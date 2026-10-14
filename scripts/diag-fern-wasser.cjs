@@ -10,36 +10,9 @@
 // der Studio-Regime-Default-AUS-Term ist gefallen; die Linse prüfte bis dahin NUR die
 // gefallene Weiche = Verifikation von Existenz statt Konsum).
 // (Das ältere `diag-far-water.cjs` ist die H3-Region-Gate-Diagnose — ein ANDERES Werkzeug.)
-const puppeteer = require("puppeteer");
-const http = require("http");
-const fs = require("fs");
-const path = require("path");
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const PORT = Number(process.env.FERN_WASSER_PORT || 4404);
-const root = path.resolve(__dirname, "..");
-const mime = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".json": "application/json",
-    ".css": "text/css",
-    ".png": "image/png",
-};
-const server = http.createServer((req, res) => {
-    let p = req.url.split("?")[0];
-    if (p === "/") p = "/index.html";
-    const fp = path.join(root, p);
-    if (!fp.startsWith(root)) {
-        res.statusCode = 403;
-        return res.end();
-    }
-    fs.readFile(fp, (err, data) => {
-        if (err) {
-            res.statusCode = 404;
-            return res.end();
-        }
-        res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-        res.end(data);
-    });
-});
+const server = statikServer();
 async function runOnce(browser, noFoundry) {
     const page = await browser.newPage();
     await page.evaluateOnNewDocument((nf) => {
@@ -236,11 +209,7 @@ async function runOnce(browser, noFoundry) {
 
 (async () => {
     await new Promise((r) => server.listen(PORT, r));
-    const browser = await puppeteer.launch({
-        headless: "new",
-        args: ["--no-sandbox", "--disable-gpu"],
-        protocolTimeout: 240000,
-    });
+    const browser = await starteBrowser({ art: "null", frist: 240000 });
     const okAlt = await runOnce(browser, true);
     const okProd = await runOnce(browser, false);
     await browser.close();

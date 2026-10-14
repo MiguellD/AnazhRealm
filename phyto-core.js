@@ -78,7 +78,25 @@
         // die Euler-Knickgrenze — echte Bäume sind viel dicker als kritisch).
         const k = lerp(13, 22, P.slim);
         const D = Math.pow((P.height / k) * 2, 1.5);
-        const trunkR = clamp(D * 0.5, 0.07, 1.25) * (P.trunkMul || 1);
+        const trunkForm = clamp(D * 0.5, 0.07, 1.25) * (P.trunkMul || 1);
+        // DAS WELT-MASS (K20, 12.10.): ein Baum, dessen Phänotyp sein Maß in Metern trägt (`P.hoeheM` die Wipfel-Höhe des
+        // Individuums in der Größe 1 — das Laub steht 1–2,5 m darüber —, `P.hd` die Schlankheit H/D seines Standorts, `P.weltSkala` Meter je Vorlagen-Einheit), wächst in
+        // der Welt so hoch und so schlank: der Stamm misst H/hd (Bestand 40–100, der Solitär gedrungener —
+        // waldwissen, McMahon 1973), die Höhe trägt der Schaft (`schaftHub`, unten). Die Formel oben in Vorlagen-
+        // Einheiten las H/D 13–18 für jeden Baum (gate:pflanzen-nah (H)); sie bleibt das Maß der FORM — die Quirl-
+        // Teilung der Konifere liest sie —, alle übrigen Radien sind relativ zum Stamm (da Vinci): das Skelett und
+        // der Zufalls-Strom bleiben gleich, jeder Ast wird mit dem Stamm schlanker. Ohne Welt-Maß (der Bauplan-Baum
+        // der Werkstatt, das stehende Totholz — die Bruch-Höhe ist sein Maß) wächst der Stamm nach der Formel oben.
+        // DER SOLITÄR (K20, `P.freistand`, FREISTAND unten): ein Baum im Offenen trägt seine Krone tief — der Schaft hebt sie
+        // nur bis zum Kronenansatz FREISTAND.ansatz (kein Hub auf die Bestandshöhe), sein Stamm misst die Höhe durch die
+        // gedrungene Schlankheit hd · FREISTAND.hd (Solitäreiche Marbach: kurzer, dicker Stamm unter breiter Krone).
+        const weltMass = P.weltSkala > 0 && P.hoeheM > 0 && P.hd > 0;
+        const frei = weltMass && P.freistand === 1;
+        const trunkR = !weltMass
+            ? trunkForm
+            : frei
+              ? (P.height / (P.hd * FREISTAND.hd) / 2) * (P.trunkMul || 1)
+              : (P.hoeheM / P.hd / 2 / P.weltSkala) * (P.trunkMul || 1);
 
         const grow = (pos, dir, radius, length, depth, accSway, parentRun, isLead) => {
             if (count > countCap) return;
@@ -132,7 +150,7 @@
                     if (Math.floor(p2[1] / intn) > Math.floor(p[1] / intn)) {
                         const nWh = Math.round(lerp(5, 7, P.apical)),
                             uy = clamp(p2[1] / P.height, 0, 1);
-                        const wShare = clamp(0.42 - 0.37 * clamp(trunkR / 1.2, 0, 1), 0.05, 0.42);
+                        const wShare = clamp(0.42 - 0.37 * clamp(trunkForm / 1.2, 0, 1), 0.05, 0.42);
                         const brad = r1 * Math.pow(wShare / nWh, 1 / P.delta);
                         for (let w = 0; w < nWh; w++) {
                             azim.v += GOLDEN;
@@ -330,6 +348,15 @@
         } else {
             grow([0, 0, 0], [0, 1, 0], trunkR, P.height * (P.conifer ? 0.2 : 0.3), 0, 0, -1, false);
         }
+        // DER HUB DES SCHAFTS reist mit (K20, das Welt-Maß): die Krone wuchs in der Form-Höhe, der Schaft trägt sie um `schaftHub`
+        // (Vorlagen-Einheiten) höher — das Maß ihres Details (die Sichthöhe der SSE-Stufenwahl) ist die Höhe ohne ihn.
+        // Der Solitär trägt seinen kurzen Stamm (FREISTAND.ansatz): der Schaft hebt die Krone, bis ihr tiefster Blatt-Anker
+        // bei ansatz × Höhe steht (der Stamm misst die Höhe seines Wuchses, H/D bleibt unter dem Bestand).
+        const schaft = !weltMass
+            ? 0
+            : frei
+              ? schaftHub(segs, leaves, runMeta, 0, FREISTAND.ansatz)
+              : schaftHub(segs, leaves, runMeta, P.hoeheM / P.weltSkala);
         // Wind-Schwung normieren (foundry-core trägt sway0/sway1 ins Vorlagen-Attribut aWind).
         const gain = Number.isFinite(P.windGain) ? P.windGain : 1;
         for (const s of segs) {
@@ -347,7 +374,7 @@
             leaves.length = 0;
             for (const _k of kp) leaves.push(_k);
         }
-        return { segs, leaves, trunkR, height: P.height, runMeta };
+        return { segs, leaves, trunkR, trunkForm, height: P.height, runMeta, schaftHub: schaft };
     }
 
     // ── MODUL-HELFER (für die Asset-Montage, geteilt von den Bau-Funktionen unten) ──
@@ -382,9 +409,9 @@
     // Integration 05.10.: die zweite Baum-Zelle war ein Zwilling der ersten (derselbe Zweig, derselbe Strom — Prüfer W5:
     // „die zwei Baum-Zellen sind fast gleich"); sie trägt seither den Weiden-Zweig, die Bäume lesen Zelle 0.
     const BLATT_ATLAS_BREIT = { zellen: 1, kern: 0.72, fuellung: 0.1796 };
-    // Die Wedel-Zelle (S3, 09.10.): der Wedel reicht bis 0,936 der halben Zelle (kern 1), Füllung 0,2811 gemessen (gate:asset-contract
-    // malt den Atlas und hält die Zahl gegen den Maler; vorher die Nadel-Zweiglein 0,2537).
-    const BLATT_ATLAS_WEDEL = { zelle: 3, kern: 1, fuellung: 0.2811 };
+    // Die Wedel-Zelle (S3, 09.10.): der Wedel reicht bis 0,936 der halben Zelle (kern 1), Füllung 0,3603 gemessen (gate:asset-contract
+    // malt den Atlas und hält die Zahl gegen den Maler; vorher die Nadel-Zweiglein 0,2537, die Lanzette bis K58 0,2811).
+    const BLATT_ATLAS_WEDEL = { zelle: 3, kern: 1, fuellung: 0.3603 };
     // DIE GROSSBLATT-ZELLE (05.10.): das Blatt-Mass ist eine Eigenschaft der Art — die Baum-Karten (Zelle 0) tragen
     // das Natur-Blatt der Baeume (14 px in der 512er-Zelle), die kleine Karte des Strauchs und die gestreckte Straehne
     // der Weide trugen damit 0,026 bzw. 0,039 m (Hasel und Weide: 0,06–0,15 m). Zelle 2 traegt ihr den Zweig mit
@@ -491,11 +518,20 @@
     // Späher S3): die Nadel-Zelle trug radiale Zweiglein — auf der Krone las jeder Nadel-Ast als „kugeliges Büschel"
     // (Radial-Stern), die Nadel-Äste selbst als Röhren (Koniferen-L0 78–80 % Rinde). Der Wedel ist der Ast UND seine
     // Nadeln: die Strähne zieht ihn entlang der gewachsenen Bahn (foundry-core, budget.tree[Stufe].wedel).
+    // DER UMRISS DES ZWEIGS (K58, 14.10.): die Zweiglein fielen zur Spitze auf 0 (`(1 − t)^0,85`) — der Wedel war eine
+    // Lanzette mit Mittelrippe, und weil die Mips des Karten-Gesetzes die Deckung halten, las er ab 20 m als EIN Riesenblatt
+    // (Augen-Befund 14.10.: „Nadelbäume als große kantige Karten"). Jetzt das Band eines Fichten-Zweigs: die Länge hält bis
+    // zur Spitze und bricht stumpf (`(1 − t^stumpf)^0,5`), je Zweiglein um `streu` [Basis, Zufall] zerfranst, und statt 36 dichter
+    // Zweiglein tragen 16 je `unter` Unter-Zweiglein (`unterLaenge` der Zweig-Länge): jedes Zweiglein ein eigener Sprüh-Büschel,
+    // die Lücken zwischen ihnen überleben die tiefen Mips — die Karte liest als Hand aus Nadel-Büscheln, nie als Klinge.
     const WEDEL_ZWEIG = {
-        seiten: 36,
-        laenge: 0.95,
+        seiten: 16,
+        laenge: 0.8,
+        stumpf: 3,
+        streu: [0.75, 0.5],
+        unterLaenge: 0.42,
         winkel: [0.82, 0.18],
-        unter: 4,
+        unter: 7,
         abstand: 1.6,
         nadel: 12,
         breite: 1.6,
@@ -757,14 +793,25 @@
                     sg = i % 2 ? 1 : -1,
                     q = rachis(t),
                     w = kr * t + sg * (WZ.winkel[0] + rg() * WZ.winkel[1]),
-                    L = halbe * WZ.laenge * Math.pow(1 - t, 0.85) * (0.85 + rg() * 0.3);
+                    L =
+                        halbe *
+                        WZ.laenge *
+                        Math.pow(1 - Math.pow(t, WZ.stumpf), 0.5) *
+                        (WZ.streu[0] + rg() * WZ.streu[1]);
                 if (L < WZ.nadel) continue;
                 const pz = achse(q, w, L, -sg * 0.18, 1.3, 1);
                 // Unter-Zweiglein am äußeren Teil der langen Zweiglein (der Wedel wird nach außen dichter).
                 for (let u = 0; u < WZ.unter && L > 6 * WZ.nadel; u++) {
                     const tu = 0.35 + (0.5 * u) / Math.max(1, WZ.unter - 1),
                         su = (u + i) % 2 ? 1 : -1;
-                    achse(pz(tu), w - sg * 0.18 * tu + su * (0.62 + rg() * 0.2), L * 0.3 * (1 - 0.4 * tu), 0, 0.9, 0.9);
+                    achse(
+                        pz(tu),
+                        w - sg * 0.18 * tu + su * (0.62 + rg() * 0.2),
+                        L * WZ.unterLaenge * (1 - 0.4 * tu),
+                        0,
+                        0.9,
+                        0.9
+                    );
                 }
             }
             x.restore();
@@ -828,7 +875,7 @@
                     );
                 lin[o + 3] = a;
             }
-        const ms = impostorMips(lin, W, H, 4, 0.5, 64, { quer: true, blut: wert, alphaRoh: true });
+        const ms = impostorMips(lin, W, H, 4, 0.5, 64, { quer: true, blut: wert, alphaRoh: true, glatt: true });
         const mips = ms.stufen.map((st) => ({ data: st.data, width: st.w, height: st.h }));
         // Unter einem Texel je Zelle: die Box (gerade Alpha), bis 1×1.
         let t = mips[mips.length - 1];
@@ -858,8 +905,8 @@
     }
 
     // DIE FRACHT DES BLATT-ATLAS (05.10.): was der Wirt als Textur laedt, je Format EINE Stufe desselben Bilds —
-    //   bc    die Kette ab Stufe 0 (512er-Zelle) als BC1-sRGB (der Karten-Codec bc1Kodiere: 8 B je 4×4, Alpha an 128 —
-    //         der alphaTest des Laub-Stoffs schneidet an derselben Stelle), bis die Zelle KARTEN_GESETZ.minSeite misst;
+    //   bc    die Kette ab Stufe 0 (512er-Zelle) als BC3-sRGB (K20: bc3Kodiere, 16 B je 4×4 — die glatte Alpha der Kette reist mit;
+    //         der alphaTest des Laub-Stoffs schneidet zwischen den Texeln), bis die Zelle KARTEN_GESETZ.minSeite misst;
     //   rgba  die Kette ab Stufe 1 (256er-Zelle) — der Wirt ohne BC laedt die Bytes von gestern (1,3 MB statt 5,3 MB).
     // DIE FRACHT IST VORMULTIPLIZIERT, in JEDEM Format (das Karten-Gesetz, KARTEN_GESETZ): BC1 kann es nicht anders —
     // sein Index 3 ist transparent SCHWARZ —, die rgba-Kette traegt dasselbe Gesetz (rgb · alpha, linear; ein Texel
@@ -871,7 +918,7 @@
     // (das Buch) und der Wirt, der vor dem Buch malt (`_ensureFoliageClusterAtlas`). Ohne Bild → null.
     function blattAtlasFracht(bild, mitBc) {
         if (!bild || !Array.isArray(bild.mips) || bild.mips.length < 2) return null;
-        const r = bild.mips.slice(1).map((m) => {
+        const vor = (m) => {
             const d = new Uint8Array(m.data);
             for (let i = 0; i < d.length; i += 4) {
                 const a = d[i + 3];
@@ -879,15 +926,20 @@
                 for (let k = 0; k < 3; k++) d[i + k] = a ? linZuSrgb8((LIN_AUS_SRGB8[d[i + k]] * a) / 255) : 0;
             }
             return { data: d, width: m.width, height: m.height };
-        });
+        };
+        const r = bild.mips.slice(1).map(vor);
         const out = { wert: bild.wert, rgba: { breite: r[0].width, hoehe: r[0].height, mips: r }, bc: null };
         if (mitBc !== false) {
+            // BC3 (K20): die glatte Alpha der Kette reist mit (BC1 schnitt sie an 128 auf ein Bit), die Farbe
+            // vormultipliziert wie die rgba-Kette. Die Kette endet, bevor eine Zellzeile unter vier Blöcke fällt: der
+            // Vier-Farben-Block trägt die vormultiplizierte Farbe von Texeln sehr verschiedener Deckung nicht (die 8er-Zelle
+            // las 7 % zu dunkel, gate:pflanzen-nah (F)); jenseits liest die Welt die letzte Stufe — die L1 endet bei λ ≈ 3.
             const bc = [];
             for (const m of bild.mips) {
-                if (m.width / 4 < KARTEN_GESETZ.minSeite || m.height < KARTEN_GESETZ.minSeite) break;
-                bc.push({ data: bc1Kodiere(m.data, m.width, m.height), width: m.width, height: m.height });
+                if (m.width / 4 < 4 * KARTEN_GESETZ.minSeite || m.height < 4 * KARTEN_GESETZ.minSeite) break;
+                bc.push({ data: bc3Kodiere(vor(m).data, m.width, m.height), width: m.width, height: m.height });
             }
-            out.bc = { breite: bild.breite, hoehe: bild.hoehe, mips: bc };
+            out.bc = { format: "bc3", breite: bild.breite, hoehe: bild.hoehe, mips: bc };
         }
         return out;
     }
@@ -1276,14 +1328,13 @@
     // Formraum (elong/sph), Sediment-Bänke (strat), Wadell-Facetten-Clipping (round) + Laplace-
     // Rundung. THREE + eine noise3-Funktion werden INJIZIERT (kein Perm-Tabellen-Port; Main gibt
     // seine SimplexNoise, das Portal seine simplex3 — die Form ist gesetz-gleich, nicht byte-
-    // gleich, was für Fels genügt [kein Lockstep]). Optional geologische Vertex-Farben
-    // (opts.withColor + THREE.Color) für Materialien, die vertexColors lesen. `seq` (0..1) treibt
+    // gleich, was für Fels genügt [kein Lockstep]). Nur die GESTALT: den Stoff legt das Fels-Gesetz
+    // auf (gelaende-core `felsNetz`, K17; die Vertex-Farben hier sind gefallen). `seq` (0..1) treibt
     // die Facetten-Ebenen deterministisch. Rückgabe: eine THREE.BufferGeometry (Radius ~size).
     function buildBoulderGeometry(THREE, noise3, P, seq) {
         if (!THREE || !THREE.IcosahedronGeometry) return null;
         const rnd = typeof seq === "function" ? seq : Math.random;
         const rrange = (a, b) => a + (b - a) * rnd();
-        const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
         const vadd = (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
         const vscl = (a, s) => [a[0] * s, a[1] * s, a[2] * s];
         const vsub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
@@ -1404,69 +1455,6 @@
         for (let i = 0; i < n; i++) pos.setXYZ(i, V[i][0], V[i][1], V[i][2]);
         pos.needsUpdate = true;
         geo.computeVertexNormals();
-        // Optional: geologische Vertex-Farben (AO in Mulden · Sediment-Bänke · Eisen-Schlieren).
-        if (P.withColor && THREE.Color) {
-            const nor = geo.attributes.normal;
-            const ao = new Float32Array(n);
-            for (let i = 0; i < n; i++) {
-                let mean = [0, 0, 0],
-                    c = 0;
-                adj[i].forEach((j) => {
-                    mean = vadd(mean, V[j]);
-                    c++;
-                });
-                mean = vscl(mean, 1 / Math.max(1, c));
-                const toMean = vsub(mean, V[i]),
-                    nv = [nor.getX(i), nor.getY(i), nor.getZ(i)];
-                ao[i] = clamp(0.5 + vdot(vn(toMean), nv) * 1.2, 0.12, 1);
-            }
-            const cols = new Float32Array(n * 3);
-            const base = new THREE.Color(P.rockA || 0x8a8278),
-                dark = new THREE.Color(P.rockB || 0x4a463e),
-                acc = new THREE.Color(P.rockC || 0x9a9286);
-            const quartz = new THREE.Color(0xe8e0d2),
-                feld = new THREE.Color(0xc69a86),
-                mica = new THREE.Color(0x2c2a26),
-                bleach = new THREE.Color(0xccc7b6),
-                moss = new THREE.Color(0x6f8a3e),
-                iron = new THREE.Color(0x7a4a26);
-            const rockLichen = P.rockLichen != null ? P.rockLichen : 0;
-            const sr = mulberry32(Math.floor((P.seed || 1) * 9973));
-            for (let i = 0; i < n; i++) {
-                let c = base.clone();
-                const up = nor.getY(i);
-                if (P.speckle) {
-                    const m = sr();
-                    if (m < 0.14) c.lerp(quartz, 0.6);
-                    else if (m < 0.26) c.lerp(feld, 0.45);
-                    else if (m < 0.34) c.lerp(mica, 0.65);
-                }
-                c.lerp(dark, ao[i] * 0.7);
-                if (ao[i] < 0.42 && up > 0.1) c.lerp(bleach, ((0.42 - ao[i]) / 0.42) * 0.4 * clamp(up, 0, 1));
-                if (strat > 0.02) {
-                    const band = Math.sin(V[i][1] * 7.0 + off);
-                    if (band > 0.4) c.lerp(acc, 0.55 * strat);
-                    else if (band < -0.4) c.lerp(dark, 0.6 * strat);
-                }
-                const stain = fbm3([V[i][0] * 1.4, V[i][1] * 3.2, V[i][2] * 1.4], 3, off + 21.0);
-                if (stain > 0.22) c.lerp(iron, (stain - 0.22) * 0.6);
-                // Vorlagen-Flechte/Moos (phytogenesis buildBoulder): auf sonnigen Kuppen, feucht-
-                // gemustert. Tag-neutral gegated (rockLichen default 0 → AnazhRealm-Fels unverändert;
-                // die Portal-Vorlage reicht 0.6 → ihr Moos bleibt). Byte-treu zur Vorlage.
-                if (rockLichen > 0 && up > 0.22) {
-                    const patch = fbm3([V[i][0] * 2.4, V[i][1] * 2.4, V[i][2] * 2.4], 3, off + 33.0);
-                    const lf = clamp((up - 0.22) / 0.5, 0, 1) * rockLichen;
-                    if (patch > -0.05) c.lerp(moss, clamp((patch + 0.05) * 1.8, 0, 1) * lf * 0.6);
-                }
-                const mott = fbm3([V[i][0] * 0.8, V[i][1] * 0.8, V[i][2] * 0.8], 3, off + 7.7);
-                c.multiplyScalar(1 + mott * 0.22);
-                c.multiplyScalar(0.88 + sr() * 0.22);
-                cols[i * 3] = c.r;
-                cols[i * 3 + 1] = c.g;
-                cols[i * 3 + 2] = c.b;
-            }
-            geo.setAttribute("color", new THREE.BufferAttribute(cols, 3));
-        }
         const size = P.size != null ? P.size : 0.5;
         geo.scale(size, size, size);
         return geo;
@@ -1716,6 +1704,79 @@
     // `deriveParamsPlant` Tree-Zweig Z.1105) — THREE-frei (der Farb-Wurf ist `hexOffsetHSL`, die
     // r128-Arithmetik). Die Zufalls-Zieh-REIHENFOLGE ist exakt die der Vorlage → derselbe Same ⇒
     // dieselbe Gestalt.
+    // DER SCHAFT TRÄGT DIE HÖHE (K20): der gewachsene Baum wird so hoch, dass sein Wipfel (der höchste Strang des
+    // Skeletts — dasselbe Skelett in jeder Stufe, kein Sprung zwischen L0 und L1) bei `ziel` steht, und zwar im Schaft:
+    // der Stamm-Lauf (Lauf 0) streckt sich unter dem tiefsten Ast-Ansatz yb, jeder andere Lauf und jedes Blatt rückt
+    // starr um ziel − h0 (auch die hängende Rute). Die Krone bleibt, wie sie wuchs — Breite, Lagen, Blatt-Zahl: die
+    // Kronen-Deckung von oben (forestKronenDeckung) und die Kosten bleiben —, der Bestandsbaum steht auf seinem langen
+    // Schaft (die Buche trägt ihre Krone im oberen Drittel). Der gestreckte Schaft behält die Ring-Teilung seines
+    // Wuchses (je gestrecktem Strang so viele Teile, wie er länger wurde — der Wurzelanlauf bleibt rund). Der Schaft
+    // wächst nur: ein Baum, dessen Wipfel schon höher steht, bleibt, wie er wuchs (ein gestauchter Schaft zog die Krone
+    // in den Stamm-Abschnitt der Rinden-Linse). Punkte, die sich Stränge teilen, rücken genau einmal. Rückgabe: der Hub ziel − h0
+    // (Vorlagen-Einheiten; 0, wo der Schaft nicht wächst).
+    // Mit `ansatz` (der Solitär, FREISTAND.ansatz) zielt der Hub statt auf eine Höhe auf den Kronenansatz: der tiefste
+    // Punkt der Krone (Ast-Ansatz oder hängendes Blatt, yk) steht danach bei ansatz × Höhe, (yk + dh) / (h0 + dh) = ansatz.
+    function schaftHub(segs, leaves, runMeta, ziel, ansatz) {
+        let h0 = 0,
+            yb = Infinity;
+        const erst = new Set();
+        for (const s of segs) {
+            h0 = Math.max(h0, s.p0[1], s.p1[1]);
+            if (erst.has(s.runId)) continue;
+            erst.add(s.runId);
+            const m = runMeta[s.runId];
+            if (m && m.parentRun === 0) yb = Math.min(yb, s.p0[1]);
+        }
+        if (!(yb > 1e-6) || !(h0 > yb)) return 0;
+        let yk = yb;
+        if (ansatz > 0) for (const l of leaves) yk = Math.min(yk, l.pos[1]);
+        const dh = ansatz > 0 && ansatz < 1 ? (ansatz * h0 - yk) / (1 - ansatz) : ziel - h0;
+        if (!(dh > 0)) return 0;
+        const streck = (yb + dh) / yb;
+        const laenge = (q) => Math.hypot(q.p1[0] - q.p0[0], q.p1[1] - q.p0[1], q.p1[2] - q.p0[2]);
+        const vorher = segs.map((q) => (q.runId === 0 ? laenge(q) : 0));
+        const gesehen = new Set();
+        const hebe = (q, stamm) => {
+            if (gesehen.has(q)) return;
+            gesehen.add(q);
+            if (!stamm || q[1] >= yb) q[1] += dh;
+            else if (q[1] > 0) q[1] *= streck;
+        };
+        for (const q of segs) {
+            hebe(q.p0, q.runId === 0);
+            hebe(q.p1, q.runId === 0);
+        }
+        for (const l of leaves) hebe(l.pos, false);
+        const lerp = (a, b, t) => a + (b - a) * t;
+        const alle = segs.slice();
+        segs.length = 0;
+        alle.forEach((q, i) => {
+            const n = vorher[i] > 0 ? Math.max(1, Math.round(laenge(q) / vorher[i])) : 1;
+            if (n === 1) return void segs.push(q);
+            let a = q.p0;
+            for (let j = 1; j <= n; j++) {
+                const t0 = (j - 1) / n,
+                    t1 = j / n;
+                const b =
+                    j === n
+                        ? q.p1
+                        : [lerp(q.p0[0], q.p1[0], t1), lerp(q.p0[1], q.p1[1], t1), lerp(q.p0[2], q.p1[2], t1)];
+                segs.push(
+                    Object.assign({}, q, {
+                        p0: a,
+                        p1: b,
+                        r0: lerp(q.r0, q.r1, t0),
+                        r1: lerp(q.r0, q.r1, t1),
+                        sway0: lerp(q.sway0, q.sway1, t0),
+                        sway1: lerp(q.sway0, q.sway1, t1),
+                    })
+                );
+                a = b;
+            }
+        });
+        return dh;
+    }
+
     function treePhenotype(api, slim, trop, delta, leaf) {
         const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
         const lerp = (a, b, t) => a + (b - a) * t;
@@ -1857,7 +1918,7 @@
     // P-Vektor für `growSkeleton` und die Bau-Stufen (foundry-core `deriveParamsPlant` delegiert hierher, Studio und
     // Foundry-Worker lesen ihn). Die Zieh-Reihenfolge ist die der Vorlage: 3 Farb-Würfe, der Wuchs-Strom, die Phase,
     // danach nur beim Totholz die Bruch-Höhe — derselbe Same ⇒ dieselbe Gestalt.
-    function treeParams(dials, seedInt, stufe, art) {
+    function treeParams(dials, seedInt, stufe, art, weltSkala) {
         const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
         const lerp = (a, b, t) => a + (b - a) * t;
         const api = dials.api,
@@ -1908,6 +1969,15 @@
             P.tot = 1;
             P.totBruch = 0.42 + IR() * 0.26;
             P.crown = "kahl";
+        }
+        // DAS WELT-MASS (K20): ein lebender Baum trägt seinen Phänotyp in Metern (`ph.hoeheM` die Wipfel-Höhe der Größe 1,
+        // mit dem Höhen-Wurf seiner Gestalt; `ph.hd` die Schlankheit H/D seines Standorts) und die Welt-Skala, mit der der
+        // Wald ihn pflanzt (`weltSkala`, Meter je Vorlagen-Einheit — die Render-Zeile trägt der Wirt) — `growSkeleton` lässt
+        // ihn so hoch und so schlank wachsen. Kein Wurf (der Zufalls-Strom bleibt); ohne Welt-Skala baut er in der Form-Höhe.
+        if (ph.kind === "tree" && ph.hoeheM > 0 && ph.hd > 0 && !ph.tot && weltSkala > 0) {
+            P.hoeheM = ph.hoeheM * (P.height / ph.height);
+            P.hd = ph.hd;
+            P.weltSkala = weltSkala;
         }
         return P;
     }
@@ -1963,6 +2033,22 @@
         lab: { contrast: 1.9, mid: 0.5 },
         host: { contrast: 1.35, mid: 0.72 },
     };
+    // DER SOLITÄR (K20, nordstern §4.5: „Solitär gedrungener", Solitäreiche Marbach): die Schlankheit eines frei stehenden
+    // Baums ist hd · FREISTAND.hd seiner Art im Bestand (Eiche 60 → 27; Bestand H/D 40–100) — growSkeleton liest `P.freistand`.
+    // Frei steht ein Baum, wenn kein stehender Nachbar näher ist als FREISTAND.abstand × die Summe der Kronen (der Wirt,
+    // `_forestStehtFrei`): Lichtkonkurrenz reicht über die Kronen-Berührung (pack 1,16) hinaus, ab dem Doppelten fehlt sie.
+    // ansatz: der tiefste Blatt-Anker des Solitärs bei 0,3 × Höhe, die Karten hängen darunter: die sichtbare Krone beginnt
+    // bei 0,15–0,2 der Höhe (Marbach: kurzer dicker Stamm unter der Krone — ohne ihn
+    // stand die Krone als Busch auf dem Boden, Blick-Sonde 12.10.).
+    // ab: die Gestalt des Solitärs (`solitaerGestalt`) — eine Baum-Art mit mindestens `ab` Bestand-Gestalten
+    // (budget.gestalten, die Massen-Arten des Walds) trägt DAZU ihren Solitär als Gestalt V+1: der Bestand behält alle
+    // V Individuen (kein Klon), der Solitär ist ein eigenes. Die Arten mit einer Gestalt (Weide, Mammut) tragen keinen.
+    const FREISTAND = Object.freeze({ hd: 0.45, abstand: 2, ansatz: 0.3, ab: 2 });
+    // Die Gestalt des Solitärs einer Art mit V Bestand-Gestalten (V+1), 0 = die Art trägt keinen. Leser: der Wirt
+    // (`_foundryGestalten`, `_foundryGestaltOv`), gate:asset-contract (jede Gestalt der Welt unter ihrer Zeile).
+    function solitaerGestalt(kind, V) {
+        return kind === "tree" && Number.isInteger(V) && V >= FREISTAND.ab ? V + 1 : 0;
+    }
     function forestStandDensity(fbm, x, z, opt) {
         const f1 = fbm(x * 0.014 + 30, z * 0.014 + 12);
         const f2 = fbm(x * 0.038 + 5, z * 0.038 + 20);
@@ -3055,7 +3141,7 @@
     // LINEAR. Die Schicht trägt sRGB (bc1-rgba-unorm-srgb / rgba8unorm-srgb, die GPU dekodiert): der Codec mittelt
     // jede Mip-Stufe LINEAR und kodiert erst beim Schreiben. Befund Blick-Tour 04.10.: der Host las die linearen
     // Bytes als sRGB — Eichen-Laub 0,12 → 0,013 linear, die Fernkrone stand SCHWARZ und im Dunst grau.
-    var KARTEN_GESETZ = { schwelle: 0.34, normalTeiler: 2, minSeite: 4, minOpak: 64 };
+    var KARTEN_GESETZ = { schwelle: 0.34, normalTeiler: 2, minSeite: 4, minOpak: 64, glaette: 4, glaetteBis: 2 };
     // linear (0..1) → sRGB-Byte, und die Tabelle der 256 linearen Eingangs-Bytes
     function linZuSrgb8(x) {
         const v = x <= 0.0031308 ? 12.92 * x : 1.055 * Math.pow(x, 1 / 2.4) - 0.055;
@@ -3115,7 +3201,7 @@
 
     // DECKUNGSTREUE MIPS der Albedo: Stufe 0 binarisiert an der Schwelle (opak → rgb, 255 · sonst 0,0,0,0). Jede
     // tiefere Stufe liest den ECHTEN Deckungsanteil ihres Stufe-0-Fußabdrucks und macht je Ansicht genau so viele
-    // Texel opak, wie Stufe 0 deckt (Rang nach Anteil, Gleichstand über eine feste Permutation) — eine Box-Mip
+    // Texel opak, wie Stufe 0 deckt (Rang nach Anteil, Gleichstand über die Deckung der Nachbarschaft) — eine Box-Mip
     // dünnt die Krone sonst unter dem alphaTest aus. Die Farbe ist das alpha-gewichtete LINEARE Mittel des
     // Fußabdrucks; Eingang linear (der Bäcker), jede Stufe sRGB-kodiert (DER FARBRAUM oben).
     // EIN Mip-Gesetz für jede Karte (S7: auch der EINE Blatt-Atlas, bakeLeafAtlasBild — sein eigener Mip-Weg mit
@@ -3125,12 +3211,73 @@
     //            Schwarz), ein nicht gewählter Texel trägt das Mittel seiner deckenden Kinder bzw. `blut`, Alpha 0;
     //   alphaRoh Stufe 0 behält ihr Eingangs-Alpha (die Kantenglättung des Malers, nah vergrößert), gezählt wird
     //            die Deckung an der Schwelle wie immer.
+    //   glatt    die Alpha jeder tieferen Stufe ist die skalierte Deckung (Castaño): genau die gewählten Texel tragen
+    //            die Schwelle, der Rest fällt stetig — die Kante liegt zwischen den Texeln (K20; braucht blut).
     // Rückgabe: { stufen: [{ w, h, data }], deckung: [Anteil je Stufe], opak: opake Texel der Stufe 0 }.
+    // DAS σ DER GLATTEN STUFE (K20): die Skala der Alpha (Deckung des Texels × σ, gerundet, bei 255 gekappt), unter der
+    // die Zelle nw × nh, bilinear in S × S Unterproben je Texel gelesen (in der Zelle geklemmt), an der Schwelle `thr`
+    // (Byte) den Anteil `ziel` deckt — die Deckung, die der Filter der GPU sieht. Die Deckung steigt monoton mit σ:
+    // Klammer um den Startwert, dann Bisektion im Logarithmus.
+    function glattSigma(schl, nw, nh, sigma0, thr, ziel) {
+        const S = nw >= 128 ? 2 : 4,
+            W = nw * S,
+            H = nh * S;
+        const tafel = (n, m) => {
+            const i0 = new Int32Array(n),
+                i1 = new Int32Array(n),
+                f = new Float32Array(n);
+            for (let j = 0; j < n; j++) {
+                const x = (j + 0.5) / S - 0.5,
+                    x0 = Math.floor(x);
+                f[j] = x - x0;
+                i0[j] = Math.min(m - 1, Math.max(0, x0));
+                i1[j] = Math.min(m - 1, Math.max(0, x0 + 1));
+            }
+            return { i0, i1, f };
+        };
+        const tx = tafel(W, nw),
+            ty = tafel(H, nh);
+        const A = new Float32Array(nw * nh);
+        const deck = (s) => {
+            for (let i = 0; i < A.length; i++) A[i] = schl[i] > 0 ? Math.min(255, Math.round(schl[i] * s * 255)) : 0;
+            let k = 0;
+            for (let y = 0; y < H; y++) {
+                const r0 = ty.i0[y] * nw,
+                    r1 = ty.i1[y] * nw,
+                    fy = ty.f[y];
+                for (let x = 0; x < W; x++) {
+                    const x0 = tx.i0[x],
+                        x1 = tx.i1[x],
+                        fx = tx.f[x];
+                    const a0 = A[r0 + x0] + (A[r0 + x1] - A[r0 + x0]) * fx,
+                        a1 = A[r1 + x0] + (A[r1 + x1] - A[r1 + x0]) * fx;
+                    if (a0 + (a1 - a0) * fy >= thr) k++;
+                }
+            }
+            return k / (W * H);
+        };
+        // Trifft der Startwert die Deckung auf 1 % (die großen Stufen, wo ein Rand-Texel wenig wiegt), bleibt er.
+        if (Math.abs(deck(sigma0) - ziel) <= 0.01 * ziel) return sigma0;
+        let lo = sigma0,
+            hi = sigma0;
+        while (deck(hi) < ziel && hi < sigma0 * 64) hi *= 2;
+        while (deck(lo) > ziel && lo > sigma0 / 64) lo /= 2;
+        if (hi <= lo) return sigma0;
+        for (let it = 0; it < 14; it++) {
+            const mid = Math.sqrt(lo * hi);
+            if (deck(mid) < ziel) lo = mid;
+            else hi = mid;
+        }
+        return Math.abs(deck(lo) - ziel) < Math.abs(deck(hi) - ziel) ? lo : hi;
+    }
+
     function impostorMips(rgba, w, h, V, schwelle, nStufen, opt) {
         const thr = (schwelle == null ? KARTEN_GESETZ.schwelle : schwelle) * 255;
         const quer = !!(opt && opt.quer),
             blut = opt && opt.blut ? opt.blut.map((x) => linZuSrgb8(x)) : null,
-            roh0 = !!(opt && opt.alphaRoh);
+            roh0 = !!(opt && opt.alphaRoh),
+            glatt = !!(opt && opt.glatt);
+        if (glatt && !blut) throw new Error("impostorMips: glatt braucht blut (die Farbe jedes deckenden Texels)");
         const hA = quer ? h : (h / V) | 0,
             wA = quer ? (w / V) | 0 : w;
         const n0 = w * h;
@@ -3198,15 +3345,42 @@
             // Texel i der Ansicht v: übereinander zusammenhängend, nebeneinander zeilenweise je Zelle
             const tex = quer ? (v, i) => ((i / nwA) | 0) * nw + v * nwA + (i % nwA) : (v, i) => v * nA + i;
             const schluessel = new Float64Array(nA),
-                sortiert = new Float64Array(nA);
+                sortiert = new Float64Array(nA),
+                dicht = new Float64Array(nA),
+                weich = new Float64Array(nA);
+            const fuss = 1 << (2 * k); // Stufe-0-Texel je Texel dieser Stufe
             let opakK = 0;
             for (let v = 0; v < V; v++) {
                 let positiv = 0;
+                // DIE DECKUNG DES TEXELS (K20, 12.10.): der Box-Anteil c seines Stufe-0-Fußabdrucks, geglättet über die
+                // Nachbarschaft (`KARTEN_GESETZ.glaette` binomiale 3×3-Gänge je Stufe — zwei Texel der Stufe, das Büschel
+                // statt des Blatts, wo das Blatt unter wenige Pixel fällt). Die Wahl hält die Büschel zusammen: ein Texel
+                // im dichten Zweig gewinnt gegen einen vereinzelten, die Lücke zwischen zwei Blättern füllt sich. Der
+                // Gleichstand über einen Orts-Hash (bis 12.10.) säte Einzel-Texel quer über die Krone: das Korn der
+                // Mittelsicht, das unter dem ½-Pixel-Versatz flimmerte (gate:pflanzen-nah (Z)).
+                for (let i = 0; i < nA; i++) dicht[i] = ta[tex(v, i)] / fuss;
+                const gaenge = k <= KARTEN_GESETZ.glaetteBis ? KARTEN_GESETZ.glaette : 1;
+                for (let gang = 0; gang < gaenge; gang++) {
+                    for (let i = 0; i < nA; i++) {
+                        const ix = i % nwA,
+                            iy = (i / nwA) | 0;
+                        let nb = 0;
+                        for (let dy = -1; dy <= 1; dy++)
+                            for (let dx = -1; dx <= 1; dx++) {
+                                const x = Math.min(nwA - 1, Math.max(0, ix + dx)),
+                                    y = Math.min(nhA - 1, Math.max(0, iy + dy));
+                                nb += dicht[y * nwA + x] * (dx ? 1 : 2) * (dy ? 1 : 2);
+                            }
+                        weich[i] = nb / 16;
+                    }
+                    dicht.set(weich);
+                }
                 for (let i = 0; i < nA; i++) {
                     const s = ta[tex(v, i)];
-                    if (s > 0) positiv++;
-                    // Rang: Deckung zuerst, Gleichstand über die Bijektion i·φ mod 2^20 (deterministisch, ortsgestreut)
-                    schluessel[i] = s * 1048576 + (Math.imul(i, 0x9e3779b1) & 0xfffff);
+                    // wählbar: glatt jeder Texel mit Deckung in der Nachbarschaft (er trägt die Blut-Farbe), sonst nur mit
+                    // eigener (die Karte trägt die Farbe ihrer Kinder); der Gleichstand über die eigene Deckung
+                    schluessel[i] = glatt || s > 0 ? dicht[i] + (1e-6 * s) / fuss : 0;
+                    if (schluessel[i] > 0) positiv++;
                 }
                 const M = Math.min(positiv, Math.round(cov0[v] * nA));
                 if (blut)
@@ -3226,8 +3400,23 @@
                 sortiert.set(schluessel);
                 sortiert.sort();
                 const grenze = sortiert[nA - M];
+                // GLATT (Castaño 2010, Mip-Wahl mit Erhalt der Deckung): die Alpha ist die Deckung des Texels, skaliert mit
+                // σ — der Filter liest eine stetige Kante (der Umriss liegt zwischen den Texeln, nicht auf ihrem Raster).
+                // σ hält die Deckung, die der FILTER sieht: bilinear abgetastet (S × S Unterproben je Texel, in der Zelle
+                // geklemmt, die Alpha wie geschrieben — gerundet, bei 255 gekappt) deckt die Stufe an der Schwelle, was
+                // Stufe 0 deckt. Der Startwert — genau die M gewählten Texel tragen die Schwelle — zählt Texel-Mitten: der
+                // Umriss einer stetigen Alpha läuft durch die Mitten der Rand-Texel, die Stufe verlor einen halben Rand-
+                // Texel je Büschel (16er-Zelle 0,160 statt 0,182; die Karte der Buche, die der Bäcker aus diesen Stufen
+                // rastert, deckte 0,914 ihres Bilds — gate:asset-contract D).
+                let sigma = grenze > 0 ? thr / 255 / grenze : 0;
+                if (glatt && sigma > 0) sigma = glattSigma(schluessel, nwA, nhA, sigma, thr, cov0[v]);
                 for (let i = 0; i < nA; i++) {
                     const o = tex(v, i);
+                    if (glatt) {
+                        if (schluessel[i] > 0) data[o * 4 + 3] = Math.min(255, Math.round(schluessel[i] * sigma * 255));
+                        if (data[o * 4 + 3] >= thr) opakK++;
+                        continue;
+                    }
                     if (schluessel[i] >= grenze && ta[o] > 0) {
                         data[o * 4] = linZuSrgb8(tr[o] / ta[o]);
                         data[o * 4 + 1] = linZuSrgb8(tg[o] / ta[o]);
@@ -3615,10 +3804,51 @@
         return out;
     }
 
-    // Der Rückweg für die Linse (gate:asset-contract BC-Rundlauf): "bc1" → rgba · "bc5" → rg (2 B je Texel).
+    // BC3 (K20, 12.10.): die Farbe als BC1-Block im 4-Farben-Modus (jeder Texel deckend kodiert — BC3 liest den
+    // Farb-Block immer so), die Alpha als BC4-Block davor (16 B je 4×4). Für die Fracht mit STETIGER Alpha (die glatte
+    // Mip-Kette des Blatt-Atlas): BC1 trägt ein Bit und schnitt die Kante zurück auf das Texel-Raster.
+    function bc3Kodiere(rgba, w, h) {
+        const bw = Math.ceil(w / 4),
+            bh = Math.ceil(h / 4);
+        const deckend = new Uint8Array(rgba);
+        for (let i = 3; i < deckend.length; i += 4) deckend[i] = 255;
+        const farbe = bc1Kodiere(deckend, w, h);
+        const out = new Uint8Array(bw * bh * 16);
+        const a = new Uint8Array(16);
+        for (let by = 0; by < bh; by++)
+            for (let bx = 0; bx < bw; bx++) {
+                for (let j = 0; j < 16; j++) {
+                    const x = Math.min(w - 1, bx * 4 + (j & 3)),
+                        y = Math.min(h - 1, by * 4 + (j >> 2));
+                    a[j] = rgba[(y * w + x) * 4 + 3];
+                }
+                const b = by * bw + bx;
+                bc4Block(a, out, b * 16);
+                out.set(farbe.subarray(b * 8, b * 8 + 8), b * 16 + 8);
+            }
+        return out;
+    }
+
+    // Der Rückweg für die Linse (gate:asset-contract BC-Rundlauf): "bc1"/"bc3" → rgba · "bc5" → rg (2 B je Texel).
     function bcDekodiere(buf, w, h, fmt) {
         const bw = Math.ceil(w / 4),
             bh = Math.ceil(h / 4);
+        if (fmt === "bc3") {
+            const n = bw * bh;
+            const farbe = new Uint8Array(n * 8),
+                alpha = new Uint8Array(n * 16);
+            for (let b = 0; b < n; b++) {
+                farbe.set(buf.subarray(b * 16 + 8, b * 16 + 16), b * 8);
+                // der Alpha-Block als erster Kanal eines BC5-Blocks (der zweite bleibt leer)
+                alpha.set(buf.subarray(b * 16, b * 16 + 8), b * 16);
+            }
+            // Der Farb-Block im 4-Farben-Modus: BC1 dekodiert c0 ≤ c1 als 3-Farben-Modus — BC3 nie. Die Kodierung schreibt
+            // ohne Transparenz c0 ≥ c1 (Gleichheit = eine Farbe, beide Lesarten gleich).
+            const out = bcDekodiere(farbe, w, h, "bc1");
+            const rg = bcDekodiere(alpha, w, h, "bc5");
+            for (let i = 0; i < w * h; i++) out[i * 4 + 3] = rg[i * 2];
+            return out;
+        }
         if (fmt === "bc1") {
             const out = new Uint8Array(w * h * 4);
             const p = new Int32Array(16);
@@ -3941,6 +4171,35 @@
     function _budgetMal(m) {
         return m.rad && Array.isArray(m.rad.raeder) && m.rad.raeder.length ? m.rad.raeder.length : 1;
     }
+    // DIE FLÜGEL-GESTALT (1310-4): ist b dieselbe Gestalt wie a, nur verschoben? Derselbe Index, jede Spur gleich (1e-6),
+    // die Lage um EINEN Vektor versetzt (1e-5). a, b = { pos, idx, spuren: [Array | null, …] } (die Spuren in derselben
+    // Reihenfolge). Gibt den Versatz [dx, dy, dz] oder null. Vorder- und Hinterflügel einer Seite (porta `makeLeaf(seite,
+    // ±zFace)`) sind so gebaut: der Wirt zeichnet den zweiten als Instanz des ersten (`_foundryFluegelInstanz`), das Gesetz
+    // zählt ihn mit ihm (`budgetSippen`) — EINE Regel für beide.
+    function budgetGestaltVersatz(a, b) {
+        const A = a.pos,
+            B = b.pos;
+        if (!A || !B || A === B || A.length !== B.length || A.length < 3) return null;
+        if (!!a.idx !== !!b.idx || (a.idx && a.idx.length !== b.idx.length)) return null;
+        if (a.idx) for (let i = 0; i < a.idx.length; i++) if (a.idx[i] !== b.idx[i]) return null;
+        if (a.spuren.length !== b.spuren.length) return null;
+        for (let s = 0; s < a.spuren.length; s++) {
+            const x = a.spuren[s],
+                y = b.spuren[s];
+            if (!x !== !y) return null;
+            if (!x) continue;
+            if (x.length !== y.length) return null;
+            for (let i = 0; i < x.length; i++) if (Math.abs(x[i] - y[i]) > 1e-6) return null;
+        }
+        const d = [B[0] - A[0], B[1] - A[1], B[2] - A[2]];
+        for (let i = 0; i < A.length; i++) if (Math.abs(B[i] - A[i] - d[i % 3]) > 1e-5) return null;
+        return d;
+    }
+    function _budgetGestalt(m) {
+        const spuren = [m.normal && m.normal.array ? m.normal.array : null];
+        for (const a of BUDGET_GESETZ.formAttr) spuren.push(m[a] && m[a].array ? m[a].array : null);
+        return { pos: m.position.array, idx: m.index || null, spuren: spuren };
+    }
     // Die Kosten einer gelieferten Stufe nach der Regel des Wirts (Beipack ohne Puffer zählt nicht). Der Schatten-Teil
     // (S3, `teil: "schatten"`) zeichnet nur in den Kaskaden — er zählt nicht zur Stufe, sondern zu ihrem Wurf (`budgetWurf`).
     function budgetSippen(meshes) {
@@ -3948,6 +4207,7 @@
             verts = 0,
             draws = 0;
         const gr = new Map();
+        const fluegel = [];
         for (const m of meshes || []) {
             if (!_budgetTeil(m) || m.teil === "schatten") continue;
             const nv = m.position.array.length / 3;
@@ -3955,6 +4215,14 @@
             verts += nv;
             const k = budgetSippe(m);
             if (k === null) {
+                // DIE FLÜGEL-GESTALT: wiederholt ein Flügel-Teil ein früheres desselben Stoffs und derselben Form nur
+                // verschoben, zeichnet der Wirt es als dessen Instanz — kein eigener Draw
+                if (m.tuer && !m.rad) {
+                    const art = budgetStoff(m.kind, m.mat) + "#" + _budgetForm(m);
+                    const g = _budgetGestalt(m);
+                    if (fluegel.some((v) => v.art === art && budgetGestaltVersatz(v.g, g))) continue;
+                    fluegel.push({ art: art, g: g });
+                }
                 draws++;
                 continue;
             }
@@ -4208,8 +4476,36 @@
             }
         }
         const lebend = () => gruppen.filter((g) => !g.in);
-        const zaehle = () =>
-            lebend().reduce((s, g) => s + Math.max(1, Math.ceil(g.verts / BUDGET_GESETZ.teilVertsMax)), 0);
+        // Gezählt wird in der Einheit des Wirts (`budgetSippen`): ein Flügel, dessen Teile die eines früheren desselben
+        // Stoffs der Reihe nach um EINEN Vektor verschoben wiederholen (DIE FLÜGEL-GESTALT, `budgetGestaltVersatz`), wird
+        // seine Instanz — er zählt nicht.
+        const zwillingMemo = new Map();
+        const zwilling = (a, b) => {
+            const key = a.nr + ":" + b.nr + ":" + a.teile.length + ":" + b.teile.length;
+            if (zwillingMemo.has(key)) return zwillingMemo.get(key);
+            let d0 = null,
+                ja = a.stoff === b.stoff && a.teile.length === b.teile.length;
+            for (let i = 0; ja && i < a.teile.length; i++) {
+                const d = budgetGestaltVersatz(_budgetGestalt(a.teile[i].m), _budgetGestalt(b.teile[i].m));
+                if (!d) ja = false;
+                else if (!d0) d0 = d;
+                else for (let c = 0; c < 3; c++) if (Math.abs(d[c] - d0[c]) > 1e-5) ja = false;
+            }
+            zwillingMemo.set(key, ja);
+            return ja;
+        };
+        const zaehle = () => {
+            const vorlagen = [];
+            let n = 0;
+            for (const g of lebend()) {
+                if (g.klasse.indexOf("T:") === 0) {
+                    if (vorlagen.some((v) => zwilling(v, g))) continue;
+                    vorlagen.push(g);
+                }
+                n += Math.max(1, Math.ceil(g.verts / BUDGET_GESETZ.teilVertsMax));
+            }
+            return n;
+        };
         // Je Schritt fällt das Paar mit dem kleinsten SEH-FEHLER = Fläche des faltenden Stoffs × Seh-Abstand: was das
         // Auge kaum sieht (kleine Fläche) oder kaum unterscheidet (kleiner Abstand), fällt zuerst; die kleinere Fläche
         // faltet in die größere. (Die Dreiecks-Zahl ist kein Seh-Maß: eine Glas-Fassade aus 12 Dreiecken deckt 850 m².)
@@ -4520,6 +4816,8 @@
         scanRadialXZ: scanRadialXZ,
         forestCellRng: forestCellRng,
         FOREST_STAND: FOREST_STAND,
+        FREISTAND: FREISTAND,
+        solitaerGestalt: solitaerGestalt,
         forestStandDensity: forestStandDensity,
         forestGeburt: forestGeburt,
         forestBestand: forestBestand,
@@ -4559,7 +4857,7 @@
         hexOffsetHSL: hexOffsetHSL, // K24 — der Farb-Wurf im HSL-Raum (r128-Arithmetik, renderer-frei)
         bakeLeafAtlasCanvas: bakeLeafAtlasCanvas,
         bakeLeafAtlasBild: bakeLeafAtlasBild, // das Textur-Bild des EINEN Atlas: blutend, Zell-Mittel gleich, deckungstreue Mips, `wert`
-        blattAtlasFracht: blattAtlasFracht, // die Fracht des Atlas je Format: BC1 ab Stufe 0, rgba ab Stufe 1 (05.10.)
+        blattAtlasFracht: blattAtlasFracht, // die Fracht des Atlas je Format: BC3 ab Stufe 0 (K20), rgba ab Stufe 1 (05.10.)
         BLATT_ATLAS_ZELLE: BLATT_ATLAS_ZELLE, // die Zelle des Atlas in Pixeln (512, 05.10.)
         buildFoliageQuads: buildFoliageQuads,
         kronenLagen: kronenLagen, // S3: die Lagen einer Krone — der Bau-Regler der Karten-Wahl (foundry-core __lagenWahl)
@@ -4590,6 +4888,7 @@
         normalMips: normalMips,
         bc1Kodiere: bc1Kodiere,
         bc5Kodiere: bc5Kodiere,
+        bc3Kodiere: bc3Kodiere, // die Fracht mit stetiger Alpha (der Blatt-Atlas, K20)
         bcDekodiere: bcDekodiere,
         karteKodiere: karteKodiere,
         bodenBand: bodenBand, // Waldboden 04.10. — das Trapez-Band des Boden-Gesetzes
@@ -4605,6 +4904,7 @@
         budgetGlut: budgetGlut,
         budgetSippe: budgetSippe, // die EINE Verschmelz-Regel eines Teils (Wirt: Flatten + Ofen, Gesetz: Draws)
         budgetSippen: budgetSippen, // Dreiecke + Draws einer gelieferten Stufe nach der Regel des Wirts
+        budgetGestaltVersatz: budgetGestaltVersatz, // dieselbe Gestalt, nur verschoben (Flügel-Instanz des Wirts) — der Versatz oder null
         budgetWurf: budgetWurf, // S3: der Schatten-Teil einer Stufe (Dreiecke, Teile)
         budgetZeile: budgetZeile, // Stufen-Klammer + Budget-Zeile eines Kerns
         kerneVereinen: kerneVereinen, // der EINE Merge der Zweit-Kern-Blöcke (Stufen · Budget · Gestalten)

@@ -28,6 +28,7 @@
 //   node scripts/diag-look-golden.cjs --render   → rendert den Spot, vergleicht gegen Golden
 //   node scripts/diag-look-golden.cjs --mint      → mintet das Golden aus dem aktuellen Render
 // ─────────────────────────────────────────────────────────────────────────
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 
@@ -140,37 +141,11 @@ function selfTest() {
 
 // ── Render-Pfad (opt-in): den settled Spot rendern, Luma lesen, gegen Golden ──
 async function renderLuma() {
-    const puppeteer = require("puppeteer");
-    const http = require("http");
-    const root = path.resolve(__dirname, "..");
-    const mime = {
-        ".html": "text/html",
-        ".js": "application/javascript",
-        ".wasm": "application/wasm",
-        ".json": "application/json",
-        ".css": "text/css",
-        ".png": "image/png",
-        ".woff2": "font/woff2",
-    };
-    const server = http.createServer((req, res) => {
-        let p = req.url.split("?")[0];
-        if (p === "/") p = "/index.html";
-        const fp = path.join(root, p);
-        if (!fp.startsWith(root)) return ((res.statusCode = 403), res.end());
-        fs.readFile(fp, (err, data) => {
-            if (err) return ((res.statusCode = 404), res.end());
-            res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-            res.end(data);
-        });
-    });
+    const server = statikServer();
     // Port über LOOK_GOLDEN_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4320.
     const PORT = Number(process.env.LOOK_GOLDEN_PORT || 4320);
     await new Promise((r) => server.listen(PORT, r));
-    const browser = await puppeteer.launch({
-        headless: "new",
-        args: ["--no-sandbox", "--use-angle=swiftshader"],
-        protocolTimeout: 600000,
-    });
+    const browser = await starteBrowser({ art: "standard", frist: 600000, zusatz: ["--use-angle=swiftshader"] });
     const page = await browser.newPage();
     await page.setViewport({ width: 640, height: 400 });
     let luma = null;

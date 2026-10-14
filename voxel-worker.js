@@ -87,6 +87,9 @@ const state = {
     erbgut: null,
     // der Erdbau der Orte (K10, gelaende-core `erdbauNormal`) oder null
     erdbau: null,
+    // DER FELS-STOFF des Mains (`FELS_STOFF.basis` · `FELS_STOFF.netz`, K17-2): die Töne und Schwellen, mit denen
+    // `buildChunkMesh` den Stoff baut (gelaende-core `felsStoff`). Fehlt er, wirft der Bau (fail-closed).
+    felsStoff: null,
 };
 
 self.onmessage = function (e) {
@@ -124,6 +127,10 @@ self.onmessage = function (e) {
                         normals: mesh.normals.buffer,
                         indices: mesh.indices.buffer,
                         colors: mesh.colors.buffer,
+                        // der Stoff (K17-2): Himmels-Sicht und Schutt je Vertex, die Feuchte des Mooses je Netz
+                        himmel: mesh.himmel.buffer,
+                        schutt: mesh.schutt.buffer,
+                        felsFeuchte: mesh.felsFeuchte,
                         waterCells: mesh.waterCells.buffer,
                         // der Höhlen-Graph (Welle 7): je Dreieck die Zelle seiner Luft + Zellen · Seiten · Portale
                         hTri: mesh.hTri.buffer,
@@ -141,6 +148,8 @@ self.onmessage = function (e) {
                         mesh.normals.buffer,
                         mesh.indices.buffer,
                         mesh.colors.buffer,
+                        mesh.himmel.buffer,
+                        mesh.schutt.buffer,
                         mesh.waterCells.buffer,
                         mesh.hTri.buffer,
                         mesh.hKnoten.buffer,
@@ -211,7 +220,7 @@ function applyStateSnapshot(snap) {
     if (!snap) return;
     if (snap.seed && snap.seed !== state.seed) {
         state.seed = snap.seed;
-        state.noise = new SimplexNoise(state.seed + ":voxel");
+        state.noise = G.lageRausch(state.seed, SimplexNoise);
     }
     if (typeof snap.baseHeight === "number") state.baseHeight = snap.baseHeight;
     if (typeof snap.waterLevel === "number") state.waterLevel = snap.waterLevel;
@@ -231,10 +240,13 @@ function applyStateSnapshot(snap) {
     if (typeof snap.genVersion === "number") state.genVersion = snap.genVersion;
     // Die Boden-Palette des Mains (Studio PORTAL_GROUND nach dem Farb-Gesetz, linear) — dieselben Zahlen.
     if (snap.bodenPalette) state.bodenPalette = snap.bodenPalette;
+    // Der Wiesen-Grund des Mains (K53, `WIESEN_GRUND`: Farbe, Wache, Fleck) — dieselben Zahlen.
+    if (snap.wiesenGrund) state.wiesenGrund = snap.wiesenGrund;
     if (typeof snap.regionSize === "number") state.regionSize = snap.regionSize;
     if (snap.erbgut !== undefined) state.erbgut = snap.erbgut;
     // DER ERDBAU DER ORTE (K10): die Splat-Liste des Mains (`_erdbauRoh`), hier in die Normalform des Gesetzbuchs gelegt
     if (snap.erdbau !== undefined) state.erdbau = G.erdbauNormal(snap.erdbau);
+    if (snap.felsStoff) state.felsStoff = snap.felsStoff;
 }
 
 function applyStateDelta(delta) {
@@ -2108,6 +2120,9 @@ function attachFieldColors(positions) {
     // `AnazhRealm.BODEN_FARBE`) — ohne sie färbt der Worker nicht (laut, kein stiller Ersatz).
     const P = state.bodenPalette;
     if (!P) throw new Error("attachFieldColors: die Boden-Palette fehlt im Worker-Zustand (bodenPalette)");
+    const WG = state.wiesenGrund;
+    if (!WG || !state.noise)
+        throw new Error("attachFieldColors: der Wiesen-Grund (wiesenGrund) oder das Rauschen fehlt im Worker-Zustand");
     const stone = P.rock;
     const earth = P.mead;
     // V18.181-merge-Λ Sub 3h — Γ1-Lesart-4 (V18.178): Mirror von Main
@@ -2192,6 +2207,12 @@ function attachFieldColors(positions) {
         // identisch): die Fluss-Bänke als getrampelte, gepackte Erde.
         const pathF = pathFieldAt(x, z, y);
         if (pathF > 0.01) mix(packedDirt, pathF * 0.6);
+        // DER WIESEN-GRUND (K53, Spiegel von `_bodenFarbeAt`, dieselben Zahlen aus dem Schnappschuss `wiesenGrund`)
+        const gruen = ss(0, WG.schwelle, c[1] - 0.5 * (c[0] + c[2]));
+        if (gruen > 0) {
+            const fleck = (sandNoise.noise2D(x * 0.13 + 5.3, z * 0.13 - 2.9) + 1) * 0.5;
+            mix(WG.farbe, gruen * (0.5 + 0.5 * fleck));
+        }
         colors[i * 3] = c[0];
         colors[i * 3 + 1] = c[1];
         colors[i * 3 + 2] = c[2];
@@ -2689,6 +2710,27 @@ function buildChunkMesh(cx, cz, lod) {
     // identische Eingangs-Werte für die Color-Mix-Pipeline.
     const positionsF32 = new Float32Array(positions);
     const colors = attachFieldColors(positionsF32);
+    // DER STOFF ENTSTEHT, WO DAS NETZ ENTSTEHT (K17-2): Himmels-Sicht, Fels-Stoff (in `colors`) und Schutt aus dem EINEN
+    // Gelände-Kern — derselbe Code wie im Sync-Bau des Mains (`_felsStoff`), der Main setzt nur die Attribute. Bis K17-2 rechnete
+    // der Main ihn je Chunk nach (Mess-Wiese Σ 59,4 ms je Ring).
+    const FS = state.felsStoff;
+    if (!FS) throw new Error("buildChunkMesh: der Fels-Stoff fehlt im Worker-Zustand (felsStoff)");
+    const indicesU32 = new Uint32Array(indices);
+    const hTri = Int32Array.from(triZelle);
+    const nV = positionsF32.length / 3;
+    const himmel = G.himmelsSicht(indicesU32, hTri, nV, step);
+    const fels = G.felsStoff(
+        state,
+        FS.basis,
+        FS.netz,
+        positionsF32,
+        normals,
+        indicesU32,
+        himmel,
+        colors,
+        nV,
+        feuchteAt
+    );
     // V9.93 (Wasser-LOD-Naht-Heilung): Wasser-Cells IMMER LOD 0 für naht-
     // freie Wasseroberflächen über LOD-Boundaries hinweg. Für LOD-0-Chunks
     // teilen wir die schon gesampelte `density` (V9.81-Sharing wirkt). Für
@@ -2724,11 +2766,14 @@ function buildChunkMesh(cx, cz, lod) {
     return {
         empty: false,
         positions: positionsF32,
-        indices: new Uint32Array(indices),
+        indices: indicesU32,
         normals,
         colors,
+        himmel,
+        schutt: fels.schutt,
+        felsFeuchte: fels.feuchte,
         waterCells,
-        hTri: Int32Array.from(triZelle),
+        hTri,
         hN: hoehle.n,
         hKnoten: hoehle.knoten,
         hMuend: hoehle.muend,

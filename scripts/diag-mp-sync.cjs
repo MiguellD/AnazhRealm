@@ -29,10 +29,10 @@
 //
 //   node scripts/diag-mp-sync.cjs [--selftest] [--roh <datei>]
 "use strict";
+const { starteBrowser } = require("./lib/welt-boot.cjs");
 const { spawn } = require("child_process");
 const fs = require("fs");
 const path = require("path");
-const puppeteer = require("puppeteer");
 
 const ROOT = path.resolve(__dirname, "..");
 const PORT = Number(process.env.MP_SYNC_PORT || 4312);
@@ -228,21 +228,7 @@ function bericht(p) {
     const t0 = Date.now();
     const saveServer = await startProc("save-server.js", /läuft/);
     let signaling = null;
-    const browser = await puppeteer.launch({
-        headless: true,
-        protocolTimeout: 180000,
-        args: [
-            "--use-angle=swiftshader",
-            "--enable-unsafe-swiftshader",
-            "--ignore-gpu-blocklist",
-            "--no-sandbox",
-            "--disable-setuid-sandbox",
-            "--autoplay-policy=no-user-gesture-required",
-            "--disable-background-timer-throttling",
-            "--disable-backgrounding-occluded-windows",
-            "--disable-renderer-backgrounding",
-        ],
-    });
+    const browser = await starteBrowser({ art: "webgl", frist: 180000, zusatz: ["--ignore-gpu-blocklist", "--autoplay-policy=no-user-gesture-required", "--disable-background-timer-throttling", "--disable-backgrounding-occluded-windows", "--disable-renderer-backgrounding"] });
     try {
         // ── Seite A: frisch, der signaling-server ist AUS ──
         const pageA = await browser.newPage();

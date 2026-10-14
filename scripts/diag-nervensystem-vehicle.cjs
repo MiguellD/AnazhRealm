@@ -23,33 +23,14 @@
 //     geklemmt (kindStages-Merge) UND fuer einen unbekannten kind ohne jeden Eintrag ebenso
 //     (N7.5 [0]) — gemessen an den requested-Keys.
 //   node scripts/diag-nervensystem-vehicle.cjs [--selftest]
-const puppeteer = require("puppeteer");
-const http = require("http");
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.NERV_PORT || 4407);
 const root = path.resolve(__dirname, "..");
-const mime = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".wasm": "application/wasm",
-    ".json": "application/json",
-    ".css": "text/css",
-    ".png": "image/png",
-    ".woff2": "font/woff2",
-};
-const server = http.createServer((req, res) => {
-    let p = req.url.split("?")[0];
-    if (p === "/") p = "/index.html";
-    const fp = path.join(root, p);
-    if (!fp.startsWith(root)) return ((res.statusCode = 403), res.end());
-    fs.readFile(fp, (err, data) => {
-        if (err) return ((res.statusCode = 404), res.end());
-        res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-        res.end(data);
-    });
-});
+const server = statikServer();
 
 const errs = [];
 function check(name, ok, detail) {
@@ -159,8 +140,8 @@ function staticLaws(anazhSrc, phytoSrc, vcSrc, manifestSrc, pcSrc) {
         /zweit\.kern\.buildInstance\(msg\.presetId/.test(phytoNC),
     ]);
     out.push([
-        "A8: vehicle-core deklariert kindStages.vehicle == [0] (B2-Vertrags-Daten)",
-        /kindStages:\s*\{\s*vehicle:\s*\[0\]\s*\}/.test(vcSrc),
+        "A8: vehicle-core deklariert kindStages.vehicle == [0, 1] (B2-Vertrags-Daten; die Stufe 1 seit K43-2)",
+        /kindStages:\s*\{\s*vehicle:\s*\[0,\s*1\]\s*\}/.test(vcSrc),
     ]);
     // A9 (N1-migriert, V9.56-i): der kind:vehicle-ZWEIG ist der KIND_POLICY-Zeile gewichen —
     // die Probe prueft jetzt die Tabellen-Realitaet: die vehicle-Policy-Zeile traegt Praefix+Donor,
@@ -181,8 +162,8 @@ function staticLaws(anazhSrc, phytoSrc, vcSrc, manifestSrc, pcSrc) {
 }
 
 (async () => {
-    const anazhSrc = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
-    const phytoSrc = fs.readFileSync(path.join(root, "worlds/terrain/phytogenesis.js"), "utf8");
+    const anazhSrc = stammLib.text(root);
+    const phytoSrc = fs.readFileSync(path.join(root, "foundry-bruecke.js"), "utf8"); // die Brücke (K42)
     const vcSrc = fs.readFileSync(path.join(root, "vehicle-core.js"), "utf8");
     const manifestSrc = fs.readFileSync(path.join(root, "cores.manifest.json"), "utf8");
     const pcSrc = fs.readFileSync(path.join(root, "phyto-core.js"), "utf8");
@@ -221,11 +202,7 @@ function staticLaws(anazhSrc, phytoSrc, vcSrc, manifestSrc, pcSrc) {
 
     console.log("\n=== TEIL B-F: der lebende Draht (Browser, foundry-ON) ===");
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await puppeteer.launch({
-        headless: true,
-        protocolTimeout: 180000,
-        args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--no-sandbox", "--disable-setuid-sandbox"],
-    });
+    const browser = await starteBrowser({ art: "webgl", frist: 180000 });
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(() => {
         window.__anazhForceFoundry = true;
@@ -394,7 +371,7 @@ function staticLaws(anazhSrc, phytoSrc, vcSrc, manifestSrc, pcSrc) {
     );
     check("B: die Regler-Daten fliessen (gt.s.radstand == 2.9)", out.b.gtRadstand === 2.9, String(out.b.gtRadstand));
     check("B: alle 5 Fahrzeug-Gattungen im Buch", out.b.vehicleCount === 5, String(out.b.vehicleCount));
-    check("B: kindStages.vehicle == [0] (N7.5-Merge am Ingest)", out.b.ksVehicle === "[0]", String(out.b.ksVehicle));
+    check("B: kindStages.vehicle == [0,1] (N7.5-Merge am Ingest)", out.b.ksVehicle === "[0,1]", String(out.b.ksVehicle));
     check("B: foundry-core-kinds UNANGETASTET (tree [0,1,2])", out.b.ksTree === "[0,1,2]", String(out.b.ksTree));
     check("B: foundry-core-kinds UNANGETASTET (grass [1,2])", out.b.ksGrass === "[1,2]", String(out.b.ksGrass));
     check(

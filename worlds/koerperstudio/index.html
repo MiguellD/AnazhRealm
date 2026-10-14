@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <!-- koerperstudio-Portal (Nachlese-Welle, W-A4c-Muster) — eigenes Document, eigene strikte CSP:
-     Skript nur same-origin (koerperstudio.js + ../../koerper-core.js + ../terrain/lib/ — Three.js r128
+     Skript nur same-origin (koerperstudio.js + ../../koerper-core.js + ../../foundry-core.js + ../terrain/lib/ — Three.js r128
      vendored vom geteilten Regal, kein CDN mehr; die Shell wanderte dafür byte-treu
      aus dem Inline-Skript nach koerperstudio.js, das schmiede.js/fachwerk.js-Muster). Die
      iframe-Sandbox trägt die Isolation; die W12-Brücke am Ende von koerperstudio.js
@@ -13,6 +13,7 @@
     content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; base-uri 'self'; object-src 'none';"
 /><meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Da Vinci Studio v19 — Living Human</title>
+<link rel="stylesheet" href="../huelle/huelle.css?v=18.546.1">
 <style>
 body{margin:0;overflow:hidden;background:#050505}canvas{display:block}
 #ui{position:fixed;top:10px;right:10px;width:280px;background:rgba(10,10,15,0.85);padding:18px;border-radius:12px;color:#ddd;font-family:system-ui,sans-serif;font-size:13px;z-index:100;backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.1);max-height:90vh;overflow-y:auto}
@@ -22,9 +23,9 @@ body{margin:0;overflow:hidden;background:#050505}canvas{display:block}
 #ui .row{margin-bottom:8px}
 #ui label{display:flex;justify-content:space-between;margin-bottom:3px;color:#aaa;font-size:12px}
 #ui label span{color:#8cf;font-weight:600}
-#ui input[type=range]{width:100%;height:4px;-webkit-appearance:none;background:rgba(255,255,255,0.15);border-radius:2px;outline:none}
-#ui input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:#6af;cursor:pointer}
-#ui input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:#6af;cursor:pointer;border:none}
+/* Regler · Sitzung · Kosten-Leiste formt die Hülle (../huelle/huelle.css) — hier nur die Palette */
+:root{--h-akzent:#8cf;--h-tinte:#ddd;--h-matt:#7a8190;--h-haar:rgba(255,255,255,0.15);--h-feld:rgba(10,10,15,0.85);--h-knopf:rgba(100,170,255,0.2)}
+#ui .h-sitzung button,#ui .h-knoepfe button{flex:0 0 auto}
 #ui .btns{display:flex;gap:8px;margin-top:10px}
 #ui button{flex:1;padding:7px;border:none;border-radius:6px;background:rgba(100,170,255,0.2);color:#8cf;cursor:pointer;font-size:12px}
 #ui button:hover{background:rgba(100,170,255,0.35)}
@@ -56,15 +57,12 @@ body{margin:0;overflow:hidden;background:#050505}canvas{display:block}
 <body>
 <div id="ui">
 <h3>🎭 Character Studio</h3>
+<div id="sitzung"></div>
 <div class="section"><h4>Körper</h4>
-<div class="row"><label>Größe <span id="vHeight">1.00</span></label><input type="range" id="sHeight" min="0.85" max="1.15" step="0.01" value="1.0"></div>
-<div class="row"><label>Masse (Fett) <span id="vMass">35%</span></label><input type="range" id="sMass" min="0" max="1" step="0.01" value="0.35"></div>
-<div class="row"><label>Muskeltonus <span id="vTone">50%</span></label><input type="range" id="sTone" min="0" max="1" step="0.01" value="0.5"></div>
-<div class="row"><label>Alter <span id="vAge">25</span></label><input type="range" id="sAge" min="0" max="1" step="0.01" value="0.15"></div>
-<div class="row"><label>Männlichkeit <span id="vGender">100%</span></label><input type="range" id="sGender" min="0" max="1" step="0.01" value="1.0"></div>
+<div id="reglerKoerper"></div>
 </div>
 <div class="section"><h4>Pose</h4>
-<div class="row"><label>Armhaltung <span id="vArms">0%</span></label><input type="range" id="sArms" min="0" max="1" step="0.01" value="0.0"></div>
+<div id="reglerPose"></div>
 </div>
 <div class="section"><h4>Haut</h4><div class="mini">Ton</div><div class="swatches" id="skinTones"></div></div><div class="section"><h4>Haare</h4>
 <div class="mini">Stil</div>
@@ -73,8 +71,7 @@ body{margin:0;overflow:hidden;background:#050505}canvas{display:block}
 </div>
 <div class="mini">Farbe</div>
 <div class="swatches" id="hairColors"></div>
-<div class="row"><label>Länge <span id="vHairLen">100%</span></label><input type="range" id="sHairLen" min="0.2" max="2.0" step="0.05" value="1.0"></div>
-<div class="row"><label>Volumen <span id="vHairVol">100%</span></label><input type="range" id="sHairVol" min="0.5" max="2.0" step="0.05" value="1.0"></div>
+<div id="reglerHaar"></div>
 </div>
 <div class="section"><h4>Oberteil</h4>
 <div class="pickgrid" id="topStyles">
@@ -106,15 +103,20 @@ body{margin:0;overflow:hidden;background:#050505}canvas{display:block}
 <button data-e="showcase">Showcase</button>
 </div>
 </div>
+<div class="section"><h4>Stufe</h4><div class="pickgrid" id="stufen"><button data-s="auto" class="active">auto</button><button data-s="0">L0</button><button data-s="1">L1</button></div><div class="mini" id="stufeIst"></div></div>
 <div class="btns"><button id="btnRandom">🎲 Zufall</button><button id="btnReset">↺ Reset</button></div>
+<div class="section"><h4>Kosten</h4><div id="kosten"></div></div>
 <div class="btns"><button id="btnPlay" style="width:100%;background:linear-gradient(90deg,#3a6ea5,#5a8fc5);font-weight:600">🎮 Spielen — Ninja-Park</button></div>
 <!-- STUDIO-ÜBERGABE (Auftrag D): nur im AnazhRealm-Portal sichtbar (die W12-Brücke enthüllt ihn) — standalone bleibt die UI byte-alt. -->
 <div class="btns"><button id="btnUebergabe" hidden style="width:100%;background:linear-gradient(90deg,#7a5a2a,#b08a3a);font-weight:600">An die Welt übergeben</button></div>
 <div class="preset" id="presetLabel">Athletischer Mann · 25</div>
 </div>
-<script src="../../koerper-core.js?v=18.544.0"></script>
-<script src="../../tetrapoda-core.js?v=18.544.0"></script>
-<script src="koerperstudio.js?v=18.544.0"></script>
+<script src="../../koerper-core.js?v=18.546.1"></script>
+<script src="../../tetrapoda-core.js?v=18.546.1"></script>
+<!-- LABOR = WELT (K45-2): DERSELBE Bäcker wie Foundry-Worker und Wirts-Ofen (BAKERS_BY_KIND.koerper) — die gezeigte Gestalt IST der Welt-Guss -->
+<script src="../../foundry-core.js?v=18.546.1"></script>
+<script src="../huelle/huelle.js?v=18.546.1"></script>
+<script src="koerperstudio.js?v=18.546.1"></script>
 
 <div id="hud" style="display:none;position:fixed;top:14px;left:50%;transform:translateX(-50%);background:rgba(10,12,18,0.82);color:#eef3fa;padding:8px 16px;border-radius:9px;font:600 15px/1.4 ui-monospace,Menlo,monospace;letter-spacing:0.4px;pointer-events:none;z-index:50;box-shadow:0 4px 20px rgba(0,0,0,.5);transition:background 0.25s">bereit</div>
 <div id="playHint" style="display:none;position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:rgba(10,12,18,0.82);color:#dfe6f0;padding:10px 18px;border-radius:10px;font:13px/1.5 system-ui;text-align:center;pointer-events:none;z-index:50;box-shadow:0 4px 20px rgba(0,0,0,.5)"><b>WASD</b> bewegen &nbsp;·&nbsp; <b>Maus</b> schauen &nbsp;·&nbsp; <b>Leertaste</b> springen &nbsp;·&nbsp; <b>Shift</b> sprinten &nbsp;·&nbsp; <b>Strg</b> (schnell) sliden &nbsp;·&nbsp; <b>Strg</b> (langsam) ducken &nbsp;·&nbsp; Luft+<b>Leertaste</b> Doppelsprung &nbsp;·&nbsp; Wand+<b>Leertaste</b> Wandsprung (<b>W</b> halten = klettern) &nbsp;·&nbsp; <b>R</b> Neustart &nbsp;·&nbsp; <b>C</b> Kamera (3rd/Ego) &nbsp;·&nbsp; <b>Esc</b> verlassen</div>

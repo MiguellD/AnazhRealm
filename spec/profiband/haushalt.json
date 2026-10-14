@@ -1,6 +1,6 @@
 {
     "version": 1,
-    "zweck": "DER HAUSHALT DES PROFI-BANDS (W0): das Soll je Klasse an JEDEM Messort (`messorte`: die Mess-Wiese, der Genesis-Ring; je Ort Spieler, Blick, Dorf-Zug, Ort-Takt und seine eigene Ratsche), Hauptbild + Kaskade k0 + k1. Richter: `node scripts/werkbank.cjs umstellen --ort <id>` + `band --ort <id>` (echte GPU, Integration); Wand: `npm run gate:profiband` (Summe <= Band, Schema, verankerte Muster). Eine Klasse ordnet die Täter-Klassen des Stamms (`AnazhRealm#_taeterKlasse`: `<familie>:<preset>:L<stufe>`, `tier:<seele>`, sonst der Erzeuger-Name) über ihre Regeln; die erste passende Klasse in Listen-Reihenfolge gewinnt. Es gibt KEINE Sammelzeile: ein Täter, den keine Regel nimmt, ist ROT (`haushalt`) — jede Welle, die eine neue Klasse zeichnet, trägt hier ihre Regel ein.",
+    "zweck": "DER HAUSHALT DES PROFI-BANDS (W0): das Soll je Klasse an JEDEM Messort (`messorte`: die Mess-Wiese, der Genesis-Ring; je Ort Spieler, Blick, Dorf-Zug, Ort-Takt und seine Ratschen je Gerät × Sicht, `ratsche-<ort>-<gerät>-<sicht>.json`), Hauptbild + Kaskade k0 + k1. Richter: `node scripts/werkbank.cjs umstellen --ort <id>` + `band --ort <id>` (echte GPU, Integration); Wand: `npm run gate:profiband` (Summe <= Band, Schema, verankerte Muster). Eine Klasse ordnet die Täter-Klassen des Stamms (`AnazhRealm#_taeterKlasse`: `<familie>:<preset>:L<stufe>`, `tier:<seele>`, sonst der Erzeuger-Name) über ihre Regeln; die erste passende Klasse in Listen-Reihenfolge gewinnt. Es gibt KEINE Sammelzeile: ein Täter, den keine Regel nimmt, ist ROT (`haushalt`) — jede Welle, die eine neue Klasse zeichnet, trägt hier ihre Regel ein.",
     "quelle": "Band: docs/analyse/perf-paritaet-baseline-v18432.md (das Schöpfer-HUD-Referenzspiel 09.07.: 60 fps · DRW 208 · TRI ~680k · VRAM 117,7 MB), docs/roadmap.md §0 (der FPS-Boden). Soll je Klasse: der Wellen-Plan zum Profi-Band (Synthese 04.10., W0).",
     "band": {
         "befehle": 208,
@@ -9,7 +9,31 @@
         "gpuMs": 16.7,
         "fps": 60
     },
-    "geraet": "Radeon 890M (Integration, werkbank --echt, 1920x1080, DPR 1)",
+    "geraete": {
+        "radeon": {
+            "titel": "Radeon 890M (iGPU, der Mess-Klon, werkbank --echt, 1920x1080, DPR 1)",
+            "muster": "\b(amd|ati)\b|radeon|rdna"
+        },
+        "gtx": {
+            "titel": "GTX 1060 (alte dGPU, der OMEN, werkbank --echt, 1920x1080, DPR 1)",
+            "muster": "nvidia|geforce|pascal"
+        }
+    },
+    "sichten": {
+        "ego": {
+            "titel": "Ego (Erste Person, state.cameraMode first — der Start jeder Welt)",
+            "kamera": "first"
+        },
+        "third": {
+            "titel": "Third-Person (state.cameraMode third, die Kamera als Kugel hinter dem Spieler)",
+            "kamera": "third"
+        }
+    },
+    "renderZiele": {
+        "mb": 60,
+        "erzeuger": "^tex:(TRAANode[.](history|resolve)|output|depth|szene|kaskade[0-9]+|r184-ausgabe)$",
+        "quelle": "K50 (14.10.): die Ziele der Bild-Kette zählen je Schirm, nie je Welt — am Kopf 45f1eeae (Genesis third, 1920x1080, DPR 1) 71,4 MB: Geschichte 15,8 + 4,0 Tiefe, Resolve 15,8, Szenen-Ziel 7,9 + Tiefe 7,9, Tiefen-Abbild 4,0, Kaskaden 2 x 8,0. Das Band 118 MB minus die Welt am Genesis-Ring (Puffer 37,1 + Karten und Atlanten 18,0 MB, K44) lässt 62,9 MB; der Haushalt 60 MB. Die zeitliche Hochskalierung (`_zeitAufloesung`, Szenen-Skala 0,75) trägt ihn."
+    },
     "paesse": [
         "haupt",
         "k0",
@@ -28,18 +52,17 @@
                 -840
             ],
             "dorfZug": false,
-            "ortTakt": [],
-            "ratsche": "ratsche.json"
+            "ortTakt": []
         },
         {
             "id": "genesis",
             "titel": "Der Genesis-Ring (S1 W1f): die Ankunft jeder Welt — zehn Kern-Portale im Kreis R 11 m um den Genesis-Ort (die Mitte der Start-Plattform, `_genesisMitte`; in der Standard-Welt 36/0, seit Welle L V-D1 steht der Ring um die Plattform statt um den Ursprung), die vier Vorschauen (Haus, Wagen, Esse, Drachentor) radial dahinter; der Spieler in der Ring-Mitte auf der Plattform, der Blick nach −x (unter vier Blicken der teuerste: am Kopf der Welle L 243 Befehle und 2,30 M Dreiecke, +x 225 / 2,09 M, +z 224 / 2,25 M, −z 234 / 2,03 M). Der Anker (`anker`) nennt die Stamm-Methode des Orts: steht der Genesis-Ort der Welt mehr als 1 m neben `spieler`, bricht `umstellen --ort genesis` laut ab (der Ring zog am 07.10. 36 m um, die Messung stand 36 m daneben). Der Dorf-Zug ruht (`window.__anazhAutoSettlement = false`: sein Inhalt hinge an der Bildrate), das deterministische Genesis-Gut baut der Ort-Takt mit den Methoden des Stamms.",
             "spieler": [
-                36,
+                0,
                 0
             ],
             "blick": [
-                26,
+                -10,
                 0
             ],
             "anker": "_genesisMitte",
@@ -48,7 +71,6 @@
                 "_genesisPortalRing",
                 "_portalApproachPrefetch"
             ],
-            "ratsche": "ratsche-genesis.json",
             "soll": [
                 {
                     "name": "Tor-Hülle",
@@ -73,7 +95,6 @@
             ],
             "dorfZug": true,
             "ortTakt": [],
-            "ratsche": "ratsche-dorf.json",
             "soll": [
                 {
                     "name": "Haus-Wurf",
@@ -229,7 +250,7 @@
             "id": "boden",
             "titel": "Boden (Boden-Satz · Wasser-Satz · Fern-Ring · Fern-Wasser)",
             "befehle": 12,
-            "dreiecke": 200000,
+            "dreiecke": 120000,
             "regeln": [
                 {
                     "muster": "^(bodenSatz|wasserSatz|voxelChunk|fern-ring|farWater|chunk-water-[a-z]+)$"

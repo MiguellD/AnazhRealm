@@ -279,8 +279,8 @@ was eine GELIEFERTE Stufe kosten darf, als Daten neben `kindStages`.
       im Index-Stride; die Trauer-Krone wählt ihre Peitschen über `quadLagen`) UND die Wand (L). Das Soll der L1 (12)
       steigt offen auf 13: mit 12 deckte die Laub-L1 von unten (60°) im Mittel 0,90–0,94 ihres Bilds von V18.536, die
       Weiden-L1 0,86 (Gegenprüfung R1, Bild-Tafel);
-    - `quote` (tree[1] 0,4): Dreiecke L1 / L0 derselben KRONE (Q) — Laub ≤ 0,29, Koniferen ≤ 0,39 (Mammut: 14 Furchen am
-      Stamm); das Soll 0,35 hält der Mammut nicht, die Zeile steht offen bei 0,4. Ein Baum ohne Krone (Totholz) ist in der
+    - `quote` (tree[1] 0,35, K20): Dreiecke L1 / L0 derselben KRONE (Q) — Laub ≤ 0,26, Koniferen ≤ 0,35; im Kronenraum (ab
+      dem tiefsten Ast-Ansatz) trägt der L1-Stamm nur seine Bahn (Mammut 0,371 → 0,346). Ein Baum ohne Krone (Totholz) ist in der
       L1 nie Gerüst + Karte — die Quote gilt ihm nicht (unten: sein Gerüst);
     - `geruest` (tree[0] 0,1 · tree[1] 0,25 trunkR): die Stufe trägt als Röhre nur Stränge ab geruest·trunkR — jeder
       feinere Strang ist seine Karte (das Atlas-Bild ist ein belaubter Zweig) bzw. Strähne. Ein Baum OHNE Krone (Totholz)
@@ -316,7 +316,8 @@ was eine GELIEFERTE Stufe kosten darf, als Daten neben `kindStages`.
       seinen Naht-Ringen, die die Armlänge braucht — ohne sie fiel die Stamm-Albedo auf 0,291 < 0,30; Laub 4 886–7 526,
       Koniferen 5 188–6 412, Weide 6 474–8 842), `tree[1].tris` 10 000 → 2 900 (Soll 2 400 — die Birke 2 690–2 782, der
       Mammut 2 308–2 448; jede andere Art ≤ 2 034), `draws` 3 → 2 (die Birken-Wurzel trägt den Birken-Stoff).
-    - DAS BILD VON V18.536 (Wand D, Gegenprüfung R1): `spec/asset-contract/v1/bild-v18536.json` trägt je Baum-Art × Same
+    - DIE BILD-TAFEL (Wand D, Gegenprüfung R1; gemünzt V18.536, neu im Vertrags-Akt K20 — die Bäume tragen ihr Welt-Maß):
+      `spec/asset-contract/v1/bild-tafel.json` trägt je Baum-Art × Same
       L0 und L1 je Blick-Hebung (0°/30°/60° von unten, je acht Azimute; das Bild über dem Boden der Vorlage — die Wurzeln
       im Boden sieht kein Spieler) und die Studio-Karte (Deckung, Kronenfarbe). Je Art hält das Mittel der Gestalten je
       Stufe und Hebung und die Deckung der Karten 0,92–1,08, jede Gestalt 0,85–1,15; die Kronenfarbe der Karten je Art im
@@ -365,6 +366,10 @@ eines Gesetzbuchs als Primitive, asset-lokal (Vorlagen-Raum, Meter), JEDE Zahl a
   am Flat). **EIN Leser:** `_huelleVon(h, rolle, quelle)` (prüft die Form, fail-closed), die Kollision
   (`_hausHuelleSetzen`/`_hausBlockerBoxen`, rolle `fest`) und der Welt-March (`_archFoundryZiegel` →
   `_huelleMarchDefs`, rolle `sicht`: Kasten, Keil Typ 2..5 + 0,49 · walm, Kapsel — das WGSL `sdKeil`/`gradKeil`).
+- **Das Maß des Baums (K20):** jeder gewachsene Bau (Rezept-Art Baum oder Strauch) trägt den Beipack `__mass`
+  (`{ schaftHub }`, Vorlagen-Einheiten: der Hub, um den der Schaft die Krone über ihre Form-Höhe trägt; 0 ohne Welt-Maß) —
+  `FOUNDRY_BEIPACK` `__mass` → `_mass`; der EINE Leser `_foundryGruppenHoehe` misst die Sichthöhe der SSE-Stufenwahl ohne
+  ihn, fail-closed (KERN-PFLICHT).
 - Wände: `gate:haus-fern` (Form, Kosten, innen am Kern), `gate:tor-fern` (das Tor: Fernbild ≤ 24 sicht-Teile ohne
   wurf-Teil durch den EINEN Leser, Wurf-Deckung, innen — über die Regler-Hülle), `gate:studio-vertrag` (B2/B2c/fernform), `gate:asset-contract`
   (die NUR-WURF-Stufe gebaut über die Brücke: `__fern` in der Form, Dreiecke ≤ Zeile).
@@ -915,11 +920,34 @@ Wirt, der Kern hält keinen Welt-Zustand außer Strömen, die er aus der Saat ab
 (beide Seiten der Erklärung, die Absenz der Blöcke, die Funktions-Fläche; Selbsttest), die Zwillings-Wand in
 `gate:altlasten` hält die Formeln im Gesetzbuch.
 
-**Stand der Gesetz-Kerne:** `gelaende-core.js` (`__gelaendeCore`) — die EINE 2D-Höhe `hoehe(L, x, z, mitDetail)` (der
-Term-Auswerter des Erbguts samt seiner Normalform `erbgutNormal` und der Wildnis-Term = die LANDFORM, K16: Großform-
-Splines `grossform` mit den Reglern `LANDFORM_REGLER`, das Flussnetz mit seinen Senken als den benannten Seen
-`benannteSeen`, das Schicht-Gesetz `schichtOrt`), die Schneegrenze `schnee`, die Gelände-Linse `statistik`/`hangBaender` und
-der Kachel-Schlüssel; geladen vom Stamm (vor `anazhRealm.js`), vom voxel-worker (`importScripts` mit `?v=`) und vom
-Foundry-Worker. Es gibt keinen Spiegel: kein Leser rechnet eine dieser Formeln nach (die Boden-Farbe liest `schnee`, der
-Feld-Zeichner und der Fern-Ring `hoehe`); die Zwillings-Wand in `gate:altlasten` sucht sie als Muster in jeder Wurzel-Datei
-und jedem Skript.
+Was ein Gesetz-Kern über das Gesetz hinaus trägt, ist das, was Studio UND Welt lesen müssen, damit kein Zwilling entsteht:
+die LINSE, die sein Gesetz misst (dieselbe Rechnung für die Wand und die Zahl-Leiste des Studios), und die PLAN-TÜR, durch
+die ein Plan des Studios zur Welt wird (Studio = Welt byte-gleich, M5). Die BEDIENUNG eines Studios — die Namen seiner
+Regler, ihre Gruppen, seine benannten Landschaften — ist weder Gesetz noch Linse: sie gehört dem Studio (beim Gelände
+`worlds/gelaende/bedienung.json`), eine benannte Landschaft ist ein Rezept und steht nie im Kern. Jeder Schlüssel des
+Namensraums steht in der Erklärung unten; `gate:studio-vertrag` liest sie und nennt jeden Schlüssel, der fehlt, und jedes
+Rezept unter jedem Namen (ein Schlüssel aus `PRESET`/`REZEPT`/`RECIPE`, eine Liste von Einträgen mit `regler`, `kind` oder
+Dials `s`) beim Namen.
+
+**Stand der Gesetz-Kerne:** `gelaende-core.js` (`__gelaendeCore`) — DAS GESETZ: die EINE 2D-Höhe `hoehe(L, x, z, mitDetail)`
+(der Term-Auswerter des Erbguts `termY` samt seiner Normalform `erbgutNormal`, der Wildnis-Term `wildnisY` = die LANDFORM,
+K16: Großform-Splines `grossform` an den Knoten `OFFSET_KNOTEN`/`RELIEF_KNOTEN` mit den Reglern `LANDFORM_REGLER` — gelesen
+je Lage über `landformRegler` —, das Flussnetz mit den Kanten `NETZ_KANTE`, seinen Läufen `flussLaeufe` und seinen Senken als
+den benannten Seen `benannteSeen`, die Breite des Flusses `FLUSS_BREITE`/`flussBreite`, der Mäander `MAEANDER`, das
+Schicht-Gesetz `schichtOrt`, der Höhlen-Mund `HOEHLEN_MUND`/`hoehlenMund`), die Schneegrenze `SCHNEE`/`schnee`, die
+Generation des Bodens `BODEN_GENERATION` und der Kachel-Schlüssel `kachelSchluessel`. DER FELS-STOFF (K17): das Aussehen
+des Felsens `FELS` mit seiner Saat `FELS_SAAT` — `felsStoff` (der Welt-Boden je Chunk im Worker), `felsNetz` (die Gestalten),
+`felsBasis`, `felsFarbe`, `felsKruemmung`, `felsLage`, `felsMittel`/`felsMittelWerte` (die Ferne), `felsFein` (der
+Detail-Term des Shaders) mit seiner Welle `felsWelle` (K17-3: der Shader liest sie EINMAL im Rausch-Atlas und reicht sie
+in die Fels-Funktion), `felsZahl` (das Rechenwerk des Gesetzes, mit `falte` und `fest`), `felsBankung` (die Messung der Bänke), der Schutt
+`schuttKorn`/`schuttMittel`, die Himmels-Sicht der Höhle `HIMMELS_SICHT`/`himmelsSicht` und DAS RAUSCH-GESETZ `RAUSCH` mit
+`rauschGitter`/`rauschRaum` (das EINE Gradienten-Rauschen des Boden-Shaders).
+DIE LINSE (K16, K16b): `statistik` mit ihren Schwellen `LINSE`, `hangBaender` mit den Bändern `HANG_BAENDER`, die Bahnen
+der Flachland-Glieder `maeanderZahl`, die Messung `MESSUNG` (das Mess-Raster, der Makro-Abdruck, der Schicht-Ort) mit
+`abdruckFeld`, `messStatistik`, `schichtSchritte`/`schichtMessung`, und der Natur-Korridor `KORRIDOR` mit seinem `urteil`.
+DIE PLAN-TÜR (K16b): `PLAN_ART`, `PLAN_VERSION`, `planNormal`, `planErbgut`, `planAbbild`, `planLage` auf dem Grund `GRUND`,
+die Lage `lageAus`/`lageAbbild` mit ihrem Rausch-Strom `lageRausch`. DIE ERKLÄRUNG: `VERSION`, `STUDIO_VERTRAG`, `FUNKTION`.
+Geladen vom Stamm (vor `stamm/`), vom Terrain-Labor (vor `foundry-core.js`), vom voxel-worker (`importScripts` mit `?v=`),
+vom Foundry-Worker und vom Makro-Worker des Studios. Es gibt keinen Spiegel: kein Leser rechnet eine dieser Formeln nach (die Boden-Farbe liest `schnee`, der Feld-Zeichner und der Fern-Ring `hoehe`, die
+Zahl-Leiste und die Gelände-Wände `MESSUNG`); die Zwillings-Wand in `gate:altlasten` sucht sie als Muster in jeder
+Wurzel-Datei und jedem Skript.

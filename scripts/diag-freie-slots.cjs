@@ -34,24 +34,13 @@
 // Namen genannt.
 //   node scripts/diag-freie-slots.cjs [--selftest]          (npm run gate:freie-slots; Port: FREIE_SLOTS_PORT)
 "use strict";
-const puppeteer = require("puppeteer");
-const http = require("http");
-const fs = require("fs");
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const path = require("path");
-const { linsenWebGpuArgs, adapterZeile } = require("./lib/software-gpu.cjs");
+const stammLib = require("./lib/stamm.cjs");
 const { installWieseSicht } = require("./lib/wiese-sicht.cjs");
 
 const PORT = Number(process.env.FREIE_SLOTS_PORT || 4527);
 const root = path.resolve(__dirname, "..");
-const mime = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".wasm": "application/wasm",
-    ".json": "application/json",
-    ".css": "text/css",
-    ".png": "image/png",
-    ".woff2": "font/woff2",
-};
 
 // ── Q: die Quelle. Kommentare fallen, dann zählt jede `<x>.count =`-Zuweisung, deren Empfänger keine bekannte
 //      Nicht-Instanz-Zahl ist (Inventar-Slots, drawRange). Erlaubt ist genau die eine im Chokepoint `_instanzZahl`.
@@ -81,20 +70,9 @@ function quellBefunde(src) {
 }
 
 async function welt() {
-    const server = http.createServer((req, res) => {
-        let p = req.url.split("?")[0];
-        if (p === "/") p = "/index.html";
-        const fp = path.join(root, p);
-        if (!fp.startsWith(root)) return ((res.statusCode = 403), res.end());
-        fs.readFile(fp, (err, data) => {
-            if (err) return ((res.statusCode = 404), res.end());
-            res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-            res.end(data);
-        });
-    });
+    const server = statikServer();
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await puppeteer.launch({ headless: true, protocolTimeout: 600000, args: linsenWebGpuArgs() });
-    await adapterZeile(browser);
+    const browser = await starteBrowser({ art: "linse", frist: 600000 });
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(() => {
         window.__anazhHeadlessNullRenderer = true;
@@ -457,7 +435,7 @@ async function welt() {
 (async () => {
     const fails = [];
     // ── Q (Quelle) + ihr Selbsttest ──
-    const src = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+    const src = stammLib.text(root);
     const q = quellBefunde(src);
     console.log("=== Q — die Quelle (kommentar-frei) ===");
     console.log(q.length ? q.map((x) => "  ❌ " + x).join("\n") : "  ✅ count schreibt nur _instanzZahl · keine Free-Liste · kein `_lebt`");

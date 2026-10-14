@@ -49,6 +49,7 @@
 //   node scripts/diag-kamera-treue.cjs [--selftest]   (npm run gate:kamera-treue)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 
 const BILD_SOLL = 0.999; // der Replay zeichnet wie der direkte Pfad
 const BLIND_GRENZE = 0.98; // die Lauf-Kontrollen MÜSSEN darunter liegen
@@ -80,6 +81,16 @@ function urteil(z) {
     if (!(b.schattenBundle < BLIND_GRENZE))
         v.push(`BILD: ein Schatten-Bundle mit fremdem Stoff zeichnet Y zu ${b.schattenBundle} gleich (Soll < ${BLIND_GRENZE}) — die Override-Probe ist blind`);
     if (!(b.xGegenY < BLICK_GRENZE)) v.push(`BILD: Blick X und Blick Y sind zu ${b.xGegenY} gleich (Soll < ${BLICK_GRENZE}) — die Bühne ist blind`);
+    // DIE SENKE (1410-1): EIN Knoten-Zustand je Signatur auch für Instanz-Senken, und sie zeichnet wie r184s InstancedMesh.
+    const sk = z.senke || {};
+    if (sk.kontrolle !== true)
+        v.push("SENKE: zwei r184-InstancedMesh EINES Stoffs tragen nicht zwei Knoten-Zustände — die Lauf-Kontrolle ist blind");
+    if (sk.geteilt !== true)
+        v.push("SENKE: zwei Senken EINES Stoffs und EINER Geometrie tragen zwei Knoten-Zustände — die uuid je InstancedMesh steht wieder im Schlüssel (Programm je Senke)");
+    if (!(sk.bild >= BILD_SOLL))
+        v.push(`SENKE: der Zeichner zeichnet ${sk.bild} gleich mit r184s InstancedMesh derselben Matrizen (Soll ≥ ${BILD_SOLL}) — Lage, Farbe oder Wurf je Instanz weichen ab`);
+    if (!(sk.blind < BLIND_GRENZE))
+        v.push(`SENKE: ohne die Senke zeichnet die Bühne ${sk.blind} gleich (Soll < ${BLIND_GRENZE}) — die Bild-Probe sieht die Senke nicht`);
     // DIE STAND-WAND (Welle K): im Stand kostet die Diät nur die Prüfung — kein Voll-Refresh, kein zweiter Gang über einen
     // Knoten oder eine geteilte Gruppe im selben Render, kein Upload; Programme mit denselben Quellen teilen EINE Gruppe;
     // eine Änderung im Stand erreicht das Bild wie ein voller Refresh.
@@ -124,6 +135,7 @@ function selbsttest() {
         lauf: { spielBilder: 0, kehraus: 0 },
         aufnahme: { gezeichnet: 13, verfolgt: 13, schattenRenders: 1, unterOverride: 0 },
         bild: { replay: 1, fremd: 1, ohneStapel: 0.62, schattenBundle: 0.91, xGegenY: 0.31 },
+        senke: { geteilt: true, kontrolle: true, bild: 1, blind: 0.95 },
         stand: {
             teilen: { programme: 8, gruppenJeProgramm: 1, gruppen: 1 },
             direkt: ruhig,
@@ -157,6 +169,10 @@ function selbsttest() {
         { name: "Änderungs-Probe blind", z: mit("stand.aenderung.direkt", { taeter: 1 }), muss: /die Änderungs-Probe ist blind/ },
         { name: "Gruppe je Programm", z: mit("stand.teilen", { gruppen: 8 }), muss: /tragen 8 geteilte Gruppen statt 1/ },
         { name: "Teilen blind", z: mit("stand.teilen", { programme: 0 }), muss: /TEILEN: 0 Karten-Programme/ },
+        { name: "Programm je Senke", z: mit("senke", { geteilt: false }), muss: /SENKE: zwei Senken EINES Stoffs/ },
+        { name: "Senken-Kontrolle blind", z: mit("senke", { kontrolle: false }), muss: /SENKE: zwei r184-InstancedMesh/ },
+        { name: "Senke zeichnet anders", z: mit("senke", { bild: 0.97 }), muss: /SENKE: der Zeichner zeichnet 0.97/ },
+        { name: "Senken-Bild blind", z: mit("senke", { blind: 0.999 }), muss: /SENKE: ohne die Senke/ },
         { name: "Stand blind", z: mit("stand.direkt", { pruef: 0 }), muss: /STAND direkt: keine Diät-Prüfung/ },
         {
             name: "Stempel überlebt den verschachtelten Render",
@@ -186,34 +202,9 @@ if (process.argv.includes("--selftest")) {
     process.exit(0);
 }
 
-const puppeteer = require("puppeteer");
-const { linsenWebGpuArgs, adapterZeile } = require("./lib/software-gpu.cjs");
-const http = require("http");
-const fs = require("fs");
-const path = require("path");
 
-const root = path.resolve(__dirname, "..");
 const PORT = Number(process.env.KAMERA_TREUE_PORT) || 4472;
-const mime = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".json": "application/json",
-    ".css": "text/css",
-    ".woff2": "font/woff2",
-    ".png": "image/png",
-    ".wasm": "application/wasm",
-};
-const server = http.createServer((req, res) => {
-    let p = req.url.split("?")[0];
-    if (p === "/") p = "/index.html";
-    const fp = path.join(root, p);
-    if (!fp.startsWith(root)) return ((res.statusCode = 403), res.end());
-    fs.readFile(fp, (err, data) => {
-        if (err) return ((res.statusCode = 404), res.end());
-        res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-        res.end(data);
-    });
-});
+const server = statikServer();
 
 // DIE BÜHNE (Seiten-Kontext): der echte Renderer des Spiels mit seinen Eingriffen (_configureRenderer), eine eigene
 // Szene, Zeit fest. Jeder Schuss ist ein echter Render in ein Ziel (160×120).
@@ -669,7 +660,62 @@ function buehne() {
                 if (ubEigen) be.updateBinding = ubRoh;
                 else delete be.updateBinding;
             }
+            // (h) DIE SENKE (1410-1): zwei Senken EINES Stoffs und EINER Geometrie (`_instanzMesh`) zeichnen über ihre
+            // Zeichner aus EINEM Knoten-Zustand — r184 hängt an jede InstancedMesh ihre uuid, zwei r184-InstancedMesh desselben
+            // Stoffs tragen zwei (Lauf-Kontrolle). Und die Senke zeichnet wie r184s InstancedMesh: Lage, Drehung, Farbe und
+            // Wurf je Instanz (Bild gegen eine InstancedMesh mit denselben Matrizen); ohne die Senke weicht das Bild ab.
+            const senke = {};
+            {
+                gruppe.isBundleGroup = false;
+                const sStoff = diaet(new T.MeshStandardNodeMaterial({ color: 0x9a5a3a }));
+                const sGeo = new T.BoxGeometry(1, 2, 1);
+                const lage = (m, dx) => {
+                    const m4 = new T.Matrix4();
+                    for (let i = 0; i < 3; i++) {
+                        m4.makeRotationY(0.5 * i).setPosition(-3 + dx + i * 1.6, 1, 6);
+                        m.setMatrixAt(i, m4);
+                        m.setColorAt(i, new T.Color().setHSL(i / 3, 0.6, 0.5));
+                    }
+                    m.instanceMatrix.needsUpdate = true;
+                    m.instanceColor.needsUpdate = true;
+                    m.castShadow = true;
+                    m.receiveShadow = true;
+                    m.frustumCulled = false;
+                    return m;
+                };
+                const sA = lage(A._instanzMesh(sGeo, sStoff, 3), 0);
+                const sB = lage(A._instanzMesh(sGeo, sStoff, 3), 6);
+                A._instanzZahl(sA, 3);
+                A._instanzZahl(sB, 3);
+                const refA = lage(new T.InstancedMesh(sGeo, sStoff, 3), 0);
+                const refB = lage(new T.InstancedMesh(sGeo, sStoff, 3), 6);
+                const zustand = (o) => {
+                    const ro = (o.__renderObjekte || []).find((x) => x.camera === kam);
+                    return ro ? ro.getNodeBuilderState() : null;
+                };
+                blick(1);
+                gruppe.add(sA, sB);
+                await schuss();
+                const bildSenke = await schuss();
+                // wer zeichnet: der Zeichner der Senke (ein Stand ohne Zeichner zeichnet die Senke selbst)
+                const zeichnet = (o) => o.__zeichner || o;
+                senke.geteilt = !!zustand(zeichnet(sA)) && zustand(zeichnet(sA)) === zustand(zeichnet(sB));
+                gruppe.remove(sA);
+                await schuss();
+                const bildOhne = await schuss();
+                gruppe.add(refA);
+                await schuss();
+                const bildRef = await schuss();
+                gruppe.remove(sB);
+                gruppe.add(refB);
+                await schuss();
+                senke.kontrolle = !!zustand(refA) && zustand(refA) !== zustand(refB);
+                senke.bild = gleich(bildSenke, bildRef);
+                senke.blind = gleich(bildOhne, bildRef);
+                gruppe.remove(refA, refB);
+            }
             return {
+                senke,
                 stand,
                 aufnahme,
                 stoffe: stoffe.size,
@@ -697,14 +743,7 @@ function buehne() {
 (async () => {
     console.log("=== KAMERA-TREUE — echter Renderer (WebGPU, swiftshader-Adapter, kienspan, Schatten an): Stapel · Override · Bild ===");
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await puppeteer.launch({
-        headless: true,
-        protocolTimeout: 600000,
-        // WebGPU auf swiftshader (die Bundle-API lebt nur im WebGPU-Backend; der WebGL2-Rückfall liest jede BundleGroup
-        // als Gruppe — dort wäre die Wand blind). Die Schalter je Plattform trägt das EINE Rezept (scripts/lib/software-gpu.cjs).
-        args: linsenWebGpuArgs(),
-    });
-    await adapterZeile(browser);
+    const browser = await starteBrowser({ art: "linse", frist: 600000 });
     const page = await browser.newPage();
     await page.setViewport({ width: 320, height: 240 });
     const pageErrors = [];
@@ -771,6 +810,7 @@ function buehne() {
         `\n✅ GRÜN — LAUF: ${out.lauf.spielBilder} Spiel-Bilder, ${out.lauf.kehraus} Kehraus-Puffer in der Bühne; die Aufnahme verfolgt ${out.aufnahme.verfolgt} von ${out.aufnahme.gezeichnet} Draws trotz Schatten-Render, ` +
             `kein Bundle unter dem Override-Stoff; der Replay zeichnet Blick Y wie der direkte Pfad (${out.bild.replay}, mit fremdem ` +
             `Schatten-Stoff ${out.bild.fremd}); ohne den Chokepoint ${out.bild.ohneStapel}, ein Schatten-Bundle ${out.bild.schattenBundle}. ` +
+            `SENKE: zwei Senken EINES Stoffs zeichnen aus EINEM Knoten-Zustand (zwei r184-InstancedMesh: zwei), bild-gleich mit r184s InstancedMesh (${out.senke.bild}; ohne die Senke ${out.senke.blind}). ` +
             `STAND: ${out.stand.teilen.programme} Karten-Programme tragen ${out.stand.teilen.gruppen} geteilte Gruppe(n); je Render ${out.stand.direkt.pruef} Prüfungen, 0 Voll-Refreshs, 0 Uploads, 0 wiederholte Gänge (direkt und Replay); nach einer Änderung im Stand zeichnet die Diät ${out.stand.aenderung.direkt.diaet}/${out.stand.aenderung.replay.diaet} wie der volle Refresh (nie-Refresh ${out.stand.aenderung.direkt.taeter}/${out.stand.aenderung.replay.taeter}); ` +
             `VERSCHACHTELT (Werfer ohne Diät) ${out.stand.verschachtelt.direkt.diaet}/${out.stand.verschachtelt.replay.diaet} (Stempel nur aus der Render-Id ${out.stand.verschachtelt.direkt.taeter}/${out.stand.verschachtelt.replay.taeter}).`
     );

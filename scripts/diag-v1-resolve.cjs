@@ -5,22 +5,13 @@
 // brunnen_dorf lösen über ihre studioGestalt-Zeile auf das Gesetzbuch der Architektur auf (feuerstelle · marktstand ·
 // brunnen); die sechs Glut-Formationen sind gefallen, ihr Umzug trägt alte Welten auf glutbrunnen. Reine CPU-Logik,
 // kein Rendern. Selbst-assertierend: falsche Auflösung → exit 1.
-const puppeteer = require("puppeteer");
-const http = require("http");
-const fs = require("fs");
-const path = require("path");
 // Port über V1_RESOLVE_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4509.
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const PORT = Number(process.env.V1_RESOLVE_PORT || 4509);
-const root = path.resolve(__dirname, "..");
-const mime = { ".html": "text/html", ".js": "application/javascript", ".wasm": "application/wasm", ".json": "application/json", ".css": "text/css", ".png": "image/png" };
-const server = http.createServer((req, res) => {
-    let p = req.url.split("?")[0]; if (p === "/") p = "/index.html";
-    const fp = path.join(root, p); if (!fp.startsWith(root)) { res.statusCode = 403; return res.end(); }
-    fs.readFile(fp, (err, data) => { if (err) { res.statusCode = 404; return res.end(); } res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream"); res.end(data); });
-});
+const server = statikServer();
 (async () => {
     await new Promise((r) => server.listen(PORT, r));
-    const browser = await puppeteer.launch({ headless: true, protocolTimeout: 120000, args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--no-sandbox", "--disable-setuid-sandbox"] });
+    const browser = await starteBrowser({ art: "webgl", frist: 120000 });
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(() => { window.__anazhHeadlessNullRenderer = true; });
     page.on("pageerror", (e) => console.log("[ERR]", (e.stack || e.message).split("\n")[0]));

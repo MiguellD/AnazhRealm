@@ -1,5 +1,5 @@
 {
-    "zweck": "DIE PRÜFBÜHNE (Spike 09.10., artifacts/profiband/pruefbuehne/plan.md §6): eine Welt aus dem Welt-Motor, deren Erbgut statt der Wildnis analytische Gelände-Terme trägt — eine Insel im Meer (Plateau 12 m über dem Spiegel, Kuppel 0,3 %, Schelf auf 12 m unter den Spiegel), die 30°-Rampe an S2 und die Meeres-Bucht mit Furt und Kolk an S5. Höhen relativ zur Basis (terrainBaseHeight 0; der Meeresspiegel liegt bei Basis − 3). Wo der Wildnis-Term nicht wiegt, wirft das Feld nichts: kein Wald, keine Streu, keine ungesetzten Tiere, kein Dorf, keine Schwebe-Insel. Geboren wie jede fremde Welt: importWorldBeside (Welt-Tor) + aktiv + Reload. Die Hindernis-Station S4 (0|−170) ist Saat des Snapshots: sechs Steinkörper als Baupläne und Bauten (Würfel, Säule, Mauer, Gasse, Hausrumpf 45°, Engpass), ihre Sohle auf dem Insel-Term, die Spec in stationen.json — sie reisen durch dieselbe Snapshot-Tür wie jedes Haus eines Saves.",
+    "zweck": "DIE PRÜFBÜHNE (Spike 09.10., artifacts/profiband/pruefbuehne/plan.md §6): eine Welt aus dem Welt-Motor, deren Erbgut statt der Wildnis analytische Gelände-Terme trägt — eine Insel im Meer (Plateau 12 m über dem Spiegel, Kuppel 0,3 %, Schelf auf 12 m unter den Spiegel), die 30°-Rampe an S2 die Meeres-Bucht mit Furt und Kolk an S5 und die Klamm an S6 (ein Bach mit 14 % Gefälle zwischen 70°-Wänden, der Ort, an dem ein Damm staut). Höhen relativ zur Basis (terrainBaseHeight 0; der Meeresspiegel liegt bei Basis − 3). Wo der Wildnis-Term nicht wiegt, wirft das Feld nichts: kein Wald, keine Streu, keine ungesetzten Tiere, kein Dorf, keine Schwebe-Insel. Geboren wie jede fremde Welt: importWorldBeside (Welt-Tor) + aktiv + Reload. Die Hindernis-Station S4 (0|−170) ist Saat des Snapshots: sechs Steinkörper als Baupläne und Bauten (Würfel, Säule, Mauer, Gasse, Hausrumpf 45°, Engpass), ihre Sohle auf dem Insel-Term, die Spec in stationen.json — sie reisen durch dieselbe Snapshot-Tür wie jedes Haus eines Saves.",
     "playerPosition": null,
     "knowledgeBase": [],
     "version": "18.537.0",
@@ -52,6 +52,18 @@
                     "kolkLage": 20,
                     "kolkR": 10,
                     "kolkTiefe": 6
+                },
+                {
+                    "art": "rinne",
+                    "x0": 370,
+                    "z0": 0,
+                    "x1": 470,
+                    "z1": 0,
+                    "quelle": 9,
+                    "muendung": -5,
+                    "sohle": 20,
+                    "ufer": 70,
+                    "einzug": 2
                 }
             ]
         }

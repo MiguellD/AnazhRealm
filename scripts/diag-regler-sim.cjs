@@ -20,42 +20,15 @@
 //      Vergiftete-Zahl-KLASSE (session-wachsende Phantom-Last) als Invariante
 //      über die GANZE Kette, nicht nur den Tap.
 // ─────────────────────────────────────────────────────────────────────────
-const puppeteer = require("puppeteer");
-const http = require("http");
-const fs = require("fs");
-const path = require("path");
 
-const root = path.resolve(__dirname, "..");
 // Port über REGLER_SIM_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4403.
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const PORT = Number(process.env.REGLER_SIM_PORT || 4403);
-const mime = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".wasm": "application/wasm",
-    ".json": "application/json",
-    ".css": "text/css",
-    ".woff2": "font/woff2",
-    ".png": "image/png",
-};
-const server = http.createServer((req, res) => {
-    let p = req.url.split("?")[0];
-    if (p === "/") p = "/index.html";
-    const fp = path.join(root, p);
-    if (!fp.startsWith(root)) return ((res.statusCode = 403), res.end());
-    fs.readFile(fp, (err, data) => {
-        if (err) return ((res.statusCode = 404), res.end());
-        res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-        res.end(data);
-    });
-});
+const server = statikServer();
 
 (async () => {
     await new Promise((r) => server.listen(PORT, r));
-    const browser = await puppeteer.launch({
-        headless: "new",
-        protocolTimeout: 300000,
-        args: ["--no-sandbox", "--disable-gpu"],
-    });
+    const browser = await starteBrowser({ art: "null", frist: 300000 });
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(() => {
         window.__anazhHeadlessNullRenderer = true;
@@ -111,7 +84,6 @@ const server = http.createServer((req, res) => {
             const levers = () => ({
                 loadScale: st.perfSense.loadScale,
                 density: st._foliageDensityScale,
-                renderScale: st._renderScale,
                 shadowIv: st._shadowMinInterval,
                 foliageR: st.foliageRadius,
                 godray: st._godrayScale,
@@ -128,9 +100,7 @@ const server = http.createServer((req, res) => {
                 const s1b = levers();
                 o.s1Throttled = s1a.density < 0.9 && s1a.loadScale < 0.5;
                 o.s1Converged =
-                    Math.abs(s1b.density - s1a.density) < 0.02 &&
-                    Math.abs(s1b.loadScale - s1a.loadScale) < 0.02 &&
-                    Math.abs(s1b.renderScale - s1a.renderScale) < 0.051;
+                    Math.abs(s1b.density - s1a.density) < 0.02 && Math.abs(s1b.loadScale - s1a.loadScale) < 0.02;
                 o.s1 = { a: s1a, b: s1b };
                 // Studio-Regime: trotz gefallener Dichte KEIN Dispose+Rebuild (die tote Schleife).
                 // AUSLÖSCHUNGS-WELLE (Beifang, V9.56-i nachgezogen): `_tickGrassThin` fiel in
@@ -157,7 +127,7 @@ const server = http.createServer((req, res) => {
                 // ── S3: STARKE GPU (7 ms) → alles wächst zurück ──
                 for (let i = 0; i < 2200; i++) feed(7, Object.assign({}, HONEST));
                 const s3 = levers();
-                o.s3Recovered = s3.loadScale > 0.95 && s3.density > 0.95 && s3.renderScale > 0.95;
+                o.s3Recovered = s3.loadScale > 0.95 && s3.density > 0.95;
                 o.s3 = s3;
                 // ── S4: SESSION-ZEIT-INVARIANZ im Totband (err=0 → Stellgrößen eingefroren;
                 // eine vergiftete/wachsende Metrik drückte sie über die Session weiter) ──
@@ -307,7 +277,7 @@ const server = http.createServer((req, res) => {
             pass: out.s2StreamSacred,
         },
         {
-            name: `S3 starke GPU: alles wächst zurück (loadScale ${f2(out.s3.loadScale)}, Dichte ${f2(out.s3.density)}, renderScale ${f2(out.s3.renderScale)})`,
+            name: `S3 starke GPU: alles wächst zurück (loadScale ${f2(out.s3.loadScale)}, Dichte ${f2(out.s3.density)})`,
             pass: out.s3Recovered,
         },
         {

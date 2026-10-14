@@ -16,169 +16,9 @@
    Geometrie wird ABGELEITET (nicht gemalt). Wind = Euler-Bernoulli Eigenfreq.
    ========================================================================== */
 
-/* ---------- Konstanten & deterministischer PRNG (Saat -> Individuum) ------- */
+/* ---------- Der Bau-Teil (PRNG, Vektoren, Simplex, Stoffe, Saison-Tint, Regler-Kontext, LOD-Band, Bäcker,
+   Asset-Kanäle) lebt in foundry-bruecke.js — das Labor lädt die Brücke vor dieser Datei (index.html). ---------- */
 const PHI = (1 + Math.sqrt(5)) / 2;
-/* V18.491.243 — Lab Phyllotaxis golden ← PHYLO_GESETZ.golden fail-soft; Host none (PHYLO_VIS). FIB stays local (dead). */
-const GOLDEN_FALLBACK = Math.PI * (3 - Math.sqrt(5)); // 137.50776 deg Phyllotaxis
-const _PHYLO_G = (typeof window !== "undefined" && window.__phytoCore && window.__phytoCore.PHYLO_GESETZ) || null;
-const GOLDEN = (_PHYLO_G && isFinite(_PHYLO_G.golden)) ? _PHYLO_G.golden : GOLDEN_FALLBACK;
-const FIB = [3, 5, 8, 13, 21, 34, 55];
-let RNG = mulberry32(12345);
-const rnd = () => RNG();
-const rrange = (a, b) => a + (b - a) * RNG();
-const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
-const lerp = (a, b, t) => a + (b - a) * t;
-
-/* ---------- Vektor-Helfer (THREE-frei: portabel & headless prüfbar) -------- */
-const vsub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
-const vadd = (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
-const vscl = (a, s) => [a[0] * s, a[1] * s, a[2] * s];
-const vdot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
-const vlen = (a) => Math.hypot(a[0], a[1], a[2]);
-const vnorm = (a) => {
-    const l = vlen(a) || 1e-9;
-    return [a[0] / l, a[1] / l, a[2] / l];
-};
-const vcross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
-const vlerp = (a, b, t) => [lerp(a[0], b[0], t), lerp(a[1], b[1], t), lerp(a[2], b[2], t)];
-
-/* ---------- 3D Simplex Noise (CPU, fuer Felsen-fBm) ------------------------ */
-const _grad3 = [
-    [1, 1, 0],
-    [-1, 1, 0],
-    [1, -1, 0],
-    [-1, -1, 0],
-    [1, 0, 1],
-    [-1, 0, 1],
-    [1, 0, -1],
-    [-1, 0, -1],
-    [0, 1, 1],
-    [0, -1, 1],
-    [0, 1, -1],
-    [0, -1, -1],
-];
-const _perm = new Uint8Array(512);
-(function () {
-    const p = new Uint8Array(256);
-    for (let i = 0; i < 256; i++) p[i] = i;
-    let s = mulberry32(7);
-    for (let i = 255; i > 0; i--) {
-        const j = Math.floor(s() * (i + 1));
-        const t = p[i];
-        p[i] = p[j];
-        p[j] = t;
-    }
-    for (let i = 0; i < 512; i++) _perm[i] = p[i & 255];
-})();
-function simplex3(x, y, z) {
-    const F3 = 1 / 3,
-        G3 = 1 / 6;
-    let n0, n1, n2, n3;
-    const sN = (x + y + z) * F3,
-        i = Math.floor(x + sN),
-        j = Math.floor(y + sN),
-        k = Math.floor(z + sN);
-    const tN = (i + j + k) * G3,
-        X0 = i - tN,
-        Y0 = j - tN,
-        Z0 = k - tN,
-        x0 = x - X0,
-        y0 = y - Y0,
-        z0 = z - Z0;
-    let i1, j1, k1, i2, j2, k2;
-    if (x0 >= y0) {
-        if (y0 >= z0) {
-            i1 = 1;
-            j1 = 0;
-            k1 = 0;
-            i2 = 1;
-            j2 = 1;
-            k2 = 0;
-        } else if (x0 >= z0) {
-            i1 = 1;
-            j1 = 0;
-            k1 = 0;
-            i2 = 1;
-            j2 = 0;
-            k2 = 1;
-        } else {
-            i1 = 0;
-            j1 = 0;
-            k1 = 1;
-            i2 = 1;
-            j2 = 0;
-            k2 = 1;
-        }
-    } else {
-        if (y0 < z0) {
-            i1 = 0;
-            j1 = 0;
-            k1 = 1;
-            i2 = 0;
-            j2 = 1;
-            k2 = 1;
-        } else if (x0 < z0) {
-            i1 = 0;
-            j1 = 1;
-            k1 = 0;
-            i2 = 0;
-            j2 = 1;
-            k2 = 1;
-        } else {
-            i1 = 0;
-            j1 = 1;
-            k1 = 0;
-            i2 = 1;
-            j2 = 1;
-            k2 = 0;
-        }
-    }
-    const x1 = x0 - i1 + G3,
-        y1 = y0 - j1 + G3,
-        z1 = z0 - k1 + G3,
-        x2 = x0 - i2 + 2 * G3,
-        y2 = y0 - j2 + 2 * G3,
-        z2 = z0 - k2 + 2 * G3,
-        x3 = x0 - 1 + 3 * G3,
-        y3 = y0 - 1 + 3 * G3,
-        z3 = z0 - 1 + 3 * G3;
-    const ii = i & 255,
-        jj = j & 255,
-        kk = k & 255;
-    const gi0 = _perm[ii + _perm[jj + _perm[kk]]] % 12,
-        gi1 = _perm[ii + i1 + _perm[jj + j1 + _perm[kk + k1]]] % 12,
-        gi2 = _perm[ii + i2 + _perm[jj + j2 + _perm[kk + k2]]] % 12,
-        gi3 = _perm[ii + 1 + _perm[jj + 1 + _perm[kk + 1]]] % 12;
-    let t0 = 0.6 - x0 * x0 - y0 * y0 - z0 * z0;
-    if (t0 < 0) n0 = 0;
-    else {
-        t0 *= t0;
-        const g = _grad3[gi0];
-        n0 = t0 * t0 * (g[0] * x0 + g[1] * y0 + g[2] * z0);
-    }
-    let t1 = 0.6 - x1 * x1 - y1 * y1 - z1 * z1;
-    if (t1 < 0) n1 = 0;
-    else {
-        t1 *= t1;
-        const g = _grad3[gi1];
-        n1 = t1 * t1 * (g[0] * x1 + g[1] * y1 + g[2] * z1);
-    }
-    let t2 = 0.6 - x2 * x2 - y2 * y2 - z2 * z2;
-    if (t2 < 0) n2 = 0;
-    else {
-        t2 *= t2;
-        const g = _grad3[gi2];
-        n2 = t2 * t2 * (g[0] * x2 + g[1] * y2 + g[2] * z2);
-    }
-    let t3 = 0.6 - x3 * x3 - y3 * y3 - z3 * z3;
-    if (t3 < 0) n3 = 0;
-    else {
-        t3 *= t3;
-        const g = _grad3[gi3];
-        n3 = t3 * t3 * (g[0] * x3 + g[1] * y3 + g[2] * z3);
-    }
-    return 32 * (n0 + n1 + n2 + n3);
-}
 
 /* ---------- Geteilte Uniforms: Wind (Eigenfreq) + Saison (Phaenologie) ----- */
 // uSeasonMul: aktueller Saison-Tint / Bau-Tint -> Laubfarbe drivet KONTINUIERLICH, ohne Rebuild
@@ -194,18 +34,10 @@ const _seasonBuiltTint = new THREE.Color(SAISON_GESETZ.bau); // Tint, mit dem di
 // beim naechsten Laden BEIDES: der Studio-Wald UND die AnazhRealm-WebGPU-Welt (dieselbe Sichtweite, dasselbe
 // nahe LOD, dieselben Distanzen/Fades, dieselbe Wiese/Blumen/Buesche im selben aktiven Radius). Kein
 // Shader-/Geometrie-Transfer (r128-GLSL != WebGPU) — die WERTE fliessen, der Renderer bleibt AnazhRealms.
-// Zwei-Pass-Laub: geteilte Uniforms fuer den Tiefen-Test (Laub gegen die Struktur-Tiefe verdecken)
-const _dummyTex = new THREE.DataTexture(new Uint8Array([255, 255, 255, 255]), 1, 1, THREE.RGBAFormat);
-_dummyTex.needsUpdate = true;
 const _dummyVol = new THREE.DataTexture3D(new Float32Array([1]), 1, 1, 1);
 _dummyVol.format = THREE.RedFormat;
 _dummyVol.type = THREE.FloatType;
 _dummyVol.needsUpdate = true;
-const _folDepthU = {
-    uStructDepth: { value: _dummyTex },
-    uHalfRes: { value: new THREE.Vector2(1, 1) },
-    uFolEnable: { value: 0.0 },
-};
 // ZWEI-PASS-LAUB: Struktur (Stamm/Boden/Fels/Wasser) voll aufgeloest & scharf; Laub (Blaetter/Gras) halb aufgeloest & weich, tiefenkorrekt darueber compositet.
 class FoliagePass extends THREE.Pass {
     constructor() {
@@ -284,40 +116,22 @@ class FoliagePass extends THREE.Pass {
         this.fsq.render(renderer); // 3) COMPOSITE: Laub weich hochskaliert ueber scharfe Struktur
     }
 }
-let windTarget = 0.05,
-    presenceTarget = 1,
-    bloomTarget = 1;
 let rockLichen = 0.6;
-let seasonTint = new THREE.Color(0x4f7a30),
-    seasonAccent = new THREE.Color(0x6f9a3a);
 
 /* ---------- Wind-Injektion in Material-Shader (begin_vertex Hook) ---------- */
 
 /* ---------- Canvas-Fabrik: DOM (Studio/iframe) ODER OffscreenCanvas (Worker) ---- */
 /* ---------- Prozedurale Rinden-Normalmap (vertikale Riefen + Risse) -------- */
 
-let barkNormalTex = null,
-    barkMat,
-    barkMatBirch,
-    foliageMat,
-    foliageMatTex,
-    grassMat,
-    stemMat,
-    schattenMat,
-    _terMat = null,
-    _envMats = [];
-let _leafAtlas = null; // FIX v31: foliageMatTex = Multi-Blatt-Texturkarten (L1); _leafAtlas = zur Laufzeit GEMALTER Cluster-Atlas (Canvas-2D, deterministisch, kein GL-Risiko)
 /* ---------- Globale Szene-Handles ----------------------------------------- */
 let scene,
     camera,
-    renderer,
     composer,
     fxaa,
     cinePass,
     bloomPass,
     controls,
     clock,
-    subject,
     contactShadow,
     groundMesh,
     keyLight,
@@ -332,8 +146,6 @@ let scene,
     _rain;
 const _invVP = new THREE.Matrix4();
 let showcase = false;
-let __lod = 0;
-let __rockKind = "boulder";
 let framedOnce = false;
 
 /* ---------- Merge-Helfer: viele Geometrien -> 1 Draw Call ----------------- */
@@ -372,18 +184,8 @@ let framedOnce = false;
 /* ========================================================================== *
    ARTEN-KATALOG — Presets als Punkte im Morphospace (Tupel + Bauer)
  * ========================================================================== */
-let CURRENT = "eiche",
-    SEED = 12345;
 
-/* ---------- Slider -> abgeleitete Struktur-Parameter ---------------------- */
-function gv(id) {
-    return parseFloat(document.getElementById(id).value);
-}
-let __dials =
-    null; /* Dial-Kontext: gesetzt = kanonische Preset-Regler (Wald/Templates/Atlas, DOM-frei & deterministisch); null = Studio liest live die Slider */
 
-/* ---------- Saison (Phaenologie) ------------------------------------------ */
-let curSeason = "summer";
 
 /* ---------- Aufbau / Sitz / Rahmung / Abbau ------------------------------- */
 function disposeSubject() {
@@ -571,23 +373,35 @@ function windStempel(geo, tmpl, S) {
     }
     geo.setAttribute("aWindB", new THREE.Float32BufferAttribute(a, 2));
 }
+// DIE GESTALT DES LABORS in `subject`: die Ableitung aus den Dials (DIALS = __dials) und der Emitter der Art — dieselbe Tafel
+// wie buildInstance. `build` (das Bild) und die Kosten-Leiste (je Stufe, laborGestaltDerStufe) rufen sie.
+function emitGestalt(pre) {
+    if (pre.panel === "rock") {
+        const P = deriveParamsRock(pre);
+        __rockKind = P.kind;
+        emitRock(P);
+        return { P, baum: false };
+    }
+    const P = deriveParamsPlant(pre);
+    let baum = false;
+    if (P.kind === "flower") emitFlower(P);
+    else if (P.kind === "grass") emitGrass(P);
+    else if (WALDBODEN_EMIT[P.kind]) WALDBODEN_EMIT[P.kind](P); // der Waldboden: dieselbe Tafel wie buildInstance
+    else {
+        emitTree(P);
+        baum = true;
+    }
+    return { P, baum };
+}
 function build() {
     RNG = mulberry32(Math.floor(SEED));
     disposeSubject();
     subject = new THREE.Group();
     scene.add(subject);
     const pre = PRESETS[CURRENT];
-    if (pre.panel === "rock") {
-        const P = deriveParamsRock(pre);
-        __rockKind = P.kind;
-        emitRock(P);
-    } else {
-        const P = deriveParamsPlant(pre);
-        if (P.kind === "flower") emitFlower(P);
-        else if (P.kind === "grass") emitGrass(P);
-        else if (WALDBODEN_EMIT[P.kind]) WALDBODEN_EMIT[P.kind](P); // der Waldboden: dieselbe Tafel wie buildInstance
-        else {
-            const nodes = emitTree(P);
+    const { P, baum } = emitGestalt(pre);
+    if (pre.panel !== "rock") {
+        if (baum) {
             const _pl = PORTAL_RENDER_CONFIG.placement || {},
                 _S = ((_pl.scale && _pl.scale[CURRENT]) || 1) * (P.kind === "tree" ? _pl.treeScaleMul || 1 : 1),
                 _w = windDaten(subject, _S);
@@ -610,28 +424,19 @@ function build() {
         if (_bbTo) clearTimeout(_bbTo);
         _bbTo = setTimeout(studioBillboard, 80);
     } // FIX v34: zentral — egal ob Art-Wechsel, Neue Saat, Wuerfeln oder Slider: L2 zeigt IMMER die Fernstufe des Waldes (entprellt: Slider-Ziehen bakt max ~12x/s)
+    kostenMessen(); // die Kosten-Leiste der Hülle misst je Stufe neu (entprellt, eine Stufe je Leerlauf)
 }
 /* ========================================================================== *
    STUDIO — bewusst nahe am Tetrapoda-Labor gehalten (Geometrie ist der Star):
    PMREM-Env · Hemi+Key+Rim+Fill · Boden · Kontaktschatten · Bloom+FXAA+Cine
  * ========================================================================== */
 function init() {
-    // FOUNDRY-MODUS: AnazhRealm laedt diese Datei versteckt als reinen Asset-Motor
-    // (?asset-foundry=1). Kein Renderer, kein eigener Wald, kein Render-Loop — nur die
-    // Materialien + Saison + PRESETS, damit buildInstance echte Baum-Assets liefert.
-    // P0 (foundry-core-Weg): dieselbe Foundry auch als WORKER ladbar — der Bootstrap setzt
-    // self.__PHYTO_FOUNDRY_WORKER=true vor importScripts (eine Blob-URL trägt kein ?search).
-    const __foundryWorker =
-        typeof window === "undefined" && typeof self !== "undefined" && self.__PHYTO_FOUNDRY_WORKER === true;
-    if (__foundryWorker || (typeof location !== "undefined" && /[?&]asset-foundry/.test(location.search))) {
-        globalThis.__PHYTO_FOUNDRY = true;
-        try {
-            buildMaterials();
-        } catch (_e) {}
-        try {
-            setSeasonColors("summer");
-        } catch (_e) {}
-        return; // die Portal-Bruecke (IIFE am Datei-Ende) meldet ready + bedient build-asset
+    // FOUNDRY-MODUS im Labor-Fenster (?asset-foundry=1): kein Renderer, kein eigener Wald, kein Render-Loop — nur
+    // die Stoffe + der Sommer (foundryModus, foundry-bruecke.js — DIESELBE Funktion, die der Worker-Start ruft).
+    // Der Foundry-Worker lädt diese Datei nicht mehr (K42): er startet in der Brücke.
+    if (typeof location !== "undefined" && /[?&]asset-foundry/.test(location.search)) {
+        foundryModus();
+        return; // das Portal (IIFE am Datei-Ende) meldet ready, die Brücke bedient die Asset-Kanäle
     }
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0x070b08);
@@ -1022,6 +827,7 @@ function init() {
     );
     buildMaterials();
     setSeasonColors("summer");
+    huelleAufbauen(); // die Hülle vor dem ersten Bau: er liest die Dials aus ihr (DIALS = __dials)
     build();
     wireUI();
     wireForest();
@@ -1874,187 +1680,6 @@ function findClearing(trees, R, seedInt) {
 }
 /* =================== ENDE ECO-ENGINE =================== */
 let __forest = null;
-function bakeImpostorAtlas() {
-    const _impSpec = PORTAL_RENDER_CONFIG.impostor || {};
-    const K = Math.max(1, _impSpecs.length),
-        V = _impV,
-        cw = _impSpec.cellW || 128,
-        ch = _impSpec.cellH || 256; // Spalten = (Art,Variante), Zeilen = 8 Blickwinkel um Y -> die Silhouette DREHT mit der Kamera (SpeedTree-Multi-View); Zell-Maße aus der EINEN Quelle (foundry-core)
-    const sig = _impSpecs.map((s) => s.sp + s.seed).join(","); // Signatur der Baubeschreibungen: neue Seeds (Rebuild) -> Atlas MUSS neu, sonst zeigt die Ferne alte Baeume
-    if (_impRT && _impK === K && _impBakedSig === sig) return; // EINMAL-BAKE: der Atlas ist SAISONINVARIANT (volle Krone gebacken; Praesenz+Tint macht der Shader) -> nach diesem Bake nie wieder, deterministischer Zyklus kostenlos
-    if (!_impRT || _impK !== K) {
-        if (_impRT) _impRT.dispose();
-        if (_impNrmRT) _impNrmRT.dispose();
-        _impRT = new THREE.WebGLRenderTarget(cw * K, ch * V, {
-            minFilter: THREE.LinearMipmapLinearFilter,
-            magFilter: THREE.LinearFilter,
-            format: THREE.RGBAFormat,
-            generateMipmaps: true,
-        });
-        _impAtlas = _impRT.texture;
-        _impNrmRT = new THREE.WebGLRenderTarget(cw * K, ch * V, {
-            minFilter: THREE.LinearMipmapLinearFilter,
-            magFilter: THREE.LinearFilter,
-            format: THREE.RGBAFormat,
-            generateMipmaps: true,
-        });
-        _impNrm = _impNrmRT.texture;
-        const _an =
-            renderer.capabilities && renderer.capabilities.getMaxAnisotropy
-                ? renderer.capabilities.getMaxAnisotropy()
-                : 1;
-        _impAtlas.anisotropy = Math.min(8, _an);
-        _impNrm.anisotropy = Math.min(8, _an); // flache Blickwinkel auf ferne Karten bleiben scharf (Einzeiler-Gewinn)   // NORMAL-ATLAS: gleiche Zellen, Normale in Zell-Raum (rechts,oben,zurKamera) -> per-Fragment-Licht in der Ferne
-        _impK = K;
-        if (_impMat) {
-            _impMat.uniforms.uK.value = K;
-            _impMat.uniforms.map.value = _impAtlas;
-            _impMat.uniforms.nmap.value = _impNrm;
-        }
-    }
-    if (!_impNrmOv) _impNrmOv = new THREE.MeshNormalMaterial({ side: THREE.DoubleSide }); // Override fuer den Normal-Pass (r128: packNormalToRGB(view-space n) -- an der three-Quelle verifiziert)
-    const bs = new THREE.Scene();
-    const hl = new THREE.HemisphereLight(0xffffff, 0x8a8a8a, 1.05);
-    bs.add(hl); // FLACH backen (neutral, richtungslos): der Atlas ist Albedo -- die LICHTRICHTUNG kommt zur Laufzeit aus _wSunPos, sonst waere die Bake-Richtung fuer immer eingefroren
-    const cam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 500);
-    const pRT = renderer.getRenderTarget(),
-        pA = renderer.getClearAlpha(),
-        pT = WIND.uTime.value,
-        pPres = SEASON.uLeafPresence.value;
-    WIND.uTime.value = 0;
-    SEASON.uLeafPresence.value = 1.0; // ruhiger, aufrechter Bake mit VOLLER Krone (egal welche Saison gerade laeuft) -> fette Alpha, mip-stabil
-    renderer.setRenderTarget(_impNrmRT);
-    renderer.setClearColor(0x8080ff, 1);
-    renderer.clear(); // Normal-Atlas komplett auf neutral
-    renderer.setRenderTarget(_impRT);
-    renderer.setClearColor(0x2f4a22, 0);
-    renderer.clear(); // Clear = Laubgruen(alpha 0): Mip-Blending blutet Blattfarbe statt Schwarz. Zellen-Clipping laeuft ueber RT-eigene viewport/scissor-Props (r128 wendet sie beim Bind an; renderer.setViewport waere pixelRatio-skaliert und wuerde von setRenderTarget zurueckgesetzt -- UND autoClear wuerde ohne RT-scissorTest bei JEDEM View den GANZEN Atlas loeschen)
-    for (let i = 0; i < K; i++) {
-        const s = _impSpecs[i];
-        let tree;
-        try {
-            /* M2 (Bäcker-Vereinigung): trägt der Spec ein explizites ov (Welt-Anfrage über den
-               bake-impostor-Kanal), bäckt GENAU dieses — Karte==Welt-Baum (ov-frei = Preset-
-               Defaults). Der Studio-Wald-Pfad (specs mit crownBase/trunkMul) bleibt byte-identisch.
-               ZWEIT-KERN-BÄCKEREI (M1-Folgeschritt): trägt der Spec einen eigenen Bauer (`bau` —
-               das buildInstance eines Manifest-Kerns, __replyBakeImpostor setzt ihn), baut DER das
-               Bake-Subjekt mit seinen kompletten Materialien; ohne `bau` läuft der Pflanzen-Pfad
-               unverändert (der Studio-Wald setzt nie `bau`). */
-            tree = (typeof s.bau === "function" ? s.bau : buildInstance)(
-                s.sp,
-                s.seed,
-                1,
-                s.ov !== undefined ? s.ov : { crownBase: s.crownBase, trunkMul: s.trunkMul }
-            );
-            if (!tree) continue; // fail-soft: ein Kern-Bauer darf null liefern (unbekanntes Rezept) — Zelle bleibt leer statt Wurf mit halb-gebundenem Renderer-State
-        } catch (e) {
-            continue;
-        }
-        const box = new THREE.Box3().setFromObject(tree);
-        /* FIX v36: ANKER = STAMMACHSE, NICHT Boxmitte. Der Laufzeit-Anker des Billboards ist die Instanzposition
-       (Stammbasis, lokales (0,0)). Die alte Box-Rezentrierung hing den Stamm konstant um (cxb,czb) neben die
-       Bildmitte — auf dem kamerafolgenden Quad wird ein konstanter BILDversatz zum ORBITIERENDEN Weltversatz:
-       beim Umrunden kreist der Karten-Stamm um den Anker und springt an der L1<->L2-Blende seitlich gegen den
-       3D-Stamm. (Der alte Kommentar behauptete Achsen-Zentrierung — die Mathematik lieferte Boxmitte.) */
-        bs.add(tree);
-        /* „Drähte statt Kopien" (08.07., wie P6 beim Wuchs): Rahmen-Formel + Radial-Scan leben
-       EINMAL in phyto-core (__phytoCore.impostorFrame/scanRadialXZ — dieselben liest AnazhRealms
-       Foundry-Bäcker; byte-gleich zur alten Inline-Form: halfH = max(0.5,maxY)·1.02·0.5,
-       halfW = max(halfH·(cw/ch=0.5), radial·1.04) — FIX v36/v28 unverändert: exakter
-       Radialabstand, rotationsinvariant, kein Seiten-Clip, per-Art-Rahmen). */
-        let _rad2 = 0;
-        tree.traverse((o) => {
-            if (o.isMesh && o.geometry && o.geometry.attributes.position) {
-                _rad2 = __phytoCore.scanRadialXZ(o.geometry.attributes.position.array, _rad2);
-            }
-        });
-        const _frame = __phytoCore.impostorFrame(box.max.y, Math.sqrt(_rad2)),
-            halfH = _frame.halfH,
-            halfW = _frame.halfW;
-        _impWR[s.sp + s.seed] = halfW / halfH; // Seitenverhaeltnis persistent (Objekt ueberlebt den Einmal-Bake-Fruehausstieg bei unveraenderter Signatur) -> Quad-Breite zieht in buildForest mit, Textur bleibt unverzerrt
-        _impFrame[s.sp + s.seed] = _frame; // W6: derselbe Rahmen reist im Welt-Payload (Quad = Bake-Kamera, keine Wurzel-Höhe)
-        cam.left = -halfW;
-        cam.right = halfW;
-        cam.top = halfH;
-        cam.bottom = -halfH;
-        cam.position.set(0, halfH, Math.max(halfW * 2.5, box.max.y) + 40);
-        cam.lookAt(0, halfH, 0);
-        cam.updateProjectionMatrix();
-        for (let v = 0; v < V; v++) {
-            tree.rotation.y = -v * ((Math.PI * 2) / V);
-            tree.updateMatrixWorld(true); // Ansicht v = Baum aus Peilung v*45 Grad gesehen (Kamera fix, Baum gegenrotiert)
-            _impRT.viewport.set(i * cw, v * ch, cw, ch);
-            _impRT.scissor.set(i * cw, v * ch, cw, ch);
-            _impRT.scissorTest = true; // Zelle als RT-Property: Bind wendet sie an, autoClear loescht NUR diese Zelle (nicht den Atlas), keine pixelRatio-Skalierung
-            renderer.setRenderTarget(_impRT);
-            renderer.setClearColor(0x2f4a22, 0);
-            renderer.render(bs, cam);
-            bs.overrideMaterial = _impNrmOv;
-            _impNrmRT.viewport.set(i * cw, v * ch, cw, ch);
-            _impNrmRT.scissor.set(i * cw, v * ch, cw, ch);
-            _impNrmRT.scissorTest = true;
-            renderer.setRenderTarget(_impNrmRT);
-            renderer.setClearColor(0x8080ff, 1); // Hintergrund-Normale = zur Kamera (neutral)
-            renderer.render(bs, cam);
-            bs.overrideMaterial = null;
-        }
-        bs.remove(tree);
-        tree.traverse((o) => {
-            if (o.isMesh && o.geometry.dispose) o.geometry.dispose();
-        });
-    }
-    _impRT.viewport.set(0, 0, cw * K, ch * V);
-    _impRT.scissor.set(0, 0, cw * K, ch * V);
-    _impRT.scissorTest = false; // RT-Props zurueck auf voll: naechster Bind (Re-Bake-Clear, Debug-Reads) sieht den ganzen Atlas
-    _impNrmRT.viewport.set(0, 0, cw * K, ch * V);
-    _impNrmRT.scissor.set(0, 0, cw * K, ch * V);
-    _impNrmRT.scissorTest = false;
-    /* DILATION (2px): Kronenfarbe in transparente Randtexel fluten, Alpha bleibt 0 -> Mips mischen Blattfarbe statt Clear-Gruen (kein dunkler Halo an fernen Karten). Zellgrenzen sicher: Rahmenraender sind leer. */
-    if (!_impDilMat) {
-        _impDilMat = new THREE.ShaderMaterial({
-            uniforms: { tSrc: { value: null }, uTexel: { value: new THREE.Vector2(1, 1) } },
-            vertexShader: "varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,0.0,1.0);}",
-            fragmentShader:
-                "uniform sampler2D tSrc;uniform vec2 uTexel;varying vec2 vUv;void main(){vec4 c=texture2D(tSrc,vUv);if(c.a>0.05){gl_FragColor=c;return;}float ba=0.0;vec3 bc=c.rgb;for(int dy=-1;dy<=1;dy++)for(int dx=-1;dx<=1;dx++){if(dx==0&&dy==0)continue;vec4 n=texture2D(tSrc,vUv+vec2(float(dx),float(dy))*uTexel);if(n.a>ba){ba=n.a;bc=n.rgb;}}gl_FragColor=vec4(ba>0.05?bc:c.rgb,0.0);}",
-            depthTest: false,
-            depthWrite: false,
-        });
-        _impDilScene = new THREE.Scene();
-        const _fq = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), _impDilMat);
-        _fq.frustumCulled = false;
-        _impDilScene.add(_fq);
-        _impDilCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-    }
-    if (!_impDilRT || _impDilRT.width !== cw * K || _impDilRT.height !== ch * V) {
-        if (_impDilRT) _impDilRT.dispose();
-        _impDilRT = new THREE.WebGLRenderTarget(cw * K, ch * V, { format: THREE.RGBAFormat });
-    }
-    _impDilMat.uniforms.uTexel.value.set(1 / (cw * K), 1 / (ch * V));
-    const _pAC = renderer.autoClear;
-    renderer.autoClear = false;
-    _impDilMat.uniforms.tSrc.value = _impRT.texture;
-    renderer.setRenderTarget(_impDilRT);
-    renderer.render(_impDilScene, _impDilCam);
-    _impDilMat.uniforms.tSrc.value = _impDilRT.texture;
-    renderer.setRenderTarget(_impRT);
-    renderer.render(_impDilScene, _impDilCam);
-    renderer.autoClear = _pAC;
-    renderer.setScissorTest(false);
-    renderer.setRenderTarget(pRT);
-    // BÄCKER-VEREINIGUNG (Worker-Naht): im Foundry-Worker gibt es kein innerWidth/innerHeight
-    // (ReferenceError) — dort ist der Offscreen-Baecker 256x256 (__foundryBakeRenderer).
-    // Der Fenster-Pfad (Studio/iframe) liest weiter die echten Fenstermasse, byte-identisch.
-    renderer.setViewport(
-        0,
-        0,
-        typeof innerWidth !== "undefined" ? innerWidth : 256,
-        typeof innerHeight !== "undefined" ? innerHeight : 256
-    );
-    renderer.setClearColor(0x000000, pA);
-    WIND.uTime.value = pT;
-    SEASON.uLeafPresence.value = pPres;
-    _impBakedSig = sig;
-}
 function buildForest() {
     if (typeof _lvCache !== "undefined") _lvCache.clear(); // neue Kronen -> Zyklus-Speicher ungueltig
     forestGroup = new THREE.Group();
@@ -2154,18 +1779,37 @@ function buildForest() {
         cRock = new THREE.Color(PORTAL_GROUND.rock),
         cWet = new THREE.Color(PORTAL_GROUND.wet),
         cSand = new THREE.Color(PORTAL_GROUND.sand);
+    // DER FELS DES BODENS ist das Fels-Gesetz (gelaende-core `felsFarbe`, K17) — dasselbe, das der Welt-Boden und die
+    // Fels-Gestalten lesen: Pakete, die Mittel der Bänke, Kanten und Klüfte, die Rinde an konvexen Kanten aus der Krümmung,
+    // Flechte und Moos. Der Palette-Stein ist eine sRGB-Absicht (FARB-GESETZ), sein linearer Wert der Grundton; die Masche
+    // (TS / SEG) ist die Kante, die das Gesetz trägt. Bis K17 tönte hier der Palette-Stein den Fels als eine Masse.
+    const GK = window.__gelaendeCore;
+    if (!GK || typeof GK.felsFarbe !== "function" || typeof GK.felsKruemmung !== "function")
+        throw new Error("phytogenesis: gelaende-core felsFarbe fehlt (Kern-Pflicht, worlds/terrain/index.html)");
+    const felsB = GK.felsBasis(cRock.clone().convertSRGBToLinear().toArray());
+    for (let i = 0; i < tp.count; i++) tp.setZ(i, forestGroundH(tp.getX(i), -tp.getY(i)));
+    tg.computeVertexNormals();
+    const tn = tg.attributes.normal;
+    const felsK = GK.felsKruemmung(tp.array, tn.array, tg.index ? tg.index.array : null, tp.count);
+    const felsT = [0, 0, 0];
     for (let i = 0; i < tp.count; i++) {
         const lx = tp.getX(i),
             ly = tp.getY(i),
             wx = lx,
             wz = -ly;
-        tp.setZ(i, forestGroundH(wx, wz));
         const sd = standDensity(wx, wz),
             rk = rockiness(wx, wz),
             sl = slopeAt(wx, wz).s,
             pd = Math.min(pathDist(wx, wz), trailAt(wx, wz));
         const c = cMead.clone().lerp(cLit, sstep(0.3, 0.8, sd));
-        c.lerp(cRock, Math.max(sstep(0.16, 0.3, sl), sstep(0.5, 0.85, rk) * 0.7));
+        const wFels = Math.max(sstep(0.16, 0.3, sl), sstep(0.5, 0.85, rk) * 0.7);
+        if (wFels > 0) {
+            // die Normale der Ebene (lokal z oben) in der Welt: (nx, nz, −ny)
+            GK.felsFarbe(felsB, wx, tp.getZ(i), wz, tn.getX(i), tn.getZ(i), -tn.getY(i), felsK[i], 1, moistAt(wx, wz), TS / SEG, felsT);
+            c.r += (felsT[0] - c.r) * wFels;
+            c.g += (felsT[1] - c.g) * wFels;
+            c.b += (felsT[2] - c.b) * wFels;
+        }
         if (pd < 3.4) c.lerp(cDirt, sstep(3.4, 0.4, pd));
         c.multiplyScalar(0.58 + 0.46 * lightAt(wx, wz)); // FIX v27: GEBACKENES KRONENDACH-LICHT — lgrid existiert schon (Unterwuchs-Treiber), floss aber nie in die Bodenfarbe. Jetzt: Bestandeskern dunkel, Lichtung hell -> die Baeume werfen sichtbaren Makro-Schatten in die Albedo, unabhaengig von der Shadow-Map. Kostet 0 zur Laufzeit.
         const mw = moistAt(wx, wz);
@@ -2178,7 +1822,6 @@ function buildForest() {
         tcol.push(c.r, c.g, c.b);
     }
     tg.setAttribute("color", new THREE.Float32BufferAttribute(tcol, 3));
-    tg.computeVertexNormals();
     const terMat = new THREE.MeshStandardMaterial({
         vertexColors: true,
         roughness: 0.94,
@@ -2357,7 +2000,8 @@ function buildForest() {
       tanne: Number.isFinite(_WG.crownBase.tanne) ? _WG.crownBase.tanne : _CB_FB.tanne,
       mammut: Number.isFinite(_WG.crownBase.mammut) ? _WG.crownBase.mammut : _CB_FB.mammut
     } : _CB_FB; // Stamm freistellen (Selbstastung im Wald)
-    const TMUL = (_WG && Number.isFinite(_WG.trunkMul)) ? _WG.trunkMul : 0.5; // Stamm schlanker (Wald-Realismus; Studio unberuehrt)
+    // Der Stamm des Studio-Walds ist der Stamm der Welt: seine Schlankheit traegt das Welt-Mass des Kerns (K20, ph.hd) —
+    // der Wald-Faktor trunkMul 0,5, der die Vorlagen-Formel (H/D 13–18) schlanker zog, ist gefallen.
     const poolL = [{}, {}];
     /* L2-Mesh-Pool gestrichen: Fernstufe IST das Billboard (tote Fracht seit der Impostor-Aera) */ const mp = (
         sp,
@@ -2367,7 +2011,7 @@ function buildForest() {
         for (let i = 0; i < n; i++) seeds.push(Math.floor(RNG() * 1e6));
         for (let L = 0; L < 2; L++)
             poolL[L][sp] = seeds.map((sd) => {
-                const g = buildInstance(sp, sd, L, { crownBase: CB[sp], trunkMul: TMUL });
+                const g = buildInstance(sp, sd, L, { crownBase: CB[sp] });
                 g.userData.seed = sd;
                 return g;
             });
@@ -2382,7 +2026,7 @@ function buildForest() {
     for (const sp of Object.keys(poolL[0])) {
         poolL[0][sp].forEach((tmpl, v) => {
             _impCellOf[sp + "|" + v] = _impSpecs.length;
-            _impSpecs.push({ sp, seed: tmpl.userData.seed, crownBase: CB[sp], trunkMul: TMUL });
+            _impSpecs.push({ sp, seed: tmpl.userData.seed, crownBase: CB[sp] });
         });
     }
     // LOD-WURZEL (08.07.) — DIE STUFEN-WAHRHEIT JE ART AUS DEN VERTRAGS-DATEN
@@ -3356,34 +3000,11 @@ let _rScale = 1.25,
     _fpsN = 0,
     _fpsEl = null,
     _fpsTarget = 60,
-    _fpsSlider = null,
     _folRes = 0.5,
     _sightDist = PORTAL_RENDER_CONFIG.sight,
-    _ctrlPanel = null,
-    _folSlider = null,
-    _sightSlider = null;
+    _ctrlPanel = null;
 let _dcLast = 0,
     _triLast = 0; // FIX v27: Frame-Totale (Drawcalls/Dreiecke) — nach composer.render() eingesammelt, vom HUD gelesen
-let _impAtlas = null,
-    _impK = 0,
-    _impGeo = null,
-    _impRT = null,
-    _impNrmRT = null,
-    _impNrm = null,
-    _impNrmOv = null,
-    _impDilMat = null,
-    _impDilRT = null,
-    _impDilScene = null,
-    _impDilCam = null,
-    _impBakedSig = "",
-    _impT = 0,
-    _impMat = null,
-    _impSpecs = [],
-    _impCellOf = {},
-    _impWR = {},
-    _impFrame = {}; // W6: der Bake-Rahmen je (Art, Same) — das Payload der Welt-Karte trägt ihn (kein dritter L1-Bau)
-const _impV = (PORTAL_RENDER_CONFIG.impostor && PORTAL_RENDER_CONFIG.impostor.views) || 8, // Bäcker-Spec aus der EINEN Quelle (foundry-core, Studio-Vertrag B2)
-    _impYAxis = new THREE.Vector3(0, 1, 0); // 8 Blickwinkel je Baum im Atlas (Zeilen); _impNrm = Normal-Atlas; Atlas ist SAISONINVARIANT (einmal je Seed-Signatur); _impWR = Zell-Seitenverhaeltnis je Art (FIX v28)
 let _grassTiles = [];
 let _occG = null,
     _occW = 0; // FIX v31: Kronen-Dichtegitter (3m-Zellen) fuer die Sichtlinien-Transmittanz — gebaut EINMAL je Wald aus trees[].T
@@ -3391,16 +3012,6 @@ let _treeLOD = [],
     _lodT = 0,
     _lodCx = 1e9,
     _lodCz = 1e9;
-// EINE Quelle fuers LOD-Band (aus PORTAL_RENDER_CONFIG.lod): <D0 fein, D0..D1 mittel, >D1 Billboard;
-// KOMPLEMENTAERES Dither-Crossfade -- dieselbe Maske teilt die Pixel exakt (kein Pop, keine Luecke). FADE0
-// 4 = das nahe L0->L1-Band (fast identische Meshes) traegt ein schmaleres Dither-Feld; die Fern-Blende
-// (FADE=8, 3D->Billboard) bleibt breit. Editiert der Schoepfer die Distanzen HIER (im Config-Block), folgt
-// das Studio-LOD UND — ueber den get-render-config-Kanal — AnazhRealms LOD.
-const LOD_D0 = PORTAL_RENDER_CONFIG.lod.d0,
-    LOD_D1 = PORTAL_RENDER_CONFIG.lod.d1,
-    LOD_FADE = PORTAL_RENDER_CONFIG.lod.fade,
-    LOD_FADE0 = PORTAL_RENDER_CONFIG.lod.fade0;
-const _lodU = { uLodMaskOn: { value: 1 }, uLodRef: { value: PORTAL_RENDER_CONFIG.lod.ref }, uDitherT: { value: 0 } };
 let taaPass = null,
     _taaPrevVP = new THREE.Matrix4(),
     _taaCurVP = new THREE.Matrix4(),
@@ -3598,11 +3209,7 @@ let WSEASONPLAY = false,
     WSEASONSPEED = 0.01; // Jahreszeit-Drift (Anteil pro Sekunde)
 let WXPLAY = false; // Wetter-Autoplay: Wolkenfelder ziehen durch (kontinuierlicher Drift statt hartem Preset-Sprung)
 const _wxPh = [1.7, 4.1, 0.3, 2.9]; // Phasen-Offsets fuer unabhaengige Drift je Kanal (Fog/Sun/Grey/Wind)
-let _timeSlider = null,
-    _seasonSlider = null,
-    _timeVal = null,
-    _seasonVal = null,
-    _lastSeasonBuild = 0.28;
+let _lastSeasonBuild = 0.28;
 let wxFog = 0.16,
     wxFogT = 0.16,
     wxSun = 1,
@@ -3726,14 +3333,10 @@ function updateWorld(dt) {
     if (WPLAY) {
         WTIME = (WTIME + dt * WSPEED) % 24;
         if (WTIME < 0) WTIME += 24;
-        if (_timeSlider) _timeSlider.value = WTIME;
-        if (_timeVal) _timeVal.textContent = fmtHM(WTIME);
     }
-    if (WSEASONPLAY) {
-        WSEASON = (((WSEASON + dt * WSEASONSPEED) % 1) + 1) % 1;
-        if (_seasonSlider) _seasonSlider.value = WSEASON;
-        if (_seasonVal) _seasonVal.textContent = SEASON_NAMES[Math.floor((((WSEASON % 1) + 1) % 1) * 8) % 8];
-    } // KONTINUITAET STATT REBUILD (Profi-Gesetz): im Autoplay NIE synchron neu bauen -- uLeafPresence, uBloom und uSeasonMul tragen das Jahr kontinuierlich; ein echter Wald baut sich auch nicht um. Manuelle Saison-Wahl backt weiterhin exakt.
+    if (WSEASONPLAY) WSEASON = (((WSEASON + dt * WSEASONSPEED) % 1) + 1) % 1;
+    if (WPLAY || WSEASONPLAY) welteZeigen(); // die Regler der Hülle folgen der laufenden Zeit
+    // KONTINUITAET STATT REBUILD (Profi-Gesetz): im Autoplay NIE synchron neu bauen -- uLeafPresence, uBloom und uSeasonMul tragen das Jahr kontinuierlich; ein echter Wald baut sich auch nicht um. Manuelle Saison-Wahl backt weiterhin exakt.
     if (WXPLAY) {
         _wxT += dt * 0.05; // langsame Wolkenfeld-Drift, eigenes Tempo (unabhaengig von Zeit-/Jahreszeit-Speed)
         const n = (ph) =>
@@ -4339,41 +3942,35 @@ function animate() {
                 _fpsEl = document.createElement("div");
                 _fpsEl.style.cssText = "margin-bottom:4px;color:#dff";
                 _ctrlPanel.appendChild(_fpsEl);
-                const mkRow = (label, min, max, step, val, fn) => {
-                    const w = document.createElement("div");
-                    w.style.cssText = "margin-top:6px";
-                    const l = document.createElement("div");
-                    l.textContent = label;
-                    l.style.cssText = "opacity:.82;margin-bottom:1px;font-weight:500";
-                    const sl = document.createElement("input");
-                    sl.type = "range";
-                    sl.min = min;
-                    sl.max = max;
-                    sl.step = step;
-                    sl.value = val;
-                    sl.style.cssText = "width:100%;accent-color:#6cc;cursor:pointer";
-                    sl.oninput = () => fn(+sl.value);
-                    w.appendChild(l);
-                    w.appendChild(sl);
-                    _ctrlPanel.appendChild(w);
-                    return sl;
+                // die Wald-Regler baut die EINE Hülle (AnazhHuelle.regler): live je Zug, kein Rückgängig-Schritt (Ansicht)
+                const waldW = { fps: _fpsTarget, laub: Math.round(_folRes * 100), sicht: _sightDist };
+                const wald = {
+                    fps: (v) => {
+                        _fpsTarget = v;
+                    },
+                    laub: (v) => {
+                        _folRes = v / 100;
+                        if (_foliagePass) _foliagePass.resizeFol();
+                    },
+                    sicht: (v) => {
+                        _sightDist = v;
+                        if (scene.fog) {
+                            scene.fog.far = _sightDist;
+                            scene.fog.near = _sightDist * 0.35;
+                        }
+                        camera.far = _sightDist + 20;
+                        camera.updateProjectionMatrix();
+                    },
                 };
-                _fpsSlider = mkRow("Ziel-FPS  (scharf - fluessig)", 30, 60, 5, _fpsTarget, (v) => {
-                    _fpsTarget = v;
-                });
-                _folSlider = mkRow("Laub-Aufloesung", 25, 100, 5, Math.round(_folRes * 100), (v) => {
-                    _folRes = v / 100;
-                    if (_foliagePass) _foliagePass.resizeFol();
-                });
-                _sightSlider = mkRow("Sichtweite  (Dunst)", 40, 120, 5, _sightDist, (v) => {
-                    _sightDist = v;
-                    if (scene.fog) {
-                        scene.fog.far = _sightDist;
-                        scene.fog.near = _sightDist * 0.35;
-                    }
-                    camera.far = _sightDist + 20;
-                    camera.updateProjectionMatrix();
-                });
+                AnazhHuelle.regler(
+                    _ctrlPanel.appendChild(document.createElement("div")),
+                    [
+                        { id: "fps", lab: "Ziel-FPS  (scharf - flüssig)", min: 30, max: 60, step: 5 },
+                        { id: "laub", lab: "Laub-Auflösung", min: 25, max: 100, step: 5 },
+                        { id: "sicht", lab: "Sichtweite  (Dunst)", min: 40, max: 120, step: 5 },
+                    ],
+                    { werte: waldW, ruheMs: 0, gruppen: false, zuruecksetzen: false, bei: (id, v) => wald[id](v) }
+                );
                 document.body.appendChild(_ctrlPanel);
             }
             _ctrlPanel.style.display = "";
@@ -4610,102 +4207,195 @@ addEventListener("resize", () => {
     fxaa.uniforms["resolution"].value.set(1 / innerWidth, 1 / innerHeight);
 });
 
-/* ---------- UI-Verdrahtung ------------------------------------------------ */
-function setSliders(pre) {
-    if (pre.panel === "plant") {
-        const s = pre.s;
-        document.getElementById("sApi").value = s.api;
-        document.getElementById("sDelta").value = s.delta;
-        document.getElementById("sSlim").value = s.slim;
-        document.getElementById("sTrop").value = s.trop;
-        document.getElementById("sLeaf").value = s.leaf;
-    } else {
-        const s = pre.s;
-        document.getElementById("rGen").value = s.gen;
-        document.getElementById("rSph").value = s.sph;
-        document.getElementById("rElo").value = s.elong;
-        document.getElementById("rRnd").value = s.rnd;
-        document.getElementById("rRgh").value = s.rgh;
-        document.getElementById("rStr").value = s.str;
-    }
-    refreshVals();
+/* ---------- UI-Verdrahtung: DIE EINE STUDIO-HÜLLE (K47, worlds/huelle/huelle.js) -------------------------------------
+ * Regler (die Dials der Pflanze und des Felses, Tageszeit und Jahr, die Wald-Regler), die Sitzung (Undo/Redo · Same ·
+ * Sperre je Achse), die Kosten-Leiste je LOD-Stufe gegen die Budget-Zeile des Kerns und die Portal-Brücke mit dem
+ * DSL-Adapter kommen aus der Hülle. Die Shell liest ihr DIALS-Objekt, nie das DOM: es IST der Dial-Kontext des Kerns
+ * (`__dials`, foundry-bruecke.js) — deriveParamsPlant/deriveParamsRock lesen es wie die Preset-Dials des Waldes. */
+// Die Dial-Zeilen in der B4-Form (id = der Dial-Schlüssel der Presets, PRESETS[*].s); `wurf` = der Bereich des Würfels.
+// Kein Gesetz und kein Rezept des Kerns — die Lehrsätze am Regler (studio-vertrag B4: die Pflanzen-Dials leben in der Shell,
+// benannte Schuld; ihr Umzug in PARAMS_BY_KIND ist Synthese W4e).
+const DIAL_ZEILEN = {
+    plant: [
+        { id: "api", lab: "Apikaldominanz", min: 0, max: 1, step: 0.01, def: 0.3, wurf: [0.12, 0.95], law: "Leittrieb vs. Verzweigung — Nadelbaum(hoch)→Laubkrone(tief)" },
+        { id: "delta", lab: "Verästelung Δ", min: 1.8, max: 3.0, step: 0.05, def: 2.3, wurf: [2.0, 2.5], law: "r_Stamm^Δ = Σ r_Ast^Δ — da Vinci / Pipe-Modell (2 mech · 3 hydr)" },
+        { id: "slim", lab: "Schlankheit", min: 0, max: 1, step: 0.01, def: 0.45, wurf: [0.2, 0.85], law: "H = k·D^(2/3) — McMahon elastische Knickgrenze" },
+        { id: "trop", lab: "Gravitropismus", min: -1, max: 1, step: 0.02, def: -0.14, wurf: [-0.2, 0.9], law: "Sollwinkel z. Vertikalen — aufrecht(−) bis Trauerwuchs(+)" },
+        { id: "leaf", lab: "Belaubung", min: 0, max: 1, step: 0.01, def: 0.6, wurf: [0.35, 0.9], law: "Blattdichte + Blattgröße (Corner-Regel: Axialkonformität)" },
+    ],
+    rock: [
+        { id: "gen", lab: "Genese", min: 0, max: 1, step: 0.01, def: 0.55, wurf: [0.05, 0.95], law: "kristallin → vulkanisch-säulig → massiv → klastisch (Genese-Achse leitet die Sorte ab)" },
+        { id: "sph", lab: "Sphärizität", min: 0, max: 1, step: 0.01, def: 0.3, wurf: [0.2, 0.8], law: "Zingg c/b — kugelig(hoch) bis plattig/scheibig(tief)" },
+        { id: "elong", lab: "Streckung", min: 0, max: 1, step: 0.01, def: 0.2, wurf: [0.1, 0.7], law: "Zingg b/a — gedrungen bis stängelig/säulig" },
+        { id: "rnd", lab: "Rundung", min: 0, max: 1, step: 0.01, def: 0.35, wurf: [0.1, 0.8], law: "Wadell-Rundung — eckig(gebrochen) bis gerundet(transportiert)" },
+        { id: "rgh", lab: "Rauheit D", min: 0, max: 1, step: 0.01, def: 0.55, wurf: [0.3, 0.7], law: "fraktale Oberfläche (fBm-Oktaven) — Verwitterungsgrad" },
+        { id: "str", lab: "Schichtung", min: 0, max: 1, step: 0.01, def: 0.15, wurf: [0.05, 0.85], law: "Sediment-Bänderung + differentielle Erosion (Simse)" },
+    ],
+};
+const DIALS = {}; // die Werte beider Dial-Regler (in place) = der Dial-Kontext des Kerns
+const WELT_W = {}; // Tageszeit + Jahr (Welt-Steuerung, kein Rückgängig-Schritt: die Zeit läuft auch von selbst)
+let sitz = null,
+    reglerPflanze = null,
+    reglerFels = null,
+    reglerZeit = null,
+    reglerJahr = null,
+    kostenLeiste = null,
+    kostenArt = null;
+const dialPanel = (pre) => (pre.panel === "rock" ? "rock" : "plant");
+function neuBauen() {
+    if (forestMode) rebuildForestInPlace();
+    else build();
 }
-function refreshVals() {
-    const map = {
-        sApi: "vApi",
-        sDelta: "vDelta",
-        sSlim: "vSlim",
-        sTrop: "vTrop",
-        sLeaf: "vLeaf",
-        rGen: "vGen",
-        rSph: "vSph",
-        rElo: "vElo",
-        rRnd: "vRnd",
-        rRgh: "vRgh",
-        rStr: "vStr",
-    };
-    for (const id in map) {
-        const el = document.getElementById(id);
-        if (el) document.getElementById(map[id]).textContent = parseFloat(el.value).toFixed(2);
-    }
-}
-let rebuildTimer = null;
-function debouncedBuild() {
-    clearTimeout(rebuildTimer);
-    rebuildTimer = setTimeout(build, 180);
-}
-function setVal(id, v) {
-    const el = document.getElementById(id);
-    if (el) el.value = v;
-}
-function diceAll() {
-    const ids = Object.keys(PRESETS);
-    CURRENT = ids[Math.floor(Math.random() * ids.length)];
+function artSetzen(id) {
+    CURRENT = id;
     const pre = PRESETS[CURRENT];
     document.querySelectorAll("#ui [data-p]").forEach((x) => x.classList.toggle("active", x.dataset.p === CURRENT));
     document.getElementById("panelPlant").classList.toggle("hidden", pre.panel !== "plant");
     document.getElementById("panelRock").classList.toggle("hidden", pre.panel !== "rock");
-    const rr = (a, b) => a + Math.random() * (b - a);
-    if (pre.panel === "plant") {
-        setVal("sApi", rr(0.12, 0.95));
-        setVal("sDelta", rr(2.0, 2.5));
-        setVal("sSlim", rr(0.2, 0.85));
-        setVal("sTrop", rr(-0.2, 0.9));
-        setVal("sLeaf", rr(0.35, 0.9));
-    } else {
-        setVal("rGen", rr(0.05, 0.95));
-        setVal("rSph", rr(0.2, 0.8));
-        setVal("rElo", rr(0.1, 0.7));
-        setVal("rRnd", rr(0.1, 0.8));
-        setVal("rRgh", rr(0.3, 0.7));
-        setVal("rStr", rr(0.05, 0.85));
+}
+// DIE GESTALT DES LABORS je LOD-Stufe für die Kosten-Leiste: dieselbe Ableitung und derselbe Emitter wie `build` (die Dials
+// aus DIALS, derselbe Same), in eine eigene Gruppe — die Szene, die Stufe und der Strom des Labors bleiben unberührt. Eine
+// Stufe, die die Studio-Karte IST (budget.karte), zählt als ihr Achsen-Quad (2 Dreiecke, 1 Stoff), wie der Host sie zeichnet.
+function laborGestaltDerStufe(s) {
+    const pre = PRESETS[CURRENT];
+    const zeile = PORTAL_RENDER_CONFIG.lod.budget[pre.kind];
+    if (zeile && zeile[s] && zeile[s].karte) return new THREE.Mesh(new THREE.PlaneGeometry(1, 1), _impMat || foliageMat);
+    const sS = subject,
+        sL = __lod,
+        sR = RNG,
+        sK = __rockKind;
+    const g = new THREE.Group();
+    subject = g;
+    __lod = s;
+    RNG = mulberry32(Math.floor(SEED));
+    try {
+        emitGestalt(pre);
+    } finally {
+        subject = sS;
+        __lod = sL;
+        RNG = sR;
+        __rockKind = sK;
     }
-    refreshVals();
-    SEED = Math.floor(Math.random() * 1e6);
-    if (forestMode) rebuildForestInPlace();
-    else build();
+    return g;
+}
+function kostenMessen() {
+    if (!sitz) return; // der Foundry-Modus und der Boot vor der Hülle messen nicht
+    const kind = PRESETS[CURRENT].kind;
+    if (kind !== kostenArt) {
+        kostenArt = kind;
+        const ziel = document.getElementById("kosten");
+        ziel.textContent = "";
+        const L = PORTAL_RENDER_CONFIG.lod;
+        kostenLeiste = AnazhHuelle.kosten(ziel, {
+            budget: L.budget[kind],
+            stufen: L.kindStages[kind],
+            bauen: laborGestaltDerStufe,
+            titel: "KOSTEN JE STUFE · " + kind,
+            quelle:
+                "gemessen an der Labor-Gestalt je Stufe (dieselben Dials, derselbe Same) gegen die Budget-Zeile des Kerns (PORTAL_RENDER_CONFIG.lod.budget." +
+                kind +
+                "); die Karten-Stufe zählt als Achsen-Quad",
+        });
+    }
+    kostenLeiste.neu();
+}
+// Die Hülle steht VOR dem ersten Bau: der erste `build` liest DIALS (die Lehr-Startwerte der Zeilen).
+function huelleAufbauen() {
+    __dials = DIALS;
+    sitz = AnazhHuelle.sitzung({
+        werte: DIALS,
+        seed: SEED,
+        sperren: true,
+        zustand: () => ({ art: CURRENT, saat: SEED }),
+        zustandSetzen: (z) => {
+            artSetzen(z.art);
+            SEED = z.saat;
+            sitz.seedSetzen(SEED, true);
+        },
+        // der Same aus dem Feld: EIN Schritt (der Rückweg kennt die alte Saat)
+        beiSeed: (n) => {
+            sitz.schritt(() => {
+                SEED = n;
+            });
+            neuBauen();
+        },
+        anwenden: () => neuBauen(),
+    });
+    sitz.leiste(document.getElementById("sitzung"));
+    const dialOpt = () => ({
+        werte: DIALS,
+        sitzung: sitz,
+        gruppen: false,
+        basis: () => PRESETS[CURRENT].s, // ↺ = die Vorlage (die Dials des gewählten Presets)
+        nachRuhe: () => build(),
+    });
+    reglerPflanze = AnazhHuelle.regler(document.getElementById("panelPlant"), DIAL_ZEILEN.plant, dialOpt());
+    reglerFels = AnazhHuelle.regler(document.getElementById("panelRock"), DIAL_ZEILEN.rock, dialOpt());
+    reglerZeit = AnazhHuelle.regler(document.getElementById("reglerZeit"), [{ id: "zeit", lab: "Tageszeit", min: 0, max: 24, step: 0.05, def: 10 }], {
+        werte: WELT_W,
+        start: () => WTIME,
+        ruheMs: 0,
+        gruppen: false,
+        zuruecksetzen: false,
+        format: (z, v) => fmtHM(v),
+        bei: (id, v) => {
+            WTIME = v;
+        },
+    });
+    reglerJahr = AnazhHuelle.regler(document.getElementById("reglerJahr"), [{ id: "jahr", lab: "Jahr", min: 0, max: 1, step: 0.005, def: 0.28 }], {
+        werte: WELT_W,
+        start: () => WSEASON,
+        ruheMs: 400, // der Zug fließt (Tönung je Bild), der exakte Saison-Bau wartet, bis der Regler ruht
+        gruppen: false,
+        zuruecksetzen: false,
+        format: (z, v) => SEASON_NAMES[Math.floor((((v % 1) + 1) % 1) * 8) % 8],
+        bei: (id, v) => {
+            WSEASON = v;
+        },
+        nachRuhe: () => {
+            _lastSeasonBuild = WSEASON;
+            worldRebuild();
+        },
+    });
+}
+function welteZeigen() {
+    if (!reglerZeit) return;
+    WELT_W.zeit = WTIME;
+    WELT_W.jahr = WSEASON;
+    reglerZeit.sync();
+    reglerJahr.sync();
+}
+// DER WÜRFEL — EINE Tat: ein neuer Same zieht die Art, jede freie Dial-Achse (in ihrem Würfel-Bereich, auf ihr Raster) und
+// die Saat aus EINEM Strom (AnazhHuelle.zufall); derselbe Same gibt dieselbe Variante, das Schloss hält eine Achse fest.
+function diceAll() {
+    sitz.schritt(() => {
+        const neu = (Date.now() ^ ((Math.random() * 4294967296) >>> 0)) >>> 0 || 1;
+        const r = AnazhHuelle.zufall(neu);
+        const ids = Object.keys(PRESETS);
+        artSetzen(ids[Math.floor(r() * ids.length)]);
+        const panel = dialPanel(PRESETS[CURRENT]);
+        const w = {};
+        for (const z of DIAL_ZEILEN[panel]) {
+            const v = z.wurf[0] + r() * (z.wurf[1] - z.wurf[0]);
+            if (!sitz.gesperrt(z.id)) w[z.id] = +(z.min + Math.round((v - z.min) / z.step) * z.step).toFixed(6);
+        }
+        (panel === "rock" ? reglerFels : reglerPflanze).setzen(w, true);
+        SEED = neu;
+        sitz.seedSetzen(neu, true);
+    });
+    neuBauen();
 }
 function wireUI() {
     document.querySelectorAll("#ui [data-p]").forEach((b) =>
         b.addEventListener("click", () => {
-            document.querySelectorAll("#ui [data-p]").forEach((x) => x.classList.remove("active"));
-            b.classList.add("active");
-            CURRENT = b.dataset.p;
-            const pre = PRESETS[CURRENT];
-            document.getElementById("panelPlant").classList.toggle("hidden", pre.panel !== "plant");
-            document.getElementById("panelRock").classList.toggle("hidden", pre.panel !== "rock");
-            setSliders(pre);
+            sitz.schritt(() => {
+                artSetzen(b.dataset.p);
+                const pre = PRESETS[CURRENT];
+                (dialPanel(pre) === "rock" ? reglerFels : reglerPflanze).setzen(pre.s, true);
+            });
             build();
         })
     );
-    ["sApi", "sDelta", "sSlim", "sTrop", "sLeaf", "rGen", "rSph", "rElo", "rRnd", "rRgh", "rStr"].forEach((id) => {
-        const el = document.getElementById(id);
-        if (!el) return;
-        el.addEventListener("input", () => {
-            refreshVals();
-            debouncedBuild();
-        });
-    });
     document.querySelectorAll("#ui [data-w]").forEach((b) =>
         b.addEventListener("click", () => {
             document.querySelectorAll("#ui [data-w]").forEach((x) => x.classList.remove("active"));
@@ -4721,37 +4411,12 @@ function wireUI() {
             const m = { spring: 0.0, summer: 0.25, autumn: 0.5, winter: 0.75 };
             WSEASON = b.dataset.s in m ? m[b.dataset.s] : 0.25;
             _lastSeasonBuild = WSEASON;
-            if (_seasonSlider) _seasonSlider.value = WSEASON;
-            if (_seasonVal) _seasonVal.textContent = SEASON_NAMES[Math.floor(WSEASON * 8) % 8];
+            welteZeigen();
             worldRebuild();
         })
     );
-    // ===== WELT-Steuerung: Tageszeit / Wetter / Jahreszeit + Autoplay =====
+    // ===== WELT-Steuerung: Autoplay von Zeit, Jahr und Wetter (die Regler baut die Hülle) =====
     (function () {
-        const ts = document.getElementById("wTime"),
-            tv = document.getElementById("wTimeV");
-        if (ts) {
-            _timeSlider = ts;
-            _timeVal = tv;
-            ts.addEventListener("input", () => {
-                WTIME = parseFloat(ts.value);
-                if (tv) tv.textContent = fmtHM(WTIME);
-            });
-        }
-        const ssl = document.getElementById("wSeason"),
-            sv = document.getElementById("wSeasonV");
-        if (ssl) {
-            _seasonSlider = ssl;
-            _seasonVal = sv;
-            ssl.addEventListener("input", () => {
-                WSEASON = parseFloat(ssl.value);
-                if (sv) sv.textContent = SEASON_NAMES[Math.floor((((WSEASON % 1) + 1) % 1) * 8) % 8];
-            });
-            ssl.addEventListener("change", () => {
-                _lastSeasonBuild = WSEASON;
-                worldRebuild();
-            });
-        }
         const pb = document.getElementById("wPlay");
         if (pb)
             pb.addEventListener("click", () => {
@@ -4816,9 +4481,11 @@ function wireUI() {
     document.querySelectorAll("#ui [data-x]").forEach((b) =>
         b.addEventListener("click", () => {
             if (b.dataset.x === "seed") {
-                SEED = Math.floor(Math.random() * 1e6);
-                if (forestMode) rebuildForestInPlace();
-                else build();
+                sitz.schritt(() => {
+                    SEED = Math.floor(Math.random() * 1e6);
+                    sitz.seedSetzen(SEED, true);
+                });
+                neuBauen();
             } else if (b.dataset.x === "dice") {
                 diceAll();
             } else {
@@ -4827,28 +4494,16 @@ function wireUI() {
             }
         })
     );
-    refreshVals();
 }
 init();
 
 /* ==========================================================================
-   AnazhRealm-PORTAL-BRÜCKE (W12-Protokoll) — der Welt-Adapter.
-   Phytogenesis kennt AnazhRealm nicht; diese Brücke übersetzt DSL-Wörter
-   in die ECHTEN UI-Pfade der Welt (Button-Klicks — eine Quelle, kein
-   Parallel-Pfad) und trägt enter/ready/exit/event über postMessage.
+   AnazhRealm-PORTAL-BRÜCKE (W12-Protokoll) — die EINE Brücke der Hülle (AnazhHuelle.bruecke, K47).
+   Phytogenesis kennt AnazhRealm nicht; die Wörter gehen in die ECHTEN UI-Pfade der Welt (Knopf-Klicks — eine Quelle, kein
+   Parallel-Pfad), ready meldet die Hülle aus ./manifest.json, jede andere Nachricht der Heimat (die Asset-Kanäle) beantwortet
+   die Foundry-Brücke (foundryKanal, foundry-bruecke.js) — im Labor-Fenster dieselbe Funktion wie im Worker.
    ========================================================================== */
 (() => {
-    // DUAL-TRANSPORT (der P0/P2-Weg zu foundry-core): DIESELBE Brücke antwortet im iframe
-    // (window.parent.postMessage) UND im Worker (self.postMessage) — EIN Protokoll, kein zweiter Pfad.
-    const __post =
-        typeof window !== "undefined"
-            ? (p) => {
-                  if (window.parent && window.parent !== window) window.parent.postMessage(p, "*");
-              }
-            : (p) => self.postMessage(p);
-    function sendEvent(text) {
-        __post({ type: "event", text: String(text) });
-    }
     function clickBtn(sel) {
         const b = document.querySelector(sel);
         if (b) {
@@ -4857,905 +4512,47 @@ init();
         }
         return false;
     }
-    // DSL-Wort → UI-Pfad. Die Presets tragen ihren eigenen Namen; Wetter/
-    // Jahreszeit/Tageszeit sprechen die eigene Sprache der Welt (KEIN
+    // Die Presets tragen ihren eigenen Namen; Wetter/Jahreszeit/Tageszeit sprechen die eigene Sprache der Welt (KEIN
     // skybox_color-Fake: den Himmel führt hier das Tag/Nacht-System).
     const WX = { klar: 1, bewoelkt: 1, nebel: 1, sturm: 1 };
     const SEASONS = { fruehling: "spring", sommer: "summer", herbst: "autumn", winter: "winter" };
-    function applyDsl(program) {
-        if (!Array.isArray(program) || typeof program[0] !== "string") return;
-        const op = program[0];
-        if (op === "chain") {
-            for (let i = 1; i < program.length; i++) applyDsl(program[i]);
-            return;
-        }
-        try {
-            if (Object.prototype.hasOwnProperty.call(PRESETS, op)) {
-                if (clickBtn(String.fromCharCode(35) + 'ui [data-p="' + op + '"]'))
-                    sendEvent("Im Morphologie-Labor wuchs: " + op + ".");
-            } else if (op === "wald") {
-                if (!forestMode) {
-                    enterForest();
-                    sendEvent("Der Wald der Phytogenesis-Welt wurde betreten.");
+    const B = AnazhHuelle.bruecke({
+        welt: "terrain",
+        manifest: true,
+        wort: (op) => {
+            try {
+                if (Object.prototype.hasOwnProperty.call(PRESETS, op)) {
+                    if (clickBtn('#ui [data-p="' + op + '"]')) B.ereignis("Im Morphologie-Labor wuchs: " + op + ".");
+                } else if (op === "wald") {
+                    if (!forestMode) {
+                        enterForest();
+                        B.ereignis("Der Wald der Phytogenesis-Welt wurde betreten.");
+                    }
+                } else if (SEASONS[op]) {
+                    if (clickBtn('#ui [data-s="' + SEASONS[op] + '"]')) B.ereignis("Die Jahreszeit wandelte sich: " + op + ".");
+                } else if (WX[op]) {
+                    if (clickBtn('#ui [data-wx="' + op + '"]')) B.ereignis("Das Wetter wandelte sich: " + op + ".");
+                } else if (op === "tag" || op === "nacht") {
+                    WTIME = op === "tag" ? 11 : 23;
+                    welteZeigen();
+                    B.ereignis(op === "tag" ? "Die Sonne stieg über das Labor." : "Die Nacht legte sich über das Labor.");
+                } else if (op === "neu") {
+                    if (clickBtn('#ui [data-x="seed"]')) B.ereignis("Eine neue Saat keimte im Morphologie-Labor.");
                 }
-            } else if (SEASONS[op]) {
-                if (clickBtn(String.fromCharCode(35) + 'ui [data-s="' + SEASONS[op] + '"]'))
-                    sendEvent("Die Jahreszeit wandelte sich: " + op + ".");
-            } else if (WX[op]) {
-                if (clickBtn(String.fromCharCode(35) + 'ui [data-wx="' + op + '"]'))
-                    sendEvent("Das Wetter wandelte sich: " + op + ".");
-            } else if (op === "tag" || op === "nacht") {
-                WTIME = op === "tag" ? 11 : 23;
-                const ts = document.getElementById("wTime");
-                if (ts) ts.value = WTIME;
-                const tv = document.getElementById("wTimeV");
-                if (tv) tv.textContent = fmtHM(WTIME);
-                sendEvent(op === "tag" ? "Die Sonne stieg über das Labor." : "Die Nacht legte sich über das Labor.");
-            } else if (op === "neu") {
-                SEED = Math.floor(Math.random() * 1e6);
-                if (forestMode) rebuildForestInPlace();
-                else build();
-                sendEvent("Eine neue Saat keimte im Morphologie-Labor.");
+            } catch (err) {
+                console.warn("Phytogenesis-Portal: Befehl fehlgeschlagen —", err && err.message);
             }
-        } catch (err) {
-            console.warn("Phytogenesis-Portal: Befehl fehlgeschlagen —", err && err.message);
-        }
-    }
-    function __portalOnMessage(msg) {
-        if (!msg || typeof msg !== "object") return;
-        if (msg.type === "enter") {
-            const avatar = msg.avatar && typeof msg.avatar === "object" ? msg.avatar : {};
+        },
+        enter: (avatar) => {
             const name = typeof avatar.name === "string" && avatar.name ? avatar.name : "Reisender";
             const el = document.getElementById("avatar-name");
             // W13 V2 — der Vibe-Pass trägt die Identität des Reisenden mit.
             if (el) el.textContent = avatar.fingerprint ? name + " · " + avatar.fingerprint : name;
-        } else if (msg.type === "dsl") {
-            applyDsl(msg.program);
-        } else if (msg.type === "build-asset") {
-            // DER ASSET-KANAL: AnazhRealm fragt einen fertigen Baum/Pflanze an, die
-            // Vorlage laeuft ihr ECHTES buildInstance (Skelett+Rinde+Blaetter+Wurzeln, das
-            // eigene LOD), und schickt die reine Geometrie (engine-neutrale Float32-Puffer)
-            // als transferable zurueck. AnazhRealm pflanzt sie 1:1 — kein Nachbau, kein
-            // Sezieren; die Vorlage-Datei IST der Samen (ein Edit hier -> andere Assets).
-            __replyBuildAsset(msg);
-        } else if (msg.type === "bake-impostor") {
-            // DER BILLBOARD-KANAL (L2): AnazhRealm fragt die FERNSTUFE eines Baums an. Die Vorlage
-            // laeuft ihren EIGENEN Baecker `bakeImpostorAtlas` (8-Winkel-RTT, Normal-Atlas, per-Art-
-            // Rahmen, Dilation) offscreen und schickt die fertigen Atlas-Pixel + Rahmen zurueck.
-            // KEIN Nachbau in AnazhRealm: editiert der Schoepfer den Baecker/Shader/das Framing hier,
-            // fliesst es automatisch in die AnazhRealm-Ferne. Der Studio-Baecker IST die Fernstufe.
-            __replyBakeImpostor(msg);
-        } else if (msg.type === "render-native") {
-            // DER VERGLEICHS-KANAL: das Studio rendert EIN Asset mit SEINEN ECHTEN Materialien
-            // (barkMat/foliageMat/rockMat…) offscreen + schickt die Pixel + die Kamera zurueck.
-            // AnazhRealm rendert dasselbe Asset durch seine Pipeline mit DERSELBEN Kamera → Bild-
-            // Vergleich Seite an Seite (muessen identisch aussehen). Der ehrliche Beweis.
-            __replyRenderNative(msg);
-        } else if (msg.type === "get-book") {
-            // SYNERGIE-WELLE — DER EINE UMSCHLAG: das Studio exportiert sein KOMPLETTES Buch
-            // (Rezepte + B4-Regler-Tabellen + Welt-Palette + Wahrnehmungs-Config) in EINEM
-            // Reply. Die drei Einzel-Kanaele (get-recipes/get-world-params/get-render-config)
-            // sind GEFALLEN (Abschied, kein Parallelpfad): EIN Roundtrip, EIN Reply-Zweig,
-            // EIN Ingest-Chokepoint am Host (_foundryIngestBook). Ein Edit an PRESETS/
-            // PORTAL_GROUND/PORTAL_RENDER_CONFIG hier fliesst automatisch mit; die Geometrie-
-            // Erzeugung bleibt im Studio (build-asset — der on-demand-Kanal).
-            __replyBook(msg);
-        } else if (msg.type === "export-settlement") {
-            // DER SETTLEMENT-KANAL (N5.7, W-A5b): der Host fragt eine Siedlung als reine
-            // DATEN an (Slots + benannte Schichten). GENERISCH wie exportDrive (N6.2):
-            // der ERSTE Manifest-Kern mit einer exportSettlement-Formel antwortet — kein
-            // Kern-spezifisches Literal (M8: Tabelle vor if). Fail-soft: kein Kern/Fehler
-            // -> plan null, der Host behandelt das geschlossen.
-            __replySettlement(msg);
-        }
-    }
-    function __replySettlement(msg) {
-        let plan = null;
-        try {
-            for (const zk of __zweitKerne()) {
-                if (typeof zk.kern.exportSettlement === "function") {
-                    plan = zk.kern.exportSettlement(msg && msg.dp);
-                    break;
-                }
-            }
-        } catch (_e) {
-            plan = null;
-        }
-        if (typeof window === "undefined" || (window.parent && window.parent !== window)) {
-            __post({ type: "settlement", world: "terrain", reqId: msg && msg.reqId, plan }, "*");
-        }
-    }
-    // SPIEGEL-ZENSUS 17.07. — DAS SIEDLUNGS-EXISTENZ-GESETZ reist im Buch-
-    // Umschlag: GENERISCH wie __replySettlement (M8, kein Kern-Literal) liefert
-    // der ERSTE Manifest-Kern mit einer SIEDLUNG-Daten-Zeile (fachwerk-core:
-    // cellM/rarity/nHMin/nHSpan/slopeMax) das WO/WIEVIEL der
-    // Doerfer. Reine JSON-Daten; kein Kern -> null (der Host bleibt byte-alt).
-    function __zweitKernSiedlung() {
-        try {
-            for (const zk of __zweitKerne()) {
-                if (zk.kern && zk.kern.SIEDLUNG && typeof zk.kern.SIEDLUNG === "object") return zk.kern.SIEDLUNG;
-            }
-        } catch (_e) {}
-        return null;
-    }
-    if (typeof window !== "undefined") {
-        window.addEventListener("message", (event) => {
-            if (event.source !== window.parent) return;
-            __portalOnMessage(event.data);
-        });
-    } else if (typeof self !== "undefined") {
-        self.onmessage = (event) => __portalOnMessage(event && event.data);
-    }
-    // SYNERGIE-WELLE — DIE DREI PAYLOAD-QUELLEN (Welt-Palette · Wahrnehmung · Buch)
-    // liefern reine Daten; der EINE Umschlag (__replyBook / Kanal "get-book") traegt
-    // sie in EINEM Roundtrip. Die drei Einzel-Kanaele (get-recipes/get-world-params/
-    // get-render-config) sind GEFALLEN (Abschied, kein Parallelpfad — Host + Gates
-    // fragen den Umschlag).
-    function __worldParamsPayload() {
-        // Reine Daten (JSON-klonbar): NUR die Werte, die AnazhRealm auch LIEST (kein toter Passagier).
-        // Die Boden-Palette reist NICHT mehr hier: AnazhRealm liest PORTAL_GROUND synchron im Terrain-Namensraum
-        // (__terrainCore.PORTAL_GROUND, foundry-core) — der Voxel-Worker braucht sie vor dem ersten Chunk.
-        const params = {
-            // ATMOSPHAERE-ANKER (Mittag): Himmel-Top + Sonnenfarbe. AnazhRealms Tag/Nacht-Zyklus
-            // animiert den Rest; NUR der Mittags-Stop folgt dem Studio (additiv, kein Einfrieren).
-            sky: { top: PORTAL_SKY.top, sun: PORTAL_SKY.sun },
-        };
-        return params;
-    }
-    // N2 (Nervensystem-Plan, „Runtime = Validator") — DIE GENERISCHE ZWEIT-KERN-LISTE: der
-    // Foundry-Worker injiziert self.__anazhCores (= cores.manifest.json) VOR den importScripts;
-    // die Bruecke liest daraus alle Kerne mit eigenem Namensraum (ns != null; das ns-Global via
-    // self[ns]) — kein Kern-spezifisches ns-Literal mehr (M8: Tabelle vor if). Ein dritter Kern
-    // ist eine Manifest-Zeile, keine Bruecken-Zeile. Fehlt self.__anazhCores (die Portal-FENSTER-
-    // Instanz laedt keine Kerne), ist die Liste leer — byte-gleich zum Verhalten ohne Zweit-Kern.
-    function __zweitKerne() {
-        const out = [];
-        try {
-            const cores = typeof self !== "undefined" && Array.isArray(self.__anazhCores) ? self.__anazhCores : [];
-            for (let i = 0; i < cores.length; i++) {
-                const c = cores[i];
-                if (!c || typeof c.ns !== "string" || !c.ns) continue;
-                const kern = self[c.ns];
-                if (kern && typeof kern === "object")
-                    out.push({ id: typeof c.id === "string" && c.id ? c.id : c.ns, kern });
-            }
-        } catch (_e) {}
-        return out;
-    }
-    function __renderConfigPayload() {
-        // Reine Daten (JSON-klonbar) — die EINE Wahrnehmungs-Quelle (PORTAL_RENDER_CONFIG). Tiefe Kopie,
-        // damit der Empfaenger nichts am Studio-Objekt mutiert.
-        const c = PORTAL_RENDER_CONFIG;
-        const cfg = {
-            sight: c.sight,
-            fogNearMul: c.fogNearMul,
-            camFarPad: c.camFarPad,
-            // kindStages (LOD-WURZEL 08.07.): die Stufen-Wahrheit je Art als DATEN — welche
-            // buildInstance-Stufen eine Art traegt+nutzt (Baum/Strauch [0,1,2] · Gras [1,2]
-            // zweistufig · Blume [0,2] · Fels einstufig). Der Empfaenger clampt seine Distanz-Wahl
-            // auf die naechste verfuegbare Stufe (tiefe Kopie, JSON-klonbar).
-            lod: {
-                d0: c.lod.d0,
-                d1: c.lod.d1,
-                fade: c.lod.fade,
-                fade0: c.lod.fade0,
-                ref: c.lod.ref,
-                hyst: c.lod.hyst,
-                kindStages: c.lod.kindStages ? JSON.parse(JSON.stringify(c.lod.kindStages)) : undefined,
-                // DAS BUDGET je Art × Stufe reist mit (04.10.) — ohne diese Zeile fiele es auf dem Weg zum
-                // Host still weg (die Whitelist kopiert feldweise).
-                budget: c.lod.budget ? JSON.parse(JSON.stringify(c.lod.budget)) : undefined,
-            },
-            density: {
-                cell: c.density.cell,
-                pack: c.density.pack,
-                dartsPerM2: c.density.dartsPerM2,
-                crown: Object.assign({}, c.density.crown),
-            },
-            understory: {
-                grassStep: c.understory.grassStep,
-                flowerStep: c.understory.flowerStep,
-                bushStep: c.understory.bushStep,
-            },
-            // NERVENSYSTEM — die Platzierungs-Daten (Welt-Skalen je Preset + Baum-Mul + Streu-
-            // Seltenheit) fliessen als reine Zahlen: AnazhRealm liest sie LIVE statt eines
-            // hartkodierten Spiegels. Ein neues Asset = eine scale-Zeile in foundry-core.
-            // Der Bäcker-Spec (Studio-Vertrag B2): Blickwinkel + Zell-Maße des Impostor-Atlas —
-            // AnazhRealms RTT-Bäcker liest DIESELBEN Zahlen wie bakeImpostorAtlas hier.
-            impostor: c.impostor
-                ? { views: c.impostor.views, cellW: c.impostor.cellW, cellH: c.impostor.cellH }
-                : undefined,
-            placement: c.placement
-                ? {
-                      treeScaleMul: c.placement.treeScaleMul,
-                      scale: Object.assign({}, c.placement.scale),
-                      rarity: Object.assign({}, c.placement.rarity),
-                      // Das Boden-Gesetz (Waldboden 04.10.) reist mit — die Nah-Streu und die Fern-Schicht der Welt
-                      // lesen DIESELBEN Zeilen wie der Labor-Wald (ohne diese Zeile fiele es still weg).
-                      boden: c.placement.boden ? JSON.parse(JSON.stringify(c.placement.boden)) : undefined,
-                  }
-                : null,
-        };
-        // W7b/N2 (Studio-Vertrag v1.1 N7.5 + Nervensystem-Plan) — die kindStages-Bloecke der
-        // ZWEIT-KERNE reisen SEPARAT (je Kern ein Block unter cfg.lod.zusatzKindStages[<id>],
-        // GENERISCH aus der Manifest-Schleife): der EMPFAENGER mergt am EINEN Ingest-Chokepoint
-        // (_foundryIngestRenderConfig), ein Kern ueberschreibt nie den Block eines anderen.
-        // must-ignore-fest: ein v1-only-Leser ignoriert das Zusatz-Feld schlicht.
-        // W8 — DAS BUDGET DER ZWEIT-KERNE reist auf demselben Weg (je Kern sein lod.budget — Zeilen je Art und
-        // Gestalten je Rezept — unter cfg.lod.zusatzBudget[<id>]): die Whitelist kopiert feldweise, ohne diese
-        // Zeilen fiele es still weg. Der Empfaenger mergt NUR in _foundryIngestRenderConfig (phyto-core kerneVereinen).
-        try {
-            for (const zk of __zweitKerne()) {
-                const prc = zk.kern.PORTAL_RENDER_CONFIG;
-                const ks = prc && prc.lod ? prc.lod.kindStages : null;
-                if (!ks || !cfg.lod) continue;
-                if (!cfg.lod.zusatzKindStages) cfg.lod.zusatzKindStages = {};
-                cfg.lod.zusatzKindStages[zk.id] = JSON.parse(JSON.stringify(ks));
-                if (prc.lod.budget) {
-                    if (!cfg.lod.zusatzBudget) cfg.lod.zusatzBudget = {};
-                    cfg.lod.zusatzBudget[zk.id] = JSON.parse(JSON.stringify(prc.lod.budget));
-                }
-            }
-        } catch (_e) {}
-        return cfg;
-    }
-    function __bookPayload() {
-        const book = {};
-        try {
-            for (const id in PRESETS) {
-                if (!Object.prototype.hasOwnProperty.call(PRESETS, id)) continue;
-                const p = PRESETS[id];
-                if (!p || typeof p !== "object") continue;
-                // Reine Daten (JSON-klonbar): kind/panel + die Regler `s` + die Material/Form `fx` + die Phänotyp-Zeile
-                // `ph` der Art (K24: Rinde, Laub, Nadel und Krone eines Baums sind phyto-core artPhaenotyp(s, Art)).
-                book[id] = { kind: p.kind, panel: p.panel, s: Object.assign({}, p.s), fx: Object.assign({}, p.fx) };
-                if (p.ph) book[id].ph = Object.assign({}, p.ph);
-            }
-        } catch (_e) {}
-        // W7b/N2 (Studio-Vertrag v1.1 N7.2 + Nervensystem-Plan) — die ZWEIT-KERN-REZEPTE reisen im
-        // SELBEN Buch: jeder Manifest-Kern mit eigenem Namensraum traegt seine Presets bei (die
-        // GENERISCHE Schleife, kein Kern-spezifisches if). Disjunkt first-wins: ein spaeterer Kern
-        // ueberschreibt NIE einen Eintrag eines frueheren (N7.5-Geist); `lab` reist mit. Ohne
-        // Kerne (Portal-Fenster laedt kein Manifest): No-op, das Buch bleibt byte-gleich.
-        try {
-            for (const zk of __zweitKerne()) {
-                const P = zk.kern.PRESETS;
-                if (!P) continue;
-                for (const id in P) {
-                    if (!Object.prototype.hasOwnProperty.call(P, id) || book[id]) continue;
-                    const p = P[id];
-                    if (!p || typeof p !== "object") continue;
-                    book[id] = {
-                        kind: p.kind,
-                        panel: p.panel || zk.id,
-                        lab: typeof p.lab === "string" ? p.lab : undefined,
-                        s: Object.assign({}, p.s),
-                        fx: Object.assign({}, p.fx),
-                    };
-                    // N6.2 (Nervensystem Phase δ, Woerterbuch v1 `drive`) — DIE FAHR-FORMEL
-                    // REIST ALS DATEN: traegt der Kern die EINE Export-Formel (exportDrive —
-                    // dieselben Gesetze wie die Probefahrt: carPhys + FAHR + Federrate),
-                    // rechnet die BRUECKE das fahrprofil BEIM BUCH-BAU statt es statisch in
-                    // die PRESETS einzufrieren (Gesetz #0: ein Schoepfer-Edit an carPhys
-                    // fliesst beim naechsten Buch-Bau automatisch mit, kein Duplikat).
-                    // s+fx ist exakt der buildInstance-Merge-Schwanz (der Kern mergt intern
-                    // DEFAULT_P+BASE_P davor — die eine Merge-Ordnung). must-ignore: ein
-                    // Alt-Leser ohne fahrprofil-Steckplatz ignoriert das Feld schlicht.
-                    if (typeof zk.kern.exportDrive === "function") {
-                        try {
-                            const fp = zk.kern.exportDrive(Object.assign({}, p.s, p.fx));
-                            if (fp && typeof fp === "object") book[id].fx.fahrprofil = fp;
-                        } catch (_e3) {}
-                    }
-                }
-            }
-        } catch (_e2) {}
-        // W-A1 (Katalysator-Bogen §5, „regelbar, alle Assets") — DIE B4-REGLER-TABELLEN REISEN
-        // MIT DEM BUCH: jeder Manifest-Kern mit PARAMS-Array traegt seine Regler-Tabelle unter
-        // paramsByKind[<kind>] bei (kind aus dem ERSTEN Rezept des Kerns; disjunkt first-wins
-        // wie das Buch). NUR JSON-klonbare Felder reisen (id/lab/min/max/step/def/law/grp,
-        // fail-soft gefiltert) — der Empfaenger rendert seine Werkstatt-Slider AUS diesen
-        // Daten, kein UI-Hardcode je Domaene. must-ignore-billig: ein Alt-Empfaenger ohne
-        // paramsByKind-Steckplatz ignoriert das Feld schlicht.
-        const paramsByKind = {};
-        const __paramRows = (PA) => {
-            const rows = [];
-            for (let i = 0; i < PA.length; i++) {
-                const d = PA[i];
-                if (!d || typeof d.id !== "string" || !d.id) continue;
-                const row = { id: d.id };
-                if (typeof d.lab === "string" && d.lab) row.lab = d.lab;
-                if (typeof d.min === "number" && isFinite(d.min)) row.min = d.min;
-                if (typeof d.max === "number" && isFinite(d.max)) row.max = d.max;
-                if (typeof d.step === "number" && isFinite(d.step)) row.step = d.step;
-                if (typeof d.def === "number" && isFinite(d.def)) row.def = d.def;
-                if (typeof d.law === "string" && d.law) row.law = d.law;
-                if (typeof d.grp === "string" && d.grp) row.grp = d.grp;
-                rows.push(row);
-            }
-            return rows;
-        };
-        // SYNERGIE-WELLE — DIE EINE B4-FORM: JEDER Kern (Primaer-Kern foundry-core wie
-        // jeder Zweit-Kern) exportiert seine Regler-Tabellen als MAP `PARAMS_BY_KIND`
-        // ({ <kind>: rows }) — auch Ein-Kind-Kerne. Der alte flache PARAMS-Zweig (kind
-        // implizit aus dem ersten Rezept geraten) ist GEFALLEN (Abschied, kein
-        // Parallelpfad): EIN Export-Dialekt, EINE Assembly-Schleife, erste Quelle
-        // gewinnt je kind (wie das Buch, must-ignore-billig).
-        const __mergeParamsMap = (map) => {
-            if (!map || typeof map !== "object") return;
-            for (const kind in map) {
-                if (!Object.prototype.hasOwnProperty.call(map, kind)) continue;
-                if (paramsByKind[kind] || !Array.isArray(map[kind])) continue;
-                const rows = __paramRows(map[kind]);
-                if (rows.length) paramsByKind[kind] = rows;
-            }
-        };
-        try {
-            for (const zk of __zweitKerne()) __mergeParamsMap(zk.kern.PARAMS_BY_KIND);
-        } catch (_e4) {}
-        try {
-            if (typeof PARAMS_BY_KIND === "object") __mergeParamsMap(PARAMS_BY_KIND);
-        } catch (_e5) {}
-        return { book, paramsByKind };
-    }
-    // SYNERGIE-WELLE — DER EINE UMSCHLAG: das komplette Studio-Buch (Rezepte +
-    // Regler-Tabellen + Welt-Palette + Wahrnehmungs-Config) in EINEM Reply — der
-    // Host (und jedes Gate) fragt EINEN Kanal statt drei.
-    function __replyBook(msg) {
-        const bp = __bookPayload();
-        if (typeof window === "undefined" || (window.parent && window.parent !== window)) {
-            __post(
-                {
-                    type: "book",
-                    world: "terrain",
-                    reqId: msg && msg.reqId,
-                    book: bp.book,
-                    paramsByKind: bp.paramsByKind,
-                    worldParams: __worldParamsPayload(),
-                    renderConfig: __renderConfigPayload(),
-                    // SPIEGEL-ZENSUS 17.07. — das Siedlungs-Existenz-Gesetz
-                    // (fachwerk SIEDLUNG) reist additiv mit; ein Alt-Empfaenger
-                    // ohne den Steckplatz ignoriert das Feld (must-ignore).
-                    siedlung: __zweitKernSiedlung(),
-                    // DER EINE BLATT-ATLAS reist als Bild (S7): der Worker malt ihn (OffscreenCanvas) samt Mip-Kette,
-                    // die Transport-Schale gibt die Puffer per Transfer weiter — der Haupt-Thread malt und mippt nie
-                    // (kalt ~125 ms im Haupt-Thread, mit GPU-Leinwand ~450 ms).
-                    blattAtlas:
-                        typeof window === "undefined"
-                            ? self.__phytoCore.bakeLeafAtlasBild({ createElement: () => __mkCanvas(1, 1) })
-                            : undefined,
-                },
-                "*"
-            );
-        }
-    }
-    // Ein Mesh der Instanz -> {kind, + alle Vertex-Attribute als Float32/Uint32}. REIN
-    // lesend (buildInstance/emitTree unveraendert). kind aus dem Material-Zeiger.
-    function __assetMaterialKind(mat) {
-        if (!mat) return "unknown";
-        if (mat === barkMat || mat === barkMatBirch) return "bark";
-        if (mat === foliageMatTex) return "foliageTex";
-        if (mat === foliageMat) return "foliage";
-        if (mat === grassMat) return "grass";
-        if (typeof stemMat !== "undefined" && mat === stemMat) return "stem";
-        if (typeof schattenMat !== "undefined" && mat === schattenMat) return "schatten";
-        // DER EINE SCHATTEN-STOFF eines Zweit-Kerns (S3: die Stufe 3 von Haus und Ausstattung, fachwerk `wurfStoff`, gestempelt
-        // `userData.__stoff = "schatten"`) — dieselbe Material-Identität wie der Schatten-Teil der Baum-L1.
-        if (mat.userData && mat.userData.__stoff === "schatten") return "schatten";
-        return "unknown";
-    }
-    function __extractAssetMesh(mesh, zweitKern, basisInv) {
-        const geo = mesh.geometry;
-        if (!geo || !geo.attributes || !geo.attributes.position) return null;
-        const out = { kind: __assetMaterialKind(mesh.material) };
-        // DIE LOOK-KLASSE REIST MIT (30.09., additiv, must-ignore): Kreatur-/Mensch-Bäcker stempeln
-        // material.userData.__klasse (fell · fellSchale · straehne* · skin · haut · hair) — der Welt-Weber webt fuer
-        // GENAU diese Namen FELL_LOOK/HAUT_LOOK/HAAR_LOOK. Pflanzen-Materialien tragen das Feld nie
-        // (ihre Replies bleiben byte-alt, gate:asset-contract).
-        const __kl = mesh.material && mesh.material.userData && mesh.material.userData.__klasse;
-        // Die EINE Look-Liste lebt im Budget-Gesetz (phyto-core LOOK_KLASSEN) — Ofen und Wirt lesen dieselbe.
-        if (out.kind === "unknown" && typeof __kl === "string" && (typeof self !== "undefined" ? self : globalThis).__phytoCore.budgetLook(__kl))
-            out.kind = __kl;
-        // DIE EINE PIPE: das animierte Gelenk des Meshes reist mit (Kreatur-Assets;
-        // Pflanzen tragen das Feld nie — additiv, must-ignore).
-        if (mesh.userData && mesh.userData.__assetJoint) out.joint = mesh.userData.__assetJoint;
-        // DER SCHATTEN-TEIL REIST MIT (S3, 09.10., additiv, must-ignore): die Baum-L1 liefert ihren Wurf als eigenes Teil
-        // (foundry-core tree[1].wurf, `teil: "schatten"`, Attribut aDeckt) — der Wirt zeichnet es nur in den Kaskaden.
-        // Andere Teile tragen das Feld nie (ihre Replies bleiben byte-alt). Der drawRange-Vorsatz (`wurf`) ist gefallen.
-        if (mesh.userData && typeof mesh.userData.__teil === "string") out.teil = mesh.userData.__teil;
-        // V18.465 — DIE TÜR REIST MIT (additiv, must-ignore): ein Tor-Flügel-Mesh
-        // (porta-core buildGate: leafL/R/LB/RB tragen userData.side + die Hinge-
-        // Position der Gruppe) bekommt sein Scharnier als DATEN — die Welt baut
-        // daraus die Flügel-Animation (Rotation um die Hinge-Achse auf den GEBACKENEN
-        // Geschlossen-Pose-Vertices). Pflanzen/Fahrzeuge tragen das Feld nie.
-        for (let anc = mesh.parent; anc; anc = anc.parent) {
-            if (anc.userData && typeof anc.userData.side === "number") {
-                out.tuer = { seite: anc.userData.side, hx: anc.position.x, zf: anc.position.z };
-                // DORF-ERLEBNIS (17.07., additiv, must-ignore): fachwerk-Haustür-
-                // Flügel reisen mit ihrer GEBACKENEN Offen-Pose (userData.offen,
-                // buildStufe-Separation) — der Host schliesst/öffnet relativ dazu.
-                // porta-Tore tragen das Feld nie → deren Replies bleiben byte-alt.
-                if (typeof anc.userData.offen === "number" && anc.userData.offen !== 0)
-                    out.tuer.offen = anc.userData.offen;
-                break;
-            }
-        }
-        // DIE MATERIAL-REGLER FLIESSEN MIT (einspeisung der regler): die echten MeshStandard-Parameter
-        // dieses Materials als reine Daten -> AnazhRealm baut EXAKT dasselbe Material. Fels matt,
-        // Kristall glaenzend+facettiert (flatShading), Gras env-gedaempft — alles OHNE hartkodiertes
-        // per-kind-Raten in AnazhRealm. Editiert der Schoepfer eine Roughness/Metalness hier, folgt es.
-        const mat = mesh.material;
-        if (mat) {
-            out.mat = {
-                roughness: typeof mat.roughness === "number" ? mat.roughness : 0.7,
-                metalness: typeof mat.metalness === "number" ? mat.metalness : 0,
-                flatShading: !!mat.flatShading,
-                envMapIntensity: typeof mat.envMapIntensity === "number" ? mat.envMapIntensity : 1,
-                side: typeof mat.side === "number" ? mat.side : 0, // 0 Front · 1 Back · 2 Double
-                alphaTest: typeof mat.alphaTest === "number" ? mat.alphaTest : 0,
-                hasNormalMap: !!mat.normalMap,
-            };
-            // W7b — die MATERIAL-FARBE reist additiv mit (must-ignore fuer Alt-Leser), aber NUR
-            // fuer ZWEIT-KERN-Meshes (der Dispatch-Flag, NICHT der Material-kind: Fels/Kristall
-            // sind ebenfalls kind "unknown" und leben byte-exakt in den v1-Asset-Goldens —
-            // gate:asset-contract, 52 sha256 ueber den Reply, gemessen). Fahrzeug-Materialien
-            // (paint/glass/clay) sind uniform ohne Vertex-Colors; der Empfaenger
-            // (_foundryBuildGroup) fuellt daraus das color-Attribut. Die Komponenten sind LINEAR:
-            // das Gesetzbuch rechnet sein Paletten-Hex (sRGB-Absicht) selbst um (das FARB-GESETZ,
-            // W5: vehicle-core/schmiede-core `stoffFarbe`, fachwerk `_lin`), die Bruecke reicht sie roh.
-            if (zweitKern && mat.color && typeof mat.color.r === "number")
-                out.mat.color = [mat.color.r, mat.color.g, mat.color.b];
-            // DIE EINE PIPE: Emissiv reist NUR wenn nicht-schwarz (additiv, must-ignore;
-            // Pflanzen/Fahrzeuge tragen schwarz → Feld fehlt → Replies byte-gleich).
-            if (zweitKern && mat.userData && mat.userData.__webe) out.mat.webe = mat.userData.__webe;
-            // DIE SEH-KLASSE reist mit (Integration W8, must-ignore): was der Stoff dem AUGE ist (auge · glas · metall ·
-            // haar · haut · glut · stoff), gestempelt vom Gesetzbuch (material.userData.__seh) — das Budget-Gesetz faltet
-            // nur innerhalb EINER. Pflanzen tragen das Feld nie (ihre Replies bleiben byte-alt, gate:asset-contract).
-            if (zweitKern && mat.userData && typeof mat.userData.__seh === "string") out.mat.seh = mat.userData.__seh;
-            // DAS LEUCHT-GESETZ reist mit (Architektur-Welle 05.10., must-ignore): ein Stoff, der in seiner Vertex-Farbe
-            // leuchtet (fachwerk `feuer`: Glut, Flamme, Herdfeuer), trägt die Stärke — die Welt webt emissiveNode = Farbe ×
-            // leucht. Stoffe ohne das Feld (Pflanzen, jede andere Glut) bleiben byte-alt.
-            if (zweitKern && mat.userData && typeof mat.userData.__leucht === "number") out.mat.leucht = mat.userData.__leucht;
-            // DAS LEUCHTQUELLEN-GESETZ reist mit (K11, must-ignore): ein Stoff, der nach einem Zeitplan glüht (fachwerk `glas`:
-            // das wache Fenster), trägt den Namen seines Emitter-Datums (LICHT_GESETZ) — die Welt webt ihm die Glut der Tageszeit.
-            if (zweitKern && mat.userData && typeof mat.userData.__licht === "string") out.mat.licht = mat.userData.__licht;
-            if (zweitKern && mat.emissive && (mat.emissive.r || mat.emissive.g || mat.emissive.b)) {
-                out.mat.emissive = [mat.emissive.r, mat.emissive.g, mat.emissive.b];
-                out.mat.emissiveIntensity = typeof mat.emissiveIntensity === "number" ? mat.emissiveIntensity : 1;
-            }
-            // DER KLARLACK UND DIE DURCHSICHT REISEN MIT (W5 Gegenstände, additiv, must-ignore): ein Zweit-Kern-Stoff
-            // mit Klarlack (Fahrzeug-Lack, Klingen-Stahl) oder Durchsicht (Scheibe, Fenster, Glimm-Scheibe) trägt sie als
-            // Daten — der Wirt baut dasselbe Material (phyto-core `budgetRegler`: cc · ccr · op). Ohne sie war der Lack
-            // in der Welt ein Metall ohne Lackschicht (Tiefschwarz spiegelte nichts) und jede Scheibe eine Wand.
-            // Pflanzen tragen die Felder nie (ihre Replies bleiben byte-alt).
-            if (zweitKern && typeof mat.clearcoat === "number" && mat.clearcoat > 0) {
-                out.mat.clearcoat = mat.clearcoat;
-                out.mat.clearcoatRoughness = typeof mat.clearcoatRoughness === "number" ? mat.clearcoatRoughness : 0;
-            }
-            if (zweitKern && mat.transparent && typeof mat.opacity === "number" && mat.opacity < 1)
-                out.mat.opacity = mat.opacity;
-        }
-        const A = geo.attributes;
-        // Alle vorhandenen Standard- + Wind-Attribute mitgeben (position/normal/color/uv +
-        // aWind/aCenter/aType und was sonst am Mesh haengt) — engine-neutral. ELEMENT-WEISE
-        // via count/itemSize + get*(): robust gegen INTERLEAVED-Puffer (at.array waere dort der
-        // ganze verschachtelte Puffer = 2^N-zu-gross), gibt einen dicht-gepackten Puffer zurueck.
-        for (const name in A) {
-            const at = A[name];
-            if (!at || typeof at.count !== "number") continue;
-            const is = at.itemSize || 3;
-            const dst = new Float32Array(at.count * is);
-            for (let i = 0; i < at.count; i++) {
-                dst[i * is] = at.getX(i);
-                if (is > 1) dst[i * is + 1] = at.getY(i);
-                if (is > 2) dst[i * is + 2] = at.getZ(i);
-                if (is > 3) dst[i * is + 3] = at.getW(i);
-            }
-            out[name] = { array: dst, itemSize: is };
-        }
-        if (geo.index) out.index = new Uint32Array(Array.from(geo.index.array));
-        // Welt-Transform der Instanz (buildInstance setzt g.position.y; Meshes koennen lokal
-        // versetzt sein) in die Vertices backen, damit AnazhRealm den Baum am Ursprung erhaelt.
-        // WELLE L (Q13 F-D8, additiv): ein RAD bäckt relativ zu seiner Nabe (`basisInv` = Nabe⁻¹) — die Welt setzt
-        // es je Ecke als Instanz (Rolle, Lenk-Einschlag, ungefedert). Ohne `basisInv` byte-alt.
-        mesh.updateWorldMatrix(true, false);
-        const e = basisInv ? new THREE.Matrix4().multiplyMatrices(basisInv, mesh.matrixWorld).elements : mesh.matrixWorld.elements,
-            pos = out.position.array;
-        for (let i = 0; i < pos.length; i += 3) {
-            const x = pos[i],
-                y = pos[i + 1],
-                z = pos[i + 2];
-            pos[i] = e[0] * x + e[4] * y + e[8] * z + e[12];
-            pos[i + 1] = e[1] * x + e[5] * y + e[9] * z + e[13];
-            pos[i + 2] = e[2] * x + e[6] * y + e[10] * z + e[14];
-        }
-        return out;
-    }
-    function __replyBuildAsset(msg) {
-        const reqId = msg.reqId;
-        let meshes = [];
-        let budgetBruch = null; // W8: der Bruch des Budget-Gesetzes (nur Zweit-Kerne), reist mit
-        let budgetBericht = null; // W8: Stufe + Kosten vorher/nachher (nur Zweit-Kerne), reist mit
-        // JAHRESZEIT (Vorlagen-Phaenologie): AnazhRealm reicht die aktuelle Saison herein, die
-        // Foundry backt die Assets in DIESER Jahreszeit (Blatt-Farbe/Praesenz Fruehling..Winter).
-        if (msg.season && typeof setSeasonColors === "function") {
-            try {
-                setSeasonColors(msg.season);
-            } catch (_se) {}
-        }
-        try {
-            // W7b/N2 (Studio-Vertrag v1.1 + Nervensystem-Plan) — der ZWEIT-KERN-DISPATCH ist
-            // MANIFEST-GETRIEBEN: ein Preset, das NICHT im Pflanzen-Buch steht (der Primaer-
-            // PRESETS-Check fuehrt wie bisher), baut durch den ERSTEN Manifest-Kern, dessen
-            // PRESETS es traegt (dieselbe Vertrags-Signatur; der Kern klemmt intern auf seine
-            // feine Stufe). Extraktion/Dispose identisch: die Meshes reisen engine-neutral,
-            // mat-Regler fliessen mit; der zweitKern-Flag steuert die mat.color-Serialisierung.
-            let zweit = null;
-            let zweitBaecker = null; // DIE EINE PIPE (V18.458): Gattungs-Bäcker für MESHFREI-Kerne
-            if (typeof msg.presetId === "string" && !Object.prototype.hasOwnProperty.call(PRESETS, msg.presetId)) {
-                for (const zk of __zweitKerne()) {
-                    if (!zk.kern.PRESETS || !Object.prototype.hasOwnProperty.call(zk.kern.PRESETS, msg.presetId))
-                        continue;
-                    if (typeof zk.kern.buildInstance === "function") {
-                        zweit = zk;
-                        break;
-                    }
-                    // MESHFREI-Kern (Vertrag §8 — kein eigener GL-Bau): die PIPE bäckt ihn
-                    // über den Tisch BAKERS_BY_KIND (foundry-core, tabellengetrieben M8).
-                    const __pk = zk.kern.PRESETS[msg.presetId];
-                    if (
-                        __pk &&
-                        typeof BAKERS_BY_KIND !== "undefined" &&
-                        typeof BAKERS_BY_KIND[__pk.kind] === "function"
-                    ) {
-                        zweit = zk;
-                        zweitBaecker = BAKERS_BY_KIND[__pk.kind];
-                        break;
-                    }
-                }
-            }
-            const isZweitKern = !!zweit;
-            // W-A1 (Katalysator §5) — DER REGLER-KANAL: msg.ov (B4-Overrides der Werkstatt)
-            // reist in BEIDE Zweige (buildInstance nimmt ov als 4. Argument — der Pflanzen-
-            // Pfad traegt Object.assign(P, ov) seit je, die Bruecke reichte nur null).
-            // ERFINDER-WELLE („blume z.B. keine regler?"): jetzt sind auch die Pflanzen
-            // regelbar; OHNE ov ist der Bau byte-identisch (gate:asset-contract Goldens
-            // laufen ov-frei — der Welt-Pfad bleibt byte-vertraglich rein, W-A1-Gesetz:
-            // ov umgeht IDB + f.cache am Host).
-            const g = isZweitKern
-                ? zweitBaecker
-                    ? zweitBaecker(zweit.kern, msg.presetId, Number(msg.seed) || 0, msg.lod | 0, msg.ov || null)
-                    : zweit.kern.buildInstance(msg.presetId, Number(msg.seed) || 0, msg.lod | 0, msg.ov || null)
-                : buildInstance(msg.presetId || "eiche", Number(msg.seed) || 0, msg.lod | 0, msg.ov || null);
-            g.updateMatrixWorld(true);
-            // WELLE L (Q13 F-D8, additiv, must-ignore): DAS RAD REIST EINMAL. Ein Fahrzeug trägt seine Naben als Daten
-            // (vehicle-core buildWheels: userData.rad {ecke, front, os}, userData.radDreht am drehenden Teil). Die Teile
-            // der Ecke 0 reisen nabenrelativ gebacken mit `rad` = {dreht, raeder}: raeder nennt jede Ecke (Naben-Lage
-            // im Vorlagen-Raum, lenkt, Drehung π für die Gegenseite — die Felge der Gegenseite ist die gespiegelte
-            // Ecke 0 um π gedreht). Die übrigen Ecken reisen nicht: die Welt setzt das eine Rad viermal als Instanz.
-            // Ein Kern ohne Naben bleibt byte-alt.
-            const __naben = [];
-            g.traverse((o) => {
-                if (o.userData && o.userData.rad && typeof o.userData.rad.ecke === "number") __naben.push(o);
-            });
-            const __nabe0 = __naben.find((h) => h.userData.rad.ecke === 0) || null;
-            let __nabeInv = null;
-            let __raeder = null;
-            if (__nabe0) {
-                __nabeInv = new THREE.Matrix4().copy(__nabe0.matrixWorld).invert();
-                const os0 = __nabe0.userData.rad.os;
-                __raeder = __naben.map((h) => {
-                    const p = new THREE.Vector3().setFromMatrixPosition(h.matrixWorld);
-                    return { hx: p.x, hy: p.y, hz: p.z, front: !!h.userData.rad.front, dreh: h.userData.rad.os === os0 ? 0 : Math.PI };
-                });
-            }
-            g.traverse((o) => {
-                if (o.isMesh) {
-                    let nabe = null;
-                    let dreht = false;
-                    for (let a = o.parent; a && __nabe0; a = a.parent) {
-                        if (a.userData && a.userData.radDreht) dreht = true;
-                        if (a.userData && a.userData.rad) {
-                            nabe = a;
-                            break;
-                        }
-                    }
-                    if (nabe) {
-                        if (nabe !== __nabe0) return; // dieselbe Gestalt — die Welt setzt sie als Instanz
-                        const mr = __extractAssetMesh(o, isZweitKern, __nabeInv);
-                        if (mr) {
-                            mr.rad = { dreht: dreht, raeder: __raeder };
-                            meshes.push(mr);
-                        }
-                        return;
-                    }
-                    const m = __extractAssetMesh(o, isZweitKern);
-                    if (m) meshes.push(m);
-                }
-            });
-            // DIE EINE PIPE: der Gelenk-Baum reist als Pseudo-Eintrag im selben
-            // Reply (kein neuer Kanal; Leser ohne position-Guard überspringen ihn,
-            // IDB trägt ihn gratis mit).
-            if (g.userData && g.userData.__skelett) meshes.push({ kind: "__skelett", skelett: g.userData.__skelett });
-            // Aufraeumen (kein Leak in der Foundry): Geometrien + Materialien der Wegwerf-Instanz.
-            g.traverse((o) => {
-                if (o.isMesh) {
-                    if (o.geometry) o.geometry.dispose();
-                }
-            });
-            // DAS BUDGET-GESETZ AM AUSGANG (Studio-Vertrag B2c, W8): jede Zweit-Kern-Gestalt verlaesst das Studio
-            // auf ihrer Budget-Zeile (PORTAL_RENDER_CONFIG.lod.budget[kind][stufe] des EIGENEN Kerns) — die Stoffe
-            // falten je Bindungs-Klasse auf `draws` (phyto-core `budgetErzwingen`; innerhalb der Zeile byte-gleich).
-            // Ein Bruch (Zeile fehlt, Stufe ueber tris/draws) reist als `budgetBruch` mit und schreit hier; die Wand
-            // (gate:asset-contract) baut jede Stufe und wird rot. Die Pflanzen tragen ihr Budget im Bau selbst.
-            if (isZweitKern) {
-                const PC = (typeof self !== "undefined" ? self : globalThis).__phytoCore;
-                const pk = zweit.kern.PRESETS[msg.presetId];
-                const bz = PC.budgetZeile(zweit.kern.PORTAL_RENDER_CONFIG, pk && pk.kind, msg.lod | 0);
-                const res = PC.budgetErzwingen(meshes, bz && bz.zeile);
-                meshes = res.meshes;
-                budgetBericht = {
-                    stufe: bz ? bz.stufe : null,
-                    vorher: res.bericht.vorher,
-                    nachher: res.bericht.nachher,
-                    faltungen: res.bericht.faltungen.length,
-                };
-                if (res.bericht.bruch.length) {
-                    budgetBruch = res.bericht.bruch;
-                    console.error("[budget] " + msg.presetId + " L" + (msg.lod | 0) + ": " + JSON.stringify(budgetBruch));
-                }
-            }
-            // DIE HÜLLEN REISEN MIT (Welle L + S3, additiv, must-ignore): ein Haus (fachwerk buildInstance) trägt seine
-            // Kollisions-Liste (`__huelle`, jede Stufe die Solids der Stufe 0) und die Stufe 3 ihre Fernform (`__fern`) — je
-            // ein Beipack-Eintrag neben den Meshes (das __skelett-Muster: kein neuer Kanal, die Platte trägt ihn gratis), der
-            // Wirt hängt sie über seine EINE Beipack-Karte an (`FOUNDRY_BEIPACK`). Nach dem Budget-Ausgang: der Beipack ist
-            // kein Teil. Andere Gestalten tragen die Felder nie.
-            for (const __bp of ["__huelle", "__fern"])
-                if (g && g.userData && g.userData[__bp] && typeof g.userData[__bp] === "object")
-                    meshes.push({ kind: __bp, huelle: g.userData[__bp] });
-        } catch (e) {
-            meshes = [];
-            try {
-                console.warn("[phyto] build-asset", msg.presetId, e && e.message);
-            } catch (_) {}
-        }
-        // KEINE Transferables: der strukturierte Klon kopiert die Float32/Uint32-Arrays
-        // sauber. Transferables teilten/neutralisierten Puffer (geteilte ArrayBuffer der
-        // interleaved Vorlagen-Attribute -> 2^N-Vertex-Korruption beim Empfaenger).
-        if (typeof window === "undefined" || (window.parent && window.parent !== window)) {
-            __post(
-                {
-                    type: "asset",
-                    world: "terrain",
-                    cv: 1, // Asset-Vertrag v1 (spec/asset-contract/v1) — jede asset-Antwort traegt die Vertrags-Version.
-                    reqId,
-                    presetId: msg.presetId,
-                    seed: msg.seed,
-                    lod: msg.lod | 0,
-                    meshes,
-                    // must-ignore: nur Zweit-Kern-Antworten tragen den Budget-Bericht (Pflanzen bleiben byte-alt),
-                    // nur ein gebrochenes Budget den Bruch.
-                    ...(budgetBericht ? { budget: budgetBericht } : {}),
-                    ...(budgetBruch ? { budgetBruch } : {}),
-                },
-                "*"
-            );
-        }
-    }
-    // DER OFFSCREEN-BAKE-RENDERER (nur Foundry): der Studio-Baecker `bakeImpostorAtlas` liest den
-    // GLOBALEN `renderer` — im Foundry-Modus (init kehrt vor dem Display-Renderer zurueck) gibt es
-    // keinen. Wir bauen EINEN kleinen Offscreen-WebGL-Renderer (nie am DOM, kein Display-Loop) und
-    // zeigen den globalen `renderer` darauf. Anderer Kontext-Typ als AnazhRealms WebGPU -> kein
-    // Konflikt (wie die Diag-Offscreen-Renderer). Einmalig, gecacht.
-    // BÄCKER-VEREINIGUNG (Worker-Naht): im Foundry-WORKER gibt es kein window und kein implizites
-    // DOM-Canvas — Scope-Halter G (window ODER self) traegt den Cache, und der Worker-Zweig reicht
-    // ein OffscreenCanvas an r128 (Feature-Guard; fehlt es, fail-closed -> null -> payload null).
-    // Der iframe-Pfad bleibt byte-identisch (window vorhanden -> implizites Canvas wie bisher).
-    function __foundryBakeRenderer() {
-        const G = typeof window !== "undefined" ? window : self;
-        if (G.__foundryGL) return G.__foundryGL;
-        try {
-            const opts = { antialias: true, alpha: true, preserveDrawingBuffer: false };
-            if (typeof window === "undefined") {
-                if (typeof OffscreenCanvas === "undefined") return null; // Worker ohne OffscreenCanvas: kein GL-Baecker moeglich
-                opts.canvas = new OffscreenCanvas(256, 256);
-            }
-            const gl = new THREE.WebGLRenderer(opts);
-            gl.setSize(256, 256, false);
-            if (THREE.sRGBEncoding !== undefined) gl.outputEncoding = THREE.sRGBEncoding;
-            gl.toneMapping = THREE.ACESFilmicToneMapping;
-            gl.toneMappingExposure = 1.0;
-            G.__foundryGL = gl;
-            // eslint-disable-next-line no-global-assign
-            renderer = gl; // der Studio-Baecker liest `renderer` -> auf den Offscreen-GL zeigen
-            return gl;
-        } catch (_e) {
-            return null;
-        }
-    }
-    // Ein Asset mit den STUDIO-EIGENEN Materialien rendern (offscreen WebGL) + Pixel/Kamera zurueck.
-    function __replyRenderNative(msg) {
-        const reqId = msg.reqId;
-        const presetId = msg.presetId || "eiche";
-        const seed = Number(msg.seed) || 0;
-        const lod = msg.lod | 0;
-        const W = msg.size || 320;
-        let payload = null;
-        try {
-            if (msg.season && typeof setSeasonColors === "function") {
-                try {
-                    setSeasonColors(msg.season);
-                } catch (_se) {}
-            }
-            const gl = __foundryBakeRenderer();
-            if (!gl) throw new Error("kein Renderer");
-            if (typeof bakeLeafAtlas === "function") {
-                try {
-                    bakeLeafAtlas();
-                } catch (_le) {}
-            }
-            const g = buildInstance(presetId, seed, lod, msg.ov || null);
-            g.updateMatrixWorld(true);
-            const sc = new THREE.Scene();
-            sc.add(new THREE.HemisphereLight(0xdfeecc, 0x2a2a1a, 0.7));
-            const kl = new THREE.DirectionalLight(0xfff2d9, 2.2);
-            kl.position.set(6, 10, 5);
-            sc.add(kl);
-            sc.add(g);
-            const box = new THREE.Box3().setFromObject(g);
-            const ctr = box.getCenter(new THREE.Vector3()),
-                sz = box.getSize(new THREE.Vector3());
-            const d = Math.max(sz.x, sz.y, sz.z) * 1.6 + 2;
-            const camPos = [ctr.x + d * 0.6, box.min.y + sz.y * 0.55, ctr.z + d * 0.7];
-            const camLook = [ctr.x, ctr.y, ctr.z];
-            const cam = new THREE.PerspectiveCamera(42, 1, 0.05, 500);
-            cam.position.set(camPos[0], camPos[1], camPos[2]);
-            cam.lookAt(camLook[0], camLook[1], camLook[2]);
-            cam.updateProjectionMatrix();
-            const rt = new THREE.WebGLRenderTarget(W, W);
-            const pRT = gl.getRenderTarget();
-            gl.setRenderTarget(rt);
-            gl.setClearColor(0xbcd2e0, 1);
-            gl.clear();
-            gl.render(sc, cam);
-            const buf = new Uint8Array(W * W * 4);
-            gl.readRenderTargetPixels(rt, 0, 0, W, W, buf);
-            gl.setRenderTarget(pRT);
-            g.traverse((o) => {
-                if (o.isMesh && o.geometry) o.geometry.dispose();
-            });
-            rt.dispose();
-            payload = { W: W, pixels: buf, camPos: camPos, camLook: camLook };
-        } catch (e) {
-            try {
-                console.warn("[phyto] render-native", presetId, e && e.message);
-            } catch (_) {}
-        }
-        if (typeof window === "undefined" || (window.parent && window.parent !== window)) {
-            __post(
-                {
-                    type: "render-native",
-                    world: "terrain",
-                    reqId: reqId,
-                    presetId: presetId,
-                    seed: seed,
-                    payload: payload,
-                },
-                "*"
-            );
-        }
-    }
-    // Die Fernstufe EINES Baums: der Studio-Baecker bakt SEIN 8-Winkel-Billboard (Albedo + Normal),
-    // wir lesen die Atlas-Pixel + Rahmen zurueck. `bakeImpostorAtlas` liest `_impSpecs` (die Zellen),
-    // also fuellen wir EINE Zelle (Art,Seed) — K=1, eine Atlas-Schicht cellW x (cellH*V) im Studio-Layout
-    // (Ansichten vertikal, Zeilen bottom-up). W6: die Render-Targets leben weiter (K bleibt 1, nur die Signatur
-    // erzwingt den Neu-Bake), der Rahmen kommt aus DEMSELBEN Bake (`_impFrame`) statt aus einem dritten L1-Bau;
-    // Albedo und Normale reisen in voller Aufloesung (die Welt-Schicht mittelt der Karten-Codec, phyto-core).
-    function __replyBakeImpostor(msg) {
-        const reqId = msg.reqId;
-        const presetId = msg.presetId || "eiche";
-        const seed = Number(msg.seed) || 0;
-        let payload = null;
-        try {
-            if (msg.season && typeof setSeasonColors === "function") {
-                try {
-                    setSeasonColors(msg.season);
-                } catch (_se) {}
-            }
-            const gl = __foundryBakeRenderer();
-            if (!gl) throw new Error("kein Offscreen-Renderer");
-            // Die Karte zeichnet den Laub-Stoff: sein Atlas-Bild malt der Worker erst hier (die Geometrie braucht es nie).
-            bakeLeafAtlas();
-            // ZWEIT-KERN-BÄCKEREI (M1-Folgeschritt, Studio-Seite): ein Preset, das NICHT im
-            // Pflanzen-Buch steht, baut sein Bake-Subjekt durch den ERSTEN Manifest-Kern,
-            // dessen PRESETS es trägt — exakt der __replyBuildAsset-Dispatch (__zweitKerne()-
-            // Schleife). Der Kern liefert die KOMPLETTE Gruppe (eigene Materialien); der
-            // Bake-Rahmen (impostorFrame/scanRadialXZ über die gebaute Gruppe) ist geometrie-
-            // agnostisch und bleibt. Kennt KEIN Kern das Preset: fail-closed (Wurf -> payload
-            // null) — nie wieder eine LEERE Karte als „Erfolg".
-            let zweit = null;
-            if (typeof presetId === "string" && !Object.prototype.hasOwnProperty.call(PRESETS, presetId)) {
-                for (const zk of __zweitKerne()) {
-                    if (
-                        zk.kern.PRESETS &&
-                        Object.prototype.hasOwnProperty.call(zk.kern.PRESETS, presetId) &&
-                        typeof zk.kern.buildInstance === "function"
-                    ) {
-                        zweit = zk;
-                        break;
-                    }
-                }
-                if (!zweit) throw new Error("kein Kern kennt Preset " + presetId);
-            }
-            const __bau = zweit ? (sp, sd, lod, ov) => zweit.kern.buildInstance(sp, sd, lod, ov) : null;
-            // M2 (Bäcker-Vereinigung): das Bake-Subjekt IST der Welt-Baum — ov reist
-            // VERBATIM aus der Anfrage (Welt baut ov-frei = Preset-Defaults; die alten
-            // Studio-Wald-Konstanten CB/TMUL gehören NUR dem buildForest-Pfad). Sonst
-            // passt die Karte nicht zur Nahstufe (Stamm-Dicke/Kronen-Ansatz-Pop bei 40 m).
-            // Das M2-Gesetz gilt dem Zweit-Kern-Zweig identisch (ov verbatim in `bau`).
-            const bakeOv = msg.ov || null;
-            // EINE Bake-Zelle -> K=1; die leere Signatur erzwingt den Neu-Bake in die lebenden Targets.
-            _impSpecs = [{ sp: presetId, seed: seed, ov: bakeOv, bau: __bau }];
-            _impCellOf = {};
-            _impCellOf[presetId + "|0"] = 0;
-            _impBakedSig = "";
-            delete _impFrame[presetId + seed];
-            bakeImpostorAtlas(); // DER STUDIO-BAECKER — kein Nachbau
-            const ic = PORTAL_RENDER_CONFIG.impostor,
-                cw = ic.cellW,
-                ch = ic.cellH,
-                V = _impV;
-            const fr = _impFrame[presetId + seed];
-            if (!fr) throw new Error("kein Bake-Rahmen (das Bake-Subjekt baute nicht)");
-            const albedo = new Uint8Array(cw * ch * V * 4);
-            gl.readRenderTargetPixels(_impRT, 0, 0, cw, ch * V, albedo);
-            const normal = new Uint8Array(cw * ch * V * 4);
-            gl.readRenderTargetPixels(_impNrmRT, 0, 0, cw, ch * V, normal);
-            payload = {
-                cw: cw,
-                ch: ch,
-                V: V,
-                frame: { halfH: fr.halfH, halfW: fr.halfW },
-                albedo: albedo,
-                normal: normal,
-            };
-        } catch (e) {
-            try {
-                console.warn("[phyto] bake-impostor", presetId, e && e.message);
-            } catch (_) {}
-        }
-        if (typeof window === "undefined" || (window.parent && window.parent !== window)) {
-            __post(
-                { type: "impostor", world: "terrain", reqId: reqId, presetId: presetId, seed: seed, payload: payload },
-                "*"
-            );
-        }
-    }
-    // Escape verlässt das Portal — aber NUR im Studio: im Wald gehört Escape
-    // dem PointerLock ("Maus frei") und der ✕-Knopf dem Wald-Ausgang; das
-    // Portal verlässt man erst aus dem Studio heraus (kein Doppel-Sinn).
-    // (Nur im Fenster-Kontext — der Foundry-Worker hat keine Tasten.)
-    if (typeof window !== "undefined")
-        window.addEventListener("keydown", (event) => {
-            if (event.key !== "Escape") return;
-            if (forestMode || document.pointerLockElement) return;
-            if (window.parent && window.parent !== window) {
-                __post({ type: "exit", world: "terrain" }, "*");
-            }
-        });
-    // W12 Phase 3 — die native Manifest-Stufe: die Welt liest ihr eigenes
-    // manifest.json und meldet dsl + label im ready-Handshake.
-    function announceReady(extra) {
-        if (typeof window === "undefined" || (window.parent && window.parent !== window)) {
-            __post(Object.assign({ type: "ready", world: "terrain" }, extra || {}), "*");
-        }
-    }
-    fetch("./manifest.json")
-        .then((res) => (res.ok ? res.json() : null))
-        .then((m) => {
-            const dsl = m && Array.isArray(m.dsl) ? m.dsl : null;
-            const label = m && typeof m.label === "string" ? m.label : null;
-            announceReady(dsl ? { dsl, label } : {});
-        })
-        .catch(() => announceReady({}));
+        },
+        // Escape verlässt das Portal NUR im Studio: im Wald gehört Escape dem PointerLock ("Maus frei") und der ✕-Knopf dem
+        // Wald-Ausgang (kein Doppel-Sinn).
+        esc: () => !(forestMode || document.pointerLockElement),
+        // DIE ASSET-KANÄLE (build-asset · bake-impostor · render-native · get-book · export-settlement)
+        sonst: (msg) => foundryKanal(msg),
+    });
 })();

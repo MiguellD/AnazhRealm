@@ -22,6 +22,7 @@
 const vm = require("vm");
 const fs = require("fs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 
 const root = path.resolve(__dirname, "..");
 
@@ -98,7 +99,7 @@ function loadCore(entry) {
     ctx.globalThis = ctx;
     let code = "";
     for (const dep of entry.deps || []) code += fs.readFileSync(path.join(root, dep), "utf8") + "\n;";
-    code += fs.readFileSync(path.join(root, entry.file), "utf8");
+    code += entry.quelle != null ? entry.quelle : fs.readFileSync(path.join(root, entry.file), "utf8"); // quelle: der Selbsttest
     if (entry.ns) {
         // v1.1-Namensraum-Kern: dieselben Block-Namen, gelesen unter entry.ns
         // (fehlt der Namensraum ganz, bleibt alles null → B1/B2/G4.3 werden rot).
@@ -112,6 +113,15 @@ function loadCore(entry) {
             " meshfrei: N.MESHFREI === 1," + // v1.1 §8 — components-only-Kern (B2 N/A)
             " funktion: N.FUNKTION === 1," + // §9 (K09a) — Gesetz-Kern: reine Funktionen, keine Rezepte
             " api: Object.keys(N).filter(function (k) { return typeof N[k] === 'function'; })," +
+            " oberflaeche: Object.keys(N)," +
+            // §9 — ein Rezept unter JEDEM Namen: ein Schlüssel aus PRESET/REZEPT/RECIPE oder eine Liste (Feld/Objekt) von
+            // Einträgen mit regler, kind oder Dials s (die benannte Landschaft hieß LANDFORM_PRESETS — die Wand sah nur PRESETS)
+            " rezeptig: Object.keys(N).filter(function (k) { var v = N[k];" +
+            " if (/PRESET|REZEPT|RECIPE/i.test(k)) return true;" +
+            " if (!v || typeof v !== 'object') return false;" +
+            " var e = Array.isArray(v) ? v : Object.keys(v).map(function (q) { return v[q]; });" +
+            " return e.some(function (x) { return !!x && typeof x === 'object' && !Array.isArray(x) &&" +
+            " ('regler' in x || 'kind' in x || (!!x.s && typeof x.s === 'object')); }); })," +
             " zweit: true," + // W8 — ein Zweit-Kern zählt die Gestalten seiner Rezepte selbst (B2c)
             " cfg: N.PORTAL_RENDER_CONFIG || null," +
             " paramsByKind: N.PARAMS_BY_KIND || null," +
@@ -143,8 +153,15 @@ function loadCore(entry) {
 // keine Rezepte, keine Gestalt, keine Regler. Der Namensraum erklärt FUNKTION = 1 (und STUDIO_VERTRAG = 1), die
 // Manifest-Zeile `"funktion": true` — beide Seiten stimmen überein. Die Brücke liest ihn generisch (kein PRESETS → kein
 // Buch-Eintrag, kein build-asset-Dispatch). → Verletzungsliste.
-function validateFunktionsKern(m, entry) {
+// `erklaert`: die Schlüssel, die §9 „Stand der Gesetz-Kerne" nennt (`gesetzKernErklaert`) — jeder Schlüssel des Namensraums
+// steht dort, sonst trägt der Kern, was der Vertrag nicht kennt (K16b legte Bedienung und Landschaften still hinein).
+function validateFunktionsKern(m, entry, erklaert) {
     const v = [];
+    for (const k of m.rezeptig || []) v.push(`§9: ein Gesetz-Kern trägt keine Rezepte (${k})`);
+    if (erklaert)
+        for (const k of m.oberflaeche || [])
+            if (!erklaert.has(k))
+                v.push(`§9: ${k} steht nicht in der Erklärung (studio-vertrag §9 „Stand der Gesetz-Kerne")`);
     if (m.vertrag !== 1) v.push(`G4.3: STUDIO_VERTRAG fehlt oder != 1 (ist: ${m.vertrag})`);
     if (!m.funktion) v.push("§9: der Namensraum erklärt FUNKTION = 1 nicht");
     if (!(entry && entry.funktion === true)) v.push('§9: die Manifest-Zeile erklärt "funktion": true nicht');
@@ -155,6 +172,14 @@ function validateFunktionsKern(m, entry) {
     if (m.paramsByKind) v.push("§9: ein Gesetz-Kern trägt keine Regler (PARAMS_BY_KIND)");
     if (!Array.isArray(m.api) || m.api.length < 1) v.push("§9: der Gesetz-Kern trägt keine Funktion");
     return v;
+}
+
+// §9 — DIE ERKLÄRUNG der Gesetz-Kerne: jeder Name in Backticks im Absatz „Stand der Gesetz-Kerne" (bis zur Leerzeile).
+function gesetzKernErklaert(doc) {
+    const i = doc.indexOf("**Stand der Gesetz-Kerne:**");
+    if (i < 0) return new Set();
+    const e = doc.indexOf("\n\n", i);
+    return new Set([...doc.slice(i, e < 0 ? doc.length : e).matchAll(/`([A-Za-z_$][\w$]*)/g)].map((m) => m[1]));
 }
 
 // Reine Validierungs-Funktion (auch der Selbst-Test ruft sie) → Verletzungsliste.
@@ -261,7 +286,9 @@ function validateManifest(m) {
                 else if ((fern === "karte") !== karte)
                     v.push(`B2c: lod.budget.${k}.fernform — "karte" genau dann, wenn die letzte Stufe Karte ist`);
                 else if ((fern === "huelle") !== nurWurf)
-                    v.push(`B2c: lod.budget.${k}.fernform — "huelle" genau dann, wenn eine NUR-WURF-Stufe den Beipack __fern trägt`);
+                    v.push(
+                        `B2c: lod.budget.${k}.fernform — "huelle" genau dann, wenn eine NUR-WURF-Stufe den Beipack __fern trägt`
+                    );
             }
         }
         for (const k in ks) {
@@ -303,11 +330,16 @@ function validateManifest(m) {
                     if (z.nurWurf !== true) v.push(`B2c: lod.budget.${k}[${st}].nurWurf ist nur als true erlaubt`);
                     else if (st !== 3) v.push(`B2c: lod.budget.${k}[${st}].nurWurf — nur die Stufe 3 ist NUR-WURF`);
                     else {
-                        if (z.schatten !== st) v.push(`B2c: lod.budget.${k}[${st}].nurWurf — die Stufe wirft selbst (schatten ${st})`);
-                        if ("karte" in z) v.push(`B2c: lod.budget.${k}[${st}].nurWurf mit karte — die Wurf-Stufe ist nie Karte`);
+                        if (z.schatten !== st)
+                            v.push(`B2c: lod.budget.${k}[${st}].nurWurf — die Stufe wirft selbst (schatten ${st})`);
+                        if ("karte" in z)
+                            v.push(`B2c: lod.budget.${k}[${st}].nurWurf mit karte — die Wurf-Stufe ist nie Karte`);
                     }
                 } else if (st === 3) v.push(`B2: lod.kindStages.${k} — die Stufe 3 trägt nurWurf (nie Anzeige)`);
-                if ("blattKarte" in z && !(typeof z.blattKarte === "number" && z.blattKarte > 0 && isFinite(z.blattKarte)))
+                if (
+                    "blattKarte" in z &&
+                    !(typeof z.blattKarte === "number" && z.blattKarte > 0 && isFinite(z.blattKarte))
+                )
                     v.push(`B2c: lod.budget.${k}[${st}].blattKarte muss endlich > 0 sein`);
                 // S3 (09.10.): die Kosten-Regler der Krone — lagen (Quad-Lagen je Kronen-Pixel, > 0), quote (Dreiecke der
                 // Stufe / der Nah-Stufe, in (0, 1)), geruest (Röhren ab geruest·trunkR, in (0, 1)), wedel (der Nadel-Ast als
@@ -332,7 +364,9 @@ function validateManifest(m) {
                         !(w.winkel > 0 && w.winkel < 45) ||
                         !(w.holz >= 0 && w.holz < 1)
                     )
-                        v.push(`B2c: lod.budget.${k}[${st}].wedel muss ab in [0, 1), teile (ganz >= 1), breite (> 0), nadel (> 0), rand (>= 0), winkel in (0, 45) und holz in [0, 1) tragen`);
+                        v.push(
+                            `B2c: lod.budget.${k}[${st}].wedel muss ab in [0, 1), teile (ganz >= 1), breite (> 0), nadel (> 0), rand (>= 0), winkel in (0, 45) und holz in [0, 1) tragen`
+                        );
                 }
                 // W5: der Anteil der gewachsenen Blattstellen je Kronen-Art, die eine Karte/Strähne tragen — (0, 1].
                 if ("dichte" in z) {
@@ -360,7 +394,9 @@ function validateManifest(m) {
                         !(r.breite > 0 && isFinite(r.breite)) ||
                         (k === "tree" && !(r.holz >= 0 && r.holz < 1))
                     )
-                        v.push(`B2c: lod.budget.${k}[${st}].straehne muss teile (ganz >= 1), breite (> 0) und am Baum holz in [0, 1) tragen`);
+                        v.push(
+                            `B2c: lod.budget.${k}[${st}].straehne muss teile (ganz >= 1), breite (> 0) und am Baum holz in [0, 1) tragen`
+                        );
                 }
                 if ("boden" in z && !(typeof z.boden === "number" && z.boden >= 0 && z.boden < 1))
                     v.push(`B2c: lod.budget.${k}[${st}].boden muss in [0, 1) liegen`);
@@ -370,8 +406,16 @@ function validateManifest(m) {
                 if ("rispe" in z) {
                     const r = z.rispe;
                     const ganz = (x) => Number.isInteger(x) && x >= 1;
-                    if (!r || !ganz(r.grannen) || !ganz(r.segmente) || r.segmente > 3 || !(r.breite > 0 && isFinite(r.breite)))
-                        v.push(`B2c: lod.budget.${k}[${st}].rispe muss grannen, segmente (ganz, 1..3) und breite (> 0) tragen`);
+                    if (
+                        !r ||
+                        !ganz(r.grannen) ||
+                        !ganz(r.segmente) ||
+                        r.segmente > 3 ||
+                        !(r.breite > 0 && isFinite(r.breite))
+                    )
+                        v.push(
+                            `B2c: lod.budget.${k}[${st}].rispe muss grannen, segmente (ganz, 1..3) und breite (> 0) tragen`
+                        );
                 }
                 // W6 (05.10.): die Bahn der L1-Aeste — ein Ring faellt, wenn Mitte und Radius hoechstens so viele
                 // Baumhoehen von der Strecke seiner Nachbarn abweichen (foundry-core __ringBahn): 0 < ringToleranz < 0,01.
@@ -409,7 +453,11 @@ function validateManifest(m) {
                         );
                     if (w && "teil" in w && w.teil !== "schatten")
                         v.push(`B2c: lod.budget.${k}[${st}].wurf.teil muss "schatten" sein`);
-                    if (w && "teil" in w && !(Number.isInteger(w.tris) && w.tris > 0 && w.lagen > 0 && isFinite(w.lagen)))
+                    if (
+                        w &&
+                        "teil" in w &&
+                        !(Number.isInteger(w.tris) && w.tris > 0 && w.lagen > 0 && isFinite(w.lagen))
+                    )
                         v.push(`B2c: lod.budget.${k}[${st}].wurf mit teil trägt tris (ganz > 0) und lagen (> 0)`);
                 }
                 // S3 (DARF): die Stufen-Grenze — ab `ab` m × Körpergröße trägt die Stufe das Bild (die Gelenk-Gestalt
@@ -449,6 +497,32 @@ function validateManifest(m) {
                 vor = { st, z };
             }
         }
+        // K43 (Studio-Welle 1, DIE TOR-STUFEN) — PFLICHT, wo die Art gate lebt: die Kosten liegen im Asset, nicht im Wirt. Das Tor
+        // trägt die Kette L0 → L1 → Fernform: Stufe 0, Stufe 1 mit ihrer Grenze `ab` (die Distanz im Kern) und der Hysterese der
+        // Art, die NUR-WURF-Stufe 3 (Wurf und Fernform "huelle"), jede mit Zeile, tris streng fallend (L0 > L1 > Fern). Vorher
+        // zeigte das Tor nur die Stufe 0 bis 26 m ([0, 3]) — 7 Tore am Genesis-Ring 206k Dreiecke, 53 Befehle (Radeon, ego).
+        if (ks.gate) {
+            const G = B.gate || {};
+            const st = ks.gate;
+            const kette =
+                st.length === 3 &&
+                st[0] === 0 &&
+                st[1] === 1 &&
+                st[2] === 3 &&
+                G[0] &&
+                G[1] &&
+                G[3] &&
+                G[3].nurWurf === true &&
+                G.fernform === "huelle" &&
+                typeof G[1].ab === "number" &&
+                typeof G.hyst === "number" &&
+                G[0].tris > G[1].tris &&
+                G[1].tris > G[3].tris;
+            if (!kette)
+                v.push(
+                    "B2c: lod.budget.gate trägt die Stufen-Kette nicht (K43: kindStages [0, 1, 3], Zeilen 0 · 1 mit ab · 3 nurWurf, hyst, fernform huelle, tris L0 > L1 > Fern)"
+                );
+        }
         // S3 (Vertrags-Akt 09.10.) — PFLICHT im Haupt-Kern: die Baum-Stufen 0/1 tragen ihre Kosten-Regler, der Fels ist
         // einstufig (eine Fels-L1 spart an der Mess-Wiese < 3k Dreiecke: formationen 10 240 / Haushalt 30 000).
         if (!m.zweit && B.tree) {
@@ -457,7 +531,8 @@ function validateManifest(m) {
                 if (!z) continue;
                 for (const f of ["lagen", "geruest", "blattKarte", "wedel"])
                     if (!(f in z)) v.push(`B2c: lod.budget.tree[${st}].${f} fehlt (S3-Pflicht)`);
-                for (const f of ["nadelKarte"]) if (f in z) v.push(`B2c: lod.budget.tree[${st}].${f} ist gefallen (S3: der Wedel)`);
+                for (const f of ["nadelKarte"])
+                    if (f in z) v.push(`B2c: lod.budget.tree[${st}].${f} ist gefallen (S3: der Wedel)`);
                 if (z.dichte && ("laub" in z.dichte || "nadel" in z.dichte))
                     v.push(`B2c: lod.budget.tree[${st}].dichte.laub/nadel ist gefallen (S3: die Lagen-Wahl)`);
             }
@@ -789,7 +864,7 @@ function validateManifest(m) {
             continue;
         }
         const funktionsKern = m.funktion || entry.funktion === true;
-        const viol = funktionsKern ? validateFunktionsKern(m, entry) : validateManifest(m);
+        const viol = funktionsKern ? validateFunktionsKern(m, entry, gesetzKernErklaert(doc)) : validateManifest(m);
         const lodM = m.cfg && m.cfg.lod;
         if (lodM && lodM.budget) budgets[entry.file] = { budget: lodM.budget, kindStages: lodM.kindStages || {} };
         else if (lodM && lodM.kindStages) ohneBudget.push(entry.file);
@@ -818,14 +893,14 @@ function validateManifest(m) {
     // §4b Ü1 — die Licht-Übersetzungs-Konstante existiert im Code (die Regel ist Struktur).
     check(
         "Ü1: AnazhRealm.LEGACY_LICHT = Math.PI existiert (r155-Migrations-Regel)",
-        /LEGACY_LICHT\s*=\s*Math\.PI/.test(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8"))
+        /LEGACY_LICHT\s*=\s*Math\.PI/.test(stammLib.text(root))
     );
 
     // §4 G4.1 — must-ignore am EINEN Auto-Register-Chokepoint: unbekannte
     // kinds werden ÜBERSPRUNGEN (continue-Filter), nie geworfen. Kommentare
     // gestrippt (die V18.267-Falle).
-    const realm = fs
-        .readFileSync(path.join(root, "anazhRealm.js"), "utf8")
+    const realm = stammLib
+        .text(root)
         .replace(/\/\*[\s\S]*?\*\//g, "")
         .replace(/\/\/[^\n]*/g, "");
     const reg = realm.match(/_foundryAutoRegisterSpecies\(book\)\s*\{[\s\S]{0,2500}/);
@@ -851,10 +926,11 @@ function validateManifest(m) {
 
     // B2c — DIE KARTEN-LINSE: die Karten-Stufe des Studios (budget[kind][letzte].karte) und die Fernstufe des
     // Hosts (KIND_POLICY[kind].impostor → `_foundryBuildImpostorFlat`) sagen dasselbe — je Art, die ein Budget
-    // trägt. Weichen sie ab, misst die Konsum-Wand eine Stufe, die nie ins Bild kommt (oder umgekehrt). Eine
-    // EINSTUFIGE Art (nur Stufe 0 gezeigt — Tor, Fahrzeug) liefert keine Karten-Stufe: ihre Fernkarte backt der Wirt aus
-    // Stufe 0 (Studio-Vertrag B2, „L2-Auto-Impostor ist Sache des Wirts"). Eine NUR-WURF-Stufe zählt nicht: sie kommt
-    // nie ins Bild (das Tor [0, 3], 1110-9).
+    // trägt. Weichen sie ab, misst die Konsum-Wand eine Stufe, die nie ins Bild kommt (oder umgekehrt). Eine Art ohne
+    // Studio-Karte liefert keine Karten-Stufe: ihre Fernkarte backt der Wirt (KIND_POLICY impostor) aus ihrer letzten
+    // gezeigten Stufe (Studio-Vertrag B2, „L2-Auto-Impostor ist Sache des Wirts") — einstufig wie bis K43 das Fahrzeug [0]
+    // oder gestuft wie seit K43-2 das Fahrzeug [0, 1] (die Karte aus der Stufe 1). Eine NUR-WURF-Stufe zählt nicht: sie
+    // kommt nie ins Bild (das Tor [0, 3], 1110-9). Rot ist die Studio-Karte, die der Wirt nie zeigt.
     const kartenUrteil = (src, bud) => {
         const kp = src.match(/AnazhRealm\.KIND_POLICY = Object\.freeze\(\{([\s\S]*?)\n\}\);/);
         if (!kp) return ["KIND_POLICY im Stamm nicht gefunden"];
@@ -863,11 +939,10 @@ function validateManifest(m) {
             const { budget, kindStages } = bud[datei];
             for (const k in kindStages) {
                 const st = kindStages[k];
-                const gezeigt = st.filter((s) => !(budget[k] && budget[k][s] && budget[k][s].nurWurf === true));
                 const letzte = budget[k] && budget[k][st[st.length - 1]];
                 const karte = !!(letzte && letzte.karte === true);
                 const imp = new RegExp("\\n\\s*" + k + ": Object\\.freeze\\(\\{[^}]*impostor: true").test(kp[1]);
-                if (karte ? !imp : imp && gezeigt.length > 1)
+                if (karte && !imp)
                     f.push(
                         `${k}: Studio-Karte ${karte ? "ja" : "nein"} ≠ Host-Impostor ${imp ? "ja" : "nein"} (${datei})`
                     );
@@ -896,7 +971,7 @@ function validateManifest(m) {
     // Sync-Guss des Wirts-Ofens (Tier UND Mensch) verlässt das Studio an derselben Stelle (`_ofenBudget`), und der
     // Material-Cache des Wirts keyt mit DERSELBEN Stoff-Identität (budgetStoff), mit der das Gesetz zählt.
     const phytoNC = fs
-        .readFileSync(path.join(root, "worlds/terrain/phytogenesis.js"), "utf8")
+        .readFileSync(path.join(root, "foundry-bruecke.js"), "utf8") // die Brücke (K42) trägt __replyBuildAsset
         .replace(/\/\*[\s\S]*?\*\//g, "")
         .replace(/\/\/[^\n]*/g, "");
     const leserUrteil = (realmSrc, phytoSrc) => {
@@ -1062,7 +1137,7 @@ function validateManifest(m) {
     (function zwillingsAbsenz() {
         let src = null;
         try {
-            src = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+            src = stammLib.text(root);
         } catch (_e) {}
         const treffer = src ? zwillingsTreffer(src) : ZWILLINGE;
         check(
@@ -1116,13 +1191,16 @@ function validateManifest(m) {
             const wk = fs.readFileSync(path.join(root, "voxel-worker.js"), "utf8");
             const ix = fs.readFileSync(path.join(root, "index.html"), "utf8");
             const gTag = ix.indexOf('<script src="gelaende-core.js?v=');
-            const sTag = ix.indexOf('<script src="anazhRealm.js?v=');
+            // der ERSTE Stamm-Tag (scripts/lib/stamm.cjs: die Liste, wie index.html sie lädt)
+            const sTag = ix.indexOf('<script src="' + stammLib.dateien(root)[0] + "?v=");
             check(
                 "KONSUM: gelaende steht in GESETZ_KERNE und im Manifest (§9), voxel-worker und index.html laden gelaende-core.js",
                 !!src &&
                     /gelaende:\s*"__gelaendeCore"/.test(src) &&
                     MANIFEST.some((c) => c.id === "gelaende" && c.ns === "__gelaendeCore" && c.funktion === true) &&
-                    wk.includes('importScripts((self.__anazhBase || "") + "gelaende-core.js" + (__phytoV ? "?v=" + __phytoV : ""));') &&
+                    wk.includes(
+                        'importScripts((self.__anazhBase || "") + "gelaende-core.js" + (__phytoV ? "?v=" + __phytoV : ""));'
+                    ) &&
                     gTag >= 0 &&
                     sTag > gTag
             );
@@ -1134,6 +1212,24 @@ function validateManifest(m) {
                 "SELBST-TEST: ein Gesetz-Kern mit Rezept und ohne Funktion feuert §9",
                 schlecht.length === 2,
                 schlecht.join(" · ")
+            );
+            // Das Rezept unter einem anderen Namen und der unerklärte Schlüssel — durch den echten Lader (vm, Namensraum): die
+            // Landschaften als LANDFORM_PRESETS (der Name) und als LANDSCHAFTEN (nur die Gestalt: Einträge mit regler) und
+            // eine Zahl ohne Erklärung MÜSSEN je beim Namen rot werden.
+            const fremd = { file: "selbsttest-gesetz.js", ns: "__selbstGesetz", funktion: true };
+            fremd.quelle =
+                "self.__selbstGesetz = { STUDIO_VERTRAG: 1, FUNKTION: 1, hoehe: function () { return 0; }," +
+                " LANDFORM_PRESETS: [{ id: 'tafelland', regler: { tafel: 1 } }]," +
+                " LANDSCHAFTEN: { kueste: { name: 'Küste', regler: { land: 0.25 } } }, SCHWELLE: 3 };";
+            const fv = validateFunktionsKern(loadCore(fremd), fremd, new Set(["STUDIO_VERTRAG", "FUNKTION", "hoehe"]));
+            const nennt = (t) => fv.some((s) => s.includes(t));
+            check(
+                "SELBST-TEST: ein Rezept unter fremdem Namen (LANDFORM_PRESETS, LANDSCHAFTEN) und ein unerklärter Schlüssel feuern §9 beim Namen",
+                fv.length === 5 &&
+                    nennt("keine Rezepte (LANDFORM_PRESETS)") &&
+                    nennt("keine Rezepte (LANDSCHAFTEN)") &&
+                    nennt("SCHWELLE steht nicht in der Erklärung"),
+                fv.join(" · ")
             );
             // FELS-/KRISTALL-HÜLLE (18.07., M1): der vierte Gesetz-Blocker-Zweig
             // lebt (Konsum: _felsBlockerParts VOR dem generischen Parts-Pfad im
@@ -1239,20 +1335,34 @@ function validateManifest(m) {
     const bvS3h = validateManifest({
         vertrag: 1,
         zweit: true,
-        presets: { h: { kind: "haus" }, a: { kind: "aus" }, k: { kind: "karto" } },
+        presets: { h: { kind: "haus" }, a: { kind: "aus" }, k: { kind: "karto" }, t: { kind: "gate" } },
         build: function () {},
         cfg: {
             lod: {
-                kindStages: { haus: [0, 3], aus: [0, 1], karto: [0, 3] },
+                kindStages: { haus: [0, 3], aus: [0, 1], karto: [0, 3], gate: [0, 3] },
                 budget: {
-                    haus: { 0: { tris: 100, draws: 2, schatten: 3 }, 3: { tris: 10, draws: 1, schatten: 3 }, fernform: "huelle" },
-                    aus: { 0: { tris: 100, draws: 1, schatten: 0 }, 1: { tris: 50, draws: 1, schatten: 1 }, fernform: "huelle" },
+                    haus: {
+                        0: { tris: 100, draws: 2, schatten: 3 },
+                        3: { tris: 10, draws: 1, schatten: 3 },
+                        fernform: "huelle",
+                    },
+                    aus: {
+                        0: { tris: 100, draws: 1, schatten: 0 },
+                        1: { tris: 50, draws: 1, schatten: 1 },
+                        fernform: "huelle",
+                    },
                     karto: {
                         0: { tris: 100, draws: 1, schatten: 3 },
                         3: { tris: 10, draws: 1, schatten: 3, nurWurf: true, karte: true },
                         fernform: "huelle",
                     },
-                    gestalten: { h: 1, a: 1, k: 1 },
+                    // K43: das Tor in seiner alten Form (nur Stufe 0 gezeigt, keine Stufe 1) — die Tor-Stufen-Wand MUSS feuern
+                    gate: {
+                        0: { tris: 100, draws: 2, schatten: 3 },
+                        3: { tris: 10, draws: 1, schatten: 3, nurWurf: true },
+                        fernform: "huelle",
+                    },
+                    gestalten: { h: 1, a: 1, k: 1, t: 1 },
                 },
             },
         },
@@ -1346,8 +1456,9 @@ function validateManifest(m) {
             bvB.some((s) => s.includes("gestalten.* — kein Rezept")) &&
             bvB.some((s) => s.includes("gestalten.b fehlt")) &&
             bvS3h.some((s) => s.includes("kindStages.haus — die Stufe 3 trägt nurWurf")) &&
-            bvS3h.some((s) => s.includes("aus.fernform — \"huelle\" genau dann")) &&
+            bvS3h.some((s) => s.includes('aus.fernform — "huelle" genau dann')) &&
             bvS3h.some((s) => s.includes("karto[3].nurWurf mit karte")) &&
+            bvS3h.some((s) => s.includes("lod.budget.gate trägt die Stufen-Kette nicht")) &&
             bvS3.some((s) => s.includes("kreatur.hyst muss in (0, 0,5)")) &&
             bvS3.some((s) => s.includes("kreatur[0].ab — die erste Stufe beginnt bei 0")) &&
             bvS3.some((s) => s.includes("kreatur[2].ab steigt nicht streng")) &&
@@ -1399,7 +1510,7 @@ function validateManifest(m) {
     // nicht (ihr einziger Leser wäre dieses Falten: Konsum 0), (c) die Baum-Zeile trägt ihre S3-Pflicht und der Fels ist
     // einstufig (validateManifest oben; hier der Selbsttest).
     {
-        const pg = fs.readFileSync(path.join(root, "worlds", "terrain", "phytogenesis.js"), "utf8");
+        const pg = fs.readFileSync(path.join(root, "foundry-bruecke.js"), "utf8"); // __replyBuildAsset lebt in der Brücke (K42)
         const pcSrc = fs.readFileSync(path.join(root, "phyto-core.js"), "utf8");
         const absenz = (pgS, pcS) => {
             const v = [];
@@ -1409,13 +1520,20 @@ function validateManifest(m) {
             const ruf = [...body.matchAll(/budgetErzwingen\(/g)].map((x) => x.index);
             if (!body) v.push("__replyBuildAsset nicht gefunden");
             else if (ruf.some((i) => zweig < 0 || i < zweig || i > body.indexOf("\n            }\n", zweig)))
-                v.push("budgetErzwingen faltet außerhalb des Zweit-Kern-Zweigs (die Pflanzen-Zeile ist der Bau-Regler)");
+                v.push(
+                    "budgetErzwingen faltet außerhalb des Zweit-Kern-Zweigs (die Pflanzen-Zeile ist der Bau-Regler)"
+                );
             const seh = /seh: Object\.freeze\((\[[^\]]*\])\)/.exec(pcS);
-            if (!seh || JSON.parse(seh[1]).indexOf("laub") >= 0) v.push("die Seh-Klasse laub lebt in BUDGET_GESETZ.seh");
+            if (!seh || JSON.parse(seh[1]).indexOf("laub") >= 0)
+                v.push("die Seh-Klasse laub lebt in BUDGET_GESETZ.seh");
             return v;
         };
         const echt = absenz(pg, pcSrc);
-        check("B2c S3-Absenz: kein Pflanzen-Falten (budgetErzwingen nur im Zweit-Kern-Zweig), keine Seh-Klasse laub", echt.length === 0, echt.join(" · "));
+        check(
+            "B2c S3-Absenz: kein Pflanzen-Falten (budgetErzwingen nur im Zweit-Kern-Zweig), keine Seh-Klasse laub",
+            echt.length === 0,
+            echt.join(" · ")
+        );
         const pflicht = validateManifest({
             vertrag: 1,
             presets: { a: { kind: "tree" } },
@@ -1429,19 +1547,39 @@ function validateManifest(m) {
                             1: { tris: 50, draws: 1, schatten: 1, wurf: { durchmesserM: 0.17 } },
                             fernform: "gesetz",
                         },
-                        rock: { 0: { tris: 10, draws: 1, schatten: 0 }, 1: { tris: 5, draws: 1, schatten: 1 }, fernform: "gesetz" },
+                        rock: {
+                            0: { tris: 10, draws: 1, schatten: 0 },
+                            1: { tris: 5, draws: 1, schatten: 1 },
+                            fernform: "gesetz",
+                        },
                         gestalten: { "*": 1 },
                     },
                 },
             },
         });
-        const falten = absenz(pg.replace("if (isZweitKern) {", "if (true) {").replace("const res = PC.budgetErzwingen(meshes", "const res0 = PC.budgetErzwingen(meshes, null); const res = PC.budgetErzwingen(meshes"), pcSrc);
+        const falten = absenz(
+            pg
+                .replace("if (isZweitKern) {", "if (true) {")
+                .replace(
+                    "const res = PC.budgetErzwingen(meshes",
+                    "const res0 = PC.budgetErzwingen(meshes, null); const res = PC.budgetErzwingen(meshes"
+                ),
+            pcSrc
+        );
         const laub = absenz(pg, pcSrc.replace('seh: Object.freeze(["stoff",', 'seh: Object.freeze(["laub", "stoff",'));
         check(
             "SELBST-TEST: die S3-Wand feuert (Baum-Zeile ohne lagen/geruest/blattKarte/wedel/quote/wurf.teil, mit nadelKarte und dichte.laub · Fels zweistufig · Pflanzen-Falten · Seh-Klasse laub)",
-            ["tree[0].lagen fehlt", "tree[0].geruest fehlt", "tree[0].blattKarte fehlt", "tree[0].wedel fehlt", "tree[0].nadelKarte ist gefallen", "dichte.laub/nadel ist gefallen", "tree[1].quote fehlt", 'wurf.teil "schatten" fehlt', "rock ist [0]"].every((t) =>
-                pflicht.some((s) => s.includes(t))
-            ) &&
+            [
+                "tree[0].lagen fehlt",
+                "tree[0].geruest fehlt",
+                "tree[0].blattKarte fehlt",
+                "tree[0].wedel fehlt",
+                "tree[0].nadelKarte ist gefallen",
+                "dichte.laub/nadel ist gefallen",
+                "tree[1].quote fehlt",
+                'wurf.teil "schatten" fehlt',
+                "rock ist [0]",
+            ].every((t) => pflicht.some((s) => s.includes(t))) &&
                 falten.length > 0 &&
                 laub.length > 0,
             `${pflicht.length} Zeilen-Befunde · Falten ${falten.length} · laub ${laub.length}`

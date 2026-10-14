@@ -45,13 +45,10 @@
 //   … [--bilder <ordner>]                         legt je Bild-Paar beide Bilder ab
 //   Port: WELTBILD_FROST_PORT (Standard 4426). Exit 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const puppeteer = require("puppeteer");
-const { linsenWebGpuArgs, adapterZeile, echteWebGpuArgs } = require("./lib/software-gpu.cjs");
-const http = require("http");
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 
-const root = path.resolve(__dirname, "..");
 const PORT = Number(process.env.WELTBILD_FROST_PORT || 4426);
 const ECHT = process.argv.includes("--echt");
 const BILDER = (() => {
@@ -61,26 +58,7 @@ const BILDER = (() => {
 // Anteil bewegter 16×16-Blöcke der Bildmitte, ab dem das Bild der Kamera folgt: eine Drehung bewegt 40–100 %, ein stehendes
 // Bild unter der zeitlichen Kantenglättung zittert bis 1,4 % (Radeon, 08.10.) — die Schwelle liegt dazwischen mit Abstand.
 const FOLGT_MIN = 0.05;
-const mime = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".wasm": "application/wasm",
-    ".json": "application/json",
-    ".css": "text/css",
-    ".png": "image/png",
-    ".woff2": "font/woff2",
-};
-const server = http.createServer((req, res) => {
-    let p = req.url.split("?")[0];
-    if (p === "/") p = "/index.html";
-    const fp = path.join(root, p);
-    if (!fp.startsWith(root)) return ((res.statusCode = 403), res.end());
-    fs.readFile(fp, (err, data) => {
-        if (err) return ((res.statusCode = 404), res.end());
-        res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-        res.end(data);
-    });
-});
+const server = statikServer();
 
 const fehler = [];
 function check(name, ok, detail) {
@@ -255,13 +233,13 @@ function pruefRaum(echt) {
 
 (async () => {
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await puppeteer.launch({
+    const browser = await starteBrowser({
+        art: ECHT ? "echt" : "linse",
         headless: !ECHT,
-        protocolTimeout: 1800000,
-        defaultViewport: ECHT ? { width: 1280, height: 720, deviceScaleFactor: 1 } : { width: 640, height: 360 },
-        args: ECHT ? [...echteWebGpuArgs(), "--window-size=1300,820"] : linsenWebGpuArgs(),
+        frist: 1800000,
+        viewport: ECHT ? { width: 1280, height: 720, deviceScaleFactor: 1 } : { width: 640, height: 360 },
+        zusatz: ECHT ? ["--window-size=1300,820"] : [],
     });
-    await adapterZeile(browser);
     const page = await browser.newPage();
     const t0 = Date.now();
     const zeit = () => `+${Math.round((Date.now() - t0) / 1000)} s`;

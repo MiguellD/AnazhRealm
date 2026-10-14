@@ -66,7 +66,7 @@ function spielStapel() {
     Error.stackTraceLimit = lim;
     const namen = [];
     for (const l of zeilen) {
-        if (!/anazhRealm\.js/.test(l)) continue;
+        if (!/anazhRealm\.js|\/stamm\/\d\d[a-z]?\.js/.test(l)) continue;
         const m = /at (?:async )?(?:new )?([^\s(]+) \(/.exec(l);
         namen.push(m ? m[1].replace(/^(AnazhRealm|Object)\./, "") : "(anonym)");
     }
@@ -365,6 +365,19 @@ function erstRuhe(frame, opt, wer) {
         const tE = performance.now();
         let tFort = tE,
             stand = "";
+        // der Grund einer Absage: die letzten Meldungen des Übersetzers und der Pipeline in der GPU-Wache (`_gpuWacheMeldung`)
+        const grund = () => {
+            const m = ((window.anazhRealm._gpuWache || {}).meldungen || []).filter(
+                (x) => x.quelle === "three" || x.quelle === "pipeline"
+            );
+            return m.length
+                ? " — " +
+                      m
+                          .slice(-2)
+                          .map((x) => x.kopf)
+                          .join(" | ")
+                : "";
+        };
         // der Name einer Pipeline: ihr Label (`renderPipeline_<Stoff>_<id>`), sonst Programm-Name und Schlüssel
         const name = (p) =>
             (E.namen && E.namen.get(p)) ||
@@ -390,7 +403,7 @@ function erstRuhe(frame, opt, wer) {
                 for (const p of E.offen.keys()) namen.push(name(p));
                 const wartet =
                     E.wartetN !== w0 && E.wartetAuf
-                        ? `; ein Draw wartet auf ${name(E.wartetAuf)}${E.abgesagt && E.abgesagt.has(E.wartetAuf) ? " (ABGESAGT)" : ""}`
+                        ? `; ein Draw wartet auf ${name(E.wartetAuf)}${E.abgesagt && E.abgesagt.has(E.wartetAuf) ? ` (ABGESAGT)${grund()}` : ""}`
                         : "";
                 throw new Error(
                     `ERST-ZEICHNUNG OFFEN — ${wer || "die Aufnahme"} bricht ab: offen ${E.offen.size} nach ${Math.round(

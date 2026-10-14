@@ -69,23 +69,13 @@
 //
 //   node scripts/diag-fahr-leben.cjs [--selftest]          Port: FAHR_LEBEN_PORT (Standard 4413)
 "use strict";
-const puppeteer = require("puppeteer");
-const http = require("http");
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
-const { linsenWebGpuArgs, adapterZeile } = require("./lib/software-gpu.cjs");
+const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.FAHR_LEBEN_PORT || 4413);
 const root = path.resolve(__dirname, "..");
-const mime = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".wasm": "application/wasm",
-    ".json": "application/json",
-    ".css": "text/css",
-    ".png": "image/png",
-    ".woff2": "font/woff2",
-};
 
 const errs = [];
 function check(name, ok, detail) {
@@ -743,17 +733,7 @@ function stationVerdict(s) {
     return out;
 }
 
-const server = http.createServer((req, res) => {
-    let p = req.url.split("?")[0];
-    if (p === "/") p = "/index.html";
-    const fp = path.join(root, p);
-    if (!fp.startsWith(root)) return ((res.statusCode = 403), res.end());
-    fs.readFile(fp, (err, data) => {
-        if (err) return ((res.statusCode = 404), res.end());
-        res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-        res.end(data);
-    });
-});
+const server = statikServer();
 
 // ── DIE PROBE IN DER SEITE (Funktionsrumpf; r = die Welt). Fährt den echten Frame. ──
 async function probeLeben(expected) {
@@ -3469,8 +3449,10 @@ async function probeBahn(B) {
     phase("F1");
     // ════ F3 — DIE NATUR-WAND KENNT DEN WAGEN: eine Tanne 1,5 m vor dem Ursprung eines stehenden GT ════
     const wandProbe = () => {
-        const sx = M.x + 14;
-        const sz = M.z + 14;
+        // außerhalb der Lichtung des Genesis-Platzes samt der Krone einer Tanne (K52: die Lichtung trägt den Ring der Tore,
+        // 15 m — bei M + 14/14 urteilte die Wand „lichtung", bevor sie den Wagen fragte)
+        const sx = M.x + 30;
+        const sz = M.z + 30;
         const e = r.spawnArchitecture(
             "fahrzeug_gt",
             { x: sx, y: boden(sx, sz) + 0.5, z: sz },
@@ -4337,7 +4319,7 @@ function quellenAbgriff() {
             );
         }
         // Die statischen Wände feuern auf den Vor-Stand.
-        const quelle = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+        const quelle = stammLib.text(root);
         const garage = fs.readFileSync(path.join(root, "worlds/garage/garage.js"), "utf8");
         const kern = fs.readFileSync(path.join(root, "vehicle-core.js"), "utf8");
         const gruen = taktWand(quelle);
@@ -4648,7 +4630,7 @@ function quellenAbgriff() {
         process.exit(0);
     }
 
-    const quelle = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+    const quelle = stammLib.text(root);
     console.log("=== W — DIE STATISCHE WAND DES RITT-TAKTS (Node, kommentarfrei) ===");
     for (const [name, ok, detail] of taktWand(quelle)) check(name, ok, detail);
     console.log("=== P — DIE KERN-PFLICHT DES FAHR-SCHRITTS (Node, kommentarfrei) ===");
@@ -4664,12 +4646,7 @@ function quellenAbgriff() {
     for (const [name, ok, detail] of kernProbe(globalThis.__vehicleCore)) check(name, ok, detail);
 
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await puppeteer.launch({
-        headless: true,
-        protocolTimeout: 300000,
-        args: [...linsenWebGpuArgs(), "--autoplay-policy=no-user-gesture-required"],
-    });
-    await adapterZeile(browser);
+    const browser = await starteBrowser({ art: "linse", frist: 300000, zusatz: ["--autoplay-policy=no-user-gesture-required"] });
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(() => {
         window.__anazhForceFoundry = true;

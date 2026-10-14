@@ -33,9 +33,14 @@
 //       gegen das Gesetz, je Stufe (L0 · L1 · einzige Nah-Stufe · Karte) × Laub/Rinde × Metrik-Verhältnis × Band-Satz ×
 //       Distanz-Intervall, Dither-Raster 256 — kein Loch; der Überschuss (das Fenster behält, das Gesetz nicht) steht als
 //       Zahl. --selftest: verschobene Kanten (je Stufe 1 m nach innen) reißen Löcher und werden genannt.
-//   (7) DIE KETTE OHNE PARTNER (06.10., F-D3/V-D3): eine Karten-Art, die nur die L0 zeigt (Wagen, Tor), blendet nie
-//       aus — dieselbe Loch-Probe wie die Stufen-Wahrheit (Teil b), über den Sweep 4–55 m, voll und unter Last. Bis 06.10.
-//       stempelte der Gruppen-Bau ihre L0 als „L0 vor einer L1" (1): ab 8 m × Perf fiel die ganze Gestalt aus.
+//   (7) DIE KETTE DES GESETZBUCHS (K43-3; vorher „die Kette ohne Partner", 06.10. F-D3/V-D3): Wagen und Tor tragen ihre
+//       Stufen-Kette im Gesetzbuch (vehicle [0,1] + Karte, gate [0,1] nach den Grenzen `ab` + NUR-WURF 3) — jede gezeigte
+//       Stufe hat ihren Partner, beide stehen im Bild, und über den Sweep 4–55 m reißt kein Loch, voll und unter Last
+//       (dieselbe Loch-Probe wie die Stufen-Wahrheit, Teil b). Die gezeichnete Stufe einer Satz-Art (das Tor) ist ihre
+//       ZELLE im Bau-Satz: die Linse liest die Stempel je Ecke dort, nie an der Gruppe, die nie zeichnet. Bis 06.10.
+//       stempelte der Gruppen-Bau die einzige L0 als „L0 vor einer L1" (1): ab 8 m × Perf fiel die ganze Gestalt aus.
+//       Selbsttest im selben Lauf: die L1 lädt nie und die Stufe hält nicht (Loch am Wagen, L1 fehlt im Bild); der Satz
+//       folgt der Stufe nicht (die Marke stumm: fehlende Zelle am Tor — der alte Leser der Gruppen sah 0 Löcher).
 //   (8) DIE STUFE OHNE BILD (1110-11, die Birke in 5 m stand doppelt): das Maß der Blende ist die INSTANZ (Studio foundry-core
 //       `_iw = instanceMatrix[3].xz`) — Maske, Karte und das Fenster der Instanz-Wahl messen vom Auge zum Ursprung der
 //       Instanz, nie zum Fragment. Statisch: keine Maske misst von positionWorld, die Karte von ihrem Anker (`_dA`), das
@@ -61,23 +66,14 @@
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 //   node scripts/diag-foundry-crossfade.cjs [--selftest]
 "use strict";
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const vm = require("vm");
-const http = require("http");
-const puppeteer = require("puppeteer");
+const stammLib = require("./lib/stamm.cjs");
 
 const root = path.resolve(__dirname, "..");
 const PORT = Number(process.env.CROSSFADE_PORT || 4418);
-const mime = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".wasm": "application/wasm",
-    ".json": "application/json",
-    ".css": "text/css",
-    ".png": "image/png",
-    ".woff2": "font/woff2",
-};
 const errs = [];
 function check(name, ok, detail) {
     console.log(`  ${ok ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
@@ -107,7 +103,7 @@ function fnBody(src, sigRe) {
 // ===== TEIL 1: die Studio-GLSL-Wahrheit parsen (foundry-core.js + phytogenesis.js, NUR LESEN) =====
 const foundrySrc = fs.readFileSync(path.join(root, "foundry-core.js"), "utf8");
 const phytogenSrc = fs.readFileSync(path.join(root, "worlds", "terrain", "phytogenesis.js"), "utf8");
-const anazhSrc = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+const anazhSrc = stammLib.text(root);
 const coreSrcRaw = fs.readFileSync(path.join(root, "phyto-core.js"), "utf8");
 
 function parseStudio() {
@@ -460,8 +456,17 @@ function massDerBlende(srcNC) {
     else if (/weite|_instanzWeite|pflanzeRandM|ak\[i \* 4 \+ 1\]/.test(fen)) v.push("das Fenster der Instanz-Wahl misst die Weite der Gestalt");
     if (!/if \(assignBuffer && builder\) builder\.__anazhInstanzMatrix = n;/.test(srcNC))
         v.push("der Haken legt die Matrix der Instanz nicht am Builder ab");
+    // die Kette des Ursprungs (K20-N1): `_instanzMitteNode` → der Anker der EINEN Naht `_weltNaht` (Objekt × Instanz-Matrix,
+    // Spalte 3) → `_instanzMatrixNode` liest die Matrix, die der Haken am Builder ablegt
     const mitte = fnBody(srcNC, /_instanzMitteNode\(T\)\s*/) || "";
-    if (!/builder\.__anazhInstanzMatrix/.test(mitte) || !/m\.element\(3\)/.test(mitte) || !/modelWorldMatrix/.test(mitte))
+    const naht = fnBody(srcNC, /^ {4}_weltNaht\(T\)\s*/m) || "";
+    const matrix = fnBody(srcNC, /^ {4}_instanzMatrixNode\(T\)\s*/m) || "";
+    if (
+        !/this\._weltNaht\(T\)\.anker/.test(mitte) ||
+        !/modelWorldMatrix\.mul\(this\._instanzMatrixNode\(T\)\)/.test(naht) ||
+        !/anker: Mw\.element\(3\)/.test(naht) ||
+        !/builder\.__anazhInstanzMatrix/.test(matrix)
+    )
         v.push("der Ursprung der Instanz liest nicht die Instanz-Matrix (Spalte 3) in der Welt");
     return v;
 }
@@ -502,23 +507,9 @@ function stilleBlende(srcNC) {
 
 // ===== TEIL (b) — W5.4: die CPU-Doppel-Mitgliedschaft im lebenden System (headless) =====
 async function runPartB() {
-    const server = http.createServer((req, res) => {
-        let p = req.url.split("?")[0];
-        if (p === "/") p = "/index.html";
-        const fp = path.join(root, p);
-        if (!fp.startsWith(root)) return ((res.statusCode = 403), res.end());
-        fs.readFile(fp, (err, data) => {
-            if (err) return ((res.statusCode = 404), res.end());
-            res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-            res.end(data);
-        });
-    });
+    const server = statikServer();
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await puppeteer.launch({
-        headless: true,
-        protocolTimeout: 240000,
-        args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--no-sandbox", "--disable-setuid-sandbox"],
-    });
+    const browser = await starteBrowser({ art: "webgl", frist: 240000 });
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(() => {
         window.__anazhForceFoundry = true;
@@ -603,10 +594,11 @@ async function runPartB() {
         // Der Strauch verlässt die Welt vor der Baseline (die Slot-Bilanz zählt nur den Proben-Baum); der Sweep pflanzt
         // ihn mit warmen Stufen neu und räumt ihn wieder.
         if (sEntry) r.removeArchitecture(sEntry);
-        // DIE KETTE OHNE PARTNER (06.10., F-D3/V-D3): Wagen und Tor sind Karten-Arten (KIND_POLICY.impostor), zeigen
-        // aber nur die L0 (Wagen kindStages [0]; das Tor [0,3], die 3 ist NUR-WURF und wird nie gezeigt — 1110-9). Eigene
-        // Orte; ihre L0 wärmt hier, der Sweep pflanzt sie neu und räumt sie.
-        res.ohnePartner = [];
+        // DIE KETTE DES GESETZBUCHS (K43-3; vorher „die Kette ohne Partner", 06.10. F-D3/V-D3): Wagen und Tor tragen ihre
+        // Stufen-Kette im Gesetzbuch — der Wagen [0, 1] und die Karte (KIND_POLICY.impostor), das Tor [0, 1] nach den Grenzen
+        // seines Kerns (B2c `ab`, keine Karte; die 3 ist NUR-WURF und wird nie gezeigt). Eigene Orte; JEDE gezeigte Stufe (und
+        // die Karte der Karten-Art) wärmt hier, der Sweep pflanzt sie neu und räumt sie.
+        res.kette = [];
         for (const [typ, dx] of [
             ["fahrzeug_gt", 800],
             ["tor_drachentor", 1200],
@@ -616,24 +608,36 @@ async function runPartB() {
             const oy = r._voxelSurfaceY(ox, oz) || 1;
             const oE = r.spawnArchitecture(typ, { x: ox, y: oy, z: oz }, { silent: true, seed: 5 });
             const oPreset = oE ? r._foundryPresetForEntry(oE) : null;
-            let oWarm = false;
+            const stufen = oPreset ? r._foundryKindStages(oPreset) : null;
+            const gezeigt = (stufen || []).filter((s) => !r._foundryNurWurf(oPreset, s));
+            const karte = !!oPreset && r._foundryPresetIsTree(oPreset);
+            const ziel = gezeigt.concat(karte ? [2] : []);
+            const warm = {};
+            const alleWarm = () => ziel.length > 0 && ziel.every((s) => warm[s] === true);
             const dlO = performance.now() + 90000;
-            while (oE && oPreset && performance.now() < dlO && !oWarm) {
-                const fl = r._foundryFlattenFor(oE, oPreset, 0);
-                if (fl && fl.instanceable) oWarm = true;
-                else {
+            while (oE && oPreset && performance.now() < dlO && !alleWarm()) {
+                for (const lod of ziel)
+                    if (!warm[lod]) {
+                        const fl = r._foundryFlattenFor(oE, oPreset, lod);
+                        if (fl && fl.instanceable) warm[lod] = true;
+                    }
+                if (!alleWarm()) {
                     try {
                         r._gameLoopTick(performance.now());
                     } catch (_e) {}
                     await sleep(120);
                 }
             }
-            res.ohnePartner.push({
+            const rec = oPreset && f.recipes ? f.recipes[oPreset] : null;
+            res.kette.push({
                 typ,
                 preset: oPreset,
-                warm: oWarm,
-                stufen: oPreset ? r._foundryKindStages(oPreset) : null,
-                gezeigt: oPreset ? (r._foundryKindStages(oPreset) || []).filter((s) => !r._foundryNurWurf(oPreset, s)) : null,
+                warm,
+                alleWarm: alleWarm(),
+                stufen,
+                gezeigt,
+                karte,
+                satzArt: !!(rec && A.BAU_SATZ[rec.kind]),
                 ort: { x: ox, y: oy, z: oz },
             });
             if (oE) r.removeArchitecture(oE);
@@ -814,18 +818,187 @@ async function runPartB() {
                     r.removeArchitecture(s2); // räumt aus der Sweep-Liste (removeArchitecture sucht dort)
                     st.architectures = [entry];
                 }
-                // Die Kette ohne Partner im selben Gesetz: kein Loch über den Sweep, voll und unter Last.
-                for (const op of res.ohnePartner || []) {
-                    if (!op.warm) continue;
-                    const o2 = r.spawnArchitecture(op.typ, op.ort, { silent: true, seed: 5 });
-                    if (!o2) continue;
-                    if (!o2.instanced) r._rebuildArchitectureMesh(o2);
-                    st.architectures = [o2];
-                    const E = { entry: o2, px: op.ort.x, py: op.ort.y, pz: op.ort.z };
-                    op.voll = lochSweep(1, E);
-                    op.last = lochSweep(fdMin, E);
-                    r.removeArchitecture(o2);
-                    st.architectures = [entry];
+                // DIE KETTE DES GESETZBUCHS im selben Gesetz (K43-3): je Probe die GEZEICHNETEN Stufen — eine Instanz-Gruppe mit
+                // ihren Instanz-Stempeln, ein Bereich des Bau-Satzes mit den Stempeln JE ECKE seiner Zelle (die Satz-Gruppe
+                // zeichnet nie: sie ist Slot-Wahrheit, gezeichnet wird ihr Bereich im Satz ihres Stoffs, `_bauSatzArt`). Eine
+                // Zelle, die der Satz nicht trägt (Satz verborgen, Bereich oder Zelle fehlt, die Zelle liegt nicht an ihrer
+                // Instanz), zeichnet nichts; eine Probe ohne gezeichnete Stufe ist ein Loch (die Gestalt fort — 4–55 m liegen vor
+                // jeder Fernform). Der alte Leser (nur die Gruppen-Stempel) rechnet daneben: die Gegenprobe, die er nicht sah.
+                const satzStempel = (g, ref, o) => {
+                    const S = st.chunkSaetze ? st.chunkSaetze.get(g.satz) : null;
+                    const b = S ? S.bloecke.get(g.key) : null;
+                    const z = b && b.zellen ? b.zellen[ref.slot] : null;
+                    let anDerInstanz = false;
+                    if (z && !z.huelle.isEmpty()) {
+                        const T3 = window.THREE;
+                        if (!g.geom.boundingBox) g.geom.computeBoundingBox();
+                        const soll = g.geom.boundingBox
+                            .clone()
+                            .applyMatrix4(new T3.Matrix4().fromArray(g.mesh.instanceMatrix.array, ref.slot * 16));
+                        anDerInstanz = soll.containsPoint(z.huelle.getCenter(new T3.Vector3()));
+                    }
+                    if (!S || S.verborgen || !b || !anDerInstanz) {
+                        o.zelleFehlt++;
+                        if (!o.fehltBeispiel)
+                            o.fehltBeispiel = {
+                                satz: String(g.satz).split("|")[0],
+                                key: String(g.key).slice(0, 48),
+                                slot: ref.slot,
+                                bereich: !!b,
+                                zellen: b && b.zellen ? b.zellen.length : 0,
+                            };
+                        return null;
+                    }
+                    o.satzZellen++;
+                    const at = b.geom.attributes;
+                    let al = null,
+                        h = 0,
+                        hL = 0;
+                    for (let i = 0; i < z.idx.length; i++) {
+                        const v = z.idx[i] - b.vStart;
+                        const a = at.aLodLevel.array[v],
+                            hh = at.aH0.array[v],
+                            hl = at.aH0L.array[v];
+                        if (al === null) {
+                            al = a;
+                            h = hh;
+                            hL = hl;
+                        } else if (a !== al || hh !== h || hl !== hL) {
+                            o.eckeUngleich++;
+                            break;
+                        }
+                    }
+                    return { h, hL, modus: al > 2.5 ? "l1e" : al > 1.5 ? "l1" : al > 0.5 ? "l0" : "frei" };
+                };
+                // Die Löcher einer Probe: je Rinde/Laub × 64 Dither-Werte einer, den KEINE gezeichnete Stufe behält (der Halt —
+                // |aH0L| mit Vorzeichen — zeichnet voll, „frei" ist ungemaskt); ohne gezeichnete Stufe alle 128.
+                const lochZahl = (stufen, raw, k) => {
+                    if (!stufen.size) return 128;
+                    let n = 0;
+                    for (const fol of [false, true])
+                        for (let i = 0; i < 64; i++) {
+                            const dh = (i + 0.5) / 64;
+                            let behalten = false;
+                            for (const [m, e] of stufen) {
+                                if (m === "frei" || e.halt) {
+                                    behalten = true;
+                                    break;
+                                }
+                                const dS = raw * k * Math.min(lodRefLive / Math.max(e.h, 1e-3), 1);
+                                const dL = raw * k * Math.min(lodRefLive / Math.max(fol ? e.hL : e.h, 1e-3), 1);
+                                const z = core.lodCrossfadeMask(dS, dh, cfgM, MODUS_LOD[m], fol, dL);
+                                if (m === "l1e" ? z.f1o < dh : z.keep) {
+                                    behalten = true;
+                                    break;
+                                }
+                            }
+                            if (!behalten) n++;
+                        }
+                    return n;
+                };
+                const kettenSweep = (fd, E) => {
+                    st._foliageDensityScale = fd;
+                    const k = r._lodPerfMul();
+                    const o = {
+                        perf: +k.toFixed(3),
+                        proben: 0,
+                        loecher: 0,
+                        leer: 0,
+                        altLoecher: 0,
+                        satzZellen: 0,
+                        zelleFehlt: 0,
+                        eckeUngleich: 0,
+                        stempelUngleich: 0,
+                        modi: {},
+                        stufen: {},
+                        beispiel: null,
+                        fehltBeispiel: null,
+                    };
+                    const dazu = (M, sp) => {
+                        const e = M.get(sp.modus) || { h: 0, hL: Infinity, halt: false };
+                        e.h = Math.max(e.h, sp.h);
+                        e.hL = Math.min(e.hL, Math.abs(sp.hL));
+                        e.halt = e.halt || sp.hL < 0;
+                        M.set(sp.modus, e);
+                    };
+                    for (const raw of [4, 7, 10, 13, 16, 19, 22, 25, 28, 32, 36, 42, 48, 55, 48, 42, 36, 32, 28, 25, 22, 19, 16, 13, 10, 7, 4]) {
+                        st.playerMesh.position.set(E.px - raw, E.py, E.pz);
+                        r._archLODCursor = 0;
+                        for (let i = 0; i < 4; i++) r._tickArchitectureLOD(99, st.playerMesh.position);
+                        r._tickBauSatz(); // der Render legt die Bereiche vor dem Zeichnen (`_tickChunkSatz`)
+                        const neu = new Map(),
+                            alt = new Map();
+                        for (const list of [E.entry.instSlots, E.entry.instSlotsBand])
+                            if (Array.isArray(list))
+                                for (const ref of list) {
+                                    const g = st.archInstanceGroups && st.archInstanceGroups.get(ref.key);
+                                    if (!g || !g.mesh || g.shadowTwin || g.mesh.layers.mask === 1 << A.SHADOW_TWIN_LAYER) continue;
+                                    const spAlt = stempelVon(ref);
+                                    if (spAlt) dazu(alt, spAlt);
+                                    const sp = g.satz ? satzStempel(g, ref, o) : spAlt;
+                                    if (!sp) continue;
+                                    dazu(neu, sp);
+                                    o.modi[sp.modus] = (o.modi[sp.modus] || 0) + 1;
+                                    const s = stageOfKey(ref.key);
+                                    if (s !== null) o.stufen[s] = (o.stufen[s] || 0) + 1;
+                                }
+                        o.proben++;
+                        const visH = r._lodTreeVisHeight(E.entry);
+                        for (const [m, e] of neu)
+                            if (m !== "frei" && !(Math.abs(e.h - visH) <= 1e-3 * Math.max(1, visH))) o.stempelUngleich++;
+                        const n = lochZahl(neu, raw, k);
+                        if (!neu.size) o.leer++;
+                        o.loecher += n;
+                        o.altLoecher += lochZahl(alt, raw, k);
+                        if (n > 0 && !o.beispiel)
+                            o.beispiel = { raw, modi: [...neu.keys()], primaer: E.entry._lodLevel, band: Number.isFinite(E.entry._lodBandLevel) ? E.entry._lodBandLevel : null, loecher: n };
+                    }
+                    return o;
+                };
+                // Ein Lauf der Kette; `gegen` = der Täter des Selbsttests im selben Lauf: "partner" — die L1 lädt nie und die Stufe
+                // hält nicht (der Stand vor K36: die L0 dithert zu einer Stufe, die es nicht gibt); "satz" — der Bau-Satz folgt der
+                // Stufe nicht (die Marke `_bauSatzMarke` stumm: die Gruppe wechselt, ihr Bereich im Satz nie).
+                const kettenLauf = (op, gegen) => {
+                    if (gegen === "satz") r._bauSatzMarke = function () {};
+                    if (gegen === "partner") {
+                        r._foundryFlattenFor = function (e, p, lod) {
+                            return p === op.preset && lod === 1 ? null : A.prototype._foundryFlattenFor.call(this, e, p, lod);
+                        };
+                        r._lodSlotVoll = function (e, band, bl = e._lodBandLevel) {
+                            const karte = e._occluded === true || e._bruecke === true;
+                            return band ? karte && bl === 2 : karte;
+                        };
+                    }
+                    let o2 = null;
+                    try {
+                        o2 = r.spawnArchitecture(op.typ, op.ort, { silent: true, seed: 5 });
+                        if (!o2) return null;
+                        if (!o2.instanced) r._rebuildArchitectureMesh(o2);
+                        st.architectures = [o2];
+                        const E = { entry: o2, px: op.ort.x, py: op.ort.y, pz: op.ort.z };
+                        return gegen ? kettenSweep(1, E) : { voll: kettenSweep(1, E), last: kettenSweep(fdMin, E) };
+                    } finally {
+                        delete r._bauSatzMarke;
+                        delete r._foundryFlattenFor;
+                        delete r._lodSlotVoll;
+                        if (o2) r.removeArchitecture(o2);
+                        st.architectures = [entry];
+                        // der Satz zurück auf die Wahrheit seiner Gruppen: jeder Bereich jeder Bau-Satz-Art und jede Satz-Gruppe
+                        for (const [art, S] of st.chunkSaetze || [])
+                            if (st.satzStoffe && st.satzStoffe.has(art)) for (const key of S.bloecke.keys()) r._bauSatzMarke(key, art);
+                        for (const g of (st.archInstanceGroups || new Map()).values()) if (g.satz) r._bauSatzMarke(g.key, g.satz);
+                        r._tickBauSatz();
+                    }
+                };
+                for (const op of res.kette || []) {
+                    if (!op.alleWarm) continue;
+                    const lauf = kettenLauf(op, null);
+                    if (lauf) {
+                        op.voll = lauf.voll;
+                        op.last = lauf.last;
+                    }
+                    op.gegenPartner = kettenLauf(op, "partner");
+                    if (op.satzArt) op.gegenSatz = kettenLauf(op, "satz");
                 }
                 const echt = r._lodTreeVisHeight;
                 r._lodTreeVisHeight = () => 0; // die Gegenprobe: der Leser vor dem 04.10.
@@ -1289,7 +1462,9 @@ function schattenWahrheit(srcNC, fcSrc = foundrySrc) {
     const stoff = fnBody(srcNC, /_foundryTreeMaterial\(kind, mp, wiegen, baum\)\s*/) || "";
     if (!stoff) v.push("_foundryTreeMaterial(kind, mp, wiegen, baum) fehlt");
     else {
-        const erlaubt = new Set(["TSL.max(haar, wolle)", "mat.opacityNode.mul(_keepX)"]); // Fell-Schale wirft nicht
+        // kein Stoff schneidet über opacityNode aus (die Fell-Schale samt Kopf-Schalen trägt ihn in colorNode.a, K28) — nur die
+        // Blende multipliziert einen schon gesetzten Kanal
+        const erlaubt = new Set(["mat.opacityNode.mul(_keepX)"]);
         for (const m of stoff.matchAll(/mat\.opacityNode = ([^;]+);/g))
             if (!erlaubt.has(m[1].trim())) v.push("werfender Stoff schneidet über opacityNode aus: " + m[1].trim());
     }
@@ -1512,6 +1687,14 @@ async function main() {
             ["Schatten-Teil im Hauptbild, jedes Teil wirft", nc.replace("if (lf.teil !== wurfTeil) continue;", "")],
             ["Wurf-Zeile ohne Teil-Namen trifft still jedes Leaf", nc.replace('if (wurf && !(typeof wurfTeil === "string" && wurfTeil))', "if (false)")],
             ["Schatten-Teil fehlt still", nc.replace("if (!hat)", "if (false)")],
+            [
+                // die Fell-Schale (Haar · Wolle, Leib und Kopf) schnitt bis K28 über opacityNode aus — der Ausschnitt zurück dorthin
+                "Fell-Schale über opacityNode",
+                nc.replace(
+                    /(TSL\.mix\(TSL\.float\(FS\.wurzel\), TSL\.float\(FS\.spitze\), t\)\),\s*)TSL\.max\(haar, wolle\)(\s*\);)/,
+                    (_m, a, b) => a + "1.0" + b + " mat.opacityNode = TSL.max(haar, wolle);"
+                ),
+            ],
             ["Schatten-Stoff über opacityNode", nc.replace("mat.colorNode = TSL.vec4(TSL.vec3(0.0), atl ? TSL.max(deckt, atl.a) : deckt);", "mat.colorNode = TSL.vec4(TSL.vec3(0.0), 1.0); mat.opacityNode = TSL.max(deckt, atl.a);")],
             ["Index-Vorsatz kehrt zurück", nc.replace("z.drawRange.count = g.drawRange.count;", "z.drawRange.count = lf.wurf * 3;")],
             ["Fassade verliert den Wurf", nc.replace("g2.setDrawRange(srcGeom.drawRange.start, srcGeom.drawRange.count);", "")],
@@ -1609,6 +1792,11 @@ async function main() {
                 ],
                 ["Karte zum Quad", nc.replace("distNode: _dA,", "distNode: _Ta.sqrt(_hl2),")],
                 ["Haken ohne Matrix", nc.replace("if (assignBuffer && builder) builder.__anazhInstanzMatrix = n;", "")],
+                // die Naht ohne Instanz-Matrix: der Ursprung jeder Instanz wäre der Ursprung ihres Objekts (K20-N1)
+                [
+                    "Naht ohne Instanz",
+                    nc.replace("const Mw = T.modelWorldMatrix.mul(this._instanzMatrixNode(T));", "const Mw = T.modelWorldMatrix;"),
+                ],
             ]) {
                 const v = massDerBlende(src);
                 check(`Selbst-Test Maß: „${name}" → die Linse nennt ihn`, src !== nc && v.length > 0, v.join(" · "));
@@ -1972,28 +2160,67 @@ async function main() {
             check("STRAUCH: kein Loch, Stempel = CPU-Sichthöhe (volle Leistung)", ST.voll.loecher === 0 && ST.voll.stempelUngleich === 0, z(ST.voll));
             check("STRAUCH: kein Loch unter Last (Perf-Streck)", ST.last.proben >= 8 && ST.last.loecher === 0 && ST.last.stempelUngleich === 0, z(ST.last));
         } else check("STRAUCH-Sweep lief", false, "fehlt");
-        // DIE KETTE OHNE PARTNER: eine Art, die nur die L0 deklariert, blendet nie aus — sonst ein Loch über die ganze
-        // Gestalt ab 8 m × Perf (der eigene Wagen in der Verfolger-Kamera ein Geist, jeder Wagen und jedes Tor jenseits
-        // 12 m fort; 06.10. rot: GT voll 27 von 27 Proben mit Loch).
-        for (const op of out.ohnePartner || []) {
-            // gezählt werden die GEZEIGTEN Stufen (eine NUR-WURF-Stufe ist kein Blend-Partner, `_foundryDeclaredStage`)
-            const nurL0 = Array.isArray(op.gezeigt) && op.gezeigt.length === 1 && op.gezeigt[0] === 0;
+        // DIE KETTE DES GESETZBUCHS (K43-3): Wagen und Tor tragen ihre Stufen-Kette im Gesetzbuch — jede gezeigte Stufe hat
+        // ihren Partner (L0 ↔ L1), beide stehen im Bild, und über den Sweep 4–55 m reißt kein Loch, voll und unter Last. Eine
+        // Satz-Art (das Tor, `BAU_SATZ`) wird an ihren Satz-Zellen geprobt — die Stempel je Ecke, die der Satz zeichnet.
+        // Vorher (06.10., „die Kette ohne Partner"): die L0 dithert zu einer L1, die es nicht gibt — GT voll 27 von 27 Proben
+        // mit Loch; bis K43-3 erwartete die Linse Wagen und Tor nur als L0 und las nur Instanz-Gruppen (das Tor: 0 Proben).
+        const zk = (o) =>
+            o
+                ? `${o.proben} Proben · Löcher ${o.loecher} (leer ${o.leer}) · Satz-Zellen ${o.satzZellen} (fehlt ${o.zelleFehlt}, Ecke≠ ${o.eckeUngleich}) · Stempel≠CPU ${o.stempelUngleich} · Stufen ${JSON.stringify(o.stufen)} · Perf ×${o.perf} · alter Leser ${o.altLoecher} Löcher${o.beispiel ? " — z. B. " + JSON.stringify(o.beispiel) : ""}${o.fehltBeispiel ? " — Zelle fehlt z. B. " + JSON.stringify(o.fehltBeispiel) : ""}`
+                : "fehlt";
+        for (const op of out.kette || []) {
+            // gezählt werden die GEZEIGTEN Stufen (eine NUR-WURF-Stufe ist kein Partner, `_foundryDeclaredStage`)
+            const g = Array.isArray(op.gezeigt) ? op.gezeigt : [];
+            const mitPartner = g.length >= 2 && g[0] === 0 && g.every((s, i) => i === 0 || s === g[i - 1] + 1);
             check(
-                `KETTE OHNE PARTNER (${op.typ}): Preset, nur die L0 gezeigt, L0 warm`,
-                !!op.preset && nurL0 && op.warm === true,
-                JSON.stringify({ preset: op.preset, stufen: op.stufen, gezeigt: op.gezeigt, warm: op.warm })
+                `KETTE DES GESETZBUCHS (${op.typ}): jede gezeigte Stufe hat ihren Partner (L0 ↔ L1), alle warm`,
+                !!op.preset && mitPartner && op.alleWarm === true,
+                JSON.stringify({ preset: op.preset, stufen: op.stufen, gezeigt: op.gezeigt, karte: op.karte, satz: op.satzArt, warm: op.warm })
             );
             if (!op.voll || !op.last) {
-                check(`KETTE OHNE PARTNER (${op.typ}): Sweep lief`, false, "fehlt");
+                check(`KETTE DES GESETZBUCHS (${op.typ}): Sweep lief`, false, "fehlt");
                 continue;
             }
+            const ganz = (o) =>
+                o.proben >= 8 && o.loecher === 0 && o.leer === 0 && o.zelleFehlt === 0 && o.eckeUngleich === 0 && o.stempelUngleich === 0;
             check(
-                `KETTE OHNE PARTNER (${op.typ}): kein Loch über den Sweep, voll und unter Last (die L0 bleibt ganz)`,
-                op.voll.proben >= 8 && op.last.proben >= 8 && op.voll.loecher === 0 && op.last.loecher === 0,
-                `voll ${z(op.voll)} — last ${z(op.last)} — Stempel ${JSON.stringify(op.voll.modi)}`
+                `KETTE DES GESETZBUCHS (${op.typ}): kein Loch über den Sweep 4–55 m, voll und unter Last`,
+                ganz(op.voll) && ganz(op.last),
+                `voll ${zk(op.voll)} — last ${zk(op.last)}`
             );
+            check(
+                `KETTE DES GESETZBUCHS (${op.typ}): der Partner steht im Bild — jede gezeigte Stufe zeichnet im Sweep`,
+                g.length > 0 && g.every((s) => (op.voll.stufen[s] || 0) > 0 && (op.last.stufen[s] || 0) > 0),
+                JSON.stringify({ voll: op.voll.stufen, last: op.last.stufen, modi: op.voll.modi })
+            );
+            if (op.satzArt)
+                check(
+                    `KETTE DES GESETZBUCHS (${op.typ}): der Bau-Satz zeichnet — jede Probe liest die Stempel je Ecke ihrer Satz-Zellen`,
+                    op.voll.satzZellen >= op.voll.proben && op.last.satzZellen >= op.last.proben,
+                    `voll ${op.voll.satzZellen} Zellen in ${op.voll.proben} Proben — last ${op.last.satzZellen} in ${op.last.proben}`
+                );
+            // Selbsttest im selben Lauf: die Linse MUSS den Täter beim Namen zählen.
+            const GP = op.gegenPartner;
+            if (op.karte)
+                check(
+                    `KETTE Selbsttest (${op.typ}): der Partner lädt nie und die Stufe hält nicht — die Linse zählt das Loch der L0, die zu nichts dithert`,
+                    !!GP && GP.loecher > 0,
+                    zk(GP)
+                );
+            check(
+                `KETTE Selbsttest (${op.typ}): der Partner lädt nie — die Linse vermisst die L1 im Bild`,
+                !!GP && GP.proben >= 8 && !((GP.stufen[1] || 0) > 0),
+                zk(GP)
+            );
+            if (op.satzArt)
+                check(
+                    `KETTE Selbsttest (${op.typ}): der Satz folgt der Stufe nicht (die Marke stumm) — die Linse zählt die fehlende Satz-Zelle als Loch`,
+                    !!op.gegenSatz && op.gegenSatz.zelleFehlt > 0 && op.gegenSatz.loecher > 0,
+                    zk(op.gegenSatz)
+                );
         }
-        if (!(out.ohnePartner || []).length) check("KETTE OHNE PARTNER lief", false, "fehlt");
+        if (!(out.kette || []).length) check("KETTE DES GESETZBUCHS lief", false, "fehlt");
     } else check("STUFEN-WAHRHEIT lief", false, SW ? SW.err : "fehlt");
     // (10) DER GEISTER-BAUM (K36): je Lauf 14 Augen-Orte (6–40 m Wahrnehmung, hin und zurück), die Deckung am Auge 0 oder 1.
     const GB = out && out.geisterBaum;

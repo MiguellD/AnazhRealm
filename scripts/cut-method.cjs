@@ -29,7 +29,14 @@ const args = process.argv.slice(2);
 const name = args.find((a) => !a.startsWith("--"));
 const apply = args.includes("--apply");
 const withComment = args.includes("--with-comment");
-const fileArg = args.indexOf("--file") >= 0 ? args[args.indexOf("--file") + 1] : "anazhRealm.js";
+// ohne --file: die Stamm-Datei, die die Methode trägt (scripts/lib/stamm.cjs; findet sie keine, die erste — dort meldet
+// der Schnitt „nicht gefunden")
+const stammLib = require("./lib/stamm.cjs");
+const fileArg =
+    args.indexOf("--file") >= 0
+        ? args[args.indexOf("--file") + 1]
+        : (name && stammLib.dateiVon(path.resolve(__dirname, ".."), name)) ||
+          stammLib.dateien(path.resolve(__dirname, ".."))[0];
 const nthArg = args.indexOf("--nth") >= 0 ? parseInt(args[args.indexOf("--nth") + 1], 10) : null;
 const file = path.resolve(__dirname, "..", fileArg);
 

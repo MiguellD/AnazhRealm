@@ -23,33 +23,13 @@
 //
 //   node scripts/diag-p2p-gestalt.cjs
 "use strict";
-const puppeteer = require("puppeteer");
-const http = require("http");
-const fs = require("fs");
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.P2P_GESTALT_PORT || 4457);
 const root = path.resolve(__dirname, "..");
-const mime = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".wasm": "application/wasm",
-    ".json": "application/json",
-    ".css": "text/css",
-    ".png": "image/png",
-    ".woff2": "font/woff2",
-};
-const server = http.createServer((req, res) => {
-    let p = req.url.split("?")[0];
-    if (p === "/") p = "/index.html";
-    const fp = path.join(root, p);
-    if (!fp.startsWith(root)) return ((res.statusCode = 403), res.end());
-    fs.readFile(fp, (err, data) => {
-        if (err) return ((res.statusCode = 404), res.end());
-        res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-        res.end(data);
-    });
-});
+const server = statikServer();
 
 const errs = [];
 function check(name, ok, detail) {
@@ -60,7 +40,7 @@ function check(name, ok, detail) {
 (async () => {
     // ── Quell-Proben (die Naht lebt im Stamm — Broadcast · Empfang · Konsum) ──
     console.log("=== P2P-GESTALT — Quell-Proben (die Übergabe reist im soul-Kanal) ===");
-    const stamm = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+    const stamm = stammLib.text(root);
     check(
         "Q: der soul-Broadcast trägt die Avatar-Übergabe additiv (nur koerper, kein toter Kreatur-Kanal)",
         /msg\.uebergabe = \{ koerper: su\.koerper \};/.test(stamm)
@@ -83,11 +63,7 @@ function check(name, ok, detail) {
     );
 
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await puppeteer.launch({
-        headless: true,
-        protocolTimeout: 300000,
-        args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--no-sandbox", "--disable-setuid-sandbox"],
-    });
+    const browser = await starteBrowser({ art: "webgl", frist: 300000 });
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(() => {
         window.__anazhForceFoundry = true;
@@ -147,7 +123,7 @@ function check(name, ok, detail) {
         const A = r.constructor;
         const f = r._ensureAssetFoundry();
         while (performance.now() < dl0) {
-            if (f && f.ready && f.recipes && f.recipes.mensch && !f._prefetching) break;
+            if (f && f.ready && f.recipes && f.recipes.mensch && !f._vorrat) break;
             await sleep(120);
         }
         if (!(f && f.ready && f.recipes && f.recipes.mensch)) return { fatal: "mensch-Rezept kam nie" };

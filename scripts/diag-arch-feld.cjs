@@ -29,12 +29,11 @@
 // plus die vier D-Schüsse (artifacts/beweis-e/arch-feld-licht-*.png) aus der EINEN Aufnahme fürs Auge.
 //   node scripts/diag-arch-feld.cjs
 "use strict";
-const puppeteer = require("puppeteer");
-const { linsenWebGpuArgs, adapterZeile } = require("./lib/software-gpu.cjs");
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
-const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 
 const root = path.resolve(__dirname, "..");
 const argOf = (k, d) => {
@@ -45,26 +44,7 @@ const PORT = Number(process.env.ARCH_FELD_PORT || 4467);
 const OUT = path.resolve(argOf("--out", path.join(root, "artifacts", "beweis-e")));
 const W = 640,
     H = 360;
-const mime = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".wasm": "application/wasm",
-    ".json": "application/json",
-    ".css": "text/css",
-    ".png": "image/png",
-    ".woff2": "font/woff2",
-};
-const server = http.createServer((req, res) => {
-    let p = req.url.split("?")[0];
-    if (p === "/") p = "/index.html";
-    const fp = path.join(root, p);
-    if (!fp.startsWith(root)) return ((res.statusCode = 403), res.end());
-    fs.readFile(fp, (err, data) => {
-        if (err) return ((res.statusCode = 404), res.end());
-        res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-        res.end(data);
-    });
-});
+const server = statikServer();
 
 // A' — das Gesetz des Bäckers über das Karten-Buch (je begonnenem Bake: Zelle, ihr Rang d, der Rang dF der Zelle der
 // fernen Eiche im Moment der Wahl): bis die Zelle der Eiche dran ist, überholt sie keine fernere (Rang −1 = ohne Bedarf).
@@ -109,7 +89,7 @@ function schlangenGesetz(src) {
     };
 }
 {
-    const stamm = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+    const stamm = stammLib.text(root);
     if (process.argv.includes("--selftest")) {
         const kaputt = stamm.replace(
             "if (entry._ziegelSlot || entry._ziegelGebacken || ohneFeld) {\n                    if (this._archZiegelFern(entry)) regung++;\n                } else {\n                    // Steht",
@@ -163,12 +143,7 @@ function schlangenGesetz(src) {
 (async () => {
     fs.mkdirSync(OUT, { recursive: true });
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await puppeteer.launch({
-        headless: true,
-        protocolTimeout: 900000,
-        args: linsenWebGpuArgs(),
-    });
-    await adapterZeile(browser);
+    const browser = await starteBrowser({ art: "linse", frist: 900000 });
     const page = await browser.newPage();
     await page.setViewport({ width: W, height: H });
     const pageErrors = [];
@@ -255,7 +230,7 @@ function schlangenGesetz(src) {
         // Gestalt-Bedarf, m; −1 = ohne Bedarf) und dem Rang der Zelle der fernen Eiche im Moment der WAHL — die Linse prüft
         // das GESETZ des Bäckers (nah zuerst, nie verhungert), nicht seinen Durchsatz.
         const presetF = r._foundryPresetForEntry(ebF);
-        const zelleF = "fimp:" + r._foundryKartenKey(presetF, r._foundryVariantFor(ebF.seed, presetF), null);
+        const zelleF = "fimp:" + r._foundryKartenKey(presetF, r._foundryGestaltFor(ebF, presetF), null);
         const backBuch = [];
         const rang = (z) => (z && Number.isFinite(z._bedarfD2) ? Math.round(Math.sqrt(z._bedarfD2)) : -1);
         let zuletzt = r._impostorBakePending ? r._impostorBakePendingKey : null;
@@ -346,7 +321,7 @@ function schlangenGesetz(src) {
                           ? r._foundry.cache.has(
                                 r._foundryKoerperKey(
                                     r._archFoundryPreset(e),
-                                    r._foundryVariantFor(e.seed, r._archFoundryPreset(e)),
+                                    r._foundryGestaltFor(e, r._archFoundryPreset(e)),
                                     1
                                 )
                             )

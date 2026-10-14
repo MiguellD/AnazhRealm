@@ -45,10 +45,9 @@
 //   node scripts/diag-wetter-wache.cjs [--selftest]   (npm run gate:wetter-wache; Port WETTER_WACHE_PORT, HIMMEL_MIN)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const puppeteer = require("puppeteer");
-const http = require("http");
-const fs = require("fs");
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 const {
     AUSGABE_INSTALL,
     wetterUrteil,
@@ -86,26 +85,7 @@ if (process.argv.includes("--selftest")) {
     process.exit(0);
 }
 
-const mime = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".wasm": "application/wasm",
-    ".json": "application/json",
-    ".css": "text/css",
-    ".png": "image/png",
-    ".woff2": "font/woff2",
-};
-const server = http.createServer((req, res) => {
-    let p = req.url.split("?")[0];
-    if (p === "/") p = "/index.html";
-    const fp = path.join(root, p);
-    if (!fp.startsWith(root)) return ((res.statusCode = 403), res.end());
-    fs.readFile(fp, (err, data) => {
-        if (err) return ((res.statusCode = 404), res.end());
-        res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-        res.end(data);
-    });
-});
+const server = statikServer();
 
 // Die Probe im Seiten-Kontext: jeder Schreiber-Weg des Spiels unter der Bühne, der rohe Schmuggel, die freie Welt.
 function probe() {
@@ -473,7 +453,7 @@ async function boot(browser, pageErrors) {
 
 (async () => {
     // (Q) der Stamm: wer schreibt `this.state.weather` und `this.state.timeOfDay` (Kommentare zählen nicht)
-    const stamm = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8").split("\n");
+    const stamm = stammLib.text(root).split("\n");
     const quelle = { wetter: { n: 0, orte: [] }, uhr: { n: 0, orte: [] } };
     stamm.forEach((z, i) => {
         const code = z.replace(/\/\/.*$/, "");
@@ -484,11 +464,7 @@ async function boot(browser, pageErrors) {
     quelle.uhr.n = quelle.uhr.orte.length;
 
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await puppeteer.launch({
-        headless: true,
-        protocolTimeout: 900000,
-        args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--no-sandbox", "--disable-setuid-sandbox"],
-    });
+    const browser = await starteBrowser({ art: "webgl", frist: 900000 });
     const pageErrors = [];
     const page = await boot(browser, pageErrors);
     const S = await page.evaluate(probe);

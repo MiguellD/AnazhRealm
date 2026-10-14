@@ -27,7 +27,7 @@
 //       sie (sonst prüfte die Wand nichts), nach einem neuen Boden (`_chunkSatzMarke`: Graben, LOD-Naht) misst der nächste
 //       Pass jede Mündung im Bild neu (vorher sperrte ein gegrabener Hang die Mündung dahinter, bis das Auge 0,25 m ging);
 //   (i) HIMMELS-LICHT (K02a, Auge 11 bei 762/−138) — der Boden-Stoff liest die Himmels-Sicht je Vertex (`aoNode` =
-//       `aHimmel`, `_himmelsSicht` aus dem Höhlen-Graph): kein Höhlen-Vertex trägt mehr Himmel, als sein gerader Abstand zur
+//       `aHimmel`, gelaende-core `himmelsSicht` aus dem Höhlen-Graph): kein Höhlen-Vertex trägt mehr Himmel, als sein gerader Abstand zur
 //       nächsten Himmels-Fläche lässt, und die Mündung bleibt hell. Vorher lag der volle Himmel auf jeder Höhlen-Wand: 22 m
 //       unter dem Fels stand die Ich-Sicht im blaugrauen Schleier (Helligkeit 55,5, ohne Umgebung 0).
 //   (j) LICHT DES AUGES — in der Höhle die wahre Normale und das Licht des Auges nach seinem Gesetz, im Freien aus; BLENDUNG:
@@ -39,8 +39,20 @@
 //   (l) SZENEN-LICHT (K15, OMEN 1110-3): unter freiem Himmel trägt jedes Licht der Szene Licht — ein Licht auf Stärke 0
 //       steht trotzdem im Licht-Hash JEDES beleuchteten Stoffs und kostet in jedem Fragment (das Punkt-Licht des Auges ab
 //       Boot: 0,48 ms je Frame auf der GTX 1060, wo es nicht leuchtete);
-//   (k) WIESE UNTER FELS — jeder Höhlen-Vertex ohne Himmel trägt den Stein der Palette (`_bodenFarbeUnterFels`), vorher
+//   (k) DER FELS HAT STOFF (K17) — jeder Höhlen-Vertex ohne Himmel und jeder Kliff-Vertex trägt den Fels-Stoff (gelaende-core
+//       `felsFarbe` über `_felsStoff`: Bänke, Kanten, Mulden, Flechte, Moos), Streuung σ/Mittel ≥ 0,08, Albedo ≤ 0,30; vorher
+//       die eine graue Masse des Palette-Steins (Auge-Runde V18.540 bei 762/−138), davor
 //       das Grün der Wiese 25 m über ihm.
+//   (m) DIE BANKUNG IST UNREGELMÄSSIG (K17, Nachbesserung 1) — am Gesetz (gelaende-core `felsBankung`, ohne Browser): der
+//       Variationskoeffizient der Bank-Mächtigkeit ≥ 0,4, die Eigen-Welligkeit der Fugen ≥ 0,1 Bänke, der Durchlauf der Klüfte
+//       durch die Fuge ≥ 0,4; der Detail-Term des Boden-Shaders liest dieselben Größen (paketDicke · fugeWelle · kehle ·
+//       kluftVersatz · fugeLambda). Vorher (9f400dd5) lasen sich gleich hohe Bänke mit geraden Strich-Fugen und je Bank neu
+//       ansetzenden Klüften als Ziegelmauer: im Shader CV 0, am Gesetz 0,20, Welligkeit 0, Durchlauf 0,13.
+//   (n) DER STOFF ENTSTEHT IM WORKER (K17-2) — wo der Worker das Netz baut, baut er Himmels-Sicht, Fels-Stoff und Schutt
+//       (gelaende-core `himmelsSicht` · `felsStoff` in `buildChunkMesh`) und reicht sie per Transfer: im Ring der Mess-Wiese
+//       ruft der Haupt-Thread in keinem Worker-Bau (`_buildVoxelChunkDataFromWorkerMesh`) das Fels-Gesetz, und (a) prüft
+//       Himmel, Schutt und Farbe des Workers byte-gleich gegen den Sync-Bau. Gegenprobe: der Sync-Bau ruft es (sonst
+//       zählte die Wand blind). Vorher (c8e46330) rechnete `_felsStoff` je Worker-Bau im Haupt-Thread: Wiese Σ 59,4 ms.
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): ein Befund mit jedem Täter — Spiegel-Drift, Loch, Licht-Leck,
 // leerer Blick, blinde Linse, toter Schnitt, stumpfer Hinaus-Blick, fehlender Chokepoint, Page-Error — MUSS rot fallen und
 // ihn beim Namen nennen.
@@ -52,6 +64,15 @@ const PFLICHT = ["wiese", "hang", "muendung", "hoehle", "hinaus"];
 // Natürliche Mündungen je km² im Mittelgebirge (Karte K16): die Welt trägt die Höhlen sichtbar.
 const MUENDUNGEN_JE_KM2 = 1;
 const IN_HOEHLE = ["muendung", "hoehle", "hinaus"];
+// (k) Der Fels-Stoff (K17): höchstens 1 % der Fels-Vertices ohne das Gesetz (Summen-Reihenfolge der Krümmung an den
+// Satz-Nähten), Streuung σ/Mittel der Leuchtdichte ≥ 0,08 (die gleichförmige Masse liegt bei 0), Albedo ≤ 0,30 (nordstern §1).
+const FELS_FREMD_ANTEIL = 0.01;
+const FELS_STREUUNG_MIN = 0.08;
+const FELS_ALBEDO_MAX = 0.3;
+// (m) Die Bankung (K17 Nachbesserung 1): Natur-Bankung streut stark (Variationskoeffizient ≳ 0,4, Koordinator-Auge 13.10.).
+const BANK_CV_MIN = 0.4;
+const FUGE_WELLE_MIN = 0.1;
+const KLUFT_DURCHLAUF_MIN = 0.4;
 
 // Das Urteil über einen Befund: Liste der Verstöße (leer = grün). Rein, im Selbsttest wie im Lauf.
 function urteil(b) {
@@ -211,15 +232,84 @@ function urteil(b) {
             );
         }
     }
-    // (k) UNTER FELS WÄCHST NICHTS: jeder Höhlen-Vertex ohne Himmel trägt den Stein der Palette
+    // (k) DER FELS HAT STOFF (K17): jeder Höhlen-Vertex ohne Himmel und jeder Kliff-Vertex trägt den Fels-Stoff des
+    // Gesetzes (gelaende-core `felsFarbe`) — nie die Farbe der Säule, nie EINE graue Masse, im Natur-Band
     const wf = b.wieseUnterFels;
     if (!wf || !(wf.ohneHimmel > 0))
         v.push("LEER: (k) Wiese unter Fels: kein Höhlen-Vertex ohne Himmel im Boden-Satz (die Wand prüfte nichts)");
-    else if (wf.fremd > 0)
+    else {
+        if (wf.fremd > wf.ohneHimmel * FELS_FREMD_ANTEIL)
+            v.push(
+                `WIESE UNTER FELS: ${wf.fremd} von ${wf.ohneHimmel} Höhlen-Vertices ohne Himmel tragen nicht den Fels-Stoff ` +
+                    `(${wf.gruen} davon grün), zuerst ${JSON.stringify(wf.erst)} — die Farbe der Säule oder ein Zwilling liegt ` +
+                    "auf dem Höhlen-Fels (`_felsStoff` liest gelaende-core `felsFarbe`)"
+            );
+        if (!(wf.streuung >= FELS_STREUUNG_MIN))
+            v.push(
+                `MASSE: der Höhlen-Fels ist gleichförmig — Streuung der Leuchtdichte σ/Mittel ${wf.streuung} über ` +
+                    `${wf.ohneHimmel} Vertices (mindestens ${FELS_STREUUNG_MIN}: Bänke, Kanten, Mulden des Fels-Stoffs)`
+            );
+        if (!(wf.albedo <= FELS_ALBEDO_MAX))
+            v.push(`ALBEDO: der Höhlen-Fels liegt bei Y ${wf.albedo} (linear), über dem Natur-Band ${FELS_ALBEDO_MAX}`);
+    }
+    const kl = b.kliff;
+    if (!kl || !(kl.steil > 0))
         v.push(
-            `WIESE UNTER FELS: ${wf.fremd} von ${wf.ohneHimmel} Höhlen-Vertices ohne Himmel tragen nicht den Stein der Palette ` +
-                `(${wf.gruen} davon grün), zuerst ${JSON.stringify(wf.erst)} — die Farbe der Säule (Wiese, Feuchte, Schnee) ` +
-                "liegt auf dem Höhlen-Boden (`_bodenFarbeUnterFels`)"
+            "LEER: (k) Kliff: kein steiler Vertex unter dem Himmel im Boden-Satz (die Wand prüfte keinen Kliff-Stoff)"
+        );
+    else if (kl.fremd > kl.steil * FELS_FREMD_ANTEIL)
+        v.push(
+            `KLIFF OHNE STOFF: ${kl.fremd} von ${kl.steil} steilen Vertices unter dem Himmel tragen nicht den Fels-Stoff ` +
+                `(${kl.gruen} davon grün), zuerst ${JSON.stringify(kl.erst)} — der Vertex trägt die Säule, der Fels lebt nur ` +
+                "als Farbton im Shader (`_felsStoff`)"
+        );
+    // (m) DIE BANKUNG: unregelmäßig am Gesetz, und der Detail-Term liest es
+    const bk = b.bankung;
+    if (!bk || !(bk.baenke > 0))
+        v.push("LEER: (m) Bankung: das Gesetz trägt keine Bänke (gelaende-core `felsBankung` fehlt)");
+    else {
+        if (!(bk.cv >= BANK_CV_MIN))
+            v.push(
+                `MAUERWERK: die Bänke sind gleich hoch — Variationskoeffizient der Mächtigkeit ${bk.cv} über ${bk.baenke} ` +
+                    `Bänke (mindestens ${BANK_CV_MIN}: dünnbankige und massige Pakete, gelaende-core paketDicke · bankStreu)`
+            );
+        if (!(bk.welligkeit >= FUGE_WELLE_MIN))
+            v.push(
+                `GERADE FUGEN: die Fugen wellen nicht für sich — Eigen-Welligkeit ${bk.welligkeit} Bänke (mindestens ` +
+                    `${FUGE_WELLE_MIN}, gelaende-core fugeWelle)`
+            );
+        if (!(bk.durchlauf >= KLUFT_DURCHLAUF_MIN))
+            v.push(
+                `KLÜFTE SETZEN NEU AN: nur ${bk.durchlauf} der Klüfte laufen durch die Fuge weiter (mindestens ` +
+                    `${KLUFT_DURCHLAUF_MIN}: ihre Lage je Paket, gelaende-core kluftVersatz)`
+            );
+    }
+    // (n) DER STOFF ENTSTEHT IM WORKER: kein Ruf des Fels-Gesetzes im Haupt-Thread je Worker-Bau
+    const sw = b.stoffWorker;
+    if (!sw || !(sw.bauten > 0))
+        v.push("LEER: (n) Stoff im Worker: kein Worker-Bau im Ring der Mess-Wiese (die Wand prüfte nichts)");
+    else {
+        if (sw.rufe > 0)
+            v.push(
+                `FELS-STOFF IM HAUPT-THREAD: ${sw.rufe} Rufe des Fels-Gesetzes (${sw.namen.join(" · ")}) in ${sw.bauten} ` +
+                    `Worker-Bauten (\`_buildVoxelChunkDataFromWorkerMesh\` → \`_felsStoff\`, Σ ${sw.ms} ms) — der Stoff ` +
+                    "entsteht im Worker (voxel-worker `buildChunkMesh`, gelaende-core `felsStoff`)"
+            );
+        if (!(sw.syncRufe > 0))
+            v.push(
+                "LINSE BLIND: (n) Stoff im Worker: auch der Sync-Bau ruft das Fels-Gesetz nicht (die Zählung sieht nichts)"
+            );
+    }
+    if (c.feinRuft === false || c.feinEigenHash === true)
+        v.push(
+            "CODE: der Detail-Term (`_terrainGeologyAlbedo`) rechnet nicht das Gesetz (" +
+                (c.feinRuft === false ? "ruft gelaende-core felsFein/schuttKorn nicht" : "eigene Ziehung fract(sin)") +
+                ") — im Shader fährt ein Zwilling"
+        );
+    if (c.feinRuft !== undefined && !(c.feinRechenwerk && c.feinRechenwerk.maxDiff <= 1e-6))
+        v.push(
+            "RECHENWERK: das TSL-Rechenwerk (`_felsRechenwerkTSL`) rechnet nicht das Gesetz — " +
+                (c.feinRechenwerk ? `max. Abstand ${c.feinRechenwerk.maxDiff} an ${c.feinRechenwerk.n} Punkten` : "fehlt")
         );
     if (!c.passLiest)
         v.push("CODE: `_chunkSatzPass` ruft `_hoehlenSicht` nicht (der Chokepoint wählt die Höhle nicht)");
@@ -276,9 +366,13 @@ function selbsttest() {
                     seiten: true,
                     kanten: true,
                     rand: true,
+                    himmel: true,
+                    schutt: true,
+                    farbe: true,
                 },
             },
         ],
+        stoffWorker: { bauten: 81, rufe: 0, namen: [], ms: 9, msMax: 0.4, syncRufe: 5200 },
         blicke: [
             {
                 name: "wiese",
@@ -321,8 +415,13 @@ function selbsttest() {
             augenVorZweig: true,
             augenTslFremd: null,
             poolGesetz: true,
+            feinRuft: true,
+            feinEigenHash: false,
+            feinRechenwerk: { maxDiff: 0, n: 400 },
         },
-        wieseUnterFels: { ohneHimmel: 700, fremd: 0, gruen: 0, erst: null },
+        bankung: { baenke: 2000, mittel: 0.65, cv: 0.71, welligkeit: 0.112, durchlauf: 0.526 },
+        wieseUnterFels: { ohneHimmel: 700, fremd: 0, gruen: 0, erst: null, streuung: 0.19, albedo: 0.14 },
+        kliff: { steil: 300, fremd: 0, gruen: 0, erst: null },
         augenLicht: {
             augeInHoehle: true,
             hoehle: { auge: [-1041, 9, -738], h: 0.2, I: 30, soll: 30, abfall: 1, kern: 8, R: 20, blendung: 1.03 },
@@ -356,6 +455,19 @@ function selbsttest() {
     const faelle = [
         ["Spiegel-Drift", (b) => (b.spiegel[0].felder.tri = false), /SPIEGEL: Chunk 0,0 .*tri weicht ab/],
         ["kein Spiegel", (b) => (b.spiegel = []), /SPIEGEL: kein Chunk/],
+        // (n) der Stand c8e46330: der Fels-Stoff rechnet je Worker-Bau im Haupt-Thread, der Worker reicht keinen Himmel
+        [
+            "Himmel nur im Haupt-Thread",
+            (b) => (b.spiegel[0].felder.himmel = false),
+            /SPIEGEL: Chunk 0,0 .*himmel weicht ab/,
+        ],
+        [
+            "Fels-Stoff im Haupt-Thread",
+            (b) => Object.assign(b.stoffWorker, { rufe: 4100, namen: ["felsFarbe", "felsKruemmung"], ms: 59.4 }),
+            /FELS-STOFF IM HAUPT-THREAD: 4100 Rufe des Fels-Gesetzes \(felsFarbe · felsKruemmung\) in 81 Worker-Bauten/,
+        ],
+        ["Zählung blind", (b) => (b.stoffWorker.syncRufe = 0), /LINSE BLIND: \(n\) Stoff im Worker/],
+        ["kein Worker-Bau", (b) => (b.stoffWorker.bauten = 0), /LEER: \(n\) Stoff im Worker/],
         [
             "Höhle ohne Mündung",
             (b) => (b.muendungen = { anzahl: 0, km2: 4, jeKm2: 0 }),
@@ -494,6 +606,27 @@ function selbsttest() {
             /WIESE UNTER FELS: 650 von 700 Höhlen-Vertices ohne Himmel .*420 davon grün/,
         ],
         ["Fels ohne Höhle", (b) => (b.wieseUnterFels.ohneHimmel = 0), /LEER: \(k\) Wiese unter Fels/],
+        // (k) K17: der Höhlen-Fels von Auge 11 (762/−138) war EINE graue Masse — jeder Vertex der Stein der Palette
+        [
+            "Masse",
+            (b) => (b.wieseUnterFels.streuung = 0),
+            /MASSE: der Höhlen-Fels ist gleichförmig — Streuung .* 0 über 700/,
+        ],
+        ["Fels zu hell", (b) => (b.wieseUnterFels.albedo = 0.5), /ALBEDO: der Höhlen-Fels liegt bei Y 0\.5/],
+        [
+            "Kliff ohne Stoff",
+            (b) => Object.assign(b.kliff, { fremd: 280, gruen: 90, erst: { p: [700, 30, -120] } }),
+            /KLIFF OHNE STOFF: 280 von 300 steilen Vertices/,
+        ],
+        ["Kein Kliff", (b) => (b.kliff.steil = 0), /LEER: \(k\) Kliff/],
+        // (m) K17 Nachbesserung 1: das Höhlen-Bild las sich als Ziegelmauer (9f400dd5)
+        ["Ziegelmauer", (b) => (b.bankung.cv = 0.204), /MAUERWERK: die Bänke sind gleich hoch — .* 0\.204 über 2000/],
+        ["Gerade Fugen", (b) => (b.bankung.welligkeit = 0), /GERADE FUGEN: .* Eigen-Welligkeit 0 Bänke/],
+        ["Klüfte je Bank", (b) => (b.bankung.durchlauf = 0.13), /KLÜFTE SETZEN NEU AN: nur 0\.13/],
+        ["Ohne Bankung", (b) => delete b.bankung, /LEER: \(m\) Bankung/],
+        ["Shader-Zwilling", (b) => (b.code.feinRuft = false), /CODE: der Detail-Term .*\(ruft gelaende-core felsFein/],
+        ["Eigene Ziehung", (b) => (b.code.feinEigenHash = true), /CODE: der Detail-Term .*\(eigene Ziehung/],
+        ["Rechenwerk falsch", (b) => (b.code.feinRechenwerk = { maxDiff: 0.31, n: 400 }), /RECHENWERK: .* 0\.31 an 400/],
     ];
     for (const [name, tat, muss] of faelle) {
         const b = klon();
@@ -516,47 +649,21 @@ if (process.argv.includes("--selftest")) {
     process.exit(0);
 }
 
-const puppeteer = require("puppeteer");
-const http = require("http");
-const fs = require("fs");
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const path = require("path");
 const { installHoehlenStrahl } = require("./lib/hoehlen-strahl.cjs");
 
-const root = path.resolve(__dirname, "..");
 const PORT = Number(process.env.HOEHLEN_SICHT_PORT) || 4504;
 // Die Mess-Wiese und das Quadrat der Mündungs-Suche (halbe Seite, m). Mündung, Höhlen-Raum und der Blick hinaus stehen
 // nicht als Zahl hier: die Suche liest sie aus dem Gesetz der Welt (K16 — die Orte der alten Welt waren Literale).
 const { messort } = require("./lib/welt-orte.cjs");
 const ORTE = { mess: messort("wiese"), mundHalb: 1000 };
-const mime = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".json": "application/json",
-    ".css": "text/css",
-    ".woff2": "font/woff2",
-    ".png": "image/png",
-    ".wasm": "application/wasm",
-};
-const server = http.createServer((req, res) => {
-    let p = req.url.split("?")[0];
-    if (p === "/") p = "/index.html";
-    const fp = path.join(root, p);
-    if (!fp.startsWith(root)) return ((res.statusCode = 403), res.end());
-    fs.readFile(fp, (err, data) => {
-        if (err) return ((res.statusCode = 404), res.end());
-        res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-        res.end(data);
-    });
-});
+const server = statikServer();
 
 (async () => {
     console.log("=== HÖHLEN-SICHT (Welle 7) — Null-Renderer, Mess-Wiese, Strahl-Wahrheit gegen den Boden-Satz ===");
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await puppeteer.launch({
-        headless: "new",
-        protocolTimeout: 600000,
-        args: ["--no-sandbox", "--disable-gpu"],
-    });
+    const browser = await starteBrowser({ art: "null", frist: 600000 });
     const page = await browser.newPage();
     page.setDefaultTimeout(580000);
     const pageErrors = [];
@@ -605,12 +712,48 @@ const server = http.createServer((req, res) => {
                     if (i % 5 === 0) await pause(10);
                 }
             };
+            // ── (n) DER STOFF ENTSTEHT IM WORKER: der Kern ist eingefroren — die Wand reicht dem Haupt-Thread eine zählende
+            // Kopie (jeder Leser fragt `globalThis.__gelaendeCore` je Ruf) und zählt die Rufe des Fels-Gesetzes je Worker-Bau
+            const GK0 = globalThis.__gelaendeCore;
+            const FELS_NAMEN = ["felsStoff", "felsFarbe", "felsKruemmung", "felsNetz", "himmelsSicht"];
+            const felsZaehl = { an: false, rufe: 0, namen: new Set() };
+            const GKz = Object.assign({}, GK0);
+            for (const k of FELS_NAMEN)
+                if (typeof GK0[k] === "function")
+                    GKz[k] = function () {
+                        if (felsZaehl.an) {
+                            felsZaehl.rufe++;
+                            felsZaehl.namen.add(k);
+                        }
+                        return GK0[k].apply(this, arguments);
+                    };
+            globalThis.__gelaendeCore = GKz;
+            const stoffWorker = { bauten: 0, rufe: 0, namen: [], ms: 0, msMax: 0, syncRufe: 0 };
+            r._buildVoxelChunkDataFromWorkerMesh = function () {
+                const r0 = felsZaehl.rufe,
+                    t0 = performance.now();
+                felsZaehl.an = true;
+                try {
+                    return Object.getPrototypeOf(r)._buildVoxelChunkDataFromWorkerMesh.apply(this, arguments);
+                } finally {
+                    felsZaehl.an = false;
+                    const dt = performance.now() - t0;
+                    stoffWorker.bauten++;
+                    stoffWorker.ms += dt;
+                    if (dt > stoffWorker.msMax) stoffWorker.msMax = dt;
+                    stoffWorker.rufe += felsZaehl.rufe - r0;
+                }
+            };
             // ── an die Mess-Wiese
             st.playerMesh.position.set(MESS.x, r._voxelSurfaceY(MESS.x, MESS.z) + 1.8, MESS.z);
             await schwinge();
+            delete r._buildVoxelChunkDataFromWorkerMesh;
+            stoffWorker.namen = [...felsZaehl.namen];
+            stoffWorker.ms = +stoffWorker.ms.toFixed(1);
+            stoffWorker.msMax = +stoffWorker.msMax.toFixed(2);
             r._tickChunkSatz();
             const s = st.chunkSaetze.get("boden");
-            const aus = { spiegel: [], blicke: [], code: {}, ringChunks: last, bereiche: s.bloecke.size };
+            const aus = { spiegel: [], blicke: [], code: {}, ringChunks: last, bereiche: s.bloecke.size, stoffWorker };
 
             // ── (a) SPIEGEL: Main-Sync gegen Worker für Chunks verschiedener Stufe
             const lpc = st.lastPlayerVoxelChunk;
@@ -642,7 +785,15 @@ const server = http.createServer((req, res) => {
             for (const c of wahl) {
                 try {
                     const w = await r._voxelWorkerComputeChunkMesh(c.cx, c.cz, c.lod);
-                    const m = r._buildVoxelChunkData(c.cx, c.cz, c.lod);
+                    const r0 = felsZaehl.rufe;
+                    felsZaehl.an = true;
+                    let m;
+                    try {
+                        m = r._buildVoxelChunkData(c.cx, c.cz, c.lod);
+                    } finally {
+                        felsZaehl.an = false;
+                        stoffWorker.syncRufe += felsZaehl.rufe - r0;
+                    }
                     const g = m && m.mesh ? m.mesh.geometry : null;
                     if (!g || w.empty) {
                         aus.spiegel.push({ chunk: c.key, lod: c.lod, fehler: "leer auf einer Seite" });
@@ -663,6 +814,10 @@ const server = http.createServer((req, res) => {
                             seiten: gleich(W.seiten, H && H.seiten),
                             kanten: gleich(W.kanten, H && H.kanten),
                             rand: gleich(W.rand, H && H.rand),
+                            // (n) der Stoff des Workers: die rohe Antwort gegen den fertigen Sync-Bau
+                            himmel: gleich(w.himmel, g.attributes.aHimmel && g.attributes.aHimmel.array),
+                            schutt: gleich(w.schutt, g.attributes.aSchutt && g.attributes.aSchutt.array),
+                            farbe: gleich(w.colors, g.attributes.color.array),
                         },
                     });
                     g.dispose();
@@ -670,6 +825,7 @@ const server = http.createServer((req, res) => {
                     aus.spiegel.push({ chunk: c.key, lod: c.lod, fehler: String((e && e.message) || e) });
                 }
             }
+            globalThis.__gelaendeCore = GK0;
 
             // ── Standorte aus dem Gesetz (K16): DIE MÜNDUNGS-SUCHE — im Quadrat um die Mess-Wiese jede Spalte mit einer Flanke
             // ab 30° (der Hang der Welt-Höhe, unabhängig vom Mündungs-Term des Kerns), dann das Kriterium an ihr und ihren
@@ -1017,7 +1173,7 @@ const server = http.createServer((req, res) => {
                             if (hoehleV.has(j) && kn.tore.some((t) => t.box && t.box.containsPoint(pm))) mundV.add(j);
                         }
                     }
-                const L = A.HIMMELS_SICHT ? A.HIMMELS_SICHT.m : 3;
+                const L = window.__gelaendeCore.HIMMELS_SICHT.m;
                 const TIEF = 14,
                     R = 2,
                     GR = 15;
@@ -1085,27 +1241,95 @@ const server = http.createServer((req, res) => {
                 if (HA) for (const i of mundV) ms += HA.getX(i);
                 hl.muendMittel = mundV.size ? +(ms / mundV.size).toFixed(3) : null;
                 aus.himmel = hl;
-                // (k) UNTER FELS WÄCHST NICHTS: jeder Höhlen-Vertex ohne Himmel (aHimmel ≤ 0,001) trägt den Stein der Palette
-                // (`BODEN_FARBE.rock`, je Kanal auf 0,002) — nie die Farbe der Säule über ihm
+                // (k) DER FELS HAT STOFF (K17): jeder Höhlen-Vertex ohne Himmel (aHimmel ≤ 0,001) und jeder Kliff-Vertex
+                // (aHimmel ≥ 0,999, Steile ≥ rockHi: das Gewicht des Fels-Stoffs ist dort 1) trägt die Farbe, die das Gesetz
+                // für IHN rechnet — gelaende-core `felsFarbe` mit seiner Krümmung (`felsKruemmung` über das Netz des Satzes),
+                // seiner Himmels-Sicht und Feuchte (`_feuchteAt`), je Kanal auf 0,002 —, nie die Farbe der Säule; dazu die
+                // Streuung der Leuchtdichte über den Höhlen-Fels (die Masse liegt bei 0) und seine Albedo.
                 const CA = geo && geo.attributes.color;
-                const fels = A.BODEN_FARBE.rock;
-                const wf = { ohneHimmel: 0, fremd: 0, gruen: 0, erst: null };
-                if (HA && CA)
-                    for (const i of hoehleV) {
-                        if (HA.getX(i) > 0.001) continue;
-                        wf.ohneHimmel++;
-                        const c = [CA.getX(i), CA.getY(i), CA.getZ(i)];
-                        if (Math.max(...c.map((q, j) => Math.abs(q - fels[j]))) <= 0.002) continue;
-                        wf.fremd++;
-                        if (c[1] - (c[0] + c[2]) / 2 > 0) wf.gruen++;
-                        if (!wf.erst)
-                            wf.erst = {
-                                p: [PA.getX(i), PA.getY(i), PA.getZ(i)].map((q) => +q.toFixed(1)),
-                                c: c.map((q) => +q.toFixed(3)),
-                                fels: fels.map((q) => +q.toFixed(3)),
-                            };
+                const NA = geo && geo.attributes.normal;
+                const GK = window.__gelaendeCore;
+                const G = A.TERRAIN_GEOLOGY;
+                const FS = A.FELS_STOFF;
+                const wf = { ohneHimmel: 0, fremd: 0, gruen: 0, erst: null, streuung: null, albedo: null };
+                const kl = { steil: 0, fremd: 0, gruen: 0, erst: null };
+                if (HA && CA && NA && GK && typeof GK.felsFarbe === "function") {
+                    const nV = PA.count;
+                    const P3 = new Float32Array(nV * 3),
+                        N3 = new Float32Array(nV * 3);
+                    for (let i = 0; i < nV; i++) {
+                        P3[3 * i] = PA.getX(i);
+                        P3[3 * i + 1] = PA.getY(i);
+                        P3[3 * i + 2] = PA.getZ(i);
+                        N3[3 * i] = NA.getX(i);
+                        N3[3 * i + 1] = NA.getY(i);
+                        N3[3 * i + 2] = NA.getZ(i);
                     }
+                    // Die Krümmung je Block aus SEINEM Netz (der Satz-Index trägt freie Bereiche früherer Blöcke). Die
+                    // LOD-Naht (`stitch:`-Blöcke) kopiert die fertige Farbe ihres Chunks auf eigene Quads und Vorhänge
+                    // (Normale des Vorhangs 0,2 nach oben) — sie trägt den Stoff ihrer Quelle, gezählt werden die Chunks.
+                    const KR = new Float32Array(nV);
+                    const naht = new Uint8Array(nV).fill(1);
+                    // die Feuchte des Moos-Terms: EINE je Chunk (`_felsStoff` am Schwerpunkt seines Felsens unter dem Himmel,
+                    // `userData.felsFeuchte`)
+                    const FE = new Float32Array(nV).fill(NaN);
+                    if (bs)
+                        for (const [key, bl] of bs.bloecke) {
+                            if (String(key).startsWith("stitch:") || !bl.geom || !bl.geom.index) continue;
+                            const g = bl.geom;
+                            const k = GK.felsKruemmung(
+                                g.attributes.position.array,
+                                g.attributes.normal.array,
+                                g.index.array,
+                                bl.vAnzahl
+                            );
+                            KR.set(k, bl.vStart);
+                            naht.fill(0, bl.vStart, bl.vStart + bl.vAnzahl);
+                            const ud = g.userData ? g.userData.felsFeuchte : undefined;
+                            FE.fill(Number.isFinite(ud) ? ud : NaN, bl.vStart, bl.vStart + bl.vAnzahl);
+                        }
+                    const B = FS ? FS.basis : GK.felsBasis(A.BODEN_FARBE.rock);
+                    const fuss = FS.netz.fuss; // die Kante des Nah-Netzes, die das Spiel liest (`FELS_STOFF.netz`, kein Zwilling daneben)
+                    const soll = [0, 0, 0];
+                    const pruefe = (i, him, z) => {
+                        const x = P3[3 * i],
+                            y = P3[3 * i + 1],
+                            zz = P3[3 * i + 2];
+                        const fe = him > 0 ? FE[i] : 0;
+                        GK.felsFarbe(B, x, y, zz, N3[3 * i], N3[3 * i + 1], N3[3 * i + 2], KR[i], him, fe, fuss, soll);
+                        const c = [CA.getX(i), CA.getY(i), CA.getZ(i)];
+                        if (Math.max(...c.map((q, j) => Math.abs(q - soll[j]))) <= 0.002) return c;
+                        z.fremd++;
+                        if (c[1] - (c[0] + c[2]) / 2 > 0) z.gruen++;
+                        if (!z.erst)
+                            z.erst = {
+                                p: [x, y, zz].map((q) => +q.toFixed(1)),
+                                c: c.map((q) => +q.toFixed(3)),
+                                soll: soll.map((q) => +q.toFixed(3)),
+                            };
+                        return c;
+                    };
+                    const Ys = [];
+                    for (const i of hoehleV) {
+                        if (HA.getX(i) > 0.001 || naht[i]) continue;
+                        wf.ohneHimmel++;
+                        const c = pruefe(i, 0, wf);
+                        Ys.push(0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]);
+                    }
+                    if (Ys.length) {
+                        const m = Ys.reduce((a, q) => a + q, 0) / Ys.length;
+                        const s = Math.sqrt(Ys.reduce((a, q) => a + (q - m) * (q - m), 0) / Ys.length);
+                        wf.albedo = +m.toFixed(3);
+                        wf.streuung = m > 0 ? +(s / m).toFixed(3) : 0;
+                    }
+                    for (let i = 0; i < nV; i++) {
+                        if (naht[i] || HA.getX(i) < 0.999 || 1 - N3[3 * i + 1] < G.rockHi) continue;
+                        kl.steil++;
+                        pruefe(i, HA.getX(i), kl);
+                    }
+                }
                 aus.wieseUnterFels = wf;
+                aus.kliff = kl;
             }
             // ── (j) DAS LICHT DES AUGES: das Auge in der Höhlen-Luft (der Hinaus-Blick, 16 m unter der Wiese) und unter freiem
             // Himmel (2 m über der Säulen-Oberkante desselben Orts) — je Ort der Takt der Lichter (`_applyDayNightToScene`),
@@ -1234,6 +1458,154 @@ const server = http.createServer((req, res) => {
             aus.code.augenVorZweig = /\bnormalView\b/.test(bedingung) && /\bpositionView\b/.test(bedingung);
             const fremd = (pool + code(r._punktLichtBrdf)).match(/\b(diffuseContribution|specularColorBlended)\b/);
             aus.code.augenTslFremd = fremd ? fremd[1] : null;
+            // (m) Der Shader rechnet DAS Gesetz (Nachbesserung 2): der Detail-Term ruft gelaende-core `felsFein` und `schuttKorn`
+            // mit dem TSL-Rechenwerk und trägt keine eigene Ziehung — und das Rechenwerk rechnet, was das Gesetz rechnet: über
+            // einem Zahlen-TSL (dieselben Knoten-Methoden, u32 als Math.imul/>>>) gegen das Zahlen-Rechenwerk des Kerns an
+            // 400 Punkten. Bis dahin prüfte die Linse nur Namen (ein Shader mit eigenen gleich hohen Bänken blieb grün).
+            const fein = code(r._terrainGeologyAlbedo);
+            aus.code.feinRuft = /GK\.felsFein\(_O,/.test(fein) && /GK\.schuttKorn\(_O,/.test(fein);
+            aus.code.feinEigenHash = /43758|fract\([^;]*\bsin\(/.test(fein);
+            aus.code.feinRechenwerk = (() => {
+                const GKc = globalThis.__gelaendeCore;
+                if (!GKc || typeof GKc.felsFein !== "function" || typeof r.constructor._felsRechenwerkTSL !== "function")
+                    return null;
+                const V = (x) => (typeof x === "number" ? x : x.v);
+                // die Knoten-Methoden lesen den Wert beim Aufruf (`this.v`): eine Variable (`toVar`, K17-3 `fest`/`falte`)
+                // ändert ihn mit `assign`, ein Lese-Glied eines vec4 (`.x` … `.w`) liest den Wert seiner Variable jetzt
+                const P = {
+                    add(b) {
+                        return mk(this.t === "u" ? (this.v + V(b)) >>> 0 : this.v + V(b), this.t);
+                    },
+                    sub(b) {
+                        return mk(this.v - V(b), this.t);
+                    },
+                    mul(b) {
+                        return mk(this.t === "u" ? Math.imul(this.v, V(b)) >>> 0 : this.v * V(b), this.t);
+                    },
+                    div(b) {
+                        return mk(this.v / V(b), this.t);
+                    },
+                    clamp(a, c) {
+                        return mk(Math.min(c, Math.max(a, this.v)), this.t);
+                    },
+                    bitXor(b) {
+                        return mk((this.v ^ V(b)) >>> 0, "u");
+                    },
+                    shiftRight(b) {
+                        return mk(this.v >>> V(b), "u");
+                    },
+                    greaterThan(b) {
+                        return mk(this.v > V(b) ? 1 : 0, "b");
+                    },
+                    toVar() {
+                        const h = mk(this.v, this.t);
+                        h.assign = (b) => {
+                            h.v = V(b);
+                        };
+                        return h;
+                    },
+                };
+                const mk = (v, t) => Object.assign(Object.create(P), { v, t });
+                // vec4 als Variable: x … w lesen den Zustand, `assign` setzt ihn (die Falte des Rechenwerks)
+                const vec4 = (...c) => ({
+                    c,
+                    toVar() {
+                        const H = { c: c.map(V) };
+                        const glied = (q) => Object.defineProperty(Object.assign(Object.create(P), { t: "f" }), "v", { get: () => H.c[q] });
+                        return {
+                            x: glied(0),
+                            y: glied(1),
+                            z: glied(2),
+                            w: glied(3),
+                            assign: (n) => {
+                                H.c = n.c.map(V);
+                            },
+                        };
+                    },
+                });
+                const glatt = (a, b, x) => {
+                    let t = (V(x) - V(a)) / (V(b) - V(a));
+                    t = t < 0 ? 0 : t > 1 ? 1 : t;
+                    return mk(t * t * (3 - 2 * t), "f");
+                };
+                const Tm = {
+                    float: (x) => mk(V(x), "f"),
+                    uint: (x) => mk(V(x) >>> 0, "u"),
+                    int: (x) => mk(Math.trunc(V(x)), "i"),
+                    min: (a, b) => mk(Math.min(V(a), V(b)), "f"),
+                    max: (a, b) => mk(Math.max(V(a), V(b)), "f"),
+                    floor: (a) => mk(Math.floor(V(a)), "f"),
+                    sin: (a) => mk(Math.sin(V(a)), "f"),
+                    exp: (a) => mk(Math.exp(V(a)), "f"),
+                    abs: (a) => mk(Math.abs(V(a)), "f"),
+                    sqrt: (a) => mk(Math.sqrt(V(a)), "f"),
+                    step: (e, x) => mk(V(x) >= V(e) ? 1 : 0, "f"),
+                    smoothstep: glatt,
+                    select: (c, a, b) => (V(c) ? a : b),
+                    uniformFlow: (x) => x,
+                    vec3: (a, b, c) => ({ x: a, y: b, z: c }),
+                    vec4,
+                    // ein Fn mit Layout ruft seinen Rumpf mit der Liste der Argumente; die Schleife zählt i = 0 … n − 1
+                    Fn: (f) => {
+                        const g = (...a) => f(a);
+                        g.setLayout = () => g;
+                        return g;
+                    },
+                    Loop: (n, rumpf) => {
+                        for (let i = 0; i < n; i++) rumpf({ i: mk(i, "i") });
+                    },
+                };
+                // `raum` des Rausch-Atlas, Schritt für Schritt aus den Atlas-Bytes (`_rauschAtlasDaten`, Texel = Byte / 127 − 1)
+                // wie `_rauschAtlas().raum` — die Welle der Bänke liest im Shader EINE Probe im Atlas (K17-2 NB1)
+                const RG = r.constructor.RAUSCH_GESETZ,
+                    AD = r.constructor._rauschAtlasDaten();
+                const raumMock = (p) => {
+                    const P = RG.P,
+                        m = P - 1,
+                        [SA, SB] = RG.schraeg;
+                    const x = V(p.x),
+                        y = V(p.y),
+                        z = V(p.z);
+                    const cx = Math.floor(x),
+                        cy = Math.floor(y),
+                        cz = Math.floor(z);
+                    const f = [x - cx, y - cy, z - cz];
+                    const i0 = (cx + cz * SA) & m,
+                        j0 = (cy + cz * SB) & m;
+                    const ecken = (i, j, c) => [0, 1, 2, 3].map((e) => AD[(j * 3 * P + 3 * i + c) * 4 + e] / 127 - 1);
+                    const fx4 = [f[0], f[0] - 1, f[0], f[0] - 1],
+                        fy4 = [f[1], f[1], f[1] - 1, f[1] - 1];
+                    const schicht = (i, j, fz) => {
+                        const a = ecken(i, j, 0),
+                            b = ecken(i, j, 1),
+                            c = ecken(i, j, 2);
+                        return [0, 1, 2, 3].map((e) => a[e] * fx4[e] + b[e] * fy4[e] + c[e] * fz);
+                    };
+                    const bl = (t) => t * t * t * (t * (t * 6 - 15) + 10);
+                    const mix = (a, b, t) => a + (b - a) * t;
+                    const u = f.map(bl);
+                    const s0 = schicht(i0, j0, f[2]),
+                        s1 = schicht((i0 + SA) & m, (j0 + SB) & m, f[2] - 1);
+                    const d = [0, 1, 2, 3].map((e) => mix(s0[e], s1[e], u[2]));
+                    return mk(mix(mix(d[0], d[1], u[0]), mix(d[2], d[3], u[0]), u[1]) * RG.skala, "f");
+                };
+                const O = r.constructor._felsRechenwerkTSL(Tm, raumMock);
+                const B = r.constructor.FELS_STOFF.basis;
+                let maxDiff = 0,
+                    n = 0;
+                for (let i = 0; i < 400; i++) {
+                    const x = Math.sin(i * 1.37) * 900,
+                        y = Math.cos(i * 0.71) * 80,
+                        z = Math.sin(i * 0.53) * 900;
+                    const a = GKc.felsFein(O, B, x, y, z),
+                        b = GKc.felsFein(GKc.felsZahl, B, x, y, z);
+                    const ka = GKc.schuttKorn(O, x, z),
+                        kb = GKc.schuttKorn(GKc.felsZahl, x, z);
+                    maxDiff = Math.max(maxDiff, Math.abs(V(a.bank) - b.bank), Math.abs(V(a.kante) - b.kante), Math.abs(V(ka) - kb));
+                    n++;
+                }
+                return { maxDiff, n };
+            })();
             aus.code.passLiest = /this\._hoehlenSicht\(/.test(code(r._chunkSatzPass));
             aus.code.abschnittLiest = /\.knoten\.sicht\s*===\s*stempel/.test(code(r._chunkSatzAbschnitt));
             aus.code.hinausLiest = /this\._hoehlenHinaus\(/.test(code(r._hoehlenSicht));
@@ -1257,6 +1629,13 @@ const server = http.createServer((req, res) => {
                     Object.entries(sp.felder)
                         .map(([k, x]) => `${k} ${x ? "=" : "≠"}`)
                         .join(" · "))
+        );
+    const swb = befund.stoffWorker;
+    if (swb)
+        console.log(
+            `  (n) Stoff im Worker: ${swb.bauten} Worker-Bauten, ${swb.rufe} Rufe des Fels-Gesetzes im Haupt-Thread` +
+                (swb.namen.length ? ` (${swb.namen.join(" · ")})` : "") +
+                `, Σ ${swb.ms} ms, max ${swb.msMax} ms je Bau · Gegenprobe Sync-Bau ${swb.syncRufe} Rufe`
         );
     console.log(`  Orte: Mündung ${JSON.stringify(befund.orte.muendung)} · Höhle ${JSON.stringify(befund.orte.raum)}`);
     if (befund.muendungen)
@@ -1306,9 +1685,37 @@ const server = http.createServer((req, res) => {
     const wu = befund.wieseUnterFels;
     if (wu)
         console.log(
-            `  (k) Wiese unter Fels: ${wu.ohneHimmel} Höhlen-Vertices ohne Himmel, ${wu.fremd} nicht Stein (${wu.gruen} grün)` +
+            `  (k) Fels-Stoff Höhle: ${wu.ohneHimmel} Vertices ohne Himmel, ${wu.fremd} ohne das Gesetz (${wu.gruen} grün), ` +
+                `Albedo Y ${wu.albedo}, Streuung σ/Mittel ${wu.streuung}` +
                 (wu.erst ? `, zuerst ${JSON.stringify(wu.erst)}` : "")
         );
+    const kf = befund.kliff;
+    if (kf)
+        console.log(
+            `  (k) Fels-Stoff Kliff: ${kf.steil} steile Vertices unter dem Himmel, ${kf.fremd} ohne das Gesetz (${kf.gruen} grün)` +
+                (kf.erst ? `, zuerst ${JSON.stringify(kf.erst)}` : "")
+        );
+    // (m) DIE BANKUNG am Gesetz (rein, ohne Browser)
+    try {
+        globalThis.self = globalThis;
+        require(path.join(__dirname, "..", "gelaende-core.js"));
+        const GKn = globalThis.__gelaendeCore;
+        befund.bankung = GKn && typeof GKn.felsBankung === "function" ? GKn.felsBankung() : null;
+    } catch (e) {
+        befund.bankung = null;
+        console.log("  (m) Bankung: gelaende-core nicht ladbar — " + ((e && e.message) || e));
+    }
+    const bkn = befund.bankung;
+    if (bkn)
+        console.log(
+            `  (m) Bankung am Gesetz: ${bkn.baenke} Bänke, Mittel ${bkn.mittel} m, Variationskoeffizient ${bkn.cv}, ` +
+                `Eigen-Welligkeit der Fugen ${bkn.welligkeit} Bänke, Durchlauf der Klüfte ${bkn.durchlauf}`
+        );
+    const fr = befund.code && befund.code.feinRechenwerk;
+    console.log(
+        `  (m) Shader: ruft das Gesetz ${befund.code && befund.code.feinRuft}, eigene Ziehung ${befund.code && befund.code.feinEigenHash}, ` +
+            `TSL-Rechenwerk gegen Zahlen-Rechenwerk ${fr ? `max. Abstand ${fr.maxDiff} an ${fr.n} Punkten` : "fehlt"}`
+    );
     const v = urteil(befund);
     if (v.length) {
         console.log("\n❌ HÖHLEN-SICHT ROT:\n  " + v.join("\n  "));

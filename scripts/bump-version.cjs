@@ -39,7 +39,11 @@ traeger("package-lock.json", (s) => {
     if (j.packages && j.packages[""]) j.packages[""].version = ziel;
     return JSON.stringify(j, null, 4) + "\n";
 });
-traeger("anazhRealm.js", (s) => s.replace(/(AnazhRealm\.VERSION = ")[0-9.]+(";)/, `$1${ziel}$2`));
+// der VERSION-Träger: genau EINE Stamm-Datei mit genau EINER Zeile, sonst wirft scripts/lib/stamm.cjs (ein fehlender
+// Träger war hier still übersprungen — ein stale ?v= der Worker wäre die Folge)
+traeger(require("./lib/stamm.cjs").versionsDatei(root), (s) =>
+    s.replace(/(AnazhRealm\.VERSION = ")[0-9.]+(";)/, `$1${ziel}$2`)
+);
 const htmls = ["index.html"];
 for (const d of fs.readdirSync(path.join(root, "worlds"))) {
     const h = path.join("worlds", d, "index.html");

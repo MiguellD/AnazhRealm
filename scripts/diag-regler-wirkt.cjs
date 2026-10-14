@@ -33,6 +33,7 @@
 // Port über REGLER_WIRKT_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4561; der Stamm des
 // Ofen-Kanals über REGLER_WIRKT_OFEN_PORT, Standard Port + 1.
 "use strict";
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const { runWithWorker } = require("./lib/asset-worker-harness.cjs");
@@ -85,24 +86,9 @@ function ersteStufe(rc, art) {
 const OFEN_PORT = Number(process.env.REGLER_WIRKT_OFEN_PORT || PORT + 1);
 
 async function imStamm(cb) {
-    const http = require("http");
-    const puppeteer = require("puppeteer");
-    const { linsenWebGpuArgs, adapterZeile } = require("./lib/software-gpu.cjs");
-    const MIME = { ".html": "text/html", ".js": "application/javascript", ".mjs": "application/javascript", ".json": "application/json", ".css": "text/css", ".wasm": "application/wasm", ".png": "image/png", ".woff2": "font/woff2" };
-    const server = http.createServer((req, res) => {
-        let p = decodeURIComponent(req.url.split("?")[0]);
-        if (p === "/") p = "/index.html";
-        const fp = path.join(ROOT, p);
-        if (!fp.startsWith(ROOT)) return ((res.statusCode = 403), res.end());
-        fs.readFile(fp, (err, data) => {
-            if (err) return ((res.statusCode = 404), res.end());
-            res.setHeader("Content-Type", MIME[path.extname(fp)] || "application/octet-stream");
-            res.end(data);
-        });
-    });
+    const server = statikServer();
     await new Promise((r) => server.listen(OFEN_PORT, "127.0.0.1", r));
-    const browser = await puppeteer.launch({ headless: true, protocolTimeout: 300000, args: linsenWebGpuArgs() });
-    await adapterZeile(browser);
+    const browser = await starteBrowser({ art: "linse", frist: 300000 });
     try {
         const page = await browser.newPage();
         await page.evaluateOnNewDocument(() => {
@@ -118,7 +104,7 @@ async function imStamm(cb) {
             () => {
                 const r = window.anazhRealm;
                 const f = r && r._foundry;
-                return !!(f && f.ready && f.recipes && f.paramsByKind && Object.keys(f.paramsByKind).length && !f._prefetching && globalThis.BAKERS_BY_KIND && window.__koerperCore && window.__tetrapodaCore);
+                return !!(f && f.ready && f.recipes && f.paramsByKind && Object.keys(f.paramsByKind).length && !f._vorrat && globalThis.BAKERS_BY_KIND && window.__koerperCore && window.__tetrapodaCore);
             },
             { timeout: 240000, polling: 250 }
         );
@@ -432,7 +418,7 @@ async function messen(h, opts) {
 // erste Stufe und die NUR-WURF-Stufe ohne ov und an jedem Regler-Rand (min, max) über die echte Brücke und richtet: die
 // Regel wirft nie von der teureren Stufe. Die Zeile der NUR-WURF-Stufe ist das Rezept-Maß (gate:asset-contract), am
 // Regler-Rand richtet die Regel — die Probe nennt jede Stelle, an der die Stufe selbst wirft, mit ihren Kosten.
-const STAMM_PFAD = path.join(ROOT, "anazhRealm.js");
+const stammLib = require("./lib/stamm.cjs");
 function statischeMethode(src, kopf, args) {
     const i = src.indexOf(kopf);
     if (i < 0) throw new Error("im Stamm nicht gefunden: " + kopf);
@@ -446,7 +432,7 @@ function statischeMethode(src, kopf, args) {
     return { rumpf: src.slice(j + 1, k), fn: new Function(...args, src.slice(j + 1, k)) };
 }
 function stammRegel(src) {
-    const s = src || fs.readFileSync(STAMM_PFAD, "utf8");
+    const s = src || stammLib.text(ROOT);
     return {
         teilWirft: statischeMethode(s, "static _teilWirft(m) {", ["m"]).fn,
         vonBilligerer: statischeMethode(s, "static _wurfVonBilligerer(eigen, zwilling) {", ["eigen", "zwilling"]).fn,
@@ -692,7 +678,7 @@ async function selbsttest() {
     await runWithWorker(PORT, async (h) => {
         wHeil = await wurfMessen(h, { nurArt: "gate", nurRezept: "kathedrale" });
     });
-    const quelle = fs.readFileSync(STAMM_PFAD, "utf8");
+    const quelle = stammLib.text(ROOT);
     const taeterQ = quelle.replace('return zwilling < eigen ? "zwilling" : "selbst";', 'return "zwilling";');
     const wTaeter = taeterQ !== quelle ? wurfRichten(wHeil.zeilen, stammRegel(taeterQ)) : [];
     const rotHeil = wurfUrteil(wHeil.zeilen);

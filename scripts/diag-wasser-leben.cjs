@@ -51,6 +51,8 @@
 // Port: WASSER_LEBEN_PORT (Standard 4623).
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const stammLib = require("./lib/stamm.cjs");
 
 const SCHWELLE = {
     steigend: 0, // Anteil der 2-m-Schritte, deren Lauf-Fläche > 5 cm steigt
@@ -61,6 +63,7 @@ const SCHWELLE = {
     kantenVerhaeltnis: 1.3, // Kanten-Dichte der Stromschnelle bei Wasser-Uhr 3600 s gegen 60 s
     kantenRuhig: 5, // Kanten-Dichte des ruhigen Flusses bei 3600 s (mittlere Luma-Stufe je Pixel)
     hellRuhig: 0.05, // Schaum-Deckung des ruhigen Flusses (kein Ufer, kein Steil-Lauf: das Gesetz schäumt dort nicht)
+    schaumSchnelle: 0.5, // Schaum-Deckung der Stromschnelle im selben Mass (das Wildwasser schäumt: sonst ist B1 blind)
     sturm: 1.3, // Kanten-Dichte des ruhigen Flusses im Sturm gegen die bei Sonne (das Gesetz: Amplitude × (w0 + w1·Wind))
     schlieren: 50, // senkrechte Läufe ≥ 4 lit Pixel des Sturm-Regens allein auf Schwarz (640 × 360)
     neigung: 0.2, // (rechts − links) / (rechts + links) der diagonalen Lauf-Nachbarn quer zum Wind
@@ -251,7 +254,7 @@ function urteil(b) {
             else if (p.abweichend > 0)
                 v.push(
                     `U2 ZWEI FARBEN: ${p.abweichend} von ${p.vertices} Ufer-Vertices färbt der Worker anders als der Main ` +
-                        `(max ${p.maxDiff})`
+                        `(max ${p.maxDiff}; ${p.fels || 0} tragen den Fels-Stoff)`
                 );
         }
     }
@@ -486,6 +489,13 @@ function urteil(b) {
                     v.push(
                         `B1 SCHAUM: ${(a.ruhig.hellAnteil * 100).toFixed(1)} % des ruhigen Flusses schaumbedeckt ohne Gesetz-Grund`
                     );
+                // B1 zählt nur, was der SCHAUM hebt (das Bild ohne Schaum daneben, `wasserBild`): nimmt dieses Bild der
+                // Stromschnelle ihren Schaum nicht (das Wildwasser schäumt nach dem Gesetz), sähe B1 keinen Schaum mehr
+                if (!(a.schnelle.hellAnteil >= S.schaumSchnelle))
+                    v.push(
+                        `B1 LEER: das Bild ohne Schaum nimmt der Stromschnelle den Schaum nicht ` +
+                            `(${(a.schnelle.hellAnteil * 100).toFixed(1)} % vom Schaum gehoben) — B1 sähe keinen`
+                    );
             }
         }
     }
@@ -626,7 +636,7 @@ function selbsttest() {
         bild: {
             uhr60: {
                 ruhig: { kantenDichte: 1, hellAnteil: 0, pixel: 20000 },
-                schnelle: { kantenDichte: 20, pixel: 20000 },
+                schnelle: { kantenDichte: 20, hellAnteil: 0.98, pixel: 20000 },
             },
             uhr3600: { ruhig: { kantenDichte: 1 }, schnelle: { kantenDichte: 21 } },
             kantenVerhaeltnis: 1.05,
@@ -715,6 +725,7 @@ function selbsttest() {
         ["B5 SENKRECHT", (b) => (b.regen.neigung = 0.02)],
         ["B2 ZEBRA", (b) => Object.assign(b.bild, { kantenVerhaeltnis: 5.8 })],
         ["B1 SCHAUM", (b) => (b.bild.uhr60.ruhig.hellAnteil = 0.6)],
+        ["B1 LEER", (b) => (b.bild.uhr60.schnelle.hellAnteil = 0.02)],
         ["B3 STURM", (b) => (b.bild.sturmVerhaeltnis = 1)],
         ["B2 ZEBRA: der ruhige", (b) => (b.bild.uhr3600.ruhig.kantenDichte = 63.4)],
         ["B LEER", (b) => (b.bild.uhr60.schnelle.pixel = 0)],
@@ -724,7 +735,7 @@ function selbsttest() {
     let rot = 0;
     // B6 an der lebenden Quelle (die Wand der CI, ohne Browser): der Wasser-Stoff rechnet sein Rauschen ohne sin.
     const quelleSin = hashSin(
-        require("fs").readFileSync(require("path").join(__dirname, "..", "anazhRealm.js"), "utf8")
+        stammLib.text(require("path").join(__dirname, ".."))
     );
     console.log(
         `  ${quelleSin ? "❌" : "✅"} B6 HASH an der Quelle: ${quelleSin || "das Wasser-Rauschen rechnet ohne sin"}`
@@ -753,43 +764,16 @@ if (process.argv.includes("--selftest")) selbsttest();
 else lauf();
 
 async function lauf() {
-    const puppeteer = require("puppeteer");
-    const http = require("http");
     const fs = require("fs");
     const path = require("path");
     const { WASSER_INSTALL } = require("./lib/wasser-linse.cjs");
-    const { linsenWebGpuArgs, adapterZeile, echteWebGpuArgs } = require("./lib/software-gpu.cjs");
     const BILD = process.argv.includes("--bild");
     const ECHT = process.argv.includes("--echt");
     const PORT = Number(process.env.WASSER_LEBEN_PORT || 4623);
     const root = path.resolve(__dirname, "..");
-    const mime = {
-        ".html": "text/html",
-        ".js": "application/javascript",
-        ".wasm": "application/wasm",
-        ".json": "application/json",
-        ".css": "text/css",
-        ".png": "image/png",
-        ".woff2": "font/woff2",
-    };
-    const server = http.createServer((req, res) => {
-        let p = req.url.split("?")[0];
-        if (p === "/") p = "/index.html";
-        const fp = path.join(root, p);
-        if (!fp.startsWith(root)) return ((res.statusCode = 403), res.end());
-        fs.readFile(fp, (err, data) => {
-            if (err) return ((res.statusCode = 404), res.end());
-            res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-            res.end(data);
-        });
-    });
+    const server = statikServer();
     await new Promise((r) => server.listen(PORT, r));
-    const browser = await puppeteer.launch({
-        headless: ECHT ? false : "new",
-        protocolTimeout: 900000,
-        args: BILD ? (ECHT ? echteWebGpuArgs() : linsenWebGpuArgs()) : ["--no-sandbox", "--disable-gpu"],
-    });
-    if (BILD) await adapterZeile(browser);
+    const browser = await starteBrowser({ art: BILD ? (ECHT ? "echt" : "linse") : "null", headless: !ECHT, frist: 900000 });
     const page = await browser.newPage();
     if (BILD) await page.setViewport({ width: 640, height: 360 });
     const seitenFehler = [];
@@ -798,7 +782,7 @@ async function lauf() {
         await page.evaluateOnNewDocument(() => {
             window.__anazhHeadlessNullRenderer = true;
         });
-    let befund = { seitenFehler, hashSin: hashSin(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8")) };
+    let befund = { seitenFehler, hashSin: hashSin(stammLib.text(root)) };
     let exit = 1;
     try {
         await page.goto(`http://127.0.0.1:${PORT}/index.html${BILD && !ECHT ? "?holz=kienspan" : ""}`, {

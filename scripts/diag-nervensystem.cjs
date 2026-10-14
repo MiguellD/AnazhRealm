@@ -15,33 +15,13 @@
 //     und der WALD-GENERATOR streut ihn in frische Zellen — ohne EINE Zeile AnazhRealm-Edit.
 //     (Die LODs fließen konstruktiv: buildInstance(id, seed, 0/1/2) ist die Studio-eigene Stufung.)
 //   node scripts/diag-nervensystem.cjs
-const puppeteer = require("puppeteer");
-const http = require("http");
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 
 const PORT = Number(process.env.NERV_PORT || 4406);
 const root = path.resolve(__dirname, "..");
-const mime = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".wasm": "application/wasm",
-    ".json": "application/json",
-    ".css": "text/css",
-    ".png": "image/png",
-    ".woff2": "font/woff2",
-};
-const server = http.createServer((req, res) => {
-    let p = req.url.split("?")[0];
-    if (p === "/") p = "/index.html";
-    const fp = path.join(root, p);
-    if (!fp.startsWith(root)) return ((res.statusCode = 403), res.end());
-    fs.readFile(fp, (err, data) => {
-        if (err) return ((res.statusCode = 404), res.end());
-        res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-        res.end(data);
-    });
-});
+const server = statikServer();
 
 const errs = [];
 function check(name, ok, detail) {
@@ -63,15 +43,16 @@ function check(name, ok, detail) {
         /PORTAL_RENDER_CONFIG\.placement/.test(phytoCode) && !/const SCALE = \{\s*gras: 0\.24/.test(phytoCode)
     );
     check("phytogenesis nutzt TREE_SCALE_MUL statt des 0.82-Literals im Wald", /SCALE\[sp\] \* tr\.s \* TREE_SCALE_MUL/.test(phytoCode));
-    check("die Brücke exportiert placement (get-render-config)", /placement:\s*c\.placement/.test(phytoCode));
+    // Die Brücke ist seit K42 ihre eigene Datei (foundry-bruecke.js) — der Export lebt dort, nicht im Labor.
+    const brueckeCode = fs
+        .readFileSync(path.join(root, "foundry-bruecke.js"), "utf8")
+        .replace(/\/\*[\s\S]*?\*\//g, "")
+        .replace(/\/\/[^\n]*/g, "");
+    check("die Brücke exportiert placement (get-render-config)", /placement:\s*c\.placement/.test(brueckeCode));
 
     console.log("\n=== TEIL B-D: der lebende Draht (Browser, foundry-ON) ===");
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await puppeteer.launch({
-        headless: true,
-        protocolTimeout: 180000,
-        args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--no-sandbox", "--disable-setuid-sandbox"],
-    });
+    const browser = await starteBrowser({ art: "webgl", frist: 180000 });
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(() => {
         window.__anazhForceFoundry = true;

@@ -21,10 +21,7 @@
             "datum": "2026-10-07T01:37:39.928Z",
             "geraet": "amd rdna-3",
             "ort": "genesis",
-            "spieler": [
-                0,
-                0
-            ],
+            "spieler": [0, 0],
             "echt": true
         }
     },
@@ -117,10 +114,7 @@
                     "klick": "#ui [data-p=\"zacken\"]"
                 },
                 "stoff": {
-                    "r": [
-                        0.5,
-                        1
-                    ]
+                    "r": [0.5, 1]
                 }
             },
             "welt": {
@@ -132,26 +126,23 @@
                 "klasse": "^formationenSatz$",
                 "stoff": {
                     "kind": "^unknown$",
-                    "r": [
-                        0.5,
-                        1
-                    ]
+                    "r": [0.5, 1]
                 }
             },
             "ist": {
                 "labor": {
-                    "Y": 0.5042,
-                    "rgb": "0.5317/0.5026/0.4383",
+                    "Y": 0.2432,
+                    "rgb": "0.2692/0.2419/0.1801",
                     "pixel": 307925
                 },
                 "welt": {
-                    "Y": 0.4772,
-                    "rgb": "0.5064/0.475/0.4128",
-                    "pixel": 15979
+                    "Y": 0.2366,
+                    "rgb": "0.2617/0.2354/0.1746",
+                    "pixel": 19618
                 },
-                "verhaeltnis": 1.0566
+                "verhaeltnis": 1.0279
             },
-            "ratsche": 0.0551
+            "ratsche": 0.0275
         },
         {
             "id": "boden",
@@ -163,9 +154,7 @@
                     "wald": true
                 },
                 "wurzel": "scene",
-                "nur": [
-                    "_terMat"
-                ],
+                "nur": ["_terMat"],
                 "blick": "oben"
             },
             "welt": {
@@ -247,10 +236,7 @@
                 },
                 "stoff": {
                     "seh": "metall",
-                    "cc": [
-                        0.5,
-                        1
-                    ]
+                    "cc": [0.5, 1]
                 }
             },
             "welt": {
@@ -262,10 +248,7 @@
                 "klasse": "^f:gt:L0$",
                 "stoff": {
                     "seh": "metall",
-                    "cc": [
-                        0.5,
-                        1
-                    ]
+                    "cc": [0.5, 1]
                 }
             },
             "ist": {
@@ -322,12 +305,12 @@
         {
             "id": "haut",
             "gruppe": "Haut/Fell",
-            "titel": "Mensch, die Haut im Ton Mahagoni 0x5f3826 (der Ton des Spieler-Leibs dieser Welt; Labor: das Farbfeld Mahagoni des Körperstudios)",
+            "titel": "Mensch, die Haut im Ton Mahagoni 0x6a4230 (K57: vorher 0x5f3826) (der Ton des Spieler-Leibs dieser Welt; Labor: das Farbfeld Mahagoni des Körperstudios)",
             "labor": {
                 "studio": "koerperstudio",
-                "nur": [
-                    "matSkin"
-                ],
+                "stoff": {
+                    "kind": "^(haut|skin)$"
+                },
                 "aktion": {
                     "klick": "#skinTones .sw",
                     "index": 6
@@ -368,10 +351,7 @@
                     "klick": "[data-p=\"wolf\"]"
                 },
                 "stoff": {
-                    "r": [
-                        0.85,
-                        1
-                    ]
+                    "r": [0.85, 1]
                 }
             },
             "welt": {
@@ -441,77 +421,49 @@
         "terrain": {
             "ist": {
                 "kL": 0.7482,
-                "ausgabe": [
-                    186,
-                    193,
-                    184
-                ]
+                "ausgabe": [186, 193, 184]
             },
             "ratsche": 0.866
         },
         "garage": {
             "ist": {
                 "kL": 0.6468,
-                "ausgabe": [
-                    207,
-                    210,
-                    212
-                ]
+                "ausgabe": [207, 210, 212]
             },
             "ratsche": 0.7204
         },
         "portale": {
             "ist": {
                 "kL": 0.8023,
-                "ausgabe": [
-                    197,
-                    207,
-                    202
-                ]
+                "ausgabe": [197, 207, 202]
             },
             "ratsche": 0.9359
         },
         "schmiede": {
             "ist": {
                 "kL": 0.6427,
-                "ausgabe": [
-                    170,
-                    158,
-                    146
-                ]
+                "ausgabe": [170, 158, 146]
             },
             "ratsche": 0.7141
         },
         "fachwerk": {
             "ist": {
                 "kL": 0.4922,
-                "ausgabe": [
-                    198,
-                    196,
-                    193
-                ]
+                "ausgabe": [198, 196, 193]
             },
             "ratsche": 0.4472
         },
         "koerperstudio": {
             "ist": {
                 "kL": 0.699,
-                "ausgabe": [
-                    170,
-                    181,
-                    178
-                ]
+                "ausgabe": [170, 181, 178]
             },
             "ratsche": 0.798
         },
         "tetrapoda": {
             "ist": {
                 "kL": 0.8802,
-                "ausgabe": [
-                    255,
-                    255,
-                    255
-                ]
+                "ausgabe": [255, 255, 255]
             },
             "ratsche": 1.0285
         }

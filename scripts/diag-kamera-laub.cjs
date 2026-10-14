@@ -21,12 +21,12 @@
 //   KAMERA_LAUB_STAMM=<datei>                              ein anderer Stamm (anazhRealm.js) — das Vorher eines A/B
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const puppeteer = require("puppeteer");
-const http = require("http");
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const { WASSER_INSTALL } = require("./lib/wasser-linse.cjs");
 const { linsenWebGpuArgs, adapterZeile } = require("./lib/software-gpu.cjs");
+const stammLib = require("./lib/stamm.cjs");
 const { KAMERA_NAH_INSTALL } = require("./lib/kamera-nah.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 const argv = process.argv.slice(2);
@@ -46,20 +46,13 @@ const STUDIO = process.env.KAMERA_LAUB_STUDIO ? path.resolve(process.env.KAMERA_
 // die CI fährt sie in zwei Schritten (gate:kamera-laub · gate:kamera-leib), je unter 3 min
 const TEILE = (process.argv.includes("--teile") ? process.argv[process.argv.indexOf("--teile") + 1] : process.env.KAMERA_LAUB_TEILE || "laub,leib,ninja").split(",");
 const root = path.resolve(__dirname, "..");
-const mime = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".wasm": "application/wasm",
-    ".json": "application/json",
-    ".css": "text/css",
-    ".png": "image/png",
-    ".woff2": "font/woff2",
-};
 // Die Nah-Radien der Messung (m) — fest in der Linse, damit Vorher und Nachher unter derselben Bedingung stehen.
 const RADIUS = Object.freeze({ third: 2.0, ritt: 3.0, first: 0.8 });
 const SAUM = 0.6; // der Saum der Durchsicht (KAMERA_DURCHSICHT.saumM): in 3rd endet die Nah-Kugel samt Saum vor dem Ziel
 // Höchste Nah-Deckung einer Stellung (Anteil des Schirms).
 const NAH_DECKUNG_MAX = 0.02;
+// Der Schmuggel steigt höchstens so hoch am Stamm hinauf (m), bis das Laub ohne Durchsicht die Linse deckt (die Kronen-Stellung).
+const SCHMUGGEL_HUB_M = 40;
 // Die Orte der Schau (Befund §2): die Ankunft, das Ufer mit dem Hain des Satzes, die Lichtung der Herde (8a) und der
 // 30°-Hang (2c, 8b/8c — dort steht nur Streu: Gestrüpp, Geröll, Stumpf). Jeder Ort kommt AUS DER WELT (K16, Orts-Wand):
 // das Ufer ist das Ostufer des nächsten Sees am Messort (`__wasserOrte`), die Lichtung die nächste ebene trockene Stelle
@@ -116,6 +109,8 @@ function urteil(m) {
             out.push(`Schmuggel: ein Laub-Stoff ohne Durchsicht bleibt ungenannt (${JSON.stringify(s.laub || null)})`);
         if (!(s.fels && s.fels.max > NAH_DECKUNG_MAX && Object.keys(s.fels.taeter || {}).some((k) => /Formation/.test(k))))
             out.push(`Schmuggel: ein Fels vor der Linse bleibt ungenannt (${JSON.stringify(s.fels || null)})`);
+        if (s.krone && !(s.krone.max <= NAH_DECKUNG_MAX))
+            out.push(`Krone: die Durchsicht öffnet das Laub in der Krone nicht (${pct(s.krone.max)} bei +${s.krone.hub} m; ${JSON.stringify(s.krone.taeter || {})})`);
     }
     return out;
 }
@@ -745,21 +740,16 @@ function ninja(arg) {
     return out;
 }
 
-const server = http.createServer((req, res) => {
-    let p = req.url.split("?")[0];
-    if (p === "/") p = "/index.html";
-    const fp =
-        STAMM && p === "/anazhRealm.js"
-            ? STAMM
-            : STUDIO && p === "/worlds/koerperstudio/koerperstudio.js"
-              ? STUDIO
-              : path.join(root, p);
-    if (fp !== STAMM && fp !== STUDIO && !fp.startsWith(root)) return ((res.statusCode = 403), res.end());
-    fs.readFile(fp, (err, data) => {
-        if (err) return ((res.statusCode = 404), res.end());
-        res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-        res.end(data);
-    });
+// KAMERA_LAUB_STAMM: der Stamm-Text des Vorher (eine Stamm-Datei oder ein Baum, scripts/lib/stamm.cjs), ausgeliefert in
+// der Form dieses Baums (`liefere`: die Datei, die die Zeile trägt)
+const STAMM_TEXT = STAMM ? stammLib.text(STAMM) : null;
+const server = statikServer({
+    root,
+    wandle: (p, data) => {
+        const vorher = STAMM_TEXT ? stammLib.liefere(root, p, STAMM_TEXT) : null;
+        if (vorher) return vorher;
+        return STUDIO && p === "/worlds/koerperstudio/koerperstudio.js" ? fs.readFileSync(STUDIO) : data;
+    },
 });
 
 // ── DIE PROBE IN DER SEITE (r = die Welt) ──
@@ -858,12 +848,18 @@ async function probe(arg) {
         try {
             const tS = performance.now();
             r.setCameraMode("third");
+            // DIE KRONEN-STELLUNG (K20, 12.10.): der Bestandsbaum trägt seine Krone auf dem Schaft (phyto-core schaftHub) — am
+            // Stamm-Fuß steht kein Laub in der Nah-Kugel, der Schmuggel dort maß 0,0 % und die Linse war blind. Die Stellung
+            // steigt je 1 m am Stamm hinauf (der Spieler schwebt, die 3rd-Kamera folgt), bis das Laub ohne Durchsicht die Linse
+            // deckt; an DERSELBEN Stellung muss die Durchsicht es wieder öffnen (≤ NAH_DECKUNG_MAX).
+            let hub = 0;
             const stelle = () => {
-                st.playerMesh.position.set(sl.x, hh(sl.x, sl.z) + 1.0, sl.z);
+                st.playerMesh.position.set(sl.x, hh(sl.x, sl.z) + 1.0 + hub, sl.z);
                 st.yaw = sl.gier;
                 st.pitch = sl.pitch;
                 ruhig();
             };
+            const nimmLaub = (d) => d.deckung > arg.nahMax && Object.keys(d.taeter || {}).some((k) => /^Laub /.test(k));
             // (1) die Laub-Stoffe der Szene ohne Durchsicht
             const laub = new Map();
             st.scene.traverse((o) => {
@@ -872,10 +868,22 @@ async function probe(arg) {
                 if ((k === "foliage" || k === "foliageTex") && mt.maskNode) laub.set(mt, mt.maskNode);
             });
             for (const mt of laub.keys()) mt.maskNode = null;
-            stelle();
-            s.laub = nahDeckung({ radien: sl.radien, gw: arg.gw, gh: arg.gh, ort: speicherOrt, dyn: gt ? gt.id : null });
+            for (hub = 0; hub <= arg.hubMax; hub += 1) {
+                stelle();
+                s.laub = nahDeckung({ radien: sl.radien, gw: arg.gw, gh: arg.gh, ort: speicherOrt, dyn: gt ? gt.id : null, neu: hub > 0 });
+                if (nimmLaub(s.laub)) break;
+            }
             s.laub.max = s.laub.deckung;
+            s.laub.hub = hub;
             for (const [mt, kn] of laub) mt.maskNode = kn;
+            // (1b) dieselbe Kronen-Stellung MIT Durchsicht
+            if (nimmLaub(s.laub)) {
+                stelle();
+                s.krone = nahDeckung({ radien: sl.radien, gw: arg.gw, gh: arg.gh, ort: speicherOrt, dyn: gt ? gt.id : null });
+                s.krone.max = s.krone.deckung;
+                s.krone.hub = hub;
+            }
+            hub = 0;
             // (2) ein Fels 1 m vor der Linse (eine Formation ohne Durchsicht)
             stelle();
             const c = st.camera.position;
@@ -1097,7 +1105,7 @@ async function probe(arg) {
 }
 
 (async () => {
-    const quelle = fs.readFileSync(STAMM || path.join(root, "anazhRealm.js"), "utf8");
+    const quelle = STAMM_TEXT || stammLib.text(root);
     const studioQuelle = fs.readFileSync(STUDIO || path.join(root, "worlds", "koerperstudio", "koerperstudio.js"), "utf8");
     if (process.argv.includes("--selftest")) {
         console.log("=== SELBST-TEST (ohne Welt) ===");
@@ -1153,6 +1161,7 @@ async function probe(arg) {
             ["fremde Maske", { orte: Object.assign({}, gesund.orte, { hang: { modi: { third: { n: 4, max: 0, fremd: true }, first: { n: 4, max: 0 }, ritt: { n: 4, max: 0 } } } }) }, "hang third: ein Pflanzen-Stoff trägt eine fremde Maske"],
             ["Linse blind für Laub", { schmuggel: { laub: { max: 0, taeter: {} }, fels: gesund.schmuggel.fels } }, "Schmuggel: ein Laub-Stoff ohne Durchsicht bleibt ungenannt"],
             ["Linse blind für Fels", { schmuggel: { laub: gesund.schmuggel.laub, fels: { max: 0, taeter: {} } } }, "Schmuggel: ein Fels vor der Linse bleibt ungenannt"],
+            ["Krone ohne Durchsicht (die Kronen-Stellung, K20)", { schmuggel: Object.assign({}, gesund.schmuggel, { krone: { max: 0.31, hub: 14, taeter: { "Laub baum_tanne": 0.31 } } }) }, "Krone: die Durchsicht öffnet das Laub in der Krone nicht"],
             ["ein Ort fehlt", { orte: { ankunft: gesund.orte.ankunft, ufer: gesund.orte.ufer } }, "hang: nicht gemessen"],
         ];
         for (const [name, bruch, soll] of brueche) {
@@ -1203,8 +1212,7 @@ async function probe(arg) {
 
     const t0 = Date.now();
     await new Promise((res) => server.listen(PORT, "127.0.0.1", res));
-    const browser = await puppeteer.launch({ headless: true, protocolTimeout: 900000, args: linsenWebGpuArgs() });
-    await adapterZeile(browser);
+    const browser = await starteBrowser({ art: "linse", frist: 900000 });
     const page = await browser.newPage();
     await page.setViewport({ width: 1280, height: 720 });
     await page.evaluateOnNewDocument(() => {
@@ -1223,7 +1231,7 @@ async function probe(arg) {
         const tL = Date.now();
         await page.evaluate(KAMERA_NAH_INSTALL);
         await page.evaluate(WASSER_INSTALL); // __wasserOrte + __weltOrt: die Orte aus der Welt
-        m = await page.evaluate(probe, { orte: process.env.KAMERA_LAUB_NUR ? ORTE.filter((o) => process.env.KAMERA_LAUB_NUR.split(",").includes(o.id)) : ORTE, radius: RADIUS, saum: SAUM, jeOrt: 5, jeStreu: 2, gw: 48, gh: 27 });
+        m = await page.evaluate(probe, { orte: process.env.KAMERA_LAUB_NUR ? ORTE.filter((o) => process.env.KAMERA_LAUB_NUR.split(",").includes(o.id)) : ORTE, radius: RADIUS, saum: SAUM, nahMax: NAH_DECKUNG_MAX, hubMax: SCHMUGGEL_HUB_M, jeOrt: 5, jeStreu: 2, gw: 48, gh: 27 });
         zeiten.laub = Date.now() - tL;
     }
     let leib = null;
@@ -1284,6 +1292,7 @@ async function probe(arg) {
         }
         const s = m.schmuggel || {};
         console.log(`  Schmuggel: Laub ohne Durchsicht → ${pct(s.laub && s.laub.max)} (${Object.keys((s.laub && s.laub.taeter) || {}).join(", ")}) · Fels vor der Linse → ${pct(s.fels && s.fels.max)} (${Object.keys((s.fels && s.fels.taeter) || {}).join(", ")})`);
+        console.log(`  Kronen-Stellung: +${s.laub && s.laub.hub != null ? s.laub.hub : "—"} m am Stamm · mit Durchsicht → ${pct(s.krone && s.krone.max)} (${Object.keys((s.krone && s.krone.taeter) || {}).join(", ")})`);
         console.log(`  Zeiten (ms): ${JSON.stringify(m.zeiten)}`);
         const v = urteil(m);
         check("K1 keine Stellung mit Laub, Strauch, Ast oder Fels vor der Linse (Deckung im Freiraum ≤ 2 %), die Linse nennt den eingeschmuggelten Täter", v.length === 0, v.length ? "Täter: " + v.join(" · ") : "");
@@ -1340,17 +1349,10 @@ async function probe(arg) {
 // ── DIE BILD-PAARE am echten Renderer (Fenster, Hardware-Adapter) — das Ufer mit dem Hain (A 41–47) und der Hang (B 28–31,
 // C 05–12), je Sicht die schlimmste Stellung des Vorher ──
 async function bildPaare() {
-    const { echteWebGpuArgs } = require("./lib/software-gpu.cjs");
     if (!SEITE) throw new Error("--bilder braucht --seite http://localhost:<port> (der save-server des Arbeitsbaums)");
     fs.mkdirSync(BILDER, { recursive: true });
     const profil = path.join(require("os").tmpdir(), `kamera-laub-profil-${Date.now()}`);
-    const browser = await puppeteer.launch({
-        headless: false,
-        userDataDir: profil,
-        protocolTimeout: 3600000,
-        defaultViewport: { width: 1280, height: 720, deviceScaleFactor: 1 },
-        args: [...echteWebGpuArgs(), "--window-size=1300,860"],
-    });
+    const browser = await starteBrowser({ art: "echt", headless: false, profil: profil, frist: 3600000, viewport: { width: 1280, height: 720, deviceScaleFactor: 1 }, zusatz: ["--window-size=1300,860"] });
     try {
         const page = await browser.newPage();
         const fehler = [];
@@ -1363,7 +1365,7 @@ async function bildPaare() {
         await page.evaluate(KAMERA_NAH_INSTALL);
         await page.evaluate(WASSER_INSTALL); // __wasserOrte + __weltOrt: die Orte aus der Welt
         const nur = (process.env.KAMERA_LAUB_NUR || "ufer,hang").split(",");
-        const m = await page.evaluate(probe, { orte: ORTE.filter((o) => nur.includes(o.id)), radius: RADIUS, saum: SAUM, jeOrt: 5, jeStreu: 2, gw: 48, gh: 27, nahAus: true, bilder: { w: 1280, h: 720 } });
+        const m = await page.evaluate(probe, { orte: ORTE.filter((o) => nur.includes(o.id)), radius: RADIUS, saum: SAUM, nahMax: NAH_DECKUNG_MAX, hubMax: SCHMUGGEL_HUB_M, jeOrt: 5, jeStreu: 2, gw: 48, gh: 27, nahAus: true, bilder: { w: 1280, h: 720 } });
         console.log(`=== DIE BILD-PAARE (echte GPU, Ausgabe-Pfad) → ${BILDER} ===`);
         for (const [id, o] of Object.entries(m.orte)) {
             if (o.err) console.log(`  ${id}: Ausnahme ${String(o.err).split("\n")[0]}`);
@@ -1399,18 +1401,11 @@ async function bildPaare() {
 // pose-14 des Körper-Studios (sein Bild-Schirm). Vorher und Nachher sind zwei Läufe: KAMERA_LAUB_STAMM / KAMERA_LAUB_STUDIO
 // tragen den Vor-Stand, `--phase vorher|nachher` den Datei-Namen. ──
 async function leibBilder(ordner) {
-    const { echteWebGpuArgs } = require("./lib/software-gpu.cjs");
     const phase = opt("--phase", "nachher");
     fs.mkdirSync(ordner, { recursive: true });
     await new Promise((res) => server.listen(PORT, "127.0.0.1", res));
     const profil = path.join(require("os").tmpdir(), `kamera-leib-profil-${Date.now()}`);
-    const browser = await puppeteer.launch({
-        headless: false,
-        userDataDir: profil,
-        protocolTimeout: 3600000,
-        defaultViewport: { width: 1280, height: 720, deviceScaleFactor: 1 },
-        args: [...echteWebGpuArgs(), "--window-size=1300,860"],
-    });
+    const browser = await starteBrowser({ art: "echt", headless: false, profil: profil, frist: 3600000, viewport: { width: 1280, height: 720, deviceScaleFactor: 1 }, zusatz: ["--window-size=1300,860"] });
     const bericht = { phase, posen: {} };
     try {
         const page = await browser.newPage();

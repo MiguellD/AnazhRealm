@@ -21,33 +21,14 @@
 //     liefert Meshes end-to-end (mat.color reist, BuildGroup baut) · die
 //     Distanz-Wahl lod=2 klemmt fail-closed auf Stufe 0.
 //   node scripts/diag-nervensystem-porta.cjs [--selftest]
-const puppeteer = require("puppeteer");
-const http = require("http");
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.NERV_PORTA_PORT || 4431);
 const root = path.resolve(__dirname, "..");
-const mime = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".wasm": "application/wasm",
-    ".json": "application/json",
-    ".css": "text/css",
-    ".png": "image/png",
-    ".woff2": "font/woff2",
-};
-const server = http.createServer((req, res) => {
-    let p = req.url.split("?")[0];
-    if (p === "/") p = "/index.html";
-    const fp = path.join(root, p);
-    if (!fp.startsWith(root)) return ((res.statusCode = 403), res.end());
-    fs.readFile(fp, (err, data) => {
-        if (err) return ((res.statusCode = 404), res.end());
-        res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-        res.end(data);
-    });
-});
+const server = statikServer();
 
 const errs = [];
 function check(name, ok, detail) {
@@ -107,8 +88,8 @@ function staticLaws(anazhSrc, pcSrc, manifestSrc) {
         autoReg !== null && /KIND_POLICY/.test(autoReg) && !/kind\s*[!=]==?\s*"/.test(autoReg),
     ]);
     out.push([
-        "S4: porta-core deklariert kindStages.gate == [0, 3] (B2-Vertrags-Daten; 3 = die NUR-WURF-Stufe, 1110-9)",
-        /kindStages:\s*\{\s*gate:\s*\[0,\s*3\]\s*\}/.test(pcSrc),
+        "S4: porta-core deklariert kindStages.gate == [0, 1, 3] (B2-Vertrags-Daten; 1 = die Stufe 1 seit K43, 3 = die NUR-WURF-Stufe, 1110-9)",
+        /kindStages:\s*\{\s*gate:\s*\[0,\s*1,\s*3\]\s*\}/.test(pcSrc),
     ]);
     out.push([
         "S5: die Tor-Rezepte tragen das Platzierungs-Gesetz als DATEN (fx.place mode site + siteTag tor)",
@@ -161,7 +142,7 @@ function ksRow(src, name) {
 }
 
 (async () => {
-    const anazhSrc = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+    const anazhSrc = stammLib.text(root);
     const pcSrc = fs.readFileSync(path.join(root, "porta-core.js"), "utf8");
     const manifestSrc = fs.readFileSync(path.join(root, "cores.manifest.json"), "utf8");
 
@@ -188,11 +169,7 @@ function ksRow(src, name) {
 
     console.log("\n=== TEIL B: der lebende Draht (Browser, foundry-ON) ===");
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await puppeteer.launch({
-        headless: true,
-        protocolTimeout: 180000,
-        args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--no-sandbox", "--disable-setuid-sandbox"],
-    });
+    const browser = await starteBrowser({ art: "webgl", frist: 180000 });
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(() => {
         window.__anazhForceFoundry = true;
@@ -313,9 +290,9 @@ function ksRow(src, name) {
     );
     check("B: die Regler-Daten fliessen (drachentor.s.orders == 2)", out.b.orders === 2, String(out.b.orders));
     check("B: alle 7 Tor-Ordnungen im Buch", out.b.gateCount === 7, String(out.b.gateCount));
-    check("B: kindStages.gate == [0,3] (N7.5-Merge am Ingest; 3 = NUR-WURF)", out.b.ksGate === "[0,3]", String(out.b.ksGate));
+    check("B: kindStages.gate == [0,1,3] (N7.5-Merge am Ingest; 3 = NUR-WURF)", out.b.ksGate === "[0,1,3]", String(out.b.ksGate));
     check("B: foundry-core-kinds UNANGETASTET (tree [0,1,2])", out.b.ksTree === "[0,1,2]", String(out.b.ksTree));
-    check("B: vehicle-kindStages UNANGETASTET ([0])", out.b.ksVehicle === "[0]", String(out.b.ksVehicle));
+    check("B: vehicle-kindStages UNANGETASTET ([0,1])", out.b.ksVehicle === "[0,1]", String(out.b.ksVehicle));
     check(
         "D: Auto-Blueprint tor_drachentor registriert (Donor-Klon)",
         out.d.blueprint === true && out.d.parts >= 4,
@@ -367,8 +344,8 @@ function ksRow(src, name) {
     check("E: _foundryBuildGroup baut die Gruppe (Kinder > 0)", out.e.groupChildren > 0, String(out.e.groupChildren));
     check("E: jedes Kind traegt das color-Attribut (WebGPU-STRIKT-Fill)", out.e.allHaveColor === true);
     check(
-        "F: die Distanz-Wahl 2 klemmt fuer kind:gate auf Stufe 0 (fail-closed [0])",
-        /^[^|]*\|[^|]*\|0(\||$)/.test(out.f.key || ""), // Körper-Schlüssel preset|gestalt|stufe[|ov] (V18.527)
+        "F: die Distanz-Wahl 2 klemmt fuer kind:gate auf Stufe 1 (die größte gezeigte ≤ 2, K43)",
+        /^[^|]*\|[^|]*\|1(\||$)/.test(out.f.key || ""), // Körper-Schlüssel preset|gestalt|stufe[|ov] (V18.527)
         out.f.err || String(out.f.key)
     );
     if (pageErrors.length) check("keine Seiten-Fehler", false, pageErrors[0]);

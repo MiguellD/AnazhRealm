@@ -19,11 +19,9 @@
 //   --selftest: ein erzwungener Kapsel-Satz in 20 m (ohne Träger) — die Linse wird rot und nennt ihn
 //   ANALOG_NAH_PORT=… node scripts/diag-analog-nah.cjs [--selftest]
 "use strict";
-const puppeteer = require("puppeteer");
-const { linsenWebGpuArgs, adapterZeile } = require("./lib/software-gpu.cjs");
-const http = require("http");
-const fs = require("fs");
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 
 const root = path.resolve(__dirname, "..");
 // DER MESSORT (spec/profiband/haushalt.json `messorte`, S1 W1f): die Linse steht an der Mess-Wiese in IHREM Zustand —
@@ -36,26 +34,7 @@ const SELBST = process.argv.includes("--selftest");
 const GRENZE_E = 1500; // Takte bis zum ersten satzfreien Zustand nach dem Boot
 const RUHE = 100; // Takte, in denen eingeschwungen kein Satz auftauchen darf
 const GRENZE_T = 120; // Takte nach der Rückkehr bis 0
-const mime = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".wasm": "application/wasm",
-    ".json": "application/json",
-    ".css": "text/css",
-    ".png": "image/png",
-    ".woff2": "font/woff2",
-};
-const server = http.createServer((req, res) => {
-    let p = req.url.split("?")[0];
-    if (p === "/") p = "/index.html";
-    const fp = path.join(root, p);
-    if (!fp.startsWith(root)) return ((res.statusCode = 403), res.end());
-    fs.readFile(fp, (err, data) => {
-        if (err) return ((res.statusCode = 404), res.end());
-        res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-        res.end(data);
-    });
-});
+const server = statikServer();
 
 // S — DIE KLASSE KEHRT NICHT ZURÜCK (statisch, vor dem Boot): die drei Wurzeln der Klumpen-Rampe stehen als Struktur.
 //   S1 der Karten-Bäcker wartet nicht auf die Bühne (der Kreis Bühne → Streu → Karte → Bühne) und läuft im festen Takt
@@ -88,7 +67,7 @@ function klassenWand(src) {
     return { ok: S1 && S2 && S3, S1, S2, S3 };
 }
 {
-    const stamm = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+    const stamm = stammLib.text(root);
     const heil = klassenWand(stamm);
     if (SELBST) {
         const brueche = [
@@ -140,17 +119,7 @@ function urteil(z) {
 
 (async () => {
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await puppeteer.launch({
-        headless: true,
-        protocolTimeout: 1800000,
-        // WebGPU auf swiftshader: nur dort zeichnet der Feld-Pass (rohes WGSL); fiele der Renderer auf WebGL2, läse die
-        // Linse die CPU-Wahrheit eines Passes, der nie läuft — das Backend steht im Bericht. Die Schalter je Plattform
-        // trägt das EINE Rezept (scripts/lib/software-gpu.cjs): auf dem Linux-Runner starb das Gerät ~3,9 s nach dem Start
-        // („destroyed"), weil der GPU-Prozess ohne Vulkan keine Ablage für die Canvas-Swapchain fand.
-        args: linsenWebGpuArgs(),
-        dumpio: false,
-    });
-    await adapterZeile(browser);
+    const browser = await starteBrowser({ art: "linse", frist: 1800000, dumpio: false });
     // Was der Browser-Prozess über seinen GPU-Prozess sagt (Absturz, Watchdog, Verlust), reist ins Log.
     {
         const proc = browser.process();

@@ -2,8 +2,8 @@
 //
 // EINE Chromium-Seite fährt beide Produzenten NEBENEINANDER:
 //   (a) das bestehende Studio-iframe  (worlds/terrain/index.html?asset-foundry=1)
-//   (b) einen Web-WORKER, der dieselben Studio-Dateien lädt (three-r128 + libs + phyto-core +
-//       phytogenesis) — self.__PHYTO_FOUNDRY_WORKER=true schaltet denselben Foundry-Modus.
+//   (b) einen Web-WORKER, der die Manifest-Kette lädt (three-r128 + Geometrie-Helfer + Kerne +
+//       foundry-bruecke) — self.__PHYTO_FOUNDRY_WORKER=true schaltet denselben Foundry-Modus.
 // Beide bekommen IDENTISCHE build-asset-Anfragen in IDENTISCHER Reihenfolge (setSeasonColors ist
 // stateful — gleiche Sequenz ⇒ gleiche Zustands-Trajektorie) und werden BYTE-verglichen:
 // jede Attribut-Puffer-Byte, der Index, kind, die Material-Regler. Dazu recipes/world-params/
@@ -19,45 +19,17 @@
 //   node scripts/diag-foundry-parity.cjs
 //   PARITY_SEEDS="1,7" PARITY_LODS="0,2" PARITY_SEASONS="summer" node scripts/diag-foundry-parity.cjs
 
-const puppeteer = require("puppeteer");
-const http = require("http");
-const fs = require("fs");
-const path = require("path");
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.PARITY_PORT || 4521);
-const root = path.resolve(__dirname, "..");
 const SEEDS = (process.env.PARITY_SEEDS || "1,7,12345,999983").split(",").map(Number);
 const LODS = (process.env.PARITY_LODS || "0,1,2").split(",").map(Number);
 const SEASONS = (process.env.PARITY_SEASONS || "spring,summer,autumn,winter").split(",");
 
-const mime = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".json": "application/json",
-    ".css": "text/css",
-    ".png": "image/png",
-    ".woff2": "font/woff2",
-};
 
-// Die Studio-Script-Kette EXAKT wie worlds/terrain/index.html (Reihenfolge trägt: FoliagePass
-// extends THREE.Pass braucht EffectComposer davor; phytogenesis liest __phytoCore).
-const WORKER_SCRIPTS = [
-    "/worlds/terrain/lib/three-r128.min.js",
-    "/worlds/terrain/lib/OrbitControls.js",
-    "/worlds/terrain/lib/PointerLockControls.js",
-    "/worlds/terrain/lib/BufferGeometryUtils.js",
-    "/worlds/terrain/lib/CopyShader.js",
-    "/worlds/terrain/lib/LuminosityHighPassShader.js",
-    "/worlds/terrain/lib/FXAAShader.js",
-    "/worlds/terrain/lib/EffectComposer.js",
-    "/worlds/terrain/lib/RenderPass.js",
-    "/worlds/terrain/lib/MaskPass.js",
-    "/worlds/terrain/lib/ShaderPass.js",
-    "/worlds/terrain/lib/UnrealBloomPass.js",
-    "/phyto-core.js",
-    "/foundry-core.js", // P2: der Studio-Generator-Kern VOR phytogenesis (die Shell liest seine Globals)
-    "/worlds/terrain/phytogenesis.js",
-];
+// Die Worker-Kette aus dem Manifest — DIESELBE Liste wie die Produktion und das Asset-Harness (lib der Kerne →
+// Kerne → die Foundry-Brücke, K42; die Labor-Shell lädt nur das iframe).
+const { WORKER_SCRIPTS } = require("./lib/asset-worker-harness.cjs");
 
 const PAGE = `<!doctype html><meta charset="utf-8"><title>P0 Foundry-Parität</title><body>
 <script>
@@ -93,7 +65,7 @@ const PAGE = `<!doctype html><meta charset="utf-8"><title>P0 Foundry-Parität</t
     const boot =
         "self.__PHYTO_FOUNDRY_WORKER=true;" +
         "importScripts(" + ${JSON.stringify(WORKER_SCRIPTS)}.map((p) => JSON.stringify(location.origin + p)).join(",") + ");" +
-        "init();"; // init() nimmt den Foundry-Zweig (Worker-Flag) und kehrt vor jedem Renderer zurück
+        ""; // die Brücke startet sich selbst im Foundry-Modus (Worker-Flag) und kehrt vor jedem Renderer zurück
     const worker = new Worker(URL.createObjectURL(new Blob([boot], { type: "text/javascript" })));
     const workerPending = new Map();
     let workerReadyAt = 0;
@@ -198,28 +170,11 @@ const PAGE = `<!doctype html><meta charset="utf-8"><title>P0 Foundry-Parität</t
 })();
 </script></body>`;
 
-const server = http.createServer((req, res) => {
-    let p = req.url.split("?")[0];
-    if (p === "/" || p === "/__parity.html") {
-        res.setHeader("Content-Type", "text/html");
-        return res.end(PAGE);
-    }
-    const fp = path.join(root, p);
-    if (!fp.startsWith(root)) return ((res.statusCode = 403), res.end());
-    fs.readFile(fp, (err, data) => {
-        if (err) return ((res.statusCode = 404), res.end());
-        res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-        res.end(data);
-    });
-});
+const server = statikServer({ seiten: { "/": PAGE, "/__parity.html": PAGE } });
 
 (async () => {
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await puppeteer.launch({
-        headless: true,
-        protocolTimeout: 240000,
-        args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--no-sandbox", "--disable-setuid-sandbox"],
-    });
+    const browser = await starteBrowser({ art: "webgl", frist: 240000 });
     const page = await browser.newPage();
     const pageErrors = [];
     page.on("pageerror", (e) => pageErrors.push(String((e && e.message) || e)));

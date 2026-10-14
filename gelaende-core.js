@@ -55,10 +55,18 @@
         }
         // "bucht": die Rinne A → B (offene Mündung ins Meer), Sohle eben, quer die Ufer mit ihrem Winkel; längs eine
         // Furt-Schwelle (Krone über ihre Breite, Flanken mit tanF) und ein Kolk (Kosinus-Mulde). Schneidet (Minimum).
+        // "rinne": die Klamm A → B — dieselbe Rinne, die Sohle fällt von `quelle` nach `muendung` (das Gefälle des Bachs, der in
+        // ihr läuft: `flussLaeufe`), ohne Furt und Kolk. Schneidet (Minimum).
         let q = ((x - t.x0) * t.ex + (z - t.z0) * t.ez) / t.len2;
         if (q < 0) q = 0;
         else if (q > 1) q = 1;
         const d = Math.hypot(x - (t.x0 + t.ex * q), z - (t.z0 + t.ez * q));
+        if (t.art === "rinne") {
+            const s = base + t.quelle + (t.muendung - t.quelle) * q;
+            const wr = d - t.sohle * 0.5;
+            const br = wr > 0 ? s + wr * t.tanU : s;
+            return br < h ? br : h;
+        }
         let g = base + t.grund;
         const f = Math.abs(q * t.len - t.furtLage) - t.furtBreite * 0.5;
         const furt = base + t.furtKrone - (f > 0 ? f * t.tanF : 0);
@@ -89,7 +97,7 @@
         const RAD = Math.PI / 180;
         return roh.terme.map((t, i) => {
             if (!t || typeof t !== "object") nein(`Term ${i} ist kein Objekt`);
-            if (!["wildnis", "insel", "rampe", "bucht"].includes(t.art)) nein(`unbekannte Term-Art „${t.art}"`);
+            if (!["wildnis", "insel", "rampe", "bucht", "rinne"].includes(t.art)) nein(`unbekannte Term-Art „${t.art}"`);
             const basis = t.art === "wildnis" || t.art === "insel";
             if (basis !== (i === 0)) nein(`Term ${i} (${t.art}): nur der erste Term setzt den Grund`);
             if (t.art === "wildnis") {
@@ -153,6 +161,33 @@
                     kolkZ: z0 + ez * kolk,
                     kolkR: zahl(t, "kolkR", 1, 100),
                     kolkTiefe: zahl(t, "kolkTiefe", 0, 30),
+                };
+            }
+            if (t.art === "rinne") {
+                // DIE KLAMM (werk-ufer): ein Bach mit Gefälle zwischen steilen Wänden — der Ort, an dem ein Damm staut (die
+                // Aue der Wildnis ist flach, ein Damm wird dort umflossen). `einzug` (km²) gibt dem Bach seine Breite (`flussBreite`).
+                const x0 = zahl(t, "x0", -1e5, 1e5);
+                const z0 = zahl(t, "z0", -1e5, 1e5);
+                const ex = zahl(t, "x1", -1e5, 1e5) - x0;
+                const ez = zahl(t, "z1", -1e5, 1e5) - z0;
+                const len = Math.hypot(ex, ez);
+                if (!(len >= 1)) nein("rinne: A und B fallen zusammen");
+                const quelle = zahl(t, "quelle", -100, 200);
+                const muendung = zahl(t, "muendung", -100, 200);
+                if (!(muendung < quelle)) nein("rinne: die Sohle fällt nicht von der Quelle zur Mündung");
+                return {
+                    art: "rinne",
+                    x0,
+                    z0,
+                    ex,
+                    ez,
+                    len,
+                    len2: ex * ex + ez * ez,
+                    sohle: zahl(t, "sohle", 2, 200),
+                    tanU: Math.tan(zahl(t, "ufer", 5, 80) * RAD),
+                    quelle,
+                    muendung,
+                    einzug: zahl(t, "einzug", 0.01, 1000),
                 };
             }
             return nein(`unbekannte Term-Art „${t.art}"`);
@@ -309,17 +344,27 @@
     const NETZE = new Map();
     // Der Heiß-Pfad (jede Spalte): die Lage merkt ihr Netz an der Identität ihrer Eingaben (Rausch-Strom, Erbgut-Normalform,
     // Basis, Wasser) — der Schlüssel-Text entsteht nur beim Wechsel.
+    // Die zuletzt gefragte Lage steht vor der WeakMap (eine Welt fragt Spalte um Spalte dieselbe).
     const LAGE_NETZ = new WeakMap();
+    let lageLetzt = null;
     function netzFuer(L) {
         const noise = L.noise;
         const erbgut = L.erbgut;
+        let m = lageLetzt;
+        // dieselbe Lage mit denselben rohen Feldern: dasselbe Netz, ohne Basis und Wasser neu zu rechnen
+        if (m && m.L === L && m.noise === noise && m.erbgut === erbgut && m.bh === L.baseHeight && m.wh === L.waterLevel)
+            return m.N;
         const base = L.baseHeight || 0;
         const wl = Number.isFinite(L.waterLevel) ? L.waterLevel : base + 4;
-        const m = LAGE_NETZ.get(L);
-        if (m && m.noise === noise && m.erbgut === erbgut && m.base === base && m.wl === wl) return m.N;
-        const N = netzNeu(L, base, wl);
-        LAGE_NETZ.set(L, { noise, erbgut, base, wl, N });
-        return N;
+        m = LAGE_NETZ.get(L);
+        if (!(m && m.noise === noise && m.erbgut === erbgut && m.base === base && m.wl === wl)) {
+            m = { L, noise, erbgut, base, wl, bh: L.baseHeight, wh: L.waterLevel, N: netzNeu(L, base, wl) };
+            LAGE_NETZ.set(L, m);
+        }
+        m.bh = L.baseHeight;
+        m.wh = L.waterLevel;
+        lageLetzt = m;
+        return m.N;
     }
     function netzNeu(L, base, wl) {
         const P = landformRegler(L);
@@ -338,6 +383,10 @@
             ebenen: P.rinnen > 0 ? 3 : 2,
             knoten: [new Map(), new Map(), new Map()],
             zellen: [new Map(), new Map(), new Map()],
+            // die zuletzt gefragte Zelle je Ebene (der Bau tastet Spalte um Spalte durch dieselbe Zelle) und der Talgrund je
+            // Zelle der Ebene 0 (`talZelle`)
+            zLetzt: [{ ci: NaN, cj: NaN, z: null }, { ci: NaN, cj: NaN, z: null }, { ci: NaN, cj: NaN, z: null }],
+            tal: { M: new Map(), ci: NaN, cj: NaN, a: null },
             tp: Math.tan((P.pedimentWinkel * Math.PI) / 180),
             ts: Math.tan((P.schuttWinkel * Math.PI) / 180),
             tc: Math.tan((P.kliffWinkel * Math.PI) / 180),
@@ -347,6 +396,8 @@
         return N;
     }
 
+    // Die Großform einer Lage (der Namensraum-Leser `grossform(L, x, z)`).
+    const grossformAus = (L, x, z) => grossform(netzFuer(L), x, z);
     // T1 — die Großform an (x, z): Grundhöhe K (sie lenkt das Netz der Ebene 0 und setzt Meer und Seen), Relief (die Hülle
     // über dem Talgrund), Hebung U (der Steilheits-Index der Flüsse: ks = ks₀·U), Stil (Tafelland), Trog-Gewicht.
     function grossform(N, x, z) {
@@ -363,9 +414,21 @@
         const off = spline(OFFSET_SPLINE, c);
         const kueste = glatt(-0.28, 0.12, c);
         const rel = spline(RELIEF_SPLINE, e) * P.hoehe * (0.15 + 0.85 * kueste);
-        const stilN = n.noise2D(wx * 0.000192 + 91.3, wz * 0.000192 + 5.9) * 0.5 + 0.5;
-        // Das Tafelland ist ein Ort, kein Schleier: scharfe Grenze (0,05 im Stil-Feld), volle Kraft ab 45 m Relief.
-        const stil = glatt(1 - P.tafel * 0.62, 1.05 - P.tafel * 0.62, stilN) * glatt(18, 45, rel) * (1 - glatt(160, 195, rel));
+        // Das Tafelland ist ein Ort, kein Schleier: scharfe Grenze (0,05 im Stil-Feld), volle Kraft ab 45 m Relief. Unter 18 m
+        // und über 195 m Relief ist es null — dort fragt die Spalte das Stil-Feld nie (die Ebene zahlt kein Rauschen, das sie
+        // nicht trägt; dieselbe Höhe bis aufs Bit, `gate:worker-dichte`).
+        const reliefStil = glatt(18, 45, rel);
+        const reliefDecke = 1 - glatt(160, 195, rel);
+        const stil =
+            reliefStil === 0 || reliefDecke === 0
+                ? 0
+                : glatt(
+                      1 - P.tafel * 0.62,
+                      1.05 - P.tafel * 0.62,
+                      n.noise2D(wx * 0.000192 + 91.3, wz * 0.000192 + 5.9) * 0.5 + 0.5
+                  ) *
+                  reliefStil *
+                  reliefDecke;
         return {
             off,
             rel,
@@ -714,6 +777,7 @@
             b,
             stil,
             reach,
+            reach2: reach * reach,
             mo,
             mn,
             ml,
@@ -721,16 +785,27 @@
             von: kn, // der Knoten des Segments (eine Mündung darauf ist ein Zufluss, keine Senke: `flussLaeufe`)
         };
     }
+    // Die Zelle trägt zwei Listen: `alle` (die Box der Rinne samt Reichweite trifft die Zelle — die Mündung sucht darin den
+    // tiefsten Punkt) und `nah` (die Rinne selbst kommt der Zelle näher als ihre Reichweite: nur sie kann eine Spalte der
+    // Zelle formen — die Fläche fragt keine Rinne, deren Profil dort nie greift; dieselbe Höhe bis aufs Bit).
     function zelle(N, k, ci, cj) {
+        const Z = N.zLetzt[k];
+        if (Z.ci === ci && Z.cj === cj) return Z.z;
         const M = N.zellen[k];
         const key = ci * 67108864 + cj;
         let z = M.get(key);
-        if (z) return z;
+        if (!z) z = zelleNeu(N, k, ci, cj, M, key);
+        Z.ci = ci;
+        Z.cj = cj;
+        Z.z = z;
+        return z;
+    }
+    function zelleNeu(N, k, ci, cj, M, key) {
         const S = N.S[k];
         const x0 = ci * S;
         const z0 = cj * S;
         const r = k === 0 ? 2 : 3;
-        z = [];
+        const z = [];
         for (let j = cj - r; j <= cj + r; j++)
             for (let i = ci - r; i <= ci + r; i++) {
                 const s = segment(N, knoten(N, k, i, j));
@@ -743,9 +818,33 @@
                 if (mxx < x0 || mnx > x0 + S || mxz < z0 || mnz > z0 + S) continue;
                 z.push(s);
             }
+        const e = { alle: z, nah: z.filter((s) => streckeTrifft(s, x0, z0, S, s.reach + 0.001)) };
         if (M.size > 300000) M.clear();
-        M.set(key, z);
-        return z;
+        M.set(key, e);
+        return e;
+    }
+    // Trifft die Strecke A → A + e das Rechteck [x0, x0 + S] × [z0, z0 + S], um r erweitert? (Liang-Barsky; die Ecken des
+    // erweiterten Rechtecks sind eckig — die Probe hält jede Rinne, die näher als r kommt, und ein Millimeter Rand die Rundung.)
+    function streckeTrifft(s, x0, z0, S, r) {
+        const p = [-s.ex, s.ex, -s.ez, s.ez];
+        const q = [s.ax - (x0 - r), x0 + S + r - s.ax, s.az - (z0 - r), z0 + S + r - s.az];
+        let t0 = 0;
+        let t1 = 1;
+        for (let i = 0; i < 4; i++) {
+            if (p[i] === 0) {
+                if (q[i] < 0) return false;
+                continue;
+            }
+            const v = q[i] / p[i];
+            if (p[i] < 0) {
+                if (v > t1) return false;
+                if (v > t0) t0 = v;
+            } else {
+                if (v < t0) return false;
+                if (v < t1) t1 = v;
+            }
+        }
+        return true;
     }
     // DIE SCHICHT-PERIODE (T5) — EINE Quelle für Treppe, Reichweite und Schicht-Ort: eine Schicht der Mächtigkeit T ist die
     // weiche Lage (Schutthang am Ruhewinkel), die harte Lage (`hartAnteil` · T am Kliff-Winkel) und die Bank (T/2). Monument
@@ -787,27 +886,64 @@
         r -= M.wS;
         return r < M.wC ? N.tc : N.tp * 0.5;
     }
+    // DER SCHUTT DER TREPPE an u (K17): der Abschnitt Schutthang (dieselben Abschnitte wie `treppe`) trägt den Schutt seines
+    // Kliffs — 1, bis die Wand beginnt (weich über 1 m in sie hinein), am Fuß über 2 m aus dem Pediment bzw. der Bank. Das
+    // Pediment, das Kliff und die Bank tragen keinen (das Kliff ist Fels, die Steile des Netzes legt ihn).
+    function treppeSchutt(N, u) {
+        if (u <= 140) return 0;
+        const M = schichtMass(N);
+        const r = (u - 140) % M.per;
+        return glatt(0, 2, r) * (1 - glatt(M.wS, M.wS + 1, r));
+    }
     // DER TALGRUND an (x, z): die Sohlen der Ebene-0-Knoten, stetig gemittelt (Gewicht (1 − d²/R²)², R = 1,6 Kanten) — die
     // Basis der Hülle (Talgrund + Relief): die Gipfel stehen über IHREM Tal, nie über einer erfundenen Ebene.
+    // Je Zelle der Ebene 0 stehen die Knoten, die eine Spalte darin erreichen können (Abstand zum Zellen-Rechteck < R, mit
+    // Rand), als [x, z, Sohle] in der Reihenfolge der Summe — die Spalte fragt keine 25 Knoten mehr und keine, deren Gewicht
+    // dort null ist (dieselbe Summe in derselben Reihenfolge: dieselbe Höhe bis aufs Bit).
+    function talZelle(N, ci, cj) {
+        const T = N.tal;
+        if (T.ci === ci && T.cj === cj) return T.a;
+        const key = ci * 67108864 + cj;
+        let a = T.M.get(key);
+        if (!a) {
+            const S = N.S[0];
+            const R2 = 1.6 * S * 1.6 * S * 1.0001;
+            const x0 = ci * S;
+            const z0 = cj * S;
+            const w = [];
+            for (let j = cj - 2; j <= cj + 2; j++)
+                for (let i = ci - 2; i <= ci + 2; i++) {
+                    const kn = knoten(N, 0, i, j);
+                    const dx = kn.x < x0 ? x0 - kn.x : kn.x > x0 + S ? kn.x - x0 - S : 0;
+                    const dz = kn.z < z0 ? z0 - kn.z : kn.z > z0 + S ? kn.z - z0 - S : 0;
+                    if (dx * dx + dz * dz >= R2) continue;
+                    w.push(kn.x, kn.z, knotenSohle(N, kn));
+                }
+            a = Float64Array.from(w);
+            if (T.M.size > 300000) T.M.clear();
+            T.M.set(key, a);
+        }
+        T.ci = ci;
+        T.cj = cj;
+        T.a = a;
+        return a;
+    }
     function talgrund(N, x, z) {
         const S = N.S[0];
         const R = 1.6 * S;
         const R2 = R * R;
-        const ci = Math.floor(x / S);
-        const cj = Math.floor(z / S);
+        const a = talZelle(N, Math.floor(x / S), Math.floor(z / S));
         let sw = 0;
         let sb = 0;
-        for (let j = cj - 2; j <= cj + 2; j++)
-            for (let i = ci - 2; i <= ci + 2; i++) {
-                const kn = knoten(N, 0, i, j);
-                const dx = x - kn.x;
-                const dz = z - kn.z;
-                const q = 1 - (dx * dx + dz * dz) / R2;
-                if (q <= 0) continue;
-                const w = q * q;
-                sw += w;
-                sb += w * knotenSohle(N, kn);
-            }
+        for (let p = 0; p < a.length; p += 3) {
+            const dx = x - a[p];
+            const dz = z - a[p + 1];
+            const q = 1 - (dx * dx + dz * dz) / R2;
+            if (q <= 0) continue;
+            const w = q * q;
+            sw += w;
+            sb += w * a[p + 2];
+        }
         return sw > 0 ? sb / sw : N.base + grossform(N, x, z).K;
     }
 
@@ -818,15 +954,17 @@
         let steil = 0;
         let nah = 1;
         let hang = 0;
+        let schutt = 0;
         let aue = false;
         for (let k = 0; k <= kmax; k++) {
             const S = N.S[k];
-            const segs = zelle(N, k, Math.floor(x / S), Math.floor(z / S));
+            const segs = zelle(N, k, Math.floor(x / S), Math.floor(z / S)).nah;
             let Hk = H;
             let kSteil = 0;
             let kNah = 1;
             let kAue = false;
             let kHang = 0;
+            let kSchutt = 0;
             for (let q = 0; q < segs.length; q++) {
                 const s = segs[q];
                 const dx = x - s.ax;
@@ -836,7 +974,7 @@
                 const px = dx - s.ex * t;
                 const pz = dz - s.ez * t;
                 const d2 = px * px + pz * pz;
-                if (d2 >= s.reach * s.reach) continue;
+                if (d2 >= s.reach2) continue;
                 const bed = s.ba + (s.bb - s.ba) * t;
                 if (bed >= Hk) continue;
                 const d = Math.sqrt(d2);
@@ -846,6 +984,7 @@
                 let w = 0;
                 // die Neigung des Profils quer zur Rinne (mit der Treppe gemischt) — der Hang der gewählten Fläche
                 let gh = 0;
+                let sch = 0;
                 // Die Aue fällt quer 0,6 % zur Rinne (das Wasser sammelt sich im Bett, nie in der Fläche) — zur BAHN des
                 // Mäanders: der Abstand quer zur Sehne, so gestaucht, dass die Bahn 0 und die Auen-Kante F bleibt (stetig an
                 // der Kante und an den Knoten, wo die Bahn auf der Sehne liegt).
@@ -872,6 +1011,7 @@
                         const vs = sohle + (tr < H - sohle ? tr : H - sohle);
                         v += (vs - v) * s.stil;
                         gh = g * (1 - s.stil) + (tr < H - sohle ? treppeHang(N, u) : 0) * s.stil;
+                        sch = tr < H - sohle ? treppeSchutt(N, u) * s.stil : 0;
                     }
                 }
                 if (v < Hk) {
@@ -880,6 +1020,7 @@
                     kNah = w < 1 ? w : 1;
                     kAue = u <= 0;
                     kHang = gh;
+                    kSchutt = sch;
                 }
             }
             if (Hk < H) {
@@ -887,6 +1028,7 @@
                 if (kNah < nah) nah = kNah;
                 aue = kAue;
                 hang = kHang;
+                schutt = kSchutt;
             }
             H = Hk;
         }
@@ -894,6 +1036,7 @@
             aus.steil = steil;
             aus.nah = nah;
             aus.hang = hang;
+            aus.schutt = schutt;
             aus.aue = aue;
         }
         return H;
@@ -902,7 +1045,7 @@
     // trägt (Sohle + Profil), mit seiner Sohle.
     function muendung(N, k, x, z) {
         const S = N.S[k];
-        const segs = zelle(N, k, Math.floor(x / S), Math.floor(z / S));
+        const segs = zelle(N, k, Math.floor(x / S), Math.floor(z / S)).alle;
         let best = null;
         let bv = Infinity;
         for (let q = 0; q < segs.length; q++) {
@@ -954,7 +1097,7 @@
     });
     function schnee(L, y, x, z) {
         if (!Number.isFinite(x) || !Number.isFinite(z)) throw new Error("gelaende-core schnee: der Ort (x, z) fehlt");
-        const wl = Number.isFinite(L.waterLevel) ? L.waterLevel : (L.baseHeight || 0) - 3;
+        const wl = Number.isFinite(L.waterLevel) ? L.waterLevel : (L.baseHeight || 0) - GRUND.meerUnterBasis;
         let zunge = 0;
         for (const o of SCHNEE.zungen) zunge += L.noise.noise2D(x * o.f + o.ox, z * o.f + o.oz) * o.a;
         return glatt(SCHNEE.start, SCHNEE.voll, y - wl + zunge);
@@ -965,9 +1108,12 @@
         const n = L.noise;
         const base = N.base;
         const gf = grossform(N, x, z);
-        const mess = { steil: 0, nah: 1, hang: 0 };
+        const mess = { steil: 0, nah: 1, hang: 0, schutt: 0 };
         let h = flaeche(N, N.ebenen - 1, x, z, gf, mess);
-        if (aus) aus.hang = mess.hang;
+        if (aus) {
+            aus.hang = mess.hang;
+            aus.schutt = mess.schutt;
+        }
         // T3 — das hang-begrenzte Detail (λ 38 m und 17 m): Amplitude < ½ Hang × λ/2π, null in Rinne und Aue.
         if (mitDetail && N.P.detail > 0 && mess.steil > 0.02) {
             const amp = N.P.detail * Math.min(3, mess.steil) * glatt(0.05, 0.45, mess.nah);
@@ -1026,11 +1172,50 @@
     // Hauptlaufs, jedes Glied gehört EINEM Lauf), zur Senke ("see" ein benannter See, "meer") oder jenseits der Reichweite
     // ("rand"). Je Glied die Enden, die Sohlen (`knotenSohle`, stromab streng fallend), das Einzugsgebiet A in m² und die
     // BAHN (`bahnPunkte`: der Mäander, Punkte im Abstand ≤ `schritt` m — der Wirt legt Kanal und Spiegel darauf). Ohne
-    // Wildnis-Term (eine Bühne): [].
+    // Wildnis-Term (eine Bühne): der Bach jeder Klamm (`rinne`), die das Fenster berührt — EIN Glied auf ihrer Achse, Quelle
+    // in A, die Sohle der Klamm, Ende im Meer (`term` "rinne": der Lauf gehört der Bühne, kein Wurf des Feldes).
     function flussLaeufe(L, x0, z0, x1, z1, schritt) {
         if (!(schritt > 0)) throw new Error("gelaende-core flussLaeufe: der Abtast-Schritt der Bahn fehlt");
         const T = L.erbgut && L.erbgut.terme;
-        if (!T || !T.length || T[0].art !== "wildnis") return [];
+        if (!T || !T.length) return [];
+        if (T[0].art !== "wildnis") {
+            const base = L.baseHeight || 0;
+            const aus = [];
+            for (const t of T) {
+                if (t.art !== "rinne") continue;
+                const xb = t.x0 + t.ex;
+                const zb = t.z0 + t.ez;
+                if (Math.max(t.x0, xb) < x0 || Math.min(t.x0, xb) >= x1 || Math.max(t.z0, zb) < z0 || Math.min(t.z0, zb) >= z1)
+                    continue;
+                const ux = t.ex / t.len;
+                const uz = t.ez / t.len;
+                const m = Math.max(1, Math.ceil(t.len / schritt));
+                const bahn = [];
+                for (let q = 0; q <= m; q++) {
+                    const u = q / m;
+                    bahn.push({ t: u, x: t.x0 + t.ex * u, z: t.z0 + t.ez * u, s: t.len * u, fx: ux, fz: uz });
+                }
+                aus.push({
+                    k: 0,
+                    quelle: true,
+                    term: "rinne",
+                    ende: "meer",
+                    glieder: [
+                        {
+                            ax: t.x0,
+                            az: t.z0,
+                            bx: xb,
+                            bz: zb,
+                            ba: base + t.quelle,
+                            bb: base + t.muendung,
+                            A: t.einzug * 1e6,
+                            bahn,
+                        },
+                    ],
+                });
+            }
+            return aus;
+        }
         const N = netzFuer(L);
         const drin = (kn) => {
             const S = 2 * N.S[kn.k];
@@ -1324,15 +1509,16 @@
     // Eine Welt ohne Erbgut trägt [wildnis]. Fehlt der Lage ihr Erbgut, wirft der Auswerter (fail-closed, nie still
     // Wildnis). Leser: jeder Leser der Höhe (Dichte, Hydrosphäre, Fern-Ring, Spawn-Ort) in Stamm und Worker.
     // `aus` (optional) trägt den Hang der Wildnis-Fläche (tan, `flaeche`) — ein Term darüber, der die Höhe ändert, nimmt
-    // ihn (0: kein Hang-Urteil, wo Insel, Rampe oder Bucht formen).
+    // ihn (0: kein Hang-Urteil, wo Insel, Rampe oder Bucht formen), ebenso den Schutt des Schicht-Gesetzes (`aus.schutt`
+    // 0..1: der Schutthang der Treppe × Stil, `treppeSchutt` — der Leser ist der Fels-Stoff des Bodens, K17).
     function hoehe(L, x, z, mitDetail = true, aus) {
         const T = L.erbgut.terme;
         const t0 = T[0];
-        if (aus) aus.hang = 0;
+        if (aus) aus.hang = aus.schutt = 0;
         let h = t0.art === "wildnis" ? wildnisY(L, x, z, mitDetail, aus) : termY(t0, 0, x, z, L);
         for (let i = 1; i < T.length; i++) {
             const h2 = termY(T[i], h, x, z, L);
-            if (aus && h2 !== h) aus.hang = 0;
+            if (aus && h2 !== h) aus.hang = aus.schutt = 0;
             h = h2;
         }
         // der Erdbau der Orte (K10) liegt als letzter Term auf allem: der Ort vor dem Hang
@@ -1725,6 +1911,9 @@
                 p50Prozent: hang.length ? Math.round(1000 * q(hang, 0.5)) / 10 : null,
                 p90Prozent: hang.length ? Math.round(1000 * q(hang, 0.9)) / 10 : null,
                 anteilUnter8Prozent: hang.length ? r3(hang.filter((v) => v < LINSE.hangSanft).length / hang.length) : null,
+                // das Hang-Histogramm des inneren Landes je 5° (0–75°, die letzte Klasse sammelt den Rest): das Bild der
+                // Zahl in der Leiste des Studios
+                grad5: hang.reduce((a, s) => (a[Math.min(14, Math.floor((Math.atan(s) * 180) / Math.PI / 5))]++, a), new Array(15).fill(0)),
             },
             senken1mJeKm2: km2 > 0 ? Math.round((100 * senken) / km2) / 100 : null,
             senken1m: senken,
@@ -1746,8 +1935,15 @@
         };
     }
     // Das Hang-Histogramm in Grad (zentrale Differenzen auf einem feinen Raster): die Anteile der Bänder des Schicht-
-    // Gesetzes — Pediment 0,5–7°, Schutthang 30–40° (Ruhewinkel 33–37°), Kliff ≥ 60°.
+    // Gesetzes (`HANG_BAENDER` — EINE Quelle für die Linse und die Farben des Hang-Histogramms im Studio).
+    const HANG_BAENDER = Object.freeze({
+        pediment: Object.freeze([0.5, 7]),
+        schutt: Object.freeze([30, 40]),
+        ruhe: Object.freeze([33, 37]),
+        kliff: Object.freeze([60, 90]),
+    });
     function hangBaender(H, n, step, maske) {
+        const B = HANG_BAENDER;
         let c = 0;
         let ped = 0;
         let schutt = 0;
@@ -1761,10 +1957,10 @@
                 const g = Math.hypot((H[k + 1] - H[k - 1]) / (2 * step), (H[k + n] - H[k - n]) / (2 * step));
                 const w = Math.atan(g) * DEG;
                 c++;
-                if (w >= 0.5 && w <= 7) ped++;
-                if (w >= 30 && w <= 40) schutt++;
-                if (w >= 33 && w <= 37) ruhe++;
-                if (w >= 60) kliff++;
+                if (w >= B.pediment[0] && w <= B.pediment[1]) ped++;
+                if (w >= B.schutt[0] && w <= B.schutt[1]) schutt++;
+                if (w >= B.ruhe[0] && w <= B.ruhe[1]) ruhe++;
+                if (w >= B.kliff[0]) kliff++;
             }
         const r3 = (v) => Math.round(v * 1000) / 1000;
         if (!c) return { zellen: 0, pediment: 0, schutt: 0, ruhe: 0, kliff: 0 };
@@ -1827,10 +2023,1130 @@
         };
     }
 
+    // ── DER FELS-STOFF (K17): EIN Gesetz für das Aussehen des Felsens — der Welt-Boden (Kliff, Schutthang, Höhle), das
+    // Gelände-Studio und die Fels-Gestalten der Foundry (Findling, Felsbogen, Felsturm, Säulen, Schutt) lesen es. Das
+    // Schicht-Gesetz (T5) sagt, WO Kliff und Schutthang liegen; der Stoff sagt, WIE sie aussehen: Bänke nach Höhe und
+    // Einfallen, Korn, die Verwitterungsrinde an konvexen Kanten (aus der Krümmung), Mulden dunkel, Flechte am
+    // trockenen Licht, Moos am feuchten Sims. Alle Farben LINEAR (FARB-GESETZ); Fels liegt im Natur-Band ≤ 0,30
+    // (nordstern §4.1, e-education PSU earth103). `fuss` ist die Kante des Netzes, das die Farbe trägt (m): was es nicht
+    // auflöst (Wellenlänge < 2 · fuss), trägt sein Mittel — die feinen Bänke trägt dann der EINE Detail-Term im Shader
+    // (`FELS.fein`, eine Probe im Rausch-Atlas), Lehre 19.
+    const FELS = Object.freeze({
+        einfall: 0.07, // Einfallen der Bänke (rad, ≈ 4°: flach lagernd wie die Tafelberge des Schicht-Gesetzes)
+        streichen: 0.6, // Streich-Richtung (rad gegen +x)
+        // DIE BANKUNG ist unregelmäßig (Nachbesserung K17: gleich hohe Bänke mit geraden Fugen und je Bank versetzten
+        // Klüften lasen sich als Ziegelmauer). Die Natur: die Mächtigkeit streut stark — dünnbankige und massige Pakete —,
+        // jede Fuge wellt für sich und keilt aus, die Klüfte laufen schräg durch die Bänke eines Pakets.
+        paket: 5.5, // mittlere Mächtigkeit eines Bank-Pakets (m): die groben Lagen, die das 1,8-m-Netz trägt
+        paketStreu: 0.6, // die Paket-Grenze wandert je Paket um ± paketStreu/2 Pakete
+        paketKontrast: 0.2,
+        bank: 0.9, // Mächtigkeit einer Bank (m) bei Paket-Dicke 1
+        paketDicke: [0.35, 2.2], // je Paket die Bank-Mächtigkeit × (log-gleich zwischen beiden): dünnbankig … massig
+        bankStreu: 0.85, // die Grenze einer Bank wandert um ± bankStreu/2 Bänke (gleich verteilt)
+        bankKontrast: 0.22, // Helligkeit je Bank ±
+        akzentAnteil: 0.25, // Anteil der hellen (sandigen) Bänke
+        fugeWelle: 0.25, // ± Bänke: jede Fuge wellt für sich (zwei Sinus, im Streichen und quer dazu)
+        fugeLambda: [3.5, 12], // ihre Wellenlänge (m), je Fuge gezogen
+        // Die Fuge ist eine KANTE, kein Strich: unter ihr die gerundete Oberkante der Bank (die Rinde, hell), über ihr die
+        // Kehle (die zurückwitternde Fuge, dunkel) — ihre Weite streut je Fuge, und auf `1 − fugeOffen` der Länge keilt sie aus.
+        kehle: 0.1, // Höhe der Kehle über der Fuge (m)
+        rand: 0.08, // Höhe der hellen Oberkante unter der Fuge (m)
+        randHell: 0.4, // Mischung zum gebleichten Stein an der Oberkante
+        fuge: 0.6, // Abdunklung in der Kehle zur dunklen Lage
+        fugeStreu: 0.8, // ± Anteil, um den die Kehle je Fuge weiter oder enger ist
+        fugeOffen: 0.65, // Anteil der Fugen-Länge, die klafft
+        fugeOffenLambda: 6, // m
+        kanteHell: 0.6, // die Verwitterungsrinde: Mischung zum gebleichten Stein an konvexen Kanten
+        kanteK: [0.08, 0.6], // Krümmung (1/m): von … bis voll
+        muldeDunkel: 0.5,
+        muldeK: [0.06, 0.5],
+        bleiche: 1.75, // der gebleichte Stein = Basis × bleiche
+        flechte: [0.27, 0.26, 0.15], // Krustenflechte, grau-grün-gelb (sRGB 0x8e8c6c)
+        flechteDeckung: 0.6,
+        flechteLambda: 2.4, // m
+        moos: [0.069, 0.111, 0.019], // Moos (sRGB 0x4a5e26)
+        moosDeckung: 0.75,
+        moosLambda: 3.4, // m
+        grundMax: 0.22, // der Grundton höchstens (Y linear): der Fels bleibt im Natur-Band ≤ 0,30
+        korn: 0.12, // ± je Korn (Vertex-Hash, wo das Netz es trägt: die Gestalten)
+        kornLambda: 0.12, // m
+        // Die Klüfte: zwei steile Scharen (im Streichen und quer dazu), um `kluftSchraeg` gegen die Senkrechte geneigt; ihr
+        // Abstand je Paket aus `kluftDicht`, ihre Lage je PAKET — eine Kluft läuft durch die Bänke ihres Pakets und springt an
+        // der Fuge nur um ± `kluftVersatz` Abstände; `kluftAnteil` der Bänke trägt sie, die übrigen sind ungeklüftet.
+        kluft: 3.2, // Abstand (m)
+        kluftDicht: [0.6, 1.6],
+        kluftSchraeg: 0.35,
+        kluftAnteil: 0.6,
+        kluftVersatz: 0.06,
+        kluftBreite: 0.05, // Anteil des Abstands, den die Kluft je Seite trägt (je Bank × 0,5 … 1,5)
+        kluftDunkel: 0.5, // Mischung zur dunklen Lage in der Kluft
+        // Der EINE Detail-Term im Boden-Shader trägt, was die Masche nicht trägt — Bänke, Kanten und Klüfte nach DIESEM
+        // Gesetz (`felsLage`), relativ zum Mittel, das der Vertex trägt (`felsMittelWerte`). EINE Probe im Rausch-Atlas (`rausch`,
+        // σ × `rausch` ≈ 0,37) wellt die Schichten im Großen: `xz` je m, `y` je Bank, ± `welle` Bänke; das Auge blendet aus,
+        // was der Pixel nicht trägt (Bänke und Klüfte `fern` m, Kanten `fugeFern` m).
+        fein: Object.freeze({ xz: 0.05, y: 0.35, welle: 1.2, rausch: 1.4, fern: [120, 260], fugeFern: [30, 80] }),
+        // Der Schutthang (Geröll = halb Fels) trägt im Detail-Term statt der Bänke den Schutt: Steine der Kante `korn` (m), je
+        // Stein ± `kontrast` und je Stein sein Maß `groesse`, eine Kuppe `kuppe`, `offen` der Fugen klafft (`spalt` der Kante, um `tiefe`
+        // dunkel) — sein Mittel `schuttMittel()` < 1: das Geröll wirft Schatten in sich, nah wie fern (`schuttKornO`). Die
+        // Streuung des Gesetzes in 2-m-Fenstern trägt die Geröll-Referenz (real-bergsee.jpg, Geröll vorn σ/Mittel 0,773): K17-2
+        // NB1 0,573 → 0,769, sein Mittel 0,631 → 0,514 (Wand : Schutt der Referenz 0,72, das Kliff-Bild trug 0,54 und σ/Mittel
+        // 0,375 < 0,43 — kontrast 0,8 → 0,9, kuppe 0,7 → 0,9, tiefe 0,8 → 0,95, offen 0,25 → 0,45).
+        geroell: Object.freeze({ korn: 0.7, groesse: [0.45, 1.45], kontrast: 0.9, kuppe: 0.9, spalt: 0.06, tiefe: 0.95, offen: 0.45, welle: 0.18 }),
+    });
+    const FELS_SAAT = saatHash("fels-stoff");
+    const TAU = 2 * Math.PI;
+    const FELS_CS = Math.cos(FELS.streichen),
+        FELS_SN = Math.sin(FELS.streichen),
+        FELS_TE = Math.tan(FELS.einfall);
+    const fz = (a, b, c) => zufall(FELS_SAAT, a, b, c);
+    // Trägt ein Netz der Kante `fuss` die Wellenlänge λ? 1 = ganz (fuss ≤ λ/4), 0 = nur ihr Mittel (fuss ≥ λ/2).
+    const traegt = (lambda, fuss) => 1 - glatt(0.25 * lambda, 0.5 * lambda, fuss > 0 ? fuss : 0);
+    // Die drei Töne eines Felsens aus seinem Grundton (linear): die dunkle Lage und die helle, sandige Bank. Der Grundton
+    // liegt im Natur-Band: über `FELS.grundMax` (Leuchtdichte Y) sinken alle drei Töne gemeinsam — mit Bänken, Rinde und
+    // Flechte bleibt der Fels ≤ 0,30 (ein heller Sandstein-Ton der Palette war Y 0,33).
+    function felsBasis(basis, dunkel, akzent) {
+        const Y = 0.2126 * basis[0] + 0.7152 * basis[1] + 0.0722 * basis[2];
+        const f = Y > FELS.grundMax ? FELS.grundMax / Y : 1;
+        const b = [basis[0] * f, basis[1] * f, basis[2] * f];
+        return Object.freeze({
+            basis: b,
+            dunkel: dunkel ? [dunkel[0] * f, dunkel[1] * f, dunkel[2] * f] : [b[0] * 0.45, b[1] * 0.45, b[2] * 0.45],
+            akzent: akzent ? [akzent[0] * f, akzent[1] * f, akzent[2] * f] : [b[0] * 1.35, b[1] * 1.28, b[2] * 1.18],
+        });
+    }
+    // DAS RAUSCH-GESETZ (Welle G; K17-2 Nachbesserung 1 aus dem Stamm in den Kern): das EINE Gradienten-Rauschen der Boden-
+    // Stoffe — das Perlin-Rauschen von MaterialX (three r184 `mx_noise_float`: die Gradienten-Menge nach `h & 15` aus dem
+    // Jenkins-lookup3-Hash, die Fünftgrad-Blende, die Skala 0,982). Der Hash liegt EINMAL im Gitter (`rauschGitter`: je Punkt
+    // (i, j) der Gradient, Komponenten −1 · 0 · +1), das der Stamm als Rausch-Atlas packt (`_rauschAtlasDaten`); `P` Gitter-
+    // Zellen je Kante, die dritte Achse im selben Gitter, je Schicht um `schraeg` versetzt. `rauschRaum` ist derselbe Wert
+    // auf der CPU, den der Shader mit sechs Atlas-Ladungen liest (`_rauschAtlas().raum`) — Vertex und Pixel lesen EIN
+    // Rauschen, keiner rechnet es aus Hash-Zügen nach.
+    const RAUSCH = Object.freeze({ P: 256, schraeg: Object.freeze([12, 42]), skala: 0.982 });
+    let _rauschGitterMemo = null;
+    function rauschGitter() {
+        if (_rauschGitterMemo) return _rauschGitterMemo;
+        const P = RAUSCH.P;
+        const rot = (x, k) => ((x << k) | (x >>> (32 - k))) >>> 0;
+        const hash = (x, y, z) => {
+            let a = (0xdeadbeef + (3 << 2) + 13) >>> 0;
+            let b = a;
+            let c = a;
+            a = (a + x) >>> 0;
+            b = (b + y) >>> 0;
+            c = (c + z) >>> 0;
+            c = ((c ^ b) - rot(b, 14)) >>> 0;
+            a = ((a ^ c) - rot(c, 11)) >>> 0;
+            b = ((b ^ a) - rot(a, 25)) >>> 0;
+            c = ((c ^ b) - rot(b, 16)) >>> 0;
+            a = ((a ^ c) - rot(c, 4)) >>> 0;
+            b = ((b ^ a) - rot(a, 14)) >>> 0;
+            c = ((c ^ b) - rot(b, 24)) >>> 0;
+            return c;
+        };
+        const g = new Int8Array(P * P * 3);
+        for (let j = 0; j < P; j++)
+            for (let i = 0; i < P; i++) {
+                const h = hash(i, j, 0) & 15;
+                const o = (j * P + i) * 3;
+                const u = h < 8 ? 0 : 1;
+                const v = h < 4 ? 1 : h === 12 || h === 14 ? 0 : 2;
+                g[o + u] += h & 1 ? -1 : 1;
+                g[o + v] += h & 2 ? -1 : 1;
+            }
+        _rauschGitterMemo = g;
+        return g;
+    }
+    // Der Raum-Wert an (x, y, z): die acht Ecken der Zelle aus zwei Schichten des Gitters (Schicht k bei (i + A·k, j + B·k)),
+    // je Ecke Gradient · Abstand, trilinear mit der Fünftgrad-Blende — Schritt für Schritt wie `_rauschAtlas().raum`.
+    function rauschRaum(x, y, z) {
+        const g = rauschGitter();
+        const P = RAUSCH.P,
+            m = P - 1,
+            A = RAUSCH.schraeg[0],
+            B = RAUSCH.schraeg[1];
+        const cx = Math.floor(x),
+            cy = Math.floor(y),
+            cz = Math.floor(z);
+        const fx = x - cx,
+            fy = y - cy,
+            fz = z - cz;
+        const i0 = (cx + cz * A) & m,
+            j0 = (cy + cz * B) & m;
+        const i1 = (i0 + A) & m,
+            j1 = (j0 + B) & m;
+        const ecke = (i, j, dx, dy, ez) => {
+            const o = (((j + dy) & m) * P + ((i + dx) & m)) * 3;
+            return g[o] * (fx - dx) + g[o + 1] * (fy - dy) + g[o + 2] * ez;
+        };
+        const bl = (t) => t * t * t * (t * (t * 6 - 15) + 10);
+        const ux = bl(fx),
+            uy = bl(fy),
+            uz = bl(fz);
+        const mix = (a, b, t) => a + (b - a) * t;
+        const d = (dx, dy) => mix(ecke(i0, j0, dx, dy, fz), ecke(i1, j1, dx, dy, fz - 1), uz);
+        return mix(mix(d(0, 0), d(1, 0), ux), mix(d(0, 1), d(1, 1), ux), uy) * RAUSCH.skala;
+    }
+    // DAS RECHENWERK DES FELS-GESETZES (K17, Nachbesserung 2): der Fein-Term ist EIN Code für den Vertex (Zahlen) und den
+    // Boden-Shader (TSL-Knoten, `_felsRechenwerkTSL` im Stamm) — bis hierher transkribierte der Shader das Gesetz mit eigenem
+    // Sinus-Hash und eigener Welle (die Paket-Grenzen von Vertex und Shader lagen im Median 0,57 m auseinander, und eine Linse
+    // konnte den Shader nur über Namen prüfen). `o` ist das Rechenwerk: add · sub · mul · div · min · max, floor · sin · exp ·
+    // abs · sqrt, step(kante, v) = v ≥ kante, glatt(a, b, v), clamp01, wahl(c, a, b) = c ? a : b mit c ∈ {0, 1}, zufall(saat, i, j, k)
+    // = `zufall` für ganze i, j, k (im Shader dieselben 32-Bit-Ganzzahl-Schritte), rausch(x, y, z) = `rauschRaum` (im Shader
+    // EINE Probe im Rausch-Atlas). Die Reihenfolge der Rechnung ist die des Gesetzes vor dem Rechenwerk. Ein Rauschen rechnet
+    // das Rechenwerk nie aus Hash-Zügen nach (das Rausch-Gesetz: bis K17-2 Nachbesserung 1 wellte ein Wert-Rauschen aus acht
+    // Ziehungen die Bänke im Fragment).
+    // DIE FALTE (K17-3): falte(n, start, schritt) = der Zustand nach n Schritten, schritt(q, zustand) → der neue Zustand (eine
+    // Liste, q = 0 … n − 1). Wo das Gesetz dieselbe Rechnung über Nachbarn wiederholt (die neun Zellen des Schutts, die vier
+    // Bank-Grenzen der Lage), schreibt es sie EINMAL: die Zahl rechnet die Schleife, der Shader trägt EINE Schleife statt
+    // n ausgeschriebener Kopien (seit K17 stand jede Ziehung 78-mal im Boden-Programm: 96 050 → 149 521 Zeichen WGSL, und
+    // swiftshader übersetzte sie vor dem ersten Bild — die Prüfbühne S0 riss ihre Frist). fest(v) = v: ein Wert, den das Gesetz
+    // mehrfach liest, steht im Shader als EINE Variable (r184 baut einen Knoten in einer Schleife je Leser neu).
+    const ZAHL = Object.freeze({
+        fest: (v) => v,
+        falte: (n, start, schritt) => {
+            let z = start;
+            for (let q = 0; q < n; q++) z = schritt(q, z);
+            return z;
+        },
+        add: (a, b) => a + b,
+        sub: (a, b) => a - b,
+        mul: (a, b) => a * b,
+        div: (a, b) => a / b,
+        min: (a, b) => Math.min(a, b),
+        max: (a, b) => Math.max(a, b),
+        floor: Math.floor,
+        sin: Math.sin,
+        exp: Math.exp,
+        abs: Math.abs,
+        sqrt: Math.sqrt,
+        step: (e, v) => (v >= e ? 1 : 0),
+        glatt: glatt,
+        clamp01: (v) => (v < 0 ? 0 : v > 1 ? 1 : v),
+        wahl: (c, a, b) => (c ? a : b),
+        zufall: zufall,
+        rausch: rauschRaum,
+    });
+    // Wert-Rauschen [0, 1] im Gitter der Kante 1 (trilinear, geglättet) — rein, deterministisch, ohne Saat-Strom. NUR im Vertex
+    // (Flechte und Moos des Netzes): es zieht acht Hashes je Wert und hat darum kein Rechenwerk — der Pixel liest das EINE
+    // Gradienten-Rauschen (`rausch`).
+    function wert3(x, y, z, sh) {
+        const ix = Math.floor(x),
+            iy = Math.floor(y),
+            iz = Math.floor(z);
+        let fx = x - ix,
+            fy = y - iy,
+            fz3 = z - iz;
+        fx = fx * fx * (3 - 2 * fx);
+        fy = fy * fy * (3 - 2 * fy);
+        fz3 = fz3 * fz3 * (3 - 2 * fz3);
+        const e = (i, j, k) => zufall(sh, ix + i, iy + j, iz + k);
+        const lerp = (a, b, t) => a + (b - a) * t;
+        const x00 = lerp(e(0, 0, 0), e(1, 0, 0), fx);
+        const x10 = lerp(e(0, 1, 0), e(1, 1, 0), fx);
+        const x01 = lerp(e(0, 0, 1), e(1, 0, 1), fx);
+        const x11 = lerp(e(0, 1, 1), e(1, 1, 1), fx);
+        return lerp(lerp(x00, x10, fy), lerp(x01, x11, fy), fz3);
+    }
+    const fzO = (o, a, b, c) => o.zufall(FELS_SAAT, a, b, c);
+    // Die Paket-Grenze k (m, in der Schicht-Höhe).
+    const paketGrenzeO = (o, k) => o.mul(o.add(k, o.mul(o.sub(fzO(o, k, 31, 0), 0.5), FELS.paketStreu)), FELS.paket);
+    // Das Paket an der Schicht-Höhe s (die Grenzen wandern um weniger als ein halbes Paket: Nachbarn genügen).
+    function paketAnO(o, s) {
+        const k = o.fest(o.floor(o.div(s, FELS.paket)));
+        return o.add(o.sub(k, o.sub(1, o.step(paketGrenzeO(o, k), s))), o.step(paketGrenzeO(o, o.add(k, 1)), s));
+    }
+    const paketAn = (s) => paketAnO(ZAHL, s);
+    // Die Bank-Mächtigkeit im Paket p (m): log-gleich in `paketDicke`.
+    const _lnD0 = Math.log(FELS.paketDicke[0]),
+        _lnDq = Math.log(FELS.paketDicke[1] / FELS.paketDicke[0]);
+    const paketBankO = (o, p) => o.mul(FELS.bank, o.exp(o.add(_lnD0, o.mul(_lnDq, fzO(o, p, 37, 0)))));
+    // Die Grenze i der Bänke im Paket p (in Bänken des Pakets ab der Paket-Grenze 0) an der Lage (h1 im Streichen, h2 quer):
+    // gezogen um ± bankStreu/2, gewellt um ± fugeWelle (zwei Sinus, je Fuge Wellenlänge und Phase). Die Paket-Grenze (i ≤ 0)
+    // wellt nur mit der großen Welle.
+    function bankGrenzeO(o, p, i, h1, h2) {
+        const F = FELS;
+        const l1 = o.add(F.fugeLambda[0], o.mul(F.fugeLambda[1] - F.fugeLambda[0], fzO(o, p, i, 43)));
+        const w = o.add(
+            o.mul(0.65, o.sin(o.mul(TAU, o.add(o.div(h1, l1), fzO(o, p, i, 47))))),
+            o.mul(0.35, o.sin(o.mul(TAU, o.add(o.div(h2, o.mul(0.61, l1)), fzO(o, p, i, 53)))))
+        );
+        const in0 = o.step(0.5, i);
+        return o.add(
+            o.add(i, o.mul(in0, o.mul(o.sub(fzO(o, p, i, 41), 0.5), F.bankStreu))),
+            o.mul(in0, o.mul(F.fugeWelle, w))
+        );
+    }
+    // Klafft die Fuge i des Pakets p an der Lage? (0 = ausgekeilt … 1 = offen; `fugeOffen` der Länge klafft)
+    const _offenC = Math.cos(Math.PI * FELS.fugeOffen);
+    const fugeOffenO = (o, p, i, h1, h2) =>
+        o.glatt(
+            _offenC - 0.25,
+            _offenC + 0.25,
+            o.sin(o.mul(TAU, o.add(o.div(o.add(h1, o.mul(0.5, h2)), FELS.fugeOffenLambda), fzO(o, p, i, 59))))
+        );
+    // DIE LAGE IM FELS an (x, y, z) mit der großen Welle `welle` (± 1, Bänke × `fein.welle`): Paket, Bank, die Mächtigkeit der
+    // Bank hier und der Abstand zur Fuge unten und oben (m). Die Bank zwischen den Grenzen j − 1 … j + 2 (die Grenzen wandern
+    // um weniger als 0,65 Bänke): die oberste darunter, die unterste darüber — wo sich zwei Fugen kreuzen, keilt die Bank aus.
+    function felsLageO(o, x, y, z, welle, aus) {
+        const F = FELS;
+        const h1 = o.fest(o.add(o.mul(x, FELS_CS), o.mul(z, FELS_SN))),
+            h2 = o.fest(o.sub(o.mul(z, FELS_CS), o.mul(x, FELS_SN)));
+        const s = o.fest(o.add(o.add(y, o.mul(FELS_TE, h1)), o.mul(o.mul(welle, F.fein.welle), F.bank)));
+        const p = o.fest(paketAnO(o, s));
+        const pa = o.fest(paketGrenzeO(o, p));
+        const d = o.fest(paketBankO(o, p));
+        const u = o.fest(o.div(o.sub(s, pa), d));
+        const top = o.div(o.sub(paketGrenzeO(o, o.add(p, 1)), pa), d);
+        const j = o.fest(o.floor(u));
+        // die vier Grenzen j − 1 … j + 2 in EINER Falte (q = 0 … 3): die erste ist die Untergrenze, die zweite und dritte zählen
+        // unten, wo u über ihnen liegt (ist1, ist2), sonst oben, die vierte ist die Obergrenze — min und max sind exakt, die
+        // Reihenfolge der Falte gibt dieselben Zahlen wie die vier ausgeschriebenen Grenzen
+        const [lo, hiB, ist1, ist2] = o.falte(4, [-1e9, 1e9, 0, 0], (q, z) => {
+            const b = o.fest(bankGrenzeO(o, p, o.add(o.sub(j, 1), q), h1, h2));
+            const erst = o.sub(1, o.step(0.5, q)),
+                letzt = o.step(2.5, q);
+            const mitte = o.sub(o.sub(1, erst), letzt);
+            const ist = o.fest(o.mul(o.step(b, u), mitte));
+            return [
+                o.wahl(erst, b, o.max(z[0], o.wahl(ist, b, -1e9))),
+                o.min(z[1], o.wahl(mitte, o.wahl(ist, 1e9, b), o.wahl(letzt, b, 1e9))),
+                o.wahl(o.mul(mitte, o.sub(1, o.step(1.5, q))), ist, z[2]),
+                o.wahl(o.mul(mitte, o.step(1.5, q)), ist, z[3]),
+            ];
+        });
+        const hi = o.fest(o.min(hiB, top));
+        aus.s = s;
+        aus.h1 = h1;
+        aus.h2 = h2;
+        aus.paket = p;
+        aus.bank = o.fest(o.sub(o.add(j, ist2), o.sub(1, ist1)));
+        aus.d = d;
+        aus.dicke = o.mul(o.sub(hi, lo), d);
+        aus.unten = o.fest(o.mul(o.sub(u, lo), d));
+        aus.oben = o.fest(o.mul(o.sub(hi, u), d));
+        return aus;
+    }
+    const felsLage = (x, y, z, welle, aus) => felsLageO(ZAHL, x, y, z, welle || 0, aus);
+    const _lage = { s: 0, h1: 0, h2: 0, paket: 0, bank: 0, d: 0, dicke: 0, unten: 0, oben: 0 };
+    // In der Kluft (0..1, 1 = Mitte): u in Kluft-Abständen, b die halbe Breite.
+    const inKluftO = (o, u, b) => o.clamp01(o.sub(1, o.div(o.abs(o.sub(u, o.floor(o.add(u, 0.5)))), b)));
+    // Die Kanten und Klüfte an einer Lage: die Kehle über der Fuge (dunkel), die Oberkante unter der nächsten (hell), die
+    // Kluft (dunkel) — je 0..1, ohne Mittel. aus = { kehle, rand, kluft }.
+    function felsKantenO(o, L, aus) {
+        const F = FELS;
+        const p = L.paket,
+            k = L.bank;
+        const kw = o.fest(o.mul(
+            o.mul(F.kehle, o.add(1, o.mul(F.fugeStreu, o.sub(o.mul(2, fzO(o, p, k, 19)), 1)))),
+            fugeOffenO(o, p, k, L.h1, L.h2)
+        ));
+        const kIn = o.mul(o.sub(1, o.step(kw, 1e-4)), o.sub(1, o.step(kw, L.unten)));
+        const ke = o.fest(o.wahl(kIn, o.sub(1, o.div(L.unten, o.max(kw, 1e-4))), 0));
+        aus.kehle = o.mul(ke, ke);
+        const rw = o.fest(o.mul(F.rand, fugeOffenO(o, p, o.add(k, 1), L.h1, L.h2)));
+        const rIn = o.mul(o.sub(1, o.step(rw, 1e-4)), o.sub(1, o.step(rw, L.oben)));
+        const t = o.fest(o.wahl(rIn, o.sub(1, o.div(L.oben, o.max(rw, 1e-4))), 0));
+        aus.rand = o.mul(o.mul(4, t), o.sub(1, t));
+        const kd = o.fest(o.mul(F.kluft, o.add(F.kluftDicht[0], o.mul(F.kluftDicht[1] - F.kluftDicht[0], fzO(o, p, 29, 0)))));
+        const kb = o.fest(o.mul(F.kluftBreite, o.add(0.5, fzO(o, p, k, 71))));
+        const v = 2 * F.kluftVersatz;
+        const u1 = o.add(o.add(o.div(o.add(L.h1, o.mul(L.s, F.kluftSchraeg)), kd), fzO(o, p, 13, 0)), o.mul(o.sub(fzO(o, p, k, 61), 0.5), v));
+        const u2 = o.add(
+            o.add(o.div(o.sub(L.h2, o.mul(o.mul(0.6, L.s), F.kluftSchraeg)), kd), fzO(o, p, 17, 0)),
+            o.mul(o.sub(fzO(o, p, k, 67), 0.5), v)
+        );
+        const ik = o.fest(o.wahl(o.sub(1, o.step(F.kluftAnteil, fzO(o, p, k, 23))), o.max(inKluftO(o, u1, kb), inKluftO(o, u2, kb)), 0));
+        aus.kluft = o.mul(ik, ik);
+        return aus;
+    }
+    const felsKanten = (L, aus) => felsKantenO(ZAHL, L, aus);
+    const _kanten = { kehle: 0, rand: 0, kluft: 0 };
+    // DER FEIN-TERM DES FELSENS relativ zum Mittel, das der Vertex trägt (`felsMittelWerte`): `bank` = Helligkeit × helle Bank
+    // × Kluft, `kante` = Kehle × Oberkante — je mit dem Mittel 1. B = `felsBasis` (die Töne der dunklen Lage und der hellen
+    // Bank relativ zum Grundton). Die große Welle ist DASSELBE Gradienten-Rauschen wie im Vertex (`felsFarbe`, `rausch`) —
+    // `felsWelle` an (x, y, z); wer sie schon trägt, reicht sie als `w` (der Shader liest sie EINMAL im Rausch-Atlas, außerhalb
+    // der Fels-Funktion: K17-3).
+    function felsWelleO(o, x, y, z) {
+        const F = FELS;
+        const sy = o.add(y, o.mul(FELS_TE, o.add(o.mul(x, FELS_CS), o.mul(z, FELS_SN))));
+        return o.mul(F.fein.rausch, o.rausch(o.mul(x, F.fein.xz), o.div(o.mul(sy, F.fein.y), F.bank), o.mul(z, F.fein.xz)));
+    }
+    function felsFeinO(o, B, x, y, z, welle) {
+        const F = FELS;
+        const FM = felsMittelWerte();
+        const Yl = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+        const aRel = 0.6 * (Yl(B.akzent) / Yl(B.basis) - 1);
+        const dRel = 1 - Yl(B.dunkel) / Yl(B.basis);
+        const w = welle === undefined ? felsWelleO(o, x, y, z) : welle;
+        const L = felsLageO(o, x, y, z, w, {});
+        const K = felsKantenO(o, L, {});
+        const hell = o.div(o.add(1, o.mul(F.bankKontrast, o.sub(o.mul(2, fzO(o, L.paket, L.bank, 3)), 1))), FM.hell);
+        const akz = o.div(o.add(1, o.mul(aRel, o.sub(1, o.step(F.akzentAnteil, fzO(o, L.paket, L.bank, 5))))), 1 + aRel * FM.akzent);
+        const kluft = o.div(o.sub(1, o.mul(K.kluft, F.kluftDunkel * dRel)), 1 - FM.kluft * F.kluftDunkel * dRel);
+        const kehle = o.div(o.sub(1, o.mul(K.kehle, F.fuge * dRel)), 1 - FM.kehle * F.fuge * dRel);
+        const rh = F.randHell * (F.bleiche - 1);
+        const rand = o.div(o.add(1, o.mul(K.rand, rh)), 1 + FM.rand * rh);
+        return { bank: o.mul(o.mul(hell, akz), kluft), kante: o.mul(kehle, rand), lage: L };
+    }
+    // DER SCHUTT (`FELS.geroell`): Steine der Kante `korn` (Zellen-Rauschen in der Ebene des Hangs, je Zelle ein gezogener
+    // Mittelpunkt), je Stein seine Helligkeit ± `kontrast`, zwischen den Steinen die Fuge (`spalt` der Kante) dunkel um `tiefe`
+    // — sein Mittel ist `schuttMittel()`. Bis zur Nachbesserung 2 lagen achsparallele Würfel (`floor(wp / korn)`) als
+    // Pixel-Mosaik auf dem Hang (σ/Mittel 0,127 gegen 0,72 der Geröll-Referenz).
+    // Nachbesserung 3: gleich große Zellen mit gleich dunkler Fuge lasen sich als PFLASTER. Die Natur: die Steine streuen in
+    // der Größe (je Stein sein Maß `groesse`, das Zellen-Rauschen gewichtet: ein großer Block nimmt den Nachbarn Platz), jeder
+    // Stein ist eine Kuppe (zur Kante hin sieht er weniger Himmel: `kuppe`), und nur ein Teil der Fugen klafft (je Stein
+    // `offen`) — und das Geröll als Ganzes wirft Schatten in sich: sein Mittel ist `schuttMittel()` < 1, nah wie fern.
+    function schuttKornO(o, x, z) {
+        const S = FELS.geroell;
+        // die Ebene des Hangs leicht gewellt (`welle` Zellen): die Kanten der Steine runden, kein Vieleck-Mosaik
+        const u0 = o.fest(o.div(x, S.korn)),
+            v0 = o.fest(o.div(z, S.korn));
+        const u = o.fest(o.add(u0, o.mul(S.welle, o.add(o.sin(o.add(o.mul(v0, 1.9), 1.1)), o.mul(0.6, o.sin(o.add(o.mul(u0, 0.73), o.mul(v0, 1.31))))))));
+        const v = o.fest(o.add(v0, o.mul(S.welle, o.add(o.sin(o.add(o.mul(u0, 2.1), 0.7)), o.mul(0.6, o.sin(o.sub(o.mul(v0, 0.67), o.mul(u0, 1.23))))))));
+        const iu = o.fest(o.floor(u)),
+            iv = o.fest(o.floor(v));
+        // die neun Zellen um (iu, iv) in EINER Falte (q = 0 … 8: a = ⌊q/3⌋ − 1 außen, b = q − 3⌊q/3⌋ − 1 innen); der Zustand ist
+        // der nächste und der zweitnächste Abstand (im Maß des Steins), die Helligkeit und das Klaffen des nächsten
+        const [d1, d2, hb, ho] = o.falte(9, [9, 9, 0.5, 0.5], (q, z) => {
+            const qa = o.floor(o.div(q, 3));
+            const ci = o.fest(o.add(iu, o.sub(qa, 1))),
+                cj = o.fest(o.add(iv, o.sub(o.sub(q, o.mul(3, qa)), 1)));
+            const du = o.fest(o.sub(o.add(ci, o.add(0.15, o.mul(0.7, o.zufall(FELS_SAAT ^ 0x5c, ci, cj, 0)))), u));
+            const dv = o.fest(o.sub(o.add(cj, o.add(0.15, o.mul(0.7, o.zufall(FELS_SAAT ^ 0x5c, ci, cj, 1)))), v));
+            const r = o.add(S.groesse[0], o.mul(S.groesse[1] - S.groesse[0], o.zufall(FELS_SAAT ^ 0x5c, ci, cj, 3)));
+            const d = o.fest(o.div(o.sqrt(o.add(o.mul(du, du), o.mul(dv, dv))), r));
+            const c = o.fest(o.step(d, z[0])); // näher als der bisher nächste (im Maß des Steins)
+            return [
+                o.min(z[0], d),
+                o.wahl(c, z[0], o.min(z[1], d)),
+                o.wahl(c, o.zufall(FELS_SAAT ^ 0x5c, ci, cj, 2), z[2]),
+                o.wahl(c, o.zufall(FELS_SAAT ^ 0x5c, ci, cj, 4), z[3]),
+            ];
+        });
+        // e: 1 in der Mitte des Steins, 0 an seiner Kante (die gewichtete Grenze liegt bei d1 = d2)
+        const e = o.div(o.sub(d2, d1), o.add(d2, d1));
+        const ke = o.sub(1, e);
+        const kuppe = o.sub(1, o.mul(S.kuppe, o.mul(ke, ke)));
+        const fuge = o.mul(o.step(1 - S.offen, ho), o.sub(1, o.glatt(0, S.spalt, e)));
+        const stein = o.add(1, o.mul(S.kontrast, o.sub(o.mul(2, hb), 1)));
+        return o.mul(o.mul(stein, kuppe), o.sub(1, o.mul(S.tiefe, fuge)));
+    }
+    let _schuttMittelMemo = 0;
+    function schuttMittel() {
+        if (_schuttMittelMemo) return _schuttMittelMemo;
+        let m = 0;
+        for (let i = 0; i < 96; i++) for (let j = 0; j < 96; j++) m += schuttKornO(ZAHL, i * 0.0731 + j * 0.0137, j * 0.0719 - i * 0.0113);
+        _schuttMittelMemo = m / 9216;
+        return _schuttMittelMemo;
+    }
+    // Die Mittel des Gesetzes (über die Lage gemittelt, EINMAL gezogen): was ein Netz trägt, das Bänke, Kanten oder Klüfte
+    // nicht auflöst — der Vertex trägt sie, der Detail-Term im Shader rechnet relativ zu ihnen (sein Mittel ist der Vertex).
+    let _felsMittelMemo = null;
+    function felsMittelWerte() {
+        if (_felsMittelMemo) return _felsMittelMemo;
+        let n = 0,
+            ke = 0,
+            ra = 0,
+            kl = 0,
+            ak = 0,
+            he = 0;
+        for (let i = 0; i < 64; i++)
+            for (let j = 0; j < 64; j++) {
+                const L = felsLage(i * 2.71 + j * 0.37, (i * 64 + j) * 0.0617, j * 1.93 - i * 0.71, 0, _lage);
+                felsKanten(L, _kanten);
+                ke += _kanten.kehle;
+                ra += _kanten.rand;
+                kl += _kanten.kluft;
+                ak += fz(L.paket, L.bank, 5) < FELS.akzentAnteil ? 1 : 0;
+                he += 1 + FELS.bankKontrast * (2 * fz(L.paket, L.bank, 3) - 1);
+                n++;
+            }
+        _felsMittelMemo = Object.freeze({ kehle: ke / n, rand: ra / n, kluft: kl / n, akzent: ak / n, hell: he / n });
+        return _felsMittelMemo;
+    }
+    // DIE FELS-FARBE an einem Punkt (linear, nach `out`): B = `felsBasis`; (x, y, z) die Lage (m, Welt oder Gestalt); n die
+    // Normale; `krumm` die mittlere Krümmung (1/m, > 0 konvex — `felsKruemmung`); `himmel` die Himmels-Sicht (0 Höhle …
+    // 1 frei); `feucht` 0..1; `fuss` die Kante des tragenden Netzes (m). Was das Netz nicht trägt, trägt sein Mittel — und
+    // wird dann nicht gerechnet (der Welt-Boden mit 1,8 m trägt nur die Pakete).
+    let _tFuss = NaN,
+        _tSatz = null;
+    function traegtSatz(fuss) {
+        if (fuss === _tFuss) return _tSatz;
+        const F = FELS;
+        _tFuss = fuss;
+        _tSatz = {
+            fuss,
+            tp: traegt(F.paket, fuss),
+            tb: traegt(F.bank, fuss),
+            tf: traegt(4 * (F.kehle + F.rand), fuss),
+            tj: traegt(F.kluft, fuss),
+            tk: traegt(F.kornLambda * 4, fuss),
+            tfl: traegt(F.flechteLambda, fuss),
+            tm: traegt(F.moosLambda, fuss),
+        };
+        return _tSatz;
+    }
+    // Die Kette Paket · Bank · Kanten · Klüfte (die Bank `L` und ihre Kanten `K`, wo das Netz sie trägt, sonst ihre Mittel)
+    // vom Grundton × m (m das Paket) nach out.
+    function felsKette(B, m, L, K, T, out) {
+        const F = FELS;
+        const M = _felsMittelMemo || felsMittelWerte();
+        const tb = L ? T.tb : 0,
+            tf = K ? T.tf : 0,
+            tj = K ? T.tj : 0;
+        let r = B.basis[0] * m,
+            g = B.basis[1] * m,
+            b = B.basis[2] * m;
+        // Bänke: die helle Bank und ihre Helligkeit.
+        const akz = (tb > 0 ? tb * (fz(L.paket, L.bank, 5) < F.akzentAnteil ? 1 : 0) : 0) + (1 - tb) * M.akzent;
+        r += (B.akzent[0] - r) * akz * 0.6;
+        g += (B.akzent[1] - g) * akz * 0.6;
+        b += (B.akzent[2] - b) * akz * 0.6;
+        const hell = (tb > 0 ? tb * (1 + F.bankKontrast * (2 * fz(L.paket, L.bank, 3) - 1)) : 0) + (1 - tb) * M.hell;
+        r *= hell;
+        g *= hell;
+        b *= hell;
+        // Die Kanten: die Kehle über der Fuge zur dunklen Lage, die Oberkante unter ihr zum gebleichten Stein; die Klüfte.
+        const kehle = ((tf > 0 ? tf * K.kehle : 0) + (1 - tf) * M.kehle) * F.fuge;
+        r += (B.dunkel[0] - r) * kehle;
+        g += (B.dunkel[1] - g) * kehle;
+        b += (B.dunkel[2] - b) * kehle;
+        const rand = ((tf > 0 ? tf * K.rand : 0) + (1 - tf) * M.rand) * F.randHell;
+        r += (B.basis[0] * F.bleiche - r) * rand;
+        g += (B.basis[1] * F.bleiche - g) * rand;
+        b += (B.basis[2] * F.bleiche - b) * rand;
+        const kluft = ((tj > 0 ? tj * K.kluft : 0) + (1 - tj) * M.kluft) * F.kluftDunkel;
+        r += (B.dunkel[0] - r) * kluft;
+        g += (B.dunkel[1] - g) * kluft;
+        b += (B.dunkel[2] - b) * kluft;
+        out[0] = r;
+        out[1] = g;
+        out[2] = b;
+        return out;
+    }
+    // Trägt das Netz nichts Feines, ist die Kette affin im Paket-Faktor m: c(m) = c0 + m · d — EINMAL je (B, fuss).
+    const _affinMemo = new WeakMap();
+    function felsAffin(B, T) {
+        let A = _affinMemo.get(B);
+        if (A && A.fuss === T.fuss) return A;
+        const c0 = felsKette(B, 0, null, null, T, [0, 0, 0]);
+        const c1 = felsKette(B, 1, null, null, T, [0, 0, 0]);
+        A = { fuss: T.fuss, c0, d: [c1[0] - c0[0], c1[1] - c0[1], c1[2] - c0[2]] };
+        _affinMemo.set(B, A);
+        return A;
+    }
+    function felsFarbe(B, x, y, z, nx, ny, nz, krumm, himmel, feucht, fuss, out) {
+        const F = FELS;
+        const T = traegtSatz(fuss);
+        const sy = y + FELS_TE * (x * FELS_CS + z * FELS_SN);
+        let L = null;
+        if (T.tb > 0 || T.tf > 0 || T.tj > 0) {
+            const w = F.fein.rausch * rauschRaum(x * F.fein.xz, (sy * F.fein.y) / F.bank, z * F.fein.xz);
+            L = felsLage(x, y, z, w, _lage);
+        }
+        // Bank-Pakete (grob) — ihr Mittel ist 1.
+        const m = T.tp > 0 ? 1 + T.tp * F.paketKontrast * (2 * fz(L ? L.paket : paketAn(sy), 11, 0) - 1) : 1;
+        let r, g, b;
+        if (L) {
+            felsKette(B, m, L, felsKanten(L, _kanten), T, out);
+            r = out[0];
+            g = out[1];
+            b = out[2];
+        } else {
+            const A = felsAffin(B, T);
+            r = A.c0[0] + m * A.d[0];
+            g = A.c0[1] + m * A.d[1];
+            b = A.c0[2] + m * A.d[2];
+        }
+        // Korn (Vertex-Hash) — nur, wo das Netz es trägt; sein Mittel ist 1.
+        if (T.tk > 0) {
+            const q = 1 / F.kornLambda;
+            const mk = 1 + T.tk * F.korn * (2 * zufall(FELS_SAAT, Math.floor(x * q), Math.floor(y * q), Math.floor(z * q)) - 1);
+            r *= mk;
+            g *= mk;
+            b *= mk;
+        }
+        // Die Kante des Netzes: konvex hellt die Verwitterungsrinde auf, die Mulde dunkelt.
+        const k = krumm > 0 || krumm < 0 ? krumm : 0;
+        if (k > F.kanteK[0]) {
+            const ke = glatt(F.kanteK[0], F.kanteK[1], k) * F.kanteHell;
+            r += (B.basis[0] * F.bleiche - r) * ke;
+            g += (B.basis[1] * F.bleiche - g) * ke;
+            b += (B.basis[2] * F.bleiche - b) * ke;
+        } else if (-k > F.muldeK[0]) {
+            const md = 1 - glatt(F.muldeK[0], F.muldeK[1], -k) * F.muldeDunkel;
+            r *= md;
+            g *= md;
+            b *= md;
+        }
+        // Flechte am trockenen Licht, Moos am feuchten Sims — beide nur unter dem Himmel, in Flecken (das Rauschen nur, wo
+        // das Netz die Flecken trägt).
+        const h = himmel > 0 ? (himmel < 1 ? himmel : 1) : 0;
+        const fe = feucht > 0 ? (feucht < 1 ? feucht : 1) : 0;
+        if (h > 0) {
+            const tfl = T.tfl;
+            const lf = F.flechteLambda;
+            const pf = (tfl > 0 ? tfl * glatt(0.5, 0.72, wert3(x / lf, y / lf, z / lf, FELS_SAAT ^ 0x51)) : 0) + (1 - tfl) * 0.27;
+            const wf = F.flechteDeckung * pf * h * (1 - 0.7 * fe) * glatt(-0.3, 0.4, ny);
+            r += (F.flechte[0] - r) * wf;
+            g += (F.flechte[1] - g) * wf;
+            b += (F.flechte[2] - b) * wf;
+            if (fe > 0 && ny > 0.15) {
+                const tm = T.tm;
+                const lm = F.moosLambda;
+                const pm = (tm > 0 ? tm * glatt(0.45, 0.7, wert3(x / lm, y / lm, z / lm, FELS_SAAT ^ 0xa3)) : 0) + (1 - tm) * 0.32;
+                const wm = F.moosDeckung * pm * h * fe * glatt(0.15, 0.7, ny);
+                r += (F.moos[0] - r) * wm;
+                g += (F.moos[1] - g) * wm;
+                b += (F.moos[2] - b) * wm;
+            }
+        }
+        out[0] = r;
+        out[1] = g;
+        out[2] = b;
+        return out;
+    }
+    // Die mittlere Krümmung je Vertex (1/m, > 0 konvex) eines indizierten Netzes: je Kante (i, j) −2 n_i · (p_j − p_i) /
+    // |p_j − p_i|², gemittelt — auf einer Kugel vom Radius ρ genau 1/ρ. P, N: Float32-Felder (xyz), I: Index (oder null);
+    // `maske` (optional, je Vertex > 0 = gefragt): nur Dreiecke mit einer gefragten Ecke werden gerechnet.
+    function felsKruemmung(P, N, I, n, out, maske) {
+        const K = out || new Float32Array(n);
+        const c = new Uint16Array(n);
+        K.fill(0, 0, n);
+        if (!I) return K;
+        // je Dreieck die drei Kanten, jede an beiden Enden: −2 n_i · (p_j − p_i) / l² (eng geschrieben: der Takt des
+        // Welt-Bodens zahlt sie je Chunk)
+        const m = I.length - 2;
+        for (let t = 0; t < m; t += 3) {
+            const v0 = I[t],
+                v1 = I[t + 1],
+                v2 = I[t + 2];
+            if (maske && maske[v0] === 0 && maske[v1] === 0 && maske[v2] === 0) continue;
+            const x0 = P[3 * v0],
+                y0 = P[3 * v0 + 1],
+                z0 = P[3 * v0 + 2],
+                x1 = P[3 * v1],
+                y1 = P[3 * v1 + 1],
+                z1 = P[3 * v1 + 2],
+                x2 = P[3 * v2],
+                y2 = P[3 * v2 + 1],
+                z2 = P[3 * v2 + 2];
+            const a0 = N[3 * v0],
+                b0 = N[3 * v0 + 1],
+                c0 = N[3 * v0 + 2],
+                a1 = N[3 * v1],
+                b1 = N[3 * v1 + 1],
+                c1 = N[3 * v1 + 2],
+                a2 = N[3 * v2],
+                b2 = N[3 * v2 + 1],
+                c2 = N[3 * v2 + 2];
+            let dx = x1 - x0,
+                dy = y1 - y0,
+                dz = z1 - z0,
+                l2 = dx * dx + dy * dy + dz * dz;
+            if (l2 > 1e-12) {
+                const q = 2 / l2;
+                K[v0] -= q * (a0 * dx + b0 * dy + c0 * dz);
+                K[v1] += q * (a1 * dx + b1 * dy + c1 * dz);
+                c[v0]++;
+                c[v1]++;
+            }
+            dx = x2 - x1;
+            dy = y2 - y1;
+            dz = z2 - z1;
+            l2 = dx * dx + dy * dy + dz * dz;
+            if (l2 > 1e-12) {
+                const q = 2 / l2;
+                K[v1] -= q * (a1 * dx + b1 * dy + c1 * dz);
+                K[v2] += q * (a2 * dx + b2 * dy + c2 * dz);
+                c[v1]++;
+                c[v2]++;
+            }
+            dx = x0 - x2;
+            dy = y0 - y2;
+            dz = z0 - z2;
+            l2 = dx * dx + dy * dy + dz * dz;
+            if (l2 > 1e-12) {
+                const q = 2 / l2;
+                K[v2] -= q * (a2 * dx + b2 * dy + c2 * dz);
+                K[v0] += q * (a0 * dx + b0 * dy + c0 * dz);
+                c[v2]++;
+                c[v0]++;
+            }
+        }
+        for (let i = 0; i < n; i++) if (c[i]) K[i] /= c[i];
+        return K;
+    }
+    // DIE UNREGELMÄSSIGKEIT DER BANKUNG (die Zahl am Gesetz, `gate:hoehlen-sicht` (l)): der Variationskoeffizient der
+    // Bank-Mächtigkeit (an einer Lotrechten, n Bänke), die Welligkeit der Fugen (RMS-Abweichung einer Fuge von ihrer Geraden
+    // über `strecke` m, in Bank-Mächtigkeiten) und der Durchlauf der Klüfte (Anteil der Klüfte einer Bank, die in der Bank
+    // darüber innerhalb ± 0,15 Abständen weiterlaufen).
+    function felsBankung(o) {
+        const F = FELS;
+        const strecke = (o && o.strecke) || 20;
+        const dicken = [];
+        let s = 0.013;
+        let guard = 0;
+        while (dicken.length < 2000 && guard++ < 20000) {
+            const L = felsLage(0, s, 0, 0, _lage);
+            if (L.dicke > 1e-3) dicken.push(L.dicke);
+            s += L.oben + 1e-4;
+        }
+        const mw = dicken.reduce((a, v) => a + v, 0) / dicken.length;
+        const sd = Math.sqrt(dicken.reduce((a, v) => a + (v - mw) * (v - mw), 0) / dicken.length);
+        // Die Welligkeit: je Fuge (Paket p, Grenze i ≥ 1) ihre Höhe über h1 (h2 = 0), von ihrer Ausgleichs-Geraden.
+        let wSum = 0,
+            wN = 0;
+        for (let p = 0; p < 40; p++) {
+            const d = paketBankO(ZAHL, p);
+            for (let i = 1; i <= 3; i++) {
+                const xs = [],
+                    ys = [];
+                for (let h = 0; h <= strecke; h += 0.25) {
+                    xs.push(h);
+                    ys.push(bankGrenzeO(ZAHL, p, i, h, 0) * d);
+                }
+                const n = xs.length;
+                const mx = xs.reduce((a, v) => a + v, 0) / n,
+                    my = ys.reduce((a, v) => a + v, 0) / n;
+                let sxy = 0,
+                    sxx = 0;
+                for (let q = 0; q < n; q++) {
+                    sxy += (xs[q] - mx) * (ys[q] - my);
+                    sxx += (xs[q] - mx) * (xs[q] - mx);
+                }
+                const k = sxx > 0 ? sxy / sxx : 0;
+                let rss = 0;
+                for (let q = 0; q < n; q++) {
+                    const e = ys[q] - (my + k * (xs[q] - mx));
+                    rss += e * e;
+                }
+                wSum += Math.sqrt(rss / n) / d;
+                wN++;
+            }
+        }
+        // Der Durchlauf: je Bank mit Klüften die Lage ihrer Klüfte (Schar 1) gegen die Bank darüber im selben Paket.
+        let lauf = 0,
+            laufN = 0;
+        for (let p = 0; p < 60; p++)
+            for (let k = 0; k < 4; k++) {
+                if (!(fz(p, k, 23) < F.kluftAnteil)) continue;
+                laufN++;
+                if (!(fz(p, k + 1, 23) < F.kluftAnteil)) continue;
+                const v = 2 * F.kluftVersatz;
+                const dq = (fz(p, k + 1, 61) - 0.5) * v - (fz(p, k, 61) - 0.5) * v;
+                if (Math.abs(dq - Math.round(dq)) <= 0.15) lauf++;
+            }
+        const r3 = (v) => Math.round(v * 1000) / 1000;
+        return { baenke: dicken.length, mittel: r3(mw), cv: r3(sd / mw), welligkeit: r3(wSum / wN), durchlauf: r3(laufN ? lauf / laufN : 0) };
+    }
+    // Ein ganzes Netz durch den Stoff (die Gestalten der Foundry, der Werkstatt-Stein): C ← felsFarbe je Vertex.
+    // o = { himmel (1), feucht (0,3), fuss (die mittlere Kante, sonst aus dem Netz) }.
+    function felsNetz(B, P, N, I, n, o, C) {
+        const K = felsKruemmung(P, N, I, n);
+        let fuss = o && o.fuss > 0 ? o.fuss : 0;
+        if (!fuss && I && I.length >= 3) {
+            let s = 0,
+                m = 0;
+            for (let t = 0; t + 2 < I.length && m < 600; t += 3, m++) {
+                const a = I[t],
+                    b = I[t + 1];
+                s += Math.hypot(P[3 * b] - P[3 * a], P[3 * b + 1] - P[3 * a + 1], P[3 * b + 2] - P[3 * a + 2]);
+            }
+            fuss = m ? s / m : 0;
+        }
+        const him = o && o.himmel != null ? o.himmel : 1;
+        const fe = o && o.feucht != null ? o.feucht : 0.3;
+        const tmp = [0, 0, 0];
+        for (let i = 0; i < n; i++) {
+            felsFarbe(B, P[3 * i], P[3 * i + 1], P[3 * i + 2], N[3 * i], N[3 * i + 1], N[3 * i + 2], K[i], him, fe, fuss, tmp);
+            C[3 * i] = tmp[0];
+            C[3 * i + 1] = tmp[1];
+            C[3 * i + 2] = tmp[2];
+        }
+        return C;
+    }
+    // Das Mittel des Stoffs (die Ferne, wo kein Netz eine Bank trägt): ein senkrechter Fels unter dem Himmel.
+    function felsMittel(B, feucht) {
+        return felsFarbe(B, 0, 0, 0, 0, 0, 1, 0, 1, feucht != null ? feucht : 0.3, 1e9, [0, 0, 0]);
+    }
+
+    // DIE HIMMELS-SICHT EINES BODEN-NETZES (K02a, Auge 11 bei 762/−138; K17-2 aus dem Stamm in den Kern — der voxel-worker
+    // baut sie, wo er das Netz baut): je Vertex der Anteil des Himmels-Lichts, der ihn erreicht (der Boden-Stoff liest ihn als
+    // Verdeckung). Die Wahrheit ist der Höhlen-Graph (`tri`: je Dreieck die Zelle seiner Luft, −1 = Himmels-Luft): jede Fläche
+    // der Himmels-Luft sieht den Himmel (1), in die Höhlen-Luft fällt er je Netz-Schritt (`step` m) um exp(−step / m) — über
+    // die Kanten der Dreiecke von der nächsten Himmels-Fläche fort; eine Höhle ohne Himmels-Fläche im Netz sieht ihn nie (0).
+    // Ohne Höhlen-Graph sieht jede Fläche den Himmel.
+    const HIMMELS_SICHT = Object.freeze({ m: 3 });
+    function himmelsSicht(index, tri, n, step) {
+        const V = new Float32Array(n);
+        if (!tri) return V.fill(1);
+        const nT = (index.length / 3) | 0;
+        if (tri.length !== nT) throw new Error(`himmelsSicht: ${tri.length} Höhlen-Zellen für ${nT} Dreiecke`);
+        const schritt = Math.exp(-step / HIMMELS_SICHT.m);
+        const hop = new Int8Array(n).fill(-1);
+        for (let t = 0; t < nT; t++)
+            if (tri[t] < 0) hop[index[3 * t]] = hop[index[3 * t + 1]] = hop[index[3 * t + 2]] = 0;
+        // je Schritt wächst die Front um eine Dreiecks-Kante (höchstens `schritte`, darunter liegt der Rest unter 1 %)
+        const schritte = Math.min(120, Math.ceil(Math.log(0.01) / Math.log(schritt)));
+        for (let k = 1; k <= schritte; k++) {
+            let neu = 0;
+            for (let t = 0; t < nT; t++) {
+                const a = index[3 * t],
+                    b = index[3 * t + 1],
+                    c = index[3 * t + 2];
+                if (hop[a] === k - 1 || hop[b] === k - 1 || hop[c] === k - 1) {
+                    if (hop[a] < 0) ((hop[a] = k), neu++);
+                    if (hop[b] < 0) ((hop[b] = k), neu++);
+                    if (hop[c] < 0) ((hop[c] = k), neu++);
+                }
+            }
+            if (!neu) break;
+        }
+        for (let i = 0; i < n; i++) V[i] = hop[i] < 0 ? 0 : Math.pow(schritt, hop[i]);
+        return V;
+    }
+
+    // DER FELS-STOFF EINES BODEN-NETZES (K17; K17-2 aus dem Stamm `_felsStoff` in den Kern — der voxel-worker rechnet ihn beim
+    // Chunk-Bau und reicht ihn per Transfer, der Haupt-Thread rechnet ihn nur im Sync-Bau): die Säulen-Farbe C ist eine Funktion
+    // von (x, z); wo das Netz Fels ist, trägt der Vertex den Fels-Stoff (`felsFarbe`: Pakete, Rinde an konvexen Kanten aus der
+    // Krümmung des Netzes, Mulden, Flechte am trockenen Licht, Moos am feuchten Sims). Das Gewicht je Vertex: was den Himmel
+    // nicht sieht (1 − H, die Höhle), was steil steht (die Steile der Normale über `rockLo` … `rockHi`) und darunter der Schutt
+    // des Schicht-Gesetzes (`hoehe(…, aus).schutt` auf einem Gitter der Kante `schuttGitter` über die Vertices unter dem Himmel,
+    // die steiler als `schuttKandidat` stehen, bilinear gelesen; × `schutt`), je das größere. Die Krümmung nur an Fels und Höhle
+    // (der Schutt bricht, er rundet nicht), die Feuchte EINMAL je Netz am Schwerpunkt seines Felsens unter dem Himmel.
+    // L die Gelände-Lage · B `felsBasis` · o { rockLo, rockHi, schuttKandidat, schuttGitter, schutt, fuss } · P N I das Netz
+    // (n Vertices) · H `himmelsSicht` (null: alles unter dem Himmel) · C die Säulen-Farbe (wird zum Stoff gemischt) ·
+    // feuchte(x, z, y) die Feuchte des Wirts. → { schutt: Float32Array(n) (das Gewicht des Schutts, der Detail-Term legt sein
+    // Korn auf), feuchte (womit das Moos gerechnet wurde; undefined ohne Fels) }.
+    function felsStoff(L, B, o, P, N, I, H, C, n, feuchte) {
+        const SW = new Float32Array(n);
+        let gx0 = Infinity,
+            gx1 = -Infinity,
+            gz0 = Infinity,
+            gz1 = -Infinity;
+        for (let i = 0; i < n; i++) {
+            if (1 - N[3 * i + 1] < o.schuttKandidat || (H && H[i] < 1)) continue;
+            const x = P[3 * i],
+                z = P[3 * i + 2];
+            if (x < gx0) gx0 = x;
+            if (x > gx1) gx1 = x;
+            if (z < gz0) gz0 = z;
+            if (z > gz1) gz1 = z;
+        }
+        if (gx1 >= gx0) {
+            const nx = Math.max(2, Math.ceil((gx1 - gx0) / o.schuttGitter) + 1);
+            const nz = Math.max(2, Math.ceil((gz1 - gz0) / o.schuttGitter) + 1);
+            const dx = (gx1 - gx0) / (nx - 1) || 1;
+            const dz = (gz1 - gz0) / (nz - 1) || 1;
+            const aus = {};
+            const Gw = new Float32Array(nx * nz);
+            let jede = 0;
+            for (let j = 0; j < nz; j++)
+                for (let i = 0; i < nx; i++) {
+                    hoehe(L, gx0 + i * dx, gz0 + j * dz, false, aus);
+                    if ((Gw[j * nx + i] = aus.schutt > 0 ? aus.schutt : 0) > 0) jede++;
+                }
+            if (jede)
+                for (let i = 0; i < n; i++) {
+                    if (H && H[i] < 1) continue;
+                    let u = (P[3 * i] - gx0) / dx,
+                        v = (P[3 * i + 2] - gz0) / dz;
+                    u = u < 0 ? 0 : u > nx - 1 ? nx - 1 : u;
+                    v = v < 0 ? 0 : v > nz - 1 ? nz - 1 : v;
+                    const iu = Math.min(nx - 2, Math.floor(u)),
+                        iv = Math.min(nz - 2, Math.floor(v));
+                    const fu = u - iu,
+                        fv = v - iv;
+                    const a = Gw[iv * nx + iu] + (Gw[iv * nx + iu + 1] - Gw[iv * nx + iu]) * fu;
+                    const b = Gw[(iv + 1) * nx + iu] + (Gw[(iv + 1) * nx + iu + 1] - Gw[(iv + 1) * nx + iu]) * fu;
+                    SW[i] = a + (b - a) * fv;
+                }
+        }
+        const W = new Float32Array(n);
+        const KM = new Uint8Array(n);
+        let jeder = 0;
+        let kante = 0;
+        let sx = 0,
+            sy = 0,
+            sz = 0,
+            sn = 0;
+        for (let i = 0; i < n; i++) {
+            const st = 1 - N[3 * i + 1];
+            let t = (st - o.rockLo) / (o.rockHi - o.rockLo);
+            t = t < 0 ? 0 : t > 1 ? 1 : t;
+            const wr = t * t * (3 - 2 * t);
+            const ws = o.schutt * SW[i] * (1 - wr);
+            SW[i] = ws;
+            const w = Math.max(H ? 1 - H[i] : 0, wr + ws);
+            if (!(w > 0)) continue;
+            W[i] = w;
+            jeder++;
+            if (wr > 0 || (H && H[i] < 1)) {
+                KM[i] = 1;
+                kante++;
+            }
+            if (!H || H[i] > 0) {
+                sx += P[3 * i];
+                sy += P[3 * i + 1];
+                sz += P[3 * i + 2];
+                sn++;
+            }
+        }
+        if (!jeder) return { schutt: SW, feuchte: undefined };
+        const K = kante ? felsKruemmung(P, N, I, n, null, KM) : null;
+        const fe = sn ? feuchte(sx / sn, sz / sn, sy / sn) : 0;
+        const t = [0, 0, 0];
+        for (let i = 0; i < n; i++) {
+            const w = W[i];
+            if (!(w > 0)) continue;
+            const h = H ? H[i] : 1;
+            const kr = K && KM[i] ? K[i] : 0;
+            felsFarbe(B, P[3 * i], P[3 * i + 1], P[3 * i + 2], N[3 * i], N[3 * i + 1], N[3 * i + 2], kr, h, h > 0 ? fe : 0, o.fuss, t);
+            C[3 * i] += (t[0] - C[3 * i]) * w;
+            C[3 * i + 1] += (t[1] - C[3 * i + 1]) * w;
+            C[3 * i + 2] += (t[2] - C[3 * i + 2]) * w;
+        }
+        return { schutt: SW, feuchte: fe };
+    }
+
+    // ── DAS GELÄNDE-STUDIO (K16b): Urteil, Messung und Plan — rein additiv, die Höhe rechnet weiter `hoehe` allein. Die
+    // Bedienung (Namen, Haupt-Regler je Gruppe, die benannten Landschaften) ist kein Gesetz und kein Rezept des Kerns
+    // (studio-vertrag §9): sie liegt beim Studio (worlds/gelaende/bedienung.json).
+    //
+    // DIE MESSUNG — EINE Quelle für die Wände (gate:gelaende-realismus, gate:gelaende-studio) und die Zahl-Leiste des
+    // Studios (der Makro-Worker): das Raster der Statistik (4 × 4 km innen, 30 m, der Rand von 2 km rechnet Füllung, Abfluss
+    // und das WAHRE Einzugsgebiet der Flüsse mit, die ins Feld treten — gezählt wird das innere Feld), der Makro-Abdruck des
+    // Byte-Beweises (64 × 64, ±852 m, Schritt 27 m — ganzzahlig, f32-exakt; je Punkt mit und ohne Detail) und der Ort des
+    // Schicht-Gesetzes (das Tafelland ist ein ORT im Stil-Feld λ 5,2 km: der Kern nennt ihn im Umkreis von 8 km — in
+    // 4 × 4 km fehlt er zwei von drei Welten —, gezählt wird auf 2-m-Raster über 600 m im Tafelland selbst, Stil ≥ 0,8).
+    const MESSUNG = (function () {
+        const schritt = 30;
+        const halb = 2000;
+        const rand = Math.round(2000 / schritt);
+        const aussen = halb + rand * schritt;
+        return Object.freeze({
+            raster: Object.freeze({ schritt, halb, rand, n: Math.floor((2 * aussen) / schritt) + 1, x0: -aussen }),
+            abdruck: Object.freeze({ n: 64, x0: -852, schritt: 27 }),
+            schicht: Object.freeze({ umkreis: 8000, n: 301, schritt: 2, stil: 0.8 }),
+        });
+    })();
+    // Der Makro-Abdruck einer Höhe `hf(x, z, mitDetail)` — dieselben Bytes für die Lage des Studios (`hoehe`) und die Welt
+    // (`_terrainMacroSurfaceY`): je Punkt erst mit, dann ohne Detail.
+    function abdruckFeld(hf) {
+        const A = MESSUNG.abdruck;
+        const h = new Float64Array(A.n * A.n * 2);
+        let q = 0;
+        for (let j = 0; j < A.n; j++)
+            for (let i = 0; i < A.n; i++) {
+                h[q++] = hf(A.x0 + i * A.schritt, A.x0 + j * A.schritt, true);
+                h[q++] = hf(A.x0 + i * A.schritt, A.x0 + j * A.schritt, false);
+            }
+        return h;
+    }
+    // Die Statistik des Mess-Rasters (`MESSUNG.raster`, H[i + j·n] = Höhe mit Detail am Punkt x0 + i·schritt, x0 + j·schritt)
+    // einer Lage; `gesetz` (optional) ist das gemessene Gesetzbuch, das die benannten Seen nennt (die Linse misst einen
+    // anderen Stand mit DIESER Rechnung) — ohne `benannteSeen` zählt jede Senke.
+    function messStatistik(H, L, gesetz) {
+        const R = MESSUNG.raster;
+        const g = gesetz || { benannteSeen: benannteSeen };
+        const benannt = typeof g.benannteSeen === "function" ? g.benannteSeen(L, R.x0, R.x0, R.schritt, R.n) : [];
+        return statistik(H, R.n, R.schritt, L.waterLevel, benannt, R.rand);
+    }
+    // Das Schicht-Gesetz am Schicht-Ort in Zeilen (ein Generator: der Worker gibt zwischen zwei Zeilen den Takt ab, die
+    // Linse zieht ihn durch `schichtMessung` in einem Zug): `{ ort, x, z, baender }` — ohne Ort (kein Tafelland im
+    // Umkreis, oder ein Gesetz ohne `schichtOrt`) misst er am Ursprung ohne Maske, das Urteil gilt dort nicht (`urteil`).
+    // `gesetz` (optional): das gemessene Gesetzbuch (`hoehe`, `grossform`, `schichtOrt`), sonst dieses.
+    function* schichtSchritte(L, gesetz) {
+        const M = MESSUNG.schicht;
+        const g = gesetz || { hoehe: hoehe, grossform: grossformAus, schichtOrt: schichtOrt };
+        const ort = typeof g.schichtOrt === "function" ? g.schichtOrt(L, -M.umkreis, -M.umkreis, M.umkreis, M.umkreis) : null;
+        const ox = ort ? ort.x : 0;
+        const oz = ort ? ort.z : 0;
+        const h = ((M.n - 1) / 2) * M.schritt;
+        const stil = ort && typeof g.grossform === "function";
+        const HF = new Float64Array(M.n * M.n);
+        const maske = new Uint8Array(M.n * M.n);
+        for (let j = 0; j < M.n; j++) {
+            for (let i = 0; i < M.n; i++) {
+                const x = ox - h + i * M.schritt;
+                const z = oz - h + j * M.schritt;
+                HF[i + j * M.n] = g.hoehe(L, x, z, true);
+                maske[i + j * M.n] = !stil || g.grossform(L, x, z).stil >= M.stil ? 1 : 0;
+            }
+            yield j;
+        }
+        return { ort, x: ox, z: oz, baender: hangBaender(HF, M.n, M.schritt, maske) };
+    }
+    function schichtMessung(L, gesetz) {
+        const it = schichtSchritte(L, gesetz);
+        for (;;) {
+            const r = it.next();
+            if (r.done) return r.value;
+        }
+    }
+    // DER NATUR-KORRIDOR der Gelände-Linse (Nordstern §4.1, Karte K16) — EINE Quelle für die Wand (`diag-worker-dichte
+    // --realismus`) und die Zahl-Leiste des Studios: grün im Korridor, rot außerhalb.
+    const KORRIDOR = Object.freeze({
+        senkenJeKm2: 1,
+        senkeAnteil: 0.01,
+        thetaMin: 0.3,
+        thetaMax: 0.7,
+        r2Min: 0.5,
+        hammondSanft: 1,
+        dorfplaetze: 3,
+        kliff: 0.02,
+        schutt: 0.05,
+        pediment: 0.2,
+    });
+    // Das Urteil je Ziel aus der Statistik (`messStatistik`) und der Schicht-Messung (`schichtMessung`; null = noch nicht
+    // gemessen): true im Korridor, false außerhalb, null = das Ziel gilt hier nicht (ohne Schicht-Ort gilt das Schicht-Gesetz
+    // nicht — die Bänder am Ursprung sind nur Auskunft).
+    function urteil(st, messung) {
+        const K = KORRIDOR;
+        const schicht = messung && messung.ort ? messung.baender : null;
+        return {
+            senken: st.senken1mJeKm2 <= K.senkenJeKm2 && st.anteilSenkeTiefer1m < K.senkeAnteil,
+            flint:
+                st.flint.theta != null &&
+                st.flint.theta >= K.thetaMin &&
+                st.flint.theta <= K.thetaMax &&
+                st.flint.r2 >= K.r2Min,
+            hammond: st.hammond.sanft >= K.hammondSanft,
+            dorfplaetze: st.dorfplaetze >= K.dorfplaetze,
+            // ohne Schicht-Ort (kein Tafelland im Umkreis) gilt das Schicht-Gesetz nicht: null, nie grün
+            schicht:
+                schicht == null
+                    ? null
+                    : schicht.zellen > 0 &&
+                schicht.kliff >= K.kliff &&
+                schicht.schutt >= K.schutt &&
+                schicht.pediment >= K.pediment,
+        };
+    }
+    // DER PLAN (M5): was das Studio exportiert und die Welt beim Import liest — die Saat und die Regler, sonst nichts.
+    // Fail-closed: eine fremde Art, eine andere Version, eine Saat ohne Namen, ein unbekannter Regler (ein neuerer Build
+    // hätte ein Gesetz, das dieser nicht rechnet) oder eine Nicht-Zahl WERFEN mit dem Grund; ein fehlender Regler trägt
+    // sein def (wie im Erbgut), Zahlen werden auf [min, max] geklemmt. Leser: das Studio (Export), die Welt-Tür des Stamms
+    // (`_weltAusPlan`), die Studio-Probe.
+    const PLAN_ART = "gelaende-plan";
+    const PLAN_VERSION = 1;
+    // DER GRUND jeder Welt — EINE Quelle: eine frisch geborene Welt (und jede Plan-Welt) steht auf der Basis 0, das Meer
+    // liegt `meerUnterBasis` unter der Basis (`_buildWaterPlane`, `_hydroInit`), die Hydrosphäre rechnet in Kacheln der
+    // Kante `kachel` (`HYDROSPHERE.regionSize`), der Rausch-Strom der Höhe ist Saat + `strom` (`lageRausch`).
+    const GRUND = Object.freeze({ basis: 0, meerUnterBasis: 3, kachel: 2048, strom: ":voxel" });
+    function planNormal(roh) {
+        const nein = (grund) => {
+            throw new Error(`Gelände-Plan abgelehnt: ${grund}`);
+        };
+        if (!roh || typeof roh !== "object") nein("kein Objekt");
+        if (roh.art !== PLAN_ART) nein(`die Art ist „${roh.art}", nicht „${PLAN_ART}"`);
+        if (roh.v !== PLAN_VERSION) nein(`Version ${roh.v} (dieser Build liest ${PLAN_VERSION})`);
+        if (typeof roh.saat !== "string" || !/^[A-Za-z0-9:._-]{1,64}$/.test(roh.saat))
+            nein("die Saat ist kein Name (1–64 Zeichen aus A–Z a–z 0–9 : . _ -)");
+        const rg = roh.regler;
+        if (!rg || typeof rg !== "object" || Array.isArray(rg)) nein("keine Regler");
+        for (const k of Object.keys(rg)) if (!LANDFORM_REGLER.some((r) => r.id === k)) nein(`unbekannter Regler „${k}"`);
+        const regler = {};
+        for (const r of LANDFORM_REGLER) {
+            const v = rg[r.id];
+            if (v === undefined) regler[r.id] = r.def;
+            else if (typeof v !== "number" || !Number.isFinite(v)) nein(`${r.id} ist keine Zahl`);
+            else regler[r.id] = Math.min(r.max, Math.max(r.min, v));
+        }
+        return { art: PLAN_ART, v: PLAN_VERSION, saat: roh.saat, regler };
+    }
+    // Das Erbgut einer Plan-Welt (`worldMeta.erbgut` roh): EIN Wildnis-Term, der jeden Regler trägt.
+    function planErbgut(plan) {
+        const p = planNormal(plan);
+        return { terme: [Object.assign({ art: "wildnis" }, p.regler)] };
+    }
+    // DIE LAGE AUS IHREM ABBILD — EINE Rechnung für jede Lage, die `hoehe` liest: die Welt (`_gelaende`, ihr Rausch-Strom),
+    // der Worker der Welt (`voxel-worker` applyStateSnapshot), der Plan (`planLage`), der Makro-Worker des Studios (A = die
+    // gebaute Welt aus ihrem Abbild, B = der Entwurf) und die Gelände-Linse (`diag-worker-dichte --realismus`). Das Abbild
+    // ist reine Daten (es reist per postMessage): Saat, Basis, Wasserspiegel, Erbgut-Normalform, Kachel-Kante.
+    function lageRausch(seed, Rausch) {
+        return new Rausch(String(seed) + GRUND.strom);
+    }
+    function lageAbbild(L) {
+        return {
+            seed: String(L.seed),
+            baseHeight: L.baseHeight,
+            waterLevel: L.waterLevel,
+            erbgut: { terme: L.erbgut.terme, wildnis: L.erbgut.wildnis },
+            regionSize: L.regionSize,
+        };
+    }
+    function lageAus(a, Rausch) {
+        return {
+            seed: a.seed,
+            noise: lageRausch(a.seed, Rausch),
+            baseHeight: a.baseHeight,
+            waterLevel: a.waterLevel,
+            erbgut: a.erbgut,
+            regionSize: a.regionSize,
+        };
+    }
+    // Das Abbild der Welt, die ein Plan gebiert (`_weltAusPlan`): Saat des Plans, der Grund (`GRUND`), EIN Wildnis-Term.
+    function planAbbild(plan) {
+        const p = planNormal(plan);
+        return {
+            seed: p.saat,
+            baseHeight: GRUND.basis,
+            waterLevel: GRUND.basis - GRUND.meerUnterBasis,
+            erbgut: { terme: erbgutNormal(planErbgut(p)), wildnis: 1 },
+            regionSize: GRUND.kachel,
+        };
+    }
+    // Die Gelände-Lage einer Plan-Welt, wie die Welt sie nach dem Import liest — `Rausch` ist der SimplexNoise-Konstruktor
+    // des Wirts (vendor/simplex-noise.js).
+    function planLage(plan, Rausch) {
+        return lageAus(planAbbild(plan), Rausch);
+    }
+
     root.__gelaendeCore = Object.freeze({
+        MESSUNG: MESSUNG,
+        abdruckFeld: abdruckFeld,
+        messStatistik: messStatistik,
+        schichtSchritte: schichtSchritte,
+        schichtMessung: schichtMessung,
+        KORRIDOR: KORRIDOR,
+        urteil: urteil,
+        PLAN_ART: PLAN_ART,
+        PLAN_VERSION: PLAN_VERSION,
+        GRUND: GRUND,
+        planNormal: planNormal,
+        planErbgut: planErbgut,
+        lageRausch: lageRausch,
+        lageAbbild: lageAbbild,
+        lageAus: lageAus,
+        planAbbild: planAbbild,
+        planLage: planLage,
         LINSE: LINSE,
+        RAUSCH: RAUSCH,
+        rauschGitter: rauschGitter,
+        rauschRaum: rauschRaum,
+        FELS: FELS,
+        HIMMELS_SICHT: HIMMELS_SICHT,
+        himmelsSicht: himmelsSicht,
+        felsStoff: felsStoff,
+        felsBasis: felsBasis,
+        felsFarbe: felsFarbe,
+        felsKruemmung: felsKruemmung,
+        felsNetz: felsNetz,
+        felsMittel: felsMittel,
+        felsLage: felsLage,
+        felsMittelWerte: felsMittelWerte,
+        felsBankung: felsBankung,
+        felsFein: felsFeinO,
+        felsWelle: felsWelleO,
+        schuttKorn: schuttKornO,
+        schuttMittel: schuttMittel,
+        FELS_SAAT: FELS_SAAT,
+        felsZahl: ZAHL,
         statistik: statistik,
         hangBaender: hangBaender,
+        HANG_BAENDER: HANG_BAENDER,
         maeanderZahl: maeanderZahl,
         MAEANDER: MAEANDER,
         FLUSS_BREITE: FLUSS_BREITE,
@@ -1859,7 +3175,7 @@
         termY: termY,
         SCHNEE: SCHNEE,
         schnee: schnee,
-        grossform: (L, x, z) => grossform(netzFuer(L), x, z),
+        grossform: grossformAus,
         landformRegler: landformRegler,
         benannteSeen: benannteSeen,
         flussLaeufe: flussLaeufe,

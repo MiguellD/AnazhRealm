@@ -30,31 +30,22 @@
 //       stehender Wolf hangauf an der Streifen-Stelle mit dem größten Träger-Fehler (12–30°): jede Sohle (Median je Pfote)
 //       und der Leib ≤ 6 cm. Vorher las der Stand-Leser dort den Träger: 527 von 582 Punkten daneben, die Hinterpfoten
 //       62–71 cm über dem Boden (Konsum-Leser: Pfoten-IK `_kreaturFussBoden`, Tier-Lage, Fuß-IK des Menschen `_gaitBodenY`)
-//   K7  WIESE UND STREU AM CHUNK-RAND (K21): der Boden hat EINEN Leser (`_bodenSichtAt`) — an der Mess-Wiese (LOD-0-Chunks im
-//       Umkreis 120 m) stehen Büschel und Pflanzen im Rand-Streifen so dicht wie in der Chunk-Mitte daneben (0,9–2,7 m):
+//   K7  WIESE UND STREU AM CHUNK-RAND (K21): der Boden hat EINEN Leser (`_bodenSichtAt`) — an der Mess-Wiese (die Chunks einer
+//       Stufe im Umkreis 120 m) stehen Büschel und Pflanzen im Rand-Streifen so dicht wie in der Chunk-Mitte daneben (L0 0,9–2,7 m):
 //       Wiese ±10 %, Streu ±10 % oder drei Unschärfen. Vorher lasen beide nur die Karte des Eigners: Dichte 0,11 gegen
 //       1,31 Büschel je m², ein Gitter kahler Linien in der Wiese (Konsum-Leser: `_nahWieseKachelBueschel`, `_nahStreuKachel`)
 //   --selftest: je Defekt serviert der Server die Basis-Zeile von anazhRealm.js (cf9a07ba) — GENAU die Probe dieses
 //   Defekts muss rot werden; fehlt die geheilte Zeile, ist der Selbsttest rot.
 //   node scripts/diag-koerper-stand.cjs [--selftest]
 "use strict";
-const puppeteer = require("puppeteer");
-const http = require("http");
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.KOERPER_STAND_PORT || 4479);
 const ROOT = path.resolve(__dirname, "..");
 const SELBST = process.argv.includes("--selftest");
-const MIME = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".wasm": "application/wasm",
-    ".json": "application/json",
-    ".css": "text/css",
-    ".woff2": "font/woff2",
-    ".png": "image/png",
-};
 
 // DIE BASIS-ZEILEN je Defekt: [geheilte Form in anazhRealm.js, Basis-Form]. Der Selbsttest serviert die Basis-Form.
 const BASIS = {
@@ -110,25 +101,24 @@ const BASIS = {
 };
 let patch = null;
 let patchFehler = [];
-
-const server = http.createServer((req, res) => {
-    let p = req.url.split("?")[0];
-    if (p === "/") p = "/index.html";
-    const fp = path.join(ROOT, p);
-    if (!fp.startsWith(ROOT)) return ((res.statusCode = 403), res.end());
-    fs.readFile(fp, (err, data) => {
-        if (err) return ((res.statusCode = 404), res.end());
-        if (patch && p === "/anazhRealm.js") {
-            let txt = data.toString("utf8");
-            for (const [geheilt, basis] of patch) {
-                if (!txt.includes(geheilt)) patchFehler.push(`geheilte Zeile fehlt („${geheilt.slice(0, 70)}…")`);
-                else txt = txt.replace(geheilt, basis);
-            }
-            data = Buffer.from(txt, "utf8");
+// Der Patch wirkt auf den virtuellen Stamm (scripts/lib/stamm.cjs) — EINMAL je Patch-Satz; ausgeliefert wird je Stamm-
+// Datei ihr Teil (`liefere`), so trifft jede Zeile die Datei, die sie trägt.
+let gepatcht = { patch: null, text: null };
+function stammGepatcht() {
+    if (gepatcht.patch !== patch) {
+        let txt = stammLib.text(ROOT);
+        for (const [geheilt, basis] of patch) {
+            if (!txt.includes(geheilt)) patchFehler.push(`geheilte Zeile fehlt („${geheilt.slice(0, 70)}…")`);
+            else txt = txt.replace(geheilt, basis);
         }
-        res.setHeader("Content-Type", MIME[path.extname(fp)] || "application/octet-stream");
-        res.end(data);
-    });
+        gepatcht = { patch, text: txt };
+    }
+    return gepatcht.text;
+}
+
+const server = statikServer({
+    root: ROOT,
+    wandle: (p, data) => (data && patch && stammLib.istStammUrl(ROOT, p) ? stammLib.liefere(ROOT, p, stammGepatcht()) : data),
 });
 
 // Die Proben laufen IN der Seite (r = die Welt). Kein Stub: jede Probe ruft die Chokepoints des Spiels.
@@ -322,8 +312,9 @@ async function proben(mitWiese) {
     // (die Welt schwingt dort ein), der erste mit einer Hang-Stelle im Band.
     let hang = null;
     let eben = null;
-    // DIE MITTE DER EINGESCHWUNGENEN WELT: um sie stehen die Chunks der Stufe 0 (K6 misst den Rand-Streifen dort, nie am
-    // verlassenen Start — 300 m weiter trägt der Start die gröberen Stufen, und der Leser liest über die Stufen-Grenze nichts)
+    // DIE MITTE DER EINGESCHWUNGENEN WELT: um sie stehen die Chunks der Nah-Zone (K6 misst den Rand-Streifen dort, nie am
+    // verlassenen Start — 300 m weiter trägt der Start die gröbersten Stufen; seit K51 liegen die Nähte 0 ↔ 1 ↔ 2 im Streifen
+    // der Probe, der Leser liest über jede Stufen-Grenze)
     let mitte = { x: start.x, z: start.z };
     const orte = [[0, 0]];
     for (const d of [150, 300])
@@ -453,6 +444,8 @@ async function proben(mitWiese) {
             const ux = kx / lg;
             const uz = kz / lg;
             let yAlt = null;
+            let xAlt = null;
+            let zAlt = null;
             let maxUeber = 0;
             let traeger = null;
             // der Täter beim Namen: die Box-Oberkante eines Werks, auf der die Lage nach dem größten Sprung steht (sonst Boden)
@@ -475,7 +468,10 @@ async function proben(mitWiese) {
                 const sz = hang.z + uz * (-8 + k * 0.12);
                 const yJetzt = c.position.y;
                 if (yAlt !== null && k > 4) {
-                    const erwartet = Math.abs(Math.tan((hang.neig * Math.PI) / 180) * 0.12);
+                    // die Neigung über den GEGANGENEN Weg (die Lage des Vortakts zur Lage jetzt): ein Werk am Weg schiebt
+                    // den Leib (K20: die Hülle der Tanne ist ihr gezeichneter Stamm — der Stoß am Stamm ist kein Sprung)
+                    const weg = Math.hypot(c.position.x - xAlt, c.position.z - zAlt);
+                    const erwartet = Math.abs(Math.tan((hang.neig * Math.PI) / 180) * weg);
                     const ueber = Math.abs(yJetzt - yAlt) - erwartet;
                     if (ueber > maxUeber) {
                         maxUeber = ueber;
@@ -483,6 +479,8 @@ async function proben(mitWiese) {
                     }
                 }
                 yAlt = yJetzt;
+                xAlt = c.position.x;
+                zAlt = c.position.z;
                 c.position.x = sx;
                 c.position.z = sz;
             });
@@ -865,8 +863,9 @@ async function proben(mitWiese) {
     s.playerVel = savedVel;
     // ── K7 WIESE UND STREU AM CHUNK-RAND (K21): Nah-Wiese und Nah-Streu lesen Fuß, Hang und Grün über den EINEN Leser
     // (`_bodenSichtAt`) — vorher nur die Karte des Eigners, im Rand-Streifen fiel kaum ein Büschel (ein Gitter kahler Linien in
-    // der Wiese, Dichte 0,11 gegen 1,31 je m²). An der Mess-Wiese (−900/−850, dicht) die Kacheln der LOD-0-Chunks im Umkreis
-    // 120 m (der Nah-Ring liegt ganz in LOD 0): Büschel bzw. Pflanzen je m² im Streifen gegen die Chunk-Mitte daneben (0,9–2,7 m:
+    // der Wiese, Dichte 0,11 gegen 1,31 je m²). An der Mess-Wiese (−900/−850, dicht) die Kacheln im Umkreis 120 m, deren Chunks
+    // einer Stufe sind (der Nah-Ring liegt ganz in LOD 0, die Stufen-Kette K51 trägt L1 und L2 in den Umkreis; der Streifen ist
+    // ein halber Schritt der Stufe): Büschel bzw. Pflanzen je m² im Streifen gegen die Chunk-Mitte daneben (0,9–2,7 m in L0:
     // dieselben Nähte, dieselben Felder — die ganze Mitte läge auf anderen Wiesen). Läuft im Lauf ohne Defekt und im Defekt
     // „wiese"; zuletzt, denn der Spieler zieht dafür um. ──
     if (mitWiese) {
@@ -894,22 +893,28 @@ async function proben(mitWiese) {
             }
         }
         const C = r._voxelChunkConfig(0);
-        const halb = C.step / 2;
-        const fach = (x, z) => {
+        // der Rand-Streifen in der Breite der Stufe (ein halber Schritt, K51: die Nah-Zone ist 3 × 3 — die Kacheln jeder Stufe
+        // zählen, der Leser liest jede Naht)
+        const fach = (x, z, stufe) => {
+            const halb = r._voxelChunkConfig(stufe).step / 2;
             const lx = x - Math.floor(x / C.span) * C.span;
             const lz = z - Math.floor(z / C.span) * C.span;
             if (lx < halb || lz < halb) return 0; // der Rand-Streifen
             if (lx < 3 * halb || lz < 3 * halb) return 1; // die Mitte daneben
             return 2;
         };
-        // jeder Chunk der Kachel und seine unteren Nachbarn gebaut und in LOD 0 (die Linse rechnet das selbst, nie über den Leser)
-        const lod0 = (x0, z0, x1, z1) => {
+        // jeder Chunk der Kachel und seine unteren Nachbarn gebaut und in EINER Stufe (die Linse rechnet das selbst, nie über den
+        // Leser): die Stufe, sonst -1
+        const eineStufe = (x0, z0, x1, z1) => {
+            let stufe = -1;
             for (let cz = Math.floor(z0 / C.span) - 1; cz <= Math.floor(z1 / C.span); cz++)
                 for (let cx = Math.floor(x0 / C.span) - 1; cx <= Math.floor(x1 / C.span); cx++) {
                     const e = s.voxelChunks.get(`${cx},${cz}`);
-                    if (!e || (e.lod || 0) !== 0) return false;
+                    if (!e) return -1;
+                    if (stufe < 0) stufe = e.lod || 0;
+                    else if ((e.lod || 0) !== stufe) return -1;
                 }
-            return true;
+            return stufe;
         };
         const R = 120;
         const zaehle = (K, rand, bau) => {
@@ -918,13 +923,14 @@ async function proben(mitWiese) {
             let kacheln = 0;
             for (let tz = Math.floor((Z - R) / K); tz <= Math.floor((Z + R) / K); tz++)
                 for (let tx = Math.floor((X - R) / K); tx <= Math.floor((X + R) / K); tx++) {
-                    if (!lod0(tx * K - rand, tz * K - rand, (tx + 1) * K + rand, (tz + 1) * K + rand)) continue;
+                    const stufe = eineStufe(tx * K - rand, tz * K - rand, (tx + 1) * K + rand, (tz + 1) * K + rand);
+                    if (stufe < 0) continue;
                     const liste = bau(tx, tz);
                     if (!liste) continue;
                     kacheln++;
                     for (let a = 0.05; a < K; a += 0.1)
-                        for (let b = 0.05; b < K; b += 0.1) flaeche[fach(tx * K + a, tz * K + b)] += 0.01;
-                    for (const q of liste) zahl[fach(q.x, q.z)]++;
+                        for (let b = 0.05; b < K; b += 0.1) flaeche[fach(tx * K + a, tz * K + b, stufe)] += 0.01;
+                    for (const q of liste) zahl[fach(q.x, q.z, stufe)]++;
                 }
             const d = zahl.map((n, i) => (flaeche[i] > 0 ? n / flaeche[i] : 0));
             const verh = d[1] > 0 ? d[0] / d[1] : 0;
@@ -1056,16 +1062,13 @@ function zeile(o) {
 
 (async () => {
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await puppeteer.launch({
-        headless: "new",
-        protocolTimeout: 900000,
-        args: ["--no-sandbox", "--disable-gpu"],
-    });
+    const browser = await starteBrowser({ art: "null", frist: 900000 });
     let rot = 0;
     try {
         const lauf = async (inj) => {
             patch = inj && BASIS[inj] ? BASIS[inj] : null;
             patchFehler = [];
+            gepatcht = { patch: null, text: null }; // je Lauf neu gepatcht (die Fehl-Zeilen zählen je Lauf)
             // je Lauf ein eigener Browser-Kontext: kein Speicherstand (Save, IndexedDB) des Vorlaufs reist in die nächste
             // Welt (ein gespeichertes Dorf stünde sonst unter dem neu gegründeten)
             const kontext = await browser.createBrowserContext();

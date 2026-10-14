@@ -172,9 +172,9 @@
   },
   "wolf-L0|fellSchale|wolf": {
    "meshes": 1,
-   "verts": 13356,
-   "tris": 26712,
-   "sha256": "69208dd861c51fc9da581a398cb6ddb6a124b9653f59efe2e63520ec9a4554cf"
+   "verts": 13164,
+   "tris": 26304,
+   "sha256": "df55c89919b2a18c18f1a626a0aa3f7a1e2f09b691da12627e2690e90581c8fd"
   },
   "wolf-L0|gelenk|wolf": {
    "sha256": "4f97437e09ba060e40d214ffd368dd234c96d6a6c141b2843f23bb26df97ef6c"
@@ -273,7 +273,7 @@
    "sha256": "6cd4e10586a5fb3cb8c10e1292dde7b88dd879f144a033fad88d513d811ba477"
   },
   "wolf-L0|beipack": {
-   "sha256": "c1efd7d2e2e4ebc7f02f270767c0ad9461f923909675d77c79f40aea9620880e"
+   "sha256": "3435383a0ba5e30176c2341f0971960b75efefb3476862185a3e77ab208cae54"
   },
   "wolf-L1|fell|wolf": {
    "meshes": 1,
@@ -604,9 +604,9 @@
   },
   "fox-L0|fellSchale|wolf": {
    "meshes": 1,
-   "verts": 13932,
-   "tris": 27888,
-   "sha256": "a333ada1ac1a4c3deed0146c0ed4bab05e4565a29b4508af671d8d8cae33fc0f"
+   "verts": 13530,
+   "tris": 27056,
+   "sha256": "4d09a8c81314d2580298c3a9bc01785ddd216b784fc37c43e8adcc3b8ff07454"
   },
   "fox-L0|gelenk|wolf": {
    "sha256": "4f97437e09ba060e40d214ffd368dd234c96d6a6c141b2843f23bb26df97ef6c"
@@ -711,7 +711,7 @@
    "sha256": "2f64a2248b0b94f9d3fc3e5df7775a49bf6e564b8390ba413b4bb5bb9556a5e7"
   },
   "fox-L0|beipack": {
-   "sha256": "f465f1a30c729bf8dffbda2acd3e539db7887b4b3e8858ec637db7ccb2dae6ef"
+   "sha256": "5c7f3f0db080647e63654c9b48cabbd52970d7f8993e6014f9119e6b7b1eb5b4"
   },
   "fox-L1|fell|wolf": {
    "meshes": 1,
@@ -1012,9 +1012,9 @@
   },
   "bear-L0|fellSchale|wolf": {
    "meshes": 1,
-   "verts": 14370,
-   "tris": 28752,
-   "sha256": "20f0de5db3a79943404c9fffa34c25640f23449d526ee15ec14b1e13625a6533"
+   "verts": 14309,
+   "tris": 28604,
+   "sha256": "cc922acbe139a657aa6c380c7c054b6d50d8c9c53ac72730d8b3df31b7927384"
   },
   "bear-L0|gelenk|wolf": {
    "sha256": "4f97437e09ba060e40d214ffd368dd234c96d6a6c141b2843f23bb26df97ef6c"
@@ -1095,7 +1095,7 @@
    "sha256": "86ece91669214ffdecb3146c40c19c2ce2404cb49d7dc5431e542cee47598d24"
   },
   "bear-L0|beipack": {
-   "sha256": "685ca062c5fecf2fdfc169757c9e3910964f89e239395b7cca6bdafc2c1a7c87"
+   "sha256": "0a0f07bf6b2461490f002107ce0e333fa49eb2ae2583ce5d3523a1d64fcb9d0e"
   },
   "bear-L1|fell|wolf": {
    "meshes": 1,
@@ -1348,9 +1348,9 @@
   },
   "deer-L0|fellSchale|wolf": {
    "meshes": 1,
-   "verts": 12744,
-   "tris": 25512,
-   "sha256": "c2f918644304ea67b0e3bb2cf248d9ea0e65ce0e0bc41e308eb1d371051c843c"
+   "verts": 12714,
+   "tris": 25424,
+   "sha256": "4a9f77c6af61592992f4e932a4e1d342948b67f31c3fa42b5797feb8280e1207"
   },
   "deer-L0|gelenk|wolf": {
    "sha256": "4f97437e09ba060e40d214ffd368dd234c96d6a6c141b2843f23bb26df97ef6c"
@@ -1434,7 +1434,7 @@
    "sha256": "0f0ecebf5d7d50a304104d1dec257e7bdec65fc9b19b37b632d93aba743dca85"
   },
   "deer-L0|beipack": {
-   "sha256": "b2c16cb11647044b5a235a2a2da20760f7a170afe6efeae38f93f2e070f3c161"
+   "sha256": "c8a95775a9d381db8fe882fce016cde5b3c1f3a9155d71e074ccec435c9efdf1"
   },
   "deer-L1|fell|wolf": {
    "meshes": 1,
@@ -1556,233 +1556,119 @@
   "deer-L1|beipack": {
    "sha256": "1be2f636f006c36286b27b35d7905fcc41d36ea2eac5641b54f039fb4e012372"
   },
-  "mensch-L0|skin|torso": {
-   "meshes": 1,
-   "verts": 11641,
-   "tris": 18592,
-   "sha256": "0a92226af219b6d2fe62f955875fe0b3e86ab8209191912ad07cc94a92a8cb8f"
-  },
-  "mensch-L0|dark|torso": {
-   "meshes": 1,
-   "verts": 2835,
-   "tris": 4680,
-   "sha256": "46fa72f9c36ba03eedfc169d14d82beb948e2b97a0329c32a7678aa1321a2db7"
-  },
-  "mensch-L0|skin|arm-1": {
-   "meshes": 1,
-   "verts": 1260,
-   "tris": 2080,
-   "sha256": "30825adbc5674aec6074a53f1bd4dd98fb5862016bdb65f772f8485b8f102502"
-  },
-  "mensch-L0|joint|arm-1": {
-   "meshes": 1,
-   "verts": 315,
-   "tris": 520,
-   "sha256": "9d1071cadc99dcb8d7ab04bdad3ffe639d6254756f4e9c82c38a3e3bd6931dd6"
-  },
-  "mensch-L0|skin|elbow-1": {
-   "meshes": 1,
-   "verts": 630,
-   "tris": 1040,
-   "sha256": "c49a2711f0ab61ab4c0a1343bfeba6f85d97eb49467302f7a8fc05933319b948"
-  },
   "mensch-L0|haut|hand-1": {
    "meshes": 1,
-   "verts": 4990,
-   "tris": 9984,
-   "sha256": "b53ec26d06abd963eab4edf1093752a3874de2f773daad050627b960a938ae7c"
-  },
-  "mensch-L0|skin|arm1": {
-   "meshes": 1,
-   "verts": 1260,
-   "tris": 2080,
-   "sha256": "73486761ac90bd0f8366992ca27c5c24eefe1f26463ac2cec02c5d7996341391"
-  },
-  "mensch-L0|joint|arm1": {
-   "meshes": 1,
-   "verts": 315,
-   "tris": 520,
-   "sha256": "455223770babfe6ef55891bcc461b58ffe3043dbe2f290d1358934a1cad093d5"
-  },
-  "mensch-L0|skin|elbow1": {
-   "meshes": 1,
-   "verts": 630,
-   "tris": 1040,
-   "sha256": "472e9d26ece49bbf04f957967c404e14f43e48e8f2b6dbb9cbaa093c275c729d"
+   "verts": 2315,
+   "tris": 4632,
+   "sha256": "3de7558d21d8dfaf8b94668c6a93ff26fac56e8fe324d490e4e8c7d67855077c"
   },
   "mensch-L0|haut|hand1": {
    "meshes": 1,
-   "verts": 4930,
-   "tris": 9860,
-   "sha256": "daced74d5ee465282de0c8eb79f083e7b5fc703eae5f8e500d7d5cd73e4e1b58"
+   "verts": 2287,
+   "tris": 4574,
+   "sha256": "164eef958b8c66846bf21b20f952d89114b0965ab28804d2afc0a0daf090633a"
   },
   "mensch-L0|socket|head": {
    "meshes": 1,
-   "verts": 1260,
-   "tris": 2080,
-   "sha256": "be0326c42cbfd1a36424b52765857bcf958ab3778f2e771dfd532cc7839a9b32"
+   "verts": 468,
+   "tris": 672,
+   "sha256": "c6c13a1f9e1c66b74704ca4651956858e287e971b377d0b3e3bfa787378d6eaf"
   },
   "mensch-L0|eye|eyeL": {
    "meshes": 1,
-   "verts": 315,
-   "tris": 520,
-   "sha256": "a91a1e7f8a6632004a02d41571e1592ad24ede5ac44197ff0562b134e9e8e1b2"
+   "verts": 117,
+   "tris": 168,
+   "sha256": "055dd503155cf5e4f5634b5fcafc9645c820448e60fd1dc68cca6a16440e1f59"
   },
   "mensch-L0|iris|irisL": {
    "meshes": 1,
-   "verts": 315,
-   "tris": 520,
-   "sha256": "93ed6c260ac9043df8ce6da62c769d9f0c90aeba2adc03578ec9f2fe3cd203f6"
+   "verts": 117,
+   "tris": 168,
+   "sha256": "92402522fbc9e8ce613b85038c67e6bd32f5bcea9fec9cf24b61c25fc9959253"
   },
   "mensch-L0|pupil|eyeL": {
    "meshes": 1,
-   "verts": 315,
-   "tris": 520,
-   "sha256": "af8157d0d220cf601be5f63d2b83a604b22da02df694f4a3ca2d7de19db3b466"
+   "verts": 117,
+   "tris": 168,
+   "sha256": "07df5588e5a40840efa910e87c76b1b560fe389b317c4416a68705ffcd49e687"
   },
   "mensch-L0|skin|lidTL": {
    "meshes": 1,
-   "verts": 315,
-   "tris": 520,
-   "sha256": "918b888155ede0778ed0ac0f4c70ee0225959f20aae2194ba7ab31baeae882f2"
+   "verts": 117,
+   "tris": 168,
+   "sha256": "7935bf018ee295d0df78e338c9fe67a643ee701598a2cc25b9b0f4afe840a3cb"
   },
   "mensch-L0|skin|lidBL": {
    "meshes": 1,
-   "verts": 315,
-   "tris": 520,
-   "sha256": "4997194193c1a2a7a6f6f3c0d14217467908f324351a83da56f07b20f198e455"
+   "verts": 117,
+   "tris": 168,
+   "sha256": "4b680e9b570e7d9d09371e869aefb5308b323828db7f5c4ae285eab122d260a8"
   },
   "mensch-L0|eye|eyeR": {
    "meshes": 1,
-   "verts": 315,
-   "tris": 520,
-   "sha256": "80bda6aeb511a36a790b52092dc0923030815fb1cf7372276bf67f3c0ac36cb0"
+   "verts": 117,
+   "tris": 168,
+   "sha256": "1d902a7098658df919491491cc6639722b7a0a42ea993f29d1627e8c08d46d18"
   },
   "mensch-L0|iris|irisR": {
    "meshes": 1,
-   "verts": 315,
-   "tris": 520,
-   "sha256": "e6729b06791da2dbad9fbe619237384dc402e1bcdb107312410de0d274a73ec8"
+   "verts": 117,
+   "tris": 168,
+   "sha256": "92402522fbc9e8ce613b85038c67e6bd32f5bcea9fec9cf24b61c25fc9959253"
   },
   "mensch-L0|pupil|eyeR": {
    "meshes": 1,
-   "verts": 315,
-   "tris": 520,
-   "sha256": "6360c3bf040826e02ca8d0a431ccae166b06e6983188631ec2de1457ab772ff8"
+   "verts": 117,
+   "tris": 168,
+   "sha256": "43889bfb268337229dd1887fa2fb83c5737d784e63abd931d242b22d4e2c6f50"
   },
   "mensch-L0|skin|lidTR": {
    "meshes": 1,
-   "verts": 315,
-   "tris": 520,
-   "sha256": "918b888155ede0778ed0ac0f4c70ee0225959f20aae2194ba7ab31baeae882f2"
+   "verts": 117,
+   "tris": 168,
+   "sha256": "7935bf018ee295d0df78e338c9fe67a643ee701598a2cc25b9b0f4afe840a3cb"
   },
   "mensch-L0|skin|lidBR": {
    "meshes": 1,
-   "verts": 315,
-   "tris": 520,
-   "sha256": "3b5aa4498ac1ea908cf4a5e6185bfd56dfc8ad1518fce57ed5e1a6c373739cfa"
+   "verts": 117,
+   "tris": 168,
+   "sha256": "031059bdb79ef5c2fec7dd77d6351b6db8a01ac0402eeb753200f0b92f0a27c4"
   },
   "mensch-L0|hair|head": {
    "meshes": 1,
-   "verts": 9016,
-   "tris": 4628,
-   "sha256": "7a46f2b7f3d0525e2a8490bd1166e90acf991b5fb14ec7fe7c15089aecaf8750"
+   "verts": 4896,
+   "tris": 2568,
+   "sha256": "f2090a3a78f2620615163a3b2800b9e493788428036ffd875f7955f7800f1ed7"
   },
   "mensch-L0|haut|head": {
    "meshes": 1,
-   "verts": 6446,
-   "tris": 12888,
-   "sha256": "de33a990c7748e98f4c83bb055a9a51f659d09dfa7637d1f71fe5a6a984cd853"
-  },
-  "mensch-L0|shorts|mensch": {
-   "meshes": 1,
-   "verts": 945,
-   "tris": 1560,
-   "sha256": "1ec64564d8acd3b992512237ef4a89d563b13515748e4fe089898c942aa9a91a"
-  },
-  "mensch-L0|skin|hip-1": {
-   "meshes": 1,
-   "verts": 1260,
-   "tris": 2080,
-   "sha256": "a1d77a1851130e584a0df7f74f31ae44058991a6ad7c659120afa35ee9cb9db7"
-  },
-  "mensch-L0|joint|hip-1": {
-   "meshes": 1,
-   "verts": 315,
-   "tris": 520,
-   "sha256": "19ffd4af5c131262a2527538582154e01f1f4a6a729a85f6c215d1a2ca401ea6"
-  },
-  "mensch-L0|skin|knee-1": {
-   "meshes": 1,
-   "verts": 630,
-   "tris": 1040,
-   "sha256": "bcca0198f0beeb317156f7506d22314b22a5e64f2d272fd6151b02ff1604be5e"
-  },
-  "mensch-L0|joint|ankle-1": {
-   "meshes": 1,
-   "verts": 315,
-   "tris": 520,
-   "sha256": "089fb1a4a06020f257b3c8fb248babef2f1ad47f4043996e82ac2d783dd00e54"
-  },
-  "mensch-L0|skin|ankle-1": {
-   "meshes": 1,
-   "verts": 3780,
-   "tris": 6240,
-   "sha256": "0115148eba5cfb5ced25689d30a58af01ceab743a8826e9393f71517dff4efee"
-  },
-  "mensch-L0|skin|hip1": {
-   "meshes": 1,
-   "verts": 1260,
-   "tris": 2080,
-   "sha256": "5c54888b1ded8b6239bbd342c68a6e80e5bf20148fff7c95612b46714363e0a8"
-  },
-  "mensch-L0|joint|hip1": {
-   "meshes": 1,
-   "verts": 315,
-   "tris": 520,
-   "sha256": "c5840935b40c60d237d9a7dee816c446e3a7129030a18d02825f8909070f3903"
-  },
-  "mensch-L0|skin|knee1": {
-   "meshes": 1,
-   "verts": 630,
-   "tris": 1040,
-   "sha256": "c8d72e307f54bf7c4cbfef540596ca7673cdb3c27d0d9e7358a021e02e37834a"
-  },
-  "mensch-L0|joint|ankle1": {
-   "meshes": 1,
-   "verts": 315,
-   "tris": 520,
-   "sha256": "089fb1a4a06020f257b3c8fb248babef2f1ad47f4043996e82ac2d783dd00e54"
-  },
-  "mensch-L0|skin|ankle1": {
-   "meshes": 1,
-   "verts": 3780,
-   "tris": 6240,
-   "sha256": "5c10e1aef71442b46e0334b4020b4b178a5f3fd334b70ed8581908509c75187a"
+   "verts": 3482,
+   "tris": 6960,
+   "sha256": "e48d24265993574fa084061daf3713939a4afbf5fc1b5d1e05b96c0bfca62cd9"
   },
   "mensch-L0|haut|mensch": {
    "meshes": 1,
-   "verts": 16746,
-   "tris": 33500,
-   "sha256": "d2ba3c6dbf042af696ef6ac593902ce578c8ae0929ef713683fd85fb488daba1"
+   "verts": 1342,
+   "tris": 2494,
+   "sha256": "40a96a5e9dc45b4c0b71080f380dfcc060491c9906531224223cc1039053ce78"
   },
   "mensch-L0|stoff_233047|mensch": {
    "meshes": 1,
-   "verts": 7435,
-   "tris": 14864,
-   "sha256": "24ff56b1972090e6fd6a65297613e50d0df2dfa67e57e53c1ca8070a8d302434"
+   "verts": 4091,
+   "tris": 7884,
+   "sha256": "b3e887a9d12ea7843f2974b5c685dca04a16f4c77a950a842e3691954388ccc4"
   },
   "mensch-L0|stoff_2a2c30|mensch": {
    "meshes": 1,
-   "verts": 6644,
-   "tris": 13308,
-   "sha256": "40967bfc85be137d3f859d08856d827c80a5b14257af5301628a78e6dfa3ee0b"
+   "verts": 3589,
+   "tris": 7052,
+   "sha256": "82f3b24fc8e2480cacff95240fd89d875f7a7f15f2c525a296cd348c50cd782d"
   },
   "mensch-L0|stoff_e8e6e0|mensch": {
    "meshes": 1,
-   "verts": 1598,
-   "tris": 3188,
-   "sha256": "d670ecba077041fab98e514b3416be4b1d1a1e5c1e478ca1a2a6b4e17ade5c76"
+   "verts": 743,
+   "tris": 1478,
+   "sha256": "c4d8ecf18bb53c82e8f2653055660a4c3385d8f781349045f1ea89ede8f69676"
   },
   "mensch-L0|gelenk|mensch": {
    "sha256": "bb95e2730d1cdaf22c266a3abd6c293dd5a259ec39a98c2144136da26b7cff85"
@@ -1791,7 +1677,7 @@
    "sha256": "6353e6ecb609476ec06763353994fd8ccf326b0457e377fa6c28464fde6004eb"
   },
   "mensch-L0|gelenk|head": {
-   "sha256": "413eccc0927190fd3bf13c255e30e6b92b6925c9598bccaf1c94a2154028173e"
+   "sha256": "af664e9f67e919997ff8ac7aa3abf1c4591e03e1450afd6ac725f21eb4f9c28d"
   },
   "mensch-L0|gelenk|arm1": {
    "sha256": "3a97d53222fac5523bb16c50dba4c93fef5817df6ce04aec55830f9d5cd54aca"
@@ -1830,121 +1716,103 @@
    "sha256": "5886d892229569ba53bdd4ddacfd2efb2d944a9e9878258faa3d60e13634fbba"
   },
   "mensch-L0|gelenk|irisL": {
-   "sha256": "a4aa178494c006715545c6b4d32192419ebff0065979c97c67c6be556a9cf001"
+   "sha256": "51c4ed6aeb97bcfadf5e72f9bc69fe38fd96695543018228b68f65d40f7ca7b7"
   },
   "mensch-L0|gelenk|irisR": {
-   "sha256": "28808b44aa6be8f06a3bf610b6486534b3ba03b11b5290a1328d4c40db77090c"
+   "sha256": "cb9dbf1ed6a1589ed19fe03cf387eeef37054918ed140ca8e0af1730358423ca"
   },
   "mensch-L0|gelenk|lidTL": {
-   "sha256": "8a098de8d533e34e858182db15dda7b88c362eb1bea5bd8f5f1a941c0b585726"
+   "sha256": "64b8a864e049714ac94dccca179b75cfb44f5d70c8b04f658c702c736deacb8d"
   },
   "mensch-L0|gelenk|lidTR": {
-   "sha256": "5c0bbed07ded252132b23de992581c38a57d640860cd2c79adadd44a4a542d5d"
+   "sha256": "e0027eb3251ed3294b1bc4d19da07b81e0be93f92dc46cf91c2efbe241a38b0e"
   },
   "mensch-L0|gelenk|lidBL": {
-   "sha256": "f7baa2f572cc4738e0025613150b8cc68e95732260a85ca8e484b19bc0e6df03"
+   "sha256": "6414242f11bdb8f4d4065808be397a8d1e6a737443b53de15f157c4e8f3d80aa"
   },
   "mensch-L0|gelenk|lidBR": {
-   "sha256": "9e8c8ab288fd3d7fa20f04a3c115638410408c05234597e4ac94f20616f847f7"
+   "sha256": "c26af06e50a0dccc57ca69d05e476f5cdc5bb7b70bc0bb81f90e00a188e477ed"
   },
   "mensch-L0|gelenk|eyeL": {
-   "sha256": "2d9c34372f1a50d9741e04c5ae89e4c0fd1bd4398c827c88993ded980aa76e59"
+   "sha256": "60f9be1230d6a39e52240ed2e8b58bfcbe006194fc5f17cfbba2813c25e5bfba"
   },
   "mensch-L0|gelenk|eyeR": {
-   "sha256": "f268454160e8cccdc67d4f18c619c40835a8ae17a70f0cef983dfd5a6772bccd"
+   "sha256": "8aa0fa4838f6a5c36fd6d66780d5466901f9876efe2065e26f655a14f2543532"
   },
   "mensch-L0|beipack": {
-   "sha256": "c2591871b8e7dce248e709569484f4228912372e04d55f42eb1bdb33dd3430d1"
+   "sha256": "598e578e398e60056e285dd98e14facd0c20e47d3c4ab5540e78b662527fa4df"
   },
   "mensch-L1|skin|mensch": {
    "meshes": 1,
-   "verts": 10718,
-   "tris": 12592,
-   "sha256": "983902e5d685503d31df95e9decd247d33eebad976625c1fced9bf2aed902f33"
-  },
-  "mensch-L1|dark|mensch": {
-   "meshes": 1,
-   "verts": 567,
-   "tris": 720,
-   "sha256": "2a9cd27d2dddc7f5fa76333272b2860e8c7dbfab4b1b332887bc1fbf42c4945e"
-  },
-  "mensch-L1|joint|mensch": {
-   "meshes": 1,
-   "verts": 378,
-   "tris": 480,
-   "sha256": "b30800fd2cd2e06a938069b68ce7c6625b1f53e34036af5808bbdbbc2b80a50e"
+   "verts": 5209,
+   "tris": 5784,
+   "sha256": "4e5ee2630352eb8a34606e84830f89b92852fc6d814da6910879f1dca7b0352a"
   },
   "mensch-L1|socket|mensch": {
    "meshes": 1,
    "verts": 252,
    "tris": 320,
-   "sha256": "b07dd517b32d6797444a9d5c5f884a7ad4a196e51cfa7bc8dccc808185e2e866"
+   "sha256": "e1fad3e31681b37f1bc0a7012bcff25edb78b52e506c24ddd888139e3e033801"
   },
   "mensch-L1|eye|mensch": {
    "meshes": 1,
    "verts": 126,
    "tris": 160,
-   "sha256": "d9c9fdd81eb9fb9dd9f1c8e3c029c47428044dea7cf8eba3d6baabe876fa2360"
+   "sha256": "46c879312f04d46780d5e65ac95a0d8a79d7a3723f7523a2f5c209c6216b2d87"
   },
   "mensch-L1|iris|mensch": {
    "meshes": 1,
    "verts": 126,
    "tris": 160,
-   "sha256": "6e00dad43bdb846da43d65a256ee8d0fe82067237831ce8daf02ef5d5f9f0023"
+   "sha256": "160c470432718834776e49b009d070c34d2f99d0a26b886ca554acffbfd6c3b5"
   },
   "mensch-L1|pupil|mensch": {
    "meshes": 1,
    "verts": 126,
    "tris": 160,
-   "sha256": "c16fdff0e7fb8b51be12350d4b0741cd0d089f2dc7b12e2fb1ac37e163c49cb5"
+   "sha256": "363ba8902f18fd5d203092cef078de7fcdb105b3ffad00efd3d59a46195e1a22"
   },
   "mensch-L1|shadow|mensch": {
    "meshes": 1,
    "verts": 143,
    "tris": 128,
-   "sha256": "3d78e0b8161b9f660570d2b4c4613ada8d3d4d4c75fb77ba3cc75d4e1fe6ebc1"
+   "sha256": "947105b4e18cd5fb06b91718cac78034ed921f926d273e930aa084d76612a78b"
   },
   "mensch-L1|lips|mensch": {
    "meshes": 1,
    "verts": 126,
    "tris": 160,
-   "sha256": "f71ad625c4acd31d16f612fdc8b0352b16f50a4070a351cd45249fffde61fc59"
+   "sha256": "616052238dc31940fa3eeddfa0f1b07c9ba41be58626fb76fa4a310505368f7c"
   },
   "mensch-L1|hair|mensch": {
    "meshes": 1,
-   "verts": 400,
-   "tris": 240,
-   "sha256": "f56bdcd651b87f3b5e37a239fecc5dba07e20124d64cca9a4529063e24ca202b"
-  },
-  "mensch-L1|shorts|mensch": {
-   "meshes": 1,
-   "verts": 189,
-   "tris": 240,
-   "sha256": "5281ead2bac70bdb6734d74b6e009a3ed2b6495be5a35b0c6bf4f22ccb0f80b8"
+   "verts": 463,
+   "tris": 320,
+   "sha256": "13b7313cb72bad03b02e8cde8409ec827f05683fba0b6e945fcdb62d0aa3213e"
   },
   "mensch-L1|haut|mensch": {
    "meshes": 1,
-   "verts": 5988,
-   "tris": 11972,
-   "sha256": "303a492e72a91c000681fd015c58b3a4e972ea92c8144149e4628a8c86600b48"
+   "verts": 569,
+   "tris": 1018,
+   "sha256": "9ced87032b222bc00bb194c961db50d361a2ca4a4926e34cee1b48009ca430e1"
   },
   "mensch-L1|stoff_233047|mensch": {
    "meshes": 1,
-   "verts": 2706,
-   "tris": 5408,
-   "sha256": "d6c769e80773b4c86de2c1e19df118b61a36ed68ee6fcf20e210e33c6fb51749"
+   "verts": 1439,
+   "tris": 2699,
+   "sha256": "6d221b36b5cfd028c2e2f1a7c391677154ea50cf8ba9d0d08aed0d830d8c5e02"
   },
   "mensch-L1|stoff_2a2c30|mensch": {
    "meshes": 1,
-   "verts": 2172,
-   "tris": 4340,
-   "sha256": "78f375577ac58157351d626ade792d573db09e7c57f33527a31aeb057ef225bd"
+   "verts": 1253,
+   "tris": 2444,
+   "sha256": "c4e014971dd0b2aa74b52b8dd17c54387df37f2ac5d558fbc3751bb7fcf46fd4"
   },
   "mensch-L1|stoff_e8e6e0|mensch": {
    "meshes": 1,
-   "verts": 686,
-   "tris": 1364,
-   "sha256": "a74c566f75a0c693441eecec134fad944884946f71f1663d6c1f3fbc4ed300e1"
+   "verts": 326,
+   "tris": 644,
+   "sha256": "0e7ba6bbc5607d3c00ad9cb5e325c61999c72c9803e5136dd0001ab7aca643b8"
   },
   "mensch-L1|gelenk|mensch": {
    "sha256": "bb95e2730d1cdaf22c266a3abd6c293dd5a259ec39a98c2144136da26b7cff85"
@@ -1953,7 +1821,7 @@
    "sha256": "6353e6ecb609476ec06763353994fd8ccf326b0457e377fa6c28464fde6004eb"
   },
   "mensch-L1|gelenk|head": {
-   "sha256": "413eccc0927190fd3bf13c255e30e6b92b6925c9598bccaf1c94a2154028173e"
+   "sha256": "af664e9f67e919997ff8ac7aa3abf1c4591e03e1450afd6ac725f21eb4f9c28d"
   },
   "mensch-L1|gelenk|arm1": {
    "sha256": "3a97d53222fac5523bb16c50dba4c93fef5817df6ce04aec55830f9d5cd54aca"
@@ -1992,31 +1860,31 @@
    "sha256": "5886d892229569ba53bdd4ddacfd2efb2d944a9e9878258faa3d60e13634fbba"
   },
   "mensch-L1|gelenk|irisL": {
-   "sha256": "a4aa178494c006715545c6b4d32192419ebff0065979c97c67c6be556a9cf001"
+   "sha256": "51c4ed6aeb97bcfadf5e72f9bc69fe38fd96695543018228b68f65d40f7ca7b7"
   },
   "mensch-L1|gelenk|irisR": {
-   "sha256": "28808b44aa6be8f06a3bf610b6486534b3ba03b11b5290a1328d4c40db77090c"
+   "sha256": "cb9dbf1ed6a1589ed19fe03cf387eeef37054918ed140ca8e0af1730358423ca"
   },
   "mensch-L1|gelenk|lidTL": {
-   "sha256": "8a098de8d533e34e858182db15dda7b88c362eb1bea5bd8f5f1a941c0b585726"
+   "sha256": "64b8a864e049714ac94dccca179b75cfb44f5d70c8b04f658c702c736deacb8d"
   },
   "mensch-L1|gelenk|lidTR": {
-   "sha256": "5c0bbed07ded252132b23de992581c38a57d640860cd2c79adadd44a4a542d5d"
+   "sha256": "e0027eb3251ed3294b1bc4d19da07b81e0be93f92dc46cf91c2efbe241a38b0e"
   },
   "mensch-L1|gelenk|lidBL": {
-   "sha256": "f7baa2f572cc4738e0025613150b8cc68e95732260a85ca8e484b19bc0e6df03"
+   "sha256": "6414242f11bdb8f4d4065808be397a8d1e6a737443b53de15f157c4e8f3d80aa"
   },
   "mensch-L1|gelenk|lidBR": {
-   "sha256": "9e8c8ab288fd3d7fa20f04a3c115638410408c05234597e4ac94f20616f847f7"
+   "sha256": "c26af06e50a0dccc57ca69d05e476f5cdc5bb7b70bc0bb81f90e00a188e477ed"
   },
   "mensch-L1|gelenk|eyeL": {
-   "sha256": "2d9c34372f1a50d9741e04c5ae89e4c0fd1bd4398c827c88993ded980aa76e59"
+   "sha256": "60f9be1230d6a39e52240ed2e8b58bfcbe006194fc5f17cfbba2813c25e5bfba"
   },
   "mensch-L1|gelenk|eyeR": {
-   "sha256": "f268454160e8cccdc67d4f18c619c40835a8ae17a70f0cef983dfd5a6772bccd"
+   "sha256": "8aa0fa4838f6a5c36fd6d66780d5466901f9876efe2065e26f655a14f2543532"
   },
   "mensch-L1|beipack": {
-   "sha256": "88ff4b4fa9287c289d79cda8bf2de6801f51c3b4bd81ea64358ad12340affb7d"
+   "sha256": "6c8e71330cf1468f5adf37f00a4a6b8efc759a3e6cf1f33d8b1f3687eed14a52"
   }
  }
 }

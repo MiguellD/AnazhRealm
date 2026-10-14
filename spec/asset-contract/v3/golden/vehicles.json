@@ -52,6 +52,31 @@
       "vertices": 29272,
       "sha256": "4638ecb7e9e18eb9bc8d62d3143d19a33c86d6865f826a598a508db1c063b590"
     },
+    "gt-s7-L1": {
+      "objects": 328,
+      "vertices": 13094,
+      "sha256": "b22e712b4ad33e47b0a1a10ea40ae70a2d87a3e3680fc73a8696034c3d6a7f18"
+    },
+    "supersport-s7-L1": {
+      "objects": 328,
+      "vertices": 12976,
+      "sha256": "538e1d843e76de3ce3b0f621a0618f1ba03a5158add95003561dcaf1ed75bb7d"
+    },
+    "limousine-s7-L1": {
+      "objects": 344,
+      "vertices": 13372,
+      "sha256": "57be54e7294d60b29564d8d48793d24a15080a501c8531181d0bd67651619680"
+    },
+    "kompakt_fwd-s7-L1": {
+      "objects": 359,
+      "vertices": 13664,
+      "sha256": "6952118c497537a97ba076b618492c77d81c8c1513187733be12cb32405fb270"
+    },
+    "suv-s7-L1": {
+      "objects": 355,
+      "vertices": 14020,
+      "sha256": "a582f0b4102a337420b886452f23c17f49652f4aeb158896950f1f87da82eb5a"
+    },
     "gt-s7-L0-ov_toro": {
       "objects": 387,
       "vertices": 29065,

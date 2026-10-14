@@ -34,7 +34,9 @@
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const STAND = require("./lib/stand-linse.cjs");
+const stammLib = require("./lib/stamm.cjs");
 
 const urteil = (b) => STAND.standUrteil(b);
 
@@ -268,9 +270,8 @@ function selbsttest() {
 // und `_scatterRegionWork` (der Hauptpfad von `_scatterRegion`) beim Namen; jede Form eines Schreibers und jeder ungedeckte
 // Pfad wird gefunden; Anlage, Wecker-Ruf, gedeckter Helfer, Eigner-Takt und Leser bleiben grün.
 function schreiberSelbsttest(fehler) {
-    const fs = require("fs");
     const path = require("path");
-    const stamm = fs.readFileSync(path.join(__dirname, "..", "anazhRealm.js"), "utf8");
+    const stamm = stammLib.text(path.join(__dirname, ".."));
     const wand = STAND.schreiberWand(stamm);
     const wv = STAND.schreiberUrteil(wand);
     const zahl = Object.entries(wand.schreiber)
@@ -463,44 +464,18 @@ if (process.argv.includes("--selftest")) {
     process.exit(0);
 }
 
-const puppeteer = require("puppeteer");
-const http = require("http");
-const fs = require("fs");
 const path = require("path");
 
 const root = path.resolve(__dirname, "..");
 const PORT = Number(process.env.STAND_TAKT_PORT) || 4528;
 const { messort } = require("./lib/welt-orte.cjs");
 const MESS = messort("wiese");
-const mime = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".json": "application/json",
-    ".css": "text/css",
-    ".woff2": "font/woff2",
-    ".png": "image/png",
-    ".wasm": "application/wasm",
-};
-const server = http.createServer((req, res) => {
-    let p = req.url.split("?")[0];
-    if (p === "/") p = "/index.html";
-    const fp = path.join(root, p);
-    if (!fp.startsWith(root)) return ((res.statusCode = 403), res.end());
-    fs.readFile(fp, (err, data) => {
-        if (err) return ((res.statusCode = 404), res.end());
-        res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-        res.end(data);
-    });
-});
+const server = statikServer();
 
 (async () => {
     console.log("=== STAND-TAKT (Welle K) — Null-Renderer, Mess-Wiese, die Stand-Linse je Frame ===");
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await puppeteer.launch({
-        headless: "new",
-        protocolTimeout: 600000,
-        args: ["--no-sandbox", "--disable-gpu"],
-    });
+    const browser = await starteBrowser({ art: "null", frist: 600000 });
     const page = await browser.newPage();
     page.setDefaultTimeout(580000);
     const pageErrors = [];
@@ -833,7 +808,7 @@ const server = http.createServer((req, res) => {
         process.exit(1);
     }
     befund.pageErrors = pageErrors;
-    befund.schreiber = STAND.schreiberWand(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8"));
+    befund.schreiber = STAND.schreiberWand(stammLib.text(root));
     const namen = Object.keys(STAND.TAKTE);
     const zeile = (n, x) =>
         `  ${n.padEnd(8)} ${x.frames} Frames · Σ ${x.summe} Einheiten · ` +

@@ -2,21 +2,12 @@
 // bei lebender Foundry rendert KEIN Baum die Grammatik-Geometrie (der „83 batched-174k-Bäume"-Nachbau ist weg).
 // Der Scatter trägt Bäume UND Fels/Kiesel als Studio-Asset (fscatter:*); die Grammatik erscheint nur für
 // wirklich ungemappte Arten. Selbst-assertierend: ein Grammatik-BAUM in den Instanz-Gruppen → exit 1.
-const puppeteer = require("puppeteer");
-const http = require("http");
-const fs = require("fs");
-const path = require("path");
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const PORT = Number(process.env.TREEBUILDER_PORT || 4511);
-const root = path.resolve(__dirname, "..");
-const mime = { ".html": "text/html", ".js": "application/javascript", ".wasm": "application/wasm", ".json": "application/json", ".css": "text/css", ".png": "image/png" };
-const server = http.createServer((req, res) => {
-    let p = req.url.split("?")[0]; if (p === "/") p = "/index.html";
-    const fp = path.join(root, p); if (!fp.startsWith(root)) { res.statusCode = 403; return res.end(); }
-    fs.readFile(fp, (err, data) => { if (err) { res.statusCode = 404; return res.end(); } res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream"); res.end(data); });
-});
+const server = statikServer();
 (async () => {
     await new Promise((r) => server.listen(PORT, r));
-    const browser = await puppeteer.launch({ headless: true, protocolTimeout: 180000, args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--no-sandbox", "--disable-setuid-sandbox"] });
+    const browser = await starteBrowser({ art: "webgl", frist: 180000 });
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(() => { window.__anazhHeadlessNullRenderer = true; });
     page.on("pageerror", (e) => console.log("[ERR]", (e.stack || e.message).split("\n")[0]));

@@ -33,7 +33,7 @@ const law = (name, present, cond, detail) => {
     }
 };
 
-const anazhNC = stripComments(read("anazhRealm.js"));
+const anazhNC = stripComments(require("./lib/stamm.cjs").text(ROOT));
 const foundryNC = stripComments(read("foundry-core.js"));
 const pkg = read("package.json");
 
@@ -155,10 +155,12 @@ law(
     "die v36-Rahmenformel lebt wieder als Kopie im Monolithen"
 );
 const phytogenNC = stripComments(read("worlds/terrain/phytogenesis.js"));
+// Die Foundry-Brücke (K42): der Bau-Teil der Pflanzen-Shell — der Studio-Bäcker und die Asset-Kanäle leben dort.
+const brueckeNC = stripComments(read("foundry-bruecke.js"));
 law(
-    "das Studio liest DENSELBEN Rahmen (`__phytoCore.impostorFrame` in bakeImpostorAtlas)",
+    "das Studio liest DENSELBEN Rahmen (`__phytoCore.impostorFrame` in bakeImpostorAtlas, foundry-bruecke)",
     true,
-    /__phytoCore\.impostorFrame\(/.test(phytogenNC)
+    /__phytoCore\.impostorFrame\(/.test(brueckeNC)
 );
 law(
     "der Bäcker-Spec lebt als Daten in foundry-core (`impostor: { views:`)",
@@ -319,7 +321,7 @@ law(
     law(
         "N2: die Bruecke traegt KEIN Kern-spezifisches ns-Literal mehr (self.__vehicleCore)",
         false,
-        /self\.__vehicleCore/.test(phytogenNC),
+        /self\.__vehicleCore/.test(brueckeNC + phytogenNC),
         "ein Kern-spezifischer ns-Zugriff ist zurueck in der Bruecke"
     );
 }
@@ -336,7 +338,7 @@ law(
 //      Alt-Tuft-Nachbau = Fail-Open); der Bauer verbucht „leer" VOR dem Tuft-Fallback. Der
 //      Tuft-SCHNITT ist N7.3-gebunden (die Gras-Bänder üben den foundry-off-Pfad) — bis dahin
 //      wacht diese Wand + die Zensus-Klasse in gate:asset-inventory.
-// N4.4 die Impostor-Entscheidung ist eine POLICY-ZEILE (`impostor: true` — tree/shrub/gate/
+// N4.4 die Impostor-Entscheidung ist eine POLICY-ZEILE (`impostor: true` — tree/shrub/
 //      vehicle [V18.477 Fahrzeug-Fernstufe, gate:fahrzeug-fern wacht]), kein kind-Literal in
 //      `_foundryPresetIsTree`; rock/flower/grass impostorn fail-closed nicht.
 console.log("\nGesetz N4 — die Instance-Straße (eine Naht · mp führt · Tuft-Wand · Impostor als Daten):");

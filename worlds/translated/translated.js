@@ -335,14 +335,10 @@
         pos.needsUpdate = true;
     }
 
-    function applyDsl(program) {
-        if (!Array.isArray(program) || typeof program[0] !== "string") return;
-        if (program[0] === "chain") {
-            for (let i = 1; i < program.length; i++) applyDsl(program[i]);
-            return;
-        }
+    // Das Programm (chain, Einzelwort) zerlegt die Brücke der Hülle; hier wirkt das Wort.
+    function wort(w) {
         try {
-            applyEffect(program[0]);
+            applyEffect(w);
         } catch (err) {
             showFallback("Übersetzte Welt: Befehl fehlgeschlagen — " + (err && err.message));
         }
@@ -412,18 +408,17 @@
 
     requestAnimationFrame(frame);
 
-    // --- postMessage-Handshake mit der Heimat-Welt ---
+    // --- Die Brücke zur Heimat: die der Hülle (../huelle/huelle.js, K41) ---
+    // Die übersetzte Welt meldet KEIN eigenes Manifest (ihr DSL-Vokabular kommt aus dem portalMeta der Heimat — Stufe
+    // „übersetzt"); die ready signalisiert nur ihre Bereitschaft. Die Szene reist im enter und wird EINMAL gebaut.
     let sceneBuilt = false;
-    window.addEventListener("message", (event) => {
-        if (event.source !== window.parent) return;
-        const msg = event.data;
-        if (!msg || typeof msg !== "object") return;
-        if (msg.type === "enter") {
-            const avatar = msg.avatar && typeof msg.avatar === "object" ? msg.avatar : {};
+    window.AnazhHuelle.bruecke({
+        welt: "translated",
+        wort,
+        enter: (avatar, msg) => {
             const name = typeof avatar.name === "string" && avatar.name ? avatar.name : "Reisender";
             const el = document.getElementById("avatar-name");
             if (el) el.textContent = avatar.fingerprint ? name + " · " + avatar.fingerprint : name;
-            // Die Szene EINMAL aufbauen (enter kommt zweimal: ready + load).
             if (!sceneBuilt && msg.scene) {
                 sceneBuilt = true;
                 try {
@@ -432,21 +427,6 @@
                     showFallback("Übersetzte Welt: Szenen-Aufbau fehlgeschlagen — " + (err && err.message));
                 }
             }
-        } else if (msg.type === "dsl") {
-            applyDsl(msg.program);
-        }
+        },
     });
-
-    window.addEventListener("keydown", (event) => {
-        if (event.key === "Escape" && window.parent && window.parent !== window) {
-            window.parent.postMessage({ type: "exit", world: "translated" }, "*");
-        }
-    });
-
-    // Der ready-Handshake: die übersetzte Welt meldet KEIN eigenes Manifest
-    // (ihr DSL-Vokabular kommt aus dem portalMeta der Heimat — Stufe
-    // „übersetzt"); sie signalisiert nur ihre Bereitschaft.
-    if (window.parent && window.parent !== window) {
-        window.parent.postMessage({ type: "ready", world: "translated" }, "*");
-    }
 })();

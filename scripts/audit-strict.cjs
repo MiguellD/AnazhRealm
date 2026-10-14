@@ -25,13 +25,13 @@
 // Lauf via `npm run audit:strict`. Strikter als playtest (auch warnings
 // werden zu exits).
 
+const { starteBrowser } = require("./lib/welt-boot.cjs");
 const { spawn } = require("child_process");
 const fs = require("fs");
 const path = require("path");
-const puppeteer = require("puppeteer");
+const stammLib = require("./lib/stamm.cjs");
 
 const ROOT = path.resolve(__dirname, "..");
-const SOURCE_JS = path.join(ROOT, "anazhRealm.js");
 const INDEX_HTML = path.join(ROOT, "index.html");
 
 let failures = [];
@@ -97,7 +97,7 @@ function auditCssVariables() {
 // ============================================================
 function auditSoftDefaults() {
     console.log("\n=== Soft-Default-Audit ===");
-    const src = fs.readFileSync(SOURCE_JS, "utf8");
+    const src = stammLib.text(ROOT);
     const checks = [
         {
             literal: "Grok",
@@ -153,9 +153,7 @@ async function auditStateAndMethods() {
         }, 3000);
     });
 
-    const browser = await puppeteer.launch({
-        args: ["--no-sandbox", "--autoplay-policy=no-user-gesture-required"],
-    });
+    const browser = await starteBrowser({ art: "standard", zusatz: ["--autoplay-policy=no-user-gesture-required"] });
     try {
         const page = await browser.newPage();
         page.on("pageerror", (err) => {
@@ -198,7 +196,7 @@ async function auditStateAndMethods() {
             fail("STATE", "window.anazhRealm.state nicht erreichbar");
         } else {
             // Source-Code scannen für this.state.X.Y.Z reads
-            const src = fs.readFileSync(SOURCE_JS, "utf8");
+            const src = stammLib.text(ROOT);
             // Regex für `this.state.X.Y.Z` (max 3 Ebenen, nur einfache Identifier)
             const re = /this\.state\.([a-zA-Z_$][\w$]*(?:\.[a-zA-Z_$][\w$]*){0,2})/g;
             const usedPaths = new Set();
@@ -623,7 +621,6 @@ async function auditStateAndMethods() {
                 "pendingFoliageChunks", // `if (!state.X) … new Set()` / `if (state.X)`
                 "_frameOverBudget", // V18.282 — Frame-über-Budget-Flag (steuert nur Optik), undefined ist falsy
                 "_foliageDensityScale", // V18.277 — Dichte-Faktor, `state.X != null ? : 1`
-                "_foliageResScale", // Subsystem 5 — Laub-Auflösungs-Faktor, `state.X != null ? : MIN`
                 "_foliageMatCache", // V18.288 — geteilte Bewuchs-Materialien, `if (!state.X) state.X = new Map()`
                 "_loopErrorCount", // V18.278 — Loop-Error-Boundary-Zähler, `state.X || 0`
                 "_bootPhase3", // V18.308 — deferierte Boot-Arbeit (Kreaturen), `if (!state.X) return` (in _bootDeferCreatures gesetzt, im Loop gedraint, dann null)
@@ -682,7 +679,7 @@ async function auditStateAndMethods() {
 //      (klang:UMWELT — die Stimme folgt dem Körper, tierRuf).
 function auditAtmosphereHardcode() {
     console.log("\n=== Atmosphäre-Hardcode-Audit ===");
-    const src = fs.readFileSync(SOURCE_JS, "utf8");
+    const src = stammLib.text(ROOT);
     // Methode-Block extrahieren: von `[ATMOSPHERE]`-Kommentar bis zur
     // nächsten Methode (Zeile beginnt mit 4-Space + identifier(args).
     const lines = src.split("\n");

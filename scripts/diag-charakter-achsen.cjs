@@ -22,6 +22,7 @@
 const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 
 const root = path.resolve(__dirname, "..");
 global.THREE = require(path.join(root, "worlds/terrain/lib/three-r128.min.js"));
@@ -85,7 +86,7 @@ const GENRES = Object.keys(KC.PRESETS || {});
 check(`G: klang-core exportiert die Genre-Presets (${GENRES.length})`, GENRES.length >= 20, GENRES.slice(0, 6).join(" · ") + " …");
 
 // ── V: die Welt-Naht (Quell-Proben — Konsum, nicht Existenz) ──
-const stamm = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+const stamm = stammLib.text(root);
 check("V: KIND_CHARAKTER-Tabelle (M8) trägt weapon→TRADITIONEN + vehicle→CULTURES",
     /KIND_CHARAKTER = Object\.freeze/.test(stamm) && /tabelle: "TRADITIONEN"/.test(stamm) && /tabelle: "CULTURES"/.test(stamm));
 check("V: das präge-Verb schreibt den EINEN Regler-Kanal (studioOv)",

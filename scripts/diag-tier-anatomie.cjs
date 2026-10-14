@@ -10,7 +10,9 @@
 //   --selftest: (S1) der Rumpf 1,4× gestreckt → brustTiefe rot · (S2) das Muster einfarbig → kontrast rot ·
 //   (S3) der Maßstab 1 → widerristM rot · (S4) der Hals 1,8× breit → halsBreite rot · (S5) der Kopf in den Hals
 //   geschoben → kopfFrei rot · (S6) die Läufe ohne ihre Fell-Zeilen → beinUnten kahl · (S7) die Wurzel ohne
-//   Deck-Mantel und Rumpf-Zeilen → rumpf kahl. Die Linse feuert, sonst ist sie vakuös.
+//   Deck-Mantel und Rumpf-Zeilen → rumpf kahl · (S8) der Kopf ohne Schalen → Kopf-Fell rot · (S9) die äußerste Schale
+//   kehrt zurück → äußerste rot · (S10) das Kopf-Fell unter der Wolle-Schwelle → Kopf-Fell kahl. Die Linse feuert, sonst
+//   ist sie vakuös.
 // Dazu kopfFrei (Anteil der Kopf-Länge vor der Leib-Haut) und halsBreite (die Leib-Haut auf 60 % Schulter → Kopf).
 // DIE KAHL-LINSE (Integration W5-Körper: die Anatomie-Welle ließ 28 % des Bär-Rumpfs, 87 % seiner Läufe und 34 % des
 // Hirsch-Halses kahl, unbenannt): je Region (rumpf · hals · beinOben · beinUnten · rute — nach dem dominanten Bone
@@ -26,6 +28,7 @@ const ROOT = path.resolve(__dirname, "..");
 const ARTEN = ["wolf", "fox", "bear", "deer"];
 const WOLLE_SCHWELLE = 0.05; // aSchale.y, ab der die inneren Schalen decken (Welt-Material fellSchale)
 const KAHL_MAX = 0.02; // höchster kahler Anteil je Region
+const KOPF_KAHL_MAX = 0.1; // höchster kahler Anteil des Kopf-Fells (das Fell weicht Auge, Nase, Lefze, Zahn und Ohr)
 const BEIN_OBEN = new Set(["flU", "frU", "hlT", "hrT", "legFL", "legFR", "legHL", "legHR"]);
 const BEIN_UNTEN = new Set(["flL", "flP", "frL", "frP", "hlC", "hlP", "hrC", "hrP"]);
 
@@ -89,6 +92,63 @@ function ladeWelt() {
     for (const f of ["worlds/terrain/lib/three-r128.min.js", "phyto-core.js", "koerper-core.js", "tetrapoda-core.js", "foundry-core.js"])
         vm.runInContext(fs.readFileSync(path.join(ROOT, f), "utf8"), sb, { filename: f });
     return sb;
+}
+
+// DIE KOPF-SCHALEN (K28): jede starre Kopf-Haut (Kopf und Kiefer — die Fell-Meshes an headGroup und jawGroup) trägt
+// Schalen im EINEN Stapel: Ecken mit Gewicht 1 an ihrem Gelenk, auf kopfSchalen − 1 Höhen (t = s / kopfSchalen), im Raster
+// des Rumpfs (aSchale.z wie der Leib) und deckend (aSchale.y ≥ die Wolle-Schwelle); im ganzen Stapel fehlt die äußerste Höhe
+// (t = 1 trägt keine Locke); kahl (am Auge, an Nase und Lefze) höchstens KOPF_KAHL_MAX der Ecken. Rot vor K28 (der Kopf glatt, dann 19 Karten): `wolf Kopf-Fell: headGroup trägt keine Schale`.
+function kopfUrteil(sb, art, g) {
+    const v = [];
+    const NK = sb.TIER_FELL.kopfSchalen;
+    const sk = g.userData.__skelett;
+    let schale = null;
+    const haeute = new Set();
+    g.traverse((o) => {
+        if (!o.isMesh) return;
+        const kl = o.material.userData.__klasse;
+        if (kl === "fellSchale") schale = o.geometry;
+        if (kl === "fell" && (o.userData.__assetJoint === "headGroup" || o.userData.__assetJoint === "jawGroup"))
+            haeute.add(o.userData.__assetJoint);
+    });
+    if (!schale) return { v: [`${art} Kopf-Fell: kein Schalen-Stapel`], roh: null };
+    if (!haeute.size) return { v: [`${art} Kopf-Fell: keine Kopf-Haut`], roh: null };
+    const S = schale.attributes.aSchale.array,
+        SI = schale.attributes.skinIndex.array,
+        SW = schale.attributes.skinWeight.array;
+    const je = {};
+    const leibZellen = new Set();
+    let tMax = 0;
+    for (let i = 0; i < S.length / 3; i++) {
+        tMax = Math.max(tMax, S[i * 3]);
+        const jn = SW[i * 4] === 1 ? sk.skinJoints[SI[i * 4]] : null;
+        if (!haeute.has(jn)) {
+            leibZellen.add(S[i * 3 + 2]);
+            continue;
+        }
+        const e = je[jn] || (je[jn] = { n: 0, t: new Set(), zellen: new Set(), kahl: 0 });
+        e.n++;
+        e.t.add(Math.round(S[i * 3] * NK * 1000) / 1000);
+        e.zellen.add(S[i * 3 + 2]);
+        if (!(S[i * 3 + 1] >= WOLLE_SCHWELLE)) e.kahl++;
+    }
+    if (!(tMax < 1 - 1e-6)) v.push(`${art} Schalen: die äußerste Schale (t = ${tMax.toFixed(3)}) ist gegossen`);
+    const roh = {};
+    for (const h of haeute) {
+        const e = je[h];
+        if (!e) {
+            v.push(`${art} Kopf-Fell: ${h} trägt keine Schale`);
+            continue;
+        }
+        roh[h] = e.n;
+        const hoehen = [...e.t].sort((a, b) => a - b);
+        if (hoehen.join() !== Array.from({ length: NK - 1 }, (_, k) => k + 1).join())
+            v.push(`${art} Kopf-Fell: ${h} trägt die Höhen ${hoehen.map((x) => x + "/" + NK).join(" ")} statt 1…${NK - 1}/${NK}`);
+        if (leibZellen.size !== 1 || e.zellen.size !== 1 || [...e.zellen][0] !== [...leibZellen][0])
+            v.push(`${art} Kopf-Fell: ${h} liegt nicht im Raster des Rumpfs`);
+        if (e.kahl > KOPF_KAHL_MAX * e.n) v.push(`${art} Kopf-Fell: ${h} kahl in ${e.kahl} von ${e.n} Ecken (> ${KOPF_KAHL_MAX})`);
+    }
+    return { v, roh };
 }
 
 // Die gebackene Gruppe → Teile in der Ruhe-Pose (Gelenk-Welt aus dem __skelett-Beipack).
@@ -330,6 +390,9 @@ function lauf(sb, opts) {
         m.kahl = kahlAnteile(g);
         for (const [r, x] of Object.entries(m.kahl)) if (!(x <= KAHL_MAX)) u.v.push(`${art} kahl ${r} ${x.toFixed(3)} > ${KAHL_MAX}`);
         u.roh.kahl = m.kahl;
+        const kz = kopfUrteil(sb, art, g);
+        u.v.push(...kz.v);
+        u.roh.kopfFell = kz.roh;
         // die zweite Stufe (die gelenkige Grobstufe) gegen ihre Budget-Zeile
         const g1 = sb.BAKERS_BY_KIND.kreatur(TC, art, 0, 1, null);
         let t1 = 0;
@@ -352,7 +415,7 @@ function zeige(ergebnis) {
             .map(([r, x]) => `${r} ${r3(x)}`)
             .join(" ");
         console.log(
-            `  ${art.padEnd(5)} W ${m.widerristM.toFixed(2)} m · Brust ${r3(m.brustTiefe)} · Aufzug ${r3(m.aufzug)} · Rumpf ${r3(m.rumpf)} · Unterarm ${r3(m.unterarm)} · Kopf ${r3(m.kopfHoehe)} · Ohr ${r3(m.ohr)} · Rute ${r3(m.rute)} · Kopf frei ${r3(m.kopfFrei)} · Hals ${r3(m.halsBreite)} · Kontrast ${r3(m.kontrast)} · Lauf ${r3(m.lauf)} · Spitze ${r3(m.spitze)} · L0 ${m.tris} / L1 ${m.trisL1} Dreiecke · kahl ${kahl}`
+            `  ${art.padEnd(5)} W ${m.widerristM.toFixed(2)} m · Brust ${r3(m.brustTiefe)} · Aufzug ${r3(m.aufzug)} · Rumpf ${r3(m.rumpf)} · Unterarm ${r3(m.unterarm)} · Kopf ${r3(m.kopfHoehe)} · Ohr ${r3(m.ohr)} · Rute ${r3(m.rute)} · Kopf frei ${r3(m.kopfFrei)} · Hals ${r3(m.halsBreite)} · Kontrast ${r3(m.kontrast)} · Lauf ${r3(m.lauf)} · Spitze ${r3(m.spitze)} · Kopf-Fell ${JSON.stringify(m.kopfFell)} · L0 ${m.tris} / L1 ${m.trisL1} Dreiecke · kahl ${kahl}`
         );
     }
 }
@@ -438,6 +501,26 @@ if (process.argv.includes("--selftest")) {
         TC.fellStreu = (P, M, O) => alt(P, M, O).filter((row) => !weg(row));
         const r = lauf(sb);
         TC.fellStreu = alt;
+        pruefe(name, r.fehler, muster);
+    }
+    // S8–S10: das Kopf-Fell (der Stapel nach dem Guss verzerrt — die Kopf-Ecken verlieren ihr Gelenk, eine Ecke steht bei
+    // t = 1, die Kopf-Ecken unter der Wolle-Schwelle)
+    const kopfEcken = (g, f) =>
+        g.traverse((o) => {
+            if (!o.isMesh || o.material.userData.__klasse !== "fellSchale") return;
+            const A = o.geometry.attributes;
+            const sk = g.userData.__skelett;
+            for (let i = 0; i < A.aSchale.count; i++) {
+                const jn = A.skinWeight.array[i * 4] === 1 ? sk.skinJoints[A.skinIndex.array[i * 4]] : null;
+                if (jn === "headGroup" || jn === "jawGroup") f(i, A);
+            }
+        });
+    for (const [name, verzerre, muster] of [
+        ["S8 der Kopf ohne Schalen wird erkannt", (sb2, g) => kopfEcken(g, (i, A) => (A.skinWeight.array[i * 4] = 0.999)), /wolf Kopf-Fell: headGroup trägt keine Schale/],
+        ["S9 die äußerste Schale wird erkannt", (sb2, g) => kopfEcken(g, (i, A) => (A.aSchale.array[i * 3] = 1)), /wolf Schalen: die äußerste Schale/],
+        ["S10 das kahle Kopf-Fell wird erkannt", (sb2, g) => kopfEcken(g, (i, A) => (A.aSchale.array[i * 3 + 1] = 0.01)), /wolf Kopf-Fell: headGroup kahl/],
+    ]) {
+        const r = lauf(ladeWelt(), { verzerre });
         pruefe(name, r.fehler, muster);
     }
     if (rot) {

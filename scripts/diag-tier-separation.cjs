@@ -45,13 +45,9 @@
 // Band 0/1 (aiDiv 1 → Richtungs-Recompute JEDEN Frame, kein Stagger-Drift).
 //   node scripts/diag-tier-separation.cjs
 // ─────────────────────────────────────────────────────────────────────────
-const puppeteer = require("puppeteer");
-const http = require("http");
-const fs = require("fs");
-const path = require("path");
 
-const root = path.resolve(__dirname, "..");
 // Port über TIER_SEPARATION_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4433.
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const PORT = Number(process.env.TIER_SEPARATION_PORT || 4433);
 // (D–F) DAS URTEIL LEIB AN LEIB (0710-4 — pure Funktion, Probe UND Selbst-Test).
 const LEIB_SOLL = { tiefM: -0.05, dvMin: 0.05, verhaeltnis: 0.3, flugFaktor: 3 };
@@ -85,34 +81,11 @@ function leibVerdict(L) {
     if (L.lockstep !== true) v.push(`leib-lockstep: zwei gleiche Proben enden verschieden (${L.lockstepAbw})`);
     return v;
 }
-const mime = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".wasm": "application/wasm",
-    ".json": "application/json",
-    ".css": "text/css",
-    ".woff2": "font/woff2",
-    ".png": "image/png",
-};
-const server = http.createServer((req, res) => {
-    let p = req.url.split("?")[0];
-    if (p === "/") p = "/index.html";
-    const fp = path.join(root, p);
-    if (!fp.startsWith(root)) return ((res.statusCode = 403), res.end());
-    fs.readFile(fp, (err, data) => {
-        if (err) return ((res.statusCode = 404), res.end());
-        res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-        res.end(data);
-    });
-});
+const server = statikServer();
 
 (async () => {
     await new Promise((r) => server.listen(PORT, r));
-    const browser = await puppeteer.launch({
-        headless: "new",
-        protocolTimeout: 300000,
-        args: ["--no-sandbox", "--disable-gpu"],
-    });
+    const browser = await starteBrowser({ art: "null", frist: 300000 });
     const page = await browser.newPage();
     page.setDefaultTimeout(280000);
     let pageErr = null;

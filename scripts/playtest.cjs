@@ -5,8 +5,9 @@
 const { spawn } = require("child_process");
 const fs = require("fs");
 const path = require("path");
-const puppeteer = require("puppeteer");
+const { starteBrowser } = require("./lib/welt-boot.cjs");
 const SK = require("./lib/shader-kosten.cjs");
+const stammLib = require("./lib/stamm.cjs");
 
 // DURATION_MS ist nur der MINDEST-Warmup der zeit-getriebenen Systeme; robust gegen CI-Last macht
 // der count-basierte Pump unten (pumpt, bis die Ziel-Chunks WIRKLICH gebaut sind, statt Timer).
@@ -19437,17 +19438,15 @@ async function checkBandVoxelTerrainCore(ctx) {
                 Math.abs(cL3.dim * cL3.step - 43.2) < 1e-6 &&
                 Math.abs(cL3.dimY * cL3.step - 417.6) < 1e-6;
             const lf = (rr) => r._voxelChunkLodFor(rr, 0, 0, 0);
-            // N3 (Naht §12): der LOD0-Ring ist 5×5 (maxRing 2) → die Cross-LOD-Grenze
-            // sitzt jetzt bei r=2→3 (~100 m), nicht mehr r=1→2 (~50 m).
+            // K51 (die Boden-Stufen): die Nah-Zone ist 3×3 (r≤1 → L0), dann verdoppelt sich der Schritt mit dem Abstand
+            // (r2 → L1, r3–9 → L2, ab r10 → L3)
             out.lodPyramidBands =
                 lf(0) === 0 &&
                 lf(1) === 0 &&
-                lf(2) === 0 &&
-                lf(3) === 1 &&
-                lf(8) === 1 &&
+                lf(2) === 1 &&
+                lf(3) === 2 &&
                 lf(9) === 2 &&
-                lf(10) === 2 &&
-                lf(11) === 3 &&
+                lf(10) === 3 &&
                 lf(12) === 3;
             let lod23Builds = true;
             try {
@@ -19465,32 +19464,27 @@ async function checkBandVoxelTerrainCore(ctx) {
             }
             out.lod23Builds = lod23Builds;
 
-            // V17.114 U1 — die DETAIL-KASKADE: `_detailBand(r)` ist die EINE Quelle,
-            // `_voxelChunkLodFor` liest sie (byte-identisch), die Tabelle ist frozen,
+            // V17.114 U1 — die DETAIL-KASKADE: `_detailBand(r)` ist die EINE Quelle der Distanz-Bänder, die Tabelle ist
+            // frozen; die Stufe des Boden-Netzes liest `_voxelChunkLodFor` aus seiner Kette (`BODEN_STUFEN`, K51),
             // und der Aerial-Schleier (hazeFar) koppelt an die Ring-Kante (§2).
             out.detailBandFn = typeof r._detailBand === "function";
             if (out.detailBandFn) {
                 const b = (rr) => r._detailBand(rr);
-                out.bandLods =
-                    b(0).lod === 0 &&
-                    b(1).lod === 0 &&
-                    b(2).lod === 0 &&
-                    b(3).lod === 1 &&
-                    b(8).lod === 1 &&
-                    b(9).lod === 2 &&
-                    b(10).lod === 2 &&
-                    b(11).lod === 3 &&
-                    b(99).lod === 3;
+                // die Kaskade trägt keine Geometrie-Stufe mehr (ihr Leser zog in die Kette des Bodens, K51)
+                out.bandLods = [0, 2, 3, 8, 9, 10, 11, 99].every((rr) => !("lod" in b(rr)));
+                const BS = r.constructor.BODEN_STUFEN;
+                const kette = (rr) => BS.find((x) => rr <= x.maxRing).lod;
                 out.lodReadsBand =
-                    r._voxelChunkLodFor(0, 0, 0, 0) === b(0).lod && r._voxelChunkLodFor(9, 0, 0, 0) === b(9).lod;
-                // LOD-Hysterese: ein Chunk hält seine feinere LOD im Deadband (r ≤ Band-Grenze +
-                // LOD_HYSTERESIS_RINGS), VERFEINERT aber sofort. Am Grat LOD0(maxRing 2)↔LOD1: r=3/lod0 → 0
-                // (kein Pop), r=4/lod0 → 1, r=2/lod1 → 0, ohne currentLod → reine Band-LOD (lf(3)===1).
+                    Object.isFrozen(BS) &&
+                    [0, 1, 2, 3, 9, 10, 12].every((rr) => r._voxelChunkLodFor(rr, 0, 0, 0) === kette(rr));
+                // LOD-Hysterese: ein Chunk hält seine feinere Stufe im Deadband (r ≤ Stufen-Grenze +
+                // LOD_HYSTERESIS_RINGS), VERFEINERT aber sofort. Am Grat L0(maxRing 1)↔L1: r=2/lod0 → 0
+                // (kein Pop), r=3/lod0 → 2, r=1/lod1 → 0, ohne currentLod → reine Stufe (lf(2)===1).
                 out.lodHysteresis =
-                    r._voxelChunkLodFor(3, 0, 0, 0, 0) === 0 &&
-                    r._voxelChunkLodFor(4, 0, 0, 0, 0) === 1 &&
-                    r._voxelChunkLodFor(2, 0, 0, 0, 1) === 0 &&
-                    r._voxelChunkLodFor(3, 0, 0, 0) === 1 &&
+                    r._voxelChunkLodFor(2, 0, 0, 0, 0) === 0 &&
+                    r._voxelChunkLodFor(3, 0, 0, 0, 0) === 2 &&
+                    r._voxelChunkLodFor(1, 0, 0, 0, 1) === 0 &&
+                    r._voxelChunkLodFor(2, 0, 0, 0) === 1 &&
                     typeof r.constructor.LOD_HYSTERESIS_RINGS === "number";
                 out.cascadeFrozen = Object.isFrozen(r.constructor.DETAIL_CASCADE);
                 // V18.530 — der Dunst koppelt NICHT mehr an den Sicht-Ring (er verbarg die LOD-Naht): die Luft ist
@@ -19542,7 +19536,7 @@ async function checkBandVoxelTerrainCore(ctx) {
             voxelP2bResults.lodPyramidConfig
         );
         check(
-            "N3 (Naht §12): LOD0-Ring 5×5 (r≤2→0, r3-8→1, r9-10→2, r≥11→3) — die Cross-LOD-Grenze in den Fog",
+            "K51 Boden-Stufen: Nah-Zone 3×3 (r≤1→0, r2→1, r3-9→2, r≥10→3) — der Schritt verdoppelt sich mit dem Abstand",
             voxelP2bResults.lodPyramidBands
         );
         check(
@@ -19554,13 +19548,13 @@ async function checkBandVoxelTerrainCore(ctx) {
             voxelP2bResults.detailBandFn === true
         );
         if (voxelP2bResults.detailBandFn) {
-            check("N3 (Naht §12): Kaskaden-Bänder (r≤2→0, r3-8→1, r9-10→2, r≥11→3)", voxelP2bResults.bandLods === true);
+            check("K51: die Detail-Kaskade trägt keine Geometrie-Stufe (kein Feld ohne Leser)", voxelP2bResults.bandLods === true);
             check(
-                "V17.114 U1: _voxelChunkLodFor liest die Kaskade (kein Parallel-Pfad)",
+                "K51: _voxelChunkLodFor liest die EINE Kette des Bodens (BODEN_STUFEN, frozen, kein Parallel-Pfad)",
                 voxelP2bResults.lodReadsBand === true
             );
             check(
-                "N3 (Naht §12): LOD-Hysterese — Verfeinern sofort, Vergröbern erst im Deadband (r > Band-Grenze + LOD_HYSTERESIS_RINGS) → kein Flip-Flop-Pop am Grat",
+                "N3 (Naht §12): LOD-Hysterese — Verfeinern sofort, Vergröbern erst im Deadband (r > Stufen-Grenze + LOD_HYSTERESIS_RINGS) → kein Flip-Flop-Pop am Grat",
                 voxelP2bResults.lodHysteresis === true
             );
             check("V17.114 U1: DETAIL_CASCADE ist frozen (kein Drift)", voxelP2bResults.cascadeFrozen === true);
@@ -21130,12 +21124,8 @@ async function checkBandWelleC3CellularReaction(ctx) {
             window.__codeOf(r._buildVoxelChunkWaterCells)
         );
         // Jede Cell-Index-Berechnung liest die LOD des Chunks, sonst greift dim=24/step=1.8 (LOD 0) auf
-        // einem LOD-1-Chunk (dim=12/step=3.6) out-of-bounds. cfgFor(entry) gilt fürs Terrain; waterCells
+        // einem LOD-1-Chunk (dim=12/step=3.6) out-of-bounds. waterCells
         // leben immer auf LOD 0 → cfgWater.
-        const cfgFor = (chunkEntry) => {
-            const lod = chunkEntry && Number.isFinite(chunkEntry.lod) ? chunkEntry.lod : 0;
-            return r._voxelChunkConfig(lod);
-        };
         const cfgWater = r._voxelChunkConfig(0); // Wasser-Cells immer LOD 0
         // span ist LOD-invariant (43.2 m), darf aus dem Default gelesen werden.
         const span = r._voxelChunkConfig().span;
@@ -21612,9 +21602,9 @@ async function checkBandWellePerf3bDistanceLod(ctx) {
         if (out.hasLodHelper) {
             out.lodNear = r._voxelChunkLodFor(0, 0, 0, 0); // r=0 → LOD 0
             out.lodAdjacent = r._voxelChunkLodFor(1, 0, 0, 0); // r=1 → LOD 0
-            out.lodMidRing = r._voxelChunkLodFor(2, 0, 0, 0); // r=2 → LOD 0 (N3: LOD0-Ring 5×5)
-            out.lodFar = r._voxelChunkLodFor(3, 0, 0, 0); // r=3 → LOD 1 (N3: Grenze bei r=3)
-            out.lodVeryFar = r._voxelChunkLodFor(4, 0, 0, 0); // r=4 → LOD 1
+            out.lodMidRing = r._voxelChunkLodFor(2, 0, 0, 0); // r=2 → LOD 1 (K51: die Nah-Zone ist 3×3)
+            out.lodFar = r._voxelChunkLodFor(3, 0, 0, 0); // r=3 → LOD 2
+            out.lodVeryFar = r._voxelChunkLodFor(4, 0, 0, 0); // r=4 → LOD 2
         }
         // 3) Empirisch: ein streaming-aktiver Chunk hat `entry.lod`. Async-Streaming macht die LOD-
         // Verteilung history-abhängig (Flake) → EINEN LOD-1-Chunk deterministisch bauen (Worker aus →
@@ -21682,9 +21672,9 @@ async function checkBandWellePerf3bDistanceLod(ctx) {
     if (res.hasLodHelper) {
         check("Welle Perf-3.b V9.88: r=0 (Player-Chunk) → LOD 0", res.lodNear === 0);
         check("Welle Perf-3.b V9.88: r=1 (Nachbar-Chunk) → LOD 0", res.lodAdjacent === 0);
-        check("N3 (Naht §12): r=2 (LOD0-Ring 5×5) → LOD 0", res.lodMidRing === 0);
-        check("N3 (Naht §12): r=3 (jenseits des LOD0-Rings) → LOD 1", res.lodFar === 1);
-        check("Welle Perf-3.b V9.88: r=4 (sehr ferner Chunk) → LOD 1", res.lodVeryFar === 1);
+        check("K51 Boden-Stufen: r=2 (jenseits der Nah-Zone 3×3) → LOD 1", res.lodMidRing === 1);
+        check("K51 Boden-Stufen: r=3 → LOD 2", res.lodFar === 2);
+        check("K51 Boden-Stufen: r=4 (sehr ferner Chunk) → LOD 2", res.lodVeryFar === 2);
     }
     check("Welle Perf-3.b V9.88: ≥1 LOD-0-Chunk gestreamt (Nahbereich)", res.lod0Count >= 1);
     check("Welle Perf-3.b V9.88: ≥1 LOD-1-Chunk gestreamt (Fernbereich)", res.lod1Count >= 1);
@@ -22915,7 +22905,7 @@ async function checkBandWellePerf3cPhase3FullMesh(ctx) {
         out.idxMismatches = idxMismatches;
         out.idxBitIdentical = idxMismatches === 0;
         // Colors bit-identisch? Der Worker-Weg ist das Worker-Mesh UND sein Haupt-Thread-Schritt (die Himmels-Sicht und
-        // der Stein unter Fels, `_bodenFarbeUnterFels`, K02a): verglichen wird der FERTIGE Bau beider Wege — vorher las
+        // der Fels-Stoff, `_felsStoff`, K17): verglichen wird der FERTIGE Bau beider Wege — vorher las
         // der Vergleich die rohen Worker-Farben gegen den fertigen Sync-Bau (8 328 Abweichungen am Spawn-Chunk, 0,071).
         // Die Zellen reisen als Kopie (der Bau stempelt sie, der Zellen-Vergleich unten liest die ungestempelten).
         const wFertig = r._buildVoxelChunkDataFromWorkerMesh(
@@ -24710,8 +24700,9 @@ async function checkBandNahStreu(ctx) {
             );
         const ns = r.state.nahStreu;
         // (6) DER STREU-SATZ (W7): die Draw-Einheit ist der STOFF — kein Nah-Streu-Objekt zeichnet selbst, je Stoff EIN
-        // Satz in der Szene (wirft nicht), jede Senke ist ein Studio-Teil (leafKey f:…) ohne Mesh, ihre Blöcke treu
-        // (Σ n = Anzahl, je Block Identitäten und Matrizen), jeder Block mit Pflanzen ein Bereich im Satz ihres Stoffs.
+        // Satz in der Szene (der stehende Stoff wirft, der wiegende nie — 1310-11), jede Senke ist ein Studio-Teil (leafKey f:…)
+        // ohne Mesh, ihre Blöcke treu (Σ n = Anzahl, je Block Identitäten und Matrizen), jeder Block mit Pflanzen ein Bereich im
+        // Satz ihres Stoffs.
         let selbst = 0;
         r.state.scene.traverse((o) => {
             if (o.isMesh && ((o.userData && o.userData.inventar === "streu-klein") || /^streuNah:/.test(o.name || "")))
@@ -24721,12 +24712,15 @@ async function checkBandNahStreu(ctx) {
         for (const [art, satz] of r.state.chunkSaetze || [])
             if (satz.spec.userData.streuSatz) stoffSaetze.set(art, satz);
         const stoffe = new Set([...ns.senken.values()].map((a) => a.mat.uuid));
+        const stehtJe = new Map([...ns.senken.values()].map((a) => [a.satz, !a.wiegt]));
         out.jeStoffEinSatz =
             selbst === 0 &&
             [...ns.senken.values()].every((a) => stoffSaetze.has(a.satz)) &&
             new Set([...stoffSaetze.values()].map((x) => x.spec.mat.uuid)).size === stoffSaetze.size &&
             stoffSaetze.size <= stoffe.size &&
-            [...stoffSaetze.values()].every((x) => x.mesh.parent === r.state.scene && x.mesh.castShadow === false);
+            [...stoffSaetze].every(
+                ([art, x]) => x.mesh.parent === r.state.scene && x.mesh.castShadow === (stehtJe.get(art) === true)
+            );
         out.studioTeile = [...ns.senken.values()].every(
             (a) => a.mesh === undefined && typeof a.leafKey === "string" && a.leafKey.startsWith("f:")
         );
@@ -24792,7 +24786,7 @@ async function checkBandNahStreu(ctx) {
         JSON.stringify(res.wind)
     );
     check(
-        "Nah-Streu (W7): die Draw-Einheit ist der Stoff — je Stoff EIN Streu-Satz in der Szene, keine Senke zeichnet, keiner wirft",
+        "Nah-Streu (W7): die Draw-Einheit ist der Stoff — je Stoff EIN Streu-Satz in der Szene, keine Senke zeichnet, der stehende Stoff wirft, der wiegende nie",
         res.jeStoffEinSatz === true
     );
     check("Nah-Streu: jede Senke ist ein Studio-Teil (leafKey f:…), Daten ohne Mesh", res.studioTeile === true);
@@ -27983,7 +27977,7 @@ async function checkBandWaldbodenKaskade(ctx) {
         const r = window.anazhRealm;
         const out = {};
         const bands = r.constructor.DETAIL_CASCADE;
-        out.kaskadeOhneDeko = bands.every((b) => !("deko" in b) && !("dekoDichte" in b) && Number.isFinite(b.lod));
+        out.kaskadeOhneDeko = bands.every((b) => !("deko" in b) && !("dekoDichte" in b) && Number.isFinite(b.aiDiv));
         const jobs = window.__codeOf(r._buildDeferrableJobs);
         out.loopTicktNahStreu = /_tickNahStreu\(/.test(jobs) && /_tickNahWiese\(/.test(jobs);
         const NS = r.constructor.NAH_STREU;
@@ -27995,7 +27989,7 @@ async function checkBandWaldbodenKaskade(ctx) {
         check("Waldboden-Kaskade: Sonde lief", false, "evaluate warf");
         return;
     }
-    check("Waldboden: DETAIL_CASCADE trägt keine Deko-Bänder mehr (LOD + KI-Takt)", res.kaskadeOhneDeko === true);
+    check("Waldboden: DETAIL_CASCADE trägt keine Deko-Bänder mehr (Ring + KI-Takt)", res.kaskadeOhneDeko === true);
     check("Waldboden: der scatterDeco-Job tickt Nah-Wiese UND Nah-Streu", res.loopTicktNahStreu === true);
     check(
         "Waldboden: die Nah-Streu ist schirm-gebunden (Armlänge < Radius ≤ 40 m, Kachel = n · Zelle)",
@@ -28005,7 +27999,7 @@ async function checkBandWaldbodenKaskade(ctx) {
 
 // A3 — FERNE BINNENGEWÄSSER: Heimat-Region (±1024) unberührt; jenseits liefern lazy Kacheln (2048 m,
 // f(seed, Koordinate) — peer-identisch, egal wann berechnet) Seen · Flüsse · Erosion; eine
-// mitwandernde Region bräche den Determinismus. Voller Beweis: `scripts/diag-ferne-seen.cjs`.
+// mitwandernde Region bräche den Determinismus. Voller Beweis: die Sonde diag-ferne-seen (git-Archiv).
 async function checkBandV18132FerneSeen(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, async () => {
@@ -30888,6 +30882,81 @@ async function checkBandLambda3Wind(ctx) {
     );
 }
 
+// 1310-18 — EIN GRAPH JE SIGNATUR (der Schlüssel geprüft): r184 schlüsselt ein Programm nach der IDENTITÄT seiner Knoten
+// (`customCacheKey` = Knoten-id). Stoffe gleicher Signatur und verschiedener Werte (Regler, Leucht-Maß, Wind der Art, Gestalt
+// und Realm-Fenster des Tors) tragen DENSELBEN Programm-Schlüssel und ihre Werte als Stoff-Wert; verschiedene Signaturen
+// verschiedene. Lauf-Kontrolle: zwei frisch und gleich gebaute Graphen tragen zwei Schlüssel — ohne den geteilten Graphen
+// baute jeder Stoff sein eigenes Programm (1310-17: 43 Foundry-Stoffe, 43 Bauten; 5 Membranen, 5 Bauten).
+async function checkBandStoffSignatur(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const T = window.THREE;
+        const TSL = T.TSL;
+        const k = (m) => m.customProgramCacheKey();
+        const out = {};
+        const a = r._foundryTreeMaterial("unknown", { roughness: 0.41, metalness: 0.1 });
+        const b = r._foundryTreeMaterial("unknown", {
+            roughness: 0.77,
+            metalness: 0.3,
+            emissive: [0.2, 0.1, 0],
+            emissiveIntensity: 2,
+        });
+        const l1 = r._foundryTreeMaterial("unknown", { roughness: 0.5, leucht: 2 });
+        const l2 = r._foundryTreeMaterial("unknown", { roughness: 0.5, leucht: 3.5 });
+        const w1 = r._foundryTreeMaterial("bark", null, false, { ht: 9.5, delta: 0.021, an: 1 });
+        const w2 = r._foundryTreeMaterial("bark", null, false, { ht: 14.25, delta: 0.034, an: 1 });
+        out.regler = a !== b && k(a) === k(b);
+        out.leucht =
+            l1 !== l2 && k(l1) === k(l2) && l1.userData.stoffWerte.leucht === 2 && l2.userData.stoffWerte.leucht === 3.5;
+        out.wind =
+            w1 !== w2 &&
+            k(w1) === k(w2) &&
+            (!w1.positionNode || (w1.userData.windArt.x === 9.5 && w2.userData.windArt.x === 14.25));
+        out.trennt = k(a) !== k(l1) && k(a) !== k(w1);
+        const pc = globalThis.__portaCore;
+        const tor = (n) => {
+            const p = pc.gateParams(pc.PRESETS[n]);
+            return { gestalt: n, p, mu: pc.membranUniforms(p), gesetz: pc.MEMBRAN_GESETZ };
+        };
+        const ta = tor("drachentor");
+        const tb = tor("kathedrale");
+        const ma = r._membranMaterialFor(ta);
+        const mb = r._membranMaterialFor(tb);
+        const fa = ma.mat.userData.tor.w;
+        const fb = mb.mat.userData.tor.w;
+        out.fensterVerschieden = fa.x > 0.001 !== fb.x > 0.001 || fa.w > 0.001 !== fb.w > 0.001;
+        out.membran = k(ma.mat) === k(mb.mat);
+        out.nebel = k(r._nebelMaterialFor(ta, ma.u).mat) === k(r._nebelMaterialFor(tb, mb.u).mat);
+        out.atem = typeof ma.u.time.value === "number" && ma.u !== mb.u;
+        const bau = () => {
+            const m = new T.MeshStandardNodeMaterial();
+            m.colorNode = TSL.vec4(TSL.attribute("color", "vec3").mul(0.5), 1.0);
+            return m;
+        };
+        out.kontrolle = k(bau()) !== k(bau());
+        return out;
+    });
+    check(
+        "1310-18 Schlüssel: Foundry-Stoffe gleicher Signatur, verschiedener Regler tragen EINEN Programm-Schlüssel",
+        res.regler === true
+    );
+    check(
+        "1310-18 Schlüssel: das Leucht-Maß ist ein Stoff-Wert (zwei Maße, EIN Programm-Schlüssel)",
+        res.leucht === true
+    );
+    check("1310-18 Schlüssel: der Wind der Art ist ein Stoff-Wert (zwei Arten, EIN Programm-Schlüssel)", res.wind === true);
+    check("1310-18 Schlüssel: verschiedene Signaturen tragen verschiedene Programm-Schlüssel", res.trennt === true);
+    check(
+        "1310-18 Schlüssel: zwei Tore mit verschiedenen Realm-Fenstern tragen EINE Membran und EINEN Nebel",
+        res.fensterVerschieden === true && res.membran === true && res.nebel === true && res.atem === true
+    );
+    check(
+        "1310-18 Lauf-Kontrolle: zwei frisch und gleich gebaute Graphen tragen zwei Schlüssel (r184 schlüsselt nach Identität)",
+        res.kontrolle === true
+    );
+}
+
 async function checkBandLambda4Streu(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -31015,10 +31084,11 @@ async function checkBandV18177AAA(ctx) {
         out.aoStrength = aer.aoStrength;
         out.aoCap = aer.aoCap;
         out.frozen = Object.isFrozen(aer);
-        // Doppel-Definitions-Wand: kein AKTIVER `static get AERIAL()` in der Klasse; __codeOf strippt die
-        // Kommentare (sie dürfen das Wort zitieren), gesucht wird die echte Method-Definition.
-        const srcNoComments = window.__codeOf(A);
-        out.noGetterShadow = !/static\s+get\s+AERIAL\s*\(/.test(srcNoComments);
+        // Doppel-Definitions-Wand: kein AKTIVER `static get AERIAL()` in der Klasse — gelesen am lebenden Deskriptor,
+        // nie am Klassen-Text (der trüge nach dem Stamm-Schnitt nur den Kern): ein statischer Getter machte AERIAL zum
+        // Accessor, und die §26-Zuweisung liefe im sloppy-Skript still ins Leere.
+        const dAerial = Object.getOwnPropertyDescriptor(A, "AERIAL") || {};
+        out.noGetterShadow = "value" in dAerial && !dAerial.get;
         return out;
     });
     check(
@@ -33994,9 +34064,10 @@ async function checkBandV18201ManaKonsum(ctx) {
             out.schoepferCanPay = r._canPayMana(50) === true; // immer ok
 
             // (K7) Anti-Scope §3: KEIN DSL-Op für Mana-Drain
-            const dslOpsSrc = window.__codeOf(r.constructor).substring(0, 100000);
-            // grobe Probe: kein "drain_mana" oder "consume_mana" als DSL-Op-Key
-            out.noDslDrainMana = !/\bdrain_mana\s*:\s*\(/.test(dslOpsSrc) && !/\bconsume_mana\s*:\s*\(/.test(dslOpsSrc);
+            // die lebende Op-Tafel (nie der Klassen-Text: nach dem Stamm-Schnitt trüge er nur den Kern): kein
+            // "drain_mana" oder "consume_mana" als DSL-Op-Key
+            const dslOps = r.dslEffects || {};
+            out.noDslDrainMana = Object.keys(dslOps).length > 0 && !("drain_mana" in dslOps) && !("consume_mana" in dslOps);
 
             // (K8) Mode-Override per opts: opts.mode overschreibt getGameMode
             if (r.setGameMode) r.setGameMode("pfad");
@@ -37525,12 +37596,18 @@ async function checkBandWahrerAnblickSaeule1(ctx) {
         const G = A.TERRAIN_GEOLOGY;
         out.configFrozen = !!G && Object.isFrozen(G);
         out.slopeOrderRock = !!G && G.rockLo < G.rockHi;
-        out.slopeOrderScree = !!G && G.screeLo < G.screeHi;
-        out.screeBeforeRock = !!G && G.screeLo < G.rockLo;
+        out.slopeOrderScree = !!G && G.schuttGitter > 0 && G.schuttGitter <= 2 * 3.6;
+        out.screeBeforeRock = !!G && G.schuttKandidat < G.rockLo;
+        // Der Fels-Ton ist das Gesetz (K17, gelaende-core `felsBasis` über `FELS_STOFF`), kein Tint der Geologie mehr.
+        const FS = A.FELS_STOFF;
         out.tintsAreRgb =
             !!G &&
-            Array.isArray(G.rockTint) &&
-            G.rockTint.length === 3 &&
+            !("rockTint" in G) &&
+            !!FS &&
+            Array.isArray(FS.basis.basis) &&
+            FS.basis.basis.length === 3 &&
+            Array.isArray(FS.mittel) &&
+            FS.mittel.length === 3 &&
             Array.isArray(G.mossTint) &&
             G.mossTint.length === 3;
         out.mossMaxBounded = !!G && G.mossMax > 0 && G.mossMax <= 1;
@@ -37659,9 +37736,12 @@ async function checkBandWahrerAnblickSaeule1(ctx) {
     check("Ω-OPSIS S1 (A1) _terrainGeologyAlbedo Helfer existiert", res.helperExists === true);
     check("Ω-OPSIS S1 (A2) TERRAIN_GEOLOGY ist frozen", res.configFrozen === true);
     check("Ω-OPSIS S1 (A3) Fels-Schwellen geordnet (rockLo < rockHi)", res.slopeOrderRock === true);
-    check("Ω-OPSIS S1 (A4) Geröll-Schwellen geordnet (screeLo < screeHi)", res.slopeOrderScree === true);
-    check("Ω-OPSIS S1 (A5) Geröll beginnt vor Fels (screeLo < rockLo)", res.screeBeforeRock === true);
-    check("Ω-OPSIS S1 (A6) rockTint + mossTint sind RGB-Tripel", res.tintsAreRgb === true);
+    check("Ω-OPSIS S1 (A4) Schutt-Gitter des Gesetzes trägt das Schicht-Band (0 < schuttGitter ≤ 7,2 m)", res.slopeOrderScree === true);
+    check("Ω-OPSIS S1 (A5) Schutt-Kandidat beginnt vor Fels (schuttKandidat < rockLo)", res.screeBeforeRock === true);
+    check(
+        "Ω-OPSIS S1 (A6) Fels-Stoff (Basis + Mittel) und mossTint sind RGB-Tripel, kein rockTint-Zwilling",
+        res.tintsAreRgb === true
+    );
     check("Ω-OPSIS S1 (A7) mossMax ∈ (0,1] (kein voller Teppich)", res.mossMaxBounded === true);
 
     check("Ω-OPSIS S1 (B1) CONSUM: Toon-Builder ruft _terrainGeologyAlbedo", res.toonCallsGeology === true);
@@ -37870,8 +37950,14 @@ async function checkBandWahrerAnblickGras(ctx) {
 // DAS RAUSCH-GESETZ (Welle G, der Boden-Stoff): Boden-, Substanz- und Mikro-Stoffe lesen EIN Gradienten-Rauschen aus dem
 // Rausch-Atlas (`_rauschAtlas`), nie das Hash-Rauschen `mx_noise_float` (je Aufruf 8 Gitter-Hashes, 26 je Boden-Fragment).
 // Proben: Absenz im Code der fünf Stoff-Bauer · KONSUM im Knoten-Graph des GEZEICHNETEN Boden-Stoffs (die Shader-Kosten-
-// Linse `__stoffGraph`, scripts/lib/shader-kosten.cjs: kein Rausch-Funktions-Knoten, die 78 Ladungen des Atlas — 7 Raum-
-// Werte × 6 + 18 Ebenen × 2 —, kein verborgener Fn-Rumpf; die Basis f2361bb1 trägt dort 26 mx-Knoten und 0 Ladungen) · die
+// Linse `__stoffGraph`, scripts/lib/shader-kosten.cjs: kein Rausch-Funktions-Knoten, die 76 Ladungen des Atlas im Graph — 7 Raum-
+// Werte × 6 + 17 Ebenen × 2 = 76 (K53: der Fleck des Wiesen-Grunds ging mit ihm ins Gesetz, `_bodenFarbeAt`, 78 → 76;
+// K17-3 Runde 2: die acht Halm-Schichten der Wiese stehen wieder ausgeschrieben, ihre Mischung in
+// der reinen Funktion `rauschEbene` — als Schleife in `wieseRelief` las eine Layout-Funktion die Bindung des Atlas); die siebte Raum-Probe ist die Welle der Fels-Bänke, `rausch` des Rechenwerks, auf der CPU
+// gelaende-core `rauschRaum` —, kein verborgener Fn-Rumpf (der Fels-Term rechnet im Zweig des Stamms, `_zweigTSL`: sein Inhalt
+// reist als Argument, der Graph sieht ihn); die Basis f2361bb1 trägt dort 26 mx-Knoten und 0 Ladungen) · das Rechenwerk des
+// Fels-Gesetzes rechnet kein Rauschen aus Hash-Zügen (K17 wellte die Bänke mit einem Wert-Rauschen aus acht Ziehungen im
+// Fragment: die Ladungen fielen 78 → 72, die Absenz sah es nicht) · die
 // Atlas-Bytes sind die MaterialX-Gradienten (lookup3, eigene Portierung hier) und richtig gepackt. Die GPU-Gleichheit (WGSL
 // gegen CPU) und das Budget des erzeugten WGSL misst dieselbe Linse am echten Renderer (`werkbank shader --stoff boden
 // --rauschprobe`).
@@ -37891,6 +37977,16 @@ async function checkBandRauschGesetz(ctx) {
                 "_buildPbrNodeMaterial",
             ];
             out.absenz = stoffe.filter((n) => /mx_noise_float/.test(window.__codeOf(r[n])));
+            // das Rechenwerk des Fels-Gesetzes (gelaende-core): Fein-Term und Schutt-Korn laufen im Fragment — ein Rauschen
+            // lesen sie nur über `o.rausch` (EINE Probe im Rausch-Atlas), nie ein Gitter-Rauschen aus Ziehungen (`wert3`)
+            const GK = window.__gelaendeCore;
+            // (die Welle rechnet `felsWelle`, K17-3: der Shader liest sie außerhalb der Fels-Funktion und reicht sie hinein)
+            const feinSrc =
+                GK && GK.felsFein && GK.felsWelle ? window.__codeOf(GK.felsFein) + window.__codeOf(GK.felsWelle) : "";
+            const kornSrc = GK && GK.schuttKorn ? window.__codeOf(GK.schuttKorn) : "";
+            if (!feinSrc || !/o\.rausch\(/.test(feinSrc)) out.absenz.push("felsFein ohne o.rausch");
+            for (const [n, src] of [["felsFein", feinSrc], ["schuttKorn", kornSrc]])
+                if (/wert3|mx_noise/.test(src)) out.absenz.push(n + " (Gitter-Rauschen aus Ziehungen)");
             // KONSUM: der Knoten-Graph des Stoffs, den der Boden zeichnet (vor dem Bau — was der Compiler liest)
             out.graph = window.__stoffGraph(r.state.voxelChunkMaterial);
             // DIE ATLAS-BYTES: die MaterialX-Gradienten aus lookup3 (eigene Portierung), gepackt je Komponente × 4 Ecken
@@ -37959,7 +38055,7 @@ async function checkBandRauschGesetz(ctx) {
             return out;
         })) || {};
     check(
-        `RAUSCH-GESETZ (A) Absenz: kein mx_noise_float in den Boden- und Substanz-Stoffen (${(res.absenz || []).join(", ") || "keiner"})`,
+        `RAUSCH-GESETZ (A) Absenz: kein mx_noise_float in den Boden- und Substanz-Stoffen, kein Gitter-Rauschen aus Ziehungen im Rechenwerk des Fels-Gesetzes (${(res.absenz || []).join(", ") || "keiner"})`,
         Array.isArray(res.absenz) && res.absenz.length === 0
     );
     const g = res.graph || {};
@@ -37968,8 +38064,8 @@ async function checkBandRauschGesetz(ctx) {
         .map(([f, c]) => f + " ×" + c)
         .join(", ");
     check(
-        `RAUSCH-GESETZ (B) KONSUM: der gezeichnete Boden-Stoff trägt im Knoten-Graph ${atlas} Atlas-Ladungen (Soll 78), ${g.rauschen} Rausch-Funktionen (Soll 0${namen ? ": " + namen : ""}) und ${g.verborgen} verborgene Fn-Rümpfe (Soll 0) — ${g.knoten} Knoten aus ${(g.slots || []).length} Slots${g.fehler ? " — " + g.fehler : ""}`,
-        !g.fehler && g.rauschen === 0 && g.verborgen === 0 && atlas === 78
+        `RAUSCH-GESETZ (B) KONSUM: der gezeichnete Boden-Stoff trägt im Knoten-Graph ${atlas} Atlas-Ladungen (Soll 76), ${g.rauschen} Rausch-Funktionen (Soll 0${namen ? ": " + namen : ""}) und ${g.verborgen} verborgene Fn-Rümpfe (Soll 0; ${g.zweig} Zweige des Stamms) — ${g.knoten} Knoten aus ${(g.slots || []).length} Slots${g.fehler ? " — " + g.fehler : ""}`,
+        !g.fehler && g.rauschen === 0 && g.verborgen === 0 && atlas === 76
     );
     check(
         `RAUSCH-GESETZ (C) die Atlas-Bytes sind die MaterialX-Gradienten (${res.falsch} falsch) und richtig gepackt (${res.packung} Brüche)`,
@@ -38209,38 +38305,61 @@ async function checkBandV18264ShadowCache(ctx) {
             csm && csm.lights && csm.lights.length ? csm.lights : st.directionalLight ? [st.directionalLight] : [];
         out.lichter = lichter.length;
         if (!out.hasMethod || !lichter.length || !A.SCHATTEN_TAKT) return out;
-        const zaehle = (n) => {
+        // 1410-3: in Ruhe je Frame höchstens EINE Kaskade (die nahe jeden nahMax-ten Frame, die ferne dazwischen); bewegt
+        // sich die Kamera, folgt die nahe jedem Frame im Regler-Takt (der Schatten des gehenden Spielers hinkt nie).
+        const kam = st.camera;
+        const kamX = kam ? kam.position.x : 0;
+        let schritt = 0;
+        const zaehle = (n, bewegt) => {
             const z = lichter.map(() => 0);
+            z.doppelt = 0;
             for (let i = 0; i < n; i++) {
                 lichter.forEach((l) => l.shadow && (l.shadow.needsUpdate = false));
+                if (bewegt && kam) {
+                    kam.position.x = kamX + 0.05 * ++schritt;
+                    kam.updateMatrixWorld(true);
+                }
                 r._loopShadowUpdate();
                 lichter.forEach((l, k) => l.shadow && l.shadow.needsUpdate && z[k]++);
+                if (lichter.filter((l) => l.shadow && l.shadow.needsUpdate).length > 1) z.doppelt++;
             }
             return z;
         };
         const ivAlt = st._shadowMinInterval;
         st._shadowMinInterval = 1;
         r._shadowLast = null;
-        zaehle(1);
-        const z1 = zaehle(30);
+        zaehle(2, false);
+        const z1 = zaehle(30, false);
+        const zb = zaehle(30, true);
+        if (kam) {
+            kam.position.x = kamX;
+            kam.updateMatrixWorld(true);
+        }
+        zaehle(2, false);
         st._shadowMinInterval = 4;
-        const z4 = zaehle(60);
+        const z4 = zaehle(60, false);
         st._shadowMinInterval = ivAlt;
         r._shadowLast = null;
+        const T = A.SCHATTEN_TAKT;
         out.autoUpdateOff = lichter.every((l) => l.shadow && l.shadow.autoUpdate === false);
         out.nah1 = z1[0];
         out.nah4 = z4[0];
+        out.nahBewegt = zb[0];
         out.fern1 = lichter.length > 1 ? z1[1] : null;
-        out.nahJedenFrame = z1[0] === 30;
-        out.nahGedeckelt = z4[0] === 60 / Math.min(A.SCHATTEN_TAKT.nahMax, 4);
-        out.fernSeltener = lichter.length < 2 || z1[1] === 30 / A.SCHATTEN_TAKT.fernFaktor;
+        out.doppelt1 = z1.doppelt;
+        out.nahRuhe = z1[0] === 30 / T.nahMax && z1.doppelt === 0;
+        out.nahBewegtJedenFrame = !kam || zb[0] === 30;
+        out.nahGedeckelt = z4[0] === 60 / Math.min(T.nahMax, 4);
+        const fern = 30 / (T.nahMax * T.fernFaktor);
+        out.fernSeltener = lichter.length < 2 || (z1[1] >= Math.floor(fern) - 1 && z1[1] <= Math.ceil(fern));
         return out;
     });
     check("V18.524: _loopShadowUpdate fährt den Leser je Licht (autoUpdate aus)", res.hasMethod && res.autoUpdateOff);
     check("V18.264: shadowMinInterval ist eine Regelkreis-Stellgröße (CONSUM)", res.hasLever && res.actuatorDrives);
     check(
-        `V18.524: die nahe Schatten-Map rendert im Regler-Takt (Intervall 1: ${res.nah1}/30, Intervall 4: ${res.nah4}/60)`,
-        res.nahJedenFrame === true && res.nahGedeckelt === true
+        `1410-3: die nahe Schatten-Map in Ruhe jeden nahMax-ten Frame ohne Doppel-Frame, bewegt jeden Frame (Ruhe ${res.nah1}/30, ` +
+            `doppelt ${res.doppelt1}, bewegt ${res.nahBewegt}/30, Intervall 4: ${res.nah4}/60)`,
+        res.nahRuhe === true && res.nahBewegtJedenFrame === true && res.nahGedeckelt === true
     );
     check(
         `V18.524: die ferne Kaskade rendert seltener (${res.fern1 == null ? "ohne CSM" : res.fern1 + "/30"})`,
@@ -38976,7 +39095,7 @@ async function checkBandW3UiPuls(ctx) {
     let srcOk = false;
     let migratedCount = 0;
     try {
-        const src = fs.readFileSync(path.resolve(__dirname, "..", "anazhRealm.js"), "utf8");
+        const src = stammLib.text(path.join(__dirname, ".."));
         migratedCount = (src.match(/_uiDirty\("hof"\)/g) || []).length;
         const directMechanic = (
             src.match(/if \(typeof this\._renderCreatureListUI === "function"\) this\._renderCreatureListUI\(\);/g) ||
@@ -40266,7 +40385,7 @@ async function checkBandWelle6XAudit(ctx) {
         // `_canSoulJumpFromSlope` liest `statTags`, in die computePlayerStats NACH dem Soul-Clamp die
         // aktiven Boosts addiert (Emotion/Welt-Resonanz — transienter Konfounder) → Boosts leeren. Dann
         // gilt für jede Wund-Intensität w∈[0,1]: Drache-score = 0.4−0.05w (< 0.4), Phönix-score =
-        // 0.475−0.05w (≥ 0.4) — der Wund-Term verschiebt beide gleich. Linse: scripts/diag-soul-jump.cjs.
+        // 0.475−0.05w (≥ 0.4) — der Wund-Term verschiebt beide gleich. Linse: diag-soul-jump (git-Archiv).
         if (r.state.player) r.state.player.boosts = [];
         // ALTLASTEN-NULL: eine LEICHTE lebendige Seele (federn-Fixture,
         // lebendig≈0.98/dichte≈0.29 → score 0.60) klettert; der WOLF-Körper
@@ -42745,7 +42864,6 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
                 /* skip */
             }
         }
-        const anySrc = (re) => allSrc.some((m) => re.test(m.src));
         const srcOf = (name) => {
             const m = allSrc.find((x) => x.name === name);
             return m ? m.src : "";
@@ -45816,7 +45934,7 @@ async function checkBandTranslatorAndUntrusted(ctx) {
 
     // ### V8.71 — W15 Phase 1: der Auto-Vendor-Pfad ###
     // _vendorPostBundle (der einzige Netz-Schritt) wird gestubbt —
-    // der echte save-server-Round-Trip lebt in smoke-vendor.cjs.
+    // der echte save-server-Round-Trip lebt in der Sonde smoke-vendor (git-Archiv).
     const vendorResults = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         const out = {};
@@ -45998,7 +46116,7 @@ async function checkBandTranslatorAndUntrusted(ctx) {
 
     // ### V8.72 — W15 Phase 2: der GitHub-Fetch ###
     // _vendorPostRepo (der Netz-Schritt) wird gestubbt; der echte GitHub-Round-Trip lebt offline +
-    // deterministisch in smoke-vendor.cjs (lokales Fake-GitHub).
+    // deterministisch in der Sonde smoke-vendor (git-Archiv) (lokales Fake-GitHub).
     const vendor2Results = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         const out = {};
@@ -46375,7 +46493,7 @@ async function checkBandG8R2SovereignWall(ctx) {
 
 // G8 R3 — Lokalitäts-Härtung (M1): die Sandbox-Grenze als Invariante eingefroren
 // (sandboxed → null-origin · vendored → unforgeable sandboxed · kein Welt-Pfad
-// zum innersten Ring). Die ECHTE Isolation beweist smoke-sandbox.cjs im Browser.
+// zum innersten Ring). Die ECHTE Isolation beweist die Sonde smoke-sandbox (git-Archiv) im Browser.
 async function checkBandG8R3Locality(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -46589,7 +46707,7 @@ async function checkBandG8R5LivingImmune(ctx) {
 
 // DAS HOCH-BECKEN (Stau-Spiegel): ein Spieler-Werk (Fill/solide Architektur) öffnet die Spiegel-Kappe
 // LOKAL per bounded Spill-Scan (Priority-Flood); gepinnte Quell-Spalten tropfen den Pool voll. Hier
-// nur PURE Beweise; der Welt-Beweis am echten Fluss ist `scripts/diag-stau.cjs`.
+// nur PURE Beweise; der Welt-Beweis am echten Fluss ist die Sonde diag-stau (git-Archiv).
 async function checkBandV18129HochBecken(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -46693,7 +46811,7 @@ async function checkBandV18129HochBecken(ctx) {
 // SCHATTEN_FERN_FAKTOR. Jede Kaskade zeichnet jeden Werfer ihrer Box — die Wand: über die ganze geregelte
 // Reichweite (MIN..MAX) und die User-Decke (400 m) trägt JEDE Kaskade ≥ 10 % der Tiefe (kein Streifen, der
 // einen vollen Werfer-Durchgang kostet; V18.130–509 klemmte die dritte auf einen 5-%-Streifen). Die CSM-Init
-// ist LAZY (erster echter Material-Build) → hier Konstruktion + Vertrag; Look + Maps misst `diag-csm.cjs`.
+// ist LAZY (erster echter Material-Build) → hier Konstruktion + Vertrag; Look + Maps misst die Sonde diag-csm (git-Archiv).
 async function checkBandV18130CsmShadow(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -46777,7 +46895,7 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
     void errors;
     void finalState;
     // ### V8.40 + V8.41 — Regler: Sicht-Ring + Cel-Stufen + Fog ###
-    const v840Results = await safeEvaluate(page, () => {
+    const v840Results = await safeEvaluate(page, (stammDateien) => {
         const r = window.anazhRealm;
         const out = {};
         const ring = document.getElementById("slider-ring");
@@ -46810,21 +46928,20 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
         out.fogDefault3 = !r.state.atmosphere || r.state.atmosphere.fogDistance === undefined;
         out.fogHandlerTriples = !/slider-fog/.test(window.__codeOf(r.slidersInitDOM));
 
-        // V8.41 — Cache-Buster auf der anazhRealm.js-Einbindung.
-        const appScript = [...document.querySelectorAll("script")].find((s) =>
-            (s.getAttribute("src") || "").includes("anazhRealm.js")
-        );
-        out.cacheBust = !!appScript && /anazhRealm\.js\?v=/.test(appScript.getAttribute("src") || "");
+        // V8.41 — Cache-Buster auf JEDER Stamm-Einbindung (die Liste aus scripts/lib/stamm.cjs, wie index.html sie lädt).
+        const tags = [...document.querySelectorAll("script")].map((s) => s.getAttribute("src") || "");
+        const ohneBuster = stammDateien.filter((p) => !tags.some((t) => t.split("?")[0] === p && /\?v=/.test(t)));
+        out.cacheBust = stammDateien.length > 0 && ohneBuster.length === 0;
 
         return out;
-    });
+    }, stammLib.dateien(path.join(__dirname, "..")));
 
     if (v840Results && !v840Results.error) {
         check("V8.40/E2: Sicht-Ring-Regler 1–12, Default 4 (9×9)", v840Results.ringSliderRange);
         check("V8.40 → V18.530: kein Fog-Regler-Setter mehr", v840Results.fogTripleRange);
         check("V8.40 → V18.530: kein persistiertes fogDistance mehr", v840Results.fogDefault3);
         check("V8.40 → V18.530: keine Fog-Slider-Verdrahtung mehr", v840Results.fogHandlerTriples);
-        check("V8.41: anazhRealm.js mit Cache-Buster ?v= eingebunden", v840Results.cacheBust);
+        check("V8.41: jede Stamm-Datei mit Cache-Buster ?v= eingebunden", v840Results.cacheBust);
     } else {
         check("V8.40: Regler-Tests laufen", false, v840Results ? v840Results.error : "no result");
     }
@@ -54168,10 +54285,6 @@ async function checkBandRing5Soul(ctx) {
         // ersetzt (neuer Group). Wir lesen jedes Mal frisch
         // aus state, statt eine Referenz festzuhalten.
         const currentMesh = () => r.state.playerMesh;
-        const currentMaterial = () => {
-            const m = currentMesh();
-            return m && m.userData && m.userData.material;
-        };
         const currentParts = () => {
             const m = currentMesh();
             return m && m.userData && m.userData.parts;
@@ -55701,24 +55814,25 @@ async function checkBandRing6Workshop(ctx) {
     const server = await startSaveServer();
     console.log(`Lade ${SERVER_URL} für ${DURATION_MS / 1000}s ...`);
 
-    const browser = await puppeteer.launch({
-        headless: true,
-        // Hängt ein page.evaluate (toter Renderer, detached frame), wird er nach diesem Timeout eine
-        // FANGBARE Rejection statt einer Endlos-Blockade — großzügig (≫ teuerstes Band ~57 s), aber endlich.
-        protocolTimeout: 240000,
-        args: [
-            // Das Gate läuft GPU-frei: der Null-Renderer (Default) braucht keinen GPU, und der swiftshader-
-            // GPU-Prozess crashte unter kumulativer Last im Schwanz (detached frame). PLAYTEST_REAL_RENDERER=1
-            // schaltet swiftshader zurück (nur für das Screenshot-Artefakt).
-            ...(REAL_RENDERER
-                ? ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--enable-webgl", "--ignore-gpu-blocklist"]
-                : ["--disable-gpu", "--disable-software-rasterizer"]),
-            "--no-sandbox",
-            "--disable-setuid-sandbox",
-            // Ring 4: erlaubt AudioContext im Headless-Modus ohne User-Geste,
-            // sonst bleibt der Context im "suspended" und initSymphony tut nix.
-            "--autoplay-policy=no-user-gesture-required",
-        ],
+    // Der Browser über die EINE Weiche (scripts/lib/welt-boot.cjs) mit dem Fehler-Sammler an der Seite: jeder Seitenfehler,
+    // jedes console.error und jeder Absturz macht den Lauf ROT beim Namen, neben dem Urteil der Bänder.
+    const browser = await starteBrowser({
+        // Das Gate läuft GPU-frei: der Null-Renderer (Default) braucht keinen GPU, und der swiftshader-GPU-Prozess crashte
+        // unter kumulativer Last im Schwanz (detached frame). PLAYTEST_REAL_RENDERER=1 schaltet swiftshader zurück (nur für
+        // das Screenshot-Artefakt).
+        art: REAL_RENDERER ? "webgl" : "null",
+        // GPU-frei entsteht kein WebGL-Kontext: der Offscreen-Bäcker der Foundry (foundry-bruecke `__foundryBakeRenderer`)
+        // schließt dann zu (null) — r128 meldet das mit drei console.error, erwartet und beim Namen.
+        erwartet: REAL_RENDERER
+            ? null
+            : /THREE\.WebGLRenderer: (A WebGL context could not be created|Error creating WebGL context)/,
+        // Hängt ein page.evaluate (toter Renderer, detached frame), wird er nach dieser Frist eine FANGBARE Rejection statt
+        // einer Endlos-Blockade — großzügig (≫ teuerstes Band ~57 s), aber endlich.
+        frist: 240000,
+        // Ring 4: AudioContext im Headless-Modus ohne User-Geste (sonst bleibt er "suspended" und initSymphony tut nix).
+        zusatz: REAL_RENDERER
+            ? ["--enable-webgl", "--ignore-gpu-blocklist", "--autoplay-policy=no-user-gesture-required"]
+            : ["--disable-software-rasterizer", "--disable-setuid-sandbox", "--autoplay-policy=no-user-gesture-required"],
     });
     const page = await browser.newPage();
     await page.setViewport({ width: 1280, height: 720 });
@@ -56117,7 +56231,7 @@ async function checkBandRing6Workshop(ctx) {
                 await new Promise((resolve) => setTimeout(resolve, 0));
             }
             // Foundry-Warm-Anker: der Studio-Worker bootet ASYNC (ein anderer Worker als der ausgehängte
-            // voxelWorker) → warten auf f.ready → recipeCount > 0 → !_prefetching (im ready-Handler synchron
+            // voxelWorker) → warten auf f.ready → recipeCount > 0 → !_vorrat (im ready-Handler synchron
             // true, also „false nach ready“ = Prefetch fertig). Der Loop pumpt weiter; der Deckel ist nur
             // Hänger-Schutz — ein Cap-Treffer lässt die Bänder ehrlich rot werden.
             const _fdry = r._foundry || (typeof r._ensureAssetFoundry === "function" ? r._ensureAssetFoundry() : null);
@@ -56127,7 +56241,7 @@ async function checkBandRing6Workshop(ctx) {
                 const FOUNDRY_WARM_CAP_MS = 120000;
                 const fDeadline = performance.now() + FOUNDRY_WARM_CAP_MS;
                 while (
-                    !(_fdry.ready && _fdry.recipeCount > 0 && _fdry._prefetching === false) &&
+                    !(_fdry.ready && _fdry.recipeCount > 0 && _fdry._vorrat === false) &&
                     performance.now() < fDeadline
                 ) {
                     try {
@@ -56138,7 +56252,7 @@ async function checkBandRing6Workshop(ctx) {
                     await new Promise((resolve) => setTimeout(resolve, 25));
                 }
                 foundryReadyMs =
-                    _fdry.ready && _fdry.recipeCount > 0 && _fdry._prefetching === false
+                    _fdry.ready && _fdry.recipeCount > 0 && _fdry._vorrat === false
                         ? Math.round(performance.now() - foundryT0)
                         : -1;
                 // Kurzer Settle-Pump: `_foundryRewarmColdTrees` (feuert am Prefetch-Ende,
@@ -56431,6 +56545,7 @@ async function checkBandRing6Workshop(ctx) {
             await timed(checkBandLambda2HismSynthese, ctx);
             await timed(checkBandLambda3Wind, ctx);
             await timed(checkBandLambda4Streu, ctx);
+            await timed(checkBandStoffSignatur, ctx);
             await timed(checkBandLambda5MischwaldSynthese, ctx);
             await timed(checkBandLambda6Detail, ctx);
             await timed(checkBandV18177AAA, ctx);

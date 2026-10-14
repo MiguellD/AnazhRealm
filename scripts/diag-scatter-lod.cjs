@@ -28,33 +28,13 @@
 //
 //   node scripts/diag-scatter-lod.cjs
 "use strict";
-const puppeteer = require("puppeteer");
-const http = require("http");
-const fs = require("fs");
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.SCATTER_LOD_PORT || 4441);
 const root = path.resolve(__dirname, "..");
-const mime = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".wasm": "application/wasm",
-    ".json": "application/json",
-    ".css": "text/css",
-    ".png": "image/png",
-    ".woff2": "font/woff2",
-};
-const server = http.createServer((req, res) => {
-    let p = req.url.split("?")[0];
-    if (p === "/") p = "/index.html";
-    const fp = path.join(root, p);
-    if (!fp.startsWith(root)) return ((res.statusCode = 403), res.end());
-    fs.readFile(fp, (err, data) => {
-        if (err) return ((res.statusCode = 404), res.end());
-        res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-        res.end(data);
-    });
-});
+const server = statikServer();
 
 const errs = [];
 function check(name, ok, detail) {
@@ -64,7 +44,7 @@ function check(name, ok, detail) {
 
 (async () => {
     // ── P: die Quell-Probe (der Promotions-Block walkt den Region-Fächer) ──
-    const src = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+    const src = stammLib.text(root);
     const promoIdx = src.indexOf("baum-D2-Heilung");
     const promoBlock = promoIdx >= 0 ? src.slice(promoIdx, promoIdx + 1800) : "";
     check(
@@ -103,11 +83,7 @@ function check(name, ok, detail) {
     );
 
     await new Promise((r) => server.listen(PORT, r));
-    const browser = await puppeteer.launch({
-        headless: true,
-        protocolTimeout: 300000,
-        args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--no-sandbox", "--disable-setuid-sandbox"],
-    });
+    const browser = await starteBrowser({ art: "webgl", frist: 300000 });
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(() => {
         window.__anazhHeadlessNullRenderer = true;
@@ -133,7 +109,9 @@ function check(name, ok, detail) {
             if (f && f.ready) break;
             await new Promise((r2) => setTimeout(r2, 100));
         }
-        // Scatter-Regionen um den Spieler bauen lassen (der Streaming-Tick baut 1/Frame).
+        // Scatter-Regionen um den Spieler bauen lassen (der Streaming-Tick baut 1/Frame), bis die Streu STEHT (die EINE
+        // Antwort `_streuWartet`): die Fern-Baum-Karte bestellt ihr Leser (K30) — eine Region wartet auf sie und baut nach
+        // der Lieferung neu; erst dann trägt sie ihre Fern-Zellen.
         const pm = r.state.playerMesh.position;
         const dl2 = performance.now() + 45000;
         let cells = 0;
@@ -142,9 +120,10 @@ function check(name, ok, detail) {
             const map = r.state.scatterRegions;
             cells = 0;
             if (map) for (const reg of map.values()) cells += reg.cells ? reg.cells.length : 0;
-            if (cells > 40) break;
+            if (cells > 40 && r._streuWartet(pm) === 0) break;
             await new Promise((r2) => setTimeout(r2, 30));
         }
+        res.streuWartet = r._streuWartet(pm);
         res.cells = cells;
         if (!cells) return res;
         // Eine lebende Zelle suchen (Schicht-agnostisch — der Tick trägt alle

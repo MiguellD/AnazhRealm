@@ -32,9 +32,10 @@
 //   ohne Urteil: tiefe Sonne 11° für die Werfer, Nacht, die Nah-Wiese als Empfänger, Hang 20°/35°, Übergang k0→k1)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
-const http = require("http");
+const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.SCHATTEN_BIAS_PORT || 4607);
 const root = path.resolve(__dirname, "..");
@@ -176,7 +177,7 @@ function urteil(S, Q, pageErrors) {
 if (process.argv.includes("--selftest")) {
     console.log("=== SCHATTEN-BIAS — Selbsttest (ohne Browser) ===");
     const v = [];
-    const stammQ = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+    const stammQ = stammLib.text(root);
     const stamm = quellWand(stammQ);
     for (const b of stamm) v.push("STAMM: " + b);
     const fremd = quellWand(
@@ -273,31 +274,10 @@ if (!ECHT) {
     process.exit(2);
 }
 
-const puppeteer = require("puppeteer");
-const { echteWebGpuArgs } = require("./lib/software-gpu.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 const W = 960,
     H = 540;
-const mime = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".wasm": "application/wasm",
-    ".json": "application/json",
-    ".css": "text/css",
-    ".png": "image/png",
-    ".woff2": "font/woff2",
-};
-const server = http.createServer((req, res) => {
-    let p = req.url.split("?")[0];
-    if (p === "/") p = "/index.html";
-    const fp = path.join(root, p);
-    if (!fp.startsWith(root)) return ((res.statusCode = 403), res.end());
-    fs.readFile(fp, (err, data) => {
-        if (err) return ((res.statusCode = 404), res.end());
-        res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-        res.end(data);
-    });
-});
+const server = statikServer();
 
 // DIE BÜHNE (in der Seite): Boot, Foundry, die ebene Bühne der Mess-Wiese, Tiere fort.
 async function buehneBauen() {
@@ -1486,14 +1466,15 @@ async function probe(cfg) {
 }
 
 (async () => {
-    const Q = quellWand(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8"));
+    const Q = quellWand(stammLib.text(root));
     fs.mkdirSync(OUT, { recursive: true });
     await new Promise((res) => server.listen(PORT, "127.0.0.1", res));
-    const browser = await puppeteer.launch({
+    const browser = await starteBrowser({
+        art: "echt",
         headless: false,
-        protocolTimeout: 3600000,
-        defaultViewport: { width: W, height: H },
-        args: echteWebGpuArgs().concat([`--window-size=${W},${H + 80}`]),
+        frist: 3600000,
+        viewport: { width: W, height: H },
+        zusatz: [`--window-size=${W},${H + 80}`],
     });
     const page = await browser.newPage();
     await page.setViewport({ width: W, height: H });
