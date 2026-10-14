@@ -201,6 +201,31 @@ self.onmessage = function (e) {
                     [positions.buffer, indices.buffer, aFlow.buffer, aWave.buffer, aDepth.buffer, aSlope.buffer]
                 );
             }
+        } else if (msg.type === "hoehen") {
+            // DIE HÖHEN DER FERNE (K60): der Feld-Zeichner des Mains (`_feldZeichnerHoehen` — Feld-Pass und Ring-Maler)
+            // fragt das EINE Gelände-Gesetzbuch für eine Punkt-Liste hier, mit DEMSELBEN Zustand wie jeder Chunk (`state`,
+            // der Spiegel der Lage `_gelaende`) — dieselbe Funktion, derselbe Same, nie eine eigene Ableitung. `aus` lebt
+            // wie im Main einmal je Auftrag; der Schutt (`aus.schutt`) reist nur, wenn der Main ihn fragt.
+            const p = msg.punkte;
+            const n = (p.length / 2) | 0;
+            const werte = new Float32Array(n);
+            const schutt = msg.schutt ? new Float32Array(n) : null;
+            const aus = schutt ? { hang: 0, schutt: 0 } : undefined;
+            const detail = !!msg.detail;
+            for (let k = 0; k < n; k++) {
+                werte[k] = G.hoehe(state, p[k * 2], p[k * 2 + 1], detail, aus);
+                if (aus) schutt[k] = aus.schutt > 0 ? aus.schutt : 0;
+            }
+            const tr = schutt ? [werte.buffer, schutt.buffer] : [werte.buffer];
+            self.postMessage(
+                {
+                    type: "hoehen-result",
+                    requestId: msg.requestId,
+                    werte: werte.buffer,
+                    schutt: schutt ? schutt.buffer : null,
+                },
+                tr
+            );
         } else if (msg.type === "ping") {
             self.postMessage({ type: "pong", requestId: msg.requestId || null });
         }

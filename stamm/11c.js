@@ -2587,7 +2587,16 @@ class AnazhRealm_Z11c {
     // Takt-Budget des Streamings trägt (`_voxelStreamBudgetMs`, der Regler atmet es), mindestens 16 — nie eine feste Zahl
     // (bis K16 fest 1 500 je Task: bei 25 µs je Spalte 37 ms am Stück auf dem Haupt-Thread, Lehre 14).
     // `schutt` (optional, Float32Array n): je Punkt das Gewicht des Schutts aus DEMSELBEN Ruf (`aus.schutt`).
+    // DER FADEN DER FERNE (K60): steht der Voxel-Faden, rechnet ER die Punkte (`_voxelWorkerHoehen`, dasselbe Gesetzbuch am
+    // selben Zustand wie jeder Chunk) — Radeon kalt bis zum ersten Bild hielten die Scheiben des Feld-Passes (9 216 Punkte)
+    // den Haupt-Faden 2,0 s, während der Voxel-Faden zu 95 % ruhte. Die Scheiben bleiben nur, solange kein Faden steht (der
+    // Blob-Weg der Sandbox ist unterwegs, `_getVoxelWorker`).
     _feldZeichnerHoehen(punkte, includeDetail, schutt) {
+        if (this._getVoxelWorker())
+            return this._voxelWorkerHoehen(punkte, includeDetail, !!schutt).then((r) => {
+                if (schutt) schutt.set(r.schutt);
+                return r.werte;
+            });
         const n = (punkte.length / 2) | 0;
         const werte = new Float32Array(n);
         const aus = schutt ? { hang: 0, schutt: 0 } : undefined;

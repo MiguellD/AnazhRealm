@@ -11,9 +11,7 @@ class AnazhRealm_Z20d {
     // Gestalt des Orts (`_forestStehtFrei`) jeden Nachbarn neu, und jede neue Fläche eines Grundrisses warf das Gedächtnis der
     // Gestalt (`_ortGestaltSame`): Radeon kalt bis zum ersten Bild 3 220 Freistand-Fragen an 251 Orten, das Urteil 1,5 s.
     _forestDartSteht(d, gx, gz, cellDarts) {
-        const memo = this._forestGesetzWahr()
-            ? this._forestStehtMemo || (this._forestStehtMemo = new WeakMap())
-            : null;
+        const memo = this._forestGesetzWahr() ? this._forestStehtMemo || (this._forestStehtMemo = new WeakMap()) : null;
         const hat = memo ? memo.get(d) : undefined;
         if (hat !== undefined) return hat;
         const F = AnazhRealm.FOREST;
