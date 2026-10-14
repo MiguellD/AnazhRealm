@@ -308,19 +308,36 @@ function deckung(umbauListe, aufblaehen, nurIds) {
 }
 
 // ── F: DIE FERNE STUFE (K64) — was der Wirt jenseits der Ring-Mitte zeigt, trägt das Soll der Klasse, und nur L0-Stoff ──
-// Die Stufe bei d: die größte gezeigte Stufe, deren Grenze `ab` (Budget-Zeile) d unterschreitet (der Wirt ohne Zustand,
-// `_stufeNachGrenzen`). Das Soll je Tor jenseits FERN_AB_M: die Klasse ≤ 120 000 an Genesis Third (Augen-Befund 14.10.) minus
-// das Nahe (drachentor L0 + Flügel, geisttor L0 + Flügel: 39 262) und den Wurf (k0 30 162) = 50 576 auf die fünf Tore
-// jenseits 12 m → 10 000 je Tor (Rohdatei artifacts/profiband/tore-fern/zaehlen-genesis-third-vorher.json im Arbeits-Klon).
+// Die Stufe bei d liest der EINE Wähler des Wirts (`_stufeNachGrenzen` aus dem Stamm, ohne Zustand wie am Spawn) über den
+// Grenzen der Budget-Zeilen (`ab`, `hyst`; die gezeigten Stufen, nie die NUR-WURF-Stufe — `_archStufenGrenzen`).
+// DAS SOLL DER KLASSE (K64-n1): ≤ 120 000 Dreiecke an Genesis Third (Augen-Befund 14.10.). Gemessen an Genesis Third (werkbank
+// zaehlen, Rohdatei artifacts/profiband/tore-fern/k64/zaehlen-genesis-third-nachher.json im Arbeits-Klon) stehen dort fest: das
+// Nahe in der Stufe 0 (drachentor 23 192 + Flügel 8 984, geisttor 2 726 + Flügel 4 360 + Wurf 2 132 = 41 394), verkalkt im
+// Hysterese-Band in der Stufe 1 (23 082), der Wurf der Stufe 3 (19 248) und der Wurf der fernen Stufe (kathedrale + ruine
+// 4 814) — 88 538. Fern jenseits 12 m stehen fünf Tore (maurentor, die Portale-Vorschau als drachentor, maschine, kathedrale,
+// ruine): ihre Summe trägt den Rest 31 462. Die Linse rechnet die SUMME der fünf (nie ein Mittel über eine angenommene Zahl).
 // Stoff-Treue: jede Fläche einer gezeigten fernen Stufe trägt einen Stoff ihrer L0 (Typ, Farbe, Glut, Metall, Rauheit,
 // Deckkraft gleich) — keine Fläche heller als ihr L0-Stoff, die Albedo der Fernstufe IST die der L0.
-const FERN = { abM: 12, dM: [13, 15, 17], trisJe: 10000 };
+const FERN = {
+    dM: [13, 15, 17],
+    klasse: 120000,
+    fest: 41394 + 23082 + 19248 + 4814,
+    genesisThird: ["maurentor", "drachentor", "maschine", "kathedrale", "ruine"],
+};
+FERN.rest = FERN.klasse - FERN.fest;
+const STUFE_NACH_GRENZEN = Function(
+    "return function _stufeNachGrenzen(d, cur, G, s) {" +
+        methodeAus(STAMM, "    static _stufeNachGrenzen(d, cur, G, s) {") +
+        "};"
+)();
 function stufeBei(K, d) {
-    const zeilen = K.PORTAL_RENDER_CONFIG.lod.budget.gate,
+    const art = K.PORTAL_RENDER_CONFIG.lod.budget.gate,
         S = K.PORTAL_RENDER_CONFIG.lod.kindStages.gate;
-    let st = S[0];
-    for (const s of S) if (zeilen[s] && !zeilen[s].nurWurf && Number.isFinite(zeilen[s].ab) && d > zeilen[s].ab) st = s;
-    return st;
+    const grenzen = S.filter((st) => art[st] && Number.isFinite(art[st].ab) && art[st].nurWurf !== true).map((st) => ({
+        stufe: st,
+        ab: art[st].ab,
+    }));
+    return STUFE_NACH_GRENZEN(d, undefined, { erste: S[0], grenzen, h: art.hyst }, 1);
 }
 const stoffKey = (m) =>
     [
@@ -342,7 +359,10 @@ function stoffe(g) {
 function fernStufe(K, verfaelsche) {
     const bruch = [],
         ist = [];
-    let maxT = 0;
+    let maxT = 0,
+        summe = 0;
+    const st13 = stufeBei(K, FERN.dM[0]),
+        zeile = K.PORTAL_RENDER_CONFIG.lod.budget.gate[st13];
     for (const id of Object.keys(K.PRESETS)) {
         if (NUR && !NUR.test(id)) continue;
         const L0 = stoffe(K.buildInstance(id, 7, 0));
@@ -352,12 +372,19 @@ function fernStufe(K, verfaelsche) {
             if (verfaelsche) verfaelsche(g);
             const n = tris(g);
             maxT = Math.max(maxT, n);
-            if (d === FERN.dM[0]) ist.push(`${id} L${st} ${n}`);
-            if (n > FERN.trisJe) bruch.push(`${id} bei ${d} m Stufe ${st}: ${n} Dreiecke > ${FERN.trisJe}`);
+            if (d === FERN.dM[0]) {
+                ist.push(`${id} L${st} ${n}`);
+                if (FERN.genesisThird.includes(id)) summe += n;
+            }
+            if (zeile && n > zeile.tris) bruch.push(`${id} bei ${d} m Stufe ${st}: ${n} Dreiecke > Zeile ${zeile.tris}`);
             for (const k of stoffe(g)) if (!L0.has(k)) bruch.push(`${id} Stufe ${st}: Stoff ${k} nicht in der L0`);
         }
     }
-    return { bruch: [...new Set(bruch)], ist, maxT };
+    if (!NUR && summe > FERN.rest)
+        bruch.push(
+            `Genesis Third fern (${FERN.genesisThird.join(" · ")}) Stufe ${st13}: ${summe} Dreiecke > Rest ${FERN.rest} (Klasse ${FERN.fest + summe} > ${FERN.klasse})`
+        );
+    return { bruch: [...new Set(bruch)], ist, maxT, summe };
 }
 // Der Kern mit einer anderen Stufe 2 (Selbsttest: die Stufe 2 trägt das Gesetz der Stufe 1 — die Linse muss die Kosten nennen)
 function kernMit(ersatz) {
@@ -405,9 +432,9 @@ check(
 );
 const f = fernStufe(PC);
 check(
-    `F FERNE STUFE: jenseits ${FERN.abM} m (${FERN.dM.join(" · ")} m) je Tor ≤ ${FERN.trisJe} Dreiecke, jede Fläche ein Stoff der L0`,
+    `F FERNE STUFE: Genesis Third — die fünf fernen Tore ≤ ${FERN.rest} Dreiecke (Klasse ≤ ${FERN.klasse}), jede Fläche ein Stoff der L0`,
     f.bruch.length === 0,
-    f.bruch.length ? f.bruch.slice(0, 6).join(" · ") : `bei ${FERN.dM[0]} m: ${f.ist.join(" · ")} (max ${f.maxT})`
+    f.bruch.length ? f.bruch.slice(0, 6).join(" · ") : `Summe ${f.summe} (Klasse ${FERN.fest + f.summe}) · bei ${FERN.dM[0]} m: ${f.ist.join(" · ")}`
 );
 if (SELBST) {
     // S5: die Stufe 2 mit dem Gesetz der Stufe 1 — die Linse nennt die Tore beim Namen
@@ -417,7 +444,9 @@ if (SELBST) {
     const f5 = K5 && fernStufe(K5);
     check(
         "SELBSTTEST F: die Stufe 2 mit dem Gesetz der Stufe 1 wird rot beim Namen",
-        !!f5 && f5.bruch.some((b) => /drachentor bei 13 m Stufe 2: \d+ Dreiecke/.test(b)),
+        !!f5 &&
+            f5.bruch.some((b) => /drachentor bei 13 m Stufe 2: \d+ Dreiecke/.test(b)) &&
+            f5.bruch.some((b) => /^Genesis Third fern .* Stufe 2: \d+ Dreiecke > Rest/.test(b)),
         f5 ? f5.bruch[0] : "TOR_DETAIL_2 fehlt in der Quelle"
     );
     // S6: ein Stoff der fernen Stufe heller als sein L0-Stoff

@@ -20,10 +20,15 @@
 //       B2 70 m vor dem Ring, Blick vom Ring weg: KEINE Membran und kein Nebel zeichnet — Täter beim Namen (Gestalt, Abstand)
 //       B3 die Hülle trägt die Welle: die Kugel jeder Membran-Geometrie reicht in z bis zur Amplitude des Gesetzes
 //       BS Selbsttest am echten Frame: mit `frustumCulled = false` (dem alten Stand) MUSS B2 jede Membran beim Namen nennen
+//       H  (K64-n1) aus der Ring-Mitte, AUSGABE-Pfad gegen das Labor-Bild derselben Pixel: die Welt hebt die Membran nicht über
+//          ihren Anzeige-Wert (Y ≤ 1,15 ×) und brennt nicht aus (Y > 240 ≤ 5 %) — die Shell malt in Bild-Werten, die Welt liest
+//          sie durch das FARB-GESETZ ins Lineare (Lehre 21)
+//       HS Selbsttest: der rohe Leser (Anzeige-Wert als Strahlung, der Stand vor K64-n1) MUSS in H rot werden
 //
 //   node scripts/diag-portal-membran.cjs [--ohne-blick]
 "use strict";
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 
 const PORT = Number(process.env.PORTAL_MEMBRAN_PORT || 4439);
 const server = statikServer();
@@ -117,6 +122,146 @@ async function blickProbe(opts) {
     return aus;
 }
 
+// H (K64-n1, die Hellen Tafeln): aus der Ring-Mitte (der Spieler am Spawn, die Tore wach) liest der AUSGABE-Pfad die Pixel jeder
+// Membran — die Maske ist ein zweiter Schuss mit Magenta-Membranen und schwarzem Nebel bei angehaltener Uhr. Die Shell malt in
+// Bild-Werten (ACES endet im Anzeige-Wert); roh als lineare Strahlung gelesen hob die Ausgabe ihre dunklen Bänder an, die Membran
+// stand milchig-weiß (entsättigt). `opt.roh`: die Membranen und Nebel zeichnen ihren Anzeige-Wert roh (der alte Leser, Selbsttest).
+async function hellProbe(opt) {
+    const r = window.anazhRealm;
+    const st = r.state;
+    const T = window.THREE;
+    const TSL = T.TSL;
+    const rend = st.renderer;
+    rend.setAnimationLoop(null);
+    const W = 480,
+        H = 270;
+    const g = r._genesisMitte();
+    const cam = st.camera;
+    cam.position.set(g.x, r._voxelSurfaceY(g.x, g.z) + 1.7, g.z);
+    cam.lookAt(g.x - 10, r._voxelSurfaceY(g.x - 10, g.z) + 1.7, g.z + 1e-4);
+    cam.updateMatrixWorld(true);
+    window.__buehne();
+    const echtNow = performance.now.bind(performance);
+    performance.now = () => 4.2e6; // die Uhr steht: Atem, Puls und Welle gleich in beiden Schüssen
+    const recs = [...r._portalMembranes.values()];
+    const vor = recs.map((rec) => [rec.mesh.material.colorNode, rec.nebel ? rec.nebel.material.colorNode : null]);
+    const setze = (fm, fn) =>
+        recs.forEach((rec) => {
+            rec.mesh.material.colorNode = fm(rec);
+            rec.mesh.material.needsUpdate = true;
+            if (rec.nebel) {
+                rec.nebel.material.colorNode = fn(rec);
+                rec.nebel.material.needsUpdate = true;
+            }
+        });
+    const schuss = async () => {
+        r._schattenAlleNeu();
+        await window.__ausgabeAufnahme(W, H, 1, { wahl: 0 });
+        return (await window.__ausgabeAufnahme(W, H, 1, { wahl: 0 })).u8.slice();
+    };
+    try {
+        if (opt.roh)
+            setze(
+                (rec) => TSL.vec4(r._membranGraph(rec.tor.gesetz).anzeige, 1.0),
+                (rec) => TSL.vec4(r._nebelGraph(rec.tor.gesetz).anzeige, 1.0)
+            );
+        const A = await schuss();
+        setze(
+            () => TSL.vec4(1, 0, 1, 1),
+            () => TSL.vec4(0, 0, 0, 1)
+        );
+        const M = await schuss();
+        // DAS LABOR-BILD derselben Pixel: die Shell zeigt ihren Anzeige-Wert als Pixel (kein Ausgabe-Schritt). Ein eigenes
+        // Render-Ziel liefert in r184 die rohen Werte des Stoffs (linear, ungetont — scripts/lib/ausgabe-aufnahme.cjs): die
+        // Membranen und Nebel zeichnen dort ihren Anzeige-Wert, ein zweiter Schuss in Magenta ist die Maske desselben Ziels.
+        const roh = async () => {
+            const rt = new T.RenderTarget(W, H, { depthBuffer: true, samples: 0 });
+            try {
+                // die neuen Stoff-Werte kompilieren erst (r184 überspringt ein Objekt, dessen Programm noch baut)
+                if (typeof rend.compileAsync === "function") await rend.compileAsync(st.scene, cam);
+                rend.setRenderTarget(rt);
+                rend.render(st.scene, cam);
+                rend.render(st.scene, cam);
+                const px = await rend.readRenderTargetPixelsAsync(rt, 0, 0, W, H);
+                const u = px instanceof Uint8Array ? px : new Uint8Array(px.buffer || px);
+                // WebGPU richtet jede Zeile auf 256 Byte aus (480 px → 2 048 Byte): das Polster fällt (wie in der Aufnahme)
+                const zeile = W * 4,
+                    schritt = u.length > zeile * H ? Math.ceil(zeile / 256) * 256 : zeile;
+                if (schritt === zeile) return u;
+                const voll = new Uint8Array(zeile * H);
+                for (let y = 0; y < H; y++) voll.set(u.subarray(y * schritt, y * schritt + zeile), y * zeile);
+                return voll;
+            } finally {
+                rend.setRenderTarget(null);
+                rt.dispose();
+            }
+        };
+        setze(
+            (rec) => TSL.vec4(r._membranGraph(rec.tor.gesetz).anzeige, 1.0),
+            (rec) => TSL.vec4(r._nebelGraph(rec.tor.gesetz).anzeige, 1.0)
+        );
+        const L = await roh();
+        setze(
+            () => TSL.vec4(1, 0, 1, 1),
+            () => TSL.vec4(0, 0, 0, 1)
+        );
+        const LM = await roh();
+        const Y = (u, i) => 0.2126 * u[i] + 0.7152 * u[i + 1] + 0.0722 * u[i + 2];
+        let nL = 0,
+            sL = 0;
+        for (let i = 0; i < W * H * 4; i += 4)
+            if (LM[i] > LM[i + 1] + 70 && LM[i + 2] > LM[i + 1] + 70) {
+                nL++;
+                sL += Y(L, i);
+            }
+        let n = 0,
+            weiss = 0,
+            sY = 0,
+            sat = 0;
+        for (let i = 0; i < W * H * 4; i += 4) {
+            if (!(M[i] > M[i + 1] + 70 && M[i + 2] > M[i + 1] + 70)) continue;
+            n++;
+            const y = Y(A, i);
+            sY += y;
+            if (y > 240) weiss++;
+            const mx = Math.max(A[i], A[i + 1], A[i + 2]);
+            sat += mx > 0 ? (mx - Math.min(A[i], A[i + 1], A[i + 2])) / mx : 0;
+        }
+        const P = new T.Vector3();
+        const imBild = recs
+            .filter((rec) => {
+                rec.mesh.getWorldPosition(P);
+                return P.sub(cam.position).normalize().dot(cam.getWorldDirection(new T.Vector3())) > 0.5;
+            })
+            .map((rec) => rec.tor.gestalt);
+        return {
+            n,
+            anteil: n / (W * H),
+            weiss: n ? weiss / n : 0,
+            Y: n ? sY / n : 0,
+            saettigung: n ? sat / n : 0,
+            Ylabor: nL ? sL / nL : 0,
+            nLabor: nL,
+            imBild,
+            belichtung: rend.toneMappingExposure,
+        };
+    } finally {
+        recs.forEach((rec, i) => {
+            rec.mesh.material.colorNode = vor[i][0];
+            rec.mesh.material.needsUpdate = true;
+            if (rec.nebel) {
+                rec.nebel.material.colorNode = vor[i][1];
+                rec.nebel.material.needsUpdate = true;
+            }
+        });
+        performance.now = echtNow;
+    }
+}
+// Das Soll (K64-n1): Labor = Welt (Lehre 19) — die Welt hebt die Membran nicht über ihr Labor-Bild: Y der Welt ≤ 1,15 × Y des
+// Anzeige-Werts derselben Tore (gemessen swiftshader, Ring-Mitte, Belichtung 0,615: der rohe Leser hob um ≈ 1,6 ×, das FARB-
+// GESETZ zeigt ≈ 0,9 ×), und kein Ausbrand: Y > 240 auf ≤ 5 % der Membran-Pixel (Nordstern Portale).
+const HELL = { hub: 1.15, weiss: 0.05 };
+
 async function blickStufe(check) {
     const browser = await starteBrowser({ art: "linse", frist: 900000 });
     const lauf = async (alt) => {
@@ -126,6 +271,10 @@ async function blickStufe(check) {
         page.on("pageerror", (e) => seite.push((e.message || String(e)).split("\n")[0]));
         await page.goto(`http://127.0.0.1:${PORT}/index.html?holz=kienspan`, { waitUntil: "domcontentloaded", timeout: 60000 });
         const o = await page.evaluate(blickProbe, { alt });
+        if (!o.fehler) {
+            await page.evaluate(AUSGABE_INSTALL);
+            o.hell = await page.evaluate(hellProbe, { roh: alt });
+        }
         o.seite = seite;
         await page.close();
         return o;
@@ -152,6 +301,15 @@ async function blickStufe(check) {
                 ? loch.map((h) => `${h.gestalt} (Amplitude ${h.amplitude})`).join(" · ")
                 : b.huelle.map((h) => `${h.gestalt} ±${h.amplitude.toFixed(2)} m`).join(" · ")
         );
+        const hellZeile = (h) =>
+            `${h.n} Membran-Pixel (${(h.anteil * 100).toFixed(1)} %), Y Welt ${h.Y.toFixed(1)} gegen Labor ${h.Ylabor.toFixed(1)} (× ${(h.Y / Math.max(1, h.Ylabor)).toFixed(2)}), Sättigung ${h.saettigung.toFixed(3)}, ` +
+            `Y > 240 ${(h.weiss * 100).toFixed(1)} %, Belichtung ${h.belichtung.toFixed(3)} — ${h.imBild.join(" · ")}`;
+        const hellRot = (h) => !(h.n > 200 && h.nLabor > 200 && h.Y <= HELL.hub * h.Ylabor && h.weiss <= HELL.weiss);
+        check(
+            `H aus der Ring-Mitte: die Welt hebt die Membran nicht über ihr Labor-Bild (Y ≤ ${HELL.hub} × Labor) und brennt nicht aus (Y > 240 ≤ ${HELL.weiss * 100} %)`,
+            !hellRot(b.hell),
+            hellZeile(b.hell)
+        );
         check("B keine Page-Errors", b.seite.length === 0, b.seite.slice(0, 2).join(" | "));
         // BS: der alte Stand (frustumCulled = false) in einer frischen Seite — B2 MUSS jede Membran beim Namen nennen
         const s = await lauf(true);
@@ -161,6 +319,7 @@ async function blickStufe(check) {
             s.weg.membran === s.membranen,
             `${s.weg.membran} von ${s.membranen}: ${s.weg.taeter.slice(0, 4).join(" · ")}${s.weg.taeter.length > 4 ? " …" : ""}`
         );
+        check("HS Selbsttest: der rohe Leser (Anzeige-Wert als Strahlung) wird in H rot beim Namen", hellRot(s.hell), hellZeile(s.hell));
     } catch (e) {
         check("B Lauf", false, (e && e.message) || String(e));
     }

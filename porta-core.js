@@ -77,13 +77,14 @@
                 // wBraid=1; die Rezepte 4 608–23 276), draws 6 = das Minimum über die Rezepte (maschine: vier Metalle
                 // verschiedener Glut, Leucht-Linien, die Licht-Scheibe — die Faltung kreuzt keine Glut-Grenze).
                 // K64 (DIE STUFE 2, Kosten ins Asset): derselbe Bau unter TOR_DETAIL_2 ab 12 m × Welt-Skala (hinein ab 13,2 m,
-                // zurück unter 10,8 m — der Ring-Mittelpunkt bei 11 m bleibt Stufe 1, die Third-Sicht und die Vorschauen fallen
-                // hinein). tris = die Regler-Hülle der Stufe 2 (gemessen 14 686 an verkalkt orders=9; die Rezepte 3 594–9 706,
-                // die Stufe 1 trug 4 608–23 276), band = das Nordstern-Soll L2 (offen, solange ein Rezept darüber liegt).
+                // zurück unter 10,8 m — die Ring-Tore bei 11 m liegen im Band: wer aus der Mitte kommt, sieht die Stufe 1, wer
+                // von außen kommt, die Stufe 2 bis 10,8 m; die Third-Sicht und die Vorschauen fallen hinein). tris = die
+                // Regler-Hülle der Stufe 2 (gemessen 11 974 an verkalkt orders=9; die Rezepte 2 394–7 810, die Stufe 1 trug
+                // 4 608–23 276), band = das Nordstern-Soll L2 (offen, solange ein Rezept darüber liegt).
                 gate: {
                     0: { tris: 76000, band: 60000, draws: 9, schatten: 3 },
                     1: { tris: 34000, draws: 6, schatten: 3, ab: 9.5 },
-                    2: { tris: 15000, band: 6000, draws: 6, schatten: 3, ab: 12 },
+                    2: { tris: 12000, band: 6000, draws: 6, schatten: 3, ab: 12 },
                     3: { tris: 12000, draws: 1, schatten: 3, nurWurf: true },
                     fernform: "huelle",
                     hyst: 0.1,
@@ -242,15 +243,16 @@
     // DIE STUFE 2 DES TORS (K64, Kosten ins Asset): derselbe Bau jenseits `lod.budget.gate[2].ab` (12 m), gerechnet im Pixel der
     // SZENE (TAAU-Skala 0,75: 0,97 cm / 8 m / 0,75 = 1,94 cm je Szenen-Pixel bei 12 m). Drei Teile des EINEN Gesetzes: der
     // Sehnen-Fehler 5 cm (≤ 2,6 px, der Fehler der Stufe 1 an ihrer Grenze), das FEINE fällt — eine Röhre oder ein Ring mit
-    // Radius ≤ `feinM` (Durchmesser ≤ ein Szenen-Pixel: die Blätter der Pässe, die Dreipässe; sie flimmerten dort nur) —, und
-    // das Geflecht trägt jeden `straehnen`-ten Strang mit der Deckung aller (Breite × straehnen, dieselbe Phase, derselbe
+    // Durchmesser ≤ `feinM` (1,5 Szenen-Pixel bei 12 m = 2,9 cm: das Filigran der Pässe, die Dreipässe, die Gitter-Sprossen
+    // unter 3 cm; sie flimmerten dort unter der Zeit-Auflösung nur, K64-n1: die Klasse an Genesis Third 126 772 > 120 000) —,
+    // und das Geflecht trägt jeden `straehnen`-ten Strang mit der Deckung aller (Breite × straehnen, dieselbe Phase, derselbe
     // Zufalls-Strom: die Strähnen-Lücke 16 cm bleibt ≥ 8 px, das Band behält Fläche und Farbe).
-    var TOR_DETAIL_2 = { sehneM: 0.05, laengsM: 3, umfangMin: 3, ringMin: 5, proben: 256, zylinder: 4, tuerFest: true, pixelM: 0.0194, straehnen: 2 };
+    var TOR_DETAIL_2 = { sehneM: 0.05, laengsM: 3, umfangMin: 3, ringMin: 5, proben: 256, zylinder: 4, tuerFest: true, feinM: 0.0291, straehnen: 2 };
     var _detail = TOR_DETAIL; // das Gesetz des laufenden Baus (buildInstance setzt es je Stufe, synchron)
-    // Das FEINE der Stufe (TOR_DETAIL_2 `feinM`): eine Röhre oder ein Ring dieses Radius fällt — an seiner Stelle eine leere Gruppe
-    // (kein Draw, kein Dreieck; der Bau-Strom läuft unverändert weiter). Die Stufen 0 und 1 tragen kein `feinM`.
+    // Das FEINE der Stufe (TOR_DETAIL_2 `feinM`): ein Teil dieses Durchmessers (Röhre, Ring, Fase) fällt — an seiner Stelle eine
+    // leere Gruppe (kein Draw, kein Dreieck; der Bau-Strom läuft unverändert weiter). Die Stufen 0 und 1 tragen kein `feinM`.
     function fein(m) {
-        return _detail.pixelM > 0 && m <= _detail.pixelM;
+        return _detail.feinM > 0 && m <= _detail.feinM;
     }
     function umfangMit(D, r, hoechst) {
         var n = Math.ceil(Math.PI / Math.acos(Math.max(-1, 1 - D.sehneM / r)));
