@@ -113,6 +113,13 @@ const HASH = async () => {
         // ARMLÄNGE
         await page.setViewport({ width: 1920, height: 1080 });
         await new Promise((r) => setTimeout(r, 1500));
+        // die Ruhe-Pose beider Labore: Entspannt ohne Verhaltens-Einlage (das Labor würfelt sonst Gehen/Umsehen in den Schuss)
+        await page.evaluate(() => {
+            emo.set("idle");
+            emo.behType = null;
+            emo.behTimer = -1e9;
+        });
+        await new Promise((r) => setTimeout(r, 2500));
         out.armlaenge = await page.evaluate(() => {
             document.getElementById("ui").style.display = "none";
             const bt = document.getElementById("buildtag");
