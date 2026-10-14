@@ -21124,12 +21124,8 @@ async function checkBandWelleC3CellularReaction(ctx) {
             window.__codeOf(r._buildVoxelChunkWaterCells)
         );
         // Jede Cell-Index-Berechnung liest die LOD des Chunks, sonst greift dim=24/step=1.8 (LOD 0) auf
-        // einem LOD-1-Chunk (dim=12/step=3.6) out-of-bounds. cfgFor(entry) gilt fürs Terrain; waterCells
+        // einem LOD-1-Chunk (dim=12/step=3.6) out-of-bounds. waterCells
         // leben immer auf LOD 0 → cfgWater.
-        const cfgFor = (chunkEntry) => {
-            const lod = chunkEntry && Number.isFinite(chunkEntry.lod) ? chunkEntry.lod : 0;
-            return r._voxelChunkConfig(lod);
-        };
         const cfgWater = r._voxelChunkConfig(0); // Wasser-Cells immer LOD 0
         // span ist LOD-invariant (43.2 m), darf aus dem Default gelesen werden.
         const span = r._voxelChunkConfig().span;
@@ -42845,7 +42841,6 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
                 /* skip */
             }
         }
-        const anySrc = (re) => allSrc.some((m) => re.test(m.src));
         const srcOf = (name) => {
             const m = allSrc.find((x) => x.name === name);
             return m ? m.src : "";
@@ -54267,10 +54262,6 @@ async function checkBandRing5Soul(ctx) {
         // ersetzt (neuer Group). Wir lesen jedes Mal frisch
         // aus state, statt eine Referenz festzuhalten.
         const currentMesh = () => r.state.playerMesh;
-        const currentMaterial = () => {
-            const m = currentMesh();
-            return m && m.userData && m.userData.material;
-        };
         const currentParts = () => {
             const m = currentMesh();
             return m && m.userData && m.userData.parts;
