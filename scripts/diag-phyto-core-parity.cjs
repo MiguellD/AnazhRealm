@@ -135,9 +135,9 @@ ok(
 // Der gesehene Baum (foundry-core `deriveParamsPlant`, wie `buildInstance` ihn ruft: __dials = Preset-Regler, SEED,
 // __lod = Bau-Stufe) und das Gesetz (`__phytoCore.treeParams(s, Saat, Stufe, Art)`) müssen denselben P-Vektor
 // liefern — Schlüssel für Schlüssel, je Art × Gestalt (Saat) × Stufe. Der Foundry-Worker-Scope wird wie im Worker
-// gebaut (three-r128 → phyto-core → foundry-core); clamp/lerp/__dials/SEED/__lod/gv stellt dort die Shell
-// (phytogenesis.js), hier ihr Ersatz. Konsum-Leser: `buildInstance` (Foundry-Worker, jeder Baum der Welt) und
-// `build()` (Studio).
+// gebaut (three-r128 → phyto-core → foundry-core); clamp/lerp/__dials/SEED/__lod stellt dort die Brücke
+// (foundry-bruecke.js), hier ihr Ersatz — die Dials liest der Kern nur aus `__dials` (K47: kein DOM-Leser `gv` mehr).
+// Konsum-Leser: `buildInstance` (Foundry-Worker, jeder Baum der Welt) und `build()` (Studio).
 const TERR_LIB = path.join(__dirname, "..", "worlds", "terrain", "lib");
 const fsb = { console, performance: { now: () => 0 } };
 fsb.self = fsb;
@@ -147,8 +147,7 @@ vm.runInContext(fs.readFileSync(path.join(TERR_LIB, "three-r128.min.js"), "utf8"
 vm.runInContext(src, fctx, { filename: "phyto-core.js(foundry)" });
 vm.runInContext(
     "var clamp = (x, a, b) => Math.max(a, Math.min(b, x)), lerp = (a, b, t) => a + (b - a) * t;" +
-        "var __dials = null, SEED = 0, __lod = 0, subject = null, RNG = null, CURRENT = '';" +
-        "function gv() { throw new Error('gv: der P-Zwilling liest nur Preset-Regler'); }",
+        "var __dials = null, SEED = 0, __lod = 0, subject = null, RNG = null, CURRENT = '';",
     fctx
 );
 vm.runInContext(fs.readFileSync(path.join(__dirname, "..", "foundry-core.js"), "utf8"), fctx, {

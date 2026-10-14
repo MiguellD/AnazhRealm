@@ -4447,12 +4447,13 @@ function __weltSkalaArt(id) {
 }
 
 function deriveParamsPlant(pre) {
+    // die Dials aus dem Dial-Kontext des Wirts (`__dials`): im Bau die Preset-Dials, im Labor das Regler-Objekt der Hülle (K47)
     const _D = __dials;
-    const api = _D ? _D.api : gv("sApi"),
-        delta = _D ? _D.delta : gv("sDelta"),
-        slim = _D ? _D.slim : gv("sSlim"),
-        trop = _D ? _D.trop : gv("sTrop"),
-        leaf = _D ? _D.leaf : gv("sLeaf");
+    const api = _D.api,
+        delta = _D.delta,
+        slim = _D.slim,
+        trop = _D.trop,
+        leaf = _D.leaf;
     const fx = pre.fx;
     const IR = mulberry32(((Math.floor(SEED) + 1) * 2246822519) >>> 0);
     const J = (a) => 1 + (IR() - 0.5) * 2 * a,
@@ -4657,13 +4658,13 @@ function rockPhenotype(gen, sph, elong, round, rough, strat, IR) {
 }
 
 function deriveParamsRock(pre) {
-    const _D = __dials;
-    const gen = _D ? _D.gen : gv("rGen"),
-        sph = _D ? _D.sph : gv("rSph"),
-        elong = _D ? _D.elong : gv("rElo"),
-        round = _D ? _D.rnd : gv("rRnd"),
-        rough = _D ? _D.rgh : gv("rRgh"),
-        strat = _D ? _D.str : gv("rStr");
+    const _D = __dials; // der Dial-Kontext des Wirts (siehe deriveParamsPlant)
+    const gen = _D.gen,
+        sph = _D.sph,
+        elong = _D.elong,
+        round = _D.rnd,
+        rough = _D.rgh,
+        strat = _D.str;
     const IR = mulberry32(((Math.floor(SEED) + 7) * 2246822519) >>> 0);
     const J = (a) => 1 + (IR() - 0.5) * 2 * a,
         O = (a) => (IR() - 0.5) * 2 * a;

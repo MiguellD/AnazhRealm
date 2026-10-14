@@ -203,12 +203,9 @@ let __rockKind = "boulder";
 let CURRENT = "eiche",
     SEED = 12345;
 
-/* ---------- Slider -> abgeleitete Struktur-Parameter ---------------------- */
-function gv(id) {
-    return parseFloat(document.getElementById(id).value);
-}
+/* ---------- Der Dial-Kontext: die Regler, aus denen deriveParams* die Struktur ableiten ---------------------- */
 let __dials =
-    null; /* Dial-Kontext: gesetzt = kanonische Preset-Regler (Wald/Templates/Atlas, DOM-frei & deterministisch); null = Studio liest live die Slider */
+    null; /* buildInstance setzt die kanonischen Preset-Dials (Wald/Templates/Atlas, DOM-frei & deterministisch); das Labor setzt das Regler-Objekt der Hülle (phytogenesis.js DIALS, K47) — nie das DOM */
 
 /* ---------- Saison (Phaenologie) ------------------------------------------ */
 let curSeason = "summer";
