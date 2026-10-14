@@ -132,3 +132,6 @@ Flackern), lokale Linsen auf swiftshader (Pipeline-Bau 42–292 s, gate:haus-wel
 | takt-kreatur | (nur lokal, ohne Änderung) | K59 hatte noch nicht geschnitten | neu starten: Kreaturen außerhalb des Bilds 0,75 ms, updateMatrixWorld 0,44 ms (OMEN bericht/1410-3-takt.md) |
 
 Fork-PR-Freigabe steht auf `all_external_contributors` (Voraussetzung des OMEN-Runners). Notbremse-Lehre: erst bei 98 % bremsen, vorher keine Drosselung.
+
+## Aufräumen (Lehre 14.10. nachts)
+Vergessene Prozesse zogen stundenlang Radeon-Leistung und verrauschten die lokalen Messungen (Spiel-Tab 7880 ~11 h, Werkbank-Echt-Fenster ~2 h, Puppeteer-Browser, 7 save-server, 13 journal-wache, 4 Studio-Tabs). Ab jetzt: nach jeder Welle und Augen-Runde `powershell -File artifacts/profiband/werkzeug/aufraeumen.ps1` (lokal, schützt :4312) und die Chat-Browser-Tabs schließen (preview_stop schließt keinen Tab). Arbeiter beenden, was sie starten. Benannt für den Code: die Werkbank beendet sich nach N Minuten ohne Befehl (Leerlauf-Frist), damit ein abgebrochener Arbeiter kein Fenster stehen lässt.
