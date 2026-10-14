@@ -1187,6 +1187,21 @@ async function probe(arg) {
         check("K4 Selbst-Test: die Abnahme-Zeile nennt jeden eingeschmuggelten Fall und jede Fixture beim Namen", abnahmeBrueche.length === 0, abnahmeBrueche.join(" · "));
         for (const f of JSON.parse(fs.readFileSync(path.join(fdir, "faelle.json"), "utf8")).faelle)
             console.log(`   Fixture ${f.name}: ${AU.abnahmeUrteil(AU.fixtureMessung(f, fdir), AU.SCHWELLEN).zeile}`);
+        // K5 — DIE SOLL-TAFEL (K63, spec/abnahme/soll-tafel.json, AAAA Schritt 0): je sichtbarer Klasse Soll (eigen oder als
+        // Verweis auf KOPF_SOLL · BLATT_ATLAS_WEDEL · die Albedo-Tafel), Budget je LOD-Stufe aus dem Haushalt und EIN Maß mit
+        // Ist aus dem Ausgabe-Pfad. Die Wand: die Tafel trägt keinen Bruch (Verweis ohne Ziel, Haushalt-Klasse fehlt, Reihenfolge
+        // nicht nach Wirkung, ROT ohne Täter), die Maske trennt Schatten, Wurzel und Verdecker von der Klasse, jeder eingeschmuggelte
+        // Bruch fällt beim Namen; ein ROTES Maß ist der Auftrag der nächsten AAAA-Karte, nie ein Bruch der Wand.
+        const sollTafel = JSON.parse(fs.readFileSync(path.join(fdir, "soll-tafel.json"), "utf8"));
+        const sollQ = {
+            haushalt: JSON.parse(fs.readFileSync(path.join(root, "spec", "profiband", "haushalt.json"), "utf8")),
+            lesen: (d) => (fs.existsSync(path.join(root, d)) ? fs.readFileSync(path.join(root, d), "utf8") : null),
+        };
+        const sollBrueche = AU.sollTafelSelbsttest(sollTafel, sollQ);
+        check("K5 Selbst-Test: die Soll-Tafel ohne Bruch, Maske und Maße geeicht, jeder Tafel-Bruch beim Namen", sollBrueche.length === 0, sollBrueche.join(" · "));
+        const sollU = AU.sollTafelUrteil(sollTafel, sollQ);
+        console.log(`   SOLL-TAFEL: ${sollU.rot} von ${sollU.zeilen.length} Klassen ROT (nach Wirkung):`);
+        for (const z of sollU.zeilen) console.log(`     ${AU.sollTafelZeile(z)}`);
         const aufWand = (q) =>
             /window\.__abnahmeUrteil\(m\)/.test(q) &&
             /fehler\.abnahme = m;\s*throw fehler;/.test(q) &&

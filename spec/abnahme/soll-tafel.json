@@ -1,0 +1,403 @@
+{
+    "version": 1,
+    "zweck": "DIE SOLL-TAFEL (K63, AAAA Schritt 0, Lehre 18 „erst das Soll-Bild, dann die Welle“): je sichtbarer Klasse (a) das Soll als messbare Eigenschaften einer benannten AAA-Referenz — eigene Eigenschaften mit Band und Quelle, oder der VERWEIS auf ein Soll, das schon im Kern oder in einer Tafel steht (KOPF_SOLL, BLATT_ATLAS_WEDEL, die Albedo-Tafel: referenziert, nie kopiert); (b) das Budget je LOD-Stufe aus dem Haushalt des Profi-Bands (`budget.haushalt` = die Klassen-Zeile von spec/profiband/haushalt.json als L0, L1 ≤ 35 %, L2 ≤ 10 %, Nordstern M4; der VRAM-Anteil der Welt nach dem Dreiecks-Anteil — gerechnet von scripts/lib/abnahme-urteil.cjs `sollTafelUrteil`, nie abgeschrieben); (c) EIN Maß, das das heutige Bild aus dem Ausgabe-Pfad misst (`werkbank bild --klasse`: Klassen-Maske aus vier Schüssen derselben Pose, `klassenMasse`; `werkbank licht`; `werkbank albedo`), mit Ist, Täter und Rohdatei. Das Urteil ROT/GRÜN rechnet die Linse aus Ist und Band; die Reihenfolge ist die sichtbare Wirkung (Bildanteil am Messort × Abstand zum Band) = die Reihenfolge der folgenden AAAA-Karten. Wand: diag-kamera-laub --selftest (K5, npm run check).",
+    "gemessen": {
+        "datum": "2026-10-14",
+        "kopf": "d2e06032 (V18.546.2, integ-probe = main)",
+        "geraet": "Radeon 890M (amd rdna-3), Werkbank headless am Hardware-Adapter (das GPU-Schloss hielten K60-1 und K64; Bild-Urteile, keine Zeiten), Leinwand 640×360, Bühne Mittag · Sonne · Sommer",
+        "rohdaten": "artifacts/profiband/soll-tafel/ im Arbeits-Klon (je Klasse <id>.png · <id>.maske.png · <id>.abnahme.json mit `klasse.masse`)"
+    },
+    "klassen": [
+        {
+            "id": "boden-nah",
+            "titel": "Gras und Boden nah (Nah-Wiese über dem Boden-Satz)",
+            "wirkung": {
+                "rang": 1,
+                "grund": "Bildanteil an der Wiese 0,65 (Boden 0,367 + Gras 0,286 des Bilds) × Abstand |ln(0,44/0,9)| 0,72 = 0,47 — der Boden trägt jedes Ego-Bild; Augen-Befund 14.10. Nr. 4 „Gras als einzelne Büschel auf glattem Grün“"
+            },
+            "referenz": [
+                {
+                    "titel": "Ghost of Tsushima (Sucker Punch, 2020)",
+                    "technik": "prozedurales Gras je Kachel im Compute-Pass, Halme bis an den Horizont-Saum, Wind als Feld (GDC 2021, „Procedural Grass in Ghost of Tsushima“)"
+                },
+                {
+                    "titel": "Horizon Zero Dawn (Guerrilla, 2017)",
+                    "technik": "Vegetation als Platzierungs-Funktion über Dichte-Karten, der Boden unter der Wiese ist aus Augenhöhe nie frei (GDC 2018, „Between Tech and Art: The Vegetation of Horizon Zero Dawn“)"
+                }
+            ],
+            "soll": {
+                "eigenschaften": [
+                    {
+                        "groesse": "bodenDeckung",
+                        "band": [0.9, 1],
+                        "einheit": "Anteil des sichtbaren Bodens, den Halme decken (Augenhöhe 1,7 m, Blick 10–15 m voraus)",
+                        "quelle": "Lückenanteil P(θ) = exp(−G·LAI/cos θ) (Nilson 1971, Agric. Meteorol. 8:25; Campbell & Norman 1998, Kap. 15) mit G 0,5, Grasland-LAI ≥ 1,7 (Asner, Scurlock & Hicke 2003, Global Ecol. Biogeogr. 12:191) und θ ≈ 80° aus Augenhöhe: P ≤ 0,01 — die Wiese deckt ihren Boden [gerechnet]"
+                    },
+                    {
+                        "groesse": "nyquist",
+                        "band": [0.11, 0.16],
+                        "einheit": "Schachbrett-Anteil der Gradient-Energie (klassenMasse)",
+                        "quelle": "natürliche Bild-Statistik, Leistungsspektrum 1/f^β mit β 1,6–2,4 (Field 1987, JOSA A 4:2379; van der Schaaf & van Hateren 1996, Vision Res. 36:2759): klassenMasse auf synthetischen 1/f^β-Bildern 0,11–0,16 [gerechnet]"
+                    }
+                ]
+            },
+            "budget": {
+                "haushalt": "nahWiese"
+            },
+            "mass": {
+                "name": "bodenDeckung",
+                "band": [0.9, null],
+                "quelle": "soll.eigenschaften bodenDeckung",
+                "ist": 0.4385,
+                "teile": {
+                    "grasPixel": 65973,
+                    "bodenPixel": 84462,
+                    "grasDeckungUnten": 0.614
+                },
+                "taeter": "nahWiese:L1/L2 — das Gras endet am Nah-Ring (≈ 15 m), dahinter glatter Boden-Satz (bodenSatz 0,367 des Bilds sichtbar)",
+                "werkzeug": "werkbank bild -278 +1.7 -1038 -276 +1.2 -1026 --wahl 0 --klasse '^(nahWiese:.*|streuSatz)$' bzw. '^bodenSatz$' (dieselbe Pose, Mess-Wiese K55)",
+                "rohdatei": "artifacts/profiband/soll-tafel/boden-gras.abnahme.json + boden-grund.abnahme.json",
+                "bild": "artifacts/profiband/soll-tafel/boden-gras.png"
+            }
+        },
+        {
+            "id": "himmel-licht",
+            "titel": "Himmel und Licht (Sonne gegen Himmel am Mittag)",
+            "wirkung": {
+                "rang": 2,
+                "grund": "Bildanteil 1,0 (jedes Pixel im Tageslicht) × Abstand |ln(4,18/5)| 0,18 = 0,18 — die Schatten sind zu hell, das Bild flach"
+            },
+            "referenz": [
+                {
+                    "titel": "Frostbite (EA DICE), Moving Frostbite to PBR",
+                    "technik": "physikalische Licht-Einheiten: Sonne ~100 000 lx, klarer Himmel 10 000–20 000 lx, Belichtung in EV (Lagarde & de Rousiers, SIGGRAPH 2014)"
+                },
+                {
+                    "titel": "Unreal Engine 5 SkyAtmosphere",
+                    "technik": "Rayleigh/Mie/Ozon in LUTs, die Sonne als gerichtetes Licht in lx, der Himmel als Umgebung aus derselben Atmosphäre (Hillaire 2020, Comput. Graph. Forum 39(4))"
+                }
+            ],
+            "soll": {
+                "eigenschaften": [
+                    {
+                        "groesse": "lichtVerhaeltnis",
+                        "band": [5, 12],
+                        "einheit": "E(Sonne + Himmel) / E(Himmel) an der waagrechten 18-%-Karte, Mittag klar",
+                        "quelle": "Diffus-Anteil des klaren Himmels 0,08–0,2 (Liu & Jordan 1960, Solar Energy 4(3):1); Frostbite PBR (Sonne 100 klx, Himmel 10–20 klx): 6–11"
+                    }
+                ]
+            },
+            "budget": {
+                "haushalt": "einzelstuecke"
+            },
+            "mass": {
+                "name": "lichtVerhaeltnis",
+                "band": [5, 12],
+                "quelle": "soll.eigenschaften lichtVerhaeltnis",
+                "ist": 4.18,
+                "teile": {
+                    "E_alle_oben": 9.44,
+                    "E_umgebung_oben": 2.26,
+                    "E_sonne_oben": 7.18,
+                    "sonneHoehe": "y 0,962"
+                },
+                "taeter": "die Umgebung (Himmels-Env) gegen DirectionalLight 7,43: E Himmel 2,26 zu Sonne 7,18 — der Himmel füllt die Schatten zu hell",
+                "werkzeug": "werkbank licht (die Licht-Bilanz, Mess-Wiese K55 −278/−1038; der zweite Ruf — der erste misst 0, siehe offen)",
+                "rohdatei": "artifacts/profiband/soll-tafel/himmel-licht.licht.json",
+                "bild": "artifacts/profiband/soll-tafel/boden-gras.png"
+            }
+        },
+        {
+            "id": "laub",
+            "titel": "Laub (Laub- und Nadelbaum, Kronen-Karten L0/L1 und Karte L2)",
+            "wirkung": {
+                "rang": 3,
+                "grund": "Bildanteil am Waldrand 0,42 × Abstand |ln(0,199/0,16)| 0,22 = 0,09 — Augen-Befund 14.10.: Nadel-Karten groß und kantig, Laub-Karten mit Dither-Muster"
+            },
+            "referenz": [
+                {
+                    "titel": "Horizon Zero Dawn (Guerrilla, 2017)",
+                    "technik": "Kronen aus vielen kleinen Blatt-Karten mit Alpha-Test und zeitlicher Auflösung, kein sichtbares Raster im Blätterdach (GDC 2018, Vegetation of Horizon Zero Dawn)"
+                },
+                {
+                    "titel": "The Witcher 4 Tech-Demo / Unreal Engine 5.6 (2025)",
+                    "technik": "Nanite-Laub: Geometrie statt Karten bis in die Ferne, LOD-Wechsel ohne Dither-Blende"
+                }
+            ],
+            "soll": {
+                "verweis": [
+                    {
+                        "datei": "phyto-core.js",
+                        "symbol": "BLATT_ATLAS_WEDEL"
+                    }
+                ],
+                "eigenschaften": [
+                    {
+                        "groesse": "nyquist",
+                        "band": [0.11, 0.16],
+                        "einheit": "Schachbrett-Anteil der Gradient-Energie in der Krone (klassenMasse)",
+                        "quelle": "natürliche Bild-Statistik 1/f^β, β 1,6–2,4 (Field 1987; van der Schaaf & van Hateren 1996): 0,11–0,16 [gerechnet]; am Boden-Satz desselben Lichts gemessen 0,124"
+                    }
+                ]
+            },
+            "budget": {
+                "haushalt": "baum"
+            },
+            "mass": {
+                "name": "nyquist",
+                "band": [null, 0.16],
+                "quelle": "soll.eigenschaften nyquist",
+                "ist": 0.1994,
+                "teile": {
+                    "deckung": 0.4158,
+                    "detail": 0.1226,
+                    "silhouette": 36.68,
+                    "boden": 0.1238,
+                    "gras": 0.1767
+                },
+                "taeter": "f:tanne:L0/L1 · f:fichte:L1 · f:eiche:L1 (Kronen-Karten mit der Dither-Blende je Instanz)",
+                "werkzeug": "werkbank bild -284 +1.7 -1042 -269 34 -1036 --ziel tanne --klasse '^(f:[a-z_]+:L[0-2]|fimp:[a-z_]+:L[0-2]|kronendach)$'",
+                "rohdatei": "artifacts/profiband/soll-tafel/laub-tanne.abnahme.json",
+                "bild": "artifacts/profiband/soll-tafel/laub-tanne.png"
+            }
+        },
+        {
+            "id": "haus",
+            "titel": "Haus (Fachwerk, die Bau-Stoffe Putz · Holz · Dach)",
+            "wirkung": {
+                "rang": 4,
+                "grund": "Bildanteil im Dorf ≈ 0,1 × Abstand |ln(0,505/0,9)| 0,58 ≈ 0,06 — das Labor zeigt das Haus halb so hell wie die Welt (M0)"
+            },
+            "referenz": [
+                {
+                    "titel": "Assassin's Creed Unity (Ubisoft, 2014)",
+                    "technik": "Fassaden aus kalibrierten Stoffen (physikalisch basierte Albedo je Material, Putz · Holz · Ziegel im selben Licht wie die Welt)"
+                },
+                {
+                    "titel": "Esri CityEngine / CGA",
+                    "technik": "die Epoche als Regel-Grammatik, das Haus aus Parzelle → Masse → Fassade (Müller et al. 2006, ACM TOG 25(3):614)"
+                }
+            ],
+            "soll": {
+                "verweis": [
+                    {
+                        "datei": "spec/farbe/albedo-tafel.json",
+                        "zeile": "haus"
+                    }
+                ],
+                "eigenschaften": [
+                    {
+                        "groesse": "albedo",
+                        "band": [0.9, 1.1],
+                        "einheit": "Albedo Labor / Welt der Bau-Stoffe (dieselbe Rechnung `albedoAuswerten`)",
+                        "quelle": "Nordstern M0 Substrat-Treue und die Toleranz der Albedo-Tafel 0,1 (spec/farbe/albedo-tafel.json)"
+                    }
+                ]
+            },
+            "budget": {
+                "haushalt": "bau"
+            },
+            "mass": {
+                "name": "albedo",
+                "band": [0.9, 1.1],
+                "quelle": "soll.eigenschaften albedo",
+                "ist": 0.505,
+                "teile": {
+                    "labor": 0.0841,
+                    "welt": 0.1665,
+                    "gemessen": "07.10. (Albedo-Tafel, Radeon)"
+                },
+                "taeter": "fachwerk Labor r128 (die Kultur alemannisch auf Saat 3) gegen die Welt (bauSatz, f:alemannisch:L0/L1): das Labor zeigt die Bau-Stoffe 0,0841 statt 0,1665",
+                "werkzeug": "werkbank albedo --tafel + diag-albedo-tafel.cjs --labor (die Albedo-Tafel)",
+                "rohdatei": "spec/farbe/albedo-tafel.json (Zeile haus, ist)",
+                "bild": "artifacts/profiband/soll-tafel/tor-nah.png"
+            }
+        },
+        {
+            "id": "wasser",
+            "titel": "Wasser (Wasser-Satz, Fern-Wasser)",
+            "wirkung": {
+                "rang": 5,
+                "grund": "ungemessen: an Wiese und Genesis steht kein Wasser im Blick (farWater 1 070 m fern) — die Wirkung ist offen, darum hinter den gemessenen ROTEN"
+            },
+            "referenz": [
+                {
+                    "titel": "Sea of Thieves (Rare, 2018)",
+                    "technik": "Fresnel-Spiegel mit Bildschirm-Raum-Reflexion und Planar-Fallback, die Wasser-Farbe aus Streuung im Volumen"
+                },
+                {
+                    "titel": "Red Dead Redemption 2 (Rockstar, 2018)",
+                    "technik": "Flüsse mit Spiegel von Ufer, Wolke und Mond; Strömung aus dem Gelände"
+                }
+            ],
+            "soll": {
+                "eigenschaften": [
+                    {
+                        "groesse": "detail",
+                        "band": [0.05, null],
+                        "einheit": "Gradient / Mittel im Wasser (ein Spiegel trägt das Detail des Gespiegelten)",
+                        "quelle": "Fresnel ≈ 2 % senkrecht, streifend → 100 % (n 1,333): aus Augenhöhe spiegelt der See Ufer und Wolke (Nordstern §4.1 Wasser-Optik); heute Spiegel 128×64-Verlauf"
+                    }
+                ]
+            },
+            "budget": {
+                "haushalt": "boden"
+            },
+            "mass": {
+                "name": "detail",
+                "band": [0.05, null],
+                "quelle": "soll.eigenschaften detail",
+                "ist": null,
+                "taeter": null,
+                "werkzeug": "werkbank bild <Ufer-Pose> --klasse '^(wasserSatz|farWater|chunk-water-[a-z]+)$' — ein Messort mit Wasser fehlt im Haushalt",
+                "rohdatei": null
+            }
+        },
+        {
+            "id": "tor-fern",
+            "titel": "Tore (der Genesis-Ring: Rahmen bau:welt_* und Membran)",
+            "wirkung": {
+                "rang": 6,
+                "grund": "GRÜN im Maß: die Ring-Tore lesen aus 30 m wie aus 8 m (1,06); das Tor-Studio-Tor fern (Augen-Befund 14.10., Stufe 1/3) trägt der Ring nicht — K64 misst es"
+            },
+            "referenz": [
+                {
+                    "titel": "Fortnite / Unreal Engine HLOD",
+                    "technik": "die Fernstufe aus dem Stoff des Originals gebacken (Impostor bzw. HLOD-Proxy mit derselben Albedo), der Wechsel ohne Helligkeits-Sprung"
+                },
+                {
+                    "titel": "Horizon Forbidden West (Guerrilla, 2022)",
+                    "technik": "Impostor-Karten aus der Albedo und Normale des Modells, im selben Licht wie das Original"
+                }
+            ],
+            "soll": {
+                "verweis": [
+                    {
+                        "datei": "spec/farbe/albedo-tafel.json",
+                        "zeile": "tor"
+                    }
+                ],
+                "eigenschaften": [
+                    {
+                        "groesse": "stufenTreue",
+                        "band": [0.8, 1.25],
+                        "einheit": "Luma der Klasse aus 30 m / aus 8 m (Ausgabe-Pfad, gleiche Bühne)",
+                        "quelle": "± ⅓ Blende: der kleinste Belichtungs-Schritt, den das Auge an einer Fläche als Sprung liest; HLOD/Impostor aus derselben Albedo"
+                    }
+                ]
+            },
+            "budget": {
+                "haushalt": "bau"
+            },
+            "mass": {
+                "name": "stufenTreue",
+                "band": [0.8, 1.25],
+                "quelle": "soll.eigenschaften stufenTreue",
+                "ist": 1.06,
+                "teile": {
+                    "lumaNah": 134.37,
+                    "lumaFern": 142.51,
+                    "membranEmission": 0.487,
+                    "rahmenAlbedo": "0,12–0,19"
+                },
+                "taeter": null,
+                "werkzeug": "werkbank bild 3.4 92.2 -2.5 3.4 92.5 -10.5 --wahl 0 und 3.4 93 19.5 3.4 92.5 -10.5 --ziel tor (Blick-Wahl: Pose 29,38/4,5) --klasse '^(bau:welt_[a-z_]+|portal-membran)$'; werkbank albedo --nur",
+                "rohdatei": "artifacts/profiband/soll-tafel/tor-nah.abnahme.json + tor-fern.abnahme.json + albedo-genesis.json",
+                "bild": "artifacts/profiband/soll-tafel/tor-fern.png"
+            }
+        },
+        {
+            "id": "fels",
+            "titel": "Fels (Formationen-Satz)",
+            "wirkung": {
+                "rang": 7,
+                "grund": "GRÜN im Maß (Albedo 0,237 ≤ 0,30)"
+            },
+            "referenz": [
+                {
+                    "titel": "Quixel Megascans in The Mandalorian / UE5 Valley of the Ancient (2021)",
+                    "technik": "photogrammetrischer Fels mit kalibrierter Albedo (Fels dunkel, 0,1–0,3) und Nanite-Geometrie"
+                }
+            ],
+            "soll": {
+                "verweis": [
+                    {
+                        "datei": "spec/farbe/albedo-tafel.json",
+                        "zeile": "fels"
+                    }
+                ],
+                "eigenschaften": [
+                    {
+                        "groesse": "albedo",
+                        "band": [0.1, 0.3],
+                        "einheit": "Albedo (linear, Rec.-709-Luma) des Fels-Stoffs",
+                        "quelle": "Fels ≤ 0,30 (PSU EARTH 103, Albedo-Tabelle; Nordstern §4.1)"
+                    }
+                ]
+            },
+            "budget": {
+                "haushalt": "formationen"
+            },
+            "mass": {
+                "name": "albedo",
+                "band": [0.1, 0.3],
+                "quelle": "soll.eigenschaften albedo",
+                "ist": 0.2366,
+                "teile": {
+                    "heute": 0.2173,
+                    "heutePixel": 4,
+                    "gemessen": "07.10. Albedo-Tafel (heute nur 4 Pixel im Blick)"
+                },
+                "taeter": null,
+                "werkzeug": "werkbank albedo --tafel (Zeile fels) bzw. werkbank albedo --nur '^formationenSatz$'",
+                "rohdatei": "spec/farbe/albedo-tafel.json (Zeile fels, ist) + artifacts/profiband/soll-tafel/albedo-genesis.json"
+            }
+        },
+        {
+            "id": "mensch-kopf",
+            "titel": "Mensch-Kopf (der gebackene Kopf L0: Haut, Augen, Haar)",
+            "wirkung": {
+                "rang": 8,
+                "grund": "GRÜN im Maß: jede Größe von MENSCH_SOLL (11) und KOPF_SOLL (16) im Band (K57, gate:mensch-anatomie)"
+            },
+            "referenz": [
+                {
+                    "titel": "MetaHuman (Epic Games, Unreal Engine 5)",
+                    "technik": "Kopf aus Scan-Statistik: Proportion nach Anthropometrie, Augen in der Höhle mit Lidern, Lippe und Höhle als Töne der Haut, Haar als Volumen"
+                }
+            ],
+            "soll": {
+                "verweis": [
+                    {
+                        "datei": "koerper-core.js",
+                        "symbol": "KOPF_SOLL"
+                    },
+                    {
+                        "datei": "koerper-core.js",
+                        "symbol": "MENSCH_SOLL"
+                    }
+                ]
+            },
+            "budget": {
+                "haushalt": "einzelstuecke"
+            },
+            "mass": {
+                "name": "kopfSoll",
+                "band": [0, 0],
+                "quelle": "gate:mensch-anatomie (Zahl der Größen außerhalb ihres Bands)",
+                "ist": 0,
+                "teile": {
+                    "kopfDreiecke": 11880,
+                    "augenLinie": 0.5123,
+                    "augenSpalt": 1.0601,
+                    "lippeL": -9.02,
+                    "haarDeckung": 0.9866
+                },
+                "taeter": null,
+                "werkzeug": "node scripts/diag-mensch-anatomie.cjs; Bild werkbank bild -278 29.22 -1037.55 -278 29.2 -1038 --spieler --klasse '^spieler$' (Third)",
+                "rohdatei": "artifacts/profiband/soll-tafel/mensch-kopf.anatomie.txt",
+                "bild": "artifacts/profiband/soll-tafel/mensch-kopf.png"
+            }
+        }
+    ]
+}

@@ -493,8 +493,338 @@ function abnahmeSelbsttest(fixtureDir) {
     return v;
 }
 
+// DIE KLASSEN-MASKE (K63, die Soll-Tafel; rein, in der Seite als `__klassenMaske`): welche Pixel des Ausgabe-Bilds eine
+// Klasse zeichnet, aus vier Schüssen derselben Pose (`werkbank bild --klasse`): F voll, O ohne die Klasse, C nur die Klasse
+// (und der Himmel), S nur der Himmel. Ein Pixel gehört der Klasse, wenn F ≠ O (sie ist dort sichtbar — was vor ihr steht,
+// ändert sich nicht) UND C ≠ S (sie liegt dort — ihr Schatten auf dem Boden nicht: der Boden fehlt in C und S). Schwelle =
+// Summe der Kanal-Beträge (0–765); das Rauschen zweier Schüsse derselben Szene (TRAA, Blende) liegt darunter.
+// Die Falle (gemessen 14.10., Tannen der Wiese): wo die Klasse UNTER dem Boden weiterläuft (die Wurzeln) und ihr Schatten
+// darüber fällt, gilt beides — F ist der beschattete Boden, C die Wurzel. Ein Pixel, an dem F nur ein dunklerer O mit
+// derselben Farbart ist (ein Schatten), gehört der Klasse nur, wenn F dort zeigt, was C zeigt.
+function klassenMaske(F, O, C, S, W, H, schwelle) {
+    const t = schwelle == null ? 18 : schwelle;
+    const m = new Uint8Array(W * H);
+    const d = (A, B, i) => Math.abs(A[i] - B[i]) + Math.abs(A[i + 1] - B[i + 1]) + Math.abs(A[i + 2] - B[i + 2]);
+    const art = (A, i) => {
+        const s = A[i] + A[i + 1] + A[i + 2] + 1;
+        return [A[i] / s, A[i + 1] / s];
+    };
+    for (let p = 0; p < W * H; p++) {
+        const i = p * 4;
+        if (!(d(F, O, i) > t && d(C, S, i) > t)) continue;
+        const dunkler = F[i] <= O[i] + 4 && F[i + 1] <= O[i + 1] + 4 && F[i + 2] <= O[i + 2] + 4;
+        const fa = art(F, i),
+            oa = art(O, i);
+        const schatten = dunkler && Math.abs(fa[0] - oa[0]) + Math.abs(fa[1] - oa[1]) < 0.06;
+        const fs = F[i] + F[i + 1] + F[i + 2];
+        m[p] = schatten && d(F, C, i) > Math.max(3 * t, 0.35 * fs) ? 0 : 1;
+    }
+    return m;
+}
+
+// DIE KLASSEN-MASSE (K63; rein, in der Seite als `__klassenMasse`): was das Bild F auf den Pixeln der Maske m zeigt, in Zahlen
+// der Soll-Tafel (Luma = Rec. 709 auf den sRGB-Werten 0–255, wie `bildMasse`):
+//   deckung       Anteil der Klasse am Bild · deckungUnten derselbe Anteil im unteren Drittel (der Boden vor dem Auge)
+//   luma/kontrast Mittel und σ/Mittel der Luma auf der Klasse
+//   detail        mittlerer Gradient-Betrag im Inneren / Mittel (die Normalen- und Textur-Frequenz: glatt → 0)
+//   nyquist       Anteil der Schachbrett-Energie an der Gradient-Energie in 2×2-Blöcken ganz in der Klasse (k = (a−b−c+d)/4
+//                 gegen gx, gy): ein Dither- oder Hash-Muster → 1, weißes Rauschen 1/3, eine glatte Fläche 0
+//   silhouette    Rand-Pixel / √Fläche (der Kreis 2√π ≈ 3,5; eine zerfranste Krone, ein Gitter weit darüber)
+function klassenMasse(F, m, W, H) {
+    const L = new Float32Array(W * H);
+    for (let p = 0; p < W * H; p++) L[p] = 0.2126 * F[p * 4] + 0.7152 * F[p * 4 + 1] + 0.0722 * F[p * 4 + 2];
+    let n = 0,
+        s = 0,
+        s2 = 0,
+        rand = 0,
+        unten = 0,
+        g = 0,
+        ng = 0,
+        ek = 0,
+        eg = 0;
+    const y3 = Math.floor((2 * H) / 3);
+    const inM = (x, y) => x >= 0 && y >= 0 && x < W && y < H && m[y * W + x] === 1;
+    for (let y = 0; y < H; y++)
+        for (let x = 0; x < W; x++) {
+            const p = y * W + x;
+            if (!m[p]) continue;
+            n++;
+            s += L[p];
+            s2 += L[p] * L[p];
+            if (y >= y3) unten++;
+            const innen = inM(x - 1, y) && inM(x + 1, y) && inM(x, y - 1) && inM(x, y + 1);
+            if (!innen) rand++;
+            else {
+                g += Math.hypot(L[p + 1] - L[p - 1], L[p + W] - L[p - W]) / 2;
+                ng++;
+            }
+            if ((x & 1) === 0 && (y & 1) === 0 && inM(x + 1, y) && inM(x, y + 1) && inM(x + 1, y + 1)) {
+                const a = L[p],
+                    b = L[p + 1],
+                    c = L[p + W],
+                    d = L[p + W + 1];
+                const k = (a - b - c + d) / 4,
+                    gx = (a - b + c - d) / 4,
+                    gy = (a + b - c - d) / 4;
+                ek += k * k;
+                eg += gx * gx + gy * gy;
+            }
+        }
+    const mittel = n ? s / n : null;
+    const r4 = (x) => (x == null || !Number.isFinite(x) ? null : +x.toFixed(4));
+    return {
+        pixel: n,
+        deckung: r4(n / (W * H)),
+        deckungUnten: r4(unten / (W * (H - y3))),
+        luma: mittel == null ? null : +mittel.toFixed(2),
+        kontrast: n ? r4(Math.sqrt(Math.max(0, s2 / n - mittel * mittel)) / Math.max(1, mittel)) : null,
+        detail: ng ? r4(g / ng / Math.max(1, mittel)) : null,
+        nyquist: ek + eg > 0 ? r4(ek / (ek + eg)) : null,
+        silhouette: n ? r4(rand / Math.sqrt(n)) : null,
+    };
+}
+
+// DIE SOLL-TAFEL (K63, Lehre 18 „erst das Soll-Bild, dann die Welle"; spec/abnahme/soll-tafel.json): je sichtbarer Klasse die
+// AAA-Referenz in Zahlen (`soll`: eigene Eigenschaften mit Band und Quelle, oder der VERWEIS auf ein Soll, das schon im Kern
+// oder in einer Tafel steht — KOPF_SOLL, BLATT_ATLAS_WEDEL, die Albedo-Tafel: referenziert, nie kopiert), das Budget je
+// LOD-Stufe aus dem Haushalt des Profi-Bands (`budget.haushalt`: die Klassen-Zeile ist L0, L1 ≤ 35 %, L2 ≤ 10 % — Nordstern
+// M4; der VRAM-Anteil der Welt nach dem Dreiecks-Anteil der Zeile) und EIN Maß, das das heutige Bild aus dem Ausgabe-Pfad
+// misst (`mass`: Name, Band, Ist, Täter, Rohdatei). Das Urteil ROT/GRÜN rechnet DIESE Funktion aus Ist und Band (nie ein
+// Wort in der Tafel); ein ungemessenes Ist ist ROT. `fehler` sind Brüche der Tafel selbst (Schema, ein Verweis ohne Ziel, die
+// Reihenfolge nicht nach Wirkung) — sie machen die Wand ROT; ein ROTES Maß ist der Auftrag der nächsten AAAA-Karte.
+const SOLL_MASSE = Object.freeze([
+    "deckung",
+    "deckungUnten",
+    "luma",
+    "kontrast",
+    "detail",
+    "nyquist",
+    "silhouette",
+    "stufenTreue",
+    "albedo",
+    "lichtVerhaeltnis",
+    "bodenDeckung",
+    "kopfSoll",
+]);
+function sollTafelUrteil(tafel, q) {
+    const fehler = [];
+    const zeilen = [];
+    const haushalt = (q && q.haushalt) || null;
+    const lesen = (q && q.lesen) || (() => null);
+    const kl = (tafel && tafel.klassen) || [];
+    if (!kl.length) fehler.push("die Tafel trägt keine Klasse (vakuös)");
+    const welt = haushalt ? haushalt.band.vramMB - ((haushalt.renderZiele && haushalt.renderZiele.mb) || 0) : null;
+    const summeTris = haushalt ? haushalt.klassen.reduce((a, k) => a + (k.dreiecke || 0), 0) : 0;
+    const zahl = (x) => typeof x === "number" && Number.isFinite(x);
+    let vorRang = 0;
+    const ids = new Set();
+    for (const k of kl) {
+        const wo = `Klasse ${k.id || "?"}`;
+        if (!k.id || ids.has(k.id)) fehler.push(`${wo}: id fehlt oder doppelt`);
+        ids.add(k.id);
+        const rang = k.wirkung && k.wirkung.rang;
+        if (!zahl(rang) || rang <= vorRang)
+            fehler.push(`${wo}: Wirkungs-Rang ${rang} nicht aufsteigend (die Tafel steht nach Wirkung)`);
+        else vorRang = rang;
+        if (!k.wirkung || !k.wirkung.grund) fehler.push(`${wo}: die Wirkung ohne Grund`);
+        if (!(k.referenz || []).some((r) => r.titel && r.technik))
+            fehler.push(`${wo}: keine benannte AAA-Referenz (Titel + Technik)`);
+        const so = k.soll || {};
+        if (!(so.eigenschaften || []).length && !(so.verweis || []).length)
+            fehler.push(`${wo}: kein Soll (Eigenschaften oder Verweis)`);
+        for (const e of so.eigenschaften || [])
+            if (!e.groesse || !Array.isArray(e.band) || e.band.length !== 2 || !e.quelle)
+                fehler.push(`${wo}: Soll-Eigenschaft ${e.groesse || "?"} ohne Band [min, max] oder Quelle`);
+        for (const v of so.verweis || []) {
+            const t = v.datei ? lesen(v.datei) : null;
+            if (t == null) fehler.push(`${wo}: Verweis auf ${v.datei} — die Datei fehlt`);
+            else if (v.symbol && !new RegExp(`\\b(var|const|let)\\s+${v.symbol}\\s*=`).test(t))
+                fehler.push(`${wo}: Verweis ${v.datei} ${v.symbol} — das Symbol ist dort nicht definiert`);
+            else if (v.zeile) {
+                let z = null;
+                try {
+                    z = (JSON.parse(t).zeilen || []).find((x) => x.id === v.zeile);
+                } catch (_e) {}
+                if (!z) fehler.push(`${wo}: Verweis ${v.datei} Zeile „${v.zeile}" fehlt`);
+            }
+        }
+        const b = k.budget || {};
+        const hz = haushalt ? haushalt.klassen.find((x) => x.id === b.haushalt) : null;
+        if (!hz)
+            fehler.push(`${wo}: Budget ohne Haushalt-Klasse („${b.haushalt}" fehlt in spec/profiband/haushalt.json)`);
+        const stufen = hz
+            ? {
+                  L0: { dreiecke: hz.dreiecke, befehle: hz.befehle },
+                  L1: { dreiecke: Math.round(hz.dreiecke * 0.35), befehle: Math.ceil(hz.befehle * 0.35) },
+                  L2: { dreiecke: Math.round(hz.dreiecke * 0.1), befehle: Math.ceil(hz.befehle * 0.1) },
+                  vramMB: summeTris ? +((welt * hz.dreiecke) / summeTris).toFixed(1) : null,
+              }
+            : null;
+        const ma = k.mass || {};
+        if (!SOLL_MASSE.includes(ma.name)) fehler.push(`${wo}: Maß „${ma.name}" unbekannt (${SOLL_MASSE.join(", ")})`);
+        const band = Array.isArray(ma.band) && ma.band.length === 2 ? ma.band : null;
+        if (!band || (band[0] == null && band[1] == null)) fehler.push(`${wo}: Maß ohne Band [min, max]`);
+        if (!ma.quelle) fehler.push(`${wo}: Maß-Band ohne Quelle`);
+        let urteil = "ROT",
+            grund;
+        if (!zahl(ma.ist)) grund = `${ma.name} ungemessen`;
+        else if (!ma.rohdatei) grund = `${ma.name} ${ma.ist} ohne Rohdatei`;
+        else if (band && band[0] != null && ma.ist < band[0]) grund = `${ma.name} ${ma.ist} < ${band[0]}`;
+        else if (band && band[1] != null && ma.ist > band[1]) grund = `${ma.name} ${ma.ist} > ${band[1]}`;
+        else urteil = "GRÜN";
+        if (urteil === "ROT" && zahl(ma.ist) && ma.rohdatei && !ma.taeter)
+            fehler.push(`${wo}: ROT ohne Täter beim Namen`);
+        zeilen.push({
+            rang,
+            id: k.id,
+            titel: k.titel,
+            mass: ma.name,
+            ist: zahl(ma.ist) ? ma.ist : null,
+            band,
+            urteil,
+            grund: grund || null,
+            taeter: ma.taeter || null,
+            stufen,
+        });
+    }
+    return { ok: fehler.length === 0, fehler, zeilen, rot: zeilen.filter((z) => z.urteil === "ROT").length };
+}
+function sollTafelZeile(z) {
+    const b = z.band ? `[${z.band[0] == null ? "−∞" : z.band[0]}, ${z.band[1] == null ? "∞" : z.band[1]}]` : "?";
+    const s = z.stufen;
+    const bud = s
+        ? `L0 ${s.L0.dreiecke}/${s.L0.befehle} · L1 ${s.L1.dreiecke}/${s.L1.befehle} · L2 ${s.L2.dreiecke}/${s.L2.befehle} · ${s.vramMB} MB`
+        : "kein Budget";
+    return `${z.rang}. ${z.urteil === "ROT" ? "ROT " : "GRÜN"} ${z.id}: ${z.mass} ${z.ist == null ? "—" : z.ist} Soll ${b}${z.urteil === "ROT" ? ` — ${z.grund}${z.taeter ? ` (Täter ${z.taeter})` : ""}` : ""} · Budget ${bud}`;
+}
+
+// DER SELBSTTEST der Soll-Tafel (rein): die Maske trennt Schatten und Verdecker von der Klasse, die Maße treffen ihre
+// Eichpunkte (Schachbrett 1, glatt 0), jeder eingeschmuggelte Bruch der Tafel fällt beim Namen, ein Ist außerhalb ist ROT,
+// ein ungemessenes nie GRÜN. Rückgabe: Liste der Brüche (leer = grün).
+function sollTafelSelbsttest(tafel, q) {
+    const v = [];
+    const W = 16,
+        H = 12;
+    const bild = (f) => {
+        const u = new Uint8Array(W * H * 4);
+        for (let y = 0; y < H; y++)
+            for (let x = 0; x < W; x++) {
+                const c = f(x, y);
+                u.set([c, c, c, 255], (y * W + x) * 4);
+            }
+        return u;
+    };
+    // die Klasse ein Quadrat x 4–9, y 2–7; ihr Schatten auf dem Boden y 8–10; ein Verdecker davor x 4–5; ihre Wurzel unter
+    // dem Boden x 7–8, y 9–10 (in C sichtbar, in F der beschattete Boden)
+    const inK = (x, y) => x >= 4 && x <= 9 && y >= 2 && y <= 7;
+    const schatten = (x, y) => x >= 4 && x <= 9 && y >= 8 && y <= 10;
+    const wurzel = (x, y) => (x === 7 || x === 8) && (y === 9 || y === 10);
+    const vor = (x) => x === 4 || x === 5;
+    const F = bild((x, y) => (inK(x, y) ? (vor(x) ? 30 : 200) : schatten(x, y) ? 60 : y > 7 ? 120 : 220));
+    const O = bild((x, y) => (inK(x, y) && vor(x) ? 30 : y > 7 ? 120 : 220));
+    const C = bild((x, y) => (inK(x, y) || wurzel(x, y) ? 200 : 220));
+    const S = bild(() => 220);
+    // C trägt die Klasse auf Himmel 220 — dort, wo sie 200 zeigt, unterscheidet sie sich
+    const m = klassenMaske(F, O, C, S, W, H, 18);
+    let soll = 0,
+        falsch = 0;
+    for (let y = 0; y < H; y++)
+        for (let x = 0; x < W; x++) {
+            const e = inK(x, y) && !vor(x) ? 1 : 0;
+            soll += e;
+            if (m[y * W + x] !== e) falsch++;
+        }
+    if (falsch) v.push(`Maske: ${falsch} Pixel falsch (Schatten oder Verdecker in der Klasse, oder die Klasse fehlt)`);
+    const voll = new Uint8Array(W * H).fill(1);
+    const schach = klassenMasse(
+        bild((x, y) => ((x + y) & 1 ? 40 : 200)),
+        voll,
+        W,
+        H
+    );
+    if (!(schach.nyquist > 0.99)) v.push(`Maß nyquist: Schachbrett ${schach.nyquist} statt 1`);
+    const glatt = klassenMasse(
+        bild((x) => 40 + x * 8),
+        voll,
+        W,
+        H
+    );
+    if (!(glatt.nyquist < 0.01)) v.push(`Maß nyquist: Verlauf ${glatt.nyquist} statt 0`);
+    if (!(glatt.detail > 0)) v.push(`Maß detail: Verlauf ${glatt.detail} nicht > 0`);
+    if (
+        klassenMasse(
+            bild(() => 99),
+            voll,
+            W,
+            H
+        ).detail !== 0
+    )
+        v.push("Maß detail: Flachbild nicht 0");
+    if (!(Math.abs(klassenMasse(F, m, W, H).luma - 200) < 1e-6)) v.push("Maß luma: die Klasse liest nicht 200");
+    // die Tafel: die echte ohne Bruch, jeder eingeschmuggelte Bruch beim Namen
+    const echt = sollTafelUrteil(tafel, q);
+    for (const f of echt.fehler) v.push(`Tafel: ${f}`);
+    const klon = () => JSON.parse(JSON.stringify(tafel));
+    const faelle = [
+        ["Haushalt-Klasse fehlt", (t) => (t.klassen[0].budget.haushalt = "phantom"), '„phantom" fehlt'],
+        [
+            "Verweis ins Leere",
+            (t) => (t.klassen[0].soll.verweis = [{ datei: "koerper-core.js", symbol: "PHANTOM_SOLL" }]),
+            "PHANTOM_SOLL",
+        ],
+        ["Reihenfolge nicht nach Wirkung", (t) => t.klassen.reverse(), "nicht aufsteigend"],
+        ["Maß unbekannt", (t) => (t.klassen[0].mass.name = "schoenheit"), '„schoenheit" unbekannt'],
+        ["Referenz ohne Technik", (t) => (t.klassen[0].referenz = [{ titel: "X" }]), "keine benannte AAA-Referenz"],
+        [
+            "ROT ohne Täter",
+            (t) => {
+                const ma = t.klassen[0].mass;
+                ma.ist = ma.band[1] != null ? ma.band[1] + 1 : ma.band[0] - 1;
+                ma.rohdatei = ma.rohdatei || "x.json";
+                delete ma.taeter;
+            },
+            "ohne Täter",
+        ],
+    ];
+    for (const [name, fn, wort] of faelle) {
+        if (!tafel || !(tafel.klassen || []).length) break;
+        const t = klon();
+        fn(t);
+        const u = sollTafelUrteil(t, q);
+        if (u.ok || !u.fehler.some((f) => f.includes(wort)))
+            v.push(`Tafel-Bruch „${name}": nicht beim Namen (${u.fehler.join(" · ") || "grün"})`);
+    }
+    if (tafel && (tafel.klassen || []).length) {
+        const t = klon();
+        const ma = t.klassen[0].mass;
+        ma.ist = null;
+        if (sollTafelUrteil(t, q).zeilen[0].urteil !== "ROT") v.push("ein ungemessenes Ist ist GRÜN");
+        const t2 = klon();
+        const m2 = t2.klassen[0].mass;
+        m2.ist = m2.band[0] != null ? m2.band[0] : m2.band[1];
+        m2.rohdatei = "x.json";
+        if (sollTafelUrteil(t2, q).zeilen[0].urteil !== "GRÜN") v.push("ein Ist auf dem Band-Rand ist ROT");
+        const t3 = klon();
+        const m3 = t3.klassen[0].mass;
+        m3.ist = m3.band[1] != null ? m3.band[1] * 1.5 + 1 : m3.band[0] / 2 - 1;
+        m3.rohdatei = "x.json";
+        m3.taeter = "phantom";
+        const z3 = sollTafelUrteil(t3, q).zeilen[0];
+        if (z3.urteil !== "ROT" || !sollTafelZeile(z3).includes("Täter phantom"))
+            v.push("ein Ist außerhalb nicht ROT beim Täter");
+    }
+    if (sollTafelUrteil({ klassen: [] }, q).ok) v.push("die leere Tafel ist grün");
+    return v;
+}
+
 module.exports = {
     SCHWELLEN,
+    SOLL_MASSE,
+    klassenMaske,
+    klassenMasse,
+    sollTafelUrteil,
+    sollTafelZeile,
+    sollTafelSelbsttest,
     abnahmeUrteil,
     bildMasse,
     paarUrteil,
@@ -505,5 +835,7 @@ module.exports = {
     abnahmeSelbsttest,
     ABNAHME_INSTALL:
         `window.__abnahmeUrteil = (m) => (${abnahmeUrteil.toString()})(m, ${JSON.stringify(SCHWELLEN)});` +
-        `window.__bildMasse = ${bildMasse.toString()};`,
+        `window.__bildMasse = ${bildMasse.toString()};` +
+        `window.__klassenMaske = ${klassenMaske.toString()};` +
+        `window.__klassenMasse = ${klassenMasse.toString()};`,
 };

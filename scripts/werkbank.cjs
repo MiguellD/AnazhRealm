@@ -15,6 +15,11 @@
 //                                                           und Lade-Ring fest, `--pose` stellt an eine seiner Stationen
 //   node scripts/werkbank.cjs bild <px> <py> <pz> <lx> <ly> <lz> [--datei f.png] [--w 640 --h 360] [--ziel name] [--wahl N]
 //                                                           Bühne + echter Frame (Ausgabe-Pfad)
+//                                      [--klasse <regex>] [--spieler]   DIE KLASSE IM BILD (K63, die Soll-Tafel spec/abnahme/
+//                                                           soll-tafel.json): in voller Puffer-Größe, drei Schüsse mehr an
+//                                                           derselben Pose → die Maske der Täter-Klasse (`<datei>.maske.png`)
+//                                                           und ihre Maße (abnahme-urteil `klassenMasse`) im Begleit-JSON;
+//                                                           `--spieler` lässt den Spieler-Leib im Bild
 //   node scripts/werkbank.cjs methode <name> [--terrain] [--quelle datei]  Methode aus anazhRealm.js (Arbeitsbaum;
 //                                                           `--quelle`: aus einem anderen Stand, die Basis eines A/B)
 //                                                           live tauschen; --terrain baut das EINE
@@ -1049,6 +1054,12 @@ async function starte() {
             const py = boden(px, pz, k.py),
                 ly = boden(lx, lz, k.ly);
             rend.setAnimationLoop(null);
+            // DIE KLASSE (K63, die Soll-Tafel): das Bild in voller Puffer-Größe — Dither und Kanten leben im Pixel des Schirms
+            if (k.klasse) {
+                const db = rend.getDrawingBufferSize(new window.THREE.Vector2());
+                k.w = Math.round(db.x);
+                k.h = Math.round(db.y);
+            }
             // die Kamera VOR der Bühne: die Bühne setzt Tag und Nacht neu, und das Licht des Auges steht an der Kamera
             // (`_dayNightApplyAugenLicht`, seine Stärke aus dem Himmel am Auge) — danach gesetzt, stand es an der Kamera des
             // letzten Schusses (K16: das Auge in der Höhle schwarz, Helligkeit 0, das Licht lag draußen unter dem Himmel)
@@ -1057,7 +1068,7 @@ async function starte() {
             cam.lookAt(lx, ly, lz + 1e-4);
             cam.updateMatrixWorld(true);
             window.__buehne();
-            if (r.state.playerMesh) r.state.playerMesh.visible = false;
+            if (r.state.playerMesh) r.state.playerMesh.visible = !!k.spieler;
             // DAS ZIEL des Bilds ist der Blick-Punkt (K32): die Aufnahme prüft, ob es im Bild und frei ist, und die Blick-Wahl
             // sucht bis zu `wahl` Posen um den Ort (Standard drei Runden, 42 — gemessen 13.10. am Dreier-Hain: frei erst in Pose 26;
             // `--wahl 0` schießt nur die genannte Pose)
@@ -1084,6 +1095,80 @@ async function starte() {
             const u8 = auf.u8,
                 W = k.w,
                 H = k.h;
+            // DIE KLASSE IM BILD (K63, scripts/lib/abnahme-urteil.cjs `klassenMaske` · `klassenMasse`): drei Schüsse mehr an
+            // derselben Pose (die Blick-Wahl ist gefallen) — O ohne die Klasse, C nur die Klasse und der Himmel, S nur der
+            // Himmel; Klasse = die Täter-Klasse (`_taeterKlasse`) gegen den Ausdruck `k.klasse`. Die Nah-Wiese ruht, solange
+            // Objekte verborgen sind (ihr Takt setzt je Kachel `visible`), jedes Bündel nimmt neu auf; danach steht alles wie vorher.
+            let klasse = null;
+            if (k.klasse) {
+                const re = new RegExp(k.klasse);
+                const himmel = /^(himmel|himmel-[a-z]+)$/;
+                const zeichnet = (o) =>
+                    o.visible === true && !!o.geometry && (o.isMesh || o.isLine || o.isPoints || o.isSprite);
+                const eigen = [],
+                    fremd = [],
+                    namen = {};
+                r.state.scene.traverse((o) => {
+                    if (!zeichnet(o)) return;
+                    const kl = r._taeterKlasse(o);
+                    if (re.test(kl)) {
+                        eigen.push(o);
+                        namen[kl] = (namen[kl] || 0) + 1;
+                    } else if (!himmel.test(kl)) fremd.push(o);
+                });
+                if (!eigen.length)
+                    throw new Error(`Klasse /${k.klasse}/: kein gezeichnetes Objekt in der Szene — die Soll-Messung braucht ihr Exemplar`);
+                const bundlesNeu = () =>
+                    r.state.scene.traverse((o) => {
+                        if (o.isBundleGroup) o.needsUpdate = true;
+                    });
+                const wieseEigen = Object.prototype.hasOwnProperty.call(r, "_tickNahWiese");
+                const wieseAlt = r._tickNahWiese;
+                r._tickNahWiese = () => 0;
+                const schuss = async (aus) => {
+                    for (const o of aus) o.visible = false;
+                    bundlesNeu();
+                    try {
+                        r._schattenAlleNeu();
+                        return (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;
+                    } finally {
+                        for (const o of aus) o.visible = true;
+                        bundlesNeu();
+                    }
+                };
+                try {
+                    const O = await schuss(eigen);
+                    const C = await schuss(fremd);
+                    const S = await schuss(eigen.concat(fremd));
+                    const m = window.__klassenMaske(u8, O, C, S, W, H, 18);
+                    const mu8 = new Uint8Array(W * H * 4);
+                    for (let p = 0; p < W * H; p++) {
+                        const i = p * 4;
+                        const g = 0.25 * (0.2126 * u8[i] + 0.7152 * u8[i + 1] + 0.0722 * u8[i + 2]);
+                        mu8[i] = m[p] ? u8[i] : g;
+                        mu8[i + 1] = m[p] ? u8[i + 1] : g;
+                        mu8[i + 2] = m[p] ? u8[i + 2] : g + 40;
+                        mu8[i + 3] = 255;
+                    }
+                    const cv2 = document.createElement("canvas");
+                    cv2.width = W;
+                    cv2.height = H;
+                    const ctx2 = cv2.getContext("2d");
+                    const img2 = ctx2.createImageData(W, H);
+                    img2.data.set(mu8);
+                    ctx2.putImageData(img2, 0, 0);
+                    klasse = {
+                        ausdruck: k.klasse,
+                        objekte: eigen.length,
+                        namen,
+                        masse: window.__klassenMasse(u8, m, W, H),
+                        maske: cv2.toDataURL("image/png"),
+                    };
+                } finally {
+                    if (wieseEigen) r._tickNahWiese = wieseAlt;
+                    else delete r._tickNahWiese;
+                }
+            }
             const lum = (i) => 0.2126 * u8[i] + 0.7152 * u8[i + 1] + 0.0722 * u8[i + 2];
             let n = 0,
                 l = 0,
@@ -1111,6 +1196,7 @@ async function starte() {
                 dc: auf.info.drawCalls,
                 dreiecke: auf.info.triangles,
                 ms: Math.round(auf.ms),
+                klasse,
                 png: cv.toDataURL("image/png"),
             };
         }, k);
@@ -1290,6 +1376,13 @@ async function starte() {
                     fs.mkdirSync(path.dirname(datei), { recursive: true });
                     fs.writeFileSync(datei, Buffer.from(o.png.split(",")[1], "base64"));
                     delete o.png;
+                    // DIE KLASSE (K63): die Maske neben dem Bild, die Maße im Begleit-JSON (die Rohdatei der Soll-Tafel)
+                    if (o.klasse) {
+                        const mdatei = datei.replace(/\.png$/i, "") + ".maske.png";
+                        fs.writeFileSync(mdatei, Buffer.from(o.klasse.maske.split(",")[1], "base64"));
+                        o.klasse.maske = mdatei;
+                        o.abnahme.klasse = o.klasse;
+                    }
                     // DAS BEGLEIT-JSON (K32): die Abnahme des Bilds mit dem Stand des Arbeitsbaums (SHA, geändert ja/nein)
                     o.abnahme.stand.sha = gitStand();
                     fs.writeFileSync(
@@ -2396,6 +2489,8 @@ async function starte() {
             h: Number(opt("--h", 360)),
             ziel: opt("--ziel"),
             wahl: opt("--wahl"),
+            klasse: opt("--klasse"),
+            spieler: argv.includes("--spieler"),
         });
     else if (cmd === "methode")
         o = await rufe("/methode", { name: a[0], terrain: argv.includes("--terrain"), quelle: opt("--quelle") });

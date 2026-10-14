@@ -652,11 +652,6 @@ function lichtBilanz() {
                 }
             }
         } finally {
-            if (freiAlt) {
-                freiIx.array.set(freiAlt);
-                freiIx.needsUpdate = true;
-                if (nahtMesh) visAlt.set(nahtMesh, nahtSicht);
-            }
             for (const m of meshes) m.visible = visAlt.get(m);
             bundles();
             for (const [l, i] of lichtAlt) l.intensity = i;
@@ -958,6 +953,13 @@ function nahFernSicht(opts) {
                 });
             }
         } finally {
+            // die Teilung des Rings steht wieder, wie sie war (9ca8b242 setzte diese Rückgabe in die Licht-Bilanz, wo `freiAlt`
+            // nie stand: `werkbank licht` brach seither mit „freiAlt is not defined", K63)
+            if (freiAlt) {
+                freiIx.array.set(freiAlt);
+                freiIx.needsUpdate = true;
+                if (nahtMesh) visAlt.set(nahtMesh, nahtSicht);
+            }
             for (const m of meshes) m.visible = visAlt.get(m);
             for (const [l, i] of lichter) l.intensity = i;
             sc.remove(A);
