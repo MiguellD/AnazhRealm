@@ -140,3 +140,19 @@ Vergessene Prozesse zogen stundenlang Radeon-Leistung und verrauschten die lokal
 - Lokal: 11 Worktrees statt 151 am Morgen — Haupt-Checkout (main), AnazhRealm-integ (integ-probe), AnazhRealm-diag, koordination, schau-v18537 (Auge, detached) und die offenen Zweige boden-stufen, mess-wiese, ci-diaet, ort-gelaende (K10), haus-fenster (K38-N1), pruef-vakuum (Z2a). Jeder sauber und gepusht. Roh-Daten entfernter Worktrees: artifacts/profiband/wt-archiv/.
 - Keine Prozesse, keine Chat-Tabs, GPU-Schloss frei. OMEN: keine Prozesse, Fenster zu, GPU P8, alle Zweige gepusht.
 - **integ-probe (9f61ab23) ist überholt:** sie trägt die alte K51-3 vor K51-4..6. Für die nächste Integration integ-probe auf main 062ec357 neu setzen (`git push -f origin 062ec357:integ-probe` nach Sichtung) und boden-stufen von dort aus mergen.
+
+## NEUSTART 14.10. ~21:30 (Woche frisch, 0 %) — Koordinator-Sitzung 6fa51df3 „Gigant weitergehts"
+
+- integ-probe auf main 062ec357 gesetzt; der alte Stand liegt als `integ-probe-alt-1410` (9f61ab23, K51-3 alt — überholt von boden-stufen).
+- **Welle 1** (je Karte ein Workflow aus `artifacts/profiband/workflows/karte.js`):
+
+| Karte | Zweig | Frozen | Risiko | Ports |
+|---|---|---|---|---|
+| K60 Ankunft kalt ≤ 5 s | ankunft-kalt (neu ab 062ec357) | B | R3 | 8200–8219 |
+| K62 Render-Objekt-Pfad (≈ 30 µs je Befehl) | render-objekt (neu ab 062ec357) | E CPU-Takt | R3 | 8220–8239 |
+| K10-6 Ort auf dem Gelände (main einmergen per stamm-rehome) | ort-gelaende | C | R3 tief | 8240–8259 |
+| K55-5 Mess-Wiese + gtx-ratschen-1410 merge-reif | mess-wiese | E (Vorbedingung Ratschen) | R2 | 8950–8969 |
+| K61 CI-Diät ≤ 8 min, Gruppen CPU/GPU markiert | ci-diaet | Takt der Arbeit | R2 | 8270–8289 |
+
+- **OMEN:** Gehend-ABAB boden-stufen 9e2f9c7c gegen main 062ec357 läuft (bericht/1410-boden3-abab.md); danach Werkpaket K59 `takt-kreatur` (Kreaturen außerhalb des Bilds, updateMatrixWorld statisch; bericht/1410-k59-takt.md).
+- **CI-Runner auf dem OMEN:** nach K61; das Ja zum Download holt der Koordinator frisch beim Schöpfer.
