@@ -135,6 +135,7 @@ export default [
             ecmaVersion: 2022,
             sourceType: "script",
             globals: {
+                AnazhHuelle: "readonly", // die Studio-Hülle (K47): die Heimat lädt worlds/huelle/huelle.js vor dem Studio
                 window: "readonly",
                 self: "readonly",
                 document: "readonly",
