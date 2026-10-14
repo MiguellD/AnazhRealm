@@ -108,8 +108,8 @@ function staticLaws(anazhSrc, pcSrc, manifestSrc) {
         autoReg !== null && /KIND_POLICY/.test(autoReg) && !/kind\s*[!=]==?\s*"/.test(autoReg),
     ]);
     out.push([
-        "S4: porta-core deklariert kindStages.gate == [0, 3] (B2-Vertrags-Daten; 3 = die NUR-WURF-Stufe, 1110-9)",
-        /kindStages:\s*\{\s*gate:\s*\[0,\s*3\]\s*\}/.test(pcSrc),
+        "S4: porta-core deklariert kindStages.gate == [0, 1, 3] (B2-Vertrags-Daten; 1 = die Stufe 1 seit K43, 3 = die NUR-WURF-Stufe, 1110-9)",
+        /kindStages:\s*\{\s*gate:\s*\[0,\s*1,\s*3\]\s*\}/.test(pcSrc),
     ]);
     out.push([
         "S5: die Tor-Rezepte tragen das Platzierungs-Gesetz als DATEN (fx.place mode site + siteTag tor)",
@@ -314,9 +314,9 @@ function ksRow(src, name) {
     );
     check("B: die Regler-Daten fliessen (drachentor.s.orders == 2)", out.b.orders === 2, String(out.b.orders));
     check("B: alle 7 Tor-Ordnungen im Buch", out.b.gateCount === 7, String(out.b.gateCount));
-    check("B: kindStages.gate == [0,3] (N7.5-Merge am Ingest; 3 = NUR-WURF)", out.b.ksGate === "[0,3]", String(out.b.ksGate));
+    check("B: kindStages.gate == [0,1,3] (N7.5-Merge am Ingest; 3 = NUR-WURF)", out.b.ksGate === "[0,1,3]", String(out.b.ksGate));
     check("B: foundry-core-kinds UNANGETASTET (tree [0,1,2])", out.b.ksTree === "[0,1,2]", String(out.b.ksTree));
-    check("B: vehicle-kindStages UNANGETASTET ([0])", out.b.ksVehicle === "[0]", String(out.b.ksVehicle));
+    check("B: vehicle-kindStages UNANGETASTET ([0,1])", out.b.ksVehicle === "[0,1]", String(out.b.ksVehicle));
     check(
         "D: Auto-Blueprint tor_drachentor registriert (Donor-Klon)",
         out.d.blueprint === true && out.d.parts >= 4,
@@ -368,8 +368,8 @@ function ksRow(src, name) {
     check("E: _foundryBuildGroup baut die Gruppe (Kinder > 0)", out.e.groupChildren > 0, String(out.e.groupChildren));
     check("E: jedes Kind traegt das color-Attribut (WebGPU-STRIKT-Fill)", out.e.allHaveColor === true);
     check(
-        "F: die Distanz-Wahl 2 klemmt fuer kind:gate auf Stufe 0 (fail-closed [0])",
-        /^[^|]*\|[^|]*\|0(\||$)/.test(out.f.key || ""), // Körper-Schlüssel preset|gestalt|stufe[|ov] (V18.527)
+        "F: die Distanz-Wahl 2 klemmt fuer kind:gate auf Stufe 1 (die größte gezeigte ≤ 2, K43)",
+        /^[^|]*\|[^|]*\|1(\||$)/.test(out.f.key || ""), // Körper-Schlüssel preset|gestalt|stufe[|ov] (V18.527)
         out.f.err || String(out.f.key)
     );
     if (pageErrors.length) check("keine Seiten-Fehler", false, pageErrors[0]);

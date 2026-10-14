@@ -338,7 +338,7 @@ law(
 //      Alt-Tuft-Nachbau = Fail-Open); der Bauer verbucht „leer" VOR dem Tuft-Fallback. Der
 //      Tuft-SCHNITT ist N7.3-gebunden (die Gras-Bänder üben den foundry-off-Pfad) — bis dahin
 //      wacht diese Wand + die Zensus-Klasse in gate:asset-inventory.
-// N4.4 die Impostor-Entscheidung ist eine POLICY-ZEILE (`impostor: true` — tree/shrub/gate/
+// N4.4 die Impostor-Entscheidung ist eine POLICY-ZEILE (`impostor: true` — tree/shrub/
 //      vehicle [V18.477 Fahrzeug-Fernstufe, gate:fahrzeug-fern wacht]), kein kind-Literal in
 //      `_foundryPresetIsTree`; rock/flower/grass impostorn fail-closed nicht.
 console.log("\nGesetz N4 — die Instance-Straße (eine Naht · mp führt · Tuft-Wand · Impostor als Daten):");

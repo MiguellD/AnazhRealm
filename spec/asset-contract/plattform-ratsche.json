@@ -22,11 +22,11 @@
         },
         "v3": {
             "kern": "vehicle-core.js",
-            "faelle": 12,
+            "faelle": 17,
             "kippt": {
-                "atan2": 12,
-                "sin": 12,
-                "cos": 12,
+                "atan2": 17,
+                "sin": 17,
+                "cos": 17,
                 "hypot": 5
             },
             "taeter": {
@@ -35,13 +35,13 @@
                 "cos": "vehicle-core.js:392 cos (rotation.x = PI/2 -> Quaternion -> Float64-Matrix)",
                 "hypot": "vehicle-core.js:1769 hypot (lenA, die A-Saeule)"
             },
-            "soll": "0 - das Raster kommt mit dem v3-Akt der W3 (Fahrzeug-L1)"
+            "soll": "0 - das Raster kommt mit dem v3-Akt der W3; K43-2 trug die Fahrzeug-Stufe 1 dazu (12 -> 17 Faelle, dieselben Taeter je Fall, das Raster steht offen)"
         },
         "v4": {
             "kern": "porta-core.js",
-            "faelle": 16,
+            "faelle": 23,
             "kippt": {},
-            "soll": "0 - erreicht: porta-core ausRaster am Ausgang (S1, Re-Mint mit Grund: Node 22 rot 16/16)"
+            "soll": "0 - erreicht: porta-core ausRaster am Ausgang (S1, Re-Mint mit Grund: Node 22 rot 16/16); K43 die Stufe 1 je Ordnung dazu (16 -> 23 Faelle, keiner kippt)"
         },
         "v5": {
             "kern": "schmiede-core.js",

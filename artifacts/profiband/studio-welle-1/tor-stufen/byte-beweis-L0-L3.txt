@@ -1,0 +1,1 @@
+BYTE-BEWEIS 16/16 Fälle Attribute+Matrizen byte-gleich, Index alt==neu oder Identität; neu indiziert: 522 Gitter 

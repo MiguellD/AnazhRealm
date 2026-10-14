@@ -87,9 +87,11 @@ function fingerprint(group, nurGeometrie) {
 // ── Die eingefrorenen Fälle: Gattungen × Seeds × LODs (+ ov-Kultur-Kanal) ──
 const GATTUNGEN = ["gt", "supersport", "limousine", "kompakt_fwd", "suv"];
 const SEEDS = [7, 12345];
-const LODS = [0]; // kindStages.vehicle = [0] — die einzige getragene Stufe
+const LODS = [0]; // kindStages.vehicle = [0, 1] — die feine Stufe je Seed; die Stufe 1 trägt je Gattung EINEN Fall (unten)
 const CASES = [];
 for (const g of GATTUNGEN) for (const s of SEEDS) for (const l of LODS) CASES.push({ rezeptId: g, seed: s, lod: l });
+// DIE STUFE 1 (K43-2, Vertrags-Akt: fünf Fälle neu, die zwölf alten byte-gleich): derselbe Bau unter FAHRZEUG_DETAIL_1
+for (const g of GATTUNGEN) CASES.push({ rezeptId: g, seed: 7, lod: 1 });
 // ov-Kanal (CULTURES als Parameter-Override) — friert auch die Merge-Semantik ein
 CASES.push({ rezeptId: "gt", seed: 7, lod: 0, ovKultur: "toro" });
 CASES.push({ rezeptId: "supersport", seed: 7, lod: 0, ovKultur: "cavallo" });

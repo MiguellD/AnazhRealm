@@ -187,7 +187,16 @@ class AnazhRealm_Z15b {
             // Die BRÜCKE trägt keinen Hysterese-Zustand: ihre Stufe 2 ist die gedockte Karte, nicht die Wahl. Mit ihr als
             // Zustand blieb die Wahl im Band [thresh12 − hyst, thresh12] (22,6–26 m) auf 2, die Brücke löste sich als
             // „Karte" auf und blendete nach Distanz aus — ohne L1-Partner, der Baum stand halb ausgedithert.
-            let newLOD = this._chooseLODForDistance(dist, entry._bruecke ? undefined : entry._lodLevel, visH);
+            // DIE GRENZEN DES GESETZBUCHS (K43): nennt die Art ihre Stufen-Grenzen (B2c `ab`), wählt der Takt nach ihnen
+            const grenzen = treeLike ? null : this._archStufenGrenzen(entry);
+            let newLOD = grenzen
+                ? AnazhRealm._stufeNachGrenzen(
+                      dist,
+                      entry._lodLevel,
+                      grenzen,
+                      Number.isFinite(entry.scale) && entry.scale > 0 ? entry.scale : 1
+                  )
+                : this._chooseLODForDistance(dist, entry._bruecke ? undefined : entry._lodLevel, visH);
             // Occlusion-Demotion: ein ferner 3D-Baum (LOD0/1) hinter dichter Kronen-Masse fällt auf LOD2.
             // `entry._occluded` trägt die Hysterese — transient, NICHT im Snapshot.
             if (occlOn && newLOD < 2 && dist > AnazhRealm.OCCLUSION.occDist) {

@@ -2533,7 +2533,17 @@ class AnazhRealm_Z14 {
             // Tür-Flügel öffnen sich dem Reisenden: g.tuer-Meshes drehen um die Hinge-Achse, Ziel = Nähe ×
             // _tuerOffenRad() (EINE Quelle TUER_GESETZ.offen, wie das Lab-DOOR_OPEN), weich geglättet.
             // Nur Registry-Portale (≤ Handvoll); ferne Tore stehen zu.
-            this._tickTorFluegel(rec, entry, act);
+            // DIE TÜR LEBT IN DER STUFE 0 (K43): nennt das Gesetzbuch die Grenze seiner Stufe 1 (B2c `ab`, `hyst`), stehen die
+            // Flügel jenseits in der FERN-POSE (K43-2, `TUER_GESETZ.fern` — die Stufe 1 trägt sie fest im Körper, die Stufe 0
+            // zeigt an der Grenze dieselbe) — sie öffnen von der Grenze, an der die Stufe 0 sicher steht ((1 − h)·ab), bis zur
+            // Reichweite ganz; die Nähe nie weiter als der Atem des Tors (act).
+            const tg = this._archStufenGrenzen(entry);
+            const tNah = tg ? tg.grenzen[0].ab * (1 - tg.h) * scale : null;
+            const fern = tg ? AnazhRealm._tuerFernAnteil() : 0;
+            const tuerAct = tg
+                ? fern + (1 - fern) * Math.min(act, Math.max(0, Math.min(1, (tNah - d) / Math.max(0.5, tNah - reach))))
+                : act;
+            this._tickTorFluegel(rec, entry, tuerAct);
             if (
                 rec.armed !== false &&
                 inApertur &&
@@ -2652,17 +2662,18 @@ class AnazhRealm_Z14 {
             }
             // DORF-ERLEBNIS — Haus-Recs starten in der GEBACKENEN Offen-Pose
             // (rec._fluegelStart = Gesetz-Winkel): die Tür schliesst beim ersten
-            // Fern-Tick WEICH statt zu springen. Tore (gebacken zu): Start 0.
-            rec._fluegelWinkel = rec._fluegelStart || 0;
+            // Fern-Tick WEICH statt zu springen. Tore (gebacken zu) stehen beim ersten Tick SOFORT im Ziel (K43-2): ihre
+            // Flügel kommen mit dem Wechsel aus der Stufe 1, die die Fern-Pose trägt — ein weicher Start bei 0 schlösse sie.
+            rec._fluegelWinkel = Number.isFinite(rec._fluegelStart) ? rec._fluegelStart : null;
         }
         if (!rec._fluegel || !rec._fluegel.length) return;
         // ZENSUS 17.07. — der Öffnungswinkel ist das EINE porta-Gesetz
         // (TUER_GESETZ.offen; der TOR_FLUEGEL_OFFEN-Zwilling fiel 19.07.,
         // der Leser ist fail-closed).
         const ziel = act * AnazhRealm._tuerOffenRad();
-        const alt = rec._fluegelWinkel || 0;
-        const neu = alt + (ziel - alt) * 0.12;
-        if (Math.abs(neu - alt) < 0.0005 && Math.abs(neu - ziel) < 0.001) return; // eingeschwungen
+        const alt = rec._fluegelWinkel;
+        const neu = alt == null ? ziel : alt + (ziel - alt) * 0.12;
+        if (alt != null && Math.abs(neu - alt) < 0.0005 && Math.abs(neu - ziel) < 0.001) return; // eingeschwungen
         rec._fluegelWinkel = neu;
         const T = THREE;
         const ew = this._archEntryWorldMatrix(entry, this._torTmpEw || (this._torTmpEw = new T.Matrix4()));
