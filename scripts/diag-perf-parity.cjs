@@ -100,7 +100,7 @@ const PROFI = { triRendered: 680000, drw: 208, visPct: 61, vramMB: 118 };
 
 (async () => {
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await starteBrowser({ art: "webgl", frist: 240000 });
+    const browser = await starteBrowser({ art: "webgl", frist: 240000, zeit: true }); // FPS · CPU · GPU in ms
 
     // ===== SEITE 1: DER STUDIO-WALD (der Massstab; echter WebGL-Render fuer info.render) =====
     console.log("=== STUDIO-WALD (der Massstab) ===");

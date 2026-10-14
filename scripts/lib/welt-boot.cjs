@@ -16,7 +16,7 @@
 const fs = require("fs");
 const http = require("http");
 const path = require("path");
-const { linsenWebGpuArgs, echteWebGpuArgs, adapterZeile } = require("./software-gpu.cjs");
+const { linsenWebGpuArgs, linsenWebglArgs, echteWebGpuArgs, adapterZeile, zeitZeile } = require("./software-gpu.cjs");
 
 const ROOT = path.resolve(__dirname, "..", "..");
 
@@ -28,13 +28,23 @@ const MIME = {
     ".json": "application/json",
     ".css": "text/css",
     ".png": "image/png",
+    ".gif": "image/gif",
     ".svg": "image/svg+xml",
     ".woff2": "font/woff2",
 };
 
 // Der Statik-Server: liefert die Datei unter der Wurzel (Query fällt), `/` heißt `start`; außerhalb der Wurzel 403, fehlt
-// die Datei 404. `seiten` liefert eigene Seiten nach Pfad (Text oder Funktion), `keinCache` setzt no-store.
-function statikServer({ root = ROOT, start = "/index.html", seiten = null, keinCache = false } = {}) {
+// die Datei 404. `seiten` liefert eigene Seiten nach Pfad (Text, Puffer oder Funktion des Requests, auch als Promise; der
+// Typ nach der Endung des Pfads, ohne Endung text/html), `keinCache` setzt no-store. `wandle(pfad, daten)` ist der EINE
+// Haken der Selbsttests (Patch auf die Basis-Zeile, Überlagerung einer anderen Wurzel, Verzögerung): er bekommt die Bytes
+// der Datei (null, wenn sie fehlt) und gibt die ausgelieferten zurück (auch als Promise; null heißt 404). Ein Wurf im Haken
+// oder in einer Seite ist 500 und ein Fehler der Linse beim Namen (der Fehler-Sammler).
+function statikServer({ root = ROOT, start = "/index.html", seiten = null, keinCache = false, wandle = null } = {}) {
+    const bruch = (res, p, e) => {
+        melde("server", `${p}: ${(e && (e.stack || e.message)) || e}`);
+        res.statusCode = 500;
+        res.end();
+    };
     return http.createServer((req, res) => {
         let p;
         try {
@@ -45,42 +55,51 @@ function statikServer({ root = ROOT, start = "/index.html", seiten = null, keinC
         }
         if (seiten && Object.prototype.hasOwnProperty.call(seiten, p)) {
             const s = seiten[p];
-            res.setHeader("Content-Type", "text/html");
-            return res.end(typeof s === "function" ? s() : s);
+            const typ = MIME[path.extname(p)] || "text/html";
+            return Promise.resolve()
+                .then(() => (typeof s === "function" ? s(req) : s))
+                .then((inhalt) => (res.setHeader("Content-Type", typ), res.end(inhalt)), (e) => bruch(res, p, e));
         }
         if (p === "/") p = start;
         const fp = path.join(root, p);
         if (!fp.startsWith(root)) return ((res.statusCode = 403), res.end());
         fs.readFile(fp, (err, data) => {
-            if (err) return ((res.statusCode = 404), res.end());
-            res.setHeader("Content-Type", MIME[path.extname(fp)] || "application/octet-stream");
-            if (keinCache) res.setHeader("Cache-Control", "no-store");
-            res.end(data);
+            const roh = err ? null : data;
+            Promise.resolve()
+                .then(() => (wandle ? wandle(p, roh) : roh))
+                .then((inhalt) => {
+                    if (inhalt == null) return ((res.statusCode = 404), res.end());
+                    res.setHeader("Content-Type", MIME[path.extname(fp)] || "application/octet-stream");
+                    if (keinCache) res.setHeader("Cache-Control", "no-store");
+                    res.end(inhalt);
+                }, (e) => bruch(res, p, e));
         });
     });
 }
 
-// Die Browser-Rezepte. null: kein GPU-Prozess (die Seite setzt __anazhHeadlessNullRenderer) · webgl: WebGL2 auf
-// swiftshader (ANGLE) · standard: Chromes eigene Wahl headless · linse: WebGPU an der Weiche (lokal die Karte, die CI swiftshader) · echt: der Hardware-Adapter.
+// Die Browser-Rezepte. null: kein GPU-Prozess (die Seite setzt __anazhHeadlessNullRenderer) · webgl: WebGL2 an der
+// Weiche (lokal ANGLE auf der Karte, die CI und jede Zeit-Linse swiftshader) · standard: Chromes eigene Wahl headless ·
+// linse: WebGPU an der Weiche (lokal die Karte, die CI und jede Zeit-Linse swiftshader) · echt: der Hardware-Adapter.
+// `zeit: true` sagt der Weiche: diese Linse urteilt über eine Zeit (K39-2, software-gpu.cjs DIE ZEIT-ACHSE).
 const REZEPTE = {
     null: () => ["--no-sandbox", "--disable-gpu"],
-    webgl: () => ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--no-sandbox", "--disable-setuid-sandbox"],
+    webgl: (o) => linsenWebglArgs(process.env, process.platform, o),
     standard: () => ["--no-sandbox", "--disable-setuid-sandbox"],
-    linse: () => linsenWebGpuArgs(),
+    linse: (o) => linsenWebGpuArgs(process.env, process.platform, o),
     echt: () => echteWebGpuArgs(),
 };
 
 // Die Start-Optionen aus dem Rezept: `frist` = protocolTimeout (ms), `zusatz` = weitere Schalter hinter dem Rezept,
 // `viewport` = defaultViewport, `profil` = userDataDir; `headless` steht, wenn nichts gesagt ist (echt: mit Fenster nur,
 // wenn gesagt).
-function browserOptionen({ art, frist, zusatz = [], headless = true, viewport, profil, dumpio } = {}) {
+function browserOptionen({ art, frist, zusatz = [], headless = true, viewport, profil, dumpio, zeit = false } = {}) {
     if (!REZEPTE[art]) throw new Error(`welt-boot: unbekanntes Rezept "${art}" — erlaubt: ${Object.keys(REZEPTE).join(" · ")}`);
     const o = { headless };
     if (profil != null) o.userDataDir = profil;
     if (frist != null) o.protocolTimeout = frist;
     if (viewport !== undefined) o.defaultViewport = viewport;
     if (dumpio != null) o.dumpio = dumpio;
-    o.args = [...REZEPTE[art](), ...zusatz];
+    o.args = [...REZEPTE[art]({ zeit }), ...zusatz];
     return o;
 }
 
@@ -148,8 +167,13 @@ async function starteBrowser(opts = {}) {
             // ein Ziel, das vor dem Anheften stirbt, meldet sich über disconnected/close
         }
     });
-    // jede WebGPU-Linse nennt den Adapter, den der Browser WIRKLICH liefert (gate:start-rezept W4)
-    if (opts.art === "linse" || opts.art === "echt") await adapterZeile(browser);
+    // jede GPU-Linse nennt den Adapter, den der Browser WIRKLICH liefert (gate:start-rezept W4), die WebGL-Linse ihren
+    // WebGL2-Renderer; die ZEIT-ZEILE (W5): eine Zeit-Linse auf der Karte ist ROT beim Namen
+    if (opts.art === "linse" || opts.art === "echt" || opts.art === "webgl") {
+        const info = await adapterZeile(browser, { webgl: opts.art === "webgl" });
+        const rot = zeitZeile({ zeit: !!opts.zeit, art: opts.art, info });
+        if (rot) melde("zeit-linse", rot);
+    }
     return browser;
 }
 
