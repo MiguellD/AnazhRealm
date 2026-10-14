@@ -53,6 +53,16 @@ zurück (`__aufsNiveau`, Tier und Mensch). Neu geprägt NUR die 8 Hüllen-Schlü
 `mensch-L1|haut|mensch` · `mensch-L1|stoff_*|mensch` (3); Ecken, Dreiecke und Meshes je Klasse unverändert, alle übrigen
 475 Klassen byte-gleich (L0 297/297).
 
+Vertrags-Akt K45-2 (14.10.2026, Labor = Welt beim Menschen — die Kleid-Gewichte ziehen in den Ofen): jede Stoff-Hülle,
+deren Kleid-Zone erbt (`koerper-core kleidZonen` `erbt: 1`, Oberteil und Hose; der Schuh nie), übernimmt die Gelenk-Gewichte
+der 4 nächsten Haut-Ecken in der Spreiz-Pose und glättet sie zweimal über ihr Netz (`__stoffErbtHaut`, das Lab-Gesetz
+`_inheritWeights` + `_smoothInfl`) — Haut und Stoff sind EIN Verformungsfeld. Neu geprägt NUR die 4 Stoff-Schlüssel
+`mensch-L0|stoff_233047|mensch` · `mensch-L0|stoff_2a2c30|mensch` · `mensch-L1|stoff_233047|mensch` ·
+`mensch-L1|stoff_2a2c30|mensch`; Ecken, Dreiecke und Meshes je Klasse unverändert (L0 2 434/4 860 und 2 165/4 350, L1
+1 075/2 146 und 863/1 722), alle übrigen 460 Klassen byte-gleich (Haut, Schuh, Kopf, Hände, Gelenke, Beipacks). Zahl
+(`artifacts/profiband/welle-95/labor-welt-mensch/naht-{vorher,nachher}.json`, sieben ROM-Posen des Labors): die Naht-Drift
+Stoff gegen Haut-Feld p95 0,131 → 0,021 Lab-Einheiten, Haut-Ecken, die aus ihrem Stoff treten, 1 749 → 1 213 (L0).
+
 ## Invarianten des Gates
 
 - **Determinismus:** ein frischer Ofen (neuer vm-Kontext) gießt jede Klasse byte-gleich.

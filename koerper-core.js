@@ -206,6 +206,9 @@
                 abstand: 0.12, // der Hüllen-Abstand aus der Haut (Körper-Einheiten, ~3,5 cm — der Bäcker liest ihn je Zone)
                 rough: top === "pullover" ? 0.92 : top === "tank" ? 0.82 : top === "poncho" ? 0.88 : 0.85,
                 webe: top === "pullover" ? "knit" : top === "poncho" ? "wool" : "cotton",
+                // K45-2 (rein additiv): der Stoff ERBT die Gelenk-Gewichte der Haut darunter (das Lab-Gesetz „weight
+                // transfer", der Ofen liest es) — Haut und Stoff sind EIN Verformungsfeld, der Abstand dreht starr mit.
+                erbt: 1,
             });
         }
         var bottom = d.bottom || "pants";
@@ -224,6 +227,7 @@
                 abstand: 0.12,
                 rough: bottom === "pants" ? 0.82 : 0.85,
                 webe: bottom === "pants" ? "denim" : "cotton",
+                erbt: 1, // K45-2: wie das Oberteil (der Schuh erbt nie — er folgt dem Fuß, nicht dem Bein)
             });
         }
         var shoes = d.shoes || "sneaker";
