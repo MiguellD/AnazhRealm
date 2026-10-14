@@ -22,7 +22,7 @@
 //      (läuft 1×, auf dem Boot-Seed).
 "use strict";
 const puppeteer = require("puppeteer");
-const { softwareWebGpuArgs } = require("./lib/software-gpu.cjs");
+const { linsenWebGpuArgs, adapterZeile } = require("./lib/software-gpu.cjs");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
@@ -135,8 +135,9 @@ const server = http.createServer((req, res) => {
     const browser = await puppeteer.launch({
         headless: true,
         protocolTimeout: 600000,
-        args: softwareWebGpuArgs(),
+        args: linsenWebGpuArgs(),
     });
+    await adapterZeile(browser);
     const page = await browser.newPage();
     const pageErrors = [];
     page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));

@@ -714,7 +714,7 @@ async function lauf() {
     const fs = require("fs");
     const path = require("path");
     const { WASSER_INSTALL } = require("./lib/wasser-linse.cjs");
-    const { softwareWebGpuArgs, echteWebGpuArgs } = require("./lib/software-gpu.cjs");
+    const { linsenWebGpuArgs, adapterZeile, echteWebGpuArgs } = require("./lib/software-gpu.cjs");
     const BILD = process.argv.includes("--bild");
     const ECHT = process.argv.includes("--echt");
     const PORT = Number(process.env.WASSER_LEBEN_PORT || 4623);
@@ -743,8 +743,9 @@ async function lauf() {
     const browser = await puppeteer.launch({
         headless: ECHT ? false : "new",
         protocolTimeout: 900000,
-        args: BILD ? (ECHT ? echteWebGpuArgs() : softwareWebGpuArgs()) : ["--no-sandbox", "--disable-gpu"],
+        args: BILD ? (ECHT ? echteWebGpuArgs() : linsenWebGpuArgs()) : ["--no-sandbox", "--disable-gpu"],
     });
+    if (BILD) await adapterZeile(browser);
     const page = await browser.newPage();
     if (BILD) await page.setViewport({ width: 640, height: 360 });
     const seitenFehler = [];
@@ -760,13 +761,17 @@ async function lauf() {
             waitUntil: "domcontentloaded",
             timeout: 120000,
         });
+        // Das Bild wartet auch auf den Renderer (`rendererReady`, renderer.init() durch): auf dem Hardware-Adapter steht die
+        // Hydrosphäre vor dem Backend, und `__wasserBild` riss „render() called before the backend is initialized".
         await page.waitForFunction(
-            () =>
+            (bild) =>
                 window.anazhRealm &&
                 typeof window.anazhRealm._gameLoopTick === "function" &&
                 window.anazhRealm.state.hydrosphere &&
-                window.anazhRealm.state.hydrosphere.ready,
-            { timeout: 600000, polling: 250 }
+                window.anazhRealm.state.hydrosphere.ready &&
+                (!bild || window.anazhRealm.state.rendererReady),
+            { timeout: 600000, polling: 250 },
+            BILD
         );
         await page.evaluate(WASSER_INSTALL);
         if (BILD) {

@@ -26,7 +26,7 @@
 //   Felder MUSS rot melden) · Exit 1 = mindestens ein Band ROT (mit Diagnose).
 "use strict";
 const puppeteer = require("puppeteer");
-const { softwareWebGpuArgs } = require("./lib/software-gpu.cjs");
+const { linsenWebGpuArgs, adapterZeile } = require("./lib/software-gpu.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 const http = require("http");
 const fs = require("fs");
@@ -630,8 +630,9 @@ function erstWandInstall() {
     const browser = await puppeteer.launch({
         headless: true,
         protocolTimeout: 600000,
-        args: softwareWebGpuArgs(),
+        args: linsenWebGpuArgs(),
     });
+    await adapterZeile(browser);
     const page = await browser.newPage();
     await page.setViewport({ width: 640, height: 360 });
     const pageErrors = [];

@@ -15,7 +15,7 @@
 //        aus einer Messung BEIDER Seiten das Ist setzen und die Ratsche senken (nie heben)
 //
 // Port: ALBEDO_PORT (Standard 4587). `--echt` fährt die echte GPU (scripts/lib/software-gpu.cjs echteWebGpuArgs), sonst
-// swiftshader (softwareWebGpuArgs, das EINE Start-Rezept).
+// die Weiche des EINEN Start-Rezepts (linsenWebGpuArgs: lokal der Hardware-Adapter, in der CI swiftshader).
 "use strict";
 const fs = require("fs");
 const path = require("path");
@@ -58,13 +58,15 @@ function statisch(seiten) {
 
 async function browser(echt) {
     const puppeteer = require("puppeteer");
-    const { softwareWebGpuArgs, echteWebGpuArgs } = require("./lib/software-gpu.cjs");
-    return puppeteer.launch({
+    const { linsenWebGpuArgs, adapterZeile, echteWebGpuArgs } = require("./lib/software-gpu.cjs");
+    const b = await puppeteer.launch({
         headless: true,
         protocolTimeout: 900000,
-        args: [...(echt ? echteWebGpuArgs() : softwareWebGpuArgs()), "--window-size=1280,800"],
+        args: [...(echt ? echteWebGpuArgs() : linsenWebGpuArgs()), "--window-size=1280,800"],
         defaultViewport: { width: 1280, height: 800, deviceScaleFactor: 1 },
     });
+    await adapterZeile(b);
+    return b;
 }
 
 // ── Die Labor-Seite ─────────────────────────────────────────────────────────────────────────────────────────────────────
