@@ -617,11 +617,12 @@ class AnazhRealm_Z20a {
                 : 4;
         const n = Math.max(1, Math.min(AnazhRealm.FOUNDRY_WERK_FAEDEN, Math.floor(kerne / 4)));
         for (let k = 1; k < n; k++) {
-            const h = { k, w: new Worker(f.bootUrl), bereit: false };
+            const w = new Worker(f.bootUrl);
+            const h = { k, w, bereit: false };
             // ein Boot-/Laufzeit-Fehler eines Helfers bricht LAUT (K22) wie der des Werks
-            h.w.onerror = (ev) =>
+            w.onerror = (ev) =>
                 this._stoffBruch(`der Werk-Faden ${k} fällt — ` + ((ev && ev.message) || "Boot-/Laufzeit-Fehler"));
-            h.w.onmessage = (ev) => {
+            w.onmessage = (ev) => {
                 const m = ev.data;
                 if (!m || typeof m !== "object") return;
                 if (m.type === "ready" && m.world === "terrain") h.bereit = true;

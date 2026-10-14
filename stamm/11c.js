@@ -3378,8 +3378,10 @@ class AnazhRealm_Z11c {
                     saison,
                 };
             })
-            .catch(() => {
+            .catch((e) => {
                 if (this.state.feldPass === fp && fp.gen === gen) fp.flug = false;
+                // die Höhen reisen durch den Voxel-Faden (`_voxelWorkerHoehen`, K60): sein Bruch meldet sich beim Namen
+                this._stoffBruch("der Feld-Pass (die Höhen der Ferne)", e);
             });
     }
 

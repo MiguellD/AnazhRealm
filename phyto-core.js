@@ -2217,6 +2217,24 @@
     // Die Kronen: T = Art-Krone × Größe (forestTreeSize über ihre Quantile samt der Überhälter). Befund 11.10.: das Dach las die
     // Geburt (0,90) als Deckung, der gepflanzte Bestand deckt 0,16 — die Ferne stand als geschlossenes Grün vor offenem Wald.
     // kronen = [[Gewicht, Kronen-Radius bei Größe 1], …] (die Arten-Mischung am Ort); F = { cell, dartsPerCell, pack }.
+    // OHNE GARBAGE, JEDE GRÖSSE EINMAL (K60): die Fern-Farbe ruft die Deckung je Abtastung einer Masche (Radeon kalt bis zum
+    // ersten Bild ~70 000 Rufe, 1,3 s Selbstzeit, dazu der Sammler) — bis K60 legte jeder Ruf 61 + 300 kleine Arrays an und
+    // rechnete 60 Exponentiale je Art, obwohl die 60 Quantile nur 16 Größen tragen (12 Quantile, die Überhälter sind die
+    // Quantil-Größe oder eine der 4 festen). Jetzt leben Anteile und Größen in festen Puffern dieses Kerns, der Matérn-Faktor
+    // (1 − e^(−λA))/A wird je Art und Größe EINMAL gerechnet, und jede Summe läuft in DERSELBEN Folge aus DENSELBEN
+    // Rechnungen wie zuvor — bitgleich (Byte-Beweis K60: 300 000 Fälle samt Rand, NaN und 7 Arten, 0 ungleich).
+    const _deckNQ = 12;
+    const _deckNU = 4;
+    const _deckG = _deckNQ * (1 + _deckNU);
+    const _deckAnteil = new Float64Array(_deckG); // der Anteil je Quantil in der Folge der Summe (fest)
+    for (let i = 0; i < _deckNQ; i++) {
+        _deckAnteil[i * (1 + _deckNU)] = 0.95 / _deckNQ;
+        for (let j = 0; j < _deckNU; j++) _deckAnteil[i * (1 + _deckNU) + 1 + j] = 0.05 / _deckNQ / _deckNU;
+    }
+    const _deckStufe = new Uint8Array(_deckG); // je Quantil seine Größe: 0..11 die Quantil-Größe, 12..15 ein fester Überhälter
+    const _deckWert = new Float64Array(_deckNQ + _deckNU); // die geklemmte Größe je Stufe (je Ruf aus sd)
+    const _deckFaktor = new Float64Array(_deckNQ + _deckNU); // der Matérn-Faktor je Stufe (je Art)
+    const _deckHat = new Uint8Array(_deckNQ + _deckNU);
     function forestKronenDeckung(sd, geburt, kronen, F) {
         const lambda = (F.dartsPerCell / (F.cell * F.cell)) * (geburt > 0 ? geburt : 0);
         if (!(lambda > 0) || !kronen || !kronen.length) return 0;
@@ -2224,36 +2242,50 @@
         for (let k = 0; k < kronen.length; k++) wSumme += kronen[k][0] > 0 ? kronen[k][0] : 0;
         if (!(wSumme > 0)) return 0;
         // Die Größen-Verteilung (forestTreeSize): ue gleichverteilt auf [0, 1 − 0,52·sd], s = 0,55 + 1,45·ue^1,45; mit 5 % ein
-        // Überhälter max(s, 1,3 + 0,55·u). 12 × 4 Quantile.
-        const NQ = 12;
-        const NU = 4;
+        // Überhälter max(s, 1,3 + 0,55·u). 12 × 4 Quantile, geklemmt auf [0,5; 1,95].
+        const NQ = _deckNQ;
+        const NU = _deckNU;
         const oben = 1 - 0.52 * (sd < 0 ? 0 : sd > 1 ? 1 : sd);
-        const groesse = [];
+        const V = _deckWert;
+        const S = _deckStufe;
+        const klemme = (v) => (v < 0.5 ? 0.5 : v > 1.95 ? 1.95 : v);
+        for (let j = 0; j < NU; j++) V[NQ + j] = klemme(1.3 + 0.55 * ((j + 0.5) / NU));
         for (let i = 0; i < NQ; i++) {
             const s = 0.55 + 1.45 * Math.pow(((i + 0.5) / NQ) * oben, 1.45);
-            groesse.push([0.95 / NQ, s]);
-            for (let j = 0; j < NU; j++) groesse.push([0.05 / NQ / NU, Math.max(s, 1.3 + 0.55 * ((j + 0.5) / NU))]);
-        }
-        const T = [];
-        for (let k = 0; k < kronen.length; k++) {
-            const w = kronen[k][0] > 0 ? kronen[k][0] / wSumme : 0;
-            if (!(w > 0)) continue;
-            for (let g = 0; g < groesse.length; g++) {
-                const s = groesse[g][1] < 0.5 ? 0.5 : groesse[g][1] > 1.95 ? 1.95 : groesse[g][1];
-                T.push([w * groesse[g][0], kronen[k][1] * s]);
-            }
+            V[i] = klemme(s);
+            S[i * (1 + NU)] = i;
+            // max(s, c) ist s, wo s nicht unter c liegt (auch NaN und Gleichstand), sonst c
+            for (let j = 0; j < NU; j++) S[i * (1 + NU) + 1 + j] = s < 1.3 + 0.55 * ((j + 0.5) / NU) ? NQ + j : i;
         }
         let mT = 0;
         let mT2 = 0;
-        for (let i = 0; i < T.length; i++) {
-            mT += T[i][0] * T[i][1];
-            mT2 += T[i][0] * T[i][1] * T[i][1];
+        for (let k = 0; k < kronen.length; k++) {
+            const w = kronen[k][0] > 0 ? kronen[k][0] / wSumme : 0;
+            if (!(w > 0)) continue;
+            for (let g = 0; g < _deckG; g++) {
+                const tw = w * _deckAnteil[g];
+                const t = kronen[k][1] * V[S[g]];
+                mT += tw * t;
+                mT2 += tw * t * t;
+            }
         }
         let deckung = 0;
-        for (let i = 0; i < T.length; i++) {
-            const t = T[i][1];
-            const A = Math.PI * F.pack * F.pack * (t * t + 2 * t * mT + mT2);
-            deckung += T[i][0] * Math.PI * t * t * ((1 - Math.exp(-lambda * A)) / A);
+        const H = _deckHat;
+        const Q = _deckFaktor;
+        for (let k = 0; k < kronen.length; k++) {
+            const w = kronen[k][0] > 0 ? kronen[k][0] / wSumme : 0;
+            if (!(w > 0)) continue;
+            H.fill(0);
+            for (let g = 0; g < _deckG; g++) {
+                const st = S[g];
+                const t = kronen[k][1] * V[st];
+                if (!H[st]) {
+                    const A = Math.PI * F.pack * F.pack * (t * t + 2 * t * mT + mT2);
+                    Q[st] = (1 - Math.exp(-lambda * A)) / A;
+                    H[st] = 1;
+                }
+                deckung += w * _deckAnteil[g] * Math.PI * t * t * Q[st];
+            }
         }
         return deckung > 1 ? 1 : deckung;
     }
