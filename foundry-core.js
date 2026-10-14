@@ -7321,6 +7321,15 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
             handMitte[hn] = [mx / hp2.count, my / hp2.count, mz / hp2.count];
         }
     }
+    // K57: die Grobstufe trägt das Haar-Volumen als Primitiv (koerper haarKappe) — der Zwilling wirft den Umriss der
+    // Kappe, die nah in die Kopf-Haut gießt (gate:kreatur-kosten DECKUNG mensch: IoU 0,947 -> 0,939 ohne sie)
+    if (fein)
+        for (const k of kern.haarKappe(dials)) {
+            const m = new THREE.Mesh(new THREE.SphereGeometry(k.r, segW, segH), matFuer("hair"));
+            m.position.set(k.c[0], k.c[1], k.c[2]);
+            m.scale.set(k.sc[0], k.sc[1], k.sc[2]);
+            B.parts.head.add(m);
+        }
     // DAS BAUM-HAAR (V18.461): kern.haarStreu streut die Frisur als Strähnen
     // über die Schädel-Kalotte — dieselbe __streuGeo wie das Fell (Wurzel→
     // Spitze-Verlauf als Vertex-Farben, deterministischer LCG). lod1 bleibt kahl.
