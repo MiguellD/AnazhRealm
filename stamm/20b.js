@@ -2309,7 +2309,8 @@ class AnazhRealm_Z20b {
         // · Ton-Anker der Strähne · Blende · Wiegen); der erste Stoff einer Signatur legt ihre Knoten ab, jeder weitere zeichnet
         // mit DENSELBEN Knoten — die Werte je Stoff liest der Graph als Stoff-Wert, die Regler (Rauheit, Metall, Leuchtfarbe,
         // Deckkraft, Schwelle) liest r184 als Stoff-Referenz. Weichen die belegten Knoten-Plätze ab, fehlt der Signatur eine
-        // Eingabe: das bricht laut beim Namen, nie still mit fremdem Graphen.
+        // Eingabe: das bricht laut beim Namen, nie still mit fremdem Graphen. Der Satz-Stoff (K43-2) ist eine Eingabe: er liest
+        // Rauheit und Metall je Ecke (`aRegler`), das Emissiv aus `aGlut` und, durchsichtig, die Deckkraft in colorNode.a.
         const _plaetze = [
             "colorNode",
             "emissiveNode",
@@ -2318,6 +2319,8 @@ class AnazhRealm_Z20b {
             "positionNode",
             "maskNode",
             "maskShadowNode",
+            "roughnessNode",
+            "metalnessNode",
         ];
         const _sig = [
             kind,
@@ -2330,6 +2333,7 @@ class AnazhRealm_Z20b {
             _tonA && klasseLook ? "ton" : "",
             xfade ? "xf" : "",
             wiegen === true ? "wiegt" : "",
+            satz === true ? (R.op < 1 ? "satz:durch" : "satz") : "",
         ].join("|");
         if (!this._foundryGraphen) this._foundryGraphen = new Map();
         const _graph = this._foundryGraphen.get(_sig);
