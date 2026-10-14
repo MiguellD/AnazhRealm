@@ -1514,7 +1514,7 @@
         "38220503417"
       ]
     },
-    "Laub-Auflösung (die Szene-Auflösung folgt dem EINEN Regler, Last-Boden im Stand, Bewegungs-Boden)": {
+    "Szenen-Skala (die EINE Größe der Auflösung, der Regler trägt sie nicht, das Laub trägt seine Layer)": {
       "s": 5,
       "n": 5,
       "lauf": "npm run gate:foliage-res",

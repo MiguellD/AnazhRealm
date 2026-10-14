@@ -519,7 +519,7 @@ function lauf(k) {
                 },
                 stellgroessen: {
                     loadScale: Number.isFinite(s.loadScale) ? +s.loadScale.toFixed(2) : null,
-                    renderScale: st._renderScale != null ? +(+st._renderScale).toFixed(2) : null,
+                    szeneSkala: typeof r._szeneSkalaWirk === "function" ? r._szeneSkalaWirk() : null,
                     pixelRatio: rend.getPixelRatio ? rend.getPixelRatio() : null,
                     foliageRadius: st.foliageRadius != null ? Math.round(st.foliageRadius) : null,
                     foliageDichte: st._foliageDensityScale != null ? +(+st._foliageDensityScale).toFixed(2) : null,

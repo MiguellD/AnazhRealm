@@ -110,44 +110,195 @@ class AnazhRealm_Z25c {
         }
     }
 
-    // DIE VORTIEFE IN 16 BIT (0710-1 P2, Runde 2): der Resolve der zeitlichen Auflösung liest die Vortiefe nur gegen die
-    // Schwelle der Disokklusion (vendor/TRAANode.js: `depthThreshold = 0.0005`, `samplePreviousDepth` → `isDisocclusion`) —
-    // eine Stufe von depth16unorm (1/65535 ≈ 1,5·10⁻⁵) liegt 33-fach darunter. r184 kopierte die Szenen-Tiefe
-    // (depth24plus, 4 Byte) Byte für Byte in die Tiefe des Geschichts-Ziels, und eine Kopie verlangt dasselbe Format: 7,9 MB
-    // bei 1080p. Jetzt trägt die Vortiefe 16 bit (3,95 MB), und an der EINEN Stelle, an der der Knoten kopiert
-    // (`renderer.copyTextureToTexture(currentDepth, _historyRenderTarget.depthTexture)`), zeichnet ein Vollbild-Zug die
-    // Szenen-Tiefe als Fragment-Tiefe in die Tiefe des Geschichts-Ziels (`_traaVortiefeZug`) — Farbe ungeschrieben (die
-    // Geschichte bleibt, wie sie ist), Tiefe ohne Test (jedes Pixel), geladen Texel für Texel (kein Filter). Jeder andere
-    // Kopier-Ruf fährt r184. gate:vendor-anker pinnt die Kopier-Stelle des Knotens, gate:ziel-zensus (d) den Weg.
-    _traaVortiefe(traa) {
-        const rend = this.state.renderer;
-        const ziel = traa && traa._historyRenderTarget;
-        if (!ziel || !ziel.depthTexture || !rend || typeof rend.copyTextureToTexture !== "function" || !rend.backend) {
-            this.log(
-                "TRAA-VORTIEFE: Geschichts-Ziel oder Kopier-Weg fehlt (Vendor-Drift) — die Vortiefe bleibt 32 bit",
-                "ERROR"
-            );
-            return;
-        }
-        const tiefe = ziel.depthTexture;
-        tiefe.type = THREE.UnsignedShortType;
-        const farbe = ziel.texture;
-        const realm = this;
-        const roh = rend.copyTextureToTexture;
-        rend.copyTextureToTexture = function (von, nach, ...rest) {
-            if (nach === tiefe && von && von.isDepthTexture === true) {
-                realm._traaVortiefeZug(this, von, tiefe);
-                return undefined;
-            }
-            // DER NEUSTART DER GESCHICHTE (0910-1 B): bei jedem Größenwechsel kopiert der Knoten das Szenen-Bild in die
-            // Geschichte (vendor/TRAANode.js `needsRestart`). Trägt das Szenen-Ziel rg11b10ufloat (`_ausgabeFormat`), die
-            // Geschichte rgba16float, verbietet WebGPU die Kopie — ein Vollbild-Zug lädt Texel für Texel und schreibt Alpha 1.
-            if (nach === farbe && von && von.type !== nach.type) {
-                realm._traaNeustartZug(this, von, farbe);
-                return undefined;
-            }
-            return roh.call(this, von, nach, ...rest);
+    // DIE ZEITLICHE HOCHSKALIERUNG (K50, TAAU): die Szene rendert in der EINEN Szenen-Skala (`_szeneSkalaWirk`, der
+    // Szenen-Pass `setResolutionScale`), die zeitliche Auflösung löst auf die AUSGABE-Auflösung auf. Die Kamera springt je Frame
+    // um einen Halton-Versatz in EINGANGS-Pixeln (die Folge des Knotens, `setViewOffset` mit der Eingangs-Größe), jedes
+    // Eingangs-Texel trägt so über die Folge eine andere Stelle der Ausgabe. Je Ausgabe-Pixel wiegt der Resolve die 3×3 Texel
+    // um seine Stelle nach ihrem Abstand in AUSGABE-Pixeln (exp(−ZEIT_KERN·d²): 7 statt Unreals 2,29 — gemessen schärfer und ruhiger), die Deckung des
+    // nächsten Texels wiegt das Gewicht des Jetzt (ein Pixel ohne nahen Abtastpunkt in diesem Frame hält seine Geschichte),
+    // die Varianz-Klemme spannt dieselben 3×3 Texel (im Stand ZEIT_GAMMA_RUHE σ: das gröbere Gitter streut weiter). Geschichte und Resolve bleiben rgba16float in der Ausgabe-Auflösung (W7:
+    // 11/11/10 posterisierte die Geschichte). DIE VORTIEFE lebt im Kanal a der Geschichte (die Sicht-Tiefe des Vorbilds je
+    // Ausgabe-Pixel, float16 relativ 2⁻¹¹ — 0,05 mm Tiefen-Stufe auf 1 m gegen die Disokklusions-Schwelle 0,0005): kein
+    // eigenes Tiefen-Ziel der Geschichte, kein Vollbild-Zug je Frame. Ein Größenwechsel der Ausgabe startet die Geschichte
+    // neu (ein Frame ohne Geschichte); ein Wechsel der Skala lässt sie stehen (sie lebt in der Ausgabe). Basis ist r184s
+    // TRAANode (vendor/TRAANode.js unverändert): Bau, Ziele, Halton-Folge, Kamera-Uniformen und `clearViewOffset` erbt der
+    // Knoten, Resolve, Größen und Lauf sind seine. Das Quad nimmt die Klasse des Quads der Post-Kette (`pp._quadMesh`,
+    // gate:vendor-anker); fehlt sie, bricht die Kette LAUT.
+    _zeitAufloesung(pp, farbe, tiefe, bewegung, kamera) {
+        const T = THREE.TSL;
+        const Quad = pp && pp._quadMesh && pp._quadMesh.constructor;
+        if (typeof Quad !== "function" || typeof THREE.TRAANode !== "function")
+            throw new Error("ZEIT-AUFLÖSUNG: Quad der Post-Kette oder TRAANode fehlt (Vendor-Drift)");
+        const { Fn, If, float, vec2, vec3, vec4, uv, texture, uniform, max, exp, floor, mix, luminance } = T;
+        const klemme = (h, lo, hi) => {
+            const p = hi.add(lo).mul(0.5);
+            const e = hi.sub(lo).mul(0.5).add(1e-7);
+            const v = h.sub(p);
+            const u = v.div(e).abs();
+            const m = max(u.x, u.y, u.z);
+            return m.greaterThan(1).select(p.add(v.div(m)), h);
         };
+        class ZeitAufloesung extends THREE.TRAANode {
+            constructor() {
+                super(farbe, tiefe, bewegung, kamera);
+                this._historyRenderTarget.depthTexture = null;
+                this._zitter = uniform(new THREE.Vector2());
+                this._neustart = uniform(1);
+                this._kern = uniform(AnazhRealm.ZEIT_KERN);
+                this._gammaRuhe = uniform(AnazhRealm.ZEIT_GAMMA_RUHE);
+                this._quad = new Quad(this._resolveMaterial);
+                this._quad.name = "TRAA";
+                this._gr = new THREE.Vector2();
+            }
+            // die Eingangs-Größe, wie r184s Szenen-Pass sie anlegt (PassNode.setSize: CSS-Größe × Pixel-Verhältnis × Skala)
+            eingang(aus) {
+                const r = this._rend;
+                const sp = this.beautyNode.passNode;
+                r.getSize(aus);
+                const k = r.getPixelRatio() * sp.getResolutionScale();
+                return aus.set(Math.floor(aus.x * k), Math.floor(aus.y * k));
+            }
+            setViewOffset(_w, _h) {
+                const e = this.eingang(this._gr);
+                super.setViewOffset(e.x, e.y);
+                const v = this.camera.view;
+                this._zitter.value.set(v.offsetX, v.offsetY);
+            }
+            updateBefore(frame) {
+                const r = frame.renderer;
+                this._previousCameraWorldMatrix.value.copy(this._cameraWorldMatrix.value);
+                this._previousCameraProjectionMatrixInverse.value.copy(this._cameraProjectionMatrixInverse.value);
+                this._cameraNearFar.value.set(this.camera.near, this.camera.far);
+                this._cameraWorldMatrix.value.copy(this.camera.matrixWorld);
+                this._cameraWorldMatrixInverse.value.copy(this.camera.matrixWorldInverse);
+                this._cameraProjectionMatrixInverse.value.copy(this.camera.projectionMatrixInverse);
+                const aus = r.getDrawingBufferSize(new THREE.Vector2());
+                if (this._needsPostProcessingSync === true) {
+                    this.setViewOffset(aus.x, aus.y);
+                    this._needsPostProcessingSync = false;
+                }
+                const g = this._historyRenderTarget;
+                const neu = g.width !== aus.x || g.height !== aus.y;
+                this.setSize(aus.x, aus.y);
+                const ziel = r.getRenderTarget(),
+                    mrt = r.getMRT(),
+                    rof = r.getRenderObjectFunction(),
+                    autoClear = r.autoClear;
+                r.setMRT(null);
+                r.setRenderObjectFunction(null);
+                r.autoClear = true;
+                if (neu) {
+                    r.initRenderTarget(g);
+                    r.initRenderTarget(this._resolveRenderTarget);
+                }
+                this._neustart.value = neu ? 1 : 0;
+                r.setRenderTarget(this._resolveRenderTarget);
+                this._quad.render(r);
+                r.setRenderTarget(null);
+                r.copyTextureToTexture(this._resolveRenderTarget.texture, g.texture);
+                r.setRenderTarget(ziel);
+                r.setMRT(mrt);
+                r.setRenderObjectFunction(rof);
+                r.autoClear = autoClear;
+            }
+            setup(builder) {
+                this._rend = builder.renderer;
+                const rp = builder.context.renderPipeline;
+                if (rp) {
+                    this._needsPostProcessingSync = true;
+                    rp.context.onBeforeRenderPipeline = () => {
+                        const g = builder.renderer.getDrawingBufferSize(new THREE.Vector2());
+                        this.setViewOffset(g.x, g.y);
+                    };
+                    rp.context.onAfterRenderPipeline = () => this.clearViewOffset();
+                }
+                if (builder.renderer.reversedDepthBuffer === true || builder.renderer.logarithmicDepthBuffer === true)
+                    throw new Error("ZEIT-AUFLÖSUNG: umgekehrte oder logarithmische Tiefe trägt der Resolve nicht");
+                this._velocityNode = builder.context.velocity !== undefined ? builder.context.velocity : T.velocity;
+                const ein = this.beautyNode;
+                const tief = this.depthNode;
+                const geschichte = texture(this._historyRenderTarget.texture);
+                const { x: nah, y: fern } = this._cameraNearFar;
+                const resolve = Fn(() => {
+                    const uvA = uv();
+                    const einGr = vec2(ein.size());
+                    const ausGr = vec2(1).div(this._invSize);
+                    const pEin = uvA.mul(einGr);
+                    const zelle = floor(pEin);
+                    const jePx = ausGr.div(einGr);
+                    const hoch = einGr.sub(1);
+                    const summeW = float(0).toVar();
+                    const summeC = vec3(0).toVar();
+                    const m1 = vec3(0).toVar();
+                    const m2 = vec3(0).toVar();
+                    const wNah = float(0).toVar();
+                    const nahD = float(2).toVar();
+                    const nahT = vec2(0).toVar();
+                    const fernD = float(-1).toVar();
+                    for (let y = -1; y <= 1; y++)
+                        for (let x = -1; x <= 1; x++) {
+                            const t = zelle.add(vec2(x, y)).clamp(vec2(0), hoch).toVar();
+                            const c = ein.load(t).rgb.max(0).toVar();
+                            const d = t.add(0.5).add(this._zitter).sub(pEin).mul(jePx);
+                            const w = exp(d.dot(d).mul(this._kern).negate()).toVar();
+                            summeW.addAssign(w);
+                            summeC.addAssign(c.mul(w));
+                            m1.addAssign(c);
+                            m2.addAssign(c.mul(c));
+                            wNah.assign(max(wNah, w));
+                            const tz = tief.load(t).r.toVar();
+                            If(tz.lessThan(nahD), () => {
+                                nahD.assign(tz);
+                                nahT.assign(t);
+                            });
+                            If(tz.greaterThan(fernD), () => {
+                                fernD.assign(tz);
+                            });
+                        }
+                    const jetzt = summeC.div(max(summeW, 1e-5)).toVar();
+                    // die Bewegung des nächsten Texels (NDC → UV), die Geschichte an ihrer Stelle im Vorbild
+                    const versatz = this.velocityNode.load(nahT.add(0.5)).xy.mul(vec2(0.5, -0.5)).toVar();
+                    const gUV = uvA.sub(versatz).toVar();
+                    const hist = geschichte.sample(gUV).toVar();
+                    const vorD = T.viewZToPerspectiveDepth(hist.a, nah, fern);
+                    const posV = T.getViewPosition(gUV, vorD, this._previousCameraProjectionMatrixInverse);
+                    const posW = this._previousCameraWorldMatrix.mul(vec4(posV, 1)).xyz;
+                    const vorJetzt = T.viewZToPerspectiveDepth(
+                        this._cameraWorldMatrixInverse.mul(vec4(posW, 1)).z,
+                        nah,
+                        fern
+                    );
+                    const imBild = gUV.greaterThanEqual(0).all().and(gUV.lessThanEqual(1).all());
+                    const kante = fernD.sub(nahD).greaterThan(this.edgeDepthDiff);
+                    const frei = nahD.sub(vorJetzt).greaterThan(this.depthThreshold);
+                    const gueltig = imBild.and(kante.or(frei.not())).and(this._neustart.equal(0));
+                    const lauf = uvA.sub(gUV).mul(ausGr).length().div(this.maxVelocityLength).saturate();
+                    // das Gewicht des Jetzt: Grund 0,05, Unterpixel-Korrektur der Bewegung, mal die Deckung des nächsten Texels
+                    const phase = versatz.mul(ausGr).fract().abs();
+                    const pw = max(phase, phase.oneMinus());
+                    const alpha = float(0.05).add(pw.x.mul(pw.y).oneMinus().div(0.75).mul(0.25)).toVar();
+                    alpha.mulAssign(wNah);
+                    alpha.assign(gueltig.select(alpha.add(lauf).saturate(), float(1)));
+                    // die Varianz-Klemme der Geschichte über die 3×3 Eingangs-Texel
+                    const gamma = mix(float(0.5), this._gammaRuhe, lauf.oneMinus().pow2());
+                    const mittel = m1.div(9);
+                    const sigma = m2.div(9).sub(mittel.mul(mittel)).max(0).sqrt().mul(gamma);
+                    const histC = klemme(hist.rgb, mittel.sub(sigma), mittel.add(sigma));
+                    // die Flimmer-Dämpfung nach Luma (r184 flickerReduction)
+                    const wJ = alpha.div(luminance(jetzt.div(max(jetzt.x, jetzt.y, jetzt.z).add(1))).add(1));
+                    const wG = alpha.oneMinus().div(luminance(histC.div(max(histC.x, histC.y, histC.z).add(1))).add(1));
+                    const aus = jetzt
+                        .mul(wJ)
+                        .add(histC.mul(wG))
+                        .div(max(wJ.add(wG), 1e-5));
+                    const dMitte = tief.load(zelle.clamp(vec2(0), hoch)).r;
+                    return vec4(aus, T.perspectiveDepthToViewZ(dMitte, nah, fern));
+                });
+                this._resolveMaterial.colorNode = resolve();
+                return this._textureNode;
+            }
+        }
+        return new ZeitAufloesung();
     }
 
     // DAS AUSGABE-ZIEL DER SZENE IN 32 BIT (0910-1 B, Host-VRAM Runde 2): r184s Szenen-Pass legt `output` als rgba16float an
@@ -260,125 +411,14 @@ class AnazhRealm_Z25c {
             });
     }
 
-    // DER ZUG DES NEUSTARTS: ein roher Pass auf eigenem Encoder wie `_traaVortiefeZug` — ein Vollbild-Dreieck lädt das
-    // Szenen-Bild Texel für Texel und schreibt es mit Alpha 1 in die Farbe der Geschichte (die Ziele legt r184 an wie für
-    // seine Kopie, `_textures.updateTexture`).
-    _traaNeustartZug(rend, von, nach) {
-        const be = rend.backend;
-        rend._textures.updateTexture(von);
-        rend._textures.updateTexture(nach);
-        const q = be.get(von).texture;
-        const z = be.get(nach).texture;
-        if (!q || !z) return;
-        let N = this._traaNeustartGpu;
-        if (!N || N.format !== z.format) {
-            const modul = be.device.createShaderModule({
-                label: "TRAA-Neustart",
-                code:
-                    "@group(0) @binding(0) var bild: texture_2d<f32>;\n" +
-                    "@vertex fn vs(@builtin(vertex_index) i: u32) -> @builtin(position) vec4f {\n" +
-                    "    let p = vec2f(f32((i << 1u) & 2u), f32(i & 2u));\n" +
-                    "    return vec4f(p * vec2f(2.0, -2.0) + vec2f(-1.0, 1.0), 0.0, 1.0);\n" +
-                    "}\n" +
-                    "@fragment fn fs(@builtin(position) p: vec4f) -> @location(0) vec4f {\n" +
-                    "    return vec4f(textureLoad(bild, vec2i(p.xy), 0).rgb, 1.0);\n" +
-                    "}\n",
-            });
-            N = this._traaNeustartGpu = {
-                format: z.format,
-                pipe: be.device.createRenderPipeline({
-                    label: "TRAA-Neustart",
-                    layout: "auto",
-                    vertex: { module: modul, entryPoint: "vs" },
-                    fragment: { module: modul, entryPoint: "fs", targets: [{ format: z.format }] },
-                    primitive: { topology: "triangle-list" },
-                }),
-                quelle: null,
-                ziel: null,
-            };
-        }
-        if (N.quelle !== q || N.ziel !== z) {
-            N.gruppe = be.device.createBindGroup({
-                layout: N.pipe.getBindGroupLayout(0),
-                entries: [{ binding: 0, resource: q.createView() }],
-            });
-            N.ansicht = z.createView();
-            N.quelle = q;
-            N.ziel = z;
-        }
-        const enc = be.device.createCommandEncoder({ label: "TRAA-Neustart" });
-        const pass = enc.beginRenderPass({
-            label: "TRAA-Neustart",
-            colorAttachments: [{ view: N.ansicht, loadOp: "clear", clearValue: [0, 0, 0, 1], storeOp: "store" }],
-        });
-        pass.setPipeline(N.pipe);
-        pass.setBindGroup(0, N.gruppe);
-        pass.draw(3);
-        pass.end();
-        be.device.queue.submit([enc.finish()]);
-    }
-
-    // DER ZUG DER VORTIEFE (Gegenprüfung 0710-3, gelb: gpu-bank CPU je Frame 2,73 → 3,04 ms — der Zug war ein eigenes
-    // `renderer.render` einer Szene mit Orthogonal-Kamera, Render-Liste, Material-Weg und Pass-Deskriptor für EIN
-    // Vollbild-Dreieck): ein roher Pass auf eigenem Encoder, so wie r184s eigene Kopie (`copyTextureToTexture` erzeugt
-    // einen Encoder und reicht ihn sofort ein) — dieselbe Stelle in der Folge der Queue. Ein Vollbild-Dreieck lädt die
-    // Szenen-Tiefe Texel für Texel und schreibt sie als Fragment-Tiefe (Test immer, kein Farb-Anhang); die Ziele legt r184
-    // an wie für seine Kopie (`_textures.updateTexture`, auch nach jedem Resize).
-    _traaVortiefeZug(rend, von, nach) {
-        const be = rend.backend;
-        rend._textures.updateTexture(von);
-        rend._textures.updateTexture(nach);
-        const q = be.get(von).texture;
-        const z = be.get(nach).texture;
-        if (!q || !z) return;
-        let V = this._traaVortiefeGpu;
-        if (!V || V.format !== z.format) {
-            const modul = be.device.createShaderModule({
-                label: "TRAA-Vortiefe",
-                code:
-                    "@group(0) @binding(0) var tiefe: texture_depth_2d;\n" +
-                    "@vertex fn vs(@builtin(vertex_index) i: u32) -> @builtin(position) vec4f {\n" +
-                    "    let p = vec2f(f32((i << 1u) & 2u), f32(i & 2u));\n" +
-                    "    return vec4f(p * vec2f(2.0, -2.0) + vec2f(-1.0, 1.0), 0.0, 1.0);\n" +
-                    "}\n" +
-                    "@fragment fn fs(@builtin(position) p: vec4f) -> @builtin(frag_depth) f32 {\n" +
-                    "    return textureLoad(tiefe, vec2i(p.xy), 0);\n" +
-                    "}\n",
-            });
-            V = this._traaVortiefeGpu = {
-                format: z.format,
-                pipe: be.device.createRenderPipeline({
-                    label: "TRAA-Vortiefe",
-                    layout: "auto",
-                    vertex: { module: modul, entryPoint: "vs" },
-                    fragment: { module: modul, entryPoint: "fs", targets: [] },
-                    depthStencil: { format: z.format, depthWriteEnabled: true, depthCompare: "always" },
-                    primitive: { topology: "triangle-list" },
-                }),
-                quelle: null,
-                ziel: null,
-            };
-        }
-        if (V.quelle !== q || V.ziel !== z) {
-            V.gruppe = be.device.createBindGroup({
-                layout: V.pipe.getBindGroupLayout(0),
-                entries: [{ binding: 0, resource: q.createView({ aspect: "depth-only" }) }],
-            });
-            V.ansicht = z.createView();
-            V.quelle = q;
-            V.ziel = z;
-        }
-        const enc = be.device.createCommandEncoder({ label: "TRAA-Vortiefe" });
-        const pass = enc.beginRenderPass({
-            label: "TRAA-Vortiefe",
-            colorAttachments: [],
-            depthStencilAttachment: { view: V.ansicht, depthLoadOp: "load", depthStoreOp: "store" },
-        });
-        pass.setPipeline(V.pipe);
-        pass.setBindGroup(0, V.gruppe);
-        pass.draw(3);
-        pass.end();
-        be.device.queue.submit([enc.finish()]);
+    // DIE EINE SZENEN-SKALA (K50): die interne Auflösung der Szene relativ zur Ausgabe — `state.szeneSkala` (der Regler
+    // „Szene-Auflösung“ im Menü, im Snapshot), sonst `SZENE_SKALA`. Sie lebt nur mit der zeitlichen Auflösung: ohne sie (Holz
+    // kienspan) gibt es keinen Hochskalierer, die Szene rendert in der Ausgabe-Auflösung.
+    _szeneSkalaWirk() {
+        if (!this.state._traa) return 1;
+        const s = this.state.szeneSkala;
+        const w = s == null || !Number.isFinite(+s) ? AnazhRealm.SZENE_SKALA : +s;
+        return Math.max(AnazhRealm.SZENE_SKALA_MIN, Math.min(1, w));
     }
 
     // Post-Processing-Pipeline: EIN THREE.PostProcessing mit Bloom + Color-Grading (Sättigung + Kontrast),
@@ -400,9 +440,10 @@ class AnazhRealm_Z25c {
             const { pass, uniform, vec2, vec3, float, luminance, mix, smoothstep, screenUV, max, min } = TSL;
             const pp = new PPCtor(this.state.renderer);
             const scenePass = pass(this.state.scene, this.state.camera);
-            // Das Szene-RT bleibt auf Skala 1 (setResolutionScale): jeder Laufzeit-Realloc zerstört die
-            // Depth-View des Render-Kontexts (s. _loopRender).
-            if (typeof scenePass.setResolutionScale === "function") scenePass.setResolutionScale(1);
+            // DIE EINE SZENEN-SKALA (K50): der Szenen-Pass rendert in ihr, die zeitliche Auflösung löst auf die Ausgabe auf
+            // (`_zeitAufloesung`). Gesetzt vor dem ersten Render; ein neuer Wert (der Regler im Menü) legt die Ziele beim
+            // nächsten Frame neu an wie ein Fenster-Wechsel (`_loopRender`), nie je Last.
+            scenePass.setResolutionScale(this._szeneSkalaWirk());
             this._ausgabeFormat(scenePass); // das Szenen-Ziel in rg11b10ufloat (0910-1 B), vor dem ersten Render
             this.state.scenePass = scenePass;
             // EIN Szene-Pass, eine Diät-Wahrheit: ein zweiter Szene-Pass (die Fern-Schicht) ließ Material-Diät
@@ -425,8 +466,8 @@ class AnazhRealm_Z25c {
             // Wolken zu Höhenlinien, die Radeon rundet beim Schreiben gegen null (Sonde 1,0117 → 1,0; über die Geschichte das
             // Mittel −2…−3 % Luma) und die Ruhe halbierte sich (Frame zu Frame 0,29 → 0,58 Luma auf Armlänge) — 6 bzw. 5
             // Mantissen-Bit tragen die zeitliche Auflösung nicht. Das Szenen-Bild EINES Frames trägt sie: es liegt seit 0910-1 B
-            // in rg11b10ufloat (`_ausgabeFormat`, −7,9 MB), die Rundung gleicht `_ausgabeSonde` aus, den Neustart der
-            // Geschichte zeichnet `_traaNeustartZug` (die Kopie verlangte gleiche Formate).
+            // in rg11b10ufloat (`_ausgabeFormat`, −7,9 MB), die Rundung gleicht `_ausgabeSonde` aus. Seit K50 ist sie der
+            // zeitliche HOCHSKALIERER (`_zeitAufloesung`): die Szene in der Szenen-Skala, Geschichte und Resolve in der Ausgabe.
             // Fehlt TRAANode im THREE der Seite (eine Cache-Kopie des Bootstraps von vor der zeitlichen Auflösung), bricht
             // die Kette LAUT — nie still ohne Kantenglättung, Bloom und Grading weiter.
             if (this.state._traa && typeof THREE.TRAANode !== "function") {
@@ -437,22 +478,14 @@ class AnazhRealm_Z25c {
                 throw new Error("THREE.TRAANode fehlt im Bootstrap");
             }
             const traa = this.state._traa
-                ? new THREE.TRAANode(
+                ? this._zeitAufloesung(
+                      pp,
                       sceneColor,
                       scenePass.getTextureNode("depth"),
                       this._traaKameraBewegung(TSL, scenePass.getTextureNode("depth")),
                       this.state.camera
                   )
                 : null;
-            // Die Platzhalter-Tiefe des Knotens (1×1, bis die Geschichte ihre Tiefe trägt) hat weder Namen noch Ziel —
-            // die Band-Linse nennt jedes Textur-Objekt beim Erzeuger (gate:vendor-anker pinnt die Vendor-Zeile).
-            if (traa) traa._previousDepthNode.value.name = "TRAANode.vortiefe";
-            // DIE VORTIEFE DER GESCHICHTE: je Frame bringt der Knoten die Szenen-Tiefe in die Tiefe seines Geschichts-Ziels, der
-            // Resolve des nächsten Frames liest sie als Vortiefe (`samplePreviousDepth` → Disokklusion: wo die reprojizierte
-            // Vortiefe vor der jetzigen liegt, fällt die Geschichte — sonst zieht jede freigelegte Kante einen Geist). Sie trägt
-            // 16 bit (`_traaVortiefe`); der Name ist der, den die Band-Linse ihr über das Ziel gibt (`<ziel>:tiefe`).
-            if (traa) traa._historyRenderTarget.depthTexture.name = "TRAANode.history:tiefe";
-            if (traa) this._traaVortiefe(traa);
             if (traa) sceneColor = traa.getTextureNode();
 
             const u = {
@@ -495,6 +528,9 @@ class AnazhRealm_Z25c {
                 // DER AUSGLEICH DER AUSGABE-RUNDUNG (0910-1 B, `_ausgabeSonde`): je Kanal der Faktor, um den das Szenen-Bild
                 // in 11/11/10 im Mittel zu dunkel ankommt — derselbe Vektor, den die Sonde setzt (1 ohne Sonde).
                 ausgabeAusgleich: uniform(this.state._ausgabeAusgleich || new THREE.Vector3(1, 1, 1)),
+                // DIE NACH-SCHÄRFE DER HOCHSKALIERUNG (K50): `ZEIT_SCHAERFE × (1 − Szenen-Skala)`, gestellt in `_loopRender` — bei
+                // Skala 1 null (die Stufe kostet dann nichts).
+                nachSchaerfe: uniform(0),
             };
             this.state.postProcessingUniforms = u;
             // V8 (Kür) — die EINE benannte Godray-Quelle (Gesetz #0): der Frame-Code (`_loopRender`)
@@ -531,7 +567,23 @@ class AnazhRealm_Z25c {
             // trägt beide (vorher zwei an derselben Stelle — die Ausgabe-UV des Quads ist screenUV).
             // Jede Abtastung des Szenen-Bilds trägt den Ausgleich der Ausgabe-Rundung (`_ausgabeSonde`; 1 auf rgba16float).
             const bild = (uv) => sceneColor.sample(uv).rgb.mul(u.ausgabeAusgleich);
-            const mitte = bild(screenUV);
+            // DIE NACH-SCHÄRFE (K50): die zeitliche Hochskalierung rekonstruiert die Ausgabe aus einer kleineren Szene, ihr Bild ist
+            // um eine Spur weicher (gemessen am Ausgabe-Pfad, Gradient der Kanten). Wie jeder Hochskalierer (FSR2 RCAS, TSR) schärft
+            // die Kette NACH dem Resolve — nie in die Geschichte: die Mitte gegen ihre vier Nachbarn in Ausgabe-Pixeln, geklemmt auf
+            // deren Spanne (kein Saum über das Minimum und Maximum der Nachbarschaft hinaus). Stärke 0 → der Zweig fällt.
+            const roh = bild(screenUV);
+            const px1 = vec2(1, 1).div(TSL.screenSize);
+            const schaerfeDelta = () => {
+                const o = bild(screenUV.sub(vec2(float(0), px1.y)));
+                const un = bild(screenUV.add(vec2(float(0), px1.y)));
+                const li = bild(screenUV.sub(vec2(px1.x, float(0))));
+                const re = bild(screenUV.add(vec2(px1.x, float(0))));
+                const mn = min(min(min(o, un), min(li, re)), roh);
+                const mx = max(max(max(o, un), max(li, re)), roh);
+                const scharf = roh.add(roh.mul(4).sub(o).sub(un).sub(li).sub(re).mul(u.nachSchaerfe));
+                return scharf.clamp(mn, mx).sub(roh);
+            };
+            const mitte = roh.add(nurBeiStaerke(schaerfeDelta(), u.nachSchaerfe));
             const bright = (uv) => {
                 const c = uv === screenUV ? mitte : bild(uv);
                 const l = luminance(c);
@@ -2051,35 +2103,6 @@ class AnazhRealm_Z25c {
         // Zeichnen — ein frei gewordener und im selben Frame neu vergebener Bereich ist nie ungelegt sichtbar.
         this._tickChunkSatz();
         // Skybox-Position DIREKT vor dem Render kopieren (die Kamera ist hier schon aktualisiert).
-        // WAHRNEHMUNGS-SENSE: Winkel- + Translations-Geschwindigkeit des Blicks → `_camMotion01` ∈ [0..1];
-        // fast-attack, short-decay (~170 ms). Reine Beobachtung; der Perf-Aktuator liest sie.
-        if (this.state.camera) {
-            const cam = this.state.camera;
-            // currentTime ist SEKUNDEN (loop: t/1000). dtS geklemmt: Boden gegen Div-0, Deckel
-            // gegen den Riesen-dt eines Tab-Wechsels/ersten Frames (sonst falscher Peak).
-            const dtS = this._camMotionLast ? Math.min(0.1, Math.max(0.001, currentTime - this._camMotionLast)) : 0.016;
-            this._camMotionLast = currentTime;
-            if (!this._camDirPrev) this._camDirPrev = new THREE.Vector3();
-            if (!this._camPosPrev) this._camPosPrev = new THREE.Vector3();
-            if (!this._camDirTmp) this._camDirTmp = new THREE.Vector3();
-            const dir = cam.getWorldDirection(this._camDirTmp);
-            let raw = 0;
-            if (this._camMotionInit) {
-                const dot = Math.max(-1, Math.min(1, dir.dot(this._camDirPrev)));
-                const angVel = Math.acos(dot) / dtS; // rad/s Blick-Winkelgeschwindigkeit
-                const posVel = cam.position.distanceTo(this._camPosPrev) / dtS; // m/s
-                const angN = Math.min(1, angVel / AnazhRealm.PERF_CAM_ANGVEL_FULL);
-                const posN = Math.min(1, posVel / AnazhRealm.PERF_CAM_POSVEL_FULL);
-                raw = Math.max(angN, posN);
-            }
-            this._camMotionInit = true;
-            this._camDirPrev.copy(dir);
-            this._camPosPrev.copy(cam.position);
-            const prev = this.state._camMotion01 != null ? this.state._camMotion01 : 0;
-            // Fast-Attack (raw sofort), Short-Decay (Zeitkonstante DECAY_MS in ms → dtS×1000):
-            const decay = Math.exp((-dtS * 1000) / AnazhRealm.PERF_CAM_MOTION_DECAY_MS);
-            this.state._camMotion01 = raw >= prev ? raw : prev * decay;
-        }
         if (this.state.camera && this.state.skybox) {
             this.state.skybox.position.copy(this.state.camera.position);
         }
@@ -2208,10 +2231,14 @@ class AnazhRealm_Z25c {
         this._leuchtTakt();
         // Die Kehraus-Marke vor dem Frame: was dieser Frame zeichnet, trägt einen höheren Zähler.
         const zaehlerVor = this._gpuKehrausMarke();
-        // Das Szene-RT bleibt für immer auf Skala 1 — kein Laufzeit-Realloc: die Render-Objekte (auch die mit noch
-        // offener Pipeline, die Erst-Zeichnung) hängen am Render-Kontext, jeder RT-Realloc zerstört dessen Depth-View
-        // (Fehler-Klasse ohne fps-Gewinn). Die statische KLASSEN-PIXEL-KAPPE (Boot-Set) trägt die Auflösungs-
-        // Ökonomie; eine Wahrnehmungs-Auflösung nur realloc-frei (Viewport-Scaling).
+        // DIE SZENEN-SKALA am Szenen-Pass: nie je Last (jeder Ziel-Wechsel unter lebenden Bündeln war die Destroyed-Klasse,
+        // realloc-tod 20.07.) — nur ein neuer Wert des Spielers (`state.szeneSkala`, der Regler im Menü), und der legt die
+        // Ziele beim nächsten Frame neu an wie ein Fenster-Wechsel (der Vorher-Textur-Wächter der Diät folgt jeder Textur).
+        const sp = this.state.scenePass;
+        if (sp && sp.getResolutionScale() !== this._szeneSkalaWirk()) sp.setResolutionScale(this._szeneSkalaWirk());
+        const ppu = this.state.postProcessingUniforms;
+        if (ppu && ppu.nachSchaerfe)
+            ppu.nachSchaerfe.value = this.state.traaNode ? AnazhRealm.ZEIT_SCHAERFE * (1 - this._szeneSkalaWirk()) : 0;
         // DIE WEICHE: Post-Kette oder Direktpfad — und mit ihr Leinwand-Tiefe und Rahmen-Ziel (`_leinwandWeg`, der EINE Weg).
         let direkt = !pp || this.state.postProcessingFailed === true;
         if (!direkt) {

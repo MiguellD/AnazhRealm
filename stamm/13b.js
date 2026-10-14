@@ -836,8 +836,9 @@ class AnazhRealm_Z13b {
             if (Number.isFinite(pt)) this.state.perfTargetMs = Math.max(16, Math.min(34, pt)); // Ziel-FPS 30..60 → 33..16 ms
             const lr = Number(state.lodRef);
             if (Number.isFinite(lr)) this.state.lodRef = Math.max(4, Math.min(30, lr));
-            const fc = Number(state.foliageResCeiling);
-            if (Number.isFinite(fc)) this.state.foliageResCeiling = Math.max(0.25, Math.min(1, fc));
+            // die Szenen-Skala (K50) — das alte Feld `foliageResCeiling` trug den Regler ohne Leser und fällt
+            const sk = state.szeneSkala == null ? NaN : Number(state.szeneSkala);
+            if (Number.isFinite(sk)) this.state.szeneSkala = Math.max(AnazhRealm.SZENE_SKALA_MIN, Math.min(1, sk));
             const rr = Number(state.chunkRingRadius);
             if (Number.isFinite(rr)) this.state.chunkRingRadius = Math.max(1, Math.min(12, rr));
             // V18.389 (P5) — die Perf-Panel-Sichtbarkeit überlebt den Reload (nur ein expliziter

@@ -366,39 +366,10 @@ class AnazhRealm_Z05b {
                 !streamBusy
             );
         }
-        // SUBSYSTEM 5 — DIE EINE SZENE-AUFLÖSUNG: `_foliageResScale` skaliert das pass()-RenderTarget der
-        // GANZEN Szene via `scenePass.setResolutionScale` in `_loopRender` — flicker-frei, nie die Swapchain
-        // (setPixelRatio bleibt konstant). Faktor = MIN aus (a) PID-Last `lerp(LOAD_FLOOR, ceil, effArch)`
-        // und (b) Wahrnehmung `lerp(ceil, MOTION_FLOOR, _camMotion01)` (schnelle Kamera maskiert die
-        // Absenkung, die frei werdende GPU-Zeit trägt das Streaming). Absenken sofort, Anheben sanft.
-        {
-            const rsCeil = Number.isFinite(st.foliageResCeiling)
-                ? Math.max(AnazhRealm.PERF_FOLIAGE_RES_MIN, Math.min(1, st.foliageResCeiling))
-                : 1;
-            if (st.renderer && st.renderer._isHeadlessNull) {
-                st._foliageResScale = rsCeil;
-            } else {
-                const loadAllow = lerp(AnazhRealm.PERF_SCENE_RES_LOAD_FLOOR, rsCeil, effArch);
-                const m = cl(st._camMotion01 || 0);
-                const motionAllow = lerp(rsCeil, AnazhRealm.PERF_SCENE_RES_MOTION_FLOOR, m);
-                const rsTarget = Math.min(loadAllow, motionAllow);
-                const rsCur = st._foliageResScale != null ? st._foliageResScale : rsCeil;
-                const rsStep = AnazhRealm.PERF_FOLIAGE_RES_GROW_STEP;
-                // Kontinuierlicher Kontroll-Wert: sofort absenken, schrittweise anheben. Die 0.05-Quantisierung
-                // passiert ERST am Konsumenten (`_loopRender`) — hier fräße die grobe Stufe den feinen Wachs-Schritt
-                // und der Wert kletterte nie zurück.
-                const raw = rsTarget < rsCur ? rsTarget : Math.min(rsTarget, rsCur + rsStep);
-                st._foliageResScale = Math.max(
-                    Math.min(rsCeil, AnazhRealm.PERF_FOLIAGE_RES_MIN),
-                    Math.min(rsCeil, raw)
-                );
-            }
-        }
-        // Der Swapchain-DPR bleibt KONSTANT (Klassen-Pixel-Kappe, einmal beim Boot per Dead-Band): die
-        // adaptive Auflösung lebt jetzt allein im Szene-RT (oben). `_renderScale` = 1 (voller DPR),
-        // `_applyRenderScale` trägt nur noch den Klassen-Pixel-Cap — kein per-Last-setPixelRatio mehr.
-        st._renderScale = 1;
-        if (!(st.renderer && st.renderer._isHeadlessNull)) this._applyRenderScale(1);
+        // DIE AUFLÖSUNG IST KEIN STELLGLIED DES REGLERS (K50): die Szene rendert in der EINEN Szenen-Skala (`_szeneSkalaWirk`,
+        // der Spieler setzt sie), die zeitliche Auflösung löst auf die Ausgabe auf — ein Ziel-Wechsel je Last war die
+        // Destroyed-Klasse (realloc-tod 20.07.). Der Regler trägt die Pixel-Kappe der Geräte-Klasse (`_applyRenderScale`).
+        if (!(st.renderer && st.renderer._isHeadlessNull)) this._applyRenderScale();
         // Der Schatten-Pass (ein zweiter Voll-Render) unter dem EINEN Regler: `effArch` skaliert die
         // Schatten-Reichweite zwischen Last-Floor und User-Ceiling (`atmosphere.shadowRange`) — unter Last
         // schrumpft das Frustum (weniger Caster, schärfere Nah-Schatten); jenseits ~150 m deckt der Nebel.
@@ -593,12 +564,12 @@ class AnazhRealm_Z05b {
         );
     }
 
-    _applyRenderScale(scale) {
+    _applyRenderScale() {
         const st = this.state;
         const renderer = st.renderer;
         if (!renderer || renderer._isHeadlessNull || typeof renderer.setPixelRatio !== "function") return;
         const dprRaw = typeof window !== "undefined" && window.devicePixelRatio ? window.devicePixelRatio : 1;
-        // Adaptive Render-Auflösung an die GPU (setPixelRatio) mit Dead-Band `_renderScaleApplied` —
+        // Die Pixel-Kappe an die GPU (setPixelRatio) mit Dead-Band `_renderScaleApplied` —
         // setPixelRatio realloziert die Framebuffer, nie pro Frame. DPR-Kappe: Profil (kienspan 1) +
         // GERÄTE-KLASSE (konstant je Sitzung → feuert einmal beim Boot, kein Laufzeit-Flackern);
         // eine EXPLIZITE Holz-Wahl (?holz=/localStorage) schlägt die Klassen-Kappe.
@@ -609,7 +580,7 @@ class AnazhRealm_Z05b {
             else if (gp && gp.klasse === "mittel") klasseCap = 1.5;
         }
         const dpr = Math.min(dprRaw, this.state._holzPixelCap || 2, klasseCap);
-        const target = Math.max(AnazhRealm.PERF_RENDER_SCALE_MIN, Math.min(1, scale)) * dpr;
+        const target = dpr;
         if (st._renderScaleApplied != null && Math.abs(target - st._renderScaleApplied) < 0.001) return;
         st._renderScaleApplied = target;
         try {
@@ -681,17 +652,16 @@ class AnazhRealm_Z05b {
         let coll = 0;
         if (this.state.architectures) for (const e of this.state.architectures) if (e && e.collision) coll++;
         const wq = this.state.voxelMeshPending ? this.state.voxelMeshPending.size : 0;
-        // Erweiterter Readout: fps · Render-Skala% · Laub-Auflösung% · dc · tris + die Spieler-Position.
+        // Erweiterter Readout: fps · Szenen-Skala% · dc · tris + die Spieler-Position.
         const fps = s.frameMs > 0 ? Math.round(1000 / s.frameMs) : 0;
         const fpsCol = fps < 30 ? "#ff6b6b" : fps < 55 ? "#ffd166" : "#8fe98f";
-        const rScalePct = Math.round((this.state._renderScale != null ? this.state._renderScale : 1) * 100);
-        const folResPct = Math.round((this.state._foliageResScale != null ? this.state._foliageResScale : 1) * 100);
+        const szenePct = Math.round(this._szeneSkalaWirk() * 100);
         const trisK = Math.round((s.renderTris || 0) / 1000);
         const pmesh = this.state.playerMesh && this.state.playerMesh.position;
         const posStr = pmesh ? `${pmesh.x.toFixed(0)}, ${pmesh.y.toFixed(0)}, ${pmesh.z.toFixed(0)}` : "—";
         div.innerHTML =
             `PERF-SENSE (der Nexus misst seine Last)\n` +
-            `HUD  <span style="color:${fpsCol}">${fps}</span> fps · ${rScalePct}% · Laub ${folResPct}% · ${rc.toFixed(0)}dc · ${trisK}k▲\n` +
+            `HUD  <span style="color:${fpsCol}">${fps}</span> fps · Szene ${szenePct}% · ${rc.toFixed(0)}dc · ${trisK}k▲\n` +
             `POS  ${posStr}  (x,y,z)\n` +
             `frame  ø ${s.frameMs.toFixed(1)}  max <span style="color:${fmCol}">${fm.toFixed(0)}</span> / soll ${targetMs} ms\n` +
             `stream ${ph("streaming")}  water ${ph("waterIso")}  arch ${ph("archCulling")}\n` +
@@ -716,7 +686,7 @@ class AnazhRealm_Z05b {
     }
 
     // Standalone-Perf-Panel (top-right, default sichtbar, EINE Zeile): liest DIESELBE `perfSense`-Quelle
-    // wie der Regler (frameMs/renderCalls/renderTris + `_renderScale`/`_foliageResScale`), kein
+    // wie der Regler (frameMs/renderCalls/renderTris + die Szenen-Skala `_szeneSkalaWirk`), kein
     // eigener Zähler. Der Debug-Overlay (`_perfSenseRender`, hinter `perfOverlay`) bleibt Dev-Werkzeug.
     _ensurePerfPanelDiv() {
         if (typeof document === "undefined" || !document.body) return null;
@@ -815,8 +785,7 @@ class AnazhRealm_Z05b {
             const ms = fr && fr.memSeries && fr.memSeries.length ? fr.memSeries[fr.memSeries.length - 1] : null;
             const heap = ms && Number.isFinite(ms.heapMB) ? ms.heapMB.toFixed(0) + " MB" : "—";
             const z = typeof this._impostorCensus === "function" ? this._impostorCensus() : null;
-            const rsc = Math.round((this.state._renderScale != null ? this.state._renderScale : 1) * 100);
-            const fol = Math.round((this.state._foliageResScale != null ? this.state._foliageResScale : 1) * 100);
+            const szene = Math.round(this._szeneSkalaWirk() * 100);
             // GPU-ZEIT-WELLE — das Grid trägt die WAHRE GPU-Zeit (EWMA) + das Quelle-Feld:
             // "echt" = timestamp-query, "proxy" = frameMs−ΣCPU (der Screenshot zeigt IMMER,
             // welcher Messung er glaubt). Rot über der Frame-Decke (PERF_TARGET_MS).
@@ -842,7 +811,7 @@ class AnazhRealm_Z05b {
                     gpuMs != null ? gpuMs.toFixed(1) + " ms" : "—",
                     gpuMs != null && gpuMs > AnazhRealm.PERF_TARGET_MS ? "#ff8a8a" : undefined
                 ) +
-                row("render/Laub", rsc + "% / " + fol + "%") +
+                row("Szene", szene + "%") +
                 row(
                     "Impostor",
                     z ? `${z.gebacken}✓ ${z.wartend}○ ${z.gescheitert}✗` : "—",
@@ -1275,7 +1244,7 @@ class AnazhRealm_Z05b {
             ctx: {
                 foliageRadius: st.foliageRadius != null ? Math.round(+st.foliageRadius) : null,
                 foliageDensity: st._foliageDensityScale != null ? +(+st._foliageDensityScale).toFixed(2) : null,
-                foliageRes: st._foliageResScale != null ? +(+st._foliageResScale).toFixed(2) : null,
+                szeneSkala: +this._szeneSkalaWirk().toFixed(2),
                 creatures: st.creatures ? st.creatures.length : 0,
                 chunks: st.voxelChunks ? st.voxelChunks.size : 0,
                 chunkQueue: st.voxelMeshPending ? st.voxelMeshPending.size : 0,
@@ -1546,11 +1515,7 @@ class AnazhRealm_Z05b {
                           foliageRadius: st.foliageRadius != null ? Math.round(+st.foliageRadius) : null,
                           foliageDensity:
                               st._foliageDensityScale != null ? +(+st._foliageDensityScale).toFixed(2) : null,
-                          foliageRes: st._foliageResScale != null ? +(+st._foliageResScale).toFixed(2) : null,
-                          renderScale: st._renderScale != null ? +(+st._renderScale).toFixed(2) : null,
-                          // WELLE 1 — der Wahrnehmungs-Term im Trace: 0 = Stand (Szene scharf), 1 = schnelle
-                          // Kamera (Auflösung imperzeptibel abgesenkt, GPU-Zeit ans Streaming).
-                          camMotion: st._camMotion01 != null ? +(+st._camMotion01).toFixed(2) : null,
+                          szeneSkala: +this._szeneSkalaWirk().toFixed(2),
                           archRadius:
                               st.architectureCullingRadius != null ? Math.round(+st.architectureCullingRadius) : null,
                           streamBudgetMs:
