@@ -46,6 +46,14 @@ Stand: 14.10. — der nächste Agent setzt hier fort.
 - `restliste.cjs [--aufbau] [--nur liste]` — pflegt `BOOT_REST` aus der Wand selbst.
 - Falle: Backslashes in Bash-Heredocs gehen verloren (`\b` wurde Backspace) — Regex nur per Write/Edit.
 
+## CI
+
+- Zweig-CI 38579928983 an db479ffd: **12/13**. ROT nur `voll 8/11` gate:verdeckungs-abfrage: der Sammler fand 6× pageerror
+  `TypeError: Invalid value used in weak set` in r184 `resolveOccludedAsync` (swiftshader, CI) — an der Basis stumm.
+  ERSTER SCHRITT des nächsten Agenten: klären, ob der Selbsttest der Linse den Täter selbst zieht (dann `erwartet` benennen
+  wie fenster-wechsel) oder die Welt eine Verdeckungs-Abfrage mit totem Objekt stellt (dann im Stamm heilen); danach
+  `[ci voll]` bis 13/13, dann merge-bereit.
+
 ## Offen (benannt) — die 17 der Rest-Liste
 
 - Eigene Server-Rümpfe mit Patch/Überlagerung: haus-welt, koerper-stand, kamera-laub, klang-zensus, studio-begehen,
