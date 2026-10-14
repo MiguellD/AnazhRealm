@@ -31,12 +31,11 @@ const path = require("path");
 const http = require("http");
 const puppeteer = require("puppeteer");
 const stammLib = require("./lib/stamm.cjs");
-const { WORKER_SCRIPTS } = require("./lib/asset-worker-harness.cjs");
+const { WORKER_BOOT } = require("./lib/asset-worker-harness.cjs");
 
 const ROOT = path.resolve(__dirname, "..");
 const PORT = Number(process.env.FAHRZEUG_FERN_PORT || 4553);
 const STAMM = stammLib.text(ROOT);
-const CORES_MANIFEST = JSON.parse(fs.readFileSync(path.join(ROOT, "cores.manifest.json"), "utf8"));
 const MIME = {
     ".html": "text/html",
     ".js": "application/javascript",
@@ -346,11 +345,7 @@ function pageHtml() {
     return `<!doctype html><meta charset="utf-8"><title>fahrzeug-fern</title><body><script>
 (() => {
   const S = (window.__AW = { ready: false, error: null });
-  const boot =
-    "self.__PHYTO_FOUNDRY_WORKER=true;" +
-    "self.__anazhCores=" + JSON.stringify(${JSON.stringify(CORES_MANIFEST)}) + ";" +
-    "importScripts(" + ${JSON.stringify(WORKER_SCRIPTS)}.map((p) => JSON.stringify(location.origin + p)).join(",") + ");" +
-    "init();";
+  const boot = ${WORKER_BOOT};
   const worker = new Worker(URL.createObjectURL(new Blob([boot], { type: "text/javascript" })));
   const pending = new Map();
   let seq = 1;

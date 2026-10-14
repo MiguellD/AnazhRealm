@@ -154,6 +154,7 @@ function rebuild(){
   bowEnds(gBody,S); bowEnds(gPackage,S);   // Plan-Konvexität Front/Heck       //   Karosserie + Bauraum + Frame folgen derselben Sektion
   gSprung.position.set(0,0,0);gSprung.rotation.set(0,0,0);
   renderTafel(res);
+  kostenLeiste.neu();
 }
 
 // ── Lehren-Tafel rendern ──
@@ -176,6 +177,15 @@ function renderTafel(res){
 // Presets — Welle L: Gattung und Kultur setzen P in der Merge-Ordnung von buildInstance (DEFAULT_P + Preset + Kultur als
 // ov); vorher mergte der Klick nur den Preset-Patch: Supersport → GT ließ grip 0,85 stehen, eine Kultur blieb für immer.
 let presetId='gt',kulturId=null;
+// Die Sitzung der Hülle: jede Tat (Regler-Zug, Gattung, Kultur, Zurücksetzen) ist EIN Rückgängig-Schritt über P samt
+// Gattung und Kultur (Strg+Z · Strg+Umschalt+Z); der Rückweg baut wie der Hinweg.
+// (markiert: ob die Gattung noch leuchtet — ein Regler-Zug löscht die Marke, sein Rückgängig stellt sie wieder her)
+const sitz=AnazhHuelle.sitzung({werte:P,zustand:()=>({presetId,kulturId,markiert:[...pdiv.children].some(c=>c.classList.contains('on'))}),
+  zustandSetzen:z=>{presetId=z.presetId;kulturId=z.kulturId;const ids=Object.keys(PRESETS);
+    [...pdiv.children].forEach((c,i)=>c.classList.toggle('on',z.markiert&&ids[i]===presetId));
+    const cids=Object.keys(CULTURES);[...cdiv.querySelectorAll('button')].forEach((c,i)=>c.classList.toggle('on',cids[i]===kulturId));},
+  anwenden:()=>rebuild()});
+sitz.leiste(document.getElementById('sitzung'),{seed:false});
 function presetSetzen(pid){presetId=pid;for(const k in P)delete P[k];
   Object.assign(P,VC.DEFAULT_P,VC.presetPatch(pid),kulturId?CULTURES[kulturId].fx:{});syncSliders();rebuild();}
 function kulturSetzen(kid){const alt=kulturId?CULTURES[kulturId].fx:{};const basis=Object.assign({},VC.DEFAULT_P,VC.presetPatch(presetId));
@@ -184,13 +194,13 @@ function kulturSetzen(kid){const alt=kulturId?CULTURES[kulturId].fx:{};const bas
 const pdiv=document.getElementById('presets');
 for(const pid in PRESETS){const b=document.createElement('button');b.className='btn';b.textContent=PRESETS[pid].lab;
   if(pid==='gt')b.classList.add('on');
-  b.onclick=()=>{[...pdiv.children].forEach(c=>c.classList.remove('on'));b.classList.add('on');presetSetzen(pid);};pdiv.appendChild(b);}
+  b.onclick=()=>{[...pdiv.children].forEach(c=>c.classList.remove('on'));b.classList.add('on');sitz.schritt(()=>presetSetzen(pid));};pdiv.appendChild(b);}
 // Kultur-Selektor (orthogonal zum Typ)
 const cdiv=document.createElement('div');cdiv.style.cssText='margin-top:8px';pdiv.parentNode.insertBefore(cdiv,pdiv.nextSibling);
 {const cl=document.createElement('div');cl.textContent='KULTUR';cl.style.cssText='font-size:10px;letter-spacing:1px;opacity:.55;margin:4px 0 2px';cdiv.appendChild(cl);}
 for(const cid in CULTURES){const b=document.createElement('button');b.className='btn';b.textContent=CULTURES[cid].lab;
   b.onclick=()=>{const ab=kulturId===cid;[...cdiv.querySelectorAll('button')].forEach(c=>c.classList.remove('on'));if(!ab)b.classList.add('on');
-    kulturSetzen(ab?null:cid);};cdiv.appendChild(b);}   // zweiter Klick auf die gewählte Kultur wählt sie ab
+    sitz.schritt(()=>kulturSetzen(ab?null:cid));};cdiv.appendChild(b);}   // zweiter Klick auf die gewählte Kultur wählt sie ab
 // Ebenen-Toggles
 const ldiv=document.getElementById('layers');
 const LY=[['frame','Rahmen','gFrame'],['joints','Gelenke','gJoints'],['cal','Lehren','gCal'],['pkg','Baukörper','gPackage'],['wheels','Räder','gWheels'],['body','Haut','gBody'],['neg','Negativ','gNeg']];
@@ -219,20 +229,18 @@ ergB.onclick=()=>{ergOn=!ergOn;ergB.classList.toggle('on',ergOn);
   if(ergOn)Object.assign(show,ERGEBNIS);
   else     Object.assign(show,{frame:false,joints:false,cal:true, pkg:false,wheels:true,body:true,neg:false});
   applyVis();syncLayerButtons();};
-// Slider
-const sdiv=document.getElementById('sliders');const sliderEls={};let lastGrp='';
-const fmt=pp=>pp.step>=1?P[pp.id].toFixed(0):P[pp.id].toFixed(2);
-PARAMS.forEach(pp=>{
-  if(pp.grp!==lastGrp){const t=document.createElement('div');t.className='sec-t';t.textContent=pp.grp;sdiv.appendChild(t);lastGrp=pp.grp;}
-  const wrap=document.createElement('div');wrap.className='sl';
-  wrap.innerHTML=`<div class="sl-h"><span>${pp.lab}</span><span class="v" id="v_${pp.id}">${fmt(pp)}</span></div>`;
-  const inp=document.createElement('input');inp.type='range';inp.min=pp.min;inp.max=pp.max;inp.step=pp.step;inp.value=P[pp.id];
-  inp.oninput=()=>{P[pp.id]=parseFloat(inp.value);document.getElementById('v_'+pp.id).textContent=fmt(pp);
-    if(!pp.dyn){[...pdiv.children].forEach(c=>c.classList.remove('on'));rebuild();}};   // Dynamik-Regler: kein Neubau, wirkt live
-  wrap.appendChild(inp);
-  if(pp.law){const lw=document.createElement('div');lw.className='law';lw.textContent='→ '+pp.law;wrap.appendChild(lw);}
-  sdiv.appendChild(wrap);sliderEls[pp.id]=inp;});
-function syncSliders(){PARAMS.forEach(pp=>{sliderEls[pp.id].value=P[pp.id];document.getElementById('v_'+pp.id).textContent=fmt(pp);});}
+// Regler — die Hülle (K41): der EINE Generator aus PARAMS_BY_KIND.vehicle schreibt P in place; ein Aufbau je Bild
+// (ruheMs 0, der Zug bleibt flüssig), die Dynamik-Regler (dyn) wirken live ohne Neubau.
+const regler=AnazhHuelle.regler(document.getElementById('sliders'),PARAMS,{werte:P,ruheMs:0,sitzung:sitz,
+  basis:()=>Object.assign({},VC.DEFAULT_P,VC.presetPatch(presetId),kulturId?CULTURES[kulturId].fx:{}),
+  bei:(id,v,pp)=>{if(!pp.dyn)[...pdiv.children].forEach(c=>c.classList.remove('on'));},
+  nachRuhe:(ids,bau)=>{if(bau)rebuild();}});
+function syncSliders(){regler.sync();}
+// Die Kosten-Leiste der Hülle: die WELT-Gestalt (buildInstance des Kerns mit P als ov — derselbe Bau wie der Foundry-Worker)
+// gegen die Budget-Zeile je Stufe; neu gemessen, wenn der Regler-Zug ruht.
+const kostenLeiste=AnazhHuelle.kosten(document.getElementById('kosten'),{budget:VC.PORTAL_RENDER_CONFIG.lod.budget.vehicle,
+  stufen:VC.PORTAL_RENDER_CONFIG.lod.kindStages.vehicle,bauen:s=>VC.buildInstance(presetId,1,s,P),
+  quelle:'gemessen an der Welt-Gestalt (vehicle-core buildInstance, Same 1); Befehle nach dem Budget-Gesetz ≤ Zeile'});
 
 // ════════════════════════════════════════════════════════════════════
 // FAHRMODELL — kinematisches Fahrradmodell (Sawicki/Monster, timestep-stabil):
@@ -379,7 +387,7 @@ const keys={};
 addEventListener('keyup',e=>{keys[e.code]=false;});
 addEventListener('keydown',e=>{keys[e.code]=true;
   if(mode==='fahren'&&['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();
-  if(e.code==='Escape'){if(mode==='fahren')exitDrive();return;}
+  if(e.code==='Escape'){if(mode==='fahren'){exitDrive();e.stopImmediatePropagation();}return;}   // der Fahr-Exit hält Esc an: die Brücke dahinter sieht ihn nicht (vorher stand mode schon auf werkstatt — die Heimkehr folgte)
   if(e.code==='KeyK'){kinB.click();return;}                          // Türen — in beiden Modi (auch beim Fahren)
   if(mode!=='werkstatt')return;
   const order=['frame','joints','cal','pkg','wheels','body','neg'];
@@ -414,55 +422,22 @@ function animate(){requestAnimationFrame(animate);const dt=Math.min(1/30,clock.g
 presetSetzen('gt');animate();   // Welle L: das erste Laden geht denselben Weg (der Federraten-Regler zeigte 95 bei Zustand 100)
 addEventListener('resize',()=>{cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix();R.setSize(innerWidth,innerHeight);});
 
-/* ==================== W12-PORTAL-BRÜCKE (AnazhRealm-Heimat) ==================== */
-/* Dasselbe Muster wie worlds/terrain + worlds/fluid: enter/ready-Handshake, die DSL
-   spricht über die ECHTEN UI-Pfade (Button-click = eine Quelle), Esc meldet die
-   Heimkehr — im Fahr-Modus gehört Esc dem Werkstatt-Exit (eigener Handler oben). */
-(function () {
-    if (typeof window === "undefined" || !window.parent || window.parent === window) return;
-    function post(m) {
-        try {
-            window.parent.postMessage(m, "*");
-        } catch (_e) {}
-    }
-    var DSL = ["cavallo", "toro", "stern", "vorsprung", "monolith", "gt", "supersport", "limousine", "kompakt-fwd", "suv", "probefahrt", "werkstatt"];
-    function clickPreset(word) {
-        /* Gattungs-PRESETS leben in #presets, die KULTUREN (Cavallo/Toro/…) in
-           einem dynamisch eingefügten Geschwister-div — darum über ALLE
-           #ctl-Buttons matchen (kein DSL-Wort kollidiert mit Ebenen-Labels). */
-        var ctl = document.getElementById("ctl") || document;
-        var kids = ctl.querySelectorAll("button");
-        for (var i = 0; i < kids.length; i++) {
-            if ((kids[i].textContent || "").toLowerCase() === word) {
-                kids[i].click();
-                return true;
-            }
-        }
-        return false;
-    }
-    window.addEventListener("message", function (ev) {
-        if (ev.source !== window.parent) return;
-        var msg = ev.data;
-        if (!msg || typeof msg !== "object") return;
-        if (msg.type === "enter") {
-            post({ type: "ready", world: "garage", label: "Anatomie · Fahrzeug", dsl: DSL });
-        } else if (msg.type === "dsl" && Array.isArray(msg.program)) {
-            for (var i = 0; i < msg.program.length; i++) {
-                var op = msg.program[i];
-                var word = String((op && op[0]) || op || "").toLowerCase();
-                if (word === "probefahrt") {
-                    var st = document.getElementById("start");
-                    if (st) st.click();
-                } else if (word === "werkstatt") {
-                    if (typeof exitDrive === "function" && typeof mode !== "undefined" && mode === "fahren") exitDrive();
-                } else clickPreset(word);
-            }
-        }
-    });
-    window.addEventListener("keydown", function (ev) {
-        if (ev.key !== "Escape") return;
-        if (typeof mode !== "undefined" && mode === "fahren") return; /* Esc = Fahr-Exit (oben) */
-        post({ type: "exit", world: "garage" });
-    });
-    post({ type: "ready", world: "garage", label: "Anatomie · Fahrzeug", dsl: DSL });
-})();
+/* ==================== DIE BRÜCKE ZUR HEIMAT (die Hülle, K41) ==================== */
+/* EINE Brücke für alle Welten (../huelle/huelle.js): ready einmal, die DSL spricht über die ECHTEN UI-Pfade (Button-click
+   = eine Quelle), das Einzelwort der Heimat ganz (["gt"] → „gt", nie „g"); Esc meldet die Heimkehr — im Fahr-Modus
+   gehört Esc dem Werkstatt-Exit (der Tasten-Hörer oben hält ihn an). */
+AnazhHuelle.bruecke({
+    welt: "garage",
+    label: "Anatomie · Fahrzeug",
+    dsl: ["cavallo", "toro", "stern", "vorsprung", "monolith", "gt", "supersport", "limousine", "kompakt-fwd", "suv", "probefahrt", "werkstatt"],
+    wort: function (w) {
+        if (w === "probefahrt") {
+            if (startB) startB.click();
+        } else if (w === "werkstatt") {
+            if (mode === "fahren") exitDrive();
+        } else AnazhHuelle.knopfMitText(document.getElementById("ctl"), w); /* Gattungen (#presets) UND Kulturen */
+    },
+    esc: function () {
+        return mode !== "fahren";
+    },
+});

@@ -183,7 +183,7 @@ function staticLaws(anazhSrc, phytoSrc, vcSrc, manifestSrc, pcSrc) {
 
 (async () => {
     const anazhSrc = stammLib.text(root);
-    const phytoSrc = fs.readFileSync(path.join(root, "worlds/terrain/phytogenesis.js"), "utf8");
+    const phytoSrc = fs.readFileSync(path.join(root, "foundry-bruecke.js"), "utf8"); // die Brücke (K42)
     const vcSrc = fs.readFileSync(path.join(root, "vehicle-core.js"), "utf8");
     const manifestSrc = fs.readFileSync(path.join(root, "cores.manifest.json"), "utf8");
     const pcSrc = fs.readFileSync(path.join(root, "phyto-core.js"), "utf8");

@@ -54,10 +54,18 @@
         }
         // "bucht": die Rinne A → B (offene Mündung ins Meer), Sohle eben, quer die Ufer mit ihrem Winkel; längs eine
         // Furt-Schwelle (Krone über ihre Breite, Flanken mit tanF) und ein Kolk (Kosinus-Mulde). Schneidet (Minimum).
+        // "rinne": die Klamm A → B — dieselbe Rinne, die Sohle fällt von `quelle` nach `muendung` (das Gefälle des Bachs, der in
+        // ihr läuft: `flussLaeufe`), ohne Furt und Kolk. Schneidet (Minimum).
         let q = ((x - t.x0) * t.ex + (z - t.z0) * t.ez) / t.len2;
         if (q < 0) q = 0;
         else if (q > 1) q = 1;
         const d = Math.hypot(x - (t.x0 + t.ex * q), z - (t.z0 + t.ez * q));
+        if (t.art === "rinne") {
+            const s = base + t.quelle + (t.muendung - t.quelle) * q;
+            const wr = d - t.sohle * 0.5;
+            const br = wr > 0 ? s + wr * t.tanU : s;
+            return br < h ? br : h;
+        }
         let g = base + t.grund;
         const f = Math.abs(q * t.len - t.furtLage) - t.furtBreite * 0.5;
         const furt = base + t.furtKrone - (f > 0 ? f * t.tanF : 0);
@@ -88,7 +96,7 @@
         const RAD = Math.PI / 180;
         return roh.terme.map((t, i) => {
             if (!t || typeof t !== "object") nein(`Term ${i} ist kein Objekt`);
-            if (!["wildnis", "insel", "rampe", "bucht"].includes(t.art)) nein(`unbekannte Term-Art „${t.art}"`);
+            if (!["wildnis", "insel", "rampe", "bucht", "rinne"].includes(t.art)) nein(`unbekannte Term-Art „${t.art}"`);
             const basis = t.art === "wildnis" || t.art === "insel";
             if (basis !== (i === 0)) nein(`Term ${i} (${t.art}): nur der erste Term setzt den Grund`);
             if (t.art === "wildnis") {
@@ -152,6 +160,33 @@
                     kolkZ: z0 + ez * kolk,
                     kolkR: zahl(t, "kolkR", 1, 100),
                     kolkTiefe: zahl(t, "kolkTiefe", 0, 30),
+                };
+            }
+            if (t.art === "rinne") {
+                // DIE KLAMM (werk-ufer): ein Bach mit Gefälle zwischen steilen Wänden — der Ort, an dem ein Damm staut (die
+                // Aue der Wildnis ist flach, ein Damm wird dort umflossen). `einzug` (km²) gibt dem Bach seine Breite (`flussBreite`).
+                const x0 = zahl(t, "x0", -1e5, 1e5);
+                const z0 = zahl(t, "z0", -1e5, 1e5);
+                const ex = zahl(t, "x1", -1e5, 1e5) - x0;
+                const ez = zahl(t, "z1", -1e5, 1e5) - z0;
+                const len = Math.hypot(ex, ez);
+                if (!(len >= 1)) nein("rinne: A und B fallen zusammen");
+                const quelle = zahl(t, "quelle", -100, 200);
+                const muendung = zahl(t, "muendung", -100, 200);
+                if (!(muendung < quelle)) nein("rinne: die Sohle fällt nicht von der Quelle zur Mündung");
+                return {
+                    art: "rinne",
+                    x0,
+                    z0,
+                    ex,
+                    ez,
+                    len,
+                    len2: ex * ex + ez * ez,
+                    sohle: zahl(t, "sohle", 2, 200),
+                    tanU: Math.tan(zahl(t, "ufer", 5, 80) * RAD),
+                    quelle,
+                    muendung,
+                    einzug: zahl(t, "einzug", 0.01, 1000),
                 };
             }
             return nein(`unbekannte Term-Art „${t.art}"`);
@@ -1046,11 +1081,50 @@
     // Hauptlaufs, jedes Glied gehört EINEM Lauf), zur Senke ("see" ein benannter See, "meer") oder jenseits der Reichweite
     // ("rand"). Je Glied die Enden, die Sohlen (`knotenSohle`, stromab streng fallend), das Einzugsgebiet A in m² und die
     // BAHN (`bahnPunkte`: der Mäander, Punkte im Abstand ≤ `schritt` m — der Wirt legt Kanal und Spiegel darauf). Ohne
-    // Wildnis-Term (eine Bühne): [].
+    // Wildnis-Term (eine Bühne): der Bach jeder Klamm (`rinne`), die das Fenster berührt — EIN Glied auf ihrer Achse, Quelle
+    // in A, die Sohle der Klamm, Ende im Meer (`term` "rinne": der Lauf gehört der Bühne, kein Wurf des Feldes).
     function flussLaeufe(L, x0, z0, x1, z1, schritt) {
         if (!(schritt > 0)) throw new Error("gelaende-core flussLaeufe: der Abtast-Schritt der Bahn fehlt");
         const T = L.erbgut && L.erbgut.terme;
-        if (!T || !T.length || T[0].art !== "wildnis") return [];
+        if (!T || !T.length) return [];
+        if (T[0].art !== "wildnis") {
+            const base = L.baseHeight || 0;
+            const aus = [];
+            for (const t of T) {
+                if (t.art !== "rinne") continue;
+                const xb = t.x0 + t.ex;
+                const zb = t.z0 + t.ez;
+                if (Math.max(t.x0, xb) < x0 || Math.min(t.x0, xb) >= x1 || Math.max(t.z0, zb) < z0 || Math.min(t.z0, zb) >= z1)
+                    continue;
+                const ux = t.ex / t.len;
+                const uz = t.ez / t.len;
+                const m = Math.max(1, Math.ceil(t.len / schritt));
+                const bahn = [];
+                for (let q = 0; q <= m; q++) {
+                    const u = q / m;
+                    bahn.push({ t: u, x: t.x0 + t.ex * u, z: t.z0 + t.ez * u, s: t.len * u, fx: ux, fz: uz });
+                }
+                aus.push({
+                    k: 0,
+                    quelle: true,
+                    term: "rinne",
+                    ende: "meer",
+                    glieder: [
+                        {
+                            ax: t.x0,
+                            az: t.z0,
+                            bx: xb,
+                            bz: zb,
+                            ba: base + t.quelle,
+                            bb: base + t.muendung,
+                            A: t.einzug * 1e6,
+                            bahn,
+                        },
+                    ],
+                });
+            }
+            return aus;
+        }
         const N = netzFuer(L);
         const drin = (kn) => {
             const S = 2 * N.S[kn.k];

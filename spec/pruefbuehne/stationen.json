@@ -1,5 +1,5 @@
 {
-    "zweck": "DIE STATIONEN DER PRÜFBÜHNE (Spike 09.10.): je Station ihr Ort (x|z, Meter) und die Gesetz-Zahlen, die eine Linse am lebenden Erbgut prüft (der Term der Station steht ≤ 1 m neben der Spec). Höhen relativ zur Basis (Spiegel = Basis − 3). Kameras: A, B = die benannten Posen, je [dx, dz, \"+Höhe über dem Boden\"] von der Station. S0 (Atrium), S2 (die 30°-Rampe), S4 (die Hindernisse: ihre Körper je Teil — Mitte über dem Boden und Maß in Metern, Gier in Grad, gesät als Baupläne des Snapshots) und S5 (die Bucht mit Furt); `meer` ist der Schelf-Grund vor der Insel.",
+    "zweck": "DIE STATIONEN DER PRÜFBÜHNE (Spike 09.10.): je Station ihr Ort (x|z, Meter) und die Gesetz-Zahlen, die eine Linse am lebenden Erbgut prüft (der Term der Station steht ≤ 1 m neben der Spec). Höhen relativ zur Basis (Spiegel = Basis − 3). Kameras: A, B = die benannten Posen, je [dx, dz, \"+Höhe über dem Boden\"] von der Station. S0 (Atrium), S2 (die 30°-Rampe), S4 (die Hindernisse: ihre Körper je Teil — Mitte über dem Boden und Maß in Metern, Gier in Grad, gesät als Baupläne des Snapshots) S5 (die Bucht mit Furt) und S6 (die Klamm: der Bach, quer über den der Damm von gate:werk-im-wasser D staut); `meer` ist der Schelf-Grund vor der Insel.",
     "spiegel": -3,
     "stationen": [
         {
@@ -151,6 +151,13 @@
             "id": "s5-kolk",
             "x": 0,
             "z": -350
+        },
+        {
+            "id": "s6-klamm",
+            "x": 410,
+            "z": 0,
+            "gefaelle": 0.14,
+            "sohle": 20
         },
         {
             "id": "meer",

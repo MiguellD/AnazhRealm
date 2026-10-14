@@ -53,8 +53,9 @@ graceful-leeres Ergebnis (die Gates fangen einen fehlenden Kern sofort).
 
 ### Gesetz 3 — der STUDIO-Bäcker ist die Fernstufe (Bäcker-Vereinigung, kein Nachbau)
 
-Der 8-Winkel-Impostor-Atlas backt im STUDIO-Bäcker des Foundry-Workers (phytogenesis
-`bakeImpostorAtlas` über den Kanal `bake-impostor` → Reply `impostor`): `_tickImpostorBake`
+Der 8-Winkel-Impostor-Atlas backt im STUDIO-Bäcker des Foundry-Workers (`bakeImpostorAtlas` in der
+Foundry-Brücke `foundry-bruecke.js`, die Worker und Pflanzen-Labor laden; K42, vorher die Labor-Shell
+phytogenesis.js; über den Kanal `bake-impostor` → Reply `impostor`): `_tickImpostorBake`
 fragt je Atlas-Zelle (`presetId`, `seed = Gestalt`, Golden-Sommer, Schicht-Format `fmt`), die
 Transport-Schale kodiert die Karte im Worker mit dem Karten-Codec (phyto-core: deckungstreue
 Mips, BC1-sRGB/BC5 bzw. rgba8/rg8) und legt sie auf die Platte, `_applyStudioImpostorPayload`

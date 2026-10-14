@@ -1613,18 +1613,27 @@ const rimL=new THREE.DirectionalLight(0x33aaff,2.0);rimL.position.set(-5,4,-5);s
 const composer=new THREE.EffectComposer(renderer);composer.addPass(new THREE.RenderPass(scene,camera));composer.addPass(new THREE.UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),0.3,0.4,0.9));const fxaa=new THREE.ShaderPass(THREE.FXAAShader);fxaa.uniforms['resolution'].value.set(1/innerWidth,1/innerHeight);composer.addPass(fxaa);
 const cine={uniforms:{tDiffuse:{value:null},time:{value:0}},vertexShader:`varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`,fragmentShader:`uniform sampler2D tDiffuse;uniform float time;varying vec2 vUv;float random(vec2 st){return fract(sin(dot(st.xy,vec2(12.9898,78.233)))*43758.5453123);}float getLum(vec2 uv){return dot(texture2D(tDiffuse,uv).rgb,vec3(0.299,0.587,0.114));}void main(){vec2 uv=vUv;vec2 dir=uv-0.5;float dist=length(dir);vec2 offset=dir*dist*0.0035;float r=texture2D(tDiffuse,uv+offset).r;float g=texture2D(tDiffuse,uv).g;float b=texture2D(tDiffuse,uv-offset).b;vec3 color=vec3(r,g,b);float lum=getLum(uv);float lL=getLum(uv-vec2(0.001,0.0)),lR=getLum(uv+vec2(0.001,0.0)),lU=getLum(uv-vec2(0.0,0.001)),lD=getLum(uv+vec2(0.0,0.001));float edge=abs(lL-lum)+abs(lR-lum)+abs(lU-lum)+abs(lD-lum);color*=(1.0+edge*0.55);color*=smoothstep(1.2,0.1,dist*1.3);color+=random(uv+time)*0.014-0.007;gl_FragColor=vec4(color,1.0);}`};const cinePass=new THREE.ShaderPass(cine);cinePass.renderToScreen=true;composer.addPass(cinePass);
 const controls=new THREE.OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.target.set(0,trochanterY,0);controls.minDistance=3;controls.maxDistance=15;controls.autoRotateSpeed=0.8;controls.update();
-const slMap={height:'sHeight',mass:'sMass',tone:'sTone',age:'sAge',gender:'sGender',hairLen:'sHairLen',hairVol:'sHairVol',arms:'sArms'};const valMap={height:'vHeight',mass:'vMass',tone:'vTone',age:'vAge',gender:'vGender',hairLen:'vHairLen',hairVol:'vHairVol',arms:'vArms'};function fmtVal(k){if(k==='height')return params.height.toFixed(2);if(k==='age')return Math.round(18+params.age*62);return Math.round(params[k]*100)+'%';}function syncUI(){for(let k in slMap){document.getElementById(slMap[k]).value=params[k];document.getElementById(valMap[k]).textContent=fmtVal(k);}}for(let k in slMap){document.getElementById(slMap[k]).addEventListener('input',e=>{params[k]=parseFloat(e.target.value);document.getElementById(valMap[k]).textContent=fmtVal(k);morph();dressSoon();});}document.getElementById('btnReset').addEventListener('click',()=>{Object.assign(params,{height:1.0,mass:0.35,tone:0.5,age:0.15,gender:1.0,hairLen:1.0,hairVol:1.0,arms:0.0,hairStyle:'mittel',hairColor:'darkbrown',top:'tshirt',topColor:'navy',bottom:'pants',bottomColor:'charcoal',shoes:'sneaker',shoeColor:'white'});syncUI();syncPickers();_skinRepaint(SKIN_TONES[params.skinTone].hex);buildHair();morph();buildOutfit();});document.getElementById('btnRandom').addEventListener('click',()=>{params.height=0.9+Math.random()*0.25;params.mass=Math.random();params.tone=Math.random();params.age=Math.random()*0.8;params.gender=Math.random();params.hairLen=0.3+Math.random()*1.5;params.hairVol=0.6+Math.random()*1.2;params.arms=Math.random()*0.3;var hk=Object.keys(HAIRSTYLES);params.hairStyle=hk[Math.floor(Math.random()*hk.length)];params.hairColor=randKey(HAIR_COLORS);params.top=randPick(['tshirt','pullover','tank','poncho','tshirt','pullover']);params.topColor=randKey(CLOTH_COLORS);params.bottom=randPick(['pants','shorts','pants']);params.bottomColor=randKey(CLOTH_COLORS);params.shoes=randPick(['sneaker','boot','sneaker']);params.shoeColor=randKey(CLOTH_COLORS);params.skinTone=randKey(SKIN_TONES);_skinRepaint(SKIN_TONES[params.skinTone].hex);syncUI();syncPickers();buildHair();morph();buildOutfit();});document.querySelectorAll('#emotions button').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('#emotions button').forEach(function(b2){b2.classList.remove('active');});b.classList.add('active');emoMode=b.dataset.e;emo.set(emoMode);});});
-function randPick(a){return a[Math.floor(Math.random()*a.length)];}
-function randKey(o){var k=Object.keys(o);return k[Math.floor(Math.random()*k.length)];}
-function buildSwatches(containerId,palette,getKey,onPick){var cont=document.getElementById(containerId);if(!cont)return;cont.innerHTML='';Object.keys(palette).forEach(function(key){var sw=document.createElement('div');sw.className='sw';sw.title=palette[key].name;var hex=(palette[key].base!=null)?palette[key].base:palette[key].hex;sw.style.background='#'+('000000'+hex.toString(16)).slice(-6);if(key===getKey())sw.classList.add('active');sw.addEventListener('click',function(){cont.querySelectorAll('.sw').forEach(function(x){x.classList.remove('active');});sw.classList.add('active');onPick(key);});cont.appendChild(sw);});}
-function wirePicker(containerId,attr,onPick){var cont=document.getElementById(containerId);if(!cont)return;cont.querySelectorAll('button').forEach(function(b){b.addEventListener('click',function(){cont.querySelectorAll('button').forEach(function(x){x.classList.remove('active');});b.classList.add('active');onPick(b.dataset[attr]);});});}
+/* DIE HÜLLE (K41): die Sitzung trägt jede Tat (Regler-Zug, Haar-/Kleid-Wahl, Farbe, Zufall, Reset) als EINEN Rückgängig-Schritt über params; der EINE Generator liest PARAMS_BY_KIND.koerper (je grp ein Abschnitt) und schreibt params in place — der Leib morpht live, das Kleid nach der Ruhe. */
+function fmtVal(k){if(k==='height')return params.height.toFixed(2);if(k==='age')return Math.round(18+params.age*62);return Math.round(params[k]*100)+'%';}
+function gestaltNeu(){_skinRepaint(SKIN_TONES[params.skinTone].hex);syncPickers();buildHair();morph();buildOutfit();}
+const sitz=AnazhHuelle.sitzung({werte:params,anwenden:()=>{syncUI();gestaltNeu();}});sitz.leiste(document.getElementById('sitzung'));
+const KPARAMS=window.__koerperCore.PARAMS_BY_KIND.koerper;
+const kosten=AnazhHuelle.kosten(document.getElementById('kosten'),{budget:window.__koerperCore.PORTAL_RENDER_CONFIG.lod.budget.koerper,stufen:[0],quelle:'gemessen an der Labor-Gestalt (Leib + Haar + Kleid); den Welt-Guss bäckt der Host-Ofen aus denselben Dials (L1 = seine Grobstufe)'});
+const kostenSoon=()=>{clearTimeout(kostenSoon.t);kostenSoon.t=setTimeout(()=>kosten.messen(character,0),400);};
+const reglerKoerper=['KOERPER','POSE','HAAR'].map(g=>AnazhHuelle.regler(document.getElementById(g==='KOERPER'?'reglerKoerper':g==='POSE'?'reglerPose':'reglerHaar'),KPARAMS.filter(z=>z.grp===g),{werte:params,sitzung:sitz,gruppen:false,zuruecksetzen:false,ruheMs:150,format:z=>fmtVal(z.id),bei:()=>morph(),nachRuhe:()=>{dressSoon();kostenSoon();}}));
+function syncUI(){reglerKoerper.forEach(r=>r.sync());}
+document.getElementById('btnReset').addEventListener('click',()=>sitz.schritt(()=>{Object.assign(params,{height:1.0,mass:0.35,tone:0.5,age:0.15,gender:1.0,hairLen:1.0,hairVol:1.0,arms:0.0,hairStyle:'mittel',hairColor:'darkbrown',top:'tshirt',topColor:'navy',bottom:'pants',bottomColor:'charcoal',shoes:'sneaker',shoeColor:'white'});syncUI();gestaltNeu();}));/* der Zufall zieht aus dem Samen der Sitzung (derselbe Same = derselbe Mensch) */document.getElementById('btnRandom').addEventListener('click',()=>{sitz.seedSetzen((Date.now()^((Math.random()*4294967296)>>>0))>>>0,true);const R=AnazhHuelle.zufall(sitz.seed);sitz.schritt(()=>{params.height=0.9+R()*0.25;params.mass=R();params.tone=R();params.age=R()*0.8;params.gender=R();params.hairLen=0.3+R()*1.5;params.hairVol=0.6+R()*1.2;params.arms=R()*0.3;var hk=Object.keys(HAIRSTYLES);params.hairStyle=hk[Math.floor(R()*hk.length)];params.hairColor=randKey(HAIR_COLORS,R);params.top=randPick(['tshirt','pullover','tank','poncho','tshirt','pullover'],R);params.topColor=randKey(CLOTH_COLORS,R);params.bottom=randPick(['pants','shorts','pants'],R);params.bottomColor=randKey(CLOTH_COLORS,R);params.shoes=randPick(['sneaker','boot','sneaker'],R);params.shoeColor=randKey(CLOTH_COLORS,R);params.skinTone=randKey(SKIN_TONES,R);syncUI();gestaltNeu();});});document.querySelectorAll('#emotions button').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('#emotions button').forEach(function(b2){b2.classList.remove('active');});b.classList.add('active');emoMode=b.dataset.e;emo.set(emoMode);});});
+function randPick(a,R){return a[Math.floor((R||Math.random)()*a.length)];}
+function randKey(o,R){var k=Object.keys(o);return k[Math.floor((R||Math.random)()*k.length)];}
+function buildSwatches(containerId,palette,getKey,onPick){var cont=document.getElementById(containerId);if(!cont)return;cont.innerHTML='';Object.keys(palette).forEach(function(key){var sw=document.createElement('div');sw.className='sw';sw.title=palette[key].name;var hex=(palette[key].base!=null)?palette[key].base:palette[key].hex;sw.style.background='#'+('000000'+hex.toString(16)).slice(-6);if(key===getKey())sw.classList.add('active');sw.addEventListener('click',function(){cont.querySelectorAll('.sw').forEach(function(x){x.classList.remove('active');});sw.classList.add('active');sitz.schritt(function(){onPick(key);});});cont.appendChild(sw);});}
+function wirePicker(containerId,attr,onPick){var cont=document.getElementById(containerId);if(!cont)return;cont.querySelectorAll('button').forEach(function(b){b.addEventListener('click',function(){cont.querySelectorAll('button').forEach(function(x){x.classList.remove('active');});b.classList.add('active');sitz.schritt(function(){onPick(b.dataset[attr]);});});});}
 function syncPickers(){[['hairStyles','h','hairStyle'],['topStyles','t','top'],['botStyles','b','bottom'],['shoeStyles','s','shoes']].forEach(function(c){var cont=document.getElementById(c[0]);if(cont)cont.querySelectorAll('button').forEach(function(b){b.classList.toggle('active',b.dataset[c[1]]===params[c[2]]);});});buildSwatches('skinTones',SKIN_TONES,function(){return params.skinTone;},function(k){params.skinTone=k;_skinRepaint(SKIN_TONES[k].hex);});buildSwatches('hairColors',HAIR_COLORS,function(){return params.hairColor;},function(k){params.hairColor=k;buildHair();});buildSwatches('topColors',CLOTH_COLORS,function(){return params.topColor;},function(k){params.topColor=k;buildOutfit();});buildSwatches('botColors',CLOTH_COLORS,function(){return params.bottomColor;},function(k){params.bottomColor=k;buildOutfit();});buildSwatches('shoeColors',CLOTH_COLORS,function(){return params.shoeColor;},function(k){params.shoeColor=k;buildOutfit();});}
 wirePicker('hairStyles','h',function(v){params.hairStyle=v;buildHair();});
 wirePicker('topStyles','t',function(v){params.top=v;buildOutfit();});
 wirePicker('botStyles','b',function(v){params.bottom=v;buildOutfit();});
 wirePicker('shoeStyles','s',function(v){params.shoes=v;buildOutfit();});
 syncPickers();
-morph();buildOutfit();syncUI();emo.set('idle');
+morph();buildOutfit();syncUI();emo.set('idle');kostenSoon();
 const clock=new THREE.Clock(); var blinkTimer=0;
 function animate(){requestAnimationFrame(animate);var dt=1/60,t=clock.getElapsedTime();matSkin.userData.uTime.value=t;cinePass.uniforms.time.value=t;controls.autoRotate=(emoMode==='showcase');if(play.on)playInput(dt);emo.update(dt,t);var bm=emo.getBeh(t);var e=emo.cur;
 var targetY=bm.jumpY||0;var dy=targetY-bodyPhys.y;bodyPhys.vy+=dy*300*dt;bodyPhys.vy-=25*dt;bodyPhys.vy*=0.88;bodyPhys.y+=bodyPhys.vy*dt;if(bodyPhys.y<0){bodyPhys.y=0;if(bodyPhys.vy<0)bodyPhys.vy*=-0.15;}
@@ -1987,20 +1996,12 @@ var BUILD='B64·benchmark';console.log('%cDA VINCI BUILD '+BUILD,'color:#7fd;fon
 (function(){var d=document.createElement('div');d.id='buildtag';d.textContent=BUILD;d.style.cssText='position:fixed;right:8px;bottom:6px;font:10px monospace;color:#9fb2c8;opacity:.45;z-index:99;pointer-events:none;';document.body.appendChild(d);})();
 animate();addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);composer.setSize(innerWidth,innerHeight);});
 
-/* ==================== W12-PORTAL-BRÜCKE (AnazhRealm-Heimat) ==================== */
-/* Das fachwerk.js-Muster: enter/ready-Handshake, die DSL spricht die ECHTEN
-   UI-Pfade — die acht Bewegungs-/Emotions-Profile leben als #emotions-Buttons
-   (data-e, click() → emo.set), "zufall"/"zuruecksetzen" klicken btnRandom/
-   btnReset (exakt der Nutzer-Pfad). DSL-Wörter deutsch (Registry == Brücke
-   wortgleich). Esc meldet die Heimkehr — im Ninja-Park-Spielmodus gehört Esc
-   dem exitPlay (eigener Handler oben), die Brücke schweigt dort. */
+/* ==================== DIE BRÜCKE ZUR HEIMAT (die Hülle, K41) ==================== */
+/* EINE Brücke (../huelle/huelle.js): die DSL spricht die ECHTEN UI-Pfade — die acht Bewegungs-/Emotions-Profile leben
+   als #emotions-Buttons (data-e, click() → emo.set), "zufall"/"zuruecksetzen" klicken btnRandom/btnReset (exakt der
+   Nutzer-Pfad). DSL-Wörter deutsch (Registry == Brücke wortgleich). Esc meldet die Heimkehr — im Ninja-Park-Spielmodus
+   gehört Esc dem exitPlay, die Brücke schweigt dort. */
 (function () {
-    if (typeof window === "undefined" || !window.parent || window.parent === window) return;
-    function post(m) {
-        try {
-            window.parent.postMessage(m, "*");
-        } catch (_e) {}
-    }
     var EMOTION = {
         entspannt: "idle",
         freude: "joy",
@@ -2011,60 +2012,36 @@ animate();addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;ca
         kampf: "fight",
         showcase: "showcase",
     };
-    var DSL = Object.keys(EMOTION).concat(["zufall", "zuruecksetzen"]);
-    var LABEL = "Da Vinci Studio — Lebendiger Mensch";
-    function clickId(id) {
-        var b = document.getElementById(id);
-        if (b) b.click();
-        return !!b;
-    }
-    window.addEventListener("message", function (ev) {
-        if (ev.source !== window.parent) return;
-        var msg = ev.data;
-        if (!msg || typeof msg !== "object") return;
-        if (msg.type === "enter") {
-            post({ type: "ready", world: "koerperstudio", label: LABEL, dsl: DSL });
-        } else if (msg.type === "dsl" && Array.isArray(msg.program)) {
-            for (var i = 0; i < msg.program.length; i++) {
-                var op = msg.program[i];
-                var word = String((op && op[0]) || op || "")
-                    .toLowerCase()
-                    .trim();
-                if (EMOTION[word]) {
-                    var b = document.querySelector('#emotions button[data-e="' + EMOTION[word] + '"]');
-                    if (b) b.click();
-                } else if (word === "zufall") clickId("btnRandom");
-                else if (word === "zuruecksetzen") clickId("btnReset");
-            }
+    var B = AnazhHuelle.bruecke({
+        welt: "koerperstudio",
+        label: "Da Vinci Studio — Lebendiger Mensch",
+        dsl: Object.keys(EMOTION).concat(["zufall", "zuruecksetzen"]),
+        wort: function (w) {
+            if (EMOTION[w]) {
+                var b = document.querySelector('#emotions button[data-e="' + EMOTION[w] + '"]');
+                if (b) b.click();
+            } else if (w === "zufall") document.getElementById("btnRandom").click();
+            else if (w === "zuruecksetzen") document.getElementById("btnReset").click();
+        },
+        esc: function () {
+            return !(typeof play !== "undefined" && play && play.on); /* Esc = Ninja-Park verlassen (exitPlay) */
+        },
+    });
+    /* STUDIO-ÜBERGABE (Auftrag D) — „An die Welt übergeben": postet die AKTUELLE Schöpfer-Bearbeitung über DIESELBE
+       Brücke: die acht numerischen Dials als s, die String-Wahlen (skinTone/hairStyle/hairColor/top/topColor/bottom/
+       bottomColor/shoes/shoeColor) als gestalt — geschieden über typeof aus dem EINEN params-Objekt. Der Knopf ist
+       standalone hidden (nur das Portal enthüllt ihn). */
+    var b = document.getElementById("btnUebergabe");
+    if (!b || !window.parent || window.parent === window) return;
+    b.hidden = false;
+    b.addEventListener("click", function () {
+        var s = {};
+        var gestalt = {};
+        for (var k in params) {
+            if (!Object.prototype.hasOwnProperty.call(params, k)) continue;
+            if (typeof params[k] === "number") s[k] = params[k];
+            else if (typeof params[k] === "string") gestalt[k] = params[k];
         }
+        B.post({ type: "uebergabe", world: "koerperstudio", kind: "koerper", s: s, gestalt: gestalt });
     });
-    window.addEventListener("keydown", function (ev) {
-        if (ev.key !== "Escape") return;
-        if (typeof play !== "undefined" && play && play.on) return; /* Esc = Ninja-Park verlassen (exitPlay) */
-        post({ type: "exit", world: "koerperstudio" });
-    });
-    /* STUDIO-ÜBERGABE (Auftrag D) — „An die Welt übergeben": postet die AKTUELLE
-       Schöpfer-Bearbeitung additiv über DIESELBE Brücke (das settlement/event-
-       Zusatz-Kanal-Muster der terrain-Brücke): die acht numerischen Dials als s,
-       die String-Wahlen (skinTone/hairStyle/hairColor/top/topColor/bottom/
-       bottomColor/shoes/shoeColor) als gestalt — geschieden über typeof aus dem
-       EINEN params-Objekt (dieselbe Quelle, die das Lab live formt). Der Knopf
-       ist standalone hidden (nur das Portal enthüllt ihn) — bestehendes
-       Verhalten byte-unberührt. */
-    (function () {
-        var b = document.getElementById("btnUebergabe");
-        if (!b) return;
-        b.hidden = false;
-        b.addEventListener("click", function () {
-            var s = {};
-            var gestalt = {};
-            for (var k in params) {
-                if (!Object.prototype.hasOwnProperty.call(params, k)) continue;
-                if (typeof params[k] === "number") s[k] = params[k];
-                else if (typeof params[k] === "string") gestalt[k] = params[k];
-            }
-            post({ type: "uebergabe", world: "koerperstudio", kind: "koerper", s: s, gestalt: gestalt });
-        });
-    })();
-    post({ type: "ready", world: "koerperstudio", label: LABEL, dsl: DSL });
 })();

@@ -263,7 +263,7 @@ function staticLaws(vcSrc, garageSrc, anazhSrc, phytoSrc) {
     const vcSrc = fs.readFileSync(path.join(root, "vehicle-core.js"), "utf8");
     const garageSrc = fs.readFileSync(path.join(root, "worlds/garage/garage.js"), "utf8");
     const anazhSrc = stammLib.text(root);
-    const phytoSrc = fs.readFileSync(path.join(root, "worlds/terrain/phytogenesis.js"), "utf8");
+    const phytoSrc = fs.readFileSync(path.join(root, "foundry-bruecke.js"), "utf8"); // die Brücke (K42)
 
     if (process.argv.includes("--selftest")) {
         console.log("=== SELBST-TEST: die Linse feuert auf injizierte Verletzungen ===");

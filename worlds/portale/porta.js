@@ -27,6 +27,7 @@ var gate,membrane,memMat,rimMat,D,rebuildTimer=null,leafL=null,leafR=null,leafLB
 // ============================================================
 function buildGate(p){
   if(!p)p=readParams();
+  if(kostenLeiste)kostenLeiste.neu();
   if(gate)scene.remove(gate);
   var R=PC.buildGate(p,{front:doorAngle,back:doorAngleB});                       // die EINE Bau-Quelle (Kern) — Struktur + Türen + Fundament
   gate=R.gate;D=R.D;leafL=R.leafL;leafR=R.leafR;leafLB=R.leafLB;leafRB=R.leafRB;rimMat=R.rimMat;
@@ -126,8 +127,12 @@ function buildMembrane(){
 }
 
 // pk (Slider-id → Bau-Schlüssel) lebt im Kern — oben als PC.pk aliast (eine Quelle).
-function readParams(){var p={M:1.4};SLIDERS.forEach(function(s){if(s[1]==='h')return;p[pk(s[0])]=parseFloat(document.getElementById('s_'+s[0]).value);});return p;}
-function setParams(v){SLIDERS.forEach(function(s){if(s[1]==='h')return;var el=document.getElementById('s_'+s[0]);if(v[s[0]]!==undefined){el.value=v[s[0]];document.getElementById('v_'+s[0]).textContent=(+v[s[0]]).toFixed(2);}});}
+// DIE HÜLLE (K41): die Regler-Werte leben in W (Slider-id → Wert, geschrieben vom EINEN Generator), nie im DOM.
+var W={},regler=null,sitz=null,kostenLeiste=null,aktivPreset='Kathedrale';
+function readParams(){var p={M:1.4};SLIDERS.forEach(function(s){if(s[1]==='h')return;p[pk(s[0])]=W[s[0]];});return p;}
+function setParams(v){if(regler)regler.setzen(v,true);else Object.assign(W,v);}
+function presetMarke(name){aktivPreset=name;[].forEach.call(document.getElementById('presets').children,function(b){b.classList.toggle('active',b.textContent===name);});}
+function rezeptId(){var ids=Object.keys(PC.PRESETS);for(var i=0;i<ids.length;i++)if(PC.PRESETS[ids[i]].lab===aktivPreset)return ids[i];return ids[0];}
 // V18.491.132 MESSEN_VIS.lab=law-ui
 function updateLaw(){var el=document.getElementById('law');if(!el)return;el.textContent='Strategien: Mauer '+D.p.wMason.toFixed(2)+' Geflecht '+D.p.wBraid.toFixed(2)+' Mono '+D.p.wMono.toFixed(2)+' Lace '+D.p.wLace.toFixed(2)+'\nOrdnungen='+Math.round(D.p.orders)+' (gestaffelt, zurückweichend)\nStich='+D.rise.toFixed(2)+'→Schub='+D.thrustNorm.toFixed(2)+'→Dicke='+D.jambW.toFixed(2);}
 
@@ -147,12 +152,22 @@ function init(){
   var cine={uniforms:{tDiffuse:{value:null},time:{value:0}},vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',fragmentShader:'uniform sampler2D tDiffuse;uniform float time;varying vec2 vUv;float random(vec2 st){return fract(sin(dot(st.xy,vec2(12.9898,78.233)))*43758.5453123);}float getLum(vec2 uv){return dot(texture2D(tDiffuse,uv).rgb,vec3(0.299,0.587,0.114));}void main(){vec2 uv=vUv;vec2 dir=uv-0.5;float dist=length(dir);vec2 o=dir*dist*0.008;float r=texture2D(tDiffuse,uv+o).r;float g=texture2D(tDiffuse,uv).g;float b=texture2D(tDiffuse,uv-o).b;vec3 color=vec3(r,g,b);float lum=getLum(uv);float lL=getLum(uv-vec2(0.001,0.0)),lR=getLum(uv+vec2(0.001,0.0)),lU=getLum(uv-vec2(0.0,0.001)),lD=getLum(uv+vec2(0.0,0.001));float edge=abs(lL-lum)+abs(lR-lum)+abs(lU-lum)+abs(lD-lum);color*=(1.0+edge*2.0);color*=smoothstep(1.2,0.1,dist*1.3);color+=random(uv+time)*0.03-0.015;gl_FragColor=vec4(color,1.0);}'};
   cinePass=new THREE.ShaderPass(cine);cinePass.renderToScreen=true;composer.addPass(cinePass);
   controls=new THREE.OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.minDistance=4;controls.maxDistance=44;clock=new THREE.Clock();
-  var sd=document.getElementById('sliders');
-  SLIDERS.forEach(function(s){if(s[1]==='h'){var hd=document.createElement('div');hd.className='h';hd.textContent=s[0]==='VOK'?'— VOKABULAR —':s[0]==='DEP'?'— TIEFE / PASSAGE —':s[0]==='FORM'?'— FORM —':'— MATERIAL / SCHWELLE —';sd.appendChild(hd);return;}var cl=s[7]===1?' voc':s[7]===2?' dep':'';var row=document.createElement('div');row.className='sl'+cl;row.innerHTML='<label>'+s[1]+'</label><input type="range" id="s_'+s[0]+'" min="'+s[2]+'" max="'+s[3]+'" step="'+s[4]+'" value="'+s[5]+'"><span class="v" id="v_'+s[0]+'">'+(+s[5]).toFixed(2)+'</span>';sd.appendChild(row);});
-  SLIDERS.forEach(function(s){if(s[1]==='h')return;document.getElementById('s_'+s[0]).addEventListener('input',function(){document.getElementById('v_'+s[0]).textContent=parseFloat(this.value).toFixed(2);clearTimeout(rebuildTimer);rebuildTimer=setTimeout(function(){buildGate();},90);[].forEach.call(document.getElementById('presets').children,function(b){b.classList.remove('active');});});});
-  var pc=document.getElementById('presets');Object.keys(PRESETS).forEach(function(name,ix){var b=document.createElement('button');b.textContent=name;if(ix===0)b.className='active';b.onclick=function(){[].forEach.call(pc.children,function(x){x.classList.remove('active');});b.className='active';setParams(PRESETS[name]);buildGate();};pc.appendChild(b);});
-  document.getElementById('rnd').onclick=function(){var v={};SLIDERS.forEach(function(s){if(s[1]==='h')return;v[s[0]]=s[4]>=1?Math.round(s[2]+Math.random()*(s[3]-s[2])):s[2]+Math.random()*(s[3]-s[2]);});setParams(v);[].forEach.call(pc.children,function(b){b.classList.remove('active');});buildGate();};
-  setParams(PRESETS.Kathedrale);buildGate();animate();
+  // DIE HÜLLE (K41): Sitzung (Undo/Redo · Same · Schloss je Achse) + der EINE Regler-Generator aus PARAMS_BY_KIND.gate
+  // (die Vertrags-Sicht von SLIDERS; Entprellung 90 ms wie zuvor) + die Kosten-Leiste der Welt-Gestalt je Stufe.
+  var GATE_PARAMS=PC.PARAMS_BY_KIND.gate;
+  sitz=AnazhHuelle.sitzung({werte:W,sperren:true,zustand:function(){return {preset:aktivPreset};},
+    zustandSetzen:function(z){presetMarke(z.preset);},anwenden:function(){buildGate();}});
+  sitz.leiste(document.getElementById('sitzung'));
+  regler=AnazhHuelle.regler(document.getElementById('sliders'),GATE_PARAMS,{werte:W,ruheMs:90,sitzung:sitz,
+    basis:function(){return PRESETS[aktivPreset]||null;},
+    bei:function(){presetMarke(null);},nachRuhe:function(){buildGate();}});
+  kostenLeiste=AnazhHuelle.kosten(document.getElementById('kosten'),{budget:PC.PORTAL_RENDER_CONFIG.lod.budget.gate,
+    stufen:PC.PORTAL_RENDER_CONFIG.lod.kindStages.gate,bauen:function(s){return PC.buildInstance(rezeptId(),1,s,W);},
+    quelle:'gemessen an der Welt-Gestalt (porta-core buildInstance, die Regler als ov); L3·Wurf = die NUR-WURF-Hülle'});
+  var pc=document.getElementById('presets');Object.keys(PRESETS).forEach(function(name){var b=document.createElement('button');b.textContent=name;b.onclick=function(){sitz.schritt(function(){presetMarke(name);setParams(PRESETS[name]);buildGate();});};pc.appendChild(b);});
+  // Der Zufallspunkt ist der Würfel der Sitzung: ein neuer Same zieht jede freie Achse (das Schloss hält eine fest).
+  document.getElementById('rnd').onclick=function(){presetMarke(null);sitz.wuerfeln(GATE_PARAMS);};
+  presetMarke('Kathedrale');setParams(PRESETS.Kathedrale);buildGate();animate();
 }
 function buildFog(){
   if(fogGroup&&fogGroup.parent)scene.remove(fogGroup);
@@ -248,46 +263,15 @@ addEventListener('resize',function(){camera.aspect=innerWidth/innerHeight;camera
 addEventListener('keydown',function(e){if(e.repeat)return;var ch=false;if(e.key==='e'||e.key==='E'){doorTarget=doorTarget>0.5?0.0:DOOR_OPEN;ch=true;}if(e.key==='r'||e.key==='R'){doorTargetB=doorTargetB>0.5?0.0:DOOR_OPEN;ch=true;}if(ch)updatePrompt();});
 init();
 
-/* ==================== W12-PORTAL-BRÜCKE (AnazhRealm-Heimat) ==================== */
-(function () {
-    if (typeof window === "undefined" || !window.parent || window.parent === window) return;
-    function post(m) {
-        try {
-            window.parent.postMessage(m, "*");
-        } catch (_e) {}
-    }
-    var DSL = ["drachentor", "kathedrale", "maschine", "geisttor", "verkalkt", "ruine", "maurentor", "zufall"];
-    function clickPreset(word) {
-        var pdiv = document.getElementById("presets");
-        if (!pdiv) return false;
-        var kids = pdiv.children;
-        for (var i = 0; i < kids.length; i++) {
-            if ((kids[i].textContent || "").toLowerCase() === word) {
-                kids[i].click();
-                return true;
-            }
-        }
-        return false;
-    }
-    window.addEventListener("message", function (ev) {
-        if (ev.source !== window.parent) return;
-        var msg = ev.data;
-        if (!msg || typeof msg !== "object") return;
-        if (msg.type === "enter") {
-            post({ type: "ready", world: "portale", label: "Porta — Ordnungen & fraktale Tiefe", dsl: DSL });
-        } else if (msg.type === "dsl" && Array.isArray(msg.program)) {
-            for (var i = 0; i < msg.program.length; i++) {
-                var op = msg.program[i];
-                var word = String((op && op[0]) || op || "").toLowerCase();
-                if (word === "zufall") {
-                    var r = document.getElementById("rnd");
-                    if (r) r.click();
-                } else clickPreset(word);
-            }
-        }
-    });
-    window.addEventListener("keydown", function (ev) {
-        if (ev.key === "Escape") post({ type: "exit", world: "portale" });
-    });
-    post({ type: "ready", world: "portale", label: "Porta — Ordnungen & fraktale Tiefe", dsl: DSL });
-})();
+/* ==================== DIE BRÜCKE ZUR HEIMAT (die Hülle, K41) ==================== */
+/* EINE Brücke (../huelle/huelle.js): die Tor-Ordnungen über die Preset-Knöpfe (#presets), „zufall" über den Würfel der
+   Sitzung (#rnd); das Einzelwort der Heimat ganz. */
+AnazhHuelle.bruecke({
+    welt: "portale",
+    label: "Porta — Ordnungen & fraktale Tiefe",
+    dsl: ["drachentor", "kathedrale", "maschine", "geisttor", "verkalkt", "ruine", "maurentor", "zufall"],
+    wort: function (w) {
+        if (w === "zufall") document.getElementById("rnd").click();
+        else AnazhHuelle.knopfMitText(document.getElementById("presets"), w);
+    },
+});

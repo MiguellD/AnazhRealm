@@ -225,7 +225,7 @@ const FORBIDDEN = [
     {
         token: "dt * 42",
         fiel: "Welle L Q7 — die Fall-Zahl des Labors wohnt im REGEN_GESETZ",
-        auch: ["worlds/terrain/phytogenesis.js"],
+        auch: ["worlds/terrain/phytogenesis.js", "foundry-bruecke.js"],
     },
     // DIE UFER-BÄNDER sind stetig: Strand, Schlick, Pfad und Höhen-Feuchte lesen beide Bezüge (`_waterLevelAt` → see ·
     // fluss · ufer); das Strand-Fenster schnitt die Glocke bei 2,0 m, die Worker-Feuchte las eine Halbbreite, die kein
@@ -488,7 +488,7 @@ const FORBIDDEN = [
     {
         token: "__baumGrammatik",
         fiel: "05.10. — der Grammatik-Beipack hatte keinen Leser mehr",
-        auch: ["worlds/terrain/phytogenesis.js"], // die Brücke legte ihn in den Umschlag
+        auch: ["worlds/terrain/phytogenesis.js", "foundry-bruecke.js"], // die Brücke legte ihn in den Umschlag
     },
     { token: "sdCappedCone", fiel: "05.10. — kein Kegel-Stumpf im Welt-March (nur der Baum-Satz trug ihn)" },
     { token: "abaum:", fiel: "05.10. — die Gesetz-Streu heißt agesetz:, Bäume haben keinen Satz" },
@@ -845,7 +845,7 @@ const FORBIDDEN = [
     {
         token: "__strauchZeile",
         fiel: "Welle 6 — die Holz-Zeile ist die Stufe selbst (stufenRezept, emitTree)",
-        auch: ["worlds/terrain/phytogenesis.js"],
+        auch: ["worlds/terrain/phytogenesis.js", "foundry-bruecke.js"],
     },
     { token: "[4000, 1500, 1400]", fiel: "Welle 6 — der Strauch hat kein Rezept 0 (die Klingen-Krone)" },
     // DER SATZ FOLGT SEINEM INHALT (W7): der leere Satz war ein Sonderfall, der nur auf die Start-Kapazität zurückkehrte —
@@ -923,6 +923,26 @@ const FORBIDDEN = [
         fiel: "Studio-Welle S1 — gate:portal-konformanz (die echte Heimat, die echte Form)",
         auch: ["package.json"],
     },
+    // DIE STUDIO-HÜLLE (K41, Studio-Welle 1): EIN UI-Modul (worlds/huelle/huelle.js) trägt Regler, Sitzung, Kosten-Leiste und
+    // die Portal-Brücke der Studios, der Nebenwelten und der Werkstatt; die Kopien fielen ganz (gate:studio-huelle nennt
+    // jede neue Kopie beim Namen, hier stehen die Namen der gefallenen Spiegel).
+    { token: "_wsOvDebounce", fiel: "Studio-Hülle K41 — die Werkstatt entprellt im EINEN Generator (AnazhHuelle.regler, ruheMs)" },
+    {
+        token: "function announceReady",
+        fiel: "Studio-Hülle K41 — die ready meldet die EINE Brücke (AnazhHuelle.bruecke mit manifest)",
+        auch: ["worlds/skeleton/skeleton.js", "worlds/fluid/fluid.js"],
+    },
+    {
+        token: "sliderEls",
+        fiel: "Studio-Hülle K41 — die Schieber hält der Generator (regler.eingabe / regler.sync)",
+        auch: ["worlds/garage/garage.js", "worlds/schmiede/schmiede.js"],
+    },
+    {
+        token: "slMap",
+        fiel: "Studio-Hülle K41 — params schreibt der Generator, kein Id-Spiegel",
+        auch: ["worlds/koerperstudio/koerperstudio.js"],
+    },
+    { token: "seedInput", fiel: "Studio-Hülle K41 — der Same lebt in der Sitzung (sitz.seedSetzen)", auch: ["worlds/klang/klang.js"] },
     // DIE LAGE STEHT (Welle C): die Nah-Wiese trug eine eigene Kamera-Signatur, jeder andere Leser rechnete je Pass neu. EIN
     // Gesetz der Lage (`_passLageGen`, `L.gen`) gilt allen Lesern der Sicht-Kette.
     { token: "_sichtSteht", fiel: "Welle C — EIN Gesetz der Lage je Pass (_passLageGen, L.gen)" },
@@ -1051,7 +1071,7 @@ const FORBIDDEN = [
     {
         token: "__wurf",
         fiel: "S3 — der Schatten-Teil (teil schatten) trägt den Wurf, kein Index-Vorsatz",
-        auch: ["foundry-core.js", "worlds/terrain/phytogenesis.js"],
+        auch: ["foundry-core.js", "worlds/terrain/phytogenesis.js", "foundry-bruecke.js"],
     },
     { token: "lf.wurf", fiel: "S3 — der Schatten-Teil ist selbst der Zwilling (_foundryFlattenFor)" },
     { token: "wurfe", fiel: "S3 — das Verschmelzen legt keinen Wurf-Vorsatz mehr nach vorn (_geoVerbinden)" },
