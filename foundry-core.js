@@ -398,8 +398,11 @@ const PORTAL_RENDER_CONFIG = {
             // Breite der Granne in Einheiten der alten. Die Breite ist an der BILD-Deckung geeicht (echte GPU, Mess-Wiese,
             // 8 Blicke, Wind-Uhr gepinnt, Ährchen-Anteil der Pixel 2,5–3,5 m voraus): 6 × 2 bei 1,1 zeigt 3,07 % gegen
             // 3,20 % der Basis (flächen-treu 1,09); L2 bei 2,65 im Band 6–9 m 3,11 % gegen 3,19 %.
+            // DER HALM-TEPPICH (K56, 14.10.): der Büschel deckt seine Raster-Zelle (TEPPICH_REICH), die Dreiecke wandern
+            // von der Rispe in die Halme — L1 Halme 3 Segmente, 0,8 der Labor-Zahl, Rispe 4 × 1 bei 1,6 (862/1 000, vorher
+            // 1 188); die Nah-Wiese an der Wiese −278/−1038 74,1k → 74,8k Dreiecke, Halm-Deckung des Bodens 0,230 → 0,460.
             grass: {
-                1: { tris: 1220, draws: 1, schatten: false, rispe: { grannen: 4, segmente: 1, breite: 1.6 } },
+                1: { tris: 1000, draws: 1, schatten: false, rispe: { grannen: 4, segmente: 1, breite: 1.6 } },
                 2: { tris: 130, draws: 1, schatten: false, rispe: { grannen: 1, segmente: 1, breite: 2.65 } },
                 fernform: "boden",
             },
@@ -2687,7 +2690,7 @@ const GRAS_SPITZE_HELL = 1.08;
 const TEPPICH_REICH = 0.7;
 function emitGrass(P) {
     const geos = [];
-    const lf = __lod === 0 ? 1 : __lod === 1 ? 0.85 : 0.14;
+    const lf = __lod === 0 ? 1 : __lod === 1 ? 0.8 : 0.14;
     const N = Math.max(3, Math.round(lerp(50, 150, P.density) * lf));
     const baseCol = vegFarbe(seasonTint).multiplyScalar(0.6),
         tipCol = vegFarbe(seasonAccent).multiplyScalar(GRAS_SPITZE_HELL);
