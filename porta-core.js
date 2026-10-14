@@ -231,8 +231,8 @@
     // 75°): der Sehnen-Fehler 2 cm trägt ≤ 2 px am nächsten Punkt der Stufe, 1,3 px am Genesis-Ring (11 m). Jede Röhre, jeder
     // Ring und jedes Scharnier behält die mittlere Breite der Stufe 0 (`breiteTreu`: weniger Seiten, der Radius wächst um das
     // Verhältnis der mittleren Kaliber-Breiten n · sin(π / n)) — die Silhouette bleibt, die Seiten fallen. Die Flügel stehen
-    // zu und sind Teil des Körpers (`tuerFest`: kein Scharnier-Datum, der Wirt dreht nur die Flügel der Stufe 0 — die Tür
-    // lebt in der Nähe, `TUER_GESETZ`).
+    // in der Fern-Pose und sind Teil des Körpers (`tuerFest`: kein Scharnier-Datum, der Wirt dreht nur die Flügel der Stufe 0 —
+    // die Tür lebt in der Nähe und öffnet aus derselben Pose, `TUER_GESETZ.fern`).
     var TOR_DETAIL_1 = { sehneM: 0.025, laengsM: 2, umfangMin: 3, ringMin: 6, proben: 256, zylinder: 6, tuerFest: true };
     var _detail = TOR_DETAIL; // das Gesetz des laufenden Baus (buildInstance setzt es je Stufe, synchron)
     function umfangMit(D, r, hoechst) {
@@ -809,8 +809,9 @@
     // derselbe Bau, nur das Gesetz wechselt (synchron gesetzt und zurückgesetzt).
     function baueStufe(p, st) {
         _detail = st === 1 ? TOR_DETAIL_1 : TOR_DETAIL;
+        var fern = TUER_GESETZ.fern * TUER_GESETZ.offen;
         try {
-            return buildGate(p, null);
+            return buildGate(p, st === 1 ? { front: fern, back: fern } : null);
         } finally {
             _detail = TOR_DETAIL;
         }
@@ -938,7 +939,11 @@
     // Wirt (TOR_FLUEGEL_OFFEN, anazhRealm.js) trugen dieselbe 1.95 als
     // Zahlen-Zwilling — jetzt lesen BEIDE diese eine Quelle (fail-soft
     // byte-gleich: kalter Kern -> das alte Literal).
-    var TUER_GESETZ = { offen: 1.95 };
+    // DIE FERN-POSE (K43-2, rein additiv): der Anteil von `offen`, in dem die Flügel jenseits der Tür-Nähe stehen — die Stufe 1
+    // trägt sie fest im Körper (`baueStufe`), die Stufe 0 öffnet von ihr bis `offen` (der Wirt, `_tickTorFluegel`). Vorher
+    // standen die Flügel der Stufe 1 zu: von der Genesis-Mitte (11 m) war jedes Tor geschlossen, die Stufe 0 öffnete erst
+    // unter 8,55 m — der Stufen-Wechsel war eine Tür, die aufspringt.
+    var TUER_GESETZ = { offen: 1.95, fern: 0.5 };
 
     // DIE TOR-HUELLE (Leben-Schau 2, Nachbesserung 10.10. — rein additive DATEN, wie die Fels-Huellen fx.huellen im
     // terrain-Kern): je Rezept die Masse der gezeichneten Gestalt (buildInstance LOD 0, seed-invariant), mit denen der

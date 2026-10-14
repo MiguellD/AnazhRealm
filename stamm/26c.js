@@ -1529,6 +1529,13 @@ AnazhRealm._tuerOffenRad = function () {
     if (Number.isFinite(o) && o > 0) return o;
     return AnazhRealm._kernPflichtBruch("porta:TUER_GESETZ.offen");
 };
+// Die Fern-Pose der Tor-Flügel (K43-2): der Anteil von `offen`, in dem die Flügel jenseits der Tür-Nähe stehen — die Stufe 1
+// trägt ihn im Körper (porta-core `baueStufe`), die Stufe 0 öffnet von ihm (`_tickTorFluegel`). Fail-closed.
+AnazhRealm._tuerFernAnteil = function () {
+    const f = AnazhRealm.Gesetz("porta:TUER_GESETZ.fern", null);
+    if (Number.isFinite(f) && f >= 0 && f <= 1) return f;
+    return AnazhRealm._kernPflichtBruch("porta:TUER_GESETZ.fern");
+};
 // DIE EINE DIÄT-PRÜFUNG (needsRefresh) für jeden Beobachter eines Diät-Objekts — Hauptpass (der Material-
 // Beobachter aus _materialObserverDiaet) UND Schattenpass (der Beobachter des r184-Schatten-Materials, s.
 // _configureRenderer; dort zählt die Diät des ORIGINAL-Materials am Objekt). `obs` = der Beobachter, `altNR`
