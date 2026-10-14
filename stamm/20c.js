@@ -1184,6 +1184,7 @@ class AnazhRealm_Z20c {
             constructor(senke) {
                 super(new T.InstancedBufferGeometry(), senke.material);
                 const fassade = this.geometry;
+                this.__fassade = fassade;
                 fassade.setAttribute("aInstanzSenke", MARKE);
                 this.__instanzQuelle = senke;
                 this.isInstanzZeichner = true;
@@ -1667,6 +1668,10 @@ class AnazhRealm_Z20c {
     static _instanzZahl(mesh, n) {
         mesh.count = n;
         mesh.visible = n > 0;
+        // der Zeichner zählt mit (1410-1): seine Fassade zeichnet so viele Instanzen, wie die Senke JETZT zählt — r184 liest die
+        // Zahl zur Zeichen-Zeit, und der verschachtelte Schatten-Render stellt sie mitten im Hauptbild um und zurück, ohne neu
+        // zu projizieren (die Zahl der Projektion war dann die der Kaskade: Instanzen fehlten oder standen doppelt im Bild)
+        if (mesh.__zeichner) mesh.__zeichner.__fassade.instanceCount = n;
     }
     // DAS VERSCHMELZEN: die Foundry liefert Teile je Kind — Geröll 16 Steine EINES Materials, ein Fahrzeug ~700
     // Teile auf 40 Materialien. Jedes Teil war ein eigenes Leaf = eine eigene Instanz-Gruppe = ein Draw je Pass
