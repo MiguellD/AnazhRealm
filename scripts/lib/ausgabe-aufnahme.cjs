@@ -378,7 +378,7 @@ function erstRuhe(frame, opt, wer) {
                 (x) => x.quelle === "three" || x.quelle === "pipeline"
             );
             return m.length
-                ? ": " +
+                ? " — " +
                       m
                           .slice(-2)
                           .map((x) => x.kopf)
@@ -410,7 +410,7 @@ function erstRuhe(frame, opt, wer) {
                 for (const p of E.offen.keys()) namen.push(name(p));
                 const wartet =
                     E.wartetN !== w0 && E.wartetAuf
-                        ? `; ein Draw wartet auf ${name(E.wartetAuf)}${E.abgesagt && E.abgesagt.has(E.wartetAuf) ? ` (ABGESAGT${grund()})` : ""}`
+                        ? `; ein Draw wartet auf ${name(E.wartetAuf)}${E.abgesagt && E.abgesagt.has(E.wartetAuf) ? ` (ABGESAGT)${grund()}` : ""}`
                         : "";
                 throw new Error(
                     `ERST-ZEICHNUNG OFFEN — ${wer || "die Aufnahme"} bricht ab: offen ${E.offen.size} nach ${Math.round(
