@@ -5,12 +5,23 @@ class AnazhRealm_Z20d {
     // Paar akzeptierter Zentren < pack·(Ti+Tj). Shared shy-Distanz (phyto-core forestTooClose) + named prio-max
     // (forestPrioWins); FOREST_TOPOLOGY.host = "cell" (Feel-Entscheid .116). Einziger Leser ist der Pflanz-Gang
     // (`_forestPlantChunk`) — die Spawn-Wahl liest den Wald nicht, die Genesis-Lichtung hält ihn von der Plattform fern.
+    // DAS URTEIL GEHÖRT DEM DART (K60): es ist eine reine Funktion des Darts und seiner Nachbar-Zellen am Stand des Walds
+    // (`_forestDartStand`) — gemerkt je Dart-Objekt (die Objekte leben im Dart-Gedächtnis dieses Stands, ein neuer Stand legt
+    // neue an), nur über der Wahrheit des Gesetzes (`_forestGesetzWahr`; vorläufige Darts merken nichts). Bis K60 fragte jede
+    // Gestalt des Orts (`_forestStehtFrei`) jeden Nachbarn neu, und jede neue Fläche eines Grundrisses warf das Gedächtnis der
+    // Gestalt (`_ortGestaltSame`): Radeon kalt bis zum ersten Bild 3 220 Freistand-Fragen an 251 Orten, das Urteil 1,5 s.
     _forestDartSteht(d, gx, gz, cellDarts) {
+        const memo = this._forestGesetzWahr()
+            ? this._forestStehtMemo || (this._forestStehtMemo = new WeakMap())
+            : null;
+        const hat = memo ? memo.get(d) : undefined;
+        if (hat !== undefined) return hat;
         const F = AnazhRealm.FOREST;
         const core = typeof globalThis !== "undefined" && globalThis.__phytoCore;
         const tooClose = core && typeof core.forestTooClose === "function" ? core.forestTooClose : null;
         const prioWins = core && core.forestPrioWins;
-        for (let ax = -2; ax <= 2; ax++) {
+        let steht = true;
+        nachbarn: for (let ax = -2; ax <= 2; ax++) {
             for (let az = -2; az <= 2; az++) {
                 const nb = cellDarts(gx + ax, gz + az);
                 for (let k = 0; k < nb.length; k++) {
@@ -30,11 +41,15 @@ class AnazhRealm_Z20d {
                     const better = prioWins
                         ? prioWins(o, d)
                         : o.prio > d.prio || (o.prio === d.prio && (o.x > d.x || (o.x === d.x && o.z > d.z)));
-                    if (better) return false;
+                    if (better) {
+                        steht = false;
+                        break nachbarn;
+                    }
                 }
             }
         }
-        return true;
+        if (memo) memo.set(d, steht);
+        return steht;
     }
 
     // DER SOLITÄR STEHT FREI (K20): kein stehender Baum des Wald-Gesetzes (`_forestDartSteht`) näher als phyto-core
@@ -45,28 +60,51 @@ class AnazhRealm_Z20d {
     // (`_ortWand` fragt nur den Grundriss; den Wagen fragt sie nicht, er fährt, und das Wasser des Gesetzes trägt schon
     // der Dart) — der Wurf im Haus stand nie (gate:fernwald F: die Eiche neben einem Haus über ihrem einzigen Nachbarn
     // blieb Bestand). Wer die Antwort merkt, merkt sie am Stand der Grundrisse (`_grundrissStand`).
+    // ZWEI STÄNDE, ZWEI GEDÄCHTNISSE (K60): die stehenden Nachbarn im Freistand-Kreis sind eine Funktion des Orts am Stand des
+    // Walds — gemerkt am Dart-Gedächtnis dieses Stands (`_forestDartMemo`, nur über der Wahrheit des Gesetzes); Wildnis und
+    // Wand fragt jede Antwort neu (wenige Nachbarn, je eine Gitter-Frage). Eine neue Fläche eines Grundrisses (je Haus des
+    // Dorfs) fragt so nur die Wand, nie wieder 81 Zellen.
     _forestStehtFrei(x, z, T, cellDarts) {
         const core = typeof globalThis !== "undefined" ? globalThis.__phytoCore : null;
         const FS = core && core.FREISTAND;
         if (!FS || !(FS.abstand > 0)) return AnazhRealm._kernPflichtBruch("phyto:FREISTAND.abstand");
-        const CELL = AnazhRealm.FOREST.cell;
-        const gx = Math.floor(x / CELL);
-        const gz = Math.floor(z / CELL);
-        for (let ax = -4; ax <= 4; ax++) {
-            for (let az = -4; az <= 4; az++) {
-                const nb = cellDarts(gx + ax, gz + az);
-                for (let k = 0; k < nb.length; k++) {
-                    const o = nb[k];
-                    const r = FS.abstand * (T + o.T);
-                    const dx = o.x - x;
-                    const dz = o.z - z;
-                    const d2 = dx * dx + dz * dz;
-                    if (d2 < 1e-6 || d2 >= r * r) continue;
-                    if (!this._forestDartSteht(o, gx + ax, gz + az, cellDarts)) continue;
-                    if (!this._wildnisTraegt(o.x, o.z)) continue;
-                    if (!this._ortWand(o.sp, { x: o.x, y: o.surfaceY + 0.5, z: o.z }, { scale: o.s })) return false;
+        let memo = null;
+        if (this._forestGesetzWahr()) {
+            if (this._freistandMemoVon !== this._forestDartMemo || !this._freistandMemo) {
+                this._freistandMemo = new Map();
+                this._freistandMemoVon = this._forestDartMemo;
+            }
+            memo = this._freistandMemo;
+        }
+        const key = x + "," + z + "," + T;
+        let nah = memo ? memo.get(key) : undefined;
+        if (!nah) {
+            nah = [];
+            const CELL = AnazhRealm.FOREST.cell;
+            const gx = Math.floor(x / CELL);
+            const gz = Math.floor(z / CELL);
+            for (let ax = -4; ax <= 4; ax++) {
+                for (let az = -4; az <= 4; az++) {
+                    const nb = cellDarts(gx + ax, gz + az);
+                    for (let k = 0; k < nb.length; k++) {
+                        const o = nb[k];
+                        const r = FS.abstand * (T + o.T);
+                        const dx = o.x - x;
+                        const dz = o.z - z;
+                        const d2 = dx * dx + dz * dz;
+                        if (d2 < 1e-6 || d2 >= r * r) continue;
+                        if (this._forestDartSteht(o, gx + ax, gz + az, cellDarts)) nah.push(o);
+                    }
                 }
             }
+            if (memo) {
+                if (memo.size >= 16384) memo.clear(); // bounded — die Front ist lokal
+                memo.set(key, nah);
+            }
+        }
+        for (const o of nah) {
+            if (!this._wildnisTraegt(o.x, o.z)) continue;
+            if (!this._ortWand(o.sp, { x: o.x, y: o.surfaceY + 0.5, z: o.z }, { scale: o.s })) return false;
         }
         return true;
     }
