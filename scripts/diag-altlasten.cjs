@@ -1459,7 +1459,7 @@ const ZWILLINGE = [
         fiel: "KONVERGENZ II — die Material-Klassen-Farben wohnen im Gesetzbuch (MATERIAL_KLASSEN); Shell + Stamm LESEN",
     },
     {
-        fingerprint: "mahagoni:{hex:0x5f3826",
+        fingerprint: "mahagoni:{hex:0x6a4230", // K57: der Ton nach KOPF_SOLL hautAlbedo (vorher 0x5f3826)
         gesetzbuch: "koerper-core.js",
         verboten: ["worlds/koerperstudio/koerperstudio.js", ...STAMM],
         fiel: "KONVERGENZ II — die Haut-/Haar-Paletten wohnen im Gesetzbuch (SKIN_TONES/HAIR_COLORS); der Genom-Roller pickt aus der Lab-Wahrheit",
