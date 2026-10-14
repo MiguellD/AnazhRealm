@@ -47,6 +47,13 @@
 //  (T) SCHMAL (W7): jeder Index über ≤ 65 535 Vertices trägt 16 bit (r184 weitete ihn auf 32, der Stamm hält ihn
 //      schmal — `_backendGesetz`), jedes Haut-Gewicht unorm16 (Wolf · Mensch). (S4) die alten Formen gestubbt → die Linse
 //      nennt die breiten Puffer.
+//  (G) DER RUHENDE LEIB (K59, Gebot 7: Kosten an Schirm + Änderung): ein Tier außer Bild, jenseits der Nah-Gestalt und
+//      ohne Zustand ruht (KREATUR_RUHE) — es geht jeden `takt`-ten Takt mit der gesammelten Zeit (die Summe der
+//      Schritt-Zeiten = die Summe der Frames, auf 1e-9), und der Matrix-Gang der Szene steigt nicht in sein Skelett (0 Gänge
+//      in ein angehängtes Kind). Ein Leser der Glieder (der Treffer) liest die JETZIGE Lage über `_leibMatrix`; das
+//      Erwachen im Blick zieht den Leib vor jedem Szenen-Gang nach. Nah, im Stoß, zu schnell für `wegMax` und gefallen ruht
+//      keiner. (S8) der Leser ohne Chokepoint verfehlt die Probe; (S9) das Erwachen ohne Nachziehen lässt das angehängte
+//      Kind ohne Matrix — beide rot an genau dieser Zeile.
 //  (S) SELBST-TESTS (die Linse feuert): (S1) mit gestubbter Raten-Leiter
 //      (_creatureAnimDiv ≡ 1) tickt auch die Hinter-Kreatur voll — der
 //      Zähler misst die echte Leiter, nicht sich selbst. (S2) mit gestubbter
@@ -1038,6 +1045,192 @@ const server = statikServer();
             else delete r._gelenkRuhe; // restaurieren (Gate-Hook-Lehre)
             o.checks.s6LensFires = !!o.s6 && o.s6.fern.rad > 0.05;
 
+            // ── (G) DER RUHENDE LEIB (K59, Gebot 7): außer Bild, fern, ohne Zustand → grober Takt, kein Matrix-Gang ──
+            // Der Null-Renderer backt kein Feld (`_tickKreaturZiegel` schweigt headless): die Probe trägt den Bake-Versuch
+            // (`_kzVersuch`) wie ein ferner Leib, dessen Feld steht. Der Frustum kommt wie im Loop aus `_loopFrustumCulling`;
+            // der Matrix-Gang ist `scene.updateMatrixWorld()` wie im Render. Gezählt: volle Schritte (`_kreaturHuellenKontakt`
+            // je Schritt), die Zeit der Schritte (`_kreaturLaufTakt` trägt das dt), die Gänge in ein angehängtes Kind.
+            o.g = (() => {
+                const T3 = window.THREE;
+                const R = A.KREATUR_RUHE;
+                if (!R || typeof r._tickKreaturRuhe !== "function") return { fehler: "KREATUR_RUHE/_tickKreaturRuhe fehlt" };
+                const cam = s.camera;
+                const blick = (dx, dz) => {
+                    cam.position.set(pm.x, pm.y + 2, pm.z);
+                    cam.lookAt(pm.x + dx, pm.y + 2, pm.z + dz);
+                    cam.updateMatrixWorld(true);
+                };
+                const g = { schritte: 0, zeit: 0, gaenge: 0 };
+                const probe = spawnAt(-120, 0);
+                if (!probe) return { fehler: "Spawn fehlgeschlagen" };
+                const u = probe.userData;
+                u._kzVersuch = true;
+                const kind = new T3.Object3D();
+                kind.position.set(0, 1, 0);
+                const kindGang = kind.updateMatrixWorld;
+                kind.updateMatrixWorld = function (f) {
+                    g.gaenge++;
+                    return kindGang.call(this, f);
+                };
+                probe.add(kind);
+                const P = Object.getPrototypeOf(r);
+                r._kreaturHuellenKontakt = function (c) {
+                    if (c === probe) g.schritte++;
+                    return P._kreaturHuellenKontakt.apply(this, arguments);
+                };
+                r._kreaturLaufTakt = function (c, dt) {
+                    if (c === probe) g.zeit += dt;
+                    return P._kreaturLaufTakt.apply(this, arguments);
+                };
+                const takt = (n, setze) => {
+                    for (let k = 0; k < n; k++) {
+                        if (setze) setze();
+                        r._loopFrustumCulling();
+                        r.updateCreatures(0.02);
+                        s.scene.updateMatrixWorld();
+                    }
+                };
+                const nullen = () => {
+                    g.schritte = 0;
+                    g.gaenge = 0;
+                };
+                const kindStimmt = () => {
+                    const soll = new T3.Matrix4().compose(probe.position, probe.quaternion, probe.scale).multiply(kind.matrix);
+                    let d = 0;
+                    for (let k = 0; k < 16; k++) d = Math.max(d, Math.abs(soll.elements[k] - kind.matrixWorld.elements[k]));
+                    return d;
+                };
+                // der Leser an der ruhenden Probe: ein senkrechter Stab durch ihre JETZIGE Lage (`dz` m neben der des Ruhe-Beginns)
+                const leserTrifft = (dz) => {
+                    const p = probe.position;
+                    p.z += dz;
+                    const hit = r._kreaturGliedTreffer(probe, p.x, p.y - 1, p.z, p.x, p.y + 4, p.z, 0.4);
+                    p.z -= dz;
+                    return !!hit;
+                };
+                try {
+                    // (G1) RUHT: 120 m hinter dem Blick — jeder `takt`-te Takt ein Schritt, die Zeit vollständig, kein Gang ins Kind
+                    blick(1, 0);
+                    takt(2);
+                    nullen();
+                    const t0 = g.zeit + (u._ruheDt || 0);
+                    const NG = 40;
+                    takt(NG);
+                    g.g1 = {
+                        ruht: u._ruht === true,
+                        wurzel: Object.prototype.hasOwnProperty.call(probe, "updateMatrixWorld"),
+                        schritte: g.schritte,
+                        zeitFehler: Math.abs(g.zeit + (u._ruheDt || 0) - t0 - NG * 0.02),
+                        gaenge: g.gaenge,
+                    };
+                    // (G2) DER LESER zieht nach: der Treffer an der ruhenden Probe liest ihre jetzige Lage
+                    g.g2 = { trifft: leserTrifft(5) };
+                    // (S8) SELBST-TEST: der Leser ruft die Wurzel direkt (ohne Chokepoint) → er liest die Lage des letzten
+                    // Nachziehens (G2, +5 m) und verfehlt die Probe 5 m auf der anderen Seite
+                    r._leibMatrix = function (c) {
+                        c.updateMatrixWorld(true);
+                    };
+                    g.s8 = { trifft: leserTrifft(-5) };
+                    delete r._leibMatrix;
+                    // (G3) ERWACHT: der Blick wendet sich zur Probe — das Erwachen zieht den ganzen Leib nach, bevor ein
+                    // Szenen-Gang läuft (das Kind steht an der jetzigen Lage); der erste Schritt trägt die gesammelte Zeit
+                    blick(-1, 0);
+                    r._loopFrustumCulling();
+                    r._tickKreaturRuhe(0.02, pm);
+                    g.g3 = {
+                        wach: u._ruht === false,
+                        wurzel: Object.prototype.hasOwnProperty.call(probe, "updateMatrixWorld"),
+                        kindFehler: kindStimmt(),
+                    };
+                    nullen();
+                    takt(4);
+                    g.g3.schritte = g.schritte;
+                    g.g3.zeitFehler = Math.abs(g.zeit + (u._ruheDt || 0) - t0 - (NG + 4) * 0.02);
+                    // (S9) SELBST-TEST: das Erwachen ohne Nachziehen → das Kind trägt die Matrix des Ruhe-Beginns
+                    blick(1, 0);
+                    takt(3);
+                    const wachOrig = r._kreaturErwacht;
+                    r._kreaturErwacht = function (c) {
+                        c.userData._ruht = false;
+                        delete c.updateMatrixWorld;
+                    };
+                    const ruhte9 = u._ruht === true;
+                    probe.position.z += 5;
+                    blick(-1, 0);
+                    r._loopFrustumCulling();
+                    r._tickKreaturRuhe(0.02, pm);
+                    g.s9 = { ruhteVorher: ruhte9, wach: u._ruht === false, kindFehler: kindStimmt() };
+                    if (wachOrig === P._kreaturErwacht) delete r._kreaturErwacht;
+                    else r._kreaturErwacht = wachOrig;
+                    probe.position.z -= 5;
+                    // (G4) NAH: 40 m hinter dem Blick (diesseits der Nah-Gestalt) — jeder Takt ein Schritt
+                    blick(1, 0);
+                    const nahX = -Math.min(40, A.KREATUR_NAH_MESH.aus - 10);
+                    const pinNah = () => {
+                        probe.position.x = pm.x + nahX;
+                        probe.position.z = pm.z;
+                    };
+                    takt(2, pinNah);
+                    nullen();
+                    takt(12, pinNah);
+                    g.g4 = { schritte: g.schritte, ruht: u._ruht === true };
+                    // (G5) ZUSTAND: ein Leib im Stoß ruht nie, auch fern hinter dem Blick
+                    probe.position.x = pm.x - 120;
+                    u._stossV = { x: 0.1, z: 0 };
+                    nullen();
+                    takt(12);
+                    g.g5 = { schritte: g.schritte, ruht: u._ruht === true };
+                    delete u._stossV;
+                    // (G6) WEG: ein Leib, dessen grober Schritt `wegMax` überschritte, geht voll
+                    takt(3);
+                    const ruhteVorher = u._ruht === true;
+                    if (u._steuer) u._steuer.v = (1.5 * R.wegMax) / (R.takt * 0.02);
+                    r._tickKreaturRuhe(0.02, pm);
+                    g.g6 = { ruhteVorher, ruht: u._ruht === true };
+                    // (G7) DER GEFALLENE ruht nie: ein ruhender Leib unter den Gefallenen erwacht
+                    if (u._steuer) u._steuer.v = 0;
+                    takt(3);
+                    const ruhte7 = u._ruht === true;
+                    const iW = s.creatures.indexOf(probe);
+                    s.creatures.splice(iW, 1);
+                    s.leichname.push(probe);
+                    r._tickKreaturRuhe(0.02, pm);
+                    g.g7 = { ruhteVorher: ruhte7, wach: u._ruht === false };
+                    s.leichname.splice(s.leichname.indexOf(probe), 1);
+                    s.creatures.splice(iW, 0, probe);
+                } finally {
+                    delete r._kreaturHuellenKontakt;
+                    delete r._kreaturLaufTakt;
+                    delete r._leibMatrix;
+                    if (u._ruht === true) r._kreaturErwacht(probe);
+                    probe.remove(kind);
+                    cleanup([probe]);
+                }
+                return g;
+            })();
+            {
+                const G = o.g || {};
+                const R = A.KREATUR_RUHE || {};
+                o.checks.gRuht =
+                    !!G.g1 &&
+                    G.g1.ruht &&
+                    G.g1.wurzel &&
+                    G.g1.schritte >= 40 / R.takt - 1 &&
+                    G.g1.schritte <= 40 / R.takt + 1 &&
+                    G.g1.zeitFehler < 1e-9 &&
+                    G.g1.gaenge === 0;
+                o.checks.gLeser = !!G.g2 && G.g2.trifft;
+                o.checks.s8LensFires = !!G.s8 && !G.s8.trifft;
+                o.checks.gErwacht =
+                    !!G.g3 && G.g3.wach && !G.g3.wurzel && G.g3.schritte === 4 && G.g3.kindFehler < 1e-6 && G.g3.zeitFehler < 1e-9;
+                o.checks.s9LensFires = !!G.s9 && G.s9.ruhteVorher && G.s9.wach && G.s9.kindFehler > 1;
+                o.checks.gNah = !!G.g4 && G.g4.schritte === 12 && !G.g4.ruht;
+                o.checks.gZustand = !!G.g5 && G.g5.schritte === 12 && !G.g5.ruht;
+                o.checks.gWeg = !!G.g6 && G.g6.ruhteVorher && !G.g6.ruht;
+                o.checks.gGefallen = !!G.g7 && G.g7.ruhteVorher && G.g7.wach;
+            }
+
+            o.ruheTakt = A.KREATUR_RUHE && A.KREATUR_RUHE.takt;
             o.creaturesAfter = s.creatures.length;
             return o;
         });
@@ -1200,10 +1393,37 @@ const server = statikServer();
             c.s6LensFires,
             `SELBST-TEST (S6): die Ruhe gestubbt → der ferne Mensch bleibt mitten im Schritt (${out.s6 ? fR(out.s6.fern) : "?"})`
         );
+        const G = out.g || {};
+        if (G.fehler) check(false, `(G) ${G.fehler}`);
+        else {
+            const g1 = G.g1 || {},
+                g3 = G.g3 || {};
+            check(
+                c.gRuht,
+                `(G) RUHT: 120 m hinter dem Blick geht der Leib ${g1.schritte} von 40 Takten (Takt 1/${out.ruheTakt}), die Zeit vollständig (Fehler ${g1.zeitFehler}), ${g1.gaenge} Matrix-Gänge ins angehängte Kind, eigene Wurzel ${g1.wurzel}`
+            );
+            check(c.gLeser, "(G) LESER: der Treffer an der ruhenden Probe liest ihre jetzige Lage (`_leibMatrix` zieht nach)");
+            check(
+                c.s8LensFires,
+                "SELBST-TEST (S8): der Leser ruft die ruhende Wurzel direkt → er liest die Lage des Ruhe-Beginns und verfehlt"
+            );
+            check(
+                c.gErwacht,
+                `(G) ERWACHT im Blick: die Wurzel fällt, das Kind steht vor jedem Szenen-Gang an der jetzigen Lage (Fehler ${g3.kindFehler}), danach ${g3.schritte}/4 Schritte, die Zeit vollständig (${g3.zeitFehler})`
+            );
+            check(
+                c.s9LensFires,
+                `SELBST-TEST (S9): das Erwachen ohne Nachziehen → das angehängte Kind bleibt ohne Matrix (Fehler ${G.s9 && G.s9.kindFehler})`
+            );
+            check(c.gNah, `(G) NAH (diesseits der Nah-Gestalt) ruht nie: ${G.g4 && G.g4.schritte}/12 Schritte`);
+            check(c.gZustand, `(G) ZUSTAND: ein Leib im Stoß ruht nie: ${G.g5 && G.g5.schritte}/12 Schritte`);
+            check(c.gWeg, "(G) WEG: ein Leib, dessen grober Schritt `wegMax` überschritte, geht voll");
+            check(c.gGefallen, "(G) der Gefallene ruht nie (ein ruhender Leib unter den Gefallenen erwacht)");
+        }
         check(!pageErr, `kein Page-Error (${pageErr || "sauber"})`);
     }
     console.log(
-        `\n  ${ok ? "✅ GRÜN — die Kreatur kostet, was man von ihr sieht (Anim-Rate · Stand-Pose · Grobstufe KONSUMIERT · Starr-Bindung · Körper-Kugel · Werfer aus der Kern-Zeile · Ruhe jenseits der Grenze)" : "❌ ROT — die Kreatur-Kosten-Verdrahtung trägt nicht"}\n`
+        `\n  ${ok ? "✅ GRÜN — die Kreatur kostet, was man von ihr sieht (Anim-Rate · Stand-Pose · Grobstufe KONSUMIERT · Starr-Bindung · Körper-Kugel · Werfer aus der Kern-Zeile · Ruhe jenseits der Grenze · der ruhende Leib außer Bild)" :"❌ ROT — die Kreatur-Kosten-Verdrahtung trägt nicht"}\n`
     );
     process.exit(ok ? 0 : 1);
 })();

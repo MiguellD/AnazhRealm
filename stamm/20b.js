@@ -1773,7 +1773,7 @@ class AnazhRealm_Z20b {
     _kreaturGliedTreffer(cr, ax, ay, az, bx, by, bz, radius, flaeche = false) {
         const gl = this._kreaturTrefferGlieder(cr);
         if (!gl) return null;
-        cr.updateMatrixWorld(true);
+        this._leibMatrix(cr);
         const v = this._trefferVek || (this._trefferVek = [new THREE.Vector3(), new THREE.Vector3()]);
         let best = null;
         let bestTiefe = Infinity;
