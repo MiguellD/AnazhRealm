@@ -1385,7 +1385,8 @@ class AnazhRealm_Z07 {
     // (`kodiere`; vendor/three.webgpu.min.js, gepinnt in gate:vendor-anker). Roh kodiert, was kein Bündel tragen kann: ein
     // Draw in die Aufnahme eines Region-Bündels (der Kodierer ist selbst ein Bündel), eine Verdeckungs-Abfrage (sie gehört dem
     // Pass), eine Array-Kamera (Ansicht und Kamera-Gruppe je Teil), ein Stencil-Bezug (`setStencilReference` gibt es im Bündel
-    // nicht), ein Multi- oder indirekter Draw — und jeder, dessen Stempel seit dem letzten Draw brach. Gerufen wird je Draw
+    // nicht), ein indirekter Draw (den Multi-Draw-Zweig von `_draw` erreicht die Welt nicht: der Batch-Pfad fiel V18.510,
+    // gate:altlasten hält ihn draußen) — und jeder, dessen Stempel seit dem letzten Draw brach. Gerufen wird je Draw
     // der Prototyp (Linsen hängen sich dort ein); gate:kamera-treue (BEFEHL) liest die Zähler `_befehl`.
     _befehlZeichnen(be, kodiere, ro, info, kd, pipe, bindungen, puffer, dp, enc, sets) {
         const B = this._befehl || this._befehlStand();
@@ -1394,7 +1395,6 @@ class AnazhRealm_Z07 {
             enc !== kd.currentPass ||
             enc.executeBundles === undefined ||
             o.occlusionTest === true ||
-            o.isBatchedMesh === true ||
             ro.camera.isArrayCamera === true ||
             (ro.context.stencil === true && ro.material.stencilWrite === true) ||
             ro.getIndirect() !== null
