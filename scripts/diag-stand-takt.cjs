@@ -96,6 +96,7 @@ function selbsttest() {
         },
         // BÜHNE: Befund des Selbsttests, kein gesetzter Ort
         strom: { spielerChunk: true, x: -300, z: -850, takte: 40 },
+        stufe: { wechsel: 2, takte: { nahStreu: 1, nahWiese: 1 }, rufe: {} },
         code: Object.fromEntries(namen.map((n) => [n, { fragt: true, meldet: true }])),
         pageErrors: [],
     };
@@ -162,6 +163,12 @@ function selbsttest() {
             /GEHEN: der Saum geht ohne neuen Anker \(3840 Einheiten\)/,
         ],
         ["Gehen ohne Weg", (b) => (b.gehen.weg = 0.2), /BEWEGUNG: beim Gehen kam der Spieler 0.2 m voran/],
+        [
+            "ein Stufen-Wechsel weckt die Stufen-Wahl",
+            (b) => Object.assign(b.stufe, { takte: { archLod: 1638 }, rufe: { _lodTreeVisHeight: 1638 } }),
+            /STUFE: 2 Stufen-Wechsel ohne Form-Änderung wecken archLod \(1638 Einheiten\)/,
+        ],
+        ["die Stufen-Probe ist stumpf", (b) => (b.stufe.wechsel = 0), /STUFE: kein Stufen-Wechsel geschah/],
         [
             "das Streaming verhungert nach der Ruhe",
             (b) => (b.strom.spielerChunk = false),
@@ -766,6 +773,46 @@ const server = statikServer();
                     aus.gehen.zelleGleich = zelle(p1) === z0;
                     aus.gehen.ankerGleich = (st.fernRing ? st.fernRing.gen | 0 : -1) === g0;
                 }
+                // (U) STUFE (K51-5): aus der Ruhe tauscht ein ferner Chunk seine Stufe hin und zurück, wie der Streaming-Takt
+                // (`_rebuildVoxelChunk(cx, cz, lod)`, hier synchron) — gezählt je Takt die Einheiten und die Rufe des Walds
+                {
+                    await bisRuhe(900);
+                    const pm = st.playerMesh.position;
+                    let ziel = null;
+                    for (const [k, e] of st.voxelChunks) {
+                        if (!e || e.empty || !e.mesh || e.lod !== 2) continue;
+                        const [cx, cz] = k.split(",").map(Number);
+                        if (!ziel || Math.abs(cx * 43.2 - pm.x) + Math.abs(cz * 43.2 - pm.z) < ziel.d)
+                            ziel = { cx, cz, d: Math.abs(cx * 43.2 - pm.x) + Math.abs(cz * 43.2 - pm.z) };
+                    }
+                    const U = {
+                        wechsel: 0,
+                        takte: {},
+                        rufe: { _lodTreeVisHeight: 0, _forestStehtFrei: 0, _forestCellDarts: 0 },
+                    };
+                    const alt = {};
+                    for (const m of Object.keys(U.rufe)) {
+                        alt[m] = P[m];
+                        P[m] = function (...a) {
+                            U.rufe[m]++;
+                            return alt[m].apply(this, a);
+                        };
+                    }
+                    try {
+                        if (ziel)
+                            for (const lod of [1, 2]) {
+                                r._rebuildVoxelChunk(ziel.cx, ziel.cz, lod, { forceSync: true });
+                                const e = st.voxelChunks.get(ziel.cx + "," + ziel.cz);
+                                if (e && e.lod === lod) U.wechsel++;
+                                const ph = await phase(20);
+                                for (const n of Object.keys(TAKTE))
+                                    U.takte[n] = (U.takte[n] | 0) + (ph.takte[n] ? ph.takte[n].summe : 0);
+                            }
+                    } finally {
+                        Object.assign(P, alt);
+                    }
+                    aus.stufe = U;
+                }
                 // (T) STROM: erst Ruhe, dann der Sprung an einen fremden Ort — der Spieler-Chunk muss kommen
                 {
                     await bisRuhe(900);
@@ -855,6 +902,10 @@ const server = statikServer();
         if (W.regler) console.log(zeile("regler", W.regler));
         if (W.wahrnehmung) console.log(zeile("wahrn.", W.wahrnehmung));
     }
+    if (befund.stufe)
+        console.log(
+            `  Stufe: ${befund.stufe.wechsel} Wechsel ohne Form-Änderung — Einheiten ${JSON.stringify(befund.stufe.takte)} · Rufe ${JSON.stringify(befund.stufe.rufe)}`
+        );
     if (befund.strom)
         console.log(
             `  Strom: Sprung an (${befund.strom.x}, ${befund.strom.z}) — Spieler-Chunk ${befund.strom.spielerChunk ? "steht" : "FEHLT"} nach ${befund.strom.takte} Takten`

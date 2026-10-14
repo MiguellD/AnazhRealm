@@ -109,7 +109,8 @@ class AnazhRealm_Z11c {
             st.nahWiese = { kacheln: new Map(), senken: new Map(), vorlagen: new Map(), neu: true, offen: 0 };
         const nw = st.nahWiese;
         // DIE STAND-WACHE: stehen Auge, Chunks und Studio-Vorlagen, steht jede Kachel — kein Gang.
-        if (this._standRuht("nahWiese", 1, { pos: st.camera.position, rand: AnazhRealm.STAND_RAND_M })) return 0;
+        if (this._standRuht("nahWiese", 1, { pos: st.camera.position, rand: AnazhRealm.STAND_RAND_M }, "karte"))
+            return 0;
         let gefallen = 0;
         const cam = st.camera.position;
         const tcx = Math.floor(cam.x / NW.kachel);
@@ -701,7 +702,8 @@ class AnazhRealm_Z11c {
         if (!st.nahStreu) st.nahStreu = { kacheln: new Map(), senken: new Map(), offen: 0 };
         const ns = st.nahStreu;
         // DIE STAND-WACHE: stehen Auge, Chunks, Ernte und Buch, steht jede Kachel in ihrem Zustand — kein Gang.
-        if (this._standRuht("nahStreu", 1, { pos: st.camera.position, rand: AnazhRealm.STAND_RAND_M })) return 0;
+        if (this._standRuht("nahStreu", 1, { pos: st.camera.position, rand: AnazhRealm.STAND_RAND_M }, "karte"))
+            return 0;
         let gefallen = 0;
         const cam = st.camera.position;
         const tcx = Math.floor(cam.x / NS.kachel);

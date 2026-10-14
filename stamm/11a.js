@@ -184,7 +184,7 @@ class AnazhRealm_Z11a {
     // DER geteilte Finalize-Schritt beider Pfade: Mesh in die Scene, Entry setzen, Gras + Iso-Wasser +
     // Vegetation. `fresh` muss ein erfolgreicher Build sein. Gibt das Entry zurück oder null
     // (degenerierte Iso-Fläche → {empty:true}).
-    _finalizeVoxelChunkBuild(cx, cz, lod, fresh, syncWater = false, altLod = null) {
+    _finalizeVoxelChunkBuild(cx, cz, lod, fresh, syncWater = false, altLod = null, stufe = false) {
         const key = `${cx},${cz}`;
         if (fresh.kind === "empty") {
             this.state.voxelChunks.set(key, { empty: true });
@@ -212,7 +212,9 @@ class AnazhRealm_Z11a {
             hasBVH: typeof fresh.hasBVH === "boolean" ? fresh.hasBVH : true,
         };
         this.state.voxelChunks.set(key, entry);
-        this._weltRegt(true); // die Chunk-Menge regt sich: die Stand-Wache weckt die Fege-Takte (Boden-Stempel)
+        // die Chunk-Menge regt sich: die Stand-Wache weckt die Fege-Takte (Boden-Stempel); ein reiner Stufen-Wechsel (`stufe`,
+        // K51-5) regt nur die Boden-Karte — die Menge steht, Wald, Streu und Sichthöhen lesen sie nicht
+        this._weltRegt(true, stufe);
         // Gras nur im Nah-Ring (Distanz-Gate unten); Iso-Wasser ist der EINZIGE Wasser-Render-Pfad,
         // Streu-Strukturen idempotent je Chunk einmal. span ist über alle LODs gleich (43.2 m) → derselbe
         // Gras-Build trägt LOD 0 und LOD 1.
@@ -728,7 +730,7 @@ class AnazhRealm_Z11a {
     // V12.0-perf.a — Fail/Empty/Finalize-Abschluss des Rebuild-Pfads. Bei
     // null (OOM/degeneriert): Retry-Counter (max 3) + re-dirty. Sonst:
     // Finalize. Returnt true bei aufgelöst (empty ODER filled), false bei Fail.
-    _completeVoxelRebuild(key, cx, cz, lod, fresh, altLod = null) {
+    _completeVoxelRebuild(key, cx, cz, lod, fresh, altLod = null, stufe = false) {
         if (fresh === null) {
             // Build fail (Heap-OOM oder degenerierte Iso-Fläche): Retry-Counter, nach 3 Versuchen {empty:true}.
             // Der nächste Edit auf den Bereich setzt den Counter zurück.
@@ -750,7 +752,7 @@ class AnazhRealm_Z11a {
         // V12.0-perf.h.1 — Edit-Rebuild-Pfad (`_rebuildVoxelChunk` ←
         // Carve/Fill/Architektur): Wasser-Iso SYNCHRON bauen (kein Flacker am
         // Edit-Punkt). Nur der Streaming-Pfad (ferne neue Chunks) deferred.
-        this._finalizeVoxelChunkBuild(cx, cz, lod, fresh, true, altLod);
+        this._finalizeVoxelChunkBuild(cx, cz, lod, fresh, true, altLod, stufe);
         return true;
     }
 
@@ -770,6 +772,14 @@ class AnazhRealm_Z11a {
         // (`!_frameOverBudget`) — sonst ASYNC (alter Mesh bleibt, Kollision ist feld-nativ sofort aktuell),
         // kein Dauer-Stall aus ~126-ms-Sync-Rebuilds beim Graben. Explizites `opts.forceSync`
         // (`_syncRebuildEditFootprint`, `_drainDirtyVoxelChunks`) baut IMMER sync.
+        // DER STUFEN-WECHSEL (K51-5): der Streaming-Takt tauscht nur die Stufe eines stehenden Chunks — keine Form-Änderung
+        // wartet (kein Carve/Fill am Gras, kein Edit im Dirty-Satz). Er regt nur die Boden-Karte (`_weltRegt(true, true)`),
+        // und sein offener Bau gehört dem Streaming-Takt (er bleibt wach, bis der Bau kommt) — nie dem Dirty-Takt, der
+        // ohne Stufe die ALTE baute (gehend an der Mess-Wiese: ein Neubau in der alten Stufe je verzögertem Wechsel).
+        const formWartet =
+            (this.state.grassDirtyChunks && this.state.grassDirtyChunks.has(key)) ||
+            (this.state.dirtyVoxelChunks && this.state.dirtyVoxelChunks.has(key));
+        const stufe = altLod !== null && lod !== null && lod !== altLod && !formWartet;
         const editPressure = this._voxelChunkIsPlayerChunk(cx, cz) || this._chunkRegionHasCarve(cx, cz);
         const forceSync = opts.forceSync === true || (editPressure && !this.state._frameOverBudget);
         // Welle G-fix — das Gras nur disposen, wenn die Oberfläche sich änderte
@@ -778,22 +788,23 @@ class AnazhRealm_Z11a {
         const keepGrass = !(this.state.grassDirtyChunks && this.state.grassDirtyChunks.has(key));
         if (forceSync) {
             // V9.40-d — dispose-before-build (kein Loch, Sync-Build same-frame).
-            if (oldEntry) this._disposeVoxelChunk(key, keepGrass);
+            if (oldEntry) this._disposeVoxelChunk(key, keepGrass, stufe);
             const fresh = this._acquireVoxelChunkBuild(cx, cz, useLod, { forceSync: true });
-            return this._completeVoxelRebuild(key, cx, cz, useLod, fresh, altLod);
+            return this._completeVoxelRebuild(key, cx, cz, useLod, fresh, altLod, stufe);
         }
         // Async: erst bauen/anfordern, NICHT vorher disposen.
         const fresh = this._acquireVoxelChunkBuild(cx, cz, useLod, { forceSync: false });
         if (fresh === "pending") {
             // Worker/GPU-Request läuft — alter Chunk bleibt sichtbar, dirty
-            // behalten, der nächste Tick prüft erneut (Cache-Hit → Swap).
+            // behalten, der nächste Tick prüft erneut (Cache-Hit → Swap) — den Stufen-Wechsel der Streaming-Takt
+            if (stufe) return false;
             if (!this.state.dirtyVoxelChunks) this.state.dirtyVoxelChunks = new Set();
             this.state.dirtyVoxelChunks.add(key);
             return false;
         }
         // Build fertig/fail → atomarer Swap: alten erst JETZT disposen.
-        if (oldEntry) this._disposeVoxelChunk(key, keepGrass);
-        return this._completeVoxelRebuild(key, cx, cz, useLod, fresh, altLod);
+        if (oldEntry) this._disposeVoxelChunk(key, keepGrass, stufe);
+        return this._completeVoxelRebuild(key, cx, cz, useLod, fresh, altLod, stufe);
     }
 
     // Baut einen Voxel-Chunk an (cx, cz) über die geteilte Kaskade; No-op, wenn er existiert. Leeres
@@ -843,7 +854,7 @@ class AnazhRealm_Z11a {
 
     // Räumt einen Voxel-Chunk: Kollision, Mesh, Geometrie, Material.
     // Idempotent.
-    _disposeVoxelChunk(key, keepGrass = false) {
+    _disposeVoxelChunk(key, keepGrass = false, stufe = false) {
         if (!this.state.voxelChunks) return;
         // V18.275 — ein gepruneter Chunk verlässt auch die Foliage-Warteschlange (kein Leck).
         if (this.state.pendingFoliageChunks) this.state.pendingFoliageChunks.delete(key);
@@ -872,7 +883,7 @@ class AnazhRealm_Z11a {
         // Welle A — ausstehenden Gras-Build für diesen Chunk verwerfen.
         if (this.state.pendingGrass) this.state.pendingGrass.delete(key);
         this.state.voxelChunks.delete(key);
-        this._weltRegt(true); // die Chunk-Menge regt sich: die Stand-Wache weckt die Fege-Takte (Boden-Stempel)
+        this._weltRegt(true, stufe); // die Chunk-Menge regt sich (ein Stufen-Wechsel nur die Boden-Karte, K51-5)
         // V9.40-c — dirty-Marker mit-entfernen, sonst zeigt er auf einen
         // gleich-keyed Chunk, den der Streaming-Ring später frisch baut, und
         // triggert einen unnötigen Rebuild im nächsten Tick.

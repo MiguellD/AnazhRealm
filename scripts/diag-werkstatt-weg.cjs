@@ -259,7 +259,9 @@ function werkVerdict(m) {
     // Die Hülle des gesetzten Werks liegt in der Reichweite, die die Klemme misst (Integration V18.536: die Stamm-Hülle trägt
     // seit v1-ankunft die Welt-Skala des Studio-Baums).
     if (Number.isFinite(m.huelleReicht) && m.reicht > 0 && m.huelleReicht > m.reicht + 0.01)
-        out.push(`die Hülle des Werks reicht ${m.huelleReicht} m, die Klemme misst ${m.reicht} m — der Spieler steht im Werk`);
+        out.push(
+            `die Hülle des Werks reicht ${m.huelleReicht} m, die Klemme misst ${m.reicht} m — der Spieler steht im Werk`
+        );
     if (m.gesendetSame !== m.werkSame)
         out.push(`der Mitspieler bekommt den Samen ${m.gesendetSame}, das Werk trägt ${m.werkSame}`);
     // Jedes Setzen ein neues Werk (Integration V18.536, Auflage 1): nach dem Setzen zeigt das Phantom den nächsten Samen.

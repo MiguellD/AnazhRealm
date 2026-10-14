@@ -231,7 +231,11 @@ function check(name, ok, detail) {
                 // Selbsttest: dasselbe Haus OHNE Grundriss hält den Wurf nicht — die Eiche bleibt Bestand (die Linse
                 // unterscheidet: frei macht nur der Grundriss). Seit K52 trägt jeder Bau einen (die Hülle seiner Blocker-Boxen):
                 // die Probe nimmt ihm Fundament, Hülle und Boxen, und der Stand der Grundrisse fällt
-                const ohne = r.spawnArchitecture("haus_alemannisch", { x: o.x, y: o.surfaceY, z: o.z }, { silent: true });
+                const ohne = r.spawnArchitecture(
+                    "haus_alemannisch",
+                    { x: o.x, y: o.surfaceY, z: o.z },
+                    { silent: true }
+                );
                 if (ohne) {
                     ohne.fundament = undefined;
                     ohne._hausHuelle = undefined;
