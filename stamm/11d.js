@@ -828,6 +828,26 @@ class AnazhRealm_Z11d {
             "    let k = (u32(iy) * u32(S.feldAz) + u32(ix)) * 4u;\n" +
             "    return vec4<f32>(feld[k], feld[k + 1u], feld[k + 2u], feld[k + 3u]);\n" +
             "}\n" +
+            // DAS FELD IST EINE FLÄCHE, KEIN KASTEN-GITTER (K16, die Horizont-Zinnen): der Strahl liest Höhe und Farbe bilinear
+            // zwischen den vier Texel-Mitten (Azimut umlaufend, radial geklemmt). Bis K16 las er den nächsten Texel: jeder
+            // Texel (1,875° × 667 m) stand als Kasten mit ebenem Dach und senkrechter Wand — die Silhouette trug Zinnen.
+            "fn feldAn(rel: vec2<f32>, r: f32) -> vec4<f32> {\n" +
+            "    let PI = 3.14159265358979;\n" +
+            "    let nAz = i32(S.feldAz);\n" +
+            "    let fx = (atan2(rel.y, rel.x) / (2.0 * PI) + 0.5) * S.feldAz - 0.5;\n" +
+            "    let fy = clamp((r - S.rMin) / (S.rMax - S.rMin) * S.feldRad - 0.5, 0.0, S.feldRad - 1.0);\n" +
+            "    let x0 = floor(fx);\n" +
+            "    let y0 = floor(fy);\n" +
+            "    let tx = fx - x0;\n" +
+            "    let ty = fy - y0;\n" +
+            "    let ix0 = ((i32(x0) % nAz) + nAz) % nAz;\n" +
+            "    let ix1 = (ix0 + 1) % nAz;\n" +
+            "    let iy0 = i32(y0);\n" +
+            "    let iy1 = min(iy0 + 1, i32(S.feldRad) - 1);\n" +
+            "    let a = mix(feldTexel(ix0, iy0), feldTexel(ix1, iy0), tx);\n" +
+            "    let b = mix(feldTexel(ix0, iy1), feldTexel(ix1, iy1), tx);\n" +
+            "    return mix(a, b, ty);\n" +
+            "}\n" +
             "@compute @workgroup_size(64)\n" +
             "fn main(@builtin(global_invocation_id) gid: vec3<u32>) {\n" +
             "    let idx = gid.x;\n" +
@@ -859,10 +879,7 @@ class AnazhRealm_Z11d {
             "        let r = length(rel);\n" +
             "        if (r < S.rMin) { tVor = t; continue; }\n" +
             "        if (r > S.rMax) { break; }\n" +
-            "        let u = atan2(rel.y, rel.x) / (2.0 * PI) + 0.5;\n" +
-            "        let ix = i32(clamp(u, 0.0, 0.9999) * S.feldAz) % i32(S.feldAz);\n" +
-            "        let iy = clamp(i32((r - S.rMin) / (S.rMax - S.rMin) * S.feldRad), 0, i32(S.feldRad) - 1);\n" +
-            "        let h = feldTexel(ix, iy);\n" +
+            "        let h = feldAn(rel, r);\n" +
             "        if (pos.y <= h.x) {\n" +
             "            var aB = tVor;\n" +
             "            var bB = t;\n" +
@@ -873,10 +890,7 @@ class AnazhRealm_Z11d {
             "                let pm = camPos + dir * m;\n" +
             "                let relM = pm.xz - vec2<f32>(S.ankerX, S.ankerZ);\n" +
             "                let rM = length(relM);\n" +
-            "                let uM = atan2(relM.y, relM.x) / (2.0 * PI) + 0.5;\n" +
-            "                let ixM = i32(clamp(uM, 0.0, 0.9999) * S.feldAz) % i32(S.feldAz);\n" +
-            "                let iyM = clamp(i32((rM - S.rMin) / (S.rMax - S.rMin) * S.feldRad), 0, i32(S.feldRad) - 1);\n" +
-            "                let hM = feldTexel(ixM, iyM);\n" +
+            "                let hM = feldAn(relM, rM);\n" +
             "                if (pm.y <= hM.x) { bB = m; tFein = m; hF = hM; } else { aB = m; }\n" +
             "            }\n" +
             "            pano[o] = hF.y; pano[o + 1u] = hF.z; pano[o + 2u] = hF.w; pano[o + 3u] = tFein;\n" +
@@ -1192,12 +1206,16 @@ class AnazhRealm_Z11d {
         if (dx * dx + dz * dz > F.reanchorDist * F.reanchorDist) {
             fr.anchorX = Math.round(playerPos.x / F.anchorQuant) * F.anchorQuant;
             fr.anchorZ = Math.round(playerPos.z / F.anchorQuant) * F.anchorQuant;
+            fr.uAnker.value.set(fr.anchorX, fr.anchorZ);
             fr.cursor = 0; // voller Höhen-Refresh, budgetiert über die nächsten Frames
             fr.gen = (fr.gen || 0) + 1; // laufende Feld-Flüge sind überholt
+            fr.vollY.fill(NaN); // das volle Gesetz der Bau-Zone gehört zum Anker
+            fr.feldY.fill(NaN); // die Feld-Fläche der Naht ebenso
             fr.gpuFlug = false;
         }
         // Die Schalen leben auf Layer 0 (EIN Szene-Pass) — selbstheilend, falls ein Altstand sie verschob.
         for (const m of fr.meshes) if (m.layers.mask !== 1) m.layers.mask = 1;
+        this._fernRingMaske(fr); // der Ring weicht dem Gebauten (`maskNode`)
         // DER FELD-ZEICHNER: ein anstehender VOLLER Refresh (Boot/Re-Anker)
         // wird zuerst vom Feld gemalt (EIN GPU-Lauf, Horizont steht sofort);
         // die CPU-Scheibe darunter verfeinert dieselben Vertices aufs f64-Gesetz.
@@ -1205,6 +1223,8 @@ class AnazhRealm_Z11d {
         this._fernRingRefresh(F.refreshVertsProTick);
         // DAS EINE WASSER: kam oder ging das Fern-Wasser, legt der Ring seine nassen Punkte neu (`_fernRingWasserTiefe`).
         this._fernRingWasserNeu(fr);
+        // DIE KOSTEN AN DER NAHT: die Dreiecke der Schale 0 folgen Maske und Lage (frei · Naht · getragen, `_fernRingTeilung`).
+        this._fernRingTeilung(fr);
         // DER FELD-PASS (Ring-Besitz): die Ferne jenseits der Schalen — Ensure,
         // Re-Malen bei Anker-Wechsel, Kamera-Uniforms.
         this._tickFeldPass(fr);
@@ -1229,12 +1249,17 @@ class AnazhRealm_Z11d {
         this._fernFarbeMemo = null; // die Fern-Farben gehören der Welt, die den Ring trug
         const fr = this.state.fernRing;
         if (!fr) return;
+        // je gezeichnetes Mesh seine Geometrie (Schale 1, Schale 2, die zwei Teile der Schale 0) und sein Stoff (die zwei
+        // Stoffe, frei und Naht, geteilt — ein zweites dispose ist ohne Hörer leer)
         for (const m of fr.meshes || []) {
             if (!m) continue;
             if (this.state.scene) this.state.scene.remove(m);
             this._queueGeometryDispose(m.geometry);
+            if (m.material && typeof m.material.dispose === "function") m.material.dispose();
         }
-        if (fr.material && typeof fr.material.dispose === "function") fr.material.dispose();
+        // die volle Schale 0: der Träger der Attribute, die ihre zwei Teile teilen (sie zeichnet kein Mesh)
+        if (fr.geos && fr.geos[0]) this._queueGeometryDispose(fr.geos[0]);
+        if (fr.maske && fr.maske.tex) fr.maske.tex.dispose(); // die Masken-Karte des Gebauten
         // die Kamera-Weitung zurücknehmen (die Klippe war der Ring-Besitz).
         if (Number.isFinite(this._fernRingCamFarAlt) && this.state.camera) {
             this.state.camera.far = this._fernRingCamFarAlt;

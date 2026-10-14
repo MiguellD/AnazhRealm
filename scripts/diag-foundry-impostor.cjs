@@ -120,6 +120,7 @@ async function driveImpostor(page) {
                 const vor = new Set(r.state.archInstanceGroups ? r.state.archInstanceGroups.keys() : []);
                 const sE = r._scatterInstanceAdd("fscatter:eiche:1:2", 10, 0, 10, 0.3, 1.1, null, "3,4", flat1);
                 const sF = r._scatterInstanceAdd("fscatter:fichte:1:2", 20, 0, 10, 0.7, 0.9, null, "3,4", flat2);
+                // BÜHNE: Eintrag einer Einheits-Probe, kein gesetzter Ort
                 const entry = { type: "baum_eiche", position: { x: 30, y: 0, z: 10 }, rotation: 0, scale: 1.2, seed: 7 };
                 r._archInstanceAdd(entry, flat1);
                 const neu = [...r.state.archInstanceGroups.keys()].filter((k) => !vor.has(k));
@@ -300,6 +301,7 @@ async function kleberProbe(page, fmtWunsch) {
             szene.add(mesh);
             szene.add(new T.AmbientLight(0xffffff, 3));
             const cam = new T.PerspectiveCamera(60, W / H, 0.5, 500);
+            // BÜHNE: eigene Szene des Impostor-Vergleichs
             cam.position.set(0, 4, 26);
             cam.lookAt(0, 4, 0);
             cam.updateMatrixWorld(true);

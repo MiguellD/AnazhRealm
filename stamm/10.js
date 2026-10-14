@@ -430,9 +430,24 @@ class AnazhRealm_Z10 {
                             _terrRough
                         );
                         {
-                            // Der Chunk-Boden (Wege-Karte) trägt dort, wo kein echter Wald zeichnet, das Kronendach des
-                            // Fern-Rings (`_fernKroneNahMisch`, 0910-8) — dieselbe Boden-Farbe je Ort nah und fern.
-                            const _alb = opts.wegeKarte === true ? this._fernKroneNahMisch(_Ta, _geo) : _geo;
+                            // DAS KRONENDACH (0910-8, K16 — EINE Quelle): wo kein echter Wald zeichnet, trägt der Boden mit Wege-Karte
+                            // das Kronendach × Saison nach der Deckung (`_fernKroneNahMisch`) — der Chunk-Boden UND der Fern-Ring,
+                            // derselbe Stoff; der Ring reicht seine Ecken-Krone (`opts.kroneVertex`) für den Ort jenseits der Karte.
+                            let _alb =
+                                opts.wegeKarte === true
+                                    ? this._fernKroneNahMisch(_Ta, _geo, opts.kroneVertex || null)
+                                    : _geo;
+                            // DAS WASSER DES RINGS (K16, die Naht des Wassers): der Anteil des Wassers (`opts.wasserVertex`,
+                            // aNass) ist kein Boden — er wirft zurück, was der Wasser-Stoff zurückwirft (`_wasserBlick`: der
+                            // Körper R∞ im Licht des Orts, der Himmel × Fresnel, der Glanz; dieselben Uniforms), der Boden
+                            // trägt den Rest. Bis K16 mischte der Ring ein Fern-Blau in die Boden-Farbe (Luma 4,8× zu hell).
+                            if (opts.wasserVertex) {
+                                // im Fern-Fenster die Fluss-Karte je Fragment, jenseits der Kasten-Anteil des Punkts
+                                const _fk = this._flussKarteNode(_Ta);
+                                const _nass = _Ta.mix(opts.wasserVertex, _fk.wert, _fk.imFenster).clamp(0.0, 1.0);
+                                _alb = _alb.mul(_Ta.float(1.0).sub(_nass));
+                                mat.emissiveNode = this._fernWasserBlickNode(_Ta).mul(_nass);
+                            }
                             albedoNode = _alb;
                             mat.colorNode = _Ta.vec4(_alb, 1.0);
                             if (_terrRough.node) mat.roughnessNode = _terrRough.node;

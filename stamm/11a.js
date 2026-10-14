@@ -1298,21 +1298,15 @@ class AnazhRealm_Z11a {
             const ctx = this._hydroInit(origin);
             this._hydroMarkOcean(ctx);
             this._hydroPriorityFlood(ctx);
-            this._hydroFlowDirection(ctx);
-            this._hydroAccumulate(ctx);
             const lakes = this._hydroExtractLakes(ctx);
-            const rivers = this._hydroExtractRivers(ctx);
+            const rivers = this._hydroNetzFluesse(ctx);
             // Jeder Fluss-Punkt bekommt seine ECHTE Voxel-Surface-Höhe (`voxelY`): geroutet wird auf der glatten
             // Makro-Surface, Wasserfälle leben aber an den echten Klippen — das Ribbon hängt am Voxel-Relief.
             this._hydroSampleRiverSurfaces(rivers);
             // Der Spiegel jedes Fluss-Punkts (stromab nie steigend, quer waagrecht) — das Bett folgt ihm (Carve).
             this._hydroRiverSpiegel(ctx, rivers);
             const waterfalls = this._hydroExtractWaterfalls(ctx, rivers);
-            // Diagnostik: jede Land-Zelle (nicht Rand, nicht Meer) MUSS nach dem
-            // Priority-Flood einen definierten Abfluss tragen — das ε garantiert
-            // es; undrainedLand > 0 wäre ein Algorithmus-Bug.
-            const { dim, surf, waterLevel, flowTo, lakeOf, isOcean } = ctx;
-            let undrainedLand = 0;
+            const { dim, surf, waterLevel, lakeOf, isOcean } = ctx;
             let landCells = 0;
             let lakeCells = 0;
             let seaCells = 0;
@@ -1331,7 +1325,6 @@ class AnazhRealm_Z11a {
                 const j = (idx / dim) | 0;
                 if (i === 0 || j === 0 || i === dim - 1 || j === dim - 1) continue;
                 landCells++;
-                if (flowTo[idx] < 0) undrainedLand++;
             }
             // Diagnostik: steilstes Fluss-Segment der Voxel-Surface (Tuning-Anker für `waterfallSlope`) +
             // Netz-Vermessung (Fluss-Längen, See-Größen: echte Flüsse oder Pfützen-Kette?).
@@ -1344,10 +1337,13 @@ class AnazhRealm_Z11a {
             let riverMaxDrop = 0;
             let riverPointsTotal = 0;
             let riverLenMax = 0;
+            // die Breite des kleinsten vollen Flusses (Leser: die Quell-Hülle der Wasser-Linse)
+            let bettMin = Infinity;
             for (let ri = 0; ri < rivers.length; ri++) {
                 const pts = rivers[ri].points;
                 riverPointsTotal += pts.length;
                 if (pts.length > riverLenMax) riverLenMax = pts.length;
+                for (const p of pts) if (p.quelle === 1 && p.width < bettMin) bettMin = p.width;
                 for (let k = 0; k + 1 < pts.length; k++) {
                     const a = pts[k];
                     const b = pts[k + 1];
@@ -1387,8 +1383,7 @@ class AnazhRealm_Z11a {
                     landCells,
                     lakeCells,
                     seaCells,
-                    undrainedLand,
-                    maxAccum: Math.round(ctx.maxAccum),
+                    bettMin: Number.isFinite(bettMin) ? Math.round(bettMin * 100) / 100 : null,
                     waterLevel: Math.round(waterLevel),
                     surfMin: Math.round(surfMin),
                     surfMax: Math.round(surfMax),
@@ -1473,7 +1468,8 @@ class AnazhRealm_Z11a {
     // LAND neben einem Körper (3×3) → dessen Spiegel, wenn `terrainTopY < rim` (Mulde bis zum Terrain
     // gefüllt, keine Ufer-Wand), sonst trocken. `terrainTopY` reicht der Aufrufer (Density-Grid bzw.
     // `_voxelSurfaceY`); Rückgabe -Infinity = „hier nie Wasser".
-    _atlasWaterLevelAt(x, z, terrainTopY) {
+    // `aus` (optional) bekommt den Spiegel der Wasser-KÖRPER ohne den Fluss: `aus.koerper` (Meer, See; −Infinity = keiner).
+    _atlasWaterLevelAt(x, z, terrainTopY, aus) {
         let level = -Infinity;
         let inRegion = false;
         const h = this._hydroFor(x, z); // A3 (V18.132): Heimat ODER Kachel
@@ -1527,6 +1523,7 @@ class AnazhRealm_Z11a {
             const waterLevel = typeof this.state.waterLevel === "number" ? this.state.waterLevel : 0;
             level = waterLevel;
         }
+        if (aus) aus.koerper = level;
         const river = this._hydroRiverAt(x, z);
         if (river && river.surfaceY > level) {
             // Auch beim Fluss: `_hydroRiverAt` trifft die volle Carve-Breite inkl. Bank-Rampe, deren surfaceY
@@ -1616,7 +1613,7 @@ class AnazhRealm_Z11a {
     // DER FELS-BEWEIS (Welle L, R2): liegt `_voxelSurfaceY(x, z)` sicher über `hoehe`? Der Scan läuft von oben über sein
     // Gitter und nimmt den ERSTEN Fels — ist ein Gitterpunkt über `hoehe` Fels, liegt die Oberfläche dort oder höher.
     // Dichte-Proben an genau diesen Gitterpunkten (dieselbe Subtraktions-Kette, derselbe Spalten-Kontext, dieselbe Dichte
-    // `_fieldDensityAt` samt Edits) statt des Scans: (1) der höchste Punkt unter dem Rauheits-Band (surf − 12·roughScale —
+    // `_fieldDensityAt` samt Edits) statt des Scans: (1) der höchste Punkt unter der Makro-Höhe (surf —
     // dort ist Fels, wo keine Höhle ist), sonst der tiefste über `hoehe`; (2) ist der tiefste über `hoehe` Luft und der
     // darunter Fels, liegt die Oberfläche auf der Kante dazwischen (die Interpolation des Scans, bitgleich) — oder höher,
     // falls darüber noch Fels hängt. false = unbewiesen, der Scan entscheidet. Die Wasser-Suche (`_findNearestWaterPoint`)
@@ -1631,7 +1628,7 @@ class AnazhRealm_Z11a {
         const top = floorY + cfg.dimY * cfg.step - 8;
         const bottom = floorY + 12;
         const skipAbove = Math.max(ctx.surf + 12 + 4 * cfg.step, this._voxelEditsFillTop() + 2);
-        const band = ctx.surf - 12 * ctx.roughScale;
+        const band = ctx.surf;
         let unterBand = null,
             tiefster = null;
         for (let y = top; y >= bottom && y > hoehe; y -= 1.2) {

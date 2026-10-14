@@ -256,6 +256,9 @@ class AnazhRealm_Z11b {
         const ws = pr ? this._foundryWorldScaleMatrix(pr) : null;
         entry._hausHuelleSkala = ws && ws.elements ? ws.elements[0] || 1 : 1;
         this._populateBlockerAABBs(entry);
+        // mit der Hülle kennt das Haus seinen Grundriss (`_grundrissVon`): was dort wuchs, weicht (`_grundrissRaeumen`)
+        if (entry.position && this.state.architectures && this.state.architectures.includes(entry))
+            this._grundrissRaeumen(entry);
     }
 
     // Die Blocker-Boxen eines Hauses: je Hüllen-Box eine GEDREHTE Box (obb: Mitte, Gier, Halb-Maße — das Labor-overlap-
@@ -1107,9 +1110,6 @@ class AnazhRealm_Z11b {
             surf,
             isOcean: null,
             filled: null,
-            flowTo: null,
-            accum: null,
-            maxAccum: 0,
             lakeOf: null,
         };
     }
@@ -1280,73 +1280,6 @@ class AnazhRealm_Z11b {
         ctx.filled = filled;
     }
 
-    // Phase 3 — Flow-Direction (D8): jede Land-Zelle zeigt zum Nachbarn mit kleinster Füllhöhe; das ε
-    // garantiert, dass er echt tiefer liegt (ein Abfluss existiert immer). Rand + Meer: flowTo = -1.
-    _hydroFlowDirection(ctx) {
-        const { dim, filled, isOcean } = ctx;
-        const n = dim * dim;
-        const flowTo = new Int32Array(n).fill(-1);
-        const NB = [
-            [-1, -1],
-            [0, -1],
-            [1, -1],
-            [-1, 0],
-            [1, 0],
-            [-1, 1],
-            [0, 1],
-            [1, 1],
-        ];
-        for (let j = 0; j < dim; j++) {
-            for (let i = 0; i < dim; i++) {
-                const idx = i + j * dim;
-                const border = i === 0 || j === 0 || i === dim - 1 || j === dim - 1;
-                if (border || isOcean[idx]) continue; // Auslass (Rand/Ozean)
-                // Steilstes GEFÄLLE (drop/Distanz, √2-Penalty für Diagonalen) statt steilster Drop — sonst
-                // bevorzugt D8 Diagonalen und die Drainage bekommt eine Vorzugsrichtung.
-                const fHere = filled[idx];
-                let bestN = -1;
-                let bestSlope = 0;
-                for (let k = 0; k < 8; k++) {
-                    const ni = i + NB[k][0];
-                    const nj = j + NB[k][1];
-                    if (ni < 0 || nj < 0 || ni >= dim || nj >= dim) continue;
-                    const nidx = ni + nj * dim;
-                    const drop = fHere - filled[nidx];
-                    if (drop <= 0) continue; // nur bergab
-                    const slope = NB[k][0] !== 0 && NB[k][1] !== 0 ? drop / Math.SQRT2 : drop;
-                    if (slope > bestSlope) {
-                        bestSlope = slope;
-                        bestN = nidx;
-                    }
-                }
-                flowTo[idx] = bestN;
-            }
-        }
-        ctx.flowTo = flowTo;
-    }
-
-    // Phase 4 — Flow-Accumulation: Zellen absteigend nach Füllhöhe; jede gibt ihre Akkumulation an
-    // flowTo weiter (echt tiefer → später verarbeitet, also final vor dem Weiterreichen).
-    // A[idx] = Drainage durch die Zelle.
-    _hydroAccumulate(ctx) {
-        const { dim, filled, flowTo } = ctx;
-        const n = dim * dim;
-        const accum = new Float64Array(n).fill(1);
-        const order = new Array(n);
-        for (let i = 0; i < n; i++) order[i] = i;
-        // absteigend nach Füllhöhe; Gleichstand nach Index → deterministisch
-        order.sort((a, b) => filled[b] - filled[a] || a - b);
-        let maxAccum = 0;
-        for (let o = 0; o < n; o++) {
-            const idx = order[o];
-            const t = flowTo[idx];
-            if (t >= 0) accum[t] += accum[idx];
-            if (accum[idx] > maxAccum) maxAccum = accum[idx];
-        }
-        ctx.accum = accum;
-        ctx.maxAccum = maxAccum;
-    }
-
     // Phase 5a — Seen: Komponenten der aufgefüllten Zellen (filled > surf, über Meereshöhe). Je See:
     // Füll-Level (≈ Überlauf-Höhe), Boden, Rand-Höhe, Bounding-Box, Zell-Indizes (für die See-Plane).
     _hydroExtractLakes(ctx) {
@@ -1443,129 +1376,76 @@ class AnazhRealm_Z11b {
         return lakes;
     }
 
-    // Phase 5b — Flüsse: Zellen mit Akkumulation ≥ Schwelle. Flüsse fließen durch Seen HINDURCH
-    // (Conduit = Durchfluss-Zelle, See oder nicht): die Polylinie folgt `flowTo` vom Quell-Hang über die
-    // See-Kette zum Meer (das ε routet durchs Becken). See-Punkte tragen `inLake: true` + Füllstand als
-    // `y` (Renderer + Carve überspringen sie). Breite w = widthMin + widthK·√A.
-    _hydroExtractRivers(ctx) {
-        const { dim, cell, originX, originZ, filled, accum, flowTo, lakeOf, isOcean } = ctx;
+    // Phase 5b — DIE FLÜSSE SIND DAS NETZ DES GESETZES (K16): die Läufe der Ebenen 0 und 1 aus gelaende-core
+    // (`flussLaeufe`) — dasselbe Netz, das die Täler schneidet; die Hydrosphäre rechnet kein zweites (bis K16 eine D8-
+    // Akkumulation auf der geglätteten Makro-Fläche: ihr Kanal fräste den gebauten Boden quer durch Hänge und Ebenen, 3,94
+    // Senken > 1 m je km² und 1 Dorfplatz gegen 0,26 und 6 ohne ihn). Je Glied die Punkte seiner BAHN (der Mäander des
+    // Gesetzes, `bahn`: Abstand ≤ Zelle auf dem Bogen; ein geteilter Unterlauf trägt dieselben Punkte); `y` die Sohle des
+    // Gesetzes am Ort der Sehne (stromab streng fallend), die Richtung die der Bahn, die Breite aus dem Einzugsgebiet (Kern
+    // `flussBreite`), an der Quelle das Rinnsal (W-F5: quellBett + quellWeitung je Meter Bogen). Ein Lauf endet am Meer, am
+    // See (`mouth` "see", `seeY` sein Spiegel), als Zufluss auf der Bahn seines Hauptlaufs ("zufluss") oder am Rand der Kachel.
+    _hydroNetzFluesse(ctx) {
+        const { dim, cell, originX, originZ, size, filled, lakeOf, isOcean } = ctx;
         const HC = AnazhRealm.HYDROSPHERE;
-        const n = dim * dim;
-        // adaptive Fluss-Schwelle: ein Bruchteil des größten Durchflusses der
-        // Welt, mit einem absoluten Boden — robust über verschiedene Seeds
-        // (anderes Relief → andere Max-Akkumulation).
-        const threshold = Math.max(HC.riverThresholdMin, ctx.maxAccum * HC.riverThresholdFrac);
-        const isSea = (idx) => isOcean[idx] === 1;
-        // ein Conduit trägt echten Durchfluss — auch eine See-Zelle (der
-        // Fluss fliesst durch den See HINDURCH, statt an ihm zu enden).
-        const isConduit = (idx) => !isSea(idx) && accum[idx] >= threshold;
-        // Quelle = LAND-Conduit ohne Land-Conduit stromauf. Seen sind für die Suche transparent (der ε-Flow-
-        // Baum eines Beckens verzweigt fein → sonst Geister-Quellen); hasUpstream überspringt See-Zellen,
-        // ein See ohne Land-Zufluss startet seinen Fluss am Auslass.
-        const isLandConduit = (idx) => isConduit(idx) && lakeOf[idx] < 0;
-        const hasUpstream = new Uint8Array(n);
-        for (let idx = 0; idx < n; idx++) {
-            if (!isLandConduit(idx)) continue;
-            let cur = flowTo[idx];
-            for (let g = 0; g < HC.maxRiverPoints && cur >= 0 && lakeOf[cur] >= 0; g++) {
-                cur = flowTo[cur];
-            }
-            if (cur >= 0 && isLandConduit(cur)) hasUpstream[cur] = 1;
-        }
-        const wx = (idx) => originX + ((idx % dim) + 0.5) * cell;
-        const wz = (idx) => originZ + (((idx / dim) | 0) + 0.5) * cell;
-        // DER LAUF (W-F5, Gegenprüfung 07.10., Runde 3): je Zelle die Länge ihres längsten Laufs stromauf bis zu einer Quelle
-        // — die Quelle wächst mit ihm. Fließt ein See in die Quelle (ein Abfluss) oder der Lauf durch einen See, trägt er das
-        // Wasser des Sees mit: dort ist der Lauf unendlich (ein Abfluss beginnt in der Breite seines Durchflusses).
-        const lauf = new Float64Array(n).fill(-1);
-        for (let src = 0; src < n; src++) {
-            if (!isLandConduit(src) || hasUpstream[src]) continue;
-            let s = 0;
-            for (const [di, dj] of [
-                [-1, -1],
-                [0, -1],
-                [1, -1],
-                [-1, 0],
-                [1, 0],
-                [-1, 1],
-                [0, 1],
-                [1, 1],
-            ]) {
-                const ni = (src % dim) + di;
-                const nj = ((src / dim) | 0) + dj;
-                if (
-                    ni >= 0 &&
-                    nj >= 0 &&
-                    ni < dim &&
-                    nj < dim &&
-                    flowTo[ni + nj * dim] === src &&
-                    lakeOf[ni + nj * dim] >= 0
-                )
-                    s = Infinity;
-            }
-            let cur = src;
-            for (let guard = 0; guard < HC.maxRiverPoints && cur >= 0; guard++) {
-                if (lakeOf[cur] >= 0) s = Infinity;
-                if (lauf[cur] >= s) break; // ein früherer Lauf trug hier (und stromab) schon mehr
-                lauf[cur] = s;
-                const t = flowTo[cur];
-                if (t < 0 || isSea(t)) break;
-                s += Math.hypot(wx(t) - wx(cur), wz(t) - wz(cur));
-                cur = t;
-            }
-        }
+        const G = globalThis.__gelaendeCore;
+        const laeufe = G.flussLaeufe(this._gelaende(), originX, originZ, originX + size, originZ + size, cell);
+        const zelle = (x, z) => {
+            const i = Math.floor((x - originX) / cell);
+            const j = Math.floor((z - originZ) / cell);
+            return i >= 0 && j >= 0 && i < dim && j < dim ? i + j * dim : -1;
+        };
         const rivers = [];
-        for (let src = 0; src < n; src++) {
-            if (!isLandConduit(src) || hasUpstream[src]) continue;
-            const points = [];
-            let cur = src;
-            let mouth = "border";
-            for (let guard = 0; guard < HC.maxRiverPoints && cur >= 0; guard++) {
-                const t = flowTo[cur];
-                let fx = 0;
-                let fz = 0;
-                if (t >= 0) {
-                    fx = wx(t) - wx(cur);
-                    fz = wz(t) - wz(cur);
-                    const L = Math.hypot(fx, fz) || 1;
-                    fx /= L;
-                    fz /= L;
+        for (const lf of laeufe) {
+            let lauf = lf.quelle ? 0 : Infinity;
+            let points = [];
+            let mouth = null;
+            let seeY = NaN;
+            const abschluss = (m) => {
+                if (points.length >= 2) {
+                    const rv = { points, mouth: m };
+                    if (m === "see" && Number.isFinite(seeY)) rv.seeY = seeY;
+                    rivers.push(rv);
                 }
-                // DIE QUELLE wächst aus dem Gesetz (W-F5): jede beginnt als das Rinnsal (quellBett) und weitet sich stromab um
-                // quellWeitung je Meter Lauf, bis sie die Breite ihrer Akkumulation trägt (an der Schwelle quellBreite, ab der
-                // doppelten Schwelle die volle); die Tiefe folgt dem Anteil (`AnazhRealm._flussTiefe`). Je Zelle aus Lauf und
-                // Akkumulation: geteilte Unterläufe sind breiten-gleich. Bis V18.531 sprang jede Quelle in voller Breite aus dem
-                // Boden (8,2–11,9 m, 2,36 m tief); bis 5040e8f7 wer an seiner ersten Zelle schon mehr als die Schwelle sammelte
-                // (die Quelle −456/872: 11,75 m breit, 1,62 m tief).
-                const voll = HC.widthMin + HC.widthK * Math.sqrt(accum[cur]);
-                const quelle = Math.min(
-                    1,
-                    Math.max(HC.quellBreite, (accum[cur] - threshold) / threshold),
-                    (HC.quellBett + HC.quellWeitung * lauf[cur]) / voll
-                );
-                points.push({
-                    x: wx(cur),
-                    z: wz(cur),
-                    // y = hydrologische Füllhöhe: fällt entlang flowTo STRIKT monoton, auch durch einen See (ε≈0.01 →
-                    // die See-Strecke ist nahezu flach).
-                    y: filled[cur],
-                    width: voll * quelle,
-                    quelle,
-                    flowX: fx,
-                    flowZ: fz,
-                    inLake: lakeOf[cur] >= 0,
-                });
-                if (t < 0) {
-                    mouth = "border";
-                    break;
+                points = [];
+            };
+            for (let g = 0; g < lf.glieder.length && !mouth; g++) {
+                const gl = lf.glieder[g];
+                const B = gl.bahn;
+                const voll = G.flussBreite(gl.A);
+                const bis = g === lf.glieder.length - 1 ? B.length : B.length - 1;
+                for (let m = 0; m < bis; m++) {
+                    const { t, x, z } = B[m];
+                    const idx = zelle(x, z);
+                    if (idx < 0) {
+                        abschluss("border");
+                        continue;
+                    }
+                    if (isOcean[idx]) {
+                        mouth = "sea";
+                        break;
+                    }
+                    if (lakeOf[idx] >= 0) {
+                        mouth = "see";
+                        seeY = filled[idx];
+                        break;
+                    }
+                    const s = lauf + B[m].s;
+                    const quelle = Math.min(1, (HC.quellBett + HC.quellWeitung * s) / voll);
+                    points.push({
+                        x,
+                        z,
+                        y: gl.ba + (gl.bb - gl.ba) * t,
+                        width: voll * quelle,
+                        quelle,
+                        flowX: B[m].fx,
+                        flowZ: B[m].fz,
+                        inLake: false,
+                    });
                 }
-                if (isSea(t)) {
-                    mouth = "sea";
-                    break;
-                }
-                cur = t;
+                lauf += B[B.length - 1].s;
             }
-            if (points.length >= 2) rivers.push({ points, mouth });
+            const ende = { meer: "sea", see: "see", muendung: "zufluss" };
+            abschluss(mouth || ende[lf.ende] || "border");
         }
         return rivers;
     }
@@ -1606,7 +1486,7 @@ class AnazhRealm_Z11b {
         const S = new Map();
         const ziel = (p) => {
             const D = AnazhRealm._flussTiefe(p);
-            const rand = (p.width || HC.widthMin) * 0.5 + D / HC.bankNeigung;
+            const rand = p.width * 0.5 + D / HC.bankNeigung;
             let tief = Number.isFinite(p.voxelY) ? p.voxelY : p.y;
             for (let sg = -1; sg <= 1; sg += 2) {
                 const v = this._voxelSurfaceY(p.x - p.flowZ * rand * sg, p.z + p.flowX * rand * sg);
@@ -1690,6 +1570,7 @@ class AnazhRealm_Z11b {
             let unten = -Infinity;
             if (e < P.length) unten = P[e].inLake ? P[e].y : S.get(schluessel(P[e]));
             else if (rv.mouth === "sea") unten = ctx.waterLevel;
+            else if (rv.mouth === "see" && Number.isFinite(rv.seeY)) unten = rv.seeY;
             for (let i = k; i < e; i++) {
                 const key = schluessel(P[i]);
                 S.set(key, Math.min(oben, Math.max(unten, S.get(key))));
@@ -1697,6 +1578,89 @@ class AnazhRealm_Z11b {
             // Der Abfluss beginnt bündig mit seinem See (sonst schnitte der Kanal den Becken-Rand auf den tieferen Lauf
             // und das See-Wasser stünde als Wand darüber); die Stufe liegt im ersten Segment.
             if (Number.isFinite(oben)) S.set(schluessel(P[k]), oben);
+        }
+        // (4) DIE FRÄSE DES BREITEREN (K16, W-F5): die Ufer eines Zuflusses liest `ziel` ungefräst — liegt er im Kanal oder
+        // auf der Böschung eines BREITEREN Flusses, schneidet dessen Fräse den Boden unter ihn, und sein Wasser stand darüber
+        // (am Ursprung 0,5–2,9 m tief statt des Rinnsals; im Kanal des Stamms hob es dessen Spiegel bis 0,71 m). Je Segment
+        // des breiteren (die breitesten zuerst — ihr Spiegel steht dann fest) trägt jeder schmalere Punkt eines anderen Laufs
+        // in seiner Reichweite höchstens die Kanal-Fläche des Segments (die Gestalt von `_hydrosphereCarveAt`) minus seinem
+        // Freibord, nie weniger als den Spiegel des breiteren. Danach wieder stromab nie steigend.
+        {
+            const sN = HC.bankNeigung;
+            const sK = HC.bankKruemmung;
+            const fuss = HC.bankRundung;
+            const zelle = (x, z) =>
+                Math.round((x - ctx.originX) / ctx.cell - 0.5) + "," + Math.round((z - ctx.originZ) / ctx.cell - 0.5);
+            const raster = new Map();
+            for (const [key, p] of punkte) {
+                const zk = zelle(p.x, p.z);
+                if (!raster.has(zk)) raster.set(zk, []);
+                raster.get(zk).push(key);
+            }
+            const stromab = (kp, kz, n) => {
+                for (let k = naechster.get(kp), g = 0; k !== undefined && g < n; k = naechster.get(k), g++)
+                    if (k === kz) return true;
+                return false;
+            };
+            const segmente = [...naechster.entries()].sort(
+                (a, b) => (punkte.get(b[0]).width || 0) - (punkte.get(a[0]).width || 0)
+            );
+            let gekappt = false;
+            for (const [ka, kb] of segmente) {
+                const a = punkte.get(ka);
+                const b = punkte.get(kb);
+                if (!b) continue;
+                const hwA = a.width * 0.5;
+                const hwB = b.width * 0.5;
+                const dA = AnazhRealm._flussTiefe(a);
+                const dB = AnazhRealm._flussTiefe(b);
+                const weit = Math.max(hwA + dA / sN, hwB + dB / sN) + HC.dammBreite + HC.bankWeite;
+                const nZ = Math.ceil(weit / ctx.cell) + 1;
+                const ia = Math.round((a.x - ctx.originX) / ctx.cell - 0.5);
+                const ja = Math.round((a.z - ctx.originZ) / ctx.cell - 0.5);
+                const ex = b.x - a.x;
+                const ez = b.z - a.z;
+                const len2 = ex * ex + ez * ez || 1;
+                for (let dj = -nZ; dj <= nZ; dj++)
+                    for (let di = -nZ; di <= nZ; di++) {
+                        const liste = raster.get(ia + di + "," + (ja + dj));
+                        if (!liste) continue;
+                        for (const kp of liste) {
+                            if (kp === ka || kp === kb) continue;
+                            const p = punkte.get(kp);
+                            let t = ((p.x - a.x) * ex + (p.z - a.z) * ez) / len2;
+                            t = t < 0 ? 0 : t > 1 ? 1 : t;
+                            const halfW = hwA + (hwB - hwA) * t;
+                            if (!(p.width * 0.5 < halfW)) continue;
+                            const D = dA + (dB - dA) * t;
+                            const dK = halfW + D / sN;
+                            const dist = Math.hypot(p.x - (a.x + ex * t), p.z - (a.z + ez * t));
+                            if (dist >= dK + HC.dammBreite + HC.bankWeite) continue;
+                            const spiegel = S.get(ka) + (S.get(kb) - S.get(ka)) * t;
+                            if (!(S.get(kp) > spiegel)) continue;
+                            if (stromab(kp, ka, nZ + 2)) continue; // der eigene Lauf mündet hier
+                            const B = spiegel - (1 - HC.spiegelFreibord) * D;
+                            const u0 = dist - halfW;
+                            let flaeche =
+                                u0 <= -fuss
+                                    ? B
+                                    : u0 < fuss
+                                      ? B + (sN * (u0 + fuss) * (u0 + fuss)) / (4 * fuss)
+                                      : B + sN * u0;
+                            if (dist > dK) flaeche += sK * (dist - dK) * (dist - dK);
+                            const grenze = Math.max(spiegel, flaeche - HC.spiegelFreibord * AnazhRealm._flussTiefe(p));
+                            if (S.get(kp) > grenze) {
+                                S.set(kp, grenze);
+                                gekappt = true;
+                            }
+                        }
+                    }
+            }
+            if (gekappt)
+                for (const key of nachHoehe) {
+                    const n = naechster.get(key);
+                    if (n !== undefined && S.get(n) > S.get(key)) S.set(n, S.get(key));
+                }
         }
         for (const rv of rivers) for (const p of rv.points) p.S = p.inLake ? p.y : S.get(schluessel(p));
     }
@@ -1809,8 +1773,8 @@ class AnazhRealm_Z11b {
                     az: a.z,
                     bx: b.x,
                     bz: b.z,
-                    hwA: (a.width || HC.widthMin) * 0.5,
-                    hwB: (b.width || HC.widthMin) * 0.5,
+                    hwA: a.width * 0.5,
+                    hwB: b.width * 0.5,
                     dA: AnazhRealm._flussTiefe(a),
                     dB: AnazhRealm._flussTiefe(b),
                     // der Spiegel an beiden Enden (`_hydroRiverSpiegel`): Fluss-Fläche und Bett lesen ihn linear
@@ -2197,6 +2161,45 @@ class AnazhRealm_Z11b {
     // Der EINE Wasser-Shader für alle Iso-Wasser-Meshes (Ozean + See + Fluss): `aWave` ∈ [0,1]
     // (Ozean-Anteil, skaliert die Wellen; weich 0 am Ufer → kein Küsten-Riss), `aFlow` (Gefälle-
     // Tangente, die Strömung trägt das Bild stromab). Sonne/Licht/Fog speist `_applyDayNightToScene`.
+    // DER WASSER-KÖRPER (K16, die Naht des Wassers): was die optisch tiefe Wassersäule zurückstreut, R∞ = 0,33 · b_b / (a + b_b)
+    // je Kanal (Gordon 1975; a = die Absorption wK des Gesetzes, b_b = seine Rückstreuung `koerperStreu`, 1/m) — EINE Formel
+    // für den Wasser-Stoff und jeden Fern-Leser (Ring, Feld-Pass). Bis K16 trug die Ferne ein eigenes Fern-Blau
+    // (`FERN_FARBE.wasser`, 0x265273): der Fluss im Ring 4,8× heller als der gebaute (Luma 0,255 gegen 0,053).
+    static _wasserKoerper(WG) {
+        return WG.wK.map((k) => (0.33 * WG.koerperStreu) / (k + WG.koerperStreu));
+    }
+
+    // DER BLICK DES WASSERS (K16, EIN Baustein für den Wasser-Stoff und den Fern-Ring): was die Fläche mit der Normale `n`
+    // dem Auge `viewDir` zurückwirft, über dem Grund mit dem Durchlass `T` — der Körper im Licht des Orts (R∞ × E/π), soweit
+    // er den Grund deckt (1 − T) und nicht gespiegelt wird (1 − F); der Himmel × F; der Glanz. Liefert { eigen, fres }.
+    _wasserBlick(TSL, WG, o) {
+        const { float, vec3, normalize, reflect, max, dot, pow, clamp, texture, equirectUV } = TSL;
+        // Schlick-Fresnel (WASSER_GESETZ): fres = f0 + f1·(1−n·v)^f2 — EIN Fresnel für Spiegel UND Durchlass.
+        const ndvW = clamp(dot(o.n, o.viewDir), 0.0, 1.0);
+        const fres = float(WG.fresnel[0]).add(
+            float(WG.fresnel[1]).mul(pow(float(1.0).sub(ndvW), float(WG.fresnel[2])))
+        );
+        // DER SPIEGEL IST DER HIMMEL: die EINE Himmels-Umgebung (`_himmelUmgebungTex`, dieselbe Textur, aus der PMREM
+        // die IBL jedes PBR-Stoffs filtert) in Richtung des gespiegelten Strahls — Strahlung in Himmels-Einheiten,
+        // nie unter den Horizont (Kräusel-Normalen), Mip 0 (glatt; an der Azimut-Naht griffe die Ableitung die
+        // gröbste Stufe). Bis V18.530 spiegelte das Wasser die Zenit-Tönung × die SONNEN-Stärke (uLight 7,4): der
+        // Spiegel lag 3–5× über dem Himmel, den er spiegelt — weiß wie Eis (Blick-Tour 07, Helligkeit 188).
+        const _R = reflect(o.viewDir.negate(), o.n);
+        const _Rh = normalize(vec3(_R.x, max(_R.y, float(0.02)), _R.z));
+        const himmel = texture(this._himmelUmgebungTex(), equirectUV(_Rh)).level(float(0)).rgb;
+        // W10 — der Sonnen-Glitzer der Vorlage: reflect-basiert, Exponent/Gewinn aus dem Gesetz, die Sonne selbst
+        // (Rayleigh-Farbe sunCol × ihre Stärke light).
+        const spec = pow(max(dot(reflect(normalize(o.sunDir).negate(), o.n), o.viewDir), 0.0), float(WG.spec[0]));
+        const glanz = o.sunCol.mul(spec).mul(WG.spec[1]).mul(o.light);
+        const eigen = o.koerper
+            .mul(o.irr)
+            .mul(float(1.0).sub(o.T))
+            .mul(float(1.0).sub(fres))
+            .add(himmel.mul(fres))
+            .add(glanz);
+        return { eigen, fres };
+    }
+
     _ensureHydroSurfaceMaterial() {
         if (this.state.hydroSurfaceMaterial) return this.state.hydroSurfaceMaterial;
         if (typeof THREE === "undefined") return null;
@@ -2273,7 +2276,7 @@ class AnazhRealm_Z11b {
         // 0,025, ein dunkles Blaugrün, im Licht des Orts 3–4× dunkler als die Wiese. Bis 05.10. stand hier das tiefe
         // Anzeige-Blau des Studios (exp(−wK·tief), als sRGB-Absicht dekodiert 0,0003/0,027/0,107): aus 45 m ein
         // leuchtendes Königsblau. Schaum: weiß, eine diffuse Fläche.
-        const koerperAlbedo = vec3(...WG.wK.map((k) => (0.33 * WG.koerperStreu) / (k + WG.koerperStreu)));
+        const koerperAlbedo = vec3(...AnazhRealm._wasserKoerper(WG));
         const uFoam = uniform(new THREE.Color().setRGB(WG.schaum.farbe[0], WG.schaum.farbe[1], WG.schaum.farbe[2]));
         // Das Licht des Orts (Schreiber `_dayNightApplyWaterMaterials`): uIrr = E/π einer waagrechten Fläche (Sonne
         // + Himmels-Umgebung + Hemi + Ambient — dieselbe Bilanz wie die Belichtung, `_waagrechtIrradianz`), der
@@ -2496,9 +2499,11 @@ class AnazhRealm_Z11b {
         const whitewater = smoothstep(float(1.2), float(3.2), aSlopeV).mul(
             float(0.25).add(riverS1.mul(0.75).mul(detailFade))
         );
-        // V14-Emotions-Haken: uEmotion>0 hebt den Schaum sanft an (die Welt atmet
-        // im Wasser); default 0 = exakt das alte Bild.
-        const foamD = clamp(max(max(foam, depthFoam).mul(detailFade), whitewater).add(uEmotion.mul(0.25)), 0.0, 1.0);
+        // V14-Emotions-Haken: uEmotion > 0 hebt den Schaum des GESETZES an (die Welt atmet im Wasser: Ufer, Kamm, Wildwasser
+        // schäumen bis doppelt), nie Schaum, wo das Gesetz keinen hat; 0 = das Bild des Gesetzes. Bis K16 legte die Stimmung
+        // + 0,25 · uEmotion über JEDES Wasser — der ruhige Fluss trug bei der Boot-Stimmung 0,9 ein Schaum-Grau (Makro 300 m
+        // Luma 0,387 gegen den Ring 0,106), das der Blick des Wassers (`_wasserBlick`) nicht kennt.
+        const foamD = clamp(max(max(foam, depthFoam).mul(detailFade), whitewater).mul(uEmotion.add(1.0)), 0.0, 1.0);
 
         // Flow-ausgerichtete Mikro-Kräuselung der NORMALE (Fragment-Stage): das Sonnen-Glitzern wandert
         // stromab. Bewusst KEIN Vertex-Displacement (Narben-Wand: kein Querschnitt, keine Naht).
@@ -2516,32 +2521,16 @@ class AnazhRealm_Z11b {
             .mul(detailFade);
         const nFlow = normalize(n.add(vec3(fdir.x.mul(flowRipple), float(0.0), fdir.y.mul(flowRipple))));
         const viewDir = normalize(cameraPosition.sub(vWorldPos));
-        // Schlick-Fresnel (WASSER_GESETZ): fres = f0 + f1·(1−n·v)^f2 — EIN Fresnel für Spiegel UND Durchlass.
-        const ndvW = clamp(dot(nFlow, viewDir), 0.0, 1.0);
-        const fres = float(WG.fresnel[0]).add(
-            float(WG.fresnel[1]).mul(pow(float(1.0).sub(ndvW), float(WG.fresnel[2])))
-        );
-        // DER SPIEGEL IST DER HIMMEL: die EINE Himmels-Umgebung (`_himmelUmgebungTex`, dieselbe Textur, aus der PMREM
-        // die IBL jedes PBR-Stoffs filtert) in Richtung des gespiegelten Strahls — Strahlung in Himmels-Einheiten,
-        // nie unter den Horizont (Kräusel-Normalen), Mip 0 (glatt; an der Azimut-Naht griffe die Ableitung die
-        // gröbste Stufe). Bis V18.530 spiegelte das Wasser die Zenit-Tönung × die SONNEN-Stärke (uLight 7,4): der
-        // Spiegel lag 3–5× über dem Himmel, den er spiegelt — weiß wie Eis (Blick-Tour 07, Helligkeit 188).
-        const _R = reflect(viewDir.negate(), nFlow);
-        const _Rh = normalize(vec3(_R.x, max(_R.y, float(0.02)), _R.z));
-        const himmel = texture(this._himmelUmgebungTex(), equirectUV(_Rh)).level(float(0)).rgb;
-        // W10 — der Sonnen-Glitzer der Vorlage: reflect-basiert, Exponent/Gewinn aus dem Gesetz, die Sonne selbst
-        // (Rayleigh-Farbe uSunCol × ihre Stärke uLight).
-        const spec = pow(max(dot(reflect(normalize(uSunDir).negate(), nFlow), viewDir), 0.0), float(WG.spec[0]));
-        const glanz = uSunCol.mul(spec).mul(WG.spec[1]).mul(uLight);
-        // Was das Wasser selbst zurückwirft: der Körper im Licht des Orts (Volumen-Albedo × E/π), soweit er den
-        // Grund deckt (1 − T) und nicht gespiegelt wird (1 − F); der Himmel × F; der Glanz. Der Schaum ist eine
-        // diffuse weiße Fläche im selben Licht, er deckt (fw).
-        const eigen = koerperAlbedo
-            .mul(uIrr)
-            .mul(float(1.0).sub(T))
-            .mul(float(1.0).sub(fres))
-            .add(himmel.mul(fres))
-            .add(glanz);
+        const { eigen, fres } = this._wasserBlick(TSL, WG, {
+            n: nFlow,
+            viewDir,
+            T,
+            koerper: koerperAlbedo,
+            irr: uIrr,
+            sunCol: uSunCol,
+            sunDir: uSunDir,
+            light: uLight,
+        });
         const fw = foamD.mul(0.7);
         // DIE DECKUNG (Standard-Blending: Bild = C·α + Grund·(1−α)): der Grund kommt mit T·(1−F)·(1−fw) durch, also
         // α = 1 − T·(1−F)·(1−fw) und C = (fw·Schaum + (1−fw)·eigen) / α — am Ufer scheint der Grund (α → F),

@@ -1964,7 +1964,8 @@
         host: { contrast: 1.35, mid: 0.72 },
     };
     function forestStandDensity(fbm, x, z, opt) {
-        const d = fbm(x * 0.014 + 30, z * 0.014 + 12) * 0.55 + fbm(x * 0.038 + 5, z * 0.038 + 20) * 0.45;
+        const f1 = fbm(x * 0.014 + 30, z * 0.014 + 12);
+        const f2 = fbm(x * 0.038 + 5, z * 0.038 + 20);
         let contrast = FOREST_STAND.host.contrast,
             mid = FOREST_STAND.host.mid;
         if (typeof opt === "string") {
@@ -1977,6 +1978,11 @@
             if (opt.contrast != null) contrast = +opt.contrast;
             if (opt.mid != null) mid = +opt.mid;
         }
+        return forestStandDensityAus(f1, f2, contrast, mid);
+    }
+    // Die Bestandsdichte aus ihren zwei Oktaven (grob f1, fein f2) — die EINE Formel für den Ort und sein Mittel (forestBestand).
+    function forestStandDensityAus(f1, f2, contrast, mid) {
+        const d = f1 * 0.55 + f2 * 0.45;
         const v = (d - 0.5) * contrast + mid;
         return v < 0 ? 0 : v > 1 ? 1 : v;
     }
@@ -2002,19 +2008,179 @@
                       return t * t * (3 - 2 * t);
                   };
         const pf = (c) => Math.max(0, 1 - Math.abs(patch - c) / 0.14);
-        const wF = (ss(0.4, 0.8, clim) * 0.45 + dry * 0.5 + 0.04) * (0.18 + 4.8 * pf(0.15)); // Fichte→kiefer: trockene Höhen
-        const wT = (ss(0.5, 0.9, clim) * 0.38 + dry * 0.3 + 0.03) * (0.16 + 4.2 * pf(0.36)); // Tanne: höher/feuchter
-        const wE = ((1 - dry) * 0.65 + wet * 0.35 + 0.04) * (0.18 + 4.6 * pf(0.58)); // Eiche: tiefe, feuchte Lagen
-        const wB = ((0.14 + 0.45 * open) * (1 - Math.abs(clim - 0.5) * 0.9) + 0.03) * (0.2 + 3.6 * pf(0.82)); // Birke: Pionier in Lücken
+        let pF = pf(0.15);
+        let pT = pf(0.36);
+        let pE = pf(0.58);
+        let pB = pf(0.82);
+        let sF = ss(0.4, 0.8, clim);
+        let sT = ss(0.5, 0.9, clim);
+        let aC = Math.abs(clim - 0.5);
+        // DAS MITTEL UNTER DEM FUSSABDRUCK (`forestNische` mit ctx.fussM): jeder Term, den die Gewichte linear lesen, blendet
+        // zu seinem Erwartungswert über das Mosaik (kP: Bestands-Mosaik, kC: Klima) — ohne `opts.mittel` dieselben Zahlen.
+        const mi = opts && opts.mittel ? opts.mittel : null;
+        if (mi) {
+            const M = mi.M;
+            pF += (M.pF - pF) * mi.kP;
+            pT += (M.pT - pT) * mi.kP;
+            pE += (M.pE - pE) * mi.kP;
+            pB += (M.pB - pB) * mi.kP;
+            sF += (M.sF - sF) * mi.kC;
+            sT += (M.sT - sT) * mi.kC;
+            aC += (M.aC - aC) * mi.kC;
+        }
+        const wF = (sF * 0.45 + dry * 0.5 + 0.04) * (0.18 + 4.8 * pF); // Fichte→kiefer: trockene Höhen
+        const wT = (sT * 0.38 + dry * 0.3 + 0.03) * (0.16 + 4.2 * pT); // Tanne: höher/feuchter
+        const wE = ((1 - dry) * 0.65 + wet * 0.35 + 0.04) * (0.18 + 4.6 * pE); // Eiche: tiefe, feuchte Lagen
+        const wB = ((0.14 + 0.45 * open) * (1 - aC * 0.9) + 0.03) * (0.2 + 3.6 * pB); // Birke: Pionier in Lücken
         const wW = wet * wet * (1 - dry) * 0.8 + 0.01; // Weide→erle base; Caller + waterProx²·6
         return { wF, wT, wE, wB, wW };
+    }
+
+    // DAS MOSAIK-MITTEL eines Wald-Rauschens (K16, die Fern-Farbe): die Erwartungswerte der Terme, die forestNicheWeights
+    // linear liest — pf je Patch-Zentrum, die zwei Klima-Rampen, |clim − 0,5| —, gezogen aus dem Rauschen SELBST (32 × 32
+    // Proben im Raster 7,31 Rausch-Einheiten, weit über jede Korrelation; Patch und Klima lesen dasselbe fbm). Einmal je
+    // fbm-Funktion (WeakMap), rein, ohne rng.
+    const _mosaikMemo = typeof WeakMap === "function" ? new WeakMap() : null;
+    function forestMosaikMittel(fbm) {
+        const hit = _mosaikMemo && _mosaikMemo.get(fbm);
+        if (hit) return hit;
+        const ss = (e0, e1, v) => {
+            let t = (v - e0) / (e1 - e0);
+            t = t < 0 ? 0 : t > 1 ? 1 : t;
+            return t * t * (3 - 2 * t);
+        };
+        const pf = (v, c) => Math.max(0, 1 - Math.abs(v - c) / 0.14);
+        const M = { pF: 0, pT: 0, pE: 0, pB: 0, sF: 0, sT: 0, aC: 0 };
+        const N = 32;
+        for (let i = 0; i < N; i++)
+            for (let j = 0; j < N; j++) {
+                const v = fbm(i * 7.31 + 0.37, j * 7.31 + 0.71);
+                M.pF += pf(v, 0.15);
+                M.pT += pf(v, 0.36);
+                M.pE += pf(v, 0.58);
+                M.pB += pf(v, 0.82);
+                M.sF += ss(0.4, 0.8, v);
+                M.sT += ss(0.5, 0.9, v);
+                M.aC += Math.abs(v - 0.5);
+            }
+        for (const k in M) M[k] /= N * N;
+        if (_mosaikMemo) _mosaikMemo.set(fbm, M);
+        return M;
+    }
+    // Die Blende einer Oktave der Wellenlänge λ unter einem Fußabdruck der Kante f: ihr Wert bis f = λ/4, ihr Mittel ab f = λ/2
+    // (Nyquist: ein Raster der Kante f trägt nur Wellen ab 2 f).
+    function forestOktavMittel(f, lambda) {
+        let t = (f / lambda - 0.25) / 0.25;
+        t = t < 0 ? 0 : t > 1 ? 1 : t;
+        return t * t * (3 - 2 * t);
+    }
+
+    // DER BESTAND UNTER DEM FUSSABDRUCK (K16, die Fern-Farbe): Bestandsdichte sd und Geburt (forestGeburt(sd), die Dart-Rate) eines
+    // Orts, der für eine Fläche der Kante fussM steht. forestStandDensity liest zwei Oktaven (λ 71 m und 26 m); was der Abdruck
+    // nicht auflöst, trägt seinen ERWARTUNGSWERT über die Verteilung des Rauschens: die feine Oktave bedingt auf die grobe
+    // (E[· | grob], 32 Quantile), beide zusammen das Mittel des Bestands. Geburt und Dichte werden je für sich gemittelt (die
+    // Geburt ist nichtlinear — das Mittel der Geburt ist nie die Geburt des Mittels). fussM 0: die Zahlen von
+    // forestStandDensity und forestGeburt. Die Kronen-Deckung daraus trägt forestKronenDeckung.
+    const _bestandMemo = typeof WeakMap === "function" ? new WeakMap() : null;
+    function forestBestand(fbm, x, z, fussM) {
+        const sdAus = (f1, f2) => forestStandDensityAus(f1, f2, FOREST_STAND.host.contrast, FOREST_STAND.host.mid);
+        const f1 = fbm(x * 0.014 + 30, z * 0.014 + 12);
+        const f2 = fbm(x * 0.038 + 5, z * 0.038 + 20);
+        const sd = sdAus(f1, f2);
+        const geburt = forestGeburt(sd);
+        const k2 = fussM > 0 ? forestOktavMittel(fussM, 1 / 0.038) : 0;
+        if (!(k2 > 0)) return { sd, geburt };
+        let Q = _bestandMemo && _bestandMemo.get(fbm);
+        if (!Q) {
+            const v = [];
+            for (let i = 0; i < 32; i++) for (let j = 0; j < 32; j++) v.push(fbm(i * 7.31 + 0.37, j * 7.31 + 0.71));
+            v.sort((a, b) => a - b);
+            const q = new Float64Array(32);
+            for (let i = 0; i < 32; i++) q[i] = v[i * 32 + 16];
+            let sd0 = 0;
+            let a0 = 0;
+            for (let i = 0; i < 32; i++)
+                for (let j = 0; j < 32; j++) {
+                    const s = sdAus(q[i], q[j]);
+                    sd0 += s;
+                    a0 += forestGeburt(s);
+                }
+            Q = { q, sd0: sd0 / 1024, a0: a0 / 1024 };
+            if (_bestandMemo) _bestandMemo.set(fbm, Q);
+        }
+        let sd1 = 0;
+        let a1 = 0;
+        for (let j = 0; j < 32; j++) {
+            const s = sdAus(f1, Q.q[j]);
+            sd1 += s;
+            a1 += forestGeburt(s);
+        }
+        sd1 /= 32;
+        a1 /= 32;
+        const k1 = forestOktavMittel(fussM, 1 / 0.014);
+        const sdM = sd1 + (Q.sd0 - sd1) * k1;
+        const aM = a1 + (Q.a0 - a1) * k1;
+        return { sd: sd + (sdM - sd) * k2, geburt: geburt + (aM - geburt) * k2 };
+    }
+
+    // DIE KRONEN-DECKUNG DES GEPFLANZTEN BESTANDS (K16, die Naht): der Anteil des Bodens unter Kronen, den planForestCell samt der
+    // Kronen-Schüchternheit des Hosts im Mittel stehen lässt — die Fernform des Waldes (das Kronendach des Rings) liest diese
+    // Zahl, nie die Geburt. Die Geburt ist die Rate der Darts (F.dartsPerCell je F.cell², Wurf gegen forestGeburt(sd)); die
+    // Schüchternheit (Zentren >= F.pack·(Ti+Tj), das prio-Maximum gewinnt) ist ein Matérn-II-Prozess: ein Dart der Krone T steht
+    // mit (1 − e^(−λA))/(λA), A = π·pack²·E[(T+Tj)²]; seine Krone überlappt keine andere, die Deckung ist die Summe ihrer Flächen.
+    // Die Kronen: T = Art-Krone × Größe (forestTreeSize über ihre Quantile samt der Überhälter). Befund 11.10.: das Dach las die
+    // Geburt (0,90) als Deckung, der gepflanzte Bestand deckt 0,16 — die Ferne stand als geschlossenes Grün vor offenem Wald.
+    // kronen = [[Gewicht, Kronen-Radius bei Größe 1], …] (die Arten-Mischung am Ort); F = { cell, dartsPerCell, pack }.
+    function forestKronenDeckung(sd, geburt, kronen, F) {
+        const lambda = (F.dartsPerCell / (F.cell * F.cell)) * (geburt > 0 ? geburt : 0);
+        if (!(lambda > 0) || !kronen || !kronen.length) return 0;
+        let wSumme = 0;
+        for (let k = 0; k < kronen.length; k++) wSumme += kronen[k][0] > 0 ? kronen[k][0] : 0;
+        if (!(wSumme > 0)) return 0;
+        // Die Größen-Verteilung (forestTreeSize): ue gleichverteilt auf [0, 1 − 0,52·sd], s = 0,55 + 1,45·ue^1,45; mit 5 % ein
+        // Überhälter max(s, 1,3 + 0,55·u). 12 × 4 Quantile.
+        const NQ = 12;
+        const NU = 4;
+        const oben = 1 - 0.52 * (sd < 0 ? 0 : sd > 1 ? 1 : sd);
+        const groesse = [];
+        for (let i = 0; i < NQ; i++) {
+            const s = 0.55 + 1.45 * Math.pow(((i + 0.5) / NQ) * oben, 1.45);
+            groesse.push([0.95 / NQ, s]);
+            for (let j = 0; j < NU; j++) groesse.push([0.05 / NQ / NU, Math.max(s, 1.3 + 0.55 * ((j + 0.5) / NU))]);
+        }
+        const T = [];
+        for (let k = 0; k < kronen.length; k++) {
+            const w = kronen[k][0] > 0 ? kronen[k][0] / wSumme : 0;
+            if (!(w > 0)) continue;
+            for (let g = 0; g < groesse.length; g++) {
+                const s = groesse[g][1] < 0.5 ? 0.5 : groesse[g][1] > 1.95 ? 1.95 : groesse[g][1];
+                T.push([w * groesse[g][0], kronen[k][1] * s]);
+            }
+        }
+        let mT = 0;
+        let mT2 = 0;
+        for (let i = 0; i < T.length; i++) {
+            mT += T[i][0] * T[i][1];
+            mT2 += T[i][0] * T[i][1] * T[i][1];
+        }
+        let deckung = 0;
+        for (let i = 0; i < T.length; i++) {
+            const t = T[i][1];
+            const A = Math.PI * F.pack * F.pack * (t * t + 2 * t * mT + mT2);
+            deckung += T[i][0] * Math.PI * t * t * ((1 - Math.exp(-lambda * A)) / A);
+        }
+        return deckung > 1 ? 1 : deckung;
     }
 
     // DIE NISCHE EINES ORTS (EINE Formel für den gepflanzten und den fernen Wald): Klima, Bestands-Mosaik, Feuchte,
     // Höhen-Trockenheit und Offenheit am Ort (x, z) auf der Oberfläche surfaceY bei Bestandsdichte sd → die Arten-
     // Gewichte der fünf Wald-Arten (wF Kiefer · wT Tanne · wE Eiche · wB Birke · wW Erle, ohne die Auto-Arten) samt
     // clim/patch/feu. planForestCell würfelt daraus die Art, die Fernform des Hosts mischt daraus die Kronen-Farbe.
-    // Keine rng-Aufrufe. ctx = { F (dryScale), baseH, fbm(px,pz), feuchteAt(x,z,surfY) }.
+    // Keine rng-Aufrufe. ctx = { F (dryScale), baseH, fbm(px,pz), feuchteAt(x,z,surfY), fussM? }.
+    // DER FUSSABDRUCK (K16, die Fern-Farbe): `ctx.fussM` = die Kante der Fläche, für die der Ort steht (eine Masche des Fern-
+    // Rings, ein Texel des Feld-Passes). Das Bestands-Mosaik (λ 20 m) und das Klima (λ 83 m) tragen darunter ihr Mittel
+    // (forestMosaikMittel, forestOktavMittel): ihr Wert wechselte unter einer 13 × 39-m-Masche je Punkt die Art, und jede
+    // Masche zog als radialer Streifen um den Spieler. Ohne fussM (planForestCell, das Labor) dieselben Zahlen wie zuvor.
     function forestNische(x, z, surfaceY, sd, ctx) {
         const ss = (e0, e1, v) => {
             let t = (v - e0) / (e1 - e0);
@@ -2029,7 +2195,24 @@
         const open = 1 - sd;
         const clim = ctx.fbm(x * 0.012 + 50, z * 0.012 + 9); // breiter Klima-/Trockengradient
         const patch = ctx.fbm(x * 0.05 + 200, z * 0.05 + 90); // Bestands-Mosaik (Reinbestände + Mischsäume)
-        const NW = forestNicheWeights(clim, dry, wet, open, patch, { ss });
+        const fussM = ctx.fussM > 0 ? ctx.fussM : 0;
+        const NW = forestNicheWeights(
+            clim,
+            dry,
+            wet,
+            open,
+            patch,
+            fussM
+                ? {
+                      ss,
+                      mittel: {
+                          M: forestMosaikMittel(ctx.fbm),
+                          kP: forestOktavMittel(fussM, 1 / 0.05),
+                          kC: forestOktavMittel(fussM, 1 / 0.012),
+                      },
+                  }
+                : { ss }
+        );
         return {
             wF: NW.wF,
             wT: NW.wT,
@@ -4402,6 +4585,9 @@
         FOREST_STAND: FOREST_STAND,
         forestStandDensity: forestStandDensity,
         forestGeburt: forestGeburt,
+        forestBestand: forestBestand,
+        forestKronenDeckung: forestKronenDeckung, // K16: die Kronen-Deckung des gepflanzten Bestands (das Dach des Rings liest sie)
+        forestOktavMittel: forestOktavMittel, // K16: die Blende einer Oktave unter einem Fußabdruck (Wert → Mittel) // K16: Bestandsdichte + Deckung unter einem Fußabdruck (die Fern-Farbe)
         forestNicheWeights: forestNicheWeights,
         forestNische: forestNische,
         forestTreeSize: forestTreeSize,

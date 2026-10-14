@@ -1149,6 +1149,8 @@ class AnazhRealm_Z05a {
     static _weltMetaHeil(m) {
         if (typeof m.seed !== "string" || m.seed.length === 0) m.seed = "anazh-realm-seed";
         m.voxelTerrain = true;
+        // K16: das Gelände ist das Flussnetz des Gesetzbuchs — der Ein-Massiv-Anker alter Welten fällt (sie ziehen um).
+        delete m.macro;
     }
 
     // DIE WELTGRENZE (Gegenprüfung Runde 2, 10.10.): eine geladene Welt ERSETZT das worldMeta der Seite — die Vorlage,

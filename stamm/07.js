@@ -108,7 +108,7 @@ class AnazhRealm_Z07 {
                 this.state.voxelWorkerReady = false;
             };
             this.state.voxelWorker = worker;
-            // Der Worker ist erst nutzbar, wenn sein State (Seed, Atlas, Erosion, Tarns, voxelEdits) gesetzt
+            // Der Worker ist erst nutzbar, wenn sein State (Seed, Atlas, voxelEdits) gesetzt
             // ist; fire-and-forget, das Ready-Flag setzt der init-ack.
             this._voxelWorkerSyncState({ op: "init" });
             return worker;
@@ -141,7 +141,7 @@ class AnazhRealm_Z07 {
             .catch((e2) => this._stoffBruch("der Voxel-Faden startet nicht (Blob-Weg)", e2));
     }
 
-    // Voller State-Snapshot für den Worker (Seed, Hydrosphäre-Atlas, erosion, tarns, voxelEdits, …).
+    // Voller State-Snapshot für den Worker (Seed, Hydrosphäre-Atlas, voxelEdits, …).
     // Structured Clone statt Transfer: der Main-Thread muss die Atlas-Daten BEHALTEN.
     _voxelWorkerSnapshotState() {
         const seed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
@@ -149,7 +149,6 @@ class AnazhRealm_Z07 {
             seed,
             baseHeight: this.state.terrainBaseHeight || 0,
             waterLevel: typeof this.state.waterLevel === "number" ? this.state.waterLevel : 0,
-            terrainSteepness: typeof this.state.terrainSteepness === "number" ? this.state.terrainSteepness : 1, // V14.7: ridgeAmp-Skala (Worker-Mirror)
             voxelEdits: this._snapshotVoxelEdits(),
             hydroComputing: !!this._hydroComputing,
             // der Fluss-Kanal (Welle L): Freibord und das Gesetz der Bank reisen mit — der Worker baut dasselbe Bett
@@ -165,9 +164,6 @@ class AnazhRealm_Z07 {
             // Die genVersion-Schleuse reist mit: der Worker-Spiegel gated die Feuchte-Mix-Linie identisch
             // (Legacy-Welten gen < 2 → feuchte = 0).
             genVersion: typeof this._genVersion === "function" ? this._genVersion() : 1,
-            // Der persistierte macroAnker reist mit — sonst baut der Worker nach einer Konstanten-Änderung
-            // einen anderen Anker als der Main (Naht-Drift). null bei gen < 3.
-            macroAnker: typeof this._macroAnker === "function" ? this._macroAnker() : null,
             // DAS ERBGUT reist in seiner Normalform mit (die Terme der EINEN 2D-Höhe, das Wildnis-Gewicht): der Worker
             // rechnet dieselben Zahlen, nie eine eigene Ableitung.
             erbgut: this._erbgut(),
@@ -204,14 +200,7 @@ class AnazhRealm_Z07 {
         snap.hydroBand = this.state.hydroBand
             ? { top: this.state.hydroBand.top, bottom: this.state.hydroBand.bottom }
             : null;
-        const e = this.state.erosion;
-        if (e) {
-            snap.erosion = { originX: e.originX, originZ: e.originZ, cell: e.cell, dim: e.dim, delta: e.delta };
-        } else {
-            snap.erosion = null;
-        }
-        snap.tarns = Array.isArray(this.state.tarns) ? this.state.tarns.map((t) => ({ ...t })) : null;
-        // Die fernen Kacheln reisen mit (plain Object {key: tile}, gelesen in hydroFor/erosionFor) — sonst
+        // Die fernen Kacheln reisen mit (plain Object {key: tile}, gelesen in hydroFor) — sonst
         // baut der Worker ferne Chunks gegen die OOB-Wahrheit = Determinismus-Bruch main↔worker.
         snap.hydroTiles = null;
         if (this.state.hydroTiles && this.state.hydroTiles.size) {
@@ -231,20 +220,6 @@ class AnazhRealm_Z07 {
                     lakeW: t.lakeW,
                     lakeNear: t.lakeNear,
                     water: t.water || null,
-                };
-            }
-        }
-        snap.erosionTiles = null;
-        if (this.state.erosionTiles && this.state.erosionTiles.size) {
-            snap.erosionTiles = {};
-            for (const [key, t] of this.state.erosionTiles) {
-                if (!t) continue;
-                snap.erosionTiles[key] = {
-                    originX: t.originX,
-                    originZ: t.originZ,
-                    cell: t.cell,
-                    dim: t.dim,
-                    delta: t.delta,
                 };
             }
         }
@@ -435,22 +410,14 @@ class AnazhRealm_Z07 {
             return c._idbReady;
         }
         // Stempel = AnazhRealm.VERSION (jeder Release bustet — bewusst statt SHA über den Stamm) + genVersion
-        // + macroAnker-Hash (ein fremder Anker darf nie alte Bytes lesen) + die Form des Replys (CHUNK_IDB_FORM);
+        // + die Form des Replys (CHUNK_IDB_FORM);
         // Mismatch → clear. Der SEED lebt im
         // KEY (`_chunkIdbKey`); Welt-Wechsel ohne Reload behält den Boot-Stempel (Keys sind seed-scoped).
         const genV = typeof this._genVersion === "function" ? this._genVersion() : 1;
-        const anker = typeof this._macroAnker === "function" ? this._macroAnker() : null;
-        // + der Hash des Erbguts (seine Terme formen jeden Chunk: ein fremdes Erbgut darf nie alte Bytes lesen).
+        // + der Hash des Erbguts (seine Terme und die Regler der Landform formen jeden Chunk: ein fremdes Erbgut darf nie
+        // alte Bytes lesen).
         const stamp =
-            AnazhRealm.VERSION +
-            "|" +
-            genV +
-            "|" +
-            this._fastHash(JSON.stringify(anker || null)) +
-            "|" +
-            this._erbgut().hash +
-            "|" +
-            AnazhRealm.CHUNK_IDB_FORM;
+            AnazhRealm.VERSION + "|" + genV + "|landform|" + this._erbgut().hash + "|" + AnazhRealm.CHUNK_IDB_FORM;
         c._stamp = stamp;
         c._idbReady = new Promise((resolve) => {
             try {
@@ -778,7 +745,7 @@ class AnazhRealm_Z07 {
         }
     }
 
-    // Worker-Update bei voxelEdit: nur der Delta-Edit (Atlas/Erosion/Tarns unverändert). Die Karte trägt ihn nach — die
+    // Worker-Update bei voxelEdit: nur der Delta-Edit (Atlas unverändert). Die Karte trägt ihn nach — die
     // Generation seiner Chunks steigt (`_voxelStand`), ihre Antworten im Flug fallen beim Eintreffen; aus den Caches
     // fallen nur die Chunks, deren Stand er ändert (sein Karten-Fußabdruck samt 3×3), je LOD. Der Rest der Welt streamt
     // weiter (bis K23 leerte jeder Edit beide Caches der ganzen Welt und verwarf jede Antwort im Flug).
@@ -809,7 +776,7 @@ class AnazhRealm_Z07 {
         }
     }
 
-    // Nach Worldgen: voller Atlas + Erosion + Tarns + waterLevel an den Worker; bumpt stateGen →
+    // Nach Worldgen: voller Atlas + waterLevel an den Worker; bumpt stateGen →
     // in-flight Requests vom Pre-Worldgen-Stand werden verworfen.
     _voxelWorkerSyncWorldgenState() {
         // V12.0-perf.b — Basis-Density-Cache bei Worldgen leeren (neue Welt =
@@ -3145,8 +3112,6 @@ class AnazhRealm_Z07 {
         this.state.terrainEverGenerated = true;
         if (wasFirstSpawn) this.grokMarkFirstSpawn();
 
-        this._worldgenComputeErosionAndTarns();
-
         // V9.38 Phase 5c.2.c.3.b.ii — heightData/minHeight/maxHeight bleiben
         // null/0 in einer Voxel-Welt (voxelTerrain konstant true seit V9.35).
         // Alle Konsumenten sind voxel-aware (`getTerrainHeightAt` → `_voxelSurfaceY`).
@@ -3169,8 +3134,9 @@ class AnazhRealm_Z07 {
 
         // ### Terrain-State ###
         // In der Voxel-Welt sind heightData/minHeight/maxHeight null bzw. 0 (Konsumenten ignorieren sie);
-        // terrainSteepness skaliert die ridged-Amplitude in `_terrainMacroSurfaceY`; terrainBaseHeight ist
-        // die Voxel-Anker-Höhe (Killplane-Basis, getTerrainHeightAt-Fallback).
+        // terrainSteepness trägt nur noch die Licht-Flachheit des Bodens (`terrainFlatten`) — das Gelände-Gesetz liest es seit
+        // K16 nicht (die Landform liegt im Erbgut); terrainBaseHeight ist die Voxel-Anker-Höhe (Killplane-Basis,
+        // getTerrainHeightAt-Fallback).
         this.state.groundHeightField = heightData;
         this.state.minHeight = minHeight;
         this.state.maxHeight = maxHeight;

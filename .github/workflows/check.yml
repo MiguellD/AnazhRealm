@@ -373,6 +373,14 @@ jobs:
               # eine Fuell-Kugel ueber dem Band. Der Selbsttest verfaelscht EINEN Term nur im Worker und muss rot werden.
               run: npm run gate:worker-dichte
 
+            - name: Gelaende-Linse (die Natur-Zahlen am Gesetzbuch - Senken, Flint, Hammond, Dorfplaetze, Schicht-Gesetz)
+              if: matrix.gruppe == 1
+              # Node ohne Browser: gelaende-core in einer vm, drei Welt-Saaten, 4 x 4 km innen + 2 km Rand im 30-m-Raster
+              # (Nordstern 4.1, Karte K16). Taeter je Ziel beim Namen; der Selbsttest legt eine Eier-Karton-Stoerung auf und
+              # muss die Senken rot faerben. Dazu der GEBAUTE Boden (Null-Renderer, drei Saaten, 2 x 2 km im 30-m-Raster): Senken
+              # > 1 m und Dorfplaetze am Boden des Spielers mit Kanal und See; der Selbsttest legt die alte Bett-Tiefe auf.
+              run: npm run gate:gelaende-realismus
+
             - name: Pruefbuehne (wo die Wildnis nicht traegt, wirft das Feld nichts - auch nicht der Nexus; S4 steht an ihrer Spec; S0 leuchtet nachts aus dem Licht-Pool)
               if: matrix.gruppe == 3
               # Faehrt die echte Welt (Null-Renderer): jede Ort-Op der Welt-Akte mit der Quelle des Feldes (nexus,
@@ -1288,10 +1296,6 @@ jobs:
               # Gruppe 3 seit der Vereinigung mit waende-ci (EIN Schritt): sie lief in integ-probe ce10dcb6 (Lauf 38092890885)
               # 19,3 min, Gruppe 1 22,5 min, Gruppe 2 26,6 min; der Schritt kostet im Zweig 21 s (Lauf 38021693010).
               run: npm run gate:portal-membran
-
-            - name: Dritter Spiegel (das Makro-Gesetz rechnet auf swiftshader-WebGPU seh-paritätisch)
-              if: matrix.gruppe == 3
-              run: npm run gate:dritter-spiegel
 
             - name: Fahrzeug-Fernstufe (ein geparktes Fahrzeug serviert fern das Billboard der EINEN Bäckerei)
               if: matrix.gruppe == 1

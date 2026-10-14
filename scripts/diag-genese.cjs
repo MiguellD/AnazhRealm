@@ -72,7 +72,11 @@ function startSaveServer() {
         });
         console.log("A — GENESE-VERSION");
         // die aktuelle Genese-Version (der Stempel wandert mit der Genese — das Literal 2 war stale)
-        check(a.gen >= 2 && a.meta === a.gen, `frische Welt trägt die aktuelle genVersion`, `_genVersion()=${a.gen}, worldMeta=${a.meta}`);
+        check(
+            a.gen >= 2 && a.meta === a.gen,
+            `frische Welt trägt die aktuelle genVersion`,
+            `_genVersion()=${a.gen}, worldMeta=${a.meta}`
+        );
 
         // ---- C: FEUCHTE-Feld -------------------------------------------------
         const c = await page.evaluate(() => {
@@ -263,7 +267,9 @@ function startSaveServer() {
             check(
                 st.gemessen > 0 && st.n === 0,
                 `schilf bleibt der Trocknis fern (gemessen, nie leer grün)`,
-                d.schilfTrocken ? `n=${st.n} (${st.gemessen}/${st.kacheln} Kacheln gemessen)` : "kein gebauter trockener Chunk"
+                d.schilfTrocken
+                    ? `n=${st.n} (${st.gemessen}/${st.kacheln} Kacheln gemessen)`
+                    : "kein gebauter trockener Chunk"
             );
         }
 
@@ -281,7 +287,6 @@ function startSaveServer() {
                 "_clumpAt",
                 "_terrainBaseDensityAt",
                 "_computeHydrosphere",
-                "_computeErosion",
                 "spawnAffinityForBlueprint",
                 "_affinitaet",
             ];

@@ -25,6 +25,7 @@ const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const { WASSER_INSTALL } = require("./lib/wasser-linse.cjs");
 const stammLib = require("./lib/stamm.cjs");
 const { linsenWebGpuArgs, adapterZeile } = require("./lib/software-gpu.cjs");
 const { KAMERA_NAH_INSTALL } = require("./lib/kamera-nah.cjs");
@@ -61,12 +62,15 @@ const SAUM = 0.6; // der Saum der Durchsicht (KAMERA_DURCHSICHT.saumM): in 3rd e
 // Höchste Nah-Deckung einer Stellung (Anteil des Schirms).
 const NAH_DECKUNG_MAX = 0.02;
 // Die Orte der Schau (Befund §2): die Ankunft, das Ufer mit dem Hain des Satzes, die Lichtung der Herde (8a) und der
-// 30°-Hang (2c, 8b/8c — dort steht nur Streu: Gestrüpp, Geröll, Stumpf).
+// 30°-Hang (2c, 8b/8c — dort steht nur Streu: Gestrüpp, Geröll, Stumpf). Jeder Ort kommt AUS DER WELT (K16, Orts-Wand):
+// das Ufer ist das Ostufer des nächsten Sees am Messort (`__wasserOrte`), die Lichtung die nächste ebene trockene Stelle
+// (12 m Umkreis, Spanne ≤ 1,5 m), der Hang die nächste Stelle mit 25–35° Neigung (`__weltOrt`, scripts/lib/welt-orte.cjs) —
+// in der alten Welt standen sie als Zahlen (−872/−1127, −789/−1331, −744/−1356), die Landform des Kerns verschob sie.
 const ORTE = [
-    { id: "ankunft", bild: "A 27", x: null, z: null },
-    { id: "ufer", bild: "A 41–47", x: -872, z: -1127, satz: "pflanz mir einen eichenhain am wasser", satzWerk: "baum_eiche" },
-    { id: "lichtung", bild: "C 01–04", x: -789, z: -1331 },
-    { id: "hang", bild: "B 28–31, C 05–12", x: -744, z: -1356 },
+    { id: "ankunft", bild: "A 27" },
+    { id: "ufer", bild: "A 41–47", art: "ufer", satz: "pflanz mir einen eichenhain am wasser", satzWerk: "baum_eiche" },
+    { id: "lichtung", bild: "C 01–04", art: "eben", such: { r: 12, spanne: 1.5 } },
+    { id: "hang", bild: "B 28–31, C 05–12", art: "hang", such: { min: 25, max: 35 } },
 ];
 const MODI = ["third", "ritt", "first"];
 
@@ -940,8 +944,13 @@ async function probe(arg) {
         const tO = performance.now();
         const z = (out.orte[ort.id] = { bild: ort.bild, modi: {} });
         try {
-            if (ort.x != null) {
-                st.playerMesh.position.set(ort.x, r._voxelSurfaceY(ort.x, ort.z) + 1.8, ort.z);
+            if (ort.art) {
+                // der Ort aus der Welt (s. ORTE): findet die Suche keinen, bricht der Ort laut — nie ein Ersatz
+                const see = ort.art === "ufer" ? window.__wasserOrte({}).see : null;
+                const O = ort.art === "ufer" ? see && see.ufer && { x: see.ufer[0], z: see.ufer[1] } : window.__weltOrt(ort.art, ort.such);
+                if (!O) throw new Error(`kein Ort der Art ${ort.art} aus der Welt`);
+                z.ortAusWelt = [O.x, O.z];
+                st.playerMesh.position.set(O.x, r._voxelSurfaceY(O.x, O.z) + 1.8, O.z);
                 z.fehlt = await steht(45000);
             }
             z.ms = { boden: Math.round(performance.now() - tO) };
@@ -1217,6 +1226,7 @@ async function probe(arg) {
     if (TEILE.includes("laub")) {
         const tL = Date.now();
         await page.evaluate(KAMERA_NAH_INSTALL);
+        await page.evaluate(WASSER_INSTALL); // __wasserOrte + __weltOrt: die Orte aus der Welt
         m = await page.evaluate(probe, { orte: process.env.KAMERA_LAUB_NUR ? ORTE.filter((o) => process.env.KAMERA_LAUB_NUR.split(",").includes(o.id)) : ORTE, radius: RADIUS, saum: SAUM, jeOrt: 5, jeStreu: 2, gw: 48, gh: 27 });
         zeiten.laub = Date.now() - tL;
     }
@@ -1355,6 +1365,7 @@ async function bildPaare() {
         await page.goto(`${SEITE.replace(/\/$/, "")}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
         await page.evaluate(AUSGABE_INSTALL);
         await page.evaluate(KAMERA_NAH_INSTALL);
+        await page.evaluate(WASSER_INSTALL); // __wasserOrte + __weltOrt: die Orte aus der Welt
         const nur = (process.env.KAMERA_LAUB_NUR || "ufer,hang").split(",");
         const m = await page.evaluate(probe, { orte: ORTE.filter((o) => nur.includes(o.id)), radius: RADIUS, saum: SAUM, jeOrt: 5, jeStreu: 2, gw: 48, gh: 27, nahAus: true, bilder: { w: 1280, h: 720 } });
         console.log(`=== DIE BILD-PAARE (echte GPU, Ausgabe-Pfad) → ${BILDER} ===`);

@@ -706,9 +706,15 @@ function check(name, ok, detail) {
             // Entsorgungs-Hörer einer Geometrie an ihr erstes Render-Objekt und liest dessen Attribute erst beim Entsorgen;
             // eine getauschte Geometrie verlor so ihre GPU-Puffer (echte GPU: „Vertex buffer slot 5 … was not set"). Die
             // Wurzel: `_renderObjektRegister` nimmt den Hörer je Geometrie heraus (der Kehraus trägt die Residenz). Probe
-            // am Wasser-Satz: doppelte Kapazität, derselbe Inhalt, derselbe Mesh.
+            // am kleinsten Satz des Rings (der Tausch ist EIN Weg für jeden Satz; am Mess-Ort der K16-Landform steht kein
+            // Wasser im Ring — die Probe hing an einem 12-Vertex-Wasserfleck der alten Welt): doppelte Kapazität, derselbe
+            // Inhalt, derselbe Mesh.
             res.wachsen = null;
-            const ws = s.chunkSaetze ? s.chunkSaetze.get("wasser") : null;
+            let ws = null;
+            let wsName = null;
+            for (const [name, sa] of s.chunkSaetze ? s.chunkSaetze : [])
+                if (sa && sa.mesh && sa.bloecke && sa.bloecke.size > 0 && (!ws || sa.vKap < ws.vKap))
+                    ((ws = sa), (wsName = String(name).split("|")[0]));
             if (ws) {
                 const altMesh = ws.mesh,
                     altGeom = ws.geom,
@@ -718,6 +724,7 @@ function check(name, ok, detail) {
                 r._tickChunkSatz();
                 const ab = abschnitteVon(ws);
                 res.wachsen = {
+                    satz: wsName,
                     derselbe: ws.mesh === altMesh && ws.mesh.parent === s.scene,
                     getauscht: ws.geom !== altGeom && ws.mesh.geometry === ws.geom,
                     inhalt: ws.iSumme === altIdx && ws.bloecke.size === altBereiche && ab.treu && !ab.ueberlapp,

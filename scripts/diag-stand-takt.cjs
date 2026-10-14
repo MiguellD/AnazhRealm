@@ -93,6 +93,7 @@ function selbsttest() {
             regler: phase(12, 10),
             wahrnehmung: phase(30, 4),
         },
+        // BÜHNE: Befund des Selbsttests, kein gesetzter Ort
         strom: { spielerChunk: true, x: -300, z: -850, takte: 40 },
         code: Object.fromEntries(namen.map((n) => [n, { fragt: true, meldet: true }])),
         pageErrors: [],
@@ -469,7 +470,8 @@ const path = require("path");
 
 const root = path.resolve(__dirname, "..");
 const PORT = Number(process.env.STAND_TAKT_PORT) || 4528;
-const MESS = { x: -900, z: -850 };
+const { messort } = require("./lib/welt-orte.cjs");
+const MESS = messort("wiese");
 const mime = {
     ".html": "text/html",
     ".js": "application/javascript",
@@ -723,10 +725,10 @@ const server = http.createServer((req, res) => {
                     }
                     // der Saum (`_fernRingDeckWache`: Punkte ab `deckCursor`): der letzte Punkt der Runde steht still 1,5 m zu hoch
                     const fr = st.fernRing;
-                    if (fr && fr.zoneVerts && fr.meshes && fr.meshes[0]) {
+                    if (fr && fr.zoneVerts && fr.geos && fr.geos[0]) {
                         const o = fr.zoneVerts - 1;
                         const p = r._fernRingPunkt(fr, ((fr.deckCursor || 0) + o) % fr.zoneVerts);
-                        const pos = fr.meshes[0].geometry.attributes.position;
+                        const pos = fr.geos[0].attributes.position;
                         pos.setY(p.li, pos.getY(p.li) + 1.5); // still verstellt: kein Weckruf
                         je.deckWache = { stelle: o, runde: fr.zoneVerts };
                     }

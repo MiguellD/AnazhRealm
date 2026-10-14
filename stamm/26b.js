@@ -671,7 +671,8 @@ AnazhRealm.FAR_WATER = Object.freeze({
 // 150–500 m tiefe Dreiecke); `schalen[i].aussen`
 // = Außenradius (Schale 1 ab Voxel-Ring-Kante + `randPad`); `snap` = grobes Welt-Gitter je Schale
 // (Vertex-XZ gerundet → Höhen schwimmen beim Re-Zentrieren nie); `saumDrop` = Tauchkante der
-// innersten Reihe; `wasserDrop` = Wasser-Klemme; `reanchorDist`/`anchorQuant` = Anker-Hysterese/
+// innersten Reihe (im Gebauten zeichnet der Ring nicht: die Masken-Karte, `_fernRingMaske`); `wasserDrop` = Wasser-Klemme;
+// `reanchorDist`/`anchorQuant` = Anker-Hysterese/
 // -Quantisierung; `refreshVertsProTick` = Höhen-Refresh-Budget je Frame.
 // FELD_PASS — polares Höhen+Farb-Feld jenseits der letzten Schale: az×rad Texel bis rMaxM, gemalt
 // vom GPU-Feld-Zeichner, gemarcht vom Fullscreen-Fragment (nur Himmel-Pixel); die Fern-Farbe malt im
@@ -688,16 +689,28 @@ AnazhRealm.FELD_PANO = Object.freeze({
     rebakeDist: 60, // m XZ-Drift bis zum Re-Bake (Parallaxe auf 8 km ≈ 0.4° — unter der Wahrnehmung)
     rebakeHoehe: 12, // m Y-Drift bis zum Re-Bake (Horizont-Verschiebung)
 });
+// DIE MASCHE DES FERN-RINGS (K16): je Schale so viele geometrische Reihen, dass eine Masche radial höchstens `seite`-mal so
+// tief ist wie breit (`_fernRingReihen`) — 16 Reihen je Schale gaben Schale 0 Maschen 10 : 1 (Reihen-Faktor 1,32 gegen
+// 2π/192): jeder Makro-Blick zeigte radiale Streifen um den Spieler. Der Snap bleibt unter der Maschen-Breite am
+// sichtbaren Innenrand (Schale 0 ab der Chunk-Kante ~200 m), sonst fallen Punkte zusammen; Schale 0 trägt die
+// Deck-Zone ganz (Ring 12: 729 m).
 AnazhRealm.FERN_RING = Object.freeze({
     winkel: 192,
-    reihen: 16,
+    seite: 3,
     schalen: Object.freeze([
-        Object.freeze({ aussen: 1400, snap: 24 }),
-        Object.freeze({ aussen: 3600, snap: 64 }),
-        Object.freeze({ aussen: 8000, snap: 160 }),
+        Object.freeze({ aussen: 800, snap: 6 }),
+        Object.freeze({ aussen: 3000, snap: 24 }),
+        Object.freeze({ aussen: 8000, snap: 64 }),
     ]),
     randPad: 40,
     saumDrop: 6,
+    // DIE WEICHE IM SAUM DES GEBAUTEN (`_fernRingRegel` 1): so tief (m, senkrecht) weicht der Ring dem Chunk in der ersten
+    // Voxel-Spalte am Rand des Gebauten — über der Sehne des Rings (Ring 3 mit Stufe 1 an der Bau-Kante: Naht p95 1,3 m, max 4,3 m) und der Abweichung des Chunks
+    // (±0,4 m); längs des Strahls gekappt (`nahtWeicheMax`), damit der streifende Blick nicht ferne Hänge durch den Saum zieht.
+    nahtWeiche: 6,
+    nahtWeicheMax: 24,
+    // die Feld-Flächen des Naht-Rands, die die Deck-Wache je Takt misst (`_fernRingFeldY`)
+    feldJeTakt: 12,
     wasserDrop: 0.4,
     reanchorDist: 180,
     anchorQuant: 24,
@@ -734,15 +747,14 @@ AnazhRealm.LAUB_STREU = Object.freeze({
 // FERN_FARBE (`_fernFarbeTeile`, linear): das Kronendach des Waldes aus der Ferne = die Studio-Laubfarbe der Arten
 // am Ort × `kronenSchatten` (die Krone beschattet sich selbst: die Eiche, Blatt-Grün 0,195, trägt so 0,062 — die
 // Satelliten-Bänder geschlossener Laubwald-Kronen im Sommer, grün ~0,05–0,07); die Saison multipliziert der Leser
-// (`uSeasonMul`); der Feld-Pass malt neu, wenn die Saison je Kanal um mehr als `saisonDrift` gewandert ist. Wasser =
-// das Fern-Blau als sRGB-Absicht (FARB-GESETZ: 0x265273 → linear), flach auf dem Spiegel.
+// (`uSeasonMul`); der Feld-Pass malt neu, wenn die Saison je Kanal um mehr als `saisonDrift` gewandert ist. Das Wasser
+// trägt keine Fern-Farbe: es ist der Wasser-Körper des Gesetzes (`_wasserKoerper`, im Ring der Blick des Wassers).
 // DAS FERN-FARB-BUDGET (`_fernFarbTakt`): `msJeTakt` je Takt für die Fern-Krone des nahen Bodens, offene Ring-Farben und
 // den Feld-Farb-Job, über dem Frame-Budget `msKnapp`, nie weniger als `mindestJeTakt` Punkte (Krone und Ring je); `memo` = eine Generation des Fern-Farb-Gedächtnisses
 // (zwei Generationen tragen > 2 volle Ringe).
 AnazhRealm.FERN_FARBE = Object.freeze({
     kronenSchatten: 0.32,
     saisonDrift: 0.05,
-    wasser: Object.freeze([0.0196, 0.0863, 0.1706]),
     msJeTakt: 2,
     msKnapp: 0.5,
     mindestJeTakt: 64,
@@ -893,7 +905,49 @@ AnazhRealm._flussTiefe = function (p) {
     const HC = AnazhRealm.HYDROSPHERE;
     const q = p.quelle;
     if (!(q > 0 && q <= 1)) throw new Error(`_flussTiefe: Fluss-Punkt ohne Quell-Anteil (quelle = ${q})`);
-    return (HC.carveBedMin + (HC.carveBedK * p.width) / q) * q;
+    return Math.min(HC.kanalTiefe, (HC.carveBedMin + (HC.carveBedK * p.width) / q) * q);
+};
+// DER KASTEN QUER ZUM FLUSS (K16, `_flussAbdruck`): das Mittel eines Ufer-Bands b(|u|) über [d − F/2, d + F/2] (u der
+// Abstand quer zum Segment, d der des Punkts) aus der Stammfunktion des Bands C(s) = ∫₀ˢ b — exakt für ein gerades
+// Segment, stetig in d, für F → 0 der Punkt-Wert b(d). Die Stammfunktionen stehen neben ihren Bändern.
+AnazhRealm._kastenMittel = function (C, d, F, p, q, r, s) {
+    const a = d - F / 2;
+    const b = d + F / 2;
+    return (a >= 0 ? C(b, p, q, r, s) - C(a, p, q, r, s) : C(b, p, q, r, s) + C(-a, p, q, r, s)) / F;
+};
+// die Kronen-Blende (`_hydroRiverAt`): 1 bis zur Kanal-Kante `hw`, smoothstep auf 0 über `kappa` bis zur Krone
+AnazhRealm._stammUfer = function (s, hw, kappa) {
+    let w = (s - hw) / kappa;
+    w = w < 0 ? 0 : w > 1 ? 1 : w;
+    return Math.min(s, hw) + kappa * (w - w * w * w + (w * w * w * w) / 2);
+};
+// das Fluss-Band der Feuchte (`_feuchteAt`): 1 bis `inner`, smoothstep auf 0 über `reich`
+AnazhRealm._stammFeuchte = function (s, inner, reich) {
+    const q = s < inner ? inner : s > inner + reich ? inner + reich : s;
+    const v = (inner + reich - q) / reich;
+    return Math.min(s, inner) + reich * (0.5 - v * v * v + (v * v * v * v) / 2);
+};
+// die Bank (`_pathFieldAt`): (1 − (u − inner) / bank)² auf [inner, inner + bank]
+AnazhRealm._stammPfad = function (s, inner, bank) {
+    let q = (s - inner) / bank;
+    q = q < 0 ? 0 : q > 1 ? 1 : q;
+    return (bank * (1 - (1 - q) * (1 - q) * (1 - q))) / 3;
+};
+// die Bank × die Kronen-Blende (`_pathFieldAt` über dem Fluss-Spiegel): auf [inner, Ende] ein Polynom 5. Grades —
+// Gauß-Legendre mit drei Knoten ist exakt
+AnazhRealm._stammPfadUfer = function (s, inner, bank, hw, kappa) {
+    const e = Math.min(s, inner + bank, hw + kappa);
+    if (!(e > inner)) return 0;
+    const m = (inner + e) / 2;
+    const h = (e - inner) / 2;
+    const f = (u) => {
+        const b = 1 - (u - inner) / bank;
+        let w = (u - hw) / kappa;
+        w = w < 0 ? 0 : w > 1 ? 1 : w;
+        return b * b * (1 - w * w * (3 - 2 * w));
+    };
+    const k = h * Math.sqrt(0.6);
+    return h * ((5 / 9) * f(m - k) + (8 / 9) * f(m) + (5 / 9) * f(m + k));
 };
 
 // Die Dichte des Wassers auf der Tag-Skala der Materialien (holz 0,4 schwimmt, stein/eisen sinken): die Schwelle des
@@ -2008,10 +2062,6 @@ AnazhRealm.LICHEN = Object.freeze({
     // Decken-Anstrich).
     strength: 0.22,
 });
-// Schnee auf Prominenz (`_bodenFarbeAt`): Start/Voll in m über der kontinentalen Basis. Der Worker
-// `attachFieldColors` spiegelt die zwei Zahlen hartkodiert. Die Farben selbst sind die Boden-Palette
-// (`AnazhRealm.BODEN_FARBE`, Studio PORTAL_GROUND nach dem Farb-Gesetz).
-AnazhRealm.SCHNEE_PROMINENZ = Object.freeze({ start: 50, voll: 115 });
 
 // FELD-CHARAKTER: jede Welt-Stimme hat ihre eigene Frequenz (lebendig λ200, dichte λ340, glut λ520,
 // magie λ160 m) — der Welt-Charakter emergiert aus dem Überlagerungs-Muster (Ecotone an
@@ -2155,7 +2205,6 @@ AnazhRealm.WELT_GRENZE = Object.freeze({
     platz: Object.freeze(["worldId", "slug", "bornAt"]),
     gedaechtnis: Object.freeze([
         "_erbgutCache",
-        "_macroAnkerCache",
         "_genesisRingFertig",
         "_portalPreviewFertig",
         "_portalPreviewAwaiting",

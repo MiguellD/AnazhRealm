@@ -1978,6 +1978,20 @@ class AnazhRealm_Z05b {
         return v;
     }
 
+    // DER HIMMEL STEHT IM UNENDLICHEN (K16, echte GPU 11.10.): Kuppel (500 m), Sterne (480 m), Sonne und Mond (380 m) folgen
+    // der Kamera in endlichem Abstand — mit Tiefentest überschrieb die Kuppel jeden Fern-Ring-Vertex jenseits 500 m (aus 300 m
+    // Höhe lag die Welt unter einem „Meer“ aus Horizont-Blau). Der EINE Knoten setzt ihr Clip-z auf w: Tiefe 1,0, sie zeichnen
+    // nur, wo die Welt (Mesh, Ring, Feld, Panorama) nichts zeichnete — in jeder Reihenfolge (`gate:himmel-tag` 7 UNENDLICH).
+    static _himmelImUnendlichen(mat) {
+        if (!AnazhRealm._unendlichKnoten) {
+            const T = THREE.TSL;
+            const p = T.modelViewProjection;
+            AnazhRealm._unendlichKnoten = T.vec4(p.xy, p.w, p.w);
+        }
+        mat.vertexNode = AnazhRealm._unendlichKnoten;
+        return mat;
+    }
+
     // ### Skybox ###
     createGalaxySkybox() {
         // Skybox als MeshBasicNodeMaterial (TSL, WebGPU): Nebula-Noise + horizont-genordete Wolken.
@@ -2137,6 +2151,7 @@ class AnazhRealm_Z05b {
         skyboxMaterial.colorNode = finalColor;
         skyboxMaterial.side = THREE.BackSide;
         skyboxMaterial.depthWrite = false;
+        AnazhRealm._himmelImUnendlichen(skyboxMaterial);
 
         // Live-Uniforms speichern — DSL/dayNight/loop schreiben hier hinein
         // statt in das alte `material.uniforms.X.value` (das gibt's bei
@@ -2304,6 +2319,7 @@ class AnazhRealm_Z05b {
         // Vorderseite) — jedes Quad zeigt der Kamera genau eine Seite, die additive Mischung vertauscht: ein Durchgang
         // ist dasselbe Bild.
         starMat.forceSinglePass = true;
+        AnazhRealm._himmelImUnendlichen(starMat);
 
         // Der hellste Punkt des Himmels (kleinste Größenklasse): liegt die Grenzgröße mehr als ½ Klasse darüber, ist
         // kein Punkt sichtbar und das Feld zeichnet nicht (_dayNightApplyStarField).

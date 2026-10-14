@@ -1374,7 +1374,6 @@ class AnazhRealm_Z20a {
                 studioOv: slot.ov && typeof slot.ov === "object" ? slot.ov : undefined,
             }
         );
-        if (entry) this._grundrissRaeumen(entry);
         return entry || false; // das gesetzte Haus (die Dorf-Mitte summiert, wo es steht)
     }
     // ═══ DORF-ERLEBNIS: der EINE Hebe-Chokepoint für die Nicht-Haus-Schichten des Exports ═══

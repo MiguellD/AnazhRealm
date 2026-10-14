@@ -1062,7 +1062,17 @@ class AnazhRealm_Z17c {
                 mitte: TSL.uniform(new THREE.Vector2(0, 0)),
                 groesse: TSL.uniform(S.fensterM),
             });
-            return { S, N, daten, tex, kronen, U, mitteX: 0, mitteZ: 0, zentriert: false };
+            // DIE FLUSS-KARTE dieser Stufe (K16, die Naht des Wassers): dasselbe Fenster, dasselbe Raster wie die Wege — je Texel
+            // der Anteil, den das Wasser eines Flusses deckt (`_flussKarteMalen`, dieselben Segmente und Breiten wie
+            // `_fernFlussDeckung`). Der Fern-Ring liest sie je Fragment (`_flussKarteNode`): ein 4–17 m breiter Fluss
+            // trägt seine Kante im Bild statt im Kasten-Mittel seiner Masche (6–24 m).
+            const fDaten = new Uint8Array(N * N);
+            const fluss = {
+                daten: fDaten,
+                tex: karte(N, fDaten, THREE.RedFormat, "fluss-karte:" + S.name),
+                hydroN: -1,
+            };
+            return { S, N, daten, tex, kronen, fluss, U, mitteX: 0, mitteZ: 0, zentriert: false };
         });
         // `kronen` ist das Register (Schlüssel → [x, z, Radius]), `kronenZellen` sein Raum-Index (`LAUB_STREU.zelleM`-
         // Zellen → die Kronen darin), `kronenRandMax` der größte Laub-Rand im Register (der Umzug fragt um ihn weiter).
@@ -1376,11 +1386,13 @@ class AnazhRealm_Z17c {
     // die Nähe, nie an die Zahl besuchter Siedlungen), EIN Upload je umgezogener Stufe.
     _tickWegeKarte(playerPos) {
         const wk = this.state.wegeKarte;
-        if (!wk || !playerPos || (wk.siedlungen.length === 0 && wk.kronen.size === 0)) return;
+        if (!wk || !playerPos) return;
         const jetzt = performance.now();
+        const hydroN = this._flussKarteStand();
         for (const stufe of wk.stufen) {
             const S = stufe.S;
             if (!stufe.zentriert || Math.hypot(playerPos.x - stufe.mitteX, playerPos.z - stufe.mitteZ) >= S.umzugM) {
+                stufe.fluss.hydroN = -1; // das Fenster zog um: die Flüsse neu
                 const war = stufe.zentriert ? [stufe.mitteX, stufe.mitteZ] : null;
                 const raster = S.texelM * 16;
                 stufe.mitteX = Math.round(playerPos.x / raster) * raster;
@@ -1390,6 +1402,7 @@ class AnazhRealm_Z17c {
                 if (stufe.U) stufe.U.mitte.value.set(stufe.mitteX, stufe.mitteZ);
                 this._kronenStreuUmzug(stufe, war);
             }
+            if (stufe.fluss.hydroN !== hydroN) this._flussKarteMalen(stufe, hydroN);
             // Neu gemalte Kronen gehen gebündelt hoch (höchstens ein Upload je Stufe und `uploadMs`): das Abbild zieht
             // nur im Schmutz-Rechteck aus der Summe nach (gekappt bei 255).
             const kr = stufe.kronen;
@@ -1406,6 +1419,88 @@ class AnazhRealm_Z17c {
                 kr.upload = jetzt;
             }
         }
+    }
+
+    // Der Stand der Hydrosphäre, den die Fluss-Karte trägt: die Zahl bereiter Regionen (Heimat + Kacheln) — kommt eine
+    // Kachel dazu, malt jede Stufe ihre Flüsse neu.
+    _flussKarteStand() {
+        const st = this.state;
+        let n = st.hydrosphere && st.hydrosphere.ready ? 1 : 0;
+        if (st.hydroTiles) for (const t of st.hydroTiles.values()) if (t && t.ready) n++;
+        return n;
+    }
+
+    // Die Flüsse EINER zentrierten Stufe malen (K16, die Naht des Wassers): leeren, jedes Segment der bereiten Regionen
+    // (`riverBuckets`, je Segment einmal) als Kasten-Filter seines Wassers über die Texel-Kante — der Anteil des Texels,
+    // den [−Halbbreite, +Halbbreite] quer zum Segment deckt (dieselbe Breite wie `_fernFlussDeckung`); EIN Upload.
+    _flussKarteMalen(stufe, hydroN) {
+        const fl = stufe.fluss;
+        fl.daten.fill(0);
+        fl.hydroN = hydroN;
+        const S = stufe.S;
+        const N = stufe.N;
+        const t = S.texelM;
+        const x0w = stufe.mitteX - S.fensterM / 2;
+        const z0w = stufe.mitteZ - S.fensterM / 2;
+        const st = this.state;
+        const regionen = [st.hydrosphere, ...(st.hydroTiles ? st.hydroTiles.values() : [])];
+        const gesehen = new Set();
+        const daten = fl.daten;
+        for (const h of regionen) {
+            if (!h || !h.ready || !h.riverBuckets) continue;
+            for (const list of h.riverBuckets) {
+                if (!list) continue;
+                for (const seg of list) {
+                    if (gesehen.has(seg)) continue;
+                    gesehen.add(seg);
+                    const r = Math.max(seg.hwA, seg.hwB) + t;
+                    const i0 = Math.max(0, Math.floor((Math.min(seg.ax, seg.bx) - r - x0w) / t));
+                    const i1 = Math.min(N - 1, Math.ceil((Math.max(seg.ax, seg.bx) + r - x0w) / t));
+                    const j0 = Math.max(0, Math.floor((Math.min(seg.az, seg.bz) - r - z0w) / t));
+                    const j1 = Math.min(N - 1, Math.ceil((Math.max(seg.az, seg.bz) + r - z0w) / t));
+                    if (i1 < i0 || j1 < j0) continue;
+                    const ex = seg.bx - seg.ax;
+                    const ez = seg.bz - seg.az;
+                    const len2 = ex * ex + ez * ez || 1;
+                    for (let j = j0; j <= j1; j++) {
+                        const pz = z0w + (j + 0.5) * t;
+                        for (let i = i0; i <= i1; i++) {
+                            const px = x0w + (i + 0.5) * t;
+                            let u = ((px - seg.ax) * ex + (pz - seg.az) * ez) / len2;
+                            u = u < 0 ? 0 : u > 1 ? 1 : u;
+                            const d = Math.hypot(px - (seg.ax + ex * u), pz - (seg.az + ez * u));
+                            const hw = seg.hwA + (seg.hwB - seg.hwA) * u;
+                            const c = Math.max(0, Math.min(d + t / 2, hw) - Math.max(d - t / 2, -hw)) / t;
+                            if (c <= 0) continue;
+                            const v = Math.round(Math.min(1, c) * 255);
+                            const k = j * N + i;
+                            if (v > daten[k]) daten[k] = v;
+                        }
+                    }
+                }
+            }
+        }
+        fl.tex.needsUpdate = true;
+    }
+
+    // Der Wasser-Anteil der Fluss-Karte je Fragment (dieselbe Stufen-Wahl und dasselbe UV wie `_wegeBodenFarbe`):
+    // { wert, imFenster } — jenseits des Fern-Fensters trägt der Leser seinen Kasten-Anteil (aNass).
+    _flussKarteNode(_T) {
+        const wk = this._wegeKarteEnsure();
+        if (!wk || !wk.stufen[0].U || !wk.stufen[0].fluss)
+            throw new Error("Fluss-Karte: der Ring-Stoff braucht die Wege-Karte mit ihrer Fluss-Schicht");
+        const [nah, fern] = wk.stufen;
+        const xz = _T.positionWorld.xz;
+        const relNah = xz.sub(nah.U.mitte).div(nah.U.groesse);
+        const relFern = xz.sub(fern.U.mitte).div(fern.U.groesse);
+        const innen = _T.step(_T.max(relNah.x.abs(), relNah.y.abs()), _T.float(AnazhRealm._wegeStufeNah(nah.N)));
+        const imFenster = _T.step(_T.max(relFern.x.abs(), relFern.y.abs()), _T.float(0.5 - 1 / fern.N));
+        const wert = _T.mix(
+            _T.texture(fern.fluss.tex, relFern.add(0.5)).r,
+            _T.texture(nah.fluss.tex, relNah.add(0.5)).r,
+            innen
+        );
+        return { wert, imFenster };
     }
 
     // Die Wege EINER zentrierten Stufe neu malen — der EINE Neu-Maler für Umzug und Abbau: leeren, die Formen der
@@ -1468,21 +1563,26 @@ class AnazhRealm_Z17c {
         const xz = _T.positionWorld.xz;
         const relNah = xz.sub(nah.U.mitte).div(nah.U.groesse);
         const wNah = _T.texture(nah.tex, relNah.add(0.5));
-        const wFern = _T.texture(fern.tex, xz.sub(fern.U.mitte).div(fern.U.groesse).add(0.5));
+        const relFern = xz.sub(fern.U.mitte).div(fern.U.groesse);
+        const wFern = _T.texture(fern.tex, relFern.add(0.5));
         const innen = _T.step(_T.max(relNah.x.abs(), relNah.y.abs()), _T.float(AnazhRealm._wegeStufeNah(nah.N)));
-        const _wm = _T.mix(wFern, wNah, innen);
+        // Jenseits des Fern-Fensters liegt weder Weg noch Streu (K16: der Fern-Ring trägt denselben Stoff bis 8 km — die Karte
+        // klemmte ihren Rand-Texel sonst radial über die Ferne). Im Fenster, wo jeder Chunk steht, dieselbe Zahl.
+        const imFenster = _T.step(_T.max(relFern.x.abs(), relFern.y.abs()), _T.float(0.5));
+        const _wm = _T.mix(wFern, wNah, innen).mul(imFenster);
         const _begehbar = _T.smoothstep(_T.float(0.6), _T.float(0.85), _T.normalWorldGeometry.y); // der Hang selbst, nie die Licht-Normale
         // DIE KRONEN-STREU (`_kronenStreuNeu`): unter den echten Kronen die Laubstreu der Palette (`lit`) — zuerst, die
         // Wege liegen darüber. Dieselbe Stufen-Wahl, dasselbe UV (dasselbe Fenster).
         const kNah = _T.texture(nah.kronen.tex, relNah.add(0.5)).r;
-        const kFern = _T.texture(fern.kronen.tex, xz.sub(fern.U.mitte).div(fern.U.groesse).add(0.5)).r;
+        const kFern = _T.texture(fern.kronen.tex, relFern.add(0.5)).r;
         // Der Rand ist keine Scheibe: das Laub liegt in Zungen und Flecken (Rauschen λ ≈ 1,4 m verschiebt die Kante).
         const _laubRausch = this._rauschAtlas()
             .raum(_T.vec3(xz.x.mul(0.7), xz.y.mul(0.7), _T.float(3.3)))
             .mul(0.3);
         const _k = _T
             .smoothstep(_T.float(0.15), _T.float(0.85), _T.mix(kFern, kNah, innen).add(_laubRausch))
-            .mul(_begehbar);
+            .mul(_begehbar)
+            .mul(imFenster);
         const l = P.lit;
         // Unter der Krone liegt die Streu — ihre Albedo, nie ein Schatten: das Labor dunkelt seinen Bestandeskern
         // (`c.multiplyScalar(0.58 + 0.46 · Licht)` in worlds/terrain), die Welt hat die echte Schattenkarte der Kronen
@@ -2544,7 +2644,6 @@ class AnazhRealm_Z17c {
                 /* nicht-serialisierbar → keine Tür-Zeile (fail-closed) */
             }
         }
-        if (this._grundrissVon(entry)) this._grundrissGitter = null; // ein Bau mit Grundriss (Haus, Lichtung): das Gitter baut neu
         // KAMIN-RAUCH (.105): Spitze haus-lokal → userData.rauchQuelle (Invariant: Rauch ⟺ chimney).
         if (
             opts.chimney &&
@@ -2625,6 +2724,9 @@ class AnazhRealm_Z17c {
         this.state.architectures.push(entry);
         this._blockerEintritt(entry);
         this._weltRegt(); // die Bau-Menge regt sich: die Stand-Wache weckt die Fege-Takte
+        // DIE EINE RÄUMUNG an der Wurzel jedes Baus mit Grundriss (Haus, Lichtung): was die Natur dort schon geworfen hat,
+        // weicht (`_grundrissRaeumen`, sie baut das Gitter neu) — Dorf, Genesis-Plattform, Spieler, KI und Probe gleich.
+        if (this._grundrissVon(entry)) this._grundrissRaeumen(entry);
         // DER BESTAND DER KRONEN-KARTE: ein Wald-Baum trägt seine Krone ein, wo er als Eintrag entsteht — Pflanzung,
         // Promotion und der Reload des Zweit-Boots gehen alle hier durch (`removeArchitecture` nimmt sie heraus).
         const _krone = this._kronenRadiusFuer(type, entry.scale);

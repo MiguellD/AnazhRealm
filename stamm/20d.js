@@ -896,6 +896,38 @@ class AnazhRealm_Z20d {
             return { ex: f.ex, ez: f.ez, ox: Number.isFinite(f.ox) ? f.ox : 0, oz: Number.isFinite(f.oz) ? f.oz : 0 };
         const t = e.tuer;
         if (t && Number.isFinite(t.W) && Number.isFinite(t.D)) return { ex: t.W / 2, ez: t.D / 2, ox: 0, oz: 0 };
+        // DIE HÜLLE TRÄGT DEN GRUNDRISS (K16, gate:kamera-leib K2): ein Haus ohne Fundament- und Tür-Zeile (gesetzt vom
+        // Spieler, der KI, einer Probe) hatte keinen — die Natur wuchs hinein (eine Kiefer im haus_alemannisch der
+        // Mess-Wiese). Die festen Boxen der Studio-Hülle (`_hausHuelleSetzen`) sind sein Grundriss, gemerkt je Hülle.
+        const hu = e._hausHuelle;
+        if (hu) {
+            const m = e._grundrissHuelle;
+            if (m && m.hu === hu) return m.fp;
+            const fest = AnazhRealm._huelleVon(hu, "fest", "fachwerk:__huelle") || [];
+            let x0 = Infinity,
+                x1 = -Infinity,
+                z0 = Infinity,
+                z1 = -Infinity;
+            for (const q of fest)
+                if (q.art === "box") {
+                    x0 = Math.min(x0, q.c[0] - q.h[0]);
+                    x1 = Math.max(x1, q.c[0] + q.h[0]);
+                    z0 = Math.min(z0, q.c[2] - q.h[2]);
+                    z1 = Math.max(z1, q.c[2] + q.h[2]);
+                }
+            const k = Number.isFinite(e._hausHuelleSkala) ? e._hausHuelleSkala : 1;
+            const fp =
+                x1 > x0 && z1 > z0
+                    ? {
+                          ex: ((x1 - x0) / 2) * k,
+                          ez: ((z1 - z0) / 2) * k,
+                          ox: ((x0 + x1) / 2) * k,
+                          oz: ((z0 + z1) / 2) * k,
+                      }
+                    : null;
+            e._grundrissHuelle = { hu, fp };
+            if (fp) return fp;
+        }
         const bp = this.state.blueprints ? this.state.blueprints[e.type] : null;
         if (bp && bp.lichtung) {
             const p0 = Array.isArray(bp.parts) && bp.parts[0] && bp.parts[0].size;
@@ -999,7 +1031,8 @@ class AnazhRealm_Z20d {
     // Genesis-Scheibe. Natur-Einträge (`_istNatur`), die lebenden Streu-Zellen jeder Schicht (`_streuZelleRaeumen`) und die
     // Nah-Streu-Kacheln über dem Grundriss (sie bauen durch die Wand neu); an einer Lichtung mit der Krone (`_naturKrone`,
     // die Suche reicht eine Streu-Region weiter). Der billige Orts-Filter zuerst, die Art-Frage nur für Betroffene
-    // (Lehre 25). Leser: `_spawnSettlementSlot`, `_ensureGenesisPlatform` und das Laden. Gibt die Zahl der geräumten
+    // (Lehre 25). Leser: `spawnArchitecture` (die Wurzel jedes Baus mit Grundriss), `_hausHuelleSetzen` (die Hülle bringt ihn)
+    // und das Laden. Gibt die Zahl der geräumten
     // Natur-Stücke.
     _grundrissRaeumen(haus) {
         const fp = this._grundrissVon(haus);

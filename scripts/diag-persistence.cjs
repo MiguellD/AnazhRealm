@@ -14,6 +14,10 @@
 // den Restore überstehen, auch wenn das Studio-Buch noch nicht da ist. Die FOUNDRY-SPAWN-WAND nahm nur Text-ids als
 // Restore-Heilung: echte GPU, Werkbank, zweiter Boot — 12 Häuser an der Mess-Wiese fielen, der nächste Save schrieb
 // den Verlust fest. Gegenprobe (nicht vakuös): ein FRISCHER Spawn bei kaltem Buch bleibt blockiert.
+// (U) DER BODEN-UMZUG (K16): ein Save eines alten Bodens (ohne Boden-Generation, ohne Höhe über Grund) lädt durch den
+// ganzen Lade-Pfad (`loadState`) — jeder Bau steht danach auf dem Boden des Gesetzes in Fuß-Höhe, nicht in der alten Höhe
+// (Prüfung 1: der Restore stellte jeden Bau `precise` in seiner alten Höhe auf, |Δh| p50 37,7 m). Gegenprobe: ein Save
+// desselben Bodens bewegt nichts. Die Zahl: wie viele Bauten der Welt sich bewegen (`state.bodenUmzug`).
 //
 // (L) DIE LÖCHER NACH DEM RELOAD (K23, 12.10.): 300 Schnitz-Kugeln über den Spielpfad (`carveVoxelSphere`), Save,
 // echter Reload — jedes Loch steht wieder (die Dichte am Kugel-Zentrum liegt genau 48 unter der Basis). Bis K23
@@ -325,6 +329,37 @@ const server = http.createServer((req, res) => {
                 k.kZurueck = (r.state.architectures || []).some(istHaus);
                 k.kVorher = (snap.architectures || []).length;
                 k.kNachher = (r.state.architectures || []).length;
+                // (U) der alte Boden: jede Höhe 37,7 m daneben (die gemessene Verschiebung p50), ohne Generation und Höhe über Grund
+                const alt = JSON.parse(JSON.stringify(r.buildStateSnapshot()));
+                const gleich = JSON.parse(JSON.stringify(alt));
+                delete alt.bodenGeneration;
+                delete alt.spielerUeberGrund;
+                for (const a of alt.architectures || []) {
+                    delete a.ueberGrund;
+                    if (a.position) a.position.y += 37.7;
+                }
+                const fehl = (liste) => {
+                    let n = 0,
+                        max = 0;
+                    for (const a of liste || []) {
+                        if (!a || !a.position) continue;
+                        const g = r._voxelSurfaceY(a.position.x, a.position.z);
+                        if (!Number.isFinite(g)) continue;
+                        const d = Math.abs(a.position.y - (g + 0.5));
+                        n++;
+                        if (d > max) max = d;
+                    }
+                    return { n, max: Math.round(max * 100) / 100 };
+                };
+                r.state.bodenUmzug = null;
+                r.loadState(alt);
+                k.uAlt = fehl(r.state.architectures);
+                k.uBericht = r.state.bodenUmzug || null;
+                r.state.bodenUmzug = null;
+                const vorGleich = (r.state.architectures || []).map((a) => a.position.y);
+                r.loadState(gleich);
+                k.uGleichBericht = r.state.bodenUmzug || null;
+                k.uGleichN = vorGleich.length;
                 return k;
             })
         );
@@ -378,6 +413,16 @@ const server = http.createServer((req, res) => {
         {
             name: `(K) Reload mit kaltem Buch: das Haus mit Zahlen-id kehrt zurück (Einträge ${out.kVorher} → ${out.kNachher})`,
             pass: out.kImSnapshot === true && out.kZurueck === true && out.kNachher === out.kVorher,
+        },
+        {
+            name:
+                `(U) Boden-Umzug: ein Save des alten Bodens steht auf dem neuen (${out.uAlt ? out.uAlt.n : "?"} Bauten, ` +
+                `größte Abweichung von der Fuß-Höhe ${out.uAlt ? out.uAlt.max : "?"} m; Bericht ${JSON.stringify(out.uBericht)})`,
+            pass: !!out.uAlt && out.uAlt.n > 0 && out.uAlt.max <= 0.05 && !!out.uBericht && out.uBericht.bewegt === out.uAlt.n,
+        },
+        {
+            name: `(U) Gegenprobe: ein Save desselben Bodens zieht nicht um (Bericht ${JSON.stringify(out.uGleichBericht)})`,
+            pass: out.uGleichBericht === null,
         },
         {
             name: `(L) Löcher nach Reload ${out.lNachher}/${N_LOECHER} (vor dem Reload ${out.lVorher}/${N_LOECHER}, der Main hielt ${out.lImMain}, geladen ${out.lEdits} Edits)${out.lImMain < N_LOECHER ? " — Täter _addVoxelEdit: der FIFO-Deckel verdrängt still" : ""}`,

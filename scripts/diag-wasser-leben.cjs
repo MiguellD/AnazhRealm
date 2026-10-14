@@ -162,6 +162,11 @@ function urteil(b) {
                 );
             if (q.trocken > 0)
                 v.push(`F5 TROCKEN: ${q.trocken} von ${q.quellen} Quellen tragen auf ihren ersten 16 m kein Wasser`);
+            if (!(q.buckel <= 0))
+                v.push(
+                    `F5 BUCKEL: ${q.buckel} von ${q.imKanal} Quellen im Kanal eines breiteren Flusses heben dessen Spiegel ` +
+                        `(bis ${q.buckelMax} m) — der Zufluss nahm den Spiegel seiner ungefrästen Ufer`
+                );
             if (!(q.unsichtbarBreite <= 0))
                 v.push(
                     `F5 UNSICHTBAR: auf den Quell-Läufen liest der Körper auf ${q.unsichtbarBreite} m Breite (Summe je Punkt, in ` +
@@ -509,6 +514,9 @@ function selbsttest() {
         quelle: {
             quellen: 64,
             gespeist: 19,
+            imKanal: 5,
+            buckel: 0,
+            buckelMax: 0,
             huelle0: [2.83, 0.35],
             spruenge: 0,
             trocken: 0,
@@ -637,6 +645,8 @@ function selbsttest() {
         ["FP LEER", (b) => (b.kanal.zellen = 0)],
         ["F5 SPRUNG", (b) => Object.assign(b.quelle, { spruenge: 43, breiteMax: 12.75, tiefeMax: 1.73 })],
         ["F5 TROCKEN", (b) => (b.quelle.trocken = 1)],
+        // K16: 4 von 5 Quellen im Kanal eines breiteren Flusses hoben dessen Spiegel (−312/1688 um 1,0 m, 664/9032 um 1,36 m)
+        ["F5 BUCKEL", (b) => Object.assign(b.quelle, { buckel: 4, buckelMax: 1.36 })],
         ["F5 UNSICHTBAR", (b) => Object.assign(b.quelle, { unsichtbar: 487, unsichtbarBreite: 1200.5 })],
         ["F5 PHANTOM", (b) => Object.assign(b.quelle, { phantom: 2, phantomBreite: 0.5 })],
         ["F5 LEER", (b) => (b.quelle.quellen = 16)],
@@ -827,9 +837,16 @@ async function lauf() {
                 delete befund.bild[k];
             }
         } else {
-            // Die Welt an das Ostufer des Sees der Mess-Wiese streamen (Sync-Bau, Worker ausgehängt — wie der Playtest):
+            // DIE ORTE AUS DER WELT (K16, `__wasserOrte`): See, Ostufer, Fluss, Bach und Küste nächst der Mess-Wiese —
+            // die Literale der alten Welt (der See −944/−640, der Bach −856/−1160) lagen nach der Landform im Trockenen.
+            const ORTE = await page.evaluate(() => window.__wasserOrte({}));
+            befund.orte = ORTE;
+            console.log("  Orte aus der Welt: " + JSON.stringify(ORTE));
+            if (!ORTE.see || !ORTE.fluss || !ORTE.bach || !ORTE.kueste)
+                throw new Error("die Welt trägt keinen See, Fluss, Bach oder keine Küste nächst der Mess-Wiese");
+            // Die Welt an das Ostufer des Sees streamen (Sync-Bau, Worker ausgehängt — wie der Playtest):
             // die Wasser-Zellen der Chunks sind ein Leser der Körper-Wahrheit von gestern.
-            await page.evaluate(async () => {
+            await page.evaluate(async (ufer) => {
                 const r = window.anazhRealm;
                 const st = r.state;
                 if (st.renderer) {
@@ -838,7 +855,7 @@ async function lauf() {
                         st.renderer.renderAsync = () => Promise.resolve();
                 }
                 st.postProcessingFailed = true;
-                st.playerMesh.position.set(-890, r._voxelSurfaceY(-890, -650) + 0.6, -650);
+                st.playerMesh.position.set(ufer[0], r._voxelSurfaceY(ufer[0], ufer[1]) + 0.6, ufer[1]);
                 const worker = st.voxelWorker;
                 st.voxelWorker = null;
                 const start = performance.now();
@@ -857,37 +874,60 @@ async function lauf() {
                     await new Promise((res) => setTimeout(res, 0));
                 }
                 st.voxelWorker = worker;
-            });
+            }, ORTE.see.ufer);
             // `--nur a,b`: nur diese Proben (Werkbank-Fragen; das Gate fährt alle)
             const nurI = process.argv.indexOf("--nur");
             const NUR = nurI >= 0 ? new Set(process.argv[nurI + 1].split(",")) : null;
             const soll = (n) => !NUR || NUR.has(n);
             if (soll("fluss")) befund.fluss = await page.evaluate(() => window.__wasserFluss());
             if (soll("kanal")) befund.kanal = await page.evaluate(() => window.__wasserKanalParitaet({}));
-            if (soll("koerper")) befund.koerper = await page.evaluate(() => window.__wasserKoerper({}));
+            if (soll("koerper"))
+                befund.koerper = await page.evaluate(
+                    (o) => window.__wasserKoerper({ see: o.see.mitte, start: o.see.ufer, ziel: o.see.mitte }),
+                    ORTE
+                );
             // am See der Mess-Wiese: die Höhlen darunter und daneben (D11), das Gefährt (D10, W-W2)
             if (soll("hoehle")) befund.hoehle = await page.evaluate(() => window.__wasserHoehle({}));
-            if (soll("wagen")) befund.wagen = await page.evaluate(() => window.__wasserWagen({}));
-            if (soll("ufer")) befund.ufer = await page.evaluate(() => window.__wasserUfer({}));
+            if (soll("wagen"))
+                befund.wagen = await page.evaluate(
+                    (o) => window.__wasserWagen({ see: o.see.mitte, mitte: o.see.mitte, ufer: o.see.ufer }),
+                    ORTE
+                );
+            if (soll("ufer"))
+                befund.ufer = await page.evaluate((o) => window.__wasserUfer({ ort: [o.fluss.x, o.fluss.z] }), ORTE);
             if (soll("uferFarbe")) befund.uferFarbe = await page.evaluate(() => window.__wasserUferFarbe({}));
             // nach der Ufer-Probe steht die Welt am Fluss der Mess-Wiese: die Bank
             if (soll("bank")) befund.bank = await page.evaluate(() => window.__wasserBank({}));
             // (sie stellt die Welt an den See und an die Küste): die Leser der EINEN Wahrheit
-            if (soll("leser")) befund.leser = await page.evaluate(() => window.__wasserLeser({}));
+            if (soll("leser"))
+                befund.leser = await page.evaluate((o) => window.__wasserLeser({ orte: [o.see.ufer, o.kueste] }), ORTE);
             // zuletzt (sie bauen die Chunks an jeder Quelle und am Bach selbst): das gezeichnete Wasser gegen den Körper
-            if (soll("quelle")) befund.quelle = await page.evaluate(() => window.__wasserQuelle({ alle: true }));
-            if (soll("bach")) befund.bach = await page.evaluate(() => window.__wasserBach({}));
-            if (soll("see")) befund.see = await page.evaluate(() => window.__wasserSee({}));
+            if (soll("quelle"))
+                befund.quelle = await page.evaluate((o) => window.__wasserQuelle({ alle: true, bach: o.bach }), ORTE);
+            if (soll("bach"))
+                befund.bach = await page.evaluate((o) => window.__wasserBach({ x: o.bach.x, z: o.bach.z }), ORTE);
+            if (soll("see"))
+                befund.see = await page.evaluate((o) => window.__wasserSee({ fenster: o.see.fenster }), ORTE);
         }
         const v = urteil(befund);
         console.log(JSON.stringify(Object.assign({}, befund, { seitenFehler: seitenFehler.slice(0, 5) }), null, 1));
         if (v.length) {
             console.log(`\nWASSER-LEBEN ROT (${v.length}):`);
             for (const x of v) console.log("  ❌ " + x);
+            // in der CI auch als Annotation (die Check-Run-API trägt sie ohne Log-Rechte): K16 — das Bild war dort rot
+            // und lokal grün, der Täter stand nur im Log
+            if (process.env.GITHUB_ACTIONS)
+                for (const x of v) console.log(`::error title=wasser-leben${BILD ? ":bild" : ""}::${x}`);
         } else console.log("\nWASSER-LEBEN GRÜN");
         exit = v.length ? 1 : 0;
     } catch (e) {
         console.log("WASSER-LEBEN ABBRUCH:", (e && e.message) || e);
+        if (process.env.GITHUB_ACTIONS)
+            console.log(
+                `::error title=wasser-leben${BILD ? ":bild" : ""}::ABBRUCH ${String((e && e.message) || e).split("\n")[0]}`
+            );
+        if (process.env.GITHUB_ACTIONS && seitenFehler.length)
+            console.log(`::error title=wasser-leben::SEITE ${seitenFehler[0]}`);
         exit = 1;
     } finally {
         await browser.close().catch(() => {});

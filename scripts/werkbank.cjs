@@ -1051,11 +1051,14 @@ async function starte() {
             const py = boden(px, pz, k.py),
                 ly = boden(lx, lz, k.ly);
             rend.setAnimationLoop(null);
-            window.__buehne();
+            // die Kamera VOR der Bühne: die Bühne setzt Tag und Nacht neu, und das Licht des Auges steht an der Kamera
+            // (`_dayNightApplyAugenLicht`, seine Stärke aus dem Himmel am Auge) — danach gesetzt, stand es an der Kamera des
+            // letzten Schusses (K16: das Auge in der Höhle schwarz, Helligkeit 0, das Licht lag draußen unter dem Himmel)
             const cam = r.state.camera;
             cam.position.set(px, py, pz);
             cam.lookAt(lx, ly, lz + 1e-4);
             cam.updateMatrixWorld(true);
+            window.__buehne();
             if (r.state.playerMesh) r.state.playerMesh.visible = false;
             // DAS ZIEL des Bilds ist der Blick-Punkt (K32): die Aufnahme prüft, ob es im Bild und frei ist, und die Blick-Wahl
             // sucht bis zu `wahl` Posen um den Ort (Standard drei Runden, 42 — gemessen 13.10. am Dreier-Hain: frei erst in Pose 26;

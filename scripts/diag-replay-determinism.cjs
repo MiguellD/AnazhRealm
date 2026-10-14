@@ -93,6 +93,7 @@ function buildFrames(seq) {
             const sy = r.getTerrainHeightAt(0, 0);
             const startY = (Number.isFinite(sy) ? sy : 5) + 2;
             const mkStart = () => {
+                // BÜHNE: die Ankunft der Welt (_worldgenInitPlayerPosition: jeder Erst-Spawn auf 0/0), die Höhe aus dem Gesetz
                 pm.position.set(0, startY, 0);
                 s.playerVel.setValue(0, 0, 0);
                 s._fieldVy = 0;

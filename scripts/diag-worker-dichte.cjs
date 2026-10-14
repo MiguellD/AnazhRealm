@@ -17,7 +17,7 @@
 // sind SHA Main = Worker (bis K23 verdrängte der FIFO-Deckel in `_addVoxelEdit` ab Edit 257 still nur im Main).
 //
 //   node scripts/diag-worker-dichte.cjs [--welten standard,buehne] [--json datei]
-//   node scripts/diag-worker-dichte.cjs --selftest     ein verfälschter Worker-Term (terrainSteepness 1 → 1,0001,
+//   node scripts/diag-worker-dichte.cjs --selftest     ein verfälschter Worker-Term (die Basis-Höhe + 1 cm,
 //                                                      nur im Worker) MUSS rot werden; der saubere Lauf grün
 //   node scripts/diag-worker-dichte.cjs --abdruck datei [--wurzel dir]
 //                                                      der BYTE-ABDRUCK beider Welten (SHA-256 je Gitter, Main UND
@@ -317,9 +317,9 @@ async function probe(page, welt, mitAbdruck) {
                 return hex(h);
             };
             // DIE LESER der Formeln, die der Kern seit der Prüfung 1 trägt (K09a): die Boden-Farbe des Mains auf 32×32
-            // Punkten in drei Höhen über der Makro-Höhe (die Schnee-Prominenz `y − Basis − kontinentBasis` greift erst
-            // hoch), die Fels-Exposition (`massivMaske`, die Steilheit an der Makro-Höhe statt am Chunk-Cache), die Tarn-
-            // Mulden (`tarnMulde`) und die Normalform des Erbguts (`erbgutNormal`); dazu die Farben, die der Worker in
+            // Punkten in drei Höhen über der Makro-Höhe (die Schneegrenze `schnee` des Kerns greift erst
+            // hoch), die Fels-Exposition (die Steilheit an der Makro-Höhe statt am Chunk-Cache) und die
+            // Normalform des Erbguts (`erbgutNormal`); dazu die Farben, die der Worker in
             // seine Chunks legt (`attachFieldColors`, LOD 0 je Ort). Vorher = nachher beweist die Leser byte-gleich.
             const leserSha = async () => {
                 const f = new Float64Array(32 * 32 * 10);
@@ -344,8 +344,8 @@ async function probe(page, welt, mitAbdruck) {
                 } finally {
                     r._voxelSurfaceY = surfAlt;
                 }
-                const text = JSON.stringify({ tarns: s.tarns || null, terme: r._erbgut().terme });
-                return { farbeFels: await hex(f), tarnErbgut: await hex(new TextEncoder().encode(text)) };
+                const text = JSON.stringify({ terme: r._erbgut().terme });
+                return { farbeFels: await hex(f), erbgut: await hex(new TextEncoder().encode(text)) };
             };
             const workerFarbeSha = async () => {
                 const je = {};
@@ -366,7 +366,7 @@ async function probe(page, welt, mitAbdruck) {
                 out.shaLeser = await leserSha();
                 out.shaLeser.worker = await workerFarbeSha();
                 // DREI WELT-SAATEN (K09a): der Boot-Seed und zwei frische Saaten in der Form `w-<12>-<6>` — je Saat die
-                // chirurgische Regenesis wie gate:dritter-spiegel (Ströme, Anker, Erosion DANN Tarns), dann der Abdruck.
+                // chirurgische Regenesis (die Ströme; das Netz des Gesetzbuchs ist je Saat gemerkt), dann der Abdruck.
                 if (welt === "standard") {
                     out.shaSaaten = { [s.worldMeta.seed]: out.shaMakro };
                     out.shaLeserSaaten = {};
@@ -375,12 +375,8 @@ async function probe(page, welt, mitAbdruck) {
                     const regenesis = (saat, macro) => {
                         s.worldMeta.seed = saat;
                         r._voxelNoise = null;
-                        r._macroRidgeNoise = null;
-                        r._macroAnkerCache = null;
                         if (macro !== undefined) s.worldMeta.macro = macro;
                         else delete s.worldMeta.macro;
-                        s.erosionTiles = new Map();
-                        r._worldgenComputeErosionAndTarns();
                     };
                     for (const saat of ["w-sweepalpha0001-aaaaaa", "w-sweepbeta00002-bbbbbb"]) {
                         regenesis(saat, undefined);
@@ -404,8 +400,8 @@ async function probe(page, welt, mitAbdruck) {
     );
 }
 
-// Der Selbsttest: EIN Term nur im Worker verfälscht (terrainSteepness skaliert die ridged-Amplitude im Spiegel
-// `terrainMacroSurfaceY`) — die Linse MUSS das beim Ort und Gitter nennen.
+// Der Selbsttest: EIN Term nur im Worker verfälscht (die Basis-Höhe, die das Gesetzbuch `hoehe` liest, um 1 cm — die Steilheit
+// las es seit K16 nicht mehr, der Selbsttest war blind) — die Linse MUSS das beim Ort und Gitter nennen.
 async function verfaelsche(page, an) {
     return page.evaluate(async (an) => {
         const r = window.anazhRealm;
@@ -414,7 +410,8 @@ async function verfaelsche(page, an) {
         return new Promise((res, rej) => {
             const id = s.voxelWorkerNextRequestId++;
             s.voxelWorkerPending.set(id, { resolve: res, reject: rej });
-            s.voxelWorker.postMessage({ type: "state-update", delta: { terrainSteepness: 1.0001 }, requestId: id });
+            const delta = { baseHeight: (s.terrainBaseHeight || 0) + 0.01 };
+            s.voxelWorker.postMessage({ type: "state-update", delta, requestId: id });
         });
     }, an);
 }
@@ -429,7 +426,7 @@ async function probeVerfaelscht(page) {
         r.__dichteOrig = orig;
         r._voxelWorkerSnapshotState = function () {
             const snap = orig.call(this);
-            snap.terrainSteepness = 1.0001;
+            snap.baseHeight = (snap.baseHeight || 0) + 0.01;
             return snap;
         };
     });
@@ -467,7 +464,485 @@ function zeige(rep) {
     );
 }
 
+// ── DIE GELÄNDE-LINSE (K16, `--realismus`): die Wand der Natur-Zahlen am Gelände-Gesetzbuch — ohne Browser, das Gesetz
+// selbst in Node (vendor/simplex-noise.js + gelaende-core.js in einer vm), drei Welt-Saaten, 4 × 4 km im 30-m-Raster
+// (GLO-30), die Statistik ist `__gelaendeCore.statistik` (dieselbe Rechnung wie die Gegenmessung am gebauten Boden und
+// die Zahl-Leiste des Studios). Die Ziele (Nordstern §4.1, Karte K16): Senken > 1 m ≤ 1/km² und < 1 % der Fläche ·
+// Flint θ 0,3–0,7 bei R² ≥ 0,5 · Hammond-Ebenen vorhanden · ≥ 3 Dorfplätze · Schicht-Gesetz am Schicht-Ort (2-m-Raster):
+// Kliff ≥ 60° ≥ 2 %, Schutthang 30–40° ≥ 5 %, Pediment 0,5–7° ≥ 20 %. Der Täter je Ziel steht beim Namen.
+//   --realismus [--json datei] [--selftest]   Selbsttest: eine Eier-Karton-Störung (±3 m, λ 80 m) MUSS die Senken rot färben
+const REALISMUS_SAATEN = ["anazh-realm-seed", "w-sweepalpha0001-aaaaaa", "w-sweepbeta00002-bbbbbb"];
+function gelaendeKern(wurzel) {
+    const vm = require("vm");
+    const ctx = { console, Math, Float64Array, Float32Array, Int32Array, Uint8Array, Uint32Array, Map, Set, Object };
+    ctx.self = ctx;
+    ctx.window = ctx;
+    vm.createContext(ctx);
+    vm.runInContext(fs.readFileSync(path.join(wurzel, "vendor", "simplex-noise.js"), "utf8"), ctx);
+    vm.runInContext(fs.readFileSync(path.join(wurzel, "gelaende-core.js"), "utf8"), ctx);
+    return { G: ctx.__gelaendeCore, SimplexNoise: ctx.SimplexNoise };
+}
+function realismusLage(K, saat) {
+    const G = K.G;
+    return {
+        seed: saat,
+        noise: new K.SimplexNoise(saat + ":voxel"),
+        baseHeight: 0,
+        waterLevel: -3,
+        terrainSteepness: 1,
+        erbgut: { terme: G.erbgutNormal(undefined), wildnis: 1 },
+        regionSize: 2048,
+    };
+}
+// DAS SPALTEN-BUDGET (K16; Nordstern §4.1: ≤ 6 µs je Gelände-Spalte mit allen Termen, ≤ 3 µs in Ebenen, gegen „heute
+// 2,4–3,5 µs (26 noise2D)"). Gemessen wird, was der Chunk-Bau zahlt: die WARME Spalte (das Netz-Gedächtnis je Zelle steht —
+// der Bau tastet in 1,8 m, derselbe Raster um 7,3 m versetzt) plus das kalte Gedächtnis, umgelegt auf die 1,8-m-Spalten
+// seiner Fläche; als noise2D-Äquivalent derselben vm, so fällt die Uhr des Holzes heraus (die Eichung der Karte: 2,95 µs =
+// 26 noise2D → 6 µs ≙ 52,9, 3 µs ≙ 26,4). Ebene = Hang < 8 % über dem Wasser. Bis 12.10. maß die Linse kalte µs auf dem
+// 30-m-Raster (25–47 µs unter Last: das Gedächtnis je Zelle auf 1/278 der Spalten des Spiels verteilt) und urteilte nicht.
+const SPALTEN_BUDGET = Object.freeze({ alle: 52.9, ebenen: 26.4, eichungUsJeNoise: 2.95 / 26 });
+function spaltenKosten(G, L, H, n, S, A, usKalt, last = 0) {
+    const off = 7.3;
+    const hoehe = last
+        ? (x, z) => {
+              let h = G.hoehe(L, x, z, true);
+              for (let k = 0; k < last; k++) h += L.noise.noise2D(x * 0.01 + k, z * 0.01) * 1e-12;
+              return h;
+          }
+        : (x, z) => G.hoehe(L, x, z, true);
+    const eben = [];
+    for (let j = 1; j < n - 1; j++)
+        for (let i = 1; i < n - 1; i++) {
+            const k = i + j * n;
+            const g = Math.hypot((H[k + 1] - H[k - 1]) / (2 * S), (H[k + n] - H[k - n]) / (2 * S));
+            if (g < 0.08 && H[k] > L.waterLevel) eben.push(k);
+        }
+    // Spalten und Eichung WECHSELN sich ab (16 Scheiben, je Scheibe 4 000 noise2D): die Last des Holzes driftet während der
+    // Messung (ein voller Rechner verdoppelte noise2D 0,20 → 0,48 µs), das Verhältnis je Scheibe nicht — gezählt wird sein
+    // Median. Erst die Rohwerte kalt am 30-m-Raster und eine Eichung am Ende ließen dieselbe Welt zwischen 17 und 30 springen.
+    const median = (a) => a.slice().sort((p, q) => p - q)[a.length >> 1];
+    const takt = (ks) => {
+        const B = Math.max(1, Math.floor(ks.length / 16));
+        const rat = [];
+        const usS = [];
+        const usN = [];
+        for (let b = 0; b + B <= ks.length; b += B) {
+            let t0 = process.hrtime.bigint();
+            let s = 0;
+            for (let q = b; q < b + B; q++) {
+                const k = ks[q];
+                s += hoehe(-A + off + (k % n) * S, -A + off + ((k / n) | 0) * S);
+            }
+            const us = Number(process.hrtime.bigint() - t0) / 1000 / B;
+            t0 = process.hrtime.bigint();
+            for (let q = 0; q < 4000; q++) s += L.noise.noise2D(q * 0.013 + b, q * 0.007);
+            const un = Number(process.hrtime.bigint() - t0) / 1000 / 4000;
+            if (!(s === s)) throw new Error("spaltenKosten: NaN aus dem Gesetz");
+            rat.push(us / un);
+            usS.push(us);
+            usN.push(un);
+        }
+        return { eq: median(rat), us: median(usS), usNoise: median(usN) };
+    };
+    // der Selbsttest (eine Last von `last` noise2D je Spalte) misst jede vierte Spalte
+    const jede = last ? 4 : 1;
+    const W = takt(Array.from({ length: Math.floor((n * n) / jede) }, (_, q) => q * jede));
+    const E = takt(eben.filter((_, q) => q % jede === 0));
+    const usWarm = W.us;
+    const usEben = E.us;
+    const usNoise = W.usNoise;
+    const flaecheKm2 = ((n - 1) * S * 1e-3) ** 2;
+    const memoUsJeKm2 = last ? 0 : Math.max(0, (usKalt - usWarm) * n * n) / flaecheKm2;
+    const umgelegt = memoUsJeKm2 / (1e6 / (1.8 * 1.8)); // je 1,8-m-Spalte des Spiels
+    const alle = W.eq + umgelegt / W.usNoise;
+    const ebenen = E.eq + umgelegt / E.usNoise;
+    return {
+        usWarm: +usWarm.toFixed(2),
+        usEbene: +usEben.toFixed(2),
+        usNoise2D: +usNoise.toFixed(3),
+        memoMsJeKm2: +(memoUsJeKm2 / 1000).toFixed(1),
+        umgelegtUs: +umgelegt.toFixed(3),
+        noise2DAlle: +alle.toFixed(1),
+        noise2DEbene: +ebenen.toFixed(1),
+        ebeneSpalten: eben.length,
+        imBudget: alle <= SPALTEN_BUDGET.alle && ebenen <= SPALTEN_BUDGET.ebenen,
+    };
+}
+function realismus() {
+    // Das Gesetz kommt aus der gemessenen Wurzel (`--wurzel`: ein anderer Stand), die Linse (statistik, hangBaender)
+    // immer aus DIESEM Baum — vorher und nachher misst dieselbe Rechnung.
+    const K = gelaendeKern(root);
+    const G = K.G;
+    const Z = gelaendeKern(path.resolve(__dirname, "..")).G;
+    if (typeof Z.statistik !== "function") {
+        console.log("  ⛔ der Kern trägt keine Linse (statistik)");
+        return 1;
+    }
+    const SCHRITT = 30;
+    const HALB = 2000;
+    // Der Rand (2 km je Seite) rechnet mit — Füllung, Abfluss und das WAHRE Einzugsgebiet der Flüsse, die ins Feld treten
+    // (ohne ihn zählte Flint die Ströme ab der Feldkante); gezählt wird das innere Feld.
+    const RAND = Math.round(2000 / SCHRITT);
+    const AUSSEN = HALB + RAND * SCHRITT;
+    const n = Math.floor((2 * AUSSEN) / SCHRITT) + 1;
+    console.log(
+        "\n========= DIE GELÄNDE-LINSE — Natur-Zahlen am Gesetzbuch (Makro, 4 × 4 km innen + 2 km Rand, 30 m) ========="
+    );
+    const welten = [];
+    let rot = false;
+    const stoerung = (x, z) => 3 * Math.sin(x / 12.7) * Math.sin(z / 12.7);
+    for (const saat of REALISMUS_SAATEN) {
+        const L = realismusLage(K, saat);
+        const H = new Array(n * n);
+        const t0 = process.hrtime.bigint();
+        for (let j = 0; j < n; j++)
+            for (let i = 0; i < n; i++) H[i + j * n] = G.hoehe(L, -AUSSEN + i * SCHRITT, -AUSSEN + j * SCHRITT, true);
+        const us = Number(process.hrtime.bigint() - t0) / 1000 / (n * n);
+        const kosten = spaltenKosten(G, L, H, n, SCHRITT, AUSSEN, us);
+        const benannt = typeof G.benannteSeen === "function" ? G.benannteSeen(L, -AUSSEN, -AUSSEN, SCHRITT, n) : [];
+        const st = Z.statistik(H, n, SCHRITT, L.waterLevel, benannt, RAND);
+        // Das Schicht-Gesetz am Schicht-Ort auf 2-m-Raster, 600 m: das Tafelland ist ein ORT (Stil-Feld λ 5,2 km), der Kern
+        // nennt ihn im Umkreis von 8 km (16 × 16 km — in 4 × 4 km fehlt er zwei von drei Welten); ohne Ort: der Ursprung.
+        const ort = typeof G.schichtOrt === "function" ? G.schichtOrt(L, -8000, -8000, 8000, 8000) : null;
+        const ox = ort ? ort.x : 0;
+        const oz = ort ? ort.z : 0;
+        const fn = 301;
+        const HF = new Float64Array(fn * fn);
+        // Gezählt wird im Tafelland selbst (Stil ≥ 0,8 der Großform), nicht im Wald daneben.
+        const maske = new Uint8Array(fn * fn);
+        for (let j = 0; j < fn; j++)
+            for (let i = 0; i < fn; i++) {
+                HF[i + j * fn] = G.hoehe(L, ox - 300 + i * 2, oz - 300 + j * 2, true);
+                if (ort && typeof G.grossform === "function")
+                    maske[i + j * fn] = G.grossform(L, ox - 300 + i * 2, oz - 300 + j * 2).stil >= 0.8 ? 1 : 0;
+                else maske[i + j * fn] = 1;
+            }
+        const schicht = Z.hangBaender(HF, fn, 2, maske);
+        // DER MÄANDER (K16): die Bahnen der Flachland-Glieder des inneren Felds (`maeanderZahl`, die Bahn im 8-m-Schritt) —
+        // Sinuosität ≥ 1,3, Wellenlänge 10–14 Breiten, Rc 2–3 Breiten (Leopold & Wolman 1960, Nordstern §4.1), ≥ 3 Glieder.
+        const laeufe = G.flussLaeufe(L, -HALB, -HALB, HALB, HALB, 8);
+        const maeander = Z.maeanderZahl(laeufe);
+        const maeanderGut = (m) =>
+            m.glieder >= 3 &&
+            m.sinuositaet >= 1.3 &&
+            m.lambdaBreiten >= 10 &&
+            m.lambdaBreiten <= 14 &&
+            m.rcBreiten >= 2 &&
+            m.rcBreiten <= 3;
+        const urteil = {
+            senken: st.senken1mJeKm2 <= 1 && st.anteilSenkeTiefer1m < 0.01,
+            flint: st.flint.theta != null && st.flint.theta >= 0.3 && st.flint.theta <= 0.7 && st.flint.r2 >= 0.5,
+            hammond: st.hammond.sanft >= 1,
+            dorfplaetze: st.dorfplaetze >= 3,
+            schicht: !!ort && schicht.kliff >= 0.02 && schicht.schutt >= 0.05 && schicht.pediment >= 0.2,
+            maeander: maeanderGut(maeander),
+            kosten: kosten.imBudget,
+        };
+        const taeter = {
+            senken: "geschlossene Mulden ohne Auslass (flaeche: ein Profil-Minimum ohne Netz-Abfluss, oder das Detail T3)",
+            flint: "das Gefälle folgt dem Einzugsgebiet nicht (knotenSohle: das Bett steigt nicht mit S = ks·A^−θ je Flächen-Klasse)",
+            hammond: "keine Ebenen (RELIEF_KNOTEN hoch im Tiefland, Aue F zu schmal)",
+            dorfplaetze: "kein ebener Talboden (Aue F, AUE_QUER)",
+            schicht: ort
+                ? "die Bänder fehlen am Schicht-Ort (treppe/schichtMass: Kliff, Schutthang, Pediment)"
+                : "kein Tafelland in 16 × 16 km (grossform: Stil-Feld)",
+            maeander:
+                maeander.glieder < 3
+                    ? `${maeander.glieder} Flachland-Glieder im Feld (knotenSohle: kein Gefälle < 0,4 %)`
+                    : `die Bahn der Flachland-Glieder ist keine Schleife in der Aue: Sinuosität ${maeander.sinuositaet}, λ ${maeander.lambdaBreiten} Breiten, Rc ${maeander.rcBreiten} Breiten (flussLaeufe/segment: der Mäander-Term)`,
+            kosten: `die Spalte kostet ${kosten.noise2DAlle} noise2D (Ebene ${kosten.noise2DEbene}) gegen das Budget ${SPALTEN_BUDGET.alle} (Ebene ${SPALTEN_BUDGET.ebenen}) — hoehe: die Terme je Spalte (Netz, Profil, Detail)`,
+        };
+        let stoer = null;
+        let last = null;
+        if (SELBSTTEST) {
+            const HS = H.map((h, k) => h + stoerung(-AUSSEN + (k % n) * SCHRITT, -AUSSEN + ((k / n) | 0) * SCHRITT));
+            stoer = Z.statistik(HS, n, SCHRITT, L.waterLevel, benannt, RAND);
+            // die Kosten-Last: 40 noise2D mehr je Spalte MÜSSEN das Budget sprengen
+            last = spaltenKosten(G, L, H, n, SCHRITT, AUSSEN, us, 40);
+            // die Gerade: dieselben Läufe ohne Bahn (jedes Glied seine Sehne) MÜSSEN den Mäander rot färben
+            const gerade = Z.maeanderZahl(
+                laeufe.map((lf) => ({ ...lf, glieder: lf.glieder.map((gl) => ({ ...gl, bahn: undefined })) }))
+            );
+            stoer.maeanderGerade = maeanderGut(gerade) ? "blind" : "rot";
+        }
+        welten.push({
+            saat,
+            raster: { halbM: HALB, randM: RAND * SCHRITT, schrittM: SCHRITT, n },
+            usJeSpalteKalt: +us.toFixed(2),
+            kosten,
+            statistik: st,
+            schichtOrt: ort ? { x: ox, z: oz, stil: ort.stil } : null,
+            schicht,
+            urteil,
+            maeander,
+            stoerung: stoer && {
+                senken1mJeKm2: stoer.senken1mJeKm2,
+                minimaJeKm2: stoer.minimaJeKm2,
+                maeanderGerade: stoer.maeanderGerade,
+            },
+            kostenLast: last,
+        });
+        console.log(
+            `\n  ${saat}: Spalte ${kosten.noise2DAlle} noise2D (Ebene ${kosten.noise2DEbene}; warm ${kosten.usWarm} µs, Ebene ${kosten.usEbene} µs, noise2D ${kosten.usNoise2D} µs, Gedächtnis ${kosten.memoMsJeKm2} ms/km² = ${kosten.umgelegtUs} µs je 1,8-m-Spalte; kalt ${us.toFixed(2)} µs am 30-m-Raster) · Land ${st.landKm2} km² · Senken>1m ${st.senken1mJeKm2}/km² (${st.senken1m}, benannt ${st.senkenBenannt}; Minima ${st.minimaJeKm2}/km²; Fläche>1m ${(100 * st.anteilSenkeTiefer1m).toFixed(1)} %) · θ ${st.flint.theta} R² ${st.flint.r2} (${st.flint.klassen} Klassen aus ${st.flint.zellen} Zellen; je Zelle θ ${st.flint.thetaZelle} R² ${st.flint.r2Zelle}) · Hammond sanft ${st.hammond.sanft}/${st.hammond.fenster} · Dorfplätze ${st.dorfplaetze} · Hang p50 ${st.hang.p50Prozent} % p90 ${st.hang.p90Prozent} %`
+        );
+        console.log(
+            `    Schicht-Ort ${ort ? `(${Math.round(ox)}, ${Math.round(oz)})` : "— (kein Schicht-Term)"}: Kliff≥60° ${(100 * schicht.kliff).toFixed(1)} % · Schutt 30–40° ${(100 * schicht.schutt).toFixed(1)} % (Ruhewinkel 33–37° ${(100 * schicht.ruhe).toFixed(1)} %) · Pediment 0,5–7° ${(100 * schicht.pediment).toFixed(1)} %`
+        );
+        for (const k of Object.keys(urteil)) {
+            if (urteil[k]) continue;
+            rot = true;
+            console.log(`    ⛔ ${k}: ${taeter[k]}`);
+        }
+        console.log(
+            `    Mäander: ${maeander.glieder} Flachland-Glieder · Sinuosität ${maeander.sinuositaet} · λ ${maeander.lambdaBreiten} Breiten · Rc ${maeander.rcBreiten} Breiten (Soll ≥ 1,3 · 10–14 · 2–3)`
+        );
+        if (stoer)
+            console.log(
+                `    Selbsttest-Störung: Senken>1m ${stoer.senken1mJeKm2}/km² · die Gerade (Glieder ohne Bahn): Mäander ${stoer.maeanderGerade}`
+            );
+        if (last)
+            console.log(
+                `    Selbsttest-Last (+40 noise2D je Spalte): ${last.noise2DAlle} noise2D (Ebene ${last.noise2DEbene})`
+            );
+    }
+    const JSON_ZIEL = JSON_AUS;
+    if (JSON_ZIEL)
+        fs.writeFileSync(
+            JSON_ZIEL,
+            JSON.stringify({ zweck: "K16 Gelände-Linse (Makro am Gesetzbuch)", wurzel: root, welten }, null, 1)
+        );
+    if (SELBSTTEST) {
+        const blind = welten.some(
+            (w) =>
+                !(w.stoerung && w.stoerung.senken1mJeKm2 > 1) ||
+                !(w.kostenLast && !w.kostenLast.imBudget) ||
+                w.stoerung.maeanderGerade !== "rot"
+        );
+        console.log(
+            `\n${blind ? "⛔ SELBSTTEST ROT: die Störung, die Kosten-Last oder die Gerade blieb unentdeckt" : "✅ SELBSTTEST GRÜN: die Eier-Karton-Störung färbt die Senken rot, die Kosten-Last sprengt das Spalten-Budget, die Gerade färbt den Mäander rot"}\n`
+        );
+        return blind ? 1 : 0;
+    }
+    console.log(
+        `\n${rot ? "⛔ GELÄNDE-LINSE ROT" : "✅ GELÄNDE-LINSE GRÜN: alle Natur-Zahlen im Korridor, drei Saaten"}\n`
+    );
+    return rot ? 1 : 0;
+}
+
+// ── DER GEBAUTE BODEN (K16, Prüfung 1, `--gebaut`): dieselbe Linse (`statistik`) am Boden, den der Spieler betritt
+// (`_voxelSurfaceY`: Gesetz, Höhle, Hydrosphären-Kanal und See-Becken) neben der Makro-Höhe des Gesetzbuchs, je Saat der
+// Realismus-Wand (die Boot-Saat und zwei frische: Regenesis der Ströme, die Hydrosphäre neu), 2 × 2 km um den Ursprung (die
+// Heimat-Kachel der Hydrosphäre), 30 m. Die Makro-Wand (`--realismus`) war grün, während der gebaute Boden rot war: 3,94–
+// 11,05 Senken > 1 m je km², 1–3 Dorfplätze (Prüfung 1, gegenmessung-3saaten-1110f.json). Ziel je Saat: Senken > 1 m ≤ 1 je
+// km², ≥ 3 Dorfplätze, und die Hydrosphäre trägt Flüsse. Der Täter steht beim Namen: derselbe Boden ohne den Kanal (das Flag
+// des Hydro-Baus unterdrückt ihn) — ohne den Kanal grün → der Kanal (`_hydroNetzFluesse` → `_hydrosphereCarveAt`). Mit
+// `--selftest` im selben Boot: die Bett-Tiefe des alten Gesetzes (1,4 m + 0,16 · Breite, ohne `kanalTiefe`) MUSS die
+// Boot-Saat rot färben.
+async function gebaut(page, fehler) {
+    const b = await boote(page);
+    if (!b.ok) {
+        console.log("  ⛔ GEBAUT: Boot nicht bereit nach 120 s");
+        return 1;
+    }
+    const { alle, stoerung } = await page.evaluate(
+        async (saaten, selbst) => {
+            const r = window.anazhRealm;
+            const s = r.state;
+            const t0 = performance.now();
+            while (!(s.hydrosphere && s.hydrosphere.ready) && performance.now() - t0 < 60000) {
+                try {
+                    r._gameLoopTick(performance.now());
+                } catch (_e) {
+                    /* der Boot reift */
+                }
+                await new Promise((res) => setTimeout(res, 16));
+            }
+            r._gameLoopTick = () => {}; // die Welt steht still
+            const G = window.__gelaendeCore;
+            const wl = s.waterLevel;
+            const S = 30,
+                n = 67,
+                x0 = -990;
+            const raster = (f) => {
+                const H = new Array(n * n);
+                for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) H[i + j * n] = f(x0 + i * S, x0 + j * S);
+                return H;
+            };
+            const kurz = (st) => ({
+                senken: st.senken1mJeKm2,
+                dorf: st.dorfplaetze,
+                minima: st.minimaJeKm2,
+                theta: st.flint.theta,
+                r2: st.flint.r2,
+            });
+            // DER MÄANDER IM WASSER (K16): die Fluss-Punkte der Hydrosphäre (Kanal und Spiegel liegen darauf) in Fenstern von
+            // 400 m Bogen, flach (Gefälle < 0,4 %, nicht im See) — die Sinuosität Bogen / Sehne je Fenster, ihr Median.
+            const maeanderWasser = (h) => {
+                const sin = [];
+                for (const rv of (h && h.rivers) || []) {
+                    const P = rv.points;
+                    let k0 = 0;
+                    let bogen = 0;
+                    for (let k = 1; k < P.length; k++) {
+                        bogen += Math.hypot(P[k].x - P[k - 1].x, P[k].z - P[k - 1].z);
+                        if (bogen < 400) continue;
+                        const flach = (P[k0].y - P[k].y) / bogen < 0.004 && !P.slice(k0, k + 1).some((p) => p.inLake);
+                        if (flach) sin.push(bogen / Math.hypot(P[k].x - P[k0].x, P[k].z - P[k0].z));
+                        k0 = k;
+                        bogen = 0;
+                    }
+                }
+                sin.sort((a, b) => a - b);
+                return { fenster: sin.length, sinuositaet: sin.length ? +sin[sin.length >> 1].toFixed(3) : null };
+            };
+            // der Selbsttest je Saat — die Gerade: jedes Glied nur seine Sehne (Knoten zu Knoten), dieselbe Hydrosphäre neu
+            // gerechnet; der Mäander im Wasser MUSS rot werden (danach die Hydrosphäre des Gesetzes zurück)
+            const geradeMessung = () => {
+                const kern = window.__gelaendeCore;
+                // dieselben Punkte der Bahn, auf die Sehne gelegt (der Versatz quer fällt, t bleibt)
+                const gerade = (gl) => {
+                    const ex = gl.bx - gl.ax;
+                    const ez = gl.bz - gl.az;
+                    const len = Math.hypot(ex, ez) || 1;
+                    return gl.bahn.map((p) => ({
+                        t: p.t,
+                        x: gl.ax + ex * p.t,
+                        z: gl.az + ez * p.t,
+                        s: len * p.t,
+                        fx: ex / len,
+                        fz: ez / len,
+                    }));
+                };
+                window.__gelaendeCore = {
+                    ...kern,
+                    flussLaeufe: (...a) =>
+                        kern.flussLaeufe(...a).map((lf) => ({
+                            ...lf,
+                            glieder: lf.glieder.map((gl) => ({ ...gl, bahn: gerade(gl) })),
+                        })),
+                };
+                let m;
+                try {
+                    m = maeanderWasser(r._computeHydrosphere());
+                } finally {
+                    window.__gelaendeCore = kern;
+                }
+                s.hydrosphere = r._computeHydrosphere();
+                return m;
+            };
+            const bootSaat = s.worldMeta.seed;
+            const bootMacro = s.worldMeta.macro;
+            // die chirurgische Regenesis der Abdruck-Probe (die Ströme; das Netz des Gesetzbuchs ist je Saat gemerkt), dazu die
+            // Hydrosphäre der Saat (ihre Kacheln fallen)
+            const regenesis = (saat, macro) => {
+                s.worldMeta.seed = saat;
+                r._voxelNoise = null;
+                if (macro !== undefined) s.worldMeta.macro = macro;
+                else delete s.worldMeta.macro;
+                s.hydroTiles = new Map();
+                s.hydrosphere = r._computeHydrosphere();
+            };
+            const out = [];
+            for (const saat of [bootSaat, ...saaten.filter((x) => x !== bootSaat)]) {
+                if (saat !== bootSaat) regenesis(saat, undefined);
+                const Hm = raster((x, z) => r._terrainMacroSurfaceY(x, z, true));
+                const voll = raster((x, z) => r._voxelSurfaceY(x, z)).map((v, k) => (Number.isFinite(v) ? v : Hm[k]));
+                r._hydroComputing = true;
+                const ohne = raster((x, z) => r._voxelSurfaceY(x, z)).map((v, k) => (Number.isFinite(v) ? v : Hm[k]));
+                r._hydroComputing = false;
+                const h = s.hydrosphere;
+                out.push({
+                    seed: saat,
+                    hydro: !!(h && h.ready),
+                    fluesse: h && h.rivers ? h.rivers.length : 0,
+                    maeander: maeanderWasser(h),
+                    maeanderGerade: selbst ? geradeMessung() : null,
+                    voll: kurz(G.statistik(voll, n, S, wl, [], 0)),
+                    ohneKanal: kurz(G.statistik(ohne, n, S, wl, [], 0)),
+                    makro: kurz(G.statistik(Hm, n, S, wl, [], 0)),
+                });
+            }
+            if (s.worldMeta.seed !== bootSaat) regenesis(bootSaat, bootMacro);
+            let stoerung = null;
+            if (selbst) {
+                // die Störung: die Bett-Tiefe des alten Gesetzes (der Kanal als Graben unter der Aue)
+                const A = r.constructor;
+                const HC = A.HYDROSPHERE;
+                const tiefe = A._flussTiefe;
+                A._flussTiefe = (p) => (HC.carveBedMin + (HC.carveBedK * p.width) / p.quelle) * p.quelle;
+                s.hydrosphere = r._computeHydrosphere();
+                const Hm = raster((x, z) => r._terrainMacroSurfaceY(x, z, true));
+                const gestoert = raster((x, z) => r._voxelSurfaceY(x, z)).map((v, k) =>
+                    Number.isFinite(v) ? v : Hm[k]
+                );
+                A._flussTiefe = tiefe;
+                s.hydrosphere = r._computeHydrosphere();
+                stoerung = kurz(G.statistik(gestoert, n, S, wl, [], 0));
+            }
+            return { alle: out, stoerung };
+        },
+        REALISMUS_SAATEN,
+        SELBSTTEST
+    );
+    const gruen = (x) => x.senken <= 1 && x.dorf >= 3;
+    // der Mäander im Wasser: Median der Sinuosität der flachen 400-m-Fenster ≥ 1,25 (ohne flaches Fenster kein Urteil)
+    const maeanderGut = (m) => !m.fenster || m.sinuositaet >= 1.25;
+    let rot = !!fehler();
+    for (const out of alle) {
+        console.log(
+            `\n========= DER GEBAUTE BODEN — Natur-Zahlen am Boden des Spielers (Saat ${out.seed}, 2 × 2 km, 30 m, ${out.fluesse} Flüsse) =========`
+        );
+        for (const k of ["voll", "ohneKanal", "makro"])
+            console.log(
+                `  ${k}: Senken>1m ${out[k].senken}/km² · Dorfplätze ${out[k].dorf} · Minima ${out[k].minima}/km² · θ ${out[k].theta} R² ${out[k].r2}`
+            );
+        console.log(
+            `  Mäander im Wasser: ${out.maeander.fenster} flache 400-m-Fenster · Sinuosität ${out.maeander.sinuositaet} (Soll ≥ 1,25)`
+        );
+        if (!maeanderGut(out.maeander)) {
+            rot = true;
+            console.log(
+                "  ⛔ das Wasser läuft gerade: die Fluss-Punkte folgen der Sehne, nicht der Bahn (`_hydroNetzFluesse` liest `bahn` des Kerns)"
+            );
+        }
+        if (!out.hydro || !out.fluesse) {
+            rot = true;
+            console.log(
+                "  ⛔ LEER: die Hydrosphäre stand nicht oder trägt keinen Fluss (die Linse mäße den Boden ohne Wasser)"
+            );
+        }
+        if (!gruen(out.voll)) {
+            rot = true;
+            console.log(
+                gruen(out.ohneKanal)
+                    ? "  ⛔ der Hydrosphären-Kanal fräst den Boden: ohne ihn grün (`_hydroNetzFluesse` → `_hydrosphereCarveAt`)"
+                    : "  ⛔ der Boden ohne Kanal ist rot: Höhle oder Gesetz (`_terrainBaseDensityAtCol`)"
+            );
+        }
+    }
+    if (SELBSTTEST) {
+        const st = stoerung;
+        // die Gerade zählt an jeder Saat mit flachen Fenstern — mindestens eine, und jede davon rot
+        const mit = alle.filter((o) => o.maeanderGerade && o.maeanderGerade.fenster);
+        const sieht = mit.length > 0 && mit.every((o) => !maeanderGut(o.maeanderGerade));
+        console.log(
+            `  Selbsttest-Gerade (jedes Glied seine Sehne): ${mit.map((o) => `${o.seed} ${o.maeanderGerade.fenster} Fenster, Sinuosität ${o.maeanderGerade.sinuositaet}`).join(" · ") || "keine Saat mit flachem Fenster"} → ${sieht ? "✅ rot erkannt" : "⛔ blind"}`
+        );
+        if (!sieht) rot = true;
+        const blind = !st || (st.senken <= 1 && st.dorf >= 3);
+        console.log(
+            `\n  Selbsttest-Störung (Bett-Tiefe des alten Gesetzes, Saat ${alle[0].seed}): Senken>1m ${st ? st.senken : "–"}/km² · Dorfplätze ${st ? st.dorf : "–"} → ${blind ? "⛔ SELBSTTEST ROT: die Störung blieb unentdeckt" : "✅ SELBSTTEST GRÜN: die Störung färbt den Boden rot"}`
+        );
+        if (blind) rot = true;
+    }
+    console.log(
+        `\n${rot ? "⛔ GEBAUTER BODEN ROT" : `✅ GEBAUTER BODEN GRÜN: Senken und Dorfplätze im Korridor, ${alle.length} Saaten`}\n`
+    );
+    return rot ? 1 : 0;
+}
+
 (async () => {
+    if (argv.includes("--realismus")) process.exit(realismus());
     await new Promise((r) => server.listen(PORT, r));
     const browser = await puppeteer.launch({
         headless: true,
@@ -495,13 +970,14 @@ function zeige(rep) {
     });
     await page.reload({ waitUntil: "domcontentloaded", timeout: 60000 });
 
+    if (argv.includes("--gebaut")) process.exit(await gebaut(page, () => pageErr));
     console.log("\n========= DER DICHTE-SPIEGEL — Main _voxelEditedDensityGrid == Worker computeDensityGrid =========");
     const berichte = [];
     let rot = false;
     // DIE ABSENZ (plan §10 R1): der Name der Bühne steht nur in spec/ und in der Werkbank — der Stamm, der Worker und der
     // Seh-Spiegel lesen Zahlen (Terme, Wildnis-Gewicht), nie einen Namen (kein Flag unter anderem Namen).
     const NAME = /pruefbuehne|prüfbühne/i;
-    for (const datei of [...stammLib.dateien(root), "voxel-worker.js", "feld-wgsl.js"]) {
+    for (const datei of [...stammLib.dateien(root), "voxel-worker.js"]) {
         const n = (fs.readFileSync(path.join(root, datei), "utf8").match(new RegExp(NAME.source, "gi")) || []).length;
         if (n) {
             console.log(`  ⛔ ABSENZ: ${datei} nennt die Bühne ${n}× (ein Flag statt der Terme)`);
@@ -561,7 +1037,7 @@ function zeige(rep) {
             const v = await probeVerfaelscht(page);
             selbst = { abweichend: v.abweichend, maxDiff: v.maxDiff, gitter: v.gitter };
             console.log(
-                `\n  SELBSTTEST (terrainSteepness 1 → 1,0001 nur im Worker): ${v.abweichend} abweichende Ecken in ${v.gitter} Gittern, maxDiff ${v.maxDiff}`
+                `\n  SELBSTTEST (Basis-Höhe + 1 cm nur im Worker): ${v.abweichend} abweichende Ecken in ${v.gitter} Gittern, maxDiff ${v.maxDiff}`
             );
         }
     }
@@ -588,7 +1064,7 @@ function zeige(rep) {
         abdruck.buehne = bue
             ? { seed: bue.seed, makro: bue.shaMakro, erbgut: bue.erbgut, leser: bue.shaLeser || null }
             : null;
-        // Die Leser der Kern-Formeln (Boden-Farbe Main und Worker, Fels-Exposition, Tarn-Mulden, Erbgut-Normalform).
+        // Die Leser der Kern-Formeln (Boden-Farbe Main und Worker, Fels-Exposition, Erbgut-Normalform).
         abdruck.leser = (berichte[0] && berichte[0].shaLeser) || null;
         abdruck.leserSaaten = (berichte[0] && berichte[0].shaLeserSaaten) || null;
         fs.writeFileSync(ABDRUCK, JSON.stringify(abdruck, null, 1));
