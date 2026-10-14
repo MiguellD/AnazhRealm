@@ -45,8 +45,8 @@ const AUSGENOMMEN = {
 // H4 — die Ofen-Studios: kind = der BAKERS_BY_KIND-Schlüssel, eigenbau = der eigene Leib in der Shell (ein Ruf des Bau-Gesetzes).
 const OFEN_STUDIOS = { tetrapoda: { kind: "kreatur", eigenbau: /\b(?:bauTier|bauMensch|fellStreu)\s*\(/g } };
 // Offen, benannt (kein Grün): das Körper-Labor baut noch seinen eigenen Menschen (bauMensch + Kleid-Gewichte im Labor,
-// Synthese §3.6 Nr. 4) — 332 645 △ gegen die Zeile 166 000; die Wand nennt es in jedem Lauf.
-const OFEN_OFFEN = { koerperstudio: "die Kleid-Gewichts-Vererbung lebt im Labor (koerperstudio.js), der Ofen trägt sie noch nicht — Labor L0 332 645 △ gegen die Zeile 166 000" };
+// Synthese §3.6 Nr. 4) — 332 645 △ gegen die Welt-Zeile 40 000; die Wand nennt es in jedem Lauf.
+const OFEN_OFFEN = { koerperstudio: "die Kleid-Gewichts-Vererbung lebt im Labor (koerperstudio.js), der Ofen trägt sie noch nicht — Labor L0 332 645 △ gegen die Welt-Zeile 40 000 (der Ofen-Leib seit welle-m-e-leib)" };
 const HAND_RANGE_HTML = /<input\b[^>]*\btype\s*=\s*["']?range\b/gi;
 const HAND_RANGE_JS = /\.type\s*=\s*["']range["']|\btype\s*:\s*["']range["']|<input[^>]*type\s*=\s*\\?["']?range/g;
 const READY_LITERAL = /type\s*:\s*["']ready["']/g;
