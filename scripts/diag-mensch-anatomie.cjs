@@ -300,6 +300,44 @@ function messeKopf(sb, eingriff) {
             if (k) lS = lab(...k.split(",").map(Number));
         }
     }
+    // das freie Auge: je Punkt der Iris-Vorderseite ein Strahl nach vorn (+z) gegen die Dreiecke der Kopf-Haut
+    const idx = hautK.geometry.index ? hautK.geometry.index.array : null;
+    const tri = [];
+    for (let t = 0; t < (idx ? idx.length : hp.length) / 3; t++)
+        tri.push(
+            idx ? [hp[idx[3 * t]], hp[idx[3 * t + 1]], hp[idx[3 * t + 2]]] : [hp[3 * t], hp[3 * t + 1], hp[3 * t + 2]]
+        );
+    const trifft = (o) => {
+        for (const [a, b, c] of tri) {
+            const e1 = [b[0] - a[0], b[1] - a[1]],
+                e2 = [c[0] - a[0], c[1] - a[1]];
+            const det = e1[0] * e2[1] - e1[1] * e2[0];
+            if (Math.abs(det) < 1e-12) continue;
+            const px = o[0] - a[0],
+                py = o[1] - a[1];
+            const u = (px * e2[1] - py * e2[0]) / det,
+                w = (e1[0] * py - e1[1] * px) / det;
+            if (u < 0 || w < 0 || u + w > 1) continue;
+            if (a[2] + u * (b[2] - a[2]) + w * (c[2] - a[2]) > o[2]) return true;
+        }
+        return false;
+    };
+    let irisN = 0,
+        irisFrei = 0;
+    for (const n of ms.filter((n) => kl(n) === "iris")) {
+        const ip = punkte(T, n).map((p) =>
+            v
+                .set(...p)
+                .applyMatrix4(welt(jn(n)))
+                .toArray()
+        );
+        const zc = (spanne(ip, 2).a + spanne(ip, 2).b) / 2;
+        for (const p of ip) {
+            if (p[2] <= zc) continue;
+            irisN++;
+            if (!trifft(p)) irisFrei++;
+        }
+    }
     // das Haar als Volumen: die Kopf-Haut über der Haarlinie in Haar-Farbe (näher am Haar-Ton als am Haut-Ton)
     const haarC = linHex(K.HAIR_COLORS[K.START_PARAMS.hairColor].base);
     const d2 = (a, b) => (a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2 + (a[2] - b[2]) ** 2;
@@ -344,6 +382,7 @@ function messeKopf(sb, eingriff) {
         ohrUnten: (op.a - yNase) / kH,
         ohrLaenge: op.l / kH,
         augenVorstand: vorstand,
+        augeFrei: irisN ? irisFrei / irisN : NaN,
         lippeL: lL[0] - lH[0],
         lippeA: lL[1] - lH[1],
         hoehleL: lS ? lS[0] - lH[0] : NaN,
@@ -439,6 +478,16 @@ if (process.argv.includes("--selftest")) {
         "S5 der aufgesetzte Augapfel (eine Augapfel-Breite vor) wird erkannt",
         { kern: (K) => Object.assign({}, K, { bauMensch: vor(K) }) },
         /^augenVorstand/
+    );
+    const begrabe = (K) => (F) => {
+        const B = K.bauMensch(F);
+        for (const e of [B.augen.eyeL, B.augen.eyeR]) e.position.z -= 0.12;
+        return B;
+    };
+    pruefeKopf(
+        "S7 das begrabene Auge (eine Augapfel-Breite zurück) wird erkannt",
+        { kern: (K) => Object.assign({}, K, { bauMensch: begrabe(K) }) },
+        /^(augeFrei|augenVorstand)/
     );
     const rot0 = (K) => (h) => Object.assign({}, K.kopfToene(h), { lips: 0xaa5544 });
     pruefeKopf(
