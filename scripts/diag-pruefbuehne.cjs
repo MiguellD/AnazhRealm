@@ -774,7 +774,7 @@ async function lichtLauf() {
         defaultViewport: ECHT ? null : { width: 640, height: 360 },
         args: ECHT ? [...echteWebGpuArgs(), "--window-size=1280,800"] : linsenWebGpuArgs(),
     });
-    await adapterZeile(browser);
+    const adapter = await adapterZeile(browser);
     const ende = async (befund) => {
         console.log(`\n⛔ S0 BILD ROT: ${befund} (${Math.round((Date.now() - t0) / 1000)} s)\n`);
         await browser.close().catch(() => {});
@@ -1248,7 +1248,7 @@ async function lichtLauf() {
         pass = pass && getroffen && farbGetroffen && grossGetroffen;
     }
     console.log(
-        `\n${pass ? "✅" : "⛔"} S0 BILD ${pass ? "GRÜN: die Feuerstelle trägt den Feuerkreis aus 2 m in der Ausgabe" : "ROT"} (${Math.round((Date.now() - t0) / 1000)} s, ${ECHT ? "echte GPU" : "swiftshader"} · Holz ${HOLZ})\n`
+        `\n${pass ? "✅" : "⛔"} S0 BILD ${pass ? "GRÜN: die Feuerstelle trägt den Feuerkreis aus 2 m in der Ausgabe" : "ROT"} (${Math.round((Date.now() - t0) / 1000)} s, ${ECHT ? "echte GPU" : adapter.fehlt || adapter.vendor + "/" + adapter.architecture} · Holz ${HOLZ})\n`
     );
     process.exit(pass ? 0 : 1);
 }
