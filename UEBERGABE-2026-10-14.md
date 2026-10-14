@@ -6,7 +6,7 @@ Lies zuerst DIE GOLDENE DEFINITION in CLAUDE.md. Dann diese Datei. Dann `memory/
 
 | Ref | Kopf | Zustand |
 |---|---|---|
-| main | 7d7e2022 (V18.546.1) | Bündel + Tor-Stufen + Wiese-Teppich + Mensch Labor=Welt + Laub + Mensch-Kopf + Welt-Boot + Archiv-Wand + Schatten-Takt (1410-3: in Ruhe höchstens EINE Kaskade je Frame, in Bewegung das alte Gesetz) |
+| main | 062ec357 (V18.546.1) | Bündel + Bremsen-Löser (BOOT_REST 17 → 1, S0 113 → 75 s, Linsen auf der Radeon) + + Tor-Stufen + Wiese-Teppich + Mensch Labor=Welt + Laub + Mensch-Kopf + Welt-Boot + Archiv-Wand + Schatten-Takt (1410-3: in Ruhe höchstens EINE Kaskade je Frame, in Bewegung das alte Gesetz) |
 | integ-probe | ec86f5e2 | main + Boden-Stufen weich + Archiv-Wand + Welt-Boot (FF nach OMEN-Boden-ABAB) |
 
 **Das Bündel auf integ-probe** (Versions-Nummer noch 18.546.0, alles darin):
