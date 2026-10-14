@@ -2142,6 +2142,13 @@ class AnazhRealm_Z06c {
         this.state._bootPhase3 = { creaturesLeft: safe, lastAt: 0, announced: false };
     }
 
+    // DIE EINE REGEL, AB WANN EINE KREATUR ENTSTEHT (K60): nach dem ersten Weltbild (`_weltbildDa`, die Kontrolle) und nach dem
+    // Ofen-Vorrat (`_ofenVorratSteht`) — dann trifft jeder Spawn das Memo (Clone), nie einen Guss auf dem Haupt-Faden. Leser:
+    // Boot-Phase 3 und die Geburt des Fauna-Takts (`tickFaunaLifecycle`); ohne Foundry gibt es keinen Vorrat, auf den sie warten.
+    _kreaturenBereit() {
+        return !!this.state._weltbildDa && (!this._foundryEnabled() || !!this._ofenVorratSteht);
+    }
+
     // P3-Progression: je „Atem“ eine Kreatur, NACHDEM die Kontrolle steht und nur mit Frame-Luft
     // (`_frameOverBudget` falsy) — Bewegung/Laden gehen vor. No-op ohne offene P3-Arbeit.
     // DIE KONTROLLE IST DAS ERSTE WELTBILD (K60): bis K60 prüfte der Tick sie nie — er spawnte ab dem ersten Takt unter dem
@@ -2151,7 +2158,7 @@ class AnazhRealm_Z06c {
     _tickBootPhase3(now) {
         const p3 = this.state._bootPhase3;
         if (!p3) return;
-        if (!this.state._weltbildDa || (this._foundryEnabled() && !this._ofenVorratSteht)) return;
+        if (!this._kreaturenBereit()) return;
         if (this.state._frameOverBudget) return; // Kontrolle + Streaming zuerst
         if (now - (p3.lastAt || 0) < AnazhRealm.BOOT_PHASE3_SPAWN_MS) return;
         p3.lastAt = now;
