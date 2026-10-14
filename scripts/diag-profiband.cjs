@@ -592,12 +592,13 @@ function selbsttest() {
     const n10 = BAND.ratscheNachziehen(r10, u10, { datum: "selbsttest", eingeschwungen: true });
     const n10b = BAND.ratscheNachziehen(r10, u10, { datum: "selbsttest" });
     t(
-        "Ratsche: null gesetzt, 10 → 7 gesenkt, 3 bleibt (5 hebt nie), Schema hält nur eingeschwungen",
+        "Ratsche: null gesetzt, 10 → 7 gesenkt, 3 bleibt (5 hebt nie), die Gesamt-Zeile höchstens die Summe ihrer Zeilen " +
+            "(gemessen 12, die Zeilen 7 + 3 → 10; H2b), Schema hält nur eingeschwungen",
         n10.ratsche.klassen.boden.haupt.befehle === 7 &&
             n10.ratsche.klassen.boden.haupt.dreiecke === 7000 &&
             n10.ratsche.klassen.bau.haupt.befehle === 3 &&
             n10.ratsche.klassen.bau.haupt.dreiecke === 900 &&
-            n10.ratsche.gesamt.befehle === 12 &&
+            n10.ratsche.gesamt.befehle === 10 &&
             n10.ratsche.gemessen.datum === "selbsttest" &&
             !BAND.ratschePruefen(n10.ratsche, haushalt).length &&
             BAND.ratschePruefen(n10b.ratsche, haushalt).some((f) => /eingeschwungen/.test(f))
@@ -1342,6 +1343,24 @@ function selbsttest() {
                 ohne31.rot.some((x) => x.art === "ungemessen" && /ratsche-wiese-gtx-third\.json/.test(x.text)) &&
                 ohne31.linse === "SAUBER" &&
                 u31.rot.every((x) => typeof x.schluessel === "string")
+        );
+        // Die Gesamt-Zeile des Mints ist höchstens die Summe ihrer Zeilen: zwei Läufe, je Erzeuger ein anderes Minimum (6,0 + 4,0
+        // und 5,9 + 4,1, beide 10,0 MB) — die Hülle der Erzeuger ist 5,9 + 4,0 = 9,9, die Gesamt-Zeile zieht mit (14.10.).
+        const v32 = (a, b) => ({
+            klassen: [],
+            summe: { gebunden: { befehle: 1, dreiecke: 1 } },
+            vram: { gebunden: 10, mb: 10, erzeuger: [{ erzeuger: "buf:szene", mb: a }, { erzeuger: "tex:output", mb: b }] },
+        });
+        const n32a = BAND.ratscheNachziehen(BAND.ratscheNeu(rt), v32(6, 4), { datum: "x" });
+        const n32 = BAND.ratscheNachziehen(n32a.ratsche, v32(5.9, 4.1), { datum: "x" });
+        t(
+            "Re-Mint: die Gesamt-Zeile vramMB ist höchstens die Summe der Erzeuger (zwei Läufe 6,0 + 4,0 und 5,9 + 4,1 → " +
+                "Erzeuger 5,9 + 4,0, Gesamt 10,0 → 9,9, beim Namen)",
+            n32a.ratsche.gesamt.vramMB === 10 &&
+                n32.ratsche.vramMB["buf:szene"] === 5.9 &&
+                n32.ratsche.vramMB["tex:output"] === 4 &&
+                n32.ratsche.gesamt.vramMB === 9.9 &&
+                n32.aenderungen.some((x) => /gesamt\.vramMB: 10 → 9\.9 \(die Summe ihrer Zeilen/.test(x))
         );
         // Gerät und Sicht: der Adapter-Text der Radeon und der GTX, ein Software-Raster ohne Schlüssel; der Kamera-Modus des
         // Stamms; der alte Haushalt (EIN Gerät) und eine fremde Kamera brechen das Schema.
