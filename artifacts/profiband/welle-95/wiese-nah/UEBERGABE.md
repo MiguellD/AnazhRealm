@@ -12,11 +12,12 @@ Basis: integ-probe 51cc19af. Worktree .claude/worktrees/wiese-nah, Ports 8920-89
 - [x] Linse (T) Teppich in gate:pflanzen-nah: vorher ROT (L1 0,425/0,504, L2 0,322/0,415), nachher GRUEN (0,901/0,954, 0,586/0,702).
 - [x] profiband S29: krank = doppelte Wiese (das Samen-Maximum trug nach K56 nicht mehr ueber die Ratsche).
 - [x] Bilder: k56-neu-paar.png (-278/-1038 Blick -z), k56-alt-paar.png (-915,96/-818,54 Blick +x), oben vorher, unten nachher.
-- [x] Zahlen: neu 0,230 -> 0,487, alt 0,206 -> 0,473; nahWiese Dreiecke neu 74 108 -> 72 624, alt 79 228 -> 77 744, Befehle 4 -> 4;
+- [x] Zahlen (saubere Paare, gleiche Einschwing-Folge): neu 0,230 -> 0,487, alt 0,195 -> 0,478; nahWiese Dreiecke neu 74 108 -> 72 624, alt 79 228 -> 77 744, Befehle 4 -> 4;
       Band Mess-Wiese (headless Radeon) nahWiese 64 504 -> 64 724, Gesamt 338k -> 338k.
-- [ ] Zweig-CI [ci voll] 13/13
+- [x] Zweig-CI [ci voll]: 9a5ace9a Lauf 38556750297 rot nur geerbt voll 2/11 (S0-Kante, integ-probe c8196cd1 heilt); Merge 76d990f3 Lauf 38557639728 13/13 gruen
 
 ## Offen (geerbt, nicht K56)
 - Ratsche wiese-radeon-ego nahWiese 57 046 ist schon an der Basis ROT (64 504 live), baum Befehle 31 > 24 ebenso; der Zensus
   zensus-wiese.json (10.10.) zaehlt L1 29 / L2 239 Bueschel, live jetzt 40 / 323 (die weitere Sicht-Kugel des Bueschels).
 - Die Koniferen-Karten (Tanne/Fichte L1) bleiben gross und kantig: der zweite Hebel, nicht genommen.
+- Der Rand der Nah-Wiese (14 m) liest nach K56 als Stufe: dichter Teppich gegen die hellere Boden-Funktion dahinter.
