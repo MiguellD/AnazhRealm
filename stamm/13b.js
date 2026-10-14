@@ -1891,8 +1891,8 @@ class AnazhRealm_Z13b {
         const G = globalThis.__gelaendeCore;
         const plan = G.planNormal(roh);
         const meta = this._generateFreshWorldMeta("gelaende");
+        // der Varianten-Pool wächst je Art aus dieser Saat (`_variantSeedsFor`, K24) — die Meta trägt ihn leer
         meta.seed = plan.saat;
-        meta.variantSeed = this._generateVariantSeedPool(plan.saat);
         const snap = this._buildEmptyWorldSnapshot(meta, false);
         snap.worldMeta.erbgut = G.planErbgut(plan);
         snap.worldMeta.voxelTerrain = true;
