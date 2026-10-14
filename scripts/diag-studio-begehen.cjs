@@ -25,11 +25,10 @@
 //   2/2 Platte · B5 75/112 Wasser · B6 3/3 `wm is not defined`.
 //   node scripts/diag-studio-begehen.cjs [--selftest]
 "use strict";
-const puppeteer = require("puppeteer");
+const { starteBrowser } = require("./lib/welt-boot.cjs");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
-const { linsenWebGpuArgs, adapterZeile } = require("./lib/software-gpu.cjs");
 
 const PORT = Number(process.env.STUDIO_BEGEHEN_PORT || 4473);
 const ROOT = path.resolve(__dirname, "..");
@@ -419,8 +418,7 @@ function zeile(o) {
 
 (async () => {
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await puppeteer.launch({ headless: true, protocolTimeout: 600000, args: linsenWebGpuArgs() });
-    await adapterZeile(browser);
+    const browser = await starteBrowser({ art: "linse", frist: 600000 });
     let rot = 0;
     try {
         const lauf = async (inj) => {

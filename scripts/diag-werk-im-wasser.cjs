@@ -74,6 +74,7 @@
 //   node scripts/diag-werk-im-wasser.cjs [--selftest]          Port: WERK_WASSER_PORT (Standard 4643)
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
@@ -2523,38 +2524,15 @@ function argListe(name) {
 }
 
 async function lauf() {
-    const puppeteer = require("puppeteer");
-    const http = require("http");
-    const { linsenWebGpuArgs, adapterZeile } = require("./lib/software-gpu.cjs");
     const PORT = Number(process.env.WERK_WASSER_PORT || 4643);
     const root = path.resolve(__dirname, "..");
-    const mime = {
-        ".html": "text/html",
-        ".js": "application/javascript",
-        ".wasm": "application/wasm",
-        ".json": "application/json",
-        ".css": "text/css",
-        ".png": "image/png",
-        ".woff2": "font/woff2",
-    };
     const befund = {};
     befund.leser = leserUrteil(stammLib.text(root));
     require(path.join(root, "vehicle-core.js"));
     befund.kern = kernUrteil(globalThis.__vehicleCore);
-    const server = http.createServer((req, res) => {
-        let p = req.url.split("?")[0];
-        if (p === "/") p = "/index.html";
-        const fp = path.join(root, p);
-        if (!fp.startsWith(root)) return ((res.statusCode = 403), res.end());
-        fs.readFile(fp, (err, data) => {
-            if (err) return ((res.statusCode = 404), res.end());
-            res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-            res.end(data);
-        });
-    });
+    const server = statikServer();
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await puppeteer.launch({ headless: true, protocolTimeout: 900000, args: linsenWebGpuArgs() });
-    await adapterZeile(browser);
+    const browser = await starteBrowser({ art: "linse", frist: 900000 });
     const seitenFehler = [];
     let exit = 2;
     try {

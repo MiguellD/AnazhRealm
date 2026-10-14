@@ -27,6 +27,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const ZZ = require("./lib/ziel-zensus.cjs");
 const stammLib = require("./lib/stamm.cjs");
 
@@ -199,11 +200,7 @@ if (process.argv.includes("--selftest")) {
     process.exit(0);
 }
 
-const puppeteer = require("puppeteer");
-const http = require("http");
-const fs = require("fs");
 const path = require("path");
-const { linsenWebGpuArgs, adapterZeile } = require("./lib/software-gpu.cjs");
 const { vramAbgriff } = require("./lib/vram-abgriff.cjs");
 const { FALTE_INSTALL, ZAEHLER_INSTALL } = require("./lib/draw-zaehler.cjs");
 const { ZERLEGE_INSTALL } = require("./lib/zerlege-linse.cjs");
@@ -211,26 +208,7 @@ const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 
 const root = path.resolve(__dirname, "..");
 const PORT = Number(process.env.ZIEL_ZENSUS_PORT) || 4597;
-const mime = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".json": "application/json",
-    ".css": "text/css",
-    ".woff2": "font/woff2",
-    ".png": "image/png",
-    ".wasm": "application/wasm",
-};
-const server = http.createServer((req, res) => {
-    let p = req.url.split("?")[0];
-    if (p === "/") p = "/index.html";
-    const fp = path.join(root, p);
-    if (!fp.startsWith(root)) return ((res.statusCode = 403), res.end());
-    fs.readFile(fp, (err, data) => {
-        if (err) return ((res.statusCode = 404), res.end());
-        res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-        res.end(data);
-    });
-});
+const server = statikServer();
 
 // DIE SCHATTEN-BÜHNE (Seite): ein Richtungslicht mit einem r184-Schatten-Knoten, der durch die Hülle der Kaskaden geht
 // (`_kaskadenZiele`), eine Kiste über einem Boden, eine Kamera von oben. Gezählt: die Farb-Anhänge jedes Passes, der in
@@ -363,8 +341,7 @@ function rundungProbe() {
 (async () => {
     console.log("=== ZIEL-ZENSUS — die Wand am echten Frame (WebGPU auf swiftshader) ===");
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await puppeteer.launch({ headless: true, protocolTimeout: 900000, args: linsenWebGpuArgs() });
-    await adapterZeile(browser);
+    const browser = await starteBrowser({ art: "linse", frist: 900000 });
     const page = await browser.newPage();
     await page.setViewport({ width: 320, height: 240 });
     await page.evaluateOnNewDocument(FALTE_INSTALL);
