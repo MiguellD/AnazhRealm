@@ -7,9 +7,9 @@
 // (beide booten die seed-deterministische Default-Welt → identisches Dichtefeld).
 // Plus: der Ghost treibt B's Peer-Avatar (glatt statt 30-Hz-Snaps), pos-Nachrichten sind
 // zur Drift-Autorität umgeleitet, kein Ent-Seeden während des Laufs.
+const { starteBrowser } = require("./lib/welt-boot.cjs");
 const path = require("path");
 const { spawn } = require("child_process");
-const puppeteer = require("puppeteer");
 
 const ROOT = path.resolve(__dirname, "..");
 const PAGE_URL = "http://127.0.0.1:4312/index.html";
@@ -59,24 +59,7 @@ async function waitFor(page, evalFn, timeoutMs, label, ...args) {
     const saveServer = await startProc("save-server.js", /läuft/);
     const signaling = await startProc("signaling-server.js", /lauscht/);
 
-    const browser = await puppeteer.launch({
-        headless: true,
-        protocolTimeout: 240000,
-        args: [
-            "--use-angle=swiftshader",
-            "--enable-unsafe-swiftshader",
-            "--enable-webgl",
-            "--ignore-gpu-blocklist",
-            "--no-sandbox",
-            "--disable-setuid-sandbox",
-            "--autoplay-policy=no-user-gesture-required",
-            // ZWEI Seiten in EINEM Browser: die Hintergrund-Seite wird sonst gedrosselt
-            // (rAF suspendiert, Timer 1 Hz) → Loop/Sim/ICE sterben auf der Nicht-Fokus-Seite.
-            "--disable-background-timer-throttling",
-            "--disable-backgrounding-occluded-windows",
-            "--disable-renderer-backgrounding",
-        ],
-    });
+    const browser = await starteBrowser({ art: "webgl", frist: 240000, zusatz: ["--enable-webgl", "--ignore-gpu-blocklist", "--autoplay-policy=no-user-gesture-required", "--disable-background-timer-throttling", "--disable-backgrounding-occluded-windows", "--disable-renderer-backgrounding"] });
 
     try {
         const pageA = await browser.newPage();

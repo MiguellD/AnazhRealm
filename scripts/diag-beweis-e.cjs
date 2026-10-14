@@ -17,10 +17,8 @@
 // Lücke ist das Tier UNSICHTBAR. swiftshader-Zeiten sind keine GPU-Zeiten; die
 // Draw-Call-/Dreiecks-Zahlen sind hardware-unabhängig.
 "use strict";
-const puppeteer = require("puppeteer");
-const { linsenWebGpuArgs, adapterZeile } = require("./lib/software-gpu.cjs");
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
-const http = require("http");
 const fs = require("fs");
 const path = require("path");
 
@@ -39,26 +37,7 @@ const MIT_WIESE = !process.argv.includes("--ohne-wiese") && KLASSEN.includes("wi
 const PROTO_MS = Number(argOf("--proto-min", "15")) * 60000;
 const W = 640,
     H = 360;
-const mime = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".wasm": "application/wasm",
-    ".json": "application/json",
-    ".css": "text/css",
-    ".png": "image/png",
-    ".woff2": "font/woff2",
-};
-const server = http.createServer((req, res) => {
-    let p = req.url.split("?")[0];
-    if (p === "/") p = "/index.html";
-    const fp = path.join(root, p);
-    if (!fp.startsWith(root)) return ((res.statusCode = 403), res.end());
-    fs.readFile(fp, (err, data) => {
-        if (err) return ((res.statusCode = 404), res.end());
-        res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-        res.end(data);
-    });
-});
+const server = statikServer();
 
 // DIE BLICK-WAHL (Befund 30.09.: Kameras standen im Laub, unter dem Bauch des Tiers, hinter Stämmen):
 // 12 Azimute um das Objekt, je zwei Renders (die aktive Gestalt an/aus, 160×90, Loop ruht) — der Azimut mit den
@@ -230,12 +209,7 @@ const SCHUSS_FN = async (kam) => {
 (async () => {
     fs.mkdirSync(OUT, { recursive: true });
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await puppeteer.launch({
-        headless: true,
-        protocolTimeout: PROTO_MS,
-        args: linsenWebGpuArgs(),
-    });
-    await adapterZeile(browser);
+    const browser = await starteBrowser({ art: "linse", frist: PROTO_MS });
     const page = await browser.newPage();
     await page.setViewport({ width: W, height: H });
     const pageErrors = [];

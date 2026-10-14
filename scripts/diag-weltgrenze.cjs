@@ -41,7 +41,7 @@
 //                                      „ersetzen" MUSS rot werden) — beide beim Namen
 // Port: WELTGRENZE_PORT (Default 4401). Exit 1 bei einem Befund, einem Page-Error oder einem blinden Selbsttest.
 "use strict";
-const puppeteer = require("puppeteer");
+const { starteBrowser } = require("./lib/welt-boot.cjs");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
@@ -681,11 +681,7 @@ async function fahreWeg(browser, weg, schein) {
 (async () => {
     const tStart = Date.now();
     await new Promise((r) => server.listen(PORT, r));
-    const browser = await puppeteer.launch({
-        headless: true,
-        protocolTimeout: 600000,
-        args: ["--no-sandbox", "--disable-setuid-sandbox"],
-    });
+    const browser = await starteBrowser({ art: "standard", frist: 600000 });
     console.log("\n========= DIE WELTGRENZE — kein Feld von A reist nach B, keine Welt geht verloren =========");
     console.log(`  Baum: ${root}`);
     const berichte = [];

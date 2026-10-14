@@ -29,12 +29,8 @@
 // SELBST-TEST (im selben Boot): je Täter der alte Defekt eingespielt — jede Probe muss ROT lesen, aus ihrem Grund.
 //   node scripts/diag-tod-zensus.cjs [--ohne-selbsttest]
 "use strict";
-const puppeteer = require("puppeteer");
-const http = require("http");
-const fs = require("fs");
-const path = require("path");
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 
-const root = path.resolve(__dirname, "..");
 const PORT = Number(process.env.TOD_ZENSUS_PORT || 4494);
 const SELBST = !process.argv.includes("--ohne-selbsttest");
 
@@ -641,35 +637,12 @@ const TAETER = [
     ["raeumen", /raeumen:/],
 ];
 
-const mime = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".wasm": "application/wasm",
-    ".json": "application/json",
-    ".css": "text/css",
-    ".woff2": "font/woff2",
-    ".png": "image/png",
-};
 
 (async () => {
     const t0 = Date.now();
-    const server = http.createServer((req, res) => {
-        let p = req.url.split("?")[0];
-        if (p === "/") p = "/index.html";
-        const fp = path.join(root, p);
-        if (!fp.startsWith(root)) return ((res.statusCode = 403), res.end());
-        fs.readFile(fp, (err, data) => {
-            if (err) return ((res.statusCode = 404), res.end());
-            res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-            res.end(data);
-        });
-    });
+    const server = statikServer();
     await new Promise((r) => server.listen(PORT, r));
-    const browser = await puppeteer.launch({
-        headless: "new",
-        protocolTimeout: 600000,
-        args: ["--no-sandbox", "--disable-gpu"],
-    });
+    const browser = await starteBrowser({ art: "null", frist: 600000 });
     const fehler = [];
     const laeufe = [null, ...(SELBST ? TAETER.map(([t]) => t) : [])];
     const aus = [];

@@ -35,8 +35,8 @@
 // Port: PRUEFBUEHNE_PORT (Default 4394). Exit 1 bei einem Wurf auf der Bühne, einem gehaltenen Akt, einer blinden
 // Kontrolle, einem Page-Error oder einem roten Selbsttest.
 "use strict";
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const puppeteer = require("puppeteer");
-const http = require("http");
 const fs = require("fs");
 const path = require("path");
 
@@ -49,7 +49,6 @@ const SELBSTTEST = argv.includes("--selftest");
 const JSON_AUS = opt("--json", null);
 const EVOLUTIONEN = Math.max(1, Number(opt("--evolutionen", 60)) || 60);
 const PORT = Number(process.env.PRUEFBUEHNE_PORT) || 4394;
-const root = path.resolve(opt("--wurzel", path.resolve(__dirname, "..")));
 const BUEHNE_DATEI = path.resolve(__dirname, "..", "spec", "pruefbuehne", "welt.json");
 const STATIONEN = JSON.parse(
     fs.readFileSync(path.resolve(__dirname, "..", "spec", "pruefbuehne", "stationen.json"), "utf8")
@@ -58,35 +57,7 @@ const S4 = STATIONEN.find((st) => st.id === "s4-hindernisse");
 const S0 = STATIONEN.find((st) => st.id === "s0-atrium");
 const S4_SCHEIN = { bauplan: "pruef_mauer", dx: 0.5 }; // der Selbsttest: die Mauer rückt 0,5 m
 
-const mime = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".mjs": "application/javascript",
-    ".wasm": "application/wasm",
-    ".json": "application/json",
-    ".woff2": "font/woff2",
-    ".css": "text/css",
-    ".png": "image/png",
-    ".svg": "image/svg+xml",
-};
-const server = http.createServer((req, res) => {
-    let p = decodeURIComponent(req.url.split("?")[0]);
-    if (p === "/") p = "/index.html";
-    const fp = path.join(root, p);
-    if (!fp.startsWith(root)) {
-        res.statusCode = 403;
-        return res.end();
-    }
-    fs.readFile(fp, (err, data) => {
-        if (err) {
-            res.statusCode = 404;
-            return res.end();
-        }
-        res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-        res.setHeader("Cache-Control", "no-store");
-        res.end(data);
-    });
-});
+const server = statikServer({ keinCache: true });
 
 // Die Würfe: jede Ort-Op der Welt-Akte in ihrer kanonischen Form (die Orte, die der Nexus selbst wählt).
 const WUERFE = [
@@ -1303,11 +1274,7 @@ function zeige(rep) {
 (async () => {
     if (argv.includes("--licht")) return lichtLauf();
     await new Promise((r) => server.listen(PORT, r));
-    const browser = await puppeteer.launch({
-        headless: true,
-        protocolTimeout: 900000,
-        args: ["--no-sandbox", "--disable-setuid-sandbox"],
-    });
+    const browser = await starteBrowser({ art: "standard", frist: 900000 });
     const page = await browser.newPage();
     let pageErr = null;
     page.on("pageerror", (err) => {

@@ -4,28 +4,13 @@
 // liest die Pixel (Canvas→2D→getImageData) MIT vs OHNE Terrain-castShadow und misst den Pixel-Diff
 // (mean/max/% geändert) + die Schatten-Tri-Ersparnis (renderer.info) — bei HOHEM + TIEFEM Sonnenstand.
 // renderer.info ist hardware-unabhängig; der swiftshader-Pixel ist look-treu (Schöpfer 3× bestätigt).
-const puppeteer = require("puppeteer");
-const http = require("http");
-const fs = require("fs");
-const path = require("path");
 // Port über SHADOW_PIXEL_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4378.
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const PORT = Number(process.env.SHADOW_PIXEL_PORT || 4378);
-const root = path.resolve(__dirname, "..");
-const mime = { ".html": "text/html", ".js": "application/javascript", ".wasm": "application/wasm", ".json": "application/json", ".woff2": "font/woff2", ".css": "text/css", ".png": "image/png" };
-const server = http.createServer((req, res) => {
-    let p = req.url.split("?")[0];
-    if (p === "/") p = "/index.html";
-    const fp = path.join(root, p);
-    if (!fp.startsWith(root)) { res.statusCode = 403; return res.end(); }
-    fs.readFile(fp, (e, d) => {
-        if (e) { res.statusCode = 404; return res.end(); }
-        res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-        res.end(d);
-    });
-});
+const server = statikServer();
 (async () => {
     await new Promise((r) => server.listen(PORT, r));
-    const browser = await puppeteer.launch({ headless: true, protocolTimeout: 300000, args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--enable-webgl", "--ignore-gpu-blocklist", "--no-sandbox", "--disable-setuid-sandbox"] });
+    const browser = await starteBrowser({ art: "webgl", frist: 300000, zusatz: ["--enable-webgl", "--ignore-gpu-blocklist"] });
     const page = await browser.newPage();
     await page.setViewport({ width: 1280, height: 720 });
     page.on("pageerror", (e) => console.log("[PAGE-ERROR]", (e.stack || e.message).split("\n")[0]));

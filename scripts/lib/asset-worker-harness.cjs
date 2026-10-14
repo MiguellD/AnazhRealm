@@ -8,23 +8,13 @@
 // mint-asset-goldens.cjs (schreibt die eingefrorenen Goldens) UND diag-asset-contract.cjs (das
 // Dauer-Gate) LESEN diese eine Datei — kein zweiter Boot-Pfad, der driften kann. Die WORKER_SCRIPTS
 // sind identisch zu diag-foundry-parity.cjs (dort 720/720 byte-bewiesen).
-const puppeteer = require("puppeteer");
-const http = require("http");
+const { statikServer, starteBrowser } = require("./welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
 const { installiereDrift, FUNKTIONEN } = require("./plattform-probe.cjs");
 
 const ROOT = path.resolve(__dirname, "..", "..");
-const MIME = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".json": "application/json",
-    ".css": "text/css",
-    ".png": "image/png",
-    ".woff2": "font/woff2",
-    ".wasm": "application/wasm",
-};
 
 // V18.470 (Konsum-Matrix) — der Boot ist MANIFEST-GETRIEBEN wie die Produktion
 // (anazhRealm._ensureAssetFoundry liest cores.manifest.json + injiziert
@@ -351,26 +341,9 @@ function pageHtml() {
 // runWithWorker(port, async (h) => {...}) — bootet Server+Chromium+Worker, ruft cb mit
 // { build, getData }, räumt danach ab. Wirft bei Boot-/Worker-Fehler mit klarer Meldung.
 async function runWithWorker(port, cb) {
-    const server = http.createServer((req, res) => {
-        let p = req.url.split("?")[0];
-        if (p === "/" || p === "/__aw.html") {
-            res.setHeader("Content-Type", "text/html");
-            return res.end(pageHtml());
-        }
-        const fp = path.join(ROOT, p);
-        if (!fp.startsWith(ROOT)) return ((res.statusCode = 403), res.end());
-        fs.readFile(fp, (err, data) => {
-            if (err) return ((res.statusCode = 404), res.end());
-            res.setHeader("Content-Type", MIME[path.extname(fp)] || "application/octet-stream");
-            res.end(data);
-        });
-    });
+    const server = statikServer({ seiten: { "/": pageHtml, "/__aw.html": pageHtml } });
     await new Promise((r) => server.listen(port, "127.0.0.1", r));
-    const browser = await puppeteer.launch({
-        headless: true,
-        protocolTimeout: 240000,
-        args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--no-sandbox", "--disable-setuid-sandbox"],
-    });
+    const browser = await starteBrowser({ art: "webgl", frist: 240000 });
     try {
         const page = await browser.newPage();
         const pageErrors = [];

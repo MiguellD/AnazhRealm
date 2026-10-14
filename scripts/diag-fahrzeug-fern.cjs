@@ -26,25 +26,14 @@
 //       gegen die Fernstufe (1 Quad = 2 Tris, das Einheits-Quad des Karten-Atlas `_impostorQuad`).
 //
 //   node scripts/diag-fahrzeug-fern.cjs        (exit 0 = GRÜN, 1 = ROT, 2 = Harness-Fehler)
-const fs = require("fs");
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const path = require("path");
-const http = require("http");
-const puppeteer = require("puppeteer");
 const stammLib = require("./lib/stamm.cjs");
 const { WORKER_BOOT } = require("./lib/asset-worker-harness.cjs");
 
 const ROOT = path.resolve(__dirname, "..");
 const PORT = Number(process.env.FAHRZEUG_FERN_PORT || 4553);
 const STAMM = stammLib.text(ROOT);
-const MIME = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".json": "application/json",
-    ".css": "text/css",
-    ".png": "image/png",
-    ".woff2": "font/woff2",
-    ".wasm": "application/wasm",
-};
 
 // ── Die Bäcker-Soll-Zahlen (die fixe Naht __replyBakeImpostor, wie diag-baecker-kanal) ──
 const SOLL = { cw: 128, ch: 256, V: 8 };
@@ -411,26 +400,9 @@ function pageHtml() {
     );
 
     // ── (N/K) Die echte Bäckerei im Foundry-Worker ──
-    const server = http.createServer((req, res) => {
-        let p = req.url.split("?")[0];
-        if (p === "/" || p === "/__ff.html") {
-            res.setHeader("Content-Type", "text/html");
-            return res.end(pageHtml());
-        }
-        const fp = path.join(ROOT, p);
-        if (!fp.startsWith(ROOT)) return ((res.statusCode = 403), res.end());
-        fs.readFile(fp, (err, data) => {
-            if (err) return ((res.statusCode = 404), res.end());
-            res.setHeader("Content-Type", MIME[path.extname(fp)] || "application/octet-stream");
-            res.end(data);
-        });
-    });
+    const server = statikServer({ seiten: { "/": pageHtml, "/__ff.html": pageHtml } });
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await puppeteer.launch({
-        headless: true,
-        protocolTimeout: 240000,
-        args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--no-sandbox", "--disable-setuid-sandbox"],
-    });
+    const browser = await starteBrowser({ art: "webgl", frist: 240000 });
     let vId = null;
     let bake = null;
     let nah = null;
