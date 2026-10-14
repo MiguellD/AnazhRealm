@@ -1451,33 +1451,30 @@ class AnazhRealm_Z10 {
                         .mul(0.5)
                         .add(0.5)
                 );
-                // Die acht Schichten sind EINE Schleife in EINER WGSL-Funktion (`wieseRelief`, K17-3): ausgeschrieben
-                // standen sie achtmal im Boden-Programm (≈ 17 000 Zeichen, swiftshader übersetzte jede vor dem ersten Bild) —
-                // dieselbe Rechnung je Schicht (s/8 ist exakt), der Zustand (getroffen, Treffer-Höhe) in EINER Variable.
-                const _wieseMarsch = _T
-                    .Fn(([x, z, wx, wz, tuft]) => {
-                        const st = _T.vec2(0.0, 0.0).toVar(); // (getroffen 0/1 — branchenlos, Halm-Höhe des Treffers)
-                        _T.Loop(8, ({ i }) => {
-                            const _s8 = _T.float(i).div(8.0); // Schicht von oben (1 − s/8 = 1.0) nach unten (0.125)
-                            const _hN = _ra
-                                .ebene(_T.vec2(x.add(wx.mul(_s8)).mul(_f), z.add(wz.mul(_s8)).mul(_f)), 11, "y")
-                                .mul(0.5)
-                                .add(0.5);
-                            // Remap an die echte Noise-Verteilung: unter 0.36 = Lücke (0), über
-                            // 0.64 = volle Halm-Höhe (1) — so TRAGEN alle 8 Schichten.
-                            const _h = _T.smoothstep(_T.float(0.36), _T.float(0.64), _hN).mul(tuft).toVar();
-                            const _erst = _T.step(_T.float(1.0).sub(_s8), _h).mul(_T.float(1.0).sub(st.x)).toVar();
-                            // Die Treffer-Höhe ist die HALM-Höhe (stetig), nie die Schicht: acht Schicht-Stufen lasen sich
-                            // auf Armlänge als Höhenlinien (Linse 05.10.).
-                            st.assign(_T.vec2(st.x.add(_erst), st.y.add(_erst.mul(_h))));
-                        });
-                        return st;
-                    })
-                    .setLayout({
-                        name: "wieseRelief",
-                        type: "vec2",
-                        inputs: ["x", "z", "wx", "wz", "tuft"].map((name) => ({ name, type: "float" })),
+                // Die acht Schichten sind EINE Schleife (K17-3): ausgeschrieben standen sie achtmal im Boden-Programm
+                // (≈ 17 000 Zeichen, swiftshader übersetzte jede vor dem ersten Bild) — dieselbe Rechnung je Schicht (s/8 ist
+                // exakt), der Zustand (getroffen, Treffer-Höhe) in EINER Variable. Die Schleife steht im Rumpf des Programms,
+                // nie in einer Layout-Funktion: sie liest den Rausch-Atlas (eine Bindung), und r184 baut eine Layout-Funktion
+                // EINMAL je Builder-Klasse (`nodeBuilderFunctionsCacheMap`) — jedes weitere Programm erbte den Namen der
+                // Bindung aus dem ersten (`unresolved value 'nodeUniform0'`, die Prüfbühne sagte die Pipeline ab).
+                const _wieseMarsch = _T.Fn(([x, z, wx, wz, tuft]) => {
+                    const st = _T.vec2(0.0, 0.0).toVar(); // (getroffen 0/1 — branchenlos, Halm-Höhe des Treffers)
+                    _T.Loop(8, ({ i }) => {
+                        const _s8 = _T.float(i).div(8.0); // Schicht von oben (1 − s/8 = 1.0) nach unten (0.125)
+                        const _hN = _ra
+                            .ebene(_T.vec2(x.add(wx.mul(_s8)).mul(_f), z.add(wz.mul(_s8)).mul(_f)), 11, "y")
+                            .mul(0.5)
+                            .add(0.5);
+                        // Remap an die echte Noise-Verteilung: unter 0.36 = Lücke (0), über
+                        // 0.64 = volle Halm-Höhe (1) — so TRAGEN alle 8 Schichten.
+                        const _h = _T.smoothstep(_T.float(0.36), _T.float(0.64), _hN).mul(tuft).toVar();
+                        const _erst = _T.step(_T.float(1.0).sub(_s8), _h).mul(_T.float(1.0).sub(st.x)).toVar();
+                        // Die Treffer-Höhe ist die HALM-Höhe (stetig), nie die Schicht: acht Schicht-Stufen lasen sich
+                        // auf Armlänge als Höhenlinien (Linse 05.10.).
+                        st.assign(_T.vec2(st.x.add(_erst), st.y.add(_erst.mul(_h))));
                     });
+                    return st;
+                });
                 const _marsch = _wieseMarsch(wp.x, wp.z, _wanderX, _wanderZ, _tuft);
                 const _traf = _marsch.x; // 0 = noch kein Halm getroffen
                 const _trefH = _marsch.y; // Halm-Höhe des Treffers (0 = Wurzelgrund)

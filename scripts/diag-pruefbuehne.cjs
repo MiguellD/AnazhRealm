@@ -743,6 +743,8 @@ const s0TonPasst = (t) => !!t && t.hue >= S0_TON.hue[0] && t.hue <= S0_TON.hue[1
 // (`voxelChunkMaterial`) — seine Zeichen stehen unter der Decke des Bodens (`STOFFE.boden.budget.zeichenMax`). Seit K17 trug
 // es das Fels-Gesetz ausgeschrieben im Pixel (78 Ziehungen, 96 050 → 149 521 Zeichen; lokal 4 Kerne Schuss 12 → 20 s), die
 // Frist riss auf dem Runner (171 s). Der Selbsttest hält das gemessene Programm gegen eine Decke ein Zeichen darunter.
+// Keine Hilfs-Funktion des Programms liest eine Bindung (`bindungInFunktionMax` 0): die Layout-Funktion `wieseRelief` las den
+// Rausch-Atlas und vererbte seinen Namen in jedes weitere Programm — auf der Bühne sagte swiftshader die Pipeline ab.
 const S0_STOFF = (() => {
     const SK = require("./lib/shader-kosten.cjs");
     const decke = SK.STOFFE.boden.budget.zeichenMax;
@@ -750,7 +752,10 @@ const S0_STOFF = (() => {
         decke,
         urteil: (wgsl, d) => {
             const k = SK.wgslKosten(wgsl);
-            return { zeichen: k.zeichen, rot: SK.kostenUrteil(k, { zeichenMax: d == null ? decke : d }, "S0 Boden-Programm") };
+            return {
+                zeichen: k.zeichen,
+                rot: SK.kostenUrteil(k, { zeichenMax: d == null ? decke : d, bindungInFunktionMax: 0 }, "S0 Boden-Programm"),
+            };
         },
     };
 })();
