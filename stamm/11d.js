@@ -1220,7 +1220,11 @@ class AnazhRealm_Z11d {
         // wird zuerst vom Feld gemalt (EIN GPU-Lauf, Horizont steht sofort);
         // die CPU-Scheibe darunter verfeinert dieselben Vertices aufs f64-Gesetz.
         if (fr.cursor === 0) this._fernRingGpuMal(fr);
-        this._fernRingRefresh(F.refreshVertsProTick);
+        // DIE VERFEINERUNG NACH DEM ERSTEN BILD (K60): hat der Maler den Horizont gezeichnet (`ready`), rechnet die
+        // CPU-Scheibe dieselben Punkte ein zweites Mal (Höhe und Farbe, f32 → f64 — am Horizont unsichtbar); unter dem
+        // Ladeschirm kostete das kalt 2,2 s Haupt-Faden (Radeon, `_fernRingRefresh` im Profil), die der Boden, die Bäume
+        // und die Streu des ersten Bildes brauchen. Sie beginnt, sobald das Bild steht.
+        if (!(fr.ready && fr.cursor < fr.totalVerts && !st._weltbildDa)) this._fernRingRefresh(F.refreshVertsProTick);
         // DAS EINE WASSER: kam oder ging das Fern-Wasser, legt der Ring seine nassen Punkte neu (`_fernRingWasserTiefe`).
         this._fernRingWasserNeu(fr);
         // DIE KOSTEN AN DER NAHT: die Dreiecke der Schale 0 folgen Maske und Lage (frei · Naht · getragen, `_fernRingTeilung`).
