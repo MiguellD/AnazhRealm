@@ -798,6 +798,7 @@ async function probeLeben(expected) {
             if (l > -6 && l < w.len && Math.abs(dx * w.uz - dz * w.ux) < w.quer) {
                 r.removeArchitecture(e);
                 w.n++;
+                (w.typen || (w.typen = [])).push(e.type + "@" + l.toFixed(1));
             }
         }
     };
@@ -1410,7 +1411,12 @@ async function probeLeben(expected) {
                     }
                     if (g4._fahr && g4._fahr.luft && hoehe >= expected.flugM) break;
                 }
-                const diag4 = `Flug ${luftN} Takte, höchstens ${hoeheMax.toFixed(2)} m über dem Grund, Kante ${kl.kante.toFixed(2)} m auf 3 m`;
+                const weg4 = (g4.position.x - kl.sx) * Math.sin(kl.fahrt) + (g4.position.z - kl.sz) * Math.cos(kl.fahrt);
+                const diag4 =
+                    `Flug ${luftN} Takte, höchstens ${hoeheMax.toFixed(2)} m über dem Grund, Kante ${kl.kante.toFixed(2)} m auf 3 m` +
+                    ` · ${weg4.toFixed(1)} m längs der Bahn in ${gefahren} Frames (Kante bei ` +
+                    `${Math.hypot(kl.x - kl.sx, kl.z - kl.sz).toFixed(1)} m)` +
+                    (bahnWache.typen ? ` · die Wache räumte ${bahnWache.typen.join(", ")}` : "");
                 tasten(false);
                 const imFlug = !!(g4._fahr && g4._fahr.luft);
                 r.dismountArchitecture();

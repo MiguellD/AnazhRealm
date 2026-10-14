@@ -1,33 +1,35 @@
-# UEBERGABE mess-wiese (K55-2, Welle 95)
+# UEBERGABE mess-wiese (K55-3, Welle 95)
 
-Zweig `mess-wiese`, Kopf 38365177 (auf integ-probe 51cc19af gemergt, c6dac6fa), Worktree
-`C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\mess-wiese`, Ports 8890–8899, Scratch
-`C:\Users\micha\AppData\Local\Temp\claude\mess-wiese\` (Logs `vor-*.log` = vorher, `nach*-*.log` = nachher, CI-Logs `ci/`).
-CI am Kopf: Run 38556427061 ([ci voll]) — beim Schreiben in der Schlange. Vorher am alten Kopf 54c78ff3: Run 38546830515 8/13.
+Zweig `mess-wiese`, Worktree `C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\mess-wiese`, Ports 8950–8959.
+Gemergt: integ-probe c5e2fc8f (838d16b7) und gtx-ratschen-1410 704fc303 (708cbaf6, die sechs GTX-Ratschen am neuen
+Wiesen-Ort, Genesis 0/0, Dorf; Mint-Fix 7d720cf7) — `npm run gate:profiband` lokal EXIT 0 (12 Ratschen frisch an V18.546.0).
+Vorher CI 38556427061 an 38365177: 9/13, rot voll 2 · 4 · 7 · 10. CI am neuen Kopf: siehe Commit-Rumpf / unten.
 
-## Gebaut (Zahlen vorher -> nachher, lokal, Null-Renderer)
-- welt-orte (`scripts/lib/welt-orte.cjs`): `__weltOrte(art, opts)` + `__weltOrt`; die Mitte jeder Suche ist `WELT_MITTE`
-  (der Ursprung, `__weltMitte`), nie ein Messort. Gesetze `hoehle`, `kante`, `querhang`, `hang` (`basis`, `bergab`).
-- Fall-Wächter: ROT (O3 5x LEER „keine Höhle") -> GRÜN (vor-fall.log -> nach3-fall.log). Engine-Befund am neuen Ort:
-  ein gestoßener Wolf glitt unter einen Überhang (Keil, Luft 1,1/0,8/0,4 m) und lag 7,65 m „im Fels". Schnitt im
-  Chokepoint `_koerperSchritt` (stamm/11a.js): Luft über dem Grund bis Leib-Höhe (`_kreaturLeib().hoehe`) +
-  `KOERPER_SICHT_SPANNE` 0,2 (stamm/26c.js); die Leser `_creatureGroundY` und `_kreaturStossSchritt` reichen die Höhe.
-- Stand-Takt: ROT (Saum beim Gehen 4992 Einheiten) -> GRÜN, Saum 0 (nach-stand.log). Ursache: die Wiese lag 1,2 m vor
-  der Zellgrenze z = -1036,8; der Gang trat über, Chunks wechselten die Stufe (K51). Der Gang geht jetzt zur Mitte seiner
-  Zelle; stand-linse: Saum-Regel nur bei gleicher Zelle, neue LEER-Regel „der Gang verließ seine Zelle" (+ Selbsttest).
-- Körper-Stand (CI-Form --selftest): ROT (K7 Aufbau 866 Büschel / 70 Pflanzen) -> GRÜN, K7-Umkreis wächst 120 -> 140 m.
-- Fahr-Leben: 7 -> 3 Verletzungen (T2 Hang, S2 Kliff, S3 Querhang, L1 Hangfuß grün; nach3-fahr.log).
-- Höhlen-Sicht: Blick hoehle 0 -> 13 963 Strahlen auf Höhle (Raum nur in Chunks der Stufe 0); Mündungen um die Mitte der
-  Welt 8 in 4 km² mit Paar.
-- `npm run check` EXIT 0 (check.log).
+## Gebaut K55-3
+- voll 2 (Prüfbühne S0, Selbsttest K11b BLIND): geerbter Basis-Rot, geheilt durch den Merge von integ-probe (c8196cd1 ff.).
+- voll 10 Klang-Zensus ROT 3 -> lokal GRÜN (EXIT 0, Port 8951), `scripts/diag-klang-zensus.cjs` `W.orte`:
+  - Seeufer nach dem Leser, dem Hör-Ring des Ohrs (UMWELT.ohr radien × richtungen): der Punkt hinter dem ersten trockenen,
+    dessen ERSTER Ring Wasser trifft (die meisten nassen Ring-Punkte). ufer −32,1 -> −25,8 dB (Wind −33,0 / −44,4).
+  - Wiese jenseits der Glut-Hörweite (klang-core `glut.hoerweiteM` 26 m + 4) jedes Glut-Baus, trocken und eben im Hör-Ring,
+    offen wie der Messort (Kronen-Streu und 15-m-Bestand nie über dem Messort); das Dorf wächst vorher aus (Bau-Schlange
+    leer, ≤ 30 s). Der Glutbrunnen stand 9,9 m neben dem Messort (glut −35,1 > wind −36,4); jetzt Wiese 54 m vom Messort.
+- voll 7 Fahr-Leben S4: die Meldung nennt jetzt Weg längs der Bahn, die Kante und was die Bahn-Wache räumte.
 
-## Offen (für den nächsten Agenten)
-1. Fahr-Leben S4 „Absteigen im Flug": am Kliff (Kante 5,94 m auf 3 m, -143/-109 ff.) fliegt der Wagen 0 Takte — prüfen,
-   ob er die Kante erreicht (Anlauf, Bahn), S2 an derselben Kante ist grün.
-2. Fahr-Leben L6 (Spieler steckt 1,68 m im Wagen, 87 Stöße ohne Fahrt-Verlust) und L8 (Lockstep 0,0018 m, Bär x ab
-   Schritt 175) an der Gasse/Start um die Mess-Wiese — trotz `ankommen()`; waren schon in CI 38546830515 rot.
-3. Höhlen-Sicht Blick hinaus: LOCH 16 Zellen (15,1#1, Punkt 690/46/50) + Schatten 0 Empfänger. Verdacht: die
-   Höhlen-Sicht öffnet Mündungen in Chunks der Stufe 1 nicht (K51 Nah-Zone 3x3); die alte Probe ließe dieselben 16 weg.
-4. Klang-Zensus (voll 10): an der neuen Wiese steht ein Dorf mit Glutbrunnen 9,9 m daneben (`S wiese: Glut trägt nicht`),
-   der See ist 5 km fort (`S seeufer`). Klasse: `W.orte(wx, wz)` sucht seeufer/wald/dorf um die Wiese -> welt-orte.
-5. Danach CI 13/13, dann merge-bereit.
+## Offen (Messnamen, Befund)
+1. voll 7 S4 „Absteigen im Flug": lokal (Port 8953) fährt der GT 65,0 m längs der Bahn in 420 Frames über die Kante bei
+   24,0 m (5,94 m auf 3 m, -143/-109 ff. bzw. S2 „Fall 7,4 m bei 589,7/147,9") und hebt NIE ab (Flug 0 Takte). S2 an
+   derselben Kante zählt Luft 20/532 im Sim-Schritt, größter Sprung 0,12 m je Schritt: der Wagen klebt die Wand hinab statt
+   ballistisch zu fliegen. Nächster Schritt: Höhe/Luft je Sim-Schritt an der Kante loggen (Hook `_stepFixedSim` wie S2) und
+   im Fahr-Kern die Boden-Folge (Rad-Stufe / Ritt-Ebene `_rittEbene`) lesen, die den Wagen an einer 63°-Kante hält.
+2. voll 7 L6 (Spieler steckt 1,68 m im GT, 87 Stöße ohne Fahrt-Verlust, GT -> Spieler 0,77 m) und L8 (Lockstep Wagen
+   0,001769 m, Bär x ab Schritt 175) an der Gasse/dem Start um den Messort (`mo = expected.messort`) — lokal reproduziert,
+   auf integ-probe (alter Ort) grün. Die Klasse der Orte: Gasse und Start suchen noch um den Messort (wie bis K55-2 hoehle/
+   kante/querhang/hang) — die Ursache im Stoß-Gesetz ist nicht benannt.
+3. voll 4 Höhlen-Sicht „Blick hinaus" LOCH 16 Zellen + Schatten 0 Empfänger. Lokal vermessen (Debug, nicht committet):
+   der Verdacht „Stufe-1-Chunks" ist WIDERLEGT — es fehlen auch Stufe-0-Zellen (15,0#86 step 1,8; 15,-1#59; 16,-1#63 ganz
+   ohne Kante/Tor/Rand). Das Auge (712,2/105,3/-38,8) liegt in 16,-1 in 8 Luft-Boxen (16,-1#0 die versiegelte Sammel-Zelle,
+   #7 #8(1 Tor) #10 #13, 16,-2#38 #40 #44); 293 Zellen besucht, `hinter` 94, `offen` 5. Die fehlenden liegen hinter dem
+   Mund (x < 699), nur über Portale von Nicht-Start-Zellen erreichbar: der Weg hinaus (`_hoehlenAusgang`, Sperre ≤ weit +
+   2·HOEHLEN_AUGE_M) öffnet die Höhle gegenüber nicht. Nächster Schritt: für 15,-1#59 -> 16,-1#61 die Kette bis zu ihrer
+   Start-Zelle und deren Tor-Sperre gegen `bis` drucken.
+4. Danach CI 13/13, dann merge-bereit.
