@@ -529,8 +529,9 @@ class AnazhRealm_Z20a {
                             }
                             this._foundryPrefetchLibrary();
                             // DIE EINE PIPE: die Gattungs-Templates off-thread vorwärmen —
-                            // Welt-Spawns treffen dann nur noch das Memo (Clone, kein Freeze).
-                            this._ofenPrefetchKreaturen();
+                            // Welt-Spawns treffen dann nur noch das Memo (Clone, kein Freeze). Er wartet auf das erste
+                            // Bild (K60) wie der Vorrat der Bibliothek; ein Bruch seines Gusses meldet sich laut.
+                            this._ofenPrefetchKreaturen().catch((e) => this._stoffBruch("der Ofen-Vorrat", e));
                         } else if (m.type === "book") {
                             this._foundryIngestBook(m);
                         } else this._foundryAntwort(f, m);

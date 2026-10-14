@@ -2144,9 +2144,14 @@ class AnazhRealm_Z06c {
 
     // P3-Progression: je „Atem“ eine Kreatur, NACHDEM die Kontrolle steht und nur mit Frame-Luft
     // (`_frameOverBudget` falsy) — Bewegung/Laden gehen vor. No-op ohne offene P3-Arbeit.
+    // DIE KONTROLLE IST DAS ERSTE WELTBILD (K60): bis K60 prüfte der Tick sie nie — er spawnte ab dem ersten Takt unter dem
+    // Ladeschirm, und jede Kreatur goss ihre Gattung synchron auf dem Haupt-Faden (Radeon kalt 0,7–1,1 s vor dem Bild),
+    // neben dem Ofen-Vorrat, der dieselbe Vorlage im Faden backte. Jetzt wartet er auf das Bild (`_weltbildDa`) und auf den
+    // Ofen-Vorrat (`_ofenVorratSteht`): jeder Spawn trifft das Memo (Clone), nie einen Guss.
     _tickBootPhase3(now) {
         const p3 = this.state._bootPhase3;
         if (!p3) return;
+        if (!this.state._weltbildDa || (this._foundryEnabled() && !this._ofenVorratSteht)) return;
         if (this.state._frameOverBudget) return; // Kontrolle + Streaming zuerst
         if (now - (p3.lastAt || 0) < AnazhRealm.BOOT_PHASE3_SPAWN_MS) return;
         p3.lastAt = now;
