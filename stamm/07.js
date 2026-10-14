@@ -637,11 +637,10 @@ class AnazhRealm_Z07 {
         // Fail-closed: eine Stufe unter der gröbsten ohne Ziel spränge am Wechsel.
         const nVm = meshData.positions.length / 3;
         const zielDa = (z) => z && z.length === meshData.positions.length;
-        if (
-            (lod | 0) < 3 &&
-            !(zielDa(meshData.stufeZiel) && zielDa(meshData.normalZiel) && zielDa(meshData.farbeZiel))
-        )
-            throw new Error(`_buildVoxelChunkDataFromWorkerMesh(${cx},${cz}): der Worker liefert kein Stufen-Ziel (L${lod})`);
+        if ((lod | 0) < 3 && !(zielDa(meshData.stufeZiel) && zielDa(meshData.normalZiel) && zielDa(meshData.farbeZiel)))
+            throw new Error(
+                `_buildVoxelChunkDataFromWorkerMesh(${cx},${cz}): der Worker liefert kein Stufen-Ziel (L${lod})`
+            );
         geom.setAttribute(
             "aMorphTarget",
             new THREE.Float32BufferAttribute(

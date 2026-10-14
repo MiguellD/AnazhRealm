@@ -159,7 +159,9 @@ self.onmessage = function (e) {
                         mesh.hSeiten.buffer,
                         mesh.hKanten.buffer,
                         mesh.hRand.buffer,
-                    ].concat(mesh.stufeZiel ? [mesh.stufeZiel.buffer, mesh.normalZiel.buffer, mesh.farbeZiel.buffer] : [])
+                    ].concat(
+                        mesh.stufeZiel ? [mesh.stufeZiel.buffer, mesh.normalZiel.buffer, mesh.farbeZiel.buffer] : []
+                    )
                 );
             }
         } else if (msg.type === "water-sheet") {

@@ -1,0 +1,50 @@
+
+> anazhrealm@18.546.0 gate:seam
+> node scripts/diag-chunk-seam.cjs --gate
+
+
+=== T0 — DIE NAHT MESSEN (Terrain-Kohärenz-Plan §4) ===
+
+Gestreamte Terrain-Chunks: 49   LOD-Verteilung: {"0":4,"1":32,"2":13}
+
+── A · RÄUMLICH, GLEICHE LOD (die Determinismus-Wette) ──
+   Nachbar-Paare: 64
+   DISPOSITIV — EXAKT-geteilte Vertices nach Abstand zur Naht-Ebene:  <0.4m:53.8%(n807)  <0.9m:50.8%(n683)  <1.8m:48.6%(n1795)  <3.7m:40.3%(n3012)
+   → ~50% der Naht-Vertices sind float-EXAKT geteilt (der Pad+Crop-Overlap, V9.79) → die §1.2-These ‚KEINE geteilten Vertices‘ ist WIDERLEGT; die gleiche-LOD-Naht ist halb-verschweisst.
+   Rest-Proxy (UNRELIABEL — Punkt→Fläche auf MEHRWERTIGER Oberfläche, dominiert von Höhlen/Überhängen): von n373 ungeteilten 19.3% auf der Fläche · 48.8% >1 m (91% okkludiert) · max 15.71 m
+   → STRUKTURELL SEMI-VERSCHWEISST (50% geteilt vs Cross-LOD 0%) → KEIN primärer sichtbarer Riss (kein ‚Terrain-Löcher‘-Befund in 30 Wellen; der Rest-Proxy ist headless-unreliabel auf der mehrwertigen Fläche). Schöpfer-Auge bestätigt.
+
+── B · RÄUMLICH, CROSS-LOD (die LOD-T-junction) ──
+   Nachbar-Paare: 20
+   DISPOSITIV — EXAKT-geteilte Vertices nach Abstand zur Naht-Ebene:  <0.4m:0.3%(n391)  <0.9m:0%(n421)  <1.8m:0%(n1006)  <3.7m:0%(n1189)   — wie erwartet ≈0% (fein/grob = andere Gitter, KEINE geteilten Vertices)
+   feine Naht-Vertices zur groben Fläche (n390): 11.3% liegen auf (<0.3 m)  ·  73.6% Spalt >1 m (davon 89% okkludiert → ~8.1% SICHTBARE Spalten)  ·  max 39.9 m
+   schlimmster Spalt: 2,-2↔3,-2  39.9 m @y 30.58
+   → die Cross-LOD-Naht ist STRUKTURELL: 0% geteilte Vertices (fundamental inkompatible Gitter) + ~8.1% sichtbare >1-m-Spalten an der Oberfläche → ein echter LOD-Riss → T2 Stable-LOD+Geomorph
+
+── D · T2-GEOMORPH — schliesst der Morph die Cross-LOD-Naht? ──
+   gemorphte Boundary-Vertices: 3704 (über 15 feine Grenz-Chunks, 20 Cross-LOD-Faces)
+   liegen AUF der groben Oberfläche (<0.3 m):  ROH 8.1%  →  GEMORPHT 91.9%
+   Punkt→grobe-Fläche-Spalt:  ROH ⌀3.748 m  →  GEMORPHT ⌀0.168 m (max 13.096 m)
+   [Diag] mittl. Gewicht 1  ·  TARGET→Fläche ⌀0.168 m (soll ~0!)  ·  Grenz-ZEILE (w>0.95, n3704): 91.9% auf Fläche, ⌀0.168 m
+   → T2 unvollständig: die Grenz-Zeile schmiegt sich noch nicht voll an — _applyCrossLodGeomorph prüfen.
+
+── E · A1: MORPH-CAP + STITCH-BAND — sind die sichtbaren Cliff-Spalten gedeckt? ──
+   Stitch-Bänder: 15 Meshes · 4607 Quads  ·  Border-Row-Vertices (mit Target): 1923  ·  Cap-gestoppt (w=0, kein Cliff-Zerren): 6
+   sichtbare >1-m-RENDER-Spalten in der Grenz-Zeile: 0  ·  davon OHNE Band-Deckung: 0
+   → A1 WIRKT: jeder sichtbare Grenz-Spalt ist vom Stitch-Band überbrückt (0 ungedeckt) — der Cap stoppt das Cliff-Zerren, das Band schliesst den Rest.
+
+── C · ZEITLICH (das Abbau-Fenster) — nach T1: heilt der Footprint IM Edit-Call? ──
+   Carve an der Grenze Spieler-Chunk 0,0 ↔ Nachbar 1,0  @(43.2, 88.7, 21.6)
+   IM EDIT-CALL synchron geheilt (T1): 0 Chunk(s)  →  []
+   Spieler-Chunk in-edit: NEIN   ·   GRENZ-NACHBAR in-edit: NEIN — async @Frame 3
+   verbleibend async (Skirt, Oberfläche unverändert): 12 dirty → über 6 Frame(s) (sub-cell, imperzeptibel)
+   → T1 GREIFT NICHT vollständig: der Grenz-Nachbar heilt noch async — Footprint-Bereich prüfen.
+   SYNC-Drain-Referenz (die T1-Maschinerie): Carve → 12 dirty → EIN Drain baut 12 SYNCHRON → 0 übrig.
+
+── BEFUND (T1 gebaut · T2 als nächstes) ──
+   • A · gleiche-LOD-Grenze: STRUKTURELL SEMI-VERSCHWEISST (~50% float-exakt geteilt vs Cross-LOD 0%) → kein primärer sichtbarer Riss; KEINE eigene Arbeit nötig.
+   • C · zeitliche Naht (T1): noch offen — der Footprint heilt nicht vollständig in-edit.
+   • B · Cross-LOD-T-junction: 0% geteilt, ~8.1% sichtbare >1-m-Spalten (ROH) → der Geomorph schliesst die Zeile, Cap+Stitch-Band (A1) decken die Cliff-Reste.
+   • E · A1 Stitch-Band: GEHEILT — 0 sichtbare Grenz-Spalten ohne Band-Deckung.
+✅ SEAM-GATE: same-LOD 53.8% geteilt (≥45) · cross-LOD 20 Paare · 0 ungedeckte Spalten.
+EXIT=0

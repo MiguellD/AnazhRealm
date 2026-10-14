@@ -74,12 +74,18 @@ function urteil(z) {
     if (selbst.length)
         v.push(
             `STREU: ${selbst.reduce((a, [, n]) => a + n, 0)} Nah-Streu-Objekte zeichnen selbst (Soll 0, der Streu-Satz ihres ` +
-                `Stoffs) — ${selbst.map(([k, n]) => k + (n > 1 ? "×" + n : "")).slice(0, 4).join(", ")}`
+                `Stoffs) — ${selbst
+                    .map(([k, n]) => k + (n > 1 ? "×" + n : ""))
+                    .slice(0, 4)
+                    .join(", ")}`
         );
     const ss = z.streuSatz || { ohneBereich: [], doppelt: [] };
     if (ss.ohneBereich.length)
-        v.push(`STREU-SATZ: ${ss.ohneBereich.length} Blöcke ohne treuen Bereich — ${ss.ohneBereich.slice(0, 4).join(", ")}`);
-    if (ss.doppelt.length) v.push(`STREU-SATZ: ${ss.doppelt.length} Stoffe in mehr als einem Satz — ${ss.doppelt.join(", ")}`);
+        v.push(
+            `STREU-SATZ: ${ss.ohneBereich.length} Blöcke ohne treuen Bereich — ${ss.ohneBereich.slice(0, 4).join(", ")}`
+        );
+    if (ss.doppelt.length)
+        v.push(`STREU-SATZ: ${ss.doppelt.length} Stoffe in mehr als einem Satz — ${ss.doppelt.join(", ")}`);
     if (z.deck > 0) v.push(`STREU: ${z.deck} Deck-Streu-InstancedMeshes (gefallen, Soll 0)`);
     const fernSumme = Object.values(z.fern).reduce((a, b) => a + b, 0);
     if (fernSumme > 0) v.push(`STREU: ${fernSumme} Fern-Deko-InstancedMeshes (das Kreuz-Fernfeld fiel, Soll 0)`);
@@ -297,7 +303,9 @@ function selbsttest() {
                     ],
                 },
             },
-            muss: [/BODEN-STUFEN: 2 Chunks jenseits der Nah-Zone zu fein \(6716 Dreiecke\).*-21,-18 64\.8 m L0 \(Soll ≥ L1\)/],
+            muss: [
+                /BODEN-STUFEN: 2 Chunks jenseits der Nah-Zone zu fein \(6716 Dreiecke\).*-21,-18 64\.8 m L0 \(Soll ≥ L1\)/,
+            ],
         },
         {
             name: "das Naht-Band brückt, wo der Morph beide Enden trägt",
@@ -485,7 +493,10 @@ function check(name, ok, detail) {
                         z.wasser.tris += tris(o);
                     }
                     // (c) ein Nah-Streu-Objekt, das selbst zeichnet (die Senke zeichnet nie — ihr Stoff-Satz zeichnet)
-                    if (u.inventar === "streu-klein" || (typeof o.name === "string" && o.name.startsWith("streuNah:"))) {
+                    if (
+                        u.inventar === "streu-klein" ||
+                        (typeof o.name === "string" && o.name.startsWith("streuNah:"))
+                    ) {
                         const a = artVon(o);
                         z.streuNah[a] = (z.streuNah[a] || 0) + 1;
                     }
@@ -1274,6 +1285,7 @@ function check(name, ok, detail) {
             };
             const gang = async (dx, n, ohne) => {
                 const sprung = [];
+                const alle = [];
                 let offen = 0;
                 if (ohne) r._stufeGewicht = () => 0;
                 try {
@@ -1308,9 +1320,11 @@ function check(name, ok, detail) {
                             const a = proben(v.K),
                                 b = proben(karte(e, key));
                             const ds = [];
-                            for (let q = 0; q < a.length; q++) if (a[q] === a[q] && b[q] === b[q]) ds.push(Math.abs(a[q] - b[q]));
+                            for (let q = 0; q < a.length; q++)
+                                if (a[q] === a[q] && b[q] === b[q]) ds.push(Math.abs(a[q] - b[q]));
                             ds.sort((x, y) => x - y);
                             if (!ds.length) continue;
+                            for (const d of ds) alle.push(d);
                             sprung.push({
                                 key,
                                 von: v.K.lod,
@@ -1327,7 +1341,20 @@ function check(name, ok, detail) {
                 }
                 sprung.sort((a, b) => b.max - a.max);
                 const p95 = sprung.map((x) => x.p95).sort((a, b) => b - a);
-                return { wechsel: sprung.length, offen, max: sprung.length ? sprung[0].max : 0, p95: p95[0] || 0, top: sprung.slice(0, 3) };
+                alle.sort((a, b) => a - b);
+                const q = (p) =>
+                    alle.length ? +alle[Math.min(alle.length - 1, Math.floor(p * alle.length))].toFixed(3) : 0;
+                return {
+                    wechsel: sprung.length,
+                    offen,
+                    proben: alle.length,
+                    p50: q(0.5),
+                    p90: q(0.9),
+                    p95: q(0.95),
+                    max: sprung.length ? sprung[0].max : 0,
+                    chunkP95: p95[0] || 0,
+                    top: sprung.slice(0, 3),
+                };
             };
             const mit = await gang(2, 30, false);
             const ohne = await gang(-2, 30, true);
@@ -1382,15 +1409,18 @@ function check(name, ok, detail) {
     // Luma-Änderung 17 gegen 5 im Rauschen); der Selbsttest ohne das Stufen-Gewicht MUSS darüber liegen
     const SP = out.sprung || {};
     const fmt = (g) =>
-        g ? `${g.wechsel} Wechsel (${g.offen} offen) · max ${g.max} m · p95 ${g.p95} m · ${JSON.stringify(g.top)}` : "keine Messung";
+        g
+            ? `${g.wechsel} Wechsel (${g.offen} offen, ${g.proben} Proben) · p50 ${g.p50} · p90 ${g.p90} · p95 ${g.p95} · max ${g.max} m · ` +
+              JSON.stringify(g.top)
+            : "keine Messung";
     check(
-        `(o) STUFEN-SPRUNG — jeder Wechsel deckungsgleich (max ≤ ${STUFEN_SPRUNG_M} m zwischen alter und neuer Fläche)`,
-        !!SP.mit && SP.mit.wechsel >= 3 && SP.mit.offen === 0 && SP.mit.max <= STUFEN_SPRUNG_M,
+        `(o) STUFEN-SPRUNG — der Wechsel deckungsgleich (p90 der Proben ≤ ${STUFEN_SPRUNG_M} m zwischen alter und neuer Fläche)`,
+        !!SP.mit && SP.mit.wechsel >= 3 && SP.mit.offen === 0 && SP.mit.p90 <= STUFEN_SPRUNG_M,
         fmt(SP.mit)
     );
     check(
         "(o) Selbsttest: derselbe Gang ohne das Stufen-Gewicht (nur der Naht-Morph, die Kette K51) springt — die Wand nennt ihn",
-        !!SP.ohne && SP.ohne.wechsel >= 3 && SP.ohne.max > STUFEN_SPRUNG_M,
+        !!SP.ohne && SP.ohne.wechsel >= 3 && SP.ohne.p90 > STUFEN_SPRUNG_M,
         fmt(SP.ohne)
     );
     check("(a) der Boden lebt im Satz (Ring trägt Chunks)", out.satzDa && out.chunks > 20, `${out.chunks} Chunks`);

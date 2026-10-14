@@ -849,9 +849,7 @@ class AnazhRealm_Z10 {
                     // Luft — ohne Flächen-Vorzeichen: die Windung des Netzes kennt die Seite der Luft nicht). Unter dem
                     // Himmel (aHimmel 1) ist sie dieselbe Zahl wie vorher.
                     const _hS = opts.himmelsSicht ? this._bodenStufenKnoten().himmel : null;
-                    let _baseN = _hS
-                        ? _Tn.mix(_nWG, _up, _flat.mul(_hS))
-                        : _Tn.mix(_nGeo, _up, _flat);
+                    let _baseN = _hS ? _Tn.mix(_nWG, _up, _flat.mul(_hS)) : _Tn.mix(_nGeo, _up, _flat);
                     // Mikro-Relief (s. TERRAIN_BUMP): ein Noise-Höhengradient (zwei Oktaven: Klumpen + Korn) kippt die
                     // geflattete Normale entgegen dem Gradienten, LOD-gegated. Render-only, try/catch.
                     {
@@ -968,7 +966,11 @@ class AnazhRealm_Z10 {
         const s = code.sub(L.mul(2.0));
         const ST = AnazhRealm.BODEN_STUFEN.stufen;
         const je = (k) =>
-            T.select(L.lessThan(0.5), T.float(ST[0][k]), T.select(L.lessThan(1.5), T.float(ST[1][k]), T.float(ST[2][k])));
+            T.select(
+                L.lessThan(0.5),
+                T.float(ST[0][k]),
+                T.select(L.lessThan(1.5), T.float(ST[1][k]), T.float(ST[2][k]))
+            );
         const bis = je("bis");
         const rel = T.positionLocal.xz.sub(U.stufeAuge).abs();
         const w = T.smoothstep(bis.sub(je("band")), bis, T.max(rel.x, rel.y));

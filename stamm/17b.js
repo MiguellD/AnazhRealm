@@ -814,7 +814,12 @@ class AnazhRealm_Z17b {
         if (s.bloecke.has(key)) this._chunkSatzAus(art, key);
         const n = geom && geom.attributes && geom.attributes.position ? geom.attributes.position.count : 0;
         for (const [name, is, , w] of s.spec.attr)
-            for (const [nm, b] of w ? [[name, is], [w, 1]] : [[name, is]]) {
+            for (const [nm, b] of w
+                ? [
+                      [name, is],
+                      [w, 1],
+                  ]
+                : [[name, is]]) {
                 const a = geom && geom.attributes ? geom.attributes[nm] : null;
                 if (!a || a.itemSize !== b || a.count !== n)
                     throw new Error(
@@ -827,7 +832,15 @@ class AnazhRealm_Z17b {
         for (const { name, is, form, gis, w } of s.attr) {
             const ga = g.attributes[name];
             if (form)
-                AnazhRealm._satzPacke(form, geom.attributes[name].array, is, ga.array, vStart, n, w && geom.attributes[w].array);
+                AnazhRealm._satzPacke(
+                    form,
+                    geom.attributes[name].array,
+                    is,
+                    ga.array,
+                    vStart,
+                    n,
+                    w && geom.attributes[w].array
+                );
             else ga.array.set(geom.attributes[name].array, vStart * is);
             ga.addUpdateRange(vStart * gis, n * gis);
             ga.needsUpdate = true;

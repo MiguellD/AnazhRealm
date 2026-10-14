@@ -1,0 +1,42 @@
+=== CHUNK-SATZ (Welle B) — Null-Renderer, die Render-Bürger je Klasse ===
+
+  Zensus: 81 Chunks · Boden 1 Objekte (15651 Dreiecke) · Wasser 0 · Nah-Streu 0 selbst zeichnend, 55/55 Blöcke im Streu-Satz ihres Stoffs · Fern 0 · Deck 0 · @p:-Gruppen 0 · p:-Bundles 0 · Render-Bürger 215 · Szenen-Kinder 37
+  Bau: 76 Gruppen (43 werfen) · Glut 2 (0 werfen) · Bau-Satz 38/38 Gruppen im Satz ihres Stoffs
+
+  Satz boden: 105 Bereiche · 60506/229376 Vertices · 245310 Indizes im Ring, Hauptbild-Abschnitt 46953 · Abschnitte bis 58368/1310720 · 0× gewachsen
+  Satz formationenSatz|75c55942-7da6-4604-a2fa-c1b7f903a6b6|w: 16 Bereiche · 13359/18432 Vertices · 55680 Indizes im Ring, Hauptbild-Abschnitt 21120 · Abschnitte bis 27648/27648 · 3× gewachsen
+  Satz formationenSatz|4fe8aa57-8897-4c64-a1af-929b24adeca5|w: 16 Bereiche · 111028/139968 Vertices · 201960 Indizes im Ring, Hauptbild-Abschnitt 60720 · Abschnitte bis 73728/73728 · 8× gewachsen
+  Satz bauSatz|8cede6ae-c674-4264-a8d6-d8400abc0dd7|-: 2 Bereiche · 4725/8192 Vertices · 15840 Indizes im Ring, Hauptbild-Abschnitt 0 · Abschnitte bis 0/16384 · 0× gewachsen
+  Satz bauSatz|b2cc43e3-941b-40b0-8d2d-69a60fa55a5e|-: 2 Bereiche · 1350/8192 Vertices · 5580 Indizes im Ring, Hauptbild-Abschnitt 0 · Abschnitte bis 0/16384 · 0× gewachsen
+  Satz bauWurf|fb3ce7c0-3819-4ab7-82e4-0845f4026e09|S: 2 Bereiche · 255/8192 Vertices · 864 Indizes im Ring, Hauptbild-Abschnitt null · Abschnitte bis 0/16384 · 0× gewachsen
+  Satz streuSatz|f1839852-018a-46b1-ab7e-a9c4f3d11611: 19 Bereiche · 2502/3456 Vertices · 6318 Indizes im Ring, Hauptbild-Abschnitt 1530 · Abschnitte bis 3072/3072 · 4× gewachsen
+  Satz streuSatz|6f528fc7-97ba-4564-8f1b-26940c2e6309: 36 Bereiche · 10815/11664 Vertices · 29700 Indizes im Ring, Hauptbild-Abschnitt 9324 · Abschnitte bis 12288/12288 · 7× gewachsen
+
+  ✅ (a–d) die Draw-Einheit ist Material × Geometrie (Boden · Wasser · Streu · Bau) — sauber
+  ✅ (n) BODEN-STUFEN — kein Chunk jenseits der Halte-Grenze seiner Stufe (Kasten-Abstand ≥ bis + vorlauf + halt, K51-2); das Naht-Band brückt nur, wo der Morph nicht trägt — 81 Chunks (72 jenseits) · je Stufe {"L0":18306,"L1":39198,"L2":13502} · Naht 10764 Dreiecke (410 Brücken)
+  ✅ (o) STUFEN-SPRUNG — der Wechsel deckungsgleich (p90 der Proben ≤ 0.1 m zwischen alter und neuer Fläche) — 18 Wechsel (0 offen, 7325 Proben) · p50 0.004 · p90 0.066 · p95 0.127 · max 44.357 m · [{"key":"1,-1","von":1,"zu":0,"schritt":2,"max":44.357,"p95":0.018,"n":445},{"key":"-3,1","von":1,"zu":2,"schritt":10,"max":39.929,"p95":6.217,"n":421},{"key":"3,-1","von":2,"zu":1,"schritt":13,"max":30.989,"p95":0.011,"n":388}]
+  ✅ (o) Selbsttest: derselbe Gang ohne das Stufen-Gewicht (nur der Naht-Morph, die Kette K51) springt — die Wand nennt ihn — 18 Wechsel (0 offen, 7326 Proben) · p50 0.035 · p90 0.404 · p95 0.649 · max 44.357 m · [{"key":"1,-1","von":0,"zu":1,"schritt":29,"max":44.357,"p95":0.056,"n":445},{"key":"-3,1","von":2,"zu":1,"schritt":21,"max":39.909,"p95":6.213,"n":421},{"key":"3,-1","von":1,"zu":2,"schritt":18,"max":30.992,"p95":0.044,"n":388}]
+  ✅ (a) der Boden lebt im Satz (Ring trägt Chunks) — 81 Chunks
+  ✅ (h) BAU-SATZ — der gesetzte Studio-Bau lebt (Satz-Arten im Ring), jede Gruppe als Bereich im Satz ihres Stoffs — 38/38
+  ✅ (c) STREU-SATZ — die Nah-Streu lebt (Blöcke im Ring), jeder Block mit Pflanzen als Bereich im Streu-Satz seines Stoffs — 55/55
+  ✅ (c) … je Senke der Nah-Streu eine treue Block-Tabelle (Σ n = Anzahl, je Block Identitäten und Matrizen), jeder Block einer lebenden Kachel, keine Senke zeichnet — 5 Senken · 55 Blöcke
+  ✅ (f) TREUE — jeder Satz-Bereich trägt byte-gleich seinen Chunk (Views, Index verschoben, lückenlose Viertel) — boden 105 · formationenSatz|75c55942-7da6-4604-a2fa-c1b7f903a6b6|w 16 · formationenSatz|4fe8aa57-8897-4c64-a1af-929b24adeca5|w 16 · bauSatz|8cede6ae-c674-4264-a8d6-d8400abc0dd7|- 2 · bauSatz|b2cc43e3-941b-40b0-8d2d-69a60fa55a5e|- 2 · bauWurf|fb3ce7c0-3819-4ab7-82e4-0845f4026e09|S 2 · streuSatz|f1839852-018a-46b1-ab7e-a9c4f3d11611 19 · streuSatz|6f528fc7-97ba-4564-8f1b-26940c2e6309 36
+  ✅ (f) TREUE — jeder Abschnitt trägt seine Viertel byte-gleich hintereinander, in seiner Kapazität — boden Hauptbild 46953/245310 · formationenSatz|75c55942-7da6-4604-a2fa-c1b7f903a6b6|w Hauptbild 21120/55680 · formationenSatz|4fe8aa57-8897-4c64-a1af-929b24adeca5|w Hauptbild 60720/201960 · bauSatz|8cede6ae-c674-4264-a8d6-d8400abc0dd7|- Hauptbild 0/15840 · bauSatz|b2cc43e3-941b-40b0-8d2d-69a60fa55a5e|- Hauptbild 0/5580 · bauWurf|fb3ce7c0-3819-4ab7-82e4-0845f4026e09|S Hauptbild null/864 · streuSatz|f1839852-018a-46b1-ab7e-a9c4f3d11611 Hauptbild 1530/6318 · streuSatz|6f528fc7-97ba-4564-8f1b-26940c2e6309 Hauptbild 9324/29700
+  ✅ (f) die Viertel eines Abschnitts liegen in der Richtung der Art (Boden nah → fern, Wasser fern → nah)
+  ✅ (e) KONSUM — Chunk-Abbau ändert den Satz, nicht die Szene — {"opfer":"-1,-1","vor":{"kinder":37,"bereiche":105,"index":245310},"ab":{"kinder":37,"bereiche":103,"index":230292},"auf":{"kinder":37,"bereiche":105,"index":245310}}
+  ✅ (e) KONSUM — der Wiederaufbau kehrt in den Satz zurück (dieselbe Index-Zahl, dieselben Szenen-Kinder)
+  ✅ Absenz am Code — Boden · Stitch · Wasser gehen durch _chunkSatzEin, der platzierte Bau trägt kein p: — {"boden":true,"stitch":true,"wasser":true,"bau":true}
+  ✅ (i) WACHSEN — ein wachsender Satz tauscht die Geometrie am selben Mesh (der r184-Hörer fällt im Register), derselbe Inhalt — {"tauschSicher":true,"satz":"streuSatz","derselbe":true,"getauscht":true,"inhalt":true}
+  ✅ (j) NEUSCHREIBEN — kein Pass schreibt in Ruhe, kein Pass den Abschnitt eines anderen (Bytes je Frame nach dem ersten) — ruhe 0/0/0/0 B · druck 0/0/0/0 B · Boden {"abschnitte":{"haupt":46953,"k0":245310,"k1":245310},"iKap":648192,"iSumme":245310}
+  ✅ (j) … der zu kleine Index wächst unter Druck (beide Kaskaden über dem Ring), statt zu verdrängen; jeder Abschnitt treu — 3× gewachsen · treu true
+  ✅ (j) DREHEN — jeder Pass schreibt nur die Änderung seiner Wahl (36 × 1°, Kaskaden vor dem Blick), jeder Abschnitt nach jedem Frame treu — je Frame 14543 B (Änderung 14214 B) · die alte Regel 239881 B · untreu 0/0
+  ✅ (j) Selbsttest: die alte Verdrängung (drei Ring-Kaskaden) schreibt je Frame neu — die Wand nennt sie — NEUSCHREIBEN (alt, Frame 2): formationenSatz: k0 schrieb seinen Abschnitt — 1030560 B · NEUSCHREIBEN (alt, Frame 2): formationenSatz: k1 schrieb seinen Abschnitt — 1030560 B
+  ✅ (k) DER SATZ FOLGT SEINEM INHALT — leer: bis zur Ruhe-Frist hält er, danach schrumpft er auf vMin/iMin (derselbe Mesh) — {"gross":[32768,65536],"vorFrist":[32768,65536],"nach":[1024,3072],"ziel":[1024,3072],"derselbe":true}
+  ✅ (k) … belegt: nach der Frist dicht auf Inhalt × luft — Bereiche treu, Hauptbild-Abschnitt neu und treu, derselbe Mesh — {"gross":[226200,6144,60320],"vorFrist":[226200,6144],"nach":[66387,3072,53109],"inhalt":53109,"ziel":66387,"frei":0,"derselbe":true,"treu":true,"abschnittTreu":true,"haupt":41925}
+  ✅ (k) Selbsttest: die alte Regel (nur ein leerer Satz kehrt zurück) hält das Hochwasser des Boden-Satzes — die Wand nennt es — Boden-Satz hält 199161 Vertices für 58405 Inhalt (Ziel 73007)
+  ✅ (l) WURF-SATZ — der nurWurf-Satz (bauWurf) zieht im Hauptbild 0 Befehle, liegt nur auf SHADOW_TWIN_LAYER, die Kaskade zeichnet ihn — {"haupt":0,"kaskade":36,"schicht":4,"soll":4}
+  ✅ (l) Selbsttest: derselbe Satz ohne die Marke nurWurf zeichnet im Hauptbild — die Wand nennt ihn — Hauptbild 36 Indizes ohne die Marke
+  ✅ (g) kein Page-Error — sauber
+
+✅ GRÜN — der Ring zeichnet je Material EINEN Satz; ein Chunk ist ein Bereich im Puffer, kein Szenen-Objekt.
+EXIT=0

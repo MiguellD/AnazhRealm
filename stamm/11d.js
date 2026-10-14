@@ -1297,7 +1297,11 @@ class AnazhRealm_Z11d {
                     const acx = pcx + Math.round(dirX * ahead);
                     const acz = pcz + Math.round(dirZ * ahead);
                     if (!this.state.voxelChunks.has(`${acx},${acz}`)) {
-                        this._ensureVoxelChunkAt(acx, acz, this._voxelChunkLodFor(acx, acz, playerPos.x, playerPos.z, null));
+                        this._ensureVoxelChunkAt(
+                            acx,
+                            acz,
+                            this._voxelChunkLodFor(acx, acz, playerPos.x, playerPos.z, null)
+                        );
                     }
                 }
             }

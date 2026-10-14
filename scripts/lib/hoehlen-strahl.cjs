@@ -22,7 +22,8 @@ function installHoehlenStrahl() {
         const P = s.geom.attributes.position.array;
         const Z = s.geom.attributes.aMorphTarget ? s.geom.attributes.aMorphTarget.array : null;
         // der Morph-Code (K51-2) reist in der vierten Komponente der Satz-Farbe
-        const C4 = s.geom.attributes.color && s.geom.attributes.color.itemSize === 4 ? s.geom.attributes.color.array : null;
+        const C4 =
+            s.geom.attributes.color && s.geom.attributes.color.itemSize === 4 ? s.geom.attributes.color.array : null;
         const W = C4 ? { length: C4.length / 4 } : null;
         const zellen = [];
         let nT = 0;

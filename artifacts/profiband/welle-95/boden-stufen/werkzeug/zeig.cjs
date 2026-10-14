@@ -1,0 +1,1 @@
+let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const i=s.indexOf("{\n");console.log(s.slice(0,i).split("\n").map(l=>l.slice(0,150)).join("\n")); const j=JSON.parse(s.slice(i)).ergebnis; console.log("rauschen",JSON.stringify(j.rauschen)); j.schritte.forEach((t,k)=>console.log(k+1,JSON.stringify(t))); console.log("sprung",j.sprung,j.sprungAnteil)})

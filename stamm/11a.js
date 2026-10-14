@@ -436,8 +436,7 @@ class AnazhRealm_Z11a {
                 // Gewicht: 1 in der Grenz-Zeile (dPlane ≤ flat) → linear auf 0 bei morphBand.
                 // A1 — jenseits des Caps KEIN Naht-Morph (Naht 0): das Ziel bleibt das der Stufe (das Naht-Ziel trägt das Band),
                 // sonst zöge das Stufen-Gewicht die Cliff-Wand an den Nachbarn.
-                const naht =
-                    d3 > snapCap ? 0 : Math.max(0, Math.min(1, (morphBand - dPlane) / (morphBand - flat)));
+                const naht = d3 > snapCap ? 0 : Math.max(0, Math.min(1, (morphBand - dPlane) / (morphBand - flat)));
                 wArr[v] = this._morphCode(myLod, naht);
                 if (naht === 0) for (let k = 0; k < 3; k++) tArr[v * 3 + k] = basis[v * 3 + k];
                 touched = true;
@@ -447,7 +446,8 @@ class AnazhRealm_Z11a {
         // die gekappten Naht-Vertices (Cliff: das Naht-Ziel weiter als der Cap, der Vertex trägt das Ziel seiner Stufe) — das
         // Naht-Band brückt sie (Leser: die Naht-Probe des Playtests)
         let gekappt = 0;
-        if (bestDist) for (let v = 0; v < n; v++) if (bestDist[v] < Infinity && this._morphNaht(wArr[v]) === 0) gekappt++;
+        if (bestDist)
+            for (let v = 0; v < n; v++) if (bestDist[v] < Infinity && this._morphNaht(wArr[v]) === 0) gekappt++;
         entry.nahtGekappt = gekappt;
         entry.surfMapZiel = null; // die Karte der Ziele zieht nach (`_bodenKarteZiel`)
         this._chunkSatzMarke("boden", `${cx},${cz}`, ["aMorphTarget", "aMorphWeight"]);
@@ -537,7 +537,9 @@ class AnazhRealm_Z11a {
         const nZiel = geom.attributes.aNormalZiel,
             fZiel = geom.attributes.aFarbeZiel;
         if (!nZiel || !fZiel)
-            throw new Error(`_rebuildLodStitchBand(${key}): die Quelle trägt kein Stufen-Ziel (aNormalZiel · aFarbeZiel)`);
+            throw new Error(
+                `_rebuildLodStitchBand(${key}): die Quelle trägt kein Stufen-Ziel (aNormalZiel · aFarbeZiel)`
+            );
         const sch = geom.attributes.aSchutt;
         if (!sch) throw new Error(`_rebuildLodStitchBand(${key}): die Quelle trägt keinen Schutt (aSchutt)`);
         const seen = new Set();

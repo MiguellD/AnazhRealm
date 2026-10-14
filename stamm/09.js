@@ -74,7 +74,11 @@ class AnazhRealm_Z09 {
         const geo = this._voxelChunkGeometry(ox, oy, oz, gd, g.dimY, gd, gs, undefined, 1, dichte, 1, hoehle);
         const G = globalThis.__gelaendeCore;
         const leer = new Float32Array(0);
-        if (!geo) return G.stufeZiel(fein, leer, new Uint32Array(0), gs, [{ fein: feinNormal, grob: leer, einheit: true }, { fein: feinFarbe, grob: leer }]);
+        if (!geo)
+            return G.stufeZiel(fein, leer, new Uint32Array(0), gs, [
+                { fein: feinNormal, grob: leer, einheit: true },
+                { fein: feinFarbe, grob: leer },
+            ]);
         this._attachVoxelFieldColors(geo);
         const A = geo.attributes;
         const ziel = G.stufeZiel(fein, A.position.array, geo.index.array, gs, [

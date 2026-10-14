@@ -1,25 +1,28 @@
-# UEBERGABE boden-stufen (K51-2, Welle 95) — Stand 14.10.
+# UEBERGABE boden-stufen (K51-2, Welle 95) — Stand 14.10. abends
 
 Zweig `boden-stufen`, Worktree `.claude/worktrees/boden-stufen`, Basis integ-probe 51cc19af (FF). Ports 8900-8909,
-Scratch `C:\Users\micha\AppData\Local\Temp\claude\boden-stufen\`.
+Scratch `C:\Users\micha\AppData\Local\Temp\claude\boden-stufen\` (Werkzeug-Kopie in `werkzeug/`).
 
-## Auftrag
-Stufenwechsel des Boden-Netzes blendet nicht: Geomorph nach CDLOD (jeder Vertex der feineren Stufe wandert im
-Uebergangs-Band stetig auf die groebere Flaeche, der Wechsel geschieht deckungsgleich). Bau-Kante: L2 am Rand des
-Gebauten (diag-fern-ring (9) chunk-eigen-p95, vorher 1,39 m) <= 0,5 m. Bild: Gang-Sequenz 8 x 2 m ueber die
-Stufen-Kante, Sprung-Mass = max Pixel-Aenderung je Schritt. Linse in gate:chunk-satz oder seam. Worker bit-identisch.
+## Gebaut
+- Stufen-Wahl nach KASTEN-Abstand (Chebyshev Spieler -> Chunk-Quadrat, Meter) statt Ring: `BODEN_STUFEN` {vorlauf 3,
+  halt 4, stufen L0 bis 36/band 12, L1 100/12, L2 388,8/40}; CDLOD-Bedingung im Kommentar (26b.js). `_voxelChunkLodFor(cx,cz,px,pz,cur)`.
+- Ziel der groeberen Stufe je Vertex: Worker `stufeZielNetz` (voller Bau der Stufe L+1, eine Zelle Polster) + Stamm
+  `_stufeZielNetz` (Sync-Spiegel), EIN Gesetz gelaende-core `stufeZiel` (Lage senkrecht, sonst Raum; Normale, Stoff-Farbe baryzentrisch).
+- Shader `_bodenStufenKnoten` (10.js): f = (Naht + w - Naht*w)*geomorph, w = smoothstep(bis-band, bis, d), d Chebyshev zum
+  Uniform `stufeAuge` (`_stufeAugeTakt` im Streaming-Takt). Lage, Normale, Farbe mischen mit f.
+- Satz boden 48 B: color.w = Morph-Code (2*Stufe+Naht, `_morphCode`), aNormalZiel.w = aHimmel, aFarbeZiel.w = aSchutt
+  (`_satzPacke` mit vierter Komponente). CPU-Spiegel `_morphFaktor`, Boden-Leser mischt Karte der Lage mit Karte des Ziels.
+- Linse gate:chunk-satz (o) STUFEN-SPRUNG (Gang 30 x 2 m, Flaeche vor/nach jedem Wechsel): p90 0,066 m (Schwelle 0,1),
+  Selbsttest ohne Stufen-Gewicht p90 0,404 m ROT. (n) liest die Halte-Grenze in Metern.
 
-## Entwurf (entschieden)
-- Wahl der Stufe nach Kasten-Abstand (Chebyshev, Spieler -> Chunk-Quadrat) statt Ring: CDLOD-Bedingung
-  D(L+1) - B(L+1) >= D(L) + Vorlauf + Hysterese + Spanne; ein Ring L1 war zu schmal (Ring-Wahl kann die Bedingung nie halten).
-- Ziel der groeberen Stufe je Vertex: der Worker (und der Sync-Bau des Mains) baut das Netz der Stufe L+1 desselben
-  Chunks und projiziert jeden Vertex senkrecht darauf (gelaende-core, EINE Funktion) -> aMorphTarget (kein neuer Puffer).
-- aMorphWeight traegt 2*L + Naht-Gewicht; der Shader rechnet w = smoothstep(D-B, D, d) aus dem Spieler-Uniform.
+## Gemessen (Radeon, Ausgabe-Pfad, Mess-Wiese, Kamera fest am Gang-Start -900/+3/-850 Blick -z, Boden allein, Region 20-48 % Zeilen)
+- vorher (K51-Ring-Kette, integ c8196cd1): Schritt ueber die Grenze p99,9 19, Anteil >8 Luma 2,19 %; sonst Rauschen (0,003-0,03 %).
+- nachher: groesster Schritt p99,9 17, Anteil 0,62 % (der Ring-Umzug: neue Rand-Chunks ersetzen den Fern-Ring = BAU-KANTE);
+  das Band morpht stetig (0,11-0,32 % je 2 m). Dateien: bilder/{vorher,nachher}-ego-sprung.json, -gang-*.png, -diff-*.png.
 
-## Stand
-- [ ] Vorher-Messung Sprung (Radeon)
-- [ ] Bau
-- [ ] Nachher-Messung, Linse, CI
-
-## Zahlen / Dateien
-(folgt)
+## Offen
+- BAU-KANTE: L2 am Rand des Gebauten 1,39 m p95 vom Gesetz (diag-fern-ring (9) chunk-eigen-p95) — NICHT angefasst; sie ist
+  der Rest-Sprung am Ring-Umzug (Bild nachher-ego-diff-3-4). Weg: die aeusserste Stufe morpht im Band vor der Bau-Kante auf
+  den Fern-Ring (Gesetz + Fern-Farbe), Band an `_activeRingRadius` gebunden, gleitend.
+- Haushalt boden (120k) mit der neuen Wahl nachmessen (werkbank band, Wiese/Dorf/Genesis) — headless Ring 4: L0 18k, L1 39k, L2 13k.
+- CI [ci voll] nach Push lesen; voller Playtest.
