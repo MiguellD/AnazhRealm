@@ -954,6 +954,10 @@ AnazhRealm._stammPfadUfer = function (s, inner, bank, hw, kappa) {
 // Schwimmens und der Bezug der Wasserlinie (`_vehicleProfile`, `_fahrzeugGestalt`).
 AnazhRealm.WASSER_DICHTE_TAG = 0.55;
 
+// DER ANKER DER REIHE IM BÜNDEL (1310-9): ab diesem Weg des Auges stellen die Bündel ihre Kinder neu nach Abstand (je
+// Anker-Wechsel EINE Neuaufnahme jedes Bündels, nie je Frame).
+AnazhRealm.BUENDEL_ANKER_M = 16;
+
 AnazhRealm._kernPflichtBruch = function (pfad) {
     throw new Error(
         "KERN-PFLICHT verletzt: " +

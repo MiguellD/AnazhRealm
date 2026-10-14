@@ -329,6 +329,57 @@ class AnazhRealm_Z17b {
     // Zwilling @wahl vor @global an — bei gleichen Befehlen in EINER Sitzung gpu-bank +1,6 ms und 47,5 statt 50,1 fps unter
     // Regler voll (OMEN, GTX 1060). Jedes neue Bündel stellt die Reihe neu (stabil im Rang); die Plätze der übrigen Kinder
     // der Szene bleiben, nur die Bündel tauschen ihre Plätze untereinander.
+    // DIE REIHE IM BÜNDEL (1310-8): auch die Gruppen EINES Bündels zeichnen in seiner Kinder-Folge — bis 1310-8 die Ankunft ihrer
+    // Assets beim Boot. Die nahe Stufe zuerst (L0 vor L1 vor der Atlas-Karte), im Gleichstand der Schlüssel: wer nah steht,
+    // schreibt die Tiefe, hinter der die fernen Stufen ihre Fragmente verwerfen. Gemessen an der Mess-Wiese (OMEN, GTX 1060,
+    // EINE Sitzung, Gier 0, alle Bäume an/aus): der Baum-Preis in der Ankunft 5,02/5,25 ms, nach Stufe aufsteigend 3,46/3,33,
+    // absteigend 7,26 — gpu-bank 14,1 → 12,4 ms. Jede Aufnahme eines Kinds stellt die Reihe neu (`_archInstanceGroupFor`, das
+    // Wachsen der Gruppe); das Bündel nimmt danach ohnehin neu auf.
+    // DIE REIHE NACH ABSTAND (1310-9): trägt der Ruf das Auge (`_buendelAuge`, der Anker der Reihe), zeichnet innerhalb einer
+    // Stufe die Gruppe zuerst, deren nächste Instanz dem Auge am nächsten steht (vorn schreibt die Tiefe); ohne Auge der Schlüssel.
+    static _buendelKinderReihe(bundle, auge) {
+        const rang = (c) => (c.userData && Number.isFinite(c.userData.buendelStufe) ? c.userData.buendelStufe : 0);
+        const key = (c) => String((c.userData && c.userData.archInstanceKey) || "");
+        const nah = new Map();
+        if (auge)
+            for (const c of bundle.children) {
+                let m = 1e30;
+                const a = c.instanceMatrix && c.instanceMatrix.array;
+                const n = c.count | 0;
+                if (a)
+                    for (let i = 0; i < n; i++) {
+                        const dx = a[i * 16 + 12] - auge.x;
+                        const dz = a[i * 16 + 14] - auge.z;
+                        const d = dx * dx + dz * dz;
+                        if (d < m) m = d;
+                    }
+                nah.set(c, m);
+            }
+        bundle.children.sort(
+            (a, b) =>
+                rang(a) - rang(b) ||
+                (auge ? nah.get(a) - nah.get(b) : 0) ||
+                (key(a) < key(b) ? -1 : key(a) > key(b) ? 1 : 0)
+        );
+    }
+    // DER ANKER DER REIHE (1310-9): die Augen-Lage, an der die Bündel ihre Kinder zuletzt nach Abstand stellten. Je Frame nur
+    // dieser Vergleich; erst wenn das Auge BUENDEL_ANKER_M weiter steht, stellt jedes Region-Bündel seine Reihe neu und nimmt
+    // EINMAL neu auf — die Kosten folgen der Bewegung, nie dem Frame (Gebot 7). Stufen-Wechsel stellen die Reihe über die
+    // Aufnahme (`_archInstanceGroupFor`).
+    _buendelAnkerPruefen(pos) {
+        const a = this._buendelAuge;
+        const R = AnazhRealm.BUENDEL_ANKER_M;
+        if (a && (pos.x - a.x) * (pos.x - a.x) + (pos.z - a.z) * (pos.z - a.z) <= R * R) return false;
+        this._buendelAuge = { x: pos.x, z: pos.z };
+        const sc = this.state.scene;
+        if (sc)
+            for (const c of sc.children)
+                if (c && c.isBundleGroup && c.userData && c.userData.regionKey != null) {
+                    AnazhRealm._buendelKinderReihe(c, this._buendelAuge);
+                    c.needsUpdate = true;
+                }
+        return true;
+    }
     static _buendelRang(key) {
         return key === "@global" ? 0 : key === "@wahl" ? 2 : 1;
     }

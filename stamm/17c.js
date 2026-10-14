@@ -610,6 +610,8 @@ class AnazhRealm_Z17c {
         // regional → lokale BBox → die Engine cullt beim Umsehen; global → die Instanz-Wahl je Pass (`_instanzWahlPass`).
         mesh.frustumCulled = regional;
         mesh.userData.archInstanceKey = key;
+        // der Rang im Bündel (`_buendelKinderReihe`): die Stufe des Leafs, die Atlas-Karte (fern) zuletzt
+        mesh.userData.buendelStufe = atlasGruppe ? 9 : Number.isFinite(leaf.stufe) ? leaf.stufe : 0;
         const wahl = satz ? null : this._instanzWahlArt(leaf, castShadow, regional);
         if (wahl) mesh.userData.instanzWahl = wahl;
         // V18.389 — der Schatten-Zwilling auf SHADOW_TWIN_LAYER (set = NUR Layer 2 → aus Layer 0 raus
@@ -633,6 +635,7 @@ class AnazhRealm_Z17c {
         } else if (bundle) {
             mesh.frustumCulled = false; // der Region-Cull wandert auf die Bundle-Sichtbarkeit
             bundle.add(mesh);
+            AnazhRealm._buendelKinderReihe(bundle, this._buendelAuge);
             bundle.needsUpdate = true; // ein Bürger ohne fertige Pipeline: die Erst-Zeichnung nimmt neu auf, wenn sie steht
         } else if (this.state.scene) this.state.scene.add(mesh);
         // slotRef: Slot-Index → die Slot-Marke {key, slot} (der Rückverweis des Umzugs, `_archGroupAlloc`); slotEntry:
@@ -718,6 +721,7 @@ class AnazhRealm_Z17c {
         next.receiveShadow = true;
         next.frustumCulled = g.regional === true; // V18.300 — regionale Gruppen cullen weiter
         next.userData.archInstanceKey = g.key;
+        next.userData.buendelStufe = g.mesh.userData.buendelStufe;
         if (g.satz) next.userData.bauSatz = g.satz; // Welle 6 — die Satz-Gruppe bleibt ohne Eltern (der Satz zeichnet)
         if (g.wahl) next.userData.instanzWahl = g.wahl; // Welle 7 — die Instanz-Wahl je Pass reist mit
         // V18.389 — die Layer-Zuordnung des Schatten-Zwillings mitführen (sonst kippt der gewachsene
@@ -750,7 +754,10 @@ class AnazhRealm_Z17c {
         if (parent) {
             parent.remove(g.mesh);
             parent.add(next);
-            if (parent.isBundleGroup) parent.needsUpdate = true;
+            if (parent.isBundleGroup) {
+                AnazhRealm._buendelKinderReihe(parent, this._buendelAuge);
+                parent.needsUpdate = true;
+            }
         } else if (!g.satz && this.state.scene) this.state.scene.add(next);
         this._instanzAbschied(g.mesh); // die eigenen Instanz-Puffer verlassen die GPU (geom/mat geteilt → bleiben)
         g.mesh = next;

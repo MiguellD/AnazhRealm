@@ -1103,6 +1103,7 @@ class AnazhRealm_Z20c {
                     teil:
                         child.userData && typeof child.userData.__teil === "string" ? child.userData.__teil : undefined,
                     leafKey: "f:" + key + ":" + p,
+                    stufe: lod, // die Stufe des Leafs — der Rang seiner Gruppe im Bündel (`_buendelKinderReihe`)
                     // V4(B) — die Rück-Referenz auf die Cache-Gruppe, damit _archInstanceGroupFor
                     // beim Neubau der InstancedMesh-Gruppe den Ref-Zähler dieser Gruppe hebt.
                     _srcGroup: group,

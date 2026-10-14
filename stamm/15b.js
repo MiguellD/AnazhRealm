@@ -140,6 +140,7 @@ class AnazhRealm_Z15b {
         if (atmo && atmo.treeLOD === false) return 0;
         const pm = auge;
         if (!pm) return 0;
+        this._buendelAnkerPruefen(pm); // DIE REIHE NACH ABSTAND (1310-9): neu nur beim Anker-Wechsel
         const archs = this.state.architectures;
         if (!Array.isArray(archs) || archs.length === 0) return 0;
         // DIE STAND-WACHE: ging die Stufen-Wahl eine volle Runde über alle Einträge, ohne zu wechseln und ohne dass einer
