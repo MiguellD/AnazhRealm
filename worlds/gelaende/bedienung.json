@@ -102,7 +102,7 @@
             "bild": "Land und Meer verzahnt, Buchten und flache Mündungen",
             "regler": {
                 "land": 0.25,
-                "kontinentLambda": 6500,
+                "kontinentLambda": 9000,
                 "hoehe": 0.85,
                 "netzDichte": 1.2,
                 "aue": 1.6,
