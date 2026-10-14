@@ -811,8 +811,8 @@
     // ── B2: buildInstance(rezeptId, seed, lod, ov?) — die EINE Bau-Funktion ──
     // Deterministisch (Lab-fester rng-Strom, s. Kopf: seed reserviert, Goldens
     // cv:4 frieren die Seed-Invarianz ein); lod klemmt auf die größte deklarierte
-    // Stufe ≤ lod (kindStages.gate = [0, 3]: 0 · 1 · 2 → 0, ab 3 → 3 — L1/L2
-    // gradet der Wirt). ov reist als Parameter-Override. Ausgang: EINE THREE.Group
+    // Stufe ≤ lod (kindStages.gate = [0, 1, 2, 3]: jede Stufe ist eine eigene, ab 3 → 3
+    // — K43 die Stufe 1, K64 die Stufe 2). ov reist als Parameter-Override. Ausgang: EINE THREE.Group
     // (Türen geschlossen, doorAngles 0/0), Welt-Matrizen aktualisiert — die Naht
     // sind die Float32-Attribute ihrer Meshes (G2.2). Die Stufe 3 (NUR-WURF, 1110-9):
     // die Hüllen-Liste des Tors als EIN Gitter im Schatten-Stoff, die Liste reist als
