@@ -11,6 +11,7 @@
 const vm = require("vm");
 const fs = require("fs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 const root = path.resolve(__dirname, "..");
 
 // Ist-Stand 17.07.2026 (erste Messung) — die BEKANNTEN Waisen. Jede Zeile ist
@@ -54,7 +55,7 @@ function blaetter(obj, prefix, tiefe, out) {
 }
 (function main() {
     console.log("=== DER KONSUM-WÄCHTER (Export-Fläche vs Stamm-Leser) ===");
-    const stamm = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+    const stamm = stammLib.text(root);
     const MANIFEST = JSON.parse(fs.readFileSync(path.join(root, "cores.manifest.json"), "utf8"));
     const CORES = MANIFEST.map((c) => ({
         file: c.vertrag,

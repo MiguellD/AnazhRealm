@@ -21,6 +21,7 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 const PK = require("./lib/pack-kanon.cjs");
+const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.PACK_GATE_PORT || 4562);
 const CONTRACT = path.join(PK.ROOT, "spec", "pack", "v0", "CONTRACT.md");
@@ -136,7 +137,7 @@ async function main() {
     // (b) + (c) Source-Proben am kommentar-gestrippten Code (V18.267: der Kommentar darf das
     // Wort tragen, der CODE muss es tragen — hier PRÄSENZ-Proben, also gestrippt gegen die
     // Möglichkeit, dass NUR ein Kommentar das Muster trägt).
-    const anazh = fs.readFileSync(path.join(PK.ROOT, "anazhRealm.js"), "utf8");
+    const anazh = stammLib.text(PK.ROOT);
     // V18.511: die Platte lebt in der Transport-Schale IM Worker — der Boot reicht ihr den Manifest-TEXT und die
     // core.scripts-URLs, die Schale hasht sie (SHA-256) und hängt das Transport-Format an (`|f<n>`).
     const boot = PK.methodSource(anazh, "_ensureAssetFoundry", ["_foundryIngestBook("]);

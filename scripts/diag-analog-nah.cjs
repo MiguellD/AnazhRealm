@@ -20,10 +20,11 @@
 //   ANALOG_NAH_PORT=… node scripts/diag-analog-nah.cjs [--selftest]
 "use strict";
 const puppeteer = require("puppeteer");
-const { softwareWebGpuArgs } = require("./lib/software-gpu.cjs");
+const { linsenWebGpuArgs, adapterZeile } = require("./lib/software-gpu.cjs");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 
 const root = path.resolve(__dirname, "..");
 // DER MESSORT (spec/profiband/haushalt.json `messorte`, S1 W1f): die Linse steht an der Mess-Wiese in IHREM Zustand —
@@ -88,7 +89,7 @@ function klassenWand(src) {
     return { ok: S1 && S2 && S3, S1, S2, S3 };
 }
 {
-    const stamm = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+    const stamm = stammLib.text(root);
     const heil = klassenWand(stamm);
     if (SELBST) {
         const brueche = [
@@ -147,9 +148,10 @@ function urteil(z) {
         // Linse die CPU-Wahrheit eines Passes, der nie läuft — das Backend steht im Bericht. Die Schalter je Plattform
         // trägt das EINE Rezept (scripts/lib/software-gpu.cjs): auf dem Linux-Runner starb das Gerät ~3,9 s nach dem Start
         // („destroyed"), weil der GPU-Prozess ohne Vulkan keine Ablage für die Canvas-Swapchain fand.
-        args: softwareWebGpuArgs(),
+        args: linsenWebGpuArgs(),
         dumpio: false,
     });
+    await adapterZeile(browser);
     // Was der Browser-Prozess über seinen GPU-Prozess sagt (Absturz, Watchdog, Verlust), reist ins Log.
     {
         const proc = browser.process();

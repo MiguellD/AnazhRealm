@@ -64,6 +64,7 @@ const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 
 const root = path.resolve(__dirname, "..");
 // KLANG_WURZEL: eine Überlagerung — liegt eine Datei dort, gewinnt sie (z. B. die Stände eines älteren Commits);
@@ -527,8 +528,12 @@ const WIRT_LESER = {
 // createConstantSource), liegt in einer Methode, die ein benannter Wirt-Leser ist — sonst ist sie ein STAMM-LITERAL,
 // beim Namen und mit Zeile, auch wenn keine Tour sie je auslöst. Kommentare zählen nicht. Die Methode einer Zeile ist
 // der letzte Klassen-Kopf darüber (4 Leerzeichen eingerückt).
-const STAMM_DATEI =
-    UEBER && fs.existsSync(path.join(UEBER, "anazhRealm.js")) ? path.join(UEBER, "anazhRealm.js") : path.join(root, "anazhRealm.js");
+// Der Stamm der Überlagerung, wenn sie einen trägt (eine Form; beide wirft scripts/lib/stamm.cjs), sonst der des Baums.
+const STAMM_WURZEL =
+    UEBER &&
+    (fs.existsSync(path.join(UEBER, stammLib.ALT)) || fs.existsSync(path.join(UEBER, stammLib.DIR, "01.js")))
+        ? UEBER
+        : root;
 function stammQuellen(src) {
     const rot = [];
     let stellen = 0;
@@ -546,7 +551,7 @@ function stammQuellen(src) {
         if (kommentar && kommentar.index < m.index) continue;
         stellen++;
         if (!WIRT_LESER[methode])
-            rot.push(`G Stamm: ${methode || "(außerhalb einer Methode)"} baut ${m[1]} ohne Gesetz (anazhRealm.js:${i + 1})`);
+            rot.push(`G Stamm: ${methode || "(außerhalb einer Methode)"} baut ${m[1]} ohne Gesetz (${stammLib.ort(STAMM_WURZEL, i + 1)})`);
     }
     return { rot, stellen };
 }
@@ -1382,7 +1387,7 @@ function drucke(zeilen, offline, kostenErg, lab) {
         const { rot, zeilen } = urteile(daten, offline, lab, ereig, phasen, spitzen);
         for (const w of kostenErg.wachsen) rot.push(`K: ${w} wächst mit der Welt`);
         // (G) die Stamm-Klasse, statisch: jede Quell-Stelle des Stamms in einem Wirt-Leser.
-        const stamm = stammQuellen(fs.readFileSync(STAMM_DATEI, "utf8"));
+        const stamm = stammQuellen(stammLib.text(STAMM_WURZEL));
         for (const t of stamm.rot) rot.push(t);
         ergebnis.stamm = stamm;
         console.log(
@@ -1534,7 +1539,7 @@ function drucke(zeilen, offline, kostenErg, lab) {
             // S9: ein Ping-Zwilling im Stamm-Text — eine Methode, die einen Oszillator baut, ohne Wirt-Leser zu sein (keine
             // Tour löst sie aus; die statische Linse nennt sie trotzdem beim Namen).
             const s9 = stammQuellen(
-                fs.readFileSync(STAMM_DATEI, "utf8") +
+                stammLib.text(STAMM_WURZEL) +
                     "\n    zwillingPing(tags) {\n        const o = this.state.symphony.ctx.createOscillator();\n    }\n"
             );
             if (!s9.rot.some((t) => /^G Stamm: zwillingPing baut Oscillator ohne Gesetz/.test(t)))

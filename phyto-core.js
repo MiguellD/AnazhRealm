@@ -3938,6 +3938,35 @@
     function _budgetMal(m) {
         return m.rad && Array.isArray(m.rad.raeder) && m.rad.raeder.length ? m.rad.raeder.length : 1;
     }
+    // DIE FLÜGEL-GESTALT (1310-4): ist b dieselbe Gestalt wie a, nur verschoben? Derselbe Index, jede Spur gleich (1e-6),
+    // die Lage um EINEN Vektor versetzt (1e-5). a, b = { pos, idx, spuren: [Array | null, …] } (die Spuren in derselben
+    // Reihenfolge). Gibt den Versatz [dx, dy, dz] oder null. Vorder- und Hinterflügel einer Seite (porta `makeLeaf(seite,
+    // ±zFace)`) sind so gebaut: der Wirt zeichnet den zweiten als Instanz des ersten (`_foundryFluegelInstanz`), das Gesetz
+    // zählt ihn mit ihm (`budgetSippen`) — EINE Regel für beide.
+    function budgetGestaltVersatz(a, b) {
+        const A = a.pos,
+            B = b.pos;
+        if (!A || !B || A === B || A.length !== B.length || A.length < 3) return null;
+        if (!!a.idx !== !!b.idx || (a.idx && a.idx.length !== b.idx.length)) return null;
+        if (a.idx) for (let i = 0; i < a.idx.length; i++) if (a.idx[i] !== b.idx[i]) return null;
+        if (a.spuren.length !== b.spuren.length) return null;
+        for (let s = 0; s < a.spuren.length; s++) {
+            const x = a.spuren[s],
+                y = b.spuren[s];
+            if (!x !== !y) return null;
+            if (!x) continue;
+            if (x.length !== y.length) return null;
+            for (let i = 0; i < x.length; i++) if (Math.abs(x[i] - y[i]) > 1e-6) return null;
+        }
+        const d = [B[0] - A[0], B[1] - A[1], B[2] - A[2]];
+        for (let i = 0; i < A.length; i++) if (Math.abs(B[i] - A[i] - d[i % 3]) > 1e-5) return null;
+        return d;
+    }
+    function _budgetGestalt(m) {
+        const spuren = [m.normal && m.normal.array ? m.normal.array : null];
+        for (const a of BUDGET_GESETZ.formAttr) spuren.push(m[a] && m[a].array ? m[a].array : null);
+        return { pos: m.position.array, idx: m.index || null, spuren: spuren };
+    }
     // Die Kosten einer gelieferten Stufe nach der Regel des Wirts (Beipack ohne Puffer zählt nicht). Der Schatten-Teil
     // (S3, `teil: "schatten"`) zeichnet nur in den Kaskaden — er zählt nicht zur Stufe, sondern zu ihrem Wurf (`budgetWurf`).
     function budgetSippen(meshes) {
@@ -3945,6 +3974,7 @@
             verts = 0,
             draws = 0;
         const gr = new Map();
+        const fluegel = [];
         for (const m of meshes || []) {
             if (!_budgetTeil(m) || m.teil === "schatten") continue;
             const nv = m.position.array.length / 3;
@@ -3952,6 +3982,14 @@
             verts += nv;
             const k = budgetSippe(m);
             if (k === null) {
+                // DIE FLÜGEL-GESTALT: wiederholt ein Flügel-Teil ein früheres desselben Stoffs und derselben Form nur
+                // verschoben, zeichnet der Wirt es als dessen Instanz — kein eigener Draw
+                if (m.tuer && !m.rad) {
+                    const art = budgetStoff(m.kind, m.mat) + "#" + _budgetForm(m);
+                    const g = _budgetGestalt(m);
+                    if (fluegel.some((v) => v.art === art && budgetGestaltVersatz(v.g, g))) continue;
+                    fluegel.push({ art: art, g: g });
+                }
                 draws++;
                 continue;
             }
@@ -4205,8 +4243,36 @@
             }
         }
         const lebend = () => gruppen.filter((g) => !g.in);
-        const zaehle = () =>
-            lebend().reduce((s, g) => s + Math.max(1, Math.ceil(g.verts / BUDGET_GESETZ.teilVertsMax)), 0);
+        // Gezählt wird in der Einheit des Wirts (`budgetSippen`): ein Flügel, dessen Teile die eines früheren desselben
+        // Stoffs der Reihe nach um EINEN Vektor verschoben wiederholen (DIE FLÜGEL-GESTALT, `budgetGestaltVersatz`), wird
+        // seine Instanz — er zählt nicht.
+        const zwillingMemo = new Map();
+        const zwilling = (a, b) => {
+            const key = a.nr + ":" + b.nr + ":" + a.teile.length + ":" + b.teile.length;
+            if (zwillingMemo.has(key)) return zwillingMemo.get(key);
+            let d0 = null,
+                ja = a.stoff === b.stoff && a.teile.length === b.teile.length;
+            for (let i = 0; ja && i < a.teile.length; i++) {
+                const d = budgetGestaltVersatz(_budgetGestalt(a.teile[i].m), _budgetGestalt(b.teile[i].m));
+                if (!d) ja = false;
+                else if (!d0) d0 = d;
+                else for (let c = 0; c < 3; c++) if (Math.abs(d[c] - d0[c]) > 1e-5) ja = false;
+            }
+            zwillingMemo.set(key, ja);
+            return ja;
+        };
+        const zaehle = () => {
+            const vorlagen = [];
+            let n = 0;
+            for (const g of lebend()) {
+                if (g.klasse.indexOf("T:") === 0) {
+                    if (vorlagen.some((v) => zwilling(v, g))) continue;
+                    vorlagen.push(g);
+                }
+                n += Math.max(1, Math.ceil(g.verts / BUDGET_GESETZ.teilVertsMax));
+            }
+            return n;
+        };
         // Je Schritt fällt das Paar mit dem kleinsten SEH-FEHLER = Fläche des faltenden Stoffs × Seh-Abstand: was das
         // Auge kaum sieht (kleine Fläche) oder kaum unterscheidet (kleiner Abstand), fällt zuerst; die kleinere Fläche
         // faltet in die größere. (Die Dreiecks-Zahl ist kein Seh-Maß: eine Glas-Fassade aus 12 Dreiecken deckt 850 m².)
@@ -4602,6 +4668,7 @@
         budgetGlut: budgetGlut,
         budgetSippe: budgetSippe, // die EINE Verschmelz-Regel eines Teils (Wirt: Flatten + Ofen, Gesetz: Draws)
         budgetSippen: budgetSippen, // Dreiecke + Draws einer gelieferten Stufe nach der Regel des Wirts
+        budgetGestaltVersatz: budgetGestaltVersatz, // dieselbe Gestalt, nur verschoben (Flügel-Instanz des Wirts) — der Versatz oder null
         budgetWurf: budgetWurf, // S3: der Schatten-Teil einer Stufe (Dreiecke, Teile)
         budgetZeile: budgetZeile, // Stufen-Klammer + Budget-Zeile eines Kerns
         kerneVereinen: kerneVereinen, // der EINE Merge der Zweit-Kern-Blöcke (Stufen · Budget · Gestalten)

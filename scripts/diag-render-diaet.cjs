@@ -41,6 +41,7 @@ const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.RENDER_DIAET_PORT || 4444);
 const root = path.resolve(__dirname, "..");
@@ -76,7 +77,7 @@ function check(name, ok, detail) {
 
 (async () => {
     // ── Q: die Quell-Proben (Chokepoint-Disziplin, kein Parallelpfad) ──
-    const src = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+    const src = stammLib.text(root);
     const hebel = (src.match(/AnazhRealm\.ARCH_LEAF_MAT_SHARED/g) || []).length;
     check(
         "Q: ARCH_LEAF_MAT_SHARED hat genau 2 Code-Vorkommen (Definition + der EINE Konsument _archLeafMaterial)",

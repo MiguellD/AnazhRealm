@@ -28,6 +28,7 @@
 "use strict";
 
 const ZZ = require("./lib/ziel-zensus.cjs");
+const stammLib = require("./lib/stamm.cjs");
 
 const N_FRAMES = 8;
 // Der Schatten der Bühne: das Pixel unter der Kiste ist um mindestens so viel dunkler (Luma, 0–255) als das freie Licht.
@@ -175,7 +176,7 @@ function selbsttest() {
         console.log(`  ${ok ? "✅" : "❌"} Selbsttest „${f.name}" → ${v.join(" · ") || "(grün)"}`);
     }
     // die Quell-Wand am Stamm: grün; der Ausgleich entfernt, eine zweite Abtastung, die Sonde nicht gerufen → rot
-    const stamm = require("fs").readFileSync(require("path").join(__dirname, "..", "anazhRealm.js"), "utf8");
+    const stamm = stammLib.text(require("path").join(__dirname, ".."));
     const q0 = rundungQuelle(stamm);
     if (q0.length) fehler.push("Quell-Wand der Rundung am Stamm rot: " + q0.join(" · "));
     console.log(`  ${q0.length ? "❌" : "✅"} Quell-Wand der Rundung am Stamm → ${q0.join(" · ") || "grün"}`);
@@ -216,7 +217,7 @@ const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
-const { softwareWebGpuArgs } = require("./lib/software-gpu.cjs");
+const { linsenWebGpuArgs, adapterZeile } = require("./lib/software-gpu.cjs");
 const { vramAbgriff } = require("./lib/vram-abgriff.cjs");
 const { FALTE_INSTALL, ZAEHLER_INSTALL } = require("./lib/draw-zaehler.cjs");
 const { ZERLEGE_INSTALL } = require("./lib/zerlege-linse.cjs");
@@ -428,7 +429,7 @@ function rundungProbe() {
         };
         if (!A) return Object.assign(aus, { gelaufen: true, verbrauch: 0, zurueck: 0 });
         const mittel = async () => {
-            const u8 = (await window.__ausgabeAufnahme(64, 48, 1)).u8;
+            const u8 = (await window.__ausgabeAufnahme(64, 48, 1, { satz: "messung" })).u8;
             let s = 0;
             for (let i = 0; i < u8.length; i += 4) s += 0.2126 * u8[i] + 0.7152 * u8[i + 1] + 0.0722 * u8[i + 2];
             return s / (u8.length / 4);
@@ -454,7 +455,8 @@ function rundungProbe() {
 (async () => {
     console.log("=== ZIEL-ZENSUS — die Wand am echten Frame (WebGPU auf swiftshader) ===");
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await puppeteer.launch({ headless: true, protocolTimeout: 900000, args: softwareWebGpuArgs() });
+    const browser = await puppeteer.launch({ headless: true, protocolTimeout: 900000, args: linsenWebGpuArgs() });
+    await adapterZeile(browser);
     const page = await browser.newPage();
     await page.setViewport({ width: 320, height: 240 });
     await page.evaluateOnNewDocument(FALTE_INSTALL);
@@ -547,7 +549,7 @@ function rundungProbe() {
         out.vortiefe = await page.evaluate(vortiefeProbe);
         log(`Vortiefe: ${JSON.stringify(out.vortiefe)}`);
         // (r) die Rundung des Ausgabe-Ziels: Quelle und echter Frame
-        out.rundungQuelle = rundungQuelle(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8"));
+        out.rundungQuelle = rundungQuelle(stammLib.text(root));
         out.rundung = await page.evaluate(rundungProbe);
         log(`Rundung: ${JSON.stringify(out.rundung)}`);
         out.gpuFehler = await page.evaluate(() => window.__gpuFehlerZ.slice(0, 5));

@@ -45,8 +45,9 @@
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 const puppeteer = require("puppeteer");
-const { softwareWebGpuArgs } = require("./lib/software-gpu.cjs");
+const { linsenWebGpuArgs, adapterZeile } = require("./lib/software-gpu.cjs");
 
 const ROOT = path.resolve(__dirname, "..");
 const PORT = Number(process.env.PORTAL_KONFORMANZ_PORT || 4563);
@@ -185,17 +186,17 @@ const UEBERSETZT = {
 
 // ── DIE TÄTER des Selbsttests: die alten Defekte, eingespielt am Server (Text-Ersatz an der Quelle). Fehlt die
 // Fundstelle, ist der Selbsttest rot — die Linse wandert mit dem Code.
+// Die Heimat vor dem Schnitt: JEDE ready bekommt ein enter zur Antwort (das Ping-Pong mit den Echo-Studios) — eingespielt
+// an der garage (die träge klang unten misst die Uhr, nicht das Ping-Pong). Ausgeliefert in der Stamm-Datei, die die Zeile
+// trägt (scripts/lib/stamm.cjs `dateiMit`; trägt sie keine, die erste — dort meldet der Selbsttest die fehlende Fundstelle).
+const HEIMAT_PINGPONG = [
+    "if (!po.enterAufReady) {\n                    po.enterAufReady = true;\n                    this._portalSendEnter();\n                }",
+    'if (!po.enterAufReady || String(po.world || "").includes("/garage/")) this._portalSendEnter();\n                po.enterAufReady = true;',
+];
 const TAETER = {
     // begegnung vor dem Schnitt: der message-Handler prüft die Quelle nicht.
     "worlds/begegnung/index.html": [["if (event.source !== window.parent) return;\n", ""]],
-    // die Heimat vor dem Schnitt: JEDE ready bekommt ein enter zur Antwort (das Ping-Pong mit den Echo-Studios) —
-    // eingespielt an der garage (die träge klang unten misst die Uhr, nicht das Ping-Pong).
-    "anazhRealm.js": [
-        [
-            "if (!po.enterAufReady) {\n                    po.enterAufReady = true;\n                    this._portalSendEnter();\n                }",
-            'if (!po.enterAufReady || String(po.world || "").includes("/garage/")) this._portalSendEnter();\n                po.enterAufReady = true;',
-        ],
-    ],
+    [stammLib.dateiMit(ROOT, HEIMAT_PINGPONG[0]) || stammLib.dateien(ROOT)[0]]: [HEIMAT_PINGPONG],
     // skeleton mit dem Studio-Adapter: die Elemente des Programms je einzeln (aus ["w", arg] wird "w", arg).
     "worlds/skeleton/skeleton.js": [
         ["applyDsl(msg.program);", "msg.program.forEach(function (op) { applyDsl(op); });"],
@@ -692,7 +693,8 @@ async function lauf(welten, taeter) {
     const { s, fehlend, weg } = server(taeter);
     const lies = (rel) => ausliefern(rel, taeter, []);
     await new Promise((r) => s.listen(PORT, "127.0.0.1", r));
-    const browser = await puppeteer.launch({ headless: true, protocolTimeout: 180000, args: softwareWebGpuArgs() });
+    const browser = await puppeteer.launch({ headless: true, protocolTimeout: 180000, args: linsenWebGpuArgs() });
+    await adapterZeile(browser);
     const fehlerLog = [];
     const ergebnisse = [];
     try {

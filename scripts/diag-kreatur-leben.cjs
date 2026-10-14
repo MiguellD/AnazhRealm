@@ -12,8 +12,8 @@
 //      stempelt jagd/flucht/schwimmen, der Baum-Gang trägt Overlay + bodyX.
 //   C) SELBST-TEST — eine injizierte tote Zeile wird erkannt.
 "use strict";
-const fs = require("fs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 const root = path.resolve(__dirname, "..");
 
 let fails = 0;
@@ -32,7 +32,7 @@ const MOTION = (core && core.MOTION) || {};
 const V = (core && core.VERHALTEN) || null;
 
 // ── A) DECKUNG: Zustand-Tabelle → MOTION-Presets ──
-const stamm = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+const stamm = stammLib.text(root);
 const ztMatch = stamm.match(/AnazhRealm\.MOTION_ZUSTAND_PROFILES = Object\.freeze\(\{([\s\S]*?)\}\);/);
 check("MOTION_ZUSTAND_PROFILES existiert im Stamm", !!ztMatch);
 const kreaturTargets = [];
