@@ -6781,7 +6781,14 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
     if (skinCol === null || hairCol === null)
         throw new Error("koerper-Kern ohne Paletten (SKIN_TONES/HAIR_COLORS) — kein Guss-Ton ohne Gesetz");
     const MK = kern.MATERIAL_KLASSEN || {};
+    // K57: Lippe und Augenhöhle sind Töne der Haut (koerper kopfToene) — ohne Gesetz kein Gesicht (fail-closed)
+    if (typeof kern.kopfToene !== "function" || typeof kern.haarKappe !== "function")
+        throw new Error("koerper-Kern ohne kopfToene/haarKappe — Lippe, Höhle und Haar-Volumen folgen dem Gesetz");
+    const KT = kern.kopfToene(skinCol);
     const KL = Object.assign({}, MK, {
+        lips: Object.assign({}, MK.lips, { c: KT.lips }),
+        socket: Object.assign({}, MK.socket, { c: KT.socket }),
+        haarKappe: { c: hairCol, r: 0.85, seh: "haut" }, // die Kappe gießt in die Kopf-Haut (Vertex-Ton), nie ein eigenes Mesh
         skin: { c: skinCol, r: 0.62, seh: "haut" },
         haut: { c: skinCol, r: 0.58, seh: "haut" }, // die glatte Hüllen-HAUT (V18.463)
         hair: { c: hairCol, r: 0.85, seh: "haar" },
@@ -6824,7 +6831,9 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         gruppe: () => new THREE.Group(),
         kugel: (r, k, sc) => {
             if (k === "cornea") return new THREE.Group(); // transparente Schale entfällt (wie der Stamm-Ofen zuvor)
-            const mesh = new THREE.Mesh(new THREE.SphereGeometry(r, segW, segH), matFuer(k));
+            // K57: Augapfel, Iris, Pupille und Höhle im Augen-Raster (koerper MENSCH_GESTALT.augeRaster), nah
+            const AR = !fein && (k === "eye" || k === "iris" || k === "pupil" || k === "socket") ? kern.MENSCH_GESTALT.augeRaster : null;
+            const mesh = new THREE.Mesh(new THREE.SphereGeometry(r, AR ? AR.w : segW, AR ? AR.h : segH), matFuer(k));
             if (sc) mesh.scale.set(sc[0], sc[1], sc[2]);
             return mesh;
         },
@@ -7217,7 +7226,26 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
             return false;
         };
         B.character.updateMatrixWorld(true);
-        const prims = __tierPrims(kopf, kopf, (n) => !unterAuge(n), KH.vox, KH.blend, () => null, ["skin", "lips"], true);
+        // DAS HAAR ALS VOLUMEN (K57): die Kappe der Frisur (koerper haarKappe) gießt mit — über der Haarlinie der Haar-Ton
+        // die Lider gehören zum Auge: das Augen-Raster (die Bake-Fabrik kennt nur die Klasse skin)
+        const AR = kern.MENSCH_GESTALT.augeRaster;
+        for (const n of ["lidTL", "lidBL", "lidTR", "lidBR"]) {
+            const lid = B.parts[n];
+            if (!lid) throw new Error("MENSCH-HAUT: das Lid " + n + " fehlt (fail-closed)");
+            const alt = lid.geometry;
+            lid.geometry = new THREE.SphereGeometry(alt.parameters.radius, AR.w, AR.h);
+            alt.dispose();
+        }
+        const kappen = kern.haarKappe(dials).map((k) => {
+            const m = new THREE.Mesh(new THREE.SphereGeometry(k.r, 8, 6), matFuer("haarKappe"));
+            m.position.set(k.c[0], k.c[1], k.c[2]);
+            m.scale.set(k.sc[0], k.sc[1], k.sc[2]);
+            kopf.add(m);
+            return m;
+        });
+        kopf.updateMatrixWorld(true);
+        const prims = __tierPrims(kopf, kopf, (n) => !unterAuge(n), KH.vox, KH.blend, () => null, ["skin", "lips", "haarKappe"], true);
+        for (const m of kappen) kopf.remove(m);
         // die gemalten Falten (Nasolabial-Stäbe, Philtrum: Klasse shadow) stünden als Stäbe auf der glatten Haut — sie fallen
         kopf.traverse((n) => {
             if (n.isMesh && n.material.userData.__klasse === "shadow" && !unterAuge(n)) n.userData.__nichtGiessen = true;
@@ -7293,6 +7321,15 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
             handMitte[hn] = [mx / hp2.count, my / hp2.count, mz / hp2.count];
         }
     }
+    // K57: die Grobstufe trägt das Haar-Volumen als Primitiv (koerper haarKappe) — der Zwilling wirft den Umriss der
+    // Kappe, die nah in die Kopf-Haut gießt (gate:kreatur-kosten DECKUNG mensch: IoU 0,947 -> 0,939 ohne sie)
+    if (fein)
+        for (const k of kern.haarKappe(dials)) {
+            const m = new THREE.Mesh(new THREE.SphereGeometry(k.r, segW, segH), matFuer("hair"));
+            m.position.set(k.c[0], k.c[1], k.c[2]);
+            m.scale.set(k.sc[0], k.sc[1], k.sc[2]);
+            B.parts.head.add(m);
+        }
     // DAS BAUM-HAAR (V18.461): kern.haarStreu streut die Frisur als Strähnen
     // über die Schädel-Kalotte — dieselbe __streuGeo wie das Fell (Wurzel→
     // Spitze-Verlauf als Vertex-Farben, deterministischer LCG). lod1 bleibt kahl.
