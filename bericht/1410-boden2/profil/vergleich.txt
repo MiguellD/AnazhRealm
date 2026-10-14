@@ -1,0 +1,35 @@
+frames 996 827 fps 49.8 41.3
+== gesamt µs je Frame (A main-naechst → B K51-4)
+_foundryGestaltSame 20c.js                                      0   5370 +5370
+e three.webgpu.min.js                                       20091  24437 +4345
+loop 25a.js                                                 20037  24353 +4316
+_runFrameScheduler 25b.js                                    9492  13004 +3512
+_loopVoxelStreaming 25b.js                                   9438  12867 +3429
+_foundryGestaltFor 20c.js                                    3214      0 -3214
+_ortGestaltSame 20c.js                                       4044   1628 -2417
+_forestCellDarts 20a.js                                         0   1543 +1543
+_foundrySichtHoehe 15b.js                                    3591   5069 +1478
+_lodTreeVisHeight 15b.js                                     3993   5459 +1467
+_tickArchitectureLOD 15b.js                                  4696   6134 +1438
+_forestStehtFrei 20d.js                                      3355   4724 +1369
+_finalizeVoxelChunkBuild 11a.js                                 0   1036 +1036
+_rebuildVoxelChunk 11a.js                                       0   1021 +1021
+_dispatchFrameJobs 25b.js                                    2433   3421 +988
+_completeVoxelRebuild 11a.js                                    0    943 +943
+== selbst µs je Frame (A main-naechst → B K51-4)
+_forestStehtFrei 20d.js                                       494   2337 +1843
+_forestCellDarts 20a.js                                         0    881 +881
+(anonym) 20c.js                                               853    243 -610
+_ortGestaltSame 20c.js                                        675    119 -556
+_forestDartSteht 20d.js                                      1574   1019 -555
+_foundrySichtHoehe 15b.js                                     519    909 +390
+_foundryGestaltSame 20c.js                                      0    235 +235
+_foundryGestaltFor 20c.js                                     200      0 -200
+_foundryDeclaredStage 20b.js                                    0    198 +198
+_forestDartStand 20a.js                                         0    177 +177
+_hoehlenSichtLicht 17b.js                                     365    530 +164
+_bodenKarteAusMesh 08.js                                       62    219 +157
+_closestPtTri 11a.js                                            0    139 +139
+_applyCrossLodGeomorph 11a.js                                  86    214 +128
+_hydroDistAt 08.js                                             96    201 +104
+get regionSize 08.js                                            0     94 +94

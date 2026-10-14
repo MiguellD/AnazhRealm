@@ -33,3 +33,22 @@
 - Kein Code-Commit.
 - Ein Profil des Einström-Gangs am K51-4-Kopf (20 s, je Seite eine Sitzung, ca. 8 min) würde den Rest-Täter benennen. Auf
   Ruf.
+
+## Nachtrag: das Profil des Einström-Gangs (je Seite eine Sitzung, stehen 25 s, dann gehend sofort profil 20 s; µs je Frame)
+
+- **Gesamt:** B kostet je Frame +4,3 ms (`loop` 20,0 → 24,4 ms; fps 49,8 → 41,3). Davon trägt der Voxel-Strom +3,4 ms
+  (`_loopVoxelStreaming` / `_runFrameScheduler` 9,4 → 12,9).
+- **Der Rest-Täter ist die Folge-Kette eines Stufen-Wechsels auf dem neu gebauten Chunk.** Der Morph selbst ist es nicht.
+  - Der Neubau: `_finalizeVoxelChunkBuild`, `_rebuildVoxelChunk` und `_completeVoxelRebuild`, je ≈ +1,0 ms inklusiv,
+    ineinander.
+  - Darauf die Wald-Setzung: `_forestStehtFrei` Selbstzeit 494 → 2 337 µs (+1,84 ms), `_forestCellDarts` +0,88 ms.
+    `_forestDartSteht` sinkt um −0,56, netto Wald ≈ +2,2 ms.
+  - Die Sichthöhen der Baum-Stufen: `_tickArchitectureLOD` +1,44, `_lodTreeVisHeight` +1,47, `_foundrySichtHoehe`
+    +1,48 ms inklusiv, ineinander.
+  - Klein: `_bodenKarteAusMesh` +0,16, `_applyCrossLodGeomorph` +0,13 (der Morph), `_hydroDistAt` +0,10.
+- **Der Schnitt:** Ein Stufen-Wechsel, der die Boden-Form nur um den Morph verschiebt, darf Wald und Sichthöhen des
+  Chunks nicht neu setzen. Die Folge-Arbeit gehört an die Änderung der Form, nicht an den Neubau. Benannt, nicht
+  geschnitten.
+- **Vorbehalt:** 672ad0b2 sitzt auf einer älteren Basis als f09398e6 (`_foundryGestaltSame` gegen `_foundryGestaltFor`).
+  Ein Teil des Δ kann der Basis gehören, darum gegen den gemergten Kopf nachmessen.
+- **Rohdaten** `bericht/1410-boden2/profil/`, `vergleich.txt`.
