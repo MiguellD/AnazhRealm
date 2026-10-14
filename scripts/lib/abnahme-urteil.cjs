@@ -946,17 +946,7 @@ const MASS_RECHNER = {
             const P = nb ? Math.max(g, 0.5) / nb : null;
             const lai = nb && c > 0 ? (-Math.log(P) * c) / rc.G : null;
             const imRing = ab.baender[b + 1] <= ring;
-            baender.push({
-                von: ab.baender[b],
-                bis: ab.baender[b + 1],
-                halm: h,
-                grund: g,
-                P,
-                cos: c,
-                lai,
-                imRing,
-                wer,
-            });
+            baender.push({ von: ab.baender[b], bis: ab.baender[b + 1], halm: h, grund: g, P, cos: c, lai, imRing, wer });
             if (imRing && lai != null) {
                 sw += nb;
                 sl += lai * nb;
@@ -971,16 +961,12 @@ const MASS_RECHNER = {
         const r2 = (x) => +x.toFixed(2);
         const taeter =
             `${arg.von}–${arg.bis} m vor dem Auge: Lücke ${r2(arg.P)} (${arg.grund} von ${arg.halm + arg.grund} Pixeln Grund) → LAI ${r2(arg.lai)}` +
-            (zeichner && zeichner[1]
-                ? `, dort zeichnet ${zeichner[0]} (${Math.round((100 * zeichner[1]) / Math.max(1, arg.halm))} % der Halme)`
-                : ", dort zeichnet kein Halm");
+            (zeichner && zeichner[1] ? `, dort zeichnet ${zeichner[0]} (${Math.round((100 * zeichner[1]) / Math.max(1, arg.halm))} % der Halme)` : ", dort zeichnet kein Halm");
         return {
             ist: +(sl / sw).toFixed(3),
             taeter,
             anteil: +(pixelSumme(me, halm) + pixelSumme(me, grund)) / flaeche(me),
-            teile: baender
-                .map((b) => `${b.von}–${b.bis} m ${b.lai == null ? "—" : r2(b.lai)}${b.imRing ? "" : " (jenseits)"}`)
-                .join(" · "),
+            teile: baender.map((b) => `${b.von}–${b.bis} m ${b.lai == null ? "—" : r2(b.lai)}${b.imRing ? "" : " (jenseits)"}`).join(" · "),
         };
     },
     // DER SCHACHBRETT-ANTEIL der Klasse (`klassenMasse` nyquist über die Summen aller ihrer Teil-Klassen); der Täter die
@@ -1020,11 +1006,7 @@ const MASS_RECHNER = {
             if (!arg || z.detail < arg[1]) arg = [k, z.detail];
         }
         if (!n) return { fehler: "kein Inneres in der Klasse" };
-        return {
-            ist: +(s / n).toFixed(4),
-            taeter: `${arg[0]} (detail ${arg[1]})`,
-            anteil: pixelSumme(me) / flaeche(me),
-        };
+        return { ist: +(s / n).toFixed(4), taeter: `${arg[0]} (detail ${arg[1]})`, anteil: pixelSumme(me) / flaeche(me) };
     },
     // DER ZWEITON-ANTEIL der Klasse (`klassenMasse` zweiton über die Summen ihrer Teil-Klassen): der Anteil ihrer Pixel im
     // sichtbaren Dither-Raster; der Täter die Teil-Klasse (≥ 5 % der Pixel) mit dem höchsten Anteil.
@@ -1149,8 +1131,7 @@ const MASS_RECHNER = {
     lichtVerhaeltnis(ma) {
         const me = ma.messung;
         if (!me || me.werkzeug !== "licht") return { fehler: "keine Messung aus `werkbank licht`" };
-        for (const f of ["datum", "stand", "E_alle", "E_umgebung"])
-            if (me[f] == null) return { fehler: `die Messung ohne ${f}` };
+        for (const f of ["datum", "stand", "E_alle", "E_umgebung"]) if (me[f] == null) return { fehler: `die Messung ohne ${f}` };
         if (!(me.E_umgebung > 0 && me.E_alle > me.E_umgebung))
             return { fehler: `E alle ${me.E_alle}, E Himmel ${me.E_umgebung} — die Bilanz misst die Sonne nicht` };
         return {
@@ -1221,14 +1202,9 @@ MASS_RECHNER.albedo = (ma, q) => {
 // Tafel: das Band [1 − t, 1 + t]). Ein Verweis, den nichts liest, ist ein Bruch.
 function eigenschaftBand(e, q, wo) {
     const n = [e.band != null, e.rechnung != null, e.verweis != null].filter(Boolean).length;
-    if (n !== 1)
-        return {
-            fehler: `${wo}: Soll ${e.groesse} trägt ${n} statt EINER Quelle des Bands (band · rechnung · verweis)`,
-        };
+    if (n !== 1) return { fehler: `${wo}: Soll ${e.groesse} trägt ${n} statt EINER Quelle des Bands (band · rechnung · verweis)` };
     if (/\[gerechnet\]/.test(e.quelle || "") && !e.rechnung)
-        return {
-            fehler: `${wo}: Soll ${e.groesse} heißt „[gerechnet]" ohne Rechnung — die Linse rechnet jedes gerechnete Band`,
-        };
+        return { fehler: `${wo}: Soll ${e.groesse} heißt „[gerechnet]" ohne Rechnung — die Linse rechnet jedes gerechnete Band` };
     if (e.band != null)
         return Array.isArray(e.band) && e.band.length === 2 && (e.band[0] != null || e.band[1] != null)
             ? { band: e.band }
@@ -1533,8 +1509,7 @@ function sollTafelSelbsttest(tafel, q) {
     const mA = new Uint8Array(W * H);
     for (let p = 0; p < W * H; p++) mA[p] = teil[p] === 1 ? 1 : 0;
     // die Klasse A zeigt 200, das Misch-Pixel 170: Mittel (24·200 + 170)/25
-    if (!(Math.abs(klassenMasse(G, mA, W, H).luma - (24 * 200 + 170) / 25) < 1e-6))
-        v.push("Maß luma: die Klasse liest falsch");
+    if (!(Math.abs(klassenMasse(G, mA, W, H).luma - (24 * 200 + 170) / 25) < 1e-6)) v.push("Maß luma: die Klasse liest falsch");
     // die Rechnungen: weißes Rauschen ⅓, 1/f^β fällt mit β, einsDurch kehrt das Band um
     const weiss = nyquistNatur(0);
     if (!(Math.abs(weiss - 1 / 3) < 0.03)) v.push(`Rechnung nyquist1f: weißes Rauschen ${weiss} statt ⅓`);
@@ -1565,16 +1540,14 @@ function sollTafelSelbsttest(tafel, q) {
         abstand: { baender, ring: 14, cos, klassen: { "halm:L0": halmZ, grund: grundZ } },
     };
     const lai = MASS_RECHNER.laiWirk({ messung: laiMe, rechnung: { G: 0.5, halm: "^halm:", grund: "^grund$" } });
-    if (!(Math.abs(lai.ist - 2) < 0.02))
-        v.push(`Maß laiWirk: eine Wiese mit LAI 2 liest ${lai.ist}${lai.fehler ? " — " + lai.fehler : ""}`);
+    if (!(Math.abs(lai.ist - 2) < 0.02)) v.push(`Maß laiWirk: eine Wiese mit LAI 2 liest ${lai.ist}${lai.fehler ? " — " + lai.fehler : ""}`);
     // die Tafel: die echte ohne Bruch, jeder eingeschmuggelte Bruch beim Namen
     const echt = sollTafelUrteil(tafel, q);
     for (const f of echt.fehler) v.push(`Tafel: ${f}`);
     const klon = () => JSON.parse(JSON.stringify(tafel));
     const finde = (t, f) => (t.klassen || []).find(f);
     const mitMessung = (t) => finde(t, (k) => k.mass && k.mass.messung && k.mass.messung.werkzeug === "bild");
-    const mitVerweis = (t) =>
-        finde(t, (k) => ((k.soll && k.soll.eigenschaften) || []).some((e) => e.verweis && e.verweis.symbol));
+    const mitVerweis = (t) => finde(t, (k) => ((k.soll && k.soll.eigenschaften) || []).some((e) => e.verweis && e.verweis.symbol));
     const mitAlbedo = (t) => finde(t, (k) => k.mass && k.mass.rohdatei);
     // eine Messung auf den Stand DIESES Baums setzen (Version + Prüfsummen der Klassen-Quellen)
     const frisch = (k, me) => {
@@ -1647,12 +1620,7 @@ function sollTafelSelbsttest(tafel, q) {
         ],
         [
             "Verweis ohne Leser",
-            (t) =>
-                mitVerweis(t).soll.eigenschaften.push({
-                    groesse: "zier",
-                    verweis: { datei: "koerper-core.js", symbol: "KOPF_SOLL", feld: "augenLinie" },
-                    quelle: "x",
-                }),
+            (t) => mitVerweis(t).soll.eigenschaften.push({ groesse: "zier", verweis: { datei: "koerper-core.js", symbol: "KOPF_SOLL", feld: "augenLinie" }, quelle: "x" }),
             "kein Maß liest ihn",
         ],
         ["Maß unbekannt", (t) => (t.klassen[0].mass.name = "schoenheit"), '„schoenheit" unbekannt'],
@@ -1665,13 +1633,7 @@ function sollTafelSelbsttest(tafel, q) {
         ],
         [
             "Band und Rechnung zugleich",
-            (t) =>
-                t.klassen[0].soll.eigenschaften.push({
-                    groesse: "y",
-                    band: [5, 12],
-                    rechnung: { art: "einsDurch", von: [0.08, 0.2] },
-                    quelle: "x",
-                }),
+            (t) => t.klassen[0].soll.eigenschaften.push({ groesse: "y", band: [5, 12], rechnung: { art: "einsDurch", von: [0.08, 0.2] }, quelle: "x" }),
             "statt EINER Quelle",
         ],
         [
@@ -1728,8 +1690,7 @@ function sollTafelSelbsttest(tafel, q) {
         });
         const z0 = echt.zeilen.find((z) => z.id === ka.id);
         const z1 = sollTafelUrteil(tafel, q2).zeilen.find((z) => z.id === ka.id);
-        if (!z0 || !z1 || z1.ist === z0.ist)
-            v.push(`${ka.id}: das Ist liest nicht aus ${ro.datei} (geändert bleibt ${z1 && z1.ist})`);
+        if (!z0 || !z1 || z1.ist === z0.ist) v.push(`${ka.id}: das Ist liest nicht aus ${ro.datei} (geändert bleibt ${z1 && z1.ist})`);
     }
     if (tafel && (tafel.klassen || []).length) {
         const t = klon();

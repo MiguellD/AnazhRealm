@@ -1137,11 +1137,7 @@ async function starte() {
                 } catch (_e) {}
                 r._schattenAlleNeu();
                 // die Blick-Wahl im ersten Schuss, der zweite steht an ihrer Pose; das Bild trägt die Wahl des ersten
-                auf = await window.__ausgabeAufnahme(k.w, k.h, 1, {
-                    ziel,
-                    wahl: i === 0 ? wahl : 0,
-                    fest: i === 1 ? fest : null,
-                });
+                auf = await window.__ausgabeAufnahme(k.w, k.h, 1, { ziel, wahl: i === 0 ? wahl : 0, fest: i === 1 ? fest : null });
                 if (i === 0) gewaehlt = auf.abnahme.wahl || null;
             }
             if (gewaehlt) {
@@ -1205,8 +1201,7 @@ async function starte() {
                         `Klasse /${k.klasse}/: kein gezeichnetes Objekt in der Szene — die Soll-Messung braucht ihr Exemplar`
                     );
                 const namen = [...teile.keys()].sort();
-                if (namen.length > 250)
-                    throw new Error(`Klasse /${k.klasse}/: ${namen.length} Teil-Klassen (höchstens 250)`);
+                if (namen.length > 250) throw new Error(`Klasse /${k.klasse}/: ${namen.length} Teil-Klassen (höchstens 250)`);
                 const alle = [].concat(...teile.values());
                 const wurf = new Map(alle.map((o) => [o, o.castShadow]));
                 const bundlesNeu = () =>
@@ -1738,9 +1733,7 @@ async function starte() {
                         if (!o.klasse) throw new Error("--ist braucht --klasse (die Teilung des Bilds)");
                         const kl = o.klasse;
                         if (!Object.keys(kl.klassen).length)
-                            throw new Error(
-                                `--ist ${b.ist}: die Klasse zeichnet kein Pixel im Bild — die Tafel bleibt, wie sie war`
-                            );
+                            throw new Error(`--ist ${b.ist}: die Klasse zeichnet kein Pixel im Bild — die Tafel bleibt, wie sie war`);
                         o.ist = sollIstSchreiben(b.ist, {
                             werkzeug: "bild",
                             datum: new Date().toISOString(),
@@ -2860,13 +2853,7 @@ async function starte() {
     let o;
     if (cmd === "status") o = await rufe("/status");
     else if (cmd === "umstellen")
-        o = await rufe("/umstellen", {
-            x: a[0],
-            z: a[1],
-            ort: opt("--ort"),
-            pose: opt("--pose"),
-            sicht: opt("--sicht"),
-        });
+        o = await rufe("/umstellen", { x: a[0], z: a[1], ort: opt("--ort"), pose: opt("--pose"), sicht: opt("--sicht") });
     else if (cmd === "bild")
         o = await rufe("/bild", {
             px: a[0],
@@ -3242,26 +3229,13 @@ async function starte() {
         if (laeufe.length < 4) fehler.push(`${laeufe.length} Läufe — die Serie braucht mindestens vier`);
         const eins = (name, werte) => {
             const w = [...new Set(werte)];
-            if (w.length !== 1 || w[0] == null)
-                fehler.push(`${name} ${w.join(" / ") || "?"} — die Serie steht an EINEM ${name}`);
+            if (w.length !== 1 || w[0] == null) fehler.push(`${name} ${w.join(" / ") || "?"} — die Serie steht an EINEM ${name}`);
             return w[0];
         };
-        const ortId = eins(
-            "Ort",
-            laeufe.map((u) => (u ? u.ort : null))
-        );
-        const geraet = eins(
-            "Gerät",
-            laeufe.map((u) => (u && u.geraet ? u.geraet.schluessel : null))
-        );
-        const sicht = eins(
-            "Sicht",
-            laeufe.map((u) => (u ? u.sicht : null))
-        );
-        const version = eins(
-            "Version",
-            laeufe.map((u) => (u ? u.version : null))
-        );
+        const ortId = eins("Ort", laeufe.map((u) => (u ? u.ort : null)));
+        const geraet = eins("Gerät", laeufe.map((u) => (u && u.geraet ? u.geraet.schluessel : null)));
+        const sicht = eins("Sicht", laeufe.map((u) => (u ? u.sicht : null)));
+        const version = eins("Version", laeufe.map((u) => (u ? u.version : null)));
         if (opt("--ort") && opt("--ort") !== ortId) fehler.push(`--ort ${opt("--ort")}, die Serie steht an ${ortId}`);
         if (fehler.length) {
             console.log("Ratsche NICHT nachgezogen:\n  " + fehler.join("\n  "));
@@ -3271,9 +3245,7 @@ async function starte() {
         const { haushalt, ort } = ratscheSpec;
         const alt = BAND.ratscheVon(ratscheSpec);
         if (!alt) {
-            console.log(
-                `Ratsche NICHT nachgezogen: ${ratscheSpec.ratscheDatei} fehlt — jeder Ort × Gerät × Sicht trägt seine Datei`
-            );
+            console.log(`Ratsche NICHT nachgezogen: ${ratscheSpec.ratscheDatei} fehlt — jeder Ort × Gerät × Sicht trägt seine Datei`);
             process.exit(1);
         }
         const ratsche = neu ? BAND.ratscheNeu(alt) : alt;
@@ -3294,9 +3266,7 @@ async function starte() {
             process.exit(1);
         }
         const h = BAND.bandHuelle(laeufe.map((u) => u.roh));
-        const u = BAND.bandUrteil(
-            Object.assign({ haushalt, ratsche: alt, ort, ratscheDatei: ratscheSpec.ratscheDatei }, h)
-        );
+        const u = BAND.bandUrteil(Object.assign({ haushalt, ratsche: alt, ort, ratscheDatei: ratscheSpec.ratscheDatei }, h));
         Object.assign(u, { messung: null, boot: null });
         console.log(BAND.bandTabelle(u));
         // `--nur vram` zieht nur den Speicher nach: dann zählen nur die Speicher-Befunde der LINSE; der Re-Mint lässt die
@@ -3304,10 +3274,7 @@ async function starte() {
         const linse = (u.rot || []).filter((r) => ["unbenannt", "haushalt", "ratsche", "leck"].includes(r.art));
         const sperrt = nurVram ? BAND.vramBefunde(u) : neu ? linse.filter((r) => r.art !== "ratsche") : linse;
         if (sperrt.length) {
-            console.log(
-                "\nRatsche NICHT nachgezogen: LINSE ROT — erst die Befunde heilen:\n  " +
-                    sperrt.map((r) => r.text).join("\n  ")
-            );
+            console.log("\nRatsche NICHT nachgezogen: LINSE ROT — erst die Befunde heilen:\n  " + sperrt.map((r) => r.text).join("\n  "));
             process.exit(1);
         }
         const r = BAND.ratscheNachziehen(
