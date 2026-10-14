@@ -400,6 +400,8 @@ async function main() {
         const m = await messeLabor({ echt: argv.includes("--echt"), nur, tafel: t });
         m.datum = new Date().toISOString();
         m.echt = argv.includes("--echt");
+        // DER STAND der Labor-Seite (K63-n3, abnahme-urteil `kernStand`): Version und Prüfsumme jedes Kerns beim Messen
+        m.stand = require("./lib/abnahme-urteil.cjs").standLeser(path.join(__dirname, "..")).kernStand();
         if (opt("--datei")) fs.writeFileSync(path.resolve(opt("--datei")), JSON.stringify(m, null, 1));
         // Gegen das gespeicherte Welt-Ist: die Labor-Seite lebt, die Welt-Seite steht in der Tafel.
         const g = gespeichert(t);
@@ -429,9 +431,14 @@ async function main() {
             welt: welt.welt,
             eichung: { welt: welt.eichung, labor: labor.eichung.labor },
         };
+        // der Stand beider Seiten reist in die Tafel (K63-n3: die Soll-Tafel prüft Version und Quellen, `messStand`)
+        const st = (s) => (s && s.stand ? { version: s.stand.version, quellen: s.stand.quellen } : {});
         const r = AT.tafelNachziehen(t, m, {
-            labor: { datum: labor.datum, geraet: labor.geraet, echt: labor.echt },
-            welt: { datum: welt.datum, geraet: welt.geraet, ort: welt.ort, spieler: welt.spieler, echt: welt.echt },
+            labor: Object.assign({ datum: labor.datum, geraet: labor.geraet, echt: labor.echt }, st(labor)),
+            welt: Object.assign(
+                { datum: welt.datum, geraet: welt.geraet, ort: welt.ort, spieler: welt.spieler, echt: welt.echt },
+                st(welt)
+            ),
         });
         console.log(AT.tafelTabelle(r.u));
         if (!r.tafel) {

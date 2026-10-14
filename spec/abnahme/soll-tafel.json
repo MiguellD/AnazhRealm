@@ -500,12 +500,17 @@
         },
         {
             "id": "tor-fern",
-            "titel": "Tore (die Studio-Tore des Genesis-Rings: Foundry-Tore mit LOD-Stufe, nah L0, fern L1)",
+            "titel": "Tore (die Studio-Tore des Genesis-Rings: die Foundry-Exemplare je Stufe, L0 bis 9,5 m, dann L1 im Bau-Satz)",
             "wirkung": {
-                "grund": "die Studio-Tore des Genesis-Rings (Foundry, Stufe L0 bis 9,5 m, dann L1) aus der Nähe und aus 30 m",
-                "mangel": {
+                "grund": "die Studio-Tore des Genesis-Rings aus 30 m (der Spieler an der Kamera: L1) gegen dieselbe Kamera mit dem Spieler am Tor (L0) — die Teilung führt jedes Exemplar im Bau-Satz beim Namen",
+                "geheilt": {
                     "befund": "aus 30 m weiße Tafeln (Stufe 1/3)",
-                    "quelle": "UEBERGABE-2026-10-14.md (Zweig koordination) „DER PLAN ZU AAAA“ Nr. 3"
+                    "quelle": "UEBERGABE-2026-10-14.md (Zweig koordination) „DER PLAN ZU AAAA“ Nr. 3, Bild auge/1410/genesis-aussen.png (V18.546.0)",
+                    "bildPaar": [
+                        "../../../artifacts/profiband/soll-tafel/n3/tor-nah.png",
+                        "../../../artifacts/profiband/soll-tafel/n3/tor-fern.png"
+                    ],
+                    "warum": "am Stand V18.546.2 aus derselben Kamera in 30 m: L1/L0 = Luma drachentor 0,99 · kathedrale 1,02 · maschine 1,03; der Portal-Nebel zeichnet aus 30 m 0 Pixel — die weiße Tafel des Bilds vom 14.10. ist der Nebel, den der Ring nur mit dem Spieler am Tor zeigt (dort 40 687 Pixel, Luma 197)"
                 }
             },
             "referenz": [
@@ -536,7 +541,265 @@
             },
             "mass": {
                 "name": "stufenTreue",
-                "werkzeug": "werkbank bild 3.4 92.2 -2.5 3.4 92.5 -10.5 --wahl 0 --klasse '^(bau:welt_[a-z_]+|portal-membran)$' --ist tor-fern:nah; dasselbe aus 29.4 93.7 4.5 --wahl 0 --ist tor-fern:fern"
+                "werkzeug": "werkbank umstellen -9 10 (der Spieler am Tor: drachentor, kathedrale, maschine L0); werkbank bild -11.6 90.24 36.48 -2 +0.8 16 --wahl 0 --ziel tor-platz --klasse '^(f|fimp):(drachentor|maurentor|verkalkt|maschine|ruine|geisttor|kathedrale):L[0-3]$' --ist tor-fern:nah; werkbank umstellen -11.6 36.5 (der Spieler an der Kamera: L1); dasselbe Bild --ist tor-fern:fern",
+                "messung": {
+                    "nah": {
+                        "werkzeug": "bild",
+                        "datum": "2026-10-14T23:57:17.198Z",
+                        "stand": {
+                            "version": "18.546.2",
+                            "sha": "789a85ed25fe811bc866e14a10d1a0137fb16fcf+geaendert"
+                        },
+                        "geraet": {
+                            "backend": "WebGPU",
+                            "adapter": "amd rdna-3"
+                        },
+                        "leinwand": [
+                            1920,
+                            1080
+                        ],
+                        "kamera": [
+                            -11.6,
+                            90.24,
+                            36.48
+                        ],
+                        "ausdruck": "^(f|fimp):(drachentor|maurentor|verkalkt|maschine|ruine|geisttor|kathedrale):L[0-3]$",
+                        "schwelle": 18,
+                        "rauschen": {
+                            "anteil": 0,
+                            "pixel": 0,
+                            "max": 0
+                        },
+                        "misch": 4531,
+                        "klassen": {
+                            "f:drachentor:L0": {
+                                "objekte": 9,
+                                "zweiton": 0.0019,
+                                "zt": 63,
+                                "pixel": 33329,
+                                "deckung": 0.0161,
+                                "deckungUnten": 0,
+                                "luma": 163.55,
+                                "kontrast": 0.235,
+                                "detail": 0.103,
+                                "nyquist": 0.1427,
+                                "ek": 333029.9,
+                                "eg": 2000886.2,
+                                "silhouette": 19.188
+                            },
+                            "f:drachentor:L1": {
+                                "objekte": 5,
+                                "zweiton": 0.0059,
+                                "zt": 32,
+                                "pixel": 5453,
+                                "deckung": 0.0026,
+                                "deckungUnten": 0,
+                                "luma": 163.21,
+                                "kontrast": 0.2904,
+                                "detail": 0.1384,
+                                "nyquist": 0.1254,
+                                "ek": 50342.2,
+                                "eg": 351196.1,
+                                "silhouette": 21.8026
+                            },
+                            "f:kathedrale:L0": {
+                                "objekte": 5,
+                                "zweiton": 0,
+                                "zt": 0,
+                                "pixel": 28370,
+                                "deckung": 0.0137,
+                                "deckungUnten": 0,
+                                "luma": 136.74,
+                                "kontrast": 0.2581,
+                                "detail": 0.0552,
+                                "nyquist": 0.0635,
+                                "ek": 61639.9,
+                                "eg": 909108.9,
+                                "silhouette": 25.0246
+                            },
+                            "f:maschine:L0": {
+                                "objekte": 8,
+                                "zweiton": 0.0103,
+                                "zt": 163,
+                                "pixel": 15767,
+                                "deckung": 0.0076,
+                                "deckungUnten": 0,
+                                "luma": 163.46,
+                                "kontrast": 0.296,
+                                "detail": 0.0865,
+                                "nyquist": 0.0971,
+                                "ek": 109009.7,
+                                "eg": 1013611.3,
+                                "silhouette": 24.712
+                            },
+                            "f:maurentor:L1": {
+                                "objekte": 5,
+                                "zweiton": 0,
+                                "zt": 0,
+                                "pixel": 1205,
+                                "deckung": 0.0006,
+                                "deckungUnten": 0,
+                                "luma": 154.48,
+                                "kontrast": 0.1883,
+                                "detail": 0.0965,
+                                "nyquist": 0.0407,
+                                "ek": 1957.8,
+                                "eg": 46171.2,
+                                "silhouette": 20.4822
+                            },
+                            "f:verkalkt:L1": {
+                                "objekte": 5,
+                                "zweiton": 0.0026,
+                                "zt": 43,
+                                "pixel": 16628,
+                                "deckung": 0.008,
+                                "deckungUnten": 0,
+                                "luma": 148.33,
+                                "kontrast": 0.2181,
+                                "detail": 0.0637,
+                                "nyquist": 0.0944,
+                                "ek": 51634.2,
+                                "eg": 495302.2,
+                                "silhouette": 21.1556
+                            }
+                        },
+                        "abstand": null,
+                        "gesicht": null,
+                        "bild": "../../../artifacts/profiband/soll-tafel/n3/tor-nah.png",
+                        "quellen": {
+                            "porta-core.js": "1f5c96131f9bb2be",
+                            "foundry-core.js": "b957a6823f5b6a9e"
+                        }
+                    },
+                    "fern": {
+                        "werkzeug": "bild",
+                        "datum": "2026-10-14T23:57:31.637Z",
+                        "stand": {
+                            "version": "18.546.2",
+                            "sha": "789a85ed25fe811bc866e14a10d1a0137fb16fcf+geaendert"
+                        },
+                        "geraet": {
+                            "backend": "WebGPU",
+                            "adapter": "amd rdna-3"
+                        },
+                        "leinwand": [
+                            1920,
+                            1080
+                        ],
+                        "kamera": [
+                            -11.6,
+                            90.24,
+                            36.48
+                        ],
+                        "ausdruck": "^(f|fimp):(drachentor|maurentor|verkalkt|maschine|ruine|geisttor|kathedrale):L[0-3]$",
+                        "schwelle": 18,
+                        "rauschen": {
+                            "anteil": 0,
+                            "pixel": 0,
+                            "max": 0
+                        },
+                        "misch": 1563,
+                        "klassen": {
+                            "f:drachentor:L1": {
+                                "objekte": 5,
+                                "zweiton": 0.0042,
+                                "zt": 158,
+                                "pixel": 37425,
+                                "deckung": 0.018,
+                                "deckungUnten": 0,
+                                "luma": 161.98,
+                                "kontrast": 0.2498,
+                                "detail": 0.1135,
+                                "nyquist": 0.1126,
+                                "ek": 339235.2,
+                                "eg": 2672190.2,
+                                "silhouette": 37.2747
+                            },
+                            "f:kathedrale:L1": {
+                                "objekte": 3,
+                                "zweiton": 0,
+                                "zt": 0,
+                                "pixel": 23166,
+                                "deckung": 0.0112,
+                                "deckungUnten": 0,
+                                "luma": 139.12,
+                                "kontrast": 0.2758,
+                                "detail": 0.0959,
+                                "nyquist": 0.0623,
+                                "ek": 87333,
+                                "eg": 1313371.1,
+                                "silhouette": 18.6461
+                            },
+                            "f:maschine:L1": {
+                                "objekte": 6,
+                                "zweiton": 0.0038,
+                                "zt": 55,
+                                "pixel": 14294,
+                                "deckung": 0.0069,
+                                "deckungUnten": 0,
+                                "luma": 169.13,
+                                "kontrast": 0.2586,
+                                "detail": 0.0672,
+                                "nyquist": 0.1219,
+                                "ek": 101029,
+                                "eg": 728002.9,
+                                "silhouette": 15.0304
+                            },
+                            "f:maurentor:L1": {
+                                "objekte": 5,
+                                "zweiton": 0,
+                                "zt": 0,
+                                "pixel": 2903,
+                                "deckung": 0.0014,
+                                "deckungUnten": 0,
+                                "luma": 150.49,
+                                "kontrast": 0.1004,
+                                "detail": 0.0486,
+                                "nyquist": 0.145,
+                                "ek": 4364.9,
+                                "eg": 25745.3,
+                                "silhouette": 17.8175
+                            },
+                            "f:ruine:L1": {
+                                "objekte": 3,
+                                "zweiton": 0,
+                                "zt": 0,
+                                "pixel": 107,
+                                "deckung": 0.0001,
+                                "deckungUnten": 0,
+                                "luma": 156.75,
+                                "kontrast": 0.0098,
+                                "detail": null,
+                                "nyquist": null,
+                                "ek": 0,
+                                "eg": 0,
+                                "silhouette": 10.3441
+                            },
+                            "f:verkalkt:L1": {
+                                "objekte": 5,
+                                "zweiton": 0.0025,
+                                "zt": 43,
+                                "pixel": 16923,
+                                "deckung": 0.0082,
+                                "deckungUnten": 0,
+                                "luma": 146.18,
+                                "kontrast": 0.2229,
+                                "detail": 0.0634,
+                                "nyquist": 0.0874,
+                                "ek": 58242.6,
+                                "eg": 608526.4,
+                                "silhouette": 19.6174
+                            }
+                        },
+                        "abstand": null,
+                        "gesicht": null,
+                        "bild": "../../../artifacts/profiband/soll-tafel/n3/tor-fern.png",
+                        "quellen": {
+                            "porta-core.js": "1f5c96131f9bb2be",
+                            "foundry-core.js": "b957a6823f5b6a9e"
+                        }
+                    }
+                }
             },
             "quellen": [
                 "porta-core.js",

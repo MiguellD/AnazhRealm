@@ -1153,8 +1153,10 @@ function albedoZeile(ma, q) {
     }
     const z = (t.zeilen || []).find((x) => x.id === ro.zeile);
     if (!z || !z.ist) return { fehler: `Rohdatei ${ro.datei}: Zeile „${ro.zeile}" ohne Ist` };
-    const w = (t.gemessen && t.gemessen.welt) || {};
-    return { t, z, stand: `${String(w.datum || "?").slice(0, 10)} ${w.geraet || "?"}`, bloecke: [w] };
+    const w = (t.gemessen && t.gemessen.welt) || {},
+        l = (t.gemessen && t.gemessen.labor) || {};
+    // beide Seiten tragen ihren Stand (`kernStand`, geschrieben von werkbank `albedo --tafel` und `--labor --datei`)
+    return { t, z, stand: `${String(w.datum || "?").slice(0, 10)} ${w.geraet || "?"}`, bloecke: [w, l] };
 }
 // DER STAND einer Messung (K63-n2; Prüfer K63 R2: das Kopf-GRÜN stand auf der Albedo-Tafel vom 07.10., mit dem Datum 2020 blieb
 // es GRÜN): ein Ist gilt nur für den Stamm, an dem es gemessen ist (`stand.version` = AnazhRealm.VERSION), und für die Bytes der
@@ -1262,13 +1264,23 @@ function standLeser(root) {
             );
             return m ? m[1] : null;
         },
-        pruefsumme: (d) => {
-            const p = path.join(root, d);
-            return fs.existsSync(p)
-                ? crypto.createHash("sha256").update(fs.readFileSync(p)).digest("hex").slice(0, 16)
-                : null;
+        pruefsumme,
+        // der Stand einer Messung, die viele Klassen trägt (die Albedo-Tafel, K63-n3): die Version und die Prüfsumme JEDES Kerns
+        // (cores.manifest.json) — jede Klasse prüft daraus die Quellen, die sie trägt
+        kernStand: () => {
+            const m = JSON.parse(fs.readFileSync(path.join(root, "cores.manifest.json"), "utf8"));
+            const quellen = {};
+            for (const c of m) for (const d of c.scripts) quellen[d] = pruefsumme(d);
+            const v = /AnazhRealm\.VERSION = "([^"]+)"/.exec(fs.readFileSync(path.join(root, "stamm", "26a.js"), "utf8"));
+            return { version: v ? v[1] : null, quellen };
         },
     };
+    function pruefsumme(d) {
+        const p = path.join(root, d);
+        return fs.existsSync(p)
+            ? crypto.createHash("sha256").update(fs.readFileSync(p)).digest("hex").slice(0, 16)
+            : null;
+    }
 }
 
 // DAS URTEIL DER TAFEL (rein): je Klasse das Soll (eigen, gerechnet oder gelesen), das Budget je LOD-Stufe aus dem Haushalt des
@@ -1380,6 +1392,17 @@ function sollTafelUrteil(tafel, q) {
             fehler.push(
                 `${wo}: der benannte Mangel „${mg.befund}" (${mg.quelle}) steht, das Maß ${ma.name} ist GRÜN — es sieht ihn nicht`
             );
+        // DER GEHEILTE MANGEL (K63-n3): fällt ein Mangel, weil das heutige Bild ihn nicht mehr zeigt, trägt die Klasse ihn als
+        // `geheilt` mit Befund, Quelle, dem Bild-Paar (vorher ↔ nachher bzw. Stufe ↔ Stufe) und dem Warum in Zahlen — und ihr Maß ist
+        // GRÜN; ein geheilter Mangel neben einem ROTEN oder ungemessenen Maß ist ein Widerspruch, ein Mangel nie beides
+        const gh = (k.wirkung || {}).geheilt;
+        if (gh != null) {
+            if (!(gh.befund && gh.quelle && gh.warum && Array.isArray(gh.bildPaar) && gh.bildPaar.length === 2))
+                fehler.push(`${wo}: der geheilte Mangel ohne Befund, Quelle, Warum oder Bild-Paar`);
+            else if (urteil !== "GRÜN")
+                fehler.push(`${wo}: der Mangel „${gh.befund}" heißt geheilt, das Maß ${ma.name} ist ${urteil}`);
+            if (mg) fehler.push(`${wo}: der Mangel steht und heißt zugleich geheilt`);
+        }
         // der Bildanteil: aus der Messung des Maßes, sonst aus dem Bild der Wirkung (`--ist <id>:wirkung`), von Hand nur ohne Bild
         // und mit Quelle (das Licht: jedes Pixel)
         let anteil = zahl(r.anteil) ? r.anteil : null;
@@ -1657,6 +1680,19 @@ function sollTafelSelbsttest(tafel, q) {
                 frisch(k, k.mass.messung);
             },
             "es sieht ihn nicht",
+        ],
+        [
+            "geheilt ohne Bild-Paar",
+            (t) => (finde(t, (k) => k.wirkung && k.wirkung.geheilt).wirkung.geheilt.bildPaar = []),
+            "ohne Befund, Quelle, Warum oder Bild-Paar",
+        ],
+        [
+            "geheilt neben einem roten Maß",
+            (t) => {
+                const k = finde(t, (x) => x.wirkung && x.wirkung.geheilt && x.mass.name === "stufenTreue");
+                for (const z of Object.values(k.mass.messung.fern.klassen)) z.luma *= 2;
+            },
+            "heißt geheilt, das Maß stufenTreue ist ROT",
         ],
     ];
     for (const [name, fn, wort] of faelle) {

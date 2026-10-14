@@ -239,7 +239,7 @@ const gitStand = () => {
 // schreibt, was es gemessen hat, in die EINE Tafel (spec/abnahme/soll-tafel.json, wie `--nachziehen` die Albedo-Tafel) — Ist
 // und Täter rechnet die Linse daraus (abnahme-urteil `sollTafelUrteil`); von Hand steht dort keine Zahl.
 const SOLL_TAFEL = path.join(root, "spec", "abnahme", "soll-tafel.json");
-const { stammVersion, pruefsumme } = require("./lib/abnahme-urteil.cjs").standLeser(root);
+const { stammVersion, pruefsumme, kernStand } = require("./lib/abnahme-urteil.cjs").standLeser(root);
 function sollIstSchreiben(ziel, messung) {
     const [id, teil] = String(ziel).split(":");
     const t = JSON.parse(fs.readFileSync(SOLL_TAFEL, "utf8"));
@@ -1189,12 +1189,31 @@ async function starte() {
                     return `spieler:${kopfGewicht(o) >= 0.3 ? "kopf" : "leib"}/${o.userData.__klasse || (auge ? "auge" : "stoff")}`;
                 };
                 const teile = new Map();
-                r.state.scene.traverse((o) => {
-                    if (!zeichnet(o)) return;
-                    const kl = teilName(o);
-                    if (!re.test(kl)) return;
+                const nimm = (kl, o) => {
                     if (!teile.has(kl)) teile.set(kl, []);
                     teile.get(kl).push(o);
+                };
+                // DER BAU-SATZ IN BEREICHEN (K63-n3, `_bauSatzArt` · `_tickBauSatz`): ein Bau-Satz zeichnet die Instanz-Gruppen
+                // vieler Exemplare als EIN Mesh — die Teilung führt jeden Bereich beim Namen seiner Gruppe (`_taeterGruppe`:
+                // Exemplar und Stufe, f:drachentor:L1), nie den Satz. Ein Bereich verbirgt sich, indem er den Satz verlässt
+                // (`_chunkSatzAus`), und kehrt über den EINEN Weg zurück (`_bauSatzMarke` → `_tickBauSatz`); ein Nur-Wurf-Satz
+                // zeichnet nie ins Bild und bleibt, wie er ist. Vorher hieß das ganze Tor ab L1 „bauSatz“.
+                const bauSaetze = new Map();
+                for (const [art, s] of r.state.chunkSaetze || [])
+                    if (s.mesh && s.mesh.userData && s.mesh.userData.bauSatz && !s.spec.nurWurf)
+                        bauSaetze.set(s.mesh, { art, s });
+                r.state.scene.traverse((o) => {
+                    if (!zeichnet(o)) return;
+                    const bs = bauSaetze.get(o);
+                    if (bs) {
+                        for (const key of bs.s.bloecke.keys()) {
+                            const kl = r._taeterGruppe(key);
+                            if (re.test(kl)) nimm(kl, { bereich: true, art: bs.art, key, mesh: o });
+                        }
+                        return;
+                    }
+                    const kl = teilName(o);
+                    if (re.test(kl)) nimm(kl, o);
                 });
                 if (!teile.size)
                     throw new Error(
@@ -1203,7 +1222,10 @@ async function starte() {
                 const namen = [...teile.keys()].sort();
                 if (namen.length > 250) throw new Error(`Klasse /${k.klasse}/: ${namen.length} Teil-Klassen (höchstens 250)`);
                 const alle = [].concat(...teile.values());
-                const wurf = new Map(alle.map((o) => [o, o.castShadow]));
+                // der Wurf eines Bereichs ist der seines Satzes: der Satz wirft für die Messung nicht
+                const wurf = new Map(alle.map((o) => (o.bereich ? o.mesh : o)).map((o) => [o, o.castShadow]));
+                const verbirg = (o) => (o.bereich ? r._chunkSatzAus(o.art, o.key) : (o.visible = false));
+                const zeig = (o) => (o.bereich ? r._bauSatzMarke(o.key, o.art) : (o.visible = true));
                 const bundlesNeu = () =>
                     r.state.scene.traverse((o) => {
                         if (o.isBundleGroup) o.needsUpdate = true;
@@ -1212,18 +1234,19 @@ async function starte() {
                 const wieseAlt = r._tickNahWiese;
                 r._tickNahWiese = () => 0;
                 const schuss = async (aus) => {
-                    for (const o of aus) o.visible = false;
+                    for (const o of aus) verbirg(o);
                     bundlesNeu();
                     try {
                         r._schattenAlleNeu();
                         return (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung", fest })).u8;
                     } finally {
-                        for (const o of aus) o.visible = true;
+                        for (const o of aus) zeig(o);
+                        r._tickBauSatz();
                         bundlesNeu();
                     }
                 };
                 try {
-                    for (const o of alle) o.castShadow = false;
+                    for (const o of wurf.keys()) o.castShadow = false;
                     const G = await schuss([]);
                     const G2 = await schuss([]);
                     const Os = [];
@@ -2016,6 +2039,8 @@ async function starte() {
                     });
                     const messung = {
                         datum: new Date().toISOString(),
+                        // der Stand der Welt-Seite (K63-n3, abnahme-urteil `kernStand`): Version und Prüfsumme jedes Kerns
+                        stand: kernStand(),
                         echt: ECHT,
                         geraet,
                         ort: aktOrt,
