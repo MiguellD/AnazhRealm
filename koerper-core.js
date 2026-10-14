@@ -373,10 +373,11 @@
     // Streuung. Dichte skaliert mit hairVol, Länge mit hairLen.
     function haarStreu(d) {
         d = d || {};
-        var vol = Math.max(0.3, typeof d.hairVol === "number" ? d.hairVol : 1.0);
-        var len = Math.max(0.25, typeof d.hairLen === "number" ? d.hairLen : 1.0);
         var stil = d.hairStyle || "mittel";
-        var K = [0, 0.5, -0.02], // Kalotten-Schale (Zentrum · Radius · Skala)
+        // K57: trägt der Stil eine Kappe (HAAR_KAPPE, das Volumen), sind die Strähnen ihr Rand — halbe Dichte
+        var vol = Math.max(0.3, typeof d.hairVol === "number" ? d.hairVol : 1.0) * (HAAR_KAPPE[stil] ? 0.5 : 1);
+        var len = Math.max(0.25, typeof d.hairLen === "number" ? d.hairLen : 1.0);
+        var K = [0, 0.5 + MENSCH_GESTALT.schaedel.hoch, -0.02], // Kalotten-Schale (Zentrum · Radius · Skala; K57: hebt sich mit der Kalotte)
             KR = 0.42,
             KS = [0.96, 0.82, 1.0];
         var N = [0, 0.28, -0.16], // Nacken-Schale
@@ -695,11 +696,11 @@
     // faltet nur innerhalb EINER: das Auge (Augapfel · Iris · Pupille) nie in die Haut, die Haut-Akzente (Lippe ·
     // Augenhöhle · Furche · Gelenk · Schatten) nur in die Haut, die Hose nur in Stoff.
     var MATERIAL_KLASSEN = Object.freeze({
-        lips: Object.freeze({ c: 0xaa5544, r: 0.4, seh: "haut" }),
+        lips: Object.freeze({ r: 0.4, seh: "haut" }), // K57: der Ton folgt der Haut (kopfToene), kein roter Fleck
         eye: Object.freeze({ c: 0xdcd5ca, r: 0.08, seh: "auge" }), // Welle 5: die Sklera (vorher 0xf5f5f0, linear 0,91 — Papier)
         iris: Object.freeze({ c: 0x2a4a6a, r: 0.15, seh: "auge" }),
         pupil: Object.freeze({ c: 0x000000, r: 0.2, seh: "auge" }),
-        socket: Object.freeze({ c: 0x5a3320, r: 0.6, seh: "haut" }),
+        socket: Object.freeze({ r: 0.6, seh: "haut" }), // K57: ein Schatten der Haut (kopfToene), kein brauner Ring
         dark: Object.freeze({ c: 0x050000, r: 0.9, seh: "haut" }),
         joint: Object.freeze({ c: 0x806060, r: 0.6, seh: "haut" }),
         shadow: Object.freeze({ c: 0x8a5840, r: 0.7, seh: "haut" }),
@@ -707,7 +708,7 @@
     });
     // SKIN_TONES / HAIR_COLORS — die Lab-Paletten (Z.63/Z.79, verbatim):
     // prettier-ignore
-    var SKIN_TONES = {porzellan:{hex:0xf0d5c0,name:'Porzellan'},hell:{hex:0xe3b898,name:'Hell'},sand:{hex:0xd4a17e,name:'Sand'},karamell:{hex:0xc48566,name:'Karamell'},bronze:{hex:0xa86a4d,name:'Bronze'},umbra:{hex:0x7d4a33,name:'Umbra'},mahagoni:{hex:0x5f3826,name:'Mahagoni'},ebenholz:{hex:0x3f2418,name:'Ebenholz'}};
+    var SKIN_TONES = {porzellan:{hex:0xe6c6ae,name:'Porzellan'},hell:{hex:0xe3b898,name:'Hell'},sand:{hex:0xd4a17e,name:'Sand'},karamell:{hex:0xc48566,name:'Karamell'},bronze:{hex:0xa86a4d,name:'Bronze'},umbra:{hex:0x7d4a33,name:'Umbra'},mahagoni:{hex:0x6a4230,name:'Mahagoni'},ebenholz:{hex:0x58392a,name:'Ebenholz'}};
     // prettier-ignore
     var HAIR_COLORS = {black:{base:0x141014,lt:0x2a2228,name:'Schwarz'},darkbrown:{base:0x2a1a10,lt:0x42291a,name:'Dunkelbraun'},brown:{base:0x472c18,lt:0x6b4226,name:'Braun'},chestnut:{base:0x6b3a1a,lt:0x8f5a2e,name:'Kastanie'},blond:{base:0xa9803f,lt:0xceac6a,name:'Blond'},platinum:{base:0xcfc097,lt:0xe8ddbf,name:'Platin'},ginger:{base:0x8a3b18,lt:0xb35e2a,name:'Rot'},grey:{base:0x6e6a66,lt:0x9a958f,name:'Grau'},white:{base:0xcecbc5,lt:0xeeece8,name:'Weiß'},blue:{base:0x244a8a,lt:0x4a78c0,name:'Blau'},pink:{base:0xb0497a,lt:0xd47aa6,name:'Pink'},teal:{base:0x1f6a66,lt:0x3a9a94,name:'Teal'}};
 
@@ -767,16 +768,25 @@
     //   kopfHaut: Raster und Verrundung im Kopf-Raum (1 Einheit ≈ 0,21 m: 5,5 mm, 12 mm — das Budget koerper L0 hält),
     //     mundSpalt = halbe Breite der Mund-Linie als Anteil des Abstands der Lippen-Mitten · handHaut: Raster und
     //     Verrundung im Körper-Raum (1 Einheit ≈ 0,29 m: 3,5 mm, 6 mm; die Welt bewegt die Finger nicht).
+    //   K57 (KOPF_SOLL): kopf.mass 0,72 → 0,75 (8,05 → 7,6 Köpfe) · auge.abstand 0,7 → 0,8 (die Lücke eine Augenbreite) ·
+    //     auge.zurueck = der Augapfel tiefer in der Höhle (er stand 0,056 kH vor der Haut) · schaedel.hoch = die Kalotte
+    //     höher (das Hirn über den Augen) · gesicht.unten = das Untergesicht zur Nase gestaucht (Lippe, Kiefer, Kinn; der
+    //     Kopf sinkt, das Kinn bleibt am Hals) — die Augen auf halber Kopfhöhe · ohr: mass/tiefer = das Ohr zwischen
+    //     Augen- und Nasenlinie (es reichte 0,15 kH über die Augen) · augeRaster = das Raster der Augäpfel, Iris, Pupillen
+    //     und Höhlen im Ofen (12×8: ein Auge von 24 mm trägt keine 520 Dreiecke).
     // prettier-ignore
     var MENSCH_GESTALT = Object.freeze({
         hand: Object.freeze({ mass: 0.67, breite: 0.8 }),
         unterarm: Object.freeze({ breite: 0.66, tiefe: 0.8, bauch: 0.42 }),
         handgelenk: Object.freeze({ breite: 0.72, tiefe: 0.52 }),
         fuss: Object.freeze({ laenge: 0.9 }),
-        kopf: Object.freeze({ mass: 0.72, breite: 0.86 }),
-        auge: Object.freeze({ mass: 0.5, abstand: 0.7, pupille: 0.55, hoehle: 1.15 }),
+        kopf: Object.freeze({ mass: 0.75, breite: 0.86 }),
+        auge: Object.freeze({ mass: 0.5, abstand: 0.8, pupille: 0.55, hoehle: 1.15, zurueck: 0.065 }),
+        schaedel: Object.freeze({ hoch: 0.08 }),
+        ohr: Object.freeze({ mass: 0.755, tiefer: 0.082 }),
+        augeRaster: Object.freeze({ w: 12, h: 8 }),
         gesicht: Object.freeze({ lippe: 0.55, lippeZurueck: 0.03, oberkiefer: 0.78, wange: 0.82, naseTiefer: 0.05,
-            brauHoch: 0.028, kiefer: 0.72, kieferBreite: 0.78, kieferTiefe: 0.85, kinnZurueck: 0.04 }),
+            brauHoch: 0.028, kiefer: 0.72, kieferBreite: 0.78, kieferTiefe: 0.85, kinnZurueck: 0.04, unten: 0.84 }),
         rumpf: Object.freeze({ brustkorb: 0.52, nacken: 0.7 }),
         kopfHaut: Object.freeze({ vox: 0.026, blend: 0.055, mundSpalt: 0.35 }),
         handHaut: Object.freeze({ vox: 0.012, blend: 0.02 }),
@@ -815,6 +825,69 @@
         lippeL: [-14, -4], lippeA: [4, 14], hoehleL: [-12, 0], hoehleA: [-2, 6], hautAlbedo: [0.05, 0.62],
         haarDeckung: [0.9, 1.0], kopfDreiecke: [0, 12000], haarLinie: 0.8,
     });
+
+    // DIE TÖNE DES GESICHTS (K57, KOPF_SOLL lippe/hoehle): Lippe und Augenhöhle sind die HAUT, in CIELAB verschoben
+    // (ΔL*, Δa*, Δb*) — vorher zwei feste Klassen-Farben (0xaa5544 der rote Mund, 0x5a3320 der braune Ring um das Auge),
+    // gleich für jeden Hautton. Der Ofen liest kopfToene(Haut-Hex) → { lips, socket } (Hex, sRGB).
+    var KOPF_TON = Object.freeze({ lippe: Object.freeze([-9, 9, 2]), hoehle: Object.freeze([-6, 2, 1]) });
+    function _hexLab(hx) {
+        var c = [(hx >> 16) & 255, (hx >> 8) & 255, hx & 255].map(function (v) {
+            v /= 255;
+            return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+        });
+        var X = (0.4124 * c[0] + 0.3576 * c[1] + 0.1805 * c[2]) / 0.95047,
+            Y = 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2],
+            Z = (0.0193 * c[0] + 0.1192 * c[1] + 0.9505 * c[2]) / 1.08883;
+        var f = function (t) {
+            return t > 216 / 24389 ? Math.cbrt(t) : ((24389 / 27) * t + 16) / 116;
+        };
+        return [116 * f(Y) - 16, 500 * (f(X) - f(Y)), 200 * (f(Y) - f(Z))];
+    }
+    function _labHex(L) {
+        var fy = (L[0] + 16) / 116,
+            fx = fy + L[1] / 500,
+            fz = fy - L[2] / 200;
+        var g = function (t) {
+            return t * t * t > 216 / 24389 ? t * t * t : (116 * t - 16) / (24389 / 27);
+        };
+        var X = g(fx) * 0.95047,
+            Y = g(fy),
+            Z = g(fz) * 1.08883;
+        var lin = [3.2406 * X - 1.5372 * Y - 0.4986 * Z, -0.9689 * X + 1.8758 * Y + 0.0415 * Z, 0.0557 * X - 0.204 * Y + 1.057 * Z];
+        var h = 0;
+        for (var i = 0; i < 3; i++) {
+            var v = Math.min(1, Math.max(0, lin[i]));
+            v = v <= 0.0031308 ? 12.92 * v : 1.055 * Math.pow(v, 1 / 2.4) - 0.055;
+            h = h * 256 + Math.round(v * 255);
+        }
+        return h;
+    }
+    function kopfToene(hautHex) {
+        var h = _hexLab(hautHex);
+        var zu = function (d) {
+            return _labHex([h[0] + d[0], h[1] + d[1], h[2] + d[2]]);
+        };
+        return { lips: zu(KOPF_TON.lippe), socket: zu(KOPF_TON.hoehle) };
+    }
+    // DAS HAAR ALS VOLUMEN (K57, KOPF_SOLL haarDeckung): je Stil eine Kappe über der Kalotte, die der Ofen MIT der
+    // Kopf-Haut gießt — über der Haarlinie trägt die Haut den Haar-Ton, die Strähnen (haarStreu) sind der Rand; vorher
+    // standen 2 030 Strähnen als Fleck auf der kahlen Kalotte. [dicke, hoch, zurueck] in Kopf-Einheiten: die Kappe ist
+    // das Schädel-Ellipsoid, um dicke dicker, um hoch gehoben und um zurueck nach hinten gesetzt (die Stirn bleibt frei).
+    // prettier-ignore
+    var HAAR_KAPPE = Object.freeze({
+        buzz: [0.02, 0.07, 0.05], kurz: [0.05, 0.065, 0.06], mittel: [0.08, 0.06, 0.07], lang: [0.09, 0.06, 0.08],
+        locken: [0.14, 0.05, 0.07], afro: [0.24, 0.04, 0.05], zopf: [0.05, 0.065, 0.06], dutt: [0.05, 0.065, 0.06],
+        undercut: [0.07, 0.11, 0.04],
+    });
+    function haarKappe(d) {
+        var t = HAAR_KAPPE[(d && d.hairStyle) || "mittel"];
+        if (!t) return []; // glatze
+        var P = labProportionen(),
+            r = P.skullBaseR * 1.03,
+            SH = MENSCH_GESTALT.schaedel.hoch;
+        var sy = 1.12 + SH / (2 * r);
+        return [{ c: [0, P.skullCY + SH / 2 + t[1], -t[2]], r: r, sc: [1 + t[0], sy + t[0], 1 + t[0]] }];
+    }
 
     // Dial→Genom-Achsen des Menschen (die Lab-Slider-Semantik als DATEN —
     // verbatim aus dem Stamm gewandert; khMul skaliert die EINE Kopfhöhen-Einheit):
@@ -1107,7 +1180,7 @@
     // augen}: augen = die 12 Gesichts-Refs (eyeL…lowerLipRef), base = Ruhe-
     // Skalen für labMorph (plain {x,y,z} — labMorph.shell liest nur .x/.y/.z).
     function bauMensch(F) {
-        const {H,headSeg,acromionY,nippleY,trochanterY,shoulderHW,hipHW,baseArmX,thighLen,calfLen,upperArmLen,forearmLen,skullBaseR,skullCY,skullRX,skullRY,skullRZ,eyeDist,jawW,chinW,browY,eyeY,cheekY,noseY,lipY,chinY,jawY,hairlineY} = labProportionen();
+        const {H,headSeg,acromionY,nippleY,trochanterY,shoulderHW,hipHW,baseArmX,thighLen,calfLen,upperArmLen,forearmLen,skullBaseR,skullCY,skullRX,skullRY,skullRZ,eyeDist,jawW,chinW,browY,eyeY,cheekY,noseY,lipY:lipY0,chinY:chinY0,jawY:jawY0,hairlineY} = labProportionen();
         const matSkin = "skin", matJoint = "joint", matDark = "dark", matEye = "eye", matIris = "iris",
             matCornea = "cornea", matSocket = "socket", matShadow = "shadow", matLips = "lips", matHair = "hair", matPupil = "pupil";
         const parts = {}, base = {};
@@ -1150,14 +1223,14 @@
         const thumbG=F.gruppe();thumbG.position.set(-sd*0.3*hk*hb,-0.15*hk,0.1*hk);thumbG.rotation.set(0,sd*0.5,sd*-1.2);reg('tA_'+(sd===1?'1':'-1'),thumbG);thumbG.add(s(0.1*hk,matSkin,[0.8,1.5,0.8]));const thumbF1=c(0.06*hk,0.05*hk,0.12*hk,matSkin);thumbF1.position.y=-0.06*hk;thumbG.add(thumbF1);const thumbJG=F.gruppe();thumbJG.position.set(0,-0.12*hk,0);reg('tB_'+(sd===1?'1':'-1'),thumbJG);thumbJG.add(s(0.06*hk,matSkin,[0.8,0.8,0.8]));const thumbTip=c(0.05*hk,0.04*hk,0.08*hk,matSkin);thumbTip.position.y=-0.04*hk;thumbJG.add(thumbTip);thumbG.add(thumbJG);palmG.add(thumbG);hand.userData.thumbs.push({mcp:thumbG,ip:thumbJG});
         hand.position.set(sd*0.05,wY-0.3*hk,0);elbowG.add(hand);reg('hand'+(sd===1?'1':'-1'),hand);
         armG.rotation.z=sd*0.2;armG.rotation.x=0.05;armG.userData.baseRotZ=sd*0.2;armG.userData.baseRotX=0.05;torsoG.add(armG);});
-        const headGroup=F.gruppe();headGroup.position.y=H-headSeg/2-trochanterY;reg('head',headGroup);var HEAD_S=MENSCH_GESTALT.kopf.mass,HEAD_B=MENSCH_GESTALT.kopf.breite;headGroup.scale.set(HEAD_S*HEAD_B,HEAD_S,HEAD_S);base.headPosY=H-headSeg/2-headSeg*0.20*(1-HEAD_S);const nY=noseY-MENSCH_GESTALT.gesicht.naseTiefer,bY=browY+MENSCH_GESTALT.gesicht.brauHoch;   // loomis-pass: 5.7->6.6 koepfe; pivot-korrektur haelt das KINN auf hoehe (halsroehre!)
-        const skull=s(skullBaseR*1.03,matSkin,[1.0,1.12,1.0]);skull.position.y=skullCY;headGroup.add(skull);
+        const headGroup=F.gruppe();headGroup.position.y=H-headSeg/2-trochanterY;reg('head',headGroup);var HEAD_S=MENSCH_GESTALT.kopf.mass,HEAD_B=MENSCH_GESTALT.kopf.breite;headGroup.scale.set(HEAD_S*HEAD_B,HEAD_S,HEAD_S);base.headPosY=H-headSeg/2-headSeg*0.20*(1-HEAD_S);const nY=noseY-MENSCH_GESTALT.gesicht.naseTiefer,bY=browY+MENSCH_GESTALT.gesicht.brauHoch;const UG=MENSCH_GESTALT.gesicht.unten,lipY=nY+(lipY0-nY)*UG,chinY=nY+(chinY0-nY)*UG,jawY=nY+(jawY0-nY)*UG;base.headPosY-=(chinY-chinY0)*HEAD_S;const SH=MENSCH_GESTALT.schaedel.hoch;   // loomis-pass: 5.7->6.6 koepfe; pivot-korrektur haelt das KINN auf hoehe (halsroehre!)
+        const skull=s(skullBaseR*1.03,matSkin,[1.0,1.12+SH/(2*skullBaseR*1.03),1.0]);skull.position.y=skullCY+SH/2;headGroup.add(skull);
         [-1,1].forEach(sd=>{const t=s(0.2,matSkin,[0.62,1.05,0.85]);t.position.set(sd*0.36,headSeg*0.48,0);headGroup.add(t);});
         const forehead=s(0.13,matSkin,[1.35,0.95,0.72]);forehead.position.set(0,(browY+hairlineY)/2,0.26);forehead.rotation.x=0.2;headGroup.add(forehead);
         const glabella=s(0.05,matSkin,[0.8,0.6,1.0]);glabella.position.set(0,bY+0.06,0.38);headGroup.add(glabella);
         const browRidge=s(0.15,matSkin,[2.0,0.42,0.72]);browRidge.position.set(0,bY,0.36);headGroup.add(browRidge);
-        const AU=MENSCH_GESTALT.auge,aD=eyeDist*AU.abstand,aS=AU.mass*AU.hoehle;[-1,1].forEach(sd=>{const sock=s(0.145*aS,matSocket,[1.0/HEAD_B,0.88,0.50]);sock.position.set(sd*aD/2,eyeY,0.3+0.145*0.5*(1-aS));headGroup.add(sock);});
-        [-1,1].forEach(sd=>{const e=F.gruppe();e.add(s(0.12,matEye,[1,1.1,1]));const iris=s(0.07,matIris,[0.8,1,0.8]);iris.position.z=0.08;e.add(iris);const pupil=s(0.04*AU.pupille,matPupil);pupil.position.z=0.14-0.04*AU.pupille;e.add(pupil);e.add(s(0.13,matCornea,[1,1.1,1]));const lidT=s(0.14,matSkin,[1.15,0.35,0.9]);lidT.position.y=0.07;e.add(lidT);const lidB=s(0.14,matSkin,[1.15,0.45,0.95]);lidB.position.y=-0.09;e.add(lidB);e.scale.set(AU.mass/HEAD_B,AU.mass,AU.mass);e.position.set(sd*aD/2,eyeY,0.32+0.12*(1-AU.mass)*0.85);headGroup.add(e);if(sd<0){eyeL=reg('eyeL',e);irisL=reg('irisL',iris);lidTL=reg('lidTL',lidT);lidBL=reg('lidBL',lidB);}else{eyeR=reg('eyeR',e);irisR=reg('irisR',iris);lidTR=reg('lidTR',lidT);lidBR=reg('lidBR',lidB);}});
+        const AU=MENSCH_GESTALT.auge,aD=eyeDist*AU.abstand,aS=AU.mass*AU.hoehle;[-1,1].forEach(sd=>{const sock=s(0.145*aS,matSocket,[1.0/HEAD_B,0.88,0.50]);sock.position.set(sd*aD/2,eyeY,0.3+0.145*0.5*(1-aS)-AU.zurueck);headGroup.add(sock);});
+        [-1,1].forEach(sd=>{const e=F.gruppe();e.add(s(0.12,matEye,[1,1.1,1]));const iris=s(0.07,matIris,[0.8,1,0.8]);iris.position.z=0.08;e.add(iris);const pupil=s(0.04*AU.pupille,matPupil);pupil.position.z=0.14-0.04*AU.pupille;e.add(pupil);e.add(s(0.13,matCornea,[1,1.1,1]));const lidT=s(0.14,matSkin,[1.15,0.35,0.9]);lidT.position.y=0.07;e.add(lidT);const lidB=s(0.14,matSkin,[1.15,0.45,0.95]);lidB.position.y=-0.09;e.add(lidB);e.scale.set(AU.mass/HEAD_B,AU.mass,AU.mass);e.position.set(sd*aD/2,eyeY,0.32+0.12*(1-AU.mass)*0.85-AU.zurueck);headGroup.add(e);if(sd<0){eyeL=reg('eyeL',e);irisL=reg('irisL',iris);lidTL=reg('lidTL',lidT);lidBL=reg('lidBL',lidB);}else{eyeR=reg('eyeR',e);irisR=reg('irisR',iris);lidTR=reg('lidTR',lidT);lidBR=reg('lidBR',lidB);}});
         [-1,1].forEach(sd=>{const g=F.gruppe();const bone=reg('cheekbone'+(sd===1?'1':'-1'),s(0.13,matSkin,[1.15,0.52,0.72]));bone.position.set(sd*0.22,eyeY-0.04,0.27);bone.rotation.y=sd*0.12;bone.rotation.z=sd*-0.05;g.add(bone);headGroup.add(g);});
         [-1,1].forEach(sd=>{const b=reg('buccal'+(sd===1?'1':'-1'),s(0.14,matSkin,[0.75*MENSCH_GESTALT.gesicht.wange,0.65*MENSCH_GESTALT.gesicht.wange,0.5*MENSCH_GESTALT.gesicht.wange]));b.position.set(sd*0.18,(cheekY+jawY)/2,0.22);headGroup.add(b);});
         const GS=MENSCH_GESTALT.gesicht;const maxilla=s(0.15,matSkin,[0.75,0.88,0.85*GS.oberkiefer]);maxilla.position.set(0,(lipY+nY)/2,0.325-0.15*0.85*(1-GS.oberkiefer));headGroup.add(maxilla);
@@ -1175,7 +1248,7 @@
         const lowerLip=s(0.14,matLips,[1.12,0.48*GS.lippe,0.64*GS.lippe]);lowerLip.position.set(0,lipY-0.052*GS.lippe,0.405-GS.lippeZurueck);headGroup.add(lowerLip);lowerLipRef=lowerLip;
         const philtrum=s(0.03,matShadow,[0.5,1.0,0.8]);philtrum.position.set(0,lipY+0.08,0.41-GS.lippeZurueck);headGroup.add(philtrum);
         [-1,1].forEach(sd=>{const mc=s(0.025,matSkin,[0.8,0.8,1.0]);mc.position.set(sd*0.095,lipY-0.01,0.39-GS.lippeZurueck);headGroup.add(mc);});
-        [-1,1].forEach(sd=>{const e=F.gruppe();const helix=s(0.12,matSkin,[0.35,1.7,0.95]);e.add(helix);const concha=s(0.09,matSocket,[0.55,0.95,0.5]);concha.position.set(sd*-0.02,0.0,0.03);e.add(concha);const tragus=s(0.042,matSkin,[0.6,0.75,0.5]);tragus.position.set(sd*-0.065,-0.03,0.07);e.add(tragus);const lobe=s(0.055,matSkin,[0.5,0.75,1]);lobe.position.set(sd*-0.01,-0.17,0.02);e.add(lobe);e.position.set(sd*0.43,eyeY-0.04,-0.03);e.rotation.y=sd*-0.45;headGroup.add(e);});
+        [-1,1].forEach(sd=>{const e=F.gruppe();const helix=s(0.12,matSkin,[0.35,1.7,0.95]);e.add(helix);const concha=s(0.09,matSocket,[0.55,0.95,0.5]);concha.position.set(sd*-0.02,0.0,0.03);e.add(concha);const tragus=s(0.042,matSkin,[0.6,0.75,0.5]);tragus.position.set(sd*-0.065,-0.03,0.07);e.add(tragus);const lobe=s(0.055,matSkin,[0.5,0.75,1]);lobe.position.set(sd*-0.01,-0.17,0.02);e.add(lobe);e.position.set(sd*0.43,eyeY-0.04-MENSCH_GESTALT.ohr.tiefer,-0.03);e.scale.setScalar(MENSCH_GESTALT.ohr.mass);e.rotation.y=sd*-0.45;headGroup.add(e);});
         [-1,1].forEach(sd=>{const g=F.gruppe();for(let i=0;i<5;i++){const b=c(0.012,0.012,0.07,matHair);b.position.set((i-2)*0.032,-Math.abs(i-2)*0.008,0);b.rotation.z=sd*0.2;g.add(b);}g.position.set(sd*aD/2,bY+0.03,0.35);g.rotation.z=sd*-0.1;headGroup.add(g);if(sd<0)browL=g;else browR=g;});
         torsoG.add(headGroup);
 
@@ -1257,6 +1330,8 @@
         MENSCH_GESTALT: MENSCH_GESTALT,
         MENSCH_SOLL: MENSCH_SOLL,
         KOPF_SOLL: KOPF_SOLL,
+        kopfToene: kopfToene,
+        haarKappe: haarKappe,
         SKIN_TONES: SKIN_TONES,
         CLOTH_COLORS: CLOTH_COLORS,
         // V18.463 — die Hüllen-Maschine (verbatim, THREE-frei):

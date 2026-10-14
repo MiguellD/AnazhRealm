@@ -226,7 +226,20 @@ var SAISON_GESETZ = {
     kartenGewicht: 0.8,  // die Karte folgt der Saison zu 80 % (Impostor-Shader mix(1, uSeasonMul, 0.8))
 };
 
-var __terrainCore = { HIMMEL_GESETZ: HIMMEL_GESETZ, WASSER_GESETZ: WASSER_GESETZ, REGEN_GESETZ: REGEN_GESETZ, BERG_GESETZ: BERG_GESETZ, BERG_VIS: BERG_VIS, INSEL_GESETZ: INSEL_GESETZ, INSEL_VIS: INSEL_VIS, WALD_GESETZ: WALD_GESETZ, WALD_VIS: WALD_VIS, KACHEL_GESETZ: KACHEL_GESETZ, KACHEL_VIS: KACHEL_VIS, SAISON_GESETZ: SAISON_GESETZ };
+var __terrainCore = {
+    HIMMEL_GESETZ: HIMMEL_GESETZ,
+    WASSER_GESETZ: WASSER_GESETZ,
+    REGEN_GESETZ: REGEN_GESETZ,
+    BERG_GESETZ: BERG_GESETZ,
+    BERG_VIS: BERG_VIS,
+    INSEL_GESETZ: INSEL_GESETZ,
+    INSEL_VIS: INSEL_VIS,
+    WALD_GESETZ: WALD_GESETZ,
+    WALD_VIS: WALD_VIS,
+    KACHEL_GESETZ: KACHEL_GESETZ,
+    KACHEL_VIS: KACHEL_VIS,
+    SAISON_GESETZ: SAISON_GESETZ,
+};
 
 // DER STUDIO-VERTRAG (docs/studio-vertrag.md §4 G4.3) — die EINE Versions-
 // Semantik des Manifests: erhöht NUR bei einem Bruch der MUSS-Blöcke
@@ -1483,8 +1496,7 @@ function emitRoots(P) {
         if ((__lod === 1 || L0Baum) && st.tiefe > 0) continue;
         // H1 auch hier (L1 und Baum-L0): jeder 2. Ring, Erst- und Letzt-Ring bleiben.
         const R = st.ringe;
-        let ringe =
-            (__lod === 1 || L0Baum) && R.length > 3 ? R.filter((_, i) => i % 2 === 0 || i === R.length - 1) : R;
+        let ringe = (__lod === 1 || L0Baum) && R.length > 3 ? R.filter((_, i) => i % 2 === 0 || i === R.length - 1) : R;
         // Die Baum-L0 (S7): ohne ihre Verzweigungen endete der Primaerstrang stumpf ueber dem Boden (eine
         // Schnittflaeche von halbem Wurzel-Radius) — er laeuft in seiner Richtung weiter und taucht ab: zwei Ringe je eine
         // Segmentlaenge weiter, erst auf ein Drittel seiner Hoehe, dann ganz unter den Boden. Nie steigt sie dabei (K20,
@@ -1497,12 +1509,27 @@ function emitRoots(P) {
                 d = vsub(b.c, a.c);
             ringe = ringe.concat([
                 { c: [b.c[0] + d[0], Math.min(b.c[1] * 0.35, b.c[1]), b.c[2] + d[2]], r: b.r * 0.8, sway: 0, depth: 1 },
-                { c: [b.c[0] + 2 * d[0], Math.min(-1.2 * b.r, b.c[1] - 1.2 * b.r), b.c[2] + 2 * d[2]], r: b.r * 0.5, sway: 0, depth: 1 },
+                {
+                    c: [b.c[0] + 2 * d[0], Math.min(-1.2 * b.r, b.c[1] - 1.2 * b.r), b.c[2] + 2 * d[2]],
+                    r: b.r * 0.5,
+                    sway: 0,
+                    depth: 1,
+                },
             ]);
         }
         // Die Baum-L1 (S3): die Primaer-Wurzel in der Radial-Teilung der L2 — ab 12 m liegt ihr Bild im Boden und in der
         // Wiese (Radius 6–9 px an der L1-Nahkante), ihre Furchen traegt der Stamm (Mammut-L1: 696 Dreiecke Wurzel).
-        buildTube(geos, ringe, P, colA, colB, P._trunkR, undefined, undefined, __lod === 1 && P.kind === "tree" ? 2 : undefined); // Wurzel tritt aus dem Strebepfeiler-Wulst aus -> fliessender Uebergang, keine Fuge noetig
+        buildTube(
+            geos,
+            ringe,
+            P,
+            colA,
+            colB,
+            P._trunkR,
+            undefined,
+            undefined,
+            __lod === 1 && P.kind === "tree" ? 2 : undefined
+        ); // Wurzel tritt aus dem Strebepfeiler-Wulst aus -> fliessender Uebergang, keine Fuge noetig
     }
     // Die Birken-Wurzel traegt den Birken-Rinden-Stoff (S3, 09.10.): in der Baum-L0/-L1 war sie die dritte Sippe der
     // Birke (barkMat neben barkMatBirch: ein Befehl mehr je Gestalt und Pass). Die L2 bleibt, wie sie war (die Karte).
@@ -1579,7 +1606,10 @@ function __ringBahn(R, tol, festUnter) {
             const qx = A[0] + dx * t - C[0],
                 qy = A[1] + dy * t - C[1],
                 qz = A[2] + dz * t - C[2];
-            const e = Math.max(Math.sqrt(qx * qx + qy * qy + qz * qz), Math.abs(R[a].r + (R[b].r - R[a].r) * t - R[k].r));
+            const e = Math.max(
+                Math.sqrt(qx * qx + qy * qy + qz * qz),
+                Math.abs(R[a].r + (R[b].r - R[a].r) * t - R[k].r)
+            );
             const ek = keep[k] ? Infinity : e;
             if (ek > be) {
                 be = ek;
@@ -1652,7 +1682,7 @@ function __leitBahn(pts, blaetter) {
             bi = n - 2;
         for (let i = 0; i < n; i++) {
             const dd = vlen(vsub(l.pos, pts[i]));
-            if (dd < best) (best = dd), (bi = i);
+            if (dd < best) ((best = dd), (bi = i));
         }
         if (bi < iMin) iMin = bi;
     }
@@ -1679,7 +1709,16 @@ function __wedelBreiten(pts, blaetter, K, rand, ab) {
             const a = pts[i - 1],
                 ab = vsub(pts[i], a),
                 L2 = ab[0] * ab[0] + ab[1] * ab[1] + ab[2] * ab[2];
-            const t = L2 > 0 ? Math.max(0, Math.min(1, ((l.pos[0] - a[0]) * ab[0] + (l.pos[1] - a[1]) * ab[1] + (l.pos[2] - a[2]) * ab[2]) / L2)) : 0;
+            const t =
+                L2 > 0
+                    ? Math.max(
+                          0,
+                          Math.min(
+                              1,
+                              ((l.pos[0] - a[0]) * ab[0] + (l.pos[1] - a[1]) * ab[1] + (l.pos[2] - a[2]) * ab[2]) / L2
+                          )
+                      )
+                    : 0;
             const d = vlen(vsub(l.pos, vadd(a, vscl(ab, t))));
             if (d < best) {
                 best = d;
@@ -1761,7 +1800,9 @@ function emitTreeRezept(P, stufe) {
         )
     )
         throw new Error(
-            "[phyto] lod.budget.shrub[" + stufe + "].schnitt/rute oder shrub[0].blattKarte/dichte fehlt (1 > rute > schnitt > 0)"
+            "[phyto] lod.budget.shrub[" +
+                stufe +
+                "].schnitt/rute oder shrub[0].blattKarte/dichte fehlt (1 > rute > schnitt > 0)"
         );
     // DIE TRAUER-L1 (05.10.): ihre Peitschen sind Straehnen wie in der L0 — die Bahn jeder belaubten Peitsche wird VOR
     // dem Radius-Schnitt festgehalten (die Peitsche ist duenner als 0,08·trunkR und faellt aus der Rinde; ihre Straehne
@@ -1772,7 +1813,8 @@ function emitTreeRezept(P, stufe) {
     if (_trauerL1) {
         const belaubt = new Set(nodes.leaves.map((l) => l.run));
         // dazu der Zweig, an dessen Spitze die Peitsche waechst (S3: er ist Teil ihrer Straehne)
-        for (const r of Array.from(belaubt)) if (nodes.runMeta[r] && nodes.runMeta[r].parentRun >= 0) belaubt.add(nodes.runMeta[r].parentRun);
+        for (const r of Array.from(belaubt))
+            if (nodes.runMeta[r] && nodes.runMeta[r].parentRun >= 0) belaubt.add(nodes.runMeta[r].parentRun);
         for (const s of nodes.segs)
             if (belaubt.has(s.runId)) {
                 if (!_bahnL1.has(s.runId)) _bahnL1.set(s.runId, []);
@@ -1814,7 +1856,11 @@ function emitTreeRezept(P, stufe) {
             _wedel.holz < 1
         )
     )
-        throw new Error("[phyto] lod.budget.tree[" + __lod + "].wedel fehlt ({ab, teile, breite, nadel, rand, 0 < winkel < 45, 0 <= holz < 1})");
+        throw new Error(
+            "[phyto] lod.budget.tree[" +
+                __lod +
+                "].wedel fehlt ({ab, teile, breite, nadel, rand, 0 < winkel < 45, 0 <= holz < 1})"
+        );
     const _skWedel = __weltSkalaArt(CURRENT); // die Welt-Skala der Art (wie der Wald pflanzt) — das Nadel-Mass des Wedels
     const _aeste = new Map(), // Kopf-Lauf des Nadel-Asts → { kette: [Läufe der Haupt-Bahn], blaetter: [], pfad: [Punkte] }
         _astVon = new Map(); // jeder Lauf eines Nadel-Asts → sein Kopf
@@ -1834,12 +1880,13 @@ function emitTreeRezept(P, stufe) {
         // Die Fortsetzung eines Laufs ist die der Röhre (`leadChild` im Röhren-Zug): der letzte Leit-Lauf in Wuchs-Reihenfolge —
         // Bahn des Wedels und Röhre sind derselbe Strang.
         const fort = {};
-        for (const rid of segVon.keys()) if (M[rid] && M[rid].isLead && M[rid].parentRun >= 0) fort[M[rid].parentRun] = rid;
+        for (const rid of segVon.keys())
+            if (M[rid] && M[rid].isLead && M[rid].parentRun >= 0) fort[M[rid].parentRun] = rid;
         const stamm = new Set([0]),
             offen = [0];
         while (offen.length) {
             const r = offen.pop();
-            for (const c of kinder.get(r) || []) if (M[c].isLead && !stamm.has(c)) stamm.add(c), offen.push(c);
+            for (const c of kinder.get(r) || []) if (M[c].isLead && !stamm.has(c)) (stamm.add(c), offen.push(c));
         }
         for (const s of stamm)
             for (const k of kinder.get(s) || []) {
@@ -1936,7 +1983,10 @@ function emitTreeRezept(P, stufe) {
     }
     // Die Straehnen-Zeile der Trauer-L1 (tree[1].straehne) und das tiefste Laub (tree[0].boden, EINE Zahl der Art).
     const _st1 = _b1.straehne;
-    if (_trauerL1 && (!(_b0.boden > 0) || !_st1 || !(_st1.breite > 0) || !(_st1.teile >= 1) || !(_st1.holz >= 0 && _st1.holz < 1)))
+    if (
+        _trauerL1 &&
+        (!(_b0.boden > 0) || !_st1 || !(_st1.breite > 0) || !(_st1.teile >= 1) || !(_st1.holz >= 0 && _st1.holz < 1))
+    )
         throw new Error("[phyto] lod.budget.tree[1].straehne / tree[0].boden fehlt");
     // Die Trauer-L0 und -L1 bauen keine Einzel-Klinge: jede Peitsche (der Lauf, an dem growSkeleton ihre Blaetter
     // haengt — `run`) wird EINE Straehne entlang ihrer gewachsenen Bahn. Die Straehnen-Wahl ist die Peitschen-Wahl.
@@ -1950,7 +2000,8 @@ function emitTreeRezept(P, stufe) {
     if (_laubKrone) {
         if (!(_bz0.blattKarte > 0)) throw new Error("[phyto] lod.budget.tree[" + __lod + "].blattKarte fehlt");
         nodes.leaves = __lagenWahl(nodes.leaves, _bz0.blattKarte, _bz0.lagen);
-    } else if (_wedel) nodes.leaves = []; // die Nadeln reisen im Wedel (Farbe und Wind der Strähne)
+    } else if (_wedel)
+        nodes.leaves = []; // die Nadeln reisen im Wedel (Farbe und Wind der Strähne)
     else {
         // Der Strauch traegt in seinen Gitter-Stufen nur den Anteil shrub[0].dichte.laub der Blattstellen als Karte
         // (05.10.: die Karte misst blattKarte Blatt-Groessen — das Blatt des Atlas ist halb so lang wie gestern, die Karte
@@ -2003,7 +2054,18 @@ function emitTreeRezept(P, stufe) {
                 probe = [];
             for (const [w, B] of _peitschenBahn) {
                 const Lw = _peitschen.get(w);
-                pushStraehne(probe, B.pts, B.Lm, _st.breite * B.Lm, Lw, Lw.map(() => ({ r: 0, g: 0, b: 0 })), nodes.height * _b0.boden, _st.teile, PC.BLATT_ATLAS_WEIDE.zelle, PC.BLATT_ATLAS_BREIT.kern);
+                pushStraehne(
+                    probe,
+                    B.pts,
+                    B.Lm,
+                    _st.breite * B.Lm,
+                    Lw,
+                    Lw.map(() => ({ r: 0, g: 0, b: 0 })),
+                    nodes.height * _b0.boden,
+                    _st.teile,
+                    PC.BLATT_ATLAS_WEIDE.zelle,
+                    PC.BLATT_ATLAS_BREIT.kern
+                );
             }
             const pos = new Float32Array(probe.length * 12);
             probe.forEach((g, i) => pos.set(g.attributes.position.array, i * 12));
@@ -2050,7 +2112,7 @@ function emitTreeRezept(P, stufe) {
         P.kind === "tree" &&
         !(_wurf1 && _wurf1.durchmesserM > 0 && _wurf1.teil === "schatten" && _wurf1.lagen > 0)
     )
-        throw new Error("[phyto] lod.budget.tree[1].wurf fehlt ({durchmesserM, teil: \"schatten\", lagen})");
+        throw new Error('[phyto] lod.budget.tree[1].wurf fehlt ({durchmesserM, teil: "schatten", lagen})');
     const _skW = _wurf1 ? __weltSkalaArt(CURRENT) : 0; // die Welt-Skala der Art (wie der Wald pflanzt)
     if (_wurf1 && !(_skW > 0)) throw new Error("[phyto] placement.scale." + CURRENT + " fehlt (Schatten-Teil der L1)");
     const _wurfR = _wurf1 ? _wurf1.durchmesserM / (2 * _skW) : 0; // der Radius-Schnitt in Vorlagen-Einheiten
@@ -2256,7 +2318,13 @@ function emitTreeRezept(P, stufe) {
     if (__lod === 1 && globalThis.__phytoDebug)
         console.log(
             "[phyto] L1-Bau: " +
-                (useTexL ? "Multi-Blatt-KARTEN" : _wedel ? "Nadel-WEDEL" : _trauerL1 ? "Trauerwuchs-STRAEHNEN" : "GEOMETRIE")
+                (useTexL
+                    ? "Multi-Blatt-KARTEN"
+                    : _wedel
+                      ? "Nadel-WEDEL"
+                      : _trauerL1
+                        ? "Trauerwuchs-STRAEHNEN"
+                        : "GEOMETRIE")
         );
     const folGeosTex = [];
     const wurfKarten = []; // die Karten des Schatten-Teils (L1, S4)
@@ -2266,7 +2334,9 @@ function emitTreeRezept(P, stufe) {
     const _atl = self.__phytoCore;
     const _blattKarte = useTexL ? (_strauchKarte ? _bSK.blattKarte : _bz0.blattKarte) : 0;
     if (useTexL && !(_blattKarte > 0))
-        throw new Error("[phyto] lod.budget." + (_strauchKarte ? "shrub[0]" : "tree[" + __lod + "]") + ".blattKarte fehlt");
+        throw new Error(
+            "[phyto] lod.budget." + (_strauchKarte ? "shrub[0]" : "tree[" + __lod + "]") + ".blattKarte fehlt"
+        );
     // Die Schatten-Karten (L1, S4): eine Teilmenge der L1-Karten, die wurf.lagen Lagen haelt (dieselbe Lagen-Wahl).
     const _wurfBlatt = _wurf1 && _laubKrone ? new Set(__lagenWahl(nodes.leaves, _blattKarte, _wurf1.lagen)) : null;
     const _blattTint = (l) => {
@@ -2388,14 +2458,17 @@ function emitTreeRezept(P, stufe) {
         const fWedel = _rindeMittel ? nadelFarbe.clone().lerp(_rindeMittel, _wedel.holz) : nadelFarbe;
         // DAS NADEL-MASS DES WEDELS: jedes Stück trägt die ganze Wedel-Zelle — so viele Stücke, dass ihre Nadel
         // (WEDEL_ZWEIG.nadel px der Zelle) in der Welt höchstens `wedel.nadel` m misst (die Natur: 1,5–3 cm).
-        const stueckM = (_wedel.nadel * _atl.BLATT_ATLAS_ZELLE) / (_atl.WEDEL_ZWEIG.nadel * _atl.BLATT_ATLAS_WEDEL.kern);
+        const stueckM =
+            (_wedel.nadel * _atl.BLATT_ATLAS_ZELLE) / (_atl.WEDEL_ZWEIG.nadel * _atl.BLATT_ATLAS_WEDEL.kern);
         for (const [, A] of _aeste) {
             const leit = A === _aeste.get(-1);
             const pts = leit ? __leitBahn(A.pfad, A.blaetter) : A.pfad;
             let bahnL = 0;
             for (let i = 1; i < pts.length; i++) bahnL += vlen(vsub(pts[i], pts[i - 1]));
             const teile = Math.max(_wedel.teile, Math.ceil((bahnL * _skWedel) / stueckM));
-            const h = __wedelBreiten(pts, A.blaetter, teile, _wedel.rand, leit ? null : _wedel.ab).map((x) => x * _wedel.breite);
+            const h = __wedelBreiten(pts, A.blaetter, teile, _wedel.rand, leit ? null : _wedel.ab).map(
+                (x) => x * _wedel.breite
+            );
             // Der Wedel des Leittriebs wächst aus dem Stamm: ein Stück, das nicht über die Röhre reicht, läge in ihr (die
             // Mammut-Spitze ist 0,68 dick, ihre Nadeln sitzen in ihr).
             if (leit) {
@@ -2406,7 +2479,12 @@ function emitTreeRezept(P, stufe) {
             if (!h.some((x) => x > 0)) continue;
             const farben = A.blaetter.map(() => fWedel);
             const form = { breiten: h, winkel: (_wedel.winkel * Math.PI) / 180 };
-            for (const [ziel, nurQuer] of _wurf1 ? [[folGeosTex, false], [wurfKarten, true]] : [[folGeosTex, false]])
+            for (const [ziel, nurQuer] of _wurf1
+                ? [
+                      [folGeosTex, false],
+                      [wurfKarten, true],
+                  ]
+                : [[folGeosTex, false]])
                 pushStraehne(
                     ziel,
                     pts,
@@ -2454,8 +2532,18 @@ function emitTreeRezept(P, stufe) {
         const nRinde = teile.length;
         for (const g of wurfKarten) teile.push(g);
         teile.forEach((g, i) => {
-            g.setAttribute("aDeckt", new THREE.Float32BufferAttribute(new Float32Array(g.attributes.position.count).fill(i < nRinde ? 1 : 0), 1));
-            if (!g.attributes.uv) g.setAttribute("uv", new THREE.Float32BufferAttribute(new Float32Array(g.attributes.position.count * 2), 2));
+            g.setAttribute(
+                "aDeckt",
+                new THREE.Float32BufferAttribute(
+                    new Float32Array(g.attributes.position.count).fill(i < nRinde ? 1 : 0),
+                    1
+                )
+            );
+            if (!g.attributes.uv)
+                g.setAttribute(
+                    "uv",
+                    new THREE.Float32BufferAttribute(new Float32Array(g.attributes.position.count * 2), 2)
+                );
         });
         const ws = addMerged(teile, schattenMat);
         if (ws) {
@@ -2774,9 +2862,29 @@ function emitGrass(P) {
             // las die Rispe als Möwe statt als Federbusch. Mit `segmente` 3 ist der Bau byte-gleich zum alten (L0, 17 Samen).
             const AKV = 3,
                 NawVoll = __lod === 0 ? 11 : __lod === 1 ? 7 : 4,
-                _rz = __lod === 0 ? { grannen: 11, segmente: 3, breite: 1 } : PORTAL_RENDER_CONFIG.lod.budget.grass[__lod].rispe;
-            if (!(_rz && Number.isInteger(_rz.grannen) && _rz.grannen >= 1 && _rz.grannen <= NawVoll && Number.isInteger(_rz.segmente) && _rz.segmente >= 1 && _rz.segmente <= AKV && _rz.breite > 0))
-                throw new Error("[phyto] lod.budget.grass[" + __lod + "].rispe fehlt (grannen 1.." + NawVoll + ", segmente 1.." + AKV + ", breite > 0)");
+                _rz =
+                    __lod === 0
+                        ? { grannen: 11, segmente: 3, breite: 1 }
+                        : PORTAL_RENDER_CONFIG.lod.budget.grass[__lod].rispe;
+            if (!(
+                _rz &&
+                Number.isInteger(_rz.grannen) &&
+                _rz.grannen >= 1 &&
+                _rz.grannen <= NawVoll &&
+                Number.isInteger(_rz.segmente) &&
+                _rz.segmente >= 1 &&
+                _rz.segmente <= AKV &&
+                _rz.breite > 0
+            ))
+                throw new Error(
+                    "[phyto] lod.budget.grass[" +
+                        __lod +
+                        "].rispe fehlt (grannen 1.." +
+                        NawVoll +
+                        ", segmente 1.." +
+                        AKV +
+                        ", breite > 0)"
+                );
             const Naw = _rz.grannen,
                 AK = _rz.segmente,
                 breit = _rz.breite,
@@ -2879,10 +2987,14 @@ function __band(S, reihen, ctr, typ) {
         const R = reihen[k],
             idx = [];
         for (let q = 0; q < R.pts.length; q++)
-            idx.push(__bandVert(S, R.pts[q], R.col, R.pts.length > 1 ? q / (R.pts.length - 1) : 0.5, R.v, R.sway, ctr, typ));
+            idx.push(
+                __bandVert(S, R.pts[q], R.col, R.pts.length > 1 ? q / (R.pts.length - 1) : 0.5, R.v, R.sway, ctr, typ)
+            );
         if (vor) {
             if (idx.length === 1) for (let q = 0; q + 1 < vor.length; q++) S.i.push(vor[q], vor[q + 1], idx[0]);
-            else for (let q = 0; q + 1 < idx.length; q++) S.i.push(vor[q], vor[q + 1], idx[q + 1], vor[q], idx[q + 1], idx[q]);
+            else
+                for (let q = 0; q + 1 < idx.length; q++)
+                    S.i.push(vor[q], vor[q + 1], idx[q + 1], vor[q], idx[q + 1], idx[q]);
         }
         vor = idx;
     }
@@ -3017,9 +3129,7 @@ function emitFern(P) {
                     lp = P.fiederLen * w.L * (0.16 + 0.84 * prof) * w.fj[j][0];
                 if (lp < 0.004) continue;
                 const e = sideAt(t);
-                const dir = vnorm(
-                    vadd(vadd(vscl(e.s, sgn * 0.82), vscl(e.d, 0.5)), vscl(e.n, -0.12 + w.fj[j][1]))
-                );
+                const dir = vnorm(vadd(vadd(vscl(e.s, sgn * 0.82), vscl(e.d, 0.5)), vscl(e.n, -0.12 + w.fj[j][1])));
                 const wv = vnorm(vcross(e.n, dir)),
                     wb = lp * P.fiederBreit;
                 const reihen = [];
@@ -3028,7 +3138,11 @@ function emitFern(P) {
                     const s = q / 4,
                         hw = 0.5 * wb * B[q] * (1 - s * 0.55),
                         c = vadd(vadd(e.p, vscl(dir, lp * s)), vscl(e.n, -lp * 0.18 * s * s)),
-                        col = c0.clone().lerp(c1, 0.35 + 0.65 * s).lerp(c2, s * s * 0.55).multiplyScalar(sh);
+                        col = c0
+                            .clone()
+                            .lerp(c1, 0.35 + 0.65 * s)
+                            .lerp(c2, s * s * 0.55)
+                            .multiplyScalar(sh);
                     if (welkT > 0) col.lerp(welk, welkT * s);
                     const sw = Math.pow(t, 1.4) * P.windGain + s * 0.25;
                     reihen.push({
@@ -3045,7 +3159,12 @@ function emitFern(P) {
             // aggregiert, abwechselnd Spitze und Bucht): ~13 Dreiecke je Wedel statt einer Klinge je Fieder.
             const reihen = [];
             const e0 = sideAt(t0 * 0.35);
-            reihen.push({ pts: [vsub(e0.p, vscl(e0.s, 0.004)), vadd(e0.p, vscl(e0.s, 0.004))], col: stielA, v: 0, sway: 0 });
+            reihen.push({
+                pts: [vsub(e0.p, vscl(e0.s, 0.004)), vadd(e0.p, vscl(e0.s, 0.004))],
+                col: stielA,
+                v: 0,
+                sway: 0,
+            });
             const K1 = Math.max(4, Math.round(nP / 3));
             for (let j = 0; j <= K1; j++) {
                 const t = t0 + (1 - t0) * (j / K1),
@@ -3054,7 +3173,11 @@ function emitFern(P) {
                     lp = P.fiederLen * w.L * (0.16 + 0.84 * prof) * (j % 2 ? 0.22 : 1.0); // tiefe Buchten bis nahe der Rhachis: die Silhouette liest gefiedert, nicht gelappt
                 const e = sideAt(t);
                 const fw = vnorm(vadd(vscl(e.d, 0.32), vscl(e.n, -0.08)));
-                const col = c0.clone().lerp(c1, 0.5 + 0.5 * tp).lerp(c2, tp * 0.4).multiplyScalar(sh);
+                const col = c0
+                    .clone()
+                    .lerp(c1, 0.5 + 0.5 * tp)
+                    .lerp(c2, tp * 0.4)
+                    .multiplyScalar(sh);
                 if (welkT > 0) col.lerp(welk, welkT * tp);
                 if (j === K1) {
                     reihen.push({ pts: [e.p], col, v: 1, sway: P.windGain });
@@ -3085,7 +3208,16 @@ function emitFern(P) {
             for (let i = 1; i <= 9; i++) {
                 const a = (i / 9) * 5.2,
                     rr = kr.r * (1 - i / 11);
-                pts.push(vadd(top, vadd(vscl(out, Math.sin(a) * rr), [0, (Math.cos(a) - 1) * -rr * 0.2 + Math.sin(a * 0.5) * rr, 0])));
+                pts.push(
+                    vadd(
+                        top,
+                        vadd(vscl(out, Math.sin(a) * rr), [
+                            0,
+                            (Math.cos(a) - 1) * -rr * 0.2 + Math.sin(a * 0.5) * rr,
+                            0,
+                        ])
+                    )
+                );
             }
             __rohr(
                 S,
@@ -3141,7 +3273,15 @@ function emitSchilf(P) {
             p = vadd(p, vscl(d, hm.h / NS));
         }
         const colH = (f) => (hm.alt ? braunD.clone().lerp(braun, f) : gA.clone().lerp(gB, f));
-        __rohr(S, pts, 3, (f) => lerp(0.0075, 0.0035, f), colH, (f) => Math.pow(f, 1.5) * P.windGain, 4);
+        __rohr(
+            S,
+            pts,
+            3,
+            (f) => lerp(0.0075, 0.0035, f),
+            colH,
+            (f) => Math.pow(f, 1.5) * P.windGain,
+            4
+        );
         // Blätter (vorjährige Halme: keine)
         if (!hm.alt) {
             const nb = L0 ? hm.bl.length : Math.min(2, hm.bl.length);
@@ -3163,9 +3303,17 @@ function emitSchilf(P) {
                         wv0 = vnorm(vcross(dd, [0, 1, 0])),
                         wv = vnorm(vadd(vscl(wv0, Math.cos(tw)), vscl(vcross(dd, wv0), Math.sin(tw)))),
                         hw = (L0 ? 0.012 : 0.022) * (1 - f * 0.85),
-                        col = gA.clone().lerp(gB, 0.4 + 0.6 * f).lerp(braun, f * f * 0.25),
+                        col = gA
+                            .clone()
+                            .lerp(gB, 0.4 + 0.6 * f)
+                            .lerp(braun, f * f * 0.25),
                         sw = Math.pow(t, 1.5) * P.windGain + f * 0.4;
-                    reihen.push({ pts: s === K ? [q] : [vsub(q, vscl(wv, hw)), vadd(q, vscl(wv, hw))], col, v: f, sway: sw });
+                    reihen.push({
+                        pts: s === K ? [q] : [vsub(q, vscl(wv, hw)), vadd(q, vscl(wv, hw))],
+                        col,
+                        v: f,
+                        sway: sw,
+                    });
                     dd = vnorm(vadd(dd, [out[0] * 0.18, -0.34 * f, out[2] * 0.18]));
                     q = vadd(q, vscl(dd, len / K));
                 }
@@ -3300,7 +3448,13 @@ function emitGestruepp(P) {
                 for (let b = 0; b < nb && b < z.bl.length; b++) {
                     const j = z.bl[b],
                         pos = vlerp(e.p, zEnd, 0.35 + 0.65 * (b / Math.max(1, nb - 1))),
-                        dd = vnorm(vadd(vadd(zd, [Math.cos(z.az + j[1] * 3) * 0.8, 0.2, Math.sin(z.az + j[1] * 3) * 0.8]), [0, j[1] * 0.3, 0]));
+                        dd = vnorm(
+                            vadd(vadd(zd, [Math.cos(z.az + j[1] * 3) * 0.8, 0.2, Math.sin(z.az + j[1] * 3) * 0.8]), [
+                                0,
+                                j[1] * 0.3,
+                                0,
+                            ])
+                        );
                     blatt(pos, dd, P.blatt * j[0], j);
                 }
             } else {
@@ -3316,7 +3470,12 @@ function emitGestruepp(P) {
                 __band(
                     SL,
                     [
-                        { pts: [vsub(b0, vscl(wv, hw * 0.12)), vadd(b0, vscl(wv, hw * 0.12))], col: cc.clone().multiplyScalar(0.8), v: 0, sway: sw },
+                        {
+                            pts: [vsub(b0, vscl(wv, hw * 0.12)), vadd(b0, vscl(wv, hw * 0.12))],
+                            col: cc.clone().multiplyScalar(0.8),
+                            v: 0,
+                            sway: sw,
+                        },
                         { pts: [vsub(m, vscl(wv, hw)), vadd(m, vscl(wv, hw))], col: cc, v: 0.5, sway: sw },
                         { pts: [tip], col: cc.clone().multiplyScalar(1.1), v: 1, sway: sw },
                     ],
@@ -3355,7 +3514,10 @@ function __holzEnde(geos, c, d, r, P, rnd12, gesaegt, colInnen, colRand) {
                 rr = r * fr * 0.97,
                 p = vadd(vadd(c, vadd(vscl(u, Math.cos(a) * rr), vscl(v, Math.sin(a) * rr))), vscl(d, sp));
             const col = gesaegt
-                ? colInnen.clone().lerp(colRand, fr * 0.6).multiplyScalar(k % 2 ? 1.0 : 0.7)
+                ? colInnen
+                      .clone()
+                      .lerp(colRand, fr * 0.6)
+                      .multiplyScalar(k % 2 ? 1.0 : 0.7)
                 : colRand.clone().lerp(colInnen, 0.4 + 0.6 * rnd12[(j * 7) % 12]);
             idx.push(__bandVert(S, p, col, j / N, fr, 0, c, 0));
         }
@@ -3468,11 +3630,23 @@ function emitTotholz(P) {
         for (let i = 0; i <= M; i++) {
             const f = i / M,
                 y = h * f;
-            rings.push({ c: [0, y, 0], r: r * (1 + P.flare * 0.85 * Math.exp(-y / (h * 0.45 + 0.05))), sway: 0, depth: 0 });
+            rings.push({
+                c: [0, y, 0],
+                r: r * (1 + P.flare * 0.85 * Math.exp(-y / (h * 0.45 + 0.05))),
+                sway: 0,
+                depth: 0,
+            });
         }
         __rindenGesetz().buildTubeGesetz(vok, geos, rings, Pt, bA, bB, r, false, undefined, tubeLod);
         __holzEnde(geos, [0, h, 0], [0, 1, 0], r * 0.98, P, kopf, P.saege, innen, rand);
-        if (L0) for (const s of schwamm) __schwamm(geos, [Math.cos(s[0]) * r * 1.02, h * s[1], Math.sin(s[0]) * r * 1.02], [Math.cos(s[0]), 0, Math.sin(s[0])], r * 0.45 * s[2]);
+        if (L0)
+            for (const s of schwamm)
+                __schwamm(
+                    geos,
+                    [Math.cos(s[0]) * r * 1.02, h * s[1], Math.sin(s[0]) * r * 1.02],
+                    [Math.cos(s[0]), 0, Math.sin(s[0])],
+                    r * 0.45 * s[2]
+                );
         for (const g of geos) __holzZerfall(g, P, P._bphase);
         addMerged(geos, barkMat);
         // Die Wurzeln laufen aus dem Fuß in den Boden — das Wurzel-Gesetz des Baums (emitRoots), gemessen an der
@@ -3491,11 +3665,16 @@ function emitTotholz(P) {
         kopfB = rnd12(12),
         st = [],
         schwamm = [];
-    for (let i = 0; i < P.stummel; i++) st.push([rrange(0.2, 0.85), rrange(-1.2, 1.2), rrange(0.25, 0.7), rrange(0.18, 0.32)]);
+    for (let i = 0; i < P.stummel; i++)
+        st.push([rrange(0.2, 0.85), rrange(-1.2, 1.2), rrange(0.25, 0.7), rrange(0.18, 0.32)]);
     for (let i = 0; i < P.pilze; i++) schwamm.push([rrange(0.15, 0.85), rnd() < 0.5 ? -1 : 1, rrange(0.6, 1.1)]);
     const M = L0 ? 10 : 4,
         rings = [];
-    const axis = (f) => [(f - 0.5) * Lg, r * (1 - senke) - Math.sin(Math.PI * f) * r * 0.12, Math.sin(Math.PI * f) * bogen * Lg * 0.08];
+    const axis = (f) => [
+        (f - 0.5) * Lg,
+        r * (1 - senke) - Math.sin(Math.PI * f) * r * 0.12,
+        Math.sin(Math.PI * f) * bogen * Lg * 0.08,
+    ];
     for (let i = 0; i <= M; i++) {
         const f = i / M;
         rings.push({ c: axis(f), r: r * lerp(1.18, 0.74, f) * (f < 0.08 ? 1.12 : 1), sway: 0, depth: 0 });
@@ -4298,9 +4477,7 @@ const PRESETS = {
             // Gestalt 1..V (lod.budget.gestalten) die Huelle ihrer Studio-Gestalt LOD 0 im Vorlagen-Raum [x0, x1, y1, z0, z1]
             // (+5 %, Boden y 0) - der Welt-Blocker liest die Zeile seiner Gestalt in der Welt-Skala, gate:kollision-bild
             // misst sie gegen das gezeichnete Werk. Nur der Wirt liest sie (die Gestalt selbst baut sie nie).
-            huellen: [
-                [-1.58, 1.65, 1.82, -2, 2.1],
-            ],
+            huellen: [[-1.58, 1.65, 1.82, -2, 2.1]],
             rkind: "scree",
             size: 1.8,
             rockA: 0x7a7268,
@@ -4428,10 +4605,19 @@ function __rasterZahl(x, q) {
 }
 function __ausRaster(g) {
     g.traverse(function (o) {
-        o.position.set(__rasterZahl(o.position.x, 65536), __rasterZahl(o.position.y, 65536), __rasterZahl(o.position.z, 65536));
+        o.position.set(
+            __rasterZahl(o.position.x, 65536),
+            __rasterZahl(o.position.y, 65536),
+            __rasterZahl(o.position.z, 65536)
+        );
         o.scale.set(__rasterZahl(o.scale.x, 65536), __rasterZahl(o.scale.y, 65536), __rasterZahl(o.scale.z, 65536));
         const q = o.quaternion;
-        q.set(__rasterZahl(q.x, 1048576), __rasterZahl(q.y, 1048576), __rasterZahl(q.z, 1048576), __rasterZahl(q.w, 1048576));
+        q.set(
+            __rasterZahl(q.x, 1048576),
+            __rasterZahl(q.y, 1048576),
+            __rasterZahl(q.z, 1048576),
+            __rasterZahl(q.w, 1048576)
+        );
         if (o.geometry && o.geometry.attributes) {
             const A = o.geometry.attributes;
             for (const name in A) {
@@ -4490,7 +4676,10 @@ function deriveParamsPlant(pre) {
             // DER HALM-TEPPICH (K56): der Büschel deckt seine Zelle des Understory-Rasters — Radius in der Welt
             // grassStep · TEPPICH_REICH · Skala, die Nachbarn überlappen. Vorher 0,35–0,72 (0,15 m Welt): Büschel auf
             // glattem Grün, Halm-Deckung des Bodens im Ego-Bild 0,23. Kostet kein Dreieck.
-            clump: ((PORTAL_RENDER_CONFIG.understory.grassStep * TEPPICH_REICH) / PORTAL_RENDER_CONFIG.placement.scale.gras) * lerp(0.9, 1.1, leaf),
+            clump:
+                ((PORTAL_RENDER_CONFIG.understory.grassStep * TEPPICH_REICH) /
+                    PORTAL_RENDER_CONFIG.placement.scale.gras) *
+                lerp(0.9, 1.1, leaf),
             droop: clamp(0.35 + trop * 0.7, 0.04, 1.35),
             seedHead: clamp((leaf - 0.32) * 1.5, 0, 1),
             seedTan: 0xc8b27a,
@@ -4850,7 +5039,8 @@ function __tierMergeGeos(geos, fuell) {
     // DIE FARBE REIST MIT (Welle 5): trägt ein Teil des Eimers Vertex-Farben (das Fell-Muster der Tiere, der Wurzel→
     // Spitze-Verlauf der Haar-Strähnen), füllen die übrigen mit der Stoff-Farbe (fuell, linear). Vorher fielen die
     // Farben beim Verschmelzen still: die Strähnen des Menschen verloren ihren Lab-Verlauf.
-    if (mitFarbe && mitFarbe !== geos.length && !fuell) throw new Error("GELENK-GUSS: Farbe an " + mitFarbe + " von " + geos.length + " Teilen, keine Füll-Farbe");
+    if (mitFarbe && mitFarbe !== geos.length && !fuell)
+        throw new Error("GELENK-GUSS: Farbe an " + mitFarbe + " von " + geos.length + " Teilen, keine Füll-Farbe");
     // DIE BINDUNG REIST MIT (S3): ein geskinnter Eimer (die gelenkige Grobstufe: Haut + starr gebundene Teile, Gewicht 1)
     // verschmilzt mit seinen Gewichten — jeder Teil zeigt auf dieselbe Bone-Ordnung.
     const mitHaut = geos.every((g) => g.attributes.skinIndex && g.attributes.skinWeight);
@@ -4985,7 +5175,11 @@ function __streuGeo(row, seed, tonRGB) {
         } else {
             if (Math.cos(phi) < -0.05) continue;
             if (row.radial) {
-                d.set(Math.sin(phi) * Math.cos(theta) + jx, Math.cos(phi) + jy, Math.sin(phi) * Math.sin(theta) + jz).normalize();
+                d.set(
+                    Math.sin(phi) * Math.cos(theta) + jx,
+                    Math.cos(phi) + jy,
+                    Math.sin(phi) * Math.sin(theta) + jz
+                ).normalize();
             } else {
                 d.set(row.d[0] + jx, row.d[1] + jy, row.d[2] + jz).normalize();
             }
@@ -5064,7 +5258,10 @@ function __aufsNiveau(verts, f, nx, ny, nz, lo, vox, level) {
             const c0 = c00 + (c10 - c00) * v,
                 c1 = c01 + (c11 - c01) * v;
             const d = c0 + (c1 - c0) * w - level;
-            const ex = (((f100 - f000) * (1 - v) + (f110 - f010) * v) * (1 - w) + ((f101 - f001) * (1 - v) + (f111 - f011) * v) * w) / vox,
+            const ex =
+                    (((f100 - f000) * (1 - v) + (f110 - f010) * v) * (1 - w) +
+                        ((f101 - f001) * (1 - v) + (f111 - f011) * v) * w) /
+                    vox,
                 ey = ((c10 - c00) * (1 - w) + (c11 - c01) * w) / vox,
                 ez = (c1 - c0) / vox;
             const g2 = ex * ex + ey * ey + ez * ez;
@@ -5300,7 +5497,8 @@ function __stoffAusHaut(hg, teile, zonenTeile, dicke) {
     if (m < 30) return null;
     const flaechen = [];
     for (let t = 0; t < ia.length; t += 3)
-        if (wahl[ia[t]] && wahl[ia[t + 1]] && wahl[ia[t + 2]]) flaechen.push(karte[ia[t]], karte[ia[t + 1]], karte[ia[t + 2]]);
+        if (wahl[ia[t]] && wahl[ia[t + 1]] && wahl[ia[t + 2]])
+            flaechen.push(karte[ia[t]], karte[ia[t + 1]], karte[ia[t + 2]]);
     if (flaechen.length < 90) return null;
     const pos = new Float32Array(m * 3),
         si = new Float32Array(m * 4),
@@ -5374,7 +5572,10 @@ function __stoffAusHaut(hg, teile, zonenTeile, dicke) {
                     qy += 0.5 * (ay / A.size - qy);
                     qz += 0.5 * (az / A.size - qz);
                 }
-                const h = (qx - S[i * 3]) * N[i * 3] + (qy - S[i * 3 + 1]) * N[i * 3 + 1] + (qz - S[i * 3 + 2]) * N[i * 3 + 2];
+                const h =
+                    (qx - S[i * 3]) * N[i * 3] +
+                    (qy - S[i * 3 + 1]) * N[i * 3 + 1] +
+                    (qz - S[i * 3 + 2]) * N[i * 3 + 2];
                 if (h < dicke) {
                     qx += (dicke - h) * N[i * 3];
                     qy += (dicke - h) * N[i * 3 + 1];
@@ -5432,7 +5633,12 @@ function __stoffErbtHaut(hg, sg) {
     const gitter = new Map();
     const nH = hp.length / 3;
     for (let i = 0; i < nH; i++) {
-        const k = Math.floor(hp[i * 3] / ZELLE) + "_" + Math.floor(hp[i * 3 + 1] / ZELLE) + "_" + Math.floor(hp[i * 3 + 2] / ZELLE);
+        const k =
+            Math.floor(hp[i * 3] / ZELLE) +
+            "_" +
+            Math.floor(hp[i * 3 + 1] / ZELLE) +
+            "_" +
+            Math.floor(hp[i * 3 + 2] / ZELLE);
         let l = gitter.get(k);
         if (!l) gitter.set(k, (l = []));
         l.push(i);
@@ -5484,12 +5690,14 @@ function __stoffErbtHaut(hg, sg) {
         }
         const acc = new Map();
         if (cN === 0 || cD[0] > WEIT2) {
-            for (let k = 0; k < 4; k++) if (sw[v * 4 + k] > 0) acc.set(si[v * 4 + k], (acc.get(si[v * 4 + k]) || 0) + sw[v * 4 + k]);
+            for (let k = 0; k < 4; k++)
+                if (sw[v * 4 + k] > 0) acc.set(si[v * 4 + k], (acc.get(si[v * 4 + k]) || 0) + sw[v * 4 + k]);
         } else
             for (let c = 0; c < cN; c++) {
                 const dw = 1 / (cD[c] + 1e-4),
                     q = cJ[c];
-                for (let k = 0; k < 4; k++) if (hw[q * 4 + k] > 0) acc.set(hi[q * 4 + k], (acc.get(hi[q * 4 + k]) || 0) + dw * hw[q * 4 + k]);
+                for (let k = 0; k < 4; k++)
+                    if (hw[q * 4 + k] > 0) acc.set(hi[q * 4 + k], (acc.get(hi[q * 4 + k]) || 0) + dw * hw[q * 4 + k]);
             }
         infl[v] = ordne(acc, 6);
     }
@@ -5743,7 +5951,8 @@ function __huelleKollaps(geo, ziel) {
         const at = geo.attributes[name];
         const arr = new at.array.constructor(neu * at.itemSize);
         for (let i = 0; i < n; i++)
-            if (karte[i] >= 0) for (let k = 0; k < at.itemSize; k++) arr[karte[i] * at.itemSize + k] = at.array[i * at.itemSize + k];
+            if (karte[i] >= 0)
+                for (let k = 0; k < at.itemSize; k++) arr[karte[i] * at.itemSize + k] = at.array[i * at.itemSize + k];
         ng.setAttribute(name, new THREE.BufferAttribute(arr, at.itemSize));
     }
     ng.setIndex(new THREE.BufferAttribute(Uint32Array.from(idx), 1));
@@ -5856,7 +6065,10 @@ function bakeTierInstance(kern, presetId, seed, lod, ov) {
         kugelFein: (r, k, segs) =>
             k === "hornhaut"
                 ? new THREE.Group()
-                : new THREE.Mesh(new THREE.SphereGeometry(r, fein ? 8 : Math.min(16, segs || 16), fein ? 6 : 12), matFuer(k)),
+                : new THREE.Mesh(
+                      new THREE.SphereGeometry(r, fein ? 8 : Math.min(16, segs || 16), fein ? 6 : 12),
+                      matFuer(k)
+                  ),
         v3: (x, y, z) => new THREE.Vector3(x, y, z),
         richte: (node, dir) => {
             node.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.clone().normalize());
@@ -6088,13 +6300,33 @@ function __tierHaut(kern, B, root, nodeName, fein, P, matFuer, fell) {
     // Das Fell-Muster auf der Haut: beide Stufen über die Bone-Gewichte (EINE Regel; das Glied-Raten der Grobstufe fiel mit
     // ihrem Standbild).
     const gelenkeHaut = __tierHautGelenke(geo, skinJoints);
-    geo.setAttribute("color", new THREE.BufferAttribute(__tierMusterFarben(kern, P, B.masse, geo.attributes.position, gelenkeHaut, null), 3));
+    geo.setAttribute(
+        "color",
+        new THREE.BufferAttribute(__tierMusterFarben(kern, P, B.masse, geo.attributes.position, gelenkeHaut, null), 3)
+    );
     const mesh = new THREE.Mesh(geo, matFuer("fell"));
     root.add(mesh); // Root-lokal gebacken (Identität)
     // Die Kopf-Häute vor den Schalen: jede ist der Boden ihrer Kopf-Schalen (K28).
     const koepfe = fein ? [] : __tierKopfHaeute(hk, B, H, matFuer, kern, P);
     if (fell) {
-        const schalen = __tierFellSchalen(hk, f, nx, ny, nz, lo, vox, zentren, skinJoints, eW * eW, kandidaten, fell, B, root, nodeName, koepfe);
+        const schalen = __tierFellSchalen(
+            hk,
+            f,
+            nx,
+            ny,
+            nz,
+            lo,
+            vox,
+            zentren,
+            skinJoints,
+            eW * eW,
+            kandidaten,
+            fell,
+            B,
+            root,
+            nodeName,
+            koepfe
+        );
         root.add(new THREE.Mesh(schalen, matFuer("fellSchale")));
     }
     return skinJoints;
@@ -6251,7 +6483,13 @@ function __tierKopfHaeute(hk, B, H, matFuer, kern, P) {
         // Das Fell-Muster im Gesicht (Fang, Wangen, Stirn) — im Wurzel-Raum der Ruhe-Pose gelesen.
         const zuWurzel = new THREE.Matrix4().copy(t.wolf.matrixWorld).invert().multiply(g.matrixWorld);
         const name = g === t.jawGroup ? "jawGroup" : "headGroup";
-        geo.setAttribute("color", new THREE.BufferAttribute(__tierMusterFarben(kern, P, B.masse, geo.attributes.position, () => [[name, 1]], zuWurzel), 3));
+        geo.setAttribute(
+            "color",
+            new THREE.BufferAttribute(
+                __tierMusterFarben(kern, P, B.masse, geo.attributes.position, () => [[name, 1]], zuWurzel),
+                3
+            )
+        );
         g.add(new THREE.Mesh(geo, matFuer("fell"))); // Gelenk-lokal gebacken (Identität)
         koepfe.push({ g, name, F, vox, zuWurzel, haut: g.children[g.children.length - 1] });
     }
@@ -6290,7 +6528,24 @@ var TIER_FELL = Object.freeze({
     reich: 0.6, // die Nähe der Look-Mischung in Ellipsoid-Einheiten um e = 1 (1 / (1 + ((e − 1) / reich)²))
     kamm: 0.6, // Lean zur Spitze (× Länge)
 });
-function __tierFellSchalen(hk, f, nx, ny, nz, lo, vox, zentren, skinJoints, eW2, kandidaten, fell, B, root, nodeName, koepfe) {
+function __tierFellSchalen(
+    hk,
+    f,
+    nx,
+    ny,
+    nz,
+    lo,
+    vox,
+    zentren,
+    skinJoints,
+    eW2,
+    kandidaten,
+    fell,
+    B,
+    root,
+    nodeName,
+    koepfe
+) {
     const s = TIER_FELL.basisVox;
     const nx2 = Math.floor((nx - 1) / s) + 1,
         ny2 = Math.floor((ny - 1) / s) + 1,
@@ -6322,7 +6577,8 @@ function __tierFellSchalen(hk, f, nx, ny, nz, lo, vox, zentren, skinJoints, eW2,
     const NJ = skinJoints.length;
     const jIdx = new Map(skinJoints.map((nm, k) => [nm, k]));
     const gelenkIdx = (node) => {
-        for (let c = node; c; c = c.parent) if (nodeName.has(c)) return jIdx.has(nodeName.get(c)) ? jIdx.get(nodeName.get(c)) : -1;
+        for (let c = node; c; c = c.parent)
+            if (nodeName.has(c)) return jIdx.has(nodeName.get(c)) ? jIdx.get(nodeName.get(c)) : -1;
         return -1;
     };
     const jWurzel = gelenkIdx(root);
@@ -6332,7 +6588,8 @@ function __tierFellSchalen(hk, f, nx, ny, nz, lo, vox, zentren, skinJoints, eW2,
     const zeile = (node, c, r, sc, d, n, l) => {
         if (!(n > 0) || !(l > 0)) return;
         const j = gelenkIdx(node);
-        if (j < 0) throw new Error("FELL: die Zeile " + (nodeName.get(node) || node.name || "?") + " liegt auf keiner Haut");
+        if (j < 0)
+            throw new Error("FELL: die Zeile " + (nodeName.get(node) || node.name || "?") + " liegt auf keiner Haut");
         const M = new THREE.Matrix4().multiplyMatrices(invRoot, node.matrixWorld);
         const dw = new THREE.Vector3(d[0], d[1], d[2]).transformDirection(M);
         const rx = r * sc[0],
@@ -6382,7 +6639,15 @@ function __tierFellSchalen(hk, f, nx, ny, nz, lo, vox, zentren, skinJoints, eW2,
     // Die Segment-Mitte ist die Lage des Segment-Leibs (die Art bestimmt seine Länge), die Haar-Länge die der Art.
     for (const sw of fell.schweif) {
         const leib = sw.node.children[0];
-        zeile(sw.node, [0, 0, leib.position.z], sw.segR, [0.95, 1.18, 1.18], [0, -0.12, -0.92], (28 - 2 * sw.i) * 9, (0.047 - 0.003 * sw.i) * fell.ks);
+        zeile(
+            sw.node,
+            [0, 0, leib.position.z],
+            sw.segR,
+            [0.95, 1.18, 1.18],
+            [0, -0.12, -0.92],
+            (28 - 2 * sw.i) * 9,
+            (0.047 - 0.003 * sw.i) * fell.ks
+        );
     }
     const pa = basis.attributes.position,
         na = basis.attributes.normal,
@@ -6489,7 +6754,10 @@ function __tierFellSchalen(hk, f, nx, ny, nz, lo, vox, zentren, skinJoints, eW2,
         if (!koepfe || !koepfe.length) throw new Error("FELL: die Kopf-Zeile hat keine Kopf-Haut");
         const nK = kopfZeilen.reduce((a, z) => a + z.n, 0);
         const lK = kopfZeilen.reduce((a, z) => a + z.n * z.l, 0) / nK;
-        const dK = kopfZeilen.reduce((a, z) => a.add(new THREE.Vector3(z.d[0], z.d[1], z.d[2]).multiplyScalar(z.n)), new THREE.Vector3());
+        const dK = kopfZeilen.reduce(
+            (a, z) => a.add(new THREE.Vector3(z.d[0], z.d[1], z.d[2]).multiplyScalar(z.n)),
+            new THREE.Vector3()
+        );
         // Die Teile auf der Kopf-Haut: jedes gezeichnete Mesh unter dem Kopf außer den Kopf-Häuten (Auge, Lid, Nase, Lefze,
         // Zahn, Ohr) — ihre Ecken im Root-Raum. Das Fell weicht ihnen: die Länge an einer Wurzel ist höchstens ihr Abstand
         // zum nächsten Teil, die Dichte schwindet mit (der Fang und der Augen-Ring tragen kurzes, lichtes Fell, nie ein Fell
@@ -6517,10 +6785,18 @@ function __tierFellSchalen(hk, f, nx, ny, nz, lo, vox, zentren, skinJoints, eW2,
             const fK = new Float32Array(kx * ky * kz);
             for (let k = 0; k < kz; k++)
                 for (let j = 0; j < ky; j++)
-                    for (let i = 0; i < kx; i++) fK[i + kx * (j + ky * k)] = F.f[i * sK + F.nx * (j * sK + F.ny * k * sK)];
+                    for (let i = 0; i < kx; i++)
+                        fK[i + kx * (j + ky * k)] = F.f[i * sK + F.nx * (j * sK + F.ny * k * sK)];
             const b = __huelleAusFeld(hk, fK, kx, ky, kz, F.lo, kp.vox * sK, 0, TIER_FELL.clr * kp.vox, null, null, 0);
             if (!b) throw new Error("FELL: die Kopf-Schalen-Basis (" + kp.name + ") lieferte keine Fläche");
-            const tonK = __tierMusterFarben(fell.kern, fell.P, B.masse, b.attributes.position, () => [[kp.name, 1]], kp.zuWurzel);
+            const tonK = __tierMusterFarben(
+                fell.kern,
+                fell.P,
+                B.masse,
+                b.attributes.position,
+                () => [[kp.name, 1]],
+                kp.zuWurzel
+            );
             const M = new THREE.Matrix4().multiplyMatrices(invRoot, kp.g.matrixWorld);
             b.applyMatrix4(M);
             if (!b.attributes.normal) b.computeVertexNormals();
@@ -6546,7 +6822,14 @@ function __tierFellSchalen(hk, f, nx, ny, nz, lo, vox, zentren, skinJoints, eW2,
                 len[i] = Math.min(l, Math.sqrt(d2));
                 anteil[i] = len[i] / l;
             }
-            kopfLagen.push({ b, ton: tonK, j: skinJoints.indexOf(jn), len, anteil, dw: dK.clone().transformDirection(M) });
+            kopfLagen.push({
+                b,
+                ton: tonK,
+                j: skinJoints.indexOf(jn),
+                len,
+                anteil,
+                dw: dK.clone().transformDirection(M),
+            });
         }
     }
     const NK = TIER_FELL.kopfSchalen;
@@ -6774,14 +7057,19 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
     // Reply-Fänger meldet leer — die Tabellen sind Vertragsfläche).
     const _sTone = kern.SKIN_TONES && kern.SKIN_TONES.karamell;
     const _hTone = kern.HAIR_COLORS && kern.HAIR_COLORS.darkbrown;
-    const skinCol =
-        ov && typeof ov.skinColor === "number" ? ov.skinColor : _sTone ? _sTone.hex >>> 0 : null;
-    const hairCol =
-        ov && typeof ov.hairColor === "number" ? ov.hairColor : _hTone ? _hTone.base >>> 0 : null;
+    const skinCol = ov && typeof ov.skinColor === "number" ? ov.skinColor : _sTone ? _sTone.hex >>> 0 : null;
+    const hairCol = ov && typeof ov.hairColor === "number" ? ov.hairColor : _hTone ? _hTone.base >>> 0 : null;
     if (skinCol === null || hairCol === null)
         throw new Error("koerper-Kern ohne Paletten (SKIN_TONES/HAIR_COLORS) — kein Guss-Ton ohne Gesetz");
     const MK = kern.MATERIAL_KLASSEN || {};
+    // K57: Lippe und Augenhöhle sind Töne der Haut (koerper kopfToene) — ohne Gesetz kein Gesicht (fail-closed)
+    if (typeof kern.kopfToene !== "function" || typeof kern.haarKappe !== "function")
+        throw new Error("koerper-Kern ohne kopfToene/haarKappe — Lippe, Höhle und Haar-Volumen folgen dem Gesetz");
+    const KT = kern.kopfToene(skinCol);
     const KL = Object.assign({}, MK, {
+        lips: Object.assign({}, MK.lips, { c: KT.lips }),
+        socket: Object.assign({}, MK.socket, { c: KT.socket }),
+        haarKappe: { c: hairCol, r: 0.85, seh: "haut" }, // die Kappe gießt in die Kopf-Haut (Vertex-Ton), nie ein eigenes Mesh
         skin: { c: skinCol, r: 0.62, seh: "haut" },
         haut: { c: skinCol, r: 0.58, seh: "haut" }, // die glatte Hüllen-HAUT (V18.463)
         hair: { c: hairCol, r: 0.85, seh: "haar" },
@@ -6824,7 +7112,12 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         gruppe: () => new THREE.Group(),
         kugel: (r, k, sc) => {
             if (k === "cornea") return new THREE.Group(); // transparente Schale entfällt (wie der Stamm-Ofen zuvor)
-            const mesh = new THREE.Mesh(new THREE.SphereGeometry(r, segW, segH), matFuer(k));
+            // K57: Augapfel, Iris, Pupille und Höhle im Augen-Raster (koerper MENSCH_GESTALT.augeRaster), nah
+            const AR =
+                !fein && (k === "eye" || k === "iris" || k === "pupil" || k === "socket")
+                    ? kern.MENSCH_GESTALT.augeRaster
+                    : null;
+            const mesh = new THREE.Mesh(new THREE.SphereGeometry(r, AR ? AR.w : segW, AR ? AR.h : segH), matFuer(k));
             if (sc) mesh.scale.set(sc[0], sc[1], sc[2]);
             return mesh;
         },
@@ -6867,7 +7160,23 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         nodeNameFuerHuelle.set(B.character, "mensch");
         for (const n of namenH) if (B.parts[n]) nodeNameFuerHuelle.set(B.parts[n], n);
     }
-    const skinJoints = ["mensch", "torso", "head", "arm1", "arm-1", "elbow1", "elbow-1", "hand1", "hand-1", "hip1", "hip-1", "knee1", "knee-1", "ankle1", "ankle-1"];
+    const skinJoints = [
+        "mensch",
+        "torso",
+        "head",
+        "arm1",
+        "arm-1",
+        "elbow1",
+        "elbow-1",
+        "hand1",
+        "hand-1",
+        "hip1",
+        "hip-1",
+        "knee1",
+        "knee-1",
+        "ankle1",
+        "ankle-1",
+    ];
     if (typeof kern.surfaceNets === "function" && typeof kern.kleidZonen === "function") {
         B.character.updateMatrixWorld(true);
         const invChar = new THREE.Matrix4().copy(B.character.matrixWorld).invert();
@@ -6937,7 +7246,22 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
             for (let i = 0; i < g.length; i++) f[i] = g[i];
             f = kern.blur3(f, nx, ny, nz, sigma);
             // die Grobstufe liegt auf dem Gesetz wie die des Tiers (__aufsNiveau): ihre Hüllen werfen für die feine
-            const geo = __huelleAusFeld(kern, f, nx, ny, nz, lo, vox, level, clr, zentren, skinJoints, 0.04, undefined, fein);
+            const geo = __huelleAusFeld(
+                kern,
+                f,
+                nx,
+                ny,
+                nz,
+                lo,
+                vox,
+                level,
+                clr,
+                zentren,
+                skinJoints,
+                0.04,
+                undefined,
+                fein
+            );
             if (!geo) return null;
             const mesh = new THREE.Mesh(geo, matFuer(klasse));
             mesh.userData.__skinned = true;
@@ -6985,7 +7309,8 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
                 quellen = [];
             // je Teil-Zentrum sein Teil-Name (der nächste benannte Knoten des Baums) — die Kleid-Extrusion wählt danach
             const teilVon = new Map();
-            for (const nm of Object.keys(B.parts)) if (B.parts[nm] && !teilVon.has(B.parts[nm])) teilVon.set(B.parts[nm], nm);
+            for (const nm of Object.keys(B.parts))
+                if (B.parts[nm] && !teilVon.has(B.parts[nm])) teilVon.set(B.parts[nm], nm);
             B.character.traverse((node) => {
                 if (!node.isMesh || !node.geometry) return;
                 const kl = node.material && node.material.userData && node.material.userData.__klasse;
@@ -7036,7 +7361,12 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
             if (z.dicke > 0 && hautHuelle) {
                 // die Grobstufe wirft für die feine (S3): ihr gröberes Raster zieht die Haut der Glieder nach innen — ihr Stoff liegt
                 // um das halbe Raster-Mehr weiter draußen, damit ihr Umriss den der feinen trägt (gate:kreatur-kosten DECKUNG)
-                const aus = __stoffAusHaut(hautHuelle.geometry, hautTeile, z.teile || [], z.dicke + (fein ? 0.5 * 0.05 * (voxMul - 1) : 0));
+                const aus = __stoffAusHaut(
+                    hautHuelle.geometry,
+                    hautTeile,
+                    z.teile || [],
+                    z.dicke + (fein ? 0.5 * 0.05 * (voxMul - 1) : 0)
+                );
                 if (aus) {
                     const stoff = new THREE.Mesh(aus.geo, matFuer(km));
                     stoff.userData.__skinned = true;
@@ -7112,7 +7442,14 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
                     const a = Math.round((tmpV.x - F.lo[0]) / F.vox),
                         b = Math.round((tmpV.y - F.lo[1]) / F.vox),
                         c = Math.round((tmpV.z - F.lo[2]) / F.vox);
-                    ganz = a >= 0 && b >= 0 && c >= 0 && a < F.nx && b < F.ny && c < F.nz && F.f[a + F.nx * (b + F.ny * c)] > F.level;
+                    ganz =
+                        a >= 0 &&
+                        b >= 0 &&
+                        c >= 0 &&
+                        a < F.nx &&
+                        b < F.ny &&
+                        c < F.nz &&
+                        F.f[a + F.nx * (b + F.ny * c)] > F.level;
                 }
                 if (ganz) {
                     node.userData.__nichtGiessen = true;
@@ -7182,7 +7519,8 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
             const alt = g.index.array;
             const neu = [];
             for (let t = 0; t < alt.length; t += 3)
-                if (!(imStoff[alt[t]] && imStoff[alt[t + 1]] && imStoff[alt[t + 2]])) neu.push(alt[t], alt[t + 1], alt[t + 2]);
+                if (!(imStoff[alt[t]] && imStoff[alt[t + 1]] && imStoff[alt[t + 2]]))
+                    neu.push(alt[t], alt[t + 1], alt[t + 2]);
             const karte = new Int32Array(pa.count).fill(-1);
             let n = 0;
             for (const v of neu) if (karte[v] < 0) karte[v] = n++;
@@ -7191,10 +7529,17 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
                 const at = g.attributes[name];
                 const arr = new at.array.constructor(n * at.itemSize);
                 for (let i = 0; i < pa.count; i++)
-                    if (karte[i] >= 0) for (let k = 0; k < at.itemSize; k++) arr[karte[i] * at.itemSize + k] = at.array[i * at.itemSize + k];
+                    if (karte[i] >= 0)
+                        for (let k = 0; k < at.itemSize; k++)
+                            arr[karte[i] * at.itemSize + k] = at.array[i * at.itemSize + k];
                 ng.setAttribute(name, new THREE.BufferAttribute(arr, at.itemSize));
             }
-            ng.setIndex(new THREE.BufferAttribute(Uint32Array.from(neu, (v) => karte[v]), 1));
+            ng.setIndex(
+                new THREE.BufferAttribute(
+                    Uint32Array.from(neu, (v) => karte[v]),
+                    1
+                )
+            );
             g.dispose();
             hautHuelle.geometry = ng;
         }
@@ -7217,10 +7562,39 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
             return false;
         };
         B.character.updateMatrixWorld(true);
-        const prims = __tierPrims(kopf, kopf, (n) => !unterAuge(n), KH.vox, KH.blend, () => null, ["skin", "lips"], true);
+        // DAS HAAR ALS VOLUMEN (K57): die Kappe der Frisur (koerper haarKappe) gießt mit — über der Haarlinie der Haar-Ton
+        // die Lider gehören zum Auge: das Augen-Raster (die Bake-Fabrik kennt nur die Klasse skin)
+        const AR = kern.MENSCH_GESTALT.augeRaster;
+        for (const n of ["lidTL", "lidBL", "lidTR", "lidBR"]) {
+            const lid = B.parts[n];
+            if (!lid) throw new Error("MENSCH-HAUT: das Lid " + n + " fehlt (fail-closed)");
+            const alt = lid.geometry;
+            lid.geometry = new THREE.SphereGeometry(alt.parameters.radius, AR.w, AR.h);
+            alt.dispose();
+        }
+        const kappen = kern.haarKappe(dials).map((k) => {
+            const m = new THREE.Mesh(new THREE.SphereGeometry(k.r, 8, 6), matFuer("haarKappe"));
+            m.position.set(k.c[0], k.c[1], k.c[2]);
+            m.scale.set(k.sc[0], k.sc[1], k.sc[2]);
+            kopf.add(m);
+            return m;
+        });
+        kopf.updateMatrixWorld(true);
+        const prims = __tierPrims(
+            kopf,
+            kopf,
+            (n) => !unterAuge(n),
+            KH.vox,
+            KH.blend,
+            () => null,
+            ["skin", "lips", "haarKappe"],
+            true
+        );
+        for (const m of kappen) kopf.remove(m);
         // die gemalten Falten (Nasolabial-Stäbe, Philtrum: Klasse shadow) stünden als Stäbe auf der glatten Haut — sie fallen
         kopf.traverse((n) => {
-            if (n.isMesh && n.material.userData.__klasse === "shadow" && !unterAuge(n)) n.userData.__nichtGiessen = true;
+            if (n.isMesh && n.material.userData.__klasse === "shadow" && !unterAuge(n))
+                n.userData.__nichtGiessen = true;
         });
         if (prims.length < 2) throw new Error("MENSCH-HAUT: der Kopf trägt keine Haut-Primitive");
         const Fk = __tierFeld(prims, KH.vox, KH.blend);
@@ -7271,7 +7645,16 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         for (const hn of ["hand1", "hand-1"]) {
             const hand = B.parts[hn];
             if (!hand) continue;
-            const hp = __tierPrims(hand, hand, () => true, HH.vox, HH.blend, () => null, ["skin"], true);
+            const hp = __tierPrims(
+                hand,
+                hand,
+                () => true,
+                HH.vox,
+                HH.blend,
+                () => null,
+                ["skin"],
+                true
+            );
             if (hp.length < 2) throw new Error("MENSCH-HAUT: die Hand trägt keine Haut-Primitive");
             const Fh = __tierFeld(hp, HH.vox, HH.blend);
             const hg = __huelleAusFeld(kern, Fh.f, Fh.nx, Fh.ny, Fh.nz, Fh.lo, HH.vox, 0, 0, null, null, 0);
@@ -7340,7 +7723,8 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
     // tris IST das Band). Was nicht Hülle ist (Augen, Lider, Haar), steht fest; jede Hülle (Haut, Kleid, Schuh, Kopf- und
     // Hand-Haut) kollabiert im SELBEN Anteil, bis die Stufe die Zeile trägt. Ohne Zeile kein Mensch (fail-closed).
     {
-        const zeilen = kern.PORTAL_RENDER_CONFIG && kern.PORTAL_RENDER_CONFIG.lod && kern.PORTAL_RENDER_CONFIG.lod.budget;
+        const zeilen =
+            kern.PORTAL_RENDER_CONFIG && kern.PORTAL_RENDER_CONFIG.lod && kern.PORTAL_RENDER_CONFIG.lod.budget;
         const zeile = zeilen && zeilen.koerper && zeilen.koerper[fein ? 1 : 0];
         const ziel = zeile ? (Number.isInteger(zeile.band) ? zeile.band : zeile.tris) : null;
         if (!(ziel > 0)) throw new Error("MENSCH-GUSS: die Budget-Zeile der Stufe fehlt (koerper-core budget)");
@@ -7357,7 +7741,8 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
             } else festD += d;
         });
         const anteil = huelleD > 0 ? (ziel - festD) / huelleD : 1;
-        if (!(anteil > 0)) throw new Error(`MENSCH-GUSS: die festen Teile (${festD} Dreiecke) tragen die Zeile ${ziel} allein`);
+        if (!(anteil > 0))
+            throw new Error(`MENSCH-GUSS: die festen Teile (${festD} Dreiecke) tragen die Zeile ${ziel} allein`);
         if (anteil < 1)
             for (const h of huellen) {
                 const alt = h.geometry;
