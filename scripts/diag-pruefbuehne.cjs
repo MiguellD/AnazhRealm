@@ -320,7 +320,13 @@ async function s0Probe(page, station, schein) {
                 r._applyDayNightToScene();
             };
             uhr(0);
-            const y0 = r.getTerrainHeightAt(st.x, st.z);
+            // der Mensch steht, wo die Welt ihn ankommen lässt: trägt die Station die Genesis-Plattform (K52: die Scheibe liegt
+            // auf dem Grund), steht er auf ihr, nie in ihrem Stein (die Kapsel schob ihn 1,45 m aus dem Quarz-Kern)
+            const pl0 = r._genesisPlattform();
+            const dach0 = ((pl0 && pl0.blockerAABBs) || [])
+                .filter((b) => st.x >= b.minX && st.x <= b.maxX && st.z >= b.minZ && st.z <= b.maxZ)
+                .reduce((m, b) => Math.max(m, b.topY), -Infinity);
+            const y0 = Math.max(r.getTerrainHeightAt(st.x, st.z), dach0);
             s.playerMesh.position.set(st.x, y0 + 1, st.z);
             const vor = new Set(s.architectures || []);
             r.dslRun(["spawn_studio", "feuerstelle", ["near_player", 3], 1], { source: "human" });
@@ -877,7 +883,12 @@ async function lichtLauf() {
                         };
                         if (!gestalt) {
                             window.__buehne();
-                            const y0 = r.getTerrainHeightAt(st.x, st.z);
+                            // auf der Genesis-Plattform, wenn die Station sie trägt (K52: die Scheibe liegt auf dem Grund)
+                            const pl0 = r._genesisPlattform();
+                            const dach0 = ((pl0 && pl0.blockerAABBs) || [])
+                                .filter((b) => st.x >= b.minX && st.x <= b.maxX && st.z >= b.minZ && st.z <= b.maxZ)
+                                .reduce((m, b) => Math.max(m, b.topY), -Infinity);
+                            const y0 = Math.max(r.getTerrainHeightAt(st.x, st.z), dach0);
                             s.playerMesh.position.set(st.x, y0 + 1, st.z);
                             const vor = new Set(s.architectures);
                             const pm = s.playerMesh.position;
@@ -948,7 +959,7 @@ async function lichtLauf() {
                     };
                     const feuer = window.__s0Feuer;
                     const f = feuer.position;
-                    const g = r._voxelSurfaceY(f.x, f.z);
+                    const g = f.y - 0.5; // der Boden des Feuers: wo es steht (auf dem Grund oder auf der Genesis-Scheibe, K52)
                     const w = 640;
                     const h = 360;
                     const alt = r._leuchtTakt;

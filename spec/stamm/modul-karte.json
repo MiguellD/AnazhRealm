@@ -199,6 +199,7 @@
   "_bakeRegionFields": "Vegetation",
   "_bakedRegionKey": "Vegetation",
   "_bandOhneZwilling": "Siedlung",
+  "_bauDachUnter": "Feld",
   "_bauFrei": "Siedlung",
   "_bauFreiRund": "Siedlung",
   "_bauModusFuer": "Werkstatt",
