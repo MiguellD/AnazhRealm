@@ -31005,15 +31005,14 @@ async function checkBandLambda5MischwaldSynthese(ctx) {
         // der candidates-Liste (Spawn). KEINE statischen _jung/_alt-Varianten mehr.
         const ref = window.anazhRealm.constructor.SPECIES_TAG_REFERENCE || {};
         out.fourNewSpecies = !!(ref.baum_birke && ref.baum_erle && ref.baum_buche && ref.baum_tanne);
-        // candidates-Liste in _vegetationSampleSpawn trägt die 4 NEUEN, aber NICHT die Varianten.
-        const src = window.__codeOf(r._vegetationSampleSpawn);
-        const candidatesMatch = src.match(/const\s+candidates\s*=\s*\[([\s\S]*?)\]/);
-        const block = candidatesMatch ? candidatesMatch[1] : "";
-        out.candidatesBirke = /["']baum_birke["']/.test(block);
-        out.candidatesErle = /["']baum_erle["']/.test(block);
-        out.candidatesBuche = /["']baum_buche["']/.test(block);
-        out.candidatesTanne = /["']baum_tanne["']/.test(block);
-        out.candidatesNoVariants = !/baum_birke_(jung|alt)/.test(block) && !/baum_erle_(jung|alt)/.test(block);
+        // die Liste der Würfe des Felds (`FELD_WURF`, K10-6: die EINE, die _vegetationSampleSpawn liest) trägt die 4 NEUEN,
+        // aber NICHT die Varianten — gelesen an der Liste, nie am Rumpf-Text (Lehre 6)
+        const liste = r.constructor.FELD_WURF || [];
+        out.candidatesBirke = liste.includes("baum_birke");
+        out.candidatesErle = liste.includes("baum_erle");
+        out.candidatesBuche = liste.includes("baum_buche");
+        out.candidatesTanne = liste.includes("baum_tanne");
+        out.candidatesNoVariants = liste.length > 0 && !liste.some((n) => /^baum_(birke|erle)_(jung|alt)$/.test(n));
         // Tag-Neutralität: Birke hat dieselbe kanonische Laub-Signatur wie Eiche.
         out.tagNeutral =
             !!(ref.baum_eiche && ref.baum_birke) &&
@@ -31838,13 +31837,12 @@ async function checkBandWHWald(ctx) {
         // (2) die Bäume treten im Affinitäts-Wettstreit (candidates) NUR als kanonische Art an — keine
         // statische _jung/_alt/_breit-Variante im Pool; die Gestalt entsteht NACH dem Sieg.
         const src = window.__codeOf(r._vegetationSampleSpawn);
-        const candidatesMatch = src.match(/const\s+candidates\s*=\s*\[([\s\S]*?)\]/);
-        const candidatesBlock = candidatesMatch ? candidatesMatch[1] : "";
+        // (die Liste der Würfe des Felds, `FELD_WURF` — K10-6: gelesen an der Liste, nie am Rumpf-Text)
+        const feldWurf = window.anazhRealm.constructor.FELD_WURF || [];
         out.notInCandidates =
-            /["']baum_eiche["']/.test(candidatesBlock) &&
-            /["']baum_kiefer["']/.test(candidatesBlock) &&
-            !/baum_eiche_(breit|jung|alt)/.test(candidatesBlock) &&
-            !/baum_kiefer_schlank/.test(candidatesBlock);
+            feldWurf.includes("baum_eiche") &&
+            feldWurf.includes("baum_kiefer") &&
+            !feldWurf.some((n) => /^baum_eiche_(breit|jung|alt)$|^baum_kiefer_schlank$/.test(n));
         // Der Baum-Zweig delegiert aus `_vegetationSampleSpawn` an `_forestPlantChunk` (EINE Baum-Quelle) →
         // die Beweise lesen den Wald-Generator: die kanonische Art tritt an, die Variante entsteht NACH der
         // Nischen-Entscheidung — keine statische _jung/_alt-Variante im Pool NOCH im Generator.
@@ -36195,8 +36193,7 @@ async function checkBandV18215AtemberaubenderWald(ctx) {
 
         // ─── (W9) W1: baum_totholz ist aus TREE_NAMES + candidates GEFALLEN ───
         // Totholz zeichnete nur die Streu (belaubte Alias-Eiche); die Grammatik-Art fiel 05.10. mit.
-        const spawnSrc = window.__codeOf(r._vegetationSampleSpawn);
-        out.candidatesIncludeTotholz = /["']baum_totholz["']/.test(spawnSrc);
+        out.candidatesIncludeTotholz = (window.anazhRealm.constructor.FELD_WURF || []).includes("baum_totholz");
 
         return out;
     });
@@ -36359,7 +36356,7 @@ async function checkBandV18216KarstUndUnderstory(ctx) {
 
         // ─── (E) Source: candidates + TREE_NAMES + Bush-Sub-Spawn ─────
         const spawnSrc = window.__codeOf(r._vegetationSampleSpawn);
-        out.candidatesHasKarst = /["']baum_karst["']/.test(spawnSrc);
+        out.candidatesHasKarst = (A.FELD_WURF || []).includes("baum_karst"); // die Liste der Würfe des Felds (K10-6)
         out.treeNamesHasKarst = /TREE_NAMES[\s\S]{0,400}["']baum_karst["']/.test(spawnSrc);
         // Bush-Sub-Spawn Block: das BUSH_RATE-Konstrukt + "farn_busch"/"busch_hazel"/"blume_gross"
         out.bushSubSpawn =

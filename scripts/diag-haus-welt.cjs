@@ -119,7 +119,7 @@ const BASIS = {
     // EIN BAU OHNE HAUS-ZEILE TRÄGT KEINEN GRUNDRISS (K52): Tor, Esse, Brunnen, Damm — die Natur wirft in ihn, nichts räumt
     baugrund: [["if (!(e.affordances && e.affordances.moveable) && !this._istNatur(e)) {", "if (false) {"]],
     // DIE WAND KENNT DEN WEG NICHT (K52): Weg, Platz und Acker eines Dorfs urteilen nur über die Wiese
-    weg: [['return this._aufWeg(x, z, rand) ? "weg" : false;', "return false;"]],
+    weg: [['return this._aufWeg(x, z, rand, ohne && ohne._trittBox) ? "weg" : false;', "return false;"]],
     // DAS WERK IM STEIN (K52): der Satz setzt seine Werke auf den Boden des Gesetzes, nie auf den Bau, der dort trägt
     dach: [["? this._bauDachUnter(x, z, sy) + 0.5 : pos.y;", "? sy + 0.5 : pos.y;"]],
     // eine Quelle geht an der Wand vorbei: die Wald-Schlange setzt ihre Würfe direkt
@@ -421,7 +421,8 @@ async function proben(phasen) {
         }
     }
     // W7 BAU IM BAU: Grundriss (Raster 5 × 5) und Tür-Vorplatz (1,2 m vor der Front, 3 × 2) jedes Dorf-Hauses gegen die
-    // Boxen jedes Baus, der vor dem Dorf stand und keine Natur ist — eine Box zählt über dem Boden des Hauses (+ Stufe)
+    // Boxen jedes Baus, der vor dem Dorf stand und nicht weicht (Natur und Würfe des Felds weichen, `_weichtDemBau`; das Haus
+    // räumt sie) — eine Box zählt über dem Boden des Hauses (+ Stufe)
     if (P.has("haus")) {
         const STEP = A.PLAYER_STEP_UP;
         const w7 = { haeuser: H.length, imBau: 0, taeter: [] };
@@ -442,7 +443,7 @@ async function proben(phasen) {
                 if (!b.blockerAABBs || !b.position) continue;
                 if (Math.hypot(b.position.x - e.position.x, b.position.z - e.position.z) > 40 + (b._blockerReach || 0))
                     continue;
-                if (r._istNatur(b)) continue;
+                if (r._weichtDemBau(b)) continue; // was weicht, räumt das Haus (`_naturRaeumen`)
                 let n = 0;
                 for (const q of pkt)
                     if (b.blockerAABBs.some((bx) => bx.topY > boden + STEP && r._boxAbstand2(bx, q.x, q.z) === 0)) n++;
@@ -498,7 +499,7 @@ async function proben(phasen) {
                         30 + (b._blockerReach || 0)
                     )
                         continue;
-                    if (r._istNatur(b)) continue;
+                    if (r._weichtDemBau(b)) continue;
                     const boden = e.position.y - 0.5;
                     if (
                         b.blockerAABBs.some(
@@ -524,6 +525,8 @@ async function proben(phasen) {
         const pr = r._foundryPresetForEntry(e);
         return !!(pr && Object.prototype.hasOwnProperty.call(PHYTO, pr));
     };
+    // was dem Bau weicht: die Natur und jeder Wurf des Felds (`FELD_WURF` — die Feuerstelle des Glut-Felds, K10-6)
+    const weichtDemBau = (e) => istNatur(e) || (!!e && A.FELD_WURF.includes(e.type));
     const imGrundrissVon = (liste, x, z) => {
         for (const hs of liste) {
             const lx = lokal(hs, x, z);
@@ -537,7 +540,7 @@ async function proben(phasen) {
         let natur = 0;
         const taeter = [];
         for (const e of s.architectures) {
-            if (!istNatur(e)) continue;
+            if (!weichtDemBau(e)) continue;
             natur++;
             const hs = imGrundrissVon(liste, e.position.x, e.position.z);
             if (hs) {
@@ -886,7 +889,24 @@ async function proben(phasen) {
     if (P.has("w4")) {
         stell(dorfMitte.x, (r.getTerrainHeightAt(dorfMitte.x, dorfMitte.z) || start.y) + 3, dorfMitte.z);
         await pumpe(200);
+        // DER WURF IN DEN GRUNDRISS (K10-6): je Haus ein Wurf jeder Art des Felds in seine Mitte, durch die EINE Natur-Wand
+        // (`_naturSetzen`) — keiner steht. Ohne ihn hing W4 an der Natur, die zufällig im Grundriss wuchs (der Selbsttest
+        // „grundriss" sah 1 Busch, nach dem Umzug des Dorfs keinen: blind).
+        const wurf = [];
+        for (const hs of H) {
+            const f = hs.fundament;
+            const m = welt(hs, f.ox || 0, f.oz || 0);
+            for (const t of A.FELD_WURF) {
+                const e = r._naturSetzen(t, { x: m.x, y: (r.getTerrainHeightAt(m.x, m.z) || 0) + 0.5, z: m.z }, {
+                    silent: true,
+                    seed: 4711,
+                });
+                if (e) wurf.push(e);
+            }
+        }
         o.w4 = naturImHaus(H);
+        o.w4.wurf = H.length * A.FELD_WURF.length;
+        for (const e of wurf) if (s.architectures.includes(e)) r.removeArchitecture(e);
         // W4 WEG (K52): keine Natur (Eintrag, lebende Streu-Zelle, Kachel-Pflanze) auf Straße, Feldweg, Platz, Anger oder Acker
         // des Drehbuch-Dorfs — die Formen der Wege-Karte, ihr Abstand hier eigens gerechnet (Kapsel um das Segment, gedrehter
         // Kasten); auf dem Gras-Anger gilt seine Grenze (`sperr`, das Gesetzbuch: kein Baum tiefer als 1 m im Anger)
