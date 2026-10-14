@@ -656,7 +656,11 @@ async function probe(page, welt, wuerfe, evolutionen, schein) {
 // Hülle ≥ 1 km ist die Ferne (das Panorama) und fällt, der Fern-Ring fällt an seinem Stempel (`userData.inventar`
 // "fern-ring", wie `licht-linsen` ihn liest): seit K16 trägt seine Schale 0 die Hülle 803 m (vorher 1 413 m) in zwei Teilen
 // (frei und Naht), die Kilometer-Regel nahm beide in die Nähe — der Schuss übersetzte 13 statt 11 Programme (lokal Schuss
-// 14 → 21 s, auf dem Runner riss die Frist 170 s viermal in Folge). Fremde Szenen (Post, PMREM) und die Lichter bleiben.
+// 14 → 21 s, auf dem Runner riss die Frist 170 s viermal in Folge). Der Portal-Nebel (`userData.inventar` "portal-nebel") fällt
+// an seinem Stempel: ein durchsichtiger Schleier vor dem Tor (kein Boden, kein Werfer, kein Empfänger), dessen Hülle (r 4,7–5,7 m
+// in 7,9–13,4 m) die Kugel streift — er trug das größte Programm des Schusses (139 967 Zeichen Fragment-WGSL von 354 645; auf dem
+// Runner Schuss 84 s neben 7–8 s je Schein ohne Übersetzen, die Frist riss im Schein farbe bei 145–171 s); ohne ihn Luma 0,7105 →
+// 0,7104, Farbton 37,6° gleich (gemessen 14.10.). Fremde Szenen (Post, PMREM) und die Lichter bleiben.
 // Gemessen 12.10. (24 Kerne):
 // die ganze Welt übersetzte im ersten Schuss 54 Programme (1,5 MB Fragment-WGSL, 90–176 s am Rücklesen); auf dem Runner
 // mit 4 Kernen riss so die Protokoll-Grenze von 900 s. Der Feuerkreis liest nur Boden, Feuer, Pool und Ausgabe.
@@ -682,7 +686,7 @@ const S0_NAH_INSTALL = () => {
                 k = o.geometry.boundingSphere;
             }
             if (wurzel !== welt || !k) u = true;
-            else if (o.userData && o.userData.inventar === "fern-ring") u = false;
+            else if (o.userData && (o.userData.inventar === "fern-ring" || o.userData.inventar === "portal-nebel")) u = false;
             else {
                 kugel.copy(k).applyMatrix4(o.matrixWorld);
                 u =
@@ -1012,7 +1016,8 @@ async function lichtLauf() {
                         // der Satz „messung" (K32, scripts/lib/abnahme-urteil.cjs): der Schuss ist ein Mess-Frame der Nacht — sein
                         // Urteil liest den Kreis um das Feuer (kreis, ton) aus den Pixeln; die Belichtungs-Zeile des Beweis-Satzes
                         // (Tag-Bühne, abgesoffen ≤ 60 %) warf hier an der Mitternacht (schwarz 71,9 %, Kreis hell)
-                        for (let i = 0; i < 2; i++) {
+                        // der Schein übersetzt nichts (dieselben Programme, nur Uniform-Werte): EINE Aufnahme mit ihren 32 Warm-Frames
+                        for (let i = 0; i < (schein ? 1 : 2); i++) {
                             r._schattenAlleNeu();
                             auf = await window.__ausgabeAufnahme(w, h, 1, { satz: "messung" });
                         }
