@@ -1434,7 +1434,13 @@ class AnazhRealm_Z07 {
             if (bruch !== null) d.version = -1; // r184 nimmt auf (`_renderBundle`: die Version bricht)
             const leer = P.leer;
             rend._renderBundles(
-                [{ bundleGroup: bg, camera, renderList: { opaque: buerger, transparent: leer, transparentDoublePass: leer } }],
+                [
+                    {
+                        bundleGroup: bg,
+                        camera,
+                        renderList: { opaque: buerger, transparent: leer, transparentDoublePass: leer },
+                    },
+                ],
                 scene,
                 lightsNode
             );
@@ -1523,7 +1529,8 @@ class AnazhRealm_Z07 {
             w.marke.push(AnazhRealm._passBuendelMarke(ro));
             w.gruppen.push(ro.getBindings().map((gr) => be.get(gr).group));
             const sp = [];
-            for (const gr of ro.getBindings()) for (const b of gr.bindings) if (b.isStorageBuffer === true) sp.push(b.attribute);
+            for (const gr of ro.getBindings())
+                for (const b of gr.bindings) if (b.isStorageBuffer === true) sp.push(b.attribute);
             w.speicher.push(sp);
         }
         return w;
