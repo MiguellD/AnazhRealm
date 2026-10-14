@@ -1,0 +1,7 @@
+{
+ "ergebnis": {
+  "frames": 1016,
+  "bewegt": 1015
+ },
+ "ms": 2
+}
