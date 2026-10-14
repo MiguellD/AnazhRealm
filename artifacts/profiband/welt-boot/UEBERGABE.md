@@ -21,6 +21,10 @@ Stand: 14.10. — der nächste Agent setzt hier fort.
 - `erwartet` ist benannt, nie pauschal: boot-foliage-ring (die Linse gibt den Null-Renderer als echten aus → Stoff-Bruch
   `getMaterialNodeClass`), fenster-wechsel (Selbsttest ES MUSS „Destroyed texture … szene:tiefenabbild" ernten).
 
+- KOSTEN: ein Budget-Bruch (`[budget] …` aus foundry-bruecke, `BUDGET-BRUCH` im Stamm) ist ein Kosten-Urteil mit eigenem
+  Richter (gate:asset-contract, regler-wirkt) — der Sammler druckt ihn beim Namen, färbt aber nicht jede Linse. Befund der
+  Zweig-CI 38578219795: gotisch L1/L2 (ankunft, blocker-netz) und kathedrale L3 (regler-wirkt Selbsttest) brechen ihr Budget.
+
 ## Urteil vorher = nachher (ABAB, Basis-Worktree gegen Zweig, gleiche Ports, Verdikt-Zeilen mit maskierten Zahlen + Exit)
 
 - webgl: boot-foliage-ring\* · foundry-memory · weather-vector · v1-resolve · portal-boot · no-second-treebuilder ·

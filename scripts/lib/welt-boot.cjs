@@ -87,6 +87,7 @@ function browserOptionen({ art, frist, zusatz = [], headless = true, viewport, p
 // DER FEHLER-SAMMLER: eine Liste je Prozess, die Wache am Prozess-Ende. Harmlos ist nur, was der Page-Error-Wächter seit
 // V18.359 als harmlos kennt (Netz/Favicon/save-server im headless-Kontext) und was die Linse als `erwartet` nennt.
 const HARMLOS = /favicon|net::ERR|Failed to load resource|save-server|localhost:|127\.0\.0\.1:\d+\/api/i;
+const KOSTEN = /^\[budget\] |BUDGET-BRUCH /;
 const sammlung = { fehler: [], erwartet: null, wache: false };
 
 function melde(art, text) {
@@ -115,7 +116,11 @@ function fehlerSammler(page) {
     page.on("console", (m) => {
         if (m.type() !== "error") return;
         const t = m.text();
-        if (!HARMLOS.test(t)) melde("console.error", t);
+        if (HARMLOS.test(t)) return;
+        // Ein Budget-Bruch ist ein KOSTEN-Urteil mit eigenem Richter (gate:asset-contract je Fall, regler-wirkt je Regler),
+        // kein Absturz der Welt: er steht laut im Lauf, beim Namen und mit seinem Richter, und färbt nur seinen Richter.
+        if (KOSTEN.test(t)) return console.log(`[welt-boot] KOSTEN (Richter gate:asset-contract): ${t.slice(0, 300)}`);
+        melde("console.error", t);
     });
     return page;
 }
