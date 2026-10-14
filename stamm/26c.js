@@ -1267,7 +1267,7 @@ AnazhRealm.ANALOG_NAH_M = 64;
 AnazhRealm.KREATUR_NAH_MESH = Object.freeze({ ein: AnazhRealm.ANALOG_NAH_M, aus: AnazhRealm.ANALOG_NAH_M + 10 });
 // Das Fell-Bildschirm-Gesetz: mittlere Strähnen-Breite in Vorlagen-Einheiten (der Bäcker legt 2·t·1.8 an der
 // Wurzel, 2·t·0.65 an der Spitze, t ≈ 0.006–0.008; die Welt skaliert mit dem Guss-Faktor f ≈ 0,1) · Mindest-Breite
-// in Pixeln · Hysterese-Band. pxMin GEMESSEN (Fell-Linse `diag-fell-blick`, 720p, fov 75°): die Strähnen ändern
+// in Pixeln · Hysterese-Band. pxMin GEMESSEN (Fell-Linse diag-fell-blick, git-Archiv, 720p, fov 75°): die Strähnen ändern
 // 23 592 px bei 1,5 m · 8 421 bei 3 m · 1 808 bei 6 m · 0 ab 10 m — viele Strähnen unter einem Pixel wirken als
 // Dichte, bis ~0,1 px je Strähne (≈ 8 m bei 720p, ≈ 12 m bei 1080p).
 AnazhRealm.FELL_BILDSCHIRM = Object.freeze({ breiteM: 0.018, pxMin: 0.1, hyst: 0.1 });

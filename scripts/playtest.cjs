@@ -28003,7 +28003,7 @@ async function checkBandWaldbodenKaskade(ctx) {
 
 // A3 — FERNE BINNENGEWÄSSER: Heimat-Region (±1024) unberührt; jenseits liefern lazy Kacheln (2048 m,
 // f(seed, Koordinate) — peer-identisch, egal wann berechnet) Seen · Flüsse · Erosion; eine
-// mitwandernde Region bräche den Determinismus. Voller Beweis: `scripts/diag-ferne-seen.cjs`.
+// mitwandernde Region bräche den Determinismus. Voller Beweis: die Sonde diag-ferne-seen (git-Archiv).
 async function checkBandV18132FerneSeen(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, async () => {
@@ -40366,7 +40366,7 @@ async function checkBandWelle6XAudit(ctx) {
         // `_canSoulJumpFromSlope` liest `statTags`, in die computePlayerStats NACH dem Soul-Clamp die
         // aktiven Boosts addiert (Emotion/Welt-Resonanz — transienter Konfounder) → Boosts leeren. Dann
         // gilt für jede Wund-Intensität w∈[0,1]: Drache-score = 0.4−0.05w (< 0.4), Phönix-score =
-        // 0.475−0.05w (≥ 0.4) — der Wund-Term verschiebt beide gleich. Linse: scripts/diag-soul-jump.cjs.
+        // 0.475−0.05w (≥ 0.4) — der Wund-Term verschiebt beide gleich. Linse: diag-soul-jump (git-Archiv).
         if (r.state.player) r.state.player.boosts = [];
         // ALTLASTEN-NULL: eine LEICHTE lebendige Seele (federn-Fixture,
         // lebendig≈0.98/dichte≈0.29 → score 0.60) klettert; der WOLF-Körper
@@ -45916,7 +45916,7 @@ async function checkBandTranslatorAndUntrusted(ctx) {
 
     // ### V8.71 — W15 Phase 1: der Auto-Vendor-Pfad ###
     // _vendorPostBundle (der einzige Netz-Schritt) wird gestubbt —
-    // der echte save-server-Round-Trip lebt in smoke-vendor.cjs.
+    // der echte save-server-Round-Trip lebt in der Sonde smoke-vendor (git-Archiv).
     const vendorResults = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         const out = {};
@@ -46098,7 +46098,7 @@ async function checkBandTranslatorAndUntrusted(ctx) {
 
     // ### V8.72 — W15 Phase 2: der GitHub-Fetch ###
     // _vendorPostRepo (der Netz-Schritt) wird gestubbt; der echte GitHub-Round-Trip lebt offline +
-    // deterministisch in smoke-vendor.cjs (lokales Fake-GitHub).
+    // deterministisch in der Sonde smoke-vendor (git-Archiv) (lokales Fake-GitHub).
     const vendor2Results = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         const out = {};
@@ -46475,7 +46475,7 @@ async function checkBandG8R2SovereignWall(ctx) {
 
 // G8 R3 — Lokalitäts-Härtung (M1): die Sandbox-Grenze als Invariante eingefroren
 // (sandboxed → null-origin · vendored → unforgeable sandboxed · kein Welt-Pfad
-// zum innersten Ring). Die ECHTE Isolation beweist smoke-sandbox.cjs im Browser.
+// zum innersten Ring). Die ECHTE Isolation beweist die Sonde smoke-sandbox (git-Archiv) im Browser.
 async function checkBandG8R3Locality(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -46689,7 +46689,7 @@ async function checkBandG8R5LivingImmune(ctx) {
 
 // DAS HOCH-BECKEN (Stau-Spiegel): ein Spieler-Werk (Fill/solide Architektur) öffnet die Spiegel-Kappe
 // LOKAL per bounded Spill-Scan (Priority-Flood); gepinnte Quell-Spalten tropfen den Pool voll. Hier
-// nur PURE Beweise; der Welt-Beweis am echten Fluss ist `scripts/diag-stau.cjs`.
+// nur PURE Beweise; der Welt-Beweis am echten Fluss ist die Sonde diag-stau (git-Archiv).
 async function checkBandV18129HochBecken(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -46793,7 +46793,7 @@ async function checkBandV18129HochBecken(ctx) {
 // SCHATTEN_FERN_FAKTOR. Jede Kaskade zeichnet jeden Werfer ihrer Box — die Wand: über die ganze geregelte
 // Reichweite (MIN..MAX) und die User-Decke (400 m) trägt JEDE Kaskade ≥ 10 % der Tiefe (kein Streifen, der
 // einen vollen Werfer-Durchgang kostet; V18.130–509 klemmte die dritte auf einen 5-%-Streifen). Die CSM-Init
-// ist LAZY (erster echter Material-Build) → hier Konstruktion + Vertrag; Look + Maps misst `diag-csm.cjs`.
+// ist LAZY (erster echter Material-Build) → hier Konstruktion + Vertrag; Look + Maps misst die Sonde diag-csm (git-Archiv).
 async function checkBandV18130CsmShadow(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {

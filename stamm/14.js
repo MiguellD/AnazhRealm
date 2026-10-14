@@ -91,7 +91,7 @@ class AnazhRealm_Z14 {
 
     // Lokalitäts-Beweis (mutiert nichts): sandboxed nie allow-same-origin, `vendored` unforgeable
     // sandboxed (ein Manifest-Eintrag kann es nicht aufweichen), kein Welt-Pfad zum innersten Ring (R0).
-    // Die echte null-origin-Isolation beweist scripts/smoke-sandbox.cjs im Browser.
+    // Die echte null-origin-Isolation beweist die Sonde smoke-sandbox (git-Archiv) im Browser.
     _localityAudit() {
         const out = { ok: true, facts: {} };
         // (1) sandboxed → allow-scripts ALLEIN (kein same-origin).
