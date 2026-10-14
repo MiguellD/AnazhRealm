@@ -111,6 +111,15 @@ function check(name, ok, detail) {
                 r._ortSame = null; // das EINE Gedächtnis der Gestalt des Orts (`_ortGestaltSame`)
                 return proben.map((e) => r._foundryGestaltFor(e, "eiche"));
             };
+            // der Eintrag einer Eiche am Ort (x, z) mit Same s im Gedächtnis — es liegt in Eimern (`ORT_SAME_EIMER`, K51-5)
+            const ortEintrag = (x, z, s) => {
+                const M = r._ortSame;
+                const eimer = M && M.get(Math.floor(x / AR.ORT_SAME_EIMER) + "," + Math.floor(z / AR.ORT_SAME_EIMER));
+                if (!eimer) return null;
+                for (const k of eimer.keys())
+                    if (k.startsWith(x + "," + z + ",") && k.endsWith("," + s + ",eiche")) return { eimer, k };
+                return null;
+            };
             // die Probe von F an einer Kachel: eine Eiche im Bestand mit genau EINEM stehenden Nachbarn (Abstand > 4 m)
             const wahlF = (proben) => {
                 frischAlle(proben);
@@ -177,12 +186,7 @@ function check(name, ok, detail) {
                 try {
                     vorWelt = {
                         gestalt: r._foundryGestaltFor(e0, "eiche"),
-                        gemerkt: !!(
-                            r._ortSame &&
-                            [...r._ortSame.keys()].some(
-                                (k) => k.startsWith(KX + "," + KZ + ",") && k.endsWith(",7,eiche")
-                            )
-                        ),
+                        gemerkt: !!ortEintrag(KX, KZ, 7),
                     };
                 } catch (err) {
                     vorWelt = { fehler: String((err && err.message) || err).split("\n")[0] };
@@ -192,13 +196,10 @@ function check(name, ok, detail) {
                 // Selbsttest: ein Gedächtnis am gültigen Stand mit gekippter Gestalt muss beim Namen feuern
                 const p0 = proben[0];
                 const g0 = r._foundryGestaltFor(p0, "eiche");
-                const k0 = [...(r._ortSame ? r._ortSame.keys() : [])].find(
-                    (k) =>
-                        k.startsWith(p0.position.x + "," + p0.position.z + ",") && k.endsWith("," + p0.seed + ",eiche")
-                );
+                const k0 = ortEintrag(p0.position.x, p0.position.z, p0.seed);
                 if (k0)
-                    r._ortSame.set(
-                        k0,
+                    k0.eimer.set(
+                        k0.k,
                         r._foundryGestaltSame(p0.seed, "eiche", () => g0 !== V)
                     );
                 const sAlt = r._foundryGestaltFor(p0, "eiche");
@@ -233,12 +234,16 @@ function check(name, ok, detail) {
                 // Selbsttest: dasselbe Haus OHNE Grundriss hält den Wurf nicht — die Eiche bleibt Bestand (die Linse
                 // unterscheidet: frei macht nur der Grundriss). Seit K52 trägt jeder Bau einen (die Hülle seiner Blocker-Boxen):
                 // die Probe nimmt ihm Fundament, Hülle und Boxen, und der Stand der Grundrisse fällt
-                const ohne = r.spawnArchitecture("haus_alemannisch", { x: o.x, y: o.surfaceY, z: o.z }, { silent: true });
+                const ohne = r.spawnArchitecture(
+                    "haus_alemannisch",
+                    { x: o.x, y: o.surfaceY, z: o.z },
+                    { silent: true }
+                );
                 if (ohne) {
                     ohne.fundament = undefined;
                     ohne._hausHuelle = undefined;
                     ohne.blockerAABBs = null;
-                    r._grundrissGitter = null;
+                    r._grundrissFaellt();
                 }
                 res.E.F.selbst = !!ohne && r._foundryGestaltFor(e, "eiche") !== V;
                 if (ohne) r.removeArchitecture(ohne);

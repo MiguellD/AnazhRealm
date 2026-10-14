@@ -432,6 +432,23 @@ function standUrteil(b) {
         runde(X.phase, "mit den Tätern");
     }
     for (const x of schreiberUrteil(b.schreiber)) v.push(x);
+    // (U) STUFE (K51-5): ein reiner Stufen-Wechsel (dieselbe Fläche im Gesetz, der Morph trägt sie) regt nur die Boden-Karte —
+    // nie Stufen-Wahl, Cull, Streu, Ring oder Saum, nie Wald-Setzung oder Sichthöhen (vorher je Wechsel ein voller Gang)
+    const U = b.stufe;
+    if (!U) v.push("LEER: keine Stufen-Phase");
+    else if (!(U.wechsel > 0)) v.push("STUFE: kein Stufen-Wechsel geschah — die Probe ist stumpf");
+    else {
+        const fremd = Object.entries(U.takte || {}).filter(([n, x]) => x > 0 && n !== "nahWiese" && n !== "nahStreu");
+        if (fremd.length)
+            v.push(
+                `STUFE: ${U.wechsel} Stufen-Wechsel ohne Form-Änderung wecken ${fremd.map(([n, x]) => `${n} (${x} Einheiten)`).join(", ")}`
+            );
+        for (const m of ["_lodTreeVisHeight", "_forestStehtFrei", "_forestCellDarts"])
+            if ((U.rufe || {})[m] > 0)
+                v.push(
+                    `STUFE: ${U.wechsel} Stufen-Wechsel ohne Form-Änderung rufen ${m} ${U.rufe[m]}× (Wald-Setzung, Sichthöhen)`
+                );
+    }
     const T = b.strom;
     if (!T) v.push("LEER: keine Strom-Phase");
     else if (!T.spielerChunk)

@@ -981,20 +981,26 @@ class AnazhRealm_Z06a {
             if (i < 0 || j < 0 || i + 1 >= M || j + 1 >= M) continue;
             const o = i + j * M;
             const g = aus ? E.gruenMap : null;
-            if (m[o] > a) {
-                a = m[o];
+            // DER GEOMORPH DER STUFE (K51-2): im Übergangs-Band zeichnet der Stoff zwischen der Karte der Lage und der des Ziels
+            const st = this._bodenStufeMisch(E, ax, az, x, z);
+            const ka = st ? st(m, o) : m[o],
+                kb = st ? st(m, o + 1) : m[o + 1],
+                kc = st ? st(m, o + M) : m[o + M],
+                kd = st ? st(m, o + M + 1) : m[o + M + 1];
+            if (ka > a) {
+                a = ka;
                 ga = g ? g[o] : 0;
             }
-            if (m[o + 1] > b) {
-                b = m[o + 1];
+            if (kb > b) {
+                b = kb;
                 gb = g ? g[o + 1] : 0;
             }
-            if (m[o + M] > c) {
-                c = m[o + M];
+            if (kc > c) {
+                c = kc;
                 gc = g ? g[o + M] : 0;
             }
-            if (m[o + M + 1] > d) {
-                d = m[o + M + 1];
+            if (kd > d) {
+                d = kd;
                 gd = g ? g[o + M + 1] : 0;
             }
         }
@@ -1025,10 +1031,11 @@ class AnazhRealm_Z06a {
         if (i < 0 || j < 0 || i + 1 >= M || j + 1 >= M) return null;
         const m = E.surfMap;
         const o = i + j * M;
-        const a = m[o],
-            b = m[o + 1],
-            c = m[o + M],
-            d = m[o + M + 1];
+        const st = this._bodenStufeMisch(E, ax, az, x, z);
+        const a = st ? st(m, o) : m[o],
+            b = st ? st(m, o + 1) : m[o + 1],
+            c = st ? st(m, o + M) : m[o + M],
+            d = st ? st(m, o + M + 1) : m[o + M + 1];
         if (!(a > -Infinity && b > -Infinity && c > -Infinity && d > -Infinity)) return null;
         const fu = x / h - gx;
         const fv = z / h - gz;
@@ -1039,6 +1046,32 @@ class AnazhRealm_Z06a {
                 ? ((g[o] * (1 - fu) + g[o + 1] * fu) * (1 - fv) + (g[o + M] * (1 - fu) + g[o + M + 1] * fu) * fv) / 255
                 : 0,
         };
+    }
+    // DIE KARTE DES ZIELS (K51-2): die Boden-Karte des Chunks aus seinen Morph-Zielen (`aMorphTarget` — das Netz der nächst
+    // gröberen Stufe, an der Naht der gröbere Nachbar), lazy beim ersten Leser im Übergangs-Band, neu nach jedem Naht-Morph
+    // (`_applyCrossLodGeomorph` leert sie). Der Stoff zeichnet Lage + (Ziel − Lage) · Faktor; Naht + Stufe − Naht · Stufe ist in
+    // der Stufe linear: die Karte der Lage (`surfMap`, Naht eingerechnet) und die des Ziels, gemischt mit dem Stufen-Gewicht.
+    // Liefert die Misch-Funktion (Karte, Index) → Höhe am Punkt (x, z), oder null, wo das Gewicht 0 ist.
+    _bodenStufeMisch(E, ax, az, x, z) {
+        if (!E || !E.mesh || !E.mesh.geometry || (E.lod || 0) >= 3) return null;
+        const U = this.state.atmoUniforms;
+        const w = this._stufeGewicht(E.lod || 0, x, z) * (U && U.geomorph ? U.geomorph.value : 1);
+        if (!(w > 0)) return null;
+        if (!E.surfMapZiel) {
+            const g = E.mesh.geometry;
+            const k = this._bodenKarteAusMesh(
+                g.attributes.aMorphTarget.array,
+                g.index ? g.index.array : null,
+                g.attributes.color ? g.attributes.color.array : null,
+                ax,
+                az,
+                E.lod || 0
+            );
+            E.surfMapZiel = k && k.hoehe;
+            if (!E.surfMapZiel) return null;
+        }
+        const mz = E.surfMapZiel;
+        return (m, o) => (m[o] > -Infinity && mz[o] > -Infinity ? m[o] + (mz[o] - m[o]) * w : m[o]);
     }
     // DIE KARTEN DES BODEN-LESERS über einem Rechteck (Welt-XZ): jeder Chunk, dessen Karte `_bodenSichtAt` dort liest — der
     // Eigner und, in den ersten zwei Zellen-Schritten des Chunks (so weit reicht der Saum einer Karte herüber), seine unteren
