@@ -1082,7 +1082,7 @@ async function selbsttest() {
         "Spieler gewandert",
         wachenUrteil(
             "profil",
-            wache({ ort: Object.assign({}, wache().ort, { spieler: [-860, -850] }) }),
+            wache({ ort: Object.assign({}, wache().ort, { spieler: [ort.spieler[0] + 40, ort.spieler[1]] }) }),
             wache(),
             ort,
             true

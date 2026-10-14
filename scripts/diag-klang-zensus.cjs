@@ -65,6 +65,7 @@ const http = require("http");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
+const MESS = require("./lib/welt-orte.cjs").messort("wiese"); // der Messort aus spec/profiband/haushalt.json
 
 const root = path.resolve(__dirname, "..");
 // KLANG_WURZEL: eine Überlagerung — liegt eine Datei dort, gewinnt sie (z. B. die Stände eines älteren Commits);
@@ -1346,8 +1347,8 @@ function drucke(zeilen, offline, kostenErg, lab) {
         const phasen = {};
         // Die Orte.
         let s0 = await syn();
-        await page.evaluate(() => window.__klangW.umstellen(-900, -850));
-        const orte = await page.evaluate(() => window.__klangW.orte(-900, -850));
+        await page.evaluate((m) => window.__klangW.umstellen(m.x, m.z), MESS);
+        const orte = await page.evaluate((m) => window.__klangW.orte(m.x, m.z), MESS);
         phasen.anreise = phase(s0, await syn());
         console.log("Orte:", JSON.stringify(orte));
         const daten = {};
@@ -1370,7 +1371,7 @@ function drucke(zeilen, offline, kostenErg, lab) {
             }
         }
         s0 = await syn();
-        await page.evaluate(() => window.__klangW.umstellen(-900, -850));
+        await page.evaluate((m) => window.__klangW.umstellen(m.x, m.z), MESS);
         const kostenErg = await kosten(page);
         phasen.kosten = phase(s0, await syn());
         const ereig = await page.evaluate(() => window.__klangW.ereignisse());
@@ -1483,7 +1484,7 @@ function drucke(zeilen, offline, kostenErg, lab) {
                 if (ok3) fehl.push("S3: das Seeufer ohne Wasser hält das SOLL (die Linse ist blind)");
             } else fehl.push("S3: kein Seeufer gefunden");
             // S4: ein Glut-Umlauf über alle Bauten.
-            await page.evaluate(() => window.__klangW.umstellen(-900, -850));
+            await page.evaluate((m) => window.__klangW.umstellen(m.x, m.z), MESS);
             const k4 = await kosten(page, { alleBauten: true });
             if (!k4.wachsen.some((t) => /^bauten/.test(t))) fehl.push("S4: der Voll-Umlauf über alle Bauten bleibt unbemerkt");
             // S5: ein Ereignis-Zwilling (Glocke aus dem Stamm, direkt an den Ausgang).

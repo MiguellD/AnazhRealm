@@ -36,6 +36,7 @@ const http = require("http");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
+const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
 
 const root = path.resolve(__dirname, "..");
 const argOf = (k, d) => {
@@ -178,6 +179,7 @@ function schlangenGesetz(src) {
         const t = m.text();
         if (t.startsWith("[D]")) console.log("  " + t);
     });
+    await page.evaluateOnNewDocument(WELT_ORTE_INSTALL); // der Messort aus spec/profiband/haushalt.json (`__messWiese`)
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
     const res = await page.evaluate(async () => {
         const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -211,8 +213,7 @@ function schlangenGesetz(src) {
                 await sleep(40);
             }
         };
-        const X = -900,
-            Z = -850;
+        const [X, Z] = window.__messWiese;
         r.state.playerMesh.position.set(X, r._voxelSurfaceY(X, Z) + 1.8, Z);
         await tick(80);
         const pm = r.state.playerMesh.position;

@@ -351,14 +351,15 @@ function selbsttest() {
     const HALT = 0.02,
         DREH = (2 * Math.PI) / 180;
     const proj = (fern) => [1.3, 0, 0, 0, 0, 2.3, 0, 0, 0, 0, -1, -1, 0, 0, -0.2 * fern, 0];
+    const M = require("./lib/welt-orte.cjs").messort("wiese"); // die Kamera am Messort (Weltkoordinaten der Mess-Wiese)
     for (const [name, b, soll] of [
-        ["Atmen ±4 mm", mat(0, -900, 64.004, -850).concat(proj(1)), false],
-        ["Schritt 1,5 cm (über dem halben Halt)", mat(0, -900.015, 64, -850).concat(proj(1)), true],
-        ["Drehung 0,5°", mat(0.5, -900, 64, -850).concat(proj(1)), false],
-        ["Drehung 1,5°", mat(1.5, -900, 64, -850).concat(proj(1)), true],
-        ["Projektion (Fern-Ebene)", mat(0, -900, 64, -850).concat(proj(1.01)), true],
+        ["Atmen ±4 mm", mat(0, M.x, 64.004, M.z).concat(proj(1)), false],
+        ["Schritt 1,5 cm (über dem halben Halt)", mat(0, M.x - 0.015, 64, M.z).concat(proj(1)), true],
+        ["Drehung 0,5°", mat(0.5, M.x, 64, M.z).concat(proj(1)), false],
+        ["Drehung 1,5°", mat(1.5, M.x, 64, M.z).concat(proj(1)), true],
+        ["Projektion (Fern-Ebene)", mat(0, M.x, 64, M.z).concat(proj(1.01)), true],
     ]) {
-        const k = SICHT.sichtKameraBewegt(mat(0, -900, 64, -850).concat(proj(1)), b, HALT, DREH);
+        const k = SICHT.sichtKameraBewegt(mat(0, M.x, 64, M.z).concat(proj(1)), b, HALT, DREH);
         if (k !== soll) fehler.push(`Kamera „${name}": ${k} statt ${soll}`);
         console.log(`  ${k === soll ? "✅" : "❌"} Selbsttest Kamera „${name}" → ${k ? "bewegt" : "steht"}`);
     }
@@ -369,14 +370,14 @@ function selbsttest() {
     else {
         const bl = (ex, ez, werte) => ({ ex, ez, werte: werte || [1, 1, 14, 20, 60, 6, 4] });
         for (const [name, b, soll] of [
-            ["Atmen ±1 mm quer", bl(-900.001, -850), false],
-            ["Atmen 9 mm (unter dem halben Halt)", bl(-900.009, -850), false],
-            ["Schritt 1,5 cm", bl(-900.015, -850), true],
-            ["Perf-Streck neu", bl(-900, -850, [1, 1.1, 14, 20, 60, 6, 4]), true],
-            ["Kante des Blend-Gesetzes neu", bl(-900, -850, [1, 1, 14, 22, 60, 6, 4]), true],
-            ["Maske aus", bl(-900, -850, [0, 1, 14, 20, 60, 6, 4]), true],
+            ["Atmen ±1 mm quer", bl(M.x - 0.001, M.z), false],
+            ["Atmen 9 mm (unter dem halben Halt)", bl(M.x - 0.009, M.z), false],
+            ["Schritt 1,5 cm", bl(M.x - 0.015, M.z), true],
+            ["Perf-Streck neu", bl(M.x, M.z, [1, 1.1, 14, 20, 60, 6, 4]), true],
+            ["Kante des Blend-Gesetzes neu", bl(M.x, M.z, [1, 1, 14, 22, 60, 6, 4]), true],
+            ["Maske aus", bl(M.x, M.z, [0, 1, 14, 20, 60, 6, 4]), true],
         ]) {
-            const k = SICHT.sichtBlendeBewegt(bl(-900, -850), b, 0.02);
+            const k = SICHT.sichtBlendeBewegt(bl(M.x, M.z), b, 0.02);
             if (k !== soll) fehler.push(`Blende „${name}": ${k} statt ${soll}`);
             console.log(`  ${k === soll ? "✅" : "❌"} Selbsttest Blende „${name}" → ${k ? "bewegt" : "steht"}`);
         }

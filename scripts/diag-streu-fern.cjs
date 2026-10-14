@@ -44,6 +44,7 @@
 //   node scripts/diag-streu-fern.cjs        (Port: STREU_FERN_PORT)
 "use strict";
 const puppeteer = require("puppeteer");
+const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
@@ -90,6 +91,7 @@ function check(name, ok, detail) {
     });
     const pageErrors = [];
     page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
+    await page.evaluateOnNewDocument(WELT_ORTE_INSTALL); // der Messort aus spec/profiband/haushalt.json (`__messWiese`)
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
 
     const out = await page.evaluate(async () => {
@@ -126,9 +128,10 @@ function check(name, ok, detail) {
         const TOT = 8; // das Totband des LOD-Ticks (Mesh → Fernform erst 8 m hinter der Grenze)
         res.grenze = N;
 
-        // Die Mess-Wiese (−900/−850, dieselbe Stelle wie werkbank zaehlen).
+        // Die Mess-Wiese (der Messort des Haushalts, dieselbe Stelle wie werkbank umstellen --ort wiese).
         const pm = r.state.playerMesh.position;
-        pm.set(-900, r._voxelSurfaceY(-900, -850) + 1.8, -850);
+        const [MX, MZ] = window.__messWiese;
+        pm.set(MX, r._voxelSurfaceY(MX, MZ) + 1.8, MZ);
         const map = r._ensureScatterRegionMap();
         const zellen = () => {
             let n = 0;

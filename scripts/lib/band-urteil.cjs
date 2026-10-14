@@ -171,6 +171,19 @@ function messortePruefen(h) {
         // Aufstellen, dass `spieler` auf ihm steht (diag-profiband H6: der Stamm trägt sie).
         if (o.anker !== undefined && (typeof o.anker !== "string" || !/^_?[A-Za-z]\w*$/.test(o.anker)))
             f.push(`${o.id}: anker ist kein Methoden-Name`);
+        // DAS WIESEN-GESETZ (K55, `wiese`): die Mess-Wiese trägt es — jede Schwelle eine Zahl, Kranz und Fernblick als [von, bis];
+        // das Urteil am Ort spricht gate:profiband H1 (am Gesetz) und `werkbank umstellen --ort` (in der Welt, mit Gras).
+        if (o.id === "wiese" && o.wiese === undefined) f.push(`${o.id}: das Wiesen-Gesetz (wiese) fehlt`);
+        if (o.wiese !== undefined) {
+            const w = o.wiese || {};
+            const zahl = ["ring", "hangMax", "trockenMarge", "kroneMax", "randMin", "blickFrei", "blickWinkel", "horizontMax", "grasMin"];
+            const fehlt = zahl.filter((k) => typeof w[k] !== "number" || !Number.isFinite(w[k]));
+            const spanne = (v) => xz(v) && v[0] >= 0 && v[1] > v[0];
+            if (fehlt.length) f.push(`${o.id}: wiese ohne Zahl ${fehlt.join(", ")}`);
+            if (!spanne(w.rand) || !spanne(w.fern)) f.push(`${o.id}: wiese.rand / wiese.fern ist kein [von, bis] (m)`);
+            else if (!(w.rand[0] > w.ring)) f.push(`${o.id}: wiese.rand beginnt im Ring (${w.rand[0]} ≤ ${w.ring} m)`);
+            if (!w.quelle) f.push(`${o.id}: wiese.quelle fehlt`);
+        }
         // DER TOGGLE-ORT (1110-6): ein Ort mit `bank` richtet keine Band-Klasse, sondern die GPU-Zeit eines Schalters unter
         // 0,3 ms — eine geborene Welt (`welt`, relativ zu spec/), feste Stellgrößen des Reglers (`stell`), feste Posen und die
         // lange Bank. Er trägt keine Ratsche; jeder Band-Ort trägt eine.

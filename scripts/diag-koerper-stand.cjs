@@ -43,6 +43,7 @@ const http = require("http");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
+const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
 
 const PORT = Number(process.env.KOERPER_STAND_PORT || 4479);
 const ROOT = path.resolve(__dirname, "..");
@@ -880,13 +881,12 @@ async function proben(mitWiese) {
     s.playerVel = savedVel;
     // ── K7 WIESE UND STREU AM CHUNK-RAND (K21): Nah-Wiese und Nah-Streu lesen Fuß, Hang und Grün über den EINEN Leser
     // (`_bodenSichtAt`) — vorher nur die Karte des Eigners, im Rand-Streifen fiel kaum ein Büschel (ein Gitter kahler Linien in
-    // der Wiese, Dichte 0,11 gegen 1,31 je m²). An der Mess-Wiese (−900/−850, dicht) die Kacheln der LOD-0-Chunks im Umkreis
+    // der Wiese, Dichte 0,11 gegen 1,31 je m²). An der Mess-Wiese (der Messort des Haushalts, dicht) die Kacheln der LOD-0-Chunks im Umkreis
     // 120 m (der Nah-Ring liegt ganz in LOD 0): Büschel bzw. Pflanzen je m² im Streifen gegen die Chunk-Mitte daneben (0,9–2,7 m:
     // dieselben Nähte, dieselben Felder — die ganze Mitte läge auf anderen Wiesen). Läuft im Lauf ohne Defekt und im Defekt
     // „wiese"; zuletzt, denn der Spieler zieht dafür um. ──
     if (mitWiese) {
-        const X = -900;
-        const Z = -850;
+        const [X, Z] = window.__messWiese;
         const setz = () => {
             pm.position.set(X, r.getTerrainHeightAt(X, Z) + 2, Z);
             s._fixedSimPos = null;
@@ -1092,6 +1092,7 @@ function zeile(o) {
             await page.evaluateOnNewDocument(() => {
                 window.__anazhHeadlessNullRenderer = true;
             });
+            await page.evaluateOnNewDocument(WELT_ORTE_INSTALL); // der Messort aus spec/profiband/haushalt.json (`__messWiese`)
             await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "networkidle0", timeout: 180000 });
             await page.waitForFunction(
                 () => window.anazhRealm && typeof window.anazhRealm._gameLoopTick === "function",

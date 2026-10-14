@@ -20,6 +20,7 @@
 const puppeteer = require("puppeteer");
 const { linsenWebGpuArgs, adapterZeile } = require("./lib/software-gpu.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
+const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
@@ -240,6 +241,7 @@ const SCHUSS_FN = async (kam) => {
     await page.setViewport({ width: W, height: H });
     const pageErrors = [];
     page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
+    await page.evaluateOnNewDocument(WELT_ORTE_INSTALL); // der Messort aus spec/profiband/haushalt.json (`__messWiese`)
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
     await page.evaluate(AUSGABE_INSTALL); // die EINE Aufnahme: der echte Frame, getont wie beim Spieler
 
@@ -324,14 +326,13 @@ const SCHUSS_FN = async (kam) => {
         `Boot OK · V${boot.version} · ${boot.renderer} (WebGPU-Backend=${boot.backendWebGPU}) · Chunks=${boot.chunks} · Foundry=${boot.foundryBereit}`
     );
 
-    // ── 1b: auf die Mess-Wiese −900/−850 (flach + grün, PFLICHT D). Befund 30.09.: am Spawn
+    // ── 1b: auf die Mess-Wiese (der Messort des Haushalts: flach + grün, PFLICHT D). Befund 30.09.: am Spawn
     // stand die Kamera unter der Start-Plattform bzw. im Hang (Bühnen-Spanne bis 13 m) —
     // alle Klassen stehen darum auf der Wiese, wo Bühne und Kamera wirklich eben sind.
     const wieseStart = await page.evaluate(async () => {
         const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         const r = window.anazhRealm;
-        const X = -900,
-            Z = -850;
+        const [X, Z] = window.__messWiese;
         r.state.playerMesh.position.set(X, r._voxelSurfaceY(X, Z) + 1.8, Z);
         const dl = performance.now() + 240000;
         let stable = 0,
