@@ -51,6 +51,12 @@ AnazhRealm.AUGEN_LICHT = Object.freeze({
 // am nächsten kommt (das Licht des Auges, ein Feuer 9 m, eine Laterne 12 m, ein Tor 14 m), neu gewählt je `wahlS` Sekunden
 // oder nach `wahlM` Metern Weg; ein Platz blendet in `blendeS` Sekunden aus und ein (kein Licht springt).
 AnazhRealm.LICHT_POOL = Object.freeze({ plaetze: 4, umkreisM: 48, wahlS: 0.25, wahlM: 1, blendeS: 0.5 });
+// DAS LAND EINES WERKS (m über dem Wasser des Gesetzes, `_fundamentLand` → `_landAt`): so hoch liegt jeder Punkt eines
+// Fundaments samt Saum und Vorplatz über dem Spiegel — die Wand jedes Werks und die Ort-Wahl (`_ortTraegt`) urteilen gleich.
+AnazhRealm.WERK_LAND_M = 0.2;
+// DIE ORT-WAHL eines Plans (K10, `_ortPlanSetzen`): Ringe um den Wunsch-Anker (`ringe` × `schrittM`, je Ring `richtungen`
+// Orte), der nächste Ort, an dem der Plan jedes Haus trocken trägt (`_ortTraegt`), gewinnt.
+AnazhRealm.ORT_WAHL = Object.freeze({ schrittM: 12, ringe: 6, richtungen: 8 });
 // DER HORIZONT der Höhlen-Sicht (`_hoehlenHorizont`): die Raster-Zelle der unteren Boden-Schranke je Chunk (m) — der Schritt
 // des LOD-0-Gitters; die Horizont-Probe einer Mündung tastet ihre Bögen in halben Zellen ab.
 AnazhRealm.HOEHLEN_HORIZONT_M = 1.8;

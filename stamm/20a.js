@@ -1297,6 +1297,31 @@ class AnazhRealm_Z20a {
         return out;
     }
 
+    // DER GRUNDRISS EINES SLOTS (haus-lokal): das obb des Exports um seine Mitte — die obb-Mitte (Siedlungs-Rahmen wie
+    // slot.x/z) liegt bis 1,8 m neben dem Haus-Ursprung (das Hof-Haus 4 m), haus-lokal als Versatz {ox,oz}. Ohne obb
+    // (fremder Export) der Kern der Tür-Zeile — derselbe Grundriss, den die Wand jedes Werks an der Wurzel aus den
+    // Optionen liest (`_werkGrundriss`). `fundament` nur mit obb (das Haus eines Orts trägt den Saum seines Erdbaus).
+    // Leser: die Slot-Quelle (`_spawnSettlementSlot`) und die Ort-Wahl (`_ortTraegt`).
+    static _slotGrundriss(slot) {
+        const ry = slot.phi || 0;
+        const rc = Math.cos(ry);
+        const rs = Math.sin(ry);
+        const obb = slot.obb;
+        const tu = slot.tuer;
+        let fundament = null;
+        if (obb && Number.isFinite(obb.ex) && Number.isFinite(obb.ez) && obb.ex > 0 && obb.ez > 0) {
+            const dxw = Number.isFinite(obb.cx) ? obb.cx - slot.x : 0;
+            const dzw = Number.isFinite(obb.cz) ? obb.cz - slot.z : 0;
+            fundament = { ex: obb.ex, ez: obb.ez, ox: dxw * rc - dzw * rs, oz: dxw * rs + dzw * rc };
+        }
+        const fp =
+            fundament ||
+            (tu && Number.isFinite(tu.W) && Number.isFinite(tu.D)
+                ? { ex: tu.W / 2, ez: tu.D / 2, ox: 0, oz: 0 }
+                : null);
+        return { fundament, fp };
+    }
+
     _spawnSettlementSlot(slot, origin, f, so) {
         if (!slot || typeof slot.kultur !== "string" || !origin) return false;
         // DER BODEN DES PLANS (K10): der Slot trägt seine Höhe `y` aus dem Plan v2 (fachwerk `ortPlan`, `_ortPlanSetzen`) — die
@@ -1314,25 +1339,8 @@ class AnazhRealm_Z20a {
         const name = pol && pol.prefix ? pol.prefix + slot.kultur : null;
         if (!name || !this.state.blueprints[name]) return false; // fail-closed
         const ry = slot.phi || 0;
-        const rc = Math.cos(ry);
-        const rs = Math.sin(ry);
-        const obb = slot.obb;
         const tu = slot.tuer;
-        // DER GRUNDRISS DES SLOTS (haus-lokal): das obb des Exports um seine Mitte — die obb-Mitte (Siedlungs-Rahmen wie
-        // slot.x/z) liegt bis 1,8 m neben dem Haus-Ursprung (das Hof-Haus 4 m), haus-lokal als Versatz {ox,oz}. Ohne obb
-        // (fremder Export) der Kern der Tür-Zeile — derselbe Grundriss, den die Wand jedes Werks an der Wurzel aus den
-        // Optionen liest (`_werkGrundriss`).
-        let fundament = null;
-        if (obb && Number.isFinite(obb.ex) && Number.isFinite(obb.ez) && obb.ex > 0 && obb.ez > 0) {
-            const dxw = Number.isFinite(obb.cx) ? obb.cx - slot.x : 0;
-            const dzw = Number.isFinite(obb.cz) ? obb.cz - slot.z : 0;
-            fundament = { ex: obb.ex, ez: obb.ez, ox: dxw * rc - dzw * rs, oz: dxw * rs + dzw * rc };
-        }
-        const fp =
-            fundament ||
-            (tu && Number.isFinite(tu.W) && Number.isFinite(tu.D)
-                ? { ex: tu.W / 2, ez: tu.D / 2, ox: 0, oz: 0 }
-                : null);
+        const { fundament, fp } = AnazhRealm._slotGrundriss(slot);
         const wx = origin.x + slot.x;
         const wz = origin.z + slot.z;
         // DIE WASSER-WAND über dem ganzen Grundriss und dem Vorplatz der Tür (`_fundamentLand`, die EINE Probe mit der Wand
@@ -2166,12 +2174,13 @@ class AnazhRealm_Z20a {
             // relevant nur im Restore-nahe-einer-unbesiedelten-Zelle-Fall, fern bleibt die Zelle, wie sie ist. Die
             // Schätzung `_structureSpawnPos("haus_basis")` vor dem Plan ist gefallen (Gegenprüfung Runde 1).
             const anchor = this._siedlungsAnker(plan, { x: i2.x, y: 0, z: i2.z });
+            // DER ORT AUF DEM GELÄNDE (K10): der Plan v2 am Ort, den die Ort-Wahl um den Anker findet (der Anker folgt ihm),
+            // sein Erdbau liegt, bevor das erste Haus steht
+            plan = this._ortPlanSetzen(plan, anchor);
             // Die Reservierung trägt das Rebuild-Gedächtnis {seed,nH,x,z}: Häuser/Brunnen persistieren als
             // architectures, die Wege (kein Save-Byte) baut `_tickAutoSettlement` nach Reload am Anker neu.
             // Alle Leser fragen nur Existenz (truthy).
             wm.settlementCells[key] = { seed: i2.seed, nH: i2.nH, x: anchor.x, z: anchor.z };
-            // DER ORT AUF DEM GELÄNDE (K10): der Plan v2 am Anker, sein Erdbau liegt, bevor das erste Haus steht
-            plan = this._ortPlanSetzen(plan, anchor);
             this._autoSettlementQueue = { plan, origin: { x: anchor.x, z: anchor.z }, idx: 0, cellKey: key };
             // Wege/Platz/Brunnen sofort bei ANKUNFT (klein + einmalig; die Häuser
             // materialisieren budgetiert über die Ticks).

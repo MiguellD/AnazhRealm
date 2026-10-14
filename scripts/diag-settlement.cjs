@@ -264,9 +264,11 @@ function ortVerdikt(m) {
     if (!(m.fremdBauten === 0)) fehl.push(`fremde Bauten im Erdbau ${m.fremdBauten}`);
     // endet die Kette vor 8 s (der Wagen fuhr den Dorfweg zu Ende), zählt das Tempo bis zum Ende über 8 s: der Weg ist kürzer
     // als das Soll, nie der Wagen langsamer
-    const gt8 = m.gtEnde > 0 ? Math.round(((m.gtWeg / m.gtEnde) * 8) * 100) / 100 : m.gtWeg;
+    const gt8 = m.gtEnde > 0 ? Math.round((m.gtWeg / m.gtEnde) * 8 * 100) / 100 : m.gtWeg;
     if (!(gt8 >= GT_SOLL_M))
-        fehl.push(`GT auf dem Dorfweg ${m.gtWeg} m in ${m.gtEnde > 0 ? m.gtEnde : 8} s (${gt8} m je 8 s, Soll ≥ ${GT_SOLL_M})`);
+        fehl.push(
+            `GT auf dem Dorfweg ${m.gtWeg} m in ${m.gtEnde > 0 ? m.gtEnde : 8} s (${gt8} m je 8 s, Soll ≥ ${GT_SOLL_M})`
+        );
     if (!(m.quellenGasse >= GASSE_SOLL))
         fehl.push(`Dorf-Licht der Gasse nachts ${m.quellenGasse} sichtbare Quellen (Soll ≥ ${GASSE_SOLL})`);
     // der Pool trägt jede sichtbare Quelle der Gasse, bis er voll ist (LICHT_POOL.plaetze) — ≥ 1 ließ 4 sichtbare Köpfe mit
@@ -340,7 +342,9 @@ function gassenLicht(quellen, wege, haeuser, hfov) {
                 if (!best || je.length > best.n || (je.length === best.n && s < best.s))
                     best = { n: je.length, s, pose: [px, pz, qx, qz], je, verdeckt };
             }
-    return best ? { n: best.n, pose: best.pose, je: best.je, verdeckt: best.verdeckt } : { n: 0, pose: null, je: [], verdeckt: 0 };
+    return best
+        ? { n: best.n, pose: best.pose, je: best.je, verdeckt: best.verdeckt }
+        : { n: 0, pose: null, je: [], verdeckt: 0 };
 }
 const GASSE_SOLL = 4;
 
@@ -720,7 +724,14 @@ const FIXTURES = [
             laternenWelt: 6,
             laternenPlan: 6,
         };
-        Object.assign(gut, { planHashGleich: true, fremdBauten: 0, gtWeg: 76.4, quellenGasse: 5, poolGasse: 4, poolPlaetze: 4 });
+        Object.assign(gut, {
+            planHashGleich: true,
+            fremdBauten: 0,
+            gtWeg: 76.4,
+            quellenGasse: 5,
+            poolGasse: 4,
+            poolPlaetze: 4,
+        });
         check("Selbst-Test 12: das Verdikt eines gehaltenen Orts ist leer", ortVerdikt(gut).length === 0);
         const schlecht = Object.assign({}, gut, {
             kronen: 3,
@@ -742,7 +753,9 @@ const FIXTURES = [
         check(
             "Selbst-Test 13b: endet der Dorfweg vor 8 s, zählt das Tempo bis zum Ende (48 m in 5,1 s hält, 20 m in 5,1 s fällt)",
             ortVerdikt(Object.assign({}, gut, { gtWeg: 48.16, gtEnde: 5.1 })).length === 0 &&
-                /GT auf dem Dorfweg 20 m in 5.1 s/.test(ortVerdikt(Object.assign({}, gut, { gtWeg: 20, gtEnde: 5.1 })).join(" · "))
+                /GT auf dem Dorfweg 20 m in 5.1 s/.test(
+                    ortVerdikt(Object.assign({}, gut, { gtWeg: 20, gtEnde: 5.1 })).join(" · ")
+                )
         );
         // Selbst-Test 16 (das Dorf-Licht der Gasse): ein Weg von 60 m, fünf Laternen 3 m neben ihm alle 10 m — die Gasse
         // sieht vier, ein Haus zwischen Weg und Laternen verdeckt zwei, ohne Quellen bleibt nichts, und das Verdikt nennt die Gasse
@@ -972,7 +985,8 @@ const FIXTURES = [
                 const pl = FC.exportSettlement({ seed, nH, epoche });
                 const d = dorfLicht(pl);
                 lichtN++;
-                if (!d.ok) lichtFehl.push(`${seed}/${nH}/${epoche || "-"}: ${d.n} Laternen < ${d.soll} (${d.wegM} m Weg)`);
+                if (!d.ok)
+                    lichtFehl.push(`${seed}/${nH}/${epoche || "-"}: ${d.n} Laternen < ${d.soll} (${d.wegM} m Weg)`);
             }
         check(
             `DAS DORF-LICHT: jeder Plan mit Wegen trägt je Platz und je 25 m Weg eine Laterne (${lichtN} Pläne)`,
@@ -1435,239 +1449,359 @@ const FIXTURES = [
     // was die Welt trägt: die Häuser (Eintrag: Ort, Gier, Boden y − 0,5), der Grund unter und vor ihnen (`getTerrainHeightAt`,
     // der Boden der Körper), der Wald-Plan (`_forestCellDarts`), die Laternen (Einträge der Studio-Gestalt laterne) und der
     // Plan v2 (`_ortPlaene`).
-    const dpO = { seed: 7, nH: 18, epoche: "gruenderzeit" };
-    const outO = await page.evaluate(
-        async (urteilSrc, dp) => {
-            const r = window.anazhRealm;
-            const ortUrteil = new Function("return (" + urteilSrc + ")")();
-            const res = {};
-            try {
-                const H = (x, z) => r._terrainMacroSurfaceY(x, z, true);
-                const L = r._gelaende();
-                const ort = globalThis.__gelaendeCore.hangOrt(L, (x, z) => r._landAt(x, z, 0.2));
-                res.hang = ort;
-                if (!ort) return res;
-                const plan = await r._foundryRequestSettlement(dp);
-                const vorher = r.state.architectures.length;
-                const zellenVor = new Set(Object.keys((r.state.worldMeta && r.state.worldMeta.settlementCells) || {}));
-                await r.spawnSettlement(
-                    Object.assign({}, dp, { position: { x: ort.x, y: H(ort.x, ort.z), z: ort.z } })
-                );
-                const sc = (r.state.worldMeta && r.state.worldMeta.settlementCells) || {};
-                const neuKey = Object.keys(sc).find((k) => !zellenVor.has(k));
-                const anker = neuKey ? { x: sc[neuKey].x, z: sc[neuKey].z } : null;
-                const v2 = r._ortPlaene ? [...r._ortPlaene.values()].pop() : null;
-                const P = v2 || plan;
-                res.anker = anker;
-                res.planV2 = !!v2;
-                const neu = r.state.architectures.slice(vorher);
-                const haeuser = neu.filter((e) => typeof e.type === "string" && e.type.indexOf("haus_") === 0);
-                res.haeuser = haeuser.length;
-                res.slots = P.slots.length;
-                const slots = [];
-                for (const e of haeuser) {
-                    const sl = P.slots.find((s) => s.seed >>> 0 === e.seed);
-                    if (!sl || !anker) continue;
-                    const lx = e.position.x - anker.x;
-                    const lz = e.position.z - anker.z;
-                    const ob = sl.obb
-                        ? Object.assign({}, sl.obb, { cx: sl.obb.cx + lx - sl.x, cz: sl.obb.cz + lz - sl.z })
-                        : null;
-                    slots.push({
-                        x: lx,
-                        z: lz,
-                        phi: e.rotationY || 0,
-                        y: e.position.y - 0.5,
-                        rolle: sl.rolle,
-                        tuer: sl.tuer,
-                        obb: ob,
-                    });
-                }
-                const ortW = { ort: anker, slots, roads: P.roads || [], platz: P.platz || null };
-                res.urteil = anker ? ortUrteil(ortW, (x, z) => r.getTerrainHeightAt(x, z)) : null;
-                // die Kronen des Wald-Plans über den Grundrissen (Dach-Fläche + Krone T)
-                const F = r.constructor.FOREST;
-                const seedInt = r._forestSeedInt();
-                let x0 = Infinity;
-                let x1 = -Infinity;
-                let z0 = Infinity;
-                let z1 = -Infinity;
-                const dachW = [];
-                for (const sl of slots) {
-                    if (!sl.obb) continue;
-                    const ob = Object.assign({}, sl.obb, { cx: sl.obb.cx + anker.x, cz: sl.obb.cz + anker.z });
-                    dachW.push(ob);
-                    const rr = Math.hypot(ob.ex, ob.ez);
-                    x0 = Math.min(x0, ob.cx - rr);
-                    x1 = Math.max(x1, ob.cx + rr);
-                    z0 = Math.min(z0, ob.cz - rr);
-                    z1 = Math.max(z1, ob.cz + rr);
-                }
-                let kronen = 0;
-                for (let gx = Math.floor((x0 - 20) / F.cell); gx <= Math.floor((x1 + 20) / F.cell); gx++)
-                    for (let gz = Math.floor((z0 - 20) / F.cell); gz <= Math.floor((z1 + 20) / F.cell); gz++)
-                        for (const d of r._forestCellDarts(gx, gz, seedInt) || []) {
-                            for (const ob of dachW) {
-                                const c = Math.cos(ob.phi || 0);
-                                const s = Math.sin(ob.phi || 0);
-                                const dx = d.x - ob.cx;
-                                const dz = d.z - ob.cz;
-                                const u = Math.max(0, Math.abs(dx * c - dz * s) - ob.ex);
-                                const v = Math.max(0, Math.abs(dx * s + dz * c) - ob.ez);
-                                if (Math.hypot(u, v) < (d.T || 0)) {
-                                    kronen++;
-                                    break;
+    const messeOrt = async (modus, messort) => {
+        const dpO = { seed: 7, nH: 18, epoche: "gruenderzeit" };
+        const outO = await page.evaluate(
+            async (urteilSrc, dp, modus, messort) => {
+                const r = window.anazhRealm;
+                const ortUrteil = new Function("return (" + urteilSrc + ")")();
+                const res = {};
+                try {
+                    const H = (x, z) => r._terrainMacroSurfaceY(x, z, true);
+                    const L = r._gelaende();
+                    const vorher = r.state.architectures.length;
+                    const zellenVor = new Set(
+                        Object.keys((r.state.worldMeta && r.state.worldMeta.settlementCells) || {})
+                    );
+                    let plan;
+                    if (modus === "auto") {
+                        // DAS AUTO-DORF DER WELT (Pflicht-OFFEN C): der Dorf-Zug, wie er im Spiel läuft — der Spieler steht am
+                        // Mess-Ort `dorf` (spec/profiband/haushalt.json), der Takt (`_tickAutoSettlement`) wählt die Zelle, holt den
+                        // Export, legt den Plan v2 und baut die Häuser budgetiert über seine Takte
+                        const pm = r.state.playerMesh;
+                        pm.position.set(messort[0], H(messort[0], messort[1]) + 1, messort[1]);
+                        const SG = r.constructor._siedlungGesetz();
+                        const zelle = Math.floor(messort[0] / SG.cellM) + "," + Math.floor(messort[1] / SG.cellM);
+                        res.zelle = zelle;
+                        const hook0 = window.__anazhAutoSettlement;
+                        window.__anazhAutoSettlement = true;
+                        try {
+                            const t0 = performance.now();
+                            const cells = () => (r.state.worldMeta && r.state.worldMeta.settlementCells) || {};
+                            while (performance.now() - t0 < 90000) {
+                                r._tickAutoSettlement(pm.position);
+                                if (cells()[zelle] && !r._autoSettlementQueue && !r._autoSettlementPendingKey) break;
+                                await new Promise((ok) => setTimeout(ok, 20));
+                            }
+                        } finally {
+                            window.__anazhAutoSettlement = hook0;
+                        }
+                        const c = ((r.state.worldMeta && r.state.worldMeta.settlementCells) || {})[zelle];
+                        if (!c || !Number.isFinite(c.seed)) {
+                            res.err = `der Dorf-Zug baut an ${messort.join("/")} kein Dorf der Zelle ${zelle}`;
+                            return res;
+                        }
+                        plan = await r._foundryRequestSettlement({
+                            seed: c.seed,
+                            nH: c.nH,
+                            epoche: r._siedlungEpoche(c.seed),
+                        });
+                    } else {
+                        const ort = globalThis.__gelaendeCore.hangOrt(L, (x, z) => r._landAt(x, z, 0.2));
+                        res.hang = ort;
+                        if (!ort) return res;
+                        plan = await r._foundryRequestSettlement(dp);
+                        await r.spawnSettlement(
+                            Object.assign({}, dp, { position: { x: ort.x, y: H(ort.x, ort.z), z: ort.z } })
+                        );
+                    }
+                    const sc = (r.state.worldMeta && r.state.worldMeta.settlementCells) || {};
+                    const neuKey = Object.keys(sc).find((k) => !zellenVor.has(k));
+                    const anker = neuKey ? { x: sc[neuKey].x, z: sc[neuKey].z } : null;
+                    const v2 = r._ortPlaene ? [...r._ortPlaene.values()].pop() : null;
+                    const P = v2 || plan;
+                    res.anker = anker;
+                    res.planV2 = !!v2;
+                    const neu = r.state.architectures.slice(vorher);
+                    const haeuser = neu.filter((e) => typeof e.type === "string" && e.type.indexOf("haus_") === 0);
+                    res.haeuser = haeuser.length;
+                    res.slots = P.slots.length;
+                    // DER TÄTER JE FEHLENDEM HAUS: die Wand der EINEN Slot-Quelle, an der der Slot fiel — das Wasser
+                    // (`_fundamentLand`) oder ein Bau im Weg (`_bauFrei`, mit den Bauten, die keine Natur sind, binnen 8 m)
+                    // die Meldung der Ort-Wahl (`_ortPlanSetzen`: kein trockener Ort in den Ringen)
+                    res.ortWahl = (r.state.logBuffer || [])
+                        .map(String)
+                        .filter((z) => /ORT: der Plan/.test(z))
+                        .slice(-2);
+                    res.slotFehl = [];
+                    if (anker)
+                        for (const sl of P.slots) {
+                            if (haeuser.some((e) => e.seed === sl.seed >>> 0)) continue;
+                            const ry = sl.phi || 0;
+                            const ob = sl.obb;
+                            const dx = ob ? ob.cx - sl.x : 0;
+                            const dz = ob ? ob.cz - sl.z : 0;
+                            const fp = ob
+                                ? {
+                                      ex: ob.ex,
+                                      ez: ob.ez,
+                                      ox: dx * Math.cos(ry) - dz * Math.sin(ry),
+                                      oz: dx * Math.sin(ry) + dz * Math.cos(ry),
+                                  }
+                                : { ex: 0.5, ez: 0.5, ox: 0, oz: 0 };
+                            const wx = anker.x + sl.x;
+                            const wz = anker.z + sl.z;
+                            const saum = ob ? globalThis.__fachwerkCore.ORT_GESETZ.saumM : 0;
+                            // die nassen Punkte des EINEN Fundament-Rasters: Spiegel des Gesetzes über dem gebauten Boden
+                            const c0 = Math.cos(ry);
+                            const s0 = Math.sin(ry);
+                            const ras = r.constructor._fundamentRaster(
+                                { ex: fp.ex + saum, ez: fp.ez + saum, ox: fp.ox, oz: fp.oz },
+                                sl.tuer,
+                                0.5
+                            );
+                            let nassN = 0;
+                            let tief = 0;
+                            for (const [lx, lz] of ras) {
+                                const px = wx + lx * c0 + lz * s0;
+                                const pz = wz - lx * s0 + lz * c0;
+                                if (r._landAt(px, pz, 0.2)) continue;
+                                nassN++;
+                                const b = r._voxelSurfaceY(px, pz);
+                                tief = Math.max(tief, r._atlasWaterLevelAt(px, pz, b) - b);
+                            }
+                            res.slotFehl.push({
+                                y: Math.round(sl.y * 100) / 100,
+                                nass: nassN + "/" + ras.length,
+                                tief: Math.round(tief * 100) / 100,
+                                x: Math.round(wx * 10) / 10,
+                                z: Math.round(wz * 10) / 10,
+                                wasser: !r._fundamentLand(wx, wz, ry, fp, sl.tuer, saum),
+                                bau: !r._bauFrei(wx, wz, ry, fp, sl.tuer, sl.y),
+                                nah: r.state.architectures
+                                    .filter(
+                                        (e) =>
+                                            e.position &&
+                                            !r._istNatur(e) &&
+                                            Math.hypot(e.position.x - wx, e.position.z - wz) < 8
+                                    )
+                                    .map((e) => e.type),
+                            });
+                        }
+                    const slots = [];
+                    for (const e of haeuser) {
+                        const sl = P.slots.find((s) => s.seed >>> 0 === e.seed);
+                        if (!sl || !anker) continue;
+                        const lx = e.position.x - anker.x;
+                        const lz = e.position.z - anker.z;
+                        const ob = sl.obb
+                            ? Object.assign({}, sl.obb, { cx: sl.obb.cx + lx - sl.x, cz: sl.obb.cz + lz - sl.z })
+                            : null;
+                        slots.push({
+                            x: lx,
+                            z: lz,
+                            phi: e.rotationY || 0,
+                            y: e.position.y - 0.5,
+                            rolle: sl.rolle,
+                            tuer: sl.tuer,
+                            obb: ob,
+                        });
+                    }
+                    const ortW = { ort: anker, slots, roads: P.roads || [], platz: P.platz || null };
+                    res.urteil = anker ? ortUrteil(ortW, (x, z) => r.getTerrainHeightAt(x, z)) : null;
+                    // die Kronen des Wald-Plans über den Grundrissen (Dach-Fläche + Krone T)
+                    const F = r.constructor.FOREST;
+                    const seedInt = r._forestSeedInt();
+                    let x0 = Infinity;
+                    let x1 = -Infinity;
+                    let z0 = Infinity;
+                    let z1 = -Infinity;
+                    const dachW = [];
+                    for (const sl of slots) {
+                        if (!sl.obb) continue;
+                        const ob = Object.assign({}, sl.obb, { cx: sl.obb.cx + anker.x, cz: sl.obb.cz + anker.z });
+                        dachW.push(ob);
+                        const rr = Math.hypot(ob.ex, ob.ez);
+                        x0 = Math.min(x0, ob.cx - rr);
+                        x1 = Math.max(x1, ob.cx + rr);
+                        z0 = Math.min(z0, ob.cz - rr);
+                        z1 = Math.max(z1, ob.cz + rr);
+                    }
+                    let kronen = 0;
+                    for (let gx = Math.floor((x0 - 20) / F.cell); gx <= Math.floor((x1 + 20) / F.cell); gx++)
+                        for (let gz = Math.floor((z0 - 20) / F.cell); gz <= Math.floor((z1 + 20) / F.cell); gz++)
+                            for (const d of r._forestCellDarts(gx, gz, seedInt) || []) {
+                                for (const ob of dachW) {
+                                    const c = Math.cos(ob.phi || 0);
+                                    const s = Math.sin(ob.phi || 0);
+                                    const dx = d.x - ob.cx;
+                                    const dz = d.z - ob.cz;
+                                    const u = Math.max(0, Math.abs(dx * c - dz * s) - ob.ex);
+                                    const v = Math.max(0, Math.abs(dx * s + dz * c) - ob.ez);
+                                    if (Math.hypot(u, v) < (d.T || 0)) {
+                                        kronen++;
+                                        break;
+                                    }
                                 }
                             }
-                        }
-                res.kronen = kronen;
-                // die Laternen der Welt um den Ort gegen die des Plans: je Laterne die Studio-Gestalt (fachwerk AUSSTATTUNG
-                // laterne) als Eintrag, dessen Licht ihr Rezept trägt (`_lichtDatumDerGestalt`) — ein Licht ohne Leib zählt nicht
-                let lw = 0;
-                if (anker)
-                    for (const e of r.state.architectures)
-                        if (
-                            r._lichtDatumDerGestalt(e) === globalThis.__fachwerkCore.PRESETS.laterne?.fx?.licht &&
-                            Math.hypot(e.position.x - anker.x, e.position.z - anker.z) < 250
-                        )
-                            lw++;
-                res.laternenWelt = lw;
-                res.laternenPlan = Array.isArray(P.laternen) ? P.laternen.length : 0;
-                // der Zwilling: ein Licht ohne Leib (der Laternen-Leser bis K10-2 und sein Zellen-Gedächtnis)
-                res.laternenZwilling = ["_laternenLesen", "_laternen"].filter((k) => k in r);
-                // die Altwelten: Bauten, die kein Ort trägt (kein Haus mit Grundriss, keine Ausstattung des Dorfs: brunnen_dorf,
-                // marktstand_dorf), auf dem Erdbau eines Orts
-                let fremd = 0;
-                if (typeof r._ortFrei === "function")
-                    for (const e of r.state.architectures)
-                        if (!e.fundament && !/_dorf$/.test(e.type) && !r._ortFrei(e.position.x, e.position.z, 0.01)) {
-                            fremd++;
-                            (res.fremdArten || (res.fremdArten = {}))[e.type] = (res.fremdArten[e.type] || 0) + 1;
-                        }
-                res.fremdBauten = fremd;
-                // DAS DORF-LICHT DER GASSE (Pflicht-OFFEN C): Mitternacht über den EINEN Uhr-Schreiber, die brennenden Quellen aus
-                // dem EINEN Licht-Gesetz der Welt (`_leuchtQuellen`: Datum × Zeitplan > 0) — gezählt wird jede mit Leib (Studio-
-                // Gestalt mit Licht-Datum oder Glut) im Ort; die Gasse und ihre Sicht rechnet `gassenLicht` (Node), den Licht-Pool
-                // der Gasse liest `gassenPool`. Der Schein: derselbe Ort mit dunklem Zeitplan.
-                if (anker) {
-                    const uhr0 = r.state.timeOfDay;
-                    if (!r._uhrSetzen(0, "regler")) throw new Error("die Uhr nimmt Mitternacht nicht");
-                    const brennend = () =>
-                        r
-                            ._leuchtQuellen(anker.x, H(anker.x, anker.z), anker.z, 250, null)
-                            .filter(
-                                (q) =>
-                                    q.id &&
-                                    q.id.position &&
-                                    (r._lichtDatumDerGestalt(q.id) || r._glutFlaeche(q.id) > 0) &&
-                                    Math.hypot(q.x - anker.x, q.z - anker.z) < 250
+                    res.kronen = kronen;
+                    // die Laternen der Welt um den Ort gegen die des Plans: je Laterne die Studio-Gestalt (fachwerk AUSSTATTUNG
+                    // laterne) als Eintrag, dessen Licht ihr Rezept trägt (`_lichtDatumDerGestalt`) — ein Licht ohne Leib zählt nicht
+                    let lw = 0;
+                    if (anker)
+                        for (const e of r.state.architectures)
+                            if (
+                                r._lichtDatumDerGestalt(e) === globalThis.__fachwerkCore.PRESETS.laterne?.fx?.licht &&
+                                Math.hypot(e.position.x - anker.x, e.position.z - anker.z) < 250
                             )
-                            .map((q) => [q.x, q.z]);
-                    const qs = brennend();
-                    r._lichtZeitplan = () => 0;
-                    let dunkel;
-                    try {
-                        dunkel = brennend();
-                    } finally {
-                        delete r._lichtZeitplan;
-                    }
-                    r._uhrSetzen(uhr0, "regler");
-                    res.gasseIn = {
-                        qs,
-                        dunkel,
-                        wege: (P.roads || []).map((w) => (w.pts || []).map((p) => [anker.x + p.x, anker.z + p.z])),
-                        haeuser: dachW,
-                        hfov: 2 * Math.atan(Math.tan((r.state.camera.fov * Math.PI) / 360) * (16 / 9)),
-                    };
-                }
-                res.v2Json = v2 ? JSON.stringify(v2) : null;
-                // DER PLAN-HASH STUDIO = WELT (in derselben Seite, kein Plattform-Bit dazwischen): der Export des Fachwerk-Kerns
-                // (die Foundry rechnet ihn, das Labor baut dasselbe Layout — Teil A friert ihn ein) am Anker über die Lage des
-                // STUDIOS (gelaende-core `lageGrund` der Saat) und seinen ctx (`ortCtx`) — byte-gleich mit dem Plan v2 der Welt,
-                // oder der Wirt weicht vom Grund der Lage ab.
-                if (v2 && anker) {
-                    const Gs = globalThis.__gelaendeCore;
-                    const studio = globalThis.__fachwerkCore.ortPlan(
-                        plan,
-                        anker,
-                        Gs.ortCtx(Gs.lageGrund(L.seed, window.SimplexNoise))
-                    );
-                    res.planHashGleich = JSON.stringify(studio) === res.v2Json;
-                }
-                res.planJson = JSON.stringify({ roads: P.roads || [] });
-                res.lage = {
-                    seed: L.seed,
-                    baseHeight: L.baseHeight,
-                    waterLevel: L.waterLevel,
-                    erbgut: L.erbgut,
-                    regionSize: L.regionSize,
-                };
-            } catch (e) {
-                res.err = (e && e.stack) || String(e);
-            }
-            return res;
-        },
-        ortUrteil.toString(),
-        dpO
-    );
-    // DIE GASSE (rein, hier) und IHR LICHT-POOL (die Seite): Mitternacht, die Kamera der Gasse in Augenhöhe, ein frischer Pool
-    // über den EINEN Schreiber (`_leuchtTakt`) — gezählt die Plätze, die eine sichtbare Quelle des Orts trägt.
-    if (outO.gasseIn) {
-        const gi = outO.gasseIn;
-        const g = gassenLicht(gi.qs, gi.wege, gi.haeuser, gi.hfov);
-        outO.gasse = {
-            n: g.n,
-            pose: g.pose && g.pose.map((v) => Math.round(v * 10) / 10),
-            je: g.je,
-            verdeckt: g.verdeckt,
-            brennend: gi.qs.length,
-            schein: gassenLicht(gi.dunkel, gi.wege, gi.haeuser, gi.hfov).n,
-        };
-        if (g.pose)
-            Object.assign(
-                outO.gasse,
-                await page.evaluate(
-                    (pose, je) => {
-                        const r = window.anazhRealm;
-                        const cam = r.state.camera;
-                        const H = (x, z) => r._terrainMacroSurfaceY(x, z, true);
+                                lw++;
+                    res.laternenWelt = lw;
+                    res.laternenPlan = Array.isArray(P.laternen) ? P.laternen.length : 0;
+                    // der Zwilling: ein Licht ohne Leib (der Laternen-Leser bis K10-2 und sein Zellen-Gedächtnis)
+                    res.laternenZwilling = ["_laternenLesen", "_laternen"].filter((k) => k in r);
+                    // die Altwelten: Bauten, die kein Ort trägt (kein Haus mit Grundriss, keine Ausstattung des Dorfs: brunnen_dorf,
+                    // marktstand_dorf), auf dem Erdbau eines Orts
+                    let fremd = 0;
+                    if (typeof r._ortFrei === "function")
+                        for (const e of r.state.architectures)
+                            if (
+                                !e.fundament &&
+                                !/_dorf$/.test(e.type) &&
+                                !r._ortFrei(e.position.x, e.position.z, 0.01)
+                            ) {
+                                fremd++;
+                                (res.fremdArten || (res.fremdArten = {}))[e.type] = (res.fremdArten[e.type] || 0) + 1;
+                            }
+                    res.fremdBauten = fremd;
+                    // DAS DORF-LICHT DER GASSE (Pflicht-OFFEN C): Mitternacht über den EINEN Uhr-Schreiber, die brennenden Quellen aus
+                    // dem EINEN Licht-Gesetz der Welt (`_leuchtQuellen`: Datum × Zeitplan > 0) — gezählt wird jede mit Leib (Studio-
+                    // Gestalt mit Licht-Datum oder Glut) im Ort; die Gasse und ihre Sicht rechnet `gassenLicht` (Node), den Licht-Pool
+                    // der Gasse liest `gassenPool`. Der Schein: derselbe Ort mit dunklem Zeitplan.
+                    if (anker) {
                         const uhr0 = r.state.timeOfDay;
-                        const cam0 = { p: cam.position.clone(), q: cam.quaternion.clone(), a: cam.aspect };
-                        const [px, pz, lx, lz] = pose;
-                        r._uhrSetzen(0, "regler");
-                        cam.aspect = 16 / 9;
-                        cam.updateProjectionMatrix();
-                        cam.position.set(px, H(px, pz) + 1.7, pz);
-                        cam.lookAt(lx, H(lx, lz) + 1.7, lz);
-                        cam.updateMatrixWorld(true);
-                        r._leuchtPool = null;
-                        r._leuchtTakt();
-                        const pl = (r._leuchtPool && r._leuchtPool.plaetze) || [];
-                        const out = {
-                            plaetze: r.constructor.LICHT_POOL.plaetze,
-                            pool: pl.map((p) => [p.quelle, Math.round(p.x * 10) / 10, Math.round(p.z * 10) / 10]),
-                            poolOrt: pl.filter(
-                                (p) => p.staerke > 0 && je.some(([x, z]) => Math.hypot(x - p.x, z - p.z) < 0.5)
-                            ).length,
-                        };
+                        if (!r._uhrSetzen(0, "regler")) throw new Error("die Uhr nimmt Mitternacht nicht");
+                        const brennend = () =>
+                            r
+                                ._leuchtQuellen(anker.x, H(anker.x, anker.z), anker.z, 250, null)
+                                .filter(
+                                    (q) =>
+                                        q.id &&
+                                        q.id.position &&
+                                        (r._lichtDatumDerGestalt(q.id) || r._glutFlaeche(q.id) > 0) &&
+                                        Math.hypot(q.x - anker.x, q.z - anker.z) < 250
+                                )
+                                .map((q) => [q.x, q.z]);
+                        const qs = brennend();
+                        r._lichtZeitplan = () => 0;
+                        let dunkel;
+                        try {
+                            dunkel = brennend();
+                        } finally {
+                            delete r._lichtZeitplan;
+                        }
                         r._uhrSetzen(uhr0, "regler");
-                        cam.position.copy(cam0.p);
-                        cam.quaternion.copy(cam0.q);
-                        cam.aspect = cam0.a;
-                        cam.updateProjectionMatrix();
-                        r._leuchtPool = null;
-                        return out;
-                    },
-                    g.pose,
-                    g.je
-                )
-            );
-    }
-    // DER GT AUF DEM DORFWEG des Orts, den die Welt trägt (Plan v2, sonst der Export)
-    const gtO =
-        outO.anker && (outO.v2Json || outO.planJson)
-            ? await page.evaluate(gtDorfweg, JSON.parse(outO.v2Json || outO.planJson), outO.anker, 8)
-            : { err: "kein Ort" };
+                        res.gasseIn = {
+                            qs,
+                            dunkel,
+                            wege: (P.roads || []).map((w) => (w.pts || []).map((p) => [anker.x + p.x, anker.z + p.z])),
+                            haeuser: dachW,
+                            hfov: 2 * Math.atan(Math.tan((r.state.camera.fov * Math.PI) / 360) * (16 / 9)),
+                        };
+                    }
+                    res.v2Json = v2 ? JSON.stringify(v2) : null;
+                    // DER PLAN-HASH STUDIO = WELT (in derselben Seite, kein Plattform-Bit dazwischen): der Export des Fachwerk-Kerns
+                    // (die Foundry rechnet ihn, das Labor baut dasselbe Layout — Teil A friert ihn ein) am Anker über die Lage des
+                    // STUDIOS (gelaende-core `lageGrund` der Saat) und seinen ctx (`ortCtx`) — byte-gleich mit dem Plan v2 der Welt,
+                    // oder der Wirt weicht vom Grund der Lage ab.
+                    if (v2 && anker) {
+                        const Gs = globalThis.__gelaendeCore;
+                        const studio = globalThis.__fachwerkCore.ortPlan(
+                            plan,
+                            anker,
+                            Gs.ortCtx(Gs.lageGrund(L.seed, window.SimplexNoise))
+                        );
+                        res.planHashGleich = JSON.stringify(studio) === res.v2Json;
+                    }
+                    res.planJson = JSON.stringify({ roads: P.roads || [] });
+                    res.lage = {
+                        seed: L.seed,
+                        baseHeight: L.baseHeight,
+                        waterLevel: L.waterLevel,
+                        erbgut: L.erbgut,
+                        regionSize: L.regionSize,
+                    };
+                } catch (e) {
+                    res.err = (e && e.stack) || String(e);
+                }
+                return res;
+            },
+            ortUrteil.toString(),
+            dpO,
+            modus,
+            messort
+        );
+        // DIE GASSE (rein, hier) und IHR LICHT-POOL (die Seite): Mitternacht, die Kamera der Gasse in Augenhöhe, ein frischer Pool
+        // über den EINEN Schreiber (`_leuchtTakt`) — gezählt die Plätze, die eine sichtbare Quelle des Orts trägt.
+        if (outO.gasseIn) {
+            const gi = outO.gasseIn;
+            const g = gassenLicht(gi.qs, gi.wege, gi.haeuser, gi.hfov);
+            outO.gasse = {
+                n: g.n,
+                pose: g.pose && g.pose.map((v) => Math.round(v * 10) / 10),
+                je: g.je,
+                verdeckt: g.verdeckt,
+                brennend: gi.qs.length,
+                schein: gassenLicht(gi.dunkel, gi.wege, gi.haeuser, gi.hfov).n,
+            };
+            if (g.pose)
+                Object.assign(
+                    outO.gasse,
+                    await page.evaluate(
+                        (pose, je) => {
+                            const r = window.anazhRealm;
+                            const cam = r.state.camera;
+                            const H = (x, z) => r._terrainMacroSurfaceY(x, z, true);
+                            const uhr0 = r.state.timeOfDay;
+                            const cam0 = { p: cam.position.clone(), q: cam.quaternion.clone(), a: cam.aspect };
+                            const [px, pz, lx, lz] = pose;
+                            r._uhrSetzen(0, "regler");
+                            cam.aspect = 16 / 9;
+                            cam.updateProjectionMatrix();
+                            cam.position.set(px, H(px, pz) + 1.7, pz);
+                            cam.lookAt(lx, H(lx, lz) + 1.7, lz);
+                            cam.updateMatrixWorld(true);
+                            r._leuchtPool = null;
+                            r._leuchtTakt();
+                            const pl = (r._leuchtPool && r._leuchtPool.plaetze) || [];
+                            // DER HORIZONT DES POOLS: die sichtbaren Quellen der Gasse, die das Gesetz des Pools überhaupt
+                            // wählen darf (`_leuchtQuellen` im `umkreisM` um das Auge, ohne Sichtkegel) — eine Laterne 63 m vor
+                            // dem Auge zeigt ihren glühenden Kopf, ihr Licht trägt der Pool nicht (Gebot 7: Kosten am Schirm)
+                            const LP = r.constructor.LICHT_POOL;
+                            const imHorizont = r
+                                ._leuchtQuellen(cam.position.x, cam.position.y, cam.position.z, LP.umkreisM, null)
+                                .filter((q) => je.some(([x, z]) => Math.hypot(x - q.x, z - q.z) < 0.5)).length;
+                            const out = {
+                                plaetze: Math.min(LP.plaetze, imHorizont),
+                                pool: pl.map((p) => [p.quelle, Math.round(p.x * 10) / 10, Math.round(p.z * 10) / 10]),
+                                poolOrt: pl.filter(
+                                    (p) => p.staerke > 0 && je.some(([x, z]) => Math.hypot(x - p.x, z - p.z) < 0.5)
+                                ).length,
+                            };
+                            r._uhrSetzen(uhr0, "regler");
+                            cam.position.copy(cam0.p);
+                            cam.quaternion.copy(cam0.q);
+                            cam.aspect = cam0.a;
+                            cam.updateProjectionMatrix();
+                            r._leuchtPool = null;
+                            return out;
+                        },
+                        g.pose,
+                        g.je
+                    )
+                );
+        }
+        // DER GT AUF DEM DORFWEG des Orts, den die Welt trägt (Plan v2, sonst der Export)
+        const gtO =
+            outO.anker && (outO.v2Json || outO.planJson)
+                ? await page.evaluate(gtDorfweg, JSON.parse(outO.v2Json || outO.planJson), outO.anker, 8)
+                : { err: "kein Ort" };
+        return { outO, gtO };
+    };
+    const MESSORT_DORF = JSON.parse(
+        fs.readFileSync(path.join(root, "spec", "profiband", "haushalt.json"), "utf8")
+    ).messorte.find((o) => o.id === "dorf").spieler;
+    const O = await messeOrt("akt", null);
+    const OA = await messeOrt("auto", MESSORT_DORF);
 
     await browser.close();
     server.close();
@@ -1721,72 +1855,85 @@ const FIXTURES = [
         out.waterWall === true
     );
     check("B: der Anker misst den Plan (_siedlungsAnker, keine haus_basis-Schaetzung)", out.anchorChokepoint === true);
-    console.log("\n=== TEIL O: DER ORT AUF DEM GELÄNDE (K10, Dorf 7/18 Gründerzeit am Hang) ===");
-    if (outO.err) console.log("  Fehler im Akt: " + outO.err.split("\n").slice(0, 3).join(" | "));
-    check(
-        "O: ein Hang trägt den Akt (Gefälle 0,12–0,25 über 16 m, trocken)",
-        !!outO.hang,
-        outO.hang
-            ? `${outO.hang.x.toFixed(1)}/${outO.hang.z.toFixed(1)} Gefälle ${outO.hang.g.toFixed(3)}`
-            : "kein Hang"
-    );
-    const planHashGleich = outO.planHashGleich === true;
-    const u = outO.urteil || {};
-    const m = {
-        sockelMedian: u.sockelMedian,
-        sockelMax: u.sockelMax,
-        tuerenOk: u.tuerenOk,
-        tuerenN: u.tuerenN,
-        kronen: outO.kronen,
-        laternenWelt: outO.laternenWelt,
-        laternenPlan: outO.laternenPlan,
-        planHashGleich,
-        fremdBauten: outO.fremdBauten,
-        gtWeg: gtO.gtWeg,
-        gtEnde: gtO.endeNachS,
-        quellenGasse: outO.gasse ? outO.gasse.n : null,
-        poolGasse: outO.gasse ? outO.gasse.poolOrt : null,
-        poolPlaetze: outO.gasse ? outO.gasse.plaetze : null,
-    };
-    console.log("  DORF-LICHT DER GASSE " + JSON.stringify(outO.gasse || null));
-    console.log("  GT AUF DEM DORFWEG " + JSON.stringify(gtO.err ? { err: gtO.err.split("\n")[0] } : gtO));
-    console.log(
-        "  ORT-ZAHLEN " +
-            JSON.stringify(
-                Object.assign(
-                    {
-                        haeuser: outO.haeuser,
-                        slots: outO.slots,
-                        planV2: outO.planV2,
-                        zellen: u.zellen,
-                        fremdArten: outO.fremdArten || {},
-                    },
-                    m
+    const pruefeOrt = (titel, modusName, outO, gtO) => {
+        console.log(`\n=== TEIL O: DER ORT AUF DEM GELÄNDE (K10, ${titel}) ===`);
+        if (outO.err) console.log("  Fehler im Akt: " + outO.err.split("\n").slice(0, 3).join(" | "));
+        if (outO.zelle)
+            check(
+                `O ${modusName}: der Dorf-Zug baut das Dorf der Zelle am Mess-Ort (wie im Spiel, _tickAutoSettlement)`,
+                !outO.err && outO.haeuser > 0,
+                `Zelle ${outO.zelle}`
+            );
+        else
+            check(
+                `O ${modusName}: ein Hang trägt den Akt (Gefälle 0,12–0,25 über 16 m, trocken)`,
+                !!outO.hang,
+                outO.hang
+                    ? `${outO.hang.x.toFixed(1)}/${outO.hang.z.toFixed(1)} Gefälle ${outO.hang.g.toFixed(3)}`
+                    : "kein Hang"
+            );
+        const planHashGleich = outO.planHashGleich === true;
+        const u = outO.urteil || {};
+        const m = {
+            sockelMedian: u.sockelMedian,
+            sockelMax: u.sockelMax,
+            tuerenOk: u.tuerenOk,
+            tuerenN: u.tuerenN,
+            kronen: outO.kronen,
+            laternenWelt: outO.laternenWelt,
+            laternenPlan: outO.laternenPlan,
+            planHashGleich,
+            fremdBauten: outO.fremdBauten,
+            gtWeg: gtO.gtWeg,
+            gtEnde: gtO.endeNachS,
+            quellenGasse: outO.gasse ? outO.gasse.n : null,
+            poolGasse: outO.gasse ? outO.gasse.poolOrt : null,
+            poolPlaetze: outO.gasse ? outO.gasse.plaetze : null,
+        };
+        console.log("  DORF-LICHT DER GASSE " + JSON.stringify(outO.gasse || null));
+        console.log("  GT AUF DEM DORFWEG " + JSON.stringify(gtO.err ? { err: gtO.err.split("\n")[0] } : gtO));
+        console.log(
+            "  ORT-ZAHLEN " +
+                JSON.stringify(
+                    Object.assign(
+                        {
+                            haeuser: outO.haeuser,
+                            slots: outO.slots,
+                            planV2: outO.planV2,
+                            zellen: u.zellen,
+                            fremdArten: outO.fremdArten || {},
+                        },
+                        m
+                    )
                 )
-            )
-    );
-    if (u.tuerenFehl && u.tuerenFehl.length) console.log("  Türen ohne Gang: " + JSON.stringify(u.tuerenFehl));
-    const fehlO = ortVerdikt(m);
-    check(
-        "O: das Dorf trägt jedes Haus (alle Slots stehen)",
-        outO.haeuser > 0 && outO.haeuser === outO.slots,
-        `${outO.haeuser}/${outO.slots}`
-    );
-    check(
-        "O: der Ort hält jede Zahl (Sockel 0, Türen, Kronen 0, Laternen, Plan-Hash, Altwelten 0, der GT ≥ 60 m in 8 s auf dem Dorfweg, ≥ 4 Quellen in der Gasse nachts)",
-        fehlO.length === 0,
-        fehlO.join(" · ") || "gehalten"
-    );
-    check(
-        "O: Selbst-Schein — der Zeitplan der Welt dunkel, die Gasse sieht keine Quelle (die Zahl liest das Licht-Gesetz der Welt)",
-        !!outO.gasse && outO.gasse.schein === 0 && outO.gasse.n > 0,
-        outO.gasse ? `hell ${outO.gasse.n} · dunkel ${outO.gasse.schein}` : "keine Gasse"
-    );
-    check(
-        "O: die Laterne hat EINE Quelle — ihre Studio-Gestalt trägt Leib und Licht, kein Licht ohne Leib (`_laternenLesen` gefallen)",
-        Array.isArray(outO.laternenZwilling) && outO.laternenZwilling.length === 0,
-        "lebt: " + (outO.laternenZwilling || ["?"]).join(", ")
-    );
+        );
+        if (u.tuerenFehl && u.tuerenFehl.length) console.log("  Türen ohne Gang: " + JSON.stringify(u.tuerenFehl));
+        if (outO.slotFehl && outO.slotFehl.length) console.log("  Slots ohne Haus: " + JSON.stringify(outO.slotFehl));
+        if (outO.ortWahl && outO.ortWahl.length) console.log("  Ort-Wahl: " + outO.ortWahl.join(" | "));
+        const fehlO = ortVerdikt(m);
+        check(
+            `O ${modusName}: das Dorf trägt jedes Haus (alle Slots stehen)`,
+            outO.haeuser > 0 && outO.haeuser === outO.slots,
+            `${outO.haeuser}/${outO.slots}`
+        );
+        check(
+            `O ${modusName}: der Ort hält jede Zahl (Sockel 0, Türen, Kronen 0, Laternen, Plan-Hash, Altwelten 0, der GT ≥ 60 m in 8 s auf dem Dorfweg, ≥ 4 Quellen in der Gasse nachts)`,
+            fehlO.length === 0,
+            fehlO.join(" · ") || "gehalten"
+        );
+        check(
+            `O ${modusName}: Selbst-Schein — der Zeitplan der Welt dunkel, die Gasse sieht keine Quelle (die Zahl liest das Licht-Gesetz der Welt)`,
+            !!outO.gasse && outO.gasse.schein === 0 && outO.gasse.n > 0,
+            outO.gasse ? `hell ${outO.gasse.n} · dunkel ${outO.gasse.schein}` : "keine Gasse"
+        );
+        check(
+            `O ${modusName}: die Laterne hat EINE Quelle — ihre Studio-Gestalt trägt Leib und Licht, kein Licht ohne Leib (_laternenLesen gefallen)`,
+            Array.isArray(outO.laternenZwilling) && outO.laternenZwilling.length === 0,
+            "lebt: " + (outO.laternenZwilling || ["?"]).join(", ")
+        );
+    };
+    pruefeOrt("Dorf 7/18 Gründerzeit am Hang", "Akt", O.outO, O.gtO);
+    pruefeOrt(`das Auto-Dorf der Welt am Mess-Ort dorf, Zelle ${OA.outO.zelle || "?"}`, "Auto-Dorf", OA.outO, OA.gtO);
     console.log("\n=== TEIL C: WORLDGEN-AUTO-DÖRFER (Nachlese-Welle) ===");
     for (const [name, ok] of autoStaticLaws(stammLib.text(root))) check(name, ok);
     const c = out.c || {};

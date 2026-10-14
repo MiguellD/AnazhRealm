@@ -1370,7 +1370,7 @@ class AnazhRealm_Z03b {
     // Befund: nur die Siedlung fragte das ganze Fundament — „bau mir ein haus am wasser" stellte an 11 von 11 Uferorten ein
     // Haus, dessen Fundament 6–67 von 81 Raster-Punkten bis 0,92–3,68 m tief im Wasser stand (der Satz fragte die Mitte).
     _fundamentLand(x, z, ry, fp, tuer, saum = 0) {
-        if (!this._landAt(x, z, 0.2)) return false;
+        if (!this._landAt(x, z, AnazhRealm.WERK_LAND_M)) return false;
         if (!fp) return true;
         const c = Math.cos(ry || 0);
         const s = Math.sin(ry || 0);
@@ -1379,7 +1379,7 @@ class AnazhRealm_Z03b {
         // halben Meter (gate:werk-im-wasser Z misst ≤ 1 m). Ein Werk ohne Ort (der Satz, der Tempel) trägt keinen Saum.
         const raster = saum > 0 ? { ex: fp.ex + saum, ez: fp.ez + saum, ox: fp.ox, oz: fp.oz } : fp;
         for (const [lx, lz] of AnazhRealm._fundamentRaster(raster, tuer, 0.5))
-            if (!this._landAt(x + lx * c + lz * s, z - lx * s + lz * c, 0.2)) return false;
+            if (!this._landAt(x + lx * c + lz * s, z - lx * s + lz * c, AnazhRealm.WERK_LAND_M)) return false;
         return true;
     }
 

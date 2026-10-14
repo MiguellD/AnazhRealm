@@ -489,22 +489,110 @@ class AnazhRealm_Z08 {
     // rechnet (fachwerk `ortPlan`), über DIESELBE Gelände-Funktion (`_terrainMacroSurfaceY`, das Gesetz samt dem Erdbau früherer
     // Orte); sein Erdbau liegt, bevor das erste Haus steht. Ein Plan, der schon v2 ist, bleibt. Leser: der Akt
     // (`spawnSettlement`) und das Auto-Dorf (`_autoSettlementSpawnCell`); die Slot-Quelle liest `slot.y`.
+    // DIE ORT-WAHL (K10, Pflicht-OFFEN C: „Häuser im Fluss-Bett heilen am Plan"): der Anker ist der Wunsch; der Plan steht am
+    // nächsten Ort der Ringe um ihn (`ORT_WAHL`), an dem er JEDES Haus trägt (`_ortTraegt`: kein Haus fällt im Bett, jede
+    // Platte samt Saum und Vorplatz liegt `WERK_LAND_M` über dem Wasser des Gesetzes an ihrer EIGENEN Höhe — dasselbe Urteil,
+    // das die Wand jedes Werks (`_fundamentLand`) nach dem Erdbau fällt; kein Haus auf dem Spieler). Bis K10-6 stand das
+    // Auto-Dorf der Welt am Wunsch: vier Platten lagen 0,6 m unter dem Spiegel des Flusses (der Erdbau schnitt die Gasse unter
+    // ihn), die Wand warf die Häuser — 12/16. Der Anker folgt dem Ort des Plans (`origin` x, z und seine Mitte). Ohne
+    // trockenen Ort bleibt der Wunsch, laut: die Wand wirft die nassen Häuser.
     _ortPlanSetzen(plan, origin) {
         if (plan && plan.version === 2) return plan;
         // je Ort EIN Plan v2 (der zweite Akt am selben Anker liest sonst den Erdbau des ersten als Gelände)
         const key = "ort:" + (plan.seed >>> 0) + ":" + Math.round(origin.x) + "," + Math.round(origin.z);
         const ple = this._ortPlaene || (this._ortPlaene = new Map());
-        if (ple.has(key)) return ple.get(key);
-        // das Welt-Wasser des GESETZES (Meer, See, Fluss: `_atlasWaterLevelAt` über der Höhe — nie das gezeichnete, das vom
-        // Lade-Stand abhinge: jeder Peer legt denselben Plan) setzt das Brücken-Etikett; unter der Brücke legt der Erdbau nichts
-        const ctx = globalThis.__gelaendeCore.ortCtx(this._gelaende(), (x, z) => {
-            const w = this._atlasWaterLevelAt(x, z, -1e9);
-            return w > -Infinity && w > this._terrainMacroSurfaceY(x, z, true);
-        });
-        const v2 = globalThis.__fachwerkCore.ortPlan(plan, origin, ctx);
-        this._erdbauSetzen(key, v2.erdbau);
-        ple.set(key, v2);
+        let v2 = ple.get(key);
+        if (!v2) {
+            // das Welt-Wasser des GESETZES (Meer, See, Fluss: `_atlasWaterLevelAt` über der Höhe — nie das gezeichnete, das
+            // vom Lade-Stand abhinge: jeder Peer legt denselben Plan) setzt das Brücken-Etikett; unter der Brücke legt der
+            // Erdbau nichts
+            const ctx = globalThis.__gelaendeCore.ortCtx(this._gelaende(), (x, z) => {
+                const w = this._atlasWaterLevelAt(x, z, -1e9);
+                return w > -Infinity && w > this._terrainMacroSurfaceY(x, z, true);
+            });
+            const W = AnazhRealm.ORT_WAHL;
+            this._ensureHydroTilesAround(origin.x, origin.z, W.ringe * W.schrittM + 64);
+            for (let ring = 0; ring <= W.ringe && !v2; ring++) {
+                const n = ring ? W.richtungen : 1;
+                for (let i = 0; i < n && !v2; i++) {
+                    const a = (2 * Math.PI * i) / n;
+                    const o = {
+                        x: origin.x + Math.cos(a) * ring * W.schrittM,
+                        z: origin.z + Math.sin(a) * ring * W.schrittM,
+                    };
+                    const k = globalThis.__fachwerkCore.ortPlan(plan, o, ctx);
+                    if (this._ortTraegt(plan, k)) v2 = k;
+                }
+            }
+            if (!v2) {
+                v2 = globalThis.__fachwerkCore.ortPlan(plan, origin, ctx);
+                this.log(
+                    `ORT: der Plan „${plan.name || "?"}" findet binnen ${W.ringe * W.schrittM} m um ` +
+                        `${Math.round(origin.x)}/${Math.round(origin.z)} keinen Ort, der jedes Haus trocken trägt — die Wand ` +
+                        "wirft die nassen Häuser",
+                    "WARN"
+                );
+            }
+            this._erdbauSetzen(key, v2.erdbau);
+            ple.set(key, v2);
+        }
+        const dx = v2.ort.x - origin.x;
+        const dz = v2.ort.z - origin.z;
+        origin.x = v2.ort.x;
+        origin.z = v2.ort.z;
+        if (origin.mitte) origin.mitte = { x: origin.mitte.x + dx, z: origin.mitte.z + dz };
         return v2;
+    }
+    // TRÄGT DER PLAN v2 `k` JEDES HAUS des Exports `plan`? (die Ort-Wahl, `_ortPlanSetzen`) Kein Slot fiel im Bett (der Plan
+    // wirft ein Haus, dessen Grund das Wasser trägt), jeder Punkt des EINEN Fundament-Rasters (`_fundamentRaster`, 0,5 m,
+    // Grundriss samt Saum `ORT_GESETZ.saumM` und Vorplatz) und jede Laterne liegt mit dem Boden, den der Erdbau des Plans baut,
+    // mindestens `WERK_LAND_M` über dem Wasser des Gesetzes an dieser Höhe (`_atlasWaterLevelAt`) — das Urteil der Wand
+    // (`_fundamentLand` → `_landAt`) über dem Boden, den der Erdbau baut —, und kein Haus berührt den Spieler (Reichweite +
+    // `STRUCTURE_PLAYER_CLEAR_MARGIN`, das Dorf vor dir, `_siedlungsAnker`).
+    _ortTraegt(plan, k) {
+        if (!k || !Array.isArray(k.slots) || k.slots.length !== plan.slots.length) return false;
+        const saum = globalThis.__fachwerkCore.ORT_GESETZ.saumM;
+        const M = AnazhRealm.WERK_LAND_M;
+        const pm = this.state.playerMesh;
+        const frei = AnazhRealm.STRUCTURE_PLAYER_CLEAR_MARGIN;
+        // der Boden, den der Erdbau des Plans baut (gelaende-core `erdbauY` über dem Gesetz samt dem Erdbau früherer Orte)
+        const G = globalThis.__gelaendeCore;
+        const E = G.erdbauNormal(k.erdbau);
+        // und die Gestalt des Gewässers darüber (`_gewaesserForm` in der Dichte): wo der Fluss-Kanal (`_hydrosphereCarveAt`
+        // P samt Rundung k) unter die Platte reicht oder ein See-Becken (`_hydrosphereLakeAt`) sie hält, schneidet die Welt
+        // den Grund ins Bett — das Haus stünde im Fluss-Bett; der Damm L füllt tieferes Gelände zur Krone
+        const nass = (x, z) => {
+            const h0 = this._terrainMacroSurfaceY(x, z, true);
+            let h = E ? G.erdbauY(E, x, z, h0) : h0;
+            const C = this._hydrosphereCarveAt(x, z);
+            if (C) {
+                if (C.P < h + (C.k || 0)) return true;
+                h = Math.max(h, C.L);
+            }
+            const S = this._hydrosphereLakeAt(x, z);
+            if (S && S.w > 0) return true;
+            return h < this._atlasWaterLevelAt(x, z, h) + M;
+        };
+        for (const l of k.laternen || []) if (l && nass(k.ort.x + l.x, k.ort.z + l.z)) return false;
+        for (const sl of k.slots) {
+            const { fundament, fp } = AnazhRealm._slotGrundriss(sl);
+            if (!fp) continue;
+            const wx = k.ort.x + sl.x;
+            const wz = k.ort.z + sl.z;
+            if (pm && Math.hypot(pm.position.x - wx, pm.position.z - wz) < Math.hypot(fp.ex, fp.ez) + frei)
+                return false;
+            const s = fundament ? saum : 0;
+            const ry = sl.phi || 0;
+            const c = Math.cos(ry);
+            const sn = Math.sin(ry);
+            const raster = { ex: fp.ex + s, ez: fp.ez + s, ox: fp.ox, oz: fp.oz };
+            for (const [lx, lz] of AnazhRealm._fundamentRaster(raster, sl.tuer, 0.5)) {
+                const px = wx + lx * c + lz * sn;
+                const pz = wz - lx * sn + lz * c;
+                if (nass(px, pz)) return false;
+            }
+        }
+        return true;
     }
     // DIE ALTEN ORTE ZIEHEN UM (K10 × Entscheid §5.4: „alte Welten ziehen um, ihre Bauten werden auf das neue Gelände
     // geerdet"): ein Haus eines Orts (`fundament`), das kein Erdbau trägt — ein Save vor dem Plan v2 stellte es auf die höchste
