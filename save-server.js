@@ -871,12 +871,42 @@ function sendStaticFile(req, res) {
             const shim = wantServer ? PORTAL_SERVER_SHIM : PORTAL_TRANSPORT_SHIM;
             body = Buffer.from(injectShimScript(content.toString("utf8"), shim), "utf8");
         }
-        res.writeHead(200, {
-            "Content-Type": contentType,
-            "Access-Control-Allow-Origin": "*",
-        });
+        const kopf = statischerKopf(body, contentType);
+        if (frischBeimLeser(req, kopf.ETag)) {
+            res.writeHead(304, {
+                ETag: kopf.ETag,
+                "Cache-Control": kopf["Cache-Control"],
+                "Access-Control-Allow-Origin": "*",
+            });
+            res.end();
+            return;
+        }
+        res.writeHead(200, kopf);
         res.end(body);
     });
+}
+
+// DER CACHE-KOPF JEDER STATISCHEN DATEI (1310-16, Pflicht-OFFEN B): bis hier sandte der Server weder Validator noch Regel — jeder
+// Zweit-Boot lud 68 Skripte und 8,84 MB neu. Jetzt trägt jede Antwort ihren ETag (der Inhalt, wie er ausgeliefert wird: SHA-1,
+// stark) und `Cache-Control: no-cache` — der Browser hält die Datei und fragt bei jedem Boot nach; stimmt der ETag, antwortet
+// der Server 304 ohne Körper. Kein `immutable` auf `?v=`: der Stempel ist die VERSION, nicht der Inhalt — main ändert Code
+// auch ohne Versions-Sprung, ein immutabler Eintrag hielte dann alten Code bis zum nächsten Sprung (die Linse: gate:persistence
+// (C)).
+function statischerKopf(body, contentType) {
+    return {
+        "Content-Type": contentType,
+        "Access-Control-Allow-Origin": "*",
+        "Cache-Control": "no-cache",
+        ETag: '"' + crypto.createHash("sha1").update(body).digest("base64url") + '"',
+    };
+}
+function frischBeimLeser(req, etag) {
+    const wenn = req.headers && req.headers["if-none-match"];
+    if (!wenn) return false;
+    return wenn
+        .split(",")
+        .map((s) => s.trim().replace(/^W\//, ""))
+        .some((s) => s === etag || s === "*");
 }
 
 // DAS GANZE SCHREIBEN (K23): eine Datei des Servers wechselt nur GANZ. Der neue Inhalt geht in eine tmp-Datei daneben

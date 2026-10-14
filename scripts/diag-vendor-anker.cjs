@@ -95,7 +95,21 @@ const ANKER = [
     { file: "vendor/three.webgpu.min.js", sub: 'class bN{constructor(e="",t=[]){this.name=e,this.bindings=t,this.id=yN++}}', organ: "AnazhRealm._diaetGang (die Bindegruppe trägt eine Id)" },
     { file: "vendor/three.webgpu.min.js", sub: "getUpdateBeforeType(){return this.updateBeforeType}", organ: "AnazhRealm._diaetGang (Vorher-Takt: object geht je Programm)" },
     { file: "vendor/three.webgpu.min.js", sub: "updateBeforeNode(e){const t=e.getUpdateBeforeType(),r=e.updateReference(this);if(t===ri.FRAME){", organ: "AnazhRealm._diaetGeteiltSchreiben (NodeFrame.updateBeforeNode je Vorher-Knoten, wie Nodes.updateBefore)" },
-    { file: "vendor/three.webgpu.min.js", sub: "updateReference(e){return this.reference=null!==this.object?this.object:e.object,this.reference}", organ: "AnazhRealm._diaetGang (ein Verweis ohne festes Objekt liest frame.object — sein Programm geht seinen eigenen Gang)" },
+    { file: "vendor/three.webgpu.min.js", sub: "updateReference(e){return this.reference=null!==this.object?this.object:e.object,this.reference}", organ: "AnazhRealm._diaetGang (ein Verweis ohne festes Objekt liest frame.object — sein Programm geht seinen eigenen Gang) · _stoffWert (der Wert je Stoff liest den Stoff des zeichnenden Objekts, in jedem Pass)" },
+    // EIN GRAPH JE SIGNATUR (1310-18, `_foundryTreeMaterial` · `_membranGraph` · `_nebelGraph`): r184 schlüsselt ein Programm
+    // nach der IDENTITÄT seiner Knoten — der Knoten-Schlüssel endet in `customCacheKey` = Knoten-id; frisch gebaute Knoten
+    // hießen ein Programm je Stoff. Und je InstancedMesh hängt r184 die Objekt-uuid an den Schlüssel (der InstanceNode bindet
+    // die Matrix-Puffer des Objekts in den Graphen): die instanzierten Foundry-Teile bauen je Objekt, auch mit EINEM Graphen —
+    // fällt dieser Term, teilen sie ihr Programm ohne Umbau.
+    { file: "vendor/three.webgpu.min.js", sub: "customCacheKey(){return this.id}", organ: "EIN GRAPH JE SIGNATUR (_foundryTreeMaterial · _membranGraph · _nebelGraph: Programm-Schlüssel = Knoten-Identität)" },
+    { file: "vendor/three.webgpu.min.js", sub: '(e.isInstancedMesh||e.count>1||Array.isArray(e.morphTargetInfluences))&&(s+=e.uuid+",")', organ: "EIN GRAPH JE SIGNATUR (benannt: je InstancedMesh ein Programm — der Erst-Bau der Foundry-Instanzen)" },
+    // DER POSITIONS-KNOTEN VOR DER INSTANZ-MATRIX (K20-N1, Integration V18.547): `setupPosition` legt die Zuweisung des
+    // positionNode auf den Stapel, der Instanz-Knoten hängt sein `positionLocal = M × positionLocal` erst in seinem setup an,
+    // und `StackNode.build` baut nachgereichte Knoten NACH den ersten — im positionNode sind positionLocal, normalLocal und
+    // positionWorld die VORLAGE. Wer die Welt braucht, liest die EINE Naht `_weltNaht` (stoffe las es 1310-18 umgekehrt).
+    { file: "vendor/three.webgpu.min.js", sub: 'Sp(t).toStack(),null!==this.positionNode&&lc.assign(Gu(this.positionNode,"POSITION","vec3"))', organ: "AnazhRealm._weltNaht (setupPosition: die Zuweisung des positionNode steht im Stapel vor der Instanzierung)" },
+    { file: "vendor/three.webgpu.min.js", sub: "const n=t.mul(lc).xyz;if(lc.assign(n)", organ: "AnazhRealm._weltNaht (InstanceNode.setup: die Instanz-Matrix wird erst im setup an den aktiven Stapel gehängt)" },
+    { file: "vendor/three.webgpu.min.js", sub: "const a=this.nodes.filter(e=>-1===n.indexOf(e));for(const e of a)i(e)", organ: "AnazhRealm._weltNaht (StackNode.build: nachgereichte Knoten bauen NACH den ersten — positionNode vor der Instanz-Matrix)" },
     // JEDE TEXTUR DES PROGRAMMS (Integration V18.542): die Bindung einer Textur trägt ihren Knoten, und r184 lädt die Textur
     // nur im Binde-Gang eines Render-Objekts hoch — den fährt nur ein Refresh (der Textur-Wächter der Diät).
     { file: "vendor/three.webgpu.min.js", sub: "textureNode=t,this.groupNode=r,this.access=s}update(){const{textureNode:e}=this;return this.texture!==e.value?(this.texture=e.value,!0):super.update()}", organ: "AnazhRealm._diaetGang (die Textur-Bindung trägt ihren Knoten: jede Textur des Programms)" },

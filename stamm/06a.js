@@ -1614,6 +1614,9 @@ class AnazhRealm_Z06a {
             if (Array.isArray(j.quat)) g.quaternion.set(j.quat[0], j.quat[1], j.quat[2], j.quat[3]);
             if (Array.isArray(j.scale)) g.scale.set(j.scale[0], j.scale[1], j.scale[2]);
         }
+        // das Volumen der geschlossenen Haut (1310-15, der Ofen misst es vor dem Stoff-Schnitt) hängt am Gelenk der Hülle —
+        // die Masse liest es (`_leibVolumen`), nie die offene Fläche
+        if (skelett.leibV > 0 && teile[rootName]) teile[rootName].userData.__leibV = skelett.leibV;
         let gebaut = 0;
         for (const m of meshes) {
             if (!m || m.kind === "__skelett") continue;

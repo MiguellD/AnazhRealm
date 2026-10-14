@@ -12,7 +12,9 @@
 //   profil (12 s, Regler voll, Top 60) — und stop. DER GENESIS-RING (`--ort genesis`, 0910-1) misst in seinem EIGENEN Boot:
 //   boot · dorf-aus · fenster · umstellen --ort genesis · buehne · band — nie in einer Sitzung, die schon anderes maß.
 //   DIE BAND urteilt ihre Aufzeichnung selbst: steht der Ort nicht (`ortGestellt`: „NICHT GESTELLT"), ist der Lauf ROT und
-//   zählt nie; ein Rahmen-Ziel des Direktpfads im VRAM (`tex:r184-ausgabe`, ein Linsen-Rest) ebenso.
+//   zählt nie; JEDE Rot-Zeile der Band-Linse (ratsche · haushalt · unbenannt · stufe · leck · weit · ungemessen) ebenso —
+//   außer die Basis-Seite A des ABAB (`--basis`) trägt sie (K26: bis 13.10. sah der Exit die Linse nie, 1110-12 meldete
+//   „12 von 12 GRÜN" bei 8 von 8 Band-Boots „linse ROT"). Die Band richtet die Ratsche ihres Orts × Geräts × Sicht.
 //   DIE WACHEN nach jedem Schritt (`/wache` der Werkbank):
 //     WETTER   ab der Bühne: kein Schreiber dreht das Wetter (das Buch des Wetter-Spions, `wetterUrteil`), die Uhr des
 //              Auto-Zugs steht eingefroren, das Wort bleibt „sunny";
@@ -40,6 +42,8 @@
 //
 //   node scripts/omen-messfolge.cjs [--ort wiese|genesis] [--port 4490] [--seite http://localhost:4312] [--serie <name>] [--datei f.json]
 //                                   [--lauf-sek 30] [--ein 20] [--ruhe 300] [--profil-sek 12] [--proben 6]
+//                                   [--sicht ego|third] [--basis <A.json>]   (K26: die Sicht des Orts; die Basis-Seite A des ABAB)
+//   node scripts/omen-messfolge.cjs --urteil <boot.json> [--basis <A.json>]   (K26, ohne GPU: ein gespeicherter Boot neu gelesen)
 //   node scripts/omen-messfolge.cjs --schalter <bloecke.json> (1310-1: ein Schalter in EINER Sitzung, Erst- gegen Dauer-Zeichnung)
 //   node scripts/omen-messfolge.cjs --selbsttest       (ohne Welt: jede Wache und die Folge-Regel fallen bei ihrem Täter rot)
 //
@@ -341,6 +345,11 @@ function taktZusammen(liste) {
 const ORT = opt("--ort", "wiese");
 if (!FOLGEN[ORT]) throw new Error(`omen-messfolge: kein Messort „${ORT}" (Folgen: ${Object.keys(FOLGEN).join(", ")})`);
 const FOLGE = FOLGEN[ORT];
+// DIE SICHT (K26, Pflicht-OFFEN E in Ego UND Third-Person): der Ort wird in ihr aufgestellt, die Band richtet die Ratsche
+// dieses Orts × Geräts × Sicht.
+const SICHT = opt("--sicht", "ego");
+if (!BAND.ladeSpec(ORT).haushalt.sichten[SICHT])
+    throw new Error(`omen-messfolge: keine Sicht „${SICHT}" (${Object.keys(BAND.ladeSpec(ORT).haushalt.sichten).join(", ")})`);
 const FENSTER = [1920, 1080];
 // die messenden Schritte (Ort und Fenster gelten vor und nach ihnen), die Leser der Pass-Stempel und die Pool-Füller
 const MESSEN = new Set(["lauf-voll", "lauf-frei", "gpu-bank", "band", "profil"]);
@@ -389,18 +398,55 @@ function tierUrteil(name, t) {
         if (typeof n !== "number" || !Number.isFinite(n)) v.push(`TIERE ${name}: ${k} ist ${n}`);
     return v;
 }
-// DIE BAND-MESSUNG SELBST (rein, 0910-1): was die Band beim Zählen aufzeichnete — der gestellte Ort (`ortGestellt`: Ort der
-// letzten Aufstellung, Dorf-Zug, Ort-Takt, Gier; „NICHT GESTELLT" ist ROT, der Lauf zählt nie) und ein Rahmen-Ziel des
-// Direktpfads im VRAM (ein Linsen-Rest, `BAND.rahmenZielBefunde`).
-function bandBefunde(messung) {
+// DIE BAND-MESSUNG SELBST (rein, 0910-1; der LESER K26): was die Band beim Zählen aufzeichnete — der gestellte Ort
+// (`ortGestellt`: Ort der letzten Aufstellung, Dorf-Zug, Ort-Takt, Gier, Sicht; „NICHT GESTELLT" ist ROT, der Lauf zählt nie),
+// das Gerät und die Sicht, die ihre Ratsche wählen, und JEDE Rot-Zeile der Band-Linse (ratsche · haushalt · unbenannt ·
+// stufe · leck · weit · ungemessen) als Befund. Bis 13.10. las die Folge nur Ort und Rahmen-Ziel, der Exit sah die Linse nie:
+// 1110-12 urteilte in 8 von 8 Band-Boots „linse ROT", der Bericht „12 von 12 GRÜN, exit 0".
+// `basis` = die Band-Messung der Basis-Seite A des ABAB (`--basis`): eine Zeile, die A am selben Ort, Gerät und in derselben
+// Sicht trägt (derselbe Schlüssel, B nicht über A hinaus), ist kein Befund dieser Seite — sie bleibt der Befund von A.
+function bandBefunde(messung, basis) {
     if (!messung || typeof messung !== "object") return ["BAND band: keine Messung (die Band schrieb keine Datei)"];
     const v = [];
     if (!Array.isArray(messung.ortGestellt)) v.push("ORT band: die Band zeichnete den gestellten Ort nicht auf");
     else if (messung.ortGestellt.length) v.push(`ORT band: NICHT GESTELLT — ${messung.ortGestellt.join(" · ")}`);
-    const roh = messung.roh || {};
-    for (const b of BAND.rahmenZielBefunde(roh.vram, roh.texturen)) v.push(`RAHMEN-ZIEL band: ${b.text}`);
+    const geraet = messung.geraet && messung.geraet.schluessel;
+    if (!geraet)
+        v.push(
+            `BAND band: die Messung nennt kein Gerät (${(messung.geraet && messung.geraet.text) || "kein Adapter-Text"}) — keine Ratsche richtet sie`
+        );
+    if (!messung.sicht) v.push("BAND band: die Messung nennt keine Sicht — keine Ratsche richtet sie");
+    if (!Array.isArray(messung.rot)) {
+        v.push("BAND band: die Band-Linse schrieb kein Urteil (keine Rot-Liste)");
+        return v;
+    }
+    let traeger = null;
+    if (basis) {
+        const bg = basis.geraet && basis.geraet.schluessel;
+        const fremd = [];
+        if (basis.ort !== messung.ort) fremd.push(`Ort ${basis.ort}`);
+        if (bg !== geraet) fremd.push(`Gerät ${bg || "?"}`);
+        if (basis.sicht !== messung.sicht) fremd.push(`Sicht ${basis.sicht || "?"}`);
+        if (fremd.length || !Array.isArray(basis.rot))
+            v.push(
+                `BASIS band: die Basis-Seite A stand an ${fremd.join(" · ") || "?"}${Array.isArray(basis.rot) ? "" : " ohne Rot-Liste"} — sie trägt keine Zeile dieser Seite`
+            );
+        else traeger = new Map(basis.rot.filter((r) => r && r.schluessel).map((r) => [r.schluessel, r]));
+    }
+    const tol = (basis && basis.toleranz) || messung.toleranz || null;
+    const zahl = (x) => typeof x === "number" && Number.isFinite(x);
+    for (const r of messung.rot) {
+        const a = traeger && r.schluessel ? traeger.get(r.schluessel) : null;
+        if (a && !(zahl(r.ist) && zahl(a.ist) && r.groesse && BAND.ueberRatsche(r.ist, a.ist, tol, r.groesse))) continue;
+        v.push(`BAND-LINSE ${r.art}: ${r.text}${a ? ` (über der Basis A ${a.ist})` : ""}`);
+    }
     return v;
 }
+// Die Band-Messung eines Boots (das JSON der Folge: der Schritt „band", seine Messung) — null, wenn keiner da ist.
+const bandMessungAus = (j) => {
+    const e = j && Array.isArray(j.schritte) ? j.schritte.find((x) => x.name === "band") : null;
+    return e && e.ergebnis ? e.ergebnis.messung || null : null;
+};
 
 // die Tiere in der Kurzfassung (je Messung eine Zeile im Bericht)
 const tierKurz = (t) =>
@@ -463,7 +509,7 @@ function wachenUrteil(name, vor, nach, ort, gehalten) {
                 v.push(`ORT ${name}: keine Wache ${wann} dem Schritt`);
                 continue;
             }
-            for (const f of BAND.ortGestellt(ort, w.ort)) v.push(`ORT ${name} (${wann}): ${f}`);
+            for (const f of BAND.ortGestellt(ort, w.ort, SICHT)) v.push(`ORT ${name} (${wann}): ${f}`);
             const d = Math.hypot(w.ort.spieler[0] - ort.spieler[0], w.ort.spieler[1] - ort.spieler[1]);
             if (!(d <= 8))
                 v.push(
@@ -572,6 +618,19 @@ async function folge() {
         }
     };
     const sha = git("rev-parse HEAD");
+    // DIE BASIS-SEITE A (`--basis <A.json>`, das JSON ihres Boots): vor dem Boot gelesen — ein anderer Ort, eine andere Sicht
+    // oder keine Band-Messung brechen ab (Exit 2), nie still ohne Basis.
+    const basisDatei = opt("--basis", null);
+    let basis = null;
+    if (basisDatei) {
+        const bj = JSON.parse(fs.readFileSync(path.resolve(basisDatei), "utf8"));
+        basis = bandMessungAus(bj);
+        const bp = bj.parameter || {};
+        if (!basis || bp.ort !== ORT || bp.sicht !== SICHT)
+            throw new Error(
+                `--basis ${basisDatei}: ${basis ? `Ort ${bp.ort} · Sicht ${bp.sicht}` : "keine Band-Messung"} — die Basis-Seite A misst ${ORT} · ${SICHT}`
+            );
+    }
     const start = new Date();
     const datei = path.resolve(
         opt(
@@ -596,7 +655,10 @@ async function folge() {
         },
         start: start.toISOString(),
         rechner: { name: os.hostname(), cpu: (os.cpus()[0] || {}).model || null },
-        parameter: Object.assign({ port: PORT, seite: SEITE, serie: SERIE || null, ort: ORT, fenster: FENSTER }, P),
+        parameter: Object.assign(
+            { port: PORT, seite: SEITE, serie: SERIE || null, ort: ORT, sicht: SICHT, basis: basisDatei, fenster: FENSTER },
+            P
+        ),
         schritte: [],
         befunde: [],
         kurz: {},
@@ -660,7 +722,7 @@ async function folge() {
         // die Wache vor dem ersten Schritt mit Ort: der Stand nach dem Boot
         await schritt("dorf-aus", () => R("/eval", { code: "window.__anazhAutoSettlement = false; return true;" }));
         await schritt("fenster", () => R("/fenster", { w: FENSTER[0], h: FENSTER[1] }));
-        await schritt("umstellen", () => R("/umstellen", { ort: ORT }));
+        await schritt("umstellen", () => R("/umstellen", { ort: ORT, sicht: SICHT }));
         await schritt("buehne", () => R("/eval", { code: "return window.__buehne();" }));
         // die Tiere des zuletzt gefahrenen Schritts (aus seiner Wache) — neben jede Kurzfassung
         const tiereZuletzt = () => {
@@ -779,10 +841,11 @@ async function folge() {
                 delete e.ergebnis.datei;
                 fs.rmSync(bandDatei, { force: true });
             }
-            // die Band urteilt ihre eigene Aufzeichnung: der gestellte Ort und kein Rahmen-Ziel des Direktpfads
+            // die Band urteilt ihre eigene Aufzeichnung: der gestellte Ort, Gerät und Sicht und jede Rot-Zeile der Linse, die
+            // die Basis-Seite A nicht trägt
             if (!abbruchVon(band)) {
                 const e = aus.schritte[aus.schritte.length - 1];
-                const bb = bandBefunde(messung);
+                const bb = bandBefunde(messung, basis);
                 e.befunde.push(...bb);
                 aus.befunde.push(...bb);
                 for (const b of bb) console.log(`  ROT ${b}`);
@@ -798,6 +861,10 @@ async function folge() {
                           gestellt:
                               messung && Array.isArray(messung.ortGestellt) ? messung.ortGestellt.length === 0 : null,
                           vramMB: vram,
+                          geraet: messung && messung.geraet ? messung.geraet.schluessel : null,
+                          sicht: messung ? messung.sicht || null : null,
+                          rot: messung && Array.isArray(messung.rot) ? messung.rot.length : null,
+                          befunde: messung ? bandBefunde(messung, basis).length : null,
                       }
                     : null
             );
@@ -896,6 +963,7 @@ async function selbsttest() {
                     ortTakt: [],
                     gier: BAND.ortGier(ort),
                     spieler: ort.spieler.slice(),
+                    sicht: "ego",
                 },
                 fenster: { innen: FENSTER.slice(), puffer: FENSTER.slice() },
                 tiere: {
@@ -1107,12 +1175,13 @@ async function selbsttest() {
             wachenUrteil("band", anWiese, anWiese, g, true),
             /ORT band \(vor\): aufgestellt am Ort wiese, nicht genesis/
         );
-        const zerlegSitzung = {
-            ortGestellt: [
-                "aufgestellt am Ort wiese, nicht genesis",
-                "Ort-Takt [], der Ort will [_genesisPortalRing,_portalApproachPrefetch]",
-            ],
-            roh: {
+        // DER LESER DER BAND-LINSE (K26; 1110-12: 8 von 8 Band-Boots „linse ROT", der Bericht „12 von 12 GRÜN, exit 0"): jede
+        // Rot-Zeile der Linse ist ein Befund der Folge — außer die Basis-Seite A des ABAB trägt sie (derselbe Schlüssel, B nicht
+        // über A hinaus, A am selben Ort, Gerät und in derselben Sicht).
+        const { haushalt } = BAND.ladeSpec("genesis");
+        const zerlegSitzung = Object.assign(
+            BAND.bandUrteil({
+                zensus: { klassen: [] },
                 vram: {
                     mb: 141.1,
                     liste: [
@@ -1121,28 +1190,63 @@ async function selbsttest() {
                         { k: "tex:r184-ausgabe:tiefe depth24plus 1920x1080x1", mb: 7.9, n: 1 },
                     ],
                 },
-            },
-        };
-        const bz = bandBefunde(zerlegSitzung);
-        pruefe(
-            "0710-9: Genesis nicht gestellt",
-            bz,
-            /ORT band: NICHT GESTELLT — aufgestellt am Ort wiese, nicht genesis/
-        );
-        pruefe(
-            "0710-9: das Rahmen-Ziel der Zerleg-Linse",
-            bz,
-            /RAHMEN-ZIEL band: tex:r184-ausgabe 23\.7 MB in 2 Texturen/
-        );
-        pruefe(
-            "gestellter Ring ohne Rahmen-Ziel",
-            bandBefunde({
-                ortGestellt: [],
-                roh: { vram: { mb: 98, liste: [{ k: "buf:szene:bodenSatz", mb: 24.5, n: 6 }] } },
+                haushalt,
+                ratsche: BAND.ladeSpec("genesis", { geraet: "radeon", sicht: "ego" }).ratsche,
+                ort: g,
             }),
-            null
+            {
+                ortGestellt: [
+                    "aufgestellt am Ort wiese, nicht genesis",
+                    "Ort-Takt [], der Ort will [_genesisPortalRing,_portalApproachPrefetch]",
+                ],
+                geraet: { schluessel: "radeon", text: "amd rdna-3" },
+                sicht: "ego",
+            }
         );
+        const bz = bandBefunde(zerlegSitzung);
+        pruefe("0710-9: Genesis nicht gestellt", bz, /ORT band: NICHT GESTELLT — aufgestellt am Ort wiese, nicht genesis/);
+        pruefe("0710-9: das Rahmen-Ziel der Zerleg-Linse", bz, /BAND-LINSE leck: tex:r184-ausgabe 23\.7 MB in 2 Texturen/);
+        const TOL = { toleranzPct: 1, toleranzAbs: { befehle: 2, dreiecke: 5000, vramMB: 2 } };
+        const M = (rot, z) =>
+            Object.assign({ ort: "wiese", geraet: { schluessel: "gtx", text: "nvidia pascal" }, sicht: "ego", ortGestellt: [], toleranz: TOL, rot }, z);
+        const zeile = (art, schluessel, ist, groesse, text) => ({ art, schluessel, ist, groesse, text });
+        const EINZEL = zeile("ratsche", "ratsche:einzelstuecke:k0:dreiecke", 37964, "dreiecke", "einzelstuecke k0: 37964 dreiecke über der Ratsche 0 (Täter: spieler, dsl-insel, feld-pass)");
+        pruefe("ein gestellter Ring ohne Rot-Zeile", bandBefunde(M([])), null);
+        pruefe("eine eingeschmuggelte Rot-Zeile der Band-Linse", bandBefunde(M([EINZEL])), /^BAND-LINSE ratsche: einzelstuecke k0: 37964 dreiecke über der Ratsche 0/);
+        for (const [art, s, ist, gr] of [
+            ["haushalt", "haushalt:g:neu", 4, "befehle"],
+            ["unbenannt", "unbenannt:UNBENANNT:Mesh", 3, "befehle"],
+            ["stufe", "stufe:f:buche:L0:L0", 120, null],
+            ["leck", "leck:buf:verwaist", 12.5, "vramMB"],
+            ["weit", "weit:baum:haupt:dreiecke", null, null],
+            ["ungemessen", "ratsche:ungemessen", null, null],
+        ])
+            pruefe(`Rot-Zeile ${art}`, bandBefunde(M([zeile(art, s, ist, gr, `${art}-Zeile`)])), new RegExp(`^BAND-LINSE ${art}: ${art}-Zeile`));
+        pruefe("die Basis A trägt die Zeile (gleicher Schlüssel, gleiches Ist)", bandBefunde(M([EINZEL]), M([EINZEL])), null);
+        pruefe(
+            "B über der Basis A hinaus (47 028 gegen 37 964 Dreiecke)",
+            bandBefunde(M([Object.assign({}, EINZEL, { ist: 47028 })]), M([EINZEL])),
+            /^BAND-LINSE ratsche: .* \(über der Basis A 37964\)/
+        );
+        pruefe("die Basis A trägt einen anderen Schlüssel", bandBefunde(M([EINZEL]), M([zeile("ratsche", "ratsche:boden:haupt:dreiecke", 1, "dreiecke", "x")])), /^BAND-LINSE ratsche: einzelstuecke/);
+        pruefe("die Basis A an einem anderen Gerät", bandBefunde(M([EINZEL]), M([EINZEL], { geraet: { schluessel: "radeon", text: "amd" } })), /^BASIS band: .*Gerät radeon/);
+        pruefe("die Basis A in einer anderen Sicht", bandBefunde(M([EINZEL]), M([EINZEL], { sicht: "third" })), /^BASIS band: .*Sicht third/);
+        pruefe("eine Zeile ohne Schlüssel trägt keine Basis", bandBefunde(M([{ art: "ratsche", text: "alt" }]), M([{ art: "ratsche", text: "alt" }])), /^BAND-LINSE ratsche: alt/);
+        pruefe("die Messung nennt kein Gerät", bandBefunde(M([], { geraet: null })), /^BAND band: die Messung nennt kein Gerät/);
+        pruefe("die Band-Linse schrieb kein Urteil", bandBefunde(M(undefined)), /^BAND band: die Band-Linse schrieb kein Urteil/);
         pruefe("die Band schrieb keine Messung", bandBefunde(null), /keine Messung/);
+        // DIE GEGENPROBE 1110-12 (spec/profiband/probe-1110-12.json): beide Boots ROT beim Namen
+        const probe = JSON.parse(fs.readFileSync(path.join(root, "spec", "profiband", "probe-1110-12.json"), "utf8"));
+        const bandVon = (j) => j.schritte.find((s) => s.name === "band").ergebnis.messung;
+        pruefe("1110-12 w2B (Wiese)", bandBefunde(bandVon(probe.boots.w2B)), /^BAND-LINSE ratsche: einzelstuecke k0: 37964 dreiecke über der Ratsche 0/);
+        pruefe("1110-12 g2B (Genesis)", bandBefunde(bandVon(probe.boots.g2B)), /^BAND-LINSE ratsche: boden haupt: 101954 dreiecke über der Ratsche 95817/);
+        pruefe("1110-12 w2B mit sich selbst als Basis (alte Zeilen ohne Schlüssel)", bandBefunde(bandVon(probe.boots.w2B), bandVon(probe.boots.w2B)), /^BAND-LINSE ratsche: einzelstuecke k0/);
+        // DIE SICHT gehört zum gestellten Ort (Pflicht-OFFEN E in Ego und Third-Person): eine Wache in der anderen Sicht ist rot
+        pruefe(
+            "Third-Person gezählt, Ego verlangt (Ort-Wache)",
+            wachenUrteil("band", wache(), wache({ ort: Object.assign({}, wache().ort, { sicht: "third" }) }), ort, true),
+            /ORT band \(nach\): Sicht third, verlangt ego/
+        );
     }
     // DAS ENDE DER WERKBANK: eine Werkbank, deren `/stop` hängt (sie lebt weiter) und die ein Kind trägt (Chrome) — nach
     // `beendeBaum` lebt keiner der beiden mehr (vorher: der Abbau stand in einem unref-Timer, die Werkbank blieb als Waise)
@@ -1388,6 +1492,25 @@ function schalterCli() {
     process.exit(0);
 }
 
+// DER LESER OHNE GPU (K26, `--urteil <boot.json> [--basis <A.json>]`): ein gespeicherter Boot der Folge, neu gelesen — die
+// Befunde seiner Wachen und die Band-Linse (jede Rot-Zeile, die die Basis-Seite A nicht trägt). Exit 1, sobald einer steht.
+function urteilCli() {
+    const lies = (d) => JSON.parse(fs.readFileSync(path.resolve(d), "utf8"));
+    const j = lies(argv[argv.indexOf("--urteil") + 1]);
+    const bd = opt("--basis", null);
+    const basis = bd ? bandMessungAus(lies(bd)) : null;
+    const wachen = (j.befunde || []).filter((b) => !/^(BAND|BAND-LINSE|BASIS|ORT band|RAHMEN-ZIEL band)\b/.test(b));
+    const band = (j.folge || []).includes("band") || bandMessungAus(j) ? bandBefunde(bandMessungAus(j), basis) : [];
+    const p = j.parameter || {};
+    console.log(
+        `=== DER LESER: ${p.ort || "?"} · Sicht ${p.sicht || "?"} · ${(j.stand && j.stand.version) || "?"}${bd ? " gegen die Basis " + bd : ""} ===`
+    );
+    for (const b of [...wachen, ...band]) console.log("  ROT " + b);
+    const n = wachen.length + band.length;
+    console.log(n ? `\n❌ LESER ROT — ${n} Befunde (gespeichert: ${j.urteil})` : `\n✅ LESER GRÜN (gespeichert: ${j.urteil})`);
+    process.exit(n ? 1 : 0);
+}
+
 if (require.main === module) {
     if (argv.includes("--selbsttest"))
         selbsttest().catch((e) => {
@@ -1396,6 +1519,7 @@ if (require.main === module) {
         });
     else if (argv.includes("--streuung")) streuungCli();
     else if (argv.includes("--schalter")) schalterCli();
+    else if (argv.includes("--urteil")) urteilCli();
     else
         folge().catch((e) => {
             console.error("MESS-FOLGE-FEHLER:", (e && e.stack) || e);
@@ -1410,6 +1534,7 @@ module.exports = {
     wachenUrteil,
     tierUrteil,
     bandBefunde,
+    bandMessungAus,
     beendeBaum,
     streuungUrteil,
     schalterUrteil,

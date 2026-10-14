@@ -953,6 +953,9 @@ class AnazhRealm_Z10 {
     // Licht des Auges) trägt nur, wo sie fehlt; ohne sie gilt der Stoff als offen. KEIN Szenen-Licht: r184 sammelt jedes
     // Szenen-Licht in den Licht-Hash jedes beleuchteten Stoffs und rechnet seine BRDF auch auf Stärke 0 — der Pool ist eine
     // feste Zahl geteilter Uniforms ab dem Boot (EIN Schreiber `_leuchtTakt`), ein Wechsel der Quellen baut kein Programm.
+    // EIN KNOTEN JE GRAPH (1310-18): dasselbe Leuchten über derselben Basis (dem Leucht-Knoten des Stoffs oder r184s
+    // `materialEmissive`), demselben Zeitplan und derselben Himmels-Sicht ist DERSELBE Knoten — Stoffe mit geteiltem Graphen
+    // (`_foundryTreeMaterial`) teilen so auch ihr Leuchten und mit ihm ihr Programm (r184 schlüsselt nach der Knoten-Identität).
     _leuchtStoff(mat, mp, himmel) {
         if (!mat || mat.isNodeMaterial !== true) throw new Error("_leuchtStoff: kein Knoten-Stoff");
         const Te = THREE.TSL;
@@ -962,9 +965,20 @@ class AnazhRealm_Z10 {
             mat.userData.lichtPool = "quelle";
             return mat;
         }
-        let em = mat.emissiveNode ? Te.vec3(mat.emissiveNode) : Te.materialEmissive;
-        if (mp && mp.licht === "fenster") em = em.add(atmo.fensterGlut);
-        mat.emissiveNode = em.add(this._lichtPoolTerm(Te, atmo, himmel || null));
+        const ohne = this._leuchtOhne || (this._leuchtOhne = {});
+        const jeBasis = this._leuchtKnoten || (this._leuchtKnoten = new WeakMap());
+        const basis = mat.emissiveNode || ohne;
+        if (!jeBasis.has(basis)) jeBasis.set(basis, new WeakMap());
+        const jeHimmel = jeBasis.get(basis);
+        if (!jeHimmel.has(himmel || ohne)) jeHimmel.set(himmel || ohne, {});
+        const knoten = jeHimmel.get(himmel || ohne);
+        const plan = mp && mp.licht === "fenster" ? "fenster" : "offen";
+        if (!knoten[plan]) {
+            let em = mat.emissiveNode ? Te.vec3(mat.emissiveNode) : Te.materialEmissive;
+            if (plan === "fenster") em = em.add(atmo.fensterGlut);
+            knoten[plan] = em.add(this._lichtPoolTerm(Te, atmo, himmel || null));
+        }
+        mat.emissiveNode = knoten[plan];
         mat.userData.lichtPool = true;
         return mat;
     }
@@ -1619,25 +1633,40 @@ class AnazhRealm_Z10 {
     // des Instanz-Ursprungs, `skala` die Instanz-Skala, `spalte(i)` die Achsen, `richtung(n)` eine Vorlagen-Richtung in
     // der Welt und `vorlage(w)` einen Welt-Versatz (Meter, Welt-Richtung) zurück in die Vorlage (Spalten c_i ⟂: c_i·w / |c_i|²)
     // — sonst drehte und skalierte die Matrix ihn mit jeder Instanz (der Wind wehte in der Drehung seines Baums,
-    // gate:foundry-impostor C4).
+    // gate:foundry-impostor C4). Die Wurzel der Reihenfolge im Vendor (three.webgpu.min.js): `setupPosition` legt die
+    // Zuweisung des positionNode auf den Stapel; Instanz-, Batch- und Skin-Knoten hängen ihr `positionLocal.assign(M × …)`
+    // erst in ihrem setup an den aktiven Stapel, und `StackNode.build` baut nachgereichte Knoten NACH den ersten — das gilt
+    // für jede InstancedMesh, die Foundry-Senken eingeschlossen. EIN Satz Knoten (1310-18): r184 schlüsselt ein Programm
+    // nach der Identität seiner Knoten — die Naht entsteht EINMAL, `richtung` und `vorlage` merken sich ihren Knoten je
+    // Eingang, sonst trüge jeder Leser, der seinen Graphen teilt (der Wind je Art), doch frische Knoten.
     _weltNaht(T) {
+        if (this._weltNahtKnoten) return this._weltNahtKnoten;
         const Mw = T.modelWorldMatrix.mul(this._instanzMatrixNode(T));
         const c0 = Mw.element(0).xyz;
         const c1 = Mw.element(1).xyz;
         const c2 = Mw.element(2).xyz;
-        return {
+        const jeRichtung = new WeakMap();
+        const jeVorlage = new WeakMap();
+        const merk = (karte, n, bau) => {
+            if (!karte.has(n)) karte.set(n, bau(n));
+            return karte.get(n);
+        };
+        this._weltNahtKnoten = {
             anker: Mw.element(3).xyz,
             lage: Mw.mul(T.vec4(T.positionLocal, 1.0)).xyz,
             skala: c0.length(),
             spalte: (i) => (i === 0 ? c0 : i === 1 ? c1 : c2),
-            richtung: (n) => T.normalize(Mw.mul(T.vec4(n, 0.0)).xyz),
+            richtung: (n) => merk(jeRichtung, n, (r) => T.normalize(Mw.mul(T.vec4(r, 0.0)).xyz)),
             vorlage: (w) =>
-                T.vec3(
-                    c0.dot(w).div(c0.dot(c0).max(1e-12)),
-                    c1.dot(w).div(c1.dot(c1).max(1e-12)),
-                    c2.dot(w).div(c2.dot(c2).max(1e-12))
+                merk(jeVorlage, w, (v) =>
+                    T.vec3(
+                        c0.dot(v).div(c0.dot(c0).max(1e-12)),
+                        c1.dot(v).div(c1.dot(c1).max(1e-12)),
+                        c2.dot(v).div(c2.dot(c2).max(1e-12))
+                    )
                 ),
         };
+        return this._weltNahtKnoten;
     }
 
     // DIE INSTANZ-MATRIX IM POSITIONS-KNOTEN (K20): die Matrix der gezeichneten Instanz (der Haken an
