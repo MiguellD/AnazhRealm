@@ -12,9 +12,9 @@
 // Exit 1, wenn ein Spieler-Werk-Zyklus netto-positiv ist.
 //   node scripts/diag-ledger-cycles.cjs
 
+const { starteBrowser } = require("./lib/welt-boot.cjs");
 const { spawn } = require("child_process");
 const path = require("path");
-const puppeteer = require("puppeteer");
 
 const SERVER_JS = path.resolve("save-server.js");
 const SERVER_URL = "http://127.0.0.1:4312/index.html";
@@ -37,17 +37,7 @@ function startSaveServer() {
 
 (async () => {
     const server = await startSaveServer();
-    const browser = await puppeteer.launch({
-        headless: true,
-        args: [
-            "--use-angle=swiftshader",
-            "--enable-unsafe-swiftshader",
-            "--enable-webgl",
-            "--ignore-gpu-blocklist",
-            "--no-sandbox",
-            "--disable-setuid-sandbox",
-        ],
-    });
+    const browser = await starteBrowser({ art: "webgl", zusatz: ["--enable-webgl", "--ignore-gpu-blocklist"] });
     const page = await browser.newPage();
     let fail = false;
     try {

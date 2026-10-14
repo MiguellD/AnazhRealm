@@ -30,12 +30,9 @@
 // fester Schirm) → K rot.
 //   node scripts/diag-schirm-monotonie.cjs [--selftest]       (npm run gate:schirm-monotonie; Port SCHIRM_PORT)
 "use strict";
-const puppeteer = require("puppeteer");
-const http = require("http");
-const fs = require("fs");
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
-const { linsenWebGpuArgs, adapterZeile } = require("./lib/software-gpu.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
 
@@ -50,15 +47,6 @@ const GROESSEN = [
 ];
 const TAKTE = 12; // Takte je Probe
 const PROBEN = 3; // Proben je Größe (die Spanne)
-const mime = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".wasm": "application/wasm",
-    ".json": "application/json",
-    ".css": "text/css",
-    ".png": "image/png",
-    ".woff2": "font/woff2",
-};
 
 // ── Q: die Quelle ─────────────────────────────────────────────────────────────────────────────────────────────────────
 const SCHIRM_RE =
@@ -160,20 +148,9 @@ function driftBefunde(reihe) {
 
 // ── die Welt ──────────────────────────────────────────────────────────────────────────────────────────────────────────
 async function welt() {
-    const server = http.createServer((req, res) => {
-        let p = req.url.split("?")[0];
-        if (p === "/") p = "/index.html";
-        const fp = path.join(root, p);
-        if (!fp.startsWith(root)) return ((res.statusCode = 403), res.end());
-        fs.readFile(fp, (err, data) => {
-            if (err) return ((res.statusCode = 404), res.end());
-            res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-            res.end(data);
-        });
-    });
+    const server = statikServer();
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await puppeteer.launch({ headless: true, protocolTimeout: 900000, args: linsenWebGpuArgs() });
-    await adapterZeile(browser);
+    const browser = await starteBrowser({ art: "linse", frist: 900000 });
     const page = await browser.newPage();
     await page.setViewport({ width: GROESSEN[0][0], height: GROESSEN[0][1], deviceScaleFactor: 1 });
     await page.evaluateOnNewDocument(() => {

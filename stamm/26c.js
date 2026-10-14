@@ -1392,6 +1392,9 @@ AnazhRealm.VORRAT_PHASE = Object.freeze({ wartet: "wartet auf das erste Bild", b
 // DER SCHATTEN-TAKT je Kaskade (_loopShadowUpdate): die nahe Kaskade rendert im Regler-Intervall, höchstens
 // jeden `nahMax`-ten Frame (laufende Tiere werfen nah); die ferne im `fernFaktor`-fachen Takt.
 AnazhRealm.SCHATTEN_TAKT = Object.freeze({ nahMax: 2, fernFaktor: 3 });
+// Die Ruhe der Kamera für den Schatten-Takt (_loopShadowUpdate): jedes Element der Welt-Matrix höchstens so weit vom
+// vorigen Frame (Meter bzw. Drehung) — darüber gilt die Kamera als bewegt, die nahe Kaskade folgt jedem Frame.
+AnazhRealm.SCHATTEN_RUHE_EPS = 1e-4;
 // Die Obergrenze der Sonnen-Stufe (`_sonnenStufe`): N·L ändert sich bei einer Drehung um α höchstens um α — unter einer
 // 8-bit-Stufe ist sie unsichtbar.
 AnazhRealm.SONNEN_STUFE_SCHATTIERUNG = 1 / 255;

@@ -9,38 +9,15 @@
 // das instant-Feedback, schwache HW baut ASYNC (alter Mesh bleibt, Kollision feld-nativ
 // = sofort) → KEIN Stall. Diese Linse beweist die Entscheidung headless (GPU-frei).
 // ─────────────────────────────────────────────────────────────────────────
-const puppeteer = require("puppeteer");
-const http = require("http");
-const fs = require("fs");
-const path = require("path");
 
-const root = path.resolve(__dirname, "..");
 // Port über CARVE_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4330.
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const PORT = Number(process.env.CARVE_PORT || 4330);
-const mime = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".wasm": "application/wasm",
-    ".json": "application/json",
-    ".css": "text/css",
-    ".woff2": "font/woff2",
-    ".png": "image/png",
-};
-const server = http.createServer((req, res) => {
-    let p = req.url.split("?")[0];
-    if (p === "/") p = "/index.html";
-    const fp = path.join(root, p);
-    if (!fp.startsWith(root)) return ((res.statusCode = 403), res.end());
-    fs.readFile(fp, (err, data) => {
-        if (err) return ((res.statusCode = 404), res.end());
-        res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-        res.end(data);
-    });
-});
+const server = statikServer();
 
 (async () => {
     await new Promise((r) => server.listen(PORT, r));
-    const browser = await puppeteer.launch({ headless: "new", args: ["--no-sandbox", "--disable-gpu"] });
+    const browser = await starteBrowser({ art: "null" });
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(() => {
         window.__anazhHeadlessNullRenderer = true;

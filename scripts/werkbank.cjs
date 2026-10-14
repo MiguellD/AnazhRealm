@@ -177,6 +177,7 @@
 // bzw. `(lx,lz)` (z. B. `+1.6`). Die Bilder sind dieselbe Aufnahme wie die Beweis-Sonden
 // (`scripts/lib/ausgabe-aufnahme.cjs`: Bühne Mittag · Sonne · Sommer, Ausgabe-Pfad).
 "use strict";
+const { statikServer } = require("./lib/welt-boot.cjs");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
@@ -796,26 +797,7 @@ function bandProben(k) {
 async function starte() {
     const puppeteer = require("puppeteer");
     const { linsenWebGpuArgs, adapterZeile, echteWebGpuArgs } = require("./lib/software-gpu.cjs");
-    const mime = {
-        ".html": "text/html",
-        ".js": "application/javascript",
-        ".wasm": "application/wasm",
-        ".json": "application/json",
-        ".css": "text/css",
-        ".png": "image/png",
-        ".woff2": "font/woff2",
-    };
-    const seiten = http.createServer((req, res) => {
-        let p = req.url.split("?")[0];
-        if (p === "/") p = "/index.html";
-        const fp = path.join(root, p);
-        if (!fp.startsWith(root)) return ((res.statusCode = 403), res.end());
-        fs.readFile(fp, (err, data) => {
-            if (err) return ((res.statusCode = 404), res.end());
-            res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-            res.end(data);
-        });
-    });
+    const seiten = statikServer();
     if (ECHT) {
         // Der Flugschreiber schreibt nur vom save-server-Ursprung (isSaveServerHost) — ohne ihn kein Echt-Lauf.
         const da = await new Promise((r) =>

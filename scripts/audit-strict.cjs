@@ -25,10 +25,10 @@
 // Lauf via `npm run audit:strict`. Strikter als playtest (auch warnings
 // werden zu exits).
 
+const { starteBrowser } = require("./lib/welt-boot.cjs");
 const { spawn } = require("child_process");
 const fs = require("fs");
 const path = require("path");
-const puppeteer = require("puppeteer");
 const stammLib = require("./lib/stamm.cjs");
 
 const ROOT = path.resolve(__dirname, "..");
@@ -153,9 +153,7 @@ async function auditStateAndMethods() {
         }, 3000);
     });
 
-    const browser = await puppeteer.launch({
-        args: ["--no-sandbox", "--autoplay-policy=no-user-gesture-required"],
-    });
+    const browser = await starteBrowser({ art: "standard", zusatz: ["--autoplay-policy=no-user-gesture-required"] });
     try {
         const page = await browser.newPage();
         page.on("pageerror", (err) => {

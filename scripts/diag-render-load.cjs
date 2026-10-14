@@ -5,54 +5,16 @@
 // SCHATTEN-CASTER-Last (castShadow-Dreiecke = der zweite Voll-Render via autoUpdate),
 // (3) echter Render mit/ohne Schatten → die Schatten-Kosten als renderer.info-Delta,
 // (4) Shader-Programm-Zahl (Recompile-Stall?). MISS zuerst, dann heile (V18.260-Disziplin).
-const puppeteer = require("puppeteer"),
-    http = require("http"),
-    fs = require("fs"),
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const fs = require("fs"),
     path = require("path");
 // Port über RENDER_LOAD_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4360.
 const PORT = Number(process.env.RENDER_LOAD_PORT || 4360),
     root = path.resolve(__dirname, "..");
-const mime = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".wasm": "application/wasm",
-    ".json": "application/json",
-    ".woff2": "font/woff2",
-    ".css": "text/css",
-    ".png": "image/png",
-};
-const server = http.createServer((req, res) => {
-    let p = req.url.split("?")[0];
-    if (p === "/") p = "/index.html";
-    const fp = path.join(root, p);
-    if (!fp.startsWith(root)) {
-        res.statusCode = 403;
-        return res.end();
-    }
-    fs.readFile(fp, (e, d) => {
-        if (e) {
-            res.statusCode = 404;
-            return res.end();
-        }
-        res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-        res.end(d);
-    });
-});
+const server = statikServer();
 (async () => {
     await new Promise((r) => server.listen(PORT, r));
-    const browser = await puppeteer.launch({
-        headless: true,
-        protocolTimeout: 360000,
-        args: [
-            "--use-angle=swiftshader",
-            "--enable-unsafe-swiftshader",
-            "--enable-webgl",
-            "--ignore-gpu-blocklist",
-            "--no-sandbox",
-            "--disable-setuid-sandbox",
-            "--autoplay-policy=no-user-gesture-required",
-        ],
-    });
+    const browser = await starteBrowser({ art: "webgl", frist: 360000, zusatz: ["--enable-webgl", "--ignore-gpu-blocklist", "--autoplay-policy=no-user-gesture-required"] });
     const page = await browser.newPage();
     page.setDefaultTimeout(340000);
     page.on("pageerror", (e) => console.log("[PAGE-ERROR]", (e.stack || e.message).split("\n")[0]));
@@ -255,7 +217,7 @@ const server = http.createServer((req, res) => {
         });
 
         // DER SCHATTEN-TAKT (V18.524): je Kaskade am echten Leser (shadow.needsUpdate) — über 30 Frames gezählt,
-        // die nahe Kaskade im Regler-Takt, die ferne seltener (SCHATTEN_TAKT.fernFaktor).
+        // die nahe Kaskade jeden nahMax-ten Frame, die ferne dazwischen (SCHATTEN_TAKT; je Frame höchstens eine, 1410-3).
         const shadowCache = (() => {
             if (typeof r._loopShadowUpdate !== "function") return null;
             const csm = s.csmNode;

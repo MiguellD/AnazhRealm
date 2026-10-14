@@ -343,17 +343,27 @@
     const NETZE = new Map();
     // Der Heiß-Pfad (jede Spalte): die Lage merkt ihr Netz an der Identität ihrer Eingaben (Rausch-Strom, Erbgut-Normalform,
     // Basis, Wasser) — der Schlüssel-Text entsteht nur beim Wechsel.
+    // Die zuletzt gefragte Lage steht vor der WeakMap (eine Welt fragt Spalte um Spalte dieselbe).
     const LAGE_NETZ = new WeakMap();
+    let lageLetzt = null;
     function netzFuer(L) {
         const noise = L.noise;
         const erbgut = L.erbgut;
+        let m = lageLetzt;
+        // dieselbe Lage mit denselben rohen Feldern: dasselbe Netz, ohne Basis und Wasser neu zu rechnen
+        if (m && m.L === L && m.noise === noise && m.erbgut === erbgut && m.bh === L.baseHeight && m.wh === L.waterLevel)
+            return m.N;
         const base = L.baseHeight || 0;
         const wl = Number.isFinite(L.waterLevel) ? L.waterLevel : base + 4;
-        const m = LAGE_NETZ.get(L);
-        if (m && m.noise === noise && m.erbgut === erbgut && m.base === base && m.wl === wl) return m.N;
-        const N = netzNeu(L, base, wl);
-        LAGE_NETZ.set(L, { noise, erbgut, base, wl, N });
-        return N;
+        m = LAGE_NETZ.get(L);
+        if (!(m && m.noise === noise && m.erbgut === erbgut && m.base === base && m.wl === wl)) {
+            m = { L, noise, erbgut, base, wl, bh: L.baseHeight, wh: L.waterLevel, N: netzNeu(L, base, wl) };
+            LAGE_NETZ.set(L, m);
+        }
+        m.bh = L.baseHeight;
+        m.wh = L.waterLevel;
+        lageLetzt = m;
+        return m.N;
     }
     function netzNeu(L, base, wl) {
         const P = landformRegler(L);
@@ -372,6 +382,10 @@
             ebenen: P.rinnen > 0 ? 3 : 2,
             knoten: [new Map(), new Map(), new Map()],
             zellen: [new Map(), new Map(), new Map()],
+            // die zuletzt gefragte Zelle je Ebene (der Bau tastet Spalte um Spalte durch dieselbe Zelle) und der Talgrund je
+            // Zelle der Ebene 0 (`talZelle`)
+            zLetzt: [{ ci: NaN, cj: NaN, z: null }, { ci: NaN, cj: NaN, z: null }, { ci: NaN, cj: NaN, z: null }],
+            tal: { M: new Map(), ci: NaN, cj: NaN, a: null },
             tp: Math.tan((P.pedimentWinkel * Math.PI) / 180),
             ts: Math.tan((P.schuttWinkel * Math.PI) / 180),
             tc: Math.tan((P.kliffWinkel * Math.PI) / 180),
@@ -399,9 +413,21 @@
         const off = spline(OFFSET_SPLINE, c);
         const kueste = glatt(-0.28, 0.12, c);
         const rel = spline(RELIEF_SPLINE, e) * P.hoehe * (0.15 + 0.85 * kueste);
-        const stilN = n.noise2D(wx * 0.000192 + 91.3, wz * 0.000192 + 5.9) * 0.5 + 0.5;
-        // Das Tafelland ist ein Ort, kein Schleier: scharfe Grenze (0,05 im Stil-Feld), volle Kraft ab 45 m Relief.
-        const stil = glatt(1 - P.tafel * 0.62, 1.05 - P.tafel * 0.62, stilN) * glatt(18, 45, rel) * (1 - glatt(160, 195, rel));
+        // Das Tafelland ist ein Ort, kein Schleier: scharfe Grenze (0,05 im Stil-Feld), volle Kraft ab 45 m Relief. Unter 18 m
+        // und über 195 m Relief ist es null — dort fragt die Spalte das Stil-Feld nie (die Ebene zahlt kein Rauschen, das sie
+        // nicht trägt; dieselbe Höhe bis aufs Bit, `gate:worker-dichte`).
+        const reliefStil = glatt(18, 45, rel);
+        const reliefDecke = 1 - glatt(160, 195, rel);
+        const stil =
+            reliefStil === 0 || reliefDecke === 0
+                ? 0
+                : glatt(
+                      1 - P.tafel * 0.62,
+                      1.05 - P.tafel * 0.62,
+                      n.noise2D(wx * 0.000192 + 91.3, wz * 0.000192 + 5.9) * 0.5 + 0.5
+                  ) *
+                  reliefStil *
+                  reliefDecke;
         return {
             off,
             rel,
@@ -750,6 +776,7 @@
             b,
             stil,
             reach,
+            reach2: reach * reach,
             mo,
             mn,
             ml,
@@ -757,16 +784,27 @@
             von: kn, // der Knoten des Segments (eine Mündung darauf ist ein Zufluss, keine Senke: `flussLaeufe`)
         };
     }
+    // Die Zelle trägt zwei Listen: `alle` (die Box der Rinne samt Reichweite trifft die Zelle — die Mündung sucht darin den
+    // tiefsten Punkt) und `nah` (die Rinne selbst kommt der Zelle näher als ihre Reichweite: nur sie kann eine Spalte der
+    // Zelle formen — die Fläche fragt keine Rinne, deren Profil dort nie greift; dieselbe Höhe bis aufs Bit).
     function zelle(N, k, ci, cj) {
+        const Z = N.zLetzt[k];
+        if (Z.ci === ci && Z.cj === cj) return Z.z;
         const M = N.zellen[k];
         const key = ci * 67108864 + cj;
         let z = M.get(key);
-        if (z) return z;
+        if (!z) z = zelleNeu(N, k, ci, cj, M, key);
+        Z.ci = ci;
+        Z.cj = cj;
+        Z.z = z;
+        return z;
+    }
+    function zelleNeu(N, k, ci, cj, M, key) {
         const S = N.S[k];
         const x0 = ci * S;
         const z0 = cj * S;
         const r = k === 0 ? 2 : 3;
-        z = [];
+        const z = [];
         for (let j = cj - r; j <= cj + r; j++)
             for (let i = ci - r; i <= ci + r; i++) {
                 const s = segment(N, knoten(N, k, i, j));
@@ -779,9 +817,33 @@
                 if (mxx < x0 || mnx > x0 + S || mxz < z0 || mnz > z0 + S) continue;
                 z.push(s);
             }
+        const e = { alle: z, nah: z.filter((s) => streckeTrifft(s, x0, z0, S, s.reach + 0.001)) };
         if (M.size > 300000) M.clear();
-        M.set(key, z);
-        return z;
+        M.set(key, e);
+        return e;
+    }
+    // Trifft die Strecke A → A + e das Rechteck [x0, x0 + S] × [z0, z0 + S], um r erweitert? (Liang-Barsky; die Ecken des
+    // erweiterten Rechtecks sind eckig — die Probe hält jede Rinne, die näher als r kommt, und ein Millimeter Rand die Rundung.)
+    function streckeTrifft(s, x0, z0, S, r) {
+        const p = [-s.ex, s.ex, -s.ez, s.ez];
+        const q = [s.ax - (x0 - r), x0 + S + r - s.ax, s.az - (z0 - r), z0 + S + r - s.az];
+        let t0 = 0;
+        let t1 = 1;
+        for (let i = 0; i < 4; i++) {
+            if (p[i] === 0) {
+                if (q[i] < 0) return false;
+                continue;
+            }
+            const v = q[i] / p[i];
+            if (p[i] < 0) {
+                if (v > t1) return false;
+                if (v > t0) t0 = v;
+            } else {
+                if (v < t0) return false;
+                if (v < t1) t1 = v;
+            }
+        }
+        return true;
     }
     // DIE SCHICHT-PERIODE (T5) — EINE Quelle für Treppe, Reichweite und Schicht-Ort: eine Schicht der Mächtigkeit T ist die
     // weiche Lage (Schutthang am Ruhewinkel), die harte Lage (`hartAnteil` · T am Kliff-Winkel) und die Bank (T/2). Monument
@@ -834,25 +896,53 @@
     }
     // DER TALGRUND an (x, z): die Sohlen der Ebene-0-Knoten, stetig gemittelt (Gewicht (1 − d²/R²)², R = 1,6 Kanten) — die
     // Basis der Hülle (Talgrund + Relief): die Gipfel stehen über IHREM Tal, nie über einer erfundenen Ebene.
+    // Je Zelle der Ebene 0 stehen die Knoten, die eine Spalte darin erreichen können (Abstand zum Zellen-Rechteck < R, mit
+    // Rand), als [x, z, Sohle] in der Reihenfolge der Summe — die Spalte fragt keine 25 Knoten mehr und keine, deren Gewicht
+    // dort null ist (dieselbe Summe in derselben Reihenfolge: dieselbe Höhe bis aufs Bit).
+    function talZelle(N, ci, cj) {
+        const T = N.tal;
+        if (T.ci === ci && T.cj === cj) return T.a;
+        const key = ci * 67108864 + cj;
+        let a = T.M.get(key);
+        if (!a) {
+            const S = N.S[0];
+            const R2 = 1.6 * S * 1.6 * S * 1.0001;
+            const x0 = ci * S;
+            const z0 = cj * S;
+            const w = [];
+            for (let j = cj - 2; j <= cj + 2; j++)
+                for (let i = ci - 2; i <= ci + 2; i++) {
+                    const kn = knoten(N, 0, i, j);
+                    const dx = kn.x < x0 ? x0 - kn.x : kn.x > x0 + S ? kn.x - x0 - S : 0;
+                    const dz = kn.z < z0 ? z0 - kn.z : kn.z > z0 + S ? kn.z - z0 - S : 0;
+                    if (dx * dx + dz * dz >= R2) continue;
+                    w.push(kn.x, kn.z, knotenSohle(N, kn));
+                }
+            a = Float64Array.from(w);
+            if (T.M.size > 300000) T.M.clear();
+            T.M.set(key, a);
+        }
+        T.ci = ci;
+        T.cj = cj;
+        T.a = a;
+        return a;
+    }
     function talgrund(N, x, z) {
         const S = N.S[0];
         const R = 1.6 * S;
         const R2 = R * R;
-        const ci = Math.floor(x / S);
-        const cj = Math.floor(z / S);
+        const a = talZelle(N, Math.floor(x / S), Math.floor(z / S));
         let sw = 0;
         let sb = 0;
-        for (let j = cj - 2; j <= cj + 2; j++)
-            for (let i = ci - 2; i <= ci + 2; i++) {
-                const kn = knoten(N, 0, i, j);
-                const dx = x - kn.x;
-                const dz = z - kn.z;
-                const q = 1 - (dx * dx + dz * dz) / R2;
-                if (q <= 0) continue;
-                const w = q * q;
-                sw += w;
-                sb += w * knotenSohle(N, kn);
-            }
+        for (let p = 0; p < a.length; p += 3) {
+            const dx = x - a[p];
+            const dz = z - a[p + 1];
+            const q = 1 - (dx * dx + dz * dz) / R2;
+            if (q <= 0) continue;
+            const w = q * q;
+            sw += w;
+            sb += w * a[p + 2];
+        }
         return sw > 0 ? sb / sw : N.base + grossform(N, x, z).K;
     }
 
@@ -867,7 +957,7 @@
         let aue = false;
         for (let k = 0; k <= kmax; k++) {
             const S = N.S[k];
-            const segs = zelle(N, k, Math.floor(x / S), Math.floor(z / S));
+            const segs = zelle(N, k, Math.floor(x / S), Math.floor(z / S)).nah;
             let Hk = H;
             let kSteil = 0;
             let kNah = 1;
@@ -883,7 +973,7 @@
                 const px = dx - s.ex * t;
                 const pz = dz - s.ez * t;
                 const d2 = px * px + pz * pz;
-                if (d2 >= s.reach * s.reach) continue;
+                if (d2 >= s.reach2) continue;
                 const bed = s.ba + (s.bb - s.ba) * t;
                 if (bed >= Hk) continue;
                 const d = Math.sqrt(d2);
@@ -954,7 +1044,7 @@
     // trägt (Sohle + Profil), mit seiner Sohle.
     function muendung(N, k, x, z) {
         const S = N.S[k];
-        const segs = zelle(N, k, Math.floor(x / S), Math.floor(z / S));
+        const segs = zelle(N, k, Math.floor(x / S), Math.floor(z / S)).alle;
         let best = null;
         let bv = Infinity;
         for (let q = 0; q < segs.length; q++) {

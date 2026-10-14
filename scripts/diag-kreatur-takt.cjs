@@ -14,7 +14,7 @@
 //   --selftest  je Gate-Probe jeder alte Defekt als Täter eingespielt (TAETER): jede Probe muss ROT lesen, und zwar aus
 //               dem Grund, der den Täter beim Namen nennt
 "use strict";
-const puppeteer = require("puppeteer");
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
@@ -44,15 +44,6 @@ const RAMPE = (() => {
 const GATE_PROBEN = PROBEN; // jede Probe steht im Gate: jede Klasse der Familie ist geschnitten
 const gewaehlt = opt("--proben", null) ? opt("--proben").split(",") : argv.includes("--alle") ? PROBEN : GATE_PROBEN;
 
-const mime = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".wasm": "application/wasm",
-    ".json": "application/json",
-    ".css": "text/css",
-    ".woff2": "font/woff2",
-    ".png": "image/png",
-};
 
 function rufeWerkbank(code) {
     return new Promise((res, rej) => {
@@ -84,23 +75,9 @@ function rufeWerkbank(code) {
 }
 
 async function headless(laeufe) {
-    const server = http.createServer((req, res) => {
-        let p = req.url.split("?")[0];
-        if (p === "/") p = "/index.html";
-        const fp = path.join(root, p);
-        if (!fp.startsWith(root)) return ((res.statusCode = 403), res.end());
-        fs.readFile(fp, (err, data) => {
-            if (err) return ((res.statusCode = 404), res.end());
-            res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-            res.end(data);
-        });
-    });
+    const server = statikServer();
     await new Promise((r) => server.listen(PORT, r));
-    const browser = await puppeteer.launch({
-        headless: "new",
-        protocolTimeout: 900000,
-        args: ["--no-sandbox", "--disable-gpu"],
-    });
+    const browser = await starteBrowser({ art: "null", frist: 900000 });
     const page = await browser.newPage();
     page.setDefaultTimeout(880000);
     const fehler = [];

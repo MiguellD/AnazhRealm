@@ -8,54 +8,14 @@
 // Für jeden CA-freien Wasser-Chunk: Main-Sheet (sync) vs Worker-Sheet (round-trip),
 // Vergleich positions/indices/aFlow/aWave/aDepth/aSlope byte-für-byte (Float32/Uint32).
 // maxDiff MUSS 0. Exit 1 bei Drift/Längen-Mismatch/Page-Error.
-const puppeteer = require("puppeteer");
-const http = require("http");
-const fs = require("fs");
-const path = require("path");
 
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const PORT = Number(process.env.WORKER_WATERSHEET_PORT) || 4391;
-const root = path.resolve(__dirname, "..");
-const mime = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".wasm": "application/wasm",
-    ".json": "application/json",
-    ".woff2": "font/woff2",
-    ".css": "text/css",
-    ".png": "image/png",
-};
-const server = http.createServer((req, res) => {
-    let p = req.url.split("?")[0];
-    if (p === "/") p = "/index.html";
-    const fp = path.join(root, p);
-    if (!fp.startsWith(root)) {
-        res.statusCode = 403;
-        return res.end();
-    }
-    fs.readFile(fp, (err, data) => {
-        if (err) {
-            res.statusCode = 404;
-            return res.end();
-        }
-        res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-        res.end(data);
-    });
-});
+const server = statikServer();
 
 (async () => {
     await new Promise((r) => server.listen(PORT, r));
-    const browser = await puppeteer.launch({
-        headless: true,
-        protocolTimeout: 600000,
-        args: [
-            "--use-angle=swiftshader",
-            "--enable-unsafe-swiftshader",
-            "--enable-webgl",
-            "--ignore-gpu-blocklist",
-            "--no-sandbox",
-            "--disable-setuid-sandbox",
-        ],
-    });
+    const browser = await starteBrowser({ art: "webgl", frist: 600000, zusatz: ["--enable-webgl", "--ignore-gpu-blocklist"] });
     const page = await browser.newPage();
     let pageErr = null;
     page.on("pageerror", (err) => {

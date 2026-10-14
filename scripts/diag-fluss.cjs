@@ -34,9 +34,9 @@
 //
 //   node scripts/diag-fluss.cjs [--selftest]          (npm run gate:fluss)
 "use strict";
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
-const http = require("http");
 const stammLib = require("./lib/stamm.cjs");
 
 const root = path.resolve(__dirname, "..");
@@ -380,21 +380,15 @@ self.onmessage = (e) => {
 };`;
 
 async function verhalten(schaleSrc) {
-    const puppeteer = require("puppeteer");
-    const server = http.createServer((req, res) => {
-        if (req.url.startsWith("/kern.js")) {
-            res.setHeader("Content-Type", "application/javascript");
-            return res.end("// kern");
-        }
-        if (req.url.startsWith("/phyto-core.js")) {
-            res.setHeader("Content-Type", "application/javascript");
-            return res.end(fs.readFileSync(path.join(root, "phyto-core.js")));
-        }
-        res.setHeader("Content-Type", "text/html");
-        res.end("<!doctype html><meta charset=utf-8><title>fluss</title>");
+    const server = statikServer({
+        seiten: {
+            "/": "<!doctype html><meta charset=utf-8><title>fluss</title>",
+            "/kern.js": "// kern",
+            "/phyto-core.js": () => fs.readFileSync(path.join(root, "phyto-core.js")),
+        },
     });
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await puppeteer.launch({ headless: true, args: ["--no-sandbox", "--disable-setuid-sandbox"] });
+    const browser = await starteBrowser({ art: "standard" });
     try {
         const page = await browser.newPage();
         await page.goto(`http://127.0.0.1:${PORT}/`);
@@ -993,38 +987,9 @@ function bootListen(quelle) {
 }
 
 async function welt() {
-    const puppeteer = require("puppeteer");
-    const mime = {
-        ".html": "text/html",
-        ".js": "application/javascript",
-        ".wasm": "application/wasm",
-        ".json": "application/json",
-        ".css": "text/css",
-        ".png": "image/png",
-    };
-    const server = http.createServer((req, res) => {
-        let p = req.url.split("?")[0];
-        if (p === "/") p = "/index.html";
-        const fp = path.join(root, p);
-        if (!fp.startsWith(root)) {
-            res.statusCode = 403;
-            return res.end();
-        }
-        fs.readFile(fp, (err, data) => {
-            if (err) {
-                res.statusCode = 404;
-                return res.end();
-            }
-            res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-            res.end(data);
-        });
-    });
+    const server = statikServer();
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await puppeteer.launch({
-        headless: true,
-        protocolTimeout: 900000,
-        args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--no-sandbox", "--disable-setuid-sandbox"],
-    });
+    const browser = await starteBrowser({ art: "webgl", frist: 900000 });
     try {
         const page = await browser.newPage();
         page.on("pageerror", (e) => console.log("  [Seiten-Fehler]", String((e && e.message) || e).split("\n")[0]));

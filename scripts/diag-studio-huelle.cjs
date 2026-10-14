@@ -33,6 +33,7 @@
 //                                                    Schuss + die Seiten-Zählung (Schieber gesamt · davon Hülle · Undo
 //                                                    wirkt · Kosten-Leiste zeigt Zahlen); Port STUDIO_HUELLE_PORT (8742)
 "use strict";
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
@@ -281,24 +282,11 @@ function selbsttest() {
 
 // ── DAS BILD: je Studio die Shell im echten Browser, ein Schuss + die Zählung der Seite ──
 async function bild(ordner, name) {
-    const http = require("http");
-    const puppeteer = require("puppeteer");
-    const { echteWebGpuArgs } = require("./lib/software-gpu.cjs");
     const PORT = Number(process.env.STUDIO_HUELLE_PORT || 8742);
-    const MIME = { ".html": "text/html", ".js": "application/javascript", ".json": "application/json", ".css": "text/css", ".png": "image/png", ".wasm": "application/wasm" };
-    const s = http.createServer((req, res) => {
-        const p = decodeURIComponent(req.url.split("?")[0]);
-        const fp = path.join(ROOT, p);
-        if (!fp.startsWith(ROOT)) return ((res.statusCode = 403), res.end());
-        fs.readFile(fp, (err, data) => {
-            if (err) return ((res.statusCode = 404), res.end());
-            res.setHeader("Content-Type", MIME[path.extname(fp)] || "application/octet-stream");
-            res.end(data);
-        });
-    });
+    const s = statikServer();
     await new Promise((r) => s.listen(PORT, "127.0.0.1", r));
     fs.mkdirSync(ordner, { recursive: true });
-    const browser = await puppeteer.launch({ headless: true, protocolTimeout: 240000, args: [...echteWebGpuArgs(), "--use-angle=d3d11", "--window-size=1600,900"] });
+    const browser = await starteBrowser({ art: "echt", frist: 240000, zusatz: ["--use-angle=d3d11", "--window-size=1600,900"] });
     const zeilen = [];
     // je Studio seine Shell; das Gelände-Studio ist das Panel über der Welt-Engine (gezählt wird nur in ihm)
     const ziele = STUDIOS.map((id) => ({ id, url: `/worlds/${id}/index.html`, wurzel: null, ms: id === "koerperstudio" || id === "fachwerk" || id === "terrain" ? 9000 : 5000 }));

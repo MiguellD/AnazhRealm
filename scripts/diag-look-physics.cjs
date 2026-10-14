@@ -14,40 +14,11 @@
 // diag-look-golden.cjs; das subjektive „ist diese Kunst schön" bleibt der kleine
 // menschliche Rest — nicht der Default.
 // ─────────────────────────────────────────────────────────────────────────
-const puppeteer = require("puppeteer");
-const http = require("http");
-const fs = require("fs");
-const path = require("path");
 
 // Port über LOOK_PHYSICS_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4319.
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const PORT = Number(process.env.LOOK_PHYSICS_PORT || 4319);
-const root = path.resolve(__dirname, "..");
-const mime = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".wasm": "application/wasm",
-    ".json": "application/json",
-    ".woff2": "font/woff2",
-    ".css": "text/css",
-    ".png": "image/png",
-};
-const server = http.createServer((req, res) => {
-    let p = req.url.split("?")[0];
-    if (p === "/") p = "/index.html";
-    const filePath = path.join(root, p);
-    if (!filePath.startsWith(root)) {
-        res.statusCode = 403;
-        return res.end();
-    }
-    fs.readFile(filePath, (err, data) => {
-        if (err) {
-            res.statusCode = 404;
-            return res.end();
-        }
-        res.setHeader("Content-Type", mime[path.extname(filePath)] || "application/octet-stream");
-        res.end(data);
-    });
-});
+const server = statikServer();
 
 // sRGB → lineare relative Luminanz (BT.709 / CIE Y) — die Standard-Farbwissenschaft.
 function relLuminance([r, g, b]) {
@@ -62,7 +33,7 @@ function relLuminanceLinear([r, g, b]) {
 
 (async () => {
     await new Promise((r) => server.listen(PORT, r));
-    const browser = await puppeteer.launch({ headless: "new", args: ["--no-sandbox", "--disable-gpu"] });
+    const browser = await starteBrowser({ art: "null" });
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(() => {
         window.__anazhHeadlessNullRenderer = true;

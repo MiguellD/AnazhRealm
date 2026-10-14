@@ -6,34 +6,11 @@
 // + ~20 SELBST-ENTHALTENE Kern-Checks. KEIN Eingriff in den Monolithen → null Gate-Risiko.
 //   node scripts/playtest-fast.cjs        |        npm run playtest:fast
 //   PLAYTEST_STRICT=0 → nur reporten (exit 0)
-const puppeteer = require("puppeteer");
-const http = require("http");
-const fs = require("fs");
-const path = require("path");
 
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const PORT = Number(process.env.FAST_PORT || 4319);
 const STRICT = process.env.PLAYTEST_STRICT !== "0";
-const root = path.resolve(__dirname, "..");
-const mime = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".wasm": "application/wasm",
-    ".json": "application/json",
-    ".woff2": "font/woff2",
-    ".css": "text/css",
-    ".png": "image/png",
-};
-const server = http.createServer((req, res) => {
-    let p = req.url.split("?")[0];
-    if (p === "/") p = "/index.html";
-    const fp = path.join(root, p);
-    if (!fp.startsWith(root)) return ((res.statusCode = 403), res.end());
-    fs.readFile(fp, (err, data) => {
-        if (err) return ((res.statusCode = 404), res.end());
-        res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-        res.end(data);
-    });
-});
+const server = statikServer();
 
 const T0 = Date.now();
 let pass = 0;
@@ -50,11 +27,7 @@ function check(name, ok) {
 
 (async () => {
     await new Promise((r) => server.listen(PORT, r));
-    const browser = await puppeteer.launch({
-        headless: true,
-        protocolTimeout: 120000,
-        args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--no-sandbox", "--disable-setuid-sandbox"],
-    });
+    const browser = await starteBrowser({ art: "webgl", frist: 120000 });
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(() => {
         // GPU-frei: der Mechanik-Tier braucht kein Pixel (niemand wertet headless-

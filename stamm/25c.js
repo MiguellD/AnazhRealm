@@ -2039,10 +2039,15 @@ class AnazhRealm_Z25c {
     // EINE Leser ist `ShadowNode.updateBefore` mit `shadow.needsUpdate || shadow.autoUpdate` je Licht, und
     // `LightShadow.autoUpdate` (true) reist in jede CSM-Kaskade. Der alte Cache (V18.264) schrieb ins Leere: beide
     // Kaskaden renderten JEDEN Frame (Profil: updateShadow ~9,5 ms CPU je Frame). Hier fährt der Takt die echten
-    // Leser: die NAHE Kaskade folgt dem Regler-Intervall (gedeckelt auf `nahMax` — laufende Tiere werfen nah),
-    // die FERNE rendert im `fernFaktor`-fachen Takt; ein Sonnen-Sprung erzwingt alle. Ohne CSM trägt das Haupt-
-    // Licht die EINE Map im Nah-Takt. Eine übersprungene Kaskade bleibt konsistent: `shadow.updateMatrices` läuft
-    // nur in `renderShadow` (Vendor-Anker), die Matrix gehört zur Map.
+    // Leser: die NAHE Kaskade rendert jeden `nahMax`-ten Frame (laufende Tiere werfen nah), die FERNE im
+    // `fernFaktor`-fachen Takt des Regler-Intervalls (höchstens so dicht wie die nahe); ein Sonnen-Sprung erzwingt
+    // alle. JE FRAME HÖCHSTENS EINE KASKADE (1410-3): unter Regler voll renderte die nahe JEDEN Frame und jeder dritte
+    // trug beide — der CPU-Takt eines Frames mit zwei Schatten-Renders hob den p95 (ABAB OMEN GTX, Regler voll, CPU-Takt p95:
+    // Wiese Ego 6,0 → 5,8 · Third 6,7 → 6,4 · Genesis Ego 6,8 → 6,3 · Third 8,4 → 7,5 ms; GPU und Frame gleich). Eine
+    // fällige Kaskade wartet hinter der Vor-Kaskade dieses Frames auf den
+    // nächsten; die nahe Phase und die ferne wechseln. Ohne CSM trägt das Haupt-Licht die EINE Map im Nah-Takt.
+    // Eine übersprungene Kaskade bleibt konsistent: `shadow.updateMatrices` läuft nur in `renderShadow`
+    // (Vendor-Anker), die Matrix gehört zur Map.
     _loopShadowUpdate() {
         const r = this.state.renderer;
         if (!r || !r.shadowMap) return;
@@ -2065,14 +2070,40 @@ class AnazhRealm_Z25c {
         const minInterval = Math.max(1, Math.round(this.state._shadowMinInterval || 1));
         const csm = this.state.csmNode;
         const lichter = csm && csm.lights && csm.lights.length ? csm.lights : dl ? [dl] : [];
+        // DIE KOSTEN AN DER ÄNDERUNG (Gebot 7): bewegt sich die Kamera (Gang, Drehung, die Kamera folgt dem Spieler), folgt
+        // die nahe Kaskade jedem Frame im Regler-Takt und beide dürfen in einen Frame — der Schatten des gehenden Spielers
+        // stünde sonst jeden zweiten Frame einen Frame zurück. In Ruhe gilt je Frame höchstens eine Kaskade. Gemessen in
+        // EINER Sitzung (Genesis Third): stehend CPU-Takt p50/p95 5,7/7,4 → 5,25/6,95 ms (die Kamera in 0 von 2 700 Frames
+        // bewegt), gehend und drehend gleich — dort gilt das Gesetz vor 1410-3 (p95 21,7 gegen 22,6/23,1 ms).
+        const cam = this.state.camera;
+        const me = cam && cam.matrixWorld ? cam.matrixWorld.elements : null;
+        let bewegt = false;
+        if (me) {
+            const alt = L.kamera || (L.kamera = new Float64Array(16).fill(NaN));
+            for (let j = 0; j < 16; j++)
+                if (!(Math.abs(me[j] - alt[j]) <= AnazhRealm.SCHATTEN_RUHE_EPS)) {
+                    bewegt = true;
+                    break;
+                }
+            alt.set(me);
+        }
+        let gerendert = false;
         for (let i = 0; i < lichter.length; i++) {
             const sh = lichter[i].shadow;
             if (!sh) continue;
             sh.autoUpdate = false;
-            const takt = i === 0 ? Math.min(T.nahMax, minInterval) : minInterval * T.fernFaktor;
-            if (sunMoved || !(frame - (L.k[i] != null ? L.k[i] : -1e9) < takt)) {
+            const takt = bewegt
+                ? i === 0
+                    ? Math.min(T.nahMax, minInterval)
+                    : minInterval * T.fernFaktor
+                : i === 0
+                  ? T.nahMax
+                  : Math.max(T.nahMax, minInterval) * T.fernFaktor;
+            const faellig = !(frame - (L.k[i] != null ? L.k[i] : -1e9) < takt);
+            if (sunMoved || (faellig && (bewegt || !gerendert))) {
                 sh.needsUpdate = true;
                 L.k[i] = frame;
+                gerendert = true;
             }
         }
     }

@@ -11,34 +11,13 @@
 //     die Gruppe verdichtet, der Lebende zieht mit Matrix und Karte in die Lücke).
 //   B (echter swiftshader-Renderer, OPT-IN): der Studio-Bake läuft (`__impostorRttBaked` steigt) ohne page-error.
 //   node scripts/diag-foundry-impostor.cjs
-const puppeteer = require("puppeteer");
-const http = require("http");
-const fs = require("fs");
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.FIMP_PORT || 4595);
 const root = path.resolve(__dirname, "..");
-const mime = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".wasm": "application/wasm",
-    ".json": "application/json",
-    ".css": "text/css",
-    ".png": "image/png",
-    ".woff2": "font/woff2",
-};
-const server = http.createServer((req, res) => {
-    let p = req.url.split("?")[0];
-    if (p === "/") p = "/index.html";
-    const fp = path.join(root, p);
-    if (!fp.startsWith(root)) return ((res.statusCode = 403), res.end());
-    fs.readFile(fp, (err, data) => {
-        if (err) return ((res.statusCode = 404), res.end());
-        res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-        res.end(data);
-    });
-});
+const server = statikServer();
 
 async function bootPage(browser, nullRenderer) {
     const page = await browser.newPage();
@@ -809,11 +788,7 @@ function strichWand(src) {
     const errs = [];
 
     // ===== TEIL A — MECHANIK (Null-Renderer, HART) =====
-    const browserA = await puppeteer.launch({
-        headless: true,
-        protocolTimeout: 180000,
-        args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--no-sandbox", "--disable-setuid-sandbox"],
-    });
+    const browserA = await starteBrowser({ art: "webgl", frist: 180000 });
     const { page: pageA, pageErrors: errA } = await bootPage(browserA, true);
     const A = await driveImpostor(pageA);
     const Cs = [await kleberProbe(pageA, "bc"), await kleberProbe(pageA, "rgba8")];
@@ -1053,16 +1028,7 @@ function strichWand(src) {
     if (process.env.P5_REAL_RENDERER) {
         console.log("\n=== P5 — TEIL B: RTT-BAKE auf echtem Renderer (opt-in) ===");
         try {
-            const browserB = await puppeteer.launch({
-                headless: true,
-                protocolTimeout: 180000,
-                args: [
-                    "--use-angle=swiftshader",
-                    "--enable-unsafe-swiftshader",
-                    "--no-sandbox",
-                    "--disable-setuid-sandbox",
-                ],
-            });
+            const browserB = await starteBrowser({ art: "webgl", frist: 180000 });
             const { page: pageB, pageErrors: errB } = await bootPage(browserB, false);
             const B = await driveImpostor(pageB);
             await browserB.close();

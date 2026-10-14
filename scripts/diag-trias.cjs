@@ -25,7 +25,7 @@
 //     Klon-Erbe (studioGestalt reist, donorOnly nicht).
 //   --selftest: injizierte Verletzungen machen die Gesetze rot (Linse nicht vakuoes).
 //   node scripts/diag-trias.cjs [--selftest]
-const fs = require("fs");
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const path = require("path");
 const crypto = require("crypto");
 const stammLib = require("./lib/stamm.cjs");
@@ -282,33 +282,10 @@ function triasStaticLaws(anazhSrc) {
 
     // ===== Teil B: das Sticky-Experiment als Invariante (Browser) =====
     console.log("\n=== TEIL B: die LOD-Geschichte lebt (Browser, foundry-ON, Null-Renderer) ===");
-    const puppeteer = require("puppeteer");
-    const http = require("http");
     const PORT = Number(process.env.TRIAS_PORT || 4443);
-    const mime = {
-        ".html": "text/html",
-        ".js": "application/javascript",
-        ".json": "application/json",
-        ".css": "text/css",
-        ".png": "image/png",
-    };
-    const server = http.createServer((req, res) => {
-        let p = req.url.split("?")[0];
-        if (p === "/") p = "/index.html";
-        const fp = path.join(root, p);
-        if (!fp.startsWith(root)) return ((res.statusCode = 403), res.end());
-        fs.readFile(fp, (err, data) => {
-            if (err) return ((res.statusCode = 404), res.end());
-            res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-            res.end(data);
-        });
-    });
+    const server = statikServer();
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await puppeteer.launch({
-        headless: true,
-        protocolTimeout: 480000,
-        args: ["--disable-gpu", "--no-sandbox", "--disable-setuid-sandbox"],
-    });
+    const browser = await starteBrowser({ art: "null", frist: 480000, zusatz: ["--disable-setuid-sandbox"] });
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(() => {
         window.__anazhForceFoundry = true;

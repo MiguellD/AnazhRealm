@@ -34,34 +34,11 @@
 //
 //   node scripts/diag-gpu-zeit.cjs      (npm run gate:gpu-zeit)
 // ─────────────────────────────────────────────────────────────────────────
-const puppeteer = require("puppeteer");
-const http = require("http");
-const fs = require("fs");
-const path = require("path");
 
-const root = path.resolve(__dirname, "..");
 // Port über GPU_ZEIT_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4431.
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const PORT = Number(process.env.GPU_ZEIT_PORT || 4431);
-const mime = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".json": "application/json",
-    ".css": "text/css",
-    ".woff2": "font/woff2",
-    ".png": "image/png",
-    ".wasm": "application/wasm",
-};
-const server = http.createServer((req, res) => {
-    let p = req.url.split("?")[0];
-    if (p === "/") p = "/index.html";
-    const fp = path.join(root, p);
-    if (!fp.startsWith(root)) return ((res.statusCode = 403), res.end());
-    fs.readFile(fp, (err, data) => {
-        if (err) return ((res.statusCode = 404), res.end());
-        res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-        res.end(data);
-    });
-});
+const server = statikServer();
 
 const errs = [];
 function check(name, ok, detail) {
@@ -71,11 +48,7 @@ function check(name, ok, detail) {
 
 (async () => {
     await new Promise((r) => server.listen(PORT, r));
-    const browser = await puppeteer.launch({
-        headless: "new",
-        protocolTimeout: 300000,
-        args: ["--no-sandbox", "--disable-gpu"],
-    });
+    const browser = await starteBrowser({ art: "null", frist: 300000 });
     const page = await browser.newPage();
     page.setDefaultTimeout(280000);
     const pageErrors = [];

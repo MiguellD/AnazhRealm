@@ -184,39 +184,17 @@ if (process.argv.includes("--selftest")) {
     process.exit(0);
 }
 
-const puppeteer = require("puppeteer");
-const { linsenWebGpuArgs, adapterZeile } = require("./lib/software-gpu.cjs");
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
-const http = require("http");
 const fs = require("fs");
 const path = require("path");
 
-const root = path.resolve(__dirname, "..");
 const PORT = Number(process.env.EGO_SCHATTEN_PORT) || 4398;
 const BILDER = (() => {
     const i = process.argv.indexOf("--bilder");
     return i > 0 ? path.resolve(process.argv[i + 1]) : null;
 })();
-const mime = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".json": "application/json",
-    ".css": "text/css",
-    ".woff2": "font/woff2",
-    ".png": "image/png",
-    ".wasm": "application/wasm",
-};
-const server = http.createServer((req, res) => {
-    let p = req.url.split("?")[0];
-    if (p === "/") p = "/index.html";
-    const fp = path.join(root, p);
-    if (!fp.startsWith(root)) return ((res.statusCode = 403), res.end());
-    fs.readFile(fp, (err, data) => {
-        if (err) return ((res.statusCode = 404), res.end());
-        res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-        res.end(data);
-    });
-});
+const server = statikServer();
 
 // DIE BÜHNE (Seiten-Kontext): der echte Renderer, der echte Leib, die echte Regel; eigene Szene, Zeit fest.
 function buehne(arg) {
@@ -561,8 +539,7 @@ function buehne(arg) {
 (async () => {
     console.log("=== EGO-SCHATTEN — der Leib wirft in der Ego-Sicht, das Auge sieht ihn nicht ===");
     await new Promise((res) => server.listen(PORT, "127.0.0.1", res));
-    const browser = await puppeteer.launch({ headless: true, protocolTimeout: 600000, args: linsenWebGpuArgs() });
-    await adapterZeile(browser);
+    const browser = await starteBrowser({ art: "linse", frist: 600000 });
     const page = await browser.newPage();
     await page.setViewport({ width: 320, height: 180 });
     const pageErrors = [];

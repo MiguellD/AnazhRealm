@@ -19,25 +19,13 @@
 //   node scripts/diag-foundry-parity.cjs
 //   PARITY_SEEDS="1,7" PARITY_LODS="0,2" PARITY_SEASONS="summer" node scripts/diag-foundry-parity.cjs
 
-const puppeteer = require("puppeteer");
-const http = require("http");
-const fs = require("fs");
-const path = require("path");
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.PARITY_PORT || 4521);
-const root = path.resolve(__dirname, "..");
 const SEEDS = (process.env.PARITY_SEEDS || "1,7,12345,999983").split(",").map(Number);
 const LODS = (process.env.PARITY_LODS || "0,1,2").split(",").map(Number);
 const SEASONS = (process.env.PARITY_SEASONS || "spring,summer,autumn,winter").split(",");
 
-const mime = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".json": "application/json",
-    ".css": "text/css",
-    ".png": "image/png",
-    ".woff2": "font/woff2",
-};
 
 // Die Worker-Kette aus dem Manifest — DIESELBE Liste wie die Produktion und das Asset-Harness (lib der Kerne →
 // Kerne → die Foundry-Brücke, K42; die Labor-Shell lädt nur das iframe).
@@ -182,28 +170,11 @@ const PAGE = `<!doctype html><meta charset="utf-8"><title>P0 Foundry-Parität</t
 })();
 </script></body>`;
 
-const server = http.createServer((req, res) => {
-    let p = req.url.split("?")[0];
-    if (p === "/" || p === "/__parity.html") {
-        res.setHeader("Content-Type", "text/html");
-        return res.end(PAGE);
-    }
-    const fp = path.join(root, p);
-    if (!fp.startsWith(root)) return ((res.statusCode = 403), res.end());
-    fs.readFile(fp, (err, data) => {
-        if (err) return ((res.statusCode = 404), res.end());
-        res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-        res.end(data);
-    });
-});
+const server = statikServer({ seiten: { "/": PAGE, "/__parity.html": PAGE } });
 
 (async () => {
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await puppeteer.launch({
-        headless: true,
-        protocolTimeout: 240000,
-        args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--no-sandbox", "--disable-setuid-sandbox"],
-    });
+    const browser = await starteBrowser({ art: "webgl", frist: 240000 });
     const page = await browser.newPage();
     const pageErrors = [];
     page.on("pageerror", (e) => pageErrors.push(String((e && e.message) || e)));

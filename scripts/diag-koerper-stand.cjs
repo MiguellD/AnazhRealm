@@ -38,8 +38,7 @@
 //   Defekts muss rot werden; fehlt die geheilte Zeile, ist der Selbsttest rot.
 //   node scripts/diag-koerper-stand.cjs [--selftest]
 "use strict";
-const puppeteer = require("puppeteer");
-const http = require("http");
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
@@ -48,15 +47,6 @@ const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
 const PORT = Number(process.env.KOERPER_STAND_PORT || 4479);
 const ROOT = path.resolve(__dirname, "..");
 const SELBST = process.argv.includes("--selftest");
-const MIME = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".wasm": "application/wasm",
-    ".json": "application/json",
-    ".css": "text/css",
-    ".woff2": "font/woff2",
-    ".png": "image/png",
-};
 
 // DIE BASIS-ZEILEN je Defekt: [geheilte Form in anazhRealm.js, Basis-Form]. Der Selbsttest serviert die Basis-Form.
 const BASIS = {
@@ -127,17 +117,9 @@ function stammGepatcht() {
     return gepatcht.text;
 }
 
-const server = http.createServer((req, res) => {
-    let p = req.url.split("?")[0];
-    if (p === "/") p = "/index.html";
-    const fp = path.join(ROOT, p);
-    if (!fp.startsWith(ROOT)) return ((res.statusCode = 403), res.end());
-    fs.readFile(fp, (err, data) => {
-        if (err) return ((res.statusCode = 404), res.end());
-        if (patch && stammLib.istStammUrl(ROOT, p)) data = stammLib.liefere(ROOT, p, stammGepatcht());
-        res.setHeader("Content-Type", MIME[path.extname(fp)] || "application/octet-stream");
-        res.end(data);
-    });
+const server = statikServer({
+    root: ROOT,
+    wandle: (p, data) => (data && patch && stammLib.istStammUrl(ROOT, p) ? stammLib.liefere(ROOT, p, stammGepatcht()) : data),
 });
 
 // Die Proben laufen IN der Seite (r = die Welt). Kein Stub: jede Probe ruft die Chokepoints des Spiels.
@@ -1090,11 +1072,7 @@ function zeile(o) {
 
 (async () => {
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await puppeteer.launch({
-        headless: "new",
-        protocolTimeout: 900000,
-        args: ["--no-sandbox", "--disable-gpu"],
-    });
+    const browser = await starteBrowser({ art: "null", frist: 900000 });
     let rot = 0;
     try {
         const lauf = async (inj) => {

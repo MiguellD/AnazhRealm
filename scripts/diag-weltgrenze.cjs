@@ -41,8 +41,7 @@
 //                                      „ersetzen" MUSS rot werden) — beide beim Namen
 // Port: WELTGRENZE_PORT (Default 4401). Exit 1 bei einem Befund, einem Page-Error oder einem blinden Selbsttest.
 "use strict";
-const puppeteer = require("puppeteer");
-const http = require("http");
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
@@ -78,37 +77,12 @@ const WEGE = opt("--wege", ALLE_WEGE.join(","))
     .filter((w) => ALLE_WEGE.includes(w));
 const BUEHNE = JSON.parse(fs.readFileSync(path.resolve(__dirname, "..", "spec", "pruefbuehne", "welt.json"), "utf8"));
 
-const mime = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".mjs": "application/javascript",
-    ".wasm": "application/wasm",
-    ".json": "application/json",
-    ".woff2": "font/woff2",
-    ".css": "text/css",
-    ".png": "image/png",
-    ".svg": "image/svg+xml",
-};
-const server = http.createServer((req, res) => {
-    let p = decodeURIComponent(req.url.split("?")[0]);
-    if (p === "/") p = "/index.html";
-    const fp = path.join(root, p);
-    if (!fp.startsWith(root)) {
-        res.statusCode = 403;
-        return res.end();
-    }
-    const sende = () =>
-        fs.readFile(fp, (err, data) => {
-            if (err) {
-                res.statusCode = 404;
-                return res.end();
-            }
-            res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-            res.setHeader("Cache-Control", "no-store");
-            res.end(data);
-        });
-    if (verzoegerung && p === "/index.html") setTimeout(sende, verzoegerung);
-    else sende();
+// die Tür der Seite: `verzoegerung` hält /index.html zurück (das Fenster, in dem die alte Seite noch schreibt)
+const server = statikServer({
+    root,
+    keinCache: true,
+    wandle: (p, data) =>
+        verzoegerung && p === "/index.html" ? new Promise((r) => setTimeout(() => r(data), verzoegerung)) : data,
 });
 
 // Beim Start JEDER Seite, vor dem Spiel: der Aktiv-Zeiger und sein Speicher-Eintrag (was die alte Seite hinterließ).
@@ -681,11 +655,7 @@ async function fahreWeg(browser, weg, schein) {
 (async () => {
     const tStart = Date.now();
     await new Promise((r) => server.listen(PORT, r));
-    const browser = await puppeteer.launch({
-        headless: true,
-        protocolTimeout: 600000,
-        args: ["--no-sandbox", "--disable-setuid-sandbox"],
-    });
+    const browser = await starteBrowser({ art: "standard", frist: 600000 });
     console.log("\n========= DIE WELTGRENZE — kein Feld von A reist nach B, keine Welt geht verloren =========");
     console.log(`  Baum: ${root}`);
     const berichte = [];

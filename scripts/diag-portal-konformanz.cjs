@@ -44,12 +44,10 @@
 //   node scripts/diag-portal-konformanz.cjs              alle Welten gegen K1–K6 und die Ratschen
 // Port über PORTAL_KONFORMANZ_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4563.
 "use strict";
-const http = require("http");
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
-const puppeteer = require("puppeteer");
-const { linsenWebGpuArgs, adapterZeile } = require("./lib/software-gpu.cjs");
 
 const ROOT = path.resolve(__dirname, "..");
 const PORT = Number(process.env.PORTAL_KONFORMANZ_PORT || 4563);
@@ -57,16 +55,6 @@ const RATSCHE_PFAD = path.join(ROOT, "spec", "vertraege", "ratsche.json");
 // Die Frist der ersten ready: das Körper-Studio baut seinen Menschen, bevor die Brücke meldet (von allen Welten am
 // längsten; wie lange, misst der OMEN) — die Frist ist ein Deckel gegen den Hänger, keine Messung.
 const READY_FRIST_MS = 120000;
-const MIME = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".mjs": "application/javascript",
-    ".wasm": "application/wasm",
-    ".json": "application/json",
-    ".css": "text/css",
-    ".png": "image/png",
-    ".woff2": "font/woff2",
-};
 
 // Je Welt: das Wort, das der Spieler in die Konsole tippt, und woran man sieht, dass es wirkt. `ui` = Zustand der
 // Welt-UI (same-origin: Selektor + Feld + Soll, der echte UI-Pfad der Studios); ohne `ui` = das Journal der Heimat
@@ -265,33 +253,26 @@ function server(taeter) {
     const fehlend = [];
     // Welche 404-Täter die Welt im Browser traf (sie fragte ihr Manifest und bekam keins).
     const weg = new Set();
-    const s = http.createServer((req, res) => {
-        let p = decodeURIComponent(req.url.split("?")[0]);
-        if (p === "/") p = "/index.html";
-        if (p === "/__fremd.html") {
+    const s = statikServer({
+        root: ROOT,
+        seiten: {
             // DIE FREMDE SEITE: ein Geschwister-Frame der Heimat (same-origin), der der Welt im Auftrag der Probe eine
             // Nachricht schickt — als SEINE (event.source = dieser Frame, nie der Eltern-Frame der Welt).
-            res.setHeader("Content-Type", "text/html");
-            return res.end(
+            "/__fremd.html":
                 '<!doctype html><meta charset="utf-8"><script>window.addEventListener("message",function(ev){' +
-                    'if(ev.source!==parent||!ev.data||!ev.data.__fremd)return;' +
-                    'var f=parent.document.querySelector("#portal-overlay iframe.portal-frame");' +
-                    'if(f&&f.contentWindow)f.contentWindow.postMessage(ev.data.nachricht,"*");});</script>'
-            );
-        }
-        // Das träge Bild der klang-Täterin: es kommt nach 5 s (ein leeres GIF), so lange wartet das load der Welt.
-        if (taeter && p === "/__traege.gif") {
-            res.setHeader("Content-Type", "image/gif");
-            return void setTimeout(() => res.end(Buffer.from("R0lGODlhAQABAAAAACw=", "base64")), 5000);
-        }
-        const fp = path.join(ROOT, p);
-        if (!fp.startsWith(ROOT)) return ((res.statusCode = 403), res.end());
-        const rel = path.relative(ROOT, fp).split(path.sep).join("/");
-        if (taeter && TAETER_WEG.includes(rel)) weg.add(rel);
-        const data = ausliefern(rel, taeter, fehlend);
-        if (!data) return ((res.statusCode = 404), res.end());
-        res.setHeader("Content-Type", MIME[path.extname(fp)] || "application/octet-stream");
-        res.end(data);
+                'if(ev.source!==parent||!ev.data||!ev.data.__fremd)return;' +
+                'var f=parent.document.querySelector("#portal-overlay iframe.portal-frame");' +
+                'if(f&&f.contentWindow)f.contentWindow.postMessage(ev.data.nachricht,"*");});</script>',
+            // Das träge Bild der klang-Täterin: es kommt nach 5 s (ein leeres GIF), so lange wartet das load der Welt.
+            ...(taeter
+                ? { "/__traege.gif": () => new Promise((r) => setTimeout(() => r(Buffer.from("R0lGODlhAQABAAAAACw=", "base64")), 5000)) }
+                : {}),
+        },
+        wandle: (p) => {
+            const rel = path.relative(ROOT, path.join(ROOT, p)).split(path.sep).join("/");
+            if (taeter && TAETER_WEG.includes(rel)) weg.add(rel);
+            return ausliefern(rel, taeter, fehlend);
+        },
     });
     return { s, fehlend, weg };
 }
@@ -714,8 +695,7 @@ async function lauf(welten, taeter) {
     const { s, fehlend, weg } = server(taeter);
     const lies = (rel) => ausliefern(rel, taeter, []);
     await new Promise((r) => s.listen(PORT, "127.0.0.1", r));
-    const browser = await puppeteer.launch({ headless: true, protocolTimeout: 180000, args: linsenWebGpuArgs() });
-    await adapterZeile(browser);
+    const browser = await starteBrowser({ art: "linse", frist: 180000 });
     const fehlerLog = [];
     const ergebnisse = [];
     try {

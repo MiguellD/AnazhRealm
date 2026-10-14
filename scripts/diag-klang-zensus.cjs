@@ -60,8 +60,7 @@
 //    KLANG_WURZEL=<baum> misst einen anderen Arbeitsbaum unter derselben Linse)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const puppeteer = require("puppeteer");
-const http = require("http");
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
@@ -81,27 +80,13 @@ const opt = (k) => {
 const AUFNAHME = opt("--aufnahme");
 const JSON_AUS = opt("--json");
 
-const mime = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".wasm": "application/wasm",
-    ".json": "application/json",
-    ".css": "text/css",
-    ".woff2": "font/woff2",
-    ".png": "image/png",
-};
-const server = http.createServer((req, res) => {
-    let p = req.url.split("?")[0];
-    if (p === "/") p = "/index.html";
-    const rel = decodeURIComponent(p);
-    const ueber = UEBER ? path.join(UEBER, rel) : null;
-    const fp = ueber && ueber.startsWith(UEBER) && fs.existsSync(ueber) ? ueber : path.join(root, rel);
-    if (!fp.startsWith(root) && !(UEBER && fp.startsWith(UEBER))) return ((res.statusCode = 403), res.end());
-    fs.readFile(fp, (err, data) => {
-        if (err) return ((res.statusCode = 404), res.end());
-        res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-        res.end(data);
-    });
+const server = statikServer({
+    root,
+    wandle: (p, data) => {
+        if (!UEBER) return data;
+        const ueber = path.join(UEBER, p);
+        return ueber.startsWith(UEBER) && fs.existsSync(ueber) ? fs.readFileSync(ueber) : data;
+    },
 });
 
 // DER QUELLEN-ABGRIFF (vor jedem Seiten-Skript): jede erzeugte Quelle mit Stapel, Start, Stop, Ende — und jede
@@ -1377,11 +1362,7 @@ function drucke(zeilen, offline, kostenErg, lab) {
 
 (async () => {
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await puppeteer.launch({
-        headless: "new",
-        protocolTimeout: 600000,
-        args: ["--no-sandbox", "--disable-gpu", "--autoplay-policy=no-user-gesture-required"],
-    });
+    const browser = await starteBrowser({ art: "null", frist: 600000, zusatz: ["--autoplay-policy=no-user-gesture-required"] });
     let exit = 1;
     const ergebnis = {};
     try {

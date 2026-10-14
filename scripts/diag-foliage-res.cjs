@@ -9,45 +9,12 @@
 //   (2) `_markFoliageLayer`: Foliage-Key → FOLIAGE_LAYER + Layer 0; placed (`p:`) → nur Layer 0;
 //   (3) DER REGLER TRÄGT DIE AUFLÖSUNG NICHT: schwere und leichte Last lassen die Skala stehen, kein Laub-Faktor lebt;
 //   (4) der Flugschreiber-Snapshot trägt `szeneSkala`.
-const puppeteer = require("puppeteer");
-const http = require("http");
-const fs = require("fs");
-const path = require("path");
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const PORT = Number(process.env.FOLIAGE_RES_PORT || 4421);
-const root = path.resolve(__dirname, "..");
-const mime = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".json": "application/json",
-    ".css": "text/css",
-    ".wasm": "application/wasm",
-    ".woff2": "font/woff2",
-    ".png": "image/png",
-};
-const server = http.createServer((req, res) => {
-    let p = req.url.split("?")[0];
-    if (p === "/") p = "/index.html";
-    const fp = path.join(root, p);
-    if (!fp.startsWith(root)) {
-        res.statusCode = 403;
-        return res.end();
-    }
-    fs.readFile(fp, (err, data) => {
-        if (err) {
-            res.statusCode = 404;
-            return res.end();
-        }
-        res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-        res.end(data);
-    });
-});
+const server = statikServer();
 (async () => {
     await new Promise((r) => server.listen(PORT, r));
-    const browser = await puppeteer.launch({
-        headless: true,
-        protocolTimeout: 120000,
-        args: ["--disable-gpu", "--disable-software-rasterizer", "--no-sandbox", "--disable-setuid-sandbox"],
-    });
+    const browser = await starteBrowser({ art: "null", frist: 120000, zusatz: ["--disable-software-rasterizer", "--disable-setuid-sandbox"] });
     const page = await browser.newPage();
     let pageErr = null;
     page.on("pageerror", (e) => {
