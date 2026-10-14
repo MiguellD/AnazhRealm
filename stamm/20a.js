@@ -422,7 +422,7 @@ class AnazhRealm_Z20a {
             _vorrat: false, // die Phase des Vorrats (`VORRAT_PHASE`); false = steht nicht an oder ist durch (warm)
             recipes: null,
             // DAS BUCH IST EIN EREIGNIS (K22, Nachbesserung 4): wer auf das Studio-Buch wartet (der Vorrat, der Dorf-Spawn,
-            // die Portal-Vorschau), wartet auf `buchDa` — `_foundryIngestBook` erfüllt es. Bis hierher wartete der Vorrat
+            // die Portal-Vorschau, die Werkstatt-Vorschau, die Hand), wartet auf `buchDa` — `_foundryIngestBook` erfüllt es. Bis hierher wartete der Vorrat
             // 2 s auf die Uhr und wärmte danach ohne Rezepte (FOUNDRY WARM: fünf kritische Presets fehlen im Buch).
             buchDa: null,
             buchKam: null,
@@ -619,9 +619,6 @@ class AnazhRealm_Z20a {
         if (this._foundry && this._foundry.buchKam) this._foundry.buchKam();
         // Der Katalog steht: die Hotbar urteilt über ihre Namen und legt, wenn sie leer ist, den Start-Gurt.
         this._hotbarNachBuch();
-        // Das Buch steht: wer davor fragte (Vorschau, Hand), baut jetzt neu (`_foundryBuchDa`).
-        const fB = this._foundry;
-        if (fB && fB.buchDa && fB.recipes) fB.buchDa.loes(true);
         // (Die Stamm-Hüllen brauchen das Buch nicht mehr: die Welt-Skala liest vor ihm DIESELBE Tafel aus dem Kern —
         // `_baumHuellenNachBuch` fiel mit dem Hand-Spiegel, Leben-Schau 2.)
     }

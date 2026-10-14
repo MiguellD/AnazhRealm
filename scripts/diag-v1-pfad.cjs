@@ -116,6 +116,17 @@ function zugVerdict(m) {
                     : `zug ${wer}: ${z.key} nach ${SOLL.zugMs} ms nicht angekommen (der fremde Zug im Rang der Ferne)`
             );
     }
+    // V-D3 STUFEN (K38-N2): jede Stufe der Werkstatt-Vorschau (L0 · L1 · die L2-Karte) erwacht, wenn ihr Stoff ankommt —
+    // die Karte wartet auf ihre Höhen-Stufe (Rahmen und Sichthöhe) bzw. auf ihren Bake, nie auf eine Uhr.
+    const st = m.stufen || [];
+    if (st.length !== 3) out.push(`zug stufen: ${st.length} von 3 Stufen gemessen (vakuös)`);
+    for (const s of st)
+        if (!(Number.isFinite(s.ms) && s.ms <= SOLL.zugMs))
+            out.push(
+                s.da
+                    ? `zug stufe L${s.lod} schläft: ${s.wart} ist da, die Vorschau wartet weiter`
+                    : `zug stufe L${s.lod}: ${s.wart} nach ${SOLL.zugMs} ms nicht da`
+            );
     return out;
 }
 // V-D3 RAHMEN (K05, WS-01): die projizierte Box3 jeder Gestalt in [0,5; 0,9] der Bildkante, jede Waffe des Buchs gemessen.
@@ -1066,7 +1077,9 @@ async function probe(arg) {
         let same = 1;
         while (same < 100000 && r._foundryVariantFor(same, a.preset) !== a.variant) same++;
         const pm = st.playerMesh ? st.playerMesh.position : { x: 0, y: 0, z: 0 };
-        r._foundryFlattenFor({ type: "baum_eiche", seed: same, position: { x: pm.x + 300, y: pm.y, z: pm.z + 300 } }, a.preset, 0);
+        // ohne Ort: die Gestalt kommt aus dem Samen (mit Ort wählt der Platz sie, `_foundryGestaltFor`), der Rang ist der
+        // der Ferne (`_foundryAuftragD2` ohne Ort = ∞)
+        r._foundryFlattenFor({ type: "baum_eiche", seed: same }, a.preset, 0);
         m.vorschau = { key: a.key, fremd: imFlug(a.key) };
         const t0 = performance.now();
         r.selectBlueprintForEdit("baum_eiche");
@@ -1099,6 +1112,39 @@ async function probe(arg) {
             } finally {
                 r._refreshHeldMesh = echt;
             }
+        }
+        // (c) JEDE STUFE der Vorschau (K38-N2): die Eiche mit der LOD-Wahl 0 · 1 · 2, ihr Stoff vorher geräumt — L0/L1 der
+        // Körper der Stufe, die L2-Karte ihre Höhen-Stufe (Rahmen + Sichthöhe), ihre Höhe und ihre Zelle im Atlas.
+        m.stufen = [];
+        const bpE = st.blueprints.baum_eiche;
+        const lodAlt = bpE._recipeLod;
+        try {
+            for (const s of [0, 1, 2]) {
+                zuTeilen();
+                bpE._recipeLod = s;
+                const preset = r._foundryPresetForEntry({ type: "baum_eiche" });
+                const variant = r._foundryVariantFor(r._werkSame(bpE, "baum_eiche"), preset);
+                const kKey = r._foundryKoerperKey(preset, variant, s === 2 ? r._foundryHoehenStufe(preset) : s);
+                r._foundryCacheEvict(kKey);
+                const at = s === 2 ? r._impostorAtlas() : null;
+                const zKey = "fimp:" + r._foundryKartenKey(preset, variant, null);
+                if (at) {
+                    if (f.hoehen) f.hoehen.delete(kKey);
+                    at.zellen.delete(zKey);
+                }
+                const t2 = performance.now();
+                r.selectBlueprintForEdit("baum_eiche");
+                while (performance.now() < t2 + zugFrist && !steht()) await tick(1, 80);
+                const z = at ? at.zellen.get(zKey) : null;
+                m.stufen.push({
+                    lod: s,
+                    wart: at ? `die Karte ${zKey} (Höhen-Stufe ${kKey})` : `der Körper ${kKey}`,
+                    ms: steht() ? Math.round(performance.now() - t2) : null,
+                    da: at ? !!(z && (z.gebacken || (z.frame && f.hoehen && f.hoehen.get(kKey) > 0))) : f.cache.has(kKey),
+                });
+            }
+        } finally {
+            bpE._recipeLod = lodAlt;
         }
         m.gestartet = true;
     } catch (e) {
@@ -1201,6 +1247,7 @@ async function probe(arg) {
             gestartet: true,
             vorschau: { key: "eiche|2|0", fremd: true, ms: 1500, imCache: true },
             hand: { key: "klinge|1|0", fremd: true, ms: 900, imCache: true },
+            stufen: [0, 1, 2].map((lod) => ({ lod, wart: "eiche|2|" + lod, ms: 800, da: true })),
         };
         check("Selbst-Test V-D3 Fremder Zug: gesund == 0 Täter", zugVerdict(zugGesund).length === 0, zugVerdict(zugGesund).join(" · "));
         const zugMit = (wer, z) => Object.assign({}, zugGesund, { [wer]: Object.assign({}, zugGesund[wer], z) });
@@ -1210,6 +1257,12 @@ async function probe(arg) {
             ["die Hand schläft nach der Ankunft", zugMit("hand", { ms: null, imCache: true }), "zug hand schläft"],
             ["kein fremder Zug (vakuös)", zugMit("vorschau", { fremd: false }), "zug vorschau: kein fremder Zug"],
             ["keine Klinge im Buch (vakuös)", Object.assign({}, zugGesund, { hand: null }), "zug hand: keine Probe"],
+            [
+                "die L2-Karte schläft nach der Ankunft ihrer Höhen-Stufe (K38-N1 offen)",
+                Object.assign({}, zugGesund, { stufen: [...zugGesund.stufen.slice(0, 2), { lod: 2, wart: "fimp:eiche|2", ms: null, da: true }] }),
+                "zug stufe L2 schläft",
+            ],
+            ["keine Stufen gemessen (vakuös)", Object.assign({}, zugGesund, { stufen: [] }), "zug stufen: 0 von 3"],
         ]) {
             const v = zugVerdict(bruch);
             check(`Selbst-Test V-D3 Fremder Zug: ‚${name}' → die Linse nennt ${soll}`, v.some((t) => t.startsWith(soll)), v.join(" · "));
@@ -1521,9 +1574,9 @@ async function probe(arg) {
     const vZ = zugVerdict(zm);
     const zZ = (wer, z) => (z ? `${wer} ${z.key} fremd ${z.fremd} · ${z.ms == null ? "nie" : z.ms + " ms"}${z.vorAnkunft ? ` (${z.vorAnkunft}× vor der Ankunft geweckt)` : ""}` : `${wer} —`);
     check(
-        `V-D3 Fremder Zug jeder Wartende erwacht nach der Ankunft eines fremd gezogenen Körpers (≤ ${SOLL.zugMs} ms)`,
+        `V-D3 Fremder Zug jeder Wartende erwacht nach der Ankunft eines fremd gezogenen Körpers, jede Stufe der Vorschau nach ihrem Stoff (≤ ${SOLL.zugMs} ms)`,
         vZ.length === 0,
-        `${zZ("vorschau", zm.vorschau)} · ${zZ("hand", zm.hand)}${vZ.length ? " — Täter: " + vZ.join(", ") : ""}`
+        `${zZ("vorschau", zm.vorschau)} · ${zZ("hand", zm.hand)} · Stufen ${(zm.stufen || []).map((q) => `L${q.lod} ${q.ms == null ? "nie" : q.ms + " ms"}`).join(" · ")}${vZ.length ? " — Täter: " + vZ.join(", ") : ""}`
     );
     const rm = out.rahmen || {};
     if (rm.err) check("V-D3 Rahmen Probe ohne Ausnahme", false, rm.err.split("\n")[0]);

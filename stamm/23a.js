@@ -700,8 +700,15 @@ class AnazhRealm_Z23a {
         // camera-facing und liest Rotation/Skala aus der INSTANZ-Matrix → als 1-Instanz-InstancedMesh
         // bauen (identity, weiß = kein Tint), nie als plain Mesh. Fels/Kristall/Blume: L2-Geometrie.
         if (lod === 2 && typeof this._foundryPresetIsTree === "function" && this._foundryPresetIsTree(preset)) {
-            const flat = this._foundryBuildImpostorFlat({ seed: seedNum }, preset);
-            if (flat === null) return "pending"; // der Studio-Bake läuft → ehrliches Interim, Vorschau bei Ankunft neu
+            // DER WARTENDE DER KARTE (K38-N2): die Vorschau steht beim Spieler (Rang 0) und hängt sich an die EINE Zusage,
+            // auf die die Karte wartet — das Buch, den Zug ihrer Höhen-Stufe (Rahmen + Sichthöhe) oder ihren Bake —, und
+            // baut bei Ankunft neu. Bis hierher gab sie „pending" ohne Wecker (die Karte kam, die Vorschau schlief) bzw.
+            // zeigte vor dem Bake die L2-Geometrie und wechselte nie zur Karte der Welt.
+            let zusage = null;
+            const flat = this._foundryBuildImpostorFlat({ seed: seedNum }, preset, {
+                wo: 0,
+                wecke: (z) => (zusage = z),
+            });
             if (flat && Array.isArray(flat.leaves) && flat.leaves.length) {
                 const Ti = THREE;
                 const outImp = new Ti.Group();
@@ -728,7 +735,11 @@ class AnazhRealm_Z23a {
                 }
                 if (outImp.children.length) return outImp;
             }
-            // flat === false (Foundry kann keinen Impostor) → auf die L2-Geometrie unten zurückfallen.
+            if (zusage) {
+                this._foundryWecker(zusage, "werkstatt", () => this._workshopRebuildPreviewMesh());
+                return "pending";
+            }
+            // ohne Zusage kann die Foundry keine Karte (die Zelle scheiterte) → auf die L2-Geometrie unten zurückfallen.
         }
         // W-A1 (Gesetz #0) — der Rest laeuft durch DIE EINE Vorschau-Quelle (Bauplan- UND
         // Rezept-Auswahl teilen sie; ov-Vorschauen laufen cache-frei durch den Regler-Kanal).
@@ -822,7 +833,7 @@ class AnazhRealm_Z23a {
         };
         if (!f.ready || !f.recipes) {
             // Foundry bootet / Buch kalt → die Vorschau hängt sich an die EINE Buch-Zusage und baut bei Ankunft EINMAL neu.
-            this._foundryWecker(this._foundryBuchDa(f), "werkstatt", rebuild);
+            this._foundryWecker(f.buchDa, "werkstatt", rebuild);
             return "pending";
         }
         // ERFINDER-WELLE — die Ofen-Domaenen (koerper/kreatur/klang) ZUERST: der Host baeckt

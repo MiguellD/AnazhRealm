@@ -1559,7 +1559,10 @@ class AnazhRealm_Z17a {
             vonPlatte: false,
             _bedarfD2: Infinity,
             _flat: null,
+            fertig: null, // die Zusage der Karte: true gebacken, false gescheitert (`_karteEndet`)
+            _fertigLoes: null,
         };
+        z.fertig = new Promise((r) => (z._fertigLoes = r));
         at.zellen.set(key, z);
         this._karteNadel(null, z);
         if (at.map && z.idx >= at.cap) this._impostorAtlasTexturen(at, z.idx + 1);
@@ -1569,6 +1572,14 @@ class AnazhRealm_Z17a {
             this._impostorBakeQueue.push(key);
         }
         return z;
+    }
+    // DAS ENDE EINER KARTE (K38-N2): gebacken (`ok`) oder gescheitert — die EINE Stelle, die den Zustand der Zelle setzt
+    // und ihre Zusage `z.fertig` löst. Wer auf die Karte wartet (die L2-Vorschau der Werkstatt), hängt sich per
+    // `_foundryWecker` an; bis K38-N2 hörte niemand den Bake, und die Vorschau blieb „pending", bis der Spieler neu wählte.
+    _karteEndet(z, ok) {
+        if (ok) z.gebacken = true;
+        else z.gescheitert = true;
+        if (z._fertigLoes) z._fertigLoes(!!ok);
     }
 
     // Das EINE Einheits-Quad der Karten (6 Verts auf der Stammachse, y ∈ {0,1}) mit DREI Vertex-Attributen: position,
@@ -1741,7 +1752,7 @@ class AnazhRealm_Z17a {
                 if (hung) {
                     hung.versuche++;
                     if (hung.versuche < 3) this._impostorBakeQueue.push(hungKey);
-                    else hung.gescheitert = true;
+                    else this._karteEndet(hung, false);
                 }
                 this._impostorBakeTok = (this._impostorBakeTok || 0) + 1;
                 this._impostorBakePending = false;
@@ -1760,7 +1771,7 @@ class AnazhRealm_Z17a {
         // Geometrie).
         if (!this._foundryEnabled()) {
             const z0 = at.zellen.get(this._impostorBakeQueue.shift());
-            if (z0 && !z0.gebacken) z0.gescheitert = true;
+            if (z0 && !z0.gebacken) this._karteEndet(z0, false);
             return 0;
         }
         const f = this._ensureAssetFoundry();
@@ -1788,7 +1799,7 @@ class AnazhRealm_Z17a {
         // Zeilen); Unbekanntes fällt studio-seitig fail-closed (payload null) → gescheitert nach 3 Versuchen.
         const bKind = f.recipes && f.recipes[z.preset] && f.recipes[z.preset].kind;
         if (bKind && !/^(tree|shrub|flower|grass|rock|gate|vehicle)$/.test(bKind)) {
-            z.gescheitert = true;
+            this._karteEndet(z, false);
             return 0;
         }
         this._impostorBakePending = true;
@@ -1808,7 +1819,7 @@ class AnazhRealm_Z17a {
                 z.versuche++;
                 if (z.versuche < 3 && this._impostorBakeQueue) this._impostorBakeQueue.push(key);
                 else {
-                    z.gescheitert = true;
+                    this._karteEndet(z, false);
                     this._stoffBruch(`die Karte ${key} scheiterte ${z.versuche}× — die Fernstufe bleibt Geometrie`, e);
                 }
             })
@@ -1848,8 +1859,8 @@ class AnazhRealm_Z17a {
         // RAHMEN-EINHEIT: das Quad nimmt DENSELBEN Rahmen wie die Bake-Kamera (halfH = 1,02·maxY/2, halfW radial) —
         // keine Wurzel-Höhe mehr (bis V18.528 stand das Quad auf max(0,5, maxY − minY): vertikal verzerrt).
         if (!z.rahmenFest) z.frame = { halfH: fr.halfH, halfW: fr.halfW };
-        z.gebacken = true;
         z.vonPlatte = payload.vonPlatte === true;
+        this._karteEndet(z, true);
         // Die Karte ist gebacken → aufgeschobene Streu-Regionen neu streamen, wie bei jeder Asset-Ankunft: ein Baum-Platz,
         // dessen Nah-Stufe fehlt, wartet auf die gebackene Karte (`_foundryFlattenFor` Stufe 2 liefert vorher false). Ohne
         // diesen Anstoß blieb die Region aufgeschoben, wenn die letzte Lieferung VOR dem Bake kam — an der Mess-Wiese

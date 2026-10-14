@@ -223,7 +223,7 @@ class AnazhRealm_Z13c {
         if (!f.ready || !f.recipes) {
             // Worker bootet / Buch kalt: die Hand hängt sich an die EINE Buch-Zusage und baut GENAU EINMAL neu, sobald das
             // Buch steht — bis dahin trägt der Part-Bau (die Hand ist nie leer).
-            this._foundryWecker(this._foundryBuchDa(f), "hand", () => this._refreshHeldMesh());
+            this._foundryWecker(f.buchDa, "hand", () => this._refreshHeldMesh());
             return preset ? "pending" : null;
         }
         if (!preset) return null;

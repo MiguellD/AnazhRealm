@@ -79,18 +79,8 @@ class AnazhRealm_Z20b {
         if (erst && erst.nach) zug.then(erst.nach);
         return zug;
     }
-    // DIE BUCH-ANKUNFT als EINE Zusage (`f.buchDa`): wer vor dem Buch fragt (Vorschau, Hand), hängt sich an; sie löst am
-    // Ende von `_foundryIngestBook`, nie nach einer Frist (bis K38 gab je Wartendem ein 20-s-Poll still auf).
-    _foundryBuchDa(f) {
-        if (!f.buchDa) {
-            let loes;
-            f.buchDa = new Promise((res) => (loes = res));
-            f.buchDa.loes = loes;
-            if (f.ready && f.recipes) loes(true);
-        }
-        return f.buchDa;
-    }
-    // DER WECKER: ein Wartender (`wer`) hängt `fn(ok)` GENAU EINMAL an eine Zusage (Zug oder Buch) — kein Poll, keine Frist;
+    // DER WECKER: ein Wartender (`wer`) hängt `fn(ok)` GENAU EINMAL an eine Zusage (Zug, Buch `f.buchDa` oder Karte) — kein
+    // Poll, keine Frist (bis K38 gab je Wartendem auf das Buch ein 20-s-Poll still auf);
     // fragt er im selben Warten erneut, bleibt es der eine Wecker.
     _foundryWecker(zusage, wer, fn) {
         const hoerer = this._foundryHoerer || (this._foundryHoerer = new WeakMap());
@@ -902,8 +892,9 @@ class AnazhRealm_Z20b {
     // Die ZELLE einer (Art, Gestalt[, ov]) im EINEN Karten-Atlas (`_impostorAtlas`): null = die Geometrie für den
     // Rahmen lädt (Null-Renderer), false = gescheitert (der Aufrufer serviert Geometrie), sonst die Zelle. Mit echtem
     // Renderer entsteht sie rahmenlos und reiht ihren Bake sofort ein — Rahmen und Pixel liefert die Schicht; keine
-    // Körper-Stufe wird für die Karte gezogen.
-    _foundryEnsureImpostorRecord(preset, variant, ov) {
+    // Körper-Stufe wird für die Karte gezogen. `wer` (optional, K38-N2): ein Wartender { wo, wecke(zusage) } — er bekommt
+    // den Zug der Rahmen-Stufe und stellt ihn in seinen Rang.
+    _foundryEnsureImpostorRecord(preset, variant, ov, wer) {
         const at = this._impostorAtlas();
         if (!at) return null;
         // BÄCKER-OV (V18.478) — ein GEPRÄGTES Entry (ov) trägt seine eigene Zelle: Schlüssel und Bake tragen den
@@ -925,7 +916,7 @@ class AnazhRealm_Z20b {
         const group = this._foundryCacheGet(gkey);
         if (group === undefined) {
             if (!this._ensureAssetFoundry()) return null;
-            this._foundryZug(gkey, preset, variant, bakeLod, ov, undefined, {
+            const zug = this._foundryZug(gkey, preset, variant, bakeLod, ov, wer ? wer.wo : undefined, {
                 nach: (ok) => {
                     if (ok) {
                         this._scatterRefillPending = true;
@@ -936,11 +927,12 @@ class AnazhRealm_Z20b {
                     this._foundryRewarmColdTrees();
                 },
             });
+            if (wer) wer.wecke(zug);
             return null; // die Geometrie lädt (der Aufrufer lässt L2 kalt)
         }
         const z = this._impostorZelleNeu(at, key, preset, variant, ovK);
         if (group === null || !group.children || !group.children.some((c) => c.geometry && c.material)) {
-            z.gescheitert = true; // Foundry kann das nicht → Aufrufer nimmt Geometrie
+            this._karteEndet(z, false); // Foundry kann das nicht → Aufrufer nimmt Geometrie
             return false;
         }
         const box = new THREE.Box3().setFromObject(group);
@@ -957,35 +949,40 @@ class AnazhRealm_Z20b {
     // L2 — die Studio-Karte als HISM-Flat: das Einheits-Quad des Atlas mit dem EINEN Karten-Material, Schicht und
     // Rahmen der Zelle reisen je Instanz. Gecacht auf der Zelle. null solange der Rahmen lädt, false bei Fehler oder —
     // mit echtem Renderer — bis die Schicht gebacken ist (der Aufrufer serviert Geometrie, die Stufen-Klammer).
-    _foundryBuildImpostorFlat(entry, preset) {
+    // `wer` (optional, K38-N2): ein Wartender { wo, wecke(zusage) } — die Werkstatt-Vorschau. Liefert die Karte noch nichts,
+    // bekommt er die EINE Zusage, auf die sie wartet (das Buch, der Zug ihrer Höhen-Stufe, ihr Bake), und `wo` ist sein
+    // Rang in Schlange und Bäcker; ohne Zusage kann die Karte nicht kommen. Die Welt ruft ohne `wer` (ihr Tick baut nach).
+    _foundryBuildImpostorFlat(entry, preset, wer) {
         const variant = this._foundryGestaltFor(entry, preset);
-        if (variant == null) return null; // Buch kalt — L2 kalt, der Tick baut nach
+        if (variant == null) {
+            if (wer && this._foundry) wer.wecke(this._foundry.buchDa);
+            return null; // Buch kalt — L2 kalt, der Tick baut nach
+        }
         // Ein geprägtes Entry zieht seine ov-Zelle; ist sie noch nicht da (null), fällt der Pfad auf GEOMETRIE (nie
         // kalt, nie die ungeprägte Karte). Ungeprägt: ovE null.
         const ovE = this._artifactStudioOv(entry);
-        const z = this._foundryEnsureImpostorRecord(preset, variant, ovE || undefined);
+        const z = this._foundryEnsureImpostorRecord(preset, variant, ovE || undefined, ovE ? undefined : wer);
         if (z === null) return ovE ? false : null; // geprägt+backend → Geometrie · sonst L2 kalt
         if (!z) return false;
-        // Bedarf-Stempel für den Bäcker (nah zuerst): die kleinste Distanz² eines wartenden Eintrags zum Spieler.
-        if (!z.gebacken && entry && entry.position) {
-            const pp = this.state.playerMesh && this.state.playerMesh.position;
-            if (pp) {
-                const bx = entry.position.x - pp.x,
-                    bz = entry.position.z - pp.z;
-                const d2 = bx * bx + bz * bz;
-                if (!(z._bedarfD2 <= d2)) z._bedarfD2 = d2;
-            }
+        // Bedarf-Stempel für den Bäcker (nah zuerst): die kleinste Distanz² eines wartenden Lesers zum Spieler — der
+        // Eintrag an seinem Ort, der Wartende in seinem Rang (`_foundryAuftragD2`, ohne Ort ∞).
+        if (!z.gebacken) {
+            const d2 = this._foundryAuftragD2(wer ? wer.wo : entry && entry.position);
+            if (!(z._bedarfD2 <= d2)) z._bedarfD2 = d2;
         }
         // Mit echtem Renderer trägt die Karte erst gebacken: bis dahin liefert der Flatten für die Baum-Fernstufe NICHTS
         // (false), nie Geometrie — nah trägt die Wunsch-Stufe, fern wartet der Baum (ein Karten-Ding hat keinen Satz).
         // Headless/Null-Renderer trägt der Rahmen aus der L1-Geometrie (dort bäckt nie einer).
         const rendB = this.state && this.state.renderer;
-        if (!z.gebacken && rendB && !rendB._isHeadlessNull) return false;
+        if (!z.gebacken && rendB && !rendB._isHeadlessNull) {
+            if (wer) wer.wecke(z.fertig);
+            return false;
+        }
         if (z._flat) return z._flat;
         // Die Karte blendet nach DERSELBEN Sichthöhe wie ihre 3D-Stufen (das Studio: die Karten-Instanz trägt bh, die
         // Sichthöhe des echten Baums): die Höhe der Höhen-Stufe aus dem Höhen-Buch, je Slot × Instanz-Skala gestempelt
         // (|aKarte.w|) — nie die Rahmen-Höhe des Bakes (sie wich bis ~2 % + Bake-Rand ab). Unbekannt: die Karte wartet.
-        const hz = this._foundryBaumHoehe(preset, entry);
+        const hz = this._foundryBaumHoehe(preset, entry, wer);
         if (hz == null) return null;
         // PARITÄT: der Rahmen ist TEMPLATE-lokal → dieselbe Template→Welt-Übersetzung wie die 3D-Stufen
         // (localMatrix), sonst wäre der ferne Baum ⅓ so groß wie sein nahes Pendant (LOD-Pop beim Übergang).
