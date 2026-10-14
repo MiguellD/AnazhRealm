@@ -25,7 +25,8 @@ Bilder: tafel-mensch-labor-alt-neu-welt.png (Armlaenge alt/neu/Welt vorher/nachh
 CI: 38561062762 (Kopf 2a8fb81b) 12/13, rot nur voll 2/11 Pruefbuehne S0 (Glut-Probe K11b blind, 26,3 Grad) — das stand schon am
 Basis-Kopf 51cc19af so (integ-probe CI 38551540510, lokal pb-basis.txt 25,7 Grad), nicht vom Menschen (Spieler-Leib ausgeblendet:
 26,1 statt 26,6, pb-neu2 — Versuch 0bef1ec4 zurueckgenommen in 9934467a); integ-probe heilt es in c8196cd1, gemergt in 87992733.
-CI 38565624653 (Kopf 87992733, voll): siehe unten / Rueckgabe.
+CI 38565624653 (Kopf 87992733, voll): 13/13 — voll 1/11 (Gelaende-Linse, Kosten-Ebene am Takt) und voll 2/11 (S0-Frist 170 s)
+rissen am Laeufer-Takt und liefen in der Wiederholung gruen. Danach nur Artefakt-Commits [skip ci]: der Code des Kopfes = 87992733.
 
 Offen:
 - Albedo-Tafel Nachzug Zeile haut: die Labor-Seite misst 0,0542 (Radeon), die Welt-Seite maß in werkbank albedo --tafel stumm
