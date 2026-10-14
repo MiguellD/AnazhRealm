@@ -3535,6 +3535,23 @@ const WALDBODEN_EMIT = { fern: emitFern, reed: emitSchilf, brush: emitGestruepp,
 // Splitterkranz), das Feinreisig ist abgefallen, kein Laub. Läuft NACH dem Wuchs — das Skelett und der rnd()-Strom
 // sind die eines lebenden Baums derselben Art (FIX v35), die Stufen schneiden dasselbe Individuum.
 function __totholzSchnitt(nodes, P, seed) {
+    // DER SCHNITT TRÄGT SEINE VEKTOR-HELFER SELBST (Integration K20 × K16): er läuft auch im Haupt-Thread — der gefühlte
+    // Baum (`skelettDerGestalt` ← `_baumGestaltTeile` ← `_populateBlockerAABBs` ← `spawnArchitecture`) —, wo keine Shell
+    // (phytogenesis.js) die Vektor-Globalen stellt: jeder baum_totholz warf dort „vlen is not defined" (gate:brennglas-takt,
+    // gate:phyto-core „Skelett im Haupt-Thread"). Dieselbe Mathematik wie die Shell (so wächst auch phyto-core
+    // `growSkeleton`) — im Worker bit-gleich.
+    const lerp = (a, b, t) => a + (b - a) * t,
+        clamp = (x, a, b) => Math.max(a, Math.min(b, x)),
+        vsub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]],
+        vadd = (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]],
+        vscl = (a, s) => [a[0] * s, a[1] * s, a[2] * s],
+        vdot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2],
+        vlen = (a) => Math.hypot(a[0], a[1], a[2]),
+        vnorm = (a) => {
+            const l = vlen(a) || 1e-9;
+            return [a[0] / l, a[1] / l, a[2] / l];
+        },
+        vlerp = (a, b, t) => [lerp(a[0], b[0], t), lerp(a[1], b[1], t), lerp(a[2], b[2], t)];
     const hB = nodes.height * P.totBruch,
         rMin = (nodes.trunkR || 0.1) * 0.16,
         hsh = (k, n) => {
