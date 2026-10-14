@@ -2,7 +2,7 @@
     "version": 1,
     "zweck": "DIE RATSCHE wiese × gtx × third (K26): ungemessen bis zur Re-Mint-Serie dieses Orts × Geräts × Sicht (werkbank ratsche --neu); Gesetz (Toleranz, freie Klassen) und Form wie ratsche-wiese-radeon-ego.json. Das Band-Urteil nennt sie rot („ungemessen\"), gate:profiband H2b ebenso.",
     "gemessen": {
-        "datum": "2026-10-14T12:34:03.168Z",
+        "datum": "2026-10-14T12:52:33.119Z",
         "version": "18.546.0",
         "ort": "wiese",
         "geraet": "gtx",
@@ -36,7 +36,7 @@
     "gesamt": {
         "befehle": 85,
         "dreiecke": 323944,
-        "vramMB": 96.3
+        "vramMB": 96.2
     },
     "klassen": {
         "boden": {
