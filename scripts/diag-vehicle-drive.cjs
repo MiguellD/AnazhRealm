@@ -42,6 +42,7 @@ const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
+const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
 
 const PORT = Number(process.env.DRIVE_PORT || 4411);
 const root = path.resolve(__dirname, "..");
@@ -369,6 +370,7 @@ function staticLaws(vcSrc, garageSrc, anazhSrc, phytoSrc) {
         window.__anazhForceFoundry = true;
         window.__anazhHeadlessNullRenderer = true;
     });
+    await page.evaluateOnNewDocument(WELT_ORTE_INSTALL); // die Orte aus der Welt (`__weltOrte`, scripts/lib/welt-orte.cjs)
     const pageErrors = [];
     page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
@@ -716,24 +718,22 @@ function staticLaws(vcSrc, garageSrc, anazhSrc, phytoSrc) {
             res.gefuehlErr = (e && e.message) || String(e);
         }
         // ===== B-f (W5 Gegenstände, 05.10.): DER STAND AM HANG =====
-        // Je Hang-Probe um die Mess-Wiese (Steigung 12–35 % über ±2 m, trocken) parkt der GT längs und quer zum Hang (der
-        // Spawn-Pfad wie Hotbar/DSL: Basis auf dem Boden unter dem Ursprung); gemessen werden die vier Aufstandspunkte der
-        // GERENDERTEN Matrix gegen das Boden-Gesetz.
+        // Je Hang-Probe (Steigung 12–35 % über ±2 m, trocken) parkt der GT längs und quer zum Hang (der Spawn-Pfad wie
+        // Hotbar/DSL: Basis auf dem Boden unter dem Ursprung); gemessen werden die vier Aufstandspunkte der GERENDERTEN
+        // Matrix gegen das Boden-Gesetz. Die Hänge kommen aus der Welt (welt-orte `hang`, K55-5 — bis dahin ±40 m um die
+        // Mess-Wiese: die Wiese ist nach ihrem Gesetz flach, `hangMax` 5°, und fand in der Aue 1 Hang statt 6).
         try {
-            const mo = expected.messort;
             const M = new THREE.Matrix4();
             const v3 = new THREE.Vector3();
-            const hang = [];
-            for (let dx = -40; dx <= 40 && hang.length < 6; dx += 8)
-                for (let dz = -40; dz <= 40 && hang.length < 6; dz += 8) {
-                    const x = mo[0] + dx;
-                    const z = mo[1] + dz;
-                    const hh = (a, b) => r.getTerrainHeightAt(a, b);
-                    const g = Math.hypot((hh(x + 2, z) - hh(x - 2, z)) / 4, (hh(x, z + 2) - hh(x, z - 2)) / 4);
-                    const ws = r._atlasWaterLevelAt(x, z, hh(x, z));
-                    if (!(g >= 0.12 && g <= 0.35) || (Number.isFinite(ws) && ws > hh(x, z) - 0.3)) continue;
-                    hang.push({ x, z, g, rot: hang.length % 2 ? Math.PI / 2 : 0 });
-                }
+            const grad = (t) => (Math.atan(t) * 180) / Math.PI;
+            const hang = window
+                .__weltOrte("hang", { min: grad(0.12), max: grad(0.35), basis: 2, anzahl: 6, abstand: 24, rMax: 800 })
+                .map((o, i) => ({
+                    x: o.x,
+                    z: o.z,
+                    g: Math.tan((o.neigung * Math.PI) / 180),
+                    rot: i % 2 ? Math.PI / 2 : 0,
+                }));
             let spaltM = 0;
             const je = [];
             for (const p of hang) {
