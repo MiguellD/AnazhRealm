@@ -1,0 +1,15 @@
+{
+ "kamera": [
+  -278,
+  29.28,
+  -1038
+ ],
+ "hell": 81.2,
+ "kontrast": 6.26,
+ "dc": 45,
+ "dreiecke": 286818,
+ "ms": 172,
+ "abnahme": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 23.27 m · Luma 91 σ 43.4 schwarz 0.0 % weiß 0.0 % · Stand 18.546.0 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Blick-Wahl 1 Posen",
+ "datei": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\k1410i\\nadel\\B-nadel.png",
+ "gesamtMs": 1919
+}
