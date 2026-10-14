@@ -399,7 +399,7 @@ const PORTAL_RENDER_CONFIG = {
             // 8 Blicke, Wind-Uhr gepinnt, Ährchen-Anteil der Pixel 2,5–3,5 m voraus): 6 × 2 bei 1,1 zeigt 3,07 % gegen
             // 3,20 % der Basis (flächen-treu 1,09); L2 bei 2,65 im Band 6–9 m 3,11 % gegen 3,19 %.
             grass: {
-                1: { tris: 1220, draws: 1, schatten: false, rispe: { grannen: 6, segmente: 2, breite: 1.1 } },
+                1: { tris: 1220, draws: 1, schatten: false, rispe: { grannen: 4, segmente: 1, breite: 1.6 } },
                 2: { tris: 130, draws: 1, schatten: false, rispe: { grannen: 1, segmente: 1, breite: 2.65 } },
                 fernform: "boden",
             },
@@ -2683,9 +2683,11 @@ function emitFlower(P) {
 // Die Halm-Spitze: der Saison-Akzent nach dem Farb-Gesetz, linear um GRAS_SPITZE_HELL aufgehellt (emitGrass). Der
 // Stamm liest DIESELBE Zahl fuer die Halme seiner Boden-Wiese (`AnazhRealm.GRAS_SPITZE`, terrain:GRAS_SPITZE_HELL).
 const GRAS_SPITZE_HELL = 1.08;
+// Der Halm-Teppich (K56): Reichweite des Büschels in Einheiten des Understory-Rasters (deriveParamsPlant, Art grass).
+const TEPPICH_REICH = 0.7;
 function emitGrass(P) {
     const geos = [];
-    const lf = __lod === 0 ? 1 : __lod === 1 ? 0.55 : 0.14;
+    const lf = __lod === 0 ? 1 : __lod === 1 ? 0.85 : 0.14;
     const N = Math.max(3, Math.round(lerp(50, 150, P.density) * lf));
     const baseCol = vegFarbe(seasonTint).multiplyScalar(0.6),
         tipCol = vegFarbe(seasonAccent).multiplyScalar(GRAS_SPITZE_HELL);
@@ -2697,14 +2699,14 @@ function emitGrass(P) {
         const bx = Math.cos(a) * rr,
             bz = Math.sin(a) * rr;
         const isCulm = SH > 0 && rnd() < SH * 0.5; // Teil der Halme -> Rispenstaengel
-        const wMul = __lod === 0 ? 1 : __lod === 1 ? 1.7 : 4.6;
+        const wMul = __lod === 0 ? 1 : __lod === 1 ? 2.6 : 6.0;
         const L = P.bladeLen * (isCulm ? rrange(1.25, 1.6) : rrange(0.6, 1.15)),
             w = P.bladeW * wMul * (isCulm ? 0.5 : 0.74) * rrange(0.8, 1.1);
-        const lean = rrange(0.05, 0.22),
+        const lean = rrange(0.1, 0.4),
             la = rnd() * 6.28,
             bendDir = [Math.cos(la), 0, Math.sin(la)],
             droop = isCulm ? P.droop * 0.45 : P.droop;
-        const K = __lod === 0 ? (isCulm ? 7 : 10) : __lod === 1 ? 5 : 3,
+        const K = __lod === 0 ? (isCulm ? 7 : 10) : __lod === 1 ? 3 : 3,
             positions = [],
             idx = [],
             uvs = [],
@@ -4479,10 +4481,13 @@ function deriveParamsPlant(pre) {
         const fine = clamp(api, 0, 1); // api: breitblaettrig(0) -> feinhalmig(1)
         return {
             kind: "grass",
-            bladeLen: lerp(0.4, 1.5, slim) * J(0.16),
+            bladeLen: lerp(0.55, 2.0, slim) * J(0.16),
             bladeW: lerp(0.1, 0.035, fine) * J(0.15),
             density: clamp(leaf * J(0.2), 0.06, 1),
-            clump: lerp(0.35, 0.72, leaf),
+            // DER HALM-TEPPICH (K56): der Büschel deckt seine Zelle des Understory-Rasters — Radius in der Welt
+            // grassStep · TEPPICH_REICH · Skala, die Nachbarn überlappen. Vorher 0,35–0,72 (0,15 m Welt): Büschel auf
+            // glattem Grün, Halm-Deckung des Bodens im Ego-Bild 0,23. Kostet kein Dreieck.
+            clump: ((PORTAL_RENDER_CONFIG.understory.grassStep * TEPPICH_REICH) / PORTAL_RENDER_CONFIG.placement.scale.gras) * lerp(0.9, 1.1, leaf),
             droop: clamp(0.35 + trop * 0.7, 0.04, 1.35),
             seedHead: clamp((leaf - 0.32) * 1.5, 0, 1),
             seedTan: 0xc8b27a,
