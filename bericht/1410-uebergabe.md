@@ -3,7 +3,30 @@
 **Status: ZWISCHENSTAND + Übergabe.** Rolle: GPU-Messstation (GTX 1060) und Werkplatz. Aufträge kommen vom Koordinator
 als Karte, Antwort an den Absender.
 
-## Zweige und Köpfe (Stand 14.10. abends; main = 7d7e2022)
+## ERSTER Messauftrag der nächsten Woche (NOTBREMSE 14.10., nicht begonnen)
+
+**Gehend-ABAB boden-stufen 9e2f9c7c gegen main 062ec357** (der Zweig trägt K51-3 bis K51-6: Geomorph, nur lesende
+Nachbarn morphen, kein Wald- und Sichthöhen-Neubau beim reinen Stufenwechsel; main mit dem Schatten-Takt eingemergt).
+- **Vorbereitet** (lokal, unberührt):
+  - `abab-m062` (A, main 062ec357);
+  - `abab-p9e2` (B, 9e2f9c7c);
+  - `abab-im062` (Instrument 062ec357).
+  - node_modules-Junctions FEHLEN noch (PowerShell `New-Item -ItemType Junction … abab-b542\node_modules`).
+  - Der Wiesen-Patch FEHLT noch: Der Haushalt am Kopf sagt −900/−850; den Eintrag aus mess-wiese 54c78ff3 nur im
+    Instrument setzen.
+- **Ablauf** wie `1410-boden2-abab.md`:
+  - `p3/k1410f/gehen.sh` kopieren, `H` und `INS` auf `abab-im062`;
+  - je Seite 2 Sitzungen im Wechsel (A B, dann B A).
+  - Urteil: Frame p95 und CPU p95 beim Einströmen („gehen 1“) und eingeschwungen („gehen 2“) gegen main.
+  - Bleibt der Einström-Frame über 33 ms: `p3/k1410j/gehen-profil.sh` (Profil gehend sofort nach dem Stehen) je Seite,
+    Täter je Frame mit `profil-diff`-Logik.
+- **Abgabe:** `bericht/1410-boden3-abab.md`, kurze Zeile an den Koordinator.
+- **Vergleich:**
+  - K51-4 lag beim Einströmen bei 41,6 ms gegen main 25–33;
+  - Täter waren die Folge-Kette (Chunk-Neubau ≈ 1 ms, Wald-Setzung +2,7 ms, Sichthöhen +1,5 ms);
+  - K51-6 soll genau die Wald- und Sichthöhen-Neubauten schneiden.
+
+## Zweige und Köpfe (Stand 14.10. abends; main = 062ec357 seit dem Abend, darin 7d7e2022)
 
 | Zweig | Kopf | Stand |
 |---|---|---|
