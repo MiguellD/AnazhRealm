@@ -726,11 +726,15 @@ class AnazhRealm_Z20d {
 
     // DER ORT EINES WERKS AM UFER (Schau-2 wasser-wahrheit, Gegenprüfung): wo die Welt ein Werk mit Grundriss-Gesetz hinstellt
     // (der Satz, der Tempel des Nexus, ein Programm), sucht sie den Ort, an dem sein ganzes Fundament auf dem Land steht —
-    // `pos` selbst, sonst den nächsten in Ringen um ihn (1,5 m Schritt bis zur Reichweite des Grundrisses + 3 m, zwölf
-    // Richtungen ab dem Winkel `wurf()`, dem Strom des Samens). Geurteilt wird am Ort NACH der Spieler-Klemme der Wurzel
+    // `pos` selbst, sonst den nächsten in Ringen um den geklemmten Ort (1,5 m Schritt bis zur Reichweite des Grundrisses + 3 m
+    // + Weg der Klemme, zwölf Richtungen ab dem Winkel `wurf()`, dem Strom des Samens). Geurteilt wird am Ort NACH der Spieler-Klemme der Wurzel
     // (`_structureSpawnPos`), wie die Wurzel urteilt (`_werkImWasser`). „am Wasser" liefert den Fleck 2 m hinter dem Ufer —
     // ein Stamm steht dort, ein Haus reicht 4–6 m ins Wasser. Rückgabe { x, y, z } (y wie `pos` über dem Boden) oder null
     // (kein tragender Ort in Reichweite). Ein Werk ohne Grundriss-Gesetz: `pos` geklemmt.
+    // DAS MASS IST DER GEKLEMMTE ORT `p0` (werk-ufer): wo die Wurzel das Werk hinstellt, ist `pos` nach der Spieler-Klemme;
+    // die Ringe liegen um `p0`, so weit, dass sie den Grundriss um `pos` decken, und jeder Kandidat misst sich (geklemmt) an
+    // `p0`. Gemessen an `pos` lag jeder Kandidat nahe am Spieler auf dem Kreis der Klemme, alle fast gleich weit — das Maß
+    // verlor die Richtung des Verlangten: am Gleithang −910/−623 (3,96 m vom Wasser) stand das Haus 13,5 m vom Wasser.
     _werkOrtSuchen(type, pos, opts, wurf) {
         const sc = opts && Number.isFinite(opts.scale) && opts.scale > 0 ? opts.scale : 1;
         const klemme = (p) => this._structureSpawnPos(type, p, { state: this.state }, sc);
@@ -738,21 +742,24 @@ class AnazhRealm_Z20d {
         const g = this._werkGrundriss(type, opts);
         if (!g) return p0;
         if (!this._werkImWasser(type, p0, opts)) return p0;
-        // Die Kandidaten nach ihrem GEKLEMMTEN Abstand zu `pos` (die Klemme legt nahe am Spieler jeden auf ihren Kreis — der
-        // erste trockene Ring-Treffer lag sonst jenseits des Spielers, 16 m vom Wasser); der stabile Sort hält die Ring-Folge.
-        const reich = Math.hypot(g.fp.ex, g.fp.ez) + Math.hypot(g.fp.ox, g.fp.oz) + 3;
-        const h0 = this.getTerrainHeightAt(pos.x, pos.z);
+        const reich =
+            Math.hypot(g.fp.ex, g.fp.ez) + Math.hypot(g.fp.ox, g.fp.oz) + 3 + Math.hypot(p0.x - pos.x, p0.z - pos.z);
+        const h0 = this.getTerrainHeightAt(p0.x, p0.z);
         const a0 = wurf() * Math.PI * 2;
         const kand = [];
-        for (let r = 1.5; r <= reich; r += 1.5)
-            for (let k = 0; k < 12; k++) {
-                const a = a0 + (k * Math.PI) / 6;
-                const x = pos.x + Math.cos(a) * r;
-                const z = pos.z + Math.sin(a) * r;
+        for (let r = 1.5; r <= reich; r += 1.5) {
+            // je Ring so viele Richtungen, dass der Bogen ≤ 1,5 m bleibt (der Ring-Schritt): zwölf ließen auf 12 m Radius
+            // 6,3 m zwischen zwei Kandidaten — das Haus am Ufer stand 12 m vom Wasser, wo 3 m trugen
+            const n = Math.max(12, Math.ceil((2 * Math.PI * r) / 1.5));
+            for (let k = 0; k < n; k++) {
+                const a = a0 + (k * 2 * Math.PI) / n;
+                const x = p0.x + Math.cos(a) * r;
+                const z = p0.z + Math.sin(a) * r;
                 const h = this.getTerrainHeightAt(x, z);
-                const q = klemme({ x, y: Number.isFinite(h) && Number.isFinite(h0) ? pos.y + h - h0 : pos.y, z });
-                kand.push([Math.hypot(q.x - pos.x, q.z - pos.z), q]);
+                const q = klemme({ x, y: Number.isFinite(h) && Number.isFinite(h0) ? p0.y + h - h0 : p0.y, z });
+                kand.push([Math.hypot(q.x - p0.x, q.z - p0.z), q]);
             }
+        }
         kand.sort((a, b) => a[0] - b[0]);
         for (const [, q] of kand) if (!this._werkImWasser(type, q, opts)) return q;
         return null;

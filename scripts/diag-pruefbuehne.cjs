@@ -642,7 +642,8 @@ async function probe(page, welt, wuerfe, evolutionen, schein) {
                     inseln: (s.floatingIslands || []).length,
                     dorfZellen: Object.keys(wm().settlementCells || {}).length,
                     pflanzSchlange: (s.pendingVegSpawns || []).length,
-                    fluesse: h && Array.isArray(h.rivers) ? h.rivers.length : null,
+                    // jeder Fluss, den kein Term der Bühne trägt (der Bach der Klamm S6 ist ihr Gesetz, kein Wurf)
+                    fluesse: h && Array.isArray(h.rivers) ? h.rivers.filter((rv) => !rv.term).length : null,
                 };
             }
             out.basis = basis;
