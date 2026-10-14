@@ -316,6 +316,15 @@ class AnazhRealm_Z11a {
         const n = pos.count;
         const tArr = tgtAttr.array;
         const wArr = wAttr.array;
+        // der Fingerabdruck des alten Morphs (die Karte zieht nur nach, wenn er sich ändert)
+        const abdruck = () => {
+            let s = 0;
+            for (let v = 0; v < n; v++)
+                if (wArr[v] > 0)
+                    s += wArr[v] * (tArr[v * 3] * 1.31 + tArr[v * 3 + 1] * 1.73 + tArr[v * 3 + 2] * 1.13 + v);
+            return s;
+        };
+        const abdruckAlt = abdruck();
         // Basis = Identität (un-morpht)
         for (let v = 0; v < n; v++) {
             tArr[v * 3] = pos.getX(v);
@@ -415,6 +424,33 @@ class AnazhRealm_Z11a {
         }
         entry.hasMorph = touched;
         this._chunkSatzMarke("boden", `${cx},${cz}`, ["aMorphTarget", "aMorphWeight"]);
+        // DER BODEN-LESER LIEST, WAS GEZEICHNET WIRD (K51, Lehre 22): an einer Stufen-Naht zeichnet der Stoff die Grenz-Zeile
+        // auf der groben Fläche — die Karte des Chunks (Stand, Nah-Wiese, Nah-Streu) kommt aus derselben gemorphten Lage. Mit der
+        // Nah-Zone 3×3 liegt die Naht 43–65 m vor dem Auge, wo Tiere stehen (gate:koerper-stand K6: 346 von 772 Punkten mehr
+        // als 25 cm neben dem gezeichneten Boden, die Karte las die rohe Lage).
+        if (abdruck() !== abdruckAlt) {
+            const U = this.state.atmoUniforms;
+            const A = this.state.atmosphere;
+            const gm = U && U.geomorph ? U.geomorph.value : A && Number.isFinite(A.geomorph) ? A.geomorph : 1;
+            const P = pos.array;
+            const lage = new Float32Array(P.length);
+            for (let v = 0; v < n; v++) {
+                const f = wArr[v] * gm;
+                lage[v * 3] = P[v * 3] + (tArr[v * 3] - P[v * 3]) * f;
+                lage[v * 3 + 1] = P[v * 3 + 1] + (tArr[v * 3 + 1] - P[v * 3 + 1]) * f;
+                lage[v * 3 + 2] = P[v * 3 + 2] + (tArr[v * 3 + 2] - P[v * 3 + 2]) * f;
+            }
+            const karte = this._bodenKarteAusMesh(
+                lage,
+                geom.index ? geom.index.array : null,
+                geom.attributes.color ? geom.attributes.color.array : null,
+                cx,
+                cz,
+                myLod
+            );
+            entry.surfMap = karte && karte.hoehe;
+            entry.gruenMap = karte && karte.gruen;
+        }
         this._rebuildLodStitchBand(entry, bandVerts, `${cx},${cz}`);
     }
 

@@ -956,10 +956,24 @@ class AnazhRealm_Z06a {
             gb = 0,
             gc = 0,
             gd = 0;
+        // DIE STUFEN-NAHT (K51): ein unterer Nachbar einer anderen Stufe tastet sein eigenes Raster ab — er trägt seine Fläche
+        // bilinear in SEINEM Raster bei (alle vier Ecken), die Karten der Stufe des Eigners je Ecke. Bis K51 las der Leser über die
+        // Stufen-Grenze nichts: im Rand-Streifen einer Naht (die Nah-Zone 3×3, 43–65 m vor dem Auge) fiel er auf den Träger
+        // (gate:koerper-stand K6: 346 von 772 Punkten mehr als 25 cm neben dem gezeichneten Boden, Pfoten 24 cm).
+        let fremd = -Infinity,
+            fremdG = 0;
         for (let q = 0; q < 4; q++) {
             const ax = cx - (q & 1);
             const az = cz - (q >> 1);
             const E = q === 0 ? e : vc.get(`${ax},${az}`);
+            if (E && E.surfMap && (E.lod || 0) !== lod) {
+                const v = this._bodenKarteBilinear(E, ax, az, x, z, aus);
+                if (v !== null && v.y > fremd) {
+                    fremd = v.y;
+                    fremdG = v.gruen;
+                }
+                continue;
+            }
             const m = E && (E.lod || 0) === lod ? E.surfMap : null;
             if (!m) continue;
             const i = gx - ax * n + T;
@@ -984,11 +998,47 @@ class AnazhRealm_Z06a {
                 gd = g ? g[o + M + 1] : 0;
             }
         }
+        const eigen = a > -Infinity && b > -Infinity && c > -Infinity && d > -Infinity;
+        const fu = x / h - gx;
+        const fv = z / h - gz;
+        const y = eigen ? (a * (1 - fu) + b * fu) * (1 - fv) + (c * (1 - fu) + d * fu) * fv : -Infinity;
+        if (fremd > y) {
+            if (aus) aus.gruen = fremdG;
+            return fremd;
+        }
+        if (!eigen) return null;
+        if (aus) aus.gruen = ((ga * (1 - fu) + gb * fu) * (1 - fv) + (gc * (1 - fu) + gd * fu) * fv) / 255;
+        return y;
+    }
+    // Die Karte EINES Chunks (ax, az) bilinear am Punkt in ihrem eigenen Raster (Schritt ihrer Stufe / Teilung): { y, gruen }
+    // oder null (der Punkt liegt nicht über der Karte, eine Ecke ohne Boden). Der Leser der Stufen-Naht (`_bodenSichtAt`).
+    _bodenKarteBilinear(E, ax, az, x, z, aus) {
+        const cfg = this._voxelChunkConfig(E.lod || 0);
+        const T = AnazhRealm.BODEN_KARTE_TEILUNG;
+        const h = cfg.step / T;
+        const M = T * (cfg.dim + 3) + 1;
+        const n = cfg.dim * T;
+        const gx = Math.floor(x / h);
+        const gz = Math.floor(z / h);
+        const i = gx - ax * n + T;
+        const j = gz - az * n + T;
+        if (i < 0 || j < 0 || i + 1 >= M || j + 1 >= M) return null;
+        const m = E.surfMap;
+        const o = i + j * M;
+        const a = m[o],
+            b = m[o + 1],
+            c = m[o + M],
+            d = m[o + M + 1];
         if (!(a > -Infinity && b > -Infinity && c > -Infinity && d > -Infinity)) return null;
         const fu = x / h - gx;
         const fv = z / h - gz;
-        if (aus) aus.gruen = ((ga * (1 - fu) + gb * fu) * (1 - fv) + (gc * (1 - fu) + gd * fu) * fv) / 255;
-        return (a * (1 - fu) + b * fu) * (1 - fv) + (c * (1 - fu) + d * fu) * fv;
+        const g = aus ? E.gruenMap : null;
+        return {
+            y: (a * (1 - fu) + b * fu) * (1 - fv) + (c * (1 - fu) + d * fu) * fv,
+            gruen: g
+                ? ((g[o] * (1 - fu) + g[o + 1] * fu) * (1 - fv) + (g[o + M] * (1 - fu) + g[o + M + 1] * fu) * fv) / 255
+                : 0,
+        };
     }
     // DIE KARTEN DES BODEN-LESERS über einem Rechteck (Welt-XZ): jeder Chunk, dessen Karte `_bodenSichtAt` dort liest — der
     // Eigner und, in den ersten zwei Zellen-Schritten des Chunks (so weit reicht der Saum einer Karte herüber), seine unteren
