@@ -1,0 +1,58 @@
+
+===== KREATUR-KOSTEN — Anim-Raten-LOD · neutrale Stance · Grobstufe · Werfer je Gestalt (gate:kreatur-kosten) =====
+
+  (A) Anim-Auswertungen über 100 Ticks (Stufen-Grenze 35.0 m): nah 100 · halb 50 · viertel 25 · hinter 0
+  (B) Gelenk-Abweichung von STAND_POSE: mid-step 1.810 rad → eingefroren 0 rad (Schwanz 0)
+  (C) Mensch-Gestalt: nah 8 Meshes/24383 Verts vs. fern 6 Meshes/10158 Verts
+
+  ✅ (A) NAH voll: die nahe Kreatur wertet JEDEN Tick aus (100/100)
+  ✅ (A) HALB-Zone: ~1/2 Rate (50/100)
+  ✅ (A) VIERTEL-Zone: ~1/4 Rate (25/100)
+  ✅ (A) JENSEITS der Grenze: GAR keine Auswertung (0/100)
+  ✅ (A) und die Leiter ist monoton (fern wertet ≤ 1/2 der näheren Stufe aus)
+  ✅ (A) die Hinter-Kreatur trägt den Einfrier-Stempel (_animEingefroren)
+  ✅ SELBST-TEST (S1): Leiter gestubbt → hinter tickt voll (20/20) — der Zähler misst die echte Leiter
+  ✅ (B) PRÄMISSE: vor dem Freeze mid-step (1.810 rad > 0.05)
+  ✅ (B) NEUTRALE STANCE: eingefroren auf Stand-Winkel (0 rad < 0.02)
+  ✅ (B) und der Schwanz ruht (rotation.y ≈ 0)
+  ✅ (B) der Freeze-Pfad lief (Stempel gesetzt)
+  ✅ SELBST-TEST (S2): Stance gestubbt → bleibt mid-step (1.590 rad) — die Messung ist nicht blind
+  (R) Wolf-Guss 8 Meshes (5 geskinnt, 0 unverschmolzen) · Mensch nah 8 Meshes · ohne Starr-Bindung 25 Meshes (17 unverschmolzen) · Pose-Probe 246000 Vertices, 0 außerhalb der Kugel
+
+  ✅ (R) Wolf: kein starres Teil zieht einen zweiten Draw für dasselbe Material (Starr-Bindung)
+  ✅ (R) Mensch: dasselbe für den nahen Körper
+  ✅ (R) jede geskinnte Hülle cullt gegen ihre Körper-Kugel (frustumCulled, boundingSphere)
+  ✅ (R) POSE-PROBE: der gehende Wolf bleibt in seinen Kugeln (0 von 246000 außerhalb)
+  ✅ SELBST-TEST (S3): Starr-Bindung gestubbt → 17 unverschmolzene Teile gezählt
+  ✅ (T) SCHMAL: jeder Index über ≤ 65 535 Vertices trägt 16 bit, jedes Haut-Gewicht unorm16 (Wolf · Mensch) — sauber
+  ✅ SELBST-TEST (S4): die alten Formen → die Linse nennt 10 breite Puffer (Index Uint32Array über 302 Vertices · Index Uint32Array über 126 Vertices)
+  ✅ (R) ZWILLING: die Grobstufe ist geskinnt und trägt die Knochen der nahen (5/5 geskinnt, 0 fremde von 130 Knochen) und bleibt im Gang in ihrer Kugel
+  ✅ (W) tier:wolf nah wirft 5.756/1, mittel 5.756/1 — Soll Wurf-Teil der Grobstufe 5.756/1 (seh haar)
+  ✅ (W) tier:fox nah wirft 6.082/1, mittel 6.082/1 — Soll Wurf-Teil der Grobstufe 6.082/1 (seh haar)
+  ✅ (W) tier:bear nah wirft 6.172/1, mittel 6.172/1 — Soll Wurf-Teil der Grobstufe 6.172/1 (seh haar)
+  ✅ (W) tier:deer nah wirft 5.194/1, mittel 5.194/1 — Soll Wurf-Teil der Grobstufe 5.194/1 (seh haar)
+  ✅ (W) mensch nah wirft 13.517/5, mittel 13.517/5 — Soll Wurf-Teil der Grobstufe 13.517/5 (seh haut+stoff+haar)
+  ✅ SELBST-TEST (S5): Zwilling gestubbt → die nahe Stufe wirft wieder 34.466/8 (L0 7) — rot an genau dieser Zeile
+  ✅ (W) DECKUNG tier:wolf: der Zwilling wirft den Umriss der feinen Stufe — IoU min 0.947 (gang15/schraeg35, Fläche -3.3 %, Täter hrP 76 cm²) · Mittel 0.960 über 16 Posen × Sonnen ≥ 0.94
+  ✅ (W) DECKUNG tier:fox: der Zwilling wirft den Umriss der feinen Stufe — IoU min 0.949 (gang7/schraeg35, Fläche -3.0 %, Täter flP 29 cm²) · Mittel 0.962 über 16 Posen × Sonnen ≥ 0.94
+  ✅ (W) DECKUNG tier:bear: der Zwilling wirft den Umriss der feinen Stufe — IoU min 0.975 (gang11/hoch75, Fläche 0.0 %, Täter frP 22 cm²) · Mittel 0.979 über 16 Posen × Sonnen ≥ 0.94
+  ✅ (W) DECKUNG tier:deer: der Zwilling wirft den Umriss der feinen Stufe — IoU min 0.950 (gang7/schraeg35, Fläche 0.7 %, Täter wolf 42 cm²) · Mittel 0.957 über 16 Posen × Sonnen ≥ 0.94
+  ✅ (W) DECKUNG mensch: der Zwilling wirft den Umriss der feinen Stufe — IoU min 0.949 (gang9/seite25, Fläche -0.2 %, Täter starr 108 cm²) · Mittel 0.955 über 16 Posen × Sonnen ≥ 0.94
+  ✅ SELBST-TEST (S7): der Zwilling 6 % zur Mitte gezogen → IoU min 0.772 (gang/hoch75, Fläche -13.1 %, Täter wolf 139 cm²) · Mittel 0.784 über 4 Posen × Sonnen < 0.94 — die Deckung ist nicht blind
+  ✅ (W) ABSENZ: castShadow-Literale am Gelenk-Guss 0 · Leser der Wirts-Distanzen 0 · Konstanten 0
+  ✅ (C) der Mensch trägt die gelenkige Grobstufe (_gelenk nah+fern)
+  ✅ (C) messbare Vertex-Differenz (fern < 80 % von nah)
+  ✅ (C) weniger Meshes im Fern-Guss
+  ✅ (C) der EINE Stufen-Schalter (_gelenkStufe) schaltet nah↔fern an der Grenze der Kern-Zeile
+  ✅ (C) KONSUM: der echte Peer-Tick schaltet den fernen Menschen auf die Grobstufe (Layer 0)
+  ✅ (C) und zurück auf nah, wenn er herankommt (die Grobstufe nur in den Kaskaden)
+  ✅ (F) PRÄMISSE: der gehende Mensch-Peer ist nah mitten im Schritt (1.316 rad (knee1) > 0,05)
+  ✅ (F) RUHE: der ferne Mensch-Peer (Grobstufe im Bild) steht in der Ruhe-Pose — 0.000 rad (arm1) ≤ 0,01
+  ✅ (F) PRÄMISSE: die gehende Sicht-Kopie eines Wolfs ist nah mitten im Schritt (1.395 rad > 0,05)
+  ✅ (F) RUHE: die ferne Sicht-Kopie (Grobstufe) steht in der Kern-STAND_POSE — 0.000 rad ≤ 0,02
+  ✅ SELBST-TEST (S6): die Ruhe gestubbt → der ferne Mensch bleibt mitten im Schritt (1.316 rad (knee1))
+  ❌ (G) KREATUR_RUHE/_tickKreaturRuhe fehlt
+  ✅ kein Page-Error (sauber)
+
+  ❌ ROT — die Kreatur-Kosten-Verdrahtung trägt nicht
+

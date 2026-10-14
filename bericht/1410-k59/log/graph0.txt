@@ -1,0 +1,314 @@
+{
+ "ergebnis": {
+  "kinder": 85,
+  "gesamt": 1070,
+  "gesamtAuto": 988,
+  "nahMesh": {
+   "ein": 64,
+   "aus": 74
+  },
+  "top": [
+   {
+    "name": "regionBundle:@wahl",
+    "typ": "BundleGroup",
+    "n": 109,
+    "auto": 55,
+    "mesh": 108,
+    "tiefe": 2,
+    "wAuto": true,
+    "sichtbar": true
+   },
+   {
+    "name": "Group",
+    "typ": "Group",
+    "n": 85,
+    "auto": 85,
+    "mesh": 13,
+    "tiefe": 14,
+    "wAuto": true,
+    "sichtbar": false
+   },
+   {
+    "name": "Group",
+    "typ": "Group",
+    "n": 85,
+    "auto": 85,
+    "mesh": 13,
+    "tiefe": 14,
+    "wAuto": true,
+    "sichtbar": false
+   },
+   {
+    "name": "Group",
+    "typ": "Group",
+    "n": 85,
+    "auto": 85,
+    "mesh": 13,
+    "tiefe": 14,
+    "wAuto": true,
+    "sichtbar": false
+   },
+   {
+    "name": "Group",
+    "typ": "Group",
+    "n": 85,
+    "auto": 85,
+    "mesh": 13,
+    "tiefe": 14,
+    "wAuto": true,
+    "sichtbar": false
+   },
+   {
+    "name": "Group",
+    "typ": "Group",
+    "n": 85,
+    "auto": 85,
+    "mesh": 13,
+    "tiefe": 14,
+    "wAuto": true,
+    "sichtbar": false
+   },
+   {
+    "name": "Group",
+    "typ": "Group",
+    "n": 71,
+    "auto": 71,
+    "mesh": 13,
+    "tiefe": 7,
+    "wAuto": true,
+    "sichtbar": false
+   },
+   {
+    "name": "Group",
+    "typ": "Group",
+    "n": 71,
+    "auto": 71,
+    "mesh": 13,
+    "tiefe": 7,
+    "wAuto": true,
+    "sichtbar": false
+   },
+   {
+    "name": "Group",
+    "typ": "Group",
+    "n": 71,
+    "auto": 71,
+    "mesh": 13,
+    "tiefe": 7,
+    "wAuto": true,
+    "sichtbar": false
+   },
+   {
+    "name": "Group",
+    "typ": "Group",
+    "n": 69,
+    "auto": 69,
+    "mesh": 13,
+    "tiefe": 7,
+    "wAuto": true,
+    "sichtbar": false
+   },
+   {
+    "name": "Group",
+    "typ": "Group",
+    "n": 69,
+    "auto": 69,
+    "mesh": 13,
+    "tiefe": 7,
+    "wAuto": true,
+    "sichtbar": false
+   },
+   {
+    "name": "Group",
+    "typ": "Group",
+    "n": 64,
+    "auto": 64,
+    "mesh": 14,
+    "tiefe": 7,
+    "wAuto": true,
+    "sichtbar": true
+   },
+   {
+    "name": "regionBundle:@global",
+    "typ": "BundleGroup",
+    "n": 11,
+    "auto": 6,
+    "mesh": 10,
+    "tiefe": 2,
+    "wAuto": true,
+    "sichtbar": true
+   },
+   {
+    "name": "regionBundle:s:0,0",
+    "typ": "BundleGroup",
+    "n": 9,
+    "auto": 5,
+    "mesh": 8,
+    "tiefe": 2,
+    "wAuto": true,
+    "sichtbar": true
+   },
+   {
+    "name": "bau:welt_koerperstudio",
+    "typ": "Group",
+    "n": 6,
+    "auto": 6,
+    "mesh": 5,
+    "tiefe": 1,
+    "wAuto": true,
+    "sichtbar": true
+   },
+   {
+    "name": "bau:esse",
+    "typ": "Group",
+    "n": 5,
+    "auto": 5,
+    "mesh": 4,
+    "tiefe": 1,
+    "wAuto": true,
+    "sichtbar": true
+   },
+   {
+    "name": "bau:welt_klang",
+    "typ": "Group",
+    "n": 4,
+    "auto": 4,
+    "mesh": 3,
+    "tiefe": 1,
+    "wAuto": true,
+    "sichtbar": true
+   },
+   {
+    "name": "bau:start_plattform",
+    "typ": "Group",
+    "n": 3,
+    "auto": 3,
+    "mesh": 2,
+    "tiefe": 1,
+    "wAuto": true,
+    "sichtbar": true
+   },
+   {
+    "name": "bau:welt_tetrapoda",
+    "typ": "Group",
+    "n": 3,
+    "auto": 3,
+    "mesh": 2,
+    "tiefe": 1,
+    "wAuto": true,
+    "sichtbar": true
+   },
+   {
+    "name": "regionBundle:0,0",
+    "typ": "BundleGroup",
+    "n": 3,
+    "auto": 2,
+    "mesh": 2,
+    "tiefe": 2,
+    "wAuto": true,
+    "sichtbar": true
+   },
+   {
+    "name": "dorf-rauch",
+    "typ": "Mesh",
+    "n": 2,
+    "auto": 1,
+    "mesh": 2,
+    "tiefe": 1,
+    "wAuto": true,
+    "sichtbar": true
+   },
+   {
+    "name": "nahWiese:L1:0:0",
+    "typ": "Mesh",
+    "n": 2,
+    "auto": 1,
+    "mesh": 2,
+    "tiefe": 1,
+    "wAuto": true,
+    "sichtbar": false
+   },
+   {
+    "name": "Mesh",
+    "typ": "Mesh",
+    "n": 2,
+    "auto": 1,
+    "mesh": 2,
+    "tiefe": 1,
+    "wAuto": true,
+    "sichtbar": true
+   },
+   {
+    "name": "Mesh",
+    "typ": "Mesh",
+    "n": 2,
+    "auto": 1,
+    "mesh": 2,
+    "tiefe": 1,
+    "wAuto": true,
+    "sichtbar": true
+   },
+   {
+    "name": "nahWiese:L1:1:0",
+    "typ": "Mesh",
+    "n": 2,
+    "auto": 1,
+    "mesh": 2,
+    "tiefe": 1,
+    "wAuto": true,
+    "sichtbar": false
+   },
+   {
+    "name": "nahWiese:L2:0:0",
+    "typ": "Mesh",
+    "n": 2,
+    "auto": 1,
+    "mesh": 2,
+    "tiefe": 1,
+    "wAuto": true,
+    "sichtbar": true
+   },
+   {
+    "name": "Mesh",
+    "typ": "Mesh",
+    "n": 2,
+    "auto": 1,
+    "mesh": 2,
+    "tiefe": 1,
+    "wAuto": true,
+    "sichtbar": true
+   },
+   {
+    "name": "Mesh",
+    "typ": "Mesh",
+    "n": 2,
+    "auto": 1,
+    "mesh": 2,
+    "tiefe": 1,
+    "wAuto": true,
+    "sichtbar": true
+   },
+   {
+    "name": "Mesh",
+    "typ": "Mesh",
+    "n": 2,
+    "auto": 1,
+    "mesh": 2,
+    "tiefe": 1,
+    "wAuto": true,
+    "sichtbar": true
+   },
+   {
+    "name": "Mesh",
+    "typ": "Mesh",
+    "n": 2,
+    "auto": 1,
+    "mesh": 2,
+    "tiefe": 1,
+    "wAuto": true,
+    "sichtbar": true
+   }
+  ]
+ },
+ "ms": 5
+}

@@ -1,0 +1,35 @@
+  ✅ tetrapoda-core lädt (Namensraum __tetrapodaCore)
+  ✅ MOTION_ZUSTAND_PROFILES existiert im Stamm
+  ✅ Zustand-Tabelle trägt Zeilen (schwimmen/jagd/flucht) — Ziele: schwimmen,hunt,flee,flee
+  ✅ DECKUNG: jedes Zustand-Ziel ist ein existierendes MOTION-Preset (keine tote Zeile) — 4 gedeckt
+  ✅ MOTION trägt hunt UND schwimmen (die einst toten/neuen Gänge)
+  ✅ fx.verhalten reist im Kern (VERHALTEN: aktionen + stimmung)
+  ✅ jede Stimmungs-Aktion existiert im Katalog + alle=[min,max] gültig — 7 Stimmungen
+  ✅ Aktions-Profile nutzen nur bekannte MOTION-Felder
+  ✅ PRESETS.wolf.fx.verhalten reist im Rezept (der Buch-Pfad)
+  ✅ VERHALTEN trägt die Seelen-Blöcke jagd/furcht/temperament/wandern
+  ✅ VERHALTEN trägt die Schluss-Welle-Blöcke (schwellen/freude mit Huepf-Hoehen/groessen/separation/aufgaben/herde/wasser)
+  ✅ groessen-Bänder strikt aufsteigend (bis-Schwellen)
+  ✅ KONSUM: _motionProfileName trägt den Zustand-Vorrang (zustand vor Emotion)
+  ✅ KONSUM: updateCreatures stempelt die JAGD (Stempel am Hunt-Drive)
+  ✅ KONSUM: updateCreatures stempelt die FLUCHT
+  ✅ KONSUM: der Schwimm-Stempel lebt an der Wasser-Wahrheit
+  ✅ KONSUM: _animateTierBaum konsumiert bodyX (Rumpf-Neigung reist)
+  ✅ KONSUM: _animateTierBaum trägt den Aktions-Overlay
+  ✅ KONSUM: der Verhaltens-Tick würfelt deterministisch (FNV, kein Math.random)
+  ✅ KONSUM: die Verhaltens-Zahlen fließen durch den EINEN memoisierten Leser (_verhaltenGesetz)
+  ✅ KONSUM: der Gang-Phasen-Seed liest das Gesetz (P.phases statt hartem Trab)
+  ✅ KONSUM: die Gegenwehr ist der EINE Biss (der Ansprung, _kreaturBissAnsatz mit der Quelle gegenwehr)
+  ✅ KONSUM: die Reichweite des Bisses ist der Weg des Ansprungs (sein Tempo × die Sprung-Zeit)
+  ✅ KONSUM: die Stimmungs-Schwellen sind Gesetz (Tick liest stimmung.schwellen)
+  ✅ KONSUM: die Größen-Bänder sind Gesetz (_creatureBodySize liest groessen)
+  ✅ KONSUM: die Separations-Kraft liest das Gesetz (VERHALTEN.separation)
+  ✅ KONSUM: die Aufgaben-Tempi/Halt-Distanzen lesen das Gesetz (aufgaben.*)
+  ✅ KONSUM: die Schwarm-Kohäsion ist die Herden-Form des Kerns (tetrapoda herdeZug über VERHALTEN.herde, je Gattung)
+  ✅ KONSUM: die Ufer-Scheu liest das Gesetz (wasser.tiefenScheuM/uferBias)
+  ✅ KONSUM: die Hetze hält, wo das Maul den Leib erreicht (_kreaturBissRadial im Jagd-Weg _kreaturJagdZug; die Neugier hält am persönlichen Raum)
+  ✅ KONSUM: das Sprung-Gesetz: der Abflug ist die Parabel des Gang-Gesetzes aus der Huepf-Hoehe der Freude (v0 = √(2·g·h)); der Ansprung eines Bisses springt den Grund-Hüpfer (K13)
+  ✅ KONSUM: eine springende Aktion zündet das EINE Sprung-Gesetz (creatureJump)
+  ✅ SELBST-TEST: eine injizierte tote Zustand-Zeile fällt auf
+
+✅ GRÜN — DAS KREATUR-LEBEN IST VERBUNDEN: jedes reisende Preset hat einen wählenden Pfad (Zustand vor Emotion), die Verhaltens-Seele ist in sich geschlossen und der Baum-Gang trägt sie.

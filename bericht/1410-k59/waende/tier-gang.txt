@@ -1,0 +1,60 @@
+  ✅ wolf  0.8 m/s · Hüfte 0.629 m · Stand 0.32 · Schlupf 0.022 · Drift je Pfote 0.02 0.01 0.02 0.01
+  ❌ wolf  1.6 m/s · Hüfte 0.629 m · Stand 0.18 · Schlupf 0.06 · Drift je Pfote 0.06 0.03 0.07 0.04
+  ❌ wolf  3.0 m/s · Hüfte 0.629 m · Stand 0.09 · Schlupf 0.141 · Drift je Pfote 0.18 0.19 0.04 0.12
+  ❌ wolf  1.6 m/s (30 fps · Leiter 1/4) · Hüfte 0.629 m · Stand 0.14 · Schlupf 0.051 · Drift je Pfote 0.13 0.12 0 0
+  ✅ wolf  3.0 m/s (30 fps · Leiter 1/4) · Hüfte 0.629 m · Stand 0.08 · Schlupf 0.007 · Drift je Pfote 0.01 0.02 0 0
+  ✅ fuchs 0.8 m/s · Hüfte 0.389 m · Stand 0.24 · Schlupf 0.046 · Drift je Pfote 0.03 0.03 0.05 0.04
+  ❌ fuchs 1.6 m/s · Hüfte 0.389 m · Stand 0.09 · Schlupf 0.066 · Drift je Pfote 0.06 0.05 0.01 0.08
+  ❌ fuchs 3.0 m/s · Hüfte 0.389 m · Stand 0.03 · Schlupf 0.119 · Drift je Pfote 0.01 0.04 0.14 0.16
+  ✅ fuchs 1.6 m/s (30 fps · Leiter 1/4) · Hüfte 0.389 m · Stand 0.08 · Schlupf 0.002 · Drift je Pfote 0 0 0 0
+  ❌ fuchs 3.0 m/s (30 fps · Leiter 1/4) · Hüfte 0.389 m · Stand 0 · Schlupf null · Drift je Pfote    
+  ✅ baer  0.8 m/s · Hüfte 0.767 m · Stand 0.36 · Schlupf 0.019 · Drift je Pfote 0.01 0.01 0.02 0.01
+  ✅ baer  1.6 m/s · Hüfte 0.767 m · Stand 0.22 · Schlupf 0.05 · Drift je Pfote 0.05 0.05 0.04 0.04
+  ❌ baer  3.0 m/s · Hüfte 0.767 m · Stand 0.09 · Schlupf 0.09 · Drift je Pfote 0.08 0.09 0.03 0.1
+  ❌ baer  1.6 m/s (30 fps · Leiter 1/4) · Hüfte 0.767 m · Stand 0.2 · Schlupf 0.108 · Drift je Pfote 0 0 0.15 0.14
+  ✅ baer  3.0 m/s (30 fps · Leiter 1/4) · Hüfte 0.767 m · Stand 0.08 · Schlupf 0.003 · Drift je Pfote 0 0 0 0
+  ✅ wesen 0.8 m/s · Hüfte 0.917 m · Stand 0.38 · Schlupf 0.015 · Drift je Pfote 0.01 0.01 0 0
+  ✅ wesen 1.6 m/s · Hüfte 0.917 m · Stand 0.25 · Schlupf 0.028 · Drift je Pfote 0.02 0.03 0.02 0.01
+  ❌ wesen 3.0 m/s · Hüfte 0.917 m · Stand 0.13 · Schlupf 0.078 · Drift je Pfote 0.07 0.06 0.09 0.04
+  ❌ wesen 1.6 m/s (30 fps · Leiter 1/4) · Hüfte 0.917 m · Stand 0.25 · Schlupf 0.058 · Drift je Pfote 0.14 0.14 0 0
+  ❌ wesen 3.0 m/s (30 fps · Leiter 1/4) · Hüfte 0.917 m · Stand 0.08 · Schlupf 0.215 · Drift je Pfote   0.16 0.32
+  ❌ mensch gehen (W) 1.15 m/s · Bein 0.835 m · Stand 0.11 · Schlupf 1.124 (> 0.05) · Kadenz 0.34 Schritte/s (3.4 m je Schritt) < 1.5 · Töne 1 / Soll 0.8 (± 15 % verfehlt) · Becken Hub 1.637 L / Tiefe 1.751 L (Soll ≤ 0.07 / 0.08) · Lock-Löser 3 (Phase@Takt -1.48@4 -0.15@79 0.55@119) in 178 Stand-Takten — Täter: _gaitGesetz (fx.bewegung.gang) · tetrapoda gangBecken (das Becken des Gesetzes) · _gaitLegIK (die Reichweiten-Wand löst den stehenden Fuß)
+  ❌ mensch laufen (Shift) 5.16 m/s · Bein 0.835 m · Stand 0.33 · Schlupf 0.001 · Kadenz 1.52 Schritte/s (3.4 m je Schritt) · Töne 4 / Soll 3.8 · Becken Hub 0.077 L / Tiefe 0.183 L · Lock-Löser 30 (Phase@Takt 2.09@5 2.41@9 2.73@13 2.97@16 3.92@28 4.56@36 5.03@42 5.43@47 5.75@51 6.07@55 0.82@68 1.45@76 1.93@82 2.33@87 2.64@91 2.88@94 3.12@97 3.92@107 4.55@115 5.03@121 5.43@126 5.74@130 6.06@134 0.81@147 1.45@155 1.92@161 2.32@166 2.64@170 2.88@173 3.12@176) in 180 Stand-Takten — Täter: _gaitLegIK (die Reichweiten-Wand löst den stehenden Fuß)
+  ❌ mensch Spitze 6.75 m/s · Bein 0.835 m · Stand 0.28 · Schlupf 0.001 · Kadenz 1.99 Schritte/s (3.4 m je Schritt) · Töne 5 / Soll 4.9 · Becken Hub 0.066 L / Tiefe 0.162 L · Lock-Löser 36 (Phase@Takt 3.98@5 4.6@11 5.12@16 5.54@20 5.85@23 6.16@26 0.81@35 1.44@41 1.96@46 2.37@50 2.68@53 3@56 3.93@65 4.56@71 5.08@76 5.49@80 5.8@83 6.11@86 0.77@95 1.39@101 1.91@106 2.33@110 2.64@113 2.95@116 3.89@125 4.51@131 5.03@136 5.44@140 5.76@143 6.07@146 0.82@156 1.45@162 1.97@167 2.38@171 2.7@174 3.01@177) in 180 Stand-Takten — Täter: _gaitLegIK (die Reichweiten-Wand löst den stehenden Fuß)
+  ❌ Schwere 1,62 m/s² · Takt Mensch 2.1888 × Gesetz · Becken-Zeile g null · Takt Wolf 1.1649 × Gesetz · Literal-Zwillinge 0 — Täter: _gaitGesetz (der Schritt des Menschen liest nicht die Schwere der Welt) · _animateHumanoidRig (das Becken bekommt nicht die Zeile mit der Schwere der Welt) · _animateTierBaum (der Schritt des Tiers liest nicht die Schwere der Welt)
+[linse-gpu] nvidia/pascal
+  ❌ studio geduckt 4.58 E/s · Bein 2.74 E · Stand 0.55 · Schlupf 0.987 · Kadenz 1.02 Schritte/s · Becken Hub 0.271 L (Soll ≤ 0.07) · Täter gangGesetz (tetrapoda gangSchritt/gangFuss)
+  ❌ studio gehen 10.45 E/s · Bein 2.74 E · Stand 0.55 · Schlupf 0.994 · Kadenz 1.02 Schritte/s · Becken Hub 0.271 L (Soll ≤ 0.12) · Täter gangGesetz (tetrapoda gangSchritt/gangFuss)
+  ❌ studio sprint 17.91 E/s · Bein 2.74 E · Stand 0.57 · Schlupf 0.997 · Kadenz 1.02 Schritte/s · Becken Hub 0.271 L (Soll ≤ 0.12) · Täter gangGesetz (tetrapoda gangSchritt/gangFuss)
+
+✅ SELBST-TEST GRÜN — der Vor-Welle-Gang gleitet (18 Läufe über 0.05).
+  ✅ wolf  0.8 m/s · Hüfte 0.629 m · Stand 0.57 · Schlupf 0.01 · Drift je Pfote 0 0 0 0
+  ✅ wolf  1.6 m/s · Hüfte 0.629 m · Stand 0.53 · Schlupf 0.006 · Drift je Pfote 0 0 0 0
+  ✅ wolf  3.0 m/s · Hüfte 0.629 m · Stand 0.52 · Schlupf 0.004 · Drift je Pfote 0 0 0 0
+  ✅ wolf  1.6 m/s (30 fps · Leiter 1/4) · Hüfte 0.629 m · Stand 0.37 · Schlupf 0.003 · Drift je Pfote 0 0 0 0
+  ✅ wolf  3.0 m/s (30 fps · Leiter 1/2) · Hüfte 0.629 m · Stand 0.38 · Schlupf 0.002 · Drift je Pfote 0 0 0 0
+  ✅ fuchs 0.8 m/s · Hüfte 0.389 m · Stand 0.53 · Schlupf 0.009 · Drift je Pfote 0 0 0 0
+  ✅ fuchs 1.6 m/s · Hüfte 0.389 m · Stand 0.5 · Schlupf 0.004 · Drift je Pfote 0 0 0 0
+  ✅ fuchs 3.0 m/s · Hüfte 0.389 m · Stand 0.48 · Schlupf 0.005 · Drift je Pfote 0 0 0 0
+  ✅ fuchs 1.6 m/s (30 fps · Leiter 1/3) · Hüfte 0.389 m · Stand 0.33 · Schlupf 0.002 · Drift je Pfote 0 0 0 0
+  ✅ fuchs 3.0 m/s (30 fps · Leiter 1/1) · Hüfte 0.389 m · Stand 0.41 · Schlupf 0.005 · Drift je Pfote 0 0 0 0
+  ✅ baer  0.8 m/s · Hüfte 0.767 m · Stand 0.55 · Schlupf 0.011 · Drift je Pfote 0 0 0 0
+  ✅ baer  1.6 m/s · Hüfte 0.767 m · Stand 0.52 · Schlupf 0.008 · Drift je Pfote 0 0 0 0
+  ✅ baer  3.0 m/s · Hüfte 0.767 m · Stand 0.51 · Schlupf 0.006 · Drift je Pfote 0 0 0 0
+  ✅ baer  1.6 m/s (30 fps · Leiter 1/4) · Hüfte 0.767 m · Stand 0.4 · Schlupf 0.003 · Drift je Pfote 0 0 0 0
+  ✅ baer  3.0 m/s (30 fps · Leiter 1/3) · Hüfte 0.767 m · Stand 0.34 · Schlupf 0.002 · Drift je Pfote 0 0 0 0
+  ✅ wesen 0.8 m/s · Hüfte 0.917 m · Stand 0.55 · Schlupf 0.012 · Drift je Pfote 0 0.01 0 0
+  ✅ wesen 1.6 m/s · Hüfte 0.917 m · Stand 0.53 · Schlupf 0.009 · Drift je Pfote 0 0 0 0
+  ✅ wesen 3.0 m/s · Hüfte 0.917 m · Stand 0.54 · Schlupf 0.007 · Drift je Pfote 0 0 0 0
+  ✅ wesen 1.6 m/s (30 fps · Leiter 1/4) · Hüfte 0.917 m · Stand 0.43 · Schlupf 0.003 · Drift je Pfote 0 0 0 0
+  ✅ wesen 3.0 m/s (30 fps · Leiter 1/4) · Hüfte 0.917 m · Stand 0.32 · Schlupf 0.002 · Drift je Pfote 0 0 0 0
+  ✅ mensch gehen (W) 1.15 m/s · Bein 0.835 m · Stand 0.6 · Schlupf 0.014 · Kadenz 1.79 Schritte/s (0.64 m je Schritt) · Töne 4 / Soll 4.4 · Becken Hub 0.049 L / Tiefe 0.075 L · Lock-Löser 0 in 213 Stand-Takten
+  ✅ mensch laufen (Shift) 5.16 m/s · Bein 0.835 m · Stand 0.24 · Schlupf 0.006 · Kadenz 2.95 Schritte/s (1.75 m je Schritt) · Töne 8 / Soll 7.3 · Becken Hub 0.109 L / Tiefe 0.166 L · Lock-Löser 0 in 87 Stand-Takten
+  ✅ mensch Spitze 6.75 m/s · Bein 0.835 m · Stand 0.19 · Schlupf 0.006 · Kadenz 3.09 Schritte/s (2.19 m je Schritt) · Töne 8 / Soll 7.7 · Becken Hub 0.111 L / Tiefe 0.154 L · Lock-Löser 0 in 71 Stand-Takten
+  ✅ Schwere 1,62 m/s² · Takt Mensch 1.0000 × Gesetz · Becken-Zeile g 1.62 · Takt Wolf 1.0000 × Gesetz · Literal-Zwillinge 0
+[linse-gpu] nvidia/pascal
+  ✅ studio geduckt 4.58 E/s · Bein 2.74 E · Stand 0.63 · Schlupf 0.017 · Kadenz 3 Schritte/s · Becken Hub 0.041 L (Soll ≤ 0.07) · Täter gangGesetz (tetrapoda gangSchritt/gangFuss)
+  ✅ studio gehen 10.45 E/s · Bein 2.74 E · Stand 0.38 · Schlupf 0.027 · Kadenz 2.96 Schritte/s · Becken Hub 0.107 L (Soll ≤ 0.12) · Täter gangGesetz (tetrapoda gangSchritt/gangFuss)
+  ✅ studio sprint 17.91 E/s · Bein 2.74 E · Stand 0.25 · Schlupf 0.023 · Kadenz 3.39 Schritte/s · Becken Hub 0.116 L (Soll ≤ 0.12) · Täter gangGesetz (tetrapoda gangSchritt/gangFuss)
+
+✅ GRÜN — jede Gattung setzt ihre Pfoten (Schlupf ≤ 0.05) bei Schritt, Trab und schnellem Trab; der Mensch geht und läuft nach demselben Gesetz (Kadenz ≥ 1.5, Töne ± 15 %), in der Welt und im Körper-Studio.

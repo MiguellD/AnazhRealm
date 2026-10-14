@@ -1,0 +1,10 @@
+{
+ "ergebnis": {
+  "takte": 1438,
+  "feldJeTakt": 0.1,
+  "ruhendJeTakt": 9.99,
+  "tiere": 10,
+  "matrixGangMsJeTakt": 0.09
+ },
+ "ms": 2
+}

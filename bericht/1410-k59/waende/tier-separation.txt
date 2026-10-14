@@ -1,0 +1,28 @@
+
+===== V18.472 — DIE TIERE ENTSTAPELN + DIFFERENZIEREN SICH (gate:tier-separation) =====
+
+  (A) Paar-Deckung 0.0000 m → nach 200 Ticks 2.67 m (Körperradius 1.0083362379906569 m, Spieler-Distanz 95 m)
+  (C) Separation genullt: 0.0000 m nach 200 Ticks
+  (B1) speedMul klein 1.341 vs. Gigant 0.949 · Weg 17.6 m vs. 24.8 m
+  (B2) Kitz (scheu, 0.6) Leine 4.8 m vs. Gigant (wehrhaft, 2.4) 67.2 m · Wolf-Basis 24.7 m vs. Hirsch 8.0 m · Anker-Distanz nach Aussetzen auf 45 m: 5.5 m vs. 52.6 m
+
+  ✅ (A) PRÄMISSE: das Paar startet in exakter Deckung (0 m)
+  ✅ (A) SEPARATION: nach 200 Ticks > Körperradius getrennt (2.67 m > 1.0083362379906569 m)
+  ✅ (A) und beschränkt — keine Explosions-Kraft (2.67 m < 30 m)
+  ✅ SELBST-TEST (C): mit genullter Separation bleibt das Paar GESTAPELT (0.0000 m < 0.2 m) — die Linse feuert
+  ✅ (B1) STAT-KONSUM: verschiedene Stats → verschiedene Charakter-Geschwindigkeit (1.341 > 0.949 × 1.1)
+  ✅ (B1) und messbar verschiedene Weg-Länge je Tempo-Einheit (22.2 > 15.7 × 1.1; 17.6 m bei 0.79 m/s, 24.8 m bei 1.58 m/s)
+  ✅ (B2) GRÖSSEN-ACHSE: die Leinen differieren ≥ 25 m (4.8 vs. 67.2)
+  ✅ (B2) MUT-ACHSE KONSUMIERT: die Leine des scheuen Hirschs < Wolf (8.0 < 24.7, fleeMul des Gattungs-Temperaments gelesen)
+  ✅ (B2) das KITZ kehrt an seine kurze Leine zurück (5.5 m < 26 m)
+  ✅ (B2) der GIGANT streift frei weiter draußen (52.6 m > 30 m und > Kitz + 4)
+  (D) Fuchs → Bär: tiefste Berührung 0.000 m · Δv Stoßer 2.66 / Ziel 0.12 m/s · Massen 22.4
+  (D) Bär → Fuchs: tiefste Berührung 0.000 m · Δv Stoßer 0.12 / Ziel 2.66 m/s · Massen 0.0447
+  (E) Wolf → Spieler: tiefste Berührung -0.000 m · Spieler Δv 0.62 m/s · (F) Lockstep-Abweichung 0
+  ✅ 0710-4 (D–F) LEIB AN LEIB: keine Durchdringung, Impuls-Austausch nach Masse (der Fuchs prallt am Bären ab, der Bär wankt kaum), der Spieler bekommt seinen Stoß, Lockstep
+  ✅ SELBST-TEST (C2): ohne Leib-Kontakt durchdringt der Fuchs den Bären ohne Impuls — die Linse nennt es (leib-durchdringung: Fuchs → Bär — die Leiber stecken 0.35 m ineinander · leib-ohne-impuls: Fuchs → Bär — der Gestoßene bekommt 0.000 m/s)
+  ✅ SELBST-TEST (D): der Befund (durcheinander, ohne Impuls) nennt Durchdringung, Impuls und Spieler; ein Stoß nach Masse bleibt grün
+  ✅ kein Page-Error (sauber)
+
+  ✅ GRÜN — die Tiere entstapeln sich und tragen Charakter (Separation + Stat-/Mut-Achsen KONSUMIERT)
+
