@@ -6,7 +6,7 @@ Lies zuerst DIE GOLDENE DEFINITION in CLAUDE.md. Dann diese Datei. Dann `memory/
 
 | Ref | Kopf | Zustand |
 |---|---|---|
-| main | c5e2fc8f | das Bündel vom 14.10. (V18.546-Nummer) + Tor-Stufen + Wiese-Teppich + Mensch Labor=Welt + Putz + Wahrheit |
+| main | 7d7e2022 (V18.546.1) | Bündel + Tor-Stufen + Wiese-Teppich + Mensch Labor=Welt + Laub + Mensch-Kopf + Welt-Boot + Archiv-Wand + Schatten-Takt (1410-3: in Ruhe höchstens EINE Kaskade je Frame, in Bewegung das alte Gesetz) |
 | integ-probe | ec86f5e2 | main + Boden-Stufen weich + Archiv-Wand + Welt-Boot (FF nach OMEN-Boden-ABAB) |
 
 **Das Bündel auf integ-probe** (Versions-Nummer noch 18.546.0, alles darin):
@@ -36,7 +36,7 @@ Lies zuerst DIE GOLDENE DEFINITION in CLAUDE.md. Dann diese Datei. Dann `memory/
 | welt-boot-rest | B2: die 17 übrigen Eigen-Starts in welt-boot.cjs, pruef-vakuum (Z2a) hineinführen | dito, Temp\claude\welt-boot-rest |
 | boden-stufen (K51-5) | Stufenwechsel ohne Form-Änderung setzt Wald/Sichthöhen nicht neu (OMEN-Profil: +4,3 ms beim Einströmen) | dito, Temp\claude\boden-folge; danach OMEN-ABAB gehend |
 | linsen-radeon | K39-2: Linsen ohne Zeit-Urteil lokal auf der Radeon (Wand-Zeit-Hebel 1) | dito, Temp\claude\linsen-radeon |
-| takt-wurzel (OMEN) | 1410-3: je Frame höchstens EINE Schatten-Kaskade, CPU p95 6,0→5,8 · 6,7→6,4 · 6,8→6,3 · 8,4→7,5; in Bewegung zittert der nahe Spieler-Schatten (5–8 px) → Bewegungs-Regel (b): bewegt = nah jeden Frame | ABAB STEHEND und GEHEND nebeneinander, dann FF; koordination bericht/1410-3-takt.md |
+| takt-wurzel (OMEN) | gemergt (main 7d7e2022). CPU-Rest stehend gegen 5,8: Wiese Ego hält, Wiese Third +0,6, Genesis Ego +0,5, Genesis Third +1,7 — Render-Objekt-Pfad ≈ 30 µs je Befehl, Kreaturen außerhalb des Bilds 0,75 ms, updateMatrixWorld 0,44 ms | OMEN bericht/1410-uebergabe.md |
 | ort-gelaende 92972ef6 | K10, Frozen C (Dorf auf dem Gelände-Kern) | Neubau gegen den K16-Grund prüfen, Damm/Slots/Nachtlicht |
 | haus-fenster a5341ed3 | K38-N1, gate:fenster-wechsel rot | Täter lesen |
 | pruef-vakuum 73becf82 | Z2a Meta-Wand gegen leere Prüfungen (WIP) | mit dem Welt-Boot-Fehlersammler zusammenführen |
