@@ -33,3 +33,13 @@ Vorher CI 38556427061 an 38365177: 9/13, rot voll 2 · 4 · 7 · 10. CI am neuen
    2·HOEHLEN_AUGE_M) öffnet die Höhle gegenüber nicht. Nächster Schritt: für 15,-1#59 -> 16,-1#61 die Kette bis zu ihrer
    Start-Zelle und deren Tor-Sperre gegen `bis` drucken.
 4. Danach CI 13/13, dann merge-bereit.
+
+## CI am Kopf 73548d6c: Run 38577143460 — 8/13
+- grün neu: voll 2 (Prüfbühne, durch den Merge) und gate:klang-zensus (voll 10 läuft jetzt bis werk-im-wasser durch).
+- rot: voll 4 (Höhlen-Sicht, Offen 3) · voll 7 (Fahr-Leben S4/L6/L8, Offen 1–2) ·
+  voll 1 gate:gelaende-realismus „kosten: die Spalte kostet 27,5 noise2D (Ebene 27,7) gegen das Budget 52,9 (Ebene 26,4)" —
+  das bekannte Zeitverhältnis-Flackern (K43-3: im Wiederlauf grün) · voll 5 gate:streu-fern „G BAHNWECHSEL … zurück um das
+  Ziel: Gesetz 6 · Mesh 0 · B danach 1" (am alten Kopf grün) · voll 10 gate:werk-im-wasser „H LEER: der Satz setzte 3 von 6
+  Eichen" und „haus_alemannisch #1619 (-55,75/-829,62) 12,50 m vom Wasser (Soll ≤ 12)" — lief am alten Kopf nie (klang brach
+  den Job vorher ab); `mess` = `messort("wiese")` (Zeile 2570): dieselbe Klasse „Probe sucht um den Messort".
+- Wiederlauf der roten Jobs einmal angestoßen (rerun-failed-jobs), um voll 1/5 als Flackern zu benennen oder nicht.
