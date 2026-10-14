@@ -49,7 +49,6 @@ const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
 
-const PORT = Number(process.env.HAUS_WELT_PORT || 4486);
 const ROOT = path.resolve(__dirname, "..");
 const SELBST = process.argv.includes("--selftest");
 // --nur=promotion,nahstreu: nur diese Selbsttests (der Hauptlauf fährt immer)
@@ -78,7 +77,10 @@ const BASIS = {
         // das Urteil der Wand lebt seit Welle L Folge in `_naturWand` (Bau-Modus und Phantom fragen es mit); seit Schau-2
         // urteilt sie danach über das Wasser (`_landAt`) — die Basis kennt nur noch das Wasser, keinen Grundriss; seit K20
         // trägt die Wand des Orts (`_ortWand`) den Grundriss für die Natur-Wand und den Solitär
-        ["        return this._imGrundriss(position.x, position.z, 0.8, this._naturKrone(name, opts));", "        return false;"],
+        [
+            "        return this._imGrundriss(position.x, position.z, 0.8, this._naturKrone(name, opts));",
+            "        return false;",
+        ],
         // die Räumung lebt an der Wurzel (`spawnArchitecture`) und an der Ankunft der Hülle (`_hausHuelleSetzen`)
         ["if (this._grundrissVon(entry)) this._grundrissRaeumen(entry);", ""],
         [
@@ -175,39 +177,43 @@ const BASIS = {
     // vor der ersten Studio-Stufe die geschlossene Kern-Box ohne Tür-Lücke
     kern: [["boxen = this._hausKernHuelle(t);", "boxen = [-t.W / 2, 0, -t.D / 2, t.W / 2, 3.1, t.D / 2];"]],
 };
-let patch = null;
-let patchFehler = [];
-let patchAngewandt = new Set();
 const patchZiel = (z) =>
     z.length === 3 ? z : ["/" + (stammLib.dateiMit(ROOT, z[0]) || stammLib.dateien(ROOT)[0]), z[0], z[1]];
 
-const server = http.createServer((req, res) => {
-    let p = req.url.split("?")[0];
-    if (p === "/") p = "/index.html";
-    const fp = path.join(ROOT, p);
-    if (!fp.startsWith(ROOT)) return ((res.statusCode = 403), res.end());
-    fs.readFile(fp, (err, data) => {
-        if (err) return ((res.statusCode = 404), res.end());
-        // eine Patch-Zeile [geheilt, basis] gilt dem Stamm — der Datei, die die Zeile trägt (scripts/lib/stamm.cjs
-        // `dateiMit`; trägt sie keine, der ersten: dort meldet der Lauf die fehlende Zeile) —, [datei, geheilt, basis] der
-        // genannten Datei (das Gesetzbuch reist über den Foundry-Worker: /fachwerk-core.js)
-        const meine = patch ? patch.map(patchZiel).filter((z) => z[0] === p) : [];
-        if (meine.length) {
-            let txt = data.toString("utf8");
-            for (const [, geheilt, basis] of meine) {
-                if (!txt.includes(geheilt))
-                    patchFehler.push(`geheilte Zeile fehlt in ${p} („${geheilt.slice(0, 70)}…")`);
-                else {
-                    txt = txt.replace(geheilt, basis);
-                    patchAngewandt.add(p + "|" + geheilt);
+// DIE WELTEN NEBENEINANDER (CI-Diät 14.10.): 21 Welten (20 Selbsttests + der Hauptlauf) liefen hintereinander, 557–732 s
+// Wand-Zeit auf dem Läufer bei einem belegten Kern. Jede Welt trägt jetzt ihren EIGENEN Server (Port 0, der Patch ihres
+// Täters im Zustand `z`) und ihren eigenen Browser-Kontext — kein Patch reist in eine fremde Welt; HAUS_WELT_PARALLEL
+// Welten laufen zugleich (Vorgabe: die Kerne des Läufers, höchstens 4). Das Urteil je Welt bleibt dasselbe.
+const PARALLEL = Math.max(1, Number(process.env.HAUS_WELT_PARALLEL) || Math.min(4, require("os").cpus().length));
+const machServer = (z) =>
+    http.createServer((req, res) => {
+        const { patch, fehler: patchFehler, angewandt: patchAngewandt } = z;
+        let p = req.url.split("?")[0];
+        if (p === "/") p = "/index.html";
+        const fp = path.join(ROOT, p);
+        if (!fp.startsWith(ROOT)) return ((res.statusCode = 403), res.end());
+        fs.readFile(fp, (err, data) => {
+            if (err) return ((res.statusCode = 404), res.end());
+            // eine Patch-Zeile [geheilt, basis] gilt dem Stamm — der Datei, die die Zeile trägt (scripts/lib/stamm.cjs
+            // `dateiMit`; trägt sie keine, der ersten: dort meldet der Lauf die fehlende Zeile) —, [datei, geheilt, basis] der
+            // genannten Datei (das Gesetzbuch reist über den Foundry-Worker: /fachwerk-core.js)
+            const meine = patch ? patch.map(patchZiel).filter((z) => z[0] === p) : [];
+            if (meine.length) {
+                let txt = data.toString("utf8");
+                for (const [, geheilt, basis] of meine) {
+                    if (!txt.includes(geheilt))
+                        patchFehler.push(`geheilte Zeile fehlt in ${p} („${geheilt.slice(0, 70)}…")`);
+                    else {
+                        txt = txt.replace(geheilt, basis);
+                        patchAngewandt.add(p + "|" + geheilt);
+                    }
                 }
+                data = Buffer.from(txt, "utf8");
             }
-            data = Buffer.from(txt, "utf8");
-        }
-        res.setHeader("Content-Type", MIME[path.extname(fp)] || "application/octet-stream");
-        res.end(data);
+            res.setHeader("Content-Type", MIME[path.extname(fp)] || "application/octet-stream");
+            res.end(data);
+        });
     });
-});
 
 async function proben(phasen) {
     const r = window.anazhRealm;
@@ -721,7 +727,8 @@ async function proben(phasen) {
             );
             w8.tore = tore.length;
             if (tore.length) {
-                const ringR = tore.reduce((q, a) => q + Math.hypot(a.position.x - L.x, a.position.z - L.z), 0) / tore.length;
+                const ringR =
+                    tore.reduce((q, a) => q + Math.hypot(a.position.x - L.x, a.position.z - L.z), 0) / tore.length;
                 L.r = Math.max(platR, ringR + 4);
             }
             w8.plattform[2] = Math.round(L.r * 10) / 10;
@@ -902,7 +909,9 @@ async function proben(phasen) {
             if (!damm || !damm.blockerAABBs) wb.fehler = "der Damm entstand nicht";
             else {
                 wb.vorher = vorher.filter((e) => inBau(damm, e.position.x, e.position.z)).length;
-                wb.rest = vorher.filter((e) => s.architectures.includes(e) && inBau(damm, e.position.x, e.position.z)).length;
+                wb.rest = vorher.filter(
+                    (e) => s.architectures.includes(e) && inBau(damm, e.position.x, e.position.z)
+                ).length;
                 const kiB = hain(gx, gz);
                 wb.ki = kiB.neu.filter((e) => inBau(damm, e.position.x, e.position.z)).length;
                 wb.kiWeicht = kiB.weicht.bau;
@@ -942,11 +951,14 @@ async function proben(phasen) {
                     if (abstand(f, x, z) < (f.sperr !== undefined ? f.sperr : 0)) {
                         w.aufWeg++;
                         if (w.taeter.length < 6)
-                            w.taeter.push(`${art} (${quelle}) auf ${f.typ === "segment" ? "Weg" : f.kanal === 1 ? "Acker" : "Platz"}`);
+                            w.taeter.push(
+                                `${art} (${quelle}) auf ${f.typ === "segment" ? "Weg" : f.kanal === 1 ? "Acker" : "Platz"}`
+                            );
                         return;
                     }
             };
-            for (const e of s.architectures) if (e.position && istNatur(e)) pruef(e.type, e.position.x, e.position.z, "Eintrag");
+            for (const e of s.architectures)
+                if (e.position && istNatur(e)) pruef(e.type, e.position.x, e.position.z, "Eintrag");
             for (const region of (s.scatterRegions && s.scatterRegions.values()) || [])
                 for (const c of region.cells || [])
                     if ((c.slots && c.slots.length) || c.feld) pruef(c.species || c.layer, c.x, c.z, "Streu");
@@ -1469,7 +1481,8 @@ function urteil(o) {
                     `W8 Aufbau: ${w.zellenNeu} lebende Streu-Zellen in den neu gebauten Regionen um die Plattform (im 40-m-Kreis ${w.zellen})${w.streuSteht ? "" : " (die Regionen kamen nicht zur Ruhe)"} (Soll ≥ 20)`
                 );
             if (!(w.pflanzen >= 20)) f.push(`W8 Aufbau: ${w.pflanzen} Kachel-Pflanzen im 30-m-Kreis (Soll ≥ 20)`);
-            if (!(w.tore >= 1)) f.push(`W8 Aufbau: ${w.tore} Tore im Ring um die Plattform (der Ort-Takt baute keinen Ring)`);
+            if (!(w.tore >= 1))
+                f.push(`W8 Aufbau: ${w.tore} Tore im Ring um die Plattform (der Ort-Takt baute keinen Ring)`);
             if (!(w.gegenprobe >= 1))
                 f.push(
                     `W8 Aufbau: der Hain der KI wuchs 150 m weiter nicht (${w.gegenprobe}; ${(w.kiFehler || []).join(" ")}) — die Probe ist blind`
@@ -1479,8 +1492,7 @@ function urteil(o) {
             if (w.zellenUeber) ueber.push(`${w.zellenUeber} Streu-Zellen ${JSON.stringify(w.je)}`);
             if (w.aufScheibe) ueber.push(`${w.aufScheibe} Kachel-Pflanzen auf dem Platz`);
             if (w.kiPlattform) ueber.push(`${w.kiPlattform} Bäume der KI`);
-            if (ueber.length)
-                f.push(`W8 Lichtung: über dem Genesis-Platz (r ${w.plattform[2]} m) ${ueber.join(", ")}`);
+            if (ueber.length) f.push(`W8 Lichtung: über dem Genesis-Platz (r ${w.plattform[2]} m) ${ueber.join(", ")}`);
             if (w.kiHaus) f.push(`W8 Hain im Haus: ${w.kiHaus} Bäume der KI im Grundriss von ${w.kiHausTyp}`);
             const stumm = [];
             if (!w.kiHaus && !(w.kiWeichtHaus >= 1))
@@ -1530,7 +1542,8 @@ function urteil(o) {
             f.push(
                 `W4 Aufbau: ${w ? w.formen : "?"} Formen der Wege-Karte, ${w ? w.natur : "?"} Natur-Stücke (Soll ≥ 10 und ≥ 50 — sonst sieht die Probe keinen Weg)`
             );
-        else if (w.aufWeg) f.push(`W4 Weg: ${w.aufWeg} Natur-Stücke auf Weg, Platz und Acker des Dorfs (${w.taeter.join(" · ")})`);
+        else if (w.aufWeg)
+            f.push(`W4 Weg: ${w.aufWeg} Natur-Stücke auf Weg, Platz und Acker des Dorfs (${w.taeter.join(" · ")})`);
     }
     if (P.has("w4b")) {
         if (!o.w4b || !(o.w4b.haeuser >= 8))
@@ -1604,14 +1617,16 @@ function zeile(o) {
 }
 
 (async () => {
-    await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
     const browser = await starteBrowser({ art: "null", frist: 900000 });
+    const t0 = Date.now();
     let rot = 0;
+    let selbst = [];
     try {
         const lauf = async (inj, phasen) => {
-            patch = inj && BASIS[inj] ? BASIS[inj] : null;
-            patchFehler = [];
-            patchAngewandt = new Set();
+            const z = { patch: inj && BASIS[inj] ? BASIS[inj] : null, fehler: [], angewandt: new Set() };
+            const server = machServer(z);
+            await new Promise((r) => server.listen(0, "127.0.0.1", r));
+            const PORT = server.address().port;
             // je Lauf ein eigener Browser-Kontext: kein Speicherstand (Save, IndexedDB) des Vorlaufs reist in die nächste
             // Welt (ein gespeichertes Dorf stünde sonst unter dem neu gegründeten)
             const kontext = await browser.createBrowserContext();
@@ -1649,12 +1664,25 @@ function zeile(o) {
             });
             const o = await page.evaluate(proben, phasen || null);
             await kontext.close();
-            for (const z of patch || []) {
-                const [d, g] = patchZiel(z);
-                if (!patchAngewandt.has(d + "|" + g)) patchFehler.push(`nie angewandt: ${d} („${g.slice(0, 60)}…")`);
+            server.close();
+            for (const zeile of z.patch || []) {
+                const [d, g] = patchZiel(zeile);
+                if (!z.angewandt.has(d + "|" + g)) z.fehler.push(`nie angewandt: ${d} („${g.slice(0, 60)}…")`);
             }
-            patch = null;
-            return { o, errs, pf: patchFehler.slice() };
+            return { o, errs, pf: z.fehler.slice() };
+        };
+        // die Welten im Pool: höchstens PARALLEL zugleich, die Ergebnisse in der Reihenfolge der Aufträge
+        const pool = async (auftraege) => {
+            const erg = new Array(auftraege.length);
+            let naechster = 0;
+            const arbeiter = async () => {
+                while (naechster < auftraege.length) {
+                    const i = naechster++;
+                    erg[i] = await auftraege[i]();
+                }
+            };
+            await Promise.all(Array.from({ length: Math.min(PARALLEL, auftraege.length) }, arbeiter));
+            return erg;
         };
         if (SELBST) {
             const soll = {
@@ -1702,8 +1730,20 @@ function zeile(o) {
                 bauwand: ["haus"],
                 raster: ["haus"],
             };
-            for (const inj of Object.keys(soll).filter((k) => !NUR.length || NUR.includes(k))) {
-                const { o, pf } = await lauf(inj, phasenVon[inj]);
+            selbst = Object.keys(soll)
+                .filter((k) => !NUR.length || NUR.includes(k))
+                .map((inj) => ({ inj, soll: soll[inj], phasen: phasenVon[inj] }));
+        }
+        // der Hauptlauf zuerst (er fährt alle Phasen, die längste Welt), dann die Selbsttests — alle im Pool
+        const [haupt, ...selbstErg] = await pool([
+            () => lauf(null, PHASEN.length ? PHASEN : null),
+            ...selbst.map((s) => () => lauf(s.inj, s.phasen)),
+        ]);
+        if (selbst.length) {
+            for (let i = 0; i < selbst.length; i++) {
+                const { inj } = selbst[i];
+                const soll = { [inj]: selbst[i].soll };
+                const { o, pf } = selbstErg[i];
                 const f = urteil(o);
                 const fehlt = soll[inj].filter((x) => !f.some((y) => y.startsWith(x)));
                 const ok = pf.length === 0 && fehlt.length === 0;
@@ -1714,7 +1754,7 @@ function zeile(o) {
                 if (!ok) rot++;
             }
         }
-        const { o, errs } = await lauf(null, PHASEN.length ? PHASEN : null);
+        const { o, errs } = haupt;
         console.log("  " + zeile(o));
         const f = urteil(o);
         for (const x of f) console.log("  ❌ " + x);
@@ -1723,8 +1763,8 @@ function zeile(o) {
         if (process.env.HAUS_WELT_JSON) fs.writeFileSync(process.env.HAUS_WELT_JSON, JSON.stringify(o, null, 1));
     } finally {
         await browser.close();
-        server.close();
     }
+    console.log(`  ${1 + selbst.length} Welten, ${PARALLEL} zugleich, ${Math.round((Date.now() - t0) / 1000)} s`);
     console.log(rot ? `❌ gate:haus-welt ROT (${rot})` : "✅ gate:haus-welt grün");
     process.exit(rot ? 1 : 0);
 })().catch((e) => {
