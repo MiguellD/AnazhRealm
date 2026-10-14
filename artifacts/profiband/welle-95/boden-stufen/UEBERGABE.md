@@ -35,3 +35,10 @@ Scratch `C:\Users\micha\AppData\Local\Temp\claude\boden-stufen\` (Werkzeug-Kopie
   aNormalZiel.w) -> f3d818d7, lokal gruen; voll 9 = gate:stand-takt GEHEN: der 2-m-Stempel der Strom-Wache liess den Ring
   beim Gehen in derselben Zelle gehen (82 Einheiten) -> `_stufenZelle` (09.js): Spieler-Zelle + Fach zwischen den
   Stufen-Schwellen (Brueche t mod S, S - t mod S), Wache und Linse lesen dieselbe Zelle.
+- Lokal gruen: gate:hoehlen-sicht, gate:stand-takt (Gehen 2,19 m: strom 82 -> 0), playtest:fast 22/0. Zweig-CI an 60891c67:
+  Run 38575554103 ([ci voll]); der Puls-Lauf an f3d818d7 (38575323896) abgebrochen.
+- BAU-KANTE (nicht angefasst, Befund fuer den Nachfolger): das Ziel je Vertex (aMorphTarget/aNormalZiel/aFarbeZiel) ist beim
+  Bau gebacken = Netz der Stufe L+1; die Kante wandert mit `_activeRingRadius` (PID) und der Zelle, die aeusserste Stufe ist je
+  Ringradius L2 oder L3. Ein Kanten-Morph braucht ein ZWEITES Ziel (Gesetz-Flaeche = Fern-Ring-Rand `_fernRingFeldY`) oder
+  den Umbau des Ziels beim Kanten-Wechsel (Neubau der Rand-Chunks je Ring-Schritt) — beides beruehrt Worker-Spiegel + Satz
+  48 B + Linse (o)/(9). Messname: diag-fern-ring (9) chunk-eigen-p95 1,39 m -> Soll <= 0,5.
