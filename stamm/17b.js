@@ -445,10 +445,12 @@ class AnazhRealm_Z17b {
         if (art === "boden")
             return {
                 name: "bodenSatz",
+                // DIE VERTEX-FORM (K44): die Normale trägt snorm8x4, die Farbe float16x4 (`_satzPacke`) — der Boden-Stoff
+                // liest beide als vec3, der Chunk behält seine Float32-Arrays für jeden CPU-Leser
                 attr: [
                     ["position", 3],
-                    ["normal", 3],
-                    ["color", 3],
+                    ["normal", 3, "snorm8"],
+                    ["color", 3, "half"],
                     ["aMorphTarget", 3],
                     ["aMorphWeight", 1],
                     ["aHimmel", 1],
@@ -516,6 +518,11 @@ class AnazhRealm_Z17b {
             art,
             spec,
             attrNamen: spec.attr.map((a) => a[0]),
+            // je Attribut die Vertex-Form auf der GPU (`_satzForm`): `gis` = die Breite im Satz-Array (gepackt 4)
+            attr: spec.attr.map(([name, is, form]) => {
+                const f = this._satzForm(form);
+                return { name, is, form: f, gis: f ? 4 : is };
+            }),
             geom: null,
             mesh: null,
             vKap: 0,
@@ -561,10 +568,15 @@ class AnazhRealm_Z17b {
         const alt = s.geom;
         const waechst = vKap > s.vKap || iKap > s.iKap; // `wachse` zählt das Wachsen, nie das Schrumpfen (`_chunkSatzVerdichten`)
         const g = new THREE.BufferGeometry();
-        for (const [name, is] of s.spec.attr) {
-            const arr = new Float32Array(vKap * is);
-            if (alt) arr.set(alt.attributes[name].array.subarray(0, s.vEnde * is));
-            g.setAttribute(name, new THREE.BufferAttribute(arr, is));
+        for (const { name, form, gis } of s.attr) {
+            const arr =
+                form === "snorm8"
+                    ? new Int8Array(vKap * 4)
+                    : form === "half"
+                      ? new globalThis.Float16Array(vKap * 4)
+                      : new Float32Array(vKap * gis);
+            if (alt) arr.set(alt.attributes[name].array.subarray(0, s.vEnde * gis));
+            g.setAttribute(name, new THREE.BufferAttribute(arr, gis, form === "snorm8"));
         }
         const idx = new Uint32Array(iKap);
         const iN = alt ? Math.min(s.iEnde, alt.index.array.length, iKap) : 0;
@@ -636,8 +648,12 @@ class AnazhRealm_Z17b {
             for (const b of folge) {
                 const d = pos - b.vStart;
                 if (d !== 0) {
-                    for (const [name, is] of s.spec.attr)
-                        s.geom.attributes[name].array.copyWithin(pos * is, b.vStart * is, (b.vStart + b.vAnzahl) * is);
+                    for (const { name, gis } of s.attr)
+                        s.geom.attributes[name].array.copyWithin(
+                            pos * gis,
+                            b.vStart * gis,
+                            (b.vStart + b.vAnzahl) * gis
+                        );
                     const idx = b.idx;
                     for (let i = 0; i < idx.length; i++) idx[i] += d;
                     b.vStart = pos;
@@ -674,12 +690,62 @@ class AnazhRealm_Z17b {
         return mesh;
     }
 
+    // Die Views eines Bereichs: jedes Float32-Attribut des Chunks zeigt in den Satz; ein gepacktes (`form`) behält der Chunk
+    // als eigenes Float32-Array — der CPU-Leser liest den Wert des Gesetzes, die GPU seine Vertex-Form.
     _chunkSatzViews(s, b) {
-        for (const [name, is] of s.spec.attr)
-            b.geom.attributes[name].array = s.geom.attributes[name].array.subarray(
-                b.vStart * is,
-                (b.vStart + b.vAnzahl) * is
-            );
+        for (const { name, form, is } of s.attr)
+            if (!form)
+                b.geom.attributes[name].array = s.geom.attributes[name].array.subarray(
+                    b.vStart * is,
+                    (b.vStart + b.vAnzahl) * is
+                );
+    }
+
+    // DIE VERTEX-FORM des Satzes (K44, gemessen 14.10. Radeon, Genesis third: der Boden-Satz 14,6 von 40,1 MB Puffer, 60 B je
+    // Vertex, Normale und Farbe 24 B davon in Float32): die Normale (Einheitsvektor, |n| ≤ 1) reist als snorm8x4 (4 B, ≤ 0,45°
+    // — die Form der Profi-Engines für Vertex-Normalen), die Farbe als float16x4 (8 B, 11 Bit Mantisse, Werte über 1 bleiben;
+    // unorm hätte die Glut-Farben über 1 gekappt). Die vierte Komponente: Normale 0, Farbe 1 (Alpha). Rückgabe: die Form oder
+    // null (Float32). Ohne Float16Array (vor Chrome 135) bleibt die Farbe Float32 — laut, einmal je Welt.
+    _satzForm(form) {
+        if (!form) return null;
+        if (form === "snorm8") return form;
+        if (form === "half") {
+            if (typeof globalThis.Float16Array === "function") return form;
+            if (!this._satzFormLaut) {
+                this._satzFormLaut = true;
+                this.log(
+                    "VERTEX-FORM: Float16Array fehlt (Browser vor Chrome 135) — die Satz-Farbe bleibt Float32",
+                    "ERROR"
+                );
+            }
+            return null;
+        }
+        throw new Error(`_satzForm: unbekannte Vertex-Form „${form}"`);
+    }
+
+    // Packt `n` Vertices (Breite `is`, aus `src` ab Vertex 0) in die Vertex-Form `form` nach `dst` ab Vertex `ab` (Breite 4).
+    // EINE Quelle für Satz und Linse (gate:chunk-satz (f) prüft den Bereich gegen genau diese Packung).
+    static _satzPacke(form, src, is, dst, ab, n) {
+        const o0 = ab * 4;
+        if (form === "snorm8")
+            for (let v = 0; v < n; v++) {
+                const q = v * is,
+                    o = o0 + v * 4;
+                for (let k = 0; k < 3; k++) {
+                    const x = src[q + k];
+                    dst[o + k] = Math.round((x > 1 ? 1 : x < -1 ? -1 : x) * 127);
+                }
+                dst[o + 3] = 0;
+            }
+        else
+            for (let v = 0; v < n; v++) {
+                const q = v * is,
+                    o = o0 + v * 4;
+                dst[o] = src[q];
+                dst[o + 1] = src[q + 1];
+                dst[o + 2] = src[q + 2];
+                dst[o + 3] = 1;
+            }
     }
 
     // DIE FREILISTE des Satzes — EINE Mechanik für seine Vertex-Bereiche und die Zellen-Plätze seiner Abschnitte: Läufe
@@ -753,10 +819,11 @@ class AnazhRealm_Z17b {
         if (!geom.index || !geom.index.array) throw new Error(`_chunkSatzEin(${art}, ${key}): kein Index`);
         const vStart = this._chunkSatzVAlloc(s, n);
         const g = s.geom; // nach dem Alloc: ein Wachsen tauscht die Geometrie
-        for (const [name, is] of s.spec.attr) {
+        for (const { name, is, form, gis } of s.attr) {
             const ga = g.attributes[name];
-            ga.array.set(geom.attributes[name].array, vStart * is);
-            ga.addUpdateRange(vStart * is, n * is);
+            if (form) AnazhRealm._satzPacke(form, geom.attributes[name].array, is, ga.array, vStart, n);
+            else ga.array.set(geom.attributes[name].array, vStart * is);
+            ga.addUpdateRange(vStart * gis, n * gis);
             ga.needsUpdate = true;
         }
         const li = geom.index.array;
@@ -940,9 +1007,9 @@ class AnazhRealm_Z17b {
         const s = this.state.chunkSaetze ? this.state.chunkSaetze.get(art) : null;
         const b = s ? s.bloecke.get(key) : null;
         if (!b) return false;
-        for (const name of s.attrNamen) {
+        for (const { name, form } of s.attr) {
             const a = b.geom.attributes[name];
-            if (a) a.array = a.array.slice();
+            if (a && !form) a.array = a.array.slice(); // ein gepacktes trägt der Chunk ohnehin selbst
         }
         if (b.hoehle) this._hoehlenLoese(s, b);
         this._chunkSatzVFrei(s, b.vStart, b.vAnzahl);
@@ -960,6 +1027,10 @@ class AnazhRealm_Z17b {
         if (!b) throw new Error(`_chunkSatzMarke(${art}, ${key}): kein Bereich im Satz`);
         for (const name of namen) {
             const ga = s.geom.attributes[name];
+            const fa = s.attr.find((x) => x.name === name);
+            // ein gepacktes Attribut liest der Schreiber im Chunk (Float32) — der Satz packt es neu
+            if (fa && fa.form)
+                AnazhRealm._satzPacke(fa.form, b.geom.attributes[name].array, fa.is, ga.array, b.vStart, b.vAnzahl);
             ga.addUpdateRange(b.vStart * ga.itemSize, b.vAnzahl * ga.itemSize);
             ga.needsUpdate = true;
         }
