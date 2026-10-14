@@ -1,0 +1,16 @@
+{
+ "ort": "wiese",
+ "sicht": "third",
+ "pose": null,
+ "welt": null,
+ "spieler": [
+  -278,
+  -1038
+ ],
+ "takte": 62,
+ "chunks": 25,
+ "gier": 3.1416,
+ "dorfZug": false,
+ "ortTakt": [],
+ "ms": 11969
+}
