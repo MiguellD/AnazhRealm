@@ -247,8 +247,10 @@ function weiter(root) {
     const meldung =
         `Re-Home ${z.zweigName} auf ${z.aufName} ${z.aufSha.slice(0, 8)}: der Stamm-Merge auf dem virtuellen Text, ` +
         `die Konflikte von Hand gelöst, danach S in die Form des Ziels`;
-    fs.unlinkSync(path.join(root, KONFLIKT));
+    // der gelöste Text fällt erst, wenn der Merge steht — bricht vollziehe (index.html mit Konflikten), bleibt er für
+    // das nächste --weiter liegen
     const r = vollziehe(root, z.aufSha, z.aufName, z.zweigName, T, z.form, meldung);
+    fs.unlinkSync(path.join(root, KONFLIKT));
     fs.unlinkSync(zp);
     return r;
 }
