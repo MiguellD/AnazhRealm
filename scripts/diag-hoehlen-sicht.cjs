@@ -15,7 +15,9 @@
 //   (b') HINAUS — das Auge in Höhlen-Luft, 16 m unter der Wiese (−1041/−738, der Ring um den Spieler dort), der Blick durch
 //       die Mündung hinaus: die Strahlen beginnen in der Höhle, laufen an den Sperren vorbei und erreichen Mündungen
 //       dahinter (`_hoehlenHinaus`). Die alte Probe — die Sperre ohne den Weg hinaus — ließ dort 3 Zellen weg (2,8 % des
-//       Bilds); der Blick ist scharf nur, solange sie dort rot fällt;
+//       Bilds); der Blick ist scharf nur, solange sie dort rot fällt. Mund, Gang und Auge liegen auf dem Gitter der Stufe 0
+//       (K55-5 — ein Spalt flacher als ein Schritt trug das Auge in den Fels des Netzes); eine versiegelte Zelle zeichnet nie,
+//       ein Strahl läuft durch sie weiter (der Geomorph der Stufe hebt sie durch gezeichnete Flächen, `versiegelt` zählt es);
 //   (c) SCHATTEN — je Blick: jeder Empfänger des Bilds, dessen Weg zur Sonne im Licht-Frustum Boden trifft, trifft einen,
 //       den die Kaskade zeichnet (sonst fiele Licht durch Fels: ein Licht-Leck);
 //   (d) NICHT LEER — Mündung und Höhle zeigen Höhlen-Flächen, und die Linse ist scharf: ohne die Höhlen-Zellen im Abschnitt
@@ -840,14 +842,24 @@ const server = statikServer();
             // Nachbarn: Höhlen-Luft unter Fels, daneben Luft unter freiem Himmel, der Gang dahinter mindestens 12 m tief.
             // Gegraben wird nichts — die Linse findet, was die Welt trägt; Mündungen näher als 25 m sind eine.
             const fest = (x, y, z) => r._fieldDensityAt(x, y, z) > 0;
+            // DAS GITTER DER STUFE 0: Mund, Gang und Auge liegen auf den Punkten, aus denen das Netz entsteht (Surface-Nets auf
+            // 1,8 m) — dort ist das Feld das Gitter des Chunks. Ein Spalt flacher als ein Schritt fällt zwischen zwei feste
+            // Punkte und fehlt im Bild (K55-5: der Spalt 104,7–106,0 m bei 699/−39 trug den Blick hinaus, das Auge stand im Fels
+            // des Netzes, und jeder Strahl lief ohne Fläche durch ihn hindurch — 12 Zellen „fehlten“ hinter dem Fels).
+            const G0 = r._voxelChunkConfig(0);
+            const gy0 = (st.terrainBaseHeight || 0) - G0.floorDrop;
+            const gitter = (v) => Math.round(v / G0.step) * G0.step;
             const himmel = (x, y, z) => {
-                for (let h = y + 1.2; h < y + 60; h += 1.2) if (fest(x, h, z)) return false;
+                for (let h = y + G0.step; h < y + 60; h += G0.step) if (fest(x, h, z)) return false;
                 return true;
             };
-            const mundAn = (X, Z) => {
+            const mundAn = (X0, Z0) => {
+                const X = gitter(X0),
+                    Z = gitter(Z0);
                 const S = r._voxelSurfaceY(X, Z);
                 if (S == null) return null;
-                for (let y = S - 4; y > S - 40; y -= 2) {
+                for (let j = Math.floor((S - 4 - gy0) / G0.step); gy0 + j * G0.step > S - 40; j--) {
+                    const y = gy0 + j * G0.step;
                     if (fest(X, y, Z)) continue;
                     for (const [dx, dz] of [
                         [1, 0],
@@ -855,9 +867,11 @@ const server = statikServer();
                         [0, 1],
                         [0, -1],
                     ]) {
-                        if (fest(X + dx * 3.6, y, Z + dz * 3.6) || !himmel(X + dx * 3.6, y, Z + dz * 3.6)) continue;
+                        const ax = X + dx * 2 * G0.step,
+                            az = Z + dz * 2 * G0.step;
+                        if (fest(ax, y, az) || !himmel(ax, y, az)) continue;
                         let L = 0;
-                        while (L < 30 && !fest(X - dx * L, y, Z - dz * L)) L += 1;
+                        while (L < 30 && !fest(X - dx * L, y, Z - dz * L)) L += G0.step;
                         if (L >= 12) return { x: X, y, z: Z, dx, dz, tief: L };
                         break;
                     }
@@ -945,7 +959,8 @@ const server = statikServer();
                 }
             paare.sort((a, b) => a.wert - b.wert);
             const hinausVon = (m, q) => {
-                const e = Math.min(m.tief - 2, 24);
+                // das Auge auf einem Punkt des Gangs (Gitter, Luft bis `tief`)
+                const e = G0.step * Math.floor(Math.min(m.tief - 2, 24) / G0.step);
                 return {
                     mund: m,
                     spieler: [m.x - m.dx * e, m.y - 1.5, m.z - m.dz * e],
@@ -1026,6 +1041,7 @@ const server = statikServer();
                     strahlen: h.strahlen,
                     hoehle: h.hoehle,
                     fehlend: h.fehlend,
+                    versiegelt: h.versiegelt,
                     blind,
                     hoehleImAbschnitt: z.ab,
                     hoehleImFrustum: z.imFr,
@@ -1685,6 +1701,7 @@ const server = statikServer();
     for (const x of befund.blicke)
         console.log(
             `  Blick ${x.name} ${JSON.stringify(x.auge)}: ${x.strahlen} Strahlen, ${x.hoehle} auf Höhle, fehlend ${x.fehlend.length}, ` +
+                `durch versiegelte Flächen ${x.versiegelt}, ` +
                 `blind-Probe ${x.blind} · Abschnitt ${x.abschnittTri} Dreiecke (Höhle ${x.hoehleImAbschnitt} von ${x.hoehleImFrustum} im ` +
                 `Frustum) · Kaskade ${x.kaskadeTri} · Schatten ${x.schatten.empfaenger} Empfänger, ${x.schatten.beschattet} beschattet, ` +
                 `${x.schatten.lecks.length} Lecks` +
