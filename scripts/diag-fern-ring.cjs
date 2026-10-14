@@ -20,9 +20,11 @@
 //       _fernRingDispose stellt camera.far wieder her (die Klippe war Ring-Besitz).
 //   (9) DIE NAHT (K16) — der Ring trägt den Boden-Stoff des Chunks (dieselbe Fabrik: Wege-Karte, Geologie, Licht-
 //       Knoten) und dieselbe Höhe: je Kante zwischen gebautem und freiem Chunk die Stufe Ring ↔ Chunk gegen das volle
-//       Gesetz (Bias ≤ 0,15 m, p95 ≤ Sehne des Rings im Freien + Abweichung des Chunks + 0,1 m), im Gebauten zeichnet er
+//       Gesetz (Bias ≤ 0,15 m, p95 ≤ √(Sehne² + Abweichung des Chunks²) + 0,1 m: die Sehne des Rings und das Gitter des Chunks
+//       sind unabhängige Fehler — die Summe hielt an der Stufe-2-Kante (K51, Abweichung 1,39 m) das 2-m-Tauchen nicht mehr
+//       auseinander), im Gebauten zeichnet er
 //       nicht (die Masken-Karte seines maskNode trägt jeden gezeichneten Chunk, kein gezeichneter Durchstich). Am Ring 3
-//       (Stufe 0 und 1) misst die LOCH-PROBE nach der Regel des maskNode (`_fernRingRegel`): wo er verwirft, trifft der
+//       (Stufe 0, 1 und 2) misst die LOCH-PROBE nach der Regel des maskNode (`_fernRingRegel`): wo er verwirft, trifft der
 //       senkrechte Strahl ein gezeichnetes Deck (gemorpht, mit Stich-Band), an jeder Kante in Voxel-Kanten der Stufe, innen
 //       und außen. Selbsttests: das alte 2-m-Tauchen fällt rot, ohne die Karte sticht die Sehne durch, die alte Zellen-Regel
 //       zeigt Löcher.
@@ -674,8 +676,8 @@ const server = http.createServer((req, res) => {
             };
             // Der Null-Renderer treibt keinen Loop: die Linse pumpt den Spiel-Takt (das diag-boot-stage-Muster), bis der
             // Ring steht oder der Bestand 3 s ruht. RING 3 (7 × 7, gehalten gegen den Boot-Ramp, das diag-chunk-seam-Muster):
-            // die äußere Reihe trägt Stufe 1 (DETAIL_CASCADE, Band 0 bis Ring 2) — die Bau-Kante des Spiels und die
-            // Stufen-Naht 0 ↔ 1 stehen im Satz (mit dem 5 × 5-Satz sah die Linse nur Stufe 0).
+            // die äußere Reihe trägt Stufe 2 (BODEN_STUFEN: L0 bis Ring 1, L1 Ring 2) — die Bau-Kante des Spiels und die
+            // Stufen-Nähte 0 ↔ 1 ↔ 2 stehen im Satz (mit dem 5 × 5-Satz sah die Linse nur Stufe 0).
             const t09 = performance.now();
             const ziel9 = 3;
             r.state.chunkRingRadius = ziel9;
@@ -1650,11 +1652,11 @@ const server = http.createServer((req, res) => {
             (out.nahtErr ? ` err=${out.nahtErr}` : "")
     );
     check(
-        "9: DIE NAHT — dieselbe Höhe: die Stufe Ring (0,3 m draußen) gegen Chunk (drinnen), je gegen das volle Gesetz — keine Kante (Bias ≤ 0,15 m), p95 ≤ die Sehne des Rings im Freien + die Abweichung des Chunks + 0,1 m; Selbsttest: das alte 2-m-Tauchen fällt rot",
+        "9: DIE NAHT — dieselbe Höhe: die Stufe Ring (0,3 m draußen) gegen Chunk (drinnen), je gegen das volle Gesetz — keine Kante (Bias ≤ 0,15 m), p95 ≤ √(Sehne des Rings im Freien² + Abweichung des Chunks²) + 0,1 m (zwei unabhängige Fehler); Selbsttest: das alte 2-m-Tauchen fällt rot",
         out.nahtN >= 40 &&
             Math.abs(out.nahtBias) <= 0.15 &&
-            out.nahtP95 <= out.nahtSehneP95 + out.nahtEigenP95 + 0.1 &&
-            out.nahtSelbstP95 > out.nahtSehneP95 + out.nahtEigenP95 + 0.1,
+            out.nahtP95 <= Math.hypot(out.nahtSehneP95, out.nahtEigenP95) + 0.1 &&
+            out.nahtSelbstP95 > Math.hypot(out.nahtSehneP95, out.nahtEigenP95) + 0.1,
         `chunks=${out.nahtChunks} proben=${out.nahtN} chunk-eigen-p95=${(+out.nahtEigenP95).toFixed(3)} ring-sehne-p95=${(+out.nahtSehneP95).toFixed(3)} bias=${(+out.nahtBias).toFixed(3)} p50=${(+out.nahtP50).toFixed(3)} p95=${(+out.nahtP95).toFixed(3)} max=${(+out.nahtMax).toFixed(3)} selbsttest-p95=${(+out.nahtSelbstP95).toFixed(3)}`
     );
     check(

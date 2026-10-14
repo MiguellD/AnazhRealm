@@ -250,7 +250,7 @@
             "id": "boden",
             "titel": "Boden (Boden-Satz · Wasser-Satz · Fern-Ring · Fern-Wasser)",
             "befehle": 12,
-            "dreiecke": 200000,
+            "dreiecke": 120000,
             "regeln": [
                 {
                     "muster": "^(bodenSatz|wasserSatz|voxelChunk|fern-ring|farWater|chunk-water-[a-z]+)$"
