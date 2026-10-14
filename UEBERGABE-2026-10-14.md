@@ -135,3 +135,8 @@ Fork-PR-Freigabe steht auf `all_external_contributors` (Voraussetzung des OMEN-R
 
 ## Aufräumen (Lehre 14.10. nachts)
 Vergessene Prozesse zogen stundenlang Radeon-Leistung und verrauschten die lokalen Messungen (Spiel-Tab 7880 ~11 h, Werkbank-Echt-Fenster ~2 h, Puppeteer-Browser, 7 save-server, 13 journal-wache, 4 Studio-Tabs). Ab jetzt: nach jeder Welle und Augen-Runde `powershell -File artifacts/profiband/werkzeug/aufraeumen.ps1` (lokal, schützt :4312) und die Chat-Browser-Tabs schließen (preview_stop schließt keinen Tab). Arbeiter beenden, was sie starten. Benannt für den Code: die Werkbank beendet sich nach N Minuten ohne Befehl (Leerlauf-Frist), damit ein abgebrochener Arbeiter kein Fenster stehen lässt.
+
+## Sauberkeit beim Anhalten (14.10. nachts)
+- Lokal: 11 Worktrees statt 151 am Morgen — Haupt-Checkout (main), AnazhRealm-integ (integ-probe), AnazhRealm-diag, koordination, schau-v18537 (Auge, detached) und die offenen Zweige boden-stufen, mess-wiese, ci-diaet, ort-gelaende (K10), haus-fenster (K38-N1), pruef-vakuum (Z2a). Jeder sauber und gepusht. Roh-Daten entfernter Worktrees: artifacts/profiband/wt-archiv/.
+- Keine Prozesse, keine Chat-Tabs, GPU-Schloss frei. OMEN: keine Prozesse, Fenster zu, GPU P8, alle Zweige gepusht.
+- **integ-probe (9f61ab23) ist überholt:** sie trägt die alte K51-3 vor K51-4..6. Für die nächste Integration integ-probe auf main 062ec357 neu setzen (`git push -f origin 062ec357:integ-probe` nach Sichtung) und boden-stufen von dort aus mergen.
