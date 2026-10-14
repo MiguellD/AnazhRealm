@@ -54,10 +54,12 @@ AnazhRealm.LICHT_POOL = Object.freeze({ plaetze: 4, umkreisM: 48, wahlS: 0.25, w
 // DAS LAND EINES WERKS (m über dem Wasser des Gesetzes, `_fundamentLand` → `_landAt`): so hoch liegt jeder Punkt eines
 // Fundaments samt Saum und Vorplatz über dem Spiegel — die Wand jedes Werks und die Ort-Wahl (`_ortTraegt`) urteilen gleich.
 AnazhRealm.WERK_LAND_M = 0.2;
-// DIE ORT-WAHL eines Plans (K10, `_ortPlanSetzen`): Ringe um den Wunsch-Anker (`ringe` × `schrittM`, je Ring `richtungen`
-// Orte), der nächste Ort, an dem der Plan jedes Haus trocken trägt (`_ortTraegt`), gewinnt.
+// DIE ORT-WAHL eines Plans (K10, `_ortWahl`): Ringe um den Wunsch-Anker (`ringe` × `schrittM` = 128 m, die halbe
+// Siedlungs-Zelle fachwerk `SIEDLUNG.cellM`; auf jedem Ring Orte im Abstand ≤ `schrittM`), der nächste Ort, an dem der Plan
+// jedes Haus trägt (`_ortTraegt`), gewinnt. `grobM`: das Raster des ersten Urteils (die Wand urteilt im halben Meter).
 // `bodenTolM`: so weit darf die Gestalt des Gewässers (`_gewaesserForm`) den Boden des Plans unter einem Haus verschieben.
-AnazhRealm.ORT_WAHL = Object.freeze({ schrittM: 12, ringe: 6, richtungen: 8, bodenTolM: 0.05 });
+// `taktMs`: so lange rechnet die Wahl je Takt-Scheibe (`_ortWahlScheibe`, Lehre 14), mindestens einen Schritt.
+AnazhRealm.ORT_WAHL = Object.freeze({ schrittM: 16, ringe: 8, grobM: 2, bodenTolM: 0.05, taktMs: 3 });
 // DER HORIZONT der Höhlen-Sicht (`_hoehlenHorizont`): die Raster-Zelle der unteren Boden-Schranke je Chunk (m) — der Schritt
 // des LOD-0-Gitters; die Horizont-Probe einer Mündung tastet ihre Bögen in halben Zellen ab.
 AnazhRealm.HOEHLEN_HORIZONT_M = 1.8;

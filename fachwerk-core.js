@@ -5191,7 +5191,7 @@
         glaettM: 6, // halbe Fensterbreite der Weg-Glättung (m)
         gefaelle: 0.12, // die Fuß-Gasse (Nordstern §6: Fuß ≤ 12 %)
         saumM: 0.6, // so weit steht eine Platte über den Grundriss, eine Trasse über den Weg hinaus
-        vorplatzM: 1.6, // Tiefe des Vorplatzes vor der Haustür
+        vorplatzM: 1.6, // Tiefe des Vorplatzes vor der Haustür (mindestens: er reicht bis zur Gasse des Hauses)
         gasseM: 5, // so weit vor der Tür (über die halbe Wegbreite hinaus) findet das Haus seine Gasse
         hangPlattform: 1.5, // Spanne des Grunds unter dem Grundriss bis zur Plattform (m)
         hangHanghaus: 4, // bis zum Hanghaus; darüber Stelzen
@@ -5459,6 +5459,7 @@
             else ps.push(plan.slots[si0]);
         var NS = ps.length;
         var hy = [];
+        var gasseAb = []; // so weit vor dem Eingang beginnt die Fläche, die der Gang betritt (null: keine Gasse vor der Tür)
         var grunde = [];
         for (var si = 0; si < NS; si++) {
             var sl = ps[si];
@@ -5485,6 +5486,7 @@
                     );
             }
             hy.push(y0);
+            gasseAb.push(y0 !== null ? tritt[0][0] : null);
         }
         var inPlatte = function (x, z, ob) {
             var c = Math.cos(ob.phi || 0);
@@ -5530,14 +5532,18 @@
                 });
             if (hatTuer(sl) && isFinite(tu.w)) {
                 var ein = eingang(sl);
-                var vp = vorne(sl, ein.z - O.vorplatzM / 2);
+                // DER VORPLATZ REICHT BIS ZUR GASSE (K10-6): beginnt die Fläche, deren Höhe das Haus trägt, erst hinter dem
+                // Vorplatz, lag dazwischen ein Streifen ohne Fläche — dort griff die Böschung eines höheren Nachbarn (Auto-Dorf
+                // der Zelle −4,−4, ein Stelzen-Haus: Vorplatz 78,74 → 79,01 → Gasse 78,46, ein Absatz von 0,55 m vor der Tür)
+                var tief = gasseAb[si] !== null ? Math.max(O.vorplatzM, gasseAb[si]) : O.vorplatzM;
+                var vp = vorne(sl, ein.z - tief / 2);
                 vorplaetze.push({
                     art: "platte",
                     cx: r6(ox + vp[0]),
                     cz: r6(oz + vp[1]),
                     phi: r6(sl.phi || 0),
                     ex: r6(tu.w / 2 + O.saumM),
-                    ez: r6(O.vorplatzM / 2),
+                    ez: r6(tief / 2),
                     y: r6(y + ein.y / 2),
                 });
             }

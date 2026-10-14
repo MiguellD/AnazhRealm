@@ -1698,7 +1698,7 @@ class AnazhRealm_Z20a {
             }
             nH = SG.nHMin + ((seed >>> 24) % SG.nHSpan);
         }
-        return this._foundryRequestSettlement({ seed, nH, epoche: o.epoche, budget: o.budget }).then((plan) => {
+        return this._foundryRequestSettlement({ seed, nH, epoche: o.epoche, budget: o.budget }).then(async (plan) => {
             if (!plan) {
                 this.log(
                     "FOUNDRY KALT: Siedlung — export-settlement leer/aus — Spawn BLOCKIERT (kein stilles Nichts).",
@@ -1709,8 +1709,9 @@ class AnazhRealm_Z20a {
             }
             // der Ort aus dem Plan selbst: das Dorf liegt vor dem Spieler, nie um ihn (`_siedlungsAnker`)
             const anchor = this._siedlungsAnker(plan, o.position || null, o.blick || null);
-            // DER ORT AUF DEM GELÄNDE (K10): der Plan v2 am Anker — Höhen, Wege, Laternen und der Erdbau, den die Welt trägt
-            plan = this._ortPlanSetzen(plan, anchor);
+            // DER ORT AUF DEM GELÄNDE (K10): der Plan v2 am Anker — Höhen, Wege, Laternen und der Erdbau, den die Welt trägt;
+            // die Ort-Wahl rechnet in Takt-Scheiben (`_ortPlanWarten`, Lehre 14), der Akt wartet auf sie
+            plan = await this._ortPlanWarten(plan, anchor);
             const res = this._spawnSettlementFromExport(plan, anchor, { autonomous: !!o.autonomous });
             // DORF-ERLEBNIS — Wege/Platz/Brunnen + das Rebuild-Gedächtnis („d:<seed>"
             // im selben settlementCells-Pfad: die Wege-Streifen überleben den Reload).
@@ -2175,18 +2176,22 @@ class AnazhRealm_Z20a {
             // Schätzung `_structureSpawnPos("haus_basis")` vor dem Plan ist gefallen (Gegenprüfung Runde 1).
             const anchor = this._siedlungsAnker(plan, { x: i2.x, y: 0, z: i2.z });
             // DER ORT AUF DEM GELÄNDE (K10): der Plan v2 am Ort, den die Ort-Wahl um den Anker findet (der Anker folgt ihm),
-            // sein Erdbau liegt, bevor das erste Haus steht
-            plan = this._ortPlanSetzen(plan, anchor);
-            // Die Reservierung trägt das Rebuild-Gedächtnis {seed,nH,x,z}: Häuser/Brunnen persistieren als
-            // architectures, die Wege (kein Save-Byte) baut `_tickAutoSettlement` nach Reload am Anker neu.
-            // Alle Leser fragen nur Existenz (truthy).
-            wm.settlementCells[key] = { seed: i2.seed, nH: i2.nH, x: anchor.x, z: anchor.z };
-            this._autoSettlementQueue = { plan, origin: { x: anchor.x, z: anchor.z }, idx: 0, cellKey: key };
-            // Wege/Platz/Brunnen sofort bei ANKUNFT (klein + einmalig; die Häuser
-            // materialisieren budgetiert über die Ticks).
-            this._spawnSettlementErlebnis(plan, { x: anchor.x, z: anchor.z }, { key });
-            if (typeof this._scheduleEditSave === "function") this._scheduleEditSave();
-            return plan;
+            // sein Erdbau liegt, bevor das erste Haus steht; die Wahl rechnet in Takt-Scheiben (`_ortPlanWarten`, Lehre 14) —
+            // so lange gilt der Export als unterwegs (der Zug beginnt keine zweite Zelle, die Messung schwingt nicht ein)
+            this._autoSettlementPendingKey = key;
+            return this._ortPlanWarten(plan, anchor).then((v2) => {
+                this._autoSettlementPendingKey = null;
+                // Die Reservierung trägt das Rebuild-Gedächtnis {seed,nH,x,z}: Häuser/Brunnen persistieren als
+                // architectures, die Wege (kein Save-Byte) baut `_tickAutoSettlement` nach Reload am Anker neu.
+                // Alle Leser fragen nur Existenz (truthy).
+                wm.settlementCells[key] = { seed: i2.seed, nH: i2.nH, x: anchor.x, z: anchor.z };
+                this._autoSettlementQueue = { plan: v2, origin: { x: anchor.x, z: anchor.z }, idx: 0, cellKey: key };
+                // Wege/Platz/Brunnen sofort bei ANKUNFT (klein + einmalig; die Häuser
+                // materialisieren budgetiert über die Ticks).
+                this._spawnSettlementErlebnis(v2, { x: anchor.x, z: anchor.z }, { key });
+                if (typeof this._scheduleEditSave === "function") this._scheduleEditSave();
+                return v2;
+            });
         });
     }
     // Der Worldgen-Konsument des "settlement"-Kanals — gerufen aus dem Idle-Pass

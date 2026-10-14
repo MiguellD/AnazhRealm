@@ -488,21 +488,59 @@ class AnazhRealm_Z08 {
     // DER ORT AUF DEM GELÄNDE (K10): der Export des Studios (2D) wird am Anker zum Plan v2 — dieselbe Formel, die das Studio
     // rechnet (fachwerk `ortPlan`), über DIESELBE Gelände-Funktion (`_terrainMacroSurfaceY`, das Gesetz samt dem Erdbau früherer
     // Orte); sein Erdbau liegt, bevor das erste Haus steht. Ein Plan, der schon v2 ist, bleibt. Leser: der Akt
-    // (`spawnSettlement`) und das Auto-Dorf (`_autoSettlementSpawnCell`); die Slot-Quelle liest `slot.y`.
+    // (`spawnSettlement` über `_ortPlanWarten`), der Export (`_spawnSettlementFromExport`) und das Auto-Dorf
+    // (`_tickAutoSettlement`); die Slot-Quelle liest `slot.y`.
     // DIE ORT-WAHL (K10, Pflicht-OFFEN C: „Häuser im Fluss-Bett heilen am Plan"): der Anker ist der Wunsch; der Plan steht am
-    // nächsten Ort der Ringe um ihn (`ORT_WAHL`), an dem er JEDES Haus trägt (`_ortTraegt`: kein Haus fällt im Bett, jede
-    // Platte samt Saum und Vorplatz liegt `WERK_LAND_M` über dem Wasser des Gesetzes an ihrer EIGENEN Höhe — dasselbe Urteil,
-    // das die Wand jedes Werks (`_fundamentLand`) nach dem Erdbau fällt; kein Haus auf dem Spieler). Bis K10-6 stand das
-    // Auto-Dorf der Welt am Wunsch: vier Platten lagen 0,6 m unter dem Spiegel des Flusses (der Erdbau schnitt die Gasse unter
-    // ihn), die Wand warf die Häuser — 12/16. Der Anker folgt dem Ort des Plans (`origin` x, z und seine Mitte). Ohne
-    // trockenen Ort bleibt der Wunsch, laut: die Wand wirft die nassen Häuser.
+    // nächsten Ort der Ringe um ihn (`ORT_WAHL`: je `schrittM` ein Ring bis zur halben Siedlungs-Zelle, auf jedem Ring Orte im
+    // Abstand ≤ `schrittM`), an dem er JEDES Haus trägt (`_ortTraegt`: jede Platte samt Saum und Vorplatz liegt auf dem
+    // Boden des Plans, `WERK_LAND_M` über dem Wasser des Gesetzes — das Urteil der Wasser-Wand jedes Werks, `_fundamentLand` —,
+    // kein Haus in einem Bau, `_bauFrei`, keins auf dem Spieler). Bis K10-6 stand das Auto-Dorf der Welt am Wunsch: vier
+    // Platten lagen 0,6 m unter dem Spiegel des Flusses, die Wand warf die Häuser (12/16); die Ringe bis 72 m fanden keinen
+    // Ort (der Fluss läuft 18 m neben dem Anker, das Dorf misst 65 m Radius, der nächste trockene Ort liegt 80 m weit). Der
+    // Anker folgt dem Ort des Plans (`origin` x, z und seine Mitte). Ohne trockenen Ort bleibt der Wunsch, laut.
+    // DIE ARBEIT IM TAKT (Lehre 14): die Wahl ist EIN Generator (`_ortWahl`), der nach jedem Kandidaten und jedem Haus abgibt
+    // — bis K10-6 rechnete der Takt bis zu 49 Pläne samt Raster am Stück (≈ 34 ms je Kandidat, 1,7 s im Takt). Ihn fahren
+    // `_ortPlanSetzen` ganz (der Export, der Prüfstand), `_ortPlanWarten` über Takte (der Akt) und der Dorf-Zug je Takt eine
+    // Scheibe (`_tickAutoSettlement`); jede Scheibe `ORT_WAHL.taktMs` (`_ortWahlScheibe`).
     _ortPlanSetzen(plan, origin) {
+        return this._ortWahlScheibe(this._ortWahl(plan, origin), Infinity).value;
+    }
+    _ortPlanWarten(plan, origin) {
+        const job = this._ortWahl(plan, origin);
+        return new Promise((fertig) => {
+            const takt = () => {
+                const s = this._ortWahlScheibe(job, AnazhRealm.ORT_WAHL.taktMs);
+                if (s.done) fertig(s.value);
+                else setTimeout(takt, 16); // eine Scheibe je Bild (60 Hz), nie die Lücke zwischen zwei Bildern ganz
+            };
+            takt();
+        });
+    }
+    // EINE Scheibe der Ort-Wahl: der Generator läuft, bis er fertig ist oder `ms` verstrichen sind (mindestens ein Schritt).
+    // Die Kosten der laufenden Wahl stehen in `_ortWahlMass` (Kandidaten, Scheiben, Summe, die längste Scheibe, der Abstand
+    // des Orts zum Wunsch) — gate:settlement Teil O liest sie.
+    _ortWahlScheibe(job, ms) {
+        const t0 = performance.now();
+        let s;
+        do s = job.next();
+        while (!s.done && performance.now() - t0 < ms);
+        const d = performance.now() - t0;
+        const m = this._ortWahlMass;
+        if (m) {
+            m.scheiben++;
+            m.ms += d;
+            if (d > m.maxMs) m.maxMs = d;
+        }
+        return s;
+    }
+    *_ortWahl(plan, origin) {
         if (plan && plan.version === 2) return plan;
         // je Ort EIN Plan v2 (der zweite Akt am selben Anker liest sonst den Erdbau des ersten als Gelände)
         const key = "ort:" + (plan.seed >>> 0) + ":" + Math.round(origin.x) + "," + Math.round(origin.z);
         const ple = this._ortPlaene || (this._ortPlaene = new Map());
         let v2 = ple.get(key);
         if (!v2) {
+            const mass = (this._ortWahlMass = { kandidaten: 0, scheiben: 0, ms: 0, maxMs: 0, abstandM: null });
             // das Welt-Wasser des GESETZES (Meer, See, Fluss: `_atlasWaterLevelAt` über der Höhe — nie das gezeichnete, das
             // vom Lade-Stand abhinge: jeder Peer legt denselben Plan) setzt das Brücken-Etikett; unter der Brücke legt der
             // Erdbau nichts
@@ -511,9 +549,11 @@ class AnazhRealm_Z08 {
                 return w > -Infinity && w > this._terrainMacroSurfaceY(x, z, true);
             });
             const W = AnazhRealm.ORT_WAHL;
-            this._ensureHydroTilesAround(origin.x, origin.z, W.ringe * W.schrittM + 64);
+            let reich = 0; // so weit reicht der Plan um seinen Ursprung (das Wasser jedes Kandidaten muss gekachelt sein)
+            for (const s of plan.slots) reich = Math.max(reich, Math.hypot(s.x || 0, s.z || 0) + 16);
+            this._ensureHydroTilesAround(origin.x, origin.z, W.ringe * W.schrittM + reich);
             for (let ring = 0; ring <= W.ringe && !v2; ring++) {
-                const n = ring ? W.richtungen : 1;
+                const n = ring ? Math.ceil(2 * Math.PI * ring) : 1;
                 for (let i = 0; i < n && !v2; i++) {
                     const a = (2 * Math.PI * i) / n;
                     const o = {
@@ -521,7 +561,13 @@ class AnazhRealm_Z08 {
                         z: origin.z + Math.sin(a) * ring * W.schrittM,
                     };
                     const k = globalThis.__fachwerkCore.ortPlan(plan, o, ctx);
-                    if (this._ortTraegt(plan, k)) v2 = k;
+                    mass.kandidaten++;
+                    yield;
+                    // grob zuerst (`grobM`: ein Kanal ist Meter breit, die nassen Orte fallen dort), dann das Raster der Wand
+                    if ((yield* this._ortTraegt(plan, k, W.grobM)) && (yield* this._ortTraegt(plan, k, 0.5))) {
+                        v2 = k;
+                        mass.abstandM = ring * W.schrittM;
+                    }
                 }
             }
             if (!v2) {
@@ -543,13 +589,14 @@ class AnazhRealm_Z08 {
         if (origin.mitte) origin.mitte = { x: origin.mitte.x + dx, z: origin.mitte.z + dz };
         return v2;
     }
-    // TRÄGT DER PLAN v2 `k` JEDES HAUS des Exports `plan`? (die Ort-Wahl, `_ortPlanSetzen`) Kein Slot fiel im Bett (der Plan
-    // wirft ein Haus, dessen Grund das Wasser trägt), jeder Punkt des EINEN Fundament-Rasters (`_fundamentRaster`, 0,5 m,
-    // Grundriss samt Saum `ORT_GESETZ.saumM` und Vorplatz) und jede Laterne liegt mit dem Boden, den der Erdbau des Plans baut,
-    // mindestens `WERK_LAND_M` über dem Wasser des Gesetzes an dieser Höhe (`_atlasWaterLevelAt`) — das Urteil der Wand
-    // (`_fundamentLand` → `_landAt`) über dem Boden, den der Erdbau baut —, und kein Haus berührt den Spieler (Reichweite +
-    // `STRUCTURE_PLAYER_CLEAR_MARGIN`, das Dorf vor dir, `_siedlungsAnker`).
-    _ortTraegt(plan, k) {
+    // TRÄGT DER PLAN v2 `k` JEDES HAUS des Exports `plan`? (die Ort-Wahl, `_ortWahl`; ein Generator, der nach jedem Haus
+    // abgibt) Jeder Punkt des Fundament-Rasters (`_fundamentRaster` im Schritt `schritt`: 0,5 m ist das Raster der Wand,
+    // `_fundamentLand`; Grundriss samt Saum `ORT_GESETZ.saumM` und Vorplatz) und jede Laterne liegt mit dem Boden, den der
+    // Erdbau des Plans baut, mindestens `WERK_LAND_M` über dem Wasser des Gesetzes an dieser Höhe (`_atlasWaterLevelAt`) —
+    // das Urteil der Wand (`_fundamentLand` → `_landAt`) über dem Boden, den der Erdbau baut —, kein Haus berührt den Spieler
+    // (Reichweite + `STRUCTURE_PLAYER_CLEAR_MARGIN`, das Dorf vor dir, `_siedlungsAnker`) und im Raster der Wand steht keins
+    // in einem Bau (`_bauFrei`, die zweite Wand der Slot-Quelle: der Genesis-Platz, ein früheres Dorf).
+    *_ortTraegt(plan, k, schritt) {
         if (!k || !Array.isArray(k.slots) || k.slots.length !== plan.slots.length) return false;
         const saum = globalThis.__fachwerkCore.ORT_GESETZ.saumM;
         const M = AnazhRealm.WERK_LAND_M;
@@ -571,6 +618,8 @@ class AnazhRealm_Z08 {
             return h < this._atlasWaterLevelAt(x, z, h) + M;
         };
         for (const l of k.laternen || []) if (l && nass(k.ort.x + l.x, k.ort.z + l.z)) return false;
+        const wand = schritt <= 0.5;
+        let punkte = 0; // je 128 Punkte gibt die Wahl ab (ein Haus im Raster der Wand trägt bis zu 700)
         for (const sl of k.slots) {
             const { fundament, fp } = AnazhRealm._slotGrundriss(sl);
             if (!fp) continue;
@@ -583,11 +632,14 @@ class AnazhRealm_Z08 {
             const c = Math.cos(ry);
             const sn = Math.sin(ry);
             const raster = { ex: fp.ex + s, ez: fp.ez + s, ox: fp.ox, oz: fp.oz };
-            for (const [lx, lz] of AnazhRealm._fundamentRaster(raster, sl.tuer, 0.5)) {
+            for (const [lx, lz] of AnazhRealm._fundamentRaster(raster, sl.tuer, schritt)) {
                 const px = wx + lx * c + lz * sn;
                 const pz = wz - lx * sn + lz * c;
                 if (nass(px, pz)) return false;
+                if (++punkte % 128 === 0) yield;
             }
+            if (wand && !this._bauFrei(wx, wz, ry, fp, sl.tuer, sl.y)) return false;
+            yield;
         }
         return true;
     }

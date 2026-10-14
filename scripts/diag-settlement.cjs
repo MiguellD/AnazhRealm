@@ -1518,7 +1518,17 @@ const FIXTURES = [
                     res.slots = P.slots.length;
                     // DER TÄTER JE FEHLENDEM HAUS: die Wand der EINEN Slot-Quelle, an der der Slot fiel — das Wasser
                     // (`_fundamentLand`) oder ein Bau im Weg (`_bauFrei`, mit den Bauten, die keine Natur sind, binnen 8 m)
-                    // die Meldung der Ort-Wahl (`_ortPlanSetzen`: kein trockener Ort in den Ringen)
+                    // die Meldung der Ort-Wahl (`_ortWahl`: kein trockener Ort in den Ringen) und ihre Kosten (`_ortWahlMass`:
+                    // Kandidaten, Takt-Scheiben, Summe und längste Scheibe in ms, der Abstand des Orts zum Wunsch)
+                    const om = r._ortWahlMass;
+                    if (om)
+                        res.ortMass = {
+                            kandidaten: om.kandidaten,
+                            scheiben: om.scheiben,
+                            ms: Math.round(om.ms),
+                            maxMs: Math.round(om.maxMs * 10) / 10,
+                            abstandM: om.abstandM,
+                        };
                     res.ortWahl = (r.state.logBuffer || [])
                         .map(String)
                         .filter((z) => /ORT: der Plan/.test(z))
@@ -1910,6 +1920,7 @@ const FIXTURES = [
         if (u.tuerenFehl && u.tuerenFehl.length) console.log("  Türen ohne Gang: " + JSON.stringify(u.tuerenFehl));
         if (outO.slotFehl && outO.slotFehl.length) console.log("  Slots ohne Haus: " + JSON.stringify(outO.slotFehl));
         if (outO.ortWahl && outO.ortWahl.length) console.log("  Ort-Wahl: " + outO.ortWahl.join(" | "));
+        if (outO.ortMass) console.log("  ORT-WAHL-KOSTEN " + JSON.stringify(outO.ortMass));
         const fehlO = ortVerdikt(m);
         check(
             `O ${modusName}: das Dorf trägt jedes Haus (alle Slots stehen)`,
