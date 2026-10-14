@@ -141,9 +141,11 @@ const BASIS = {
             "var hb = new THREE.Box3().setFromObject(g); var huelle = stufe === 0 ? { stufe: 0, boxen: gm.__solids } : { stufe: stufe, boxen: [hb.min.x, hb.min.y, hb.min.z, hb.max.x, hb.max.y, hb.max.z] };",
         ],
     ],
-    // die Siedlung baut ohne Bau-Wand (ein Haus darf in einem bestehenden Bau stehen)
+    // die Siedlung baut ohne Bau-Wand (ein Haus darf in einem bestehenden Bau stehen): die Slot-Quelle und die Ort-Wahl
+    // (`_ortTraegt`, K10-6) lesen dieselbe Wand — der Defekt nimmt sie beiden
     bauwand: [
         ["if (!this._bauFrei(wx, wz, ry,", "if (false && !this._bauFrei(wx, wz, ry,"],
+        ["if (wand && !this._bauFrei(wx, wz, ry,", "if (false && wand && !this._bauFrei(wx, wz, ry,"],
         ["const R = Math.max(0.5, (this._blueprintFootprintRadius(type, 1) || 0) * Math.SQRT1_2);", "return true;"],
     ],
     // Der Täter „raster" (die Höhe des Footprints aus der Mitte allein) fiel mit K10: die Welt rechnet keine Haus-Höhe mehr
