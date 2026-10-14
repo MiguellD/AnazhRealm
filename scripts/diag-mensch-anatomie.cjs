@@ -303,10 +303,27 @@ function messeKopf(sb, eingriff) {
     // das Haar als Volumen: die Kopf-Haut über der Haarlinie in Haar-Farbe (näher am Haar-Ton als am Haut-Ton)
     const haarC = linHex(K.HAIR_COLORS[K.START_PARAMS.hairColor].base);
     const d2 = (a, b) => (a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2 + (a[2] - b[2]) ** 2;
+    // die Haarlinie aus der Kopfhöhe OHNE Haar (das Gesetz), in den Ofen-Raum über den Pupillen-Abstand
+    const iz = ms
+        .filter((n) => kl(n) === "iris")
+        .map((n) => {
+            const b = spanne(
+                punkte(T, n).map((p) =>
+                    v
+                        .set(...p)
+                        .applyMatrix4(welt(jn(n)))
+                        .toArray()
+                ),
+                0
+            );
+            return (b.a + b.b) / 2;
+        });
+    const skala = Math.abs(iz[0] - iz[1]) / ipd;
+    const yHaar = byK + (S.haarLinie || 0.8) * kH * skala;
     let kal = 0,
         bedeckt = 0;
     hp.forEach((p, i) => {
-        if ((p[1] - byK) / bkH < (S.haarLinie || 0.8)) return;
+        if (p[1] < yHaar) return;
         kal++;
         if (d2(hc[i], haarC) < d2(hc[i], hautC)) bedeckt++;
     });
