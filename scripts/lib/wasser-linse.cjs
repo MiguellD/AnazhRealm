@@ -1729,8 +1729,8 @@ function wasserSichtNetz() {
 }
 
 // ── Q7-Gestalt: die Quelle (W-F5, Befund 06.10.: „8,5 m nass, 2,36 m tief aus dem Nichts; alle 16 Quellen 8,2–11,9 m") ──
-// JEDE Quelle der Welt im Mess-Ring: alle Flüsse der Heimat-Region und jeder berechneten Kachel (mit der Kachel des Bachs der
-// Mess-Wiese), ohne Filter. Je Quelle die Querschnitte (±15 m quer zum Lauf, je 2 m) vom Ursprung längs ihres EIGENEN Laufs
+// JEDE Quelle in den Kacheln der Probe (`o.kacheln` = `QUELL_KACHELN`: der Mess-Ring mit der Kachel des Bachs der Mess-Wiese,
+// der See, die Küste), ohne Filter. Je Quelle die Querschnitte (±15 m quer zum Lauf, je 2 m) vom Ursprung längs ihres EIGENEN Laufs
 // (bis vor das Segment, das in einen See oder einen anderen Fluss mündet, höchstens 48 m): der KÖRPER (`_koerperWasser`,
 // Breite und Tiefe über dem Boden des Gesetzes) und das BILD (das gezeichnete Sheet, `__wasserSichtNetz`).
 // GESPEIST ist eine Quelle, die das Gesetz breiter als das Rinnsal beginnt (ein Abfluss) UND an deren Ursprung wirklich See-
@@ -1768,15 +1768,26 @@ function wasserQuelle(opts) {
         huelle.rinnsal = qBett;
         return huelle;
     };
-    // die Kachel des Bachs der Mess-Wiese (aus der Welt, `__wasserOrte`) gehört immer zum Mess-Ring
-    const bachOrt = o.bach || window.__wasserOrte({}).bach;
-    if (bachOrt && typeof r._ensureHydroTilesAround === "function") r._ensureHydroTilesAround(bachOrt.x, bachOrt.z, 64);
+    // DIE KACHELN (K61, `QUELL_KACHELN`): die Probe misst genau die Kacheln, die sie trägt, und stellt jede selbst her (an
+    // ihrer Mitte) — nie, was der Ring des Augenblicks geladen hat; steht eine nicht, bricht sie beim Namen
+    if (!Array.isArray(o.kacheln) || !o.kacheln.length) return { fehler: "die Quell-Probe trägt keine Kacheln" };
+    const size = HC.regionSize;
     const regionen = [];
-    const dazu = (h) => {
-        if (h && h.ready && Array.isArray(h.rivers) && regionen.indexOf(h) < 0) regionen.push(h);
-    };
-    dazu(st.hydrosphere);
-    if (st.hydroTiles) for (const h of st.hydroTiles.values()) dazu(h);
+    for (const key of o.kacheln) {
+        const [rx, rz] = String(key).split(",").map(Number);
+        if (!(rx === 0 && rz === 0)) r._ensureHydroTilesAround(rx * size, rz * size, 0);
+        const h = rx === 0 && rz === 0 ? st.hydrosphere : st.hydroTiles && st.hydroTiles.get(rx + "," + rz);
+        if (!h || !h.ready || !Array.isArray(h.rivers))
+            return { fehler: `die Kachel ${key} der Quell-Probe steht nicht` };
+        if (regionen.indexOf(h) < 0) regionen.push(h);
+    }
+    // der Bach der Mess-Wiese (aus der Welt, `__wasserOrte`) liegt in einer Kachel der Probe
+    const bachOrt = o.bach || window.__wasserOrte({}).bach;
+    const bachKachel = bachOrt && globalThis.__gelaendeCore.kachelSchluessel(r._gelaende(), bachOrt.x, bachOrt.z);
+    if (bachKachel && o.kacheln.indexOf(bachKachel) < 0)
+        return {
+            fehler: `der Bach der Mess-Wiese liegt in der Kachel ${bachKachel}, nicht in den Kacheln der Quell-Probe`,
+        };
     const sicht = window.__wasserSichtNetz();
     const koerperNass = (x, z) => {
         const y = r._voxelSurfaceY(x, z);
@@ -2029,15 +2040,22 @@ function wasserQuelle(opts) {
         tiefeMax: R(tiefen0.length ? Math.max(...tiefen0) : 0),
         beispiele,
         alle: o.alle ? alle : undefined,
-        // die Teile (K61) fügt `quellTeileVereinen` zusammen: die Rohwerte je Quelle und der Abdruck der Regionen
+        // die Teile (K61) fügt `quellTeileVereinen` zusammen: die Rohwerte je Quelle, der Teil und die gemessenen Kacheln
+        // (aus dem Ursprung jeder Region, das Urteil verlangt `QUELL_KACHELN`)
         breiten0: o.teil ? breiten0 : undefined,
         tiefen0: o.teil ? tiefen0 : undefined,
-        regionenAbdruck: regionen
-            .map((h) => h.originX + "," + h.originZ)
-            .sort()
-            .join(" "),
+        teil: o.teil || undefined,
+        kacheln: regionen.map((h) => (h.originX + size / 2) / size + "," + (h.originZ + size / 2) / size),
     };
 }
+
+// DIE KACHELN DER QUELL-PROBE (K61, zweite Prüfung): die Probe legt ihre Regionen FEST — Schlüssel „rx,rz" der Hydro-
+// Kacheln (`kachelSchluessel`, 2048 m; „0,0" die Heimat). Vorher maß sie, was `st.hydroTiles` im Augenblick trug, und das
+// lädt der Spiel-Loop mit der Reichweite des PID-Rings: die CI maß 328 Quellen in 12 Regionen (5 von 5 Läufen vor K61),
+// die frischen Teil-Welten 262 in 9 (38646124674) — 66 Quellen still ungeprüft, und zwölf gegen neun Regionen hätte die Wand
+// „verschiedene Regionen" rot flackern lassen. Die zwölf: der Mess-Ring (Mess-Wiese ±1024 m), die Kachel des Sees, die
+// Küste mit der Kachel der Küsten-Suche. Eine Kachel verschwindet nie (sie ist ein Fenster des Gesetzes über dem Seed).
+const QUELL_KACHELN = ["0,0", "-1,-1", "-1,0", "0,-1", "1,-3", "1,4", "1,5", "2,4", "2,5", "0,5", "0,6", "1,6"];
 
 // Der Teil einer Quelle (K61): aus dem Ort ihres Ursprungs, je Teil-Zahl n fest — der Seiten-Kontext ruft ihn, Node prüft ihn.
 function wasserQuellTeil(p, n) {
@@ -2046,15 +2064,23 @@ function wasserQuellTeil(p, n) {
 }
 
 // DIE TEILE ZUSAMMEN (K61): die Quell-Probe in n Seiten nebeneinander (je Seite ein Teil, `teil {k, n}`) urteilt über
-// dieselben Quellen wie EIN Lauf — die Zähler summiert, Breite und Tiefe am Ursprung aus den Rohwerten, die Regionen in jedem
-// Teil dieselben (sonst Abbruch beim Namen: ein Teil sähe andere Quellen).
+// dieselben Quellen wie EIN Lauf — die Zähler summiert, Breite und Tiefe am Ursprung aus den Rohwerten, die Kacheln in jedem
+// Teil dieselben (sonst Abbruch beim Namen: ein Teil sähe andere Quellen), jeder Teil k = 0..n−1 genau einmal (sonst fielen
+// die Quellen eines Teils still aus der Summe).
 function quellTeileVereinen(teile) {
     for (const t of teile) if (t.fehler) return { fehler: t.fehler };
-    const abdruck = teile[0].regionenAbdruck;
-    const fremd = teile.find((t) => t.regionenAbdruck !== abdruck);
+    const n = teile[0].teil ? teile[0].teil.n : teile.length;
+    const ist = teile.map((t) => (t.teil ? t.teil.k + "/" + t.teil.n : "ohne Teil")).sort();
+    const soll = Array.from({ length: n }, (_, k) => k + "/" + n).sort();
+    if (ist.join(" ") !== soll.join(" "))
+        return {
+            fehler: `die Teile der Quell-Probe decken nicht alle Quellen (${ist.join(" ")} statt ${soll.join(" ")})`,
+        };
+    const abdruck = (t) => (Array.isArray(t.kacheln) ? t.kacheln.join(" ") : "keine");
+    const fremd = teile.find((t) => abdruck(t) !== abdruck(teile[0]));
     if (fremd)
         return {
-            fehler: `die Teile der Quell-Probe sehen verschiedene Regionen (${abdruck} gegen ${fremd.regionenAbdruck})`,
+            fehler: `die Teile der Quell-Probe sehen verschiedene Kacheln (${abdruck(teile[0])} gegen ${abdruck(fremd)})`,
         };
     const R = (x, n = 2) => (Number.isFinite(x) ? Math.round(x * 10 ** n) / 10 ** n : null);
     const p50 = (A) => (A.length ? A.slice().sort((x, y) => x - y)[A.length >> 1] : 0);
@@ -2080,7 +2106,7 @@ function quellTeileVereinen(teile) {
         v[k] = summe(k);
     v.buckelMax = R(Math.max(0, ...teile.map((t) => t.buckelMax || 0)));
     v.regionen = teile[0].regionen;
-    v.regionenAbdruck = abdruck;
+    v.kacheln = teile[0].kacheln;
     v.huelle0 = teile[0].huelle0;
     v.breiteP50 = R(p50(breiten0));
     v.breiteMax = R(breiten0.length ? Math.max(...breiten0) : 0);
@@ -2773,4 +2799,5 @@ module.exports = {
         `window.__wasserRegen = ${wasserRegen.toString()};`,
     wasserQuellTeil,
     quellTeileVereinen,
+    QUELL_KACHELN,
 };

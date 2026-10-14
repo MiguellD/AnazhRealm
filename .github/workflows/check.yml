@@ -1511,8 +1511,9 @@ jobs:
               # Körper nach seiner Gestalt im Wasser (Hineingehen, Brustkorb-Linie, Kraulen, Eintauchen, Tier, Mitspieler,
               # Licht, Medium), die Decke über trockenen Höhlen, der Wagen watet und das Boot treibt, keine Ufer-Flut,
               # Klang · Tier-Scheu · Küsten-Sheet lesen die EINE Wahrheit, die Ufer-Bänder stetig über die Krone. --selftest
-              # zuerst. K61: die Quell-Probe (262 Quellen, 87 % der Wand) fährt in drei Seiten nebeneinander
-              # (WASSER_QUELL_TEILE), das Ganze urteilt über dieselben Quellen.
+              # zuerst. K61: die Quell-Probe (die 12 Kacheln QUELL_KACHELN, 328 Quellen, 87 % der Wand) fährt in drei
+              # Seiten nebeneinander (WASSER_QUELL_TEILE), jede Seite stellt die Kacheln selbst her, das Ganze urteilt
+              # über dieselben Quellen (F5 KACHELN: eine fehlende Kachel ist rot).
               run: npm run gate:wasser-leben
 
             - name: Werk im Wasser (Schau-2 — der Hain am Fluss, das Dorf am Ufer, der Wagen in der Furt, der Damm im Reload)
