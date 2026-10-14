@@ -1,0 +1,721 @@
+{
+ "gesamt": {
+  "cmd": 134,
+  "tris": 448686
+ },
+ "passe": {
+  "OrthographicCamera": {
+   "cmd": 2,
+   "tris": 2
+  },
+  "haupt": {
+   "cmd": 91,
+   "tris": 300120
+  },
+  "k0": {
+   "cmd": 40,
+   "tris": 122196
+  },
+  "k1": {
+   "cmd": 1,
+   "tris": 26368
+  }
+ },
+ "klassen": [
+  {
+   "klasse": "f:gt:L0",
+   "stufe": 0,
+   "art": "vehicle",
+   "cmd": 19,
+   "tris": 40704,
+   "je": {
+    "k0": 7,
+    "haupt": 12
+   },
+   "jeTris": {
+    "k0": 18832,
+    "haupt": 21872
+   },
+   "inst": 12,
+   "exemplare": 7,
+   "dMin": 93,
+   "dMax": 94
+  },
+  {
+   "klasse": "f:verkalkt:L0",
+   "stufe": 0,
+   "art": "gate",
+   "cmd": 9,
+   "tris": 37836,
+   "je": {
+    "haupt": 9
+   },
+   "jeTris": {
+    "haupt": 37836
+   },
+   "inst": 9,
+   "exemplare": 7,
+   "dMin": 90,
+   "dMax": 91
+  },
+  {
+   "klasse": "f:maurentor:L0",
+   "stufe": 0,
+   "art": "gate",
+   "cmd": 9,
+   "tris": 32270,
+   "je": {
+    "haupt": 9
+   },
+   "jeTris": {
+    "haupt": 32270
+   },
+   "inst": 9,
+   "exemplare": 6,
+   "dMin": 90,
+   "dMax": 92
+  },
+  {
+   "klasse": "f:drachentor:L0",
+   "stufe": 0,
+   "art": "gate",
+   "cmd": 9,
+   "tris": 46604,
+   "je": {
+    "haupt": 9
+   },
+   "jeTris": {
+    "haupt": 46604
+   },
+   "inst": 9,
+   "exemplare": 7,
+   "dMin": 90,
+   "dMax": 94
+  },
+  {
+   "klasse": "f:maschine:L0",
+   "stufe": 0,
+   "art": "gate",
+   "cmd": 8,
+   "tris": 23144,
+   "je": {
+    "haupt": 8
+   },
+   "jeTris": {
+    "haupt": 23144
+   },
+   "inst": 8,
+   "exemplare": 6,
+   "dMin": 91,
+   "dMax": 94
+  },
+  {
+   "klasse": "f:kathedrale:L0",
+   "stufe": 0,
+   "art": "gate",
+   "cmd": 7,
+   "tris": 20502,
+   "je": {
+    "k0": 2,
+    "haupt": 5
+   },
+   "jeTris": {
+    "k0": 7380,
+    "haupt": 13122
+   },
+   "inst": 5,
+   "exemplare": 4,
+   "dMin": 90,
+   "dMax": 91
+  },
+  {
+   "klasse": "f:tanne:L1",
+   "stufe": 1,
+   "art": "tree",
+   "cmd": 7,
+   "tris": 4684,
+   "je": {
+    "k0": 3,
+    "haupt": 4
+   },
+   "jeTris": {
+    "k0": 1436,
+    "haupt": 3248
+   },
+   "inst": 4,
+   "exemplare": 3,
+   "dMin": 90,
+   "dMax": 92
+  },
+  {
+   "klasse": "f:geisttor:L0",
+   "stufe": 0,
+   "art": "gate",
+   "cmd": 6,
+   "tris": 6444,
+   "je": {
+    "haupt": 4,
+    "k0": 2
+   },
+   "jeTris": {
+    "haupt": 4312,
+    "k0": 2132
+   },
+   "inst": 4,
+   "exemplare": 4,
+   "dMin": 91,
+   "dMax": 93
+  },
+  {
+   "klasse": "f:fichte:L1",
+   "stufe": 1,
+   "art": "tree",
+   "cmd": 6,
+   "tris": 4334,
+   "je": {
+    "k0": 2,
+    "haupt": 4
+   },
+   "jeTris": {
+    "k0": 1038,
+    "haupt": 3296
+   },
+   "inst": 4,
+   "exemplare": 3,
+   "dMin": 90,
+   "dMax": 92
+  },
+  {
+   "klasse": "spieler",
+   "stufe": null,
+   "art": null,
+   "cmd": 5,
+   "tris": 13514,
+   "je": {
+    "k0": 5
+   },
+   "jeTris": {
+    "k0": 13514
+   },
+   "inst": 0,
+   "exemplare": 0,
+   "dMin": null,
+   "dMax": null
+  },
+  {
+   "klasse": "portal-membran",
+   "stufe": null,
+   "art": null,
+   "cmd": 5,
+   "tris": 20250,
+   "je": {
+    "haupt": 5
+   },
+   "jeTris": {
+    "haupt": 20250
+   },
+   "inst": 5,
+   "exemplare": 5,
+   "dMin": 11,
+   "dMax": 19
+  },
+  {
+   "klasse": "bau:esse",
+   "stufe": null,
+   "art": null,
+   "cmd": 4,
+   "tris": 308,
+   "je": {
+    "k0": 4
+   },
+   "jeTris": {
+    "k0": 308
+   },
+   "inst": 0,
+   "exemplare": 0,
+   "dMin": null,
+   "dMax": null
+  },
+  {
+   "klasse": "formationenSatz",
+   "stufe": null,
+   "art": null,
+   "cmd": 4,
+   "tris": 10720,
+   "je": {
+    "k0": 2,
+    "haupt": 2
+   },
+   "jeTris": {
+    "k0": 5680,
+    "haupt": 5040
+   },
+   "inst": 2,
+   "exemplare": 1,
+   "dMin": 94,
+   "dMax": 94,
+   "inhalt": {
+    "k0": [
+     {
+      "klasse": "f:kristalle:L0",
+      "stufe": 0,
+      "art": "rock",
+      "zellen": 10,
+      "tris": 4400,
+      "eintraege": [
+       2,
+       18,
+       15,
+       19,
+       22,
+       21,
+       14,
+       20,
+       3,
+       16
+      ]
+     },
+     {
+      "klasse": "f:zacken:L0",
+      "stufe": 0,
+      "art": "rock",
+      "zellen": 4,
+      "tris": 1280,
+      "eintraege": [
+       17,
+       69,
+       68,
+       67
+      ]
+     }
+    ],
+    "haupt": [
+     {
+      "klasse": "f:kristalle:L0",
+      "stufe": 0,
+      "art": "rock",
+      "zellen": 10,
+      "tris": 4400,
+      "eintraege": [
+       2,
+       18,
+       15,
+       19,
+       22,
+       21,
+       14,
+       20,
+       3,
+       16
+      ]
+     },
+     {
+      "klasse": "f:zacken:L0",
+      "stufe": 0,
+      "art": "rock",
+      "zellen": 2,
+      "tris": 640,
+      "eintraege": [
+       17,
+       68
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "klasse": "streuSatz",
+   "stufe": null,
+   "art": null,
+   "cmd": 4,
+   "tris": 16422,
+   "je": {
+    "k0": 1,
+    "haupt": 3
+   },
+   "jeTris": {
+    "k0": 5120,
+    "haupt": 11302
+   },
+   "inst": 3,
+   "exemplare": 1,
+   "dMin": 94,
+   "dMax": 94
+  },
+  {
+   "klasse": "fern-ring",
+   "stufe": null,
+   "art": null,
+   "cmd": 4,
+   "tris": 39936,
+   "je": {
+    "haupt": 4
+   },
+   "jeTris": {
+    "haupt": 39936
+   },
+   "inst": 4,
+   "exemplare": 3,
+   "dMin": 3,
+   "dMax": 15
+  },
+  {
+   "klasse": "portal-nebel",
+   "stufe": null,
+   "art": null,
+   "cmd": 4,
+   "tris": 48,
+   "je": {
+    "haupt": 4
+   },
+   "jeTris": {
+    "haupt": 48
+   },
+   "inst": 4,
+   "exemplare": 4,
+   "dMin": 11,
+   "dMax": 11
+  },
+  {
+   "klasse": "bau:start_plattform",
+   "stufe": null,
+   "art": null,
+   "cmd": 3,
+   "tris": 144,
+   "je": {
+    "k0": 2,
+    "haupt": 1
+   },
+   "jeTris": {
+    "k0": 96,
+    "haupt": 48
+   },
+   "inst": 1,
+   "exemplare": 1,
+   "dMin": 2,
+   "dMax": 2
+  },
+  {
+   "klasse": "bodenSatz",
+   "stufe": null,
+   "art": null,
+   "cmd": 3,
+   "tris": 91006,
+   "je": {
+    "k0": 1,
+    "k1": 1,
+    "haupt": 1
+   },
+   "jeTris": {
+    "k0": 39204,
+    "k1": 26368,
+    "haupt": 25434
+   },
+   "inst": 1,
+   "exemplare": 1,
+   "dMin": 94,
+   "dMax": 94
+  },
+  {
+   "klasse": "dsl-insel",
+   "stufe": null,
+   "art": null,
+   "cmd": 2,
+   "tris": 6528,
+   "je": {
+    "k0": 2
+   },
+   "jeTris": {
+    "k0": 6528
+   },
+   "inst": 0,
+   "exemplare": 0,
+   "dMin": null,
+   "dMax": null
+  },
+  {
+   "klasse": "f:ruine:L0",
+   "stufe": 0,
+   "art": "gate",
+   "cmd": 2,
+   "tris": 4980,
+   "je": {
+    "haupt": 2
+   },
+   "jeTris": {
+    "haupt": 4980
+   },
+   "inst": 2,
+   "exemplare": 2,
+   "dMin": 91,
+   "dMax": 91
+  },
+  {
+   "klasse": "Render Pipeline",
+   "stufe": null,
+   "art": null,
+   "cmd": 1,
+   "tris": 1,
+   "je": {
+    "OrthographicCamera": 1
+   },
+   "jeTris": {
+    "OrthographicCamera": 1
+   },
+   "inst": 0,
+   "exemplare": 0,
+   "dMin": null,
+   "dMax": null
+  },
+  {
+   "klasse": "TRAA",
+   "stufe": null,
+   "art": null,
+   "cmd": 1,
+   "tris": 1,
+   "je": {
+    "OrthographicCamera": 1
+   },
+   "jeTris": {
+    "OrthographicCamera": 1
+   },
+   "inst": 0,
+   "exemplare": 0,
+   "dMin": null,
+   "dMax": null
+  },
+  {
+   "klasse": "bau:welt_tetrapoda",
+   "stufe": null,
+   "art": null,
+   "cmd": 1,
+   "tris": 444,
+   "je": {
+    "k0": 1
+   },
+   "jeTris": {
+    "k0": 444
+   },
+   "inst": 0,
+   "exemplare": 0,
+   "dMin": null,
+   "dMax": null
+  },
+  {
+   "klasse": "f:drachentor:L3",
+   "stufe": 3,
+   "art": "gate",
+   "cmd": 1,
+   "tris": 1768,
+   "je": {
+    "k0": 1
+   },
+   "jeTris": {
+    "k0": 1768
+   },
+   "inst": 0,
+   "exemplare": 0,
+   "dMin": null,
+   "dMax": null
+  },
+  {
+   "klasse": "f:verkalkt:L3",
+   "stufe": 3,
+   "art": "gate",
+   "cmd": 1,
+   "tris": 7632,
+   "je": {
+    "k0": 1
+   },
+   "jeTris": {
+    "k0": 7632
+   },
+   "inst": 0,
+   "exemplare": 0,
+   "dMin": null,
+   "dMax": null
+  },
+  {
+   "klasse": "f:maschine:L3",
+   "stufe": 3,
+   "art": "gate",
+   "cmd": 1,
+   "tris": 2312,
+   "je": {
+    "k0": 1
+   },
+   "jeTris": {
+    "k0": 2312
+   },
+   "inst": 0,
+   "exemplare": 0,
+   "dMin": null,
+   "dMax": null
+  },
+  {
+   "klasse": "f:maurentor:L3",
+   "stufe": 3,
+   "art": "gate",
+   "cmd": 1,
+   "tris": 5768,
+   "je": {
+    "k0": 1
+   },
+   "jeTris": {
+    "k0": 5768
+   },
+   "inst": 0,
+   "exemplare": 0,
+   "dMin": null,
+   "dMax": null
+  },
+  {
+   "klasse": "f:ruine:L3",
+   "stufe": 3,
+   "art": "gate",
+   "cmd": 1,
+   "tris": 2944,
+   "je": {
+    "k0": 1
+   },
+   "jeTris": {
+    "k0": 2944
+   },
+   "inst": 0,
+   "exemplare": 0,
+   "dMin": null,
+   "dMax": null
+  },
+  {
+   "klasse": "bauWurf",
+   "stufe": null,
+   "art": null,
+   "cmd": 1,
+   "tris": 60,
+   "je": {
+    "k0": 1
+   },
+   "jeTris": {
+    "k0": 60
+   },
+   "inst": 0,
+   "exemplare": 0,
+   "dMin": null,
+   "dMax": null,
+   "inhalt": {
+    "k0": [
+     {
+      "klasse": "f:alemannisch:L3",
+      "stufe": 3,
+      "art": "haus",
+      "zellen": 1,
+      "tris": 60,
+      "eintraege": [
+       "portal-preview-fachwerk"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "klasse": "f:fichte:L0",
+   "stufe": 0,
+   "art": "tree",
+   "cmd": 1,
+   "tris": 4588,
+   "je": {
+    "haupt": 1
+   },
+   "jeTris": {
+    "haupt": 4588
+   },
+   "inst": 1,
+   "exemplare": 1,
+   "dMin": 92,
+   "dMax": 92
+  },
+  {
+   "klasse": "fimp:atlas:L2",
+   "stufe": 2,
+   "art": null,
+   "cmd": 1,
+   "tris": 2,
+   "je": {
+    "haupt": 1
+   },
+   "jeTris": {
+    "haupt": 2
+   },
+   "inst": 1,
+   "exemplare": 1,
+   "dMin": 94,
+   "dMax": 94
+  },
+  {
+   "klasse": "himmel",
+   "stufe": null,
+   "art": null,
+   "cmd": 1,
+   "tris": 1984,
+   "je": {
+    "haupt": 1
+   },
+   "jeTris": {
+    "haupt": 1984
+   },
+   "inst": 1,
+   "exemplare": 1,
+   "dMin": 0,
+   "dMax": 0
+  },
+  {
+   "klasse": "himmel-sonne",
+   "stufe": null,
+   "art": null,
+   "cmd": 1,
+   "tris": 480,
+   "je": {
+    "haupt": 1
+   },
+   "jeTris": {
+    "haupt": 480
+   },
+   "inst": 1,
+   "exemplare": 1,
+   "dMin": 395,
+   "dMax": 395
+  },
+  {
+   "klasse": "farWater",
+   "stufe": null,
+   "art": null,
+   "cmd": 1,
+   "tris": 324,
+   "je": {
+    "haupt": 1
+   },
+   "jeTris": {
+    "haupt": 324
+   },
+   "inst": 1,
+   "exemplare": 1,
+   "dMin": 62,
+   "dMax": 62
+  }
+ ],
+ "unbenannt": [],
+ "programme": {
+  "vertex": 40,
+  "fragment": 48,
+  "familien": 37,
+  "pipelines": 52
+ },
+ "frameMs": 75,
+ "kaskaden": 2,
+ "kamera": [
+  0,
+  94.3,
+  0
+ ],
+ "ms": 81
+}

@@ -1,0 +1,11 @@
+# Lauf · Tor nah · ohne Membran · ohne Tor (Rest) · Genesis-Blick (ms je Frame, gpu-bank 120 x 3); P = 08b57ed8, L = Instanz-Schicht mit LOD, Q = als Gruppe (5fff9e54); 1-2 mit 60 Takten, 3-4 mit 400
+P1 19.32 16.71 10.15 9.64 
+L1 19.54 16.85 10.32 9.68 
+Q1 19.5 16.77 10.22 9.76 
+P2 19.58 17 10.43 9.67 
+L2 19.59 16.92 10.32 9.72 
+Q2 19.48 16.88 10.31 9.72 
+P3 19.82 16.89 10.66 9.95 
+L3 19.87 16.9 10.59 9.89 
+P4 19.84 17.06 10.7 9.85 
+L4 19.9 16.95 10.6 9.93 
