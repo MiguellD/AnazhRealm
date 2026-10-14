@@ -38305,38 +38305,61 @@ async function checkBandV18264ShadowCache(ctx) {
             csm && csm.lights && csm.lights.length ? csm.lights : st.directionalLight ? [st.directionalLight] : [];
         out.lichter = lichter.length;
         if (!out.hasMethod || !lichter.length || !A.SCHATTEN_TAKT) return out;
-        const zaehle = (n) => {
+        // 1410-3: in Ruhe je Frame höchstens EINE Kaskade (die nahe jeden nahMax-ten Frame, die ferne dazwischen); bewegt
+        // sich die Kamera, folgt die nahe jedem Frame im Regler-Takt (der Schatten des gehenden Spielers hinkt nie).
+        const kam = st.camera;
+        const kamX = kam ? kam.position.x : 0;
+        let schritt = 0;
+        const zaehle = (n, bewegt) => {
             const z = lichter.map(() => 0);
+            z.doppelt = 0;
             for (let i = 0; i < n; i++) {
                 lichter.forEach((l) => l.shadow && (l.shadow.needsUpdate = false));
+                if (bewegt && kam) {
+                    kam.position.x = kamX + 0.05 * ++schritt;
+                    kam.updateMatrixWorld(true);
+                }
                 r._loopShadowUpdate();
                 lichter.forEach((l, k) => l.shadow && l.shadow.needsUpdate && z[k]++);
+                if (lichter.filter((l) => l.shadow && l.shadow.needsUpdate).length > 1) z.doppelt++;
             }
             return z;
         };
         const ivAlt = st._shadowMinInterval;
         st._shadowMinInterval = 1;
         r._shadowLast = null;
-        zaehle(1);
-        const z1 = zaehle(30);
+        zaehle(2, false);
+        const z1 = zaehle(30, false);
+        const zb = zaehle(30, true);
+        if (kam) {
+            kam.position.x = kamX;
+            kam.updateMatrixWorld(true);
+        }
+        zaehle(2, false);
         st._shadowMinInterval = 4;
-        const z4 = zaehle(60);
+        const z4 = zaehle(60, false);
         st._shadowMinInterval = ivAlt;
         r._shadowLast = null;
+        const T = A.SCHATTEN_TAKT;
         out.autoUpdateOff = lichter.every((l) => l.shadow && l.shadow.autoUpdate === false);
         out.nah1 = z1[0];
         out.nah4 = z4[0];
+        out.nahBewegt = zb[0];
         out.fern1 = lichter.length > 1 ? z1[1] : null;
-        out.nahJedenFrame = z1[0] === 30;
-        out.nahGedeckelt = z4[0] === 60 / Math.min(A.SCHATTEN_TAKT.nahMax, 4);
-        out.fernSeltener = lichter.length < 2 || z1[1] === 30 / A.SCHATTEN_TAKT.fernFaktor;
+        out.doppelt1 = z1.doppelt;
+        out.nahRuhe = z1[0] === 30 / T.nahMax && z1.doppelt === 0;
+        out.nahBewegtJedenFrame = !kam || zb[0] === 30;
+        out.nahGedeckelt = z4[0] === 60 / Math.min(T.nahMax, 4);
+        const fern = 30 / (T.nahMax * T.fernFaktor);
+        out.fernSeltener = lichter.length < 2 || (z1[1] >= Math.floor(fern) - 1 && z1[1] <= Math.ceil(fern));
         return out;
     });
     check("V18.524: _loopShadowUpdate fährt den Leser je Licht (autoUpdate aus)", res.hasMethod && res.autoUpdateOff);
     check("V18.264: shadowMinInterval ist eine Regelkreis-Stellgröße (CONSUM)", res.hasLever && res.actuatorDrives);
     check(
-        `V18.524: die nahe Schatten-Map rendert im Regler-Takt (Intervall 1: ${res.nah1}/30, Intervall 4: ${res.nah4}/60)`,
-        res.nahJedenFrame === true && res.nahGedeckelt === true
+        `1410-3: die nahe Schatten-Map in Ruhe jeden nahMax-ten Frame ohne Doppel-Frame, bewegt jeden Frame (Ruhe ${res.nah1}/30, ` +
+            `doppelt ${res.doppelt1}, bewegt ${res.nahBewegt}/30, Intervall 4: ${res.nah4}/60)`,
+        res.nahRuhe === true && res.nahBewegtJedenFrame === true && res.nahGedeckelt === true
     );
     check(
         `V18.524: die ferne Kaskade rendert seltener (${res.fern1 == null ? "ohne CSM" : res.fern1 + "/30"})`,
