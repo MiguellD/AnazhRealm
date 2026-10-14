@@ -151,6 +151,9 @@ class AnazhRealm_Z10 {
                     ? this.state.atmosphere.geomorph
                     : 1.0
             ),
+            // DAS AUGE DER STUFEN (K51-2, `_stufeAugeTakt`): der Spieler des Streaming-Takts — der Geomorph des Bodens misst daran
+            // den Chebyshev-Abstand jedes Vertex zu seinem Übergangs-Band
+            stufeAuge: TSL.uniform(new THREE.Vector2(0, 0)),
             // Terrain-Mond-Rim: kühler Fresnel-Saum auf den vertexColors-Ebenen; den Wert treibt der Tag-Nacht-
             // Sync (nachts setTerrainMoonRim-Basis, tags 0 — kein Shader-Branch; EIN Schreiber:
             // _dayNightApplyHemiUndLuft).
@@ -914,15 +917,35 @@ class AnazhRealm_Z10 {
             // DAS LICHT DES AUGES (K02a, K15, K11 — `_dayNightApplyAugenLicht`, `AUGEN_LICHT`) ist ein Platz des Licht-Pools mit
             // Himmels-Ersatz: es trägt nur, wo der Himmel fehlt — der Boden reicht dem Pool seine Himmels-Sicht (`aHimmel`) unten
             // durch `_leuchtStoff`, ein Stoff ohne Himmels-Sicht gilt als offen (er trägt das Himmels-Licht ganz).
-            // Geomorph (T2 Cross-LOD-Boundary-Naht) — wie im Toon-Pfad.
+            // DER GEOMORPH DES BODENS (K51-2, CDLOD): jeder Vertex wandert im Übergangs-Band seiner Stufe stetig auf sein Ziel im
+            // Netz der nächst gröberen Stufe (`aMorphTarget`, `stufeZiel`), an der Grenze `bis` liegt er ganz auf ihr — dort
+            // wechselt der Chunk (`_voxelChunkLodFor`), deckungsgleich. `aMorphWeight` trägt den Morph-Code 2 · Stufe + Naht
+            // (`_morphCode`): die Naht (T2, die Grenz-Zeile am gröberen Nachbarn) und das Stufen-Gewicht vereinen sich zu
+            // Naht + Stufe − Naht · Stufe. Der CPU-Spiegel ist `_morphFaktor` (Boden-Leser, Sprung-Linse).
             if (opts.geomorph) {
                 try {
                     const _Tm = THREE.TSL;
                     const _aum = this._ensureAtmoUniforms();
                     {
                         const _tgt = _Tm.attribute("aMorphTarget", "vec3");
-                        const _w = _Tm.attribute("aMorphWeight", "float");
-                        const _f = _aum.geomorph.mul(_w);
+                        const _code = _Tm.attribute("aMorphWeight", "float");
+                        const _L = _code.mul(0.5).floor();
+                        const _s = _code.sub(_L.mul(2.0));
+                        const ST = AnazhRealm.BODEN_STUFEN.stufen;
+                        const _bis = _Tm.select(
+                            _L.lessThan(0.5),
+                            _Tm.float(ST[0].bis),
+                            _Tm.select(_L.lessThan(1.5), _Tm.float(ST[1].bis), _Tm.float(ST[2].bis))
+                        );
+                        const _band = _Tm.select(
+                            _L.lessThan(0.5),
+                            _Tm.float(ST[0].band),
+                            _Tm.select(_L.lessThan(1.5), _Tm.float(ST[1].band), _Tm.float(ST[2].band))
+                        );
+                        const _rel = _Tm.positionLocal.xz.sub(_aum.stufeAuge).abs();
+                        const _d = _Tm.max(_rel.x, _rel.y);
+                        const _w = _Tm.smoothstep(_bis.sub(_band), _bis, _d);
+                        const _f = _aum.geomorph.mul(_s.add(_w).sub(_s.mul(_w)));
                         mat.positionNode = _Tm.positionLocal.add(_tgt.sub(_Tm.positionLocal).mul(_f));
                     }
                 } catch (_e) {

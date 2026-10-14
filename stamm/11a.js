@@ -61,6 +61,17 @@ class AnazhRealm_Z11a {
             hoehle
         );
         if (!geom) return { mesh: null, kind: "empty" };
+        // DER GEOMORPH DER STUFE (K51-2): das Ziel jedes Vertex auf dem Netz der nächst gröberen Stufe (derselbe Bau wie im
+        // Worker, `_stufeZielNetz`), die Stufe im Morph-Code — die gröbste Stufe trägt ihre Lage als Ziel
+        {
+            const P = geom.attributes.position.array;
+            if (lod < 3) {
+                const ziel = this._stufeZielNetz(P, cx, cz, lod + 1);
+                geom.attributes.aMorphTarget.array.set(ziel);
+                geom.userData.stufeZiel = ziel;
+            }
+            geom.attributes.aMorphWeight.array.fill(this._morphCode(lod, 0));
+        }
         this._attachVoxelFieldColors(geom);
         // Material-Singleton für alle Chunks (Vertex-Farben leben pro Geometrie; PBR, roughness/metalness
         // aus den Tags). NIEMALS disposen — sonst sterben alle anderen Chunks mit (s. `_disposeVoxelChunk`).
@@ -319,19 +330,20 @@ class AnazhRealm_Z11a {
         // der Fingerabdruck des alten Morphs (die Karte zieht nur nach, wenn er sich ändert)
         const abdruck = () => {
             let s = 0;
-            for (let v = 0; v < n; v++)
-                if (wArr[v] > 0)
-                    s += wArr[v] * (tArr[v * 3] * 1.31 + tArr[v * 3 + 1] * 1.73 + tArr[v * 3 + 2] * 1.13 + v);
+            for (let v = 0; v < n; v++) {
+                const w = this._morphNaht(wArr[v]);
+                if (w > 0) s += w * (tArr[v * 3] * 1.31 + tArr[v * 3 + 1] * 1.73 + tArr[v * 3 + 2] * 1.13 + v);
+            }
             return s;
         };
         const abdruckAlt = abdruck();
-        // Basis = Identität (un-morpht)
-        for (let v = 0; v < n; v++) {
-            tArr[v * 3] = pos.getX(v);
-            tArr[v * 3 + 1] = pos.getY(v);
-            tArr[v * 3 + 2] = pos.getZ(v);
-            wArr[v] = 0;
-        }
+        // Basis = das Ziel der Stufe (K51-2, `stufeZiel`; die gröbste Stufe: die Position), Naht 0
+        const basis = geom.userData.stufeZiel || pos.array;
+        const code0 = this._morphCode(myLod, 0);
+        for (let v = 0; v < n * 3; v++) tArr[v] = basis[v];
+        wArr.fill(code0);
+        // das Naht-Ziel je Vertex (der gröbere Nachbar) — das Naht-Band brückt dorthin, auch wo der Cap den Morph stoppt
+        const nahtZiel = coarseFaces.length ? new Float32Array(n * 3) : null;
         let touched = false;
         const bestDist = coarseFaces.length ? new Float32Array(n).fill(Infinity) : null;
         // A1/N1 (gigant-plan §5 · Naht §12.2) — die Grenz-Zeilen-Vertices für das
@@ -412,17 +424,26 @@ class AnazhRealm_Z11a {
                 if (dPlane <= flat && (face.dx === 0 || face.dz === 0)) bandVerts.add(v);
                 if (d3 >= bestDist[v]) continue; // ein näheres Face gewann diesen Vertex schon
                 bestDist[v] = d3;
-                tArr[v * 3] = bx;
-                tArr[v * 3 + 1] = by;
-                tArr[v * 3 + 2] = bz;
+                tArr[v * 3] = nahtZiel[v * 3] = bx;
+                tArr[v * 3 + 1] = nahtZiel[v * 3 + 1] = by;
+                tArr[v * 3 + 2] = nahtZiel[v * 3 + 2] = bz;
                 // Gewicht: 1 in der Grenz-Zeile (dPlane ≤ flat) → linear auf 0 bei morphBand.
-                // A1 — jenseits des Caps KEIN Morph (w=0, das Target bleibt fürs Band in tArr;
-                // der Shader liest bei w=0 die rohe Position — kein Zerren der Cliff-Wand).
-                wArr[v] = d3 > snapCap ? 0 : Math.max(0, Math.min(1, (morphBand - dPlane) / (morphBand - flat)));
+                // A1 — jenseits des Caps KEIN Naht-Morph (Naht 0): das Ziel bleibt das der Stufe (das Naht-Ziel trägt das Band),
+                // sonst zöge das Stufen-Gewicht die Cliff-Wand an den Nachbarn.
+                const naht =
+                    d3 > snapCap ? 0 : Math.max(0, Math.min(1, (morphBand - dPlane) / (morphBand - flat)));
+                wArr[v] = this._morphCode(myLod, naht);
+                if (naht === 0) for (let k = 0; k < 3; k++) tArr[v * 3 + k] = basis[v * 3 + k];
                 touched = true;
             }
         }
         entry.hasMorph = touched;
+        // die gekappten Naht-Vertices (Cliff: das Naht-Ziel weiter als der Cap, der Vertex trägt das Ziel seiner Stufe) — das
+        // Naht-Band brückt sie (Leser: die Naht-Probe des Playtests)
+        let gekappt = 0;
+        if (bestDist) for (let v = 0; v < n; v++) if (bestDist[v] < Infinity && this._morphNaht(wArr[v]) === 0) gekappt++;
+        entry.nahtGekappt = gekappt;
+        entry.surfMapZiel = null; // die Karte der Ziele zieht nach (`_bodenKarteZiel`)
         this._chunkSatzMarke("boden", `${cx},${cz}`, ["aMorphTarget", "aMorphWeight"]);
         // DER BODEN-LESER LIEST, WAS GEZEICHNET WIRD (K51, Lehre 22): an einer Stufen-Naht zeichnet der Stoff die Grenz-Zeile
         // auf der groben Fläche — die Karte des Chunks (Stand, Nah-Wiese, Nah-Streu) kommt aus derselben gemorphten Lage. Mit der
@@ -435,7 +456,7 @@ class AnazhRealm_Z11a {
             const P = pos.array;
             const lage = new Float32Array(P.length);
             for (let v = 0; v < n; v++) {
-                const f = wArr[v] * gm;
+                const f = this._morphNaht(wArr[v]) * gm;
                 lage[v * 3] = P[v * 3] + (tArr[v * 3] - P[v * 3]) * f;
                 lage[v * 3 + 1] = P[v * 3 + 1] + (tArr[v * 3 + 1] - P[v * 3 + 1]) * f;
                 lage[v * 3 + 2] = P[v * 3 + 2] + (tArr[v * 3 + 2] - P[v * 3 + 2]) * f;
@@ -451,17 +472,17 @@ class AnazhRealm_Z11a {
             entry.surfMap = karte && karte.hoehe;
             entry.gruenMap = karte && karte.gruen;
         }
-        this._rebuildLodStitchBand(entry, bandVerts, `${cx},${cz}`);
+        this._rebuildLodStitchBand(entry, bandVerts, `${cx},${cz}`, nahtZiel);
     }
 
     // STITCH-BAND (Arme-Leute-Transvoxel): wo der Morph-Cap greift (Cliffs), bliebe ein Spalt. Pro
     // Mesh-KANTE der Grenz-Zeile (beide Endpunkte in der Border-Row — echte Topologie inkl. Höhlen-
     // Loops, kein Polyline-Sortieren) der Skirt und, wo ein Ende gekappt ist (Gewicht < 1), ein Quad von der
-    // feinen Kante (position) zur groben Fläche (aMorphTarget). Render-only, keine BVH, main-only. Trägt ALLE Material-Attribute des Terrain-
-    // Toons (WebGPU-strikt): color vom Quell-Vertex, aMorphTarget = Identität/w=0 (kein Doppel-Morph).
+    // feinen Kante (position) zur groben Fläche (das Naht-Ziel). Render-only, keine BVH, main-only. Trägt ALLE Material-Attribute des Terrain-
+    // Toons (WebGPU-strikt): color vom Quell-Vertex, die feine Kante Morph-Ziel und -Code ihres Quell-Vertex, sonst fest.
     // Dasselbe Material wie der Boden → ein Bereich `stitch:<chunk>` IM Boden-Satz (derselbe Befehl); der
     // Band-Mesh bleibt CPU-Körper (Naht-Sonden lesen seine Geometrie).
-    _rebuildLodStitchBand(entry, bandVerts, key) {
+    _rebuildLodStitchBand(entry, bandVerts, key, nahtZiel) {
         // Der Band-Bereich gehört dem Chunk-Key (nicht dem Eintrag): auch ein Neubau räumt ein altes Band.
         this._chunkSatzAus("boden", "stitch:" + key);
         if (entry.lodStitchMesh) {
@@ -473,6 +494,7 @@ class AnazhRealm_Z11a {
         const pos = geom.attributes.position;
         const tgt = geom.attributes.aMorphTarget;
         const wgt = geom.attributes.aMorphWeight;
+        if (!nahtZiel) throw new Error(`_rebuildLodStitchBand(${key}): kein Naht-Ziel`);
         const nrm = geom.attributes.normal;
         const col = geom.attributes.color;
         const him = geom.attributes.aHimmel;
@@ -492,7 +514,18 @@ class AnazhRealm_Z11a {
             C = [],
             HS = [],
             SC = [],
+            MT = [],
+            MW = [],
             I = [];
+        // die feine Kante der Brücke folgt der gezeichneten Kante (K51-2): ihre Ecken tragen Morph-Ziel und -Code des Quell-
+        // Vertex (der Stoff zeichnet sie, wo er die Kante zeichnet — im Übergangs-Band wandert sie mit), die grobe Seite und der
+        // Skirt stehen fest (Code 0, Ziel = Lage)
+        const tA = tgt.array,
+            wA = wgt.array;
+        const fest = (x, y, z) => {
+            MT.push(x, y, z);
+            MW.push(0);
+        };
         const sch = geom.attributes.aSchutt;
         if (!sch) throw new Error(`_rebuildLodStitchBand(${key}): die Quelle trägt keinen Schutt (aSchutt)`);
         const seen = new Set();
@@ -513,21 +546,25 @@ class AnazhRealm_Z11a {
                 const bx = pos.getX(b),
                     by = pos.getY(b),
                     bz = pos.getZ(b);
-                const tax = tgt.getX(a),
-                    tay = tgt.getY(a),
-                    taz = tgt.getZ(a);
-                const tbx = tgt.getX(b),
-                    tby = tgt.getY(b),
-                    tbz = tgt.getZ(b);
+                const tax = nahtZiel[a * 3],
+                    tay = nahtZiel[a * 3 + 1],
+                    taz = nahtZiel[a * 3 + 2];
+                const tbx = nahtZiel[b * 3],
+                    tby = nahtZiel[b * 3 + 1],
+                    tbz = nahtZiel[b * 3 + 2];
                 const spanA = Math.hypot(tax - ax, tay - ay, taz - az);
                 const spanB = Math.hypot(tbx - bx, tby - by, tbz - bz);
                 if (Math.max(spanA, spanB) < MIN_SPAN) continue;
                 // DIE BRÜCKE (rohe Kante → grobe Fläche) nur, wo der Morph die Naht NICHT schliesst (K51): trägt er beide
                 // Enden ganz (Gewicht 1), zeichnet die feine Kante schon auf der groben Fläche — die Brücke wäre eine Finne
                 // zur unsichtbaren rohen Lage (14.10., Mess-Wiese: zwei von drei Naht-Dreiecken, in jedem Pass gezeichnet).
-                if (!(wgt.getX(a) >= 1 && wgt.getX(b) >= 1)) {
+                if (!(this._morphNaht(wgt.getX(a)) >= 1 && this._morphNaht(wgt.getX(b)) >= 1)) {
                     const base = P.length / 3;
                     P.push(ax, ay, az, bx, by, bz, tbx, tby, tbz, tax, tay, taz);
+                    MT.push(tA[a * 3], tA[a * 3 + 1], tA[a * 3 + 2], tA[b * 3], tA[b * 3 + 1], tA[b * 3 + 2]);
+                    MW.push(wA[a], wA[b]);
+                    fest(tbx, tby, tbz);
+                    fest(tax, tay, taz);
                     for (const v of [a, b, b, a]) {
                         N.push(nrm ? nrm.getX(v) : 0, nrm ? nrm.getY(v) : 1, nrm ? nrm.getZ(v) : 0);
                         C.push(col ? col.getX(v) : 0.5, col ? col.getY(v) : 0.5, col ? col.getZ(v) : 0.5);
@@ -540,6 +577,7 @@ class AnazhRealm_Z11a {
                 // Normale ~horizontal-auswärts; DoubleSide → kein Backface-Loch.
                 const sBase = P.length / 3;
                 P.push(tax, tay, taz, tbx, tby, tbz, tbx, tby - SKIRT, tbz, tax, tay - SKIRT, taz);
+                for (let q = P.length - 12; q < P.length; q += 3) fest(P[q], P[q + 1], P[q + 2]);
                 for (let s = 0; s < 4; s++) {
                     N.push(0, 0.2, 0); // grob nach oben/aussen — der Vorhang ist meist verdeckt
                     const cv = s === 1 || s === 2 ? b : a;
@@ -555,8 +593,8 @@ class AnazhRealm_Z11a {
         bg.setAttribute("position", new THREE.Float32BufferAttribute(P, 3));
         bg.setAttribute("normal", new THREE.Float32BufferAttribute(N, 3));
         bg.setAttribute("color", new THREE.Float32BufferAttribute(C, 3));
-        bg.setAttribute("aMorphTarget", new THREE.Float32BufferAttribute(new Float32Array(P), 3));
-        bg.setAttribute("aMorphWeight", new THREE.Float32BufferAttribute(new Float32Array(P.length / 3), 1));
+        bg.setAttribute("aMorphTarget", new THREE.Float32BufferAttribute(MT, 3));
+        bg.setAttribute("aMorphWeight", new THREE.Float32BufferAttribute(MW, 1));
         // die Naht trägt die Himmels-Sicht ihrer beiden Ränder (je Vertex aus der Quelle kopiert, `HS`)
         bg.setAttribute("aHimmel", new THREE.Float32BufferAttribute(HS, 1));
         bg.setAttribute("aSchutt", new THREE.Float32BufferAttribute(SC, 1));

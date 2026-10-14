@@ -959,8 +959,7 @@ class AnazhRealm_Z17b {
         h.makeEmpty();
         const A = b.geom.attributes;
         const P = A.position.array,
-            Z = A.aMorphTarget ? A.aMorphTarget.array : null,
-            W = A.aMorphWeight ? A.aMorphWeight.array : null;
+            Z = A.aMorphTarget ? A.aMorphTarget.array : null;
         const vs = b.vStart;
         const rand = AnazhRealm.SCHATTEN_KASKADE.randM;
         const hub = s.spec.hub || 0;
@@ -986,7 +985,9 @@ class AnazhRealm_Z17b {
             for (let i = 0; i < I.length; i++) {
                 const v = I[i] - vs;
                 dazu(P, v * 3);
-                if (Z && W && W[v] > 0) dazu(Z, v * 3);
+                // das Morph-Ziel trägt Lage, sobald der Geomorph greift — Naht wie Stufe (K51-2: das Stufen-Gewicht folgt dem
+                // Auge, jedes Ziel kann ganz gezeichnet werden)
+                if (Z) dazu(Z, v * 3);
             }
             const zh = zelle.huelle;
             zh.makeEmpty();
@@ -1568,12 +1569,10 @@ class AnazhRealm_Z17b {
         const morph = new Float32Array(n * n);
         const A = s.geom.attributes;
         const P = A.position.array,
-            Z = A.aMorphTarget.array,
-            W = A.aMorphWeight.array;
+            Z = A.aMorphTarget.array;
+        // der Abstieg zum Ziel ganz (K51-2): das Stufen-Gewicht folgt dem Auge, jedes Ziel kann ganz gezeichnet werden
         for (let v = b.vStart; v < b.vStart + b.vAnzahl; v++) {
-            const w = W[v];
-            if (!(w > 0)) continue;
-            const ab = (P[v * 3 + 1] - Z[v * 3 + 1]) * w;
+            const ab = P[v * 3 + 1] - Z[v * 3 + 1];
             if (!(ab > 0)) continue;
             const I = Math.floor((P[v * 3] - b.cx * span) / R),
                 K = Math.floor((P[v * 3 + 2] - b.cz * span) / R);

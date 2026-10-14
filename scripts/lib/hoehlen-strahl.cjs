@@ -33,7 +33,7 @@ function installHoehlenStrahl() {
             x1 = -Infinity,
             z1 = -Infinity;
         const lage = (v, o3) => {
-            const w = W ? W[v] : 0;
+            const w = W ? r._morphFaktor(W[v], P[v * 3], P[v * 3 + 2]) : 0; // K51-2: Naht + Stufe, samt geomorph
             for (let a = 0; a < 3; a++) {
                 const p = P[v * 3 + a];
                 V[o3 + a] = w > 0 && Z ? p + (Z[v * 3 + a] - p) * w : p;

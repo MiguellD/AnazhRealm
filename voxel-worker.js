@@ -122,6 +122,8 @@ self.onmessage = function (e) {
                         empty: false,
                         lod: lod | 0,
                         positions: mesh.positions.buffer,
+                        // das Ziel der gröberen Stufe je Vertex (K51-2), null in der gröbsten Stufe
+                        stufeZiel: mesh.stufeZiel ? mesh.stufeZiel.buffer : null,
                         normals: mesh.normals.buffer,
                         indices: mesh.indices.buffer,
                         colors: mesh.colors.buffer,
@@ -155,7 +157,7 @@ self.onmessage = function (e) {
                         mesh.hSeiten.buffer,
                         mesh.hKanten.buffer,
                         mesh.hRand.buffer,
-                    ]
+                    ].concat(mesh.stufeZiel ? [mesh.stufeZiel.buffer] : [])
                 );
             }
         } else if (msg.type === "water-sheet") {
@@ -2655,6 +2657,23 @@ function chunkHasAnyWater(cx, cz, lod) {
 // Voller Chunk-Build (Iso-Mesh + Cells + Colors)
 // =============================================================================
 
+// Das grobe Netz der Stufe `grobLod` um den Chunk-Ursprung (ox, oz) mit einer Zelle Polster vor der Kante → die Ziele der
+// feinen Positionen (Spiegel von `_stufeZielNetz` im Stamm, dasselbe Gesetz `stufeZiel` aus gelaende-core).
+function stufeZielNetz(fein, ox, oy, oz, grobLod) {
+    const g = voxelChunkConfig(grobLod);
+    const gs = g.step;
+    const gox = ox - 2 * gs;
+    const goz = oz - 2 * gs;
+    const gd = g.dim + 4;
+    const dichte = computeDensityGrid(gox, oy, goz, gd, g.dimY, gd, gs);
+    const sv = extractSurfaceVertices(dichte, gox, oy, goz, gd, g.dimY, gd, gs);
+    if (sv.positions.length === 0) return G.stufeZiel(fein, new Float32Array(0), new Uint32Array(0), gs);
+    const idx = emitQuadIndices(dichte, sv.cellVert, gd, g.dimY, gd, null, null);
+    laplacianSmoothPositions(sv.positions, idx, 1, sv.sharp);
+    cropPad(sv.positions, idx, sv.vertCells, gd, gd, 1, null);
+    return G.stufeZiel(fein, new Float32Array(sv.positions), new Uint32Array(idx), gs);
+}
+
 function buildChunkMesh(cx, cz, lod) {
     const cfg = voxelChunkConfig(lod);
     const { dim, step, span, dimY, floorDrop } = cfg;
@@ -2699,6 +2718,11 @@ function buildChunkMesh(cx, cz, lod) {
     cropPad(positions, indices, vertCells, sampleDimX, sampleDimZ, 1, triZelle);
     if (positions.length === 0) return { empty: true };
     const normals = gradientNormals(positions, density, sampleOx, oy, sampleOz, step, Nx, Ny, Nz);
+    // DAS ZIEL DER GRÖBEREN STUFE (K51-2, Geomorph nach CDLOD): das Netz der Stufe lod+1 desselben Orts, eine grobe Zelle
+    // weiter nach unten gepolstert (das Gitter beginnt zwei grobe Schritte vor dem Chunk, der Crop behält die Zelle vor der
+    // Kante — sie ist die Saum-Zelle des unteren Nachbarn, so trifft jeder geteilte Vertex in beiden Chunks dieselbe Fläche),
+    // sonst derselbe Bau wie der Chunk der Stufe lod+1; je Vertex sein Ziel (gelaende-core `stufeZiel`). Stufe 3 ist die gröbste.
+    const stufeZiel = lod < 3 ? stufeZielNetz(new Float32Array(positions), ox, oy, oz, lod + 1) : null;
     // V9.91 — positions VOR colors zu Float32 konvertieren. Sonst rechnet
     // `attachFieldColors` mit Float64-Werten, Main hat aber Float32 (via
     // THREE.Float32BufferAttribute) — sub-pixel Float-Drift bei colors
@@ -2762,6 +2786,7 @@ function buildChunkMesh(cx, cz, lod) {
     return {
         empty: false,
         positions: positionsF32,
+        stufeZiel,
         indices: indicesU32,
         normals,
         colors,

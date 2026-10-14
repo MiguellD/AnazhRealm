@@ -106,19 +106,24 @@ function urteil(z) {
         const proVertex = z.vertexForm.reduce((a, f) => a + f.bytes, 0);
         if (proVertex > 48) v.push(`VERTEX-FORM: der Boden-Satz trägt ${proVertex} B je Vertex (Soll ≤ 48)`);
     }
-    // (n) DIE BODEN-STUFEN (K51): die Nah-Zone ist Ring ≤ 1 — jenseits trägt ein Chunk mindestens Stufe 1, ab Ring 3
-    // mindestens Stufe 2 (Haushalt boden 120k samt Fern-Ring; gemessen 14.10.: L0 bis Ring 2, 25 Chunks à ~5 300 Dreiecke,
-    // trug den Boden-Satz der Wiese auf 130k); ein Naht-Band brückt nur, wo der Morph die Naht nicht schliesst
-    const SOLL_STUFE = (ring) => (ring >= 3 ? 2 : ring >= 2 ? 1 : 0);
+    // (n) DIE BODEN-STUFEN (K51, K51-2 nach dem Kasten-Abstand): ein Chunk der Stufe L lebt höchstens bis zum Abstand
+    // bis + vorlauf + halt seiner Stufe (`BODEN_STUFEN`, die Tabelle liest die Wand aus der Welt) — jenseits ist er zu fein
+    // (Haushalt boden 120k samt Fern-Ring; gemessen 14.10.: L0 bis Ring 2, 25 Chunks à ~5 300 Dreiecke, trug den Boden-Satz
+    // der Wiese auf 130k); ein Naht-Band brückt nur, wo der Morph die Naht nicht schliesst
     if (z.stufen) {
-        const fein = z.stufen.chunks.filter((c) => c.lod < SOLL_STUFE(c.ring));
+        const T = z.stufen.tabelle;
+        const grenze = (lod) => {
+            const st = T.stufen.find((x) => x.lod === lod);
+            return st ? st.bis + T.vorlauf + T.halt : Infinity;
+        };
+        const fein = z.stufen.chunks.filter((c) => c.d >= grenze(c.lod));
         if (fein.length)
             v.push(
                 `BODEN-STUFEN: ${fein.length} Chunks jenseits der Nah-Zone zu fein (${fein.reduce((a, c) => a + c.dreiecke, 0)} ` +
                     `Dreiecke) — ` +
                     fein
                         .slice(0, 4)
-                        .map((c) => `${c.key} Ring ${c.ring} L${c.lod} (Soll ≥ L${SOLL_STUFE(c.ring)}) ${c.dreiecke}`)
+                        .map((c) => `${c.key} ${c.d.toFixed(1)} m L${c.lod} (Soll ≥ L${c.lod + 1}) ${c.dreiecke}`)
                         .join(", ")
             );
         const ohne = z.stufen.ohneNot;
@@ -173,11 +178,21 @@ function selbsttest() {
             { satz: "bodenSatz", attr: "aMorphTarget", form: "float32x3", bytes: 12, mb: 2.6 },
         ],
         stufen: {
+            tabelle: {
+                vorlauf: 3,
+                halt: 4,
+                stufen: [
+                    { lod: 0, bis: 36, band: 12 },
+                    { lod: 1, bis: 100, band: 12 },
+                    { lod: 2, bis: 388.8, band: 40 },
+                    { lod: 3, bis: Infinity, band: 0 },
+                ],
+            },
             chunks: [
-                { key: "0,0", ring: 0, lod: 0, dreiecke: 5300 },
-                { key: "1,0", ring: 1, lod: 0, dreiecke: 5100 },
-                { key: "2,0", ring: 2, lod: 1, dreiecke: 1300 },
-                { key: "3,0", ring: 3, lod: 2, dreiecke: 280 },
+                { key: "0,0", ring: 0, d: 0, lod: 0, dreiecke: 5300 },
+                { key: "1,0", ring: 1, d: 21.6, lod: 0, dreiecke: 5100 },
+                { key: "2,0", ring: 2, d: 64.8, lod: 1, dreiecke: 1300 },
+                { key: "3,0", ring: 3, d: 108, lod: 2, dreiecke: 280 },
             ],
             jeStufe: { L0: 10400, L1: 1300, L2: 280 },
             naht: 900,
@@ -267,19 +282,19 @@ function selbsttest() {
             ],
         },
         {
-            name: "L0 bis Ring 2 und L1 in Ring 3 (die Kette vor K51)",
+            name: "L0 bis Ring 2 und L1 in Ring 3 (die Kette vor K51), jenseits der Halte-Grenze",
             z: {
                 ...gruen,
                 stufen: {
                     ...gruen.stufen,
                     chunks: [
-                        { key: "0,0", ring: 0, lod: 0, dreiecke: 5300 },
-                        { key: "-21,-18", ring: 2, lod: 0, dreiecke: 5312 },
-                        { key: "-17,-20", ring: 3, lod: 1, dreiecke: 1404 },
+                        { key: "0,0", ring: 0, d: 0, lod: 0, dreiecke: 5300 },
+                        { key: "-21,-18", ring: 2, d: 64.8, lod: 0, dreiecke: 5312 },
+                        { key: "-17,-20", ring: 3, d: 108, lod: 1, dreiecke: 1404 },
                     ],
                 },
             },
-            muss: [/BODEN-STUFEN: 2 Chunks jenseits der Nah-Zone zu fein \(6716 Dreiecke\).*-21,-18 Ring 2 L0 \(Soll ≥ L1\)/],
+            muss: [/BODEN-STUFEN: 2 Chunks jenseits der Nah-Zone zu fein \(6716 Dreiecke\).*-21,-18 64\.8 m L0 \(Soll ≥ L1\)/],
         },
         {
             name: "das Naht-Band brückt, wo der Morph beide Enden trägt",
@@ -591,9 +606,19 @@ function check(name, ok, detail) {
                 // (n) DIE BODEN-STUFEN (K51): je gebautem Chunk sein Ring um den Spieler-Chunk, seine Stufe und seine
                 // Dreiecke; je Naht-Band die Brücken (rohe Kante → grobe Fläche), deren beide Enden der Morph ganz trägt
                 // (Gewicht 1) — die Wand liest die Netze, nie die Tabelle
-                z.stufen = { chunks: [], jeStufe: {}, naht: 0, bruecken: 0, ohneNot: [] };
+                const BS = r.constructor.BODEN_STUFEN;
+                z.stufen = {
+                    tabelle: { vorlauf: BS.vorlauf, halt: BS.halt, stufen: BS.stufen.map((x) => ({ ...x })) },
+                    chunks: [],
+                    jeStufe: {},
+                    naht: 0,
+                    bruecken: 0,
+                    ohneNot: [],
+                };
                 const lpc = s.lastPlayerVoxelChunk;
-                if (lpc)
+                const auge = s.stufeAuge;
+                const S0 = r._voxelChunkConfig(0).span;
+                if (lpc && auge)
                     for (const [key, e] of s.voxelChunks) {
                         if (!e || e.empty || !e.mesh) continue;
                         const [cx, cz] = key.split(",").map(Number);
@@ -601,7 +626,11 @@ function check(name, ok, detail) {
                         const lod = Number.isFinite(e.lod) ? e.lod : 0;
                         const g = e.mesh.geometry;
                         const n = g.index ? g.index.count / 3 : 0;
-                        z.stufen.chunks.push({ key, ring, lod, dreiecke: n });
+                        const d = Math.max(
+                            Math.max(cx * S0 - auge.x, 0, auge.x - (cx + 1) * S0),
+                            Math.max(cz * S0 - auge.z, 0, auge.z - (cz + 1) * S0)
+                        );
+                        z.stufen.chunks.push({ key, ring, d, lod, dreiecke: n });
                         z.stufen.jeStufe["L" + lod] = (z.stufen.jeStufe["L" + lod] || 0) + n;
                         const st = e.lodStitchMesh ? e.lodStitchMesh.geometry : null;
                         if (!st) continue;
@@ -611,7 +640,7 @@ function check(name, ok, detail) {
                             W = g.attributes.aMorphWeight.array;
                         const gewicht = new Map();
                         for (let v = 0; v < W.length; v++)
-                            gewicht.set(P[v * 3] + "," + P[v * 3 + 1] + "," + P[v * 3 + 2], W[v]);
+                            gewicht.set(P[v * 3] + "," + P[v * 3 + 1] + "," + P[v * 3 + 2], r._morphNaht(W[v]));
                         const Q = st.attributes.position.array;
                         let ohneNot = 0;
                         for (let q = 0; q + 11 < Q.length; q += 12) {
@@ -1237,8 +1266,8 @@ function check(name, ok, detail) {
     const zs = z.stufen;
     const jenseits = zs.chunks.filter((c) => c.ring >= 2).length;
     check(
-        "(n) BODEN-STUFEN — jenseits der Nah-Zone (Ring ≥ 2) kein Chunk in L0, ab Ring 3 keiner feiner als L2; das Naht-Band " +
-            "brückt nur, wo der Morph nicht trägt",
+        "(n) BODEN-STUFEN — kein Chunk jenseits der Halte-Grenze seiner Stufe (Kasten-Abstand ≥ bis + vorlauf + halt, K51-2); " +
+            "das Naht-Band brückt nur, wo der Morph nicht trägt",
         jenseits > 0 && zs.naht > 0 && vn.length === 0,
         `${zs.chunks.length} Chunks (${jenseits} jenseits) · je Stufe ${JSON.stringify(zs.jeStufe)} · Naht ${zs.naht} ` +
             `Dreiecke (${zs.bruecken} Brücken)` +

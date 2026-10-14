@@ -19437,9 +19437,9 @@ async function checkBandVoxelTerrainCore(ctx) {
                 cL3.dim === 3 &&
                 Math.abs(cL3.dim * cL3.step - 43.2) < 1e-6 &&
                 Math.abs(cL3.dimY * cL3.step - 417.6) < 1e-6;
-            const lf = (rr) => r._voxelChunkLodFor(rr, 0, 0, 0);
-            // K51 (die Boden-Stufen): die Nah-Zone ist 3×3 (r≤1 → L0), dann verdoppelt sich der Schritt mit dem Abstand
-            // (r2 → L1, r3–9 → L2, ab r10 → L3)
+            // K51-2 (die Boden-Stufen nach dem Kasten-Abstand): der Spieler in der Mitte des Chunks 0,0 — Chunk rr liegt
+            // rr · 43,2 − 21,6 m weit (r ≤ 1 → L0, r2 → L1, r3–9 → L2, ab r10 → L3)
+            const lf = (rr) => r._voxelChunkLodFor(rr, 0, 21.6, 21.6);
             out.lodPyramidBands =
                 lf(0) === 0 &&
                 lf(1) === 0 &&
@@ -19473,19 +19473,23 @@ async function checkBandVoxelTerrainCore(ctx) {
                 // die Kaskade trägt keine Geometrie-Stufe mehr (ihr Leser zog in die Kette des Bodens, K51)
                 out.bandLods = [0, 2, 3, 8, 9, 10, 11, 99].every((rr) => !("lod" in b(rr)));
                 const BS = r.constructor.BODEN_STUFEN;
-                const kette = (rr) => BS.find((x) => rr <= x.maxRing).lod;
+                const kette = (d) => BS.stufen.find((x) => d < x.bis + BS.vorlauf).lod;
                 out.lodReadsBand =
                     Object.isFrozen(BS) &&
-                    [0, 1, 2, 3, 9, 10, 12].every((rr) => r._voxelChunkLodFor(rr, 0, 0, 0) === kette(rr));
-                // LOD-Hysterese: ein Chunk hält seine feinere Stufe im Deadband (r ≤ Stufen-Grenze +
-                // LOD_HYSTERESIS_RINGS), VERFEINERT aber sofort. Am Grat L0(maxRing 1)↔L1: r=2/lod0 → 0
-                // (kein Pop), r=3/lod0 → 2, r=1/lod1 → 0, ohne currentLod → reine Stufe (lf(2)===1).
+                    Object.isFrozen(BS.stufen) &&
+                    [0, 1, 2, 3, 9, 10, 12].every(
+                        (rr) => r._voxelChunkLodFor(rr, 0, 21.6, 21.6) === kette(Math.max(0, rr * 43.2 - 21.6))
+                    );
+                // Die Hysterese (K51-2, in Metern): ein Chunk hält seine feinere Stufe, bis der Kasten-Abstand bis + vorlauf +
+                // halt erreicht, VERFEINERT aber sofort. Chunk 1,0 (Kante bei 43,2 m): Abstand 41 m → rein L1, mit L0 gehalten;
+                // 44 m → L1 (eine Stufe); 38 m mit L1 → L0.
                 out.lodHysteresis =
-                    r._voxelChunkLodFor(2, 0, 0, 0, 0) === 0 &&
-                    r._voxelChunkLodFor(3, 0, 0, 0, 0) === 2 &&
-                    r._voxelChunkLodFor(1, 0, 0, 0, 1) === 0 &&
-                    r._voxelChunkLodFor(2, 0, 0, 0) === 1 &&
-                    typeof r.constructor.LOD_HYSTERESIS_RINGS === "number";
+                    r._voxelChunkLodFor(1, 0, 2.2, 21.6, 0) === 0 &&
+                    r._voxelChunkLodFor(1, 0, 2.2, 21.6) === 1 &&
+                    r._voxelChunkLodFor(1, 0, -0.8, 21.6, 0) === 1 &&
+                    r._voxelChunkLodFor(1, 0, 5.2, 21.6, 1) === 0 &&
+                    BS.halt > 0 &&
+                    BS.vorlauf > 0;
                 out.cascadeFrozen = Object.isFrozen(r.constructor.DETAIL_CASCADE);
                 // V18.530 — der Dunst koppelt NICHT mehr an den Sicht-Ring (er verbarg die LOD-Naht): die Luft ist
                 // Physik (`_luftEnsure`), die Atmo-Uniforms tragen keinen Höhen-Melt mehr.
@@ -19554,7 +19558,7 @@ async function checkBandVoxelTerrainCore(ctx) {
                 voxelP2bResults.lodReadsBand === true
             );
             check(
-                "N3 (Naht §12): LOD-Hysterese — Verfeinern sofort, Vergröbern erst im Deadband (r > Stufen-Grenze + LOD_HYSTERESIS_RINGS) → kein Flip-Flop-Pop am Grat",
+                "N3 (Naht §12): LOD-Hysterese — Verfeinern sofort, Vergröbern erst jenseits bis + vorlauf + halt (K51-2, Meter) → kein Flip-Flop am Grat",
                 voxelP2bResults.lodHysteresis === true
             );
             check("V17.114 U1: DETAIL_CASCADE ist frozen (kein Drift)", voxelP2bResults.cascadeFrozen === true);
@@ -21604,11 +21608,12 @@ async function checkBandWellePerf3bDistanceLod(ctx) {
         // 2) Helper `_voxelChunkLodFor` Distance-Decision
         out.hasLodHelper = typeof r._voxelChunkLodFor === "function";
         if (out.hasLodHelper) {
-            out.lodNear = r._voxelChunkLodFor(0, 0, 0, 0); // r=0 → LOD 0
-            out.lodAdjacent = r._voxelChunkLodFor(1, 0, 0, 0); // r=1 → LOD 0
-            out.lodMidRing = r._voxelChunkLodFor(2, 0, 0, 0); // r=2 → LOD 1 (K51: die Nah-Zone ist 3×3)
-            out.lodFar = r._voxelChunkLodFor(3, 0, 0, 0); // r=3 → LOD 2
-            out.lodVeryFar = r._voxelChunkLodFor(4, 0, 0, 0); // r=4 → LOD 2
+            // der Spieler in der Mitte des Chunks 0,0 (K51-2: die Stufe folgt dem Kasten-Abstand)
+            out.lodNear = r._voxelChunkLodFor(0, 0, 21.6, 21.6); // r=0 → LOD 0
+            out.lodAdjacent = r._voxelChunkLodFor(1, 0, 21.6, 21.6); // r=1 (21,6 m) → LOD 0
+            out.lodMidRing = r._voxelChunkLodFor(2, 0, 21.6, 21.6); // r=2 (64,8 m) → LOD 1
+            out.lodFar = r._voxelChunkLodFor(3, 0, 21.6, 21.6); // r=3 (108 m) → LOD 2
+            out.lodVeryFar = r._voxelChunkLodFor(4, 0, 21.6, 21.6); // r=4 → LOD 2
         }
         // 3) Empirisch: ein streaming-aktiver Chunk hat `entry.lod`. Async-Streaming macht die LOD-
         // Verteilung history-abhängig (Flake) → EINEN LOD-1-Chunk deterministisch bauen (Worker aus →
@@ -23887,18 +23892,8 @@ async function checkBandPhaseAFundament(ctx) {
             for (const a of ["position", "normal", "color", "aMorphTarget", "aMorphWeight"]) {
                 if (!g.attributes[a]) bandAttrsOk = false;
             }
-            const w = entry.mesh.geometry.attributes.aMorphWeight;
-            const tgt = entry.mesh.geometry.attributes.aMorphTarget;
-            const pos = entry.mesh.geometry.attributes.position;
-            if (w && tgt && pos) {
-                for (let v = 0; v < pos.count; v++) {
-                    if (w.getX(v) !== 0) continue;
-                    const dx = tgt.getX(v) - pos.getX(v),
-                        dy = tgt.getY(v) - pos.getY(v),
-                        dz = tgt.getZ(v) - pos.getZ(v);
-                    if (dx * dx + dy * dy + dz * dz > 0.001) cappedTotal++;
-                }
-            }
+            // die gekappten Naht-Vertices zählt der Morph selbst (K51-2: ihr Ziel ist das ihrer Stufe, das Naht-Ziel trägt das Band)
+            cappedTotal += entry.nahtGekappt | 0;
         }
         out.bands = bands;
         out.bandAttrsOk = bandAttrsOk;

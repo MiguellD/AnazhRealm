@@ -1279,6 +1279,8 @@ class AnazhRealm_Z11d {
         // treffen kann (r ≤ 1 = sofort BVH, r ≥ 2 = lazy).
         this._setLastPlayerVoxelChunk(pcx, Math.floor(playerPos.z / span));
         const pcz = Math.floor(playerPos.z / span);
+        // DAS AUGE DER STUFEN (K51-2): derselbe Punkt wählt die Stufe jedes Chunks und treibt den Geomorph des Boden-Stoffs
+        this._stufeAugeTakt(playerPos);
         // Velocity-Prefetch: die 1–2 Chunks in Laufrichtung ZUERST in die Worker-Queue (der Ring läuft in
         // fester dz/dx-Reihenfolge, der kommende Chunk käme sonst ~5.) → der Boden steht, bevor der Spieler
         // ankommt. Billige Async-Anfrage (der Ring re-fragt als no-op); nur bei > 1 m/s.
@@ -1295,7 +1297,7 @@ class AnazhRealm_Z11d {
                     const acx = pcx + Math.round(dirX * ahead);
                     const acz = pcz + Math.round(dirZ * ahead);
                     if (!this.state.voxelChunks.has(`${acx},${acz}`)) {
-                        this._ensureVoxelChunkAt(acx, acz, this._voxelChunkLodFor(acx, acz, pcx, pcz, null));
+                        this._ensureVoxelChunkAt(acx, acz, this._voxelChunkLodFor(acx, acz, playerPos.x, playerPos.z, null));
                     }
                 }
             }
@@ -1309,8 +1311,9 @@ class AnazhRealm_Z11d {
             ? this.state._voxelStreamMaxPerFrame
             : 6;
         // DIE STAND-WACHE: steht der Ring (jede Zelle in ihrer Stufe, keiner wartet) und regt sich nichts, geht der Gang
-        // nicht — Ring, Prune und Wasser-Weckruf lesen nur Spieler-Zelle und Chunk-Menge. Nachwuchs läuft weiter.
-        if (this._standRuht("strom", 1, pcx + "," + pcz, "boden")) {
+        // nicht — Ring, Prune und Wasser-Weckruf lesen die Spieler-Lage auf 2 m (die Stufe folgt dem Kasten-Abstand, K51-2:
+        // die Schwellen liegen in Metern, nicht an der Chunk-Grenze) und die Chunk-Menge. Nachwuchs läuft weiter.
+        if (this._standRuht("strom", 1, Math.floor(playerPos.x / 2) + "," + Math.floor(playerPos.z / 2), "boden")) {
             this._tickFoliageGrowth();
             return 0;
         }
@@ -1329,7 +1332,7 @@ class AnazhRealm_Z11d {
                     // (Hysterese-Deadband am Grat); ein frischer Chunk (kein
                     // `existing`) bekommt die reine Band-LOD.
                     const existingLod = existing && Number.isFinite(existing.lod) ? existing.lod : null;
-                    const desiredLod = this._voxelChunkLodFor(cx, cz, pcx, pcz, existingLod);
+                    const desiredLod = this._voxelChunkLodFor(cx, cz, playerPos.x, playerPos.z, existingLod);
                     if (existing) {
                         const currentLod = existingLod !== null ? existingLod : 0;
                         if (currentLod !== desiredLod && !existing.empty) {
