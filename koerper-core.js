@@ -792,6 +792,29 @@
         kopfH: [0.12, 0.138], kopfB: [0.078, 0.096], augenAbstand: [0.031, 0.039], augapfel: [0.012, 0.016],
         iris: [0.0058, 0.0076], mund: [0.025, 0.033], fuss: [0.135, 0.165],
     });
+    // DAS SOLL DES KOPFES (K57, gate:mensch-anatomie KOPF): die Verhältnisse des Gesichts, nicht nur seine Größen —
+    // gemessen am GEBACKENEN Kopf (Ofen L0: die Haut, die Augen, das Haar, wie die Welt sie zeichnet), normiert auf die
+    // Kopfhöhe kH (Kinn bis Scheitel, ohne Haar). Anthropometrie des erwachsenen Mannes (Farkas-Normen: v–gn 232 mm,
+    // en–en 33 mm, ex–en 30 mm, ch–ch 54 mm, IPD 63 mm, sa–sba 62 mm) und Farbmetrik der Lippe gegen die Wange (CIELAB):
+    //   kopfAnteil = kH / Körperhöhe (Soll 1/7,5) · augenLinie = Augenmitte über dem Kinn / kH (die Augen auf halber
+    //   Kopfhöhe) · augenSpalt = Lücke zwischen den Augen / Augenbreite (der Abstand ist eine Augenbreite; die Breite
+    //   ist die sichtbare Spalte: Augapfel samt Lidern) · mundZuPupille = Mundbreite / Pupillen-Abstand (die
+    //   Mundwinkel unter den Pupillen) · ohrOben / ohrUnten = Ohr-Oberkante über der Augenlinie und Ohr-Unterkante über
+    //   der Nasen-Basis, je / kH (das Ohr zwischen Augen- und Nasenlinie) · ohrLaenge = Ohr-Länge / kH ·
+    //   augenVorstand = die Hornhaut vor der Haut ringsum / kH (das Auge liegt IN der Höhle, nie aufgesetzt) ·
+    //   lippeL / lippeA = ΔL* / Δa* der Lippe gegen die Haut (dunkler und röter, nie ein roter Fleck: ΔL* −8…−12,
+    //   Δa* +8…+12) · hoehleL / hoehleA = ΔL* / Δa* der Augenhöhle gegen die Haut (ein Schatten der Haut, kein
+    //   brauner Ring) · hautAlbedo = die lineare Luma jedes Hauttons der Palette (Hautreflexion 550 nm, dunkel bis hell)
+    //   · haarDeckung = Anteil der Kopf-Haut über der Haarlinie (0,80 kH über dem Kinn, das Trichion), die das Haar
+    //   als VOLUMEN trägt (Stil mittel; die Strähnen sind sein Rand, nie der Fleck auf der Glatze) · kopfDreiecke =
+    //   der Kopf-Anteil der L0-Zeile 40 000 (Haut, Höhlen, Augen, Lider, Haar).
+    // prettier-ignore
+    var KOPF_SOLL = Object.freeze({
+        kopfAnteil: [0.127, 0.14], augenLinie: [0.45, 0.53], augenSpalt: [0.9, 1.25], mundZuPupille: [0.78, 1.0],
+        ohrOben: [-0.02, 0.1], ohrUnten: [-0.06, 0.03], ohrLaenge: [0.23, 0.3], augenVorstand: [-0.03, 0.012],
+        lippeL: [-14, -4], lippeA: [4, 14], hoehleL: [-12, 0], hoehleA: [-2, 6], hautAlbedo: [0.05, 0.62],
+        haarDeckung: [0.9, 1.0], kopfDreiecke: [0, 12000], haarLinie: 0.8,
+    });
 
     // Dial→Genom-Achsen des Menschen (die Lab-Slider-Semantik als DATEN —
     // verbatim aus dem Stamm gewandert; khMul skaliert die EINE Kopfhöhen-Einheit):
@@ -1233,6 +1256,7 @@
         HAAR_LOOK: HAAR_LOOK,
         MENSCH_GESTALT: MENSCH_GESTALT,
         MENSCH_SOLL: MENSCH_SOLL,
+        KOPF_SOLL: KOPF_SOLL,
         SKIN_TONES: SKIN_TONES,
         CLOTH_COLORS: CLOTH_COLORS,
         // V18.463 — die Hüllen-Maschine (verbatim, THREE-frei):
