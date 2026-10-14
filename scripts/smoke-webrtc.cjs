@@ -582,7 +582,7 @@ async function waitFor(page, evalFn, timeoutMs, label, ...args) {
         check("W17 B-Relay: beide Sub-Welt-iframes haben einen Shim-WebSocket geöffnet", true);
         // A treibt ein ws-send (harness-getrieben — robust gegen die Tab-
         // Drosselung des Hintergrund-iframes; den Shim-Sende-Pfad selbst
-        // beweist smoke-shim.cjs). _portalNetReceive macht daraus einen
+        // beweist die Sonde smoke-shim, git-Archiv). _portalNetReceive macht daraus einen
         // subworld-net-Broadcast übers Mesh.
         await pageA.evaluate(() => {
             window.anazhRealm._portalNetReceive({

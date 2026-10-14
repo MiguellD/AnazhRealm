@@ -1188,19 +1188,21 @@ function selbsttest() {
                 Object.keys(BAND.einschwingOffen(satzWelt(-1))).length === 0
         );
     }
-    // S29 — die Zeile nahWiese: der Zensus der Mess-Wiese liegt unter der Ratsche; dieselben Büschel mit dem Maximum
-    // über die Samen (jede Gestalt trüge die schwerste) liegen darüber und werden rot; eine Gestalt ohne Golden und eine
+    // S29 — die Zeile nahWiese: der Zensus der Mess-Wiese liegt unter der Ratsche; die doppelte Wiese (jede Zeile mit
+    // doppelt so vielen Büscheln) liegt darüber und wird rot — unabhängig von den Golden-Dreiecken (seit K56 trägt kein
+    // Same mehr die Last, die das alte Maximum über die Samen über die Ratsche hob); eine Gestalt ohne Golden und eine
     // Ratsche ohne Wert werden beim Namen genannt (ein fehlender Wert ist nie 0).
     const nwB = zs.nahWiese;
     const nwT = gestaltDreiecke(nwB.art, nwB.zeilen);
     const rtW = BAND.ladeSpec(zs.ort, { geraet: zs.geraet, sicht: zs.sicht }).ratsche;
     const nwEcht = gestaltWand(haushalt, rtW, nwB, zs.ort, nwT);
-    const maxT = {};
-    for (const z of nwB.zeilen) {
-        const k = z.gestalt + "|" + z.stufe;
-        for (const y of nwB.zeilen) if (y.stufe === z.stufe) maxT[k] = Math.max(maxT[k] || 0, nwT[y.gestalt + "|" + y.stufe]);
-    }
-    const nwMax = gestaltWand(haushalt, rtW, nwB, zs.ort, maxT);
+    const nwMax = gestaltWand(
+        haushalt,
+        rtW,
+        Object.assign({}, nwB, { zeilen: nwB.zeilen.map((z) => Object.assign({}, z, { inst: z.inst * 2 })) }),
+        zs.ort,
+        nwT
+    );
     const nwFremd = gestaltWand(
         haushalt,
         rtW,
@@ -1212,7 +1214,7 @@ function selbsttest() {
     rtLeer.klassen[nwB.klasse].haupt.dreiecke = null;
     const nwOhne = gestaltWand(haushalt, rtLeer, nwB, zs.ort, nwT);
     t(
-        `Projektion nahWiese: die Mess-Wiese (${nwEcht.summe} Dreiecke) liegt unter der Ratsche ${nwEcht.soll}, das Maximum über die Samen (${nwMax.summe}) wird rot, eine Gestalt ohne Golden und eine Ratsche ohne Wert beim Namen`,
+        `Projektion nahWiese: die Mess-Wiese (${nwEcht.summe} Dreiecke) liegt unter der Ratsche ${nwEcht.soll}, die doppelte Wiese (${nwMax.summe}) wird rot, eine Gestalt ohne Golden und eine Ratsche ohne Wert beim Namen`,
         nwEcht.errs.length === 0 &&
             nwMax.errs.some((x) => /> Ratsche/.test(x)) &&
             nwFremd.errs.some((x) => /Gestalt 99 L1 ohne Golden-Dreiecke/.test(x)) &&

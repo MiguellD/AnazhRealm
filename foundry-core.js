@@ -398,8 +398,11 @@ const PORTAL_RENDER_CONFIG = {
             // Breite der Granne in Einheiten der alten. Die Breite ist an der BILD-Deckung geeicht (echte GPU, Mess-Wiese,
             // 8 Blicke, Wind-Uhr gepinnt, Ährchen-Anteil der Pixel 2,5–3,5 m voraus): 6 × 2 bei 1,1 zeigt 3,07 % gegen
             // 3,20 % der Basis (flächen-treu 1,09); L2 bei 2,65 im Band 6–9 m 3,11 % gegen 3,19 %.
+            // DER HALM-TEPPICH (K56, 14.10.): der Büschel deckt seine Raster-Zelle (TEPPICH_REICH), die Dreiecke wandern
+            // von der Rispe in die Halme — L1 Halme 3 Segmente, 0,8 der Labor-Zahl, Rispe 4 × 1 bei 1,6 (862/1 000, vorher
+            // 1 188); die Nah-Wiese an der Wiese −278/−1038 74,1k → 74,8k Dreiecke, Halm-Deckung des Bodens 0,230 → 0,460.
             grass: {
-                1: { tris: 1220, draws: 1, schatten: false, rispe: { grannen: 6, segmente: 2, breite: 1.1 } },
+                1: { tris: 1000, draws: 1, schatten: false, rispe: { grannen: 4, segmente: 1, breite: 1.6 } },
                 2: { tris: 130, draws: 1, schatten: false, rispe: { grannen: 1, segmente: 1, breite: 2.65 } },
                 fernform: "boden",
             },
@@ -2683,9 +2686,11 @@ function emitFlower(P) {
 // Die Halm-Spitze: der Saison-Akzent nach dem Farb-Gesetz, linear um GRAS_SPITZE_HELL aufgehellt (emitGrass). Der
 // Stamm liest DIESELBE Zahl fuer die Halme seiner Boden-Wiese (`AnazhRealm.GRAS_SPITZE`, terrain:GRAS_SPITZE_HELL).
 const GRAS_SPITZE_HELL = 1.08;
+// Der Halm-Teppich (K56): Reichweite des Büschels in Einheiten des Understory-Rasters (deriveParamsPlant, Art grass).
+const TEPPICH_REICH = 0.7;
 function emitGrass(P) {
     const geos = [];
-    const lf = __lod === 0 ? 1 : __lod === 1 ? 0.55 : 0.14;
+    const lf = __lod === 0 ? 1 : __lod === 1 ? 0.8 : 0.14;
     const N = Math.max(3, Math.round(lerp(50, 150, P.density) * lf));
     const baseCol = vegFarbe(seasonTint).multiplyScalar(0.6),
         tipCol = vegFarbe(seasonAccent).multiplyScalar(GRAS_SPITZE_HELL);
@@ -2697,14 +2702,14 @@ function emitGrass(P) {
         const bx = Math.cos(a) * rr,
             bz = Math.sin(a) * rr;
         const isCulm = SH > 0 && rnd() < SH * 0.5; // Teil der Halme -> Rispenstaengel
-        const wMul = __lod === 0 ? 1 : __lod === 1 ? 1.7 : 4.6;
+        const wMul = __lod === 0 ? 1 : __lod === 1 ? 2.6 : 6.0;
         const L = P.bladeLen * (isCulm ? rrange(1.25, 1.6) : rrange(0.6, 1.15)),
             w = P.bladeW * wMul * (isCulm ? 0.5 : 0.74) * rrange(0.8, 1.1);
-        const lean = rrange(0.05, 0.22),
+        const lean = rrange(0.1, 0.4),
             la = rnd() * 6.28,
             bendDir = [Math.cos(la), 0, Math.sin(la)],
             droop = isCulm ? P.droop * 0.45 : P.droop;
-        const K = __lod === 0 ? (isCulm ? 7 : 10) : __lod === 1 ? 5 : 3,
+        const K = __lod === 0 ? (isCulm ? 7 : 10) : __lod === 1 ? 3 : 3,
             positions = [],
             idx = [],
             uvs = [],
@@ -4479,10 +4484,13 @@ function deriveParamsPlant(pre) {
         const fine = clamp(api, 0, 1); // api: breitblaettrig(0) -> feinhalmig(1)
         return {
             kind: "grass",
-            bladeLen: lerp(0.4, 1.5, slim) * J(0.16),
+            bladeLen: lerp(0.55, 2.0, slim) * J(0.16),
             bladeW: lerp(0.1, 0.035, fine) * J(0.15),
             density: clamp(leaf * J(0.2), 0.06, 1),
-            clump: lerp(0.35, 0.72, leaf),
+            // DER HALM-TEPPICH (K56): der Büschel deckt seine Zelle des Understory-Rasters — Radius in der Welt
+            // grassStep · TEPPICH_REICH · Skala, die Nachbarn überlappen. Vorher 0,35–0,72 (0,15 m Welt): Büschel auf
+            // glattem Grün, Halm-Deckung des Bodens im Ego-Bild 0,23. Kostet kein Dreieck.
+            clump: ((PORTAL_RENDER_CONFIG.understory.grassStep * TEPPICH_REICH) / PORTAL_RENDER_CONFIG.placement.scale.gras) * lerp(0.9, 1.1, leaf),
             droop: clamp(0.35 + trop * 0.7, 0.04, 1.35),
             seedHead: clamp((leaf - 0.32) * 1.5, 0, 1),
             seedTan: 0xc8b27a,
@@ -5216,6 +5224,310 @@ function __huelleAusFeld(hk, f, nx, ny, nz, lo, vox, level, clr, zentren, skinJo
     geo.setIndex(new THREE.BufferAttribute(idx, 1));
     geo.computeVertexNormals();
     return geo;
+}
+
+// DER STOFF AUS DER HAUT (K45-2, das Lab-Gesetz `_garmentFromSkin` — „Kleidung wird AUS der Haut extrudiert", in den Ofen
+// gezogen): jede Haut-Ecke gehört dem Teil, dessen Zentrum ihr am nächsten liegt; die Ecken der Zonen-Teile bilden die Region,
+// zweimal nach Mehrheit geglättet (keine ausgefransten Saum-Inseln) und bis zu dreimal gefüllt (Inseln mit ≥ 80 % gewählten
+// Nachbarn). Der Stoff sind die Dreiecke der Region, jede Ecke um `dicke` entlang der Haut-Normale gehoben, mit IDENTISCHEN
+// Gewichten; der Saum-Ring (die offenen Kanten) wird dreimal geglättet. Rückgabe { geo, wahl } (wahl = die gewählten Haut-Ecken,
+// deren Dreiecke der Stoff deckt) oder null.
+function __stoffAusHaut(hg, teile, zonenTeile, dicke) {
+    const pa = hg.attributes.position.array,
+        na = hg.attributes.normal.array,
+        ia = hg.index.array,
+        hi = hg.attributes.skinIndex.array,
+        hw = hg.attributes.skinWeight.array;
+    const n = pa.length / 3;
+    const imZone = new Set(zonenTeile);
+    const zIn = teile.map((t) => imZone.has(t.t));
+    let wahl = new Uint8Array(n);
+    for (let i = 0; i < n; i++) {
+        let best = -1,
+            bd = Infinity;
+        for (let k = 0; k < teile.length; k++) {
+            const c = teile[k].c;
+            const dx = pa[i * 3] - c[0],
+                dy = pa[i * 3 + 1] - c[1],
+                dz = pa[i * 3 + 2] - c[2],
+                d = dx * dx + dy * dy + dz * dz;
+            if (d < bd) {
+                bd = d;
+                best = k;
+            }
+        }
+        if (best >= 0 && zIn[best]) wahl[i] = 1;
+    }
+    const nach = new Array(n);
+    for (let t = 0; t < ia.length; t += 3) {
+        const a = ia[t],
+            b = ia[t + 1],
+            c = ia[t + 2];
+        (nach[a] || (nach[a] = [])).push(b, c);
+        (nach[b] || (nach[b] = [])).push(a, c);
+        (nach[c] || (nach[c] = [])).push(a, b);
+    }
+    for (let p = 0; p < 2; p++) {
+        const neu = new Uint8Array(n);
+        for (let i = 0; i < n; i++) {
+            const nb = nach[i];
+            if (!nb) {
+                neu[i] = wahl[i];
+                continue;
+            }
+            let cnt = wahl[i] * 2;
+            for (const q of nb) cnt += wahl[q];
+            neu[i] = cnt * 2 > nb.length + 2 ? 1 : 0;
+        }
+        wahl = neu;
+    }
+    for (let p = 0; p < 3; p++) {
+        let gefuellt = 0;
+        for (let i = 0; i < n; i++) {
+            if (wahl[i] || !nach[i]) continue;
+            let c3 = 0;
+            for (const q of nach[i]) c3 += wahl[q];
+            if (c3 * 10 >= nach[i].length * 8) {
+                wahl[i] = 1;
+                gefuellt++;
+            }
+        }
+        if (!gefuellt) break;
+    }
+    const karte = new Int32Array(n).fill(-1);
+    let m = 0;
+    for (let i = 0; i < n; i++) if (wahl[i]) karte[i] = m++;
+    if (m < 30) return null;
+    const flaechen = [];
+    for (let t = 0; t < ia.length; t += 3)
+        if (wahl[ia[t]] && wahl[ia[t + 1]] && wahl[ia[t + 2]]) flaechen.push(karte[ia[t]], karte[ia[t + 1]], karte[ia[t + 2]]);
+    if (flaechen.length < 90) return null;
+    const pos = new Float32Array(m * 3),
+        si = new Float32Array(m * 4),
+        sw = new Float32Array(m * 4);
+    for (let i = 0; i < n; i++) {
+        const j = karte[i];
+        if (j < 0) continue;
+        for (let d = 0; d < 3; d++) pos[j * 3 + d] = pa[i * 3 + d] + na[i * 3 + d] * dicke;
+        for (let k = 0; k < 4; k++) {
+            si[j * 4 + k] = hi[i * 4 + k];
+            sw[j * 4 + k] = hw[i * 4 + k];
+        }
+    }
+    // der Saum-Ring: Kanten, die nur ein Dreieck trägt, je Ecke ihre Saum-Nachbarn
+    const kanten = new Map();
+    for (let t = 0; t < flaechen.length; t += 3)
+        for (let e = 0; e < 3; e++) {
+            const a = flaechen[t + e],
+                b = flaechen[t + ((e + 1) % 3)];
+            const k = a < b ? a * m + b : b * m + a;
+            kanten.set(k, (kanten.get(k) || 0) + 1);
+        }
+    const saum = new Map();
+    for (const [k, z] of kanten) {
+        if (z !== 1) continue;
+        const a = Math.floor(k / m),
+            b = k - a * m;
+        if (!saum.has(a)) saum.set(a, []);
+        if (!saum.has(b)) saum.set(b, []);
+        saum.get(a).push(b);
+        saum.get(b).push(a);
+    }
+    // DER STOFF SPANNT SICH (K45-2): Stoff liegt auf den Höhen der Haut und überbrückt ihre Mulden (Nabel, Muskel-Fugen,
+    // die Zacken der Regions-Grenze) — 24 Schritte Laplace (λ 0,5) mit der Bedingung, nie näher als `dicke` an der Haut zu
+    // liegen (gemessen entlang der Haut-Normale der Ecke): die Mulde füllt sich, die Höhe hält; der Saum bleibt auf der Haut
+    // liegen (kein Spalt am Kragen und am Ärmel)
+    {
+        const nb = new Array(m),
+            S = new Float32Array(m * 3),
+            N = new Float32Array(m * 3);
+        for (let i = 0; i < n; i++) {
+            const j = karte[i];
+            if (j < 0) continue;
+            for (let d = 0; d < 3; d++) {
+                S[j * 3 + d] = pa[i * 3 + d];
+                N[j * 3 + d] = na[i * 3 + d];
+            }
+        }
+        for (let t = 0; t < flaechen.length; t += 3)
+            for (let e = 0; e < 3; e++) {
+                const a = flaechen[t + e];
+                (nb[a] || (nb[a] = new Set())).add(flaechen[t + ((e + 1) % 3)]).add(flaechen[t + ((e + 2) % 3)]);
+            }
+        const Q = new Float32Array(m * 3);
+        for (let it = 0; it < 24; it++) {
+            for (let i = 0; i < m; i++) {
+                const A = saum.has(i) ? null : nb[i];
+                let qx = pos[i * 3],
+                    qy = pos[i * 3 + 1],
+                    qz = pos[i * 3 + 2];
+                if (A && A.size) {
+                    let ax = 0,
+                        ay = 0,
+                        az = 0;
+                    for (const j of A) {
+                        ax += pos[j * 3];
+                        ay += pos[j * 3 + 1];
+                        az += pos[j * 3 + 2];
+                    }
+                    qx += 0.5 * (ax / A.size - qx);
+                    qy += 0.5 * (ay / A.size - qy);
+                    qz += 0.5 * (az / A.size - qz);
+                }
+                const h = (qx - S[i * 3]) * N[i * 3] + (qy - S[i * 3 + 1]) * N[i * 3 + 1] + (qz - S[i * 3 + 2]) * N[i * 3 + 2];
+                if (h < dicke) {
+                    qx += (dicke - h) * N[i * 3];
+                    qy += (dicke - h) * N[i * 3 + 1];
+                    qz += (dicke - h) * N[i * 3 + 2];
+                }
+                Q[i * 3] = qx;
+                Q[i * 3 + 1] = qy;
+                Q[i * 3 + 2] = qz;
+            }
+            pos.set(Q);
+        }
+    }
+    // der Saum-Ring sechsmal entlang seiner Kanten gemittelt (ein gerader Saum)
+    const ecken = [...saum.keys()].sort((a, b) => a - b);
+    for (let it = 0; it < 6; it++) {
+        const neu = new Float32Array(ecken.length * 3);
+        ecken.forEach((v, e) => {
+            const nb = saum.get(v);
+            for (let d = 0; d < 3; d++) {
+                let s = pos[v * 3 + d];
+                for (const q of nb) s += pos[q * 3 + d];
+                neu[e * 3 + d] = s / (nb.length + 1);
+            }
+        });
+        ecken.forEach((v, e) => {
+            for (let d = 0; d < 3; d++) pos[v * 3 + d] = neu[e * 3 + d];
+        });
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+    geo.setAttribute("skinIndex", new THREE.BufferAttribute(si, 4));
+    geo.setAttribute("skinWeight", new THREE.BufferAttribute(sw, 4));
+    geo.setIndex(new THREE.BufferAttribute(Uint32Array.from(flaechen), 1));
+    geo.computeVertexNormals();
+    return { geo, wahl };
+}
+
+// DIE KLEID-GEWICHTS-VERERBUNG (K45-2, das Lab-Gesetz „weight transfer" — koerperstudio `_inheritWeights` +
+// `_smoothInfl`, in den Ofen gezogen): jede Stoff-Ecke übernimmt die Gelenk-Gewichte ihrer 4 nächsten Haut-Ecken
+// (1/(d² + 10⁻⁴), Suche in Würfeln von 1 · 3 · 5 Zellen à 0,10, Reichweite 0,55 — ohne Spender bleibt die eigene
+// Bindung), danach mischt sie zweimal mit ihren Netz-Nachbarn (0,6 eigen · 0,4 Nachbarn, je 6 Einträge), am Ende die
+// 4 stärksten. Beide Hüllen stehen in DERSELBEN Pose (der Spreiz-Pose, in der sie entstanden, die Haut noch ganz):
+// Haut und Stoff werden EIN Verformungsfeld — der Stoff-Abstand dreht in jeder Pose starr mit, die Haut tritt nicht
+// durch den Stoff (vorher banden beide je eigene Teil-Zentren). Deterministisch: Einfüge-Ordnung, Gleichstand nach Index.
+function __stoffErbtHaut(hg, sg) {
+    const hp = hg.attributes.position.array,
+        hi = hg.attributes.skinIndex.array,
+        hw = hg.attributes.skinWeight.array;
+    const sp = sg.attributes.position.array,
+        si = sg.attributes.skinIndex.array,
+        sw = sg.attributes.skinWeight.array;
+    const ZELLE = 0.1,
+        RINGE = [1, 3, 5],
+        WEIT2 = 0.55 * 0.55;
+    const gitter = new Map();
+    const nH = hp.length / 3;
+    for (let i = 0; i < nH; i++) {
+        const k = Math.floor(hp[i * 3] / ZELLE) + "_" + Math.floor(hp[i * 3 + 1] / ZELLE) + "_" + Math.floor(hp[i * 3 + 2] / ZELLE);
+        let l = gitter.get(k);
+        if (!l) gitter.set(k, (l = []));
+        l.push(i);
+    }
+    const ordne = (acc, n) => {
+        const e = [...acc].sort((a, b) => b[1] - a[1] || a[0] - b[0]).slice(0, n);
+        let s = 0;
+        for (const x of e) s += x[1];
+        return e.map((x) => [x[0], x[1] / (s || 1)]);
+    };
+    const nS = sp.length / 3;
+    let infl = new Array(nS);
+    const cJ = [-1, -1, -1, -1],
+        cD = [0, 0, 0, 0];
+    for (let v = 0; v < nS; v++) {
+        const px = sp[v * 3],
+            py = sp[v * 3 + 1],
+            pz = sp[v * 3 + 2];
+        const gx = Math.floor(px / ZELLE),
+            gy = Math.floor(py / ZELLE),
+            gz = Math.floor(pz / ZELLE);
+        let cN = 0;
+        cD[0] = cD[1] = cD[2] = cD[3] = 1e9;
+        for (let ri = 0; ri < RINGE.length && cN === 0; ri++) {
+            const r = RINGE[ri];
+            for (let dx = -r; dx <= r; dx++)
+                for (let dy = -r; dy <= r; dy++)
+                    for (let dz = -r; dz <= r; dz++) {
+                        const L = gitter.get(gx + dx + "_" + (gy + dy) + "_" + (gz + dz));
+                        if (!L) continue;
+                        for (const q of L) {
+                            const ex = hp[q * 3] - px,
+                                ey = hp[q * 3 + 1] - py,
+                                ez = hp[q * 3 + 2] - pz,
+                                d = ex * ex + ey * ey + ez * ez;
+                            if (d < cD[3]) {
+                                let ip = 3;
+                                while (ip > 0 && d < cD[ip - 1]) {
+                                    cD[ip] = cD[ip - 1];
+                                    cJ[ip] = cJ[ip - 1];
+                                    ip--;
+                                }
+                                cD[ip] = d;
+                                cJ[ip] = q;
+                                if (cN < 4) cN++;
+                            }
+                        }
+                    }
+        }
+        const acc = new Map();
+        if (cN === 0 || cD[0] > WEIT2) {
+            for (let k = 0; k < 4; k++) if (sw[v * 4 + k] > 0) acc.set(si[v * 4 + k], (acc.get(si[v * 4 + k]) || 0) + sw[v * 4 + k]);
+        } else
+            for (let c = 0; c < cN; c++) {
+                const dw = 1 / (cD[c] + 1e-4),
+                    q = cJ[c];
+                for (let k = 0; k < 4; k++) if (hw[q * 4 + k] > 0) acc.set(hi[q * 4 + k], (acc.get(hi[q * 4 + k]) || 0) + dw * hw[q * 4 + k]);
+            }
+        infl[v] = ordne(acc, 6);
+    }
+    const ix = sg.index.array;
+    const nach = new Array(nS);
+    for (let t = 0; t < ix.length; t += 3) {
+        const a = ix[t],
+            b = ix[t + 1],
+            c = ix[t + 2];
+        (nach[a] || (nach[a] = [])).push(b, c);
+        (nach[b] || (nach[b] = [])).push(a, c);
+        (nach[c] || (nach[c] = [])).push(a, b);
+    }
+    for (let pass = 0; pass < 2; pass++) {
+        const neu = new Array(nS);
+        for (let v = 0; v < nS; v++) {
+            const nb = nach[v];
+            if (!nb || !nb.length) {
+                neu[v] = infl[v];
+                continue;
+            }
+            const acc = new Map();
+            for (const [j, w] of infl[v]) acc.set(j, (acc.get(j) || 0) + w * 0.6);
+            const nw = 0.4 / nb.length;
+            for (const q of nb) for (const [j, w] of infl[q]) acc.set(j, (acc.get(j) || 0) + w * nw);
+            neu[v] = ordne(acc, 6);
+        }
+        infl = neu;
+    }
+    for (let v = 0; v < nS; v++) {
+        const e = ordne(infl[v], 4);
+        for (let k = 0; k < 4; k++) {
+            si[v * 4 + k] = e[k] ? e[k][0] : 0;
+            sw[v * 4 + k] = e[k] ? e[k][1] : 0;
+        }
+    }
+    sg.attributes.skinIndex.needsUpdate = true;
+    sg.attributes.skinWeight.needsUpdate = true;
 }
 
 // DER KANTEN-KOLLAPS EINER HÜLLE (1310-15, Lehre 19 — die Kosten gehören ins Asset): Surface-Nets legt ein gleichmäßiges
@@ -6666,29 +6978,76 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         }
         // 1) DIE HAUT: alle skin-Teile außer Kopf/Hände/Füße (dort echtes Detail).
         let hautHuelle = null;
+        const hautTeile = [];
         {
             const pts = [],
                 zen = [],
                 quellen = [];
+            // je Teil-Zentrum sein Teil-Name (der nächste benannte Knoten des Baums) — die Kleid-Extrusion wählt danach
+            const teilVon = new Map();
+            for (const nm of Object.keys(B.parts)) if (B.parts[nm] && !teilVon.has(B.parts[nm])) teilVon.set(B.parts[nm], nm);
             B.character.traverse((node) => {
                 if (!node.isMesh || !node.geometry) return;
                 const kl = node.material && node.material.userData && node.material.userData.__klasse;
-                if (kl !== "skin") return;
+                // DER LEIB unter dem Stoff (K45-2): die gemalten Shorts (Becken, Gesäß) und die Gelenk-Kugeln (Schulter, Knie-
+                // scheibe) sind Volumen des Körpers — die Haut hüllt sie mit, der Stoff aus der Haut trägt ihre Form (vorher
+                // stachen sie durch die Hose oder standen als graue Shorts über ihr)
+                if (kl !== "skin" && kl !== "shorts" && kl !== "joint") return;
                 const j = animAhnH(node);
                 if (j === "head" || j === "hand1" || j === "hand-1" || j === "ankle1" || j === "ankle-1") return;
+                const n0 = zen.length;
                 punkteVon(node, pts, zen, j);
+                if (zen.length > n0) hautTeile.push({ c: zen[n0].c, t: teilVon.has(node) ? teilVon.get(node) : null });
                 quellen.push(node);
             });
+            // ein unbenanntes Füll-Teil (die Bauch-Kugeln, Kehlkopf, Nacken) trägt den Namen des nächsten benannten Teils —
+            // nicht den seiner Gruppe (am Gelenk torso hiesse das: Bauch und Hals zugleich)
+            const benannt = hautTeile.filter((f) => f.t !== null);
+            for (const e of hautTeile) {
+                if (e.t !== null) continue;
+                let bd = Infinity,
+                    name = null;
+                for (const f of benannt) {
+                    const dx = f.c[0] - e.c[0],
+                        dy = f.c[1] - e.c[1],
+                        dz = f.c[2] - e.c[2],
+                        d = dx * dx + dy * dy + dz * dz;
+                    if (d < bd) {
+                        bd = d;
+                        name = f.t;
+                    }
+                }
+                e.t = name;
+            }
             hautHuelle = backeHuelle(pts, zen, "haut", 0.05 * voxMul, 1.4, 0.42, 0.028);
             if (hautHuelle) lebtInHuelle(quellen);
         }
         const stoffHuellen = [];
+        const stoffAusHaut = [];
         // 2) DIE KLEID-ZONEN (das Gesetz sagt WAS, die Maschine baut die Hülle):
         for (const z of kern.kleidZonen(dials) || []) {
             const km = "stoff_" + (z.hex >>> 0).toString(16);
             // STOFF-CHARAKTER (V18.464): rough je Schnitt aus der Gesetz-Zeile
             // (Lab getCloth verbatim) + Webungs-Art als must-ignore-Marker.
             KL[km] = { c: z.hex, r: typeof z.rough === "number" ? z.rough : 0.82, webe: z.webe || null, seh: "stoff" };
+            // DER STOFF AUS DER HAUT (K45-2, das Lab-Gesetz `_garmentFromSkin`): trägt die Zone eine Dicke, ist der Stoff die
+            // Haut-Region ihrer Teile, um die Dicke entlang der Haut-Normale gehoben — mit denselben Gewichten (Haut und Stoff EIN
+            // Verformungsfeld, kein Durchstoß in keiner Pose) und mit Säumen statt Ballon; die Haut darunter fällt.
+            if (z.dicke > 0 && hautHuelle) {
+                // die Grobstufe wirft für die feine (S3): ihr gröberes Raster zieht die Haut der Glieder nach innen — ihr Stoff liegt
+                // um das halbe Raster-Mehr weiter draußen, damit ihr Umriss den der feinen trägt (gate:kreatur-kosten DECKUNG)
+                const aus = __stoffAusHaut(hautHuelle.geometry, hautTeile, z.teile || [], z.dicke + (fein ? 0.5 * 0.05 * (voxMul - 1) : 0));
+                if (aus) {
+                    const stoff = new THREE.Mesh(aus.geo, matFuer(km));
+                    stoff.userData.__skinned = true;
+                    stoff.userData.__huelle = true;
+                    B.character.add(stoff);
+                    stoff.position.set(0, 0, 0);
+                    gebauteHuellen.push(stoff);
+                    stoffAusHaut.push(aus.wahl);
+                }
+                continue;
+            }
             const pts = [],
                 zen = [],
                 quellen = [];
@@ -6710,6 +7069,8 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
             if (stoff) {
                 lebtInHuelle(quellen);
                 stoffHuellen.push(stoff);
+                // DER STOFF ERBT DIE HAUT (K45-2): die Zone sagt es (`erbt`, Oberteil und Hose — der Schuh folgt dem Fuß)
+                if (z.erbt && hautHuelle) __stoffErbtHaut(hautHuelle.geometry, stoff.geometry);
             }
         }
         // DIE HAUT UNTER DEM STOFF (1310-15, Lehre 19): ein Haut-Dreieck, dessen drei Ecken im Feld einer Kleid-Hülle liegen
@@ -6718,10 +7079,12 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         // Spreiz-Pose gemerkt, in der Haut und Stoff entstanden; geschnitten wird nach der Rück-Transformation, wenn die
         // geschlossene Haut ihr Volumen gegeben hat.
         let hautImStoff = null;
-        if (hautHuelle && stoffHuellen.length) {
+        if (hautHuelle && (stoffHuellen.length || stoffAusHaut.length)) {
             const g = hautHuelle.geometry;
             const pa = g.attributes.position;
             const imStoff = (hautImStoff = new Uint8Array(pa.count));
+            // der Stoff aus der Haut deckt genau seine Region: ihre Dreiecke (alle drei Ecken gewählt) fallen aus der Haut
+            for (const wahl of stoffAusHaut) for (let i = 0; i < pa.count; i++) if (wahl[i]) imStoff[i] = 1;
             for (const s of stoffHuellen) {
                 const F = felder.get(s);
                 for (let i = 0; i < pa.count; i++) {

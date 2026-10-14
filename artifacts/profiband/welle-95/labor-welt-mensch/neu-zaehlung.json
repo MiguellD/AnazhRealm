@@ -1,0 +1,61 @@
+{
+  "name": "neu",
+  "alt": false,
+  "fehler": [
+    "console: Failed to load resource: the server responded with a status of 404 (Not Found)"
+  ],
+  "ladeS": 10.1,
+  "gl": "ANGLE (AMD, AMD Radeon(TM) 890M Graphics (0x0000150E) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+  "zaehlung": {
+    "tris": 53993,
+    "bildTris": 39996,
+    "meshes": 31,
+    "stoffe": 24,
+    "kosten": [
+      "39.996 / 40.000 △ · 12 Stoffe / 8 Befehle · Wurf L1",
+      "13.997 / 14.000 △ · 12 Stoffe / 6 Befehle · Wurf L1"
+    ],
+    "stufe": 0
+  },
+  "hash": {
+    "L0": {
+      "tris": 39996,
+      "sha": "e7b86a20d72ce73c"
+    },
+    "L1": {
+      "tris": 13997,
+      "sha": "7c33e069e26c91c1"
+    }
+  },
+  "armlaenge": {
+    "kopf": [
+      -0.145,
+      5.552,
+      -0.004
+    ],
+    "E": 3.529
+  },
+  "armZaehl": {
+    "tris": 53993,
+    "bildTris": 39996,
+    "meshes": 31,
+    "stoffe": 24,
+    "kosten": [
+      "39.996 / 40.000 △ · 12 Stoffe / 8 Befehle · Wurf L1",
+      "13.997 / 14.000 △ · 12 Stoffe / 6 Befehle · Wurf L1"
+    ],
+    "stufe": 0
+  },
+  "fern": true,
+  "fernZaehl": {
+    "tris": 13997,
+    "bildTris": 13997,
+    "meshes": 12,
+    "stoffe": 12,
+    "kosten": [
+      "39.996 / 40.000 △ · 12 Stoffe / 8 Befehle · Wurf L1",
+      "13.997 / 14.000 △ · 12 Stoffe / 6 Befehle · Wurf L1"
+    ],
+    "stufe": 1
+  }
+}

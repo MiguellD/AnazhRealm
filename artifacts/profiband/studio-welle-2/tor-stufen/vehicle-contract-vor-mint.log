@@ -1,0 +1,15 @@
+=== ASSET-VERTRAG v3 — Fahrzeuge (vehicle-core.js buildInstance) ===
+  ✅ vehicle-core geladen (__vehicleCore + buildInstance)
+  ✅ Determinismus: jeder der 17 Fälle baut doppelt byte-gleich
+  ✅ Seed-Invarianz der Geometrie: seed 7 == seed 12345 je Gattung (kein stochastischer Term)
+  ✅ Lack-Gesetz: die Same 1..8 tragen acht verschiedene Karosserie-Lacke (LACK_GESETZ ohne Clay) — 31107 777d84 10102 21447 c17103 932002 cdd1da 8c0202
+  ✅ ov-Kanal: Kultur-Override ändert den Bau (gt != gt+toro)
+  ❌ Golden trägt cv:3 + alle Fälle
+  ✅ Goldens byte-exakt (12 Fälle)
+  ❌ PLATTFORM-PROBE v3: Math.pow ±1 ULP kippt kein Byte, die übrigen Transzendenten halten die Ratsche (17 Fälle; benannt: atan2 12 · sin 12 · cos 12 · hypot 5; Nenner pow 137593 · atan2 526 · sin 143179 · cos 140291 · hypot 610 · exp 741221) — v3: 17 Probe-Fälle statt 12 (der Nenner der Ratsche) · v3 atan2 kippt 17 > 12 ← vehicle-core.js:775 atan2 · v3 sin kippt 17 > 12 ← vehicle-core.js:408 sin · v3 cos kippt 17 > 12 ← vehicle-core.js:408 cos
+  ✅ SELBST-TEST: eine grobe Drift (2^30 ULP) kippt die Bytes — die Plattform-Probe erreicht den Bau
+  ✅ SELBST-TEST: die Ratsche v3 reißt bei kippendem Math.pow und über ihrer Zeile — beim Namen
+  ✅ SELBST-TEST: korruptes Golden (sha256) wird erkannt
+  ✅ SELBST-TEST: objects-Drift wird erkannt
+
+❌ ROT — 2 Vertrags-Verletzung(en).
