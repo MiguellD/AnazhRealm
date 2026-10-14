@@ -51,7 +51,9 @@
     // (Haushalt, offen solange tris darüber liegt), draws = Draws je Tor und Pass nach der Wirts-Regel: das
     // Budget-Gesetz am Studio-Ausgang (phyto-core budgetErzwingen) faltet die Flügel-Teile je Flügel × Stoff (das
     // Scharnier reist mit, `_tickTorFluegel` dreht je Flügel und Stoff EINE Matrix), nur innerhalb EINER Seh-Klasse;
-    // Glut faltet nie — 13 ist das gemessene Minimum über alle 112 Fälle (Flügel × Stoff × Seh-Klasse). gestalten =
+    // Glut faltet nie — 13 war das gemessene Minimum über alle 112 Fälle (Flügel × Stoff × Seh-Klasse); seit 1310-4 zeichnet
+    // der Wirt den Hinterflügel einer Seite als Instanz des Vorderflügels (gleiche Gestalt, nur verschoben — phyto-core
+    // `budgetGestaltVersatz`, `_foundryFluegelInstanz`), das Gesetz zählt in seiner Einheit: 9 (dieselbe Faltung). gestalten =
     // Individuen je Tor (gefüllt je Rezept unten bei PRESETS): EINE — der Bau liest den Samen nicht (seed reserviert,
     // Kopf; Same 1 ≡ 2 byte-gleich), 16 Gestalten waren 16 byte-gleiche Zwillinge als eigene Leaves (Genesis: zwei
     // Drachentore, zwei Leaves, 43 Befehle). Eine Seed-Achse ist ein Re-Mint-Akt, nie eine Zahl hier (S3 08.10.,
@@ -69,7 +71,7 @@
                 // 1110-9 (der Wurf aus der gröberen Stufe, Nordstern M4): die Stufe 0 wirft nicht mehr selbst — ihr Wurf ist
                 // die NUR-WURF-Stufe 3, die Hüllen-Liste des Tors (huelle, N5) als EIN Gitter; dieselbe Liste ist die Fernform.
                 // tris der Stufe 3 = die Regler-Hülle (Rezepte × Regler × Rand, gate:regler-wirkt fährt auch die Stufe 3).
-                gate: { 0: { tris: 76000, band: 60000, draws: 13, schatten: 3 }, 3: { tris: 12000, draws: 1, schatten: 3, nurWurf: true }, fernform: "huelle" },
+                gate: { 0: { tris: 76000, band: 60000, draws: 9, schatten: 3 }, 3: { tris: 12000, draws: 1, schatten: 3, nurWurf: true }, fernform: "huelle" },
                 gestalten: {},
             },
         },
@@ -459,18 +461,25 @@
         }
     }
     // DAS GITTER DER LISTE (die Stufe 3): Kasten 12 Dreiecke, Kapsel ein `seiten`-Prisma mit flachen Kappen (es endet an a und b
-    // wie die Röhre, deren Wurf es trägt; die Spitzen standen r über jedes Röhren-Ende hinaus) — EIN Mesh.
+    // wie die Röhre, deren Wurf es trägt; die Spitzen standen r über jedes Röhren-Ende hinaus) — EIN Mesh, INDIZIERT: je Teil
+    // seine Ecken einmal (Kasten 8, Kapsel 2·seiten), die Dreiecke in derselben Reihenfolge über den Index. Die Suppe trug je
+    // Kapsel 60 Ecken statt 12 in den Speicher und in jede Kaskade (1310-3, Genesis: die L3-Puffer der Tore ~2,3 MB); das Gitter
+    // wirft nur, seine Normalen liest kein Bild.
     function huelleGeometrie(teile) {
-        var pos = [];
+        var pos = [], idx = [], ecke = 0;
+        var V0 = function (p) {
+            pos.push(p[0], p[1], p[2]);
+            return ecke++;
+        };
         var tri = function (a, b, c) {
-            pos.push(a[0], a[1], a[2], b[0], b[1], b[2], c[0], c[1], c[2]);
+            idx.push(a, b, c);
         };
         for (var i = 0; i < teile.length; i++) {
             var t = teile[i];
             if (t.art === "box") {
                 var c = t.c, h = t.h, F = [[0, 2, 3, 1], [4, 5, 7, 6], [0, 4, 6, 2], [1, 3, 7, 5], [0, 1, 5, 4], [2, 6, 7, 3]];
                 var V = [];
-                for (var k = 0; k < 8; k++) V.push([c[0] + (k & 1 ? h[0] : -h[0]), c[1] + (k & 2 ? h[1] : -h[1]), c[2] + (k & 4 ? h[2] : -h[2])]);
+                for (var k = 0; k < 8; k++) V.push(V0([c[0] + (k & 1 ? h[0] : -h[0]), c[1] + (k & 2 ? h[1] : -h[1]), c[2] + (k & 4 ? h[2] : -h[2])]));
                 for (var f = 0; f < 6; f++) {
                     tri(V[F[f][0]], V[F[f][1]], V[F[f][2]]);
                     tri(V[F[f][0]], V[F[f][2]], V[F[f][3]]);
@@ -484,8 +493,8 @@
                 var w = ax.clone().cross(u), n = HUELLE_GESETZ.seiten, RA = [], RB = [];
                 for (var s = 0; s < n; s++) {
                     var a = (s / n) * Math.PI * 2, cs = Math.cos(a) * t.r, sn = Math.sin(a) * t.r;
-                    RA.push([A.x + u.x * cs + w.x * sn, A.y + u.y * cs + w.y * sn, A.z + u.z * cs + w.z * sn]);
-                    RB.push([B.x + u.x * cs + w.x * sn, B.y + u.y * cs + w.y * sn, B.z + u.z * cs + w.z * sn]);
+                    RA.push(V0([A.x + u.x * cs + w.x * sn, A.y + u.y * cs + w.y * sn, A.z + u.z * cs + w.z * sn]));
+                    RB.push(V0([B.x + u.x * cs + w.x * sn, B.y + u.y * cs + w.y * sn, B.z + u.z * cs + w.z * sn]));
                 }
                 // die Kappen nur an den Enden einer Kette: ein Glied, dessen Nachbar am selben Punkt anschließt, trägt dort keine
                 // (die Kappe läge im Nachbar-Glied) — die Liste trägt die Ketten in ihrer Reihenfolge
@@ -506,6 +515,7 @@
         }
         var geo = new THREE.BufferGeometry();
         geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+        geo.setIndex(idx);
         geo.computeVertexNormals();
         return geo;
     }
@@ -820,7 +830,7 @@
     // POSITIONAL — die Shell-GLSL-Zeilen sind die Lesart-Referenz.
     var MEMBRAN_GESETZ = {
         profilW: 64, // Bogen-Oberkante: Sample-Breite der Top-Textur/Tabelle
-        seg: 90, // Plane-Unterteilung (Vertex-Welle braucht Dichte)
+        seg: 45, // Plane-Unterteilung (Vertex-Welle braucht Dichte; 1310-3 OMEN: 45 trägt die Welle bildgleich, Genesis −47k Dreiecke, −1,0 ms GPU)
         eps: 0.06, // Normalen-Differenzschritt e (Vertex-Shader)
         om: 3.0, // Wellen-Kreisfrequenz om = t*3.0
         kk: 13.8, // Wellenzahl (radiale Tropfenwelle)

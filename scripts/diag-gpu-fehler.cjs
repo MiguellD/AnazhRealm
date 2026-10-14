@@ -8,7 +8,7 @@
 "use strict";
 const http = require("http");
 const puppeteer = require("puppeteer");
-const { softwareWebGpuArgs } = require("./lib/software-gpu.cjs");
+const { linsenWebGpuArgs, adapterZeile } = require("./lib/software-gpu.cjs");
 const { GPU_FEHLER_INSTALL } = require("./lib/gpu-fehler.cjs");
 
 const PORT = Number(process.env.GPU_FEHLER_PORT || 4423);
@@ -79,7 +79,8 @@ async function probe() {
         res.end("<!doctype html><title>gpu-fehler</title>");
     });
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await puppeteer.launch({ headless: true, args: softwareWebGpuArgs() });
+    const browser = await puppeteer.launch({ headless: true, args: linsenWebGpuArgs() });
+    await adapterZeile(browser);
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(GPU_FEHLER_INSTALL);
     await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil: "domcontentloaded" });

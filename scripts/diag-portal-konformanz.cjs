@@ -47,7 +47,7 @@ const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
 const puppeteer = require("puppeteer");
-const { softwareWebGpuArgs } = require("./lib/software-gpu.cjs");
+const { linsenWebGpuArgs, adapterZeile } = require("./lib/software-gpu.cjs");
 
 const ROOT = path.resolve(__dirname, "..");
 const PORT = Number(process.env.PORTAL_KONFORMANZ_PORT || 4563);
@@ -693,7 +693,8 @@ async function lauf(welten, taeter) {
     const { s, fehlend, weg } = server(taeter);
     const lies = (rel) => ausliefern(rel, taeter, []);
     await new Promise((r) => s.listen(PORT, "127.0.0.1", r));
-    const browser = await puppeteer.launch({ headless: true, protocolTimeout: 180000, args: softwareWebGpuArgs() });
+    const browser = await puppeteer.launch({ headless: true, protocolTimeout: 180000, args: linsenWebGpuArgs() });
+    await adapterZeile(browser);
     const fehlerLog = [];
     const ergebnisse = [];
     try {

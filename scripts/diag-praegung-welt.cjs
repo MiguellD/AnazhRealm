@@ -138,7 +138,7 @@ function check(name, ok, detail) {
             return (h >>> 0).toString(16) + "/" + n;
         };
 
-        // ===== WARM-ANKER: Boot → f.ready → Buch (langschwert + gt) → !_prefetching =====
+        // ===== WARM-ANKER: Boot → f.ready → Buch (langschwert + gt) → !_vorrat =====
         const dl0 = performance.now() + 150000;
         while (
             (!window.anazhRealm || typeof window.anazhRealm._ensureAssetFoundry !== "function") &&
@@ -158,7 +158,7 @@ function check(name, ok, detail) {
                 r.state.blueprints &&
                 r.state.blueprints.klinge_langschwert &&
                 r.state.blueprints.fahrzeug_gt &&
-                !f._prefetching
+                !f._vorrat
             )
                 break;
             await sleep(120);

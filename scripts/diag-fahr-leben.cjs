@@ -74,7 +74,7 @@ const http = require("http");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
-const { softwareWebGpuArgs } = require("./lib/software-gpu.cjs");
+const { linsenWebGpuArgs, adapterZeile } = require("./lib/software-gpu.cjs");
 
 const PORT = Number(process.env.FAHR_LEBEN_PORT || 4413);
 const root = path.resolve(__dirname, "..");
@@ -4431,8 +4431,9 @@ function quellenAbgriff() {
     const browser = await puppeteer.launch({
         headless: true,
         protocolTimeout: 300000,
-        args: [...softwareWebGpuArgs(), "--autoplay-policy=no-user-gesture-required"],
+        args: [...linsenWebGpuArgs(), "--autoplay-policy=no-user-gesture-required"],
     });
+    await adapterZeile(browser);
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(() => {
         window.__anazhForceFoundry = true;

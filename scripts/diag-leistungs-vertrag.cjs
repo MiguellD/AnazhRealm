@@ -92,9 +92,9 @@ const server = http.createServer((req, res) => {
             // das Stand-Fenster misst Churn, nicht den Boot.
             {
                 const dlW = performance.now() + 150000;
-                // ... und bis der Vorrat steht (`_foundryPrefetchLibrary`): solange er saugt, baut der gelüftete Ring
-                // jede neue Region leer und aufgeschoben (der Prefetch-Zweig von `_scatterRegion`).
-                const vorrat = () => !!(r._foundry && r._foundry._prefetching);
+                // ... und bis der Vorrat durch ist (`_foundryPrefetchLibrary`, seine Phase `f._vorrat`): er wärmt neben der
+                // Welt (K30: keine Region wartet auf ihn), das Stand-Fenster misst den Churn ohne seine Lieferungen.
+                const vorrat = () => (r._foundry && r._foundry._vorrat) || false;
                 // die EINE Antwort der Welt (`_streuWartet`, Befund 09.10.: der eigene Zähler las die fehlende Regionen-Karte
                 // — der Streamer lief noch nie — als „keine wartet")
                 const wartend = (liste) => r._streuWartet(st.playerMesh ? st.playerMesh.position : null, liste);
@@ -108,7 +108,7 @@ const server = http.createServer((req, res) => {
                 }
                 o.wartendListe = [];
                 o.wartendNachBoot = wartend(o.wartendListe) + (vorrat() ? 1 : 0);
-                o.vorratSaugt = vorrat();
+                o.vorratPhase = vorrat();
             }
             const _oH0 = st.renderer._isHeadlessNull;
             const _oRS = r._applyRenderScale,
@@ -327,7 +327,7 @@ const server = http.createServer((req, res) => {
     server.close();
 
     console.log("=== DER LEISTUNGS-VERTRAG — die Laufzeit-Ökonomie als Gate ===");
-    console.log(`  BOOT-SETTLE: wartende Regionen + saugender Vorrat = ${out.wartendNachBoot} (erwartet 0)`);
+    console.log(`  BOOT-SETTLE: wartende Regionen + Vorrat nicht durch = ${out.wartendNachBoot} (erwartet 0)`);
     console.log(
         `  QUIESZENZ vor dem Stand-Fenster erreicht: ${out.quieszent} (Foundry offen beim Fenster-Start: ${out.foundryOffen})`
     );
@@ -346,7 +346,7 @@ const server = http.createServer((req, res) => {
     if (out.err) errs.push("Vertrag brach ab: " + out.err);
     if (out.wartendNachBoot !== 0)
         errs.push(
-            `BOOT: nach 150 s headless stehen ${out.wartendNachBoot - (out.vorratSaugt ? 1 : 0)} Streu-Regionen in Reichweite nicht (_streuWartet: ${(out.wartendListe || []).join(", ") || "—"})${out.vorratSaugt ? ", der Vorrat saugt noch" : ""}`
+            `BOOT: nach 150 s headless stehen ${out.wartendNachBoot - (out.vorratPhase ? 1 : 0)} Streu-Regionen in Reichweite nicht (_streuWartet: ${(out.wartendListe || []).join(", ") || "—"})${out.vorratPhase ? `, der Vorrat ${out.vorratPhase}` : ""}`
         );
     if (!out.quieszent)
         errs.push(

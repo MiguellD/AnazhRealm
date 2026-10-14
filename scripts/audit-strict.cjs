@@ -628,7 +628,6 @@ async function auditStateAndMethods() {
                 "_foliageResScale", // Subsystem 5 — Laub-Auflösungs-Faktor, `state.X != null ? : MIN`
                 "_foliageMatCache", // V18.288 — geteilte Bewuchs-Materialien, `if (!state.X) state.X = new Map()`
                 "_loopErrorCount", // V18.278 — Loop-Error-Boundary-Zähler, `state.X || 0`
-                "_loopErrorLastLog", // V18.278 — Log-Drossel-Stempel, `!state.X || now - ...`
                 "_bootPhase3", // V18.308 — deferierte Boot-Arbeit (Kreaturen), `if (!state.X) return` (in _bootDeferCreatures gesetzt, im Loop gedraint, dann null)
                 "_deferredAvatarSoul", // V18.304 — deferierter Avatar-Bau, am Boot gesetzt, im Loop `if (state.X)` gedraint, dann null
                 "_bootAvatarDelay", // V18.304 — Boot-Frame-Zähler vor dem Avatar-Bau, `(state.X || 0) + 1`

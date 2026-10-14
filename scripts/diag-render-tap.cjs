@@ -16,7 +16,7 @@
 // (trennt alte vergiftete Traces). GPU-frei, hardware-unabhängig.
 // ─────────────────────────────────────────────────────────────────────────
 const puppeteer = require("puppeteer");
-const { softwareWebGpuArgs } = require("./lib/software-gpu.cjs");
+const { linsenWebGpuArgs, adapterZeile } = require("./lib/software-gpu.cjs");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
@@ -97,8 +97,9 @@ function nakedLifetimeReads(src) {
     const browser = await puppeteer.launch({
         headless: "new",
         protocolTimeout: 300000,
-        args: REAL ? softwareWebGpuArgs() : ["--no-sandbox", "--disable-gpu"],
+        args: REAL ? linsenWebGpuArgs() : ["--no-sandbox", "--disable-gpu"],
     });
+    if (REAL) await adapterZeile(browser);
     const page = await browser.newPage();
     await page.evaluateOnNewDocument((real) => {
         if (!real) window.__anazhHeadlessNullRenderer = true;

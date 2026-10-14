@@ -311,7 +311,7 @@ async function waitFoundryReady(page, timeoutMs) {
     }, timeoutMs || 90000);
 }
 
-// Auf die WARME Bibliothek warten (der Prefetch-Fächer ist durch): _prefetching false +
+// Auf die WARME Bibliothek warten (der Prefetch-Fächer ist durch): _vorrat false +
 // Cache gefüllt. Liefert die Cache-Schlüssel (das Inventar der Gestalt-Reise).
 async function waitLibraryWarm(page, timeoutMs) {
     return page.evaluate(async (tmo) => {
@@ -319,11 +319,11 @@ async function waitLibraryWarm(page, timeoutMs) {
         const f = r._foundry;
         const dl = performance.now() + tmo;
         while (performance.now() < dl) {
-            if (f && f.cache && f.cache.size > 0 && f._prefetching === false) break;
+            if (f && f.cache && f.cache.size > 0 && f._vorrat === false) break;
             await new Promise((res) => setTimeout(res, 200));
         }
         const keys = f && f.cache ? Array.from(f.cache.keys()) : [];
-        return { warm: !!(f && f.cache && f.cache.size > 0 && f._prefetching === false), keys };
+        return { warm: !!(f && f.cache && f.cache.size > 0 && f._vorrat === false), keys };
     }, timeoutMs || 180000);
 }
 

@@ -35,7 +35,7 @@ const http = require("http");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
-const { softwareWebGpuArgs } = require("./lib/software-gpu.cjs");
+const { linsenWebGpuArgs, adapterZeile } = require("./lib/software-gpu.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 
 const PORT = Number(process.env.SCHIRM_PORT || 4579);
@@ -171,7 +171,8 @@ async function welt() {
         });
     });
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await puppeteer.launch({ headless: true, protocolTimeout: 900000, args: softwareWebGpuArgs() });
+    const browser = await puppeteer.launch({ headless: true, protocolTimeout: 900000, args: linsenWebGpuArgs() });
+    await adapterZeile(browser);
     const page = await browser.newPage();
     await page.setViewport({ width: GROESSEN[0][0], height: GROESSEN[0][1], deviceScaleFactor: 1 });
     await page.evaluateOnNewDocument(() => {

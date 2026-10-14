@@ -30,7 +30,7 @@
 //   node scripts/diag-arch-feld.cjs
 "use strict";
 const puppeteer = require("puppeteer");
-const { softwareWebGpuArgs } = require("./lib/software-gpu.cjs");
+const { linsenWebGpuArgs, adapterZeile } = require("./lib/software-gpu.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 const http = require("http");
 const fs = require("fs");
@@ -167,8 +167,9 @@ function schlangenGesetz(src) {
     const browser = await puppeteer.launch({
         headless: true,
         protocolTimeout: 900000,
-        args: softwareWebGpuArgs(),
+        args: linsenWebGpuArgs(),
     });
+    await adapterZeile(browser);
     const page = await browser.newPage();
     await page.setViewport({ width: W, height: H });
     const pageErrors = [];

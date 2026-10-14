@@ -4,7 +4,7 @@
 // EIN WERKZEUG, KEIN CI-GATE (der Mint ist eine bewusste Handlung; die Dauer-Linse ist
 // `gate:pack-contract`). Es bootet AnazhRealm foundry-ON headless (Null-Renderer — die IDB ist
 // dort bewusst AUS, also ist JEDER Reply ein echter Live-Worker-Bake), wartet die Bibliothek
-// warm (`f._prefetching === false`), liest die `f.cache`-Schlüssel (das Inventar der Gestalt-
+// warm (`f._vorrat === false`), liest die `f.cache`-Schlüssel (das Inventar der Gestalt-
 // Reise) und friert je Schlüssel den ROHEN Worker-Reply in der v1-Hülle ein (cv/key/meta/
 // components + meshes mit base64-Puffern; Vertrag: spec/pack/v0/CONTRACT.md §v1).
 //

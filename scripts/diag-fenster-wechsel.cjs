@@ -29,7 +29,7 @@ const http = require("http");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
-const { softwareWebGpuArgs } = require("./lib/software-gpu.cjs");
+const { linsenWebGpuArgs, adapterZeile } = require("./lib/software-gpu.cjs");
 const { ladeSpec } = require("./lib/band-urteil.cjs");
 
 const PORT = Number(process.env.FENSTER_PORT || 4574);
@@ -219,7 +219,8 @@ async function fensterSchritt(o) {
     );
     console.log("=== E — der echte Frame mit laufendem Loop (WebGPU auf swiftshader, kienspan, Kappe 1,25, am Bach) ===");
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await puppeteer.launch({ headless: true, protocolTimeout: 900000, args: softwareWebGpuArgs() });
+    const browser = await puppeteer.launch({ headless: true, protocolTimeout: 900000, args: linsenWebGpuArgs() });
+    await adapterZeile(browser);
     const seitenFehler = [];
     const seiteAmUfer = async (b) => {
         const p = await b.newPage();

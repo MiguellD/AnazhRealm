@@ -72,7 +72,7 @@ nächste Welle erfinden · Schöpfer-Abhängigkeit erfinden — ist ROT. Die Wan
    Scope und Ship, nie jeden Pixel.
 5. **SCOPE ZU nur bei Rest = 0** — danach kein Feature-Commit mehr (nur Format/Fix auf Zuruf).
 
-## Stand (V18.544.0 — offen ist NUR, was `docs/PFLICHT-OFFEN.md` trägt; die Chronik jeder Version ist `git log`)
+## Stand (V18.545.0 — offen ist NUR, was `docs/PFLICHT-OFFEN.md` trägt; die Chronik jeder Version ist `git log`)
 
 **ZIELLINIE (docs/roadmap.md §0.v1):** v1.0 = EIN gespielter Pfad — ankommen · laufen+sehen · in der Werkstatt bauen · mit der KI erschaffen
 (Satz → DSL-Op `spawn_studio` → EIN Stempel `_studioStampFor`; offen: der LLM-Lauf mit Schlüssel, Drehbuch-Schritt 18) · benutzen/teilen — bei
@@ -81,17 +81,26 @@ p95 ≤ 33 ms auf JEDEM Standardgerät (Richter: das Profi-Band, „richter ist 
 **PFLICHT-OFFEN (Spiegel — Wahrheit: docs/PFLICHT-OFFEN.md):** A Kopf-Zeile des Fell-Gesetzes · B Ankunft ≤ 5 s kalt (vorher ≈ 28–49 s) ·
 C Ort auf dem Gelände (das Licht = brennende Quellen des Plans) · E Profi-Band (Radeon + GTX 1060, Wiese + Genesis, Ego + Third-Person).
 
+**V18.545 trägt:** EIN Auge der Stufen (`_lodAuge`, Geister 4 → 0 an der Wiesen-Ankunft) · das Ufer ohne Band (Luma 0,667 → 0,071) · Haus-Fenster
+in jeder Stufe Glas (schwarze L2-Pixel 23 500 → 203) · EIN Bruch-Melder im Stoff-Bau (`_stoffBruch`) · die echte GPU urteilt wie die CI (fern-ring
+3,51 → 0,002 m) · das Beweisbild urteilt selbst (`abnahme-urteil.cjs`) · das erste Weltbild als Ereignis (`_weltbildSteht`, `VORRAT_PHASE`) ·
+die Tor-Diät (Membran 45 Segmente, Hinterflügel = Instanz: Genesis 705k → 650k Dreiecke, Befehle 168,7 → 148,7).
+
 **WAS STEHT — je Domäne die EINE Quelle:**
 - TERRAIN = Funktion: Höhe = EIN Gelände-Kern `gelaende-core.js` (Stamm · Worker · Playtest), Chunks = Iso-CACHE, Wildnis = EIN Term, Prüfbühne
-  `spec/pruefbuehne` (`_weltBetreten`) · WELT-MARCH EIN Pass · WASSER EINE Wahrheit (`_werkBoden`) · Edits = EINE Karte je Chunk (`_voxelEditKarte`)
-- GESTALT < 64 m Studio-Mesh + LOD-Kette, jede Karte eine Schicht des EINEN Atlas, fern Glieder-Kapseln · Baum = Studio-Karte bis 384 m, EINE
-  Ableitung aus `treeParams` der Art, EIN Wind-Term, Blende je Instanz, laut (`_blendeBruch`) · Haus und Tor fern NUR-WURF
+  `spec/pruefbuehne` (`_weltBetreten`) · WELT-MARCH EIN Pass · WASSER EINE Wahrheit (`_werkBoden`), die Ruhe ist der Fixpunkt des Automaten
+  (`_ensureWaterCALevel`) · Edits = EINE Karte je Chunk (`_voxelEditKarte`)
+- GESTALT < 64 m Studio-Mesh + LOD-Kette, EIN Auge der Stufen (`_lodAuge`), jede Karte eine Schicht des EINEN Atlas, fern Glieder-Kapseln · Baum =
+  Studio-Karte bis 384 m, EINE Ableitung aus `treeParams` der Art, EIN Wind-Term, Blende je Instanz, laut (`_blendeBruch`) · Haus und Tor fern
+  NUR-WURF, das Fenster Glas in jeder Stufe · der Tor-Hinterflügel eine Instanz des vorderen (`_foundryFluegelInstanz`)
 - BODEN Rausch-Gesetz, EIN Leser `_bodenSichtAt` · LICHT EIN Leuchtquellen-Gesetz (`kelvin`, EIN Pool) · EIN Himmel · EINE Koschmieder-Luft · TRAA ·
   Schatten 2 Kaskaden (`_schattenBias`), EIN Werfer je Gestalt · Sätze EIN Pool je Stoff · Bündel in EINER Reihe (`_buendelReihe`)
-- KOSTEN `_passTrifft` + `_wahlHaelt` · `_schirm` · `TAKT_DECKEL_S` · `_instanzAbschied` + `_gpuKehraus` · `_foundryAuftrag` · `_foundrySchale`
+- KOSTEN `_passTrifft` + `_wahlHaelt` · `_schirm` · `TAKT_DECKEL_S` · `_instanzAbschied` + `_gpuKehraus` · `_foundryAuftrag` · `_foundrySchale` ·
+  BRUCH = EIN Melder (`_stoffBruch` → `_bruchMelden`) · ANKUNFT = das erste Weltbild hat EINEN Schreiber (`_weltbildSteht`)
 - LEBEN EIN Leib-Löser, Gang EIN Gesetz · Kamera EINE Kugel · Tod `_kreaturFaellt` · Lebenswerte = Zustand (`recomputePlayerStats` klemmt) ·
   Blocker-Netz · Klang-Gesetz · Uhr + Wetter = Spieler-Wort · SPEICHER atomar (tmp + Rename + .bak)
-- PRÜFEN 6 Golden-Sätze + Ofen · Messorte Wiese, Genesis-Ring, Dorf, Prüfbühne · Linsen-Start `lib/software-gpu.cjs` · CI: Puls je Push, volle
+- PRÜFEN 6 Golden-Sätze + Ofen · Messorte Wiese, Genesis-Ring, Dorf, Prüfbühne · Linsen-Start `lib/software-gpu.cjs` (die Weiche
+  `linsenWebGpuArgs`: lokal die echte GPU, CI swiftshader) · das Beweisbild urteilt selbst (`lib/abnahme-urteil.cjs`) · CI: Puls je Push, volle
   Batterie (Playtest = Gruppe 11) auf integ-probe, main und nachts
 
 ## Architektur (die Karte)

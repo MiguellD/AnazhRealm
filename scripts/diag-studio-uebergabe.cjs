@@ -159,7 +159,7 @@ function check(name, ok, detail) {
             return bb.max.y - bb.min.y;
         };
 
-        // ===== WARM-ANKER: Boot → f.ready → Buch (mensch + wolf) → !_prefetching =====
+        // ===== WARM-ANKER: Boot → f.ready → Buch (mensch + wolf) → !_vorrat =====
         const dl0 = performance.now() + 150000;
         while (
             (!window.anazhRealm || typeof window.anazhRealm._studioUebergabeEmpfang !== "function") &&
@@ -170,7 +170,7 @@ function check(name, ok, detail) {
         if (!r) return { fatal: "anazhRealm kam nie" };
         const f = r._ensureAssetFoundry();
         while (performance.now() < dl0) {
-            if (f && f.ready && f.recipes && f.recipes.mensch && f.recipes.wolf && !f._prefetching) break;
+            if (f && f.ready && f.recipes && f.recipes.mensch && f.recipes.wolf && !f._vorrat) break;
             await sleep(120);
         }
         res.warm.ready = !!(f && f.ready);
