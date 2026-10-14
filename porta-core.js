@@ -61,7 +61,7 @@
     var GESTALTEN_JE_REZEPT = 1;
     var PORTAL_RENDER_CONFIG = {
         lod: {
-            kindStages: { gate: [0, 1, 3] },
+            kindStages: { gate: [0, 1, 2, 3] },
             budget: {
                 // fernform (B2c, Pflicht je Budget-Art): jenseits der Nah-Grenze trägt der Box-Satz im Welt-March (_archBoxFit)
                 // 1110-9 (das Detail-Gesetz der Röhren und Ringe): tris ist die Hülle der Rezepte UND des Rands jedes Reglers
@@ -76,9 +76,14 @@
                 // der Genesis-Ring steht 11 m um seine Mitte). tris = die Regler-Hülle der Stufe 1 (gemessen 33 890 an ruine
                 // wBraid=1; die Rezepte 4 608–23 276), draws 6 = das Minimum über die Rezepte (maschine: vier Metalle
                 // verschiedener Glut, Leucht-Linien, die Licht-Scheibe — die Faltung kreuzt keine Glut-Grenze).
+                // K64 (DIE STUFE 2, Kosten ins Asset): derselbe Bau unter TOR_DETAIL_2 ab 12 m × Welt-Skala (hinein ab 13,2 m,
+                // zurück unter 10,8 m — der Ring-Mittelpunkt bei 11 m bleibt Stufe 1, die Third-Sicht und die Vorschauen fallen
+                // hinein). tris = die Regler-Hülle der Stufe 2 (gemessen 14 686 an verkalkt orders=9; die Rezepte 3 594–9 706,
+                // die Stufe 1 trug 4 608–23 276), band = das Nordstern-Soll L2 (offen, solange ein Rezept darüber liegt).
                 gate: {
                     0: { tris: 76000, band: 60000, draws: 9, schatten: 3 },
                     1: { tris: 34000, draws: 6, schatten: 3, ab: 9.5 },
+                    2: { tris: 15000, band: 6000, draws: 6, schatten: 3, ab: 12 },
                     3: { tris: 12000, draws: 1, schatten: 3, nurWurf: true },
                     fernform: "huelle",
                     hyst: 0.1,
@@ -234,7 +239,19 @@
     // in der Fern-Pose und sind Teil des Körpers (`tuerFest`: kein Scharnier-Datum, der Wirt dreht nur die Flügel der Stufe 0 —
     // die Tür lebt in der Nähe und öffnet aus derselben Pose, `TUER_GESETZ.fern`).
     var TOR_DETAIL_1 = { sehneM: 0.025, laengsM: 2, umfangMin: 3, ringMin: 6, proben: 256, zylinder: 6, tuerFest: true };
+    // DIE STUFE 2 DES TORS (K64, Kosten ins Asset): derselbe Bau jenseits `lod.budget.gate[2].ab` (12 m), gerechnet im Pixel der
+    // SZENE (TAAU-Skala 0,75: 0,97 cm / 8 m / 0,75 = 1,94 cm je Szenen-Pixel bei 12 m). Drei Teile des EINEN Gesetzes: der
+    // Sehnen-Fehler 5 cm (≤ 2,6 px, der Fehler der Stufe 1 an ihrer Grenze), das FEINE fällt — eine Röhre oder ein Ring mit
+    // Radius ≤ `feinM` (Durchmesser ≤ ein Szenen-Pixel: die Blätter der Pässe, die Dreipässe; sie flimmerten dort nur) —, und
+    // das Geflecht trägt jeden `straehnen`-ten Strang mit der Deckung aller (Breite × straehnen, dieselbe Phase, derselbe
+    // Zufalls-Strom: die Strähnen-Lücke 16 cm bleibt ≥ 8 px, das Band behält Fläche und Farbe).
+    var TOR_DETAIL_2 = { sehneM: 0.05, laengsM: 3, umfangMin: 3, ringMin: 5, proben: 256, zylinder: 4, tuerFest: true, pixelM: 0.0194, straehnen: 2 };
     var _detail = TOR_DETAIL; // das Gesetz des laufenden Baus (buildInstance setzt es je Stufe, synchron)
+    // Das FEINE der Stufe (TOR_DETAIL_2 `feinM`): eine Röhre oder ein Ring dieses Radius fällt — an seiner Stelle eine leere Gruppe
+    // (kein Draw, kein Dreieck; der Bau-Strom läuft unverändert weiter). Die Stufen 0 und 1 tragen kein `feinM`.
+    function fein(m) {
+        return _detail.pixelM > 0 && m <= _detail.pixelM;
+    }
     function umfangMit(D, r, hoechst) {
         var n = Math.ceil(Math.PI / Math.acos(Math.max(-1, 1 - D.sehneM / r)));
         return Math.max(D.umfangMin, Math.min(hoechst, n));
@@ -571,13 +588,13 @@
     }
     // ═══ Geometrie-Hilfen (byte-treu, Z.46–51; Röhren und Ringe teilen nach dem Detail-Gesetz) ═══
     // prettier-ignore
-    function tubeMesh(pts,r,m,seg,rad){var sk=sehnenKurve(new THREE.CatmullRomCurve3(pts,false,'centripetal'),seg||140),n=umfangTeilung(r,rad||8);return new THREE.Mesh(new THREE.TubeGeometry(sk.kurve,sk.n,breiteTreu(r,umfangMit(TOR_DETAIL,r,rad||8),n),n,false),m);}
+    function tubeMesh(pts,r,m,seg,rad){if(fein(2*r))return new THREE.Group();var sk=sehnenKurve(new THREE.CatmullRomCurve3(pts,false,'centripetal'),seg||140),n=umfangTeilung(r,rad||8);return new THREE.Mesh(new THREE.TubeGeometry(sk.kurve,sk.n,breiteTreu(r,umfangMit(TOR_DETAIL,r,rad||8),n),n,false),m);}
     // prettier-ignore
-    function torusMesh(R,r,m,x,y,z){var me=new THREE.Mesh(ringGeometrie(R,r,8,20),m);me.position.set(x,y,z);return me;}
+    function torusMesh(R,r,m,x,y,z){if(fein(2*r))return new THREE.Group();var me=new THREE.Mesh(ringGeometrie(R,r,8,20),m);me.position.set(x,y,z);return me;}
     // prettier-ignore
     function barBetween(x0,y0,x1,y1,m,z,th){var dx=x1-x0,dy=y1-y0,len=Math.hypot(dx,dy)||0.01;var b=new THREE.Mesh(new THREE.BoxGeometry(len,th||0.04,0.1),m);b.position.set((x0+x1)/2,(y0+y1)/2,z);b.rotation.z=Math.atan2(dy,dx);return b;}
     // prettier-ignore
-    function quadBlock(c,depth,mat,zOff,jit){var cx=(c[0].x+c[1].x+c[2].x+c[3].x)/4,cy=(c[0].y+c[1].y+c[2].y+c[3].y)/4;var sh=new THREE.Shape();sh.moveTo(c[0].x-cx,c[0].y-cy);sh.lineTo(c[1].x-cx,c[1].y-cy);sh.lineTo(c[2].x-cx,c[2].y-cy);sh.lineTo(c[3].x-cx,c[3].y-cy);sh.lineTo(c[0].x-cx,c[0].y-cy);var g=new THREE.ExtrudeGeometry(sh,{depth:depth,bevelEnabled:true,bevelThickness:0.015,bevelSize:0.015,bevelSegments:1});g.translate(0,0,-depth/2);var me=new THREE.Mesh(g,mat);me.position.set(cx,cy,zOff+jit);me.castShadow=me.receiveShadow=true;return me;}
+    function quadBlock(c,depth,mat,zOff,jit){var cx=(c[0].x+c[1].x+c[2].x+c[3].x)/4,cy=(c[0].y+c[1].y+c[2].y+c[3].y)/4;var sh=new THREE.Shape();sh.moveTo(c[0].x-cx,c[0].y-cy);sh.lineTo(c[1].x-cx,c[1].y-cy);sh.lineTo(c[2].x-cx,c[2].y-cy);sh.lineTo(c[3].x-cx,c[3].y-cy);sh.lineTo(c[0].x-cx,c[0].y-cy);var bv=!fein(0.015),dz=bv?depth:depth+0.03;var g=new THREE.ExtrudeGeometry(sh,{depth:dz,bevelEnabled:bv,bevelThickness:0.015,bevelSize:0.015,bevelSegments:1});g.translate(0,0,-dz/2);var me=new THREE.Mesh(g,mat);me.position.set(cx,cy,zOff+jit);me.castShadow=me.receiveShadow=true;return me;}
     // in-plane Normalen entlang Pfad (auswaerts vom Aperturzentrum)
     // prettier-ignore
     function normalsAlong(pts,refY){var N=pts.length,F=[];for(var i=0;i<N;i++){var a=pts[Math.max(0,i-1)],b=pts[Math.min(N-1,i+1)];var tx=b.x-a.x,ty=b.y-a.y,L=Math.hypot(tx,ty)||1;tx/=L;ty/=L;var nx=-ty,ny=tx;if((pts[i].x)*nx+(pts[i].y-refY)*ny<0){nx=-nx;ny=-ny;}F.push([nx,ny]);}return F;}
@@ -668,7 +685,7 @@
           if(p.wBraid>0.03&&(o<2||orders<3)){
             var oc=offsetFull(outOff+jambW*0.5),Fb=new THREE.CatmullRomCurve3(oc,false,'centripetal').getSpacedPoints(280);
             var fn=normalsAlong(Fb,refY),rho=jambW*0.5*p.wBraid,fib=lerp(0.02,0.05,p.wBraid)*dens,turns=14,zoBr=zO;
-            var strands=function(cnt,rh,hd,ph0,mat){for(var c=0;c<cnt;c++){var ph=ph0+c*(Math.PI*2/cnt)+rng()*0.1;var pts=[];for(var q=0;q<Fb.length;q++){var s=q/(Fb.length-1),er=Math.min(s,1-s),ramp=Math.max(0,1-er/0.12),rE=rh*(1+0.7*ramp),ang=ph+hd*turns*2*Math.PI*s;var off=Math.cos(ang)*rE,zz=Math.sin(ang)*rE;pts.push(new THREE.Vector3(Fb[q].x+fn[q][0]*off,Fb[q].y+fn[q][1]*off-ramp*0.18,zoBr+zz));}var t=tubeMesh(pts,fib,mat,240,6);t.castShadow=true;gate.add(t);}};
+            var strands=function(cnt,rh,hd,ph0,mat){for(var c=0;c<cnt;c++){var ph=ph0+c*(Math.PI*2/cnt)+rng()*0.1;if(c%(_detail.straehnen||1))continue;var pts=[];for(var q=0;q<Fb.length;q++){var s=q/(Fb.length-1),er=Math.min(s,1-s),ramp=Math.max(0,1-er/0.12),rE=rh*(1+0.7*ramp),ang=ph+hd*turns*2*Math.PI*s;var off=Math.cos(ang)*rE,zz=Math.sin(ang)*rE;pts.push(new THREE.Vector3(Fb[q].x+fn[q][0]*off,Fb[q].y+fn[q][1]*off-ramp*0.18,zoBr+zz));}var t=tubeMesh(pts,fib*(_detail.straehnen||1),mat,240,6);t.castShadow=true;gate.add(t);}};
             var ns=Math.round(6*dens);strands(ns,rho*1.05,1,0,bmatG);strands(ns,rho*0.8,-1,Math.PI/6,bmatB);if(HU){var bSt=4,bK=[];for(var bj=0;bj<2*bSt+1;bj++)bK.push([]);for(var bq=0;bq<Fb.length;bq++){var bs=bq/(Fb.length-1),ber=Math.min(bs,1-bs),bramp=Math.max(0,1-ber/0.12),bp=new THREE.Vector3(Fb[bq].x,Fb[bq].y-bramp*0.18,0);for(var bj=0;bj<2*bSt+1;bj++){var b0=bj<bSt?bj*0.12/bSt:bj===bSt?0.12:0.88+(bj-bSt-1)*0.12/bSt,b1=bj<bSt?(bj+1)*0.12/bSt:bj===bSt?0.88:0.88+(bj-bSt)*0.12/bSt;if(bs>=b0-1e-9&&bs<=b1+1e-9)bK[bj].push(bp);}}for(var bj=0;bj<2*bSt+1;bj++){var bE0=bj<bSt?bj*0.12/bSt:bj===bSt?0.12:1-(0.88+(bj-bSt)*0.12/bSt);hKette(HU,bK[bj],rho*1.05*(1+0.7*Math.max(0,1-bE0/0.12))+fib,bmatG,zoBr);}}
           }
           if(p.wMono>0.03){var oc2=offsetFull(outOff+jambW*0.5),mt=tubeMesh(oc2,jambW*0.5*p.wMono+0.01,fmat,170,12);mt.position.z=zO;hKette(HU,oc2,jambW*0.5*p.wMono+0.01,fmat,zO,mt.geometry);mt.castShadow=true;gate.add(mt);}
@@ -808,10 +825,10 @@
     // Der Bau einer GEZEIGTEN Stufe: die Stufe 0 unter ihrem Detail-Gesetz (TOR_DETAIL), die Stufe 1 unter TOR_DETAIL_1 —
     // derselbe Bau, nur das Gesetz wechselt (synchron gesetzt und zurückgesetzt).
     function baueStufe(p, st) {
-        _detail = st === 1 ? TOR_DETAIL_1 : TOR_DETAIL;
+        _detail = st === 2 ? TOR_DETAIL_2 : st === 1 ? TOR_DETAIL_1 : TOR_DETAIL;
         var fern = TUER_GESETZ.fern * TUER_GESETZ.offen;
         try {
-            return buildGate(p, st === 1 ? { front: fern, back: fern } : null);
+            return buildGate(p, st === 1 || st === 2 ? { front: fern, back: fern } : null);
         } finally {
             _detail = TOR_DETAIL;
         }

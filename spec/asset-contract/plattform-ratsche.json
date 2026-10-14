@@ -39,9 +39,9 @@
         },
         "v4": {
             "kern": "porta-core.js",
-            "faelle": 23,
+            "faelle": 30,
             "kippt": {},
-            "soll": "0 - erreicht: porta-core ausRaster am Ausgang (S1, Re-Mint mit Grund: Node 22 rot 16/16); K43 die Stufe 1 je Ordnung dazu (16 -> 23 Faelle, keiner kippt)"
+            "soll": "0 - erreicht: porta-core ausRaster am Ausgang (S1, Re-Mint mit Grund: Node 22 rot 16/16); K43 die Stufe 1 je Ordnung dazu (16 -> 23 Faelle, keiner kippt); K64 die Stufe 2 je Ordnung dazu (23 -> 30 Faelle, keiner kippt)"
         },
         "v5": {
             "kern": "schmiede-core.js",
