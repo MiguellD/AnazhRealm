@@ -1822,6 +1822,9 @@ function wasserQuelle(opts) {
             const k0 = P[0].x + "," + P[0].z;
             if (ursprung.has(k0)) continue;
             ursprung.add(k0);
+            // DER TEIL (K61): `teil {k, n}` misst nur die Quellen, deren Ursprung in Teil k fällt — der Schlüssel ist der Ort
+            // des Ursprungs (nie die Reihenfolge der Kacheln), jede Quelle fällt in genau einen Teil
+            if (o.teil && window.__wasserQuellTeil(P[0], o.teil.n) !== o.teil.k) continue;
             const fl = Math.hypot(P[1].x - P[0].x, P[1].z - P[0].z) || 1;
             const fx = (P[1].x - P[0].x) / fl,
                 fz = (P[1].z - P[0].z) / fl;
@@ -2026,7 +2029,66 @@ function wasserQuelle(opts) {
         tiefeMax: R(tiefen0.length ? Math.max(...tiefen0) : 0),
         beispiele,
         alle: o.alle ? alle : undefined,
+        // die Teile (K61) fügt `quellTeileVereinen` zusammen: die Rohwerte je Quelle und der Abdruck der Regionen
+        breiten0: o.teil ? breiten0 : undefined,
+        tiefen0: o.teil ? tiefen0 : undefined,
+        regionenAbdruck: regionen
+            .map((h) => h.originX + "," + h.originZ)
+            .sort()
+            .join(" "),
     };
+}
+
+// Der Teil einer Quelle (K61): aus dem Ort ihres Ursprungs, je Teil-Zahl n fest — der Seiten-Kontext ruft ihn, Node prüft ihn.
+function wasserQuellTeil(p, n) {
+    const h = (Math.imul(Math.round(p.x * 4), 73856093) ^ Math.imul(Math.round(p.z * 4), 19349663)) >>> 0;
+    return h % n;
+}
+
+// DIE TEILE ZUSAMMEN (K61): die Quell-Probe in n Seiten nebeneinander (je Seite ein Teil, `teil {k, n}`) urteilt über
+// dieselben Quellen wie EIN Lauf — die Zähler summiert, Breite und Tiefe am Ursprung aus den Rohwerten, die Regionen in jedem
+// Teil dieselben (sonst Abbruch beim Namen: ein Teil sähe andere Quellen).
+function quellTeileVereinen(teile) {
+    for (const t of teile) if (t.fehler) return { fehler: t.fehler };
+    const abdruck = teile[0].regionenAbdruck;
+    const fremd = teile.find((t) => t.regionenAbdruck !== abdruck);
+    if (fremd)
+        return {
+            fehler: `die Teile der Quell-Probe sehen verschiedene Regionen (${abdruck} gegen ${fremd.regionenAbdruck})`,
+        };
+    const R = (x, n = 2) => (Number.isFinite(x) ? Math.round(x * 10 ** n) / 10 ** n : null);
+    const p50 = (A) => (A.length ? A.slice().sort((x, y) => x - y)[A.length >> 1] : 0);
+    const summe = (k) => teile.reduce((s, t) => s + (t[k] || 0), 0);
+    const breiten0 = [].concat(...teile.map((t) => t.breiten0 || []));
+    const tiefen0 = [].concat(...teile.map((t) => t.tiefen0 || []));
+    const v = { teile: teile.length };
+    for (const k of [
+        "quellen",
+        "gespeist",
+        "imKanal",
+        "zulauf",
+        "buckel",
+        "spruenge",
+        "trocken",
+        "querschnitte",
+        "unsichtbar",
+        "phantom",
+        "unsichtbarBreite",
+        "phantomBreite",
+        "verdeckt",
+    ])
+        v[k] = summe(k);
+    v.buckelMax = R(Math.max(0, ...teile.map((t) => t.buckelMax || 0)));
+    v.regionen = teile[0].regionen;
+    v.regionenAbdruck = abdruck;
+    v.huelle0 = teile[0].huelle0;
+    v.breiteP50 = R(p50(breiten0));
+    v.breiteMax = R(breiten0.length ? Math.max(...breiten0) : 0);
+    v.tiefeP50 = R(p50(tiefen0));
+    v.tiefeMax = R(tiefen0.length ? Math.max(...tiefen0) : 0);
+    v.beispiele = [].concat(...teile.map((t) => t.beispiele || [])).slice(0, 6);
+    if (teile.every((t) => Array.isArray(t.alle))) v.alle = [].concat(...teile.map((t) => t.alle));
+    return v;
 }
 
 // ── Q7-Bild: der Bach der Mess-Wiese (Gegenprüfung 07.10., Runde 3: „gezeichnet 17 → 0 von 17 Segmenten"; Runde 4: „F8
@@ -2698,6 +2760,7 @@ module.exports = {
         `window.__wasserFlora = ${wasserFlora.toString()};` +
         `window.__wasserSee = ${wasserSee.toString()};` +
         `window.__wasserQuelle = ${wasserQuelle.toString()};` +
+        `window.__wasserQuellTeil = ${wasserQuellTeil.toString()};` +
         `window.__wasserBach = ${wasserBach.toString()};` +
         `window.__wasserBank = ${wasserBank.toString()};` +
         `window.__wasserFluss = ${wasserFluss.toString()};` +
@@ -2708,4 +2771,6 @@ module.exports = {
         `window.__wasserKoerper = ${wasserKoerper.toString()};` +
         `window.__wasserBild = ${wasserBild.toString()};` +
         `window.__wasserRegen = ${wasserRegen.toString()};`,
+    wasserQuellTeil,
+    quellTeileVereinen,
 };
