@@ -77,3 +77,14 @@ Die genauen Zahlen stehen in den Ratschen-Dateien und in den Mint-Ausgaben, VRAM
 - Ohne CI-Lauf, weil band-leser bis zu den Radeon-Zeilen an H2b rot steht. Lokal `diag-profiband`: H2b ohne GTX-Wiese/Genesis.
 - Werkzeug `p3/k13/serie.sh` (SICHT, ORTE; Fingerabdruck-Wache vor und nach jedem Lauf).
 - Messbaum `band-leser-gtx`.
+
+## Nachtrag: das Dorf (beauftragt nach dem Bericht)
+
+- **band-leser-gtx 06b8975b** `[skip ci]`: dorf × gtx × ego und dorf × gtx × third, je 4 Läufe (erst/zweit × 2), Linse
+  sauber, 0 Zeilen angehoben.
+  - Dorf ego: 99 Befehle / 567k Dreiecke / 125,3 MB.
+  - Dorf third: 100 / 692k / 126,7 MB.
+  - Das Band zeigt VRAM 1,06× bzw. 1,07×; third liegt mit 1,02× auch bei den Dreiecken über dem Soll.
+- Auch im Dorf trägt der Leib in Third die Einzelstücke: haupt 11,9k → 174k.
+- `gate:profiband` H2b lokal: 0 GTX-Befunde, 11 Radeon-Befunde. Jede GTX-Zeile trägt ihre Messung.
+- Rohdaten: `ego/dorf-*.json`, `third/dorf-*.json`, `dorf-ego.txt`, `dorf-third.txt`.
