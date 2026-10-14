@@ -51,6 +51,7 @@
 // Port: WASSER_LEBEN_PORT (Standard 4623).
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
+const stammLib = require("./lib/stamm.cjs");
 
 const SCHWELLE = {
     steigend: 0, // Anteil der 2-m-Schritte, deren Lauf-Fläche > 5 cm steigt
@@ -714,7 +715,7 @@ function selbsttest() {
     let rot = 0;
     // B6 an der lebenden Quelle (die Wand der CI, ohne Browser): der Wasser-Stoff rechnet sein Rauschen ohne sin.
     const quelleSin = hashSin(
-        require("fs").readFileSync(require("path").join(__dirname, "..", "anazhRealm.js"), "utf8")
+        stammLib.text(require("path").join(__dirname, ".."))
     );
     console.log(
         `  ${quelleSin ? "❌" : "✅"} B6 HASH an der Quelle: ${quelleSin || "das Wasser-Rauschen rechnet ohne sin"}`
@@ -788,7 +789,7 @@ async function lauf() {
         await page.evaluateOnNewDocument(() => {
             window.__anazhHeadlessNullRenderer = true;
         });
-    let befund = { seitenFehler, hashSin: hashSin(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8")) };
+    let befund = { seitenFehler, hashSin: hashSin(stammLib.text(root)) };
     let exit = 1;
     try {
         await page.goto(`http://127.0.0.1:${PORT}/index.html${BILD && !ECHT ? "?holz=kienspan" : ""}`, {
