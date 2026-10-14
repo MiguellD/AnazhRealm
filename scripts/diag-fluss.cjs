@@ -34,11 +34,12 @@
 const fs = require("fs");
 const path = require("path");
 const http = require("http");
+const stammLib = require("./lib/stamm.cjs");
 
 const root = path.resolve(__dirname, "..");
 // Port über FLUSS_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4561.
 const PORT = Number(process.env.FLUSS_PORT || 4561);
-const stamm = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+const stamm = stammLib.text(root);
 
 const strip = (src) => src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:\\"'`])\/\/.*$/gm, "$1");
 function methode(src, kopf) {
@@ -767,7 +768,7 @@ const WELT_MESSEN = async () => {
     const tq = performance.now();
     while (performance.now() - tq < 240000) {
         await pump(20);
-        if (!f._prefetching && !(f.warte && f.warte.length) && f.pending.size === 0) break;
+        if (!f._vorrat && !(f.warte && f.warte.length) && f.pending.size === 0) break;
     }
     await pump(60);
     const fl = window.__fl;
@@ -868,11 +869,13 @@ function urteilWelt(d) {
         }
         const T = d.T && Number.isInteger(d.T[sp]) ? d.T[sp] : V; // samt Solitär V+1 (`_foundryGestalten`)
         for (const s of d.samen[sp] || []) if (!(s >= 1 && s <= V)) raus.push(`${sp}|${s}`);
-        if ((d.karten[sp] || 0) !== T) kartenFalsch.push(`${sp} ${d.karten[sp] || 0}≠${T}`);
+        // Die Karte bestellt ihr Leser (K30): eine Art ohne Leser im Bild hat keine Karte, keine Art mehr als ihre Gestalten
+        // (Budget samt Solitär, K20).
+        if ((d.karten[sp] || 0) > T) kartenFalsch.push(`${sp} ${d.karten[sp] || 0}>${T}`);
     }
     pruef("W1a jede Baum-/Strauch-Art bestellt nur ihre Gestalten 1..V", !raus.length, raus.slice(0, 6).join(" · "));
     pruef(
-        "W1b Karten-Records je Art = ihre Gestalten (Budget samt Solitär)",
+        "W1b Karten-Records je Art ≤ ihre Gestalten (Budget samt Solitär; die Karte bestellt ihr Leser)",
         !kartenFalsch.length,
         kartenFalsch.join(" · ")
     );
@@ -1109,6 +1112,10 @@ const VERHALTEN = [
         check(
             "Selbst-Test 10d: 16 Eichen-Karten → W1b rot",
             rot(Object.assign({}, gut, { karten: Object.assign({}, gut.karten, { eiche: 16 }) }), "W1b")
+        );
+        check(
+            "Selbst-Test 10d2: eine Art ohne Leser im Bild hat keine Karte (mammut 0) → W1b grün (K30)",
+            !rot(Object.assign({}, gut, { karten: Object.assign({}, gut.karten, { mammut: 0 }) }), "W1b")
         );
         check(
             "Selbst-Test 10f: 56 Baum-L2-Aufträge im Boot → W1c rot",

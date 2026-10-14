@@ -29,6 +29,17 @@ const opt = (k, d) => {
 };
 const SELBST = argv.includes("--selftest");
 const WERKBANK = opt("--werkbank", null);
+// DIE FESTE RAMPE (K16-Q): der Querhang misst auch an der Rampe der Prüfbühne (Station S2, ihre Spec) — die Welt wählt
+// ihren Hang nach ihrem Bestand (im K16-Gelände 22,2° in der CI, lokal 22,2° oder 25,5°), die Rampe steht fest
+const BUEHNE_DATEI = path.join(root, "spec", "pruefbuehne", "welt.json");
+const RAMPE = (() => {
+    const st = JSON.parse(
+        fs.readFileSync(path.join(root, "spec", "pruefbuehne", "stationen.json"), "utf8")
+    ).stationen.find((s) => s.id === "s2-hang30");
+    if (!st || !Number.isFinite(st.winkel))
+        throw new Error("die Rampe s2-hang30 fehlt in spec/pruefbuehne/stationen.json");
+    return { id: st.id, x: st.x, z: st.z, winkel: st.winkel };
+})();
 // DAS GATE wächst je geschnittener Klasse: eine Probe steht hier, sobald ihr Schnitt im Stamm steht.
 const GATE_PROBEN = PROBEN; // jede Probe steht im Gate: jede Klasse der Familie ist geschnitten
 const gewaehlt = opt("--proben", null) ? opt("--proben").split(",") : argv.includes("--alle") ? PROBEN : GATE_PROBEN;
@@ -99,13 +110,9 @@ async function headless(laeufe) {
         window.__codeOf = (0, eval)("(" + codeOf + ")");
     }, CODE_OF_SRC);
     const aus = [];
-    try {
-        await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "networkidle0", timeout: 120000 });
-        await page.waitForFunction(() => window.anazhRealm && typeof window.anazhRealm._gameLoopTick === "function", {
-            timeout: 120000,
-        });
-        // Einschwingen (plateau-basiert, die V18.273-Lehre): der Ring steht, die Boden-Funktion trägt.
-        await page.evaluate(async () => {
+    // Einschwingen (plateau-basiert, die V18.273-Lehre): der Ring steht, die Boden-Funktion trägt.
+    const einschwingen = () =>
+        page.evaluate(async () => {
             const r = window.anazhRealm;
             let last = -1,
                 stabil = 0;
@@ -123,16 +130,64 @@ async function headless(laeufe) {
                 if (t % 10 === 0) await new Promise((res) => setTimeout(res, 0));
             }
         });
-        for (const l of laeufe) {
-            const z = await page.evaluate(
-                (src, o) => {
-                    const fn = (0, eval)("(" + src + ")");
-                    return fn(window.anazhRealm, window.THREE, o);
-                },
-                KREATUR_PROBEN_SRC,
-                l
-            );
-            aus.push(z);
+    const lauf = (o) =>
+        page.evaluate(
+            (src, o) => {
+                const fn = (0, eval)("(" + src + ")");
+                return fn(window.anazhRealm, window.THREE, o);
+            },
+            KREATUR_PROBEN_SRC,
+            o
+        );
+    const bereit = () =>
+        page.waitForFunction(
+            () =>
+                window.anazhRealm &&
+                typeof window.anazhRealm._gameLoopTick === "function" &&
+                window.anazhRealm.state &&
+                window.anazhRealm.state.voxelWorkerReady,
+            { timeout: 120000 }
+        );
+    try {
+        await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "networkidle0", timeout: 120000 });
+        await bereit();
+        await einschwingen();
+        for (const l of laeufe) aus.push(await lauf(l));
+        // DIE RAMPE DER PRÜFBÜHNE (K16-Q): jeder Lauf mit dem Querhang misst ihn ein zweites Mal an der festen Rampe — die
+        // Bühne geboren wie im Spiel (importWorldBeside + aktiv + Reload, der Spieler am Fuß der Station), derselbe Täter
+        const mitRampe = laeufe.map((l, li) => [l, li]).filter(([l]) => l.proben.includes("querhang"));
+        if (mitRampe.length) {
+            await page.evaluate(() => {
+                try {
+                    localStorage.clear();
+                } catch (_e) {
+                    /* frische Platte */
+                }
+            });
+            await page.reload({ waitUntil: "domcontentloaded", timeout: 120000 });
+            await page.waitForFunction(() => window.anazhRealm && window.anazhRealm.importWorldBeside, {
+                timeout: 120000,
+            });
+            const json = JSON.parse(fs.readFileSync(BUEHNE_DATEI, "utf8"));
+            json.playerPosition = { x: RAMPE.x, y: 40, z: RAMPE.z - 8 };
+            const id = await page.evaluate((json) => {
+                const r = window.anazhRealm;
+                const res = r.importWorldBeside(json);
+                if (!res.ok) return null;
+                r.activeWorldSet(res.worldId);
+                return res.worldId;
+            }, json);
+            if (!id) throw new Error("die Prüfbühne ließ sich nicht importieren");
+            await page.reload({ waitUntil: "domcontentloaded", timeout: 120000 });
+            await bereit();
+            const seed = await page.evaluate(() => window.anazhRealm.state.worldMeta.seed);
+            if (seed !== JSON.parse(fs.readFileSync(BUEHNE_DATEI, "utf8")).worldMeta.seed)
+                throw new Error(`die Bühne ist nicht aktiv (Seed ${seed})`);
+            await einschwingen();
+            for (const [l, li] of mitRampe) {
+                const z = await lauf({ proben: ["querhang"], taeter: l.taeter, hangOrt: RAMPE });
+                if (aus[li].querhang) aus[li].querhang.rampe = z.querhang || { fehler: "die Rampe lief nicht" };
+            }
         }
     } finally {
         await browser.close();

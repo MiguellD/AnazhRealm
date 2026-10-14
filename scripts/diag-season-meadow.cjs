@@ -16,7 +16,7 @@ const path = require("path");
 
 const root = path.resolve(__dirname, "..");
 const lies = (p) => fs.readFileSync(path.join(root, p), "utf8");
-const STAMM = lies("anazhRealm.js");
+const STAMM = require("./lib/stamm.cjs").text(root);
 const KERN = lies("foundry-core.js");
 const SHELL = lies("worlds/terrain/phytogenesis.js");
 

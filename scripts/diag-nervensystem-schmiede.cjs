@@ -39,6 +39,7 @@ const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.NERV_SCHMIEDE_PORT || 4433);
 const root = path.resolve(__dirname, "..");
@@ -195,7 +196,7 @@ function staticLaws(anazhSrc, scSrc, manifestSrc) {
 }
 
 (async () => {
-    const anazhSrc = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+    const anazhSrc = stammLib.text(root);
     const scSrc = fs.readFileSync(path.join(root, "schmiede-core.js"), "utf8");
     const manifestSrc = fs.readFileSync(path.join(root, "cores.manifest.json"), "utf8");
 

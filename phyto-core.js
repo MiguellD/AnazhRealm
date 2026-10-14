@@ -1308,14 +1308,13 @@
     // Formraum (elong/sph), Sediment-Bänke (strat), Wadell-Facetten-Clipping (round) + Laplace-
     // Rundung. THREE + eine noise3-Funktion werden INJIZIERT (kein Perm-Tabellen-Port; Main gibt
     // seine SimplexNoise, das Portal seine simplex3 — die Form ist gesetz-gleich, nicht byte-
-    // gleich, was für Fels genügt [kein Lockstep]). Optional geologische Vertex-Farben
-    // (opts.withColor + THREE.Color) für Materialien, die vertexColors lesen. `seq` (0..1) treibt
+    // gleich, was für Fels genügt [kein Lockstep]). Nur die GESTALT: den Stoff legt das Fels-Gesetz
+    // auf (gelaende-core `felsNetz`, K17; die Vertex-Farben hier sind gefallen). `seq` (0..1) treibt
     // die Facetten-Ebenen deterministisch. Rückgabe: eine THREE.BufferGeometry (Radius ~size).
     function buildBoulderGeometry(THREE, noise3, P, seq) {
         if (!THREE || !THREE.IcosahedronGeometry) return null;
         const rnd = typeof seq === "function" ? seq : Math.random;
         const rrange = (a, b) => a + (b - a) * rnd();
-        const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
         const vadd = (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
         const vscl = (a, s) => [a[0] * s, a[1] * s, a[2] * s];
         const vsub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
@@ -1436,69 +1435,6 @@
         for (let i = 0; i < n; i++) pos.setXYZ(i, V[i][0], V[i][1], V[i][2]);
         pos.needsUpdate = true;
         geo.computeVertexNormals();
-        // Optional: geologische Vertex-Farben (AO in Mulden · Sediment-Bänke · Eisen-Schlieren).
-        if (P.withColor && THREE.Color) {
-            const nor = geo.attributes.normal;
-            const ao = new Float32Array(n);
-            for (let i = 0; i < n; i++) {
-                let mean = [0, 0, 0],
-                    c = 0;
-                adj[i].forEach((j) => {
-                    mean = vadd(mean, V[j]);
-                    c++;
-                });
-                mean = vscl(mean, 1 / Math.max(1, c));
-                const toMean = vsub(mean, V[i]),
-                    nv = [nor.getX(i), nor.getY(i), nor.getZ(i)];
-                ao[i] = clamp(0.5 + vdot(vn(toMean), nv) * 1.2, 0.12, 1);
-            }
-            const cols = new Float32Array(n * 3);
-            const base = new THREE.Color(P.rockA || 0x8a8278),
-                dark = new THREE.Color(P.rockB || 0x4a463e),
-                acc = new THREE.Color(P.rockC || 0x9a9286);
-            const quartz = new THREE.Color(0xe8e0d2),
-                feld = new THREE.Color(0xc69a86),
-                mica = new THREE.Color(0x2c2a26),
-                bleach = new THREE.Color(0xccc7b6),
-                moss = new THREE.Color(0x6f8a3e),
-                iron = new THREE.Color(0x7a4a26);
-            const rockLichen = P.rockLichen != null ? P.rockLichen : 0;
-            const sr = mulberry32(Math.floor((P.seed || 1) * 9973));
-            for (let i = 0; i < n; i++) {
-                let c = base.clone();
-                const up = nor.getY(i);
-                if (P.speckle) {
-                    const m = sr();
-                    if (m < 0.14) c.lerp(quartz, 0.6);
-                    else if (m < 0.26) c.lerp(feld, 0.45);
-                    else if (m < 0.34) c.lerp(mica, 0.65);
-                }
-                c.lerp(dark, ao[i] * 0.7);
-                if (ao[i] < 0.42 && up > 0.1) c.lerp(bleach, ((0.42 - ao[i]) / 0.42) * 0.4 * clamp(up, 0, 1));
-                if (strat > 0.02) {
-                    const band = Math.sin(V[i][1] * 7.0 + off);
-                    if (band > 0.4) c.lerp(acc, 0.55 * strat);
-                    else if (band < -0.4) c.lerp(dark, 0.6 * strat);
-                }
-                const stain = fbm3([V[i][0] * 1.4, V[i][1] * 3.2, V[i][2] * 1.4], 3, off + 21.0);
-                if (stain > 0.22) c.lerp(iron, (stain - 0.22) * 0.6);
-                // Vorlagen-Flechte/Moos (phytogenesis buildBoulder): auf sonnigen Kuppen, feucht-
-                // gemustert. Tag-neutral gegated (rockLichen default 0 → AnazhRealm-Fels unverändert;
-                // die Portal-Vorlage reicht 0.6 → ihr Moos bleibt). Byte-treu zur Vorlage.
-                if (rockLichen > 0 && up > 0.22) {
-                    const patch = fbm3([V[i][0] * 2.4, V[i][1] * 2.4, V[i][2] * 2.4], 3, off + 33.0);
-                    const lf = clamp((up - 0.22) / 0.5, 0, 1) * rockLichen;
-                    if (patch > -0.05) c.lerp(moss, clamp((patch + 0.05) * 1.8, 0, 1) * lf * 0.6);
-                }
-                const mott = fbm3([V[i][0] * 0.8, V[i][1] * 0.8, V[i][2] * 0.8], 3, off + 7.7);
-                c.multiplyScalar(1 + mott * 0.22);
-                c.multiplyScalar(0.88 + sr() * 0.22);
-                cols[i * 3] = c.r;
-                cols[i * 3 + 1] = c.g;
-                cols[i * 3 + 2] = c.b;
-            }
-            geo.setAttribute("color", new THREE.BufferAttribute(cols, 3));
-        }
         const size = P.size != null ? P.size : 0.5;
         geo.scale(size, size, size);
         return geo;
@@ -2094,7 +2030,8 @@
         return kind === "tree" && Number.isInteger(V) && V >= FREISTAND.ab ? V + 1 : 0;
     }
     function forestStandDensity(fbm, x, z, opt) {
-        const d = fbm(x * 0.014 + 30, z * 0.014 + 12) * 0.55 + fbm(x * 0.038 + 5, z * 0.038 + 20) * 0.45;
+        const f1 = fbm(x * 0.014 + 30, z * 0.014 + 12);
+        const f2 = fbm(x * 0.038 + 5, z * 0.038 + 20);
         let contrast = FOREST_STAND.host.contrast,
             mid = FOREST_STAND.host.mid;
         if (typeof opt === "string") {
@@ -2107,6 +2044,11 @@
             if (opt.contrast != null) contrast = +opt.contrast;
             if (opt.mid != null) mid = +opt.mid;
         }
+        return forestStandDensityAus(f1, f2, contrast, mid);
+    }
+    // Die Bestandsdichte aus ihren zwei Oktaven (grob f1, fein f2) — die EINE Formel für den Ort und sein Mittel (forestBestand).
+    function forestStandDensityAus(f1, f2, contrast, mid) {
+        const d = f1 * 0.55 + f2 * 0.45;
         const v = (d - 0.5) * contrast + mid;
         return v < 0 ? 0 : v > 1 ? 1 : v;
     }
@@ -2132,19 +2074,179 @@
                       return t * t * (3 - 2 * t);
                   };
         const pf = (c) => Math.max(0, 1 - Math.abs(patch - c) / 0.14);
-        const wF = (ss(0.4, 0.8, clim) * 0.45 + dry * 0.5 + 0.04) * (0.18 + 4.8 * pf(0.15)); // Fichte→kiefer: trockene Höhen
-        const wT = (ss(0.5, 0.9, clim) * 0.38 + dry * 0.3 + 0.03) * (0.16 + 4.2 * pf(0.36)); // Tanne: höher/feuchter
-        const wE = ((1 - dry) * 0.65 + wet * 0.35 + 0.04) * (0.18 + 4.6 * pf(0.58)); // Eiche: tiefe, feuchte Lagen
-        const wB = ((0.14 + 0.45 * open) * (1 - Math.abs(clim - 0.5) * 0.9) + 0.03) * (0.2 + 3.6 * pf(0.82)); // Birke: Pionier in Lücken
+        let pF = pf(0.15);
+        let pT = pf(0.36);
+        let pE = pf(0.58);
+        let pB = pf(0.82);
+        let sF = ss(0.4, 0.8, clim);
+        let sT = ss(0.5, 0.9, clim);
+        let aC = Math.abs(clim - 0.5);
+        // DAS MITTEL UNTER DEM FUSSABDRUCK (`forestNische` mit ctx.fussM): jeder Term, den die Gewichte linear lesen, blendet
+        // zu seinem Erwartungswert über das Mosaik (kP: Bestands-Mosaik, kC: Klima) — ohne `opts.mittel` dieselben Zahlen.
+        const mi = opts && opts.mittel ? opts.mittel : null;
+        if (mi) {
+            const M = mi.M;
+            pF += (M.pF - pF) * mi.kP;
+            pT += (M.pT - pT) * mi.kP;
+            pE += (M.pE - pE) * mi.kP;
+            pB += (M.pB - pB) * mi.kP;
+            sF += (M.sF - sF) * mi.kC;
+            sT += (M.sT - sT) * mi.kC;
+            aC += (M.aC - aC) * mi.kC;
+        }
+        const wF = (sF * 0.45 + dry * 0.5 + 0.04) * (0.18 + 4.8 * pF); // Fichte→kiefer: trockene Höhen
+        const wT = (sT * 0.38 + dry * 0.3 + 0.03) * (0.16 + 4.2 * pT); // Tanne: höher/feuchter
+        const wE = ((1 - dry) * 0.65 + wet * 0.35 + 0.04) * (0.18 + 4.6 * pE); // Eiche: tiefe, feuchte Lagen
+        const wB = ((0.14 + 0.45 * open) * (1 - aC * 0.9) + 0.03) * (0.2 + 3.6 * pB); // Birke: Pionier in Lücken
         const wW = wet * wet * (1 - dry) * 0.8 + 0.01; // Weide→erle base; Caller + waterProx²·6
         return { wF, wT, wE, wB, wW };
+    }
+
+    // DAS MOSAIK-MITTEL eines Wald-Rauschens (K16, die Fern-Farbe): die Erwartungswerte der Terme, die forestNicheWeights
+    // linear liest — pf je Patch-Zentrum, die zwei Klima-Rampen, |clim − 0,5| —, gezogen aus dem Rauschen SELBST (32 × 32
+    // Proben im Raster 7,31 Rausch-Einheiten, weit über jede Korrelation; Patch und Klima lesen dasselbe fbm). Einmal je
+    // fbm-Funktion (WeakMap), rein, ohne rng.
+    const _mosaikMemo = typeof WeakMap === "function" ? new WeakMap() : null;
+    function forestMosaikMittel(fbm) {
+        const hit = _mosaikMemo && _mosaikMemo.get(fbm);
+        if (hit) return hit;
+        const ss = (e0, e1, v) => {
+            let t = (v - e0) / (e1 - e0);
+            t = t < 0 ? 0 : t > 1 ? 1 : t;
+            return t * t * (3 - 2 * t);
+        };
+        const pf = (v, c) => Math.max(0, 1 - Math.abs(v - c) / 0.14);
+        const M = { pF: 0, pT: 0, pE: 0, pB: 0, sF: 0, sT: 0, aC: 0 };
+        const N = 32;
+        for (let i = 0; i < N; i++)
+            for (let j = 0; j < N; j++) {
+                const v = fbm(i * 7.31 + 0.37, j * 7.31 + 0.71);
+                M.pF += pf(v, 0.15);
+                M.pT += pf(v, 0.36);
+                M.pE += pf(v, 0.58);
+                M.pB += pf(v, 0.82);
+                M.sF += ss(0.4, 0.8, v);
+                M.sT += ss(0.5, 0.9, v);
+                M.aC += Math.abs(v - 0.5);
+            }
+        for (const k in M) M[k] /= N * N;
+        if (_mosaikMemo) _mosaikMemo.set(fbm, M);
+        return M;
+    }
+    // Die Blende einer Oktave der Wellenlänge λ unter einem Fußabdruck der Kante f: ihr Wert bis f = λ/4, ihr Mittel ab f = λ/2
+    // (Nyquist: ein Raster der Kante f trägt nur Wellen ab 2 f).
+    function forestOktavMittel(f, lambda) {
+        let t = (f / lambda - 0.25) / 0.25;
+        t = t < 0 ? 0 : t > 1 ? 1 : t;
+        return t * t * (3 - 2 * t);
+    }
+
+    // DER BESTAND UNTER DEM FUSSABDRUCK (K16, die Fern-Farbe): Bestandsdichte sd und Geburt (forestGeburt(sd), die Dart-Rate) eines
+    // Orts, der für eine Fläche der Kante fussM steht. forestStandDensity liest zwei Oktaven (λ 71 m und 26 m); was der Abdruck
+    // nicht auflöst, trägt seinen ERWARTUNGSWERT über die Verteilung des Rauschens: die feine Oktave bedingt auf die grobe
+    // (E[· | grob], 32 Quantile), beide zusammen das Mittel des Bestands. Geburt und Dichte werden je für sich gemittelt (die
+    // Geburt ist nichtlinear — das Mittel der Geburt ist nie die Geburt des Mittels). fussM 0: die Zahlen von
+    // forestStandDensity und forestGeburt. Die Kronen-Deckung daraus trägt forestKronenDeckung.
+    const _bestandMemo = typeof WeakMap === "function" ? new WeakMap() : null;
+    function forestBestand(fbm, x, z, fussM) {
+        const sdAus = (f1, f2) => forestStandDensityAus(f1, f2, FOREST_STAND.host.contrast, FOREST_STAND.host.mid);
+        const f1 = fbm(x * 0.014 + 30, z * 0.014 + 12);
+        const f2 = fbm(x * 0.038 + 5, z * 0.038 + 20);
+        const sd = sdAus(f1, f2);
+        const geburt = forestGeburt(sd);
+        const k2 = fussM > 0 ? forestOktavMittel(fussM, 1 / 0.038) : 0;
+        if (!(k2 > 0)) return { sd, geburt };
+        let Q = _bestandMemo && _bestandMemo.get(fbm);
+        if (!Q) {
+            const v = [];
+            for (let i = 0; i < 32; i++) for (let j = 0; j < 32; j++) v.push(fbm(i * 7.31 + 0.37, j * 7.31 + 0.71));
+            v.sort((a, b) => a - b);
+            const q = new Float64Array(32);
+            for (let i = 0; i < 32; i++) q[i] = v[i * 32 + 16];
+            let sd0 = 0;
+            let a0 = 0;
+            for (let i = 0; i < 32; i++)
+                for (let j = 0; j < 32; j++) {
+                    const s = sdAus(q[i], q[j]);
+                    sd0 += s;
+                    a0 += forestGeburt(s);
+                }
+            Q = { q, sd0: sd0 / 1024, a0: a0 / 1024 };
+            if (_bestandMemo) _bestandMemo.set(fbm, Q);
+        }
+        let sd1 = 0;
+        let a1 = 0;
+        for (let j = 0; j < 32; j++) {
+            const s = sdAus(f1, Q.q[j]);
+            sd1 += s;
+            a1 += forestGeburt(s);
+        }
+        sd1 /= 32;
+        a1 /= 32;
+        const k1 = forestOktavMittel(fussM, 1 / 0.014);
+        const sdM = sd1 + (Q.sd0 - sd1) * k1;
+        const aM = a1 + (Q.a0 - a1) * k1;
+        return { sd: sd + (sdM - sd) * k2, geburt: geburt + (aM - geburt) * k2 };
+    }
+
+    // DIE KRONEN-DECKUNG DES GEPFLANZTEN BESTANDS (K16, die Naht): der Anteil des Bodens unter Kronen, den planForestCell samt der
+    // Kronen-Schüchternheit des Hosts im Mittel stehen lässt — die Fernform des Waldes (das Kronendach des Rings) liest diese
+    // Zahl, nie die Geburt. Die Geburt ist die Rate der Darts (F.dartsPerCell je F.cell², Wurf gegen forestGeburt(sd)); die
+    // Schüchternheit (Zentren >= F.pack·(Ti+Tj), das prio-Maximum gewinnt) ist ein Matérn-II-Prozess: ein Dart der Krone T steht
+    // mit (1 − e^(−λA))/(λA), A = π·pack²·E[(T+Tj)²]; seine Krone überlappt keine andere, die Deckung ist die Summe ihrer Flächen.
+    // Die Kronen: T = Art-Krone × Größe (forestTreeSize über ihre Quantile samt der Überhälter). Befund 11.10.: das Dach las die
+    // Geburt (0,90) als Deckung, der gepflanzte Bestand deckt 0,16 — die Ferne stand als geschlossenes Grün vor offenem Wald.
+    // kronen = [[Gewicht, Kronen-Radius bei Größe 1], …] (die Arten-Mischung am Ort); F = { cell, dartsPerCell, pack }.
+    function forestKronenDeckung(sd, geburt, kronen, F) {
+        const lambda = (F.dartsPerCell / (F.cell * F.cell)) * (geburt > 0 ? geburt : 0);
+        if (!(lambda > 0) || !kronen || !kronen.length) return 0;
+        let wSumme = 0;
+        for (let k = 0; k < kronen.length; k++) wSumme += kronen[k][0] > 0 ? kronen[k][0] : 0;
+        if (!(wSumme > 0)) return 0;
+        // Die Größen-Verteilung (forestTreeSize): ue gleichverteilt auf [0, 1 − 0,52·sd], s = 0,55 + 1,45·ue^1,45; mit 5 % ein
+        // Überhälter max(s, 1,3 + 0,55·u). 12 × 4 Quantile.
+        const NQ = 12;
+        const NU = 4;
+        const oben = 1 - 0.52 * (sd < 0 ? 0 : sd > 1 ? 1 : sd);
+        const groesse = [];
+        for (let i = 0; i < NQ; i++) {
+            const s = 0.55 + 1.45 * Math.pow(((i + 0.5) / NQ) * oben, 1.45);
+            groesse.push([0.95 / NQ, s]);
+            for (let j = 0; j < NU; j++) groesse.push([0.05 / NQ / NU, Math.max(s, 1.3 + 0.55 * ((j + 0.5) / NU))]);
+        }
+        const T = [];
+        for (let k = 0; k < kronen.length; k++) {
+            const w = kronen[k][0] > 0 ? kronen[k][0] / wSumme : 0;
+            if (!(w > 0)) continue;
+            for (let g = 0; g < groesse.length; g++) {
+                const s = groesse[g][1] < 0.5 ? 0.5 : groesse[g][1] > 1.95 ? 1.95 : groesse[g][1];
+                T.push([w * groesse[g][0], kronen[k][1] * s]);
+            }
+        }
+        let mT = 0;
+        let mT2 = 0;
+        for (let i = 0; i < T.length; i++) {
+            mT += T[i][0] * T[i][1];
+            mT2 += T[i][0] * T[i][1] * T[i][1];
+        }
+        let deckung = 0;
+        for (let i = 0; i < T.length; i++) {
+            const t = T[i][1];
+            const A = Math.PI * F.pack * F.pack * (t * t + 2 * t * mT + mT2);
+            deckung += T[i][0] * Math.PI * t * t * ((1 - Math.exp(-lambda * A)) / A);
+        }
+        return deckung > 1 ? 1 : deckung;
     }
 
     // DIE NISCHE EINES ORTS (EINE Formel für den gepflanzten und den fernen Wald): Klima, Bestands-Mosaik, Feuchte,
     // Höhen-Trockenheit und Offenheit am Ort (x, z) auf der Oberfläche surfaceY bei Bestandsdichte sd → die Arten-
     // Gewichte der fünf Wald-Arten (wF Kiefer · wT Tanne · wE Eiche · wB Birke · wW Erle, ohne die Auto-Arten) samt
     // clim/patch/feu. planForestCell würfelt daraus die Art, die Fernform des Hosts mischt daraus die Kronen-Farbe.
-    // Keine rng-Aufrufe. ctx = { F (dryScale), baseH, fbm(px,pz), feuchteAt(x,z,surfY) }.
+    // Keine rng-Aufrufe. ctx = { F (dryScale), baseH, fbm(px,pz), feuchteAt(x,z,surfY), fussM? }.
+    // DER FUSSABDRUCK (K16, die Fern-Farbe): `ctx.fussM` = die Kante der Fläche, für die der Ort steht (eine Masche des Fern-
+    // Rings, ein Texel des Feld-Passes). Das Bestands-Mosaik (λ 20 m) und das Klima (λ 83 m) tragen darunter ihr Mittel
+    // (forestMosaikMittel, forestOktavMittel): ihr Wert wechselte unter einer 13 × 39-m-Masche je Punkt die Art, und jede
+    // Masche zog als radialer Streifen um den Spieler. Ohne fussM (planForestCell, das Labor) dieselben Zahlen wie zuvor.
     function forestNische(x, z, surfaceY, sd, ctx) {
         const ss = (e0, e1, v) => {
             let t = (v - e0) / (e1 - e0);
@@ -2159,7 +2261,24 @@
         const open = 1 - sd;
         const clim = ctx.fbm(x * 0.012 + 50, z * 0.012 + 9); // breiter Klima-/Trockengradient
         const patch = ctx.fbm(x * 0.05 + 200, z * 0.05 + 90); // Bestands-Mosaik (Reinbestände + Mischsäume)
-        const NW = forestNicheWeights(clim, dry, wet, open, patch, { ss });
+        const fussM = ctx.fussM > 0 ? ctx.fussM : 0;
+        const NW = forestNicheWeights(
+            clim,
+            dry,
+            wet,
+            open,
+            patch,
+            fussM
+                ? {
+                      ss,
+                      mittel: {
+                          M: forestMosaikMittel(ctx.fbm),
+                          kP: forestOktavMittel(fussM, 1 / 0.05),
+                          kC: forestOktavMittel(fussM, 1 / 0.012),
+                      },
+                  }
+                : { ss }
+        );
         return {
             wF: NW.wF,
             wT: NW.wT,
@@ -4029,6 +4148,35 @@
     function _budgetMal(m) {
         return m.rad && Array.isArray(m.rad.raeder) && m.rad.raeder.length ? m.rad.raeder.length : 1;
     }
+    // DIE FLÜGEL-GESTALT (1310-4): ist b dieselbe Gestalt wie a, nur verschoben? Derselbe Index, jede Spur gleich (1e-6),
+    // die Lage um EINEN Vektor versetzt (1e-5). a, b = { pos, idx, spuren: [Array | null, …] } (die Spuren in derselben
+    // Reihenfolge). Gibt den Versatz [dx, dy, dz] oder null. Vorder- und Hinterflügel einer Seite (porta `makeLeaf(seite,
+    // ±zFace)`) sind so gebaut: der Wirt zeichnet den zweiten als Instanz des ersten (`_foundryFluegelInstanz`), das Gesetz
+    // zählt ihn mit ihm (`budgetSippen`) — EINE Regel für beide.
+    function budgetGestaltVersatz(a, b) {
+        const A = a.pos,
+            B = b.pos;
+        if (!A || !B || A === B || A.length !== B.length || A.length < 3) return null;
+        if (!!a.idx !== !!b.idx || (a.idx && a.idx.length !== b.idx.length)) return null;
+        if (a.idx) for (let i = 0; i < a.idx.length; i++) if (a.idx[i] !== b.idx[i]) return null;
+        if (a.spuren.length !== b.spuren.length) return null;
+        for (let s = 0; s < a.spuren.length; s++) {
+            const x = a.spuren[s],
+                y = b.spuren[s];
+            if (!x !== !y) return null;
+            if (!x) continue;
+            if (x.length !== y.length) return null;
+            for (let i = 0; i < x.length; i++) if (Math.abs(x[i] - y[i]) > 1e-6) return null;
+        }
+        const d = [B[0] - A[0], B[1] - A[1], B[2] - A[2]];
+        for (let i = 0; i < A.length; i++) if (Math.abs(B[i] - A[i] - d[i % 3]) > 1e-5) return null;
+        return d;
+    }
+    function _budgetGestalt(m) {
+        const spuren = [m.normal && m.normal.array ? m.normal.array : null];
+        for (const a of BUDGET_GESETZ.formAttr) spuren.push(m[a] && m[a].array ? m[a].array : null);
+        return { pos: m.position.array, idx: m.index || null, spuren: spuren };
+    }
     // Die Kosten einer gelieferten Stufe nach der Regel des Wirts (Beipack ohne Puffer zählt nicht). Der Schatten-Teil
     // (S3, `teil: "schatten"`) zeichnet nur in den Kaskaden — er zählt nicht zur Stufe, sondern zu ihrem Wurf (`budgetWurf`).
     function budgetSippen(meshes) {
@@ -4036,6 +4184,7 @@
             verts = 0,
             draws = 0;
         const gr = new Map();
+        const fluegel = [];
         for (const m of meshes || []) {
             if (!_budgetTeil(m) || m.teil === "schatten") continue;
             const nv = m.position.array.length / 3;
@@ -4043,6 +4192,14 @@
             verts += nv;
             const k = budgetSippe(m);
             if (k === null) {
+                // DIE FLÜGEL-GESTALT: wiederholt ein Flügel-Teil ein früheres desselben Stoffs und derselben Form nur
+                // verschoben, zeichnet der Wirt es als dessen Instanz — kein eigener Draw
+                if (m.tuer && !m.rad) {
+                    const art = budgetStoff(m.kind, m.mat) + "#" + _budgetForm(m);
+                    const g = _budgetGestalt(m);
+                    if (fluegel.some((v) => v.art === art && budgetGestaltVersatz(v.g, g))) continue;
+                    fluegel.push({ art: art, g: g });
+                }
                 draws++;
                 continue;
             }
@@ -4296,8 +4453,36 @@
             }
         }
         const lebend = () => gruppen.filter((g) => !g.in);
-        const zaehle = () =>
-            lebend().reduce((s, g) => s + Math.max(1, Math.ceil(g.verts / BUDGET_GESETZ.teilVertsMax)), 0);
+        // Gezählt wird in der Einheit des Wirts (`budgetSippen`): ein Flügel, dessen Teile die eines früheren desselben
+        // Stoffs der Reihe nach um EINEN Vektor verschoben wiederholen (DIE FLÜGEL-GESTALT, `budgetGestaltVersatz`), wird
+        // seine Instanz — er zählt nicht.
+        const zwillingMemo = new Map();
+        const zwilling = (a, b) => {
+            const key = a.nr + ":" + b.nr + ":" + a.teile.length + ":" + b.teile.length;
+            if (zwillingMemo.has(key)) return zwillingMemo.get(key);
+            let d0 = null,
+                ja = a.stoff === b.stoff && a.teile.length === b.teile.length;
+            for (let i = 0; ja && i < a.teile.length; i++) {
+                const d = budgetGestaltVersatz(_budgetGestalt(a.teile[i].m), _budgetGestalt(b.teile[i].m));
+                if (!d) ja = false;
+                else if (!d0) d0 = d;
+                else for (let c = 0; c < 3; c++) if (Math.abs(d[c] - d0[c]) > 1e-5) ja = false;
+            }
+            zwillingMemo.set(key, ja);
+            return ja;
+        };
+        const zaehle = () => {
+            const vorlagen = [];
+            let n = 0;
+            for (const g of lebend()) {
+                if (g.klasse.indexOf("T:") === 0) {
+                    if (vorlagen.some((v) => zwilling(v, g))) continue;
+                    vorlagen.push(g);
+                }
+                n += Math.max(1, Math.ceil(g.verts / BUDGET_GESETZ.teilVertsMax));
+            }
+            return n;
+        };
         // Je Schritt fällt das Paar mit dem kleinsten SEH-FEHLER = Fläche des faltenden Stoffs × Seh-Abstand: was das
         // Auge kaum sieht (kleine Fläche) oder kaum unterscheidet (kleiner Abstand), fällt zuerst; die kleinere Fläche
         // faltet in die größere. (Die Dreiecks-Zahl ist kein Seh-Maß: eine Glas-Fassade aus 12 Dreiecken deckt 850 m².)
@@ -4612,6 +4797,9 @@
         solitaerGestalt: solitaerGestalt,
         forestStandDensity: forestStandDensity,
         forestGeburt: forestGeburt,
+        forestBestand: forestBestand,
+        forestKronenDeckung: forestKronenDeckung, // K16: die Kronen-Deckung des gepflanzten Bestands (das Dach des Rings liest sie)
+        forestOktavMittel: forestOktavMittel, // K16: die Blende einer Oktave unter einem Fußabdruck (Wert → Mittel) // K16: Bestandsdichte + Deckung unter einem Fußabdruck (die Fern-Farbe)
         forestNicheWeights: forestNicheWeights,
         forestNische: forestNische,
         forestTreeSize: forestTreeSize,
@@ -4693,6 +4881,7 @@
         budgetGlut: budgetGlut,
         budgetSippe: budgetSippe, // die EINE Verschmelz-Regel eines Teils (Wirt: Flatten + Ofen, Gesetz: Draws)
         budgetSippen: budgetSippen, // Dreiecke + Draws einer gelieferten Stufe nach der Regel des Wirts
+        budgetGestaltVersatz: budgetGestaltVersatz, // dieselbe Gestalt, nur verschoben (Flügel-Instanz des Wirts) — der Versatz oder null
         budgetWurf: budgetWurf, // S3: der Schatten-Teil einer Stufe (Dreiecke, Teile)
         budgetZeile: budgetZeile, // Stufen-Klammer + Budget-Zeile eines Kerns
         kerneVereinen: kerneVereinen, // der EINE Merge der Zweit-Kern-Blöcke (Stufen · Budget · Gestalten)

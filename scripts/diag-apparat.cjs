@@ -21,6 +21,7 @@
 "use strict";
 const fs = require("fs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 
 // Der eingefrorene Bestand (die U1-Nachher-Zahl, kommentar-bereinigt gezählt).
 // Der EINE legitime Rest: `chunk.toString()` am Node-Stream (kein Quelltext-
@@ -190,7 +191,7 @@ function main() {
     if (process.argv.includes("--selftest")) selftest();
     const root = path.join(__dirname, "..");
     const playtestSrc = fs.readFileSync(path.join(root, "scripts", "playtest.cjs"), "utf8");
-    const stammSrc = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+    const stammSrc = stammLib.text(root);
     const ratchet = scanRatchet(playtestSrc);
     const anker = scanAnker(playtestSrc, stammSrc);
     const errs = ratchet.errs.concat(anker.errs);

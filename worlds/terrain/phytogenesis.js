@@ -2154,18 +2154,37 @@ function buildForest() {
         cRock = new THREE.Color(PORTAL_GROUND.rock),
         cWet = new THREE.Color(PORTAL_GROUND.wet),
         cSand = new THREE.Color(PORTAL_GROUND.sand);
+    // DER FELS DES BODENS ist das Fels-Gesetz (gelaende-core `felsFarbe`, K17) — dasselbe, das der Welt-Boden und die
+    // Fels-Gestalten lesen: Pakete, die Mittel der Bänke, Kanten und Klüfte, die Rinde an konvexen Kanten aus der Krümmung,
+    // Flechte und Moos. Der Palette-Stein ist eine sRGB-Absicht (FARB-GESETZ), sein linearer Wert der Grundton; die Masche
+    // (TS / SEG) ist die Kante, die das Gesetz trägt. Bis K17 tönte hier der Palette-Stein den Fels als eine Masse.
+    const GK = window.__gelaendeCore;
+    if (!GK || typeof GK.felsFarbe !== "function" || typeof GK.felsKruemmung !== "function")
+        throw new Error("phytogenesis: gelaende-core felsFarbe fehlt (Kern-Pflicht, worlds/terrain/index.html)");
+    const felsB = GK.felsBasis(cRock.clone().convertSRGBToLinear().toArray());
+    for (let i = 0; i < tp.count; i++) tp.setZ(i, forestGroundH(tp.getX(i), -tp.getY(i)));
+    tg.computeVertexNormals();
+    const tn = tg.attributes.normal;
+    const felsK = GK.felsKruemmung(tp.array, tn.array, tg.index ? tg.index.array : null, tp.count);
+    const felsT = [0, 0, 0];
     for (let i = 0; i < tp.count; i++) {
         const lx = tp.getX(i),
             ly = tp.getY(i),
             wx = lx,
             wz = -ly;
-        tp.setZ(i, forestGroundH(wx, wz));
         const sd = standDensity(wx, wz),
             rk = rockiness(wx, wz),
             sl = slopeAt(wx, wz).s,
             pd = Math.min(pathDist(wx, wz), trailAt(wx, wz));
         const c = cMead.clone().lerp(cLit, sstep(0.3, 0.8, sd));
-        c.lerp(cRock, Math.max(sstep(0.16, 0.3, sl), sstep(0.5, 0.85, rk) * 0.7));
+        const wFels = Math.max(sstep(0.16, 0.3, sl), sstep(0.5, 0.85, rk) * 0.7);
+        if (wFels > 0) {
+            // die Normale der Ebene (lokal z oben) in der Welt: (nx, nz, −ny)
+            GK.felsFarbe(felsB, wx, tp.getZ(i), wz, tn.getX(i), tn.getZ(i), -tn.getY(i), felsK[i], 1, moistAt(wx, wz), TS / SEG, felsT);
+            c.r += (felsT[0] - c.r) * wFels;
+            c.g += (felsT[1] - c.g) * wFels;
+            c.b += (felsT[2] - c.b) * wFels;
+        }
         if (pd < 3.4) c.lerp(cDirt, sstep(3.4, 0.4, pd));
         c.multiplyScalar(0.58 + 0.46 * lightAt(wx, wz)); // FIX v27: GEBACKENES KRONENDACH-LICHT — lgrid existiert schon (Unterwuchs-Treiber), floss aber nie in die Bodenfarbe. Jetzt: Bestandeskern dunkel, Lichtung hell -> die Baeume werfen sichtbaren Makro-Schatten in die Albedo, unabhaengig von der Shadow-Map. Kostet 0 zur Laufzeit.
         const mw = moistAt(wx, wz);
@@ -2178,7 +2197,6 @@ function buildForest() {
         tcol.push(c.r, c.g, c.b);
     }
     tg.setAttribute("color", new THREE.Float32BufferAttribute(tcol, 3));
-    tg.computeVertexNormals();
     const terMat = new THREE.MeshStandardMaterial({
         vertexColors: true,
         roughness: 0.94,

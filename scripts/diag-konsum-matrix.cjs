@@ -24,14 +24,14 @@
 //   node scripts/diag-konsum-matrix.cjs      (npm run gate:konsum-matrix)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const fs = require("fs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 const { runWithWorker, fingerprintMeshes } = require("./lib/asset-worker-harness.cjs");
 
 const root = path.resolve(__dirname, "..");
 // Port über KONSUM_MATRIX_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4553.
 const PORT = Number(process.env.KONSUM_MATRIX_PORT || 4553);
-const stamm = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+const stamm = stammLib.text(root);
 
 const errs = [];
 function check(name, ok, detail) {

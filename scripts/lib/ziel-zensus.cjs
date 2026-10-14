@@ -269,7 +269,7 @@ function zielZensus(k) {
             for (const c of [name, stamm, stamm.replace(/\d+$/, "")]) {
                 if (!c) continue;
                 const m = suche('"' + c) || suche("'" + c) || suche("`" + c);
-                if (m) return { quelle: "anazhRealm.js", methode: m };
+                if (m) return { quelle: "Stamm", methode: m };
             }
             return null;
         };
@@ -754,7 +754,7 @@ function zielUrteil(z, lesen) {
                 aus,
                 "format",
                 `AUSGABE-FORMAT: ${aus.name || "#" + aus.id} (${form(aus)}, ${mb(aus.bytes)} MB) — das Gerät rendert rg11b10ufloat, der Inhalt ist ` +
-                    `lineares Licht ≥ 0, Kanal a liest keiner: die Hälfte reicht (−${mb(aus.bytes / 2)} MB; anazhRealm.js \`_ausgabeFormat\`)`
+                    `lineares Licht ≥ 0, Kanal a liest keiner: die Hälfte reicht (−${mb(aus.bytes / 2)} MB; Stamm \`_ausgabeFormat\`)`
             );
         else if (!geraet.rg11b10)
             hinweis.unshift(
@@ -817,7 +817,7 @@ function selbsttest() {
             {
                 id,
                 name,
-                erzeuger: { quelle: "anazhRealm.js", methode: "_probe" },
+                erzeuger: { quelle: "Stamm", methode: "_probe" },
                 format: "rgba16float",
                 w: 1920,
                 h: 1080,

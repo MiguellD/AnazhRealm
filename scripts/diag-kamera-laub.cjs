@@ -25,7 +25,9 @@ const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
-const { softwareWebGpuArgs } = require("./lib/software-gpu.cjs");
+const { WASSER_INSTALL } = require("./lib/wasser-linse.cjs");
+const stammLib = require("./lib/stamm.cjs");
+const { linsenWebGpuArgs, adapterZeile } = require("./lib/software-gpu.cjs");
 const { KAMERA_NAH_INSTALL } = require("./lib/kamera-nah.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 const argv = process.argv.slice(2);
@@ -62,12 +64,15 @@ const NAH_DECKUNG_MAX = 0.02;
 // Der Schmuggel steigt höchstens so hoch am Stamm hinauf (m), bis das Laub ohne Durchsicht die Linse deckt (die Kronen-Stellung).
 const SCHMUGGEL_HUB_M = 40;
 // Die Orte der Schau (Befund §2): die Ankunft, das Ufer mit dem Hain des Satzes, die Lichtung der Herde (8a) und der
-// 30°-Hang (2c, 8b/8c — dort steht nur Streu: Gestrüpp, Geröll, Stumpf).
+// 30°-Hang (2c, 8b/8c — dort steht nur Streu: Gestrüpp, Geröll, Stumpf). Jeder Ort kommt AUS DER WELT (K16, Orts-Wand):
+// das Ufer ist das Ostufer des nächsten Sees am Messort (`__wasserOrte`), die Lichtung die nächste ebene trockene Stelle
+// (12 m Umkreis, Spanne ≤ 1,5 m), der Hang die nächste Stelle mit 25–35° Neigung (`__weltOrt`, scripts/lib/welt-orte.cjs) —
+// in der alten Welt standen sie als Zahlen (−872/−1127, −789/−1331, −744/−1356), die Landform des Kerns verschob sie.
 const ORTE = [
-    { id: "ankunft", bild: "A 27", x: null, z: null },
-    { id: "ufer", bild: "A 41–47", x: -872, z: -1127, satz: "pflanz mir einen eichenhain am wasser", satzWerk: "baum_eiche" },
-    { id: "lichtung", bild: "C 01–04", x: -789, z: -1331 },
-    { id: "hang", bild: "B 28–31, C 05–12", x: -744, z: -1356 },
+    { id: "ankunft", bild: "A 27" },
+    { id: "ufer", bild: "A 41–47", art: "ufer", satz: "pflanz mir einen eichenhain am wasser", satzWerk: "baum_eiche" },
+    { id: "lichtung", bild: "C 01–04", art: "eben", such: { r: 12, spanne: 1.5 } },
+    { id: "hang", bild: "B 28–31, C 05–12", art: "hang", such: { min: 25, max: 35 } },
 ];
 const MODI = ["third", "ritt", "first"];
 
@@ -745,16 +750,19 @@ function ninja(arg) {
     return out;
 }
 
+// KAMERA_LAUB_STAMM: der Stamm-Text des Vorher (eine Stamm-Datei oder ein Baum, scripts/lib/stamm.cjs), ausgeliefert in
+// der Form dieses Baums (`liefere`: die Datei, die die Zeile trägt)
+const STAMM_TEXT = STAMM ? stammLib.text(STAMM) : null;
 const server = http.createServer((req, res) => {
     let p = req.url.split("?")[0];
     if (p === "/") p = "/index.html";
-    const fp =
-        STAMM && p === "/anazhRealm.js"
-            ? STAMM
-            : STUDIO && p === "/worlds/koerperstudio/koerperstudio.js"
-              ? STUDIO
-              : path.join(root, p);
-    if (fp !== STAMM && fp !== STUDIO && !fp.startsWith(root)) return ((res.statusCode = 403), res.end());
+    const vorher = STAMM_TEXT ? stammLib.liefere(root, p, STAMM_TEXT) : null;
+    if (vorher) {
+        res.setHeader("Content-Type", mime[".js"]);
+        return res.end(vorher);
+    }
+    const fp = STUDIO && p === "/worlds/koerperstudio/koerperstudio.js" ? STUDIO : path.join(root, p);
+    if (fp !== STUDIO && !fp.startsWith(root)) return ((res.statusCode = 403), res.end());
     fs.readFile(fp, (err, data) => {
         if (err) return ((res.statusCode = 404), res.end());
         res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
@@ -958,8 +966,13 @@ async function probe(arg) {
         const tO = performance.now();
         const z = (out.orte[ort.id] = { bild: ort.bild, modi: {} });
         try {
-            if (ort.x != null) {
-                st.playerMesh.position.set(ort.x, r._voxelSurfaceY(ort.x, ort.z) + 1.8, ort.z);
+            if (ort.art) {
+                // der Ort aus der Welt (s. ORTE): findet die Suche keinen, bricht der Ort laut — nie ein Ersatz
+                const see = ort.art === "ufer" ? window.__wasserOrte({}).see : null;
+                const O = ort.art === "ufer" ? see && see.ufer && { x: see.ufer[0], z: see.ufer[1] } : window.__weltOrt(ort.art, ort.such);
+                if (!O) throw new Error(`kein Ort der Art ${ort.art} aus der Welt`);
+                z.ortAusWelt = [O.x, O.z];
+                st.playerMesh.position.set(O.x, r._voxelSurfaceY(O.x, O.z) + 1.8, O.z);
                 z.fehlt = await steht(45000);
             }
             z.ms = { boden: Math.round(performance.now() - tO) };
@@ -1110,7 +1123,7 @@ async function probe(arg) {
 }
 
 (async () => {
-    const quelle = fs.readFileSync(STAMM || path.join(root, "anazhRealm.js"), "utf8");
+    const quelle = STAMM_TEXT || stammLib.text(root);
     const studioQuelle = fs.readFileSync(STUDIO || path.join(root, "worlds", "koerperstudio", "koerperstudio.js"), "utf8");
     if (process.argv.includes("--selftest")) {
         console.log("=== SELBST-TEST (ohne Welt) ===");
@@ -1183,6 +1196,24 @@ async function probe(arg) {
         const vorStudio = studioQuelle.replace(/_kamSeg\(LX,LY,LZ/g, "camG(LX,LY,LZ");
         const rot = wand(vorStand, vorStudio);
         check("Selbst-Test W: der Vor-Stand (Picks ohne Durchsicht · Wurf ohne Kugel · Studio mit camG) → W1 W2 W3 feuern", rot.every((w) => !w[1]), rot.map((w) => `${w[1] ? "✓" : "✗"} ${w[0].slice(0, 2)}`).join(" "));
+        // K4 — DAS BEWEISBILD PRÜFT SICH SELBST (K32, scripts/lib/abnahme-urteil.cjs): dieselbe Nah-Deckung steht in der EINEN
+        // Aufnahme jedes Beweisbilds. Die ABNAHME-Zeile nennt jeden eingeschmuggelten Fall beim Namen (Kamera im Laub, Ziel hinter
+        // Fels oder außerhalb, Schwarz-, Weiß-, Flachbild, fremder Stand, Bühne, Gerät, null und vakuös, das Bild-Paar), die
+        // Beweisbilder vom 13.10. (spec/abnahme) fallen ROT, und die Aufnahme misst, urteilt und wirft (der Vor-Stand ohne Wurf feuert).
+        const AU = require("./lib/abnahme-urteil.cjs");
+        const fdir = path.join(root, "spec", "abnahme");
+        const abnahmeBrueche = AU.abnahmeSelbsttest(fdir);
+        check("K4 Selbst-Test: die Abnahme-Zeile nennt jeden eingeschmuggelten Fall und jede Fixture beim Namen", abnahmeBrueche.length === 0, abnahmeBrueche.join(" · "));
+        for (const f of JSON.parse(fs.readFileSync(path.join(fdir, "faelle.json"), "utf8")).faelle)
+            console.log(`   Fixture ${f.name}: ${AU.abnahmeUrteil(AU.fixtureMessung(f, fdir), AU.SCHWELLEN).zeile}`);
+        const aufWand = (q) =>
+            /window\.__abnahmeUrteil\(m\)/.test(q) &&
+            /fehler\.abnahme = m;\s*throw fehler;/.test(q) &&
+            /return \{ u8, info, ms, abnahme: abnahme\(u8, W, H\) \}/.test(q) &&
+            /return \{ u8: voll, info, ms, abnahme: abnahme\(voll, W, H\) \}/.test(q);
+        const aufQuelle = fs.readFileSync(path.join(root, "scripts", "lib", "ausgabe-aufnahme.cjs"), "utf8");
+        check("K4 W: die EINE Aufnahme misst, urteilt und wirft beim Namen (jeder Rückweg trägt die Abnahme)", aufWand(aufQuelle), "");
+        check("K4 W: der Vor-Stand (die Aufnahme ohne Wurf) → die Wand feuert", !aufWand(aufQuelle.replace("throw fehler;", "")), "");
         if (errs.length) {
             console.error("\n❌ SELBST-TEST ROT — die Linse ist vakuös.");
             process.exit(1);
@@ -1199,7 +1230,8 @@ async function probe(arg) {
 
     const t0 = Date.now();
     await new Promise((res) => server.listen(PORT, "127.0.0.1", res));
-    const browser = await puppeteer.launch({ headless: true, protocolTimeout: 900000, args: softwareWebGpuArgs() });
+    const browser = await puppeteer.launch({ headless: true, protocolTimeout: 900000, args: linsenWebGpuArgs() });
+    await adapterZeile(browser);
     const page = await browser.newPage();
     await page.setViewport({ width: 1280, height: 720 });
     await page.evaluateOnNewDocument(() => {
@@ -1217,6 +1249,7 @@ async function probe(arg) {
     if (TEILE.includes("laub")) {
         const tL = Date.now();
         await page.evaluate(KAMERA_NAH_INSTALL);
+        await page.evaluate(WASSER_INSTALL); // __wasserOrte + __weltOrt: die Orte aus der Welt
         m = await page.evaluate(probe, { orte: process.env.KAMERA_LAUB_NUR ? ORTE.filter((o) => process.env.KAMERA_LAUB_NUR.split(",").includes(o.id)) : ORTE, radius: RADIUS, saum: SAUM, nahMax: NAH_DECKUNG_MAX, hubMax: SCHMUGGEL_HUB_M, jeOrt: 5, jeStreu: 2, gw: 48, gh: 27 });
         zeiten.laub = Date.now() - tL;
     }
@@ -1356,6 +1389,7 @@ async function bildPaare() {
         await page.goto(`${SEITE.replace(/\/$/, "")}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
         await page.evaluate(AUSGABE_INSTALL);
         await page.evaluate(KAMERA_NAH_INSTALL);
+        await page.evaluate(WASSER_INSTALL); // __wasserOrte + __weltOrt: die Orte aus der Welt
         const nur = (process.env.KAMERA_LAUB_NUR || "ufer,hang").split(",");
         const m = await page.evaluate(probe, { orte: ORTE.filter((o) => nur.includes(o.id)), radius: RADIUS, saum: SAUM, nahMax: NAH_DECKUNG_MAX, hubMax: SCHMUGGEL_HUB_M, jeOrt: 5, jeStreu: 2, gw: 48, gh: 27, nahAus: true, bilder: { w: 1280, h: 720 } });
         console.log(`=== DIE BILD-PAARE (echte GPU, Ausgabe-Pfad) → ${BILDER} ===`);

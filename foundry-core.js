@@ -3659,174 +3659,52 @@ function ridged(p, oct, off) {
     return s / nrm;
 }
 
+// DER FELS-STOFF DER GESTALTEN (K17): das EINE Gesetz des Felsens (gelaende-core `felsNetz` — Bänke nach Höhe und
+// Einfallen, Korn, die Verwitterungsrinde an konvexen Kanten aus der Krümmung, Mulden dunkel, Flechte und Moos) färbt
+// jedes Fels-Netz der Foundry; Welt-Boden und Gelände-Studio lesen dasselbe Gesetz. Die Töne der Gestalt (rockA · rockB ·
+// rockC) sind sRGB-Absichten (FARB-GESETZ), ihr linearer Wert ist Grundton, dunkle Lage und helle Bank — bis K17 lasen
+// sie sich roh (Felszacken Y 0,50, die Natur ≤ 0,30).
+function felsStoffNetz(P, g) {
+    const GK = typeof self !== "undefined" ? self.__gelaendeCore : null;
+    if (!GK || typeof GK.felsNetz !== "function" || typeof GK.felsBasis !== "function")
+        throw new Error("foundry-core: gelaende-core felsNetz fehlt (Kern-Pflicht, cores.manifest.json)");
+    const B = GK.felsBasis(vegFarbe(P.rockA).toArray(), vegFarbe(P.rockB).toArray(), vegFarbe(P.rockC).toArray());
+    if (!g.attributes.normal) g.computeVertexNormals();
+    const pos = g.attributes.position,
+        nor = g.attributes.normal,
+        n = pos.count;
+    const C = new Float32Array(n * 3);
+    GK.felsNetz(B, pos.array, nor.array, g.index ? g.index.array : null, n, { himmel: 1, feucht: 0.3 }, C);
+    g.setAttribute("color", new THREE.BufferAttribute(C, 3));
+    return g;
+}
+
 function buildBoulder(P) {
-    // DER GETEILTE SAMEN: das Fels-Rezept lebt in phyto-core.js (buildBoulderGeometry) —
-    // dieselbe EINE Quelle, die AnazhRealm liest. Ein Edit dort fliesst hierher UND nach
-    // AnazhRealm. detail+1, weil phyto-core intern (detail-1) rechnet → identische Silhouette.
-    // Fallback auf den Inline-Bau, falls der Samen (noch) nicht geladen ist.
+    // DER GETEILTE SAMEN: die Fels-GESTALT lebt in phyto-core.js (buildBoulderGeometry) — dieselbe EINE Quelle, die
+    // AnazhRealm liest; detail+1, weil phyto-core intern (detail-1) rechnet. Der STOFF ist das Fels-Gesetz
+    // (`felsStoffNetz`). Ohne den Samen bricht der Bau laut (bis K17 baute ein Inline-Zwilling Gestalt und Farbe nach).
     var __core = typeof self !== "undefined" && self.__phytoCore;
-    if (__core && typeof __core.buildBoulderGeometry === "function") {
-        var __d = Math.max(1, (P.detail || 6) - 3 - __lod * 2);
-        var __g = __core.buildBoulderGeometry(
-            THREE,
-            simplex3,
-            {
-                elong: P.elong,
-                sph: P.sph,
-                round: P.round,
-                rough: P.rough,
-                strat: P.strat,
-                seed: P.seed,
-                detail: __d + 1,
-                size: P.size,
-                withColor: true,
-                speckle: P.speckle,
-                rockLichen: rockLichen,
-                rockA: P.rockA,
-                rockB: P.rockB,
-                rockC: P.rockC,
-            },
-            rnd
-        );
-        if (__g) return __g;
-    }
-    const detail = Math.max(1, (P.detail || 6) - 3 - __lod * 2); // Stein nicht scharf in der Natur -> Budget zum Stamm
-    let geo = THREE.BufferGeometryUtils.mergeVertices(new THREE.IcosahedronGeometry(1, detail));
-    const pos = geo.attributes.position,
-        n = pos.count,
-        idx = geo.index.array;
-    const adj = Array.from({ length: n }, () => new Set());
-    for (let i = 0; i < idx.length; i += 3) {
-        const a = idx[i],
-            b = idx[i + 1],
-            c = idx[i + 2];
-        adj[a].add(b);
-        adj[a].add(c);
-        adj[b].add(a);
-        adj[b].add(c);
-        adj[c].add(a);
-        adj[c].add(b);
-    }
-    const sx = 1 + 0.75 * P.elong,
-        sz = 1 - 0.35 * P.elong,
-        sy = 1 - 0.62 * (1 - P.sph),
-        off = P.seed * 13.7;
-    const V = [],
-        dn = [];
-    for (let i = 0; i < n; i++) {
-        const x = pos.getX(i),
-            y = pos.getY(i),
-            z = pos.getZ(i);
-        dn.push(vnorm([x, y, z]));
-        V.push([x * sx, y * sy, z * sz]);
-    }
-    const ampF = 0.12 + P.rough * 0.34,
-        ridgeW = 1 - P.round * 0.6;
-    for (let i = 0; i < n; i++) {
-        const p = V[i];
-        const base = fbm3([p[0] * 1.05, p[1] * 1.05, p[2] * 1.05], 4, 2.0, 0.5, off);
-        const base2 = fbm3([p[0] * 2.2, p[1] * 2.2, p[2] * 2.2], 3, 2.0, 0.5, off + 2.2);
-        const rg = ridged([p[0] * 1.8, p[1] * 1.8, p[2] * 1.8], 4, off + 5.1);
-        const grain = fbm3([p[0] * 7.0, p[1] * 7.0, p[2] * 7.0], 3, 2.0, 0.5, off + 11.3);
-        const sDamp = P.strat > 0.5 ? 0.55 : 1.0; // Sediment: 3D-Lumpiness daempfen, Baenke dominieren
-        let disp =
-            ampF * sDamp * (0.62 * base + 0.16 * base2 + 0.6 * (rg - 0.5) * ridgeW) + grain * ampF * 0.42 * sDamp;
-        if (P.strat > 0.02) {
-            const step = Math.sin(V[i][1] * 7.6 + off);
-            disp += (step > 0.22 ? 0.16 : step < -0.22 ? -0.12 : step * 0.22) * P.strat;
-        } // klare horizontale Baenke, Differenzialerosion
-        V[i] = vadd(V[i], vscl(dn[i], disp));
-    }
-    const K = P.round < 0.55 ? Math.round(((0.55 - P.round) / 0.55) * 6) : 0;
-    for (let pl = 0; pl < K; pl++) {
-        let pn;
-        if (P.strat > 0.5) pn = vnorm([rrange(-0.3, 0.3), (rnd() < 0.5 ? 1 : -1) * rrange(0.7, 1), rrange(-0.3, 0.3)]);
-        else pn = vnorm([rrange(-1, 1), rrange(-1, 0.6), rrange(-1, 1)]);
-        const d0 = rrange(0.58, 0.86);
-        for (let i = 0; i < n; i++) {
-            const dd = vdot(V[i], pn) - d0;
-            if (dd > 0) V[i] = vsub(V[i], vscl(pn, dd * 0.95));
-        }
-    }
-    if (P.round > 0.78) {
-        const NV = V.map((v, i) => {
-            let a = vscl(v, 3),
-                c = 3;
-            adj[i].forEach((j) => {
-                a = vadd(a, V[j]);
-                c++;
-            });
-            return vscl(a, 1 / c);
-        });
-        for (let i = 0; i < n; i++) V[i] = NV[i];
-    }
-    for (let i = 0; i < n; i++) pos.setXYZ(i, V[i][0], V[i][1], V[i][2]);
-    pos.needsUpdate = true;
-    geo.computeVertexNormals();
-    const nor = geo.attributes.normal;
-    const ao = new Float32Array(n);
-    for (let i = 0; i < n; i++) {
-        let mean = [0, 0, 0],
-            c = 0;
-        adj[i].forEach((j) => {
-            mean = vadd(mean, V[j]);
-            c++;
-        });
-        mean = vscl(mean, 1 / c);
-        const toMean = vsub(mean, V[i]),
-            nv = [nor.getX(i), nor.getY(i), nor.getZ(i)];
-        ao[i] = clamp(0.5 + vdot(vnorm(toMean), nv) * 1.2, 0.12, 1);
-    }
-    const cols = new Float32Array(n * 3),
-        base = new THREE.Color(P.rockA),
-        dark = new THREE.Color(P.rockB),
-        acc = new THREE.Color(P.rockC);
-    const quartz = new THREE.Color(0xe8e0d2),
-        feld = new THREE.Color(0xc69a86),
-        mica = new THREE.Color(0x2c2a26),
-        bleach = new THREE.Color(0xccc7b6),
-        moss = vegFarbe(0x6f8a3e),
-        iron = new THREE.Color(0x7a4a26);
-    let minY = 1e9,
-        maxY = -1e9;
-    for (let i = 0; i < n; i++) {
-        minY = Math.min(minY, V[i][1]);
-        maxY = Math.max(maxY, V[i][1]);
-    }
-    let s2 = mulberry32(Math.floor(P.seed * 9973));
-    for (let i = 0; i < n; i++) {
-        let c = base.clone();
-        const up = nor.getY(i);
-        if (P.speckle) {
-            const m = s2();
-            if (m < 0.14) c.lerp(quartz, 0.6);
-            else if (m < 0.26) c.lerp(feld, 0.45);
-            else if (m < 0.34) c.lerp(mica, 0.65);
-        } // Granit Salz&Pfeffer
-        c.lerp(dark, ao[i] * 0.7); // AO in Mulden
-        if (ao[i] < 0.42 && up > 0.1) c.lerp(bleach, ((0.42 - ao[i]) / 0.42) * 0.4 * clamp(up, 0, 1)); // Kuppen sonnengebleicht
-        if (P.strat > 0.02) {
-            const band = Math.sin(V[i][1] * 7.0 + off);
-            if (band > 0.4) c.lerp(acc, 0.55 * P.strat);
-            else if (band < -0.4) c.lerp(dark, 0.6 * P.strat);
-        }
-        const stain = fbm3([V[i][0] * 1.4, V[i][1] * 3.2, V[i][2] * 1.4], 3, 2, 0.5, off + 21.0);
-        if (stain > 0.22) c.lerp(iron, (stain - 0.22) * 0.6); // Eisen-Schlieren (vertikal)
-        if (up > 0.22 && rockLichen > 0) {
-            const patch = fbm3([V[i][0] * 2.4, V[i][1] * 2.4, V[i][2] * 2.4], 3, 2, 0.5, off + 33.0);
-            const lf = clamp((up - 0.22) / 0.5, 0, 1) * rockLichen;
-            if (patch > -0.05) c.lerp(moss, clamp((patch + 0.05) * 1.8, 0, 1) * lf * 0.6);
-        }
-        const mott = fbm3([V[i][0] * 0.8, V[i][1] * 0.8, V[i][2] * 0.8], 3, 2, 0.5, off + 7.7);
-        c.multiplyScalar(1 + mott * 0.22);
-        c.multiplyScalar(0.88 + s2() * 0.22);
-        cols[i * 3] = c.r;
-        cols[i * 3 + 1] = c.g;
-        cols[i * 3 + 2] = c.b;
-    }
-    geo.setAttribute("color", new THREE.BufferAttribute(cols, 3));
-    geo.scale(P.size, P.size, P.size);
-    return geo;
+    if (!__core || typeof __core.buildBoulderGeometry !== "function")
+        throw new Error("foundry-core: phyto-core buildBoulderGeometry fehlt (Kern-Pflicht)");
+    var __d = Math.max(1, (P.detail || 6) - 3 - __lod * 2);
+    var __g = __core.buildBoulderGeometry(
+        THREE,
+        simplex3,
+        {
+            elong: P.elong,
+            sph: P.sph,
+            round: P.round,
+            rough: P.rough,
+            strat: P.strat,
+            seed: P.seed,
+            detail: __d + 1,
+            size: P.size,
+            withColor: false,
+        },
+        rnd
+    );
+    if (!__g) throw new Error("foundry-core: buildBoulderGeometry lieferte kein Netz");
+    return felsStoffNetz(P, __g);
 }
 
 function clipPolygon(poly, a, b) {
@@ -3905,9 +3783,6 @@ function emitColumns(P) {
             return [cx / poly.length, cz / poly.length];
         });
     }
-    const baseCol = new THREE.Color(P.rockA),
-        topCol = new THREE.Color(P.rockC),
-        dark = new THREE.Color(P.rockB);
     for (let i = 0; i < N; i++) {
         if (seeds[i][0] * seeds[i][0] + seeds[i][1] * seeds[i][1] > Rk * Rk) continue; // nur innere Zellen -> Zellkanten-Rand
         let poly = boxP.map((q) => q.slice());
@@ -3931,8 +3806,7 @@ function emitColumns(P) {
             h = P.colH * (1 - dC * 0.16) * hF * broken * rrange(0.95, 1.05),
             M = poly.length;
         const positions = [],
-            idx = [],
-            cols = [];
+            idx = [];
         let vb = 0;
         const topY = poly.map(() => h + (rnd() - 0.5) * P.colH * 0.06);
         for (let s = 0; s < M; s++) {
@@ -3946,23 +3820,14 @@ function emitColumns(P) {
                 u1 = [q1[0], t1, q1[1]];
             positions.push(b0[0], b0[1], b0[2], b1[0], b1[1], b1[2], u1[0], u1[1], u1[2], u0[0], u0[1], u0[2]);
             idx.push(vb, vb + 1, vb + 2, vb, vb + 2, vb + 3);
-            const cf = baseCol.clone().lerp(dark, rrange(0.15, 0.5));
-            for (let q = 0; q < 4; q++) {
-                const top = q >= 2;
-                cols.push(...(top ? cf.clone().lerp(topCol, 0.25).toArray() : cf.toArray()));
-            }
             vb += 4;
         }
         const capStart = vb;
         positions.push(cx, h + P.colH * 0.03, cz);
-        const ctop = baseCol.clone().lerp(topCol, 0.5);
-        if (rockLichen > 0) ctop.lerp(vegFarbe(0x768a44), 0.4 * rockLichen);
-        cols.push(...ctop.toArray());
         vb++;
         for (let s = 0; s < M; s++) {
             const q = poly[s];
             positions.push(q[0], topY[s], q[1]);
-            cols.push(...ctop.toArray());
             vb++;
         }
         for (let s = 0; s < M; s++) idx.push(capStart, capStart + 1 + s, capStart + 1 + ((s + 1) % M));
@@ -3970,7 +3835,6 @@ function emitColumns(P) {
         g.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
         g.setIndex(idx);
         g.computeVertexNormals();
-        g.setAttribute("color", new THREE.Float32BufferAttribute(cols, 3));
         geos.push(g);
     }
     let merged = null;
@@ -3978,6 +3842,7 @@ function emitColumns(P) {
         merged = THREE.BufferGeometryUtils.mergeBufferGeometries(geos, false);
     } catch (e) {}
     if (merged) {
+        felsStoffNetz(P, merged); // der Stoff der Säulen ist das Fels-Gesetz (K17)
         const mat = new THREE.MeshStandardMaterial({
             vertexColors: true,
             roughness: P.matRough,
@@ -4137,9 +4002,9 @@ function emitCrystals(P) {
         spread = Math.sqrt(cm),
         N = Math.max(4, Math.round((P.count || 18) * cm)),
         geos = [];
-    const cB = new THREE.Color(P.rockA).toArray(),
-        cT = new THREE.Color(P.rockC).toArray(),
-        dk = new THREE.Color(P.rockB).toArray(); // amtMul: ANZAHL skaliert, Cluster-Flaeche ~sqrt -> Einzelkristall konstant
+    const cB = vegFarbe(P.rockA).toArray(), // FARB-GESETZ (K17): die Töne des Kristalls sind sRGB-Absichten
+        cT = vegFarbe(P.rockC).toArray(),
+        dk = vegFarbe(P.rockB).toArray(); // amtMul: ANZAHL skaliert, Cluster-Flaeche ~sqrt -> Einzelkristall konstant
     const baseGeo = THREE.BufferGeometryUtils.mergeVertices(new THREE.IcosahedronGeometry(P.size * 0.42 * spread, 1));
     baseGeo.deleteAttribute("uv");
     const bp = baseGeo.attributes.position;
@@ -4698,7 +4563,7 @@ function lerpHex(a, b, t) {
 // 01.10.: Laub 0,31–0,53 · Gras-Büschel 0,47 · Stiel 0,38, real 0,06–0,16; das Boden-Gras der Welt
 // 0,085). Dekodiert: Eiche 0,16 · Nadel 0,09 · Stiel 0,12 · Blüte 0,49. Gelesen wird beim BACKEN (wo
 // die Palette zur Vertex-Farbe wird) — Labor, Welt, Karte und Fern-Fit tragen dieselben Bytes; die
-// Paletten selbst bleiben die Absicht. Rinde, Fels und Fachwerk liegen roh im Band und bleiben roh.
+// Paletten selbst bleiben die Absicht. Rinde und Fachwerk liegen roh im Band; der Fels liest seit K17 das Fels-Gesetz (`felsStoffNetz`).
 function vegFarbe(c) {
     const x = c && c.isColor ? c.clone() : new THREE.Color(c);
     return x.convertSRGBToLinear();
@@ -4832,7 +4697,6 @@ function setSeasonColors(s) {
         presenceTarget = 0.05;
         bloomTarget = 0.1;
     }
-    rockLichen = s === "winter" ? 0.0 : 0.6;
 }
 
 // ERFINDER-WELLE (Katalysator §2 B4, „regelbar, alle Assets") — DIE REGLER-TABELLEN DER

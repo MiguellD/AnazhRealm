@@ -22,6 +22,7 @@
 const vm = require("vm");
 const fs = require("fs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 
 const root = path.resolve(__dirname, "..");
 
@@ -98,7 +99,7 @@ function loadCore(entry) {
     ctx.globalThis = ctx;
     let code = "";
     for (const dep of entry.deps || []) code += fs.readFileSync(path.join(root, dep), "utf8") + "\n;";
-    code += fs.readFileSync(path.join(root, entry.file), "utf8");
+    code += entry.quelle != null ? entry.quelle : fs.readFileSync(path.join(root, entry.file), "utf8"); // quelle: der Selbsttest
     if (entry.ns) {
         // v1.1-Namensraum-Kern: dieselben Block-Namen, gelesen unter entry.ns
         // (fehlt der Namensraum ganz, bleibt alles null → B1/B2/G4.3 werden rot).
@@ -112,6 +113,15 @@ function loadCore(entry) {
             " meshfrei: N.MESHFREI === 1," + // v1.1 §8 — components-only-Kern (B2 N/A)
             " funktion: N.FUNKTION === 1," + // §9 (K09a) — Gesetz-Kern: reine Funktionen, keine Rezepte
             " api: Object.keys(N).filter(function (k) { return typeof N[k] === 'function'; })," +
+            " oberflaeche: Object.keys(N)," +
+            // §9 — ein Rezept unter JEDEM Namen: ein Schlüssel aus PRESET/REZEPT/RECIPE oder eine Liste (Feld/Objekt) von
+            // Einträgen mit regler, kind oder Dials s (die benannte Landschaft hieß LANDFORM_PRESETS — die Wand sah nur PRESETS)
+            " rezeptig: Object.keys(N).filter(function (k) { var v = N[k];" +
+            " if (/PRESET|REZEPT|RECIPE/i.test(k)) return true;" +
+            " if (!v || typeof v !== 'object') return false;" +
+            " var e = Array.isArray(v) ? v : Object.keys(v).map(function (q) { return v[q]; });" +
+            " return e.some(function (x) { return !!x && typeof x === 'object' && !Array.isArray(x) &&" +
+            " ('regler' in x || 'kind' in x || (!!x.s && typeof x.s === 'object')); }); })," +
             " zweit: true," + // W8 — ein Zweit-Kern zählt die Gestalten seiner Rezepte selbst (B2c)
             " cfg: N.PORTAL_RENDER_CONFIG || null," +
             " paramsByKind: N.PARAMS_BY_KIND || null," +
@@ -143,8 +153,15 @@ function loadCore(entry) {
 // keine Rezepte, keine Gestalt, keine Regler. Der Namensraum erklärt FUNKTION = 1 (und STUDIO_VERTRAG = 1), die
 // Manifest-Zeile `"funktion": true` — beide Seiten stimmen überein. Die Brücke liest ihn generisch (kein PRESETS → kein
 // Buch-Eintrag, kein build-asset-Dispatch). → Verletzungsliste.
-function validateFunktionsKern(m, entry) {
+// `erklaert`: die Schlüssel, die §9 „Stand der Gesetz-Kerne" nennt (`gesetzKernErklaert`) — jeder Schlüssel des Namensraums
+// steht dort, sonst trägt der Kern, was der Vertrag nicht kennt (K16b legte Bedienung und Landschaften still hinein).
+function validateFunktionsKern(m, entry, erklaert) {
     const v = [];
+    for (const k of m.rezeptig || []) v.push(`§9: ein Gesetz-Kern trägt keine Rezepte (${k})`);
+    if (erklaert)
+        for (const k of m.oberflaeche || [])
+            if (!erklaert.has(k))
+                v.push(`§9: ${k} steht nicht in der Erklärung (studio-vertrag §9 „Stand der Gesetz-Kerne")`);
     if (m.vertrag !== 1) v.push(`G4.3: STUDIO_VERTRAG fehlt oder != 1 (ist: ${m.vertrag})`);
     if (!m.funktion) v.push("§9: der Namensraum erklärt FUNKTION = 1 nicht");
     if (!(entry && entry.funktion === true)) v.push('§9: die Manifest-Zeile erklärt "funktion": true nicht');
@@ -155,6 +172,14 @@ function validateFunktionsKern(m, entry) {
     if (m.paramsByKind) v.push("§9: ein Gesetz-Kern trägt keine Regler (PARAMS_BY_KIND)");
     if (!Array.isArray(m.api) || m.api.length < 1) v.push("§9: der Gesetz-Kern trägt keine Funktion");
     return v;
+}
+
+// §9 — DIE ERKLÄRUNG der Gesetz-Kerne: jeder Name in Backticks im Absatz „Stand der Gesetz-Kerne" (bis zur Leerzeile).
+function gesetzKernErklaert(doc) {
+    const i = doc.indexOf("**Stand der Gesetz-Kerne:**");
+    if (i < 0) return new Set();
+    const e = doc.indexOf("\n\n", i);
+    return new Set([...doc.slice(i, e < 0 ? doc.length : e).matchAll(/`([A-Za-z_$][\w$]*)/g)].map((m) => m[1]));
 }
 
 // Reine Validierungs-Funktion (auch der Selbst-Test ruft sie) → Verletzungsliste.
@@ -789,7 +814,7 @@ function validateManifest(m) {
             continue;
         }
         const funktionsKern = m.funktion || entry.funktion === true;
-        const viol = funktionsKern ? validateFunktionsKern(m, entry) : validateManifest(m);
+        const viol = funktionsKern ? validateFunktionsKern(m, entry, gesetzKernErklaert(doc)) : validateManifest(m);
         const lodM = m.cfg && m.cfg.lod;
         if (lodM && lodM.budget) budgets[entry.file] = { budget: lodM.budget, kindStages: lodM.kindStages || {} };
         else if (lodM && lodM.kindStages) ohneBudget.push(entry.file);
@@ -818,14 +843,13 @@ function validateManifest(m) {
     // §4b Ü1 — die Licht-Übersetzungs-Konstante existiert im Code (die Regel ist Struktur).
     check(
         "Ü1: AnazhRealm.LEGACY_LICHT = Math.PI existiert (r155-Migrations-Regel)",
-        /LEGACY_LICHT\s*=\s*Math\.PI/.test(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8"))
+        /LEGACY_LICHT\s*=\s*Math\.PI/.test(stammLib.text(root))
     );
 
     // §4 G4.1 — must-ignore am EINEN Auto-Register-Chokepoint: unbekannte
     // kinds werden ÜBERSPRUNGEN (continue-Filter), nie geworfen. Kommentare
     // gestrippt (die V18.267-Falle).
-    const realm = fs
-        .readFileSync(path.join(root, "anazhRealm.js"), "utf8")
+    const realm = stammLib.text(root)
         .replace(/\/\*[\s\S]*?\*\//g, "")
         .replace(/\/\/[^\n]*/g, "");
     const reg = realm.match(/_foundryAutoRegisterSpecies\(book\)\s*\{[\s\S]{0,2500}/);
@@ -1062,7 +1086,7 @@ function validateManifest(m) {
     (function zwillingsAbsenz() {
         let src = null;
         try {
-            src = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+            src = stammLib.text(root);
         } catch (_e) {}
         const treffer = src ? zwillingsTreffer(src) : ZWILLINGE;
         check(
@@ -1116,7 +1140,8 @@ function validateManifest(m) {
             const wk = fs.readFileSync(path.join(root, "voxel-worker.js"), "utf8");
             const ix = fs.readFileSync(path.join(root, "index.html"), "utf8");
             const gTag = ix.indexOf('<script src="gelaende-core.js?v=');
-            const sTag = ix.indexOf('<script src="anazhRealm.js?v=');
+            // der ERSTE Stamm-Tag (scripts/lib/stamm.cjs: die Liste, wie index.html sie lädt)
+            const sTag = ix.indexOf('<script src="' + stammLib.dateien(root)[0] + "?v=");
             check(
                 "KONSUM: gelaende steht in GESETZ_KERNE und im Manifest (§9), voxel-worker und index.html laden gelaende-core.js",
                 !!src &&
@@ -1134,6 +1159,24 @@ function validateManifest(m) {
                 "SELBST-TEST: ein Gesetz-Kern mit Rezept und ohne Funktion feuert §9",
                 schlecht.length === 2,
                 schlecht.join(" · ")
+            );
+            // Das Rezept unter einem anderen Namen und der unerklärte Schlüssel — durch den echten Lader (vm, Namensraum): die
+            // Landschaften als LANDFORM_PRESETS (der Name) und als LANDSCHAFTEN (nur die Gestalt: Einträge mit regler) und
+            // eine Zahl ohne Erklärung MÜSSEN je beim Namen rot werden.
+            const fremd = { file: "selbsttest-gesetz.js", ns: "__selbstGesetz", funktion: true };
+            fremd.quelle =
+                "self.__selbstGesetz = { STUDIO_VERTRAG: 1, FUNKTION: 1, hoehe: function () { return 0; }," +
+                " LANDFORM_PRESETS: [{ id: 'tafelland', regler: { tafel: 1 } }]," +
+                " LANDSCHAFTEN: { kueste: { name: 'Küste', regler: { land: 0.25 } } }, SCHWELLE: 3 };";
+            const fv = validateFunktionsKern(loadCore(fremd), fremd, new Set(["STUDIO_VERTRAG", "FUNKTION", "hoehe"]));
+            const nennt = (t) => fv.some((s) => s.includes(t));
+            check(
+                "SELBST-TEST: ein Rezept unter fremdem Namen (LANDFORM_PRESETS, LANDSCHAFTEN) und ein unerklärter Schlüssel feuern §9 beim Namen",
+                fv.length === 5 &&
+                    nennt("keine Rezepte (LANDFORM_PRESETS)") &&
+                    nennt("keine Rezepte (LANDSCHAFTEN)") &&
+                    nennt("SCHWELLE steht nicht in der Erklärung"),
+                fv.join(" · ")
             );
             // FELS-/KRISTALL-HÜLLE (18.07., M1): der vierte Gesetz-Blocker-Zweig
             // lebt (Konsum: _felsBlockerParts VOR dem generischen Parts-Pfad im

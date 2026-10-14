@@ -30,11 +30,12 @@
 //   node scripts/diag-arch-feld.cjs
 "use strict";
 const puppeteer = require("puppeteer");
-const { softwareWebGpuArgs } = require("./lib/software-gpu.cjs");
+const { linsenWebGpuArgs, adapterZeile } = require("./lib/software-gpu.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 
 const root = path.resolve(__dirname, "..");
 const argOf = (k, d) => {
@@ -109,7 +110,7 @@ function schlangenGesetz(src) {
     };
 }
 {
-    const stamm = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+    const stamm = stammLib.text(root);
     if (process.argv.includes("--selftest")) {
         const kaputt = stamm.replace(
             "if (entry._ziegelSlot || entry._ziegelGebacken || ohneFeld) {\n                    if (this._archZiegelFern(entry)) regung++;\n                } else {\n                    // Steht",
@@ -166,8 +167,9 @@ function schlangenGesetz(src) {
     const browser = await puppeteer.launch({
         headless: true,
         protocolTimeout: 900000,
-        args: softwareWebGpuArgs(),
+        args: linsenWebGpuArgs(),
     });
+    await adapterZeile(browser);
     const page = await browser.newPage();
     await page.setViewport({ width: W, height: H });
     const pageErrors = [];

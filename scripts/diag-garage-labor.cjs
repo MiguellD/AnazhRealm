@@ -19,7 +19,7 @@ const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
-const { softwareWebGpuArgs } = require("./lib/software-gpu.cjs");
+const { linsenWebGpuArgs, adapterZeile } = require("./lib/software-gpu.cjs");
 
 const PORT = Number(process.env.GARAGE_LABOR_PORT || 4414);
 const root = path.resolve(__dirname, "..");
@@ -109,7 +109,8 @@ const server = http.createServer((req, res) => {
     }
 
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await puppeteer.launch({ headless: true, protocolTimeout: 120000, args: softwareWebGpuArgs() });
+    const browser = await puppeteer.launch({ headless: true, protocolTimeout: 120000, args: linsenWebGpuArgs() });
+    await adapterZeile(browser);
     const page = await browser.newPage();
     await page.setViewport({ width: 1280, height: 720 });
     const pageErrors = [];

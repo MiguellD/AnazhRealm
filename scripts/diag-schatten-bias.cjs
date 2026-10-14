@@ -35,6 +35,7 @@
 const fs = require("fs");
 const path = require("path");
 const http = require("http");
+const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.SCHATTEN_BIAS_PORT || 4607);
 const root = path.resolve(__dirname, "..");
@@ -176,7 +177,7 @@ function urteil(S, Q, pageErrors) {
 if (process.argv.includes("--selftest")) {
     console.log("=== SCHATTEN-BIAS — Selbsttest (ohne Browser) ===");
     const v = [];
-    const stammQ = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+    const stammQ = stammLib.text(root);
     const stamm = quellWand(stammQ);
     for (const b of stamm) v.push("STAMM: " + b);
     const fremd = quellWand(
@@ -1491,7 +1492,7 @@ async function probe(cfg) {
 }
 
 (async () => {
-    const Q = quellWand(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8"));
+    const Q = quellWand(stammLib.text(root));
     fs.mkdirSync(OUT, { recursive: true });
     await new Promise((res) => server.listen(PORT, "127.0.0.1", res));
     const browser = await puppeteer.launch({

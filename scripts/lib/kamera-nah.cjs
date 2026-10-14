@@ -37,6 +37,11 @@ function nahDeckungInSeite(o) {
     const R = o.radien || {};
     const D = Math.max(0, ...Object.values(R));
     const D2 = D * D;
+    // die Einträge, die nie zählen (o.ohne: ids — das benannte Ziel eines Beweisbilds, K32); sie wirken beim Sammeln, darum
+    // fragt ein Aufrufer mit `ohne` stets mit `neu`
+    const OHNE = new Set(o.ohne || []);
+    // je Klasse die Höhe, über der ein Treffer erst zählt (o.ueber: { Klasse: y }) — die Böschung am Auge, nie der Boden darunter
+    const UEBER = o.ueber || {};
     const lu = st.lodUniforms || {};
     // die Werte, die die GPU liest (uKamAuge · uKamZiel · uKamNah)
     const auge = lu.uKamAuge ? lu.uKamAuge.value.clone() : null;
@@ -158,6 +163,7 @@ function nahDeckungInSeite(o) {
                 ? g.groups
                 : [{ start: dr0, count: dr1 - dr0, materialIndex: 0 }];
         const e = eintragVon(obj, inst);
+        if (e && OHNE.has(e.id)) return; // das Ziel selbst (o.ohne) deckt nie und verdeckt nie
         for (const gr of gruppen) {
             const mat = mats[gr.materialIndex] || mats[0];
             if (!mat || mat.visible === false) continue;
@@ -175,7 +181,13 @@ function nahDeckungInSeite(o) {
                 vb.fromBufferAttribute(pos, i1).applyMatrix4(m4);
                 vc.fromBufferAttribute(pos, i2).applyMatrix4(m4);
                 if (!nimm(va, vb, vc)) continue;
-                sammle(va, vb, vc, karte ? [uv.getX(i0), uv.getY(i0), uv.getX(i1), uv.getY(i1), uv.getX(i2), uv.getY(i2)] : null, me);
+                sammle(
+                    va,
+                    vb,
+                    vc,
+                    karte ? [uv.getX(i0), uv.getY(i0), uv.getX(i1), uv.getY(i1), uv.getX(i2), uv.getY(i2)] : null,
+                    me
+                );
             }
         }
     };
@@ -194,7 +206,7 @@ function nahDeckungInSeite(o) {
             }
             if (!gross) {
                 bs.copy(g.boundingSphere).applyMatrix4(m4);
-                if (!bs.intersectsSphere(kugel)) continue;
+                if (!(typeof kugel === "function" ? kugel(bs) : bs.intersectsSphere(kugel))) continue;
             }
             fn(obj, i);
         }
@@ -235,7 +247,8 @@ function nahDeckungInSeite(o) {
                 const gross = !Number.isFinite(g.boundingSphere.radius) || g.boundingSphere.radius > 1e5;
                 if (!gross) {
                     bs.copy(g.boundingSphere).applyMatrix4(m4);
-                    if (Math.abs(bs.center.x - cx) > R + bs.radius || Math.abs(bs.center.z - cz) > R + bs.radius) return;
+                    if (Math.abs(bs.center.x - cx) > R + bs.radius || Math.abs(bs.center.z - cz) > R + bs.radius)
+                        return;
                 }
                 legeDreiecke(ob, i, imFeld, sammle);
             });
@@ -257,7 +270,15 @@ function nahDeckungInSeite(o) {
                     l.push(t);
                 }
         }
-        C = window.__nahSpeicher = { id: o.ort ? o.ort.id : "?", tris: ft, uvs: new Float32Array(uvs), metas, zellen, stempel: new Int32Array(n), lauf: 0 };
+        C = window.__nahSpeicher = {
+            id: o.ort ? o.ort.id : "?",
+            tris: ft,
+            uvs: new Float32Array(uvs),
+            metas,
+            zellen,
+            stempel: new Int32Array(n),
+            lauf: 0,
+        };
     }
     // ── die Dreiecke in der Nah-Kugel: aus dem Speicher (Zellen der Kugel) und das Bewegte frisch ──
     const tri = [];
@@ -310,7 +331,17 @@ function nahDeckungInSeite(o) {
         if (maskeVon.has(me.mat)) return maskeVon.get(me.mat);
         const mat = me.mat;
         const maske = !!(mat.maskNode && mat.maskNode.isNode);
-        const a = !maske ? null : knoten ? (mat.maskNode === knoten.laub ? "laub" : mat.maskNode === knoten.rinde ? "rinde" : mat.maskNode === knoten.boden ? "boden" : "fremd") : me.art || "rinde";
+        const a = !maske
+            ? null
+            : knoten
+              ? mat.maskNode === knoten.laub
+                  ? "laub"
+                  : mat.maskNode === knoten.rinde
+                    ? "rinde"
+                    : mat.maskNode === knoten.boden
+                      ? "boden"
+                      : "fremd"
+              : me.art || "rinde";
         maskeVon.set(mat, a);
         return a;
     };
@@ -446,7 +477,7 @@ function nahDeckungInSeite(o) {
                     w = gewicht(p, ma === "fremd" ? me.art : ma);
                 }
                 if (w > m) {
-                    if (TAETER[me.k.klasse] && h.d <= TAETER[me.k.klasse]) {
+                    if (TAETER[me.k.klasse] && h.d <= TAETER[me.k.klasse] && !(UEBER[me.k.klasse] > ey + dy * h.d)) {
                         const a = w - m;
                         deckung += a;
                         jeKlasse[me.k.klasse] = (jeKlasse[me.k.klasse] || 0) + a;
@@ -457,6 +488,100 @@ function nahDeckungInSeite(o) {
                 if (m >= 1) break;
             }
         }
+    // ── DAS ZIEL (K32, die Abnahme des Beweisbilds; o.ziel = { x, y, z, name, saum }): liegt es im Bild (Projektion der
+    // Spieler-Kamera, vor der Nah-Ebene, |ndc| ≤ 0,95), und verdeckt es nichts? Der Strahl Auge → Ziel fragt jede gezeichnete
+    // Fläche bis `saum` (0,5 m) vor dem Ziel — Laub · Rinde · Fels · Bau · Gelände · Wagen, nie die Nah-Streu (Gras und Blumen
+    // sind die Boden-Schicht) und nie das Ziel selbst (`o.ohne`); Blatt-Karten mit dem Alpha ihres Atlas, Flächen mit der
+    // Durchsicht der Kamera mit dem Gewicht der EINEN Formel (verdeckt ab 0,5). Der erste Verdecker steht beim Namen. ──
+    let zielOut = null;
+    if (o.ziel) {
+        const Z = o.ziel;
+        const zv = new T.Vector3(Z.x, Z.y, Z.z);
+        const vorn = zv.clone().applyMatrix4(cam.matrixWorldInverse).z < -near;
+        zv.project(cam);
+        const imBild = vorn && Math.abs(zv.x) <= 0.95 && Math.abs(zv.y) <= 0.95;
+        // DIE LINIE Auge → Punkt bis `saum` davor: der erste Verdecker und sein Abstand
+        const linie = (px, py, pz, saum) => {
+            const zx = px - ex,
+                zy = py - ey,
+                zz = pz - ez;
+            const L = Math.hypot(zx, zy, zz) || 1e-6;
+            const ux = zx / L,
+                uy = zy / L,
+                uz = zz / L;
+            const bis = Math.max(0, L - saum);
+            // die Hülle einer Instanz schneidet die Strecke [0, bis]
+            const amStrahl = (s) => {
+                const cx = s.center.x - ex,
+                    cy = s.center.y - ey,
+                    cz = s.center.z - ez;
+                const t = Math.max(0, Math.min(bis, cx * ux + cy * uy + cz * uz));
+                return (cx - ux * t) ** 2 + (cy - uy * t) ** 2 + (cz - uz * t) ** 2 <= s.radius * s.radius;
+            };
+            let vor = null;
+            let vorD = Infinity;
+            const pruefe = (a, b, c, uvs, me) => {
+                if (me.k.klasse === "Streu") return;
+                const e1x = b.x - a.x,
+                    e1y = b.y - a.y,
+                    e1z = b.z - a.z;
+                const e2x = c.x - a.x,
+                    e2y = c.y - a.y,
+                    e2z = c.z - a.z;
+                const px = uy * e2z - uz * e2y,
+                    py = uz * e2x - ux * e2z,
+                    pz = ux * e2y - uy * e2x;
+                const det = e1x * px + e1y * py + e1z * pz;
+                if (det > -1e-12 && det < 1e-12) return;
+                const inv = 1 / det;
+                const tx = ex - a.x,
+                    ty = ey - a.y,
+                    tz = ez - a.z;
+                const u = (tx * px + ty * py + tz * pz) * inv;
+                if (u < 0 || u > 1) return;
+                const qx = ty * e1z - tz * e1y,
+                    qy = tz * e1x - tx * e1z,
+                    qz = tx * e1y - ty * e1x;
+                const v = (ux * qx + uy * qy + uz * qz) * inv;
+                if (v < 0 || u + v > 1) return;
+                const d = (e2x * qx + e2y * qy + e2z * qz) * inv;
+                if (d <= near || d >= bis || d >= vorD) return;
+                if (me.karte && uvs) {
+                    const w0 = 1 - u - v;
+                    if (atlasA(w0 * uvs[0] + u * uvs[2] + v * uvs[4], w0 * uvs[1] + u * uvs[3] + v * uvs[5]) < me.cut)
+                        return;
+                }
+                const ma = maskeArt(me);
+                if (
+                    ma &&
+                    gewicht({ x: ex + ux * d, y: ey + uy * d, z: ez + uz * d }, ma === "fremd" ? me.art : ma) < 0.5
+                )
+                    return;
+                vorD = d;
+                vor = me.k.name;
+            };
+            st.scene.traverseVisible((obj) => {
+                if (!zaehlt(obj)) return;
+                jeInstanz(obj, amStrahl, (ob, i) => legeDreiecke(ob, i, () => true, pruefe));
+            });
+            return { vor, vorD, L };
+        };
+        // der Punkt des Ziels und, wenn genannt (`fussY`), sein Fuß: ein Ziel hinter einer Kuppe zeigt nur die Krone
+        const saum = Z.saum != null ? Z.saum : 0.5;
+        const kopf = linie(Z.x, Z.y, Z.z, saum);
+        const fuss = Number.isFinite(Z.fussY) ? linie(Z.x, Z.fussY, Z.z, saum) : null;
+        const zu = kopf.vor != null ? kopf : fuss && fuss.vor != null ? fuss : null;
+        zielOut = {
+            name: Z.name || "Ziel",
+            imBild,
+            ndc: [+zv.x.toFixed(3), +zv.y.toFixed(3)],
+            frei: zu == null,
+            vor: zu ? (zu === fuss ? "am Fuß " : "") + zu.vor : null,
+            vorAbstand: zu ? +zu.vorD.toFixed(2) : null,
+            abstand: +kopf.L.toFixed(2),
+            fussFrei: fuss ? fuss.vor == null : null,
+        };
+    }
     const N = gw * gh;
     const rund = (x) => +(x / N).toFixed(4);
     const kl = {};
@@ -476,6 +601,7 @@ function nahDeckungInSeite(o) {
         atlas: !!atlasA,
         auge: [+E.x.toFixed(2), +E.y.toFixed(2), +E.z.toFixed(2)],
         fremd: meta.some((me) => maskeArt(me) === "fremd"),
+        ziel: zielOut,
     };
 }
 

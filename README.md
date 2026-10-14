@@ -8,7 +8,7 @@ Ein als Co-Creation-Werk Mensch+KI entworfenes 3D-Browser-Sandbox-Ultiversum. Ei
 
 AnazhRealm ist eine 3D-Browser-Welt (Vanilla JS, Three.js r184 / WebGPU) mit EINEM Stamm (`anazhRealm.js`, ~104 000 Zeilen, eine Klasse) und Ringen an echten Laufzeit-Grenzen:
 
-- **Die Welt ist eine Funktion:** Voxel-Terrain aus einem Dichtefeld (Main + `voxel-worker.js` bit-identisch), Wasser als zellulärer Automat, die Ferne als Raymarch aus demselben Höhen-Gesetz (`feld-wgsl.js`). Die Physik ist feld-nativ und deterministisch (Replay + Lockstep-Multiplayer Stufe 2: nur Inputs übers Netz).
+- **Die Welt ist eine Funktion:** Voxel-Terrain aus einem Dichtefeld (Main + `voxel-worker.js` bit-identisch), Wasser als zellulärer Automat, die Ferne aus demselben Gelände-Gesetzbuch (`gelaende-core.js`). Die Physik ist feld-nativ und deterministisch (Replay + Lockstep-Multiplayer Stufe 2: nur Inputs übers Netz).
 - **Die Studios sind die Gesetzbücher:** acht Schöpfer-Labore unter `worlds/` (terrain · garage · portale · schmiede · fachwerk · klang · koerperstudio · tetrapoda) teilen ihre Gesetze mit der Welt über die Kerne (`*-core.js`, Vertrag `docs/studio-vertrag.md`); die Foundry (Worker) baut Bäume, Fels, Häuser, Waffen, Fahrzeuge und Tiere aus ihnen.
 - **Hylomorphismus als Sprache:** Form × Material → emergente Identität (Seele, Bauwerk, Werkzeug, Rüstung, Trank sprechen dieselbe Tag-Sprache); die Werkstatt baut Baupläne, die Welt liest sie.
 - **Das lebendige Feld + die DSL:** die Welt liest · schreibt · wertet ein gemeinsames Feld; eine sandboxed DSL (Budget, Op-Whitelist, kein `eval`, CSP-strict) ist die Sprache, die Mensch, Welt-Regeln und ein optionaler LLM-Begleiter teilen.

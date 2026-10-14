@@ -29,9 +29,9 @@ const { spawn } = require("child_process");
 const fs = require("fs");
 const path = require("path");
 const puppeteer = require("puppeteer");
+const stammLib = require("./lib/stamm.cjs");
 
 const ROOT = path.resolve(__dirname, "..");
-const SOURCE_JS = path.join(ROOT, "anazhRealm.js");
 const INDEX_HTML = path.join(ROOT, "index.html");
 
 let failures = [];
@@ -97,7 +97,7 @@ function auditCssVariables() {
 // ============================================================
 function auditSoftDefaults() {
     console.log("\n=== Soft-Default-Audit ===");
-    const src = fs.readFileSync(SOURCE_JS, "utf8");
+    const src = stammLib.text(ROOT);
     const checks = [
         {
             literal: "Grok",
@@ -198,7 +198,7 @@ async function auditStateAndMethods() {
             fail("STATE", "window.anazhRealm.state nicht erreichbar");
         } else {
             // Source-Code scannen für this.state.X.Y.Z reads
-            const src = fs.readFileSync(SOURCE_JS, "utf8");
+            const src = stammLib.text(ROOT);
             // Regex für `this.state.X.Y.Z` (max 3 Ebenen, nur einfache Identifier)
             const re = /this\.state\.([a-zA-Z_$][\w$]*(?:\.[a-zA-Z_$][\w$]*){0,2})/g;
             const usedPaths = new Set();
@@ -590,9 +590,7 @@ async function auditStateAndMethods() {
                 "_caFpScratch", // Float32Array, `if (!fp || fp.length<…)`-realloc
                 "_caTickCount", // V18.292 — Fluss-Re-Mesh-Throttle-Zähler, `(x||0)+1` lazy-init
                 // Worldgen-gesetzt (in generateTerrainWithParameters, vor jedem Tick-Read):
-                "erosionTiles",
                 "hydroTiles",
-                "tarns", // null-init, `if (state.tarns)`-Leser
                 "canopyChunks",
                 "bakedRegionFields",
                 "scatterRegions",
@@ -628,7 +626,6 @@ async function auditStateAndMethods() {
                 "_foliageResScale", // Subsystem 5 — Laub-Auflösungs-Faktor, `state.X != null ? : MIN`
                 "_foliageMatCache", // V18.288 — geteilte Bewuchs-Materialien, `if (!state.X) state.X = new Map()`
                 "_loopErrorCount", // V18.278 — Loop-Error-Boundary-Zähler, `state.X || 0`
-                "_loopErrorLastLog", // V18.278 — Log-Drossel-Stempel, `!state.X || now - ...`
                 "_bootPhase3", // V18.308 — deferierte Boot-Arbeit (Kreaturen), `if (!state.X) return` (in _bootDeferCreatures gesetzt, im Loop gedraint, dann null)
                 "_deferredAvatarSoul", // V18.304 — deferierter Avatar-Bau, am Boot gesetzt, im Loop `if (state.X)` gedraint, dann null
                 "_bootAvatarDelay", // V18.304 — Boot-Frame-Zähler vor dem Avatar-Bau, `(state.X || 0) + 1`
@@ -685,7 +682,7 @@ async function auditStateAndMethods() {
 //      (klang:UMWELT — die Stimme folgt dem Körper, tierRuf).
 function auditAtmosphereHardcode() {
     console.log("\n=== Atmosphäre-Hardcode-Audit ===");
-    const src = fs.readFileSync(SOURCE_JS, "utf8");
+    const src = stammLib.text(ROOT);
     // Methode-Block extrahieren: von `[ATMOSPHERE]`-Kommentar bis zur
     // nächsten Methode (Zeile beginnt mit 4-Space + identifier(args).
     const lines = src.split("\n");

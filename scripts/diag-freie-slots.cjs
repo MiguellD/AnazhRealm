@@ -38,7 +38,8 @@ const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
-const { softwareWebGpuArgs } = require("./lib/software-gpu.cjs");
+const stammLib = require("./lib/stamm.cjs");
+const { linsenWebGpuArgs, adapterZeile } = require("./lib/software-gpu.cjs");
 const { installWieseSicht } = require("./lib/wiese-sicht.cjs");
 
 const PORT = Number(process.env.FREIE_SLOTS_PORT || 4527);
@@ -93,7 +94,8 @@ async function welt() {
         });
     });
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await puppeteer.launch({ headless: true, protocolTimeout: 600000, args: softwareWebGpuArgs() });
+    const browser = await puppeteer.launch({ headless: true, protocolTimeout: 600000, args: linsenWebGpuArgs() });
+    await adapterZeile(browser);
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(() => {
         window.__anazhHeadlessNullRenderer = true;
@@ -463,7 +465,7 @@ async function welt() {
 (async () => {
     const fails = [];
     // ── Q (Quelle) + ihr Selbsttest ──
-    const src = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+    const src = stammLib.text(root);
     const q = quellBefunde(src);
     console.log("=== Q — die Quelle (kommentar-frei) ===");
     console.log(q.length ? q.map((x) => "  ❌ " + x).join("\n") : "  ✅ count schreibt nur _instanzZahl · keine Free-Liste · kein `_lebt`");

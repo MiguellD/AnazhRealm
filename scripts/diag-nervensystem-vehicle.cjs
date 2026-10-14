@@ -27,6 +27,7 @@ const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.NERV_PORT || 4407);
 const root = path.resolve(__dirname, "..");
@@ -181,7 +182,7 @@ function staticLaws(anazhSrc, phytoSrc, vcSrc, manifestSrc, pcSrc) {
 }
 
 (async () => {
-    const anazhSrc = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+    const anazhSrc = stammLib.text(root);
     const phytoSrc = fs.readFileSync(path.join(root, "worlds/terrain/phytogenesis.js"), "utf8");
     const vcSrc = fs.readFileSync(path.join(root, "vehicle-core.js"), "utf8");
     const manifestSrc = fs.readFileSync(path.join(root, "cores.manifest.json"), "utf8");
