@@ -33,13 +33,12 @@
 // `--echt` die Hardware-GPU im Fenster (1920×1080) — die Zeit richtet der OMEN an beiden Messplätzen.
 //   node scripts/diag-boot-stage.cjs --kalt [--echt] [--sek 120] [--json datei] [--bild ankunft.png]
 // ─────────────────────────────────────────────────────────────────────────
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const puppeteer = require("puppeteer");
-const http = require("http");
 const fs = require("fs");
 const path = require("path");
 const os = require("os");
 
-const root = path.resolve(__dirname, "..");
 const PORT = Number(process.env.BOOT_STAGE_PORT || 4406);
 const ARGV = process.argv.slice(2);
 const OPT = (k, d) => {
@@ -48,26 +47,7 @@ const OPT = (k, d) => {
 };
 // Das Soll der Ankunft (docs/PFLICHT-OFFEN.md B, roadmap §0.v1 Schritt 1): kalt bis Kontrolle ≤ 5 s.
 const ANKUNFT_SOLL_MS = 5000;
-const mime = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".wasm": "application/wasm",
-    ".json": "application/json",
-    ".css": "text/css",
-    ".woff2": "font/woff2",
-    ".png": "image/png",
-};
-const server = http.createServer((req, res) => {
-    let p = req.url.split("?")[0];
-    if (p === "/") p = "/index.html";
-    const fp = path.join(root, p);
-    if (!fp.startsWith(root)) return ((res.statusCode = 403), res.end());
-    fs.readFile(fp, (err, data) => {
-        if (err) return ((res.statusCode = 404), res.end());
-        res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-        res.end(data);
-    });
-});
+const server = statikServer();
 
 // ── DIE KALT-ZEILE (`--kalt`): die Probe je 200 ms in der Seite, ab dem ersten Skript ──
 function KALT_PROBE() {
@@ -329,11 +309,7 @@ async function kaltLauf() {
     if (ARGV.includes("--kalt")) return kaltLauf();
     const SELFTEST = process.argv.includes("--selftest");
     await new Promise((r) => server.listen(PORT, r));
-    const browser = await puppeteer.launch({
-        headless: "new",
-        protocolTimeout: 300000,
-        args: ["--no-sandbox", "--disable-gpu"],
-    });
+    const browser = await starteBrowser({ art: "null", frist: 300000 });
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(() => {
         window.__anazhHeadlessNullRenderer = true;

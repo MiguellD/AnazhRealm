@@ -10,10 +10,8 @@
 // Die Wind-Uhr steht für jeden Schuss (S3 08.10.); `--stelle x,z` setzt die Stelle fest (Vorher/Nachher an derselben).
 //   node scripts/diag-wiese.cjs [--tag name] [--out DIR] [--stelle x,z]
 "use strict";
-const puppeteer = require("puppeteer");
-const { linsenWebGpuArgs, adapterZeile } = require("./lib/software-gpu.cjs");
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
-const http = require("http");
 const fs = require("fs");
 const path = require("path");
 
@@ -30,26 +28,7 @@ if (STELLE && !(STELLE.length === 2 && STELLE.every(Number.isFinite))) {
     process.exit(1);
 }
 const PORT = Number(process.env.WIESE_PORT || 4468);
-const mime = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".wasm": "application/wasm",
-    ".json": "application/json",
-    ".css": "text/css",
-    ".png": "image/png",
-    ".woff2": "font/woff2",
-};
-const server = http.createServer((req, res) => {
-    let p = req.url.split("?")[0];
-    if (p === "/") p = "/index.html";
-    const fp = path.join(root, p);
-    if (!fp.startsWith(root)) return ((res.statusCode = 403), res.end());
-    fs.readFile(fp, (err, data) => {
-        if (err) return ((res.statusCode = 404), res.end());
-        res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-        res.end(data);
-    });
-});
+const server = statikServer();
 
 // Im Seiten-Kontext: ein Render in ein RT (Loop ruht, Mittag, Schatten frisch) → Pixel (+ PNG).
 const RENDER_FN = async (kam, W, H, png) => {
@@ -131,12 +110,7 @@ const RENDER_FN = async (kam, W, H, png) => {
 (async () => {
     fs.mkdirSync(OUT, { recursive: true });
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await puppeteer.launch({
-        headless: true,
-        protocolTimeout: 900000,
-        args: linsenWebGpuArgs(),
-    });
-    await adapterZeile(browser);
+    const browser = await starteBrowser({ art: "linse", frist: 900000 });
     const page = await browser.newPage();
     await page.setViewport({ width: 640, height: 360 });
     const pageErrors = [];

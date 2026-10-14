@@ -17,33 +17,13 @@
 //   Assertions sind STRUKTURELL (beide Seiten gemessen, Zahlen endlich, Report steht) —
 //   Schwellen werden nach der V18.346-Disziplin erst auf der Baseline festgezogen.
 //   node scripts/diag-perf-parity.cjs
-const puppeteer = require("puppeteer");
-const http = require("http");
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 
 const PORT = Number(process.env.PERF_PORT || 4409);
 const root = path.resolve(__dirname, "..");
-const mime = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".wasm": "application/wasm",
-    ".json": "application/json",
-    ".css": "text/css",
-    ".png": "image/png",
-    ".woff2": "font/woff2",
-};
-const server = http.createServer((req, res) => {
-    let p = req.url.split("?")[0];
-    if (p === "/") p = "/index.html";
-    const fp = path.join(root, p);
-    if (!fp.startsWith(root)) return ((res.statusCode = 403), res.end());
-    fs.readFile(fp, (err, data) => {
-        if (err) return ((res.statusCode = 404), res.end());
-        res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-        res.end(data);
-    });
-});
+const server = statikServer();
 
 const errs = [];
 function check(name, ok, detail) {
@@ -120,11 +100,7 @@ const PROFI = { triRendered: 680000, drw: 208, visPct: 61, vramMB: 118 };
 
 (async () => {
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await puppeteer.launch({
-        headless: true,
-        protocolTimeout: 240000,
-        args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--no-sandbox", "--disable-setuid-sandbox"],
-    });
+    const browser = await starteBrowser({ art: "webgl", frist: 240000 });
 
     // ===== SEITE 1: DER STUDIO-WALD (der Massstab; echter WebGL-Render fuer info.render) =====
     console.log("=== STUDIO-WALD (der Massstab) ===");

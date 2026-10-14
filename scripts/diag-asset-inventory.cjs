@@ -45,48 +45,18 @@
 // „verlorenen" Key (in f.requested ohne cache/Szene/Räumungs-Buch) und beweist, dass
 // ALLE Fangpfade feuern — sonst wäre das Grün vakuös.
 //   node scripts/diag-asset-inventory.cjs [--selftest]
-const puppeteer = require("puppeteer");
-const http = require("http");
-const fs = require("fs");
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
 const { installWieseSicht } = require("./lib/wiese-sicht.cjs");
 // Port über ASSET_INVENTORY_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4517.
 const PORT = Number(process.env.ASSET_INVENTORY_PORT || 4517);
 const root = path.resolve(__dirname, "..");
-const mime = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".wasm": "application/wasm",
-    ".json": "application/json",
-    ".css": "text/css",
-    ".png": "image/png",
-};
-const server = http.createServer((req, res) => {
-    let p = req.url.split("?")[0];
-    if (p === "/") p = "/index.html";
-    const fp = path.join(root, p);
-    if (!fp.startsWith(root)) {
-        res.statusCode = 403;
-        return res.end();
-    }
-    fs.readFile(fp, (err, data) => {
-        if (err) {
-            res.statusCode = 404;
-            return res.end();
-        }
-        res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-        res.end(data);
-    });
-});
+const server = statikServer();
 (async () => {
     const selftest = process.argv.includes("--selftest");
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await puppeteer.launch({
-        headless: true,
-        protocolTimeout: 240000,
-        args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--no-sandbox", "--disable-setuid-sandbox"],
-    });
+    const browser = await starteBrowser({ art: "webgl", frist: 240000 });
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(() => {
         window.__anazhHeadlessNullRenderer = true;

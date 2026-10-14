@@ -8,46 +8,16 @@
 //   (4) Szene-Mesh/Instanz-Zahl (Bäume „unter dem Radar")
 // Null-Renderer (schnell) — der Render-JS-Anteil fehlt hier bewusst (er ist
 // gestubbt); diese Probe isoliert TICK + HEAP + AMMO, die headless ehrlich sind.
-const puppeteer = require("puppeteer");
-const http = require("http");
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 // Port über TURN_HANG_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4396.
 const PORT = Number(process.env.TURN_HANG_PORT || 4396);
 const root = path.resolve(__dirname, "..");
-const mime = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".wasm": "application/wasm",
-    ".json": "application/json",
-    ".woff2": "font/woff2",
-    ".css": "text/css",
-    ".png": "image/png",
-};
-const server = http.createServer((req, res) => {
-    let p = req.url.split("?")[0];
-    if (p === "/") p = "/index.html";
-    const fp = path.join(root, p);
-    if (!fp.startsWith(root)) {
-        res.statusCode = 403;
-        return res.end();
-    }
-    fs.readFile(fp, (e, d) => {
-        if (e) {
-            res.statusCode = 404;
-            return res.end();
-        }
-        res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-        res.end(d);
-    });
-});
+const server = statikServer();
 (async () => {
     await new Promise((r) => server.listen(PORT, r));
-    const browser = await puppeteer.launch({
-        headless: true,
-        protocolTimeout: 580000,
-        args: ["--no-sandbox", "--disable-setuid-sandbox", "--js-flags=--expose-gc"],
-    });
+    const browser = await starteBrowser({ art: "standard", frist: 580000, zusatz: ["--js-flags=--expose-gc"] });
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(() => {
         window.__anazhHeadlessNullRenderer = true;

@@ -4,41 +4,14 @@
 // (buildInstance, PRESETS, growTreeNodes, …) — ein übersehener Bezug würde hier als ReferenceError
 // auffliegen (im asset-foundry-Modus kehrt init() vorher zurück, deshalb braucht es DIESEN Display-Boot).
 //   node scripts/diag-portal-boot.cjs
-const puppeteer = require("puppeteer");
-const http = require("http");
-const fs = require("fs");
-const path = require("path");
 
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const PORT = Number(process.env.PORTAL_PORT || 4571);
-const root = path.resolve(__dirname, "..");
-const mime = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".json": "application/json",
-    ".css": "text/css",
-    ".png": "image/png",
-    ".woff2": "font/woff2",
-    ".wasm": "application/wasm",
-};
-const server = http.createServer((req, res) => {
-    let p = req.url.split("?")[0];
-    if (p === "/") p = "/index.html";
-    const fp = path.join(root, p);
-    if (!fp.startsWith(root)) return ((res.statusCode = 403), res.end());
-    fs.readFile(fp, (err, data) => {
-        if (err) return ((res.statusCode = 404), res.end());
-        res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-        res.end(data);
-    });
-});
+const server = statikServer();
 
 (async () => {
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await puppeteer.launch({
-        headless: true,
-        protocolTimeout: 120000,
-        args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--no-sandbox", "--disable-setuid-sandbox"],
-    });
+    const browser = await starteBrowser({ art: "webgl", frist: 120000 });
     const page = await browser.newPage();
     const errors = [];
     page.on("pageerror", (e) => errors.push((e.stack || e.message || String(e)).split("\n")[0]));

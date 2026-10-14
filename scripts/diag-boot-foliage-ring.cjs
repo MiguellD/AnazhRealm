@@ -7,27 +7,14 @@
 // erzwungen → perf-headroom auf ~0-frameMs, genau die Boot-Situation) und prüft: der foliageRadius
 // bleibt an der Ring-Kante, statt auf MAX zu rennen.
 //   node scripts/diag-boot-foliage-ring.cjs
-const puppeteer = require("puppeteer");
-const http = require("http");
-const fs = require("fs");
-const path = require("path");
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const PORT = Number(process.env.FOLIRING_PORT || 4615);
-const root = path.resolve(__dirname, "..");
-const mime = { ".html": "text/html", ".js": "application/javascript", ".wasm": "application/wasm", ".json": "application/json", ".css": "text/css", ".png": "image/png", ".woff2": "font/woff2" };
-const server = http.createServer((req, res) => {
-    let p = req.url.split("?")[0];
-    if (p === "/") p = "/index.html";
-    const fp = path.join(root, p);
-    if (!fp.startsWith(root)) return ((res.statusCode = 403), res.end());
-    fs.readFile(fp, (e, d) => {
-        if (e) return ((res.statusCode = 404), res.end());
-        res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-        res.end(d);
-    });
-});
+const server = statikServer();
 (async () => {
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await puppeteer.launch({ headless: true, protocolTimeout: 120000, args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--no-sandbox", "--disable-setuid-sandbox"] });
+    // Erwartet: der Null-Renderer gibt sich unten als echter aus (_isHeadlessNull = false) — ein Stoff-Bau fragt ihn dann
+    // nach der Node-Bibliothek, die er nicht trägt, und bricht laut. Das ist die Attrappe dieser Linse, kein Fehler der Welt.
+    const browser = await starteBrowser({ art: "webgl", frist: 120000, erwartet: /reading 'getMaterialNodeClass'/ });
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(() => (window.__anazhHeadlessNullRenderer = true));
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });

@@ -20,33 +20,10 @@
 // Job im Page-Kontext (window.__jobDone/__jobOut), Node pollt kurz — ein
 // minutenlanges page.evaluate stirbt sonst an „Promise was collected".
 //   node scripts/diag-warm-start.cjs
-const puppeteer = require("puppeteer");
-const http = require("http");
-const fs = require("fs");
-const path = require("path");
 
+const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const PORT = Number(process.env.WARMSTART_PORT || 4571);
-const root = path.resolve(__dirname, "..");
-const mime = {
-    ".html": "text/html",
-    ".js": "application/javascript",
-    ".wasm": "application/wasm",
-    ".json": "application/json",
-    ".woff2": "font/woff2",
-    ".css": "text/css",
-    ".png": "image/png",
-};
-const server = http.createServer((req, res) => {
-    let p = req.url.split("?")[0];
-    if (p === "/") p = "/index.html";
-    const fp = path.join(root, p);
-    if (!fp.startsWith(root)) return ((res.statusCode = 403), res.end());
-    fs.readFile(fp, (err, data) => {
-        if (err) return ((res.statusCode = 404), res.end());
-        res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-        res.end(data);
-    });
-});
+const server = statikServer();
 
 // Startet `fn(arg)` DETACHED im Page-Kontext und pollt das Ergebnis — kein
 // langlebiges CDP-Promise (die „Promise was collected"-Falle bei Minuten-Jobs).
@@ -359,11 +336,7 @@ async function jobSelbsttest(kaltIn) {
 
 (async () => {
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    const browser = await puppeteer.launch({
-        headless: true,
-        protocolTimeout: 300000,
-        args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--no-sandbox", "--disable-setuid-sandbox"],
-    });
+    const browser = await starteBrowser({ art: "webgl", frist: 300000 });
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(() => {
         window.__anazhHeadlessNullRenderer = true; // der Gate-Kontext (kein GPU)
