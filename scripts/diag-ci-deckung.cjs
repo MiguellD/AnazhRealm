@@ -76,7 +76,7 @@ const VOLL_WENN =
     "contains(github.event.head_commit.message, '[ci voll]')";
 const istVollWenn = (x) => String(x == null ? "" : x).trim().replace(/\s+/g, " ") === VOLL_WENN;
 // Die Deckel der Waage (Median samt Vorbereitung): ein Job je Push trägt den Puls, eine Voll-Gruppe ihre Breite.
-const WAAGE_S = { push: 120, voll: 660 };
+const WAAGE_S = { push: 120, voll: 420 };
 const DECKEL_MIN = 45;
 const VORBEREITUNG = [
     ["checkout", (s) => typeof s.uses === "string" && s.uses.startsWith("actions/checkout@")],
@@ -84,7 +84,11 @@ const VORBEREITUNG = [
     ["System-Libs", (s) => /apt-get install/.test(String(s.run || ""))],
     ["npm ci", (s) => /\bnpm ci\b/.test(String(s.run || ""))],
 ];
-const IST_VORBEREITUNG = (s) => VORBEREITUNG.some(([, f]) => f(s));
+// der Browser-Cache (K61): der puppeteer-Chrome aus dem Actions-Cache, vor npm ci (dessen postinstall lädt ihn sonst je Job
+// neu — am 14.10. riss der Download mit ECONNRESET eine ganze Gruppe); er steht im Vorbereitungs-Block, ohne Gruppe
+const BROWSER_CACHE = (s) =>
+    typeof s.uses === "string" && s.uses.startsWith("actions/cache@") && /puppeteer/.test(String((s.with || {}).path || ""));
+const IST_VORBEREITUNG = (s) => BROWSER_CACHE(s) || VORBEREITUNG.some(([, f]) => f(s));
 const GRUPPE_RE = /^\s*matrix\.gruppe\s*==\s*(\d+)\s*$/;
 
 const lauf = (s) => String(s.run || "").trim();
@@ -490,16 +494,24 @@ function gruppenUrteil(job, J) {
     if (!(Number(J["timeout-minutes"]) > 0 && Number(J["timeout-minutes"]) <= DECKEL_MIN))
         v.push(`(V) DECKEL: „${job}" timeout-minutes ${J["timeout-minutes"]} (Soll 1–${DECKEL_MIN} je Gruppe)`);
     const steps = J.steps || [];
+    // der Vorbereitungs-Block: die führenden Schritte der Vorbereitung; in ihm checkout · setup-node · System-Libs · npm ci
+    // in dieser Reihenfolge, daneben nur der Browser-Cache (K61)
+    let blockEnde = 0;
+    while (blockEnde < steps.length && IST_VORBEREITUNG(steps[blockEnde])) blockEnde++;
+    const block = steps.slice(0, blockEnde).filter((s) => !BROWSER_CACHE(s));
     VORBEREITUNG.forEach(([n, f], i) => {
-        const s = steps[i];
+        const s = block[i];
         if (!s || !f(s))
             v.push(`(V) VORBEREITUNG: „${job}" Schritt ${i + 1} ist nicht „${n}" (${s ? name(s) : "fehlt"})`);
         else if (s.if)
             v.push(`(V) VORBEREITUNG: „${job}" „${n}" trägt eine Bedingung (${s.if}) — jede Gruppe braucht sie`);
     });
+    for (const s of steps.slice(0, blockEnde))
+        if (BROWSER_CACHE(s) && s.if)
+            v.push(`(V) VORBEREITUNG: „${job}" „Browser-Cache" trägt eine Bedingung (${s.if}) — jede Gruppe braucht ihn`);
     const gruppen = new Set(Array.isArray(M) ? M : []);
     const je = new Map([...gruppen].map((g) => [g, 0]));
-    for (const s of steps.slice(VORBEREITUNG.length)) {
+    for (const s of steps.slice(blockEnde)) {
         if (IST_VORBEREITUNG(s)) continue;
         const m = typeof s.if === "string" ? GRUPPE_RE.exec(s.if) : null;
         if (!s.if)

@@ -170,19 +170,22 @@ const BASIS = {
 const patchZiel = (z) =>
     z.length === 3 ? z : ["/" + (stammLib.dateiMit(ROOT, z[0]) || stammLib.dateien(ROOT)[0]), z[0], z[1]];
 
-// DIE WELTEN NEBENEINANDER (CI-Diät 14.10.): 21 Welten (20 Selbsttests + der Hauptlauf) liefen hintereinander, 557–732 s
-// Wand-Zeit auf dem Läufer bei einem belegten Kern. Jede Welt trägt jetzt ihren EIGENEN Server (Port 0, der Patch ihres
-// Täters im Zustand `z`) und ihren eigenen Browser-Kontext — kein Patch reist in eine fremde Welt; HAUS_WELT_PARALLEL
-// Welten laufen zugleich (Vorgabe: die Kerne des Läufers, höchstens 4). Das Urteil je Welt bleibt dasselbe.
+// DIE WELTEN NEBENEINANDER (K61 CI-Diät): 21 Welten (20 Selbsttests + der Hauptlauf) liefen hintereinander, Median 596 s
+// (437–678) am Läufer bei EINEM belegten Kern von vier. Jetzt fahren HAUS_WELT_PARALLEL Welten zugleich (Vorgabe: die Kerne,
+// höchstens 4); jeder Platz im Pool trägt seinen EIGENEN Server (HAUS_WELT_PORT + Platz, ohne die Variable ein freier Port)
+// mit dem Patch SEINER Welt im Zustand `z` und je Welt einen eigenen Browser-Kontext — kein Patch reist in eine fremde
+// Welt. Das Urteil je Welt bleibt dasselbe.
 const PARALLEL = Math.max(1, Number(process.env.HAUS_WELT_PARALLEL) || Math.min(4, require("os").cpus().length));
+const PORT_BASIS = Number(process.env.HAUS_WELT_PORT) || 0;
 // eine Patch-Zeile [geheilt, basis] gilt dem Stamm — der Datei, die die Zeile trägt (scripts/lib/stamm.cjs `dateiMit`; trägt
 // sie keine, der ersten: dort meldet der Lauf die fehlende Zeile) —, [datei, geheilt, basis] der genannten Datei (das
 // Gesetzbuch reist über den Foundry-Worker: /fachwerk-core.js)
-const machServer = (z) =>
+const machServer = (platz) =>
     statikServer({
         root: ROOT,
         wandle: (p, data) => {
-            const meine = data && z.patch ? z.patch.map(patchZiel).filter((x) => x[0] === p) : [];
+            const z = platz.z;
+            const meine = data && z && z.patch ? z.patch.map(patchZiel).filter((x) => x[0] === p) : [];
             if (!meine.length) return data;
             let txt = data.toString("utf8");
             for (const [, geheilt, basis] of meine) {
@@ -1603,11 +1606,10 @@ function zeile(o) {
     let rot = 0;
     let selbst = [];
     try {
-        const lauf = async (inj, phasen) => {
+        const lauf = async (inj, phasen, platz) => {
             const z = { patch: inj && BASIS[inj] ? BASIS[inj] : null, fehler: [], angewandt: new Set() };
-            const server = machServer(z);
-            await new Promise((r) => server.listen(0, "127.0.0.1", r));
-            const PORT = server.address().port;
+            platz.z = z;
+            const PORT = platz.port;
             // je Lauf ein eigener Browser-Kontext: kein Speicherstand (Save, IndexedDB) des Vorlaufs reist in die nächste
             // Welt (ein gespeichertes Dorf stünde sonst unter dem neu gegründeten)
             const kontext = await browser.createBrowserContext();
@@ -1645,7 +1647,7 @@ function zeile(o) {
             });
             const o = await page.evaluate(proben, phasen || null);
             await kontext.close();
-            server.close();
+            platz.z = null;
             for (const zeile of z.patch || []) {
                 const [d, g] = patchZiel(zeile);
                 if (!z.angewandt.has(d + "|" + g)) z.fehler.push(`nie angewandt: ${d} („${g.slice(0, 60)}…")`);
@@ -1656,13 +1658,22 @@ function zeile(o) {
         const pool = async (auftraege) => {
             const erg = new Array(auftraege.length);
             let naechster = 0;
-            const arbeiter = async () => {
-                while (naechster < auftraege.length) {
-                    const i = naechster++;
-                    erg[i] = await auftraege[i]();
+            const arbeiter = async (k) => {
+                // der Platz k: EIN Server, der den Patch der Welt liefert, die gerade auf ihm fährt
+                const platz = { z: null, port: 0 };
+                const server = machServer(platz);
+                await new Promise((r) => server.listen(PORT_BASIS ? PORT_BASIS + k : 0, "127.0.0.1", r));
+                platz.port = server.address().port;
+                try {
+                    while (naechster < auftraege.length) {
+                        const i = naechster++;
+                        erg[i] = await auftraege[i](platz);
+                    }
+                } finally {
+                    server.close();
                 }
             };
-            await Promise.all(Array.from({ length: Math.min(PARALLEL, auftraege.length) }, arbeiter));
+            await Promise.all(Array.from({ length: Math.min(PARALLEL, auftraege.length) }, (_, k) => arbeiter(k)));
             return erg;
         };
         if (SELBST) {
@@ -1717,8 +1728,8 @@ function zeile(o) {
         }
         // der Hauptlauf zuerst (er fährt alle Phasen, die längste Welt), dann die Selbsttests — alle im Pool
         const [haupt, ...selbstErg] = await pool([
-            () => lauf(null, PHASEN.length ? PHASEN : null),
-            ...selbst.map((s) => () => lauf(s.inj, s.phasen)),
+            (platz) => lauf(null, PHASEN.length ? PHASEN : null, platz),
+            ...selbst.map((s) => (platz) => lauf(s.inj, s.phasen, platz)),
         ]);
         if (selbst.length) {
             for (let i = 0; i < selbst.length; i++) {
