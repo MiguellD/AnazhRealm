@@ -1098,10 +1098,10 @@ function windDatenUrteil(quellen) {
                 `  Eichen-Krone auf 25 m (λ ${lamKrone.toFixed(2)}): bc ${korn.m.bc.toFixed(3)} · rgba ${korn.m.rgba.toFixed(3)} (≤ ${KORN_MAX})\n` +
                 KORN_LAMBDA.map((l) => `  λ ${l}: bc ${korn.m["bc@" + l]} | rgba ${korn.m["rgba@" + l]}`).join("\n")
         );
-        const fk = farbKornUrteil(frK, frK.bc.format || "bc1", lamKrone, farbOktave(quellen["anazhRealm.js"]));
+        const fk = farbKornUrteil(frK, frK.bc.format || "bc1", lamKrone, farbOktave(quellen.Stamm));
         fails.push(...fk.v);
         console.log(
-            `Farb-Korn (Σ|ΔL|/ΣL im Kronen-Inneren, ½-Pixel-Versatz; Oktave ${farbOktave(quellen["anazhRealm.js"])}): ` +
+            `Farb-Korn (Σ|ΔL|/ΣL im Kronen-Inneren, ½-Pixel-Versatz; Oktave ${farbOktave(quellen.Stamm)}): ` +
                 Object.entries(fk.m)
                     .map(([f, x]) => `${f} ${x.welt.toFixed(4)} (ohne Oktave ${x.ohne.toFixed(4)})`)
                     .join(" · ") +
@@ -1229,7 +1229,7 @@ function windDatenUrteil(quellen) {
         };
         st.push(["Korn je Texel", kornUrteil(r, lamKrone, null).v.length > 0]);
         // Farb-Korn: der Stamm ohne Oktave (die Farbe in der Stufe der Deckung) MUSS den Leser beim Namen nennen.
-        const ohneOktave = quellen["anazhRealm.js"].replace(
+        const ohneOktave = quellen.Stamm.replace(
             /\nAnazhRealm\.BLATT_FARBE_OKTAVE = [0-9.]+;/,
             "\nAnazhRealm.BLATT_FARBE_OKTAVE = 0;"
         );

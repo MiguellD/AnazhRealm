@@ -189,7 +189,7 @@ function statisch(src) {
 // Eimer-Urteil des Orts: im Bestand wählt der Same 1..V (je 1/V ± 0,03), frei steht immer der Solitär T; eine Art ohne
 // Solitär behält ihren Samen.
 const KNUTH_INVERS = (() => {
-    const m = /AnazhRealm\.KNUTH_INVERS = (\d+);/.exec(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8"));
+    const m = /AnazhRealm\.KNUTH_INVERS = (\d+);/.exec(stammLib.text(root));
     return m ? Number(m[1]) : NaN;
 })();
 const SOLITAER = (() => {
