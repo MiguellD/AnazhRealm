@@ -1263,11 +1263,13 @@ class AnazhRealm_Z07 {
             // steht — sonst meldet sich der Bürger an. Auch der synchrone Weg trifft im Cache eine noch offene Pipeline (r184
             // `getForRender`: Cache-Treffer → `e.pipeline=d`, ob fertig oder nicht), wenn eine Erst-Zeichnung ihren Schlüssel
             // eben asynchron anlegte: ein Neubau wartet dann wie sie.
-            const zeichne = (rend, ro, aufnahme, asynchron) => {
+            // `bekannt`: das Urteil von needsRefresh, wenn der Befehl es schon fällte (`_befehlHaelt` — die Prüfung zählt die
+            // Änderung beim ersten Blick, ein zweiter sähe sie nicht mehr)
+            const zeichne = (rend, ro, aufnahme, asynchron, bekannt) => {
                 const N = rend._nodes,
                     P = rend._pipelines;
                 E.bau = null; // das Versprechen gehört dem Bau DIESES Aufrufs (`_erstAbsageWache`)
-                const refresh = N.needsRefresh(ro);
+                const refresh = bekannt === undefined ? N.needsRefresh(ro) : bekannt;
                 if (refresh) {
                     N.updateBefore(ro);
                     rend._geometries.updateForRender(ro);
@@ -1293,6 +1295,23 @@ class AnazhRealm_Z07 {
                 return true;
             };
             renderer._renderObjectDirect = function (object, material, scene, camera, lightsNode, group, clip, passId) {
+                const welteigen = scene === welt.state.scene;
+                let pass, k;
+                if (welteigen) {
+                    const ctx = this._currentRenderContext.id;
+                    k = passId == null ? ctx : ctx + "|" + passId;
+                    pass = E.gezeichnet.get(object);
+                    // DER BEFEHL HÄLT (`_befehlHaelt`): ein Objekt, das in diesem Pass schon zeichnete, geht über seinen Befehl
+                    if (pass !== undefined) {
+                        const bef = pass.get(k);
+                        if (
+                            bef != null &&
+                            welt._befehlHaelt(this, bef, zeichne, object, material, camera, lightsNode, group, clip) ===
+                                true
+                        )
+                            return;
+                    }
+                }
                 const N = this._nodes;
                 const ro = this._objects.get(
                     object,
@@ -1308,7 +1327,7 @@ class AnazhRealm_Z07 {
                 ro.group = group;
                 const aufnahme = this._currentRenderBundle;
                 if (aufnahme !== null) ro.bundle = aufnahme.bundleGroup;
-                if (scene !== welt.state.scene) {
+                if (!welteigen) {
                     zeichne(this, ro, aufnahme, false);
                     return;
                 }
@@ -1316,13 +1335,10 @@ class AnazhRealm_Z07 {
                     ro._nodeBuilderState === null &&
                     N.get(ro).nodeBuilderState === undefined &&
                     N.nodeBuilderCache.get(ro.initialCacheKey) === undefined;
-                const ctx = this._currentRenderContext.id;
-                const k = passId == null ? ctx : ctx + "|" + passId;
-                let pass = E.gezeichnet.get(object);
                 if (pass !== undefined && pass.has(k)) {
                     // der Neubau eines Objekts, das in diesem Pass schon zeichnete: wie der Vendor, im Frame
                     if (ungebaut) E.neubauN++;
-                    zeichne(this, ro, aufnahme, false);
+                    pass.set(k, zeichne(this, ro, aufnahme, false) ? welt._befehlSatz(this, ro) : null);
                     return;
                 }
                 let bau = -1;
@@ -1345,8 +1361,8 @@ class AnazhRealm_Z07 {
                     E.bauMs += ms;
                 }
                 if (gezeichnet) {
-                    if (pass === undefined) E.gezeichnet.set(object, (pass = new Set()));
-                    pass.add(k);
+                    if (pass === undefined) E.gezeichnet.set(object, (pass = new Map()));
+                    pass.set(k, welt._befehlSatz(this, ro));
                 }
             };
             renderer.__anazhErstZeichnung = true;
@@ -1376,7 +1392,7 @@ class AnazhRealm_Z07 {
                 namen: new WeakMap(), // Pipeline → ihr Label `renderPipeline_<Stoff>_<id>`
                 abgesagt: new WeakSet(),
                 aufnehmen: new Set(),
-                gezeichnet: new WeakMap(), // Objekt → die Pässe (Render-Kontext|Pass-Kennung), in denen es schon zeichnete
+                gezeichnet: new WeakMap(), // Objekt → je Pass (Render-Kontext|Pass-Kennung), in dem es schon zeichnete, sein Befehl (`_befehlSatz`)
             };
         return this._erstZeichnung;
     }
@@ -1438,8 +1454,116 @@ class AnazhRealm_Z07 {
     }
 
     _befehlStand() {
-        if (!this._befehl) this._befehl = { auf: 0, wieder: 0, roh: 0, fremd: 0, einer: [null] };
+        if (!this._befehl) this._befehl = { auf: 0, wieder: 0, haelt: 0, roh: 0, fremd: 0, einer: [null] };
         return this._befehl;
+    }
+
+    // DER BEFEHL HÄLT (K62 — ein unveränderter Befehl zahlt keine Per-Objekt-Arbeit; r184 gelesen): ein Objekt, das in einem
+    // Pass schon zeichnete, zahlte je Frame den ganzen Render-Objekt-Pfad — die Ketten-Suche seines RenderObjects
+    // (`_objects.get`), die Pipeline-Frage über die Daten-Karten (`getForRender` · `isReady`), die Vorarbeit von
+    // `backend.draw` (Kontext · Pipeline · Bindungen · Puffer · Verdeckung) und den Stempel am `_draw`. Sein Befehl
+    // (`_befehlSatz`, je Objekt und Pass in `E.gezeichnet`) hält jetzt das RenderObject, die Daten des Backends und die
+    // Pipeline in der Hand: der Treffer-Zweig von r184 `RenderObjects.get` läuft ohne die Kette (Kamera und Schnitt gesetzt,
+    // dann nur reine Prüfungen: Stoff-Version, Geometrie, dynamischer Schlüssel — bricht eine, geht der Draw den Vendor-Weg),
+    // die EINE Änderungs-Prüfung (needsRefresh, die Diät) urteilt, die Pipeline fragt r184s eigene Prüfung; steht alles, spielt
+    // `_befehlWieder` das Befehls-Bündel ab. Ändert sich etwas, zeichnet der Rest des Vendor-Wegs (`zeichne`) mit dem schon
+    // gefällten Urteil. Ein Schnitt (clippingContext), eine Bündel-Aufnahme, eine fremde Szene gehen immer den Vendor-Weg.
+    // gate:vendor-anker pinnt jede gespiegelte r184-Stelle, gate:kamera-treue (BEFEHL) liest `_befehl.haelt`.
+    _befehlHaelt(rend, bef, zeichne, object, material, camera, lightsNode, group, clip) {
+        if (bef.tot === true || clip !== null || rend._currentRenderBundle !== null) return false;
+        const ro = bef.ro;
+        if (ro.material !== material || ro.lightsNode !== lightsNode || ro.context !== rend._currentRenderContext)
+            return false;
+        ro.camera = camera;
+        ro.updateClipping(clip);
+        if (
+            ro.version !== material.version ||
+            ro.needsGeometryUpdate === true ||
+            ro.initialNodesCacheKey !== ro.getDynamicCacheKey()
+        )
+            return false;
+        ro.drawRange = object.geometry.drawRange;
+        ro.group = group;
+        const B = this._befehl || this._befehlStand();
+        const refresh = rend._nodes.needsRefresh(ro);
+        if (refresh === false) {
+            rend._pipelines.updateForRender(ro);
+            if (rend._pipelines.get(ro).pipeline === bef.pipeline && this._befehlWieder(rend, ro, bef, B) === true) {
+                B.haelt++;
+                return true;
+            }
+        }
+        if (zeichne(rend, ro, null, false, refresh)) this._befehlSatz(rend, ro);
+        return true;
+    }
+
+    // DIE WIEDERGABE EINES HALTENDEN BEFEHLS: was r184 `backend.draw` vor `_draw` tut (Pipeline-Fehler, Zeichen-Bereich,
+    // die träge Verdeckungs-Abfrage des Vorgängers), dann der Stempel (`_befehlStempel`: bricht er, ist das Bündel alt —
+    // es fällt, der Vendor-Weg zeichnet roh) und das Bündel an derselben Stelle des Passes. false: der Vendor-Weg zeichnet.
+    _befehlWieder(rend, ro, bef, B) {
+        const d = bef.d,
+            b = d._befehl,
+            kd = bef.kd,
+            pass = kd.currentPass;
+        if (
+            b === undefined ||
+            !pass ||
+            pass.executeBundles === undefined ||
+            bef.pd.error === true ||
+            ro.object.occlusionTest === true ||
+            ro.camera.isArrayCamera === true ||
+            (ro.context.stencil === true && ro.material.stencilWrite === true) ||
+            ro.getIndirect() !== null
+        )
+            return false;
+        const dp = ro.getDrawParameters();
+        if (dp === null) return false;
+        const be = rend.backend;
+        if (
+            AnazhRealm._befehlStempel(be, ro, d, bef.pd.pipeline, ro.getBindings(), ro.getVertexBuffers(), dp) !== true
+        ) {
+            d._befehl = undefined;
+            d._befehlReife = 0;
+            return false;
+        }
+        if (kd.occlusionQuerySet !== undefined) {
+            const vor = kd.lastOcclusionObject;
+            if (vor !== ro.object) {
+                if (vor !== null && vor.occlusionTest === true) {
+                    pass.endOcclusionQuery();
+                    kd.occlusionQueryIndex++;
+                }
+                kd.lastOcclusionObject = ro.object;
+            }
+        }
+        rend.info.update(ro.object, dp.vertexCount, dp.instanceCount);
+        B.einer[0] = b;
+        pass.executeBundles(B.einer);
+        AnazhRealm._passNachBuendeln(be, kd.currentSets, pass);
+        B.wieder++;
+        return true;
+    }
+
+    // DER BEFEHL EINES RENDEROBJECTS (je Objekt und Pass, nach jedem Vendor-Draw neu gegriffen): das RenderObject, seine
+    // Backend-Daten (dort lebt das Befehls-Bündel), die Daten des Render-Kontexts (der Pass), die Pipeline und ihre Daten.
+    // Einmal je RenderObject hängt er sich an dessen Abschied (`onDispose`, r184 `createRenderObject`): ein entsorgtes
+    // RenderObject (Stoff oder Geometrie entsorgt, neuer Schlüssel) zeichnet nie über ihn.
+    _befehlSatz(rend, ro) {
+        const be = rend.backend;
+        const d = be.get(ro);
+        let satz = d._befehlSatz;
+        if (satz === undefined) {
+            const s = (satz = d._befehlSatz = { ro, d, kd: null, pipeline: null, pd: null, tot: false });
+            const abschied = ro.onDispose;
+            ro.onDispose = function () {
+                s.tot = true;
+                return abschied.apply(this, arguments);
+            };
+        }
+        satz.kd = be.get(ro.context);
+        satz.pipeline = rend._pipelines.get(ro).pipeline;
+        satz.pd = be.get(satz.pipeline);
+        return satz;
     }
 
     // DER STEMPEL EINES BEFEHLS: genau, was r184s `_draw` kodiert — die GPU-Pipeline, Index-Puffer und Format, Bereich, Anzahl
@@ -1458,20 +1582,26 @@ class AnazhRealm_Z07 {
             halt = false;
         }
         const ix = ro.getIndex();
-        const reihe = [
-            pipe,
-            ix !== null ? be.get(ix).buffer : null,
-            ix !== null && ix.array instanceof Uint16Array,
-            dp.vertexCount,
-            dp.instanceCount,
-            dp.firstVertex,
-            nb,
-        ];
-        for (let i = 0; i < 7; i++)
-            if (s[i] !== reihe[i]) {
-                s[i] = reihe[i];
-                halt = false;
-            }
+        const ixPuffer = ix !== null ? be.get(ix).buffer : null,
+            ix16 = ix !== null && ix.array instanceof Uint16Array;
+        if (
+            s[0] !== pipe ||
+            s[1] !== ixPuffer ||
+            s[2] !== ix16 ||
+            s[3] !== dp.vertexCount ||
+            s[4] !== dp.instanceCount ||
+            s[5] !== dp.firstVertex ||
+            s[6] !== nb
+        ) {
+            s[0] = pipe;
+            s[1] = ixPuffer;
+            s[2] = ix16;
+            s[3] = dp.vertexCount;
+            s[4] = dp.instanceCount;
+            s[5] = dp.firstVertex;
+            s[6] = nb;
+            halt = false;
+        }
         for (let i = 0; i < nb; i++) {
             const g = be.get(bindungen[i]).group;
             if (s[7 + i] !== g) {
