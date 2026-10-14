@@ -1090,11 +1090,12 @@ class AnazhRealm_Z10 {
         tex.needsUpdate = true;
         const [A, B] = R.schraeg;
         const m = T.int(P - 1);
-        // die Komponente c der vier Ecken der Zelle (i, j): EIN Texel, 0 · 127 · 254 → −1 · 0 · +1
-        const ecken = (i, j, c) =>
-            T.textureLoad(tex, T.ivec2(i.mul(3).add(c), j))
-                .mul(255 / 127)
-                .sub(1.0);
+        // die Komponente c der vier Ecken der Zelle (i, j): EIN Texel, roh geladen — die Ladung steht im Programm, das die
+        // Probe ruft (eine Bindung lebt nie in einer Layout-Funktion: r184 baut sie EINMAL je Builder-Klasse, jedes weitere
+        // Programm erbte den Namen der Textur aus dem ersten)
+        const ecken = (i, j, c) => T.textureLoad(tex, T.ivec2(i.mul(3).add(c), j));
+        // 0 · 127 · 254 → −1 · 0 · +1
+        const dekod = (e) => e.mul(255 / 127).sub(1.0);
         const blende = (t) =>
             t
                 .mul(t)
@@ -1102,38 +1103,64 @@ class AnazhRealm_Z10 {
                 .mul(t.mul(t.mul(6.0).sub(15.0)).add(10.0));
         // bilinear über die vier Ecken (00 · 10 · 01 · 11) mit der Fünftgrad-Blende
         const zelle = (d, u) => T.mix(T.mix(d.x, d.y, u.x), T.mix(d.z, d.w, u.x), u.y);
+        // DIE MISCHUNG als EINE WGSL-Funktion je Form (K17-3 Runde 2): rein (die Lage in der Zelle und die geladenen Ecken
+        // als Parameter), dieselbe Rechnung wie ausgeschrieben — ausgeschrieben stand sie je Probe im Programm (der Boden
+        // trug 13 Proben, mit Schatten 103 369 Zeichen WGSL).
+        const ebeneMisch = T.Fn(([f, a, b]) => {
+            const fx1 = f.x.sub(1.0);
+            const fy1 = f.y.sub(1.0);
+            const d = dekod(a)
+                .mul(T.vec4(f.x, fx1, f.x, fx1))
+                .add(dekod(b).mul(T.vec4(f.y, f.y, fy1, fy1)));
+            return zelle(d, blende(f)).mul(R.skala);
+        }).setLayout({
+            name: "rauschEbene",
+            type: "float",
+            inputs: [
+                { name: "f", type: "vec2" },
+                { name: "a", type: "vec4" },
+                { name: "b", type: "vec4" },
+            ],
+        });
+        const raumMisch = T.Fn(([f, a0, a1, a2, b0, b1, b2]) => {
+            const fx1 = f.x.sub(1.0);
+            const fy1 = f.y.sub(1.0);
+            const fx4 = T.vec4(f.x, fx1, f.x, fx1);
+            const fy4 = T.vec4(f.y, f.y, fy1, fy1);
+            const schicht = (e0, e1, e2, fz) => dekod(e0).mul(fx4).add(dekod(e1).mul(fy4)).add(dekod(e2).mul(fz));
+            const u = blende(f);
+            return zelle(T.mix(schicht(a0, a1, a2, f.z), schicht(b0, b1, b2, f.z.sub(1.0)), u.z), u).mul(R.skala);
+        }).setLayout({
+            name: "rauschRaum",
+            type: "float",
+            inputs: [
+                { name: "f", type: "vec3" },
+                ...["a0", "a1", "a2", "b0", "b1", "b2"].map((name) => ({ name, type: "vec4" })),
+            ],
+        });
         const ebene = (p, k, achse) => {
             const c = T.floor(p);
-            const f = p.sub(c);
             const ci = T.ivec2(c);
             const i0 = ci.x.add(A * k).bitAnd(m);
             const j0 = ci.y.add(B * k).bitAnd(m);
-            const fx1 = f.x.sub(1.0);
-            const fy1 = f.y.sub(1.0);
-            const d = ecken(i0, j0, 0)
-                .mul(T.vec4(f.x, fx1, f.x, fx1))
-                .add(ecken(i0, j0, achse === "z" ? 2 : 1).mul(T.vec4(f.y, f.y, fy1, fy1)));
-            return zelle(d, blende(f)).mul(R.skala);
+            return ebeneMisch(p.sub(c), ecken(i0, j0, 0), ecken(i0, j0, achse === "z" ? 2 : 1));
         };
         const raum = (p) => {
             const c = T.floor(p);
-            const f = p.sub(c);
             const ci = T.ivec3(c);
             const i0 = ci.x.add(ci.z.mul(A)).bitAnd(m);
             const j0 = ci.y.add(ci.z.mul(B)).bitAnd(m);
             const i1 = i0.add(A).bitAnd(m);
             const j1 = j0.add(B).bitAnd(m);
-            const fx1 = f.x.sub(1.0);
-            const fy1 = f.y.sub(1.0);
-            const fx4 = T.vec4(f.x, fx1, f.x, fx1);
-            const fy4 = T.vec4(f.y, f.y, fy1, fy1);
-            const schicht = (i, j, fz) =>
-                ecken(i, j, 0)
-                    .mul(fx4)
-                    .add(ecken(i, j, 1).mul(fy4))
-                    .add(ecken(i, j, 2).mul(fz));
-            const u = blende(f);
-            return zelle(T.mix(schicht(i0, j0, f.z), schicht(i1, j1, f.z.sub(1.0)), u.z), u).mul(R.skala);
+            return raumMisch(
+                p.sub(c),
+                ecken(i0, j0, 0),
+                ecken(i0, j0, 1),
+                ecken(i0, j0, 2),
+                ecken(i1, j1, 0),
+                ecken(i1, j1, 1),
+                ecken(i1, j1, 2)
+            );
         };
         this._rauschAtlasCache = { tex, raum, ebene };
         return this._rauschAtlasCache;
@@ -1358,8 +1385,28 @@ class AnazhRealm_Z10 {
             const _pxM = _camD.mul(2).div(_T.cameraProjectionMatrix.element(1).y.mul(_T.screenSize.y));
             const _kornSicht = _T.smoothstep(1.5, 4, _T.float(FS.gesetz.geroell.korn).div(_pxM));
             const _gate = _rockW.add(_screeW).mul(_gRock);
-            const _f = GK.felsFein(_O, FS.basis, wp.x, wp.y, wp.z);
-            const _feinV = AnazhRealm._zweigTSL(_T)(_T.vec3(_f.bank, _f.kante, GK.schuttKorn(_O, wp.x, wp.z)), _gate);
+            // DIE FELS-FUNKTION (K17-3): das Gesetz rechnet in EINER WGSL-Funktion (`felsFein`), ihre Wiederholungen als Schleifen
+            // (gelaende-core `falte`: die neun Zellen des Schutts, die vier Bank-Grenzen) und die Ziehung als EINE Funktion
+            // (`felsZufall`) — ausgeschrieben stand jede Ziehung 78-mal im Boden-Programm (96 050 → 149 521 Zeichen WGSL), und
+            // swiftshader übersetzte sie vor dem ersten Bild. Die Welle liest der Graph (EINE Probe im Rausch-Atlas, `felsWelle`)
+            // und reicht sie hinein; der Aufruf steht im Zweig (die Wiese zahlt ihn nicht).
+            const _welle = GK.felsWelle(_O, wp.x, wp.y, wp.z);
+            const _felsFn = _T
+                .Fn(([x, y, z, w]) => {
+                    const _f = GK.felsFein(_O, FS.basis, x, y, z, w);
+                    return _T.vec3(_f.bank, _f.kante, GK.schuttKorn(_O, x, z));
+                })
+                .setLayout({
+                    name: "felsFein",
+                    type: "vec3",
+                    inputs: [
+                        { name: "x", type: "float" },
+                        { name: "y", type: "float" },
+                        { name: "z", type: "float" },
+                        { name: "w", type: "float" },
+                    ],
+                });
+            const _feinV = AnazhRealm._zweigTSL(_T)(_felsFn(wp.x, wp.y, wp.z, _welle), _gate);
             const _fein = _T.mix(_T.float(1), _feinV.x, _nahB).mul(_T.mix(_T.float(1), _feinV.y, _nahF));
             const _felsGrund = felsImVertex ? albedo : _T.vec3(FS.mittel[0], FS.mittel[1], FS.mittel[2]);
             const _rockCol = _felsGrund.mul(_fein);
@@ -1445,6 +1492,11 @@ class AnazhRealm_Z10 {
                         .mul(0.5)
                         .add(0.5)
                 );
+                // Die acht Schichten stehen ausgeschrieben im Programm (der Knoten-Graph sieht jede Ladung, RAUSCH-GESETZ (B)),
+                // ihre Mischung rechnet die EINE reine Funktion des Atlas (`rauschEbene`, K17-3 Runde 2) — je Schicht nur die
+                // Lage und zwei Ladungen. Eine Schleife hiesse ein Fn-Rumpf: als Layout-Funktion las er die Bindung des Atlas
+                // (r184 baut sie EINMAL je Builder-Klasse, jedes weitere Programm erbte den Namen der Textur — die Prüf-Welt sagte
+                // die Pipeline ab), ohne Layout blieb er dem Graph verborgen.
                 let _traf = _T.float(0.0); // 0 = noch kein Halm getroffen (branchenlos)
                 let _trefH = _T.float(0.0); // Halm-Höhe des Treffers (0 = Wurzelgrund)
                 for (let _s = 0; _s < 8; _s++) {

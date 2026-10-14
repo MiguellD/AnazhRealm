@@ -1496,17 +1496,58 @@ const server = http.createServer((req, res) => {
                 if (!GKc || typeof GKc.felsFein !== "function" || typeof r.constructor._felsRechenwerkTSL !== "function")
                     return null;
                 const V = (x) => (typeof x === "number" ? x : x.v);
-                const mk = (v, t) => ({
-                    v,
-                    t,
-                    add: (b) => mk(t === "u" ? (v + V(b)) >>> 0 : v + V(b), t),
-                    sub: (b) => mk(v - V(b), t),
-                    mul: (b) => mk(t === "u" ? Math.imul(v, V(b)) >>> 0 : v * V(b), t),
-                    div: (b) => mk(v / V(b), t),
-                    clamp: (a, c) => mk(Math.min(c, Math.max(a, v)), t),
-                    bitXor: (b) => mk((v ^ V(b)) >>> 0, "u"),
-                    shiftRight: (b) => mk(v >>> V(b), "u"),
-                    greaterThan: (b) => mk(v > V(b) ? 1 : 0, "b"),
+                // die Knoten-Methoden lesen den Wert beim Aufruf (`this.v`): eine Variable (`toVar`, K17-3 `fest`/`falte`)
+                // ändert ihn mit `assign`, ein Lese-Glied eines vec4 (`.x` … `.w`) liest den Wert seiner Variable jetzt
+                const P = {
+                    add(b) {
+                        return mk(this.t === "u" ? (this.v + V(b)) >>> 0 : this.v + V(b), this.t);
+                    },
+                    sub(b) {
+                        return mk(this.v - V(b), this.t);
+                    },
+                    mul(b) {
+                        return mk(this.t === "u" ? Math.imul(this.v, V(b)) >>> 0 : this.v * V(b), this.t);
+                    },
+                    div(b) {
+                        return mk(this.v / V(b), this.t);
+                    },
+                    clamp(a, c) {
+                        return mk(Math.min(c, Math.max(a, this.v)), this.t);
+                    },
+                    bitXor(b) {
+                        return mk((this.v ^ V(b)) >>> 0, "u");
+                    },
+                    shiftRight(b) {
+                        return mk(this.v >>> V(b), "u");
+                    },
+                    greaterThan(b) {
+                        return mk(this.v > V(b) ? 1 : 0, "b");
+                    },
+                    toVar() {
+                        const h = mk(this.v, this.t);
+                        h.assign = (b) => {
+                            h.v = V(b);
+                        };
+                        return h;
+                    },
+                };
+                const mk = (v, t) => Object.assign(Object.create(P), { v, t });
+                // vec4 als Variable: x … w lesen den Zustand, `assign` setzt ihn (die Falte des Rechenwerks)
+                const vec4 = (...c) => ({
+                    c,
+                    toVar() {
+                        const H = { c: c.map(V) };
+                        const glied = (q) => Object.defineProperty(Object.assign(Object.create(P), { t: "f" }), "v", { get: () => H.c[q] });
+                        return {
+                            x: glied(0),
+                            y: glied(1),
+                            z: glied(2),
+                            w: glied(3),
+                            assign: (n) => {
+                                H.c = n.c.map(V);
+                            },
+                        };
+                    },
                 });
                 const glatt = (a, b, x) => {
                     let t = (V(x) - V(a)) / (V(b) - V(a));
@@ -1527,7 +1568,18 @@ const server = http.createServer((req, res) => {
                     step: (e, x) => mk(V(x) >= V(e) ? 1 : 0, "f"),
                     smoothstep: glatt,
                     select: (c, a, b) => (V(c) ? a : b),
+                    uniformFlow: (x) => x,
                     vec3: (a, b, c) => ({ x: a, y: b, z: c }),
+                    vec4,
+                    // ein Fn mit Layout ruft seinen Rumpf mit der Liste der Argumente; die Schleife zählt i = 0 … n − 1
+                    Fn: (f) => {
+                        const g = (...a) => f(a);
+                        g.setLayout = () => g;
+                        return g;
+                    },
+                    Loop: (n, rumpf) => {
+                        for (let i = 0; i < n; i++) rumpf({ i: mk(i, "i") });
+                    },
                 };
                 // `raum` des Rausch-Atlas, Schritt für Schritt aus den Atlas-Bytes (`_rauschAtlasDaten`, Texel = Byte / 127 − 1)
                 // wie `_rauschAtlas().raum` — die Welle der Bänke liest im Shader EINE Probe im Atlas (K17-2 NB1)

@@ -739,6 +739,26 @@ const S0_LUMA_2M = 0.15;
 // Glut-Palette des Stoffs (0xff7a35) mit der Nacht-Stärke 12 — der Ring MUSS den Farbton reißen.
 const S0_TON = { hue: [25, 45], satMax: 0.75, palette: { hex: 0xff7a35, nacht: 12 } };
 const s0TonPasst = (t) => !!t && t.hue >= S0_TON.hue[0] && t.hue <= S0_TON.hue[1];
+// DER STOFF DES SCHUSSES (K17-3, die Shader-Kosten-Linse scripts/lib/shader-kosten.cjs): der Schuss übersetzt das Boden-Programm
+// (`voxelChunkMaterial`) — seine Zeichen stehen unter der Decke des Bodens (`STOFFE.boden.budget.zeichenMax`). Seit K17 trug
+// es das Fels-Gesetz ausgeschrieben im Pixel (78 Ziehungen, 96 050 → 149 521 Zeichen; lokal 4 Kerne Schuss 12 → 20 s), die
+// Frist riss auf dem Runner (171 s). Der Selbsttest hält das gemessene Programm gegen eine Decke ein Zeichen darunter.
+// Keine Hilfs-Funktion des Programms liest eine Bindung (`bindungInFunktionMax` 0): die Layout-Funktion `wieseRelief` las den
+// Rausch-Atlas und vererbte seinen Namen in jedes weitere Programm — auf der Bühne sagte swiftshader die Pipeline ab.
+const S0_STOFF = (() => {
+    const SK = require("./lib/shader-kosten.cjs");
+    const decke = SK.STOFFE.boden.budget.zeichenMax;
+    return {
+        decke,
+        urteil: (wgsl, d) => {
+            const k = SK.wgslKosten(wgsl);
+            return {
+                zeichen: k.zeichen,
+                rot: SK.kostenUrteil(k, { zeichenMax: d == null ? decke : d, bindungInFunktionMax: 0 }, "S0 Boden-Programm"),
+            };
+        },
+    };
+})();
 const S0_FRIST_S = Math.max(30, Number(opt("--frist", 170)) || 170);
 async function lichtLauf() {
     const { linsenWebGpuArgs, adapterZeile, echteWebGpuArgs } = require("./lib/software-gpu.cjs");
@@ -982,6 +1002,19 @@ async function lichtLauf() {
                     // die Nah-Bühne (oben): auf swiftshader zeichnet der Schuss die Nähe des Feuers
                     const nahLos = nahM ? window.__s0Nah(new T.Vector3(f.x, g, f.z), nahM) : null;
                     let nahZahl = null;
+                    // DIE PROGRAMM-GRÖSSE DES BODENS (K17-3, oben S0_STOFF): je Render-Objekt des Boden-Stoffs das erzeugte Fragment,
+                    // das der Schuss übersetzt (der Zustand des Render-Objekts, wie `__shaderKosten`)
+                    const bodenWgsl = new Map();
+                    const objs = rend._objects;
+                    const roh = objs.get;
+                    objs.get = function (...a) {
+                        const ro = roh.apply(this, a);
+                        if (ro && ro.material === s.voxelChunkMaterial) {
+                            const st = ro.getNodeBuilderState();
+                            if (st && st.fragmentShader) bodenWgsl.set(st.fragmentShader, (bodenWgsl.get(st.fragmentShader) || 0) + 1);
+                        }
+                        return ro;
+                    };
                     try {
                         window.__buehne();
                         uhr(0);
@@ -1000,6 +1033,7 @@ async function lichtLauf() {
                     } finally {
                         r._leuchtTakt = alt;
                         FC.lichtFlackern = flAlt;
+                        objs.get = roh;
                         if (nahLos) nahZahl = nahLos();
                     }
                     const u8 = auf.u8;
@@ -1083,6 +1117,7 @@ async function lichtLauf() {
                         dc: auf.info && auf.info.drawCalls,
                         nah: nahZahl,
                         zaehl,
+                        boden: [...bodenWgsl.keys()],
                         png: cv.toDataURL("image/png"),
                     };
                 }, schein, ECHT ? 0 : S0_NAH_M, S0_TON.palette)
@@ -1187,6 +1222,20 @@ async function lichtLauf() {
                     ? "ist die Glut-Palette des Datums (fachwerk LICHT_GESETZ.feuer `farbe`), keine Farbtemperatur (`kelvin` fehlt)"
                     : `aus ${sauber.kelvin} K (fachwerk LICHT_GESETZ.feuer \`kelvin\` über \`lichtFarbe\`) mit ihrem Abfall (\`lichtAbfall\`)`)
         );
+    if (sauber && !sauber.fehler) {
+        const progs = sauber.boden || [];
+        if (!progs.length)
+            befunde.push(
+                "S0 Boden-Programm: der Schuss zeichnet kein Programm des Boden-Stoffs (`voxelChunkMaterial`) — die Linse ist blind"
+            );
+        progs.forEach((wgsl, i) => {
+            const u = S0_STOFF.urteil(wgsl);
+            console.log(`  S0 BODEN-PROGRAMM ${i + 1}/${progs.length}: ${u.zeichen} Zeichen WGSL (Decke ${S0_STOFF.decke})`);
+            befunde.push(...u.rot);
+            const aus = opt("--wgsl", null);
+            if (aus) fs.writeFileSync(aus.replace(/(\.wgsl)?$/, i ? `-${i + 1}.wgsl` : ".wgsl"), wgsl);
+        });
+    }
     if (sauber && !sauber.fehler && sauber.ton && !(sauber.ton.sat <= S0_TON.satMax))
         console.log(
             `    OFFEN S0 Bild: Sättigung ${sauber.ton.sat} (Soll der Karte ≤ ${S0_TON.satMax}) — der Fuß der ACES-Kurve bei der Nacht-Belichtung ${sauber.belichtung}`
@@ -1204,7 +1253,13 @@ async function lichtLauf() {
         console.log(
             `  SELBSTTEST S0 BILD (das Feuer bis K11b, Glut-Palette und nacht 12): ${farbGetroffen ? `getroffen — der Boden 1–3 m fällt auf Farbton ${fb.ton && fb.ton.hue}° bei Sättigung ${fb.ton && fb.ton.sat}: die Farbtemperatur trägt ihn` : "BLIND"}`
         );
-        pass = pass && getroffen && farbGetroffen;
+        const prog = sauber && !sauber.fehler && sauber.boden && sauber.boden[0];
+        const gross = prog ? S0_STOFF.urteil(prog, prog.length - 1) : null;
+        const grossGetroffen = !!gross && gross.rot.length === 1;
+        console.log(
+            `  SELBSTTEST S0 PROGRAMM-GRÖSSE (die Decke ein Zeichen unter dem Boden-Programm): ${grossGetroffen ? `getroffen — ${gross.rot[0].split(" — ")[0]}` : "BLIND"}`
+        );
+        pass = pass && getroffen && farbGetroffen && grossGetroffen;
     }
     console.log(
         `\n${pass ? "✅" : "⛔"} S0 BILD ${pass ? "GRÜN: die Feuerstelle trägt den Feuerkreis aus 2 m in der Ausgabe" : "ROT"} (${Math.round((Date.now() - t0) / 1000)} s, ${ECHT ? "echte GPU" : "swiftshader"} · Holz ${HOLZ})\n`

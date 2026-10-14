@@ -56,10 +56,22 @@ const LEICHT =
 // gemessen am Boden-Stoff des echten Frames): kein Gitter-Rauschen — die zwei erlaubten Rausch-Aufrufe sind r184s Schatten-
 // Dither (`interleavedGradientNoise`, 4 Ops je Aufruf, je Kaskade einer); ein MaterialX-Rauschen (548 Ops) bricht dazu die
 // Ops-Decke —, die Ladungen des Rausch-Atlas (78) und die Ops-Schätzung unter der Decke.
+// DIE PROGRAMM-GRÖSSE (`zeichenMax`, K17-3): swiftshader (die CI) übersetzt jedes Programm beim ersten Zeichnen und löst jede
+// WGSL-Funktion in ihren Aufrufer auf — die Zeichen des erzeugten Fragments sind die Übersetzungs-Arbeit, die vor dem
+// ersten Bild steht. Der Boden trug vor dem Fels-Gesetz im Pixel (K17) 96 050 Zeichen; mit dem Gesetz im Pixel, jede
+// Ziehung `zufall` 78-mal ausgeschrieben, 149 521 — die Prüfbühne S0 riss ihre Frist (171 s). Die Decke 100 000.
+// Keine Hilfs-Funktion liest eine Bindung (`bindungInFunktionMax` 0, `bindungenInFunktionen`).
 const STOFFE = Object.freeze({
     boden: Object.freeze({
         zustand: "voxelChunkMaterial",
-        budget: Object.freeze({ rauschenMax: 2, ladungenMax: 90, probenMax: 12, opsMax: 2400 }),
+        budget: Object.freeze({
+            rauschenMax: 2,
+            ladungenMax: 90,
+            probenMax: 12,
+            opsMax: 2400,
+            zeichenMax: 100000,
+            bindungInFunktionMax: 0,
+        }),
     }),
 });
 
@@ -237,7 +249,52 @@ function wgslKosten(wgsl) {
     // je Aufruf: was eine Rausch-Funktion des Moduls einmal kostet (für die Tabelle)
     const rauschJeAufruf = {};
     for (const n of fns.keys()) if (RAUSCH_NAME.test(n)) rauschJeAufruf[n] = kostenVon(n, new Set()).ops;
-    return { einstieg: name, funktionen: fns.size, zeichen: String(wgsl).length, ...k, rauschJeAufruf };
+    return {
+        einstieg: name,
+        funktionen: fns.size,
+        zeichen: String(wgsl).length,
+        ...k,
+        rauschJeAufruf,
+        bindungInFunktion: bindungenInFunktionen(code, fns, name),
+    };
+}
+
+// DIE BINDUNG IN EINER HILFS-FUNKTION (K17-3 Runde 2): r184 baut eine Layout-Funktion (`Fn().setLayout`) EINMAL je
+// Builder-KLASSE (`nodeBuilderFunctionsCacheMap`, vendor/three.webgpu.min.js: `Fi.get(e.constructor)`) und hängt denselben
+// Text an jedes Programm — eine Uniform, Textur oder ein Puffer darin trägt den Namen aus dem Programm, das sie zuerst baute.
+// Die Wiese (`wieseRelief`) las den Rausch-Atlas als `nodeUniform0`; im Programm der Prüfbühne hieß so ein f32 im Uniform-
+// Block: `unresolved value 'nodeUniform0'`, die Pipeline fiel. Eine Hilfs-Funktion liest darum keine Bindung des Moduls
+// (eine `var` auf Modul-Ebene oder einen r184-Bindungs-Namen) — je Täter die Funktion und die Namen.
+function bindungenInFunktionen(code, fns, einstieg) {
+    const global = new Set();
+    let tief = 0;
+    const deklar = /\bvar\s*(?:<[^>]*>)?\s*([A-Za-z_]\w*)/y;
+    for (let i = 0; i < code.length; i++) {
+        const c = code[i];
+        if (c === "{") tief++;
+        else if (c === "}") tief--;
+        else if (tief === 0 && c === "v" && (i === 0 || !/\w/.test(code[i - 1]))) {
+            deklar.lastIndex = i;
+            const m = deklar.exec(code);
+            if (m) global.add(m[1]);
+        }
+    }
+    const r184 = /^(?:nodeUniform\d+|NodeBuffer_\w+|nodeVarying\d+|nodeUniformsSampler\w*)$/;
+    const aus = [];
+    for (const [f, rumpf] of fns) {
+        if (f === einstieg || f === "main") continue;
+        // die eigenen Namen der Funktion: ihre Parameter und was ihr Rumpf deklariert (r184 nennt die Variablen einer Layout-
+        // Funktion wie die `var<private>` des Einstiegs: `nodeVar0` — die eigene verdeckt die des Moduls)
+        const eigen = new Set();
+        const kopf = new RegExp(`\\bfn\\s+${f}\\s*\\(([^)]*)\\)`).exec(code);
+        for (const p of (kopf ? kopf[1] : "").matchAll(/([A-Za-z_]\w*)\s*:/g)) eigen.add(p[1]);
+        for (const d of rumpf.matchAll(/\b(?:var|let|const)\s*(?:<[^>]*>)?\s*([A-Za-z_]\w*)/g)) eigen.add(d[1]);
+        const namen = new Set();
+        for (const w of rumpf.match(/\b[A-Za-z_]\w*\b/g) || [])
+            if (!eigen.has(w) && (global.has(w) || r184.test(w))) namen.add(w);
+        if (namen.size) aus.push({ fn: f, namen: [...namen] });
+    }
+    return aus;
 }
 
 // DAS URTEIL gegen ein Budget je Programm: jede Verletzung beim Namen. Ein unbekannter Budget-Schlüssel wirft (eine
@@ -260,6 +317,19 @@ const GRENZEN = {
     opsMax: [(k) => k.ops, "≤", "Ops je Fragment (Schätzung)", ""],
     ladungenMax: [(k) => k.ladungen, "≤", "Ladungen je Fragment", ""],
     probenMax: [(k) => k.proben, "≤", "Proben je Fragment", ""],
+    zeichenMax: [
+        (k) => k.zeichen,
+        "≤",
+        "Zeichen WGSL im Programm",
+        " — swiftshader übersetzt jede Zeile vor dem ersten Bild (Lehre 14: schwere Arbeit nie ausgeschrieben in jedem Pixel)",
+    ],
+    bindungInFunktionMax: [
+        (k) => k.bindungInFunktion.length,
+        "≤",
+        "Hilfs-Funktionen lesen eine Bindung des Moduls",
+        " — r184 baut eine Layout-Funktion EINMAL je Builder-Klasse, jedes weitere Programm erbt die Bindungs-Namen des ersten",
+        (k) => k.bindungInFunktion.map((b) => `${b.fn}: ${b.namen.join(", ")}`).join(" · "),
+    ],
 };
 function kostenUrteil(k, budget, name) {
     const n = name || "Programm";
@@ -269,7 +339,7 @@ function kostenUrteil(k, budget, name) {
     const v = [];
     for (const [s, grenze] of Object.entries(budget || {})) {
         if (grenze == null) continue;
-        const [lies, rel, was, warum] = GRENZEN[s];
+        const [lies, rel, was, warum, taeter] = GRENZEN[s];
         const ist = lies(k);
         if (rel === "≤" ? ist > grenze : ist < grenze) {
             const namen =
@@ -277,7 +347,9 @@ function kostenUrteil(k, budget, name) {
                     ? ` (${Object.entries(k.rauschNamen)
                           .map(([f, c]) => f + " ×" + c)
                           .join(", ")})`
-                    : "";
+                    : taeter
+                      ? ` (${taeter(k)})`
+                      : "";
             v.push(`${n}: ${ist} ${was}${namen} (Budget ${rel} ${grenze})${warum}`);
         }
     }
@@ -426,6 +498,30 @@ fn main( @builtin( position ) p : vec4<f32> ) -> Out {
     // Eine Stufe, die aus ihrem Zweig wandert, wird unbedingt (der Fall, den gate:post-kette bewacht).
     const ohneZweig = wgslKosten(modul.replace("if ( render.staerke != 0.0 ) {", "{"));
     pruef("Stufe ohne Zweig", ohneZweig.abtastungen.unbedingt, 6);
+    // Die Programm-Größe: ein Programm über der Decke nennt seine Zeichen, eines darunter hält.
+    pruef("Größe hält", kostenUrteil(k, { zeichenMax: modul.length }, "s"), []);
+    const gross = kostenUrteil(k, { zeichenMax: modul.length - 1 }, "s");
+    if (!(gross.length === 1 && gross[0].includes(`${modul.length} Zeichen WGSL im Programm`)))
+        fehler.push(`Urteil nennt die Programm-Größe nicht (${JSON.stringify(gross)})`);
+    // Die Bindung in einer Hilfs-Funktion: `hilf` liest die Texturen des Moduls (tex, tex2) — rot beim Namen; derselbe Zugriff
+    // im Einstieg hält, eine reine Hilfs-Funktion hält, und ein r184-Bindungs-Name, den das Modul nicht deklariert (der Fall
+    // der Prüfbühne: `nodeUniform0` war dort ein Feld im Uniform-Block), fällt ebenso.
+    const modulB = `@group( 0 ) @binding( 1 ) var tex : texture_2d<f32>;\n@group( 0 ) @binding( 2 ) var tex2 : texture_2d<f32>;\n${modul}`;
+    const bind = kostenUrteil(wgslKosten(modulB), { bindungInFunktionMax: 0 }, "s");
+    if (!(bind.length === 1 && bind[0].includes("hilf: tex, tex2")))
+        fehler.push(`Urteil nennt die Bindung in der Hilfs-Funktion nicht (${JSON.stringify(bind)})`);
+    const rein = modulB.replace(
+        "return textureSample( tex, samp, uv ) + textureLoad( tex2, vec2<i32>( 0 ), 0 );",
+        "return vec4<f32>( uv, 0.0, 1.0 );"
+    );
+    pruef("reine Hilfs-Funktion hält", kostenUrteil(wgslKosten(rein), { bindungInFunktionMax: 0 }, "s"), []);
+    const fremd = kostenUrteil(
+        wgslKosten(rein.replace("vec4<f32>( uv, 0.0, 1.0 )", "textureLoad( nodeUniform0, vec2<i32>( 0 ), 0 )")),
+        { bindungInFunktionMax: 0 },
+        "s"
+    );
+    if (!(fremd.length === 1 && fremd[0].includes("hilf: nodeUniform0")))
+        fehler.push(`Urteil nennt den geerbten r184-Namen nicht (${JSON.stringify(fremd)})`);
     // Ein Modul ohne Fragment-Einstieg (ein Compute-Modul) ist blind, nie grün.
     pruef("blind", kostenUrteil(wgslKosten("fn f() {}"), {}, "x").length, 1);
     // Eine vertippte Decke wirft, statt still nichts zu prüfen.

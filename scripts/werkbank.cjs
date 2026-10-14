@@ -2361,7 +2361,15 @@ async function starte() {
                 }
                 send({ fehler: "unbekannter Weg " + req.url });
             } catch (e) {
-                send({ fehler: String((e && e.message) || e).split("\n")[0], ms: Date.now() - t0 });
+                // der Fehler mit seinen ersten Rahmen (der Täter beim Namen, nicht nur die Meldung)
+                send({
+                    fehler: String((e && e.message) || e).split("\n")[0],
+                    stapel: String((e && e.stack) || "")
+                        .split("\n")
+                        .slice(1, 5)
+                        .map((s) => s.trim()),
+                    ms: Date.now() - t0,
+                });
             }
         });
     });

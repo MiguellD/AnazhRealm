@@ -652,6 +652,11 @@ function lichtBilanz() {
                 }
             }
         } finally {
+            if (freiAlt) {
+                freiIx.array.set(freiAlt);
+                freiIx.needsUpdate = true;
+                if (nahtMesh) visAlt.set(nahtMesh, nahtSicht);
+            }
             for (const m of meshes) m.visible = visAlt.get(m);
             bundles();
             for (const [l, i] of lichtAlt) l.intensity = i;
@@ -801,6 +806,20 @@ function nahFernSicht(opts) {
         const maskeAlt = lu && lu.uLodMaskOn ? lu.uLodMaskOn.value : null;
         const istNah = (m) => m.name === "bodenSatz";
         const istFern = (m) => m.userData && m.userData.inventar === "fern-ring";
+        // DER RING WEICHT DEM GEBAUTEN (K16): unter einem gezeichneten Chunk trägt die Schale 0 kein Dreieck (`_fernRingTeilung`
+        // Klasse 2) — der Fern-Schuss im Quadrat der Chunks war seither leer (0 px). Für die Schüsse der Linse zeichnet der
+        // freie Teil der Schale 0 ihr volles Index-Muster (der Träger `geos[0]`, dieselbe Länge), der Naht-Teil ruht; danach
+        // steht die Teilung wieder, wie sie war.
+        const fr = st.fernRing;
+        const freiIx = fr && fr.teilung && fr.teilung.frei && fr.teilung.frei.index;
+        const freiAlt = freiIx ? freiIx.array.slice() : null;
+        const nahtMesh = fr && fr.meshes ? fr.meshes.find((m) => fr.teilung && m.geometry === fr.teilung.naht) : null;
+        const nahtSicht = nahtMesh ? visAlt.get(nahtMesh) : null;
+        if (freiIx && fr.geos[0].index.array.length === freiIx.array.length) {
+            freiIx.array.set(fr.geos[0].index.array);
+            freiIx.needsUpdate = true;
+            if (nahtMesh) visAlt.set(nahtMesh, false);
+        }
         const schuss = async (sicht, e) => {
             for (const m of meshes) m.visible = visAlt.get(m) && sicht(m);
             sc.traverse((o) => {
@@ -941,7 +960,17 @@ function nahFernSicht(opts) {
         // Die Karte der Fern-Krone im Boden-Stoff (seit 0910-8): steht sie nicht (bereit 0, oder ein Füll-Job offen — dann
         // liegt ihre Mitte noch am alten Anker), mischt der Boden hier nichts — das Urteil nennt es.
         const nk = st.fernKroneNah;
-        return { hoehe: H, halb, orte: aus, nahKarte: nk ? (nk.U.bereit.value === 1 && !nk.job ? 1 : 0) : null };
+        return {
+            hoehe: H,
+            halb,
+            orte: aus,
+            // die Kandidaten des Quadrats: wie viele und die stärkste Deckung (ein Urteil ohne Wald-Orte nennt sie)
+            kandidaten: {
+                n: kand.length,
+                deckungMax: kand.length ? +Math.max(...kand.map((k) => k.deckung)).toFixed(2) : null,
+            },
+            nahKarte: nk ? (nk.U.bereit.value === 1 && !nk.job ? 1 : 0) : null,
+        };
     })();
 }
 
@@ -988,7 +1017,12 @@ function nahFernUrteil(messung, band) {
     for (const k of ["wald", "wiese"]) {
         const n = ((messung && messung.orte) || []).filter((o) => o.klasse === k).length;
         if (n < band.jeKlasse)
-            befunde.push(`NAH-FERN ${k}: ${n} Orte — das Urteil braucht mindestens ${band.jeKlasse}`);
+            befunde.push(
+                `NAH-FERN ${k}: ${n} Orte — das Urteil braucht mindestens ${band.jeKlasse}` +
+                    (messung && messung.kandidaten
+                        ? ` (${messung.kandidaten.n} Kandidaten im Quadrat, stärkste Deckung ${messung.kandidaten.deckungMax})`
+                        : "")
+            );
     }
     const gr = (c) => c[1] / Math.max(1e-6, c[0] + c[1] + c[2]);
     const pz = (v) => `${v >= 0 ? "+" : ""}${(v * 100).toFixed(0)} %`;
