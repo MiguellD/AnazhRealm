@@ -1598,6 +1598,18 @@ AnazhRealm._leibVolumen = function (teil, rahmen) {
     r.updateMatrixWorld(true);
     const inv = new THREE.Matrix4().copy(r.matrixWorld).invert();
     const m = new THREE.Matrix4();
+    // DAS GEMESSENE VOLUMEN DES OFENS (1310-15): der Mensch-Guss schneidet die Haut unter dem Stoff (danach ist sie offen) und
+    // misst die geschlossene Haut vorher — die Zahl hängt am Gelenk der Hülle (`__leibV`, Geometrie-Einheiten³) und gilt
+    // allein, nie zusätzlich zu einer Messung der Netze darunter.
+    let dekl = 0;
+    let hatDekl = false;
+    teil.traverse((o) => {
+        if (!(o.userData && o.userData.__leibV > 0)) return;
+        m.multiplyMatrices(inv, o.matrixWorld);
+        dekl += o.userData.__leibV * Math.abs(m.determinant());
+        hatDekl = true;
+    });
+    if (hatDekl) return dekl;
     let v = 0;
     teil.traverse((o) => {
         if (!o.isMesh || !o.geometry) return;

@@ -6344,6 +6344,7 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         hair: { c: hairCol, r: 0.85, seh: "haar" },
     });
     const fein = (lod | 0) >= 1;
+    let leibV = 0; // das Volumen der geschlossenen Haut (1310-15), der Beipack trägt es zur Masse
     const segW = fein ? 8 : 20,
         segH = fein ? 6 : 14,
         segZ = fein ? 6 : 14;
@@ -6582,12 +6583,14 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         }
         // DIE HAUT UNTER DEM STOFF (1310-15, Lehre 19): ein Haut-Dreieck, dessen drei Ecken im Feld einer Kleid-Hülle liegen
         // (über ihrem Niveau, also mindestens den Stoff-Abstand unter seiner Fläche), sieht niemand — es fällt, die Ecken
-        // werden verdichtet. Am Saum bleibt jedes Dreieck mit einer Ecke im Freien (keine Lücke). Gebacken in der Spreiz-Pose,
-        // in der Haut und Stoff entstanden.
+        // werden verdichtet. Am Saum bleibt jedes Dreieck mit einer Ecke im Freien (keine Lücke). Die Ecken werden in der
+        // Spreiz-Pose gemerkt, in der Haut und Stoff entstanden; geschnitten wird nach der Rück-Transformation, wenn die
+        // geschlossene Haut ihr Volumen gegeben hat.
+        let hautImStoff = null;
         if (hautHuelle && stoffHuellen.length) {
             const g = hautHuelle.geometry;
             const pa = g.attributes.position;
-            const imStoff = new Uint8Array(pa.count);
+            const imStoff = (hautImStoff = new Uint8Array(pa.count));
             for (const s of stoffHuellen) {
                 const F = felder.get(s);
                 for (let i = 0; i < pa.count; i++) {
@@ -6599,25 +6602,8 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
                     if (F.f[a + F.nx * (b + F.ny * c)] > F.level) imStoff[i] = 1;
                 }
             }
-            const alt = g.index.array;
-            const neu = [];
-            for (let t = 0; t < alt.length; t += 3)
-                if (!(imStoff[alt[t]] && imStoff[alt[t + 1]] && imStoff[alt[t + 2]])) neu.push(alt[t], alt[t + 1], alt[t + 2]);
-            const karte = new Int32Array(pa.count).fill(-1);
-            let n = 0;
-            for (const v of neu) if (karte[v] < 0) karte[v] = n++;
-            const ng = new THREE.BufferGeometry();
-            for (const name of Object.keys(g.attributes)) {
-                const at = g.attributes[name];
-                const arr = new at.array.constructor(n * at.itemSize);
-                for (let i = 0; i < pa.count; i++)
-                    if (karte[i] >= 0) for (let k = 0; k < at.itemSize; k++) arr[karte[i] * at.itemSize + k] = at.array[i * at.itemSize + k];
-                ng.setAttribute(name, new THREE.BufferAttribute(arr, at.itemSize));
-            }
-            ng.setIndex(new THREE.BufferAttribute(Uint32Array.from(neu, (v) => karte[v]), 1));
-            g.dispose();
-            hautHuelle.geometry = ng;
         }
+
         // WAS GANZ IN EINER HÜLLE LIEGT (1310-15): jedes übrige starre Teil (gemalte Schatten, Gelenk-Kugeln …), dessen
         // Ecken alle im Feld einer Haut- oder Kleid-Hülle liegen, liegt unter ihrer Fläche — es fällt aus dem Guss wie die
         // Quellen der Hülle. Kopf, Hände, Augen und Haar liegen in keinem dieser Felder.
@@ -6674,6 +6660,49 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
             }
             pa.needsUpdate = true;
             mesh.geometry.computeVertexNormals();
+        }
+        // DAS VOLUMEN DER GESCHLOSSENEN HAUT (1310-15): die Masse des Menschen liest das Volumen seiner Haut
+        // (`_leibVolumen`, Divergenz-Satz Σ a · (b × c) / 6 je Dreieck, in der Ruhe-Pose) — die Haut ist nach dem Stoff-Schnitt
+        // offen, also misst der Ofen sie vorher und gibt die Zahl im Beipack mit (`leibV`, Geometrie-Einheiten³).
+        if (hautHuelle) {
+            const g = hautHuelle.geometry;
+            const p = g.attributes.position.array;
+            const ix = g.index.array;
+            let v = 0;
+            for (let t = 0; t + 2 < ix.length; t += 3) {
+                const a = ix[t] * 3,
+                    b = ix[t + 1] * 3,
+                    c = ix[t + 2] * 3;
+                v +=
+                    (p[a] * (p[b + 1] * p[c + 2] - p[b + 2] * p[c + 1]) -
+                        p[a + 1] * (p[b] * p[c + 2] - p[b + 2] * p[c]) +
+                        p[a + 2] * (p[b] * p[c + 1] - p[b + 1] * p[c])) /
+                    6;
+            }
+            leibV = Math.abs(v);
+        }
+        if (hautHuelle && hautImStoff) {
+            const g = hautHuelle.geometry;
+            const pa = g.attributes.position;
+            const imStoff = hautImStoff;
+            const alt = g.index.array;
+            const neu = [];
+            for (let t = 0; t < alt.length; t += 3)
+                if (!(imStoff[alt[t]] && imStoff[alt[t + 1]] && imStoff[alt[t + 2]])) neu.push(alt[t], alt[t + 1], alt[t + 2]);
+            const karte = new Int32Array(pa.count).fill(-1);
+            let n = 0;
+            for (const v of neu) if (karte[v] < 0) karte[v] = n++;
+            const ng = new THREE.BufferGeometry();
+            for (const name of Object.keys(g.attributes)) {
+                const at = g.attributes[name];
+                const arr = new at.array.constructor(n * at.itemSize);
+                for (let i = 0; i < pa.count; i++)
+                    if (karte[i] >= 0) for (let k = 0; k < at.itemSize; k++) arr[karte[i] * at.itemSize + k] = at.array[i * at.itemSize + k];
+                ng.setAttribute(name, new THREE.BufferAttribute(arr, at.itemSize));
+            }
+            ng.setIndex(new THREE.BufferAttribute(Uint32Array.from(neu, (v) => karte[v]), 1));
+            g.dispose();
+            hautHuelle.geometry = ng;
         }
     }
     // DIE KOPF-HAUT (Welle 5, „der Mensch nah: das Gesicht"): das Gesicht war ein Haufen einzelner Kugeln (Kiefer,
@@ -6852,6 +6881,8 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         skinJoints: skinJoints,
         // die Hand-Mitte je Hand im Hand-Raum (nur nah gegossen) — der Griff der Faust
         ...(fein ? {} : { handMitte }),
+        // das Volumen der geschlossenen Haut am Gelenk der Hülle (1310-15) — die Masse liest es, nie die offene Fläche
+        ...(leibV > 0 ? { leibV } : {}),
     });
 }
 
