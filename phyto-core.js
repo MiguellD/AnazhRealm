@@ -409,9 +409,9 @@
     // Integration 05.10.: die zweite Baum-Zelle war ein Zwilling der ersten (derselbe Zweig, derselbe Strom — Prüfer W5:
     // „die zwei Baum-Zellen sind fast gleich"); sie trägt seither den Weiden-Zweig, die Bäume lesen Zelle 0.
     const BLATT_ATLAS_BREIT = { zellen: 1, kern: 0.72, fuellung: 0.1796 };
-    // Die Wedel-Zelle (S3, 09.10.): der Wedel reicht bis 0,936 der halben Zelle (kern 1), Füllung 0,2811 gemessen (gate:asset-contract
-    // malt den Atlas und hält die Zahl gegen den Maler; vorher die Nadel-Zweiglein 0,2537).
-    const BLATT_ATLAS_WEDEL = { zelle: 3, kern: 1, fuellung: 0.2811 };
+    // Die Wedel-Zelle (S3, 09.10.): der Wedel reicht bis 0,936 der halben Zelle (kern 1), Füllung 0,3603 gemessen (gate:asset-contract
+    // malt den Atlas und hält die Zahl gegen den Maler; vorher die Nadel-Zweiglein 0,2537, die Lanzette bis K58 0,2811).
+    const BLATT_ATLAS_WEDEL = { zelle: 3, kern: 1, fuellung: 0.3603 };
     // DIE GROSSBLATT-ZELLE (05.10.): das Blatt-Mass ist eine Eigenschaft der Art — die Baum-Karten (Zelle 0) tragen
     // das Natur-Blatt der Baeume (14 px in der 512er-Zelle), die kleine Karte des Strauchs und die gestreckte Straehne
     // der Weide trugen damit 0,026 bzw. 0,039 m (Hasel und Weide: 0,06–0,15 m). Zelle 2 traegt ihr den Zweig mit
@@ -518,11 +518,20 @@
     // Späher S3): die Nadel-Zelle trug radiale Zweiglein — auf der Krone las jeder Nadel-Ast als „kugeliges Büschel"
     // (Radial-Stern), die Nadel-Äste selbst als Röhren (Koniferen-L0 78–80 % Rinde). Der Wedel ist der Ast UND seine
     // Nadeln: die Strähne zieht ihn entlang der gewachsenen Bahn (foundry-core, budget.tree[Stufe].wedel).
+    // DER UMRISS DES ZWEIGS (K58, 14.10.): die Zweiglein fielen zur Spitze auf 0 (`(1 − t)^0,85`) — der Wedel war eine
+    // Lanzette mit Mittelrippe, und weil die Mips des Karten-Gesetzes die Deckung halten, las er ab 20 m als EIN Riesenblatt
+    // (Augen-Befund 14.10.: „Nadelbäume als große kantige Karten"). Jetzt das Band eines Fichten-Zweigs: die Länge hält bis
+    // zur Spitze und bricht stumpf (`(1 − t^stumpf)^0,5`), je Zweiglein um `streu` [Basis, Zufall] zerfranst, und statt 36 dichter
+    // Zweiglein tragen 16 je `unter` Unter-Zweiglein (`unterLaenge` der Zweig-Länge): jedes Zweiglein ein eigener Sprüh-Büschel,
+    // die Lücken zwischen ihnen überleben die tiefen Mips — die Karte liest als Hand aus Nadel-Büscheln, nie als Klinge.
     const WEDEL_ZWEIG = {
-        seiten: 36,
-        laenge: 0.95,
+        seiten: 16,
+        laenge: 0.8,
+        stumpf: 3,
+        streu: [0.75, 0.5],
+        unterLaenge: 0.42,
         winkel: [0.82, 0.18],
-        unter: 4,
+        unter: 7,
         abstand: 1.6,
         nadel: 12,
         breite: 1.6,
@@ -784,14 +793,25 @@
                     sg = i % 2 ? 1 : -1,
                     q = rachis(t),
                     w = kr * t + sg * (WZ.winkel[0] + rg() * WZ.winkel[1]),
-                    L = halbe * WZ.laenge * Math.pow(1 - t, 0.85) * (0.85 + rg() * 0.3);
+                    L =
+                        halbe *
+                        WZ.laenge *
+                        Math.pow(1 - Math.pow(t, WZ.stumpf), 0.5) *
+                        (WZ.streu[0] + rg() * WZ.streu[1]);
                 if (L < WZ.nadel) continue;
                 const pz = achse(q, w, L, -sg * 0.18, 1.3, 1);
                 // Unter-Zweiglein am äußeren Teil der langen Zweiglein (der Wedel wird nach außen dichter).
                 for (let u = 0; u < WZ.unter && L > 6 * WZ.nadel; u++) {
                     const tu = 0.35 + (0.5 * u) / Math.max(1, WZ.unter - 1),
                         su = (u + i) % 2 ? 1 : -1;
-                    achse(pz(tu), w - sg * 0.18 * tu + su * (0.62 + rg() * 0.2), L * 0.3 * (1 - 0.4 * tu), 0, 0.9, 0.9);
+                    achse(
+                        pz(tu),
+                        w - sg * 0.18 * tu + su * (0.62 + rg() * 0.2),
+                        L * WZ.unterLaenge * (1 - 0.4 * tu),
+                        0,
+                        0.9,
+                        0.9
+                    );
                 }
             }
             x.restore();
