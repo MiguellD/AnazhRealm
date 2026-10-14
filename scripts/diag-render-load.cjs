@@ -217,7 +217,7 @@ const server = statikServer();
         });
 
         // DER SCHATTEN-TAKT (V18.524): je Kaskade am echten Leser (shadow.needsUpdate) — über 30 Frames gezählt,
-        // die nahe Kaskade im Regler-Takt, die ferne seltener (SCHATTEN_TAKT.fernFaktor).
+        // die nahe Kaskade jeden nahMax-ten Frame, die ferne dazwischen (SCHATTEN_TAKT; je Frame höchstens eine, 1410-3).
         const shadowCache = (() => {
             if (typeof r._loopShadowUpdate !== "function") return null;
             const csm = s.csmNode;
