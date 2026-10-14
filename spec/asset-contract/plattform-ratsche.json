@@ -102,11 +102,11 @@
         },
         "ofen": {
             "kern": "foundry-core.js (Ofen, BAKERS_BY_KIND.kreatur/.koerper) + tetrapoda-core.js + koerper-core.js",
-            "faelle": 483,
-            "probe": "jede Klasse des Ofen-Goldens (189 Stoff-Klassen x Gelenk, 284 Gelenke, 10 Beipacks)",
+            "faelle": 464,
+            "probe": "jede Klasse des Ofen-Goldens (170 Stoff-Klassen x Gelenk, 284 Gelenke, 10 Beipacks)",
             "kippt": {
-                "cos": 269,
-                "sin": 220
+                "cos": 256,
+                "sin": 205
             },
             "taeter": {
                 "cos": "tetrapoda-core.js:1722 cos (frontYReach, die Reichweite des Vorderlaufs)",
