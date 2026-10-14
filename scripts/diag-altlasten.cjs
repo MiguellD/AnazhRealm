@@ -14,6 +14,7 @@
 "use strict";
 const fs = require("fs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 
 // Die gefallenen Namen (ALTLASTEN-NULL, V18.449). Jede Zeile: Token + wo er
 // fiel. PRÄZISE Tokens (keine generischen Wörter — "sprite" allein wäre
@@ -108,7 +109,10 @@ const FORBIDDEN = [
     { token: "skeleton.grammar", fiel: "K24 — das Laub der Art am Skelett heißt skeleton.laub (aus P)" },
     // K24-N1 (13.10.) — der stille Ersatz der Skelett-Leser ist gefallen: jede Größe schreibt der EINE Erzeuger aus treeParams
     // der Art, die Wand `_skelettPflicht` bricht laut, wo eine fehlt.
-    { token: "SPECIES_PALETTE_DEFAULT", fiel: "K24-N1 — die Rinde des Skeletts ist P.barkA/barkB der Art, kein Ersatz" },
+    {
+        token: "SPECIES_PALETTE_DEFAULT",
+        fiel: "K24-N1 — die Rinde des Skeletts ist P.barkA/barkB der Art, kein Ersatz",
+    },
     { token: "DEFAULT_TREE_FLARE", fiel: "K24-N1 — der Wurzelanlauf ist P.flare der Art, die Rippen STAMM_RIPPEN" },
     { token: "foliageScale", fiel: "K24-N1 — ein nie geschriebenes Skelett-Feld, die Leser setzten still 1" },
     { token: "totalH || 10", fiel: "K24-N1 — die Höhe des Skeletts ist P.height, kein Ersatz" },
@@ -522,6 +526,23 @@ const FORBIDDEN = [
     { token: "const uSkyCol ", fiel: "Welle 5 — das Wasser spiegelt die Himmels-Umgebung (_himmelUmgebungTex)" },
     { token: "skyCol: uSkyCol", fiel: "Welle 5 — der Spiegel liest die Himmels-Umgebung" },
     { token: "WG.tief", fiel: "Welle 5 — der Wasser-Körper ist R∞ = 0,33·b_b/(wK+b_b) (WASSER_GESETZ.koerperStreu)" },
+    {
+        token: "_fernFlussFarbe",
+        fiel: "K16 — der Fluss der Ferne ist der Wasser-Anteil aNass, gezeichnet mit _wasserBlick",
+    },
+    {
+        token: "FERN_FARBE.wasser",
+        fiel: "K16 — die Ferne trägt den Wasser-Körper des Gesetzes (_wasserKoerper), kein Fern-Blau",
+    },
+    { token: "0.0196, 0.0863, 0.1706", fiel: "K16 — das Fern-Blau 0x265273 fiel, R∞ aus WASSER_GESETZ" },
+    {
+        token: "_flussBreite",
+        fiel: "K16 — die Breite des Flusses ist das Gesetz des Kerns (gelaende-core flussBreite)",
+    },
+    {
+        token: "HC.widthMin",
+        fiel: "K16 — jeder Fluss-Punkt trägt seine Breite; das Minimum ist FLUSS_BREITE.min des Kerns",
+    },
     { token: "ctx.getLevel(", fiel: "Welle 5 — das Sheet liest das gezeichnete Dach (getDach, _caDach)" },
     { token: "getLevel: (", fiel: "Welle 5 — der Sheet-Kontext trägt getDach, keinen Live-Pegel" },
     { token: "_studioGround", fiel: "Welle 5 — die Boden-Palette liegt synchron im Terrain-Namensraum (BODEN_FARBE)" },
@@ -1101,13 +1122,41 @@ const FORBIDDEN = [
         ["_makeMacroAnker", "ankerAusSaat"],
         ["_erosionDeltaAt", "erosionDelta"],
         ["_erosionFor", "erosionFuer"],
-        ["_tarnDeltaAt", "tarnDelta"],
+        ["_tarnDeltaAt", "tarnDelta (fiel mit dem Tarn-Pass, K16)"],
         ["_hydroTileKeyFor", "kachelSchluessel"],
         ["MACRO_ANKER_", "MACRO_ANKER (die Literal-Zwillinge des Workers)"],
         ["function terrainMacroSurfaceY(", "hoehe (der Worker-Spiegel)"],
         ["function erbgutTermY(", "termY (der Worker-Spiegel)"],
         ["function macroAnker(", "die Lage reicht macroAnker (der Worker-Spiegel)"],
     ].map(([token, kern]) => ({ token, fiel: `K09a — gelaende-core ${kern}` })),
+    // K16 (11.10.) — DIE LANDFORM: das Flussnetz des Gesetzbuchs trägt die Täler; die Erosions-Simulation, der Ein-Massiv-
+    // Anker, die 3D-Rauheit und der WGSL-Spiegel des alten Rausch-Gesetzes fielen.
+    ...[
+        ["_computeErosion", "die Kachel-Erosion (36 Iterationen, ±26 m, Naht)"],
+        ["_erosionIncisionPass", "der Inzisions-Pass der Erosion"],
+        ["_thermalErosionPass", "der Talus-Pass der Erosion"],
+        ["_worldgenComputeErosionAndTarns", "die Erosion im Worldgen (`_worldgenTarns`)"],
+        ["_isValidMacroAnker", "die Anker-Wand (der Anker fiel)"],
+        ["_macroSpillpointAnalysis", "die Überlauf-Analyse des Ankers (der Anker fiel)"],
+        ["_hydroSeedTarns", "der Tarn-Pass (die Seen sind die Senken des Flussnetzes)"],
+        ["_worldgenTarns", "der Tarn-Pass im Worldgen"],
+        ["tarnMulde", "die Mulden-Form des Tarns"],
+        ["tarnDelta", "die Tarn-Senkung des Wildnis-Terms"],
+        ["state.tarns", "die Tarn-Liste im Zustand"],
+        ["SCHNEE_PROMINENZ", "die Schnee-Prominenz (die Schneegrenze `schnee` wohnt im Gesetzbuch)"],
+        ["SNOW_PROM_", "der Worker-Spiegel der Schnee-Prominenz"],
+        ["kontinentBasis", "die Prominenz-Basis der Schneegrenze"],
+        ["__feldWgsl", "der WGSL-Spiegel des alten Rausch-Gesetzes (der Feld-Zeichner liest den Kern)"],
+    ].map(([token, kern]) => ({ token, fiel: `K16 — ${kern}` })),
+    // K17 — DER FELS HAT STOFF: das EINE Fels-Gesetz (gelaende-core `felsFarbe` · `felsNetz`) färbt Boden und Gestalten
+    ...[
+        ["_bodenFarbeUnterFels", "der Palette-Stein unter Fels (die Höhle trägt den Fels-Stoff, `_felsStoff`)"],
+        ["rockTint", "der Fels-Tint des Shaders (der Vertex trägt den Fels-Stoff, die Ferne `FELS_STOFF.mittel`)"],
+        ["rockLumMix", "die Säulen-Luminanz auf dem Fels"],
+        ["_shadeRock", "die Hex-Abschattung des Werkstatt-Steins (die Töne leitet `felsBasis` ab)"],
+        ["_himmelsSicht", "die Himmels-Sicht im Stamm (K17-2: gelaende-core `himmelsSicht`, der Worker baut sie beim Chunk-Bau)"],
+        ["AnazhRealm.HIMMELS_SICHT", "die Länge der Himmels-Sicht im Stamm (gelaende-core `HIMMELS_SICHT`)"],
+    ].map(([token, kern]) => ({ token, fiel: `K17 — ${kern}` })),
     // DAS LICHT DES AUGES OHNE SZENEN-LICHT (K15, OMEN 1110-3): das Punkt-Licht am Auge stand ab Boot in der Szene und im
     // Licht-Hash jedes beleuchteten Stoffs — 0,48 ms je Frame auch unter dem Himmel (Stärke 0, der TSL.If-Knoten sparte den
     // Term nicht). Es ist ein Term des Boden-Stoffs unter Fels (`atmoUniforms.augenLicht`, 1 − aHimmel).
@@ -1141,6 +1190,29 @@ const FORBIDDEN = [
     { token: "_chunkSurfaceAt", fiel: "K21 — der EINE Boden-Leser `_bodenSichtAt`" },
     { token: "_chunkGruenAt", fiel: "K21 — `_bodenSichtAt(x, z, aus)` trägt den Grün-Kanal der gewinnenden Karte" },
     { token: "_chunkKarteAt", fiel: "K21 — der EINE Boden-Leser `_bodenSichtAt`" },
+    // DER VORRAT NENNT SEINE PHASE (K30-N1): sein Merker `_prefetching` stand ab dem Worker-Start auf true, auch solange er
+    // auf das erste Weltbild wartete — die Kalt-Zeile las „Vorrat läuft" (Radeon 8–44 s, die erste Bestellung bei 45 s).
+    // `f._vorrat` trägt die Phase (`VORRAT_PHASE`), jeder Leser nennt sie; der Merker, der nur „an" sagt, kehrt nicht zurück.
+    {
+        token: "_prefetching",
+        fiel: "K30-N1 — `f._vorrat` nennt die Phase des Vorrats (`VORRAT_PHASE`)",
+        auch: [
+            "scripts/playtest.cjs",
+            "scripts/diag-ankunft.cjs",
+            "scripts/diag-boot-stage.cjs",
+            "scripts/diag-fluss.cjs",
+            "scripts/diag-leistungs-vertrag.cjs",
+            "scripts/diag-p2p-gestalt.cjs",
+            "scripts/diag-parity.cjs",
+            "scripts/diag-praegung-welt.cjs",
+            "scripts/diag-regler-wirkt.cjs",
+            "scripts/diag-reload-treue.cjs",
+            "scripts/diag-rezept-katalog.cjs",
+            "scripts/diag-studio-uebergabe.cjs",
+            "scripts/lib/pack-kanon.cjs",
+            "scripts/mint-asset-packs.cjs",
+        ],
+    },
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt
@@ -1246,7 +1318,7 @@ function scan(files) {
 
 function checkSoulKeys() {
     // Die Schlüssel-Menge aus dem lebenden Literal ziehen (klammer-bewusst).
-    const src = fs.readFileSync(path.join(__dirname, "..", "anazhRealm.js"), "utf8");
+    const src = stammLib.text(path.join(__dirname, ".."));
     const start = src.indexOf("AnazhRealm.CREATURE_SOULS = Object.freeze({");
     if (start < 0) return ["CREATURE_SOULS-Literal nicht gefunden"];
     let depth = 0;
@@ -1274,6 +1346,9 @@ function checkSoulKeys() {
     return errs;
 }
 
+// Die Stamm-Dateien, wie index.html sie lädt (scripts/lib/stamm.cjs — die EINE Liste; vor dem Schnitt die eine Datei).
+const STAMM = stammLib.dateien(path.join(__dirname, ".."));
+
 // ULTRAGUSS U2 — DIE ZWILLINGS-WAND: getötete Formel-Zwillinge dürfen nicht
 // nachwachsen. Je Zeile: der Formel-Fingerabdruck darf NUR im Gesetzbuch leben.
 const ZWILLINGE = [
@@ -1286,109 +1361,109 @@ const ZWILLINGE = [
     {
         fingerprint: "leafSize: lerp(0.22, 0.6, leaf)",
         gesetzbuch: "phyto-core.js",
-        verboten: ["foundry-core.js", "anazhRealm.js"],
+        verboten: ["foundry-core.js", ...STAMM],
         fiel: "K24 — der P-Zwilling (deriveParamsPlant delegiert seinen Baum-Zweig an treeParams)",
     },
     {
         fingerprint: "ridges: 14, depth: 0.52",
         gesetzbuch: "phyto-core.js",
-        verboten: ["foundry-core.js", "anazhRealm.js"],
+        verboten: ["foundry-core.js", ...STAMM],
         fiel: "U2b (V18.467) — das Rinden-Gesetz (barkProfile/buildTubeGesetz) wohnt im Pflanzen-Gesetzbuch, foundry-core delegiert",
     },
     {
         fingerprint: "Math.pow(size / 2.4, 0.67)",
         gesetzbuch: "tetrapoda-core.js",
-        verboten: ["worlds/tetrapoda/tetrapoda.js", "anazhRealm.js"],
+        verboten: ["worlds/tetrapoda/tetrapoda.js", ...STAMM],
         fiel: "U4 — die Tier-Allometrie wohnt im Gesetzbuch (deriveTierParams)",
     },
     {
         fingerprint: "Math.sin(phases[j] - phases[i])",
         gesetzbuch: "tetrapoda-core.js",
-        verboten: ["worlds/tetrapoda/tetrapoda.js", "anazhRealm.js"],
+        verboten: ["worlds/tetrapoda/tetrapoda.js", ...STAMM],
         fiel: "U4 — der CPG-Phasen-Schritt wohnt im Gesetzbuch (cpgStep)",
     },
     {
         fingerprint: "0.818 * H",
         gesetzbuch: "koerper-core.js",
-        verboten: ["worlds/koerperstudio/koerperstudio.js", "anazhRealm.js"],
+        verboten: ["worlds/koerperstudio/koerperstudio.js", ...STAMM],
         fiel: "U3 — die 6-KH-Loomis-Proportionen wohnen im Gesetzbuch (labProportionen)",
     },
     {
         fingerprint: "(0.62 + p.tone * 0.53) * (1 - p.age * 0.35)",
         gesetzbuch: "koerper-core.js",
-        verboten: ["worlds/koerperstudio/koerperstudio.js", "anazhRealm.js"],
+        verboten: ["worlds/koerperstudio/koerperstudio.js", ...STAMM],
         fiel: "U3 — die morph()-Dial-Mathe wohnt im Gesetzbuch (labMorph)",
     },
     {
         fingerprint: "reg('glute'+(sd===1?'1':'-1')",
         gesetzbuch: "koerper-core.js",
-        verboten: ["worlds/koerperstudio/koerperstudio.js", "anazhRealm.js"],
+        verboten: ["worlds/koerperstudio/koerperstudio.js", ...STAMM],
         fiel: "KONVERGENZ — der Da-Vinci-Teile-Baum (bauMensch) wohnt NUR im Gesetzbuch; Shell + Stamm bauen per Fabrik-Haken (kein Nachbau, nie wieder)",
     },
     {
         fingerprint: "iris: Object.freeze({ c: 0x2a4a6a",
         gesetzbuch: "koerper-core.js",
-        verboten: ["worlds/koerperstudio/koerperstudio.js", "anazhRealm.js"],
+        verboten: ["worlds/koerperstudio/koerperstudio.js", ...STAMM],
         fiel: "KONVERGENZ II — die Material-Klassen-Farben wohnen im Gesetzbuch (MATERIAL_KLASSEN); Shell + Stamm LESEN",
     },
     {
         fingerprint: "mahagoni:{hex:0x5f3826",
         gesetzbuch: "koerper-core.js",
-        verboten: ["worlds/koerperstudio/koerperstudio.js", "anazhRealm.js"],
+        verboten: ["worlds/koerperstudio/koerperstudio.js", ...STAMM],
         fiel: "KONVERGENZ II — die Haut-/Haar-Paletten wohnen im Gesetzbuch (SKIN_TONES/HAIR_COLORS); der Genom-Roller pickt aus der Lab-Wahrheit",
     },
     {
         fingerprint: "wristFrac: 1.36",
         gesetzbuch: "koerper-core.js",
-        verboten: ["worlds/koerperstudio/koerperstudio.js", "anazhRealm.js"],
+        verboten: ["worlds/koerperstudio/koerperstudio.js", ...STAMM],
         fiel: "U3 — das Landmarken-Urteil wohnt im Gesetzbuch (labLandmarks)",
     },
     {
         fingerprint: "Math.abs(lz)>Math.min(Di,Dj)*0.45",
         gesetzbuch: "fachwerk-core.js",
-        verboten: ["worlds/fachwerk/fachwerk.js", "anazhRealm.js"],
+        verboten: ["worlds/fachwerk/fachwerk.js", ...STAMM],
         fiel: "U6c — das REIHEN-SNAP-Gesetz wohnt im Gesetzbuch (reihenSnap)",
     },
     {
         fingerprint: "A.p.brandwand[lx>0?'x1':'x0']=1",
         gesetzbuch: "fachwerk-core.js",
-        verboten: ["worlds/fachwerk/fachwerk.js", "anazhRealm.js"],
+        verboten: ["worlds/fachwerk/fachwerk.js", ...STAMM],
         fiel: "U6c — das BRANDWAND-Gesetz wohnt im Gesetzbuch (brandwand)",
     },
     {
         fingerprint: "jahr<1150?'romanik'",
         gesetzbuch: "fachwerk-core.js",
-        verboten: ["worlds/fachwerk/fachwerk.js", "anazhRealm.js"],
+        verboten: ["worlds/fachwerk/fachwerk.js", ...STAMM],
         fiel: "U6c — das META-Gesetz (Jahr×Klima×Personen×Wohlstand → Form) wohnt im Gesetzbuch (metaParams)",
     },
     {
         fingerprint: "_SNED=[[0,1],[2,3],[4,5],[6,7]",
         gesetzbuch: "koerper-core.js",
-        verboten: ["worlds/koerperstudio/koerperstudio.js", "anazhRealm.js", "foundry-core.js"],
+        verboten: ["worlds/koerperstudio/koerperstudio.js", ...STAMM, "foundry-core.js"],
         fiel: "V18.463 — die Hüllen-Maschine (Voxel-Ops + Surface-Nets) wohnt im Gesetzbuch; Shell UND Bäcker LESEN",
     },
     {
         fingerprint: "burgundy:{hex:0x5a2530",
         gesetzbuch: "koerper-core.js",
-        verboten: ["worlds/koerperstudio/koerperstudio.js", "anazhRealm.js"],
+        verboten: ["worlds/koerperstudio/koerperstudio.js", ...STAMM],
         fiel: "V18.461 — die Stoff-Palette wohnt im Gesetzbuch (CLOTH_COLORS); die Kleid-Zonen (kleidZonen) und die Haar-Streu (haarStreu) sind Kern-Gesetz, beide Leser LESEN",
     },
     {
         fingerprint: "(1 - tipFrac) * Math.pow(t, 1.3)",
         gesetzbuch: "schmiede-core.js",
-        verboten: ["anazhRealm.js"],
+        verboten: [...STAMM],
         fiel: "U6d — die distale Klingen-Verjüngung (bladeProfile) wohnt im Gesetzbuch (klingenProfil)",
     },
     {
         fingerprint: "Math.pow(w / 0.4, 2)",
         gesetzbuch: "schmiede-core.js",
-        verboten: ["anazhRealm.js"],
+        verboten: [...STAMM],
         fiel: "U6d — die Hohlkehle des Wirts-Schnitts (bladeProfile) wohnt im Gesetzbuch (klingenProfil)",
     },
     {
         fingerprint: "bladeLen: 1.45",
         gesetzbuch: "schmiede-core.js",
-        verboten: ["anazhRealm.js"],
+        verboten: [...STAMM],
         fiel: "U6d — die Oakeshott-Proportions-Tabelle wohnt im Gesetzbuch (OAKESHOTT_TYPES, Stamm = Getter-Delegat)",
     },
     // K09a (11.10.) — DAS GELÄNDE HAT SEIN GESETZBUCH: die Makro-Höhe (Wildnis-Term, Erbgut-Terme samt Normalform,
@@ -1396,51 +1471,97 @@ const ZWILLINGE = [
     // kontinentale Basis der Schnee-Prominenz) lebt in gelaende-core.js; Stamm, voxel-worker und jede Linse RUFEN sie.
     // Die Abdrücke sind MUSTER, nie ein Variablen-Name: die Prüfung 1 fand `(x + _wpX) * 0.00014 + 7.2` in beiden Farb-
     // Pfaden am engen Abdruck `wx * 0.00014 + 7.2` vorbei. Verboten in jeder Wurzel-Datei und jedem Skript
-    // (`gelaendeLeser`); feld-wgsl.js bleibt der Seh-Spiegel (f32-WGSL), das Terrain-Studio liest den Kern mit G2 (K09b).
+    // (`gelaendeLeser`); der WGSL-Seh-Spiegel fiel (K16, der Feld-Zeichner liest den Kern), das Terrain-Studio liest ihn mit G2 (K09b).
     ...[
-        [/\*\s*0\.00014\s*\+\s*7\.2\b/, "die kontinentale Basis des Wildnis-Terms (`kontinentBasis`)"],
         [/\*\s*0\.00026\s*\+\s*(?:11\.3|41\.7)\b/, "der Domain-Warp des Wildnis-Terms"],
-        [
-            /\*\s*0\.000(?:19\s*\+\s*33\.1|22\s*\+\s*91\.3|35\s*\+\s*19\.3|28\s*\+\s*19\.3)\b/,
-            "die Relief-, Stil- und Hochland-Masken des Wildnis-Terms",
-        ],
-        [/\*\s*0\.000(?:3\s*\+\s*61\.1|34\s*\+\s*13\.7)\b|\*\s*0\.00105\s*\+\s*8\.3\b/, "Canyon und Tafelberg"],
-        [/["'`]-macro-ridge["'`]/, "der Grat-Strom des Makro-Ankers"],
-        [/["'`]-macro-anker["'`]/, "der Samen-Strom des Makro-Ankers"],
-        [/0\.7071\s*\*\s*1\.65\b/, "die Grat-Domäne des Makro-Ankers"],
-        [/\/\s*[\w.]*massivAspect\b/, "die Massiv-Maske des Makro-Ankers (`massivMaske`)"],
-        [
-            /\/\s*\(?\s*[\w.]*\b(?:massivR|beckenR|talBreite|talTrenchBreite)\b/,
-            "die Abfall-Profile des Makro-Ankers (Massiv, Becken, Tal)",
-        ],
         [/255\s*\+\s*12\s*\*\s*Math\.tanh\(/, "der Sicherheits-Deckel der Makro-Höhe"],
-        [/noise2D\(\s*[\w.]+\s*\*\s*0\.0005\s*,/, "die Rauheits-Maske (`rauheit`)"],
-        [/Math\.exp\(\s*-\s*[\w.]+\s*\/\s*[\w.]*twoSig2\b/, "das Tarn-Delta"],
-        [/\btwoSig2\s*:/, "die Mulden-Form des Tarns (`tarnMulde`)"],
+        // K16 — DIE LANDFORM: die Großform-Felder (Kontinentalität C, Erosion E, Stil), die Spline-Stützpunkte von OFFSET
+        // und RELIEF, die drei Ebenen des Flussnetzes und die Querneigung der Aue wohnen im Gesetzbuch.
+        [/\+\s*7\.2\s*,[^,;]*?\+\s*3\.8\b/, "die Kontinentalität C der Großform"],
+        [/\+\s*33\.1\s*,[^,;]*?\+\s*71\.7\b/, "das Erosions-Feld E der Großform"],
+        [/\*\s*0\.000192\s*\+\s*91\.3\b/, "das Stil-Feld (Tafelland) der Großform"],
+        [/\[\s*-0\.55\s*,\s*(?:-26|140)\s*\]/, "die Spline-Stützpunkte OFFSET/RELIEF"],
+        [/\[\s*1600\s*,\s*400\s*,\s*100\s*\]/, "die drei Ebenen des Flussnetzes"],
+        [/\bAUE_QUER\s*=/, "die Querneigung der Aue"],
         [/kuppel\s*\*\s*\(/, "der Insel-Term des Erbguts"],
         [/\btan[UFWB]\s*:/, "die Normalform des Erbguts (`erbgutNormal`)"],
+        // K16b — DIE MESSUNG (`MESSUNG`, `abdruckFeld`, `messStatistik`, `schichtSchritte`): das Raster der Statistik, der
+        // Makro-Abdruck und der Schicht-Ort wohnen im Gesetzbuch — die Zahl-Leiste des Studios und die Gelände-Wände RUFEN
+        // sie (die Prüfung K16b fand das Schicht-Verfahren als Zwilling in makro-worker und diag-worker-dichte, das Raster
+        // in studio.js).
+        [
+            /Math\.round\(\s*2000\s*\/|\b4010\b|\b268\s*\*\s*30\b|\bn:\s*268\b/,
+            "das Mess-Raster der Statistik (MESSUNG.raster)",
+        ],
+        [/\b852\s*(?:\+|,)\s*(?:\w+\s*\*\s*27|schritt:\s*27)\b/, "der Makro-Abdruck (MESSUNG.abdruck, abdruckFeld)"],
+        [
+            /\bstil\s*(?:>=|:)\s*0\.8\b|\b8000\s*,\s*8000\b|\bumkreis:\s*8000\b/,
+            "der Schicht-Ort der Messung (MESSUNG.schicht, schichtSchritte)",
+        ],
     ].map(([muster, was]) => ({
         muster,
         gesetzbuch: "gelaende-core.js",
         verboten: gelaendeLeser(),
         fiel: `K09a — Heimat im Gelände-Gesetzbuch: ${was}`,
     })),
+    // K16 — GEFALLEN: die Landform ersetzt die Rausch-Masken, den Ein-Massiv-Anker samt Grat-Strom und Abfall-Profilen,
+    // Canyon und Tafelberg als Maske und die Rauheits-Maske. Sie haben kein Zuhause mehr — auch das Gesetzbuch nie wieder.
+    ...[
+        [/\*\s*0\.00014\s*\+\s*7\.2\b/, "die alte kontinentale Basis (λ 7100 m)"],
+        [
+            /\*\s*0\.000(?:19\s*\+\s*33\.1|22\s*\+\s*91\.3|35\s*\+\s*19\.3|28\s*\+\s*19\.3)\b/,
+            "die Relief-, Stil- und Hochland-Masken des Rausch-Gesetzes",
+        ],
+        [
+            /\*\s*0\.000(?:3\s*\+\s*61\.1|34\s*\+\s*13\.7)\b|\*\s*0\.00105\s*\+\s*8\.3\b/,
+            "Canyon und Tafelberg als Maske",
+        ],
+        // Die Canyon-Maske der Höhlen-Decke (λ 154 m): sie hob die Decke 8 m über den Boden, die Höhle brach als Grube
+        // ohne Abfluss durch — am gebauten Boden 15,2 → 4,2 Senken > 1 m je km² (die Täler sind das Flussnetz).
+        [/\*\s*0\.0065\s*\+\s*41\.7\b/, "die Canyon-Maske der Höhlen-Decke"],
+        [/["'`]-macro-ridge["'`]/, "den Grat-Strom des Makro-Ankers"],
+        [/["'`]-macro-anker["'`]/, "den Samen-Strom des Makro-Ankers"],
+        [/0\.7071\s*\*\s*1\.65\b/, "die Grat-Domäne des Makro-Ankers"],
+        [/\/\s*[\w.]*massivAspect\b/, "die Massiv-Maske des Makro-Ankers"],
+        [
+            /\/\s*\(?\s*[\w.]*\b(?:massivR|beckenR|talBreite|talTrenchBreite)\b/,
+            "die Abfall-Profile des Makro-Ankers (Massiv, Becken, Tal)",
+        ],
+        [/noise2D\(\s*[\w.]+\s*\*\s*0\.0005\s*,/, "die Rauheits-Maske"],
+        [
+            /Math\.exp\(\s*-\s*[\w.]+\s*\/\s*[\w.]*twoSig2\b|\btwoSig2\s*:/,
+            "die Tarn-Mulde (die Seen sind die Senken des Netzes)",
+        ],
+    ].map(([muster, was]) => ({
+        muster,
+        gefallen: true,
+        verboten: gelaendeLeser().concat(["gelaende-core.js"]),
+        fiel: `K16 — die Landform ersetzt ${was}`,
+    })),
 ];
 
 // Die Leser des Gelände-Gesetzes, die es nie nachrechnen: jede JS-Datei der Wurzel außer dem Gesetzbuch und dem Seh-
-// Spiegel, jedes Skript und jede Linse (eine Probe misst am Gesetz, nie an ihrer Kopie). Diese Wand trägt die Muster
-// selbst als Proben und steht nicht in der Liste.
+// Spiegel, jedes Skript und jede Linse (eine Probe misst am Gesetz, nie an ihrer Kopie) und das Gelände-Studio
+// (worlds/gelaende: das Panel und sein Makro-Worker — bis K16b außerhalb der Wand). Diese Wand trägt die Muster selbst
+// als Proben und steht nicht in der Liste.
 function gelaendeLeser() {
     const root = path.join(__dirname, "..");
+    // der Stamm aus der EINEN Liste (nach dem Schnitt liegt er unter stamm/, kein readdir der Wurzel sähe ihn)
     const wurzel = fs
         .readdirSync(root)
-        .filter((f) => /\.(?:c|m)?js$/.test(f) && f !== "gelaende-core.js" && f !== "feld-wgsl.js");
+        .filter(
+            (f) =>
+                /\.(?:c|m)?js$/.test(f) &&
+                f !== "gelaende-core.js" &&
+                !stammLib.istStammDatei(f)
+        )
+        .concat(STAMM);
     const skripte = (d) =>
         fs
             .readdirSync(path.join(root, d))
             .filter((f) => /\.(?:c|m)?js$/.test(f) && f !== "diag-altlasten.cjs")
             .map((f) => d + "/" + f);
-    return wurzel.concat(skripte("scripts"), skripte("scripts/lib"));
+    return wurzel.concat(skripte("scripts"), skripte("scripts/lib"), skripte("worlds/gelaende"));
 }
 
 // `ersatz` (Selbsttest): { datei: Text } liest statt der Platte. Ein Abdruck ist ein Text (`fingerprint`) oder ein
@@ -1471,7 +1592,9 @@ function scanZwillinge(ersatz = {}) {
     const errs = [];
     for (const z of ZWILLINGE) {
         const name = z.fingerprint ? `"${z.fingerprint}"` : String(z.muster);
-        if (!(z.gesetzbuch in ersatz) && !fs.existsSync(path.join(root, z.gesetzbuch)))
+        if (z.gefallen) {
+            // kein Zuhause: der Term fiel ganz — die verbotenen Dateien schließen das Gesetzbuch ein
+        } else if (!(z.gesetzbuch in ersatz) && !fs.existsSync(path.join(root, z.gesetzbuch)))
             errs.push(`Zwillings-Wand: das Gesetzbuch ${z.gesetzbuch} fehlt — ${name} hat kein Zuhause`);
         else if (!finde(z, lies(z.gesetzbuch)))
             errs.push(`Zwillings-Wand: Fingerabdruck ${name} fehlt im Gesetzbuch ${z.gesetzbuch}`);
@@ -1514,7 +1637,7 @@ function scanLabBuster() {
     // (18.467 während package.json 18.471 trug) — jeder Flugschreiber-Trace + Panel-Kopf
     // log über die Version. DIESELBE Wand deckt jetzt die Runtime-Konstante: EIN Gesetz,
     // alle Versions-Träger == package.json.
-    const stammSrc = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+    const stammSrc = stammLib.text(root);
     const vm = stammSrc.match(/AnazhRealm\.VERSION = "([0-9.]+)"/);
     if (!vm) errs.push("AnazhRealm.VERSION nicht gefunden (die Versions-Wand braucht den Anker)");
     else if (vm[1] !== version)
@@ -1632,13 +1755,19 @@ function entsorgungen(srcRoh) {
         f(n);
         kinder(n, (c) => ueberall(c, f));
     };
+    // Die Träger einer Art beim Namen, auch in der Mehrzahl und in der Vokabel des Hauses (der Fern-Ring trägt seit K16 je
+    // Schale `geos` und je Pass `stoffe` — die Wand sah nur `geometry`/`material` und nannte `_fernRingDispose` tot).
+    const TRAEGER_ART = {
+        geometry: "geometry",
+        geos: "geometry",
+        geometrien: "geometry",
+        material: "material",
+        materials: "material",
+        stoffe: "material",
+    };
     const traeger = (n) =>
-        n &&
-        n.type === "MemberExpression" &&
-        !n.computed &&
-        n.property &&
-        (n.property.name === "geometry" || n.property.name === "material")
-            ? n.property.name
+        n && n.type === "MemberExpression" && !n.computed && n.property && TRAEGER_ART[n.property.name]
+            ? TRAEGER_ART[n.property.name]
             : null;
     const artVon = (e, bind) => {
         if (!e) return null;
@@ -1730,7 +1859,7 @@ function scanEntsorgungsWand(srcRoh, besitzer = ENTSORGUNG_BESITZER) {
         const b = besitzer[f.methode];
         if (b && b.arten.includes(f.art)) continue;
         errs.push(
-            `Entsorgungs-Wand: anazhRealm.js:${f.zeile} \`${f.methode}\` entsorgt ${deutsch[f.art]} (\`${f.text}\`) — nicht ihr Besitz: ` +
+            `Entsorgungs-Wand: ${stammLib.ort(path.join(__dirname, ".."), f.zeile)} \`${f.methode}\` entsorgt ${deutsch[f.art]} (\`${f.text}\`) — nicht ihr Besitz: ` +
                 `Gruppen mit Welt-Vorlagen entsorgen über \`_disposeSoulGroup\`, eigene frische Objekte ` +
                 `nur ihr Besitzer (ENTSORGUNG_BESITZER)`
         );
@@ -1789,7 +1918,7 @@ function scanNormalWand(srcRoh) {
     let m;
     while ((m = re.exec(code)))
         errs.push(
-            `Normal-Wand: anazhRealm.js:${code.slice(0, m.index).split("\n").length} dreht die Normale mit der ` +
+            `Normal-Wand: ${stammLib.ort(path.join(__dirname, ".."), code.slice(0, m.index).split("\n").length)} dreht die Normale mit der ` +
                 `transponierten Matrix (n.transformDirection(M) = Mᵀ·n) — Welt → Sicht ist M.transformDirection(n)`
         );
     // DIE QUELLE (V18.532): ein normalNode-Graph liest nie r184s `normalWorld` — es ist EINE Variable je Programm; las der
@@ -1822,7 +1951,7 @@ function scanNormalWand(srcRoh) {
         }
         if (treffer)
             errs.push(
-                `Normal-Wand: anazhRealm.js:${code.slice(0, m.index).split("\n").length} — der normalNode-Graph liest ` +
+                `Normal-Wand: ${stammLib.ort(path.join(__dirname, ".."), code.slice(0, m.index).split("\n").length)} — der normalNode-Graph liest ` +
                     `r184s \`normalWorld\` (${treffer}); die Geometrie-Normale ist \`normalWorldGeometry\` × \`faceDirection\``
             );
     }
@@ -3007,7 +3136,7 @@ const STUFEN_ANKER = [
     "__lod = sLod;",
     "__lod = stufenRezept(P.kind, stufe);",
     "__lod = stufe;",
-    "return core.treeParams({ api, delta, slim, trop, leaf }, SEED, __lod, pre);",
+    "return core.treeParams({ api, delta, slim, trop, leaf }, SEED, __lod, pre, __weltSkalaArt(CURRENT));",
 ];
 function scanStufenWand(srcRoh) {
     const code = stripComments(srcRoh);
@@ -3082,6 +3211,107 @@ function scanHuellenFormWand(dateien) {
     }
     return errs;
 }
+// DIE ORTS-WAND (K16, Koordinator 13.10.): eine Probe, die Spieler, Kamera oder Tier an ein Zahlen-Literal (x, z) setzt, trägt
+// einen Ort der Welt, in der sie geschrieben wurde — die Landform des Kerns verschob ihn, und drei Gruppen der CI wurden rot
+// (der Biss am Hang, der Baum im Haus, die Ankunft im Ursprung). Der Ort kommt aus der Welt (die nächste ebene Stelle, der
+// nächste See, `_weltBetreten`), oder die Zeile ist als Bühnen-Station deklariert: `// BÜHNE: <Grund>` auf ihr oder in den
+// zwei Zeilen darüber (der Grund sagt, warum der Ort nichts trägt — eigene Szene, Mechanik, nur der Abstand zählt).
+// Gelesen wird der Code ohne Kommentare; rot mit Datei:Zeile.
+// DIE KLASSE, nicht der Aufruf (Prüfung K16 Runde 2): der Ort reist selten als Literal IM Aufruf — er steht als Orts-
+// Tabelle (`{ id: "ufer", x: -872, z: -1127 }`, kamera-laub), als Versatz-Liste (`[[-50, 60], [30, 0]]` um den Start,
+// kampf-gefuehl), als Messort-Konstante (`const MESS = { x: -900, z: -850 }`, `o.mess || [-900, -850]`) und wird erst Zeilen
+// später gesetzt. In einer Setz-Probe (die Datei setzt Spieler, Kamera oder Tier: `.position.set(`, `.position.x =`,
+// `spawnCreatureAt(`) ist darum JEDES Orts-Paar aus Zahlen-Literalen rot — ein Objekt mit x und z, ein Paar als Wert,
+// Vorgabe oder Glied einer Liste —, sobald es weiter als `ORT_NAH_M` vom Ursprung seines Bezugs zeigt (darunter liegt die
+// Mechanik am gelesenen Ort: der Wolf 1,3 m vor dem Reh). Ein Bau-Ort (`spawnArchitecture`, `spawnSettlement`) trägt das
+// Platz-Gesetz des Stamms und ist nicht gemeint. Der Messort der Band-Serie kommt aus EINER Quelle (spec/profiband/
+// haushalt.json, `scripts/lib/messort.cjs`), nie als Abschrift.
+const ORT_LIT = String.raw`-?\d+(?:\.\d+)?`;
+const ORT_MITTE = String.raw`(?:[^,;()]|\((?:[^()]|\([^()]*\))*\))*?`;
+const ORT_NAH_M = 20;
+const ORTS_MUSTER = [
+    new RegExp(
+        String.raw`\b(?:playerMesh|pm|camera|cam|kam|kamera|character|tier|wolf|reh|creature|kreatur|phantom)\.position\.set\(\s*${ORT_LIT}\s*,${ORT_MITTE},\s*${ORT_LIT}\s*\)`,
+        "g"
+    ),
+    new RegExp(String.raw`\bspawnCreatureAt\(\s*${ORT_LIT}\s*,${ORT_MITTE},\s*${ORT_LIT}\s*[,)]`, "g"),
+    new RegExp(String.raw`\b(?:playerMesh|pm)\.position\.[xz]\s*=\s*${ORT_LIT}\s*;`, "g"),
+];
+const ORT_SENKE = /\.position\.(?:set\s*\(|[xz]\s*=(?!=))|\bspawnCreatureAt\s*\(/;
+const ORT_BAU = /\b(?:spawnArchitecture|spawnSettlement|_spawnSettlementFromExport|materializePortalHall)\s*\(/;
+const ORTS_PAARE = [
+    // die Orts-Tabelle und die Messort-Konstante: ein Objekt mit x und z aus Literalen
+    new RegExp(String.raw`\{[^{}]*?\bx\s*:\s*(${ORT_LIT})\s*,(?:[^{}]*?,)?\s*z\s*:\s*(${ORT_LIT})\s*[,}]`, "g"),
+    // das Paar als Wert, Vorgabe oder Listen-Glied (die Versatz-Liste) — nur unter einem Orts-Namen (`ORT_NAME`): ein Paar
+    // unter `hue`, `dolch` oder `SONNEN` ist ein Band, kein Ort
+    new RegExp(String.raw`(?:[=:(,[]|\|\||\?\?)\s*\[\s*(${ORT_LIT})\s*,\s*(${ORT_LIT})\s*\]`, "g"),
+];
+// ein Orts-Name ist ein Wort-Glied (ganz, am Anfang vor einem Groß-Glied, oder ein Groß-Glied im camelCase): `ortR`, `mess`,
+// `startOrte`, `MESS_ORT` — nie ein Teil (`SEEDS`, `sorted`); die Wasser-Wörter fehlen bewusst (in klang tragen `ufer` und
+// `fluss` Frequenz-Bänder, die Orte des Wassers liefert `__wasserOrte`)
+const ORT_WORT =
+    "ort|orte|mess|messort|spieler|start|ziel|pos|anker|stelle|lichtung|hang|versatz|station|wiese|platz|kandidat|kandidaten";
+const ORT_NAME = {
+    test: (n) =>
+        new RegExp(String.raw`^(?:${ORT_WORT})$`, "i").test(n) ||
+        new RegExp(String.raw`^(?:${ORT_WORT})[A-Z0-9_]`).test(n) ||
+        new RegExp(String.raw`^(?:${ORT_WORT.toUpperCase()})_`).test(n) ||
+        new RegExp(
+            String.raw`[a-z0-9](?:${ORT_WORT.replace(/(^|\|)(\w)/g, (_, a, b) => a + b.toUpperCase())})(?:[A-Z0-9_]|$)`
+        ).test(n),
+};
+// der Name, unter dem ein Paar steht: der Schlüssel oder die Bindung direkt davor, im Listen-Glied die der Liste (die
+// erste offene Klammer rückwärts), in der Vorgabe (`a.mess || [...]`) der linke Name
+function ortsName(code, i) {
+    let tiefe = 0;
+    let j = i;
+    const kopf = code.slice(Math.max(0, i - 80), i + 2);
+    const direkt = /([A-Za-z_$][\w$]*)\s*(?:[:=]|\|\||\?\?)\s*\[?$/.exec(kopf.replace(/\s+$/, ""));
+    if (direkt) return direkt[1];
+    for (; j > 0 && i - j < 4000; j--) {
+        const c = code[j];
+        if (c === "]") tiefe++;
+        else if (c === "[") {
+            if (tiefe === 0) break;
+            tiefe--;
+        }
+    }
+    const m = /([A-Za-z_$][\w$]*)\s*[:=]\s*(?:\w+\s*\?\s*)?$/.exec(code.slice(Math.max(0, j - 80), j));
+    return m ? m[1] : "";
+}
+function scanOrtsWand(dateien) {
+    const errs = [];
+    for (const [name, src] of dateien) {
+        if (name === "scripts/diag-altlasten.cjs") continue; // die Wand selbst trägt ihre Selbsttest-Sätze als Text
+        const code = stripComments(src);
+        const roh = src.split("\n");
+        const zeilen = code.split("\n");
+        const buehne = (zeile) => /\/\/\s*BÜHNE:\s*\S/.test(roh.slice(Math.max(0, zeile - 3), zeile).join("\n"));
+        for (const re of ORTS_MUSTER)
+            for (const m of code.matchAll(re)) {
+                const zeile = code.slice(0, m.index).split("\n").length;
+                if (buehne(zeile)) continue;
+                errs.push(
+                    `Orts-Wand: ${name}:${zeile} setzt an ein Zahlen-Literal (${m[0].replace(/\s+/g, " ").slice(0, 60)}) — der Ort kommt aus der Welt, oder die Zeile trägt // BÜHNE: <Grund>`
+                );
+            }
+        if (!ORT_SENKE.test(code)) continue;
+        for (const re of ORTS_PAARE)
+            for (const m of code.matchAll(re)) {
+                if (Math.max(Math.abs(Number(m[1])), Math.abs(Number(m[2]))) < ORT_NAH_M) continue;
+                if (re === ORTS_PAARE[1] && !ORT_NAME.test(ortsName(code, m.index))) continue;
+                // die Zeile des Paars selbst (das Listen-Glied beginnt mit dem Komma der Zeile davor)
+                const at = re === ORTS_PAARE[1] ? m.index + m[0].lastIndexOf("[") : m.index;
+                const zeile = code.slice(0, at).split("\n").length;
+                const vor = zeilen[zeile - 1].slice(0, at - code.lastIndexOf("\n", at - 1) - 1 + m[0].length);
+                if (ORT_BAU.test(vor) || buehne(zeile)) continue;
+                errs.push(
+                    `Orts-Wand: ${name}:${zeile} trägt einen Ort als Zahlen-Paar (${m[0].replace(/\s+/g, " ").trim().slice(0, 60)}) in einer Setz-Probe — der Ort kommt aus der Welt, oder die Zeile trägt // BÜHNE: <Grund>`
+                );
+            }
+    }
+    return errs;
+}
 function wirtsDateien(root, files) {
     const gesehen = new Set();
     const aus = [];
@@ -3113,26 +3343,100 @@ function linsenDateien(root) {
         .map((f) => path.join(d, f));
 }
 
+// DIE STAMM-LESER-WAND (Stamm-Zerlegung, plan 13.10. §7.5): der Name der Stamm-Datei steht als Lese-Ziel — ein String-
+// Literal, das die Datei nennt („anazhRealm.js", „/anazhRealm.js", „http://…/anazhRealm.js", mit ?v=) — nur in
+// scripts/lib/stamm.cjs. Jeder andere Leser liest den Stamm über die EINE Schnittstelle (stammLib.text · dateien · liefere
+// · dateiMit · ort): ein Leser am Namen vorbei sähe nach dem Schnitt nur den Kern (vakuum-grün) oder bräche erst im
+// Fenster. Kommentare und Meldungen („anazhRealm.js: … fehlt") dürfen den Namen tragen; gezählt wird je Literal-Token.
+const STAMM_NAME_RX = new RegExp(
+    "^(?:\\.{0,2}/|https?://[^/]*/)?" + stammLib.ALT.replace(/\./g, "\\.") + "(?:\\?[^\"'`]*)?$"
+);
+// Ausgenommen: die Schnittstelle selbst und der Codemod (er trägt die alte Leser-Form als Muster).
+const STAMM_WERKZEUG = ["scripts/lib/stamm.cjs", "scripts/stamm-umzug.cjs"];
+function stammLeserDateien(root) {
+    const aus = [];
+    for (const f of fs.readdirSync(root))
+        if (/\.(?:c|m)?js$/.test(f) && !stammLib.istStammDatei(f)) aus.push(f);
+    const geh = (d) => {
+        for (const e of fs.readdirSync(path.join(root, d), { withFileTypes: true })) {
+            const rel = d + "/" + e.name;
+            if (e.isDirectory()) geh(rel);
+            else if (/\.(?:c|m)?js$/.test(e.name) && !STAMM_WERKZEUG.includes(rel)) aus.push(rel);
+        }
+    };
+    geh("scripts");
+    return aus;
+}
+function scanStammLeser(root, ersatz = {}) {
+    const acorn = require("acorn");
+    const errs = [];
+    const dateien = stammLeserDateien(root).concat(Object.keys(ersatz).filter((f) => !fs.existsSync(path.join(root, f))));
+    for (const rel of dateien) {
+        const src = rel in ersatz ? ersatz[rel] : fs.readFileSync(path.join(root, rel), "utf8");
+        // Vorfilter: der Name als Text oder als Regex-Quelle (anazhRealm\.js)
+        if (!src.includes(stammLib.ALT) && !src.includes(stammLib.ALT.replace(".", "\\."))) continue;
+        let toks = null;
+        for (const sourceType of ["script", "module"])
+            try {
+                toks = [
+                    ...acorn.tokenizer(src, {
+                        ecmaVersion: "latest",
+                        sourceType,
+                        locations: true,
+                        allowHashBang: true,
+                        allowReturnOutsideFunction: true,
+                    }),
+                ];
+                break;
+            } catch {
+                toks = null;
+            }
+        if (!toks) {
+            errs.push(`Stamm-Leser-Wand: ${rel} ist für acorn unlesbar — die Wand sähe ihre Leser nicht`);
+            continue;
+        }
+        for (const t of toks) {
+            if (
+                (t.type === acorn.tokTypes.string || t.type === acorn.tokTypes.template) &&
+                STAMM_NAME_RX.test(String(t.value))
+            )
+                errs.push(
+                    `Stamm-Leser-Wand: ${rel}:${t.loc.start.line} nennt ${JSON.stringify(t.value)} als Lese-Ziel — der Stamm ` +
+                        `liest sich über scripts/lib/stamm.cjs (stammLib.text · dateien · liefere · dateiMit · ort)`
+                );
+            // ein Stapel-Leser (Rahmen „…/anazhRealm.js:12:5" im Error-Stack, in der Seite) sieht auch die Zonen-Dateien
+            if (
+                t.type === acorn.tokTypes.regexp &&
+                t.value.pattern.includes("anazhRealm\\.js") &&
+                !t.value.pattern.includes("stamm\\/")
+            )
+                errs.push(
+                    `Stamm-Leser-Wand: ${rel}:${t.loc.start.line} liest Rahmen nur an /${t.value.pattern}/ — nach dem Schnitt ` +
+                        `stehen sie in stamm/NN.js (das Muster trägt \`\\/stamm\\/\\d\\d[a-z]?\\.js\` mit)`
+                );
+        }
+    }
+    return errs;
+}
+
 function main() {
     const root = path.join(__dirname, "..");
     // AUGEN-GLUT-SCHNITT (18.07.): foundry-core (der Ofen/Bäcker) steht mit in
-    // der Wand — Phantom-Leser-Namen dürfen auch dort nicht nachwachsen. feld-wgsl.js (der Welt-March im WGSL) steht
-    // mit drin: der trilineare Brick-March (feldTriAbtast/feldTriGrad, V18.528) fiel dort (Integration W0 — die
-    // Band-Wand trug dieselbe Liste ein zweites Mal, die Rückkehr-Wand ist die EINE).
+    // der Wand — Phantom-Leser-Namen dürfen auch dort nicht nachwachsen. Der Welt-March im WGSL (feld-wgsl.js) fiel
+    // mit K16 samt dem trilinearen Brick-March (feldTriAbtast/feldTriGrad, V18.528; die Rückkehr-Wand ist die EINE).
     const files = [
-        "anazhRealm.js",
+        ...STAMM,
         "voxel-worker.js",
         "index.html",
         "signaling-server.js",
         "foundry-core.js",
-        "feld-wgsl.js",
     ]
         .map((f) => path.join(root, f))
         .concat(linsenDateien(root));
 
     if (process.argv.includes("--selftest")) {
         // Die Instanz-Wand muss feuern: ein zweiter Bau am Chokepoint vorbei.
-        const stamm = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+        const stamm = stammLib.text(root);
         const instanzFeuert =
             scanInstanzWand(stamm).length === 0 &&
             scanInstanzWand(stamm + "\nconst x = new THREE.InstancedMesh(g, m, 64);\n").length === 1 &&
@@ -3272,15 +3576,15 @@ function main() {
             kern
                 .replace("__lod = stufenRezept(P.kind, stufe);", "")
                 .replace(
-                    "return core.treeParams({ api, delta, slim, trop, leaf }, SEED, __lod, pre);",
-                    'return core.treeParams({ api, delta, slim, trop, leaf }, SEED, stufenRezept("tree", __lod), pre);'
+                    "return core.treeParams({ api, delta, slim, trop, leaf }, SEED, __lod, pre, __weltSkalaArt(CURRENT));",
+                    'return core.treeParams({ api, delta, slim, trop, leaf }, SEED, stufenRezept("tree", __lod), pre, __weltSkalaArt(CURRENT));'
                 )
         );
         const stufenFeuert =
             scanStufenWand(kern).length === 0 &&
             zweite.some((e) => /zweite Bedeutung/.test(e) && /__lod = lod <= 1/.test(e)) &&
             ohne.some((e) => /stufenRezept\(P\.kind, stufe\);` steht 0×/.test(e)) &&
-            ohne.some((e) => /SEED, __lod, pre\);` steht 0×/.test(e));
+            ohne.some((e) => /SEED, __lod, pre, __weltSkalaArt\(CURRENT\)\);` steht 0×/.test(e));
         if (!stufenFeuert) {
             console.log("❌ SELBST-TEST: die Stufen-Wand feuert nicht (oder steht heute rot)", zweite, ohne);
             process.exit(1);
@@ -3329,6 +3633,51 @@ function main() {
         }
         console.log(
             `✅ SELBST-TEST: die Hüllen-Form-Wand feuert (${wirt.length} Wirts-Dateien, ${huelleRot[0]} · Kurzform erkannt)`
+        );
+        // Die Orts-Wand: ein eingeschmuggelter Satz an ein Zahlen-Literal wird beim Namen und der Zeile genannt; derselbe Satz
+        // als Bühnen-Station deklariert, und ein Ort aus der Welt, bleiben still; die Gates von heute stehen grün.
+        // Die KLASSE (Prüfung K16 Runde 2): die drei Formen der echten Täter — die Orts-Tabelle (kamera-laub), die
+        // Versatz-Liste (kampf-gefuehl), die Messort-Konstante samt Vorgabe (sicht-arbeit, wasser-linse) — werden in einer
+        // Setz-Probe beim Namen rot; ein Frequenz-Band unter `ufer`, ein Bau-Anker im Aufruf und ein Paar ohne Setzen bleiben
+        // still.
+        const SETZT = "pm.position.set(o.x, 0, o.z);\n";
+        const ortsRot = scanOrtsWand([
+            ["scripts/o.cjs", "const r = window.anazhRealm;\nr.state.playerMesh.position.set(512, 40, -300);\n"],
+            ["scripts/p.cjs", 'r.spawnCreatureAt(80, r.getTerrainHeightAt(80, 80) + 1, -80, "calm");\n'],
+            ["scripts/t.cjs", 'const ORTE = [\n    { id: "ufer", x: -872, z: -1127 },\n];\n' + SETZT],
+            ["scripts/v.cjs", "const ortR = [\n    [-14, 14],\n    [70, 0],\n].find(eben);\n" + SETZT],
+            ["scripts/m.cjs", "const MESS = { x: -900, z: -850 };\n" + SETZT],
+            ["scripts/d.cjs", "const [MX, MZ] = o.mess || [-900, -850];\n" + SETZT],
+        ]);
+        const ortsStill = scanOrtsWand([
+            ["scripts/q.cjs", "// BÜHNE: eigene Szene\npm.position.set(512, 40, -300);\n"],
+            ["scripts/u.cjs", "const O = r.__ebeneStelle();\npm.position.set(O.x, O.y, O.z);\n"],
+            ["scripts/k.cjs", "const BAND = { ufer: [60, 900], SEEDS: [7, 12345] };\n" + SETZT],
+            ["scripts/b.cjs", 'r.spawnArchitecture("haus", { x: 400, y: 0, z: 400 });\n' + SETZT],
+            ["scripts/w.cjs", "const MESS = { x: -900, z: -850 };\n"],
+        ]);
+        const ortsHeute = scanOrtsWand(gateDateien(root));
+        const ortsFeuert =
+            ortsRot.length === 6 &&
+            /o\.cjs:2 /.test(ortsRot[0]) &&
+            /p\.cjs:1 /.test(ortsRot[1]) &&
+            /t\.cjs:2 /.test(ortsRot[2]) &&
+            /v\.cjs:3 /.test(ortsRot[3]) &&
+            /m\.cjs:1 /.test(ortsRot[4]) &&
+            /d\.cjs:1 /.test(ortsRot[5]) &&
+            ortsStill.length === 0 &&
+            ortsHeute.length === 0;
+        if (!ortsFeuert) {
+            console.log(
+                "❌ SELBST-TEST: die Orts-Wand feuert nicht (oder steht heute rot)",
+                ortsRot,
+                ortsStill,
+                ortsHeute
+            );
+            process.exit(1);
+        }
+        console.log(
+            `✅ SELBST-TEST: die Orts-Wand feuert (${ortsRot[0].split(" setzt")[0]} · spawnCreatureAt, Orts-Tabelle, Versatz-Liste, Messort-Konstante und Vorgabe erkannt; BÜHNE, Welt-Ort, Band, Bau-Anker und Paar ohne Setzen still; ${gateDateien(root).length} Gate-Dateien heute grün)`
         );
         // Die Linsen stehen in der Wand: der tote Aufruf der Fernwald-Linse (Welle G) kehrt in eine Kopie zurück und
         // wird beim Namen genannt.
@@ -3648,21 +3997,52 @@ function main() {
             );
         const still = (datei, zeile) =>
             !scanZwillinge({ [datei]: probe + "// " + zeile + "\n" }).some((e) => e.includes(datei + ":"));
-        const cont0 = "const _cB = sandNoise.noise2D((x + _wpX) * 0.00014 + 7.2, (z + _wpZ) * 0.00014 + 3.8);";
+        const cont0 = "const c = sandNoise.noise2D((x + _wpX) * lc + 7.2, (z + _wpZ) * lc + 3.8);";
         const maske = "const ax = rxA / anker.massivAspect;";
         const mulde = "tarns.push({ x, z, reach2: r * r, twoSig2: 2 * s * s });";
+        // K16b: das Schicht-Verfahren im Makro-Worker des Studios, das Raster im Panel und in der Linse
+        const schicht = "maske[k] = G.grossform(L, x, z).stil >= 0.8 ? 1 : 0;";
         const zwillingFeuert =
-            feuert("voxel-worker.js", cont0, "kontinentale Basis") &&
-            feuert("anazhRealm.js", maske, "Massiv-Maske") &&
-            feuert("scripts/playtest.cjs", mulde, "Mulden-Form") &&
+            feuert("worlds/gelaende/makro-worker.js", schicht, "Schicht-Ort der Messung") &&
+            feuert("worlds/gelaende/studio.js", "const k = cv.width / (268 * 30);", "Mess-Raster der Statistik") &&
+            feuert("scripts/diag-worker-dichte.cjs", "const RAND = Math.round(2000 / SCHRITT);", "Mess-Raster") &&
+            still("worlds/gelaende/makro-worker.js", schicht) &&
+            feuert("voxel-worker.js", cont0, "Kontinentalität C") &&
+            feuert(STAMM[0], maske, "Massiv-Maske") &&
+            feuert("gelaende-core.js", maske, "Massiv-Maske") &&
+            feuert("scripts/playtest.cjs", mulde, "Tarn-Mulde") &&
+            feuert("gelaende-core.js", mulde, "Tarn-Mulde") &&
             still("voxel-worker.js", cont0) &&
-            still("anazhRealm.js", maske);
+            still(STAMM[0], maske);
         console.log(
             zwillingFeuert
-                ? "✅ SELBST-TEST: die Zwillings-Wand feuert (kontinentale Basis im Worker, Massiv-Maske im Stamm, Tarn-Mulde in einer Linse — je mit Zeile; der Kommentar nicht)"
+                ? "✅ SELBST-TEST: die Zwillings-Wand feuert (Kontinentalität im Worker, die gefallene Massiv-Maske in Stamm und Gesetzbuch, die gefallene Tarn-Mulde in Linse und Gesetzbuch — je mit Zeile; der Kommentar nicht)"
                 : "❌ SELBST-TEST: die Zwillings-Wand feuert nicht"
         );
         if (!zwillingFeuert) process.exit(1);
+        // Die Stamm-Leser-Wand muss feuern: ein kanonischer Leser am Namen vorbei, ein Server-Patcher am Pfad und ein
+        // Stapel-Leser ohne die Zonen-Dateien in einer Kopie — je beim Namen samt Zeile; Kommentar und Meldung bleiben still.
+        const leserDatei = "scripts/diag-stamm-leser-probe.cjs";
+        const n = stammLib.ALT;
+        const leserRot = scanStammLeser(root, {
+            [leserDatei]:
+                `const fs = require("fs");\nconst path = require("path");\n` +
+                `const s = fs.readFileSync(path.join(__dirname, "..", "${n}"), "utf8");\n` +
+                `if (p === "/${n}") x();\n` +
+                `if (/${n.replace(".", "\\.")}/.test(rahmen)) y();\n`,
+        });
+        const leserStill = scanStammLeser(root, {
+            [leserDatei]: `// liest ${n}\nconsole.log("${n}: der Leser fehlt");\nif (/${n.replace(".", "\\.")}|\\/stamm\\/\\d\\d[a-z]?\\.js/.test(r)) y();\n`,
+        });
+        const amOrt = (z) => leserRot.some((e) => e.startsWith(`Stamm-Leser-Wand: ${leserDatei}:${z} `));
+        const leserFeuert =
+            scanStammLeser(root).length === 0 && leserRot.length === 3 && amOrt(3) && amOrt(4) && amOrt(5) && leserStill.length === 0;
+        console.log(
+            leserFeuert
+                ? `✅ SELBST-TEST: die Stamm-Leser-Wand feuert (Leser am Namen · Patcher am Pfad · Stapel-Leser ohne stamm/ — je mit Zeile; Kommentar, Meldung und das volle Stapel-Muster still; ${stammLeserDateien(root).length} Dateien gesehen)`
+                : `❌ SELBST-TEST: die Stamm-Leser-Wand feuert nicht — ${JSON.stringify(leserRot.concat(leserStill)).slice(0, 400)}`
+        );
+        if (!leserFeuert) process.exit(1);
         process.exit(fired && aliasFeuert ? 0 : 1);
     }
 
@@ -3670,15 +4050,17 @@ function main() {
         .concat(checkSoulKeys())
         .concat(scanZwillinge())
         .concat(scanLabBuster())
-        .concat(scanInstanzWand(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8")))
-        .concat(scanEntsorgungsWand(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8")))
-        .concat(scanKartenWand(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8")))
-        .concat(scanNormalWand(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8")))
-        .concat(scanStoffWand(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8")))
+        .concat(scanInstanzWand(stammLib.text(root)))
+        .concat(scanEntsorgungsWand(stammLib.text(root)))
+        .concat(scanKartenWand(stammLib.text(root)))
+        .concat(scanNormalWand(stammLib.text(root)))
+        .concat(scanStoffWand(stammLib.text(root)))
         .concat(toteMarker(markerDateien(root)))
         .concat(scanStufenWand(fs.readFileSync(path.join(root, "foundry-core.js"), "utf8")))
         .concat(scanPortWand(gateDateien(root)))
+        .concat(scanOrtsWand(gateDateien(root)))
         .concat(scanHuellenFormWand(wirtsDateien(root, files)))
+        .concat(scanStammLeser(root))
         .concat(checkAliasArten());
     if (errs.length) {
         console.log("⛔ DIE RÜCKKEHR-WAND — gefallene Namen im Stamm und in den Linsen:");
@@ -3686,7 +4068,7 @@ function main() {
         process.exit(1);
     }
     console.log(
-        `✅ DIE RÜCKKEHR-WAND steht — ${FORBIDDEN.length} gefallene Namen grep=0 in ${files.length} Dateien (Stamm + Linsen in scripts/lib), CREATURE_SOULS = exakt [${SOUL_KEYS_EXPECTED.join(" · ")}], ${ZWILLINGE.length} Zwillings-Fingerabdrücke wohnen nur im Gesetzbuch, jede InstancedMesh entsteht im EINEN Chokepoint, ${KARTEN_METHODEN.length} Karten-Methoden malen nichts im Haupt-Thread, kein normalNode dreht mit der transponierten Matrix oder liest r184s normalWorld, kein Stoff fängt still (Stoff-Wand: kein schluckender catch im Render-Bau (am Versuch gemessen, die Hülle ohne Tiefe samt Studio-Faden, jeder Pfad bricht, jeder Studio-Faden trägt einen lauten Hörer), keine Fehler-Variable und kein toter Fehler-Marker, kein Wenn um ein TSL-Glied, kein Null-Knoten; ${STOFF_ZWEIGE.length} benannte Zweige mit ihrem Bild (ohne Seite · der Sandbox-Weg des Voxel-Fadens), der EINE Melder meldet jede Meldung ERROR und dieselbe wieder mit Zähler, keine Kette steigt still aus, kein Bau wartet in einer Schleife auf die Uhr), die Bau-Stufe hat EINE Bedeutung (stufenRezept), jedes Gate liest seinen Port aus EINER eigenen Variable, kein Wirt gibt eine Hülle in der alten Zeile (boxen statt teile), jede Gruppe mit Welt-Vorlagen entsorgt über die EINE Regel (_disposeSoulGroup).`
+        `✅ DIE RÜCKKEHR-WAND steht — ${FORBIDDEN.length} gefallene Namen grep=0 in ${files.length} Dateien (Stamm + Linsen in scripts/lib), CREATURE_SOULS = exakt [${SOUL_KEYS_EXPECTED.join(" · ")}], ${ZWILLINGE.length} Zwillings-Fingerabdrücke wohnen nur im Gesetzbuch, jede InstancedMesh entsteht im EINEN Chokepoint, ${KARTEN_METHODEN.length} Karten-Methoden malen nichts im Haupt-Thread, kein normalNode dreht mit der transponierten Matrix oder liest r184s normalWorld, kein Stoff fängt still (Stoff-Wand: kein schluckender catch im Render-Bau (am Versuch gemessen, die Hülle ohne Tiefe samt Studio-Faden, jeder Pfad bricht, jeder Studio-Faden trägt einen lauten Hörer), keine Fehler-Variable und kein toter Fehler-Marker, kein Wenn um ein TSL-Glied, kein Null-Knoten; ${STOFF_ZWEIGE.length} benannte Zweige mit ihrem Bild (ohne Seite · der Sandbox-Weg des Voxel-Fadens), der EINE Melder meldet jede Meldung ERROR und dieselbe wieder mit Zähler, keine Kette steigt still aus, kein Bau wartet in einer Schleife auf die Uhr), die Bau-Stufe hat EINE Bedeutung (stufenRezept), jedes Gate liest seinen Port aus EINER eigenen Variable, keine Probe setzt Spieler, Kamera oder Tier an ein Zahlen-Literal ohne BÜHNE, kein Wirt gibt eine Hülle in der alten Zeile (boxen statt teile), jede Gruppe mit Welt-Vorlagen entsorgt über die EINE Regel (_disposeSoulGroup), der Name der Stamm-Datei steht als Lese-Ziel nur in scripts/lib/stamm.cjs (${stammLeserDateien(root).length} Dateien gesehen).`
     );
 }
 

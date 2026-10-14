@@ -35,6 +35,7 @@ const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 
 const root = path.resolve(__dirname, "..");
 const argOf = (k, d) => {
@@ -109,7 +110,7 @@ function schlangenGesetz(src) {
     };
 }
 {
-    const stamm = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+    const stamm = stammLib.text(root);
     if (process.argv.includes("--selftest")) {
         const kaputt = stamm.replace(
             "if (entry._ziegelSlot || entry._ziegelGebacken || ohneFeld) {\n                    if (this._archZiegelFern(entry)) regung++;\n                } else {\n                    // Steht",
@@ -255,7 +256,7 @@ function schlangenGesetz(src) {
         // Gestalt-Bedarf, m; −1 = ohne Bedarf) und dem Rang der Zelle der fernen Eiche im Moment der WAHL — die Linse prüft
         // das GESETZ des Bäckers (nah zuerst, nie verhungert), nicht seinen Durchsatz.
         const presetF = r._foundryPresetForEntry(ebF);
-        const zelleF = "fimp:" + r._foundryKartenKey(presetF, r._foundryVariantFor(ebF.seed, presetF), null);
+        const zelleF = "fimp:" + r._foundryKartenKey(presetF, r._foundryGestaltFor(ebF, presetF), null);
         const backBuch = [];
         const rang = (z) => (z && Number.isFinite(z._bedarfD2) ? Math.round(Math.sqrt(z._bedarfD2)) : -1);
         let zuletzt = r._impostorBakePending ? r._impostorBakePendingKey : null;
@@ -346,7 +347,7 @@ function schlangenGesetz(src) {
                           ? r._foundry.cache.has(
                                 r._foundryKoerperKey(
                                     r._archFoundryPreset(e),
-                                    r._foundryVariantFor(e.seed, r._archFoundryPreset(e)),
+                                    r._foundryGestaltFor(e, r._archFoundryPreset(e)),
                                     1
                                 )
                             )

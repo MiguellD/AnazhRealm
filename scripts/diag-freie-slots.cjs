@@ -38,6 +38,7 @@ const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 const { linsenWebGpuArgs, adapterZeile } = require("./lib/software-gpu.cjs");
 const { installWieseSicht } = require("./lib/wiese-sicht.cjs");
 
@@ -464,7 +465,7 @@ async function welt() {
 (async () => {
     const fails = [];
     // ── Q (Quelle) + ihr Selbsttest ──
-    const src = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+    const src = stammLib.text(root);
     const q = quellBefunde(src);
     console.log("=== Q — die Quelle (kommentar-frei) ===");
     console.log(q.length ? q.map((x) => "  ❌ " + x).join("\n") : "  ✅ count schreibt nur _instanzZahl · keine Free-Liste · kein `_lebt`");

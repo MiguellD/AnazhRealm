@@ -28,6 +28,7 @@
 "use strict";
 
 const ZZ = require("./lib/ziel-zensus.cjs");
+const stammLib = require("./lib/stamm.cjs");
 
 const N_FRAMES = 8;
 // Der Schatten der Bühne: das Pixel unter der Kiste ist um mindestens so viel dunkler (Luma, 0–255) als das freie Licht.
@@ -175,7 +176,7 @@ function selbsttest() {
         console.log(`  ${ok ? "✅" : "❌"} Selbsttest „${f.name}" → ${v.join(" · ") || "(grün)"}`);
     }
     // die Quell-Wand am Stamm: grün; der Ausgleich entfernt, eine zweite Abtastung, die Sonde nicht gerufen → rot
-    const stamm = require("fs").readFileSync(require("path").join(__dirname, "..", "anazhRealm.js"), "utf8");
+    const stamm = stammLib.text(require("path").join(__dirname, ".."));
     const q0 = rundungQuelle(stamm);
     if (q0.length) fehler.push("Quell-Wand der Rundung am Stamm rot: " + q0.join(" · "));
     console.log(`  ${q0.length ? "❌" : "✅"} Quell-Wand der Rundung am Stamm → ${q0.join(" · ") || "grün"}`);
@@ -281,6 +282,7 @@ function karteOhneFarbe() {
         kiste.castShadow = true;
         szene.add(boden, kiste);
         const kam = new T.OrthographicCamera(-10, 10, 10, -10, 0.1, 100);
+        // BÜHNE: eigene Szene der Ziel-Bühne
         kam.position.set(0, 40, 0);
         kam.up.set(0, 0, -1);
         kam.lookAt(0, 0, 0);
@@ -353,6 +355,7 @@ function vortiefeProbe() {
         const szene = new T.Scene();
         szene.name = "ziel-zensus:vortiefe-buehne";
         const kam = new T.PerspectiveCamera(60, 1, 0.5, 400);
+        // BÜHNE: eigene Szene der Vortiefe-Bühne
         kam.position.set(0, 4, 6);
         kam.lookAt(0, 0, 0);
         kam.updateMatrixWorld(true);
@@ -546,7 +549,7 @@ function rundungProbe() {
         out.vortiefe = await page.evaluate(vortiefeProbe);
         log(`Vortiefe: ${JSON.stringify(out.vortiefe)}`);
         // (r) die Rundung des Ausgabe-Ziels: Quelle und echter Frame
-        out.rundungQuelle = rundungQuelle(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8"));
+        out.rundungQuelle = rundungQuelle(stammLib.text(root));
         out.rundung = await page.evaluate(rundungProbe);
         log(`Rundung: ${JSON.stringify(out.rundung)}`);
         out.gpuFehler = await page.evaluate(() => window.__gpuFehlerZ.slice(0, 5));

@@ -23,6 +23,7 @@
 "use strict";
 const fs = require("fs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 const root = path.resolve(__dirname, "..");
 
 // FNV-1a (dieselbe Hash-Familie wie der Warm-Start-Byte-Beweis).
@@ -406,7 +407,7 @@ const ANKER = [
 // dem Stempel den Render-Abschnitt (nur die Render-Id: er überlebt einen verschachtelten Render, der die geteilten Knoten
 // über die Vendor-Bahn auf seine Kamera stellt — Gegenprüfung 07.10.).
 function diaetLaden(manipuliert) {
-    const stamm = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+    const stamm = stammLib.text(root);
     const b = stamm.indexOf("AnazhRealm._diaetRefresh = function");
     if (b < 0) return null;
     let a = b;
@@ -752,7 +753,7 @@ function diaetProbe(selftest) {
 // prüft, sobald die Stoff-Version wechselt. Der Setter ist der Vendor-Text (Anker oben). 40 Objekte, Blätter und
 // Stämme im Wechsel: im Stand prüft kein Bürger, ein eigener alphaTest-Wechsel prüft genau EINEN.
 function schattenStoffProbe(ohne) {
-    const stamm = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+    const stamm = stammLib.text(root);
     const kopf = 'if (typeof renderer.renderObject !== "function")';
     const a = stamm.indexOf(kopf);
     const e = a < 0 ? -1 : stamm.indexOf("renderer.__anazhSchattenStoff = true;", a);
@@ -815,7 +816,7 @@ function schattenStoffProbe(ohne) {
 // Soll: die Haupt-Aufnahme verfolgt 10 von 10, kein Bundle unter dem Override-Stoff, nach dem Render steht der Zeiger
 // der äußeren Aufnahme wieder und beginBundle ist wieder die Methode des Backends. `ohne` = ohne Block (Selbsttest).
 function bundleWahrheitProbe(ohne) {
-    const stamm = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+    const stamm = stammLib.text(root);
     const kopf = 'if (typeof renderer._renderScene !== "function" || !renderer.backend)';
     const a = stamm.indexOf(kopf);
     const e = a < 0 ? -1 : stamm.indexOf("renderer.__anazhBundleWahrheit = true;", a);

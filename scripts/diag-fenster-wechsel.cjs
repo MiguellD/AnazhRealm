@@ -28,6 +28,7 @@ const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 const { linsenWebGpuArgs, adapterZeile } = require("./lib/software-gpu.cjs");
 const { ladeSpec } = require("./lib/band-urteil.cjs");
 
@@ -207,7 +208,7 @@ async function fensterSchritt(o) {
     const T0 = Date.now();
     const log = (z) => console.log(`  [${Math.round((Date.now() - T0) / 1000)} s] ${z}`);
     console.log("=== K — kein Zwilling im resize-Handler (Quelle) ===");
-    const koerper = resizeKoerper(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8"));
+    const koerper = resizeKoerper(stammLib.text(root));
     check(
         "K der resize-Handler baut keinen Leser der Szenen-Tiefe neu (die Diät trägt jeden Größenwechsel)",
         koerper !== null &&

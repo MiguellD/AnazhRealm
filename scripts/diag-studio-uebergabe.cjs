@@ -33,6 +33,7 @@ const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.STUDIO_UEBERGABE_PORT || 4453);
 const root = path.resolve(__dirname, "..");
@@ -66,7 +67,7 @@ function check(name, ok, detail) {
 (async () => {
     // ── Quell-Proben (Konsum-Tripwires: die Naht lebt in Stamm + Shells) ──
     console.log("=== STUDIO-ÜBERGABE — Quell-Proben (die Naht lebt in Stamm + Shells) ===");
-    const stamm = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+    const stamm = stammLib.text(root);
     const shellK = fs.readFileSync(path.join(root, "worlds/koerperstudio/koerperstudio.js"), "utf8");
     const shellT = fs.readFileSync(path.join(root, "worlds/tetrapoda/tetrapoda.js"), "utf8");
     const htmlK = fs.readFileSync(path.join(root, "worlds/koerperstudio/index.html"), "utf8");
@@ -158,7 +159,7 @@ function check(name, ok, detail) {
             return bb.max.y - bb.min.y;
         };
 
-        // ===== WARM-ANKER: Boot → f.ready → Buch (mensch + wolf) → !_prefetching =====
+        // ===== WARM-ANKER: Boot → f.ready → Buch (mensch + wolf) → !_vorrat =====
         const dl0 = performance.now() + 150000;
         while (
             (!window.anazhRealm || typeof window.anazhRealm._studioUebergabeEmpfang !== "function") &&
@@ -169,7 +170,7 @@ function check(name, ok, detail) {
         if (!r) return { fatal: "anazhRealm kam nie" };
         const f = r._ensureAssetFoundry();
         while (performance.now() < dl0) {
-            if (f && f.ready && f.recipes && f.recipes.mensch && f.recipes.wolf && !f._prefetching) break;
+            if (f && f.ready && f.recipes && f.recipes.mensch && f.recipes.wolf && !f._vorrat) break;
             await sleep(120);
         }
         res.warm.ready = !!(f && f.ready);

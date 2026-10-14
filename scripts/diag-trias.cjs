@@ -28,6 +28,7 @@
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
+const stammLib = require("./lib/stamm.cjs");
 
 const root = path.resolve(__dirname, "..");
 const errs = [];
@@ -155,7 +156,7 @@ function triasStaticLaws(anazhSrc) {
 }
 
 (async () => {
-    const anazhSrc = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+    const anazhSrc = stammLib.text(root);
 
     // ===== SELBST-TEST =====
     if (process.argv.includes("--selftest")) {
@@ -389,6 +390,7 @@ function triasStaticLaws(anazhSrc) {
         }
 
         // (1) Dorf deliberat heben (die EINE Slot-Quelle; kein Auto-Hook noetig).
+        // BÜHNE: Bau-Anker: das Dorf hebt am Anker — den Ort trägt das Platz-Gesetz des Stamms (_foundryRequestSettlement)
         const anchor = { x: 900, z: 900 };
         const plan = await Promise.race([
             r._foundryRequestSettlement({ seed: 7, nH: 6 }),

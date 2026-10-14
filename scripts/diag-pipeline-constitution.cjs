@@ -33,7 +33,7 @@ const law = (name, present, cond, detail) => {
     }
 };
 
-const anazhNC = stripComments(read("anazhRealm.js"));
+const anazhNC = stripComments(require("./lib/stamm.cjs").text(ROOT));
 const foundryNC = stripComments(read("foundry-core.js"));
 const pkg = read("package.json");
 

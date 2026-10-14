@@ -175,6 +175,7 @@
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 const { AUSGABE_INSTALL, wetterUrteil } = require("./lib/ausgabe-aufnahme.cjs");
 const { LINSEN_INSTALL } = require("./lib/licht-linsen.cjs");
 const { ZAEHLER_INSTALL, FALTE_INSTALL } = require("./lib/draw-zaehler.cjs");
@@ -1050,11 +1051,14 @@ async function starte() {
             const py = boden(px, pz, k.py),
                 ly = boden(lx, lz, k.ly);
             rend.setAnimationLoop(null);
-            window.__buehne();
+            // die Kamera VOR der Bühne: die Bühne setzt Tag und Nacht neu, und das Licht des Auges steht an der Kamera
+            // (`_dayNightApplyAugenLicht`, seine Stärke aus dem Himmel am Auge) — danach gesetzt, stand es an der Kamera des
+            // letzten Schusses (K16: das Auge in der Höhle schwarz, Helligkeit 0, das Licht lag draußen unter dem Himmel)
             const cam = r.state.camera;
             cam.position.set(px, py, pz);
             cam.lookAt(lx, ly, lz + 1e-4);
             cam.updateMatrixWorld(true);
+            window.__buehne();
             if (r.state.playerMesh) r.state.playerMesh.visible = false;
             // DAS ZIEL des Bilds ist der Blick-Punkt (K32): die Aufnahme prüft, ob es im Bild und frei ist, und die Blick-Wahl
             // sucht bis zu `wahl` Posen um den Ort (Standard drei Runden, 42 — gemessen 13.10. am Dreier-Hain: frei erst in Pose 26;
@@ -1301,10 +1305,8 @@ async function starte() {
                 }
                 if (req.url === "/methode") {
                     // `--quelle <datei>`: die Methode aus einem anderen Stand (die Basis eines A/B in EINER Welt)
-                    const quelle = fs.readFileSync(
-                        b.quelle ? path.resolve(b.quelle) : path.join(root, "anazhRealm.js"),
-                        "utf8"
-                    );
+                    // die Quelle ist eine Stamm-Datei oder ein Baum (scripts/lib/stamm.cjs: beide Formen, laut)
+                    const quelle = stammLib.text(b.quelle ? path.resolve(b.quelle) : root);
                     const src = methodeAusQuelle(quelle, b.name);
                     if (!src) return send({ fehler: `Methode ${b.name} nicht gefunden` });
                     const o = await page.evaluate(

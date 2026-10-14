@@ -42,6 +42,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const stammLib = require('./lib/stamm.cjs');
 
 const ROOT = path.resolve(__dirname, '..');
 
@@ -52,7 +53,7 @@ const GATE_FILES = ['scripts/playtest.cjs', 'scripts/playtest-fast.cjs'];
 // Proben sind `r.<x>` (die Realm-Instanz) → anazhRealm.js. Die Worker-/Bake-Mirrors
 // sind als Fallback dabei (geteilte Symbol-Namen), damit ein Mirror-Symbol nie
 // fälschlich „fehlt".
-const CODE_FILES = ['anazhRealm.js', 'voxel-worker.js'];
+const CODE_FILES = [...stammLib.dateien(path.join(__dirname, '..')), 'voxel-worker.js'];
 
 /**
  * Strippt JS-Kommentare (Block + Zeile) UND String-/Template-Literale, ohne über
@@ -286,7 +287,9 @@ function loadCorpus(files) {
   let corpus = '';
   for (const f of files) {
     const p = path.join(ROOT, f);
-    if (fs.existsSync(p)) corpus += '\n' + stripCommentsAndStrings(fs.readFileSync(p, 'utf8'));
+    // laut statt still: ein fehlender Korpus machte jede Probe vakuum-rot oder -grün
+    if (!fs.existsSync(p)) throw new Error(`source-probes: der Korpus ${f} fehlt`);
+    corpus += '\n' + stripCommentsAndStrings(fs.readFileSync(p, 'utf8'));
   }
   return corpus;
 }

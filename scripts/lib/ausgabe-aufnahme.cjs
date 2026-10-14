@@ -66,7 +66,7 @@ function spielStapel() {
     Error.stackTraceLimit = lim;
     const namen = [];
     for (const l of zeilen) {
-        if (!/anazhRealm\.js/.test(l)) continue;
+        if (!/anazhRealm\.js|\/stamm\/\d\d[a-z]?\.js/.test(l)) continue;
         const m = /at (?:async )?(?:new )?([^\s(]+) \(/.exec(l);
         namen.push(m ? m[1].replace(/^(AnazhRealm|Object)\./, "") : "(anonym)");
     }

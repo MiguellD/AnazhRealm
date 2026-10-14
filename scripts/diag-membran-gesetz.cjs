@@ -18,6 +18,7 @@
 "use strict";
 const fs = require("fs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 
 const root = path.resolve(__dirname, "..");
 global.THREE = require(path.join(root, "worlds/terrain/lib/three-r128.min.js"));
@@ -42,7 +43,7 @@ console.log("— MEMBRAN-GESETZ (porta-core ⇄ Lab-Shell ⇄ Welt) —");
 // ── Wand 1: die Zwillings-Tabelle (Alt-Literale V18.463, eingefroren) ──
 const FROZEN = {
     profilW: 64,
-    seg: 90,
+    seg: 45, // 1310-3: von 90 (Vertex-Welle bildgleich bei 45, Genesis −47k Dreiecke, −1,0 ms GPU) — ein erklärter Akt
     eps: 0.06,
     om: 3.0,
     kk: 13.8,
@@ -180,7 +181,7 @@ check("Shell liest membranUniforms", shell.includes("membranUniforms"));
 check("Shell injiziert per GN(", /GN\(MG\./.test(shell));
 check("Shell: Wellenzahl 13.8 steht nicht mehr roh im Text", !/13\.8/.test(shell));
 check("Shell: Puls 1.25 nur noch als Gesetz", !/Math\.sin\(t\s*\*\s*1\.25\)/.test(shell));
-const stamm = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+const stamm = stammLib.text(root);
 check("Stamm konsumiert membranUniforms (Welt-Leser)", stamm.includes("membranUniforms"));
 check("Stamm konsumiert MEMBRAN_GESETZ (Welt-Leser)", stamm.includes("MEMBRAN_GESETZ"));
 // PORTA-NEBEL (18.07.) — der KONSUM des vormals TOTEN Kanals: mu.fog speist

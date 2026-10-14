@@ -46,6 +46,7 @@ const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 const { linsenWebGpuArgs, adapterZeile } = require("./lib/software-gpu.cjs");
 
 const PORT = Number(process.env.WERKSTATT_WEG_PORT || 4623);
@@ -399,13 +400,16 @@ function wand(src) {
             const leser = {
                 Vorschau: /\n {4}_workshopFoundryPreviewGroup\(bpName\) \{/,
                 Hand: /\n {4}_heldFoundryGroup\(bpName\) \{/,
-                Phantom: /\n {4}_buildStudioPlacementGhost\(bp\) \{/,
+                // das Werk des Phantoms (K20: mit seinem Ort — die Gestalt des Orts); der Ghost liest es (unten)
+                Phantom: /\n {4}_phantomWerk\(bp, wo\) \{/,
                 Setzen: /\n {4}confirmBuild\(\) \{/,
             };
             const ohne = Object.entries(leser)
                 .filter(([, re]) => !/this\._werkSame\(/.test(fnBody(nc, re) || ""))
                 .map(([n]) => n);
             const null0 = /"spawn_blueprint", bm\.blueprintName, posNode, 0\b/.test(setzen);
+            const ghost = fnBody(nc, /\n {4}_buildStudioPlacementGhost\(bp, wo\) \{/) || "";
+            if (!/this\._phantomWerk\(bp, wo\)/.test(ghost)) ohne.push("Phantom-Ghost (_phantomWerk)");
             return [
                 "W8 EIN Same je Werk (`_werkSame`: Vorschau · Hand · Phantom · Setzen), das Setzen trägt Same und Drehung des Phantoms, die Nachricht an den Mitspieler den Samen des Werks",
                 hash === 1 && !ohne.length && /rotationY: dreh/.test(setzen) && !null0,
@@ -506,7 +510,7 @@ async function probe(argW) {
         n = 0;
         Math.random = function () {
             const rufer = (new Error().stack || "").split("\n")[2] || "";
-            if (/anazhRealm\.js/.test(rufer) && !/\._newArchId \(/.test(rufer)) n++;
+            if (/anazhRealm\.js|\/stamm\/\d\d[a-z]?\.js/.test(rufer) && !/\._newArchId \(/.test(rufer)) n++;
             return orig();
         };
         try {
@@ -907,8 +911,7 @@ async function probe(argW) {
             for (const [k, v] of r._foundry.cache) if (v === grp) return k;
             return null;
         };
-        const werkKey = (e) =>
-            r._foundryKoerperKey(preset, r._foundryVariantFor(e.seed, preset), 0, r._artifactStudioOv(e));
+        const werkKey = (e) => r._foundryKoerperKey(preset, r._foundryGestaltFor(e, preset), 0, r._artifactStudioOv(e));
         const dreh = (e) => (Number.isFinite(e.rotationY) ? +e.rotationY.toFixed(6) : 0);
         const tint = (e) => [e.tintH, e.tintS, e.tintV].map((v) => (Number.isFinite(v) ? v.toFixed(6) : "-")).join("/");
         const finde = (p) => {
@@ -1218,7 +1221,7 @@ async function probe(argW) {
 }
 
 (async () => {
-    const quelle = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+    const quelle = stammLib.text(root);
     if (process.argv.includes("--selftest")) {
         console.log("=== SELBST-TEST — die Verdikte und die Wand nennen ihre Täter ===");
         const gesund = {

@@ -43,23 +43,15 @@ Funktionen (Rezept+Seed+Stufe→Mesh) — virtualisierte Geometrie/SDF-Hybride,
 vom Schirm nach Bedarf gezogen statt als Klumpen geschoben. Forschungskante;
 beginnt erst, wenn Stufe 1+2 GEMESSEN stehen.
 
-## §3 · DER DRITTE SPIEGEL (das Fundament — Lehre 7 erweitert)
+## §3 · KEIN DRITTER SPIEGEL (das Fundament — Lehre 7 erweitert)
 
-Heute halten wir Main ↔ voxel-worker **bit-identisch** (f64, dieselbe Quelle).
-Damit das Feld auf der GPU zeichnet, reisen die Gesetze ein drittes Mal: nach
-**WGSL**. Normativ:
-
-- Der WGSL-Spiegel ist ein **SEH-Spiegel, nie Physik-Wahrheit**: f32 statt f64 —
-  die Abweichung ist ein GEMESSENES Toleranz-Band (`gate:dritter-spiegel`,
-  maxDiff über ein deterministisches Proben-Gitter), kein Versprechen.
-  Kollision/Sim lesen weiter NUR die f64-Quelle.
-- **EINE Quelle je Gesetz:** der WGSL-Text wohnt in `feld-wgsl.js` (Root, neben
-  den Kernen), Konstanten werden aus derselben Stelle gespeist wie die
-  JS-Leser — driftet das JS-Gesetz, MUSS die Linse rot werden (Selbsttest:
-  injizierte Abweichung wird erkannt).
-- **voxelEdits sind ein CPU-Overlay** (≤256 lokale Kugeln): der Seh-Spiegel v1
-  zeichnet das BASIS-Feld; editierte Zonen liegen ohnehin im nahen Voxel-Ring
-  (echte Geometrie). Reist der Overlay später, dann als Uniform-Liste.
+Main und voxel-worker rufen EIN Gelände-Gesetzbuch (`gelaende-core.js`), und auch
+die Ferne liest es: der Feld-Zeichner und der Fern-Ring fragen `hoehe` des Kerns,
+zeitgeschnitten auf der CPU (K16). Der WGSL-Seh-Spiegel (`feld-wgsl.js`,
+`gate:dritter-spiegel`) fiel mit K16 — das Flussnetz ist memoisierter Zustand je
+Saat, den kein Shader-Text spiegelt, und der Spiegel des alten Rausch-Gesetzes malte
+die Ferne falsch. Normativ bleibt: EINE Quelle je Gesetz; wer die Ferne zeichnet,
+liest den Kern, nie einen vereinfachten Zwilling.
 
 ## §4 · LADEN IST EIN KLACKS (der Warm-Start-Grundsatz)
 
