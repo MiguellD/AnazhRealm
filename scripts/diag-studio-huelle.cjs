@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-// diag-studio-huelle.cjs — DIE WAND DER STUDIO-HÜLLE (Studio-Welle 1, K41; Synthese §2.1 W4a, gate:studio-huelle).
+// diag-studio-huelle.cjs — DIE WAND DER STUDIO-HÜLLE (Studio-Welle 1, K41; Welle 2, K47 die terrain-Familie; Synthese §2.1
+// W4a, gate:studio-huelle).
 //
 // EIN UI-Modul (worlds/huelle/huelle.js) trägt die Regler, die Sitzung (Undo/Redo · Same · Sperre), die Kosten-Leiste
 // und die Portal-Brücke aller umgestiegenen Studios UND der Welt-Werkstatt. Die Wand nennt jede Kopie beim Namen:
@@ -8,15 +9,18 @@
 //   H2 Brücken-Kopie  eine eigene ready-Meldung (`type: "ready"`) oder ein Element-Adapter (`op[0]` je Element des
 //                     Programms) außerhalb der Hülle — die EINE Brücke ist AnazhHuelle.bruecke
 //   H3 Umstieg        jede umgestiegene Welt lädt ../huelle/huelle.js und ruft die Brücke; jedes Studio dazu Regler,
-//                     Sitzung und Kosten-Leiste; die Werkstatt ruft DENSELBEN Generator (kein Zwilling)
-// Ausgenommen, benannt: terrain + gelaende (worlds/terrain/*, phytogenesis.js und das Gelände-Studio steigen in Welle 2 um,
-// die terrain-Familie, Karte K42) und die zwei
-// sandgesicherten Welten begegnung + schwarm (CSP default-src 'none': sie laden kein Skript, ihr Protokoll richtet
-// gate:portal-konformanz).
+//                     Sitzung und Kosten-Leiste; die Werkstatt ruft DENSELBEN Generator (kein Zwilling); das Gelände-Studio
+//                     (worlds/gelaende/studio.js, ein Panel über der Welt-Engine) ruft Regler, Sitzung und Kosten-Leiste
+//                     der Hülle, die die Heimat VOR ihm lädt
+// Ausgenommen, benannt: die zwei sandgesicherten Welten begegnung + schwarm (CSP default-src 'none': sie laden kein
+// Skript, ihr Protokoll richtet gate:portal-konformanz). Die terrain-Familie (terrain + gelaende) trägt seit K47 keine
+// Ausnahme mehr.
 //
 //   node scripts/diag-studio-huelle.cjs --selftest   die Täter eingespielt (ein Hand-Regler in der garage, eine eigene
 //                                                    ready in der schmiede, der Element-Adapter in der klang, ein
-//                                                    Werkstatt-Schieber im Stamm, die fachwerk ohne Kosten-Leiste)
+//                                                    Werkstatt-Schieber im Stamm, die fachwerk ohne Kosten-Leiste, ein
+//                                                    Hand-Regler im Gelände-Studio, eine eigene ready im terrain-Labor,
+//                                                    das terrain-Labor ohne Sitzung)
 //                                                    → jede Wand rot beim Namen
 //   node scripts/diag-studio-huelle.cjs              der Baum gegen H1–H3
 //   node scripts/diag-studio-huelle.cjs --bild <ordner> [--name vorher|nachher]
@@ -29,12 +33,12 @@ const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
 
 const ROOT = path.resolve(__dirname, "..");
-// Die Welten, die in DIESER Welle auf die Hülle stehen (Studios mit Reglern + die Nebenwelten mit der Brücke allein).
-const STUDIOS = ["garage", "schmiede", "portale", "klang", "fachwerk", "koerperstudio", "tetrapoda"];
+// Die Welten auf der Hülle (Studios mit Reglern + die Nebenwelten mit der Brücke allein) und das Gelände-Studio, das als
+// Panel über der Welt-Engine lebt (index.html?studio=gelaende: keine eigene Shell, keine Brücke — die Heimat IST die Welt).
+const STUDIOS = ["garage", "schmiede", "portale", "klang", "fachwerk", "koerperstudio", "tetrapoda", "terrain"];
 const NEBENWELTEN = ["skeleton", "fluid", "translated"];
+const GELAENDE = "worlds/gelaende/studio.js";
 const AUSGENOMMEN = {
-    terrain: "Welle 2 (K42): worlds/terrain/* und phytogenesis.js",
-    gelaende: "Welle 2 (terrain-Familie): das Gelände-Studio auf der Welt-Engine (worlds/gelaende/studio.js, Pflicht-OFFEN C)",
     begegnung: "sandgesichert (CSP default-src 'none'), Protokoll: gate:portal-konformanz",
     schwarm: "sandgesichert (CSP default-src 'none'), Protokoll: gate:portal-konformanz",
 };
@@ -67,7 +71,7 @@ const zaehl = (t, rx) => (t.match(rx) || []).length;
 
 function pruefe(karte) {
     const rot = [];
-    const zahl = { handRegler: 0, handReglerTerrain: 0, bruecken: [], elementAdapter: 0 };
+    const zahl = { handRegler: 0, bruecken: [], elementAdapter: 0 };
     for (const [rel, t] of Object.entries(karte)) {
         const m = /^worlds\/([^/]+)\//.exec(rel);
         const welt = m ? m[1] : null;
@@ -75,8 +79,7 @@ function pruefe(karte) {
         const ausgenommen = welt && AUSGENOMMEN[welt];
         // H1 — Hand-Regler
         const nH = /\.html$/.test(rel) ? zaehl(t, HAND_RANGE_HTML) : zaehl(t, HAND_RANGE_JS);
-        if (welt === "terrain" || welt === "gelaende") zahl.handReglerTerrain += nH;
-        else if (nH && rel !== "index.html") {
+        if (nH && rel !== "index.html") {
             zahl.handRegler += nH;
             rot.push(`H1 ${rel}: ${nH} Hand-Regler (der EINE Generator ist AnazhHuelle.regler)`);
         }
@@ -87,7 +90,7 @@ function pruefe(karte) {
         if (nR && !ausgenommen) rot.push(`H2 ${rel}: ${nR}× eine eigene ready-Meldung (die EINE Brücke ist AnazhHuelle.bruecke)`);
         const nE = zaehl(t, ELEMENT_ADAPTER);
         zahl.elementAdapter += nE;
-        if (nE && welt !== "terrain") rot.push(`H2 ${rel}: Element-Adapter op[0] (aus "gt" wird "g") — der DSL-Adapter der Hülle liest das Programm ganz`);
+        if (nE) rot.push(`H2 ${rel}: Element-Adapter op[0] (aus "gt" wird "g") — der DSL-Adapter der Hülle liest das Programm ganz`);
     }
     // H3 — der Umstieg
     for (const id of [...STUDIOS, ...NEBENWELTEN]) {
@@ -107,6 +110,18 @@ function pruefe(karte) {
         ])
             if (!new RegExp(`AnazhHuelle\\.${fn}\\(`).test(js)) rot.push(`H3 ${id}: ohne ${was} (AnazhHuelle.${fn})`);
     }
+    // das Gelände-Studio: Regler, Sitzung und Kosten-Leiste der Hülle, die die Heimat VOR ihm lädt
+    const gel = karte[GELAENDE] || "";
+    for (const [fn, was] of [
+        ["regler", "Regler-Generator"],
+        ["sitzung", "Sitzung (Undo/Redo · Same)"],
+        ["kosten", "Kosten-Leiste je LOD-Stufe"],
+    ])
+        if (!new RegExp(`AnazhHuelle\\.${fn}\\(`).test(gel)) rot.push(`H3 gelaende: ohne ${was} (AnazhHuelle.${fn})`);
+    const heim = karte["index.html"] || "";
+    const iH = heim.indexOf('src="worlds/huelle/huelle.js?v=');
+    const iG = heim.indexOf('src="worlds/gelaende/studio.js?v=');
+    if (iG >= 0 && !(iH >= 0 && iH < iG)) rot.push("H3 gelaende: die Heimat lädt worlds/huelle/huelle.js nicht vor worlds/gelaende/studio.js");
     const werkstatt = Object.entries(karte)
         .filter(([r]) => /^stamm\/23/.test(r))
         .map(([, t]) => t)
@@ -119,7 +134,7 @@ function pruefe(karte) {
 }
 
 function bericht(zahl) {
-    console.log(`  Hand-Regler außerhalb der terrain-Familie: ${zahl.handRegler} · terrain + gelaende (Welle 2): ${zahl.handReglerTerrain}`);
+    console.log(`  Hand-Regler: ${zahl.handRegler} (die terrain-Familie ohne Ausnahme)`);
     console.log(`  eigene ready-Meldungen: ${zahl.bruecken.length} (${zahl.bruecken.join(", ") || "—"}) + die EINE der Hülle`);
 }
 
@@ -161,6 +176,34 @@ function selbsttest() {
             vor: "AnazhHuelle.kosten(",
             nach: "AnazhHuelle.__kostenFort(",
             soll: /^H3 fachwerk: ohne Kosten-Leiste/,
+        },
+        {
+            name: "H1 ein Hand-Regler im Gelände-Studio",
+            rel: GELAENDE,
+            vor: "AnazhHuelle.regler(",
+            nach: 'd.innerHTML = `<input type="range">`;\nAnazhHuelle.regler(',
+            soll: /^H1 worlds\/gelaende\/studio\.js: \d+ Hand-Regler/,
+        },
+        {
+            name: "H2 eine eigene ready im terrain-Labor",
+            rel: "worlds/terrain/phytogenesis.js",
+            vor: "AnazhHuelle.bruecke(",
+            nach: 'foundryPost({ type: "ready", world: "terrain" });\nAnazhHuelle.bruecke(',
+            soll: /^H2 worlds\/terrain\/phytogenesis\.js: 1× eine eigene ready/,
+        },
+        {
+            name: "H3 das terrain-Labor ohne Sitzung",
+            rel: "worlds/terrain/phytogenesis.js",
+            vor: "AnazhHuelle.sitzung(",
+            nach: "AnazhHuelle.__sitzungFort(",
+            soll: /^H3 terrain: ohne Sitzung/,
+        },
+        {
+            name: "H3 das Gelände-Studio ohne Kosten-Leiste",
+            rel: GELAENDE,
+            vor: "AnazhHuelle.kosten(",
+            nach: "AnazhHuelle.__kostenFort(",
+            soll: /^H3 gelaende: ohne Kosten-Leiste/,
         },
     ];
     let ok = true;
@@ -206,20 +249,27 @@ async function bild(ordner, name) {
     fs.mkdirSync(ordner, { recursive: true });
     const browser = await puppeteer.launch({ headless: true, protocolTimeout: 240000, args: [...echteWebGpuArgs(), "--use-angle=d3d11", "--window-size=1600,900"] });
     const zeilen = [];
+    // je Studio seine Shell; das Gelände-Studio ist das Panel über der Welt-Engine (gezählt wird nur in ihm)
+    const ziele = STUDIOS.map((id) => ({ id, url: `/worlds/${id}/index.html`, wurzel: null, ms: id === "koerperstudio" || id === "fachwerk" || id === "terrain" ? 9000 : 5000 }));
+    ziele.push({ id: "gelaende", url: "/index.html?studio=gelaende", wurzel: "#gelaende-studio", ms: 15000 });
+    const nur = process.argv.includes("--nur") ? process.argv[process.argv.indexOf("--nur") + 1].split(",") : null;
     try {
-        for (const id of STUDIOS) {
+        for (const { id, url, wurzel, ms } of ziele) {
+            if (nur && !nur.includes(id)) continue;
             const page = await browser.newPage();
             await page.setViewport({ width: 1600, height: 900 });
             const fehler = [];
             page.on("pageerror", (e) => fehler.push(String((e && e.message) || e).split("\n")[0].slice(0, 140)));
             const t0 = Date.now();
-            await page.goto(`http://127.0.0.1:${PORT}/worlds/${id}/index.html`, { waitUntil: "load", timeout: 180000 });
-            await new Promise((r) => setTimeout(r, id === "koerperstudio" || id === "fachwerk" ? 9000 : 5000));
-            const z = await page.evaluate(async () => {
-                const alle = [...document.querySelectorAll('input[type="range"]')];
+            await page.goto(`http://127.0.0.1:${PORT}${url}`, { waitUntil: "load", timeout: 180000 });
+            if (wurzel) await page.waitForSelector(wurzel, { timeout: 180000 }).catch(() => fehler.push(`${wurzel} erschien nicht in 180 s`));
+            await new Promise((r) => setTimeout(r, ms));
+            const z = await page.evaluate(async (wurzel) => {
+                const W = (wurzel && document.querySelector(wurzel)) || document;
+                const alle = [...W.querySelectorAll('input[type="range"]')];
                 const huelle = alle.filter((i) => i.closest(".h-regler"));
-                const r = { schieber: alle.length, huelle: huelle.length, sitzung: !!document.querySelector(".h-sitzung"), kosten: null, undo: null, gl: null };
-                const k = [...document.querySelectorAll(".h-kosten-text, .h-kosten-zeile")].map((e) => e.textContent.trim()).filter(Boolean);
+                const r = { schieber: alle.length, huelle: huelle.length, sitzung: !!W.querySelector(".h-sitzung"), kosten: null, undo: null, gl: null };
+                const k = [...W.querySelectorAll(".h-kosten-text, .h-kosten-zeile")].map((e) => e.textContent.trim()).filter(Boolean);
                 r.kosten = k.length ? k.slice(0, 4) : null;
                 const c = document.querySelector("canvas");
                 if (c) {
@@ -240,7 +290,7 @@ async function bild(ordner, name) {
                     r.undo = { vor, mitte, nach: inp.value, wirkt: inp.value === vor && mitte !== vor, marke: [...document.querySelectorAll("#presets .on, #presets .active")].map((b) => b.textContent).join("|") };
                 }
                 return r;
-            });
+            }, wurzel);
             await new Promise((r) => setTimeout(r, 1500));
             const datei = path.join(ordner, `${name}-${id}.png`);
             await page.screenshot({ path: datei });
