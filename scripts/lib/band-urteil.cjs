@@ -972,6 +972,32 @@ function ratscheNachziehen(ratsche, u, gemessen, nur) {
         for (const k of Object.keys(neu.vramMB))
             if (!lebt.has(k) && !vramFrei(neu, k)) setze(neu.vramMB, k, 0, "vramMB." + k);
     }
+    // DIE GESAMT-ZEILE IST HÖCHSTENS DIE SUMME IHRER ZEILEN (gate:profiband H2b): jede Zeile zieht je Lauf auf ihr EIGENES
+    // Minimum, die Summe der Minima liegt dann unter dem Minimum der Gesamt-Zeile (14.10., GTX-Re-Mint: vramMB 96,3 gegen
+    // die Erzeuger 96,2) — eine Gesamt-Zeile darüber feuerte nie. Die Kappe gilt, sobald jede Zeile gemessen ist.
+    const kappe = (key, zeilen, name) => {
+        const alt = neu.gesamt[key];
+        if (alt == null || zeilen.some((v) => v == null)) return;
+        const summe = key === "vramMB" ? +zeilen.reduce((a, b) => a + b, 0).toFixed(1) : zeilen.reduce((a, b) => a + b, 0);
+        if (alt > summe) {
+            neu.gesamt[key] = summe;
+            aenderungen.push(`gesamt.${key}: ${alt} → ${summe} (die Summe ihrer Zeilen, ${name})`);
+        }
+    };
+    for (const gr of nur === "vram" ? [] : ["befehle", "dreiecke"]) {
+        const zeilen = [];
+        for (const [id, rz] of Object.entries(neu.klassen || {}))
+            if (!freiGrund(neu, id)) for (const p of Object.keys(rz)) zeilen.push((rz[p] || {})[gr]);
+        kappe(gr, zeilen, "Klassen × Pässe");
+    }
+    if (u.vram)
+        kappe(
+            "vramMB",
+            Object.keys(neu.vramMB || {})
+                .filter((k) => !vramFrei(neu, k))
+                .map((k) => neu.vramMB[k]),
+            "Erzeuger"
+        );
     // Die Serie bestätigt die Ratsche an IHREM Stand (Version, Gerät, Sicht) auch ohne Änderung — gate:profiband H2b liest das
     // Alter daran.
     if (nur === "vram") {
