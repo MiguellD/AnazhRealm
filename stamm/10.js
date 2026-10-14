@@ -856,6 +856,9 @@ class AnazhRealm_Z10 {
     // Licht des Auges) trägt nur, wo sie fehlt; ohne sie gilt der Stoff als offen. KEIN Szenen-Licht: r184 sammelt jedes
     // Szenen-Licht in den Licht-Hash jedes beleuchteten Stoffs und rechnet seine BRDF auch auf Stärke 0 — der Pool ist eine
     // feste Zahl geteilter Uniforms ab dem Boot (EIN Schreiber `_leuchtTakt`), ein Wechsel der Quellen baut kein Programm.
+    // EIN KNOTEN JE GRAPH (1310-18): dasselbe Leuchten über derselben Basis (dem Leucht-Knoten des Stoffs oder r184s
+    // `materialEmissive`), demselben Zeitplan und derselben Himmels-Sicht ist DERSELBE Knoten — Stoffe mit geteiltem Graphen
+    // (`_foundryTreeMaterial`) teilen so auch ihr Leuchten und mit ihm ihr Programm (r184 schlüsselt nach der Knoten-Identität).
     _leuchtStoff(mat, mp, himmel) {
         if (!mat || mat.isNodeMaterial !== true) throw new Error("_leuchtStoff: kein Knoten-Stoff");
         const Te = THREE.TSL;
@@ -865,9 +868,20 @@ class AnazhRealm_Z10 {
             mat.userData.lichtPool = "quelle";
             return mat;
         }
-        let em = mat.emissiveNode ? Te.vec3(mat.emissiveNode) : Te.materialEmissive;
-        if (mp && mp.licht === "fenster") em = em.add(atmo.fensterGlut);
-        mat.emissiveNode = em.add(this._lichtPoolTerm(Te, atmo, himmel || null));
+        const ohne = this._leuchtOhne || (this._leuchtOhne = {});
+        const jeBasis = this._leuchtKnoten || (this._leuchtKnoten = new WeakMap());
+        const basis = mat.emissiveNode || ohne;
+        if (!jeBasis.has(basis)) jeBasis.set(basis, new WeakMap());
+        const jeHimmel = jeBasis.get(basis);
+        if (!jeHimmel.has(himmel || ohne)) jeHimmel.set(himmel || ohne, {});
+        const knoten = jeHimmel.get(himmel || ohne);
+        const plan = mp && mp.licht === "fenster" ? "fenster" : "offen";
+        if (!knoten[plan]) {
+            let em = mat.emissiveNode ? Te.vec3(mat.emissiveNode) : Te.materialEmissive;
+            if (plan === "fenster") em = em.add(atmo.fensterGlut);
+            knoten[plan] = em.add(this._lichtPoolTerm(Te, atmo, himmel || null));
+        }
+        mat.emissiveNode = knoten[plan];
         mat.userData.lichtPool = true;
         return mat;
     }

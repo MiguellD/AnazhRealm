@@ -151,8 +151,9 @@ class AnazhRealm_Z20c {
     // `windAusschlag`, hier über der TSL-Algebra) — Stamm, Ast und Blatt je mit ihrer Frequenz, die Last aus der Wind-Zeile
     // des Wetters (U = uWindStrength / WEATHER_WIND_AMP, dieselbe Zeile, die das Wasser kräuselt), die Böe aus WIND_BOE
     // (Gras, Streu und Ohr lesen sie), die Richtung uWindDir. Je Baum: die Höhe H aus seinem Instanz-Stempel aH0 (die
-    // Sichthöhe der Stufen-Blende, Vorlage × Instanz-Skala), f0 = kF · δ / H. Die Art-Größen (ht, δ, an) sind EINE
-    // Uniform je Stoff (der Schlüssel trägt sie): jede Art zeichnet ihren eigenen Stoff im selben Programm. r184 rechnet den
+    // Sichthöhe der Stufen-Blende, Vorlage × Instanz-Skala), f0 = kF · δ / H. Die Art-Größen (ht, δ, an) sind ein Stoff-Wert
+    // (`userData.windArt`, `_stoffWert`): jede Art zeichnet ihren eigenen Stoff mit DEMSELBEN Knoten — EIN Graph für Laub, einer
+    // für Rinde, Wurf und Bau (1310-18; bis dahin eine frische Uniform je Stoff, für r184 ein Programm je Art). r184 rechnet den
     // positionNode NACH der Instanzierung — positionLocal ist instanziert (Welt-Meter), positionGeometry die Vorlage.
     // Der WURF (kind "schatten": der Wurf-Teil der Foundry-L1, der Zwilling des Werkstatt-Baums) schwingt mit Stamm und
     // Ast wie sein Bild — der r184-Schattenpass zeichnet mit dem positionNode des Stoffs (Lehre 26). Das Blatt-Flattern
@@ -161,12 +162,21 @@ class AnazhRealm_Z20c {
     _baumWindStoff(mat, kind, baum) {
         if (!mat || mat.isNodeMaterial !== true || mat.positionNode) return;
         if (!this.state.windUniforms) this._grassInstanceMat();
+        const laub = kind === "foliage" || kind === "foliageTex";
+        // ohne Wind-Daten (Stumpf, liegender Stamm, Fels) steht der Stoff still (an 0) und teilt doch das Programm der Bäume
+        mat.userData.windArt = new THREE.Vector3(baum ? baum.ht : 1, baum ? baum.delta : 0, baum ? baum.an : 0);
+        mat.userData.baumWind = baum ? { ht: baum.ht, delta: baum.delta, an: baum.an } : null;
+        if (!this._baumWindKnoten) this._baumWindKnoten = {};
+        const da = this._baumWindKnoten[laub ? "laub" : "ast"];
+        if (da) {
+            mat.positionNode = da;
+            return;
+        }
         const T = THREE.TSL;
         const wu = this._ensureWindCoupling(T);
         const WG = globalThis.__phytoCore.WIND_GESETZ;
         const B = AnazhRealm.WIND_BOE;
-        // ohne Wind-Daten (Stumpf, liegender Stamm, Fels) steht der Stoff still (an 0) und teilt doch das Programm der Bäume
-        const uB = T.uniform(new THREE.Vector3(baum ? baum.ht : 1, baum ? baum.delta : 0, baum ? baum.an : 0));
+        const uB = this._stoffWert(T, "userData.windArt", "vec3");
         const A = AnazhRealm._windTsl(T);
         const pG = T.positionGeometry;
         const pW = T.positionWorld;
@@ -187,13 +197,11 @@ class AnazhRealm_Z20c {
             phi: ort.mul(-B.k),
             psi: pG.x.mul(1.7).add(pG.y.mul(0.9)).add(pG.z.mul(1.3)).div(ht).mul(6.2832),
         };
-        const laub = kind === "foliage" || kind === "foliageTex";
         const w = globalThis.__phytoCore.windAusschlag(A, e, laub);
         const quer = w.quer.mul(uB.z);
         let off = T.vec3(wu.uWindDir.x.mul(quer), w.hoch.mul(uB.z), wu.uWindDir.y.mul(quer));
         if (laub) off = off.add(T.normalize(T.normalLocal).mul(w.flattern.mul(uB.z)));
-        mat.positionNode = T.positionLocal.add(off);
-        mat.userData.baumWind = baum ? { ht: baum.ht, delta: baum.delta, an: baum.an } : null;
+        mat.positionNode = this._baumWindKnoten[laub ? "laub" : "ast"] = T.positionLocal.add(off);
     }
     // DIE EINE PIPE: die EINE Reply-Mesh → THREE-Konversion (Pflanzen-Gruppen-Bau UND Kreatur-Ofen rufen
     // sie); null bei kaputtem Eintrag. `stage` (optional) = { lod, preset } trägt die Stufen-/SSE-Stempel
