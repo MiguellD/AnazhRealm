@@ -15,6 +15,8 @@
 //   T4  ein Sonnen-Sprung erzwingt beide im selben Takt
 //   T5  ohne CSM trägt das Haupt-Licht die EINE Map im Nah-Takt (jeden nahMax-ten Frame)
 //   T6  `_schattenAlleNeu` markiert jede Kaskade (die Werkzeuge vor einer Aufnahme)
+//   T7  die Kamera BEWEGT sich (Gang, Drehung): die nahe Kaskade folgt jedem Frame (Intervall 1), beide dürfen in einen
+//       Frame — der Schatten des gehenden Spielers hinkt nie (1410-3, Kosten an der Änderung)
 //   S1  Selbsttest: mit dem alten Schreiber (renderer.shadowMap.needsUpdate) als _loopShadowUpdate wird KEINE
 //       Kaskade markiert und autoUpdate bleibt an — T1/T2 fielen
 //   S2  Selbsttest: das Gesetz vor 1410-3 (nah jeden Frame, fern jeden fernFaktor-ten im selben Frame) zählt
@@ -78,6 +80,34 @@ function probe() {
         r._shadowLast = null;
         aus.t5 = lauf([dl], 20)[0];
         aus.t5aus = dl.shadow.autoUpdate === false;
+        // T7 — die Kamera bewegt sich: je Takt ein Schritt der Kamera-Matrix
+        st.csmNode = { lights: k };
+        st.directionalLight = sonne;
+        st._shadowMinInterval = 1;
+        r._shadowLast = null;
+        const kam = st.camera;
+        const kamAlt = kam ? kam.position.x : 0;
+        const roh = r._loopShadowUpdate;
+        let schritt = 0;
+        r._loopShadowUpdate = function () {
+            if (kam) {
+                kam.position.x = kamAlt + 0.05 * ++schritt;
+                kam.updateMatrixWorld(true);
+            }
+            return roh.call(this);
+        };
+        try {
+            lauf(k, 1);
+            aus.t7 = lauf(k, 30);
+            aus.t7doppelt = aus.t7.doppelt;
+        } finally {
+            delete r._loopShadowUpdate;
+            if (kam) {
+                kam.position.x = kamAlt;
+                kam.updateMatrixWorld(true);
+            }
+        }
+        aus.t7kamera = !!kam;
         // T6
         const k6 = [kaskade(), kaskade()];
         k6.forEach((l) => (l.shadow.needsUpdate = false));
@@ -163,6 +193,11 @@ function probe() {
         check("T4 ein Sonnen-Sprung erzwingt beide", a.t4[0] === true && a.t4[1] === true);
         check("T5 ohne CSM: das Haupt-Licht im Nah-Takt", a.t5 === 20 / T.nahMax && a.t5aus, `20 Frames → ${a.t5}`);
         check("T6 _schattenAlleNeu markiert jede Kaskade", a.t6);
+        check(
+            "T7 die Kamera bewegt sich: nah jeden Frame, fern jeden fernFaktor-ten, beide dürfen in einen Frame",
+            a.t7kamera && a.t7[0] === 30 && a.t7[1] === 30 / T.fernFaktor && a.t7doppelt > 0,
+            `30 Frames → ${a.t7 ? a.t7.join(" / ") : "–"}, doppelt ${a.t7doppelt}`
+        );
         check(
             "S1 Selbsttest: der alte Schreiber markiert keine Kaskade (T2 0/0) und lässt autoUpdate an (T1 fiele)",
             a.s1.z[0] === 0 && a.s1.z[1] === 0 && a.s1.auto,

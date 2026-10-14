@@ -2070,14 +2070,35 @@ class AnazhRealm_Z25c {
         const minInterval = Math.max(1, Math.round(this.state._shadowMinInterval || 1));
         const csm = this.state.csmNode;
         const lichter = csm && csm.lights && csm.lights.length ? csm.lights : dl ? [dl] : [];
+        // DIE KOSTEN AN DER ÄNDERUNG (Gebot 7): bewegt sich die Kamera (Gang, Drehung, die Kamera folgt dem Spieler), folgt
+        // die nahe Kaskade jedem Frame im Regler-Takt und beide dürfen in einen Frame — der Schatten des gehenden Spielers
+        // stünde sonst jeden zweiten Frame einen Frame zurück. In Ruhe gilt je Frame höchstens eine Kaskade.
+        const cam = this.state.camera;
+        const me = cam && cam.matrixWorld ? cam.matrixWorld.elements : null;
+        let bewegt = false;
+        if (me) {
+            const alt = L.kamera || (L.kamera = new Float64Array(16).fill(NaN));
+            for (let j = 0; j < 16; j++)
+                if (!(Math.abs(me[j] - alt[j]) <= AnazhRealm.SCHATTEN_RUHE_EPS)) {
+                    bewegt = true;
+                    break;
+                }
+            alt.set(me);
+        }
         let gerendert = false;
         for (let i = 0; i < lichter.length; i++) {
             const sh = lichter[i].shadow;
             if (!sh) continue;
             sh.autoUpdate = false;
-            const takt = i === 0 ? T.nahMax : Math.max(T.nahMax, minInterval) * T.fernFaktor;
+            const takt = bewegt
+                ? i === 0
+                    ? Math.min(T.nahMax, minInterval)
+                    : minInterval * T.fernFaktor
+                : i === 0
+                  ? T.nahMax
+                  : Math.max(T.nahMax, minInterval) * T.fernFaktor;
             const faellig = !(frame - (L.k[i] != null ? L.k[i] : -1e9) < takt);
-            if (sunMoved || (faellig && !gerendert)) {
+            if (sunMoved || (faellig && (bewegt || !gerendert))) {
                 sh.needsUpdate = true;
                 L.k[i] = frame;
                 gerendert = true;
