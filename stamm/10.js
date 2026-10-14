@@ -1076,11 +1076,12 @@ class AnazhRealm_Z10 {
         tex.needsUpdate = true;
         const [A, B] = R.schraeg;
         const m = T.int(P - 1);
-        // die Komponente c der vier Ecken der Zelle (i, j): EIN Texel, 0 · 127 · 254 → −1 · 0 · +1
-        const ecken = (i, j, c) =>
-            T.textureLoad(tex, T.ivec2(i.mul(3).add(c), j))
-                .mul(255 / 127)
-                .sub(1.0);
+        // die Komponente c der vier Ecken der Zelle (i, j): EIN Texel, roh geladen — die Ladung steht im Programm, das die
+        // Probe ruft (eine Bindung lebt nie in einer Layout-Funktion: r184 baut sie EINMAL je Builder-Klasse, jedes weitere
+        // Programm erbte den Namen der Textur aus dem ersten)
+        const ecken = (i, j, c) => T.textureLoad(tex, T.ivec2(i.mul(3).add(c), j));
+        // 0 · 127 · 254 → −1 · 0 · +1
+        const dekod = (e) => e.mul(255 / 127).sub(1.0);
         const blende = (t) =>
             t
                 .mul(t)
@@ -1088,38 +1089,64 @@ class AnazhRealm_Z10 {
                 .mul(t.mul(t.mul(6.0).sub(15.0)).add(10.0));
         // bilinear über die vier Ecken (00 · 10 · 01 · 11) mit der Fünftgrad-Blende
         const zelle = (d, u) => T.mix(T.mix(d.x, d.y, u.x), T.mix(d.z, d.w, u.x), u.y);
+        // DIE MISCHUNG als EINE WGSL-Funktion je Form (K17-3 Runde 2): rein (die Lage in der Zelle und die geladenen Ecken
+        // als Parameter), dieselbe Rechnung wie ausgeschrieben — ausgeschrieben stand sie je Probe im Programm (der Boden
+        // trug 13 Proben, mit Schatten 103 369 Zeichen WGSL).
+        const ebeneMisch = T.Fn(([f, a, b]) => {
+            const fx1 = f.x.sub(1.0);
+            const fy1 = f.y.sub(1.0);
+            const d = dekod(a)
+                .mul(T.vec4(f.x, fx1, f.x, fx1))
+                .add(dekod(b).mul(T.vec4(f.y, f.y, fy1, fy1)));
+            return zelle(d, blende(f)).mul(R.skala);
+        }).setLayout({
+            name: "rauschEbene",
+            type: "float",
+            inputs: [
+                { name: "f", type: "vec2" },
+                { name: "a", type: "vec4" },
+                { name: "b", type: "vec4" },
+            ],
+        });
+        const raumMisch = T.Fn(([f, a0, a1, a2, b0, b1, b2]) => {
+            const fx1 = f.x.sub(1.0);
+            const fy1 = f.y.sub(1.0);
+            const fx4 = T.vec4(f.x, fx1, f.x, fx1);
+            const fy4 = T.vec4(f.y, f.y, fy1, fy1);
+            const schicht = (e0, e1, e2, fz) => dekod(e0).mul(fx4).add(dekod(e1).mul(fy4)).add(dekod(e2).mul(fz));
+            const u = blende(f);
+            return zelle(T.mix(schicht(a0, a1, a2, f.z), schicht(b0, b1, b2, f.z.sub(1.0)), u.z), u).mul(R.skala);
+        }).setLayout({
+            name: "rauschRaum",
+            type: "float",
+            inputs: [
+                { name: "f", type: "vec3" },
+                ...["a0", "a1", "a2", "b0", "b1", "b2"].map((name) => ({ name, type: "vec4" })),
+            ],
+        });
         const ebene = (p, k, achse) => {
             const c = T.floor(p);
-            const f = p.sub(c);
             const ci = T.ivec2(c);
             const i0 = ci.x.add(A * k).bitAnd(m);
             const j0 = ci.y.add(B * k).bitAnd(m);
-            const fx1 = f.x.sub(1.0);
-            const fy1 = f.y.sub(1.0);
-            const d = ecken(i0, j0, 0)
-                .mul(T.vec4(f.x, fx1, f.x, fx1))
-                .add(ecken(i0, j0, achse === "z" ? 2 : 1).mul(T.vec4(f.y, f.y, fy1, fy1)));
-            return zelle(d, blende(f)).mul(R.skala);
+            return ebeneMisch(p.sub(c), ecken(i0, j0, 0), ecken(i0, j0, achse === "z" ? 2 : 1));
         };
         const raum = (p) => {
             const c = T.floor(p);
-            const f = p.sub(c);
             const ci = T.ivec3(c);
             const i0 = ci.x.add(ci.z.mul(A)).bitAnd(m);
             const j0 = ci.y.add(ci.z.mul(B)).bitAnd(m);
             const i1 = i0.add(A).bitAnd(m);
             const j1 = j0.add(B).bitAnd(m);
-            const fx1 = f.x.sub(1.0);
-            const fy1 = f.y.sub(1.0);
-            const fx4 = T.vec4(f.x, fx1, f.x, fx1);
-            const fy4 = T.vec4(f.y, f.y, fy1, fy1);
-            const schicht = (i, j, fz) =>
-                ecken(i, j, 0)
-                    .mul(fx4)
-                    .add(ecken(i, j, 1).mul(fy4))
-                    .add(ecken(i, j, 2).mul(fz));
-            const u = blende(f);
-            return zelle(T.mix(schicht(i0, j0, f.z), schicht(i1, j1, f.z.sub(1.0)), u.z), u).mul(R.skala);
+            return raumMisch(
+                p.sub(c),
+                ecken(i0, j0, 0),
+                ecken(i0, j0, 1),
+                ecken(i0, j0, 2),
+                ecken(i1, j1, 0),
+                ecken(i1, j1, 1),
+                ecken(i1, j1, 2)
+            );
         };
         this._rauschAtlasCache = { tex, raum, ebene };
         return this._rauschAtlasCache;
