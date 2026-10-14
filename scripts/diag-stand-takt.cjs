@@ -778,13 +778,14 @@ const server = http.createServer((req, res) => {
                 // −278/−1038 lag die Grenze 1,2 m voraus, der Gang trat hinüber, die Chunks wechselten ihre Stufe, und der Saum ging
                 // zu Recht — die Linse prüfte nicht, was sie meint; verlässt er sie doch, ist die Phase LEER)
                 {
-                    const p0 = st.playerMesh.position.clone();
-                    // die Zelle, in der sich keine Stufe ändern kann (`_stufenZelle`, K51-3) — derselbe Stempel wie die Strom-Wache;
-                    // der Gang zielt auf die Mitte seines Fachs (die Fach-Grenzen aus BODEN_STUFEN wie `_stufenZelle`)
+                    // die Zelle, in der sich keine Stufe ändern kann (`_stufenZelle`, K51-3) — derselbe Stempel wie die Strom-Wache.
+                    // Ihre Fächer sind je Achse 0,8–7,4 m breit (die Grenzen aus BODEN_STUFEN wie `_stufenZelle`), der Gang läuft
+                    // ~6 m: er beginnt in der Ecke des breitesten Fachs seines Chunks und geht diagonal hindurch (~9 m frei). Der
+                    // Gang zur Fach-Mitte trat an der Mess-Wiese −278/−1038 aus einem 2-m-Fach (CI 38584912499 voll 9).
                     const zelle = (p) => r._stufenZelle(p.x, p.z);
                     const span = r._voxelChunkConfig(0).span;
                     const B = r.constructor.BODEN_STUFEN;
-                    const grenzen = [];
+                    const grenzen = [0, span];
                     for (const s of B.stufen) {
                         if (!(s.bis < Infinity)) continue;
                         for (const t of [s.bis + B.vorlauf, s.bis + B.vorlauf + B.halt]) {
@@ -792,17 +793,19 @@ const server = http.createServer((req, res) => {
                         }
                     }
                     grenzen.sort((u, v) => u - v);
-                    const mitte = (w) => {
-                        const c = Math.floor(w / span) * span;
-                        let lo = 0,
-                            hi = span;
-                        for (const g of grenzen) {
-                            if (g <= w - c) lo = g;
-                            else if (g < hi) hi = g;
-                        }
-                        return c + (lo + hi) / 2;
-                    };
-                    st.yaw = Math.atan2(mitte(p0.x) - p0.x, mitte(p0.z) - p0.z);
+                    let fach = [0, 0];
+                    for (let i = 1; i < grenzen.length; i++)
+                        if (grenzen[i] - grenzen[i - 1] > fach[1] - fach[0]) fach = [grenzen[i - 1], grenzen[i]];
+                    const q = st.playerMesh.position;
+                    const cx = Math.floor(q.x / span) * span,
+                        cz = Math.floor(q.z / span) * span;
+                    const sx = cx + fach[0] + 0.4,
+                        sz = cz + fach[0] + 0.4;
+                    st.playerMesh.position.set(sx, r._voxelSurfaceY(sx, sz) + 1.8, sz);
+                    if (st.playerVel) st.playerVel.setValue(0, 0, 0);
+                    await bisRuhe(600);
+                    const p0 = st.playerMesh.position.clone();
+                    st.yaw = Math.atan2(cx + fach[1] - 0.4 - p0.x, cz + fach[1] - 0.4 - p0.z);
                     const z0 = zelle(p0);
                     const g0 = st.fernRing ? st.fernRing.gen | 0 : -1;
                     st.keys = { w: true };
