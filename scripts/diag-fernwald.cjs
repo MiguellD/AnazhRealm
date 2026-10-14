@@ -236,7 +236,7 @@ function check(name, ok, detail) {
                     ohne.fundament = undefined;
                     ohne._hausHuelle = undefined;
                     ohne.blockerAABBs = null;
-                    r._grundrissGitter = null;
+                    r._grundrissFaellt();
                 }
                 res.E.F.selbst = !!ohne && r._foundryGestaltFor(e, "eiche") !== V;
                 if (ohne) r.removeArchitecture(ohne);

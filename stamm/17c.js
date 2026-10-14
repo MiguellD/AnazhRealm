@@ -1714,7 +1714,7 @@ class AnazhRealm_Z17c {
         const box = { x0: x - r, z0: z - r, x1: x + r, z1: z + r, formen: [form] };
         wk.siedlungen.push(box);
         wk.raeumen.push(box); // was schon um die Ausstattung wuchs, räumt der Takt (`_wegeRaeumen`)
-        this._grundrissGitter = null; // die Natur-Wand kennt die neue Fläche (`_aufWeg`)
+        this._grundrissFaellt(box.x0, box.z0, box.x1, box.z1); // die Natur-Wand kennt die neue Fläche (`_aufWeg`)
         entry._trittBox = box; // transient (kein Snapshot): der Restore setzt sie beim ersten Platz neu
         for (const stufe of wk.stufen)
             if (stufe.zentriert) {
@@ -1734,7 +1734,7 @@ class AnazhRealm_Z17c {
         if (!box || !wk) return;
         const i = wk.siedlungen.indexOf(box);
         if (i >= 0) wk.siedlungen.splice(i, 1);
-        this._grundrissGitter = null; // die Fläche fällt aus der Natur-Wand (`_aufWeg`)
+        this._grundrissFaellt(box.x0, box.z0, box.x1, box.z1); // die Fläche fällt aus der Natur-Wand (`_aufWeg`)
         entry._trittBox = undefined;
         for (const stufe of wk.stufen) if (stufe.zentriert) this._wegeStufeMalen(stufe);
         this._nahWieseNeuIn(box.x0, box.z0, box.x1, box.z1);
@@ -1927,7 +1927,7 @@ class AnazhRealm_Z17c {
         if (box.formen.length) {
             wk.siedlungen.push(box);
             wk.raeumen.push(box); // was schon auf Weg, Platz und Acker wuchs, räumt der Takt (`_wegeRaeumen`)
-            this._grundrissGitter = null; // die Natur-Wand kennt die neue Fläche (`_aufWeg`)
+            this._grundrissFaellt(box.x0, box.z0, box.x1, box.z1); // die Natur-Wand kennt die neue Fläche (`_aufWeg`)
         }
         for (const stufe of wk.stufen) if (stufe.zentriert) stufe.tex.needsUpdate = true;
         // DIE ERSTE SIEDLUNG zentriert die Karte SOFORT: die Wiese über ihr wächst im selben Takt neu

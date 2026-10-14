@@ -1178,7 +1178,7 @@ async function probe(argW) {
                     r._grundrissRaeumen(haus);
                 } finally {
                     st.architectures.splice(st.architectures.indexOf(haus), 1);
-                    r._grundrissGitter = null;
+                    r._grundrissFaellt();
                 }
             }
             m.raeumung = {
