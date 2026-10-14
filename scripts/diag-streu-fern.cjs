@@ -462,11 +462,21 @@ function check(name, ok, detail) {
                 fits = 0;
             const cursor0 = wm.kapselCursor;
             const segs0 = wm.freiKapselSeg;
+            const plaetze0 = new Map();
             try {
                 const reg0 = map.get(flipKey);
                 const rx = reg0.regX,
                     rz = reg0.regZ;
                 r._disposeScatterRegion(flipKey); // ihre Plätze fallen frei (Segmente in die alte Freiliste)
+                // ERSCHÖPFT ist die Liste erst, wenn keine der drei Quellen mehr trägt: der Bump-Cursor, die freien Segmente
+                // UND die freien Plätze der stehenden Gesetz-Blöcke — ein Spawn füllt zuerst den Block seiner Kachel
+                // (`_streuGesetzSpawn`); teilt die Region ihre Kacheln mit Nachbarn, fanden 13 von 150 Zellen dort Platz
+                // (K16-Gelände, lokal und CI 38242768343), der Allokator war nie gefragt.
+                for (const bloecke of wm.gesetzKacheln.values())
+                    for (const b of bloecke) {
+                        plaetze0.set(b, b.freiPlaetze);
+                        b.freiPlaetze = [];
+                    }
                 wm.freiKapselSeg = new Map();
                 wm.kapselCursor = AR.WELT_MARCH.kapseln;
                 wm.kapselVoll = false;
@@ -511,6 +521,8 @@ function check(name, ok, detail) {
                     segs0.set(n, alt.concat(l));
                 }
                 wm.freiKapselSeg = segs0;
+                // die freien Plätze der Blöcke zurück (ein Block, der in der Erschöpfung fiel, kehrt nicht zurück)
+                for (const [b, frei] of plaetze0) b.freiPlaetze = frei.concat(b.freiPlaetze);
                 wm.kapselCursor = cursor0;
                 wm.kapselVoll = false;
                 r._weltKapselnVollWarn = false;

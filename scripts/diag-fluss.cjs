@@ -34,11 +34,12 @@
 const fs = require("fs");
 const path = require("path");
 const http = require("http");
+const stammLib = require("./lib/stamm.cjs");
 
 const root = path.resolve(__dirname, "..");
 // Port über FLUSS_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4561.
 const PORT = Number(process.env.FLUSS_PORT || 4561);
-const stamm = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+const stamm = stammLib.text(root);
 
 const strip = (src) => src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:\\"'`])\/\/.*$/gm, "$1");
 function methode(src, kopf) {
@@ -99,7 +100,10 @@ function statisch(src) {
     const prom = methode(src, "_promoteScatterCell(cellEntry) {");
     pruef(
         "S4c EIN Streu-Same (_scatterFoundrySeed), die Promotion trägt ihn (kein Math.random-Same)",
-        formel === 1 && prom && /seed:\s*this\._scatterFoundrySeed\(/.test(strip(prom)),
+        formel === 1 &&
+            prom &&
+            /const same = this\._scatterFoundrySeed\(/.test(strip(prom)) &&
+            /seed:\s*same,/.test(strip(prom)),
         `Formel ${formel}×`
     );
     // SAISON (V18.527): kein Körper-/Karten-Schlüssel und kein Auftrag trägt die Saison, die Flip-Maschine ist fort,
@@ -177,22 +181,45 @@ function statisch(src) {
     return { gesetze: aus, schale };
 }
 
-// DIE KLON-LINSE (V18.527): die Varianten-Wahl des Stamms (`_foundryVariantFor` + `_foundryGestalten`, als Quelltext
-// gezogen) gegen das eingefrorene Studio-Budget (render-config-Golden) auf dem echten Streu-Gitter
-// (`_scatterFoundrySeed`, 600 × 600 Zellen): je Art mit V ≥ 2 trägt jede Gestalt 1/V ± 0,03, und die Nachbar-
-// sowie die 16-Zellen-Versatz-Gleichheit bleibt ≤ 1/V + 0,03 — das alte `h % 16` (untere Bits) legte ein Klon-
-// Gitter (dieselbe Gestalt 16 Zellen weiter). Jede Art liegt im Bereich 1..V.
+// DIE KLON-LINSE (V18.527, K20-N1): die Varianten-Wahl des Stamms (`_foundryVariantFor` + `_foundryGestalten` +
+// `_foundryGestaltSame`, als Quelltext gezogen) gegen das eingefrorene Studio-Budget (render-config-Golden) auf dem echten
+// Streu-Gitter (`_scatterRohSame`, 600 × 600 Zellen). (a) Der rohe Same: je Art trägt jede ihrer T Gestalten (die V
+// Bestand-Gestalten und der Solitär V+1 einer Baum-Art, phyto-core `solitaerGestalt`) 1/T ± 0,03, die Nachbar- sowie die
+// 16-Zellen-Versatz-Gleichheit bleibt ≤ 1/T + 0,03 — das alte `h % 16` (untere Bits) legte ein Klon-Gitter. (b) Das
+// Eimer-Urteil des Orts: im Bestand wählt der Same 1..V (je 1/V ± 0,03), frei steht immer der Solitär T; eine Art ohne
+// Solitär behält ihren Samen.
+const KNUTH_INVERS = (() => {
+    const m = /AnazhRealm\.KNUTH_INVERS = (\d+);/.exec(stammLib.text(root));
+    return m ? Number(m[1]) : NaN;
+})();
+const SOLITAER = (() => {
+    const ctx = { Math };
+    ctx.globalThis = ctx;
+    ctx.self = ctx;
+    require("vm").runInNewContext(fs.readFileSync(path.join(root, "phyto-core.js"), "utf8"), ctx);
+    const art = {};
+    for (const m of fs
+        .readFileSync(path.join(root, "foundry-core.js"), "utf8")
+        .matchAll(/\n {4}(\w+): \{\n {8}kind: "(\w+)"/g))
+        art[m[1]] = m[2];
+    return (preset, V) => (art[preset] ? ctx.__phytoCore.solitaerGestalt(art[preset], V) : 0);
+})();
 function gestalten(src) {
     const rc = JSON.parse(
         fs.readFileSync(path.join(root, "spec", "asset-contract", "v1", "golden", "render-config.json"), "utf8")
     );
     const G = rc && rc.lod && rc.lod.budget && rc.lod.budget.gestalten;
-    const teile = ["_foundryVariantFor(seed, preset, Vk) {", "_foundryGestalten(preset) {", "_scatterFoundrySeed("].map(
-        (k) => methode(src, k)
-    );
-    if (!G || teile.some((t) => !t)) return { ok: false, detail: "Budget oder Methode fehlt", arten: {} };
-    const AR = { _studioRenderConfig: { lod: { budget: { gestalten: G } } } };
+    const teile = [
+        "_foundryVariantFor(seed, preset, Vk) {",
+        "_foundryGestalten(preset) {",
+        "_scatterRohSame(cellX, cellZ, variantIndex) {",
+        "_foundryGestaltSame(seed, preset, stehtFrei) {",
+    ].map((k) => methode(src, k));
+    if (!G || teile.some((t) => !t) || !(KNUTH_INVERS > 0))
+        return { ok: false, detail: "Budget, Methode oder KNUTH_INVERS fehlt", arten: {} };
+    const AR = { _studioRenderConfig: { lod: { budget: { gestalten: G } } }, _solitaerVon: SOLITAER, KNUTH_INVERS };
     const r = new Function("AnazhRealm", "return {" + teile.join(",") + "};")(AR);
+    AR._studioGestaltenKern = (p) => r._foundryGestalten(p);
     const arten = {};
     let ok = true;
     for (const zeile of Object.keys(G)) {
@@ -200,28 +227,66 @@ function gestalten(src) {
         // Fahrzeug, Tor …) zählen seit W8 ihre Gestalten im EIGENEN Gesetzbuch (zusatzBudget, gate:studio-vertrag).
         const sp = zeile === "*" ? "findling" : zeile;
         const V = G[zeile];
-        const H = new Array(V + 1).fill(0);
+        const T = r._foundryGestalten(sp);
+        const solo = T > V;
+        const H = new Array(T + 1).fill(0);
+        const HB = new Array(V + 1).fill(0);
         let n = 0,
             nb = 0,
             o16 = 0,
-            raus = 0;
+            raus = 0,
+            eimerRaus = 0,
+            freiNichtSolo = 0,
+            ohneSoloAnders = 0;
+        const g = (x, z) => r._foundryVariantFor(r._scatterRohSame(x, z, 0), sp);
         for (let x = -300; x < 300; x++)
             for (let z = -300; z < 300; z++) {
-                const g = r._foundryVariantFor(r._scatterFoundrySeed(x, z, 0), sp);
-                if (!(g >= 1 && g <= V)) raus++;
-                else H[g]++;
+                const roh = r._scatterRohSame(x, z, 0);
+                const gx = g(x, z);
+                if (!(gx >= 1 && gx <= T)) raus++;
+                else H[gx]++;
                 n++;
-                if (g === r._foundryVariantFor(r._scatterFoundrySeed(x + 1, z, 0), sp)) nb++;
-                if (g === r._foundryVariantFor(r._scatterFoundrySeed(x + 16, z, 0), sp)) o16++;
+                if (gx === g(x + 1, z)) nb++;
+                if (gx === g(x + 16, z)) o16++;
+                if (solo) {
+                    const b = r._foundryVariantFor(
+                        r._foundryGestaltSame(roh, sp, () => false),
+                        sp
+                    );
+                    if (!(b >= 1 && b <= V)) eimerRaus++;
+                    else HB[b]++;
+                    if (
+                        r._foundryVariantFor(
+                            r._foundryGestaltSame(roh, sp, () => true),
+                            sp
+                        ) !== T
+                    )
+                        freiNichtSolo++;
+                } else if (r._foundryGestaltSame(roh, sp, () => true) !== roh) ohneSoloAnders++;
             }
         const anteil = H.slice(1).map((h) => h / n);
+        const bestand = HB.slice(1).map((h) => h / n);
         const artOk =
             raus === 0 &&
-            (V < 2 ||
-                (anteil.every((a) => Math.abs(a - 1 / V) <= 0.03) &&
-                    nb / n <= 1 / V + 0.03 &&
-                    o16 / n <= 1 / V + 0.03));
-        arten[zeile === "*" ? "*(findling)" : sp] = { V, nachbar: +(nb / n).toFixed(3), versatz16: +(o16 / n).toFixed(3), raus, ok: artOk };
+            eimerRaus === 0 &&
+            freiNichtSolo === 0 &&
+            ohneSoloAnders === 0 &&
+            (T < 2 ||
+                (anteil.every((a) => Math.abs(a - 1 / T) <= 0.03) &&
+                    nb / n <= 1 / T + 0.03 &&
+                    o16 / n <= 1 / T + 0.03)) &&
+            (!solo || V < 2 || bestand.every((a) => Math.abs(a - 1 / V) <= 0.03));
+        arten[zeile === "*" ? "*(findling)" : sp] = {
+            V,
+            T,
+            nachbar: +(nb / n).toFixed(3),
+            versatz16: +(o16 / n).toFixed(3),
+            raus,
+            eimerRaus,
+            freiNichtSolo,
+            ohneSoloAnders,
+            ok: artOk,
+        };
         if (!artOk) ok = false;
     }
     return { ok, arten };
@@ -419,10 +484,33 @@ async function verhalten(schaleSrc) {
                 // V8 DER VORRAT: ein Vorrats-Auftrag baut einmal, schreibt die Platte und antwortet LEER; der nächste
                 // Abruf desselben Körpers kommt von der Platte, ein zweiter Vorrat baut nicht.
                 const D = neu(3, true);
-                const v1 = await D.frag({ type: "build-asset", reqId: "v1", presetId: "gt", seed: 7, lod: 0, platte: "gt|7|0", vorrat: true });
+                const v1 = await D.frag({
+                    type: "build-asset",
+                    reqId: "v1",
+                    presetId: "gt",
+                    seed: 7,
+                    lod: 0,
+                    platte: "gt|7|0",
+                    vorrat: true,
+                });
                 await ruhe(400);
-                const v2 = await D.frag({ type: "build-asset", reqId: "v2", presetId: "gt", seed: 7, lod: 0, platte: "gt|7|0", vorrat: true });
-                const v3 = await D.frag({ type: "build-asset", reqId: "v3", presetId: "gt", seed: 7, lod: 0, platte: "gt|7|0" });
+                const v2 = await D.frag({
+                    type: "build-asset",
+                    reqId: "v2",
+                    presetId: "gt",
+                    seed: 7,
+                    lod: 0,
+                    platte: "gt|7|0",
+                    vorrat: true,
+                });
+                const v3 = await D.frag({
+                    type: "build-asset",
+                    reqId: "v3",
+                    presetId: "gt",
+                    seed: 7,
+                    lod: 0,
+                    platte: "gt|7|0",
+                });
                 const q5 = await D.frag({ type: "frage" }, "antwort");
                 aus.vorrat = !!(
                     v1 &&
@@ -438,7 +526,15 @@ async function verhalten(schaleSrc) {
                 D.w.terminate();
                 // V8b ohne Platte wärmt der Vorrat nichts: leere Antwort, KEIN Bau.
                 const E = neu(3, false);
-                const v4 = await E.frag({ type: "build-asset", reqId: "v4", presetId: "gt", seed: 7, lod: 0, platte: "gt|7|0", vorrat: true });
+                const v4 = await E.frag({
+                    type: "build-asset",
+                    reqId: "v4",
+                    presetId: "gt",
+                    seed: 7,
+                    lod: 0,
+                    platte: "gt|7|0",
+                    vorrat: true,
+                });
                 const q6 = await E.frag({ type: "frage" }, "antwort");
                 aus.vorratOhnePlatte = !!(v4 && v4.meshes.length === 0 && q6 && q6.gebaut === 0);
                 E.w.terminate();
@@ -448,7 +544,14 @@ async function verhalten(schaleSrc) {
                 const karte = (w, reqId, presetId, seed, fmt, extra) =>
                     w.frag(
                         Object.assign(
-                            { type: "bake-impostor", reqId, presetId, seed, fmt, platte: `karte|${presetId}|${seed}|${fmt}` },
+                            {
+                                type: "bake-impostor",
+                                reqId,
+                                presetId,
+                                seed,
+                                fmt,
+                                platte: `karte|${presetId}|${seed}|${fmt}`,
+                            },
                             extra || {}
                         )
                     );
@@ -535,8 +638,22 @@ async function verhalten(schaleSrc) {
                     return k;
                 });
                 await ruhe(300);
-                const wf1 = await Wk.frag({ type: "build-asset", reqId: "wf1", presetId: "f1", seed: 1, lod: 0, platte: "f1|1|0" });
-                const wf2 = await Wk.frag({ type: "build-asset", reqId: "wf2", presetId: "f2", seed: 1, lod: 0, platte: "f2|1|0" });
+                const wf1 = await Wk.frag({
+                    type: "build-asset",
+                    reqId: "wf1",
+                    presetId: "f1",
+                    seed: 1,
+                    lod: 0,
+                    platte: "f1|1|0",
+                });
+                const wf2 = await Wk.frag({
+                    type: "build-asset",
+                    reqId: "wf2",
+                    presetId: "f2",
+                    seed: 1,
+                    lod: 0,
+                    platte: "f2|1|0",
+                });
                 const tWerk = performance.now() - tH0;
                 const kLang = await lang;
                 aus.faden = !!(wf1 && wf2 && schicht(kLang, "bc") && tLang != null && tWerk < tLang);
@@ -651,12 +768,15 @@ const WELT_MESSEN = async () => {
     const tq = performance.now();
     while (performance.now() - tq < 240000) {
         await pump(20);
-        if (!f._prefetching && !(f.warte && f.warte.length) && f.pending.size === 0) break;
+        if (!f._vorrat && !(f.warte && f.warte.length) && f.pending.size === 0) break;
     }
     await pump(60);
     const fl = window.__fl;
     const cfg = r.constructor._studioRenderConfig;
     const G = cfg && cfg.lod && cfg.lod.budget ? cfg.lod.budget.gestalten : null;
+    const T = {};
+    for (const sp of ["eiche", "fichte", "birke", "tanne", "weide", "mammut", "strauch"])
+        T[sp] = r._foundryGestalten(sp);
     const samen = {};
     for (const x of fl.posts)
         if (x.t === "build-asset" && !x.ov) (samen[x.p] = samen[x.p] || []).includes(x.s) || samen[x.p].push(x.s);
@@ -711,6 +831,7 @@ const WELT_MESSEN = async () => {
     const mul1 = [su.uSeasonMul.value.r, su.uSeasonMul.value.g, su.uSeasonMul.value.b];
     return {
         G,
+        T,
         samen,
         karten,
         boot,
@@ -733,7 +854,11 @@ const WELT_MESSEN = async () => {
 function urteilWelt(d) {
     const aus = [];
     const pruef = (name, ok, detail) => aus.push([name, !!ok, detail || ""]);
-    pruef("W0 die Sonde misst (Budget im Buch, Boot bestellt, Foundry-Bäume stehen)", d.G && d.boot.posts >= 50 && d.saison.inst0 >= 5, `Boot ${d.boot.posts} Aufträge · ${d.saison.inst0} Bäume`);
+    pruef(
+        "W0 die Sonde misst (Budget im Buch, Boot bestellt, Foundry-Bäume stehen)",
+        d.G && d.boot.posts >= 50 && d.saison.inst0 >= 5,
+        `Boot ${d.boot.posts} Aufträge · ${d.saison.inst0} Bäume`
+    );
     const raus = [];
     const kartenFalsch = [];
     for (const sp of ["eiche", "fichte", "birke", "tanne", "weide", "mammut", "strauch"]) {
@@ -742,11 +867,18 @@ function urteilWelt(d) {
             raus.push(sp + " ohne Budget");
             continue;
         }
+        const T = d.T && Number.isInteger(d.T[sp]) ? d.T[sp] : V; // samt Solitär V+1 (`_foundryGestalten`)
         for (const s of d.samen[sp] || []) if (!(s >= 1 && s <= V)) raus.push(`${sp}|${s}`);
-        if ((d.karten[sp] || 0) !== V) kartenFalsch.push(`${sp} ${d.karten[sp] || 0}≠${V}`);
+        // Die Karte bestellt ihr Leser (K30): eine Art ohne Leser im Bild hat keine Karte, keine Art mehr als ihre Gestalten
+        // (Budget samt Solitär, K20).
+        if ((d.karten[sp] || 0) > T) kartenFalsch.push(`${sp} ${d.karten[sp] || 0}>${T}`);
     }
     pruef("W1a jede Baum-/Strauch-Art bestellt nur ihre Gestalten 1..V", !raus.length, raus.slice(0, 6).join(" · "));
-    pruef("W1b Karten-Records je Art = Budget-Gestalten", !kartenFalsch.length, kartenFalsch.join(" · "));
+    pruef(
+        "W1b Karten-Records je Art ≤ ihre Gestalten (Budget samt Solitär; die Karte bestellt ihr Leser)",
+        !kartenFalsch.length,
+        kartenFalsch.join(" · ")
+    );
     pruef(
         "W1c keine tote Fracht: 0 L2-Körper einer Karten-Art bestellt (die Fernstufe ist die Karte)",
         d.boot.kartenArtL2 === 0,
@@ -848,7 +980,10 @@ const VERHALTEN = [
     ["V7 Saison-Nagel: Herbst-Körper und Winter-Karte erreichen das Studio als Sommer", "nagel"],
     ["V8 Vorrat: einmal gebaut, auf die Platte, leere Antwort; der Abruf trifft die Platte", "vorrat"],
     ["V8b Vorrat ohne Platte: leere Antwort, kein Bau", "vorratOhnePlatte"],
-    ["V9 Karten auf der Platte als Atlas-Schicht: der zweite Bake kommt von der Platte, das Studio bäckt einmal", "karte"],
+    [
+        "V9 Karten auf der Platte als Atlas-Schicht: der zweite Bake kommt von der Platte, das Studio bäckt einmal",
+        "karte",
+    ],
     ["V10 das Schicht-Format trennt die Platte (rgba8 trifft die BC-Schicht nie)", "kartenFormat"],
     ["V11 nurPlatte bäckt keine Karte (Miss = payload null)", "karteNurPlatte"],
     ["V12 Zweit-Boot: 3 Karten von der Platte, 0 Bakes", "zweitBoot"],
@@ -864,49 +999,64 @@ const VERHALTEN = [
     };
     if (process.argv.includes("--selftest")) {
         console.log("=== FLUSS-WAND — SELBST-TEST: die Wand feuert auf injizierte Brüche ===");
+        // Ein Bruch, dessen Anker im Quelltext fehlt, läuft ins Leere: er bricht den Selbsttest beim Namen.
+        const bruch = (quelle, alt, neu) => {
+            if (!(alt instanceof RegExp ? alt.test(quelle) : quelle.includes(alt))) {
+                check(`Selbst-Test-Anker steht im Quelltext: ${String(alt).slice(0, 70)}`, false);
+                return quelle;
+            }
+            return quelle.replace(alt, neu);
+        };
         // die Liste läuft über Zeilen (Prettier, seit S3 aDeckt) — ein Name mehr vor der schließenden Klammer
-        const t1 = statisch(stamm.replace('    "skinWeight",\n];', '    "skinWeight",\n    "aWind",\n];')).gesetze.find((g) =>
-            g[0].startsWith("S1")
+        const t1 = statisch(bruch(stamm, '    "skinWeight",\n];', '    "skinWeight",\n    "aWind",\n];')).gesetze.find(
+            (g) => g[0].startsWith("S1")
         );
         check("Selbst-Test 1: ein Wand-Name ohne Leser → S1 rot", t1 && !t1[1]);
         const t2 = statisch(
-            stamm.replace(
+            bruch(
+                stamm,
                 "    _foundryRequest(presetId, seed, lod, ov, wo) {",
                 '    _foundryRequest(presetId, seed, lod, ov, wo) {\n        indexedDB.open("anazhFoundryAssets", 1);'
             )
         ).gesetze.find((g) => g[0].startsWith("S2b"));
         check("Selbst-Test 2: Haupt-Thread öffnet den Asset-Store → S2b rot", t2 && !t2[1]);
-        const t5 = gestalten(
-            stamm.replace("return 1 + Math.floor((h * V) / 4294967296);", "return (h % V) + 1;")
-        );
+        const t5 = gestalten(bruch(stamm, "return 1 + Math.floor((h * V) / 4294967296);", "return (h % V) + 1;"));
         check("Selbst-Test 5: Gestalten-Wahl aus den unteren Bits (h % V) → Klon-Linse rot", !t5.ok);
         const t6 = statisch(
-            stamm.replace(
-                "const variant = this._foundryVariantFor(entry.seed, preset);",
-                "const variant = this._foundryVariantFor(entry.seed);"
+            bruch(
+                stamm,
+                "if (!p) return this._foundryVariantFor(entry ? entry.seed : 0, preset, Vk);",
+                "if (!p) return this._foundryVariantFor(entry ? entry.seed : 0);"
             )
         ).gesetze.find((g) => g[0].startsWith("S4a"));
         check("Selbst-Test 6: eine Varianten-Wahl ohne Art → S4a rot", t6 && !t6[1]);
-        const t7 = statisch(
-            stamm.replace(
-                "seed: this._scatterFoundrySeed(cellEntry.cellX, cellEntry.cellZ, cellEntry.variantIndex),",
-                ""
-            )
-        ).gesetze.find((g) => g[0].startsWith("S4c"));
+        const t7 = statisch(bruch(stamm, "                seed: same,\n", "")).gesetze.find((g) =>
+            g[0].startsWith("S4c")
+        );
         check("Selbst-Test 7: Promotion ohne Zellen-Samen → S4c rot", t7 && !t7[1]);
+        const t11e = gestalten(
+            bruch(
+                stamm,
+                "const eimer = stehtFrei() ? T - 1 : Math.floor(lage * (T - 1));",
+                "const eimer = Math.floor(lage * (T - 1));"
+            )
+        );
+        check("Selbst-Test 11e: das Eimer-Urteil vergisst den Solitär (frei ≠ T) → Klon-Linse rot", !t11e.ok);
         const { schale } = statisch(stamm);
-        const v1 = await verhalten(schale.replace("return roh(msg, puffer(msg.meshes));", "return roh(msg);"));
+        const v1 = await verhalten(bruch(schale, "return roh(msg, puffer(msg.meshes));", "return roh(msg);"));
         check("Selbst-Test 3: Schale ohne Transfer → V3 rot", v1.transfer === false);
-        const v2 = await verhalten(schale.replace("!LESEN.has(k)) delete m[k]", "false) delete m[k]"));
+        const v2 = await verhalten(bruch(schale, "!LESEN.has(k)) delete m[k]", "false) delete m[k]"));
         check("Selbst-Test 4: Schale ohne Konsum-Wand → V1 rot", v2.wand === false);
         const t8 = statisch(
-            stamm.replace(
+            bruch(
+                stamm,
                 'return preset + "|" + gestalt + "|" + lod + (ov ?',
                 'return preset + "|" + gestalt + "|" + lod + "|" + this.state.season + (ov ?'
             )
         ).gesetze.find((g) => g[0].startsWith("S5a"));
         check("Selbst-Test 8: die Saison im Körper-Schlüssel → S5a rot", t8 && !t8[1]);
-        const ohneNagel = schale.replace(
+        const ohneNagel = bruch(
+            schale,
             'const weiter = Object.assign({}, m, { season: "summer" });',
             "const weiter = Object.assign({}, m);"
         );
@@ -915,8 +1065,9 @@ const VERHALTEN = [
         // Das Welt-Urteil feuert auf Bruch-Daten (die Sonde selbst misst nur im Haupt-Lauf — ein Boot kostet Minuten).
         const gut = {
             G: { eiche: 2, fichte: 2, birke: 2, tanne: 2, weide: 1, mammut: 1, strauch: 1, "*": 16 },
+            T: { eiche: 3, fichte: 3, birke: 3, tanne: 3, weide: 1, mammut: 1, strauch: 1 },
             samen: { eiche: [1, 2], weide: [1] },
-            karten: { eiche: 2, fichte: 2, birke: 2, tanne: 2, weide: 1, mammut: 1, strauch: 1 },
+            karten: { eiche: 3, fichte: 3, birke: 3, tanne: 3, weide: 1, mammut: 1, strauch: 1 },
             boot: { posts: 200, antworten: 200, kartenArtL2: 0, lru: 0, cache: 230, gebautMB: 70, gebautN: 190 },
             zweit: {
                 boot: { gebautMB: 0.4, gebautN: 3, platteMB: 69, platteN: 187, gebautListe: ["wolf|0|0"] },
@@ -934,15 +1085,23 @@ const VERHALTEN = [
             },
         };
         const rot = (d, w) => urteilWelt(d).find((g) => g[0].startsWith(w))[1] === false;
-        check("Selbst-Test 10a: das Welt-Urteil ist auf gesunden Daten grün", urteilWelt(gut).every((g) => g[1]));
+        check(
+            "Selbst-Test 10a: das Welt-Urteil ist auf gesunden Daten grün",
+            urteilWelt(gut).every((g) => g[1])
+        );
         check(
             "Selbst-Test 10b: Saison-Wechsel mit 131 Aufträgen / 131 neuen Schlüsseln → W2a rot",
-            rot(Object.assign({}, gut, { saison: Object.assign({}, gut.saison, { posts: 131, neueSchluessel: 131 }) }), "W2a")
+            rot(
+                Object.assign({}, gut, { saison: Object.assign({}, gut.saison, { posts: 131, neueSchluessel: 131 }) }),
+                "W2a"
+            )
         );
         check(
             "Selbst-Test 10e: unruhige Welt (Kontroll-Fenster bestellt) → W2a rot (die Sonde misst nicht sauber)",
             rot(
-                Object.assign({}, gut, { saison: Object.assign({}, gut.saison, { kontrolle: { posts: 7, removes: 0 } }) }),
+                Object.assign({}, gut, {
+                    saison: Object.assign({}, gut.saison, { kontrolle: { posts: 7, removes: 0 } }),
+                }),
                 "W2a"
             )
         );
@@ -953,6 +1112,10 @@ const VERHALTEN = [
         check(
             "Selbst-Test 10d: 16 Eichen-Karten → W1b rot",
             rot(Object.assign({}, gut, { karten: Object.assign({}, gut.karten, { eiche: 16 }) }), "W1b")
+        );
+        check(
+            "Selbst-Test 10d2: eine Art ohne Leser im Bild hat keine Karte (mammut 0) → W1b grün (K30)",
+            !rot(Object.assign({}, gut, { karten: Object.assign({}, gut.karten, { mammut: 0 }) }), "W1b")
         );
         check(
             "Selbst-Test 10f: 56 Baum-L2-Aufträge im Boot → W1c rot",
@@ -972,35 +1135,44 @@ const VERHALTEN = [
             )
         );
         const t11 = statisch(
-            stamm.replace("            if (this._foundryPresetIsTree(sp)) continue;\n            // Boden-Arten", "            // Boden-Arten")
+            bruch(
+                stamm,
+                "            if (this._foundryPresetIsTree(sp)) continue;\n            // Boden-Arten",
+                "            // Boden-Arten"
+            )
         ).gesetze.find((g) => g[0].startsWith("S6a"));
         check("Selbst-Test 11: Vorrat bestellt wieder Karten-Art-Geometrie → S6a rot", t11 && !t11[1]);
-        const ohneVorrat = schale.replace(
+        const ohneVorrat = bruch(
+            schale,
             "if (auftrag.vorrat) return roh(Object.assign({}, msg, { meshes: [], vorrat: true }));",
             ""
         );
         const v4 = await verhalten(ohneVorrat);
-        check("Selbst-Test 12: Schale schickt den Vorrats-Körper zum Haupt-Thread → V8 rot", ohneVorrat !== schale && v4.vorrat === false);
-        const ohneKartenPut = schale.replace("if (auftragK.key) schreib(auftragK.key, { payload: k });", "");
+        check(
+            "Selbst-Test 12: Schale schickt den Vorrats-Körper zum Haupt-Thread → V8 rot",
+            ohneVorrat !== schale && v4.vorrat === false
+        );
+        const ohneKartenPut = bruch(schale, "if (auftragK.key) schreib(auftragK.key, { payload: k });", "");
         const v5 = await verhalten(ohneKartenPut);
         check(
             "Selbst-Test 13: Schale ohne Karten-Put → V9 und V12 rot (jeder Boot bäckt die Karte neu)",
             ohneKartenPut !== schale && v5.karte === false && v5.zweitBoot === false
         );
-        const ohneKodierung = schale.replace("core.karteKodiere(p, auftragK.fmt)", "p");
+        const ohneKodierung = bruch(schale, "core.karteKodiere(p, auftragK.fmt)", "p");
         const v6 = await verhalten(ohneKodierung);
         check(
             "Selbst-Test 15: Schale ohne Karten-Codec (rohe Studio-Pixel) → V9 rot",
             ohneKodierung !== schale && v6.karte === false
         );
-        const ohneWand = schale.replace(/ &&\s*p\.opak >= G\.minOpak/, "");
+        const ohneWand = bruch(schale, / &&\s*p\.opak >= G\.minOpak/, "");
         const v7 = await verhalten(ohneWand);
         check(
             "Selbst-Test 18: Schale ohne Nicht-Leere-Wand (die leere Karte reist auf die Platte) → V13 rot",
             ohneWand !== schale && v7.karteLeer === false
         );
         // Der Studio-Lauf direkt aus dem Lese-Erfolg (die alte Schale): die Lese-Transaktion bleibt durch den Bake offen.
-        const ohneFaden = schale.replace(
+        const ohneFaden = bruch(
+            schale,
             /bauten\.push\(\(\) => \{\s*(if \(typeof W\.onmessage === "function"\) W\.onmessage\(\{ data: weiter \}\);)\s*\}\);\s*los\(\);/,
             "$1"
         );
@@ -1010,15 +1182,16 @@ const VERHALTEN = [
                 `Bäcker ${v8.fadenMs && v8.fadenMs.baecker} ms)`,
             ohneFaden !== schale && v8.faden === false
         );
-        const t16 = statisch(stamm.replace('+ "|" + fmt;', ";")).gesetze.find((g) => g[0].startsWith("S7c"));
+        const t16 = statisch(bruch(stamm, '+ "|" + fmt;', ";")).gesetze.find((g) => g[0].startsWith("S7c"));
         check("Selbst-Test 16: Karten-Schlüssel ohne Format → S7c rot", t16 && !t16[1]);
-        const t17 = statisch(stamm.replace("karteOk(p) && p.fmt === fmt", "karteOk(p)")).gesetze.find((g) =>
+        const t17 = statisch(bruch(stamm, "karteOk(p) && p.fmt === fmt", "karteOk(p)")).gesetze.find((g) =>
             g[0].startsWith("S7d")
         );
         check("Selbst-Test 17: Platten-Treffer ohne Format-Prüfung → S7d rot", t17 && !t17[1]);
         const t14 = statisch(
-            stamm.replace(
-                "                    for (const core of manifest) {\n                        if (core && typeof core.shell === \"string\" && core.shell)\n                            stempelUrls.push(new URL(core.shell + v, base).href);\n                    }\n",
+            bruch(
+                stamm,
+                '                    for (const core of manifest) {\n                        if (core && typeof core.shell === "string" && core.shell)\n                            stempelUrls.push(new URL(core.shell + v, base).href);\n                    }\n',
                 ""
             )
         ).gesetze.find((g) => g[0].startsWith("S7a"));
@@ -1048,7 +1221,11 @@ const VERHALTEN = [
     console.log("=== FLUSS-WAND — Verhalten (echter Worker + IndexedDB) ===");
     const v = await verhalten(schale);
     for (const [n, k] of VERHALTEN)
-        check(n, v[k] === true, k === "faden" && v.fadenMs ? `Werk ${v.fadenMs.werk} ms · Bäcker ${v.fadenMs.baecker} ms` : "");
+        check(
+            n,
+            v[k] === true,
+            k === "faden" && v.fadenMs ? `Werk ${v.fadenMs.werk} ms · Bäcker ${v.fadenMs.baecker} ms` : ""
+        );
     console.log("=== FLUSS-WAND — Welt-Sonde (Null-Renderer, echter Studio-Worker, Boot + Saison-Wechsel) ===");
     const w = await welt();
     console.log(

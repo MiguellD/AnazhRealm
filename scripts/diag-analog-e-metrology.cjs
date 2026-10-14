@@ -7,7 +7,7 @@ const fs = require("fs");
 const path = require("path");
 const root = path.resolve(__dirname, "..");
 const DEFAULT_PERF = path.join(root, "anazhRealmPerf.json");
-const SRC = path.join(root, "anazhRealm.js");
+const stammLib = require("./lib/stamm.cjs");
 const errs = [];
 function check(name, ok, detail) {
   console.log("  " + (ok ? "OK" : "FAIL") + " " + name + (detail ? " — " + detail : ""));
@@ -149,7 +149,7 @@ function main() {
   console.log("ANALOG-E Metrologie — fail-closed Linse");
   console.log("  Perf-Quelle: " + perfPfad);
   let src = null;
-  try { src = fs.readFileSync(SRC, "utf8"); } catch (e) { check("anazhRealm.js lesbar", false, e.message); }
+  try { src = stammLib.text(root); } catch (e) { check("der Stamm lesbar (scripts/lib/stamm.cjs)", false, e.message); }
 
   console.log("\n[A] Code-Vertrag (_flightRecorderBuildTrace + Chat-Metrologie)");
   let vertrag = null;

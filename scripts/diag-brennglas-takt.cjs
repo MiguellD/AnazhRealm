@@ -36,6 +36,7 @@
 const fs = require("fs");
 const path = require("path");
 const http = require("http");
+const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.BRENNGLAS_TAKT_PORT || 4605);
 const root = path.resolve(__dirname, "..");
@@ -342,7 +343,7 @@ function quellWand(quelle) {
 if (process.argv.includes("--selftest")) {
     console.log("=== BRENNGLAS-TAKT — Selbsttest der Quell-Wand (ohne Browser) ===");
     const v = [];
-    const stamm = quellWand(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8"));
+    const stamm = quellWand(stammLib.text(root));
     for (const b of stamm) v.push("STAMM: " + b);
     // eine Klasse mit allen Takten (leer, bis auf den geprüften) und der benannten Ausnahme
     const AUSNAHME = "_chunkSatzMesh(mesh, spec) { Object.assign(mesh.userData, spec.userData); }";
@@ -1139,7 +1140,7 @@ function urteil(S, stamm, pageErrors) {
 }
 
 (async () => {
-    const stamm = quellWand(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8"));
+    const stamm = quellWand(stammLib.text(root));
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
     const browser = await puppeteer.launch({
         headless: true,

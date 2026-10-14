@@ -25,7 +25,7 @@ const tintM=FC.tintM, DEFCOL=FC.DEFCOL, KULTUR=FC.KULTUR, KULTNAMES=FC.KULTNAMES
 const kulturFromSeed=FC.kulturFromSeed, kulturParams=FC.kulturParams;        // die reine Kultur-Ableitung (Dorf + Regler teilen sie)
 const KULLVOL=FC.KULLVOL, DESTNUR=FC.DESTNUR, TURMNUR=FC.TURMNUR, MASSNUR=FC.MASSNUR, LOD1F=FC.LOD1F;
 const bakeHaus=FC.bakeHaus, bakeLOD=FC.bakeLOD, wandTonAus=FC.wandTonAus, stapelBau=FC.stapelBau;
-const bandFassade=FC.bandFassade, fpVon=FC.fpVon, lod2Koerper=FC.lod2Koerper;
+const fpVon=FC.fpVon, lod2Koerper=FC.lod2Koerper;
 const mischeGeoms=FC.mischeGeoms, hofFuer=FC.hofFuer, fragFuer=FC.fragFuer, masseVon=FC.masseVon;  // die EINE Stufen-Quelle (Sonde ≡ Dorf ≡ Vertrag)
 // ════════════════ Lab-Shell — Szene · UI · DORF (W-A5b-Quelle) ════════════════
 function applyKultur(name, seed){                                                               // setzt Regler + Farben als kohärentes Bündel — QUELLE ist kulturParams (Dorf nutzt dieselbe)
@@ -601,7 +601,7 @@ const ZEIT={ mittag:_zeitPart('mittag',{p:[24,34,16],c:0xfff1dc,i:2.1,h:0.62,a:0
   nacht:_zeitPart('nacht',{p:[-16,22,-10],c:0x9fb6e0,i:0.32,h:0.16,a:0.12,bg:0x161d2c}) };
 function setZeit(t){ const z=ZEIT[t]||ZEIT.mittag; sun.position.set(z.p[0],z.p[1],z.p[2]); sun.color.set(z.c); sun.intensity=z.i; hemi.intensity=z.h; amb.intensity=z.a; scene.background.set(z.bg); scene.fog.color.set(z.bg); _feuerZeit=_FEU.zeit[t]||_FEU.zeit.mittag;
   const glut=_FEN.zeit[t]||0;                                                                 // NACHTLICHT-GESETZ: die Stadt zündet ihre Fenster — GETEILTE Glas-Materialien tragen das Glühen stadtweit, NULL Rebake (LICHT_GESETZ.fenster)
-  for(const gm of [M.glas, M.glasfern, (typeof _MM!=='undefined')&&_MM.glas, (typeof _MM!=='undefined')&&_MM.glasfern]){ if(!gm) continue;
+  for(const gm of Object.values(M).concat(typeof _MM!=='undefined'?Object.values(_MM):[])){ if(!gm||!gm.userData||gm.userData.__licht!=='fenster') continue;   // wer glüht, sagt der Stoff selbst (LICHT_GESETZ via __licht) — keine Liste
     gm.emissive=gm.emissive||new THREE.Color(0); if(glut) gm.emissive.setRGB(..._FENF); else gm.emissive.setRGB(0,0,0); gm.emissiveIntensity=glut; } }
 const ground=new THREE.Mesh(new THREE.CircleGeometry(130,48),new THREE.MeshStandardMaterial({color:0x4a5238,roughness:1}));
 ground.rotation.x=-Math.PI/2; ground.receiveShadow=true; scene.add(ground);
@@ -693,11 +693,11 @@ function buildHausLOD(params, stufe){
     pfad='build{gelaende:false} → bakeLOD(0) + liveWrap · RING-A-WÜRDE: Innenwände immer'+(turm?' · Turm-Schacht (Glasetagen zeigen Böden)':'');
   } else if(stufe===2){                                                                      // ≡ rebakeChunk C.stufe===1 — EINE QUELLE: fragFuer selbst
     mischeGeoms(geoms, fragFuer(B,1)); mischeGeoms(geoms, hofFuer(B)); B.frag=null; B.fragStufe=undefined;
-    pfad='HOF + fragFuer(1): stapelBau+LOD1F'+(turm?'+TURMNUR':'')+' → bakeLOD(0, alles) + INNENDUNKEL-Liner'+(turm?' + lod2Koerper + bandFassade':'');
+    pfad='HOF + fragFuer(1): stapelBau+LOD1F'+(turm?'+TURMNUR':'')+' → bakeLOD(0, alles) + INNENDUNKEL-Liner'+(turm?' + lod2Koerper + fensterFern':'');
   } else if(stufe===3){                                                                      // ≡ rebakeChunk C.stufe===2 — EINE QUELLE
     mischeGeoms(geoms, fragFuer(B,2)); mischeGeoms(geoms, hofFuer(B)); B.frag=null; B.fragStufe=undefined;
     pfad= turm ? 'fragFuer(2): Turm fern — nur lod2Koerper (wandTon-Körper)'
-               : 'fragFuer(2): DESTNUR → bakeLOD(KULLVOL, alles) + lod2Koerper(wandTon) + bandFassade';
+               : 'fragFuer(2): DESTNUR → bakeLOD(KULLVOL, alles) + lod2Koerper(wandTon) + fensterFern';
   } else {                                                                                   // ≡ rebakeChunk C.stufe===3 (VOGEL) — EINE QUELLE
     mischeGeoms(geoms, fragFuer(B,3)); B.frag=null; B.fragStufe=undefined;
     pfad='fragFuer(3): NUR lod2Koerper — GRUNDRISS-TREU: '+(B.fp?B.fp.length:1)+' Körper · wandTon warm · glas ⇒ glasfern';

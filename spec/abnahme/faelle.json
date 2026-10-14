@@ -1,0 +1,115 @@
+{
+    "zweck": "Die Beweisbilder vom 13.10. ohne freie Sicht (Augen-Befund 10, K32): je Bild das verkleinerte Bild (240×135, Flächen-Mittel; die Luma rechnet die Linse aus ihm) und die Messung der Abnahme. Gelesen von scripts/lib/abnahme-urteil.cjs abnahmeSelbsttest über diag-kamera-laub --selftest (npm run check). Jedes fällt ROT mit seinem erwarteten Grund.",
+    "faelle": [
+        {
+            "name": "K17 Dorfhang",
+            "quelle": "%TEMP%/claude/K17/t13/kopf-final/dorfhang.png (werkbank bild 13.10. 10:57, Kopf 9f400dd5)",
+            "bild": "k17-dorfhang.png",
+            "messung": {
+                "stand": {
+                    "version": "18.543.0",
+                    "sha": "9f400dd5"
+                },
+                "buehne": {
+                    "saison": "summer",
+                    "wetter": "sunny",
+                    "uhr": 0.5,
+                    "tiereGehalten": true
+                },
+                "geraet": {
+                    "backend": "WebGPU",
+                    "adapter": "google swiftshader",
+                    "leinwand": [640, 360]
+                },
+                "sicht": {
+                    "radius": 2,
+                    "deckung": 0.9606,
+                    "taeter": {
+                        "Laub baum_kiefer": 0.5239,
+                        "Laub baum_tanne": 0.4367
+                    }
+                },
+                "ziel": {
+                    "name": "Blickziel",
+                    "imBild": true,
+                    "ndc": [0, 0],
+                    "frei": false,
+                    "vor": "Laub baum_kiefer",
+                    "vorAbstand": 0.86,
+                    "abstand": 15.49,
+                    "fussFrei": null
+                },
+                "pose": {
+                    "kamera": [-47.03, 95.81, -9.99],
+                    "blick": [-0.9665, -0.24857, 0.06392]
+                }
+            },
+            "herkunft": "Sicht und Ziel an der Pose des Bilds (−47,03 95,81 −9,99 → −62 91,96 −9) in der Welt von 9f400dd5 gemessen (Werkbank 8583, nach dem Einschwingen); Luma aus dem Bild",
+            "erwartet": ["Laub baum_kiefer", "Ziel Blickziel verdeckt von Laub baum_kiefer"]
+        },
+        {
+            "name": "K20 Waldrand",
+            "quelle": "%TEMP%/claude/K20n4/k20-waldrand-25m-neu.png (13.10. 12:34)",
+            "bild": "k20-waldrand.png",
+            "messung": {
+                "pose": null
+            },
+            "herkunft": "die Sonde vermerkte weder Pose noch Stand noch Bühne: das Bild trägt keinen Beweis freier Sicht",
+            "erwartet": ["sicht.deckung ungemessen", "stand.version ungemessen", "buehne.wetter ungemessen"]
+        },
+        {
+            "name": "K24 Tanne",
+            "quelle": "%TEMP%/claude/K24/bild/k24n1-tanne.png (13.10. 13:29)",
+            "bild": "k24-tanne.png",
+            "messung": {
+                "pose": null
+            },
+            "herkunft": "die Sonde vermerkte weder Pose noch Stand noch Bühne: das Bild trägt keinen Beweis freier Sicht",
+            "erwartet": ["sicht.deckung ungemessen", "stand.version ungemessen", "buehne.wetter ungemessen"]
+        },
+        {
+            "name": "K32 nachgestellt",
+            "quelle": "%TEMP%/claude/K32/tanne-25-17.png (die Bäume von K24 setzen.js auf c5a4d0f8, Kamera 2,5 m neben der Tanne, 1,7 m über dem Boden, Blick auf die Birke)",
+            "bild": "k32-nachgestellt.png",
+            "messung": {
+                "stand": {
+                    "version": "18.543.0",
+                    "sha": "c5a4d0f8"
+                },
+                "buehne": {
+                    "saison": "summer",
+                    "wetter": "sunny",
+                    "uhr": 0.5,
+                    "tiereGehalten": true
+                },
+                "geraet": {
+                    "backend": "WebGPU",
+                    "adapter": "google swiftshader",
+                    "leinwand": [640, 360]
+                },
+                "sicht": {
+                    "radius": 2,
+                    "deckung": 0.2222,
+                    "taeter": {
+                        "Laub baum_eiche": 0.2222
+                    }
+                },
+                "ziel": {
+                    "name": "Blickziel",
+                    "imBild": true,
+                    "ndc": [0, 0],
+                    "frei": false,
+                    "vor": "Laub baum_eiche",
+                    "vorAbstand": 2.29,
+                    "abstand": 8.79
+                },
+                "pose": {
+                    "kamera": [-32.387, 59.202, -11.08],
+                    "blick": [-0.41116, 0.6712, -0.61679]
+                }
+            },
+            "herkunft": "die Aufnahme im Satz messung an der Pose (−32,39 59,20 −11,08 → −36 65,1 −16,5), Werkbank 8581 swiftshader",
+            "erwartet": ["Laub baum_eiche", "Ziel Blickziel verdeckt von Laub baum_eiche"]
+        }
+    ]
+}

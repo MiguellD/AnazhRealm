@@ -185,7 +185,7 @@ if (process.argv.includes("--selftest")) {
 }
 
 const puppeteer = require("puppeteer");
-const { softwareWebGpuArgs } = require("./lib/software-gpu.cjs");
+const { linsenWebGpuArgs, adapterZeile } = require("./lib/software-gpu.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 const http = require("http");
 const fs = require("fs");
@@ -561,7 +561,8 @@ function buehne(arg) {
 (async () => {
     console.log("=== EGO-SCHATTEN — der Leib wirft in der Ego-Sicht, das Auge sieht ihn nicht ===");
     await new Promise((res) => server.listen(PORT, "127.0.0.1", res));
-    const browser = await puppeteer.launch({ headless: true, protocolTimeout: 600000, args: softwareWebGpuArgs() });
+    const browser = await puppeteer.launch({ headless: true, protocolTimeout: 600000, args: linsenWebGpuArgs() });
+    await adapterZeile(browser);
     const page = await browser.newPage();
     await page.setViewport({ width: 320, height: 180 });
     const pageErrors = [];

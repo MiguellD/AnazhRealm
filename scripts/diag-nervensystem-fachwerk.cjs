@@ -31,6 +31,7 @@ const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.NERV_FACHWERK_PORT || 4434);
 const root = path.resolve(__dirname, "..");
@@ -166,7 +167,7 @@ function ksRow(src, name) {
 }
 
 (async () => {
-    const anazhSrc = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+    const anazhSrc = stammLib.text(root);
     const fcSrc = fs.readFileSync(path.join(root, "fachwerk-core.js"), "utf8");
     const manifestSrc = fs.readFileSync(path.join(root, "cores.manifest.json"), "utf8");
 

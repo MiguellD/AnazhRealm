@@ -1,0 +1,115 @@
+{
+    "art": "gelaende-bedienung",
+    "zweck": "Die Bedienung des Gelände-Studios (K16b) — kein Gesetz und kein Rezept des Kerns (studio-vertrag §9): die vier Gruppen in der Sprache des Bildes mit ihren Haupt-Reglern (alles Weitere hinter „mehr“), die Namen der Regler aus LANDFORM_REGLER und die benannten Landschaften. Eine Landschaft trägt nur die Regler, die sie vom Gesetz abweichen lässt (der Rest ist def); sie steht im Natur-Korridor (KORRIDOR) an der Saat der Studio-Probe (gate:gelaende-studio) und an den drei Saaten der Gelände-Linse (gate:gelaende-realismus), das Tafelland trägt das Schicht-Gesetz. Leser: worlds/gelaende/studio.js, scripts/diag-worker-dichte.cjs.",
+    "gruppen": {
+        "kontinent": {
+            "name": "Kontinent",
+            "haupt": ["land", "hoehe"]
+        },
+        "taeler": {
+            "name": "Täler",
+            "haupt": ["netzDichte", "talForm"]
+        },
+        "kliffs": {
+            "name": "Kliffs",
+            "haupt": ["tafel", "kliffWinkel"]
+        },
+        "rauheit": {
+            "name": "Rauheit",
+            "haupt": ["rinnen", "detail"]
+        }
+    },
+    "namen": {
+        "land": "Land ↔ Meer",
+        "kontinentLambda": "Weite der Kontinente",
+        "hoehe": "Höhe",
+        "rauhLambda": "Weite der Gebirge",
+        "netzDichte": "Flussnetz",
+        "talForm": "Talform V ↔ U",
+        "trog": "Trog im Hochgebirge",
+        "aue": "Aue",
+        "ks": "Steilheit der Flüsse",
+        "theta": "Konkavität θ",
+        "tafel": "Tafelland",
+        "kliffWinkel": "Kliff",
+        "schuttWinkel": "Schutthang",
+        "pedimentWinkel": "Pediment",
+        "schichtDicke": "Schicht",
+        "hartAnteil": "harte Lage",
+        "rinnen": "Rinnen",
+        "detail": "Grate"
+    },
+    "landschaften": [
+        {
+            "id": "mittelgebirge",
+            "name": "Mittelgebirge",
+            "bild": "sanfte Kuppen, weite Auen, dichtes Talnetz",
+            "regler": {
+                "land": 0.45,
+                "hoehe": 0.7,
+                "rauhLambda": 4600,
+                "netzDichte": 1.15,
+                "talForm": 1.25,
+                "trog": 0.1,
+                "aue": 1.5,
+                "theta": 0.52,
+                "tafel": 0.1,
+                "detail": 0.45
+            }
+        },
+        {
+            "id": "alpental",
+            "name": "Alpental",
+            "bild": "Trogtäler unter hohen Graten (Lauterbrunnental)",
+            "regler": {
+                "land": 0.6,
+                "hoehe": 1.5,
+                "kontinentLambda": 12000,
+                "rauhLambda": 2400,
+                "netzDichte": 0.85,
+                "talForm": 1.8,
+                "trog": 1,
+                "aue": 0.8,
+                "ks": 9,
+                "theta": 0.55,
+                "tafel": 0.05,
+                "rinnen": 1.2,
+                "detail": 0.8
+            }
+        },
+        {
+            "id": "tafelland",
+            "name": "Tafelland",
+            "bild": "Kliff über Schutthang über Pediment (Monument Valley)",
+            "regler": {
+                "land": 0.5,
+                "hoehe": 1.1,
+                "rauhLambda": 3600,
+                "netzDichte": 1.1,
+                "talForm": 1.5,
+                "theta": 0.5,
+                "tafel": 1,
+                "kliffWinkel": 82,
+                "schichtDicke": 30,
+                "hartAnteil": 0.7,
+                "aue": 1.3,
+                "detail": 0.35
+            }
+        },
+        {
+            "id": "kueste",
+            "name": "Küste",
+            "bild": "Land und Meer verzahnt, Buchten und flache Mündungen",
+            "regler": {
+                "land": 0.25,
+                "kontinentLambda": 9000,
+                "hoehe": 0.85,
+                "netzDichte": 1.2,
+                "aue": 1.6,
+                "theta": 0.5,
+                "tafel": 0.1,
+                "rinnen": 0.8
+            }
+        }
+    ]
+}

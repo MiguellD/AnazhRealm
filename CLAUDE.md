@@ -72,7 +72,7 @@ nächste Welle erfinden · Schöpfer-Abhängigkeit erfinden — ist ROT. Die Wan
    Scope und Ship, nie jeden Pixel.
 5. **SCOPE ZU nur bei Rest = 0** — danach kein Feature-Commit mehr (nur Format/Fix auf Zuruf).
 
-## Stand (V18.544.0 — offen ist NUR, was `docs/PFLICHT-OFFEN.md` trägt; die Chronik jeder Version ist `git log`)
+## Stand (V18.545.0 — offen ist NUR, was `docs/PFLICHT-OFFEN.md` trägt; die Chronik jeder Version ist `git log`)
 
 **ZIELLINIE (docs/roadmap.md §0.v1):** v1.0 = EIN gespielter Pfad — ankommen · laufen+sehen · in der Werkstatt bauen · mit der KI erschaffen
 (Satz → DSL-Op `spawn_studio` → EIN Stempel `_studioStampFor`; offen: der LLM-Lauf mit Schlüssel, Drehbuch-Schritt 18) · benutzen/teilen — bei
@@ -81,24 +81,34 @@ p95 ≤ 33 ms auf JEDEM Standardgerät (Richter: das Profi-Band, „richter ist 
 **PFLICHT-OFFEN (Spiegel — Wahrheit: docs/PFLICHT-OFFEN.md):** A Kopf-Zeile des Fell-Gesetzes · B Ankunft ≤ 5 s kalt (vorher ≈ 28–49 s) ·
 C Ort auf dem Gelände (das Licht = brennende Quellen des Plans) · E Profi-Band (Radeon + GTX 1060, Wiese + Genesis, Ego + Third-Person).
 
+**V18.545 trägt:** EIN Auge der Stufen (`_lodAuge`, Geister 4 → 0 an der Wiesen-Ankunft) · das Ufer ohne Band (Luma 0,667 → 0,071) · Haus-Fenster
+in jeder Stufe Glas (schwarze L2-Pixel 23 500 → 203) · EIN Bruch-Melder im Stoff-Bau (`_stoffBruch`) · die echte GPU urteilt wie die CI (fern-ring
+3,51 → 0,002 m) · das Beweisbild urteilt selbst (`abnahme-urteil.cjs`) · das erste Weltbild als Ereignis (`_weltbildSteht`, `VORRAT_PHASE`) ·
+die Tor-Diät (Membran 45 Segmente, Hinterflügel = Instanz: Genesis 705k → 650k Dreiecke, Befehle 168,7 → 148,7).
+
 **WAS STEHT — je Domäne die EINE Quelle:**
 - TERRAIN = Funktion: Höhe = EIN Gelände-Kern `gelaende-core.js` (Stamm · Worker · Playtest), Chunks = Iso-CACHE, Wildnis = EIN Term, Prüfbühne
-  `spec/pruefbuehne` (`_weltBetreten`) · WELT-MARCH EIN Pass · WASSER EINE Wahrheit (`_werkBoden`) · Edits = EINE Karte je Chunk (`_voxelEditKarte`)
-- GESTALT < 64 m Studio-Mesh + LOD-Kette, jede Karte eine Schicht des EINEN Atlas, fern Glieder-Kapseln · Baum = Studio-Karte bis 384 m, EINE
-  Ableitung aus `treeParams` der Art, EIN Wind-Term, Blende je Instanz, laut (`_blendeBruch`) · Haus und Tor fern NUR-WURF
+  `spec/pruefbuehne` (`_weltBetreten`) · WELT-MARCH EIN Pass · WASSER EINE Wahrheit (`_werkBoden`), die Ruhe ist der Fixpunkt des Automaten
+  (`_ensureWaterCALevel`) · Edits = EINE Karte je Chunk (`_voxelEditKarte`)
+- GESTALT < 64 m Studio-Mesh + LOD-Kette, EIN Auge der Stufen (`_lodAuge`), jede Karte eine Schicht des EINEN Atlas, fern Glieder-Kapseln · Baum =
+  Studio-Karte bis 384 m, EINE Ableitung aus `treeParams` der Art, EIN Wind-Term, Blende je Instanz, laut (`_blendeBruch`) · Haus und Tor fern
+  NUR-WURF, das Fenster Glas in jeder Stufe · der Tor-Hinterflügel eine Instanz des vorderen (`_foundryFluegelInstanz`)
 - BODEN Rausch-Gesetz, EIN Leser `_bodenSichtAt` · LICHT EIN Leuchtquellen-Gesetz (`kelvin`, EIN Pool) · EIN Himmel · EINE Koschmieder-Luft · TRAA ·
   Schatten 2 Kaskaden (`_schattenBias`), EIN Werfer je Gestalt · Sätze EIN Pool je Stoff · Bündel in EINER Reihe (`_buendelReihe`)
-- KOSTEN `_passTrifft` + `_wahlHaelt` · `_schirm` · `TAKT_DECKEL_S` · `_instanzAbschied` + `_gpuKehraus` · `_foundryAuftrag` · `_foundrySchale`
+- KOSTEN `_passTrifft` + `_wahlHaelt` · `_schirm` · `TAKT_DECKEL_S` · `_instanzAbschied` + `_gpuKehraus` · `_foundryAuftrag` · `_foundrySchale` ·
+  BRUCH = EIN Melder (`_stoffBruch` → `_bruchMelden`) · ANKUNFT = das erste Weltbild hat EINEN Schreiber (`_weltbildSteht`)
 - LEBEN EIN Leib-Löser, Gang EIN Gesetz · Kamera EINE Kugel · Tod `_kreaturFaellt` · Lebenswerte = Zustand (`recomputePlayerStats` klemmt) ·
   Blocker-Netz · Klang-Gesetz · Uhr + Wetter = Spieler-Wort · SPEICHER atomar (tmp + Rename + .bak)
-- PRÜFEN 6 Golden-Sätze + Ofen · Messorte Wiese, Genesis-Ring, Dorf, Prüfbühne · Linsen-Start `lib/software-gpu.cjs` · CI: Puls je Push, volle
+- PRÜFEN 6 Golden-Sätze + Ofen · Messorte Wiese, Genesis-Ring, Dorf, Prüfbühne · Linsen-Start `lib/software-gpu.cjs` (die Weiche
+  `linsenWebGpuArgs`: lokal die echte GPU, CI swiftshader) · das Beweisbild urteilt selbst (`lib/abnahme-urteil.cjs`) · CI: Puls je Push, volle
   Batterie (Playtest = Gruppe 11) auf integ-probe, main und nachts
 
 ## Architektur (die Karte)
 
-- **Stamm** `anazhRealm.js` (~108k, EINE Klasse, `npm run atlas` = 26 Zonen; die Zerlegung in Zonen-Dateien ist geplant,
-  `artifacts/profiband/zerlegung-1310/plan.md`): Boden · Speicher · Spieler · Anschluss + die Verben (appear·place·body·drive·wield·portal·rule) +
-  KIND_POLICY.
+- **Stamm** `stamm/` (~107k Zeilen in 48 Dateien ≤ 4 000 Z., EINE Klasse, EIN Prototyp): der Kern `stamm/01.js` (Konstruktor + §01),
+  die Zonen-Klassen `stamm/NN[x].js`, die Naht in `stamm/26a.js` trägt sie beim Laden auf `AnazhRealm` (VERSION allein dort); die Liste =
+  die Stamm-Tags in index.html; `npm run atlas` die Karte live (+ `--find`), `diag-atlas --check` die Ratsche. Boden · Speicher · Spieler ·
+  Anschluss + die Verben (appear·place·body·drive·wield·portal·rule) + KIND_POLICY.
 - **Kerne** (10, cores.manifest.json): Daten+Mathe, Vertrag v1.2 `PARAMS_BY_KIND` + must-ignore + fail-closed (`docs/studio-vertrag.md`); der
   Host ist der OFEN (bauMensch-/bauTier-Guss + Lofi). **Worker:** Foundry = terrain-Brücke (`get-book` 1×Boot · `build-asset(id,seed,lod,ov)` ·
   `export-settlement`; IDB disk-first, SHA-Stempel der Quellen) · voxel-worker. **Server:** save-server (state/.bak · perf-trace · llm-proxy ·
@@ -124,8 +134,11 @@ C Ort auf dem Gelände (das Licht = brennende Quellen des Plans) · E Profi-Band
 10. **Jede versionierte Datei trägt den `?v=`-Cache-Buster** (Worker/Bootstrap/importScripts).
 11. **Studio-Code nur unter BYTE-BEWEIS:** die Benchmark bewegt sich nie, Goldens eingefroren (Re-Mint = Vertrags-Akt); Kerne außerhalb von
     format:check, nie `prettier --write` auf Gesetzbücher (verbatim-Blöcke), neue Abschnitte additiv; `__`-Schlüssel in ov sind Steuer-Passagiere.
-12. **Monolith-Chirurgie:** `cut-method` (AST-sicher) · sofort `node --check` + eslint · seriell committen, nie Batch; Arbeiter zweigen vom Kopf
-    von integ-probe ab, nie von einem ungemergten R3-Zweig (gestapelte Zweige erben jede Röte).
+12. **Stamm-Chirurgie:** Werkzeug liest den Stamm NUR über `scripts/lib/stamm.cjs` (`text()` = der virtuelle Stamm, `ort()`, `dateiVon()`;
+    die alte Datei `anazhRealm.js` ist tot, ein Leser auf ihren Namen ist ROT); über der Decke `node scripts/stamm-umzug.cjs --teile §NN
+    <methode>`, ein Zweig von vor dem Schnitt zieht per `stamm-rehome` um; `cut-method` (AST-sicher) · sofort `diag-atlas --check` +
+    `npm run stamm:lint` · seriell committen, nie Batch; Arbeiter zweigen vom Kopf von integ-probe ab, nie von einem ungemergten R3-Zweig
+    (gestapelte Zweige erben jede Röte).
 13. **Der Loop:** Streaming prio 0, Bewegung nie am Render-Signal; EIN PID, Totband 59–77 fps; NaN-Wand vor jedem EWMA; Existenz vor Framerate
     (der Ring wächst bis `RING_EXIST_FLOOR` ohne fps-Gate, der PID atmet nur darüber).
 14. **Schwere deterministische Arbeit:** gecacht + im Idle vorgebacken + frame-adaptiv, nie synchron auf dem Interaktions-Pfad (der Chunk-Stoff
@@ -146,8 +159,9 @@ C Ort auf dem Gelände (das Licht = brennende Quellen des Plans) · E Profi-Band
     Welt fügt nur den echten Himmel als EINE Umgebung hinzu, Fill · Rim · Back leben im Labor; Belichtung aus dem Licht (Karte Mittelgrau +1 EV,
     Nacht-Deckel 1,0); Albedo `werkbank albedo` / `diag-albedo-zensus` (Karte 0,180), Verhältnisse `werkbank licht` — nie das Auge.
 22. **Der sichtbare Boden ist das Mesh:** Surface-Nets auf 1,8 m trägt die Feinform nicht (±0,2 m); was AUF dem Boden steht, liest `_bodenSichtAt`
-    (gebautes Mesh, je Ecke die oberste Fläche aus Eigner und Nachbarn), Körper stehen auf dem Gesetz; im positionNode ist `positionLocal` schon
-    instanziert (r184) — Höhen-Gewichte lesen `positionGeometry` (K20 meldet ein WGSL, das dem widerspricht: am Vendor prüfen).
+    (gebautes Mesh, je Ecke die oberste Fläche aus Eigner und Nachbarn), Körper stehen auf dem Gesetz; r184 rechnet den positionNode VOR der
+    Instanz-Matrix (WGSL gelesen, `gate:foundry-impostor` C4): dort sind `positionLocal`, `normalLocal` und `positionWorld` Vorlage — wer die Welt
+    braucht (Wind, Blick der Karte, Blende), liest die EINE Naht `_weltNaht`; Höhen-Gewichte lesen `positionGeometry`.
 23. **WebGPU zieht jeden Draw einzeln:** BatchedMesh = `drawIndexed` je Instanz, ein Puffer ohne Namen heißt `NodeBuffer_<id>` (je Geometrie ein
     Programm), der Bundle-Replay bucht nichts ins Info (`werkbank zaehlen`). Ein Bundle trägt nur, was sein Replay refresht: `_renderScene` stapelt
     `_currentRenderBundle`, nimmt unter overrideMaterial nie auf; die Diät geht jeden Knoten EINMAL je Render-Abschnitt, Stempel = (Render-Id,

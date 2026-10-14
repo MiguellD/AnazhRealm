@@ -271,6 +271,7 @@ async function waitFor(page, evalFn, timeoutMs, label, ...args) {
             // das Phantom ist ein Object3D wie im Spiel: das Setzen zieht das nächste (`_bauPhantomNeu`) und entsorgt
             // das alte über `_disposeSoulGroup` (Integration V18.536)
             const phantom = new window.THREE.Group();
+            // BÜHNE: ein Phantom-Objekt ohne Boden (Entsorgungs-Mechanik)
             phantom.position.set(44, 6, -44);
             r.state.buildMode = {
                 active: true,

@@ -92,9 +92,9 @@ const server = http.createServer((req, res) => {
             // das Stand-Fenster misst Churn, nicht den Boot.
             {
                 const dlW = performance.now() + 150000;
-                // ... und bis der Vorrat steht (`_foundryPrefetchLibrary`): solange er saugt, baut der gelüftete Ring
-                // jede neue Region leer und aufgeschoben (der Prefetch-Zweig von `_scatterRegion`).
-                const vorrat = () => !!(r._foundry && r._foundry._prefetching);
+                // ... und bis der Vorrat durch ist (`_foundryPrefetchLibrary`, seine Phase `f._vorrat`): er wärmt neben der
+                // Welt (K30: keine Region wartet auf ihn), das Stand-Fenster misst den Churn ohne seine Lieferungen.
+                const vorrat = () => (r._foundry && r._foundry._vorrat) || false;
                 // die EINE Antwort der Welt (`_streuWartet`, Befund 09.10.: der eigene Zähler las die fehlende Regionen-Karte
                 // — der Streamer lief noch nie — als „keine wartet")
                 const wartend = (liste) => r._streuWartet(st.playerMesh ? st.playerMesh.position : null, liste);
@@ -108,7 +108,7 @@ const server = http.createServer((req, res) => {
                 }
                 o.wartendListe = [];
                 o.wartendNachBoot = wartend(o.wartendListe) + (vorrat() ? 1 : 0);
-                o.vorratSaugt = vorrat();
+                o.vorratPhase = vorrat();
             }
             const _oH0 = st.renderer._isHeadlessNull;
             const _oRS = r._applyRenderScale,
@@ -136,6 +136,12 @@ const server = http.createServer((req, res) => {
                 };
             r._foundryBuildImpostorFlat = nullKarte(_oKF);
             r._foundryEnsureImpostorRecord = nullKarte(_oKR);
+            // DER STOFF IST EIN GPU-ANWENDER (Integration Grund, 14.10.): die Physical-Klasse des Klarlacks lebt in der
+            // Node-Bibliothek des Renderers (`_foundryTreeMaterial`), der Null-Renderer trägt keine — kam eine Lieferung mit
+            // Haut im gelüfteten Fenster, brach der Stoff laut („STOFF: die Gruppe der Foundry-Lieferung"). Er baut mit der
+            // Null-Semantik, in BEIDEN gelüfteten Fenstern (Stand und Ingest-Takt).
+            const _oTM = r._foundryTreeMaterial;
+            r._foundryTreeMaterial = nullKarte(_oTM);
             const feed = (ms) => {
                 st._perfFrame = {
                     render: 90,
@@ -243,6 +249,7 @@ const server = http.createServer((req, res) => {
             r._applyEffectiveShadowRange = _oSR;
             r._foundryBuildImpostorFlat = _oKF;
             r._foundryEnsureImpostorRecord = _oKR;
+            // der Stoff bleibt bis nach dem Ingest-Takt unter der Null-Semantik (s. oben)
             st._perfFrame = {};
             st._perfMarks = {};
             st.perfSense = null;
@@ -305,6 +312,7 @@ const server = http.createServer((req, res) => {
             await sleep(0);
             o.v2HeadlessSofort = hlSofort;
             st.renderer._isHeadlessNull = _oH;
+            r._foundryTreeMaterial = _oTM;
             // ── V4: LINSEN-KONSUM im gebauten Trace ──
             const trace = r._flightRecorderBuildTrace ? r._flightRecorderBuildTrace() : null;
             const ss = trace && trace.steadyState;
@@ -327,7 +335,7 @@ const server = http.createServer((req, res) => {
     server.close();
 
     console.log("=== DER LEISTUNGS-VERTRAG — die Laufzeit-Ökonomie als Gate ===");
-    console.log(`  BOOT-SETTLE: wartende Regionen + saugender Vorrat = ${out.wartendNachBoot} (erwartet 0)`);
+    console.log(`  BOOT-SETTLE: wartende Regionen + Vorrat nicht durch = ${out.wartendNachBoot} (erwartet 0)`);
     console.log(
         `  QUIESZENZ vor dem Stand-Fenster erreicht: ${out.quieszent} (Foundry offen beim Fenster-Start: ${out.foundryOffen})`
     );
@@ -346,7 +354,7 @@ const server = http.createServer((req, res) => {
     if (out.err) errs.push("Vertrag brach ab: " + out.err);
     if (out.wartendNachBoot !== 0)
         errs.push(
-            `BOOT: nach 150 s headless stehen ${out.wartendNachBoot - (out.vorratSaugt ? 1 : 0)} Streu-Regionen in Reichweite nicht (_streuWartet: ${(out.wartendListe || []).join(", ") || "—"})${out.vorratSaugt ? ", der Vorrat saugt noch" : ""}`
+            `BOOT: nach 150 s headless stehen ${out.wartendNachBoot - (out.vorratPhase ? 1 : 0)} Streu-Regionen in Reichweite nicht (_streuWartet: ${(out.wartendListe || []).join(", ") || "—"})${out.vorratPhase ? `, der Vorrat ${out.vorratPhase}` : ""}`
         );
     if (!out.quieszent)
         errs.push(
