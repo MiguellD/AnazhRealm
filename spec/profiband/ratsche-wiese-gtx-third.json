@@ -2,8 +2,8 @@
     "version": 1,
     "zweck": "DIE RATSCHE wiese × gtx × third (K26): ungemessen bis zur Re-Mint-Serie dieses Orts × Geräts × Sicht (werkbank ratsche --neu); Gesetz (Toleranz, freie Klassen) und Form wie ratsche-wiese-radeon-ego.json. Das Band-Urteil nennt sie rot („ungemessen\"), gate:profiband H2b ebenso.",
     "gemessen": {
-        "datum": "2026-10-14T02:18:51.419Z",
-        "version": "18.545.0",
+        "datum": "2026-10-14T12:34:03.168Z",
+        "version": "18.546.0",
         "ort": "wiese",
         "geraet": "gtx",
         "geraetText": "nvidia pascal",
@@ -18,10 +18,10 @@
             "zweit/1"
         ],
         "dateien": [
-            "wiese-1-erst.json",
-            "wiese-1-zweit.json",
-            "wiese-2-erst.json",
-            "wiese-2-zweit.json"
+            "wiese-third-1-erst.json",
+            "wiese-third-1-zweit.json",
+            "wiese-third-2-erst.json",
+            "wiese-third-2-zweit.json"
         ]
     },
     "toleranzPct": 1,
@@ -35,28 +35,28 @@
     },
     "gesamt": {
         "befehle": 85,
-        "dreiecke": 617819,
-        "vramMB": 119.7
+        "dreiecke": 323944,
+        "vramMB": 96.3
     },
     "klassen": {
         "boden": {
             "haupt": {
-                "befehle": 6,
-                "dreiecke": 78425
+                "befehle": 7,
+                "dreiecke": 56124
             },
             "k0": {
                 "befehle": 1,
-                "dreiecke": 56885
+                "dreiecke": 15976
             },
             "k1": {
                 "befehle": 1,
-                "dreiecke": 58035
+                "dreiecke": 8362
             }
         },
         "karten": {
             "haupt": {
                 "befehle": 1,
-                "dreiecke": 1196
+                "dreiecke": 1664
             },
             "k0": {
                 "befehle": 0,
@@ -69,26 +69,26 @@
         },
         "baum": {
             "haupt": {
-                "befehle": 22,
-                "dreiecke": 54438
+                "befehle": 20,
+                "dreiecke": 40382
             },
             "k0": {
-                "befehle": 10,
-                "dreiecke": 13338
+                "befehle": 12,
+                "dreiecke": 16456
             },
             "k1": {
-                "befehle": 2,
-                "dreiecke": 1086
+                "befehle": 3,
+                "dreiecke": 1464
             }
         },
         "busch": {
             "haupt": {
-                "befehle": 4,
-                "dreiecke": 11956
+                "befehle": 0,
+                "dreiecke": 0
             },
             "k0": {
                 "befehle": 2,
-                "dreiecke": 5100
+                "dreiecke": 2040
             },
             "k1": {
                 "befehle": 0,
@@ -98,7 +98,7 @@
         "nahWiese": {
             "haupt": {
                 "befehle": 4,
-                "dreiecke": 73934
+                "dreiecke": 60452
             },
             "k0": {
                 "befehle": 0,
@@ -111,12 +111,12 @@
         },
         "streu": {
             "haupt": {
-                "befehle": 4,
-                "dreiecke": 21267
+                "befehle": 7,
+                "dreiecke": 30796
             },
             "k0": {
-                "befehle": 0,
-                "dreiecke": 0
+                "befehle": 2,
+                "dreiecke": 5668
             },
             "k1": {
                 "befehle": 0,
@@ -140,39 +140,39 @@
         "bau": {
             "haupt": {
                 "befehle": 2,
-                "dreiecke": 17850
+                "dreiecke": 11900
             },
             "k0": {
-                "befehle": 1,
-                "dreiecke": 720
+                "befehle": 2,
+                "dreiecke": 2154
             },
             "k1": {
                 "befehle": 1,
-                "dreiecke": 480
+                "dreiecke": 120
             }
         },
         "formationen": {
             "haupt": {
                 "befehle": 1,
-                "dreiecke": 4480
+                "dreiecke": 4160
             },
             "k0": {
                 "befehle": 1,
-                "dreiecke": 4480
+                "dreiecke": 7680
             },
             "k1": {
                 "befehle": 1,
-                "dreiecke": 1920
+                "dreiecke": 2560
             }
         },
         "einzelstuecke": {
             "haupt": {
-                "befehle": 16,
-                "dreiecke": 174265
+                "befehle": 12,
+                "dreiecke": 42472
             },
             "k0": {
                 "befehle": 5,
-                "dreiecke": 37964
+                "dreiecke": 13514
             },
             "k1": {
                 "befehle": 0,
@@ -209,21 +209,22 @@
         }
     },
     "vramMB": {
-        "buf:szene": 34.9,
-        "tex:TRAANode.history": 19.8,
+        "buf:szene": 17.3,
+        "tex:TRAANode.history": 15.8,
         "tex:TRAANode.resolve": 15.8,
         "tex:kaskade0": 8,
         "tex:kaskade1": 8,
-        "tex:output": 7.9,
-        "tex:depth": 7.9,
-        "tex:szene": 4,
+        "tex:karte-albedo": 5.3,
+        "tex:output": 4.4,
+        "tex:depth": 4.4,
         "tex:wege-karte": 4,
-        "tex:karte-albedo": 2.7,
+        "tex:karte-normal": 2.7,
+        "tex:szene": 2.2,
+        "tex:fluss-karte": 2,
         "tex:feld-pass-panorama": 1.9,
-        "tex:karte-normal": 1.3,
+        "tex:laub-cluster-atlas": 1.3,
         "tex:PMREM.cubeUv": 1,
         "tex:rausch-atlas": 0.8,
-        "tex:laub-cluster-atlas": 0.7,
         "tex:welt-march-liste": 0.5,
         "tex:kronen-streu": 0.5,
         "tex:welt-march-kapseln": 0.3,
@@ -233,9 +234,10 @@
         "buf:buffer_timestamp_resolve_render": 0,
         "buf:buffer_timestamp_result_render": 0,
         "tex:fern-krone-nah": 0,
+        "tex:portal-membran": 0,
+        "tex:fern-ring-maske": 0,
         "tex:DFG_LUT": 0,
         "buf:bild": 0,
-        "buf:?": 0,
-        "tex:TRAANode.vortiefe": 0
+        "buf:?": 0
     }
 }
