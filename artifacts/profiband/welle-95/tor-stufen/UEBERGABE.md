@@ -15,7 +15,8 @@ Gebaut:
 - Lokal grün: gate:foundry-crossfade, check:statik, format:check, playtest:fast 22/22, voller Playtest Alle Invarianten OK.
 - Bilder (Radeon, werkbank bild, Genesis): drachentor-arm-L0.png, drachentor-12m-L1.png, genesis-ring-L1.png.
 
-CI: Run 38553781728 (Kopf 3712b17a) — voll 2 rot (Prüfbühne, behoben durch c8196cd1). Nächster Push [ci voll] auf c02c0381+.
+CI: Run 38553781728 (Kopf 3712b17a) 12/13 — rot nur voll 2 (Prüfbühne, auch auf integ-probe 51cc19af rot, geheilt in c8196cd1).
+CI: Run 38555428230 (Kopf 174351de) 13/13 — voll 1 (gate:gelaende-realismus, Zeit-Verhältnis Ebene 26,6 gegen 26,4, kein Gelände-Code im Zweig) im Wiederlauf grün. MERGE-BEREIT am Kopf 174351de.
 
 Offen (Budget, nicht angefasst): Klasse bau Genesis 160k gegen 120k. Zensus Stufe 1 (Node, porta-core): drachentor 23 276
 (Röhren r 2–5 cm 9 180, r > 5 cm 7 128), maurentor 22 612, verkalkt 23 082, maschine 16 688, kathedrale 14 286, ruine 10 462,
