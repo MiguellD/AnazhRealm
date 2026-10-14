@@ -501,26 +501,32 @@ function validateManifest(m) {
         // trägt die Kette L0 → L1 → Fernform: Stufe 0, Stufe 1 mit ihrer Grenze `ab` (die Distanz im Kern) und der Hysterese der
         // Art, die NUR-WURF-Stufe 3 (Wurf und Fernform "huelle"), jede mit Zeile, tris streng fallend (L0 > L1 > Fern). Vorher
         // zeigte das Tor nur die Stufe 0 bis 26 m ([0, 3]) — 7 Tore am Genesis-Ring 206k Dreiecke, 53 Befehle (Radeon, ego).
+        // K64 (die Stufe 2): die Kette L0 → L1 → L2 → Fernform, die Grenze der Stufe 2 jenseits der Stufe 1, tris streng fallend.
         if (ks.gate) {
             const G = B.gate || {};
             const st = ks.gate;
             const kette =
-                st.length === 3 &&
+                st.length === 4 &&
                 st[0] === 0 &&
                 st[1] === 1 &&
-                st[2] === 3 &&
+                st[2] === 2 &&
+                st[3] === 3 &&
                 G[0] &&
                 G[1] &&
+                G[2] &&
                 G[3] &&
                 G[3].nurWurf === true &&
                 G.fernform === "huelle" &&
                 typeof G[1].ab === "number" &&
+                typeof G[2].ab === "number" &&
+                G[2].ab > G[1].ab &&
                 typeof G.hyst === "number" &&
                 G[0].tris > G[1].tris &&
-                G[1].tris > G[3].tris;
+                G[1].tris > G[2].tris &&
+                G[2].tris > G[3].tris;
             if (!kette)
                 v.push(
-                    "B2c: lod.budget.gate trägt die Stufen-Kette nicht (K43: kindStages [0, 1, 3], Zeilen 0 · 1 mit ab · 3 nurWurf, hyst, fernform huelle, tris L0 > L1 > Fern)"
+                    "B2c: lod.budget.gate trägt die Stufen-Kette nicht (K43/K64: kindStages [0, 1, 2, 3], Zeilen 0 · 1 und 2 mit steigendem ab · 3 nurWurf, hyst, fernform huelle, tris L0 > L1 > L2 > Fern)"
                 );
         }
         // S3 (Vertrags-Akt 09.10.) — PFLICHT im Haupt-Kern: die Baum-Stufen 0/1 tragen ihre Kosten-Regler, der Fels ist
