@@ -172,10 +172,10 @@ const pPaare = vm.runInContext(
             const pre = PRESETS[id];
             for (const seed of a.samen)
                 for (const lod of a.stufen) {
-                    __dials = pre.s; SEED = seed; __lod = lod;
+                    __dials = pre.s; SEED = seed; __lod = lod; CURRENT = id;
                     const gesehen = deriveParamsPlant(pre);
                     __dials = null;
-                    const gesetz = self.__phytoCore.treeParams(pre.s, seed, lod, pre);
+                    const gesetz = self.__phytoCore.treeParams(pre.s, seed, lod, pre, __weltSkalaArt(id));
                     out.push({ fall: id + "/s" + seed + "/L" + lod, gesehen: JSON.stringify(gesehen), gesetz: JSON.stringify(gesetz) });
                 }
         }
@@ -214,6 +214,62 @@ ok(
         " Stufen",
     pFaelleRot === 0,
     pPaare.length + " Fälle, " + pFaelleRot + " abweichend" + (pFaelleRot ? " an " + Object.keys(pAbw).join(", ") : "")
+);
+
+// ── DAS SKELETT IM HAUPT-THREAD (Integration K20 × K16, 14.10.) ──
+// Der gefühlte Baum (`_baumGestaltTeile` ← `_populateBlockerAABBs` ← `spawnArchitecture`) wächst `skelettDerGestalt` im
+// Haupt-Thread — dort lädt die Seite phyto-core und foundry-core OHNE die Shell (index.html trägt kein phytogenesis.js):
+// jeder Schritt des Wuchses, der einen Vektor-Helfer der Shell liest, bricht dort (baum_totholz warf „vlen is not
+// defined", gate:brennglas-takt fand ihn im Brennpunkt der Kern-Landform). Der Scope wird wie im Haupt-Thread gebaut
+// (three → phyto-core → foundry-core, KEINE Shell-Globale), jede Baum- und Strauch-Art je Gestalt und Stufe gewachsen.
+// Konsum-Leser: `_growTreeBlueprintRich` (stamm/15b.js) — der Stamm liest das Skelett für die Kollision.
+const hsb = { console, performance: { now: () => 0 } };
+hsb.self = hsb;
+hsb.globalThis = hsb;
+const hctx = vm.createContext(hsb);
+vm.runInContext(fs.readFileSync(path.join(TERR_LIB, "three-r128.min.js"), "utf8"), hctx, { filename: "three-r128" });
+vm.runInContext(src, hctx, { filename: "phyto-core.js(haupt)" });
+vm.runInContext(fs.readFileSync(path.join(__dirname, "..", "foundry-core.js"), "utf8"), hctx, {
+    filename: "foundry-core.js(haupt)",
+});
+// Selbsttest: der Scope ist der des Haupt-Threads — ein Leser eines Shell-Globals fällt dort beim Namen
+ok(
+    "Skelett im Haupt-Thread Selbsttest: der Scope trägt keine Shell-Globale (ein Leser von vlen bricht beim Namen)",
+    vm.runInContext(
+        "(function () { try { vlen([1, 0, 0]); return false; } catch (e) { return /vlen/.test(String(e && e.message)); } })()",
+        hctx
+    ) === true
+);
+hsb.__skelettArgs = { samen: [1, 7, 12345], stufen: [0, 1, 2] };
+const hFaelle = vm.runInContext(
+    `(function () {
+        const a = self.__skelettArgs, out = [];
+        for (const id of Object.keys(PRESETS)) {
+            const pre = PRESETS[id];
+            if (!pre || (pre.kind !== "tree" && pre.kind !== "shrub")) continue;
+            for (const seed of a.samen)
+                for (const lod of a.stufen) {
+                    const fall = id + "/s" + seed + "/L" + lod;
+                    try {
+                        const s = skelettDerGestalt(id, seed, lod);
+                        out.push({ fall, segs: s && s.nodes && s.nodes.segs ? s.nodes.segs.length : 0 });
+                    } catch (e) {
+                        out.push({ fall, fehler: String((e && e.message) || e) });
+                    }
+                }
+        }
+        return out;
+    })()`,
+    hctx
+);
+const hRot = hFaelle.filter((f) => f.fehler || !(f.segs > 0));
+for (const f of hRot.slice(0, 6)) console.log("      SKELETT " + f.fall + ": " + (f.fehler || "0 Segmente"));
+ok(
+    "Skelett im Haupt-Thread: skelettDerGestalt wächst jede Baum- und Strauch-Art ohne die Shell (" +
+        new Set(hFaelle.map((f) => f.fall.split("/")[0])).size +
+        " Arten × 3 Gestalten × 3 Stufen)",
+    hFaelle.length > 0 && hRot.length === 0,
+    hFaelle.length + " Fälle, " + hRot.length + " gebrochen" + (hRot.length ? " — " + hRot[0].fall + ": " + (hRot[0].fehler || "0 Segmente") : "")
 );
 
 console.log(

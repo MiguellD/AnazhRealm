@@ -49,6 +49,7 @@ const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 const {
     AUSGABE_INSTALL,
     wetterUrteil,
@@ -473,7 +474,7 @@ async function boot(browser, pageErrors) {
 
 (async () => {
     // (Q) der Stamm: wer schreibt `this.state.weather` und `this.state.timeOfDay` (Kommentare zählen nicht)
-    const stamm = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8").split("\n");
+    const stamm = stammLib.text(root).split("\n");
     const quelle = { wetter: { n: 0, orte: [] }, uhr: { n: 0, orte: [] } };
     stamm.forEach((z, i) => {
         const code = z.replace(/\/\/.*$/, "");

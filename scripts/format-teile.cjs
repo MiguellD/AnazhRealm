@@ -281,7 +281,8 @@ function fixture() {
 async function selbsttest() {
     const prettier = require("prettier");
     const optionen = {
-        ...((await prettier.resolveConfig(path.join(__dirname, "..", "anazhRealm.js"))) || {}),
+        // die Konfiguration der Wurzel (für jede Datei dort dieselbe; der Stamm ist nach dem Schnitt keine Wurzel-Datei mehr)
+        ...((await prettier.resolveConfig(path.join(__dirname, "..", "package.json"))) || {}),
         filepath: "f.js",
     };
     const ganz = async (t) => {
@@ -378,7 +379,18 @@ function teileMit(t, blind) {
         );
         if (args.length === 1) return;
     }
-    const dateien = args.filter((a) => !a.startsWith("--"));
+    // ein Verzeichnis (der Stamm `stamm/`) steht für seine .js-Dateien — cmd expandiert keine Globs
+    const dateien = args
+        .filter((a) => !a.startsWith("--"))
+        .flatMap((a) =>
+            fs.statSync(a).isDirectory()
+                ? fs
+                      .readdirSync(a)
+                      .filter((f) => f.endsWith(".js"))
+                      .sort()
+                      .map((f) => path.join(a, f))
+                : [a]
+        );
     if (!dateien.length) {
         console.error("Aufruf: node scripts/format-teile.cjs [--selftest] <datei …>");
         process.exit(2);

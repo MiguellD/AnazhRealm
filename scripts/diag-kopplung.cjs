@@ -31,6 +31,7 @@ const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 
 const root = path.resolve(__dirname, "..");
 const PORT = Number(process.env.KOPPLUNG_PORT || 4407);
@@ -78,7 +79,7 @@ const server = http.createServer((req, res) => {
             () => window.anazhRealm && window.anazhRealm.state && typeof window.anazhRealm._gameLoopTick === "function",
             { timeout: 120000 }
         );
-        out = await page.evaluate(async () => {
+        out = await page.evaluate(async (stammDateien) => {
             const r = window.anazhRealm;
             const AR = r.constructor;
             const o = { fails: [], zahlen: {} };
@@ -174,7 +175,8 @@ const server = http.createServer((req, res) => {
                 runTicks(sw, 90, {}, 0);
                 const p = sw.state.playerMesh.position;
                 o.zahlen.schwimmerDrift = { x: p.x, z: p.z };
-                if (!(p.x > 0.5)) fail(`F1a: ruhender Schwimmer driftete nur ${p.x.toFixed(3)} m in 90 Ticks (soll > 0,5 m)`);
+                if (!(p.x > 0.5))
+                    fail(`F1a: ruhender Schwimmer driftete nur ${p.x.toFixed(3)} m in 90 Ticks (soll > 0,5 m)`);
                 if (!(Math.abs(p.z) < 0.05)) fail(`F1a: Schwimmer driftete quer zur Strömung (z=${p.z.toFixed(3)} m)`);
                 // (b) Land-Läufer: trockener Boden bei 0, DERSELBE Fluss unter den Füßen
                 //     (Bank-Fall) — er wird NIE geschoben.
@@ -187,7 +189,9 @@ const server = http.createServer((req, res) => {
                 const lp = land.state.playerMesh.position;
                 o.zahlen.landDrift = { x: lp.x, z: lp.z };
                 if (!(Math.abs(lp.x) < 0.01 && Math.abs(lp.z) < 0.01))
-                    fail(`F1b: Land-Läufer wurde geschoben (x=${lp.x.toFixed(4)}, z=${lp.z.toFixed(4)} — soll exakt stehen)`);
+                    fail(
+                        `F1b: Land-Läufer wurde geschoben (x=${lp.x.toFixed(4)}, z=${lp.z.toFixed(4)} — soll exakt stehen)`
+                    );
                 // (c) das geritten-SCHWIMMENDE Boot (der Reiter ist nie submerged; das
                 //     `_afloat`-Gate aus `_rittSchritt` trägt die Advektion).
                 const boat = mkShim(
@@ -214,10 +218,12 @@ const server = http.createServer((req, res) => {
                 runTicks(boat, 90, {}, 0);
                 const bp = boat.state.playerMesh.position;
                 o.zahlen.bootDrift = { x: bp.x, z: bp.z };
-                if (!(bp.x > 0.5)) fail(`F1c: schwimmendes Boot driftete nur ${bp.x.toFixed(3)} m in 90 Ticks (soll > 0,5 m)`);
+                if (!(bp.x > 0.5))
+                    fail(`F1c: schwimmendes Boot driftete nur ${bp.x.toFixed(3)} m in 90 Ticks (soll > 0,5 m)`);
                 // Selbst-Test F1: Advektion deaktiviert (k → 0) → der Schwimmer MUSS stehen.
                 const deadStep = patchFn(r._stepCharacter, "_stepCharacter", "= fl.", "= 0 * fl.");
-                if (!deadStep) fail("F1-Selbsttest: Strömungs-Marker (stromX = fl.x) nicht in `_stepCharacter` (Fix fehlt?)");
+                if (!deadStep)
+                    fail("F1-Selbsttest: Strömungs-Marker (stromX = fl.x) nicht in `_stepCharacter` (Fix fehlt?)");
                 else {
                     const sw2 = mkShim(
                         (x, y) => deepFloor(x, y),
@@ -227,7 +233,9 @@ const server = http.createServer((req, res) => {
                     runTicks(sw2, 90, {}, 0, deadStep);
                     o.zahlen.schwimmerDriftTot = sw2.state.playerMesh.position.x;
                     if (!(Math.abs(sw2.state.playerMesh.position.x) < 0.05))
-                        fail(`F1-Selbsttest: deaktivierte Advektion driftete trotzdem (${sw2.state.playerMesh.position.x.toFixed(3)} m)`);
+                        fail(
+                            `F1-Selbsttest: deaktivierte Advektion driftete trotzdem (${sw2.state.playerMesh.position.x.toFixed(3)} m)`
+                        );
                 }
             }
 
@@ -248,7 +256,7 @@ const server = http.createServer((req, res) => {
                 return s;
             };
             const yaw45 = Math.PI / 4; // forward = (0.707, 0, 0.707) → 45° auf die Wand
-            const intentProj = (p0, p1) => ((p1.x - p0.x) + (p1.z - p0.z)) / Math.SQRT2;
+            const intentProj = (p0, p1) => (p1.x - p0.x + (p1.z - p0.z)) / Math.SQRT2;
             const runWallWindow = (shim, stepFn) => {
                 runTicks(shim, 180, { w: true }, yaw45, stepFn); // Anlauf: sicher an der Wand
                 const p0 = shim.state.playerMesh.position.clone();
@@ -281,7 +289,9 @@ const server = http.createServer((req, res) => {
                     const deadRatio = fRes.proj > 0 ? stopped.proj / fRes.proj : NaN;
                     o.zahlen.klipTot = { wand: stopped.proj, ratio: deadRatio };
                     if (!(deadRatio < 0.1))
-                        fail(`F2a-Selbsttest: Voll-Stopp glitt trotzdem (${(deadRatio * 100).toFixed(0)} % — die Fixture sähe den alten Bug nicht)`);
+                        fail(
+                            `F2a-Selbsttest: Voll-Stopp glitt trotzdem (${(deadRatio * 100).toFixed(0)} % — die Fixture sähe den alten Bug nicht)`
+                        );
                 }
             }
             // (b) STEILHANG: Ebene fällt mit Gradient 2,5 (~68°, Normale ny≈0.37 <
@@ -299,7 +309,8 @@ const server = http.createServer((req, res) => {
                 runTicks(slope, 120, {}, 0);
                 const sp = slope.state.playerMesh.position;
                 o.zahlen.steilhang = { x: sp.x, y: sp.y };
-                if (!(sp.x > 0.3)) fail(`F2b: Steilhang-Rutsch nur ${sp.x.toFixed(3)} m in 120 Ticks (soll > 0,3 m bergab)`);
+                if (!(sp.x > 0.3))
+                    fail(`F2b: Steilhang-Rutsch nur ${sp.x.toFixed(3)} m in 120 Ticks (soll > 0,3 m bergab)`);
                 if (!(sp.y < 0.4)) fail(`F2b: der Rutsch folgte der Fläche nicht abwärts (y=${sp.y.toFixed(2)})`);
                 // Tests wandern 19.07.: der Marker liest das Kern-Gesetz direkt
                 // (hoisted Konstante hangMaxSlopeY statt State-Feld).
@@ -310,7 +321,9 @@ const server = http.createServer((req, res) => {
                     runTicks(stuck, 120, {}, 0, noSlide);
                     o.zahlen.steilhangTot = stuck.state.playerMesh.position.x;
                     if (!(Math.abs(stuck.state.playerMesh.position.x) < 0.05))
-                        fail(`F2b-Selbsttest: deaktivierter Rutsch rutschte trotzdem (${stuck.state.playerMesh.position.x.toFixed(3)} m)`);
+                        fail(
+                            `F2b-Selbsttest: deaktivierter Rutsch rutschte trotzdem (${stuck.state.playerMesh.position.x.toFixed(3)} m)`
+                        );
                 }
             }
 
@@ -340,6 +353,9 @@ const server = http.createServer((req, res) => {
             const bendOff = () => ({ x: N(0), y: N(-1e6), z: N(0), w: N(0) });
             const mkWindShim = (dirX, dirZ, bend0) => {
                 const s = Object.create(r);
+                // Die Naht Vorlage ↔ Welt (`_weltNaht`) ist hier die Einheit: der Skalar-Harness reicht die Welt-Lage
+                // selbst; die Naht an der echten Instanz misst gate:foundry-impostor C4 (echter Renderer).
+                s._weltNaht = (T) => ({ lage: T.positionWorld, vorlage: (w) => w });
                 s.state = {
                     windUniforms: {
                         uWindTime: N(3.7),
@@ -353,8 +369,8 @@ const server = http.createServer((req, res) => {
             const evalSway = (shim, wx, wz, localY, fn) => {
                 mockTSL.positionWorld = { x: N(wx), y: N(0.5), z: N(wz) };
                 mockTSL.positionLocal = { x: N(0), y: N(localY), z: N(0) };
-                // Das Höhen-Gewicht liest seit W7 die Geometrie-Position (Wurzel bei y = 0; Lehre 22: r184 instanziert
-                // positionLocal vorher).
+                // Das Höhen-Gewicht liest seit W7 die Geometrie-Position (Wurzel bei y = 0; Lehre 22: r184 rechnet den
+                // positionNode vor der Instanz-Matrix).
                 mockTSL.positionGeometry = { x: N(0), y: N(localY), z: N(0) };
                 const res = (fn || r._windSwayOffset).call(shim, mockTSL, {});
                 return { x: res.x.v, z: res.z.v };
@@ -375,17 +391,26 @@ const server = http.createServer((req, res) => {
                 const ne = (p, q) => Math.abs(p.x - q.x) > 1e-4 || Math.abs(p.z - q.z) > 1e-4;
                 o.zahlen.wind = { aX, quX, laX, aZ, quZ, laZ };
                 if (!eq(aX, quX)) fail("F3: Wind +x — zwei Punkte QUER zur Windrichtung teilen die Phase NICHT");
-                if (!ne(aX, laX)) fail("F3: Wind +x — zwei Punkte LÄNGS der Windrichtung sind phasengleich (kein Orts-Term?)");
+                if (!ne(aX, laX))
+                    fail("F3: Wind +x — zwei Punkte LÄNGS der Windrichtung sind phasengleich (kein Orts-Term?)");
                 if (!eq(aZ, quZ)) fail("F3: Wind +z — die Quer-Paarung folgt der GEDREHTEN Richtung nicht");
                 if (!ne(aZ, laZ)) fail("F3: Wind +z — die Längs-Paarung folgt der GEDREHTEN Richtung nicht");
                 // Selbst-Test F3: uWindDir-Konsum gekappt → Fallback-Konstanten (0.28, 0.21)
                 // sind NICHT quer-invariant → die Quer-Paarung MUSS brechen.
-                const noDir = patchFn(r._windSwayOffset, "_windSwayOffset", "const wd = wu.uWindDir || null;", "const wd = null;");
+                const noDir = patchFn(
+                    r._windSwayOffset,
+                    "_windSwayOffset",
+                    "const wd = wu.uWindDir || null;",
+                    "const wd = null;"
+                );
                 if (!noDir) fail("F3-Selbsttest: uWindDir-Marker nicht in `_windSwayOffset` (Fix fehlt?)");
                 else {
                     const bA = evalSway(sx, 0, 0, 0.8, noDir);
                     const bQ = evalSway(sx, 0, L, 0.8, noDir);
-                    if (eq(bA, bQ)) fail("F3-Selbsttest: ohne uWindDir blieb die Quer-Paarung gleich (die Fixture sähe den alten Baum nicht)");
+                    if (eq(bA, bQ))
+                        fail(
+                            "F3-Selbsttest: ohne uWindDir blieb die Quer-Paarung gleich (die Fixture sähe den alten Baum nicht)"
+                        );
                 }
                 // Die CPU-Richtungs-Quelle: seeded (gleicher Seed = gleicher Wind, anderer
                 // Seed = anderer), langsam (< 0.02 rad/s Drift) und einheitslang.
@@ -399,8 +424,10 @@ const server = http.createServer((req, res) => {
                 o.zahlen.windDir = { d10, d11, dOther };
                 if (!(d10.x === d10b.x && d10.z === d10b.z)) fail("F3: `_windDirAt` ist nicht deterministisch");
                 if (!(Math.abs(Math.hypot(d10.x, d10.z) - 1) < 1e-9)) fail("F3: uWindDir ist kein Einheitsvektor");
-                if (!(ang(d10, d11) < 0.02)) fail(`F3: der Wind dreht zu schnell (${ang(d10, d11).toFixed(4)} rad/s — soll langsam wandern)`);
-                if (!(ang(d10, dOther) > 1e-3)) fail("F3: anderer worldSeed ergab dieselbe Wind-Grundrichtung (nicht seeded?)");
+                if (!(ang(d10, d11) < 0.02))
+                    fail(`F3: der Wind dreht zu schnell (${ang(d10, d11).toFixed(4)} rad/s — soll langsam wandern)`);
+                if (!(ang(d10, dOther) > 1e-3))
+                    fail("F3: anderer worldSeed ergab dieselbe Wind-Grundrichtung (nicht seeded?)");
             }
 
             // ══ FIXTURE 4 (F4) — GRAS-INTERAKTION (radiales Wegbiegen) ══
@@ -444,19 +471,22 @@ const server = http.createServer((req, res) => {
 
             // ══ KONSUM-PROBEN (Lehre 5/6: verifiziere KONSUM, nicht Existenz) ══
             {
-                const src = await fetch("anazhRealm.js").then((x) => x.text());
+                // der Stamm-Text, wie die Seite ihn lädt: jede Stamm-Datei der EINEN Liste (scripts/lib/stamm.cjs)
+                const src = (await Promise.all(stammDateien.map((p) => fetch(p).then((x) => x.text())))).join("\n");
                 const count = (needle) => src.split(needle).length - 1;
                 if (!String(r.updateCreatures).includes("_waterFlowAt"))
                     fail("KONSUM: `updateCreatures` liest `_waterFlowAt` nicht (Kreaturen ohne Strömung)");
                 if (!String(r._rittSchritt).includes("_afloat"))
                     fail("KONSUM: `_rittSchritt` stempelt `_afloat` nicht (Boot ohne Strömungs-Gate)");
                 if (!(count("._ensureWindCoupling(") >= 3))
-                    fail(`KONSUM: uWindDir hat < 3 Leser (nur ${count("._ensureWindCoupling(")}× konsumiert — Gras/_windSwayOffset + Baum/_baumWindStoff + Karte sollen DIESELBE Quelle lesen)`);
+                    fail(
+                        `KONSUM: uWindDir hat < 3 Leser (nur ${count("._ensureWindCoupling(")}× konsumiert — Gras/_windSwayOffset + Baum/_baumWindStoff + Karte sollen DIESELBE Quelle lesen)`
+                    );
                 if (!(count("_tickGrasBend()") >= 1) || !src.includes("_windDirAt(currentTime)"))
                     fail("KONSUM: der Frame-Tick speist uWindDir/uBend nicht (`_loopRender`)");
             }
             return o;
-        });
+        }, stammLib.dateien(root));
     } catch (e) {
         console.error("LINSE-FEHLER:", e.message);
         out = { fails: [`Harness: ${e.message}`], zahlen: {} };
@@ -475,9 +505,7 @@ const server = http.createServer((req, res) => {
             `  F2 Gleiten: 45°-Wand ${(z.klip.ratio * 100).toFixed(0)} % Absichts-Tempo (frei ${z.klip.frei.toFixed(2)} m → Wand ${z.klip.wand.toFixed(2)} m) · Voll-Stopp-Kontrolle ${(z.klipTot ? z.klipTot.ratio * 100 : NaN).toFixed(0)} % · Steilhang-Rutsch ${z.steilhang ? z.steilhang.x.toFixed(2) : "?"} m`
         );
     if (z.windDir)
-        console.log(
-            `  F3 Wind: quer-invariant + richtungs-getrieben · Drift ${z.windDir ? "seeded/langsam" : "?"}`
-        );
+        console.log(`  F3 Wind: quer-invariant + richtungs-getrieben · Drift ${z.windDir ? "seeded/langsam" : "?"}`);
     if (z.bend)
         console.log(
             `  F4 Gras: Biegung links ${z.bend.dLinks.toFixed(3)} / rechts +${z.bend.dRechts.toFixed(3)} · Tick ${typeof z.tick === "string" ? z.tick : "Slot 0 = Spieler"}`

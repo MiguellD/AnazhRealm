@@ -31,12 +31,14 @@ const DIR = path.resolve(__dirname, "..", "spec", "asset-contract", "v1", "golde
 // DIE BILD-TAFEL (S3 pflanzen, Wand D; Gegenprüfung R1 09.10.): je Baum-Art × Same (Sommer) das Bild seiner L0 und
 // seiner L1 JE BLICK-HEBUNG (Krone UND Rinde, kronen-linse bildAus/bildDeckung — Mittel der acht Azimute je Hebung 0°,
 // 30°, 60° von unten; Raster-Kante `px` = L0-Höhe / 300 für beide Stufen) und seine Karte (die Studio-Karte aus der L1:
-// Deckung der Mip 0, mittlere lineare Kronenfarbe der opaken Texel) — gebaut aus dem Ist von V18.536 (`node
-// scripts/diag-asset-contract.cjs --tafel` auf 76c9624d). Jede spätere Stufe deckt je Hebung 0,92–1,08 davon, jede Karte
+// Deckung der Mip 0, mittlere lineare Kronenfarbe der opaken Texel) — gebaut aus dem Ist ihres Stands (`node
+// scripts/diag-asset-contract.cjs --tafel`; zuerst V18.536 auf 76c9624d, neu gemünzt im Vertrags-Akt K20: die Bäume
+// tragen ihr Welt-Maß — Schaft und Schlankheit in Metern, die Karte rahmt den höheren Baum). Jede spätere Stufe deckt je Hebung 0,92–1,08 davon, jede Karte
 // 0,92–1,08 bei ΔE76 ≤ 2. Befund: das Mittel der 24 Ansichten (D0, nur L0) sah die Seitenansicht mit einem Drittel — die
 // Koniferen-L1 verlor 22–34 % ihrer Seitenansicht, die Karte 16–27 %, ihre Farbe sprang um ΔE 2,6–5,8, ohne dass eine
 // Wand anschlug.
-const TAFEL_BILD = path.resolve(__dirname, "..", "spec", "asset-contract", "v1", "bild-v18536.json");
+const TAFEL_BILD = path.resolve(__dirname, "..", "spec", "asset-contract", "v1", "bild-tafel.json");
+const TAFEL_STAND = "K20"; // der Stand, aus dem die Tafel gemünzt ist (zuerst V18.536)
 const BILD_BAND = [0.92, 1.08];
 const GESTALT_BAND = [0.85, 1.15];
 const KARTE_DE = 2;
@@ -364,7 +366,7 @@ function deckungsUrteil(paare, band, atlas) {
 //  (L) LAGEN — Quad-Lagen je Kronen-Pixel (kronen-linse bildLagen, 24 Ansichten) ≤ lod.budget.tree[Stufe].lagen;
 //  (Q) QUOTE — Dreiecke L1 / L0 desselben Baums ≤ lod.budget.tree[1].quote (die L1 ist das Gerüst + Karten, nie die
 //      ausgedünnte L0);
-//  (D0) die L0 DECKT ihr Bild von V18.536: Bild-Deckung (Krone und Rinde) nachher/vorher ∈ [0,92; 1,08] gegen die Tafel.
+//  (D0) die L0 DECKT ihr Bild der Tafel: Bild-Deckung (Krone und Rinde) nachher/vorher ∈ [0,92; 1,08] gegen die Tafel.
 // (L) und (Q) gelten Zeilen, die ihr Feld tragen (Pflicht ab dem Vertrags-Akt); (D0) gilt immer.
 function lagenUrteil(mess, budget) {
     const v = [];
@@ -404,7 +406,7 @@ function wurfUrteil(mess, budget) {
     }
     return v;
 }
-// (D) DAS BILD JE BLICK-HEBUNG gegen die Bild-Tafel von V18.536, zweistufig: das Mittel einer ART über ihre Gestalten je
+// (D) DAS BILD JE BLICK-HEBUNG gegen die Bild-Tafel (TAFEL_STAND), zweistufig: das Mittel einer ART über ihre Gestalten je
 // Stufe und Hebung (und die Deckung ihrer Karten) hält BILD_BAND — die systematische Abweichung (die Koniferen-L1 verlor
 // 22–34 % ihrer Seitenansicht in jeder Gestalt); jede einzelne GESTALT hält GESTALT_BAND — eine Gestalt wächst anders als
 // die Vorlage, aus der V18.536 sie las (die Wedel tragen die Nadel-Wolke, V18.536 je Nadelstelle eine Spray), sie streut
@@ -437,7 +439,7 @@ function bildUrteil(mess, tafel) {
                 a.farbe.push(m.karte.farbe);
                 a.tFarbe.push(t.karte.farbe);
                 if (!band(r, GESTALT_BAND))
-                    v.push(`${k}: die Karte deckt ${r.toFixed(3)} ihres Bilds von V18.536, Gestalt-Band [${GESTALT_BAND.join(", ")}]`);
+                    v.push(`${k}: die Karte deckt ${r.toFixed(3)} ihres Bilds der Tafel ${TAFEL_STAND}, Gestalt-Band [${GESTALT_BAND.join(", ")}]`);
                 if (!(de <= KARTE_DE_GESTALT))
                     v.push(`${k}: die Kronenfarbe der Karte weicht um ΔE ${de.toFixed(2)} > ${KARTE_DE_GESTALT} ab (Gestalt)`);
                 continue;
@@ -447,7 +449,7 @@ function bildUrteil(mess, tafel) {
             a[st].push(r);
             r.forEach((x, i) => {
                 if (!band(x, GESTALT_BAND))
-                    v.push(`${k}: ${st} deckt unter ${H[i]} ${x.toFixed(3)} ihres Bilds von V18.536, Gestalt-Band [${GESTALT_BAND.join(", ")}]`);
+                    v.push(`${k}: ${st} deckt unter ${H[i]} ${x.toFixed(3)} ihres Bilds der Tafel ${TAFEL_STAND}, Gestalt-Band [${GESTALT_BAND.join(", ")}]`);
             });
         }
     }
@@ -459,11 +461,11 @@ function bildUrteil(mess, tafel) {
                 const x = a[st].reduce((s2, r) => s2 + r[i], 0) / a[st].length;
                 if (!band(x, BILD_BAND))
                     v.push(
-                        `${name}: ${st === "karte" ? "die Karten decken" : st + " deckt unter " + H[i]} im Mittel ${x.toFixed(3)} des Bilds von V18.536 (${a[st].length} Gestalten), Band [${BILD_BAND.join(", ")}]`
+                        `${name}: ${st === "karte" ? "die Karten decken" : st + " deckt unter " + H[i]} im Mittel ${x.toFixed(3)} des Bilds der Tafel ${TAFEL_STAND} (${a[st].length} Gestalten), Band [${BILD_BAND.join(", ")}]`
                     );
             }
         }
-    // die Kronenfarbe je Art: das Mittel der Karten-Farben ihrer Gestalten gegen das von V18.536
+    // die Kronenfarbe je Art: das Mittel der Karten-Farben ihrer Gestalten gegen das der Tafel
     for (const [name, a] of Object.entries(art)) {
         if (!a.farbe.length) continue;
         const mi = (xs) => [0, 1, 2].map((i) => xs.reduce((s2, c) => s2 + c[i], 0) / xs.length);
@@ -599,7 +601,7 @@ function bildUrteil(mess, tafel) {
             const qp = quotePaare[key] || (quotePaare[key] = { l0: 0, l1: 0 });
             qp["l" + c.lod] = kosten(a.meshes).tris;
             if (c.lod === 1) qp.krone = krone.length > 0;
-            // die Raster-Kante beider Stufen: die der Tafel (L0-Höhe / 300 von V18.536), beim Schreiben die der L0
+            // die Raster-Kante beider Stufen: die der Tafel (L0-Höhe / 300 ihres Stands), beim Schreiben die der L0
             const t = tafel && tafel.faelle && tafel.faelle[key];
             const bm = bildMess[key] || (bildMess[key] = { art: c.presetId, seed: c.seed, px: t ? t.px : null });
             if (bm.px == null) bm.px = H / 300;
@@ -787,7 +789,7 @@ function bildUrteil(mess, tafel) {
             const k = await karte(bm.art, bm.seed);
             if (k && !k.fehler) bm.karte = { deckung: k.deckung[0], farbe: k.farbe.ein };
         }
-        // Die Tafel schreiben (`--tafel`, auf dem Stand von V18.536): nur die Bild-Messung, kein Urteil.
+        // Die Tafel schreiben (`--tafel`, auf dem Stand TAFEL_STAND): nur die Bild-Messung, kein Urteil.
         if (tafelSchreiben) return;
         karten.gestoert = await karte(KARTEN_FAELLE[0][0], KARTEN_FAELLE[0][1], "bc1");
         // SELBST-TEST S3 (W8) vorbereitet: der Umschlag OHNE zusatzBudget — welche Kerne verlieren ihre Zeilen?
@@ -879,8 +881,8 @@ function bildUrteil(mess, tafel) {
             TAFEL_BILD,
             JSON.stringify(
                 {
-                    zweck: "DIE BILD-TAFEL (S3 pflanzen, Wand D in gate:asset-contract; Gegenprüfung R1): je Baum-Art × Same (Sommer) das Bild seiner L0 und L1 je Blick-Hebung 0°/30°/60° von unten (Mittel der acht Azimute der kronen-linse; Krone mit der Atlas-Alpha und Rinde über dem Boden der Vorlage, ohne Schatten-Teil; Raster-Kante px = L0-Höhe / 300 in Vorlagen-Einheiten, Fläche in Vorlagen-Einheiten²) und seine Studio-Karte (Deckung der Mip 0, mittlere lineare Kronenfarbe der opaken Texel) — aus dem Ist von V18.536. Je Art hält das Mittel über die Gestalten je Stufe und Hebung (und die Deckung der Karten) 0,92–1,08 davon, jede Gestalt 0,85–1,15; die Kronenfarbe der Karten je Art im Mittel ΔE76 ≤ 2, je Gestalt ≤ 4.",
-                    quelle: "node scripts/diag-asset-contract.cjs --tafel (V18.536, 76c9624d)",
+                    zweck: "DIE BILD-TAFEL (S3 pflanzen, Wand D in gate:asset-contract; Gegenprüfung R1): je Baum-Art × Same (Sommer) das Bild seiner L0 und L1 je Blick-Hebung 0°/30°/60° von unten (Mittel der acht Azimute der kronen-linse; Krone mit der Atlas-Alpha und Rinde über dem Boden der Vorlage, ohne Schatten-Teil; Raster-Kante px = L0-Höhe / 300 in Vorlagen-Einheiten, Fläche in Vorlagen-Einheiten²) und seine Studio-Karte (Deckung der Mip 0, mittlere lineare Kronenfarbe der opaken Texel) — aus dem Ist des Stands " + TAFEL_STAND + " (zuerst V18.536; K20: die Bäume tragen ihr Welt-Maß). Je Art hält das Mittel über die Gestalten je Stufe und Hebung (und die Deckung der Karten) 0,92–1,08 davon, jede Gestalt 0,85–1,15; die Kronenfarbe der Karten je Art im Mittel ΔE76 ≤ 2, je Gestalt ≤ 4.",
+                    quelle: "node scripts/diag-asset-contract.cjs --tafel (" + TAFEL_STAND + ")",
                     band: BILD_BAND,
                     gestaltBand: GESTALT_BAND,
                     karteDE: KARTE_DE,
@@ -1075,14 +1077,14 @@ function bildUrteil(mess, tafel) {
                     .map(([a, e]) => `${a} ${e.q.toFixed(2)}`)
                     .join(" · ")
         );
-        // das Bild gegen V18.536: je Stufe und Hebung die Spanne über die Bäume, die Karte (Deckung, ΔE)
+        // das Bild gegen die Tafel: je Stufe und Hebung die Spanne über die Bäume, die Karte (Deckung, ΔE)
         const spanne = (xs) => (xs.length ? `${Math.min(...xs).toFixed(3)}–${Math.max(...xs).toFixed(3)}` : "—");
         const vh = Object.values(bildMess)
             .map((m) => m.verhaeltnis)
             .filter(Boolean);
         if (vh.length)
             console.log(
-                `Bild gegen V18.536 (${vh.length} Bäume): ` +
+                `Bild gegen die Tafel ${TAFEL_STAND} (${vh.length} Bäume): ` +
                     ["L0", "L1"]
                         .map(
                             (st) =>

@@ -46,7 +46,7 @@
 //   Port: WELTBILD_FROST_PORT (Standard 4426). Exit 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
 const puppeteer = require("puppeteer");
-const { softwareWebGpuArgs, echteWebGpuArgs } = require("./lib/software-gpu.cjs");
+const { linsenWebGpuArgs, adapterZeile, echteWebGpuArgs } = require("./lib/software-gpu.cjs");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
@@ -197,6 +197,7 @@ function pruefRaum(echt) {
     if (c) seele = r._creatureProfile(c).soul;
     if (seele) tier = r._buildCreatureGroup(seele);
     if (tier) {
+        // BÜHNE: eigene Szene des Frost-Bilds
         tier.position.set(1.3, 0, -0.4);
         pivot.add(tier);
     }
@@ -217,6 +218,7 @@ function pruefRaum(echt) {
         }
     });
     const cam = new T.PerspectiveCamera(45, 16 / 9, 0.05, 100);
+    // BÜHNE: eigene Szene des Frost-Bilds
     cam.position.set(0, 1.0, 3.0);
     cam.lookAt(0, 0.7, 0);
     F.wurzel = scene;
@@ -257,8 +259,9 @@ function pruefRaum(echt) {
         headless: !ECHT,
         protocolTimeout: 1800000,
         defaultViewport: ECHT ? { width: 1280, height: 720, deviceScaleFactor: 1 } : { width: 640, height: 360 },
-        args: ECHT ? [...echteWebGpuArgs(), "--window-size=1300,820"] : softwareWebGpuArgs(),
+        args: ECHT ? [...echteWebGpuArgs(), "--window-size=1300,820"] : linsenWebGpuArgs(),
     });
+    await adapterZeile(browser);
     const page = await browser.newPage();
     const t0 = Date.now();
     const zeit = () => `+${Math.round((Date.now() - t0) / 1000)} s`;

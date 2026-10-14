@@ -61,6 +61,7 @@ const path = require("path");
 const PK = require("./lib/pack-kanon.cjs");
 const DZ = require("./lib/draw-zaehler.cjs");
 const BAND = require("./lib/band-urteil.cjs");
+const stammLib = require("./lib/stamm.cjs");
 
 const root = path.join(__dirname, "..");
 
@@ -145,7 +146,54 @@ function buendelReiheWand(src) {
     const ist = scene.children.map((c) => (c.userData ? c.userData.regionKey : c.name)).join(" · ");
     const soll = ["voxelChunk:0,0", "@global", "3,4", "himmel", "s:1,2", "@wahl"].join(" · ");
     if (ist !== soll) errs.push(`die Reihe der Bündel nach der Ankunft @wahl · 3,4 · @global · s:1,2: ${ist} — Soll ${soll}`);
-    return { errs, n: 4 };
+    // DIE REIHE IM BÜNDEL (1310-8): die Gruppen eines Bündels nach ihrer Stufe (L0 zuerst, die Atlas-Karte zuletzt), im
+    // Gleichstand nach Schlüssel — gestellt nach jeder Aufnahme (`_archInstanceGroupFor`, das Wachsen der Gruppe).
+    const kinder = rumpf(code, /\n {4}static _buendelKinderReihe\(bundle(?:, auge)?\)\s*\{/);
+    const gruppe = rumpf(code, /\n {4}_archInstanceGroupFor\(name, leafIdx, leaf, regionKey\)\s*\{/);
+    const wachsen = rumpf(code, /\n {4}_archInstanceGroupGrow\(g\)\s*\{/);
+    if (!kinder) return { errs: errs.concat(["_buendelKinderReihe fehlt im Stamm — die Gruppen eines Bündels zeichnen in der Ankunft"]), n: 4 };
+    if (!gruppe || !/bundle\.add\(mesh\);\s*AnazhRealm\._buendelKinderReihe\(bundle(?:, this\._buendelAuge)?\);/.test(gruppe))
+        errs.push("_archInstanceGroupFor stellt die Reihe im Bündel nach der Aufnahme nicht neu");
+    if (!gruppe || !/mesh\.userData\.buendelStufe\s*=/.test(gruppe))
+        errs.push("_archInstanceGroupFor gibt der Gruppe keinen Rang (mesh.userData.buendelStufe)");
+    if (!wachsen || !/AnazhRealm\._buendelKinderReihe\(parent(?:, this\._buendelAuge)?\)/.test(wachsen))
+        errs.push("_archInstanceGroupGrow stellt die Reihe im Bündel nach dem Tausch nicht neu");
+    const K = (stufe, key) => ({ userData: { buendelStufe: stufe, archInstanceKey: key } });
+    const bundle = { children: [K(1, "f:a|1|1:0"), K(9, "atlas"), K(0, "f:b|1|0:0"), K(0, "f:a|1|0:2"), K(1, "f:a|1|1:0#S")] };
+    new Function("bundle", "auge", kinder)(bundle);
+    const istK = bundle.children.map((c) => c.userData.archInstanceKey).join(" · ");
+    const sollK = ["f:a|1|0:2", "f:b|1|0:0", "f:a|1|1:0", "f:a|1|1:0#S", "atlas"].join(" · ");
+    if (istK !== sollK) errs.push(`die Reihe im Bündel nach der Ankunft L1 · Karte · L0 · L0 · Zwilling: ${istK} — Soll ${sollK}`);
+    // DIE REIHE NACH ABSTAND (1310-9): mit dem Auge zeichnet in der Stufe vorn zuerst (die nächste Instanz der Gruppe); neu
+    // gestellt nur beim Anker-Wechsel (das Auge ≥ BUENDEL_ANKER_M weiter), dann nimmt jedes Bündel EINMAL neu auf.
+    const anker = rumpf(code, /\n {4}_buendelAnkerPruefen\(pos\)\s*\{/);
+    // die Signatur ohne Wortlaut der Parameter: K36 reicht dem Takt das Auge der Maske (`auge = null`)
+    const takt = rumpf(code, /\n {4}_tickArchitectureLOD\([^)]*\)\s*\{/);
+    if (!anker) return { errs: errs.concat(["_buendelAnkerPruefen fehlt im Stamm — die Reihe kennt kein Auge (vorn nicht zuerst)"]), n: 8 };
+    if (!takt || !/this\._buendelAnkerPruefen\(pm\)/.test(takt))
+        errs.push("_tickArchitectureLOD prüft den Anker der Reihe nicht (this._buendelAnkerPruefen(pm) fehlt)");
+    const I = (stufe, key, ...orte) => {
+        const a = new Float32Array(16 * Math.max(1, orte.length));
+        orte.forEach((o, i) => ((a[i * 16 + 12] = o[0]), (a[i * 16 + 14] = o[1])));
+        return { userData: { buendelStufe: stufe, archInstanceKey: key }, instanceMatrix: { array: a }, count: orte.length };
+    };
+    const fernVorn = { children: [I(0, "f:a|1|0:0", [40, 0]), I(1, "f:z|1|1:0", [1, 0]), I(0, "f:b|1|0:0", [50, 0], [3, 0])] };
+    new Function("bundle", "auge", kinder)(fernVorn, { x: 0, z: 0 });
+    const istA = fernVorn.children.map((c) => c.userData.archInstanceKey).join(" · ");
+    const sollA = ["f:b|1|0:0", "f:a|1|0:0", "f:z|1|1:0"].join(" · ");
+    if (istA !== sollA) errs.push(`die Reihe nach Abstand (L0 bei 40 m · L1 bei 1 m · L0 bei 50 m und 3 m): ${istA} — Soll ${sollA}`);
+    const ARA = { BUENDEL_ANKER_M: 16, _buendelKinderReihe: new Function("bundle", "auge", kinder) };
+    const B1 = { isBundleGroup: true, userData: { regionKey: "@wahl" }, needsUpdate: false, children: [I(0, "f:a|1|0:0", [40, 0]), I(0, "f:b|1|0:0", [3, 0])] };
+    const welt = { state: { scene: { children: [B1] } } };
+    const pruefe = new Function("AnazhRealm", "pos", anker);
+    const erst = pruefe.call(welt, ARA, { x: 0, z: 0 });
+    B1.needsUpdate = false;
+    const nah = pruefe.call(welt, ARA, { x: 10, z: 0 });
+    const nahNeu = B1.needsUpdate;
+    const weit = pruefe.call(welt, ARA, { x: 20, z: 0 });
+    if (!(erst === true && nah === false && nahNeu === false && weit === true && B1.needsUpdate === true))
+        errs.push(`der Anker der Reihe: erster Ruf ${erst}, 10 m ${nah} (Neuaufnahme ${nahNeu}), 20 m ${weit} — Soll true · false (keine) · true (Neuaufnahme)`);
+    return { errs, n: 11 };
 }
 
 // H3 — jede Textur-/Bildziel-Erzeugung trägt ihren Erzeuger-Namen in ihrem Statement-Fenster (700 Zeichen): eine
@@ -343,7 +391,7 @@ function gestaltWand(haushalt, ratsche, block, ort, tris) {
 
 function selbsttest() {
     const { haushalt, ratsche } = BAND.ladeSpec("wiese", { geraet: "radeon", sicht: "ego" });
-    const stamm = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+    const stamm = stammLib.text(root);
     const S = stammKlasse(stamm);
     const tests = [];
     const t = (name, ok) => tests.push({ name, ok: !!ok });
@@ -1019,7 +1067,8 @@ function selbsttest() {
             !BAND.messortePruefen(haushalt).length
     );
     // S28 — DAS EINSCHWINGEN WARTET AUF DEN DORF-ZUG (Messort dorf: der Zug läuft): ein Export unterwegs und eine wachsende
-    // Siedlung halten die Welt offen, eine ruhige Welt meldet nichts.
+    // Siedlung halten die Welt offen, eine ruhige Welt meldet nichts. Und auf den SATZ, DER NOCH SCHRUMPFT (1310-1): ein Satz
+    // über seinem Ziel (`ueberSeit` ≥ 0) hält offen, ein ruhender (-1) nicht.
     const welt28 = (z) =>
         Object.assign(
             {
@@ -1040,6 +1089,24 @@ function selbsttest() {
             Object.keys(BAND.einschwingOffen(welt28({}))).length === 0 &&
             /window\.__einschwingOffen = function einschwingOffen/.test(BAND.EINSCHWING_INSTALL)
     );
+    {
+        const satzWelt = (ueber) =>
+            welt28({
+                state: {
+                    voxelMeshPending: new Set(),
+                    scatterRegions: new Map(),
+                    chunkSaetze: new Map([
+                        ["boden", { ueberSeit: -1 }],
+                        ["bauSatz|x|-", { ueberSeit: ueber }],
+                    ]),
+                },
+            });
+        t(
+            "Einschwingen: ein Satz über seinem Ziel (ueberSeit ≥ 0) hält offen, ein ruhender nicht",
+            BAND.einschwingOffen(satzWelt(12)).satzSchrumpft === 1 &&
+                Object.keys(BAND.einschwingOffen(satzWelt(-1))).length === 0
+        );
+    }
     // S29 — die Zeile nahWiese: der Zensus der Mess-Wiese liegt unter der Ratsche; dieselben Büschel mit dem Maximum
     // über die Samen (jede Gestalt trüge die schwerste) liegen darüber und werden rot; eine Gestalt ohne Golden und eine
     // Ratsche ohne Wert werden beim Namen genannt (ein fehlender Wert ist nie 0).
@@ -1074,7 +1141,7 @@ function selbsttest() {
     // S30 — DIE REIHE DER BÜNDEL (H7): der Stamm hält sie; ohne den Aufruf nach einem neuen Bündel, mit @wahl im ersten Rang
     // und ohne die Reihe im Stamm wird die Wand rot (jede Verfälschung trifft die Quelle).
     {
-        const st = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+        const st = stammLib.text(root);
         const ohneRuf = st.replace("this._buendelReihe(scene);", "");
         const wahlVorn = st.replace(
             'return key === "@global" ? 0 : key === "@wahl" ? 2 : 1;',
@@ -1089,6 +1156,36 @@ function selbsttest() {
                 buendelReiheWand(ohneRuf).errs.some((x) => /stellt die Reihe/.test(x)) &&
                 buendelReiheWand(wahlVorn).errs.some((x) => /Reihe der Bündel nach der Ankunft/.test(x)) &&
                 buendelReiheWand(ohneReihe).errs.some((x) => /hängt an der Ankunft/.test(x))
+        );
+        // DIE REIHE IM BÜNDEL (1310-8): ohne den Aufruf nach der Aufnahme, verkehrt herum und ohne die Reihe rot
+        const ohneKinderRuf = st.replace(
+            "bundle.add(mesh);\n            AnazhRealm._buendelKinderReihe(bundle, this._buendelAuge);",
+            "bundle.add(mesh);"
+        );
+        const verkehrt = st.replace("rang(a) - rang(b) ||", "rang(b) - rang(a) ||");
+        const ohneKinder = st.replace("static _buendelKinderReihe(bundle, auge) {", "static _buendelKinderReiheAlt(bundle, auge) {");
+        t(
+            "Reihe im Bündel: der Stamm stellt die Gruppen nach Stufe (L0 zuerst); ohne den Aufruf, verkehrt und ohne die Reihe rot",
+            ohneKinderRuf !== st &&
+                verkehrt !== st &&
+                ohneKinder !== st &&
+                buendelReiheWand(ohneKinderRuf).errs.some((x) => /nach der Aufnahme nicht neu/.test(x)) &&
+                buendelReiheWand(verkehrt).errs.some((x) => /Reihe im Bündel nach der Ankunft/.test(x)) &&
+                buendelReiheWand(ohneKinder).errs.some((x) => /in der Ankunft/.test(x))
+        );
+        // DIE REIHE NACH ABSTAND (1310-9): ohne den Abstand, mit einem Anker, der jeden Frame stellt, und ohne den Ruf im Takt rot
+        const ohneAbstand = st.replace("(auge ? nah.get(a) - nah.get(b) : 0) ||", "0 ||");
+        const jedenFrame = st.replace("if (a && (pos.x - a.x) * (pos.x - a.x) + (pos.z - a.z) * (pos.z - a.z) <= R * R) return false;", "");
+        const ohneTaktRuf = st.replace("this._buendelAnkerPruefen(pm);", "");
+        t(
+            "Reihe nach Abstand: vorn zuerst in der Stufe, neu nur beim Anker-Wechsel; ohne Abstand, je Frame und ohne Ruf im Takt rot",
+            ohneAbstand !== st &&
+                jedenFrame !== st &&
+                ohneTaktRuf !== st &&
+                buendelReiheWand(st).errs.length === 0 &&
+                buendelReiheWand(ohneAbstand).errs.some((x) => /Reihe nach Abstand/.test(x)) &&
+                buendelReiheWand(jedenFrame).errs.some((x) => /Anker der Reihe/.test(x)) &&
+                buendelReiheWand(ohneTaktRuf).errs.some((x) => /prüft den Anker/.test(x))
         );
     }
 
@@ -1217,7 +1314,7 @@ function main() {
         else messungen.push({ quelle: path.basename(d), ort: u.ort, geraet, sicht: u.sicht, u });
     }
     for (const f of BAND.ratscheFrische({ haushalt, version, ratschen, messungen })) errs.push("H2b " + f);
-    const stamm = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+    const stamm = stammLib.text(root);
     const nw = namensWand(stamm);
     for (const f of nw.errs) errs.push("H3 " + f);
     const tw = taeterWand(stamm);
@@ -1298,7 +1395,7 @@ function main() {
             `H2b ${ratschen.length} Ratschen frisch an V${version}${messungen.length ? ` gegen ${messungen.length} Messungen` : ""} · ` +
             `H3 ${nw.n} Textur-Erzeuger benannt · ` +
             `H4 Täter-Klasse des Stamms: ${tw.n} Schlüssel-Formen · H5 ${nl.n} Haushalt-Namen mit Erzeuger im Stamm · ` +
-            `Messorte ${ortZeile} · H6 ${ot.n} Ort-Takt- und Anker-Methoden im Stamm · H7 die Reihe der Bündel (@global · Regionen · @wahl).`
+            `Messorte ${ortZeile} · H6 ${ot.n} Ort-Takt- und Anker-Methoden im Stamm · H7 die Reihe der Bündel (@global · Regionen · @wahl) und die Reihe im Bündel (Stufe).`
     );
 }
 

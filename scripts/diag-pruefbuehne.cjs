@@ -675,7 +675,11 @@ async function probe(page, welt, wuerfe, evolutionen, schein) {
 // Spielpfad (`_loopRender`, die Stoffe der Welt, der Ausgabe-Pfad) nur die Nähe des Feuers — jedes Objekt der Welt-Szene,
 // dessen Hülle (Kugel in Welt-Lage, Instanz- und Batch-Hülle eingeschlossen) die Kugel um das Feuer schneidet. Die Sätze
 // (`bodenSatz`, `bauSatz`: Boden und Bauten je Stoff in EINEM Mesh) tragen die Überall-Hülle (1e9) und zeichnen; eine
-// Hülle ≥ 1 km ist die Ferne (Panorama, Fern-Ring) und fällt. Fremde Szenen (Post, PMREM) und die Lichter bleiben. Gemessen 12.10. (24 Kerne):
+// Hülle ≥ 1 km ist die Ferne (das Panorama) und fällt, der Fern-Ring fällt an seinem Stempel (`userData.inventar`
+// "fern-ring", wie `licht-linsen` ihn liest): seit K16 trägt seine Schale 0 die Hülle 803 m (vorher 1 413 m) in zwei Teilen
+// (frei und Naht), die Kilometer-Regel nahm beide in die Nähe — der Schuss übersetzte 13 statt 11 Programme (lokal Schuss
+// 14 → 21 s, auf dem Runner riss die Frist 170 s viermal in Folge). Fremde Szenen (Post, PMREM) und die Lichter bleiben.
+// Gemessen 12.10. (24 Kerne):
 // die ganze Welt übersetzte im ersten Schuss 54 Programme (1,5 MB Fragment-WGSL, 90–176 s am Rücklesen); auf dem Runner
 // mit 4 Kernen riss so die Protokoll-Grenze von 900 s. Der Feuerkreis liest nur Boden, Feuer, Pool und Ausgabe.
 const S0_NAH_INSTALL = () => {
@@ -700,6 +704,7 @@ const S0_NAH_INSTALL = () => {
                 k = o.geometry.boundingSphere;
             }
             if (wurzel !== welt || !k) u = true;
+            else if (o.userData && o.userData.inventar === "fern-ring") u = false;
             else {
                 kugel.copy(k).applyMatrix4(o.matrixWorld);
                 u =
@@ -735,7 +740,7 @@ const S0_TON = { hue: [25, 45], satMax: 0.75, palette: { hex: 0xff7a35, nacht: 1
 const s0TonPasst = (t) => !!t && t.hue >= S0_TON.hue[0] && t.hue <= S0_TON.hue[1];
 const S0_FRIST_S = Math.max(30, Number(opt("--frist", 170)) || 170);
 async function lichtLauf() {
-    const { softwareWebGpuArgs, echteWebGpuArgs } = require("./lib/software-gpu.cjs");
+    const { linsenWebGpuArgs, adapterZeile, echteWebGpuArgs } = require("./lib/software-gpu.cjs");
     const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
     const ECHT = argv.includes("--echt");
     const HOLZ = opt("--holz", "kienspan");
@@ -765,8 +770,9 @@ async function lichtLauf() {
         headless: !ECHT,
         protocolTimeout: (S0_FRIST_S + 60) * 1000,
         defaultViewport: ECHT ? null : { width: 640, height: 360 },
-        args: ECHT ? [...echteWebGpuArgs(), "--window-size=1280,800"] : softwareWebGpuArgs(),
+        args: ECHT ? [...echteWebGpuArgs(), "--window-size=1280,800"] : linsenWebGpuArgs(),
     });
+    await adapterZeile(browser);
     const ende = async (befund) => {
         console.log(`\n⛔ S0 BILD ROT: ${befund} (${Math.round((Date.now() - t0) / 1000)} s)\n`);
         await browser.close().catch(() => {});
@@ -800,9 +806,11 @@ async function lichtLauf() {
     await page.evaluateOnNewDocument(() => {
         window.__s0Still = true;
         const warte = setInterval(() => {
+            // die Klasse steht ab stamm/01.js, ihre Glieder trägt erst die Naht (stamm/26a.js) auf: gewartet wird auf das
+            // Glied selbst — ein vorher gesetztes `_loopRender` wäre ein Zwilling, an dem die Naht laut bricht
             // eslint-disable-next-line no-undef
             const K = typeof AnazhRealm === "function" ? AnazhRealm : null;
-            if (!K) return;
+            if (!K || typeof K.prototype._loopRender !== "function") return;
             clearInterval(warte);
             const zeichne = K.prototype._loopRender;
             K.prototype._loopRender = function (t) {
@@ -981,9 +989,12 @@ async function lichtLauf() {
                         cam.updateMatrixWorld(true);
                         // die Plätze des Pools blenden in LICHT_POOL.blendeS ein: die Wand-Uhr läuft, ehe der Schuss misst
                         await new Promise((res) => setTimeout(res, 1000 * r.constructor.LICHT_POOL.blendeS + 100));
+                        // der Satz „messung" (K32, scripts/lib/abnahme-urteil.cjs): der Schuss ist ein Mess-Frame der Nacht — sein
+                        // Urteil liest den Kreis um das Feuer (kreis, ton) aus den Pixeln; die Belichtungs-Zeile des Beweis-Satzes
+                        // (Tag-Bühne, abgesoffen ≤ 60 %) warf hier an der Mitternacht (schwarz 71,9 %, Kreis hell)
                         for (let i = 0; i < 2; i++) {
                             r._schattenAlleNeu();
-                            auf = await window.__ausgabeAufnahme(w, h, 1);
+                            auf = await window.__ausgabeAufnahme(w, h, 1, { satz: "messung" });
                         }
                     } finally {
                         r._leuchtTakt = alt;

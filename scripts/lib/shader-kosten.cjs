@@ -310,10 +310,21 @@ function kostenTabelle(nach, vor) {
 // eigene Eigenschaft ohne `_`, die ein Knoten ist oder Knoten trägt). Ein Fn-Aufruf ohne Layout baut seinen Rumpf erst im
 // Compiler: ist er ein Knoten der TSL-Bibliothek selbst (`tsl`: jeder exportierte Knoten samt Graph — positionWorld,
 // cameraPosition, normalView …), zählt er als `bibliothek`, sonst als `verborgen` (ein Rumpf des Spiels, den der Graph
-// nicht sieht — dort könnte ein Rauschen wohnen). Rein — läuft in der Seite und im Selbsttest.
-function stoffGraph(stoff, rauschQuelle, tsl) {
+// nicht sieht — dort könnte ein Rauschen wohnen). Ausgenommen sind die ZWEIGE des Stamms (`zweige`: die Rümpfe von
+// `AnazhRealm._zweigTSL`, K17-2) — ihr Rumpf liest nur seine Argumente, und die sind Kinder des Aufrufs: der Graph sieht den
+// Inhalt, gezählt als `zweig`. Rein — läuft in der Seite und im Selbsttest.
+function stoffGraph(stoff, rauschQuelle, tsl, zweige) {
     const ist = new RegExp(rauschQuelle, "i");
-    const aus = { slots: [], knoten: 0, rauschen: 0, rauschNamen: {}, texturen: {}, verborgen: 0, bibliothek: 0 };
+    const aus = {
+        slots: [],
+        knoten: 0,
+        rauschen: 0,
+        rauschNamen: {},
+        texturen: {},
+        verborgen: 0,
+        bibliothek: 0,
+        zweig: 0,
+    };
     if (!stoff) return Object.assign(aus, { fehler: "kein Stoff" });
     const bib = new Set();
     const offen = [];
@@ -346,6 +357,7 @@ function stoffGraph(stoff, rauschQuelle, tsl) {
             const lay = n.shaderNode && n.shaderNode.layout;
             if (lay) name = lay.name;
             else if (bib.has(n.id)) aus.bibliothek++;
+            else if (zweige && zweige.indexOf(n.shaderNode) >= 0) aus.zweig++;
             else aus.verborgen++;
         } else if (Array.isArray(n.functionNodes) && n.functionNodes.length) {
             const f = n.functionNodes[0];
@@ -532,6 +544,15 @@ fn main( @location( 0 ) uv : vec2<f32> ) -> OutputStruct {
         [["colorNode", "normalNode"], 8, 1, { "rausch-atlas": 2 }, 1, 1]
     );
     pruef("Graph ohne Bibliothek", stoffGraph(stoff, RAUSCH_NAME.source, null).verborgen, 2);
+    // der Zweig des Stamms (K17-2): sein Rumpf ist bekannt, sein Inhalt reist als Argument — der Graph zählt die Ladung darin
+    const zweigRumpf = { layout: null };
+    const imZweig = knoten({ isTextureNode: true, value: atlas });
+    const stoffZ = {
+        colorNode: knoten({ isShaderCallNodeInternal: true, shaderNode: zweigRumpf, rawInputs: [imZweig] }),
+    };
+    const gz = stoffGraph(stoffZ, RAUSCH_NAME.source, tsl, [zweigRumpf]);
+    pruef("Zweig des Stamms", [gz.zweig, gz.verborgen, gz.texturen], [1, 0, { "rausch-atlas": 1 }]);
+    pruef("fremder Rumpf ohne Layout", stoffGraph(stoffZ, RAUSCH_NAME.source, tsl, []).verborgen, 1);
     pruef("Graph ohne Stoff", stoffGraph(null, RAUSCH_NAME.source, tsl).fehler, "kein Stoff");
     pruef("Graph-Namen", g.rauschNamen, { mx_perlin_noise_float_0: 1 });
     return fehler;
@@ -781,5 +802,7 @@ module.exports = {
     SHADER_INSTALL:
         `window.__shaderKosten = ${shaderKostenSeite.toString()};` +
         `window.__rauschProbe = ${rauschProbe.toString()};` +
-        `window.__stoffGraph = (stoff) => (${stoffGraph.toString()})(stoff, ${JSON.stringify(RAUSCH_NAME.source)}, window.THREE.TSL);`,
+        `window.__stoffGraph = (stoff) => (${stoffGraph.toString()})(stoff, ${JSON.stringify(RAUSCH_NAME.source)}, window.THREE.TSL, ` +
+        `window.anazhRealm && typeof window.anazhRealm.constructor._zweigTSL === "function" ? ` +
+        `[window.anazhRealm.constructor._zweigTSL(window.THREE.TSL).shaderNode] : []);`,
 };

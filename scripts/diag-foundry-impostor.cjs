@@ -15,6 +15,7 @@ const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.FIMP_PORT || 4595);
 const root = path.resolve(__dirname, "..");
@@ -119,6 +120,7 @@ async function driveImpostor(page) {
                 const vor = new Set(r.state.archInstanceGroups ? r.state.archInstanceGroups.keys() : []);
                 const sE = r._scatterInstanceAdd("fscatter:eiche:1:2", 10, 0, 10, 0.3, 1.1, null, "3,4", flat1);
                 const sF = r._scatterInstanceAdd("fscatter:fichte:1:2", 20, 0, 10, 0.7, 0.9, null, "3,4", flat2);
+                // BÜHNE: Eintrag einer Einheits-Probe, kein gesetzter Ort
                 const entry = { type: "baum_eiche", position: { x: 30, y: 0, z: 10 }, rotation: 0, scale: 1.2, seed: 7 };
                 r._archInstanceAdd(entry, flat1);
                 const neu = [...r.state.archInstanceGroups.keys()].filter((k) => !vor.has(k));
@@ -142,6 +144,9 @@ async function driveImpostor(page) {
                     // die Sichthöhe je Slot = Höhe der Höhen-Stufe × Instanz-Skala (dieselbe Zahl wie der aH0-Stempel)
                     sicht: [sE[0].slot, sF[0].slot, entry.instSlots[0].slot].map((i) => slot(i)[3]),
                     erwartetSicht: [l1.sicht * 1.1, l2.sicht * 0.9, l1.sicht * 1.2],
+                    // VOLL je Slot (das Vorzeichen): die Streu-Slots frei, die frisch gesetzte Primär-Stufe hält, bis ihre
+                    // Band-Pflege urteilt (K36, `_lodSlotVoll`)
+                    voll: [false, false, r._lodSlotVoll(entry)],
                     instanziert: !!(ak && ak.isInstancedBufferAttribute && ak.itemSize === 4),
                     vertexPuffer: puffer,
                     attribute: geo ? Object.keys(geo.attributes) : [],
@@ -177,7 +182,10 @@ async function driveImpostor(page) {
                 if ((window.__impostorRttBaked || 0) > out.rttBaked) break;
             }
             out.rttBakedAfter = (typeof window !== "undefined" && window.__impostorRttBaked) || 0;
-            out.rttErrorAfter = (typeof window !== "undefined" && window.__impostorRttError) || null;
+            // der Bruch der Karte steht beim Namen im Log (`_stoffBruch`, K22); hier zählt der Zensus die gescheiterten
+            const cz = r._impostorCensus && r._impostorCensus();
+            out.rttErrorAfter =
+                cz && cz.gescheitert ? `gescheitert ${cz.gescheitert} (${cz.gescheitertArten.join(", ")})` : null;
         } catch (e) {
             out.err = (e && e.message) || String(e);
         }
@@ -211,7 +219,8 @@ async function kleberProbe(page, fmtWunsch) {
             ren.setSize(W, H, false);
             // Ein frischer Atlas im Format des Probe-Renderers (die Seite fährt den Null-Renderer).
             // BEIDE Format-Stufen desselben Pfads: BC (Adapter-Feature) und rgba8/rg8 (DataArrayTexture, GPU-Mips)
-            if (fmtWunsch === "bc" && !ren.hasFeature("texture-compression-bc")) return { fmt: "bc", ohneFeature: true };
+            if (fmtWunsch === "bc" && !ren.hasFeature("texture-compression-bc"))
+                return { fmt: "bc", ohneFeature: true };
             out.fmt = fmtWunsch;
             r._kartenAtlas = undefined;
             const at = r._impostorAtlas();
@@ -219,12 +228,13 @@ async function kleberProbe(page, fmtWunsch) {
             const prevCf = r.state.foundryCrossfade;
             r.state.foundryCrossfade = false; // die Nah-Ausblendung des Crossfades maskiert die Probe sonst
             if (r.state._foliageMatCache)
-                for (const [k, m] of r.state._foliageMatCache) if (m.userData && m.userData.impostorBillboard) r.state._foliageMatCache.delete(k);
+                for (const [k, m] of r.state._foliageMatCache)
+                    if (m.userData && m.userData.impostorBillboard) r.state._foliageMatCache.delete(k);
             const mat = r._impostorAtlasMaterial();
             r.state.foundryCrossfade = prevCf;
             out.billboard = !!(mat && mat.userData && mat.userData.impostorBillboard);
             if (!out.billboard) {
-                out.err = "Impostor-TSL-Wiring fehlgeschlagen: " + (window.__impostorAtlasError || "unbekannt");
+                out.err = "Impostor-TSL-Wiring: der Stoff trägt keinen Karten-Marker (impostorBillboard)";
                 return out;
             }
             // (1) die synthetische Studio-Karte: Albedo linear, links oben opak; Normale zur Kamera
@@ -293,6 +303,7 @@ async function kleberProbe(page, fmtWunsch) {
             szene.add(mesh);
             szene.add(new T.AmbientLight(0xffffff, 3));
             const cam = new T.PerspectiveCamera(60, W / H, 0.5, 500);
+            // BÜHNE: eigene Szene des Impostor-Vergleichs
             cam.position.set(0, 4, 26);
             cam.lookAt(0, 4, 0);
             cam.updateMatrixWorld(true);
@@ -376,6 +387,388 @@ async function kleberProbe(page, fmtWunsch) {
     }, fmtWunsch);
 }
 
+// ===== TEIL C2 — DIE VERGRÖSSERTE KARTE (K20, 12.10.) =====
+// Die Stufe 0 der Karte ist binär (Karten-Gesetz, BC1). Bilinear gelesen schnitt der alphaTest jede vergrößerte Krone in
+// Texel-Treppen (Werkbank, Radeon, Bestand von innen: Texel bis 3,3 px, Blöcke mit rechteckigen Löchern). Die Probe zeichnet
+// eine Karte mit einer DIAGONALEN Kante so nah, dass ein Texel ~4 px misst, und liest die Kontur je Zeile: die Treppe ist
+// der Anteil der Zeilen, deren Kanten-Spalte gleich bleibt (eine glatte Diagonale rückt je Zeile, eine Texel-Treppe steht
+// so viele Zeilen still, wie ein Texel hoch ist). SELBSTTEST: dieselbe Kante in 8-Texel-Stufen gemalt MUSS treppig stehen.
+async function vergroessertProbe(page, fmtWunsch) {
+    return await page.evaluate(async (fmtWunsch) => {
+        const r = window.anazhRealm;
+        const out = { err: null, fmt: fmtWunsch };
+        try {
+            const T = THREE;
+            const ren = new T.WebGPURenderer({ antialias: false });
+            await ren.init();
+            const W = 128,
+                H = 128;
+            ren.setSize(W, H, false);
+            if (fmtWunsch === "bc" && !ren.hasFeature("texture-compression-bc"))
+                return { fmt: "bc", ohneFeature: true };
+            r._kartenAtlas = undefined;
+            const at = r._impostorAtlas();
+            at.fmt = fmtWunsch;
+            const prevCf = r.state.foundryCrossfade;
+            r.state.foundryCrossfade = false;
+            if (r.state._foliageMatCache)
+                for (const [k, m] of r.state._foliageMatCache)
+                    if (m.userData && m.userData.impostorBillboard) r.state._foliageMatCache.delete(k);
+            const mat = r._impostorAtlasMaterial();
+            r.state.foundryCrossfade = prevCf;
+            if (!(mat && mat.userData && mat.userData.impostorBillboard)) return { err: "kein Billboard-Stoff" };
+            const core = window.__phytoCore;
+            const cw = at.cw,
+                ch = at.ch,
+                V = at.V;
+            // die Kante: opak, wo x + y > 1 (Ansichts-Koordinaten 0..1) — im Welt-Quad (8 × 8 m) die Diagonale x + y = 4
+            const karte = (stufe) => {
+                const alb = new Uint8Array(cw * ch * V * 4);
+                for (let y = 0; y < ch * V; y++)
+                    for (let x = 0; x < cw; x++) {
+                        const yy = y % ch;
+                        const qx = stufe ? Math.floor(x / stufe) * stufe + stufe / 2 : x + 0.5;
+                        const qy = stufe ? Math.floor(yy / (2 * stufe)) * 2 * stufe + stufe : yy + 0.5;
+                        if (qx / cw + qy / ch > 1) {
+                            const o = (y * cw + x) * 4;
+                            alb[o] = 60;
+                            alb[o + 1] = 160;
+                            alb[o + 2] = 40;
+                            alb[o + 3] = 255;
+                        }
+                    }
+                const nrm = new Uint8Array(cw * ch * V * 4);
+                for (let i = 0; i < nrm.length; i += 4) {
+                    nrm[i] = 128;
+                    nrm[i + 1] = 128;
+                    nrm[i + 2] = 255;
+                    nrm[i + 3] = 255;
+                }
+                return core.karteKodiere(
+                    { cw, ch, V, frame: { halfH: 4, halfW: 4 }, albedo: alb, normal: nrm },
+                    at.fmt
+                );
+            };
+            const cam = new T.PerspectiveCamera(60, W / H, 0.05, 50);
+            const d = 0.866; // ein Pixel 7,8 mm: ein Texel der Höhe (8 m / ch) misst ~4 px
+            cam.position.set(0, 4, d);
+            cam.lookAt(0, 4, 0);
+            cam.updateMatrixWorld(true);
+            out.pxJeTexel = +(8 / ch / ((2 * d * Math.tan(Math.PI / 6)) / H)).toFixed(2);
+            const treppe = async (stufe, name) => {
+                const z = r._impostorZelleNeu(at, "fimp:gateKante|" + name, "eiche", 1, null);
+                if (!r._applyStudioImpostorPayload(z, karte(stufe))) return null;
+                const leaf = r._impostorLeaf(z, new T.Matrix4(), 8);
+                const mesh = new T.InstancedMesh(r._lodInstanceFacade(leaf.geom, 1), mat, 1);
+                mesh.frustumCulled = false;
+                const gruppe = {
+                    key: "gate:kante:" + name,
+                    mesh,
+                    capacity: 1,
+                    liveCount: 0,
+                    slotRef: [],
+                    slotEntry: [],
+                };
+                const ref = r._archGroupAlloc(gruppe, null);
+                mesh.setMatrixAt(ref.slot, new T.Matrix4());
+                mesh.instanceMatrix.needsUpdate = true;
+                r._lodSlotStamp({ mesh }, ref.slot, 1, false, leaf);
+                const szene = new T.Scene();
+                szene.add(mesh);
+                szene.add(new T.AmbientLight(0xffffff, 3));
+                const rt = new T.RenderTarget(W, H);
+                ren.setRenderTarget(rt);
+                // der Wind ruht: die Probe misst die Karte, nie den Ausschlag des Augenblicks (die Treppe streute 0,248-0,372)
+                if (r.state.windUniforms) r.state.windUniforms.uWindStrength.value = 0;
+                await ren.renderAsync(szene, cam);
+                const buf = await ren.readRenderTargetPixelsAsync(rt, 0, 0, W, H);
+                let gleich = 0,
+                    zeilen = 0,
+                    vor = null;
+                for (let y = 0; y < H; y++) {
+                    let bx = -1;
+                    for (let x = 0; x < W; x++)
+                        if (buf[(y * W + x) * 4 + 3] > 0) {
+                            bx = x;
+                            break;
+                        }
+                    if (bx > 2 && bx < W - 3) {
+                        if (vor !== null) {
+                            zeilen++;
+                            if (bx === vor) gleich++;
+                        }
+                        vor = bx;
+                    } else vor = null;
+                }
+                rt.dispose();
+                return { treppe: zeilen ? +(gleich / zeilen).toFixed(3) : null, zeilen };
+            };
+            out.kante = await treppe(0, "glatt");
+            out.selbst = await treppe(8, "stufen");
+            ren.dispose();
+        } catch (e) {
+            out.err = (e && e.message) || String(e);
+        }
+        return out;
+    }, fmtWunsch);
+}
+
+// ===== TEIL C3 — DIE KARTE SIEHT DAS AUGE (K20, 13.10.) =====
+// r184 setzt den positionNode VOR die Instanz-Matrix (WGSL der Karte gelesen): las das Quad dort positionLocal und den
+// Normal-Probe, blickte es aus dem Vorlagen-Raum und die Matrix drehte es danach mit dem Baum — jede Karte stand als
+// feste Tafel in der Drehung ihrer Instanz (die Solitär-Eiche aus 22 m ein Strich, aus 70 m breit). Die Probe stellt
+// EINE voll deckende Karte (Rahmen 4 × 8, Skala 1,5) abseits des Ursprungs in drei Drehungen auf und misst ihre Breite
+// im Bild gegen die Breite der Tafel, die das Auge ansieht (12 m in 20 m Abstand). Täter beim Namen: der Karten-
+// positionNode in `_buildPbrNodeMaterial` und `_instanzMatrixNode`.
+const BLICK_DREHUNGEN = [0, 90, -119];
+function blickUrteil(mess) {
+    const v = [];
+    for (const m of mess) {
+        const q = m.soll > 0 ? m.breite / m.soll : 0;
+        if (!(q >= 0.9 && q <= 1.1))
+            v.push(
+                `Drehung ${m.phi}°: Breite ${m.breite} px gegen ${m.soll} px (${q.toFixed(2)}) — die Karte sieht das Auge nicht`
+            );
+    }
+    return v;
+}
+async function blickProbe(page) {
+    return await page.evaluate(async (drehungen) => {
+        const r = window.anazhRealm;
+        const out = { err: null, mess: [] };
+        try {
+            const T = THREE;
+            const ren = new T.WebGPURenderer({ antialias: false });
+            await ren.init();
+            const W = 128,
+                H = 128;
+            ren.setSize(W, H, false);
+            r._kartenAtlas = undefined;
+            const at = r._impostorAtlas();
+            at.fmt = "rgba8";
+            const prevCf = r.state.foundryCrossfade;
+            r.state.foundryCrossfade = false;
+            if (r.state._foliageMatCache)
+                for (const [k, m] of r.state._foliageMatCache)
+                    if (m.userData && m.userData.impostorBillboard) r.state._foliageMatCache.delete(k);
+            const mat = r._impostorAtlasMaterial();
+            r.state.foundryCrossfade = prevCf;
+            if (!(mat && mat.userData && mat.userData.impostorBillboard)) return { err: "kein Billboard-Stoff" };
+            const core = window.__phytoCore;
+            const cw = at.cw,
+                ch = at.ch,
+                V = at.V;
+            const alb = new Uint8Array(cw * ch * V * 4).fill(255);
+            const nrm = new Uint8Array(cw * ch * V * 4);
+            for (let i = 0; i < nrm.length; i += 4) {
+                nrm[i] = 128;
+                nrm[i + 1] = 128;
+                nrm[i + 2] = 255;
+                nrm[i + 3] = 255;
+            }
+            const z = r._impostorZelleNeu(at, "fimp:gateBlick|1", "eiche", 1, null);
+            const payload = core.karteKodiere(
+                { cw, ch, V, frame: { halfH: 4, halfW: 4 }, albedo: alb, normal: nrm },
+                at.fmt
+            );
+            if (!r._applyStudioImpostorPayload(z, payload)) return { err: "Schicht nicht geschrieben" };
+            const leaf = r._impostorLeaf(z, new T.Matrix4(), 8);
+            const anker = new T.Vector3(30, 0, -10),
+                s = 1.5,
+                d = 20;
+            const cam = new T.PerspectiveCamera(60, W / H, 0.1, 200);
+            cam.position.set(anker.x, 6, anker.z + d);
+            cam.lookAt(anker.x, 6, anker.z);
+            cam.updateMatrixWorld(true);
+            const soll = Math.round((2 * 4 * s) / ((2 * d * Math.tan(Math.PI / 6)) / W));
+            for (const phi of drehungen) {
+                const mesh = new T.InstancedMesh(r._lodInstanceFacade(leaf.geom, 1), mat, 1);
+                mesh.frustumCulled = false;
+                const gruppe = {
+                    key: "gate:blick:" + phi,
+                    mesh,
+                    capacity: 1,
+                    liveCount: 0,
+                    slotRef: [],
+                    slotEntry: [],
+                };
+                const ref = r._archGroupAlloc(gruppe, null);
+                const M = new T.Matrix4().compose(
+                    anker,
+                    new T.Quaternion().setFromAxisAngle(new T.Vector3(0, 1, 0), (phi * Math.PI) / 180),
+                    new T.Vector3(s, s, s)
+                );
+                mesh.setMatrixAt(ref.slot, M);
+                mesh.instanceMatrix.needsUpdate = true;
+                r._lodSlotStamp({ mesh }, ref.slot, s, false, leaf);
+                const szene = new T.Scene();
+                szene.add(mesh);
+                szene.add(new T.AmbientLight(0xffffff, 3));
+                const rt = new T.RenderTarget(W, H);
+                ren.setRenderTarget(rt);
+                if (r.state.windUniforms) r.state.windUniforms.uWindStrength.value = 0; // der Wind ruht (wie C2)
+                await ren.renderAsync(szene, cam);
+                const buf = await ren.readRenderTargetPixelsAsync(rt, 0, 0, W, H);
+                let breite = 0;
+                for (let y = 0; y < H; y++) {
+                    let x0 = -1,
+                        x1 = -1;
+                    for (let x = 0; x < W; x++)
+                        if (buf[(y * W + x) * 4 + 3] > 0) {
+                            if (x0 < 0) x0 = x;
+                            x1 = x;
+                        }
+                    if (x0 >= 0 && x1 - x0 + 1 > breite) breite = x1 - x0 + 1;
+                }
+                rt.dispose();
+                out.mess.push({ phi, breite, soll });
+            }
+            ren.dispose();
+        } catch (e) {
+            out.err = (e && e.message) || String(e);
+        }
+        return out;
+    }, BLICK_DREHUNGEN);
+}
+
+// ===== TEIL C4 — DER WIND WEHT IN DER WELT (K20-N1, 13.10.) =====
+// Dieselbe r184-Reihenfolge trägt jeder Stoff einer InstancedMesh (`_instanzMesh`): der positionNode läuft VOR der
+// Instanz-Matrix. Addiert der Wind dort einen Versatz in Welt-Metern und Welt-Richtung, drehte und skalierte ihn die
+// Matrix danach mit jedem Baum — jeder Baum bog sich in die Richtung seiner eigenen Drehung. Die Probe stellt EINE
+// Säule (Vorlage 10 m, der Rinden-Stoff `_baumWindStoff` mit Wind-Daten) im Sturm (Wind-Zeile 1, Richtung +x, feste
+// Wind-Uhr) in drei Instanz-Drehungen und zwei Skalen an DENSELBEN Anker und misst von oben den Versatz des Säulen-Bilds
+// gegen die Säule ohne Wind (Schwerpunkt in Welt-Metern). Urteil: jeder Versatz zeigt in die Wind-Richtung (± 10°) und
+// ist je Skala über die Drehungen gleich lang (± 10 %). Täter beim Namen: `_baumWindStoff` und `_instanzMatrixNode`.
+const WIND_FAELLE = [
+    { phi: 0, s: 1 },
+    { phi: 90, s: 1 },
+    { phi: -119, s: 1 },
+    { phi: 0, s: 2 },
+    { phi: 90, s: 2 },
+    // die Wiese (`_windSwayOffset`, die Halme der Gras-Instanzen) liest dieselbe Naht
+    { phi: 0, s: 1, stoff: "gras" },
+    { phi: 90, s: 1, stoff: "gras" },
+    { phi: -119, s: 1, stoff: "gras" },
+];
+function windUrteil(mess) {
+    const v = [];
+    const laenge = {};
+    for (const m of mess) {
+        const stoff = m.stoff || "rinde";
+        const L = Math.hypot(m.dx, m.dz);
+        // die Rinde weht in uWindDir (+x); die Wiese wiegt in Welt-x/z — sie misst gegen ihre Drehung 0
+        const ref = m.stoff ? mess.find((q) => q.stoff === m.stoff && q.phi === 0 && q.s === m.s) : null;
+        const w0 = ref ? (Math.atan2(ref.dz, ref.dx) * 180) / Math.PI : 0;
+        const w = (((((Math.atan2(m.dz, m.dx) * 180) / Math.PI - w0 + 540) % 360) + 360) % 360) - 180;
+        if (!(L > 0.05))
+            v.push(`${stoff} Drehung ${m.phi}° Skala ${m.s}: kein Versatz (${L.toFixed(3)} m) — die Probe ist blind`);
+        else if (Math.abs(w) > 10)
+            v.push(
+                `${stoff} Drehung ${m.phi}° Skala ${m.s}: der Wind weht ${w.toFixed(0)}° neben der Welt-Richtung — er dreht mit der Instanz`
+            );
+        (laenge[stoff + " " + m.s] = laenge[stoff + " " + m.s] || []).push(L);
+    }
+    for (const sk of Object.keys(laenge)) {
+        const L = laenge[sk];
+        const lo = Math.min(...L),
+            hi = Math.max(...L);
+        if (lo > 0 && hi / lo > 1.1)
+            v.push(
+                `Skala ${sk}: Versatz ${lo.toFixed(2)}–${hi.toFixed(2)} m über die Drehungen — er hängt an der Drehung`
+            );
+    }
+    return v;
+}
+async function windProbe(page) {
+    return await page.evaluate(async (faelle) => {
+        const r = window.anazhRealm;
+        const out = { err: null, mess: [] };
+        try {
+            const T = THREE;
+            const ren = new T.WebGPURenderer({ antialias: false });
+            await ren.init();
+            const W = 256,
+                H = 256;
+            ren.setSize(W, H, false);
+            if (!r.state.windUniforms) r._grassInstanceMat();
+            const wu = r._ensureWindCoupling(T.TSL);
+            const anker = new T.Vector3(30, 0, -10);
+            const halb = 2; // Bild-Halbbreite in m (von oben): 1,6 cm je Pixel
+            const cam = new T.OrthographicCamera(-halb, halb, halb, -halb, 0.1, 200);
+            cam.position.set(anker.x, 60, anker.z);
+            cam.up.set(0, 0, -1);
+            cam.lookAt(anker.x, 0, anker.z);
+            cam.updateMatrixWorld(true);
+            const schwerpunkt = async (mesh) => {
+                const szene = new T.Scene();
+                szene.add(mesh);
+                const rt = new T.RenderTarget(W, H);
+                ren.setRenderTarget(rt);
+                await ren.renderAsync(szene, cam);
+                const buf = await ren.readRenderTargetPixelsAsync(rt, 0, 0, W, H);
+                rt.dispose();
+                let n = 0,
+                    sx = 0,
+                    sy = 0;
+                for (let y = 0; y < H; y++)
+                    for (let x = 0; x < W; x++)
+                        if (buf[(y * W + x) * 4 + 3] > 0) {
+                            n++;
+                            sx += x;
+                            sy += y;
+                        }
+                if (!n) return null;
+                // Pixel → Welt (Bild-x = Welt +x, Bild-y (unten → oben) = Welt −z)
+                const px = (2 * halb) / W;
+                return { x: (sx / n + 0.5) * px - halb, z: -((sy / n + 0.5) * px - halb), n };
+            };
+            const baue = (phi, s, wind, stoff) => {
+                const g = new T.CylinderGeometry(0.3, 0.3, 10, 8, 20);
+                g.translate(0, 5, 0);
+                g.setAttribute("aH0", new T.InstancedBufferAttribute(new Float32Array([10 * s]), 1));
+                const mat = new T.MeshBasicNodeMaterial({ color: 0xffffff });
+                if (wind && stoff === "gras")
+                    mat.positionNode = T.TSL.positionLocal.add(
+                        r._windSwayOffset(T.TSL, { ampX: 1.5, hoehe: T.TSL.positionGeometry.y })
+                    );
+                else if (wind) r._baumWindStoff(mat, "bark", { ht: 10, delta: 0.3, an: 1 });
+                const mesh = new T.InstancedMesh(g, mat, 1);
+                mesh.frustumCulled = false;
+                const M = new T.Matrix4().compose(
+                    anker,
+                    new T.Quaternion().setFromAxisAngle(new T.Vector3(0, 1, 0), (phi * Math.PI) / 180),
+                    new T.Vector3(s, s, s)
+                );
+                mesh.setMatrixAt(0, M);
+                mesh.instanceMatrix.needsUpdate = true;
+                return mesh;
+            };
+            wu.uWindDir.value.set(1, 0);
+            wu.uWindStrength.value = r.constructor.WEATHER_WIND_AMP;
+            wu.uWindTime.value = 3.0;
+            for (const f of faelle) {
+                const ruhe = await schwerpunkt(baue(f.phi, f.s, false, f.stoff));
+                const sturm = await schwerpunkt(baue(f.phi, f.s, true, f.stoff));
+                if (!ruhe || !sturm) {
+                    out.mess.push({ phi: f.phi, s: f.s, stoff: f.stoff, dx: 0, dz: 0 });
+                    continue;
+                }
+                out.mess.push({
+                    phi: f.phi,
+                    s: f.s,
+                    stoff: f.stoff,
+                    dx: +(sturm.x - ruhe.x).toFixed(3),
+                    dz: +(sturm.z - ruhe.z).toFixed(3),
+                });
+            }
+            ren.dispose();
+        } catch (e) {
+            out.err = (e && e.message) || String(e);
+        }
+        return out;
+    }, WIND_FAELLE);
+}
+
 // ===== TEIL D — DIE STRICH-WAND (Integration W6, Echt-GPU 05.10.) =====
 // Die Karte liest die Peilung des ANKERS (für das ganze Quad dieselbe); steht sie genau auf einer Ansichts-Grenze, kippt
 // ihr Rundungs-Rauschen einzelne Pixel auf die Nachbar-Ansicht — die Atlas-Koordinate springt dort um 1/8 bis 7/8 der
@@ -396,7 +789,15 @@ function strichWand(src) {
         v.push("die Atlas-Stichprobe trägt keine expliziten Gradienten");
     const direkt = zahl("_at.mapNode.sample(") + zahl("_at.nmapNode.sample(");
     if (direkt) v.push(direkt + " Atlas-Stichprobe(n) an _probeA vorbei (Ableitung aus der springenden Koordinate)");
-    const albedo = zahl("_probeA(_at.mapNode, _uvA)") + zahl("_probeA(_at.mapNode, _uvB)");
+    // Die Albedo liest `_liesA` (K20): die Stichprobe über _probeA, vergrößert die kubische Zelle auf Stufe 0 — eine
+    // explizite Stufe trägt keine Ableitung, also auch keine aus der springenden Koordinate.
+    if (
+        !/const _liesA = \(tex, uv, vAns\) =>\s*_Ta\.mix\(_probeA\(tex, uv\), _kubisch\(tex, vAns\), _kubW\);/.test(src)
+    )
+        v.push("die Albedo-Lese-Naht _liesA läuft nicht über _probeA");
+    if (!src.includes(".depth(_schicht).level(_Ta.float(0.0))"))
+        v.push("die kubische Zelle liest nicht auf der expliziten Stufe 0");
+    const albedo = zahl("_liesA(_at.mapNode, _uvA, _v0)") + zahl("_liesA(_at.mapNode, _uvB, _v1)");
     const normale = zahl("_probeA(_at.nmapNode, _uvA)") + zahl("_probeA(_at.nmapNode, _uvB)");
     if (albedo !== 2 || normale !== 2)
         v.push(`Albedo (${albedo}) und Normale (${normale}) laufen nicht je zweimal (Ansicht A und B) über _probeA`);
@@ -416,6 +817,9 @@ function strichWand(src) {
     const { page: pageA, pageErrors: errA } = await bootPage(browserA, true);
     const A = await driveImpostor(pageA);
     const Cs = [await kleberProbe(pageA, "bc"), await kleberProbe(pageA, "rgba8")];
+    const C2s = [await vergroessertProbe(pageA, "bc"), await vergroessertProbe(pageA, "rgba8")];
+    const C3 = await blickProbe(pageA);
+    const C4 = await windProbe(pageA);
     await browserA.close();
 
     console.log("=== P5/BÄCKER-VEREINIGUNG + W6 DER EINE KARTEN-ATLAS — TEIL A: MECHANIK (Null-Renderer) ===");
@@ -439,7 +843,8 @@ function strichWand(src) {
     if (!A.atlas) errs.push("A: keine Karten-Flats (Eiche + Fichte) entstanden");
     else {
         if (!A.atlas.quadGeteilt) errs.push("A: zwei Arten tragen verschiedene Quads (je Karte eine Geometrie)");
-        if (!A.atlas.materialGeteilt) errs.push("A: zwei Arten tragen verschiedene Materialien (je Karte ein Programm)");
+        if (!A.atlas.materialGeteilt)
+            errs.push("A: zwei Arten tragen verschiedene Materialien (je Karte ein Programm)");
         if (!A.atlas.billboard) errs.push("A: das Atlas-TSL-Wiring kam nicht zustande (kein Billboard-Marker)");
         if (!A.atlas.schichtenVerschieden) errs.push("A: zwei Arten teilen dieselbe Atlas-Schicht");
         if (!A.atlas.texturen) errs.push("A: der Atlas trägt keine Array-Texturen für seine Zellen");
@@ -452,15 +857,20 @@ function strichWand(src) {
             errs.push(`A: die Probe-Slots liegen nicht in der Atlas-Gruppe (${G.slotGruppen.join(" · ")})`);
         if (!G.instanziert) errs.push("A: aKarte ist kein Instanz-vec4 der Karten-Gruppe");
         if (!(G.vertexPuffer <= 8))
-            errs.push(`A: die Karten-Pipeline trägt ${G.vertexPuffer} Vertex-Puffer (WebGPU-Grenze 8): ${G.attribute.join(" · ")}`);
+            errs.push(
+                `A: die Karten-Pipeline trägt ${G.vertexPuffer} Vertex-Puffer (WebGPU-Grenze 8): ${G.attribute.join(" · ")}`
+            );
         else {
             if (JSON.stringify(G.zellen) !== JSON.stringify(G.erwartet))
                 errs.push(`A: aKarte.x je Slot ${JSON.stringify(G.zellen)} ≠ ${JSON.stringify(G.erwartet)}`);
             const rOk = G.rahmen.every((v, i) => Math.abs(v - G.erwartetRahmen[i]) < 1e-5);
             if (!rOk) errs.push(`A: aKarte.yz je Slot ${JSON.stringify(G.rahmen)} ≠ ${JSON.stringify(G.erwartetRahmen)}`);
-            // die Sichthöhe der Maske: die Höhe der Höhen-Stufe × Instanz-Skala (der aH0-Stempel der L1), frei = positiv
-            const sOk = G.sicht.every((v, i) => v > 0 && Math.abs(v - G.erwartetSicht[i]) < 1e-3 * Math.max(1, G.erwartetSicht[i]));
-            if (!sOk) errs.push(`A: aKarte.w je Slot ${JSON.stringify(G.sicht)} ≠ ${JSON.stringify(G.erwartetSicht)} (Sichthöhe × Skala)`);
+            // die Sichthöhe der Maske: die Höhe der Höhen-Stufe × Instanz-Skala (der aH0-Stempel der L1), frei = positiv,
+            // VOLL (verdeckt, Brücke, die Stufe im Halt — K36) = negativ
+            const sOk = G.sicht.every(
+                (v, i) => v < 0 === G.voll[i] && Math.abs(Math.abs(v) - G.erwartetSicht[i]) < 1e-3 * Math.max(1, G.erwartetSicht[i])
+            );
+            if (!sOk) errs.push(`A: aKarte.w je Slot ${JSON.stringify(G.sicht)} ≠ ±${JSON.stringify(G.erwartetSicht)} voll ${JSON.stringify(G.voll)} (Sichthöhe × Skala)`);
         }
     }
     if (A.vereinigung) {
@@ -480,9 +890,13 @@ function strichWand(src) {
 
     for (const C of Cs) {
         const F = `C[${C.fmt}]`;
-        console.log(`\n=== TEIL C [${C.fmt}] — DIE KARTEN-WAND (Layout + befreite Slots zeichnen NICHTS, swiftshader-WebGPU) ===`);
+        console.log(
+            `\n=== TEIL C [${C.fmt}] — DIE KARTEN-WAND (Layout + befreite Slots zeichnen NICHTS, swiftshader-WebGPU) ===`
+        );
         if (C.ohneFeature) {
-            console.log("  (der Probe-Adapter kennt texture-compression-bc nicht — die BC-Stufe misst die Blick-Sonde)");
+            console.log(
+                "  (der Probe-Adapter kennt texture-compression-bc nicht — die BC-Stufe misst die Blick-Sonde)"
+            );
             continue;
         }
         console.log(`  geschrieben: ${C.geschrieben} · Wiring: ${C.billboard}`);
@@ -506,27 +920,116 @@ function strichWand(src) {
         const L = C.layout || {};
         const rest = (L.ro || 0) + (L.lu || 0) + (L.ru || 0);
         if (!(L.lo > 40 && L.lo > 6 * rest))
-            errs.push(`${F}: die Karte steht NICHT links oben (lo ${L.lo} · Rest ${rest}) — Layout gedreht oder gespiegelt`);
+            errs.push(
+                `${F}: die Karte steht NICHT links oben (lo ${L.lo} · Rest ${rest}) — Layout gedreht oder gespiegelt`
+            );
         if (!(C.monsterPx > 200))
-            errs.push(`${F}-SELBSTTEST: der Monster-Slot flutete den Schirm NICHT (${C.monsterPx} px) — die Linse ist blind`);
+            errs.push(
+                `${F}-SELBSTTEST: der Monster-Slot flutete den Schirm NICHT (${C.monsterPx} px) — die Linse ist blind`
+            );
         if (!C.umzug) errs.push(`${F}: _archGroupFree verdichtete nicht (count, Marke oder Matrix des Umzugs falsch)`);
-        if (!(C.lebtPx > 40)) errs.push(`${F}: der LEBENDE Slot zeichnet zu wenig (${C.lebtPx} px ≤ 40) — die Probe ist blind`);
+        if (!(C.lebtPx > 40))
+            errs.push(`${F}: der LEBENDE Slot zeichnet zu wenig (${C.lebtPx} px ≤ 40) — die Probe ist blind`);
         if (!(C.totPx <= 8))
             errs.push(`${F}: der befreite Slot zeichnet noch ${C.totPx} px (> 8) — die Gruppe ist NICHT dicht`);
     }
-
-    console.log("\n=== TEIL D — DIE STRICH-WAND (Quelle: jede Atlas-Stichprobe mit den Gradienten der stetigen Koordinate) ===");
     {
-        const quelle = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+        console.log(
+            "\n=== TEIL C3 — DIE KARTE SIEHT DAS AUGE (eine Karte, drei Instanz-Drehungen, Breite im Bild) ==="
+        );
+        if (C3.err) errs.push(`C3: Blick-Probe brach ab — ${C3.err}`);
+        else {
+            for (const m of C3.mess) console.log(`  Drehung ${m.phi}°: Breite ${m.breite} px (Soll ${m.soll} px)`);
+            if (C3.mess.length !== BLICK_DREHUNGEN.length)
+                errs.push("C3: nicht jede Drehung gemessen — die Probe ist blind");
+            errs.push(...blickUrteil(C3.mess).map((x) => "C3: " + x));
+        }
+        const selbstRot = blickUrteil([{ phi: 90, breite: 6, soll: 66 }]).length === 1;
+        const selbstGruen = blickUrteil([{ phi: 0, breite: 65, soll: 66 }]).length === 0;
+        console.log(
+            `  Selbsttest: die Tafel von der Seite feuert ${selbstRot} · die zugewandte Karte schweigt ${selbstGruen}`
+        );
+        if (!(selbstRot && selbstGruen))
+            errs.push("C3-SELBSTTEST: das Blick-Urteil unterscheidet Tafel und Karte nicht");
+    }
+    {
+        console.log("\n=== TEIL C4 — DER WIND WEHT IN DER WELT (eine Säule im Sturm, drei Drehungen, zwei Skalen) ===");
+        if (C4.err) errs.push(`C4: Wind-Probe brach ab — ${C4.err}`);
+        else {
+            for (const m of C4.mess)
+                console.log(`  ${m.stoff || "rinde"} Drehung ${m.phi}° Skala ${m.s}: Versatz (${m.dx}, ${m.dz}) m`);
+            if (C4.mess.length !== WIND_FAELLE.length) errs.push("C4: nicht jeder Fall gemessen — die Probe ist blind");
+            errs.push(...windUrteil(C4.mess).map((x) => "C4: " + x));
+        }
+        const selbstRot =
+            windUrteil([
+                { phi: 0, s: 1, dx: 0.8, dz: 0 },
+                { phi: 90, s: 1, dx: 0, dz: -0.8 },
+            ]).length === 1;
+        const selbstLang =
+            windUrteil([
+                { phi: 0, s: 2, dx: 0.8, dz: 0 },
+                { phi: 90, s: 2, dx: 1.6, dz: 0 },
+            ]).length === 1;
+        const selbstGruen =
+            windUrteil([
+                { phi: 0, s: 1, dx: 0.8, dz: 0.02 },
+                { phi: 90, s: 1, dx: 0.79, dz: -0.03 },
+            ]).length === 0;
+        console.log(
+            `  Selbsttest: der gedrehte Wind feuert ${selbstRot} · der skalierte feuert ${selbstLang} · der Welt-Wind schweigt ${selbstGruen}`
+        );
+        if (!(selbstRot && selbstLang && selbstGruen))
+            errs.push("C4-SELBSTTEST: das Wind-Urteil unterscheidet Welt- und Instanz-Wind nicht");
+    }
+    for (const C2 of C2s) {
+        const F = `C2[${C2.fmt}]`;
+        console.log(
+            `\n=== TEIL ${F} — DIE VERGRÖSSERTE KARTE (Treppe der Kanten-Kontur, ein Texel ~${C2.pxJeTexel} px) ===`
+        );
+        if (C2.ohneFeature) {
+            console.log("  (der Probe-Adapter kennt texture-compression-bc nicht — die BC-Stufe misst die Werkbank)");
+            continue;
+        }
+        if (C2.err) {
+            errs.push(`${F}: Kanten-Probe brach ab — ${C2.err}`);
+            continue;
+        }
+        const k = C2.kante || {},
+            s = C2.selbst || {};
+        console.log(`  glatte Kante: Treppe ${k.treppe} über ${k.zeilen} Zeilen (Soll ≤ 0,35)`);
+        console.log(`  Selbsttest 8-Texel-Stufen: Treppe ${s.treppe} über ${s.zeilen} Zeilen (MUSS > 0,6)`);
+        if (!(k.zeilen >= 40))
+            errs.push(`${F}: die Kante liegt nicht im Bild (${k.zeilen} Zeilen) — die Probe ist blind`);
+        else if (!(k.treppe <= 0.35))
+            errs.push(
+                `${F}: die vergrößerte Karte steht in Texel-Treppen (Treppe ${k.treppe} > 0,35) — _liesA liest sie nicht kubisch`
+            );
+        if (!(s.zeilen >= 40 && s.treppe > 0.6))
+            errs.push(`${F}-SELBSTTEST: die 8-Texel-Stufen stehen nicht treppig (${s.treppe}) — die Linse ist blind`);
+    }
+
+    console.log(
+        "\n=== TEIL D — DIE STRICH-WAND (Quelle: jede Atlas-Stichprobe mit den Gradienten der stetigen Koordinate) ==="
+    );
+    {
+        const quelle = stammLib.text(root);
         const echt = strichWand(quelle);
         console.log(`  echte Quelle: ${echt.length ? echt.join(" · ") : "hält"}`);
         for (const f of echt) errs.push("D: " + f);
         const ANKER = "const _probeA = (tex, uv) => tex.sample(uv).depth(_schicht).grad(_gX, _gY);";
         for (const [name, src] of [
-            ["Stichprobe ohne Gradienten", quelle.replace(ANKER, "const _probeA = (tex, uv) => tex.sample(uv).depth(_schicht);")],
+            [
+                "Stichprobe ohne Gradienten",
+                quelle.replace(ANKER, "const _probeA = (tex, uv) => tex.sample(uv).depth(_schicht);"),
+            ],
             [
                 "Gradienten aus der springenden Koordinate",
                 quelle.replace("const _gX = _uvStetig.dFdx();", "const _gX = _uvA.dFdx();"),
+            ],
+            [
+                "kubische Zelle mit Hardware-Ableitung",
+                quelle.replace(".depth(_schicht).level(_Ta.float(0.0))", ".depth(_schicht)"),
             ],
             [
                 "Normale direkt gesampelt",
@@ -535,8 +1038,11 @@ function strichWand(src) {
         ]) {
             const f = strichWand(src);
             const feuert = src !== quelle && f.length > 0;
-            console.log(`  Selbsttest „${name}“ → ${feuert ? "feuert" : "BLIND"}${src === quelle ? " (ANKER FEHLT)" : ""}`);
-            if (!feuert) errs.push(`D-SELBSTTEST: „${name}“ → die Wand feuert nicht${src === quelle ? " (ANKER FEHLT)" : ""}`);
+            console.log(
+                `  Selbsttest „${name}“ → ${feuert ? "feuert" : "BLIND"}${src === quelle ? " (ANKER FEHLT)" : ""}`
+            );
+            if (!feuert)
+                errs.push(`D-SELBSTTEST: „${name}“ → die Wand feuert nicht${src === quelle ? " (ANKER FEHLT)" : ""}`);
         }
     }
 
@@ -547,33 +1053,38 @@ function strichWand(src) {
     if (process.env.P5_REAL_RENDERER) {
         console.log("\n=== P5 — TEIL B: RTT-BAKE auf echtem Renderer (opt-in) ===");
         try {
-        const browserB = await puppeteer.launch({
-            headless: true,
-            protocolTimeout: 180000,
-            args: [
-                "--use-angle=swiftshader",
-                "--enable-unsafe-swiftshader",
-                "--no-sandbox",
-                "--disable-setuid-sandbox",
-            ],
-        });
-        const { page: pageB, pageErrors: errB } = await bootPage(browserB, false);
-        const B = await driveImpostor(pageB);
-        await browserB.close();
-        console.log(`  Worker ready: ${B.ready} · Record foundry: ${B.rec && B.rec.foundry}`);
-        console.log(`  RTT gebacken (nach Pump): ${B.rttBakedAfter} · RTT-Fehler: ${B.rttErrorAfter || "keiner"}`);
-        if (errB.length) {
-            console.log("  Seiten-Fehler B:", errB.slice(0, 3));
-            errs.push(`B: ${errB.length} Seiten-Fehler beim RTT-Pfad`);
-        }
-        if (B.err) console.log(`  (B-Notiz: ${B.err})`);
+            const browserB = await puppeteer.launch({
+                headless: true,
+                protocolTimeout: 180000,
+                args: [
+                    "--use-angle=swiftshader",
+                    "--enable-unsafe-swiftshader",
+                    "--no-sandbox",
+                    "--disable-setuid-sandbox",
+                ],
+            });
+            const { page: pageB, pageErrors: errB } = await bootPage(browserB, false);
+            const B = await driveImpostor(pageB);
+            await browserB.close();
+            console.log(`  Worker ready: ${B.ready} · Record foundry: ${B.rec && B.rec.foundry}`);
+            console.log(`  RTT gebacken (nach Pump): ${B.rttBakedAfter} · RTT-Fehler: ${B.rttErrorAfter || "keiner"}`);
+            if (errB.length) {
+                console.log("  Seiten-Fehler B:", errB.slice(0, 3));
+                errs.push(`B: ${errB.length} Seiten-Fehler beim RTT-Pfad`);
+            }
+            if (B.err) console.log(`  (B-Notiz: ${B.err})`);
             if (B.rttBakedAfter > 0) console.log("  ok — der RTT-Bake lief auf echter GPU-Bahn (Atlas gebacken).");
-            else console.log("  (RTT nicht abgeschlossen — swiftshader-fragil; den LOOK misst die Blick-Sonde auf echter GPU.)");
+            else
+                console.log(
+                    "  (RTT nicht abgeschlossen — swiftshader-fragil; den LOOK misst die Blick-Sonde auf echter GPU.)"
+                );
         } catch (e) {
             console.log(`  (Teil B uebersprungen — Renderer-Start fehlgeschlagen: ${(e && e.message) || e})`);
         }
     } else {
-        console.log("\n(Teil B [echter RTT-Bake] per Default aus — mit P5_REAL_RENDERER=1 aktivieren; den LOOK misst die Blick-Sonde auf echter GPU.)");
+        console.log(
+            "\n(Teil B [echter RTT-Bake] per Default aus — mit P5_REAL_RENDERER=1 aktivieren; den LOOK misst die Blick-Sonde auf echter GPU.)"
+        );
     }
 
     server.close();

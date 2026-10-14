@@ -77,18 +77,15 @@ const server = http.createServer((req, res) => {
         const wl = r.state.waterLevel;
         const out = { wl: +wl.toFixed(2) };
 
-        // (2a) HEIMAT-Fingerprint VOR den Kacheln (256 deterministische Punkte).
+        // (2a) HEIMAT-Fingerprint VOR den Kacheln (256 deterministische Punkte; die Kachel-Erosion fiel mit K16 — die Höhe
+        // trägt das Flussnetz des Gesetzbuchs).
         const homeFp = () => {
             const vals = [];
             for (let i = 0; i < 16; i++) {
                 for (let j = 0; j < 16; j++) {
                     const x = -1000 + (i + 0.5) * 125;
                     const z = -1000 + (j + 0.5) * 125;
-                    vals.push(
-                        r._atlasWaterLevelAt(x, z, -Infinity),
-                        window.__gelaendeCore.erosionDelta(r._gelaende(), x, z),
-                        r._terrainMacroSurfaceY(x, z, true)
-                    );
+                    vals.push(r._atlasWaterLevelAt(x, z, -Infinity), r._terrainMacroSurfaceY(x, z, true));
                 }
             }
             return JSON.stringify(vals);
@@ -120,9 +117,7 @@ const server = http.createServer((req, res) => {
 
         // (3) Kachel-Determinismus: (1,0) frisch in leere Maps neu rechnen.
         const savedH = r.state.hydroTiles;
-        const savedE = r.state.erosionTiles;
         r.state.hydroTiles = new Map();
-        r.state.erosionTiles = new Map();
         r._ensureHydroTilesAround(2048, 0, 10);
         const tile2 = r.state.hydroTiles.get("1,0");
         const wk1 = tile.water.waterKind;
@@ -144,7 +139,6 @@ const server = http.createServer((req, res) => {
                 }
         out.tileDeterministic = identical && tile2.rivers.length === tile.rivers.length;
         r.state.hydroTiles = savedH;
-        r.state.erosionTiles = savedE;
         // Worker auf den Stand der wiederhergestellten Maps bringen.
         await r._voxelWorkerSyncWorldgenState();
 

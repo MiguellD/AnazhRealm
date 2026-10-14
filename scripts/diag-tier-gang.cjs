@@ -23,7 +23,7 @@ const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
-const { softwareWebGpuArgs } = require("./lib/software-gpu.cjs");
+const { linsenWebGpuArgs, adapterZeile } = require("./lib/software-gpu.cjs");
 
 const root = path.resolve(__dirname, "..");
 const PORT = Number(process.env.TIER_GANG_PORT) || 4449;
@@ -447,6 +447,7 @@ const STUDIO = (k) => {
     play.posY = play.smY = 0.05;
     play.onGround = true;
     play.slide = 0;
+    // BÜHNE: die Gang-Bühne der Probe (eigene Ebene, kein Weltboden)
     character.position.set(0, 0.05, 0);
     const cs = character.scale.x || 1;
     const bein = (L1 + L2) * cs;
@@ -618,7 +619,8 @@ const STUDIO = (k) => {
             }
         }
         // das Labor braucht WebGL (r128): ein eigener Browser mit dem Software-Holz
-        const sb = await puppeteer.launch({ headless: true, protocolTimeout: 300000, args: softwareWebGpuArgs() });
+        const sb = await puppeteer.launch({ headless: true, protocolTimeout: 300000, args: linsenWebGpuArgs() });
+        await adapterZeile(sb);
         try {
             const sp = await sb.newPage();
             sp.setDefaultTimeout(280000);

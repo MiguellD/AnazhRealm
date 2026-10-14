@@ -14,6 +14,7 @@
 "use strict";
 const fs = require("fs");
 const path = require("path");
+const stammLib = require("./lib/stamm.cjs");
 
 // Die gefallenen Namen (ALTLASTEN-NULL, V18.449). Jede Zeile: Token + wo er
 // fiel. PRÄZISE Tokens (keine generischen Wörter — "sprite" allein wäre
@@ -108,7 +109,10 @@ const FORBIDDEN = [
     { token: "skeleton.grammar", fiel: "K24 — das Laub der Art am Skelett heißt skeleton.laub (aus P)" },
     // K24-N1 (13.10.) — der stille Ersatz der Skelett-Leser ist gefallen: jede Größe schreibt der EINE Erzeuger aus treeParams
     // der Art, die Wand `_skelettPflicht` bricht laut, wo eine fehlt.
-    { token: "SPECIES_PALETTE_DEFAULT", fiel: "K24-N1 — die Rinde des Skeletts ist P.barkA/barkB der Art, kein Ersatz" },
+    {
+        token: "SPECIES_PALETTE_DEFAULT",
+        fiel: "K24-N1 — die Rinde des Skeletts ist P.barkA/barkB der Art, kein Ersatz",
+    },
     { token: "DEFAULT_TREE_FLARE", fiel: "K24-N1 — der Wurzelanlauf ist P.flare der Art, die Rippen STAMM_RIPPEN" },
     { token: "foliageScale", fiel: "K24-N1 — ein nie geschriebenes Skelett-Feld, die Leser setzten still 1" },
     { token: "totalH || 10", fiel: "K24-N1 — die Höhe des Skeletts ist P.height, kein Ersatz" },
@@ -522,6 +526,23 @@ const FORBIDDEN = [
     { token: "const uSkyCol ", fiel: "Welle 5 — das Wasser spiegelt die Himmels-Umgebung (_himmelUmgebungTex)" },
     { token: "skyCol: uSkyCol", fiel: "Welle 5 — der Spiegel liest die Himmels-Umgebung" },
     { token: "WG.tief", fiel: "Welle 5 — der Wasser-Körper ist R∞ = 0,33·b_b/(wK+b_b) (WASSER_GESETZ.koerperStreu)" },
+    {
+        token: "_fernFlussFarbe",
+        fiel: "K16 — der Fluss der Ferne ist der Wasser-Anteil aNass, gezeichnet mit _wasserBlick",
+    },
+    {
+        token: "FERN_FARBE.wasser",
+        fiel: "K16 — die Ferne trägt den Wasser-Körper des Gesetzes (_wasserKoerper), kein Fern-Blau",
+    },
+    { token: "0.0196, 0.0863, 0.1706", fiel: "K16 — das Fern-Blau 0x265273 fiel, R∞ aus WASSER_GESETZ" },
+    {
+        token: "_flussBreite",
+        fiel: "K16 — die Breite des Flusses ist das Gesetz des Kerns (gelaende-core flussBreite)",
+    },
+    {
+        token: "HC.widthMin",
+        fiel: "K16 — jeder Fluss-Punkt trägt seine Breite; das Minimum ist FLUSS_BREITE.min des Kerns",
+    },
     { token: "ctx.getLevel(", fiel: "Welle 5 — das Sheet liest das gezeichnete Dach (getDach, _caDach)" },
     { token: "getLevel: (", fiel: "Welle 5 — der Sheet-Kontext trägt getDach, keinen Live-Pegel" },
     { token: "_studioGround", fiel: "Welle 5 — die Boden-Palette liegt synchron im Terrain-Namensraum (BODEN_FARBE)" },
@@ -1101,13 +1122,41 @@ const FORBIDDEN = [
         ["_makeMacroAnker", "ankerAusSaat"],
         ["_erosionDeltaAt", "erosionDelta"],
         ["_erosionFor", "erosionFuer"],
-        ["_tarnDeltaAt", "tarnDelta"],
+        ["_tarnDeltaAt", "tarnDelta (fiel mit dem Tarn-Pass, K16)"],
         ["_hydroTileKeyFor", "kachelSchluessel"],
         ["MACRO_ANKER_", "MACRO_ANKER (die Literal-Zwillinge des Workers)"],
         ["function terrainMacroSurfaceY(", "hoehe (der Worker-Spiegel)"],
         ["function erbgutTermY(", "termY (der Worker-Spiegel)"],
         ["function macroAnker(", "die Lage reicht macroAnker (der Worker-Spiegel)"],
     ].map(([token, kern]) => ({ token, fiel: `K09a — gelaende-core ${kern}` })),
+    // K16 (11.10.) — DIE LANDFORM: das Flussnetz des Gesetzbuchs trägt die Täler; die Erosions-Simulation, der Ein-Massiv-
+    // Anker, die 3D-Rauheit und der WGSL-Spiegel des alten Rausch-Gesetzes fielen.
+    ...[
+        ["_computeErosion", "die Kachel-Erosion (36 Iterationen, ±26 m, Naht)"],
+        ["_erosionIncisionPass", "der Inzisions-Pass der Erosion"],
+        ["_thermalErosionPass", "der Talus-Pass der Erosion"],
+        ["_worldgenComputeErosionAndTarns", "die Erosion im Worldgen (`_worldgenTarns`)"],
+        ["_isValidMacroAnker", "die Anker-Wand (der Anker fiel)"],
+        ["_macroSpillpointAnalysis", "die Überlauf-Analyse des Ankers (der Anker fiel)"],
+        ["_hydroSeedTarns", "der Tarn-Pass (die Seen sind die Senken des Flussnetzes)"],
+        ["_worldgenTarns", "der Tarn-Pass im Worldgen"],
+        ["tarnMulde", "die Mulden-Form des Tarns"],
+        ["tarnDelta", "die Tarn-Senkung des Wildnis-Terms"],
+        ["state.tarns", "die Tarn-Liste im Zustand"],
+        ["SCHNEE_PROMINENZ", "die Schnee-Prominenz (die Schneegrenze `schnee` wohnt im Gesetzbuch)"],
+        ["SNOW_PROM_", "der Worker-Spiegel der Schnee-Prominenz"],
+        ["kontinentBasis", "die Prominenz-Basis der Schneegrenze"],
+        ["__feldWgsl", "der WGSL-Spiegel des alten Rausch-Gesetzes (der Feld-Zeichner liest den Kern)"],
+    ].map(([token, kern]) => ({ token, fiel: `K16 — ${kern}` })),
+    // K17 — DER FELS HAT STOFF: das EINE Fels-Gesetz (gelaende-core `felsFarbe` · `felsNetz`) färbt Boden und Gestalten
+    ...[
+        ["_bodenFarbeUnterFels", "der Palette-Stein unter Fels (die Höhle trägt den Fels-Stoff, `_felsStoff`)"],
+        ["rockTint", "der Fels-Tint des Shaders (der Vertex trägt den Fels-Stoff, die Ferne `FELS_STOFF.mittel`)"],
+        ["rockLumMix", "die Säulen-Luminanz auf dem Fels"],
+        ["_shadeRock", "die Hex-Abschattung des Werkstatt-Steins (die Töne leitet `felsBasis` ab)"],
+        ["_himmelsSicht", "die Himmels-Sicht im Stamm (K17-2: gelaende-core `himmelsSicht`, der Worker baut sie beim Chunk-Bau)"],
+        ["AnazhRealm.HIMMELS_SICHT", "die Länge der Himmels-Sicht im Stamm (gelaende-core `HIMMELS_SICHT`)"],
+    ].map(([token, kern]) => ({ token, fiel: `K17 — ${kern}` })),
     // DAS LICHT DES AUGES OHNE SZENEN-LICHT (K15, OMEN 1110-3): das Punkt-Licht am Auge stand ab Boot in der Szene und im
     // Licht-Hash jedes beleuchteten Stoffs — 0,48 ms je Frame auch unter dem Himmel (Stärke 0, der TSL.If-Knoten sparte den
     // Term nicht). Es ist ein Term des Boden-Stoffs unter Fels (`atmoUniforms.augenLicht`, 1 − aHimmel).
@@ -1141,6 +1190,29 @@ const FORBIDDEN = [
     { token: "_chunkSurfaceAt", fiel: "K21 — der EINE Boden-Leser `_bodenSichtAt`" },
     { token: "_chunkGruenAt", fiel: "K21 — `_bodenSichtAt(x, z, aus)` trägt den Grün-Kanal der gewinnenden Karte" },
     { token: "_chunkKarteAt", fiel: "K21 — der EINE Boden-Leser `_bodenSichtAt`" },
+    // DER VORRAT NENNT SEINE PHASE (K30-N1): sein Merker `_prefetching` stand ab dem Worker-Start auf true, auch solange er
+    // auf das erste Weltbild wartete — die Kalt-Zeile las „Vorrat läuft" (Radeon 8–44 s, die erste Bestellung bei 45 s).
+    // `f._vorrat` trägt die Phase (`VORRAT_PHASE`), jeder Leser nennt sie; der Merker, der nur „an" sagt, kehrt nicht zurück.
+    {
+        token: "_prefetching",
+        fiel: "K30-N1 — `f._vorrat` nennt die Phase des Vorrats (`VORRAT_PHASE`)",
+        auch: [
+            "scripts/playtest.cjs",
+            "scripts/diag-ankunft.cjs",
+            "scripts/diag-boot-stage.cjs",
+            "scripts/diag-fluss.cjs",
+            "scripts/diag-leistungs-vertrag.cjs",
+            "scripts/diag-p2p-gestalt.cjs",
+            "scripts/diag-parity.cjs",
+            "scripts/diag-praegung-welt.cjs",
+            "scripts/diag-regler-wirkt.cjs",
+            "scripts/diag-reload-treue.cjs",
+            "scripts/diag-rezept-katalog.cjs",
+            "scripts/diag-studio-uebergabe.cjs",
+            "scripts/lib/pack-kanon.cjs",
+            "scripts/mint-asset-packs.cjs",
+        ],
+    },
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt
@@ -1246,7 +1318,7 @@ function scan(files) {
 
 function checkSoulKeys() {
     // Die Schlüssel-Menge aus dem lebenden Literal ziehen (klammer-bewusst).
-    const src = fs.readFileSync(path.join(__dirname, "..", "anazhRealm.js"), "utf8");
+    const src = stammLib.text(path.join(__dirname, ".."));
     const start = src.indexOf("AnazhRealm.CREATURE_SOULS = Object.freeze({");
     if (start < 0) return ["CREATURE_SOULS-Literal nicht gefunden"];
     let depth = 0;
@@ -1274,6 +1346,9 @@ function checkSoulKeys() {
     return errs;
 }
 
+// Die Stamm-Dateien, wie index.html sie lädt (scripts/lib/stamm.cjs — die EINE Liste; vor dem Schnitt die eine Datei).
+const STAMM = stammLib.dateien(path.join(__dirname, ".."));
+
 // ULTRAGUSS U2 — DIE ZWILLINGS-WAND: getötete Formel-Zwillinge dürfen nicht
 // nachwachsen. Je Zeile: der Formel-Fingerabdruck darf NUR im Gesetzbuch leben.
 const ZWILLINGE = [
@@ -1286,109 +1361,109 @@ const ZWILLINGE = [
     {
         fingerprint: "leafSize: lerp(0.22, 0.6, leaf)",
         gesetzbuch: "phyto-core.js",
-        verboten: ["foundry-core.js", "anazhRealm.js"],
+        verboten: ["foundry-core.js", ...STAMM],
         fiel: "K24 — der P-Zwilling (deriveParamsPlant delegiert seinen Baum-Zweig an treeParams)",
     },
     {
         fingerprint: "ridges: 14, depth: 0.52",
         gesetzbuch: "phyto-core.js",
-        verboten: ["foundry-core.js", "anazhRealm.js"],
+        verboten: ["foundry-core.js", ...STAMM],
         fiel: "U2b (V18.467) — das Rinden-Gesetz (barkProfile/buildTubeGesetz) wohnt im Pflanzen-Gesetzbuch, foundry-core delegiert",
     },
     {
         fingerprint: "Math.pow(size / 2.4, 0.67)",
         gesetzbuch: "tetrapoda-core.js",
-        verboten: ["worlds/tetrapoda/tetrapoda.js", "anazhRealm.js"],
+        verboten: ["worlds/tetrapoda/tetrapoda.js", ...STAMM],
         fiel: "U4 — die Tier-Allometrie wohnt im Gesetzbuch (deriveTierParams)",
     },
     {
         fingerprint: "Math.sin(phases[j] - phases[i])",
         gesetzbuch: "tetrapoda-core.js",
-        verboten: ["worlds/tetrapoda/tetrapoda.js", "anazhRealm.js"],
+        verboten: ["worlds/tetrapoda/tetrapoda.js", ...STAMM],
         fiel: "U4 — der CPG-Phasen-Schritt wohnt im Gesetzbuch (cpgStep)",
     },
     {
         fingerprint: "0.818 * H",
         gesetzbuch: "koerper-core.js",
-        verboten: ["worlds/koerperstudio/koerperstudio.js", "anazhRealm.js"],
+        verboten: ["worlds/koerperstudio/koerperstudio.js", ...STAMM],
         fiel: "U3 — die 6-KH-Loomis-Proportionen wohnen im Gesetzbuch (labProportionen)",
     },
     {
         fingerprint: "(0.62 + p.tone * 0.53) * (1 - p.age * 0.35)",
         gesetzbuch: "koerper-core.js",
-        verboten: ["worlds/koerperstudio/koerperstudio.js", "anazhRealm.js"],
+        verboten: ["worlds/koerperstudio/koerperstudio.js", ...STAMM],
         fiel: "U3 — die morph()-Dial-Mathe wohnt im Gesetzbuch (labMorph)",
     },
     {
         fingerprint: "reg('glute'+(sd===1?'1':'-1')",
         gesetzbuch: "koerper-core.js",
-        verboten: ["worlds/koerperstudio/koerperstudio.js", "anazhRealm.js"],
+        verboten: ["worlds/koerperstudio/koerperstudio.js", ...STAMM],
         fiel: "KONVERGENZ — der Da-Vinci-Teile-Baum (bauMensch) wohnt NUR im Gesetzbuch; Shell + Stamm bauen per Fabrik-Haken (kein Nachbau, nie wieder)",
     },
     {
         fingerprint: "iris: Object.freeze({ c: 0x2a4a6a",
         gesetzbuch: "koerper-core.js",
-        verboten: ["worlds/koerperstudio/koerperstudio.js", "anazhRealm.js"],
+        verboten: ["worlds/koerperstudio/koerperstudio.js", ...STAMM],
         fiel: "KONVERGENZ II — die Material-Klassen-Farben wohnen im Gesetzbuch (MATERIAL_KLASSEN); Shell + Stamm LESEN",
     },
     {
         fingerprint: "mahagoni:{hex:0x5f3826",
         gesetzbuch: "koerper-core.js",
-        verboten: ["worlds/koerperstudio/koerperstudio.js", "anazhRealm.js"],
+        verboten: ["worlds/koerperstudio/koerperstudio.js", ...STAMM],
         fiel: "KONVERGENZ II — die Haut-/Haar-Paletten wohnen im Gesetzbuch (SKIN_TONES/HAIR_COLORS); der Genom-Roller pickt aus der Lab-Wahrheit",
     },
     {
         fingerprint: "wristFrac: 1.36",
         gesetzbuch: "koerper-core.js",
-        verboten: ["worlds/koerperstudio/koerperstudio.js", "anazhRealm.js"],
+        verboten: ["worlds/koerperstudio/koerperstudio.js", ...STAMM],
         fiel: "U3 — das Landmarken-Urteil wohnt im Gesetzbuch (labLandmarks)",
     },
     {
         fingerprint: "Math.abs(lz)>Math.min(Di,Dj)*0.45",
         gesetzbuch: "fachwerk-core.js",
-        verboten: ["worlds/fachwerk/fachwerk.js", "anazhRealm.js"],
+        verboten: ["worlds/fachwerk/fachwerk.js", ...STAMM],
         fiel: "U6c — das REIHEN-SNAP-Gesetz wohnt im Gesetzbuch (reihenSnap)",
     },
     {
         fingerprint: "A.p.brandwand[lx>0?'x1':'x0']=1",
         gesetzbuch: "fachwerk-core.js",
-        verboten: ["worlds/fachwerk/fachwerk.js", "anazhRealm.js"],
+        verboten: ["worlds/fachwerk/fachwerk.js", ...STAMM],
         fiel: "U6c — das BRANDWAND-Gesetz wohnt im Gesetzbuch (brandwand)",
     },
     {
         fingerprint: "jahr<1150?'romanik'",
         gesetzbuch: "fachwerk-core.js",
-        verboten: ["worlds/fachwerk/fachwerk.js", "anazhRealm.js"],
+        verboten: ["worlds/fachwerk/fachwerk.js", ...STAMM],
         fiel: "U6c — das META-Gesetz (Jahr×Klima×Personen×Wohlstand → Form) wohnt im Gesetzbuch (metaParams)",
     },
     {
         fingerprint: "_SNED=[[0,1],[2,3],[4,5],[6,7]",
         gesetzbuch: "koerper-core.js",
-        verboten: ["worlds/koerperstudio/koerperstudio.js", "anazhRealm.js", "foundry-core.js"],
+        verboten: ["worlds/koerperstudio/koerperstudio.js", ...STAMM, "foundry-core.js"],
         fiel: "V18.463 — die Hüllen-Maschine (Voxel-Ops + Surface-Nets) wohnt im Gesetzbuch; Shell UND Bäcker LESEN",
     },
     {
         fingerprint: "burgundy:{hex:0x5a2530",
         gesetzbuch: "koerper-core.js",
-        verboten: ["worlds/koerperstudio/koerperstudio.js", "anazhRealm.js"],
+        verboten: ["worlds/koerperstudio/koerperstudio.js", ...STAMM],
         fiel: "V18.461 — die Stoff-Palette wohnt im Gesetzbuch (CLOTH_COLORS); die Kleid-Zonen (kleidZonen) und die Haar-Streu (haarStreu) sind Kern-Gesetz, beide Leser LESEN",
     },
     {
         fingerprint: "(1 - tipFrac) * Math.pow(t, 1.3)",
         gesetzbuch: "schmiede-core.js",
-        verboten: ["anazhRealm.js"],
+        verboten: [...STAMM],
         fiel: "U6d — die distale Klingen-Verjüngung (bladeProfile) wohnt im Gesetzbuch (klingenProfil)",
     },
     {
         fingerprint: "Math.pow(w / 0.4, 2)",
         gesetzbuch: "schmiede-core.js",
-        verboten: ["anazhRealm.js"],
+        verboten: [...STAMM],
         fiel: "U6d — die Hohlkehle des Wirts-Schnitts (bladeProfile) wohnt im Gesetzbuch (klingenProfil)",
     },
     {
         fingerprint: "bladeLen: 1.45",
         gesetzbuch: "schmiede-core.js",
-        verboten: ["anazhRealm.js"],
+        verboten: [...STAMM],
         fiel: "U6d — die Oakeshott-Proportions-Tabelle wohnt im Gesetzbuch (OAKESHOTT_TYPES, Stamm = Getter-Delegat)",
     },
     // K09a (11.10.) — DAS GELÄNDE HAT SEIN GESETZBUCH: die Makro-Höhe (Wildnis-Term, Erbgut-Terme samt Normalform,
@@ -1396,51 +1471,97 @@ const ZWILLINGE = [
     // kontinentale Basis der Schnee-Prominenz) lebt in gelaende-core.js; Stamm, voxel-worker und jede Linse RUFEN sie.
     // Die Abdrücke sind MUSTER, nie ein Variablen-Name: die Prüfung 1 fand `(x + _wpX) * 0.00014 + 7.2` in beiden Farb-
     // Pfaden am engen Abdruck `wx * 0.00014 + 7.2` vorbei. Verboten in jeder Wurzel-Datei und jedem Skript
-    // (`gelaendeLeser`); feld-wgsl.js bleibt der Seh-Spiegel (f32-WGSL), das Terrain-Studio liest den Kern mit G2 (K09b).
+    // (`gelaendeLeser`); der WGSL-Seh-Spiegel fiel (K16, der Feld-Zeichner liest den Kern), das Terrain-Studio liest ihn mit G2 (K09b).
     ...[
-        [/\*\s*0\.00014\s*\+\s*7\.2\b/, "die kontinentale Basis des Wildnis-Terms (`kontinentBasis`)"],
         [/\*\s*0\.00026\s*\+\s*(?:11\.3|41\.7)\b/, "der Domain-Warp des Wildnis-Terms"],
-        [
-            /\*\s*0\.000(?:19\s*\+\s*33\.1|22\s*\+\s*91\.3|35\s*\+\s*19\.3|28\s*\+\s*19\.3)\b/,
-            "die Relief-, Stil- und Hochland-Masken des Wildnis-Terms",
-        ],
-        [/\*\s*0\.000(?:3\s*\+\s*61\.1|34\s*\+\s*13\.7)\b|\*\s*0\.00105\s*\+\s*8\.3\b/, "Canyon und Tafelberg"],
-        [/["'`]-macro-ridge["'`]/, "der Grat-Strom des Makro-Ankers"],
-        [/["'`]-macro-anker["'`]/, "der Samen-Strom des Makro-Ankers"],
-        [/0\.7071\s*\*\s*1\.65\b/, "die Grat-Domäne des Makro-Ankers"],
-        [/\/\s*[\w.]*massivAspect\b/, "die Massiv-Maske des Makro-Ankers (`massivMaske`)"],
-        [
-            /\/\s*\(?\s*[\w.]*\b(?:massivR|beckenR|talBreite|talTrenchBreite)\b/,
-            "die Abfall-Profile des Makro-Ankers (Massiv, Becken, Tal)",
-        ],
         [/255\s*\+\s*12\s*\*\s*Math\.tanh\(/, "der Sicherheits-Deckel der Makro-Höhe"],
-        [/noise2D\(\s*[\w.]+\s*\*\s*0\.0005\s*,/, "die Rauheits-Maske (`rauheit`)"],
-        [/Math\.exp\(\s*-\s*[\w.]+\s*\/\s*[\w.]*twoSig2\b/, "das Tarn-Delta"],
-        [/\btwoSig2\s*:/, "die Mulden-Form des Tarns (`tarnMulde`)"],
+        // K16 — DIE LANDFORM: die Großform-Felder (Kontinentalität C, Erosion E, Stil), die Spline-Stützpunkte von OFFSET
+        // und RELIEF, die drei Ebenen des Flussnetzes und die Querneigung der Aue wohnen im Gesetzbuch.
+        [/\+\s*7\.2\s*,[^,;]*?\+\s*3\.8\b/, "die Kontinentalität C der Großform"],
+        [/\+\s*33\.1\s*,[^,;]*?\+\s*71\.7\b/, "das Erosions-Feld E der Großform"],
+        [/\*\s*0\.000192\s*\+\s*91\.3\b/, "das Stil-Feld (Tafelland) der Großform"],
+        [/\[\s*-0\.55\s*,\s*(?:-26|140)\s*\]/, "die Spline-Stützpunkte OFFSET/RELIEF"],
+        [/\[\s*1600\s*,\s*400\s*,\s*100\s*\]/, "die drei Ebenen des Flussnetzes"],
+        [/\bAUE_QUER\s*=/, "die Querneigung der Aue"],
         [/kuppel\s*\*\s*\(/, "der Insel-Term des Erbguts"],
         [/\btan[UFWB]\s*:/, "die Normalform des Erbguts (`erbgutNormal`)"],
+        // K16b — DIE MESSUNG (`MESSUNG`, `abdruckFeld`, `messStatistik`, `schichtSchritte`): das Raster der Statistik, der
+        // Makro-Abdruck und der Schicht-Ort wohnen im Gesetzbuch — die Zahl-Leiste des Studios und die Gelände-Wände RUFEN
+        // sie (die Prüfung K16b fand das Schicht-Verfahren als Zwilling in makro-worker und diag-worker-dichte, das Raster
+        // in studio.js).
+        [
+            /Math\.round\(\s*2000\s*\/|\b4010\b|\b268\s*\*\s*30\b|\bn:\s*268\b/,
+            "das Mess-Raster der Statistik (MESSUNG.raster)",
+        ],
+        [/\b852\s*(?:\+|,)\s*(?:\w+\s*\*\s*27|schritt:\s*27)\b/, "der Makro-Abdruck (MESSUNG.abdruck, abdruckFeld)"],
+        [
+            /\bstil\s*(?:>=|:)\s*0\.8\b|\b8000\s*,\s*8000\b|\bumkreis:\s*8000\b/,
+            "der Schicht-Ort der Messung (MESSUNG.schicht, schichtSchritte)",
+        ],
     ].map(([muster, was]) => ({
         muster,
         gesetzbuch: "gelaende-core.js",
         verboten: gelaendeLeser(),
         fiel: `K09a — Heimat im Gelände-Gesetzbuch: ${was}`,
     })),
+    // K16 — GEFALLEN: die Landform ersetzt die Rausch-Masken, den Ein-Massiv-Anker samt Grat-Strom und Abfall-Profilen,
+    // Canyon und Tafelberg als Maske und die Rauheits-Maske. Sie haben kein Zuhause mehr — auch das Gesetzbuch nie wieder.
+    ...[
+        [/\*\s*0\.00014\s*\+\s*7\.2\b/, "die alte kontinentale Basis (λ 7100 m)"],
+        [
+            /\*\s*0\.000(?:19\s*\+\s*33\.1|22\s*\+\s*91\.3|35\s*\+\s*19\.3|28\s*\+\s*19\.3)\b/,
+            "die Relief-, Stil- und Hochland-Masken des Rausch-Gesetzes",
+        ],
+        [
+            /\*\s*0\.000(?:3\s*\+\s*61\.1|34\s*\+\s*13\.7)\b|\*\s*0\.00105\s*\+\s*8\.3\b/,
+            "Canyon und Tafelberg als Maske",
+        ],
+        // Die Canyon-Maske der Höhlen-Decke (λ 154 m): sie hob die Decke 8 m über den Boden, die Höhle brach als Grube
+        // ohne Abfluss durch — am gebauten Boden 15,2 → 4,2 Senken > 1 m je km² (die Täler sind das Flussnetz).
+        [/\*\s*0\.0065\s*\+\s*41\.7\b/, "die Canyon-Maske der Höhlen-Decke"],
+        [/["'`]-macro-ridge["'`]/, "den Grat-Strom des Makro-Ankers"],
+        [/["'`]-macro-anker["'`]/, "den Samen-Strom des Makro-Ankers"],
+        [/0\.7071\s*\*\s*1\.65\b/, "die Grat-Domäne des Makro-Ankers"],
+        [/\/\s*[\w.]*massivAspect\b/, "die Massiv-Maske des Makro-Ankers"],
+        [
+            /\/\s*\(?\s*[\w.]*\b(?:massivR|beckenR|talBreite|talTrenchBreite)\b/,
+            "die Abfall-Profile des Makro-Ankers (Massiv, Becken, Tal)",
+        ],
+        [/noise2D\(\s*[\w.]+\s*\*\s*0\.0005\s*,/, "die Rauheits-Maske"],
+        [
+            /Math\.exp\(\s*-\s*[\w.]+\s*\/\s*[\w.]*twoSig2\b|\btwoSig2\s*:/,
+            "die Tarn-Mulde (die Seen sind die Senken des Netzes)",
+        ],
+    ].map(([muster, was]) => ({
+        muster,
+        gefallen: true,
+        verboten: gelaendeLeser().concat(["gelaende-core.js"]),
+        fiel: `K16 — die Landform ersetzt ${was}`,
+    })),
 ];
 
 // Die Leser des Gelände-Gesetzes, die es nie nachrechnen: jede JS-Datei der Wurzel außer dem Gesetzbuch und dem Seh-
-// Spiegel, jedes Skript und jede Linse (eine Probe misst am Gesetz, nie an ihrer Kopie). Diese Wand trägt die Muster
-// selbst als Proben und steht nicht in der Liste.
+// Spiegel, jedes Skript und jede Linse (eine Probe misst am Gesetz, nie an ihrer Kopie) und das Gelände-Studio
+// (worlds/gelaende: das Panel und sein Makro-Worker — bis K16b außerhalb der Wand). Diese Wand trägt die Muster selbst
+// als Proben und steht nicht in der Liste.
 function gelaendeLeser() {
     const root = path.join(__dirname, "..");
+    // der Stamm aus der EINEN Liste (nach dem Schnitt liegt er unter stamm/, kein readdir der Wurzel sähe ihn)
     const wurzel = fs
         .readdirSync(root)
-        .filter((f) => /\.(?:c|m)?js$/.test(f) && f !== "gelaende-core.js" && f !== "feld-wgsl.js");
+        .filter(
+            (f) =>
+                /\.(?:c|m)?js$/.test(f) &&
+                f !== "gelaende-core.js" &&
+                !stammLib.istStammDatei(f)
+        )
+        .concat(STAMM);
     const skripte = (d) =>
         fs
             .readdirSync(path.join(root, d))
             .filter((f) => /\.(?:c|m)?js$/.test(f) && f !== "diag-altlasten.cjs")
             .map((f) => d + "/" + f);
-    return wurzel.concat(skripte("scripts"), skripte("scripts/lib"));
+    return wurzel.concat(skripte("scripts"), skripte("scripts/lib"), skripte("worlds/gelaende"));
 }
 
 // `ersatz` (Selbsttest): { datei: Text } liest statt der Platte. Ein Abdruck ist ein Text (`fingerprint`) oder ein
@@ -1471,7 +1592,9 @@ function scanZwillinge(ersatz = {}) {
     const errs = [];
     for (const z of ZWILLINGE) {
         const name = z.fingerprint ? `"${z.fingerprint}"` : String(z.muster);
-        if (!(z.gesetzbuch in ersatz) && !fs.existsSync(path.join(root, z.gesetzbuch)))
+        if (z.gefallen) {
+            // kein Zuhause: der Term fiel ganz — die verbotenen Dateien schließen das Gesetzbuch ein
+        } else if (!(z.gesetzbuch in ersatz) && !fs.existsSync(path.join(root, z.gesetzbuch)))
             errs.push(`Zwillings-Wand: das Gesetzbuch ${z.gesetzbuch} fehlt — ${name} hat kein Zuhause`);
         else if (!finde(z, lies(z.gesetzbuch)))
             errs.push(`Zwillings-Wand: Fingerabdruck ${name} fehlt im Gesetzbuch ${z.gesetzbuch}`);
@@ -1514,7 +1637,7 @@ function scanLabBuster() {
     // (18.467 während package.json 18.471 trug) — jeder Flugschreiber-Trace + Panel-Kopf
     // log über die Version. DIESELBE Wand deckt jetzt die Runtime-Konstante: EIN Gesetz,
     // alle Versions-Träger == package.json.
-    const stammSrc = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+    const stammSrc = stammLib.text(root);
     const vm = stammSrc.match(/AnazhRealm\.VERSION = "([0-9.]+)"/);
     if (!vm) errs.push("AnazhRealm.VERSION nicht gefunden (die Versions-Wand braucht den Anker)");
     else if (vm[1] !== version)
@@ -1632,13 +1755,19 @@ function entsorgungen(srcRoh) {
         f(n);
         kinder(n, (c) => ueberall(c, f));
     };
+    // Die Träger einer Art beim Namen, auch in der Mehrzahl und in der Vokabel des Hauses (der Fern-Ring trägt seit K16 je
+    // Schale `geos` und je Pass `stoffe` — die Wand sah nur `geometry`/`material` und nannte `_fernRingDispose` tot).
+    const TRAEGER_ART = {
+        geometry: "geometry",
+        geos: "geometry",
+        geometrien: "geometry",
+        material: "material",
+        materials: "material",
+        stoffe: "material",
+    };
     const traeger = (n) =>
-        n &&
-        n.type === "MemberExpression" &&
-        !n.computed &&
-        n.property &&
-        (n.property.name === "geometry" || n.property.name === "material")
-            ? n.property.name
+        n && n.type === "MemberExpression" && !n.computed && n.property && TRAEGER_ART[n.property.name]
+            ? TRAEGER_ART[n.property.name]
             : null;
     const artVon = (e, bind) => {
         if (!e) return null;
@@ -1730,7 +1859,7 @@ function scanEntsorgungsWand(srcRoh, besitzer = ENTSORGUNG_BESITZER) {
         const b = besitzer[f.methode];
         if (b && b.arten.includes(f.art)) continue;
         errs.push(
-            `Entsorgungs-Wand: anazhRealm.js:${f.zeile} \`${f.methode}\` entsorgt ${deutsch[f.art]} (\`${f.text}\`) — nicht ihr Besitz: ` +
+            `Entsorgungs-Wand: ${stammLib.ort(path.join(__dirname, ".."), f.zeile)} \`${f.methode}\` entsorgt ${deutsch[f.art]} (\`${f.text}\`) — nicht ihr Besitz: ` +
                 `Gruppen mit Welt-Vorlagen entsorgen über \`_disposeSoulGroup\`, eigene frische Objekte ` +
                 `nur ihr Besitzer (ENTSORGUNG_BESITZER)`
         );
@@ -1789,7 +1918,7 @@ function scanNormalWand(srcRoh) {
     let m;
     while ((m = re.exec(code)))
         errs.push(
-            `Normal-Wand: anazhRealm.js:${code.slice(0, m.index).split("\n").length} dreht die Normale mit der ` +
+            `Normal-Wand: ${stammLib.ort(path.join(__dirname, ".."), code.slice(0, m.index).split("\n").length)} dreht die Normale mit der ` +
                 `transponierten Matrix (n.transformDirection(M) = Mᵀ·n) — Welt → Sicht ist M.transformDirection(n)`
         );
     // DIE QUELLE (V18.532): ein normalNode-Graph liest nie r184s `normalWorld` — es ist EINE Variable je Programm; las der
@@ -1822,11 +1951,1178 @@ function scanNormalWand(srcRoh) {
         }
         if (treffer)
             errs.push(
-                `Normal-Wand: anazhRealm.js:${code.slice(0, m.index).split("\n").length} — der normalNode-Graph liest ` +
+                `Normal-Wand: ${stammLib.ort(path.join(__dirname, ".."), code.slice(0, m.index).split("\n").length)} — der normalNode-Graph liest ` +
                     `r184s \`normalWorld\` (${treffer}); die Geometrie-Normale ist \`normalWorldGeometry\` × \`faceDirection\``
             );
     }
     return errs;
+}
+
+// DIE STOFF-WAND (K22, 12.10.): kein stiller Fang im Render- und Stoff-Bau. Bis 1110-11b gab die LOD-Blende bei einem
+// fehlenden Glied still null zurück, und jeder Stoff zeichnete ohne seine Maske weiter (`_blendeBruch` heilte die Blende);
+// dieselbe Klasse lebte daneben in jedem Stoff. Ein FANG ist:
+//   (a) ein catch im Stoff- oder Render-Bau, der weder wirft noch ERROR meldet (der Fehler verschwindet, das Bild zeichnet
+//       byte-alt weiter);
+//   (b) eine Fehler-Variable `window.__…Error` (der Fehler wandert in ein Fach, das kein Spiel-Leser liest);
+//   (c) ein AUSSTATTUNGS-WENN: der Bau fragt, ob TSL (THREE.TSL, im Stoff T · _T · TSL …) ein Glied trägt. Der Vendor ist
+//       gepinnt (three-bootstrap importiert three/tsl ganz, gate:vendor-anker), ein fehlendes Glied bricht beim ersten Ruf
+//       mit seinem Namen; das Wenn machte daraus einen Stoff ohne seinen Knoten;
+//   (d) ein NULL-KNOTEN: ein Knoten-Bauer, dessen Ergebnis ein Stoff in einen `…Node` setzt, gibt null zurück, oder sein
+//       Aufrufer setzt den Knoten nur unter Wenn.
+// Stoff-Bau = jede Methode, die TSL liest (ein Bezeichner aus THREE.TSL oder ein Parameter T/TSL, der TSL-Knoten baut);
+// Render-Bau = jeder Versuch (try-Block, die Kette vor `promise.catch`), der den Render-Graphen baut oder läuft (DER
+// RENDER-BAU unten: am Versuch gemessen, nie am Text des Fangs). Laut ist ein Fang, dessen jeder Pfad bricht (`_stoffBruch`,
+// ERROR mit dem Glied beim Namen, oder eine begrenzte Wiederholung, deren Ende bricht) — ein bewusster Zweig steht mit
+// Grund und Bild-Leser in STOFF_ZWEIGE (eine tote Zeile ist rot). Im Stoff ist auch jede stille Frage ein Fang: `"x" in T`,
+// `!!T.x` frei, `T.x?.(…)`, ein aus TSL gezogenes Glied (`const { pass } = TSL; if (!pass)`), das Ergebnis eines
+// Stoff-Bauers (`if (_su)`).
+// DIE LISTE (an integ-probe bb554abf ROT mit 95 Fängen: F catch · V Fehler-Variable · W Ausstattungs-Wenn · N Null-Knoten):
+//   _buildPbrNodeMaterial F4 N2 V2 W14 · _foundryTreeMaterial F1 N3 W6 · _substanceCharacter F1 V1 W5 · _grassInstanceMat
+//   F2 N1 W4 · _applySubstanceResponse F1 V1 W4 · _applyVegetationResponse F1 V1 W2 · _terrainGeologyAlbedo F1 V1 W2 ·
+//   _membranBauFor F2 W1 · _ensureLodUniforms F1 W1 · _ensurePostProcessing F1 W1 · init (CSM) F1 · _kameraDurchsichtNode
+//   N1 W1 · _ensureAtmoUniforms N1 W1 · _ensureSeasonUniforms N1 W1 · _windSwayOffset N1 · _impostorAtlas N1 ·
+//   _weltMarchEnsure N1 · createGalaxySkybox W2 · je W1 _buildStarField _configureRenderer _uniformHeimatTeilen
+//   _materialObserverDiaet _ensureWindCoupling _ensureHydroSurfaceMaterial _fernKroneNahEnsure _feldPassEnsure
+//   _tickPortalMembranes _ensureRainSystem _phantomTint _wegeKarteEnsure _blattAtlasProbe · je V1 _uiDirty (UI-Puls: ERROR
+//   beim Namen des Raums) _addConnectionLines _tickImpostorBake (nach dem dritten Versuch: `_stoffBruch`).
+// Jeder catch wirft über `_stoffBruch` (die Post-Kette meldet ihn und zeichnet direkt), jede Fenster-Variable fiel, jedes
+// Wenn um ein TSL-Glied fiel (der Uniform-Satz kommt aus seinem ensure), jeder Knoten-Bauer liefert oder bricht.
+// DIE NACHBESSERUNG (13.10., am Kopf f1528195 ROT mit 29: F22 · N7): die Wand maß den Render-Bau am Rumpf-Text (blind für
+// vier ihrer eigenen Schnitte) und kannte den Render-Lauf nicht. Laut brechen jetzt _loopRender (der Render-Lauf der
+// Post-Kette, r184 baut sie dort) · _tickBootFernDeko · _fernRingGpuMal · _feldPanoramaMal · verifyComputeContribution ·
+// _tickWornArmorVisual · _heldFoundryGroup ×3 · _feedPreviewShow · _studioUebergabeEmpfang · _buildArchMeshMerged ·
+// _tickBlueprintPrebake · _foundryIngestRecipes · _nachDorfOrientieren ×2 · _foundryBarkNormalTexture · _foundryBuildGroup ·
+// _foundryPrefetchLibrary · _tryWorkerWaterSheet · _workshopBuildSkeletonPreviewGroup · _workshopStudioPreviewFrom; die
+// Fragen an Stoff-Bauer fallen (_buildPbrNodeMaterial Saison · Tag-Licht · Flatten, _applyVegetationResponse LOD-Satz).
+// Bewusst bleibt EIN Zweig ohne Seite: `_blattAtlasProbe` gibt ohne document null, seine drei Leser stehen benannt.
+// DIE NACHBESSERUNG 2 (13.10., am Kopf 23d29378 ROT mit 8 Fängen + 2 der Drossel): die Hülle endete nach zwei Ruf-Gliedern
+// und lief zugleich über Abgelegtes (UI-Räume, Hörer: der Chat und P2P „bauten" über die Kreatur-Aura); „laut" hieß
+// „irgendein Satz bricht". Jetzt: die Hülle ist ein Fixpunkt über das, was IM Versuch läuft, der Studio-Faden zählt
+// (`_ensureAssetFoundry` startet ihn, seine Antwort baut), und JEDER Pfad muss brechen. Laut brechen jetzt
+// _buildHumanGroup (Not-Körper) · _foundryPrefetchLibrary (Karte) · _ensurePortalPreview · _portalApproachPrefetch ·
+// _ensureAssetFoundry ×2 (es gibt keinen Alt-Pfad); generateNewWorld und der Loop fangen ihren Ruf nicht mehr; die Drossel
+// des Loops (`_loopErrorBoundary`) meldet jeden NEUEN Fehler und steht als Zweig mit ihrem Bild.
+// DER HÖRER DES FADENS (Nachbesserung 2, Fortsetzung, an 23d29378 ROT mit 10: die 8 und zwei stille Hörer): der Fehler
+// eines Studio-Fadens erreicht keinen catch, sein Fehler-Hörer (`onerror`) IST sein Fang. Studio-Faden ist jeder Worker,
+// dessen Antwort einen Bauer ruft oder im Leser eines Studio-Fadens landet (der Bäcker über `_foundryAntwort`); er trägt
+// einen Hörer, dessen jeder Pfad bricht. Die Klang-Werkstatt baut nichts und bleibt draußen.
+// DIE NACHBESSERUNG 3 (13.10., am Kopf bb9c1179 ROT mit 7 Fängen + dem fehlenden Melder): der Zweig des Loops hing an einem
+// KOMMENTAR (ein leerer catch mit dem Kommentar blieb grün), die Drossel des Loops durfte INFO melden, vier `.catch(… "INFO")`
+// hingen an r184s synchronem render() (der catch an einem Namen zählte nicht als Versuch), und eine Kette aus fremder Quelle
+// stieg still aus (`if (!manifest.length) return;` im Foundry-Boot). Jetzt: ein Fund ist Code (Kommentare geschwärzt), der
+// EINE Melder `_bruchMelden` (STOFF_MELDER) ist laut, wenn er nur ERROR meldet und jeder Pfad meldet oder zählt — die Fänge
+// des Loops rufen ihn über `_loopErrorBoundary` und brauchen keinen Zweig; ein catch an einem Namen misst, was der Name
+// bindet; ein `.then`-Glied, das den gelieferten Wert prüft und ohne Wert zurückkehrt, ist ein Fang (für eine Kette aus
+// einer Methode des Stamms spricht die Methode).
+// DIE NACHBESSERUNG 4 (13.10., am Kopf 53b2c1d7 ROT mit 2 Uhr-Deckeln): ein Bau, der in einer Schleife auf die Uhr wartet,
+// geht nach dem Deckel mit halben Daten weiter — `_foundryPrefetchLibrary` wartete 2 s auf das Studio-Buch und wärmte danach
+// ohne Rezepte (gate:post-kette rot mit FOUNDRY WARM, je nach Takt), `_foundryAwaitBook` pollte. Beide warten jetzt auf das
+// EREIGNIS des Buchs (`buchDa`, `_foundryIngestBook` erfüllt es) — gate:post-kette danach 2/2 ohne FOUNDRY WARM.
+const OHNE_SEITE =
+    "ohne Seite (kein document: der Node-Prüfstand) gibt es keinen Atlas und kein Bild — mit Seite liefert " +
+    "`_ensureFoliageClusterAtlas` den Atlas oder bricht (KERN-PFLICHT)";
+const STOFF_ZWEIGE = [
+    {
+        methode: "_blattAtlasProbe",
+        art: "Null-Knoten",
+        anker: "gibt null",
+        grund: OHNE_SEITE,
+        bild: "der Laub-, Schatten- und Blatt-Karten-Stoff lesen den Atlas; gate:pflanzen-nah (F) misst seine Fracht am Bild",
+    },
+    {
+        methode: "_foundryTreeMaterial",
+        art: "Null-Knoten",
+        anker: "atl = this._blattAtlasProbe",
+        grund: OHNE_SEITE,
+        bild: "der Laub-Stoff (foliageTex) schneidet die Blattform aus dem Atlas; gate:pflanzen-nah (F)",
+    },
+    {
+        methode: "_foundryTreeMaterial",
+        art: "Null-Knoten",
+        anker: "atl = this._blattAtlasProbe",
+        grund: OHNE_SEITE,
+        bild: "der Schatten-Stoff des Laubs wirft max(aDeckt, Atlas-Alpha) — die Blattform im Schatten; gate:pflanzen-nah (F)",
+    },
+    {
+        methode: "_buildPbrNodeMaterial",
+        art: "Null-Knoten",
+        anker: "_atl = this._blattAtlasProbe",
+        grund: OHNE_SEITE,
+        bild: "die Blatt-Karte schneidet Alpha und Farbe aus dem Atlas (der EINE Leser); gate:pflanzen-nah (F)",
+    },
+    {
+        methode: "_getVoxelWorker",
+        art: "Fang",
+        anker: "throw _workerErr; this._voxelFadenBlobWeg()",
+        grund:
+            "der null-origin-Sandbox verbietet `new Worker(url)` (SecurityError): der Voxel-Faden startet EINMAL über die " +
+            "Blob-URL derselben Quelle (`voxel-worker.js?v=`); scheitert der Blob-Weg oder ein zweiter Start, bricht er laut " +
+            "(`_stoffBruch`, der äußere Fang meldet ERROR)",
+        bild:
+            "bis der Blob-Faden steht, baut der Haupt-Thread den Chunk aus derselben Dichte (der bit-identische Spiegel, " +
+            "gate:worker-dichte maxDiff 0), danach der Faden",
+    },
+];
+// DER EINE MELDER (Nachbesserung 3): `_bruchMelden` meldet jede NEUE Bruch-Meldung sofort ERROR und dieselbe wieder mit ihrem
+// Zähler höchstens alle 2 s (`_stoffBruch` und die Fehler-Grenze des Loops `_loopErrorBoundary` melden über ihn; der Loop
+// zeichnet nach einem Frame-Fehler weiter, playtest V18.278 loopSurvivesThrow · errorCounted). Die Wand misst ihn am Code
+// (DER MELDER in stoffFaenge): fehlt er, meldet er INFO/WARN oder still, ist er rot — und mit ihm jeder Fang, der ihn ruft.
+const STOFF_MELDER = ["_bruchMelden"];
+// DER RENDER-BAU (K22 Nachbesserung): was ein try VERSUCHT (sein Block, bei `promise.catch` die Kette davor), nie was sein
+// catch sagt — ein Schnitt im catch darf die Wand nie verlassen (bis hierher entschied der Rumpf-Text der Methode, und
+// der Schnitt, der `!THREE.TSL` aus `_membranBauFor` nahm, nahm die Methode aus der Wand). Ein Block baut den
+// Render-Graphen, wenn er (oder ein Bauer, den er ruft, oder dessen Bauer — zwei Ruf-Glieder; tiefer liegt die
+// Spiel-Logik) TSL liest, ein Render-Objekt baut (RENDER_KLASSE, gleich aus welchem Namensraum: `THREE`, `T = THREE`),
+// eine Render-Quelle hochlädt (`needsUpdate = true`) oder den Graphen LÄUFT: r184 baut Post-Kette, Szenen-Pass und jede
+// Pipeline erst beim ersten render() (Vendor: PostProcessing.render → _update → _quadMesh.render) — der Fang um den Lauf
+// fängt den Bau. Die GEOMETRIE gehört dazu (Prüfer K22-3): ein Stoff liest ihre Attribute (`attribute("aLodLevel")`), und
+// fehlt ein Attribut, liest r184 still 0 — der catch um die Stufen-Stempel aLodLevel · aH0 · aH0L in `_foundryBuildGroup`
+// ließ den Baum ungemaskt doppelt mit seiner Karte stehen, und die Wand sah ihn nicht (sie zählte weder BufferAttribute noch
+// setAttribute als Bau). Ein Attribut, eine Geometrie, ein Schreiben in eine Geometrie (`geo.setAttribute`, `setIndex`,
+// `addGroup` an einem Träger namens …geo…) baut den Render-Graphen.
+const RENDER_KLASSE =
+    /^(\w*(Material|Texture|RenderTarget|Node|BufferAttribute|Geometry)|Mesh|InstancedMesh|BatchedMesh|SkinnedMesh|Line|LineSegments|LineLoop|Points|Sprite|PostProcessing|RenderPipeline|WebGPURenderer|QuadMesh)$/;
+const RENDER_LAUF = /^(render|renderAsync|compile|compileAsync)$/;
+const RENDER_TRAEGER = /renderer|^pp$|postProcessing|pipeline/i;
+const GEO_SCHREIBEN = /^(setAttribute|setIndex|addGroup|setDrawRange|computeVertexNormals)$/;
+const GEO_TRAEGER = /geo/i;
+function stoffFaenge(srcRoh, zweige = STOFF_ZWEIGE) {
+    const acorn = require("acorn");
+    const kommentare = [];
+    const ast = acorn.parse(srcRoh, {
+        ecmaVersion: "latest",
+        sourceType: "script",
+        locations: true,
+        onComment: (_block, _text, start, end) => kommentare.push({ start, end }),
+    });
+    const kinder = (n, f) => {
+        for (const k in n) {
+            if (k === "loc") continue;
+            const v = n[k];
+            if (Array.isArray(v)) {
+                for (const c of v) if (c && typeof c.type === "string") f(c);
+            } else if (v && typeof v.type === "string") f(v);
+        }
+    };
+    const gehe = (n, f, eltern = null) => {
+        f(n, eltern);
+        kinder(n, (c) => gehe(c, f, n));
+    };
+    // ein Promise-Fang: `….catch((e) => …)` — sein Rückruf ist ein catch, die Kette davor sein Block
+    const istPromiseFang = (n) =>
+        n.type === "CallExpression" &&
+        n.callee.type === "MemberExpression" &&
+        !n.callee.computed &&
+        n.callee.property.name === "catch" &&
+        n.arguments.length >= 1 &&
+        /Function/.test(n.arguments[0].type);
+    // AUFGESCHOBEN läuft, was der Versuch nur ablegt: eine Funktion als Wert eines Objekts (`{ render: () => … }`), an ein
+    // Glied gehängt (`el.onclick = () => …`) oder einem Zeitgeber/Hörer übergeben (rAF, setTimeout, addEventListener …) —
+    // sie läuft nach dem Versuch, ihr Fehler erreicht seinen catch nie (die Hülle lief über die UI-Räume vom Chat in die
+    // Kreatur-Aura). Eine Funktion als Argument (forEach, map, then …) oder in einer Variable läuft im Versuch.
+    const ZEITGEBER =
+        /^(setTimeout|setInterval|requestAnimationFrame|requestIdleCallback|queueMicrotask|addEventListener|on|once)$/;
+    const aufgeschoben = (c, el) => {
+        if (!/Function/.test(c.type) || !el) return false;
+        if (el.type === "Property" && el.value === c) return true;
+        if (el.type === "MethodDefinition" || el.type === "PropertyDefinition") return true;
+        if (el.type === "AssignmentExpression" && el.right === c && el.left.type === "MemberExpression") return true;
+        if ((el.type === "CallExpression" || el.type === "NewExpression") && el.arguments.includes(c)) {
+            const k = el.callee;
+            const name =
+                k.type === "Identifier" ? k.name : k.type === "MemberExpression" && !k.computed ? k.property.name : "";
+            return ZEITGEBER.test(name);
+        }
+        return false;
+    };
+    // der Versuch ohne seine Fänge: catch-Rümpfe und Promise-Rückrufe zählen nie zum Bau, Aufgeschobenes läuft nicht in ihm
+    const geheVersuch = (n, f) => {
+        f(n);
+        if (n.type === "CatchClause") return;
+        if (istPromiseFang(n)) return geheVersuch(n.callee.object, f);
+        kinder(n, (c) => {
+            if (!aufgeschoben(c, n)) geheVersuch(c, f);
+        });
+    };
+    // der Text eines Funds ist CODE: Kommentare sind geschwärzt (Nachbesserung 3 — ein Zweig, dessen Anker ein Kommentar
+    // war, hielt einen leeren catch grün, solange der Kommentar stand)
+    const stuecke = [];
+    let bis = 0;
+    for (const c of kommentare) {
+        stuecke.push(srcRoh.slice(bis, c.start), " ".repeat(c.end - c.start));
+        bis = c.end;
+    }
+    stuecke.push(srcRoh.slice(bis));
+    const code = stuecke.join("");
+    const kurz = (n) => code.slice(n.start, n.end).replace(/\s+/g, " ").trim().slice(0, 90);
+    const funde = [];
+    const fund = (art, methode, n, was) => funde.push({ art, methode, zeile: n.loc.start.line, was });
+    const istThreeTsl = (e) =>
+        !!e &&
+        e.type === "MemberExpression" &&
+        !e.computed &&
+        e.object.type === "Identifier" &&
+        e.object.name === "THREE" &&
+        e.property.name === "TSL";
+    const ausTsl = (e) =>
+        !!e &&
+        (istThreeTsl(e) ||
+            (e.type === "MemberExpression" && !e.computed && e.property.name === "TSL") ||
+            (e.type === "LogicalExpression" && ausTsl(e.right)) ||
+            (e.type === "ConditionalExpression" && ausTsl(e.consequent)));
+    const methoden = [];
+    gehe(ast, (n) => {
+        if (n.type === "MethodDefinition" && n.key && n.value) methoden.push(n);
+    });
+    const nameVon = (m) => m.key.name || m.key.value;
+    const tslApi = (name, rumpf) =>
+        new RegExp(
+            `\\b${name}\\.(float|vec[234]|uniform|attribute|mix|fract|positionWorld|positionLocal|screenCoordinate|texture)\\b`
+        ).test(rumpf);
+    // je Methode: die Namen von TSL (`T`, `_T`, `TSL` …) und die Glieder, die aus TSL gezogen sind (`const { pass } = TSL`,
+    // `const f = T.fwidth`) — ein Glied als Wahrheitswert ist eine Frage an den Vendor
+    const aliase = (m) => {
+        const al = new Set();
+        const gl = new Set();
+        const rumpf = srcRoh.slice(m.value.start, m.value.end);
+        for (const p of m.value.params)
+            if (p.type === "Identifier" && /^(T|TSL|_T)$/.test(p.name) && tslApi(p.name, rumpf)) al.add(p.name);
+        gehe(m.value, (n) => {
+            if (n.type === "VariableDeclarator" && n.id.type === "Identifier" && ausTsl(n.init)) al.add(n.id.name);
+            if (n.type === "VariableDeclarator" && n.id.type === "ObjectPattern" && n.init)
+                for (const p of n.id.properties)
+                    if (p.key && p.key.name === "TSL" && p.value && p.value.type === "Identifier") al.add(p.value.name);
+        });
+        const ausAl = (e) => !!e && ((e.type === "Identifier" && al.has(e.name)) || istThreeTsl(e));
+        gehe(m.value, (n) => {
+            if (n.type !== "VariableDeclarator" || !n.init) return;
+            if (n.id.type === "ObjectPattern" && ausAl(n.init))
+                for (const p of n.id.properties) if (p.value && p.value.type === "Identifier") gl.add(p.value.name);
+            if (
+                n.id.type === "Identifier" &&
+                n.init.type === "MemberExpression" &&
+                !n.init.computed &&
+                ausAl(n.init.object) &&
+                n.init.property.name !== "TSL"
+            )
+                gl.add(n.id.name);
+        });
+        return { al, gl };
+    };
+    const name2al = new Map();
+    for (const m of methoden) name2al.set(m, aliase(m));
+    // (Render-Bau) der direkte Bau: TSL, ein Render-Objekt, ein Hochladen, ein Render-Lauf
+    const baut = (n, { al, gl }) => {
+        let hit = null;
+        geheVersuch(n, (e) => {
+            if (hit) return;
+            if (istThreeTsl(e)) hit = "liest THREE.TSL";
+            else if (
+                e.type === "MemberExpression" &&
+                !e.computed &&
+                e.object.type === "Identifier" &&
+                al.has(e.object.name)
+            )
+                hit = "liest TSL (" + e.object.name + ")";
+            else if (e.type === "CallExpression" && e.callee.type === "Identifier" && gl.has(e.callee.name))
+                hit = "ruft das TSL-Glied " + e.callee.name;
+            else if (
+                e.type === "NewExpression" &&
+                e.callee.type === "MemberExpression" &&
+                !e.callee.computed &&
+                e.callee.object.type === "Identifier" &&
+                RENDER_KLASSE.test(e.callee.property.name)
+            )
+                hit = "baut " + e.callee.property.name;
+            else if (
+                e.type === "AssignmentExpression" &&
+                e.left.type === "MemberExpression" &&
+                !e.left.computed &&
+                e.left.property.name === "needsUpdate"
+            )
+                hit = "lädt hoch (needsUpdate)";
+            else if (
+                e.type === "CallExpression" &&
+                e.callee.type === "MemberExpression" &&
+                !e.callee.computed &&
+                GEO_SCHREIBEN.test(e.callee.property.name) &&
+                GEO_TRAEGER.test(
+                    e.callee.object.type === "Identifier"
+                        ? e.callee.object.name
+                        : e.callee.object.type === "MemberExpression" && !e.callee.object.computed
+                          ? e.callee.object.property.name
+                          : ""
+                )
+            )
+                hit = "schreibt die Geometrie (" + e.callee.property.name + ")";
+            else if (
+                e.type === "CallExpression" &&
+                e.callee.type === "MemberExpression" &&
+                !e.callee.computed &&
+                e.callee.property.name === "postMessage" &&
+                /worker/i.test(
+                    e.callee.object.type === "Identifier"
+                        ? e.callee.object.name
+                        : e.callee.object.type === "MemberExpression" && !e.callee.object.computed
+                          ? e.callee.object.property.name
+                          : ""
+                )
+            )
+                hit = "schickt dem Faden einen Bau-Auftrag (postMessage)";
+            else if (
+                e.type === "CallExpression" &&
+                e.callee.type === "MemberExpression" &&
+                !e.callee.computed &&
+                RENDER_LAUF.test(e.callee.property.name)
+            ) {
+                const o = e.callee.object;
+                const t =
+                    o.type === "Identifier"
+                        ? o.name
+                        : o.type === "MemberExpression" && !o.computed
+                          ? o.property.name
+                          : "";
+                if (RENDER_TRAEGER.test(t)) hit = "läuft den Render-Graphen (" + t + "." + e.callee.property.name + ")";
+            }
+        });
+        return hit;
+    };
+    const ruft = (n) => {
+        const s = new Set();
+        geheVersuch(n, (e) => {
+            if (
+                e.type === "CallExpression" &&
+                e.callee.type === "MemberExpression" &&
+                e.callee.object.type === "ThisExpression" &&
+                !e.callee.computed
+            )
+                s.add(e.callee.property.name);
+        });
+        return s;
+    };
+    // DIE HÜLLE: jede Methode, die den Render-Graphen baut — direkt oder über JEDES Ruf-Glied (Fixpunkt, keine Tiefe:
+    // bis zur Nachbesserung 2 endete sie nach zwei Gliedern, und ein Bauer drei Glieder tief ließ den Fang still).
+    // DER STUDIO-FADEN: wer einen Worker startet, dessen Antwort (`onmessage`) einen Bauer ruft, baut den Render-Graphen
+    // mit — der Faden ist seine Quelle (die Foundry: ohne Faden kein Studio-Mesh). Sein Hörer läuft aufgeschoben, darum
+    // zählt er nur über den Start im Versuch.
+    const startetFaden = (n) => {
+        let ja = false;
+        geheVersuch(n, (e) => {
+            if (e.type === "NewExpression" && e.callee.type === "Identifier" && e.callee.name === "Worker") ja = true;
+        });
+        return ja;
+    };
+    const fadenRufe = (n) => {
+        const s = new Set();
+        if (!startetFaden(n)) return s;
+        gehe(n, (e) => {
+            if (
+                e.type === "AssignmentExpression" &&
+                e.left.type === "MemberExpression" &&
+                !e.left.computed &&
+                e.left.property.name === "onmessage" &&
+                /Function/.test(e.right.type)
+            )
+                gehe(e.right, (c) => {
+                    if (
+                        c.type === "CallExpression" &&
+                        c.callee.type === "MemberExpression" &&
+                        c.callee.object.type === "ThisExpression" &&
+                        !c.callee.computed
+                    )
+                        s.add(c.callee.property.name);
+                });
+        });
+        return s;
+    };
+    const renderBauer = new Map(); // Methode → { was, ueber, faden } (ueber: das gerufene Glied, null = direkt)
+    const rufe = new Map();
+    const faeden = new Map();
+    for (const m of methoden) {
+        const n = nameVon(m);
+        const h = baut(m.value, name2al.get(m));
+        if (h && !renderBauer.has(n)) renderBauer.set(n, { was: h, ueber: null });
+        const s = rufe.get(n) || new Set();
+        for (const x of ruft(m.value)) s.add(x);
+        rufe.set(n, s);
+        const fr = fadenRufe(m.value);
+        if (fr.size) faeden.set(n, fr);
+    }
+    for (let neu = true; neu;) {
+        neu = false;
+        for (const [n, xs] of rufe) {
+            if (renderBauer.has(n)) continue;
+            let x = [...xs].find((y) => renderBauer.has(y));
+            let faden = false;
+            if (!x && faeden.has(n)) {
+                x = [...faeden.get(n)].find((y) => renderBauer.has(y));
+                faden = !!x;
+            }
+            if (x) {
+                renderBauer.set(n, { was: null, ueber: x, faden });
+                neu = true;
+            }
+        }
+    }
+    // die Kette bis zum Bau, beim Namen: `ruft A → B → C (baut Mesh)`, ein Faden als `A ⇢ B`
+    const kette = (x) => {
+        let t = "ruft " + x;
+        let b = renderBauer.get(x);
+        for (let i = 0; b && b.ueber && i < 24; i++) {
+            t += (b.faden ? " ⇢ (Studio-Faden) " : " → ") + b.ueber;
+            b = renderBauer.get(b.ueber);
+        }
+        return t + " (" + (b ? b.was : "?") + ")";
+    };
+    // die Fehler-Hörer je Studio-Faden einer Methode: { w, art, fn, ort, kette } (fn null = der Faden hat keinen Hörer)
+    const HOERER = /^(onerror|onmessageerror)$/;
+    const fadenHoerer = (n) => {
+        if (!startetFaden(n)) return [];
+        const text = (e) => srcRoh.slice(e.start, e.end);
+        const istWorker = (e) =>
+            !!e && e.type === "NewExpression" && e.callee.type === "Identifier" && e.callee.name === "Worker";
+        const faeden = new Map(); // Name des Fadens → { ort, rufe, hoerer }
+        gehe(n, (e) => {
+            if (e.type === "VariableDeclarator" && e.id.type === "Identifier" && istWorker(e.init))
+                faeden.set(e.id.name, { ort: e.init, rufe: new Set(), hoerer: [] });
+            else if (e.type === "AssignmentExpression" && istWorker(e.right) && !faeden.has(text(e.left)))
+                faeden.set(text(e.left), { ort: e.right, rufe: new Set(), hoerer: [] });
+        });
+        gehe(n, (e) => {
+            let ziel = null;
+            let fn = null;
+            let art = null;
+            if (
+                e.type === "AssignmentExpression" &&
+                e.left.type === "MemberExpression" &&
+                !e.left.computed &&
+                /Function/.test(e.right.type)
+            ) {
+                ziel = text(e.left.object);
+                fn = e.right;
+                art = e.left.property.name;
+            } else if (
+                e.type === "CallExpression" &&
+                e.callee.type === "MemberExpression" &&
+                !e.callee.computed &&
+                e.callee.property.name === "addEventListener" &&
+                e.arguments.length >= 2 &&
+                e.arguments[0].type === "Literal" &&
+                /Function/.test(e.arguments[1].type)
+            ) {
+                ziel = text(e.callee.object);
+                fn = e.arguments[1];
+                art = e.arguments[0].value === "message" ? "onmessage" : "on" + e.arguments[0].value;
+            }
+            const f = ziel && faeden.get(ziel);
+            if (!f) return;
+            if (art === "onmessage")
+                gehe(fn, (c) => {
+                    if (
+                        c.type === "CallExpression" &&
+                        c.callee.type === "MemberExpression" &&
+                        c.callee.object.type === "ThisExpression" &&
+                        !c.callee.computed
+                    )
+                        f.rufe.add(c.callee.property.name);
+                });
+            else if (HOERER.test(art)) f.hoerer.push({ art, fn });
+        });
+        return [...faeden].map(([w, f]) => Object.assign({ w }, f));
+    };
+    // die Studio-Fäden des Stamms: ein Faden, dessen Antwort einen Bauer ruft, oder dessen Antwort im LESER eines
+    // Studio-Fadens landet (der Bäcker liefert seine Karte über `_foundryAntwort` wie die Foundry ihr Mesh — die Antwort
+    // erfüllt das Versprechen, das ein Bauer hält); Fixpunkt. Die Klang-Werkstatt bleibt draußen (ihre Antwort baut nichts).
+    const studioFaeden = [];
+    {
+        const alle = [];
+        for (const m of methoden) for (const f of fadenHoerer(m.value)) alle.push(Object.assign({ m }, f));
+        const leser = new Map(); // Methode → der Studio-Faden, dessen Antwort sie liest
+        for (let neu = true; neu;) {
+            neu = false;
+            for (const f of alle) {
+                if (f.kette) continue;
+                const x = [...f.rufe].find((y) => renderBauer.has(y));
+                const l = x ? null : [...f.rufe].find((y) => leser.has(y));
+                if (!x && !l) continue;
+                f.kette = x
+                    ? "(seine Antwort " + kette(x) + ")"
+                    : `(seine Antwort ruft ${l}, den Leser des Studio-Fadens ${leser.get(l)})`;
+                for (const y of f.rufe) if (!leser.has(y)) leser.set(y, `${f.w} in ${nameVon(f.m)}`);
+                studioFaeden.push(f);
+                neu = true;
+            }
+        }
+    }
+    // Ein Versuch, der NUR den Faden startet (`worker = new Worker(…)`, sein Hörer hängt danach außerhalb des Versuchs), baut
+    // mit, wenn seine Methode baut (Prüfer K22-3: der Sandbox-Fang des Voxel-Fadens gab still null, und der Haupt-Thread
+    // baute jeden Chunk selbst; die Klang-Werkstatt baut nichts und bleibt draußen).
+    const renderBau = (block, a, methode) => {
+        const h = baut(block, a);
+        if (h) return h;
+        for (const x of ruft(block)) if (renderBauer.has(x)) return kette(x);
+        for (const x of fadenRufe(block))
+            if (renderBauer.has(x)) return "startet den Studio-Faden, seine Antwort " + kette(x);
+        if (startetFaden(block) && renderBauer.has(methode)) {
+            const b = renderBauer.get(methode);
+            return "startet den Faden der bauenden Methode " + methode + " (" + (b.was || kette(b.ueber)) + ")";
+        }
+        return null;
+    };
+    // LAUT ist ein Fang, dessen JEDER Pfad bricht (Nachbesserung 2: bis hierher reichte EIN lauter Satz irgendwo im Rumpf —
+    // ein `return null` davor, ein toter Bruch nach `return`, ein Helfer, der nur bedingt wirft, blieben grün). Gezählt wird
+    // je Pfad durch den Rumpf, in seiner Reihenfolge: ein Wurf, ein ERROR beim Namen (`this.log(…, "ERROR")` oder ein
+    // Bruch-Helfer: eine Methode, deren JEDER Pfad bricht — `_stoffBruch`, `_blendeBruch`, `logError` …), eine BEGRENZTE
+    // Wiederholung (der Auftrag kehrt in seine Schlange zurück, und der andere Zweig bricht), oder das Weiterreichen eines
+    // Bruchs, der schon gemeldet ist (`if (e.stoff === true) return e`). Still ist jeder Pfad, der den Rumpf verlässt
+    // (return · break · continue) oder an seinem Ende ankommt, ehe er brach.
+    const flach = (n, f) => {
+        f(n);
+        kinder(n, (c) => {
+            if (!/Function/.test(c.type)) flach(c, f);
+        });
+    };
+    const istErrorLog = (e) =>
+        e.type === "CallExpression" &&
+        e.callee.type === "MemberExpression" &&
+        e.callee.object.type === "ThisExpression" &&
+        !e.callee.computed &&
+        e.callee.property.name === "log" &&
+        e.arguments.length >= 2 &&
+        e.arguments[1].type === "Literal" &&
+        e.arguments[1].value === "ERROR";
+    const bruchHelfer = new Set();
+    // DER MELDER (Nachbesserung 3): ein Melder in STOFF_MELDER (`_bruchMelden`) meldet einen Bruch, der jeden Frame
+    // wiederkommt, nicht jeden Frame — er ist laut, wenn JEDER `this.log` in ihm ERROR meldet, mindestens einer steht, und
+    // jeder Pfad durch ihn ERROR meldet oder den Zähler der Meldung erhöht (`e.n++`: ihr Zähler trägt die nächste Meldung).
+    // Bis hierher hielt ein Zweig mit einem KOMMENTAR als Anker die Fänge des Loops grün, und die Drossel selbst durfte INFO
+    // melden.
+    let zaehltMit = false;
+    const istZaehler = (e) =>
+        e.type === "UpdateExpression" && e.operator === "++" && e.argument.type === "MemberExpression";
+    const lautE = (e) =>
+        !!e &&
+        (istErrorLog(e) ||
+            (e.type === "AwaitExpression" && lautE(e.argument)) ||
+            (e.type === "CallExpression" &&
+                e.callee.type === "MemberExpression" &&
+                e.callee.object.type === "ThisExpression" &&
+                !e.callee.computed &&
+                bruchHelfer.has(e.callee.property.name) &&
+                e.callee.property.name !== "log"));
+    const istSchlangeZurueck = (e) =>
+        e.type === "CallExpression" &&
+        e.callee.type === "MemberExpression" &&
+        !e.callee.computed &&
+        e.callee.property.name === "push" &&
+        /Queue|Schlange/.test(srcRoh.slice(e.callee.object.start, e.callee.object.end));
+    const wiederholt = (s) =>
+        !!s &&
+        ((s.type === "ExpressionStatement" && istSchlangeZurueck(s.expression)) ||
+            (s.type === "BlockStatement" && s.body.some(wiederholt)));
+    // `if (v.stoff === true)` (oder `v && v.stoff === true`): v ist ein schon gemeldeter Bruch
+    const bruchGeprueft = (test) => {
+        const aus = new Set();
+        gehe(test, (e) => {
+            if (
+                e.type === "BinaryExpression" &&
+                e.operator === "===" &&
+                e.right.type === "Literal" &&
+                e.right.value === true &&
+                e.left.type === "MemberExpression" &&
+                !e.left.computed &&
+                e.left.property.name === "stoff" &&
+                e.left.object.type === "Identifier"
+            )
+                aus.add(e.left.object.name);
+        });
+        return aus;
+    };
+    // die Ausgänge eines Satzes: L (brach) · F (fällt weiter, ungebrochen) · R (verlässt still: return) · B (break/continue)
+    const L = "L",
+        F = "F",
+        R = "R",
+        B = "B";
+    const vereint = (...xs) => {
+        const s = new Set();
+        for (const x of xs) for (const y of x) s.add(y);
+        return s;
+    };
+    const pfade = (s, gebrochen = new Set()) => {
+        if (!s) return new Set([F]);
+        switch (s.type) {
+            case "ThrowStatement":
+                return new Set([L]);
+            case "ExpressionStatement":
+                return new Set([lautE(s.expression) || (zaehltMit && istZaehler(s.expression)) ? L : F]);
+            case "VariableDeclaration":
+                return new Set([s.declarations.some((d) => lautE(d.init)) ? L : F]);
+            case "ReturnStatement":
+                return new Set([
+                    lautE(s.argument) ||
+                    (s.argument && s.argument.type === "Identifier" && gebrochen.has(s.argument.name))
+                        ? L
+                        : R,
+                ]);
+            case "BreakStatement":
+            case "ContinueStatement":
+                return new Set([B]);
+            case "BlockStatement": {
+                let jetzt = new Set([F]);
+                for (const x of s.body) {
+                    if (!jetzt.has(F)) break; // was nach dem letzten Ausgang steht, ist tot
+                    jetzt.delete(F);
+                    jetzt = vereint(jetzt, pfade(x, gebrochen));
+                }
+                return jetzt;
+            }
+            case "IfStatement": {
+                const g2 = vereint(gebrochen, bruchGeprueft(s.test));
+                const a = pfade(s.consequent, g2);
+                const b = s.alternate ? pfade(s.alternate, gebrochen) : new Set([F]);
+                const nurL = (p) => p.size === 1 && p.has(L);
+                if ((wiederholt(s.consequent) && nurL(b)) || (nurL(a) && wiederholt(s.alternate))) return new Set([L]);
+                return vereint(a, b);
+            }
+            case "TryStatement": {
+                const p = vereint(pfade(s.block, gebrochen), s.handler ? pfade(s.handler.body, gebrochen) : []);
+                if (!s.finalizer) return p;
+                const f = pfade(s.finalizer, gebrochen);
+                return f.has(F) ? p : f;
+            }
+            case "ForStatement":
+            case "ForInStatement":
+            case "ForOfStatement":
+            case "WhileStatement":
+            case "DoWhileStatement": {
+                // ein Lauf kann nullmal gehen; break/continue enden in ihm
+                const p = pfade(s.body, gebrochen);
+                p.delete(B);
+                p.add(F);
+                return p;
+            }
+            case "SwitchStatement": {
+                const p = new Set([F]);
+                for (const c of s.cases)
+                    for (const y of pfade({ type: "BlockStatement", body: c.consequent }, gebrochen))
+                        p.add(y === B ? F : y);
+                return p;
+            }
+            case "LabeledStatement":
+                return pfade(s.body, gebrochen);
+            default:
+                return new Set([F]);
+        }
+    };
+    const bricht = (s) => {
+        const p = pfade(s);
+        return p.size === 1 && p.has(L);
+    };
+    // ein Bruch-Helfer ist KLEIN (≤ 12 Anweisungen, ein Melder, kein Bau) und JEDER seiner Pfade bricht
+    const helferKandidat = [];
+    for (const m of methoden) {
+        let anw = 0;
+        flach(m.value.body, (n) => {
+            if (/Statement$|Declaration$/.test(n.type) && n.type !== "BlockStatement") anw++;
+        });
+        if (anw <= 12) helferKandidat.push(m);
+    }
+    // die Melder zuerst: jeder benannte Melder ist laut (ein Bruch-Helfer) oder ein Fund an seiner stillen Stelle
+    const melderTot = [];
+    for (const name of STOFF_MELDER) {
+        const m = methoden.find((x) => nameVon(x) === name);
+        if (!m) {
+            melderTot.push({ methode: name, art: "Melder", anker: "die Methode fehlt" });
+            continue;
+        }
+        const logs = [];
+        flach(m.value.body, (n) => {
+            if (
+                n.type === "CallExpression" &&
+                n.callee.type === "MemberExpression" &&
+                n.callee.object.type === "ThisExpression" &&
+                !n.callee.computed &&
+                n.callee.property.name === "log"
+            )
+                logs.push(n);
+        });
+        // DIE FRIST (Prüfer K22-3): ein Zähler ist nur laut, wenn eine Frist (setTimeout) ihn meldet — sonst blieb eine Folge,
+        // die vor der nächsten Meldung endete, still. Jeder this.log der Frist meldet ERROR, mindestens einer steht.
+        let zaehlt = null;
+        const fristLogs = [];
+        flach(m.value.body, (n) => {
+            if (!zaehlt && istZaehler(n)) zaehlt = n;
+            if (
+                n.type === "CallExpression" &&
+                n.callee.type === "Identifier" &&
+                n.callee.name === "setTimeout" &&
+                n.arguments.length &&
+                /Function/.test(n.arguments[0].type)
+            )
+                gehe(n.arguments[0], (c) => {
+                    if (
+                        c.type === "CallExpression" &&
+                        c.callee.type === "MemberExpression" &&
+                        c.callee.object.type === "ThisExpression" &&
+                        !c.callee.computed &&
+                        c.callee.property.name === "log"
+                    )
+                        fristLogs.push(c);
+                });
+        });
+        // still ist jeder this.log des Melders, der nicht ERROR meldet — auch in einer inneren Funktion (der Frist)
+        const alleLogs = [];
+        gehe(m.value.body, (n) => {
+            if (
+                n.type === "CallExpression" &&
+                n.callee.type === "MemberExpression" &&
+                n.callee.object.type === "ThisExpression" &&
+                !n.callee.computed &&
+                n.callee.property.name === "log"
+            )
+                alleLogs.push(n);
+        });
+        const still = alleLogs.filter((n) => !istErrorLog(n));
+        const fristFehlt = !!zaehlt && !fristLogs.some(istErrorLog);
+        zaehltMit = true;
+        const jederPfad = bricht(m.value.body);
+        zaehltMit = false;
+        if (logs.length && !still.length && jederPfad && !fristFehlt) {
+            bruchHelfer.add(name);
+            continue;
+        }
+        // je stille Stelle ein Fund an ihrer Zeile (eine stille Stelle verdeckt nie die nächste)
+        if (!logs.length) fund("Fang", name, m, "der Melder meldet still: kein this.log");
+        for (const s of still) fund("Fang", name, s, "der Melder meldet still: " + kurz(s));
+        if (fristFehlt)
+            fund(
+                "Fang",
+                name,
+                zaehlt,
+                "der Melder meldet still: der Zähler hat keine Frist, die ihn ERROR meldet (eine Folge, die vor der nächsten Meldung endet, bleibt still)"
+            );
+        if (logs.length && !still.length && !fristFehlt && !jederPfad)
+            fund("Fang", name, m, "der Melder meldet still: ein Pfad meldet weder ERROR noch zählt er");
+    }
+    for (let neu = true; neu;) {
+        neu = false;
+        for (const m of helferKandidat) {
+            if (bruchHelfer.has(nameVon(m))) continue;
+            if (bricht(m.value.body)) {
+                bruchHelfer.add(nameVon(m));
+                neu = true;
+            }
+        }
+    }
+    const laut = (koerper) => (koerper.type === "BlockStatement" ? bricht(koerper) : lautE(koerper));
+    // (d) die Knoten-Bauer: `const v = this._m(…)`, danach `if (v …) { x.…Node = … }` oder `x.…Node = v ? … : …`; in einem
+    // Stoff jede Frage an das Ergebnis eines Stoff-Bauers (`if (_su)`, `!v`, `v?.x`)
+    const stoffMethode = new Set();
+    for (const m of methoden) {
+        const { al } = name2al.get(m);
+        if (al.size > 0 || /\bTHREE\.TSL\b/.test(srcRoh.slice(m.value.start, m.value.end))) stoffMethode.add(m);
+    }
+    const stoffName = new Set([...stoffMethode].map(nameVon));
+    const wirft = (s) =>
+        !!s &&
+        (s.type === "ThrowStatement" ||
+            (s.type === "BlockStatement" && s.body.some((x) => x.type === "ThrowStatement")));
+    const bauer = new Map(); // name → [{ methode, zeile }]
+    const wennKnoten = [];
+    for (const m of methoden) {
+        const vars = new Map();
+        gehe(m.value, (n) => {
+            if (
+                n.type === "VariableDeclarator" &&
+                n.id.type === "Identifier" &&
+                n.init &&
+                n.init.type === "CallExpression" &&
+                n.init.callee.type === "MemberExpression" &&
+                n.init.callee.object.type === "ThisExpression" &&
+                !n.init.callee.computed
+            )
+                vars.set(n.id.name, n.init.callee.property.name);
+        });
+        if (!vars.size) continue;
+        // gefragt ist der Knoten selbst (`if (v)`, `v ? … : …`, `v && …`), nie ein Glied seines Vertrags (`v.roughNode` trägt
+        // der Bauer nur, wenn sein Auftrag es verlangt)
+        const nennt = (test) => {
+            const t = [];
+            gehe(test, (e, el) => {
+                if (
+                    e.type === "Identifier" &&
+                    vars.has(e.name) &&
+                    !(el && el.type === "MemberExpression" && el.object === e && !el.optional)
+                )
+                    t.push(e.name);
+            });
+            return t;
+        };
+        const setztKnoten = (n) => /\.\w*Node\s*=(?!=)/.test(srcRoh.slice(n.start, n.end));
+        const imStoff = stoffMethode.has(m);
+        // jeder Bauer, dessen Ergebnis in einen `…Node` fließt, steht unter der Wand — auch ohne Wenn beim Aufrufer
+        gehe(m.value, (n) => {
+            if (
+                n.type === "AssignmentExpression" &&
+                n.left.type === "MemberExpression" &&
+                /Node$/.test(n.left.property.name || "")
+            )
+                gehe(n.right, (e) => {
+                    if (e.type === "Identifier" && vars.has(e.name) && !bauer.has(vars.get(e.name)))
+                        bauer.set(vars.get(e.name), []);
+                });
+        });
+        const gesehen = new Set();
+        const lautGefragt = new Set();
+        gehe(m.value, (n) => {
+            if (n.type === "ThrowStatement") gehe(n, (c) => lautGefragt.add(c));
+            if (n.type === "IfStatement" && wirft(n.consequent)) gehe(n.test, (c) => lautGefragt.add(c));
+        });
+        gehe(m.value, (n, eltern) => {
+            let t = [];
+            if (lautGefragt.has(n) || (n.type === "IfStatement" && wirft(n.consequent))) return;
+            if (n.type === "IfStatement" && setztKnoten(n.consequent)) t = nennt(n.test);
+            else if (
+                n.type === "ConditionalExpression" &&
+                eltern &&
+                eltern.type === "AssignmentExpression" &&
+                eltern.left.type === "MemberExpression" &&
+                /Node$/.test(eltern.left.property.name || "")
+            )
+                t = nennt(n.test);
+            else if (imStoff) {
+                // im Stoff: jede Frage an das Ergebnis eines Stoff-Bauers
+                let test = null;
+                if (n.type === "IfStatement" || n.type === "ConditionalExpression") test = n.test;
+                else if (n.type === "LogicalExpression") test = n.left;
+                else if (n.type === "UnaryExpression" && n.operator === "!") test = n.argument;
+                else if (n.type === "BinaryExpression" && /^[!=]==?$/.test(n.operator)) test = n;
+                else if (n.type === "ChainExpression") test = n;
+                if (test)
+                    t = nennt(test).filter((v) => stoffName.has(vars.get(v)) && !gesehen.has(v + ":" + test.start));
+                if (test) for (const v of t) gesehen.add(v + ":" + test.start);
+            }
+            for (const v of new Set(t)) {
+                const b = vars.get(v);
+                if (!bauer.has(b)) bauer.set(b, []);
+                bauer.get(b).push({ methode: nameVon(m), zeile: n.loc.start.line });
+                wennKnoten.push({
+                    methode: nameVon(m),
+                    n,
+                    was: `${v} = this.${b}(…) setzt seinen Knoten nur unter Wenn`,
+                });
+            }
+        });
+    }
+    // ein Knoten wird je Stelle einmal genannt (ein `if (!v)` ist ein Wenn, nicht zwei)
+    const wennOrt = new Set();
+    for (const w of wennKnoten) {
+        const k = w.methode + ":" + w.n.loc.start.line + ":" + w.was;
+        if (wennOrt.has(k)) continue;
+        wennOrt.add(k);
+        fund("Null-Knoten", w.methode, w.n, w.was);
+    }
+    for (const m of methoden) {
+        const name = nameVon(m);
+        const a = name2al.get(m);
+        const { al, gl } = a;
+        const stoff = stoffMethode.has(m);
+        // (b) die Fehler-Variable — im ganzen Stamm
+        gehe(m.value, (n) => {
+            if (
+                n.type === "AssignmentExpression" &&
+                n.left.type === "MemberExpression" &&
+                !n.left.computed &&
+                n.left.object.type === "Identifier" &&
+                n.left.object.name === "window" &&
+                /^__\w*(Error|Fehler)/.test(n.left.property.name)
+            )
+                fund("Fehler-Variable", name, n, `window.${n.left.property.name} (kein Spiel-Leser)`);
+        });
+        // (a) der Fang: im Stoff jeder catch, sonst jeder catch, dessen Versuch den Render-Graphen baut (try-Block,
+        // bei `promise.catch` die Kette davor — hängt der catch an einem Namen, ist der Versuch, was der Name bindet:
+        // `const rr = this._buehneRender(…); rr.catch(…)`, Nachbesserung 3)
+        const bindung = new Map();
+        gehe(m.value, (n) => {
+            if (n.type === "VariableDeclarator" && n.id.type === "Identifier" && n.init) bindung.set(n.id.name, n.init);
+        });
+        gehe(m.value, (n) => {
+            let koerper = null;
+            let versuch = null;
+            let ort = null;
+            if (n.type === "TryStatement" && n.handler) {
+                koerper = n.handler.body;
+                versuch = n.block;
+                ort = n.handler;
+            } else if (istPromiseFang(n)) {
+                koerper = n.arguments[0].body;
+                versuch = n.callee.object;
+                if (versuch.type === "Identifier" && bindung.has(versuch.name)) versuch = bindung.get(versuch.name);
+                ort = n.arguments[0];
+            } else return;
+            const bau = stoff ? "im Stoff" : renderBau(versuch, a, name);
+            if (bau && !laut(koerper)) fund("Fang", name, ort, `catch ${kurz(koerper)} — der Versuch ${bau}`);
+            // der stille Ausstieg der Kette (Nachbesserung 3): ein `.then`-Glied eines bauenden Versuchs prüft den GELIEFERTEN
+            // Wert und kehrt ohne Wert zurück (`if (!x) return;` · `return null;`) — die Kette endet erfüllt, kein Bau, kein
+            // Bruch, der catch sieht nie etwas (das Kern-Manifest ohne Kern ließ die Foundry so still ungebootet). Für den
+            // Wert spricht, wer ihn liefert: eine Kette aus einer Methode des Stamms (`this._x(…)`, auch in Promise.all)
+            // meldet dort; geprüft werden Ketten aus fremder Quelle (fetch, ein Versprechen von außen).
+            const glieder = [];
+            let wurzel = istPromiseFang(n) ? n.callee.object : null;
+            while (
+                wurzel &&
+                wurzel.type === "CallExpression" &&
+                wurzel.callee.type === "MemberExpression" &&
+                !wurzel.callee.computed &&
+                /^(then|catch|finally)$/.test(wurzel.callee.property.name)
+            ) {
+                if (wurzel.callee.property.name === "then") glieder.push(wurzel.arguments[0]);
+                wurzel = wurzel.callee.object;
+            }
+            const stammRuf = (e) =>
+                !!e &&
+                e.type === "CallExpression" &&
+                e.callee.type === "MemberExpression" &&
+                e.callee.object.type === "ThisExpression";
+            const stammQuelle =
+                stammRuf(wurzel) ||
+                (wurzel &&
+                    wurzel.type === "CallExpression" &&
+                    wurzel.callee.type === "MemberExpression" &&
+                    wurzel.callee.object.type === "Identifier" &&
+                    wurzel.callee.object.name === "Promise" &&
+                    wurzel.arguments[0] &&
+                    wurzel.arguments[0].type === "ArrayExpression" &&
+                    wurzel.arguments[0].elements.some(stammRuf));
+            if (bau && !stammQuelle)
+                for (const cb of glieder) {
+                    if (!cb || !/Function/.test(cb.type) || cb.body.type !== "BlockStatement") continue;
+                    const namen = new Set();
+                    for (const p of cb.params) gehe(p, (x) => x.type === "Identifier" && namen.add(x.name));
+                    // was aus dem Gelieferten abgeleitet ist, ist geliefert (`const manifest = JSON.parse(text)`)
+                    flach(cb.body, (d) => {
+                        if (d.type !== "VariableDeclarator" || !d.init) return;
+                        let aus = false;
+                        gehe(d.init, (x) => {
+                            if (x.type === "Identifier" && namen.has(x.name)) aus = true;
+                        });
+                        if (aus) gehe(d.id, (x) => x.type === "Identifier" && namen.add(x.name));
+                    });
+                    const leer = (s) =>
+                        !!s &&
+                        ((s.type === "ReturnStatement" &&
+                            (!s.argument || (s.argument.type === "Literal" && s.argument.value === null))) ||
+                            (s.type === "BlockStatement" && s.body.length === 1 && leer(s.body[0])));
+                    flach(cb.body, (s) => {
+                        if (s.type !== "IfStatement" || !leer(s.consequent)) return;
+                        let liest = false;
+                        gehe(s.test, (x) => {
+                            if (x.type === "Identifier" && namen.has(x.name)) liest = true;
+                        });
+                        if (liest) fund("Fang", name, s, `.then steigt still aus: ${kurz(s)} — der Versuch ${bau}`);
+                    });
+                }
+        });
+        // (a') DER HÖRER DES STUDIO-FADENS: der Fehler eines Fadens erreicht keinen catch — sein Fehler-Hörer (`onerror`,
+        // `onmessageerror`, `addEventListener("error", …)`) IST sein Fang. Ein Faden, dessen Antwort einen Bauer ruft, trägt
+        // einen Hörer, dessen jeder Pfad bricht; ohne Hörer fällt sein Bruch still (bis zur Nachbesserung 2 schwieg der
+        // Bäcker-Hörer, und jede Karte wartete für immer in der Schlange).
+        for (const f of studioFaeden) {
+            if (f.m !== m) continue;
+            if (!f.hoerer.length)
+                fund("Fang", name, f.ort, `Hörer fehlt: der Studio-Faden ${f.w} ${f.kette} — sein Bruch fällt still`);
+            for (const h of f.hoerer)
+                if (!laut(h.fn.body))
+                    fund("Fang", name, h.fn, `Hörer ${f.w}.${h.art} ${kurz(h.fn.body)} — der Studio-Faden ${f.kette}`);
+        }
+        // (a'') DER UHR-DECKEL (Nachbesserung 4): ein Bau, der in einer Schleife auf die Uhr wartet (`await new Promise((r) =>
+        // setTimeout(r, …))`), geht nach dem Deckel mit dem weiter, was gerade da ist. Der Vorrat wartete 2 s auf das
+        // Studio-Buch und wärmte danach ohne Rezepte (FOUNDRY WARM: fünf kritische Presets fehlen, der Wald am Dorf fiel je
+        // nach Takt). Ein Bau wartet auf das EREIGNIS (ein Versprechen), nie auf die Uhr.
+        if (renderBauer.has(name))
+            gehe(m.value, (n) => {
+                if (!/^(For|While|DoWhile)Statement$/.test(n.type)) return;
+                let uhr = false;
+                gehe(n.body, (x) => {
+                    if (
+                        x.type === "AwaitExpression" &&
+                        x.argument &&
+                        x.argument.type === "NewExpression" &&
+                        x.argument.callee.type === "Identifier" &&
+                        x.argument.callee.name === "Promise"
+                    )
+                        gehe(x.argument, (y) => {
+                            if (
+                                y.type === "CallExpression" &&
+                                y.callee.type === "Identifier" &&
+                                y.callee.name === "setTimeout"
+                            )
+                                uhr = true;
+                        });
+                });
+                if (uhr) fund("Uhr-Deckel", name, n, `wartet in der Schleife auf die Uhr: ${kurz(n)} — ${kette(name)}`);
+            });
+        if (!stoff) continue;
+        // (c) das Ausstattungs-Wenn: ein Glied von TSL als Wahrheitswert
+        const ausAlias = (e) => !!e && ((e.type === "Identifier" && al.has(e.name)) || istThreeTsl(e));
+        const glied = (e) => {
+            if (!e) return false;
+            if (e.type === "ChainExpression") return glied(e.expression);
+            return (
+                (e.type === "Identifier" && (al.has(e.name) || gl.has(e.name))) ||
+                istThreeTsl(e) ||
+                (e.type === "MemberExpression" &&
+                    !e.computed &&
+                    (ausAlias(e.object) || (e.object.type === "Identifier" && gl.has(e.object.name))))
+            );
+        };
+        // `wert`: der Ausdruck liefert seinen Wert (`opts.pos || T.positionLocal` — das letzte Glied ist ein Wert, keine
+        // Frage); in einer Bedingung ist jedes Glied eine Frage.
+        const glieder = (e, aus, wert) => {
+            if (!e) return aus;
+            if (e.type === "LogicalExpression") {
+                glieder(e.left, aus, false);
+                glieder(e.right, aus, wert);
+            } else if (e.type === "UnaryExpression" && (e.operator === "!" || e.operator === "typeof"))
+                glieder(e.argument, aus, false);
+            else if (e.type === "BinaryExpression" && e.operator === "in") {
+                if (glied(e.right)) aus.push(kurz(e));
+            } else if (e.type === "BinaryExpression" && /^[!=]==?$/.test(e.operator)) {
+                if (e.left.type === "UnaryExpression" && e.left.operator === "typeof")
+                    glieder(e.left.argument, aus, false);
+                else if ((glied(e.left) && nichts(e.right)) || (glied(e.right) && nichts(e.left))) aus.push(kurz(e));
+            } else if (!wert && glied(e)) aus.push(kurz(e));
+            return aus;
+        };
+        // eine Existenz-Frage vergleicht mit nichts (`T.x == null`, `T.x === undefined`)
+        const nichts = (e) =>
+            !!e && ((e.type === "Literal" && e.value === null) || (e.type === "Identifier" && e.name === "undefined"));
+        // ein optionales Glied fragt still: `T.x?.(…)`, `T?.x`, `T.x?.y` — fehlt es, wird der Knoten undefined
+        const optionalFrage = (e) => {
+            const aus = [];
+            gehe(e, (x) => {
+                if (x.type === "MemberExpression" && x.optional && (glied(x.object) || ausAlias(x.object)))
+                    aus.push(kurz(x));
+                else if (x.type === "CallExpression" && x.optional && glied(x.callee)) aus.push(kurz(x));
+            });
+            return aus;
+        };
+        // eine Frage, die laut bricht, fängt nicht: `if (!T) throw …` und alles im Wurf selbst
+        const imWurf = new Set();
+        gehe(m.value, (n) => {
+            if (n.type === "ThrowStatement") gehe(n, (c) => imWurf.add(c));
+        });
+        const erledigt = new Set();
+        gehe(m.value, (n, eltern) => {
+            if (imWurf.has(n) || erledigt.has(n)) return;
+            if (n.type === "IfStatement" && wirft(n.consequent)) {
+                gehe(n.test, (c) => erledigt.add(c));
+                return;
+            }
+            let test = null;
+            let wert = false;
+            let g = [];
+            if (n.type === "IfStatement" || n.type === "ConditionalExpression") test = n.test;
+            else if (
+                n.type === "LogicalExpression" &&
+                !(eltern && /^(LogicalExpression|UnaryExpression)$/.test(eltern.type)) &&
+                !(
+                    eltern &&
+                    (eltern.type === "IfStatement" || eltern.type === "ConditionalExpression") &&
+                    eltern.test === n
+                )
+            ) {
+                test = n;
+                wert = true;
+            } else if (
+                (n.type === "UnaryExpression" && (n.operator === "!" || n.operator === "typeof")) ||
+                (n.type === "BinaryExpression" && (n.operator === "in" || /^[!=]==?$/.test(n.operator)))
+            )
+                test = n; // die Frage steht frei (`const has = !!T.x`, `"x" in T`)
+            else if (n.type === "ChainExpression") g = optionalFrage(n);
+            if (test) {
+                g = glieder(test, [], wert).concat(optionalFrage(test));
+                gehe(test, (c) => erledigt.add(c));
+            }
+            if (g.length)
+                fund("Ausstattungs-Wenn", name, n, `fragt ${g.slice(0, 4).join(" · ")}${g.length > 4 ? " …" : ""}`);
+        });
+    }
+    // (d) der Knoten-Bauer gibt null
+    for (const m of methoden) {
+        const name = nameVon(m);
+        if (!bauer.has(name)) continue;
+        flach(m.value.body, (n) => {
+            if (
+                n.type === "ReturnStatement" &&
+                (!n.argument || (n.argument.type === "Literal" && n.argument.value === null))
+            )
+                fund(
+                    "Null-Knoten",
+                    name,
+                    n,
+                    `${name} gibt ${n.argument ? "null" : "nichts"} (sein Knoten fehlt still im Stoff)`
+                );
+        });
+    }
+    // die bewussten Zweige: je Zeile genau ein Fund (eine tote Zeile ist rot)
+    const rest = [];
+    const tot = [];
+    for (const z of zweige) {
+        const i = funde.findIndex((f) => f.methode === z.methode && f.art === z.art && f.was.includes(z.anker));
+        if (i < 0) tot.push(z);
+        else funde.splice(i, 1);
+    }
+    for (const f of funde) rest.push(f);
+    return { funde: rest, tot: tot.concat(melderTot) };
+}
+function scanStoffWand(srcRoh, zweige = STOFF_ZWEIGE) {
+    const { funde, tot } = stoffFaenge(srcRoh, zweige);
+    return funde
+        .map((f) => `Stoff-Wand: ${f.art} — anazhRealm.js:${f.zeile} \`${f.methode}\` ${f.was}`)
+        .concat(
+            tot.map(
+                (z) =>
+                    `Stoff-Wand: tote Zeile in STOFF_ZWEIGE — \`${z.methode}\` ${z.art} „${z.anker}" fängt nichts mehr`
+            )
+        );
+}
+
+// DIE TOTEN MARKER (K22 Nachbesserung): ein Prüf-Skript, das `window.__…Error`/`…Fehler` liest, misst nur, solange jemand
+// den Marker SCHREIBT (eine Zuweisung, die kein Rücksetzen ist, oder ein push). Der Stamm schreibt keinen mehr (Stoff-Wand
+// (b)); ein Marker ohne Schreiber machte eine Prüfzeile vakuös (playtest Opsis S1 D2 · E2 · F3, W-G(b), V17.J, T2 und
+// diag-chunk-seam lasen gefallene Marker — dort zählt jetzt der Stoff-Zeuge den Bruch).
+function toteMarker(dateien) {
+    const re = /window\.(__\w*(?:Error|Fehler)\w*)/g;
+    const lebt = new Set();
+    const lesen = [];
+    for (const { datei, text } of dateien) {
+        re.lastIndex = 0;
+        let m;
+        while ((m = re.exec(text))) {
+            const nach = text.slice(m.index + m[0].length, m.index + m[0].length + 24);
+            if (/^\s*=(?!=)\s*(?!null\b|undefined\b)/.test(nach) || /^\.push\(/.test(nach)) lebt.add(m[1]);
+            else lesen.push({ datei, name: m[1], zeile: text.slice(0, m.index).split("\n").length });
+        }
+    }
+    return lesen
+        .filter((l) => !lebt.has(l.name))
+        .map(
+            (l) =>
+                `Stoff-Wand: toter Fehler-Marker — ${l.datei}:${l.zeile} liest window.${l.name}, niemand schreibt ihn (die Prüfzeile misst nichts)`
+        );
+}
+function markerDateien(root) {
+    const out = [];
+    for (const dir of ["scripts", path.join("scripts", "lib")])
+        for (const f of fs.readdirSync(path.join(root, dir))) {
+            if (!/\.c?js$/.test(f) || f === "diag-altlasten.cjs") continue;
+            out.push({
+                datei: path.join(dir, f).split(path.sep).join("/"),
+                text: fs.readFileSync(path.join(root, dir, f), "utf8"),
+            });
+        }
+    return out;
 }
 
 // DIE STUFEN-WAND (Welle 6, 06.10.): eine Bau-Stufe hat EINE Bedeutung, für das Labor (build(), Knopf L0/L1/L2) wie für
@@ -1840,7 +3136,7 @@ const STUFEN_ANKER = [
     "__lod = sLod;",
     "__lod = stufenRezept(P.kind, stufe);",
     "__lod = stufe;",
-    "return core.treeParams({ api, delta, slim, trop, leaf }, SEED, __lod, pre);",
+    "return core.treeParams({ api, delta, slim, trop, leaf }, SEED, __lod, pre, __weltSkalaArt(CURRENT));",
 ];
 function scanStufenWand(srcRoh) {
     const code = stripComments(srcRoh);
@@ -1915,6 +3211,107 @@ function scanHuellenFormWand(dateien) {
     }
     return errs;
 }
+// DIE ORTS-WAND (K16, Koordinator 13.10.): eine Probe, die Spieler, Kamera oder Tier an ein Zahlen-Literal (x, z) setzt, trägt
+// einen Ort der Welt, in der sie geschrieben wurde — die Landform des Kerns verschob ihn, und drei Gruppen der CI wurden rot
+// (der Biss am Hang, der Baum im Haus, die Ankunft im Ursprung). Der Ort kommt aus der Welt (die nächste ebene Stelle, der
+// nächste See, `_weltBetreten`), oder die Zeile ist als Bühnen-Station deklariert: `// BÜHNE: <Grund>` auf ihr oder in den
+// zwei Zeilen darüber (der Grund sagt, warum der Ort nichts trägt — eigene Szene, Mechanik, nur der Abstand zählt).
+// Gelesen wird der Code ohne Kommentare; rot mit Datei:Zeile.
+// DIE KLASSE, nicht der Aufruf (Prüfung K16 Runde 2): der Ort reist selten als Literal IM Aufruf — er steht als Orts-
+// Tabelle (`{ id: "ufer", x: -872, z: -1127 }`, kamera-laub), als Versatz-Liste (`[[-50, 60], [30, 0]]` um den Start,
+// kampf-gefuehl), als Messort-Konstante (`const MESS = { x: -900, z: -850 }`, `o.mess || [-900, -850]`) und wird erst Zeilen
+// später gesetzt. In einer Setz-Probe (die Datei setzt Spieler, Kamera oder Tier: `.position.set(`, `.position.x =`,
+// `spawnCreatureAt(`) ist darum JEDES Orts-Paar aus Zahlen-Literalen rot — ein Objekt mit x und z, ein Paar als Wert,
+// Vorgabe oder Glied einer Liste —, sobald es weiter als `ORT_NAH_M` vom Ursprung seines Bezugs zeigt (darunter liegt die
+// Mechanik am gelesenen Ort: der Wolf 1,3 m vor dem Reh). Ein Bau-Ort (`spawnArchitecture`, `spawnSettlement`) trägt das
+// Platz-Gesetz des Stamms und ist nicht gemeint. Der Messort der Band-Serie kommt aus EINER Quelle (spec/profiband/
+// haushalt.json, `scripts/lib/messort.cjs`), nie als Abschrift.
+const ORT_LIT = String.raw`-?\d+(?:\.\d+)?`;
+const ORT_MITTE = String.raw`(?:[^,;()]|\((?:[^()]|\([^()]*\))*\))*?`;
+const ORT_NAH_M = 20;
+const ORTS_MUSTER = [
+    new RegExp(
+        String.raw`\b(?:playerMesh|pm|camera|cam|kam|kamera|character|tier|wolf|reh|creature|kreatur|phantom)\.position\.set\(\s*${ORT_LIT}\s*,${ORT_MITTE},\s*${ORT_LIT}\s*\)`,
+        "g"
+    ),
+    new RegExp(String.raw`\bspawnCreatureAt\(\s*${ORT_LIT}\s*,${ORT_MITTE},\s*${ORT_LIT}\s*[,)]`, "g"),
+    new RegExp(String.raw`\b(?:playerMesh|pm)\.position\.[xz]\s*=\s*${ORT_LIT}\s*;`, "g"),
+];
+const ORT_SENKE = /\.position\.(?:set\s*\(|[xz]\s*=(?!=))|\bspawnCreatureAt\s*\(/;
+const ORT_BAU = /\b(?:spawnArchitecture|spawnSettlement|_spawnSettlementFromExport|materializePortalHall)\s*\(/;
+const ORTS_PAARE = [
+    // die Orts-Tabelle und die Messort-Konstante: ein Objekt mit x und z aus Literalen
+    new RegExp(String.raw`\{[^{}]*?\bx\s*:\s*(${ORT_LIT})\s*,(?:[^{}]*?,)?\s*z\s*:\s*(${ORT_LIT})\s*[,}]`, "g"),
+    // das Paar als Wert, Vorgabe oder Listen-Glied (die Versatz-Liste) — nur unter einem Orts-Namen (`ORT_NAME`): ein Paar
+    // unter `hue`, `dolch` oder `SONNEN` ist ein Band, kein Ort
+    new RegExp(String.raw`(?:[=:(,[]|\|\||\?\?)\s*\[\s*(${ORT_LIT})\s*,\s*(${ORT_LIT})\s*\]`, "g"),
+];
+// ein Orts-Name ist ein Wort-Glied (ganz, am Anfang vor einem Groß-Glied, oder ein Groß-Glied im camelCase): `ortR`, `mess`,
+// `startOrte`, `MESS_ORT` — nie ein Teil (`SEEDS`, `sorted`); die Wasser-Wörter fehlen bewusst (in klang tragen `ufer` und
+// `fluss` Frequenz-Bänder, die Orte des Wassers liefert `__wasserOrte`)
+const ORT_WORT =
+    "ort|orte|mess|messort|spieler|start|ziel|pos|anker|stelle|lichtung|hang|versatz|station|wiese|platz|kandidat|kandidaten";
+const ORT_NAME = {
+    test: (n) =>
+        new RegExp(String.raw`^(?:${ORT_WORT})$`, "i").test(n) ||
+        new RegExp(String.raw`^(?:${ORT_WORT})[A-Z0-9_]`).test(n) ||
+        new RegExp(String.raw`^(?:${ORT_WORT.toUpperCase()})_`).test(n) ||
+        new RegExp(
+            String.raw`[a-z0-9](?:${ORT_WORT.replace(/(^|\|)(\w)/g, (_, a, b) => a + b.toUpperCase())})(?:[A-Z0-9_]|$)`
+        ).test(n),
+};
+// der Name, unter dem ein Paar steht: der Schlüssel oder die Bindung direkt davor, im Listen-Glied die der Liste (die
+// erste offene Klammer rückwärts), in der Vorgabe (`a.mess || [...]`) der linke Name
+function ortsName(code, i) {
+    let tiefe = 0;
+    let j = i;
+    const kopf = code.slice(Math.max(0, i - 80), i + 2);
+    const direkt = /([A-Za-z_$][\w$]*)\s*(?:[:=]|\|\||\?\?)\s*\[?$/.exec(kopf.replace(/\s+$/, ""));
+    if (direkt) return direkt[1];
+    for (; j > 0 && i - j < 4000; j--) {
+        const c = code[j];
+        if (c === "]") tiefe++;
+        else if (c === "[") {
+            if (tiefe === 0) break;
+            tiefe--;
+        }
+    }
+    const m = /([A-Za-z_$][\w$]*)\s*[:=]\s*(?:\w+\s*\?\s*)?$/.exec(code.slice(Math.max(0, j - 80), j));
+    return m ? m[1] : "";
+}
+function scanOrtsWand(dateien) {
+    const errs = [];
+    for (const [name, src] of dateien) {
+        if (name === "scripts/diag-altlasten.cjs") continue; // die Wand selbst trägt ihre Selbsttest-Sätze als Text
+        const code = stripComments(src);
+        const roh = src.split("\n");
+        const zeilen = code.split("\n");
+        const buehne = (zeile) => /\/\/\s*BÜHNE:\s*\S/.test(roh.slice(Math.max(0, zeile - 3), zeile).join("\n"));
+        for (const re of ORTS_MUSTER)
+            for (const m of code.matchAll(re)) {
+                const zeile = code.slice(0, m.index).split("\n").length;
+                if (buehne(zeile)) continue;
+                errs.push(
+                    `Orts-Wand: ${name}:${zeile} setzt an ein Zahlen-Literal (${m[0].replace(/\s+/g, " ").slice(0, 60)}) — der Ort kommt aus der Welt, oder die Zeile trägt // BÜHNE: <Grund>`
+                );
+            }
+        if (!ORT_SENKE.test(code)) continue;
+        for (const re of ORTS_PAARE)
+            for (const m of code.matchAll(re)) {
+                if (Math.max(Math.abs(Number(m[1])), Math.abs(Number(m[2]))) < ORT_NAH_M) continue;
+                if (re === ORTS_PAARE[1] && !ORT_NAME.test(ortsName(code, m.index))) continue;
+                // die Zeile des Paars selbst (das Listen-Glied beginnt mit dem Komma der Zeile davor)
+                const at = re === ORTS_PAARE[1] ? m.index + m[0].lastIndexOf("[") : m.index;
+                const zeile = code.slice(0, at).split("\n").length;
+                const vor = zeilen[zeile - 1].slice(0, at - code.lastIndexOf("\n", at - 1) - 1 + m[0].length);
+                if (ORT_BAU.test(vor) || buehne(zeile)) continue;
+                errs.push(
+                    `Orts-Wand: ${name}:${zeile} trägt einen Ort als Zahlen-Paar (${m[0].replace(/\s+/g, " ").trim().slice(0, 60)}) in einer Setz-Probe — der Ort kommt aus der Welt, oder die Zeile trägt // BÜHNE: <Grund>`
+                );
+            }
+    }
+    return errs;
+}
 function wirtsDateien(root, files) {
     const gesehen = new Set();
     const aus = [];
@@ -1946,26 +3343,100 @@ function linsenDateien(root) {
         .map((f) => path.join(d, f));
 }
 
+// DIE STAMM-LESER-WAND (Stamm-Zerlegung, plan 13.10. §7.5): der Name der Stamm-Datei steht als Lese-Ziel — ein String-
+// Literal, das die Datei nennt („anazhRealm.js", „/anazhRealm.js", „http://…/anazhRealm.js", mit ?v=) — nur in
+// scripts/lib/stamm.cjs. Jeder andere Leser liest den Stamm über die EINE Schnittstelle (stammLib.text · dateien · liefere
+// · dateiMit · ort): ein Leser am Namen vorbei sähe nach dem Schnitt nur den Kern (vakuum-grün) oder bräche erst im
+// Fenster. Kommentare und Meldungen („anazhRealm.js: … fehlt") dürfen den Namen tragen; gezählt wird je Literal-Token.
+const STAMM_NAME_RX = new RegExp(
+    "^(?:\\.{0,2}/|https?://[^/]*/)?" + stammLib.ALT.replace(/\./g, "\\.") + "(?:\\?[^\"'`]*)?$"
+);
+// Ausgenommen: die Schnittstelle selbst und der Codemod (er trägt die alte Leser-Form als Muster).
+const STAMM_WERKZEUG = ["scripts/lib/stamm.cjs", "scripts/stamm-umzug.cjs"];
+function stammLeserDateien(root) {
+    const aus = [];
+    for (const f of fs.readdirSync(root))
+        if (/\.(?:c|m)?js$/.test(f) && !stammLib.istStammDatei(f)) aus.push(f);
+    const geh = (d) => {
+        for (const e of fs.readdirSync(path.join(root, d), { withFileTypes: true })) {
+            const rel = d + "/" + e.name;
+            if (e.isDirectory()) geh(rel);
+            else if (/\.(?:c|m)?js$/.test(e.name) && !STAMM_WERKZEUG.includes(rel)) aus.push(rel);
+        }
+    };
+    geh("scripts");
+    return aus;
+}
+function scanStammLeser(root, ersatz = {}) {
+    const acorn = require("acorn");
+    const errs = [];
+    const dateien = stammLeserDateien(root).concat(Object.keys(ersatz).filter((f) => !fs.existsSync(path.join(root, f))));
+    for (const rel of dateien) {
+        const src = rel in ersatz ? ersatz[rel] : fs.readFileSync(path.join(root, rel), "utf8");
+        // Vorfilter: der Name als Text oder als Regex-Quelle (anazhRealm\.js)
+        if (!src.includes(stammLib.ALT) && !src.includes(stammLib.ALT.replace(".", "\\."))) continue;
+        let toks = null;
+        for (const sourceType of ["script", "module"])
+            try {
+                toks = [
+                    ...acorn.tokenizer(src, {
+                        ecmaVersion: "latest",
+                        sourceType,
+                        locations: true,
+                        allowHashBang: true,
+                        allowReturnOutsideFunction: true,
+                    }),
+                ];
+                break;
+            } catch {
+                toks = null;
+            }
+        if (!toks) {
+            errs.push(`Stamm-Leser-Wand: ${rel} ist für acorn unlesbar — die Wand sähe ihre Leser nicht`);
+            continue;
+        }
+        for (const t of toks) {
+            if (
+                (t.type === acorn.tokTypes.string || t.type === acorn.tokTypes.template) &&
+                STAMM_NAME_RX.test(String(t.value))
+            )
+                errs.push(
+                    `Stamm-Leser-Wand: ${rel}:${t.loc.start.line} nennt ${JSON.stringify(t.value)} als Lese-Ziel — der Stamm ` +
+                        `liest sich über scripts/lib/stamm.cjs (stammLib.text · dateien · liefere · dateiMit · ort)`
+                );
+            // ein Stapel-Leser (Rahmen „…/anazhRealm.js:12:5" im Error-Stack, in der Seite) sieht auch die Zonen-Dateien
+            if (
+                t.type === acorn.tokTypes.regexp &&
+                t.value.pattern.includes("anazhRealm\\.js") &&
+                !t.value.pattern.includes("stamm\\/")
+            )
+                errs.push(
+                    `Stamm-Leser-Wand: ${rel}:${t.loc.start.line} liest Rahmen nur an /${t.value.pattern}/ — nach dem Schnitt ` +
+                        `stehen sie in stamm/NN.js (das Muster trägt \`\\/stamm\\/\\d\\d[a-z]?\\.js\` mit)`
+                );
+        }
+    }
+    return errs;
+}
+
 function main() {
     const root = path.join(__dirname, "..");
     // AUGEN-GLUT-SCHNITT (18.07.): foundry-core (der Ofen/Bäcker) steht mit in
-    // der Wand — Phantom-Leser-Namen dürfen auch dort nicht nachwachsen. feld-wgsl.js (der Welt-March im WGSL) steht
-    // mit drin: der trilineare Brick-March (feldTriAbtast/feldTriGrad, V18.528) fiel dort (Integration W0 — die
-    // Band-Wand trug dieselbe Liste ein zweites Mal, die Rückkehr-Wand ist die EINE).
+    // der Wand — Phantom-Leser-Namen dürfen auch dort nicht nachwachsen. Der Welt-March im WGSL (feld-wgsl.js) fiel
+    // mit K16 samt dem trilinearen Brick-March (feldTriAbtast/feldTriGrad, V18.528; die Rückkehr-Wand ist die EINE).
     const files = [
-        "anazhRealm.js",
+        ...STAMM,
         "voxel-worker.js",
         "index.html",
         "signaling-server.js",
         "foundry-core.js",
-        "feld-wgsl.js",
     ]
         .map((f) => path.join(root, f))
         .concat(linsenDateien(root));
 
     if (process.argv.includes("--selftest")) {
         // Die Instanz-Wand muss feuern: ein zweiter Bau am Chokepoint vorbei.
-        const stamm = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+        const stamm = stammLib.text(root);
         const instanzFeuert =
             scanInstanzWand(stamm).length === 0 &&
             scanInstanzWand(stamm + "\nconst x = new THREE.InstancedMesh(g, m, 64);\n").length === 1 &&
@@ -2105,15 +3576,15 @@ function main() {
             kern
                 .replace("__lod = stufenRezept(P.kind, stufe);", "")
                 .replace(
-                    "return core.treeParams({ api, delta, slim, trop, leaf }, SEED, __lod, pre);",
-                    'return core.treeParams({ api, delta, slim, trop, leaf }, SEED, stufenRezept("tree", __lod), pre);'
+                    "return core.treeParams({ api, delta, slim, trop, leaf }, SEED, __lod, pre, __weltSkalaArt(CURRENT));",
+                    'return core.treeParams({ api, delta, slim, trop, leaf }, SEED, stufenRezept("tree", __lod), pre, __weltSkalaArt(CURRENT));'
                 )
         );
         const stufenFeuert =
             scanStufenWand(kern).length === 0 &&
             zweite.some((e) => /zweite Bedeutung/.test(e) && /__lod = lod <= 1/.test(e)) &&
             ohne.some((e) => /stufenRezept\(P\.kind, stufe\);` steht 0×/.test(e)) &&
-            ohne.some((e) => /SEED, __lod, pre\);` steht 0×/.test(e));
+            ohne.some((e) => /SEED, __lod, pre, __weltSkalaArt\(CURRENT\)\);` steht 0×/.test(e));
         if (!stufenFeuert) {
             console.log("❌ SELBST-TEST: die Stufen-Wand feuert nicht (oder steht heute rot)", zweite, ohne);
             process.exit(1);
@@ -2163,6 +3634,51 @@ function main() {
         console.log(
             `✅ SELBST-TEST: die Hüllen-Form-Wand feuert (${wirt.length} Wirts-Dateien, ${huelleRot[0]} · Kurzform erkannt)`
         );
+        // Die Orts-Wand: ein eingeschmuggelter Satz an ein Zahlen-Literal wird beim Namen und der Zeile genannt; derselbe Satz
+        // als Bühnen-Station deklariert, und ein Ort aus der Welt, bleiben still; die Gates von heute stehen grün.
+        // Die KLASSE (Prüfung K16 Runde 2): die drei Formen der echten Täter — die Orts-Tabelle (kamera-laub), die
+        // Versatz-Liste (kampf-gefuehl), die Messort-Konstante samt Vorgabe (sicht-arbeit, wasser-linse) — werden in einer
+        // Setz-Probe beim Namen rot; ein Frequenz-Band unter `ufer`, ein Bau-Anker im Aufruf und ein Paar ohne Setzen bleiben
+        // still.
+        const SETZT = "pm.position.set(o.x, 0, o.z);\n";
+        const ortsRot = scanOrtsWand([
+            ["scripts/o.cjs", "const r = window.anazhRealm;\nr.state.playerMesh.position.set(512, 40, -300);\n"],
+            ["scripts/p.cjs", 'r.spawnCreatureAt(80, r.getTerrainHeightAt(80, 80) + 1, -80, "calm");\n'],
+            ["scripts/t.cjs", 'const ORTE = [\n    { id: "ufer", x: -872, z: -1127 },\n];\n' + SETZT],
+            ["scripts/v.cjs", "const ortR = [\n    [-14, 14],\n    [70, 0],\n].find(eben);\n" + SETZT],
+            ["scripts/m.cjs", "const MESS = { x: -900, z: -850 };\n" + SETZT],
+            ["scripts/d.cjs", "const [MX, MZ] = o.mess || [-900, -850];\n" + SETZT],
+        ]);
+        const ortsStill = scanOrtsWand([
+            ["scripts/q.cjs", "// BÜHNE: eigene Szene\npm.position.set(512, 40, -300);\n"],
+            ["scripts/u.cjs", "const O = r.__ebeneStelle();\npm.position.set(O.x, O.y, O.z);\n"],
+            ["scripts/k.cjs", "const BAND = { ufer: [60, 900], SEEDS: [7, 12345] };\n" + SETZT],
+            ["scripts/b.cjs", 'r.spawnArchitecture("haus", { x: 400, y: 0, z: 400 });\n' + SETZT],
+            ["scripts/w.cjs", "const MESS = { x: -900, z: -850 };\n"],
+        ]);
+        const ortsHeute = scanOrtsWand(gateDateien(root));
+        const ortsFeuert =
+            ortsRot.length === 6 &&
+            /o\.cjs:2 /.test(ortsRot[0]) &&
+            /p\.cjs:1 /.test(ortsRot[1]) &&
+            /t\.cjs:2 /.test(ortsRot[2]) &&
+            /v\.cjs:3 /.test(ortsRot[3]) &&
+            /m\.cjs:1 /.test(ortsRot[4]) &&
+            /d\.cjs:1 /.test(ortsRot[5]) &&
+            ortsStill.length === 0 &&
+            ortsHeute.length === 0;
+        if (!ortsFeuert) {
+            console.log(
+                "❌ SELBST-TEST: die Orts-Wand feuert nicht (oder steht heute rot)",
+                ortsRot,
+                ortsStill,
+                ortsHeute
+            );
+            process.exit(1);
+        }
+        console.log(
+            `✅ SELBST-TEST: die Orts-Wand feuert (${ortsRot[0].split(" setzt")[0]} · spawnCreatureAt, Orts-Tabelle, Versatz-Liste, Messort-Konstante und Vorgabe erkannt; BÜHNE, Welt-Ort, Band, Bau-Anker und Paar ohne Setzen still; ${gateDateien(root).length} Gate-Dateien heute grün)`
+        );
         // Die Linsen stehen in der Wand: der tote Aufruf der Fernwald-Linse (Welle G) kehrt in eine Kopie zurück und
         // wird beim Namen genannt.
         const fernwald = files.find((f) => /[\\/]scripts[\\/]lib[\\/]fernwald-linse\.cjs$/.test(f));
@@ -2192,6 +3708,263 @@ function main() {
         console.log(
             `✅ SELBST-TEST: die Linsen stehen in der Wand (${linsenDateien(root).length} Dateien in scripts/lib, der tote Aufruf der Fernwald-Linse erkannt)`
         );
+        // Die Stoff-Wand muss feuern (K22, Nachbesserung 13.10.): (1) JEDER laute Bruch des Stamms, wieder still gemacht
+        // (sein catch meldet nur WARN, die Zeilen bleiben), ist rot an seiner Zeile — die Wand sieht jeden ihrer Schnitte,
+        // gleich ob der Versuch TSL liest, ein Render-Objekt baut, den Graphen läuft oder einen Bauer ruft (bis hierher
+        // prüfte der Selbsttest drei Methoden, und vier Schnitte fielen still aus der Wand); (2) je Art ein eingeschmuggelter
+        // Fang, auch die stillen Fragen (`in`, `!!` frei, `?.`, ein aus TSL gezogenes Glied, das Ergebnis eines
+        // Stoff-Bauers), jeder an seiner Zeile; (3) eine tote Zeile der bewussten Zweige ist rot; (4) ein toter
+        // Fehler-Marker in einem Prüf-Skript ist rot; der Stamm heute steht ohne Fang. Zwei Läufe der Wand.
+        {
+            const acorn = require("acorn");
+            const ast = acorn.parse(stamm, { ecmaVersion: "latest", sourceType: "script", locations: true });
+            const brueche = [];
+            const geh = (n) => {
+                let k = null;
+                let ort = null;
+                if (n.type === "TryStatement" && n.handler) {
+                    k = n.handler.body;
+                    ort = n.handler;
+                } else if (
+                    n.type === "CallExpression" &&
+                    n.callee.type === "MemberExpression" &&
+                    !n.callee.computed &&
+                    n.callee.property.name === "catch" &&
+                    n.arguments.length >= 1 &&
+                    /Function/.test(n.arguments[0].type)
+                ) {
+                    k = n.arguments[0].body;
+                    ort = n.arguments[0];
+                } else if (
+                    n.type === "AssignmentExpression" &&
+                    n.left.type === "MemberExpression" &&
+                    !n.left.computed &&
+                    /^(onerror|onmessageerror)$/.test(n.left.property.name) &&
+                    /Function/.test(n.right.type)
+                ) {
+                    // der Fehler-Hörer eines Fadens (Fortsetzung der Nachbesserung 2): sein Fang ist sein Rumpf
+                    k = n.right.body;
+                    ort = n.right;
+                }
+                if (k && /this\._(stoffBruch|blendeBruch)\(/.test(stamm.slice(k.start, k.end)))
+                    brueche.push({ k, zeile: ort.loc.start.line });
+                for (const key in n) {
+                    if (key === "loc") continue;
+                    const v = n[key];
+                    if (Array.isArray(v)) {
+                        for (const c of v) if (c && typeof c.type === "string") geh(c);
+                    } else if (v && typeof v.type === "string") geh(v);
+                }
+            };
+            geh(ast);
+            // nur die äußeren Rümpfe: ein innerer Bruch fällt mit seinem äußeren
+            const aussen = brueche.filter(
+                (b) => !brueche.some((c) => c !== b && c.k.start <= b.k.start && b.k.end <= c.k.end)
+            );
+            let stumm = stamm;
+            for (const b of aussen.slice().sort((x, y) => y.k.start - x.k.start)) {
+                const nl = "\n".repeat((stamm.slice(b.k.start, b.k.end).match(/\n/g) || []).length);
+                const still =
+                    b.k.type === "BlockStatement"
+                        ? `{ this.log("still", "WARN");${nl} }`
+                        : `this.log("still", "WARN")${nl}`;
+                stumm = stumm.slice(0, b.k.start) + still + stumm.slice(b.k.end);
+            }
+            const erwartet = aussen.map((b) => ({ name: "still gemacht", zeile: b.zeile, muster: /^Fang$/ }));
+            const schmuggel = [
+                [
+                    "in",
+                    "const mxNoise = TSL.mx_noise_float;",
+                    'const _hatMx = "mx_noise_float" in TSL; const mxNoise = TSL.mx_noise_float;',
+                    /^Ausstattungs-Wenn$/,
+                ],
+                [
+                    "!! frei",
+                    'if (_p("micro") > 0) {',
+                    'const _hatF = !!_T.fwidth; if (_p("micro") > 0 && _hatF) {',
+                    /^Ausstattungs-Wenn$/,
+                ],
+                [
+                    "?.",
+                    "mat.normalNode = _Ta.modelViewMatrix.transformDirection(_Ta.normalLocal);",
+                    "mat.normalNode = _Ta.modelViewMatrix?.transformDirection(_Ta.normalLocal);",
+                    /^Ausstattungs-Wenn$/,
+                ],
+                [
+                    "Glied aus TSL",
+                    "const { pass, uniform, vec2, vec3, float, luminance, mix, smoothstep, screenUV, max, min } = TSL;",
+                    "const { pass, uniform, vec2, vec3, float, luminance, mix, smoothstep, screenUV, max, min } = TSL; if (!pass) return null;",
+                    /^Ausstattungs-Wenn$/,
+                ],
+                [
+                    "Stoff-Bauer gefragt",
+                    "albedo = albedo.mul(this._ensureSeasonUniforms().uSeasonMul);",
+                    "const _su = this._ensureSeasonUniforms(); if (_su) albedo = albedo.mul(_su.uSeasonMul);",
+                    /^Null-Knoten$/,
+                ],
+                [
+                    "Null-Knoten (Aufrufer)",
+                    "mat.maskNode = _durch;",
+                    "if (_durch) mat.maskNode = _durch;",
+                    /^Null-Knoten$/,
+                ],
+                [
+                    "Null-Knoten (Bauer)",
+                    "const lu = this._ensureLodUniforms();\n        const A = {",
+                    "const lu = this._ensureLodUniforms(); if (!lu.uKamAuge) return null;\n        const A = {",
+                    /^Null-Knoten$/,
+                ],
+                [
+                    "Fehler-Variable",
+                    "mat.alphaTest = globalThis.__phytoCore.KARTEN_GESETZ.schwelle;",
+                    "window.__karteError = null; mat.alphaTest = globalThis.__phytoCore.KARTEN_GESETZ.schwelle;",
+                    /^Fehler-Variable$/,
+                ],
+                // Nachbesserung 3: der Fang des Loops ohne Melder (sein Kommentar bleibt stehen), der Melder meldet INFO, der
+                // tote catch an r184s synchronem render(), der stille Ausstieg der Manifest-Kette
+                [
+                    "Loop-Fang ohne Melder",
+                    "            } catch (err) {\n                // Ein Frame-Fehler erstarrt die Welt NICHT mehr (V18.278) — abfangen, loggen, weiter.\n                this._loopErrorBoundary(err);",
+                    '            } catch (err) {\n                // Ein Frame-Fehler erstarrt die Welt NICHT mehr (V18.278) — abfangen, loggen, weiter.\n                this.log(String(err), "WARN");',
+                    /^Fang$/,
+                ],
+                [
+                    "Melder meldet INFO",
+                    '            this.log(text, "ERROR");\n            return;',
+                    '            this.log(text, "INFO");\n            return;',
+                    /^Fang$/,
+                ],
+                [
+                    "toter Render-catch",
+                    '        this._buehneRender(p.renderer, p.scene, p.camera, "Werkstatt-Vorschau");',
+                    '        const rr = this._buehneRender(p.renderer, p.scene, p.camera, "Werkstatt-Vorschau"); if (rr && typeof rr.catch === "function") rr.catch((e) => this.log(String(e), "INFO"));',
+                    /^Fang$/,
+                ],
+                [
+                    "stiller Ausstieg der Kette",
+                    '                    if (!Array.isArray(manifest) || !manifest.length)\n                        throw this._stoffBruch("die Foundry bootet nicht — das Kern-Manifest trägt keinen Kern");',
+                    "                    if (!Array.isArray(manifest) || !manifest.length)\n                        return;",
+                    /^Fang$/,
+                ],
+                // Prüfer K22-3: der Melder ohne Frist und die Frist, die INFO meldet (die Fänge um die Stufen-Stempel, die
+                // Buch-Anfrage und den Faden-Start prüft (1): jeder laute Bruch still gemacht)
+                [
+                    "Melder ohne Frist",
+                    "        e.n++;\n        e.still++;\n        if (e.frist != null) return;\n        e.frist = setTimeout(() => {",
+                    "        e.n++;\n        e.still++;\n        if (e.frist != null) return;\n        e.frist = (() => {",
+                    /^Fang$/,
+                ],
+                [
+                    "Frist meldet INFO",
+                    "            this.log(`${text} (wieder: ${e.still}× seit der letzten Meldung, ${e.n}× insgesamt)`, \"ERROR\");",
+                    "            this.log(`${text} (wieder: ${e.still}× seit der letzten Meldung, ${e.n}× insgesamt)`, \"INFO\");",
+                    /^Fang$/,
+                ],
+                [
+                    "Uhr-Deckel",
+                    "        await f.buchDa;",
+                    "        for (let _w = 0; _w < 40 && !f.recipes; _w++) await new Promise((r) => setTimeout(r, 50));",
+                    /^Uhr-Deckel$/,
+                ],
+            ];
+            const fehltAnker = [];
+            for (const [name, alt, neu, muster] of schmuggel) {
+                const i = stumm.indexOf(alt);
+                if (i < 0) {
+                    fehltAnker.push(name);
+                    continue;
+                }
+                erwartet.push({ name, zeile: stumm.slice(0, i).split("\n").length, muster });
+                stumm = stumm.slice(0, i) + neu + stumm.slice(i + alt.length);
+            }
+            const heute = scanStoffWand(stamm);
+            const { funde, tot } = stoffFaenge(
+                stumm,
+                STOFF_ZWEIGE.concat([{ methode: "_gibtEsNicht", art: "Fang", anker: "catch", grund: "Selbsttest" }])
+            );
+            const blind = erwartet.filter((e) => !funde.some((f) => f.zeile === e.zeile && e.muster.test(f.art)));
+            const totFeuert = tot.length === 1 && tot[0].methode === "_gibtEsNicht";
+            const marker = toteMarker([
+                { datei: "probe.cjs", text: "out.ok = !window.__probeError;\nwindow.__lebtFehler = [];" },
+            ]);
+            const markerFeuert = marker.length === 1 && /__probeError/.test(marker[0]);
+            // (5) DIE TIEFE UND DER PFAD (Nachbesserung 2): eingeschmuggelte Methoden — ein Bauer drei Ruf-Glieder unter
+            // dem Versuch (die Hülle hat keine Tiefe), ein `return null` vor dem Bruch, ein toter Bruch nach `return`, ein
+            // Helfer, der nur bedingt wirft, ein Bruch, der erst im Zeitgeber läuft: jeder ist rot. Und die Gegenprobe: ein
+            // Bauer, den der Versuch nur ABLEGT (`{ render: () => … }`, ein Hörer), ist nie ein Fund (die Hülle lief sonst
+            // über die UI-Räume vom Chat bis in die Kreatur-Aura).
+            const MESH = "this.state.scene.add(new THREE.Mesh(g, new THREE.MeshBasicMaterial()));";
+            const tiefSchmuggel = [
+                ["drei Ruf-Glieder tief", 'try { this._sgTief1(g); } catch (e) { this.log("still", "WARN"); }'],
+                [
+                    "return null vor dem Bruch",
+                    `try { ${MESH} } catch (e) { if (!this.state.scene) return null; this._stoffBruch("x", e); }`,
+                ],
+                ["toter Bruch nach return", `try { ${MESH} } catch (e) { return null; this._stoffBruch("x", e); }`],
+                ["Helfer wirft nur bedingt", `try { ${MESH} } catch (e) { this._sgHelfer(e); }`],
+                [
+                    "Bruch erst im Zeitgeber",
+                    `try { ${MESH} } catch (e) { setTimeout(() => this._stoffBruch("x", e), 1); }`,
+                ],
+                ["Bruch nur im Zweig", `try { ${MESH} } catch (e) { if (e && e.stoff) throw e; }`],
+                // der Studio-Faden: ohne Fehler-Hörer, und ein stiller Hörer an einem Faden, der nur den Leser des
+                // Foundry-Fadens ruft (der Bäcker liefert so seine Karte)
+                ["Faden ohne Hörer", 'const w = new Worker("x"); w.onmessage = () => this._sgTief3(g);'],
+                [
+                    "Hörer schweigt am Leser",
+                    'const w = new Worker("x"); w.onerror = () => {}; w.onmessage = (ev) => this._foundryAntwort(g, ev.data);',
+                ],
+            ];
+            const helfer =
+                "    _sgTief1(g) { return this._sgTief2(g); }\n    _sgTief2(g) { return this._sgTief3(g); }\n" +
+                "    _sgTief3(g) { return new THREE.Mesh(g, null); }\n" +
+                "    _sgHelfer(e) { if (this.state.strikt) throw e; return null; }\n" +
+                '    _sgAblage(g) { try { this._uiRooms = { x: { render: () => this._sgTief1(g) } }; window.addEventListener("x", () => this._sgTief3(g)); } catch (e) {} }\n' +
+                '    _sgKlang(g) { const w = new Worker("k"); w.onerror = () => {}; w.onmessage = (ev) => { this._sgZahl = ev.data; }; }\n';
+            const tiefAnker = stamm.indexOf("    // Studio-Dither-Blende als TSL-Knoten");
+            const tiefQuelle =
+                stamm.slice(0, tiefAnker) +
+                helfer +
+                tiefSchmuggel.map(([, k], i) => `    _sgFang${i}(g) { ${k} }\n`).join("") +
+                stamm.slice(tiefAnker);
+            const tiefFunde = tiefAnker < 0 ? [] : stoffFaenge(tiefQuelle).funde.filter((f) => /^_sg/.test(f.methode));
+            const pfadBlind = tiefSchmuggel
+                .filter((_, i) => !tiefFunde.some((f) => f.methode === `_sgFang${i}` && f.art === "Fang"))
+                .map(([n]) => n);
+            const ablageRot = tiefFunde
+                .filter((f) => !/^_sgFang\d$/.test(f.methode))
+                .map((f) => `${f.methode}: ${f.was}`);
+            if (
+                heute.length ||
+                blind.length ||
+                fehltAnker.length ||
+                !totFeuert ||
+                !markerFeuert ||
+                aussen.length < 20 ||
+                tiefAnker < 0 ||
+                pfadBlind.length ||
+                ablageRot.length
+            ) {
+                console.log("❌ SELBST-TEST: die Stoff-Wand ist blind (oder steht heute rot)", {
+                    heute: heute.slice(0, 5),
+                    blind: blind.slice(0, 8).map((e) => `${e.name} :${e.zeile}`),
+                    fehltAnker,
+                    tot,
+                    marker,
+                    brueche: aussen.length,
+                    tiefAnker,
+                    pfadBlind,
+                    ablageRot,
+                });
+                process.exit(1);
+            }
+            console.log(
+                `✅ SELBST-TEST: die Stoff-Wand sieht jeden ihrer ${aussen.length} lauten Brüche still gemacht an seiner Zeile, ` +
+                    `${schmuggel.length} Schmuggel je Art (${schmuggel.map((x) => x[0]).join(" · ")}), ` +
+                    `${tiefSchmuggel.length} Schmuggel in Tiefe und Pfad (${tiefSchmuggel.map((x) => x[0]).join(" · ")}), ` +
+                    `die Ablage (Objekt-Wert, Hörer) und den Faden ohne Bau still, die tote Zweig-Zeile und den toten Fehler-Marker; heute 0`
+            );
+        }
         // Die Linse muss feuern: verbotenen Token in eine Kopie injizieren.
         const tmp = path.join(require("os").tmpdir(), "altlasten-selftest.js");
         fs.writeFileSync(tmp, 'const x = 1;\nfunction tickPhoenixDeath() {}\n// Kommentar darf "glutwesen" sagen\n');
@@ -2224,21 +3997,52 @@ function main() {
             );
         const still = (datei, zeile) =>
             !scanZwillinge({ [datei]: probe + "// " + zeile + "\n" }).some((e) => e.includes(datei + ":"));
-        const cont0 = "const _cB = sandNoise.noise2D((x + _wpX) * 0.00014 + 7.2, (z + _wpZ) * 0.00014 + 3.8);";
+        const cont0 = "const c = sandNoise.noise2D((x + _wpX) * lc + 7.2, (z + _wpZ) * lc + 3.8);";
         const maske = "const ax = rxA / anker.massivAspect;";
         const mulde = "tarns.push({ x, z, reach2: r * r, twoSig2: 2 * s * s });";
+        // K16b: das Schicht-Verfahren im Makro-Worker des Studios, das Raster im Panel und in der Linse
+        const schicht = "maske[k] = G.grossform(L, x, z).stil >= 0.8 ? 1 : 0;";
         const zwillingFeuert =
-            feuert("voxel-worker.js", cont0, "kontinentale Basis") &&
-            feuert("anazhRealm.js", maske, "Massiv-Maske") &&
-            feuert("scripts/playtest.cjs", mulde, "Mulden-Form") &&
+            feuert("worlds/gelaende/makro-worker.js", schicht, "Schicht-Ort der Messung") &&
+            feuert("worlds/gelaende/studio.js", "const k = cv.width / (268 * 30);", "Mess-Raster der Statistik") &&
+            feuert("scripts/diag-worker-dichte.cjs", "const RAND = Math.round(2000 / SCHRITT);", "Mess-Raster") &&
+            still("worlds/gelaende/makro-worker.js", schicht) &&
+            feuert("voxel-worker.js", cont0, "Kontinentalität C") &&
+            feuert(STAMM[0], maske, "Massiv-Maske") &&
+            feuert("gelaende-core.js", maske, "Massiv-Maske") &&
+            feuert("scripts/playtest.cjs", mulde, "Tarn-Mulde") &&
+            feuert("gelaende-core.js", mulde, "Tarn-Mulde") &&
             still("voxel-worker.js", cont0) &&
-            still("anazhRealm.js", maske);
+            still(STAMM[0], maske);
         console.log(
             zwillingFeuert
-                ? "✅ SELBST-TEST: die Zwillings-Wand feuert (kontinentale Basis im Worker, Massiv-Maske im Stamm, Tarn-Mulde in einer Linse — je mit Zeile; der Kommentar nicht)"
+                ? "✅ SELBST-TEST: die Zwillings-Wand feuert (Kontinentalität im Worker, die gefallene Massiv-Maske in Stamm und Gesetzbuch, die gefallene Tarn-Mulde in Linse und Gesetzbuch — je mit Zeile; der Kommentar nicht)"
                 : "❌ SELBST-TEST: die Zwillings-Wand feuert nicht"
         );
         if (!zwillingFeuert) process.exit(1);
+        // Die Stamm-Leser-Wand muss feuern: ein kanonischer Leser am Namen vorbei, ein Server-Patcher am Pfad und ein
+        // Stapel-Leser ohne die Zonen-Dateien in einer Kopie — je beim Namen samt Zeile; Kommentar und Meldung bleiben still.
+        const leserDatei = "scripts/diag-stamm-leser-probe.cjs";
+        const n = stammLib.ALT;
+        const leserRot = scanStammLeser(root, {
+            [leserDatei]:
+                `const fs = require("fs");\nconst path = require("path");\n` +
+                `const s = fs.readFileSync(path.join(__dirname, "..", "${n}"), "utf8");\n` +
+                `if (p === "/${n}") x();\n` +
+                `if (/${n.replace(".", "\\.")}/.test(rahmen)) y();\n`,
+        });
+        const leserStill = scanStammLeser(root, {
+            [leserDatei]: `// liest ${n}\nconsole.log("${n}: der Leser fehlt");\nif (/${n.replace(".", "\\.")}|\\/stamm\\/\\d\\d[a-z]?\\.js/.test(r)) y();\n`,
+        });
+        const amOrt = (z) => leserRot.some((e) => e.startsWith(`Stamm-Leser-Wand: ${leserDatei}:${z} `));
+        const leserFeuert =
+            scanStammLeser(root).length === 0 && leserRot.length === 3 && amOrt(3) && amOrt(4) && amOrt(5) && leserStill.length === 0;
+        console.log(
+            leserFeuert
+                ? `✅ SELBST-TEST: die Stamm-Leser-Wand feuert (Leser am Namen · Patcher am Pfad · Stapel-Leser ohne stamm/ — je mit Zeile; Kommentar, Meldung und das volle Stapel-Muster still; ${stammLeserDateien(root).length} Dateien gesehen)`
+                : `❌ SELBST-TEST: die Stamm-Leser-Wand feuert nicht — ${JSON.stringify(leserRot.concat(leserStill)).slice(0, 400)}`
+        );
+        if (!leserFeuert) process.exit(1);
         process.exit(fired && aliasFeuert ? 0 : 1);
     }
 
@@ -2246,13 +4050,17 @@ function main() {
         .concat(checkSoulKeys())
         .concat(scanZwillinge())
         .concat(scanLabBuster())
-        .concat(scanInstanzWand(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8")))
-        .concat(scanEntsorgungsWand(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8")))
-        .concat(scanKartenWand(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8")))
-        .concat(scanNormalWand(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8")))
+        .concat(scanInstanzWand(stammLib.text(root)))
+        .concat(scanEntsorgungsWand(stammLib.text(root)))
+        .concat(scanKartenWand(stammLib.text(root)))
+        .concat(scanNormalWand(stammLib.text(root)))
+        .concat(scanStoffWand(stammLib.text(root)))
+        .concat(toteMarker(markerDateien(root)))
         .concat(scanStufenWand(fs.readFileSync(path.join(root, "foundry-core.js"), "utf8")))
         .concat(scanPortWand(gateDateien(root)))
+        .concat(scanOrtsWand(gateDateien(root)))
         .concat(scanHuellenFormWand(wirtsDateien(root, files)))
+        .concat(scanStammLeser(root))
         .concat(checkAliasArten());
     if (errs.length) {
         console.log("⛔ DIE RÜCKKEHR-WAND — gefallene Namen im Stamm und in den Linsen:");
@@ -2260,7 +4068,7 @@ function main() {
         process.exit(1);
     }
     console.log(
-        `✅ DIE RÜCKKEHR-WAND steht — ${FORBIDDEN.length} gefallene Namen grep=0 in ${files.length} Dateien (Stamm + Linsen in scripts/lib), CREATURE_SOULS = exakt [${SOUL_KEYS_EXPECTED.join(" · ")}], ${ZWILLINGE.length} Zwillings-Fingerabdrücke wohnen nur im Gesetzbuch, jede InstancedMesh entsteht im EINEN Chokepoint, ${KARTEN_METHODEN.length} Karten-Methoden malen nichts im Haupt-Thread, kein normalNode dreht mit der transponierten Matrix oder liest r184s normalWorld, die Bau-Stufe hat EINE Bedeutung (stufenRezept), jedes Gate liest seinen Port aus EINER eigenen Variable, kein Wirt gibt eine Hülle in der alten Zeile (boxen statt teile), jede Gruppe mit Welt-Vorlagen entsorgt über die EINE Regel (_disposeSoulGroup).`
+        `✅ DIE RÜCKKEHR-WAND steht — ${FORBIDDEN.length} gefallene Namen grep=0 in ${files.length} Dateien (Stamm + Linsen in scripts/lib), CREATURE_SOULS = exakt [${SOUL_KEYS_EXPECTED.join(" · ")}], ${ZWILLINGE.length} Zwillings-Fingerabdrücke wohnen nur im Gesetzbuch, jede InstancedMesh entsteht im EINEN Chokepoint, ${KARTEN_METHODEN.length} Karten-Methoden malen nichts im Haupt-Thread, kein normalNode dreht mit der transponierten Matrix oder liest r184s normalWorld, kein Stoff fängt still (Stoff-Wand: kein schluckender catch im Render-Bau (am Versuch gemessen, die Hülle ohne Tiefe samt Studio-Faden, jeder Pfad bricht, jeder Studio-Faden trägt einen lauten Hörer), keine Fehler-Variable und kein toter Fehler-Marker, kein Wenn um ein TSL-Glied, kein Null-Knoten; ${STOFF_ZWEIGE.length} benannte Zweige mit ihrem Bild (ohne Seite · der Sandbox-Weg des Voxel-Fadens), der EINE Melder meldet jede Meldung ERROR und dieselbe wieder mit Zähler, keine Kette steigt still aus, kein Bau wartet in einer Schleife auf die Uhr), die Bau-Stufe hat EINE Bedeutung (stufenRezept), jedes Gate liest seinen Port aus EINER eigenen Variable, keine Probe setzt Spieler, Kamera oder Tier an ein Zahlen-Literal ohne BÜHNE, kein Wirt gibt eine Hülle in der alten Zeile (boxen statt teile), jede Gruppe mit Welt-Vorlagen entsorgt über die EINE Regel (_disposeSoulGroup), der Name der Stamm-Datei steht als Lese-Ziel nur in scripts/lib/stamm.cjs (${stammLeserDateien(root).length} Dateien gesehen).`
     );
 }
 

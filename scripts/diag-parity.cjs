@@ -339,7 +339,7 @@ async function renderAnazh() {
             // real backen. Vorher: baked:0, weil die Queue zum Drain-Zeitpunkt leer war.
             const f = r._foundry;
             const dlP = performance.now() + 30000;
-            while (f && f._prefetching && performance.now() < dlP) await new Promise((res) => setTimeout(res, 200));
+            while (f && f._vorrat && performance.now() < dlP) await new Promise((res) => setTimeout(res, 200));
             try {
                 const spec = r._foundryLibrarySpec();
                 for (const sp of spec.species) {
@@ -383,7 +383,10 @@ async function renderAnazh() {
                 baked: ((window.__impostorRttBaked || 0) | 0) - n0,
                 queueVorher: qLen0,
                 records: recs0,
-                err: window.__impostorRttError || null,
+                err: (() => {
+                    const cz = r._impostorCensus && r._impostorCensus();
+                    return cz && cz.gescheitert ? `gescheitert ${cz.gescheitert}` : null;
+                })(),
             };
         });
         console.log("ANAZH Impostor-RTT gebacken:", JSON.stringify(baked));
