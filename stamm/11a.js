@@ -61,18 +61,24 @@ class AnazhRealm_Z11a {
             hoehle
         );
         if (!geom) return { mesh: null, kind: "empty" };
-        // DER GEOMORPH DER STUFE (K51-2): das Ziel jedes Vertex auf dem Netz der nächst gröberen Stufe (derselbe Bau wie im
-        // Worker, `_stufeZielNetz`), die Stufe im Morph-Code — die gröbste Stufe trägt ihre Lage als Ziel
-        {
-            const P = geom.attributes.position.array;
-            if (lod < 3) {
-                const ziel = this._stufeZielNetz(P, cx, cz, lod + 1);
-                geom.attributes.aMorphTarget.array.set(ziel);
-                geom.userData.stufeZiel = ziel;
-            }
-            geom.attributes.aMorphWeight.array.fill(this._morphCode(lod, 0));
-        }
         this._attachVoxelFieldColors(geom);
+        // DER GEOMORPH DER STUFE (K51-2): das Ziel jedes Vertex auf dem Netz der nächst gröberen Stufe samt Normale und Stoff-
+        // Farbe (derselbe Bau wie im Worker, `_stufeZielNetz`), die Stufe im Morph-Code — die gröbste Stufe trägt ihre eigenen
+        {
+            const A = geom.attributes;
+            let nZ = A.normal.array,
+                fZ = A.color.array;
+            if (lod < 3) {
+                const st = this._stufeZielNetz(A.position.array, A.normal.array, A.color.array, cx, cz, lod + 1);
+                A.aMorphTarget.array.set(st.ziel);
+                geom.userData.stufeZiel = st.ziel;
+                nZ = st.felder[0];
+                fZ = st.felder[1];
+            }
+            A.aMorphWeight.array.fill(this._morphCode(lod, 0));
+            geom.setAttribute("aNormalZiel", new THREE.Float32BufferAttribute(new Float32Array(nZ), 3));
+            geom.setAttribute("aFarbeZiel", new THREE.Float32BufferAttribute(new Float32Array(fZ), 3));
+        }
         // Material-Singleton für alle Chunks (Vertex-Farben leben pro Geometrie; PBR, roughness/metalness
         // aus den Tags). NIEMALS disposen — sonst sterben alle anderen Chunks mit (s. `_disposeVoxelChunk`).
         // Der CPU-Körper des Chunks (gezeichnet als Bereich im Boden-Satz, `_chunkSatzEin`).
@@ -526,6 +532,12 @@ class AnazhRealm_Z11a {
             MT.push(x, y, z);
             MW.push(0);
         };
+        // die Ecken der feinen Kante und ihre Quell-Vertices: Normale und Stoff-Farbe wandern mit wie die Lage
+        const quelle = [];
+        const nZiel = geom.attributes.aNormalZiel,
+            fZiel = geom.attributes.aFarbeZiel;
+        if (!nZiel || !fZiel)
+            throw new Error(`_rebuildLodStitchBand(${key}): die Quelle trägt kein Stufen-Ziel (aNormalZiel · aFarbeZiel)`);
         const sch = geom.attributes.aSchutt;
         if (!sch) throw new Error(`_rebuildLodStitchBand(${key}): die Quelle trägt keinen Schutt (aSchutt)`);
         const seen = new Set();
@@ -563,6 +575,7 @@ class AnazhRealm_Z11a {
                     P.push(ax, ay, az, bx, by, bz, tbx, tby, tbz, tax, tay, taz);
                     MT.push(tA[a * 3], tA[a * 3 + 1], tA[a * 3 + 2], tA[b * 3], tA[b * 3 + 1], tA[b * 3 + 2]);
                     MW.push(wA[a], wA[b]);
+                    quelle.push(base, a, base + 1, b);
                     fest(tbx, tby, tbz);
                     fest(tax, tay, taz);
                     for (const v of [a, b, b, a]) {
@@ -595,6 +608,15 @@ class AnazhRealm_Z11a {
         bg.setAttribute("color", new THREE.Float32BufferAttribute(C, 3));
         bg.setAttribute("aMorphTarget", new THREE.Float32BufferAttribute(MT, 3));
         bg.setAttribute("aMorphWeight", new THREE.Float32BufferAttribute(MW, 1));
+        const NZ = new Float32Array(N),
+            FZ = new Float32Array(C);
+        for (let q = 0; q < quelle.length; q += 2)
+            for (let k = 0; k < 3; k++) {
+                NZ[quelle[q] * 3 + k] = nZiel.array[quelle[q + 1] * 3 + k];
+                FZ[quelle[q] * 3 + k] = fZiel.array[quelle[q + 1] * 3 + k];
+            }
+        bg.setAttribute("aNormalZiel", new THREE.Float32BufferAttribute(NZ, 3));
+        bg.setAttribute("aFarbeZiel", new THREE.Float32BufferAttribute(FZ, 3));
         // die Naht trägt die Himmels-Sicht ihrer beiden Ränder (je Vertex aus der Quelle kopiert, `HS`)
         bg.setAttribute("aHimmel", new THREE.Float32BufferAttribute(HS, 1));
         bg.setAttribute("aSchutt", new THREE.Float32BufferAttribute(SC, 1));

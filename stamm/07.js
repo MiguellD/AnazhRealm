@@ -48,6 +48,8 @@ class AnazhRealm_Z07 {
                                 positions: new Float32Array(msg.positions),
                                 // das Ziel der gröberen Stufe je Vertex (K51-2, Geomorph), null in der gröbsten Stufe
                                 stufeZiel: msg.stufeZiel ? new Float32Array(msg.stufeZiel) : null,
+                                normalZiel: msg.normalZiel ? new Float32Array(msg.normalZiel) : null,
+                                farbeZiel: msg.farbeZiel ? new Float32Array(msg.farbeZiel) : null,
                                 normals: new Float32Array(msg.normals),
                                 indices: new Uint32Array(msg.indices),
                                 colors: new Float32Array(msg.colors),
@@ -568,7 +570,8 @@ class AnazhRealm_Z07 {
                 // gegen alten State — verwerfen (der Pump resubmittet frisch).
                 if (this._voxelStand(cx, cz) !== genAtIdbRequest) return;
                 // ein Payload ohne Stufen-Ziel (K51-2) ist das alte Format: ein Fehlgriff, der Worker baut frisch
-                if (payload && !payload.empty && (payload.lod | 0) < 3 && !payload.stufeZiel) payload = null;
+                if (payload && !payload.empty && (payload.lod | 0) < 3 && !(payload.stufeZiel && payload.farbeZiel))
+                    payload = null;
                 if (payload) {
                     if (!this.state.voxelMeshCache) this.state.voxelMeshCache = new Map();
                     this.state.voxelMeshCache.set(cacheKey, payload);
@@ -633,7 +636,11 @@ class AnazhRealm_Z07 {
         // `stufeZiel`), die Stufe im Morph-Code (`_morphCode`) — der Boden-Stoff wandert im Übergangs-Band dorthin.
         // Fail-closed: eine Stufe unter der gröbsten ohne Ziel spränge am Wechsel.
         const nVm = meshData.positions.length / 3;
-        if ((lod | 0) < 3 && !(meshData.stufeZiel && meshData.stufeZiel.length === meshData.positions.length))
+        const zielDa = (z) => z && z.length === meshData.positions.length;
+        if (
+            (lod | 0) < 3 &&
+            !(zielDa(meshData.stufeZiel) && zielDa(meshData.normalZiel) && zielDa(meshData.farbeZiel))
+        )
             throw new Error(`_buildVoxelChunkDataFromWorkerMesh(${cx},${cz}): der Worker liefert kein Stufen-Ziel (L${lod})`);
         geom.setAttribute(
             "aMorphTarget",
@@ -647,6 +654,18 @@ class AnazhRealm_Z07 {
             new THREE.Float32BufferAttribute(new Float32Array(nVm).fill(this._morphCode(lod, 0)), 1)
         );
         geom.userData.stufeZiel = (lod | 0) < 3 ? meshData.stufeZiel : null;
+        // Normale und Stoff-Farbe wandern mit (der Stoff mischt sie mit demselben Faktor) — die gröbste Stufe trägt ihre eigenen
+        geom.setAttribute(
+            "aNormalZiel",
+            new THREE.Float32BufferAttribute(
+                new Float32Array((lod | 0) < 3 ? meshData.normalZiel : meshData.normals),
+                3
+            )
+        );
+        geom.setAttribute(
+            "aFarbeZiel",
+            new THREE.Float32BufferAttribute(new Float32Array((lod | 0) < 3 ? meshData.farbeZiel : meshData.colors), 3)
+        );
         // Der Höhlen-Graph (Welle 7, `_voxelHoehlenGraph` ↔ Worker `hoehlenGraph`): fail-closed — ein Boden ohne ihn
         // wüsste nicht, welche Fläche aus dem Himmel zu sehen ist.
         const H = meshData.hoehle;

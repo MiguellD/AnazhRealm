@@ -401,7 +401,8 @@ class AnazhRealm_Z10 {
                 if (opts.vertexColors === true) {
                     // PBR-Terrain trägt denselben Geologie-Albedo wie Toon: per-Vertex-Feldfarbe → per-Fragment
                     // Multi-Klassen-Geologie, als Füll-Licht-Albedo UND als colorNode.
-                    albedoNode = _Ta.attribute("color", "vec3");
+                    // der Boden (K51-2): die Stoff-Farbe wandert im Übergangs-Band mit der Lage zur Farbe der gröberen Stufe
+                    albedoNode = opts.geomorph ? this._bodenStufenKnoten().farbe : _Ta.attribute("color", "vec3");
                     if (opts.vertexColorAlbedo) {
                         // FELS: der Stoff am Vertex (das Fels-Gesetz, gelaende-core `felsNetz`) IST die Albedo; der EINE Substanz-Kern legt
                         // Korn + Kavität + Roughness drauf (instanz-stabil via positionLocal). KEIN Terrain-Geologie-Overlay
@@ -837,7 +838,9 @@ class AnazhRealm_Z10 {
                     // (echte GPU, Mess-Wiese, Zweit-Boot nach kurzem Erst-Boot: 4 von 5 Läufen dunkel, Boden-Helligkeit
                     // 68 statt 133 — gate:altlasten Normal-Wand). Derselbe Wert wie vorher, `normalWorld` baut nur die
                     // Licht-Stufe (die End-Normale aus diesem normalNode).
-                    const _nGeo = _Tn.normalWorldGeometry.mul(_Tn.faceDirection);
+                    // der Boden (K51-2): die Geometrie-Normale wandert im Übergangs-Band mit der Lage zur Normale der gröberen Stufe
+                    const _nWG = opts.geomorph ? this._bodenStufenKnoten().normalWelt : _Tn.normalWorldGeometry;
+                    const _nGeo = _nWG.mul(_Tn.faceDirection);
                     // DIE 2.5D-LICHTUNG GILT UNTER DEM HIMMEL (K02a, Auge 11 bei 762/−138): die geflattete Normale zeigt
                     // jede Boden-Fläche zum Himmel — in der Höhle lag so jede Decke und Wand als Wiese im Licht von oben
                     // (der Himmel als blaugrauer Schleier, die Sonne ohne Schatten auf dem Fels), und kein Licht von unten
@@ -845,9 +848,9 @@ class AnazhRealm_Z10 {
                     // flacht sie nur, soweit der Himmel die Fläche sieht; in der Höhle trägt die WAHRE Normale (−∇d, in die
                     // Luft — ohne Flächen-Vorzeichen: die Windung des Netzes kennt die Seite der Luft nicht). Unter dem
                     // Himmel (aHimmel 1) ist sie dieselbe Zahl wie vorher.
-                    const _hS = opts.himmelsSicht ? _Tn.attribute("aHimmel", "float") : null;
+                    const _hS = opts.himmelsSicht ? this._bodenStufenKnoten().himmel : null;
                     let _baseN = _hS
-                        ? _Tn.mix(_Tn.normalWorldGeometry, _up, _flat.mul(_hS))
+                        ? _Tn.mix(_nWG, _up, _flat.mul(_hS))
                         : _Tn.mix(_nGeo, _up, _flat);
                     // Mikro-Relief (s. TERRAIN_BUMP): ein Noise-Höhengradient (zwei Oktaven: Klumpen + Korn) kippt die
                     // geflattete Normale entgegen dem Gradienten, LOD-gegated. Render-only, try/catch.
@@ -900,7 +903,7 @@ class AnazhRealm_Z10 {
                     // fleckig gegen 0,2 % ohne Schatten (gate:schatten-terminator). Jetzt trägt der empfangene Schatten die Zuwendung der WAHREN
                     // Normale (dieselbe, aus der die Lichtung mischt) zur Richtung des aktiven Körpers: abgewandt im Schatten,
                     // der Saum am Terminator (N·L 0 … `zuwendungSaum`, ~5° Sonne) weich.
-                    const _nWahr = _hS ? _Tn.normalWorldGeometry : _nGeo;
+                    const _nWahr = _hS ? _nWG : _nGeo;
                     const _zu = _Tn.smoothstep(
                         _Tn.float(0.0),
                         _Tn.float(AnazhRealm.SCHATTEN_KASKADE.zuwendungSaum),
@@ -913,7 +916,7 @@ class AnazhRealm_Z10 {
             }
             // DIE HIMMELS-SICHT als Verdeckung: das Himmels-Licht (Umgebung, Hemi, Ambient) erreicht nur, was den Himmel
             // sieht — r184 multipliziert `aoNode` in das indirekte Licht (diffus und Glanz).
-            if (opts.himmelsSicht) mat.aoNode = THREE.TSL.attribute("aHimmel", "float");
+            if (opts.himmelsSicht) mat.aoNode = this._bodenStufenKnoten().himmel;
             // DAS LICHT DES AUGES (K02a, K15, K11 — `_dayNightApplyAugenLicht`, `AUGEN_LICHT`) ist ein Platz des Licht-Pools mit
             // Himmels-Ersatz: es trägt nur, wo der Himmel fehlt — der Boden reicht dem Pool seine Himmels-Sicht (`aHimmel`) unten
             // durch `_leuchtStoff`, ein Stoff ohne Himmels-Sicht gilt als offen (er trägt das Himmels-Licht ganz).
@@ -928,24 +931,8 @@ class AnazhRealm_Z10 {
                     const _aum = this._ensureAtmoUniforms();
                     {
                         const _tgt = _Tm.attribute("aMorphTarget", "vec3");
-                        const _code = _Tm.attribute("aMorphWeight", "float");
-                        const _L = _code.mul(0.5).floor();
-                        const _s = _code.sub(_L.mul(2.0));
-                        const ST = AnazhRealm.BODEN_STUFEN.stufen;
-                        const _bis = _Tm.select(
-                            _L.lessThan(0.5),
-                            _Tm.float(ST[0].bis),
-                            _Tm.select(_L.lessThan(1.5), _Tm.float(ST[1].bis), _Tm.float(ST[2].bis))
-                        );
-                        const _band = _Tm.select(
-                            _L.lessThan(0.5),
-                            _Tm.float(ST[0].band),
-                            _Tm.select(_L.lessThan(1.5), _Tm.float(ST[1].band), _Tm.float(ST[2].band))
-                        );
-                        const _rel = _Tm.positionLocal.xz.sub(_aum.stufeAuge).abs();
-                        const _d = _Tm.max(_rel.x, _rel.y);
-                        const _w = _Tm.smoothstep(_bis.sub(_band), _bis, _d);
-                        const _f = _aum.geomorph.mul(_s.add(_w).sub(_s.mul(_w)));
+                        const _f = this._bodenStufenKnoten().f;
+                        void _aum;
                         mat.positionNode = _Tm.positionLocal.add(_tgt.sub(_Tm.positionLocal).mul(_f));
                     }
                 } catch (_e) {
@@ -957,13 +944,46 @@ class AnazhRealm_Z10 {
         // Laub (pflanzenStoff) trägt die Vertex-Farbe EINMAL im colorNode; die Instanz-Farbe multipliziert die Pipeline.
         this._applyVegetationResponse(mat, opts, responseProfile);
         // das Leuchtquellen-Gesetz: der Licht-Pool im Leuchten des Stoffs (K11), der Boden mit seiner Himmels-Sicht
-        this._leuchtStoff(mat, null, opts.himmelsSicht ? THREE.TSL.attribute("aHimmel", "float") : null);
+        this._leuchtStoff(mat, null, opts.himmelsSicht ? this._bodenStufenKnoten().himmel : null);
         // Marker für das Test-Band (kein semantisches Verhalten)
         mat.userData = mat.userData || {};
         mat.userData.isPbrMaterial = true;
         mat.userData.pbrRoughness = params.roughness;
         mat.userData.pbrMetalness = params.metalness;
         return mat;
+    }
+
+    // DIE KNOTEN DES STUFEN-MORPHS (K51-2, CDLOD) — EIN Satz für den Boden-Stoff (Lage, Normale, Stoff-Farbe, Himmels-Sicht,
+    // Schutt). Der Satz trägt je Vertex in der vierten Komponente: die Farbe den Morph-Code (2 · Stufe + Naht, `_morphCode`), das
+    // Normal-Ziel die Himmels-Sicht, das Farb-Ziel den Schutt (`_chunkSatzArt` boden). Der Faktor f = (Naht + w − Naht · w) ·
+    // geomorph, w = smoothstep(bis − band, bis, d) im Chebyshev-Abstand d zum Auge der Stufen (`stufeAuge`); Lage, Normale und
+    // Farbe wandern mit demselben f zum Ziel der gröberen Stufe — am Wechsel deckungsgleich. CPU-Spiegel: `_morphFaktor`.
+    _bodenStufenKnoten() {
+        if (this._bodenStufenK) return this._bodenStufenK;
+        const T = THREE.TSL;
+        const U = this._ensureAtmoUniforms();
+        const farbe4 = T.attribute("color", "vec4");
+        const code = farbe4.w;
+        const L = code.mul(0.5).floor();
+        const s = code.sub(L.mul(2.0));
+        const ST = AnazhRealm.BODEN_STUFEN.stufen;
+        const je = (k) =>
+            T.select(L.lessThan(0.5), T.float(ST[0][k]), T.select(L.lessThan(1.5), T.float(ST[1][k]), T.float(ST[2][k])));
+        const bis = je("bis");
+        const rel = T.positionLocal.xz.sub(U.stufeAuge).abs();
+        const w = T.smoothstep(bis.sub(je("band")), bis, T.max(rel.x, rel.y));
+        const f = U.geomorph.mul(s.add(w).sub(s.mul(w)));
+        const nZ4 = T.attribute("aNormalZiel", "vec4");
+        const fZ4 = T.attribute("aFarbeZiel", "vec4");
+        const nLokal = T.normalize(T.mix(T.normalGeometry, nZ4.xyz, f));
+        this._bodenStufenK = {
+            f,
+            farbe: T.mix(farbe4.xyz, fZ4.xyz, f),
+            normalWelt: T.normalize(T.modelNormalMatrix.mul(nLokal)),
+            himmel: nZ4.w,
+            schutt: fZ4.w,
+        };
+        return this._bodenStufenK;
     }
 
     // DAS LEUCHTQUELLEN-GESETZ IM STOFF (K11): JEDER beleuchtete Stoff der Welt trägt den Licht-Pool als Term seines Leuchtens
@@ -1384,7 +1404,7 @@ class AnazhRealm_Z10 {
             // aus gelaende-core `hoehe(…, aus).schutt`), nie die Steile der Masche: bis zur Nachbesserung 2 lag er ab 28° auf
             // jedem Hang (der grüne Hügel grau, der 42°-Dorfhang zu 85 % Schutt), und das 28°–34°-Band streifte die 30°-Rampe in
             // den Reihen des Netzes. Die Ferne trägt das Mittel des Schutts in ihrer Farbe (`_fernSchutt`, dasselbe Gesetz).
-            const _screeW = felsImVertex ? _T.attribute("aSchutt", "float") : _T.float(0);
+            const _screeW = felsImVertex ? this._bodenStufenKnoten().schutt : _T.float(0);
             const _gRock = au && au.geoRock ? au.geoRock : _T.float(1.0);
             // DER FELS-STOFF (K17, gelaende-core `FELS`): wo das Netz den Fels trägt (der Chunk-Boden, `felsImVertex`),
             // IST die Vertex-Farbe der Fels — `_felsStoff` hat Pakete, Rinde, Mulden, Flechte und Moos aus dem Gesetz

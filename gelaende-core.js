@@ -2481,14 +2481,39 @@
     // Stelle wie die Höhenkarte im CDLOD), wo keine Fläche innerhalb eines groben Schritts senkrecht trägt (eine Wand, ein
     // Überhang) der nächste Punkt der groben Fläche im Raum, wo auch der weiter als zwei Schritte liegt, der Vertex selbst.
     // Im Übergangs-Band wandert der Vertex stetig auf dieses Ziel — am Stufen-Wechsel liegt das feine Netz auf dem groben.
-    // `fein` die Positionen (3n), `grob` + `grobIdx` das grobe Netz (3m, 3t), `schritt` sein Gitter-Schritt. Rein; Leser:
+    // `fein` die Positionen (3n), `grob` + `grobIdx` das grobe Netz (3m, 3t), `schritt` sein Gitter-Schritt; `felder` (optional)
+    // die Vertex-Felder, die mitwandern ({ fein, grob, einheit }: je 3 Komponenten — Normale, Stoff-Farbe): ihr Ziel ist der Wert der
+    // groben Fläche am Ziel-Punkt (baryzentrisch; `einheit` normiert), ohne Ziel der eigene. Rückgabe { ziel, felder }. Rein; Leser:
     // der voxel-worker (`buildChunkMesh`) und der Sync-Bau des Stamms (`_buildVoxelChunkData`) — EIN Gesetz für beide.
     const STUFE_ZIEL = Object.freeze({ senkrecht: 1, raum: 2 }); // in groben Schritten
-    function stufeZiel(fein, grob, grobIdx, schritt) {
+    function stufeZiel(fein, grob, grobIdx, schritt, felder) {
         const out = new Float32Array(fein.length);
         out.set(fein);
+        const F = (felder || []).map((fd) => {
+            const z = new Float32Array(fein.length);
+            z.set(fd.fein);
+            return z;
+        });
+        // den Ziel-Wert jedes Felds am Punkt des Dreiecks (a, b, c) mit den Gewichten (la, lb, lc) setzen
+        const feldZiel = (v, a, b, c, la, lb, lc) => {
+            for (let q = 0; q < F.length; q++) {
+                const G = felder[q].grob;
+                let x = G[a] * la + G[b] * lb + G[c] * lc,
+                    y = G[a + 1] * la + G[b + 1] * lb + G[c + 1] * lc,
+                    z = G[a + 2] * la + G[b + 2] * lb + G[c + 2] * lc;
+                if (felder[q].einheit) {
+                    const l = Math.hypot(x, y, z) || 1;
+                    x /= l;
+                    y /= l;
+                    z /= l;
+                }
+                F[q][v] = x;
+                F[q][v + 1] = y;
+                F[q][v + 2] = z;
+            }
+        };
         const nT = (grobIdx.length / 3) | 0;
-        if (nT === 0 || !(schritt > 0)) return out;
+        if (nT === 0 || !(schritt > 0)) return { ziel: out, felder: F };
         let x0 = Infinity,
             z0 = Infinity,
             x1 = -Infinity,
@@ -2519,7 +2544,8 @@
         const eimer = new Int32Array(kopf[nx * nz]);
         const fuell = kopf.slice(0, nx * nz);
         for (let t = 0; t < nT; t++) huelle(t, (k) => (eimer[fuell[k]++] = t));
-        const nah = [0, 0, 0];
+        const nah = [0, 0, 0],
+            nahL = [0, 0]; // die Gewichte (u, v) des nächsten Punkts: a + u · ab + v · ac
         // der nächste Punkt des Dreiecks (a, b, c) zu p (Ericson, Real-Time Collision Detection 5.1.5) → nah, Abstand²
         const naechster = (px, py, pz, a, b, c) => {
             const ax = grob[a],
@@ -2576,6 +2602,8 @@
             nah[0] = ax + abx * u + acx * v;
             nah[1] = ay + aby * u + acy * v;
             nah[2] = az + abz * u + acz * v;
+            nahL[0] = u;
+            nahL[1] = v;
             return (nah[0] - px) ** 2 + (nah[1] - py) ** 2 + (nah[2] - pz) ** 2;
         };
         const senk = STUFE_ZIEL.senkrecht * schritt,
@@ -2588,7 +2616,10 @@
                 cj = zelle(pz, z0, nz);
             const k = ci + cj * nx;
             let best = Infinity,
-                by = py;
+                by = py,
+                bt = -1,
+                b1 = 0,
+                b2 = 0;
             for (let q = kopf[k]; q < kopf[k + 1]; q++) {
                 const t = eimer[q];
                 const a = grobIdx[t * 3] * 3,
@@ -2611,17 +2642,25 @@
                 if (d < best) {
                     best = d;
                     by = y;
+                    bt = t;
+                    b1 = l1;
+                    b2 = l2;
                 }
             }
             if (best <= senk) {
                 out[v + 1] = by;
+                if (F.length)
+                    feldZiel(v, grobIdx[bt * 3] * 3, grobIdx[bt * 3 + 1] * 3, grobIdx[bt * 3 + 2] * 3, b1, b2, 1 - b1 - b2);
                 continue;
             }
             // keine Fläche senkrecht nah: der nächste Punkt im Raum (die 3×3 Eimer um den Vertex)
             let bd = Infinity,
                 bx = px,
-                bz = pz;
+                bz = pz,
+                bu = 0,
+                bv = 0;
             by = py;
+            bt = -1;
             for (let j = Math.max(0, cj - 1); j <= Math.min(nz - 1, cj + 1); j++)
                 for (let i = Math.max(0, ci - 1); i <= Math.min(nx - 1, ci + 1); i++) {
                     const kk = i + j * nx;
@@ -2633,6 +2672,9 @@
                             bx = nah[0];
                             by = nah[1];
                             bz = nah[2];
+                            bt = t;
+                            bu = nahL[0];
+                            bv = nahL[1];
                         }
                     }
                 }
@@ -2640,9 +2682,11 @@
                 out[v] = bx;
                 out[v + 1] = by;
                 out[v + 2] = bz;
+                if (F.length)
+                    feldZiel(v, grobIdx[bt * 3] * 3, grobIdx[bt * 3 + 1] * 3, grobIdx[bt * 3 + 2] * 3, 1 - bu - bv, bu, bv);
             }
         }
-        return out;
+        return { ziel: out, felder: F };
     }
 
     // DIE HIMMELS-SICHT EINES BODEN-NETZES (K02a, Auge 11 bei 762/−138; K17-2 aus dem Stamm in den Kern — der voxel-worker

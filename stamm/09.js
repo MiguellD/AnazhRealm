@@ -62,7 +62,7 @@ class AnazhRealm_Z09 {
 
     // DAS ZIEL DER GRÖBEREN STUFE im Sync-Bau (Spiegel von `stufeZielNetz` im voxel-worker): das Netz der Stufe `grobLod` um
     // den Chunk-Ursprung mit einer Zelle Polster vor der Kante, die Ziele über das EINE Gesetz (gelaende-core `stufeZiel`)
-    _stufeZielNetz(fein, cx, cz, grobLod) {
+    _stufeZielNetz(fein, feinNormal, feinFarbe, cx, cz, grobLod) {
         const g = this._voxelChunkConfig(grobLod);
         const gs = g.step;
         const ox = cx * g.span - 2 * gs;
@@ -70,13 +70,19 @@ class AnazhRealm_Z09 {
         const oy = (this.state.terrainBaseHeight || 0) - g.floorDrop;
         const gd = g.dim + 4;
         const dichte = this._voxelEditedDensityGrid(`${cx},${cz},${grobLod},ziel`, ox, oy, oz, gd, g.dimY, gd, gs);
-        const sv = this._voxelExtractSurfaceVertices(dichte, ox, oy, oz, gd, g.dimY, gd, gs);
+        const hoehle = this._voxelHoehlenGraph(dichte, ox, oy, oz, gd, g.dimY, gd, gs);
+        const geo = this._voxelChunkGeometry(ox, oy, oz, gd, g.dimY, gd, gs, undefined, 1, dichte, 1, hoehle);
         const G = globalThis.__gelaendeCore;
-        if (sv.positions.length === 0) return G.stufeZiel(fein, new Float32Array(0), new Uint32Array(0), gs);
-        const idx = this._voxelEmitQuadIndices(dichte, sv.cellVert, gd, g.dimY, gd, null, null);
-        this._voxelLaplacianSmoothPositions(sv.positions, idx, 1, sv.sharp);
-        this._voxelCropPad(sv.positions, idx, sv.vertCells, gd, gd, 1, null);
-        return G.stufeZiel(fein, new Float32Array(sv.positions), new Uint32Array(idx), gs);
+        const leer = new Float32Array(0);
+        if (!geo) return G.stufeZiel(fein, leer, new Uint32Array(0), gs, [{ fein: feinNormal, grob: leer, einheit: true }, { fein: feinFarbe, grob: leer }]);
+        this._attachVoxelFieldColors(geo);
+        const A = geo.attributes;
+        const ziel = G.stufeZiel(fein, A.position.array, geo.index.array, gs, [
+            { fein: feinNormal, grob: A.normal.array, einheit: true },
+            { fein: feinFarbe, grob: A.color.array },
+        ]);
+        geo.dispose();
+        return ziel;
     }
 
     // Inline-Kollision beim Stream (`buildBVH`)? Entscheidet die Chebyshev-Distanz r zum Spieler-Chunk.

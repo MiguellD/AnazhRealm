@@ -53,6 +53,9 @@
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 
+// (o) die Schwelle des Stufen-Sprungs: ein Wechsel darf die gezeichnete Fläche höchstens so weit versetzen (m)
+const STUFEN_SPRUNG_M = 0.1;
+
 // Das Urteil über einen Zensus: Liste der Verstöße (leer = grün). Rein, im Selbsttest wie im Lauf.
 function urteil(z) {
     const v = [];
@@ -805,7 +808,15 @@ function check(name, ok, detail) {
                         // gepackt (K44): der Chunk trägt sein Float32-Array, der Satz genau dessen Packung (`_satzPacke`)
                         if (src.length !== b.vAnzahl * fa.is || src.buffer === dst.buffer || is !== 4) return false;
                         const soll = new dst.constructor(b.vAnzahl * 4);
-                        r.constructor._satzPacke(fa.form, src, fa.is, soll, 0, b.vAnzahl);
+                        r.constructor._satzPacke(
+                            fa.form,
+                            src,
+                            fa.is,
+                            soll,
+                            0,
+                            b.vAnzahl,
+                            fa.w ? g.attributes[fa.w].array : undefined
+                        );
                         for (let i = 0; i < soll.length; i += 97) if (soll[i] !== dst[b.vStart * 4 + i]) return false;
                         continue;
                     }
@@ -1229,6 +1240,99 @@ function check(name, ok, detail) {
             res.wurfAlt = wurfProbe(false);
             return res;
         });
+        // (o) DER STUFEN-SPRUNG (K51-2): das Auge geht in 2-m-Schritten; je Schritt jeder Chunk, der die Stufe wechselt — seine
+        // gezeichnete Fläche (Lage + (Ziel − Lage) · `_morphFaktor`, die Boden-Karte des Stoffs) vor dem Wechsel gegen die des
+        // neuen Netzes am selben Auge, auf einem 2-m-Raster im Chunk. Selbsttest: derselbe Gang zurück ohne das Stufen-Gewicht
+        // (die Ring-Kette K51 morphte nur die Naht) springt.
+        out.sprung = await page.evaluate(async () => {
+            const r = window.anazhRealm;
+            const s = r.state;
+            const S = r._voxelChunkConfig(0).span;
+            const sleep = (ms) => new Promise((o) => setTimeout(o, ms));
+            const karte = (e, key) => {
+                const g = e.mesh.geometry;
+                const P = g.attributes.position.array,
+                    Z = g.attributes.aMorphTarget.array,
+                    W = g.attributes.aMorphWeight.array;
+                const L = new Float32Array(P.length);
+                for (let v = 0; v < W.length; v++) {
+                    const f = r._morphFaktor(W[v], P[v * 3], P[v * 3 + 2]);
+                    for (let k = 0; k < 3; k++) L[v * 3 + k] = P[v * 3 + k] + (Z[v * 3 + k] - P[v * 3 + k]) * f;
+                }
+                const [cx, cz] = key.split(",").map(Number);
+                const k = r._bodenKarteAusMesh(L, g.index ? g.index.array : null, null, cx, cz, e.lod || 0);
+                return { lod: e.lod || 0, surfMap: k && k.hoehe, cx, cz };
+            };
+            const proben = (K) => {
+                const o = [];
+                for (let z = 1; z < S; z += 2)
+                    for (let x = 1; x < S; x += 2) {
+                        const v = K.surfMap ? r._bodenKarteBilinear(K, K.cx, K.cz, K.cx * S + x, K.cz * S + z) : null;
+                        o.push(v ? v.y : NaN);
+                    }
+                return o;
+            };
+            const gang = async (dx, n, ohne) => {
+                const sprung = [];
+                let offen = 0;
+                if (ohne) r._stufeGewicht = () => 0;
+                try {
+                    const p = { x: s.stufeAuge.x, y: 0, z: s.stufeAuge.z };
+                    for (let i = 0; i < n; i++) {
+                        p.x += dx;
+                        r._stufeAugeTakt(p);
+                        const vor = new Map();
+                        for (const [key, e] of s.voxelChunks) {
+                            if (!e || e.empty || !e.mesh) continue;
+                            const [cx, cz] = key.split(",").map(Number);
+                            const soll = r._voxelChunkLodFor(cx, cz, p.x, p.z, e.lod || 0);
+                            if (soll !== (e.lod || 0)) vor.set(key, { soll, K: karte(e, key) });
+                        }
+                        const t0 = performance.now();
+                        while (performance.now() - t0 < 20000) {
+                            r._tickVoxelChunkStreaming(p);
+                            await sleep(15);
+                            let fertig = true;
+                            for (const [key, v] of vor) {
+                                const e = s.voxelChunks.get(key);
+                                if (!e || (e.lod || 0) !== v.soll) fertig = false;
+                            }
+                            if (fertig) break;
+                        }
+                        for (const [key, v] of vor) {
+                            const e = s.voxelChunks.get(key);
+                            if (!e || !e.mesh || (e.lod || 0) !== v.soll) {
+                                offen++;
+                                continue;
+                            }
+                            const a = proben(v.K),
+                                b = proben(karte(e, key));
+                            const ds = [];
+                            for (let q = 0; q < a.length; q++) if (a[q] === a[q] && b[q] === b[q]) ds.push(Math.abs(a[q] - b[q]));
+                            ds.sort((x, y) => x - y);
+                            if (!ds.length) continue;
+                            sprung.push({
+                                key,
+                                von: v.K.lod,
+                                zu: v.soll,
+                                schritt: i,
+                                max: +ds[ds.length - 1].toFixed(3),
+                                p95: +ds[Math.floor(0.95 * ds.length)].toFixed(3),
+                                n: ds.length,
+                            });
+                        }
+                    }
+                } finally {
+                    delete r._stufeGewicht;
+                }
+                sprung.sort((a, b) => b.max - a.max);
+                const p95 = sprung.map((x) => x.p95).sort((a, b) => b - a);
+                return { wechsel: sprung.length, offen, max: sprung.length ? sprung[0].max : 0, p95: p95[0] || 0, top: sprung.slice(0, 3) };
+            };
+            const mit = await gang(2, 30, false);
+            const ohne = await gang(-2, 30, true);
+            return { mit, ohne };
+        });
     } catch (e) {
         out = { error: (e && e.message) || String(e) };
     }
@@ -1272,6 +1376,22 @@ function check(name, ok, detail) {
         `${zs.chunks.length} Chunks (${jenseits} jenseits) · je Stufe ${JSON.stringify(zs.jeStufe)} · Naht ${zs.naht} ` +
             `Dreiecke (${zs.bruecken} Brücken)` +
             (vn.length ? " — " + vn.join(" · ") : "")
+    );
+    // (o) DER STUFEN-SPRUNG (K51-2): der Wechsel geschieht deckungsgleich — höchstens STUFEN_SPRUNG_M zwischen der Fläche vor und
+    // nach dem Wechsel (Befund 14.10. mit der Ring-Kette: ein Wechsel L1 → L0 sprang an der Mess-Wiese sichtbar, p99,9 der
+    // Luma-Änderung 17 gegen 5 im Rauschen); der Selbsttest ohne das Stufen-Gewicht MUSS darüber liegen
+    const SP = out.sprung || {};
+    const fmt = (g) =>
+        g ? `${g.wechsel} Wechsel (${g.offen} offen) · max ${g.max} m · p95 ${g.p95} m · ${JSON.stringify(g.top)}` : "keine Messung";
+    check(
+        `(o) STUFEN-SPRUNG — jeder Wechsel deckungsgleich (max ≤ ${STUFEN_SPRUNG_M} m zwischen alter und neuer Fläche)`,
+        !!SP.mit && SP.mit.wechsel >= 3 && SP.mit.offen === 0 && SP.mit.max <= STUFEN_SPRUNG_M,
+        fmt(SP.mit)
+    );
+    check(
+        "(o) Selbsttest: derselbe Gang ohne das Stufen-Gewicht (nur der Naht-Morph, die Kette K51) springt — die Wand nennt ihn",
+        !!SP.ohne && SP.ohne.wechsel >= 3 && SP.ohne.max > STUFEN_SPRUNG_M,
+        fmt(SP.ohne)
     );
     check("(a) der Boden lebt im Satz (Ring trägt Chunks)", out.satzDa && out.chunks > 20, `${out.chunks} Chunks`);
     check(
