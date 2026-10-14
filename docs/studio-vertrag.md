@@ -940,7 +940,9 @@ des Felsens `FELS` mit seiner Saat `FELS_SAAT` — `felsStoff` (der Welt-Boden j
 `felsBasis`, `felsFarbe`, `felsKruemmung`, `felsLage`, `felsMittel`/`felsMittelWerte` (die Ferne), `felsFein` (der
 Detail-Term des Shaders) mit seiner Welle `felsWelle` (K17-3: der Shader liest sie EINMAL im Rausch-Atlas und reicht sie
 in die Fels-Funktion), `felsZahl` (das Rechenwerk des Gesetzes, mit `falte` und `fest`), `felsBankung` (die Messung der Bänke), der Schutt
-`schuttKorn`/`schuttMittel`, die Himmels-Sicht der Höhle `HIMMELS_SICHT`/`himmelsSicht` und DAS RAUSCH-GESETZ `RAUSCH` mit
+`schuttKorn`/`schuttMittel`, die Himmels-Sicht der Höhle `HIMMELS_SICHT`/`himmelsSicht`, das Ziel der gröberen Stufe
+`STUFE_ZIEL`/`stufeZiel` (K51-2, der Geomorph der Boden-Stufen: je Vertex Lage, Normale und Stoff-Farbe auf dem Netz der nächst
+gröberen Stufe — Worker und Sync-Bau rufen dieselbe Funktion) und DAS RAUSCH-GESETZ `RAUSCH` mit
 `rauschGitter`/`rauschRaum` (das EINE Gradienten-Rauschen des Boden-Shaders).
 DIE LINSE (K16, K16b): `statistik` mit ihren Schwellen `LINSE`, `hangBaender` mit den Bändern `HANG_BAENDER`, die Bahnen
 der Flachland-Glieder `maeanderZahl`, die Messung `MESSUNG` (das Mess-Raster, der Makro-Abdruck, der Schicht-Ort) mit

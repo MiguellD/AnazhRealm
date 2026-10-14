@@ -592,7 +592,13 @@ class AnazhRealm_Z21 {
         if (!entry) return false;
         const idx = this.state.architectures.indexOf(entry);
         if (idx < 0) return false;
-        if (this._grundrissVon(entry)) this._grundrissGitter = null; // der Grundriss eines Baus fällt mit ihm
+        // der Grundriss eines Baus fällt mit ihm — am Ort (`_grundrissFaellt`)
+        const fp = this._grundrissVon(entry);
+        if (fp) {
+            const p = entry.position;
+            const r = fp.lichtung || Math.hypot(fp.ex, fp.ez) + Math.hypot(fp.ox, fp.oz) + 2;
+            this._grundrissFaellt(p.x - r, p.z - r, p.x + r, p.z + r);
+        }
         this._archZiegelTod(entry); // die Ziegel-Fernstufe stirbt mit dem Eintrag
         // Blocker-Index beim Remove pflegen (früher Out ohne solide Parts via entry.blockerAABBs); vorher
         // merken, ob es ein Blocker war — danach dirty markieren (das Wasser bekommt den Pfad zurück).
