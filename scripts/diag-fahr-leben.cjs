@@ -777,6 +777,7 @@ async function probeLeben(expected) {
             if (l > -6 && l < w.len && Math.abs(dx * w.uz - dz * w.ux) < w.quer) {
                 r.removeArchitecture(e);
                 w.n++;
+                (w.typen || (w.typen = [])).push(e.type + "@" + l.toFixed(1));
             }
         }
     };
@@ -907,6 +908,28 @@ async function probeLeben(expected) {
         aufraeumen();
         return res;
     }
+    // DIE ANKUNFT (K55-2): eine Station an einem neuen Ort misst erst, wenn die Welt um den Spieler steht — der Ring der Chunks
+    // ändert sich 80 Frames lang nicht, kein Bau wartet (höchstens 3000 Frames). Die Orte der Stationen kommen aus der Welt und
+    // liegen Hunderte Meter auseinander (die Mess-Wiese, das Dorf, die Mitte der Welt): ohne Ankunft fuhr L1 an einen
+    // Glutbrunnen ohne Kontakt, L6 setzte den Spieler 1,68 m in den Wagen, und L8 maß, während die Welt um die Gasse streamte.
+    const ankommen = async (x, zz) => {
+        st.playerMesh.position.set(x, hh(x, zz) + 2, zz);
+        if (st.playerVel) st.playerVel.setValue(0, 0, 0);
+        st._fieldVy = 0;
+        let stabil = 0;
+        let zuletzt = -1;
+        for (let i = 0; i < 3000; i++) {
+            frame(i);
+            const n = st.voxelChunks ? st.voxelChunks.size : 0;
+            if (n === zuletzt) stabil++;
+            else {
+                stabil = 0;
+                zuletzt = n;
+            }
+            if (i > 60 && stabil > 80 && !(st.voxelMeshPending && st.voxelMeshPending.size > 0)) break;
+            if (i % 10 === 0) await new Promise((ok) => setTimeout(ok, 0));
+        }
+    };
     // Ein Werk setzen, aufsitzen, einschwingen. `fahrt` = Fahrt-Richtung (sin, cos); ein Studio-Fahrzeug liegt längs x.
     const setzen = async (typ, x, zz, fahrt, vorAufsitzen) => {
         st.playerMesh.position.set(x, hh(x, zz) + 1.2, zz);
@@ -1023,26 +1046,20 @@ async function probeLeben(expected) {
             };
         }
         if (gt) weg(gt);
-        // (2) Am Hang ohne Taste: der GT steht bergauf (der Befund: rollte zurück und drehte sich 84°).
-        let hang = null;
-        for (let dx = -48; dx <= 48 && !hang; dx += 6)
-            for (let dz = -48; dz <= 48 && !hang; dz += 6) {
-                const x = mo[0] + dx;
-                const zz = mo[1] + dz;
-                const gx = (hh(x + 3, zz) - hh(x - 3, zz)) / 6;
-                const gz = (hh(x, zz + 3) - hh(x, zz - 3)) / 6;
-                const g = Math.hypot(gx, gz);
-                if (!(g >= 0.2 && g <= 0.45) || nass(x, zz)) continue;
-                // gleichmäßig: dieselbe Steigung 6 m bergab
-                const ux = gx / g;
-                const uz = gz / g;
-                const g2 = Math.hypot(
-                    (hh(x - ux * 6 + 3, zz - uz * 6) - hh(x - ux * 6 - 3, zz - uz * 6)) / 6,
-                    (hh(x - ux * 6, zz - uz * 6 + 3) - hh(x - ux * 6, zz - uz * 6 - 3)) / 6
-                );
-                if (!(g2 >= 0.15)) continue;
-                hang = { x, z: zz, g, fahrt: Math.atan2(ux, uz) };
-            }
+        // (2) Am Hang ohne Taste: der GT steht bergauf (der Befund: rollte zurück und drehte sich 84°). Der Hang kommt aus der
+        // Welt (welt-orte `hang`, K55-2 — bis dahin ±48 m um die Mess-Wiese, die flache Aue trug keinen): das Gefälle über ±3 m
+        // 0,2–0,45 (11,3–24,2°), gleichmäßig — 6 m talwärts noch ≥ 0,15 (8,5°) —, trocken.
+        const grad = (t) => (Math.atan(t) * 180) / Math.PI;
+        const hangOrt = window.__weltOrt("hang", {
+            min: grad(0.2),
+            max: grad(0.45),
+            basis: 3,
+            bergab: [6, grad(0.15)],
+            rMax: 800,
+        });
+        const hang = hangOrt
+            ? { x: hangOrt.x, z: hangOrt.z, g: Math.tan((hangOrt.neigung * Math.PI) / 180), fahrt: hangOrt.gier }
+            : null;
         res.hang = hang;
         if (hang) {
             const gh = await setzen("fahrzeug_gt", hang.x, hang.z, hang.fahrt);
@@ -1277,39 +1294,15 @@ async function probeLeben(expected) {
             S.labor = { schritte: spur.length, maxM, bei, maxY, kontakte, weg: Math.hypot(q.x - z0.x, q.z - z0.z) };
         }
         if (g1) weg(g1);
-        // S2 KLIPPE: Anlauf 24 m trocken und flach (≤ 15 %), dann fällt der Grund 3–14 m (der Befund fand 8,5 m) — und zwar an
-        // einer KANTE: die schärfste im Fenster ± 160 m um den Messort (der größte Fall in den ersten 3 m, mindestens 1,5 m),
-        // nie die erste. Die billigen Proben (Kante, Fall) zuerst, der Anlauf danach. Die Station bleibt an der Wiese: eine Reise
-        // zum Schicht-Ort vor L8 streamt die Welt neu (L1, L2 und L8 fielen, Lauf 13.10.).
-        let kl = null;
-        let klKante = 1.5;
-        const kanteSuche = (cx, cz, R) => {
-            for (let dx = -R; dx <= R; dx += 8)
-                for (let dz = -R; dz <= R; dz += 8)
-                    for (let k = 0; k < 8; k++) {
-                        const x = cx + dx;
-                        const zz = cz + dz;
-                        const ux = Math.sin((k * Math.PI) / 4);
-                        const uz = Math.cos((k * Math.PI) / 4);
-                        const h0 = hh(x, zz);
-                        if (!Number.isFinite(h0)) continue;
-                        const kante = h0 - hh(x + ux * 3, zz + uz * 3);
-                        if (!(kante > klKante)) continue;
-                        const fall = h0 - hh(x + ux * 6, zz + uz * 6);
-                        if (!(fall >= 3 && fall <= 14) || nass(x + ux * 6, zz + uz * 6)) continue;
-                        let gut = true;
-                        for (let s = 2; s <= 24 && gut; s += 2) {
-                            const a = hh(x - ux * s, zz - uz * s);
-                            const b = hh(x - ux * (s - 2), zz - uz * (s - 2));
-                            if (!Number.isFinite(a) || Math.abs(a - b) > 0.3 || nass(x - ux * s, zz - uz * s))
-                                gut = false;
-                        }
-                        if (!gut) continue;
-                        klKante = kante;
-                        kl = { x, z: zz, fall, kante, fahrt: Math.atan2(ux, uz), sx: x - ux * 24, sz: zz - uz * 24 };
-                    }
-        };
-        kanteSuche(mo[0], mo[1], 160);
+        // S2 KLIPPE: Anlauf 24 m trocken und eben (≤ 0,3 m je 2 m), dann fällt der Grund binnen 6 m um 3–14 m (der Befund fand
+        // 8,5 m) — an einer KANTE: binnen 3 m mehr als 3 m, binnen 6 m 6–14 m Fall (an einer Kante von 2,15 m auf 3 m flog der
+        // Wagen in S4 nie, an 3,13 m mit 3–4 m Fall zwei Takte 0,05 m hoch). Das Kliff kommt aus der Welt (welt-orte `kante`, K55-2 — bis
+        // dahin die schärfste Kante ± 160 m um die Mess-Wiese; die flache Aue trug keine): die nächste Stelle um die Mitte der
+        // Welt, dort die schärfste der 8 Richtungen.
+        const kOrt = window.__weltOrt("kante", { kanteMin: 3, fall: [6, 14], schritt: 4, rMax: 1600 });
+        const kl = kOrt
+            ? { x: kOrt.x, z: kOrt.z, fall: kOrt.fall, kante: kOrt.kante, fahrt: kOrt.gier, sx: kOrt.sx, sz: kOrt.sz }
+            : null;
         S.klippeOrt = kl;
         // DIE BAHN IST FREI (Fixture der Klippen-Stationen): der gesetzte Wagen stößt beim Spawn einen Remesh seines Chunks an,
         // und die Welt streut dort neu ein (Spawn-Affinität — im Lauf vom 07.10. standen drei Felsbögen und ein Glutbrunnen
@@ -1397,7 +1390,12 @@ async function probeLeben(expected) {
                     }
                     if (g4._fahr && g4._fahr.luft && hoehe >= expected.flugM) break;
                 }
-                const diag4 = `Flug ${luftN} Takte, höchstens ${hoeheMax.toFixed(2)} m über dem Grund, Kante ${kl.kante.toFixed(2)} m auf 3 m`;
+                const weg4 = (g4.position.x - kl.sx) * Math.sin(kl.fahrt) + (g4.position.z - kl.sz) * Math.cos(kl.fahrt);
+                const diag4 =
+                    `Flug ${luftN} Takte, höchstens ${hoeheMax.toFixed(2)} m über dem Grund, Kante ${kl.kante.toFixed(2)} m auf 3 m` +
+                    ` · ${weg4.toFixed(1)} m längs der Bahn in ${gefahren} Frames (Kante bei ` +
+                    `${Math.hypot(kl.x - kl.sx, kl.z - kl.sz).toFixed(1)} m)` +
+                    (bahnWache.typen ? ` · die Wache räumte ${bahnWache.typen.join(", ")}` : "");
                 tasten(false);
                 const imFlug = !!(g4._fahr && g4._fahr.luft);
                 r.dismountArchitecture();
@@ -1430,53 +1428,12 @@ async function probeLeben(expected) {
             }
             bahnWache = null;
         }
-        // S3 QUERHANG: 25–40° quer, die Höhenlinie 16 m gerade (Richtung ±20°), trocken; Fahrt längs der Linie, W.
-        let qh = null;
-        for (let dx = -160; dx <= 160 && !qh; dx += 4)
-            for (let dz = -160; dz <= 160 && !qh; dz += 4) {
-                const x = mo[0] + dx;
-                const zz = mo[1] + dz;
-                const grad = (a, b) => [(hh(a + 1, b) - hh(a - 1, b)) / 2, (hh(a, b + 1) - hh(a, b - 1)) / 2];
-                const [gx, gz] = grad(x, zz);
-                const g = Math.hypot(gx, gz);
-                if (!(g >= Math.tan(0.44) && g <= Math.tan(0.7)) || nass(x, zz)) continue;
-                const cx = -gz / g;
-                const cz = gx / g;
-                let gut = true;
-                for (let s = -8; s <= 8 && gut; s += 2) {
-                    const [ax, az] = grad(x + cx * s, zz + cz * s);
-                    const ag = Math.hypot(ax, az);
-                    if (
-                        !(ag >= 0.3) ||
-                        (ax * gx + az * gz) / (ag * g) < Math.cos(0.35) ||
-                        nass(x + cx * s, zz + cz * s)
-                    )
-                        gut = false;
-                }
-                if (!gut) continue;
-                // Die Fahrt-Linie ist frei von Bauten und Stämmen (wie die Gasse von H): seit die Stamm-Hülle eines Studio-Baums
-                // im Weltmaß steht (Leben-Schau 07.10., Kollision == Optik), hält ein Stamm den Wagen — in der CI nach 3,2 m.
-                const sx0 = x - cx * 8;
-                const sz0 = zz - cz * 8;
-                let blockiert = false;
-                for (const e of st.architectures) {
-                    if (blockiert) break;
-                    if (!e || !e.position || !e.blockerAABBs) continue;
-                    if (Math.hypot(e.position.x - x, e.position.z - zz) > 40) continue;
-                    for (const b of e.blockerAABBs) {
-                        const bx = (b.minX + b.maxX) / 2 - sx0;
-                        const bz = (b.minZ + b.maxZ) / 2 - sz0;
-                        const l = bx * cx + bz * cz;
-                        const q = Math.abs(bx * cz - bz * cx);
-                        if (l > -4 && l < 22 && q < 3 + Math.max(b.maxX - b.minX, b.maxZ - b.minZ) / 2) {
-                            blockiert = true;
-                            break;
-                        }
-                    }
-                }
-                if (blockiert) continue;
-                qh = { x: x - cx * 8, z: zz - cz * 8, grad: (Math.atan(g) * 180) / Math.PI, fahrt: Math.atan2(cx, cz) };
-            }
+        // S3 QUERHANG: 25–40° quer, die Höhenlinie 16 m gerade (Richtung ±20°), trocken; Fahrt längs der Linie, W. Der Querhang
+        // kommt aus der Welt (welt-orte `querhang`, K55-2 — bis dahin ± 160 m um die Mess-Wiese, die flache Aue trug keinen):
+        // die Fahrt-Linie ist frei von Bauten und Stämmen (wie die Gasse von H) — seit die Stamm-Hülle eines Studio-Baums im
+        // Weltmaß steht (Leben-Schau 07.10., Kollision == Optik), hält ein Stamm den Wagen (in der CI nach 3,2 m).
+        const qOrt = window.__weltOrt("querhang", { schritt: 4, rMax: 1600 });
+        const qh = qOrt ? { x: qOrt.sx, z: qOrt.sz, grad: qOrt.neigung, fahrt: qOrt.gier } : null;
         S.querOrt = qh;
         if (qh) {
             bahnWache = { sx: qh.x, sz: qh.z, ux: Math.sin(qh.fahrt), uz: Math.cos(qh.fahrt), len: 24, quer: 4, n: 0 };
@@ -1984,8 +1941,7 @@ async function probeLeben(expected) {
         // (spec/profiband/haushalt.json `dorf`, `expected.dorf`), nimmt den nächsten Glutbrunnen des Bestands und fährt ihn mit dem
         // Tempo und der Gier der Schau an (Start 5,6 m, Spieler 3,1 m vor ihm längs der Gier). Kein Glutbrunnen → vakuös, laut.
         const D = expected.dorf;
-        st.playerMesh.position.set(D.x, hh(D.x, D.z) + 2, D.z);
-        for (let i = 0; i < 240; i++) frame(i);
+        await ankommen(D.x, D.z);
         let G = null;
         for (const e of st.architectures)
             if (e && e.position && /glutbrunnen/.test(e.blueprintName || e.name || e.type || ""))
@@ -2237,6 +2193,7 @@ async function probeLeben(expected) {
         // stehenden Spieler zu — der Spieler bekommt seinen Impuls, der Wagen schiebt ihn nicht durch.
         if (gasse) {
             if (st.player && st.player.mountedArch != null) r.dismountArchitecture();
+            await ankommen(gasse.x, gasse.z);
             const ux = Math.sin(gasse.fahrt);
             const uz = Math.cos(gasse.fahrt);
             const gt = async (x, zz, rotY) => {
@@ -2382,6 +2339,7 @@ async function probeLeben(expected) {
         // 60 fps und bei gemischten Frames — sie muss gleich sein (der Stoß des Leibs lebt im festen Schritt).
         if (start && gasse) {
             if (st.player && st.player.mountedArch != null) r.dismountArchitecture();
+            await ankommen(start.x, start.z);
             const A = Object.getPrototypeOf(r).constructor;
             const steuerRoh = A._steuerGesetz;
             const steht = Object.create(steuerRoh.call(A));

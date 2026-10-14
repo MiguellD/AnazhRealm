@@ -3303,7 +3303,7 @@ function scanHuellenFormWand(dateien) {
 // Gelesen wird der Code ohne Kommentare; rot mit Datei:Zeile.
 // DIE KLASSE, nicht der Aufruf (Prüfung K16 Runde 2): der Ort reist selten als Literal IM Aufruf — er steht als Orts-
 // Tabelle (`{ id: "ufer", x: -872, z: -1127 }`, kamera-laub), als Versatz-Liste (`[[-50, 60], [30, 0]]` um den Start,
-// kampf-gefuehl), als Messort-Konstante (`const MESS = { x: -900, z: -850 }`, `o.mess || [-900, -850]`) und wird erst Zeilen
+// kampf-gefuehl), als Messort-Konstante (`const MESS = { x: -640, z: -410 }`, `o.mess || [-640, -410]`) und wird erst Zeilen
 // später gesetzt. In einer Setz-Probe (die Datei setzt Spieler, Kamera oder Tier: `.position.set(`, `.position.x =`,
 // `spawnCreatureAt(`) ist darum JEDES Orts-Paar aus Zahlen-Literalen rot — ein Objekt mit x und z, ein Paar als Wert,
 // Vorgabe oder Glied einer Liste —, sobald es weiter als `ORT_NAH_M` vom Ursprung seines Bezugs zeigt (darunter liegt die
@@ -3363,14 +3363,37 @@ function ortsName(code, i) {
     const m = /([A-Za-z_$][\w$]*)\s*[:=]\s*(?:\w+\s*\?\s*)?$/.exec(code.slice(Math.max(0, j - 80), j));
     return m ? m[1] : "";
 }
+// DIE ABSCHRIFT DES MESSORTS (K55): der Platz eines Band-Orts ohne Anker und ohne eigene Welt (die Mess-Wiese, das Dorf) steht
+// NUR im Haushalt (spec/profiband/haushalt.json, gelesen über scripts/lib/welt-orte.cjs `messort`) — und ein gefallener Platz
+// nirgends mehr. Zwei Zahlen-Literale, die ihn nennen (x, dann z binnen 60 Zeichen, Code ohne Kommentare), sind eine Abschrift,
+// gleich in welcher Form und ob die Datei setzt: `stelle(x, z)`, `umstellen(x, z)`, `const X = x, Z = z`, die Blick-Tabelle einer
+// Linse. Bis K55 trugen 14 Proben die Mess-Wiese −900/−850 als Zahlen; K16 hob den Boden dort in einen Nadelwald-Hang.
+const MESSORT_GEFALLEN = [[-900, -850]]; // die Mess-Wiese bis K55
+function messortPaare() {
+    const h = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "spec", "profiband", "haushalt.json"), "utf8"));
+    return h.messorte
+        .filter((o) => !o.anker && !o.bank && Array.isArray(o.spieler))
+        .map((o) => o.spieler)
+        .concat(MESSORT_GEFALLEN);
+}
+const zahlRe = (v) => String.raw`(?<![\w.])` + String(v).replace(/[.]/g, String.raw`\.`) + String.raw`(?![\d.])`;
 function scanOrtsWand(dateien) {
     const errs = [];
+    const abschrift = messortPaare().map((p) => ({ p, re: new RegExp(zahlRe(p[0]) + String.raw`[\s\S]{0,60}?` + zahlRe(p[1]), "g") }));
     for (const [name, src] of dateien) {
         if (name === "scripts/diag-altlasten.cjs") continue; // die Wand selbst trägt ihre Selbsttest-Sätze als Text
         const code = stripComments(src);
         const roh = src.split("\n");
         const zeilen = code.split("\n");
         const buehne = (zeile) => /\/\/\s*BÜHNE:\s*\S/.test(roh.slice(Math.max(0, zeile - 3), zeile).join("\n"));
+        for (const { p, re } of abschrift)
+            for (const m of code.matchAll(re)) {
+                const zeile = code.slice(0, m.index).split("\n").length;
+                if (buehne(zeile)) continue;
+                errs.push(
+                    `Orts-Wand: ${name}:${zeile} Abschrift des Messorts ${p.join("/")} (${m[0].replace(/\s+/g, " ").slice(0, 60)}) — der Ort kommt aus spec/profiband/haushalt.json (scripts/lib/welt-orte.cjs messort), oder die Zeile trägt // BÜHNE: <Grund>`
+                );
+            }
         for (const re of ORTS_MUSTER)
             for (const m of code.matchAll(re)) {
                 const zeile = code.slice(0, m.index).split("\n").length;
@@ -3746,16 +3769,36 @@ function main() {
             ["scripts/p.cjs", 'r.spawnCreatureAt(80, r.getTerrainHeightAt(80, 80) + 1, -80, "calm");\n'],
             ["scripts/t.cjs", 'const ORTE = [\n    { id: "ufer", x: -872, z: -1127 },\n];\n' + SETZT],
             ["scripts/v.cjs", "const ortR = [\n    [-14, 14],\n    [70, 0],\n].find(eben);\n" + SETZT],
-            ["scripts/m.cjs", "const MESS = { x: -900, z: -850 };\n" + SETZT],
-            ["scripts/d.cjs", "const [MX, MZ] = o.mess || [-900, -850];\n" + SETZT],
+            ["scripts/m.cjs", "const MESS = { x: -640, z: -410 };\n" + SETZT],
+            ["scripts/d.cjs", "const [MX, MZ] = o.mess || [-640, -410];\n" + SETZT],
         ]);
         const ortsStill = scanOrtsWand([
             ["scripts/q.cjs", "// BÜHNE: eigene Szene\npm.position.set(512, 40, -300);\n"],
             ["scripts/u.cjs", "const O = r.__ebeneStelle();\npm.position.set(O.x, O.y, O.z);\n"],
             ["scripts/k.cjs", "const BAND = { ufer: [60, 900], SEEDS: [7, 12345] };\n" + SETZT],
             ["scripts/b.cjs", 'r.spawnArchitecture("haus", { x: 400, y: 0, z: 400 });\n' + SETZT],
-            ["scripts/w.cjs", "const MESS = { x: -900, z: -850 };\n"],
+            ["scripts/w.cjs", "const MESS = { x: -640, z: -410 };\n"],
         ]);
+        // DIE ABSCHRIFT DES MESSORTS (K55): der Platz der Mess-Wiese aus dem Haushalt und der gefallene Platz, je als Aufruf und
+        // als Konstanten-Paar über zwei Zeilen — rot, auch ohne Setzen; derselbe Platz um 1 m versetzt und hinter BÜHNE still.
+        const MW = messortPaare()[0];
+        const MG = MESSORT_GEFALLEN[0];
+        const abschriftRot = scanOrtsWand([
+            ["scripts/a.cjs", `umstellen(${MW[0]}, ${MW[1]});\n`],
+            ["scripts/g.cjs", `const X = ${MG[0]},\n    Z = ${MG[1]};\n`],
+        ]);
+        const abschriftStill = scanOrtsWand([
+            ["scripts/e.cjs", `umstellen(${MW[0] + 1}, ${MW[1]});\n`],
+            ["scripts/f.cjs", `// BÜHNE: der gefallene Ort als Probe\nstelle(${MG[0]}, ${MG[1]});\n`],
+        ]);
+        if (
+            abschriftRot.length !== 2 ||
+            !abschriftRot.every((x) => /Abschrift des Messorts/.test(x)) ||
+            abschriftStill.length !== 0
+        ) {
+            console.log("❌ SELBST-TEST: die Abschrift des Messorts feuert nicht", abschriftRot, abschriftStill);
+            process.exit(1);
+        }
         const ortsHeute = scanOrtsWand(gateDateien(root));
         const ortsFeuert =
             ortsRot.length === 6 &&

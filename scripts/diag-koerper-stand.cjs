@@ -42,6 +42,7 @@ const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
+const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
 
 const PORT = Number(process.env.KOERPER_STAND_PORT || 4479);
 const ROOT = path.resolve(__dirname, "..");
@@ -122,7 +123,11 @@ const server = statikServer({
 });
 
 // Die Proben laufen IN der Seite (r = die Welt). Kein Stub: jede Probe ruft die Chokepoints des Spiels.
-async function proben(mitWiese) {
+// DER UMFANG DER K7-PROBE (die EINE Quelle für Messung und Urteil): Büschel der Nah-Wiese und Pflanzen der Nah-Streu neben dem
+// Rand-Streifen — bei 1 000 Büscheln ist die Unschärfe des Verhältnisses ≈ 3 %
+const K7_UMFANG = Object.freeze({ bueschel: 1000, pflanzen: 100 });
+
+async function proben(mitWiese, umfang) {
     const r = window.anazhRealm;
     const s = r.state;
     const T = window.THREE;
@@ -863,14 +868,13 @@ async function proben(mitWiese) {
     s.playerVel = savedVel;
     // ── K7 WIESE UND STREU AM CHUNK-RAND (K21): Nah-Wiese und Nah-Streu lesen Fuß, Hang und Grün über den EINEN Leser
     // (`_bodenSichtAt`) — vorher nur die Karte des Eigners, im Rand-Streifen fiel kaum ein Büschel (ein Gitter kahler Linien in
-    // der Wiese, Dichte 0,11 gegen 1,31 je m²). An der Mess-Wiese (−900/−850, dicht) die Kacheln im Umkreis 120 m, deren Chunks
+    // der Wiese, Dichte 0,11 gegen 1,31 je m²). An der Mess-Wiese (der Messort des Haushalts, dicht) die Kacheln im Umkreis 120 m, deren Chunks
     // einer Stufe sind (der Nah-Ring liegt ganz in LOD 0, die Stufen-Kette K51 trägt L1 und L2 in den Umkreis; der Streifen ist
     // ein halber Schritt der Stufe): Büschel bzw. Pflanzen je m² im Streifen gegen die Chunk-Mitte daneben (0,9–2,7 m in L0:
     // dieselben Nähte, dieselben Felder — die ganze Mitte läge auf anderen Wiesen). Läuft im Lauf ohne Defekt und im Defekt
     // „wiese"; zuletzt, denn der Spieler zieht dafür um. ──
     if (mitWiese) {
-        const X = -900;
-        const Z = -850;
+        const [X, Z] = window.__messWiese;
         const setz = () => {
             pm.position.set(X, r.getTerrainHeightAt(X, Z) + 2, Z);
             s._fixedSimPos = null;
@@ -916,7 +920,7 @@ async function proben(mitWiese) {
                 }
             return stufe;
         };
-        const R = 120;
+        let R = 120;
         const zaehle = (K, rand, bau) => {
             const zahl = [0, 0, 0];
             const flaeche = [0, 0, 0];
@@ -949,12 +953,18 @@ async function proben(mitWiese) {
         };
         const NW = A.NAH_WIESE;
         const NS = A.NAH_STREU;
-        o.k7wiese = zaehle(NW.kachel, 0.34, (tx, tz) => r._nahWieseKachelBueschel(tx, tz));
         const arten = r._nahStreuArten();
-        o.k7streu = zaehle(NS.kachel, 0, (tx, tz) => {
-            const satz = r._nahStreuKachel(tx, tz, arten);
-            return satz ? satz.items : null;
-        });
+        // der Umkreis wächst in 20-m-Schritten (höchstens 240 m), bis die Probe ihren Umfang trägt (K55-2: an der Mess-Wiese
+        // −278/−1038 trug der Umkreis 120 m 866 Büschel und 70 Pflanzen neben dem Streifen, die Aue ist offener als der alte Hang)
+        for (R = 120; R <= 240; R += 20) {
+            o.k7wiese = zaehle(NW.kachel, 0.34, (tx, tz) => r._nahWieseKachelBueschel(tx, tz));
+            o.k7streu = zaehle(NS.kachel, 0, (tx, tz) => {
+                const satz = r._nahStreuKachel(tx, tz, arten);
+                return satz ? satz.items : null;
+            });
+            if (o.k7wiese.daneben >= umfang.bueschel && o.k7streu.daneben >= umfang.pflanzen) break;
+        }
+        o.k7umkreis = Math.min(R, 240);
     }
     return o;
 }
@@ -1030,8 +1040,8 @@ function urteil(o) {
                 `K7 ${name === "Büschel" ? "Wiese" : "Streu"} im Rand-Streifen: Dichte ${w.dichte[0]} gegen ${w.dichte[1]} je m² daneben (Verhältnis ${w.verh} ± ${w.sigma}, Soll 1 ± ${Math.round(toleranz(w) * 100)} %; ${w.streifen}/${w.daneben} in ${w.kacheln} Kacheln) — Täter: der Leser der Kachel (_nahWieseKachelBueschel/_nahStreuKachel) liest nicht _bodenSichtAt`
             );
     };
-    k7(o.k7wiese, "Büschel", 1000, () => 0.1);
-    k7(o.k7streu, "Pflanzen", 100, (w) => Math.max(0.1, 3 * w.sigma));
+    k7(o.k7wiese, "Büschel", K7_UMFANG.bueschel, () => 0.1);
+    k7(o.k7streu, "Pflanzen", K7_UMFANG.pflanzen, (w) => Math.max(0.1, 3 * w.sigma));
     return f;
 }
 
@@ -1050,7 +1060,7 @@ function zeile(o) {
             ? ` · Rand-Stelle ${o.rand.x.toFixed(2)}/${o.rand.z} Träger-Fehler ${o.rand.fehlerCm} cm`
             : "") +
         (o.k7wiese
-            ? ` · K7 Wiese Streifen/daneben ${v(o.k7wiese.verh)} ± ${v(o.k7wiese.sigma)} (${v(o.k7wiese.streifen)}/${v(o.k7wiese.daneben)} Büschel, ${v(o.k7wiese.dichte[0])}/${v(o.k7wiese.dichte[1])}/${v(o.k7wiese.dichte[2])} je m² Streifen/daneben/Mitte)`
+            ? ` · K7 Umkreis ${v(o.k7umkreis)} m · Wiese Streifen/daneben ${v(o.k7wiese.verh)} ± ${v(o.k7wiese.sigma)} (${v(o.k7wiese.streifen)}/${v(o.k7wiese.daneben)} Büschel, ${v(o.k7wiese.dichte[0])}/${v(o.k7wiese.dichte[1])}/${v(o.k7wiese.dichte[2])} je m² Streifen/daneben/Mitte)`
             : "") +
         (o.k7streu
             ? ` · K7 Streu ${v(o.k7streu.verh)} ± ${v(o.k7streu.sigma)} (${v(o.k7streu.streifen)}/${v(o.k7streu.daneben)} Pflanzen)`
@@ -1079,6 +1089,7 @@ function zeile(o) {
             await page.evaluateOnNewDocument(() => {
                 window.__anazhHeadlessNullRenderer = true;
             });
+            await page.evaluateOnNewDocument(WELT_ORTE_INSTALL); // der Messort aus spec/profiband/haushalt.json (`__messWiese`)
             await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "networkidle0", timeout: 180000 });
             await page.waitForFunction(
                 () => window.anazhRealm && typeof window.anazhRealm._gameLoopTick === "function",
@@ -1105,7 +1116,7 @@ function zeile(o) {
                     if (t % 10 === 0) await new Promise((res) => setTimeout(res, 0));
                 }
             });
-            const o = await page.evaluate(proben, inj == null || inj === "wiese");
+            const o = await page.evaluate(proben, inj == null || inj === "wiese", K7_UMFANG);
             await kontext.close();
             patch = null;
             return { o, errs, pf: patchFehler.slice() };

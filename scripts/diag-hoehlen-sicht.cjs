@@ -91,7 +91,7 @@ function urteil(b) {
     if (!mu || !(mu.km2 > 0)) v.push("LEER: (l) Mündungen: keine Suche über das Gesetz (die Wand prüfte nichts)");
     else if (!(mu.jeKm2 >= MUENDUNGEN_JE_KM2))
         v.push(
-            `KEINE MÜNDUNG: ${mu.anzahl} natürliche Mündungen in ${mu.km2} km² um die Mess-Wiese (${mu.jeKm2} je km², ` +
+            `KEINE MÜNDUNG: ${mu.anzahl} natürliche Mündungen in ${mu.km2} km² um die Mitte der Welt (${mu.jeKm2} je km², ` +
                 `mindestens ${MUENDUNGEN_JE_KM2}) — die Höhlen-Decke bricht an keiner Fels-Flanke durch (gelaende-core ` +
                 "`hoehlenMund`, Spalten-Kontext `ceilOffset`)"
         );
@@ -654,10 +654,12 @@ const path = require("path");
 const { installHoehlenStrahl } = require("./lib/hoehlen-strahl.cjs");
 
 const PORT = Number(process.env.HOEHLEN_SICHT_PORT) || 4504;
-// Die Mess-Wiese und das Quadrat der Mündungs-Suche (halbe Seite, m). Mündung, Höhlen-Raum und der Blick hinaus stehen
-// nicht als Zahl hier: die Suche liest sie aus dem Gesetz der Welt (K16 — die Orte der alten Welt waren Literale).
-const { messort } = require("./lib/welt-orte.cjs");
-const ORTE = { mess: messort("wiese"), mundHalb: 1000 };
+// Die Mess-Wiese (die Blicke wiese und hang), die Mitte der Welt und das Quadrat der Mündungs-Suche um sie (halbe Seite, m).
+// Mündung, Höhlen-Raum und der Blick hinaus stehen nicht als Zahl hier: die Suche liest sie aus dem Gesetz der Welt (K16 — die
+// Orte der alten Welt waren Literale; K55-2 — bis dahin lag das Quadrat um die Mess-Wiese, in der flachen Aue −278/−1038 trug
+// es 5 Mündungen ohne ein Paar, der Blick hinaus prüfte nichts, CI 38546830515).
+const { messort, WELT_MITTE } = require("./lib/welt-orte.cjs");
+const ORTE = { mess: messort("wiese"), welt: WELT_MITTE, mundHalb: 1000 };
 const server = statikServer();
 
 (async () => {
@@ -827,7 +829,7 @@ const server = statikServer();
             }
             globalThis.__gelaendeCore = GK0;
 
-            // ── Standorte aus dem Gesetz (K16): DIE MÜNDUNGS-SUCHE — im Quadrat um die Mess-Wiese jede Spalte mit einer Flanke
+            // ── Standorte aus dem Gesetz (K16): DIE MÜNDUNGS-SUCHE — im Quadrat um die Mitte der Welt jede Spalte mit einer Flanke
             // ab 30° (der Hang der Welt-Höhe, unabhängig vom Mündungs-Term des Kerns), dann das Kriterium an ihr und ihren
             // Nachbarn: Höhlen-Luft unter Fels, daneben Luft unter freiem Himmel, der Gang dahinter mindestens 12 m tief.
             // Gegraben wird nichts — die Linse findet, was die Welt trägt; Mündungen näher als 25 m sind eine.
@@ -860,8 +862,9 @@ const server = statikServer();
             const wl = typeof st.waterLevel === "number" ? st.waterLevel : 0;
             const mundListe = [];
             const HALB = ORTE.mundHalb;
-            for (let z = MESS.z - HALB; z < MESS.z + HALB; z += 3.6)
-                for (let x = MESS.x - HALB; x < MESS.x + HALB; x += 3.6) {
+            const [WX, WZ] = ORTE.welt;
+            for (let z = WZ - HALB; z < WZ + HALB; z += 3.6)
+                for (let x = WX - HALB; x < WX + HALB; x += 3.6) {
                     const h0 = hoch(x, z);
                     if (h0 < wl + 1) continue;
                     const hang = Math.hypot(hoch(x + 1.8, z) - h0, hoch(x, z + 1.8) - h0) / 1.8;
@@ -888,8 +891,8 @@ const server = statikServer();
                 jeKm2: +(mundListe.length / km2).toFixed(2),
                 hangGrad: mundListe.map((m) => m.hangGrad).sort((a, b) => a - b),
             };
-            mundListe.sort((a, b) => Math.hypot(a.x - MESS.x, a.z - MESS.z) - Math.hypot(b.x - MESS.x, b.z - MESS.z));
-            // die Mündung der Blicke: die nächste zur Mess-Wiese, vor deren Mund (im Blick hinaus, 30–200 m) eine zweite liegt,
+            mundListe.sort((a, b) => Math.hypot(a.x - WX, a.z - WZ) - Math.hypot(b.x - WX, b.z - WZ));
+            // die Mündung der Blicke: die nächste zur Mitte der Welt, vor deren Mund (im Blick hinaus, 30–200 m) eine zweite liegt,
             // die ihr den Mund zuwendet — dort führt der Weg hinaus an der Sperre vorbei in die andere Höhle (fehlt das Paar:
             // eine zweite vor dem Mund, sonst die nächste)
             const gegenueber = (m, zugewandt) =>
@@ -1028,7 +1031,9 @@ const server = statikServer();
             for (const bl of blicke) aus.blicke.push(miss(bl));
 
             // ── an die Mündung: der Spieler vor dem Mund (der Ring steht um ihn), der Höhlen-Raum aus dem Gesetz in seinem
-            // Umkreis (± 2 Chunks), dann die Blicke in den Mund und in den Raum
+            // Umkreis (± 2 Chunks) in einem Chunk der Stufe 0 — nur dort trägt der Boden-Satz die Höhlen-Zellen des Graphs (K51: die
+            // Nah-Zone ist 3 × 3, der Raum in einem Chunk der Stufe 1 sah 14 400 Strahlen ohne eine Höhlen-Fläche) —, dann die
+            // Blicke in den Mund und in den Raum
             if (muendung) {
                 const m = muendung;
                 const vx = m.x + m.dx * 9,
@@ -1037,9 +1042,17 @@ const server = statikServer();
                 await schwinge();
                 r._tickChunkSatz();
                 const mpc = st.lastPlayerVoxelChunk;
+                const stufe0 = (cx, cz) => {
+                    const c = st.voxelChunks.get(cx + "," + cz);
+                    return !!c && (c.lod || 0) === 0;
+                };
                 for (let dcx = -2; dcx <= 2 && !raum; dcx++)
                     for (let dcz = -2; dcz <= 2 && !raum; dcz++)
-                        for (let x = (mpc.cx + dcx) * span + 1.8; x < (mpc.cx + dcx + 1) * span && !raum; x += 3.6)
+                        for (
+                            let x = (mpc.cx + dcx) * span + 1.8;
+                            x < (mpc.cx + dcx + 1) * span && !raum && stufe0(mpc.cx + dcx, mpc.cz + dcz);
+                            x += 3.6
+                        )
                             for (
                                 let z = (mpc.cz + dcz) * span + 1.8;
                                 z < (mpc.cz + dcz + 1) * span && !raum;

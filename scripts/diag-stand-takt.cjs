@@ -161,6 +161,7 @@ function selbsttest() {
             (b) => Object.assign(b.gehen.takte.deckWache, { summe: 3840, mitArbeit: 30 }),
             /GEHEN: der Saum geht ohne neuen Anker \(3840 Einheiten\)/,
         ],
+        ["der Gang verlässt seine Zelle", (b) => (b.gehen.zelleGleich = false), /LEER: der Gang verließ seine Zelle/],
         ["Gehen ohne Weg", (b) => (b.gehen.weg = 0.2), /BEWEGUNG: beim Gehen kam der Spieler 0.2 m voran/],
         [
             "das Streaming verhungert nach der Ruhe",
@@ -748,11 +749,17 @@ const server = statikServer();
                     await bisRuhe(600);
                     aus.wecken = W;
                 }
-                // (G) GEHEN: W gehalten
+                // (G) GEHEN: W gehalten, zur Mitte der Spieler-Zelle — der Gang bleibt in seiner Zelle (K55-2: an der Mess-Wiese
+                // −278/−1038 lag die Grenze 1,2 m voraus, der Gang trat hinüber, die Chunks wechselten ihre Stufe, und der Saum ging
+                // zu Recht — die Linse prüfte nicht, was sie meint; verlässt er sie doch, ist die Phase LEER)
                 {
                     const p0 = st.playerMesh.position.clone();
                     const span = r._voxelChunkConfig(0).span;
                     const zelle = (p) => Math.floor(p.x / span) + "," + Math.floor(p.z / span);
+                    st.yaw = Math.atan2(
+                        (Math.floor(p0.x / span) + 0.5) * span - p0.x,
+                        (Math.floor(p0.z / span) + 0.5) * span - p0.z
+                    );
                     const z0 = zelle(p0);
                     const g0 = st.fernRing ? st.fernRing.gen | 0 : -1;
                     st.keys = { w: true };
