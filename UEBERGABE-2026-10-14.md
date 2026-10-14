@@ -6,8 +6,8 @@ Lies zuerst DIE GOLDENE DEFINITION in CLAUDE.md. Dann diese Datei. Dann `memory/
 
 | Ref | Kopf | Zustand |
 |---|---|---|
-| main | 9fb869a5 (V18.545 + Stamm in 48 Zonen) | Release-Stand |
-| integ-probe | c8196cd1 (STAND_INTEG) | DAS BÜNDEL — Kandidat für den nächsten FF nach main |
+| main | c5e2fc8f | das Bündel vom 14.10. (V18.546-Nummer) + Tor-Stufen + Wiese-Teppich + Mensch Labor=Welt + Putz + Wahrheit |
+| integ-probe | ec86f5e2 | main + Boden-Stufen weich + Archiv-Wand + Welt-Boot (FF nach OMEN-Boden-ABAB) |
 
 **Das Bündel auf integ-probe** (Versions-Nummer noch 18.546.0, alles darin):
 - V18.546: K16 Landform, K16b, K17-2 Fels im Worker, K20 Wald-Maß, Baum-Reihe, K28 Fell-Kopf (Frozen A fällt)
@@ -22,11 +22,24 @@ Lies zuerst DIE GOLDENE DEFINITION in CLAUDE.md. Dann diese Datei. Dann `memory/
 
 **Regel für den FF nach main** (memory/profiband-merge.md): CI 13/13 am Kopf + voller Playtest (CI voll 11) + OMEN-ABAB „nicht langsamer“ im Rauschband bzw. das Band hält (K16 ändert die Szene überall — Szenen-Wechsel ist kein Täter, solange das Band hält) + Auge-Runde. Dann `git push origin integ-probe:main` (Fast-Forward), Versions-Stufe 18.546.0 → 18.547.0 vorher oder als nächster Commit (npm run bump).
 
-## Zweige (STAND_ZWEIGE)
+## Zweige (Stand der Notbremse; Köpfe per `git ls-remote origin <zweig>` frisch lesen)
+
+| Zweig | Zustand | nächster Schritt |
+|---|---|---|
+| integ-probe | ec86f5e2 = main c5e2fc8f + K51-3 Boden-Stufen weich (Geomorph) + Archiv-Wand + Welt-Boot (Eigen-Starts 153 → 17); CI an 533e2360 13/13, an ec86f5e2 neu | OMEN-Bericht `1410-boden-abab.md` lesen (Boden-Stufen, Wiese Ego/Third); „nicht langsamer“ + CI 13/13 → `git push origin integ-probe:main` |
+| mess-wiese | K55: Wiese -278/-1038 aus der Welt, Orts-Literale 30 → 0, Gelände-Proben aus `welt-orte.cjs`; trägt gtx-ratschen-1410 (6 GTX-Ratschen am neuen Ort) | Rote laut letztem Commit-Rumpf / Übergabe: Fahr-Leben S4/L6/L8, Höhlen-Sicht „hinaus“ (`_hoehlenAusgang`), streu-fern Bahnwechsel, werk-im-wasser; dann mergen (Ratschen gehören zum neuen Ort) |
+| mensch-kopf | K57: Kopf-Soll (Anthropometrie) als Kern-Daten + Maß, dann Proportion/Augen/Mund im koerperstudio | Übergabe im letzten Commit-Rumpf; Bild Armlänge Labor = Welt |
+| laub-aaaa | K58: Laub-Soll + Maß, größter Hebel (Nadel-Wedel / Blatt-Karten / Dither) | Übergabe im letzten Commit-Rumpf |
+| ort-gelaende 92972ef6 | K10, Frozen C (Dorf auf dem Gelände-Kern) | Neubau gegen den K16-Grund prüfen, Damm/Slots/Nachtlicht |
+| haus-fenster a5341ed3 | K38-N1, gate:fenster-wechsel rot | Täter lesen |
+| pruef-vakuum 73becf82 | Z2a Meta-Wand gegen leere Prüfungen (WIP) | mit dem Welt-Boot-Fehlersammler zusammenführen |
+| linsen-gpu (lokal) | K39 Linsen auf den Hardware-Adapter (WIP, 39 Dateien) | sichten, sonst fallen lassen |
+
+Rohdaten der Zweige liegen LOKAL unter `<worktree>/artifacts/profiband/…` bzw. `artifacts/profiband/wt-archiv/<name>/` (nie committen — Archiv-Wand).
 
 ## OMEN
 
-Sitzung „Lokaler Ordner Sicherung“ (bridge:session_01NUxuyk3y4hiZSDytqydoBT), arbeitet im Ordner koordination. Berichte unter `bericht/`, Aufträge unter `auftrag/`. Letzte Aufträge: 1410-1 Instanz-Schicht (gemergt), 1410-2 ABAB V18.546 (Wiese war andere Szene, CPU +1,0–1,6 ms → K54 heilte), Schluss-ABAB 51cc19af gegen main (STAND_OMEN). Danach: GTX-Ratschen auf den Kopf neu prägen.
+Sitzung „Lokaler Ordner Sicherung“ (bridge:session_01NUxuyk3y4hiZSDytqydoBT), arbeitet im Ordner koordination. Berichte unter `bericht/`, Aufträge unter `auftrag/`. Letzte Aufträge: 1410-1 Instanz-Schicht (gemergt), 1410-2 ABAB V18.546 (Wiese war andere Szene, CPU +1,0–1,6 ms → K54 heilte), Schluss-ABAB 51cc19af gegen main (berichtet: an allen 4 Orten schneller, Band hält bis auf CPU-Takt); Wiesen-ABAB c5e2fc8f nicht langsamer; Boden-ABAB 1410-boden-abab.md. Danach: GTX-Ratschen auf den Kopf neu prägen.
 
 ## Offen (Pflicht-OFFEN: B Ankunft ≤ 5 s · C Ort auf dem Gelände · E Profi-Band)
 
