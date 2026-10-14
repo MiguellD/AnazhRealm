@@ -573,7 +573,7 @@ class AnazhRealm_Z11c {
                 name: "streuSatz",
                 mat,
                 wurf: !a.wiegt,
-                attr: a.wiegt ? AnazhRealm.STREU_SATZ_ATTR : AnazhRealm.BAU_SATZ_ATTR,
+                attr: a.wiegt ? AnazhRealm.STREU_SATZ_ATTR : AnazhRealm.STREU_FEST_ATTR,
                 kapazitaet: "streu",
                 userData: { streuSatz: "streuSatz" },
             });

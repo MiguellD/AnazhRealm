@@ -118,15 +118,31 @@ AnazhRealm.BAU_SATZ = Object.freeze({
     crystal: "formationenSatz",
     columns: "formationenSatz",
 });
-// Die Attribute eines Bau-Satz-Bereichs: was der Studio-Stoff liest (Vertex-Farbe, die Stufen-Stempel der Dither-
-// Blende) — `_bauSatzBlock` rechnet Position und Normale in Welt-Lage, die Instanz-Stempel je Vertex.
-AnazhRealm.BAU_SATZ_ATTR = Object.freeze([
+// Die Attribute eines festen Streu-Satz-Bereichs (`_streuSatzArt`, der Stein der Nah-Streu): was der Studio-Stoff liest
+// (Vertex-Farbe, die Stufen-Stempel der Dither-Blende) — `_satzBlock` rechnet Position und Normale in Welt-Lage.
+AnazhRealm.STREU_FEST_ATTR = Object.freeze([
     Object.freeze(["position", 3]),
     Object.freeze(["normal", 3]),
     Object.freeze(["color", 3]),
     Object.freeze(["aLodLevel", 1]),
     Object.freeze(["aH0", 1]),
     Object.freeze(["aH0L", 1]),
+]);
+// Die Attribute eines Bau-Satz-Bereichs: dazu DIE REGLER JE ECKE (K43-2, der EINE Satz-Stoff `_satzStoff`) — `aRegler` =
+// Rauheit · Metall · Deckkraft (snorm8x4), `aGlut` = Emissiv × Glut-Stärke (float16x4), beide je Bereich aus dem Stoff seiner
+// Gruppe (`budgetRegler`). Befund (Radeon, Genesis, 14.10.): 22 Tor-Stoffe der Stufe 1 unterschieden sich nur in diesen
+// Zahlen (die Glut-Stärke je Rezept, Rauheit und Metall nach `metal`) — 24 Satz-Befehle im Hauptbild für sieben Bauten.
+// DIE VERTEX-FORM (K44, wie der Boden-Satz): die Normale snorm8x4, die Farbe float16x4 — die Regler kosten so keinen Byte
+// (60 → 48 B je Vertex; gemessen Genesis Radeon: Bau-Sätze 12,3 MB Inhalt bei 60 B).
+AnazhRealm.BAU_SATZ_ATTR = Object.freeze([
+    Object.freeze(["position", 3]),
+    Object.freeze(["normal", 3, "snorm8"]),
+    Object.freeze(["color", 3, "half"]),
+    Object.freeze(["aLodLevel", 1]),
+    Object.freeze(["aH0", 1]),
+    Object.freeze(["aH0L", 1]),
+    Object.freeze(["aRegler", 3, "snorm8"]),
+    Object.freeze(["aGlut", 3, "half"]),
 ]);
 // Die Attribute eines Wurf-Satz-Bereichs (`bauWurf`, S3): was der EINE Schatten-Stoff liest — Welt-Lage, die Atlas-Lage
 // (uv; die Stufe 3 trägt 0), die Deckung (aDeckt 1) und die Stufen-Stempel der Dither-Blende (Haus 0 = ungemaskt).

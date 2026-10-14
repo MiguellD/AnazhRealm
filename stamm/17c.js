@@ -28,7 +28,13 @@ class AnazhRealm_Z17c {
         const name = rec ? AnazhRealm.BAU_SATZ[rec.kind] : null;
         if (!name) return null;
         const wurf = leaf.shadowTwin === true;
-        const art = wurf ? "bauWurf|" + leaf.mat.uuid + "|S" : name + "|" + leaf.mat.uuid + (castShadow ? "|w" : "|-");
+        // DER EINE SATZ-STOFF (K43-2): ein gezeigter Bereich zeichnet im Stoff seiner KLASSE (`_satzStoff`: Art · Seh-Klasse ·
+        // Seite · Durchsicht · was der Stoff sonst webt), seine Regler (Rauheit · Metall · Deckkraft · Glut) reisen je Ecke
+        // (`aRegler`, `aGlut`, `_bauSatzBlock`). Vorher war die Art die uuid des Studio-Stoffs: jede Glut-Stärke ein Satz.
+        const satzMat = wurf ? leaf.mat : this._satzStoff(leaf.mat);
+        const art = wurf
+            ? "bauWurf|" + leaf.mat.uuid + "|S"
+            : name + "|" + satzMat.userData.satzSchluessel + (castShadow ? "|w" : "|-");
         const st = this.state;
         if (!st.satzStoffe) st.satzStoffe = new Map();
         if (!st.satzStoffe.has(art))
@@ -36,9 +42,33 @@ class AnazhRealm_Z17c {
                 art,
                 wurf
                     ? { name: "bauWurf", mat: leaf.mat, wurf: true, nurWurf: true, attr: AnazhRealm.BAU_WURF_ATTR }
-                    : { name, mat: leaf.mat, wurf: !!castShadow }
+                    : { name, mat: satzMat, wurf: !!castShadow }
             );
         return art;
+    }
+
+    // DER SATZ-STOFF EINES STUDIO-STOFFS (K43-2): derselbe Bau des Wirts (`_foundryTreeMaterial`) ohne die Regler, die je
+    // Ecke reisen — Rauheit, Metall, Emissiv × Stärke, die Deckkraft (ein durchsichtiger bleibt durchsichtig, die Zahl
+    // reist). Was den Stoff sonst trägt (Art · Seh-Klasse · Seite · flach · Umgebung · Gewebe · Leucht-Gesetz · Zeitplan ·
+    // Klarlack) bleibt seine Identität. Fail-closed: ein Stoff ohne Studio-Herkunft ist ein Bruch.
+    _satzStoff(mat) {
+        const u = mat && mat.userData;
+        if (!u || typeof u.foundryKind !== "string")
+            throw new Error(`_satzStoff: der Stoff ${mat && mat.uuid} trägt keine Studio-Herkunft (foundryKind)`);
+        const mp = u.foundryMp ? Object.assign({}, u.foundryMp) : {};
+        const durch = typeof mp.opacity === "number" && mp.opacity < 1;
+        for (const k of ["roughness", "metalness", "emissive", "emissiveIntensity", "opacity"]) delete mp[k];
+        if (durch) mp.opacity = 0.5; // die Marke der Durchsicht — die Deckkraft liest der Stoff aus `aRegler.z`
+        return this._foundryTreeMaterial(u.foundryKind, mp, false, null, true);
+    }
+
+    // Die Regler eines Bereichs je Ecke (K43-2): Rauheit · Metall · Deckkraft und Emissiv × Glut-Stärke aus dem Studio-Stoff
+    // seiner Gruppe — dieselbe Lesung (`budgetRegler`), mit der der Wirt den Stoff sonst baut.
+    static _satzRegler(mat) {
+        const u = (mat && mat.userData) || {};
+        const R = globalThis.__phytoCore.budgetRegler(u.foundryKind, u.foundryMp || null);
+        const e = R.em ? [R.em[0] * R.emI, R.em[1] * R.emI, R.em[2] * R.emI] : [0, 0, 0];
+        return { regler: [R.r, R.mt, R.op], glut: e };
     }
 
     // Die Marke einer geänderten Satz-Gruppe (der Takt legt ihren Bereich neu oder nimmt ihn heraus).
@@ -74,13 +104,15 @@ class AnazhRealm_Z17c {
     // Der Bereich einer Gruppe: jede lebende Instanz [0, liveCount) in Welt-Lage (`_satzBlock`, die Attribute des Bau-Satzes).
     _bauSatzBlock(g) {
         const st = this.state.satzStoffe ? this.state.satzStoffe.get(g.satz) : null;
+        const attr = (st && st.attr) || AnazhRealm.BAU_SATZ_ATTR;
         return this._satzBlock(
             g.geom,
             g.mesh.instanceMatrix.array,
             g.mesh.instanceColor ? g.mesh.instanceColor.array : null,
             g.liveCount | 0,
-            (st && st.attr) || AnazhRealm.BAU_SATZ_ATTR,
-            g.key
+            attr,
+            g.key,
+            attr === AnazhRealm.BAU_SATZ_ATTR ? AnazhRealm._satzRegler(g.mesh.material) : null
         );
     }
 
@@ -91,7 +123,9 @@ class AnazhRealm_Z17c {
     // Teils × Skala der Pflanze), alle anderen Vertex-Attribute wie sie sind; je Instanz eine Zelle (ihr Lauf im Index).
     // `im` = cnt × 16 Matrix-Werte, `ic` = cnt × 3 Farben oder null. Fail-closed: ein Satz-Attribut ohne Quelle, eine
     // Geometrie ohne Index ist ein lauter Bruch (`wer` nennt den Bereich).
-    _satzBlock(geo, im, ic, cnt, attr, wer) {
+    // `regler` (der Bau-Satz, `_satzRegler`): { regler: [Rauheit, Metall, Deckkraft], glut: [r, g, b] } — je Ecke dieselben
+    // Zahlen (`aRegler`, `aGlut`); ein Satz-Attribut der Regler ohne sie ist ein Bruch.
+    _satzBlock(geo, im, ic, cnt, attr, wer, regler) {
         const A = geo.attributes;
         const n = A.position.count;
         const N = n * cnt;
@@ -100,6 +134,14 @@ class AnazhRealm_Z17c {
         const NM = this._bauSatzNM || (this._bauSatzNM = new THREE.Matrix3());
         const attributes = {};
         for (const [name, is] of attr) {
+            if (name === "aRegler" || name === "aGlut") {
+                const w = regler ? (name === "aRegler" ? regler.regler : regler.glut) : null;
+                if (!w) throw new Error(`_satzBlock(${wer}): ${name} ohne die Regler des Stoffs`);
+                const out = new Float32Array(N * is);
+                for (let v = 0; v < N; v++) for (let c = 0; c < is; c++) out[v * is + c] = w[c];
+                attributes[name] = { array: out, itemSize: is, count: N };
+                continue;
+            }
             const wiegeAttr = name === "aWiege";
             const q = wiegeAttr ? A.position : A[name];
             if (!q || (!wiegeAttr && q.itemSize !== is))

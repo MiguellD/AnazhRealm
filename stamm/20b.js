@@ -1889,7 +1889,9 @@ class AnazhRealm_Z20b {
 
     // `wiegen` (true, optional): der Stoff einer weichen Boden-Art der Nah-Streu — er wiegt im EINEN Wind mit der Höhe über
     // der Wurzel in Metern aus dem Satz-Attribut `aWiege` (`_satzBlock`), also für jede Studio-Skala derselbe Stoff.
-    _foundryTreeMaterial(kind, mp, wiegen, baum) {
+    // `satz` (true, optional): der EINE Satz-Stoff des Bau-Satzes (`_satzStoff`, K43-2) — Rauheit, Metall und Deckkraft liest
+    // er je Ecke aus `aRegler`, das Emissiv × Glut-Stärke aus `aGlut` (`_satzBlock`); `mp` trägt diese Regler nicht.
+    _foundryTreeMaterial(kind, mp, wiegen, baum, satz) {
         if (!this._foundryMats) this._foundryMats = {};
         const T = THREE;
         const TSL = T.TSL;
@@ -1921,7 +1923,8 @@ class AnazhRealm_Z20b {
             globalThis.__phytoCore.budgetStoff(kind, mp) +
             (xfade ? "|xf" : "") +
             (wiegen === true ? "|wiegt" : "") +
-            (baum ? "|wind:" + baum.ht.toFixed(2) + "/" + baum.delta.toFixed(4) + "/" + baum.an : "");
+            (baum ? "|wind:" + baum.ht.toFixed(2) + "/" + baum.delta.toFixed(4) + "/" + baum.an : "") +
+            (satz === true ? "|satz" : "");
         if (this._foundryMats[key]) return this._foundryMats[key];
         let mat;
         // HAUT-VOLLENDUNG (19.07.): die Lab-Haut trägt CLEARCOAT (matSkin
@@ -2200,6 +2203,19 @@ class AnazhRealm_Z20b {
             // env) sind schon oben aus `mp` gesetzt → Kristall glaenzt facettiert, Fels bleibt matt.
             mat.colorNode = TSL.vec4(laubFarbe, 1.0);
         }
+        // DIE REGLER JE ECKE (K43-2, der EINE Satz-Stoff): Rauheit · Metall · Deckkraft aus `aRegler`, das Emissiv × Glut-Stärke
+        // aus `aGlut` — vor der Blende (sie multipliziert die Deckung) und vor dem Leucht-Gesetz (es addiert den Licht-Pool
+        // auf das Emissiv; ein Stoff des Leucht-Gesetzes `leucht` behält sein Emissiv aus der Farbe).
+        if (satz === true) {
+            const rg = TSL.attribute("aRegler", "vec3");
+            mat.roughnessNode = rg.x;
+            mat.metalnessNode = rg.y;
+            if (R.op < 1) mat.opacityNode = rg.z;
+            if (!(mp && typeof mp.leucht === "number" && mp.leucht > 0))
+                mat.emissiveNode = TSL.attribute("aGlut", "vec3");
+            mat.userData = mat.userData || {};
+            mat.userData.satzSchluessel = key;
+        }
         // Studio-Dither-Blende auf den Foundry-3D-Stufen: Fade-out L0 + Fade-in L1 (Laub überlappend, Rinde
         // exakte Partition); die Maske faltet in die Alpha (TSL statt discard, alphaTest cullt). Formeln = die
         // EINE Quelle `__phytoCore.lodCrossfadeMask` (via `_lodCrossfadeMaskNode`); xfade aus = Material
@@ -2227,7 +2243,8 @@ class AnazhRealm_Z20b {
                 // die Schwelle trennt die Maske (0 | 1), nie die Deckkraft des Stoffs: eine Scheibe (Deckkraft 0,42 < 0,5)
                 // fiel bis K11 ganz unter die Schwelle — kein Fenster, keine Wagen-Scheibe zeichnete, das Fenster-Licht
                 // der Nacht (`_leuchtStoff`) blieb unsichtbar
-                if (!(mat.alphaTest > 0)) mat.alphaTest = 0.5 * R.op;
+                // (der Satz-Stoff liest die Deckkraft je Ecke: seine Schwelle liegt unter jeder Deckkraft eines Stoffs, 1/255)
+                if (!(mat.alphaTest > 0)) mat.alphaTest = satz === true && R.op < 1 ? 1 / 255 : 0.5 * R.op;
                 mat.userData = mat.userData || {};
                 mat.userData.foundryCrossfade = true;
                 mat.userData.foundryCrossfadeKanal = kanal;
