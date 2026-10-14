@@ -396,7 +396,6 @@ if (process.argv.includes("--selftest")) {
     process.exit(0);
 }
 
-
 const PORT = Number(process.env.CHUNK_SATZ_PORT) || 4483;
 const server = statikServer();
 
@@ -1342,6 +1341,42 @@ function check(name, ok, detail) {
                 const alle = [];
                 let offen = 0;
                 if (ohne) r._stufeGewicht = () => 0;
+                // (p) DIE FOLGE DES WECHSELS (K51-4): je Neubau die Morphs seiner Nachbarn — ein Nachbar, der den Chunk nicht liest
+                // (weder seine neue noch seine alte Stufe ist gröber als die des Nachbarn), ist ein LEER-Morph. Der Selbsttest
+                // (`ohne`) fährt die Lawine bis K51-3 nach: jeder Neubau morpht alle acht.
+                const folge = { neubau: 0, morphs: 0, leer: 0 };
+                const F0 = r._finalizeVoxelChunkBuild,
+                    G0 = r._applyCrossLodGeomorph;
+                const lodVon = new Map();
+                for (const [key, e] of s.voxelChunks) if (e && !e.empty && e.mesh) lodVon.set(key, e.lod || 0);
+                let ctx = null;
+                r._finalizeVoxelChunkBuild = function (cx, cz, lod, ...rest) {
+                    const key = cx + "," + cz;
+                    ctx = { cx, cz, lod, alt: lodVon.has(key) ? lodVon.get(key) : null };
+                    folge.neubau++;
+                    try {
+                        const e = F0.call(this, cx, cz, lod, ...rest);
+                        if (ohne)
+                            for (let dx = -1; dx <= 1; dx++)
+                                for (let dz = -1; dz <= 1; dz++)
+                                    if (dx || dz) this._applyCrossLodGeomorph(cx + dx, cz + dz);
+                        return e;
+                    } finally {
+                        ctx = null;
+                        lodVon.set(key, lod);
+                    }
+                };
+                r._applyCrossLodGeomorph = function (x, z) {
+                    if (ctx && (x !== ctx.cx || z !== ctx.cz)) {
+                        const nb = s.voxelChunks.get(x + "," + z);
+                        if (nb && !nb.empty && nb.mesh) {
+                            folge.morphs++;
+                            const nl = nb.lod || 0;
+                            if (!(ctx.lod > nl || (ctx.alt !== null && ctx.alt > nl))) folge.leer++;
+                        }
+                    }
+                    return G0.call(this, x, z);
+                };
                 try {
                     const p = { x: s.stufeAuge.x, y: 0, z: s.stufeAuge.z };
                     for (let i = 0; i < n; i++) {
@@ -1392,6 +1427,8 @@ function check(name, ok, detail) {
                     }
                 } finally {
                     delete r._stufeGewicht;
+                    delete r._finalizeVoxelChunkBuild;
+                    delete r._applyCrossLodGeomorph;
                 }
                 sprung.sort((a, b) => b.max - a.max);
                 const p95 = sprung.map((x) => x.p95).sort((a, b) => b - a);
@@ -1408,6 +1445,7 @@ function check(name, ok, detail) {
                     max: sprung.length ? sprung[0].max : 0,
                     chunkP95: p95[0] || 0,
                     top: sprung.slice(0, 3),
+                    folge,
                 };
             };
             const mit = await gang(2, 30, false);
@@ -1476,6 +1514,22 @@ function check(name, ok, detail) {
         "(o) Selbsttest: derselbe Gang ohne das Stufen-Gewicht (nur der Naht-Morph, die Kette K51) springt — die Wand nennt ihn",
         !!SP.ohne && SP.ohne.wechsel >= 3 && SP.ohne.p90 > STUFEN_SPRUNG_M,
         fmt(SP.ohne)
+    );
+    // (p) DIE FOLGE DES WECHSELS (K51-4): ein Stufen-Wechsel morpht nur die Nachbarn, die den Chunk lesen — die Lawine (jeder
+    // Neubau morphte alle acht, OMEN 1410-boden gehend: Frame p95 28,7 → 41,6 ms) fällt rot beim Namen
+    const fo = (g) =>
+        g && g.folge
+            ? `${g.folge.neubau} Neubauten · ${g.folge.morphs} Nachbar-Morphs · ${g.folge.leer} leer`
+            : "keine Messung";
+    check(
+        "(p) FOLGE DES WECHSELS — kein Leer-Morph: ein Neubau morpht nur Nachbarn, die seine neue oder alte Stufe lesen",
+        !!SP.mit && !!SP.mit.folge && SP.mit.folge.neubau >= 3 && SP.mit.folge.leer === 0,
+        fo(SP.mit)
+    );
+    check(
+        "(p) Selbsttest: die Lawine (jeder Neubau morpht alle acht Nachbarn) — die Wand nennt die Leer-Morphs",
+        !!SP.ohne && !!SP.ohne.folge && SP.ohne.folge.leer > 0,
+        fo(SP.ohne)
     );
     check("(a) der Boden lebt im Satz (Ring trägt Chunks)", out.satzDa && out.chunks > 20, `${out.chunks} Chunks`);
     check(

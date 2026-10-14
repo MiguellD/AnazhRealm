@@ -184,7 +184,7 @@ class AnazhRealm_Z11a {
     // DER geteilte Finalize-Schritt beider Pfade: Mesh in die Scene, Entry setzen, Gras + Iso-Wasser +
     // Vegetation. `fresh` muss ein erfolgreicher Build sein. Gibt das Entry zurück oder null
     // (degenerierte Iso-Fläche → {empty:true}).
-    _finalizeVoxelChunkBuild(cx, cz, lod, fresh, syncWater = false) {
+    _finalizeVoxelChunkBuild(cx, cz, lod, fresh, syncWater = false, altLod = null) {
         const key = `${cx},${cz}`;
         if (fresh.kind === "empty") {
             this.state.voxelChunks.set(key, { empty: true });
@@ -285,9 +285,22 @@ class AnazhRealm_Z11a {
             if (!this.state.pendingFoliageChunks) this.state.pendingFoliageChunks = new Set();
             this.state.pendingFoliageChunks.add(`${cx},${cz}`);
         }
-        // Cross-LOD-Geomorph: diesen Chunk an GROBE Nachbarn schmiegen + die 8 Nachbarn des 3×3-Rings neu morphen
+        // Cross-LOD-Geomorph: diesen Chunk an GROBE Nachbarn schmiegen + die Nachbarn des 3×3-Rings neu morphen, die ihn LESEN
         // (ein FEINER Nachbar, der auf diesen wartete, schließt jetzt seine Naht — auch an der Ecke). Main-only, render-only.
-        for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz++) this._applyCrossLodGeomorph(cx + dx, cz + dz);
+        // DIE FOLGE DES WECHSELS (K51-4): ein Nachbar schmiegt sich nur an gröbere Nachbarn — er liest diesen Chunk, wenn dessen
+        // neue Stufe gröber ist als seine (die Naht folgt dem neuen Netz) oder dessen alte (`altLod`: die alte Naht fällt).
+        // Jeder andere behält seinen Morph; bis K51-3 morphte jeder Wechsel alle acht neu (OMEN 1410-boden gehend: die
+        // Folge-Neubauten des Stufen-Wechsels, Frame p95 28,7 → 41,6 ms; Radeon je Neubau ~9 Morphs à 1,2–1,5 ms).
+        for (let dx = -1; dx <= 1; dx++)
+            for (let dz = -1; dz <= 1; dz++) {
+                if (dx !== 0 || dz !== 0) {
+                    const nb = this.state.voxelChunks.get(`${cx + dx},${cz + dz}`);
+                    if (!nb || nb.empty || !nb.mesh) continue;
+                    const nl = Number.isFinite(nb.lod) ? nb.lod : 0;
+                    if (!(lod > nl || (altLod !== null && altLod > nl))) continue;
+                }
+                this._applyCrossLodGeomorph(cx + dx, cz + dz);
+            }
         return entry;
     }
 
@@ -715,7 +728,7 @@ class AnazhRealm_Z11a {
     // V12.0-perf.a — Fail/Empty/Finalize-Abschluss des Rebuild-Pfads. Bei
     // null (OOM/degeneriert): Retry-Counter (max 3) + re-dirty. Sonst:
     // Finalize. Returnt true bei aufgelöst (empty ODER filled), false bei Fail.
-    _completeVoxelRebuild(key, cx, cz, lod, fresh) {
+    _completeVoxelRebuild(key, cx, cz, lod, fresh, altLod = null) {
         if (fresh === null) {
             // Build fail (Heap-OOM oder degenerierte Iso-Fläche): Retry-Counter, nach 3 Versuchen {empty:true}.
             // Der nächste Edit auf den Bereich setzt den Counter zurück.
@@ -737,7 +750,7 @@ class AnazhRealm_Z11a {
         // V12.0-perf.h.1 — Edit-Rebuild-Pfad (`_rebuildVoxelChunk` ←
         // Carve/Fill/Architektur): Wasser-Iso SYNCHRON bauen (kein Flacker am
         // Edit-Punkt). Nur der Streaming-Pfad (ferne neue Chunks) deferred.
-        this._finalizeVoxelChunkBuild(cx, cz, lod, fresh, true);
+        this._finalizeVoxelChunkBuild(cx, cz, lod, fresh, true, altLod);
         return true;
     }
 
@@ -750,6 +763,9 @@ class AnazhRealm_Z11a {
         const key = `${cx},${cz}`;
         const oldEntry = this.state.voxelChunks.get(key);
         const useLod = lod !== null ? lod : oldEntry && Number.isFinite(oldEntry.lod) ? oldEntry.lod : 0;
+        // die Stufe, die der alte Chunk zeichnete — seine feineren Nachbarn lösen ihre Naht zu ihm (`_finalizeVoxelChunkBuild`)
+        const altLod =
+            oldEntry && !oldEntry.empty && oldEntry.mesh ? (Number.isFinite(oldEntry.lod) ? oldEntry.lod : 0) : null;
         // Implizite Sync-Pflicht (Spieler-Chunk / Carve-Region) nur, solange der Frame Zeit hat
         // (`!_frameOverBudget`) — sonst ASYNC (alter Mesh bleibt, Kollision ist feld-nativ sofort aktuell),
         // kein Dauer-Stall aus ~126-ms-Sync-Rebuilds beim Graben. Explizites `opts.forceSync`
@@ -764,7 +780,7 @@ class AnazhRealm_Z11a {
             // V9.40-d — dispose-before-build (kein Loch, Sync-Build same-frame).
             if (oldEntry) this._disposeVoxelChunk(key, keepGrass);
             const fresh = this._acquireVoxelChunkBuild(cx, cz, useLod, { forceSync: true });
-            return this._completeVoxelRebuild(key, cx, cz, useLod, fresh);
+            return this._completeVoxelRebuild(key, cx, cz, useLod, fresh, altLod);
         }
         // Async: erst bauen/anfordern, NICHT vorher disposen.
         const fresh = this._acquireVoxelChunkBuild(cx, cz, useLod, { forceSync: false });
@@ -777,7 +793,7 @@ class AnazhRealm_Z11a {
         }
         // Build fertig/fail → atomarer Swap: alten erst JETZT disposen.
         if (oldEntry) this._disposeVoxelChunk(key, keepGrass);
-        return this._completeVoxelRebuild(key, cx, cz, useLod, fresh);
+        return this._completeVoxelRebuild(key, cx, cz, useLod, fresh, altLod);
     }
 
     // Baut einen Voxel-Chunk an (cx, cz) über die geteilte Kaskade; No-op, wenn er existiert. Leeres
