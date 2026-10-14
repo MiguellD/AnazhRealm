@@ -146,7 +146,8 @@ function drawZensus(opts) {
                 // Die EXEMPLARE einer Klasse: die Bau-Einträge hinter ihren Instanzen (ein Tor zeichnet je Stoff einen Zug,
                 // `inst` zählt jede Instanz jedes Zugs, die Türflügel tragen eigene Orte — der Eintrag zählt das Tor einmal),
                 // ohne Eintrag die verschiedenen Orte (auf 0,5 m).
-                const w = nah[kl] || (nah[kl] = { inst: 0, dMin: Infinity, dMax: 0, orte: new Set(), eintraege: new Set() });
+                const w =
+                    nah[kl] || (nah[kl] = { inst: 0, dMin: Infinity, dMax: 0, orte: new Set(), eintraege: new Set() });
                 const mw = object.matrixWorld.elements;
                 const miss = (x, y, z) => {
                     const wx = mw[0] * x + mw[4] * y + mw[8] * z + mw[12];
