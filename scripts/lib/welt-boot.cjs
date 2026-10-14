@@ -16,7 +16,7 @@
 const fs = require("fs");
 const http = require("http");
 const path = require("path");
-const { linsenWebGpuArgs, echteWebGpuArgs, adapterZeile } = require("./software-gpu.cjs");
+const { linsenWebGpuArgs, linsenWebglArgs, echteWebGpuArgs, adapterZeile, zeitZeile } = require("./software-gpu.cjs");
 
 const ROOT = path.resolve(__dirname, "..", "..");
 
@@ -60,27 +60,29 @@ function statikServer({ root = ROOT, start = "/index.html", seiten = null, keinC
     });
 }
 
-// Die Browser-Rezepte. null: kein GPU-Prozess (die Seite setzt __anazhHeadlessNullRenderer) · webgl: WebGL2 auf
-// swiftshader (ANGLE) · standard: Chromes eigene Wahl headless · linse: WebGPU an der Weiche (lokal die Karte, die CI swiftshader) · echt: der Hardware-Adapter.
+// Die Browser-Rezepte. null: kein GPU-Prozess (die Seite setzt __anazhHeadlessNullRenderer) · webgl: WebGL2 an der
+// Weiche (lokal ANGLE auf der Karte, die CI und jede Zeit-Linse swiftshader) · standard: Chromes eigene Wahl headless ·
+// linse: WebGPU an der Weiche (lokal die Karte, die CI und jede Zeit-Linse swiftshader) · echt: der Hardware-Adapter.
+// `zeit: true` sagt der Weiche: diese Linse urteilt über eine Zeit (K39-2, software-gpu.cjs DIE ZEIT-ACHSE).
 const REZEPTE = {
     null: () => ["--no-sandbox", "--disable-gpu"],
-    webgl: () => ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--no-sandbox", "--disable-setuid-sandbox"],
+    webgl: (o) => linsenWebglArgs(process.env, process.platform, o),
     standard: () => ["--no-sandbox", "--disable-setuid-sandbox"],
-    linse: () => linsenWebGpuArgs(),
+    linse: (o) => linsenWebGpuArgs(process.env, process.platform, o),
     echt: () => echteWebGpuArgs(),
 };
 
 // Die Start-Optionen aus dem Rezept: `frist` = protocolTimeout (ms), `zusatz` = weitere Schalter hinter dem Rezept,
 // `viewport` = defaultViewport, `profil` = userDataDir; `headless` steht, wenn nichts gesagt ist (echt: mit Fenster nur,
 // wenn gesagt).
-function browserOptionen({ art, frist, zusatz = [], headless = true, viewport, profil, dumpio } = {}) {
+function browserOptionen({ art, frist, zusatz = [], headless = true, viewport, profil, dumpio, zeit = false } = {}) {
     if (!REZEPTE[art]) throw new Error(`welt-boot: unbekanntes Rezept "${art}" — erlaubt: ${Object.keys(REZEPTE).join(" · ")}`);
     const o = { headless };
     if (profil != null) o.userDataDir = profil;
     if (frist != null) o.protocolTimeout = frist;
     if (viewport !== undefined) o.defaultViewport = viewport;
     if (dumpio != null) o.dumpio = dumpio;
-    o.args = [...REZEPTE[art](), ...zusatz];
+    o.args = [...REZEPTE[art]({ zeit }), ...zusatz];
     return o;
 }
 
@@ -148,8 +150,13 @@ async function starteBrowser(opts = {}) {
             // ein Ziel, das vor dem Anheften stirbt, meldet sich über disconnected/close
         }
     });
-    // jede WebGPU-Linse nennt den Adapter, den der Browser WIRKLICH liefert (gate:start-rezept W4)
-    if (opts.art === "linse" || opts.art === "echt") await adapterZeile(browser);
+    // jede GPU-Linse nennt den Adapter, den der Browser WIRKLICH liefert (gate:start-rezept W4), die WebGL-Linse ihren
+    // WebGL2-Renderer; die ZEIT-ZEILE (W5): eine Zeit-Linse auf der Karte ist ROT beim Namen
+    if (opts.art === "linse" || opts.art === "echt" || opts.art === "webgl") {
+        const info = await adapterZeile(browser, { webgl: opts.art === "webgl" });
+        const rot = zeitZeile({ zeit: !!opts.zeit, art: opts.art, info });
+        if (rot) melde("zeit-linse", rot);
+    }
     return browser;
 }
 
