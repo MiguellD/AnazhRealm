@@ -913,13 +913,17 @@ class AnazhRealm_Z15a {
     // Findet die nächste Architektur mit gegebener Affordance im Radius.
     // Liefert null wenn nichts in Reichweite. Wird für die E-Taste (Mount)
     // und für andere Spieler-Gesten genutzt.
+    // Gefragt wird die Nähe des Spielers (K54: der Portal-Takt fragt je Frame — nie den Bestand der Welt).
     _findNearestAffordanceEntry(affordanceKey, radiusM) {
         const pm = this.state.playerMesh && this.state.playerMesh.position;
         if (!pm) return null;
         const r2 = radiusM * radiusM;
         let best = null;
         let bestD2 = r2;
-        for (const entry of this._blockerMit(affordanceKey)) {
+        const nah = this._affordanzNah || (this._affordanzNah = []);
+        nah.length = 0;
+        this._blockerUmPlatz(pm.x, pm.z, radiusM + 1e-6, nah, affordanceKey);
+        for (const entry of nah) {
             const dx = entry.position.x - pm.x;
             const dy = entry.position.y - pm.y;
             const dz = entry.position.z - pm.z;
@@ -2232,10 +2236,13 @@ class AnazhRealm_Z15a {
 
     // Radiating-Tick: in Reichweite eines Strahlers steigen awe + peace sanft (~0.04/s, über ~10 s
     // spürbar); der erste Kontakt je Strahler schreibt eine Erinnerung (journalAppendOnce).
-    // Spiegelt den focusing-Tick (filtern, Range-Check, akkumulieren).
+    // DER TAKT KOSTET DIE NÄHE (K54, Lehre 25): die Resonanz trifft nur den Spieler — gefragt werden die Strahler im Umkreis
+    // ihrer größten Reichweite um ihn (RADIATING_RANGE_M × BROADCAST_RANGE_MULT, die Stärke eines Masts ist 0..1) und je
+    // Strahler die Masten in seiner Relais-Reichweite (`_blockerUmPlatz` mit dem Namen, in der Ordnung des Bestands). Befund
+    // (OMEN 1410-2, V18.546 Wiese): je Takt lief jeder Strahler gegen jeden Mast des Bestands — Strahler × Masten wuchs mit
+    // der Welt (K16 Kristalle, K20 Kiefern als Masten), das Profil nannte 1,0–1,6 ms je Frame.
     _tickRadiatingAffordances(dt) {
-        const radiating = this._blockerMit("radiating");
-        if (radiating.length === 0) return;
+        if (this._blockerMit("radiating").length === 0) return; // der billigste Filter zuerst
         const pm = this.state.playerMesh && this.state.playerMesh.position;
         if (!pm) return;
         const emo = this.state.player && this.state.player.emotions;
@@ -2244,19 +2251,31 @@ class AnazhRealm_Z15a {
         const baseStep = AnazhRealm.RADIATING_EMOTION_RATE_PER_SEC * dt;
         // W10 ext. — broadcasting-Relais: ein leitfähiger Mast in Reichweite
         // eines Strahlers verstärkt dessen Reichweite (Affordances komponieren).
-        const broadcasting = this._blockerMit("broadcasting").filter((e) => e.position);
-        const relayRange2 = AnazhRealm.BROADCAST_RELAY_RANGE_M * AnazhRealm.BROADCAST_RELAY_RANGE_M;
+        const relayRange = AnazhRealm.BROADCAST_RELAY_RANGE_M;
+        const relayRange2 = relayRange * relayRange;
         const maxMult = AnazhRealm.BROADCAST_RANGE_MULT;
+        // die Stärke einer Affordanz ist 0..1 (`computeAffordanceStrength`) — die Grenze der Reichweite steht auf ihr
         const strengthOf = (e, key) => {
             const s = e.affordanceStrength && e.affordanceStrength[key];
-            return typeof s === "number" ? s : 1; // Altbestand ohne Snapshot → volle Wirkung
+            return typeof s === "number" ? Math.max(0, Math.min(1, s)) : 1; // Altbestand ohne Snapshot → volle Wirkung
         };
+        const radiating = this._strahlerNah || (this._strahlerNah = []);
+        radiating.length = 0;
+        const reichMax = AnazhRealm.RADIATING_RANGE_M * Math.max(1, maxMult);
+        this._blockerUmPlatz(pm.x, pm.z, reichMax + 1e-6, radiating, "radiating");
+        const broadcasting = this._strahlerMasten || (this._strahlerMasten = []);
         for (const ra of radiating) {
             if (!ra.position) continue;
+            const dx = ra.position.x - pm.x;
+            const dz = ra.position.z - pm.z;
+            if (dx * dx + dz * dz > reichMax * reichMax * (1 + 1e-9)) continue; // jenseits jeder Reichweite: kein Mast gefragt
             // Der stärkste broadcasting-Mast in Relais-Reichweite verstärkt die Strahler-Reichweite:
             // mult = 1 + Mast-Stärke × (maxMult−1); range² × mult² → die lineare Reichweite wächst um mult.
             let bestMastStrength = 0;
+            broadcasting.length = 0;
+            this._blockerUmPlatz(ra.position.x, ra.position.z, relayRange + 1e-6, broadcasting, "broadcasting");
             for (const bc of broadcasting) {
+                if (!bc.position) continue;
                 const bdx = bc.position.x - ra.position.x;
                 const bdz = bc.position.z - ra.position.z;
                 if (bdx * bdx + bdz * bdz <= relayRange2) {
@@ -2266,8 +2285,6 @@ class AnazhRealm_Z15a {
             }
             const mult = 1 + bestMastStrength * (maxMult - 1);
             const range2 = baseRange2 * mult * mult;
-            const dx = ra.position.x - pm.x;
-            const dz = ra.position.z - pm.z;
             if (dx * dx + dz * dz > range2) continue;
             // W10 ext. Politur — die Emotion-Intensität skaliert mit der
             // Strahler-Stärke: ein starker Strahler badet kräftiger.
@@ -2288,15 +2305,18 @@ class AnazhRealm_Z15a {
     // Balancing-Tick: in Reichweite senkt der Ort chaos (Komplement zu radiating); Drain-Rate skaliert
     // mit der Compound-Stärke, erster Kontakt schreibt eine Erinnerung. Weniger chaos verlangsamt
     // zugleich die Kreaturen (chaos → Tempo).
+    // Wie der Strahler-Takt fragt er nur die Nähe des Spielers (K54).
     _tickBalancingAffordances(dt) {
-        const balancing = this._blockerMit("balancing");
-        if (balancing.length === 0) return;
+        if (this._blockerMit("balancing").length === 0) return;
         const pm = this.state.playerMesh && this.state.playerMesh.position;
         if (!pm) return;
         const emo = this.state.player && this.state.player.emotions;
         if (!emo) return;
         const range2 = AnazhRealm.BALANCING_RANGE_M * AnazhRealm.BALANCING_RANGE_M;
         const baseStep = AnazhRealm.BALANCING_CHAOS_DRAIN_PER_SEC * dt;
+        const balancing = this._balanceNah || (this._balanceNah = []);
+        balancing.length = 0;
+        this._blockerUmPlatz(pm.x, pm.z, AnazhRealm.BALANCING_RANGE_M + 1e-6, balancing, "balancing");
         for (const ba of balancing) {
             if (!ba.position) continue;
             const dx = ba.position.x - pm.x;
@@ -2318,16 +2338,19 @@ class AnazhRealm_Z15a {
 
     // Lifting-Tick: in Reichweite setzt der stärkste lifting-Compound state.player.liftingField; die
     // Physik wendet damit _liftVerticalVelocity an (analog playerUnderwater → _swimVerticalVelocity).
+    // Wie der Strahler-Takt fragt er nur die Nähe des Spielers (K54).
     _tickLiftingAffordances() {
         const pl = this.state.player;
         if (!pl) return;
-        const lifting = this._blockerMit("lifting");
         const pm = this.state.playerMesh && this.state.playerMesh.position;
-        if (!pm || lifting.length === 0) {
+        if (!pm || this._blockerMit("lifting").length === 0) {
             pl.liftingField = { active: false, strength: 0 };
             return;
         }
         const range2 = AnazhRealm.LIFTING_RANGE_M * AnazhRealm.LIFTING_RANGE_M;
+        const lifting = this._hebeNah || (this._hebeNah = []);
+        lifting.length = 0;
+        this._blockerUmPlatz(pm.x, pm.z, AnazhRealm.LIFTING_RANGE_M + 1e-6, lifting, "lifting");
         let best = 0;
         for (const li of lifting) {
             if (!li.position) continue;
