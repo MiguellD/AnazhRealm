@@ -9,7 +9,7 @@
 - **Weltbild:** zweit 22,1 / 22,0 → 20,0 / 20,3 s, kalt gleich (28,4 / 29,0 → 27,9 / 29,8 s).
 - **GPU** (gpu-bank am Tor nah, am Tor-Rest und am Genesis-Blick): im Rauschen.
 - **Bild** A ↔ B bei gleichem Einschwingen: im Rausch-Boden.
-- **CI:** Lauf 38547552490 am Kopf 9a218940 läuft. Das Ergebnis folgt als Nachtrag.
+- **CI:** Lauf 38547552490 am Kopf 9a218940 GRÜN 13/13 (puls 2/2, voll 11/11).
 
 ## Der Schnitt (die Wurzel gelesen, kein Vendor-Patch)
 
@@ -105,7 +105,7 @@ Ich besitze den Weg der Instanz-Daten in den Shader. Wir schneiden uns an drei S
   - WIP b5b4fd42 · e7240087 · 6a6ab71e;
   - Merge 90737338 (08b57ed8);
   - d49b2a25 · 5fff9e54;
-  - Kopf 9a218940 [ci voll]. Die CI ist zu lesen.
+  - Kopf 9a218940 [ci voll], CI 38547552490 GRÜN 13/13.
 - **Rohdaten** `bericht/1410-1/`: bau2-auswertung, gpu-bank-tor, vergleich-*, zaehl-sued-*, waende-*, Skripte. Die
   Bilder liegen im Arbeits-Klon `p3/k18/bild` P1–P4 · L1–L4 · Q1–Q2.
 - **Wände lokal** am Kopf, alle EXIT 0 (`p3/k1410/waende3/summe.txt`):
