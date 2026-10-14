@@ -1,0 +1,13 @@
+✅ SELBST-TEST H1 ein Hand-Regler in der garage (index.html) — H1 worlds/garage/index.html: 1 Hand-Regler (der EINE Generator ist AnazhHuelle.regler)
+✅ SELBST-TEST H1 ein Werkstatt-Schieber von Hand im Stamm (stamm/23b.js) — H1 stamm/23b.js: 1 Hand-Regler (der EINE Generator ist AnazhHuelle.regler)
+✅ SELBST-TEST H2 eine eigene ready in der schmiede — H2 worlds/schmiede/schmiede.js: 1× eine eigene ready-Meldung (die EINE Brücke ist AnazhHuelle.bruecke)
+✅ SELBST-TEST H2 der Element-Adapter in der klang (op[0] je Element) — H2 worlds/klang/klang.js: Element-Adapter op[0] (aus "gt" wird "g") — der DSL-Adapter der Hülle liest das Programm ganz
+✅ SELBST-TEST H3 die fachwerk ohne Kosten-Leiste — H3 fachwerk: ohne Kosten-Leiste je LOD-Stufe (AnazhHuelle.kosten)
+✅ SELBST-TEST H4 das tetrapoda-Labor baut seinen eigenen Leib (bauTier + Fell-Streu) — H4 tetrapoda: baut einen eigenen Leib (fellStreu( · bauTier() — ein Zwilling des Ofen-Körpers
+✅ SELBST-TEST H4 das tetrapoda-Labor ohne den Bäcker der Welt (foundry-core) — H4 tetrapoda: lädt foundry-core nicht (der EINE Bäcker der Welt)
+✅ SELBST-TEST H4 das koerperstudio-Labor baut seinen eigenen Menschen (bauMensch + Haar-Streu) — H4 koerperstudio: baut einen eigenen Leib (bauMensch( · haarStreu() — ein Zwilling des Ofen-Körpers
+✅ SELBST-TEST H4 das koerperstudio-Labor ohne den Bäcker der Welt (foundry-core) — H4 koerperstudio: lädt foundry-core nicht (der EINE Bäcker der Welt)
+✅ SELBST-TEST H1 ein Hand-Regler im Gelände-Studio — H1 worlds/gelaende/studio.js: 2 Hand-Regler (der EINE Generator ist AnazhHuelle.regler)
+✅ SELBST-TEST H2 eine eigene ready im terrain-Labor — H2 worlds/terrain/phytogenesis.js: 1× eine eigene ready-Meldung (die EINE Brücke ist AnazhHuelle.bruecke)
+✅ SELBST-TEST H3 das terrain-Labor ohne Sitzung — H3 terrain: ohne Sitzung (Undo/Redo · Same) (AnazhHuelle.sitzung)
+✅ SELBST-TEST H3 das Gelände-Studio ohne Kosten-Leiste — H3 gelaende: ohne Kosten-Leiste je LOD-Stufe (AnazhHuelle.kosten)
