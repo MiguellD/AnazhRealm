@@ -1,0 +1,326 @@
+{
+ "weltbild": 29.03,
+ "zeilen": [
+  {
+   "was": "worker-neu",
+   "typ": "blob#1",
+   "t": 2.87,
+   "tw": null,
+   "twStart": null,
+   "twEmpf": null
+  },
+  {
+   "was": "haupt-behandelt",
+   "typ": "blob#1 ready",
+   "t": 5.86,
+   "tw": 5.44,
+   "twStart": 2.89,
+   "twEmpf": null
+  },
+  {
+   "was": "haupt-sendet",
+   "typ": "blob#1 get-book",
+   "t": 5.86,
+   "tw": null,
+   "twStart": null,
+   "twEmpf": null
+  },
+  {
+   "was": "haupt-sendet",
+   "typ": "blob#1 build-asset",
+   "t": 5.86,
+   "tw": null,
+   "twStart": null,
+   "twEmpf": null
+  },
+  {
+   "was": "haupt-sendet",
+   "typ": "blob#1 build-asset",
+   "t": 5.86,
+   "tw": null,
+   "twStart": null,
+   "twEmpf": null
+  },
+  {
+   "was": "haupt-sendet",
+   "typ": "blob#1 build-asset",
+   "t": 5.86,
+   "tw": null,
+   "twStart": null,
+   "twEmpf": null
+  },
+  {
+   "was": "haupt-sendet",
+   "typ": "blob#1 build-asset",
+   "t": 5.86,
+   "tw": null,
+   "twStart": null,
+   "twEmpf": null
+  },
+  {
+   "was": "haupt-sendet",
+   "typ": "blob#1 build-asset",
+   "t": 5.86,
+   "tw": null,
+   "twStart": null,
+   "twEmpf": null
+  },
+  {
+   "was": "haupt-sendet",
+   "typ": "blob#1 build-asset",
+   "t": 5.86,
+   "tw": null,
+   "twStart": null,
+   "twEmpf": null
+  },
+  {
+   "was": "haupt-sendet",
+   "typ": "blob#1 build-asset",
+   "t": 5.86,
+   "tw": null,
+   "twStart": null,
+   "twEmpf": null
+  },
+  {
+   "was": "haupt-sendet",
+   "typ": "blob#1 build-asset",
+   "t": 5.86,
+   "tw": null,
+   "twStart": null,
+   "twEmpf": null
+  },
+  {
+   "was": "haupt-behandelt",
+   "typ": "blob#1 book",
+   "t": 8.43,
+   "tw": 7.01,
+   "twStart": 2.89,
+   "twEmpf": 5.86
+  },
+  {
+   "was": "haupt-sendet",
+   "typ": "blob#1 build-asset",
+   "t": 8.65,
+   "tw": null,
+   "twStart": null,
+   "twEmpf": null
+  },
+  {
+   "was": "haupt-sendet",
+   "typ": "blob#1 build-asset",
+   "t": 8.66,
+   "tw": null,
+   "twStart": null,
+   "twEmpf": null
+  },
+  {
+   "was": "haupt-sendet",
+   "typ": "blob#1 build-asset",
+   "t": 8.66,
+   "tw": null,
+   "twStart": null,
+   "twEmpf": null
+  },
+  {
+   "was": "haupt-sendet",
+   "typ": "blob#1 build-asset",
+   "t": 8.92,
+   "tw": null,
+   "twStart": null,
+   "twEmpf": null
+  },
+  {
+   "was": "worker-neu",
+   "typ": "blob#2",
+   "t": 8.93,
+   "tw": null,
+   "twStart": null,
+   "twEmpf": null
+  },
+  {
+   "was": "haupt-sendet",
+   "typ": "blob#1 build-asset",
+   "t": 9,
+   "tw": null,
+   "twStart": null,
+   "twEmpf": null
+  },
+  {
+   "was": "haupt-sendet",
+   "typ": "blob#1 build-asset",
+   "t": 9,
+   "tw": null,
+   "twStart": null,
+   "twEmpf": null
+  },
+  {
+   "was": "haupt-sendet",
+   "typ": "blob#1 build-asset",
+   "t": 10.09,
+   "tw": null,
+   "twStart": null,
+   "twEmpf": null
+  },
+  {
+   "was": "haupt-sendet",
+   "typ": "blob#1 build-asset",
+   "t": 10.09,
+   "tw": null,
+   "twStart": null,
+   "twEmpf": null
+  },
+  {
+   "was": "haupt-behandelt",
+   "typ": "blob#2 ready",
+   "t": 10.78,
+   "tw": 10.76,
+   "twStart": 9.18,
+   "twEmpf": null
+  },
+  {
+   "was": "haupt-sendet",
+   "typ": "blob#2 bake-impostor",
+   "t": 10.78,
+   "tw": null,
+   "twStart": null,
+   "twEmpf": null
+  },
+  {
+   "was": "haupt-sendet",
+   "typ": "blob#1 build-asset",
+   "t": 11.39,
+   "tw": null,
+   "twStart": null,
+   "twEmpf": null
+  },
+  {
+   "was": "haupt-sendet",
+   "typ": "blob#1 build-asset",
+   "t": 11.77,
+   "tw": null,
+   "twStart": null,
+   "twEmpf": null
+  },
+  {
+   "was": "haupt-sendet",
+   "typ": "blob#1 export-settlement",
+   "t": 13.21,
+   "tw": null,
+   "twStart": null,
+   "twEmpf": null
+  },
+  {
+   "was": "haupt-sendet",
+   "typ": "blob#2 bake-impostor",
+   "t": 13.38,
+   "tw": null,
+   "twStart": null,
+   "twEmpf": null
+  },
+  {
+   "was": "haupt-sendet",
+   "typ": "blob#1 build-asset",
+   "t": 17.83,
+   "tw": null,
+   "twStart": null,
+   "twEmpf": null
+  },
+  {
+   "was": "haupt-sendet",
+   "typ": "blob#1 build-asset",
+   "t": 18.12,
+   "tw": null,
+   "twStart": null,
+   "twEmpf": null
+  },
+  {
+   "was": "haupt-sendet",
+   "typ": "blob#1 build-asset",
+   "t": 18.49,
+   "tw": null,
+   "twStart": null,
+   "twEmpf": null
+  },
+  {
+   "was": "haupt-sendet",
+   "typ": "blob#2 bake-impostor",
+   "t": 18.5,
+   "tw": null,
+   "twStart": null,
+   "twEmpf": null
+  },
+  {
+   "was": "haupt-sendet",
+   "typ": "blob#1 build-asset",
+   "t": 18.7,
+   "tw": null,
+   "twStart": null,
+   "twEmpf": null
+  },
+  {
+   "was": "haupt-sendet",
+   "typ": "blob#1 build-asset",
+   "t": 18.97,
+   "tw": null,
+   "twStart": null,
+   "twEmpf": null
+  },
+  {
+   "was": "haupt-sendet",
+   "typ": "blob#2 bake-impostor",
+   "t": 18.98,
+   "tw": null,
+   "twStart": null,
+   "twEmpf": null
+  },
+  {
+   "was": "haupt-sendet",
+   "typ": "blob#1 build-asset",
+   "t": 19.26,
+   "tw": null,
+   "twStart": null,
+   "twEmpf": null
+  },
+  {
+   "was": "haupt-sendet",
+   "typ": "blob#1 build-asset",
+   "t": 19.32,
+   "tw": null,
+   "twStart": null,
+   "twEmpf": null
+  },
+  {
+   "was": "haupt-sendet",
+   "typ": "blob#2 bake-impostor",
+   "t": 19.45,
+   "tw": null,
+   "twStart": null,
+   "twEmpf": null
+  },
+  {
+   "was": "haupt-sendet",
+   "typ": "blob#1 build-asset",
+   "t": 19.59,
+   "tw": null,
+   "twStart": null,
+   "twEmpf": null
+  },
+  {
+   "was": "haupt-sendet",
+   "typ": "blob#1 build-asset",
+   "t": 19.72,
+   "tw": null,
+   "twStart": null,
+   "twEmpf": null
+  },
+  {
+   "was": "haupt-sendet",
+   "typ": "blob#1 build-asset",
+   "t": 19.72,
+   "tw": null,
+   "twStart": null,
+   "twEmpf": null
+  }
+ ],
+ "alle": 218
+}

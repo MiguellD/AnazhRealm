@@ -1,0 +1,30 @@
+[linse-gpu] nvidia/pascal
+
+=== DIE ZWEIT-ZEILE (Profil mit Platte) — echte GPU · nvidia pascal · Holz voll · V18.545.0 ===
+    0 s  blockiert  696 ms | die Seite lädt
+    1 s  blockiert  358 ms (Bauten 65) | die Welt entsteht
+    2 s  blockiert    0 ms (Bauten 15) | die Welt entsteht
+    3 s  blockiert  190 ms · Foundry 0 wartend · 0 im Werk · 0 im Bäcker | der Boden wächst (Ring 0 von 3) · das Buch der Studios öffnet sich
+    4 s  blockiert  907 ms (Erst-Bau 398) · 2 Pipelines offen · Foundry 0 wartend · 0 im Werk · 0 im Bäcker | der Boden wächst (Ring 0 von 3) · das Buch der Studios öffnet sich
+    5 s  blockiert  980 ms (Boden 48 · Streu 19 · Erst-Bau 322) · 2 Pipelines offen · Foundry 0 wartend · 0 im Werk · 0 im Bäcker | der Boden wächst (Ring 1 von 3) · das Buch der Studios öffnet sich
+    6 s  blockiert 1000 ms · 2 Pipelines offen · Foundry 0 wartend · 0 im Werk · 0 im Bäcker | der Boden wächst (Ring 1 von 3) · das Buch der Studios öffnet sich
+    7 s  blockiert  934 ms (Boden 58 · Streu 18 · Erst-Bau 707) · 4 Pipelines offen · Vorrat wartet auf das erste Bild · Foundry 0 wartend · 6 im Werk · 0 im Bäcker | der Boden wächst (Ring 1 von 3) · das Buch der Studios öffnet sich
+    8 s  blockiert  909 ms (Bauten 15 · Boden 17 · Buch 18 · Gruppen-Bau 17 · Erst-Bau 254) · 3 Pipelines offen · Vorrat wartet auf das erste Bild · Foundry 0 wartend · 6 im Werk · 0 im Bäcker | der Boden wächst (Ring 1 von 3) · das Buch der Studios öffnet sich
+    9 s  blockiert  966 ms (Bauten 33 · Boden 31 · Streu 21 · Gruppen-Bau 94 · Erst-Bau 691) · 3 Pipelines offen · Vorrat wartet auf das erste Bild · Foundry 1 wartend · 2 im Werk · 0 im Bäcker | der Boden wächst (Ring 2 von 3) · 76 Bäume und Bauten wachsen · 4 Wald-Stücke warten auf ihre Gestalt · 7 ferne Bäume werden gemalt
+   10 s  blockiert  801 ms (Boden 36 · Streu 20 · Erst-Bau 555) · 2 Pipelines offen · Vorrat wartet auf das erste Bild · Foundry 1 wartend · 4 im Werk · 0 im Bäcker | der Boden wächst (Ring 2 von 3) · 75 Bäume und Bauten wachsen · 4 Wald-Stücke warten auf ihre Gestalt · 11 ferne Bäume werden gemalt
+   11 s  blockiert  881 ms (Boden 63 · Streu 13 · Erst-Bau 551) · 1 Pipelines offen · Vorrat wartet auf das erste Bild · Foundry 0 wartend · 7 im Werk · 1 im Bäcker | der Boden wächst (Ring 2 von 3) · 75 Bäume und Bauten wachsen · 4 Wald-Stücke warten auf ihre Gestalt · 11 ferne Bäume werden gemalt
+   12 s  blockiert  849 ms (Bauten 13 · Boden 5 · Streu 37 · Gruppen-Bau 8 · Erst-Bau 494) · 2 Pipelines offen · Vorrat wartet auf das erste Bild · Foundry 0 wartend · 0 im Werk · 0 im Bäcker | 4 Wald-Stücke warten auf ihre Gestalt
+   13 s  blockiert  987 ms (Streu 225 · Gruppen-Bau 7 · Erst-Bau 627) · 5 Pipelines offen · Vorrat wartet auf das erste Bild · Foundry 0 wartend · 0 im Werk · 0 im Bäcker | 4 Wald-Stücke warten auf ihre Gestalt
+   14 s  blockiert  989 ms (Streu 51 · Erst-Bau 749) · 1 Pipelines offen · Vorrat wartet auf das erste Bild · Foundry 0 wartend · 0 im Werk · 0 im Bäcker | 3 Wald-Stücke warten auf ihre Gestalt
+   15 s  blockiert  793 ms (Streu 48 · Erst-Bau 635) · 3 Pipelines offen · Vorrat wartet auf das erste Bild · Foundry 0 wartend · 0 im Werk · 0 im Bäcker | 3 Wald-Stücke warten auf ihre Gestalt
+   16 s  blockiert  437 ms (Streu 440 · Erst-Bau 293) · 1 Pipelines offen · Vorrat wartet auf das erste Bild · Foundry 0 wartend · 0 im Werk · 0 im Bäcker | 3 Wald-Stücke warten auf ihre Gestalt
+   17 s  blockiert  173 ms (Streu 277 · Gruppen-Bau 5 · Erst-Bau 91) · 1 Pipelines offen · Vorrat wartet auf das erste Bild · Foundry 0 wartend · 0 im Werk · 0 im Bäcker | 2 Wald-Stücke warten auf ihre Gestalt
+   18 s  blockiert    0 ms (Streu 90 · Erst-Bau 37) · 1 Pipelines offen · Vorrat bestellt · Foundry 0 wartend · 0 im Werk · 0 im Bäcker | — das Weltbild steht
+  8.4 s  das Buch der Studios ist da
+  7.4 s  der Vorrat wartet auf das erste Bild
+  18.3 s  der Vorrat bestellt
+  9.5 s  _foundryRequestSettlement ab 
+  12.5 s  _foundryRequestSettlement an 
+
+  t(Weltbild) = t(Kontrolle) 18.23 s ab Navigation
+  ❌ die Ankunft kalt ≤ 5 s ohne halbes Weltbild (Pflicht-OFFEN B) — 18.23 s
