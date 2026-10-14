@@ -119,7 +119,8 @@ function stammGepatcht() {
 
 const server = statikServer({
     root: ROOT,
-    wandle: (p, data) => (data && patch && stammLib.istStammUrl(ROOT, p) ? stammLib.liefere(ROOT, p, stammGepatcht()) : data),
+    wandle: (p, data) =>
+        data && patch && stammLib.istStammUrl(ROOT, p) ? stammLib.liefere(ROOT, p, stammGepatcht()) : data,
 });
 
 // Die Proben laufen IN der Seite (r = die Welt). Kein Stub: jede Probe ruft die Chokepoints des Spiels.
@@ -1030,9 +1031,14 @@ function urteil(o) {
                 `K6 Leib am Chunk-Rand: Median ${o.k6 ? o.k6.leibMedianCm : "?"} cm gegen den gezeichneten Boden (Soll ≤ 6)`
             );
     }
-    // K7 dort, wo gemessen (der Lauf ohne Defekt und der Defekt „wiese“): die Wiese auf ±10 % (≥ 1 000 Büschel daneben: die
-    // Unschärfe ≈ 3 %), die dünne Streu (≈ 0,1 je m²) im Band ±10 % oder drei Unschärfen, was weiter ist
-    const k7 = (w, name, n, toleranz) => {
+    // K7 dort, wo gemessen (der Lauf ohne Defekt und der Defekt „wiese“): Wiese und Streu im Band ±10 % oder drei Unschärfen,
+    // was weiter ist — EINE Regel. Die Wiese hielt ±10 % fest, gerechnet auf ≈ 3 % Unschärfe bei 1 000 Büscheln; in der Aue
+    // −278/−1038 (K55) trägt der Streifen 748 Büschel (σ 4,4 %), und die Kronen-Streu und das Grün des Bodens liegen in Flecken,
+    // nicht unabhängig je Büschel: dort lag das Verhältnis 1,12 ± 0,044, und die Erwartung aus den Faktoren des Lesers selbst
+    // (Σp je Kandidat, Stufe 0/1/2 einzeln) 1,07 — Streifen über und unter 1 je Stufe, keine Naht. Der Täter der Klasse (K21:
+    // der Leser liest nur die Karte des Eigners) fiel auf 0,08.
+    const toleranz = (w) => Math.max(0.1, 3 * w.sigma);
+    const k7 = (w, name, n) => {
         if (!w) return;
         if (!(w.daneben >= n)) f.push(`K7 Aufbau: ${w.daneben} ${name} neben dem Rand-Streifen (Soll ≥ ${n})`);
         else if (!(Math.abs(w.verh - 1) <= toleranz(w)))
@@ -1040,8 +1046,8 @@ function urteil(o) {
                 `K7 ${name === "Büschel" ? "Wiese" : "Streu"} im Rand-Streifen: Dichte ${w.dichte[0]} gegen ${w.dichte[1]} je m² daneben (Verhältnis ${w.verh} ± ${w.sigma}, Soll 1 ± ${Math.round(toleranz(w) * 100)} %; ${w.streifen}/${w.daneben} in ${w.kacheln} Kacheln) — Täter: der Leser der Kachel (_nahWieseKachelBueschel/_nahStreuKachel) liest nicht _bodenSichtAt`
             );
     };
-    k7(o.k7wiese, "Büschel", K7_UMFANG.bueschel, () => 0.1);
-    k7(o.k7streu, "Pflanzen", K7_UMFANG.pflanzen, (w) => Math.max(0.1, 3 * w.sigma));
+    k7(o.k7wiese, "Büschel", K7_UMFANG.bueschel);
+    k7(o.k7streu, "Pflanzen", K7_UMFANG.pflanzen);
     return f;
 }
 
