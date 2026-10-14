@@ -56,10 +56,14 @@ const LEICHT =
 // gemessen am Boden-Stoff des echten Frames): kein Gitter-Rauschen — die zwei erlaubten Rausch-Aufrufe sind r184s Schatten-
 // Dither (`interleavedGradientNoise`, 4 Ops je Aufruf, je Kaskade einer); ein MaterialX-Rauschen (548 Ops) bricht dazu die
 // Ops-Decke —, die Ladungen des Rausch-Atlas (78) und die Ops-Schätzung unter der Decke.
+// DIE PROGRAMM-GRÖSSE (`zeichenMax`, K17-3): swiftshader (die CI) übersetzt jedes Programm beim ersten Zeichnen und löst jede
+// WGSL-Funktion in ihren Aufrufer auf — die Zeichen des erzeugten Fragments sind die Übersetzungs-Arbeit, die vor dem
+// ersten Bild steht. Der Boden trug vor dem Fels-Gesetz im Pixel (K17) 96 050 Zeichen; mit dem Gesetz im Pixel, jede
+// Ziehung `zufall` 78-mal ausgeschrieben, 149 521 — die Prüfbühne S0 riss ihre Frist (171 s). Die Decke 100 000.
 const STOFFE = Object.freeze({
     boden: Object.freeze({
         zustand: "voxelChunkMaterial",
-        budget: Object.freeze({ rauschenMax: 2, ladungenMax: 90, probenMax: 12, opsMax: 2400 }),
+        budget: Object.freeze({ rauschenMax: 2, ladungenMax: 90, probenMax: 12, opsMax: 2400, zeichenMax: 100000 }),
     }),
 });
 
@@ -260,6 +264,12 @@ const GRENZEN = {
     opsMax: [(k) => k.ops, "≤", "Ops je Fragment (Schätzung)", ""],
     ladungenMax: [(k) => k.ladungen, "≤", "Ladungen je Fragment", ""],
     probenMax: [(k) => k.proben, "≤", "Proben je Fragment", ""],
+    zeichenMax: [
+        (k) => k.zeichen,
+        "≤",
+        "Zeichen WGSL im Programm",
+        " — swiftshader übersetzt jede Zeile vor dem ersten Bild (Lehre 14: schwere Arbeit nie ausgeschrieben in jedem Pixel)",
+    ],
 };
 function kostenUrteil(k, budget, name) {
     const n = name || "Programm";
@@ -426,6 +436,11 @@ fn main( @builtin( position ) p : vec4<f32> ) -> Out {
     // Eine Stufe, die aus ihrem Zweig wandert, wird unbedingt (der Fall, den gate:post-kette bewacht).
     const ohneZweig = wgslKosten(modul.replace("if ( render.staerke != 0.0 ) {", "{"));
     pruef("Stufe ohne Zweig", ohneZweig.abtastungen.unbedingt, 6);
+    // Die Programm-Größe: ein Programm über der Decke nennt seine Zeichen, eines darunter hält.
+    pruef("Größe hält", kostenUrteil(k, { zeichenMax: modul.length }, "s"), []);
+    const gross = kostenUrteil(k, { zeichenMax: modul.length - 1 }, "s");
+    if (!(gross.length === 1 && gross[0].includes(`${modul.length} Zeichen WGSL im Programm`)))
+        fehler.push(`Urteil nennt die Programm-Größe nicht (${JSON.stringify(gross)})`);
     // Ein Modul ohne Fragment-Einstieg (ein Compute-Modul) ist blind, nie grün.
     pruef("blind", kostenUrteil(wgslKosten("fn f() {}"), {}, "x").length, 1);
     // Eine vertippte Decke wirft, statt still nichts zu prüfen.
