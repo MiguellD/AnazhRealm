@@ -101,10 +101,11 @@ function schritteAus(doc) {
         const damals = ymlAm.get(r.head_sha);
         const jobs = (await api(`/actions/runs/${r.id}/attempts/${a}/jobs?per_page=100`)).jobs;
         const rot = jobs.filter((j) => !["success", "skipped"].includes(j.conclusion));
-        if (rot.length)
+        // ein genannter Messlauf (--zuerst) misst nur seine grünen Jobs; ein roter Job misst nie
+        if (rot.length && !zuerst.includes(r.id))
             throw new Error(`Lauf ${messung} trägt ${rot.map((j) => j.name + " " + j.conclusion).join(", ")}`);
         for (const job of jobs) {
-            if (job.conclusion === "skipped") continue;
+            if (job.conclusion !== "success") continue;
             let v = 0;
             for (const s of job.steps || []) {
                 const t = sek(s.started_at, s.completed_at);

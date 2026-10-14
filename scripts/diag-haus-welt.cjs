@@ -177,6 +177,17 @@ const patchZiel = (z) =>
 // Welt. Das Urteil je Welt bleibt dasselbe.
 const PARALLEL = Math.max(1, Number(process.env.HAUS_WELT_PARALLEL) || Math.min(4, require("os").cpus().length));
 const PORT_BASIS = Number(process.env.HAUS_WELT_PORT) || 0;
+// --teil=k/n (K61): am Läufer (4 Kerne) brachten vier Welten zugleich nur 596 -> 517 s (38628488866) — die Welten teilen sich
+// die Kerne. Die CI fährt die Welten darum in n Schritten in n Gruppen: Teil k trägt die Welten i (0 = der Hauptlauf, dann
+// die Selbsttests in ihrer Reihenfolge) mit i mod n = k - 1; jede Welt urteilt in GENAU einem Teil. Ohne --teil alle.
+const TEIL = (() => {
+    const a = process.argv.find((x) => x.startsWith("--teil="));
+    if (!a) return null;
+    const m = /^--teil=(\d+)\/(\d+)$/.exec(a);
+    if (!m || !(+m[1] >= 1 && +m[1] <= +m[2])) throw new Error(`${a}: erwartet --teil=k/n mit 1 <= k <= n`);
+    return { k: +m[1], n: +m[2] };
+})();
+const imTeil = (i) => !TEIL || i % TEIL.n === TEIL.k - 1;
 // eine Patch-Zeile [geheilt, basis] gilt dem Stamm — der Datei, die die Zeile trägt (scripts/lib/stamm.cjs `dateiMit`; trägt
 // sie keine, der ersten: dort meldet der Lauf die fehlende Zeile) —, [datei, geheilt, basis] der genannten Datei (das
 // Gesetzbuch reist über den Foundry-Worker: /fachwerk-core.js)
@@ -1605,6 +1616,7 @@ function zeile(o) {
     const t0 = Date.now();
     let rot = 0;
     let selbst = [];
+    let welten = 0;
     try {
         const lauf = async (inj, phasen, platz) => {
             const z = { patch: inj && BASIS[inj] ? BASIS[inj] : null, fehler: [], angewandt: new Set() };
@@ -1727,12 +1739,18 @@ function zeile(o) {
                 .map((inj) => ({ inj, soll: soll[inj], phasen: phasenVon[inj] }));
         }
         // der Hauptlauf zuerst (er fährt alle Phasen, die längste Welt), dann die Selbsttests — alle im Pool
-        const [haupt, ...selbstErg] = await pool([
+        const auftraege = [
             (platz) => lauf(null, PHASEN.length ? PHASEN : null, platz),
             ...selbst.map((s) => (platz) => lauf(s.inj, s.phasen, platz)),
-        ]);
+        ];
+        const meine = auftraege.map((_, i) => i).filter(imTeil);
+        const erg = new Array(auftraege.length);
+        (await pool(meine.map((i) => auftraege[i]))).forEach((e, j) => (erg[meine[j]] = e));
+        welten = meine.length;
+        const [haupt, ...selbstErg] = erg;
         if (selbst.length) {
             for (let i = 0; i < selbst.length; i++) {
+                if (!selbstErg[i]) continue; // die Welt eines anderen Teils
                 const { inj } = selbst[i];
                 const soll = { [inj]: selbst[i].soll };
                 const { o, pf } = selbstErg[i];
@@ -1746,17 +1764,21 @@ function zeile(o) {
                 if (!ok) rot++;
             }
         }
-        const { o, errs } = haupt;
-        console.log("  " + zeile(o));
-        const f = urteil(o);
-        for (const x of f) console.log("  ❌ " + x);
-        if (errs.length) console.log("  ❌ Seiten-Fehler: " + errs[0]);
-        rot += f.length + (errs.length ? 1 : 0);
-        if (process.env.HAUS_WELT_JSON) fs.writeFileSync(process.env.HAUS_WELT_JSON, JSON.stringify(o, null, 1));
+        if (haupt) {
+            const { o, errs } = haupt;
+            console.log("  " + zeile(o));
+            const f = urteil(o);
+            for (const x of f) console.log("  ❌ " + x);
+            if (errs.length) console.log("  ❌ Seiten-Fehler: " + errs[0]);
+            rot += f.length + (errs.length ? 1 : 0);
+            if (process.env.HAUS_WELT_JSON) fs.writeFileSync(process.env.HAUS_WELT_JSON, JSON.stringify(o, null, 1));
+        }
     } finally {
         await browser.close();
     }
-    console.log(`  ${1 + selbst.length} Welten, ${PARALLEL} zugleich, ${Math.round((Date.now() - t0) / 1000)} s`);
+    console.log(
+        `  ${welten} Welten${TEIL ? ` (Teil ${TEIL.k}/${TEIL.n})` : ""}, ${PARALLEL} zugleich, ${Math.round((Date.now() - t0) / 1000)} s`
+    );
     console.log(rot ? `❌ gate:haus-welt ROT (${rot})` : "✅ gate:haus-welt grün");
     process.exit(rot ? 1 : 0);
 })().catch((e) => {
