@@ -42,3 +42,5 @@ Scratch `C:\Users\micha\AppData\Local\Temp\claude\boden-stufen\` (Werkzeug-Kopie
   Ringradius L2 oder L3. Ein Kanten-Morph braucht ein ZWEITES Ziel (Gesetz-Flaeche = Fern-Ring-Rand `_fernRingFeldY`) oder
   den Umbau des Ziels beim Kanten-Wechsel (Neubau der Rand-Chunks je Ring-Schritt) — beides beruehrt Worker-Spiegel + Satz
   48 B + Linse (o)/(9). Messname: diag-fern-ring (9) chunk-eigen-p95 1,39 m -> Soll <= 0,5.
+- ERGEBNIS: Zweig-CI 38575554103 an 60891c67 GRUEN 13/13 (voll 2 durch den Merge geheilt, voll 4 + 9 durch die Schnitte);
+  check:statik lokal gruen. Merge-bereit ab 60891c67 (danach nur diese Uebergabe [skip ci]). Offen bleibt die BAU-KANTE.
