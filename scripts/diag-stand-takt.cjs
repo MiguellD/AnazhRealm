@@ -776,11 +776,39 @@ const server = statikServer();
                 // (U) STUFE (K51-5): aus der Ruhe tauscht ein ferner Chunk seine Stufe hin und zurück, wie der Streaming-Takt
                 // (`_rebuildVoxelChunk(cx, cz, lod)`, hier synchron) — gezählt je Takt die Einheiten und die Rufe des Walds
                 {
+                    // DIE RUHE VOR DEM WECHSEL: offener Wuchs ist keine Ruhe. Nach dem Gehen liegen Chunks neu im `foliageRadius`,
+                    // deren Vegetation wartet (`pendingFoliageChunks`, der Wuchs-Takt je Wanduhr gedrosselt); füllt sie der Wuchs
+                    // oder der Neubau des Ziels (`_populateVoxelChunkVegetation` → `_weltRegt()`) mitten in der Phase, regt sich
+                    // die Menge — nicht die Stufe (CI 38609556864: archLod · archCull · streuLod wach, die Boden-Takte nicht).
+                    // Der offene Wuchs im Radius fällt darum VOR der Ruhe, synchron; das Ziel trägt keine wartende Form.
+                    let wuchs = 0;
+                    if (st.pendingFoliageChunks)
+                        for (const k of [...st.pendingFoliageChunks]) {
+                            const [cx, cz] = k.split(",").map(Number);
+                            if (!r._foliageChunkInRadius(cx, cz)) continue;
+                            st.pendingFoliageChunks.delete(k);
+                            r._populateVoxelChunkVegetation(cx, cz, { immediate: true });
+                            wuchs++;
+                        }
+                    // ebenso das Studio: eine Ankunft (`_foundry.ankunft`, Buch, Antwort) liest der Stempel aller Takte — die Phase
+                    // beginnt erst, wenn keine Bestellung mehr wartet oder fliegt (`warte`, `pending`)
+                    const F = r._foundry;
+                    const studioRuht = () =>
+                        !F || ((!F.warte || F.warte.length === 0) && (!F.pending || F.pending.size === 0));
+                    let studio = 0;
+                    for (; studio < 900 && !studioRuht(); studio++) {
+                        takt();
+                        if (studio % 5 === 0) await pause(10);
+                    }
                     await bisRuhe(900);
+                    const ankunft0 = F ? F.ankunft | 0 : 0;
                     const pm = st.playerMesh.position;
                     let ziel = null;
+                    const formWartet = (k) =>
+                        (st.grassDirtyChunks && st.grassDirtyChunks.has(k)) ||
+                        (st.dirtyVoxelChunks && st.dirtyVoxelChunks.has(k));
                     for (const [k, e] of st.voxelChunks) {
-                        if (!e || e.empty || !e.mesh || e.lod !== 2) continue;
+                        if (!e || e.empty || !e.mesh || e.lod !== 2 || formWartet(k)) continue;
                         const [cx, cz] = k.split(",").map(Number);
                         if (!ziel || Math.abs(cx * 43.2 - pm.x) + Math.abs(cz * 43.2 - pm.z) < ziel.d)
                             ziel = { cx, cz, d: Math.abs(cx * 43.2 - pm.x) + Math.abs(cz * 43.2 - pm.z) };
@@ -789,6 +817,31 @@ const server = statikServer();
                         wechsel: 0,
                         takte: {},
                         rufe: { _lodTreeVisHeight: 0, _forestStehtFrei: 0, _forestCellDarts: 0 },
+                        ziel: ziel && {
+                            cx: ziel.cx,
+                            cz: ziel.cz,
+                            d: Math.round(ziel.d),
+                            populiert: !!(
+                                st.voxelPopulatedChunks && st.voxelPopulatedChunks.has(ziel.cx + "," + ziel.cz)
+                            ),
+                        },
+                        wuchs,
+                        studio, // Takte bis die Bestellungen des Studios ruhten
+                        ankunft: 0, // Ankünfte des Studios während der Phase
+                        regung: [], // wer die Menge regt (nicht die Stufe): die ersten Rufer beim Namen
+                    };
+                    const regtAlt = P._weltRegt;
+                    P._weltRegt = function (boden, stufe) {
+                        if (stufe !== true && U.regung.length < 3) {
+                            const z = String(new Error().stack || "")
+                                .split("\n")
+                                .slice(2, 6)
+                                .map((l) => (l.match(/at (?:AnazhRealm\.)?([\w$.]+)/) || [])[1])
+                                .filter(Boolean)
+                                .join(" < ");
+                            if (!U.regung.includes(z)) U.regung.push(z);
+                        }
+                        return regtAlt.call(this, boden, stufe);
                     };
                     const alt = {};
                     for (const m of Object.keys(U.rufe)) {
@@ -810,6 +863,8 @@ const server = statikServer();
                             }
                     } finally {
                         Object.assign(P, alt);
+                        P._weltRegt = regtAlt;
+                        U.ankunft = (F ? F.ankunft | 0 : 0) - ankunft0;
                     }
                     aus.stufe = U;
                 }
@@ -904,7 +959,7 @@ const server = statikServer();
     }
     if (befund.stufe)
         console.log(
-            `  Stufe: ${befund.stufe.wechsel} Wechsel ohne Form-Änderung — Einheiten ${JSON.stringify(befund.stufe.takte)} · Rufe ${JSON.stringify(befund.stufe.rufe)}`
+            `  Stufe: ${befund.stufe.wechsel} Wechsel ohne Form-Änderung an ${JSON.stringify(befund.stufe.ziel)} (offener Wuchs vor der Ruhe: ${befund.stufe.wuchs} Chunks, Studio ruhte nach ${befund.stufe.studio} Takten, Ankünfte in der Phase ${befund.stufe.ankunft}) — Regung ${JSON.stringify(befund.stufe.regung)} — Einheiten ${JSON.stringify(befund.stufe.takte)} · Rufe ${JSON.stringify(befund.stufe.rufe)}`
         );
     if (befund.strom)
         console.log(
