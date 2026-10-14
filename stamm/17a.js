@@ -1559,10 +1559,10 @@ class AnazhRealm_Z17a {
             vonPlatte: false,
             _bedarfD2: Infinity,
             _flat: null,
-            fertig: null, // die Zusage der Karte: true gebacken, false gescheitert (`_karteEndet`)
-            _fertigLoes: null,
+            ende: null, // die Zusage der Karte: true gebacken, false gescheitert (`_karteEndet`)
+            _endeLoes: null,
         };
-        z.fertig = new Promise((r) => (z._fertigLoes = r));
+        z.ende = new Promise((r) => (z._endeLoes = r));
         at.zellen.set(key, z);
         this._karteNadel(null, z);
         if (at.map && z.idx >= at.cap) this._impostorAtlasTexturen(at, z.idx + 1);
@@ -1574,12 +1574,12 @@ class AnazhRealm_Z17a {
         return z;
     }
     // DAS ENDE EINER KARTE (K38-N2): gebacken (`ok`) oder gescheitert — die EINE Stelle, die den Zustand der Zelle setzt
-    // und ihre Zusage `z.fertig` löst. Wer auf die Karte wartet (die L2-Vorschau der Werkstatt), hängt sich per
+    // und ihre Zusage `z.ende` löst. Wer auf die Karte wartet (die L2-Vorschau der Werkstatt), hängt sich per
     // `_foundryWecker` an; bis K38-N2 hörte niemand den Bake, und die Vorschau blieb „pending", bis der Spieler neu wählte.
     _karteEndet(z, ok) {
         if (ok) z.gebacken = true;
         else z.gescheitert = true;
-        if (z._fertigLoes) z._fertigLoes(!!ok);
+        if (z._endeLoes) z._endeLoes(!!ok);
     }
 
     // Das EINE Einheits-Quad der Karten (6 Verts auf der Stammachse, y ∈ {0,1}) mit DREI Vertex-Attributen: position,

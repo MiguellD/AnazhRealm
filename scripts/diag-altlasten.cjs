@@ -1934,8 +1934,8 @@ const KARTEN_METHODEN = [
     "_tickImpostorBake() {",
     "_applyStudioImpostorPayload(z, payload) {",
     "_buildImpostorLeaf(bp, skel) {",
-    "_foundryEnsureImpostorRecord(preset, variant, ov) {",
-    "_foundryBuildImpostorFlat(entry, preset) {",
+    "_foundryEnsureImpostorRecord(preset, variant, ov, wer) {",
+    "_foundryBuildImpostorFlat(entry, preset, wer) {",
 ];
 function scanKartenWand(srcRoh) {
     const code = stripComments(srcRoh);

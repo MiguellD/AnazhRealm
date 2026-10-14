@@ -374,6 +374,19 @@ function wand(src) {
         (effekte.match(/const c[xyz] = Number\(/g) || []).length,
         (effekte.match(/playerMesh\.position : \{ x: 0/g) || []).length,
     ];
+    // Der Foundry-Pfad pollt nicht (K38-N2): jeder Wartende auf eine Foundry-Antwort hängt am Wecker (Zug, Buch, Karte),
+    // jede Frist startet am Ereignis (`_foundryUhren`). Ein Poll ist eine Closure der Methode, die setTimeout bekommt (sie
+    // stellt sich selbst neu: poll · cachePoll · pruefe bis K38), oder ein setInterval.
+    const polls = [];
+    let foundryMethoden = 0;
+    const sigF = /\n {4}(_foundry\w*|_heldFoundryGroup|_workshop\w*Preview\w*|_impostor\w*|_karte\w*|_tickImpostorBake)\([^)\n]*\) \{/g;
+    for (let m; (m = sigF.exec(nc)); ) {
+        const b = fnBody(nc.slice(m.index), /^\n {4}\w+\([^)\n]*\) \{/) || "";
+        foundryMethoden++;
+        if (/\bsetInterval\(/.test(b)) polls.push(`${m[1]} setInterval`);
+        for (const t of b.matchAll(/\bsetTimeout\(\s*(?:\(\)\s*=>\s*)?(\w+)\s*[,(]/g))
+            if (new RegExp(`(?:const|let|function)\\s+${t[1]}\\b`).test(b)) polls.push(`${m[1]} ${t[1]}`);
+    }
     return [
         [
             "W1 die Bühne zeichnet ungemaskt (`_buehneRender`: uLodMaskOn 0 um den Render, im finally zurück)",
@@ -404,6 +417,11 @@ function wand(src) {
             "W6 die Auflöser kennen keinen Ersatz-Ort (dslPositions: 0 `_defaultSpawnPos()`, 0 `dslClamp`, 0 `Number(`; Voxel-Ops ohne eigene Koordinaten-Leser, kein Ursprung statt Spieler; `_dslRulePos` setzt at_player nur für `== null`)",
             ersatz.every((n) => n === 0) && /posNode == null/.test(regelPos) && !/Array\.isArray/.test(regelPos),
             `Ersatz-Stellen ${ersatz.join("/")}`,
+        ],
+        [
+            "W7 der Foundry-Pfad pollt nicht (kein setInterval, keine Closure, die sich per setTimeout neu stellt — jeder Wartende am Wecker, jede Frist am Ereignis)",
+            foundryMethoden >= 40 && polls.length === 0,
+            `${foundryMethoden} Methoden · Polls: ${polls.length ? polls.join(", ") : "0"}`,
         ],
     ];
 }
@@ -1335,7 +1353,7 @@ async function probe(arg) {
             }
         }
         const gruen = wand(quelle);
-        check("Selbst-Test W: der Arbeitsbaum ist grün", gruen.every((w) => w[1]), gruen.filter((w) => !w[1]).map((w) => w[0]).join(" | "));
+        check("Selbst-Test W: der Arbeitsbaum ist grün", gruen.every((w) => w[1]), gruen.filter((w) => !w[1]).map((w) => `${w[0].slice(0, 2)} ${w[2] || ""}`).join(" | "));
         const vorStand = quelle
             .replace('this._buehneRender(p.renderer, p.scene, p.camera, "Werkstatt-Vorschau");', "p.renderer.render(p.scene, p.camera);")
             .replace("if (an !== null) lu.uLodMaskOn.value = 0;", "")
@@ -1356,11 +1374,16 @@ async function probe(arg) {
             .replace(
                 "const anchor = this._genesisPlattform();",
                 'const anchor = (this.state.architectures || []).find((a) => a && a.type === "start_plattform");'
+            )
+            // der Warte-Poll der Hand beim Vorher (K38-N1): sie fragte alle 150 ms, ob das Buch steht
+            .replace(
+                'this._foundryWecker(f.buchDa, "hand", () => {',
+                "const poll = () => {\n if (f.ready && f.recipes) this._refreshHeldMesh();\n else setTimeout(poll, 150);\n };\n setTimeout(poll, 150);\n (() => {"
             );
         const rot = wand(vorStand);
         check(
-            "Selbst-Test W: der Vor-Stand (Vorschau direkt, Bühne maskiert, null-Ort, Op-Wache, Plattform-Zwilling, Ersatz-Ort) → W1–W6 feuern",
-            rot.filter((w) => !w[1]).length === 6,
+            "Selbst-Test W: der Vor-Stand (Vorschau direkt, Bühne maskiert, null-Ort, Op-Wache, Plattform-Zwilling, Ersatz-Ort, Warte-Poll der Hand) → W1–W7 feuern",
+            rot.filter((w) => !w[1]).length === 7,
             rot.map((w) => `${w[1] ? "✓" : "✗"} ${w[0].slice(0, 2)}`).join(" ")
         );
         // Die V-k5-Klasse: gesund ohne Täter, je Befund-Zustand der Täter beim Namen.

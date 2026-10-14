@@ -736,7 +736,13 @@ class AnazhRealm_Z23a {
                 if (outImp.children.length) return outImp;
             }
             if (zusage) {
-                this._foundryWecker(zusage, "werkstatt", () => this._workshopRebuildPreviewMesh());
+                this._foundryWecker(zusage, "werkstatt", () => {
+                    try {
+                        this._workshopRebuildPreviewMesh();
+                    } catch (_e) {
+                        this._stoffBruch("die Werkstatt-Vorschau (Neubau nach der Karte)", _e);
+                    }
+                });
                 return "pending";
             }
             // ohne Zusage kann die Foundry keine Karte (die Zelle scheiterte) → auf die L2-Geometrie unten zurückfallen.

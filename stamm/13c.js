@@ -223,7 +223,13 @@ class AnazhRealm_Z13c {
         if (!f.ready || !f.recipes) {
             // Worker bootet / Buch kalt: die Hand hängt sich an die EINE Buch-Zusage und baut GENAU EINMAL neu, sobald das
             // Buch steht — bis dahin trägt der Part-Bau (die Hand ist nie leer).
-            this._foundryWecker(f.buchDa, "hand", () => this._refreshHeldMesh());
+            this._foundryWecker(f.buchDa, "hand", () => {
+                try {
+                    this._refreshHeldMesh();
+                } catch (_e) {
+                    this._stoffBruch("die Hand (Neubau nach dem Buch)", _e);
+                }
+            });
             return preset ? "pending" : null;
         }
         if (!preset) return null;
@@ -241,7 +247,12 @@ class AnazhRealm_Z13c {
             // Der EINE Zug des Schlüssels (zog ihn schon die Werkstatt oder die Welt, hängt sich die Hand an): bei Ankunft
             // die Hand GENAU EINMAL neu (Cache-Treffer, kein Loop); nach Ablauf fragt der nächste Equip neu.
             this._foundryWecker(this._foundryZug(key, preset, variant, 0, heldOv, 0), "hand", (ok) => {
-                if (ok) this._refreshHeldMesh();
+                if (!ok) return;
+                try {
+                    this._refreshHeldMesh();
+                } catch (_e) {
+                    this._stoffBruch("die Hand (Neubau nach der Lieferung)", _e);
+                }
             });
             return "pending";
         }

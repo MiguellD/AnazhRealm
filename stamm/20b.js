@@ -81,22 +81,16 @@ class AnazhRealm_Z20b {
     }
     // DER WECKER: ein Wartender (`wer`) hängt `fn(ok)` GENAU EINMAL an eine Zusage (Zug, Buch `f.buchDa` oder Karte) — kein
     // Poll, keine Frist (bis K38 gab je Wartendem auf das Buch ein 20-s-Poll still auf);
-    // fragt er im selben Warten erneut, bleibt es der eine Wecker.
+    // fragt er im selben Warten erneut, bleibt es der eine Wecker. Seinen Neubau fängt der Wartende selbst LAUT beim Namen
+    // (`_stoffBruch`, K22: der Versuch steht dort, wo die Stoff-Wand ihn sieht); jede Zusage trägt je Wartenden eine
+    // eigene Kette — ein gerissener Neubau stoppt keinen anderen.
     _foundryWecker(zusage, wer, fn) {
         const hoerer = this._foundryHoerer || (this._foundryHoerer = new WeakMap());
         let w = hoerer.get(zusage);
         if (!w) hoerer.set(zusage, (w = new Set()));
         if (w.has(wer)) return;
         w.add(wer);
-        zusage.then((ok) => {
-            try {
-                fn(ok);
-            } catch (_e) {
-                // ein gerissener Neubau des Wartenden bricht LAUT beim Namen (K22, die Stoff-Wand) und stoppt die Zusage
-                // der anderen Wartenden nie
-                this._stoffBruch("der Neubau nach der Foundry-Antwort (" + wer + ")", _e);
-            }
-        });
+        zusage.then(fn);
     }
     // Der Takt-Wächter: hält ein Request-Ergebnis zurück, bis der Loop-Tick es
     // freigibt (die Konversion des Aufrufers folgt als Microtask im selben Frame).
@@ -144,13 +138,28 @@ class AnazhRealm_Z20b {
     // (höchstens GEIST_FACHE × die Frist, dann fällt er: nie verklemmt). Bis 05.10. startete die Uhr des Wiederholers,
     // während der Bäcker den Abgelaufenen noch buk (gate:arch-feld, CPU-Raster unter Fremdlast: Weide und Eiche je 3
     // Versuche, die Karte der fernen Eiche kam in Takt 3281; der dritte Ablauf macht eine Zelle für immer gescheitert).
+    // DIE UHR STARTET AM EREIGNIS (K38-N2): ein Auftrag meldet seine Frist an (`f.fristen`), `_foundryUhren` stellt sie,
+    // sobald kein früherer seines Fadens offen ist — beim Anmelden, nach jeder Antwort und beim Fall eines Geistes. Bis
+    // K38-N2 fragte je Auftrag im Flug ein 1-s-Poll, ob er schon der älteste sei (die Uhr lief bis 1 s zu spät an).
     _foundryFrist(f, reqId, dauerMs, beiAblauf) {
+        const fristen = f.fristen || (f.fristen = new Map());
+        fristen.set(reqId, { dauerMs, beiAblauf, uhr: null });
+        this._foundryUhren(f);
+    }
+    _foundryUhren(f) {
+        const fristen = f.fristen;
+        if (!fristen || !fristen.size) return;
         const nr = (id) => Number(String(id).replace(/^\D+/, ""));
-        const meine = nr(reqId);
-        const bahn = this._foundryBahn(reqId);
-        let start = null;
-        const pruefe = () => {
-            if (!f.pending.has(reqId)) return; // beantwortet
+        for (const [reqId, fr] of fristen) {
+            if (!f.pending.has(reqId)) {
+                // beantwortet: die Uhr fällt mit
+                if (fr.uhr !== null) clearTimeout(fr.uhr);
+                fristen.delete(reqId);
+                continue;
+            }
+            if (fr.uhr !== null) continue;
+            const meine = nr(reqId);
+            const bahn = this._foundryBahn(reqId);
             let vorMir = false;
             for (const k of f.pending.keys()) {
                 if (nr(k) < meine && this._foundryBahn(k) === bahn) {
@@ -158,24 +167,24 @@ class AnazhRealm_Z20b {
                     break;
                 }
             }
-            const jetzt = performance.now();
-            if (vorMir) start = null;
-            else if (start === null) start = jetzt;
-            if (start !== null && jetzt - start > dauerMs) {
-                const geist = () => {};
-                f.pending.set(reqId, geist); // die späte Antwort löst den Geist ein (`_foundryAntwort`)
-                setTimeout(() => {
-                    if (f.pending.get(reqId) === geist) {
-                        f.pending.delete(reqId);
-                        this._foundryPumpe(f);
-                    }
-                }, dauerMs * AnazhRealm.FOUNDRY_GEIST_FACH);
-                beiAblauf();
-                return;
+            if (!vorMir) fr.uhr = setTimeout(() => this._foundryAblauf(f, reqId), fr.dauerMs);
+        }
+    }
+    _foundryAblauf(f, reqId) {
+        const fr = f.fristen && f.fristen.get(reqId);
+        if (!fr) return;
+        f.fristen.delete(reqId);
+        if (!f.pending.has(reqId)) return; // beantwortet im selben Takt
+        const geist = () => {};
+        f.pending.set(reqId, geist); // die späte Antwort löst den Geist ein (`_foundryAntwort`)
+        setTimeout(() => {
+            if (f.pending.get(reqId) === geist) {
+                f.pending.delete(reqId);
+                this._foundryPumpe(f);
+                this._foundryUhren(f); // der Geist fällt: die Uhr des nächsten seines Fadens läuft an
             }
-            setTimeout(pruefe, 1000);
-        };
-        setTimeout(pruefe, 1000);
+        }, fr.dauerMs * AnazhRealm.FOUNDRY_GEIST_FACH);
+        fr.beiAblauf();
     }
     _foundryWorkerRequest(presetId, seed, lod, ov, platte, nurPlatte, wo) {
         const f = this._foundry;
@@ -975,7 +984,7 @@ class AnazhRealm_Z20b {
         // Headless/Null-Renderer trägt der Rahmen aus der L1-Geometrie (dort bäckt nie einer).
         const rendB = this.state && this.state.renderer;
         if (!z.gebacken && rendB && !rendB._isHeadlessNull) {
-            if (wer) wer.wecke(z.fertig);
+            if (wer) wer.wecke(z.ende);
             return false;
         }
         if (z._flat) return z._flat;
