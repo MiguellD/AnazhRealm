@@ -400,7 +400,7 @@ class AnazhRealm_Z10 {
                     // Multi-Klassen-Geologie, als Füll-Licht-Albedo UND als colorNode.
                     albedoNode = _Ta.attribute("color", "vec3");
                     if (opts.vertexColorAlbedo) {
-                        // FELS: die per-Vertex-Geologie (phyto-core `withColor`) IST die Albedo; der EINE Substanz-Kern legt
+                        // FELS: der Stoff am Vertex (das Fels-Gesetz, gelaende-core `felsNetz`) IST die Albedo; der EINE Substanz-Kern legt
                         // Korn + Kavität + Roughness drauf (instanz-stabil via positionLocal). KEIN Terrain-Geologie-Overlay
                         // (positionWorld schmiert über instanzierte Felsen), KEIN Normal-Flatten/Bump (plättet die Krümmung).
                         if (typeof this._substanceCharacter === "function") {
@@ -427,12 +427,28 @@ class AnazhRealm_Z10 {
                             _Ta,
                             _bodenVc || albedoNode,
                             _Ta.positionWorld,
-                            _terrRough
+                            _terrRough,
+                            opts.felsImVertex === true
                         );
                         {
-                            // Der Chunk-Boden (Wege-Karte) trägt dort, wo kein echter Wald zeichnet, das Kronendach des
-                            // Fern-Rings (`_fernKroneNahMisch`, 0910-8) — dieselbe Boden-Farbe je Ort nah und fern.
-                            const _alb = opts.wegeKarte === true ? this._fernKroneNahMisch(_Ta, _geo) : _geo;
+                            // DAS KRONENDACH (0910-8, K16 — EINE Quelle): wo kein echter Wald zeichnet, trägt der Boden mit Wege-Karte
+                            // das Kronendach × Saison nach der Deckung (`_fernKroneNahMisch`) — der Chunk-Boden UND der Fern-Ring,
+                            // derselbe Stoff; der Ring reicht seine Ecken-Krone (`opts.kroneVertex`) für den Ort jenseits der Karte.
+                            let _alb =
+                                opts.wegeKarte === true
+                                    ? this._fernKroneNahMisch(_Ta, _geo, opts.kroneVertex || null)
+                                    : _geo;
+                            // DAS WASSER DES RINGS (K16, die Naht des Wassers): der Anteil des Wassers (`opts.wasserVertex`,
+                            // aNass) ist kein Boden — er wirft zurück, was der Wasser-Stoff zurückwirft (`_wasserBlick`: der
+                            // Körper R∞ im Licht des Orts, der Himmel × Fresnel, der Glanz; dieselben Uniforms), der Boden
+                            // trägt den Rest. Bis K16 mischte der Ring ein Fern-Blau in die Boden-Farbe (Luma 4,8× zu hell).
+                            if (opts.wasserVertex) {
+                                // im Fern-Fenster die Fluss-Karte je Fragment, jenseits der Kasten-Anteil des Punkts
+                                const _fk = this._flussKarteNode(_Ta);
+                                const _nass = _Ta.mix(opts.wasserVertex, _fk.wert, _fk.imFenster).clamp(0.0, 1.0);
+                                _alb = _alb.mul(_Ta.float(1.0).sub(_nass));
+                                mat.emissiveNode = this._fernWasserBlickNode(_Ta).mul(_nass);
+                            }
                             albedoNode = _alb;
                             mat.colorNode = _Ta.vec4(_alb, 1.0);
                             if (_terrRough.node) mat.roughnessNode = _terrRough.node;
@@ -467,13 +483,18 @@ class AnazhRealm_Z10 {
                                     const _rahmen = _karte.yz;
                                     // die Schicht: ein interpolierter Instanz-Wert kann 2,9999 lesen — gerundet, nie gekappt
                                     const _schicht = _Ta.floor(_karte.x.add(_Ta.float(0.5)));
-                                    // ── Instanz-Dekodierung (der Normal-Probe) ──
+                                    // ── Instanz-Dekodierung (die Instanz-Matrix, `_instanzMatrixNode`) ──
+                                    // r184 setzt den positionNode VOR die Instanzierung (WGSL der Karte gelesen, K20 13.10.): dort
+                                    // lasen positionLocal und der Normal-Probe den VORLAGEN-Raum (Skala 1, Drehung 0), die Matrix
+                                    // drehte das Quad danach mit der Instanz — jede Karte stand als feste Tafel in der Drehung ihres
+                                    // Baums, von der Seite ein Strich. Spalte 0 = s·(cos r, 0, −sin r), Spalte 3 = der Anker.
                                     // Jede gezeichnete Instanz lebt: die Gruppe ist dicht, count = lebende Instanzen (`_archGroupFree`
-                                    // verdichtet) — die Null-3×3 eines freien Slots, die den Probe singulär machte (das welt-spannende
-                                    // Quad an der Kamera), erreicht den Shader nie.
-                                    const _probe = _Ta.normalLocal;
-                                    const _sInst = _Ta.float(1.0).div(_Ta.sqrt(_probe.dot(_probe)));
-                                    const _aRot = _Ta.atan(_probe.z.negate(), _probe.x);
+                                    // verdichtet) — die Null-3×3 eines freien Slots erreicht den Shader nie.
+                                    const _naht = this._weltNaht(_Ta);
+                                    const _m0 = _naht.spalte(0);
+                                    const _sV = _naht.skala; // die Instanz-Skala im Vertex-Takt
+                                    const _sInst = _Ta.varying(_sV, "vKarteSkala");
+                                    const _aRot = _Ta.varying(_Ta.atan(_m0.z.negate(), _m0.x), "vKarteDreh");
                                     // ── exakte Anker-Peilung im Fragment: posW = Anker + right·k
                                     //    (right ⟂ look) ⇒ ang(look) = atan2(−h) + atan2(k, d),
                                     //    d = √(|h|²−k²) — kein Varying-Emissions-Risiko, exakt. ──
@@ -511,7 +532,72 @@ class AnazhRealm_Z10 {
                                     const _gX = _uvStetig.dFdx();
                                     const _gY = _uvStetig.dFdy();
                                     const _probeA = (tex, uv) => tex.sample(uv).depth(_schicht).grad(_gX, _gY);
-                                    const _samp = _Ta.mix(_probeA(_at.mapNode, _uvA), _probeA(_at.mapNode, _uvB), _fb);
+                                    // DIE VERGRÖSSERTE KARTE (K20, 12.10.): steht ein Texel der Stufe 0 auf mehr als einem Pixel, liest
+                                    // die Karte ihre Zelle KUBISCH (B-Spline, vier bilineare Abgriffe in der eigenen Ansicht) statt
+                                    // bilinear. Die Stufe 0 ist binär (Karten-Gesetz, BC1): bilinear gelesen schnitt der alphaTest
+                                    // jede Krone in Texel-Treppen — Blöcke von 3–10 px mit rechteckigen Löchern zwischen 30 und 60 m
+                                    // (Werkbank, Radeon: Texel bis 3,3 px). Die geglättete Deckung trägt die Kante zwischen den
+                                    // Texeln; unter einem Pixel je Texel bleibt die deckungstreue Mip-Wahl allein (Gewicht `_kubW`).
+                                    const _kubX = _Ta.float(_at.cw),
+                                        _kubY = _Ta.float(_at.ch);
+                                    const _gpX = _Ta.vec2(_gX.x.mul(_kubX), _gX.y.mul(_V).mul(_kubY)).length();
+                                    const _gpY = _Ta.vec2(_gY.x.mul(_kubX), _gY.y.mul(_V).mul(_kubY)).length();
+                                    const _kubW = _Ta
+                                        .float(1.0)
+                                        .div(_gpX.max(_gpY).max(_Ta.float(1e-4)))
+                                        .sub(_Ta.float(1.0))
+                                        .clamp(0.0, 1.0);
+                                    const _kubisch = (tex, vAns) => {
+                                        const cx = _uv.x.mul(_kubX).sub(_Ta.float(0.5));
+                                        const cy = _vIn.mul(_kubY).sub(_Ta.float(0.5));
+                                        const ix = _Ta.floor(cx),
+                                            iy = _Ta.floor(cy);
+                                        const fx = cx.sub(ix),
+                                            fy = cy.sub(iy);
+                                        const gew = (f) => {
+                                            const e = _Ta.float(1.0).sub(f);
+                                            const w0 = e.mul(e).mul(e).div(6.0);
+                                            const w1 = _Ta
+                                                .float(2.0 / 3.0)
+                                                .sub(f.mul(f).mul(_Ta.float(2.0).sub(f)).mul(0.5));
+                                            const w2 = _Ta
+                                                .float(2.0 / 3.0)
+                                                .sub(e.mul(e).mul(_Ta.float(2.0).sub(e)).mul(0.5));
+                                            const w3 = f.mul(f).mul(f).div(6.0);
+                                            return {
+                                                g0: w0.add(w1),
+                                                g1: w2.add(w3),
+                                                h0: w1.div(w0.add(w1)).sub(0.5),
+                                                h1: w3.div(w2.add(w3)).add(1.5),
+                                            };
+                                        };
+                                        const wx = gew(fx),
+                                            wy = gew(fy);
+                                        // in der eigenen Ansicht: die Abgriffe bleiben einen Texel vor ihrer Kante
+                                        const ziel = (hx, hy) => {
+                                            const y = iy.add(hy).clamp(_Ta.float(1.0), _kubY.sub(1.0));
+                                            return _Ta.vec2(ix.add(hx).div(_kubX), y.div(_kubY).add(vAns).div(_V));
+                                        };
+                                        const lies = (hx, hy) =>
+                                            tex.sample(ziel(hx, hy)).depth(_schicht).level(_Ta.float(0.0));
+                                        return lies(wx.h0, wy.h0)
+                                            .mul(wx.g0)
+                                            .add(lies(wx.h1, wy.h0).mul(wx.g1))
+                                            .mul(wy.g0)
+                                            .add(
+                                                lies(wx.h0, wy.h1)
+                                                    .mul(wx.g0)
+                                                    .add(lies(wx.h1, wy.h1).mul(wx.g1))
+                                                    .mul(wy.g1)
+                                            );
+                                    };
+                                    const _liesA = (tex, uv, vAns) =>
+                                        _Ta.mix(_probeA(tex, uv), _kubisch(tex, vAns), _kubW);
+                                    const _samp = _Ta.mix(
+                                        _liesA(_at.mapNode, _uvA, _v0),
+                                        _liesA(_at.mapNode, _uvB, _v1),
+                                        _fb
+                                    );
                                     _alpha = _samp.a;
                                     // fin-Einblendung des Billboards aus der EINEN Quelle `__phytoCore.lodCrossfadeMask` lod=2 (via
                                     // `_lodCrossfadeMaskNode`); Distanz = Fragment-Anker-Peilung (√_hl2), Sichthöhe = der Stempel
@@ -578,30 +664,37 @@ class AnazhRealm_Z10 {
                                     // die Welt-Normale über die Kamera-Matrix transformieren — Welt → Sicht ist
                                     // MATRIX.transformDirection(n) (V·n), nie n.transformDirection(MATRIX) (Vᵀ·n).
                                     mat.normalNode = _Ta.cameraViewMatrix.transformDirection(_nW);
-                                    // ── CAMERA-FACING (Vertex): Anker = instanz-transformierte Achsen-Position. Das Einheits-
-                                    //    Quad steht von y=0 bis y=1 (Instanz: Anker + s·y·oben); die Rahmen-Höhe streckt die
-                                    //    Achse auf s·y·H (positionLocal ist im positionNode schon instanziert, r184) ──
+                                    // ── CAMERA-FACING (Vertex) im VORLAGEN-Raum: der positionNode läuft VOR der Instanz-Matrix
+                                    //    (r184, WGSL gelesen), die Matrix dreht, skaliert und schiebt das Quad danach. Also blickt die
+                                    //    Karte in der Vorlage auf das Auge, wie die Instanz es sieht: Auge im Objekt-Raum minus Anker
+                                    //    (Spalte 3), zurückgedreht mit der transponierten 3×3 (Mᵀ·d = s·Rᵀ·d, die Richtung genügt).
+                                    //    Das Einheits-Quad steht von y=0 bis y=1; Halbbreite und Höhe sind Vorlagen-Maß, die Skala
+                                    //    trägt die Matrix. ──
                                     const _axis = _Ta.positionLocal;
                                     const _axisY = _axis.y.add(
-                                        _Ta.positionGeometry.y.mul(_sInst).mul(_rahmen.y.sub(_Ta.float(1.0)))
+                                        _Ta.positionGeometry.y.mul(_rahmen.y.sub(_Ta.float(1.0)))
                                     );
-                                    const _lkX = _Ta.cameraPosition.x.sub(_axis.x);
-                                    const _lkZ = _Ta.cameraPosition.z.sub(_axis.z);
+                                    const _dAuge = _naht.vorlage(_Ta.cameraPosition.sub(_naht.anker));
+                                    const _lkX = _dAuge.x;
+                                    const _lkZ = _dAuge.z;
                                     const _ll = _Ta.sqrt(_lkX.mul(_lkX).add(_lkZ.mul(_lkZ))).max(_Ta.float(1e-4));
                                     const _lx = _lkX.div(_ll);
                                     const _lz = _lkZ.div(_ll);
                                     // right = cross(up, look) = (look.z, 0, −look.x)
-                                    const _off = _ecke.mul(_rahmen.x).mul(_sInst);
+                                    const _off = _ecke.mul(_rahmen.x);
                                     // DER WIND DER KARTE (K19): derselbe Wind-Term wie Rinde und Laub der nahen Stufen (phyto-core
                                     // `windAusschlag`, das Stamm-Glied: ζ = uv.y, die Kronenspitze pendelt ζ²) — die Last aus der
                                     // Wind-Zeile des Wetters, die Böe aus WIND_BOE, die Richtung uWindDir, H = Rahmen-Höhe × Instanz-Skala,
                                     // f0 = kF · δ / H mit der mittleren Schlankheit der Baum-Arten (`_karteWindDelta`: die Karte trägt
-                                    // ihre Art nur als Atlas-Schicht). Bis K19 pendelte die Karte 0,22 m in jedem Wetter.
+                                    // ihre Art nur als Atlas-Schicht). Bis K19 pendelte die Karte 0,22 m in jedem Wetter. Die Phase liest
+                                    // den Welt-Anker der Instanz, der Ausschlag (Welt-Meter in Windrichtung) geht über die EINE Naht
+                                    // (`_weltNaht.vorlage`) in die Vorlage zurück — sonst drehte und skalierte ihn die Matrix mit dem Baum.
                                     if (!this.state.windUniforms) this._grassInstanceMat();
                                     const _wu = this._ensureWindCoupling(_Ta);
                                     const _WB = AnazhRealm.WIND_BOE;
-                                    const _Hk = _rahmen.y.mul(_sInst).max(0.5);
-                                    const _ortK = _axis.x.mul(_wu.uWindDir.x).add(_axis.z.mul(_wu.uWindDir.y));
+                                    const _Hk = _rahmen.y.mul(_sV).max(0.5);
+                                    const _ankerW = _naht.anker;
+                                    const _ortK = _ankerW.x.mul(_wu.uWindDir.x).add(_ankerW.z.mul(_wu.uWindDir.y));
                                     const _wK = globalThis.__phytoCore.windAusschlag(
                                         AnazhRealm._windTsl(_Ta),
                                         {
@@ -622,12 +715,16 @@ class AnazhRealm_Z10 {
                                         },
                                         false
                                     );
-                                    const _swayX = _wu.uWindDir.x.mul(_wK.quer);
-                                    const _swayZ = _wu.uWindDir.y.mul(_wK.quer);
+                                    const _swayW = _Ta.vec3(
+                                        _wu.uWindDir.x.mul(_wK.quer),
+                                        _Ta.float(0.0),
+                                        _wu.uWindDir.y.mul(_wK.quer)
+                                    );
+                                    const _swayT = _naht.vorlage(_swayW);
                                     mat.positionNode = _Ta.vec3(
-                                        _axis.x.add(_lz.mul(_off)).add(_swayX),
-                                        _axisY,
-                                        _axis.z.add(_lx.negate().mul(_off)).add(_swayZ)
+                                        _axis.x.add(_lz.mul(_off)).add(_swayT.x),
+                                        _axisY.add(_swayT.y),
+                                        _axis.z.add(_lx.negate().mul(_off)).add(_swayT.z)
                                     );
                                     mat.userData = mat.userData || {};
                                     mat.userData.impostorBillboard = true; // Linsen-Marker (diag-impostor)
@@ -741,7 +838,7 @@ class AnazhRealm_Z10 {
                     // DIE 2.5D-LICHTUNG GILT UNTER DEM HIMMEL (K02a, Auge 11 bei 762/−138): die geflattete Normale zeigt
                     // jede Boden-Fläche zum Himmel — in der Höhle lag so jede Decke und Wand als Wiese im Licht von oben
                     // (der Himmel als blaugrauer Schleier, die Sonne ohne Schatten auf dem Fels), und kein Licht von unten
-                    // erreichte die Decke. Mit der Himmels-Sicht (`himmelsSicht`, je Vertex `aHimmel`, `_himmelsSicht`)
+                    // erreichte die Decke. Mit der Himmels-Sicht (`himmelsSicht`, je Vertex `aHimmel`, gelaende-core `himmelsSicht`)
                     // flacht sie nur, soweit der Himmel die Fläche sieht; in der Höhle trägt die WAHRE Normale (−∇d, in die
                     // Luft — ohne Flächen-Vorzeichen: die Windung des Netzes kennt die Seite der Luft nicht). Unter dem
                     // Himmel (aHimmel 1) ist sie dieselbe Zahl wie vorher.
@@ -1221,7 +1318,7 @@ class AnazhRealm_Z10 {
     // (rohe Geometrie-Normale) → Fels/Geröll bricht durch; FLACH + FEUCHT (dampEarth im Basis-Albedo) →
     // Moos. smoothstep-Konkurrenz, per-Fragment (kein Vertex-Trapez). Render-only; Fehler → der
     // unveränderte Albedo.
-    _terrainGeologyAlbedo(_T, albedo, wp, roughOut) {
+    _terrainGeologyAlbedo(_T, albedo, wp, roughOut, felsImVertex) {
         try {
             const G = AnazhRealm.TERRAIN_GEOLOGY;
             const au = this.state.atmoUniforms;
@@ -1230,21 +1327,49 @@ class AnazhRealm_Z10 {
             // Shading-Normale, die `normalWorld` im Farb-Knoten trägt) = die echte Hangneigung.
             const _steep = _T.float(1.0).sub(_T.normalWorldGeometry.y).clamp(0.0, 1.0);
             const _rockW = _T.smoothstep(_T.float(G.rockLo), _T.float(G.rockHi), _steep);
-            const _screeW = _T
-                .smoothstep(_T.float(G.screeLo), _T.float(G.screeHi), _steep)
-                .mul(_T.float(1.0).sub(_rockW));
+            // DER SCHUTT liegt, wo das Schicht-Gesetz den Schutthang legt — das Gewicht trägt der Vertex (`aSchutt`, `_felsStoff`
+            // aus gelaende-core `hoehe(…, aus).schutt`), nie die Steile der Masche: bis zur Nachbesserung 2 lag er ab 28° auf
+            // jedem Hang (der grüne Hügel grau, der 42°-Dorfhang zu 85 % Schutt), und das 28°–34°-Band streifte die 30°-Rampe in
+            // den Reihen des Netzes. Die Ferne trägt das Mittel des Schutts in ihrer Farbe (`_fernSchutt`, dasselbe Gesetz).
+            const _screeW = felsImVertex ? _T.attribute("aSchutt", "float") : _T.float(0);
             const _gRock = au && au.geoRock ? au.geoRock : _T.float(1.0);
-            // FELS-FARBE regional konsistent: die Basis-Luminanz tönt den kühlen
-            // Stein (so bleibt Gipfel-Fels heller, Glut-Hang wärmer), gebändert vom
-            // Schichtungs-Noise (Sediment-Strata in Welt-Y).
-            const _lum = albedo.x.mul(0.3).add(albedo.y.mul(0.59)).add(albedo.z.mul(0.11));
-            const _stone = _T.vec3(G.rockTint[0], G.rockTint[1], G.rockTint[2]);
-            const _bandN = _ra.raum(_T.vec3(wp.x.mul(0.05), wp.y.mul(0.6), wp.z.mul(0.05)));
-            let _rockCol = _T.mix(_stone, _T.vec3(_lum, _lum, _lum), _T.float(G.rockLumMix));
-            _rockCol = _rockCol.mul(_T.float(1.0).add(_bandN.mul(_T.float(G.rockBand))));
-            const _screeCol = _T.mix(albedo, _rockCol, _T.float(G.screeMix));
-            // Konkurrenz: erst Geröll, dann Fels (Fels dominiert die Mischung).
-            let _out = _T.mix(albedo, _screeCol, _screeW.mul(_gRock));
+            // DER FELS-STOFF (K17, gelaende-core `FELS`): wo das Netz den Fels trägt (der Chunk-Boden, `felsImVertex`),
+            // IST die Vertex-Farbe der Fels — `_felsStoff` hat Pakete, Rinde, Mulden, Flechte und Moos aus dem Gesetz
+            // aufgelegt und trägt die Mittel dessen, was die Masche nicht trägt (`felsMittelWerte`); die Ferne (Fern-Ring)
+            // trägt das Mittel des Stoffs (`FELS_STOFF.mittel`). Der EINE Detail-Term legt das Feine nach DEMSELBEN Gesetz
+            // (`felsLage`, `felsKanten`) relativ zu diesen Mitteln auf: die Bank im Paket (Mächtigkeit je Paket, Grenzen
+            // gezogen und je Fuge gewellt — wo zwei Fugen sich kreuzen, keilt die Bank aus), die Fuge als KANTE (die Kehle
+            // dunkel, die Oberkante hell, je Fuge ihre Weite, auf einem Teil der Länge ausgekeilt) und die Klüfte (schräg,
+            // ihre Lage je Paket, an der Fuge nur ein Versatz). EINE Probe im Rausch-Atlas wellt die Schichten im Großen,
+            // das Auge blendet aus, was der Pixel nicht trägt. Bis zur Nachbesserung lasen sich gleich hohe Bänke mit
+            // geraden Strich-Fugen und je Bank neu ansetzenden Klüften als Ziegelmauer.
+            const FS = AnazhRealm.FELS_STOFF;
+            const FF = FS.gesetz.fein;
+            const GK = globalThis.__gelaendeCore;
+            // EIN Rechenwerk (K17, Nachbesserung 2): der Fein-Term IST das Gesetz (gelaende-core `felsFein`, `schuttKorn`) —
+            // derselbe Code wie im Vertex, hier mit TSL-Knoten gerechnet (`_felsRechenwerkTSL`, dieselbe 32-Bit-Ziehung, die Welle
+            // aus EINER Probe im Rausch-Atlas — der Vertex liest denselben Wert, gelaende-core `rauschRaum`). Er läuft nur, wo Fels oder Schutt liegt (ein Zweig: die Wiese zahlt ihn nicht), das Auge blendet aus, was
+            // der Pixel nicht trägt: Bänke und Klüfte `fern` m, Kanten `fugeFern` m, das Schutt-Korn nach seinen Pixeln (die
+            // Kante eines Steins unter 1,5 … 4 Pixeln — Schirm-Meter je Pixel aus Abstand, Projektion und Schirmhöhe).
+            const _O = AnazhRealm._felsRechenwerkTSL(_T, _ra.raum);
+            const _camD = wp.sub(_T.cameraPosition).length();
+            const _nahB = _T.float(1).sub(_T.smoothstep(FF.fern[0], FF.fern[1], _camD));
+            const _nahF = _T.float(1).sub(_T.smoothstep(FF.fugeFern[0], FF.fugeFern[1], _camD));
+            const _pxM = _camD.mul(2).div(_T.cameraProjectionMatrix.element(1).y.mul(_T.screenSize.y));
+            const _kornSicht = _T.smoothstep(1.5, 4, _T.float(FS.gesetz.geroell.korn).div(_pxM));
+            const _gate = _rockW.add(_screeW).mul(_gRock);
+            const _f = GK.felsFein(_O, FS.basis, wp.x, wp.y, wp.z);
+            const _feinV = AnazhRealm._zweigTSL(_T)(_T.vec3(_f.bank, _f.kante, GK.schuttKorn(_O, wp.x, wp.z)), _gate);
+            const _fein = _T.mix(_T.float(1), _feinV.x, _nahB).mul(_T.mix(_T.float(1), _feinV.y, _nahF));
+            const _felsGrund = felsImVertex ? albedo : _T.vec3(FS.mittel[0], FS.mittel[1], FS.mittel[2]);
+            const _rockCol = _felsGrund.mul(_fein);
+            // Der Schutthang trägt sein Korn mit dem Gewicht des Schutts im Vertex (`aSchutt`, `_felsStoff`); der Fels dominiert.
+            // Wo der Pixel den Stein nicht trägt, bleibt das Mittel des Gerölls (`schuttMittel`: es wirft Schatten in sich).
+            // Die Steine liegen, wo das Gesetz Schutt sagt, ganz (`aSchutt` / `schutt`): die 15 % Boden im Ton des Vertex tragen
+            // kein eigenes Korn — mit dem Gewicht des Tons (0,85) fehlte dem Hang ein Sechstel seiner Streuung.
+            const _kornFern = _T.mix(_T.float(GK.schuttMittel()), _feinV.z, _kornSicht);
+            const _kornW = _screeW.div(G.schutt).clamp(0, 1).mul(_gRock);
+            let _out = albedo.mul(_T.mix(_T.float(1), _kornFern, _kornW));
             _out = _T.mix(_out, _rockCol, _rockW.mul(_gRock));
             // Moos + Ton/Korn/Kavität aus dem EINEN Substanz-Kern (wie Werke + Rinde); die Geologie-Basis
             // (Fels/Geröll) bleibt terrain-eigen. objectLocal:false (absolute Welt-Höhe). Feucht-/Grün-Treiber
@@ -1483,33 +1608,99 @@ class AnazhRealm_Z10 {
     }
 
     // DER URSPRUNG DER INSTANZ — das Maß der Blende (Studio foundry-core `_iw = instanceMatrix[3].xz`, `_cd =
-    // length(cameraPosition.xz − _iw)`): die Welt-XZ der Achse der gezeichneten Instanz, im Vertex-Takt aus ihrer Instanz-
-    // Matrix (der Haken an `_createInstanceMatrixNode` legt sie je Bau am Builder ab), ohne Instanzen der Ursprung des
-    // Objekts. Die Blende misst je INSTANZ, wie die CPU ihre Stufen legt (`_lodPerceptionDistance` am Eintrag): je Fragment
+    // length(cameraPosition.xz − _iw)`): die Welt-XZ der Achse der gezeichneten Instanz, im Vertex-Takt aus der EINEN Naht
+    // (`_weltNaht`: Objekt × Instanz-Matrix; ohne Instanzen der Ursprung des Objekts, eine InstancedMesh ohne Matrix bricht
+    // laut). Die Blende misst je INSTANZ, wie die CPU ihre Stufen legt (`_lodPerceptionDistance` am Eintrag): je Fragment
     // gemessen löste sich die ferne Krone eines nahen Baums auf, und die Stufen-Wahl musste dafür die zweite Stufe
     // zeichnen (1110-11: die Birke in 5 m stand doppelt, 0,6–2,7 ms GPU an der Mess-Wiese).
     _instanzMitteNode(T) {
         if (this._instanzMitteKnoten) return this._instanzMitteKnoten;
-        // die Knoten-Basis exportiert window.THREE nicht — sie ist die Oberklasse des InstanceNode (r184 `class … extends Node`)
-        const N = THREE.InstanceNode ? Object.getPrototypeOf(THREE.InstanceNode) : null;
-        if (!N || N.type !== "Node" || !T.varying || !T.modelWorldMatrix || !T.vec4) {
-            const text =
-                "URSPRUNG DER INSTANZ: r184 Node (über InstanceNode) · varying · modelWorldMatrix fehlen (Vendor-Drift)";
+        if (!T.varying) {
+            const text = "URSPRUNG DER INSTANZ: r184 varying fehlt (Vendor-Drift)";
             this.log(text, "ERROR");
             throw new Error(text);
         }
-        class InstanzMitte extends N {
+        this._instanzMitteKnoten = T.varying(this._weltNaht(T).anker.xz, "vInstanzMitte");
+        return this._instanzMitteKnoten;
+    }
+
+    // DIE WELT IM POSITIONS-KNOTEN (K20-N1) — die EINE Naht zwischen Vorlage und Welt für jeden Stoff, der im positionNode
+    // die Welt braucht (der Wind von Gras, Streu, Rinde, Laub und Karte, die Karte, die das Auge ansieht, die Blende): r184
+    // rechnet den positionNode VOR der Instanz-Matrix (WGSL der Karte und der Nah-Wiesen-Senke gelesen: erst
+    // `positionLocal = …positionNode…`, dann `positionLocal = instanzMatrix × positionLocal`), dort lesen positionLocal,
+    // normalLocal und positionWorld den VORLAGEN-Raum. Jede InstancedMesh entsteht in `_instanzMesh`, also gilt das für
+    // jeden Stoff einer Instanz. Die Naht trägt Mw = Objekt × Instanz-Matrix: `lage` die Welt-Lage des Vertex, `anker` die
+    // des Instanz-Ursprungs, `skala` die Instanz-Skala, `spalte(i)` die Achsen, `richtung(n)` eine Vorlagen-Richtung in
+    // der Welt und `vorlage(w)` einen Welt-Versatz (Meter, Welt-Richtung) zurück in die Vorlage (Spalten c_i ⟂: c_i·w / |c_i|²)
+    // — sonst drehte und skalierte die Matrix ihn mit jeder Instanz (der Wind wehte in der Drehung seines Baums,
+    // gate:foundry-impostor C4). Die Wurzel der Reihenfolge im Vendor (three.webgpu.min.js): `setupPosition` legt die
+    // Zuweisung des positionNode auf den Stapel; Instanz-, Batch- und Skin-Knoten hängen ihr `positionLocal.assign(M × …)`
+    // erst in ihrem setup an den aktiven Stapel, und `StackNode.build` baut nachgereichte Knoten NACH den ersten — das gilt
+    // für jede InstancedMesh, die Foundry-Senken eingeschlossen. EIN Satz Knoten (1310-18): r184 schlüsselt ein Programm
+    // nach der Identität seiner Knoten — die Naht entsteht EINMAL, `richtung` und `vorlage` merken sich ihren Knoten je
+    // Eingang, sonst trüge jeder Leser, der seinen Graphen teilt (der Wind je Art), doch frische Knoten.
+    _weltNaht(T) {
+        if (this._weltNahtKnoten) return this._weltNahtKnoten;
+        const Mw = T.modelWorldMatrix.mul(this._instanzMatrixNode(T));
+        const c0 = Mw.element(0).xyz;
+        const c1 = Mw.element(1).xyz;
+        const c2 = Mw.element(2).xyz;
+        const jeRichtung = new WeakMap();
+        const jeVorlage = new WeakMap();
+        const merk = (karte, n, bau) => {
+            if (!karte.has(n)) karte.set(n, bau(n));
+            return karte.get(n);
+        };
+        this._weltNahtKnoten = {
+            anker: Mw.element(3).xyz,
+            lage: Mw.mul(T.vec4(T.positionLocal, 1.0)).xyz,
+            skala: c0.length(),
+            spalte: (i) => (i === 0 ? c0 : i === 1 ? c1 : c2),
+            richtung: (n) => merk(jeRichtung, n, (r) => T.normalize(Mw.mul(T.vec4(r, 0.0)).xyz)),
+            vorlage: (w) =>
+                merk(jeVorlage, w, (v) =>
+                    T.vec3(
+                        c0.dot(v).div(c0.dot(c0).max(1e-12)),
+                        c1.dot(v).div(c1.dot(c1).max(1e-12)),
+                        c2.dot(v).div(c2.dot(c2).max(1e-12))
+                    )
+                ),
+        };
+        return this._weltNahtKnoten;
+    }
+
+    // DIE INSTANZ-MATRIX IM POSITIONS-KNOTEN (K20): die Matrix der gezeichneten Instanz (der Haken an
+    // `_createInstanceMatrixNode` legt sie je Bau am Builder ab), ohne Instanzen die Einheit — der EINE Leser des Hakens,
+    // gelesen über die Naht `_weltNaht`. Fehlt sie an einer InstancedMesh, bricht der Bau LAUT — nie ein Stoff, der still
+    // in der Drehung seiner Instanz steht.
+    _instanzMatrixNode(T) {
+        if (this._instanzMatrixKnoten) return this._instanzMatrixKnoten;
+        const N = THREE.InstanceNode ? Object.getPrototypeOf(THREE.InstanceNode) : null;
+        if (!N || N.type !== "Node" || !T.mat4) {
+            const text = "INSTANZ-MATRIX: r184 Node (über InstanceNode) · mat4 fehlen (Vendor-Drift)";
+            this.log(text, "ERROR");
+            throw new Error(text);
+        }
+        const realm = this;
+        class InstanzMatrix extends N {
             constructor() {
-                super("vec2");
+                super("mat4");
             }
             setup(builder) {
                 const m = builder.__anazhInstanzMatrix;
-                const lokal = m ? T.vec4(m.element(3).xyz, 1.0) : T.vec4(0.0, 0.0, 0.0, 1.0);
-                return T.modelWorldMatrix.mul(lokal).xz;
+                if (m) return m;
+                // eine Senke zeichnet über ihren Zeichner (1410-1): auch er trägt Instanzen und bricht ohne Matrix laut
+                if (builder.object && (builder.object.isInstancedMesh || builder.object.isInstanzZeichner === true)) {
+                    const text =
+                        "INSTANZ-MATRIX: der Bau einer InstancedMesh fragt vor ihrer Instanz-Matrix (r184-Reihenfolge)";
+                    realm.log(text, "ERROR");
+                    throw new Error(text);
+                }
+                return T.mat4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
             }
         }
-        this._instanzMitteKnoten = T.varying(new InstanzMitte(), "vInstanzMitte");
-        return this._instanzMitteKnoten;
+        this._instanzMatrixKnoten = new InstanzMatrix();
+        return this._instanzMatrixKnoten;
     }
 
     // DER BRUCH DER BLENDE (1110-11 Nachtrag): fehlt der Blende ein Glied (ein Uniform des LOD-Satzes, ein TSL-Knoten, die

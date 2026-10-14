@@ -196,7 +196,6 @@ var INSEL_VIS = { lab: "coast-74", host: "none" };
 // prettier-ignore
 var WALD_GESETZ = {
     flod: 0,
-    trunkMul: 0.5,
     glade: 22,
     crownBase: { eiche: 0.42, fichte: 0.3, birke: 0.42, weide: 0.4, tanne: 0.3, mammut: 0.46 }
 };
@@ -308,7 +307,7 @@ const PORTAL_RENDER_CONFIG = {
         // dieselbe Zahl: tiefstes Laub in Baumhoehen), deckung (tree[1]: das Band, in dem die gebaute L1-Krone die
         // L0-Krone desselben Baums bedeckt; gate:asset-contract misst es als BILD-Deckung an gebauten L0/L1-Paaren — 24
         // gerasterte Ansichten, kronen-linse —; dazu haelt jede Stufe und ihre Karte je Blick-Hebung das Bild von V18.536,
-        // Wand D gegen spec/asset-contract/v1/bild-v18536.json),
+        // Wand D gegen spec/asset-contract/v1/bild-tafel.json),
         // ringToleranz (tree[1], W6 05.10.: die Bahn der L1-Aeste — ein Ring faellt, wenn Mitte und Radius hoechstens so
         // viele Baumhoehen von der Strecke seiner Nachbarn abweichen; 0,001 = 0,7 px an der L1-Nahkante, __ringBahn),
         // wurf (tree[1], W6 05.10.: der Wurf-Teil — Rinden-Straenge ab durchmesserM Welt-Durchmesser werfen, feinere,
@@ -340,7 +339,7 @@ const PORTAL_RENDER_CONFIG = {
                     draws: 2,
                     schatten: 1,
                     lagen: 13,
-                    quote: 0.4,
+                    quote: 0.35,
                     blattKarte: 2.2,
                     geruest: 0.25,
                     wedel: { ab: 0, teile: 2, breite: 2.03, nadel: 0.05, rand: 0.3, winkel: 5, holz: 0.15 },
@@ -502,7 +501,7 @@ const PORTAL_RENDER_CONFIG = {
             basalt: 0.42,
             sediment: 0.4,
             kristalle: 0.15,
-            birke: 4.13,
+            birke: 4.03,
             eiche: 4.16,
             weide: 2.75,
             tanne: 4.26,
@@ -1323,6 +1322,11 @@ function pushLeafClusterQuad(arr, pos, dir, up, scale, color, sway, phase, omega
 }
 
 function growTreeNodes(P) {
+    return __wuchsDerStufe(P, typeof __lod === "undefined" ? 0 : __lod, rnd);
+}
+// Der Wuchs eines Rezepts `stufe` aus dem Strom `zufall` (K20: rein, ohne Studio-Globale — der Bau liest ihn über
+// growTreeNodes, der gefühlte Baum über skelettDerGestalt).
+function __wuchsDerStufe(P, stufe, zufall) {
     // DER GETEILTE SAMEN: die Baum-Wuchs-Mathematik (da Vinci Δ · McMahon · Apikaldominanz ·
     // Gravitropismus · Phyllotaxis · Whorls) lebt in phyto-core.js (growSkeleton) — DIESELBE
     // Quelle, die AnazhRealm (Main + Voxel-Worker) liest. Ein Edit am Wuchs-Gesetz fliesst hier
@@ -1337,17 +1341,18 @@ function growTreeNodes(P) {
     if (__core && typeof __core.growSkeleton === "function") {
         // Baum-L1 traegt das Blatt-Budget der L0 (20000 statt 9000): die L1-Krone ist eine Teilmenge der L0-Blaetter
         // (Stride _lf), so haengt ihre Deckung nie davon ab, ob eine Art die Kappe erreicht (Fichte/Tanne taten es).
-        const __gsLBl = typeof __lod === "undefined" ? 0 : __lod;
+        const __gsLBl = stufe;
         // Der Strauch hat kein Rezept 0 (`stufenRezept`): seine Zeile nennt nur die Rezepte 1 und 2 — fehlt das Budget
         // des Rezepts, bricht der Bau laut (kein stiller Rueckfall auf das Kern-Budget 20 000).
         const __gsLB =
             (globalThis.PHYTO_LEAFBUDGET && globalThis.PHYTO_LEAFBUDGET[__gsLBl]) ||
             (P.kind === "shrub" ? { 1: 1500, 2: 1400 } : [20000, 20000, 7000])[__gsLBl];
         if (!(__gsLB > 0)) throw new Error("[phyto] Blatt-Budget fehlt: " + P.kind + " Rezept " + __gsLBl);
-        const __gsR = __core.growSkeleton(Object.assign({}, P, { leafBudget: __gsLB }), rnd);
+        const __gsR = __core.growSkeleton(Object.assign({}, P, { leafBudget: __gsLB }), zufall);
         if (__gsR && __gsR.segs && __gsR.segs.length) {
             P._trunkR = __gsR.trunkR;
             P._D = 2 * __gsR.trunkR;
+            P._schaftHub = __gsR.schaftHub; // der Hub des Schafts (K20), der Beipack `__mass` trägt ihn zum Wirt
             return __gsR;
         }
     }
@@ -1391,6 +1396,14 @@ function pushJointSphere(arr, pos, r, col, sway) {
     arr.push(g);
 }
 
+// DER WURZEL-ANLAUF (K20, 13.10.): an der Oberfläche läuft die Primär-Wurzel nur im Anlauf des Stamms (`stammRadien`
+// Stamm-Radien um die Achse) — dort flacht sie ab und folgt dem Boden; jenseits taucht sie ab (`abtauchen`, die Neigung je
+// Schritt wie über dem Boden, verdoppelt). Befund (Werkbank, Radeon, Strahl auf den Strich): die dünnen dunklen Striche am
+// Boden neben den Stammfüßen waren die Tannen-Wurzel `f:tanne|1|1` — 4,6 m vom Fuß 0,58 m unter der Vorlagen-Ebene, der
+// Hang zum Wasser 2,1 m tiefer, also 1,5 m über dem Ufer. Die Reichweite misst an der Baum-Höhe (0,3 H · spread), der
+// Querschnitt am Stamm: mit dem Welt-Maß (H/D 70–89) lief die Wurzel 0,37 H flach (Tanne 9,5 m, Mammut 17 m) und trat auf
+// jedem Hang über 9–15 % aus dem Boden.
+const WURZEL_ANLAUF = { stammRadien: 3, abtauchen: 1.2 };
 function growRoot(strands, pos, dir, radius, len, depth, P, rt) {
     rt = rt || { dive: 0.6, wob: 0.4, nb: 2 };
     if (depth > 4 || radius < P._trunkR * 0.05 || len < 0.1) return;
@@ -1399,14 +1412,16 @@ function growRoot(strands, pos, dir, radius, len, depth, P, rt) {
         d = vnorm(dir.slice());
     const rings = [{ c: p.slice(), r: radius, sway: 0, depth: 1 }];
     let seekT = rnd() * 6.28;
+    const anlaufR = P._trunkR * WURZEL_ANLAUF.stammRadien;
     for (let i = 0; i < STEPS; i++) {
         const f = i / STEPS;
+        const imAnlauf = p[0] * p[0] + p[2] * p[2] < anlaufR * anlaufR;
         let vb;
         if (depth === 0) {
-            vb = p[1] > P._trunkR * 0.16 ? 0.55 : lerp(0.1, rt.dive, f);
+            vb = p[1] > P._trunkR * 0.16 ? 0.55 : imAnlauf ? lerp(0.1, rt.dive, f) : WURZEL_ANLAUF.abtauchen;
         } else vb = 0.3 + depth * 0.12; // arttypische Abtauchtiefe (Flach- vs Tiefwurzler)
         d = vnorm(vadd(d, [0, -vb * 0.5, 0]));
-        if (depth === 0 && p[1] < P._trunkR * 0.16) {
+        if (depth === 0 && imAnlauf && p[1] < P._trunkR * 0.16) {
             d[1] *= 0.45;
             d = vnorm(d);
         } // an der Oberflaeche abflachen -> folgt dem Boden
@@ -1469,14 +1484,17 @@ function emitRoots(P) {
             (__lod === 1 || L0Baum) && R.length > 3 ? R.filter((_, i) => i % 2 === 0 || i === R.length - 1) : R;
         // Die Baum-L0 (S7): ohne ihre Verzweigungen endete der Primaerstrang stumpf ueber dem Boden (eine
         // Schnittflaeche von halbem Wurzel-Radius) — er laeuft in seiner Richtung weiter und taucht ab: zwei Ringe je eine
-        // Segmentlaenge weiter, erst auf ein Drittel seiner Hoehe, dann ganz unter den Boden.
+        // Segmentlaenge weiter, erst auf ein Drittel seiner Hoehe, dann ganz unter den Boden. Nie steigt sie dabei (K20,
+        // WURZEL_ANLAUF): das Ende der abgetauchten Wurzel liegt tief, ihre Ringe stiegen von dort zurueck auf ein Drittel
+        // der Tiefe und traten am Hang aus (Fichte-L0 auf 20 % Hang sichtbar bis 6,4 m) — unter dem Boden bleibt die
+        // Fortsetzung in der Tiefe ihres Endes; ueber dem Boden ist sie die alte.
         if (L0Baum && R.length > 1) {
             const a = R[R.length - 2],
                 b = R[R.length - 1],
                 d = vsub(b.c, a.c);
             ringe = ringe.concat([
-                { c: [b.c[0] + d[0], b.c[1] * 0.35, b.c[2] + d[2]], r: b.r * 0.8, sway: 0, depth: 1 },
-                { c: [b.c[0] + 2 * d[0], -1.2 * b.r, b.c[2] + 2 * d[2]], r: b.r * 0.5, sway: 0, depth: 1 },
+                { c: [b.c[0] + d[0], Math.min(b.c[1] * 0.35, b.c[1]), b.c[2] + d[2]], r: b.r * 0.8, sway: 0, depth: 1 },
+                { c: [b.c[0] + 2 * d[0], Math.min(-1.2 * b.r, b.c[1] - 1.2 * b.r), b.c[2] + 2 * d[2]], r: b.r * 0.5, sway: 0, depth: 1 },
             ]);
         }
         // Die Baum-L1 (S3): die Primaer-Wurzel in der Radial-Teilung der L2 — ab 12 m liegt ihr Bild im Boden und in der
@@ -1529,12 +1547,15 @@ function buildTube(geos, rings, P, barkBase, barkTip, trunkR, noFlute, barkThick
 // lodRef Hoehe betritt die L1 bei Distanz = Hoehe, 1080 Zeilen bei 75 Grad Sichtfeld = 704 px je Baumhoehe). Befund
 // (Mess-Wiese, werkbank band 05.10.): die Nadel-Aeste der Tanne trugen 42 x 100 Dreiecke auf geraden Bahnen — 59 % der
 // L1. Kein rnd()-Zug: der Wuchs und jeder Strom bleiben die von L0 (FIX v35).
-function __ringBahn(R, tol) {
+// `festUnter` (K20, Höhe in Vorlagen-Einheiten): Ringe darunter bleiben alle — der Stamm unter dem Kronenraum trägt sein
+// Rinden-Bild, im Kronenraum nur seine Bahn.
+function __ringBahn(R, tol, festUnter) {
     const n = R.length;
     if (!(tol > 0) || n <= 2) return R;
     const keep = new Uint8Array(n);
     keep[0] = keep[n - 1] = 1;
-    for (let i = 0; i < n; i++) if (R[i].fuss || R[i].zeile !== undefined) keep[i] = 1;
+    for (let i = 0; i < n; i++)
+        if (R[i].fuss || R[i].zeile !== undefined || (festUnter !== undefined && R[i].c[1] < festUnter)) keep[i] = 1;
     const stapel = [0, n - 1];
     while (stapel.length) {
         const b = stapel.pop(),
@@ -1705,7 +1726,7 @@ function emitTree(P) {
 }
 function emitTreeRezept(P, stufe) {
     const nodes = growTreeNodes(P);
-    if (P.tot) __totholzSchnitt(nodes, P); // Totholz: Krone gebrochen, Reisig ab, kein Laub (nach dem Wuchs)
+    if (P.tot) __totholzSchnitt(nodes, P, SEED); // Totholz: Krone gebrochen, Reisig ab, kein Laub (nach dem Wuchs)
     /* FIX v35: LOD = ABLEITUNG AUS L0. Ein Same -> EIN Individuum: das Skelett waechst bei JEDER Stufe identisch
      (gleicher RNG-Strom), niedrigere Stufen entstehen deterministisch daraus — Zweige unter der Radius-Schwelle
      fallen aus der Geometrie (das ist Pipe-Modell-treu: duenn = jung = fern unsichtbar), Blaetter werden per
@@ -1791,10 +1812,7 @@ function emitTreeRezept(P, stufe) {
         )
     )
         throw new Error("[phyto] lod.budget.tree[" + __lod + "].wedel fehlt ({ab, teile, breite, nadel, rand, 0 < winkel < 45, 0 <= holz < 1})");
-    const _skWedel = (() => {
-        const sc = PORTAL_RENDER_CONFIG.placement.scale[CURRENT];
-        return sc === 1 ? 1 : sc < 1 ? sc : sc * PORTAL_RENDER_CONFIG.placement.treeScaleMul;
-    })(); // die Welt-Skala der Art (wie der Wald pflanzt) — das Nadel-Mass des Wedels
+    const _skWedel = __weltSkalaArt(CURRENT); // die Welt-Skala der Art (wie der Wald pflanzt) — das Nadel-Mass des Wedels
     const _aeste = new Map(), // Kopf-Lauf des Nadel-Asts → { kette: [Läufe der Haupt-Bahn], blaetter: [], pfad: [Punkte] }
         _astVon = new Map(); // jeder Lauf eines Nadel-Asts → sein Kopf
     if (_wedel) {
@@ -2030,9 +2048,7 @@ function emitTreeRezept(P, stufe) {
         !(_wurf1 && _wurf1.durchmesserM > 0 && _wurf1.teil === "schatten" && _wurf1.lagen > 0)
     )
         throw new Error("[phyto] lod.budget.tree[1].wurf fehlt ({durchmesserM, teil: \"schatten\", lagen})");
-    const _plz = PORTAL_RENDER_CONFIG.placement,
-        _skB = _wurf1 ? _plz.scale[CURRENT] : 0,
-        _skW = _skB === 1 ? 1 : _skB < 1 ? _skB : _skB * _plz.treeScaleMul; // die Welt-Skala der Art (wie der Wald pflanzt)
+    const _skW = _wurf1 ? __weltSkalaArt(CURRENT) : 0; // die Welt-Skala der Art (wie der Wald pflanzt)
     if (_wurf1 && !(_skW > 0)) throw new Error("[phyto] placement.scale." + CURRENT + " fehlt (Schatten-Teil der L1)");
     const _wurfR = _wurf1 ? _wurf1.durchmesserM / (2 * _skW) : 0; // der Radius-Schnitt in Vorlagen-Einheiten
     const _wurfRinge = []; // die Bahnen der werfenden Straenge (Ringe nach Bahn-Toleranz)
@@ -2109,6 +2125,22 @@ function emitTreeRezept(P, stufe) {
     const _ringTol1 = __lod === 1 && P.kind === "tree" ? _b1.ringToleranz : 0;
     if (__lod === 1 && P.kind === "tree" && !(_ringTol1 > 0 && _ringTol1 < 0.01))
         throw new Error("[phyto] lod.budget.tree[1].ringToleranz fehlt (0 < ringToleranz < 0,01 Baumhoehen)");
+    // DER KRONENRAUM DER L1 (K20, 13.10.): ab dem tiefsten Ast-Ansatz steht der Stamm in der Krone — dort trägt er nur seine
+    // Bahn (dieselbe Toleranz), darunter sein ganzes Rinden-Bild. Befund: der Mammut-Stamm trug 21 Ringe zu 28 Seiten,
+    // 46 % der L1 (L1/L0 0,371 über der Quote 0,35).
+    // Der Ast-Ansatz ist der erste Ring eines Seiten-Laufs oder, bei der Konifere, der erste Punkt der Bahn eines Nadel-Asts
+    // (`_aeste`; seine Läufe reisen als Wedel und fehlen den Röhren).
+    let _kronenRaumY;
+    const _ansatz = (y0) => {
+        if (_kronenRaumY === undefined || y0 < _kronenRaumY) _kronenRaumY = y0;
+    };
+    if (_ringTol1 > 0) {
+        for (const rid of runs.keys()) {
+            const mm = meta[rid];
+            if (mm && !mm.isLead && mm.parentRun >= 0) _ansatz(runs.get(rid)[0].p0[1]);
+        }
+        for (const [k, A] of _aeste) if (k >= 0 && A.pfad && A.pfad.length) _ansatz(A.pfad[0][1]);
+    }
     for (const rid of runs.keys()) {
         const mm = meta[rid];
         if (mm && mm.isLead) continue;
@@ -2120,6 +2152,8 @@ function emitTreeRezept(P, stufe) {
         let rings = strandRings(rid);
         if (_ringTol1 > 0 && rings[0].r - nodes.trunkR * 0.12 <= nodes.trunkR * 0.88 * 0.6)
             rings = __ringBahn(rings, _ringTol1 * nodes.height);
+        else if (_ringTol1 > 0 && _kronenRaumY !== undefined)
+            rings = __ringBahn(rings, _ringTol1 * nodes.height, _kronenRaumY);
         if (_wedel && _aeste.has(rid)) rings = __bahnBis(rings, _wedel.ab);
         if (rings.length < 2) continue;
         const baseRing = rings[0];
@@ -2166,6 +2200,9 @@ function emitTreeRezept(P, stufe) {
             let n = Math.sin(p[0] * 12.9 + p[1] * 78.2 + p[2] * 37.7) * 43758.5;
             return n - Math.floor(n);
         };
+        // Die Stummel-Maße sind am Stamm der FORM bemessen (phyto-core trunkForm): der schlanke Stamm des Welt-Maßes (K20)
+        // zieht sie mit (ein Stummel von 3,5 cm Vorlage stand dicker als der Stamm).
+        const stummel = nodes.trunkForm > 0 ? nodes.trunkR / nodes.trunkForm : 1;
         let stubN = 0;
         for (const sg of nodes.segs) {
             const h = sg.p0[1];
@@ -2176,7 +2213,7 @@ function emitTreeRezept(P, stufe) {
             const ang = dh([sg.p1[0] + 0.3, sg.p0[1], sg.p1[2] - 0.2]) * 6.2831,
                 down = -0.2 - 0.55 * dh(sg.p1);
             const odir = vnorm([Math.cos(ang), down, Math.sin(ang)]);
-            const baseR = Math.max(0.035, sg.r0 * (0.16 + 0.1 * dh(sg.p0))),
+            const baseR = Math.max(0.035 * stummel, sg.r0 * (0.16 + 0.1 * dh(sg.p0))),
                 L = baseR * (6 + 8 * dh(sg.p1));
             const start = vadd(sg.p0, vscl(odir, sg.r0 * 0.6));
             const NST = 4,
@@ -2187,7 +2224,7 @@ function emitTreeRezept(P, stufe) {
                 c[1] -= L * f * f * 0.4; // tot -> haengt ab
                 stubRings.push({
                     c,
-                    r: i === NST ? Math.max(0.01, baseR * 0.05) : baseR * (1 - f * 0.72),
+                    r: i === NST ? Math.max(0.01 * stummel, baseR * 0.05) : baseR * (1 - f * 0.72),
                     sway: sg.sway0 * (1 - f),
                     depth: 1,
                 });
@@ -3497,11 +3534,28 @@ const WALDBODEN_EMIT = { fern: emitFern, reed: emitSchilf, brush: emitGestruepp,
 // Das Totholz eines stehenden Baums (P.tot): die Krone ist gebrochen (der Stamm endet in der Bruch-Höhe in einem
 // Splitterkranz), das Feinreisig ist abgefallen, kein Laub. Läuft NACH dem Wuchs — das Skelett und der rnd()-Strom
 // sind die eines lebenden Baums derselben Art (FIX v35), die Stufen schneiden dasselbe Individuum.
-function __totholzSchnitt(nodes, P) {
+function __totholzSchnitt(nodes, P, seed) {
+    // DER SCHNITT TRÄGT SEINE VEKTOR-HELFER SELBST (Integration K20 × K16): er läuft auch im Haupt-Thread — der gefühlte
+    // Baum (`skelettDerGestalt` ← `_baumGestaltTeile` ← `_populateBlockerAABBs` ← `spawnArchitecture`) —, wo keine Shell
+    // (phytogenesis.js) die Vektor-Globalen stellt: jeder baum_totholz warf dort „vlen is not defined" (gate:brennglas-takt,
+    // gate:phyto-core „Skelett im Haupt-Thread"). Dieselbe Mathematik wie die Shell (so wächst auch phyto-core
+    // `growSkeleton`) — im Worker bit-gleich.
+    const lerp = (a, b, t) => a + (b - a) * t,
+        clamp = (x, a, b) => Math.max(a, Math.min(b, x)),
+        vsub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]],
+        vadd = (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]],
+        vscl = (a, s) => [a[0] * s, a[1] * s, a[2] * s],
+        vdot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2],
+        vlen = (a) => Math.hypot(a[0], a[1], a[2]),
+        vnorm = (a) => {
+            const l = vlen(a) || 1e-9;
+            return [a[0] / l, a[1] / l, a[2] / l];
+        },
+        vlerp = (a, b, t) => [lerp(a[0], b[0], t), lerp(a[1], b[1], t), lerp(a[2], b[2], t)];
     const hB = nodes.height * P.totBruch,
         rMin = (nodes.trunkR || 0.1) * 0.16,
         hsh = (k, n) => {
-            let h = Math.imul((k + 1) ^ 0x2c1b3c6d, 0x297a2d39) ^ Math.imul(n + 7, 0x5bd1e995) ^ Math.floor(SEED);
+            let h = Math.imul((k + 1) ^ 0x2c1b3c6d, 0x297a2d39) ^ Math.imul(n + 7, 0x5bd1e995) ^ Math.floor(seed);
             h = Math.imul(h ^ (h >>> 15), 0x85ebca6b);
             return ((h ^ (h >>> 13)) >>> 0) / 4294967296;
         };
@@ -3622,174 +3676,52 @@ function ridged(p, oct, off) {
     return s / nrm;
 }
 
+// DER FELS-STOFF DER GESTALTEN (K17): das EINE Gesetz des Felsens (gelaende-core `felsNetz` — Bänke nach Höhe und
+// Einfallen, Korn, die Verwitterungsrinde an konvexen Kanten aus der Krümmung, Mulden dunkel, Flechte und Moos) färbt
+// jedes Fels-Netz der Foundry; Welt-Boden und Gelände-Studio lesen dasselbe Gesetz. Die Töne der Gestalt (rockA · rockB ·
+// rockC) sind sRGB-Absichten (FARB-GESETZ), ihr linearer Wert ist Grundton, dunkle Lage und helle Bank — bis K17 lasen
+// sie sich roh (Felszacken Y 0,50, die Natur ≤ 0,30).
+function felsStoffNetz(P, g) {
+    const GK = typeof self !== "undefined" ? self.__gelaendeCore : null;
+    if (!GK || typeof GK.felsNetz !== "function" || typeof GK.felsBasis !== "function")
+        throw new Error("foundry-core: gelaende-core felsNetz fehlt (Kern-Pflicht, cores.manifest.json)");
+    const B = GK.felsBasis(vegFarbe(P.rockA).toArray(), vegFarbe(P.rockB).toArray(), vegFarbe(P.rockC).toArray());
+    if (!g.attributes.normal) g.computeVertexNormals();
+    const pos = g.attributes.position,
+        nor = g.attributes.normal,
+        n = pos.count;
+    const C = new Float32Array(n * 3);
+    GK.felsNetz(B, pos.array, nor.array, g.index ? g.index.array : null, n, { himmel: 1, feucht: 0.3 }, C);
+    g.setAttribute("color", new THREE.BufferAttribute(C, 3));
+    return g;
+}
+
 function buildBoulder(P) {
-    // DER GETEILTE SAMEN: das Fels-Rezept lebt in phyto-core.js (buildBoulderGeometry) —
-    // dieselbe EINE Quelle, die AnazhRealm liest. Ein Edit dort fliesst hierher UND nach
-    // AnazhRealm. detail+1, weil phyto-core intern (detail-1) rechnet → identische Silhouette.
-    // Fallback auf den Inline-Bau, falls der Samen (noch) nicht geladen ist.
+    // DER GETEILTE SAMEN: die Fels-GESTALT lebt in phyto-core.js (buildBoulderGeometry) — dieselbe EINE Quelle, die
+    // AnazhRealm liest; detail+1, weil phyto-core intern (detail-1) rechnet. Der STOFF ist das Fels-Gesetz
+    // (`felsStoffNetz`). Ohne den Samen bricht der Bau laut (bis K17 baute ein Inline-Zwilling Gestalt und Farbe nach).
     var __core = typeof self !== "undefined" && self.__phytoCore;
-    if (__core && typeof __core.buildBoulderGeometry === "function") {
-        var __d = Math.max(1, (P.detail || 6) - 3 - __lod * 2);
-        var __g = __core.buildBoulderGeometry(
-            THREE,
-            simplex3,
-            {
-                elong: P.elong,
-                sph: P.sph,
-                round: P.round,
-                rough: P.rough,
-                strat: P.strat,
-                seed: P.seed,
-                detail: __d + 1,
-                size: P.size,
-                withColor: true,
-                speckle: P.speckle,
-                rockLichen: rockLichen,
-                rockA: P.rockA,
-                rockB: P.rockB,
-                rockC: P.rockC,
-            },
-            rnd
-        );
-        if (__g) return __g;
-    }
-    const detail = Math.max(1, (P.detail || 6) - 3 - __lod * 2); // Stein nicht scharf in der Natur -> Budget zum Stamm
-    let geo = THREE.BufferGeometryUtils.mergeVertices(new THREE.IcosahedronGeometry(1, detail));
-    const pos = geo.attributes.position,
-        n = pos.count,
-        idx = geo.index.array;
-    const adj = Array.from({ length: n }, () => new Set());
-    for (let i = 0; i < idx.length; i += 3) {
-        const a = idx[i],
-            b = idx[i + 1],
-            c = idx[i + 2];
-        adj[a].add(b);
-        adj[a].add(c);
-        adj[b].add(a);
-        adj[b].add(c);
-        adj[c].add(a);
-        adj[c].add(b);
-    }
-    const sx = 1 + 0.75 * P.elong,
-        sz = 1 - 0.35 * P.elong,
-        sy = 1 - 0.62 * (1 - P.sph),
-        off = P.seed * 13.7;
-    const V = [],
-        dn = [];
-    for (let i = 0; i < n; i++) {
-        const x = pos.getX(i),
-            y = pos.getY(i),
-            z = pos.getZ(i);
-        dn.push(vnorm([x, y, z]));
-        V.push([x * sx, y * sy, z * sz]);
-    }
-    const ampF = 0.12 + P.rough * 0.34,
-        ridgeW = 1 - P.round * 0.6;
-    for (let i = 0; i < n; i++) {
-        const p = V[i];
-        const base = fbm3([p[0] * 1.05, p[1] * 1.05, p[2] * 1.05], 4, 2.0, 0.5, off);
-        const base2 = fbm3([p[0] * 2.2, p[1] * 2.2, p[2] * 2.2], 3, 2.0, 0.5, off + 2.2);
-        const rg = ridged([p[0] * 1.8, p[1] * 1.8, p[2] * 1.8], 4, off + 5.1);
-        const grain = fbm3([p[0] * 7.0, p[1] * 7.0, p[2] * 7.0], 3, 2.0, 0.5, off + 11.3);
-        const sDamp = P.strat > 0.5 ? 0.55 : 1.0; // Sediment: 3D-Lumpiness daempfen, Baenke dominieren
-        let disp =
-            ampF * sDamp * (0.62 * base + 0.16 * base2 + 0.6 * (rg - 0.5) * ridgeW) + grain * ampF * 0.42 * sDamp;
-        if (P.strat > 0.02) {
-            const step = Math.sin(V[i][1] * 7.6 + off);
-            disp += (step > 0.22 ? 0.16 : step < -0.22 ? -0.12 : step * 0.22) * P.strat;
-        } // klare horizontale Baenke, Differenzialerosion
-        V[i] = vadd(V[i], vscl(dn[i], disp));
-    }
-    const K = P.round < 0.55 ? Math.round(((0.55 - P.round) / 0.55) * 6) : 0;
-    for (let pl = 0; pl < K; pl++) {
-        let pn;
-        if (P.strat > 0.5) pn = vnorm([rrange(-0.3, 0.3), (rnd() < 0.5 ? 1 : -1) * rrange(0.7, 1), rrange(-0.3, 0.3)]);
-        else pn = vnorm([rrange(-1, 1), rrange(-1, 0.6), rrange(-1, 1)]);
-        const d0 = rrange(0.58, 0.86);
-        for (let i = 0; i < n; i++) {
-            const dd = vdot(V[i], pn) - d0;
-            if (dd > 0) V[i] = vsub(V[i], vscl(pn, dd * 0.95));
-        }
-    }
-    if (P.round > 0.78) {
-        const NV = V.map((v, i) => {
-            let a = vscl(v, 3),
-                c = 3;
-            adj[i].forEach((j) => {
-                a = vadd(a, V[j]);
-                c++;
-            });
-            return vscl(a, 1 / c);
-        });
-        for (let i = 0; i < n; i++) V[i] = NV[i];
-    }
-    for (let i = 0; i < n; i++) pos.setXYZ(i, V[i][0], V[i][1], V[i][2]);
-    pos.needsUpdate = true;
-    geo.computeVertexNormals();
-    const nor = geo.attributes.normal;
-    const ao = new Float32Array(n);
-    for (let i = 0; i < n; i++) {
-        let mean = [0, 0, 0],
-            c = 0;
-        adj[i].forEach((j) => {
-            mean = vadd(mean, V[j]);
-            c++;
-        });
-        mean = vscl(mean, 1 / c);
-        const toMean = vsub(mean, V[i]),
-            nv = [nor.getX(i), nor.getY(i), nor.getZ(i)];
-        ao[i] = clamp(0.5 + vdot(vnorm(toMean), nv) * 1.2, 0.12, 1);
-    }
-    const cols = new Float32Array(n * 3),
-        base = new THREE.Color(P.rockA),
-        dark = new THREE.Color(P.rockB),
-        acc = new THREE.Color(P.rockC);
-    const quartz = new THREE.Color(0xe8e0d2),
-        feld = new THREE.Color(0xc69a86),
-        mica = new THREE.Color(0x2c2a26),
-        bleach = new THREE.Color(0xccc7b6),
-        moss = vegFarbe(0x6f8a3e),
-        iron = new THREE.Color(0x7a4a26);
-    let minY = 1e9,
-        maxY = -1e9;
-    for (let i = 0; i < n; i++) {
-        minY = Math.min(minY, V[i][1]);
-        maxY = Math.max(maxY, V[i][1]);
-    }
-    let s2 = mulberry32(Math.floor(P.seed * 9973));
-    for (let i = 0; i < n; i++) {
-        let c = base.clone();
-        const up = nor.getY(i);
-        if (P.speckle) {
-            const m = s2();
-            if (m < 0.14) c.lerp(quartz, 0.6);
-            else if (m < 0.26) c.lerp(feld, 0.45);
-            else if (m < 0.34) c.lerp(mica, 0.65);
-        } // Granit Salz&Pfeffer
-        c.lerp(dark, ao[i] * 0.7); // AO in Mulden
-        if (ao[i] < 0.42 && up > 0.1) c.lerp(bleach, ((0.42 - ao[i]) / 0.42) * 0.4 * clamp(up, 0, 1)); // Kuppen sonnengebleicht
-        if (P.strat > 0.02) {
-            const band = Math.sin(V[i][1] * 7.0 + off);
-            if (band > 0.4) c.lerp(acc, 0.55 * P.strat);
-            else if (band < -0.4) c.lerp(dark, 0.6 * P.strat);
-        }
-        const stain = fbm3([V[i][0] * 1.4, V[i][1] * 3.2, V[i][2] * 1.4], 3, 2, 0.5, off + 21.0);
-        if (stain > 0.22) c.lerp(iron, (stain - 0.22) * 0.6); // Eisen-Schlieren (vertikal)
-        if (up > 0.22 && rockLichen > 0) {
-            const patch = fbm3([V[i][0] * 2.4, V[i][1] * 2.4, V[i][2] * 2.4], 3, 2, 0.5, off + 33.0);
-            const lf = clamp((up - 0.22) / 0.5, 0, 1) * rockLichen;
-            if (patch > -0.05) c.lerp(moss, clamp((patch + 0.05) * 1.8, 0, 1) * lf * 0.6);
-        }
-        const mott = fbm3([V[i][0] * 0.8, V[i][1] * 0.8, V[i][2] * 0.8], 3, 2, 0.5, off + 7.7);
-        c.multiplyScalar(1 + mott * 0.22);
-        c.multiplyScalar(0.88 + s2() * 0.22);
-        cols[i * 3] = c.r;
-        cols[i * 3 + 1] = c.g;
-        cols[i * 3 + 2] = c.b;
-    }
-    geo.setAttribute("color", new THREE.BufferAttribute(cols, 3));
-    geo.scale(P.size, P.size, P.size);
-    return geo;
+    if (!__core || typeof __core.buildBoulderGeometry !== "function")
+        throw new Error("foundry-core: phyto-core buildBoulderGeometry fehlt (Kern-Pflicht)");
+    var __d = Math.max(1, (P.detail || 6) - 3 - __lod * 2);
+    var __g = __core.buildBoulderGeometry(
+        THREE,
+        simplex3,
+        {
+            elong: P.elong,
+            sph: P.sph,
+            round: P.round,
+            rough: P.rough,
+            strat: P.strat,
+            seed: P.seed,
+            detail: __d + 1,
+            size: P.size,
+            withColor: false,
+        },
+        rnd
+    );
+    if (!__g) throw new Error("foundry-core: buildBoulderGeometry lieferte kein Netz");
+    return felsStoffNetz(P, __g);
 }
 
 function clipPolygon(poly, a, b) {
@@ -3868,9 +3800,6 @@ function emitColumns(P) {
             return [cx / poly.length, cz / poly.length];
         });
     }
-    const baseCol = new THREE.Color(P.rockA),
-        topCol = new THREE.Color(P.rockC),
-        dark = new THREE.Color(P.rockB);
     for (let i = 0; i < N; i++) {
         if (seeds[i][0] * seeds[i][0] + seeds[i][1] * seeds[i][1] > Rk * Rk) continue; // nur innere Zellen -> Zellkanten-Rand
         let poly = boxP.map((q) => q.slice());
@@ -3894,8 +3823,7 @@ function emitColumns(P) {
             h = P.colH * (1 - dC * 0.16) * hF * broken * rrange(0.95, 1.05),
             M = poly.length;
         const positions = [],
-            idx = [],
-            cols = [];
+            idx = [];
         let vb = 0;
         const topY = poly.map(() => h + (rnd() - 0.5) * P.colH * 0.06);
         for (let s = 0; s < M; s++) {
@@ -3909,23 +3837,14 @@ function emitColumns(P) {
                 u1 = [q1[0], t1, q1[1]];
             positions.push(b0[0], b0[1], b0[2], b1[0], b1[1], b1[2], u1[0], u1[1], u1[2], u0[0], u0[1], u0[2]);
             idx.push(vb, vb + 1, vb + 2, vb, vb + 2, vb + 3);
-            const cf = baseCol.clone().lerp(dark, rrange(0.15, 0.5));
-            for (let q = 0; q < 4; q++) {
-                const top = q >= 2;
-                cols.push(...(top ? cf.clone().lerp(topCol, 0.25).toArray() : cf.toArray()));
-            }
             vb += 4;
         }
         const capStart = vb;
         positions.push(cx, h + P.colH * 0.03, cz);
-        const ctop = baseCol.clone().lerp(topCol, 0.5);
-        if (rockLichen > 0) ctop.lerp(vegFarbe(0x768a44), 0.4 * rockLichen);
-        cols.push(...ctop.toArray());
         vb++;
         for (let s = 0; s < M; s++) {
             const q = poly[s];
             positions.push(q[0], topY[s], q[1]);
-            cols.push(...ctop.toArray());
             vb++;
         }
         for (let s = 0; s < M; s++) idx.push(capStart, capStart + 1 + s, capStart + 1 + ((s + 1) % M));
@@ -3933,7 +3852,6 @@ function emitColumns(P) {
         g.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
         g.setIndex(idx);
         g.computeVertexNormals();
-        g.setAttribute("color", new THREE.Float32BufferAttribute(cols, 3));
         geos.push(g);
     }
     let merged = null;
@@ -3941,6 +3859,7 @@ function emitColumns(P) {
         merged = THREE.BufferGeometryUtils.mergeBufferGeometries(geos, false);
     } catch (e) {}
     if (merged) {
+        felsStoffNetz(P, merged); // der Stoff der Säulen ist das Fels-Gesetz (K17)
         const mat = new THREE.MeshStandardMaterial({
             vertexColors: true,
             roughness: P.matRough,
@@ -4100,9 +4019,9 @@ function emitCrystals(P) {
         spread = Math.sqrt(cm),
         N = Math.max(4, Math.round((P.count || 18) * cm)),
         geos = [];
-    const cB = new THREE.Color(P.rockA).toArray(),
-        cT = new THREE.Color(P.rockC).toArray(),
-        dk = new THREE.Color(P.rockB).toArray(); // amtMul: ANZAHL skaliert, Cluster-Flaeche ~sqrt -> Einzelkristall konstant
+    const cB = vegFarbe(P.rockA).toArray(), // FARB-GESETZ (K17): die Töne des Kristalls sind sRGB-Absichten
+        cT = vegFarbe(P.rockC).toArray(),
+        dk = vegFarbe(P.rockB).toArray(); // amtMul: ANZAHL skaliert, Cluster-Flaeche ~sqrt -> Einzelkristall konstant
     const baseGeo = THREE.BufferGeometryUtils.mergeVertices(new THREE.IcosahedronGeometry(P.size * 0.42 * spread, 1));
     baseGeo.deleteAttribute("uv");
     const bp = baseGeo.attributes.position;
@@ -4172,31 +4091,37 @@ const PRESETS = {
         kind: "tree",
         panel: "plant",
         s: { api: 0.3, delta: 2.3, slim: 0.45, trop: -0.15, leaf: 0.6 },
+        ph: { hoeheM: 15.55, hd: 60 }, // Welt-Maß (K20): Stieleiche im Bestand (Altbestand 15–35 m)
     },
     fichte: {
         kind: "tree",
         panel: "plant",
         s: { api: 0.92, delta: 2.05, slim: 0.72, trop: 0.1, leaf: 0.7 },
+        ph: { hoeheM: 26.2, hd: 70 }, // Welt-Maß (K20): Fichte im Bestand (Altbestand 30–50 m)
     },
     birke: {
         kind: "tree",
         panel: "plant",
         s: { api: 0.55, delta: 2.2, slim: 0.78, trop: 0.42, leaf: 0.42 },
+        ph: { hoeheM: 13, hd: 80 }, // Welt-Maß (K20): Birke, der schlanke Pionier (Altbestand 15–25 m)
     },
     weide: {
         kind: "tree",
         panel: "plant",
         s: { api: 0.3, delta: 2.3, slim: 0.55, trop: 0.9, leaf: 0.8 },
+        ph: { hoeheM: 7, hd: 25 }, // Welt-Maß (K20): die Trauerweide am Wasser: Solitär, gedrungen
     },
     mammut: {
         kind: "tree",
         panel: "plant",
         s: { api: 0.95, delta: 2.35, slim: 0.18, trop: 0.05, leaf: 0.88 },
+        ph: { hoeheM: 39.9, hd: 18 }, // Welt-Maß (K20): der Mammutbaum, Solitär-Riese: gedrungen
     },
     tanne: {
         kind: "tree",
         panel: "plant",
         s: { api: 0.9, delta: 2.1, slim: 0.74, trop: 0.05, leaf: 0.78 },
+        ph: { hoeheM: 26.9, hd: 65 }, // Welt-Maß (K20): Weißtanne im Bestand (30–50 m)
     },
     strauch: {
         kind: "shrub",
@@ -4466,6 +4391,8 @@ const PRESETS = {
             leafShape: { m: 4.1, n1: 0.91, n2: 0.865, n3: 0.865, a: 1, b: 1, wsc: 0.36 }, // das ganzrandig-wellige Ovalblatt (Eichen-Gesetz bei Lappung 0,3)
             roots: 6,
             flare: 0.24,
+            hoeheM: 23.55, // Welt-Maß (K20): Buche im Bestand (Altbestand 30–45 m)
+            hd: 70,
         },
     },
     // Der Karst-Baum: knorrig, gedrungen, mit mächtigem Wurzelanlauf an der Klippe.
@@ -4474,7 +4401,7 @@ const PRESETS = {
         panel: "plant",
         s: { api: 0.28, delta: 2.4, slim: 0.14, trop: -0.4, leaf: 0.36 },
         fx: { place: { mode: "none" } }, // die Pflanz-Regel; Rinde, Laub, Nadel und Krone sind der Phänotyp (phyto-core artPhaenotyp)
-        ph: { flare: 0.9, roots: 5, leafCol: 0x3e6626, barkA: 0x3b3128, barkB: 0x5f5444 },
+        ph: { flare: 0.9, roots: 5, leafCol: 0x3e6626, barkA: 0x3b3128, barkB: 0x5f5444, hoeheM: 8.5, hd: 15 }, // Welt-Maß (K20): Klippen-Solitär, gedrungen
     },
     // Das stehende Totholz: ein abgestorbener Laubbaum — gebrochene Krone, kein Reisig, kein Laub, vergraute Borke.
     totholz: {
@@ -4485,6 +4412,39 @@ const PRESETS = {
         ph: { tot: 1, barkA: 0x46423a, barkB: 0x6e685c },
     },
 };
+
+// DAS BYTE-RASTER AM AUSGANG (K20, der Re-Mint des Kerns; das Muster porta-core/fachwerk-core ausRaster): jede Zahl, die
+// buildInstance liefert, liegt auf einem Gitter, das kein letztes Bit erreicht — Attribute 2^-12, Normalen 2^-14, Lage
+// und Maß 2^-16, Drehung 2^-20; −0 → 0. Befund (spec/asset-contract/plattform-ratsche.json, Satz v1): sin/cos/hypot ±1
+// ULP kippten 18–29 der 43 Probe-Fälle, jede Zahl des Baums hängt an ihnen. Die Stoffe teilt der Kern über alle Bauten
+// — sie bleiben unberührt (ihre Farben tragen die Paletten-Bytes, die Bäume die Vertex-Farben).
+function __rasterZahl(x, q) {
+    return Math.round(x * q) / q + 0;
+}
+function __ausRaster(g) {
+    g.traverse(function (o) {
+        o.position.set(__rasterZahl(o.position.x, 65536), __rasterZahl(o.position.y, 65536), __rasterZahl(o.position.z, 65536));
+        o.scale.set(__rasterZahl(o.scale.x, 65536), __rasterZahl(o.scale.y, 65536), __rasterZahl(o.scale.z, 65536));
+        const q = o.quaternion;
+        q.set(__rasterZahl(q.x, 1048576), __rasterZahl(q.y, 1048576), __rasterZahl(q.z, 1048576), __rasterZahl(q.w, 1048576));
+        if (o.geometry && o.geometry.attributes) {
+            const A = o.geometry.attributes;
+            for (const name in A) {
+                const s = name === "normal" ? 16384 : 4096,
+                    arr = A[name].array;
+                for (let k = 0; k < arr.length; k++) arr[k] = __rasterZahl(arr[k], s);
+            }
+        }
+    });
+}
+
+// DIE WELT-SKALA EINER ART (wie der Wald pflanzt, placement): Meter je Vorlagen-Einheit — Skala 1 baut in Welt-Metern,
+// unter 1 bleibt sie (Gras, Fels), darüber trägt der Baum den Wald-Faktor treeScaleMul. Die EINE Formel für jeden Leser
+// im Kern (Wedel-Nadel, Schatten-Teil, das Welt-Maß des Wuchses).
+function __weltSkalaArt(id) {
+    const sc = PORTAL_RENDER_CONFIG.placement.scale[id];
+    return sc === 1 ? 1 : sc < 1 ? sc : sc * PORTAL_RENDER_CONFIG.placement.treeScaleMul;
+}
 
 function deriveParamsPlant(pre) {
     const _D = __dials;
@@ -4530,12 +4490,12 @@ function deriveParamsPlant(pre) {
     }
     if (WALDBODEN_EMIT[pre.kind]) return deriveParamsWaldboden(pre, { api, delta, slim, trop, leaf }, IR, J, O);
     // tree / shrub — DIE EINE ABLEITUNG (K24): der Baum-Zweig ist das Gesetz `treeParams` (phyto-core) — Regler, Saat,
-    // Bau-Stufe und die Phänotyp-Zeile der Art (`pre.ph`). Hier lebt keine eigene Ableitung mehr (der Zwilling setzte
+    // Bau-Stufe, die Phänotyp-Zeile der Art (`pre.ph`) und die Welt-Skala, mit der der Wald sie pflanzt (das Welt-Maß, K20). Hier lebt keine eigene Ableitung mehr (der Zwilling setzte
     // keinen Quirl-Abstand und trug eine eigene Stufen-Tafel). Fail-closed: ohne Gesetzbuch kein Baum.
     const core = typeof self !== "undefined" && self.__phytoCore;
     if (!core || typeof core.treeParams !== "function")
         throw new Error("phyto-core fehlt — die Baum-Ableitung wohnt im Gesetzbuch (Ladereihenfolge)");
-    return core.treeParams({ api, delta, slim, trop, leaf }, SEED, __lod, pre);
+    return core.treeParams({ api, delta, slim, trop, leaf }, SEED, __lod, pre, __weltSkalaArt(CURRENT));
 }
 
 // Die Regler des Waldbodens → die Gestalt-Parameter je Art (api · delta · slim · trop · leaf wie jede Pflanze).
@@ -4620,7 +4580,7 @@ function lerpHex(a, b, t) {
 // 01.10.: Laub 0,31–0,53 · Gras-Büschel 0,47 · Stiel 0,38, real 0,06–0,16; das Boden-Gras der Welt
 // 0,085). Dekodiert: Eiche 0,16 · Nadel 0,09 · Stiel 0,12 · Blüte 0,49. Gelesen wird beim BACKEN (wo
 // die Palette zur Vertex-Farbe wird) — Labor, Welt, Karte und Fern-Fit tragen dieselben Bytes; die
-// Paletten selbst bleiben die Absicht. Rinde, Fels und Fachwerk liegen roh im Band und bleiben roh.
+// Paletten selbst bleiben die Absicht. Rinde und Fachwerk liegen roh im Band; der Fels liest seit K17 das Fels-Gesetz (`felsStoffNetz`).
 function vegFarbe(c) {
     const x = c && c.isColor ? c.clone() : new THREE.Color(c);
     return x.convertSRGBToLinear();
@@ -4754,7 +4714,6 @@ function setSeasonColors(s) {
         presenceTarget = 0.05;
         bloomTarget = 0.1;
     }
-    rockLichen = s === "winter" ? 0.0 : 0.6;
 }
 
 // ERFINDER-WELLE (Katalysator §2 B4, „regelbar, alle Assets") — DIE REGLER-TABELLEN DER
@@ -4803,11 +4762,15 @@ function buildInstance(presetId, seed, lod, ov) {
             emitRock(P);
         } else {
             const P = deriveParamsPlant(pre);
-            if (ov) Object.assign(P, ov); // Wald-Overrides (crownBase/trunkMul)
+            if (ov) Object.assign(P, ov); // Wald-Overrides (crownBase)
             if (P.kind === "flower") emitFlower(P);
             else if (P.kind === "grass") emitGrass(P);
             else if (WALDBODEN_EMIT[P.kind]) WALDBODEN_EMIT[P.kind](P);
             else emitTree(P); // (der Grammatik-Beipack fuer den Analog-Satz fiel 05.10. — fern ist der Baum seine Karte)
+            // DAS MASS DES BAUMS (K20, Beipack `__mass`, must-ignore): der Hub, um den der Schaft die Krone trägt (phyto-core
+            // schaftHub, Vorlagen-Einheiten auf dem Byte-Raster). Der Wirt misst die Sichthöhe der SSE-Stufenwahl ohne ihn: das
+            // Detail, das eine Stufe vereinfacht, ist die Krone, und sie wuchs in der Form-Höhe (der Hub kostete 7 Befehle).
+            if (Number.isFinite(P._schaftHub)) g.userData.__mass = { schaftHub: __rasterZahl(P._schaftHub, 65536) };
         }
     } catch (e) {
         console.warn("Instanz", presetId, e);
@@ -4815,6 +4778,8 @@ function buildInstance(presetId, seed, lod, ov) {
     g.updateMatrixWorld(true);
     const box = new THREE.Box3().setFromObject(g);
     if (isFinite(box.min.y) && box.min.y > 0.002) g.position.y -= box.min.y;
+    __ausRaster(g);
+    g.updateMatrixWorld(true);
     subject = sS;
     SEED = sSeed;
     CURRENT = sCur;
@@ -4824,6 +4789,32 @@ function buildInstance(presetId, seed, lod, ov) {
     __dials = sDials;
     return g;
 }
+
+// DAS SKELETT DER GESTALT (K20, rein additiv): der Wuchs eines Baums oder Strauchs, wie buildInstance ihn für
+// (presetId, seed, lod, ov) wächst — dieselben kanonischen Regler, derselbe Same und Strom (RNG = mulberry32(seed)),
+// dieselbe Ableitung samt Prägung, dasselbe Stufen-Rezept und Blatt-Budget, der Totholz-Schnitt —, ohne Geometrie.
+// Der Stamm liest es für den gefühlten Baum (Kollision): er IST der gezeichnete, nie ein zweites Individuum.
+// Rückgabe { P, nodes } (nodes = growTreeNodes: segs · leaves · trunkR · runMeta · schaftHub), null für jede andere Art.
+function skelettDerGestalt(presetId, seed, lod, ov) {
+    const pre = PRESETS[presetId];
+    if (!pre || (pre.kind !== "tree" && pre.kind !== "shrub")) return null;
+    const core = typeof self !== "undefined" && self.__phytoCore;
+    if (!core || typeof core.treeParams !== "function" || typeof core.stufenRezept !== "function")
+        throw new Error("phyto-core fehlt — das Skelett der Gestalt wohnt im Gesetzbuch (Ladereihenfolge)");
+    const d = pre.s;
+    const P = core.treeParams(
+        { api: d.api, delta: d.delta, slim: d.slim, trop: d.trop, leaf: d.leaf },
+        seed,
+        lod,
+        pre,
+        __weltSkalaArt(presetId)
+    );
+    if (ov) Object.assign(P, ov);
+    const nodes = __wuchsDerStufe(P, core.stufenRezept(P.kind, lod), mulberry32(Math.floor(seed) >>> 0));
+    if (P.tot) __totholzSchnitt(nodes, P, seed);
+    return { P, nodes };
+}
+__terrainCore.skelettDerGestalt = skelettDerGestalt;
 
 // ════════════════════════════════════════════════════════════════════════════
 // DIE EINE PIPE (V18.458) — DER GATTUNGS-BÄCKER-TISCH.
@@ -5226,6 +5217,227 @@ function __huelleAusFeld(hk, f, nx, ny, nz, lo, vox, level, clr, zentren, skinJo
     return geo;
 }
 
+// DER KANTEN-KOLLAPS EINER HÜLLE (1310-15, Lehre 19 — die Kosten gehören ins Asset): Surface-Nets legt ein gleichmäßiges
+// Netz über jede Fläche, auch über die flache Brust und das gerade Hosenbein. Der Kollaps nimmt Kanten, bis `ziel` Dreiecke
+// bleiben, die billigste zuerst (Garland-Heckbert: die Summe der Ebenen-Quadriken beider Ecken, gewichtet mit der
+// Flächen-Größe, am Rest-Punkt). Halbkanten-Kollaps: der Rest-Punkt ist ein Endpunkt, er behält Lage, Gewichte und Farbe —
+// kein neues Attribut, die Haut bleibt an denselben Knochen. Der Rand steht fest (der Saum der Haut unter dem Ärmel),
+// verworfen wird jeder Kollaps, der die Mannigfaltigkeit bricht (Link-Bedingung) oder eine Fläche umklappt. Deterministisch:
+// Kosten, bei Gleichstand die Ecken-Nummern. Rückgabe: eine neue, dichte Geometrie (oder `geo`, wenn nichts zu tun ist).
+function __huelleKollaps(geo, ziel) {
+    const pa = geo.attributes.position;
+    const n = pa.count;
+    const I0 = geo.index && geo.index.array;
+    if (!I0 || I0.length / 3 <= ziel) return geo;
+    const P = new Float64Array(n * 3);
+    for (let i = 0; i < n; i++) {
+        P[i * 3] = pa.getX(i);
+        P[i * 3 + 1] = pa.getY(i);
+        P[i * 3 + 2] = pa.getZ(i);
+    }
+    const F = Int32Array.from(I0);
+    const mAll = F.length / 3;
+    let m = mAll;
+    const lebt = new Uint8Array(mAll).fill(1);
+    const vf = Array.from({ length: n }, () => []);
+    for (let f = 0; f < mAll; f++) for (let k = 0; k < 3; k++) vf[F[f * 3 + k]].push(f);
+    // die Quadriken (symmetrisch 4×4 als 10 Werte) und die Rand-Ecken (eine Kante mit nur einer Fläche)
+    const Q = new Float64Array(n * 10);
+    const kanten = new Map();
+    for (let f = 0; f < mAll; f++) {
+        const a = F[f * 3],
+            b = F[f * 3 + 1],
+            c = F[f * 3 + 2];
+        const ux = P[b * 3] - P[a * 3],
+            uy = P[b * 3 + 1] - P[a * 3 + 1],
+            uz = P[b * 3 + 2] - P[a * 3 + 2];
+        const vx = P[c * 3] - P[a * 3],
+            vy = P[c * 3 + 1] - P[a * 3 + 1],
+            vz = P[c * 3 + 2] - P[a * 3 + 2];
+        let nx = uy * vz - uz * vy,
+            ny = uz * vx - ux * vz,
+            nz = ux * vy - uy * vx;
+        const L = Math.hypot(nx, ny, nz);
+        if (L > 1e-20) {
+            nx /= L;
+            ny /= L;
+            nz /= L;
+            const d = -(nx * P[a * 3] + ny * P[a * 3 + 1] + nz * P[a * 3 + 2]);
+            const w = L / 2;
+            const q = [nx * nx, nx * ny, nx * nz, nx * d, ny * ny, ny * nz, ny * d, nz * nz, nz * d, d * d];
+            for (const v of [a, b, c]) for (let k = 0; k < 10; k++) Q[v * 10 + k] += w * q[k];
+        }
+        for (const [x, y] of [
+            [a, b],
+            [b, c],
+            [c, a],
+        ]) {
+            const key = x < y ? x * n + y : y * n + x;
+            kanten.set(key, (kanten.get(key) || 0) + 1);
+        }
+    }
+    const fest = new Uint8Array(n);
+    for (const [key, z] of kanten)
+        if (z === 1) {
+            fest[Math.floor(key / n)] = 1;
+            fest[key % n] = 1;
+        }
+    const kosten = (u, v) => {
+        const x = P[v * 3],
+            y = P[v * 3 + 1],
+            z = P[v * 3 + 2];
+        const A = u * 10,
+            Bq = v * 10;
+        const q = (k) => Q[A + k] + Q[Bq + k];
+        return (
+            q(0) * x * x +
+            2 * q(1) * x * y +
+            2 * q(2) * x * z +
+            2 * q(3) * x +
+            q(4) * y * y +
+            2 * q(5) * y * z +
+            2 * q(6) * y +
+            q(7) * z * z +
+            2 * q(8) * z +
+            q(9)
+        );
+    };
+    // die Halde (binärer Min-Heap über Kosten, Gleichstand nach u, v), Einträge mit den Versionen beider Ecken
+    const hc = [],
+        hu = [],
+        hv = [],
+        hs = [];
+    const ver = new Uint32Array(n);
+    const vor = (i, j) => hc[i] < hc[j] || (hc[i] === hc[j] && (hu[i] < hu[j] || (hu[i] === hu[j] && hv[i] < hv[j])));
+    const tausch = (i, j) => {
+        [hc[i], hc[j]] = [hc[j], hc[i]];
+        [hu[i], hu[j]] = [hu[j], hu[i]];
+        [hv[i], hv[j]] = [hv[j], hv[i]];
+        [hs[i], hs[j]] = [hs[j], hs[i]];
+    };
+    const legen = (u, v) => {
+        if (fest[u]) return;
+        let i = hc.length;
+        hc.push(kosten(u, v));
+        hu.push(u);
+        hv.push(v);
+        hs.push(ver[u] + ver[v] * 4294967296);
+        while (i > 0) {
+            const p = (i - 1) >> 1;
+            if (!vor(i, p)) break;
+            tausch(i, p);
+            i = p;
+        }
+    };
+    const nehmen = () => {
+        const last = hc.length - 1;
+        tausch(0, last);
+        const r = [hu.pop(), hv.pop(), hs.pop()];
+        hc.pop();
+        let i = 0;
+        for (;;) {
+            const l = 2 * i + 1,
+                rr = l + 1;
+            let k = i;
+            if (l < hc.length && vor(l, k)) k = l;
+            if (rr < hc.length && vor(rr, k)) k = rr;
+            if (k === i) break;
+            tausch(i, k);
+            i = k;
+        }
+        return r;
+    };
+    for (const key of kanten.keys()) {
+        const a = Math.floor(key / n),
+            b = key % n;
+        legen(a, b);
+        legen(b, a);
+    }
+    const weg = new Uint8Array(n);
+    const nachbarn = (u) => {
+        const s = new Set();
+        for (const f of vf[u]) if (lebt[f]) for (let k = 0; k < 3; k++) if (F[f * 3 + k] !== u) s.add(F[f * 3 + k]);
+        return s;
+    };
+    const normale = (f, ersetze, durch) => {
+        const e = [0, 1, 2].map((k) => (F[f * 3 + k] === ersetze ? durch : F[f * 3 + k]));
+        const ux = P[e[1] * 3] - P[e[0] * 3],
+            uy = P[e[1] * 3 + 1] - P[e[0] * 3 + 1],
+            uz = P[e[1] * 3 + 2] - P[e[0] * 3 + 2];
+        const vx = P[e[2] * 3] - P[e[0] * 3],
+            vy = P[e[2] * 3 + 1] - P[e[0] * 3 + 1],
+            vz = P[e[2] * 3 + 2] - P[e[0] * 3 + 2];
+        return [uy * vz - uz * vy, uz * vx - ux * vz, ux * vy - uy * vx];
+    };
+    while (m > ziel && hc.length) {
+        const [u, v, s] = nehmen();
+        if (weg[u] || weg[v] || s !== ver[u] + ver[v] * 4294967296) continue;
+        // die Link-Bedingung: die gemeinsamen Nachbarn sind genau die Spitzen der Flächen über der Kante
+        const Nu = nachbarn(u),
+            Nv = nachbarn(v);
+        if (!Nu.has(v)) continue;
+        let gemeinsam = 0;
+        for (const w of Nu) if (Nv.has(w)) gemeinsam++;
+        let ueber = 0;
+        for (const f of vf[u]) if (lebt[f] && (F[f * 3] === v || F[f * 3 + 1] === v || F[f * 3 + 2] === v)) ueber++;
+        if (gemeinsam !== ueber) continue;
+        // keine Fläche klappt um, keine entartet
+        let gut = true;
+        for (const f of vf[u]) {
+            if (!lebt[f] || F[f * 3] === v || F[f * 3 + 1] === v || F[f * 3 + 2] === v) continue;
+            const a = normale(f, -1, -1),
+                b = normale(f, u, v);
+            const la = Math.hypot(a[0], a[1], a[2]),
+                lb = Math.hypot(b[0], b[1], b[2]);
+            if (!(lb > 1e-12 * (la + 1e-30)) || (a[0] * b[0] + a[1] * b[1] + a[2] * b[2]) / (la * lb) < 0.2) {
+                gut = false;
+                break;
+            }
+        }
+        if (!gut) continue;
+        for (const f of vf[u]) {
+            if (!lebt[f]) continue;
+            if (F[f * 3] === v || F[f * 3 + 1] === v || F[f * 3 + 2] === v) {
+                lebt[f] = 0;
+                m--;
+            } else {
+                for (let k = 0; k < 3; k++) if (F[f * 3 + k] === u) F[f * 3 + k] = v;
+                vf[v].push(f);
+            }
+        }
+        weg[u] = 1;
+        for (let k = 0; k < 10; k++) Q[v * 10 + k] += Q[u * 10 + k];
+        ver[v]++;
+        for (const w of nachbarn(v)) {
+            legen(v, w);
+            legen(w, v);
+        }
+    }
+    // die dichte Geometrie: die überlebenden Ecken mit allen Attributen, der Index neu
+    const karte = new Int32Array(n).fill(-1);
+    const idx = [];
+    let neu = 0;
+    for (let f = 0; f < mAll; f++)
+        if (lebt[f])
+            for (let k = 0; k < 3; k++) {
+                const v = F[f * 3 + k];
+                if (karte[v] < 0) karte[v] = neu++;
+                idx.push(karte[v]);
+            }
+    const ng = new THREE.BufferGeometry();
+    for (const name of Object.keys(geo.attributes)) {
+        if (name === "normal") continue;
+        const at = geo.attributes[name];
+        const arr = new at.array.constructor(neu * at.itemSize);
+        for (let i = 0; i < n; i++)
+            if (karte[i] >= 0) for (let k = 0; k < at.itemSize; k++) arr[karte[i] * at.itemSize + k] = at.array[i * at.itemSize + k];
+        ng.setAttribute(name, new THREE.BufferAttribute(arr, at.itemSize));
+    }
+    ng.setIndex(new THREE.BufferAttribute(Uint32Array.from(idx), 1));
+    ng.computeVertexNormals();
+    return ng;
+}
+
 // DER TIER-GUSS: baut den bauTier-Baum des Gattungs-Kerns mit ECHTEN THREE-
 // Fabriken, bäckt jede Mesh-Geometrie in den LOKAL-Raum ihres nächsten
 // ANIMIERTEN Gelenks und mergt je (Gelenk × Material-Klasse) → wenige Meshes,
@@ -5566,11 +5778,12 @@ function __tierHaut(kern, B, root, nodeName, fein, P, matFuer, fell) {
     geo.setAttribute("color", new THREE.BufferAttribute(__tierMusterFarben(kern, P, B.masse, geo.attributes.position, gelenkeHaut, null), 3));
     const mesh = new THREE.Mesh(geo, matFuer("fell"));
     root.add(mesh); // Root-lokal gebacken (Identität)
+    // Die Kopf-Häute vor den Schalen: jede ist der Boden ihrer Kopf-Schalen (K28).
+    const koepfe = fein ? [] : __tierKopfHaeute(hk, B, H, matFuer, kern, P);
     if (fell) {
-        const schalen = __tierFellSchalen(hk, f, nx, ny, nz, lo, vox, zentren, skinJoints, eW * eW, kandidaten, fell, B, root, nodeName);
+        const schalen = __tierFellSchalen(hk, f, nx, ny, nz, lo, vox, zentren, skinJoints, eW * eW, kandidaten, fell, B, root, nodeName, koepfe);
         root.add(new THREE.Mesh(schalen, matFuer("fellSchale")));
     }
-    if (!fein) __tierKopfHaeute(hk, B, H, matFuer, kern, P);
     return skinJoints;
 }
 
@@ -5711,6 +5924,7 @@ function __tierKopfHaeute(hk, B, H, matFuer, kern, P) {
         return false;
     };
     const ohneLider = [t.lidTL, t.lidTR, t.earL, t.earR].filter(Boolean);
+    const koepfe = [];
     for (const [g, nimm] of [
         [t.headGroup, (n) => !unterEinem(n, eigen)],
         [t.jawGroup, (n) => !unterEinem(n, ohneLider)],
@@ -5726,7 +5940,9 @@ function __tierKopfHaeute(hk, B, H, matFuer, kern, P) {
         const name = g === t.jawGroup ? "jawGroup" : "headGroup";
         geo.setAttribute("color", new THREE.BufferAttribute(__tierMusterFarben(kern, P, B.masse, geo.attributes.position, () => [[name, 1]], zuWurzel), 3));
         g.add(new THREE.Mesh(geo, matFuer("fell"))); // Gelenk-lokal gebacken (Identität)
+        koepfe.push({ g, name, F, vox, zuWurzel, haut: g.children[g.children.length - 1] });
     }
+    return koepfe;
 }
 
 // ── DAS SCHALEN-FELL (V18.497): N versetzte Schalen über einer gröberen Haut aus DEMSELBEN Feld (jeder
@@ -5744,17 +5960,24 @@ function __tierKopfHaeute(hk, B, H, matFuer, kern, P) {
 // Median · Haar-Zellen je Einheit = √Median — das Raster der Lab-Strähnen) · aWurzel (der Bind-Punkt
 // der Haar-Wurzel — die Haar-Maske liest ihn, damit jedes Haar EINE Säule über alle Schalen bleibt) ·
 // color (der gemischte Ton, linear). Das Welt-Material (Klasse fellSchale) maskiert und schattiert.
-// Benannt, nicht gegossen: die eine Kopf-Zeile des Gesetzes (headGroup, 30 Strähnen) — 5 % der Leib-Dichte,
-// in der Welt 2,8 × 0,8 mm (≈ 0,2 px breit bei 2 m); Kopf-Schalen kosteten ~9k Dreiecke für ein Büschel
-// unter dem Pixel. Die Kopf-Haut trägt den Fell-Look (FELL_LOOK.koerper).
+// DIE KOPF-SCHALEN (K28): der Kopf trägt sein Fell wie der Rumpf — Schalen über SEINER Haut. Die starren Kopf-Häute
+// (Kopf und Kiefer) liegen außerhalb des Leib-Felds; ihre Schalen-Basis ist jeder basisVox-te Punkt DESSELBEN Felds wie
+// die Kopf-Haut (wie am Rumpf), gebunden mit Gewicht 1 an ihr Gelenk (es tritt hinten an die Bone-Ordnung). Den LOOK
+// trägt die Kopf-Zeile des Gesetzes (headGroup: Länge, nach hinten gelegt; mehrere Zeilen nach Strähnen-Zahl gemischt),
+// in der Skala des Kopfs; das Raster und die Dicke sind die des Rumpfs (Haar-Zellen √Median, die Locke aus der Dichte
+// der Wurzel, an der der Kopf hängt — die 30 Strähnen der Zeile sind die Streu-Zahl der Lab-Kappe, die Deckung ist
+// Leser-Sache, fellStreu); der Ton ist das Muster der Kopf-Haut am selben Punkt (EIN Ton-Gesetz). Die Kopf-Fell-Länge
+// ist ein Drittel des Deckhaars (0,03 gegen 0,09): vier Schalen-Höhen halten etwa den Abstand des Rumpfs. Vorher stand der
+// Kopf glatt (die Zeile benannt, nicht gegossen), dann als 19 Karten der Lab-Kappe, die im Armlängen-Bild nicht lasen.
 var TIER_FELL = Object.freeze({
     schalen: 6,
+    kopfSchalen: 4, // gegossen 3 (die äußerste fällt wie am Rumpf)
     basisVox: 2, // Schalen-Basis = jeder basisVox-te Rasterpunkt der Haut
     clr: 0.5, // × vox: die Basis liegt knapp über der Haut
     reich: 0.6, // die Nähe der Look-Mischung in Ellipsoid-Einheiten um e = 1 (1 / (1 + ((e − 1) / reich)²))
     kamm: 0.6, // Lean zur Spitze (× Länge)
 });
-function __tierFellSchalen(hk, f, nx, ny, nz, lo, vox, zentren, skinJoints, eW2, kandidaten, fell, B, root, nodeName) {
+function __tierFellSchalen(hk, f, nx, ny, nz, lo, vox, zentren, skinJoints, eW2, kandidaten, fell, B, root, nodeName, koepfe) {
     const s = TIER_FELL.basisVox;
     const nx2 = Math.floor((nx - 1) / s) + 1,
         ny2 = Math.floor((ny - 1) / s) + 1,
@@ -5796,7 +6019,7 @@ function __tierFellSchalen(hk, f, nx, ny, nz, lo, vox, zentren, skinJoints, eW2,
     const zeile = (node, c, r, sc, d, n, l) => {
         if (!(n > 0) || !(l > 0)) return;
         const j = gelenkIdx(node);
-        if (j < 0) return; // ein Teil ohne Leib-Haut: der Kopf trägt seine starren Häute (oben benannt)
+        if (j < 0) throw new Error("FELL: die Zeile " + (nodeName.get(node) || node.name || "?") + " liegt auf keiner Haut");
         const M = new THREE.Matrix4().multiplyMatrices(invRoot, node.matrixWorld);
         const dw = new THREE.Vector3(d[0], d[1], d[2]).transformDirection(M);
         const rx = r * sc[0],
@@ -5816,6 +6039,8 @@ function __tierFellSchalen(hk, f, nx, ny, nz, lo, vox, zentren, skinJoints, eW2,
     };
     // Der Deck-Mantel (Unterwolle · Grannen · helle Spitzen) liegt gleichmäßig auf der Haut der Wurzel.
     const mantel = [];
+    const kopf = B.teile.headGroup;
+    const kopfZeilen = []; // die Zeilen des starren Kopfs: der Look seiner Schalen (oben)
     for (const row of fell.rows) {
         if (row.art === "deck") {
             const dw = new THREE.Vector3(row.d[0], row.d[1], row.d[2]).normalize();
@@ -5831,8 +6056,13 @@ function __tierFellSchalen(hk, f, nx, ny, nz, lo, vox, zentren, skinJoints, eW2,
             continue;
         }
         const node = B.teile[row.teil];
-        if (node)
-            zeile(node, row.c, row.r, row.sc, row.d, row.n, row.l + ((row.lj != null ? row.lj : 0.015) / 2) * fell.kl);
+        if (!node) throw new Error("FELL: die Zeile " + row.teil + " hat keinen Teil im Bau");
+        const l = row.l + ((row.lj != null ? row.lj : 0.015) / 2) * fell.kl;
+        if (node === kopf) {
+            if (row.n > 0 && l > 0) kopfZeilen.push({ n: row.n, l, d: row.d });
+            continue;
+        }
+        zeile(node, row.c, row.r, row.sc, row.d, row.n, l);
     }
     // Das Schweif-Gesetz des Ofens (Lab-Streu je Segment: (28 − 2i)·9 Strähnen, Länge 0.047 − 0.003·i im
     // Mittel, nach hinten gekämmt) — dieselben Zahlen wie die gefallenen Schweif-Strähnen.
@@ -5939,17 +6169,92 @@ function __tierFellSchalen(hk, f, nx, ny, nz, lo, vox, zentren, skinJoints, eW2,
         .sort((a, b) => a - b);
     const median = belegt.length ? belegt[belegt.length >> 1] : 1;
     const zellen = Math.sqrt(median);
-    // Der Schalen-Stapel: N Kopien der Basis, jede auf ihrer Höhe, gekämmt, gleich gewichtet.
-    const N = TIER_FELL.schalen;
-    const P = new Float32Array(Vs * N * 3),
-        Nn = new Float32Array(Vs * N * 3),
-        C = new Float32Array(Vs * N * 3),
-        Wz = new Float32Array(Vs * N * 3),
-        T = new Float32Array(Vs * N * 3),
-        SI = new Float32Array(Vs * N * 4),
-        SW = new Float32Array(Vs * N * 4),
-        I = new Uint32Array(hX.length * N);
-    for (let sN = 0; sN < N; sN++) {
+    // Die Lagen der Kopf-Schalen: je starre Kopf-Haut ihre Basis (jeder basisVox-te Punkt ihres Felds, knapp über der
+    // Haut) im Root-Raum, ihr Ton (das Muster der Kopf-Haut), ihr Gelenk; Länge und Legerichtung aus den Kopf-Zeilen.
+    const kopfLagen = [];
+    if (kopfZeilen.length) {
+        if (!koepfe || !koepfe.length) throw new Error("FELL: die Kopf-Zeile hat keine Kopf-Haut");
+        const nK = kopfZeilen.reduce((a, z) => a + z.n, 0);
+        const lK = kopfZeilen.reduce((a, z) => a + z.n * z.l, 0) / nK;
+        const dK = kopfZeilen.reduce((a, z) => a.add(new THREE.Vector3(z.d[0], z.d[1], z.d[2]).multiplyScalar(z.n)), new THREE.Vector3());
+        // Die Teile auf der Kopf-Haut: jedes gezeichnete Mesh unter dem Kopf außer den Kopf-Häuten (Auge, Lid, Nase, Lefze,
+        // Zahn, Ohr) — ihre Ecken im Root-Raum. Das Fell weicht ihnen: die Länge an einer Wurzel ist höchstens ihr Abstand
+        // zum nächsten Teil, die Dichte schwindet mit (der Fang und der Augen-Ring tragen kurzes, lichtes Fell, nie ein Fell
+        // über dem Auge).
+        const haeute = new Set(koepfe.map((kp) => kp.haut));
+        const teile = [];
+        const v3 = new THREE.Vector3();
+        kopf.updateMatrixWorld(true);
+        kopf.traverse((m) => {
+            if (!m.isMesh || haeute.has(m) || m.userData.__nichtGiessen) return;
+            const Mm = new THREE.Matrix4().multiplyMatrices(invRoot, m.matrixWorld);
+            const pm = m.geometry.attributes.position;
+            for (let i = 0; i < pm.count; i++) {
+                v3.fromBufferAttribute(pm, i).applyMatrix4(Mm);
+                teile.push(v3.x, v3.y, v3.z);
+            }
+        });
+        if (!teile.length) throw new Error("FELL: der Kopf trägt kein Teil auf seiner Haut");
+        for (const kp of koepfe) {
+            const F = kp.F,
+                sK = TIER_FELL.basisVox;
+            const kx = Math.floor((F.nx - 1) / sK) + 1,
+                ky = Math.floor((F.ny - 1) / sK) + 1,
+                kz = Math.floor((F.nz - 1) / sK) + 1;
+            const fK = new Float32Array(kx * ky * kz);
+            for (let k = 0; k < kz; k++)
+                for (let j = 0; j < ky; j++)
+                    for (let i = 0; i < kx; i++) fK[i + kx * (j + ky * k)] = F.f[i * sK + F.nx * (j * sK + F.ny * k * sK)];
+            const b = __huelleAusFeld(hk, fK, kx, ky, kz, F.lo, kp.vox * sK, 0, TIER_FELL.clr * kp.vox, null, null, 0);
+            if (!b) throw new Error("FELL: die Kopf-Schalen-Basis (" + kp.name + ") lieferte keine Fläche");
+            const tonK = __tierMusterFarben(fell.kern, fell.P, B.masse, b.attributes.position, () => [[kp.name, 1]], kp.zuWurzel);
+            const M = new THREE.Matrix4().multiplyMatrices(invRoot, kp.g.matrixWorld);
+            b.applyMatrix4(M);
+            if (!b.attributes.normal) b.computeVertexNormals();
+            const jn = nodeName.get(kp.g);
+            if (!jn) throw new Error("FELL: die Kopf-Haut " + kp.name + " hängt an keinem Gelenk");
+            if (skinJoints.indexOf(jn) < 0) skinJoints.push(jn);
+            const l = lK * M.getMaxScaleOnAxis();
+            const bp = b.attributes.position,
+                len = new Float32Array(bp.count),
+                anteil = new Float32Array(bp.count);
+            for (let i = 0; i < bp.count; i++) {
+                const x = bp.getX(i),
+                    y = bp.getY(i),
+                    z = bp.getZ(i);
+                let d2 = Infinity;
+                for (let q = 0; q < teile.length; q += 3) {
+                    const dx = teile[q] - x,
+                        dy = teile[q + 1] - y,
+                        dz = teile[q + 2] - z;
+                    const e = dx * dx + dy * dy + dz * dz;
+                    if (e < d2) d2 = e;
+                }
+                len[i] = Math.min(l, Math.sqrt(d2));
+                anteil[i] = len[i] / l;
+            }
+            kopfLagen.push({ b, ton: tonK, j: skinJoints.indexOf(jn), len, anteil, dw: dK.clone().transformDirection(M) });
+        }
+    }
+    const NK = TIER_FELL.kopfSchalen;
+    const dKopf = Math.min(1.6, dichteJe[jWurzel] / median); // die Dichte der Wurzel, an der der Kopf hängt
+    const VK = kopfLagen.reduce((a, k) => a + k.b.attributes.position.count * (NK - 1), 0),
+        XK = kopfLagen.reduce((a, k) => a + k.b.index.count * (NK - 1), 0);
+    // Der Schalen-Stapel: N − 1 Kopien der Basis, jede auf ihrer Höhe, gekämmt, gleich gewichtet; dahinter die Kopf-Schalen
+    // (der Leib bleibt der Anfang der Puffer). DIE ÄUSSERSTE SCHALE FÄLLT (K28): bei t = 1 trägt sie keine Locke (jede endet
+    // bei 55–100 % der Länge, ihre Spitze liegt unter t = 1; die Wolle deckt nur bis t = 0,34) — das Welt-Material verwarf
+    // jedes ihrer Fragmente, sie kostete je Tier ein Sechstel des Stapels (Wolf 4 477 Dreiecke) für kein Pixel.
+    const N = TIER_FELL.schalen,
+        NS = N - 1;
+    const P = new Float32Array((Vs * NS + VK) * 3),
+        Nn = new Float32Array((Vs * NS + VK) * 3),
+        C = new Float32Array((Vs * NS + VK) * 3),
+        Wz = new Float32Array((Vs * NS + VK) * 3),
+        T = new Float32Array((Vs * NS + VK) * 3),
+        SI = new Float32Array((Vs * NS + VK) * 4),
+        SW = new Float32Array((Vs * NS + VK) * 4),
+        I = new Uint32Array(hX.length * NS + XK);
+    for (let sN = 0; sN < NS; sN++) {
         const t = (sN + 1) / N;
         const o = sN * Vs;
         for (let i = 0; i < Vs; i++) {
@@ -5980,6 +6285,52 @@ function __tierFellSchalen(hk, f, nx, ny, nz, lo, vox, zentren, skinJoints, eW2,
             }
         }
         for (let q = 0; q < hX.length; q++) I[sN * hX.length + q] = hX[q] + o;
+    }
+    // Die Kopf-Schalen: dasselbe Schalen-Gesetz (Höhe (s+1)/N der Länge, Lean ∝ t², Raster √Median), Gewicht 1 am Gelenk.
+    let vK = Vs * NS,
+        qK = hX.length * NS;
+    for (const k of kopfLagen) {
+        const kp = k.b.attributes.position,
+            kn = k.b.attributes.normal,
+            kX = k.b.index.array,
+            n = kp.count;
+        for (let sN = 0; sN < NK - 1; sN++) {
+            const t = (sN + 1) / NK;
+            for (let q = 0; q < kX.length; q++) I[qK++] = kX[q] + vK;
+            for (let i = 0; i < n; i++, vK++) {
+                const nx0 = kn.getX(i),
+                    ny0 = kn.getY(i),
+                    nz0 = kn.getZ(i);
+                const dn = k.dw.x * nx0 + k.dw.y * ny0 + k.dw.z * nz0;
+                let tx = k.dw.x - dn * nx0,
+                    ty = k.dw.y - dn * ny0,
+                    tz = k.dw.z - dn * nz0;
+                const tl = Math.sqrt(tx * tx + ty * ty + tz * tz) || 1;
+                tx /= tl;
+                ty /= tl;
+                tz /= tl;
+                const lt = k.len[i] * t,
+                    lk = k.len[i] * t * t * TIER_FELL.kamm;
+                P[vK * 3] = kp.getX(i) + nx0 * lt + tx * lk;
+                P[vK * 3 + 1] = kp.getY(i) + ny0 * lt + ty * lk;
+                P[vK * 3 + 2] = kp.getZ(i) + nz0 * lt + tz * lk;
+                Nn[vK * 3] = nx0;
+                Nn[vK * 3 + 1] = ny0;
+                Nn[vK * 3 + 2] = nz0;
+                Wz[vK * 3] = kp.getX(i);
+                Wz[vK * 3 + 1] = kp.getY(i);
+                Wz[vK * 3 + 2] = kp.getZ(i);
+                C[vK * 3] = k.ton[i * 3];
+                C[vK * 3 + 1] = k.ton[i * 3 + 1];
+                C[vK * 3 + 2] = k.ton[i * 3 + 2];
+                T[vK * 3] = t;
+                T[vK * 3 + 1] = dKopf * k.anteil[i];
+                T[vK * 3 + 2] = zellen;
+                SI[vK * 4] = k.j;
+                SW[vK * 4] = 1;
+            }
+        }
+        k.b.dispose();
     }
     basis.dispose();
     const geo = new THREE.BufferGeometry();
@@ -6123,6 +6474,7 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         hair: { c: hairCol, r: 0.85, seh: "haar" },
     });
     const fein = (lod | 0) >= 1;
+    let leibV = 0; // das Volumen der geschlossenen Haut (1310-15), der Beipack trägt es zur Masse
     const segW = fein ? 8 : 20,
         segH = fein ? 6 : 14,
         segZ = fein ? 6 : 14;
@@ -6236,7 +6588,7 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         // Gewichte → SkinnedGeo. clr = Abstand AUS der Haut (das Lab-Prinzip;
         // ohne ihn stechen die Muskel-Primitiven durch die Hülle).
         const backeHuelle = (pts, zentren, klasse, vox, sigma, level, clr) => {
-            if (pts.length < 24) return;
+            if (pts.length < 24) return null;
             const lo = [1e9, 1e9, 1e9],
                 hi = [-1e9, -1e9, -1e9];
             for (const p of pts)
@@ -6273,12 +6625,23 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
             f = kern.blur3(f, nx, ny, nz, sigma);
             // die Grobstufe liegt auf dem Gesetz wie die des Tiers (__aufsNiveau): ihre Hüllen werfen für die feine
             const geo = __huelleAusFeld(kern, f, nx, ny, nz, lo, vox, level, clr, zentren, skinJoints, 0.04, undefined, fein);
-            if (!geo) return;
+            if (!geo) return null;
             const mesh = new THREE.Mesh(geo, matFuer(klasse));
             mesh.userData.__skinned = true;
+            mesh.userData.__huelle = true; // die Band-Zeile vereinfacht sie (1310-15)
             B.character.add(mesh);
             mesh.position.set(0, 0, 0); // Geometrie ist Charakter-lokal
             gebauteHuellen.push(mesh);
+            felder.set(mesh, { f, nx, ny, nz, lo, vox, level });
+            return mesh;
+        };
+        const felder = new Map();
+        // DAS PRIMITIV LEBT IN SEINER HÜLLE (1310-15, Lehre 19): was eine Haut- oder Kleid-Hülle trägt, liegt unter ihr
+        // (der CLR-Push bzw. der Stoff-Abstand hebt die Fläche aus jedem Primitiv) — es wird nie gesehen und fällt aus dem
+        // Guss (`__nichtGiessen`, dieselbe Regel wie Kopf- und Hand-Haut). Vorher zog der Mensch nah 51k Dreiecke unter
+        // seinen Hüllen mit (Rumpf, Glieder, Füße im Schuh).
+        const lebtInHuelle = (knoten) => {
+            for (const n of knoten) n.userData.__nichtGiessen = true;
         };
         const gebauteHuellen = [];
         const voxMul = fein ? 1.6 : 1.0;
@@ -6301,9 +6664,11 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
             mSpreiz[nm] = new THREE.Matrix4().multiplyMatrices(invChar, nd.matrixWorld);
         }
         // 1) DIE HAUT: alle skin-Teile außer Kopf/Hände/Füße (dort echtes Detail).
+        let hautHuelle = null;
         {
             const pts = [],
-                zen = [];
+                zen = [],
+                quellen = [];
             B.character.traverse((node) => {
                 if (!node.isMesh || !node.geometry) return;
                 const kl = node.material && node.material.userData && node.material.userData.__klasse;
@@ -6311,9 +6676,12 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
                 const j = animAhnH(node);
                 if (j === "head" || j === "hand1" || j === "hand-1" || j === "ankle1" || j === "ankle-1") return;
                 punkteVon(node, pts, zen, j);
+                quellen.push(node);
             });
-            backeHuelle(pts, zen, "haut", 0.05 * voxMul, 1.4, 0.42, 0.028);
+            hautHuelle = backeHuelle(pts, zen, "haut", 0.05 * voxMul, 1.4, 0.42, 0.028);
+            if (hautHuelle) lebtInHuelle(quellen);
         }
+        const stoffHuellen = [];
         // 2) DIE KLEID-ZONEN (das Gesetz sagt WAS, die Maschine baut die Hülle):
         for (const z of kern.kleidZonen(dials) || []) {
             const km = "stoff_" + (z.hex >>> 0).toString(16);
@@ -6321,18 +6689,74 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
             // (Lab getCloth verbatim) + Webungs-Art als must-ignore-Marker.
             KL[km] = { c: z.hex, r: typeof z.rough === "number" ? z.rough : 0.82, webe: z.webe || null, seh: "stoff" };
             const pts = [],
-                zen = [];
+                zen = [],
+                quellen = [];
             for (const tn of z.teile || []) {
                 const teil = B.parts[tn];
                 if (!teil) continue;
-                if (teil.isMesh) punkteVon(teil, pts, zen, animAhnH(teil));
-                else
+                if (teil.isMesh) {
+                    punkteVon(teil, pts, zen, animAhnH(teil));
+                    quellen.push(teil);
+                } else
                     teil.traverse((n2) => {
-                        if (n2.isMesh && n2.geometry && !n2.userData.__skinned) punkteVon(n2, pts, zen, animAhnH(n2));
+                        if (n2.isMesh && n2.geometry && !n2.userData.__skinned) {
+                            punkteVon(n2, pts, zen, animAhnH(n2));
+                            quellen.push(n2);
+                        }
                     });
             }
-            backeHuelle(pts, zen, km, 0.06 * voxMul, 1.5, 0.38, z.abstand);
+            const stoff = backeHuelle(pts, zen, km, 0.06 * voxMul, 1.5, 0.38, z.abstand);
+            if (stoff) {
+                lebtInHuelle(quellen);
+                stoffHuellen.push(stoff);
+            }
         }
+        // DIE HAUT UNTER DEM STOFF (1310-15, Lehre 19): ein Haut-Dreieck, dessen drei Ecken im Feld einer Kleid-Hülle liegen
+        // (über ihrem Niveau, also mindestens den Stoff-Abstand unter seiner Fläche), sieht niemand — es fällt, die Ecken
+        // werden verdichtet. Am Saum bleibt jedes Dreieck mit einer Ecke im Freien (keine Lücke). Die Ecken werden in der
+        // Spreiz-Pose gemerkt, in der Haut und Stoff entstanden; geschnitten wird nach der Rück-Transformation, wenn die
+        // geschlossene Haut ihr Volumen gegeben hat.
+        let hautImStoff = null;
+        if (hautHuelle && stoffHuellen.length) {
+            const g = hautHuelle.geometry;
+            const pa = g.attributes.position;
+            const imStoff = (hautImStoff = new Uint8Array(pa.count));
+            for (const s of stoffHuellen) {
+                const F = felder.get(s);
+                for (let i = 0; i < pa.count; i++) {
+                    if (imStoff[i]) continue;
+                    const a = Math.round((pa.getX(i) - F.lo[0]) / F.vox),
+                        b = Math.round((pa.getY(i) - F.lo[1]) / F.vox),
+                        c = Math.round((pa.getZ(i) - F.lo[2]) / F.vox);
+                    if (a < 0 || b < 0 || c < 0 || a >= F.nx || b >= F.ny || c >= F.nz) continue;
+                    if (F.f[a + F.nx * (b + F.ny * c)] > F.level) imStoff[i] = 1;
+                }
+            }
+        }
+
+        // WAS GANZ IN EINER HÜLLE LIEGT (1310-15): jedes übrige starre Teil (gemalte Schatten, Gelenk-Kugeln …), dessen
+        // Ecken alle im Feld einer Haut- oder Kleid-Hülle liegen, liegt unter ihrer Fläche — es fällt aus dem Guss wie die
+        // Quellen der Hülle. Kopf, Hände, Augen und Haar liegen in keinem dieser Felder.
+        B.character.traverse((node) => {
+            if (!node.isMesh || !node.geometry || node.userData.__nichtGiessen || node.userData.__skinned) return;
+            tmpM.multiplyMatrices(invChar, node.matrixWorld);
+            const pa = node.geometry.attributes.position;
+            for (const F of felder.values()) {
+                let ganz = pa.count > 0;
+                for (let i = 0; i < pa.count && ganz; i++) {
+                    tmpV.set(pa.getX(i), pa.getY(i), pa.getZ(i)).applyMatrix4(tmpM);
+                    const a = Math.round((tmpV.x - F.lo[0]) / F.vox),
+                        b = Math.round((tmpV.y - F.lo[1]) / F.vox),
+                        c = Math.round((tmpV.z - F.lo[2]) / F.vox);
+                    ganz = a >= 0 && b >= 0 && c >= 0 && a < F.nx && b < F.ny && c < F.nz && F.f[a + F.nx * (b + F.ny * c)] > F.level;
+                }
+                if (ganz) {
+                    node.userData.__nichtGiessen = true;
+                    break;
+                }
+            }
+        });
+        felder.clear();
         // ZURÜCK IN DIE DEFAULT-POSE: Gelenke restaurieren, je Gelenk das
         // Delta default×inv(spreiz) (Charakter-lokal), jeden Hüllen-Vertex
         // gewichtet transformieren (die eine LBS-Formel), Normalen frisch.
@@ -6366,6 +6790,49 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
             }
             pa.needsUpdate = true;
             mesh.geometry.computeVertexNormals();
+        }
+        // DAS VOLUMEN DER GESCHLOSSENEN HAUT (1310-15): die Masse des Menschen liest das Volumen seiner Haut
+        // (`_leibVolumen`, Divergenz-Satz Σ a · (b × c) / 6 je Dreieck, in der Ruhe-Pose) — die Haut ist nach dem Stoff-Schnitt
+        // offen, also misst der Ofen sie vorher und gibt die Zahl im Beipack mit (`leibV`, Geometrie-Einheiten³).
+        if (hautHuelle) {
+            const g = hautHuelle.geometry;
+            const p = g.attributes.position.array;
+            const ix = g.index.array;
+            let v = 0;
+            for (let t = 0; t + 2 < ix.length; t += 3) {
+                const a = ix[t] * 3,
+                    b = ix[t + 1] * 3,
+                    c = ix[t + 2] * 3;
+                v +=
+                    (p[a] * (p[b + 1] * p[c + 2] - p[b + 2] * p[c + 1]) -
+                        p[a + 1] * (p[b] * p[c + 2] - p[b + 2] * p[c]) +
+                        p[a + 2] * (p[b] * p[c + 1] - p[b + 1] * p[c])) /
+                    6;
+            }
+            leibV = Math.abs(v);
+        }
+        if (hautHuelle && hautImStoff) {
+            const g = hautHuelle.geometry;
+            const pa = g.attributes.position;
+            const imStoff = hautImStoff;
+            const alt = g.index.array;
+            const neu = [];
+            for (let t = 0; t < alt.length; t += 3)
+                if (!(imStoff[alt[t]] && imStoff[alt[t + 1]] && imStoff[alt[t + 2]])) neu.push(alt[t], alt[t + 1], alt[t + 2]);
+            const karte = new Int32Array(pa.count).fill(-1);
+            let n = 0;
+            for (const v of neu) if (karte[v] < 0) karte[v] = n++;
+            const ng = new THREE.BufferGeometry();
+            for (const name of Object.keys(g.attributes)) {
+                const at = g.attributes[name];
+                const arr = new at.array.constructor(n * at.itemSize);
+                for (let i = 0; i < pa.count; i++)
+                    if (karte[i] >= 0) for (let k = 0; k < at.itemSize; k++) arr[karte[i] * at.itemSize + k] = at.array[i * at.itemSize + k];
+                ng.setAttribute(name, new THREE.BufferAttribute(arr, at.itemSize));
+            }
+            ng.setIndex(new THREE.BufferAttribute(Uint32Array.from(neu, (v) => karte[v]), 1));
+            g.dispose();
+            hautHuelle.geometry = ng;
         }
     }
     // DIE KOPF-HAUT (Welle 5, „der Mensch nah: das Gesicht"): das Gesicht war ein Haufen einzelner Kugeln (Kiefer,
@@ -6431,7 +6898,9 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
             col.set(spalt ? [fb[0] * 0.25, fb[1] * 0.2, fb[2] * 0.2] : fb, i * 3);
         }
         geo.setAttribute("color", new THREE.BufferAttribute(col, 3));
-        kopf.add(new THREE.Mesh(geo, matFuer("haut"))); // Kopf-lokal gebacken (Identität)
+        const kopfHaut = new THREE.Mesh(geo, matFuer("haut")); // Kopf-lokal gebacken (Identität)
+        kopfHaut.userData.__huelle = true;
+        kopf.add(kopfHaut);
         // DIE HAND-HAUT: Handfläche, Finger (Zylinder als Ellipsoide) und Daumen werden EINE Fläche je Hand — vorher
         // hingen vier Zylinder-Stäbe an einer Kugel (die Rechen-Hand der Tour).
         const HH = kern.MENSCH_GESTALT.handHaut;
@@ -6443,7 +6912,9 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
             const Fh = __tierFeld(hp, HH.vox, HH.blend);
             const hg = __huelleAusFeld(kern, Fh.f, Fh.nx, Fh.ny, Fh.nz, Fh.lo, HH.vox, 0, 0, null, null, 0);
             if (!hg) throw new Error("MENSCH-HAUT: die Hand-Haut lieferte keine Fläche");
-            hand.add(new THREE.Mesh(hg, matFuer("haut"))); // Hand-lokal gebacken (Identität)
+            const handHaut = new THREE.Mesh(hg, matFuer("haut")); // Hand-lokal gebacken (Identität)
+            handHaut.userData.__huelle = true;
+            hand.add(handHaut);
             // DIE HAND-MITTE (Integration W5-Körper): der Schwerpunkt der Hand-Haut im Hand-Raum reist im Beipack — die
             // Faust des Wirts setzt den Griff dorthin (vorher eine Welt-Konstante der alten Hand: 0,07 m daneben).
             const hp2 = hg.attributes.position;
@@ -6500,6 +6971,39 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
     const nodeName = new Map();
     nodeName.set(B.character, "mensch");
     for (const n of namen) if (B.parts[n]) nodeName.set(B.parts[n], n);
+    // DIE NAHE STUFE TRÄGT IHRE ZEILE (1310-15, Lehre 19): das Ziel ist die Kern-Zeile der Stufe (koerper-core
+    // PORTAL_RENDER_CONFIG) — `band`, solange es steht, sonst `tris` (B2c: erreicht die Stufe das Band, fällt das Feld und
+    // tris IST das Band). Was nicht Hülle ist (Augen, Lider, Haar), steht fest; jede Hülle (Haut, Kleid, Schuh, Kopf- und
+    // Hand-Haut) kollabiert im SELBEN Anteil, bis die Stufe die Zeile trägt. Ohne Zeile kein Mensch (fail-closed).
+    {
+        const zeilen = kern.PORTAL_RENDER_CONFIG && kern.PORTAL_RENDER_CONFIG.lod && kern.PORTAL_RENDER_CONFIG.lod.budget;
+        const zeile = zeilen && zeilen.koerper && zeilen.koerper[fein ? 1 : 0];
+        const ziel = zeile ? (Number.isInteger(zeile.band) ? zeile.band : zeile.tris) : null;
+        if (!(ziel > 0)) throw new Error("MENSCH-GUSS: die Budget-Zeile der Stufe fehlt (koerper-core budget)");
+        const huellen = [];
+        let festD = 0,
+            huelleD = 0;
+        B.character.traverse((node) => {
+            if (!node.isMesh || !node.geometry || node.userData.__nichtGiessen) return;
+            const g = node.geometry;
+            const d = (g.index ? g.index.count : g.attributes.position.count) / 3;
+            if (node.userData.__huelle) {
+                huellen.push(node);
+                huelleD += d;
+            } else festD += d;
+        });
+        const anteil = huelleD > 0 ? (ziel - festD) / huelleD : 1;
+        if (!(anteil > 0)) throw new Error(`MENSCH-GUSS: die festen Teile (${festD} Dreiecke) tragen die Zeile ${ziel} allein`);
+        if (anteil < 1)
+            for (const h of huellen) {
+                const alt = h.geometry;
+                const neu = __huelleKollaps(alt, Math.floor((alt.index.count / 3) * anteil));
+                if (neu !== alt) {
+                    alt.dispose();
+                    h.geometry = neu;
+                }
+            }
+    }
     return __bakeGelenkBaum(B.character, "mensch", nodeName, fein, {
         art: presetId,
         base: skinCol,
@@ -6507,6 +7011,8 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         skinJoints: skinJoints,
         // die Hand-Mitte je Hand im Hand-Raum (nur nah gegossen) — der Griff der Faust
         ...(fein ? {} : { handMitte }),
+        // das Volumen der geschlossenen Haut am Gelenk der Hülle (1310-15) — die Masse liest es, nie die offene Fläche
+        ...(leibV > 0 ? { leibV } : {}),
     });
 }
 

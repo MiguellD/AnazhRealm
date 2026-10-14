@@ -2,16 +2,16 @@
     "version": 1,
     "zweck": "DIE RATSCHEN DER VERTRAGS-WÄNDE (Studio-Welle S1, Synthese W1 c/d/e): je Klasse die benannte Ist-Liste, die nur SCHRUMPFEN darf, und das Soll der Synthese daneben. Ein neuer Eintrag ist rot (beim Namen); ein geheilter ebenfalls, bis seine Zeile im selben Commit fällt — die Zahl sinkt und wächst nie still zurück. Heben ist ein begründeter Akt von Hand im Commit. Leser: gate:portal-konformanz (dslEinzelwort, readyEcho) und gate:regler-wirkt (reglerTot, reglerBudget).",
     "dslEinzelwort": {
-        "zweck": "Der Spieler tippt im Portal EIN Wort in die Konsole; die Heimat schickt es flach als [\"w\", …args] (_portalParseWorldCommand → _portalForwardDsl). Stumm = die Welt-UI zeigt keine Wirkung, obwohl dieselbe Welt die chain-Form umsetzt (Kontrolle K4). Ursache je Studio: die Brücke liest op[0] je ELEMENT des Programms — aus \"gt\" wird \"g\" (Synthese §0.1).",
+        "zweck": "Der Spieler tippt im Portal EIN Wort in die Konsole; die Heimat schickt es flach als [\"w\", …args] (_portalParseWorldCommand → _portalForwardDsl). Stumm = die Welt-UI zeigt keine Wirkung, obwohl dieselbe Welt die chain-Form umsetzt (Kontrolle K4). Ursache je Studio: die Brücke liest op[0] je ELEMENT des Programms — aus \"gt\" wird \"g\" (Synthese §0.1). Studio-Hülle K41: EIN Adapter (AnazhHuelle.bruecke) liest das Programm ganz — 7 → 0.",
         "soll": 0,
         "sollQuelle": "Synthese §4 W4 (Hülle): DSL-Einzelwort 0/7 → 7/7 — EIN Adapter applyDsl mit chain-Rekursion (skeleton-Norm)",
-        "welten": ["fachwerk", "garage", "klang", "koerperstudio", "portale", "schmiede", "tetrapoda"]
+        "welten": []
     },
     "readyEcho": {
-        "zweck": "Die Welt beantwortet jedes enter der Heimat mit einer neuen ready (die Norm skeleton/fluid/terrain meldet ready einmal, unaufgefordert). Seit die Heimat nur die erste ready beantwortet, ist das Echo endlich (K2); der Dialekt bleibt, bis die Brücke EINE ist.",
+        "zweck": "Die Welt beantwortet jedes enter der Heimat mit einer neuen ready (die Norm skeleton/fluid/terrain meldet ready einmal, unaufgefordert). Seit die Heimat nur die erste ready beantwortet, ist das Echo endlich (K2); der Dialekt bleibt, bis die Brücke EINE ist. Studio-Hülle K41: EINE Brücke für die 10 Welten, die ein Skript laden, die ready einmal — 7 → 0.",
         "soll": 0,
         "sollQuelle": "Synthese §4 W4 (Hülle): Brücken 13 → 1",
-        "welten": ["fachwerk", "garage", "klang", "koerperstudio", "portale", "schmiede", "tetrapoda"]
+        "welten": []
     },
     "reglerTot": {
         "zweck": "Ein Regler aus PARAMS_BY_KIND, den die Werkstatt rendert, dessen Wert den Bau an KEINEM Rezept seiner Art bewegt (erste Stufe der Art, min und max) — gemessen am Kanal, den die Werkstatt-Vorschau nimmt: die Mesh-Arten über build-asset (ov {id: wert}, Seed 1), die MESHFREI-Arten (Vertrag §8) über den Host-Ofen (_workshopStudioPreviewFrom → _workshopOvenPreview, der Wert aus ws.studioOv). Schlüssel kern:art:id, Wert = der Befund.",
@@ -46,8 +46,6 @@
             "fachwerk:haus:bend": "bend=1 an alemannisch L0: tris 159946 > 132000",
             "fachwerk:haus:doppel": "doppel=1 an alemannisch L0: tris 155208 > 132000",
             "fachwerk:haus:storeys": "storeys=12 an alemannisch L0: tris 150162 > 132000",
-            "koerper:koerper:hairVol": "hairVol=2 an mensch L0 (Host-Ofen): tris 166520 > 166000",
-            "koerper:koerper:tone": "tone=1 an mensch L0 (Host-Ofen): tris 166840 > 166000",
             "porta:gate:ruin": "ruin=1 an drachentor L0: draws 14 > 13",
             "porta:gate:wMason": "wMason=1 an drachentor L0: draws 14 > 13",
             "porta:gate:wMono": "wMono=1 an drachentor L0: draws 14 > 13",

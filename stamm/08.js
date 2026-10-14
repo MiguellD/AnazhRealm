@@ -1,25 +1,7 @@
 class AnazhRealm_Z08 {
-    // ===== ATLAS §08 · WELT-GENESE — Dichtefeld · Erosion · Hydrosphäre · Feuchte/Kronen =====
-    // V9.47 — Hydraulische Tröpfchen-Erosion carvt dendritische Täler + füllt
-    // Becken mit Sediment. MUSS hier laufen — VOR allem Surface-abhängigen
-    // Worldgen (Inseln, Hydrosphäre, Genesis-Plattform, Chunk-Streaming) →
-    // alle sehen das erodierte Gelände. V9.51 — der Tarn-Pass: Bergseen als
-    // additive Hochmulden ins Erosions-Delta. try/catch — ein Erosions-Fehler
-    // darf den Worldgen nie brechen.
-    _worldgenComputeErosionAndTarns() {
-        try {
-            this.state.erosion = this._computeErosion();
-            this.log(
-                `V9.47: Hydraulische Erosion — ${AnazhRealm.EROSION.iterations} Stream-Power-Iterationen über ${AnazhRealm.EROSION.regionSize}m-Region`,
-                "INFO"
-            );
-            const tarns = this._hydroSeedTarns();
-            this.log(`V9.51: Tarn-Pass — ${tarns.length} Bergsee-Mulden gesetzt`, "INFO");
-        } catch (e) {
-            this.state.erosion = null;
-            this.log(`Erosion fehlgeschlagen: ${e.message}`, "ERROR");
-        }
-    }
+    // ===== ATLAS §08 · WELT-GENESE — Dichtefeld · Hydrosphäre · Feuchte/Kronen =====
+    // Täler und Seen trägt das Flussnetz des Gelände-Gesetzbuchs (K16): ein See ist eine Senke des Netzes (Ebene 0),
+    // die Hydrosphäre füllt sie — keine Erosions-Simulation, kein Tarn-Pass, das Gelände entwässert aus sich selbst.
 
     // Worldgen-Inseln über `spawnIslandAt` (Surface-Nets, ein Pfad); Spawn-Y aus der echten Voxel-Surface
     // (`maxHeight` ist in Voxel-Welten 0 — `maxHeight + 20` landete Inseln IM Terrain).
@@ -91,7 +73,6 @@ class AnazhRealm_Z08 {
             // fernen Kacheln des ALTEN Seeds muessen fallen (lazy-Neubau aus
             // dem neuen Seed; derived, nie persistiert).
             this.state.hydroTiles = new Map();
-            this.state.erosionTiles = new Map();
             const hydro = this._computeHydrosphere();
             this.state.hydrosphere = hydro;
             this.log(
@@ -110,36 +91,35 @@ class AnazhRealm_Z08 {
         } catch (e) {
             this.log(`Hydrosphäre-Rendering fehlgeschlagen: ${e.message}`, "ERROR");
         }
-        // Der Worker erhält fertigen Atlas + Erosion + Tarns (full state-set); ab
+        // Der Worker erhält fertigen Atlas (full state-set); ab
         // `voxelWorkerSyncedHydroStateGen === voxelWorkerStateGen` traut ihm der Streaming-Pfad.
         // Bumpt stateGen → in-flight Pre-Worldgen-Requests werden verworfen.
         this._voxelWorkerSyncWorldgenState();
     }
 
-    // Globales Wasser-Y-Band: top = max(state.waterLevel, alle lake.level) + 10 m, bottom = waterLevel
-    // − 10 m (reicht, weil die Iso nur die OBERE Wassergrenze rendert). Cells außerhalb werden ohne
+    // Globales Wasser-Y-Band: top = der höchste Spiegel JEDES Wasser-Körpers (waterLevel, jeder See, jeder Punkt jedes Flusses)
+    // + 10 m, bottom = waterLevel − 10 m (reicht, weil die Iso nur die OBERE Wassergrenze rendert). Cells außerhalb werden ohne
     // Density-Sample klassifiziert (above=AIR, below=WATER) — dieselbe Regel wie der OOB-Live-Compute in
-    // `_buildVoxelChunkWaterIsoSurface` → nahtfrei.
+    // `_buildVoxelChunkWaterIsoSurface` → nahtfrei. DER FLUSS GEHÖRT HINEIN (K16): das Band kannte nur die Seen; seit die
+    // Landform im Gelände-Gesetz liegt, steigen die Flüsse in die Täler des Mittelgebirges (Spiegel bis 55 m), das Band endete
+    // bei 23,7 m (der höchste See + 10) — der Zell-Bau ließ jede Fluss-Zelle darüber AIR: in der Heimat 344 von 549 Fluss-
+    // Segmenten ohne gezeichnetes Wasser (am Bach -744/-872 Wasser-Meshes 0, die Quellen trocken).
     _computeHydroBand() {
         const wl = typeof this.state.waterLevel === "number" ? this.state.waterLevel : 0;
         let topY = wl;
-        const h = this.state.hydrosphere;
-        if (h && Array.isArray(h.lakes)) {
-            for (const lake of h.lakes) {
-                if (Number.isFinite(lake.level) && lake.level > topY) topY = lake.level;
-            }
-        }
+        const hebe = (h) => {
+            if (!h) return;
+            if (Array.isArray(h.lakes))
+                for (const lake of h.lakes) if (Number.isFinite(lake.level) && lake.level > topY) topY = lake.level;
+            if (Array.isArray(h.rivers))
+                for (const fluss of h.rivers)
+                    for (const p of fluss.points || []) if (Number.isFinite(p.S) && p.S > topY) topY = p.S;
+        };
+        hebe(this.state.hydrosphere);
         // A3 (V18.132) — das Band ist GLOBAL (V9.77: alle Chunks teilen die
-        // Thresholds): die See-Spiegel der fernen Kacheln heben es mit, sonst
+        // Thresholds): die Spiegel der fernen Kacheln heben es mit, sonst
         // wuerde der Band-Skip ihre Zellen als garantiert-AIR ueberspringen.
-        if (this.state.hydroTiles) {
-            for (const t of this.state.hydroTiles.values()) {
-                if (!t || !Array.isArray(t.lakes)) continue;
-                for (const lake of t.lakes) {
-                    if (Number.isFinite(lake.level) && lake.level > topY) topY = lake.level;
-                }
-            }
-        }
+        if (this.state.hydroTiles) for (const t of this.state.hydroTiles.values()) hebe(t);
         this.state.hydroBand = {
             top: topY + 10,
             bottom: wl - 10,
@@ -205,8 +185,8 @@ class AnazhRealm_Z08 {
             { x: spot.x, y: platCenterY + 0.5, z: spot.z },
             { silent: true }
         );
-        // die Lichtung (ihr Bauplan, `_grundrissVon`): was die Natur schon um die Scheibe geworfen hat, fällt wie im Haus
-        if (plat) this._grundrissRaeumen(plat);
+        // die Lichtung (ihr Bauplan, `_grundrissVon`): was die Natur schon um die Scheibe geworfen hat, fällt wie im Haus —
+        // geräumt an der Wurzel (`spawnArchitecture`)
         // Spieler oben auf die Plattform setzen. Plattform-Part-Top liegt
         // bei platCenterY + 1 (Cylinder y-Center 0.5, Höhe 1). +1.2 Puffer.
         const spawnY = platCenterY + 2.2;
@@ -230,289 +210,11 @@ class AnazhRealm_Z08 {
 
     // Dichte-Feld: > 0 fest, < 0 Luft, 0 Oberfläche = 2D-Makro-Oberfläche (`surf − y`) + zwei 3D-Noise-
     // Bänder (Höhlen, Überhänge); die Makro-Oberfläche ist die EINE Quelle für Dichte UND Hydrosphäre.
-    // Erosion (Stream-Power-Inzision): die ROHE Makro-Surface ko-evolviert `EROSION.iterations`-mal mit
-    // der Drainage (`_erosionIncisionPass`), gespeichert als Delta (erodiert − roh). Läuft VOR
-    // `_computeHydrosphere`; zirkelfrei (das Erosions-Delta des Gesetzbuchs, gelaende-core `erosionDelta`, ist 0 solange `state.erosion` null), ohne RNG.
-    _computeErosion(origin = null) {
-        // Die Erosion ist Zustand des Wildnis-Terms (nur der Wildnis-Term, gelaende-core `wildnisY`, liest ihr Delta): eine Welt ohne ihn rechnet sie nicht.
-        if (!(this._erbgut().wildnis > 0)) {
-            if (!origin) this.state.erosion = null;
-            return null;
-        }
-        const E = AnazhRealm.EROSION;
-        const dim = Math.max(8, Math.round(E.regionSize / E.cell));
-        // Parametrisierter Ursprung (Kachel-Erosion): die Heimat-Region nullt `state.erosion` (Re-Compute-
-        // Reinheit); eine Kachel lässt sie stehen — `erosionFuer` (gelaende-core) ist exklusiv, die Kachel sampelt roh.
-        const originX = origin && Number.isFinite(origin.x) ? origin.x : -E.regionSize / 2;
-        const originZ = origin && Number.isFinite(origin.z) ? origin.z : -E.regionSize / 2;
-        const n = dim * dim;
-        // (1) die rohe Makro-Surface ins Heightfield sampeln (includeDetail
-        // false — erodiert wird die Makro-Form, nicht das Hochfrequenz-Detail).
-        if (!origin) this.state.erosion = null; // ein Re-Compute sieht so die rohe Surface
-        // `_terrainMacroSurfaceY` addiert sonst die Tarn-Mulden: die Erosion läuft VOR `_hydroSeedTarns` und
-        // muss auch beim Re-Run tarn-frei sampeln (sonst divergieren die Läufe) — saved + restored im finally.
-        // Sie läuft vor Architekturen/Edits und bleibt statische Worldgen-Geomorphologie (kein Recompute).
-        const savedTarns = this.state.tarns;
-        this.state.tarns = null;
-        const h = new Float64Array(n);
-        for (let j = 0; j < dim; j++) {
-            for (let i = 0; i < dim; i++) {
-                h[i + j * dim] = this._terrainMacroSurfaceY(originX + i * E.cell, originZ + j * E.cell, false);
-            }
-        }
-        const orig = Float64Array.from(h);
-        // (2) Scratch-Puffer EINMAL allozieren — die Iterationen verwenden sie
-        // wieder (kein GC-Druck über die Pässe).
-        const buf = {
-            filled: new Float64Array(n),
-            flowTo: new Int32Array(n),
-            accum: new Float64Array(n),
-            visited: new Uint8Array(n),
-            order: new Int32Array(n),
-            hpK: new Float64Array(n),
-            hpV: new Int32Array(n),
-            thermalDelta: new Float64Array(n), // V14.2 Talus-Akkumulator
-            thNbIdx: new Int32Array(8), // V14.2 niedrigere Nachbarn (pro Zelle)
-            thNbExc: new Float64Array(8), // V14.2 deren Überschuss
-        };
-        // (3) Terrain + Drainage ko-evolvieren lassen: Inzision SCHÄRFT (fluviale
-        // Täler), der Talus-Pass GLÄTTET (Hänge auf den Ruhewinkel) — zusammen
-        // ergeben sie natürliche Berge mit Talus-Flanken statt 60°-Cusps.
-        for (let it = 0; it < E.iterations; it++) {
-            this._erosionIncisionPass(h, dim, buf, E);
-            this._thermalErosionPass(h, dim, buf, E);
-        }
-        // (4) Delta = erodiert − roh, geklemmt + zum Region-Rand auf 0 getapert
-        // (sonst klaffte eine Stufe zum un-erodierten Umland jenseits der Region).
-        const delta = new Float32Array(n);
-        const taper = E.edgeTaper;
-        const md = E.maxDelta;
-        for (let j = 0; j < dim; j++) {
-            for (let i = 0; i < dim; i++) {
-                const idx = i + j * dim;
-                let dv = h[idx] - orig[idx];
-                if (dv > md) dv = md;
-                else if (dv < -md) dv = -md;
-                const edge = Math.min(i, j, dim - 1 - i, dim - 1 - j);
-                if (edge < taper) dv *= edge / taper;
-                delta[idx] = dv;
-            }
-        }
-        this.state.tarns = savedTarns; // V9.51 — Tarns wiederhergestellt
-        return {
-            delta,
-            dim,
-            cell: E.cell,
-            originX,
-            originZ,
-            regionSize: E.regionSize,
-            flowTo: Int32Array.from(buf.flowTo),
-        };
-    }
-
-    // Eine Stream-Power-Inzisions-Iteration auf `h` (in-place): (1) Priority-Flood (Barnes) → `filled`,
-    // (2) D8-Flow-Direction → `flowTo`, (3) Flow-Accumulation → `accum`, (4) Inzision `Δh = k·A^m·S^n`.
-    // Grate (A≈1) schneiden kaum ein, Täler tief → das Relief WÄCHST. `buf`-Scratch kommt vom Aufrufer.
-    _erosionIncisionPass(h, dim, buf, E) {
-        const n = dim * dim;
-        const { filled, flowTo, accum, visited, order, hpK, hpV } = buf;
-        visited.fill(0);
-        // --- (1) Priority-Flood: binärer Min-Heap, mit den Rand-Zellen geseedet ---
-        let hlen = 0;
-        const swap = (a, b) => {
-            const k = hpK[a];
-            hpK[a] = hpK[b];
-            hpK[b] = k;
-            const v = hpV[a];
-            hpV[a] = hpV[b];
-            hpV[b] = v;
-        };
-        const push = (k, v) => {
-            hpK[hlen] = k;
-            hpV[hlen] = v;
-            let c = hlen++;
-            while (c > 0) {
-                const p = (c - 1) >> 1;
-                if (hpK[p] <= hpK[c]) break;
-                swap(p, c);
-                c = p;
-            }
-        };
-        const pop = () => {
-            const top = hpV[0];
-            hlen--;
-            if (hlen > 0) {
-                hpK[0] = hpK[hlen];
-                hpV[0] = hpV[hlen];
-                let c = 0;
-                for (;;) {
-                    const l = c * 2 + 1;
-                    const r = l + 1;
-                    let s = c;
-                    if (l < hlen && hpK[l] < hpK[s]) s = l;
-                    if (r < hlen && hpK[r] < hpK[s]) s = r;
-                    if (s === c) break;
-                    swap(s, c);
-                    c = s;
-                }
-            }
-            return top;
-        };
-        for (let j = 0; j < dim; j++) {
-            for (let i = 0; i < dim; i++) {
-                if (i !== 0 && j !== 0 && i !== dim - 1 && j !== dim - 1) continue;
-                const idx = i + j * dim;
-                filled[idx] = h[idx];
-                visited[idx] = 1;
-                push(h[idx], idx);
-            }
-        }
-        const eps = E.fillEpsilon;
-        // Die Pop-Reihenfolge IST die nach Füllhöhe aufsteigend sortierte
-        // Reihenfolge — in `order` festgehalten spart das einen O(n log n)-
-        // Sort je Iteration (Accumulation + Inzision brauchen diese Ordnung).
-        let oi = 0;
-        while (hlen > 0) {
-            const c = pop();
-            order[oi++] = c;
-            const ci = c % dim;
-            const cj = (c / dim) | 0;
-            for (let dj = -1; dj <= 1; dj++) {
-                for (let di = -1; di <= 1; di++) {
-                    if (di === 0 && dj === 0) continue;
-                    const ni = ci + di;
-                    const nj = cj + dj;
-                    if (ni < 0 || nj < 0 || ni >= dim || nj >= dim) continue;
-                    const nb = ni + nj * dim;
-                    if (visited[nb]) continue;
-                    filled[nb] = h[nb] > filled[c] + eps ? h[nb] : filled[c] + eps;
-                    visited[nb] = 1;
-                    push(filled[nb], nb);
-                }
-            }
-        }
-        // --- (2) Flow-Direction: jede Nicht-Rand-Zelle → steilster GEFÄLLE-Nachbar ---
-        // Steilstes SLOPE (drop/dist, dist=√2 diagonal), nie steilster absoluter Drop — der bevorzugt
-        // Diagonalen und gibt Drainage, Erosion und Hydro-Flow einen Diagonal-Grain (diag-flow-bias).
-        const INV_DIAG = 1 / Math.SQRT2;
-        for (let j = 1; j < dim - 1; j++) {
-            for (let i = 1; i < dim - 1; i++) {
-                const idx = i + j * dim;
-                const fHere = filled[idx];
-                let best = -1;
-                let bestSlope = 0;
-                for (let dj = -1; dj <= 1; dj++) {
-                    for (let di = -1; di <= 1; di++) {
-                        if (di === 0 && dj === 0) continue;
-                        const nb = i + di + (j + dj) * dim;
-                        const drop = fHere - filled[nb];
-                        if (drop <= 0) continue; // nur bergab
-                        const slope = di !== 0 && dj !== 0 ? drop * INV_DIAG : drop;
-                        if (slope > bestSlope) {
-                            bestSlope = slope;
-                            best = nb;
-                        }
-                    }
-                }
-                flowTo[idx] = best;
-            }
-        }
-        for (let j = 0; j < dim; j++) {
-            for (let i = 0; i < dim; i++) {
-                if (i === 0 || j === 0 || i === dim - 1 || j === dim - 1) flowTo[i + j * dim] = -1;
-            }
-        }
-        // --- (3) Flow-Accumulation: `order` rückwärts (absteigende Füllhöhe)
-        // → eine Zelle wird VOR ihrer Abfluss-Zelle verarbeitet. ---
-        for (let i = 0; i < n; i++) accum[i] = 1;
-        for (let o = n - 1; o >= 0; o--) {
-            const c = order[o];
-            const t = flowTo[c];
-            if (t >= 0) accum[t] += accum[c];
-        }
-        // --- (4) Inzision: Δh = k·A^m·S^n je Zelle, STROMAB-ZUERST (`order` vorwärts): die Abfluss-Zelle
-        // ist schon gesenkt, wenn ihr Zufluss dran ist → der Kanal wandert gemeinsam nach unten. ---
-        const k = E.streamK;
-        const cap = E.maxIncisionPerPass;
-        const m = E.areaExp;
-        const nn = E.slopeExp;
-        const minA = E.channelMinArea;
-        for (let o = 0; o < n; o++) {
-            const c = order[o];
-            const t = flowTo[c];
-            if (t < 0) continue;
-            // fluviale Inzision nur in Kanälen — Hänge/Grate (A < minA)
-            // bleiben unberührt, die scharfen Gipfel überleben.
-            if (accum[c] < minA) continue;
-            const slope = (filled[c] - filled[t]) / E.cell;
-            if (slope <= 0) continue;
-            // nicht unter den Abfluss-Nachbarn schneiden (keine Flow-Inversion).
-            const room = h[c] - h[t];
-            if (room <= 0) continue;
-            let inc = k * Math.pow(accum[c], m) * Math.pow(slope, nn);
-            if (inc > cap) inc = cap;
-            if (inc > room) inc = room;
-            h[c] -= inc;
-        }
-    }
-
-    // Thermische Erosion (Angle-of-Repose): Zellen steiler als der Ruhewinkel geben Überschuss an
-    // niedrigere Nachbarn ab (massenerhaltend) → Talus-Flanken statt 60°-Cusps. Transport in einen
-    // SEPARATEN Akkumulator (`thermalDelta`), nie in-place — sonst hinge das Ergebnis von der
-    // Scan-Reihenfolge ab (Determinismus-Bruch).
-    _thermalErosionPass(h, dim, buf, E) {
-        const n = dim * dim;
-        const td = buf.thermalDelta;
-        td.fill(0);
-        // max stabile Höhendifferenz = tan(Ruhewinkel) · Zell-Distanz; der
-        // Diagonal-Nachbar ist √2 weiter → höhere Schwelle (sonst Achsen-Grid-
-        // Bias wie der V13.3-D8-Flow-Befund).
-        const talusT = Math.tan((E.talusAngle * Math.PI) / 180) * E.cell;
-        const talusD = talusT * Math.SQRT2;
-        const factor = E.talusFactor;
-        const nbIdx = buf.thNbIdx;
-        const nbExc = buf.thNbExc;
-        for (let j = 1; j < dim - 1; j++) {
-            for (let i = 1; i < dim - 1; i++) {
-                const idx = i + j * dim;
-                const hc = h[idx];
-                let cnt = 0;
-                let sumExc = 0;
-                let maxExc = 0;
-                for (let dj = -1; dj <= 1; dj++) {
-                    for (let di = -1; di <= 1; di++) {
-                        if (di === 0 && dj === 0) continue;
-                        const nb = i + di + (j + dj) * dim;
-                        const T = di !== 0 && dj !== 0 ? talusD : talusT;
-                        const diff = hc - h[nb] - T;
-                        if (diff > 0) {
-                            nbIdx[cnt] = nb;
-                            nbExc[cnt] = diff;
-                            cnt++;
-                            sumExc += diff;
-                            if (diff > maxExc) maxExc = diff;
-                        }
-                    }
-                }
-                if (sumExc > 0) {
-                    // Bewege einen Bruchteil des GRÖSSTEN Überschusses, proportional
-                    // auf die instabilen Nachbarn verteilt (Musgrave-Thermal-Modell).
-                    const move = factor * maxExc * 0.5;
-                    td[idx] -= move;
-                    for (let p = 0; p < cnt; p++) {
-                        td[nbIdx[p]] += move * (nbExc[p] / sumExc);
-                    }
-                }
-            }
-        }
-        for (let i = 0; i < n; i++) h[i] += td[i];
-    }
-
     // ===== FERNE BINNENGEWAESSER: die seed-deterministischen KACHELN =====
-    // Die Heimat-Region (state.hydrosphere/erosion, ±1024 m) bleibt unangetastet; jenseits liefert eine
-    // lazy Kachel (2048 m, dieselbe Maschinerie) Seen·Flüsse·Erosion = f(seed, Kachel) — für jeden Peer
-    // gleich. Der Kachel-Schlüssel und die Erosions-Auflösung wohnen im Gelände-Gesetzbuch (gelaende-core.js
-    // `kachelSchluessel` · `erosionFuer`), Stamm und voxel-worker lesen sie dort; Kacheln sind DERIVED (nie im
+    // Die Heimat-Region (state.hydrosphere, ±1024 m) bleibt unangetastet; jenseits liefert eine
+    // lazy Kachel (2048 m, dieselbe Maschinerie) Seen·Flüsse = f(seed, Kachel) — für jeden Peer
+    // gleich. Der Kachel-Schlüssel wohnt im Gelände-Gesetzbuch (gelaende-core.js
+    // `kachelSchluessel`), Stamm und voxel-worker lesen ihn dort; Kacheln sind DERIVED (nie im
     // Snapshot), Welt-Regen leert sie.
     // Die EINE Region-Aufloesung fuer alle Hydro-Leser: Heimat-Region, wenn
     // (x,z) in ihr liegt; sonst die Kachel; sonst die Heimat (deren OOB-Logik
@@ -550,17 +252,9 @@ class AnazhRealm_Z08 {
                 if (rx === 0 && rz === 0) continue;
                 const key = `${rx},${rz}`;
                 if (!this.state.hydroTiles) this.state.hydroTiles = new Map();
-                if (!this.state.erosionTiles) this.state.erosionTiles = new Map();
                 if (this.state.hydroTiles.has(key)) continue;
                 const t0 = performance.now();
                 const origin = { x: rx * size - half, z: rz * size - half };
-                // EROSION ZUERST (wie die Heimat: die Hydro-Probe sieht die erodierten Täler via gelaende-core erosionFuer).
-                // flowTo (64 KB) trägt nur der Heimat-Atlas (diag-flow-bias liest ihn) — die Kachel bleibt schlank.
-                const eTile = this._computeErosion(origin);
-                if (eTile) {
-                    eTile.flowTo = null;
-                    this.state.erosionTiles.set(key, eTile);
-                }
                 this.state.hydroTiles.set(key, this._computeHydrosphere(origin));
                 this._computeHydroBand();
                 made++;
@@ -577,183 +271,6 @@ class AnazhRealm_Z08 {
         // Clear nötig: kein Chunk der neuen Kachel wurde je gebaut, in-flight verwirft der gen-bump.
         if (made && this.state.voxelWorker) this._voxelWorkerSyncState({ op: "state-set" });
         return made;
-    }
-
-    // Tarn-Pass: Bergseen als Gauss-Mulden im Erosions-Delta an hohen, sanft geneigten Stellen. Läuft
-    // NACH `_computeErosion`, VOR `_computeHydrosphere` → das Priority-Flood füllt die Mulde zum See, die
-    // bestehende Wasser-Maschinerie rendert ihn. Deterministisch (seed-Noise), legt `state.tarns` ab.
-    // ACHTUNG: wer `_computeErosion` neu rechnet, MUSS diesen Pass danach erneut rufen.
-    _hydroSeedTarns() {
-        this.state.tarns = [];
-        // Die Tarne sind Mulden des Wildnis-Terms (gelaende-core `wildnisY` addiert sie): eine Welt ohne ihn sät keine.
-        if (!(this._erbgut().wildnis > 0)) return this.state.tarns;
-        const T = AnazhRealm.TARN;
-        const base = this.state.terrainBaseHeight || 0;
-        const region = AnazhRealm.EROSION.regionSize;
-        const n = this._gelaende().noise;
-        const half = region / 2;
-        const cols = Math.max(3, Math.round(region / T.spacing));
-        const cellW = region / cols;
-        // --- die Kandidaten-Punkte (jittered grid) + ihre Makro-Höhen ---
-        const pts = [];
-        for (let cj = 0; cj < cols; cj++) {
-            for (let ci = 0; ci < cols; ci++) {
-                const jx = n.noise2D(ci * 7.13 + 1.7, cj * 7.13 + 9.2) * cellW * 0.34;
-                const jz = n.noise2D(ci * 4.41 + 50.3, cj * 4.41 + 31.8) * cellW * 0.34;
-                const x = -half + (ci + 0.5) * cellW + jx;
-                const z = -half + (cj + 0.5) * cellW + jz;
-                pts.push({ ci, cj, x, z, surf: this._terrainMacroSurfaceY(x, z, false) });
-            }
-        }
-        // ADAPTIVE Höhen-Schwelle — die Tarns sitzen im oberen Relief-Anteil
-        // DIESER Welt. So findet der Pass auch in einer flachen Welt das
-        // Hochland (ein fixer Wert verfehlte mal alles, mal zu viel).
-        const sorted = pts
-            .map((p) => p.surf)
-            .filter((s) => Number.isFinite(s))
-            .sort((a, b) => a - b);
-        if (sorted.length < 4) return [];
-        const reliefThr = Math.max(base + T.minReliefAbs, sorted[Math.floor(sorted.length * T.reliefPercentile)]);
-        // --- Kandidaten gaten + akzeptieren ---
-        const tarns = [];
-        const d = AnazhRealm.EROSION.cell;
-        const minSep = T.radiusMax;
-        for (const p of pts) {
-            if (!Number.isFinite(p.surf) || p.surf < reliefThr) continue;
-            // Platzierungs-Noise (tief-frequent) — hält die Tarns sparsam.
-            if (n.noise2D(p.x * 0.0021 + 17, p.z * 0.0021 - 8) < T.placeThreshold) continue;
-            // Hang messen — ein Tarn sitzt in einer sanften Hochmulde; sanft
-            // genug, dass die grosse, tiefe Gauss-Mulde ein geschlossenes
-            // Becken formt (`depthMin` > 0.83·maxSlope·radiusMax).
-            const gx =
-                (this._terrainMacroSurfaceY(p.x + d, p.z, false) - this._terrainMacroSurfaceY(p.x - d, p.z, false)) /
-                (2 * d);
-            const gz =
-                (this._terrainMacroSurfaceY(p.x, p.z + d, false) - this._terrainMacroSurfaceY(p.x, p.z - d, false)) /
-                (2 * d);
-            const slope = Math.hypot(gx, gz);
-            if (slope > T.maxSlope) continue;
-            let tooClose = false;
-            for (const tn of tarns) {
-                if (Math.hypot(tn.x - p.x, tn.z - p.z) < minSep) {
-                    tooClose = true;
-                    break;
-                }
-            }
-            if (tooClose) continue;
-            const rr = n.noise2D(p.ci * 2.7 - 12, p.cj * 2.7 + 4) * 0.5 + 0.5;
-            const r = T.radiusMin + rr * (T.radiusMax - T.radiusMin);
-            // Adaptive Tiefe ∝ `slope·r` (Hang-Abfall über den Radius) + ~8 m garantierte Wassertiefe — das
-            // Becken schließt immer mit derselben Wassertiefe; geklemmt auf [depthMin, depthMax].
-            let depth = Math.max(T.depthMin, Math.min(T.depthMax, 0.996 * slope * r + 8));
-            // KRITISCH: der Mulden-Boden bleibt ≥ waterRef+1 — sonst kriecht der Border-Ozean-Flood hinein und
-            // markiert den Tarn als Ozean (keine See-Extraktion). Reicht es dann nicht für depthMin → verwerfen.
-            const waterRef = Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : base + 4;
-            const maxAllowed = p.surf - waterRef - 1;
-            if (maxAllowed < T.depthMin) continue; // zu niedrig — kein Bergsee
-            if (depth > maxAllowed) depth = maxAllowed;
-            // Die Mulden-Form (σ, Reichweite) ist Gesetz: `tarnMulde` im Gelände-Gesetzbuch, `tarnDelta` liest sie.
-            tarns.push(globalThis.__gelaendeCore.tarnMulde(p.x, p.z, p.surf, r, depth));
-        }
-        this.state.tarns = tarns;
-        return tarns;
-    }
-
-    // Der persistierte Anker (worldMeta.macro) IST die Source of Truth: eine Welt behält ihren Original-
-    // Anker, auch wenn Konstanten sich ändern; Main↔Worker via `_voxelWorkerSnapshotState.macroAnker`.
-    // Persistenz reist im worldMeta-Spread. Alte Welt ohne macro → re-compute aus Seed (gen≥3) oder null;
-    // korruptes Feld → verwerfen + neu bauen (must-ignore).
-    _macroAnker() {
-        if (this._macroAnkerCache) return this._macroAnkerCache;
-        if (this._genVersion() < 3) return null;
-        // Der Anker ist Zustand des Wildnis-Terms: eine Welt ohne ihn hat keinen (und schreibt keinen in ihr worldMeta).
-        if (!(this._erbgut().wildnis > 0)) return null;
-        const wm = this.state.worldMeta;
-        if (!wm) return null;
-        if (wm.macro && AnazhRealm._isValidMacroAnker(wm.macro)) {
-            this._macroAnkerCache = wm.macro;
-            return this._macroAnkerCache;
-        }
-        const seed = wm.seed || "anazh-realm-seed";
-        this._macroAnkerCache = globalThis.__gelaendeCore.ankerAusSaat(seed);
-        // Erbgut persistieren — der nächste Lade-Vorgang liest aus wm.macro
-        // (und damit auch ein geteiltes Welt-Bündel: signiert+additiv).
-        wm.macro = this._macroAnkerCache;
-        return this._macroAnkerCache;
-    }
-
-    // Struktur-Validierung gegen korrupte macro-Felder (Müll, falsches Schema, manipuliertes Bündel —
-    // must-ignore); prüft Form, nicht Semantik (die deckt die Abfluss-Invariante).
-    static _isValidMacroAnker(m) {
-        if (!m || typeof m !== "object") return false;
-        if (!m.massivC || typeof m.massivC.x !== "number" || typeof m.massivC.z !== "number") return false;
-        if (typeof m.massivR !== "number" || !Number.isFinite(m.massivR)) return false;
-        if (typeof m.massivH !== "number" || !Number.isFinite(m.massivH)) return false;
-        if (typeof m.massivRot !== "number" || !Number.isFinite(m.massivRot)) return false;
-        if (typeof m.massivAspect !== "number" || !Number.isFinite(m.massivAspect)) return false;
-        if (!m.beckenC || typeof m.beckenC.x !== "number" || typeof m.beckenC.z !== "number") return false;
-        if (typeof m.beckenR !== "number" || !Number.isFinite(m.beckenR)) return false;
-        if (typeof m.beckenD !== "number" || !Number.isFinite(m.beckenD)) return false;
-        if (!Array.isArray(m.talVertices) || m.talVertices.length < 2) return false;
-        if (!Array.isArray(m.talFloors) || m.talFloors.length !== m.talVertices.length) return false;
-        for (const v of m.talVertices) {
-            if (!v || typeof v.x !== "number" || typeof v.z !== "number") return false;
-            if (!Number.isFinite(v.x) || !Number.isFinite(v.z)) return false;
-        }
-        for (const f of m.talFloors) {
-            if (typeof f !== "number" || !Number.isFinite(f)) return false;
-        }
-        if (typeof m.talBreite !== "number" || typeof m.talTrenchTiefe !== "number") return false;
-        if (typeof m.talTrenchBreite !== "number" || typeof m.talBlendExp !== "number") return false;
-        return true;
-    }
-
-    // Abfluss-Invariante: an N=32 Strahlen am Becken-Rim die Makro-Höhe messen (includeDetail=false);
-    // die Spannweite max−min MUSS > beckenD*0.5 sein → ein klarer Tiefweg, nie ein rund umringtes
-    // (endorheisches) Becken. spillAngle zeigt zum Tal-Endpunkt — das Tal ist der designte Auslass.
-    // Nutzbar als Verifikations-Wand im Test-Band und als Bau-Zeit-Check.
-    _macroSpillpointAnalysis(anker) {
-        if (!anker) return null;
-        const N = 32;
-        let minRimY = Infinity;
-        let maxRimY = -Infinity;
-        let spillAngle = 0;
-        let crestAngle = 0;
-        for (let i = 0; i < N; i++) {
-            const theta = (i / N) * Math.PI * 2;
-            const x = anker.beckenC.x + Math.cos(theta) * anker.beckenR;
-            const z = anker.beckenC.z + Math.sin(theta) * anker.beckenR;
-            const y = this._terrainMacroSurfaceY(x, z, false);
-            if (y < minRimY) {
-                minRimY = y;
-                spillAngle = theta;
-            }
-            if (y > maxRimY) {
-                maxRimY = y;
-                crestAngle = theta;
-            }
-        }
-        const span = maxRimY - minRimY;
-        const hasOutflow = span > anker.beckenD * 0.5;
-        // Tal-Eingangs-Richtung vom Becken-Zentrum nach außen: das letzte Tal-Vertex liegt am beckenC, das
-        // vorletzte davor in Tal-Längsrichtung → diese Richtung zeigt, wo das Tal den Rim kreuzt. Zeigt
-        // spillAngle dorthin, ist der Tal-Eingang der designte Spillweg.
-        const tEnd = anker.talVertices[anker.talVertices.length - 1];
-        const tPrev = anker.talVertices[anker.talVertices.length - 2];
-        const talEntryDirAng = Math.atan2(tPrev.z - tEnd.z, tPrev.x - tEnd.x);
-        let dAng = spillAngle - talEntryDirAng;
-        while (dAng > Math.PI) dAng -= 2 * Math.PI;
-        while (dAng < -Math.PI) dAng += 2 * Math.PI;
-        const spillVsTalDeg = (Math.abs(dAng) * 180) / Math.PI;
-        return {
-            minRimY,
-            maxRimY,
-            span,
-            spillAngleRad: spillAngle,
-            crestAngleRad: crestAngle,
-            hasOutflow,
-            spillVsTalDeg,
-        };
     }
 
     // Slope + Rock-Exposure als abgeleitete Welt-Felder direkt aus `_voxelSurfaceY` — am Genese-Leser
@@ -779,9 +296,8 @@ class AnazhRealm_Z08 {
         return Math.hypot(dxh, dzh);
     }
 
-    // Rock-Exposure: slope-getrieben + Massiv-Bias (im Massiv-Footprint mehr
-    // Fels-Wahrscheinlichkeit). LAAS-Form: `smoothstep(0.75, 1.45, slope) +
-    // massivMask · 0.18`. Returnt [0, 1+] (Clamping macht der Konsument).
+    // Rock-Exposure: slope-getrieben, `smoothstep(0.75, 1.45, slope)` — die Kliffs und Flanken des Flussnetzes tragen
+    // den Fels (K16: der Massiv-Bias des Ein-Massiv-Ankers fiel mit ihm). Returnt [0, 1].
     _rockExposureAt(x, z) {
         const slope = this._slopeAt(x, z);
         const ss = (e0, e1, v) => {
@@ -789,24 +305,21 @@ class AnazhRealm_Z08 {
             t = t < 0 ? 0 : t > 1 ? 1 : t;
             return t * t * (3 - 2 * t);
         };
-        let exposure = ss(0.75, 1.45, slope);
-        // Die Massiv-Maske des Ankers (smoothstep-Glocke ohne Grate) aus dem Gelände-Gesetzbuch.
-        const anker = this._macroAnker();
-        if (anker) exposure += globalThis.__gelaendeCore.massivMaske(anker, x, z) * 0.18;
-        return exposure;
+        return ss(0.75, 1.45, slope);
     }
 
     // DIE EINE 2D-HÖHE der Welt: das Gelände-Gesetzbuch (gelaende-core.js `hoehe` — der Term-Auswerter des Erbguts,
     // der Wildnis-Term, der Makro-Anker) an der Lage dieser Welt. Liest jeder Leser der Höhe (Dichte, Hydrosphäre,
     // Fern-Ring, Spawn-Ort, Erosion); der voxel-worker ruft DASSELBE Gesetzbuch mit seinem Zustand (kein Spiegel).
-    _terrainMacroSurfaceY(x, z, includeDetail = true) {
-        return globalThis.__gelaendeCore.hoehe(this._gelaende(), x, z, includeDetail);
+    // `aus` (optional) trägt den Hang der Fläche (`hang`, tan) — der Spalten-Kontext liest ihn für die Höhlen-Mündung.
+    _terrainMacroSurfaceY(x, z, includeDetail = true, aus) {
+        return globalThis.__gelaendeCore.hoehe(this._gelaende(), x, z, includeDetail, aus);
     }
 
     // DIE GELÄNDE-LAGE: was das Gesetzbuch liest, unter den Namen des Worker-Zustands — eine LEBENDE Sicht auf
     // `state` (jeder Zugriff liest den Stand von jetzt; kein zweiter Speicher, nichts zu synchronisieren). Der Rausch-
-    // Strom `_voxelNoise` entsteht beim ersten Lesen aus der Saat; `macroAnker` ist `_macroAnker()` (null bei
-    // genVersion < 3), `erbgut` die gemerkte Normalform, `regionSize` die Kachel-Kante der Hydrosphäre.
+    // Strom `_voxelNoise` entsteht beim ersten Lesen aus der Saat; `erbgut` ist die gemerkte Normalform (sie trägt die
+    // Regler der Landform), `regionSize` die Kachel-Kante der Hydrosphäre.
     _gelaende() {
         if (this._gelaendeLage) return this._gelaendeLage;
         const realm = this;
@@ -815,7 +328,8 @@ class AnazhRealm_Z08 {
                 return (realm.state.worldMeta && realm.state.worldMeta.seed) || "anazh-realm-seed";
             },
             get noise() {
-                if (!realm._voxelNoise) realm._voxelNoise = new SimplexNoise(this.seed + ":voxel");
+                if (!realm._voxelNoise)
+                    realm._voxelNoise = globalThis.__gelaendeCore.lageRausch(this.seed, SimplexNoise);
                 return realm._voxelNoise;
             },
             get baseHeight() {
@@ -823,21 +337,6 @@ class AnazhRealm_Z08 {
             },
             get waterLevel() {
                 return realm.state.waterLevel;
-            },
-            get terrainSteepness() {
-                return realm.state.terrainSteepness;
-            },
-            get erosion() {
-                return realm.state.erosion;
-            },
-            get erosionTiles() {
-                return realm.state.erosionTiles;
-            },
-            get tarns() {
-                return realm.state.tarns;
-            },
-            get macroAnker() {
-                return realm._macroAnker();
             },
             get erbgut() {
                 return realm._erbgutCache || realm._erbgut();
@@ -850,7 +349,7 @@ class AnazhRealm_Z08 {
     }
 
     // DAS ERBGUT der Welt (`worldMeta.erbgut`), validiert und gemerkt: { terme, wildnis, hash }. Fehlt es, ist die Welt
-    // [wildnis] (jeder heutige Save). Die Empfänger-Wand ist fail-closed nach dem Muster `_isValidMacroAnker`, aber
+    // [wildnis] (jeder heutige Save). Die Empfänger-Wand ist fail-closed und
     // ohne stillen Ersatz: eine unbekannte Term-Art, eine fehlende Zahl oder eine Form außerhalb der Regeln WIRFT — die
     // Welt erwacht nicht und sagt es auf dem Ladeschirm (init), nie still Wildnis. `wildnis` ist das Gewicht des
     // Wildnis-Terms (1 = die Welt trägt ihn, 0 = nicht); `_wildnisTraegt` und die Spalte lesen es.
@@ -897,7 +396,9 @@ class AnazhRealm_Z08 {
         } catch (e) {
             return String((e && e.message) || e);
         }
-        if (terme.length === 1 && terme[0].art === "wildnis") return null;
+        // Die Wildnis allein OHNE Regler reist zu jedem; trägt der Wildnis-Term Regler des Gelände-Studios (eine Plan-Welt),
+        // zeichnete ein Build vor ihnen die Standard-Landform darunter — sie reist nur zur Stufe 2.
+        if (terme.length === 1 && terme[0].art === "wildnis" && Object.keys(terme[0]).length === 1) return null;
         const kann = msg && typeof msg.erbgut === "number" && Number.isFinite(msg.erbgut) ? msg.erbgut : 0;
         if (kann >= AnazhRealm.ERBGUT_PROTOKOLL) return null;
         return `der Empfänger liest kein Erbgut (Protokoll ${kann} < ${AnazhRealm.ERBGUT_PROTOKOLL}) — die Welt [${terme
@@ -923,11 +424,11 @@ class AnazhRealm_Z08 {
         return quelle === "nexus" || quelle === "rule:nexus";
     }
 
-    // Der Hydrosphäre-Compute-Pfad (`_computeErosion`, `_hydroSeedTarns`, `_hydroInit`) liest direkt
+    // Der Hydrosphäre-Compute-Pfad (`_hydroInit`) liest direkt
     // `_terrainMacroSurfaceY` (worldgen-frozen); der Spieler-Wille lebt im Cell-Feld, nie in der Drainage.
 
     // Spalten-Kontext: die rein 2D-Arbeit (Makro-Oberfläche `_terrainMacroSurfaceY` ~61 % der Density-
-    // Kosten, eroR, Canyon-Maske, Hydro-Carve/See) EINMAL pro (x,z) statt pro Voxel; der per-Voxel
+    // Kosten, eroR, Höhlen-Mündung, Hydro-Carve/See) EINMAL pro (x,z) statt pro Voxel; der per-Voxel
     // `_terrainBaseDensityAtCol` liest sie byte-identisch. Die Basis-Dichte OHNE voxelEdits ist
     // worldgen-frozen → pro Chunk+LOD cachebar (`state.voxelBaseDensityCache`), Edits legen nur das
     // Kugel-Delta drauf. MUSS bit-identisch im Worker (`terrainColumnContext`).
@@ -941,24 +442,19 @@ class AnazhRealm_Z08 {
         const L = this._gelaende();
         const n = L.noise;
         const base = this.state.terrainBaseHeight || 0;
-        const surf = this._terrainMacroSurfaceY(x, z);
+        const mess = this._spaltenHang || (this._spaltenHang = { hang: 0 });
+        const surf = this._terrainMacroSurfaceY(x, z, true, mess);
         // DAS WILDNIS-GEWICHT der Spalte: die 3D-Rauheit und die Höhlen-Hülle sind Wildnis — sie wiegen mit ihm (Wildnis-
         // Welt ≡ 1: jeder Wert byte-gleich; ohne Wildnis-Term 0: kein noise3D, keine Höhle, der Boden ist die Term-Höhe).
         const wild = (this._erbgutCache || this._erbgut()).wildnis;
-        let roughScale = 0;
         let ceilOffset = -24;
         if (wild > 0) {
-            // T6c — WEITE FELDER: die Rauheits-Maske des Gesetzbuchs (λ~2000 m) → Roughness regional (0.16 + 0.84·mtnR).
-            const mtnR = globalThis.__gelaendeCore.rauheit(L, x, z);
-            roughScale = (0.16 + 0.84 * mtnR) * wild;
-            // T5 (G3) — die CANYON-MASKE (2D, freq 0.0065) hebt die Höhlen-Decke selektiv → Canyons.
-            const canyonOpen = Math.max(
-                0,
-                Math.min(1, (n.noise2D(x * 0.0065 + 41.7, z * 0.0065 - 18.3) - 0.52) / 0.18)
-            );
-            // T7b-ii (Aquifer-Gate): unter Wasser hält die Decke −24 m Abstand + kein canyonOpen (kein Abfluss).
+            // Die Höhlen-Decke bleibt unter dem Boden (16 m, unter Wasser 24 m — T7b-ii, kein Abfluss): die Höhle bricht
+            // nie als Grube durch die Wiese (die Canyon-Maske fiel, K16). DIE MÜNDUNG ist Gesetz (gelaende-core
+            // `hoehlenMund`): wo die Flanke Fels trägt, hebt ihr Gewicht die Decke über den Boden — der Mund steht im Fels.
             const waterLevelD = typeof this.state.waterLevel === "number" ? this.state.waterLevel : base + 4;
-            ceilOffset = surf < waterLevelD + 1 ? -24 : -16 + canyonOpen * 24;
+            const G = globalThis.__gelaendeCore;
+            ceilOffset = surf < waterLevelD + 1 ? -24 : -16 + G.HOEHLEN_MUND.hub * G.hoehlenMund(mess.hang);
         }
         // V9.43-d/-45-b — der Hydrosphären-Carve (Fluss-Rinnen + See-Becken-Blend), 2D je Spalte.
         const hydro = this.state.hydrosphere;
@@ -973,7 +469,6 @@ class AnazhRealm_Z08 {
         out.base = base;
         out.surf = surf;
         out.wild = wild;
-        out.roughScale = roughScale;
         out.ceilOffset = ceilOffset;
         out.hydroActive = hydroActive;
         out.hydroCarve = hydroCarve;
@@ -991,8 +486,6 @@ class AnazhRealm_Z08 {
         let d = surf - y;
         // Rauheit und Höhlen sind Wildnis: ohne ihr Gewicht (ctx.wild 0) wird kein noise3D gerechnet.
         if (ctx.wild > 0) {
-            d += n.noise3D(x * 0.05, y * 0.05, z * 0.05) * 7 * ctx.roughScale;
-            d += n.noise3D(x * 0.018, y * 0.022, z * 0.018) * 5 * ctx.roughScale;
             const caveFloor = Math.max(0, Math.min(1, (y - (base - 28)) / 8));
             const caveCeil = Math.max(0, Math.min(1, (surf + ctx.ceilOffset - y) / 8));
             const caveEnv = caveFloor * caveCeil * ctx.wild;
@@ -1008,23 +501,26 @@ class AnazhRealm_Z08 {
                 d -= hallCarve * caveEnv * 72;
             }
         }
-        if (ctx.hydroActive) {
-            // Der Fluss-Kanal (`_hydrosphereCarveAt`): das weiche Maximum aus Gelände und Damm, davon das weiche Minimum mit
-            // dem Kanal (polynomial, Rundung k: m ∓ h² · k / 4, h = max(k − |a − b|, 0) / k); das See-Becken danach.
-            const kn = ctx.hydroCarve;
-            if (kn) {
-                const dL = kn.L - y;
-                let hk = Math.max(kn.k - Math.abs(d - dL), 0) / kn.k;
-                const damm = Math.max(d, dL) + hk * hk * kn.k * 0.25;
-                const dP = kn.P - y;
-                hk = Math.max(kn.k - Math.abs(damm - dP), 0) / kn.k;
-                d = Math.min(damm, dP) - hk * hk * kn.k * 0.25;
-            }
-            const lk = ctx.lake;
-            if (lk) {
-                const flatD = lk.bedY - y;
-                d = d * (1 - lk.w) + flatD * lk.w;
-            }
+        if (ctx.hydroActive) d = AnazhRealm._gewaesserForm(d, y, ctx.hydroCarve, ctx.lake);
+        return d;
+    }
+
+    // DIE FORM DES GEWÄSSERS (EINE Formel für die Dichte des Chunks und die Fläche der Ferne, `_fernNass`): der Fluss-Kanal
+    // `kn` (`_hydrosphereCarveAt`) als weiches Maximum aus Gelände und Damm, davon das weiche Minimum mit dem Kanal
+    // (polynomial, Rundung k: m ∓ h² · k / 4, h = max(k − |a − b|, 0) / k); das See-Becken `lk` danach. `d` ist die Dichte
+    // an der Höhe `y` (die Fläche − y); mit y = 0 und d = der Höhe einer Spalte ist das Ergebnis ihre Fläche.
+    static _gewaesserForm(d, y, kn, lk) {
+        if (kn) {
+            const dL = kn.L - y;
+            let hk = Math.max(kn.k - Math.abs(d - dL), 0) / kn.k;
+            const damm = Math.max(d, dL) + hk * hk * kn.k * 0.25;
+            const dP = kn.P - y;
+            hk = Math.max(kn.k - Math.abs(damm - dP), 0) / kn.k;
+            d = Math.min(damm, dP) - hk * hk * kn.k * 0.25;
+        }
+        if (lk) {
+            const flatD = lk.bedY - y;
+            d = d * (1 - lk.w) + flatD * lk.w;
         }
         return d;
     }
@@ -1310,6 +806,8 @@ class AnazhRealm_Z08 {
         const bj0 = Math.floor((z - h.originZ) / bs);
         let best = Infinity;
         let bestHw = 0;
+        let bestRand = Infinity;
+        let bestSp = NaN;
         for (let dj = -1; dj <= 1; dj++) {
             for (let di = -1; di <= 1; di++) {
                 const bi = bi0 + di;
@@ -1326,14 +824,113 @@ class AnazhRealm_Z08 {
                     if (t < 0) t = 0;
                     else if (t > 1) t = 1;
                     const dist = Math.hypot(x - (seg.ax + ex * t), z - (seg.az + ez * t));
-                    if (dist < best) {
+                    const hw = seg.hwA + (seg.hwB - seg.hwA) * t;
+                    // der nächste RAND (Abstand minus die Halbbreite, wie die Leser sie nehmen), nie die nächste Mittellinie
+                    // (K16, U1): zwischen zwei Segmenten ungleicher Breite sprang sonst die Halbbreite und mit ihr die Feuchte
+                    // (0,83 → 0,44 in 2 cm, 213/−890) — so ist jedes Band das Maximum der Segmente, stetig
+                    const rand = dist - Math.max(1, hw);
+                    if (rand < bestRand) {
+                        bestRand = rand;
                         best = dist;
-                        bestHw = seg.hwA + (seg.hwB - seg.hwA) * t;
+                        bestHw = hw;
+                        bestSp = seg.sA + (seg.sB - seg.sA) * t;
                     }
                 }
             }
         }
-        return { dist: best, halfW: bestHw };
+        return { dist: best, halfW: bestHw, spiegel: bestSp };
+    }
+
+    // DIE FLÜSSE UNTER EINEM ABDRUCK (K16, die Fern-Farbe): ein Fern-Punkt steht für eine Fläche der Kante `F` (`fussM`,
+    // `_fernFarbeMasche`), die Netz-Flüsse liegen schmaler darunter (Bett ab 2 m, die Bank 4,5 m, die Krone wenige Meter).
+    // Je Segment in Reichweite (die Buckets bis F/2 weiter): der Abstand `dist`, die Halbbreite `hw`, die Weite `kappa` von
+    // der Kanal-Kante zur Krone, der Spiegel `sp` und das Mittel der Kronen-Blende `mu` über den Abdruck (`_kastenMittel`
+    // quer zum Segment) — die Leser (Feuchte, Pfad, Schlick, Strand) falten ihre Bänder genauso und nehmen das Maximum der
+    // Segmente: stetig im Ort. Befund 12.10. (gate:fern-ring Band 10): neun Punkt-Abtastungen je Masche trafen die schmalen
+    // Bänder oder nicht — mit den Netz-Flüssen stieg der Streifen-Index 0,47 → 0,54 (dieselbe Welt ohne Fluss-Bänder 0,33).
+    // Der Abdruck wächst, wenn mehr Segmente unter ihm liegen, als er fasst (verdoppelt) — bis 12.10. kappte er still bei 32
+    // (1 052 von 1,82 Mio. Rufen, Prüfung K16: ein Fern-Punkt bis 1 300 m Abdruck über einem dichten Netz verlor Bänder).
+    static _flussAbdruckWachse(A) {
+        for (const k of ["dist", "hw", "kappa", "sp", "mu"]) {
+            const neu = new Float64Array(A[k].length * 2);
+            neu.set(A[k]);
+            A[k] = neu;
+        }
+    }
+
+    _flussAbdruck(x, z, F) {
+        const A =
+            this._flussAbdruckMemo ||
+            (this._flussAbdruckMemo = {
+                x: NaN,
+                z: NaN,
+                F: NaN,
+                h: null,
+                bereit: false,
+                n: 0,
+                seg: [],
+                dist: new Float64Array(32),
+                hw: new Float64Array(32),
+                kappa: new Float64Array(32),
+                sp: new Float64Array(32),
+                mu: new Float64Array(32),
+            });
+        const h = this._hydroFor(x, z);
+        const bereit = !!(h && h.ready && h.riverBuckets);
+        if (A.x === x && A.z === z && A.F === F && A.h === h && A.bereit === bereit) return A;
+        A.x = x;
+        A.z = z;
+        A.F = F;
+        A.h = h;
+        A.bereit = bereit;
+        A.n = 0;
+        if (!bereit) return A;
+        const HC = AnazhRealm.HYDROSPHERE;
+        const reich = AnazhRealm.FEUCHTE.flussReichweite;
+        const bs = h.bucketSize;
+        const bd = h.bucketsDim;
+        const bi0 = Math.floor((x - h.originX) / bs);
+        const bj0 = Math.floor((z - h.originZ) / bs);
+        // jedes Segment steht in den Buckets seiner um die Feuchte-Reichweite erweiterten Box (`_hydroBuildCarveIndex`) —
+        // der Abdruck reicht F/2 weiter
+        const nb = Math.ceil(F / 2 / bs);
+        for (let bj = bj0 - nb; bj <= bj0 + nb; bj++) {
+            if (bj < 0 || bj >= bd) continue;
+            for (let bi = bi0 - nb; bi <= bi0 + nb; bi++) {
+                if (bi < 0 || bi >= bd) continue;
+                const list = h.riverBuckets[bj * bd + bi];
+                if (!list) continue;
+                for (let s = 0; s < list.length; s++) {
+                    const seg = list[s];
+                    const ex = seg.bx - seg.ax;
+                    const ez = seg.bz - seg.az;
+                    const len2 = ex * ex + ez * ez || 1;
+                    let t = ((x - seg.ax) * ex + (z - seg.az) * ez) / len2;
+                    if (t < 0) t = 0;
+                    else if (t > 1) t = 1;
+                    const dist = Math.hypot(x - (seg.ax + ex * t), z - (seg.az + ez * t));
+                    const hw = seg.hwA + (seg.hwB - seg.hwA) * t;
+                    const kappa = Math.max(1e-3, (seg.dA + (seg.dB - seg.dA) * t) / HC.bankNeigung);
+                    if (dist - F / 2 >= Math.max(Math.max(1, hw) + reich, hw + kappa)) continue;
+                    let schon = false;
+                    for (let k = 0; k < A.n; k++)
+                        if (A.seg[k] === seg) {
+                            schon = true;
+                            break;
+                        }
+                    if (schon) continue;
+                    if (A.n === A.dist.length) AnazhRealm._flussAbdruckWachse(A); // keine Kappe: jedes Segment unter dem Abdruck zählt
+                    const n = A.n++;
+                    A.seg[n] = seg;
+                    A.dist[n] = dist;
+                    A.hw[n] = hw;
+                    A.kappa[n] = kappa;
+                    A.sp[n] = seg.sA + (seg.sB - seg.sA) * t;
+                    A.mu[n] = AnazhRealm._kastenMittel(AnazhRealm._stammUfer, dist, F, hw, kappa);
+                }
+            }
+        }
+        return A;
     }
 
     // Γ1 (genese-plan) — die GENESE-Version der Welt: fehlend = 1 (Legacy —
@@ -1346,17 +943,32 @@ class AnazhRealm_Z08 {
     // Das Feuchte-Feld, abgeleitet aus der HYDROSPHÄRE (Terrain → Wasser → Feuchte → Leben), nicht aus
     // Noise. Lebt am Genese-Leser (Spawn/Scatter/Boden), NICHT in worldFieldAt (Bucket-Walk nicht in den
     // Hot-Path; der Höhen-Term braucht surfY). max() aus (a) Fluss-Nähe (smoothstep über die Segment-
-    // Distanz) und (b) Höhe über dem Wasserspiegel (feuchte Niederungen).
-    _feuchteAt(x, z, surfY) {
+    // Distanz) und (b) Höhe über dem Wasserspiegel (feuchte Niederungen). `fussM` (optional, die Fern-Farbe): die Kante der
+    // Fläche, für die der Punkt steht — dann trägt jedes Fluss-Band sein Mittel über sie (`_flussAbdruck`).
+    _feuchteAt(x, z, surfY, fussM) {
         if (this._genVersion() < 2) return 0;
         const F = AnazhRealm.FEUCHTE;
-        const r = this._hydroDistAt(x, z);
+        const ab = fussM > 0 ? this._flussAbdruck(x, z, fussM) : null;
         let fluss = 0;
-        if (Number.isFinite(r.dist)) {
-            const inner = Math.max(1, r.halfW);
-            const outer = inner + F.flussReichweite;
-            const t = Math.max(0, Math.min(1, (outer - r.dist) / (outer - inner)));
-            fluss = t * t * (3 - 2 * t);
+        if (ab) {
+            for (let i = 0; i < ab.n; i++) {
+                const m = AnazhRealm._kastenMittel(
+                    AnazhRealm._stammFeuchte,
+                    ab.dist[i],
+                    fussM,
+                    Math.max(1, ab.hw[i]),
+                    F.flussReichweite
+                );
+                if (m > fluss) fluss = m;
+            }
+        } else {
+            const r = this._hydroDistAt(x, z);
+            if (Number.isFinite(r.dist)) {
+                const inner = Math.max(1, r.halfW);
+                const outer = inner + F.flussReichweite;
+                const t = Math.max(0, Math.min(1, (outer - r.dist) / (outer - inner)));
+                fluss = t * t * (3 - 2 * t);
+            }
         }
         let hoehe = 0;
         const sy = Number.isFinite(surfY) ? surfY : this._voxelSurfaceY ? this._voxelSurfaceY(x, z) : null;
@@ -1369,20 +981,50 @@ class AnazhRealm_Z08 {
                 return t * t * (3 - 2 * t) * F.hoeheGewicht;
             };
             hoehe = band(sy - uf.see);
-            if (uf.fluss !== null) hoehe = Math.max(hoehe, uf.ufer * band(sy - uf.fluss));
+            if (ab) for (let i = 0; i < ab.n; i++) hoehe = Math.max(hoehe, ab.mu[i] * band(sy - ab.sp[i]));
+            else if (uf.fluss !== null) hoehe = Math.max(hoehe, uf.ufer * band(sy - uf.fluss));
         }
         return Math.max(0, Math.min(1, Math.max(fluss, hoehe)));
     }
 
     // Pfad-Feld: Fluss-Bänke sind getrampelte Erde — knapp außerhalb der Wasserkante (dist ∈ [halfW,
     // halfW+bankW]) auf niedriger Bank (0..5 m über dem Spiegel) → Pfad ∈ [0,1]. Render-only (Boden-
-    // Farbe, Gras unterdrückt); liest den worker-gespiegelten _hydroDistAt → P2P bit-identisch.
-    _pathFieldAt(x, z, surfY) {
+    // Farbe, Gras unterdrückt); liest den worker-gespiegelten _hydroDistAt → P2P bit-identisch. `fussM` (optional, die
+    // Fern-Farbe): die Bank trägt ihr Mittel über die Fläche des Punkts (`_flussAbdruck`), je Bezug.
+    _pathFieldAt(x, z, surfY, fussM) {
         if (this._genVersion() < 2) return 0;
+        const bankW = 4.5;
+        const niedrig = (above) => (above < 0 || above > 5 ? 0 : 1);
+        if (fussM > 0 && Number.isFinite(surfY)) {
+            const ab = this._flussAbdruck(x, z, fussM);
+            if (!ab.n) return 0;
+            const uf = { see: 0, fluss: null, ufer: 0 };
+            this._waterLevelAt(x, z, uf);
+            const nSee = niedrig(surfY - uf.see);
+            let p = 0;
+            for (let i = 0; i < ab.n; i++) {
+                const inner = Math.max(1, ab.hw[i]);
+                const mSee = nSee
+                    ? AnazhRealm._kastenMittel(AnazhRealm._stammPfad, ab.dist[i], fussM, inner, bankW) * nSee
+                    : 0;
+                const mFluss = niedrig(surfY - ab.sp[i])
+                    ? AnazhRealm._kastenMittel(
+                          AnazhRealm._stammPfadUfer,
+                          ab.dist[i],
+                          fussM,
+                          inner,
+                          bankW,
+                          ab.hw[i],
+                          ab.kappa[i]
+                      )
+                    : 0;
+                p = Math.max(p, mSee, mFluss);
+            }
+            return p;
+        }
         const r = this._hydroDistAt(x, z);
         if (!Number.isFinite(r.dist)) return 0;
         const inner = Math.max(1, r.halfW);
-        const bankW = 4.5;
         const d = r.dist - inner;
         if (d < 0 || d > bankW) return 0;
         const band = 1 - d / bankW;
@@ -1391,7 +1033,6 @@ class AnazhRealm_Z08 {
         // Kronen-Blende
         const uf = { see: 0, fluss: null, ufer: 0 };
         this._waterLevelAt(x, z, uf);
-        const niedrig = (above) => (above < 0 || above > 5 ? 0 : 1);
         let w = niedrig(surfY - uf.see);
         if (uf.fluss !== null) w = Math.max(w, uf.ufer * niedrig(surfY - uf.fluss));
         return band * band * w;
@@ -1503,7 +1144,10 @@ class AnazhRealm_Z08 {
         geom.setAttribute("aMorphWeight", new THREE.Float32BufferAttribute(new Float32Array(positions.length / 3), 1));
         geom.setAttribute(
             "aHimmel",
-            new THREE.Float32BufferAttribute(AnazhRealm._himmelsSicht(indices, triZelle, positions.length / 3, step), 1)
+            new THREE.Float32BufferAttribute(
+                globalThis.__gelaendeCore.himmelsSicht(indices, triZelle, positions.length / 3, step),
+                1
+            )
         );
         if (hoehle)
             geom.hoehle = {
@@ -2344,30 +1988,56 @@ class AnazhRealm_Z08 {
             colors[i * 3 + 2] = out[2];
         }
         geom.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
-        this._bodenFarbeUnterFels(geom);
+        this._felsStoff(geom);
     }
 
-    // UNTER FELS WÄCHST NICHTS (K02a, Auge 11 bei 762/−138): die Boden-Farbe ist eine Funktion von (x, z) — Wiese, Feuchte,
-    // Schnee liegen auf der Säule —, und der Höhlen-Boden 25 m unter der Wiese trug ihr Grün (der Stoff liest daraus noch
-    // seine Wiese, `_terrainGeologyAlbedo`). Was den Himmel nicht sieht, ist Fels: die Farbe fällt mit der Himmels-Sicht
-    // (`aHimmel`, `_himmelsSicht`) auf den Stein der Palette (`BODEN_FARBE.rock`) — an der Mündung ein Saum, in der Höhle
-    // Stein; unter dem Himmel (aHimmel 1) bleibt jede Zahl, wie sie war. Beide Bau-Wege rufen es: der synchrone über
-    // `_attachVoxelFieldColors`, der Worker-Weg nach seiner Himmels-Sicht (`_buildVoxelChunkDataFromWorkerMesh`).
-    _bodenFarbeUnterFels(geom) {
+    // DER FELS HAT STOFF (K17; davor K02a „unter Fels wächst nichts"): das EINE Gesetz rechnet ihn — gelaende-core `felsStoff`
+    // (die Pakete, die Rinde aus der Krümmung, Mulden, Flechte, Moos und der Schutt des Schicht-Gesetzes, Gewicht aus Himmels-
+    // Sicht und Steile). Er entsteht, wo das Netz entsteht (K17-2): der Streaming-Pfad bekommt ihn fertig vom voxel-worker
+    // (`buildChunkMesh`, per Transfer — `_buildVoxelChunkDataFromWorkerMesh` setzt nur die Attribute), der Haupt-Thread rechnet
+    // ihn nur im Sync-Bau (`_attachVoxelFieldColors`: Spieler-Chunk, Graben, Voxel-Test). Bis K17-2 rechnete `_felsStoff` je
+    // Worker-Bau im Haupt-Thread (Mess-Wiese Σ 59,4 ms je Ring, max 7,3 ms je Chunk, `gate:hoehlen-sicht` (n)).
+    _felsStoff(geom) {
         const col = geom.attributes.color;
         const him = geom.attributes.aHimmel;
-        if (!col || !him) return;
-        const fels = AnazhRealm.BODEN_FARBE.rock;
-        const C = col.array;
-        const H = him.array;
-        for (let i = 0; i < H.length; i++) {
-            const t = 1 - H[i];
-            if (!(t > 0)) continue;
-            C[3 * i] += (fels[0] - C[3 * i]) * t;
-            C[3 * i + 1] += (fels[1] - C[3 * i + 1]) * t;
-            C[3 * i + 2] += (fels[2] - C[3 * i + 2]) * t;
-        }
+        const nor = geom.attributes.normal;
+        const pos = geom.attributes.position;
+        if (!col || !nor || !pos)
+            throw new Error("_felsStoff: der Boden trägt nicht color · normal · position (fail-closed)");
+        // Ohne Höhlen-Graph (nur der Voxel-Test `_voxelTest`: ein Gitter ohne Sicht-Graph) steht jeder Vertex unter dem
+        // Himmel — jeder Chunk trägt `aHimmel` (`_buildVoxelChunkData*` bauen den Graph fail-closed).
+        const S = globalThis.__gelaendeCore.felsStoff(
+            this._gelaende(),
+            AnazhRealm.FELS_STOFF.basis,
+            AnazhRealm.FELS_STOFF.netz,
+            pos.array,
+            nor.array,
+            geom.index ? geom.index.array : null,
+            him ? him.array : null,
+            col.array,
+            pos.count,
+            (x, z, y) => this._feuchteAt(x, z, y)
+        );
+        geom.setAttribute("aSchutt", new THREE.Float32BufferAttribute(S.schutt, 1));
+        // die Linse (`gate:hoehlen-sicht` (k)) liest, womit das Moos gerechnet wurde
+        if (S.feuchte !== undefined) geom.userData.felsFeuchte = S.feuchte;
         col.needsUpdate = true;
+    }
+
+    // Das Mittel des Magie-Flecks (`_bodenFarbeAt`: ss(0,6, 0,85, Rauschen)) über die Verteilung des Rauschens selbst — 32 × 32
+    // Proben im Raster 7,31, einmal je Rausch-Instanz (die Saat wechselt sie).
+    _fleckMittel(noise) {
+        if (this._fleckMittelRausch === noise) return this._fleckMittelWert;
+        let m = 0;
+        for (let i = 0; i < 32; i++)
+            for (let j = 0; j < 32; j++) {
+                let t = ((noise.noise2D(i * 7.31 + 0.37, j * 7.31 + 0.71) + 1) * 0.5 - 0.6) / 0.25;
+                t = t < 0 ? 0 : t > 1 ? 1 : t;
+                m += t * t * (3 - 2 * t);
+            }
+        this._fleckMittelRausch = noise;
+        this._fleckMittelWert = m / 1024;
+        return this._fleckMittelWert;
     }
 
     // DIE EINE BODEN-FARBE (V18.530): die Welt-Feld-Farbe eines Boden-Punkts aus derselben fraktalen Sprache
@@ -2378,8 +2048,10 @@ class AnazhRealm_Z08 {
     // Werte roh als linear (der Stein 0,42/0,44/0,49 mit dem Magie-Violett darüber: weiß-lavendel, Blick-Tour 05).
     // Magie ist ein AKZENT in Flecken, der Seegrund unter jedem Wasser Schlick. Die Laubstreu liegt NICHT hier: sie
     // folgt den echten Kronen (`_kronenStreuNeu` → `_wegeBodenFarbe`). `out` = [r, g, b] (linear, wie das Vertex-
-    // Attribut).
-    _bodenFarbeAt(x, y, z, out) {
+    // Attribut). `fussM` (optional, die Fern-Farbe): die Kante der Fläche, für die der Punkt steht — die Flecken, die sie nicht
+    // auflöst (Flechte λ 25 m, Magie λ 11 m), tragen ihr Mittel (phyto-core `forestOktavMittel`); ohne fussM (jeder Chunk, der
+    // Worker-Spiegel) dieselben Zahlen.
+    _bodenFarbeAt(x, y, z, out, fussM) {
         // V9.60-b.2 — Sand-Variation: lazy-laden des deterministischen
         // Welt-Noises (gleiche Instanz wie `_terrainMacroSurfaceY`). Macht
         // Strand-Breite + Intensität regional variabel statt überall gleich.
@@ -2395,11 +2067,6 @@ class AnazhRealm_Z08 {
         const sed = P.sediment;
         const sand = P.sand;
         const packedDirt = P.dirt;
-        // V17.105 — Schnee-Schwelle als PROMINENZ (Relief über der kontinentalen
-        // Basis), nicht absolutes y. HARTKODIERT + im Worker gespiegelt (eine Runtime-Tunable würde den
-        // Worker desyncen, V17.100).
-        const SNOW_PROM_START = AnazhRealm.SCHNEE_PROMINENZ.start;
-        const SNOW_PROM_FULL = AnazhRealm.SCHNEE_PROMINENZ.voll;
         const ss = (e0, e1, x) => {
             let t = (x - e0) / (e1 - e0);
             t = t < 0 ? 0 : t > 1 ? 1 : t;
@@ -2419,7 +2086,7 @@ class AnazhRealm_Z08 {
         mix(earth, ss(0.25, 0.85, f.lebendig));
         // Feuchte schiebt den Boden Richtung dampEarth. Reihenfolge im mix-Stack ist Pflicht: nach earth, VOR
         // lava/snow/sed/strand. genVersion-Schleuse via _feuchteAt (< 2 → 0); Vertex-y ist die Surface.
-        const feuchte = typeof this._feuchteAt === "function" ? this._feuchteAt(x, z, y) : 0;
+        const feuchte = typeof this._feuchteAt === "function" ? this._feuchteAt(x, z, y, fussM) : 0;
         mix(dampEarth, ss(F_VIS_LO, F_VIS_HI, feuchte));
         // Kein Kronendach im Vertex: bis 06.10. dunkelte das Kronenlicht-Feld der Platzierung (`_canopyLightAt`, wo
         // Bäume wachsen DÜRFEN) den Boden × (0,58 + 0,46 · Licht) — zu 98 % ohne Baum darüber, unter einem Baum
@@ -2428,7 +2095,9 @@ class AnazhRealm_Z08 {
         // NACH dampEarth, VOR lava/snow/sed/strand (die überschreiben den Stein). Schwellen in
         // AnazhRealm.LICHEN (der Worker spiegelt sie hardkodiert), die Farbe ist die Flechte der Palette.
         const LCH = AnazhRealm.LICHEN;
-        const lichenCluster = (sandNoise.noise2D(x * 0.04 + 7.7, z * 0.04 - 3.3) + 1) * 0.5; // [0..1]
+        let lichenCluster = (sandNoise.noise2D(x * 0.04 + 7.7, z * 0.04 - 3.3) + 1) * 0.5; // [0..1]
+        const oktav = fussM > 0 ? globalThis.__phytoCore.forestOktavMittel : null;
+        if (oktav) lichenCluster += (0.5 - lichenCluster) * oktav(fussM, 1 / 0.04); // das Simplex-Mittel ist 0,5
         const lichenMix =
             ss(LCH.feuchteLo, LCH.feuchteHi, feuchte) *
             ss(LCH.dichteLo, LCH.dichteHi, f.dichte || 0) *
@@ -2437,32 +2106,37 @@ class AnazhRealm_Z08 {
         mix(P.flechte, lichenMix);
         mix(lava, ss(0.48, 1.02, f.glut) * 0.65); // dunkles Basalt, gekappt — kein flaches Rot
         // Der Magie-Akzent: Flecken (λ ≈ 11 m, ein Sechstel der Fläche, höchstens 30 %) in den Magie-Regionen — nie die Grundfarbe.
-        const magieFleck = ss(0.6, 0.85, (sandNoise.noise2D(x * 0.09 + 3.1, z * 0.09 - 8.7) + 1) * 0.5);
+        let magieFleck = ss(0.6, 0.85, (sandNoise.noise2D(x * 0.09 + 3.1, z * 0.09 - 8.7) + 1) * 0.5);
+        if (oktav) magieFleck += (this._fleckMittel(sandNoise) - magieFleck) * oktav(fussM, 1 / 0.09);
         mix(violet, ss(0.55, 1.0, f.magieleitung) * magieFleck * 0.3);
-        // Schnee auf PROMINENZ `y − cont0` (Relief über der λ7100-m-Basis), nicht absolutem y — sonst
-        // schmiert Schnee über ~halb den Boden (Hochkontrast-Flecken, die unter Licht driften). Robust gegen
-        // regionale Höhen (Prominenz max 70 m nah, 156 m fern). Wer die Terrain-Höhe ändert, MUSS die
-        // surf-relativen Schichten nachziehen. cont0 ist die kontinentale Basis des Gelände-Gesetzbuchs (`kontinentBasis`
-        // — dieselbe Funktion ruft der Worker in `attachFieldColors`).
-        const _cont0 = globalThis.__gelaendeCore.kontinentBasis(this._gelaende(), x, z);
-        mix(snow, ss(SNOW_PROM_START, SNOW_PROM_FULL, y - base - _cont0));
+        // Die Schneegrenze ist Gesetz (gelaende-core `schnee`: die Höhe über dem Meer, dieselbe Funktion ruft der Worker
+        // in `attachFieldColors`).
+        mix(snow, globalThis.__gelaendeCore.schnee(this._gelaende(), y, x, z));
         // Der Seegrund: unter JEDEM Wasser (Meer, See, Fluss — der Spiegel des Orts) liegt Schlick, voll ab 4 m
         // Tiefe (bis V18.530 nur unter dem Meeresspiegel y < −2: die Bergseen lagen auf Wiese und Streu).
         // Schlick und Strand sind Ufer-Bänder über beiden Bezügen (`_waterLevelAt`): See/Meer voll, der Fluss mit seiner
-        // Kronen-Blende — stetig über die Krone, wo der Fluss-Spiegel endet.
+        // Kronen-Blende — stetig über die Krone, wo der Fluss-Spiegel endet. Mit `fussM` trägt jedes Fluss-Band das Mittel
+        // seiner Kronen-Blende über die Fläche (`_flussAbdruck`, je Segment sein Spiegel) statt der Punkt-Probe.
         const uf = { see: 0, fluss: null, ufer: 0 };
         this._waterLevelAt(x, z, uf);
+        const ab = fussM > 0 ? this._flussAbdruck(x, z, fussM) : null;
         const aboveWater = y - uf.see;
-        const aboveFluss = uf.fluss !== null ? y - uf.fluss : null;
+        const aboveFluss = !ab && uf.fluss !== null ? y - uf.fluss : null;
         let schlick = ss(-0.5, -4, aboveWater);
         if (aboveFluss !== null) schlick = Math.max(schlick, uf.ufer * ss(-0.5, -4, aboveFluss));
-        mix(sed, schlick);
         // Strand: Glocken-Profil über dem Wasser (`_waterLevelAt` O(1) für Ozean; See-Vertices bekommen den
         // See-Spiegel). Drei Noise-Modulationen statt einer Schwelle: (a) Breite (λ~570 m), (b) Intensität
         // (λ~290 m), (c) karge Fels-Patches ohne Sand. Die Glocke trägt bis 0,6 + 1,9 m — das Fenster schneidet sie nie
         // (bis Welle L endete es bei 2,0 m: ein Sprung im Strand jeder breiten Glocke).
         const imStrand = (a) => a !== null && a > -1.3 && a < 2.5;
-        if (imStrand(aboveWater) || (uf.ufer > 0 && imStrand(aboveFluss))) {
+        let flussStrand = false;
+        if (ab)
+            for (let i = 0; i < ab.n; i++) {
+                schlick = Math.max(schlick, ab.mu[i] * ss(-0.5, -4, y - ab.sp[i]));
+                if (ab.mu[i] > 0 && imStrand(y - ab.sp[i])) flussStrand = true;
+            }
+        mix(sed, schlick);
+        if (imStrand(aboveWater) || (uf.ufer > 0 && imStrand(aboveFluss)) || flussStrand) {
             const widthNoise = (sandNoise.noise2D(x * 0.0018, z * 0.0018) + 1) * 0.5; // [0, 1]
             const intenseNoise = (sandNoise.noise2D(x * 0.0034 + 17, z * 0.0034 - 9) + 1) * 0.5;
             if (widthNoise > 0.18) {
@@ -2471,6 +2145,8 @@ class AnazhRealm_Z08 {
                 const glocke = (a) => Math.max(0, 1 - Math.abs(a - 0.6) / width);
                 let shoreBlend = glocke(aboveWater);
                 if (aboveFluss !== null) shoreBlend = Math.max(shoreBlend, uf.ufer * glocke(aboveFluss));
+                if (ab)
+                    for (let i = 0; i < ab.n; i++) shoreBlend = Math.max(shoreBlend, ab.mu[i] * glocke(y - ab.sp[i]));
                 mix(sand, shoreBlend * intensity);
             }
             // widthNoise <= 0.18 → karge Stelle, Sand bleibt aus (Stone/
@@ -2480,7 +2156,7 @@ class AnazhRealm_Z08 {
         // V18.230 (Ω-OPSIS Säule II Ω-O6) — die PFADE: die Fluss-Bänke sind
         // getrampelte, gepackte Erde (Gras wird zusätzlich unterdrückt, s.
         // _buildVoxelChunkGrass). Lawful aus dem Drainage-Netz (_pathFieldAt).
-        const pathF = this._pathFieldAt(x, z, y);
+        const pathF = this._pathFieldAt(x, z, y, fussM);
         if (pathF > 0.01) mix(packedDirt, pathF * 0.6);
         out[0] = c[0];
         out[1] = c[1];

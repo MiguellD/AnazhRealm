@@ -105,14 +105,21 @@ const ANKER = [
     { file: "vendor/three.webgpu.min.js", sub: '(e.isInstancedMesh||e.count>1||Array.isArray(e.morphTargetInfluences))&&(s+=e.uuid+",")', organ: "EIN GRAPH JE SIGNATUR (je InstancedMesh ein Programm — darum zeichnet die Senke über ihren Zeichner, `_instanzZeichner`)" },
     // DIE SENKE ZEICHNET ÜBER IHREN ZEICHNER (1410-1, `_instanzZeichner` · `_senkenKnoten` · der setupPosition-Haken in
     // `_configureRenderer`): eine Gruppe zeichnet nicht, ihre Kinder schon; die Zahl eines Draws ist instanceCount der
-    // InstancedBufferGeometry; r184 instanziert in setupPosition vor dem positionNode und liest die Instanz-Farbe als
-    // vInstanceColor; je Bindung trägt der Speicher-Knoten sein Attribut, ein Wechsel baut die Bindegruppe neu.
+    // InstancedBufferGeometry; der Instanz-Knoten steht in setupPosition, wo r184s InstanceNode steht (sein setup legt die
+    // Matrix am Builder ab, seine Zuweisung baut NACH der des positionNode), r184 liest die Instanz-Farbe als vInstanceColor; je Bindung trägt der Speicher-Knoten sein Attribut, ein Wechsel baut die Bindegruppe neu.
     { file: "vendor/three.webgpu.min.js", sub: "if(e.layers.test(t.layers))if(e.isGroup)r=e.renderOrder", organ: "DIE SENKE (projiziert als Gruppe: sie zeichnet nicht, ihr Zeichner schon)" },
     { file: "vendor/three.webgpu.min.js", sub: "!0===r.isInstancedBufferGeometry?u=r.instanceCount", organ: "DIE SENKE (die Instanz-Zahl des Zeichners ist instanceCount seiner Fassade)" },
-    { file: "vendor/three.webgpu.min.js", sub: "t.isInstancedMesh&&t.instanceMatrix&&!0===t.instanceMatrix.isInstancedBufferAttribute&&Sp(t).toStack(),null!==this.positionNode", organ: "DIE SENKE (setupPosition instanziert vor dem positionNode — der Haken stellt dort den EINEN Instanz-Knoten)" },
+    { file: "vendor/three.webgpu.min.js", sub: "t.isInstancedMesh&&t.instanceMatrix&&!0===t.instanceMatrix.isInstancedBufferAttribute&&Sp(t).toStack(),null!==this.positionNode", organ: "DIE SENKE (setupPosition: der Haken stellt den EINEN Instanz-Knoten an die Stelle des InstanceNode)" },
     { file: "vendor/three.webgpu.min.js", sub: 't.instanceColor){s=kn("vec3","vInstanceColor").mul(s)}', organ: "DIE SENKE (die Instanz-Farbe liest r184 als vInstanceColor — der Instanz-Knoten schreibt sie aus `instanzFarbe`)" },
     { file: "vendor/three.webgpu.min.js", sub: "n.attribute!==e&&(n.attribute=e,s=!0)", organ: "DIE SENKE (je Bindung das Attribut des Speicher-Knotens, ein Wechsel baut die Bindegruppe neu — die Matrix je Zeichen-Objekt)" },
     { file: "vendor/three.webgpu.min.js", sub: "get attribute(){return this.nodeUniform.value}", organ: "DIE SENKE (die Speicher-Bindung liest das Attribut aus dem Wert ihres Knotens — `_senkenKnoten` stellt ihn je Objekt)" },
+    // DER POSITIONS-KNOTEN VOR DER INSTANZ-MATRIX (K20-N1, Integration V18.547): `setupPosition` legt die Zuweisung des
+    // positionNode auf den Stapel, der Instanz-Knoten hängt sein `positionLocal = M × positionLocal` erst in seinem setup an,
+    // und `StackNode.build` baut nachgereichte Knoten NACH den ersten — im positionNode sind positionLocal, normalLocal und
+    // positionWorld die VORLAGE. Wer die Welt braucht, liest die EINE Naht `_weltNaht` (stoffe las es 1310-18 umgekehrt).
+    { file: "vendor/three.webgpu.min.js", sub: 'Sp(t).toStack(),null!==this.positionNode&&lc.assign(Gu(this.positionNode,"POSITION","vec3"))', organ: "AnazhRealm._weltNaht (setupPosition: die Zuweisung des positionNode steht im Stapel vor der Instanzierung)" },
+    { file: "vendor/three.webgpu.min.js", sub: "const n=t.mul(lc).xyz;if(lc.assign(n)", organ: "AnazhRealm._weltNaht (InstanceNode.setup: die Instanz-Matrix wird erst im setup an den aktiven Stapel gehängt)" },
+    { file: "vendor/three.webgpu.min.js", sub: "const a=this.nodes.filter(e=>-1===n.indexOf(e));for(const e of a)i(e)", organ: "AnazhRealm._weltNaht (StackNode.build: nachgereichte Knoten bauen NACH den ersten — positionNode vor der Instanz-Matrix)" },
     // JEDE TEXTUR DES PROGRAMMS (Integration V18.542): die Bindung einer Textur trägt ihren Knoten, und r184 lädt die Textur
     // nur im Binde-Gang eines Render-Objekts hoch — den fährt nur ein Refresh (der Textur-Wächter der Diät).
     { file: "vendor/three.webgpu.min.js", sub: "textureNode=t,this.groupNode=r,this.access=s}update(){const{textureNode:e}=this;return this.texture!==e.value?(this.texture=e.value,!0):super.update()}", organ: "AnazhRealm._diaetGang (die Textur-Bindung trägt ihren Knoten: jede Textur des Programms)" },

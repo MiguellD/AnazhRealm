@@ -538,16 +538,9 @@ class AnazhRealm_Z15c {
                         hs = (hs * 1664525 + 1013904223) & 0x7fffffff;
                         return hs / 0x7fffffff;
                     };
-                    // Geologie-Farbe (phyto-core `withColor`: Speckle · Kavitäts-AO · Sediment-Bänke · Eisen-Schlieren ·
-                    // Moos-Bleach). part.color (Strata + Fuß-Moos aus _rockVariant) ist der Basis-Ton rockA; rockB/rockC
-                    // leiten deterministisch ab. Tag-neutral (nur das color-Attribut). Das Material liest die
+                    // Die Gestalt aus phyto-core, der Stoff aus dem Fels-Gesetz (unten, K17). part.color (Strata + Fuß-Moos
+                    // aus _rockVariant) ist der Basis-Ton. Tag-neutral (nur das color-Attribut). Das Material liest die
                     // Vertex-Farbe (matOpts.vertexColorAlbedo).
-                    const _shadeRock = (c, f) => {
-                        const _r = Math.max(0, Math.min(255, Math.round(((c >> 16) & 0xff) * f)));
-                        const _g = Math.max(0, Math.min(255, Math.round(((c >> 8) & 0xff) * f)));
-                        const _b = Math.max(0, Math.min(255, Math.round((c & 0xff) * f)));
-                        return (_r << 16) | (_g << 8) | _b;
-                    };
                     const _rockBase = Number.isFinite(part.color) ? part.color : 0x8a8278;
                     // Werkstatt-Regler: `part.rockDials` (Rundheit/Rauheit/Streckung/Schichtung) / `part.rockSeed`
                     // überschreiben die Geologie live über dieselbe buildBoulderGeometry-Quelle; ohne Override das
@@ -569,17 +562,27 @@ class AnazhRealm_Z15c {
                             // LOD-Override (Werkstatt-Regler): gröbere Regeneration = weniger Detail.
                             detail: Math.max(1, det + 2 - (Number.isFinite(part.rockLod) ? part.rockLod : 0)),
                             seed: Number.isFinite(part.rockSeed) ? (part.rockSeed % 9973) + 1 : (hs % 9973) + 1,
-                            withColor: true,
-                            speckle: true,
-                            rockA: _rockBase,
-                            rockB: _shadeRock(_rockBase, 0.52),
-                            rockC: _shadeRock(_rockBase, 1.14),
                         },
                         seq
                     );
                     if (g) {
                         g.scale(0.5 * sx, 0.5 * sy, 0.5 * sz);
                         g.computeVertexNormals();
+                        // DER STOFF ist das Fels-Gesetz (K17, gelaende-core `felsNetz`): der Basis-Ton (part.color) ist
+                        // eine sRGB-Absicht (FARB-GESETZ), die dunkle Lage und die helle Bank leitet das Gesetz ab.
+                        const GK = globalThis.__gelaendeCore;
+                        const n = g.attributes.position.count;
+                        const C = new Float32Array(n * 3);
+                        GK.felsNetz(
+                            GK.felsBasis(AnazhRealm._srgbHexLinear(_rockBase)),
+                            g.attributes.position.array,
+                            g.attributes.normal.array,
+                            g.index ? g.index.array : null,
+                            n,
+                            { himmel: 1, feucht: 0.3 },
+                            C
+                        );
+                        g.setAttribute("color", new THREE.Float32BufferAttribute(C, 3));
                         return g;
                     }
                 }
@@ -1660,7 +1663,7 @@ class AnazhRealm_Z15c {
             // W-E (§8.3) — die Antenne IST die Substanz: das Material-Tag-Profil
             // reist in den Material-Bau (Glut glimmt, Eisen spiegelt, Holz wärmt).
             if (partMatDef && partMatDef.tags) matOpts.tags = partMatDef.tags;
-            // Trägt die Part-Geometrie ein `color`-Attribut (phyto-core `withColor`-Fels), liest das Material die
+            // Trägt die Part-Geometrie ein `color`-Attribut (der Fels-Stoff, gelaende-core `felsNetz`), liest das Material die
             // Vertex-Farbe als Albedo (`vertexColorAlbedo` in _buildPbrNodeMaterial, ohne Terrain-Geologie-
             // Overlay). Rein geometrie-getrieben; Parts ohne color-Attribut unverändert.
             if (geom && geom.attributes && geom.attributes.color) {

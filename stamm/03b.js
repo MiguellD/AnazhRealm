@@ -1378,7 +1378,7 @@ class AnazhRealm_Z03b {
         // (FUNDAMENT_SOCKEL_M) über den Grundriss hinaus (`_archFundamentBox`) — das Land fragt dieselbe Fläche, die der
         // Zell-Stempel und gate:werk-im-wasser Z messen; ein Werk ohne Fundament (der Satz, der Tempel) trägt keinen Sockel
         const raster = sockel > 0 ? { ex: fp.ex + sockel, ez: fp.ez + sockel, ox: fp.ox, oz: fp.oz } : fp;
-        for (const [lx, lz] of AnazhRealm._fundamentRaster(raster, tuer))
+        for (const [lx, lz] of AnazhRealm._fundamentRaster(raster, tuer, 0.5))
             if (!this._landAt(x + lx * c + lz * s, z - lx * s + lz * c, 0.2)) return false;
         return true;
     }

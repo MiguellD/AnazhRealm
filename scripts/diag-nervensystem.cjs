@@ -63,7 +63,12 @@ function check(name, ok, detail) {
         /PORTAL_RENDER_CONFIG\.placement/.test(phytoCode) && !/const SCALE = \{\s*gras: 0\.24/.test(phytoCode)
     );
     check("phytogenesis nutzt TREE_SCALE_MUL statt des 0.82-Literals im Wald", /SCALE\[sp\] \* tr\.s \* TREE_SCALE_MUL/.test(phytoCode));
-    check("die Brücke exportiert placement (get-render-config)", /placement:\s*c\.placement/.test(phytoCode));
+    // Die Brücke ist seit K42 ihre eigene Datei (foundry-bruecke.js) — der Export lebt dort, nicht im Labor.
+    const brueckeCode = fs
+        .readFileSync(path.join(root, "foundry-bruecke.js"), "utf8")
+        .replace(/\/\*[\s\S]*?\*\//g, "")
+        .replace(/\/\/[^\n]*/g, "");
+    check("die Brücke exportiert placement (get-render-config)", /placement:\s*c\.placement/.test(brueckeCode));
 
     console.log("\n=== TEIL B-D: der lebende Draht (Browser, foundry-ON) ===");
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));

@@ -28,41 +28,34 @@ const MIME = {
 
 // V18.470 (Konsum-Matrix) — der Boot ist MANIFEST-GETRIEBEN wie die Produktion
 // (anazhRealm._ensureAssetFoundry liest cores.manifest.json + injiziert
-// self.__anazhCores): die fixe Studio-lib-Kette → alle Kern-Skripte in
-// Manifest-Reihenfolge → die Shells zuletzt. So trägt das Harness-Buch ALLE
-// Gattungen (tor/klinge/haus/kreatur …), nicht nur die Pflanzen — EINE Quelle,
-// kein hartkodierter Zweitpfad. (Die Pflanzen-Goldens bleiben byte-identisch —
-// gate:asset-contract ist der stehende Beweis.)
+// self.__anazhCores): die lib der Kerne → alle Kern-Skripte in Manifest-Reihenfolge
+// → die Foundry-Brücke zuletzt (K42: keine Labor-Shell, keine Labor-Szene) — ALLES
+// aus dem Manifest. So trägt das Harness-Buch ALLE Gattungen (tor/klinge/haus/
+// kreatur …), nicht nur die Pflanzen — EINE Quelle, kein hartkodierter Zweitpfad.
+// (Die Pflanzen-Goldens bleiben byte-identisch — gate:asset-contract ist der stehende Beweis.)
 const CORES_MANIFEST = JSON.parse(fs.readFileSync(path.join(ROOT, "cores.manifest.json"), "utf8"));
 const WORKER_SCRIPTS = (() => {
-    const rel = [
-        "/worlds/terrain/lib/three-r128.min.js",
-        "/worlds/terrain/lib/OrbitControls.js",
-        "/worlds/terrain/lib/PointerLockControls.js",
-        "/worlds/terrain/lib/BufferGeometryUtils.js",
-        "/worlds/terrain/lib/CopyShader.js",
-        "/worlds/terrain/lib/LuminosityHighPassShader.js",
-        "/worlds/terrain/lib/FXAAShader.js",
-        "/worlds/terrain/lib/EffectComposer.js",
-        "/worlds/terrain/lib/RenderPass.js",
-        "/worlds/terrain/lib/MaskPass.js",
-        "/worlds/terrain/lib/ShaderPass.js",
-        "/worlds/terrain/lib/UnrealBloomPass.js",
-    ];
+    const rel = [];
+    for (const core of CORES_MANIFEST) if (core && Array.isArray(core.lib)) for (const s of core.lib) rel.push("/" + s);
     for (const core of CORES_MANIFEST) if (core && Array.isArray(core.scripts)) for (const s of core.scripts) rel.push("/" + s);
-    for (const core of CORES_MANIFEST) if (core && typeof core.shell === "string" && core.shell) rel.push("/" + core.shell);
+    for (const core of CORES_MANIFEST) if (core && typeof core.bruecke === "string" && core.bruecke) rel.push("/" + core.bruecke);
     return rel;
 })();
+// Der Boot-Quelltext des Foundry-Workers als JS-AUSDRUCK für den Seiten-Kontext (location.origin) — das Harness, der
+// Bäcker-Kanal und die Fahrzeug-Ferne setzen DIESEN ein (`const boot = ${WORKER_BOOT};`), kein zweiter Boot-Text. Die
+// Brücke startet sich selbst (Foundry-Modus, Kanal-Hörer, ready) — kein init() hinter den importScripts.
+const WORKER_BOOT =
+    '"self.__PHYTO_FOUNDRY_WORKER=true;" + "self.__anazhCores=" + JSON.stringify(' +
+    JSON.stringify(CORES_MANIFEST) +
+    ') + ";" + "importScripts(" + ' +
+    JSON.stringify(WORKER_SCRIPTS) +
+    '.map((p) => JSON.stringify(location.origin + p)).join(",") + ");"';
 
 function pageHtml() {
     return `<!doctype html><meta charset="utf-8"><title>asset-worker</title><body><script src="/phyto-core.js"></script><script>
 (() => {
   const S = (window.__AW = { ready: false, error: null });
-  const boot =
-    "self.__PHYTO_FOUNDRY_WORKER=true;" +
-    "self.__anazhCores=" + JSON.stringify(${JSON.stringify(CORES_MANIFEST)}) + ";" +
-    "importScripts(" + ${JSON.stringify(WORKER_SCRIPTS)}.map((p) => JSON.stringify(location.origin + p)).join(",") + ");" +
-    "init();";
+  const boot = ${WORKER_BOOT};
   const worker = new Worker(URL.createObjectURL(new Blob([boot], { type: "text/javascript" })));
   const pending = new Map();
   let seq = 1;
@@ -468,4 +461,4 @@ function fingerprintMeshes(meshes) {
     });
 }
 
-module.exports = { runWithWorker, fingerprintMeshes, istBeipack, WORKER_SCRIPTS };
+module.exports = { runWithWorker, fingerprintMeshes, istBeipack, WORKER_SCRIPTS, WORKER_BOOT };

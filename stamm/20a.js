@@ -287,20 +287,58 @@ class AnazhRealm_Z20a {
         return () => 0;
     }
 
+    // DIE WAHRHEIT DES WALDS (K20): die Darts lesen Boden, Wasser und Feuchte (`_voxelSurfaceY`, `_atlasWaterLevelAt`,
+    // `_feuchteAt` — Erosion, Flüsse und Seen der Hydro-Kachel ihres Orts). Vor dem Worldgen (keine Heimat-Hydrosphäre)
+    // gibt es sie nicht: jede Antwort des Walds ist dann vorläufig und wird nie gemerkt (`_forestCellDarts`), die Gestalt
+    // des Orts wartet (`_foundryGestaltFor` → null, wie auf ein kaltes Buch).
+    _forestGesetzWahr() {
+        const h = this.state.hydrosphere;
+        return !!(h && h.ready);
+    }
+
+    // DER STAND DES WALD-GESETZES (K20): die Darts sind eine Funktion von Welt-Same, Arten-Satz (die Arten des Buchs,
+    // `_forestExtraSpecies`) und Hydrosphäre. Ein neuer Same, ein neues Buch, eine neue Hydrosphäre (der Welt-Regen) oder neue
+    // Arten (`_foundryAutoRegisterSpecies` leert das Gedächtnis) legen ein neues Dart-Gedächtnis an — seine Nummer IST der
+    // Stand. Wer eine Antwort des Walds merkt (die Gestalt des Orts `_foundryGestaltFor`, die Streu-Gestalt
+    // `_scatterFoundrySeed`), merkt sie an diesem Stand, nie an der Reihenfolge: der Zweit-Boot fragte den gesetzten Baum,
+    // bevor die Wasser-Wahrheit seines Orts stand, und seine Gestalt blieb die eines anderen Walds (A1-Eiche bei −740/−1190:
+    // Gestalt 1 statt 2; gate:fernwald E).
+    _forestDartStand(seedInt) {
+        const buch = this._foundry ? this._foundry.recipes || null : null;
+        const hydro = this.state.hydrosphere || null;
+        if (
+            !this._forestDartMemo ||
+            this._forestDartMemoSeed !== seedInt ||
+            this._forestDartMemoBuch !== buch ||
+            this._forestDartMemoHydro !== hydro
+        ) {
+            this._forestDartMemo = new Map();
+            this._forestDartMemoSeed = seedInt;
+            this._forestDartMemoBuch = buch;
+            this._forestDartMemoHydro = hydro;
+            this._forestDartGen = (this._forestDartGen || 0) + 1;
+        }
+        return this._forestDartGen;
+    }
+
     // BORN-Darts einer Zelle, reine Funktion von (cx,cz,seed): standDensity-Wurf → Boden/Wasser → Slope →
     // Arten-Nische → reverse-J-Größe → Mammut. Nur geborene Darts treten in die Kronen-Schüchternheit ein.
     _forestCellDarts(cx, cz, seedInt) {
         // Zell-Memo über Aufrufe: jeder Chunk liest ±2 Rand-Zellen (~4× Redundanz), und die Dart-Generierung
         // (`_voxelSurfaceY`-Scan + Slope + Feuchte) dominiert die Plant-Zeit. Seed-gebunden (Welt-Wechsel
-        // leert), bounded (voll → clear); Instanz-Feld, kein state/Snapshot.
-        let memo = this._forestDartMemo;
-        if (!memo || this._forestDartMemoSeed !== seedInt) {
-            memo = this._forestDartMemo = new Map();
-            this._forestDartMemoSeed = seedInt;
-        }
+        // leert), bounded (voll → clear); Instanz-Feld, kein state/Snapshot. Die Wahrheit zuerst (`_forestGesetzWahr`): wie
+        // der Chunk-Bau (`_acquireVoxelChunkBuild`) steht die Hydro-Kachel der Zelle vor der Frage; vor dem Worldgen ist die
+        // Antwort vorläufig (`vorlaeufig`) und kein Gedächtnis.
         const memoKey = cx + "," + cz;
-        const hit = memo.get(memoKey);
-        if (hit) return hit;
+        let memo = null;
+        if (this._forestGesetzWahr()) {
+            this._forestDartStand(seedInt);
+            memo = this._forestDartMemo;
+            const hit = memo.get(memoKey);
+            if (hit) return hit;
+            const C = AnazhRealm.FOREST.cell;
+            this._ensureHydroTilesAround((cx + 0.5) * C, (cz + 0.5) * C, C);
+        }
         // Die Pflanz-Logik lebt EINMAL in phyto-core (planForestCell); hier nur Memo + Welt-Reads als ctx-
         // Funktionen (Oberfläche · Wasser · Slope · Feuchte · fbm). Ohne Kern → leerer Wald.
         const core = typeof globalThis !== "undefined" && globalThis.__phytoCore;
@@ -338,18 +376,22 @@ class AnazhRealm_Z20a {
                       feuchteAt: (x, z, sy) => (typeof this._feuchteAt === "function" ? this._feuchteAt(x, z, sy) : 0),
                   })
                 : [];
+        if (!memo) {
+            out.vorlaeufig = true;
+            return out;
+        }
         if (memo.size > 8192) memo.clear(); // bounded — die Front ist lokal, ein Clear kostet nur Re-Compute
         memo.set(memoKey, out);
         return out;
     }
 
     // ==================== ASSET-FOUNDRY: die Vorlage pflanzt ihre echten Bäume ====================
-    // Die Vorlage (worlds/terrain/phytogenesis.js) läuft als reiner Asset-Motor (?asset-foundry=1) und
-    // liefert ihre echten Baum-Instanzen (buildInstance, eigenes LOD) als Geometrie-Puffer; AnazhRealm
-    // baut daraus Meshes — kein Nachbau. Ein Edit an der Vorlage ändert die Bäume hier.
+    // Der Studio-Generator (die Kerne + die Foundry-Brücke foundry-bruecke.js, K42) läuft als Worker und liefert
+    // seine echten Baum-Instanzen (buildInstance, eigenes LOD) als Geometrie-Puffer; AnazhRealm baut daraus
+    // Meshes — kein Nachbau. Ein Edit am Kern oder an der Brücke ändert die Bäume hier, ein Edit am Labor nie.
     _foundryEnabled() {
-        // Studio-Asset AUSLESEN + PLATZIEREN, nie nachbauen. Der Geometrie-Motor läuft als WORKER (init()
-        // kehrt VOR dem Renderer zurück → kein zweiter GPU-Kontext), auch headless — die EINE aktive Quelle.
+        // Studio-Asset AUSLESEN + PLATZIEREN, nie nachbauen. Der Geometrie-Motor läuft als WORKER (die Brücke
+        // startet ohne Renderer → kein zweiter GPU-Kontext), auch headless — die EINE aktive Quelle.
         // Kein Grammatik-Render-Fallback: ein noch nicht gebackenes Asset heißt kurz KEIN Mesh. Richter
         // (`_growTreeBlueprintRich`) + Understory-Grammatik (`_growTreeBlueprintForSpawn`) bleiben.
         // Nur ohne Worker (exotische Einbettung) → Alt-Pfad.
@@ -392,11 +434,12 @@ class AnazhRealm_Z20a {
         f.buchDa = new Promise((r) => (f.buchKam = r));
         this._foundry = f;
         try {
-            // Studio-Generator als WORKER (self.__PHYTO_FOUNDRY_WORKER=true; init() kehrt vor jedem Renderer
-            // zurück). importScripts braucht ABSOLUTE URLs (Blob-URL ohne Basis → new URL(..., location.href)).
-            // Kerne aus cores.manifest.json (EINE Quelle), ?v= Pflicht. Reihenfolge: Studio-lib-Kette
-            // (FoliagePass braucht EffectComposer) → Kerne in Manifest-Folge (phyto- VOR foundry-core) → Shells
-            // ZULETZT. Async: f.ready bleibt false bis zum ready-Handshake; jeder Fetch-/Parse-Fehler lässt es so.
+            // Studio-Generator als WORKER (self.__PHYTO_FOUNDRY_WORKER=true; die Brücke startet ohne Renderer).
+            // importScripts braucht ABSOLUTE URLs (Blob-URL ohne Basis → new URL(..., location.href)). ALLES aus
+            // cores.manifest.json (EINE Quelle), ?v= Pflicht. Reihenfolge: die lib der Kerne (three r128 + die
+            // Geometrie-Helfer — keine Labor-Szene) → Kerne in Manifest-Folge (phyto- VOR foundry-core) → die Brücke
+            // ZULETZT (K42: keine Labor-Shell im Worker). Async: f.ready bleibt false bis zum ready-Handshake; jeder
+            // Fetch-/Parse-Fehler lässt es so.
             const v = "?v=" + (AnazhRealm.VERSION || "");
             fetch("cores.manifest.json" + v)
                 .then((res) => res.text())
@@ -405,35 +448,27 @@ class AnazhRealm_Z20a {
                     // kein Kern-Satz, kein Faden: der Boot bricht laut (der catch unten reicht den Bruch unverändert weiter)
                     if (!Array.isArray(manifest) || !manifest.length)
                         throw this._stoffBruch("die Foundry bootet nicht — das Kern-Manifest trägt keinen Kern");
-                    const rel = [
-                        "worlds/terrain/lib/three-r128.min.js",
-                        "worlds/terrain/lib/OrbitControls.js",
-                        "worlds/terrain/lib/PointerLockControls.js",
-                        "worlds/terrain/lib/BufferGeometryUtils.js",
-                        "worlds/terrain/lib/CopyShader.js",
-                        "worlds/terrain/lib/LuminosityHighPassShader.js",
-                        "worlds/terrain/lib/FXAAShader.js",
-                        "worlds/terrain/lib/EffectComposer.js",
-                        "worlds/terrain/lib/RenderPass.js",
-                        "worlds/terrain/lib/MaskPass.js",
-                        "worlds/terrain/lib/ShaderPass.js",
-                        "worlds/terrain/lib/UnrealBloomPass.js",
-                    ];
+                    const rel = [];
+                    for (const core of manifest) {
+                        if (!core || !Array.isArray(core.lib)) continue;
+                        for (const s of core.lib) if (typeof s === "string" && s) rel.push(s);
+                    }
                     for (const core of manifest) {
                         if (!core || !Array.isArray(core.scripts)) continue;
                         for (const s of core.scripts) if (typeof s === "string" && s) rel.push(s);
                     }
                     for (const core of manifest) {
-                        if (core && typeof core.shell === "string" && core.shell) rel.push(core.shell);
+                        if (core && typeof core.bruecke === "string" && core.bruecke) rel.push(core.bruecke);
                     }
                     const base = typeof window !== "undefined" && window.location ? window.location.href : "";
                     const abs = rel.map((p) => new URL(p + v, base).href);
                     // self.__anazhCores reist VOR den importScripts in den Worker (Brücke liest die ns-Kerne generisch);
                     // das Manifest ist reines JSON → JSON.stringify ist ein sicheres JS-Literal. DIE TRANSPORT-SCHALE
                     // steht davor (`_foundrySchale`): sie registriert ihren Kanal-Hörer VOR dem Studio.
-                    // Der Stempel hasht JEDE Generator-Quelle: die Kern-Skripte UND die Shells (V18.527) — die Shell
-                    // phytogenesis.js trägt `__extractAssetMesh` (backt matrixWorld in die Vertices) und
-                    // `bakeImpostorAtlas` (die Karte); ein Shell-Edit ohne Stempel lieferte stale Körper und Karten.
+                    // Der Stempel hasht JEDE Generator-Quelle: die Kern-Skripte UND die Brücke (K42) — sie trägt
+                    // `__extractAssetMesh` (backt matrixWorld in die Vertices) und `bakeImpostorAtlas` (die Karte); ein
+                    // Brücken-Edit ohne Stempel lieferte stale Körper und Karten. Die Labor-Shell hasht er nie: ein UI-Edit
+                    // am Pflanzen-Labor leert keinen Asset-Cache.
                     const stempelUrls = [];
                     for (const core of manifest) {
                         if (!core || !Array.isArray(core.scripts)) continue;
@@ -441,8 +476,8 @@ class AnazhRealm_Z20a {
                             if (typeof s === "string" && s) stempelUrls.push(new URL(s + v, base).href);
                     }
                     for (const core of manifest) {
-                        if (core && typeof core.shell === "string" && core.shell)
-                            stempelUrls.push(new URL(core.shell + v, base).href);
+                        if (core && typeof core.bruecke === "string" && core.bruecke)
+                            stempelUrls.push(new URL(core.bruecke + v, base).href);
                     }
                     // Die Platte: aus unter dem Null-Renderer (gate-deterministisch) und ohne IndexedDB/WebCrypto.
                     const rend = this.state.renderer;
@@ -468,7 +503,7 @@ class AnazhRealm_Z20a {
                         JSON.stringify(manifest) +
                         ";importScripts(" +
                         abs.map((u) => JSON.stringify(u)).join(",") +
-                        ");init();";
+                        ");"; // die Brücke startet sich selbst (Foundry-Modus, Kanal-Hörer, ready)
                     f.bootUrl = URL.createObjectURL(new Blob([boot], { type: "text/javascript" }));
                     const worker = new Worker(f.bootUrl);
                     f.worker = worker;
@@ -808,7 +843,7 @@ class AnazhRealm_Z20a {
     // (Σ 3,7 s, max 207 ms) und IDB-Gets hinter den Schreib-Transaktionen (Median 3,3 s, max 60 s); 32 % der
     // Bytes (aWind · aCenter · aType) las niemand. Die Schale läuft im Worker VOR den Studio-Skripten (der
     // Boot-Blob stellt ihren Quelltext voran, `_ensureAssetFoundry`) und trägt den ganzen Transport:
-    //   PLATTE        Stempel (SHA-256 über Manifest + alle Kern-Skripte + Shells, `|f<FOUNDRY_PLATTE_FORMAT>`) · Get · Put
+    //   PLATTE        Stempel (SHA-256 über Manifest + alle Kern-Skripte + die Brücke, `|f<FOUNDRY_PLATTE_FORMAT>`) · Get · Put
     //                 — der Haupt-Thread fasst den Asset-Cache nie mehr an (Store `anazhFoundryAssets/assets`).
     //   KONSUM-WAND   nur die Attribute, die `_foundryBuildMesh` liest (FOUNDRY_LESEN), reisen und liegen auf Platte.
     //   VERENGUNG     Index Uint32 → Uint16, wo das Teil ≤ 65 536 Vertices trägt.
@@ -1029,7 +1064,7 @@ class AnazhRealm_Z20a {
             }
             if (msg && msg.type === "render-native" && p && p.pixels) return roh(msg, [p.pixels.buffer]);
             // Das Buch trägt das Bild des EINEN Blatt-Atlas: die Schale macht es im Worker zur FRACHT
-            // (`__phytoCore.blattAtlasFracht`, 05.10.: BC1 ab Stufe 0 für den Wirt mit BC, rgba ab Stufe 1 ohne) und reicht
+            // (`__phytoCore.blattAtlasFracht`: BC3 ab Stufe 0 für den Wirt mit BC (K20), rgba ab Stufe 1 ohne) und reicht
             // sie per Transfer, nie als Klon — der Haupt-Thread kodiert nichts.
             if (msg && msg.type === "book" && msg.blattAtlas && Array.isArray(msg.blattAtlas.mips)) {
                 const fr = W.__phytoCore.blattAtlasFracht(msg.blattAtlas, true);
@@ -1239,13 +1274,16 @@ class AnazhRealm_Z20a {
     // je drei Punkte über die Türbreite; flaeche false). Integration Welle L: vier Ecken und die Mitte ließen den Buckel
     // zwischen sich durch — an einer Kuppe der Front lag die Haustür 2,9 m unter dem Gelände (gate:haus-welt W1). Leser: die
     // Höhe der Siedlung (`_spawnSettlementSlot`) und das Land jedes Fundaments (`_fundamentLand`).
-    static _fundamentRaster(fp, tuer) {
+    // `schritt` (m, Vorgabe 2): die Höhe misst Buckel in 2 m, das Land misst die Wasserlinie in 1 m (werk-ufer: zwischen
+    // den 2-m-Punkten lag die Linie 0,85 m tief im Grundriss, das Haus am Gleithang stand 0,27 m im Wasser — Z misst ≤ 1 m).
+    static _fundamentRaster(fp, tuer, schritt = 2) {
         const out = [];
         if (!fp || !Number.isFinite(fp.ex) || !Number.isFinite(fp.ez) || !(fp.ex > 0) || !(fp.ez > 0)) return out;
         const ox = Number.isFinite(fp.ox) ? fp.ox : 0;
         const oz = Number.isFinite(fp.oz) ? fp.oz : 0;
-        const nx = Math.min(12, Math.max(1, Math.ceil(fp.ex)));
-        const nz = Math.min(12, Math.max(1, Math.ceil(fp.ez)));
+        const deckel = Math.ceil(24 / schritt);
+        const nx = Math.min(deckel, Math.max(1, Math.ceil((2 * fp.ex) / schritt)));
+        const nz = Math.min(deckel, Math.max(1, Math.ceil((2 * fp.ez) / schritt)));
         for (let i = 0; i <= nx; i++)
             for (let j = 0; j <= nz; j++)
                 out.push([ox + fp.ex * ((2 * i) / nx - 1), oz + fp.ez * ((2 * j) / nz - 1), true]);
@@ -1374,7 +1412,6 @@ class AnazhRealm_Z20a {
                 studioOv: slot.ov && typeof slot.ov === "object" ? slot.ov : undefined,
             }
         );
-        if (entry) this._grundrissRaeumen(entry);
         return entry || false; // das gesetzte Haus (die Dorf-Mitte summiert, wo es steht)
     }
     // ═══ DORF-ERLEBNIS: der EINE Hebe-Chokepoint für die Nicht-Haus-Schichten des Exports ═══

@@ -329,6 +329,57 @@ class AnazhRealm_Z17b {
     // Zwilling @wahl vor @global an — bei gleichen Befehlen in EINER Sitzung gpu-bank +1,6 ms und 47,5 statt 50,1 fps unter
     // Regler voll (OMEN, GTX 1060). Jedes neue Bündel stellt die Reihe neu (stabil im Rang); die Plätze der übrigen Kinder
     // der Szene bleiben, nur die Bündel tauschen ihre Plätze untereinander.
+    // DIE REIHE IM BÜNDEL (1310-8): auch die Gruppen EINES Bündels zeichnen in seiner Kinder-Folge — bis 1310-8 die Ankunft ihrer
+    // Assets beim Boot. Die nahe Stufe zuerst (L0 vor L1 vor der Atlas-Karte), im Gleichstand der Schlüssel: wer nah steht,
+    // schreibt die Tiefe, hinter der die fernen Stufen ihre Fragmente verwerfen. Gemessen an der Mess-Wiese (OMEN, GTX 1060,
+    // EINE Sitzung, Gier 0, alle Bäume an/aus): der Baum-Preis in der Ankunft 5,02/5,25 ms, nach Stufe aufsteigend 3,46/3,33,
+    // absteigend 7,26 — gpu-bank 14,1 → 12,4 ms. Jede Aufnahme eines Kinds stellt die Reihe neu (`_archInstanceGroupFor`, das
+    // Wachsen der Gruppe); das Bündel nimmt danach ohnehin neu auf.
+    // DIE REIHE NACH ABSTAND (1310-9): trägt der Ruf das Auge (`_buendelAuge`, der Anker der Reihe), zeichnet innerhalb einer
+    // Stufe die Gruppe zuerst, deren nächste Instanz dem Auge am nächsten steht (vorn schreibt die Tiefe); ohne Auge der Schlüssel.
+    static _buendelKinderReihe(bundle, auge) {
+        const rang = (c) => (c.userData && Number.isFinite(c.userData.buendelStufe) ? c.userData.buendelStufe : 0);
+        const key = (c) => String((c.userData && c.userData.archInstanceKey) || "");
+        const nah = new Map();
+        if (auge)
+            for (const c of bundle.children) {
+                let m = 1e30;
+                const a = c.instanceMatrix && c.instanceMatrix.array;
+                const n = c.count | 0;
+                if (a)
+                    for (let i = 0; i < n; i++) {
+                        const dx = a[i * 16 + 12] - auge.x;
+                        const dz = a[i * 16 + 14] - auge.z;
+                        const d = dx * dx + dz * dz;
+                        if (d < m) m = d;
+                    }
+                nah.set(c, m);
+            }
+        bundle.children.sort(
+            (a, b) =>
+                rang(a) - rang(b) ||
+                (auge ? nah.get(a) - nah.get(b) : 0) ||
+                (key(a) < key(b) ? -1 : key(a) > key(b) ? 1 : 0)
+        );
+    }
+    // DER ANKER DER REIHE (1310-9): die Augen-Lage, an der die Bündel ihre Kinder zuletzt nach Abstand stellten. Je Frame nur
+    // dieser Vergleich; erst wenn das Auge BUENDEL_ANKER_M weiter steht, stellt jedes Region-Bündel seine Reihe neu und nimmt
+    // EINMAL neu auf — die Kosten folgen der Bewegung, nie dem Frame (Gebot 7). Stufen-Wechsel stellen die Reihe über die
+    // Aufnahme (`_archInstanceGroupFor`).
+    _buendelAnkerPruefen(pos) {
+        const a = this._buendelAuge;
+        const R = AnazhRealm.BUENDEL_ANKER_M;
+        if (a && (pos.x - a.x) * (pos.x - a.x) + (pos.z - a.z) * (pos.z - a.z) <= R * R) return false;
+        this._buendelAuge = { x: pos.x, z: pos.z };
+        const sc = this.state.scene;
+        if (sc)
+            for (const c of sc.children)
+                if (c && c.isBundleGroup && c.userData && c.userData.regionKey != null) {
+                    AnazhRealm._buendelKinderReihe(c, this._buendelAuge);
+                    c.needsUpdate = true;
+                }
+        return true;
+    }
     static _buendelRang(key) {
         return key === "@global" ? 0 : key === "@wahl" ? 2 : 1;
     }
@@ -394,13 +445,16 @@ class AnazhRealm_Z17b {
         if (art === "boden")
             return {
                 name: "bodenSatz",
+                // DIE VERTEX-FORM (K44): die Normale trägt snorm8x4, die Farbe float16x4 (`_satzPacke`) — der Boden-Stoff
+                // liest beide als vec3, der Chunk behält seine Float32-Arrays für jeden CPU-Leser
                 attr: [
                     ["position", 3],
-                    ["normal", 3],
-                    ["color", 3],
+                    ["normal", 3, "snorm8"],
+                    ["color", 3, "half"],
                     ["aMorphTarget", 3],
                     ["aMorphWeight", 1],
                     ["aHimmel", 1],
+                    ["aSchutt", 1],
                 ],
                 mat: this._getVoxelChunkMaterial(),
                 schatten: true, // der Boden wirft (Hang auf Tal) — je Kaskade 1 Befehl, ihr Abschnitt
@@ -464,6 +518,11 @@ class AnazhRealm_Z17b {
             art,
             spec,
             attrNamen: spec.attr.map((a) => a[0]),
+            // je Attribut die Vertex-Form auf der GPU (`_satzForm`): `gis` = die Breite im Satz-Array (gepackt 4)
+            attr: spec.attr.map(([name, is, form]) => {
+                const f = this._satzForm(form);
+                return { name, is, form: f, gis: f ? 4 : is };
+            }),
             geom: null,
             mesh: null,
             vKap: 0,
@@ -509,10 +568,15 @@ class AnazhRealm_Z17b {
         const alt = s.geom;
         const waechst = vKap > s.vKap || iKap > s.iKap; // `wachse` zählt das Wachsen, nie das Schrumpfen (`_chunkSatzVerdichten`)
         const g = new THREE.BufferGeometry();
-        for (const [name, is] of s.spec.attr) {
-            const arr = new Float32Array(vKap * is);
-            if (alt) arr.set(alt.attributes[name].array.subarray(0, s.vEnde * is));
-            g.setAttribute(name, new THREE.BufferAttribute(arr, is));
+        for (const { name, form, gis } of s.attr) {
+            const arr =
+                form === "snorm8"
+                    ? new Int8Array(vKap * 4)
+                    : form === "half"
+                      ? new globalThis.Float16Array(vKap * 4)
+                      : new Float32Array(vKap * gis);
+            if (alt) arr.set(alt.attributes[name].array.subarray(0, s.vEnde * gis));
+            g.setAttribute(name, new THREE.BufferAttribute(arr, gis, form === "snorm8"));
         }
         const idx = new Uint32Array(iKap);
         const iN = alt ? Math.min(s.iEnde, alt.index.array.length, iKap) : 0;
@@ -584,8 +648,12 @@ class AnazhRealm_Z17b {
             for (const b of folge) {
                 const d = pos - b.vStart;
                 if (d !== 0) {
-                    for (const [name, is] of s.spec.attr)
-                        s.geom.attributes[name].array.copyWithin(pos * is, b.vStart * is, (b.vStart + b.vAnzahl) * is);
+                    for (const { name, gis } of s.attr)
+                        s.geom.attributes[name].array.copyWithin(
+                            pos * gis,
+                            b.vStart * gis,
+                            (b.vStart + b.vAnzahl) * gis
+                        );
                     const idx = b.idx;
                     for (let i = 0; i < idx.length; i++) idx[i] += d;
                     b.vStart = pos;
@@ -622,12 +690,62 @@ class AnazhRealm_Z17b {
         return mesh;
     }
 
+    // Die Views eines Bereichs: jedes Float32-Attribut des Chunks zeigt in den Satz; ein gepacktes (`form`) behält der Chunk
+    // als eigenes Float32-Array — der CPU-Leser liest den Wert des Gesetzes, die GPU seine Vertex-Form.
     _chunkSatzViews(s, b) {
-        for (const [name, is] of s.spec.attr)
-            b.geom.attributes[name].array = s.geom.attributes[name].array.subarray(
-                b.vStart * is,
-                (b.vStart + b.vAnzahl) * is
-            );
+        for (const { name, form, is } of s.attr)
+            if (!form)
+                b.geom.attributes[name].array = s.geom.attributes[name].array.subarray(
+                    b.vStart * is,
+                    (b.vStart + b.vAnzahl) * is
+                );
+    }
+
+    // DIE VERTEX-FORM des Satzes (K44, gemessen 14.10. Radeon, Genesis third: der Boden-Satz 14,6 von 40,1 MB Puffer, 60 B je
+    // Vertex, Normale und Farbe 24 B davon in Float32): die Normale (Einheitsvektor, |n| ≤ 1) reist als snorm8x4 (4 B, ≤ 0,45°
+    // — die Form der Profi-Engines für Vertex-Normalen), die Farbe als float16x4 (8 B, 11 Bit Mantisse, Werte über 1 bleiben;
+    // unorm hätte die Glut-Farben über 1 gekappt). Die vierte Komponente: Normale 0, Farbe 1 (Alpha). Rückgabe: die Form oder
+    // null (Float32). Ohne Float16Array (vor Chrome 135) bleibt die Farbe Float32 — laut, einmal je Welt.
+    _satzForm(form) {
+        if (!form) return null;
+        if (form === "snorm8") return form;
+        if (form === "half") {
+            if (typeof globalThis.Float16Array === "function") return form;
+            if (!this._satzFormLaut) {
+                this._satzFormLaut = true;
+                this.log(
+                    "VERTEX-FORM: Float16Array fehlt (Browser vor Chrome 135) — die Satz-Farbe bleibt Float32",
+                    "ERROR"
+                );
+            }
+            return null;
+        }
+        throw new Error(`_satzForm: unbekannte Vertex-Form „${form}"`);
+    }
+
+    // Packt `n` Vertices (Breite `is`, aus `src` ab Vertex 0) in die Vertex-Form `form` nach `dst` ab Vertex `ab` (Breite 4).
+    // EINE Quelle für Satz und Linse (gate:chunk-satz (f) prüft den Bereich gegen genau diese Packung).
+    static _satzPacke(form, src, is, dst, ab, n) {
+        const o0 = ab * 4;
+        if (form === "snorm8")
+            for (let v = 0; v < n; v++) {
+                const q = v * is,
+                    o = o0 + v * 4;
+                for (let k = 0; k < 3; k++) {
+                    const x = src[q + k];
+                    dst[o + k] = Math.round((x > 1 ? 1 : x < -1 ? -1 : x) * 127);
+                }
+                dst[o + 3] = 0;
+            }
+        else
+            for (let v = 0; v < n; v++) {
+                const q = v * is,
+                    o = o0 + v * 4;
+                dst[o] = src[q];
+                dst[o + 1] = src[q + 1];
+                dst[o + 2] = src[q + 2];
+                dst[o + 3] = 1;
+            }
     }
 
     // DIE FREILISTE des Satzes — EINE Mechanik für seine Vertex-Bereiche und die Zellen-Plätze seiner Abschnitte: Läufe
@@ -701,10 +819,11 @@ class AnazhRealm_Z17b {
         if (!geom.index || !geom.index.array) throw new Error(`_chunkSatzEin(${art}, ${key}): kein Index`);
         const vStart = this._chunkSatzVAlloc(s, n);
         const g = s.geom; // nach dem Alloc: ein Wachsen tauscht die Geometrie
-        for (const [name, is] of s.spec.attr) {
+        for (const { name, is, form, gis } of s.attr) {
             const ga = g.attributes[name];
-            ga.array.set(geom.attributes[name].array, vStart * is);
-            ga.addUpdateRange(vStart * is, n * is);
+            if (form) AnazhRealm._satzPacke(form, geom.attributes[name].array, is, ga.array, vStart, n);
+            else ga.array.set(geom.attributes[name].array, vStart * is);
+            ga.addUpdateRange(vStart * gis, n * gis);
             ga.needsUpdate = true;
         }
         const li = geom.index.array;
@@ -888,9 +1007,9 @@ class AnazhRealm_Z17b {
         const s = this.state.chunkSaetze ? this.state.chunkSaetze.get(art) : null;
         const b = s ? s.bloecke.get(key) : null;
         if (!b) return false;
-        for (const name of s.attrNamen) {
+        for (const { name, form } of s.attr) {
             const a = b.geom.attributes[name];
-            if (a) a.array = a.array.slice();
+            if (a && !form) a.array = a.array.slice(); // ein gepacktes trägt der Chunk ohnehin selbst
         }
         if (b.hoehle) this._hoehlenLoese(s, b);
         this._chunkSatzVFrei(s, b.vStart, b.vAnzahl);
@@ -908,6 +1027,10 @@ class AnazhRealm_Z17b {
         if (!b) throw new Error(`_chunkSatzMarke(${art}, ${key}): kein Bereich im Satz`);
         for (const name of namen) {
             const ga = s.geom.attributes[name];
+            const fa = s.attr.find((x) => x.name === name);
+            // ein gepacktes Attribut liest der Schreiber im Chunk (Float32) — der Satz packt es neu
+            if (fa && fa.form)
+                AnazhRealm._satzPacke(fa.form, b.geom.attributes[name].array, fa.is, ga.array, b.vStart, b.vAnzahl);
             ga.addUpdateRange(b.vStart * ga.itemSize, b.vAnzahl * ga.itemSize);
             ga.needsUpdate = true;
         }
@@ -1348,43 +1471,6 @@ class AnazhRealm_Z17b {
     // die Schatten-Karte trägt je Strahl die ERSTE Fläche vom Licht, und die liegt in Himmels-Luft oder hinter einer Mündung —
     // jede andere Höhlen-Fläche ändert die Karte nie. Die Kosten folgen dem Bild: je Pass die Mündungen und die erreichten
     // Zellen, nie die Weltgröße.
-
-    // DIE HIMMELS-SICHT des Bodens (K02a, Auge 11 bei 762/−138): je Vertex der Anteil des Himmels-Lichts, der ihn erreicht —
-    // die Umgebung (der EINE Himmel), Hemi und Ambient sind Himmels-Licht, und der Boden-Stoff liest diesen Wert als seine
-    // Verdeckung (`aoNode` des Chunk-Materials). Die Wahrheit ist der Höhlen-Graph (`tri`: je Dreieck die Zelle seiner Luft,
-    // −1 = Himmels-Luft): jede Fläche der Himmels-Luft sieht den Himmel (1), in die Höhlen-Luft fällt er je Netz-Schritt
-    // (`step` m) um exp(−step / HIMMELS_SICHT.m) — über die Kanten der Dreiecke von der nächsten Himmels-Fläche fort; eine
-    // Höhle ohne Himmels-Fläche im Chunk sieht ihn nie (0). Vorher lag der Himmel auf jeder Höhlen-Wand: 22 m unter dem Fels
-    // stand die Ich-Sicht in einem blaugrauen Schleier (Sonne im Schatten, Umgebung voll; ohne Umgebung Helligkeit 0).
-    // Ohne Höhlen-Graph (kein Boden-Chunk) sieht jede Fläche den Himmel.
-    static _himmelsSicht(index, tri, n, step) {
-        const V = new Float32Array(n);
-        if (!tri) return V.fill(1);
-        const nT = (index.length / 3) | 0;
-        if (tri.length !== nT) throw new Error(`_himmelsSicht: ${tri.length} Höhlen-Zellen für ${nT} Dreiecke`);
-        const schritt = Math.exp(-step / AnazhRealm.HIMMELS_SICHT.m);
-        const hop = new Int8Array(n).fill(-1);
-        for (let t = 0; t < nT; t++)
-            if (tri[t] < 0) hop[index[3 * t]] = hop[index[3 * t + 1]] = hop[index[3 * t + 2]] = 0;
-        // je Schritt wächst die Front um eine Dreiecks-Kante (höchstens `schritte`, darunter liegt der Rest unter 1 %)
-        const schritte = Math.min(120, Math.ceil(Math.log(0.01) / Math.log(schritt)));
-        for (let k = 1; k <= schritte; k++) {
-            let neu = 0;
-            for (let t = 0; t < nT; t++) {
-                const a = index[3 * t],
-                    b = index[3 * t + 1],
-                    c = index[3 * t + 2];
-                if (hop[a] === k - 1 || hop[b] === k - 1 || hop[c] === k - 1) {
-                    if (hop[a] < 0) ((hop[a] = k), neu++);
-                    if (hop[b] < 0) ((hop[b] = k), neu++);
-                    if (hop[c] < 0) ((hop[c] = k), neu++);
-                }
-            }
-            if (!neu) break;
-        }
-        for (let i = 0; i < n; i++) V[i] = hop[i] < 0 ? 0 : Math.pow(schritt, hop[i]);
-        return V;
-    }
 
     // Die Knoten eines Boden-Bereichs aus dem Höhlen-Graph seines Chunks (Boxen in Welt-Lage, um den Saum geweitet); sein
     // Horizont entsteht beim ersten Lesen (`_hoehlenHorizont`).

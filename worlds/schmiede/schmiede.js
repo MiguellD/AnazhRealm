@@ -298,7 +298,7 @@ function rebuild(){
     gWeapon=new THREE.Group(); gWeapon.add(buildBogen(P,M.wood)); gWeapon.visible=show.steel; weapon.add(gWeapon);
     gSpine=new THREE.Group();gSection=new THREE.Group();gLehren=new THREE.Group();gMass=new THREE.Group();
     weapon.position.set(-((P.riserLen||0.13)+2*(P.limbLen||0.6))/2, 0.30, 0);
-    renderBogenTafel(P); return;
+    renderBogenTafel(P); kostenLeiste.neu(); return;
   }
   const S=stations(P), m=measure(P), res=evalLehren(P);
   // — STAHL (die Haut) —
@@ -321,6 +321,7 @@ function rebuild(){
   // — zentrieren & auf Augenhöhe heben —
   weapon.position.set(-S.L/2,0.30,0);
   renderTafel(res,m);
+  kostenLeiste.neu();
 }
 // — Lehren-Tafel rendern —
 function pct(v,band){const lo=band[0],hi=band[1],pad=(hi-lo)*0.8;const a=lo-pad,b=hi+pad;return Math.max(2,Math.min(98,(v-a)/(b-a)*100));}
@@ -358,21 +359,33 @@ function renderBogenTafel(P){
 // ════════════════════════════════════════════════════════════════════
 // UI
 // ════════════════════════════════════════════════════════════════════
-const sdiv=document.getElementById('sliders');let sliderEls={};
-function buildSliders(){sdiv.innerHTML='';sliderEls={};let lastGrp='';
-  const set=(P.modus==='wucht')?PARAMS_IMPACT:PARAMS_BLADE;
-  set.forEach(pp=>{
-    if(pp.grp!==lastGrp){const t=document.createElement('div');t.className='sec-t';t.textContent=pp.grp;sdiv.appendChild(t);lastGrp=pp.grp;}
-    const wrap=document.createElement('div');wrap.className='sl';
-    const fmt=v=>pp.step>=1?v.toFixed(0):(pp.step>=.01?v.toFixed(2):v.toFixed(4));
-    wrap.innerHTML='<div class="sl-h"><span>'+pp.lab+'</span><span class="v" id="v_'+pp.id+'">'+fmt(P[pp.id])+'</span></div>';
-    const inp=document.createElement('input');inp.type='range';inp.min=pp.min;inp.max=pp.max;inp.step=pp.step;inp.value=P[pp.id];
-    inp.oninput=()=>{P[pp.id]=parseFloat(inp.value);document.getElementById('v_'+pp.id).textContent=fmt(P[pp.id]);
-      [...pdiv.children].forEach(c=>c.classList.remove('on'));rebuild();};
-    wrap.appendChild(inp);
-    const lw=document.createElement('div');lw.className='law';lw.textContent='→ '+pp.law;wrap.appendChild(lw);
-    sdiv.appendChild(wrap);sliderEls[pp.id]=inp;});
+// Die Hülle (K41): die Sitzung trägt jede Tat (Regler-Zug, Gattung, Tradition, Zurücksetzen) als EINEN Rückgängig-
+// Schritt über P samt Gattung und Tradition; der Regler-Generator liest PARAMS_BLADE bzw. PARAMS_IMPACT (je modus) und
+// schreibt P in place, ein Aufbau je Bild.
+const tradName=T=>Object.keys(TRADITIONEN).find(k=>TRADITIONEN[k]===T)||'Frank';
+let basisP=null;   // P nach dem letzten Gattungs-/Traditions-Zug — das Ziel von „Zurücksetzen“
+// (markiert: ob die Gattung noch leuchtet — ein Regler-Zug löscht die Marke, sein Rückgängig stellt sie wieder her)
+const sitz=AnazhHuelle.sitzung({werte:P,zustand:()=>({gattung:currentGattung,trad:tradName(currentTrad),markiert:!!pdiv.querySelector('button.on')}),
+  zustandSetzen:z=>{currentGattung=z.gattung;currentTrad=TRADITIONEN[z.trad]||currentTrad;SC.setTradition(currentTrad);
+    [...pdiv.querySelectorAll('button')].forEach(c=>c.classList.toggle('on',z.markiert&&c.textContent===currentGattung));
+    [...tdiv.children].forEach(c=>c.classList.toggle('on',c.textContent===z.trad));},
+  anwenden:()=>{buildSliders();rebuild();}});
+sitz.leiste(document.getElementById('sitzung'),{seed:false});
+const sdiv=document.getElementById('sliders');let regler=null;
+function buildSliders(){
+  regler=AnazhHuelle.regler(sdiv,(P.modus==='wucht')?PARAMS_IMPACT:PARAMS_BLADE,{werte:P,ruheMs:0,sitzung:sitz,
+    basis:()=>basisP,
+    bei:()=>[...pdiv.querySelectorAll('button')].forEach(c=>c.classList.remove('on')),
+    nachRuhe:(ids,bau)=>{if(bau)rebuild();}});
 }
+// Die Kosten-Leiste: die WELT-Gestalt (buildInstance des Kerns: Gattung × Tradition + die B4-Regler als ov) gegen die
+// Budget-Zeile je Stufe.
+const rezeptDerGattung=()=>Object.keys(SC.PRESETS).find(id=>SC.PRESETS[id].lab===currentGattung);
+const kostenLeiste=AnazhHuelle.kosten(document.getElementById('kosten'),{budget:SC.PORTAL_RENDER_CONFIG.lod.budget.weapon,
+  stufen:SC.PORTAL_RENDER_CONFIG.lod.kindStages.weapon,
+  bauen:s=>{const ov={__tradition:tradName(currentTrad)};(regler?regler.zeilen:[]).forEach(z=>{ov[z.id]=P[z.id];});
+    return SC.buildInstance(rezeptDerGattung(),1,s,ov);},
+  quelle:'gemessen an der Welt-Gestalt (schmiede-core buildInstance: Gattung × Tradition + Regler als ov)'});
 // Gattungen
 const pdiv=document.getElementById('presets');
 function gattLabel(t){const d=document.createElement('div');d.className='sec-t';d.style.cssText='flex:1 1 100%;margin-top:4px';d.textContent=t;return d;}
@@ -381,20 +394,20 @@ function gattLabel(t){const d=document.createElement('div');d.className='sec-t';
    if(isTool!==lastTool){pdiv.appendChild(gattLabel(isTool?'WERKZEUGE':'WAFFEN'));lastTool=isTool;}
    const b=document.createElement('button');b.className='btn'+(isTool?' tool':'');b.textContent=name;
    if(name===currentGattung)b.classList.add('on');
-   b.onclick=()=>{delete P.guardOverride;P.backSpike=false;P.beak=false;delete P.task;delete P.cheekMul;delete P.pickLen;Object.assign(P,GATTUNGEN[name]);if(!P.task)snapBases(P);currentGattung=name;
+   b.onclick=()=>sitz.schritt(()=>{delete P.guardOverride;P.backSpike=false;P.beak=false;delete P.task;delete P.cheekMul;delete P.pickLen;Object.assign(P,GATTUNGEN[name]);if(!P.task)snapBases(P);currentGattung=name;
      applyTrad(currentTrad,false);
      [...pdiv.querySelectorAll('button')].forEach(c=>c.classList.remove('on'));b.classList.add('on');
-     buildSliders();rebuild();};
+     buildSliders();rebuild();});
    pdiv.appendChild(b);}}
 // Traditionen
 const tdiv=document.getElementById('trads');
 function applyTrad(T,doRebuild){currentTrad=T;SC.setTradition(T);
   if(P.task){ P.task.werkstoff=tradWerkstoff(T); applyTask(P); snapBases(P); }   // Kopf neu aus Aufgabe × Kultur-Metall ableiten (β/Wange/Masse)
-  shapeByTradition(P,T);
+  shapeByTradition(P,T);basisP=Object.assign({},P);
   if(doRebuild)rebuild();}
 for(const tn in TRADITIONEN){const b=document.createElement('button');b.className='btn';b.textContent=tn;
   if(TRADITIONEN[tn]===currentTrad)b.classList.add('on');
-  b.onclick=()=>{[...tdiv.children].forEach(c=>c.classList.remove('on'));b.classList.add('on');applyTrad(TRADITIONEN[tn],true);};
+  b.onclick=()=>{[...tdiv.children].forEach(c=>c.classList.remove('on'));b.classList.add('on');sitz.schritt(()=>applyTrad(TRADITIONEN[tn],true));};
   tdiv.appendChild(b);}
 // Ebenen
 const ldiv=document.getElementById('layers');
@@ -1559,24 +1572,15 @@ addEventListener('keydown',e=>{if(arena.active)return;const k=e.key.toLowerCase(
   else if(k==='t'){const ks=Object.keys(TRADITIONEN);const cur=Object.keys(TRADITIONEN).find(n=>TRADITIONEN[n]===currentTrad);const ni=(ks.indexOf(cur)+1)%ks.length;tdiv.children[ni].click();}});
 
 // — Start —
-P._kBase=P.kruemmung;buildSliders();rebuild();appendArenaUI();animate();
+P._kBase=P.kruemmung;basisP=Object.assign({},P);buildSliders();rebuild();appendArenaUI();animate();
 
-/* ==================== W12-PORTAL-BRÜCKE (AnazhRealm-Heimat) ==================== */
-/* Dasselbe Muster wie worlds/garage + worlds/portale: enter/ready-Handshake, die
-   DSL spricht über die ECHTEN UI-Pfade (Button-click = eine Quelle) — die 21
-   Gattungen (#presets) + 4 Traditionen (#trads) + die Haupt-Gesten "anschlagen"
-   (#ring, die Harmonik-Probe) und "stahl" (#finish, der Stahl/Roh-Umschalter).
-   Umlaut-Namen reisen ASCII-gefaltet (saebel/grossschwert/faellaxt — die
-   terrain-Konvention "fruehling"); dieselbe Faltung liegt auf dem Button-Text.
-   Esc meldet die Heimkehr — im Prüfstand gehört Esc dem Pointer-Lock-Release
-   (eigener Handler oben), die Brücke schweigt dort. */
+/* ==================== DIE BRÜCKE ZUR HEIMAT (die Hülle, K41) ==================== */
+/* EINE Brücke (../huelle/huelle.js): die DSL spricht über die ECHTEN UI-Pfade (Button-click = eine Quelle) — die 21
+   Gattungen (#presets) + 4 Traditionen (#trads) + die Gesten "anschlagen" (#ring, die Harmonik-Probe) und "stahl"
+   (#finish, der Stahl/Roh-Umschalter). Umlaut-Namen reisen ASCII-gefaltet (saebel/grossschwert/faellaxt — die
+   terrain-Konvention "fruehling"); dieselbe Faltung liegt auf dem Button-Text. Esc meldet die Heimkehr — im Prüfstand
+   gehört Esc dem Pointer-Lock-Release, die Brücke schweigt dort. */
 (function () {
-    if (typeof window === "undefined" || !window.parent || window.parent === window) return;
-    function post(m) {
-        try {
-            window.parent.postMessage(m, "*");
-        } catch (_e) {}
-    }
     /* ASCII-Faltung — EINE Normalisierung für DSL-Wort UND Button-Text. */
     function norm(s) {
         return String(s || "")
@@ -1587,18 +1591,8 @@ P._kBase=P.kruemmung;buildSliders();rebuild();appendArenaUI();animate();
             .replace(/ß/g, "ss")
             .trim();
     }
-    var DSL = [
-        "langschwert", "saebel", "degen", "grossschwert", "dolch", "messer",
-        "langbogen", "kriegsbogen", "reiterbogen", "recurvebogen",
-        "streitkolben", "kriegsaxt", "kriegshammer", "keule",
-        "faellaxt", "spaltmaul", "vorschlaghammer", "beil", "spitzhacke", "spaten", "schaufel",
-        "frank", "nihon", "pars", "urvolk",
-        "anschlagen", "stahl",
-    ];
-    /* Gattungen leben in #presets, Traditionen in #trads — NUR dort matchen:
-       die Ebenen-Buttons (#layers) tragen "Stahl" als Label, ein Match über
-       alle #ctl-Buttons kollidierte (anders als in der garage, wo kein
-       DSL-Wort mit einem Ebenen-Label kollidiert). */
+    /* Gattungen leben in #presets, Traditionen in #trads — NUR dort matchen: die Ebenen-Buttons (#layers) tragen
+       "Stahl" als Label, ein Match über alle #ctl-Buttons kollidierte. */
     function clickIn(id, word) {
         var div = document.getElementById(id);
         if (!div) return false;
@@ -1611,30 +1605,29 @@ P._kBase=P.kruemmung;buildSliders();rebuild();appendArenaUI();animate();
         }
         return false;
     }
-    window.addEventListener("message", function (ev) {
-        if (ev.source !== window.parent) return;
-        var msg = ev.data;
-        if (!msg || typeof msg !== "object") return;
-        if (msg.type === "enter") {
-            post({ type: "ready", world: "schmiede", label: "Anatomie · Klinge", dsl: DSL });
-        } else if (msg.type === "dsl" && Array.isArray(msg.program)) {
-            for (var i = 0; i < msg.program.length; i++) {
-                var op = msg.program[i];
-                var word = norm((op && op[0]) || op || "");
-                if (word === "anschlagen") {
-                    var rg = document.getElementById("ring");
-                    if (rg) rg.click();
-                } else if (word === "stahl") {
-                    var fi = document.getElementById("finish");
-                    if (fi) fi.click();
-                } else if (!clickIn("presets", word)) clickIn("trads", word);
-            }
-        }
+    AnazhHuelle.bruecke({
+        welt: "schmiede",
+        label: "Anatomie · Klinge",
+        dsl: [
+            "langschwert", "saebel", "degen", "grossschwert", "dolch", "messer",
+            "langbogen", "kriegsbogen", "reiterbogen", "recurvebogen",
+            "streitkolben", "kriegsaxt", "kriegshammer", "keule",
+            "faellaxt", "spaltmaul", "vorschlaghammer", "beil", "spitzhacke", "spaten", "schaufel",
+            "frank", "nihon", "pars", "urvolk",
+            "anschlagen", "stahl",
+        ],
+        wort: function (w) {
+            var word = norm(w);
+            if (word === "anschlagen") {
+                var rg = document.getElementById("ring");
+                if (rg) rg.click();
+            } else if (word === "stahl") {
+                var fi = document.getElementById("finish");
+                if (fi) fi.click();
+            } else if (!clickIn("presets", word)) clickIn("trads", word);
+        },
+        esc: function () {
+            return !(typeof arena !== "undefined" && arena && arena.active); /* Esc = Pointer-Lock im Prüfstand */
+        },
     });
-    window.addEventListener("keydown", function (ev) {
-        if (ev.key !== "Escape") return;
-        if (typeof arena !== "undefined" && arena && arena.active) return; /* Esc = Pointer-Lock im Prüfstand */
-        post({ type: "exit", world: "schmiede" });
-    });
-    post({ type: "ready", world: "schmiede", label: "Anatomie · Klinge", dsl: DSL });
 })();

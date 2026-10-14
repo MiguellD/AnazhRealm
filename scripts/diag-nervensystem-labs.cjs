@@ -135,7 +135,7 @@ function staticLaws(anazhSrc, brueckeSrc, manifestSrc, cores) {
 
 (async () => {
     const anazhSrc = stammLib.text(root);
-    const brueckeSrc = fs.readFileSync(path.join(root, "worlds/terrain/phytogenesis.js"), "utf8");
+    const brueckeSrc = fs.readFileSync(path.join(root, "foundry-bruecke.js"), "utf8"); // die Brücke (K42)
     const manifestSrc = fs.readFileSync(path.join(root, "cores.manifest.json"), "utf8");
     const cores = ["klang-core.js", "koerper-core.js", "tetrapoda-core.js"].map((f) => [
         f,

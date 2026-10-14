@@ -16,6 +16,8 @@ class AnazhRealm_Z20b {
     _foundryRequest(presetId, seed, lod, ov, wo) {
         const f = this._foundry;
         if (!f) return Promise.resolve(null);
+        // Die Gestalt des Orts (K20): die Solitär-Gestalt einer Baum-Art reist mit ihrer Prägung (`_foundryGestaltOv`).
+        ov = this._foundryGestaltOv(presetId, seed, ov);
         // Regler-Kanal: ein nicht-leeres ov formt den Körper; sein Hash trennt den Schlüssel (geprägt und ungeprägt
         // vergiften sich nie). Die Werkstatt-Vorschau (wo === 0) umgeht die Platte KOMPLETT — ein Unikat je Regler-Stand.
         const hasOv = !!(ov && typeof ov === "object" && Object.keys(ov).length);
@@ -282,6 +284,7 @@ class AnazhRealm_Z20b {
     _foundryBakeImpostorRequest(presetId, seed, ov, fmt, bedarfD2) {
         const f = this._foundry;
         if (!f || !f.ready || !f.worker || !fmt) return Promise.resolve(null);
+        ov = this._foundryGestaltOv(presetId, seed, ov); // die Gestalt des Orts (K20) samt der Prägung des Bestellers
         // Die Prägung reist ADDITIV in den Bake (msg.ov nur wenn non-null): Bake-Subjekt ist die geprägte
         // Gestalt. Ohne ov byte-identisch. __-Schlüssel bleiben Steuer-Passagiere (der Kern konsumiert sie).
         // Die Karte ist Golden-Sommer (die Schale nagelt die Saison); das Jahr färbt der Karten-Stoff (uSeasonMul).
@@ -860,7 +863,7 @@ class AnazhRealm_Z20b {
     // Rahmen der Zelle reisen je Instanz. Gecacht auf der Zelle. null solange der Rahmen lädt, false bei Fehler oder —
     // mit echtem Renderer — bis die Schicht gebacken ist (der Aufrufer serviert Geometrie, die Stufen-Klammer).
     _foundryBuildImpostorFlat(entry, preset) {
-        const variant = this._foundryVariantFor(entry.seed, preset);
+        const variant = this._foundryGestaltFor(entry, preset);
         if (variant == null) return null; // Buch kalt — L2 kalt, der Tick baut nach
         // Ein geprägtes Entry zieht seine ov-Zelle; ist sie noch nicht da (null), fällt der Pfad auf GEOMETRIE (nie
         // kalt, nie die ungeprägte Karte). Ungeprägt: ovE null.
@@ -1257,7 +1260,7 @@ class AnazhRealm_Z20b {
     _archFoundryZiegel(entry, preset, ovH) {
         const wm = this._weltMarchEnsure();
         if (!wm) return false;
-        const variant = this._foundryVariantFor(entry.seed, preset);
+        const variant = this._foundryGestaltFor(entry, preset);
         if (variant == null) return false; // Buch kalt — der nächste Tick fragt wieder, nichts verbrannt
         const huelle = this._foundryFernForm(preset) === "huelle";
         const stufe = huelle ? this._foundryFernStufe(preset) : 1;
@@ -1491,6 +1494,10 @@ class AnazhRealm_Z20b {
             if (!o.isMesh || !o.geometry || !o.geometry.attributes || !o.geometry.attributes.position) return;
             const grob = cr.userData._gelenk ? cr.userData._gelenk.fern : null;
             for (let p = o; grob && p && p !== cr; p = p.parent) if (p === grob) return; // die Grobstufe wäre der Doppel-Körper
+            // Das Fell ist kein Leib (K28): die Glieder (Treffer, Biss, Fern-Bild) passen auf Haut und starre Teile — die
+            // Schalen und Strähnen über ihnen trügen ihre Länge in jedes Volumen (der Biss reichte um das Kopf-Fell weiter).
+            const kl = o.userData && o.userData.__klasse;
+            if (typeof kl === "string" && (kl === "fellSchale" || kl.indexOf("straehne") === 0)) return;
             // Die Tier-Haut (V18.497) ist EIN SkinnedMesh über alle Glieder: je Vertex zählt der dominante
             // Bone (skinIndex[0] trägt das größte Gewicht) — die Haut zerfällt in Glied-Stücke, deren
             // matrixWorld (Bone · boneInverse · bindMatrix) den Bind-Raum starr an die LAUFENDE Pose hängt.
@@ -2073,12 +2080,14 @@ class AnazhRealm_Z20b {
                                 .mul(TSL.float(1.0).sub(t.mul(0.75)));
                             const haar = TSL.step(dist, radius).mul(TSL.step(t, h1.mul(0.45).add(0.55)));
                             const wolle = TSL.step(t, 0.34).mul(TSL.step(0.05, aS.y));
-                            mat.opacityNode = TSL.max(haar, wolle);
+                            // Der Ausschnitt lebt in colorNode.a wie jeder Ausschnitt (Lehre 26: der r184-Schattenpass liest
+                            // colorNode.a, nie opacityNode) — kein Stoff schneidet über opacityNode, auch keiner, der heute
+                            // nicht wirft. Die Kopf-Schalen (K28) tragen dasselbe Raster: Leib und Kopf EIN Stoff.
                             mat.alphaTest = 0.5;
                             const FS = AnazhRealm.FELL_SCHALE;
                             mat.colorNode = TSL.vec4(
                                 vcol.mul(TSL.mix(TSL.float(FS.wurzel), TSL.float(FS.spitze), t)),
-                                1.0
+                                TSL.max(haar, wolle)
                             );
                         }
                         const sT = schale

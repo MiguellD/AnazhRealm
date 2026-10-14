@@ -282,6 +282,7 @@ function karteOhneFarbe() {
         kiste.castShadow = true;
         szene.add(boden, kiste);
         const kam = new T.OrthographicCamera(-10, 10, 10, -10, 0.1, 100);
+        // BÜHNE: eigene Szene der Ziel-Bühne
         kam.position.set(0, 40, 0);
         kam.up.set(0, 0, -1);
         kam.lookAt(0, 0, 0);
@@ -354,6 +355,7 @@ function vortiefeProbe() {
         const szene = new T.Scene();
         szene.name = "ziel-zensus:vortiefe-buehne";
         const kam = new T.PerspectiveCamera(60, 1, 0.5, 400);
+        // BÜHNE: eigene Szene der Vortiefe-Bühne
         kam.position.set(0, 4, 6);
         kam.lookAt(0, 0, 0);
         kam.updateMatrixWorld(true);

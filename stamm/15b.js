@@ -140,6 +140,7 @@ class AnazhRealm_Z15b {
         if (atmo && atmo.treeLOD === false) return 0;
         const pm = auge;
         if (!pm) return 0;
+        this._buendelAnkerPruefen(pm); // DIE REIHE NACH ABSTAND (1310-9): neu nur beim Anker-Wechsel
         const archs = this.state.architectures;
         if (!Array.isArray(archs) || archs.length === 0) return 0;
         // DIE STAND-WACHE: ging die Stufen-Wahl eine volle Runde über alle Einträge, ohne zu wechseln und ohne dass einer
@@ -1141,7 +1142,7 @@ class AnazhRealm_Z15b {
                 const variantIndex = h % N;
                 // V18.387 — Baum-Schichten (nicht Fels/Kiesel) reichen die Sichthöhe
                 // durch → die Erst-LOD-Wahl nutzt die Wahrnehmungs-Distanz.
-                const visH = this._scatterSichtHoehe(layer, species, cellX, cellZ, variantIndex, tf.scale);
+                const visH = this._scatterSichtHoehe(layer, species, cellX, cellZ, variantIndex, tf);
                 if (visH === null) {
                     // die Höhen-Stufe des Foundry-Baums lädt: die Region wartet wie auf ein ladendes Asset
                     region._deferredFoundry = true;
@@ -1194,26 +1195,34 @@ class AnazhRealm_Z15b {
         return emitted;
     }
 
-    // Der EINE Foundry-Same einer Streu-Zelle (Γ5: aus Zelle + Varianten-Index, nie Zufall): die Materialisierung
-    // (Primär-Stufe · Gesetz-Bahn · Band-Partner), die Sichthöhe der Stufenwahl und die Promotion zum echten Eintrag
-    // lesen ihn — die Gestalt (`_foundryVariantFor`) bleibt beim Kristallisieren dieselbe.
-    _scatterFoundrySeed(cellX, cellZ, variantIndex) {
+    // Der rohe Same einer Streu-Zelle (Γ5: aus Zelle + Varianten-Index, nie Zufall) — die Klon-Linse (gate:fluss) misst
+    // seine Verteilung über die Gestalten.
+    _scatterRohSame(cellX, cellZ, variantIndex) {
         return ((cellX * 73856093) ^ (cellZ * 19349663) ^ (variantIndex + 1)) >>> 0;
+    }
+    // Der EINE Foundry-Same einer Streu-Zelle: die Materialisierung (Primär-Stufe · Gesetz-Bahn · Band-Partner), die
+    // Sichthöhe der Stufenwahl und die Promotion zum echten Eintrag lesen ihn — die Gestalt (`_foundryVariantFor`) bleibt
+    // beim Kristallisieren dieselbe. Die Gestalt folgt dem Ort (K20): der Streu-Baum am Ort tf (x, z, scale) fragt die EINE
+    // Gestalt des Orts (`_ortGestaltSame`) wie der gepflanzte, null = sie wartet auf die Wahrheit ihres Orts.
+    _scatterFoundrySeed(cellX, cellZ, variantIndex, species, tf) {
+        const roh = this._scatterRohSame(cellX, cellZ, variantIndex);
+        const preset = this._foundryPresetFor(species);
+        if (!preset) return roh;
+        const krone = AnazhRealm.FOREST.crown[species];
+        return this._ortGestaltSame(tf.x, tf.z, krone > 0 ? krone * tf.scale : 0, roh, preset);
     }
 
     // Die Sichthöhe einer Streu-Zelle für die Stufenwahl: Fels 0 (roh), ein Foundry-Baum der Stempel seines Assets
     // (_foundrySichtHoehe — dieselbe Zahl, die seine Masken lesen; null = die Höhen-Stufe lädt, die Zelle wartet),
     // sonst der Grammatik-Bauplan.
-    _scatterSichtHoehe(layer, species, cellX, cellZ, variantIndex, scale) {
+    _scatterSichtHoehe(layer, species, cellX, cellZ, variantIndex, tf) {
         if (layer.kind === "rock") return 0;
         const preset = this._foundryEnabled() ? this._foundryPresetFor(species) : null;
-        if (preset && this._foundryPresetIsTree(preset))
-            return this._foundrySichtHoehe(
-                preset,
-                { seed: this._scatterFoundrySeed(cellX, cellZ, variantIndex) },
-                scale
-            );
-        return this._lodTreeVisHeightFor(species, variantIndex, scale);
+        if (preset && this._foundryPresetIsTree(preset)) {
+            const seed = this._scatterFoundrySeed(cellX, cellZ, variantIndex, species, tf);
+            return seed === null ? null : this._foundrySichtHoehe(preset, { seed }, tf.scale);
+        }
+        return this._lodTreeVisHeightFor(species, variantIndex, tf.scale);
     }
 
     // Die EINE Zellen-Materialisierung (gate:scatter-ab ist die Byte-Wand): baut für eine Streu-Zelle die
@@ -1247,8 +1256,8 @@ class AnazhRealm_Z15b {
         const foundryPreset = this._foundryEnabled() ? this._foundryPresetFor(species) : null;
         // Der EINE Streu-Same der Zelle (`_scatterFoundrySeed`): Primär-Stufe, Gesetz-Bahn, Band-Partner und die
         // Promotion lesen ihn — dieselbe Gestalt auf jeder Bahn.
-        const fseed = foundryPreset ? this._scatterFoundrySeed(cellX, cellZ, variantIndex) : 0;
-        const gestalt = foundryPreset ? this._foundryVariantFor(fseed, foundryPreset) : null;
+        const fseed = foundryPreset ? this._scatterFoundrySeed(cellX, cellZ, variantIndex, species, tf) : 0;
+        const gestalt = foundryPreset && fseed !== null ? this._foundryVariantFor(fseed, foundryPreset) : null;
         if (foundryPreset && gestalt == null) {
             if (!ctxNoDefer) region._deferredFoundry = true; // Buch kalt → deferrieren wie ein ladendes Asset
             return null;
@@ -1527,14 +1536,7 @@ class AnazhRealm_Z15b {
             const dist = Math.sqrt(dx * dx + dz * dz);
             if (dist > SC.outerM + 96) continue; // jenseits räumt der Region-Ring selbst
             const tf = this._scatterCellTransform(cell.cellX, cell.cellZ, cell.cellM, layer.scaleBase, layer.scaleVar);
-            const visH = this._scatterSichtHoehe(
-                layer,
-                cell.species,
-                cell.cellX,
-                cell.cellZ,
-                cell.variantIndex,
-                tf.scale
-            );
+            const visH = this._scatterSichtHoehe(layer, cell.species, cell.cellX, cell.cellZ, cell.variantIndex, tf);
             if (visH === null) {
                 offen++;
                 continue; // die Höhen-Stufe lädt: die Zelle hält ihre Stufe
@@ -1769,6 +1771,15 @@ class AnazhRealm_Z15b {
             promLayer ? promLayer.scaleBase : cellEntry.scaleBase,
             promLayer ? promLayer.scaleVar : cellEntry.scaleVar
         );
+        // Der Same der Zelle (die Gestalt des Orts) vor dem Freigeben: wartet sie, wartet die Promotion mit ihr.
+        const same = this._scatterFoundrySeed(
+            cellEntry.cellX,
+            cellEntry.cellZ,
+            cellEntry.variantIndex,
+            cellEntry.species,
+            tf
+        );
+        if (same === null) return null;
         const surfY = this._voxelSurfaceY ? this._voxelSurfaceY(tf.x, tf.z) : cellEntry.y || 0;
         // Deko-Slots freigeben BEVOR der echte Baum spawnt (kein Doppel-Mesh) — und die Krone der Zelle mit ihnen: der
         // Eintrag trägt seine eigene ein (`spawnArchitecture`), sonst summierte die Karte sie doppelt.
@@ -1789,7 +1800,7 @@ class AnazhRealm_Z15b {
                 precise: true,
                 scale: tf.scale,
                 rotationY: tf.yaw,
-                seed: this._scatterFoundrySeed(cellEntry.cellX, cellEntry.cellZ, cellEntry.variantIndex),
+                seed: same,
             }
         );
         if (entry) {
@@ -2115,7 +2126,7 @@ class AnazhRealm_Z15b {
     // ein ladendes Asset. Kann das Studio die Höhen-Stufe nicht bauen, meldet sich das einmal je Körper LAUT.
     _foundryBaumHoehe(preset, entry) {
         const f = this._foundry;
-        const gestalt = f ? this._foundryVariantFor(entry.seed, preset) : null;
+        const gestalt = f ? this._foundryGestaltFor(entry, preset) : null;
         if (gestalt == null) return null; // Buch kalt
         const stufe = this._foundryHoehenStufe(preset);
         const key = this._foundryKoerperKey(preset, gestalt, stufe, this._artifactStudioOv(entry));
@@ -2404,7 +2415,24 @@ class AnazhRealm_Z15b {
         const pc = globalThis.__phytoCore;
         if (!pc || typeof pc.treeParams !== "function") return AnazhRealm._kernPflichtBruch("phyto:treeParams");
         const dials = (opts && opts.recipeDials) || art.rec.s;
-        const P0 = pc.treeParams(dials, hash >>> 0, lodLevel, art.rec);
+        // DIE GESTALT (K20): `opts.gestalt` = { g, ov } — der gefühlte Baum IST der gezeichnete: sein Skelett wächst aus
+        // derselben Gestalt, wie der Worker sie baut (foundry-core `skelettDerGestalt`: Same g, Strom, Ableitung samt
+        // Prägung des Orts, Stufen-Rezept). Ohne Gestalt (Werkstatt, Grammatik-Welt) der Same des Aufrufers.
+        const gestalt = opts && opts.gestalt;
+        let gewachsen = null;
+        if (gestalt) {
+            const tc = globalThis.__terrainCore;
+            if (!tc || typeof tc.skelettDerGestalt !== "function")
+                return AnazhRealm._kernPflichtBruch("terrain:skelettDerGestalt");
+            gewachsen = tc.skelettDerGestalt(art.id, gestalt.g, lodLevel, gestalt.ov || null);
+            if (!gewachsen) return null;
+        }
+        // DAS WELT-MASS (K20): der gefühlte Baum wächst mit der Welt-Skala seiner Art, wie der Wald den gesehenen pflanzt
+        // (die EINE Template→Welt-Quelle `_foundryWorldScaleMatrix`, dieselbe Zahl wie der Kern `__weltSkalaArt`) — der
+        // Stamm, den die Kollision liest, misst H/hd wie der gezeichnete (vorher der Stamm der Form: Eiche 0,88 statt 0,22 m).
+        const P0 = gewachsen
+            ? gewachsen.P
+            : pc.treeParams(dials, hash >>> 0, lodLevel, art.rec, this._foundryWorldScaleMatrix(art.id).elements[0]);
         // Die Größenklasse ist ein abgeleitetes Etikett der Ableitung (nur baum_*: Sträucher und Kräuter SIND klein).
         const isTreeSpecies = String(speciesKey || "").startsWith("baum_");
         let sizeClass;
@@ -2471,7 +2499,8 @@ class AnazhRealm_Z15b {
             countCap: lodLevel === 0 ? 3600 : lodLevel === 1 ? 600 : 90,
             leafBudget: lodLevel === 0 ? 480 : lodLevel === 1 ? 90 : 8,
         });
-        const phyto = this._phytoGrowSkeleton(P, phytoSeq);
+        // die Gestalt trägt ihr gewachsenes Skelett (der Strom des Workers), sonst wächst es hier aus dem Samen
+        const phyto = gewachsen ? gewachsen.nodes : this._phytoGrowSkeleton(P, phytoSeq);
         const trunkBaseR = phyto.trunkR;
         // Trunk-Kette = run 0 + die durchgehende Lead-Nachkommen-Kette. Der Wuchs ist tiefen-zuerst mit dem
         // Lead als children[0] → countCap beschneidet nur Seiten-Äste, NIE die Stammhöhe.

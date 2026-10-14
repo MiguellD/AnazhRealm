@@ -1,3 +1,4 @@
+const { WELT_ORTE_INSTALL } = require("./welt-orte.cjs");
 // wasser-linse.cjs — DIE WASSER-LINSE der Leben-Prüfung (Welle L, Klassen Q6 + Q7): drei Proben, die den Defekt beim
 // NAMEN nennen und den Chokepoint selbst rufen (nie einen Stub). Befund 06.10. (sichtbares Fenster, echte Radeon,
 // artifacts/profiband/leben/befund-wasser-fluss.md): der Fluss steigt bergauf (14,3 % der 2-m-Schritte), wölbt sich
@@ -17,7 +18,7 @@
 //   window.__wasserRegen(o)          Q7-Regen: der Sturm-Regen der Welt allein auf Schwarz — Schlieren und Neigung
 //
 // Werkbank (echte GPU, sichtbar): `werkbank eval` mit WASSER_INSTALL; Gate: scripts/diag-wasser-leben.cjs.
-"use strict";
+("use strict");
 
 // ── Q7-Gestalt ──
 function wasserFluss() {
@@ -194,9 +195,10 @@ function wasserKoerper(opts) {
         const st = r.state;
         const A = r.constructor;
         const DT = A.FIXED_DT;
-        const h = st.hydrosphere;
+        const ziel = o.see || window.__wasserOrte({}).see.mitte;
+        // die Region des Sees (Heimat oder Kachel — der See der Landform liegt jenseits ±1024 m)
+        const h = r._hydroFor(ziel[0], ziel[1]);
         if (!h || !h.ready) return { fehler: "keine Hydrosphäre" };
-        const ziel = o.see || [-944, -640];
         const seen = (h.lakes || []).filter((l) => l.level > (st.waterLevel || 0) + 2 && l.cells && l.cells.length > 8);
         let see = null,
             best = Infinity;
@@ -213,8 +215,8 @@ function wasserKoerper(opts) {
         const spiegel = see.level;
         // Der Weg des Befunds (06.10., Station 1): vom Ostufer (−884/−650, trockenes Gras) nach Westen bis −935 (8 m
         // tief) — kein Fluss quert ihn; dort Lage, Kraulen und Eintauchen.
-        const [x0, mz] = o.start || [-884, -650];
-        const mx = (o.ziel || [-935, -650])[0];
+        const [x0, mz] = o.start || window.__wasserOrte({}).see.ufer;
+        const mx = (o.ziel || ziel)[0];
         const grundMitte = r._voxelSurfaceY(mx, mz);
         const tiefeMitte = grundMitte !== null ? spiegel - grundMitte : null;
         // Die Brustkorb-Linie aus dem Körper-Gesetz: Brustwarzen-Höhe nippleY/H der Proportionen × Welt-Körperhöhe
@@ -520,7 +522,7 @@ function wasserKoerper(opts) {
 function __wasserKroneVon(r, p) {
     const A = r.constructor;
     const HC = A.HYDROSPHERE;
-    const w = p.width || HC.widthMin;
+    const w = p.width;
     const D = typeof A._flussTiefe === "function" ? A._flussTiefe(p) : HC.carveBedMin + HC.carveBedK * w;
     if (!Number.isFinite(HC.bankNeigung)) throw new Error("HYDROSPHERE.bankNeigung fehlt (das Gesetz der Bank)");
     return w * 0.5 + D / HC.bankNeigung;
@@ -539,7 +541,7 @@ function wasserUfer(opts) {
         const h = st.hydrosphere;
         if (!h || !h.ready) return { fehler: "keine Hydrosphäre" };
         const HC = r.constructor.HYDROSPHERE;
-        const ziel = o.ort || [-872, -1127];
+        const ziel = o.ort || (({ fluss }) => [fluss.x, fluss.z])(window.__wasserOrte({}));
         let best = null,
             bd = Infinity;
         // Die Heimat-Region und die fernen Kacheln (der Fluss des Befunds liegt jenseits ±1024 m).
@@ -727,29 +729,54 @@ function wasserUferFarbe(opts) {
                 }
             }
         }
-        // Die Parität: ein Ufer-Chunk aus dem Worker (Farbe je Vertex im Worker gerechnet) gegen `_bodenFarbeAt` im Main.
+        // Die Parität: ein Ufer-Chunk aus dem Worker (Farbe je Vertex im Worker gerechnet) gegen DASSELBE Gesetz im Stamm —
+        // die Spalten-Farbe `_bodenFarbeAt` und der Fels-Stoff `_felsStoff` darüber, auf dem Netz des Workers. Seit K17-2
+        // mischt der Worker den Fels-Stoff in seine Farbe (der Stamm setzt nur die Attribute); der Leser komponiert, was die
+        // Farbe heute bedeutet (bis K17-2 verglich er nur die Spalten-Farbe: 529/2579 Ufer-Vertices „abweichend").
         let paritaet = null;
         if (typeof r._voxelWorkerComputeChunkMesh === "function" && r._getVoxelWorker() && proben.length) {
             await r._voxelWorkerSyncState({ op: "init" });
+            const T = window.THREE;
             const span = r._voxelChunkConfig(0).span;
             let vertices = 0,
                 abweichend = 0,
-                maxDiff = 0;
+                maxDiff = 0,
+                fels = 0;
             for (const [a] of proben.slice(0, o.chunks || 3)) {
                 const m = await r._voxelWorkerComputeChunkMesh(Math.floor(a.x / span), Math.floor(a.z / span), 0);
                 if (!m || m.empty) continue;
                 const pos = new Float32Array(m.positions),
                     col = new Float32Array(m.colors);
+                const soll = new Float32Array(pos.length);
                 for (let i = 0; i < pos.length; i += 3) {
                     r._bodenFarbeAt(pos[i], pos[i + 1], pos[i + 2], c);
+                    soll[i] = c[0];
+                    soll[i + 1] = c[1];
+                    soll[i + 2] = c[2];
+                }
+                const spalte = soll.slice();
+                const g = new T.BufferGeometry();
+                g.setAttribute("position", new T.BufferAttribute(pos, 3));
+                g.setAttribute("normal", new T.BufferAttribute(new Float32Array(m.normals), 3));
+                g.setAttribute("aHimmel", new T.BufferAttribute(new Float32Array(m.himmel), 1));
+                g.setAttribute("color", new T.BufferAttribute(soll, 3));
+                g.setIndex(new T.BufferAttribute(new Uint32Array(m.indices), 1));
+                r._felsStoff(g);
+                for (let i = 0; i < pos.length; i += 3) {
                     vertices++;
-                    let dmax = 0;
-                    for (let k = 0; k < 3; k++) dmax = Math.max(dmax, Math.abs(Math.fround(c[k]) - col[i + k]));
+                    let dmax = 0,
+                        dfels = 0;
+                    for (let k = 0; k < 3; k++) {
+                        dmax = Math.max(dmax, Math.abs(soll[i + k] - col[i + k]));
+                        dfels = Math.max(dfels, Math.abs(soll[i + k] - spalte[i + k]));
+                    }
+                    if (dfels > 0) fels++;
                     if (dmax > 0) abweichend++;
                     if (dmax > maxDiff) maxDiff = dmax;
                 }
+                g.dispose();
             }
-            paritaet = { vertices, abweichend, maxDiff };
+            paritaet = { vertices, abweichend, maxDiff, fels };
         }
         return {
             proben: proben.length,
@@ -891,6 +918,9 @@ function wasserBild(opts) {
         // und verschluckte jede Strähne): Licht des Orts 1 (Schaum 0,93 · Deckung 0,7 bleibt unter 1), kein Sonnen-Glanz.
         // Der Spiel-Loop ruht während der Probe (Lehre 17): zwischen den beiden Uhren schrieb der Tag-Nacht-Takt Licht
         // und Himmel neu (06.10.: die Stromschnelle bei Uhr 3600 2,5× heller als bei 60 — das Licht, nicht das Wasser).
+        // Die Stimmung der Probe fest bei 0 (K16): der V14-Haken `uEmotion` (die Vitalität des Spielers) hebt den Schaum des
+        // Gesetzes bis auf das Doppelte (bis K16 legte er + 0,25 · uEmotion über JEDES Wasser); die Stimmung driftet mit der
+        // Boot-Zeit (lokal 0,06, in der CI ≈ 0,17). B1 misst den Schaum des Gesetzes, nicht die Laune.
         renderer.setAnimationLoop(null);
         // DER HIMMEL DER PROBE FEST (K40, Lehre 17): das Wasser spiegelt die Himmels-Umgebung der Tageszeit — der Boot
         // dauert je Adapter verschieden lang, also spiegelte jeder Adapter eine andere Stunde (ruhiger Fluss hell auf
@@ -914,9 +944,21 @@ function wasserBild(opts) {
             U.time.value = zeit;
             U.irr.value.setRGB(1, 1, 1);
             U.light.value = 0;
+            // DAS BILD OHNE SCHAUM (K10 × K16 × K40): derselbe Frame mit dem Schaum-Faktor des Gesetzes auf 0 (foamD × (1 +
+            // uEmotion), uEmotion −1) — „hell" zählt nur, wo der SCHAUM das Pixel hebt, nie der Himmel im Fresnel des
+            // Streiflichts (der Mittags-Himmel K40 hob den ruhigen Fluss am fernen Rand über 32 — 6,0 % ohne einen Schaum-Term)
+            // — gemessen 14.10. (swiftshader): 5 049 von 5 049 hellen Pixeln des ruhigen Flusses sind ohne Schaum genauso hell,
+            // die rohe Zählung wechselt je Lauf zwischen 0,6 % und 6,0 % (Basis 9fb869a5 wie Kopf), vom Schaum gehoben 0 %
+            U.emotion.value = -1;
+            const px0 = await lese();
+            U.emotion.value = 0;
             const px = await lese();
             const L = new Float32Array(W * H);
-            for (let p = 0; p < W * H; p++) L[p] = 0.2126 * px[p * 4] + 0.7152 * px[p * 4 + 1] + 0.0722 * px[p * 4 + 2];
+            const L0 = new Float32Array(W * H);
+            for (let p = 0; p < W * H; p++) {
+                L[p] = 0.2126 * px[p * 4] + 0.7152 * px[p * 4 + 1] + 0.0722 * px[p * 4 + 2];
+                L0[p] = 0.2126 * px0[p * 4] + 0.7152 * px0[p * 4 + 1] + 0.0722 * px0[p * 4 + 2];
+            }
             const zone = (z) => {
                 let n = 0,
                     tv = 0,
@@ -931,7 +973,7 @@ function wasserBild(opts) {
                         np++;
                         summe += L[p];
                         if (L[p] > 64) weiss++; // Schaum: über ein Viertel Weiß (der Wasser-Körper liegt bei Licht 1 unter 20)
-                        if (L[p] > 32) hell++; // Schaum-Deckung: doppelt so hell wie der Wasser-Körper im Licht 1
+                        if (L[p] > 32 && L[p] - L0[p] > 8) hell++; // Schaum-Deckung: doppelt so hell wie der Wasser-Körper im Licht 1, vom Schaum
 
                         if (maske[p + 1] === z && maske[p + W] === z) {
                             tv += Math.abs(L[p + 1] - L[p]) + Math.abs(L[p + W] - L[p]);
@@ -1272,9 +1314,9 @@ function wasserWagen(opts) {
         const o = opts || {};
         const r = window.anazhRealm;
         const st = r.state;
-        const h = st.hydrosphere;
+        const ziel = o.see || window.__wasserOrte({}).see.mitte;
+        const h = r._hydroFor(ziel[0], ziel[1]);
         if (!h || !h.ready) return { fehler: "keine Hydrosphäre" };
-        const ziel = o.see || [-944, -640];
         let see = null,
             best = Infinity;
         for (const l of h.lakes || []) {
@@ -1342,20 +1384,31 @@ function wasserWagen(opts) {
         };
         const aus = { see: { spiegel: R(S, 2) } };
         try {
-            const mitte = o.mitte || [-935, -650];
+            const mitte = o.mitte || ziel;
             aus.wagen = fahre("fahrzeug_gt", mitte[0], mitte[1]);
             aus.boot = fahre(BOOT, mitte[0], mitte[1]);
-            // (c) der Rand-Streifen: Atlas-Land neben dem See, der Boden ≥ 1 m unter dem Spiegel.
+            // (c) der Rand-Streifen: Atlas-Land neben dem See, der Boden ≥ 1 m unter dem Spiegel — auf den Strahlen von der
+            //     Mitte des Sees (16 Richtungen, je 3 m) die ersten Atlas-Land-Spalten jenseits der See-Zellen
+            //     (K16: vorher ein Literal-Streifen x −944, z −690…−726 am See der alten Welt)
             const rand = [];
-            for (let z = -690; z >= -726; z -= 3) {
-                const x = -944;
-                const boden = r._voxelSurfaceY(x, z);
-                if (!Number.isFinite(boden) || S - boden < 1) continue;
-                const hr = r._hydroFor(x, z);
-                const ci = Math.floor((x - hr.originX) / hr.cell),
-                    cj = Math.floor((z - hr.originZ) / hr.cell);
-                if (hr.water.waterKind[ci + cj * hr.dim] !== 0) continue; // nur Atlas-Land (der Streifen)
-                rand.push([x, z, S - boden]);
+            for (let w = 0; w < 16 && rand.length < 12; w++) {
+                const ca = Math.cos((w * Math.PI) / 8),
+                    sa = Math.sin((w * Math.PI) / 8);
+                let land = false;
+                for (let d = 3; d <= 600 && rand.length < 12; d += 3) {
+                    const x = mitte[0] + ca * d,
+                        z = mitte[1] + sa * d;
+                    const hr = r._hydroFor(x, z);
+                    if (!hr || !hr.water) break;
+                    const ci = Math.floor((x - hr.originX) / hr.cell),
+                        cj = Math.floor((z - hr.originZ) / hr.cell);
+                    if (hr.water.waterKind[ci + cj * hr.dim] !== 0) continue; // noch See
+                    land = true;
+                    const boden = r._voxelSurfaceY(x, z);
+                    if (!Number.isFinite(boden) || S - boden < 1) break; // der Streifen endet am Ufer
+                    rand.push([R(x, 1), R(z, 1), S - boden]);
+                }
+                if (!land) continue;
             }
             let treibt = 0;
             const randAus = [];
@@ -1365,11 +1418,13 @@ function wasserWagen(opts) {
                 randAus.push([x, z, R(tiefe, 2), f.afloat]);
             }
             aus.rand = { proben: rand.length, treibt, punkte: randAus };
-            // (d) Bug-ab: der Punkt des Wegs vom Ostufer mit dem steilsten Seegrund und ≥ 2,5 m Wasser.
+            // (d) Bug-ab: der Punkt des Wegs vom Ostufer (`o.ufer`, aus der Welt) zur Mitte mit dem steilsten Seegrund und
+            //     ≥ 2,5 m Wasser.
             let steil = null,
                 gMax = 0;
-            for (let x = -890; x >= -934; x -= 1) {
-                const z = -650;
+            const ostufer = o.ufer || window.__wasserOrte({}).see.ufer;
+            for (let x = ostufer[0]; x >= mitte[0]; x -= 1) {
+                const z = ostufer[1];
                 const b0 = r._voxelSurfaceY(x, z),
                     b1 = r._voxelSurfaceY(x - 2, z);
                 if (!Number.isFinite(b0) || !Number.isFinite(b1) || S - b0 < 2.5) continue;
@@ -1680,13 +1735,14 @@ function wasserSichtNetz() {
 // Breite und Tiefe über dem Boden des Gesetzes) und das BILD (das gezeichnete Sheet, `__wasserSichtNetz`).
 // GESPEIST ist eine Quelle, die das Gesetz breiter als das Rinnsal beginnt (ein Abfluss) UND an deren Ursprung wirklich See-
 // Wasser steht (Körper-Wasser, das der See- oder Meeres-Spiegel des Gesetzes trägt, bis 10 m um den Ursprung): ihr Wasser
-// kommt nicht aus dem Nichts.
+// kommt nicht aus dem Nichts. GESPEIST ist auch eine Quelle IM KANAL eines breiteren Flusses (ihr Wasser ist seins) — sie darf
+// seinen Spiegel nie heben (BUCKEL).
 // Jede andere ist eine QUELLE im Sinn des Gesetzes, und das Wasser des FLUSSES (das Körper-Wasser im Kanal ihres EIGENEN
 // Laufs bis zur Krone; ein See, ein anderer Fluss daneben zählt nie) darf auf ihrem ersten Segment nicht breiter sein als die
 // HÜLLE des Gesetzes und am Ursprung nicht
 // tiefer (dahinter trägt der Fluss die Breiten seiner Punkte, Biegungen weiten den Querschnitt): das Rinnsal (quellBett)
 // plus quellWeitung je Meter Lauf, das Wasser bis zur Krone (Bett-Tiefe je Breite höchstens die des kleinsten vollen Flusses
-// dieser Welt, die Schwelle aus maxAccum; Neigung bankNeigung); Mess-Körnung zwei Proben
+// dieser Welt, `stats.bettMin`; Neigung bankNeigung); Mess-Körnung zwei Proben
 // (0,5 m) in der Breite, 5 cm in der Tiefe (in der Mitte des Laufs). Ein SPRUNG ist ein Querschnitt über der Hülle (am
 // Ursprung: die Quelle bricht aus dem Nichts). Eine Quelle ohne Körper-Wasser auf ihren ersten 16 m ist TROCKEN (nie grün).
 // Unsichtbar/Phantom je PUNKT (`quer`: Breite des Bilds gegen Breite des Körpers), summiert über alle Quell-Läufe.
@@ -1703,8 +1759,7 @@ function wasserQuelle(opts) {
     const qBett = Number.isFinite(HC.quellBett) ? HC.quellBett : 1.2;
     const G = Number.isFinite(HC.quellWeitung) ? HC.quellWeitung : 0.25;
     const huelleVon = (h) => {
-        const thr = Math.max(HC.riverThresholdMin, ((h.stats && h.stats.maxAccum) || 0) * HC.riverThresholdFrac);
-        const bett = HC.widthMin + HC.widthK * Math.sqrt(thr);
+        const bett = h.stats && h.stats.bettMin > 0 ? h.stats.bettMin : globalThis.__gelaendeCore.FLUSS_BREITE.min;
         const dRel = HC.carveBedMin / bett + HC.carveBedK;
         const huelle = (s) => {
             const w = qBett + G * Math.max(0, s);
@@ -1713,8 +1768,9 @@ function wasserQuelle(opts) {
         huelle.rinnsal = qBett;
         return huelle;
     };
-    // die Kachel des Bachs der Mess-Wiese (−856/−1160) gehört immer zum Mess-Ring
-    if (typeof r._ensureHydroTilesAround === "function") r._ensureHydroTilesAround(-856, -1160, 64);
+    // die Kachel des Bachs der Mess-Wiese (aus der Welt, `__wasserOrte`) gehört immer zum Mess-Ring
+    const bachOrt = o.bach || window.__wasserOrte({}).bach;
+    if (bachOrt && typeof r._ensureHydroTilesAround === "function") r._ensureHydroTilesAround(bachOrt.x, bachOrt.z, 64);
     const regionen = [];
     const dazu = (h) => {
         if (h && h.ready && Array.isArray(h.rivers) && regionen.indexOf(h) < 0) regionen.push(h);
@@ -1737,7 +1793,11 @@ function wasserQuelle(opts) {
         unsichtbarBreite = 0,
         phantomBreite = 0,
         querschnitte = 0,
-        verdeckt = 0;
+        verdeckt = 0,
+        imKanal = 0,
+        zulauf = 0,
+        buckel = 0,
+        buckelMax = 0;
     const breiten0 = [],
         tiefen0 = [],
         beispiele = [],
@@ -1768,8 +1828,8 @@ function wasserQuelle(opts) {
             // der Kanal DIESER Quelle: bis zur Krone ihrer eigenen Segmente (der gezeichnete Spiegel liegt auf dem
             // 1,8-m-Gitter, ein Spiegel-Vergleich auf 2 cm trennte nicht mehr; ein Nachbar-Fluss zählte als eigenes Wasser)
             const eigenSeg = [];
-            const eigen = (px, pz) => {
-                for (const [a, b, krA, krB] of eigenSeg) {
+            const kanalVon = (segs) => (px, pz) => {
+                for (const [a, b, krA, krB] of segs) {
                     const ex = b.x - a.x,
                         ez = b.z - a.z,
                         l2 = ex * ex + ez * ez || 1;
@@ -1778,6 +1838,10 @@ function wasserQuelle(opts) {
                 }
                 return false;
             };
+            const eigen = kanalVon(eigenSeg);
+            // das erste Segment allein (der SPRUNG misst die Quelle, K16): an einer Biegung läuft der Querschnitt längs des
+            // nächsten Segments, und dessen Wasser zählte als Breite der Quelle (2104/6616: 18,75 m bei s = 12 m)
+            const eigen0 = (px, pz) => kanalVon(eigenSeg.slice(0, 1))(px, pz);
             for (let i = 0; i + 1 < P.length; i++) {
                 if (P[i + 1].inLake || (traeger.get(P[i + 1].x + "," + P[i + 1].z) || 0) > 1) break;
                 // die Krone des Gesetzes, längs des Segments zwischen seinen Punkten (wie `_hydroRiverAt`)
@@ -1796,16 +1860,23 @@ function wasserQuelle(opts) {
                 const L = Math.hypot(b.x - a.x, b.z - a.z) || 1;
                 const nx = -(b.z - a.z) / L,
                     nz = (b.x - a.x) / L;
-                for (let t = 0; t < L && s <= 48; t += 2, s += 2)
-                    lauf.push(
-                        Object.assign(
-                            sicht.quer(a.x + ((b.x - a.x) * t) / L, a.z + ((b.z - a.z) * t) / L, nx, nz, 15, eigen),
-                            { s, seg: i }
-                        )
-                    );
+                for (let t = 0; t < L && s <= 48; t += 2, s += 2) {
+                    const x = a.x + ((b.x - a.x) * t) / L,
+                        z = a.z + ((b.z - a.z) * t) / L;
+                    lauf.push(Object.assign(sicht.quer(x, z, nx, nz, 15, eigen), { s, seg: i, x, z, nx, nz }));
+                }
             }
             if (!lauf.length)
-                lauf.push(Object.assign(sicht.quer(P[0].x, P[0].z, -fz, fx, 15, eigen), { s: 0, seg: 0 }));
+                lauf.push(
+                    Object.assign(sicht.quer(P[0].x, P[0].z, -fz, fx, 15, eigen), {
+                        s: 0,
+                        seg: 0,
+                        x: P[0].x,
+                        z: P[0].z,
+                        nx: -fz,
+                        nz: fx,
+                    })
+                );
             quellen++;
             const q0 = lauf[0];
             breiten0.push(q0.breiteQ);
@@ -1825,15 +1896,64 @@ function wasserQuelle(opts) {
                     r._waterLevelAt(x, z, uf);
                     seeNah = uf.see > r._voxelSurfaceY(x, z) + 0.05;
                 }
-            const gespeistJa = abfluss && seeNah;
+            // IM KANAL (K16): der Ursprung liegt im Kanal eines BREITEREN Flusses (bis zu dessen Krone, nie auf dem eigenen
+            // Lauf) — sein Wasser ist das Wasser des breiteren (gespeist). Es darf dessen Spiegel nie heben: BUCKEL ist das
+            // Körper-Wasser am Ursprung über dem höchsten Spiegel der deckenden Segmente (vor K16 hob ein Zufluss, der in der Aue
+            // des Stamms begann, den Stamm mit dem Spiegel seiner ungefrästen Ufer, bis 1,36 m). Gedeckt heißt wie in
+            // `_hydroRiverAt`: der Abstand zum SEGMENT bis zu seiner Krone, Breite und Spiegel längs des Segments.
+            let kanalS = -Infinity;
+            for (const rw of h.rivers)
+                for (let i = 0; i + 1 < rw.points.length; i++) {
+                    const a = rw.points[i],
+                        b = rw.points[i + 1];
+                    if (a.inLake || b.inLake || !Number.isFinite(a.S) || !Number.isFinite(b.S)) continue;
+                    // nie der eigene Lauf (K16: jedes Glied des Netzes gehört EINEM Lauf; ein Zufluss, der am Kopf der Quelle
+                    // endet, teilt ihren ersten Punkt und speist sie)
+                    if (rw === rv) continue;
+                    const ex = b.x - a.x,
+                        ez = b.z - a.z,
+                        l2 = ex * ex + ez * ez || 1;
+                    const t = Math.max(0, Math.min(1, ((P[0].x - a.x) * ex + (P[0].z - a.z) * ez) / l2));
+                    if (!(a.width + (b.width - a.width) * t > P[0].width)) continue;
+                    const kr =
+                        window.__wasserKroneVon(r, a) +
+                        (window.__wasserKroneVon(r, b) - window.__wasserKroneVon(r, a)) * t;
+                    if (Math.hypot(P[0].x - (a.x + ex * t), P[0].z - (a.z + ez * t)) > kr) continue;
+                    const sp = a.S + (b.S - a.S) * t;
+                    if (sp > kanalS) kanalS = sp;
+                }
+            const imKanalJa = kanalS > -Infinity;
+            if (imKanalJa) {
+                imKanal++;
+                const y0 = r._voxelSurfaceY(P[0].x, P[0].z);
+                const hub = r._koerperWasser(P[0].x, P[0].z, y0) - kanalS;
+                if (hub > 0.05) {
+                    buckel++;
+                    if (hub > buckelMax) buckelMax = hub;
+                    if (beispiele.length < (o.beispiele || 6))
+                        beispiele.push(["buckel", R(P[0].x, 0), R(P[0].z, 0), R(hub)]);
+                }
+            }
+            // ZULAUF (K16): das Netz des Gelände-Gesetzes ist eins für die ganze Welt, die Kachel schneidet es — ein Lauf, der
+            // am Rand seiner Kachel beginnt (bis eine Zelle innen), trägt das Wasser seines Oberlaufs jenseits des Rands.
+            const randAbstand = Math.min(
+                P[0].x - h.originX,
+                P[0].z - h.originZ,
+                h.originX + h.dim * h.cell - P[0].x,
+                h.originZ + h.dim * h.cell - P[0].z
+            );
+            const zulaufJa = randAbstand <= h.cell * 1.01;
+            if (zulaufJa) zulauf++;
+            const gespeistJa = (abfluss && seeNah) || imKanalJa || zulaufJa;
             if (gespeistJa) gespeist++;
             let ueber = null;
             if (!gespeistJa)
                 for (const q of lauf) {
                     if (q.seg > 0) break; // die Quelle ist ihr erstes Segment; dahinter trägt der Fluss seine Punkt-Breiten
                     const hl = huelle(q.s);
-                    if (q.breiteQ > hl.breite || (q.s === 0 && q.tiefeMitte > hl.tiefe)) {
-                        ueber = q;
+                    const q1 = eigenSeg.length > 1 ? sicht.quer(q.x, q.z, q.nx, q.nz, 15, eigen0) : q;
+                    if (q1.breiteQ > hl.breite || (q.s === 0 && q1.tiefeMitte > hl.tiefe)) {
+                        ueber = Object.assign({}, q, { breiteQ: q1.breiteQ, tiefeMitte: q1.tiefeMitte });
                         break;
                     }
                 }
@@ -1886,6 +2006,10 @@ function wasserQuelle(opts) {
     return {
         quellen,
         gespeist,
+        imKanal,
+        zulauf,
+        buckel,
+        buckelMax: R(buckelMax),
         regionen: regionen.length,
         huelle0: [R(h0.breite), R(h0.tiefe)],
         spruenge,
@@ -1912,12 +2036,16 @@ function wasserQuelle(opts) {
 // dem gezeichneten Boden, `__wasserSichtNetz`): die Breiten-Summen des Körper-Wassers, des gezeichneten, des Unsichtbaren
 // (der Körper liest Wasser, das niemand sieht) und der Phantome (gezeichnetes Wasser, in dem der Körper trocken steht). Dazu
 // die Pflanzen am Lauf (`__wasserFlora`, ±6 m um die Mittellinie).
+// die Länge der Bach-Probe (m auf der Bahn ab der Quelle; F8 urteilt ab 80 Querschnitten zu 2 m) — die Seite erhält sie mit
+// `WASSER_INSTALL`
+const BACH_PROBE_M = 200;
 function wasserBach(opts) {
     const o = opts || {};
     const r = window.anazhRealm;
     const R = (x, n = 2) => (Number.isFinite(x) ? Math.round(x * 10 ** n) / 10 ** n : null);
-    const ZX = Number.isFinite(o.x) ? o.x : -856,
-        ZZ = Number.isFinite(o.z) ? o.z : -1160;
+    const bachOrt = Number.isFinite(o.x) && Number.isFinite(o.z) ? null : window.__wasserOrte({}).bach;
+    const ZX = bachOrt ? bachOrt.x : o.x,
+        ZZ = bachOrt ? bachOrt.z : o.z;
     if (typeof r._ensureHydroTilesAround === "function") r._ensureHydroTilesAround(ZX, ZZ, 64);
     const h = r._hydroFor(ZX, ZZ);
     if (!h || !h.ready || !Array.isArray(h.rivers)) return { fehler: "keine Hydrosphäre am Bach" };
@@ -1934,7 +2062,11 @@ function wasserBach(opts) {
     if (!rv || bd > 40) return { fehler: `kein Fluss an ${ZX}/${ZZ} (nächster Punkt ${R(bd)} m)` };
     const P = rv.points;
     const sicht = window.__wasserSichtNetz();
-    const segmente = Math.min(o.segmente || 10, P.length - 1);
+    // DIE ERSTEN `BACH_PROBE_M` METER des Bachs, nie eine Zahl seiner Punkte: die Abtastung der Bahn ist Sache des Gesetzes
+    // (K16: der Mäander tastet nach seinen Knicken ab, zehn Stücke trugen 13.10. nur noch 140 m, F8 fiel LEER)
+    let segmente = 0;
+    for (let lang = 0; segmente < P.length - 1 && lang < BACH_PROBE_M; segmente++)
+        lang += Math.hypot(P[segmente + 1].x - P[segmente].x, P[segmente + 1].z - P[segmente].z);
     const aus = {
         quelle: [R(P[0].x, 0), R(P[0].z, 0)],
         segmente,
@@ -1983,7 +2115,7 @@ function wasserBach(opts) {
 // Pflanzen im Fenster (`__wasserFlora`).
 function wasserSee(opts) {
     const o = opts || {};
-    const f = o.fenster || [-930, -690, -850, -610];
+    const f = o.fenster || window.__wasserOrte({}).see.fenster;
     const sicht = window.__wasserSichtNetz();
     const aus = sicht.fenster(f[0], f[1], f[2], f[3], o.d || 0.5);
     aus.fenster = f;
@@ -2089,8 +2221,8 @@ function wasserFlora(opts) {
 // Je Fluss-Punkt (Heimat-Region und Kacheln) in einem geladenen Nah-Chunk (LOD 0) ein Profil-Schnitt quer zum Lauf: der
 // Boden des Gesetzes (`_voxelSurfaceY`, 0,1-m-Schritte) von der Wasserlinie (der erste Boden über dem Spiegel) 6 m weit —
 // die BANK, die der Kanal schneidet — und ihre steilste Neigung über 0,5 m je Seite. Gegen das Geologie-Gesetz des Bodens
-// (`TERRAIN_GEOLOGY`, wie `_terrainGeologyAlbedo`): ab rockLo (1 − n.y = 0,42, ≈ 54,5°) trägt der Hang Fels, ab screeLo
-// (≈ 37°) Geröll. Dazu das BILD (Lehre 22: sichtbar ist das 1,8-m-Mesh): die Vertices der Chunk-Meshes über dem Spiegel
+// (`TERRAIN_GEOLOGY`, wie `_terrainGeologyAlbedo`): ab rockLo (1 − n.y = 0,42, ≈ 54,5°) trägt der Hang Fels; Geröll-Kandidat
+// ist ein Profil ab `schuttKandidat` (≈ 23°) — Schutt trägt nur der Schutthang des Schicht-Gesetzes (je Vertex `aSchutt`, K17). Dazu das BILD (Lehre 22: sichtbar ist das 1,8-m-Mesh): die Vertices der Chunk-Meshes über dem Spiegel
 // des nächsten Fluss-Punkts, bis 6 m darüber und bis halbe Breite + 8 m von seiner Mitte — ihr Fels- und Geröll-Gewicht aus
 // der Geometrie-Normale. Bis 8f09227d lag die Krone nach 0,6 der Bank-Rampe, und dahinter glitt eine Wand ins Gelände.
 function wasserBank(opts) {
@@ -2105,7 +2237,7 @@ function wasserBank(opts) {
     const R = (x, n = 2) => (Number.isFinite(x) ? Math.round(x * 10 ** n) / 10 ** n : null);
     const grad = (steile) => (Math.acos(1 - steile) * 180) / Math.PI;
     const felsGrad = grad(G.rockLo),
-        geroellGrad = grad(G.screeLo);
+        geroellGrad = grad(G.schuttKandidat);
     const nah = (x, z) => {
         const e = st.voxelChunks && st.voxelChunks.get(Math.floor(x / span) + "," + Math.floor(z / span));
         return e && e.mesh && e.lod === 0 ? e : null;
@@ -2169,7 +2301,7 @@ function wasserBank(opts) {
     const raster = new Map();
     for (const [a, b] of punkte) {
         const sp = spiegelVon(a);
-        const hw = Math.max(1, (a.width || HC.widthMin) * 0.5);
+        const hw = Math.max(1, a.width * 0.5);
         const L = Math.hypot(b.x - a.x, b.z - a.z);
         for (let t = 0; t <= L; t += 0.5) {
             const x = a.x + ((b.x - a.x) * t) / (L || 1),
@@ -2217,11 +2349,12 @@ function wasserBank(opts) {
             n.fromBufferAttribute(nor, i).applyMatrix3(nm).normalize();
             const steile = Math.max(0, Math.min(1, 1 - n.y));
             const rw = ss(G.rockLo, G.rockHi, steile);
-            const sw = ss(G.screeLo, G.screeHi, steile) * (1 - rw);
+            const sch = e.mesh.geometry.attributes.aSchutt;
+            const sw = sch ? sch.getX(i) : 0;
             vertices++;
             gewicht += rw + sw;
             if (steile > G.rockLo) felsV++;
-            else if (steile > G.screeLo) geroellV++;
+            else if (sw > 0.5) geroellV++;
         }
     }
     const s = winkel.slice().sort((x, y) => x - y);
@@ -2299,10 +2432,7 @@ function wasserLeser(opts) {
         };
         const bsp = { klang: [], scheu: [], kueste: [], trinken: [] };
         const R1 = (v) => Math.round(v * 10) / 10;
-        for (const [px, pz] of o.orte || [
-            [-890, -650],
-            [-88, -880],
-        ]) {
+        for (const [px, pz] of o.orte || (({ see, kueste }) => [see.ufer, kueste])(window.__wasserOrte({}))) {
             await strom(px, pz);
             aus.orte.push([px, pz, st.voxelChunks.size]);
             const pcx = Math.floor(px / span),
@@ -2369,8 +2499,198 @@ function wasserLeser(opts) {
     })();
 }
 
+// ── DIE ORTE DES WASSERS AUS DER WELT (K16) ──
+// Die Proben lasen die Orte der alten Welt als Literale (der See der Mess-Wiese −944/−640 mit Ostufer −884/−650, der Bach
+// −856/−1160, der Fluss −872/−1127, die Küste −88/−880); seit die Landform im Gelände-Gesetz liegt, steht dort kein See und
+// kein Bach (K11/K „kein See", F8 „kein Fluss an −856/−1160, nächster Punkt 549,85 m"). Gesucht am Gesetz nächst der
+// Mess-Wiese (`mess`): der See (die nächste benannte Senke des Gelände-Gesetzes, deren Kachel einen See über dem Meer trägt,
+// tiefste Stelle ≥ 3 m), sein Ostufer (von der tiefsten Stelle nach +x die erste trockene Spalte, 4 m landein — der Weg
+// des Körpers läuft längs x), der Fluss (der nächste Lauf-Punkt 2–14 m breit), der Bach (die Quelle des nächsten Laufs
+// mit ≥ 11 Punkten — die Bach-Probe misst seine ersten Segmente) und die Küste (die nächste Ozean-Zelle des Atlas neben
+// Land, dort die Land-Seite).
+function wasserOrte(opts) {
+    const o = opts || {};
+    const r = window.anazhRealm;
+    const st = r.state;
+    const G = window.__gelaendeCore;
+    const mitte = o.mess || window.__messWiese; // der Messort aus spec/profiband/haushalt.json (welt-orte.cjs)
+    if (!mitte) throw new Error("__wasserOrte: keine Mitte (weder opts.mess noch __messWiese)");
+    const [MX, MZ] = mitte;
+    const wl = st.waterLevel || 0;
+    const R1 = (v) => Math.round(v * 10) / 10;
+    const tiefe = (x, z) => {
+        const g = r._voxelSurfaceY(x, z);
+        if (!Number.isFinite(g)) return -Infinity;
+        const w = r._atlasWaterLevelAt(x, z, g);
+        return w > g ? w - g : -Infinity;
+    };
+    const aus = { mess: [MX, MZ], see: null, fluss: null, bach: null, kueste: null };
+    if (typeof r._ensureHydroTilesAround === "function") r._ensureHydroTilesAround(MX, MZ, 1024);
+    // 1) der See
+    const L = r._gelaende();
+    const kand = G.benannteSeen(L, -12000, -12000, 64, 375)
+        .map((k) => ({ x: -12000 + (k % 375) * 64, z: -12000 + ((k / 375) | 0) * 64 }))
+        .sort((a, b) => Math.hypot(a.x - MX, a.z - MZ) - Math.hypot(b.x - MX, b.z - MZ));
+    for (const k of kand) {
+        r._ensureHydroTilesAround(k.x, k.z, 0);
+        const h = r._hydroFor(k.x, k.z);
+        const lake = h && (h.lakes || []).find((l) => l.level > wl + 2 && l.cells && l.cells.length >= 16);
+        if (!lake) continue;
+        // die Mitte und der Weg vom Ostufer tragen das Wasser des SEES (kein Fluss mündet dort: sein Spiegel läge über dem
+        // des Sees — am See 1816/−6168 trug die tiefste Zelle den Fluss-Spiegel 1,54 m statt 0,91 m, K2/K6 maßen am See)
+        const seeWasser = (x, z) => tiefe(x, z) > 0 && !r._hydroRiverAt(x, z);
+        const zellen = [];
+        for (const q of lake.cells) {
+            const x = h.originX + ((q % h.dim) + 0.5) * h.cell;
+            const z = h.originZ + (((q / h.dim) | 0) + 0.5) * h.cell;
+            const t = tiefe(x, z);
+            if (t >= 3 && !r._hydroRiverAt(x, z)) zellen.push({ x, z, t });
+        }
+        zellen.sort((a, b) => b.t - a.t);
+        let best = null;
+        let ufer = null;
+        for (const c of zellen) {
+            let d = 2;
+            while (d <= 600 && seeWasser(c.x + d, c.z)) d++;
+            if (d > 600 || tiefe(c.x + d, c.z) > 0) continue; // ein Fluss oder kein Ufer auf dem Weg
+            best = c;
+            ufer = [R1(c.x + d + 4), R1(c.z)];
+            break;
+        }
+        if (!best) continue;
+        aus.see = {
+            x: R1(best.x),
+            z: R1(best.z),
+            tiefe: R1(best.t),
+            level: lake.level,
+            ufer,
+            mitte: [R1(best.x), R1(best.z)],
+            fenster: [ufer[0] - 40, ufer[1] - 40, ufer[0] + 40, ufer[1] + 40],
+        };
+        break;
+    }
+    // 2) Fluss und Bach: über alle geladenen Regionen
+    const regionen = [st.hydrosphere]
+        .concat(st.hydroTiles ? [...st.hydroTiles.values()] : [])
+        .filter((h) => h && h.ready);
+    let fd = Infinity;
+    let bd = Infinity;
+    for (const h of regionen)
+        for (const rv of h.rivers || []) {
+            const P = rv.points || [];
+            for (const p of P) {
+                if (p.inLake || !(p.width >= 2 && p.width <= 14)) continue;
+                const d = Math.hypot(p.x - MX, p.z - MZ);
+                if (d < fd) ((fd = d), (aus.fluss = { x: R1(p.x), z: R1(p.z), breite: R1(p.width) }));
+            }
+            let lang = 0;
+            for (let k = 1; k < P.length && lang < BACH_PROBE_M; k++)
+                lang += Math.hypot(P[k].x - P[k - 1].x, P[k].z - P[k - 1].z);
+            if (lang >= BACH_PROBE_M) {
+                const d = Math.hypot(P[0].x - MX, P[0].z - MZ);
+                if (d < bd) ((bd = d), (aus.bach = { x: R1(P[0].x), z: R1(P[0].z) }));
+            }
+        }
+    // 3) die Küste: die nächste Ozean-Zelle (waterKind 1) neben Land mit Boden unter dem Meer, die Land-Seite — liegt das Meer jenseits der geladenen
+    //    Kacheln, zuerst am Gesetz (Ringe zu 64 m bis 12 km) der erste Grund unter dem Meer, dort die Kachel
+    if (!regionen.some((h) => h.water && h.water.waterKind && h.water.waterKind.indexOf(1) >= 0))
+        for (let R = 64, da = false; R <= 12000 && !da; R += 64) {
+            const n = Math.ceil((2 * Math.PI * R) / 64);
+            for (let k = 0; k < n && !da; k++) {
+                const x = MX + R * Math.cos((k / n) * 2 * Math.PI);
+                const z = MZ + R * Math.sin((k / n) * 2 * Math.PI);
+                if (!(r._terrainMacroSurfaceY(x, z, false) < wl - 2)) continue;
+                r._ensureHydroTilesAround(x, z, 0);
+                const h = r._hydroFor(x, z);
+                if (h && h.ready && regionen.indexOf(h) < 0) regionen.push(h);
+                da = !!(h && h.water && h.water.waterKind && h.water.waterKind.indexOf(1) >= 0);
+                // die Küste ist breiter als eine Kachel: ihre Nachbarn gehören zur Suche nach der Tasche (unten)
+                if (da) {
+                    r._ensureHydroTilesAround(x, z, 1024);
+                    for (const t of st.hydroTiles ? st.hydroTiles.values() : [])
+                        if (t && t.ready && regionen.indexOf(t) < 0) regionen.push(t);
+                }
+            }
+        }
+    let kd = Infinity;
+    for (const h of regionen) {
+        const wK = h.water && h.water.waterKind;
+        if (!wK) continue;
+        for (let cj = 1; cj < h.dim - 1; cj++)
+            for (let ci = 1; ci < h.dim - 1; ci++) {
+                if (wK[ci + cj * h.dim] !== 0) continue;
+                let meer = null;
+                for (const [di, dj] of [
+                    [1, 0],
+                    [-1, 0],
+                    [0, 1],
+                    [0, -1],
+                ])
+                    if (wK[ci + di + (cj + dj) * h.dim] === 1) meer = [di, dj];
+                if (!meer) continue;
+                const x = h.originX + (ci + 0.5) * h.cell;
+                const z = h.originZ + (cj + 0.5) * h.cell;
+                const d = Math.hypot(x - MX, z - MZ);
+                if (d < kd) ((kd = d), (aus.kueste = [R1(x), R1(z)]));
+            }
+    }
+    // die TASCHE (K16): Atlas-Land mit Boden unter dem Meer liegt nur jenseits des 3×3-Rands (am Rand füllt der Atlas die
+    // Spalte selbst bis zum Spiegel) — dort zeichnet das Sheet den Küsten-Aquifer, und dort misst die Probe K12. Je Land-Zelle
+    // ohne Wasser im 3×3 und mit Meer in 6 Zellen 8 × 8 Proben; die Zelle mit den meisten Proben unter dem Meer (gleich viele:
+    // die nähere), dort die tiefste. Die neue Landform trägt sie selten (vorher suchte die Wahl die Nachbar-Zelle des Meeres
+    // mit Boden unter dem Meer − 1,2 m: die gibt es am Rand nie — 0 Küsten-Spalten, K12 LEER).
+    let besteZahl = 0,
+        besteD = Infinity;
+    for (const h of regionen) {
+        const wK = h.water && h.water.waterKind;
+        if (!wK || wK.indexOf(1) < 0) continue;
+        const D = h.dim;
+        for (let cj = 1; cj < D - 1; cj++)
+            for (let ci = 1; ci < D - 1; ci++) {
+                if (wK[ci + cj * D] !== 0) continue;
+                let rand = false,
+                    meer = false;
+                for (let dj = -1; dj <= 1 && !rand; dj++)
+                    for (let di = -1; di <= 1; di++) {
+                        const k = wK[ci + di + (cj + dj) * D];
+                        if (k === 1 || k === 2) rand = true;
+                    }
+                if (rand) continue;
+                for (let dj = -6; dj <= 6 && !meer; dj++)
+                    for (let di = -6; di <= 6; di++) {
+                        const ni = ci + di,
+                            nj = cj + dj;
+                        if (ni >= 0 && nj >= 0 && ni < D && nj < D && wK[ni + nj * D] === 1) meer = true;
+                    }
+                if (!meer) continue;
+                let zahl = 0,
+                    tiefst = null;
+                for (let a = 0; a < 8; a++)
+                    for (let b = 0; b < 8; b++) {
+                        const x = h.originX + (ci + (a + 0.5) / 8) * h.cell,
+                            z = h.originZ + (cj + (b + 0.5) / 8) * h.cell;
+                        const g = r._voxelSurfaceY(x, z);
+                        if (!(g < wl - 0.05) || r._atlasWaterLevelAt(x, z, g) > -Infinity) continue;
+                        zahl++;
+                        if (!tiefst || g < tiefst[2]) tiefst = [x, z, g];
+                    }
+                if (!zahl) continue;
+                const d = Math.hypot(tiefst[0] - MX, tiefst[1] - MZ);
+                if (zahl > besteZahl || (zahl === besteZahl && d < besteD)) {
+                    besteZahl = zahl;
+                    besteD = d;
+                    aus.kueste = [R1(tiefst[0]), R1(tiefst[1])];
+                }
+            }
+    }
+    return aus;
+}
+
 module.exports = {
     WASSER_INSTALL:
+        WELT_ORTE_INSTALL +
+        `var BACH_PROBE_M = ${BACH_PROBE_M};` +
+        `window.__wasserOrte = ${wasserOrte.toString()};` +
         `window.__wasserLeser = ${wasserLeser.toString()};` +
         `window.__wasserHoehle = ${wasserHoehle.toString()};` +
         `window.__wasserWagen = ${wasserWagen.toString()};` +

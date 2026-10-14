@@ -125,7 +125,7 @@ async function main() {
         for (const marker of [
             "<preset>|<gestalt>|<lod>",
             "karte|<preset>|<gestalt>",
-            "shell_1",
+            "bruecke_1",
             "SHA-256",
             "__anazhLiveBake",
             "LEGACY_LICHT",
@@ -155,8 +155,8 @@ async function main() {
             "Stempel: ALLE Manifest-Skripte (core.scripts) reisen mit"
         );
         check(
-            /stempelUrls\.push\(new URL\(core\.shell \+ v, base\)\.href\)/.test(b),
-            "Stempel: die Shells (core.shell — Mesh-Extraktion + Karten-Bäcker) reisen mit (V18.527)"
+            /stempelUrls\.push\(new URL\(core\.bruecke \+ v, base\)\.href\)/.test(b) && !/core\.shell/.test(b),
+            "Stempel: die Foundry-Brücke (core.bruecke — Mesh-Extraktion + Karten-Bäcker) reist mit, keine Labor-Shell (K42)"
         );
         check(/SHA-256/.test(sc), "Stempel: SHA-256-Digest in der Schale");
         check(

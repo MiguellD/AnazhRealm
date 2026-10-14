@@ -1,18 +1,27 @@
 {
     "version": 1,
-    "zweck": "DIE RATSCHE DES GENESIS-RINGS (S1 W1f, der zweite Messort `genesis` in spec/profiband/haushalt.json): je Haushalt-Klasse × Pass (und je VRAM-Erzeuger) die obere Hülle einer Mess-Serie am Genesis-Ring — dieselbe Form und dieselben Regeln wie die Ratsche der Mess-Wiese (ratsche.json, dort der volle Zweck): eine Klasse darf nur FALLEN, `null` = ungemessen, gesetzt und gesenkt nur aus einer SERIE der echten GPU (`werkbank.cjs start --echt --serie <name>` · `umstellen --ort genesis` · `band --ort genesis --datei a.json` (mehrmals, dazu `reload` für den Zweit-Boot) · `ratsche --ort genesis a.json b.json …`). Der Ort: der Spieler in der Ring-Mitte auf der Plattform (der Anker `_genesisMitte`, in der Standard-Welt 36/0), der Blick nach −x, der Dorf-Zug ruht, Ring und Vorschauen baut der Ort-Takt. Neu gesetzt am 07.10. (Integration Welle L): der Ring zog mit V-D1 um die Plattform, die alte Hülle hielt die Ring-Mitte am Ursprung — ein anderer Ort.",
+    "zweck": "DIE RATSCHE DES DORFS (S3 haus, der dritte Messort `dorf` in spec/profiband/haushalt.json): je Haushalt-Klasse × Pass (und je VRAM-Erzeuger) die obere Hülle einer Mess-Serie am Dorf der Zelle −4,−4 — dieselbe Form und dieselben Regeln wie die Ratsche der Mess-Wiese (ratsche.json, dort der volle Zweck). Angelegt UNGEMESSEN (`null`): die Werte setzt die EINE Serie des Integrators auf dem integrierten Kopf (Plan §2 E6 — eine Serie wartet das Einschwingen ab, Zeitfrist, und läuft nie neben dem parallelen Fenster der anderen Gruppe): `werkbank.cjs start --echt --serie <name>` · `umstellen --ort dorf` · `band --ort dorf --datei a.json` (≥ 4, dazu `reload` für den Zweit-Boot) · `ratsche --ort dorf a.json b.json …`. Der Dorf-Zug läuft (der Ort will ihn), die Ratsche nimmt nur Läufe, die eingeschwungen sind (kein Export unterwegs, keine wachsende Siedlung).",
     "gemessen": {
-        "datum": "2026-10-07T17:33:23.976Z",
-        "ort": "genesis",
-        "geraet": "Radeon 890M (Integration, werkbank --echt, 1920x1080, DPR 1)",
+        "datum": "2026-10-14T02:51:20.038Z",
+        "version": "18.545.0",
+        "ort": "dorf",
+        "geraet": "radeon",
+        "geraetText": "amd rdna-3",
+        "sicht": "ego",
         "eingeschwungen": true,
-        "laeufe": 5,
+        "neu": true,
+        "laeufe": 4,
         "boots": [
             "erst/1",
-            "zweit/2",
+            "zweit/1",
             "erst/1",
-            "zweit/2",
-            "erst/1"
+            "zweit/1"
+        ],
+        "dateien": [
+            "dorf-1-erst.json",
+            "dorf-1-zweit.json",
+            "dorf-2-erst.json",
+            "dorf-2-zweit.json"
         ]
     },
     "toleranzPct": 1,
@@ -25,29 +34,29 @@
         "tier": "Weltzustand, nicht Kosten: die Tiere wandern — in der Serie 04./05.10. 11 bis 101 Befehle im Hauptbild (0 bis 3 Arten im Bild, je Art 11 bis 42 Befehle mit Schatten). Die Kosten je Tier hält gate:kreatur-kosten (ein Draw je Material, Körper-Kugel-Cull); im Band zählt die Klasse voll."
     },
     "gesamt": {
-        "befehle": 265,
-        "dreiecke": 2500982,
-        "vramMB": 177.9
+        "befehle": 101,
+        "dreiecke": 580343,
+        "vramMB": 125.8
     },
     "klassen": {
         "boden": {
             "haupt": {
                 "befehle": 6,
-                "dreiecke": 95817
+                "dreiecke": 66561
             },
             "k0": {
                 "befehle": 1,
-                "dreiecke": 103843
+                "dreiecke": 43273
             },
             "k1": {
                 "befehle": 1,
-                "dreiecke": 64204
+                "dreiecke": 51508
             }
         },
         "streu": {
             "haupt": {
-                "befehle": 2,
-                "dreiecke": 4760
+                "befehle": 5,
+                "dreiecke": 58326
             },
             "k0": {
                 "befehle": 0,
@@ -61,7 +70,7 @@
         "karten": {
             "haupt": {
                 "befehle": 1,
-                "dreiecke": 832
+                "dreiecke": 962
             },
             "k0": {
                 "befehle": 0,
@@ -74,26 +83,26 @@
         },
         "baum": {
             "haupt": {
-                "befehle": 18,
-                "dreiecke": 88544
+                "befehle": 28,
+                "dreiecke": 87746
             },
             "k0": {
-                "befehle": 18,
-                "dreiecke": 126286
+                "befehle": 10,
+                "dreiecke": 12868
             },
             "k1": {
-                "befehle": 4,
-                "dreiecke": 13110
+                "befehle": 2,
+                "dreiecke": 1086
             }
         },
         "busch": {
             "haupt": {
-                "befehle": 0,
-                "dreiecke": 0
+                "befehle": 4,
+                "dreiecke": 40116
             },
             "k0": {
-                "befehle": 0,
-                "dreiecke": 0
+                "befehle": 2,
+                "dreiecke": 16320
             },
             "k1": {
                 "befehle": 0,
@@ -102,8 +111,8 @@
         },
         "nahWiese": {
             "haupt": {
-                "befehle": 2,
-                "dreiecke": 1416
+                "befehle": 4,
+                "dreiecke": 45974
             },
             "k0": {
                 "befehle": 0,
@@ -130,44 +139,44 @@
         },
         "bau": {
             "haupt": {
-                "befehle": 97,
-                "dreiecke": 1120063
+                "befehle": 11,
+                "dreiecke": 42336
             },
             "k0": {
-                "befehle": 66,
-                "dreiecke": 665586
+                "befehle": 2,
+                "dreiecke": 3680
             },
             "k1": {
-                "befehle": 17,
-                "dreiecke": 39280
+                "befehle": 1,
+                "dreiecke": 486
             }
         },
         "formationen": {
             "haupt": {
                 "befehle": 2,
-                "dreiecke": 8400
+                "dreiecke": 9480
             },
             "k0": {
                 "befehle": 2,
-                "dreiecke": 12840
+                "dreiecke": 10240
             },
             "k1": {
-                "befehle": 2,
-                "dreiecke": 1720
+                "befehle": 1,
+                "dreiecke": 1600
             }
         },
         "einzelstuecke": {
             "haupt": {
-                "befehle": 21,
-                "dreiecke": 138689
+                "befehle": 8,
+                "dreiecke": 11853
             },
             "k0": {
-                "befehle": 3,
-                "dreiecke": 9064
+                "befehle": 5,
+                "dreiecke": 37964
             },
             "k1": {
-                "befehle": 2,
-                "dreiecke": 6528
+                "befehle": 5,
+                "dreiecke": 37964
             }
         },
         "leerHuellen": {
@@ -200,14 +209,14 @@
         }
     },
     "vramMB": {
-        "buf:szene": 68.7,
-        "tex:TRAANode.history": 23.7,
-        "tex:output": 15.8,
+        "buf:szene": 41.3,
+        "tex:TRAANode.history": 19.8,
         "tex:TRAANode.resolve": 15.8,
-        "tex:kaskade0": 12,
-        "tex:kaskade1": 12,
+        "tex:kaskade0": 8,
+        "tex:kaskade1": 8,
+        "tex:output": 7.9,
         "tex:depth": 7.9,
-        "tex:szene": 7.9,
+        "tex:szene": 4,
         "tex:wege-karte": 4,
         "tex:karte-albedo": 2.7,
         "tex:feld-pass-panorama": 1.9,
@@ -217,15 +226,14 @@
         "tex:laub-cluster-atlas": 0.7,
         "tex:welt-march-liste": 0.5,
         "tex:kronen-streu": 0.5,
-        "buf:bindingBuffer": 0.4,
         "tex:welt-march-kapseln": 0.3,
         "tex:himmel-umgebung": 0,
+        "buf:bindingBuffer": 0,
         "buf:bindingBufferundefined_UniformBuffer_": 0,
         "buf:buffer_timestamp_resolve_render": 0,
         "buf:buffer_timestamp_result_render": 0,
-        "tex:portal-membran": 0,
+        "tex:fern-krone-nah": 0,
         "tex:DFG_LUT": 0,
-        "buf:verwaist": 0,
         "buf:bild": 0,
         "buf:?": 0,
         "tex:TRAANode.vortiefe": 0

@@ -475,7 +475,10 @@ function check(name, ok) {
                 for (let i = 0; i < s.length; i++) h = ((h ^ s.charCodeAt(i)) * 16777619) >>> 0;
                 return h >>> 0;
             };
-            const vergleiche = (ist, soll) => Object.keys(soll).filter((k) => ist[k] !== soll[k]);
+            // der Stamm am Fuß hält das Gesetz auf 5 % (die Wurzel-Verjüngung des Wuchses; die Form las das Vierfache)
+            const gleich = (k, a, b) =>
+                k === "stammM" && a != null && b != null ? Math.abs(a / b - 1) <= 0.05 : a === b;
+            const vergleiche = (ist, soll) => Object.keys(soll).filter((k) => !gleich(k, ist[k], soll[k]));
             const notiere = (k, fall) => (o.abw[k] = o.abw[k] || []).push(fall);
             for (const sp of ARTEN)
                 for (const seed of ["k24-a", "k24-b"])
@@ -483,11 +486,18 @@ function check(name, ok) {
                         const fall = sp + "/" + seed + "/L" + lod;
                         o.faelle++;
                         try {
-                            const rec = tab[r._foundryPresetFor(sp)];
-                            const P = pc.treeParams(rec.s, fnv(sp + "|" + seed + "|v5"), lod, rec);
+                            const id = r._foundryPresetFor(sp);
+                            const rec = tab[id];
+                            // K20: das Gesetz mit der Welt-Skala der Art, wie der Wald den gesehenen Baum pflanzt
+                            // (die EINE Template→Welt-Quelle `_foundryWorldScaleMatrix`)
+                            const ws = r._foundryWorldScaleMatrix(id).elements[0];
+                            const P = pc.treeParams(rec.s, fnv(sp + "|" + seed + "|v5"), lod, rec, ws);
                             const teile = r._growTreeBlueprintRich(sp, seed, { lod });
                             const sk = r._lastTreeSkeleton;
                             r._lastTreeSkeleton = null;
+                            // der Stamm am Fuß, den die Kollision liest (Welt-Meter): mit Welt-Maß misst er H/hd
+                            const fuss = (sk.branches || []).find((b) => b.isTrunk);
+                            const r0 = fuss && fuss.points && fuss.points[0] ? fuss.points[0].r : NaN;
                             // die Nadel-Art liest der Richter an seinen Laub-Bällen ab (Nadel y-gestreckt), der Fuß-Saum zählt nicht
                             const baelle = (teile || []).filter(
                                 (p) => p.material === "laub" && p.size.x <= p.size.y * 1.5
@@ -498,6 +508,7 @@ function check(name, ok) {
                                 rindeB: sk.barkB,
                                 laub: sk.foliageColor,
                                 nadel: baelle.length > 0 && baelle.every((p) => p.size.y > p.size.x),
+                                stammM: P.weltSkala > 0 ? +(r0 * 2 * P.weltSkala).toFixed(3) : null,
                             };
                             const soll = {
                                 hoehe: P.height,
@@ -505,17 +516,23 @@ function check(name, ok) {
                                 rindeB: P.barkB,
                                 laub: P.leafCol,
                                 nadel: !!P.conifer && !P.tot,
+                                // Brusthöhen-Durchmesser des Bestands: Wipfel-Höhe durch die Schlankheit H/D
+                                stammM: P.weltSkala > 0 ? +(P.hoeheM / P.hd).toFixed(3) : null,
                             };
                             const d = vergleiche(ist, soll);
                             if (d.length) o.rot++;
-                            for (const k of d) notiere(k, fall);
+                            for (const k of d)
+                                notiere(k, k === "stammM" ? `${fall} ${ist.stammM}≠${soll.stammM} m` : fall);
                             // Selbsttest: ein eingeschleuster Zwilling (die Rinde einer anderen Art) MUSS beim Namen fallen
                             if (fall === "baum_buche/k24-a/L0")
                                 o.selbst =
                                     vergleiche(
                                         Object.assign({}, soll, { rindeA: soll.rindeA ^ 0x101010 }),
                                         soll
-                                    ).join() === "rindeA";
+                                    ).join() === "rindeA" &&
+                                    // und der Stamm der Form (das Vierfache des Gesetzes) fällt beim Namen
+                                    vergleiche(Object.assign({}, soll, { stammM: soll.stammM * 4 }), soll).join() ===
+                                        "stammM";
                         } catch (e) {
                             o.rot++;
                             notiere("bruch:" + ((e && e.message) || String(e)).slice(0, 60), fall);
@@ -527,7 +544,10 @@ function check(name, ok) {
             console.log(
                 "     ⟶ RICHTER " + k + ": " + RI.abw[k].length + " Fälle, z. B. " + RI.abw[k].slice(0, 3).join(" ")
             );
-        check("K24 RICHTER Selbsttest: ein Rinden-Zwilling fällt beim Namen (rindeA)", RI.selbst === true);
+        check(
+            "K24 RICHTER Selbsttest: ein Rinden-Zwilling (rindeA) und der Stamm der Form (stammM) fallen beim Namen",
+            RI.selbst === true
+        );
         check(
             `K24 RICHTER = GESETZ: gefühlter Baum = treeParams der Art, 9 Arten × 2 Gestalten × 3 Stufen (${RI.faelle} Fälle, ${RI.rot} abweichend)`,
             RI.faelle === 54 && RI.rot === 0

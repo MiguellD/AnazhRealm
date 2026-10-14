@@ -21,7 +21,8 @@ const FC=window.__fachwerkCore;
 const HAUS=FC.HAUS;                                                          // die parametrische Haus-Fabrik — EINE Quelle
 const M=FC.materials(), _MM=FC._MM;                                          // geteilte Materialien (nie disposen) + VC-Zwillinge (setZeit zündet das Glas stadtweit)
 const _mmFor=FC._mmFor, mLay=FC.mLay, mat=FC.mat;                            // Rollen-Materialien (Bake · Layout · Fabrik)
-const tintM=FC.tintM, DEFCOL=FC.DEFCOL, KULTUR=FC.KULTUR, KULTNAMES=FC.KULTNAMES;
+const DEFCOL=FC.DEFCOL, KULTUR=FC.KULTUR, KULTNAMES=FC.KULTNAMES;
+let farbeJetzt=DEFCOL; const tintM=c=>{ farbeJetzt=c; return FC.tintM(c); };   // die Farbe reist im Rückgängig-Zustand (Sitzung der Hülle)
 const kulturFromSeed=FC.kulturFromSeed, kulturParams=FC.kulturParams;        // die reine Kultur-Ableitung (Dorf + Regler teilen sie)
 const KULLVOL=FC.KULLVOL, DESTNUR=FC.DESTNUR, TURMNUR=FC.TURMNUR, MASSNUR=FC.MASSNUR, LOD1F=FC.LOD1F;
 const bakeHaus=FC.bakeHaus, bakeLOD=FC.bakeLOD, wandTonAus=FC.wandTonAus, stapelBau=FC.stapelBau;
@@ -32,15 +33,12 @@ function applyKultur(name, seed){                                               
   if(name==='manuell'){ tintM(DEFCOL); return; }
   if(name==='samen') name=kulturFromSeed(seed);
   const kp=kulturParams(name, seed); if(!kp){ tintM(DEFCOL); return; }
-  $('pP').value=kp.pitchDeg; $('pW').value=kp.W; $('pD').value=kp.D; $('pS').value=kp.storeys;
+  formSetzen({pitchDeg:kp.pitchDeg, W:kp.W, D:kp.D, storeys:kp.storeys, hip:kp.hip, roofCurve:kp.roofCurve,
+    treppgiebel:+!!kp.treppgiebel, kuppel:+!!kp.kuppel, portikus:+!!kp.portikus, arkade:+!!kp.arkade, turm:+!!kp.turm,
+    zinnen:+!!kp.zinnen, veranda:+!!kp.veranda, vorkragung:+!!kp.vorkragung, pilotis:+!!kp.pilotis, terrasse:+!!kp.terrasse});
   $('pB').value=kp.brace; $('pStil').value=kp.stil;
-  if($('pH')) $('pH').value=Math.round(kp.hip*100);
-  if($('pCurve')) $('pCurve').value=Math.round(kp.roofCurve*100);
-  if($('vS')) $('vS').textContent=$('pS').value;
   tintM(kp.col);
-  const ck=(id,v)=>{ if($(id)) $(id).checked=!!v; }, vl=(id,v)=>{ if($(id)) $(id).value=v; };
-  ck('pTreppgiebel',kp.treppgiebel); ck('pKuppel',kp.kuppel); ck('pPortikus',kp.portikus); ck('pArkade',kp.arkade); ck('pTurm',kp.turm);
-  ck('pZinnen',kp.zinnen); ck('pVeranda',kp.veranda); ck('pVorkragung',kp.vorkragung); ck('pPilotis',kp.pilotis); ck('pTerrasse',kp.terrasse);
+  const vl=(id,v)=>{ if($(id)) $(id).value=v; };
   vl('pDachTyp',kp.dachTyp); vl('pBogenTyp',kp.bogenTyp); vl('pG',kp.grundriss);
 }
 // ═══ DORF-QUELLE — lebt seit W-A5b im Kern __fachwerkCore (byte-treu verschoben, sha256-Paritäts-Beleg im Wellen-Bericht; exportSettlement exportiert sie als Slot-DATEN an den Host). Die Shell LIEST die eine Quelle: ═══
@@ -206,7 +204,7 @@ function buildDorf(dp){
     if(bwN) console.log('BRANDWAND: '+bwN+' anliegende Seiten erkannt'); }
   for(const ck in dorfChunks){ const C=dorfChunks[ck];                                        // WARMSTART-GESETZ: Chunks starten in ihrer DISTANZ-Stufe zum Spawn — der Spieler steht ab Sekunde 0 in Stufe-1-Umgebung statt sekundenlang im Vogel-Schwarm (Michis Nah-Destillat-Fotos)
     const dc=Math.max(0, Math.hypot(C.cx-lay.spawn.x, C.cz-lay.spawn.z)-34);
-    const bs=Math.max(0.55, Math.min(1.35, Math.sqrt((parseInt(document.getElementById('pBudget').value)||170000)/170000)));   /*Quelle: der REGLER selbst — norm.budget war Epochen-Konstante (GEMESSEN 100%)*/         /*BUDGET-WARMSTART-GESETZ: die Startlast FOLGT dem Prim-Regler — Radien skalieren mit sqrt(Budget), der Teller-Vollausbau war reglertaub*/
+    const bs=Math.max(0.55, Math.min(1.35, Math.sqrt((RW.budget||170000)/170000)));   /*Quelle: der REGLER selbst — norm.budget war Epochen-Konstante (GEMESSEN 100%)*/         /*BUDGET-WARMSTART-GESETZ: die Startlast FOLGT dem Prim-Regler — Radien skalieren mit sqrt(Budget), der Teller-Vollausbau war reglertaub*/
     C.stufe = dc<100*bs? 1 : (dc<220*bs? 2 : 3);
     rebakeChunk(ck, true); }
   const W2=lay.welt;
@@ -560,15 +558,14 @@ function frameDorf(){ orb.r=Math.min(90,(dorf?dorf.R:30)*2.0+12); orb.ty=6; appl
 const metaParams=FC.metaParams;
 
 function applyMeta(){
-  const jahr=+$('pJahr').value, klima=+$('pKlima').value/100, leute=+$('pLeute').value, wohl=+$('pWohl').value/100;
+  const jahr=RW.jahr, klima=RW.klima/100, leute=RW.leute, wohl=RW.wohl/100;
   const m=metaParams(jahr,klima,leute,wohl);
-  $('pP').value=m.pitch; $('pW').value=m.W; $('pD').value=m.D; $('pS').value=m.storeys; $('pStil').value=m.stil; $('pB').value=(m.stil==='alt')?'andreas':'none';
+  const F=m.F;
+  formSetzen({pitchDeg:m.pitch, W:m.W, D:m.D, storeys:m.storeys, treppgiebel:+!!F.treppgiebel, kuppel:+!!F.kuppel, portikus:+!!F.portikus,
+    arkade:+!!F.arkade, turm:+!!F.turm, zinnen:+!!F.zinnen, veranda:+!!F.veranda, vorkragung:+!!F.vorkragung, pilotis:+!!F.pilotis, terrasse:+!!F.terrasse});
+  $('pStil').value=m.stil; $('pB').value=(m.stil==='alt')?'andreas':'none';
   if($('pBogenTyp'))$('pBogenTyp').value=m.bogen; if($('pDachTyp'))$('pDachTyp').value='sattel'; if($('pG'))$('pG').value=m.grund;
-  const ck=(id,v)=>{ if($(id)) $(id).checked=!!v; };
-  ck('pTreppgiebel',m.F.treppgiebel); ck('pKuppel',m.F.kuppel); ck('pPortikus',m.F.portikus); ck('pArkade',m.F.arkade); ck('pTurm',m.F.turm); ck('pZinnen',m.F.zinnen); ck('pVeranda',m.F.veranda); ck('pVorkragung',m.F.vorkragung); ck('pPilotis',m.F.pilotis); ck('pTerrasse',m.F.terrasse);
   tintM(Object.assign({},DEFCOL,m.col));
-  if($('vJahr'))$('vJahr').textContent=jahr; if($('vKlima'))$('vKlima').textContent=(klima<0.3?'Nord':klima>0.72?'Süd':'gemäßigt'); if($('vLeute'))$('vLeute').textContent=leute; if($('vWohl'))$('vWohl').textContent=(wohl<0.33?'arm':wohl>0.66?'reich':'mittel');
-  if(typeof labels==='function')labels();
 }
 // mat lebt im Kern (__fachwerkCore, oben aliast) — eine Quelle für Fabrik + Bake + Layout.
 
@@ -636,7 +633,7 @@ function buildHouse(params){
     sun.shadow.camera.left=-26;sun.shadow.camera.right=26;sun.shadow.camera.top=26;sun.shadow.camera.bottom=-26;sun.shadow.camera.updateProjectionMatrix(); scene.fog.near=55; scene.fog.far=150; tintM(DEFCOL); if($('pK'))applyKultur($('pK').value,SEED); }
   if(houseGroup){ houseGroup.traverse(o=>{if(o.geometry)o.geometry.dispose();}); scene.remove(houseGroup); }
   if(typeof ground!=='undefined') ground.visible=true; const _ch=document.getElementById('chronik'); if(_ch)_ch.style.display='none'; dorfRauch.teilchen.forEach(T2=>{scene.remove(T2.m);}); dorfRauch.teilchen.length=0; dorfRauch.quellen.length=0;
-  const lodSt=(document.getElementById('pLOD'))?(+document.getElementById('pLOD').value|0):0;   // LOD-SONDE: >0 = Dorf-Bake-Pfad statt Editor-Haus
+  const lodSt=RW.lod|0;   // LOD-SONDE: >0 = Dorf-Bake-Pfad statt Editor-Haus (Bedienungs-Zeile der Hülle)
   const ausId=document.getElementById('pAus')?document.getElementById('pAus').value:'haus';      // AUSSTATTUNG statt Haus (Feuerstelle · Marktstand · Ziehbrunnen)
   if(ausId!=='haus'&&FC.AUSSTATTUNG[ausId]){ buildAusstattungLab(ausId, lodSt); return; }
   if(lodSt>0){ buildHausLOD(params, lodSt); return; }
@@ -717,34 +714,77 @@ function buildHausLOD(params, stufe){
     inf.textContent=LODNAME[stufe]+(turm?' · TURM-Pfad (≥6 Geschosse)':'')+'\n'+dc+' Draw-Calls · '+(tris|0).toLocaleString('de-DE')+' Dreiecke\n'+pfad; }
 }
 
-// ════════════════ Form-Regler ════════════════
+// ════════════════ Form-Regler — DIE HÜLLE (K41) ════════════════
+// EINE Werte-Tafel RW: die 21 B4-Zeilen des Kerns (PARAMS_BY_KIND.haus, in den Einheiten des Gesetzbuchs — hip/roofCurve/
+// bend 0..1, terrAsym −1..1, die 0/1-Zeilen als Schalter, annexN 0..2) UND die Bedienungs-Zeilen des Labs in derselben
+// Form (Meta-Gesetz, LOD-Sonde, Dorf, Explosion). Der EINE Generator schreibt RW, readParams liest RW, nie das DOM.
 const $=id=>document.getElementById(id);
 const hipName=h=>h<0.02?'Satteldach':(h>0.98?'Walmdach':'Krüppelwalm');
-function readParams(){ const h=(+$('pH').value)/100;
-  return { W:+$('pW').value, D:+$('pD').value, pitchDeg:+$('pP').value, hip:h,
-           storeys:+$('pS').value, brace:$('pB').value, grundriss:$('pG').value, stil:$('pStil').value,
-           doppel:$('pDoppel').checked?1:0, terrain:$('pTerrain').checked?1:0,
-           annex:$('pAnnex').checked?1:0, annexN:(($('pAnnex')&&$('pAnnex').checked)?((($('pAnnex2')&&$('pAnnex2').checked))?2:1):0), balcony:$('pBalcony').checked?1:0, roofCurve:(+($('pCurve')?$('pCurve').value:0))/100, treppgiebel:($('pTreppgiebel')&&$('pTreppgiebel').checked)?1:0, kuppel:($('pKuppel')&&$('pKuppel').checked)?1:0, portikus:($('pPortikus')&&$('pPortikus').checked)?1:0, dachTyp:($('pDachTyp')?$('pDachTyp').value:'sattel'), bogenTyp:($('pBogenTyp')?$('pBogenTyp').value:'none'), arkade:($('pArkade')&&$('pArkade').checked)?1:0, turm:($('pTurm')&&$('pTurm').checked)?1:0, zinnen:($('pZinnen')&&$('pZinnen').checked)?1:0, veranda:($('pVeranda')&&$('pVeranda').checked)?1:0, vorkragung:($('pVorkragung')&&$('pVorkragung').checked)?1:0, pilotis:($('pPilotis')&&$('pPilotis').checked)?1:0, terrAsym:(($('pTerrAsym')?+$('pTerrAsym').value:0))/100, terrasse:($('pTerrasse')&&$('pTerrasse').checked)?1:0, bend:(+($('pBend')?$('pBend').value:0))/100, seed:SEED }; }
-function labels(){ $('vW').textContent=(+$('pW').value).toFixed(1)+' m'; $('vD').textContent=(+$('pD').value).toFixed(1)+' m';
-  $('vP').textContent=$('pP').value+'°'; $('vH').textContent=hipName((+$('pH').value)/100); if($('vCurve'))$('vCurve').textContent=($('pCurve')?$('pCurve').value:0)+'%'; if($('vBend'))$('vBend').textContent=($('pBend')?$('pBend').value:0)+'%'; if($('vS'))$('vS').textContent=$('pS').value; }
+const RW={};
+const HAUS_PARAMS=FC.PARAMS_BY_KIND.haus;
+const BED_META=[{id:'jahr',lab:'⏳ Jahr',min:1000,max:2025,step:5,def:1500},{id:'klima',lab:'🌍 Klima',min:0,max:100,step:1,def:50},
+  {id:'leute',lab:'👥 Personen',min:1,max:20,step:1,def:5},{id:'wohl',lab:'💰 Wohlstand',min:0,max:100,step:1,def:40}];
+const BED_LOD=[{id:'lod',lab:'🔍 LOD-Sonde',min:0,max:4,step:1,def:0,law:'Kamera bleibt stehen — die Stufen direkt vergleichbar (Editor · Ring A · Chunk 1–3)'}];
+const BED_DORF=[{id:'nH',lab:'Häuser',min:4,max:320,step:1,def:12},{id:'budget',lab:'Prim-Budget',min:100000,max:400000,step:10000,def:170000}];
+const BED_EXP=[{id:'exp',lab:'Explosionszeichnung',min:0,max:100,step:1,def:0}];
+function reglerFmt(z,v){ switch(z.id){
+  case 'W': case 'D': return (+v).toFixed(1)+' m'; case 'pitchDeg': return v+'°'; case 'hip': return hipName(v);
+  case 'roofCurve': case 'bend': case 'terrAsym': return Math.round(v*100)+' %'; case 'annexN': return v?v+'×':'aus';
+  case 'klima': return v<30?'Nord':v>72?'Süd':'gemäßigt'; case 'wohl': return v<33?'arm':v>66?'reich':'mittel';
+  case 'lod': return LODNAME[v|0]; case 'budget': return Math.round(v/1000)+'k'; case 'exp': return v+' %'; }
+  return null; }
+function readParams(){
+  return { W:RW.W, D:RW.D, pitchDeg:RW.pitchDeg, hip:RW.hip, storeys:RW.storeys, brace:$('pB').value, grundriss:$('pG').value, stil:$('pStil').value,
+           doppel:RW.doppel, terrain:$('pTerrain').checked?1:0, annex:RW.annexN>0?1:0, annexN:RW.annexN, balcony:RW.balcony, roofCurve:RW.roofCurve,
+           treppgiebel:RW.treppgiebel, kuppel:RW.kuppel, portikus:RW.portikus, dachTyp:($('pDachTyp')?$('pDachTyp').value:'sattel'),
+           bogenTyp:($('pBogenTyp')?$('pBogenTyp').value:'none'), arkade:RW.arkade, turm:RW.turm, zinnen:RW.zinnen, veranda:RW.veranda,
+           vorkragung:RW.vorkragung, pilotis:RW.pilotis, terrAsym:RW.terrAsym, terrasse:RW.terrasse, bend:RW.bend, seed:SEED }; }
+function labels(){}   // die Werte zeigt der Generator selbst (je Zeile, im Gesetz-Format)
 let SEED=3;
-function regen(keepCam){ labels(); if($('pDorf')&&$('pDorf').checked){ buildDorf({epoche:$('pEpoche').value, nH:+$('pNH').value, seed:SEED, budget:+($('pBudget')?$('pBudget').value:170000)}); if(!keepCam) frameDorf(); else applyOrbit(); } else { buildHouse(readParams()); if(!keepCam) frameHouse(); else applyOrbit(); } }
-['pW','pD','pP','pH','pS','pCurve','pBend'].forEach(id=>{ $(id).addEventListener('input',labels); $(id).addEventListener('change',()=>regen(true)); });
-['pS','pB','pG','pStil','pDachTyp','pBogenTyp'].forEach(id=>$(id).addEventListener('change',()=>regen(true)));
-['pJahr','pKlima','pLeute','pWohl'].forEach(id=>$(id)&&$(id).addEventListener('input',()=>{ applyMeta(); regen(true); }));   // META-GESETZ treibt alle Regler
-$('pK').addEventListener('change',()=>{ applyKultur($('pK').value, SEED); $('vK').textContent=($('pK').value==='samen'?'Samen→'+kulturFromSeed(SEED):$('pK').value); regen(true); });
+function regen(keepCam){ if($('pDorf')&&$('pDorf').checked){ buildDorf({epoche:$('pEpoche').value, nH:RW.nH, seed:SEED, budget:RW.budget}); if(!keepCam) frameDorf(); else applyOrbit(); } else { buildHouse(readParams()); if(!keepCam) frameHouse(); else applyOrbit(); }
+  wahlMerken(); kostenLeiste.neu(); }
+// Die Sitzung: jede Tat (Regler, Schalter, Kultur, Auswahl, Würfel, Same) ist EIN Rückgängig-Schritt über RW samt Wahl-Feldern,
+// Same und Farbe; das Schloss je Achse hält eine Achse beim Würfeln fest.
+const sitz=AnazhHuelle.sitzung({werte:RW,sperren:true,seed:SEED,
+  zustand:()=>({k:$('pK').value,b:$('pB').value,g:$('pG').value,stil:$('pStil').value,dach:$('pDachTyp').value,bogen:$('pBogenTyp').value,
+    aus:$('pAus').value,dorf:$('pDorf').checked,ep:$('pEpoche').value,terrain:$('pTerrain').checked,seed:SEED,farbe:farbeJetzt}),
+  zustandSetzen:z=>{ $('pK').value=z.k; $('pB').value=z.b; $('pG').value=z.g; $('pStil').value=z.stil; $('pDachTyp').value=z.dach; $('pBogenTyp').value=z.bogen;
+    $('pAus').value=z.aus; $('pDorf').checked=z.dorf; $('pEpoche').value=z.ep; $('pTerrain').checked=z.terrain; SEED=z.seed; sitz.seedSetzen(SEED,true);
+    $('vK').textContent=(z.k==='samen'?'Samen→'+kulturFromSeed(SEED):z.k); $('vAus').textContent=$('pAus').options[$('pAus').selectedIndex].text; tintM(z.farbe); },
+  anwenden:()=>{ explodeSetzen(); regen(true); },
+  beiSeed:s=>sitz.schritt(()=>{ SEED=s; const fest=gesperrteWerte(); if($('pK').value!=='manuell'){ applyKultur($('pK').value, SEED); $('vK').textContent=($('pK').value==='samen'?'Samen→'+kulturFromSeed(SEED):$('pK').value); } formSetzen(fest); regen(true); })});
+sitz.leiste($('sitzung'));
+const gesperrteWerte=()=>{ const f={}; HAUS_PARAMS.forEach(z=>{ if(sitz.gesperrt(z.id)) f[z.id]=RW[z.id]; }); return f; };
+const formRegler=AnazhHuelle.regler($('reglerForm'),HAUS_PARAMS,{werte:RW,sitzung:sitz,format:reglerFmt,basis:()=>{ const kp=$('pK').value!=='manuell'&&kulturParams($('pK').value==='samen'?kulturFromSeed(SEED):$('pK').value,SEED); return kp||null; },
+  nachRuhe:()=>regen(true)});
+function formSetzen(o){ formRegler.setzen(o,true); }
+// Die Kosten-Leiste: die WELT-Gestalt der gewählten Kultur (fachwerk-core buildInstance, die B4-Regler als ov — derselbe
+// Bau wie der Foundry-Worker) gegen die Budget-Zeile je Stufe, die NUR-WURF-Stufe 3 eingeschlossen. Ohne Kultur
+// („manuell“/„Samen“) misst sie die Kultur des Samens.
+const kostenLeiste=AnazhHuelle.kosten($('kosten'),{budget:FC.PORTAL_RENDER_CONFIG.lod.budget.haus,stufen:FC.PORTAL_RENDER_CONFIG.lod.kindStages.haus,
+  bauen:s=>{ const k=$('pK').value; const id=FC.PRESETS[k]?k:kulturFromSeed(SEED); const ov={}; HAUS_PARAMS.forEach(z=>{ ov[z.id]=RW[z.id]; }); return FC.buildInstance(id,1,s,ov); },
+  quelle:'gemessen an der Welt-Gestalt (fachwerk-core buildInstance, Same 1, die Regler als ov); L3·Wurf = der Fernkörper im Schatten'});
+const metaRegler=AnazhHuelle.regler($('reglerMeta'),BED_META,{werte:RW,sitzung:sitz,format:reglerFmt,gruppen:false,zuruecksetzen:false,
+  nachRuhe:()=>{ applyMeta(); regen(true); }});   // META-GESETZ treibt alle Form-Regler — Zug + Folge sind EIN Rückgängig-Schritt
+AnazhHuelle.regler($('reglerLOD'),BED_LOD,{werte:RW,sitzung:sitz,format:reglerFmt,gruppen:false,zuruecksetzen:false,
+  nachRuhe:()=>{ if(!($('pDorf')&&$('pDorf').checked)) regen(true); }});   // LOD-SONDE: Kamera bleibt stehen → Stufen direkt vergleichbar
+// Eine Auswahl ist ein Rückgängig-Schritt: zurück auf den Wert vor der Wahl (gemerkt nach jedem Bau), dann die Wahl als Tat.
+const WAHL=['pK','pB','pG','pStil','pDachTyp','pBogenTyp','pTerrain','pDorf'], wahlVor={};
+const wahlLies=id=>$(id).type==='checkbox'?$(id).checked:$(id).value;
+const wahlSchreib=(id,v)=>{ if($(id).type==='checkbox')$(id).checked=v; else $(id).value=v; };
+function wahlMerken(){ WAHL.forEach(id=>{ wahlVor[id]=wahlLies(id); }); }
+function wahlSchritt(id,tat){ const neu=wahlLies(id); wahlSchreib(id,wahlVor[id]); sitz.schritt(()=>{ wahlSchreib(id,neu); if(tat)tat(neu); }); }
+['pB','pG','pStil','pDachTyp','pBogenTyp','pTerrain'].forEach(id=>$(id).addEventListener('change',()=>{ wahlSchritt(id); regen(true); }));
+$('pK').addEventListener('change',()=>{ wahlSchritt('pK',neu=>{ applyKultur(neu, SEED); $('vK').textContent=(neu==='samen'?'Samen→'+kulturFromSeed(SEED):neu); }); regen(true); });
 $('pZeit').addEventListener('change',()=>setZeit($('pZeit').value));
 if($('pAus')) $('pAus').addEventListener('change',()=>{ $('vAus').textContent=$('pAus').options[$('pAus').selectedIndex].text; regen(false); });
-$('pSeed').onclick=()=>{ SEED=(Math.random()*1e6|0)+1; if($('pK').value!=='manuell'){ applyKultur($('pK').value, SEED); $('vK').textContent=($('pK').value==='samen'?'Samen→'+kulturFromSeed(SEED):$('pK').value); } regen(true); };
-['pAnnex','pBalcony','pDoppel','pTerrain','pTreppgiebel','pKuppel','pPortikus','pArkade','pTurm','pZinnen','pVeranda','pVorkragung','pPilotis','pTerrasse'].forEach(id=>$(id).addEventListener('change',()=>regen(true)));
-if($('pLOD')){ const lodLbl=()=>{ $('vLOD').textContent=LODNAME[+$('pLOD').value|0]; };     // LOD-SONDE: Kamera bleibt stehen → Stufen direkt vergleichbar
-  $('pLOD').addEventListener('input',()=>{ lodLbl(); if(!($('pDorf')&&$('pDorf').checked)) regen(true); });
-  lodLbl(); }
+// „⚂ Felder“: ein neuer Same (die Kultur würfelt ihre Felder neu); derselbe Weg wie das Same-Feld der Sitzung
+$('pSeed').onclick=()=>sitz.seedSetzen((Math.random()*1e6|0)+1);
 $('pTest').onclick=()=>{ const R=[];
   const ok=(nm,c)=>R.push((c?'✓ ':'✗ ')+nm);
   try{
     if($('pDorf')&&!$('pDorf').checked){ $('pDorf').checked=true; }
-    SEED=4242; if($('pNH'))$('pNH').value=30; if($('pEpoche'))$('pEpoche').value='moderne'; regen(false);
+    SEED=4242; dorfRegler.setzen({nH:30},true); if($('pEpoche'))$('pEpoche').value='moderne'; regen(false);
     ok('Bau: Solids '+solids.length, solids.length>40);
     ok('Bau: Türen (initial 0, kommen mit Ring A) '+doorList.length, true);
     const nCh=Object.keys(dorfChunks).length; ok('Streaming: Chunks '+nCh, nCh>0);
@@ -800,25 +840,25 @@ $('pTest').onclick=()=>{ const R=[];
   console.log('%cSELBSTTEST','font-weight:bold', R);
   const chd=document.getElementById('chronik'); if(chd){ chd.textContent='SELBSTTEST '+(R.length-fails)+'/'+R.length+(fails?' — FEHLER (Konsole!)':' GRÜN — ')+' '+(fails?'':chd.textContent); }
   alert('SELBSTTEST '+(R.length-fails)+'/'+R.length+(fails?' — Details in der Konsole':' GRÜN')+'\n\n'+R.join('\n')); };
-$('pRand').onclick=()=>{ if($('pDorf')&&$('pDorf').checked){ SEED=(Math.random()*1e6|0)+1; $('pNH').value=Math.round(Math.exp(Math.log(5)+Math.random()*(Math.log(320)-Math.log(5)))); regen(false); return; } const G=['I','L','U','T','kreuz'];
-  SEED=(Math.random()*1e6|0)+1;
-  $('pK').value = KULTNAMES[Math.floor(Math.random()*KULTNAMES.length)]; $('vK').textContent=$('pK').value;
-  applyKultur($('pK').value, SEED);                                                  // Kultur setzt Neigung·Proportion·Figur·Stil·Farben kohärent
-  $('pG').value=G[Math.floor(Math.random()*G.length)];                               // Grundriss frei dazu
-  $('pH').value=Math.round(Math.random()*100/2)*2;                                  // FIX Issue3: KEIN pS-Override mehr — applyKultur setzt die Geschosse je Kultur (Türme bleiben Türme)
-  $('pAnnex').checked=Math.random()<0.4; $('pBalcony').checked=(Math.random()<0.45 && +$('pS').value>=2);
+$('pRand').onclick=()=>{ const neu=(Math.random()*1e6|0)+1; sitz.seedSetzen(neu,true); const R=AnazhHuelle.zufall(neu);
+  if($('pDorf')&&$('pDorf').checked){ sitz.schritt(()=>{ SEED=neu; dorfRegler.setzen({nH:Math.round(Math.exp(Math.log(5)+R()*(Math.log(320)-Math.log(5))))},true); }); regen(false); return; }
+  const G=['I','L','U','T','kreuz'];
+  sitz.schritt(()=>{ SEED=neu; const fest=gesperrteWerte();
+    $('pK').value = KULTNAMES[Math.floor(R()*KULTNAMES.length)]; $('vK').textContent=$('pK').value;
+    applyKultur($('pK').value, SEED);                                                  // Kultur setzt Neigung·Proportion·Figur·Stil·Farben kohärent
+    $('pG').value=G[Math.floor(R()*G.length)];                                         // Grundriss frei dazu
+    formSetzen({hip:Math.round(R()*50)/50, annexN:R()<0.4?1:0});                        // FIX Issue3: KEIN Geschoss-Override — applyKultur setzt die Geschosse je Kultur
+    formSetzen({balcony:(R()<0.45 && RW.storeys>=2)?1:0});
+    formSetzen(fest); });
   regen(false); };
-if($('pDorf')){ $('pDorf').addEventListener('change',()=>regen(false));
-  $('pEpoche').addEventListener('change',()=>{ if($('pDorf').checked) regen(false); });
-  $('pNH').addEventListener('input',()=>{ $('vNH').textContent=$('pNH').value; });
-  $('pNH').addEventListener('change',()=>{ if($('pDorf').checked) regen(true); }); }
-  $('pBudget').addEventListener('input',()=>{ $('vBud').textContent=Math.round($('pBudget').value/1000)+'k'; });
-  $('pBudget').addEventListener('change',()=>{ if($('pDorf').checked) regen(true); });
+$('pDorf').addEventListener('change',()=>{ wahlSchritt('pDorf'); regen(false); });
+$('pEpoche').addEventListener('change',()=>{ if($('pDorf').checked) regen(false); });
+const dorfRegler=AnazhHuelle.regler($('reglerDorf'),BED_DORF,{werte:RW,sitzung:sitz,format:reglerFmt,gruppen:false,zuruecksetzen:false,
+  nachRuhe:()=>{ if($('pDorf').checked) regen(true); }});
 
 // Explosion / Schnitt
-const expS=$('exp'),expV=$('expv');
-expS.oninput=()=>{explode=expS.value/100;expV.textContent=expS.value+' %';
-  if(haus)ORDER.forEach(k=>{if(haus.subsystems[k])haus.subsystems[k].position.y=explode*(EXPL[k]||0);});};
+function explodeSetzen(){ explode=RW.exp/100; if(haus)ORDER.forEach(k=>{if(haus.subsystems[k])haus.subsystems[k].position.y=explode*(EXPL[k]||0);}); }
+const expRegler=AnazhHuelle.regler($('reglerExp'),BED_EXP,{werte:RW,format:reglerFmt,gruppen:false,zuruecksetzen:false,ruheMs:0,bei:explodeSetzen});
 const clip=new THREE.Plane(new THREE.Vector3(-1,0,0),0.0);
 $('cut').onchange=e=>{renderer.clippingPlanes=e.target.checked?[clip]:[];};
 
@@ -884,7 +924,7 @@ function gravity(dt){const p=player.pos;player.vy-=G*dt;p.y+=player.vy*dt;player
 function enterWalk(){mode='walk';$('ui').style.display='none';
   $('hud').style.display='block';$('esc').style.display='block';
   if(haus)ORDER.forEach(k=>{if(haus.subsystems[k]){haus.subsystems[k].visible=true;haus.subsystems[k].position.y=0;}checks[k].checked=true;});
-  renderer.clippingPlanes=[];$('cut').checked=false;expS.value=0;expV.textContent='0 %';explode=0;
+  renderer.clippingPlanes=[];$('cut').checked=false;expRegler.setzen({exp:0},true);explode=0;
   const sp=dorf?dorf.spawn:(haus?haus.spawn:(lodSpawn||{x:0,z:-8}));                        // LOD-SONDE: begehbar ohne Kollision (durchlaufen = inspizieren)
   player.pos.set(sp.x,0,sp.z);player.vy=0;player.groundY=0;yaw=Math.PI;pitch=0;
   cv.requestPointerLock();}
@@ -952,24 +992,15 @@ if(dorf&&dorfB){ lodTick(performance.now());
 renderer.render(scene,camera);requestAnimationFrame(frame);}
 
 // ── Start ──
-labels(); setZeit($('pZeit').value); applyKultur($('pK').value, SEED); buildHouse(readParams()); frameHouse(); requestAnimationFrame(frame);
+setZeit($('pZeit').value); applyKultur($('pK').value, SEED); buildHouse(readParams()); frameHouse(); wahlMerken(); kostenLeiste.neu(); requestAnimationFrame(frame);
 addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
 
-/* ==================== W12-PORTAL-BRÜCKE (AnazhRealm-Heimat) ==================== */
-/* Dasselbe Muster wie worlds/schmiede: enter/ready-Handshake, die DSL spricht die
-   ECHTEN UI-Pfade — die 32 Kulturen leben im <select id="pK"> (Wert setzen +
-   change-Event = exakt der Nutzer-Pfad, applyKultur + regen laufen), "dorf"/"haus"
-   schalten die Dorf-Checkbox (#pDorf, change-Event). Kultur-Namen sind schon
-   ASCII (KULTNAMES). Esc meldet die Heimkehr — im Begeh-Modus gehört Esc dem
-   Pointer-Lock-Release (exitWalk, eigener Handler oben), die Brücke schweigt dort. */
+/* ==================== DIE BRÜCKE ZUR HEIMAT (die Hülle, K41) ==================== */
+/* EINE Brücke (../huelle/huelle.js): die DSL spricht die ECHTEN UI-Pfade — die 32 Kulturen leben im <select id="pK">
+   (Wert setzen + change-Event = exakt der Nutzer-Pfad, applyKultur + regen laufen, ein Rückgängig-Schritt), "dorf"/
+   "haus" schalten die Dorf-Checkbox (#pDorf, change-Event). Kultur-Namen sind schon ASCII (KULTNAMES). Esc meldet die
+   Heimkehr — im Begeh-Modus gehört Esc dem Pointer-Lock-Release (exitWalk), die Brücke schweigt dort. */
 (function () {
-    if (typeof window === "undefined" || !window.parent || window.parent === window) return;
-    function post(m) {
-        try {
-            window.parent.postMessage(m, "*");
-        } catch (_e) {}
-    }
-    var DSL = FC.KULTNAMES.concat(["dorf", "haus"]);
     function setSelect(id, value) {
         var el = document.getElementById(id);
         if (!el) return false;
@@ -989,26 +1020,17 @@ addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updat
         }
         return true;
     }
-    window.addEventListener("message", function (ev) {
-        if (ev.source !== window.parent) return;
-        var msg = ev.data;
-        if (!msg || typeof msg !== "object") return;
-        if (msg.type === "enter") {
-            post({ type: "ready", world: "fachwerk", label: "Fachwerkhaus — parametrisch, begehbar", dsl: DSL });
-        } else if (msg.type === "dsl" && Array.isArray(msg.program)) {
-            for (var i = 0; i < msg.program.length; i++) {
-                var op = msg.program[i];
-                var word = String((op && op[0]) || op || "").toLowerCase().trim();
-                if (word === "dorf") setCheck("pDorf", true);
-                else if (word === "haus") setCheck("pDorf", false);
-                else setSelect("pK", word);
-            }
-        }
+    AnazhHuelle.bruecke({
+        welt: "fachwerk",
+        label: "Fachwerkhaus — parametrisch, begehbar",
+        dsl: FC.KULTNAMES.concat(["dorf", "haus"]),
+        wort: function (w) {
+            if (w === "dorf") setCheck("pDorf", true);
+            else if (w === "haus") setCheck("pDorf", false);
+            else setSelect("pK", w);
+        },
+        esc: function () {
+            return mode !== "walk"; /* Esc = Pointer-Lock im Begeh-Modus */
+        },
     });
-    window.addEventListener("keydown", function (ev) {
-        if (ev.key !== "Escape") return;
-        if (typeof mode !== "undefined" && mode === "walk") return; /* Esc = Pointer-Lock im Begeh-Modus */
-        post({ type: "exit", world: "fachwerk" });
-    });
-    post({ type: "ready", world: "fachwerk", label: "Fachwerkhaus — parametrisch, begehbar", dsl: DSL });
 })();

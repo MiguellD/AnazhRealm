@@ -947,18 +947,13 @@ class AnazhRealm_Z06b {
     // Accumulation braucht eine endliche Wasserscheide); cell 16 m → 128² Zellen im Perf-Budget.
     static get HYDROSPHERE() {
         return Object.freeze({
-            regionSize: 2048, // Region-Kantenlänge in m (um den Welt-Ursprung)
+            regionSize: globalThis.__gelaendeCore.GRUND.kachel, // Region-Kantenlänge in m (um den Welt-Ursprung; der Grund des Kerns)
             cell: 16, // Zell-Größe in m → dim = regionSize / cell = 128
             fillEpsilon: 0.01, // Priority-Flood-ε: definiertes Gefälle je Zelle
-            // Fluss-Schwelle adaptiv: max(absoluter Boden, Anteil des größten
-            // Durchflusses) — robust über verschiedene Seeds (anderes Relief →
-            // andere Max-Akkumulation). Eine Zelle ist Fluss ab dieser Akkum.
-            riverThresholdMin: 60, // absoluter Boden (Zell-Zahl)
-            riverThresholdFrac: 0.04, // Anteil der Max-Akkumulation
             minLakeCells: 6, // ein See ist ≥ 6 Zellen — kleinere Füll-Senken
             // sind Mikro-Pits (Drainage gefüllt, aber kein gelisteter See)
-            widthMin: 3, // Fluss-Mindestbreite in m
-            widthK: 0.32, // Breiten-Faktor: width = widthMin + widthK·√Akkumulation
+            // DIE BREITE (K16) ist das Gesetz des Kerns (gelaende-core `flussBreite`, `FLUSS_BREITE`): der Mäander misst seine
+            // Wellenlänge daran, jeder Fluss-Punkt trägt sie (`width`).
             // Gegen die ECHTE Voxel-Surface getunt (steilstes Fluss-Segment ~0.5): Wasserfall = Lauf steiler
             // als 0.4 UND in Summe ≥ 6 m Absturz (`_hydroExtractWaterfalls` verschmilzt Kaskaden per run-merge).
             waterfallSlope: 0.4, // Δy/Δhoriz, ab dem ein Fluss-Segment steil zählt
@@ -969,6 +964,9 @@ class AnazhRealm_Z06b {
             // Rinnen + gemuldete Becken. Bett-Tiefe ∝ Fluss-Breite.
             carveBedMin: 1.4, // m — Mindest-Tiefe eines Fluss-Betts
             carveBedK: 0.16, // m je m Fluss-Breite — breitere Flüsse schneiden tiefer
+            // DER KANAL IN DER AUE (K16): die Bett-Tiefe ist höchstens kanalTiefe — die Aue des Gelände-Gesetzes ist das
+            // Hochwasser-Bett, der Kanal liegt in ihr, nie als Graben unter ihr (am 30-m-Raster: keine Senke > 1 m).
+            kanalTiefe: 0.8,
             // DER FLUSS-SPIEGEL (Welle L, Q7-Gestalt): der Spiegel liegt um diesen Anteil der Bett-Tiefe unter dem
             // tiefsten Ufer seines Querschnitts (und so tief unter der Kanal-Krone); das Bett liegt um den Rest darunter.
             spiegelFreibord: 0.25,
@@ -993,74 +991,12 @@ class AnazhRealm_Z06b {
             dammBreite: 2.6, // m hinter der Krone des Kanals
             dammFreibord: 0.2, // m über dem Spiegel, mindestens
             // DIE QUELLE (W-F5): jede beginnt als Rinnsal mit quellBett Meter Bett (Wasser höchstens 2,3 m breit und 0,37 m
-            // tief) und weitet sich stromab um quellWeitung je Meter Lauf (m/m), bis sie die Breite ihrer Akkumulation trägt
-            // (an der Schwelle quellBreite der vollen, ab der doppelten Schwelle die volle) — Breite und Tiefe wachsen aus dem
-            // Gesetz, nichts bricht aus dem Nichts.
+            // tief) und weitet sich stromab um quellWeitung je Meter Lauf (m/m), bis sie die Breite ihres Einzugsgebiets trägt
+            // — Breite und Tiefe wachsen aus dem Gesetz, nichts bricht aus dem Nichts.
             quellBett: 1.2,
             quellWeitung: 0.25,
-            quellBreite: 0.25,
             carveLakeBedDepth: 8, // m — der See-Boden liegt ~so weit unter dem Spiegel
             carveBucketSize: 32, // m — Kantenlänge einer Fluss-Index-Bucket-Zelle
-        });
-    }
-
-    // Fluviale Erosion via STREAM-POWER-Inzision (Braun & Willett / Fastscape): `_computeErosion` sampelt
-    // die Makro-Surface und lässt Terrain + Drainage ~30 Iterationen ko-evolvieren (Priority-Flood →
-    // Flow-Direction → Flow-Accumulation → Inzision). `Δh = k·A^m·S^n` schneidet, wo viel Wasser fließt
-    // (Täler tief, Grate mit A≈1 bleiben scharf, Becken-Auslässe am stärksten).
-    // `_terrainMacroSurfaceY` addiert das Delta; deterministisch ohne RNG.
-    static get EROSION() {
-        return Object.freeze({
-            regionSize: 2048, // m — dieselbe Region wie die Hydrosphäre
-            cell: 16, // m → dim = 128 (dasselbe Raster wie die Hydrosphäre)
-            iterations: 36, // Landschafts-Evolutions-Iterationen
-            fillEpsilon: 0.01, // Priority-Flood-ε (definiertes Gefälle je Zelle)
-            streamK: 0.4, // Stream-Power-Konstante k in Δh = k·A^m·S^n
-            channelMinArea: 14, // Zellen — Inzision NUR ab dieser Drainage-Fläche
-            // (fluviale Erosion gilt für Kanäle; Hänge/Grate mit A darunter
-            // bleiben unberührt → die scharfen Gipfel überleben unversehrt; die
-            // Schwelle schützt die Grate, also dürfen k/Iterationen kräftig sein).
-            areaExp: 0.5, // m — Exponent der Drainage-Fläche A (Zell-Zahl)
-            slopeExp: 1.0, // n — Exponent des Gefälles S
-            maxIncisionPerPass: 1.1, // m — Klemme je Iteration (Stabilität)
-            edgeTaper: 10, // Zellen — das Delta wird zum Region-Rand auf 0 getapert
-            maxDelta: 26, // m — Gesamt-Delta-Klemme (schützt die Chunk-Hülle).
-            // 26 m, weil der Talus-Pass Steilwände stärker abträgt (enger ließe 60°-Cusps stehen); hält die
-            // Decken-Marge (Surface-Max ~110 m, Decke 133 m).
-            // Thermische Erosion (Talus): Stream-Power SCHÄRFT, der Talus-Pass GLÄTTET — Hänge über dem
-            // Ruhewinkel tragen ins Tal ab; beide ko-evolvieren je Iteration (hydraulisch + thermisch).
-            talusAngle: 25, // ° — Ruhewinkel; Hänge darüber fliessen ab
-            talusFactor: 0.55, // Anteil des Überschuss-Transports je Iteration
-        });
-    }
-
-    // V9.51 — der Tarn-Pass: Bergseen als additive Hochmulden. Die Stream-
-    // Power-Erosion (V9.47) entwässert jedes Hochbecken → ohne diesen Pass
-    // gibt es keine Bergseen. `_hydroSeedTarns` setzt sie bewusst.
-    static get TARN() {
-        return Object.freeze({
-            spacing: 200, // m — Kantenlänge einer Kandidaten-Zelle (jittered grid)
-            reliefPercentile: 0.55, // ADAPTIVE Höhen-Schwelle — Tarns im oberen
-            // ~45 % des Relief DIESER Welt (V9.58-c von 0.58 gesenkt, weil die
-            // Tektonik die Hochlands-Verteilung verbreitete — die alte 42%-
-            // Grenze schloss jetzt zu viele echte Hochlands-Spots aus).
-            minReliefAbs: 30, // m — absoluter Boden über terrainBaseHeight (V9.58-c
-            // von 14 auf 30 angehoben: in der V9.58-b-Welt mit max ~120 m sind
-            // 14 m kein Hochland mehr, sondern Mittelland).
-            maxSlope: 0.35, // Hang-Grenze (V9.58-c von 0.25 auf 0.35 erweitert,
-            // weil die V9.58-b-Berge steiler sind; die Mulden-Tiefe skaliert
-            // adaptiv mit dem Hang, das Becken schliesst trotzdem sicher).
-            placeThreshold: -0.1, // Tief-Frequenz-Platzierungs-Noise: Spot nur darüber
-            // (V9.58-c von 0.05 auf −0.1 gesenkt — die alte Schwelle nahm nur
-            // ~47 % der Spots an, in einer Welt mit weiteren Hochlandsregionen
-            // wollen wir grosszügiger sein; ~60 % der Spots passen).
-            radiusMin: 85, // m — Mulden-Radius. GROSS (> 5 Hydro-16-m-Zellen), damit
-            radiusMax: 120, // das 16-m-Raster + der 3×3-Blur die Mulde nicht wegglätten.
-            depthMin: 34, // m — Mulden-Tiefe (V14.2 von 28 auf 34: die thermische
-            // Erosion glättet die Tarn-Umgebung, flachere Mulden schließen sonst nicht zum See — Kopplung
-            // Erosion↔Tarn). Nicht höher: sonst klemmt `maxAllowed = surf − waterRef − 1` zu viele
-            // Hochlands-Spots raus (aggressiver depthMin frisst Tarns).
-            depthMax: 55, // m — OBERgrenze (V9.58-c von 42 auf 55 entsprechend).
         });
     }
 

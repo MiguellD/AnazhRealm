@@ -1978,6 +1978,20 @@ class AnazhRealm_Z05b {
         return v;
     }
 
+    // DER HIMMEL STEHT IM UNENDLICHEN (K16, echte GPU 11.10.): Kuppel (500 m), Sterne (480 m), Sonne und Mond (380 m) folgen
+    // der Kamera in endlichem Abstand — mit Tiefentest überschrieb die Kuppel jeden Fern-Ring-Vertex jenseits 500 m (aus 300 m
+    // Höhe lag die Welt unter einem „Meer“ aus Horizont-Blau). Der EINE Knoten setzt ihr Clip-z auf w: Tiefe 1,0, sie zeichnen
+    // nur, wo die Welt (Mesh, Ring, Feld, Panorama) nichts zeichnete — in jeder Reihenfolge (`gate:himmel-tag` 7 UNENDLICH).
+    static _himmelImUnendlichen(mat) {
+        if (!AnazhRealm._unendlichKnoten) {
+            const T = THREE.TSL;
+            const p = T.modelViewProjection;
+            AnazhRealm._unendlichKnoten = T.vec4(p.xy, p.w, p.w);
+        }
+        mat.vertexNode = AnazhRealm._unendlichKnoten;
+        return mat;
+    }
+
     // ### Skybox ###
     createGalaxySkybox() {
         // Skybox als MeshBasicNodeMaterial (TSL, WebGPU): Nebula-Noise + horizont-genordete Wolken.
@@ -2137,6 +2151,7 @@ class AnazhRealm_Z05b {
         skyboxMaterial.colorNode = finalColor;
         skyboxMaterial.side = THREE.BackSide;
         skyboxMaterial.depthWrite = false;
+        AnazhRealm._himmelImUnendlichen(skyboxMaterial);
 
         // Live-Uniforms speichern — DSL/dayNight/loop schreiben hier hinein
         // statt in das alte `material.uniforms.X.value` (das gibt's bei
@@ -2304,6 +2319,7 @@ class AnazhRealm_Z05b {
         // Vorderseite) — jedes Quad zeigt der Kamera genau eine Seite, die additive Mischung vertauscht: ein Durchgang
         // ist dasselbe Bild.
         starMat.forceSinglePass = true;
+        AnazhRealm._himmelImUnendlichen(starMat);
 
         // Der hellste Punkt des Himmels (kleinste Größenklasse): liegt die Grenzgröße mehr als ½ Klasse darüber, ist
         // kein Punkt sichtbar und das Feld zeichnet nicht (_dayNightApplyStarField).
@@ -2360,9 +2376,11 @@ class AnazhRealm_Z05b {
     // Voxel-Chunk selbst (Iso-Surface aus den Wasser-Cells, s. unten).
     _buildWaterPlane() {
         if (!this.state.scene || typeof THREE === "undefined") return;
-        // Der Meeresspiegel ist ABSOLUT (`terrainBaseHeight − 3`): bis zur Welle L lief davor eine 13×13-Stichprobe
+        // Der Meeresspiegel ist ABSOLUT (`terrainBaseHeight − GRUND.meerUnterBasis` des Kerns): bis zur Welle L lief davor eine 13×13-Stichprobe
         // `_voxelSurfaceY` (169 Dichte-Säulen beim Boot), die nur sortiert und dann verworfen wurde (W-kD11).
-        if (typeof this.state.waterLevel !== "number") this.state.waterLevel = (this.state.terrainBaseHeight || 0) - 3;
+        if (typeof this.state.waterLevel !== "number")
+            this.state.waterLevel =
+                (this.state.terrainBaseHeight || 0) - globalThis.__gelaendeCore.GRUND.meerUnterBasis;
         // Das Wasser ist ein Cell-Zustand im Voxel-Feld; jeder Voxel-Chunk baut sein Iso-Surface-Mesh aus
         // den Cells (`_buildVoxelChunkWaterIsoSurface`) — EIN Wasser-Mesh, eine Geometrie-Quelle.
         this.log(`Welt-Wasser — Meeresspiegel y=${this.state.waterLevel.toFixed(1)} (Iso-Cells, V9.75)`);
@@ -2634,7 +2652,9 @@ class AnazhRealm_Z05b {
     _windSwayOffset(TSL, opts = {}) {
         const wu = this._windUniformsEnsure();
         this._ensureWindCoupling(TSL);
-        const { vec3, float, sin, cos, max, positionWorld } = TSL;
+        const { vec3, float, sin, cos, max } = TSL;
+        const naht = this._weltNaht(TSL);
+        const positionWorld = naht.lage;
         const ampX = typeof opts.ampX === "number" ? opts.ampX : 1.5;
         const wd = wu.uWindDir || null;
         const dotWW = wd ? positionWorld.x.mul(wd.x).add(positionWorld.z.mul(wd.y)) : null;
@@ -2643,12 +2663,12 @@ class AnazhRealm_Z05b {
             .add(
                 dotWW ? dotWW.mul(float(0.35)) : positionWorld.x.mul(float(0.28)).add(positionWorld.z.mul(float(0.21)))
             );
-        // Höhen-Gewicht = Höhe über der Wurzel. r184 setzt den positionNode VOR die Instanzierung (gelesen im WGSL der
-        // Nah-Wiesen-Senke, W7 06.10.: erst `positionLocal += Versatz`, dann `positionLocal = instanzMatrix ×
-        // positionLocal`): in einer InstancedMesh lesen `positionLocal` und `positionWorld` hier den VORLAGEN-Raum — Phase
-        // und Biegung sehen die Vorlage, der Versatz dreht und skaliert mit der Instanz. Ein Satz (Welt-Lage, keine
-        // Instanz — die Nah-Streu) liest die Welt. Die Geometrie-Position (`positionGeometry`, Wurzel bei y = 0) trägt die
-        // Halm-Höhe; `opts.hoehe` reicht eine eigene Höhe in Metern.
+        // Höhen-Gewicht = Höhe über der Wurzel. r184 setzt den positionNode VOR die Instanzierung: Phase, Böe und Biegung
+        // lesen die Welt-Lage des Vertex aus der EINEN Naht (`_weltNaht`), der Versatz (Welt-Meter, Welt-Richtung) geht
+        // über sie in die Vorlage zurück (K20-N1; bis dahin sah jeder Halm die Vorlage — die Wiese wiegte im Gleichtakt,
+        // jede Instanz in ihrer eigenen Drehung, die Biegung des Spielers maß gegen die Vorlage). Ein Satz (Welt-Lage,
+        // keine Instanz — die Nah-Streu) liest dieselbe Naht (die Einheit). Die Geometrie-Position (`positionGeometry`,
+        // Wurzel bei y = 0) trägt die Halm-Höhe; `opts.hoehe` reicht eine eigene Höhe in Metern.
         const hf = max(opts.hoehe || TSL.positionGeometry.y, float(0.0));
         // Die Böe liest WIND_BOE — dieselben Zahlen hört das Ohr (`_windBoeAt`).
         const B = AnazhRealm.WIND_BOE;
@@ -2693,7 +2713,7 @@ class AnazhRealm_Z05b {
             offX = offX.add(bendX.mul(hfB).mul(float(0.4)));
             offZ = offZ.add(bendZ.mul(hfB).mul(float(0.4)));
         }
-        return vec3(offX, float(0.0), offZ);
+        return naht.vorlage(vec3(offX, float(0.0), offZ));
     }
 
     // CPU-Seite der EINEN Wind-Richtung: θ(t) = θ0(seed) + 0.5·sin(t·0.009 + φ1) + 0.22·sin(t·0.0257

@@ -96,6 +96,16 @@ function urteil(z) {
         v.push(
             `BAU-SATZ: ${bs.ohneBereich.length} Satz-Gruppen ohne treuen Bereich — ${bs.ohneBereich.slice(0, 4).join(", ")}`
         );
+    // (m) DIE VERTEX-FORM (K44): der Boden-Satz trägt die Normale als snorm8x4 und die Farbe als float16x4 — eine Float32-
+    // Normale oder -Farbe im Satz ist der Täter (60 statt 48 B je Vertex, gemessen 14.10. Radeon: 14,6 MB des Boden-Satzes)
+    const SOLL = { normal: "nint8x4", color: "float16x4" };
+    for (const f of z.vertexForm || [])
+        if (SOLL[f.attr] && f.form !== SOLL[f.attr])
+            v.push(`VERTEX-FORM: ${f.satz} ${f.attr} ${f.form} (Soll ${SOLL[f.attr]}) — ${f.mb} MB`);
+    if (z.vertexForm && z.vertexForm.length) {
+        const proVertex = z.vertexForm.reduce((a, f) => a + f.bytes, 0);
+        if (proVertex > 48) v.push(`VERTEX-FORM: der Boden-Satz trägt ${proVertex} B je Vertex (Soll ≤ 48)`);
+    }
     return v;
 }
 
@@ -131,6 +141,12 @@ function selbsttest() {
         pGruppen: [],
         pBundles: [],
         bauSatz: { gruppen: 3, imSatz: 3, selbst: [], ohneBereich: [] },
+        vertexForm: [
+            { satz: "bodenSatz", attr: "position", form: "float32x3", bytes: 12, mb: 2.6 },
+            { satz: "bodenSatz", attr: "normal", form: "nint8x4", bytes: 4, mb: 0.9 },
+            { satz: "bodenSatz", attr: "color", form: "float16x4", bytes: 8, mb: 1.8 },
+            { satz: "bodenSatz", attr: "aMorphTarget", form: "float32x3", bytes: 12, mb: 2.6 },
+        ],
     };
     const fehler = [];
     if (urteil(gruen).length !== 0) fehler.push("der grüne Zensus fällt rot: " + urteil(gruen).join(" · "));
@@ -192,6 +208,26 @@ function selbsttest() {
                 },
             },
             muss: [/BAU-SATZ: 1 Satz-Gruppen ohne treuen Bereich.*f:griechisch:L2/],
+        },
+        {
+            name: "der Boden-Satz trägt Normale und Farbe in Float32 (die Form vor K44)",
+            z: {
+                ...gruen,
+                vertexForm: [
+                    { satz: "bodenSatz", attr: "position", form: "float32x3", bytes: 12, mb: 2.6 },
+                    { satz: "bodenSatz", attr: "normal", form: "float32x3", bytes: 12, mb: 2.6 },
+                    { satz: "bodenSatz", attr: "color", form: "float32x3", bytes: 12, mb: 2.6 },
+                    { satz: "bodenSatz", attr: "aMorphTarget", form: "float32x3", bytes: 12, mb: 2.6 },
+                    { satz: "bodenSatz", attr: "aHimmel", form: "float32x1", bytes: 4, mb: 0.9 },
+                    { satz: "bodenSatz", attr: "aSchutt", form: "float32x1", bytes: 4, mb: 0.9 },
+                    { satz: "bodenSatz", attr: "aMorphWeight", form: "float32x1", bytes: 4, mb: 0.9 },
+                ],
+            },
+            muss: [
+                /VERTEX-FORM: bodenSatz normal float32x3 \(Soll nint8x4\)/,
+                /VERTEX-FORM: bodenSatz color float32x3 \(Soll float16x4\)/,
+                /VERTEX-FORM: der Boden-Satz trägt 60 B je Vertex/,
+            ],
         },
     ];
     for (const f of faelle) {
@@ -480,6 +516,21 @@ function check(name, ok, detail) {
                         }
                 z.boden.tris = Math.round(z.boden.tris);
                 z.wasser.tris = Math.round(z.wasser.tris);
+                // (m) DIE VERTEX-FORM des Boden-Satzes: je Attribut die Form, die die GPU bekommt (Typ × Breite, normiert)
+                // und seine Bytes im Satz — die Wand liest das Array, nie die Deklaration
+                z.vertexForm = [];
+                const bs = s.chunkSaetze ? s.chunkSaetze.get("boden") : null;
+                if (bs)
+                    for (const [name, a] of Object.entries(bs.geom.attributes)) {
+                        const typ = a.array.constructor.name.replace("Array", "").toLowerCase();
+                        z.vertexForm.push({
+                            satz: bs.spec.name,
+                            attr: name,
+                            form: (a.normalized ? "n" : "") + typ + "x" + a.itemSize,
+                            bytes: a.array.BYTES_PER_ELEMENT * a.itemSize,
+                            mb: +(a.array.byteLength / 1048576).toFixed(2),
+                        });
+                    }
                 return z;
             };
             // der Haken des Renders (Hauptbild): der Satz legt seinen Abschnitt — der Zensus zählt, was das Hauptbild zeichnet
@@ -623,10 +674,20 @@ function check(name, ok, detail) {
                 const geo = satz.mesh.geometry;
                 if (satz.bloecke.get(b.key) !== b) return false;
                 const g = b.geom;
-                for (const a of satz.attrNamen) {
+                // ein Satz ohne Formen-Liste (vor K44) trägt jedes Attribut als View
+                for (const fa of satz.attr || satz.attrNamen.map((name) => ({ name, form: null }))) {
+                    const a = fa.name;
                     const src = g.attributes[a].array;
                     const dst = geo.attributes[a].array;
                     const is = geo.attributes[a].itemSize;
+                    if (fa.form) {
+                        // gepackt (K44): der Chunk trägt sein Float32-Array, der Satz genau dessen Packung (`_satzPacke`)
+                        if (src.length !== b.vAnzahl * fa.is || src.buffer === dst.buffer || is !== 4) return false;
+                        const soll = new dst.constructor(b.vAnzahl * 4);
+                        r.constructor._satzPacke(fa.form, src, fa.is, soll, 0, b.vAnzahl);
+                        for (let i = 0; i < soll.length; i += 97) if (soll[i] !== dst[b.vStart * 4 + i]) return false;
+                        continue;
+                    }
                     if (src.length !== b.vAnzahl * is || src.buffer !== dst.buffer) return false;
                     for (let i = 0; i < src.length; i += 97) if (src[i] !== dst[b.vStart * is + i]) return false;
                 }
@@ -706,9 +767,15 @@ function check(name, ok, detail) {
             // Entsorgungs-Hörer einer Geometrie an ihr erstes Render-Objekt und liest dessen Attribute erst beim Entsorgen;
             // eine getauschte Geometrie verlor so ihre GPU-Puffer (echte GPU: „Vertex buffer slot 5 … was not set"). Die
             // Wurzel: `_renderObjektRegister` nimmt den Hörer je Geometrie heraus (der Kehraus trägt die Residenz). Probe
-            // am Wasser-Satz: doppelte Kapazität, derselbe Inhalt, derselbe Mesh.
+            // am kleinsten Satz des Rings (der Tausch ist EIN Weg für jeden Satz; am Mess-Ort der K16-Landform steht kein
+            // Wasser im Ring — die Probe hing an einem 12-Vertex-Wasserfleck der alten Welt): doppelte Kapazität, derselbe
+            // Inhalt, derselbe Mesh.
             res.wachsen = null;
-            const ws = s.chunkSaetze ? s.chunkSaetze.get("wasser") : null;
+            let ws = null;
+            let wsName = null;
+            for (const [name, sa] of s.chunkSaetze ? s.chunkSaetze : [])
+                if (sa && sa.mesh && sa.bloecke && sa.bloecke.size > 0 && (!ws || sa.vKap < ws.vKap))
+                    ((ws = sa), (wsName = String(name).split("|")[0]));
             if (ws) {
                 const altMesh = ws.mesh,
                     altGeom = ws.geom,
@@ -718,6 +785,7 @@ function check(name, ok, detail) {
                 r._tickChunkSatz();
                 const ab = abschnitteVon(ws);
                 res.wachsen = {
+                    satz: wsName,
                     derselbe: ws.mesh === altMesh && ws.mesh.parent === s.scene,
                     getauscht: ws.geom !== altGeom && ws.mesh.geometry === ws.geom,
                     inhalt: ws.iSumme === altIdx && ws.bloecke.size === altBereiche && ab.treu && !ab.ueberlapp,

@@ -58,6 +58,7 @@ export default [
                 btoa: "readonly",
                 TextEncoder: "readonly",
                 indexedDB: "readonly", // V18.151 IndexedDB-Spiegel (vorbestehender Lint-Riss, M2-Beifang)
+                AnazhHuelle: "readonly", // die Studio-Hülle (worlds/huelle/huelle.js, K41): die Werkstatt ruft DENSELBEN Regler-Generator
                 // CDN-Libs
                 THREE: "readonly",
                 Ammo: "readonly",
@@ -121,6 +122,39 @@ export default [
                 Float32Array: "readonly",
                 Uint8Array: "readonly",
                 Uint32Array: "readonly",
+            },
+        },
+        rules: {
+            "no-unused-vars": ["warn", { argsIgnorePattern: "^_", caughtErrorsIgnorePattern: "^_" }],
+        },
+    },
+    {
+        // DAS GELÄNDE-STUDIO (K16b): das Panel im Browser (studio.js) und sein Makro-Worker (makro-worker.js).
+        files: ["worlds/gelaende/*.js"],
+        languageOptions: {
+            ecmaVersion: 2022,
+            sourceType: "script",
+            globals: {
+                window: "readonly",
+                self: "readonly",
+                document: "readonly",
+                location: "readonly",
+                localStorage: "readonly",
+                performance: "readonly",
+                crypto: "readonly",
+                importScripts: "readonly",
+                postMessage: "readonly",
+                Worker: "readonly",
+                Blob: "readonly",
+                URL: "readonly",
+                URLSearchParams: "readonly",
+                ImageData: "readonly",
+                fetch: "readonly",
+                Event: "readonly",
+                alert: "readonly",
+                setTimeout: "readonly",
+                setInterval: "readonly",
+                console: "readonly",
             },
         },
         rules: {

@@ -390,6 +390,7 @@ function triasStaticLaws(anazhSrc) {
         }
 
         // (1) Dorf deliberat heben (die EINE Slot-Quelle; kein Auto-Hook noetig).
+        // BÜHNE: Bau-Anker: das Dorf hebt am Anker — den Ort trägt das Platz-Gesetz des Stamms (_foundryRequestSettlement)
         const anchor = { x: 900, z: 900 };
         const plan = await Promise.race([
             r._foundryRequestSettlement({ seed: 7, nH: 6 }),

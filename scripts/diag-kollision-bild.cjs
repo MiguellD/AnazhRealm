@@ -230,6 +230,7 @@ const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const { messort } = require("./lib/welt-orte.cjs");
 
 const root = path.resolve(__dirname, "..");
 const PORT = Number(process.env.KOLLISION_BILD_PORT) || 4631;
@@ -267,7 +268,7 @@ async function probe(K) {
     const f = r._ensureAssetFoundry();
     const dl = performance.now() + 90000;
     while (performance.now() < dl && !(f && f.ready && f.recipes && f.recipes.zacken)) await pause(100);
-    const MW = { x: -913.7, z: -890 };
+    const MW = K.mess; // die Mess-Wiese aus EINER Quelle (spec/profiband/haushalt.json), nie ihre Abschrift
     st.playerMesh.position.set(MW.x, r._voxelSurfaceY(MW.x, MW.z) + 1.8, MW.z);
     let stabil = 0,
         last = -1;
@@ -395,7 +396,10 @@ async function probe(K) {
         let g = null;
         const sl = (e.instSlots || []).find((s) => typeof s.key === "string" && /^f:/.test(s.key));
         if (sl) g = Number(sl.key.split("|")[1]);
-        if (!Number.isFinite(g)) g = r._foundryVariantFor(e.seed, pr);
+        // ohne Körper-Slot (die Karte der L2 trägt „fimp:atlas") die Gestalt, die der Wirt zeichnet: der EINE Leser
+        // `_foundryGestaltFor` (die Gestalt des Orts, K20) — der rohe Same wählte ohne Ort, und jede dritte Tanne der Karten-
+        // Stufe wurde gegen den Solitär gemessen (40 Fehlbefunde, die Spitze der Bestand-Hülle 0,8–2,2 m über ihm)
+        if (!Number.isFinite(g)) g = r._foundryGestaltFor(e, pr);
         if (!Number.isFinite(g)) return null;
         const pts = await bild(pr, g);
         if (!pts || !pts.length) return null;
@@ -637,6 +641,7 @@ async function probe(K) {
             timeout: 180000,
         });
         befund = await page.evaluate(probe, {
+            mess: messort("wiese"),
             R: 150,
             SEITE_M,
             OBEN_ANTEIL,

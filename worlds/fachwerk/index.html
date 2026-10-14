@@ -11,6 +11,7 @@
     content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; base-uri 'self'; object-src 'none';"
 /><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>Fachwerkhaus — parametrisch, begehbar</title>
+<link rel="stylesheet" href="../huelle/huelle.css?v=18.546.0">
 <style>
 :root{--bg:#0c0f14;--pn:#10151c;--ln:#1e2630;--ac:#c98a3a;--tx:#cdd6df;--mut:#7c8794;}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -29,7 +30,9 @@ canvas{display:block}
 .row input[type=checkbox]:checked::after{content:"";position:absolute;left:5px;top:2px;width:4px;height:8px;border:solid #1a1206;border-width:0 2px 2px 0;transform:rotate(45deg)}
 .pr{margin:7px 0 3px}
 .pr label{font-size:12.5px;display:block;margin-bottom:1px}
-.slide{width:100%;margin:3px 0 2px;accent-color:var(--ac)}
+/* Regler · Sitzung · Kosten-Leiste formt die Hülle (../huelle/huelle.css) — hier nur die Palette */
+:root{--h-akzent:var(--ac);--h-tinte:var(--tx);--h-matt:var(--mut);--h-haar:var(--ln);--h-feld:var(--pn);--h-knopf:#141a22}
+.meta-regler{border-top:1px solid #3a4452;padding-top:6px;margin-top:6px}
 .val{font-size:11px;color:var(--ac);float:right;font-variant-numeric:tabular-nums}
 select{width:100%;margin-top:3px;padding:6px 8px;border:1px solid var(--ln);border-radius:7px;background:#0b0e13;color:var(--tx);font:inherit;cursor:pointer}
 .btn{display:block;width:100%;margin-top:8px;padding:11px;border:1px solid var(--ln);border-radius:9px;background:#141a22;color:var(--tx);font:inherit;font-weight:600;letter-spacing:.04em;cursor:pointer;text-align:center}
@@ -52,62 +55,41 @@ select{width:100%;margin-top:3px;padding:6px 8px;border:1px solid var(--ln);bord
   <button class="btn go" id="begehen">▶ BEGEHEN</button>
   <div class="hint">Erste Person: <b>W A S D</b> · Maus schauen · <b>Leer</b> Sprung · <b>E</b> Tür · <b>ESC</b> zurück.</div>
 
+  <div id="sitzung"></div>
   <div class="sec">Form — Regler</div>
   <div class="pr"><label>Ausstattung <span class="val" id="vAus">— Haus —</span></label><select id="pAus"><option value="haus" selected>— Haus —</option><option value="feuerstelle">Feuerstelle · Steinring, Glut</option><option value="marktstand">Marktstand · Plane, Waren</option><option value="brunnen">Ziehbrunnen · Kranz, Haspel</option></select></div>
   <div class="pr"><label>Kultur <span class="val" id="vK">manuell</span></label><select id="pK"><option value="manuell" selected>Manuell</option><option value="samen">⚂ Aus dem Samen</option><option value="alemannisch">Alemannisch · steil, hell</option><option value="fraenkisch">Fränkisch · Zierfachwerk</option><option value="niedersaechsisch">Niedersächsisch · breit</option><option value="mittelalterlich">Mittelalterlich · ganz alt</option><option value="holzhuette">Holzhütte · Block</option><option value="franzoesisch">Französisch · Schiefer, hoch</option><option value="italienisch">Italienisch · Terrakotta</option><option value="modern">Modern · Putz</option><option value="volle_moderne">Volle Moderne · Glas</option><option value="hochhaus">Hochhaus · Glasturm</option><option value="roemisch">Römisch · Domus</option><option value="tudor">Tudor · Sichtfachwerk</option><option value="alpenchalet">Alpenchalet · Holz</option><option value="hollaendisch">Holländisch · Klinker</option><option value="hanseatisch">Hanseatisch · Backstein</option><option value="georgian">Georgianisch · symm.</option><option value="viktorianisch">Viktorianisch · steil</option><option value="griechisch">Griechisch · Kykladen</option><option value="spanisch">Spanisch · Terrakotta</option><option value="andalusisch">Andalusisch · weiß</option><option value="provenzalisch">Provenzalisch · Stein</option><option value="pueblo">Pueblo · Adobe</option><option value="marokkanisch">Marokkanisch · Lehm</option><option value="skandinavisch">Skandinavisch · Falunrot</option><option value="norwegisch">Norwegisch · dunkel</option><option value="russisch">Russisch · Isba</option><option value="schwarzwald">Schwarzwald · breit</option><option value="japanisch">Japanisch · Minka</option><option value="gotisch">Gotisch · steil</option><option value="barock">Barock · Stuck</option><option value="renaissance">Renaissance · symm.</option><option value="chinesisch">Chinesisch · Schwungdach</option></select></div>
-  <div class="pr" style="border-top:1px solid #3a4452;padding-top:6px"><label>⏳ Jahr <span class="val" id="vJahr">1500</span></label><input type="range" id="pJahr" min="1000" max="2025" value="1500" step="5"></div>
-  <div class="pr"><label>🌍 Klima <span class="val" id="vKlima">gemäßigt</span></label><input type="range" id="pKlima" min="0" max="100" value="50"></div>
-  <div class="pr"><label>👥 Personen <span class="val" id="vLeute">5</span></label><input type="range" id="pLeute" min="1" max="20" value="5"></div>
-  <div class="pr"><label>💰 Wohlstand <span class="val" id="vWohl">mittel</span></label><input type="range" id="pWohl" min="0" max="100" value="40"></div>
-  <div class="pr"><label>Breite <span class="val" id="vW">9.0 m</span></label><input type="range" min="6" max="14" step="0.5" value="9" class="slide" id="pW"></div>
-  <div class="pr"><label>Tiefe <span class="val" id="vD">7.0 m</span></label><input type="range" min="5" max="10" step="0.5" value="7" class="slide" id="pD"></div>
-  <div class="pr"><label>Dachneigung <span class="val" id="vP">50°</span></label><input type="range" min="8" max="60" step="1" value="50" class="slide" id="pP"></div>
-  <div class="pr"><label>Dachform <span class="val" id="vH">Satteldach</span></label><input type="range" min="0" max="100" step="2" value="0" class="slide" id="pH"></div>
-  <div class="pr"><label>Dachschwung <span class="val" id="vCurve">0%</span></label><input type="range" min="0" max="100" step="5" value="0" class="slide" id="pCurve"></div>
-  <div class="pr"><label>Grundriss-Bogen <span class="val" id="vBend">0%</span></label><input type="range" min="0" max="100" step="5" value="0" class="slide" id="pBend"></div>
-  <div class="pr"><label>Geschosse <span class="val" id="vS">2</span></label><input type="range" id="pS" min="1" max="12" step="1" value="2"></div>
+  <div id="reglerMeta" class="meta-regler"></div>
+  <div id="reglerForm"></div>
   <div class="pr"><label>Fachwerk-Figur</label><select id="pB"><option value="andreas">Andreaskreuz</option><option value="k">K-Strebe (Bock)</option><option value="mann">Mann</option><option value="wild">Wilder Mann</option></select></div>
   <div class="pr"><label>Grundriss</label><select id="pG"><option value="I">I — Rechteck</option><option value="L" selected>L — Kreuzflügel</option><option value="U">U — Flügel + Anbau</option><option value="T">T — Flügel + Anbau</option><option value="kreuz">Kreuz — drei Flügel</option><option value="hof">Hof — Innenhof</option></select></div>
   <div class="pr"><label>Stil</label><select id="pStil"><option value="alt" selected>Fachwerk</option><option value="modern">Modern · Putz</option><option value="huette">Blockholz</option><option value="stein">Putz / Stein</option><option value="glas">Glasfassade</option><option value="stroh">Reet / Stroh</option></select></div>
-  <div class="pr"><label>Tageszeit</label><select id="pZeit"><option value="mittag" selected>Mittag</option><option value="morgen">Morgen</option><option value="abend">Abend</option><option value="nacht">Nacht</option></select></div>
-  <div class="row"><label for="pDoppel">Doppelhaus</label><input type="checkbox" id="pDoppel"></div>
-  <div class="row"><label for="pTerrain">Gelände &amp; Garten</label><input type="checkbox" id="pTerrain" checked></div>
-  <div class="row"><label for="pAnnex">Anbau · Garage</label><input type="checkbox" id="pAnnex"></div>
-  <div class="row"><label for="pAnnex2">Anbau ×2 (beide Seiten)</label><input type="checkbox" id="pAnnex2"></div>
-  <div class="row"><label for="pBalcony">Balkon (Laube)</label><input type="checkbox" id="pBalcony"></div>
-  <div class="row"><label for="pTreppgiebel">Treppengiebel</label><input type="checkbox" id="pTreppgiebel"></div>
-  <div class="row"><label for="pKuppel">Kuppel</label><input type="checkbox" id="pKuppel"></div>
-  <div class="row"><label for="pPortikus">Portikus · Säulen</label><input type="checkbox" id="pPortikus"></div>
   <div class="pr"><label>Dachtyp</label><select id="pDachTyp"><option value="sattel" selected>Sattel</option><option value="mansard">Mansarde</option><option value="pyramide">Pyramide / Zelt</option><option value="kegel">Kegel</option><option value="pult">Pult</option><option value="tonne">Tonne</option><option value="schmetterling">Schmetterling</option><option value="zwiebel">Zwiebel</option></select></div>
   <div class="pr"><label>Bogen (Öffnungen/Arkade)</label><select id="pBogenTyp"><option value="none" selected>—</option><option value="rund">Rundbogen</option><option value="spitz">Spitzbogen</option><option value="hufeisen">Hufeisen</option></select></div>
-  <div class="row"><label for="pArkade">Arkade · Kreuzgang</label><input type="checkbox" id="pArkade"></div>
-  <div class="row"><label for="pTurm">Turm</label><input type="checkbox" id="pTurm"></div>
-  <div class="row"><label for="pZinnen">Zinnen · Burg</label><input type="checkbox" id="pZinnen"></div>
-  <div class="row"><label for="pVeranda">Veranda</label><input type="checkbox" id="pVeranda"></div>
-  <div class="row"><label for="pVorkragung">Vorkragung (Jetty)</label><input type="checkbox" id="pVorkragung"></div>
-  <div class="row"><label for="pPilotis">Pilotis (Stelzen)</label><input type="checkbox" id="pPilotis"></div>
-  <div class="row"><label for="pTerrasse">Terrassierung</label><input type="checkbox" id="pTerrasse"></div>
-  <div class="row"><label for="pTerrAsym">Terr.-Versatz</label><input type="range" id="pTerrAsym" min="-100" max="100" value="0" style="width:90px"></div>
-  <div class="pr" style="border-top:1px solid #3a4452;padding-top:6px"><label>🔍 LOD-Sonde <span class="val" id="vLOD">Editor · voll</span></label><input type="range" id="pLOD" min="0" max="4" step="1" value="0" class="slide"></div>
+  <div class="pr"><label>Tageszeit</label><select id="pZeit"><option value="mittag" selected>Mittag</option><option value="morgen">Morgen</option><option value="abend">Abend</option><option value="nacht">Nacht</option></select></div>
+  <div class="row"><label for="pTerrain">Gelände &amp; Garten</label><input type="checkbox" id="pTerrain" checked></div>
+  <div id="reglerLOD"></div>
   <div id="lodInfo" style="display:none;font:11px/1.5 system-ui;color:#9fb2c8;margin:2px 0 6px;white-space:pre-line"></div>
   <div class="mini"><button class="btn" id="pSeed">⚂ Felder</button><button class="btn" id="pTest" title="Systemprüfung im lebenden Browser">🧪 Selbsttest</button><button class="btn" id="pRand" style="background:linear-gradient(180deg,#3a5570,#26415c);color:#dce6ff;border-color:#3a5570">🎲 Alles würfeln</button></div>
 
   <div class="sec">Dorf</div>
   <div class="row"><label for="pDorf">DORF-MODUS · Siedlung statt Haus</label><input type="checkbox" id="pDorf"></div>
   <div class="pr"><label>Epoche <span class="val" id="vEp"></span></label><select id="pEpoche"><option value="gewuerfelt" selected>⚅ Gewachsen · aus dem Samen</option><option value="mittelalter">Mittelalter · Haufendorf</option><option value="antike">Antike · Raster</option><option value="hanse">Hanse · Straßendorf</option><option value="barock">Barock · Angerdorf</option><option value="gruenderzeit">Gründerzeit · Straße</option><option value="alpin">Alpin · Haufendorf</option><option value="mediterran">Mediterran · Haufendorf</option><option value="fernost">Fernost · Haufendorf</option><option value="moderne">Moderne · Raster</option></select></div>
-  <div class="pr"><label>Häuser <span class="val" id="vNH">12</span></label><input type="range" id="pNH" min="4" max="320" value="12" step="1"></div>
-  <div class="pr"><label>Prim-Budget <span class="val" id="vBud">170k</span></label><input type="range" id="pBudget" min="100000" max="400000" value="170000" step="10000"></div>
+  <div id="reglerDorf"></div>
 
   <div class="sec">Ansicht</div>
   <div class="row"><label for="cut">Schnitt (halbes Haus)</label><input type="checkbox" id="cut"></div>
-  <div class="pr"><label>Explosionszeichnung <span class="val" id="expv">0 %</span></label><input type="range" min="0" max="100" value="0" class="slide" id="exp"></div>
+  <div id="reglerExp"></div>
   <div class="mini"><button class="btn" id="alle">Alle</button><button class="btn" id="roh">Nur Rohbau</button></div>
+  <div class="sec">Kosten je Stufe</div>
+  <div id="kosten"></div>
   <div class="sec">Subsysteme</div>
   <div id="subs"></div>
 </div>
 <div id="hud"><div class="cross"></div><div class="keys"><b>W A S D</b> gehen &nbsp;·&nbsp; Maus schauen &nbsp;·&nbsp; <b>Leer</b> Sprung &nbsp;·&nbsp; <b>E</b> Tür &nbsp;·&nbsp; <b>ESC</b> zurück</div></div>
 <div id="esc"><b>ESC</b> — zurück zur Übersicht</div>
 <script src="../terrain/lib/three-r128.min.js"></script>
-<script src="../../fachwerk-core.js?v=18.545.0"></script>
-<script src="fachwerk.js?v=18.545.0"></script>
+<script src="../../fachwerk-core.js?v=18.546.0"></script>
+<script src="../huelle/huelle.js?v=18.546.0"></script>
+<script src="fachwerk.js?v=18.546.0"></script>
 </body></html>

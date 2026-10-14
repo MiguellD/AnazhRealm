@@ -31,7 +31,12 @@
 //      (foundry-core) und den Laub-Stoff der Welt (anazhRealm).
 //  (W) WEIDE — jede Karte der Trauer-Krone (L0 und L1) liest die Weiden-Zelle (BLATT_ATLAS_WEIDE: lanzettliche Blätter an
 //      der hängenden Rute). Vorher die Großblatt-Zelle: runde Hasel-Blätter an der Weide (Prüfer W5, Bild weide-8m).
-//  (F) FRACHT — der Wirt lädt den Atlas als Fracht seines Formats (phyto-core blattAtlasFracht: BC1 ab Stufe 0, rgba ab
+//  (Z) KORN — das Kanten-Flimmern der Laub-Karte in der Mittelsicht (K20): die Zelle als Karte auf dem Schirm, trilinear,
+//      alphaTest 0,5, das Pixel als Mittel der Halton-Unterproben der zeitlichen Auflösung; Δ-Luma (Laub gegen Himmel)
+//      zwischen zwei Bildern mit ½-Pixel-Versatz an der Eichen-Krone auf 25 m ≤ KORN_MAX (50 % von vorher 0,166), die
+//      Deckung je λ 1…3 = Stufe 0 ± 0,1 (nah = fern). Konsum-Leser: der Laub-Stoff (`_blattAtlasProbe`).
+//  (H) HÖHEN-ZENSUS je Art (K20): der Altbestand in der Spanne der Natur, H/D in Brusthöhe im Bestands-Band.
+//  (F) FRACHT — der Wirt lädt den Atlas als Fracht seines Formats (phyto-core blattAtlasFracht: BC3 ab Stufe 0, rgba ab
 //      Stufe 1), das Labor das blutende Bild. Je Format, Zelle und Zell-Größe (≥ FRACHT_MIN_ZELLE px) wird die GPU
 //      nachgerechnet (sRGB-Dekodierung je Texel, bilinear linear, alphaTest 0,5) und der EINE Leser der Welt angewandt
 //      (gefiltertes rgb ÷ alpha ÷ wert): Luminanz und Deckung der Welt = Labor (± FRACHT_TOL). Dazu die Quelle: der Leser
@@ -219,7 +224,7 @@ function bluetenUrteil(fall, T) {
                 ok =
                     uv[(k + 2 * i) * 2] === 0 &&
                     uv[(k + 2 * i + 1) * 2] === 1 &&
-                    Math.abs(uv[(k + 2 * i) * 2 + 1] - i / (KLINGE - 1)) < 1e-6;
+                    Math.abs(uv[(k + 2 * i) * 2 + 1] - i / (KLINGE - 1)) <= 1 / 8192; // das Byte-Raster am Ausgang: 2^-12
             if (!ok) continue;
             const g = (Y(t.col, k) + Y(t.col, k + 1)) / 2,
                 s = (Y(t.col, k + 2 * KLINGE - 2) + Y(t.col, k + 2 * KLINGE - 1)) / 2;
@@ -372,11 +377,11 @@ function frachtReihen(bild, bcLeser) {
     const bc = fr.bc.mips.map((m) => ({
         width: m.width,
         height: m.height,
-        data: PC.bcDekodiere(m.data, m.width, m.height, "bc1"),
+        data: PC.bcDekodiere(m.data, m.width, m.height, fr.bc.format || "bc1"),
     }));
     return {
         labor: stufen(bild.mips, false),
-        welt: { bc1: stufen(bc, bcLeser !== false), rgba: stufen(fr.rgba.mips, true) },
+        welt: { bc: stufen(bc, bcLeser !== false), rgba: stufen(fr.rgba.mips, true) },
     };
 }
 function frachtUrteil(R) {
@@ -405,6 +410,357 @@ function frachtUrteil(R) {
 }
 // Die Quelle des Lesers: `_blattAtlasProbe` teilt durch alpha, und `userData.wert` liest nur er (geschrieben wird es
 // in `_ensureFoliageClusterAtlas`).
+// (Z) DAS KANTEN-FLIMMERN der Laub-Karte in der Mittelsicht (K20, 12.10.): die Zelle des Atlas als Karte auf dem Schirm
+// (N × N Pixel), die GPU nachgerechnet — trilinear (Stufe aus dem Texel-Maß je Pixel), bilinear je Stufe, alphaTest 0,5 —
+// zweimal, das zweite Bild um ½ Pixel (diagonal) versetzt. Messname: Δ-Luma Laub gegen Himmel (Kontrast 1) = Anteil der
+// Pixel der Krone, die beim ½-Pixel-Versatz ihre Deckung wechseln. Die Mittelsicht: λ = 1 … 3 (die 512er-Zelle auf
+// 256 … 64 Pixel); die Kopfzahl ist die Krone der Eichen-L1 auf 25 m (1080p, 75°). Die Deckung je λ steht daneben.
+const KORN_LAMBDA = [1, 1.5, 2, 2.5, 3];
+// Die Unterproben der zeitlichen Auflösung: Halton (2, 3), 8 Stück — der Jitter der TRAANode (r184).
+const KORN_HALTON = [];
+for (let i = 1; i <= 8; i++) {
+    const h = (b) => {
+        let f = 1,
+            r = 0,
+            n = i;
+        while (n > 0) {
+            f /= b;
+            r += f * (n % b);
+            n = Math.floor(n / b);
+        }
+        return r;
+    };
+    KORN_HALTON.push([h(2), h(3)]);
+}
+// Die Schwelle des Laub-Stoffs je Schirm-Ort: der alphaTest 0,5 (die Welt zeichnet ohne Raster-Schwelle).
+const kornSchwelle = () => 0.5;
+// Vorher (integ-probe 858ed586, Rang-Mips mit Orts-Hash, BC1): 0,166 an der Eichen-Krone auf 25 m (λ 1,58) — Ziel ≤ 50 %.
+const KORN_MAX = 0.083;
+function kornReihe(mips, zBasis) {
+    // `mips` je Stufe { width, height, data rgba8 }, 4 Zellen nebeneinander; `zBasis` = Zell-Breite der ersten Stufe.
+    const stufeA = (m, c, u, v) => {
+        const W = m.width,
+            H = m.height,
+            d = m.data;
+        const x = ((c + u) / 4) * W - 0.5,
+            y = v * H - 0.5;
+        const x0 = Math.floor(x),
+            y0 = Math.floor(y),
+            fx = x - x0,
+            fy = y - y0;
+        let a = 0;
+        for (let q = 0; q < 4; q++) {
+            const dx = q & 1,
+                dy = q >> 1;
+            const w = (dx ? fx : 1 - fx) * (dy ? fy : 1 - fy);
+            a += w * d[(Math.min(H - 1, Math.max(0, y0 + dy)) * W + Math.min(W - 1, Math.max(0, x0 + dx))) * 4 + 3];
+        }
+        return a / 255;
+    };
+    const versatz = Math.log2(PC.BLATT_ATLAS_ZELLE / zBasis);
+    return (lambda) => {
+        const N = Math.max(4, Math.round(PC.BLATT_ATLAS_ZELLE / Math.pow(2, lambda)));
+        const l = Math.max(0, lambda - versatz),
+            l0 = Math.min(mips.length - 1, Math.floor(l)),
+            l1 = Math.min(mips.length - 1, l0 + 1),
+            f = l - Math.floor(l);
+        const probe = (c, u, v) => {
+            const a0 = stufeA(mips[l0], c, u, v);
+            return l1 === l0 || f === 0 ? a0 : a0 + (stufeA(mips[l1], c, u, v) - a0) * f;
+        };
+        // Das Pixel, wie die zeitliche Auflösung es ruhend zeigt: das Mittel über die Halton-Unterproben (TRAANode).
+        const pixel = (c, px, py, schwelle) => {
+            let k = 0;
+            for (const [hx, hy] of KORN_HALTON)
+                if (probe(c, (px + hx) / N, (py + hy) / N) >= schwelle(px + hx, py + hy)) k++;
+            return k / KORN_HALTON.length;
+        };
+        const zellen = [];
+        for (let c = 0; c < 4; c++) {
+            let wechsel = 0,
+                krone = 0,
+                deckt = 0;
+            for (let j = 0; j < N; j++)
+                for (let i = 0; i < N; i++) {
+                    const k1 = pixel(c, i, j, kornSchwelle),
+                        k2 = pixel(c, i + 0.5, j + 0.5, kornSchwelle);
+                    deckt += k1;
+                    krone += Math.max(k1, k2);
+                    wechsel += Math.abs(k1 - k2);
+                }
+            zellen.push({ flimmern: krone ? wechsel / krone : 0, deckung: deckt / (N * N) });
+        }
+        return { lambda, N, zellen };
+    };
+}
+// (Z2) DAS FARB-KORN der Laub-Karte in der Mittelsicht (K20, 13.10.): das Kanten-Korn (oben) misst die Deckung, das Bild
+// der Welt flimmerte aber IN der Krone — Radeon, Ausgabe-Pfad, Eiche 25 m nur L1: Δ-Luma 3,41 je Pixel, davon 2,54 im
+// Kronen-Inneren; dieselbe Krone mit flacher Farbe (Atlas-Alpha, ohne Atlas-rgb) 2,04, das Innere 0,97 (K20n10/g1). Der
+// Täter ist das Detail der Atlas-FARBE unter zwei Pixeln. Messname: die Krone als Karte (wie oben), je voll deckendem
+// Pixel die Luma der Farbe (rgb ÷ alpha, wie der Leser `_blattAtlasProbe`) über die Halton-Unterproben, die deckend
+// sind; Farb-Korn = Σ|ΔL| / Σ L beim ½-Pixel-Versatz. Die Farbe liest ihre Stufe λ + Oktave (AnazhRealm.BLATT_FARBE_OKTAVE,
+// aus dem Stamm gelesen), die Deckung λ. Ziel: Farb-Korn der Welt ≤ FARB_KORN_ANTEIL × Farb-Korn ohne Oktave.
+const FARB_KORN_ANTEIL = 0.5;
+function farbKornReihe(mips, zBasis) {
+    const lin = new Float64Array(256);
+    for (let i = 0; i < 256; i++) {
+        const v = i / 255;
+        lin[i] = v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+    }
+    const stufe = (m, c, u, v) => {
+        const W = m.width,
+            H = m.height,
+            d = m.data;
+        const x = ((c + u) / 4) * W - 0.5,
+            y = v * H - 0.5;
+        const x0 = Math.floor(x),
+            y0 = Math.floor(y),
+            fx = x - x0,
+            fy = y - y0;
+        let l = 0,
+            a = 0;
+        for (let q = 0; q < 4; q++) {
+            const dx = q & 1,
+                dy = q >> 1;
+            const w = (dx ? fx : 1 - fx) * (dy ? fy : 1 - fy);
+            const o = (Math.min(H - 1, Math.max(0, y0 + dy)) * W + Math.min(W - 1, Math.max(0, x0 + dx))) * 4;
+            l += w * (0.2126 * lin[d[o]] + 0.7152 * lin[d[o + 1]] + 0.0722 * lin[d[o + 2]]);
+            a += (w * d[o + 3]) / 255;
+        }
+        return [l, a];
+    };
+    const versatz = Math.log2(PC.BLATT_ATLAS_ZELLE / zBasis);
+    const probe = (lam, c, u, v) => {
+        const l = Math.max(0, lam - versatz),
+            l0 = Math.min(mips.length - 1, Math.floor(l)),
+            l1 = Math.min(mips.length - 1, l0 + 1),
+            f = l - Math.floor(l);
+        const p0 = stufe(mips[l0], c, u, v);
+        if (l1 === l0 || f === 0) return p0;
+        const p1 = stufe(mips[l1], c, u, v);
+        return [p0[0] + (p1[0] - p0[0]) * f, p0[1] + (p1[1] - p0[1]) * f];
+    };
+    return (lambda, oktave) => {
+        const N = Math.max(4, Math.round(PC.BLATT_ATLAS_ZELLE / Math.pow(2, lambda)));
+        const pixel = (px, py) => {
+            let s = 0;
+            for (const [hx, hy] of KORN_HALTON) {
+                const u = (px + hx) / N,
+                    v = (py + hy) / N;
+                if (probe(lambda, 0, u, v)[1] < kornSchwelle()) return null; // nur voll deckende Pixel: das Innere
+                const [l, a] = probe(lambda + oktave, 0, u, v);
+                s += l / Math.max(a, 1e-3);
+            }
+            return s / KORN_HALTON.length;
+        };
+        let d = 0,
+            summe = 0;
+        for (let j = 0; j < N; j++)
+            for (let i = 0; i < N; i++) {
+                const l1 = pixel(i, j),
+                    l2 = pixel(i + 0.5, j + 0.5);
+                if (l1 == null || l2 == null) continue;
+                d += Math.abs(l1 - l2);
+                summe += (l1 + l2) / 2;
+            }
+        return summe > 0 ? d / summe : 0;
+    };
+}
+// Die Oktave der Farbe, wie der Stamm sie trägt (Kommentare zitieren — gelesen wird die Zuweisung); fehlt sie: 0.
+function farbOktave(quelle) {
+    const m = /\nAnazhRealm\.BLATT_FARBE_OKTAVE = ([0-9.]+);/.exec(quelle);
+    return m ? Number(m[1]) : 0;
+}
+function farbKornUrteil(fr, bcFmt, lambdaKrone, oktave) {
+    const v = [],
+        m = {};
+    const bc = fr.bc.mips.map((x) => ({
+        width: x.width,
+        height: x.height,
+        data: PC.bcDekodiere(x.data, x.width, x.height, bcFmt),
+    }));
+    for (const [fmt, mips] of [
+        ["bc", bc],
+        ["rgba", fr.rgba.mips],
+    ]) {
+        const r = farbKornReihe(mips, mips[0].width / 4);
+        const ohne = r(lambdaKrone, 0),
+            welt = r(lambdaKrone, oktave);
+        m[fmt] = { ohne, welt };
+        if (!(welt <= FARB_KORN_ANTEIL * ohne))
+            v.push(
+                `Farb-Korn ${fmt}: die Eichen-Krone auf 25 m (λ ${lambdaKrone.toFixed(2)}, Oktave ${oktave}) ${welt.toFixed(4)} > ${FARB_KORN_ANTEIL} × ${ohne.toFixed(4)} (ohne Oktave) — der Täter: _blattAtlasProbe liest die Farbe in der Stufe der Deckung`
+            );
+    }
+    return { v, m };
+}
+// Die Reihen je Format der Welt (die Fracht, wie die GPU sie liest) — `fr` = blattAtlasFracht(bild, true).
+function kornReihen(fr, bcFmt) {
+    const bc = fr.bc.mips.map((m) => ({
+        width: m.width,
+        height: m.height,
+        data: PC.bcDekodiere(m.data, m.width, m.height, bcFmt),
+    }));
+    return {
+        bc: kornReihe(bc, bc[0].width / 4),
+        rgba: kornReihe(fr.rgba.mips, fr.rgba.mips[0].width / 4),
+    };
+}
+// λ der Krone auf `dist` m: die Zelle der Karte in der Welt (Kante ÷ kern × Skala) auf dem Schirm (1080 px, 75°).
+function kronenLambda(T, skala, dist) {
+    const kante = kartenKante(T);
+    if (!kante) return null;
+    const zelleM = (kante / PC.BLATT_ATLAS_BREIT.kern) * skala;
+    const pxJeM = 1080 / (2 * dist * Math.tan((37.5 * Math.PI) / 180));
+    return Math.log2(PC.BLATT_ATLAS_ZELLE / (zelleM * pxJeM));
+}
+function kornUrteil(reihen, lambdaKrone, deckungLabor) {
+    const v = [],
+        m = {};
+    for (const [fmt, r] of Object.entries(reihen)) {
+        const kopf = r(lambdaKrone);
+        m[fmt] = kopf.zellen[0].flimmern;
+        if (kopf.zellen[0].flimmern > KORN_MAX)
+            v.push(
+                `Korn ${fmt}: die Eichen-Krone auf 25 m (λ ${lambdaKrone.toFixed(2)}, ${kopf.N} px) flimmert ${kopf.zellen[0].flimmern.toFixed(3)} > ${KORN_MAX}`
+            );
+        for (const lam of KORN_LAMBDA) {
+            const s = r(lam);
+            s.zellen.forEach((z, c) => {
+                if (deckungLabor && Math.abs(z.deckung - deckungLabor[c]) > 0.1)
+                    v.push(
+                        `Korn ${fmt} Zelle ${c} λ ${lam}: Deckung ${z.deckung.toFixed(3)} ≠ Stufe 0 ${deckungLabor[c].toFixed(3)} (± 0,1)`
+                    );
+            });
+            m[`${fmt}@${lam}`] = s.zellen.map((z) => `${z.flimmern.toFixed(3)}/${z.deckung.toFixed(2)}`).join(" ");
+        }
+    }
+    return { v, m };
+}
+// (H) DER HÖHEN-ZENSUS (K20): die Welt-Höhe einer Art = Höhe der gelieferten L0 × Welt-Skala × Größe des Wald-Gesetzes
+// (phyto-core forestTreeSize); der Altbestand sind die herrschenden Bäume (Größe p75 … p98 über die Bestandsdichte).
+// Die Spannen der Natur (Steckbriefe; nordstern §4.5): Buche 30–45, Fichte 30–50, Stieleiche 15–35, Birke 15–25 m.
+// H/D: Höhe durch den Stamm-Durchmesser in Brusthöhe (1,3 m Welt) — scale-frei, Bestand 40–100.
+const HOEHE_SPANNE = { buche: [30, 45], fichte: [30, 50], eiche: [15, 35], birke: [15, 25] };
+const HD_BESTAND = [40, 100];
+function altbestandGroesse() {
+    let a = 0x2545f491;
+    const rng = () => {
+        a = (a + 0x6d2b79f5) | 0;
+        let t = Math.imul(a ^ (a >>> 15), 1 | a);
+        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+    const s = [];
+    for (let i = 0; i < 4000; i++) s.push(PC.forestTreeSize(rng, i / 4000));
+    s.sort((x, y) => x - y);
+    return [s[Math.floor(0.75 * s.length)], s[Math.floor(0.98 * s.length)]];
+}
+function brustDurchmesser(T, yWelt, skala) {
+    const y = yWelt / skala;
+    let sx = 0,
+        sz = 0,
+        n = 0;
+    const pts = [];
+    for (const t of T) {
+        if (t.kind !== "bark") continue;
+        for (let i = 0; i + 2 < t.pos.length; i += 3)
+            if (Math.abs(t.pos[i + 1] - y) < 0.15) {
+                const x = t.pos[i],
+                    z = t.pos[i + 2];
+                if (Math.hypot(x, z) > 2) continue; // nur der Stamm um die Achse
+                pts.push([x, z]);
+                sx += x;
+                sz += z;
+                n++;
+            }
+    }
+    if (!n) return 0;
+    const mx = sx / n,
+        mz = sz / n;
+    // der Median der Abstände zur Achse: ein tief ansetzender Ast im Fenster verschiebt ihn nicht
+    const r = pts.map(([x, z]) => Math.hypot(x - mx, z - mz)).sort((p, q) => p - q)[pts.length >> 1];
+    return 2 * r * skala;
+}
+// DER SOLITÄR (K20, nordstern §4.5 „Solitär gedrungener", Soll-Bild Solitäreiche Marbach: tiefer Kronenansatz, kurzer dicker
+// Stamm): die Gestalt mit FREISTAND (ov freistand, die Gestalt V der Welt) trägt höchstens SOLITAER_HD × das H/D ihres Bestands,
+// und wo der Bestand seine Krone hebt (Kronenansatz ≥ 0,1 — der tiefste Nicht-Rinden-Punkt je Höhe), setzt ihre Krone
+// mindestens 0,05 tiefer an (die Birke trägt schon im Bestand Zweige am Fuß).
+const SOLITAER_HD = 0.6;
+// Der Kronenansatz des Solitärs (tiefstes Blatt ÷ Höhe, Solitäreiche Marbach): tief, aber über einem kurzen Stamm —
+// unter 0,08 steht die Krone als Busch auf dem Boden (Blick-Sonde 12.10.), über 0,35 trägt er den Bestands-Schaft.
+const SOLITAER_ANSATZ = [0.08, 0.35];
+function kronenAnsatz(T) {
+    let lo = Infinity;
+    for (const t of T) if (t.kind !== "bark") for (let i = 1; i < t.pos.length; i += 3) lo = Math.min(lo, t.pos[i]);
+    return lo;
+}
+function solitaerUrteil(roh, skala) {
+    const v = [],
+        m = {};
+    for (const art of Object.keys(HOEHE_SPANNE)) {
+        const b = roh[`${art}-s1-L0`],
+            f = roh[`${art}-s1-L0-frei`];
+        if (!b || !f) {
+            v.push(`Solitär ${art}: nicht gebaut`);
+            continue;
+        }
+        const hB = hoehe(b.T) * skala(art),
+            hF = hoehe(f.T) * skala(art);
+        const dB = brustDurchmesser(b.T, 1.3, skala(art)),
+            dF = brustDurchmesser(f.T, 1.3, skala(art));
+        const hdB = dB > 0 ? hB / dB : 0,
+            hdF = dF > 0 ? hF / dF : Infinity;
+        const kaB = kronenAnsatz(b.T) / hoehe(b.T),
+            kaF = kronenAnsatz(f.T) / hoehe(f.T);
+        m[art] =
+            `${hF.toFixed(1)} m · H/D ${hdF.toFixed(0)} (Bestand ${hdB.toFixed(0)}) · Kronenansatz ${kaF.toFixed(2)} (Bestand ${kaB.toFixed(2)})`;
+        if (!(hdF <= SOLITAER_HD * hdB))
+            v.push(
+                `Solitär ${art}: H/D ${hdF.toFixed(0)} nicht gedrungen (Bestand ${hdB.toFixed(0)}, Soll ≤ ${(SOLITAER_HD * hdB).toFixed(0)})`
+            );
+        if (!(kaF >= SOLITAER_ANSATZ[0] && kaF <= SOLITAER_ANSATZ[1]))
+            v.push(
+                `Solitär ${art}: Kronenansatz ${kaF.toFixed(2)} ausserhalb ${SOLITAER_ANSATZ.join("–")} (${kaF < SOLITAER_ANSATZ[0] ? "kein Stamm unter der Krone" : "die Krone sitzt hoch"})`
+            );
+    }
+    return { v, m };
+}
+function hoehenUrteil(roh, skala) {
+    const v = [],
+        m = {};
+    const [s0, s1] = altbestandGroesse();
+    for (const [art, sp] of Object.entries(HOEHE_SPANNE)) {
+        const f = roh[`${art}-s1-L0`];
+        if (!f) {
+            v.push(`Höhe: ${art} nicht gebaut`);
+            continue;
+        }
+        const h1 = hoehe(f.T) * skala(art);
+        const lo = h1 * s0,
+            hi = h1 * s1;
+        const D = brustDurchmesser(f.T, 1.3, skala(art));
+        const hd = D > 0 ? h1 / D : 0;
+        m[art] = `${lo.toFixed(1)}–${hi.toFixed(1)} m (Größe 1: ${h1.toFixed(1)} m) · H/D ${hd.toFixed(0)}`;
+        if (lo < sp[0] - 0.5 || hi > sp[1] + 0.5)
+            v.push(`Höhe ${art}: Altbestand ${lo.toFixed(1)}–${hi.toFixed(1)} m außerhalb ${sp[0]}–${sp[1]} m`);
+        if (!(hd >= HD_BESTAND[0] && hd <= HD_BESTAND[1]))
+            v.push(`H/D ${art}: ${hd.toFixed(0)} außerhalb ${HD_BESTAND.join("–")}`);
+    }
+    m.groesse = `${s0.toFixed(2)}–${s1.toFixed(2)}`;
+    return { v, m };
+}
+
+// Die Deckung der Stufe 0 je Zelle (das Labor-Bild, alphaTest 0,5) — der Maßstab „nah = fern".
+function deckungStufe0(bild) {
+    const m = bild.mips[0],
+        Z = m.width / 4,
+        out = [0, 0, 0, 0];
+    for (let y = 0; y < m.height; y++)
+        for (let x = 0; x < m.width; x++) if (m.data[(y * m.width + x) * 4 + 3] >= 128) out[Math.min(3, (x / Z) | 0)]++;
+    return out.map((n) => n / (Z * m.height));
+}
+
 function leserUrteil(quelle) {
     const v = [];
     const text = quelle.replace(/\/\/[^\n]*/g, ""); // Kommentare zitieren (Lehre 6) — gezählt wird Code
@@ -633,11 +989,14 @@ function windDatenUrteil(quellen) {
         rc = b.renderConfig || {};
         const art = (p) => buch[p] && buch[p].kind;
         const baeume = Object.keys(buch).filter((p) => art(p) === "tree");
-        const fall = async (presetId, lod, seed) => {
-            const k = `${presetId}-s${seed}-L${lod}`;
-            roh[k] = { presetId, lod, seed, T: teile((await build({ presetId, lod, seed, season: "summer" })).meshes) };
+        const fall = async (presetId, lod, seed, ov) => {
+            const k = `${presetId}-s${seed}-L${lod}${ov ? "-frei" : ""}`;
+            const msg = { presetId, lod, seed, season: "summer" };
+            if (ov) msg.ov = ov;
+            roh[k] = { presetId, lod, seed, T: teile((await build(msg)).meshes) };
         };
         for (const p of baeume) await fall(p, 0, 1);
+        for (const p of Object.keys(HOEHE_SPANNE)) await fall(p, 0, 1, { freistand: 1 });
         for (const p of baeume) await fall(p, 1, 1);
         await fall("birke", 0, 2);
         for (const p of Object.keys(buch).filter((x) => art(x) === "shrub"))
@@ -714,13 +1073,57 @@ function windDatenUrteil(quellen) {
     fails.push(...frachtUrteil(fracht), ...leserUrteil(quellen.Stamm));
     const fz = (s) => s.zellen.map((z) => z.Y.toFixed(3)).join("/");
     console.log(
-        "Fracht (Y je Zelle 0/1/2/3 ÷ wert, Labor | BC1 | rgba):\n" +
+        "Fracht (Y je Zelle 0/1/2/3 ÷ wert, Labor | BC3 | rgba):\n" +
             fracht.labor
                 .map((L) => {
-                    const b = fracht.welt.bc1.find((s) => s.Z === L.Z),
+                    const b = fracht.welt.bc.find((s) => s.Z === L.Z),
                         r = fracht.welt.rgba.find((s) => s.Z === L.Z);
                     return `  Zelle ${L.Z} px: ${fz(L)} | ${b ? fz(b) : "—"} | ${r ? fz(r) : "—"}`;
                 })
+                .join("\n")
+    );
+
+    // (Z) das Kanten-Flimmern der Laub-Karte in der Mittelsicht, je Format der Welt.
+    const eicheL1 = roh["eiche-s1-L1"];
+    const lamKrone = eicheL1 ? kronenLambda(eicheL1.T, skala("eiche"), 25) : null;
+    const frK = PC.blattAtlasFracht(bild, true);
+    const dk0 = deckungStufe0(bild);
+    let korn = null;
+    if (lamKrone == null) fails.push("Korn: die Eichen-L1 trägt keine Laub-Karte");
+    else {
+        korn = kornUrteil(kornReihen(frK, frK.bc.format || "bc1"), lamKrone, dk0);
+        fails.push(...korn.v);
+        console.log(
+            `Korn (Δ-Luma beim ½-Pixel-Versatz / Deckung, Zelle 0 1 2 3; Stufe 0 ${dk0.map((x) => x.toFixed(2)).join(" ")}):\n` +
+                `  Eichen-Krone auf 25 m (λ ${lamKrone.toFixed(2)}): bc ${korn.m.bc.toFixed(3)} · rgba ${korn.m.rgba.toFixed(3)} (≤ ${KORN_MAX})\n` +
+                KORN_LAMBDA.map((l) => `  λ ${l}: bc ${korn.m["bc@" + l]} | rgba ${korn.m["rgba@" + l]}`).join("\n")
+        );
+        const fk = farbKornUrteil(frK, frK.bc.format || "bc1", lamKrone, farbOktave(quellen.Stamm));
+        fails.push(...fk.v);
+        console.log(
+            `Farb-Korn (Σ|ΔL|/ΣL im Kronen-Inneren, ½-Pixel-Versatz; Oktave ${farbOktave(quellen.Stamm)}): ` +
+                Object.entries(fk.m)
+                    .map(([f, x]) => `${f} ${x.welt.toFixed(4)} (ohne Oktave ${x.ohne.toFixed(4)})`)
+                    .join(" · ") +
+                ` — Ziel ≤ ${FARB_KORN_ANTEIL} × ohne`
+        );
+    }
+
+    // (H) der Höhen-Zensus je Art gegen die Spanne der Natur, und H/D.
+    const hz = hoehenUrteil(roh, skala);
+    fails.push(...hz.v);
+    const so = solitaerUrteil(roh, skala);
+    fails.push(...so.v);
+    console.log(
+        "Solitär (FREISTAND, Größe 1):\n" +
+            Object.keys(HOEHE_SPANNE)
+                .map((a) => `  ${a}: ${so.m[a] || "—"}`)
+                .join("\n")
+    );
+    console.log(
+        `Höhen (Altbestand, Größe ${hz.m.groesse}):\n` +
+            Object.keys(HOEHE_SPANNE)
+                .map((a) => `  ${a}: ${hz.m[a]} (Natur ${HOEHE_SPANNE[a].join("–")} m)`)
                 .join("\n")
     );
 
@@ -803,11 +1206,82 @@ function windDatenUrteil(quellen) {
                 })
             ).v.length > 0,
         ]);
-    st.push(["BC1 gerade gelesen (ohne ÷ alpha)", frachtUrteil(frachtReihen(bild, false)).length > 0]);
+    st.push(["BC gerade gelesen (ohne ÷ alpha)", frachtUrteil(frachtReihen(bild, false)).length > 0]);
     st.push([
         "Leser teilt nicht durch alpha",
         leserUrteil(quellen.Stamm.replace(".rgb.div(s.a.max(T.float(1e-3)))", ".rgb")).length > 0,
     ]);
+    // Korn: jede Stufe ab 1 je Texel gegen ein Hash-Raster binär geschnitten (die Deckung im Mittel gleich) — die Linse
+    // muss das Flimmern nennen.
+    if (lamKrone != null) {
+        const kornig = (mips) =>
+            mips.map((m, k) => {
+                if (k === 0) return m;
+                const d = new Uint8Array(m.data);
+                for (let i = 0; i < d.length; i += 4) {
+                    const h = ((Math.imul(i >> 2, 0x9e3779b1) >>> 0) % 251) + 2;
+                    d[i + 3] = d[i + 3] >= h ? 255 : 0;
+                }
+                return { width: m.width, height: m.height, data: d };
+            });
+        const r = {
+            rgba: kornReihe(kornig(frK.rgba.mips), frK.rgba.mips[0].width / 4),
+        };
+        st.push(["Korn je Texel", kornUrteil(r, lamKrone, null).v.length > 0]);
+        // Farb-Korn: der Stamm ohne Oktave (die Farbe in der Stufe der Deckung) MUSS den Leser beim Namen nennen.
+        const ohneOktave = quellen.Stamm.replace(
+            /\nAnazhRealm\.BLATT_FARBE_OKTAVE = [0-9.]+;/,
+            "\nAnazhRealm.BLATT_FARBE_OKTAVE = 0;"
+        );
+        st.push([
+            "Farb-Korn ohne Oktave",
+            farbKornUrteil(frK, frK.bc.format || "bc1", lamKrone, farbOktave(ohneOktave)).v.length > 0,
+        ]);
+    }
+    // (H) an kranken Kopien des Zensus (K20): die Buche gestaucht auf 0,6 ihrer Höhe (der Wald von gestern, 18–27 m) und
+    // ihr Stamm in x/z × 4 (der Stamm vor dem Welt-Maß, H/D 15) — beide MÜSSEN die Buche beim Namen nennen.
+    {
+        const verzerrt = (T, ky, kxz) =>
+            T.map((t) => {
+                if (!t.pos) return t;
+                const p = Float32Array.from(t.pos);
+                for (let i = 0; i < p.length; i += 3) {
+                    p[i] *= kxz;
+                    p[i + 1] *= ky;
+                    p[i + 2] *= kxz;
+                }
+                return Object.assign({}, t, { pos: p });
+            });
+        const krank = (ky, kxz) => {
+            const r2 = Object.assign({}, roh);
+            if (roh["buche-s1-L0"])
+                r2["buche-s1-L0"] = Object.assign({}, roh["buche-s1-L0"], {
+                    T: verzerrt(roh["buche-s1-L0"].T, ky, kxz),
+                });
+            return hoehenUrteil(r2, skala).v;
+        };
+        st.push(["Höhe gestaucht (Buche × 0,6)", krank(0.6, 1).some((x) => /^Höhe buche:/.test(x))]);
+        st.push(["Stamm × 4 (Buche H/D)", krank(1, 4).some((x) => /^H\/D buche:/.test(x))]);
+        // der kranke Solitär: die Bestandsgestalt an seiner Stelle (FREISTAND ungelesen) muss beim Namen feuern
+        const r3 = Object.assign({}, roh);
+        if (roh["eiche-s1-L0"]) r3["eiche-s1-L0-frei"] = roh["eiche-s1-L0"];
+        st.push(["Solitär = Bestand (Eiche)", solitaerUrteil(r3, skala).v.some((x) => /^Solitär eiche:/.test(x))]);
+        // der Busch-Solitär: die Krone des Solitärs auf den Boden gesenkt (kein Stamm unter ihr) muss beim Namen feuern
+        const fr = roh["eiche-s1-L0-frei"];
+        if (fr) {
+            const lo = kronenAnsatz(fr.T);
+            const T = fr.T.map((t) =>
+                t.kind === "bark"
+                    ? t
+                    : Object.assign({}, t, { pos: Array.from(t.pos, (v, i) => (i % 3 === 1 ? v - lo : v)) })
+            );
+            const r4 = Object.assign({}, roh, { "eiche-s1-L0-frei": Object.assign({}, fr, { T }) });
+            st.push([
+                "Busch-Solitär (Eiche)",
+                solitaerUrteil(r4, skala).v.some((x) => /^Solitär eiche: Kronenansatz .*kein Stamm/.test(x)),
+            ]);
+        }
+    }
     if (eiche)
         st.push(["Welt-δ ×0,5 (f0 gegen das Gesetz)", windUrteil("halb", eiche.T, skala("eiche"), 0.5).v.length > 0]);
     st.push([

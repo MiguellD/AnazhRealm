@@ -1149,6 +1149,8 @@ class AnazhRealm_Z05a {
     static _weltMetaHeil(m) {
         if (typeof m.seed !== "string" || m.seed.length === 0) m.seed = "anazh-realm-seed";
         m.voxelTerrain = true;
+        // K16: das Gelände ist das Flussnetz des Gesetzbuchs — der Ein-Massiv-Anker alter Welten fällt (sie ziehen um).
+        delete m.macro;
     }
 
     // DIE WELTGRENZE (Gegenprüfung Runde 2, 10.10.): eine geladene Welt ERSETZT das worldMeta der Seite — die Vorlage,
@@ -1452,7 +1454,7 @@ class AnazhRealm_Z05a {
             creatures: [],
             creatureEmotions: [],
             terrainSteepness: 1.0,
-            terrainBaseHeight: 0.0,
+            terrainBaseHeight: globalThis.__gelaendeCore.GRUND.basis, // der Grund einer frisch geborenen Welt (Kern)
             weather: "sunny",
             // Eine neue Welt ist eigenständig: sie erbt von der alten NUR die Wahl des Schöpfers (die Positiv-Liste
             // `AnazhRealm.WELT_GRENZE.geburt`: visibility, creator), nie ihre Identität — keine parentWorlds (Fusion: Ring

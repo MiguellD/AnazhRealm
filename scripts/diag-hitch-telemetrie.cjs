@@ -238,7 +238,13 @@ function erstWandInstall() {
         const t0 = performance.now();
         await bisEreignis(() => (!ESt || ESt.offen.size === 0) && (!U || U.imFlug.size === 0), 50);
         ruheOffen = ESt ? ESt.offen.size : 0;
-        return Math.round(performance.now() - t0);
+        const ms = Math.round(performance.now() - t0);
+        window.__erstWandRuhe = {
+            ms,
+            offen: ruheOffen,
+            namen: ESt ? [...ESt.offen.keys()].map((p) => ESt.namen.get(p) || "ohne Namen") : [],
+        };
+        return ms;
     };
     const probe = (vendor) => buehne(() => probeAufDerBuehne(vendor));
     const probeAufDerBuehne = async (vendor) => {
@@ -785,10 +791,16 @@ function erstWandInstall() {
         // Protokoll-Frist (600 s) — dann nennt der Wurf die Probe beim Namen
         const ruf = async (name, fn, arg) => {
             const t0 = Date.now();
+            await page.evaluate(() => (window.__erstWandRuhe = null));
             const v = await page.evaluate(fn, arg).catch((e) => {
                 throw new Error(`[Erst-Zeichnung] ${name} nach ${Math.round((Date.now() - t0) / 1000)} s: ${(e && e.message) || e}`);
             });
             console.log(`  [Erst-Zeichnung] ${name}: ${Math.round((Date.now() - t0) / 1000)} s`);
+            const ru = await page.evaluate(() => window.__erstWandRuhe);
+            if (ru && ru.offen)
+                console.log(
+                    `  [Erst-Zeichnung] ${name}: die Ruhe endete nach ${ru.ms} ms mit ${ru.offen} offenen Pipelines der Welt — ${ru.namen.join(" · ")}`
+                );
             return v;
         };
         await page.evaluate(`(${erstWandInstall.toString()})()`);

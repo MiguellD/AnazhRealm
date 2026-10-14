@@ -10,6 +10,9 @@ class AnazhRealm_Z12 {
                       z: this.state.playerMesh.position.z,
                   }
                 : { x: 0, y: 5, z: 0 },
+            // DIE BODEN-GENERATION (K16): unter welchem Gelände-Gesetz die Höhen dieses Saves stehen (`_bodenUmzug`).
+            bodenGeneration: globalThis.__gelaendeCore.BODEN_GENERATION,
+            spielerUeberGrund: this.state.playerMesh ? this._ueberGrund(this.state.playerMesh.position) : undefined,
             knowledgeBase: knowledgeBase,
             version: this.state.currentVersion,
             selfAwareness: this.state.selfAwareness,
@@ -214,6 +217,8 @@ class AnazhRealm_Z12 {
                 id: a.id,
                 type: a.type,
                 position: { x: a.position.x, y: a.position.y, z: a.position.z },
+                // die Höhe über dem Boden des Gesetzes: der Boden-Umzug stellt sie auf einem neuen Boden wieder her
+                ueberGrund: this._ueberGrund(a.position),
                 seed: a.seed,
                 scale: Number.isFinite(a.scale) ? a.scale : 1,
                 // W-H (V18.179, V8.59-Klasse) — die Pro-Instanz-Yaw überlebt den

@@ -7,26 +7,18 @@
             "probe": "jeder Golden-Fall mit Samen 7 im Sommer (21 Arten, alle Stufen)",
             "powWirt": "das gepinnte Chrome (puppeteer aus package-lock, 148.0.7778.97) - CI und lokal dieselbe V8; ein Chrome-Wechsel ist der Ausloeser, pow kippt dann 16 Faelle",
             "kippt": {
-                "pow": 16,
-                "hypot": 29,
-                "sin": 23,
-                "cos": 18
+                "pow": 2,
+                "hypot": 10,
+                "sin": 4,
+                "cos": 1
             },
             "taeter": {
-                "pow": "phyto-core.js:80 pow (D = pow(2 H / k, 1,5), der Stamm-Durchmesser)",
-                "hypot": "phyto-core.js:43 hypot (vlen, die Vektor-Laenge des Wuchses)",
-                "sin": "phyto-core.js:307 sin (cdir, die Biegung der Kind-Achse)",
-                "cos": "phyto-core.js:52 cos (die Drehung im Wuchs)"
+                "pow": "phyto-core.js:76 pow (D = pow(2 H / k, 1,5), der Stamm-Durchmesser)",
+                "hypot": "phyto-core.js:39 hypot (vlen, die Vektor-Laenge des Wuchses)",
+                "sin": "phyto-core.js:313 sin (cdir, die Biegung der Kind-Achse)",
+                "cos": "phyto-core.js:48 cos (die Drehung im Wuchs)"
             },
-            "soll": "0 - EIN Byte-Raster am Ausgang der Bruecke (build-asset); es kommt mit dem naechsten v1-Akt (W3 Pflanzen-L1 oder W5 Farb-Akt), nie als eigener Byte-Akt",
-            "hebung": [
-                {
-                    "karte": "K24",
-                    "hypot": "26 -> 29",
-                    "sin": "21 -> 23",
-                    "grund": "die Konifere waechst mit dem Quirl-Abstand des Gesetzes (mehr Quirle je Stamm): mehr Wuchs-Aufrufe an der letzten Bit-Kante; das Byte-Raster am Ausgang von buildInstance bringt K20 (wald-mass 7ba7a0db) mit dem naechsten v1-Akt, dann Soll 0"
-                }
-            ]
+            "soll": "0 - das Byte-Raster am Ausgang von foundry-core buildInstance steht seit K20 (pow 16 -> 2, hypot 26 -> 10, sin 21 -> 4, cos 18 -> 1); der Rest kippt diskrete Entscheidungen des Wuchses (Schwellen auf Radius und Laenge) - 0 braucht das Raster IM Wuchs"
         },
         "v3": {
             "kern": "vehicle-core.js",
@@ -102,11 +94,11 @@
         },
         "ofen": {
             "kern": "foundry-core.js (Ofen, BAKERS_BY_KIND.kreatur/.koerper) + tetrapoda-core.js + koerper-core.js",
-            "faelle": 483,
-            "probe": "jede Klasse des Ofen-Goldens (189 Stoff-Klassen x Gelenk, 284 Gelenke, 10 Beipacks)",
+            "faelle": 464,
+            "probe": "jede Klasse des Ofen-Goldens (170 Stoff-Klassen x Gelenk, 284 Gelenke, 10 Beipacks)",
             "kippt": {
-                "cos": 269,
-                "sin": 220
+                "cos": 256,
+                "sin": 205
             },
             "taeter": {
                 "cos": "tetrapoda-core.js:1722 cos (frontYReach, die Reichweite des Vorderlaufs)",

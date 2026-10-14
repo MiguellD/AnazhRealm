@@ -3,11 +3,16 @@
 // die SYNCHRONE Main-Thread-Zeit jeder bis `_gameLoopTick` existiert (= die Kontrolle kommt). Null-
 // Renderer → hardware-unabhängig (ein dominanter Synchron-Block friert jede Hardware). Zeigt, WO die
 // Sekunden vor der Kontrolle hingehen + was schon deferiert ist (Kreaturen) vs was den Pfad blockt.
+// DIE WAND MISST ODER BRICHT (K16, Pruefung 13.10.: sie druckte "?" und EXIT 0): jede benannte Methode muss am Prototyp
+// leben (eine gefallene, etwa die Kachel-Erosion, nennt sie beim Namen), Setter und Kontrolle muessen beobachtet sein, und
+// vor der Kontrolle zaehlt nur, was vor ihr endete (bis 13.10. zaehlten die Kreaturen danach mit: Schaetzung -416 ms).
+// Port: BOOT_BREAKDOWN_PORT (Standard 4413). `--selbsttest`: eine erfundene Methode muss die Wand ROT machen.
 const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
-const PORT = 4413;
+const PORT = Number(process.env.BOOT_BREAKDOWN_PORT || 4413);
+const SELBSTTEST = process.argv.includes("--selbsttest");
 const root = path.resolve(__dirname, "..");
 const mime = {
     ".html": "text/html",
@@ -47,7 +52,7 @@ const server = http.createServer((req, res) => {
     page.on("pageerror", (e) => {
         pageErr = (e.stack || e.message).split("\n")[0];
     });
-    await page.evaluateOnNewDocument(() => {
+    await page.evaluateOnNewDocument((selbsttest) => {
         window.__anazhHeadlessNullRenderer = true;
         window.__bootT = {};
         window.__tNav = performance.now();
@@ -55,20 +60,21 @@ const server = http.createServer((req, res) => {
         const METHODS = [
             "init",
             "generateTerrainWithParameters",
-            "_worldgenComputeErosionAndTarns",
             "_worldgenSpawnFloatingIslands",
             "_worldgenBuildVoxelChunkCache",
             "_worldgenComputeAndBuildHydrosphere",
             "_bootDeferCreatures",
             "spawnCreatures",
             "_spawnOneInitialCreature",
-            "_buildCreatureSkinGeometry",
             "_buildHumanoidRig",
             "_buildHumanGroup",
             "forgeAvatar",
             "_ensureGenesisPlatform",
             "_ensureSkyEnvironment",
         ];
+        if (selbsttest) METHODS.push("_gibtEsNichtSelbsttest");
+        window.__bootFehlt = [];
+        window.__bootVorKontrolle = {};
         Object.defineProperty(window, "anazhRealm", {
             configurable: true,
             get() {
@@ -82,13 +88,22 @@ const server = http.createServer((req, res) => {
                     const T = window.__bootT;
                     for (const name of METHODS) {
                         const orig = proto[name];
-                        if (typeof orig !== "function" || orig.__wrapped) continue;
+                        if (typeof orig !== "function") {
+                            window.__bootFehlt.push(name);
+                            continue;
+                        }
+                        if (orig.__wrapped) continue;
                         const w = function (...a) {
                             const t0 = performance.now();
                             try {
                                 return orig.apply(this, a);
                             } finally {
-                                T[name] = (T[name] || 0) + (performance.now() - t0);
+                                const ms = performance.now() - t0;
+                                T[name] = (T[name] || 0) + ms;
+                                if (window.__tReady == null) {
+                                    const V = window.__bootVorKontrolle;
+                                    V[name] = (V[name] || 0) + ms;
+                                }
                                 T["#" + name] = (T["#" + name] || 0) + 1;
                             }
                         };
@@ -101,7 +116,7 @@ const server = http.createServer((req, res) => {
                 }
             },
         });
-    });
+    }, SELBSTTEST);
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
     await page.evaluate(async () => {
         const start = performance.now();
@@ -120,6 +135,8 @@ const server = http.createServer((req, res) => {
         tSet: window.__tSet,
         tReady: window.__tReady,
         err: window.__bootErr || null,
+        fehlt: window.__bootFehlt || null,
+        V: window.__bootVorKontrolle || {},
     }));
 
     console.log("\n===== BOOT-AUFSCHLÜSSELUNG (Sync-Block vor der Kontrolle) =====\n");
@@ -138,16 +155,34 @@ const server = http.createServer((req, res) => {
     for (const row of rows) {
         console.log(`  ${row.k.padEnd(36)} ${row.ms.toFixed(0).padStart(7)}   ${String(row.n).padStart(5)}`);
     }
-    const creatures = (T._bootDeferCreatures || 0) + (T.spawnCreatures || 0);
-    const skin = (T._buildCreatureSkinGeometry || 0) + (T._buildHumanoidRig || 0);
+    const V = r.V || {};
+    // spawnCreatures laeuft IN _bootDeferCreatures: die Summe zaehlte die Kreaturen doppelt (Schaetzung -521 ms).
+    const creatures = Math.max(V._bootDeferCreatures || 0, V.spawnCreatures || 0);
+    const skin = V._buildHumanoidRig || 0;
     console.log(
-        `\n  → Kreaturen-Sync (headless sofort, in PROD deferiert): ${creatures.toFixed(0)} ms (davon Skin ${skin.toFixed(0)} ms)`
+        `\n  → Kreaturen-Sync vor der Kontrolle (in PROD deferiert): ${creatures.toFixed(0)} ms (davon Rig ${skin.toFixed(0)} ms)`
     );
     console.log(
         `  → PROD-Sync-Schätzung (init − Kreaturen):              ${initMs != null ? (initMs - creatures).toFixed(0) : "?"} ms`
     );
+    // DAS URTEIL: gemessen ist nur, was beobachtet wurde — sonst ROT mit dem Grund.
+    const rot = [];
+    if (pageErr) rot.push("Seiten-Fehler: " + pageErr);
+    if (r.err) rot.push("Haken-Fehler: " + r.err);
+    if (r.tSet == null) rot.push("der Setter von window.anazhRealm feuerte nie");
+    if (r.tReady == null) rot.push("die Kontrolle (_gameLoopTick) kam nie binnen 60 s");
+    if (!r.fehlt) rot.push("der Haken lief nie (keine Methoden-Liste)");
+    else for (const n of r.fehlt) rot.push("Methode fehlt am Prototyp: " + n);
+    if (!(T.init > 0)) rot.push("init() ohne Messung");
     console.log("");
+    for (const g of rot) console.log("  ROT " + g);
+    const exit = SELBSTTEST ? (rot.some((g) => g.includes("_gibtEsNichtSelbsttest")) ? 0 : 1) : rot.length ? 1 : 0;
+    console.log(
+        SELBSTTEST
+            ? "  SELBSTTEST: die erfundene Methode macht die Wand " + (exit === 0 ? "ROT (richtig)" : "NICHT rot (Linse blind)")
+            : "  URTEIL: " + (rot.length ? "ROT (" + rot.length + ")" : "gemessen")
+    );
     await browser.close();
     server.close();
-    process.exit(0);
+    process.exit(exit);
 })();

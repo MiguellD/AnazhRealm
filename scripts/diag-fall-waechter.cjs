@@ -10,11 +10,11 @@
 // (`_creatureGroundY` → `_koerperBodenUnter`) lasen den Boden unter dem Körper schon. Die Wand (Null-Renderer, echter
 // Spiel-Takt `_gameLoopTick`, die Boden-Wahrheit ist das Dichtefeld selbst — der erste Fels unter dem Körper):
 //   (O) DIE ORTE DER SCHAU
-//       O1 der Wagen im Spaltgrund unter dem Überhang (−900,6/−976,1): aufgesessen, in der Luft wie in der Schau — nach 4 s
+//       O1 der Wagen im Spaltgrund unter dem Überhang (die nächste Spalte um −900,6/−976,1, in die er passt): aufgesessen, in der Luft wie in der Schau — nach 4 s
 //          steht er auf seinem Grund (≤ STEHT_M daneben), er war nie tiefer als FALL_M unter ihm;
 //       O2 die Fahrt der Schau: der GT mit 10,6 m/s über die Spaltkante (Start −912/−975, Fahrt +x, 4 s Gas), 20 s — nie
 //          tiefer als FALL_M unter seinem Grund, nie unter der Todes-Ebene;
-//       O3 die Höhle der Boden-Funktion (−875,5/−1229,4, Fels 38,5–48,5 m, Luft 30–38,5 m): ein Wagen auf dem Höhlen-Grund,
+//       O3 die Höhle der Boden-Funktion (die nächste Kammer um −875,5/−1229,4 mit Wand, `spaltenUm`): ein Wagen auf dem Höhlen-Grund,
 //          ein an die nächste Wand gestoßener Wolf, ein in sie laufender Wolf, der Spieler zu Fuß — jeder steht am Ende auf
 //          dem Grund, keiner unter ihm, keiner auf dem Dach (die Wand hält den Leib: CI 38009273564 trug ein Stoß den Wolf in
 //          den Fels, sein Boden fiel auf die Oberkante der Säule, 11,88 m auf dem Dach); und ein Wolf, der auf dem Grund
@@ -44,6 +44,7 @@
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
+const { messort } = require("./lib/welt-orte.cjs");
 
 const root = path.resolve(__dirname, "..");
 const FALL_M = 1.0; // so tief darf ein Körper nie unter dem Fels unter ihm liegen
@@ -96,6 +97,10 @@ const OBERKANTE_BENANNT = {
     _creatureWaterContextAt: [["_voxelSurfaceY"], "Ufer-Suche: Land in den Nachbar-Spalten, nie der Boden des Leibs"],
     _archFundamentBox: [["getTerrainHeightAt"], "Bauwerk: das Podest eines Hauses (kein Leib)"],
     _bergSchattenVerdeckt: [["_terrainMacroSurfaceY"], "Sicht: die Berg-Verdeckung einer Region (kein Leib)"],
+    _bodenUmzug: [
+        ["_voxelSurfaceY"],
+        "Platzierung: ein Save eines alten Bodens setzt Bauten und Spieler auf die Oberfläche des neuen (K16)",
+    ],
 };
 
 // DIE QUELLEN-WAND (AST): je Körper-Schritt die Rufe eines Dach-Lesers (Täter) und ob er einen Boden-Leser ruft; jeder
@@ -631,48 +636,112 @@ async function probe(K) {
     };
     const proben = [];
     const ort = (x, z) => x.toFixed(1) + "/" + z.toFixed(1);
-    // DIE ÜBERHANG-SPALTEN um (cx, cz): von der Oberkante abwärts Fels ≥ felsMin, dann Luft ≥ luftMin, dann ein Grund ≥ 1 m Fels.
-    const spaltenUm = (cx, cz, n, felsMin = 2, luftMin = 3) => {
+    // DIE WAND DER HÖHLE (die Wahrheit der Linse, das Dichtefeld): je Richtung (16) der erste Abstand, an dem der Fels vom
+    // Fuß + einer Stufe bis über zwei weitere Meter reicht — dort ist kein Boden in der Schicht des Körpers, nur Wand. Die
+    // nächste Wand im Umkreis von 2,5 m, sonst null.
+    const wandUm = (x, z, grund) => {
+        let best = null;
+        for (let k = 0; k < 16; k++) {
+            const w = (k / 16) * Math.PI * 2;
+            const dx = Math.cos(w),
+                dz = Math.sin(w);
+            for (let d = 0.1; d <= 2.5 && (!best || d < best.d); d += 0.1) {
+                const px = x + dx * d,
+                    pz = z + dz * d;
+                let fels = true;
+                for (let yy = grund + A.PLAYER_STEP_UP; yy <= grund + A.PLAYER_STEP_UP + 2.1 && fels; yy += 0.25)
+                    fels = r._fieldSolid(px, yy, pz);
+                if (fels) {
+                    best = { dx, dz, d };
+                    break;
+                }
+            }
+        }
+        return best;
+    };
+    // DER LEIB PASST (K16, das Flussnetz-Gelände): seine Höhlen sind Gänge 16 m unter dem Boden, oft schmaler als der Wagen —
+    // ein Körper, den die Probe halb in die Wand setzt, steht in keiner Höhle, ihn trägt die Säule (die Platzierung im Gestein,
+    // `_koerperBodenUnter`; am Gang −885,5/−1240,5 standen zwei Räder des GT im Fels, er stand 29,5 m auf dem Dach). Im Umkreis
+    // R (der Wagen: KAMMER_R, die halbe Diagonale des GT, 1,66 m; der Wolf: WOLF_R, seine Länge) ist es ein GRUND: der Fels
+    // liegt im Abstand r höchstens r · GRUND_STEIG über oder unter dem der Spalte (≤ 18°, der Leib ruht; am ersten Wolf-Ort um
+    // −897,8/−1252,3 fiel der Gang mit 38° zur Wand, die Wölfe glitten 2 m), darüber Luft bis + 2,4 m.
+    const KAMMER_R = 1.8,
+        WOLF_R = 0.9,
+        GRUND_STEIG = 1 / 3;
+    const leibPasst = (x, z, g, R) => {
+        for (let k = 0; k < 12; k++) {
+            const w = (k / 12) * Math.PI * 2;
+            for (const rr of [R / 2, R]) {
+                const px = x + Math.cos(w) * rr,
+                    pz = z + Math.sin(w) * rr;
+                const d = rr * GRUND_STEIG;
+                for (let yy = g + d + 0.05; yy <= g + 2.4; yy += 0.3) if (r._fieldSolid(px, yy, pz)) return false;
+                let fy = g + d + 0.05;
+                while (fy > g - d && !r._fieldSolid(px, fy, pz)) fy -= 0.05;
+                if (fy <= g - d) return false;
+            }
+        }
+        return true;
+    };
+    // DIE ÜBERHANG-SPALTEN um (cx, cz): von der Oberkante abwärts Fels ≥ felsMin, dann Luft ≥ luftMin, dann ein Grund ≥ 1 m Fels,
+    // und der Leib im Umkreis R passt (`leibPasst`); `mitWand` verlangt die Wand der Höhle im Umkreis von 2,5 m (die Wolf-Proben). Der Ort
+    // kommt aus der Welt: Ringe alle 2 m bis 60 m, ihre Punkte höchstens 2 m auseinander, der Fels in 0,25-m-Schritten, der
+    // Grund auf 2 cm.
+    const spaltenUm = (cx, cz, n, felsMin = 2, luftMin = 3, mitWand = false, R = KAMMER_R) => {
         const out = [];
-        for (let rr = 0; rr <= 40 && out.length < n; rr += 3)
-            for (let k = 0; k < 12 && out.length < n; k++) {
-                const w = (k / 12) * Math.PI * 2 + rr * 0.37;
+        for (let rr = 0; rr <= 60 && out.length < n; rr += 2) {
+            const nk = Math.max(1, Math.ceil((2 * Math.PI * rr) / 2));
+            for (let k = 0; k < nk && out.length < n; k++) {
+                const w = (k / nk) * Math.PI * 2 + rr * 0.37;
                 const x = cx + Math.cos(w) * rr,
                     z = cz + Math.sin(w) * rr;
+                if (out.some((o) => Math.hypot(o.x - x, o.z - z) < 5)) continue;
                 const top = dachAn(x, z);
                 if (!Number.isFinite(top)) continue;
                 // von der Oberkante abwärts: Fels, dann Luft, dann ein Grund aus Fels
                 let y = top - 0.05;
                 let fels = 0;
-                while (y > top - 40 && r._fieldSolid(x, y, z)) {
-                    y -= 0.1;
-                    fels += 0.1;
+                while (y > top - 50 && r._fieldSolid(x, y, z)) {
+                    y -= 0.25;
+                    fels += 0.25;
                 }
                 if (fels < felsMin) continue;
                 let luft = 0;
-                while (y > top - 60 && !r._fieldSolid(x, y, z)) {
-                    y -= 0.1;
-                    luft += 0.1;
+                while (y > top - 70 && !r._fieldSolid(x, y, z)) {
+                    y -= 0.25;
+                    luft += 0.25;
                 }
-                if (luft < luftMin || y <= top - 60) continue;
+                if (luft < luftMin || y <= top - 70) continue;
                 if (!r._fieldSolid(x, y - 1, z)) continue;
-                if (out.some((o) => Math.hypot(o.x - x, o.z - z) < 5)) continue;
+                while (r._fieldSolid(x, y + 0.02, z)) y += 0.02;
+                if (!leibPasst(x, z, y, R)) continue;
+                if (mitWand && !wandUm(x, z, y)) continue;
                 out.push({ x, z, grund: y, dach: top });
             }
+        }
         return out;
     };
-    // ── O1 DER WAGEN UNTER DEM ÜBERHANG (Spaltgrund −900,6/−976,1)
-    const O1 = { x: -900.6, z: -976.1 };
+    // ── O1 DER WAGEN UNTER DEM ÜBERHANG
+    // Seit K16 (das Flussnetz-Gelände, die Canyon-Maske fiel) liegt dort kein offener Spalt mehr: der Ort ist die nächste
+    // Spalte, in die der Wagen passt, mit ≥ 4 m Fels über ≥ 3 m Luft (`spaltenUm`) — gelesen aus der Welt, nie ein Literal.
+    // die Mitte der Suche ist der Messort der Band-Serie (spec/profiband/haushalt.json, `K.mess`), nie ein Ort der alten Welt
+    const O1 = K.mess;
+    let O1s;
     const o1 = async (name) => {
-        await einschwingen(-904, -975);
-        raeumen(O1.x, O1.z, 30);
-        const grund = grundUnter(O1.x, 20, O1.z);
-        if (!Number.isFinite(grund) || grund > 18 || dachAn(O1.x, O1.z) - grund < 8)
+        if (O1s === undefined) {
+            await einschwingen(O1.x, O1.z);
+            O1s = spaltenUm(O1.x, O1.z, 1, 4, 3)[0] || null;
+        }
+        if (!O1s) return { name, fehler: `kein Überhang um ${ort(O1.x, O1.z)} (keine Spalte, in die der Wagen passt)` };
+        await einschwingen(O1s.x, O1s.z);
+        raeumen(O1s.x, O1s.z, 30);
+        const grund = grundUnter(O1s.x, O1s.grund + 1, O1s.z);
+        if (!Number.isFinite(grund) || dachAn(O1s.x, O1s.z) - grund < 8)
             return {
                 name,
-                fehler: `kein Überhang an ${ort(O1.x, O1.z)} (Grund ${grund}, Oberkante ${dachAn(O1.x, O1.z)})`,
+                fehler: `kein Überhang an ${ort(O1s.x, O1s.z)} (Grund ${grund}, Oberkante ${dachAn(O1s.x, O1s.z)})`,
             };
-        const e = await wagen(O1.x, O1.z, grund, Math.PI / 2);
+        const e = await wagen(O1s.x, O1s.z, grund, Math.PI / 2);
         if (!e) return { name, fehler: "der GT ließ sich nicht setzen/aufsitzen" };
         for (let i = 0; i < 3; i++) takt();
         const fz = e._fahr;
@@ -710,12 +779,18 @@ async function probe(K) {
     // ── O2 DIE SCHAU-FAHRT über die Spaltkante
     {
         const name = "O2 Schau-Fahrt über die Spaltkante";
-        const S = { x: -912, z: -975 };
-        const grund = grundUnter(S.x, r._voxelSurfaceY(S.x, S.z) + 1, S.z);
-        const e = await wagen(S.x, S.z, grund, Math.PI / 2);
-        if (!e) proben.push({ name, fehler: "der GT ließ sich nicht setzen/aufsitzen" });
+        // der Start liegt 11,4 m vor der Spalte aus O1 (aus der Welt, `spaltenUm`), die Fahrt quert ihre Kante längs +x
+        if (O1s === undefined) {
+            await einschwingen(O1.x, O1.z);
+            O1s = spaltenUm(O1.x, O1.z, 1, 4, 3)[0] || null;
+        }
+        const S = O1s ? { x: O1s.x - 11.4, z: O1s.z + 1.1 } : null;
+        const grund = S ? grundUnter(S.x, r._voxelSurfaceY(S.x, S.z) + 1, S.z) : NaN;
+        const e = S ? await wagen(S.x, S.z, grund, Math.PI / 2) : null;
+        if (!S) proben.push({ name, fehler: `keine Spalte um ${ort(O1.x, O1.z)} (O1) — die Kante fehlt` });
+        else if (!e) proben.push({ name, fehler: "der GT ließ sich nicht setzen/aufsitzen" });
         else {
-            raeumen(-900, -975, 40);
+            raeumen(O1s.x, O1s.z, 40);
             for (let i = 0; i < 12; i++) takt();
             st.playerVel.setValue(10.6, 0, 0);
             if (e._fahr) e._fahr.vlong = 10.6;
@@ -732,27 +807,32 @@ async function probe(K) {
         }
     }
     // ── O3 DIE HÖHLE der Boden-Funktion
-    const O3 = { x: -875.5, z: -1229.4 };
+    const O3 = K.mess; // die Mitte der Suche: der Messort (s. O1)
     await einschwingen(O3.x, O3.z);
-    raeumen(O3.x, O3.z, 40);
-    // die Höhle am Ort der Schau: die nächste Spalte mit ≥ 4 m Fels über ≥ 3 m Luft (das Dichtefeld des Orts trägt den
-    // Fluss-Schnitt seiner Hydro-Kachel — die Höhe der Decke wandert um Meter, die Höhle bleibt)
-    const hs = spaltenUm(O3.x, O3.z, 1, 4, 3)[0] || null;
+    // die Höhle am Ort der Schau: die nächste Spalte mit ≥ 4 m Fels über ≥ 3 m Luft, in die der Leib passt (K16: die Gänge des
+    // Flussnetz-Geländes, gelesen aus der Welt) — der Wagen in der nächsten Kammer (`hk`), der Wolf und der Spieler an der
+    // nächsten Stelle mit der Wand im Umkreis von 2,5 m (`hs`)
+    const hs = spaltenUm(O3.x, O3.z, 1, 4, 3, true, WOLF_R)[0] || null;
+    const hk = spaltenUm(O3.x, O3.z, 1, 4, 3)[0] || null;
     const H = hs ? { x: hs.x, z: hs.z } : O3;
     const hoehleGrund = hs ? hs.grund : NaN;
     const hoehleOk = !!hs;
     {
         const name = "O3 Wagen in der Höhle";
-        if (!hoehleOk)
+        if (hk) {
+            await einschwingen(hk.x, hk.z);
+            raeumen(hk.x, hk.z, 40);
+        }
+        if (!hk || !hoehleOk)
             proben.push({
                 name,
-                fehler: `keine Höhle um ${ort(O3.x, O3.z)} (keine Spalte mit 4 m Fels über 3 m Luft)`,
+                fehler: `keine Höhle um ${ort(O3.x, O3.z)} (keine Spalte mit 4 m Fels über 3 m Luft, in die der ${hk ? "Wolf mit Wand" : "Wagen"} passt)`,
             });
         else {
-            const e = await wagen(H.x, H.z, hoehleGrund, 0);
+            const e = await wagen(hk.x, hk.z, hk.grund, 0);
             if (!e) proben.push({ name, fehler: "der GT ließ sich nicht setzen/aufsitzen" });
             else {
-                const m = wagenSpur(e, 120, null, hoehleGrund);
+                const m = wagenSpur(e, 120, null, hk.grund);
                 proben.push(
                     Object.assign(
                         { name, koerper: "Wagen " + e.type + "#" + e.id, ort: ort(e.position.x, e.position.z) },
@@ -760,6 +840,8 @@ async function probe(K) {
                     )
                 );
                 weg(e);
+                await einschwingen(H.x, H.z);
+                raeumen(H.x, H.z, 40);
                 // DER SPIELER AM ORT DES RUFS (die Szene der Prüfung 2 K02a): der Abstieg setzte ihn auf den Ort des Wagens, und
                 // die Wolf-Proben riefen ihre Tiere neben ihn (sein Stoß am selben Ort: der erste Grund, `spawnCreatureAt`). Seit
                 // K02b steigt er NEBEN dem Wagen aus (`_aussteigOrt`, 1,54 m) — die Linse stellt ihn selbst dorthin, wo er stand.
@@ -770,29 +852,6 @@ async function probe(K) {
             }
         }
     }
-    // DIE WAND DER HÖHLE (die Wahrheit der Linse, das Dichtefeld): je Richtung (16) der erste Abstand, an dem der Fels vom
-    // Fuß + einer Stufe bis über zwei weitere Meter reicht — dort ist kein Boden in der Schicht des Körpers, nur Wand. Die
-    // nächste Wand im Umkreis von 2,5 m, sonst null.
-    const wandUm = (x, z, grund) => {
-        let best = null;
-        for (let k = 0; k < 16; k++) {
-            const w = (k / 16) * Math.PI * 2;
-            const dx = Math.cos(w),
-                dz = Math.sin(w);
-            for (let d = 0.1; d <= 2.5 && (!best || d < best.d); d += 0.1) {
-                const px = x + dx * d,
-                    pz = z + dz * d;
-                let fels = true;
-                for (let yy = grund + A.PLAYER_STEP_UP; yy <= grund + A.PLAYER_STEP_UP + 2.1 && fels; yy += 0.25)
-                    fels = r._fieldSolid(px, yy, pz);
-                if (fels) {
-                    best = { dx, dz, d };
-                    break;
-                }
-            }
-        }
-        return best;
-    };
     // Ein Wolf an der Wand: er steht (sein Steuer-Schritt hält ihn), dann gleitet er gestoßen 1,5 s auf die nächste Wand zu
     // (6 m/s — die Reibung zehrt 0,6·g, er trüge 3 m weit; ohne Wand 3 m/s in +x) — oder er LÄUFT 2,5 s mit 2 m/s in sie
     // hinein (`art` „lauf"). Die Wand hält ihn; vorher trug ihn der Schritt in den Fels, und der Boden des Körpers fiel auf
@@ -1151,7 +1210,13 @@ async function probe(K) {
         await page.waitForFunction(() => window.anazhRealm && typeof window.anazhRealm._gameLoopTick === "function", {
             timeout: 180000,
         });
-        befund = await page.evaluate(probe, { FALL_M, DACH_M, spaltenJeOrt: 6, todGier: TOD_GIER });
+        befund = await page.evaluate(probe, {
+            FALL_M,
+            DACH_M,
+            spaltenJeOrt: 6,
+            todGier: TOD_GIER,
+            mess: messort("wiese"),
+        });
     } catch (e) {
         befund = { fehler: (e && e.message) || String(e) };
     }

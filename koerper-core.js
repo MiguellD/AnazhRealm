@@ -40,8 +40,13 @@
             kindStages: { koerper: [0, 1] },
             budget: {
                 koerper: {
-                    0: { tris: 166000, band: 40000, draws: 8, schatten: 1 },
-                    1: { tris: 40000, band: 8000, draws: 6, schatten: 1, ab: 40, wurf: { seh: ["haut", "stoff", "haar"] } },
+                    // 1310-15 (Lehre 19, Re-Mint deklariert): die Stufe erreicht ihr Band, das Feld `band` fällt und `tris`
+                    // IST das Band (B2c) — der Ofen trägt die Zeile: das Primitiv lebt in seiner Hülle, die Haut unter dem
+                    // Stoff fällt, jede Hülle kollabiert auf den Anteil, der die Stufe auf die Zeile bringt (foundry-core
+                    // bakeMenschInstance). L0 162 412 → 39 995, L1 38 444 → 13 994 Dreiecke; die Grobstufe trägt 35 % der
+                    // feinen (das alte Ziel 8 000 ließ den Wurf-Zwilling den Umriss nur noch zu 0,92 decken).
+                    0: { tris: 40000, draws: 8, schatten: 1 },
+                    1: { tris: 14000, draws: 6, schatten: 1, ab: 40, wurf: { seh: ["haut", "stoff", "haar"] } },
                     // S3 (rein additiv, Lehre 19): die Grobstufe trägt ab `ab` m das Bild und wirft für beide Stufen (die
                     // feine wirft über `schatten: 1` ihren Zwilling); `wurf.seh` wählt den werfenden Teil (Haut, Kleid,
                     // Haar — nie die Augen). `hyst` = die Hysterese der Stufen-Grenze (±10 %). 40 m ist eine KOSTEN-Grenze,

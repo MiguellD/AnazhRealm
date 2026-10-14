@@ -390,14 +390,31 @@ class AnazhRealm_Z17a {
     // (`_studioStampFor` — die Prägung, die das Setzen mitgibt). Foundry aus/kalt → null: der Donor-Ghost bleibt,
     // `tickBuildMode` swappt, sobald das Asset dockt. Geteilte Studio-Geometrie ist sharedGeom-markiert + hält
     // `foundrySrcGroup` (`_disposeSoulGroup` lässt sie stehen); Material = der gecachte Klon (`_ghostMaterialFor`).
-    _buildStudioPlacementGhost(bp) {
+    // `wo` = der Ort des Phantoms (`_phantomWerk`): ein Baum zeigt die Gestalt dieses Orts, die Gruppe trägt sie
+    // (`userData.studioGestalt`), `tickBuildMode` tauscht, sobald der Ort eine andere wählt.
+    // DAS WERK DES PHANTOMS (K20): der Eintrag, den `confirmBuild` an diesem Ort stellt — der Same des nächsten Setzens
+    // (`_werkSame` mit dem Bau-Modus), der Stempel (`_studioStampFor`) und der Ort (`wo`, der Spawn-Ort des Setzens: x, z
+    // des Phantoms): ein Baum fragt die Gestalt seines Orts (`_foundryGestaltFor`) wie das gesetzte Werk. Befund: das
+    // Phantom fragte ohne Ort den rohen Samen und zeigte den Solitär (eiche|3), an seinem Ort im Bestand stand eiche|2.
+    _phantomWerk(bp, wo) {
+        const werk = { seed: this._werkSame(bp, bp.name, this.state.buildMode), type: bp.name };
+        const stempel = this._studioStampFor(bp.name);
+        if (stempel) werk.studioOv = stempel;
+        if (wo && Number.isFinite(wo.x) && Number.isFinite(wo.z)) werk.position = { x: wo.x, y: wo.y + 0.5, z: wo.z };
+        return werk;
+    }
+    // Die Gestalt, die das Phantom am Ort `wo` zeigen muss (das Gedächtnis des Orts `_ortGestaltSame` merkt jeden Ort);
+    // null = kein Studio-Werk oder der Ort wartet.
+    _phantomGestalt(bp, wo) {
+        const preset = this._foundryPresetForEntry({ type: bp.name });
+        return preset ? this._foundryGestaltFor(this._phantomWerk(bp, wo), preset) : null;
+    }
+    _buildStudioPlacementGhost(bp, wo) {
         if (!bp || typeof bp.name !== "string") return null;
         if (typeof this._foundryEnabled !== "function" || !this._foundryEnabled()) return null;
         const preset = this._foundryPresetForEntry({ type: bp.name });
         if (!preset) return null;
-        const werk = { seed: this._werkSame(bp, bp.name, this.state.buildMode), type: bp.name };
-        const stempel = this._studioStampFor(bp.name);
-        if (stempel) werk.studioOv = stempel;
+        const werk = this._phantomWerk(bp, wo);
         const flat = this._foundryFlattenFor(werk, preset, 0);
         if (!flat || !flat.instanceable || !Array.isArray(flat.leaves) || !flat.leaves.length) {
             // null = lädt noch (die Anfrage ist unterwegs) → tickBuildMode heilt den Donor-
@@ -424,6 +441,7 @@ class AnazhRealm_Z17a {
             grp.userData.foundrySrcGroup = src;
         }
         grp.userData.studioGhost = true;
+        grp.userData.studioGestalt = this._foundryGestaltFor(werk, preset);
         if (this.state.buildMode && this.state.buildMode.phantomStudioPending === bp.name) {
             this.state.buildMode.phantomStudioPending = null;
         }
@@ -433,10 +451,10 @@ class AnazhRealm_Z17a {
     // Platzier-Phantom: mergeable (≥6 Teile, keine connections) → gecachte Merge-Geometrie + gecachter
     // Ghost-Mat-Klon; sonst `_buildFromBlueprint` mit FRISCHEN Per-Teil-Materialien. castShadow aus.
     // ZUERST die Studio-Gestalt (Quelle des finalen Eintrags), sonst der Donor-Bau; `opts.donorOnly` =
-    // Prebake-Pfad (Cache/Pipeline wärmen ohne Studio-Bake je Katalog-Bauplan).
+    // Prebake-Pfad (Cache/Pipeline wärmen ohne Studio-Bake je Katalog-Bauplan); `opts.wo` = der Ort des Phantoms.
     _buildPlacementGhost(bp, opts) {
         if (!(opts && opts.donorOnly)) {
-            const studio = this._buildStudioPlacementGhost(bp);
+            const studio = this._buildStudioPlacementGhost(bp, opts && opts.wo);
             if (studio) return studio;
         }
         const group = this._buildArchMeshMerged(bp);
@@ -600,11 +618,14 @@ class AnazhRealm_Z17a {
         if (!fracht || !fracht.rgba) throw new Error("KERN-PFLICHT: der Blatt-Atlas lieferte kein Bild");
         let tex;
         if (bc && fracht.bc && fracht.bc.mips.length) {
+            // BC3 (K20): die glatte Alpha der Mip-Kette (phyto-core `impostorMips` glatt) — BC1 trug ein Bit.
+            if (fracht.bc.format !== "bc3")
+                throw new Error("KERN-PFLICHT: die Blatt-Fracht ist nicht BC3 (" + fracht.bc.format + ")");
             tex = new THREE.CompressedTexture(
                 fracht.bc.mips,
                 fracht.bc.breite,
                 fracht.bc.hoehe,
-                THREE.RGBA_S3TC_DXT1_Format
+                THREE.RGBA_S3TC_DXT5_Format
             );
         } else {
             tex = new THREE.DataTexture(
@@ -642,15 +663,22 @@ class AnazhRealm_Z17a {
     // Nadeln als dunkle Fussel. Leser: der Laub-Stoff (`_foundryMaterial`, foliageTex) und der Grammatik-Pfad
     // (`_buildPbrNodeMaterial`, foliageLeaf); `gate:pflanzen-nah` (F) misst die Fracht je Format und Stufe gegen das
     // Labor. Headless (kein Atlas) → null.
+    // DIE FARBE LIEST IHRE STUFE `BLATT_FARBE_OKTAVE` ÜBER DER DECKUNG (K20, 13.10.): die Alpha (die Blattform, der alphaTest)
+    // liest die Stufe des Schirms, die Farbe (rgb ÷ alpha) dieselbe Textur zwei Oktaven gröber — kein Farb-Detail unter vier
+    // Pixeln, die Silhouette bleibt scharf und die Deckung je Stufe treu (die Alpha-Stufe ist unberührt). Befund Radeon,
+    // Ausgabe-Pfad, Eiche 25 m nur L1: Δ-Luma beim ½-Pixel-Versatz 3,41, davon 2,49 im Kronen-Inneren — das Detail der Atlas-
+    // Farbe unter zwei Pixeln (flache Farbe 2,04); Oktave 1 → 2,94, Oktave 2 → 2,62 (K20n10/g2). Linse: gate:pflanzen-nah (Z2).
     _blattAtlasProbe(T) {
         const tex = this._ensureFoliageClusterAtlas();
         if (!tex) return null;
-        const s = T.texture(tex, T.attribute("uv", "vec2"));
+        const uv = T.attribute("uv", "vec2");
+        const s = T.texture(tex, uv).bias(T.float(AnazhRealm.BLATT_FARBE_OKTAVE));
+        const deckung = T.texture(tex, uv);
         const w = tex.userData.wert;
         return {
             tex,
             rgb: s.rgb.div(s.a.max(T.float(1e-3))).mul(T.vec3(1 / w[0], 1 / w[1], 1 / w[2])),
-            a: s.a,
+            a: deckung.a,
         };
     }
 
@@ -1392,7 +1420,8 @@ class AnazhRealm_Z17a {
         return dev && dev.features && dev.features.has("texture-compression-bc") ? "bc" : "rgba8";
     }
 
-    // Die Texturen des Atlas für mindestens `bedarf` Schichten (verdoppelnd). Das Wachsen baut neue Texturen, kopiert
+    // Die Texturen des Atlas für mindestens `bedarf` Schichten (in Schritten `KARTEN_ATLAS_SCHRITT`: das Verdoppeln hielt an
+    // der Mess-Wiese 32 Schichten für 18 Karten — +4 MB VRAM, als die Solitäre ihre Karte bekamen). Das Wachsen baut neue Texturen, kopiert
     // die Schichten und tauscht den Wert der Basis-Knoten — das EINE Material bleibt, die Bundles zeichnen neu.
     _impostorAtlasTexturen(at, bedarf) {
         if (!at) return null;
@@ -1415,8 +1444,9 @@ class AnazhRealm_Z17a {
             if (!at.fmt) at.fmt = this._impostorAtlasFormat();
             at.masse = core.karteMasse(at.cw, at.ch, at.V, at.nt, at.fmt);
         }
+        const S = AnazhRealm.KARTEN_ATLAS_SCHRITT;
         let cap = Math.max(8, at.cap || 0);
-        while (cap < soll) cap *= 2;
+        while (cap < soll) cap += S;
         const M = at.masse;
         const T = THREE;
         // Die Namen tragen den Erzeuger (die Band-Linse zählt je Name): Albedo und Normale getrennt.

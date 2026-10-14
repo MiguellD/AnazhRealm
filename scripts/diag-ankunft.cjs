@@ -827,9 +827,11 @@ async function probe(arg) {
             m.baum = baum.type;
             m.weltSkala = +r._foundryWorldScaleMatrix(r._foundryPresetForEntry(baum)).elements[0].toFixed(3);
             // die Skala des Stamm-Blockers gegen die Vorlage: die Breiten-Summe der Blocker-Boxen gegen dieselben festen Teile
-            // im Vorlagen-Maß (`_blockerComputePartAABB` ohne Welt-Skala)
+            // im Vorlagen-Maß (`_blockerComputePartAABB` ohne Welt-Skala). Dieselben Teile wie der Blocker (K20): der gefühlte
+            // Baum ist das Skelett seiner Gestalt (`_baumGestaltTeile`), der Bauplan nur, wo das Studio keinen Baum zeichnet —
+            // gegen den Bauplan gemessen, las die Ankunft am Kiefer-Individuum der Kern-Landform × 3,589 statt × 3,977.
             const bp = st.blueprints[baum.type];
-            const vorlage = (bp.parts || [])
+            const vorlage = (r._baumGestaltTeile(baum) || bp.parts || [])
                 .filter((p) => r._isPartSolid(p))
                 .map((p) => r._blockerComputePartAABB(baum, p))
                 .filter(Boolean);

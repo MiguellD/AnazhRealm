@@ -37,6 +37,40 @@ class AnazhRealm_Z20d {
         return true;
     }
 
+    // DER SOLITÄR STEHT FREI (K20): kein stehender Baum des Wald-Gesetzes (`_forestDartSteht`) näher als phyto-core
+    // FREISTAND.abstand × die Summe der Kronen (T eigene Krone in m; der Baum an derselben Stelle ist er selbst). Die Nachbarn reichen
+    // ±4 Zellen (48 m trägt 2 × (6 + 18) m: Eiche neben dem größten Mammut). Mess-Wiese 12.10.: der Bestand steht bei
+    // 1,2–1,5 × der Kronen-Summe, frei steht jeder sechste bis siebte Baum. Ein Nachbar steht nur, wo ihn auch der Pflanz-Gang
+    // setzt (`_enqueueVegetationSpawn`): die Wildnis trägt seinen Ort (`_wildnisTraegt`) und die Wand des Orts lässt ihn durch
+    // (`_ortWand` fragt nur den Grundriss; den Wagen fragt sie nicht, er fährt, und das Wasser des Gesetzes trägt schon
+    // der Dart) — der Wurf im Haus stand nie (gate:fernwald F: die Eiche neben einem Haus über ihrem einzigen Nachbarn
+    // blieb Bestand). Wer die Antwort merkt, merkt sie am Stand der Grundrisse (`_grundrissStand`).
+    _forestStehtFrei(x, z, T, cellDarts) {
+        const core = typeof globalThis !== "undefined" ? globalThis.__phytoCore : null;
+        const FS = core && core.FREISTAND;
+        if (!FS || !(FS.abstand > 0)) return AnazhRealm._kernPflichtBruch("phyto:FREISTAND.abstand");
+        const CELL = AnazhRealm.FOREST.cell;
+        const gx = Math.floor(x / CELL);
+        const gz = Math.floor(z / CELL);
+        for (let ax = -4; ax <= 4; ax++) {
+            for (let az = -4; az <= 4; az++) {
+                const nb = cellDarts(gx + ax, gz + az);
+                for (let k = 0; k < nb.length; k++) {
+                    const o = nb[k];
+                    const r = FS.abstand * (T + o.T);
+                    const dx = o.x - x;
+                    const dz = o.z - z;
+                    const d2 = dx * dx + dz * dz;
+                    if (d2 < 1e-6 || d2 >= r * r) continue;
+                    if (!this._forestDartSteht(o, gx + ax, gz + az, cellDarts)) continue;
+                    if (!this._wildnisTraegt(o.x, o.z)) continue;
+                    if (!this._ortWand(o.sp, { x: o.x, y: o.surfaceY + 0.5, z: o.z }, { scale: o.s })) return false;
+                }
+            }
+        }
+        return true;
+    }
+
     _forestPlantChunk(cx, cz) {
         if (!this.state.scene || !this.state.blueprints) return 0;
         const F = AnazhRealm.FOREST;
@@ -628,10 +662,18 @@ class AnazhRealm_Z20d {
     // Namen) urteilt selbst, ihr Schilf steht im Ufer-Wasser.
     _naturWand(name, position, opts) {
         if (!position) return false;
-        const g = this._imGrundriss(position.x, position.z, 0.8, this._naturKrone(name, opts));
+        const g = this._ortWand(name, position, opts);
         if (g) return g;
         if (this._imWagen(position.x, position.z, 0.8)) return "wagen";
         return name && !this._stammFussLand(position.x, position.z, 0.05) ? "wasser" : false;
+    }
+
+    // DIE WAND DES ORTS (K20): der Grundriss (`_imGrundriss`, die Krone des Wurfs) — die Hälfte der Natur-Wand, die der Ort
+    // trägt. Der Wagen fährt und das gezeichnete Wasser folgt dem Laden der Chunks: beide urteilen nur über das Setzen
+    // (`_naturWand`); das Wasser des Gesetzes trägt schon der Dart (`planForestCell`). Leser: `_naturWand` und das Wald-Gesetz
+    // des Solitärs (`_forestStehtFrei`), dessen Antwort `_ortGestaltSame` am Stand der Grundrisse merkt.
+    _ortWand(name, position, opts) {
+        return this._imGrundriss(position.x, position.z, 0.8, this._naturKrone(name, opts));
     }
 
     // Liegt (x, z) in der Hülle eines Studio-Wagens (+ `rand`, der Stamm; eine Krone darf über das Dach)? Ein Wagen ist Bau,
@@ -684,11 +726,15 @@ class AnazhRealm_Z20d {
 
     // DER ORT EINES WERKS AM UFER (Schau-2 wasser-wahrheit, Gegenprüfung): wo die Welt ein Werk mit Grundriss-Gesetz hinstellt
     // (der Satz, der Tempel des Nexus, ein Programm), sucht sie den Ort, an dem sein ganzes Fundament auf dem Land steht —
-    // `pos` selbst, sonst den nächsten in Ringen um ihn (1,5 m Schritt bis zur Reichweite des Grundrisses + 3 m, zwölf
-    // Richtungen ab dem Winkel `wurf()`, dem Strom des Samens). Geurteilt wird am Ort NACH der Spieler-Klemme der Wurzel
+    // `pos` selbst, sonst den nächsten in Ringen um den geklemmten Ort (1,5 m Schritt bis zur Reichweite des Grundrisses + 3 m
+    // + Weg der Klemme, zwölf Richtungen ab dem Winkel `wurf()`, dem Strom des Samens). Geurteilt wird am Ort NACH der Spieler-Klemme der Wurzel
     // (`_structureSpawnPos`), wie die Wurzel urteilt (`_werkImWasser`). „am Wasser" liefert den Fleck 2 m hinter dem Ufer —
     // ein Stamm steht dort, ein Haus reicht 4–6 m ins Wasser. Rückgabe { x, y, z } (y wie `pos` über dem Boden) oder null
     // (kein tragender Ort in Reichweite). Ein Werk ohne Grundriss-Gesetz: `pos` geklemmt.
+    // DAS MASS IST DER GEKLEMMTE ORT `p0` (werk-ufer): wo die Wurzel das Werk hinstellt, ist `pos` nach der Spieler-Klemme;
+    // die Ringe liegen um `p0`, so weit, dass sie den Grundriss um `pos` decken, und jeder Kandidat misst sich (geklemmt) an
+    // `p0`. Gemessen an `pos` lag jeder Kandidat nahe am Spieler auf dem Kreis der Klemme, alle fast gleich weit — das Maß
+    // verlor die Richtung des Verlangten: am Gleithang −910/−623 (3,96 m vom Wasser) stand das Haus 13,5 m vom Wasser.
     _werkOrtSuchen(type, pos, opts, wurf) {
         const sc = opts && Number.isFinite(opts.scale) && opts.scale > 0 ? opts.scale : 1;
         const klemme = (p) => this._structureSpawnPos(type, p, { state: this.state }, sc);
@@ -696,21 +742,24 @@ class AnazhRealm_Z20d {
         const g = this._werkGrundriss(type, opts);
         if (!g) return p0;
         if (!this._werkImWasser(type, p0, opts)) return p0;
-        // Die Kandidaten nach ihrem GEKLEMMTEN Abstand zu `pos` (die Klemme legt nahe am Spieler jeden auf ihren Kreis — der
-        // erste trockene Ring-Treffer lag sonst jenseits des Spielers, 16 m vom Wasser); der stabile Sort hält die Ring-Folge.
-        const reich = Math.hypot(g.fp.ex, g.fp.ez) + Math.hypot(g.fp.ox, g.fp.oz) + 3;
-        const h0 = this.getTerrainHeightAt(pos.x, pos.z);
+        const reich =
+            Math.hypot(g.fp.ex, g.fp.ez) + Math.hypot(g.fp.ox, g.fp.oz) + 3 + Math.hypot(p0.x - pos.x, p0.z - pos.z);
+        const h0 = this.getTerrainHeightAt(p0.x, p0.z);
         const a0 = wurf() * Math.PI * 2;
         const kand = [];
-        for (let r = 1.5; r <= reich; r += 1.5)
-            for (let k = 0; k < 12; k++) {
-                const a = a0 + (k * Math.PI) / 6;
-                const x = pos.x + Math.cos(a) * r;
-                const z = pos.z + Math.sin(a) * r;
+        for (let r = 1.5; r <= reich; r += 1.5) {
+            // je Ring so viele Richtungen, dass der Bogen ≤ 1,5 m bleibt (der Ring-Schritt): zwölf ließen auf 12 m Radius
+            // 6,3 m zwischen zwei Kandidaten — das Haus am Ufer stand 12 m vom Wasser, wo 3 m trugen
+            const n = Math.max(12, Math.ceil((2 * Math.PI * r) / 1.5));
+            for (let k = 0; k < n; k++) {
+                const a = a0 + (k * 2 * Math.PI) / n;
+                const x = p0.x + Math.cos(a) * r;
+                const z = p0.z + Math.sin(a) * r;
                 const h = this.getTerrainHeightAt(x, z);
-                const q = klemme({ x, y: Number.isFinite(h) && Number.isFinite(h0) ? pos.y + h - h0 : pos.y, z });
-                kand.push([Math.hypot(q.x - pos.x, q.z - pos.z), q]);
+                const q = klemme({ x, y: Number.isFinite(h) && Number.isFinite(h0) ? p0.y + h - h0 : p0.y, z });
+                kand.push([Math.hypot(q.x - p0.x, q.z - p0.z), q]);
             }
+        }
         kand.sort((a, b) => a[0] - b[0]);
         for (const [, q] of kand) if (!this._werkImWasser(type, q, opts)) return q;
         return null;
@@ -827,28 +876,9 @@ class AnazhRealm_Z20d {
     // Lichtungen stehen daneben (eine je Welt); es entsteht faul aus den Einträgen und fällt bei jedem Spawn/Abriss eines Baus
     // mit Grundriss. Rückgabe: "lichtung" | "haus" | false.
     _imGrundriss(x, z, rand = 0.8, krone = 0) {
-        const G = 32;
-        const schluessel = (gx, gz) => (gx + 0x8000) * 0x10000 + (gz + 0x8000);
-        let gitter = this._grundrissGitter;
-        if (!gitter) {
-            gitter = this._grundrissGitter = { zellen: new Map(), lichtungen: [] };
-            for (const e of this.state.architectures || []) {
-                const fp = this._grundrissVon(e);
-                if (!fp) continue;
-                if (fp.lichtung) {
-                    gitter.lichtungen.push({ x: e.position.x, z: e.position.z, r: fp.lichtung });
-                    continue;
-                }
-                const r = Math.hypot(fp.ex, fp.ez) + Math.hypot(fp.ox, fp.oz) + 2;
-                for (let gx = Math.floor((e.position.x - r) / G); gx <= Math.floor((e.position.x + r) / G); gx++)
-                    for (let gz = Math.floor((e.position.z - r) / G); gz <= Math.floor((e.position.z + r) / G); gz++) {
-                        const k = schluessel(gx, gz);
-                        let l = gitter.zellen.get(k);
-                        if (!l) gitter.zellen.set(k, (l = []));
-                        l.push(e);
-                    }
-            }
-        }
+        const G = AnazhRealm.GRUNDRISS_ZELLE;
+        const schluessel = AnazhRealm._grundrissSchluessel;
+        const gitter = this._grundrissStand();
         const reich = Math.max(rand, krone);
         for (const L of gitter.lichtungen) if ((x - L.x) ** 2 + (z - L.z) ** 2 < (L.r + reich) ** 2) return "lichtung";
         if (gitter.zellen.size === 0) return false;
@@ -869,6 +899,33 @@ class AnazhRealm_Z20d {
                 return "haus";
         }
         return false;
+    }
+
+    // DER STAND DER GRUNDRISSE (K20): das Gitter der Häuser und Lichtungen, faul aus den Einträgen gebaut; es fällt bei jedem
+    // Spawn/Abriss eines Baus mit Grundriss, sein Objekt IST der Stand. Leser: `_imGrundriss` und wer eine Antwort merkt, die
+    // durch die Natur-Wand geht (die Gestalt des Orts `_foundryGestaltFor`, die Streu-Gestalt `_scatterFoundrySeed`: ein
+    // neues Haus über einem Nachbarn macht den Baum daneben frei).
+    _grundrissStand() {
+        if (this._grundrissGitter) return this._grundrissGitter;
+        const G = AnazhRealm.GRUNDRISS_ZELLE;
+        const gitter = (this._grundrissGitter = { zellen: new Map(), lichtungen: [] });
+        for (const e of this.state.architectures || []) {
+            const fp = this._grundrissVon(e);
+            if (!fp) continue;
+            if (fp.lichtung) {
+                gitter.lichtungen.push({ x: e.position.x, z: e.position.z, r: fp.lichtung });
+                continue;
+            }
+            const r = Math.hypot(fp.ex, fp.ez) + Math.hypot(fp.ox, fp.oz) + 2;
+            for (let gx = Math.floor((e.position.x - r) / G); gx <= Math.floor((e.position.x + r) / G); gx++)
+                for (let gz = Math.floor((e.position.z - r) / G); gz <= Math.floor((e.position.z + r) / G); gz++) {
+                    const k = AnazhRealm._grundrissSchluessel(gx, gz);
+                    let l = gitter.zellen.get(k);
+                    if (!l) gitter.zellen.set(k, (l = []));
+                    l.push(e);
+                }
+        }
+        return gitter;
     }
 
     // Ist der Eintrag Natur? Die Art steht am Eintrag (`_lodSpecies` des Walds, die Bauplan-Präfixe baum_/busch_/grown_,
@@ -896,6 +953,38 @@ class AnazhRealm_Z20d {
             return { ex: f.ex, ez: f.ez, ox: Number.isFinite(f.ox) ? f.ox : 0, oz: Number.isFinite(f.oz) ? f.oz : 0 };
         const t = e.tuer;
         if (t && Number.isFinite(t.W) && Number.isFinite(t.D)) return { ex: t.W / 2, ez: t.D / 2, ox: 0, oz: 0 };
+        // DIE HÜLLE TRÄGT DEN GRUNDRISS (K16, gate:kamera-leib K2): ein Haus ohne Fundament- und Tür-Zeile (gesetzt vom
+        // Spieler, der KI, einer Probe) hatte keinen — die Natur wuchs hinein (eine Kiefer im haus_alemannisch der
+        // Mess-Wiese). Die festen Boxen der Studio-Hülle (`_hausHuelleSetzen`) sind sein Grundriss, gemerkt je Hülle.
+        const hu = e._hausHuelle;
+        if (hu) {
+            const m = e._grundrissHuelle;
+            if (m && m.hu === hu) return m.fp;
+            const fest = AnazhRealm._huelleVon(hu, "fest", "fachwerk:__huelle") || [];
+            let x0 = Infinity,
+                x1 = -Infinity,
+                z0 = Infinity,
+                z1 = -Infinity;
+            for (const q of fest)
+                if (q.art === "box") {
+                    x0 = Math.min(x0, q.c[0] - q.h[0]);
+                    x1 = Math.max(x1, q.c[0] + q.h[0]);
+                    z0 = Math.min(z0, q.c[2] - q.h[2]);
+                    z1 = Math.max(z1, q.c[2] + q.h[2]);
+                }
+            const k = Number.isFinite(e._hausHuelleSkala) ? e._hausHuelleSkala : 1;
+            const fp =
+                x1 > x0 && z1 > z0
+                    ? {
+                          ex: ((x1 - x0) / 2) * k,
+                          ez: ((z1 - z0) / 2) * k,
+                          ox: ((x0 + x1) / 2) * k,
+                          oz: ((z0 + z1) / 2) * k,
+                      }
+                    : null;
+            e._grundrissHuelle = { hu, fp };
+            if (fp) return fp;
+        }
         const bp = this.state.blueprints ? this.state.blueprints[e.type] : null;
         if (bp && bp.lichtung) {
             const p0 = Array.isArray(bp.parts) && bp.parts[0] && bp.parts[0].size;
@@ -999,7 +1088,8 @@ class AnazhRealm_Z20d {
     // Genesis-Scheibe. Natur-Einträge (`_istNatur`), die lebenden Streu-Zellen jeder Schicht (`_streuZelleRaeumen`) und die
     // Nah-Streu-Kacheln über dem Grundriss (sie bauen durch die Wand neu); an einer Lichtung mit der Krone (`_naturKrone`,
     // die Suche reicht eine Streu-Region weiter). Der billige Orts-Filter zuerst, die Art-Frage nur für Betroffene
-    // (Lehre 25). Leser: `_spawnSettlementSlot`, `_ensureGenesisPlatform` und das Laden. Gibt die Zahl der geräumten
+    // (Lehre 25). Leser: `spawnArchitecture` (die Wurzel jedes Baus mit Grundriss), `_hausHuelleSetzen` (die Hülle bringt ihn)
+    // und das Laden. Gibt die Zahl der geräumten
     // Natur-Stücke.
     _grundrissRaeumen(haus) {
         const fp = this._grundrissVon(haus);
@@ -2755,7 +2845,9 @@ class AnazhRealm_Z20d {
         }
         bm.phantomMesh = null;
         bm.phantomStudioPending = null; // B1 — frisches Phantom, kein Alt-Pending
-        const phantom = this._buildPlacementGhost(this.state.blueprints[bm.blueprintName]);
+        // der Ort des Phantoms: der des alten, sonst der Blick (die Gestalt eines Baums folgt ihm, `_phantomWerk`)
+        const wo = alt ? alt.position : this.state.playerMesh && bm.active ? this._resolvePhantomTarget() : null;
+        const phantom = this._buildPlacementGhost(this.state.blueprints[bm.blueprintName], { wo });
         phantom.name = "bau-phantom";
         if (alt) {
             phantom.position.copy(alt.position);

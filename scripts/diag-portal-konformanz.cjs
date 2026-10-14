@@ -26,13 +26,15 @@
 //                 Werkzeug und den Vibe-Pass; fluid und terrain den Vibe-Pass am Namen des Reisenden
 // Dazu zwei RATSCHEN (spec/vertraege/ratsche.json — Ist darf nur fallen, Soll daneben):
 //   dslEinzelwort  der Spieler tippt EIN Wort in die Konsole (`processChatCommand`, die Heimat schickt die flache Form
-//                  ["w"]): wirkt es sichtbar oder bleibt die Welt stumm? (Synthese §0.1: 7 Studios lesen op[0] je
-//                  Element — aus "gt" wird "g")
-//   readyEcho      die Welt beantwortet jedes enter mit einer neuen ready (13 Brücken-Kopien, zwei Dialekte)
+//                  ["w"]): wirkt es sichtbar oder bleibt die Welt stumm? (Synthese §0.1: 7 Studios lasen op[0] je
+//                  Element — aus "gt" wurde "g"; seit der Studio-Hülle K41 liest EIN Adapter das Programm ganz: 0/7)
+//   readyEcho      die Welt beantwortet jedes enter mit einer neuen ready (13 Brücken-Kopien, zwei Dialekte — seit der
+//                  Hülle EINE Brücke für 10 Welten, die ready einmal; 0/7)
 // Eine Welt, die neu stumm oder neu Echo ist, ist rot; eine geheilte ebenfalls, bis ihre Zeile im selben Commit fällt.
 //
 //   node scripts/diag-portal-konformanz.cjs --selftest   die alten Defekte eingespielt (begegnung ohne Quellen-Prüfung,
-//                                                        die Heimat beantwortet JEDE ready, skeleton liest op[0] je
+//                                                        die Heimat beantwortet JEDE ready und die Brücke der Hülle
+//                                                        spricht wieder den Echo-Dialekt, die Hülle liest op[0] je
 //                                                        Element, skeleton und terrain ohne Manifest — der Server
 //                                                        antwortet 404 —, fluid meldet ihr Manifest ohne „flut", die
 //                                                        garage trägt eins ohne Soll-Zeile) → jede Wand wird rot und
@@ -197,14 +199,25 @@ const TAETER = {
     // begegnung vor dem Schnitt: der message-Handler prüft die Quelle nicht.
     "worlds/begegnung/index.html": [["if (event.source !== window.parent) return;\n", ""]],
     [stammLib.dateiMit(ROOT, HEIMAT_PINGPONG[0]) || stammLib.dateien(ROOT)[0]]: [HEIMAT_PINGPONG],
-    // skeleton mit dem Studio-Adapter: die Elemente des Programms je einzeln (aus ["w", arg] wird "w", arg).
-    "worlds/skeleton/skeleton.js": [
-        ["applyDsl(msg.program);", "msg.program.forEach(function (op) { applyDsl(op); });"],
-        // das Mitgebrachte als Markup statt als Text → K7 rot
-        ['chip.textContent = String((m && m.name) || "?");', 'chip.innerHTML = String((m && m.name) || "?");'],
+    // DIE EINE BRÜCKE (Studio-Hülle K41) mit den alten Defekten der 13 Kopien: (a) der Element-Adapter — die Elemente des
+    // Programms je einzeln (aus ["w", arg] wird "w", arg): das Einzelwort stumm, die chain-Form wirkt; (b) der Echo-
+    // Dialekt — jedes enter bekommt eine neue ready (das Ping-Pong mit der Heimat-Täterin an der garage, die träge klang);
+    // (c) das unvollständige Manifest — das welt-eigene Wort fehlt im ready (fluid ohne „flut" → K1 rot beim Namen); (d) s. u.
+    "worlds/huelle/huelle.js": [
+        ['} else if (m.type === "dsl") wirke(m.program);', '} else if (m.type === "dsl") m.program.forEach(function (op) { wirke(op); });'],
+        [
+            'if (m.type === "enter") {\n                if (opt.enter)',
+            'if (m.type === "enter") {\n                bereit(opt.dsl ? { label: opt.label, dsl: opt.dsl } : {});\n                if (opt.enter)',
+        ],
+        // (d) die Brücke ohne Quellen-Prüfung — eine fremde Seite steuert jede Welt der Hülle (K3 rot, auch am UI-Pfad)
+        ["if (ev.source !== eltern) return;\n            var m = ev.data;", "var m = ev.data;"],
+        [
+            "var dsl = m && Array.isArray(m.dsl) ? m.dsl : null;",
+            'var dsl = m && Array.isArray(m.dsl) ? m.dsl.filter(function (w) { return w !== "flut"; }) : null;',
+        ],
     ],
-    // fluid meldet ihr Manifest unvollständig (das welt-eigene Wort fehlt im ready) → K1 rot, „flut" beim Namen
-    "worlds/fluid/fluid.js": [["const dsl = m && Array.isArray(m.dsl) ? m.dsl : null;", 'const dsl = m && Array.isArray(m.dsl) ? m.dsl.filter((w) => w !== "flut") : null;']],
+    // das Mitgebrachte als Markup statt als Text → K7 rot
+    "worlds/skeleton/skeleton.js": [['chip.textContent = String((m && m.name) || "?");', 'chip.innerHTML = String((m && m.name) || "?");']],
     // klang TRÄGE wie die fachwerk auf dem CI-Runner (V18.540, Lauf 38138358932: „fachwerk ready 1 · enter 3", die
     // Ratsche meldete „readyEcho geheilt"): die Brücke meldet ready, der Boot läuft noch 0,6 s weiter und stellt dann
     // 3 s Bau in die Schlange (sechs Aufgaben zu 0,5 s) — VOR die enter der Heimat; ein Bild hält das load der Welt 5 s
@@ -212,10 +225,12 @@ const TAETER = {
     // der Antwort. Das Echo ist eine Eigenschaft der Welt, kein Urteil der Uhr. (Eingespielt an der LEICHTEN Echo-Welt
     // klang: die Trägheit ist der Täter, nicht die Welt — die fachwerk kostete den Selbsttest auf dem Runner 54 s, Lauf
     // 38146486287.)
+    // (Die Brücke der Hülle meldet ihre ready synchron im Aufruf; danach läuft der Boot 0,6 s weiter und stellt den Bau in die
+    // Schlange — das Echo spricht die Brücken-Täterin oben.)
     "worlds/klang/klang.js": [
         [
-            'post({ type: "ready", world: "klang", label: LABEL, dsl: DSL });\n})();',
-            'document.body.appendChild(new Image()).src = "/__traege.gif";\n    window.addEventListener("message", function (ev) {\n        if (ev.source === window && ev.data && ev.data.__bau) for (var t1 = Date.now(); Date.now() - t1 < 500; );\n    });\n    setTimeout(function () {\n        post({ type: "ready", world: "klang", label: LABEL, dsl: DSL });\n        for (var t0 = Date.now(); Date.now() - t0 < 600; );\n        for (var b = 0; b < 6; b++) window.postMessage({ __bau: 1 }, "*");\n    }, 0);\n})();',
+            'AnazhHuelle.bruecke({\n    welt: "klang",',
+            'document.body.appendChild(new Image()).src = "/__traege.gif";\nwindow.addEventListener("message", function (ev) {\n    if (ev.source === window && ev.data && ev.data.__bau) for (var t1 = Date.now(); Date.now() - t1 < 500; );\n});\nsetTimeout(function () {\n    for (var t0 = Date.now(); Date.now() - t0 < 600; );\n    for (var b = 0; b < 6; b++) window.postMessage({ __bau: 1 }, "*");\n}, 0);\nAnazhHuelle.bruecke({\n    welt: "klang",',
         ],
     ],
 };
@@ -645,15 +660,21 @@ async function pruefeWelt(page, welt, fehlerLog, lies) {
     const fremd = programm
         ? { type: "dsl", program: ["chain", programm] }
         : { type: "peer-join", peerId: "fremd-konformanz", name: "Fremder" };
+    // Der Vorher-Zustand der UI-Wände (K3, Einzelwort) wird VOR der Tat gelesen (je EINE CDP-Rundreise): der Rück-Hörer
+    // steht in der Hörer-Reihe der Welt HINTER ihrer Brücke (er kommt nach dem load) — las er „vor" beim Eintreffen der
+    // Nachricht, hatte die Brücke schon gewirkt. An der Studio-Hülle gesehen (K41): vor = nach = „Supersport", das
+    // wirkende Einzelwort galt als stumm, und K3 war am UI-Pfad blind (eine fremde chain-Form, die wirkt, las vor = nach).
+    const vorK3 = await zustand(page, welt);
     const k3 = await schleuse(page, "fremd", welt, { fremd });
-    aus.k.K3 = !wirkt(welt, k3.vor, k3.nach) && k3.nach.journal === k3.vor.journal;
+    aus.k.K3 = !wirkt(welt, vorK3, k3.nach) && k3.nach.journal === k3.vor.journal;
     if (!aus.k.K3) aus.notiz.push("eine fremde Seite steuert die Welt (event.source ungeprüft)");
     // dslEinzelwort: der Spieler tippt das Wort in die Konsole (die Heimat schickt die flache Form).
     if (programm) {
+        const vorEw = await zustand(page, welt);
         const ew = await schleuse(page, "heimat", welt, { chat: welt.wort });
-        const nach = await bisWirkung(page, welt, ew.nach, (n) => wirkt(welt, ew.vor, n));
-        aus.stumm = !wirkt(welt, ew.vor, nach);
-        aus.einzelwort = { programm, vor: ew.vor, nach };
+        const nach = await bisWirkung(page, welt, ew.nach, (n) => wirkt(welt, vorEw, n));
+        aus.stumm = !wirkt(welt, vorEw, nach);
+        aus.einzelwort = { programm, vor: vorEw, nach };
     }
     // K4: die chain-Form über den echten Weiterleiter der Heimat (bzw. der Ko-Präsenz-Eintritt von der Heimat).
     const s4 = await schleuse(
@@ -770,13 +791,14 @@ async function selbsttest() {
     const proben = [
         ["Täter-Fundstellen gefunden", !fehlend.length, fehlend.join(" · ")],
         ["K3 rot: begegnung ohne Quellen-Prüfung nimmt den fremden peer-join an", by.begegnung && by.begegnung.k.K3 === false, ""],
+        ["K3 rot am UI-Pfad: die Hülle ohne Quellen-Prüfung — die garage nimmt die fremde chain-Form an (der Vorher-Zustand vor der Tat gelesen)", by.garage && by.garage.k.K3 === false, ""],
         ["K2 rot: die Heimat beantwortet jede ready, garage spielt Ping-Pong", by.garage && by.garage.k.K2 === false, by.garage && by.garage.handshake ? `${by.garage.handshake.enters} enter` : ""],
         [
             "Uhr-frei: klang baut nach ihrer ready 3 s, bevor sie die enter liest — die Ratsche readyEcho hält, der Handshake endet",
             by.klang && by.klang.echo === true && by.klang.k.K2 === true,
             by.klang && by.klang.handshake ? `ready ${by.klang.handshake.readys} · enter ${by.klang.handshake.enters}` : "",
         ],
-        ["Ratsche rot: skeleton mit Element-Adapter ist NEU stumm", v.neu.includes("skeleton"), "neu stumm: " + v.neu.join(",")],
+        ["Ratsche rot: die Hülle mit Element-Adapter — skeleton ist NEU stumm", v.neu.includes("skeleton"), "neu stumm: " + v.neu.join(",")],
         ["Kontrolle: die chain-Form wirkt trotz Element-Adapter (der Täter trifft nur das Einzelwort)", by.skeleton && by.skeleton.k.K4 === true, ""],
         ["K7 rot: skeleton rendert den Material-Namen als Markup", by.skeleton && by.skeleton.k.K7 === false, by.skeleton ? by.skeleton.notiz.filter((n) => /Markup/.test(n)).join("") : ""],
         ["404-Täter getroffen: die Welt fragte ihr Manifest und bekam keins", TAETER_WEG.every((r) => weg.has(r)), [...weg].join(" · ")],

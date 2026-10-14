@@ -14,6 +14,10 @@
 // den Restore überstehen, auch wenn das Studio-Buch noch nicht da ist. Die FOUNDRY-SPAWN-WAND nahm nur Text-ids als
 // Restore-Heilung: echte GPU, Werkbank, zweiter Boot — 12 Häuser an der Mess-Wiese fielen, der nächste Save schrieb
 // den Verlust fest. Gegenprobe (nicht vakuös): ein FRISCHER Spawn bei kaltem Buch bleibt blockiert.
+// (U) DER BODEN-UMZUG (K16): ein Save eines alten Bodens (ohne Boden-Generation, ohne Höhe über Grund) lädt durch den
+// ganzen Lade-Pfad (`loadState`) — jeder Bau steht danach auf dem Boden des Gesetzes in Fuß-Höhe, nicht in der alten Höhe
+// (Prüfung 1: der Restore stellte jeden Bau `precise` in seiner alten Höhe auf, |Δh| p50 37,7 m). Gegenprobe: ein Save
+// desselben Bodens bewegt nichts. Die Zahl: wie viele Bauten der Welt sich bewegen (`state.bodenUmzug`).
 //
 // (L) DIE LÖCHER NACH DEM RELOAD (K23, 12.10.): 300 Schnitz-Kugeln über den Spielpfad (`carveVoxelSphere`), Save,
 // echter Reload — jedes Loch steht wieder (die Dichte am Kugel-Zentrum liegt genau 48 unter der Basis). Bis K23
@@ -145,6 +149,76 @@ async function serverLauf(quelle, tod) {
     const out = { tod, status, getoetet: status !== 200, ziel: lies(ziel), bak: lies(ziel + ".bak") };
     fs.rmSync(dir, { recursive: true, force: true });
     return out;
+}
+
+// (C) DER CACHE-KOPF AM ECHTEN SERVER (1310-16): der save-server (Quelltext `quelle`) in einem Sandbox-Ordner mit einer
+// gestempelten Skript-Datei. Jede statische Antwort trägt einen ETag des Inhalts und `Cache-Control: no-cache`; die Frage mit
+// `If-None-Match` bekommt 304 ohne Körper; ändert sich der Inhalt bei GLEICHEM Stempel, ändert sich der ETag (kein alter Code
+// unter derselben Version). Bis 1310-16 sandte der Server keinen Validator — jeder Zweit-Boot lud 8,84 MB neu.
+async function cacheProbe(quelle) {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "k16-cache-"));
+    fs.writeFileSync(path.join(dir, "save-server.js"), quelle, "utf8");
+    fs.writeFileSync(path.join(dir, "probe.js"), "window.__probe = 1;\n", "utf8");
+    const proc = spawn(process.execPath, [path.join(dir, "save-server.js")], {
+        cwd: dir,
+        stdio: ["ignore", "pipe", "pipe"],
+        env: Object.assign({}, process.env, { PORT: String(SERVER_PORT) }),
+    });
+    const hole = (weg, kopf) =>
+        new Promise((resolve) => {
+            const req = http.request(
+                { host: "127.0.0.1", port: SERVER_PORT, path: weg, method: "GET", headers: kopf || {} },
+                (res) => {
+                    let n = 0;
+                    res.on("data", (c) => (n += c.length));
+                    res.on("end", () =>
+                        resolve({
+                            status: res.statusCode,
+                            etag: res.headers.etag || null,
+                            cc: res.headers["cache-control"] || null,
+                            n,
+                        })
+                    );
+                }
+            );
+            req.on("error", () => resolve({ status: "abgerissen" }));
+            req.end();
+        });
+    try {
+        await new Promise((resolve, reject) => {
+            const t = setTimeout(() => reject(new Error("save-server-Kopie startete nicht in 8 s")), 8000);
+            proc.stdout.on("data", (c) => {
+                if (/Save-Server/i.test(String(c))) {
+                    clearTimeout(t);
+                    resolve();
+                }
+            });
+            proc.on("exit", () => reject(new Error("save-server-Kopie endete beim Start")));
+        });
+        const a = await hole("/probe.js?v=1");
+        const b = a.etag ? await hole("/probe.js?v=1", { "If-None-Match": a.etag }) : { status: null };
+        fs.writeFileSync(path.join(dir, "probe.js"), "window.__probe = 2;\n", "utf8");
+        const c = await hole("/probe.js?v=1", a.etag ? { "If-None-Match": a.etag } : {});
+        return {
+            erst: a,
+            frisch: b,
+            geaendert: c,
+            ok:
+                a.status === 200 &&
+                !!a.etag &&
+                /no-cache/.test(a.cc || "") &&
+                !/immutable/.test(a.cc || "") &&
+                b.status === 304 &&
+                b.n === 0 &&
+                c.status === 200 &&
+                !!c.etag &&
+                c.etag !== a.etag,
+        };
+    } finally {
+        proc.kill("SIGKILL");
+        await sleep(300);
+        fs.rmSync(dir, { recursive: true, force: true });
+    }
 }
 
 // (S) Die Probe: der Tod an jedem Schreib-Punkt der Reihe nach, bis ein Lauf durchkommt (der volle Save; sein .bak hält
@@ -325,6 +399,37 @@ const server = http.createServer((req, res) => {
                 k.kZurueck = (r.state.architectures || []).some(istHaus);
                 k.kVorher = (snap.architectures || []).length;
                 k.kNachher = (r.state.architectures || []).length;
+                // (U) der alte Boden: jede Höhe 37,7 m daneben (die gemessene Verschiebung p50), ohne Generation und Höhe über Grund
+                const alt = JSON.parse(JSON.stringify(r.buildStateSnapshot()));
+                const gleich = JSON.parse(JSON.stringify(alt));
+                delete alt.bodenGeneration;
+                delete alt.spielerUeberGrund;
+                for (const a of alt.architectures || []) {
+                    delete a.ueberGrund;
+                    if (a.position) a.position.y += 37.7;
+                }
+                const fehl = (liste) => {
+                    let n = 0,
+                        max = 0;
+                    for (const a of liste || []) {
+                        if (!a || !a.position) continue;
+                        const g = r._voxelSurfaceY(a.position.x, a.position.z);
+                        if (!Number.isFinite(g)) continue;
+                        const d = Math.abs(a.position.y - (g + 0.5));
+                        n++;
+                        if (d > max) max = d;
+                    }
+                    return { n, max: Math.round(max * 100) / 100 };
+                };
+                r.state.bodenUmzug = null;
+                r.loadState(alt);
+                k.uAlt = fehl(r.state.architectures);
+                k.uBericht = r.state.bodenUmzug || null;
+                r.state.bodenUmzug = null;
+                const vorGleich = (r.state.architectures || []).map((a) => a.position.y);
+                r.loadState(gleich);
+                k.uGleichBericht = r.state.bodenUmzug || null;
+                k.uGleichN = vorGleich.length;
                 return k;
             })
         );
@@ -360,6 +465,27 @@ const server = http.createServer((req, res) => {
         const alt = quelle.replace(KOPF, `${KOPF}\n    return fs.promises.writeFile(ziel, text, "utf8");`);
         selbst = await serverProbe(alt);
     }
+    // (C) Der Cache-Kopf am echten Server — und im Selbsttest der Kopf ohne Validator (der Stand vor 1310-16), der rot werden MUSS.
+    let cache = null,
+        cacheSelbst = null;
+    try {
+        cache = await cacheProbe(quelle);
+        if (SELBSTTEST) {
+            const CK = "const kopf = statischerKopf(body, contentType);";
+            if (!quelle.includes(CK)) {
+                console.log(`⛔ SELBSTTEST: save-server.js trägt „${CK}" nicht — die Verfälschung greift nicht`);
+                process.exit(1);
+            }
+            cacheSelbst = await cacheProbe(
+                quelle.replace(CK, `const kopf = { "Content-Type": contentType, "Access-Control-Allow-Origin": "*" };`)
+            );
+        }
+    } catch (e) {
+        console.log(`⛔ (C) Cache-Probe fehlgeschlagen: ${(e && e.message) || e}`);
+        process.exit(2);
+    }
+    const cZeile = (p) =>
+        `erst ${p.erst.status} ETag ${p.erst.etag ? "ja" : "nein"} „${p.erst.cc || "—"}" · nachgefragt ${p.frisch.status} (${p.frisch.n || 0} B) · Inhalt geändert ${p.geaendert.status}${p.geaendert.etag && p.geaendert.etag !== p.erst.etag ? " neuer ETag" : ""}`;
 
     const checks = [
         { name: "World-Key == Active-Key (kein Key-Drift)", pass: out.idsMatch },
@@ -380,6 +506,16 @@ const server = http.createServer((req, res) => {
             pass: out.kImSnapshot === true && out.kZurueck === true && out.kNachher === out.kVorher,
         },
         {
+            name:
+                `(U) Boden-Umzug: ein Save des alten Bodens steht auf dem neuen (${out.uAlt ? out.uAlt.n : "?"} Bauten, ` +
+                `größte Abweichung von der Fuß-Höhe ${out.uAlt ? out.uAlt.max : "?"} m; Bericht ${JSON.stringify(out.uBericht)})`,
+            pass: !!out.uAlt && out.uAlt.n > 0 && out.uAlt.max <= 0.05 && !!out.uBericht && out.uBericht.bewegt === out.uAlt.n,
+        },
+        {
+            name: `(U) Gegenprobe: ein Save desselben Bodens zieht nicht um (Bericht ${JSON.stringify(out.uGleichBericht)})`,
+            pass: out.uGleichBericht === null,
+        },
+        {
             name: `(L) Löcher nach Reload ${out.lNachher}/${N_LOECHER} (vor dem Reload ${out.lVorher}/${N_LOECHER}, der Main hielt ${out.lImMain}, geladen ${out.lEdits} Edits)${out.lImMain < N_LOECHER ? " — Täter _addVoxelEdit: der FIFO-Deckel verdrängt still" : ""}`,
             pass: out.lVorher === N_LOECHER && out.lNachher === N_LOECHER,
         },
@@ -391,12 +527,22 @@ const server = http.createServer((req, res) => {
             name: `(S) save-server: ein Kill mitten im Schreiben lässt den alten oder neuen Stand GANZ (${s.ganz}/${s.kills.length})${s.killsOk ? "" : " — Täter: save-server.js schreibt direkt aufs Ziel (kein tmp + rename)"}`,
             pass: s.killsOk,
         },
+        {
+            name: `(C) save-server: jede statische Datei trägt ETag + no-cache, die Nachfrage bekommt 304, neuer Inhalt neuen ETag (${cZeile(cache)})${cache.ok ? "" : " — Täter: save-server.js sendStaticFile (statischerKopf)"}`,
+            pass: cache.ok,
+        },
     ];
     if (SELBSTTEST)
-        checks.push({
-            name: `(S) SELBSTTEST: die alte Schreib-Art (fs.writeFile aufs Ziel) wird ROT (${sZeile(selbst)})`,
-            pass: !selbst.killsOk,
-        });
+        checks.push(
+            {
+                name: `(S) SELBSTTEST: die alte Schreib-Art (fs.writeFile aufs Ziel) wird ROT (${sZeile(selbst)})`,
+                pass: !selbst.killsOk,
+            },
+            {
+                name: `(C) SELBSTTEST: der Kopf ohne Validator wird ROT (${cZeile(cacheSelbst)})`,
+                pass: !cacheSelbst.ok,
+            }
+        );
     console.log("\n=== Persistenz-Härtung (rotierender Backup + korruptions-sicherer Load) ===");
     let fails = 0;
     for (const c of checks) {

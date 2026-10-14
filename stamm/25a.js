@@ -1319,24 +1319,28 @@ class AnazhRealm_Z25a {
             16,
             16
         );
-        const sunMat = new THREE.MeshBasicMaterial({
-            color: 0xffe8b0,
-            fog: false,
-            transparent: true,
-            opacity: 0.95,
-        });
+        const sunMat = AnazhRealm._himmelImUnendlichen(
+            new THREE.MeshBasicNodeMaterial({
+                color: 0xffe8b0,
+                fog: false,
+                transparent: true,
+                opacity: 0.95,
+            })
+        );
         const sunMesh = new THREE.Mesh(sunGeo, sunMat);
         sunMesh.name = "himmel-sonne";
         sunMesh.frustumCulled = false; // immer rendern (Himmelskörper)
         scene.add(sunMesh);
         this.state.sunMesh = sunMesh;
         const moonGeo = new THREE.SphereGeometry(9, 16, 16);
-        const moonMat = new THREE.MeshBasicMaterial({
-            color: 0xd0d4e0,
-            fog: false,
-            transparent: true,
-            opacity: 0.9,
-        });
+        const moonMat = AnazhRealm._himmelImUnendlichen(
+            new THREE.MeshBasicNodeMaterial({
+                color: 0xd0d4e0,
+                fog: false,
+                transparent: true,
+                opacity: 0.9,
+            })
+        );
         const moonMesh = new THREE.Mesh(moonGeo, moonMat);
         moonMesh.name = "himmel-mond";
         moonMesh.frustumCulled = false;

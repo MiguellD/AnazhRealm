@@ -136,6 +136,12 @@ const server = http.createServer((req, res) => {
                 };
             r._foundryBuildImpostorFlat = nullKarte(_oKF);
             r._foundryEnsureImpostorRecord = nullKarte(_oKR);
+            // DER STOFF IST EIN GPU-ANWENDER (Integration Grund, 14.10.): die Physical-Klasse des Klarlacks lebt in der
+            // Node-Bibliothek des Renderers (`_foundryTreeMaterial`), der Null-Renderer trägt keine — kam eine Lieferung mit
+            // Haut im gelüfteten Fenster, brach der Stoff laut („STOFF: die Gruppe der Foundry-Lieferung"). Er baut mit der
+            // Null-Semantik, in BEIDEN gelüfteten Fenstern (Stand und Ingest-Takt).
+            const _oTM = r._foundryTreeMaterial;
+            r._foundryTreeMaterial = nullKarte(_oTM);
             const feed = (ms) => {
                 st._perfFrame = {
                     render: 90,
@@ -243,6 +249,7 @@ const server = http.createServer((req, res) => {
             r._applyEffectiveShadowRange = _oSR;
             r._foundryBuildImpostorFlat = _oKF;
             r._foundryEnsureImpostorRecord = _oKR;
+            // der Stoff bleibt bis nach dem Ingest-Takt unter der Null-Semantik (s. oben)
             st._perfFrame = {};
             st._perfMarks = {};
             st.perfSense = null;
@@ -305,6 +312,7 @@ const server = http.createServer((req, res) => {
             await sleep(0);
             o.v2HeadlessSofort = hlSofort;
             st.renderer._isHeadlessNull = _oH;
+            r._foundryTreeMaterial = _oTM;
             // ── V4: LINSEN-KONSUM im gebauten Trace ──
             const trace = r._flightRecorderBuildTrace ? r._flightRecorderBuildTrace() : null;
             const ss = trace && trace.steadyState;
