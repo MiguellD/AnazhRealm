@@ -98,7 +98,7 @@ function fnBody(src, sigRe) {
 }
 
 // ── DIE VERDIKTE (pure Funktionen; Browser-Probe UND Selbst-Test). Rückgabe: die Täter beim Namen. ──
-const SOLL = { vorschauAnteil: 0.99, rahmenMin: 0.5, rahmenMax: 0.9, zugMs: 20000 };
+const SOLL = { vorschauAnteil: 0.99, rahmenMin: 0.5, rahmenMax: 0.9, zugMs: 20000, karteMin: 0.5, karteMax: 1.5 };
 // V-D3 FREMDER ZUG (K38): jeder Wartende erwacht nach der Ankunft eines Körpers, den ein ANDERER zuerst zog.
 function zugVerdict(m) {
     if (!m || m.gestartet !== true) return ["zug start"];
@@ -126,6 +126,12 @@ function zugVerdict(m) {
                 s.da
                     ? `zug stufe L${s.lod} schläft: ${s.wart} ist da, die Vorschau wartet weiter`
                     : `zug stufe L${s.lod}: ${s.wart} nach ${SOLL.zugMs} ms nicht da`
+            );
+        // die Karte steht in ihrer Größe: die Box der Vorschau misst die Höhe ihrer Höhen-Stufe (der Rahmen rahmt die Karte,
+        // nie den Stamm des Einheits-Quads)
+        else if (s.lod === 2 && !(s.hoch / s.soll >= SOLL.karteMin && s.hoch / s.soll <= SOLL.karteMax))
+            out.push(
+                `zug stufe L2 rahmen: die Box der Karte misst ${s.hoch} m, ihre Höhen-Stufe ${s.soll} m — Täter die Box der Karten-Instanz (Einheits-Quad)`
             );
     return out;
 }
@@ -1154,7 +1160,10 @@ async function probe(arg) {
                 r.selectBlueprintForEdit("baum_eiche");
                 while (performance.now() < t2 + zugFrist && !steht()) await tick(1, 80);
                 const z = at ? at.zellen.get(zKey) : null;
+                const box = steht() ? new THREE.Box3().setFromObject(p.currentMesh) : null;
                 m.stufen.push({
+                    hoch: box ? Math.round((box.max.y - box.min.y) * 100) / 100 : null,
+                    soll: f.hoehen && f.hoehen.get(kKey) > 0 ? Math.round(f.hoehen.get(kKey) * 100) / 100 : null,
                     lod: s,
                     wart: at ? `die Karte ${zKey} (Höhen-Stufe ${kKey})` : `der Körper ${kKey}`,
                     ms: steht() ? Math.round(performance.now() - t2) : null,
@@ -1265,7 +1274,7 @@ async function probe(arg) {
             gestartet: true,
             vorschau: { key: "eiche|2|0", fremd: true, ms: 1500, imCache: true },
             hand: { key: "klinge|1|0", fremd: true, ms: 900, imCache: true },
-            stufen: [0, 1, 2].map((lod) => ({ lod, wart: "eiche|2|" + lod, ms: 800, da: true })),
+            stufen: [0, 1, 2].map((lod) => ({ lod, wart: "eiche|2|" + lod, ms: 800, da: true, hoch: 21.4, soll: 21 })),
         };
         check("Selbst-Test V-D3 Fremder Zug: gesund == 0 Täter", zugVerdict(zugGesund).length === 0, zugVerdict(zugGesund).join(" · "));
         const zugMit = (wer, z) => Object.assign({}, zugGesund, { [wer]: Object.assign({}, zugGesund[wer], z) });
@@ -1281,6 +1290,11 @@ async function probe(arg) {
                 "zug stufe L2 schläft",
             ],
             ["keine Stufen gemessen (vakuös)", Object.assign({}, zugGesund, { stufen: [] }), "zug stufen: 0 von 3"],
+            [
+                "die Vorschau rahmt den Stamm (Box des Einheits-Quads, Bild 15.10.)",
+                Object.assign({}, zugGesund, { stufen: [...zugGesund.stufen.slice(0, 2), { lod: 2, wart: "fimp:eiche|2", ms: 900, da: true, hoch: 1.1, soll: 21 }] }),
+                "zug stufe L2 rahmen",
+            ],
         ]) {
             const v = zugVerdict(bruch);
             check(`Selbst-Test V-D3 Fremder Zug: ‚${name}' → die Linse nennt ${soll}`, v.some((t) => t.startsWith(soll)), v.join(" · "));
@@ -1599,7 +1613,7 @@ async function probe(arg) {
     check(
         `V-D3 Fremder Zug jeder Wartende erwacht nach der Ankunft eines fremd gezogenen Körpers, jede Stufe der Vorschau nach ihrem Stoff (≤ ${SOLL.zugMs} ms)`,
         vZ.length === 0,
-        `${zZ("vorschau", zm.vorschau)} · ${zZ("hand", zm.hand)} · Stufen ${(zm.stufen || []).map((q) => `L${q.lod} ${q.ms == null ? "nie" : q.ms + " ms"}`).join(" · ")}${vZ.length ? " — Täter: " + vZ.join(", ") : ""}`
+        `${zZ("vorschau", zm.vorschau)} · ${zZ("hand", zm.hand)} · Stufen ${(zm.stufen || []).map((q) => `L${q.lod} ${q.ms == null ? "nie" : q.ms + " ms"}${q.lod === 2 ? ` (Box ${q.hoch} m, Höhen-Stufe ${q.soll} m)` : ""}`).join(" · ")}${vZ.length ? " — Täter: " + vZ.join(", ") : ""}`
     );
     const rm = out.rahmen || {};
     if (rm.err) check("V-D3 Rahmen Probe ohne Ausnahme", false, rm.err.split("\n")[0]);

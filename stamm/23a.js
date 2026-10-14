@@ -719,8 +719,18 @@ class AnazhRealm_Z23a {
                     this._lodSlotStamp({ mesh: inst }, 0, 1, false, lf);
                     // PARITÄT: die Template→Welt-Scale reist in der leaf.localMatrix — die Vorschau
                     // zeigt das Billboard in WELT-Größe (Vorschau == Welt), nicht template-lokal.
-                    inst.setMatrixAt(0, lf.localMatrix ? lf.localMatrix.clone() : new Ti.Matrix4());
+                    const lm = lf.localMatrix ? lf.localMatrix.clone() : new Ti.Matrix4();
+                    inst.setMatrixAt(0, lm);
                     inst.instanceMatrix.needsUpdate = true;
+                    // DER RAHMEN DER KARTE (K38-N2): die Instanz trägt die Box ihrer Karte — Halbbreite und Höhe des Rahmens
+                    // (template-lokal, ab der Stammbasis) × die Template→Welt-Matrix. Das Einheits-Quad allein misst auf
+                    // der Stammachse 1 m (Breite und Höhe reisen erst im Shader, `aKarte`): die Vorschau rahmte den Stamm.
+                    const [hw, hh] = lf.rahmen;
+                    inst.boundingBox = new Ti.Box3(
+                        new Ti.Vector3(-hw, 0, -hw),
+                        new Ti.Vector3(hw, hh, hw)
+                    ).applyMatrix4(lm);
+                    inst.boundingSphere = inst.boundingBox.getBoundingSphere(new Ti.Sphere());
                     if (typeof inst.setColorAt === "function") {
                         inst.setColorAt(0, new Ti.Color(1, 1, 1));
                         if (inst.instanceColor) inst.instanceColor.needsUpdate = true;
