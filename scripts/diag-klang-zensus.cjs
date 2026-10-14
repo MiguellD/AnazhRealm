@@ -238,16 +238,36 @@ function werkzeug() {
             const r0 = Math.max(1e-3, seeZelle.d);
             const ux = (wx - seeZelle.x) / r0;
             const uz = (wz - seeZelle.z) / r0;
+            // Der Leser ist der Hör-Ring des Ohrs (UMWELT.ohr: radien × richtungen, feste Welt-Achsen): das Ufer steht, wo
+            // das Ohr trocken steht und sein ERSTER Ring Wasser trifft — der Punkt hinter dem ersten trockenen Punkt mit den
+            // meisten nassen Ring-Punkten. Ein fester Abstand (3 m) traf an der Wiese von K55 (See 2381/−5191) mit keiner
+            // der festen Richtungen das Wasser: das Ohr hörte es erst auf dem Ring 10 m (−32,1 dB, Wind −33,0).
+            const O = window.__klangCore.UMWELT.ohr;
+            const ringNass = (x, z) => {
+                let erst = 0,
+                    alle = 0;
+                for (const rad of O.radien)
+                    for (let k = 0; k < O.richtungen; k++) {
+                        const a = (k / O.richtungen) * Math.PI * 2;
+                        if (!W.nass(x + Math.sin(a) * rad, z + Math.cos(a) * rad)) continue;
+                        alle++;
+                        if (rad === O.radien[0]) erst++;
+                    }
+                return { erst, alle };
+            };
             for (let s = 1; s < r0; s++) {
                 const qx = seeZelle.x + ux * s;
                 const qz = seeZelle.z + uz * s;
                 if (!W.nass(qx, qz)) {
-                    // drei Meter hinter dem ersten trockenen Punkt (das Wasser 3–4 m entfernt): das Ohr hört das Ufer auf
-                    // seinem ersten Ring (4 m). Mit vier Metern traf der erste Ring den trockenen Saum, seit die Welt das
-                    // flache Ufer zeichnet und der Körper es liest (Gegenprüfung 07.10., Runde 3: Ufer 10 m, −31,5 dB).
-                    const fx = qx + ux * 3;
-                    const fz = qz + uz * 3;
-                    if (!W.nass(fx, fz)) best = { x: fx, z: fz, wasser: { x: qx - ux, z: qz - uz } };
+                    let wahl = null;
+                    for (let t = 0; t <= O.radien[0]; t += 0.5) {
+                        const fx = qx + ux * t;
+                        const fz = qz + uz * t;
+                        if (W.nass(fx, fz)) continue;
+                        const n = ringNass(fx, fz);
+                        if (n.erst > 0 && (!wahl || n.alle > wahl.n.alle)) wahl = { x: fx, z: fz, n };
+                    }
+                    if (wahl) best = { x: wahl.x, z: wahl.z, wasser: { x: qx - ux, z: qz - uz }, ring: wahl.n };
                     break;
                 }
             }
@@ -298,6 +318,55 @@ function werkzeug() {
             orte.dorf = { x: ex + ((wx - ex) / d) * 4, z: ez + ((wz - ez) / d) * 4, glut: { x: ex, z: ez, typ: glut.e.type } };
             // ARMLÄNGE an der Glut: 1 m vor dem Bau (das Knistern aus nächster Nähe — die Spitzen-Probe).
             orte.glutArm = { x: ex + (wx - ex) / d, z: ez + (wz - ez) / d, glut: { x: ex, z: ez, typ: glut.e.type } };
+        }
+        // DIE WIESE liegt jenseits der Hörweite jeder Glut (klang-core UMWELT.stimmen.glut.hoerweiteM): seit K55 steht
+        // an der Mess-Wiese ein Dorf des Gesetzes, sein Glutbrunnen 9,9 m neben dem Messort (glut −35,1 dB über Wind
+        // −36,4). Das Dorf wächst erst ganz (die Bau-Schlange leer, höchstens 30 s), dann gilt der nächste trockene, ebene
+        // Punkt um den Messort, an dem jede Glut außer Hörweite liegt und kein Wasser im Hör-Ring.
+        const dlDorf = performance.now() + 30000;
+        while (r._autoSettlementQueue && r._autoSettlementQueue.plan && performance.now() < dlDorf) {
+            W.takt();
+            await sleep(30);
+        }
+        const hoerweite = window.__klangCore.UMWELT.stimmen.glut.hoerweiteM;
+        const gluten = (st.architectures || []).filter((e) => e && e.position && W.glutFlaeche(e) > 0);
+        const O2 = window.__klangCore.UMWELT.ohr;
+        // offen wie der Messort: keine dichtere Krone, kein größerer Bestand im 15-m-Kreis (der erste Fund 42 m vor dem
+        // Messort stand am Waldrand: 17 Bäume, Wind −48,3 dB unter dem Soll −46)
+        const deckMess = r._kronenStreuAt(wx, wz);
+        const bestandMess = W.bestand(wx, wz, 15);
+        const wieseHaelt = (x, z) => {
+            for (const e of gluten) if (Math.hypot(e.position.x - x, e.position.z - z) < hoerweite + 4) return false;
+            if (r._kronenStreuAt(x, z) > deckMess || W.bestand(x, z, 15) > bestandMess) return false;
+            let lo = Infinity,
+                hi = -Infinity;
+            for (let k = 0; k <= O2.richtungen; k++) {
+                const a = (k / O2.richtungen) * Math.PI * 2;
+                for (const rad of k === O2.richtungen ? [0] : O2.radien) {
+                    const px = x + Math.sin(a) * rad,
+                        pz = z + Math.cos(a) * rad;
+                    if (W.nass(px, pz)) return false;
+                    if (rad > 6) continue;
+                    const y = r._voxelSurfaceY(px, pz);
+                    if (y === null) return false;
+                    lo = Math.min(lo, y);
+                    hi = Math.max(hi, y);
+                }
+            }
+            return hi - lo <= 1.5;
+        };
+        if (!wieseHaelt(wx, wz)) {
+            let neu = null;
+            for (let rr = 6; rr <= 240 && !neu; rr += 6) {
+                const n = Math.round((2 * Math.PI * rr) / 6);
+                for (let q = 0; q < n && !neu; q++) {
+                    const a = (q / n) * Math.PI * 2;
+                    const x = wx + Math.cos(a) * rr,
+                        z = wz + Math.sin(a) * rr;
+                    if (wieseHaelt(x, z)) neu = { x, z, vomMessort: rr, glutHoerweite: hoerweite };
+                }
+            }
+            orte.wiese = neu || { x: wx, z: wz, ohneOrt: "kein Punkt jenseits der Glut-Hörweite binnen 240 m" };
         }
         // ARMLÄNGE am Wasserfall: der nächste Fall der Region, der nächste trockene Punkt 3–24 m neben seinem Fuß (der
         // Fuß liegt im Becken). Seit die Bank mit ihrer Neigung ins Gelände läuft (Welle L, Gegenprüfung 07.10.), reicht
