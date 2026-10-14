@@ -1,5 +1,5 @@
 {
- "kopf": "0d011984",
+ "kopf": "e93e179a",
  "start": [
   {
    "lod": 0,
@@ -54,7 +54,7 @@
   {
    "lod": 1,
    "tris": 13997,
-   "sha": "7c33e069e26c91c1",
+   "sha": "3a500c6dd48088b5",
    "posen": {
     "bind": {
      "driftMax": 0,
@@ -62,44 +62,44 @@
      "durchstoss": 0
     },
     "ruhe": {
-     "driftMax": 0.007,
+     "driftMax": 0.0071,
      "driftP95": 0.0052,
-     "durchstoss": 0
+     "durchstoss": 1
     },
     "guard": {
-     "driftMax": 0.3421,
-     "driftP95": 0.2029,
+     "driftMax": 0.3451,
+     "driftP95": 0.2089,
      "durchstoss": 1
     },
     "punch": {
-     "driftMax": 0.7346,
-     "driftP95": 0.4222,
-     "durchstoss": 1
+     "driftMax": 0.7408,
+     "driftP95": 0.4432,
+     "durchstoss": 0
     },
     "jubel": {
-     "driftMax": 1.2184,
-     "driftP95": 0.6263,
-     "durchstoss": 0
+     "driftMax": 1.2308,
+     "driftP95": 0.6427,
+     "durchstoss": 3
     },
     "hocke": {
-     "driftMax": 0.0099,
-     "driftP95": 0.0065,
-     "durchstoss": 0
+     "driftMax": 0.01,
+     "driftP95": 0.0066,
+     "durchstoss": 1
     },
     "kick": {
-     "driftMax": 0.2282,
-     "driftP95": 0.0717,
-     "durchstoss": 0
+     "driftMax": 0.2305,
+     "driftP95": 0.0764,
+     "durchstoss": 1
     }
    },
    "hautEcken": 575,
    "bedeckt": [
-    "tshirt:67",
+    "tshirt:76",
     "pants:0"
    ],
-   "driftMax": 1.2184,
-   "driftP95": 0.2014,
-   "durchstoss": 2
+   "driftMax": 1.2308,
+   "driftP95": 0.2101,
+   "durchstoss": 7
   },
   {
    "lod": 0,
@@ -211,5 +211,5 @@
    }
   }
  ],
- "ms": 7322
+ "ms": 6095
 }

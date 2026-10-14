@@ -57,7 +57,8 @@ Vertrags-Akt K45-2 (14.10.2026, Labor = Welt beim Menschen — die Kleid-Gewicht
 (1) DER STOFF AUS DER HAUT (das Lab-Gesetz `_garmentFromSkin`, `__stoffAusHaut`): eine Kleid-Zone mit `dicke` (koerper-core
 `kleidZonen`: Oberteil 0,032 außer dem Poncho, Hose 0,024, ohne Hose die Unterhose 0,012) ist die Haut-Region ihrer Teile, um die
 Dicke entlang der Haut-Normale gehoben, mit IDENTISCHEN Gewichten, gespannt über die Mulden der Haut (24 Schritte Laplace, nie
-näher als die Dicke), der Saum liegt auf der Haut; die Haut darunter fällt. (2) DER LEIB unter dem Stoff: die gemalten Shorts
+näher als die Dicke), der Saum liegt auf der Haut; die Haut darunter fällt; die Grobstufe hebt ihren Stoff um das halbe
+Raster-Mehr (0,015), damit ihr Wurf den Umriss der feinen trägt (gate:kreatur-kosten DECKUNG mensch IoU min 0,947, Basis 0,949). (2) DER LEIB unter dem Stoff: die gemalten Shorts
 und die Gelenk-Kugeln sind Volumen der Haut (`leibV` 5,10 → 5,76, das Becken war kein Leib). (3) Der Poncho (weit, Lab-Drapé)
 bleibt eine Hülle und ERBT die Gewichte der Haut (`__stoffErbtHaut`, das Lab-Gesetz `_inheritWeights` + `_smoothInfl`).
 Neu geprägt NUR die 16 Mensch-Schlüssel: `mensch-L0|haut|{mensch,head,hand1,hand-1}` · `mensch-L0|stoff_{233047,2a2c30,e8e6e0}|mensch`

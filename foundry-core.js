@@ -7026,7 +7026,9 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
             // Haut-Region ihrer Teile, um die Dicke entlang der Haut-Normale gehoben — mit denselben Gewichten (Haut und Stoff EIN
             // Verformungsfeld, kein Durchstoß in keiner Pose) und mit Säumen statt Ballon; die Haut darunter fällt.
             if (z.dicke > 0 && hautHuelle) {
-                const aus = __stoffAusHaut(hautHuelle.geometry, hautTeile, z.teile || [], z.dicke);
+                // die Grobstufe wirft für die feine (S3): ihr gröberes Raster zieht die Haut der Glieder nach innen — ihr Stoff liegt
+                // um das halbe Raster-Mehr weiter draußen, damit ihr Umriss den der feinen trägt (gate:kreatur-kosten DECKUNG)
+                const aus = __stoffAusHaut(hautHuelle.geometry, hautTeile, z.teile || [], z.dicke + (fein ? 0.5 * 0.05 * (voxMul - 1) : 0));
                 if (aus) {
                     const stoff = new THREE.Mesh(aus.geo, matFuer(km));
                     stoff.userData.__skinned = true;
