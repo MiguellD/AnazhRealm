@@ -1053,7 +1053,8 @@ const server = statikServer();
             o.g = (() => {
                 const T3 = window.THREE;
                 const R = A.KREATUR_RUHE;
-                if (!R || typeof r._tickKreaturRuhe !== "function") return { fehler: "KREATUR_RUHE/_tickKreaturRuhe fehlt" };
+                if (!R || typeof r._tickKreaturRuhe !== "function")
+                    return { fehler: "KREATUR_RUHE/_tickKreaturRuhe fehlt" };
                 const cam = s.camera;
                 const blick = (dx, dz) => {
                     cam.position.set(pm.x, pm.y + 2, pm.z);
@@ -1095,9 +1096,12 @@ const server = statikServer();
                     g.gaenge = 0;
                 };
                 const kindStimmt = () => {
-                    const soll = new T3.Matrix4().compose(probe.position, probe.quaternion, probe.scale).multiply(kind.matrix);
+                    const soll = new T3.Matrix4()
+                        .compose(probe.position, probe.quaternion, probe.scale)
+                        .multiply(kind.matrix);
                     let d = 0;
-                    for (let k = 0; k < 16; k++) d = Math.max(d, Math.abs(soll.elements[k] - kind.matrixWorld.elements[k]));
+                    for (let k = 0; k < 16; k++)
+                        d = Math.max(d, Math.abs(soll.elements[k] - kind.matrixWorld.elements[k]));
                     return d;
                 };
                 // der Leser an der ruhenden Probe: ein senkrechter Stab durch ihre JETZIGE Lage (`dz` m neben der des Ruhe-Beginns)
@@ -1222,7 +1226,12 @@ const server = statikServer();
                 o.checks.gLeser = !!G.g2 && G.g2.trifft;
                 o.checks.s8LensFires = !!G.s8 && !G.s8.trifft;
                 o.checks.gErwacht =
-                    !!G.g3 && G.g3.wach && !G.g3.wurzel && G.g3.schritte === 4 && G.g3.kindFehler < 1e-6 && G.g3.zeitFehler < 1e-9;
+                    !!G.g3 &&
+                    G.g3.wach &&
+                    !G.g3.wurzel &&
+                    G.g3.schritte === 4 &&
+                    G.g3.kindFehler < 1e-6 &&
+                    G.g3.zeitFehler < 1e-9;
                 o.checks.s9LensFires = !!G.s9 && G.s9.ruhteVorher && G.s9.wach && G.s9.kindFehler > 1;
                 o.checks.gNah = !!G.g4 && G.g4.schritte === 12 && !G.g4.ruht;
                 o.checks.gZustand = !!G.g5 && G.g5.schritte === 12 && !G.g5.ruht;
@@ -1402,7 +1411,10 @@ const server = statikServer();
                 c.gRuht,
                 `(G) RUHT: 120 m hinter dem Blick geht der Leib ${g1.schritte} von 40 Takten (Takt 1/${out.ruheTakt}), die Zeit vollständig (Fehler ${g1.zeitFehler}), ${g1.gaenge} Matrix-Gänge ins angehängte Kind, eigene Wurzel ${g1.wurzel}`
             );
-            check(c.gLeser, "(G) LESER: der Treffer an der ruhenden Probe liest ihre jetzige Lage (`_leibMatrix` zieht nach)");
+            check(
+                c.gLeser,
+                "(G) LESER: der Treffer an der ruhenden Probe liest ihre jetzige Lage (`_leibMatrix` zieht nach)"
+            );
             check(
                 c.s8LensFires,
                 "SELBST-TEST (S8): der Leser ruft die ruhende Wurzel direkt → er liest die Lage des Ruhe-Beginns und verfehlt"
@@ -1423,7 +1435,7 @@ const server = statikServer();
         check(!pageErr, `kein Page-Error (${pageErr || "sauber"})`);
     }
     console.log(
-        `\n  ${ok ? "✅ GRÜN — die Kreatur kostet, was man von ihr sieht (Anim-Rate · Stand-Pose · Grobstufe KONSUMIERT · Starr-Bindung · Körper-Kugel · Werfer aus der Kern-Zeile · Ruhe jenseits der Grenze · der ruhende Leib außer Bild)" :"❌ ROT — die Kreatur-Kosten-Verdrahtung trägt nicht"}\n`
+        `\n  ${ok ? "✅ GRÜN — die Kreatur kostet, was man von ihr sieht (Anim-Rate · Stand-Pose · Grobstufe KONSUMIERT · Starr-Bindung · Körper-Kugel · Werfer aus der Kern-Zeile · Ruhe jenseits der Grenze · der ruhende Leib außer Bild)" : "❌ ROT — die Kreatur-Kosten-Verdrahtung trägt nicht"}\n`
     );
     process.exit(ok ? 0 : 1);
 })();

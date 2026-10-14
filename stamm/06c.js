@@ -2745,6 +2745,20 @@ class AnazhRealm_Z06c {
         Object.getPrototypeOf(c).updateMatrixWorld.call(c, true);
     }
 
+    // EIN BLICK OHNE TAKT (die Ausgabe-Aufnahme setzt die Kamera und rendert ohne Kreatur-Takt): jeder ruhende Leib erwacht
+    // und schreibt sein Feld, bevor dieser Blick ihn zeichnet — sonst stünde sein Feld, wo er zu ruhen begann. Der nächste
+    // Takt entscheidet die Ruhe wieder am Blick des Spiels. Rückgabe: die Zahl der Geweckten.
+    _leiberWecken() {
+        let n = 0;
+        for (const c of this.state.creatures) {
+            if (!c || !c.userData || c.userData._ruht !== true) continue;
+            this._kreaturErwacht(c);
+            n++;
+        }
+        if (n && this.state.playerMesh) this._tickKreaturZiegel(this.state.playerMesh.position);
+        return n;
+    }
+
     updateCreatures(delta) {
         this.state.creatureAnimationTime += delta;
         // W4 (V17.48) — die emotionale CONTAGION + das Wachsen der Bindung leben HIER
