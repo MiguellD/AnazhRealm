@@ -6236,7 +6236,7 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         // Gewichte → SkinnedGeo. clr = Abstand AUS der Haut (das Lab-Prinzip;
         // ohne ihn stechen die Muskel-Primitiven durch die Hülle).
         const backeHuelle = (pts, zentren, klasse, vox, sigma, level, clr) => {
-            if (pts.length < 24) return;
+            if (pts.length < 24) return null;
             const lo = [1e9, 1e9, 1e9],
                 hi = [-1e9, -1e9, -1e9];
             for (const p of pts)
@@ -6273,12 +6273,22 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
             f = kern.blur3(f, nx, ny, nz, sigma);
             // die Grobstufe liegt auf dem Gesetz wie die des Tiers (__aufsNiveau): ihre Hüllen werfen für die feine
             const geo = __huelleAusFeld(kern, f, nx, ny, nz, lo, vox, level, clr, zentren, skinJoints, 0.04, undefined, fein);
-            if (!geo) return;
+            if (!geo) return null;
             const mesh = new THREE.Mesh(geo, matFuer(klasse));
             mesh.userData.__skinned = true;
             B.character.add(mesh);
             mesh.position.set(0, 0, 0); // Geometrie ist Charakter-lokal
             gebauteHuellen.push(mesh);
+            felder.set(mesh, { f, nx, ny, nz, lo, vox, level });
+            return mesh;
+        };
+        const felder = new Map();
+        // DAS PRIMITIV LEBT IN SEINER HÜLLE (1310-15, Lehre 19): was eine Haut- oder Kleid-Hülle trägt, liegt unter ihr
+        // (der CLR-Push bzw. der Stoff-Abstand hebt die Fläche aus jedem Primitiv) — es wird nie gesehen und fällt aus dem
+        // Guss (`__nichtGiessen`, dieselbe Regel wie Kopf- und Hand-Haut). Vorher zog der Mensch nah 51k Dreiecke unter
+        // seinen Hüllen mit (Rumpf, Glieder, Füße im Schuh).
+        const lebtInHuelle = (knoten) => {
+            for (const n of knoten) n.userData.__nichtGiessen = true;
         };
         const gebauteHuellen = [];
         const voxMul = fein ? 1.6 : 1.0;
@@ -6301,9 +6311,11 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
             mSpreiz[nm] = new THREE.Matrix4().multiplyMatrices(invChar, nd.matrixWorld);
         }
         // 1) DIE HAUT: alle skin-Teile außer Kopf/Hände/Füße (dort echtes Detail).
+        let hautHuelle = null;
         {
             const pts = [],
-                zen = [];
+                zen = [],
+                quellen = [];
             B.character.traverse((node) => {
                 if (!node.isMesh || !node.geometry) return;
                 const kl = node.material && node.material.userData && node.material.userData.__klasse;
@@ -6311,9 +6323,12 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
                 const j = animAhnH(node);
                 if (j === "head" || j === "hand1" || j === "hand-1" || j === "ankle1" || j === "ankle-1") return;
                 punkteVon(node, pts, zen, j);
+                quellen.push(node);
             });
-            backeHuelle(pts, zen, "haut", 0.05 * voxMul, 1.4, 0.42, 0.028);
+            hautHuelle = backeHuelle(pts, zen, "haut", 0.05 * voxMul, 1.4, 0.42, 0.028);
+            if (hautHuelle) lebtInHuelle(quellen);
         }
+        const stoffHuellen = [];
         // 2) DIE KLEID-ZONEN (das Gesetz sagt WAS, die Maschine baut die Hülle):
         for (const z of kern.kleidZonen(dials) || []) {
             const km = "stoff_" + (z.hex >>> 0).toString(16);
@@ -6321,18 +6336,89 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
             // (Lab getCloth verbatim) + Webungs-Art als must-ignore-Marker.
             KL[km] = { c: z.hex, r: typeof z.rough === "number" ? z.rough : 0.82, webe: z.webe || null, seh: "stoff" };
             const pts = [],
-                zen = [];
+                zen = [],
+                quellen = [];
             for (const tn of z.teile || []) {
                 const teil = B.parts[tn];
                 if (!teil) continue;
-                if (teil.isMesh) punkteVon(teil, pts, zen, animAhnH(teil));
-                else
+                if (teil.isMesh) {
+                    punkteVon(teil, pts, zen, animAhnH(teil));
+                    quellen.push(teil);
+                } else
                     teil.traverse((n2) => {
-                        if (n2.isMesh && n2.geometry && !n2.userData.__skinned) punkteVon(n2, pts, zen, animAhnH(n2));
+                        if (n2.isMesh && n2.geometry && !n2.userData.__skinned) {
+                            punkteVon(n2, pts, zen, animAhnH(n2));
+                            quellen.push(n2);
+                        }
                     });
             }
-            backeHuelle(pts, zen, km, 0.06 * voxMul, 1.5, 0.38, z.abstand);
+            const stoff = backeHuelle(pts, zen, km, 0.06 * voxMul, 1.5, 0.38, z.abstand);
+            if (stoff) {
+                lebtInHuelle(quellen);
+                stoffHuellen.push(stoff);
+            }
         }
+        // DIE HAUT UNTER DEM STOFF (1310-15, Lehre 19): ein Haut-Dreieck, dessen drei Ecken im Feld einer Kleid-Hülle liegen
+        // (über ihrem Niveau, also mindestens den Stoff-Abstand unter seiner Fläche), sieht niemand — es fällt, die Ecken
+        // werden verdichtet. Am Saum bleibt jedes Dreieck mit einer Ecke im Freien (keine Lücke). Gebacken in der Spreiz-Pose,
+        // in der Haut und Stoff entstanden.
+        if (hautHuelle && stoffHuellen.length) {
+            const g = hautHuelle.geometry;
+            const pa = g.attributes.position;
+            const imStoff = new Uint8Array(pa.count);
+            for (const s of stoffHuellen) {
+                const F = felder.get(s);
+                for (let i = 0; i < pa.count; i++) {
+                    if (imStoff[i]) continue;
+                    const a = Math.round((pa.getX(i) - F.lo[0]) / F.vox),
+                        b = Math.round((pa.getY(i) - F.lo[1]) / F.vox),
+                        c = Math.round((pa.getZ(i) - F.lo[2]) / F.vox);
+                    if (a < 0 || b < 0 || c < 0 || a >= F.nx || b >= F.ny || c >= F.nz) continue;
+                    if (F.f[a + F.nx * (b + F.ny * c)] > F.level) imStoff[i] = 1;
+                }
+            }
+            const alt = g.index.array;
+            const neu = [];
+            for (let t = 0; t < alt.length; t += 3)
+                if (!(imStoff[alt[t]] && imStoff[alt[t + 1]] && imStoff[alt[t + 2]])) neu.push(alt[t], alt[t + 1], alt[t + 2]);
+            const karte = new Int32Array(pa.count).fill(-1);
+            let n = 0;
+            for (const v of neu) if (karte[v] < 0) karte[v] = n++;
+            const ng = new THREE.BufferGeometry();
+            for (const name of Object.keys(g.attributes)) {
+                const at = g.attributes[name];
+                const arr = new at.array.constructor(n * at.itemSize);
+                for (let i = 0; i < pa.count; i++)
+                    if (karte[i] >= 0) for (let k = 0; k < at.itemSize; k++) arr[karte[i] * at.itemSize + k] = at.array[i * at.itemSize + k];
+                ng.setAttribute(name, new THREE.BufferAttribute(arr, at.itemSize));
+            }
+            ng.setIndex(new THREE.BufferAttribute(Uint32Array.from(neu, (v) => karte[v]), 1));
+            g.dispose();
+            hautHuelle.geometry = ng;
+        }
+        // WAS GANZ IN EINER HÜLLE LIEGT (1310-15): jedes übrige starre Teil (gemalte Schatten, Gelenk-Kugeln …), dessen
+        // Ecken alle im Feld einer Haut- oder Kleid-Hülle liegen, liegt unter ihrer Fläche — es fällt aus dem Guss wie die
+        // Quellen der Hülle. Kopf, Hände, Augen und Haar liegen in keinem dieser Felder.
+        B.character.traverse((node) => {
+            if (!node.isMesh || !node.geometry || node.userData.__nichtGiessen || node.userData.__skinned) return;
+            tmpM.multiplyMatrices(invChar, node.matrixWorld);
+            const pa = node.geometry.attributes.position;
+            for (const F of felder.values()) {
+                let ganz = pa.count > 0;
+                for (let i = 0; i < pa.count && ganz; i++) {
+                    tmpV.set(pa.getX(i), pa.getY(i), pa.getZ(i)).applyMatrix4(tmpM);
+                    const a = Math.round((tmpV.x - F.lo[0]) / F.vox),
+                        b = Math.round((tmpV.y - F.lo[1]) / F.vox),
+                        c = Math.round((tmpV.z - F.lo[2]) / F.vox);
+                    ganz = a >= 0 && b >= 0 && c >= 0 && a < F.nx && b < F.ny && c < F.nz && F.f[a + F.nx * (b + F.ny * c)] > F.level;
+                }
+                if (ganz) {
+                    node.userData.__nichtGiessen = true;
+                    break;
+                }
+            }
+        });
+        felder.clear();
         // ZURÜCK IN DIE DEFAULT-POSE: Gelenke restaurieren, je Gelenk das
         // Delta default×inv(spreiz) (Charakter-lokal), jeden Hüllen-Vertex
         // gewichtet transformieren (die eine LBS-Formel), Normalen frisch.
