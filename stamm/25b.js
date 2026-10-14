@@ -2002,6 +2002,12 @@ class AnazhRealm_Z25b {
         // (gemeinsame Loop-locals); jetzt aus this.state neu gelesen.
         const player = this.state.playerMesh;
         const camera = this.state.camera;
+        // DIE KAMERA-FÜHRUNG eines Studios (`kameraFuehren`): solange eine steht, setzt SIE die Kamera — der Spieler bleibt,
+        // wo er ist, die Welt streamt um ihn wie immer.
+        if (this._kameraFuehrung && player && camera) {
+            this._kameraFuehrung(camera, currentTime, player.position);
+            return;
+        }
         if (player && camera) {
             // Spieler-Mesh in Yaw-Richtung drehen, damit die Seele in
             // Bewegungsrichtung schaut — wichtig für asymmetrische Formen

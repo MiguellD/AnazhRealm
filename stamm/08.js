@@ -328,7 +328,8 @@ class AnazhRealm_Z08 {
                 return (realm.state.worldMeta && realm.state.worldMeta.seed) || "anazh-realm-seed";
             },
             get noise() {
-                if (!realm._voxelNoise) realm._voxelNoise = new SimplexNoise(this.seed + ":voxel");
+                if (!realm._voxelNoise)
+                    realm._voxelNoise = globalThis.__gelaendeCore.lageRausch(this.seed, SimplexNoise);
                 return realm._voxelNoise;
             },
             get baseHeight() {
@@ -395,7 +396,9 @@ class AnazhRealm_Z08 {
         } catch (e) {
             return String((e && e.message) || e);
         }
-        if (terme.length === 1 && terme[0].art === "wildnis") return null;
+        // Die Wildnis allein OHNE Regler reist zu jedem; trägt der Wildnis-Term Regler des Gelände-Studios (eine Plan-Welt),
+        // zeichnete ein Build vor ihnen die Standard-Landform darunter — sie reist nur zur Stufe 2.
+        if (terme.length === 1 && terme[0].art === "wildnis" && Object.keys(terme[0]).length === 1) return null;
         const kann = msg && typeof msg.erbgut === "number" && Number.isFinite(msg.erbgut) ? msg.erbgut : 0;
         if (kann >= AnazhRealm.ERBGUT_PROTOKOLL) return null;
         return `der Empfänger liest kein Erbgut (Protokoll ${kann} < ${AnazhRealm.ERBGUT_PROTOKOLL}) — die Welt [${terme

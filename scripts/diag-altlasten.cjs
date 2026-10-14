@@ -1476,6 +1476,19 @@ const ZWILLINGE = [
         [/\bAUE_QUER\s*=/, "die Querneigung der Aue"],
         [/kuppel\s*\*\s*\(/, "der Insel-Term des Erbguts"],
         [/\btan[UFWB]\s*:/, "die Normalform des Erbguts (`erbgutNormal`)"],
+        // K16b — DIE MESSUNG (`MESSUNG`, `abdruckFeld`, `messStatistik`, `schichtSchritte`): das Raster der Statistik, der
+        // Makro-Abdruck und der Schicht-Ort wohnen im Gesetzbuch — die Zahl-Leiste des Studios und die Gelände-Wände RUFEN
+        // sie (die Prüfung K16b fand das Schicht-Verfahren als Zwilling in makro-worker und diag-worker-dichte, das Raster
+        // in studio.js).
+        [
+            /Math\.round\(\s*2000\s*\/|\b4010\b|\b268\s*\*\s*30\b|\bn:\s*268\b/,
+            "das Mess-Raster der Statistik (MESSUNG.raster)",
+        ],
+        [/\b852\s*(?:\+|,)\s*(?:\w+\s*\*\s*27|schritt:\s*27)\b/, "der Makro-Abdruck (MESSUNG.abdruck, abdruckFeld)"],
+        [
+            /\bstil\s*(?:>=|:)\s*0\.8\b|\b8000\s*,\s*8000\b|\bumkreis:\s*8000\b/,
+            "der Schicht-Ort der Messung (MESSUNG.schicht, schichtSchritte)",
+        ],
     ].map(([muster, was]) => ({
         muster,
         gesetzbuch: "gelaende-core.js",
@@ -1519,8 +1532,9 @@ const ZWILLINGE = [
 ];
 
 // Die Leser des Gelände-Gesetzes, die es nie nachrechnen: jede JS-Datei der Wurzel außer dem Gesetzbuch und dem Seh-
-// Spiegel, jedes Skript und jede Linse (eine Probe misst am Gesetz, nie an ihrer Kopie). Diese Wand trägt die Muster
-// selbst als Proben und steht nicht in der Liste.
+// Spiegel, jedes Skript und jede Linse (eine Probe misst am Gesetz, nie an ihrer Kopie) und das Gelände-Studio
+// (worlds/gelaende: das Panel und sein Makro-Worker — bis K16b außerhalb der Wand). Diese Wand trägt die Muster selbst
+// als Proben und steht nicht in der Liste.
 function gelaendeLeser() {
     const root = path.join(__dirname, "..");
     // der Stamm aus der EINEN Liste (nach dem Schnitt liegt er unter stamm/, kein readdir der Wurzel sähe ihn)
@@ -1538,7 +1552,7 @@ function gelaendeLeser() {
             .readdirSync(path.join(root, d))
             .filter((f) => /\.(?:c|m)?js$/.test(f) && f !== "diag-altlasten.cjs")
             .map((f) => d + "/" + f);
-    return wurzel.concat(skripte("scripts"), skripte("scripts/lib"));
+    return wurzel.concat(skripte("scripts"), skripte("scripts/lib"), skripte("worlds/gelaende"));
 }
 
 // `ersatz` (Selbsttest): { datei: Text } liest statt der Platte. Ein Abdruck ist ein Text (`fingerprint`) oder ein
@@ -1732,13 +1746,19 @@ function entsorgungen(srcRoh) {
         f(n);
         kinder(n, (c) => ueberall(c, f));
     };
+    // Die Träger einer Art beim Namen, auch in der Mehrzahl und in der Vokabel des Hauses (der Fern-Ring trägt seit K16 je
+    // Schale `geos` und je Pass `stoffe` — die Wand sah nur `geometry`/`material` und nannte `_fernRingDispose` tot).
+    const TRAEGER_ART = {
+        geometry: "geometry",
+        geos: "geometry",
+        geometrien: "geometry",
+        material: "material",
+        materials: "material",
+        stoffe: "material",
+    };
     const traeger = (n) =>
-        n &&
-        n.type === "MemberExpression" &&
-        !n.computed &&
-        n.property &&
-        (n.property.name === "geometry" || n.property.name === "material")
-            ? n.property.name
+        n && n.type === "MemberExpression" && !n.computed && n.property && TRAEGER_ART[n.property.name]
+            ? TRAEGER_ART[n.property.name]
             : null;
     const artVon = (e, bind) => {
         if (!e) return null;
@@ -3971,7 +3991,13 @@ function main() {
         const cont0 = "const c = sandNoise.noise2D((x + _wpX) * lc + 7.2, (z + _wpZ) * lc + 3.8);";
         const maske = "const ax = rxA / anker.massivAspect;";
         const mulde = "tarns.push({ x, z, reach2: r * r, twoSig2: 2 * s * s });";
+        // K16b: das Schicht-Verfahren im Makro-Worker des Studios, das Raster im Panel und in der Linse
+        const schicht = "maske[k] = G.grossform(L, x, z).stil >= 0.8 ? 1 : 0;";
         const zwillingFeuert =
+            feuert("worlds/gelaende/makro-worker.js", schicht, "Schicht-Ort der Messung") &&
+            feuert("worlds/gelaende/studio.js", "const k = cv.width / (268 * 30);", "Mess-Raster der Statistik") &&
+            feuert("scripts/diag-worker-dichte.cjs", "const RAND = Math.round(2000 / SCHRITT);", "Mess-Raster") &&
+            still("worlds/gelaende/makro-worker.js", schicht) &&
             feuert("voxel-worker.js", cont0, "Kontinentalität C") &&
             feuert(STAMM[0], maske, "Massiv-Maske") &&
             feuert("gelaende-core.js", maske, "Massiv-Maske") &&

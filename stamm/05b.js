@@ -2376,9 +2376,11 @@ class AnazhRealm_Z05b {
     // Voxel-Chunk selbst (Iso-Surface aus den Wasser-Cells, s. unten).
     _buildWaterPlane() {
         if (!this.state.scene || typeof THREE === "undefined") return;
-        // Der Meeresspiegel ist ABSOLUT (`terrainBaseHeight − 3`): bis zur Welle L lief davor eine 13×13-Stichprobe
+        // Der Meeresspiegel ist ABSOLUT (`terrainBaseHeight − GRUND.meerUnterBasis` des Kerns): bis zur Welle L lief davor eine 13×13-Stichprobe
         // `_voxelSurfaceY` (169 Dichte-Säulen beim Boot), die nur sortiert und dann verworfen wurde (W-kD11).
-        if (typeof this.state.waterLevel !== "number") this.state.waterLevel = (this.state.terrainBaseHeight || 0) - 3;
+        if (typeof this.state.waterLevel !== "number")
+            this.state.waterLevel =
+                (this.state.terrainBaseHeight || 0) - globalThis.__gelaendeCore.GRUND.meerUnterBasis;
         // Das Wasser ist ein Cell-Zustand im Voxel-Feld; jeder Voxel-Chunk baut sein Iso-Surface-Mesh aus
         // den Cells (`_buildVoxelChunkWaterIsoSurface`) — EIN Wasser-Mesh, eine Geometrie-Quelle.
         this.log(`Welt-Wasser — Meeresspiegel y=${this.state.waterLevel.toFixed(1)} (Iso-Cells, V9.75)`);

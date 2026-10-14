@@ -346,6 +346,8 @@
         return N;
     }
 
+    // Die Großform einer Lage (der Namensraum-Leser `grossform(L, x, z)`).
+    const grossformAus = (L, x, z) => grossform(netzFuer(L), x, z);
     // T1 — die Großform an (x, z): Grundhöhe K (sie lenkt das Netz der Ebene 0 und setzt Meer und Seen), Relief (die Hülle
     // über dem Talgrund), Hebung U (der Steilheits-Index der Flüsse: ks = ks₀·U), Stil (Tafelland), Trog-Gewicht.
     function grossform(N, x, z) {
@@ -953,7 +955,7 @@
     });
     function schnee(L, y, x, z) {
         if (!Number.isFinite(x) || !Number.isFinite(z)) throw new Error("gelaende-core schnee: der Ort (x, z) fehlt");
-        const wl = Number.isFinite(L.waterLevel) ? L.waterLevel : (L.baseHeight || 0) - 3;
+        const wl = Number.isFinite(L.waterLevel) ? L.waterLevel : (L.baseHeight || 0) - GRUND.meerUnterBasis;
         let zunge = 0;
         for (const o of SCHNEE.zungen) zunge += L.noise.noise2D(x * o.f + o.ox, z * o.f + o.oz) * o.a;
         return glatt(SCHNEE.start, SCHNEE.voll, y - wl + zunge);
@@ -1519,6 +1521,9 @@
                 p50Prozent: hang.length ? Math.round(1000 * q(hang, 0.5)) / 10 : null,
                 p90Prozent: hang.length ? Math.round(1000 * q(hang, 0.9)) / 10 : null,
                 anteilUnter8Prozent: hang.length ? r3(hang.filter((v) => v < LINSE.hangSanft).length / hang.length) : null,
+                // das Hang-Histogramm des inneren Landes je 5° (0–75°, die letzte Klasse sammelt den Rest): das Bild der
+                // Zahl in der Leiste des Studios
+                grad5: hang.reduce((a, s) => (a[Math.min(14, Math.floor((Math.atan(s) * 180) / Math.PI / 5))]++, a), new Array(15).fill(0)),
             },
             senken1mJeKm2: km2 > 0 ? Math.round((100 * senken) / km2) / 100 : null,
             senken1m: senken,
@@ -1540,8 +1545,15 @@
         };
     }
     // Das Hang-Histogramm in Grad (zentrale Differenzen auf einem feinen Raster): die Anteile der Bänder des Schicht-
-    // Gesetzes — Pediment 0,5–7°, Schutthang 30–40° (Ruhewinkel 33–37°), Kliff ≥ 60°.
+    // Gesetzes (`HANG_BAENDER` — EINE Quelle für die Linse und die Farben des Hang-Histogramms im Studio).
+    const HANG_BAENDER = Object.freeze({
+        pediment: Object.freeze([0.5, 7]),
+        schutt: Object.freeze([30, 40]),
+        ruhe: Object.freeze([33, 37]),
+        kliff: Object.freeze([60, 90]),
+    });
     function hangBaender(H, n, step, maske) {
+        const B = HANG_BAENDER;
         let c = 0;
         let ped = 0;
         let schutt = 0;
@@ -1555,10 +1567,10 @@
                 const g = Math.hypot((H[k + 1] - H[k - 1]) / (2 * step), (H[k + n] - H[k - n]) / (2 * step));
                 const w = Math.atan(g) * DEG;
                 c++;
-                if (w >= 0.5 && w <= 7) ped++;
-                if (w >= 30 && w <= 40) schutt++;
-                if (w >= 33 && w <= 37) ruhe++;
-                if (w >= 60) kliff++;
+                if (w >= B.pediment[0] && w <= B.pediment[1]) ped++;
+                if (w >= B.schutt[0] && w <= B.schutt[1]) schutt++;
+                if (w >= B.ruhe[0] && w <= B.ruhe[1]) ruhe++;
+                if (w >= B.kliff[0]) kliff++;
             }
         const r3 = (v) => Math.round(v * 1000) / 1000;
         if (!c) return { zellen: 0, pediment: 0, schutt: 0, ruhe: 0, kliff: 0 };
@@ -1621,10 +1633,222 @@
         };
     }
 
+    // ── DAS GELÄNDE-STUDIO (K16b): Urteil, Messung und Plan — rein additiv, die Höhe rechnet weiter `hoehe` allein. Die
+    // Bedienung (Namen, Haupt-Regler je Gruppe, die benannten Landschaften) ist kein Gesetz und kein Rezept des Kerns
+    // (studio-vertrag §9): sie liegt beim Studio (worlds/gelaende/bedienung.json).
+    //
+    // DIE MESSUNG — EINE Quelle für die Wände (gate:gelaende-realismus, gate:gelaende-studio) und die Zahl-Leiste des
+    // Studios (der Makro-Worker): das Raster der Statistik (4 × 4 km innen, 30 m, der Rand von 2 km rechnet Füllung, Abfluss
+    // und das WAHRE Einzugsgebiet der Flüsse mit, die ins Feld treten — gezählt wird das innere Feld), der Makro-Abdruck des
+    // Byte-Beweises (64 × 64, ±852 m, Schritt 27 m — ganzzahlig, f32-exakt; je Punkt mit und ohne Detail) und der Ort des
+    // Schicht-Gesetzes (das Tafelland ist ein ORT im Stil-Feld λ 5,2 km: der Kern nennt ihn im Umkreis von 8 km — in
+    // 4 × 4 km fehlt er zwei von drei Welten —, gezählt wird auf 2-m-Raster über 600 m im Tafelland selbst, Stil ≥ 0,8).
+    const MESSUNG = (function () {
+        const schritt = 30;
+        const halb = 2000;
+        const rand = Math.round(2000 / schritt);
+        const aussen = halb + rand * schritt;
+        return Object.freeze({
+            raster: Object.freeze({ schritt, halb, rand, n: Math.floor((2 * aussen) / schritt) + 1, x0: -aussen }),
+            abdruck: Object.freeze({ n: 64, x0: -852, schritt: 27 }),
+            schicht: Object.freeze({ umkreis: 8000, n: 301, schritt: 2, stil: 0.8 }),
+        });
+    })();
+    // Der Makro-Abdruck einer Höhe `hf(x, z, mitDetail)` — dieselben Bytes für die Lage des Studios (`hoehe`) und die Welt
+    // (`_terrainMacroSurfaceY`): je Punkt erst mit, dann ohne Detail.
+    function abdruckFeld(hf) {
+        const A = MESSUNG.abdruck;
+        const h = new Float64Array(A.n * A.n * 2);
+        let q = 0;
+        for (let j = 0; j < A.n; j++)
+            for (let i = 0; i < A.n; i++) {
+                h[q++] = hf(A.x0 + i * A.schritt, A.x0 + j * A.schritt, true);
+                h[q++] = hf(A.x0 + i * A.schritt, A.x0 + j * A.schritt, false);
+            }
+        return h;
+    }
+    // Die Statistik des Mess-Rasters (`MESSUNG.raster`, H[i + j·n] = Höhe mit Detail am Punkt x0 + i·schritt, x0 + j·schritt)
+    // einer Lage; `gesetz` (optional) ist das gemessene Gesetzbuch, das die benannten Seen nennt (die Linse misst einen
+    // anderen Stand mit DIESER Rechnung) — ohne `benannteSeen` zählt jede Senke.
+    function messStatistik(H, L, gesetz) {
+        const R = MESSUNG.raster;
+        const g = gesetz || { benannteSeen: benannteSeen };
+        const benannt = typeof g.benannteSeen === "function" ? g.benannteSeen(L, R.x0, R.x0, R.schritt, R.n) : [];
+        return statistik(H, R.n, R.schritt, L.waterLevel, benannt, R.rand);
+    }
+    // Das Schicht-Gesetz am Schicht-Ort in Zeilen (ein Generator: der Worker gibt zwischen zwei Zeilen den Takt ab, die
+    // Linse zieht ihn durch `schichtMessung` in einem Zug): `{ ort, x, z, baender }` — ohne Ort (kein Tafelland im
+    // Umkreis, oder ein Gesetz ohne `schichtOrt`) misst er am Ursprung ohne Maske, das Urteil gilt dort nicht (`urteil`).
+    // `gesetz` (optional): das gemessene Gesetzbuch (`hoehe`, `grossform`, `schichtOrt`), sonst dieses.
+    function* schichtSchritte(L, gesetz) {
+        const M = MESSUNG.schicht;
+        const g = gesetz || { hoehe: hoehe, grossform: grossformAus, schichtOrt: schichtOrt };
+        const ort = typeof g.schichtOrt === "function" ? g.schichtOrt(L, -M.umkreis, -M.umkreis, M.umkreis, M.umkreis) : null;
+        const ox = ort ? ort.x : 0;
+        const oz = ort ? ort.z : 0;
+        const h = ((M.n - 1) / 2) * M.schritt;
+        const stil = ort && typeof g.grossform === "function";
+        const HF = new Float64Array(M.n * M.n);
+        const maske = new Uint8Array(M.n * M.n);
+        for (let j = 0; j < M.n; j++) {
+            for (let i = 0; i < M.n; i++) {
+                const x = ox - h + i * M.schritt;
+                const z = oz - h + j * M.schritt;
+                HF[i + j * M.n] = g.hoehe(L, x, z, true);
+                maske[i + j * M.n] = !stil || g.grossform(L, x, z).stil >= M.stil ? 1 : 0;
+            }
+            yield j;
+        }
+        return { ort, x: ox, z: oz, baender: hangBaender(HF, M.n, M.schritt, maske) };
+    }
+    function schichtMessung(L, gesetz) {
+        const it = schichtSchritte(L, gesetz);
+        for (;;) {
+            const r = it.next();
+            if (r.done) return r.value;
+        }
+    }
+    // DER NATUR-KORRIDOR der Gelände-Linse (Nordstern §4.1, Karte K16) — EINE Quelle für die Wand (`diag-worker-dichte
+    // --realismus`) und die Zahl-Leiste des Studios: grün im Korridor, rot außerhalb.
+    const KORRIDOR = Object.freeze({
+        senkenJeKm2: 1,
+        senkeAnteil: 0.01,
+        thetaMin: 0.3,
+        thetaMax: 0.7,
+        r2Min: 0.5,
+        hammondSanft: 1,
+        dorfplaetze: 3,
+        kliff: 0.02,
+        schutt: 0.05,
+        pediment: 0.2,
+    });
+    // Das Urteil je Ziel aus der Statistik (`messStatistik`) und der Schicht-Messung (`schichtMessung`; null = noch nicht
+    // gemessen): true im Korridor, false außerhalb, null = das Ziel gilt hier nicht (ohne Schicht-Ort gilt das Schicht-Gesetz
+    // nicht — die Bänder am Ursprung sind nur Auskunft).
+    function urteil(st, messung) {
+        const K = KORRIDOR;
+        const schicht = messung && messung.ort ? messung.baender : null;
+        return {
+            senken: st.senken1mJeKm2 <= K.senkenJeKm2 && st.anteilSenkeTiefer1m < K.senkeAnteil,
+            flint:
+                st.flint.theta != null &&
+                st.flint.theta >= K.thetaMin &&
+                st.flint.theta <= K.thetaMax &&
+                st.flint.r2 >= K.r2Min,
+            hammond: st.hammond.sanft >= K.hammondSanft,
+            dorfplaetze: st.dorfplaetze >= K.dorfplaetze,
+            // ohne Schicht-Ort (kein Tafelland im Umkreis) gilt das Schicht-Gesetz nicht: null, nie grün
+            schicht:
+                schicht == null
+                    ? null
+                    : schicht.zellen > 0 &&
+                schicht.kliff >= K.kliff &&
+                schicht.schutt >= K.schutt &&
+                schicht.pediment >= K.pediment,
+        };
+    }
+    // DER PLAN (M5): was das Studio exportiert und die Welt beim Import liest — die Saat und die Regler, sonst nichts.
+    // Fail-closed: eine fremde Art, eine andere Version, eine Saat ohne Namen, ein unbekannter Regler (ein neuerer Build
+    // hätte ein Gesetz, das dieser nicht rechnet) oder eine Nicht-Zahl WERFEN mit dem Grund; ein fehlender Regler trägt
+    // sein def (wie im Erbgut), Zahlen werden auf [min, max] geklemmt. Leser: das Studio (Export), die Welt-Tür des Stamms
+    // (`_weltAusPlan`), die Studio-Probe.
+    const PLAN_ART = "gelaende-plan";
+    const PLAN_VERSION = 1;
+    // DER GRUND jeder Welt — EINE Quelle: eine frisch geborene Welt (und jede Plan-Welt) steht auf der Basis 0, das Meer
+    // liegt `meerUnterBasis` unter der Basis (`_buildWaterPlane`, `_hydroInit`), die Hydrosphäre rechnet in Kacheln der
+    // Kante `kachel` (`HYDROSPHERE.regionSize`), der Rausch-Strom der Höhe ist Saat + `strom` (`lageRausch`).
+    const GRUND = Object.freeze({ basis: 0, meerUnterBasis: 3, kachel: 2048, strom: ":voxel" });
+    function planNormal(roh) {
+        const nein = (grund) => {
+            throw new Error(`Gelände-Plan abgelehnt: ${grund}`);
+        };
+        if (!roh || typeof roh !== "object") nein("kein Objekt");
+        if (roh.art !== PLAN_ART) nein(`die Art ist „${roh.art}", nicht „${PLAN_ART}"`);
+        if (roh.v !== PLAN_VERSION) nein(`Version ${roh.v} (dieser Build liest ${PLAN_VERSION})`);
+        if (typeof roh.saat !== "string" || !/^[A-Za-z0-9:._-]{1,64}$/.test(roh.saat))
+            nein("die Saat ist kein Name (1–64 Zeichen aus A–Z a–z 0–9 : . _ -)");
+        const rg = roh.regler;
+        if (!rg || typeof rg !== "object" || Array.isArray(rg)) nein("keine Regler");
+        for (const k of Object.keys(rg)) if (!LANDFORM_REGLER.some((r) => r.id === k)) nein(`unbekannter Regler „${k}"`);
+        const regler = {};
+        for (const r of LANDFORM_REGLER) {
+            const v = rg[r.id];
+            if (v === undefined) regler[r.id] = r.def;
+            else if (typeof v !== "number" || !Number.isFinite(v)) nein(`${r.id} ist keine Zahl`);
+            else regler[r.id] = Math.min(r.max, Math.max(r.min, v));
+        }
+        return { art: PLAN_ART, v: PLAN_VERSION, saat: roh.saat, regler };
+    }
+    // Das Erbgut einer Plan-Welt (`worldMeta.erbgut` roh): EIN Wildnis-Term, der jeden Regler trägt.
+    function planErbgut(plan) {
+        const p = planNormal(plan);
+        return { terme: [Object.assign({ art: "wildnis" }, p.regler)] };
+    }
+    // DIE LAGE AUS IHREM ABBILD — EINE Rechnung für jede Lage, die `hoehe` liest: die Welt (`_gelaende`, ihr Rausch-Strom),
+    // der Worker der Welt (`voxel-worker` applyStateSnapshot), der Plan (`planLage`), der Makro-Worker des Studios (A = die
+    // gebaute Welt aus ihrem Abbild, B = der Entwurf) und die Gelände-Linse (`diag-worker-dichte --realismus`). Das Abbild
+    // ist reine Daten (es reist per postMessage): Saat, Basis, Wasserspiegel, Erbgut-Normalform, Kachel-Kante.
+    function lageRausch(seed, Rausch) {
+        return new Rausch(String(seed) + GRUND.strom);
+    }
+    function lageAbbild(L) {
+        return {
+            seed: String(L.seed),
+            baseHeight: L.baseHeight,
+            waterLevel: L.waterLevel,
+            erbgut: { terme: L.erbgut.terme, wildnis: L.erbgut.wildnis },
+            regionSize: L.regionSize,
+        };
+    }
+    function lageAus(a, Rausch) {
+        return {
+            seed: a.seed,
+            noise: lageRausch(a.seed, Rausch),
+            baseHeight: a.baseHeight,
+            waterLevel: a.waterLevel,
+            erbgut: a.erbgut,
+            regionSize: a.regionSize,
+        };
+    }
+    // Das Abbild der Welt, die ein Plan gebiert (`_weltAusPlan`): Saat des Plans, der Grund (`GRUND`), EIN Wildnis-Term.
+    function planAbbild(plan) {
+        const p = planNormal(plan);
+        return {
+            seed: p.saat,
+            baseHeight: GRUND.basis,
+            waterLevel: GRUND.basis - GRUND.meerUnterBasis,
+            erbgut: { terme: erbgutNormal(planErbgut(p)), wildnis: 1 },
+            regionSize: GRUND.kachel,
+        };
+    }
+    // Die Gelände-Lage einer Plan-Welt, wie die Welt sie nach dem Import liest — `Rausch` ist der SimplexNoise-Konstruktor
+    // des Wirts (vendor/simplex-noise.js).
+    function planLage(plan, Rausch) {
+        return lageAus(planAbbild(plan), Rausch);
+    }
+
     root.__gelaendeCore = Object.freeze({
+        MESSUNG: MESSUNG,
+        abdruckFeld: abdruckFeld,
+        messStatistik: messStatistik,
+        schichtSchritte: schichtSchritte,
+        schichtMessung: schichtMessung,
+        KORRIDOR: KORRIDOR,
+        urteil: urteil,
+        PLAN_ART: PLAN_ART,
+        PLAN_VERSION: PLAN_VERSION,
+        GRUND: GRUND,
+        planNormal: planNormal,
+        planErbgut: planErbgut,
+        lageRausch: lageRausch,
+        lageAbbild: lageAbbild,
+        lageAus: lageAus,
+        planAbbild: planAbbild,
+        planLage: planLage,
         LINSE: LINSE,
         statistik: statistik,
         hangBaender: hangBaender,
+        HANG_BAENDER: HANG_BAENDER,
         maeanderZahl: maeanderZahl,
         MAEANDER: MAEANDER,
         FLUSS_BREITE: FLUSS_BREITE,
@@ -1645,7 +1869,7 @@
         termY: termY,
         SCHNEE: SCHNEE,
         schnee: schnee,
-        grossform: (L, x, z) => grossform(netzFuer(L), x, z),
+        grossform: grossformAus,
         landformRegler: landformRegler,
         benannteSeen: benannteSeen,
         flussLaeufe: flussLaeufe,

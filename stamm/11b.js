@@ -1080,7 +1080,7 @@ class AnazhRealm_Z11b {
         const base = this.state.terrainBaseHeight || 0;
         let waterLevel = this.state.waterLevel;
         if (typeof waterLevel !== "number" || !Number.isFinite(waterLevel)) {
-            waterLevel = base - 3;
+            waterLevel = base - globalThis.__gelaendeCore.GRUND.meerUnterBasis;
         }
         const size = H.regionSize;
         const cell = H.cell;

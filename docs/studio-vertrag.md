@@ -915,11 +915,27 @@ Wirt, der Kern hält keinen Welt-Zustand außer Strömen, die er aus der Saat ab
 (beide Seiten der Erklärung, die Absenz der Blöcke, die Funktions-Fläche; Selbsttest), die Zwillings-Wand in
 `gate:altlasten` hält die Formeln im Gesetzbuch.
 
-**Stand der Gesetz-Kerne:** `gelaende-core.js` (`__gelaendeCore`) — die EINE 2D-Höhe `hoehe(L, x, z, mitDetail)` (der
-Term-Auswerter des Erbguts samt seiner Normalform `erbgutNormal` und der Wildnis-Term = die LANDFORM, K16: Großform-
-Splines `grossform` mit den Reglern `LANDFORM_REGLER`, das Flussnetz mit seinen Senken als den benannten Seen
-`benannteSeen`, das Schicht-Gesetz `schichtOrt`), die Schneegrenze `schnee`, die Gelände-Linse `statistik`/`hangBaender` und
-der Kachel-Schlüssel; geladen vom Stamm (vor `anazhRealm.js`), vom voxel-worker (`importScripts` mit `?v=`) und vom
-Foundry-Worker. Es gibt keinen Spiegel: kein Leser rechnet eine dieser Formeln nach (die Boden-Farbe liest `schnee`, der
-Feld-Zeichner und der Fern-Ring `hoehe`); die Zwillings-Wand in `gate:altlasten` sucht sie als Muster in jeder Wurzel-Datei
-und jedem Skript.
+Was ein Gesetz-Kern über das Gesetz hinaus trägt, ist das, was Studio UND Welt lesen müssen, damit kein Zwilling entsteht:
+die LINSE, die sein Gesetz misst (dieselbe Rechnung für die Wand und die Zahl-Leiste des Studios), und die PLAN-TÜR, durch
+die ein Plan des Studios zur Welt wird (Studio = Welt byte-gleich, M5). Die BEDIENUNG eines Studios — die Namen seiner
+Regler, ihre Gruppen, seine benannten Landschaften — ist weder Gesetz noch Linse: sie gehört dem Studio (beim Gelände
+`worlds/gelaende/bedienung.json`), eine benannte Landschaft ist ein Rezept und steht nie im Kern. Jeder Schlüssel des
+Namensraums steht in der Erklärung unten; `gate:studio-vertrag` liest sie und nennt jeden Schlüssel, der fehlt, und jedes
+Rezept unter jedem Namen (ein Schlüssel aus `PRESET`/`REZEPT`/`RECIPE`, eine Liste von Einträgen mit `regler`, `kind` oder
+Dials `s`) beim Namen.
+
+**Stand der Gesetz-Kerne:** `gelaende-core.js` (`__gelaendeCore`) — DAS GESETZ: die EINE 2D-Höhe `hoehe(L, x, z, mitDetail)`
+(der Term-Auswerter des Erbguts `termY` samt seiner Normalform `erbgutNormal`, der Wildnis-Term `wildnisY` = die LANDFORM,
+K16: Großform-Splines `grossform` an den Knoten `OFFSET_KNOTEN`/`RELIEF_KNOTEN` mit den Reglern `LANDFORM_REGLER` — gelesen
+je Lage über `landformRegler` —, das Flussnetz mit den Kanten `NETZ_KANTE`, seinen Läufen `flussLaeufe` und seinen Senken als
+den benannten Seen `benannteSeen`, das Schicht-Gesetz `schichtOrt`, der Höhlen-Mund `HOEHLEN_MUND`/`hoehlenMund`), die
+Schneegrenze `SCHNEE`/`schnee`, die Generation des Bodens `BODEN_GENERATION` und der Kachel-Schlüssel `kachelSchluessel`.
+DIE LINSE (K16, K16b): `statistik` mit ihren Schwellen `LINSE`, `hangBaender` mit den Bändern `HANG_BAENDER`, die Messung
+`MESSUNG` (das Mess-Raster, der Makro-Abdruck, der Schicht-Ort) mit `abdruckFeld`, `messStatistik`, `schichtSchritte`/
+`schichtMessung`, und der Natur-Korridor `KORRIDOR` mit seinem `urteil`. DIE PLAN-TÜR (K16b): `PLAN_ART`, `PLAN_VERSION`,
+`planNormal`, `planErbgut`, `planAbbild`, `planLage` auf dem Grund `GRUND`, die Lage `lageAus`/`lageAbbild` mit ihrem
+Rausch-Strom `lageRausch`. DIE ERKLÄRUNG: `VERSION`, `STUDIO_VERTRAG`, `FUNKTION`. Geladen vom Stamm (vor `anazhRealm.js`),
+vom voxel-worker (`importScripts` mit `?v=`), vom Foundry-Worker und vom Makro-Worker des Studios. Es gibt keinen Spiegel:
+kein Leser rechnet eine dieser Formeln nach (die Boden-Farbe liest `schnee`, der Feld-Zeichner und der Fern-Ring `hoehe`, die
+Zahl-Leiste und die Gelände-Wände `MESSUNG`); die Zwillings-Wand in `gate:altlasten` sucht sie als Muster in jeder
+Wurzel-Datei und jedem Skript.

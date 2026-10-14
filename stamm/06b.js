@@ -947,7 +947,7 @@ class AnazhRealm_Z06b {
     // Accumulation braucht eine endliche Wasserscheide); cell 16 m → 128² Zellen im Perf-Budget.
     static get HYDROSPHERE() {
         return Object.freeze({
-            regionSize: 2048, // Region-Kantenlänge in m (um den Welt-Ursprung)
+            regionSize: globalThis.__gelaendeCore.GRUND.kachel, // Region-Kantenlänge in m (um den Welt-Ursprung; der Grund des Kerns)
             cell: 16, // Zell-Größe in m → dim = regionSize / cell = 128
             fillEpsilon: 0.01, // Priority-Flood-ε: definiertes Gefälle je Zelle
             minLakeCells: 6, // ein See ist ≥ 6 Zellen — kleinere Füll-Senken

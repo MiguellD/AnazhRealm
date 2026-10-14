@@ -381,6 +381,17 @@ jobs:
               # > 1 m und Dorfplaetze am Boden des Spielers mit Kanal und See; der Selbsttest legt die alte Bett-Tiefe auf.
               run: npm run gate:gelaende-realismus
 
+            - name: Gelaende-Studio (A ist die gebaute Welt, jeder Regler wirkt, jedes Preset im Korridor, EIN Plan reist byte-gleich in die Welt)
+              if: matrix.gruppe == 9
+              # Faehrt index.html?studio=gelaende (Null-Renderer) ueber einer Welt, die kein Plan beschreibt (Basis 7 m,
+              # Rampe): der Start zeigt A und nennt Rampe und Basis als Abweichung; A zeigt dieselbe Welt (Makro-Abdruck + Statistik); jeder Regler aus LANDFORM_REGLER einmal ueber
+              # sein Schieber-Element (tot = das Raster bleibt byte-gleich); jeder Landschafts-Knopf (bedienung.json) ohne
+              # rotes Ziel, das Schicht-Gesetz an mindestens einem; der Export (EIN Plan) durch das Welt-Tor, nach dem
+              # Reload derselbe Makro-Abdruck (64 x 64) und dieselbe Statistik in der Welt, und die Karte malt den Schnee der
+              # Boden-Farbe der Welt in ihrer Palette. Der Selbsttest: ein Schritt am Regler "hoehe" aendert den Abdruck, ein
+              # Preset ausserhalb des Korridors, ein Start auf B und eine Karte ohne Schnee fallen rot (Karte K16b).
+              run: npm run gate:gelaende-studio
+
             - name: Pruefbuehne (wo die Wildnis nicht traegt, wirft das Feld nichts - auch nicht der Nexus; S4 steht an ihrer Spec; S0 leuchtet nachts aus dem Licht-Pool)
               if: matrix.gruppe == 3
               # Faehrt die echte Welt (Null-Renderer): jede Ort-Op der Welt-Akte mit der Quelle des Feldes (nexus,

@@ -1454,7 +1454,7 @@ class AnazhRealm_Z05a {
             creatures: [],
             creatureEmotions: [],
             terrainSteepness: 1.0,
-            terrainBaseHeight: 0.0,
+            terrainBaseHeight: globalThis.__gelaendeCore.GRUND.basis, // der Grund einer frisch geborenen Welt (Kern)
             weather: "sunny",
             // Eine neue Welt ist eigenständig: sie erbt von der alten NUR die Wahl des Schöpfers (die Positiv-Liste
             // `AnazhRealm.WELT_GRENZE.geburt`: visibility, creator), nie ihre Identität — keine parentWorlds (Fusion: Ring

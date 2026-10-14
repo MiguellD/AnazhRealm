@@ -1561,6 +1561,25 @@ class AnazhRealm_Z13b {
     }
 
     _openWeltTorDialog(parsed, file) {
+        // EIN PLAN DES GELÄNDE-STUDIOS klopft an wie eine Welt: die Tür macht aus ihm die Welt, die er beschreibt
+        // (`_weltAusPlan`), dann wählt der Spieler wie bei jeder Datei. Ein Plan, den dieser Build nicht liest, fällt
+        // benannt (fail-closed, nie still Wildnis).
+        if (parsed && parsed.art === globalThis.__gelaendeCore.PLAN_ART) {
+            try {
+                parsed = this._weltAusPlan(parsed);
+            } catch (e) {
+                const grund = String((e && e.message) || e);
+                this.log(grund, "ERROR");
+                const chatOutput = typeof document !== "undefined" ? document.getElementById("chat-output") : null;
+                if (chatOutput) {
+                    const line = document.createElement("div");
+                    line.textContent = grund;
+                    chatOutput.appendChild(line);
+                    chatOutput.scrollTop = chatOutput.scrollHeight;
+                }
+                return;
+            }
+        }
         this.state.pendingImport = { parsed, fileName: (file && file.name) || "unbekannt" };
         const dialog = document.getElementById("world-tor-dialog");
         const summary = document.getElementById("world-tor-summary");
@@ -1862,6 +1881,24 @@ class AnazhRealm_Z13b {
     // Importierte Welt bekommt eine NEUE worldId (sonst überschriebe sie eine gleichnamige), behält Seed +
     // Inhalt, trägt die Original-ID in `parentWorlds`. Slug-Kollision → `-2`/`-3`/… wie createNewWorld.
     // Die aktive Welt bleibt; `reload` springt direkt in die importierte.
+    // DIE WELT AUS EINEM PLAN (K16b): der Export des Gelände-Studios (`{ art: "gelaende-plan", v, saat, regler }`) wird die
+    // Welt, die er beschreibt — eine frisch geborene Welt (wie „Neue Welt", vor ihrem Erst-Spawn) mit der Saat des Plans
+    // und seinen Reglern im Erbgut (`planErbgut`), auf dem Grund des Kerns (`GRUND`). Die Welt erfindet nichts:
+    // ihre Höhe ist `hoehe` an genau der Lage, die das Studio rechnete (`planLage`) — Studio = Welt byte-gleich
+    // (gate:worker-dichte --studio). Wirft mit dem Grund, wenn der Plan nicht gelesen werden kann. Leser: die Welt-Tür
+    // (`_openWeltTorDialog`) und das Studio („Welt bauen").
+    _weltAusPlan(roh) {
+        const G = globalThis.__gelaendeCore;
+        const plan = G.planNormal(roh);
+        const meta = this._generateFreshWorldMeta("gelaende");
+        meta.seed = plan.saat;
+        meta.variantSeed = this._generateVariantSeedPool(plan.saat);
+        const snap = this._buildEmptyWorldSnapshot(meta, false);
+        snap.worldMeta.erbgut = G.planErbgut(plan);
+        snap.worldMeta.voxelTerrain = true;
+        return snap;
+    }
+
     importWorldBeside(parsed, { reload = false } = {}) {
         if (!parsed || typeof parsed !== "object") {
             return { ok: false, reason: "kein gültiger Snapshot" };

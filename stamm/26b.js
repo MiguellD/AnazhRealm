@@ -2192,8 +2192,9 @@ AnazhRealm.P2P_PULL_COOLDOWN_MS = 5000;
 // DIE ERBGUT-STUFE DES PROTOKOLLS: wer eine Welt erbittet (world-request, world-pull), erklärt, dass er
 // `worldMeta.erbgut` liest und eine unbekannte Term-Art ablehnt (`_erbgutEinlass`). Ein Sender reicht eine Welt, deren
 // Erbgut nicht die Wildnis allein ist, nur einem Empfänger mit dieser Stufe (`_erbgutTeilbar`) — ein Build davor
-// zeichnete sie still als Wildnis.
-AnazhRealm.ERBGUT_PROTOKOLL = 1;
+// zeichnete sie still als Wildnis. Stufe 2 (K16b): der Empfänger liest auch die Regler im Wildnis-Term (eine Welt aus
+// einem Plan des Gelände-Studios).
+AnazhRealm.ERBGUT_PROTOKOLL = 2;
 // DIE WELTGRENZE: was beim Wechsel der Welt aus der alten reist — beim Namen, sonst nichts (gate:weltgrenze).
 //   geburt       die Wahl des Schöpfers, die eine neue Welt erbt (`_buildEmptyWorldSnapshot`)
 //   platz        der Speicher-Platz der Seite, nur in die Lücken einer geladenen Welt (`_weltMetaWechsel`)

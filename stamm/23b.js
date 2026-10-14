@@ -1949,6 +1949,13 @@ class AnazhRealm_Z23b {
     }
 
     // Ring 5 V2 Vorbereitung — Kamera-Modus (Erst-/Dritte-Person).
+    // DIE KAMERA-FÜHRUNG (K16b, der Anschluss eines Studios an die Welt-Engine): `fn(camera, t, spielerPos)` setzt je Frame
+    // die Kamera statt der Spieler-Kamera (`_loopCamera`); null gibt sie dem Spieler zurück. Leser: das Gelände-Studio
+    // (Makro-Flug, langsamer Orbit; „Augenhöhe" = null).
+    kameraFuehren(fn) {
+        this._kameraFuehrung = typeof fn === "function" ? fn : null;
+    }
+
     setCameraMode(mode) {
         const next = mode === "third" ? "third" : "first";
         this.state.cameraMode = next;
