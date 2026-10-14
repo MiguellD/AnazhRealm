@@ -320,14 +320,14 @@ async function s0Probe(page, station, schein) {
                 r._applyDayNightToScene();
             };
             uhr(0);
-            // der Mensch steht, wo die Welt ihn ankommen lässt: trägt die Station die Genesis-Plattform (K52: die Scheibe liegt
-            // auf dem Grund), steht er auf ihr, nie in ihrem Stein (die Kapsel schob ihn 1,45 m aus dem Quarz-Kern)
-            const pl0 = r._genesisPlattform();
-            const dach0 = ((pl0 && pl0.blockerAABBs) || [])
-                .filter((b) => st.x >= b.minX && st.x <= b.maxX && st.z >= b.minZ && st.z <= b.maxZ)
-                .reduce((m, b) => Math.max(m, b.topY), -Infinity);
-            const y0 = Math.max(r.getTerrainHeightAt(st.x, st.z), dach0);
-            s.playerMesh.position.set(st.x, y0 + 1, st.z);
+            // der Mensch steht im Atrium am Rand des Genesis-Platzes (K52: die Scheibe liegt auf dem Grund der Station, der Ring
+            // der Tore um sie): 2 m jenseits der Lichtung, zwischen zwei Toren (18°), der Blick des Schusses weg vom Ring
+            const A0 = r.constructor.GENESIS_PLATZ;
+            const w0 = Math.PI / 10;
+            const sx = st.x + (A0.ringR + A0.rand + 2) * Math.cos(w0);
+            const sz = st.z + (A0.ringR + A0.rand + 2) * Math.sin(w0);
+            const y0 = r.getTerrainHeightAt(sx, sz);
+            s.playerMesh.position.set(sx, y0 + 1, sz);
             const vor = new Set(s.architectures || []);
             r.dslRun(["spawn_studio", "feuerstelle", ["near_player", 3], 1], { source: "human" });
             await takt(20);
@@ -883,13 +883,13 @@ async function lichtLauf() {
                         };
                         if (!gestalt) {
                             window.__buehne();
-                            // auf der Genesis-Plattform, wenn die Station sie trägt (K52: die Scheibe liegt auf dem Grund)
-                            const pl0 = r._genesisPlattform();
-                            const dach0 = ((pl0 && pl0.blockerAABBs) || [])
-                                .filter((b) => st.x >= b.minX && st.x <= b.maxX && st.z >= b.minZ && st.z <= b.maxZ)
-                                .reduce((m, b) => Math.max(m, b.topY), -Infinity);
-                            const y0 = Math.max(r.getTerrainHeightAt(st.x, st.z), dach0);
-                            s.playerMesh.position.set(st.x, y0 + 1, st.z);
+                            // am Rand des Genesis-Platzes, zwischen zwei Toren (K52: die Scheibe liegt auf dem Grund der Station)
+                            const A0 = r.constructor.GENESIS_PLATZ;
+                            const w0 = Math.PI / 10;
+                            const sx = st.x + (A0.ringR + A0.rand + 2) * Math.cos(w0);
+                            const sz = st.z + (A0.ringR + A0.rand + 2) * Math.sin(w0);
+                            const y0 = r.getTerrainHeightAt(sx, sz);
+                            s.playerMesh.position.set(sx, y0 + 1, sz);
                             const vor = new Set(s.architectures);
                             const pm = s.playerMesh.position;
                             let feuer = null;

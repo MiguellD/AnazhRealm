@@ -130,6 +130,8 @@ const BASIS = {
     baugrund: [["if (!(e.affordances && e.affordances.moveable) && !this._istNatur(e)) {", "if (false) {"]],
     // DIE WAND KENNT DEN WEG NICHT (K52): Weg, Platz und Acker eines Dorfs urteilen nur über die Wiese
     weg: [['return this._aufWeg(x, z, rand) ? "weg" : false;', "return false;"]],
+    // DAS WERK IM STEIN (K52): der Satz setzt seine Werke auf den Boden des Gesetzes, nie auf den Bau, der dort trägt
+    dach: [["? this._bauDachUnter(x, z, sy) + 0.5 : pos.y;", "? sy + 0.5 : pos.y;"]],
     // eine Quelle geht an der Wand vorbei: die Wald-Schlange setzt ihre Würfe direkt
     lichtungwald: [
         [
@@ -649,6 +651,18 @@ async function proben(phasen) {
                     luft = Math.max(luft, sohle - g);
                 }
             o.sohle = { luft: Number.isFinite(luft) ? Math.round(luft * 100) / 100 : null };
+            // DAS WERK AUF DER SCHEIBE: der Satz des Menschen setzt eine Feuerstelle 2 m neben der Mitte — sie steht AUF der
+            // Scheibe (ihre Basis an der Oberkante), nie in ihrem Stein (`_bauDachUnter`; vorher 1 m tief: der Feuerkreis dunkel)
+            const wx = plat.position.x + 2;
+            const wz = plat.position.z;
+            const dach = Math.max(
+                ...boxen.filter((q) => wx >= q.minX && wx <= q.maxX && wz >= q.minZ && wz <= q.maxZ).map((q) => q.topY)
+            );
+            const vor = new Set(s.architectures);
+            r.dslRun(["spawn_studio", "feuerstelle", ["at", wx, dach + 0.5, wz], 1], { source: "test" });
+            const werk = s.architectures.find((e) => !vor.has(e) && e.position);
+            o.sohle.werkTief = werk ? Math.round((dach - (werk.position.y - 0.5)) * 100) / 100 : null;
+            if (werk) r.removeArchitecture(werk);
         }
     }
     if (P.has("lichtung")) {
@@ -1485,8 +1499,14 @@ function urteil(o) {
     if (P.has("sohle")) {
         const so = o.sohle;
         if (!so || so.fehler) f.push(`W8 Aufbau: ${so ? so.fehler : "Sohlen-Probe fehlt"}`);
-        else if (!(so.luft <= 0.3))
-            f.push(`W8 Sohle: die Scheibe schwebt ${so.luft} m über dem Boden unter ihr (Soll ≤ 0,3 m)`);
+        else {
+            if (!(so.luft <= 0.3))
+                f.push(`W8 Sohle: die Scheibe schwebt ${so.luft} m über dem Boden unter ihr (Soll ≤ 0,3 m)`);
+            if (!(Math.abs(so.werkTief) <= 0.05))
+                f.push(
+                    `W8 Sohle: die Feuerstelle des Satzes steht ${so.werkTief} m unter der Oberkante der Scheibe (Soll auf ihr, ± 5 cm)`
+                );
+        }
     }
     if (P.has("bau")) {
         const wb = o.bau;
@@ -1577,7 +1597,7 @@ function zeile(o) {
         ` · W4 Natur im Grundriss ${o.w4 ? o.w4.imHaus + "/" + o.w4.natur : "?"} · W4 Weg ${o.w4weg ? o.w4weg.aufWeg + "/" + o.w4weg.natur + " auf " + o.w4weg.formen + " Formen" : "?"} · W4c Überstand ${hs.map((h) => h.grundrissUeberM).join("/")} m` +
         ` · W4b (fern ${o.fernOrt ? o.fernOrt.x + "/" + o.fernOrt.z : "?"}) Streu vorher ${o.w4b && o.w4b.streuVorher ? o.w4b.streuVorher.zellen : "?"} Zellen im Dorf-Kreis, unter den Häusern ${o.w4b && o.w4b.unterHaus ? o.w4b.unterHaus.geraeumt + " geräumt + " + o.w4b.unterHaus.lebend + " lebend" : "?"}, fern ${o.w4b && o.w4b.fern ? o.w4b.fern.imHaus + "/" + o.w4b.fern.zellen : "?"} Streu, nah ${o.w4b && o.w4b.nah ? o.w4b.nah.imHaus + "/" + o.w4b.nah.natur : "?"} Natur + ${o.w4b && o.w4b.nahStreu ? o.w4b.nahStreu.imHaus : "?"} Streu, Neubau ${o.w4b && o.w4b.neubau ? o.w4b.neubau.imHaus + "/" + o.w4b.neubau.zellen : "?"}, Nah-Streu ${o.w4b && o.w4b.kachel ? o.w4b.kachel.imHaus + "/" + o.w4b.kachel.pflanzen : "?"}, Promotion ${o.w4b && o.w4b.promo ? o.w4b.promo.promoviert + " (warm " + o.w4b.promoWarm.promoviert + "), offen " + o.w4b.promo.rest : "?"} (${o.w4b ? o.w4b.haeuser : "?"} Häuser)` +
         ` · W5 Optik ${hs.map((h) => h.optikProzent).join("/")} %` +
-        ` · W8 Lichtung ${o.w8 ? o.w8.fehler || `Sohle ${o.sohle ? o.sohle.fehler || o.sohle.luft + " m über Grund" : "?"} · ${o.w8.tore} Tore, Platz r ${o.w8.plattform[2]} m · Natur ${o.w8.naturUeber} · Streu ${o.w8.zellenUeber}/${o.w8.zellen} (Regionen ${o.w8.zellenNeu}) · Kachel ${o.w8.aufScheibe}/${o.w8.pflanzen} · KI Plattform ${o.w8.kiPlattform} (benannt ${o.w8.kiWeichtPlattform}) · KI Haus ${o.w8.kiHaus} (benannt ${o.w8.kiWeichtHaus}) · Satz „${o.w8.chatSatz}" · Gegenprobe ${o.w8.gegenprobe} · Damm ${o.bau ? o.bau.fehler || `${o.bau.rest}/${o.bau.vorher} Bäume geblieben, KI ${o.bau.ki} (benannt ${o.bau.kiWeicht})` : "?"} · ${o.w8.baeume} Bäume im 60-m-Kreis` : "?"}` +
+        ` · W8 Lichtung ${o.w8 ? o.w8.fehler || `Sohle ${o.sohle ? o.sohle.fehler || o.sohle.luft + " m über Grund, Werk " + o.sohle.werkTief + " m im Stein" : "?"} · ${o.w8.tore} Tore, Platz r ${o.w8.plattform[2]} m · Natur ${o.w8.naturUeber} · Streu ${o.w8.zellenUeber}/${o.w8.zellen} (Regionen ${o.w8.zellenNeu}) · Kachel ${o.w8.aufScheibe}/${o.w8.pflanzen} · KI Plattform ${o.w8.kiPlattform} (benannt ${o.w8.kiWeichtPlattform}) · KI Haus ${o.w8.kiHaus} (benannt ${o.w8.kiWeichtHaus}) · Satz „${o.w8.chatSatz}" · Gegenprobe ${o.w8.gegenprobe} · Damm ${o.bau ? o.bau.fehler || `${o.bau.rest}/${o.bau.vorher} Bäume geblieben, KI ${o.bau.ki} (benannt ${o.bau.kiWeicht})` : "?"} · ${o.w8.baeume} Bäume im 60-m-Kreis` : "?"}` +
         ` · W7 Bau im Bau ${o.w7 ? o.w7.imBau + "/" + o.w7.haeuser + ", zweites Dorf " + o.w7.zweitesImBau + "/" + o.w7.zweitesDorf : "?"}` +
         ` · W6 Tür frontal ${(o.w6 || []).map((w) => w.kultur + (w.fehler ? ":" + w.fehler : " Kern " + w.kernDrinM + " m (" + w.kernBoxen + " Boxen) / " + (w.fern || []).map((fz) => "L" + fz.stufe + " " + fz.drinM + " m").join(" / "))).join(" · ")}`
     );
@@ -1654,6 +1674,7 @@ function zeile(o) {
                 platz: ["W8 Lichtung"],
                 baugrund: ["W8 Bau"],
                 weg: ["W4 Weg"],
+                dach: ["W8 Sohle"],
                 lichtungwald: ["W8 Lichtung"],
                 kihain: ["W8 Lichtung", "W8 Hain im Haus"],
                 stumm: ["W8 Absage"],
@@ -1676,6 +1697,7 @@ function zeile(o) {
                 platz: ["lichtung"],
                 baugrund: ["bau"],
                 weg: ["w4"],
+                dach: ["sohle"],
                 lichtungwald: ["lichtung"],
                 kihain: ["lichtung"],
                 stumm: ["lichtung"],

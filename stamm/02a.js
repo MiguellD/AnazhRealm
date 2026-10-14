@@ -1932,7 +1932,7 @@ class AnazhRealm_Z02a {
     // DER TRAGENDE BAU (K52): liegt (x, z) auf einem Bau, der auf dem Grund steht (die Genesis-Scheibe, ein Sockel — seine
     // Box reicht bis auf den Boden `boden`, höchstens eine Stufe darüber), trägt seine Oberkante, was der Satz dort setzt;
     // sonst der Boden. Natur und was fährt tragen nichts. Seit die Scheibe auf dem Grund liegt, stand die Feuerstelle des
-    // Menschen auf ihr IM Stein (Prüfbühne S0: der Feuerkreis Luma 0,656 → 0,015).
+    // Menschen auf ihr IM Stein (der Feuerkreis aus 2 m: Luma 0,656 → 0,015).
     _bauDachUnter(x, z, boden) {
         const STEP = AnazhRealm.PLAYER_STEP_UP;
         const nahe = this._blockerNahe(x, z, 0, -Infinity, (this._bauDachNahe = this._bauDachNahe || []));
