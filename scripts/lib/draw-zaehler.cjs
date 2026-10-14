@@ -133,7 +133,9 @@ function drawZensus(opts) {
                 const n = g.index ? g.index.count : g.attributes.position ? g.attributes.position.count : 0;
                 const dr = g.drawRange && Number.isFinite(g.drawRange.count) ? Math.min(g.drawRange.count, n) : n;
                 tris = dr / 3;
-                if (object.isInstancedMesh) tris *= object.count;
+                // eine Senke zeichnet über ihren Zeichner (1410-1): die Instanzen zählt die Senke
+                const senke = object.isInstanzZeichner === true ? object.__instanzQuelle : object;
+                if (senke.isInstancedMesh) tris *= senke.count;
             }
             const e = zaehl[k] || (zaehl[k] = { cmd: 0, obj: 0, tris: 0 });
             e.obj++;
@@ -185,7 +187,9 @@ function drawZensus(opts) {
                     material: (material && (material.name || material.type)) || null,
                     geometrie: g ? g.name || g.type : null,
                     vertices: g && g.attributes && g.attributes.position ? g.attributes.position.count : 0,
-                    instanzen: object.isInstancedMesh ? object.count : null,
+                    instanzen: (object.isInstanzZeichner === true ? object.__instanzQuelle : object).isInstancedMesh
+                        ? (object.isInstanzZeichner === true ? object.__instanzQuelle : object).count
+                        : null,
                     userData: Object.keys(object.userData || {}).slice(0, 8),
                 });
             }
