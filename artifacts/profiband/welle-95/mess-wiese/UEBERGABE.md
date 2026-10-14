@@ -43,3 +43,6 @@ Vorher CI 38556427061 an 38365177: 9/13, rot voll 2 · 4 · 7 · 10. CI am neuen
   Eichen" und „haus_alemannisch #1619 (-55,75/-829,62) 12,50 m vom Wasser (Soll ≤ 12)" — lief am alten Kopf nie (klang brach
   den Job vorher ab); `mess` = `messort("wiese")` (Zeile 2570): dieselbe Klasse „Probe sucht um den Messort".
 - Wiederlauf der roten Jobs einmal angestoßen (rerun-failed-jobs), um voll 1/5 als Flackern zu benennen oder nicht.
+
+## Wiederlauf Run 38577143460 (Versuch 2): 9/13 rot: voll 5/11 failure, voll 10/11 failure, voll 4/11 failure, voll 7/11 failure
+- voll 5 streu-fern G BAHNWECHSEL im Wiederlauf erneut rot: KEIN Flackern, ein echter Befund am neuen Kopf (am Kopf 38365177 gruen; neu sind der Merge integ-probe c5e2fc8f mit wiese-nah K56 und gtx-ratschen).
