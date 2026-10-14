@@ -1184,7 +1184,9 @@ const server = http.createServer((req, res) => {
                 const bs = [...r.state.chunkSaetze.values()].find((q) => q.spec && q.spec.name === "bodenSatz");
                 const geo = bs && bs.geom;
                 const PA = geo && geo.attributes.position;
-                const HA = geo && geo.attributes.aHimmel;
+                // die Himmels-Sicht reist im Satz in der vierten Komponente des Normal-Ziels (snorm8, K51-2 `_chunkSatzArt` boden)
+                const NZ = geo && geo.attributes.aNormalZiel;
+                const HA = NZ && NZ.itemSize === 4 ? { getX: (i) => NZ.getW(i) } : null;
                 const himmelV = new Set(),
                     hoehleV = new Set();
                 for (const b of bs ? bs.bloecke.values() : [])
