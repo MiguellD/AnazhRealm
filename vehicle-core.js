@@ -38,14 +38,32 @@
     // Lack — beim LACK_GESETZ; gefüllt je Rezept unten bei PRESETS).
     const PORTAL_RENDER_CONFIG = {
         lod: {
-            kindStages: { vehicle: [0] },
+            kindStages: { vehicle: [0, 1] },
             budget: {
                 // fernform (B2c, Pflicht je Budget-Art): jenseits der Nah-Grenze trägt der Box-Satz im Welt-March (_archBoxFit)
-                vehicle: { 0: { tris: 32000, band: 20000, draws: 12, schatten: 0 }, fernform: "gesetz" },
+                // K43-2 (DIE STUFE 1, Kosten ins Asset): derselbe Bau unter FAHRZEUG_DETAIL_1 (jede Teilung × 0,4) — der Wirt
+                // serviert sie in seiner mittleren Distanz (vorher die L0 bis zur Karte: der GT der Genesis-Vorschau in 19 m
+                // trug 25 384 Dreiecke je Pass); sie wirft selbst. tris/draws = die gemessene Hülle über alle Rezepte (die Faltung
+                // erreicht 10 von 23 Stoffen: vier Lichter falten nie, das Glas, Metall und Stoff je in zwei Bindungs-Klassen).
+                vehicle: {
+                    0: { tris: 32000, band: 20000, draws: 12, schatten: 0 },
+                    1: { tris: 10600, draws: 10, schatten: 1 },
+                    fernform: "gesetz",
+                },
                 gestalten: {},
             },
         },
     };
+
+    // DAS DETAIL-GESETZ DER STUFE (K43-2): jede Teilung des Baus (Blech-Gitter, Röhren, Reifen, Felgen, Ringe) läuft durch
+    // `teil` — die Stufe 0 trägt ihre Zahl unverändert (byte-gleich), die Stufe 1 ihr k-faches, nie unter dem Minimum der
+    // Form. `buildInstance` setzt das Gesetz je Stufe synchron und setzt es zurück.
+    const FAHRZEUG_DETAIL = Object.freeze({ k: 1 });
+    const FAHRZEUG_DETAIL_1 = Object.freeze({ k: 0.4 });
+    let _vd = FAHRZEUG_DETAIL;
+    function teil(n, min) {
+        return _vd === FAHRZEUG_DETAIL ? n : Math.max(min, Math.round(n * _vd.k));
+    }
 
     // ── Materialien (geteilt, nie disposen) ── — lazy (der Validator-vm lädt ohne THREE; erst der erste Bau ruft sie)
     let M = null;
@@ -310,7 +328,7 @@
         return me;
     }
     function cyl(rt, rb, h, m, seg) {
-        const me = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, seg || 28), m);
+        const me = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, teil(seg || 28, 8)), m);
         me.castShadow = true;
         me.receiveShadow = true;
         return me;
@@ -394,7 +412,7 @@
         return me;
     }
     function dot(p, m, r) {
-        const me = new THREE.Mesh(new THREE.SphereGeometry(r || 0.022, 16, 12), m);
+        const me = new THREE.Mesh(new THREE.SphereGeometry(r || 0.022, teil(16, 6), teil(12, 4)), m);
         me.position.set(p[0], p[1], p[2]);
         return me;
     }
@@ -407,7 +425,7 @@
         return new THREE.Line(g, m);
     }
     function ring(rad, m) {
-        const me = new THREE.Mesh(new THREE.TorusGeometry(rad, 0.006, 8, 32), m);
+        const me = new THREE.Mesh(new THREE.TorusGeometry(rad, 0.006, teil(8, 3), teil(32, 10)), m);
         return me;
     }
 
@@ -608,15 +626,15 @@
         // Reifen: offene Lauffläche + zwei Flanken-Ringe (Felge sichtbar)
         g.add(crownedTread(r, w, 0.12, M.tire));
         for (const s of [-1, 1]) {
-            const sw = new THREE.Mesh(new THREE.RingGeometry(rimLip, r, 36), M.tire);
+            const sw = new THREE.Mesh(new THREE.RingGeometry(rimLip, r, teil(36, 12)), M.tire);
             sw.position.z = (s * w) / 2;
             g.add(sw);
         }
         // Felgenbett + Bremsscheibe (dreht mit)
-        const barrel = new THREE.Mesh(new THREE.CylinderGeometry(rimLip, rimLip, w * 0.84, 36, 1, true), M.rimM);
+        const barrel = new THREE.Mesh(new THREE.CylinderGeometry(rimLip, rimLip, w * 0.84, teil(36, 12), 1, true), M.rimM);
         barrel.rotation.x = Math.PI / 2;
         g.add(barrel);
-        const rotor = new THREE.Mesh(new THREE.CylinderGeometry(Rout * 0.92, Rout * 0.92, w * 0.18, 28), M.brake);
+        const rotor = new THREE.Mesh(new THREE.CylinderGeometry(Rout * 0.92, Rout * 0.92, w * 0.18, teil(28, 10)), M.brake);
         rotor.rotation.x = Math.PI / 2;
         rotor.position.z = -os * w * 0.1;
         g.add(rotor);
@@ -658,7 +676,7 @@
                 }
             } // Doppelspeiche
             else if (cg === "upright") {
-                const disc = new THREE.Mesh(new THREE.CylinderGeometry(Rout * 0.94, Rout * 0.94, w * 0.1, 28), M.rimM);
+                const disc = new THREE.Mesh(new THREE.CylinderGeometry(Rout * 0.94, Rout * 0.94, w * 0.1, teil(28, 10)), M.rimM);
                 disc.rotation.x = Math.PI / 2;
                 disc.position.z = fz;
                 g.add(disc);
@@ -681,13 +699,13 @@
             }
         }
         // Felgenring (verbindet die Speichen außen) + Bremsabnutzungs-Ring auf der Scheibe
-        const rimRing = new THREE.Mesh(new THREE.TorusGeometry(rimLip, 0.016, 8, 36), M.rimM);
+        const rimRing = new THREE.Mesh(new THREE.TorusGeometry(rimLip, 0.016, teil(8, 3), teil(36, 12)), M.rimM);
         rimRing.position.z = fz;
         g.add(rimRing);
-        const wear = new THREE.Mesh(new THREE.TorusGeometry(Rout * 0.74, 0.006, 6, 28), M.rimD);
+        const wear = new THREE.Mesh(new THREE.TorusGeometry(Rout * 0.74, 0.006, teil(6, 3), teil(28, 10)), M.rimD);
         wear.position.z = -os * w * 0.1;
         g.add(wear);
-        const cap = new THREE.Mesh(new THREE.CylinderGeometry(hubR, hubR, w * 0.3, 18), M.rimM);
+        const cap = new THREE.Mesh(new THREE.CylinderGeometry(hubR, hubR, w * 0.3, teil(18, 8)), M.rimM);
         cap.rotation.x = Math.PI / 2;
         cap.position.z = os * w * 0.34;
         g.add(cap);
@@ -871,8 +889,8 @@
 
     // Gewölbtes Blech: unterteilte Box, Scheitel in der Mitte hochgezogen (Parabel über die Breite z), Normalen neu → liest sich rund statt flach.
     function dome(cx, cy, cz, hw, hh, hd, m, crown, rotZ, xTaper) {
-        const segD = Math.max(14, Math.round(hd * 30)),
-            segW = Math.max(10, Math.round(hw * 16));
+        const segD = teil(Math.max(14, Math.round(hd * 30)), 4),
+            segW = teil(Math.max(10, Math.round(hw * 16)), 3);
         const geo = new THREE.BoxGeometry(hw * 2, hh * 2, hd * 2, segW, 1, segD);
         const p = geo.attributes.position;
         for (let i = 0; i < p.count; i++) {
@@ -893,14 +911,14 @@
     // gewölbtes Glas-Quad: 3x3-Gitter, Mitte entlang Flächennormale nach aussen (konvex in der Draufsicht)
     // unterteilte Box: viele Stützpunkte → taperBody/crossSection rendert die Schnitt-Form GLATT (Hüfte/Taille/Tuck) statt facettiert.
     function Bsub(cx, cy, cz, hw, hh, hd, m, sx, sy) {
-        const me = new THREE.Mesh(new THREE.BoxGeometry(hw * 2, hh * 2, hd * 2, sx || 1, sy || 1, 1), m);
+        const me = new THREE.Mesh(new THREE.BoxGeometry(hw * 2, hh * 2, hd * 2, teil(sx || 1, 1), teil(sy || 1, 1), 1), m);
         me.position.set(cx, cy, cz);
         me.castShadow = me.receiveShadow = true;
         return me;
     }
     // getonnte Lauffläche: Radius wölbt zur Mitte (Tonnenprofil), Schultern runden ab — echter Reifen statt gerader Zylinder.
     function crownedTread(r, w, crown, m) {
-        const g = new THREE.CylinderGeometry(r, r, w, 40, 8, true);
+        const g = new THREE.CylinderGeometry(r, r, w, teil(40, 14), teil(8, 2), true);
         const pos = g.attributes.position;
         for (let i = 0; i < pos.count; i++) {
             const x = pos.getX(i),
@@ -1096,7 +1114,7 @@
         }
     }
     function bowedQuad(p0, p1, p2, p3, bow, mat) {
-        const N = 6;
+        const N = teil(6, 2);
         const lp = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
         const e1 = [p1[0] - p0[0], p1[1] - p0[1], p1[2] - p0[2]],
             e2 = [p3[0] - p0[0], p3[1] - p0[1], p3[2] - p0[2]];
@@ -3365,8 +3383,8 @@
 
     // ── B2: buildInstance(rezeptId, seed, lod, ov?) — die EINE Bau-Funktion ──
     // Deterministisch (rein aus den Parametern); die GEOMETRIE ist seed-invariant, der Same wählt den LACK der Gestalt
-    // (`lackIndex`, W5 — Goldens cv:3 neu gemintet); lod wird auf die einzige getragene
-    // Stufe 0 geklemmt (kindStages.vehicle=[0] — L1/L2 gradet der Wirt). ov reist
+    // (`lackIndex`, W5 — Goldens cv:3 neu gemintet); lod wählt die Stufe (kindStages.vehicle = [0, 1], K43-2: ab 1 die
+    // Stufe 1 unter FAHRZEUG_DETAIL_1; die Karte gradet der Wirt). ov reist
     // als Parameter-Override (z. B. CULTURES[x].fx). Ausgang: EINE THREE.Group
     // (Baukörper + Haut + Räder, Querschnitt-verjüngt + plan-konvex), Welt-Matrizen
     // aktualisiert — die Naht sind die Float32-Attribute ihrer Meshes (G2.2).
@@ -3374,6 +3392,16 @@
         const pre = PRESETS[rezeptId];
         if (!pre) return null;
         const P = Object.assign({}, DEFAULT_P, BASE_P, pre.s, pre.fx, ov || {});
+        // die gezeigte Stufe (kindStages.vehicle = [0, 1]): die größte deklarierte ≤ dem Wunsch
+        const st = lod >= 1 ? 1 : 0;
+        _vd = st === 1 ? FAHRZEUG_DETAIL_1 : FAHRZEUG_DETAIL;
+        try {
+            return baueFahrzeug(rezeptId, seed, P, st);
+        } finally {
+            _vd = FAHRZEUG_DETAIL;
+        }
+    }
+    function baueFahrzeug(rezeptId, seed, P, st) {
         const mats = materials();
         const ctx = { M: mats, bodyMat: lackStoff(lackIndex(seed)), doors: [], corners: [] };
         const H = hardpoints(P);
@@ -3389,7 +3417,7 @@
         taperBody(body, S, P);
         bowEnds(body, S);
         bowEnds(pkg, S);
-        g.userData = { kind: "vehicle", rezeptId: rezeptId, seed: seed, lod: 0 };
+        g.userData = { kind: "vehicle", rezeptId: rezeptId, seed: seed, lod: st };
         g.updateMatrixWorld(true);
         return g;
     }

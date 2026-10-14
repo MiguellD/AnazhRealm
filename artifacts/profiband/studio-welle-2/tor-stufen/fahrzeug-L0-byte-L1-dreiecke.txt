@@ -1,0 +1,6 @@
+gt 28424 ba5a7d757efd | L1 9808 0.35 L0 ba5a7d757efd
+supersport 27956 5b39df61b6c2 | L1 9660 0.35 L0 5b39df61b6c2
+limousine 28528 e5fdfae8c5f7 | L1 9896 0.35 L0 e5fdfae8c5f7
+kompakt_fwd 28716 822f94356d94 | L1 10056 0.35 L0 822f94356d94
+suv 30624 c7bbbec62e80 | L1 10512 0.34 L0 c7bbbec62e80
+MAX 30624 30624 | L1   L0 10512
