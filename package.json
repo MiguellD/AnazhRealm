@@ -125,7 +125,7 @@
         "gate:tier-separation": "node scripts/diag-tier-separation.cjs",
         "gate:reconnect": "node scripts/diag-reconnect.cjs",
         "gate:kreatur-kosten": "node scripts/diag-kreatur-kosten.cjs",
-        "gate:hitch-telemetrie": "node scripts/diag-hitch-telemetrie.cjs",
+        "gate:hitch-telemetrie": "node scripts/diag-hitch-telemetrie.cjs --teil=1 && node scripts/diag-hitch-telemetrie.cjs --teil=2",
         "gate:kreatur-leben": "node scripts/diag-kreatur-leben.cjs",
         "gate:kreatur-takt": "node scripts/diag-kreatur-takt.cjs --selftest && node scripts/diag-kreatur-takt.cjs",
         "gate:tier-fern": "node scripts/diag-tier-fern.cjs",

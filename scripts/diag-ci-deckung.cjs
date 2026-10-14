@@ -61,6 +61,7 @@ const fs = require("fs");
 const path = require("path");
 const { execSync } = require("child_process");
 const yaml = require("js-yaml");
+const { klasseDesLaufs } = require("./lib/ci-klasse.cjs");
 
 const root = path.resolve(__dirname, "..");
 const DATEI = ".github/workflows/check.yml";
@@ -528,6 +529,107 @@ function gruppenUrteil(job, J) {
     return v;
 }
 
+// (K) DIE KLASSE (K61): jede Voll-Gruppe trägt GENAU eine Klasse (`strategy.matrix.include` { gruppe, klasse: cpu | gpu }),
+// der Job reicht sie als CI_KLASSE an seine Schritte — die Weiche (scripts/lib/welt-boot.cjs) urteilt zur Laufzeit: ein
+// Echt-Rezept in einer CPU-Gruppe ist ROT beim Namen. Statisch (scripts/lib/ci-klasse.cjs): ein Schritt mit Echt-Rezept steht in
+// einer GPU-Gruppe, eine GPU-Gruppe trägt keinen Schritt ohne — die GPU-Gruppen sind die Arbeit eines GPU-Läufers.
+const KLASSEN_CI = ["cpu", "gpu"];
+const CI_KLASSE_ENV = "${{ matrix.klasse }}";
+function klassenUrteil(doc, skripte, lies) {
+    const v = [];
+    const J = doc && doc.jobs && doc.jobs[VOLL_JOB];
+    if (!J) return v;
+    const M = (J.strategy && J.strategy.matrix) || {};
+    const gruppen = Array.isArray(M.gruppe) ? M.gruppe : [];
+    const klasse = new Map();
+    for (const e of Array.isArray(M.include) ? M.include : []) {
+        if (!e || !gruppen.includes(e.gruppe)) v.push(`(K) KLASSE: matrix.include ${JSON.stringify(e)} nennt keine Gruppe der Matrix`);
+        else if (!KLASSEN_CI.includes(e.klasse))
+            v.push(`(K) KLASSE: Gruppe ${e.gruppe} trägt die Klasse „${e.klasse}" (Soll ${KLASSEN_CI.join(" oder ")})`);
+        else if (klasse.has(e.gruppe)) v.push(`(K) KLASSE: Gruppe ${e.gruppe} trägt zwei Klassen`);
+        else klasse.set(e.gruppe, e.klasse);
+    }
+    for (const g of gruppen)
+        if (!klasse.has(g))
+            v.push(`(K) KLASSE: Gruppe ${g} von „${VOLL_JOB}" trägt keine Klasse (matrix.include { gruppe: ${g}, klasse: cpu | gpu })`);
+    if (!J.env || J.env.CI_KLASSE !== CI_KLASSE_ENV)
+        v.push(`(K) KLASSE: „${VOLL_JOB}" reicht die Klasse nicht als CI_KLASSE: ${CI_KLASSE_ENV} an seine Schritte — die Weiche urteilt blind`);
+    for (const s of J.steps || []) {
+        if (!s.run || IST_VORBEREITUNG(s)) continue;
+        const m = typeof s.if === "string" ? GRUPPE_RE.exec(s.if) : null;
+        if (!m) continue; // (G) urteilt
+        const g = Number(m[1]);
+        const k = klasseDesLaufs(s.run, skripte, lies);
+        if (klasse.get(g) === "cpu" && k.klasse === "gpu")
+            v.push(`(K) CPU-GRUPPE: „${name(s)}" (Gruppe ${g}) startet ein Echt-Rezept — ${k.wo}`);
+        if (klasse.get(g) === "gpu" && k.klasse === "cpu")
+            v.push(`(K) GPU-GRUPPE: „${name(s)}" (Gruppe ${g}) braucht keinen Echt-Renderer — er gehört in eine CPU-Gruppe`);
+    }
+    return v;
+}
+function selbsttestKlasse() {
+    const dateien = {
+        "a.cjs": 'starteBrowser({ art: "null" });',
+        "g.cjs": 'const { x } = require("./lib/h.cjs");',
+        "lib/h.cjs": 'starteBrowser({ art: "linse", frist: 1 });',
+        "b.cjs": 'const BILD = process.argv.includes("--bild");\nstarteBrowser({ art: BILD ? "linse" : "null" });',
+    };
+    const lies = (f) => {
+        const k = Object.keys(dateien).find((d) => f.replace(/\\/g, "/").endsWith("/scripts/" + d));
+        return k ? dateien[k] : null;
+    };
+    const skripte = {
+        "gate:a": "node scripts/a.cjs",
+        "gate:g": "node scripts/g.cjs",
+        "gate:b": "node scripts/b.cjs",
+        "gate:b-bild": "node scripts/b.cjs --bild",
+    };
+    const doc = () => ({
+        jobs: {
+            voll: {
+                if: VOLL_WENN,
+                env: { CI_KLASSE: CI_KLASSE_ENV },
+                strategy: {
+                    "fail-fast": false,
+                    matrix: {
+                        gruppe: [1, 2],
+                        include: [
+                            { gruppe: 1, klasse: "cpu" },
+                            { gruppe: 2, klasse: "gpu" },
+                        ],
+                    },
+                },
+                steps: [
+                    { name: "A", if: "matrix.gruppe == 1", run: "npm run gate:a" },
+                    { name: "B", if: "matrix.gruppe == 1", run: "npm run gate:b" },
+                    { name: "G", if: "matrix.gruppe == 2", run: "npm run gate:g" },
+                    { name: "B-Bild", if: "matrix.gruppe == 2", run: "npm run gate:b-bild" },
+                ],
+            },
+        },
+    });
+    const V = (d) => d.jobs.voll;
+    const faelle = [
+        ["die Klassen im Lot (grün)", () => {}, null],
+        ["ein Echt-Rezept über eine lib in der CPU-Gruppe", (d) => (V(d).steps[2].if = "matrix.gruppe == 1"), /\(K\) CPU-GRUPPE: „G" \(Gruppe 1\) startet ein Echt-Rezept — scripts\/g\.cjs → scripts\/lib\/h\.cjs/],
+        ["der Schalter --bild macht den Zweig echt", (d) => (V(d).steps[3].if = "matrix.gruppe == 1"), /\(K\) CPU-GRUPPE: „B-Bild" \(Gruppe 1\)/],
+        ["ein CPU-Schritt in der GPU-Gruppe", (d) => (V(d).steps[1].if = "matrix.gruppe == 2"), /\(K\) GPU-GRUPPE: „B" \(Gruppe 2\) braucht keinen Echt-Renderer/],
+        ["eine Gruppe ohne Klasse", (d) => V(d).strategy.matrix.include.pop(), /\(K\) KLASSE: Gruppe 2 von „voll" trägt keine Klasse/],
+        ["eine fremde Klasse", (d) => (V(d).strategy.matrix.include[0].klasse = "tpu"), /\(K\) KLASSE: Gruppe 1 trägt die Klasse „tpu"/],
+        ["die Klasse reist nicht an die Schritte", (d) => delete V(d).env, /\(K\) KLASSE: „voll" reicht die Klasse nicht als CI_KLASSE/],
+    ];
+    const f = [];
+    for (const [n, tat, soll] of faelle) {
+        const d = doc();
+        tat(d);
+        const u = klassenUrteil(d, skripte, lies);
+        const ok = soll ? u.some((x) => soll.test(x)) : u.length === 0;
+        console.log(`  ${ok ? "✅" : "❌"} Selbsttest „${n}" → ${u.join(" · ") || "grün"}`);
+        if (!ok) f.push(`„${n}" fällt nicht rot beim Namen (${u.join(" · ") || "grün"})`);
+    }
+    return f;
+}
+
 // (T) DIE WAAGE: je Job und Gruppe die Vorbereitung plus die Median-Zeiten ihrer Schritte. Ein Job ohne Bedingung läuft je
 // Push (Deckel 2 min), der Job unter VOLL_WENN trägt die Breite (11 min je Gruppe); ein Job ohne Matrix ist EINE Gruppe.
 // → { v: Befunde, zeilen: je Gruppe „job g/N: x,y min" }
@@ -563,7 +665,8 @@ function waage(doc, zeiten) {
                 summe += z.s;
                 if (!groesster || z.s > groesster[1]) groesster = [name(s), z.s];
             }
-            const wer = g === null ? job : `${job} ${g}/${gs.length}`;
+            const kl = ((J.strategy && J.strategy.matrix && J.strategy.matrix.include) || []).find((e) => e && e.gruppe === g);
+            const wer = g === null ? job : `${job} ${g}/${gs.length}` + (kl && kl.klasse ? ` ${kl.klasse}` : "");
             zeilen.push(`${wer} ${minuten(summe)}`);
             if (summe > WAAGE_S[art])
                 v.push(
@@ -742,7 +845,7 @@ function selbsttest() {
         `  ${ok3 ? "✅" : "❌"} Selbsttest „in npm run check gewandert" → verloren ${JSON.stringify(z3.verloren)}`
     );
     if (!ok3) f.push("(Z) ein Schritt, dessen Befehle ein anderer Schritt fährt, zählt als verloren");
-    return f.concat(selbsttestWaage(), selbsttestGegenrichtung(), selbsttestPlaytest());
+    return f.concat(selbsttestWaage(), selbsttestGegenrichtung(), selbsttestPlaytest(), selbsttestKlasse());
 }
 
 // (T) Die Waage gegen ein Fixture — und gegen das heutige check.yml (b5eb02e9, das eingefrorene `vorher` in ci-zeiten.json):
@@ -771,13 +874,13 @@ function selbsttestWaage() {
             },
         },
     });
-    const zeiten = () => ({ vorbereitung_s: 20, schritte: { Lint: { s: 30 }, A: { s: 300 }, B: { s: 400 }, C: { s: 200 } } });
+    const zeiten = () => ({ vorbereitung_s: 20, schritte: { Lint: { s: 30 }, A: { s: 200 }, B: { s: 300 }, C: { s: 150 } } });
     const faelle = [
         ["die Waage im Lot (grün)", () => {}, null],
         [
-            "eine Voll-Gruppe über 11 min",
-            (d, z) => (z.schritte.A.s = 500),
-            /\(T\) WAAGE: „voll 1\/2" trägt 12,0 min \(Deckel 11,0 min je Voll-Gruppe\) — der größte Schritt „A" 8,3 min/,
+            "eine Voll-Gruppe über 7 min",
+            (d, z) => (z.schritte.A.s = 300),
+            /\(T\) WAAGE: „voll 1\/2" trägt 7,8 min \(Deckel 7,0 min je Voll-Gruppe\) — der größte Schritt „A" 5,0 min/,
         ],
         [
             "der Puls über 2 min",
@@ -789,7 +892,7 @@ function selbsttestWaage() {
         [
             "ein Schritt aus voll in den Puls gezogen",
             (d) => d.jobs.puls.steps.push(Object.assign(d.jobs.voll.steps.splice(5, 1)[0], { if: "matrix.gruppe == 1" })),
-            /\(T\) WAAGE: „puls 1\/1" trägt 7,5 min .*„B" 6,7 min/,
+            /\(T\) WAAGE: „puls 1\/1" trägt 5,8 min .*„B" 5,0 min/,
         ],
     ];
     const f = [];
@@ -1102,6 +1205,7 @@ if (process.argv.includes("--selftest")) {
 const doc = yaml.load(fs.readFileSync(path.join(root, DATEI), "utf8"));
 const skripte = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8")).scripts || {};
 const v = urteil(doc);
+v.push(...klassenUrteil(doc, skripte));
 const i = process.argv.indexOf("--gegen");
 let z = null;
 if (i > 0) {
@@ -1142,5 +1246,5 @@ if (v.length) {
     process.exit(1);
 }
 console.log(
-    "✅ GRÜN — jeder Gate-Schritt läuft genau einmal, jede Gruppe trägt die Vorbereitung und ihre Schritte und liegt unter ihrem Deckel (Puls 2 min, Voll 11 min); jede Wand läuft in einem Workflow oder steht mit Klasse und Grund in der Ausnahme-Liste; der volle Playtest urteilt in seiner eigenen Voll-Gruppe am Verdikt."
+    "✅ GRÜN — jeder Gate-Schritt läuft genau einmal, jede Gruppe trägt die Vorbereitung und ihre Schritte und liegt unter ihrem Deckel (Puls 2 min, Voll 7 min), jede Voll-Gruppe trägt ihre Klasse cpu oder gpu; jede Wand läuft in einem Workflow oder steht mit Klasse und Grund in der Ausnahme-Liste; der volle Playtest urteilt in seiner eigenen Voll-Gruppe am Verdikt."
 );
