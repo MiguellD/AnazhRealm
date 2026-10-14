@@ -80,3 +80,22 @@ playtest.cjs (56k Zeilen) zerlegen; S0-Frist (170 s, drei swiftshader-Szenen) un
 - `artifacts/profiband/werkzeug/notbremse.sh` (WIP je Worktree), `ereignis-warte.sh`, `workflows/karte.js`, `workflows/integ.js`.
 - Rehome aus fremdem Baum: scripts/stamm-rehome.cjs mit `ROOT = process.cwd()` (Kopie im Scratchpad).
 - CI lesen: GitHub-API mit Token aus `git credential fill`; Warter als Bash run_in_background auf `head_sha`.
+
+## Vergessene Fäden (Reflexion 14.10. abends — jeder mit Ort)
+
+- **Versions-Stufe:** seit 3e13e7bc trugen sechs geänderte Kerne noch `?v=18.546.0` (Cache-Mischung möglich, Lehre 10) — main-naechst 0377737d hebt auf 18.546.1. Die Minor-Stufe 18.547.0 braucht zuerst den Ratschen-Re-Mint (H2b: Radeon UND GTX auf demselben Kopf, Wiese am K55-Ort).
+- **Frozen C** (Ort auf dem Gelände): K10 ort-gelaende 92972ef6 seit 13.10. unberührt — gegen den K16-Grund neu aufsetzen (Damm, Auto-Dorf-Slots, Nachtlicht ≥ 4 Quellen).
+- **Frozen B** (Ankunft ≤ 5 s): seit K30/Instanz-Schicht unberührt; Weltbild zweit ~20 s, Engpass Haupt-Faden (K42 zeigte: der Worker ist nicht kritisch).
+- **K38-N1** haus-fenster a5341ed3 (gate:fenster-wechsel rot) · **Augen-Befunde** 6 Haus fern, 8 Boden fern, 12 Gasse ohne Weg-Stoff, 16 Sinus-Mäander + harte Schnee-Kappe (koordination auftrag/auge-befunde-1310.md) · Tore aus 30 m als weiße Tafeln (auge-befunde-1410.md).
+- **Grok-Karten** K29 (Fuß, ein Boden), K31, K33, K34 (Zwillinge Studio ↔ Welt), K35 (Altbauten, UFO fällt) — artifacts/profiband/grok-1310/sichtung.md.
+- **Wald-Dichte**: Kronen-Deckung sättigt bei 0,18 (Matérn-II `pack` 1,16) — „Solitär-Lichtungen“, auf main gleich.
+- **Drehbuch-Schritt 18**: der echte LLM-Lauf mit Schlüssel (docs/abnahme-drehbuch.md).
+
+## Die Lehren dieses Tages für den Arbeitsfluss
+
+- **Was trug:** Fertigsteller je Karte, der Koordinator merged selbst, Bündel → EINE ABAB → EIN FF; gut 20 Karten an einem Tag nach main.
+- **integ-probe nur für Gemessenes:** K51-3 kam vor seiner ABAB hinein und sperrte dann Welt-Boot und Archiv-Wand (Umweg main-naechst per cherry-pick). Riskantes (Streaming, Takt, Pixel) bleibt auf seinem Zweig, bis die ABAB spricht.
+- **ABAB auch GEHEND:** stehend „nicht langsamer“, gehend Frame p95 28,7 → 41,6 ms (K51-3). Jede Karte, die Streaming, Chunks, Stufen oder Takt berührt, misst gehend.
+- **Soll als Kern-Daten + Linse** (K57 `KOPF_SOLL`, gate:mensch-anatomie) ist die Vorlage für jede AAAA-Klasse (Schritt 0 Soll-Tafel).
+- **Feature-Zweige fahren nur den Puls:** für die volle Batterie `[ci voll]` in die Kopf-Message.
+- **Fehler-Sammler findet Verstecktes:** der Welt-Boot machte stumme Seitenfehler sichtbar (verdeckungs-abfrage) — die 17 Rest-Boots können weitere tragen.
