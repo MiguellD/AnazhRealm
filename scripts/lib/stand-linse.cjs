@@ -596,6 +596,18 @@ function standUrteil(b) {
         if (!c[n] || !c[n].fragt) v.push(`CODE: ${TAKTE[n]} fragt die Stand-Wache nicht (\`_standRuht\`)`);
         if (!c[n] || !c[n].meldet) v.push(`CODE: ${TAKTE[n]} meldet seinen Gang nicht (\`_standMeldet\`)`);
     }
+    const N = b.nachschub;
+    if (!N) v.push("LEER: keine Nachschub-Probe (die Streu nach der Schlange des Walds)");
+    else if (N.warten.length && (N.schlange > 0 || N.foundry > 0))
+        v.push(
+            `NACHSCHUB: nach ${N.takte} Takten plant die Schlange des Walds noch ${N.schlange} Zellen, die Foundry hat ` +
+                `${N.foundry} Aufträge offen — ${N.warten.length} Streu-Regionen warten (${N.warten.join(", ")})`
+        );
+    else if (N.warten.length)
+        v.push(
+            `NACHSCHUB: ${N.warten.length} Streu-Regionen warten, obwohl die Schlange des Walds leer ist und kein Asset ` +
+                `aussteht (${N.warten.join(", ")}) — nichts baut sie neu (_scatterRefillPending, _tickWaldPlan)`
+        );
     for (const e of b.pageErrors || []) v.push(`PAGE-ERROR: ${e}`);
     return v;
 }

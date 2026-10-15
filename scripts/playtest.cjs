@@ -13,7 +13,9 @@ const stammLib = require("./lib/stamm.cjs");
 // der count-basierte Pump unten (pumpt, bis die Ziel-Chunks WIRKLICH gebaut sind, statt Timer).
 // Default 30 s = CI-Wert (.github/workflows/check.yml).
 const DURATION_MS = Number(process.env.PLAYTEST_SECONDS || 30) * 1000;
-const SERVER_URL = "http://127.0.0.1:4312/index.html";
+// der Port des save-servers (PLAYTEST_PORT, sonst 4312): ein Prüfer fährt den vollen Playtest in seinem Port-Band
+const PLAYTEST_PORT = Number(process.env.PLAYTEST_PORT) || 4312;
+const SERVER_URL = `http://127.0.0.1:${PLAYTEST_PORT}/index.html`;
 const STRICT = process.env.PLAYTEST_STRICT !== "0";
 // Default GPU-frei (Null-Renderer): kein Band liest Pixel, der echte GPU-Kontext wäre nur Crash-Quelle
 // (swiftshader unter Last). PLAYTEST_REAL_RENDERER=1 = echter WebGPU-Renderer + End-Screenshot
@@ -24,7 +26,10 @@ const SCREENSHOT_PATH = path.join(ARTIFACT_DIR, "playtest.png");
 
 function startSaveServer() {
     return new Promise((resolve, reject) => {
-        const proc = spawn("node", ["save-server.js"], { stdio: ["ignore", "pipe", "pipe"] });
+        const proc = spawn("node", ["save-server.js"], {
+            stdio: ["ignore", "pipe", "pipe"],
+            env: Object.assign({}, process.env, { PORT: String(PLAYTEST_PORT) }),
+        });
         let ready = false;
         const timeout = setTimeout(() => {
             if (!ready) reject(new Error("Save-Server startete nicht innerhalb 5 s"));
@@ -17644,7 +17649,7 @@ async function checkBandWelle6GHylomorphism(ctx) {
     // ### Hylomorphismus-Unification ###
     // Bäume laufen durchs Architektur-System (spawn_tree-DSL-Op → spawnArchitecture): EINE Sprache,
     // EIN Renderpfad. Inseln + UFOs bleiben Sonderpfad (Inseln = floating-chunk-Disziplin).
-    const wave6gResults = await safeEvaluate(page, () => {
+    const wave6gResults = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
         const out = {};
@@ -17758,6 +17763,20 @@ async function checkBandWelle6GHylomorphism(ctx) {
 
         const newTreeArch = archsAfter > archsBefore ? r.state.architectures[archsAfter - 1] : null;
         out.newTreeIsBaumEiche = !!(newTreeArch && newTreeArch.type === "baum_eiche");
+        // DER WALD PLANT IM TAKT (K69): die Gestalt des Baums wartet auf den Plan der Wald-Zellen um seinen Ort, wie auf ein
+        // kaltes Buch — die Schlange des Walds (`_tickWaldPlan`) plant sie im Takt, dann steht er mit Gestalt und Hülle. Der
+        // Band läuft den Takt, bis er steht (höchstens 900 Takte), und nennt, wie lange er wartete.
+        out.newTreeWaldWartet = !!(newTreeArch && !r._waldPlanSteht(newTreeArch.position.x, newTreeArch.position.z));
+        out.newTreeTakte = 0;
+        const steht = () =>
+            !!(newTreeArch && (newTreeArch.mesh || newTreeArch.instanced)) &&
+            Array.isArray(newTreeArch.blockerAABBs) &&
+            newTreeArch.blockerAABBs.length > 0;
+        while (newTreeArch && !steht() && out.newTreeTakte < 900) {
+            r._gameLoopTick();
+            out.newTreeTakte++;
+            if (out.newTreeTakte % 10 === 0) await new Promise((ok) => setTimeout(ok, 0));
+        }
         // V12.0-perf.c.2 — instancierter Baum: gerendert via Instance-Slot
         // (entry.instanced), nicht via entry.mesh.
         out.newTreeHasMesh = !!(newTreeArch && (newTreeArch.mesh || newTreeArch.instanced));
@@ -17993,6 +18012,9 @@ async function checkBandWelle6GHylomorphism(ctx) {
             wave6gResults.treeNotAddedToVegetation
         );
         check("Welle 6.G P1.5: neu-gespawnter Baum hat type='baum_eiche'", wave6gResults.newTreeIsBaumEiche);
+        console.log(
+            `  Welle 6.G P1.5: der neue Baum stand nach ${wave6gResults.newTreeTakte} Takten (Plan des Walds wartete: ${wave6gResults.newTreeWaldWartet})`
+        );
         check("Welle 6.G P1.5: neu-gespawnter Baum ist gerendert (Mesh oder instanced)", wave6gResults.newTreeHasMesh);
         check(
             "Welle 6.G P1.5: neu-gespawnter Baum hat feld-native Kollision via blockerAABBs (solider Stamm)",

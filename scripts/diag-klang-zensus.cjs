@@ -683,7 +683,19 @@ async function messeOrt(page, name, ort, stubs) {
             const syn0 = W.synthese();
             try {
                 const um = await W.umstellen(ort.x, ort.z);
-                // Einschwingen: der Ring läuft voll, die Stimmen werden bestellt, geliefert und rampen ein.
+                // Einschwingen: der Wald steht (K69-2: die Schlange des Walds plant im Takt — die Linse urteilt in
+                // Bau-Ereignissen, nie in Wanduhr-Sekunden, Lehre 26: die Schlange leer, kein Pflanz-Gang und keine
+                // Streu-Region wartet, höchstens 60 s), dann läuft der Ring voll, die Stimmen werden bestellt, geliefert und
+                // rampen ein.
+                const waldDl = performance.now() + 60000;
+                const waldSteht = () =>
+                    !(r._waldPlanSchlange && r._waldPlanSchlange.size) &&
+                    !(r._waldPflanzWarten && r._waldPflanzWarten.size) &&
+                    r._streuWartet(st.playerMesh.position) === 0;
+                while (!waldSteht() && performance.now() < waldDl) {
+                    W.takt();
+                    await new Promise((res) => setTimeout(res, 0));
+                }
                 const dl = performance.now() + 2500;
                 while (performance.now() < dl) {
                     W.takt();

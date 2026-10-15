@@ -2491,6 +2491,18 @@ class AnazhRealm_Z25c {
             const q = t && t.position;
             if (q && (q.x - p.x) ** 2 + (q.z - p.z) ** 2 <= R * R) gesetzt++;
         }
+        // Der Pflanz-Gang, der auf den Plan seines Walds wartet (`_waldPflanzWarten`, K69): sein Chunk trägt noch keinen Baum —
+        // ohne diesen Term wich der Ladeschirm, und der Wald der Mesh-Zone wuchs im Bild nach (K69-2).
+        const PW = this._waldPflanzWarten;
+        if (PW && PW.size) {
+            const { span } = this._voxelChunkConfig();
+            for (const key of PW) {
+                const i = key.indexOf(",");
+                const mx = (Number(key.slice(0, i)) + 0.5) * span;
+                const mz = (Number(key.slice(i + 1)) + 0.5) * span;
+                if ((mx - p.x) ** 2 + (mz - p.z) ** 2 <= R * R) gesetzt++;
+            }
+        }
         if (gesetzt) luecke("pflanzung", `${gesetzt} Bäume werden gepflanzt`);
         const warten = this._streuWartet(p);
         if (warten) luecke("streu", `${warten} Wald-Stücke warten auf ihre Gestalt`);

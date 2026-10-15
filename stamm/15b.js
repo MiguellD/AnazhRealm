@@ -1212,10 +1212,11 @@ class AnazhRealm_Z15b {
     // Der EINE Foundry-Same einer Streu-Zelle: die Materialisierung (Primär-Stufe · Gesetz-Bahn · Band-Partner), die
     // Sichthöhe der Stufenwahl und die Promotion zum echten Eintrag lesen ihn — die Gestalt (`_foundryVariantFor`) bleibt
     // beim Kristallisieren dieselbe. Die Gestalt folgt dem Ort (K20): der Streu-Baum am Ort tf (x, z, scale) fragt die EINE
-    // Gestalt des Orts (`_ortGestaltSame`) wie der gepflanzte, null = sie wartet auf die Wahrheit ihres Orts.
+    // Gestalt des Orts (`_ortGestaltSame`) wie der gepflanzte, null = sie wartet auf die Wahrheit ihres Orts. Ohne Foundry
+    // trägt die Zelle keine Gestalt (Grammatik) — dieselbe Regel wie ihr Bau (`_scatterMaterializeCell`): der rohe Same.
     _scatterFoundrySeed(cellX, cellZ, variantIndex, species, tf) {
         const roh = this._scatterRohSame(cellX, cellZ, variantIndex);
-        const preset = this._foundryPresetFor(species);
+        const preset = this._foundryEnabled() ? this._foundryPresetFor(species) : null;
         if (!preset) return roh;
         const krone = AnazhRealm.FOREST.crown[species];
         return this._ortGestaltSame(tf.x, tf.z, krone > 0 ? krone * tf.scale : 0, roh, preset);
@@ -1652,8 +1653,10 @@ class AnazhRealm_Z15b {
         if (wunsch !== (cell.bandWunsch == null ? null : cell.bandWunsch)) return true;
         if (cell.halt !== "wartet" || wunsch === null) return false;
         const preset = this._foundryPresetFor(cell.species);
-        const seed = this._scatterFoundrySeed(cell.cellX, cell.cellZ, cell.variantIndex);
-        const pf = preset ? this._foundryFlattenFor({ seed }, preset, wunsch) : null;
+        // derselbe Same wie ihr Bau (die Gestalt des Orts, `_scatterFoundrySeed`) — bis K69-2 fragte er ohne Art und Ort den
+        // rohen Samen, also den Partner einer anderen Gestalt
+        const seed = this._scatterFoundrySeed(cell.cellX, cell.cellZ, cell.variantIndex, cell.species, tf);
+        const pf = preset && seed !== null ? this._foundryFlattenFor({ seed }, preset, wunsch) : null;
         return !!(pf && pf.instanceable);
     }
 

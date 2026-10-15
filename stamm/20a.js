@@ -540,6 +540,12 @@ class AnazhRealm_Z20a {
             this._waldPlanRegung = (this._waldPlanRegung | 0) + 1;
             this._waldPlanWeckBis = t0 + 250;
         }
+        // DIE STREU WARTET AUF DEN WALD WIE AUF IHR ASSET (K69-2): eine Streu-Region, deren Bäume auf die Gestalt ihres Orts
+        // warten (`_scatterFoundrySeed` → null), schiebt sich auf (`_deferredFoundry`) — und neu baute sie bis hier NUR die
+        // Lieferung eines Assets (`_scatterRefillPending`). Ohne Lieferung stand sie für immer: Null-Gang an der Mess-Wiese
+        // 6 von 6 Regionen nach geleerter Schlange aufgeschoben (Ladeschirm „4 Wald-Stücke warten auf ihre Gestalt",
+        // CI 38736568849). Ist die Schlange leer, steht jede bestellte Zelle — die Region baut neu wie nach einer Lieferung.
+        if (n > 0 && !Q.size) this._scatterRefillPending = true;
         return n;
     }
 

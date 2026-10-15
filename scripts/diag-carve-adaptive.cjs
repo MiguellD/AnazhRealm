@@ -38,7 +38,8 @@ const server = statikServer();
             if (!pc) return { err: "kein Spieler-Chunk" };
             const cx = pc.cx,
                 cz = pc.cz;
-            const o = { isPlayerChunk: pc.cx === cx && pc.cz === cz };
+            // der Test-Chunk ist der GEBAUTE Chunk unter dem Spieler (sonst misst der Neubau ins Leere)
+            const o = { isPlayerChunk: !!(st.voxelChunks && st.voxelChunks.has(cx + "," + cz)) };
             // den Build-Aufruf bespitzeln → die forceSync-ENTSCHEIDUNG ablesen (unabhängig
             // vom headless-no-worker-Sync-Fallback)
             let lastForceSync = null;
@@ -80,7 +81,7 @@ const server = statikServer();
     }
 
     const checks = [
-        { name: "Der Test-Chunk IST der Spieler-Chunk", pass: out.isPlayerChunk },
+        { name: "Der Test-Chunk ist der gebaute Chunk unter dem Spieler", pass: out.isPlayerChunk },
         {
             name: "Gesunder Frame → der Neubau des Spieler-Chunks geht über den Worker (kein Sync-Trip im Takt)",
             pass: out.syncWhenHealthy === false,

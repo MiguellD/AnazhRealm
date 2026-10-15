@@ -148,6 +148,7 @@ function selbsttest() {
             amSpieler: { ort: [-293, -1071], gelegt: true, dirty: 9, takte: 42, heil: true, sync: [] },
         },
         code: Object.fromEntries(namen.map((n) => [n, { fragt: true, meldet: true }])),
+        nachschub: { takte: 31, schlange: 0, foundry: 0, warten: [] },
         pageErrors: [],
     };
     const klon = () => JSON.parse(JSON.stringify(gruen));
@@ -430,6 +431,12 @@ function selbsttest() {
         ["keine Ruhe", (b) => delete b.ruhe, /LEER: keine Ruhe-Phase/],
         ["keine Bruch-Phase", (b) => delete b.bruch, /LEER: keine Bruch-Phase/],
         ["Page-Error", (b) => b.pageErrors.push("TypeError: x"), /PAGE-ERROR: TypeError: x/],
+        [
+            "die Streu wartet nach geleerter Schlange des Walds (K69-2, CI 38736568849)",
+            (b) => (b.nachschub.warten = ["-3,-5 wartet auf ihr Asset"]),
+            /NACHSCHUB: 1 Streu-Regionen warten, obwohl die Schlange des Walds leer ist/,
+        ],
+        ["keine Nachschub-Probe", (b) => delete b.nachschub, /LEER: keine Nachschub-Probe/],
     ];
     for (const [name, tat, muss] of faelle) {
         const b = klon();
@@ -688,9 +695,13 @@ const server = statikServer();
                 let t = performance.now();
                 const takt = () => {
                     t += 1000 / 60;
+                    // ein Takt, der wirft, ist ein Befund (PAGE-ERROR im Urteil), nie still: bis K69-2 schluckte die Linse ihn
                     try {
                         r._gameLoopTick(t);
-                    } catch (_e) {}
+                    } catch (e) {
+                        const tf = window.__standTaktFehler || (window.__standTaktFehler = []);
+                        if (tf.length < 5) tf.push("Takt: " + String((e && e.stack) || e).split("\n")[0]);
+                    }
                 };
                 const foundryOffen = () => {
                     const f = r._foundry;
@@ -1546,6 +1557,25 @@ const server = statikServer();
                 }
                 aus.wache =
                     st && r._standWache ? [...r._standWache.takte].map(([n, x]) => [n, x.ruht, x.arbeit]) : null;
+                // (N) DER NACHSCHUB DES WALDS (K69-2): wartet die Gestalt einer Streu-Zelle auf den Plan des Walds, schiebt
+                // sich ihre Region auf — steht der Plan (die Schlange leer) und steht kein Asset aus, baut sie neu. Bis K69-2
+                // baute sie nur die Lieferung eines Assets neu: 6 von 6 Regionen standen für immer (CI 38736568849).
+                {
+                    const p = st.playerMesh.position;
+                    const schlange = () =>
+                        (r._waldPlanSchlange ? r._waldPlanSchlange.size : 0) +
+                        (r._waldPflanzWarten ? r._waldPflanzWarten.size : 0);
+                    let i = 0;
+                    for (; i < 2000; i++) {
+                        if (schlange() === 0 && foundryOffen() === 0 && r._streuWartet(p) === 0) break;
+                        takt();
+                        if (i % 10 === 0) await pause(5);
+                    }
+                    const warten = [];
+                    r._streuWartet(p, warten);
+                    aus.nachschub = { takte: i, schlange: schlange(), foundry: foundryOffen(), warten };
+                }
+                aus.taktFehler = window.__standTaktFehler || [];
                 return aus;
             },
             MESS,
@@ -1560,7 +1590,7 @@ const server = statikServer();
         console.log("❌ LAUF-FEHLER: " + (befund ? befund.fehler : "kein Befund"));
         process.exit(1);
     }
-    befund.pageErrors = pageErrors;
+    befund.pageErrors = pageErrors.concat(befund.taktFehler || []);
     befund.schreiber = STAND.schreiberWand(stammLib.text(root));
     const namen = Object.keys(STAND.TAKTE);
     const zeile = (n, x) =>
@@ -1570,7 +1600,10 @@ const server = statikServer();
             ? " · wirkt " + namen.map((k) => `${k} ${x.takte[k].wirkt}`).join(" ")
             : "");
     console.log(
-        `  Ring ${befund.ring} Chunks · ${befund.architekturen} Bauten · die Wache schlief nach ${befund.bisRuhe} Takten`
+        `  Ring ${befund.ring} Chunks · ${befund.architekturen} Bauten · die Wache schlief nach ${befund.bisRuhe} Takten` +
+            (befund.nachschub
+                ? ` · Nachschub: die Schlange des Walds leer nach ${befund.nachschub.takte} Takten, ${befund.nachschub.warten.length} Streu-Regionen warten`
+                : "")
     );
     for (const n of ["ruhe", "bruch", "gehen"]) if (befund[n]) console.log(zeile(n, befund[n]));
     const rundeZeile = (wo, ph) =>

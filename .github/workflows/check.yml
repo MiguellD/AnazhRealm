@@ -475,12 +475,11 @@ jobs:
               # vorigen; der Selbsttest setzt das direkte fs.writeFile ein und sieht ROT. Lokal 16 → 30 s.
               run: npm run gate:persistence
 
-            - name: Adaptiver Carve-Rebuild (der Grab-Stall an der Wurzel)
+            - name: Carve-Neubau ueber den Worker (der Grab-Stall an der Wurzel)
               if: matrix.gruppe == 3
-              # Beweist headless die adaptive Sync/Async-Entscheidung des Edit-/Spieler-Chunk-Rebuilds:
-              # gesunder Frame → SYNC (instant-Carve-Feedback auf starker HW), Frame über Budget →
-              # ASYNC (KEIN ~200-ms-Stall auf schwacher HW; Kollision feld-nativ = sofort), explizites
-              # forceSync gewinnt immer. Schliesst den Schöpfer-`Gegraben → FPS 4`-Befund an der Wurzel.
+              # Beweist headless: der Neubau eines Edit-/Spieler-Chunks geht bei gesundem UND bei ueberzogenem Frame
+              # ueber den Worker (K69-2: kein synchroner Chunk-Bau im Takt, die Flut-Saat reist mit dem Auftrag), nur
+              # ein explizites forceSync baut synchron. Schliesst den Schöpfer-`Gegraben → FPS 4`-Befund an der Wurzel.
               run: npm run gate:carve
 
             - name: Dichte-Spiegel (Main und voxel-worker bauen jedes Chunk-Gitter byte-gleich, mit Edits ueber dem Band)
