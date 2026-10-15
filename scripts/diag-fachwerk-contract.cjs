@@ -274,7 +274,311 @@ function compare(golden, actual) {
     return bad;
 }
 
+// ── DER BOGEN IM VERBAND (K66, Augen-Runde 15.10. am Auto-Dorf −812,7/−819,0: die Bögen der Laube der römischen Kirche
+//    ragten aus 20 m über die Traufe, nah schwebten die Keilsteine lose und verdreht neben den Pfeilerköpfen). Je Bogen —
+//    die Marke `keil` an jedem Keilstein (bogenRahmen: Lage, Kurve, Deckel, Pfeiler), `zwickel` an seiner Mauer — in der
+//    Ebene des Bogens (u längs der Wand ab der Bogenmitte, v über dem Kämpfer):
+//    B1 die Öffnung ist frei: keine Ecke eines Keilsteins liegt in der Öffnung unter der Laibung (1 cm);
+//    B2 der Verband ist geschlossen: benachbarte Keilsteine teilen ihre Fuge (Laibung und Rücken, 1 cm);
+//    B3 die Fugen sind radial: jede Stoßfuge zeigt zur Mitte ihrer Kurve (≤ 3°);
+//    B4 der Kämpfer trägt: kein Keilstein reicht unter den Kämpfer (1 cm), der Kämpferstein liegt auf seinem Pfeiler;
+//    B5 unter der Traufe: der höchste Punkt des Bogens samt Zwickel bleibt unter seinem Deckel (`cap`).
+//    Die Mitte der Kurve aus dem EINEN Bogen-Gesetz (fachwerk `BOGEN_GESETZ`): rund (0, 0) · hufeisen (0, R·tan α) ·
+//    stich (0, f − ρ) · spitz (±e, 0) je Hälfte.
+function bogenEbene(B, m) {
+    // die Ecken des Keilsteins in der Bogen-Ebene (u, v), entdoppelt (die Tiefe fällt heraus)
+    const p = m.geometry.attributes.position;
+    const v3 = new THREE.Vector3();
+    const ecken = [];
+    m.updateMatrixWorld(true);
+    for (let i = 0; i < p.count; i++) {
+        v3.fromBufferAttribute(p, i).applyMatrix4(m.matrixWorld);
+        const u = B.horiz ? v3.x - B.cx : v3.z - B.cz;
+        const v = v3.y - B.yS;
+        if (!ecken.some((e) => Math.abs(e[0] - u) < 1e-4 && Math.abs(e[1] - v) < 1e-4)) ecken.push([u, v]);
+    }
+    return ecken;
+}
+function bogenMitte(BG, B, u) {
+    const R = B.R;
+    if (B.kurve === "hufeisen") return [0, R * Math.tan(BG.hufeisenAlpha)];
+    if (B.kurve === "stich") {
+        const f = B.stich;
+        const rho = (R * R + f * f) / (2 * f);
+        return [0, f - rho];
+    }
+    if (B.kurve === "spitz") return [u < 0 ? BG.spitzE * R : -BG.spitzE * R, 0];
+    return [0, 0];
+}
+function imPolygon(pt, poly) {
+    let drin = false;
+    for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+        const [xi, yi] = poly[i];
+        const [xj, yj] = poly[j];
+        if (yi > pt[1] !== yj > pt[1] && pt[0] < ((xj - xi) * (pt[1] - yi)) / (yj - yi || 1e-12) + xi) drin = !drin;
+    }
+    return drin;
+}
+function abstandPolylinie(pt, pl) {
+    let d = Infinity;
+    for (let i = 1; i < pl.length; i++) {
+        const [ax, ay] = pl[i - 1];
+        const [bx, by] = pl[i];
+        const dx = bx - ax;
+        const dy = by - ay;
+        const l2 = dx * dx + dy * dy;
+        let t = l2 > 0 ? ((pt[0] - ax) * dx + (pt[1] - ay) * dy) / l2 : 0;
+        t = Math.max(0, Math.min(1, t));
+        d = Math.min(d, Math.hypot(pt[0] - ax - dx * t, pt[1] - ay - dy * t));
+    }
+    return d;
+}
+// Das Urteil EINES Bogens: B die Marke, steine [{i, ecken}] (Ecken in der Ebene), zwickelMaxV die Oberkante seiner Mauer.
+function bogenUrteil(BG, B, steine, zwickelMaxV) {
+    const bef = [];
+    const S = steine.slice().sort((a, b) => a.i - b.i);
+    const lai = B.intrados;
+    // B1 — die Öffnung: die Laibung samt der Kämpfer-Sehne als Polygon
+    for (const s of S)
+        for (const e of s.ecken)
+            if (imPolygon(e, lai) && abstandPolylinie(e, lai) > 0.01) {
+                bef.push(
+                    `B1 Keilstein ${s.i} hängt ${abstandPolylinie(e, lai).toFixed(2)} m in die Öffnung (${e.map((x) => x.toFixed(2)).join("/")})`
+                );
+                break;
+            }
+    // die Laibungs- und Rücken-Ecken je Stein (die zwei der Mitte nächsten sind Laibung)
+    const teile = S.map((s) => {
+        // je Ecke die Mitte ihrer Kurve (der Spitzbogen hat zwei: der Schlussstein liegt über beiden)
+        const r = s.ecken
+            .map((e) => {
+                const c = bogenMitte(BG, B, e[0]);
+                return { e, r: Math.hypot(e[0] - c[0], e[1] - c[1]) };
+            })
+            .sort((a, b) => a.r - b.r);
+        return { s, lai: r.slice(0, 2).map((q) => q.e), ruecken: r.slice(2).map((q) => q.e) };
+    });
+    // B2 — der Verband: benachbarte Steine teilen ihre Fuge
+    // (die gemeinsame Laibungs-Ecke deckt sich, und jede Stoßfuge liegt auf der Linie der anderen — der Schlussstein darf länger sein)
+    const fuge = (t, a) =>
+        t.ruecken
+            .slice()
+            .sort((x, y) => Math.hypot(x[0] - a[0], x[1] - a[1]) - Math.hypot(y[0] - a[0], y[1] - a[1]))[0];
+    const zurLinie = (p, a, b) => {
+        const dx = b[0] - a[0];
+        const dy = b[1] - a[1];
+        return Math.abs((p[0] - a[0]) * dy - (p[1] - a[1]) * dx) / (Math.hypot(dx, dy) || 1);
+    };
+    for (let k = 1; k < teile.length; k++) {
+        const A = teile[k - 1];
+        const Bt = teile[k];
+        let dl = Infinity;
+        let pa = null;
+        let pb = null;
+        for (const a of A.lai)
+            for (const b of Bt.lai) {
+                const d = Math.hypot(a[0] - b[0], a[1] - b[1]);
+                if (d < dl) [dl, pa, pb] = [d, a, b];
+            }
+        const ra = fuge(A, pa);
+        const rb = fuge(Bt, pb);
+        const dr = ra && rb ? Math.max(zurLinie(rb, pa, ra), zurLinie(ra, pb, rb)) : Infinity;
+        if (dl > 0.01 || dr > 0.01) {
+            bef.push(`B2 Fuge ${A.s.i}|${Bt.s.i} offen ${Math.max(dl, dr).toFixed(3)} m`);
+            break;
+        }
+    }
+    // B3 — die Fugen radial: je Stein seine zwei Stoßfugen (Laibungs-Ecke zur nächsten Rücken-Ecke)
+    for (const t of teile) {
+        let schlimm = 0;
+        for (const a of t.lai) {
+            if (a[1] < 0.02) continue; // das Lager auf dem Kämpfer ist keine Stoßfuge
+            const q = t.ruecken
+                .slice()
+                .sort((x, y) => Math.hypot(x[0] - a[0], x[1] - a[1]) - Math.hypot(y[0] - a[0], y[1] - a[1]))[0];
+            if (!q) continue;
+            const fx = q[0] - a[0];
+            const fy = q[1] - a[1];
+            const c = bogenMitte(BG, B, a[0]);
+            const rx = (a[0] + q[0]) / 2 - c[0];
+            const ry = (a[1] + q[1]) / 2 - c[1];
+            const cos = Math.abs(fx * rx + fy * ry) / (Math.hypot(fx, fy) * Math.hypot(rx, ry) || 1);
+            schlimm = Math.max(schlimm, (Math.acos(Math.min(1, cos)) * 180) / Math.PI);
+        }
+        if (schlimm > 3) {
+            bef.push(`B3 Keilstein ${t.s.i} verdreht: Fuge ${schlimm.toFixed(0)}° gegen den Radius`);
+            break;
+        }
+    }
+    // B4 — der Kämpfer: nichts unter yS; die Kämpfersteine über ihrem Pfeiler
+    const vMin = Math.min(...S.flatMap((s) => s.ecken.map((e) => e[1])));
+    if (vMin < -0.01) bef.push(`B4 ein Keilstein reicht ${(-vMin).toFixed(2)} m unter den Kämpfer`);
+    if (B.pfeiler && S.length) {
+        for (const [s, pf] of [
+            [S[0], B.pfeiler[0]],
+            [S[S.length - 1], B.pfeiler[1]],
+        ]) {
+            const fuss = s.ecken.filter((e) => e[1] < 0.02);
+            const aus = fuss.filter((e) => e[0] < pf[0] - 0.01 || e[0] > pf[1] + 0.01);
+            if (!fuss.length || aus.length) {
+                bef.push(
+                    `B4 Kämpferstein ${s.i} liegt nicht auf seinem Pfeiler (${fuss.length ? aus[0][0].toFixed(2) : "kein Lager"} außerhalb ${pf[0].toFixed(2)}…${pf[1].toFixed(2)})`
+                );
+                break;
+            }
+        }
+    }
+    // B5 — unter der Traufe
+    const vMax = Math.max(zwickelMaxV, ...S.flatMap((s) => s.ecken.map((e) => e[1])));
+    if (B.yS + vMax > B.cap + 0.005)
+        bef.push(`B5 der Bogen ragt ${(B.yS + vMax - B.cap).toFixed(2)} m über seinen Deckel (${B.cap.toFixed(2)} m)`);
+    return bef;
+}
+// Alle Bögen einer roh gebauten Gruppe → [{B, befunde}]
+function bogenBefunde(BG, g) {
+    const boegen = new Map();
+    g.updateMatrixWorld(true);
+    g.traverse((o) => {
+        const k = o.userData && o.userData.keil;
+        const z = o.userData && o.userData.zwickel;
+        if (!k && !z) return;
+        const B = (k || z).bogen;
+        let e = boegen.get(B);
+        if (!e) boegen.set(B, (e = { steine: [], zwickelMaxV: -Infinity }));
+        if (k) e.steine.push({ i: k.i, ecken: bogenEbene(B, o) });
+        else e.zwickelMaxV = Math.max(e.zwickelMaxV, ...bogenEbene(B, o).map((q) => q[1]));
+    });
+    return [...boegen].map(([B, e]) => ({ B, befunde: bogenUrteil(BG, B, e.steine, e.zwickelMaxV) }));
+}
+// Der Selbsttest der Linse: ein Bogen aus Keilen (rund, R 1, Stärke 0,25, 9 Steine) ist grün; verdreht, gerückt, gesenkt,
+// zu hoch fällt er je am Namen.
+function bogenSelbsttest(BG) {
+    const R = 1;
+    const t = 0.25;
+    const N = 9;
+    const B = {
+        cx: 0,
+        cz: 0,
+        yS: 0,
+        R,
+        horiz: true,
+        kurve: "rund",
+        cap: 1.3,
+        pfeiler: [
+            [-1.3, -1],
+            [1, 1.3],
+        ],
+        intrados: [],
+    };
+    for (let k = 0; k <= 32; k++)
+        B.intrados.push([-R * Math.cos((Math.PI * k) / 32), R * Math.sin((Math.PI * k) / 32)]);
+    const keil = (i) => {
+        const a0 = (Math.PI * i) / N;
+        const a1 = (Math.PI * (i + 1)) / N;
+        const P = (a, r) => [-r * Math.cos(a), r * Math.sin(a)];
+        return { i, ecken: [P(a0, R), P(a1, R), P(a1, R + t), P(a0, R + t)] };
+    };
+    const gut = () => Array.from({ length: N }, (_, i) => keil(i));
+    const fall = (name, steine, cap) => bogenUrteil(BG, Object.assign({}, B, cap ? { cap } : {}), steine, -Infinity);
+    const ok = fall("gut", gut()).length === 0;
+    const dreh = gut();
+    {
+        const s = dreh[3];
+        const m = s.ecken.reduce((a, e) => [a[0] + e[0] / 4, a[1] + e[1] / 4], [0, 0]);
+        const w = (40 * Math.PI) / 180;
+        s.ecken = s.ecken.map(([u, v]) => [
+            m[0] + (u - m[0]) * Math.cos(w) - (v - m[1]) * Math.sin(w),
+            m[1] + (u - m[0]) * Math.sin(w) + (v - m[1]) * Math.cos(w),
+        ]);
+    }
+    const lose = gut();
+    lose[4].ecken = lose[4].ecken.map(([u, v]) => [u * 1.06, v * 1.06]);
+    const tief = gut();
+    tief[0].ecken = tief[0].ecken.map(([u, v]) => [u, v - 0.12]);
+    const hat = (bef, k) => bef.some((b) => b.startsWith(k));
+    return {
+        gruen: ok,
+        B3: hat(fall("dreh", dreh), "B3"),
+        B2: hat(fall("lose", lose), "B2"),
+        B4: hat(fall("tief", tief), "B4"),
+        B5: hat(fall("hoch", gut(), 1.1), "B5"),
+    };
+}
+function bogenLinse() {
+    const BG = FC.BOGEN_GESETZ;
+    check(
+        "BOGEN-VERBAND: das Bogen-Gesetz steht im Kern (BOGEN_GESETZ: hufeisenAlpha, spitzE)",
+        !!BG && Number.isFinite(BG.hufeisenAlpha) && Number.isFinite(BG.spitzE)
+    );
+    if (!BG) return;
+    const st = bogenSelbsttest(BG);
+    check(
+        "BOGEN-VERBAND SELBST-TEST: ein Bogen aus Keilen ist grün; verdreht (B3), gerückt (B2), unter dem Kämpfer (B4), über dem Deckel (B5) fällt er",
+        st.gruen && st.B3 && st.B2 && st.B4 && st.B5,
+        JSON.stringify(st)
+    );
+    // die Fälle: jede Kultur, wie sie ist (Fenster- und Tür-Bögen) und mit Laube (arkade 1); die Laube in jeder Bogen-Art; die
+    // römische Kirche des Auto-Dorfs (die Marke des Dorfs: arkade 1, W 15, D 11)
+    const faelle = [];
+    for (const k of KULTUREN) {
+        faelle.push([k, null]);
+        faelle.push([k, { arkade: 1 }]);
+    }
+    for (const bt of ["rund", "spitz", "hufeisen"]) {
+        faelle.push(["alemannisch", { arkade: 1, bogenTyp: bt, storeys: 2 }]);
+        faelle.push(["roemisch", { arkade: 1, bogenTyp: bt }]);
+    }
+    faelle.push(["roemisch", { arkade: 1, W: 15, D: 11 }]);
+    FC.materials();
+    const t0 = Date.now();
+    let boegen = 0;
+    const taeter = [];
+    const je = { B1: 0, B2: 0, B3: 0, B4: 0, B5: 0 };
+    for (const [k, ov] of faelle) {
+        const hp = FC.hausParams(FC.PRESETS[k], ov);
+        hp.seed = 7;
+        const H = FC.HAUS(THREE, FC.mat, hp);
+        const g = H.build({ gelaende: false });
+        // die Laube trägt ihre Bögen (oder, wo kein Stich unter die Traufe passt, den Sturz der Säulenhalle) — ein Bogen, der am
+        // Deckel scheitert, darf die Laube nicht still leeren
+        let laube = 0;
+        let sturz = false;
+        g.traverse((o) => {
+            if (o.userData && o.userData.sturz) sturz = true;
+        });
+        for (const { B, befunde } of bogenBefunde(BG, g)) {
+            if (B.art === "arkade") laube++;
+            boegen++;
+            for (const b of befunde) je[b.slice(0, 2)]++;
+            if (befunde.length)
+                taeter.push(
+                    `bogenRahmen[${B.art}] ${k}${ov ? " " + JSON.stringify(ov) : ""} (${B.kurve}, R ${B.R.toFixed(2)}): ${befunde[0]}`
+                );
+        }
+        if (ov && ov.arkade && !laube && !sturz)
+            taeter.push(`arkade ${k} ${JSON.stringify(ov)}: die Laube trägt weder Bogen noch Sturz`);
+        disposeGroup(g);
+    }
+    console.log(
+        `  · BOGEN-VERBAND: ${boegen} Bögen in ${faelle.length} Bauten, ${taeter.length} rot — je Befund ${JSON.stringify(je)} (${Date.now() - t0} ms)`
+    );
+    const kirche = taeter.filter((t) => t.includes('"W":15'));
+    const erste = ["B1", "B2", "B3", "B4", "B5"].map((b) => taeter.find((t) => t.includes(": " + b))).filter(Boolean);
+    for (const t of erste.concat(kirche.slice(0, 2))) console.log("      " + t);
+    check(
+        `BOGEN-VERBAND: jeder Bogen liegt im Verband unter seiner Traufe (B1 Öffnung frei · B2 geschlossen · B3 radial · B4 Kämpfer · B5 Deckel; ${boegen} Bögen)`,
+        boegen > 0 && taeter.length === 0,
+        taeter.length ? `${taeter.length} rot, zuerst: ${taeter[0]}` : ""
+    );
+}
+
 (async function main() {
+    if (process.argv.includes("--bogen")) {
+        console.log("=== BOGEN-VERBAND (K66) — fachwerk-core bogenRahmen ===");
+        bogenLinse();
+        console.log(errs.length ? `\n❌ ROT — ${errs.length}` : "\n✅ GRÜN");
+        process.exit(errs.length ? 1 : 0);
+    }
     console.log("=== ASSET-VERTRAG v6 — Häuser (fachwerk-core.js buildInstance) ===");
     check("fachwerk-core geladen (__fachwerkCore + buildInstance)", !!FC && typeof FC.buildInstance === "function");
     check(
@@ -739,6 +1043,9 @@ function compare(golden, actual) {
     await probeWand("v6", { laden: frisch, bauen: (K) => fingerAlle(K, PROBE_HAUS) }, check);
     await probeWand("v6a", { laden: frisch, bauen: (K) => fingerAlle(K, AUS_CASES) }, check);
     globalThis.__fachwerkCore = FC;
+
+    // 12) DER BOGEN IM VERBAND (K66)
+    bogenLinse();
 
     if (errs.length) {
         console.error(`\n❌ ROT — ${errs.length} Vertrags-Verletzung(en).`);

@@ -852,7 +852,7 @@
     return lf; }
   function tueren(){const g=grp(); if(ROUND)return g; const z=-Dp/2+0.07, lw=doorW/2-0.03, lh=doorH-0.08, cy=baseY+doorH/2, openA=1.15, openB=1.05;
     beam(g,-doorW/2-0.06,cy,-Dp/2,0.14,doorH+0.12,0.26,'holz'); beam(g,doorW/2+0.06,cy,-Dp/2,0.14,doorH+0.12,0.26,'holz'); // Türstock
-    beam(g,0,baseY+doorH+0.05,-Dp/2,doorW+0.36,0.16,0.26,'holz'); if(P.bogenTyp&&P.bogenTyp!=='none')bogenRahmen(g,0,baseY+doorH+0.13,-Dp/2,doorW*0.62,true,P.bogenTyp,'holz');                                                          // Sturz
+    beam(g,0,baseY+doorH+0.05,-Dp/2,doorW+0.36,0.16,0.26,'holz'); if(P.bogenTyp&&P.bogenTyp!=='none')bogenRahmen(g,0,baseY+doorH+0.13,-Dp/2,doorW*0.62,true,P.bogenTyp,'holz',{art:'tuer',cap:roofUnderY(0,-Dp/2)});                                                          // Sturz
     const olY0=baseY+doorH+0.13, olY1=Math.min(baseY+P.egH-P.raehm-0.02,olY0+0.42), olH=olY1-olY0;                            // Oberlicht
     if(olH>0.12){ beam(g,0,olY0,-Dp/2,doorW+0.22,0.08,0.24,'holz');
       beam(g,0,(olY0+olY1)/2,-Dp/2+0.03,doorW,olH,0.035,'glas');
@@ -888,17 +888,64 @@
       beam(sg,0,h/2-sw/2,0,t,sw,w,role); beam(sg,0,-h/2+sw/2,0,t,sw,w,role);
       beam(sg,0,0,0,0.045,h,0.04,role); beam(sg,0,0,0,0.045,0.04,w,role); beam(sg,-0.012,0,0,0.025,h-2*sw,w-2*sw,gl); }
     return sg; }
-  function bogenRahmen(g,cx,yS,cz,R,horiz,typ,role){   // BOGEN-GESETZ über jeder Öffnung (rund/spitz/hufeisen) — dieselbe Kurve wie die Arkade, ein Vektor
-    const N=10, dp=0.42, deeper=0.14; for(let i=0;i<N;i++){ const t=i/(N-1), a=Math.PI*t; let lat=-R*Math.cos(a), off=R*Math.sin(a);
-      if(typ==='spitz'){ off=R*Math.sin(a)+0.62*R*Math.sin(a)*(1-Math.abs(Math.cos(a))); lat=-R*Math.cos(a)*(1-0.16*Math.sin(a)); }
-      if(typ==='hufeisen'){ if(t<0.14||t>0.86) lat+=(t<0.5?1:-1)*0.2*R; }
-      const rot=a-Math.PI/2, oz=(cz<0?-deeper:deeper), ox=(cx<0?-deeper:deeper); if(horiz) beam(g,cx+lat,yS+off,cz+oz,0.30,0.19,dp,role,[0,0,rot]); else beam(g,cx+ox,yS+off,cz+lat,dp,0.19,0.30,role,[rot,0,0]); } }
+  // ════ DAS BOGEN-GESETZ (K66): Keilsteine im VERBAND — jede Stoßfuge radial zur Mitte ihrer Kurve, jeder Stein ein Keil zwischen zwei Fugen
+  //    (gleiche Bogenlänge, N ungerade: der Schlussstein im Scheitel, 2 cm vorstehend), die Kämpfersteine mit ihrem Lager auf dem Kämpfer
+  //    (Höhe yS); die Kurve rund · spitz (zwei Mittelpunkte ±spitzE·R) · hufeisen (Mitte R·tan α über dem Kämpfer, darunter der Kämpferstein)
+  //    · stich (Segment mit dem Stich o.stich). Bis K66 lagen zehn gleiche Kästen AUF der Kurve, gedreht um a − π/2 statt π/2 − a (in jeder
+  //    Wand längs x um bis zu 90° verdreht), ab R ≈ 0,9 m mit Lücken, die Kämpfersteine halb in der Öffnung, und kein Deckel prüfte den
+  //    Scheitel (gate:fachwerk-contract BOGEN-VERBAND: 821 von 821 Bögen rot). o: { t die Bogenstärke, tiefe, versatz (die Lage in der
+  //    Wandtiefe; Öffnungen 0,14 nach außen), cap (die Unterkante des Dachs darüber: reicht der Scheitel samt Stärke darüber, entsteht der
+  //    Bogen nicht), stich, zwickel [uL, uR, vTop] (die Mauer über dem Bogen bis vTop, seitlich bis uL/uR — die Laube), art, pfeiler }.
+  //    Rückgabe: die Marke des Bogens oder null. Jeder Keilstein trägt die Marke `keil`, jede Mauer `zwickel` (die Linse liest sie).
+  function bogenSteig(kurve,R,f){ const BG=BOGEN_GESETZ; return kurve==='spitz'?R*Math.sqrt(1+2*BG.spitzE) : kurve==='hufeisen'?R*(Math.tan(BG.hufeisenAlpha)+1/Math.cos(BG.hufeisenAlpha)) : kurve==='stich'?f : R; }
+  function bogenAussen(kurve,R){ return kurve==='hufeisen'?R/Math.cos(BOGEN_GESETZ.hufeisenAlpha):R; }   // die weiteste Laibung von der Achse
+  function bogenKurve(kurve,R,f,s){ const BG=BOGEN_GESETZ;   // der Punkt der Laibung und seine Normale (nach außen) am Parameter s ∈ [0, 1] (hufeisen: nur über der Mitte)
+    if(kurve==='spitz'){ const e=BG.spitzE*R, rho=R+e, ta=Math.acos(-e/rho), h=s<=0.5?s*2:(1-s)*2, th=Math.PI-(Math.PI-ta)*h, sg=s<=0.5?1:-1; return [sg*(e+rho*Math.cos(th)), rho*Math.sin(th), sg*Math.cos(th), Math.sin(th)]; }
+    if(kurve==='hufeisen'){ const h0=R*Math.tan(BG.hufeisenAlpha), rho=R/Math.cos(BG.hufeisenAlpha), a=Math.PI*s; return [-rho*Math.cos(a), h0+rho*Math.sin(a), -Math.cos(a), Math.sin(a)]; }
+    if(kurve==='stich'){ const rho=(R*R+f*f)/(2*f), be=Math.asin(Math.min(1,R/rho)), a=Math.PI/2+be-2*be*s; return [rho*Math.cos(a), f-rho+rho*Math.sin(a), Math.cos(a), Math.sin(a)]; }
+    const a=Math.PI*s; return [-R*Math.cos(a), R*Math.sin(a), -Math.cos(a), Math.sin(a)]; }
+  function prisma(g,polys,eb,role,merk){   // ebene Polygone (konvex oder sternförmig von der ersten Ecke, gegen den Uhrzeiger in u-v) um die Tiefe w0…w1 — EIN Mesh, jeder Punkt durch deform
+    const W=(u,v,w)=>deform(eb.horiz?eb.cx+u:eb.cx+w, v, eb.horiz?eb.cz+w:eb.cz+u), P=[], sp=eb.horiz;   // x-y-Ebene: (u, v, w) rechtshändig; z-y-Ebene: gespiegelt — die Wicklung kehrt
+    const push=(a,b,c)=>{ if(sp)P.push(a[0],a[1],a[2],b[0],b[1],b[2],c[0],c[1],c[2]); else P.push(a[0],a[1],a[2],c[0],c[1],c[2],b[0],b[1],b[2]); };
+    let mu=0,mv=0,k=0;
+    for(const q of polys){ const n=q.length, A=q.map(p=>W(p[0],p[1],eb.w0)), B=q.map(p=>W(p[0],p[1],eb.w1)); for(const p of q){ mu+=p[0]; mv+=p[1]; k++; }
+      for(let i=1;i<n-1;i++){ push(A[0],A[i+1],A[i]); push(B[0],B[i],B[i+1]); }
+      for(let i=0;i<n;i++){ const j=(i+1)%n; push(A[i],A[j],B[j]); push(A[i],B[j],B[i]); } }
+    const geo=new THREE.BufferGeometry(); geo.setAttribute('position',new THREE.Float32BufferAttribute(P,3)); geo.computeVertexNormals();
+    const m=new THREE.Mesh(geo,mat(role)); m.castShadow=!NOSHADOW[role]; m.receiveShadow=true; if(merk)Object.assign(m.userData,merk); g.add(m);
+    const c=W(mu/k,mv/k,(eb.w0+eb.w1)/2); return tintWood(m,role,c[0],c[1],c[2]); }
+  function bogenRahmen(g,cx,yS,cz,R,horiz,typ,role,o){   // BOGEN-GESETZ über jeder Öffnung (rund/spitz/hufeisen/stich) — dieselbe Kurve wie die Laube, ein Gesetz
+    o=o||{}; const kurve=typ||'rund', f=kurve==='stich'?o.stich:0, t=(o.t!=null?o.t:0.19), steig=bogenSteig(kurve,R,f), cap=(o.cap!=null?o.cap:Infinity);
+    if(!(R>0.05) || (kurve==='stich' && !(f>0.02)) || yS+steig+t*1.12>cap-0.02) return null;   // der Deckel: kein Scheitel durch das Dach
+    const dp=(o.tiefe!=null?o.tiefe:0.42), vs=(o.versatz!=null?o.versatz:((horiz?cz:cx)<0?-0.14:0.14));
+    const B={cx,cz,yS,R,t,horiz,kurve,stich:f,art:o.art||'oeffnung',cap,pfeiler:o.pfeiler||null,intrados:[]};   // DIE MARKE DES BOGENS (gate:fachwerk-contract BOGEN-VERBAND)
+    const BG=BOGEN_GESETZ, h0=kurve==='hufeisen'?R*Math.tan(BG.hufeisenAlpha):0, rhoH=R/Math.cos(BG.hufeisenAlpha);
+    if(kurve==='hufeisen'){ for(let k=0;k<=48;k++){ const a=-BG.hufeisenAlpha+(Math.PI+2*BG.hufeisenAlpha)*k/48; B.intrados.push([-rhoH*Math.cos(a),h0+rhoH*Math.sin(a)]); } }
+    else for(let k=0;k<=48;k++){ const q=bogenKurve(kurve,R,f,k/48); B.intrados.push([q[0],q[1]]); }
+    // die Bogenlänge der Laibung (dicht abgetastet) → N Keile gleicher Länge
+    const M=96, tab=[], L=[0]; for(let k=0;k<=M;k++){ tab.push(bogenKurve(kurve,R,f,k/M)); if(k)L.push(L[k-1]+Math.hypot(tab[k][0]-tab[k-1][0],tab[k][1]-tab[k-1][1])); }
+    const at=(l)=>{ let k=1; while(k<M && L[k]<l)k++; const a=tab[k-1], b=tab[k], q=(L[k]-L[k-1])>0?Math.max(0,Math.min(1,(l-L[k-1])/(L[k]-L[k-1]))):0, nu=a[2]+(b[2]-a[2])*q, nv=a[3]+(b[3]-a[3])*q, nl=Math.hypot(nu,nv)||1; return [a[0]+(b[0]-a[0])*q, a[1]+(b[1]-a[1])*q, nu/nl, nv/nl]; };
+    const Lg=L[M], rM=Math.max(R,steig); let N=Math.max(5,Math.round(Lg*(1+t/(2*rM))/0.34)); if(N%2===0)N++;
+    const eb=(d)=>({horiz,cx,cz,w0:vs-d/2,w1:vs+d/2}), ext=(q,tt)=>[q[0]+q[2]*tt, q[1]+q[3]*tt], vO=(q)=>[q[0],yS+q[1]];
+    const Q=[]; for(let i=0;i<=N;i++){ const q=at(Lg*i/N); Q.push({p:[q[0],q[1]], n:q, r:ext(q,t)}); }
+    for(let i=0;i<N;i++){ const sch=(i===(N-1)/2), tt=sch?t*1.12:t, a=Q[i], b=Q[i+1];
+      prisma(g,[[vO(a.p),vO(b.p),vO(ext(b.n,tt)),vO(ext(a.n,tt))]],eb(sch?dp+0.04:dp),role,{keil:{bogen:B,i}}); }
+    const zw=[];   // die Kämpfer-Stücke und die Mauer über dem Bogen (Zwickel)
+    if(kurve==='hufeisen') for(const sg of [-1,1]){ const pl=[[sg*(rhoH+t),yS],[sg*R,yS]];   // der Kämpferstein unter der Mitte: sein Lager auf yS, oben die Fuge durch die Mitte
+      for(let k=1;k<=6;k++){ const a=-BG.hufeisenAlpha+BG.hufeisenAlpha*k/6; pl.push([sg*rhoH*Math.cos(a), yS+h0+rhoH*Math.sin(a)]); } pl.push([sg*(rhoH+t),yS+h0]); zw.push(sg<0?pl:pl.reverse()); }
+    if(kurve==='stich'){ const q0=Q[0].r, qN=Q[N].r; zw.push([[q0[0],yS],[Q[0].p[0],yS],vO(q0)]); zw.push([[Q[N].p[0],yS],[qN[0],yS],vO(qN)]); }   // das Widerlager unter dem schrägen Lager
+    if(o.zwickel){ const uL=o.zwickel[0], uR=o.zwickel[1], top=o.zwickel[2];
+      if(Q[0].r[0]-uL>0.005) zw.push([[uL,yS],[Q[0].r[0],yS],[Q[0].r[0],top],[uL,top]]);
+      if(uR-Q[N].r[0]>0.005) zw.push([[Q[N].r[0],yS],[uR,yS],[uR,top],[Q[N].r[0],top]]);
+      for(let i=0;i<N;i++){ const a=Q[i].r, b=Q[i+1].r; if(b[0]-a[0]>1e-4 && top-yS-Math.max(a[1],b[1])>1e-4) zw.push([vO(a),vO(b),[b[0],top],[a[0],top]]); } }
+    if(zw.length) prisma(g,zw,eb(dp-0.06),role,{zwickel:{bogen:B}});
+    return B; }
   function fensterAt(g,cx,cy,cz,w,h,horiz,capY){ const fr='holz', gl=fensterSchlaeft(P.seed,horiz?'z':'x',horiz?cz:cx,horiz?cx:cz,cy)?'glasdunkel':'glas', _cap=(capY!=null?capY:Math.min(roofUnderY(cx,cz),roofUnderY(cx+(horiz?0.22:0),cz+(horiz?0.22:0))));   // BOGEN-DECKEL-GESETZ: lokale Dachgrenze schlägt Hauptdach; Doppel-Sample gegen Randfälle
-    if(horiz){ beam(g,cx,cy+h/2+0.05,cz,w+0.2,0.1,0.18,fr); if(P.bogenTyp&&P.bogenTyp!=='none' && (cy+h/2+0.12+w*0.58)<_cap-0.10)bogenRahmen(g,cx,cy+h/2+0.12,cz,w*0.58,true,P.bogenTyp,fr); beam(g,cx,cy-h/2-0.05,cz,w+0.22,0.1,0.24,fr);     // Sturz + Fensterbank
+    if(horiz){ beam(g,cx,cy+h/2+0.05,cz,w+0.2,0.1,0.18,fr); if(P.bogenTyp&&P.bogenTyp!=='none')bogenRahmen(g,cx,cy+h/2+0.12,cz,w*0.58,true,P.bogenTyp,fr,{art:'fenster',cap:_cap}); beam(g,cx,cy-h/2-0.05,cz,w+0.22,0.1,0.24,fr);     // Sturz + Fensterbank
       beam(g,cx-w/2-0.05,cy,cz,0.1,h+0.1,0.18,fr); beam(g,cx+w/2+0.05,cy,cz,0.1,h+0.1,0.18,fr);              // Pfosten
       const L=grp(); const inner=windowSash(w,h,true,fr,gl); inner.position.x=w/2; L.add(inner);
       L.position.set(...deform(cx-w/2,cy,cz)); L.rotation.y=(cz<0?0.62:-0.62)+(DEF_bk>0?(cx-w/2)*DEF_bk:0); L.userData={window:true,openA:L.rotation.y}; g.add(L);
-    } else { beam(g,cx,cy+h/2+0.05,cz,0.18,0.1,w+0.2,fr); if(P.bogenTyp&&P.bogenTyp!=='none' && (cy+h/2+0.12+w*0.58)<_cap-0.10)bogenRahmen(g,cx,cy+h/2+0.12,cz,w*0.58,false,P.bogenTyp,fr); beam(g,cx,cy-h/2-0.05,cz,0.24,0.1,w+0.22,fr);
+    } else { beam(g,cx,cy+h/2+0.05,cz,0.18,0.1,w+0.2,fr); if(P.bogenTyp&&P.bogenTyp!=='none')bogenRahmen(g,cx,cy+h/2+0.12,cz,w*0.58,false,P.bogenTyp,fr,{art:'fenster',cap:_cap}); beam(g,cx,cy-h/2-0.05,cz,0.24,0.1,w+0.22,fr);
       beam(g,cx,cy,cz-w/2-0.05,0.18,h+0.1,0.1,fr); beam(g,cx,cy,cz+w/2+0.05,0.18,h+0.1,0.1,fr);
       const L=grp(); const inner=windowSash(w,h,false,fr,gl); inner.position.z=w/2; L.add(inner);
       L.position.set(...deform(cx,cy,cz-w/2)); L.rotation.y=(cx<0?-0.62:0.62)+(DEF_bk>0?cx*DEF_bk:0); L.userData={window:true,openA:L.rotation.y}; g.add(L); } }
@@ -1447,22 +1494,37 @@
     if(dt==='zwiebel'||P.kuppel){ const base=wallTop,bands=16,prof=t=>[rad*Math.pow(Math.cos(t*Math.PI*0.5),0.6)*(1+0.3*Math.sin(t*Math.PI)),base+rad*1.7*t]; for(let bd=0;bd<bands;bd++){const A=prof(bd/bands),B=prof((bd+1)/bands); for(let s=0;s<seg;s++){const a0=s/seg*2*Math.PI,a1=(s+1)/seg*2*Math.PI; tri(g,[A[0]*Math.cos(a0),A[1],A[0]*Math.sin(a0)],[B[0]*Math.cos(a0),B[1],B[0]*Math.sin(a0)],[B[0]*Math.cos(a1),B[1],B[0]*Math.sin(a1)],'kupfer'); tri(g,[A[0]*Math.cos(a0),A[1],A[0]*Math.sin(a0)],[B[0]*Math.cos(a1),B[1],B[0]*Math.sin(a1)],[A[0]*Math.cos(a1),A[1],A[0]*Math.sin(a1)],'kupfer');}} }
     else { const apexY=wallTop+rad*1.3; for(let s=0;s<seg;s++){ const a0=s/seg*2*Math.PI,a1=(s+1)/seg*2*Math.PI; tri(g,[rad*Math.cos(a0),wallTop,rad*Math.sin(a0)],[rad*Math.cos(a1),wallTop,rad*Math.sin(a1)],[0,apexY,0],'ziegel'); } beam(g,0,apexY+0.2,0,0.1,0.5,0.1,'metall'); }
     return g; }
-  function bogenAuf(g,cx,y0,cz,halfW,pierH,depthB,role,typ,horiz){ horiz=(horiz!==false);   // DAS BOGEN-GESETZ: Rund/Spitz/Hufeisen — Pfeiler + Archivolte aus Keilsteinen. Daraus wachsen Arkade, Gewölbe, echte Kuppel
-    const yS=y0+pierH, R=halfW; if(horiz){ beam(g,cx-halfW-0.16,(y0+yS)/2,cz,0.32,pierH,depthB,role); beam(g,cx+halfW+0.16,(y0+yS)/2,cz,0.32,pierH,depthB,role); } else { beam(g,cx,(y0+yS)/2,cz-halfW-0.16,depthB,pierH,0.32,role); beam(g,cx,(y0+yS)/2,cz+halfW+0.16,depthB,pierH,0.32,role); }
-    bogenRahmen(g,cx,yS,cz,R,horiz,typ,role); }   // EINE Bogenkurve: Arkade nutzt jetzt dasselbe Gesetz wie die Fenster/Tür-Öffnungen
-  function arkade(){ const g=grp(); if(!P.arkade) return g;   // ARKADE/KREUZGANG (Rom/Romanik/Islam/Gotik) — folgt jetzt dem GETEILTEN Grundriss-Umriss (eachFootEdge) wie zinnen/vorkragung/veranda; Orientierung via bogenAuf-horiz
-    const typ=P.bogenTyp==='none'?'rund':P.bogenTyp, pierH=Math.min(3.4,Math.max(2.4,eaveY-baseY-0.5)), d=1.8, rH=pierH+0.9, tilt=Math.PI*0.14;
+  function arkade(){ const g=grp(); if(!P.arkade) return g;   // ARKADE/KREUZGANG (Rom/Romanik/Islam/Gotik) — folgt dem GETEILTEN Grundriss-Umriss (eachFootEdge) wie zinnen/vorkragung/veranda
+    // DIE LAUBE UNTER DER TRAUFE (K66): ihr flaches Dach liegt bündig mit dem Dach des Hauses (einstöckig: auf der Traufe) bzw. auf dem Boden des
+    // Obergeschosses; über den Bögen die Mauer (Zwickel) bis unter die Platte. Die Pfeiler stehen GETEILT in der Flucht (n + 1 für n Bögen; ein
+    // Rechteck: die Flucht läuft bis in die Ecken, die Ecke trägt EIN Pfeiler), auf jedem der Kämpfer. Der Bogen folgt der Höhe, die ihm die
+    // Traufe lässt: die Bogen-Art des Hauses, wo ihr Scheitel unter die Platte passt (lichte Höhe am Kämpfer ≥ lichtK), sonst der Stichbogen mit dem
+    // Stich, der bleibt; ist der flacher als R/5, trägt ein Sturz (die Säulenhalle). Bis K66 stand je Bogen ein eigenes Pfeilerpaar (Doppelpfeiler
+    // 4 cm versetzt), der Kämpfer auf 2,4–3,4 m, das Pultdach 0,9 m darüber — der Scheitel ragte bis 1,1 m über die Traufe.
+    const typ=P.bogenTyp==='none'?'rund':P.bogenTyp, d=1.8, pd=0.5, kH=0.18, dachT=0.12, gesims=0.12, lichtK=1.9, ue=0.15;
+    const yZ=(P.storeys>=2?levels[0].top:eaveY), eins=(FOOTPRINT.length===1);
     eachFootEdge((x0,x1,z0,z1,axis,side,r)=>{
-      if(axis==='z'){ const len=x1-x0, zf=z0+side*d, n=Math.max(2,Math.round(len/2.6));
-        for(let i=0;i<n;i++){ const x=x0+(i+0.5)*len/n; bogenAuf(g,x,baseY,zf,len/n/2-0.18,pierH,0.5,'stein',typ,true); }
-        beam(g,(x0+x1)/2,baseY+0.05,z0+side*d/2,len+0.4,0.1,d,'weg');
-        beam(g,(x0+x1)/2,baseY+(pierH+rH)/2,z0+side*d*0.5,len+0.6,0.12,d+0.5,'ziegel',[side*tilt,0,0]);
-        addMasse({art:'vordach',x0,x1,z0:Math.min(z0,z0+side*(d+0.25)),z1:Math.max(z0,z0+side*(d+0.25)),yB:baseY+pierH,yT:baseY+rH,first:side<0?'+z':'-z'}); }
-      else { const len=z1-z0, xf=x0+side*d, n=Math.max(2,Math.round(len/2.6));
-        for(let i=0;i<n;i++){ const z=z0+(i+0.5)*len/n; bogenAuf(g,xf,baseY,z,len/n/2-0.18,pierH,0.5,'stein',typ,false); }
-        beam(g,x0+side*d/2,baseY+0.05,(z0+z1)/2,d,0.1,len+0.4,'weg');
-        beam(g,x0+side*d*0.5,baseY+(pierH+rH)/2,(z0+z1)/2,d+0.5,0.12,len+0.6,'ziegel',[0,0,-side*tilt]);
-        addMasse({art:'vordach',x0:Math.min(x0,x0+side*(d+0.25)),x1:Math.max(x0,x0+side*(d+0.25)),z0,z1,yB:baseY+pierH,yT:baseY+rH,first:side<0?'+x':'-x'}); }
+      const horiz=(axis==='z'), wl=horiz?z0:x0, lf=wl+side*d, e0=horiz?x0:z0, e1=horiz?x1:z1;   // Wandflucht · Pfeilerflucht · die Kante
+      const a0=e0-(eins?d:0), a1=e1+(eins?d:0), len=a1-a0, n=Math.max(2,Math.round(len/2.6)), b=len/n, pw=Math.min(0.6,Math.max(0.44,0.2*b)), R=b/2-pw/2;
+      const P3=(u,v,lx,ly,lz,role)=>horiz?beam(g,u,v,lf,lx,ly,lz,role):beam(g,lf,v,u,lz,ly,lx,role);   // ein Kasten in der Flucht (lx längs, lz quer)
+      const stueck=(u0,u1,q0,q1,y0,y1,role)=>{ const qa=Math.min(q0,q1), qb=Math.max(q0,q1); if(horiz) beam(g,(u0+u1)/2,(y0+y1)/2,(qa+qb)/2,u1-u0,y1-y0,qb-qa,role); else beam(g,(qa+qb)/2,(y0+y1)/2,(u0+u1)/2,qb-qa,y1-y0,u1-u0,role); };
+      let kurve=typ, steig=bogenSteig(typ,R,0), stich=0;
+      let t=Math.min(0.3,Math.max(0.2,0.22*R)); t=Math.min(t, pw/2-(bogenAussen(kurve,R)-R)-0.01);
+      if(baseY+lichtK+steig+t*1.12+gesims>yZ){ kurve='stich'; t=Math.min(Math.min(0.3,Math.max(0.2,0.22*R)), pw/2-0.01); stich=Math.min(R, yZ-gesims-t*1.12-lichtK-baseY); steig=stich; }
+      const sturz=(kurve==='stich' && stich<0.2*R), yS=sturz? yZ-0.3 : yZ-gesims-t*1.12-steig;   // der Kämpfer: so hoch, dass der Scheitel unter die Platte reicht
+      for(let i=0;i<=n;i++){ if(eins && !horiz && (i===0||i===n)) continue;   // die Eck-Pfeiler trägt die Flucht längs x
+        const u=a0+i*b; P3(u,(baseY+yS-kH)/2,pw,yS-kH-baseY,pd,'stein'); P3(u,yS-kH/2,pw+0.08,kH,pd+0.08,'stein'); }   // Pfeiler + Kämpfer
+      const uA=(eins&&!horiz)?a0+pw/2:a0-pw/2, uB=(eins&&!horiz)?a1-pw/2:a1+pw/2;   // die Flucht der Mauer über den Bögen (die Ecke gehört der Flucht längs x)
+      if(sturz) P3((uA+uB)/2,(yS+yZ)/2,uB-uA,yZ-yS,pd-0.04,'stein').userData.sturz=true;   // der Sturz der Säulenhalle
+      else for(let i=0;i<n;i++){ const c=a0+(i+0.5)*b;
+        bogenRahmen(g,horiz?c:lf,yS,horiz?lf:c,R,horiz,kurve,'stein',{art:'arkade',t,tiefe:pd-0.02,versatz:0,cap:yZ,stich,zwickel:[-b/2,b/2,yZ],pfeiler:[[-R-pw,-R],[R,R+pw]]}); }
+      if(!sturz && eins && horiz) for(const [u0,u1] of [[a0-pw/2,a0],[a1,a1+pw/2]]) P3((u0+u1)/2,(yS+yZ)/2,u1-u0,yZ-yS,pd-0.06,'stein');   // die Mauer über der äußeren Hälfte der Eck-Pfeiler
+      const fA=(eins&&!horiz)?e0:uA, fB=(eins&&!horiz)?e1:uB;   // der Boden und das Dach der Laube: längs x samt den Ecken, quer nur die Kante
+      stueck(fA,fB,wl,lf+side*pd/2,baseY,baseY+0.1,'weg');
+      const dA=(eins&&!horiz)?e0:uA-ue, dB=(eins&&!horiz)?e1:uB+ue, q1=lf+side*(pd/2+ue);
+      stueck(dA,dB,wl-side*0.05,q1,yZ,yZ+dachT,'stein');
+      if(horiz) addMasse({art:'vordach',x0:dA,x1:dB,z0:Math.min(wl,q1),z1:Math.max(wl,q1),yB:yZ,yT:yZ+dachT,first:side<0?'+z':'-z'});
+      else addMasse({art:'vordach',x0:Math.min(wl,q1),x1:Math.max(wl,q1),z0:dA,z1:dB,yB:yZ,yT:yZ+dachT,first:side<0?'+x':'-x'});
     });
     return g; }
   function turm(){ const g=grp(); if(!P.turm) return g;   // TURM — HOHL (LOCHWAND-GESETZ: echte Fenster + echtes Portal + Geschossböden), an die Ringmauer gebunden, Standort aus der BELEGUNGS-QUELLE, bei Burg ZINNENKRANZ
@@ -3192,12 +3254,13 @@
     if(ok&&trees.some(q2=>Math.hypot(tx-q2.x,tz-q2.z)<3.0))ok=false;
     if(ok) trees.push({x:tx,z:tz,h:2.6+rnd()*1.8}); }
   const laternen=[];                                                                          // LATERNEN-GESETZ: die moderne Stadt leuchtet
+  const LG9=LICHT_GESETZ.laterne, LATERNE_WAND=Math.sqrt(Math.max(0,(LG9.hoeheM*LG9.hoeheM+LG9.kernM*LG9.kernM)/2-LG9.kernM*LG9.kernM));   /*DIE LATERNE VOR DER WAND (K66): ihr Licht trifft keine Wand mit mehr als dem Doppelten der Gasse unter ihr — (h²+k²)/(d²+k²) ≤ 2, d ≥ 2,55 m; bis K66 stand sie 0,45 m vor dem Grundriss, die Giebelwand trug nachts das Sechsfache*/
   let R9L=30; for(const rd9 of roads) for(const q9 of rd9.pts){ const d9=Math.hypot(q9.x,q9.z); if(d9>R9L)R9L=d9; }   /*ZEITREISE-Referenz: der ECHTE Stadtradius (Strassen-Max), nicht Mauer-Rw — GEMESSEN 0 Gas*/
   if(staedt&&plan.jahr>1850){ for(const rd of roads){ if(rd.gen>=2)continue;
     for(let u=6, fl=1; u<(rd.len||0)-4; u+=DORF_NORM.laneiv-4+((u*7)%5), fl=-fl){ const q=at(rd,u);   /*laneiv KONSUMIERT: 13..17 byte-gleich (laneiv-4 == 13)*/
       const lx2=q.x+fl*q.nx*(rd.w/2+gw+0.35), lz2=q.z+fl*q.nz*(rd.w/2+gw+0.35);
       let ok=true;
-      for(const q2 of obbs){ if(distPunktOBB(lx2,lz2,q2.o)<0.45){ok=false;break;} }
+      for(const q2 of obbs){ if(distPunktOBB(lx2,lz2,q2.o)<LATERNE_WAND){ok=false;break;} }
       if(ok&&laternen.some(l=>Math.hypot(lx2-l.x,lz2-l.z)<9))ok=false;
       if(ok){ const dL=Math.min(1, Math.hypot(lx2,lz2)/(R9L*0.80));                          /*LATERNEN-ZEITREISE: jede Laterne liest das JAHR ihres Rings — Gas im Altkern, Elektro am Saum*/
         const R0=globalThis.__ring; const rj=(R0&&R0.ringe)? (R0.gr0+(plan.jahr-R0.gr0)*Math.pow(dL,0.82)) : plan.jahr;
@@ -3205,7 +3268,7 @@
         laternen.push({x:lx2,z:lz2,th:Math.atan2(-fl*q.nz,-fl*q.nx),gas:gasB}); } } } }
   else { /*DAS DORF-LICHT (K10, Auge 13.10.: das Start-Dorf trug 0 Laternen, die Nacht war ohne ein Licht): jede Laterne vor einer Wand wie in der Stadt (kein Grundriss, 9 m Abstand, nicht am Brunnen) — eine am Platz, eine an jedem Weg-Knoten (Grad ≥ 3), laengs jedes Wegs eine je DORF_LICHT_WEG m*/
     const DORF_LICHT_WEG=25;
-    const setz=(x,z,th)=>{ for(const q2 of obbs){ if(distPunktOBB(x,z,q2.o)<0.45) return false; }
+    const setz=(x,z,th)=>{ for(const q2 of obbs){ if(distPunktOBB(x,z,q2.o)<LATERNE_WAND) return false; }
       if(laternen.some(l=>Math.hypot(x-l.x,z-l.z)<9)||brunnen.some(b2=>Math.hypot(x-b2.x,z-b2.z)<2)) return false; laternen.push({x,z,th,gas:true}); return true; };
     const amWeg=(rd,u,fl)=>{ const q=at(rd,u); return setz(q.x+fl*q.nx*(rd.w/2+gw+0.35), q.z+fl*q.nz*(rd.w/2+gw+0.35), Math.atan2(-fl*q.nz,-fl*q.nx)); };
     if(platz) [[0.25,0],[-0.25,0],[0,0.7],[0,-0.7]].some(([fx,fz])=>setz(platz.cx+fx*platz.ex, platz.cz+fz*platz.ez, 0));
@@ -3658,6 +3721,10 @@
     // Welt (`_leuchtTakt`: Feuerstelle, Glut, jeder Eintrag mit Datum — die Laternen eines Plans, K10; `_leuchtStoff`:
     // Fenster). Das Labor (r128, Legacy-Licht) zeichnet den Abfall als (1 − d/R)^abfall — r128 kennt 1/d² nur für die ganze
     // Szene (physicallyCorrectLights).
+    // DAS BOGEN-GESETZ (K66): die Kurven der Bögen — hufeisen: der Mittelpunkt um R·tan(hufeisenAlpha) über dem Kämpfer, der Bogen
+    // läuft um hufeisenAlpha unter die Mitte; spitz: zwei Mittelpunkte im Abstand spitzE·R von der Achse auf der Kämpferlinie
+    // (Radius (1 + spitzE)·R, Scheitel 1,61 R). Leser: bogenRahmen (Keilsteine im Verband) und die Linse gate:fachwerk-contract BOGEN-VERBAND.
+    var BOGEN_GESETZ = Object.freeze({ hufeisenAlpha: 0.35, spitzE: 0.8 });
     var LICHT_GESETZ = {
         feuer: { kelvin: 2000, staerke: 1, zeit: { mittag: 1.6, morgen: 1.6, abend: 2.2, nacht: 45 }, reichweiteM: 9, abfall: 2, kernM: 0.76, hoeheM: 0.35, flacker: { amp: 0.18, hz: [6.3, 9.7] } },
         fenster: { kelvin: 2800, zeit: { mittag: 0, morgen: 0, abend: 0.42, nacht: 0.85 } },
@@ -5197,6 +5264,24 @@
         hangHanghaus: 4, // bis zum Hanghaus; darüber Stelzen
         brueckeM: 8, // so weit hält der FREI-Splat einer Brücke den Grund je Seite des Wegs unberührt (die Böschung staut nicht)
     };
+    // DER VORPLATZ EINES HAUSES (K10-6 · K66, plan-lokal): vor seinem Eingang (die Haustür; beim HOF-Haus das Tor im Torriegel vor dem Hof,
+    // zC = Front − Hof-Tiefe clamp(W, 5, 9)) ein Rechteck der Türbreite samt Saum und der Tiefe `tief` (ohne: ORT_GESETZ.vorplatzM) — EINE Quelle
+    // für die Erdbau-Platte des Vorplatzes (`ortPlan`, die Tiefe bis zur Gasse) und den Boden des Wirts (`_stlWegeBuild`: getretene Erde, die
+    // Stufe vor der Tür trägt keinen Halm). `tuer`: die Fläche vor der Haustür selbst (beim HOF-Haus die Stufe im Hof). null ohne Tür.
+    // Rückgabe {cx, cz, phi, ex, ez} im Rahmen des Plans.
+    function vorplatzFlaeche(sl, tief, tuer) {
+        var tu = sl && sl.tuer;
+        if (!tu || !isFinite(tu.x) || !isFinite(tu.z) || !isFinite(tu.w)) return null;
+        var O = ORT_GESETZ;
+        var pre = PRESETS[sl.kultur];
+        var hof = !!(pre && pre.kind !== "ausstattung" && hausParams(pre, sl.ov || null).grundriss === "hof" && isFinite(tu.W));
+        var ez0 = hof && !tuer ? tu.z - Math.min(9, Math.max(5, tu.W)) : tu.z;
+        var t = isFinite(tief) ? tief : O.vorplatzM;
+        var c = Math.cos(sl.phi || 0);
+        var s = Math.sin(sl.phi || 0);
+        var lz = ez0 - t / 2;
+        return { cx: sl.x + tu.x * c + lz * s, cz: sl.z - tu.x * s + lz * c, phi: sl.phi || 0, ex: tu.w / 2 + O.saumM, ez: t / 2 };
+    }
     function ortPlan(plan, origin, ctx) {
         if (
             !plan ||
@@ -5536,14 +5621,14 @@
                 // Vorplatz, lag dazwischen ein Streifen ohne Fläche — dort griff die Böschung eines höheren Nachbarn (Auto-Dorf
                 // der Zelle −4,−4, ein Stelzen-Haus: Vorplatz 78,74 → 79,01 → Gasse 78,46, ein Absatz von 0,55 m vor der Tür)
                 var tief = gasseAb[si] !== null ? Math.max(O.vorplatzM, gasseAb[si]) : O.vorplatzM;
-                var vp = vorne(sl, ein.z - tief / 2);
+                var vf = vorplatzFlaeche(sl, tief);
                 vorplaetze.push({
                     art: "platte",
-                    cx: r6(ox + vp[0]),
-                    cz: r6(oz + vp[1]),
-                    phi: r6(sl.phi || 0),
-                    ex: r6(tu.w / 2 + O.saumM),
-                    ez: r6(tief / 2),
+                    cx: r6(ox + vf.cx),
+                    cz: r6(oz + vf.cz),
+                    phi: r6(vf.phi),
+                    ex: r6(vf.ex),
+                    ez: r6(vf.ez),
                     y: r6(y + ein.y / 2),
                 });
             }
@@ -5698,6 +5783,8 @@
         ZEIT_VIS: ZEIT_VIS,
         // K11 — das Leuchtquellen-Gesetz (Labor und Welt lesen dasselbe Datum)
         LICHT_GESETZ: LICHT_GESETZ,
+        BOGEN_GESETZ: BOGEN_GESETZ,
+        vorplatzFlaeche: vorplatzFlaeche,
         lichtFlackern: lichtFlackern,
         // K11b — die Farbe aus der Farbtemperatur, der Abfall 1/d² mit Kern und Saum (die Welt rechnet ihn im Stoff)
         lichtFarbe: lichtFarbe,

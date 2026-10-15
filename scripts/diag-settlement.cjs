@@ -265,6 +265,13 @@ function ortVerdikt(m) {
     if (!(m.laternenPlan > 0 && m.laternenWelt === m.laternenPlan))
         fehl.push(`Laternen Welt ${m.laternenWelt} / Plan ${m.laternenPlan}`);
     if (!(m.planHashGleich === true)) fehl.push("Plan-Hash Studio ≠ Welt");
+    // K66: keine Laterne näher an einer Wand, als ihr Licht-Gesetz trägt; jede Stufe vor einer Haustür liegt auf dem Weg
+    if (!(m.laterneWand >= m.laterneWandSoll - 0.01))
+        fehl.push(
+            `Laterne ${m.laterneWand} m vor einer Hauswand (Soll ≥ ${m.laterneWandSoll} m: die Wand trägt höchstens das Doppelte der Gasse)`
+        );
+    if (!(m.vorplatzN > 0 && m.vorplatzOk === m.vorplatzN))
+        fehl.push(`Stufe vor der Tür auf dem Weg ${m.vorplatzOk}/${m.vorplatzN}`);
     if (!(m.fremdBauten === 0)) fehl.push(`fremde Bauten im Erdbau ${m.fremdBauten}`);
     // endet die Kette vor 8 s (der Wagen fuhr den Dorfweg zu Ende), zählt das Tempo bis zum Ende über 8 s: der Weg ist kürzer
     // als das Soll, nie der Wagen langsamer
@@ -876,6 +883,10 @@ const FIXTURES = [
             kronen: 0,
             laternenWelt: 6,
             laternenPlan: 6,
+            laterneWand: 3.1,
+            laterneWandSoll: 2.548,
+            vorplatzOk: 16,
+            vorplatzN: 16,
         };
         Object.assign(gut, {
             planHashGleich: true,
@@ -894,6 +905,8 @@ const FIXTURES = [
             gtWeg: 5.2,
             haeuser: 12,
             wasserSlots: 4,
+            laterneWand: 1.45,
+            vorplatzOk: 0,
         });
         const vs = ortVerdikt(schlecht).join(" · ");
         check(
@@ -903,7 +916,9 @@ const FIXTURES = [
                 /Laternen Welt 0/.test(vs) &&
                 /Plan-Hash/.test(vs) &&
                 /GT auf dem Dorfweg 5.2 m/.test(vs) &&
-                /Häuser 12\/16 des Exports \(4 Slots im Wasser/.test(vs),
+                /Häuser 12\/16 des Exports \(4 Slots im Wasser/.test(vs) &&
+                /Laterne 1.45 m vor einer Hauswand/.test(vs) &&
+                /Stufe vor der Tür auf dem Weg 0\/16/.test(vs),
             vs
         );
         check(
@@ -1818,6 +1833,55 @@ const FIXTURES = [
                     res.laternenPlan = Array.isArray(P.laternen) ? P.laternen.length : 0;
                     // der Zwilling: ein Licht ohne Leib (der Laternen-Leser bis K10-2 und sein Zellen-Gedächtnis)
                     res.laternenZwilling = ["_laternenLesen", "_laternen"].filter((k) => k in r);
+                    // DIE LATERNE VOR DER WAND (K66, Augen-Runde 15.10.: nachts glühte eine Giebelwand gesättigt orange): je Laterne der
+                    // Welt der Abstand zur nächsten Hauswand des Plans (die Tür-Zeile W × D um den Slot); das Soll aus dem EINEN
+                    // Licht-Gesetz (fachwerk LICHT_GESETZ.laterne, Abfall 1/(d² + k²)): die Wand trägt höchstens das Doppelte der Gasse
+                    const LGl = globalThis.__fachwerkCore.LICHT_GESETZ.laterne;
+                    res.laterneWandSoll =
+                        Math.round(
+                            1000 * Math.sqrt(Math.max(0, (LGl.hoeheM ** 2 + LGl.kernM ** 2) / 2 - LGl.kernM ** 2))
+                        ) / 1000;
+                    let lwMin = Infinity;
+                    if (anker && P.ort)
+                        for (const e of r.state.architectures) {
+                            if (r._lichtDatumDerGestalt(e) !== globalThis.__fachwerkCore.PRESETS.laterne?.fx?.licht)
+                                continue;
+                            if (Math.hypot(e.position.x - anker.x, e.position.z - anker.z) >= 250) continue;
+                            for (const sl of P.slots) {
+                                const tu = sl.tuer;
+                                if (!tu || !Number.isFinite(tu.W) || !Number.isFinite(tu.D)) continue;
+                                const c = Math.cos(sl.phi || 0);
+                                const sn = Math.sin(sl.phi || 0);
+                                const dx = e.position.x - (P.ort.x + sl.x);
+                                const dz = e.position.z - (P.ort.z + sl.z);
+                                const uu = Math.abs(dx * c - dz * sn) - tu.W / 2;
+                                const vv = Math.abs(dx * sn + dz * c) - tu.D / 2;
+                                lwMin = Math.min(lwMin, uu > 0 ? (vv > 0 ? Math.hypot(uu, vv) : uu) : vv > 0 ? vv : 0);
+                            }
+                        }
+                    res.laterneWand = Number.isFinite(lwMin) ? Math.round(lwMin * 100) / 100 : null;
+                    // DIE STUFE VOR DER TÜR IST WEG (K66, Augen-Runde 15.10.: Gras wuchs über die Türtreppe): je Haus der Punkt 0,8 m
+                    // vor der Mitte seiner Haustür liegt auf einer Fläche des Dorfs (`_aufWeg`: die Formen der EINEN Wege-Karte, die
+                    // die Wiese über `_pfadFeldAt` und die Natur-Wand lesen) — Grundriss gegen Natur gilt auch für Treppe und Vorplatz
+                    let vpOk = 0;
+                    let vpN = 0;
+                    const vpFehl = [];
+                    if (P.ort)
+                        P.slots.forEach((sl, si) => {
+                            const tu = sl.tuer;
+                            if (!tu || !Number.isFinite(tu.x) || !Number.isFinite(tu.z)) return;
+                            const c = Math.cos(sl.phi || 0);
+                            const sn = Math.sin(sl.phi || 0);
+                            const lz = tu.z - 0.8;
+                            const wx = P.ort.x + sl.x + tu.x * c + lz * sn;
+                            const wz = P.ort.z + sl.z - tu.x * sn + lz * c;
+                            vpN++;
+                            if (r._aufWeg(wx, wz, 0)) vpOk++;
+                            else vpFehl.push(si);
+                        });
+                    res.vorplatzOk = vpOk;
+                    res.vorplatzN = vpN;
+                    res.vorplatzFehl = vpFehl;
                     // die Altwelten: Bauten, die kein Ort trägt (kein Haus mit Grundriss, keine Ausstattung des Dorfs: brunnen_dorf,
                     // marktstand_dorf), auf dem Erdbau eines Orts
                     let fremd = 0;
@@ -2058,6 +2122,10 @@ const FIXTURES = [
             kronen: outO.kronen,
             laternenWelt: outO.laternenWelt,
             laternenPlan: outO.laternenPlan,
+            laterneWand: outO.laterneWand,
+            laterneWandSoll: outO.laterneWandSoll,
+            vorplatzOk: outO.vorplatzOk,
+            vorplatzN: outO.vorplatzN,
             planHashGleich,
             fremdBauten: outO.fremdBauten,
             gtWeg: gtO.gtWeg,

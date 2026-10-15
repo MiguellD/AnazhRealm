@@ -1804,6 +1804,35 @@ class AnazhRealm_Z17c {
                     ...(anger ? { sperr: -1 } : {}),
                 });
         }
+        // DIE VORPLÄTZE (K66, Augen-Runde 15.10.: Gras wuchs über die Türtreppe): vor jeder Tür liegt getretene Erde — Grundriss gegen
+        // Natur gilt für Treppe und Vorplatz wie für den Weg; das Gesetzbuch legt sie (fachwerk `vorplatzFlaeche`, dieselbe Fläche wie die
+        // Erdbau-Platte des Vorplatzes, plan-lokal je Slot — auch im Wege-Rebuild aus dem Export), die Wiese (`_pfadFeldAt`) und die
+        // Natur-Wand (`_aufWeg`) lesen dieselbe Form.
+        for (const sl of plan.slots || []) {
+            if (n >= MAX) break;
+            // der Vorplatz vor dem Eingang und die Stufe vor der Haustür (beim Hof-Haus liegt sie im Hof)
+            const FC = globalThis.__fachwerkCore;
+            const vor = FC.vorplatzFlaeche(sl);
+            const tuer = FC.vorplatzFlaeche(sl, undefined, true);
+            for (const vp of vor && tuer && (vor.cx !== tuer.cx || vor.cz !== tuer.cz) ? [vor, tuer] : [vor]) {
+                if (!vp) continue;
+                const wx = origin.x + vp.cx;
+                const wz = origin.z + vp.cz;
+                if (!this._landAt(wx, wz, 0.2)) continue;
+                form({
+                    typ: "kasten",
+                    kanal: 0,
+                    ax: wx,
+                    az: wz,
+                    bx: wx,
+                    bz: wz,
+                    ex: vp.ex,
+                    ez: vp.ez,
+                    phi: vp.phi || 0,
+                    halb: 0,
+                });
+            }
+        }
         // Die ÄCKER (felder-Schicht): je OBB ein gedrehtes Acker-Rechteck (Kanal G) — die Layout-Wahrheit des
         // Gesetzbuchs lebt im Boden.
         for (const fd of plan.felder || []) {
