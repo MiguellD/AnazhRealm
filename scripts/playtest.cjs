@@ -839,7 +839,6 @@ async function checkBandV1721LivingFieldAura(ctx) {
         const r = window.anazhRealm;
         const out = {};
         if (r.state.lifeField) r.state.lifeField.clear(); // V17.27 — Feld-Lese-Tests messen den frozen Kern
-        out.hasAuraAt = typeof r.auraAt === "function";
         const a = r.auraAt(0, 0, 1.5);
         out.auraShape =
             !!a &&
@@ -898,7 +897,6 @@ async function checkBandV1721LivingFieldAura(ctx) {
         }
         return out;
     });
-    check("V17.21 lebendiges Feld: auraAt(x,z,t) existiert", res.hasAuraAt);
     check("V17.21 lebendiges Feld: auraAt-Shape (4 Feld-Achsen + emotion + t)", res.auraShape);
     check("V17.21 lebendiges Feld: auraAt umhüllt das eingefrorene worldFieldAt (Kern bit-gleich)", res.auraWrapsField);
     check("V17.21 lebendiges Feld: FIELD_TO_EMOTION ist frozen + verdrahtet", res.hasMap);
@@ -922,7 +920,6 @@ async function checkBandV1722NexusEyes(ctx) {
     const res = await page.evaluate(() => {
         const r = window.anazhRealm;
         const out = {};
-        out.hasFieldColor = typeof r.dslComposeFieldColor === "function";
         const lo = () => 0.0; // kontrollierte rng (< jede Achsen-Stärke → resoniert)
         out.magieColor = r.dslComposeFieldColor(lo, { magieleitung: 1, glut: 0, lebendig: 0 }) === "#d4a3ff";
         out.glutColor = r.dslComposeFieldColor(lo, { magieleitung: 0, glut: 1, lebendig: 0 }) === "#ff7a59";
@@ -933,7 +930,6 @@ async function checkBandV1722NexusEyes(ctx) {
         out.composesValid = Array.isArray(prog) && typeof prog[0] === "string";
         return out;
     });
-    check("V17.22 Nexus-Augen: dslComposeFieldColor existiert", res.hasFieldColor);
     check("V17.22 Nexus-Augen: magie-leitender Ort → magisches Lila", res.magieColor);
     check("V17.22 Nexus-Augen: glühender Ort → warmes Feuer", res.glutColor);
     check("V17.22 Nexus-Augen: lebendiger Ort → frisches Grün", res.lebendigColor);
@@ -8361,7 +8357,6 @@ async function checkBandWaves1to3(ctx) {
         out.hasEmotionShiftPool =
             Array.isArray(r.state.grok.pool.emotionShift) && r.state.grok.pool.emotionShift.length > 0;
         // E — grokSpeakFromJournal existiert
-        out.hasGrokSpeakFromJournal = typeof r.grokSpeakFromJournal === "function";
         // F — die aktive Welt lebt jetzt als Insel in der BIBLIOTHEK (der Welt-Manager); die
         // Einstellungen tragen keine Welt-Akte mehr (V18.79, Profi-Struktur). Die alte
         // #world-info-Box ist entfernt → die „Diese Welt"-Insel (#feed-active-ident) ist die Heimat.
@@ -8427,7 +8422,6 @@ async function checkBandWaves1to3(ctx) {
         check("Welle 3 E: emotionShift-Trigger im Grok-State", wave3Results.hasEmotionShiftTrigger);
         check("Welle 3 E: journalEvent-Pool gefüllt", wave3Results.hasJournalEventPool);
         check("Welle 3 E: emotionShift-Pool gefüllt", wave3Results.hasEmotionShiftPool);
-        check("Welle 3 E: grokSpeakFromJournal-Funktion existiert", wave3Results.hasGrokSpeakFromJournal);
         check("Welle 3 F: Diese-Welt-Insel (#feed-active-ident) im DOM", wave3Results.activeWorldIslandInDom);
         check(
             "Welle 3 F: Welt-Verwaltung im Welt-Manager (Bibliothek: Empfangen + Welt-Datei-Export)",
@@ -9164,7 +9158,6 @@ async function checkBandWave5(ctx) {
         // (computeSpatialTags) bleibt das Subjekt + ihre Wirkung ist im neuen UI in der Resonanz-/Fähigkeit-
         // Zeile reflektiert. Wir prüfen, dass die räumliche Emergenz die FORM diskriminiert.
         r.selectBlueprintForEdit("wave5b-test");
-        out.uiSpatialTitle = typeof r.computeSpatialTags === "function";
         const spatPointed = r.computeSpatialTags(r.state.blueprints["wave5b-test"]) || {};
         out.uiSpatialRow = Object.keys(spatPointed).length > 0;
 
@@ -9255,10 +9248,6 @@ async function checkBandWave5(ctx) {
         check("Welle 5 B: Pyramide oben verstärkt Magieleitung räumlich", wave5bResults.tipBoostsMagic);
         check("Welle 5 B: Pyramide unten gibt KEINEN Top-Bonus", wave5bResults.bottomNoTipBoost);
         check("Welle 5 B: Helix am Rand hat at_outside", wave5bResults.helixAtOutside);
-        check(
-            "Welle 5 B (V17.91): computeSpatialTags existiert (die räumliche Emergenz-Daten-Schicht)",
-            wave5bResults.uiSpatialTitle
-        );
         check("Welle 5 B (V17.91): der pointed-am-Rand-Bauplan trägt räumliche Tags", wave5bResults.uiSpatialRow);
         check(
             "Welle 5 B (V17.91): die räumliche Emergenz diskriminiert die Form (pointed ≠ atomar)",
@@ -9658,7 +9647,6 @@ async function checkBandWave5(ctx) {
         out.uiConnectPopover = !!connOverlay;
         out.uiConnectTypeButtons = connOverlay ? connOverlay.querySelectorAll("button").length > 1 : false;
         if (typeof r._workshopCloseConnectPopover === "function") r._workshopCloseConnectPopover();
-        out.uiConnectRemoveApi = typeof r.removeConnectionFromBlueprint === "function";
 
         // Solid-Threshold: schwache Verbindung hat workshop-conn-weak class
         r.state.blueprints["w5a-weak"] = {
@@ -9733,10 +9721,6 @@ async function checkBandWave5(ctx) {
             wave5aResults.uiConnectPopover
         );
         check("Welle 5 A (V17.91): das Popover bietet Verbindungs-Typen", wave5aResults.uiConnectTypeButtons);
-        check(
-            "Welle 5 A (V17.91): Verbindung lösen via Toggle/API (removeConnectionFromBlueprint)",
-            wave5aResults.uiConnectRemoveApi
-        );
         check("Welle 5 A: Schwache Verbindung traegt workshop-conn-weak class", wave5aResults.weakClassApplied);
     }
 
@@ -11253,8 +11237,6 @@ async function checkBandRing11AndW7Mesh(ctx) {
         out.noChunkDeltasField = !("chunkDeltas" in (r.state.worldMeta || {}));
 
         // (2) Die neuen voxel_carve/voxel_fill-DSL-Ops leben.
-        out.voxelCarveOpRegistered = typeof r.dslEffects.voxel_carve === "function";
-        out.voxelFillOpRegistered = typeof r.dslEffects.voxel_fill === "function";
 
         // (3) Chat-Patterns sind auf die neuen Ops umgeroutet.
         const chatDig = r.parseChatToDsl("grabe loch");
@@ -11327,8 +11309,6 @@ async function checkBandRing11AndW7Mesh(ctx) {
             "Voxel V9.36: worldMeta.chunkDeltas-Feld ist entfernt (frische Welten)",
             voxelV936Results.noChunkDeltasField
         );
-        check("Voxel V9.36: dslEffects.voxel_carve ist registriert", voxelV936Results.voxelCarveOpRegistered);
-        check("Voxel V9.36: dslEffects.voxel_fill ist registriert", voxelV936Results.voxelFillOpRegistered);
         check(
             "Voxel V9.36: Chat 'grabe loch' → voxel_carve (Heightfield-Pfad umgeroutet)",
             voxelV936Results.chatDigRoutesToVoxelCarve
@@ -14725,7 +14705,6 @@ async function checkBandLateMultiUser(ctx) {
         if (!r) return null;
         const out = {};
 
-        out.broadcastMethodExists = typeof r.p2pBroadcastDsl === "function";
 
         // p2pSend mocken, um zu prüfen WAS gesendet würde
         const sent = [];
@@ -14823,7 +14802,6 @@ async function checkBandLateMultiUser(ctx) {
             (ring11V2Results && ring11V2Results.error) || "page.evaluate fehlgeschlagen"
         );
     } else {
-        check("Ring 11 V2: p2pBroadcastDsl-Methode existiert", ring11V2Results.broadcastMethodExists);
         check("Ring 11 V2: human-DSL wird gebroadcastet", ring11V2Results.humanBroadcasts);
         check("Ring 11 V2: remote-DSL wird NICHT re-gebroadcastet (Loop-Schutz)", ring11V2Results.remoteDoesNotEcho);
         check(
@@ -15494,8 +15472,6 @@ async function checkBandWelle6APolish(ctx) {
         const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
-        out.hasResolveMethod = typeof r._resolvePhantomTarget === "function";
-        out.hasTintMethod = typeof r._applyPhantomTint === "function";
         out.hasPhantomOnGroundField = "phantomOnGround" in r.state.buildMode;
 
 
@@ -15580,8 +15556,6 @@ async function checkBandWelle6APolish(ctx) {
     });
 
     if (wave6a45Results) {
-        check("Welle 6.A4: _resolvePhantomTarget-Methode existiert", wave6a45Results.hasResolveMethod);
-        check("Welle 6.A5: _applyPhantomTint-Methode existiert", wave6a45Results.hasTintMethod);
         check("Welle 6.A5: buildMode.phantomOnGround-Feld existiert", wave6a45Results.hasPhantomOnGroundField);
         if (wave6a45Results.phantomExists) {
             check(
@@ -15604,9 +15578,6 @@ async function checkBandWelle6APolish(ctx) {
         const r = window.anazhRealm;
         if (!r || typeof r.describeProgram !== "function") return null;
         const out = {};
-        out.hasDescribeMethod = typeof r.describeProgram === "function";
-        out.hasPosHelper = typeof r._describeDslPosition === "function";
-        out.hasCondHelper = typeof r._describeDslCondition === "function";
         // Vorlagen-Smoke-Tests
         out.weatherDesc = r.describeProgram(["weather", "rainy"]);
         out.spawnCreatureDesc = r.describeProgram(["spawn_creature", ["at_player"], 3, "happy"]);
@@ -15645,9 +15616,6 @@ async function checkBandWelle6APolish(ctx) {
     });
 
     if (wave6e1Results) {
-        check("Welle 6.E1: describeProgram-Methode existiert", wave6e1Results.hasDescribeMethod);
-        check("Welle 6.E1: _describeDslPosition-Helper existiert", wave6e1Results.hasPosHelper);
-        check("Welle 6.E1: _describeDslCondition-Helper existiert", wave6e1Results.hasCondHelper);
         check("Welle 6.E1: weather-Op wird beschrieben (Wetter + Wert)", wave6e1Results.weatherOk);
         check("Welle 6.E1: spawn_creature-Op nutzt count + emotion + position", wave6e1Results.creatureOk);
         check("Welle 6.E1: chain-Op verbindet Teile mit 'und'", wave6e1Results.chainOk);
@@ -15672,7 +15640,6 @@ async function checkBandWelle6APolish(ctx) {
         out.introPagesGone = typeof r._introPages === "undefined";
         out.noDialogInDom = !document.getElementById("intro-dialog");
         // (b) Der WOW-Start: der Begleiter lädt ein — eine Einladung, KEINE Anleitung.
-        out.hasWelcome = typeof r._firstWorldWelcome === "function";
         const msg = typeof r._firstWelcomeMessage === "function" ? r._firstWelcomeMessage() : "";
         out.welcomeIsInvitation = typeof msg === "string" && msg.length > 0;
         out.welcomeNotManual = !/WASD|Hotbar|Space|Maus|1-9|drücke/i.test(msg);
@@ -15698,7 +15665,6 @@ async function checkBandWelle6APolish(ctx) {
         check("UI-Putz WOW-Start: Anleitungs-Modal (initIntroDialog) entfernt", wowStartResults.introDialogGone);
         check("UI-Putz WOW-Start: _introPages-Helper entfernt", wowStartResults.introPagesGone);
         check("UI-Putz WOW-Start: kein #intro-dialog im DOM", wowStartResults.noDialogInDom);
-        check("UI-Putz WOW-Start: _firstWorldWelcome existiert", wowStartResults.hasWelcome);
         check("UI-Putz WOW-Start: Begrüssung ist eine Einladung (nicht-leer)", wowStartResults.welcomeIsInvitation);
         check("UI-Putz WOW-Start: Begrüssung ist KEINE Steuerungs-Anleitung", wowStartResults.welcomeNotManual);
         check("UI-Putz WOW-Start: Begleiter spricht beim ersten Welt-Start", wowStartResults.welcomeSpoken);
@@ -15713,8 +15679,6 @@ async function checkBandWelle6APolish(ctx) {
         const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
-        out.hasAddLinesMethod = typeof r._addConnectionLines === "function";
-        out.hasColorHelper = typeof r._connectionColor === "function";
 
         // Farb-Mapping
         out.colorWeak = r._connectionColor(0.4);
@@ -15885,8 +15849,6 @@ async function checkBandWelle6APolish(ctx) {
     });
 
     if (wave6fResults) {
-        check("Welle 6.F1: _addConnectionLines-Methode existiert", wave6fResults.hasAddLinesMethod);
-        check("Welle 6.F1: _connectionColor-Helper existiert", wave6fResults.hasColorHelper);
         check("Welle 6.F1: schwache Verbindung (<0.7) = rot 0xff5555", wave6fResults.colorWeakIsRed);
         check("Welle 6.F1: mittlere Verbindung (0.7..1.5) = goldgelb 0xffcc44", wave6fResults.colorOkIsYellow);
         check("Welle 6.F1: starke Verbindung (≥1.5) = grün 0x66ff88", wave6fResults.colorStrongIsGreen);
@@ -15934,10 +15896,7 @@ async function checkBandWelle6DSoul(ctx) {
         const out = {};
         out.hasStatMatrix = typeof C.STAT_FROM_TAGS === "object";
         out.statKeys = Object.keys(C.STAT_FROM_TAGS).sort().join(",");
-        out.hasComputeMethod = typeof r.computePlayerStats === "function";
-        out.hasRecomputeMethod = typeof r.recomputePlayerStats === "function";
         // V18.61 Ich-F — die flache renderPlayerStatsUI ist durch das Daten-Viz-Spec-Sheet ersetzt.
-        out.hasRenderMethod = typeof r._ichBuildSpecSheet === "function";
 
         // Welle 6.D Etappe 1.5 — Seele = Bauplan aus Körper-Teilen
         const defs = r.playerSoulDefs;
@@ -15956,7 +15915,6 @@ async function checkBandWelle6DSoul(ctx) {
             .every((p) => typeof p.shape === "string" && typeof p.material === "string");
         // Tag-Aggregation: bodyParts liefern Compound-Tags via dieselbe
         // MAX-Aggregation wie Architekturen (computeCompoundTags).
-        out.hasSoulCompoundTagsMethod = typeof r.computeSoulCompoundTags === "function";
         const humanCompoundTags = r.computeSoulCompoundTags(defs.human);
         out.humanCompoundTagsAreObject = humanCompoundTags && typeof humanCompoundTags === "object";
         // Aggregierte Tags sollten echte MATERIAL_TAG_KEYS sein
@@ -16263,7 +16221,6 @@ async function checkBandWelle6DSoul(ctx) {
         r.state.player.stamina = r.state.player.staminaMax;
 
         // (6) Konsumables aus Compound-Tags
-        out.hasSetBlueprintAsConsumable = typeof r.setBlueprintAsConsumable === "function";
         // Setup: Bauplan aus quarz-Helix + glut-Sphere (sollte magieleitung + brennbar hoch)
         r.state.blueprints.wave6d_potion = {
             name: "wave6d_potion",
@@ -16370,7 +16327,6 @@ async function checkBandWelle6DSoul(ctx) {
         check("Reflex 5: applyOpToPart zieht Stamina ab", reflexResults.staminaWasDeducted);
         check("Reflex 5: applyOpToPart lehnt ab bei stamina<cost", reflexResults.applyOpRejectedNoStamina);
         // (6) Konsumables-Logik
-        check("Reflex 6: setBlueprintAsConsumable-Methode existiert", reflexResults.hasSetBlueprintAsConsumable);
         check("Reflex 6: setBlueprintAsConsumable liefert ok", reflexResults.markConsumableOk);
         check("Reflex 6: Bauplan bekommt role:'consumable'", reflexResults.blueprintGotRoleConsumable);
         check("Reflex 6: consumableMeta speichert durationSeconds", reflexResults.blueprintHasConsumableMeta);
@@ -16400,7 +16356,6 @@ async function checkBandWelle6DSoul(ctx) {
         out.toolWeight015 = Math.abs(C.TOOL_STAT_WEIGHT - 0.15) < 0.001;
         out.hasEquipTool = typeof r.equipTool === "function";
         out.hasEquipArmor = typeof r.equipArmor === "function";
-        out.hasSetArmor = typeof r.setBlueprintAsArmor === "function";
         out.hasEquippedState =
             r.state.player.equipped && "held" in r.state.player.equipped && "armor" in r.state.player.equipped;
         // SYNERGIE-WELLE — die Hue-Map ist mit der Avatar-Aura gefallen (Abwesenheit).
@@ -16521,7 +16476,6 @@ async function checkBandWelle6DSoul(ctx) {
         check("Welle 6.D Etappe 3b: TOOL_STAT_WEIGHT == 0.15", wave6d3bResults.toolWeight015);
         check("Welle 6.D Etappe 3b: equipTool-Methode existiert", wave6d3bResults.hasEquipTool);
         check("Welle 6.D Etappe 3b: equipArmor-Methode existiert", wave6d3bResults.hasEquipArmor);
-        check("Welle 6.D Etappe 3b: setBlueprintAsArmor-Methode existiert", wave6d3bResults.hasSetArmor);
         check(
             "Welle 6.D Etappe 3b: state.player.equipped = {held, armor} (V17.57 W2-B)",
             wave6d3bResults.hasEquippedState
@@ -16586,7 +16540,6 @@ async function checkBandWelle6DSoul(ctx) {
         if (typeof r.setGameMode === "function") r.setGameMode("pfad");
 
         // --- Tod-Behandlung (ALTLASTEN-NULL: feld-nativ) ---
-        out.hasDamageMethod = typeof r.damagePlayer === "function";
         // U1 (V18.452) — Katalog-Existenz statt Namens-Wiederholung: der ANKER-
         // KATALOG (window.__anker) trägt die Symbolnamen; zieht das Symbol um,
         // wandert EINE Katalog-Zeile, nie N Proben.
@@ -16688,8 +16641,6 @@ async function checkBandWelle6DSoul(ctx) {
 
         // --- Konsumables ---
         out.hasConsumablesContainer = r.state.consumables && typeof r.state.consumables === "object";
-        out.hasCreateConsumableMethod = typeof r.createOrUpdateConsumable === "function";
-        out.hasActivateMethod = typeof r.activateConsumable === "function";
         // define_consumable via DSL
         r.dslRun(
             ["define_consumable", "trank_des_lichts", { magieleitung: 0.3, resoniert: 0.2 }, 60, "Trank des Lichts"],
@@ -16736,7 +16687,6 @@ async function checkBandWelle6DSoul(ctx) {
 
     if (wave6d3aResults && !wave6d3aResults.error) {
         // Tod-Behandlung
-        check("Welle 6.D Etappe 3a: damagePlayer-Methode existiert", wave6d3aResults.hasDamageMethod);
         check(
             "Welle 6.D Etappe 3a (NULL): _playerDeathRespawn existiert (Phönix-Maschine gefallen)",
             wave6d3aResults.hasTriggerPhoenixMethod
@@ -16791,11 +16741,6 @@ async function checkBandWelle6DSoul(ctx) {
         );
         // Konsumables
         check("Welle 6.D Etappe 3a: state.consumables-Container existiert", wave6d3aResults.hasConsumablesContainer);
-        check(
-            "Welle 6.D Etappe 3a: createOrUpdateConsumable-Methode existiert",
-            wave6d3aResults.hasCreateConsumableMethod
-        );
-        check("Welle 6.D Etappe 3a: activateConsumable-Methode existiert", wave6d3aResults.hasActivateMethod);
         check("Welle 6.D Etappe 3a: define_consumable DSL-Op legt Konsumabel an", wave6d3aResults.consumableDefined);
         check("Welle 6.D Etappe 3a: Konsumabel speichert tagBonus", wave6d3aResults.consumableTagBonus);
         check("Welle 6.D Etappe 3a: Konsumabel speichert durationSeconds", wave6d3aResults.consumableDuration);
@@ -16825,8 +16770,6 @@ async function checkBandWelle6DSoul(ctx) {
         const C = typeof AnazhRealm !== "undefined" ? AnazhRealm : r.constructor;
         const out = {};
         out.hasBoostsField = Array.isArray(r.state.player.boosts);
-        out.hasAddMethod = typeof r.addPlayerBoost === "function";
-        out.hasTickMethod = typeof r.tickPlayerBoosts === "function";
         out.hasEmotionMap = C.BOOST_EMOTION_TAG && typeof C.BOOST_EMOTION_TAG === "object";
         out.emotionAxisCount = C.BOOST_EMOTION_TAG ? Object.keys(C.BOOST_EMOTION_TAG).length : 0;
         out.hasResonanceConst = typeof C.BOOST_RESONANCE_DELTA === "number";
@@ -16960,8 +16903,6 @@ async function checkBandWelle6DSoul(ctx) {
 
     if (wave6d2Results && !wave6d2Results.error) {
         check("Welle 6.D Etappe 2: state.player.boosts ist Array", wave6d2Results.hasBoostsField);
-        check("Welle 6.D Etappe 2: addPlayerBoost-Methode existiert", wave6d2Results.hasAddMethod);
-        check("Welle 6.D Etappe 2: tickPlayerBoosts-Methode existiert", wave6d2Results.hasTickMethod);
         check(
             "Welle 6.D Etappe 2: BOOST_EMOTION_TAG-Map mit 6 Emotionen",
             wave6d2Results.hasEmotionMap && wave6d2Results.emotionAxisCount === 6
@@ -17014,8 +16955,6 @@ async function checkBandWelle6DSoul(ctx) {
         const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
-        out.hasGetSoulDef = typeof r._getSoulDef === "function";
-        out.hasCreateMethod = typeof r.createOrUpdateSoulFromDsl === "function";
         out.customSoulsContainerExists = r.state.customSouls && typeof r.state.customSouls === "object";
 
         // DSL-Op define_soul ist im Interpreter
@@ -17127,12 +17066,6 @@ async function checkBandWelle6DSoul(ctx) {
         // V18.62 Ich-H — der Ich-Soul-Editor ist geschnitten; die Seelen-Schöpfung lebt in der Werkstatt
         // (die Seele IST ein Bauplan, soulToBlueprint + „Körper holen"). Die customSoul-CRUD bleibt als
         // Datenschicht (define_soul + die Brücke lesen sie).
-        out.hasSoulToBlueprint = typeof r.soulToBlueprint === "function";
-        out.hasCloneMethod = typeof r.cloneSoulToCustom === "function";
-        out.hasDeleteMethod = typeof r.deleteCustomSoul === "function";
-        out.hasAddPartMethod = typeof r.addPartToCustomSoul === "function";
-        out.hasUpdatePartMethod = typeof r.updatePartInCustomSoul === "function";
-        out.hasRemovePartMethod = typeof r.removePartFromCustomSoul === "function";
         // Der parallele Ich-Soul-Editor existiert NICHT mehr (in die Werkstatt gewandert)
         out.ichSoulEditorGone = !document.getElementById("soul-editor");
 
@@ -17216,15 +17149,6 @@ async function checkBandWelle6DSoul(ctx) {
 
     if (wave6d17Results && !wave6d17Results.error) {
         check(
-            "V18.62 Ich-H: soulToBlueprint-Brücke existiert (Seele → Werkstatt-Bauplan)",
-            wave6d17Results.hasSoulToBlueprint
-        );
-        check("Welle 6.D Etappe 1.7: cloneSoulToCustom-Methode existiert", wave6d17Results.hasCloneMethod);
-        check("Welle 6.D Etappe 1.7: deleteCustomSoul-Methode existiert", wave6d17Results.hasDeleteMethod);
-        check("Welle 6.D Etappe 1.7: addPartToCustomSoul-Methode existiert", wave6d17Results.hasAddPartMethod);
-        check("Welle 6.D Etappe 1.7: updatePartInCustomSoul-Methode existiert", wave6d17Results.hasUpdatePartMethod);
-        check("Welle 6.D Etappe 1.7: removePartFromCustomSoul-Methode existiert", wave6d17Results.hasRemovePartMethod);
-        check(
             "V18.62 Ich-H: der parallele Ich-Soul-Editor ist geschnitten (Schöpfung in der Werkstatt)",
             wave6d17Results.ichSoulEditorGone
         );
@@ -17268,8 +17192,6 @@ async function checkBandWelle6DSoul(ctx) {
     }
 
     if (wave6d16Results) {
-        check("Welle 6.D Etappe 1.6: _getSoulDef-Helper existiert", wave6d16Results.hasGetSoulDef);
-        check("Welle 6.D Etappe 1.6: createOrUpdateSoulFromDsl-Methode existiert", wave6d16Results.hasCreateMethod);
         check(
             "Welle 6.D Etappe 1.6: state.customSouls-Container existiert",
             wave6d16Results.customSoulsContainerExists
@@ -17318,18 +17240,11 @@ async function checkBandWelle6DSoul(ctx) {
             wave6dResults.statKeys ===
                 "attackSpeed,damage,defense,heatResist,hpMax,jumpPower,knockback,magicResist,manaMax,precision,speed,staminaMax"
         );
-        check("Welle 6.D: computePlayerStats-Methode existiert", wave6dResults.hasComputeMethod);
-        check("Welle 6.D: recomputePlayerStats-Methode existiert", wave6dResults.hasRecomputeMethod);
-        check("Welle 6.D: das Selbst-Spec-Sheet (_ichBuildSpecSheet) existiert", wave6dResults.hasRenderMethod);
         check(
             "Welle 6.D Etappe 1.5: Mensch-Def + vier Tier-Körper tragen bodyParts",
             wave6dResults.allSoulsHaveBodyParts
         );
         check("Welle 6.D Etappe 1.5: jedes bodyPart hat shape + material", wave6dResults.bodyPartsHaveShapeMaterial);
-        check(
-            "Welle 6.D Etappe 1.5: computeSoulCompoundTags-Methode existiert",
-            wave6dResults.hasSoulCompoundTagsMethod
-        );
         check(
             "Welle 6.D Etappe 1.5: computeSoulCompoundTags liefert ein Tag-Objekt",
             wave6dResults.humanCompoundTagsAreObject
@@ -17408,8 +17323,6 @@ async function checkBandWelle6GHylomorphism(ctx) {
         // Kollision ist feld-nativ (Dichtefeld + `entry.blockerAABBs`).
         out.islandCollisionHelpersRemoved =
             typeof r._buildIslandCollision !== "function" && typeof r._disposeStaticCollision !== "function";
-        out.hasSpawnIslandAt = typeof r.spawnIslandAt === "function";
-        out.hasSpawnUfoAt = typeof r.spawnUfoAt === "function";
         out.parallelTreeHelperRemoved = typeof r._buildTreeCollision !== "function";
         out.parallelSpawnTreeAtRemoved = typeof r.spawnTreeAt !== "function";
 
@@ -17613,7 +17526,6 @@ async function checkBandWelle6GHylomorphism(ctx) {
             "Welle 6.G P1.5 → P3: die Ammo-Insel-Kollisions-Helfer sind feld-nativ ersetzt (geschnitten)",
             wave6gResults.islandCollisionHelpersRemoved
         );
-        check("Welle 6.G P1.5: spawnIslandAt-Methode existiert", wave6gResults.hasSpawnIslandAt);
         // Inseln teilen die Surface-Nets-Pipeline mit den Voxel-Chunks: `_voxelChunkGeometry` nimmt einen
         // `densityFn`-Callback (Default = Welt-Chunks, Insel-Pfad übergibt `_islandDensityAt`).
         const r42a = await page.evaluate(() => {
@@ -17725,7 +17637,6 @@ async function checkBandWelle6GHylomorphism(ctx) {
             r42c.isToonMarker === true && r42c.isNodeMaterial === true
         );
         check("V9.42-c: Insel-Geometrie trägt per-Vertex color-Attribut", !!r42c.hasColorAttr);
-        check("Welle 6.G P1.5: spawnUfoAt-Methode existiert", wave6gResults.hasSpawnUfoAt);
         check(
             "Welle 6.G P1.5: _buildTreeCollision-Parallelhelper ist GELÖSCHT (Hylomorphismus-Unification)",
             wave6gResults.parallelTreeHelperRemoved
@@ -17812,7 +17723,6 @@ async function checkBandWelle6GHylomorphism(ctx) {
         out.hasWorldFieldAt = typeof r.worldFieldAt === "function";
         out.hasSpawnAffinity = typeof r.spawnAffinityForBlueprint === "function";
         // V9.39 — der Voxel-Populator ist die lebende Schicht.
-        out.hasPopulateChunk = typeof r._populateVoxelChunkVegetation === "function";
         // Drei neue Baupläne als Built-ins.
         const bps = r.state.blueprints || {};
         out.hasSteinBlock = !!(bps.stein_block && bps.stein_block.builtIn && bps.stein_block.parts.length >= 1);
@@ -17969,10 +17879,6 @@ async function checkBandWelle6GHylomorphism(ctx) {
         check("Welle 6.G P2: spawnAffinityForBlueprint-Methode existiert", wave6gP2Results.hasSpawnAffinity);
         // Der `hasPopulateChunk`-Flag prüft das Voxel-Pendant `_populateVoxelChunkVegetation`
         // (umgewidmet im evaluate-Block; `populateChunkVegetation` ist gelöscht).
-        check(
-            "Welle 6.G P2 (V9.39): _populateVoxelChunkVegetation-Methode existiert (Voxel-Pendant)",
-            wave6gP2Results.hasPopulateChunk
-        );
         check("Welle 6.G P2: Bauplan 'stein_block' existiert als Built-in", wave6gP2Results.hasSteinBlock);
         check("Welle 6.G P2: Bauplan 'kristall_geode' existiert als Built-in", wave6gP2Results.hasKristallGeode);
         check("Welle 6.G P2: Bauplan 'glutbrunnen' existiert als Built-in", wave6gP2Results.hasGlutbrunnen);
@@ -20843,7 +20749,6 @@ async function checkBandWelleC3CellularReaction(ctx) {
         const _savedScatter = r.state.atmosphere ? r.state.atmosphere.gpuScatter : undefined;
         if (r.state.atmosphere) r.state.atmosphere.gpuScatter = false;
         // 1) Stempel-Methode existiert
-        out.hasStampMethod = typeof r._stampArchitectureSolidCellsInto === "function";
         // Jede Cell-Index-Berechnung liest die LOD des Chunks, sonst greift dim=24/step=1.8 (LOD 0) auf
         // einem LOD-1-Chunk (dim=12/step=3.6) out-of-bounds. waterCells
         // leben immer auf LOD 0 → cfgWater.
@@ -21151,7 +21056,6 @@ async function checkBandWelleC3CellularReaction(ctx) {
         // T4a-2 — der Automat ist in die WELT verdrahtet: reaktive Level-Schicht + Welt-Tick +
         // cross-chunk-wake, der Carve weckt die Region. Voller Welt-Beweis: `diag-water-world-flow`.
         out.t4HasWorldTick = typeof r._tickWorldWaterCA === "function" && typeof r._wakeWaterCA === "function";
-        out.t4ExchangesBoundary = typeof r._exchangeWaterBoundary === "function";
 
         // V18.224 — Scatter-Flag wiederherstellen (Test-Isolation aufräumen)
         if (r.state.atmosphere) r.state.atmosphere.gpuScatter = _savedScatter;
@@ -21161,7 +21065,6 @@ async function checkBandWelleC3CellularReaction(ctx) {
         check("Welle C.3 V9.74: Cellular-Reaktion-Band (realm verfügbar)", false, res.error);
         return;
     }
-    check("Welle C.3 V9.74: _stampArchitectureSolidCellsInto existiert", res.hasStampMethod);
     check("Welle C.3 V9.74: Damm-Spawn als Test-Setup erfolgreich", res.damSpawnSucceeded);
     check(
         "Welle C.3 V9.74: Blocker-AABB hat botY (V9.74-Erweiterung)",
@@ -21238,7 +21141,6 @@ async function checkBandWelleC3CellularReaction(ctx) {
     }
     // T4a-2 — in die Welt verdrahtet (reaktive Schicht + Welt-Tick + cross-chunk-wake + Carve-Wake).
     check("T4a-2 (Wasser-CA): _tickWorldWaterCA + _wakeWaterCA existieren (Welt-Verdrahtung)", res.t4HasWorldTick);
-    check("T4a-2 (Wasser-CA): _exchangeWaterBoundary existiert (cross-chunk-wake)", res.t4ExchangesBoundary);
 }
 
 // Distance-LOD: ferne Chunks (> 80 m) bauen mit step=3.6 m statt 1.8, dim=12 statt 24, dimY=62
@@ -21362,7 +21264,6 @@ async function checkBandWellePerfCArchInstancing(ctx) {
         const out = {};
         out.hasFlatten = typeof r._archFlattenBlueprint === "function";
         out.hasEntryMatrix = typeof r._archEntryWorldMatrix === "function";
-        out.hasLeafMat = typeof r._archLeafMaterial === "function";
         if (!out.hasFlatten || !out.hasEntryMatrix) return out;
 
         // Gate: ein gewachsener Baum (Grammatik) ist instancbar. Er ist _isMerged (Bark+Foliage = 2 Leaves);
@@ -21508,7 +21409,6 @@ async function checkBandWellePerfCArchInstancing(ctx) {
     }
     check("V12.0-perf.c.1: _archFlattenBlueprint existiert", res.hasFlatten);
     check("V12.0-perf.c.1: _archEntryWorldMatrix existiert", res.hasEntryMatrix);
-    check("V12.0-perf.c.1: _archLeafMaterial existiert", res.hasLeafMat);
     check(
         "V12.0-perf.c.1: baum_kiefer instancbar (gewachsene Krone, ≥1 Leaf je Part)",
         res.kieferInstanceable === true && res.kieferLeaves >= 1, // V18.259: gewachsene Krone → variable Part-Zahl (statt fixe 7)
@@ -22123,8 +22023,6 @@ async function checkBandWellePerf3cWorkerFoundation(ctx) {
         const out = {};
         // 1) Worker-Helper existieren
         out.hasGetWorker = typeof r._getVoxelWorker === "function";
-        out.hasSnapshotState = typeof r._voxelWorkerSnapshotState === "function";
-        out.hasSyncState = typeof r._voxelWorkerSyncState === "function";
         out.hasComputeDensity = typeof r._voxelWorkerComputeDensity === "function";
         if (!out.hasGetWorker || !out.hasComputeDensity) {
             return { ...out, error: "voxel-worker helpers missing" };
@@ -22199,8 +22097,6 @@ async function checkBandWellePerf3cWorkerFoundation(ctx) {
         return;
     }
     check("Welle Perf-3.c V9.89: _getVoxelWorker existiert", res.hasGetWorker);
-    check("Welle Perf-3.c V9.89: _voxelWorkerSnapshotState existiert", res.hasSnapshotState);
-    check("Welle Perf-3.c V9.89: _voxelWorkerSyncState existiert", res.hasSyncState);
     check("Welle Perf-3.c V9.89: _voxelWorkerComputeDensity existiert", res.hasComputeDensity);
     check("Welle Perf-3.c V9.89: Worker spawnt erfolgreich", res.workerSpawned);
     check("Welle Perf-3.c V9.89: Worker ready nach init-sync", res.workerReady);
@@ -22227,9 +22123,6 @@ async function checkBandWellePerf3cPhase2Async(ctx) {
         if (!r || !r.state) return { error: "no realm" };
         const out = {};
         // 1) Worker-Methoden existieren
-        out.hasFetch = typeof r._fetchOrRequestChunkDensity === "function";
-        out.hasNotifyEdit = typeof r._voxelWorkerNotifyEdit === "function";
-        out.hasSyncWorldgen = typeof r._voxelWorkerSyncWorldgenState === "function";
         // 2) State-Felder existieren
         out.hasCacheField = "voxelDensityCache" in r.state;
         out.hasPendingField = "voxelDensityPending" in r.state;
@@ -22332,9 +22225,6 @@ async function checkBandWellePerf3cPhase2Async(ctx) {
         check("Welle Perf-3.c V9.90: Phase-2-Band (realm verfügbar)", false, res.error);
         return;
     }
-    check("Welle Perf-3.c V9.90: _fetchOrRequestChunkDensity existiert", res.hasFetch);
-    check("Welle Perf-3.c V9.90: _voxelWorkerNotifyEdit existiert", res.hasNotifyEdit);
-    check("Welle Perf-3.c V9.90: _voxelWorkerSyncWorldgenState existiert", res.hasSyncWorldgen);
     check("Welle Perf-3.c V9.90: state.voxelDensityCache existiert", res.hasCacheField);
     check("Welle Perf-3.c V9.90: state.voxelDensityPending existiert", res.hasPendingField);
     check("Welle Perf-3.c V9.90: state.voxelWorkerWorldgenSynced existiert", res.hasSyncedGenField);
@@ -22374,8 +22264,6 @@ async function checkBandWellePerf3cPhase3FullMesh(ctx) {
         if (!r || !r.state) return { error: "no realm" };
         const out = {};
         out.hasComputeChunkMesh = typeof r._voxelWorkerComputeChunkMesh === "function";
-        out.hasFetchMesh = typeof r._fetchOrRequestChunkMesh === "function";
-        out.hasBuildFromWorker = typeof r._buildVoxelChunkDataFromWorkerMesh === "function";
         out.hasMeshCache = "voxelMeshCache" in r.state;
         out.hasMeshPending = "voxelMeshPending" in r.state;
         if (!out.hasComputeChunkMesh) return { ...out, error: "Phase 3 methods missing" };
@@ -22542,8 +22430,6 @@ async function checkBandWellePerf3cPhase3FullMesh(ctx) {
         return;
     }
     check("Welle Perf-3.c V9.91: _voxelWorkerComputeChunkMesh existiert", res.hasComputeChunkMesh);
-    check("Welle Perf-3.c V9.91: _fetchOrRequestChunkMesh existiert", res.hasFetchMesh);
-    check("Welle Perf-3.c V9.91: _buildVoxelChunkDataFromWorkerMesh existiert", res.hasBuildFromWorker);
     check("Welle Perf-3.c V9.91: state.voxelMeshCache existiert", res.hasMeshCache);
     check("Welle Perf-3.c V9.91: state.voxelMeshPending existiert", res.hasMeshPending);
     check("Welle Perf-3.c V9.91: Worker-State synced (worldgenSynced)", res.workerSynced);
@@ -23934,7 +23820,6 @@ async function checkBandWelleV11D3DrinkTask(ctx) {
 
         // API-Existenz.
         out.tickExists = typeof r._tickCreatureDrink === "function";
-        out.findExists = typeof r._findNearestWaterPoint === "function";
 
 
         // Chat-Pattern „trinke" liefert drink-Programm.
@@ -24008,7 +23893,6 @@ async function checkBandWelleV11D3DrinkTask(ctx) {
     check("Welle V11.0-d.3: CREATURE_DRINK_SEARCH_RADIUS = 40m", res.searchRadius === 40);
     check("Welle V11.0-d.3: CREATURE_DRINK_SPEED = 3.0 m/s", res.speed === 3.0);
     check("Welle V11.0-d.3: _tickCreatureDrink existiert", res.tickExists === true);
-    check("Welle V11.0-d.3: _findNearestWaterPoint existiert", res.findExists === true);
     check("Welle V11.0-d.3: Chat-Pattern 'trinke' → creature_task_nearest drink", res.chatParsesTrinke === true);
     if (res.waterFound) {
         check("Welle V11.0-d.3: _findNearestWaterPoint findet Wasser (Vorbedingung)", res.findReturnsObj === true);
@@ -24791,8 +24675,6 @@ async function checkBandVoxelP3AndInventory(ctx) {
         if (!r || !r.state) return null;
         const out = {};
         out.hasGameModes = Array.isArray(r.constructor.GAME_MODES) && r.constructor.GAME_MODES.length === 3;
-        out.hasSetGameMode = typeof r.setGameMode === "function";
-        out.hasGetGameMode = typeof r.getGameMode === "function";
         // Default-Modus NEUER Welten ist frieden — geprüft über `_buildEmptyWorldSnapshot` (init-time),
         // nicht über den Runtime-State (frühere Tests schalten evtl. auf pfad).
         if (typeof r._buildEmptyWorldSnapshot === "function") {
@@ -24919,8 +24801,6 @@ async function checkBandVoxelP3AndInventory(ctx) {
 
     if (wave6c2Results && !wave6c2Results.error) {
         check("Welle 6.C2: AnazhRealm.GAME_MODES existiert", wave6c2Results.hasGameModes);
-        check("Welle 6.C2: setGameMode-Methode existiert", wave6c2Results.hasSetGameMode);
-        check("Welle 6.C2: getGameMode-Methode existiert", wave6c2Results.hasGetGameMode);
         check("Welle 6.C2: Neue Welten starten im frieden-Modus (init-time)", wave6c2Results.defaultModeFrieden);
         check(
             "Welle 6.C2: GAME_MODES[0] === 'frieden' (kanonischer Default)",
@@ -24972,14 +24852,6 @@ async function checkBandVoxelP3AndInventory(ctx) {
         out.initiallyEmpty = r.state.player.inventory.every((s) => s === null);
 
         // Methoden
-        out.hasAddToInventory = typeof r.addToInventory === "function";
-        out.hasRemoveFromInventory = typeof r.removeFromInventory === "function";
-        out.hasRenderInventoryUI = typeof r.renderInventoryUI === "function";
-        out.hasSelectInventorySlot = typeof r.selectInventorySlot === "function";
-        out.hasTryAssign = typeof r.tryAssignFromInventoryToHotbar === "function";
-        out.hasToggleOverlay = typeof r.toggleInventoryOverlay === "function";
-        out.hasPlayPing = typeof r.playInventoryHoverPing === "function";
-        out.hasInventoryInitDOM = typeof r.inventoryInitDOM === "function";
 
         // addToInventory: ein bekannter Bauplan → erster leerer Slot
         const okAdd = r.addToInventory("baum_eiche", 3);
@@ -25204,14 +25076,6 @@ async function checkBandVoxelP3AndInventory(ctx) {
         check("Welle 6.C1: state.player.inventory ist Array", wave6c1Results.hasInventoryArray);
         check("Welle 6.C1: Inventar hat exakt 27 Slots", wave6c1Results.inventoryHas27Slots);
         check("Welle 6.C1: Inventar initial leer (alle 27 null)", wave6c1Results.initiallyEmpty);
-        check("Welle 6.C1: addToInventory-Methode existiert", wave6c1Results.hasAddToInventory);
-        check("Welle 6.C1: removeFromInventory-Methode existiert", wave6c1Results.hasRemoveFromInventory);
-        check("Welle 6.C1: renderInventoryUI-Methode existiert", wave6c1Results.hasRenderInventoryUI);
-        check("Welle 6.C1: selectInventorySlot-Methode existiert", wave6c1Results.hasSelectInventorySlot);
-        check("Welle 6.C1: tryAssignFromInventoryToHotbar existiert", wave6c1Results.hasTryAssign);
-        check("Welle 6.C1: toggleInventoryOverlay-Methode existiert", wave6c1Results.hasToggleOverlay);
-        check("Welle 6.C1: playInventoryHoverPing-Methode existiert", wave6c1Results.hasPlayPing);
-        check("Welle 6.C1: inventoryInitDOM-Methode existiert", wave6c1Results.hasInventoryInitDOM);
         check(
             "V18.57 Ich: _selfProfile bündelt die gemessenen Vektoren (soul/stats/emotions/mood/boosts)",
             wave6c1Results.hasSelfProfileFn && wave6c1Results.selfProfileBundles
@@ -25308,9 +25172,6 @@ async function checkBandVoxelP3AndInventory(ctx) {
         const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
-        out.hasRenderRecipeBook = typeof r.renderRecipeBook === "function";
-        out.hasCraftFromRecipe = typeof r.craftFromRecipe === "function";
-        out.hasRenderEquip = typeof r._renderInventoryEquip === "function";
 
         // Inventar öffnen → Rezeptbuch + Equip-Status rendern.
         r.toggleInventoryOverlay(true);
@@ -25347,9 +25208,6 @@ async function checkBandVoxelP3AndInventory(ctx) {
     });
 
     if (recipeBookResults) {
-        check("UI-Putz Rezeptbuch: renderRecipeBook existiert", recipeBookResults.hasRenderRecipeBook);
-        check("UI-Putz Rezeptbuch: craftFromRecipe existiert", recipeBookResults.hasCraftFromRecipe);
-        check("UI-Putz Rezeptbuch: _renderInventoryEquip existiert", recipeBookResults.hasRenderEquip);
         check("UI-Putz Rezeptbuch: Container im DOM", recipeBookResults.recipesContainerExists);
         check(
             "UI-Putz Rezeptbuch: listet craftbare Baupläne",
@@ -25371,11 +25229,6 @@ async function checkBandVoxelP3AndInventory(ctx) {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
         const out = {};
-        out.hasDragStart = typeof r._onSlotDragStart === "function";
-        out.hasDragOver = typeof r._onSlotDragOver === "function";
-        out.hasDrop = typeof r._onSlotDrop === "function";
-        out.hasDragEnd = typeof r._onSlotDragEnd === "function";
-        out.hasDragLeave = typeof r._onSlotDragLeave === "function";
 
         // Setup: zwei Bauplan-Einträge im Inventar, leerer Hotbar.
         r.state.player.inventory = new Array(27).fill(null);
@@ -25518,11 +25371,6 @@ async function checkBandVoxelP3AndInventory(ctx) {
     });
 
     if (dragResults && !dragResults.error) {
-        check("Welle 6.C1 Drag: _onSlotDragStart existiert", dragResults.hasDragStart);
-        check("Welle 6.C1 Drag: _onSlotDragOver existiert", dragResults.hasDragOver);
-        check("Welle 6.C1 Drag: _onSlotDrop existiert", dragResults.hasDrop);
-        check("Welle 6.C1 Drag: _onSlotDragEnd existiert", dragResults.hasDragEnd);
-        check("Welle 6.C1 Drag: _onSlotDragLeave existiert", dragResults.hasDragLeave);
         check("Welle 6.C1 Drag: inv→inv tauscht Slot-Inhalte", dragResults.invToInvSwap);
         check("Welle 6.C1 Drag: inv→hot legt Bauplan in Hotbar", dragResults.invToHotPlaces);
         check(
@@ -25644,13 +25492,6 @@ async function checkBandWelle6Keybindings(ctx) {
         // Statische Konstante
         out.hasStaminaCost = r.constructor._aktionAusdauer() === 5;
         // Methoden-Existenz
-        out.hasTryMouseBreak = typeof r.tryMouseBreak === "function";
-        out.hasTryMousePlace = typeof r.tryMousePlace === "function";
-        out.hasRemoveArchitecture = typeof r.removeArchitecture === "function";
-        out.hasPickArchitecture = typeof r._pickArchitectureAtCrosshair === "function";
-        out.hasRaycastWorldHit = typeof r._raycastWorldHit === "function";
-        out.hasStaminaGate = typeof r._mouseActionStaminaGate === "function";
-        out.hasConsumeStamina = typeof r._consumeMouseStamina === "function";
 
         // Setup: pfad-Modus für Stamina-Tests, frische Stamina.
         const oldMode = r.getGameMode();
@@ -25720,13 +25561,6 @@ async function checkBandWelle6Keybindings(ctx) {
             "Welle 6.A6: aktionAusdauer-Gesetz === 5 (koerper-core, Zwilling gefallen)",
             wave6a6Results.hasStaminaCost
         );
-        check("Welle 6.A6: tryMouseBreak existiert", wave6a6Results.hasTryMouseBreak);
-        check("Welle 6.A6: tryMousePlace existiert", wave6a6Results.hasTryMousePlace);
-        check("Welle 6.A6: removeArchitecture existiert", wave6a6Results.hasRemoveArchitecture);
-        check("Welle 6.A6: _pickArchitectureAtCrosshair existiert", wave6a6Results.hasPickArchitecture);
-        check("Welle 6.A6: _raycastWorldHit existiert", wave6a6Results.hasRaycastWorldHit);
-        check("Welle 6.A6: _mouseActionStaminaGate existiert", wave6a6Results.hasStaminaGate);
-        check("Welle 6.A6: _consumeMouseStamina existiert", wave6a6Results.hasConsumeStamina);
         check("Welle 6.A6: Stamina-Gate im pfad-Modus ok mit cost=5", wave6a6Results.pfadGateOk);
         check("Welle 6.A6: pfad verbraucht 5 Stamina pro Aktion", wave6a6Results.pfadConsumesFive);
         check("Welle 6.A6: pfad verweigert bei zu wenig Stamina", wave6a6Results.pfadGateBlocksLow);
@@ -25752,7 +25586,6 @@ async function checkBandWelle6Keybindings(ctx) {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
         const out = {};
-        out.hasFarewellPing = typeof r._playArchitectureFarewellPing === "function";
         // Threshold-Konstante existiert
         const thr = r.constructor.WORLD_EFFECT_THRESHOLDS;
         out.thresholdReadable = thr && typeof thr.resonance_mild === "number" && thr.resonance_mild > 0;
@@ -25812,7 +25645,6 @@ async function checkBandWelle6Keybindings(ctx) {
     });
 
     if (wave6a6V2Results && !wave6a6V2Results.error) {
-        check("Welle 6.A6 V2: _playArchitectureFarewellPing existiert", wave6a6V2Results.hasFarewellPing);
         check("Welle 6.A6 V2: WORLD_EFFECT_THRESHOLDS.resonance_mild lesbar", wave6a6V2Results.thresholdReadable);
         check("Welle 6.A6 V2: Symphony initialisierbar im Headless", wave6a6V2Results.symphonyReady);
         if (wave6a6V2Results.symphonyReady) {
@@ -26330,7 +26162,6 @@ async function checkBandWelle6HCreatures(ctx) {
         }
 
         // === Journal-Eintrag bei Beziehungs-Geste (Vision §1.1) ===
-        out.hasJournalMethod = typeof r._journalCreatureTask === "function";
         const c1 = r.state.creatures[1];
         r.assignCreatureTask(c1, "wander", {}, { silent: true });
         const jBefore = (r.state.worldJournal && r.state.worldJournal.entries.length) || 0;
@@ -26386,7 +26217,6 @@ async function checkBandWelle6HCreatures(ctx) {
         out.textureSharedAcross10Cycles = uniqueMaps.size === 1;
 
         // === Status-Bar Task-Zähler (UX) ===
-        out.hasRenderTaskStatus = typeof r._renderTaskStatusUI === "function";
         out.statusTasksInDom = !!document.getElementById("status-tasks");
         r.assignTaskToAllCreatures("wander");
         r.assignCreatureTask(r.state.creatures[0], "follow_player", {}, { silent: true });
@@ -26427,7 +26257,6 @@ async function checkBandWelle6HCreatures(ctx) {
                 wave6hV2Results.wanderIsSilent
             );
         }
-        check("Welle 6.H V2: _journalCreatureTask existiert", wave6hV2Results.hasJournalMethod);
         check("Welle 6.H V2: Task-Wechsel schreibt ins Welt-Journal (Vision §1.1)", wave6hV2Results.journalGrows);
         check("Welle 6.H V2: Journal-Eintrag trägt type='relationship'", wave6hV2Results.journalTypeIsRelationship);
         check(
@@ -26451,7 +26280,6 @@ async function checkBandWelle6HCreatures(ctx) {
             "Welle 6.H V2: 10 Task-Wechsel teilen sich EINE Textur (kein Memory-Churn)",
             wave6hV2Results.textureSharedAcross10Cycles
         );
-        check("Welle 6.H V2: _renderTaskStatusUI existiert", wave6hV2Results.hasRenderTaskStatus);
         check("Welle 6.H V2: #status-tasks-Item im DOM", wave6hV2Results.statusTasksInDom);
         check("Welle 6.H V2: Status-Bar zeigt '2 folgen · 1 warten' nach Setup", wave6hV2Results.statusShowsCounts);
         check("Welle 6.H V2: Status-Bar zeigt '—' wenn alle wander", wave6hV2Results.statusEmptyDash);
@@ -27028,11 +26856,8 @@ async function checkBandWelle6HCreatures(ctx) {
         const r = window.anazhRealm;
         if (!r || !r.state || !r.state.creatures || r.state.creatures.length < 2) return null;
         const out = {};
-        out.hasHarvest = typeof r.harvestArchitecture === "function";
-        out.hasAddMaterial = typeof r.addMaterialToInventory === "function";
         out.hasVolumeConst = r.constructor.HARVEST_VOLUME_TO_UNITS === 4;
         out.hasHandoverDist = r.constructor.CREATURE_HANDOVER_DIST === 2.0;
-        out.hasCarryingVisual = typeof r._refreshCreatureCarryingVisual === "function";
 
         const p = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, y: 5, z: 0 };
 
@@ -27159,11 +26984,8 @@ async function checkBandWelle6HCreatures(ctx) {
     });
 
     if (wave6hP2b5Results && !wave6hP2b5Results.error) {
-        check("Welle 6.H P2B.5: harvestArchitecture-Methode existiert", wave6hP2b5Results.hasHarvest);
-        check("Welle 6.H P2B.5: addMaterialToInventory-Methode existiert", wave6hP2b5Results.hasAddMaterial);
         check("Welle 6.H P2B.5: HARVEST_VOLUME_TO_UNITS===4", wave6hP2b5Results.hasVolumeConst);
         check("Welle 6.H P2B.5: CREATURE_HANDOVER_DIST===2.0", wave6hP2b5Results.hasHandoverDist);
-        check("Welle 6.H P2B.5: _refreshCreatureCarryingVisual-Methode existiert", wave6hP2b5Results.hasCarryingVisual);
         check(
             "Welle 6.H P2B.5: stein_block-Harvest liefert ≥10 Stein (volumen-basiert)",
             wave6hP2b5Results.steinBlockHasStein
@@ -27216,10 +27038,6 @@ async function checkBandWelle6HCreatures(ctx) {
         const r = window.anazhRealm;
         if (!r || !r.state || !r.state.playerMesh) return null;
         const out = {};
-        out.hasComputeBuildCost = typeof r.computeBuildCost === "function";
-        out.hasCheckBuildCost = typeof r.checkBuildCost === "function";
-        out.hasTryConsumeBuildCost = typeof r.tryConsumeBuildCost === "function";
-        out.hasBuildMaterialGate = typeof r._buildMaterialGate === "function";
 
         // Wertneutralität: build-cost ≡ harvest-return.
         const p = r.state.playerMesh.position;
@@ -27333,7 +27151,6 @@ async function checkBandWelle6HCreatures(ctx) {
         const stoneAfterFrieden = r.state.player.inventory[0] ? r.state.player.inventory[0].count : 0;
         out.friedenBuildsWithMaterial = builtFriedenMat === true && r.state.architectures.length > archBeforeFriedenMat;
         out.friedenConsumesMaterial = stoneBeforeFrieden > stoneAfterFrieden;
-        out.hasMakeCostGate = typeof r._makeCostGate === "function";
 
         // HUD-Reflexion
         r.setGameMode("pfad");
@@ -27367,10 +27184,6 @@ async function checkBandWelle6HCreatures(ctx) {
     });
 
     if (wave6hP2cResults && !wave6hP2cResults.error) {
-        check("Welle 6.H P2C: computeBuildCost existiert", wave6hP2cResults.hasComputeBuildCost);
-        check("Welle 6.H P2C: checkBuildCost existiert", wave6hP2cResults.hasCheckBuildCost);
-        check("Welle 6.H P2C: tryConsumeBuildCost existiert", wave6hP2cResults.hasTryConsumeBuildCost);
-        check("Welle 6.H P2C: _buildMaterialGate existiert", wave6hP2cResults.hasBuildMaterialGate);
         check(
             "Welle 6.H P2C: computeBuildCost ≡ harvestArchitecture (Wertneutralität)",
             wave6hP2cResults.symmetryHarvest
@@ -27401,7 +27214,6 @@ async function checkBandWelle6HCreatures(ctx) {
             wave6hP2cResults.schoepferBuildsFree && wave6hP2cResults.schoepferGrows
         );
         check("Welle 6.H P2C: schöpfer-Modus: Inventar bleibt leer (unbegrenzt)", wave6hP2cResults.schoepferEmptyAfter);
-        check("V17.60 S2: _makeCostGate (das generalisierte Mach-Tor) existiert", wave6hP2cResults.hasMakeCostGate);
         check(
             "V17.60 S2: frieden ohne Material → confirmBuild lehnt ab (frieden zahlt Materie, nicht gratis)",
             wave6hP2cResults.friedenRejectsWithoutMaterial && wave6hP2cResults.friedenNoArchOnReject
@@ -33197,8 +33009,6 @@ async function checkBandV18201ManaKonsum(ctx) {
         const out = {};
 
         // (K1) Helper existieren
-        out.canPayExists = typeof r._canPayMana === "function";
-        out.drainExists = typeof r._drainMana === "function";
 
         const savedMana = r.state.player && r.state.player.mana;
         const savedManaMax = r.state.player && r.state.player.manaMax;
@@ -33261,8 +33071,6 @@ async function checkBandV18201ManaKonsum(ctx) {
         return out;
     });
 
-    check("V18.201 (K1a) _canPayMana Helper existiert", res.canPayExists === true);
-    check("V18.201 (K1b) _drainMana Helper existiert", res.drainExists === true);
     check("V18.201 (K2a) canPay: 50 ≤ 60 → true", res.canPayEnough === true);
     check("V18.201 (K2b) canPay: 70 > 60 → false", res.canPayInsufficient === true);
     check("V18.201 (K2c) canPay: 0 → true (no-op)", res.canPayZero === true);
@@ -34039,7 +33847,6 @@ async function checkBandV18210Verdrahtung(ctx) {
 
         // ============== A1: Γ7 WORLDGEN-HOOK ==============
         // (A1a) Helper _growTreeBlueprintForSpawn existiert + ruft Helper
-        out.a1HelperExists = typeof r._growTreeBlueprintForSpawn === "function";
         // (A1b) gen-Default für FRESH ist 9 (V18.216 KARST + Büsche)
         const newMeta = r._generateFreshWorldMeta ? r._generateFreshWorldMeta("test-v18214") : null;
         out.a1FreshGenIs4 = newMeta && newMeta.genVersion === 9;
@@ -34235,8 +34042,6 @@ async function checkBandV18210Verdrahtung(ctx) {
 
         // ============== A3: _scentAt KREATUR-KI ==============
         // (A3a) Helper existieren
-        out.a3HuntDirExists = typeof r._creatureScentHuntDir === "function";
-        out.a3StrikeExists = typeof r._tickCreatureScentStrike === "function";
         // (A3b) Konstanten gesetzt
         // (Welle LF: die Witterung wählt die Beute an der Nase — der Proben-Schritt des Gradienten scentProbeM fiel;
         // der Ring der Hetze hetzM und die Pirsch-Sicht sind Jagd-Gesetz)
@@ -34404,7 +34209,6 @@ async function checkBandV18210Verdrahtung(ctx) {
     });
 
     // A1 — Worldgen-Hook
-    check("V18.210-A1a _growTreeBlueprintForSpawn Helper existiert", res.a1HelperExists === true);
     check("V18.216 FRESH-Welt genVersion = 9 (KARST + Büsche aktiv; war 8)", res.a1FreshGenIs4 === true);
     check("V18.210-A1c Determinismus: (species, seed) → derselbe cacheKey", res.a1Deterministic === true);
     check("V18.210-A1d Cache-Reuse: SELBE seed → SELBES Bauplan-Object", res.a1CacheReuse === true);
@@ -34426,8 +34230,6 @@ async function checkBandV18210Verdrahtung(ctx) {
     check("V18.210-A2e DOM-Slider slider-structureboost existiert", res.a2DomSliderExists === true);
 
     // A3 — Scent KI
-    check("V18.210-A3a _creatureScentHuntDir Helper existiert", res.a3HuntDirExists === true);
-    check("V18.210-A3a2 _tickCreatureScentStrike Helper existiert", res.a3StrikeExists === true);
     check(
         `V18.210-A3b VERHALTEN.jagd.scentRangeM/hetzM Gesetz, kein Gradienten-Schritt (range=${res.a3ScentRangeM}, hetzM=${res.a3ScentProbeM})`,
         res.a3ConstsOk === true
@@ -34496,8 +34298,6 @@ async function checkBandV18211SkeletonGrammar(ctx) {
 
         // (S2) `_growTreeBlueprintRich` existiert (Routing-Helfer-Trio).
         out.richExists = typeof r._growTreeBlueprintRich === "function";
-        out.legacyExists = typeof r._growTreeBlueprintLegacy === "function";
-        out.routingExists = typeof r._growTreeBlueprint === "function";
 
         // (S3) RICH-PFAD bei direktem Aufruf produziert ≥50 Parts (vs Legacy ~12).
         // 50 = sicherer Schwellenwert; gemessen 75-81 pro Art.
@@ -34558,8 +34358,6 @@ async function checkBandV18211SkeletonGrammar(ctx) {
         res.sixSpecies === true
     );
     check("V18.211 (S2a) _growTreeBlueprintRich existiert", res.richExists === true);
-    check("V18.211 (S2b) _growTreeBlueprintLegacy existiert", res.legacyExists === true);
-    check("V18.211 (S2c) _growTreeBlueprint Routing-Funktion existiert", res.routingExists === true);
     check(
         `V18.211 (S3a) Rich-Grammatik produziert ≥50 Parts (gemessen ${res.richPartsCount})`,
         res.richProducesMany === true
@@ -34705,8 +34503,6 @@ async function checkBandV18213MeshMerge(ctx) {
         const out = {};
 
         // ─── (M1) Source-Probes: die zwei neuen Helper + Routing ─────
-        out.mergeHelperExists = typeof r._mergeBlueprintByMaterial === "function";
-        out.mergeGeomsExists = typeof r._mergeGeometries === "function";
 
 
         // ─── (M3+M4) Behavioral: gen=6 grown Baum trägt _isMerged + Merge funktioniert ───
@@ -34837,8 +34633,6 @@ async function checkBandV18213MeshMerge(ctx) {
         return out;
     });
 
-    check("V18.213 (M1a) _mergeBlueprintByMaterial existiert", res.mergeHelperExists === true);
-    check("V18.213 (M1b) _mergeGeometries existiert", res.mergeGeomsExists === true);
     check("V18.213 (M3a) gen=6 grown Bauplan trägt _isMerged: true", res.bpHasIsMerged === true);
     check("V18.213 (M3b) bp.parts bleibt erhalten (≥50 Parts, V17.16-Wand)", res.bpStillHasParts === true);
     check("V18.213 (M4a) archFlattenBlueprint markiert merged: true (Diagnose-Marker)", res.flatHasMergedFlag === true);
@@ -34885,9 +34679,6 @@ async function checkBandV18214SkeletonMesh(ctx) {
         const out = {};
 
         // ─── (T1) Source-Probes: die vier neuen Helper + Routing ─────
-        out.tubeBuilderExists = typeof r._buildTreeTubeGeometry === "function";
-        out.cardBuilderExists = typeof r._buildTreeFoliageCardGeometry === "function";
-        out.skelLeavesExists = typeof r._buildTreeSkeletonLeaves === "function";
         // K24-N1: der Wurzelanlauf ist das Gesetz der Art (P.flare), die Röhre trägt nur ihre Rippen-Zahl; der Ersatz fiel
         out.defaultFlareExists = Number.isInteger(A.STAMM_RIPPEN) && A.STAMM_RIPPEN > 0 && !("DEFAULT_TREE_FLARE" in A);
         out.speciesTreeParamsExists =
@@ -35024,9 +34815,6 @@ async function checkBandV18214SkeletonMesh(ctx) {
         return out;
     });
 
-    check("V18.214 (T1a) _buildTreeTubeGeometry existiert", res.tubeBuilderExists === true);
-    check("V18.214 (T1b) _buildTreeFoliageCardGeometry existiert", res.cardBuilderExists === true);
-    check("V18.214 (T1c) _buildTreeSkeletonLeaves existiert", res.skelLeavesExists === true);
     check(
         "V18.214 (T1f) der Wurzelanlauf ist das Gesetz (STAMM_RIPPEN, DEFAULT_TREE_FLARE fort)",
         res.defaultFlareExists === true
@@ -35396,7 +35184,6 @@ async function checkBandV18217VariantenPool(ctx) {
         // die Vielfalt reitet pro Instanz über scale/rotationY/tint); der Pool-Mechanismus ist N-unabhängig.
         out.constantExists = Number.isFinite(A.VARIANTS_PER_SPECIES) && A.VARIANTS_PER_SPECIES >= 2;
         out.constantValue = A.VARIANTS_PER_SPECIES;
-        out.ensureHelperExists = typeof r._variantSeedsFor === "function";
 
         // ─── (B) Behavioral: Fresh-Welt hat Pool ──────────────────────
         const newMeta = r._generateFreshWorldMeta ? r._generateFreshWorldMeta("test-v18217") : null;
@@ -35549,7 +35336,6 @@ async function checkBandV18217VariantenPool(ctx) {
         `V18.217 (A1) AnazhRealm.VARIANTS_PER_SPECIES Konstante (gemessen ${res.constantValue})`,
         res.constantExists === true
     );
-    check("K24 (A2) _variantSeedsFor: die Zeile je Art", res.ensureHelperExists === true);
 
     // (B) Fresh-Welt
     check("V18.217 (B1) Fresh-Welt-Meta trägt variantSeed-Pool", res.freshHasPool === true);
@@ -35833,8 +35619,6 @@ async function checkBandV18219bisVollendung(ctx) {
         const out = {};
 
         // ─── V18.218.1 LOD-ACTIVATION ────────────────────────────────
-        out.lodTickExists = typeof r._tickArchitectureLOD === "function";
-        out.lodSwitchExists = typeof r._switchArchitectureLOD === "function";
         // Der Loop ist phasen-orchestriert (V9.44-f) — die Verdrahtung lebt in
         // einer der `_loopXY`-Phasen, nicht im `_gameLoopTick`-Closure selbst.
         // Wir prüfen ALLE Loop-Phasen-Quellen.
@@ -35881,8 +35665,6 @@ async function checkBandV18219bisVollendung(ctx) {
 
         // ─── V18.219 GPU-FELD-BAKE ───────────────────────────────────
         out.bakeRegionExists = typeof r._bakeRegionFields === "function";
-        out.sampleBakedExists = typeof r._sampleBakedField === "function";
-        out.invalidateBakedExists = typeof r._invalidateBakedRegionsAround === "function";
         out.bakeConfigExists = typeof r._bakeRegionConfig === "function";
         if (out.bakeRegionExists) {
             const cfg = r._bakeRegionConfig();
@@ -35919,10 +35701,8 @@ async function checkBandV18219bisVollendung(ctx) {
 
         // ─── V18.220 SCATTER-BITMASK + CAP + LOOKUP ──────────────────
         out.scatterMarkPromotedExists = typeof r._scatterMarkCellPromoted === "function";
-        out.scatterIsPromotedExists = typeof r._scatterIsCellPromoted === "function";
         out.scatterCounterExists = typeof r._scatterIncrementCounter === "function";
         out.scatterRegisterExists = typeof r._scatterRegisterCell === "function";
-        out.scatterLookupExists = typeof r._scatterLookupCell === "function";
         if (out.scatterMarkPromotedExists) {
             r._scatterMarkCellPromoted(100, 200, "tree");
             out.markedThenIsPromoted = r._scatterIsCellPromoted(100, 200, "tree") === true;
@@ -35948,10 +35728,7 @@ async function checkBandV18219bisVollendung(ctx) {
         }
 
         // ─── V18.222 CANOPY CHUNK-STREAMING ──────────────────────────
-        out.canopyConfigExists = typeof r._canopyChunkConfig === "function";
         out.canopyEnsureExists = typeof r._canopyEnsureChunk === "function";
-        out.canopyDisposeExists = typeof r._canopyDisposeChunkByKey === "function";
-        out.canopyTickExists = typeof r._tickCanopyStreaming === "function";
         out.canopyTickInLoop = /_tickCanopyStreaming/.test(loopBody);
         out.canopyFlagDefault = r.state.atmosphere && r.state.atmosphere.canopyStreaming === false;
         if (out.canopyEnsureExists) {
@@ -35984,8 +35761,6 @@ async function checkBandV18219bisVollendung(ctx) {
     });
 
     // V18.218.1 LOD-Activation
-    check("V18.218.1 (L1) _tickArchitectureLOD Helper", res.lodTickExists === true);
-    check("V18.218.1 (L2) _switchArchitectureLOD Helper", res.lodSwitchExists === true);
     check("V18.218.1 (L3) _gameLoopTick ruft _tickArchitectureLOD (Verdrahtung)", res.lodTickInLoop === true);
     check("V18.218.1 (L4) atmosphere.treeLOD=true Default", res.lodFlagDefault === true);
     check(
@@ -35999,8 +35774,6 @@ async function checkBandV18219bisVollendung(ctx) {
 
     // V18.219 GPU-Feld-Bake
     check("V18.219 (B1) _bakeRegionFields Helper", res.bakeRegionExists === true);
-    check("V18.219 (B2) _sampleBakedField Helper", res.sampleBakedExists === true);
-    check("V18.219 (B3) _invalidateBakedRegionsAround Helper", res.invalidateBakedExists === true);
     check("V18.219 (B4) _bakeRegionConfig liefert sizeM/res/channels", res.bakeConfigValid === true);
     check("V18.219 (B5) Bake-Akt liefert entry mit data-Float32Array", res.bakeReturnsEntry === true);
     check(
@@ -36018,10 +35791,8 @@ async function checkBandV18219bisVollendung(ctx) {
 
     // V18.220 Scatter-Bitmask + Cap + Lookup
     check("V18.220 (S1) _scatterMarkCellPromoted Helper", res.scatterMarkPromotedExists === true);
-    check("V18.220 (S2) _scatterIsCellPromoted Helper", res.scatterIsPromotedExists === true);
     check("V18.220 (S3) _scatterIncrementCounter Helper", res.scatterCounterExists === true);
     check("V18.220 (S4) _scatterRegisterCell Helper", res.scatterRegisterExists === true);
-    check("V18.220 (S5) _scatterLookupCell Helper", res.scatterLookupExists === true);
     check("V18.220 (S6) markiertes Cell ist promoted=true", res.markedThenIsPromoted === true);
     check("V18.220 (S7) Distant cell promoted=false (kein false-positive)", res.distantNotPromoted === true);
     check("V18.220 (S8) Lookup species=baum_birke", res.lookupSpecies === true);
@@ -36036,10 +35807,7 @@ async function checkBandV18219bisVollendung(ctx) {
     );
 
     // V18.222 Canopy chunk-streaming
-    check("V18.222 (C1) _canopyChunkConfig Helper", res.canopyConfigExists === true);
     check("V18.222 (C2) _canopyEnsureChunk Helper", res.canopyEnsureExists === true);
-    check("V18.222 (C3) _canopyDisposeChunkByKey Helper", res.canopyDisposeExists === true);
-    check("V18.222 (C4) _tickCanopyStreaming Helper", res.canopyTickExists === true);
     check("V18.222 (C5) _gameLoopTick ruft _tickCanopyStreaming (Verdrahtung)", res.canopyTickInLoop === true);
     check("V18.222 (C6) atmosphere.canopyStreaming Default false (OPT-IN)", res.canopyFlagDefault === true);
     check("V18.222 (C8) _canopyEnsureChunk baut Mesh+Geometry+Material", res.canopyMeshBuilt === true);
@@ -36356,8 +36124,6 @@ async function checkBandV18224ScatterPromotion(ctx) {
         }
 
         // ─── (F) Streaming-Tick + Welt-Wechsel-Cleanup ────────────────
-        out.disposeRegionExists = typeof r._disposeScatterRegion === "function";
-        out.disposeAllExists = typeof r._disposeAllScatterRegions === "function";
 
         // ─── (G) Version ──────────────────────────────────────────────
         out.versionStr = A.VERSION;
@@ -36461,8 +36227,6 @@ async function checkBandV18224ScatterPromotion(ctx) {
     check("V18.224 (E8) Cell jetzt promoted (Bitmask — kein zweiter Deko-Spawn)", res.cellNowPromoted === true);
 
     // (F) Streaming + Cleanup
-    check("V18.224 (F1) _disposeScatterRegion Helper", res.disposeRegionExists === true);
-    check("V18.224 (F2) _disposeAllScatterRegions Helper", res.disposeAllExists === true);
 
     // (G) Version
     check(`V18.224 (V1) VERSION floor ≥ 18.224.0 (gemessen ${res.versionStr})`, res.versionFloor18224 === true);
@@ -38968,7 +38732,6 @@ async function checkBandWelle6XAudit(ctx) {
         out.logbookConsoleSectionExists = !!consoleLog;
         // V8.14: Section bleibt sichtbar, NUR #log (innen) hidden default
         out.logbookHiddenByDefault = !!logEl && logEl.hidden === true;
-        out.logbookInitDOMExists = typeof r.logbookInitDOM === "function";
         out.consoleLogToggleExists = !!document.getElementById("console-log-toggle");
         // Toggle aktivieren → #log wird sichtbar (Section bleibt sichtbar)
         const toggle = document.getElementById("logbook-toggle");
@@ -38993,7 +38756,6 @@ async function checkBandWelle6XAudit(ctx) {
         // B2 — Welt-Bauwerke-Buttons entfernt
         out.architectureActionsRemoved = !document.getElementById("architecture-actions");
         // Aber Chat-Pfade existieren weiter (smoke: spawn_village ist noch da)
-        out.spawnVillageStillCallable = typeof r.dslRun === "function";
 
 
         // Logik-Test: simuliere Wheel-Deltas, hotbar-Slot ändert sich
@@ -39020,7 +38782,6 @@ async function checkBandWelle6XAudit(ctx) {
             "Welle 6.X.2 B1 V8.14: #log default hidden (Section bleibt sichtbar)",
             wave6x2Results.logbookHiddenByDefault
         );
-        check("Welle 6.X.2 B1: logbookInitDOM-Methode existiert", wave6x2Results.logbookInitDOMExists);
         check("Welle 6.X.2 V8.14: #console-log-toggle Inline-Button im DOM", wave6x2Results.consoleLogToggleExists);
         check("Welle 6.X.2 B1: Toggle aktivieren macht Logbuch sichtbar", wave6x2Results.logbookVisibleAfterToggle);
         check("Welle 6.X.2 B1: Toggle deaktivieren versteckt Logbuch", wave6x2Results.logbookHiddenAfterUntoggle);
@@ -39030,7 +38791,6 @@ async function checkBandWelle6XAudit(ctx) {
             "Welle 6.X.2 B2: #architecture-actions aus dem world-drawer entfernt",
             wave6x2Results.architectureActionsRemoved
         );
-        check("Welle 6.X.2 B2: dslRun bleibt verfügbar (Chat-Pfad lebt)", wave6x2Results.spawnVillageStillCallable);
         check("Welle 6.X.2 B4: Hotbar zykelt vorwärts", wave6x2Results.hotbarCyclesForward);
         check("Welle 6.X.2 B4: Hotbar zykelt rückwärts", wave6x2Results.hotbarCyclesBackward);
         check("Welle 6.X.2 B4: Hotbar wrappt bei 0 → 8", wave6x2Results.hotbarWrapsAtZero);
@@ -39094,7 +38854,6 @@ async function checkBandWelle6XAudit(ctx) {
         }
 
         // --- C3: _canSoulJumpFromSlope existiert
-        out.canJumpFromSlopeExists = typeof r._canSoulJumpFromSlope === "function";
 
         // --- C3: kein Slope → springen erlaubt
         r.state.onSteepSlope = false;
@@ -39188,7 +38947,6 @@ async function checkBandWelle6XAudit(ctx) {
             "Welle 6.X.3 C1: Chat 'baue dorf hier' trägt Ort und Blick des Sprechers (z ≈ 0, Gier 0 bzw. π/2, Bildwinkel > 0)",
             wave6x3Results.chatBuildDorfForwardOffset
         );
-        check("Welle 6.X.3 C3: _canSoulJumpFromSlope-Methode existiert", wave6x3Results.canJumpFromSlopeExists);
         check("Welle 6.X.3 C3: kein Slope → Sprung erlaubt", wave6x3Results.flatGroundJumpAllowed);
         check("Welle 6.X.3 C3: frieden-Modus überschreibt Slope-Block", wave6x3Results.peaceModeOverridesSlope);
         check("Welle 6.X.3 C3: schöpfer-Modus überschreibt Slope-Block", wave6x3Results.creatorModeOverridesSlope);
@@ -39218,7 +38976,6 @@ async function checkBandWelle6XAudit(ctx) {
         out.playerNameDefault = r.state.player.name === "Schöpfer";
 
         // --- F1: identityInitDOM-Methode existiert + Inputs im DOM
-        out.identityInitMethodExists = typeof r.identityInitDOM === "function";
         out.companionInputExists = !!document.getElementById("companion-name-input");
         out.playerInputExists = !!document.getElementById("player-name-input");
         out.identitySectionExists = !!document.getElementById("identity-section");
@@ -39291,7 +39048,6 @@ async function checkBandWelle6XAudit(ctx) {
     if (wave6x45Results && !wave6x45Results.error) {
         check("Welle 6.X.4 F1: state.grok.companionName default 'Grok'", wave6x45Results.companionNameDefault);
         check("Welle 6.X.4 F1: state.player.name default 'Schöpfer'", wave6x45Results.playerNameDefault);
-        check("Welle 6.X.4 F1: identityInitDOM-Methode existiert", wave6x45Results.identityInitMethodExists);
         check("Welle 6.X.4 F1: #companion-name-input im DOM", wave6x45Results.companionInputExists);
         check("Welle 6.X.4 F1: #player-name-input im DOM", wave6x45Results.playerInputExists);
         check("Welle 6.X.4 F1: #identity-section im DOM", wave6x45Results.identitySectionExists);
@@ -39353,12 +39109,6 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
             AnazhRealm.DAY_NIGHT_STOPS[AnazhRealm.DAY_NIGHT_STOPS.length - 1].t === 1 &&
             AnazhRealm.DAY_NIGHT_STOPS.every((s, i, arr) => i === 0 || s.t > arr[i - 1].t);
         out.lightsReferenced = r.state.directionalLight !== null && r.state.ambientLight !== null;
-        out.interpolateMethod = typeof r._interpolateDayNight === "function";
-        out.applyMethod = typeof r._applyDayNightToScene === "function";
-        out.tickMethod = typeof r.tickDayNight === "function";
-        out.timeOfDayLabelMethod = typeof r._timeOfDayLabel === "function";
-        out.setTimeOfDayMethod = typeof r.setTimeOfDay === "function";
-        out.setDayLengthMethod = typeof r.setDayLength === "function";
 
         // DAS LICHT DES TAGS liest die Quelle (D3, Lehre 2): Farbe und Stärke der Sonne rechnet die EINE Atmosphäre
         // (`_atmoSonne` am Winkel der Sonne, `_sonnenWinkel`) — die Tag-Nacht-Tafel trägt nur noch die Himmelsfarbe. Mittag hell
@@ -39429,8 +39179,6 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
 
         // --- b) Sanfte Wetter-Übergänge
         out.weatherTransitionDuration = AnazhRealm.WEATHER_TRANSITION_DURATION_MS === 45000;
-        out.requestWeatherTransitionMethod = typeof r.requestWeatherTransition === "function";
-        out.tickWeatherTransitionMethod = typeof r.tickWeatherTransition === "function";
         out.weatherTintsExists = !!AnazhRealm.WEATHER_TINTS;
         out.weatherTintsSunnyRainy =
             AnazhRealm.WEATHER_TINTS.sunny &&
@@ -39470,10 +39218,6 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         out.faunaTickInterval = AnazhRealm.FAUNA_TICK_INTERVAL_MS === 10000;
         out.faunaBirthCdExists = AnazhRealm.FAUNA_BIRTH_COOLDOWN_MS > 0;
         out.faunaDeathCdExists = AnazhRealm.FAUNA_DEATH_COOLDOWN_MS > 0;
-        out.findOldestMethod = typeof r._findOldestCreature === "function";
-        out.naturalBirthMethod = typeof r._creatureNaturalBirth === "function";
-        out.naturalDeathMethod = typeof r._creatureNaturalDeath === "function";
-        out.pickFaunaSoulMethod = typeof r._pickFaunaSoulAtPlayer === "function";
         out.faunaLifecycleField = r.state.faunaLifecycle && typeof r.state.faunaLifecycle.lastTick === "number";
 
         // _findOldestCreature liefert die älteste (kleinster bornAt). Test-Isolation: ALLE Kreaturen auf
@@ -39551,12 +39295,6 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
             wave6g3Results.dayNightStopsSorted
         );
         check("Welle 6.G3.a: directionalLight + ambientLight Referenzen gesetzt", wave6g3Results.lightsReferenced);
-        check("Welle 6.G3.a: _interpolateDayNight-Methode existiert", wave6g3Results.interpolateMethod);
-        check("Welle 6.G3.a: _applyDayNightToScene-Methode existiert", wave6g3Results.applyMethod);
-        check("Welle 6.G3.a: tickDayNight-Methode existiert", wave6g3Results.tickMethod);
-        check("Welle 6.G3.a: _timeOfDayLabel-Methode existiert", wave6g3Results.timeOfDayLabelMethod);
-        check("Welle 6.G3.a: setTimeOfDay-Methode existiert", wave6g3Results.setTimeOfDayMethod);
-        check("Welle 6.G3.a: setDayLength-Methode existiert", wave6g3Results.setDayLengthMethod);
         check(
             "Welle 6.G3.a: Mittag (0.5) trägt das Licht der EINEN Atmosphäre (Durchlass ≥ 0.7)",
             wave6g3Results.interpolateMiddayClear
@@ -39590,11 +39328,6 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
 
         // --- b) Wetter-Übergang
         check("Welle 6.G3.b: WEATHER_TRANSITION_DURATION_MS === 45000", wave6g3Results.weatherTransitionDuration);
-        check(
-            "Welle 6.G3.b: requestWeatherTransition-Methode existiert",
-            wave6g3Results.requestWeatherTransitionMethod
-        );
-        check("Welle 6.G3.b: tickWeatherTransition-Methode existiert", wave6g3Results.tickWeatherTransitionMethod);
         check("Welle 6.G3.b: WEATHER_TINTS frozen mit sunny/rainy", wave6g3Results.weatherTintsExists);
         check(
             "Welle 6.G3.b: WEATHER_TINTS — sunny skyMul 1.0, rainy < 1.0 (dämpft Sky)",
@@ -39633,10 +39366,6 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         check("Welle 6.G3.c: FAUNA_TICK_INTERVAL_MS === 10000", wave6g3Results.faunaTickInterval);
         check("Welle 6.G3.c: FAUNA_BIRTH_COOLDOWN_MS > 0", wave6g3Results.faunaBirthCdExists);
         check("Welle 6.G3.c: FAUNA_DEATH_COOLDOWN_MS > 0", wave6g3Results.faunaDeathCdExists);
-        check("Welle 6.G3.c: _findOldestCreature-Methode existiert", wave6g3Results.findOldestMethod);
-        check("Welle 6.G3.c: _creatureNaturalBirth-Methode existiert", wave6g3Results.naturalBirthMethod);
-        check("Welle 6.G3.c: _creatureNaturalDeath-Methode existiert", wave6g3Results.naturalDeathMethod);
-        check("Welle 6.G3.c: _pickFaunaSoulAtPlayer-Methode existiert", wave6g3Results.pickFaunaSoulMethod);
         check("Welle 6.G3.c: state.faunaLifecycle initialisiert", wave6g3Results.faunaLifecycleField);
         check("Welle 6.G3.c: _findOldestCreature wählt kleinste bornAt", wave6g3Results.oldestIsOlder);
         check(
@@ -39661,10 +39390,6 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         const AnazhRealm = window.AnazhRealm || r.constructor;
 
         // --- Wurzel-Helper existieren
-        out.affinityPickHelper = typeof r._affinityPickFromCandidates === "function";
-        out.emotionModulateHelper = typeof r._emotionModulate === "function";
-        out.creatureSoulTagsHelper = typeof r._creatureSoulTags === "function";
-        out.faunaTargetHelper = typeof r._currentFaunaTarget === "function";
 
         // --- Vision 1: Affinity-Pick wählt höhere Resonanz
         // Test-Kandidaten mit klaren Tag-Profilen
@@ -39878,10 +39603,6 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
     });
 
     if (wave6g3v2Results && !wave6g3v2Results.error) {
-        check("Welle 6.G3 V2: _affinityPickFromCandidates existiert", wave6g3v2Results.affinityPickHelper);
-        check("Welle 6.G3 V2: _emotionModulate existiert", wave6g3v2Results.emotionModulateHelper);
-        check("Welle 6.G3 V2: _creatureSoulTags existiert", wave6g3v2Results.creatureSoulTagsHelper);
-        check("Welle 6.G3 V2: _currentFaunaTarget existiert", wave6g3v2Results.faunaTargetHelper);
         check(
             "Welle 6.G3 V2 Vision: Affinity-Pick wählt magieSoul in magie-Welt (>66%, 30 Runs)",
             wave6g3v2Results.affinityPicksMagieInMagieField
@@ -40726,7 +40447,6 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         );
         // V13.9.2: der Wert ist live über setWaterCull(minDepth) justierbar +
         // persistiert in state.atmosphere.waterCull.
-        out.waterCullSetter = typeof r.setWaterCull === "function";
 
         // Wasser-Physik: state.playerUnderwater existiert als Flag
         // Render-Loop hat Auftriebs- + Speed-Logik (Source-Pattern)
@@ -40764,7 +40484,6 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         check("V13.5: Wasser-Shader hat Emotions-Kopplungs-Haken (uniform)", v830Results.waterEmotionHook);
         check("V13.9: Wasser-Shader hat Min-Depth-Cull-Uniform (justierbar)", v830Results.waterMinDepthUniform);
         check("V13.9.2: Min-Depth-Cull-Uniform trägt endlichen, ≥0-Wert", v830Results.waterMinDepthValueOk);
-        check("V13.9.2: setWaterCull-Setter (Slider + Persistenz) vorhanden", v830Results.waterCullSetter);
     } else {
         check("V8.30: Schnittstellen-Politur Tests laufen", false, v830Results ? v830Results.error : "no result");
     }
@@ -41550,7 +41269,6 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
                     color: 0x888888,
                 },
             ];
-            out.costTooltipMethod = typeof r._blueprintCostTooltip === "function";
             const tip = r._blueprintCostTooltip("_t838c");
             out.costTooltipText = /Bau-Kosten/.test(tip) && /stein/.test(tip) && /hast/.test(tip);
             const origHotbar0 = r.state.hotbar[0];
@@ -41630,7 +41348,6 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
     });
 
     if (v838Results && !v838Results.error) {
-        check("V8.38: _blueprintCostTooltip-Methode existiert", v838Results.costTooltipMethod);
         check("V8.38: Kosten-Tooltip nennt Bau-Kosten + Material + 'hast'", v838Results.costTooltipText);
         check("V8.38: gefüllter Hotbar-Slot trägt den Kosten-Tooltip", v838Results.hotbarSlotTitle);
         check("V8.38: Bauplan-Inventar-Slot trägt den Kosten-Tooltip", v838Results.invSlotTitle);
@@ -41661,7 +41378,6 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
             typeof rc.architecture === "string";
 
         // computeBlueprintQuality.
-        out.qualityMethod = typeof r.computeBlueprintQuality === "function";
         out.qualityUnworked =
             r.computeBlueprintQuality({
                 parts: [{ shape: "box", material: "stein", size: { x: 1, y: 1, z: 1 } }],
@@ -41752,7 +41468,6 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
 
     if (v839Results && !v839Results.error) {
         check("V8.39: BLUEPRINT_ROLE_COLORS-Konstante mit allen Rollen", v839Results.roleColorsExist);
-        check("V8.39: computeBlueprintQuality-Methode existiert", v839Results.qualityMethod);
         check("V8.39: unbearbeiteter Bauplan hat Qualität 1.0 (geboren)", v839Results.qualityUnworked);
         check("V8.39: bearbeiteter Bauplan trägt seine Werkzeug-Präzision als Qualität", v839Results.qualityWorked);
         check("V8.39: Werkzeug-Op-Stamina skaliert mit cap (stumpf teurer als fein)", v839Results.staminaScales);
@@ -41799,7 +41514,6 @@ async function checkBandW12WorldPortal(ctx) {
         out.builtinHasParts = !!wp && Array.isArray(wp.parts) && wp.parts.length >= 2;
 
         // setBlueprintAsPortal — Marker-Methode.
-        out.markMethod = typeof r.setBlueprintAsPortal === "function";
         if (r.state.blueprints["_w12p"]) delete r.state.blueprints["_w12p"];
         r.createBlueprint("_w12p", "W12P");
         const markRes = r.setBlueprintAsPortal("_w12p");
@@ -41833,7 +41547,6 @@ async function checkBandW12WorldPortal(ctx) {
 
         // W12-Korrektur — die Portal-NATUR emergiert aus der Substanz:
         // ein magie-leitender Ring wird zum Tor (das Ziel bleibt autoriert).
-        out.portalShapedMethod = typeof r._isPortalShaped === "function";
 
         // Magie-Ring (Quarz-Torus, begehbar groß) → Portal.
         const magicRing = {
@@ -41912,7 +41625,6 @@ async function checkBandW12WorldPortal(ctx) {
         check("W12 P1: welt_portal hat role:'portal' + roleManual", w12c1Results.builtinRole);
         check("W12 P1: welt_portal trägt portalMeta (world + label)", w12c1Results.builtinMeta);
         check("W12 P1: welt_portal hat min. 2 Parts (Ring + Membran)", w12c1Results.builtinHasParts);
-        check("W12 P1: setBlueprintAsPortal-Methode existiert", w12c1Results.markMethod);
         check("W12 P1: setBlueprintAsPortal markiert eigenen Bauplan", w12c1Results.markOk);
         check("W12 P1: manuelle Portal-Rolle überlebt _refreshBlueprintRoleEmergent", w12c1Results.manualSticks);
         check("W12 P1: setBlueprintAsPortal lehnt Built-in ab", w12c1Results.rejectBuiltin);
@@ -41920,7 +41632,6 @@ async function checkBandW12WorldPortal(ctx) {
         check("W12 P1: _sanitizePortalMeta verwirft fremdes Origin", w12c1Results.sanitizeForeign);
         check("W12 P1: _sanitizePortalMeta verwirft Pfad-Traversal", w12c1Results.sanitizeTraversal);
         check("W12 P1: _sanitizePortalMeta behält gültigen worlds/-Pfad", w12c1Results.sanitizeValid);
-        check("W12 P1: _isPortalShaped-Methode existiert", w12c1Results.portalShapedMethod);
         check("W12 P1: Magie-Ring (Quarz-Torus) ist _isPortalShaped", w12c1Results.magicRingIsPortalShaped);
         check(
             "W12 P1: Magie-Ring emergiert als Rolle 'portal' (computeBlueprintRole)",
@@ -41955,9 +41666,6 @@ async function checkBandW12WorldPortal(ctx) {
         // echte Heimat (ready · enter · DSL-Ereignis im Journal · Esc heim · Quellen-Wand · Seiten-Fehler).
 
         // Overlay-Methoden.
-        out.buildMethod = typeof r._buildPortalOverlay === "function";
-        out.disposeMethod = typeof r._disposePortalOverlay === "function";
-        out.sendEnterMethod = typeof r._portalSendEnter === "function";
 
         // _buildPortalOverlay erzeugt das Overlay + sandboxed iframe.
         r._buildPortalOverlay({ world: "worlds/skeleton/index.html", label: "Test" });
@@ -41985,9 +41693,6 @@ async function checkBandW12WorldPortal(ctx) {
 
     if (w12c2Results && !w12c2Results.error) {
         check("W12 P1 C2: CSP enthält frame-src 'self'", w12c2Results.cspFrameSrc);
-        check("W12 P1 C2: _buildPortalOverlay-Methode existiert", w12c2Results.buildMethod);
-        check("W12 P1 C2: _disposePortalOverlay-Methode existiert", w12c2Results.disposeMethod);
-        check("W12 P1 C2: _portalSendEnter-Methode existiert", w12c2Results.sendEnterMethod);
         check("W12 P1 C2: _buildPortalOverlay erzeugt Overlay + iframe", w12c2Results.overlayBuilt);
         check("W12 P1 C2: iframe ist sandboxed (allow-scripts)", w12c2Results.iframeSandboxed);
         check("W12 P1 C2: iframe-src zeigt auf die Skelett-Welt", w12c2Results.iframeSrcSkeleton);
@@ -42332,7 +42037,6 @@ async function checkBandW12WorldPortal(ctx) {
             ws.portalMeta.dsl.includes("sturm") &&
             wt.portalMeta.dsl.includes("wald");
 
-        out.aimExists = typeof r.aimBlueprintAtWorld === "function";
 
         // Ein eigener (nicht-Built-in) Bauplan zum Zielen.
         r.state.blueprints.test_portal_ring = {
@@ -42380,7 +42084,6 @@ async function checkBandW12WorldPortal(ctx) {
         check("W12 P2: WORLD_REGISTRY existiert (skeleton/fluid/terrain)", w12registryResults.registryExists);
         check("W12 P2: Registry-Einträge tragen Pfad + DSL-Manifest", w12registryResults.registryShape);
         check("W12 P2: Built-in-Portale beziehen portalMeta aus der Registry", w12registryResults.builtinsFromRegistry);
-        check("W12 P2: aimBlueprintAtWorld existiert", w12registryResults.aimExists);
         check("W12 P2: Equip-UI trägt eine Portal-Welt-Auswahl", w12registryResults.uiPortalSelect);
         check("W12 P2: aimBlueprintAtWorld richtet per Welt-id", w12registryResults.aimById);
         check("W12 P2: aimBlueprintAtWorld richtet per Welt-Label", w12registryResults.aimByLabel);
@@ -42396,7 +42099,6 @@ async function checkBandW12WorldPortal(ctx) {
     const w12portalSizeResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
-        out.passageExists = typeof r._avatarPassageSize === "function";
         const passage = r._avatarPassageSize();
         out.passageSane = typeof passage === "number" && passage > 0.5 && passage < 30;
         const torusBp = (sizeX, material) => ({
@@ -42426,7 +42128,6 @@ async function checkBandW12WorldPortal(ctx) {
     });
 
     if (w12portalSizeResults && !w12portalSizeResults.error) {
-        check("W12 P2: _avatarPassageSize existiert", w12portalSizeResults.passageExists);
         check("W12 P2: Avatar-Durchgangsgröße ist plausibel", w12portalSizeResults.passageSane);
         check("W12 P2: großer Magie-Ring ist Tor-förmig", w12portalSizeResults.bigIsPortalShaped);
         check("W12 P2: zu kleiner Ring (< Avatar) ist kein Tor", w12portalSizeResults.smallNotPortalShaped);
@@ -42617,14 +42318,12 @@ async function checkBandW12WorldPortal(ctx) {
         const r = window.anazhRealm;
         const out = {};
         // _sanitizeDslSubset — der gemeinsame Manifest-Sanitizer.
-        out.sanitizeExists = typeof r._sanitizeDslSubset === "function";
         out.sanitizeFilters =
             JSON.stringify(r._sanitizeDslSubset(["ok_op", "Bad Op", 5, "auch_gut", null])) ===
             JSON.stringify(["ok_op", "auch_gut"]);
         out.sanitizeNullOnEmpty = r._sanitizeDslSubset([]) === null && r._sanitizeDslSubset("nope") === null;
         out.sanitizeCaps = r._sanitizeDslSubset(new Array(80).fill("op")).length === 64;
         // _portalReceiveManifest — die Welt beschreibt sich selbst.
-        out.receiveExists = typeof r._portalReceiveManifest === "function";
         r._portalOverlay = {
             label: "Alt-Label",
             world: "worlds/fluid/index.html",
@@ -42676,11 +42375,9 @@ async function checkBandW12WorldPortal(ctx) {
     });
 
     if (w12p3bResults && !w12p3bResults.error) {
-        check("W12 P3b: _sanitizeDslSubset existiert", w12p3bResults.sanitizeExists);
         check("W12 P3b: Sanitizer filtert Nicht-Ops raus", w12p3bResults.sanitizeFilters);
         check("W12 P3b: Sanitizer liefert null bei leer/Nicht-Array", w12p3bResults.sanitizeNullOnEmpty);
         check("W12 P3b: Sanitizer deckelt auf 64 Ops", w12p3bResults.sanitizeCaps);
-        check("W12 P3b: _portalReceiveManifest existiert", w12p3bResults.receiveExists);
         check("W12 P3b: natives Manifest überschreibt po.dsl + setzt Stufe 'nativ'", w12p3bResults.nativeOverrides);
         check("W12 P3b: natives Manifest übernimmt das Welt-Label", w12p3bResults.nativeLabel);
         check("W12 P3b: angekündigtes dsl wird gesäubert (kein garbage-Op)", w12p3bResults.nativeSanitized);
@@ -43093,7 +42790,6 @@ async function checkBandW13W14VibePassLibrary(ctx) {
             !!fluidCard && /sturm/.test(fluidCard.textContent) && /übersetzt/.test(fluidCard.textContent);
         // === Bib-A0/A/B/D (bibliothek-plan) — der Welt-Browser auf Werkstatt-/Hof-/Ich-Niveau ===
         // Bib-A0: _worldProfile bündelt den GEMESSENEN Welt-Vektor (EIN Vektor, viele Leser; KONSUM V17.31).
-        out.worldProfileExists = typeof r._worldProfile === "function";
         const wpRef = REG.fluid;
         const wp = r._worldProfile(wpRef);
         out.worldProfileBundles =
@@ -43336,7 +43032,6 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         check("W14 P1: Bibliothek-Drawer im DOM", w14Results.drawerInDom);
         check("W14 P1: renderLibraryUI baut eine Karte pro Welt", w14Results.cardPerWorld);
         check("W14 P1: Karte zeigt Label + DSL-Vokabular + Stufen-Marke", w14Results.cardShowsDsl);
-        check("Bib-A0: _worldProfile existiert", w14Results.worldProfileExists);
         check(
             "Bib-A0: _worldProfile bündelt den Welt-Vektor (id/label/dsl/trust/searchText)",
             w14Results.worldProfileBundles
@@ -45528,7 +45223,6 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
         out.statsHudHpFillExists = !!document.getElementById("stats-hud-hp-fill");
         out.statsHudStamFillExists = !!document.getElementById("stats-hud-stam-fill");
         out.statsHudTooltipExists = !!document.getElementById("stats-hud-tooltip");
-        out.tickStatsHudMethodExists = typeof r.tickStatsHud === "function";
 
         // --- B3: tickStatsHud aktualisiert HP-Text + Bar-Width
         // V8.13 Fix: HP/Stamina liegen auf state.player.*, nicht state.*
@@ -45559,7 +45253,6 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
         out.masterVolDefault = r.state.symphony.masterVolume === 1.0;
         out.pingVolDefault = r.state.symphony.creaturePingVolume === 1.0;
         out.ringRadiusDefault = r.state.chunkRingRadius === 4;
-        out.slidersInitMethodExists = typeof r.slidersInitDOM === "function";
         out.slidersSectionExists = !!document.getElementById("sliders-section");
         out.masterSliderExists = !!document.getElementById("slider-master");
         out.pingsSliderExists = !!document.getElementById("slider-pings");
@@ -45611,7 +45304,6 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
         const out = {};
 
         // computeBlueprintDomainCounts existiert + liefert sinnvolle Map
-        out.domainCountsMethodExists = typeof r.computeBlueprintDomainCounts === "function";
 
         // Test: Bauplan ohne opChain → leere counts
         const tn = "audit_v816_test";
@@ -45676,10 +45368,6 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
     });
 
     if (wave6x4cResults && !wave6x4cResults.error) {
-        check(
-            "Welle 6.X.4 V8.16 Punkt 18: computeBlueprintDomainCounts existiert",
-            wave6x4cResults.domainCountsMethodExists
-        );
         check("Welle 6.X.4 V8.16: Leere opChain → keine Domain-Counts", wave6x4cResults.emptyChainNoDomain);
         check(
             "Welle 6.X.4 V8.16: Schmiede-Hammer-Anwendung erhöht forging-Count",
@@ -45705,7 +45393,6 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
         check("Welle 6.X.4 B3: #stats-hud-hp-fill SVG-Element existiert", wave6x4bResults.statsHudHpFillExists);
         check("Welle 6.X.4 B3: #stats-hud-stam-fill SVG-Element existiert", wave6x4bResults.statsHudStamFillExists);
         check("Welle 6.X.4 B3: #stats-hud-tooltip im DOM", wave6x4bResults.statsHudTooltipExists);
-        check("Welle 6.X.4 B3: tickStatsHud-Methode existiert", wave6x4bResults.tickStatsHudMethodExists);
         check("Welle 6.X.4 B3: HP-Text zeigt 50/100 nach Setzen", wave6x4bResults.hpTextShowsRatio);
         check("Welle 6.X.4 B3: Stamina-Text zeigt 75/100 nach Setzen", wave6x4bResults.stamTextShowsRatio);
         check("Welle 6.X.4 B3: HP-Fill-Width proportional (50% → 83px von 166px)", wave6x4bResults.hpFillProportional);
@@ -45715,7 +45402,6 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
         check("Welle 6.X.4 D2: state.symphony.masterVolume default 1.0", wave6x4bResults.masterVolDefault);
         check("Welle 6.X.4 D2: state.symphony.creaturePingVolume default 1.0", wave6x4bResults.pingVolDefault);
         check("Welle 6.X.4 D2: state.chunkRingRadius default 4 (V8.40: 9×9)", wave6x4bResults.ringRadiusDefault);
-        check("Welle 6.X.4 D2: slidersInitDOM-Methode existiert", wave6x4bResults.slidersInitMethodExists);
         check("Welle 6.X.4 D2: #sliders-section im DOM", wave6x4bResults.slidersSectionExists);
         check("Welle 6.X.4 D2: #slider-master im DOM", wave6x4bResults.masterSliderExists);
         check("Welle 6.X.4 D2: #slider-pings im DOM", wave6x4bResults.pingsSliderExists);
@@ -49335,7 +49021,6 @@ async function checkBandWaves9And10a(ctx) {
             out.drehbankMechanism = r._computeWorkshopDomain(r.state.blueprints.drehbank) === "mechanism";
             out.noHardcodedDomain = r.state.blueprints.esse.workshopDomain === undefined;
             out.proximityConst = AR.WORKSHOP_PROXIMITY_M === 32;
-            out.gateMethodExists = typeof r._workshopStationGate === "function";
 
             // Modus auf pfad für strikten Test
             r.setGameMode("pfad");
@@ -49402,7 +49087,6 @@ async function checkBandWaves9And10a(ctx) {
                 wave9cResults.noHardcodedDomain
         );
         check("Welle 9c: Konstante WORKSHOP_PROXIMITY_M === 32 (V17.90 — Basis-Maßstab)", wave9cResults.proximityConst);
-        check("Welle 9c: _workshopStationGate-Methode existiert", wave9cResults.gateMethodExists);
         check(
             "Welle 9c: pfad ohne nahe Werkstatt → Gate lehnt ab + nennt neededDomain",
             wave9cResults.pfadFarFails && wave9cResults.pfadFarReportsDomain
@@ -49433,7 +49117,6 @@ async function checkBandWaves9And10a(ctx) {
         const out = {};
         try {
             out.machineBonus = AR.MACHINE_PRECISION_BONUS === 0.05;
-            out.hasSoulFromBp = typeof r.applyPlayerSoulFromBlueprint === "function";
 
             // Maschinen-Bonus
             if (r.state.blueprints["test_9d_machine"]) r.deleteBlueprint("test_9d_machine");
@@ -49511,7 +49194,6 @@ async function checkBandWaves9And10a(ctx) {
 
     if (wave9dResults && !wave9dResults.error) {
         check("Welle 9d: MACHINE_PRECISION_BONUS === 0.05", wave9dResults.machineBonus);
-        check("Welle 9d: applyPlayerSoulFromBlueprint-Methode existiert", wave9dResults.hasSoulFromBp);
         check(
             "Welle 9d: registerBlueprintAsTool mit role=machine vergibt Bonus auf precisionCap (min + 0.05, gedeckelt 1.0)",
             wave9dResults.regOk && wave9dResults.toolHasBonus
@@ -49556,7 +49238,6 @@ async function checkBandWaves9And10a(ctx) {
         const out = {};
         try {
             // Helper-Methode existiert
-            out.hasHelper = typeof r._compoundAvgPrecisionFromParts === "function";
 
             // Leeres Array → 1.0
             out.emptyIs1 = r._compoundAvgPrecisionFromParts([]) === 1.0;
@@ -49670,7 +49351,6 @@ async function checkBandWaves9And10a(ctx) {
     });
 
     if (wave10aResults && !wave10aResults.error) {
-        check("Welle 10a: _compoundAvgPrecisionFromParts-Methode existiert", wave10aResults.hasHelper);
         check(
             "Welle 10a: leeres/null Array → Default 1.0 (geboren, kein Effekt)",
             wave10aResults.emptyIs1 && wave10aResults.nullIs1
