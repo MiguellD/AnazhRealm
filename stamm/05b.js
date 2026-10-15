@@ -529,19 +529,36 @@ class AnazhRealm_Z05b {
         } catch (_e) {
             /* Privacy-Modus */
         }
+        // Gefragt wird das Gerät, das WIRKLICH zeichnet (K67): der WebGPU-Adapter, wenn die Welt ihn bekommt — sonst der
+        // WebGL2-Rückfall (r184 fällt ohne Adapter und unter dem forceWebGL-Hook auf GL), dessen Renderer-String. Vorher
+        // fragte die Wahl nur den Adapter: auf dem Rückfall antwortete keiner, und eine Software-GL (swiftshader) fuhr
+        // „voll" — der GPU-Prozess rasterte auf der CPU unter 200–400 % Last, und ein synchroner Programm-Bau wartete
+        // 60–170 s auf ihn (gate:webgl-probe riss in 14 von 192 Läufen, die Stall-Akte der Boot-Lib nannte es).
+        let sig = null;
         try {
-            if (typeof navigator !== "undefined" && navigator.gpu) {
+            if (typeof navigator !== "undefined" && navigator.gpu && !AnazhRealm._forceWebGL()) {
                 const a = await Promise.race([
                     navigator.gpu.requestAdapter(),
                     new Promise((res) => setTimeout(() => res(null), 4000)),
                 ]);
-                const info = a && a.info ? a.info : {};
-                const sig = `${info.vendor || ""} ${info.architecture || ""} ${info.description || ""}`.toLowerCase();
-                if (/swiftshader|llvmpipe|lavapipe|software|cpu/.test(sig)) return "kienspan";
+                if (a) {
+                    const info = a.info || {};
+                    sig = `${info.vendor || ""} ${info.architecture || ""} ${info.description || ""}`;
+                }
             }
-        } catch (_e) {
-            /* Adapter-Probe fail-soft → voll */
+            if (sig === null && typeof document !== "undefined") {
+                const gl = document.createElement("canvas").getContext("webgl2");
+                if (gl) {
+                    const ext = gl.getExtension("WEBGL_debug_renderer_info");
+                    sig = String(gl.getParameter(ext ? ext.UNMASKED_RENDERER_WEBGL : gl.RENDERER));
+                    const los = gl.getExtension("WEBGL_lose_context");
+                    if (los) los.loseContext();
+                }
+            }
+        } catch (e) {
+            this.log(`HOLZ-WAHL: das zeichnende Gerät ließ sich nicht befragen (${(e && e.message) || e}) — „voll"`, "WARN");
         }
+        if (sig !== null && /swiftshader|llvmpipe|lavapipe|software|cpu/.test(sig.toLowerCase())) return "kienspan";
         return "voll";
     }
 

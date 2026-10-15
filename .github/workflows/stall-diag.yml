@@ -43,6 +43,26 @@ jobs:
             - run: npm ci --no-audit --no-fund
             - name: Selbsttest der Stall-Akte
               run: node scripts/lib/welt-boot.cjs --selbsttest
+            - name: WebGL-Familie (jedes Gate mit einer art-webgl-Linse) - je Läufer ein Viertel
+              if: matrix.laeufer <= 4
+              shell: bash
+              run: |
+                  set +e
+                  GATES=$(node - <<'JS'
+                  const p = require("./package.json").scripts, fs = require("fs");
+                  const raus = new Set(["gate:perf-parity", "gate:webgl-probe"]);
+                  console.log(Object.entries(p).filter(([k, v]) => k.startsWith("gate:") && !raus.has(k) && [...v.matchAll(/scripts\/([\w.-]+\.cjs)/g)].some((m) => { try { return /art: "webgl"/.test(fs.readFileSync("scripts/" + m[1], "utf8")); } catch (e) { return false; } })).map(([k]) => k).join(" "));
+                  JS
+                  )
+                  i=0; ROT=0
+                  for g in $GATES; do
+                    i=$((i+1)); [ $(( i % 4 + 1 )) -eq ${{ matrix.laeufer }} ] || continue
+                    T0=$(date +%s); npm run -s $g > /tmp/g.log 2>&1; E=$?
+                    echo "GATE $g EXIT=$E DAUER=$(( $(date +%s) - T0 )) s"
+                    if [ $E -ne 0 ]; then ROT=$((ROT+1)); tail -30 /tmp/g.log; fi
+                    grep -hE "stall-akte\] (═══|URTEIL)" /tmp/g.log | head -6
+                  done
+                  echo "GATES ROT=$ROT"
             - name: webgl-probe in Folge
               shell: bash
               run: |

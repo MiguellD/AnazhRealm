@@ -351,42 +351,6 @@ async function cpuDelta(b, ms) {
     }
 }
 
-// DIE GPU-SPUR: ein Chrome-Trace von `ms` über die GPU-Kategorien — was der GPU-Prozess in der Zeit tut, in der die Seite
-// auf ihn wartet (je Name Anzahl und Summe; ein Arbeitsgang, der länger als das Fenster läuft, erscheint nicht).
-async function gpuSpur(b, ms) {
-    if (!b.cdp || b.spurLaeuft) return null;
-    b.spurLaeuft = true;
-    const ev = [];
-    const daten = (e) => ev.push(...e.value);
-    try {
-        b.cdp.on("Tracing.dataCollected", daten);
-        const fertig = new Promise((r) => b.cdp.once("Tracing.tracingComplete", r));
-        await b.cdp.send("Tracing.start", {
-            transferMode: "ReportEvents",
-            traceConfig: { includedCategories: ["gpu", "gpu.angle", "disabled-by-default-gpu.angle", "gpu.service", "viz"] },
-        });
-        await new Promise((r) => setTimeout(r, ms));
-        await b.cdp.send("Tracing.end");
-        await Promise.race([fertig, new Promise((r) => setTimeout(r, 10000))]);
-    } catch (e) {
-        return `Trace: ${(e && e.message) || e}`;
-    } finally {
-        b.cdp.off("Tracing.dataCollected", daten);
-        b.spurLaeuft = false;
-    }
-    const je = new Map();
-    for (const e of ev) {
-        if (e.ph !== "X" || !(e.dur > 0)) continue;
-        const k = `${e.name}`;
-        const w = je.get(k) || { n: 0, ms: 0 };
-        w.n++;
-        w.ms += e.dur / 1000;
-        je.set(k, w);
-    }
-    const top = [...je].sort((x, y) => y[1].ms - x[1].ms).slice(0, 10);
-    return `${ev.length} Ereignisse · ${top.map(([k, w]) => `${k} ${w.n}× ${(w.ms / 1000).toFixed(1)} s`).join(" · ") || "keine Arbeit mit Dauer im Fenster"}`;
-}
-
 // DIE AKTE: was offen ist, der Puls, die Stempel, CPU, der Stapel, Konsole, Stderr — und das Urteil beim Namen.
 async function akte(page, grund) {
     const A = page.__akte;
@@ -397,15 +361,12 @@ async function akte(page, grund) {
     const cpu = await cpuDelta(A.b, 2000);
     let stapel = null;
     const fragen = A.dbg && !schon && luecke != null && luecke > 2000;
-    // ein langer Stall (≥ 15 s) trägt die GPU-Spur, parallel zur Frage nach dem Stapel
-    const spurP = !schon && luecke != null && luecke >= 15000 ? gpuSpur(A.b, 8000) : Promise.resolve(null);
     if (fragen) {
         const pausiert = new Promise((r) => (A.warte = r));
         A.s.send("Debugger.pause").catch(() => {});
         stapel = await Promise.race([pausiert, new Promise((r) => setTimeout(() => r(null), 6000))]);
         A.warte = null;
     }
-    const spur = await spurP;
     const letzt = A.stempel.length ? A.stempel[A.stempel.length - 1] : "kein Stempel";
     let urteil;
     if (!A.puls) urteil = "KEIN PULS — das Dokument lief nie an (Navigation oder Dokument-Start)";
@@ -419,7 +380,6 @@ async function akte(page, grund) {
     z.push(A.puls ? `Puls ${A.pulsN}×, zuletzt vor ${sek(luecke)} s — ${A.puls.text}` : "Puls nie");
     for (const s of A.stempel) z.push(`Stempel ${s}`);
     z.push(`CPU (2 s) ${cpu.text}`);
-    if (spur) z.push(`GPU-Spur (8 s) ${spur}`);
     if (A.b.last.length) z.push(`Last je 2 s (GPU-Prozess/Renderer %, älteste zuerst) ${A.b.last.join(" · ")}`);
     z.push(`Stapel ${stapel ? stapelText(stapel) : fragen ? "keine Pause in 6 s — der Haupt-Thread steht NATIV" : A.dbg ? "(nicht gefragt: der Puls lebt oder die Akte fragte schon)" : "(kein Debugger: Zeit-Linse)"}`);
     for (const k of A.konsole) z.push(`Konsole ${k}`);
