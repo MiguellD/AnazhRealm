@@ -21,6 +21,7 @@
 // "sicht" in K; eine Liste ohne ihre wurf-Teile in W (drachentor, maurentor); aufgeblähte Kapseln (+0,15 m) in I (geisttor).
 //   node scripts/diag-tor-fern.cjs [--selftest] [--nur <regex>]
 "use strict";
+const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
 
@@ -44,7 +45,9 @@ const STAMM = stammLib.text(root);
 function methodeAus(src, kopf) {
     const i = src.indexOf(kopf);
     if (i < 0) throw new Error("im Stamm nicht gefunden: " + kopf);
-    let j = src.indexOf("{", i), tiefe = 0, k = j;
+    let j = src.indexOf("{", i),
+        tiefe = 0,
+        k = j;
     for (; k < src.length; k++) {
         if (src[k] === "{") tiefe++;
         else if (src[k] === "}" && --tiefe === 0) break;
@@ -70,12 +73,15 @@ const huelleVon = leser(RUMPF);
 // ── Fußabdruck entlang der Sonne (Raster 5 cm) ──
 const RASTER = 0.05;
 function dreiecke(g, nurWerfer) {
-    const out = [], v = new THREE.Vector3();
+    const out = [],
+        v = new THREE.Vector3();
     g.updateMatrixWorld(true);
     g.traverse((o) => {
         // die L0 wirft, was castShadow trägt (der Wirt: leaf.castShadow = castsShadow && child.castShadow !== false)
         if (!o.isMesh || (nurWerfer && !o.castShadow)) return;
-        const P = o.geometry.attributes.position, I = o.geometry.index, n = I ? I.count : P.count;
+        const P = o.geometry.attributes.position,
+            I = o.geometry.index,
+            n = I ? I.count : P.count;
         for (let i = 0; i < n; i++) {
             v.fromBufferAttribute(P, I ? I.getX(i) : i).applyMatrix4(o.matrixWorld);
             out.push(v.x, v.y, v.z);
@@ -84,21 +90,29 @@ function dreiecke(g, nurWerfer) {
     return out;
 }
 function abdruck(D, d, box) {
-    const nu = Math.ceil((box.u1 - box.u0) / RASTER), nv = Math.ceil((box.v1 - box.v0) / RASTER), m = new Uint8Array(nu * nv);
+    const nu = Math.ceil((box.u1 - box.u0) / RASTER),
+        nv = Math.ceil((box.v1 - box.v0) / RASTER),
+        m = new Uint8Array(nu * nv);
     const pr = (x, y, z) => {
         const t = Math.max(0, y) / d[1];
         return [x - d[0] * t, z - d[2] * t];
     };
     for (let i = 0; i < D.length; i += 9) {
-        const a = pr(D[i], D[i + 1], D[i + 2]), b = pr(D[i + 3], D[i + 4], D[i + 5]), c = pr(D[i + 6], D[i + 7], D[i + 8]);
+        const a = pr(D[i], D[i + 1], D[i + 2]),
+            b = pr(D[i + 3], D[i + 4], D[i + 5]),
+            c = pr(D[i + 6], D[i + 7], D[i + 8]);
         const ar = (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
         if (Math.abs(ar) < 1e-12) continue;
-        const i0 = Math.max(0, Math.floor((Math.min(a[0], b[0], c[0]) - box.u0) / RASTER)), i1 = Math.min(nu - 1, Math.ceil((Math.max(a[0], b[0], c[0]) - box.u0) / RASTER));
-        const k0 = Math.max(0, Math.floor((Math.min(a[1], b[1], c[1]) - box.v0) / RASTER)), k1 = Math.min(nv - 1, Math.ceil((Math.max(a[1], b[1], c[1]) - box.v0) / RASTER));
+        const i0 = Math.max(0, Math.floor((Math.min(a[0], b[0], c[0]) - box.u0) / RASTER)),
+            i1 = Math.min(nu - 1, Math.ceil((Math.max(a[0], b[0], c[0]) - box.u0) / RASTER));
+        const k0 = Math.max(0, Math.floor((Math.min(a[1], b[1], c[1]) - box.v0) / RASTER)),
+            k1 = Math.min(nv - 1, Math.ceil((Math.max(a[1], b[1], c[1]) - box.v0) / RASTER));
         for (let k = k0; k <= k1; k++)
             for (let ii = i0; ii <= i1; ii++) {
-                const px = box.u0 + (ii + 0.5) * RASTER, py = box.v0 + (k + 0.5) * RASTER;
-                const w0 = ((b[0] - px) * (c[1] - py) - (b[1] - py) * (c[0] - px)) / ar, w1 = ((c[0] - px) * (a[1] - py) - (c[1] - py) * (a[0] - px)) / ar;
+                const px = box.u0 + (ii + 0.5) * RASTER,
+                    py = box.v0 + (k + 0.5) * RASTER;
+                const w0 = ((b[0] - px) * (c[1] - py) - (b[1] - py) * (c[0] - px)) / ar,
+                    w1 = ((c[0] - px) * (a[1] - py) - (c[1] - py) * (a[0] - px)) / ar;
                 if (w0 >= -1e-9 && w1 >= -1e-9 && 1 - w0 - w1 >= -1e-9) m[k * nu + ii] = 1;
             }
     }
@@ -107,21 +121,32 @@ function abdruck(D, d, box) {
 const SONNEN = [];
 for (const h of [25, 40, 60, 74])
     for (const az of [0, 120, 240]) {
-        const e = (h * Math.PI) / 180, a = (az * Math.PI) / 180;
+        const e = (h * Math.PI) / 180,
+            a = (az * Math.PI) / 180;
         SONNEN.push([Math.cos(e) * Math.sin(a), Math.sin(e), Math.cos(e) * Math.cos(a)]);
     }
 function wurfDeckung(L0, W) {
     const ious = [];
     for (const d of SONNEN) {
-        let u0 = 1e9, u1 = -1e9, v0 = 1e9, v1 = -1e9;
+        let u0 = 1e9,
+            u1 = -1e9,
+            v0 = 1e9,
+            v1 = -1e9;
         for (const D of [L0, W])
             for (let i = 0; i < D.length; i += 3) {
-                const t = Math.max(0, D[i + 1]) / d[1], u = D[i] - d[0] * t, v = D[i + 2] - d[2] * t;
-                u0 = Math.min(u0, u); u1 = Math.max(u1, u); v0 = Math.min(v0, v); v1 = Math.max(v1, v);
+                const t = Math.max(0, D[i + 1]) / d[1],
+                    u = D[i] - d[0] * t,
+                    v = D[i + 2] - d[2] * t;
+                u0 = Math.min(u0, u);
+                u1 = Math.max(u1, u);
+                v0 = Math.min(v0, v);
+                v1 = Math.max(v1, v);
             }
         const box = { u0: u0 - 0.2, u1: u1 + 0.2, v0: v0 - 0.2, v1: v1 + 0.2 };
-        const a = abdruck(L0, d, box), b = abdruck(W, d, box);
-        let s = 0, v = 0;
+        const a = abdruck(L0, d, box),
+            b = abdruck(W, d, box);
+        let s = 0,
+            v = 0;
         for (let k = 0; k < a.length; k++) {
             if (a[k] && b[k]) s++;
             if (a[k] || b[k]) v++;
@@ -135,7 +160,8 @@ function wurfDeckung(L0, W) {
 // ── Innen: Abstand der Stufe-3-Ecken zur L0-Oberfläche (Hash 8 cm) ──
 const ZELLE = 0.08;
 function oberflaeche(g) {
-    const H = new Map(), v = [new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()];
+    const H = new Map(),
+        v = [new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()];
     const rein = (x, y, z) => {
         const k = Math.floor(x / ZELLE) + "," + Math.floor(y / ZELLE) + "," + Math.floor(z / ZELLE);
         let a = H.get(k);
@@ -144,25 +170,38 @@ function oberflaeche(g) {
     };
     const tei = (a, b, c, d) => {
         if (Math.max(a.distanceTo(b), b.distanceTo(c), c.distanceTo(a)) < 0.08 || d > 6) {
-            rein(a.x, a.y, a.z); rein(b.x, b.y, b.z); rein(c.x, c.y, c.z); rein((a.x + b.x + c.x) / 3, (a.y + b.y + c.y) / 3, (a.z + b.z + c.z) / 3);
+            rein(a.x, a.y, a.z);
+            rein(b.x, b.y, b.z);
+            rein(c.x, c.y, c.z);
+            rein((a.x + b.x + c.x) / 3, (a.y + b.y + c.y) / 3, (a.z + b.z + c.z) / 3);
             return;
         }
-        const ab = a.clone().add(b).multiplyScalar(0.5), bc = b.clone().add(c).multiplyScalar(0.5), ca = c.clone().add(a).multiplyScalar(0.5);
-        tei(a, ab, ca, d + 1); tei(ab, b, bc, d + 1); tei(ca, bc, c, d + 1); tei(ab, bc, ca, d + 1);
+        const ab = a.clone().add(b).multiplyScalar(0.5),
+            bc = b.clone().add(c).multiplyScalar(0.5),
+            ca = c.clone().add(a).multiplyScalar(0.5);
+        tei(a, ab, ca, d + 1);
+        tei(ab, b, bc, d + 1);
+        tei(ca, bc, c, d + 1);
+        tei(ab, bc, ca, d + 1);
     };
     g.updateMatrixWorld(true);
     g.traverse((o) => {
         if (!o.isMesh || o.geometry.type === "CircleGeometry") return;
-        const P = o.geometry.attributes.position, I = o.geometry.index, n = I ? I.count : P.count;
+        const P = o.geometry.attributes.position,
+            I = o.geometry.index,
+            n = I ? I.count : P.count;
         for (let i = 0; i < n; i += 3) {
-            for (let k = 0; k < 3; k++) v[k].fromBufferAttribute(P, I ? I.getX(i + k) : i + k).applyMatrix4(o.matrixWorld);
+            for (let k = 0; k < 3; k++)
+                v[k].fromBufferAttribute(P, I ? I.getX(i + k) : i + k).applyMatrix4(o.matrixWorld);
             tei(v[0].clone(), v[1].clone(), v[2].clone(), 0);
         }
     });
     return H;
 }
 function abstand(H, x, y, z) {
-    const cx = Math.floor(x / ZELLE), cy = Math.floor(y / ZELLE), cz = Math.floor(z / ZELLE);
+    const cx = Math.floor(x / ZELLE),
+        cy = Math.floor(y / ZELLE),
+        cz = Math.floor(z / ZELLE);
     let best = Infinity;
     for (let r = 0; r <= 3 && best > r * ZELLE; r++)
         for (let dx = -r; dx <= r; dx++)
@@ -171,12 +210,14 @@ function abstand(H, x, y, z) {
                     if (Math.max(Math.abs(dx), Math.abs(dy), Math.abs(dz)) !== r) continue;
                     const a = H.get(cx + dx + "," + (cy + dy) + "," + (cz + dz));
                     if (!a) continue;
-                    for (let i = 0; i < a.length; i += 3) best = Math.min(best, Math.hypot(a[i] - x, a[i + 1] - y, a[i + 2] - z));
+                    for (let i = 0; i < a.length; i += 3)
+                        best = Math.min(best, Math.hypot(a[i] - x, a[i + 1] - y, a[i + 2] - z));
                 }
     return best;
 }
 function innenP95(L0g, W) {
-    const H = oberflaeche(L0g), D = [];
+    const H = oberflaeche(L0g),
+        D = [];
     for (let i = 0; i < W.length; i += 3) D.push(abstand(H, W[i], W[i + 1], W[i + 2]));
     D.sort((a, b) => a - b);
     return D[Math.min(D.length - 1, Math.floor(0.95 * D.length))];
@@ -200,13 +241,16 @@ const draws = (g3) => {
 // ── K über die Regler-Hülle ──
 function kosten(leserFn, umbau, nurRezepte) {
     const bruch = [];
-    let maxSicht = 0, maxTris = 0, maxRand = 0;
+    let maxSicht = 0,
+        maxTris = 0,
+        maxRand = 0;
     for (const id of Object.keys(PC.PRESETS)) {
         if (NUR && !NUR.test(id)) continue;
         const raender = [null];
         if (!nurRezepte) for (const z of PC.PARAMS_BY_KIND.gate) raender.push([z.id, z.min], [z.id, z.max]);
         for (const r of raender) {
-            const ov = r ? { [r[0]]: r[1] } : undefined, wo = id + (r ? " " + r[0] + "=" + r[1] : "");
+            const ov = r ? { [r[0]]: r[1] } : undefined,
+                wo = id + (r ? " " + r[0] + "=" + r[1] : "");
             let h = PC.huelle(id, 7, ov);
             if (umbau) h = umbau(h);
             let sicht;
@@ -224,7 +268,9 @@ function kosten(leserFn, umbau, nurRezepte) {
                 // das Gitter der Stufe 3 aus derselben Liste mit dem EINEN Gitter-Bauer des Kerns (buildInstance(…, 3) = huelle → huelleGruppe)
                 // die Zeile ist das Rezept-Maß (Entscheidung A, 12.10.): am Rezept gilt sie, am Regler-Rand richtet die
                 // Kosten-Regel des Wirts (`_wurfVonBilligerer`, gate:regler-wirkt WURF) — hier steht dort nur die Zahl
-                const g3 = PC.huelleGruppe(h.teile), n = tris(g3), dr = draws(g3);
+                const g3 = PC.huelleGruppe(h.teile),
+                    n = tris(g3),
+                    dr = draws(g3);
                 if (r) maxRand = Math.max(maxRand, n);
                 else maxTris = Math.max(maxTris, n);
                 if (!r && n > ZEILE.tris) bruch.push(`${wo}: Stufe 3 ${n} Dreiecke > ${ZEILE.tris}`);
@@ -240,19 +286,117 @@ function deckung(umbauListe, aufblaehen, nurIds) {
     const zeilen = [];
     for (const id of Object.keys(PC.PRESETS)) {
         if ((NUR && !NUR.test(id)) || (nurIds && !nurIds.includes(id))) continue;
-        const L0g = PC.buildInstance(id, 7, 0), L0 = dreiecke(L0g, true);
+        const L0g = PC.buildInstance(id, 7, 0),
+            L0 = dreiecke(L0g, true);
         let g3 = PC.buildInstance(id, 7, 3);
         if (umbauListe || aufblaehen) {
             let h = PC.huelle(id, 7);
             if (umbauListe) h = umbauListe(h);
-            if (aufblaehen) h = { stufe: 3, teile: h.teile.map((t) => (t.art === "kapsel" ? Object.assign({}, t, { r: t.r + aufblaehen }) : t)) };
+            if (aufblaehen)
+                h = {
+                    stufe: 3,
+                    teile: h.teile.map((t) => (t.art === "kapsel" ? Object.assign({}, t, { r: t.r + aufblaehen }) : t)),
+                };
             g3 = PC.huelleGruppe(h.teile);
         }
         const W = gitterDreiecke(g3);
-        const w = wurfDeckung(L0, W), i95 = innenP95(L0g, W);
+        const w = wurfDeckung(L0, W),
+            i95 = innenP95(L0g, W);
         zeilen.push({ id, iouMin: w.min, iouMedian: w.median, innenP95: i95 });
     }
     return zeilen;
+}
+
+// ── F: DIE FERNE STUFE (K64) — was der Wirt jenseits der Ring-Mitte zeigt, trägt das Soll der Klasse, und nur L0-Stoff ──
+// Die Stufe bei d liest der EINE Wähler des Wirts (`_stufeNachGrenzen` aus dem Stamm, ohne Zustand wie am Spawn) über den
+// Grenzen der Budget-Zeilen (`ab`, `hyst`; die gezeigten Stufen, nie die NUR-WURF-Stufe — `_archStufenGrenzen`).
+// DAS SOLL DER KLASSE (K64-n1): ≤ 120 000 Dreiecke an Genesis Third (Augen-Befund 14.10.). Gemessen an Genesis Third (werkbank
+// zaehlen, Rohdatei artifacts/profiband/tore-fern/k64/zaehlen-genesis-third-nachher.json im Arbeits-Klon) stehen dort fest: das
+// Nahe in der Stufe 0 (drachentor 23 192 + Flügel 8 984, geisttor 2 726 + Flügel 4 360 + Wurf 2 132 = 41 394), verkalkt im
+// Hysterese-Band in der Stufe 1 (23 082), der Wurf der Stufe 3 (19 248) und der Wurf der fernen Stufe (kathedrale + ruine
+// 4 814) — 88 538. Fern jenseits 12 m stehen fünf Tore (maurentor, die Portale-Vorschau als drachentor, maschine, kathedrale,
+// ruine): ihre Summe trägt den Rest 31 462. Die Linse rechnet die SUMME der fünf (nie ein Mittel über eine angenommene Zahl).
+// Stoff-Treue: jede Fläche einer gezeigten fernen Stufe trägt einen Stoff ihrer L0 (Typ, Farbe, Glut, Metall, Rauheit,
+// Deckkraft gleich) — keine Fläche heller als ihr L0-Stoff, die Albedo der Fernstufe IST die der L0.
+const FERN = {
+    dM: [13, 15, 17],
+    klasse: 120000,
+    fest: 41394 + 23082 + 19248 + 4814,
+    genesisThird: ["maurentor", "drachentor", "maschine", "kathedrale", "ruine"],
+};
+FERN.rest = FERN.klasse - FERN.fest;
+const STUFE_NACH_GRENZEN = Function(
+    "return function _stufeNachGrenzen(d, cur, G, s) {" +
+        methodeAus(STAMM, "    static _stufeNachGrenzen(d, cur, G, s) {") +
+        "};"
+)();
+function stufeBei(K, d) {
+    const art = K.PORTAL_RENDER_CONFIG.lod.budget.gate,
+        S = K.PORTAL_RENDER_CONFIG.lod.kindStages.gate;
+    const grenzen = S.filter((st) => art[st] && Number.isFinite(art[st].ab) && art[st].nurWurf !== true).map((st) => ({
+        stufe: st,
+        ab: art[st].ab,
+    }));
+    return STUFE_NACH_GRENZEN(d, undefined, { erste: S[0], grenzen, h: art.hyst }, 1);
+}
+const stoffKey = (m) =>
+    [
+        m.type,
+        m.color ? m.color.getHexString() : "-",
+        m.emissive ? m.emissive.getHexString() : "-",
+        m.emissiveIntensity,
+        m.metalness,
+        m.roughness,
+        m.transparent ? m.opacity : 1,
+    ].join("|");
+function stoffe(g) {
+    const s = new Set();
+    g.traverse((o) => {
+        if (o.isMesh) for (const m of Array.isArray(o.material) ? o.material : [o.material]) s.add(stoffKey(m));
+    });
+    return s;
+}
+function fernStufe(K, verfaelsche) {
+    const bruch = [],
+        ist = [];
+    let maxT = 0,
+        summe = 0;
+    const st13 = stufeBei(K, FERN.dM[0]),
+        zeile = K.PORTAL_RENDER_CONFIG.lod.budget.gate[st13];
+    for (const id of Object.keys(K.PRESETS)) {
+        if (NUR && !NUR.test(id)) continue;
+        const L0 = stoffe(K.buildInstance(id, 7, 0));
+        for (const d of FERN.dM) {
+            const st = stufeBei(K, d),
+                g = K.buildInstance(id, 7, st);
+            if (verfaelsche) verfaelsche(g);
+            const n = tris(g);
+            maxT = Math.max(maxT, n);
+            if (d === FERN.dM[0]) {
+                ist.push(`${id} L${st} ${n}`);
+                if (FERN.genesisThird.includes(id)) summe += n;
+            }
+            if (zeile && n > zeile.tris)
+                bruch.push(`${id} bei ${d} m Stufe ${st}: ${n} Dreiecke > Zeile ${zeile.tris}`);
+            for (const k of stoffe(g)) if (!L0.has(k)) bruch.push(`${id} Stufe ${st}: Stoff ${k} nicht in der L0`);
+        }
+    }
+    if (!NUR && summe > FERN.rest)
+        bruch.push(
+            `Genesis Third fern (${FERN.genesisThird.join(" · ")}) Stufe ${st13}: ${summe} Dreiecke > Rest ${FERN.rest} (Klasse ${FERN.fest + summe} > ${FERN.klasse})`
+        );
+    return { bruch: [...new Set(bruch)], ist, maxT, summe };
+}
+// Der Kern mit einer anderen Stufe 2 (Selbsttest: die Stufe 2 trägt das Gesetz der Stufe 1 — die Linse muss die Kosten nennen)
+function kernMit(ersatz) {
+    const src = fs.readFileSync(path.join(root, "porta-core.js"), "utf8"),
+        neu = src.replace(/var TOR_DETAIL_2 = \{[^}]*\};/, ersatz);
+    if (neu === src) return null;
+    const alt = globalThis.__portaCore;
+    Function("module", "exports", neu)({}, {});
+    const K = globalThis.__portaCore;
+    globalThis.__portaCore = alt;
+    return K;
 }
 
 const fails = [];
@@ -260,7 +404,9 @@ const check = (name, ok, info) => {
     console.log(`  ${ok ? "✅" : "❌"} ${name}${info ? " — " + info : ""}`);
     if (!ok) fails.push(name);
 };
-console.log(`=== TOR-FERN (1110-9) — NUR-WURF-Stufe 3 und Fernform der Tore (porta-core huelle, Zeile ${JSON.stringify(ZEILE)}) ===`);
+console.log(
+    `=== TOR-FERN (1110-9) — NUR-WURF-Stufe 3 und Fernform der Tore (porta-core huelle, Zeile ${JSON.stringify(ZEILE)}) ===`
+);
 const k = kosten(huelleVon);
 check(
     `K KOSTEN: Fernbild ≤ ${SOLL.fernTeile} Teile ohne wurf-Teil (Regler-Hülle), Stufe 3 ≤ ${ZEILE.tris} Dreiecke am Rezept / ${ZEILE.draws} Draw`,
@@ -272,7 +418,9 @@ check(
 const z = deckung(null, 0);
 const med = [...z.map((r) => r.iouMedian)].sort((a, b) => a - b)[z.length >> 1];
 for (const r of z)
-    console.log(`     ${r.id.padEnd(11)} Wurf-IoU min ${r.iouMin.toFixed(3)} · Median ${r.iouMedian.toFixed(3)} · innen p95 ${(r.innenP95 * 100).toFixed(1)} cm`);
+    console.log(
+        `     ${r.id.padEnd(11)} Wurf-IoU min ${r.iouMin.toFixed(3)} · Median ${r.iouMedian.toFixed(3)} · innen p95 ${(r.innenP95 * 100).toFixed(1)} cm`
+    );
 check(
     `W WURF-DECKUNG: je Rezept ≥ ${SOLL.wurfIou}, Median ≥ ${SOLL.wurfMedian} (12 Sonnen, Raster 5 cm)`,
     z.every((r) => r.iouMin >= SOLL.wurfIou) && med >= SOLL.wurfMedian,
@@ -283,20 +431,79 @@ check(
     z.every((r) => r.innenP95 <= SOLL.innenP95),
     `max p95 ${(Math.max(...z.map((r) => r.innenP95)) * 100).toFixed(1)} cm`
 );
+const f = fernStufe(PC);
+check(
+    `F FERNE STUFE: Genesis Third — die fünf fernen Tore ≤ ${FERN.rest} Dreiecke (Klasse ≤ ${FERN.klasse}), jede Fläche ein Stoff der L0`,
+    f.bruch.length === 0,
+    f.bruch.length
+        ? f.bruch.slice(0, 6).join(" · ")
+        : `Summe ${f.summe} (Klasse ${FERN.fest + f.summe}) · bei ${FERN.dM[0]} m: ${f.ist.join(" · ")}`
+);
 if (SELBST) {
+    // S5: die Stufe 2 mit dem Gesetz der Stufe 1 — die Linse nennt die Tore beim Namen
+    const K5 = kernMit(
+        "var TOR_DETAIL_2 = { sehneM: 0.025, laengsM: 2, umfangMin: 3, ringMin: 6, proben: 256, zylinder: 6, tuerFest: true };"
+    );
+    const f5 = K5 && fernStufe(K5);
+    check(
+        "SELBSTTEST F: die Stufe 2 mit dem Gesetz der Stufe 1 wird rot beim Namen",
+        !!f5 &&
+            f5.bruch.some((b) => /drachentor bei 13 m Stufe 2: \d+ Dreiecke/.test(b)) &&
+            f5.bruch.some((b) => /^Genesis Third fern .* Stufe 2: \d+ Dreiecke > Rest/.test(b)),
+        f5 ? f5.bruch[0] : "TOR_DETAIL_2 fehlt in der Quelle"
+    );
+    // S6: ein Stoff der fernen Stufe heller als sein L0-Stoff
+    const f6 = fernStufe(PC, (g) =>
+        g.traverse((o) => {
+            if (o.isMesh && o.material.color && !o.userData.__k64) {
+                o.material = o.material.clone();
+                o.material.color.multiplyScalar(1.2);
+                o.userData.__k64 = 1;
+            }
+        })
+    );
+    check(
+        "SELBSTTEST F: ein aufgehellter Stoff der fernen Stufe wird rot",
+        f6.bruch.some((b) => /nicht in der L0/.test(b)),
+        f6.bruch.find((b) => /nicht in der L0/.test(b)) || ""
+    );
     // S1: ein Leser, dessen Rollen-Filter "wurf" durchlässt (die Fernform läse jedes Teil)
-    const leck = RUMPF.replace('if (t.rolle !== rolle && t.rolle !== "beide") continue;', 'if (t.rolle !== rolle && t.rolle !== "beide" && t.rolle !== "wurf") continue;');
-    const s1 = leck !== RUMPF && kosten(leser(leck), null, true).bruch.some((b) => /wurf-Teile im Fernbild|Teile > 24/.test(b));
-    check("SELBSTTEST K: ein Leser, der wurf ins Fernbild lässt, wird rot", s1, leck === RUMPF ? "der Rollen-Filter des Lesers fehlt in der Quelle" : "");
+    const leck = RUMPF.replace(
+        'if (t.rolle !== rolle && t.rolle !== "beide") continue;',
+        'if (t.rolle !== rolle && t.rolle !== "beide" && t.rolle !== "wurf") continue;'
+    );
+    const s1 =
+        leck !== RUMPF &&
+        kosten(leser(leck), null, true).bruch.some((b) => /wurf-Teile im Fernbild|Teile > 24/.test(b));
+    check(
+        "SELBSTTEST K: ein Leser, der wurf ins Fernbild lässt, wird rot",
+        s1,
+        leck === RUMPF ? "der Rollen-Filter des Lesers fehlt in der Quelle" : ""
+    );
     // S2: 25 Teile "sicht"
-    const s2 = kosten(huelleVon, (h) => ({ stufe: 3, teile: h.teile.map((t, i) => (i < 25 ? Object.assign({}, t, { rolle: "sicht" }) : t)) }), true).bruch.some((b) => /Teile > 24/.test(b));
+    const s2 = kosten(
+        huelleVon,
+        (h) => ({ stufe: 3, teile: h.teile.map((t, i) => (i < 25 ? Object.assign({}, t, { rolle: "sicht" }) : t)) }),
+        true
+    ).bruch.some((b) => /Teile > 24/.test(b));
     check("SELBSTTEST K: 25 sicht-Teile werden rot", s2);
     // S3: die Liste ohne ihre wurf-Teile (nur die Fernform wirft)
-    const z3 = deckung((h) => ({ stufe: 3, teile: h.teile.filter((t) => t.rolle !== "wurf") }), 0, ["drachentor", "maurentor"]);
-    check("SELBSTTEST W: ohne die wurf-Teile fällt die Deckung", z3.some((r) => r.iouMin < SOLL.wurfIou), `min ${Math.min(...z3.map((r) => r.iouMin)).toFixed(3)}`);
+    const z3 = deckung((h) => ({ stufe: 3, teile: h.teile.filter((t) => t.rolle !== "wurf") }), 0, [
+        "drachentor",
+        "maurentor",
+    ]);
+    check(
+        "SELBSTTEST W: ohne die wurf-Teile fällt die Deckung",
+        z3.some((r) => r.iouMin < SOLL.wurfIou),
+        `min ${Math.min(...z3.map((r) => r.iouMin)).toFixed(3)}`
+    );
     // S4: aufgeblähte Kapseln (+0,15 m)
     const z4 = deckung(null, 0.15, ["geisttor"]);
-    check("SELBSTTEST I: aufgeblähte Kapseln stehen aus der L0", z4.some((r) => r.innenP95 > SOLL.innenP95), `max p95 ${(Math.max(...z4.map((r) => r.innenP95)) * 100).toFixed(1)} cm`);
+    check(
+        "SELBSTTEST I: aufgeblähte Kapseln stehen aus der L0",
+        z4.some((r) => r.innenP95 > SOLL.innenP95),
+        `max p95 ${(Math.max(...z4.map((r) => r.innenP95)) * 100).toFixed(1)} cm`
+    );
 }
 console.log(
     fails.length

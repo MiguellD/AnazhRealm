@@ -27,6 +27,7 @@ const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
+const kernStufen = require("./lib/kern-stufen.cjs");
 
 const PORT = Number(process.env.NERV_PORT || 4407);
 const root = path.resolve(__dirname, "..");
@@ -240,8 +241,7 @@ function staticLaws(anazhSrc, phytoSrc, vcSrc, manifestSrc, pcSrc) {
                 ? Object.keys(f.recipes).filter((k) => f.recipes[k] && f.recipes[k].kind === "vehicle").length
                 : 0;
         res.b.ksVehicle = ks ? JSON.stringify(ks.vehicle) : null;
-        res.b.ksTree = ks ? JSON.stringify(ks.tree) : null;
-        res.b.ksGrass = ks ? JSON.stringify(ks.grass) : null;
+        res.b.ks = ks ? JSON.parse(JSON.stringify(ks)) : null;
         // ===== C: die MERGE-SEMANTIK direkt (first-wins + disjunkt), mit Restore =====
         try {
             const orig = A._studioRenderConfig;
@@ -360,6 +360,8 @@ function staticLaws(anazhSrc, phytoSrc, vcSrc, manifestSrc, pcSrc) {
         }
         return res;
     });
+    // Die Erwartung der Stufen: die Kerne in der Seite (dieselben Dateien wie der Worker), nie eine Abschrift (K64).
+    const kern = await page.evaluate(kernStufen.seitenStufen, kernStufen.kernRaeume());
 
     await browser.close();
     server.close();
@@ -372,8 +374,12 @@ function staticLaws(anazhSrc, phytoSrc, vcSrc, manifestSrc, pcSrc) {
     check("B: die Regler-Daten fliessen (gt.s.radstand == 2.9)", out.b.gtRadstand === 2.9, String(out.b.gtRadstand));
     check("B: alle 5 Fahrzeug-Gattungen im Buch", out.b.vehicleCount === 5, String(out.b.vehicleCount));
     check("B: kindStages.vehicle == [0,1] (N7.5-Merge am Ingest)", out.b.ksVehicle === "[0,1]", String(out.b.ksVehicle));
-    check("B: foundry-core-kinds UNANGETASTET (tree [0,1,2])", out.b.ksTree === "[0,1,2]", String(out.b.ksTree));
-    check("B: foundry-core-kinds UNANGETASTET (grass [1,2])", out.b.ksGrass === "[1,2]", String(out.b.ksGrass));
+    const abweichung = kernStufen.stufenAbweichung(out.b.ks, kern);
+    check(
+        "B: der Ingest-Merge traegt die Stufen-Liste JEDES Kerns (kein Kern ueberschreibt einen anderen)",
+        abweichung.length === 0,
+        abweichung.join(" · ") || `${Object.keys(kern).length} Arten`
+    );
     check(
         "C: first-wins — ein Zweit-Kern ueberschreibt NIE (tree bleibt [7,8])",
         out.c.treeKept === "[7,8]",

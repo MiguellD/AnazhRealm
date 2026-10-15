@@ -8,7 +8,7 @@
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
-const { runWithWorker, fingerprintMeshes } = require("./lib/asset-worker-harness.cjs");
+const { runWithWorker, fingerprintMeshes, DATEN_KANAELE } = require("./lib/asset-worker-harness.cjs");
 
 const PORT = Number(process.env.MINT_PORT || 4541);
 const DIR = path.resolve(__dirname, "..", "spec", "asset-contract", "v1", "golden");
@@ -57,11 +57,7 @@ async function nurDaten() {
     const manifest = JSON.parse(fs.readFileSync(path.join(DIR, "manifest.json"), "utf8"));
     await runWithWorker(PORT, async ({ getData }) => {
         const bookReply = await getData("get-book");
-        for (const [field, key] of [
-            ["book", "recipes"],
-            ["worldParams", "world-params"],
-            ["renderConfig", "render-config"],
-        ]) {
+        for (const [field, key] of DATEN_KANAELE) {
             const json = JSON.stringify(bookReply[field]);
             const alt = fs.readFileSync(path.join(DIR, key + ".json"), "utf8").trim();
             fs.writeFileSync(path.join(DIR, key + ".json"), json + "\n");
@@ -89,11 +85,7 @@ async function nurDaten() {
         // Die drei Daten-Kanäle einfrieren (reine Daten, JSON — der Vertrag normiert sie).
         // SYNERGIE-WELLE — der EINE Umschlag (get-book) traegt die drei Payloads.
         const bookReply = await getData("get-book");
-        for (const [field, key] of [
-            ["book", "recipes"],
-            ["worldParams", "world-params"],
-            ["renderConfig", "render-config"],
-        ]) {
+        for (const [field, key] of DATEN_KANAELE) {
             const body = bookReply[field];
             const json = JSON.stringify(body);
             fs.writeFileSync(path.join(DIR, key + ".json"), json + "\n");

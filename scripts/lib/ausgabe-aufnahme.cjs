@@ -358,10 +358,14 @@ function tiereHalten() {
 // Pause für den GPU-Prozess, bis ein Frame nichts mehr baut oder verschiebt, kein Draw auf seine Pipeline wartet und keine
 // Pipeline offen ist. Steht die Erst-Zeichnung `opt.erstFristMs` (120 s) ohne Fortschritt oder fünfmal so lange insgesamt,
 // bricht `wer` LAUT ab und nennt jede offene Pipeline beim Namen. Ohne Erst-Zeichnung (Null-Renderer) null.
+// `opt.nurGezeichnete` (K64-n3): ein Bild, das nur einen Teil der Szene zeichnet (eine Render-Objekt-Funktion lässt Bürger
+// aus), wartet nur auf das, was es zeichnet — der Frame baut nichts, verschiebt nichts, kein Draw wartet; offene Pipelines
+// ausgelassener Bürger (die Welt stieß sie vor dem Bild an) zählen nicht.
 function erstRuhe(frame, opt, wer) {
     return (async () => {
         const E = window.anazhRealm._erstZeichnung;
         if (!E) return null;
+        const offenZaehlt = !(opt && opt.nurGezeichnete);
         const tE = performance.now();
         let tFort = tE,
             stand = "";
@@ -390,7 +394,7 @@ function erstRuhe(frame, opt, wer) {
             await new Promise((res) => setTimeout(res, 0));
             // der Blick steht, wenn ein Frame nichts baut, nichts verschiebt, kein Draw auf seine Pipeline wartet
             // und kein Bundle ohne einen Bürger versiegelt ist (der wartende Draw zählt auf jedem Backend)
-            if (E.offen.size === 0 && E.bauN === b0 && E.verschoben === v0 && E.wartetN === w0) break;
+            if ((!offenZaehlt || E.offen.size === 0) && E.bauN === b0 && E.verschoben === v0 && E.wartetN === w0) break;
             const jetzt = performance.now();
             const s = `${E.bauN}|${E.verschoben}|${E.offen.size}|${E.bereitN}`;
             if (s !== stand) {

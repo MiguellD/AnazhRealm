@@ -8,23 +8,24 @@
 //   S (statisch, Node): Manifest traegt porta (ns __portaCore) · KIND_POLICY
 //     traegt die gate-Zeile (prefix tor_, donor tor_basis) · der Auto-Register-
 //     Chokepoint laeuft die Tabelle OHNE kind-String-Vergleich · porta-core
-//     deklariert kindStages.gate == [0, 3] · die Rezepte tragen fx.place
+//     deklariert kindStages.gate als Kette 0 … 3 (3 = NUR-WURF) · die Rezepte tragen fx.place
 //     {mode:"site", siteTag:"tor"} als DATEN · die Donor-SUBSTANZ tor_basis
 //     lebt als EINGEFRORENE Zeile in KIND_SUBSTANCE (der Alt-Blueprint ist
 //     PHYSISCH gefallen — AUSLÖSCHUNGS-WELLE). --selftest injiziert 2 Verletzungen.
 //   B (Browser, foundry-ON, Null-Renderer): das LIVE-Buch traegt die 7 Tor-
-//     Rezepte · kindStages.gate == [0,3] gemerged (foundry-core-kinds unberuehrt) ·
+//     Rezepte · der Ingest-Merge traegt die Stufen-Liste JEDES Kerns (scripts/lib/kern-stufen.cjs) ·
 //     Auto-Blueprint tor_drachentor entsteht am EINEN Chokepoint (Donor-Klon,
 //     KEIN _grownSpecies) · die generische tor_-Regel loest auf · die Place-
 //     Aufloesung liefert mode "site" + siteTag "tor", der Dispatch streut NICHT
 //     (N5.6) + keine tor_-Wald-Nische · _foundryRequest("drachentor",7,0)
 //     liefert Meshes end-to-end (mat.color reist, BuildGroup baut) · die
-//     Distanz-Wahl lod=2 klemmt fail-closed auf Stufe 0.
+//     Distanz-Wahl lod=2 klemmt auf die groesste deklarierte Stufe ≤ 2.
 //   node scripts/diag-nervensystem-porta.cjs [--selftest]
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
+const kernStufen = require("./lib/kern-stufen.cjs");
 
 const PORT = Number(process.env.NERV_PORTA_PORT || 4431);
 const root = path.resolve(__dirname, "..");
@@ -87,9 +88,13 @@ function staticLaws(anazhSrc, pcSrc, manifestSrc) {
         "S3: der Auto-Register-Chokepoint laeuft die Policy-Tabelle (kein kind-String-Vergleich, M8 — s. a. gate:constitution N1)",
         autoReg !== null && /KIND_POLICY/.test(autoReg) && !/kind\s*[!=]==?\s*"/.test(autoReg),
     ]);
+    // Die Kette als Gestalt, nie als Abschrift (K64: die Stufe 2 der Tore): 0 zuerst, streng steigend, 1 dabei, 3 = NUR-WURF zuletzt.
+    const kette = (pcSrc.match(/kindStages:\s*\{\s*gate:\s*\[([\d,\s]*)\]\s*\}/) || [])[1];
+    const S = kette ? kette.split(",").map((x) => Number(x.trim())) : [];
     out.push([
-        "S4: porta-core deklariert kindStages.gate == [0, 1, 3] (B2-Vertrags-Daten; 1 = die Stufe 1 seit K43, 3 = die NUR-WURF-Stufe, 1110-9)",
-        /kindStages:\s*\{\s*gate:\s*\[0,\s*1,\s*3\]\s*\}/.test(pcSrc),
+        "S4: porta-core deklariert kindStages.gate als Kette 0 … 3 (B2-Vertrags-Daten; 1 = die Stufe 1 seit K43, 3 = die NUR-WURF-Stufe, 1110-9)",
+        S.length >= 3 && S[0] === 0 && S.includes(1) && S[S.length - 1] === 3 && S.every((s, i) => i === 0 || s > S[i - 1]),
+        kette === undefined ? "keine Deklaration" : `[${kette}]`,
     ]);
     out.push([
         "S5: die Tor-Rezepte tragen das Platzierungs-Gesetz als DATEN (fx.place mode site + siteTag tor)",
@@ -156,6 +161,15 @@ function ksRow(src, name) {
         const brokenPolicy = anazhSrc.replace('donor: "tor_basis"', 'donor: "tor_kaputt"');
         const s2 = staticLaws(brokenPolicy, pcSrc, manifestSrc).find((l) => l[0].startsWith("S2"));
         check("Selbst-Test 2: gate-Policy-Zeile verstuemmelt -> S2 feuert", s2 && s2[1] === false);
+        // V3: die NUR-WURF-Stufe aus der Kette gestrichen -> S4 muss rot werden.
+        const brokenStages = pcSrc.replace(/(kindStages:\s*\{\s*gate:\s*\[[\d,\s]*?),\s*3\]/, "$1]");
+        const s4 = staticLaws(anazhSrc, brokenStages, manifestSrc).find((l) => l[0].startsWith("S4"));
+        check(
+            "Selbst-Test 3: die Stufe 3 aus kindStages.gate gestrichen -> S4 feuert",
+            brokenStages !== pcSrc && s4 && s4[1] === false
+        );
+        // V4: ein Buch mit abgeschriebener Stufen-Liste -> der Merge-Vergleich nennt die Art.
+        check("Selbst-Test 4: eine abgeschriebene Stufen-Liste faellt beim Namen (kern-stufen)", kernStufen.selbsttest());
         if (errs.length) {
             console.error("\n❌ SELBST-TEST ROT — die Linse ist vakuoes.");
             process.exit(1);
@@ -207,9 +221,7 @@ function ksRow(src, name) {
             f && f.recipes
                 ? Object.keys(f.recipes).filter((k) => f.recipes[k] && f.recipes[k].kind === "gate").length
                 : 0;
-        res.b.ksGate = ks ? JSON.stringify(ks.gate) : null;
-        res.b.ksTree = ks ? JSON.stringify(ks.tree) : null;
-        res.b.ksVehicle = ks ? JSON.stringify(ks.vehicle) : null;
+        res.b.ks = ks ? JSON.parse(JSON.stringify(ks)) : null;
         // ===== D: der AUTO-BLUEPRINT (Donor-Klon am EINEN Chokepoint) =====
         try {
             const bp = r.state.blueprints && r.state.blueprints.tor_drachentor;
@@ -279,6 +291,8 @@ function ksRow(src, name) {
         }
         return res;
     });
+    // Die Erwartung der Stufen: die Kerne in der Seite (dieselben Dateien wie der Worker), nie eine Abschrift (K64).
+    const kern = await page.evaluate(kernStufen.seitenStufen, kernStufen.kernRaeume());
 
     await browser.close();
     server.close();
@@ -290,9 +304,18 @@ function ksRow(src, name) {
     );
     check("B: die Regler-Daten fliessen (drachentor.s.orders == 2)", out.b.orders === 2, String(out.b.orders));
     check("B: alle 7 Tor-Ordnungen im Buch", out.b.gateCount === 7, String(out.b.gateCount));
-    check("B: kindStages.gate == [0,1,3] (N7.5-Merge am Ingest; 3 = NUR-WURF)", out.b.ksGate === "[0,1,3]", String(out.b.ksGate));
-    check("B: foundry-core-kinds UNANGETASTET (tree [0,1,2])", out.b.ksTree === "[0,1,2]", String(out.b.ksTree));
-    check("B: vehicle-kindStages UNANGETASTET ([0,1])", out.b.ksVehicle === "[0,1]", String(out.b.ksVehicle));
+    const ksGate = out.b.ks ? JSON.stringify(out.b.ks.gate) : "fehlt";
+    check(
+        "B: kindStages.gate == die Deklaration von porta-core (N7.5-Merge am Ingest; 3 = NUR-WURF)",
+        ksGate === kern.gate,
+        `${ksGate} (Kern ${kern.gate})`
+    );
+    const abweichung = kernStufen.stufenAbweichung(out.b.ks, kern);
+    check(
+        "B: der Ingest-Merge traegt die Stufen-Liste JEDES Kerns (kein Kern ueberschreibt einen anderen)",
+        abweichung.length === 0,
+        abweichung.join(" · ") || `${Object.keys(kern).length} Arten`
+    );
     check(
         "D: Auto-Blueprint tor_drachentor registriert (Donor-Klon)",
         out.d.blueprint === true && out.d.parts >= 4,
@@ -343,9 +366,10 @@ function ksRow(src, name) {
     check("E: die Material-Farbe reist mit (mat.color)", out.e.hasMatColor === true);
     check("E: _foundryBuildGroup baut die Gruppe (Kinder > 0)", out.e.groupChildren > 0, String(out.e.groupChildren));
     check("E: jedes Kind traegt das color-Attribut (WebGPU-STRIKT-Fill)", out.e.allHaveColor === true);
+    const fSoll = kern.gate ? kernStufen.geklemmteStufe(kern.gate, 2) : null;
     check(
-        "F: die Distanz-Wahl 2 klemmt fuer kind:gate auf Stufe 1 (die größte gezeigte ≤ 2, K43)",
-        /^[^|]*\|[^|]*\|1(\||$)/.test(out.f.key || ""), // Körper-Schlüssel preset|gestalt|stufe[|ov] (V18.527)
+        `F: die Distanz-Wahl 2 klemmt fuer kind:gate auf die groesste deklarierte Stufe ≤ 2 (${fSoll})`,
+        (String(out.f.key || "").split("|")[2] || "") === String(fSoll), // Körper-Schlüssel preset|gestalt|stufe[|ov] (V18.527)
         out.f.err || String(out.f.key)
     );
     if (pageErrors.length) check("keine Seiten-Fehler", false, pageErrors[0]);

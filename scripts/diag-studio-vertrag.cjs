@@ -23,6 +23,7 @@ const vm = require("vm");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
+const { umschlagImVm, ersteAbweichung, DATEN_KANAELE } = require("./lib/asset-worker-harness.cjs");
 
 const root = path.resolve(__dirname, "..");
 
@@ -501,26 +502,32 @@ function validateManifest(m) {
         // trägt die Kette L0 → L1 → Fernform: Stufe 0, Stufe 1 mit ihrer Grenze `ab` (die Distanz im Kern) und der Hysterese der
         // Art, die NUR-WURF-Stufe 3 (Wurf und Fernform "huelle"), jede mit Zeile, tris streng fallend (L0 > L1 > Fern). Vorher
         // zeigte das Tor nur die Stufe 0 bis 26 m ([0, 3]) — 7 Tore am Genesis-Ring 206k Dreiecke, 53 Befehle (Radeon, ego).
+        // K64 (die Stufe 2): die Kette L0 → L1 → L2 → Fernform, die Grenze der Stufe 2 jenseits der Stufe 1, tris streng fallend.
         if (ks.gate) {
             const G = B.gate || {};
             const st = ks.gate;
             const kette =
-                st.length === 3 &&
+                st.length === 4 &&
                 st[0] === 0 &&
                 st[1] === 1 &&
-                st[2] === 3 &&
+                st[2] === 2 &&
+                st[3] === 3 &&
                 G[0] &&
                 G[1] &&
+                G[2] &&
                 G[3] &&
                 G[3].nurWurf === true &&
                 G.fernform === "huelle" &&
                 typeof G[1].ab === "number" &&
+                typeof G[2].ab === "number" &&
+                G[2].ab > G[1].ab &&
                 typeof G.hyst === "number" &&
                 G[0].tris > G[1].tris &&
-                G[1].tris > G[3].tris;
+                G[1].tris > G[2].tris &&
+                G[2].tris > G[3].tris;
             if (!kette)
                 v.push(
-                    "B2c: lod.budget.gate trägt die Stufen-Kette nicht (K43: kindStages [0, 1, 3], Zeilen 0 · 1 mit ab · 3 nurWurf, hyst, fernform huelle, tris L0 > L1 > Fern)"
+                    "B2c: lod.budget.gate trägt die Stufen-Kette nicht (K43/K64: kindStages [0, 1, 2, 3], Zeilen 0 · 1 und 2 mit steigendem ab · 3 nurWurf, hyst, fernform huelle, tris L0 > L1 > L2 > Fern)"
                 );
         }
         // S3 (Vertrags-Akt 09.10.) — PFLICHT im Haupt-Kern: die Baum-Stufen 0/1 tragen ihre Kosten-Regler, der Fels ist
@@ -923,6 +930,51 @@ function validateManifest(m) {
         ohneGestalten.length === 0,
         ohneGestalten.join(", ")
     );
+
+    // U (K64-n2) — DER EINGEFRORENE UMSCHLAG IM PULS: was ein Kern deklariert (Rezepte · Welt-Palette · Stufen und Budget
+    // jeder Art), reist im EINEN Umschlag (get-book) zum Wirt; seine drei Daten-Kanäle sind eingefroren
+    // (spec/asset-contract/v1/golden, Re-Mint = Vertrags-Akt). Befund K64-n1: porta-core trug gate[2].tris 12 500, eingefroren
+    // 15 000 — rot erst in der vollen Batterie (gate:asset-contract, Gruppe 5 Schritt 37, „divergiert" ohne Namen), jeder
+    // spätere Schritt der Gruppe übersprungen. Hier antwortet DERSELBE Kanal der Brücke im Node-vm (umschlagImVm, dieselben
+    // Dateien wie der Worker) und jede Abweichung steht beim Schlüssel; gate:asset-contract bleibt der Beweis im Browser.
+    const umschlagBefunde = (quellen) => {
+        const u = umschlagImVm(quellen);
+        const out = [];
+        for (const [feld, key] of DATEN_KANAELE) {
+            const gold = fs.readFileSync(
+                path.join(root, "spec", "asset-contract", "v1", "golden", key + ".json"),
+                "utf8"
+            );
+            if (JSON.stringify(u[feld]) === gold.trim()) continue;
+            const a = ersteAbweichung(u[feld], JSON.parse(gold));
+            out.push(`${key} ${a ? `${a.pfad}: Kern ${a.ist} ≠ eingefroren ${a.soll}` : "weicht ab"}`);
+        }
+        return out;
+    };
+    const umschlag = umschlagBefunde();
+    check(
+        "U: der Umschlag der Kerne (recipes · world-params · render-config) trifft die eingefrorenen JSONs byte-genau",
+        umschlag.length === 0,
+        umschlag.length
+            ? umschlag.join(" · ") + " — Vertrags-Akt: MINT_NUR_DATEN=1 node scripts/mint-asset-goldens.cjs"
+            : `${DATEN_KANAELE.length}/${DATEN_KANAELE.length} byte-gleich`
+    );
+    // Selbsttest: eine Budget-Zeile eines Zweit-Kerns und ein Rezept-Regler des Haupt-Kerns, nach dem Laden verschoben —
+    // die Wand nennt beide Schlüssel.
+    {
+        const lese = (f) => fs.readFileSync(path.join(root, f), "utf8");
+        const st = umschlagBefunde({
+            "porta-core.js":
+                lese("porta-core.js") + "\n;__portaCore.PORTAL_RENDER_CONFIG.lod.budget.gate[2].tris += 1;",
+            "foundry-core.js": lese("foundry-core.js") + "\n;PRESETS.eiche.s[Object.keys(PRESETS.eiche.s)[0]] += 0.5;",
+        });
+        check(
+            "SELBST-TEST U: ein verschobenes Tor-Budget und ein verschobener Eichen-Regler fallen beim Schlüssel",
+            st.some((z) => z.startsWith("render-config lod.zusatzBudget.porta.gate.2.tris:")) &&
+                st.some((z) => /^recipes eiche\.s\.\w+:/.test(z)),
+            st.join(" · ")
+        );
+    }
 
     // B2c — DIE KARTEN-LINSE: die Karten-Stufe des Studios (budget[kind][letzte].karte) und die Fernstufe des
     // Hosts (KIND_POLICY[kind].impostor → `_foundryBuildImpostorFlat`) sagen dasselbe — je Art, die ein Budget
