@@ -46,9 +46,10 @@
                 "exemplar": {
                     "typ": "architektur",
                     "name": "baum_eiche",
-                    "radius": 5
+                    "radius": 5,
+                    "nah": 12
                 },
-                "klasse": "^f:eiche:L[01]$",
+                "klasse": "^f:eiche:L[0-3]$",
                 "stoff": {
                     "kind": "^bark$"
                 }
@@ -91,9 +92,10 @@
                 "exemplar": {
                     "typ": "architektur",
                     "name": "baum_eiche",
-                    "radius": 5
+                    "radius": 5,
+                    "nah": 12
                 },
-                "klasse": "^f:eiche:L[01]$",
+                "klasse": "^f:eiche:L[0-3]$",
                 "stoff": {
                     "kind": "^foliage(Tex)?$"
                 }
@@ -291,7 +293,7 @@
                     "name": "fahrzeug_gt",
                     "radius": 4
                 },
-                "klasse": "^f:gt:L0$",
+                "klasse": "^f:gt:L[0-3]$",
                 "stoff": {
                     "seh": "metall",
                     "cc": [
@@ -337,7 +339,7 @@
                     "name": "welt_portale",
                     "radius": 5
                 },
-                "klasse": "^f:kathedrale:L0$",
+                "klasse": "^(bauSatz|f:kathedrale:L[0-3])$",
                 "stoff": {
                     "seh": "metall"
                 }
@@ -383,7 +385,7 @@
                     "typ": "spieler",
                     "radius": 2
                 },
-                "klasse": "^spieler$",
+                "klasse": "^spieler(:.*)?$",
                 "stoff": {
                     "kind": "^(haut|skin)$"
                 }

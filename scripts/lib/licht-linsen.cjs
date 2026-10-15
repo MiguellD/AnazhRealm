@@ -167,7 +167,9 @@ function albedoSicht(opts) {
                     for (const e of st.architectures || [])
                         if (e && e.type === ex.name && e.position) {
                             const d = Math.hypot(e.position.x - pp.x, e.position.z - pp.z);
-                            if (d <= 80 && (!best || d < best.d)) best = { e, d };
+                            // `nah` (K63-n4): nur ein Exemplar so nah am Spieler, dass es in seiner Mesh-Stufe zeichnet — ein fernes
+                            // trägt die Karte des Atlas (fimp), deren Stoff keine Zeile trennt; sonst setzt die Linse es
+                            if (d <= (ex.nah || 80) && (!best || d < best.d)) best = { e, d };
                         }
                     let e = best && best.e;
                     if (!e) {

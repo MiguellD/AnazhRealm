@@ -49,10 +49,10 @@
                 "werkzeug": "werkbank bild -278 +1.7 -1038 -276 +1.2 -1026 --wahl 0 --klasse '^(nahWiese:.*|streuSatz|bodenSatz)$' --abstand --ist boden-nah (Mess-Wiese K55)",
                 "messung": {
                     "werkzeug": "bild",
-                    "datum": "2026-10-14T23:59:21.813Z",
+                    "datum": "2026-10-15T01:05:35.711Z",
                     "stand": {
                         "version": "18.546.2",
-                        "sha": "1335d9f5da489db7b9b180adeda1f6096366ea21"
+                        "sha": "22bb0d9cbba712086fcff76b704071ea9047fb96"
                     },
                     "geraet": {
                         "backend": "WebGPU",
@@ -74,67 +74,75 @@
                         "pixel": 0,
                         "max": 0
                     },
-                    "misch": 142160,
+                    "misch": 143449,
                     "klassen": {
                         "bodenSatz": {
                             "objekte": 1,
-                            "zweiton": 0.0005,
-                            "zt": 239,
-                            "pixel": 520392,
-                            "deckung": 0.251,
-                            "deckungUnten": 0.405,
-                            "luma": 89.63,
-                            "kontrast": 0.5095,
-                            "detail": 0.0768,
-                            "nyquist": 0.088,
-                            "ek": 550193.8,
-                            "eg": 5699681.2,
-                            "silhouette": 181.4808
+                            "zweiton": 0.0002,
+                            "zt": 93,
+                            "weiss": 0.0001,
+                            "wt": 60,
+                            "pixel": 519738,
+                            "deckung": 0.2506,
+                            "deckungUnten": 0.4043,
+                            "luma": 90.18,
+                            "kontrast": 0.5018,
+                            "detail": 0.0763,
+                            "nyquist": 0.0882,
+                            "ek": 543806.2,
+                            "eg": 5621958.9,
+                            "silhouette": 182.0763
                         },
                         "nahWiese:L1": {
                             "objekte": 2,
-                            "zweiton": 0.0016,
-                            "zt": 530,
-                            "pixel": 339260,
+                            "zweiton": 0.0013,
+                            "zt": 428,
+                            "weiss": 0,
+                            "wt": 0,
+                            "pixel": 339331,
                             "deckung": 0.1636,
-                            "deckungUnten": 0.4793,
-                            "luma": 73.7,
-                            "kontrast": 0.3855,
-                            "detail": 0.1023,
-                            "nyquist": 0.1531,
-                            "ek": 985004.7,
-                            "eg": 5446705.4,
-                            "silhouette": 173.823
+                            "deckungUnten": 0.4797,
+                            "luma": 74.82,
+                            "kontrast": 0.381,
+                            "detail": 0.1006,
+                            "nyquist": 0.1474,
+                            "ek": 936503.8,
+                            "eg": 5418989.1,
+                            "silhouette": 175.1988
                         },
                         "nahWiese:L2": {
                             "objekte": 2,
-                            "zweiton": 0.0006,
-                            "zt": 97,
-                            "pixel": 166346,
-                            "deckung": 0.0802,
-                            "deckungUnten": 0.059,
-                            "luma": 67.79,
-                            "kontrast": 0.3342,
-                            "detail": 0.1123,
-                            "nyquist": 0.1438,
-                            "ek": 366826.9,
-                            "eg": 2184500.3,
-                            "silhouette": 143.0973
+                            "zweiton": 0.001,
+                            "zt": 171,
+                            "weiss": 0,
+                            "wt": 1,
+                            "pixel": 166659,
+                            "deckung": 0.0804,
+                            "deckungUnten": 0.0592,
+                            "luma": 68.91,
+                            "kontrast": 0.3302,
+                            "detail": 0.1116,
+                            "nyquist": 0.1342,
+                            "ek": 351104.9,
+                            "eg": 2264812.3,
+                            "silhouette": 144.1386
                         },
                         "streuSatz": {
                             "objekte": 4,
-                            "zweiton": 0.001,
-                            "zt": 33,
-                            "pixel": 34336,
+                            "zweiton": 0.0012,
+                            "zt": 40,
+                            "weiss": 0,
+                            "wt": 0,
+                            "pixel": 34452,
                             "deckung": 0.0166,
-                            "deckungUnten": 0.0494,
-                            "luma": 43.95,
-                            "kontrast": 0.6343,
-                            "detail": 0.0848,
-                            "nyquist": 0.2019,
-                            "ek": 30599.6,
-                            "eg": 120988,
-                            "silhouette": 58.9963
+                            "deckungUnten": 0.0496,
+                            "luma": 44.52,
+                            "kontrast": 0.6112,
+                            "detail": 0.0825,
+                            "nyquist": 0.1914,
+                            "ek": 27698,
+                            "eg": 116983.7,
+                            "silhouette": 59.107
                         }
                     },
                     "abstand": {
@@ -153,44 +161,44 @@
                         "cos": [
                             null,
                             0.4699,
-                            0.2622,
+                            0.2621,
                             0.1556,
                             0.0884,
-                            0.0463,
-                            0.0449
+                            0.0464,
+                            0.0447
                         ],
                         "klassen": {
                             "bodenSatz": [
                                 0,
-                                210324,
-                                127459,
-                                30577,
-                                108595,
-                                32725,
-                                1628
+                                210027,
+                                127188,
+                                30722,
+                                108609,
+                                32587,
+                                1675
                             ],
                             "nahWiese:L2": [
                                 0,
-                                359,
-                                88808,
-                                54857,
+                                363,
+                                89307,
+                                54667,
                                 22322,
                                 0,
                                 0
                             ],
                             "nahWiese:L1": [
                                 0,
-                                275855,
-                                63397,
-                                8,
+                                276257,
+                                63057,
+                                17,
                                 0,
                                 0,
                                 0
                             ],
                             "streuSatz": [
                                 0,
-                                32033,
-                                2303,
+                                32124,
+                                2328,
                                 0,
                                 0,
                                 0,
@@ -199,10 +207,18 @@
                         }
                     },
                     "gesicht": null,
-                    "bild": "../../../artifacts/profiband/soll-tafel/n3/boden-nah.png",
+                    "bild": "../../../../AppData/Local/Temp/claude/K63-n4/boden.png",
                     "quellen": {
                         "gelaende-core.js": "f1d87533ace49a59",
-                        "phyto-core.js": "95f967fc8a37fd95"
+                        "phyto-core.js": "95f967fc8a37fd95",
+                        "stamm/07.js": "6a3ea63b9ee05a21",
+                        "stamm/10.js": "32d29d540373569b",
+                        "stamm/19.js": "2bb652c80a58c2a9",
+                        "stamm/24.js": "e600eb9cc991ce4c",
+                        "stamm/25c.js": "c37660b5c7102438",
+                        "stamm/11c.js": "d2269993c239da8e",
+                        "stamm/17b.js": "e9a220a4e1af8dbf",
+                        "stamm/20a.js": "32632c152bc477e2"
                     }
                 }
             },
@@ -261,22 +277,28 @@
                 "werkzeug": "werkbank licht --ist himmel-licht (die Licht-Bilanz an der Mess-Wiese)",
                 "messung": {
                     "werkzeug": "licht",
-                    "datum": "2026-10-14T23:59:04.496Z",
+                    "datum": "2026-10-15T01:05:41.512Z",
                     "stand": {
-                        "sha": "1335d9f5da489db7b9b180adeda1f6096366ea21",
+                        "sha": "22bb0d9cbba712086fcff76b704071ea9047fb96",
                         "version": "18.546.2"
                     },
                     "geraet": {
                         "adapter": "amd rdna-3"
                     },
-                    "E_alle": 9.46,
+                    "E_alle": 9.52,
                     "E_umgebung": 2.26,
                     "sonnenRichtung": [
                         0,
                         0.962,
                         0.272
                     ],
-                    "quellen": {}
+                    "quellen": {
+                        "stamm/07.js": "6a3ea63b9ee05a21",
+                        "stamm/10.js": "32d29d540373569b",
+                        "stamm/19.js": "2bb652c80a58c2a9",
+                        "stamm/24.js": "e600eb9cc991ce4c",
+                        "stamm/25c.js": "c37660b5c7102438"
+                    }
                 }
             },
             "quellen": [
@@ -331,10 +353,10 @@
                 "werkzeug": "werkbank bild -284 +1.7 -1042 -269 34 -1036 --ziel tanne --klasse '^(f:(tanne|fichte|eiche|birke|buche|kiefer|weide|strauch|mammut)[a-z_]*:L[0-2]|fimp:[a-z_]+:L[0-2]|kronendach)$' --ist laub",
                 "messung": {
                     "werkzeug": "bild",
-                    "datum": "2026-10-14T23:30:41.145Z",
+                    "datum": "2026-10-15T01:05:41.051Z",
                     "stand": {
                         "version": "18.546.2",
-                        "sha": "d84721a6b12b1b0e4f038f2991be6584614150bf+geaendert"
+                        "sha": "22bb0d9cbba712086fcff76b704071ea9047fb96"
                     },
                     "geraet": {
                         "backend": "WebGPU",
@@ -356,75 +378,92 @@
                         "pixel": 0,
                         "max": 0
                     },
-                    "misch": 96495,
+                    "misch": 92858,
                     "klassen": {
                         "f:fichte:L1": {
                             "objekte": 9,
-                            "zweiton": 0.0141,
-                            "zt": 3612,
-                            "pixel": 256782,
-                            "deckung": 0.1238,
+                            "zweiton": 0.0148,
+                            "zt": 3840,
+                            "weiss": 0.0037,
+                            "wt": 956,
+                            "pixel": 259659,
+                            "deckung": 0.1252,
                             "deckungUnten": 0.0033,
-                            "luma": 52.06,
-                            "kontrast": 0.378,
-                            "detail": 0.1044,
-                            "nyquist": 0.1759,
-                            "ek": 525282.6,
-                            "eg": 2460656.6,
-                            "silhouette": 122.5607
+                            "luma": 52.6,
+                            "kontrast": 0.4018,
+                            "detail": 0.1076,
+                            "nyquist": 0.1784,
+                            "ek": 646009.2,
+                            "eg": 2975140.6,
+                            "silhouette": 115.0348
                         },
                         "f:tanne:L0": {
                             "objekte": 4,
-                            "zweiton": 0.0424,
-                            "zt": 2697,
-                            "pixel": 63622,
-                            "deckung": 0.0307,
+                            "zweiton": 0.0582,
+                            "zt": 3834,
+                            "weiss": 0.0486,
+                            "wt": 3202,
+                            "pixel": 65870,
+                            "deckung": 0.0318,
                             "deckungUnten": 0,
-                            "luma": 63.99,
-                            "kontrast": 0.4219,
-                            "detail": 0.0725,
-                            "nyquist": 0.1849,
-                            "ek": 124778.8,
-                            "eg": 550084.7,
-                            "silhouette": 45.0812
+                            "luma": 69.7,
+                            "kontrast": 0.5534,
+                            "detail": 0.1108,
+                            "nyquist": 0.1873,
+                            "ek": 507250.7,
+                            "eg": 2201128.8,
+                            "silhouette": 45.7741
                         },
                         "f:tanne:L1": {
                             "objekte": 9,
-                            "zweiton": 0.0109,
-                            "zt": 3440,
-                            "pixel": 315914,
-                            "deckung": 0.1524,
-                            "deckungUnten": 0.0052,
-                            "luma": 56.23,
-                            "kontrast": 0.4112,
-                            "detail": 0.1064,
-                            "nyquist": 0.1888,
-                            "ek": 1420010.7,
-                            "eg": 6102430.5,
-                            "silhouette": 80.0659
+                            "zweiton": 0.0106,
+                            "zt": 3344,
+                            "weiss": 0.0054,
+                            "wt": 1694,
+                            "pixel": 316224,
+                            "deckung": 0.1525,
+                            "deckungUnten": 0.0053,
+                            "luma": 56.14,
+                            "kontrast": 0.3885,
+                            "detail": 0.1039,
+                            "nyquist": 0.184,
+                            "ek": 1193357.1,
+                            "eg": 5291334.9,
+                            "silhouette": 79.7243
                         },
                         "fimp:atlas:L2": {
                             "objekte": 1,
-                            "zweiton": 0.0632,
-                            "zt": 27327,
-                            "pixel": 432402,
-                            "deckung": 0.2085,
-                            "deckungUnten": 0.106,
-                            "luma": 62.23,
-                            "kontrast": 0.5696,
-                            "detail": 0.1204,
-                            "nyquist": 0.2167,
-                            "ek": 2771529.3,
-                            "eg": 10020807.1,
-                            "silhouette": 100.6474
+                            "zweiton": 0.0625,
+                            "zt": 26736,
+                            "weiss": 0.0028,
+                            "wt": 1199,
+                            "pixel": 427951,
+                            "deckung": 0.2064,
+                            "deckungUnten": 0.1057,
+                            "luma": 62.17,
+                            "kontrast": 0.5731,
+                            "detail": 0.1208,
+                            "nyquist": 0.2096,
+                            "ek": 2694327.6,
+                            "eg": 10161368.7,
+                            "silhouette": 96.0042
                         }
                     },
                     "abstand": null,
                     "gesicht": null,
-                    "bild": "../../../artifacts/profiband/soll-tafel/n2/laub.png",
+                    "bild": "../../../../AppData/Local/Temp/claude/K63-n4/laub.png",
                     "quellen": {
                         "phyto-core.js": "95f967fc8a37fd95",
-                        "foundry-core.js": "b957a6823f5b6a9e"
+                        "foundry-core.js": "b957a6823f5b6a9e",
+                        "stamm/07.js": "6a3ea63b9ee05a21",
+                        "stamm/10.js": "32d29d540373569b",
+                        "stamm/19.js": "2bb652c80a58c2a9",
+                        "stamm/24.js": "e600eb9cc991ce4c",
+                        "stamm/25c.js": "c37660b5c7102438",
+                        "stamm/17a.js": "3171fb2dc0f872b0",
+                        "stamm/20b.js": "6a89dd8438ca8da9",
+                        "stamm/20c.js": "739572d20e186d24",
+                        "stamm/20d.js": "7fc3616ed9846a7b"
                     }
                 }
             },
@@ -593,7 +632,175 @@
                         "ab": 1
                     }
                 },
-                "werkzeug": "werkbank umstellen 0 0 (der Spieler in der Ring-Mitte: die Ankunft); je Stufe s des Kerns ab 1 ein Bild der Kamera in ihrem Abstand vom Ring auf den Tor-Platz: werkbank bild <Pose> --wahl 0 --ziel tor-platz --klasse ^(portal-membran|portal-nebel|(f|fimp):(drachentor|maurentor|verkalkt|maschine|ruine|geisttor|kathedrale):L[0-3])$ --ist tor-fern:L<s>"
+                "werkzeug": "werkbank umstellen 0 0 (der Spieler in der Ring-Mitte: die Ankunft); je Stufe s des Kerns ab 1 ein Bild der Kamera in ihrem Abstand vom Ring auf den Tor-Platz: werkbank bild <Pose> --wahl 0 --ziel tor-platz --klasse ^(portal-membran|portal-nebel|(f|fimp):(drachentor|maurentor|verkalkt|maschine|ruine|geisttor|kathedrale):L[0-3])$ --ist tor-fern:L<s>",
+                "messung": {
+                    "L1": {
+                        "werkzeug": "bild",
+                        "datum": "2026-10-15T01:04:42.429Z",
+                        "stand": {
+                            "version": "18.546.2",
+                            "sha": "22bb0d9cbba712086fcff76b704071ea9047fb96"
+                        },
+                        "geraet": {
+                            "backend": "WebGPU",
+                            "adapter": "amd rdna-3"
+                        },
+                        "leinwand": [
+                            1920,
+                            1080
+                        ],
+                        "kamera": [
+                            -11.6,
+                            90.24,
+                            36.48
+                        ],
+                        "ausdruck": "^(portal-membran|portal-nebel|(f|fimp):(drachentor|maurentor|verkalkt|maschine|ruine|geisttor|kathedrale):L[0-3])$",
+                        "schwelle": 18,
+                        "rauschen": {
+                            "anteil": 0,
+                            "pixel": 0,
+                            "max": 0
+                        },
+                        "misch": 11884,
+                        "klassen": {
+                            "f:drachentor:L1": {
+                                "objekte": 5,
+                                "zweiton": 0.0025,
+                                "zt": 88,
+                                "weiss": 0.0458,
+                                "wt": 1629,
+                                "pixel": 35550,
+                                "deckung": 0.0171,
+                                "deckungUnten": 0,
+                                "luma": 166.57,
+                                "kontrast": 0.2077,
+                                "detail": 0.097,
+                                "nyquist": 0.115,
+                                "ek": 251537.1,
+                                "eg": 1934809.2,
+                                "silhouette": 39.3377
+                            },
+                            "f:kathedrale:L1": {
+                                "objekte": 3,
+                                "zweiton": 0,
+                                "zt": 0,
+                                "weiss": 0.2873,
+                                "wt": 6624,
+                                "pixel": 23058,
+                                "deckung": 0.0111,
+                                "deckungUnten": 0,
+                                "luma": 141.18,
+                                "kontrast": 0.2561,
+                                "detail": 0.089,
+                                "nyquist": 0.046,
+                                "ek": 59480,
+                                "eg": 1232224,
+                                "silhouette": 16.1279
+                            },
+                            "f:maschine:L1": {
+                                "objekte": 6,
+                                "zweiton": 0,
+                                "zt": 0,
+                                "weiss": 0.087,
+                                "wt": 1202,
+                                "pixel": 13817,
+                                "deckung": 0.0067,
+                                "deckungUnten": 0,
+                                "luma": 171.54,
+                                "kontrast": 0.2489,
+                                "detail": 0.0635,
+                                "nyquist": 0.1125,
+                                "ek": 81787,
+                                "eg": 644986.2,
+                                "silhouette": 14.6581
+                            },
+                            "f:maurentor:L1": {
+                                "objekte": 5,
+                                "zweiton": 0,
+                                "zt": 0,
+                                "weiss": 0.0249,
+                                "wt": 90,
+                                "pixel": 3609,
+                                "deckung": 0.0017,
+                                "deckungUnten": 0,
+                                "luma": 152.03,
+                                "kontrast": 0.1181,
+                                "detail": 0.0555,
+                                "nyquist": 0.0699,
+                                "ek": 3853,
+                                "eg": 51255.2,
+                                "silhouette": 17.9276
+                            },
+                            "f:verkalkt:L1": {
+                                "objekte": 5,
+                                "zweiton": 0.0026,
+                                "zt": 41,
+                                "weiss": 0.0308,
+                                "wt": 490,
+                                "pixel": 15910,
+                                "deckung": 0.0077,
+                                "deckungUnten": 0,
+                                "luma": 154.71,
+                                "kontrast": 0.1805,
+                                "detail": 0.0472,
+                                "nyquist": 0.0848,
+                                "ek": 33940.4,
+                                "eg": 366496.3,
+                                "silhouette": 15.0712
+                            },
+                            "portal-membran": {
+                                "objekte": 8,
+                                "zweiton": 0,
+                                "zt": 0,
+                                "weiss": 0.423,
+                                "wt": 16681,
+                                "pixel": 39439,
+                                "deckung": 0.019,
+                                "deckungUnten": 0,
+                                "luma": 127.45,
+                                "kontrast": 0.4718,
+                                "detail": 0.0694,
+                                "nyquist": 0.1432,
+                                "ek": 142103.5,
+                                "eg": 850456.5,
+                                "silhouette": 20.323
+                            },
+                            "portal-nebel": {
+                                "objekte": 7,
+                                "zweiton": 0,
+                                "zt": 0,
+                                "weiss": 0.5015,
+                                "wt": 4102,
+                                "pixel": 8180,
+                                "deckung": 0.0039,
+                                "deckungUnten": 0,
+                                "luma": 170.38,
+                                "kontrast": 0.3139,
+                                "detail": 0.0468,
+                                "nyquist": 0.0657,
+                                "ek": 10186.6,
+                                "eg": 144886.5,
+                                "silhouette": 26.6797
+                            }
+                        },
+                        "abstand": null,
+                        "gesicht": null,
+                        "bild": "../../../../AppData/Local/Temp/claude/K63-n4/tor-L1.png",
+                        "quellen": {
+                            "porta-core.js": "1f5c96131f9bb2be",
+                            "foundry-core.js": "b957a6823f5b6a9e",
+                            "stamm/07.js": "6a3ea63b9ee05a21",
+                            "stamm/10.js": "32d29d540373569b",
+                            "stamm/19.js": "2bb652c80a58c2a9",
+                            "stamm/24.js": "e600eb9cc991ce4c",
+                            "stamm/25c.js": "c37660b5c7102438",
+                            "stamm/14.js": "c8ee5a0ca50e8a1b",
+                            "stamm/17a.js": "3171fb2dc0f872b0",
+                            "stamm/17c.js": "d848b70d6294c19a",
+                            "stamm/20b.js": "6a89dd8438ca8da9"
+                        }
+                    }
+                }
             },
             "quellen": [
                 "porta-core.js",
@@ -747,10 +954,10 @@
                 "werkzeug": "werkbank umstellen --ort wiese --sicht third; werkbank bild 0 0 0 0 0 0 --gesicht 0.7 --wahl 0 --spieler --klasse '^spieler:kopf/' --ist mensch-kopf; der Bildanteil: werkbank bild (Third-Blick) --spieler --klasse '^spieler$' --ist mensch-kopf:wirkung",
                 "messung": {
                     "werkzeug": "bild",
-                    "datum": "2026-10-14T23:29:30.584Z",
+                    "datum": "2026-10-15T01:05:50.055Z",
                     "stand": {
                         "version": "18.546.2",
-                        "sha": "d84721a6b12b1b0e4f038f2991be6584614150bf+geaendert"
+                        "sha": "22bb0d9cbba712086fcff76b704071ea9047fb96"
                     },
                     "geraet": {
                         "backend": "WebGPU",
@@ -761,99 +968,107 @@
                         1080
                     ],
                     "kamera": [
-                        -899.96,
+                        -900.06,
                         108.98,
-                        -849.39
+                        -849.42
                     ],
                     "ausdruck": "^spieler:kopf/",
                     "schwelle": 18,
                     "rauschen": {
-                        "anteil": 0.000009,
-                        "pixel": 19,
-                        "max": 379
+                        "anteil": 0.000005,
+                        "pixel": 10,
+                        "max": 400
                     },
-                    "misch": 689,
+                    "misch": 663,
                     "klassen": {
                         "spieler:kopf/auge": {
                             "objekte": 2,
                             "zweiton": 0,
                             "zt": 0,
-                            "pixel": 422,
+                            "weiss": 0.0678,
+                            "wt": 27,
+                            "pixel": 398,
                             "deckung": 0.0002,
                             "deckungUnten": 0,
-                            "luma": 92.09,
-                            "kontrast": 0.7746,
-                            "detail": 0.2428,
-                            "nyquist": 0.0818,
-                            "ek": 4209.8,
-                            "eg": 47229,
-                            "silhouette": 5.5008
+                            "luma": 87.46,
+                            "kontrast": 0.8092,
+                            "detail": 0.2499,
+                            "nyquist": 0.0363,
+                            "ek": 1938,
+                            "eg": 51455.5,
+                            "silhouette": 5.6642
                         },
                         "spieler:kopf/hair": {
                             "objekte": 2,
                             "zweiton": 0,
                             "zt": 0,
-                            "pixel": 551,
-                            "deckung": 0.0003,
+                            "weiss": 0.0789,
+                            "wt": 40,
+                            "pixel": 507,
+                            "deckung": 0.0002,
                             "deckungUnten": 0,
-                            "luma": 64.12,
-                            "kontrast": 0.6495,
-                            "detail": 0.36,
-                            "nyquist": 0.1694,
-                            "ek": 3675.5,
-                            "eg": 18021.2,
-                            "silhouette": 17.6796
+                            "luma": 58.51,
+                            "kontrast": 0.6634,
+                            "detail": 0.3113,
+                            "nyquist": 0.2152,
+                            "ek": 2854.1,
+                            "eg": 10406.6,
+                            "silhouette": 17.5426
                         },
                         "spieler:kopf/haut": {
                             "objekte": 2,
                             "zweiton": 0,
                             "zt": 0,
-                            "pixel": 27378,
-                            "deckung": 0.0132,
+                            "weiss": 0.0441,
+                            "wt": 1183,
+                            "pixel": 26825,
+                            "deckung": 0.0129,
                             "deckungUnten": 0,
-                            "luma": 51.89,
-                            "kontrast": 0.8383,
-                            "detail": 0.0638,
-                            "nyquist": 0.0924,
-                            "ek": 16391.1,
-                            "eg": 161029.1,
-                            "silhouette": 8.999
+                            "luma": 50.74,
+                            "kontrast": 0.8301,
+                            "detail": 0.0672,
+                            "nyquist": 0.0927,
+                            "ek": 18739.1,
+                            "eg": 183309.7,
+                            "silhouette": 8.7371
                         },
                         "spieler:kopf/skin": {
                             "objekte": 1,
                             "zweiton": 0,
                             "zt": 0,
-                            "pixel": 495,
-                            "deckung": 0.0002,
+                            "weiss": 0,
+                            "wt": 0,
+                            "pixel": 567,
+                            "deckung": 0.0003,
                             "deckungUnten": 0,
-                            "luma": 21.65,
-                            "kontrast": 0.3749,
-                            "detail": 0.0611,
-                            "nyquist": 0.2205,
-                            "ek": 37.4,
-                            "eg": 132.1,
-                            "silhouette": 11.5513
+                            "luma": 21.58,
+                            "kontrast": 0.2581,
+                            "detail": 0.0478,
+                            "nyquist": 0.2605,
+                            "ek": 58.2,
+                            "eg": 165.3,
+                            "silhouette": 11.5909
                         }
                     },
                     "abstand": null,
                     "gesicht": {
-                        "augeFrei": 0.45,
-                        "lippeL": -8.18,
-                        "lippeA": 1.23,
-                        "hoehleL": -2.85,
-                        "hoehleA": -1.19,
-                        "haarDeckung": 0.738,
+                        "augeFrei": 0.422,
+                        "lippeL": -8,
+                        "lippeA": 1.55,
+                        "hoehleL": -2.73,
+                        "hoehleA": -1.18,
+                        "haarDeckung": 0.613,
                         "proben": {
                             "iris": 180,
-                            "irisSicht": 81,
+                            "irisSicht": 76,
                             "lippe": 175,
-                            "wange": 649,
-                            "kalotte": 84,
-                            "haarPixel": 551
+                            "wange": 626,
+                            "kalotte": 80,
+                            "haarPixel": 507
                         },
                         "zeilen": {
-                            "auge": 525.1,
-                            "mund": 599.7
+                            "auge": 523.7,
+                            "mund": 596.5
                         },
                         "toene": {
                             "haut": "6a4230",
@@ -862,10 +1077,18 @@
                             "kappe": "cecbc5"
                         }
                     },
-                    "bild": "../../../artifacts/profiband/soll-tafel/n2/mensch-kopf.png",
+                    "bild": "../../../../AppData/Local/Temp/claude/K63-n4/kopf.png",
                     "quellen": {
                         "koerper-core.js": "94a8359fccad2ea4",
-                        "foundry-core.js": "b957a6823f5b6a9e"
+                        "foundry-core.js": "b957a6823f5b6a9e",
+                        "stamm/07.js": "6a3ea63b9ee05a21",
+                        "stamm/10.js": "32d29d540373569b",
+                        "stamm/19.js": "2bb652c80a58c2a9",
+                        "stamm/24.js": "e600eb9cc991ce4c",
+                        "stamm/25c.js": "c37660b5c7102438",
+                        "stamm/15a.js": "f0610a76b23bfe9e",
+                        "stamm/15c.js": "079dee3b5f4fdc27",
+                        "stamm/25b.js": "7f2302d3be1d5750"
                     }
                 }
             },
