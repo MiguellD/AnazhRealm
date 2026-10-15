@@ -75,6 +75,7 @@ const FROZEN = {
         gewichtMax: 0.55,
         act: [0.65, 0.35],
         glanz: [2.0, 0.9, 0.15],
+        welle: [1.0, 1.0, 1.0],
     },
     puls: 1.25,
     aktivDepth: [0.1, 0.85],

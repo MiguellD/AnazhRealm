@@ -1261,6 +1261,17 @@ async function starte() {
                     const G2 = await schuss([]);
                     const Os = [];
                     for (const n of namen) Os.push(await schuss(teile.get(n)));
+                    // DAS BILD OHNE FILM (D8, K5 milchweiss): misst die Tafel die Membran, zeichnet derselbe Schuss sie noch einmal
+                    // mit ihrem Ziel allein (`__membranOhneFilm`) — Milch ist, was der Film dem Ziel hinzufügt, nie ein blasses Ziel
+                    let ohneFilm = null;
+                    if (teile.has("portal-membran")) {
+                        window.__membranOhneFilm(true);
+                        try {
+                            ohneFilm = await schuss([]);
+                        } finally {
+                            window.__membranOhneFilm(false);
+                        }
+                    }
                     const schwelle = 18;
                     const rauschen = window.__bildRauschen(G, G2, W, H, schwelle);
                     const { teil, misch } = window.__klassenTeilung(G, Os, W, H, schwelle);
@@ -1372,8 +1383,9 @@ async function starte() {
                     namen.forEach((n, j) => {
                         const m = new Uint8Array(W * H);
                         for (let p = 0; p < W * H; p++) m[p] = teil[p] === j + 1 ? 1 : 0;
-                        const ms = window.__klassenMasse(u8, m, W, H, aussen);
-                        if (/^portal-membran$/.test(n) && ms.pixel) ms.ziel = zielTreue(m);
+                        const mb = /^portal-membran$/.test(n);
+                        const ms = window.__klassenMasse(u8, m, W, H, aussen, mb ? ohneFilm : null);
+                        if (mb && ms.pixel) ms.ziel = zielTreue(m);
                         if (ms.pixel) klassen[n] = Object.assign({ objekte: teile.get(n).length }, ms);
                     });
                     // DIE PROBEN DES GESICHTS (K63-n2, `--gesicht`): je Vertex des Kopfs sein Zug — die Iris an ihrem Gelenk

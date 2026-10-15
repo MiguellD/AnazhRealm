@@ -91,7 +91,7 @@ function buildMembrane(){
       " gl_Position=projectionMatrix*modelViewMatrix*vec4(pos,1.0);}"].join('\n'),
     fragmentShader:[
       "precision highp float;uniform float uTime,uLeft,uW,uBaseY,uHspan,uSpringX,uRimAx,uRimAy,uWaveDepth,uActivate,uPulse;uniform vec3 uCam,uCenter,uPA,uPB,uPC,uPD;uniform sampler2D uTopTex,uPano;varying vec2 vXY;varying vec3 vW;varying vec3 vN;varying float vWelle;",
-      "vec3 pal(float t){return uPA+uPB*cos(6.28318*(uPC*t+uPD));}",
+      "vec3 pal(float t){return uPA+uPB*cos(6.28318*(uPC*vec3("+GN(FI.welle[0])+","+GN(FI.welle[1])+","+GN(FI.welle[2])+")*t+uPD));}",
       "vec2 equi(vec3 d){return vec2(atan(d.z,d.x)*0.15915494309+0.5,asin(clamp(d.y,-1.0,1.0))*0.31830988618+0.5);}",
       "void main(){",
       " float u=clamp((vXY.x-uLeft)/uW,0.0,1.0);float topY=uBaseY+texture2D(uTopTex,vec2(u,0.5)).r*uHspan;",

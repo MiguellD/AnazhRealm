@@ -1977,7 +1977,6 @@ class AnazhRealm_Z14 {
         const vPC = W("pc", "vec3");
         const vPD = W("pd", "vec3");
         const F = (x) => TSL.float(x);
-        const pal = (t) => vPA.add(vPB.mul(TSL.cos(vPC.mul(t).add(vPD).mul(F(6.28318)))));
         const hash2 = TSL.Fn(([q]) => {
             const p = TSL.fract(q.mul(TSL.vec2(123.34, 345.45)));
             const p2 = p.add(TSL.dot(p, p.add(F(34.345))));
@@ -2100,7 +2099,13 @@ class AnazhRealm_Z14 {
             .add(rr.mul(FI.dicke[1]))
             .add(d0V.div(TSL.max(waveDepth, F(1e-3))).mul(FI.dicke[2]))
             .add(TSL.sin(time.mul(FI.dicke[4]).add(xy.y.mul(FI.dicke[5]))).mul(FI.dicke[3]));
-        const film = TSL.max(pal(dicke.mul(cosT).mul(2.0)), F(0.0));
+        // DIE DISPERSION (D8): der Gangunterschied 2·n·d·cos θt in Wellenlängen ist je Farbe ein anderer (λ_R / λ) — die Bänder
+        // laufen in Blau schneller als in Rot (die Newton-Folge), weiß nur beim dünnsten Film
+        const welle = TSL.vec3(FI.welle[0], FI.welle[1], FI.welle[2]);
+        const film = TSL.max(
+            vPA.add(vPB.mul(TSL.cos(vPC.mul(welle).mul(dicke.mul(cosT).mul(2.0)).add(vPD).mul(F(6.28318))))),
+            F(0.0)
+        );
         const fres = F(FI.fresnel[0]).add(F(1 - FI.fresnel[0]).mul(TSL.pow(F(1.0).sub(cosI), F(FI.fresnel[1]))));
         const rand = TSL.smoothstep(F(FI.rand[0]), F(FI.rand[1]), rr);
         // DER RAND GEZÄHMT (D8): das Gewicht des Films trägt einen Deckel — bei streifendem Blick bleibt das Ziel sichtbar
@@ -2116,7 +2121,14 @@ class AnazhRealm_Z14 {
         const spiegel = TSL.texture(this._himmelUmgebungTex(), TSL.equirectUV(RfW)).level(F(0)).rgb;
         const glanz = film.mul(spiegel).mul(F(FI.glanz[0])).mul(pulse.mul(FI.glanz[2]).add(FI.glanz[1]));
         const col = TSL.mix(ziel, glanz, filmW);
-        const G = { positionNode, colorNode: TSL.vec4(col, 1.0), opacityNode: keep, anzeige: col };
+        // `ohneFilm`: dieselbe Öffnung ohne den Film — nur das Ziel (die Linse milchweiss: Milch ist, was der Film dem Ziel
+        // hinzufügt; `__membranOhneFilm` in scripts/lib/ausgabe-aufnahme.cjs)
+        const G = {
+            positionNode,
+            colorNode: TSL.vec4(col, 1.0),
+            opacityNode: keep,
+            ohneFilm: TSL.vec4(ziel, 1.0),
+        };
         this._membranGraphen.set(MG, G);
         return G;
     }

@@ -25,7 +25,8 @@
 //       B3 die Hülle trägt die Welle: die Kugel jeder Membran-Geometrie reicht in z bis zur Amplitude des Gesetzes
 //       BS Selbsttest am echten Frame: mit `frustumCulled = false` (dem alten Stand) MUSS B2 jede Membran beim Namen nennen
 //       H  (K64-n1, D8) aus der Ring-Mitte, AUSGABE-Pfad: die Öffnung brennt nicht aus (Y > 240 ≤ 5 %) und liest nicht als Milch
-//          (unbunt und hell — dieselbe Regel wie K5 milchweiss: C*ab < 5 bei L* ≥ 50 — ≤ 5 %): sie zeigt das Ziel durch den Film
+//          (unbunt und hell — K5 milchweiss `klassenMasse`: C*ab < 5 bei L* ≥ 50 — ≤ 5 %, gegen das Bild ohne Film: Milch ist,
+//          was der Film dem Ziel hinzufügt, nie ein blasses Ziel): sie zeigt das Ziel durch den Film
 //       HS Selbsttest: der Milch-Leser (die Öffnung als helles Weiß, das Bild des Stands vor D8) MUSS in H rot werden — in
 //          DERSELBEN Seite, gegen dieselbe Maske
 //       HM (K64-n3) die Maske zeichnet ohne kaltes Programm (je Bild gezählt: neue Vertex-/Fragment-Programme), HMS Selbsttest:
@@ -234,23 +235,19 @@ async function hellProbe() {
         recs.forEach((rec) => (rec.mesh.visible = false));
         const M = await uhr("M", schuss);
         recs.forEach((rec, i) => (rec.mesh.visible = sicht[i]));
+        // DAS BILD OHNE FILM (D8): dieselbe Welt, jede Membran zeigt nur ihr Ziel (`__membranOhneFilm`) — Milch ist, was der Film
+        // dem Ziel hinzufügt (K5 `klassenMasse` mit dem Bild ohne Film), nie ein blasses Ziel
+        window.__membranOhneFilm(true);
+        let Z;
+        try {
+            Z = await uhr("Z", schuss);
+        } finally {
+            window.__membranOhneFilm(false);
+        }
         // DER MILCH-LESER (HS): die Öffnung als helles Weiß (dreifach über der Belichtung — die ACES-Schulter, das Bild vor D8)
         setze(() => TSL.vec4(TSL.vec3(3.0).mul(r._torZiele().uBelicht), 1.0));
         const R = await uhr("R", schuss);
         const Y = (u, i) => 0.2126 * u[i] + 0.7152 * u[i + 1] + 0.0722 * u[i + 2];
-        // milchig = unbunt und hell (K5 `klassenMasse` milchweiss: CIELAB D65 aus den linearisierten sRGB-Werten, C*ab < 5, L* ≥ 50)
-        const lin = (c) => ((c /= 255) <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
-        const fl = (t) => (t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116);
-        const milchig = (u, i) => {
-            const R0 = lin(u[i]),
-                G0 = lin(u[i + 1]),
-                B0 = lin(u[i + 2]);
-            const fy = fl(0.2126 * R0 + 0.7152 * G0 + 0.0722 * B0);
-            if (116 * fy - 16 < 50) return false;
-            const a = 500 * (fl((0.4124 * R0 + 0.3576 * G0 + 0.1805 * B0) / 0.95047) - fy),
-                b = 200 * (fy - fl((0.0193 * R0 + 0.1192 * G0 + 0.9505 * B0) / 1.08883));
-            return Math.hypot(a, b) < 5;
-        };
         // EINE Maske für alle drei Bilder: die Pixel, in denen die Welt eine Membran zeigt — mit Membran steht ein Kanal um
         // mindestens STUFE anders als ohne (swiftshader: Stufe 10 nimmt 7 876 der 8 014 magenta Pixel, 1 außerhalb; 6 griff
         // 71 Pixel neben die Membran, 16 ließ 353 Rand-Pixel fallen)
@@ -259,18 +256,25 @@ async function hellProbe() {
         for (let i = 0; i < W * H * 4; i += 4)
             if (Math.max(Math.abs(A[i] - M[i]), Math.abs(A[i + 1] - M[i + 1]), Math.abs(A[i + 2] - M[i + 2])) >= STUFE)
                 maske.push(i);
+        // milchweiß = die Regel von K5 (`klassenMasse`: Y > 240 oder unbunt-hell, C*ab < 5 bei L* ≥ 50) gegen das Bild ohne Film
+        const m8 = new Uint8Array(W * H);
+        for (const i of maske) m8[i / 4] = 1;
         const mass = (u) => {
             let sY = 0,
-                milch = 0,
                 weiss = 0;
             for (const i of maske) {
                 const y = Y(u, i);
                 sY += y;
                 if (y > 240) weiss++;
-                else if (milchig(u, i)) milch++;
             }
             const n = maske.length;
-            return { Y: n ? sY / n : 0, weiss: n ? weiss / n : 0, milch: n ? (milch + weiss) / n : 0 };
+            const k = n ? window.__klassenMasse(u, m8, W, H, null, Z) : null;
+            return {
+                Y: n ? sY / n : 0,
+                weiss: n ? weiss / n : 0,
+                milch: k ? k.weiss : 0,
+                zielWeiss: k ? k.wtZiel / n : 0,
+            };
         };
         const P = new T.Vector3();
         const imBild = recs
@@ -307,7 +311,7 @@ async function hellProbe() {
     }
 }
 // Das Soll (K64-n1, D8): die Öffnung zeigt das Ziel durch den Film — sie brennt nicht aus (Y > 240 ≤ 5 % der Membran-Pixel,
-// Nordstern Portale) und liest nicht als Milch (unbunt und hell ≤ 5 %, die Regel von K5 milchweiss). Bis D8 maß H die Welt gegen
+// Nordstern Portale) und liest nicht als Milch (unbunt und hell ≤ 5 %, die Regel von K5 milchweiss gegen das Bild ohne Film). Bis D8 maß H die Welt gegen
 // das Labor-Bild des Anzeige-Werts der Shell (Labor = Welt, Y ≤ 1,15 ×): die Membran malt keinen Anzeige-Wert mehr, sie liest das
 // lineare Panorama der Ziel-Welt durch die Belichtung der Heimat.
 const HELL = { weiss: 0.05, milch: 0.05 };
@@ -364,7 +368,7 @@ async function blickStufe(check) {
         );
         // je Bild Wanduhr und kalte Programme: „M 512 ms/0 kalt"
         const kaltZeile = (h) =>
-            ["A", "M", "R"]
+            ["A", "M", "Z", "R"]
                 .map(
                     (k) =>
                         `${k} ${h.zeit[k]} ms/${h.kalt[k] == null ? "?" : h.kalt[k]} kalt` +
@@ -374,7 +378,8 @@ async function blickStufe(check) {
         // `w`: das Bild unter dem Urteil (welt = das Spiel, milch = der Milch-Leser) in DERSELBEN Maske
         const hellZeile = (h, w) =>
             `${h.n} Membran-Pixel (${(h.anteil * 100).toFixed(1)} %), ${w === h.welt ? "Welt" : "Milch"}: Y ${w.Y.toFixed(1)}, ` +
-            `Y > 240 ${(w.weiss * 100).toFixed(1)} %, milchweiß ${(w.milch * 100).toFixed(1)} %, Belichtung ${h.belichtung.toFixed(3)} — ` +
+            `Y > 240 ${(w.weiss * 100).toFixed(1)} %, milchweiß ${(w.milch * 100).toFixed(1)} % (das Ziel selbst weiß ${(w.zielWeiss * 100).toFixed(1)} %), ` +
+            `Belichtung ${h.belichtung.toFixed(3)} — ` +
             `${h.imBild.join(" · ")} [${kaltZeile(h)}]`;
         const hellRot = (h, w) => !(h.n > 200 && w.weiss <= HELL.weiss && w.milch <= HELL.milch);
         check(

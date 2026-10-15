@@ -331,6 +331,24 @@ function buehne() {
     return { saison: st.season, phase: st.seasonPhase, wetter: st.weather };
 }
 
+// DIE MEMBRAN OHNE FILM (D8, die Linse milchweiss — K5 `klassenMasse` liest Milch gegen das Bild ohne Film): `an` setzt jeder
+// Membran der Welt den Ziel-Knoten ihres Graphen (`_membranGraph` → ohneFilm: nur das Panorama der Ziel-Welt) als Farbe, `an`
+// false den Graphen zurück. Dieselbe Pose, dieselbe Uhr, derselbe Ausgabe-Pfad: der Unterschied zweier Bilder ist der Film.
+// Zurück die Zahl der Membranen.
+function membranOhneFilm(an) {
+    const r = window.anazhRealm;
+    let n = 0;
+    for (const rec of r._portalMembranes ? r._portalMembranes.values() : []) {
+        const mat = rec.mesh && rec.mesh.material;
+        if (!mat || !rec.tor || !rec.tor.gesetz) continue;
+        const G = r._membranGraph(rec.tor.gesetz);
+        mat.colorNode = an ? G.ohneFilm : G.colorNode;
+        mat.needsUpdate = true;
+        n++;
+    }
+    return n;
+}
+
 // DIE TIERE HALTEN STILL: zwischen Blick-Wahl und Schuss liegen hunderte Takte, in denen Tiere wandern —
 // gemessen 01.10. (aaa13 Haus fern, aaa14 Kreatur fern): ein Tier lief in die Kamera und füllte das
 // Bild. Nach jedem Kreatur-Tick fallen x/z auf den Stand davor zurück; Animation, Haut, Boden-Höhe
@@ -1239,5 +1257,6 @@ module.exports = {
         `window.__uhrBuch = ${uhrBuch.toString()};` +
         `window.__buehne = ${buehne.toString()};` +
         `window.__tiereHalten = ${tiereHalten.toString()};` +
+        `window.__membranOhneFilm = ${membranOhneFilm.toString()};` +
         `(${saisonFest.toString()})();`,
 };

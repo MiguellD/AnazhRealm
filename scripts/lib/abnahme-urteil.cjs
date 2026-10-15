@@ -558,7 +558,7 @@ function bildRauschen(A, B, W, H, schwelle) {
 //   silhouette    Rand-Pixel / √Fläche (der Kreis 2√π ≈ 3,5; eine zerfranste Krone, ein Gitter weit darüber)
 //   weiss/wt      Anteil und Zahl der Pixel, die als Weiß lesen statt als Farbe (s. MILCHWEISS unten)
 //   kante/kr      die Geradheit des Umrisses gegen das Außen (s. DIE KANTE DER SILHOUETTE unten) und die Zahl seiner Pixel
-function klassenMasse(F, m, W, H, aussen) {
+function klassenMasse(F, m, W, H, aussen, ohne) {
     const L = new Float32Array(W * H);
     for (let p = 0; p < W * H; p++) L[p] = 0.2126 * F[p * 4] + 0.7152 * F[p * 4 + 1] + 0.0722 * F[p * 4 + 2];
     let n = 0,
@@ -641,26 +641,34 @@ function klassenMasse(F, m, W, H, aussen) {
     // Mahy et al. 1994; L* ≥ 50, heller als die 18-%-Karte)
     // DIE BUNTHEIT (D8, `oeffnungBunt`): je Pixel der Klasse C*ab im selben CIELAB — ihr Mittel `bunt` (ein Ziel in der Öffnung
     // trägt Farbe, Milch, Nebel und Grau lesen ≈ 0)
+    // DIE MILCH DES FILMS (D8): trägt der Aufruf das Bild derselben Pose OHNE den Film (`ohne`, die Membran zeigt nur ihr Ziel —
+    // `__membranOhneFilm`), zählt ein Pixel nur, wenn es weiß liest UND sein Ziel nicht: Milch ist, was der Film dem Ziel
+    // hinzufügt; ein blasses Ziel (der helle Grund des Fachwerk-Studios) ist das Ziel, nicht Milch (`wtZiel` zählt es). Dieselbe
+    // Regel liest beide Bilder.
     let wt = 0,
+        wtZiel = 0,
         cs = 0;
     const lin = (c) => ((c /= 255) <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
     const fl = (t) => (t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116);
-    for (let p = 0; p < W * H; p++) {
-        if (m[p] !== 1) continue;
-        const R = lin(F[p * 4]),
-            G2 = lin(F[p * 4 + 1]),
-            B = lin(F[p * 4 + 2]);
+    let cab = 0;
+    const weissIn = (U, p) => {
+        const R = lin(U[p * 4]),
+            G2 = lin(U[p * 4 + 1]),
+            B = lin(U[p * 4 + 2]);
         const fy = fl(0.2126 * R + 0.7152 * G2 + 0.0722 * B);
         const a = 500 * (fl((0.4124 * R + 0.3576 * G2 + 0.1805 * B) / 0.95047) - fy),
             b = 200 * (fy - fl((0.0193 * R + 0.1192 * G2 + 0.9505 * B) / 1.08883));
-        const cab = Math.hypot(a, b);
+        cab = Math.hypot(a, b);
+        if (0.2126 * U[p * 4] + 0.7152 * U[p * 4 + 1] + 0.0722 * U[p * 4 + 2] > 240) return true;
+        return 116 * fy - 16 >= 50 && cab < 5;
+    };
+    for (let p = 0; p < W * H; p++) {
+        if (m[p] !== 1) continue;
+        const w = weissIn(F, p);
         cs += cab;
-        if (L[p] > 240) {
-            wt++;
-            continue;
-        }
-        if (116 * fy - 16 < 50) continue;
-        if (cab < 5) wt++;
+        if (!w) continue;
+        if (ohne && weissIn(ohne, p)) wtZiel++;
+        else wt++;
     }
     // DIE KANTE DER SILHOUETTE (K68-n2, Augen-Befund 14.10. „Nadelbaum-Karten groß und kantig"): je Rand-Pixel der Klasse,
     // das ans Außen grenzt (`aussen`: kein gemessener Teil — Himmel, Boden, Holz; ohne `aussen` jedes Pixel außerhalb der
@@ -759,6 +767,7 @@ function klassenMasse(F, m, W, H, aussen) {
         zt,
         weiss: n ? r4(wt / n) : null,
         wt,
+        wtZiel: ohne ? wtZiel : null,
         bunt: n ? +(cs / n).toFixed(2) : null,
         pixel: n,
         deckung: r4(n / (W * H)),
@@ -1278,9 +1287,15 @@ const MASS_RECHNER = {
         for (const { s, ap } of A.schuesse)
             for (const [n, k] of ap) {
                 if (k.wt == null) return { fehler: `${s}: die Messung ohne Milchweiß (${n}) — vor K63-n4 gemessen` };
+                if (k.wtZiel == null)
+                    return {
+                        fehler: `${s}: die Messung ohne das Bild ohne Film (${n}) — vor D8 gemessen, ein blasses Ziel läse als Milch`,
+                    };
                 w += k.wt;
                 px += k.pixel;
-                teile.push(`${s} ${n} ${(k.wt / Math.max(1, k.pixel)).toFixed(2)} (${k.pixel} px)`);
+                teile.push(
+                    `${s} ${n} ${(k.wt / Math.max(1, k.pixel)).toFixed(2)} (${k.pixel} px, Ziel weiß ${(k.wtZiel / Math.max(1, k.pixel)).toFixed(2)})`
+                );
                 if (!arg || k.wt > arg[2]) arg = [s, n, k.wt, k.pixel];
             }
         return {
@@ -2015,21 +2030,28 @@ function sollTafelSelbsttest(tafel, q) {
     });
     // MILCHWEISS: ein unbunt-heller Fleck liest 1 (auch ohne Ausbrand), ein bunter 0, Mittelgrau unter der 18-%-Karte 0; die
     // Stufen des Kerns: eine Stufe ohne Schuss lässt das Maß offen, ein Schuss mit den Toren in fremder Stufe ist ein Bruch
-    const fleck = (ton) => {
-        const F = new Uint8Array(W * H * 4);
-        for (let p = 0; p < W * H; p++) F.set([ton[0], ton[1], ton[2], 255], p * 4);
-        return klassenMasse(F, new Uint8Array(W * H).fill(1), W, H);
+    // `zielTon`: das Bild ohne Film (D8) — die Membran zeigt nur ihr Ziel; ein weißer Fleck über einem weißen Ziel ist keine Milch
+    const fleck = (ton, zielTon) => {
+        const bild = (t) => {
+            const F = new Uint8Array(W * H * 4);
+            for (let p = 0; p < W * H; p++) F.set([t[0], t[1], t[2], 255], p * 4);
+            return F;
+        };
+        return klassenMasse(bild(ton), new Uint8Array(W * H).fill(1), W, H, null, zielTon ? bild(zielTon) : null);
     };
     if (!(fleck([200, 200, 202]).weiss === 1 && fleck([99, 99, 99]).weiss === 0 && fleck([60, 140, 200]).weiss === 0))
         v.push(
             `Maß milchweiss: Weiß ${fleck([200, 200, 202]).weiss} statt 1, Grau 99 ${fleck([99, 99, 99]).weiss} und Blau ${fleck([60, 140, 200]).weiss} statt 0`
         );
-    const apMe = (stufe, ton) =>
+    // das Ziel der Apertur-Schüsse ist bunt (Himmelblau), solange der Fall kein anderes nennt
+    const BLAU = [60, 140, 200];
+    const apMe = (stufe, ton, zielTon = BLAU) =>
         Object.assign(stufeMe([]), {
-            klassen: { [`f:tor:L${stufe}`]: { pixel: 400, luma: 100 }, "portal-membran": fleck(ton) },
+            klassen: { [`f:tor:L${stufe}`]: { pixel: 400, luma: 100 }, "portal-membran": fleck(ton, zielTon) },
         });
     // die Stufe 3 ist (wie im Kern der Tore) eine NUR-WURF-Stufe: ihr Schuss zeigt die Fernform — die Apertur ohne Tor-Mesh
-    const fernMe = (ton) => Object.assign(stufeMe([]), { klassen: { "portal-membran": fleck(ton) } });
+    const fernMe = (ton, zielTon = BLAU) =>
+        Object.assign(stufeMe([]), { klassen: { "portal-membran": fleck(ton, zielTon) } });
     const rcW = {
         apertur: "^portal-membran$",
         tor: "^(?:f|fimp):tor:L(\\d)$",
@@ -2057,6 +2079,14 @@ function sollTafelSelbsttest(tafel, q) {
     const mwFremd = mw({ L3: apMe(1, [235, 235, 236]) });
     if (!(mwFremd.fehler && /in Stufe L1/.test(mwFremd.fehler)))
         v.push("Maß milchweiss: ein Schuss L3 mit Toren in L1 nicht beim Namen");
+    // DIE MILCH DES FILMS (D8): eine weiße Öffnung über einem weißen Ziel ist das Ziel, keine Milch; über einem bunten Ziel Milch;
+    // ein Schuss ohne das Bild ohne Film ist vor D8 gemessen (ein blasses Ziel läse als Milch)
+    const mwBlass = mw({ L1: apMe(1, [235, 235, 236], [236, 236, 236]), L3: fernMe([200, 200, 200], [201, 201, 201]) });
+    if (mwBlass.ist !== 0)
+        v.push(`Maß milchweiss: ein weißes Ziel liest als Milch (${mwBlass.ist}${mwBlass.fehler ? " — " + mwBlass.fehler : ""})`);
+    const mwOhne = mw({ L1: apMe(1, [235, 235, 236], null), L3: fernMe([200, 200, 200], null) });
+    if (!(mwOhne.fehler && /ohne Film/.test(mwOhne.fehler)))
+        v.push("Maß milchweiss: ein Schuss ohne das Bild ohne Film nicht beim Namen");
     // OEFFNUNG-BUNT (D8): die milchige Öffnung liest unter 5, die bunte (Rotviolett) über 20, der Täter ist die unbunteste Klasse
     if (!(fleck([200, 200, 202]).bunt < 5 && fleck([120, 60, 150]).bunt > 20))
         v.push(`Maß oeffnungBunt: Weiß C*ab ${fleck([200, 200, 202]).bunt}, Violett ${fleck([120, 60, 150]).bunt}`);
