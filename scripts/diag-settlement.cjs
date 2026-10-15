@@ -1158,12 +1158,35 @@ const FIXTURES = [
         // DAS DORF-LICHT (K10, Auge 13.10.): das Start-Dorf trug 0 Laternen, „Dorf-Lichter nachts = Laternenzahl" hielt
         // mit 0 = 0 vakuös. Jeder Plan mit Wegen trägt je Platz eine und je 25 m Weg eine Laterne (das Dorf-Licht des
         // Gesetzbuchs, dorfLayout) — über Dörfer, Weiler und Märkte, jede Epoche. Selbsttest: derselbe Plan ohne Laternen.
+        // Seit K66 steht jede Laterne VOR der Wand (fachwerk `LATERNE_WAND` aus LICHT_GESETZ.laterne: die Wand trägt höchstens das
+        // Doppelte der Gasse) — die Zahl hält dennoch: in einer beidseits bebauten Gasse fielen Laternen (5/14 7 < 9, 9/20 9 < 10);
+        // gemessen wird darum Zahl UND Wand-Abstand jeder Laterne zum nächsten Grundriss (der OBB des Slots).
+        const LGd = FC.LICHT_GESETZ.laterne;
+        const wandSoll = Math.sqrt(Math.max(0, (LGd.hoeheM ** 2 + LGd.kernM ** 2) / 2 - LGd.kernM ** 2));
         const dorfLicht = (pl) => {
             let wegM = 0;
             for (const rd of pl.roads || []) wegM += rd.len || 0;
             const soll = (pl.platz ? 1 : 0) + Math.floor(wegM / 25);
             const n = Array.isArray(pl.laternen) ? pl.laternen.length : 0;
-            return { n, soll, wegM: Math.round(wegM), ok: !(wegM > 0) || n >= soll };
+            let wand = Infinity;
+            for (const l of pl.laternen || [])
+                for (const sl of pl.slots || []) {
+                    const o = sl.obb;
+                    if (!o) continue;
+                    const c = Math.cos(o.phi || 0);
+                    const sn = Math.sin(o.phi || 0);
+                    const uu = Math.abs((l.x - o.cx) * c - (l.z - o.cz) * sn) - o.ex;
+                    const vv = Math.abs((l.x - o.cx) * sn + (l.z - o.cz) * c) - o.ez;
+                    wand = Math.min(wand, uu > 0 ? (vv > 0 ? Math.hypot(uu, vv) : uu) : vv > 0 ? vv : Math.max(uu, vv));
+                }
+            const wandOk = !(wand < wandSoll - 0.01);
+            return {
+                n,
+                soll,
+                wand: Math.round(wand * 100) / 100,
+                wegM: Math.round(wegM),
+                ok: (!(wegM > 0) || n >= soll) && wandOk,
+            };
         };
         const lichtFehl = [];
         let lichtN = 0;
@@ -1174,24 +1197,41 @@ const FIXTURES = [
             [3, 9],
             [7, 18],
             [11, 40],
+            [5, 14],
+            [9, 20],
         ])
             for (const epoche of [undefined, "antike"]) {
                 const pl = FC.exportSettlement({ seed, nH, epoche });
                 const d = dorfLicht(pl);
                 lichtN++;
                 if (!d.ok)
-                    lichtFehl.push(`${seed}/${nH}/${epoche || "-"}: ${d.n} Laternen < ${d.soll} (${d.wegM} m Weg)`);
+                    lichtFehl.push(
+                        `${seed}/${nH}/${epoche || "-"}: ${d.n} Laternen (Soll ≥ ${d.soll}, ${d.wegM} m Weg), die nächste ${d.wand} m vor einer Wand (Soll ≥ ${wandSoll.toFixed(2)} m)`
+                    );
             }
         check(
-            `DAS DORF-LICHT: jeder Plan mit Wegen trägt je Platz und je 25 m Weg eine Laterne (${lichtN} Pläne)`,
+            `DAS DORF-LICHT: jeder Plan mit Wegen trägt je Platz und je 25 m Weg eine Laterne, jede vor der Wand (${lichtN} Pläne)`,
             lichtFehl.length === 0,
             lichtFehl.slice(0, 3).join(" · ")
         );
         {
             const pl = FC.exportSettlement({ seed: 7, nH: 12 });
+            const o0 = pl.slots[0].obb;
             check(
-                "Selbst-Test 15: derselbe Plan ohne Laternen fällt im Dorf-Licht",
-                dorfLicht(pl).ok && !dorfLicht(Object.assign({}, pl, { laternen: [] })).ok
+                "Selbst-Test 15: derselbe Plan ohne Laternen fällt im Dorf-Licht, eine Laterne an der Wand (0,45 m wie bis K66) ebenso",
+                dorfLicht(pl).ok &&
+                    !dorfLicht(Object.assign({}, pl, { laternen: [] })).ok &&
+                    !dorfLicht(
+                        Object.assign({}, pl, {
+                            laternen: pl.laternen.concat([
+                                {
+                                    x: o0.cx + (o0.ex + 0.45) * Math.cos(o0.phi || 0),
+                                    z: o0.cz - (o0.ex + 0.45) * Math.sin(o0.phi || 0),
+                                    th: 0,
+                                },
+                            ]),
+                        })
+                    ).ok
             );
         }
     }

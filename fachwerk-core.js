@@ -3256,12 +3256,12 @@
     if(ok) trees.push({x:tx,z:tz,h:2.6+rnd()*1.8}); }
   const laternen=[];                                                                          // LATERNEN-GESETZ: die moderne Stadt leuchtet
   const LG9=LICHT_GESETZ.laterne, LATERNE_WAND=Math.sqrt(Math.max(0,(LG9.hoeheM*LG9.hoeheM+LG9.kernM*LG9.kernM)/2-LG9.kernM*LG9.kernM));   /*DIE LATERNE VOR DER WAND (K66): ihr Licht trifft keine Wand mit mehr als dem Doppelten der Gasse unter ihr — (h²+k²)/(d²+k²) ≤ 2, d ≥ 2,55 m; bis K66 stand sie 0,45 m vor dem Grundriss, die Giebelwand trug nachts das Sechsfache*/
+  const laterneQuer=(rd,q,fl)=>{ for(let o=rd.w/2+gw+0.35; o>=rd.w/4-1e-9; o-=0.25){ const x=q.x+fl*q.nx*o, z=q.z+fl*q.nz*o; if(obbs.every(q2=>distPunktOBB(x,z,q2.o)>=LATERNE_WAND)) return {x,z}; } return null; };   /*DER STAND QUER ZUR GASSE (K66): so nah am Grundriss, wie die Wand es traegt — vom alten Stand 0,35 m hinter dem Gehweg in 0,25-m-Schritten bis zur Mitte der eigenen Weghaelfte (rd.w/4 von der Achse); in einer beidseits bebauten Gasse steht die Laterne am Wegrand statt zu fallen (bis K66-n3 fielen 5/14 auf 7 statt 9, 9/20 auf 9 statt 10 Laternen, das DORF-LICHT riss)*/
   let R9L=30; for(const rd9 of roads) for(const q9 of rd9.pts){ const d9=Math.hypot(q9.x,q9.z); if(d9>R9L)R9L=d9; }   /*ZEITREISE-Referenz: der ECHTE Stadtradius (Strassen-Max), nicht Mauer-Rw — GEMESSEN 0 Gas*/
   if(staedt&&plan.jahr>1850){ for(const rd of roads){ if(rd.gen>=2)continue;
     for(let u=6, fl=1; u<(rd.len||0)-4; u+=DORF_NORM.laneiv-4+((u*7)%5), fl=-fl){ const q=at(rd,u);   /*laneiv KONSUMIERT: 13..17 byte-gleich (laneiv-4 == 13)*/
-      const lx2=q.x+fl*q.nx*(rd.w/2+gw+0.35), lz2=q.z+fl*q.nz*(rd.w/2+gw+0.35);
-      let ok=true;
-      for(const q2 of obbs){ if(distPunktOBB(lx2,lz2,q2.o)<LATERNE_WAND){ok=false;break;} }
+      const lq=laterneQuer(rd,q,fl), lx2=lq?lq.x:0, lz2=lq?lq.z:0;
+      let ok=!!lq;
       if(ok&&laternen.some(l=>Math.hypot(lx2-l.x,lz2-l.z)<9))ok=false;
       if(ok){ const dL=Math.min(1, Math.hypot(lx2,lz2)/(R9L*0.80));                          /*LATERNEN-ZEITREISE: jede Laterne liest das JAHR ihres Rings — Gas im Altkern, Elektro am Saum*/
         const R0=globalThis.__ring; const rj=(R0&&R0.ringe)? (R0.gr0+(plan.jahr-R0.gr0)*Math.pow(dL,0.82)) : plan.jahr;
@@ -3271,10 +3271,10 @@
     const DORF_LICHT_WEG=25;
     const setz=(x,z,th)=>{ for(const q2 of obbs){ if(distPunktOBB(x,z,q2.o)<LATERNE_WAND) return false; }
       if(laternen.some(l=>Math.hypot(x-l.x,z-l.z)<9)||brunnen.some(b2=>Math.hypot(x-b2.x,z-b2.z)<2)) return false; laternen.push({x,z,th,gas:true}); return true; };
-    const amWeg=(rd,u,fl)=>{ const q=at(rd,u); return setz(q.x+fl*q.nx*(rd.w/2+gw+0.35), q.z+fl*q.nz*(rd.w/2+gw+0.35), Math.atan2(-fl*q.nz,-fl*q.nx)); };
+    const amWeg=(rd,u,fl)=>{ const q=at(rd,u), lq=laterneQuer(rd,q,fl); return !!lq&&setz(lq.x, lq.z, Math.atan2(-fl*q.nz,-fl*q.nx)); };
     if(platz) [[0.25,0],[-0.25,0],[0,0.7],[0,-0.7]].some(([fx,fz])=>setz(platz.cx+fx*platz.ex, platz.cz+fz*platz.ez, 0));
     const grad=new Array(G.nodes.length).fill(0); for(const rd of roads){ grad[rd.a]++; grad[rd.b]++; }
-    for(const rd of roads){ const L=rd.len||0; for(const [ende,k] of [[0,rd.a],[1,rd.b]]){ if(grad[k]<3) continue; const u0=ende?Math.max(0,L-2):Math.min(L,2); amWeg(rd,u0,1)||amWeg(rd,u0,-1); } }
+    for(const rd of roads){ const L=rd.len||0; for(const [ende,k] of [[0,rd.a],[1,rd.b]]){ if(grad[k]<3) continue; for(let du=2; du<=Math.max(2,Math.min(8,L/2)); du+=1){ const u0=ende?Math.max(0,L-du):Math.min(L,du); if(amWeg(rd,u0,1)||amWeg(rd,u0,-1)) break; } } }   /*der Knoten sucht seinen Stand bis 8 m in den Weg hinein (K66: vor der Wand fand er ihn 2 m vom Knoten selten)*/
     for(const rd of roads){ const L=rd.len||0; for(let u=DORF_LICHT_WEG/2, fl=1; u<L; u+=DORF_LICHT_WEG, fl=-fl){
       for(let du=0; du<=DORF_LICHT_WEG/2-1; du+=1){ if((u+du<L&&(amWeg(rd,u+du,fl)||amWeg(rd,u+du,-fl)))||(du&&u-du>0&&(amWeg(rd,u-du,fl)||amWeg(rd,u-du,-fl)))) break; } } } }
   const sp=at(roads[0],Math.min(roads[0].len||8,8));
