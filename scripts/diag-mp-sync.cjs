@@ -15,6 +15,10 @@
 //   (c) GRABEN    das Chat-Graben reist (K23): A tippt „voxel carve“ und „voxel fill“ im Gespräch, B trägt GENAU dieselben
 //                 zwei Edits (Ort, Radius, Art) — keiner fehlt (Täter `_chatTryVoxelDebugCommand`: schnitzt direkt statt
 //                 über dslRun) und keiner doppelt (Täter: der Empfang wendet eine Graben-Nachricht mehrfach an).
+//   (d) LANGE TAKTE B trägt Takte, in denen je Takt mindestens 2 × `aufholJeSchritt` Schritte von A ankommen (K60): B sieht A
+//                 an dessen Ort, und nach JEDEM Takt liegen höchstens Jitter-Reserve + ein Aufhol-Burst Schritte hinter dem
+//                 Empfang (Täter `_lockstepTickPeers`: die Kappe zählt Frames statt Wanduhr). Der Selbsttest im Hauptlauf
+//                 setzt die alte Kappe ein → (d) ROT am Verzug.
 // Dazu der Spielpfad: Seite A über den KNOPF (`#p2p-toggle`, zweiter Klick im Aufbau startet kein zweites Init, der
 // Knopf liest die EINE Absicht), Seite B über den BOOT (die gemerkte Absicht aus `p2pPersist`). A läuft nach dem
 // Ladeschirm über die Tastatur (`_stepCharacter`; A bootete zuerst, sein Ladeschirm fällt zuerst), B sieht A an dessen
@@ -48,8 +52,10 @@ const ROH = (() => {
 const REJOIN_DECKEL_S = 31;
 const ABSTAND_M = 0.3;
 const LATENZ_MS = 150;
-// (d) die Länge eines langen Takts bei B (ms): der Ghost braucht dann mehr als 10 Schritte je Takt (60 je Sekunde × 0,3 s = 18).
-const LANG_MS = 300;
+// (d) der lange Takt bei B, in Schritten: B tickt erst, wenn ZUFLUSS_FAKTOR × aufholJeSchritt Schritte von A angekommen sind —
+// das Szenario steht in Schritten je Takt, nie in Millisekunden des Läufers (CI 38670118945: mit 300-ms-Takten hielt die alte
+// Kappe bei langsamem Sender fast Schritt, der Selbsttest war blind).
+const ZUFLUSS_FAKTOR = 2;
 // Nachlauf nach dem Eintreffen der Edits bei B: eine zweite Anwendung derselben Nachricht kann nach der ersten landen.
 const GRABEN_NACHLAUF_MS = 800;
 
@@ -186,7 +192,15 @@ function installiere(alteTuer) {
         }
         return res;
     };
-    mp.p2pTickProbe = r.p2pTick; // (d) die langen Takte legen sich um die Probe, nie an ihr vorbei
+    // DER TAKT DES GHOSTS: jeder Verbrauch (`_lockstepTickPeers`, aus `p2pTick`) zählt; (d) legt seine langen Takte um
+    // diesen Zähler, nie an ihm vorbei
+    const lsEcht = Object.getPrototypeOf(r)._lockstepTickPeers;
+    mp.lsTakte = 0;
+    mp.lsZaehler = function (nowMs) {
+        mp.lsTakte++;
+        return lsEcht.call(this, nowMs);
+    };
+    r._lockstepTickPeers = mp.lsZaehler;
     window.__mpPumpe = setInterval(() => {
         try {
             r._gameLoopTick(performance.now());
@@ -415,6 +429,10 @@ function bericht(p) {
                 "A steht wieder"
             );
             await sleep(1200);
+            // B urteilt nach seinem EREIGNIS: zwei eigene Takte, seit A steht — nie nach der Uhr des Läufers (ein Hintergrund-
+            // Takt unter Last kam lokal 1,9 s nach dem Stand noch nicht: Abstand 1,905 m bei Rückstau 111, K60-N3/mp-3.txt)
+            const takteB = await pageB.evaluate(() => window.__mp.lsTakte);
+            await waitFor(pageB, (n) => window.__mp.lsTakte >= n + 2, 60000, "B: zwei Ghost-Takte nach dem Stand von A", takteB);
             const wahrA = await pageA.evaluate(() => {
                 const p = window.anazhRealm.state.playerMesh.position;
                 return { x: p.x, y: p.y, z: p.z, bewegtAm: window.__mp.eigenBewegtAm };
@@ -455,57 +473,120 @@ function bericht(p) {
         if (!process.env.CI && l0.latenz !== null)
             check(`Latenz ≤ ${LATENZ_MS} ms (lokal)`, l0.latenz <= LATENZ_MS, `${l0.latenz} ms`);
 
-        // ── (d) LANGE TAKTE (K60): B trägt Takte von LANG_MS (der Lade-Takt eines Mitspielers unter seinem Ladeschirm, ein
+        // ── (d) LANGE TAKTE (K60): B trägt lange Takte (der Lade-Takt eines Mitspielers unter seinem Ladeschirm, ein
         // langsames Gerät) — der Ghost hält mit dem Sender Schritt, sein Verbrauch liest die Wanduhr, nie den Frame
         // (`_lockstepTickPeers`). Befund CI 38639169868: B unter seinem Ladeschirm, 56 Peer-Takte, A nach dem Lauf 1,924 m
         // daneben ohne eine Regung — je Takt höchstens 10 Schritte, der Sender schickt 60 je Sekunde. Der Selbsttest gleich
         // danach setzt die alte Kappe wieder ein (jeder Takt gilt als ein Frame von 1/60 s): (d) muss ROT werden.
+        // DAS URTEIL LIEST DEN VERZUG JE TAKT, nie nur den Ort am Ende: nach jedem langen Takt bleiben höchstens die
+        // Jitter-Reserve und EIN Aufhol-Burst im Puffer (`VERZUG_GRENZE` Schritte hinter dem Empfang). Der Ort am Ende allein
+        // war blind (CI 38670118945): A stand 1,2 s, bevor B urteilte, die alte Kappe holte den kurzen Lauf in dieser Zeit fast
+        // ein (Abstand 0,233 m bei Rückstau 102 Schritten) — der Verzug wächst unter ihr je Takt um Zufluss − 10, unter der
+        // Wanduhr bleibt er bei der Reserve.
+        const lsGesetz = await pageB.evaluate(() => {
+            const L = window.anazhRealm.constructor.LOCKSTEP;
+            return { reserve: L.jitterReserve, aufhol: L.aufholJeSchritt };
+        });
+        const VERZUG_GRENZE = lsGesetz.reserve + lsGesetz.aufhol;
+        // DER LANGE TAKT IN SCHRITTEN: der Ghost bei B verbraucht erst, wenn seit seinem letzten Takt ZUFLUSS_SOLL Schritte von A angekommen
+        // sind — ein Takt trägt so immer das Doppelte der alten Kappe, gleich wie schnell A sendet und wie belastet der Läufer
+        // ist (CI 38670118945 lief mit 300 ms Wanduhr-Takten; lokal unter Last kam je Takt kein einziger Schritt, K60-N3/mp-4.txt)
+        const ZUFLUSS_SOLL = ZUFLUSS_FAKTOR * lsGesetz.aufhol;
         const langeTakte = (an, alteKappe) =>
             pageB.evaluate(
-                (an, ms, alteKappe) => {
+                (an, soll, alteKappe, pid) => {
                     const r = window.anazhRealm;
-                    const probe = window.__mp.p2pTickProbe;
-                    r.p2pTick = probe;
-                    delete r._lockstepTickPeers;
-                    if (!an) return;
-                    r.p2pTick = function (t) {
-                        const t0 = performance.now();
-                        while (performance.now() - t0 < ms) {
-                            /* ein langer Takt */
+                    const mp = window.__mp;
+                    const fenster = mp.langFenster || null; // das Fenster, das hier endet
+                    mp.langFenster = null;
+                    r._lockstepTickPeers = mp.lsZaehler;
+                    if (!an) return fenster;
+                    const f = (mp.langFenster = { takte: 0, verzugMax: 0, zufluss: [], taktMsMax: 0, hoch: null, vorT: null });
+                    const echt = Object.getPrototypeOf(r)._lockstepTickPeers;
+                    // nur der Verbrauch des Ghosts wartet (der lange Takt), `p2pTick` selbst läuft weiter: Peer-Pflege,
+                    // Zeichnen und das eigene Senden bleiben am Leben, die Verbindung hält
+                    r._lockstepTickPeers = function (nowMs) {
+                        const e = this.state.p2p.peers.get(pid);
+                        const ls = e && e.lockstep;
+                        // der Empfangs-Stand (nächster erwarteter Schritt): Verbrauch und Anker lassen ihn stehen
+                        const hoch = ls ? ls.bufStart + ls.buf.length : null;
+                        if (f.hoch !== null && hoch !== null && hoch - f.hoch < soll) return undefined; // der lange Takt
+                        // die alte Kappe: jeder Takt gilt als EIN Frame von 1/60 s (je Takt höchstens aufholJeSchritt Schritte)
+                        if (alteKappe) this.state.p2p._lockstepTickMs = nowMs - 1000 / 60;
+                        mp.lsTakte++;
+                        const res = echt.call(this, nowMs);
+                        if (ls) {
+                            // Verzug = Schritte, die nach dem Verbrauch dieses Takts noch hinter dem Empfang liegen
+                            if (f.hoch !== null) f.zufluss.push(hoch - f.hoch);
+                            f.hoch = hoch;
+                            f.takte++;
+                            f.verzugMax = Math.max(f.verzugMax, ls.buf.length);
                         }
-                        return probe.call(this, t);
+                        if (f.vorT !== null) f.taktMsMax = Math.max(f.taktMsMax, Math.round(nowMs - f.vorT));
+                        f.vorT = nowMs;
+                        return res;
                     };
-                    if (alteKappe) {
-                        const echt = Object.getPrototypeOf(r)._lockstepTickPeers;
-                        r._lockstepTickPeers = function (nowMs) {
-                            this.state.p2p._lockstepTickMs = nowMs - 1000 / 60;
-                            return echt.call(this, nowMs);
-                        };
-                    }
+                    return null;
                 },
                 an,
-                LANG_MS,
-                !!alteKappe
+                ZUFLUSS_SOLL,
+                !!alteKappe,
+                idA
             );
+        // DIE EINE PRÜF-FUNKTION von (d) — der Lauf und sein Selbsttest gehen durch denselben Code
+        const zuflussMedian = (f) => {
+            const z = [...f.zufluss].sort((a, b) => a - b);
+            return z.length ? z[z.length >> 1] : 0;
+        };
+        const dMaengel = (l, f) => {
+            const m = [];
+            if (!(l.lauf > 1)) m.push(`LEER: A lief ${l.lauf.toFixed(2)} m (≤ 1 m)`);
+            if (!f || f.takte < 3) m.push(`LEER: ${f ? f.takte : 0} lange Takte mit dem Ghost von A (< 3)`);
+            if (!l.sichtB.sichtbar) m.push("A bei B unsichtbar");
+            if (l.abstand > ABSTAND_M) m.push(`Abstand ${l.abstand.toFixed(3)} m > ${ABSTAND_M} m`);
+            if (f && f.verzugMax > VERZUG_GRENZE) m.push(`VERZUG ${f.verzugMax} Schritte nach einem Takt > ${VERZUG_GRENZE}`);
+            return m;
+        };
+        const fensterSatz = (f) =>
+            f
+                ? `${f.takte} Takte (bis ${f.taktMsMax} ms), Zufluss je Takt Median ${zuflussMedian(f)} Schritte, Verzug nach dem Takt max ${f.verzugMax} (Grenze ${VERZUG_GRENZE})`
+                : "kein Fenster";
+        console.log(
+            `  INFO (d) der Ghost bei B verbraucht erst je ${ZUFLUSS_SOLL} angekommene Schritte von A (${ZUFLUSS_FAKTOR} × aufholJeSchritt ${lsGesetz.aufhol}), Verzug-Grenze ${VERZUG_GRENZE}`
+        );
+        // das Fenster endet nach seinem Ereignis (drei lange Takte mit dem Ghost von A), nie nach der Uhr des Läufers
+        const fensterZu = async () => {
+            await waitFor(pageB, () => !!window.__mp.langFenster && window.__mp.langFenster.takte >= 3, 60000, "B: drei lange Takte").catch(
+                () => {}
+            );
+            return langeTakte(false);
+        };
         await langeTakte(true, false);
         const l1 = await laufUndSicht();
-        await langeTakte(false);
-        roh.langeTakte = Object.assign({ taktMs: LANG_MS }, l1);
+        const f1 = await fensterZu();
+        const m1 = dMaengel(l1, f1);
+        roh.langeTakte = Object.assign({ zuflussSoll: ZUFLUSS_SOLL, verzugGrenze: VERZUG_GRENZE, fenster: f1 }, l1);
         check(
-            `(d) lange Takte bei B (${LANG_MS} ms): B sieht A an dessen Ort (±${ABSTAND_M} m waagrecht)`,
-            l1.lauf > 1 && l1.sichtB.sichtbar && l1.abstand <= ABSTAND_M,
-            `Lauf ${l1.lauf.toFixed(2)} m · ${sichtSatz(l1)}` +
-                (l1.abstand > ABSTAND_M ? " — Täter _lockstepTickPeers: die Aufhol-Kappe zählt Frames statt Wanduhr" : "")
+            `(d) lange Takte bei B (je ${ZUFLUSS_SOLL} Schritte von A): B sieht A an dessen Ort (±${ABSTAND_M} m waagrecht), der Verzug bleibt bei der Reserve`,
+            m1.length === 0,
+            `Lauf ${l1.lauf.toFixed(2)} m · ${sichtSatz(l1)} · ${fensterSatz(f1)}` +
+                (m1.length ? ` — ${m1.join(" · ")} — Täter _lockstepTickPeers: die Aufhol-Kappe zählt Frames statt Wanduhr` : "")
         );
         await sleep(1500); // B holt bei kurzen Takten auf
         await langeTakte(true, true);
         const l2 = await laufUndSicht();
-        await langeTakte(false);
-        roh.langeTakteAlteKappe = l2;
+        const f2 = await fensterZu();
+        const m2 = dMaengel(l2, f2);
+        roh.langeTakteAlteKappe = Object.assign({ fenster: f2 }, l2);
+        // das Szenario stresst die alte Kappe (Zufluss je Takt über ihr), und (d) fällt an seinem Verzug-Term
+        const gestresst = zuflussMedian(f2) > lsGesetz.aufhol;
+        const amVerzug = m2.some((x) => x.startsWith("VERZUG"));
         check(
-            "(d) Selbsttest: die alte Kappe je Frame macht (d) ROT",
-            l2.lauf > 1 && l2.abstand > ABSTAND_M,
-            `Lauf ${l2.lauf.toFixed(2)} m · ${sichtSatz(l2)} — (d) ${l2.abstand > ABSTAND_M ? "ROT" : "GRÜN, die Linse ist blind"}`
+            "(d) Selbsttest: die alte Kappe je Frame macht (d) ROT am Verzug",
+            gestresst && amVerzug && !m2.some((x) => x.startsWith("LEER")),
+            `Lauf ${l2.lauf.toFixed(2)} m · ${sichtSatz(l2)} · ${fensterSatz(f2)} — (d) ${
+                m2.length ? "ROT: " + m2.join(" · ") : "GRÜN, die Linse ist blind"
+            }${gestresst ? "" : ` — das Szenario stresst die alte Kappe nicht (Zufluss ≤ ${lsGesetz.aufhol} je Takt)`}`
         );
         await sleep(1500);
 
