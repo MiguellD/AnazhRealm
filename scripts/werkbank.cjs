@@ -60,7 +60,7 @@
 //                                                           Wiederholung je Render · Uploads · writeBuffer) und NETTO kosten
 //                                                           — jeder verschachtelte Render (der Schatten im ersten Licht-
 //                                                           Empfänger) ist abgezogen und beim Pfad genannt
-//                                                           (scripts/lib/diaet-linse.cjs; Exit 1: Wiederholung im Stand)
+//                                                           (scripts/lib/diaet-linse.cjs; Exit 1: Wiederholung oder Refresh ohne Änderung im Stand)
 //   node scripts/werkbank.cjs takt [n] [--extra a,b]       DIE TAKT-LINSE: CPU je Loop-Subsystem, n Takte, Render
 //                                                           ruht (scripts/lib/takt-linse.cjs)
 //   node scripts/werkbank.cjs stand [n] [--ein s] [--ruhe max-s] [--regler voll|frei] [--tiere frei|halten]
@@ -3260,7 +3260,7 @@ async function starte() {
             console.log(
                 f.length
                     ? "SELBSTTEST ROT:\n  " + f.join("\n  ")
-                    : "SELBSTTEST GRÜN: das Diät-Urteil nennt die Wiederholung im Stand und eine blinde Linse beim Namen"
+                    : "SELBSTTEST GRÜN: das Diät-Urteil nennt die Wiederholung im Stand, den Refresh ohne Änderung und eine blinde Linse beim Namen"
             );
             process.exit(f.length ? 1 : 0);
         }
