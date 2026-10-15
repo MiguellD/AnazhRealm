@@ -424,6 +424,86 @@ class AnazhRealm_Z20a {
         return out;
     }
 
+    // DER WALD PLANT IM TAKT (K69, Lehre 14 + 25): eine frische Wald-Zelle zu planen kostet 1–3 ms (`planForestCell`, ~160
+    // Sichthöhen); die Gestalt EINES Baums in frischem Wald fragt bis zu 13 × 13 Zellen (der Freistand ±4, das Urteil jedes
+    // Nachbarn ±2: `WALD_PLAN.reich`). Bis K69 plante der erste Frager am Stück — beim Gang ins Dorf die Ausstattung des Dorfs
+    // 366 Zellen in EINER Aufgabe neben dem Takt (551 ms, Null-Renderer), ein Takt 113 Zellen (245 ms). Jetzt fragt die
+    // Gestalt des Orts (`_ortGestaltSame`) hier: steht der Plan um (x, z), gilt ihr Urteil sofort; fehlen Zellen, bestellt sie
+    // sie in der Schlange des Walds (`_tickWaldPlan`) und wartet — wie auf ein kaltes Buch, so warten ihre Leser schon (die
+    // Hülle, die Streu, die Promotion, die Karte). Die Frage merkt ihre fehlenden Zellen je Zelle des Orts: jede weitere
+    // kostet einen Blick, bis die letzte steht. Fiel eine bestellte Zelle aus der Schlange (ein neuer Stand, ein Erdbau),
+    // bestellt die Frage neu.
+    _waldPlanSteht(x, z) {
+        const memo = this._forestDartMemo;
+        if (!memo) return false;
+        const C = AnazhRealm.FOREST.cell;
+        const gx = Math.floor(x / C);
+        const gz = Math.floor(z / C);
+        const bk = gx + "," + gz;
+        if (!this._waldWarten || this._waldWarten.size > 4096) this._waldWarten = new Map();
+        const Q = this._waldPlanSchlange || (this._waldPlanSchlange = new Map());
+        let fehlt = this._waldWarten.get(bk);
+        if (fehlt) {
+            while (fehlt.length && memo.has(fehlt[fehlt.length - 1])) fehlt.pop();
+            if (fehlt.length) {
+                if (!Q.has(fehlt[fehlt.length - 1]))
+                    for (const k of fehlt) {
+                        if (memo.has(k) || Q.has(k)) continue;
+                        const i = k.indexOf(",");
+                        Q.set(k, [Number(k.slice(0, i)), Number(k.slice(i + 1))]);
+                    }
+                return false;
+            }
+            this._waldWarten.delete(bk);
+        }
+        const R = AnazhRealm.WALD_PLAN.reich;
+        fehlt = null;
+        for (let ax = -R; ax <= R; ax++)
+            for (let az = -R; az <= R; az++) {
+                const k = gx + ax + "," + (gz + az);
+                if (memo.has(k)) continue;
+                (fehlt || (fehlt = [])).push(k);
+                if (!Q.has(k)) Q.set(k, [gx + ax, gz + az]);
+            }
+        if (!fehlt) return true;
+        this._waldWarten.set(bk, fehlt);
+        return false;
+    }
+
+    // DIE SCHLANGE DES WALDS (K69): der Takt-Planer (Job `waldPlan`, Welt-Substanz) plant die bestellten Zellen
+    // (`_waldPlanSteht`) nah zuerst, je Takt höchstens `WALD_PLAN.ms` (mindestens eine Zelle — nie verhungert; der Lade-Takt
+    // gibt sein ganzes Budget). Ihre Regung (`_waldPlanRegung`) liest der Stand-Stempel: sie weckt die Fege-Takte, deren Bäume
+    // auf ihre Zellen warten — wenn die Schlange leer ist, und solange sie plant, höchstens alle 250 ms. → die Zahl der Zellen.
+    _tickWaldPlan(ms) {
+        const Q = this._waldPlanSchlange;
+        if (!Q || !Q.size || !this._forestGesetzWahr()) return 0;
+        const seedInt = this._forestSeedInt();
+        this._forestDartStand(seedInt);
+        const memo = this._forestDartMemo;
+        const C = AnazhRealm.FOREST.cell;
+        const liste = [];
+        for (const [k, g] of Q) {
+            if (memo.has(k)) Q.delete(k);
+            else liste.push([this._spielerD2((g[0] + 0.5) * C, (g[1] + 0.5) * C), k, g]);
+        }
+        liste.sort((a, b) => a[0] - b[0]);
+        const budget = Number.isFinite(ms) ? ms : Infinity;
+        const frist = this._ladeTakt() ? budget : Math.min(budget, AnazhRealm.WALD_PLAN.ms);
+        const t0 = performance.now();
+        let n = 0;
+        for (const [, k, g] of liste) {
+            if (n > 0 && performance.now() - t0 >= frist) break;
+            this._forestCellDarts(g[0], g[1], seedInt);
+            Q.delete(k);
+            n++;
+        }
+        if (n > 0 && (!Q.size || !(t0 < this._waldPlanWeckBis))) {
+            this._waldPlanRegung = (this._waldPlanRegung | 0) + 1;
+            this._waldPlanWeckBis = t0 + 250;
+        }
+        return n;
+    }
+
     // ==================== ASSET-FOUNDRY: die Vorlage pflanzt ihre echten Bäume ====================
     // Der Studio-Generator (die Kerne + die Foundry-Brücke foundry-bruecke.js, K42) läuft als Worker und liefert
     // seine echten Baum-Instanzen (buildInstance, eigenes LOD) als Geometrie-Puffer; AnazhRealm baut daraus

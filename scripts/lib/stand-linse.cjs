@@ -496,6 +496,30 @@ function standUrteil(b) {
                     `\`massBau\`, ${H.ms} ms) — das Nein des Exports (\`chimney: null\`) fiel in der Slot-Quelle ` +
                     `(\`_spawnSettlementSlot\`), jedes Dorf-Haus ohne Kamin baut sich beim Nähern im Takt zweimal`
             );
+        // der Baum in frischem Wald (ein Hof-Baum des Dorfs, `_naturSetzen`): bis K69 plante seine Gestalt jede fehlende Zelle
+        // bis ±6 SYNCHRON im Aufrufer (`_ortGestaltSame › _forestStehtFrei › planForestCell`) — die Ausstattung eines Dorfs
+        // plante beim Gang hinein 366 Zellen in EINER Aufgabe (551 ms); jetzt plant sie die Schlange des Walds im Takt
+        const Wd = O.wald;
+        if (!Wd || !Wd.gesetzt)
+            v.push("LEER: die Ort-Phase setzte keinen Baum in frischem Wald — der Wald-Plan ist ungeprüft");
+        else {
+            if (Wd.synchron > 0)
+                v.push(
+                    `ORT: der Baum in frischem Wald bei (${Wd.ort}) plante ${Wd.synchron} Wald-Zellen synchron ` +
+                        `(\`_ortGestaltSame › _forestStehtFrei › planForestCell\`, ${Wd.ms} ms) — die Gestalt plant am Stück ` +
+                        `im Aufrufer, die Ausstattung eines Dorfs wird eine Lawine neben dem Takt`
+                );
+            if (!Number.isInteger(Wd.gestalt))
+                v.push(
+                    `ORT: die Gestalt des Baums in frischem Wald steht nach ${Wd.takte} Takten nicht — die Schlange des ` +
+                        `Walds (\`_tickWaldPlan\`) plant seine Zellen nicht`
+                );
+            if (Wd.maxTaktMs > 40)
+                v.push(
+                    `ORT: die Schlange des Walds plante in EINEM Takt ${Wd.maxTaktMs} ms (${Wd.maxTaktZellen} Zellen) — ` +
+                        `ihr Budget (\`WALD_PLAN.ms\`) hält nicht`
+                );
+        }
         if (!O.stand || !O.stand.key)
             v.push("LEER: die Ort-Phase fand keinen fernen Chunk für den Stand der Worker-Antworten");
         else if (!O.stand.gleich)

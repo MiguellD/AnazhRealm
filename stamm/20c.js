@@ -788,7 +788,8 @@ class AnazhRealm_Z20c {
         let wartet = false;
         const same = this._foundryGestaltSame(seed, preset, () => {
             if (!(T > 0)) return false;
-            if (!this._forestGesetzWahr()) {
+            // die Wahrheit des Gesetzes und der Plan des Walds um den Ort (`_waldPlanSteht`, K69): fehlt eins, wartet sie
+            if (!this._forestGesetzWahr() || !this._waldPlanSteht(x, z)) {
                 wartet = true;
                 return false;
             }

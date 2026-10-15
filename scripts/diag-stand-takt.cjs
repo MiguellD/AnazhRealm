@@ -116,6 +116,17 @@ function selbsttest() {
             maxTaktMs: 21,
             raeumung: { abbau: 5, saves: 0, saveMs: 0 },
             kamin: { kultur: "alemannisch", gesetzt: true, bau: 0, ms: 0 },
+            wald: {
+                gesetzt: true,
+                ort: [-182, -618],
+                synchron: 0,
+                ms: 0,
+                takte: 64,
+                gestalt: 2,
+                imTakt: 169,
+                maxTaktZellen: 3,
+                maxTaktMs: 4.1,
+            },
         },
         code: Object.fromEntries(namen.map((n) => [n, { fragt: true, meldet: true }])),
         pageErrors: [],
@@ -319,6 +330,26 @@ function selbsttest() {
             "die Ort-Phase setzt kein Haus ohne Kamin",
             (b) => (b.ort.kamin.gesetzt = false),
             /LEER: die Ort-Phase setzte kein Haus ohne Kamin/,
+        ],
+        [
+            "der Baum in frischem Wald plant seine Zellen synchron (bis K69)",
+            (b) => Object.assign(b.ort.wald, { synchron: 169, ms: 271.4, takte: 0, imTakt: 0, maxTaktZellen: 0 }),
+            /ORT: der Baum in frischem Wald bei \(-182,-618\) plante 169 Wald-Zellen synchron .*_ortGestaltSame.*planForestCell.*271\.4 ms/,
+        ],
+        [
+            "die Gestalt des Baums in frischem Wald steht nie",
+            (b) => Object.assign(b.ort.wald, { gestalt: null, takte: 600 }),
+            /ORT: die Gestalt des Baums in frischem Wald steht nach 600 Takten nicht/,
+        ],
+        [
+            "die Schlange des Walds plant am Stück",
+            (b) => Object.assign(b.ort.wald, { maxTaktMs: 271.4, maxTaktZellen: 169 }),
+            /ORT: die Schlange des Walds plante in EINEM Takt 271\.4 ms \(169 Zellen\)/,
+        ],
+        [
+            "die Ort-Phase setzt keinen Baum in frischem Wald",
+            (b) => (b.ort.wald.gesetzt = false),
+            /LEER: die Ort-Phase setzte keinen Baum in frischem Wald/,
         ],
         ["keine Ort-Phase", (b) => delete b.ort, /LEER: keine Ort-Phase/],
         ["keine Ruhe", (b) => delete b.ruhe, /LEER: keine Ruhe-Phase/],
@@ -1120,6 +1151,82 @@ const server = statikServer();
                         }
                         O.kamin = { kultur: kultur || null, gesetzt, bau: n, ms: +ms.toFixed(1) };
                     }
+                    // DER BAUM IN FRISCHEM WALD (K69): ein Hof-Baum des Dorfs (`_naturSetzen`, wie die Ausstattung
+                    // `_spawnSettlementErlebnis`) an einem Ort, dessen Wald nie geplant wurde — gezählt die Wald-Zellen, die
+                    // sein Setzen SYNCHRON plant (`planForestCell` im Aufrufer), dann die Takte, bis seine Gestalt steht, und
+                    // die längste Plan-Arbeit eines Takts (die Schlange des Walds, `_tickWaldPlan`)
+                    {
+                        const core = globalThis.__phytoCore;
+                        const roh = core.planForestCell;
+                        let n = 0;
+                        let ms = 0;
+                        core.planForestCell = function () {
+                            const t4 = performance.now();
+                            n++;
+                            try {
+                                return roh.apply(this, arguments);
+                            } finally {
+                                ms += performance.now() - t4;
+                            }
+                        };
+                        const Wd = { gesetzt: false };
+                        try {
+                            const C = r.constructor.FOREST.cell;
+                            for (const [dx, dz] of [
+                                [0, 420],
+                                [420, 0],
+                                [0, -420],
+                                [-420, 0],
+                                [300, 300],
+                                [-300, 300],
+                            ]) {
+                                const wx = ox + dx;
+                                const wz = oz + dz;
+                                const memo = r._forestDartMemo;
+                                if (memo && memo.has(Math.floor(wx / C) + "," + Math.floor(wz / C))) continue;
+                                if (!r._landAt(wx, wz, 0.2)) continue;
+                                const wy = r.getTerrainHeightAt(wx, wz);
+                                if (!Number.isFinite(wy)) continue;
+                                n = 0;
+                                ms = 0;
+                                const e = r._naturSetzen(
+                                    "baum_eiche",
+                                    { x: wx, y: wy, z: wz },
+                                    { seed: 4711, scale: 0.6, rotationY: 0, silent: true }
+                                );
+                                if (!e) continue;
+                                Object.assign(Wd, { gesetzt: true, ort: [wx, wz], synchron: n, ms: +ms.toFixed(1) });
+                                const preset = r._foundryPresetForEntry(e);
+                                let g = r._foundryGestaltFor(e, preset);
+                                let takte = 0;
+                                let maxN = 0;
+                                let maxMs = 0;
+                                n = 0;
+                                while (!Number.isInteger(g) && takte < 600) {
+                                    const n0 = n;
+                                    const m0 = ms;
+                                    takt();
+                                    takte++;
+                                    if (ms - m0 > maxMs) maxMs = ms - m0;
+                                    maxN = Math.max(maxN, n - n0);
+                                    g = r._foundryGestaltFor(e, preset);
+                                    if (takte % 20 === 0) await pause(5);
+                                }
+                                Object.assign(Wd, {
+                                    takte,
+                                    gestalt: Number.isInteger(g) ? g : null,
+                                    imTakt: n,
+                                    maxTaktZellen: maxN,
+                                    maxTaktMs: +maxMs.toFixed(1),
+                                });
+                                r.removeArchitecture(e);
+                                break;
+                            }
+                        } finally {
+                            core.planForestCell = roh;
+                        }
+                        O.wald = Wd;
+                    }
                     aus.ort = O;
                 }
                 // (T) STROM: erst Ruhe, dann der Sprung an einen fremden Ort — der Spieler-Chunk muss kommen
@@ -1232,6 +1339,11 @@ const server = statikServer();
                 (O.kamin
                     ? ` — das Haus ohne Kamin (${O.kamin.kultur}) ${O.kamin.gesetzt ? "gesetzt" : "NICHT gesetzt"}, ` +
                       `${O.kamin.bau} Kern-Nachbauten (${O.kamin.ms} ms)`
+                    : "") +
+                (O.wald && O.wald.gesetzt
+                    ? ` — der Baum in frischem Wald bei (${O.wald.ort}): ${O.wald.synchron} Zellen synchron ` +
+                      `(${O.wald.ms} ms), Gestalt ${O.wald.gestalt} nach ${O.wald.takte} Takten, ${O.wald.imTakt} Zellen im ` +
+                      `Takt (der längste ${O.wald.maxTaktMs} ms, ${O.wald.maxTaktZellen} Zellen)`
                     : "")
         );
     if (befund.strom)

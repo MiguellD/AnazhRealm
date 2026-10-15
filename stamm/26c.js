@@ -1316,6 +1316,9 @@ AnazhRealm.STAND_RAND_M = 0.25;
 AnazhRealm.KRONE_MAX_M = 36;
 AnazhRealm.ORT_SAME_EIMER = 48;
 AnazhRealm.ORT_SAME_REICH = 5 * AnazhRealm.FOREST.cell + AnazhRealm.KRONE_MAX_M;
+// DER WALD PLANT IM TAKT (K69, `_waldPlanSteht` · `_tickWaldPlan`): die Gestalt eines Baums liest die Wald-Zellen bis ±`reich`
+// um seine Zelle (der Freistand ±4, das Urteil jedes Nachbarn ±2); je Takt plant der Wald frische Zellen höchstens `ms` lang.
+AnazhRealm.WALD_PLAN = Object.freeze({ reich: 6, ms: 3 });
 AnazhRealm.STAND_RAND_FERN_M = 1;
 // Der Horizont-Saum (m): über so viele Meter vor `SCATTER.outerM` liegen die Ränder der Karten-Dinge, je Eintrag aus
 // seinem Samen (Salz: der Hash-Kanal des Saums, `_pcg2d`) — der Wald dünnt aus, jeder Baum steht ganz oder gar nicht.
