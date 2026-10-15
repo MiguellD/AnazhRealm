@@ -1096,7 +1096,7 @@ AnazhRealm.ATMO_LUT = Object.freeze({
 // DER BODEN DER ATMOSPHÄRE (D3): die gemessene Welt-Albedo (linear) — das Mittel aus Laub und Wald-Boden der Albedo-Tafel
 // (spec/farbe/albedo-tafel.json, ist.welt; `werkbank albedo --tafel`), nie ein Grau 0,3. Er trägt die Mehrfachstreuung und
 // die untere Hälfte der Umgebung; `diag-atmo-hillaire` hält ihn an der Tafel (±3 %).
-AnazhRealm.ATMO_BODEN = Object.freeze([0.0959, 0.1371, 0.0453]);
+AnazhRealm.ATMO_BODEN = Object.freeze([0.1003, 0.1385, 0.0449]);
 // Licht-Rig: KEY_BASE skaliert die Rayleigh-Lichtmenge aufs Schlüssellicht (Mittag ≈ 2.6·0.913 unter
 // ACES). Ziel key-dominant (Vorlage dir/(amb+hemi) ≈ 15:1); die Schattenseite trägt der Himmel.
 AnazhRealm.KEY_BASE = 2.6;
