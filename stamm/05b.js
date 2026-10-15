@@ -556,7 +556,10 @@ class AnazhRealm_Z05b {
                 }
             }
         } catch (e) {
-            this.log(`HOLZ-WAHL: das zeichnende Gerät ließ sich nicht befragen (${(e && e.message) || e}) — „voll"`, "WARN");
+            this.log(
+                `HOLZ-WAHL: das zeichnende Gerät ließ sich nicht befragen (${(e && e.message) || e}) — „voll"`,
+                "WARN"
+            );
         }
         if (sig !== null && /swiftshader|llvmpipe|lavapipe|software|cpu/.test(sig.toLowerCase())) return "kienspan";
         return "voll";
