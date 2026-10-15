@@ -1420,7 +1420,10 @@ class AnazhRealm_Z20c {
                 if (im) this.value = im;
             }
         }
-        const matrix = new SenkenMatrizen().toReadOnly().element(T.instanceIndex);
+        // `matrizen`: der EINE Speicher-Knoten aller Senken — die Diät (`_diaetGang` (7)) kennt ihn beim Namen: sein Wert ist die
+        // Instanz-Matrix der Quelle, deren Wechsel der Instanz-Wächter (1) fängt
+        const matrizen = new SenkenMatrizen();
+        const matrix = matrizen.toReadOnly().element(T.instanceIndex);
         class SenkenInstanz extends N {
             constructor() {
                 super("void");
@@ -1435,7 +1438,7 @@ class AnazhRealm_Z20c {
                 return null;
             }
         }
-        AnazhRealm.__senkenKnoten = { matrix, instanz: new SenkenInstanz() };
+        AnazhRealm.__senkenKnoten = { matrix, matrizen, instanz: new SenkenInstanz() };
         return AnazhRealm.__senkenKnoten;
     }
     // DER GPU-ABSCHIED — der EINE Weg, auf dem eine Geometrie-Kopie die GPU verlässt. r184 trägt jedes hochgeladene

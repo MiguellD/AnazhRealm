@@ -1594,15 +1594,35 @@ AnazhRealm._diaetGang = function (ro, nbs) {
     // mit festem Bezug (ein Verweis auf Licht oder Schatten, ein Objekt-Knoten eines festen Objekts) stellt sich EINMAL je
     // Render-Abschnitt wie die render-Knoten; jeder andere stellt je Prüfung den Wert seines Render-Objekts. Die Gruppen-Knoten
     // tragen nichts (ihr Gang hebt nur die Version).
+    // (7) GEDECKT DURCH DIE ANDEREN WÄCHTER (K62-n4 — gemessen an Genesis Third, Radeon 890M: der Wächter kostete im Frame
+    // 0,74 ms für 94 Prüfungen; die Hauptstoffe der Welt verglichen je Prüfung 5 Uniforms und stellten 4 Knoten, deren Werte nie
+    // je Objekt wechseln): die Interna des r184-PMREMNode (`_texture` · `_width` · `_height` · `_maxMip` — `updateFromTexture`
+    // setzt sie nur mit einer neuen Umgebungs-Textur, deren Id der Textur-Wächter (6) sieht), der EINE Speicher-Knoten der Senken
+    // (`_senkenKnoten`: sein Wert ist die Instanz-Matrix der Quelle, die der Instanz-Wächter (1) sieht) und die Umgebungs-Werte
+    // des Stoffs (`DIAET_UMWELT`: r184 liest envMap · envMapIntensity des Stoffs — equals() vergleicht sie — oder die Umgebung
+    // der Szene; die vergleicht (7) je Prüfung als Zahlen, `umwelt`).
     const rein = AnazhRealm._diaetWeltrein(),
+        umweltIds = AnazhRealm._diaetUmwelt(),
         stoffWerte = (nbs.observer && nbs.observer.refreshUniforms) || [];
-    const gedeckt = (n) =>
-        rein.has(n.id) ||
-        (n.isMaterialReferenceNode === true && n.material === null && stoffWerte.includes(n.property));
+    const andere = new Set();
+    for (const n of nbs.updateBeforeNodes)
+        if (n.type === "PMREMNode")
+            for (const t of [n._texture, n._width, n._height, n._maxMip]) if (t && t.id !== undefined) andere.add(t.id);
+    const senke = AnazhRealm.__senkenKnoten ? AnazhRealm.__senkenKnoten.matrizen : null;
+    if (senke) andere.add(senke.id);
+    let umwelt = false;
+    const gedeckt = (n) => {
+        if (umweltIds.has(n.id)) return (umwelt = true);
+        return (
+            rein.has(n.id) ||
+            andere.has(n.id) ||
+            (n.isMaterialReferenceNode === true && n.material === null && stoffWerte.includes(n.property))
+        );
+    };
     const fest = (n) =>
         (n.isMaterialReferenceNode !== true && n.object !== undefined && n.object !== null) ||
         (n.object3d !== undefined && n.object3d !== null);
-    const gedecktU = new Set();
+    const gedecktU = new Set(andere);
     for (const n of nbs.updateBeforeNodes) (jeZeichen(n, n.getUpdateBeforeType()) ? eigenVor : vor).push(n);
     for (const n of nbs.updateNodes) {
         const typ = n.getUpdateType();
@@ -1630,8 +1650,13 @@ AnazhRealm._diaetGang = function (ro, nbs) {
         }
         for (let bi = 0; bi < g.bindings.length; bi++) {
             const b = g.bindings[bi];
-            if (b.isStorageBuffer === true) speicher = true;
-            else if (b.isUniformBuffer === true && b.isNodeUniformsGroup !== true) vergleich.push([gi, bi, null]);
+            if (b.isStorageBuffer === true) {
+                // r184 `NodeStorageBuffer`: der Speicher-Knoten ist selbst die nodeUniform der Bindung (gemessen: die Senke
+                // trug ihn so, ihre Prüfung las je Draw das Attribut des zuletzt gestellten Objekts — 3–7 Refreshs je Frame)
+                const nu = b.nodeUniform;
+                const nd = nu && nu.isNode === true ? nu : nu && nu.node;
+                if (!nd || !andere.has(nd.id)) speicher = true;
+            } else if (b.isUniformBuffer === true && b.isNodeUniformsGroup !== true) vergleich.push([gi, bi, null]);
             else if (b.isUniformBuffer === true) {
                 const ix = [];
                 for (let ui = 0; ui < b.uniforms.length; ui++) {
@@ -1650,7 +1675,8 @@ AnazhRealm._diaetGang = function (ro, nbs) {
         for (const b of g.bindings)
             if (b.isSampledTexture === true && b.textureNode && texturen.indexOf(b.textureNode) < 0)
                 texturen.push(b.textureNode);
-    return { vor, knoten, eigenVor, eigenKnoten, gruppen, texturen, vergleich, speicher };
+    const eigen = speicher || umwelt || vergleich.length > 0 || eigenVor.length > 0 || eigenKnoten.length > 0;
+    return { vor, knoten, eigenVor, eigenKnoten, gruppen, texturen, vergleich, speicher, umwelt, eigen };
 };
 // (6) Wechselte eine Textur des Programms (Id oder Version) seit dem letzten Blick dieses Render-Objekts?
 AnazhRealm._diaetVorTextur = function (obs, ro) {
@@ -1695,11 +1721,64 @@ AnazhRealm._diaetWeltrein = function () {
         );
     return (AnazhRealm._weltreinIds = ids);
 };
-// (7) Die eigenen Werte eines Render-Objekts je Prüfung: die Speicher-Puffer seiner eigenen Gruppen (Attribut Id · Version —
+// (7) Die Umgebungs-Werte des Stoffs (r184-TSL, Takt object): `materialEnvIntensity` liest envMapIntensity des Stoffs oder
+// environmentIntensity der Szene, `materialEnvRotation` envMapRotation des Stoffs oder environmentRotation der Szene. Den Stoff
+// deckt equals(), die Szene vergleicht (7) je Prüfung (`_diaetEigen`). Fehlt einer, bricht es laut.
+AnazhRealm.DIAET_UMWELT = Object.freeze(["materialEnvIntensity", "materialEnvRotation"]);
+AnazhRealm._diaetUmwelt = function () {
+    if (AnazhRealm._umweltIds) return AnazhRealm._umweltIds;
+    const T = THREE.TSL || {};
+    const ids = new Set();
+    for (const k of AnazhRealm.DIAET_UMWELT) if (T[k] && T[k].id !== undefined) ids.add(T[k].id);
+    if (ids.size !== AnazhRealm.DIAET_UMWELT.length)
+        throw new Error(
+            "DIÄT: r184-TSL trägt nicht jeden Umgebungs-Knoten (Vendor-Drift): " + AnazhRealm.DIAET_UMWELT.join(" · ")
+        );
+    return (AnazhRealm._umweltIds = ids);
+};
+// (7) Die eigenen Werte eines Render-Objekts je Prüfung: die Umgebung der Szene und die Drehung der Stoff-Umgebung (je Zahl —
+// ein Wechsel zieht EINEN Refresh nach sich), die Speicher-Puffer seiner eigenen Gruppen (Attribut Id · Version —
 // ein Wechsel zieht EINEN Refresh nach sich), die Vorher-Knoten und Knoten je Zeichen-Objekt, und je eigenem Uniform-Puffer
 // der Vergleich genau der Uniforms, die equals() nicht deckt (`_diaetGang`) — er lädt, was sich änderte (wie r184 `_update`).
 // true: ein Refresh ist fällig.
 AnazhRealm._diaetEigen = function (rend, obs, ro, k) {
+    if (k.umwelt) {
+        const sc = ro.scene,
+            m = ro.material;
+        const env = sc.environment,
+            er = sc.environmentRotation,
+            mr = m.envMapRotation;
+        const d = obs.getRenderObjectData(ro);
+        const u = d._anazhUmwelt || (d._anazhUmwelt = []);
+        const w0 = env ? env.id : -1,
+            w1 = sc.environmentIntensity,
+            w2 = er ? er.x : 0,
+            w3 = er ? er.y : 0,
+            w4 = er ? er.z : 0,
+            w5 = mr ? mr.x : 0,
+            w6 = mr ? mr.y : 0,
+            w7 = mr ? mr.z : 0;
+        if (
+            u[0] !== w0 ||
+            u[1] !== w1 ||
+            u[2] !== w2 ||
+            u[3] !== w3 ||
+            u[4] !== w4 ||
+            u[5] !== w5 ||
+            u[6] !== w6 ||
+            u[7] !== w7
+        ) {
+            u[0] = w0;
+            u[1] = w1;
+            u[2] = w2;
+            u[3] = w3;
+            u[4] = w4;
+            u[5] = w5;
+            u[6] = w6;
+            u[7] = w7;
+            return true;
+        }
+    }
     if (k.speicher) {
         const d = obs.getRenderObjectData(ro);
         const v = d._anazhSpV || (d._anazhSpV = []);
@@ -1845,11 +1924,7 @@ AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
     if (AnazhRealm._diaetVorTextur(obs, ro)) return true;
     // (7) die eigenen Werte des Render-Objekts (Speicher-Puffer, Vorher-Knoten je Zeichen-Objekt, Uniform-Puffer)
     const k = ro.getNodeBuilderState()._anazhGang;
-    if (
-        (k.speicher || k.vergleich.length > 0 || k.eigenVor.length > 0 || k.eigenKnoten.length > 0) &&
-        AnazhRealm._diaetEigen(rend, obs, ro, k)
-    )
-        return true;
+    if (k.eigen && AnazhRealm._diaetEigen(rend, obs, ro, k)) return true;
     return obs.equals(ro, obs.getLights(ro.lightsNode, rid), rid) !== true;
 };
 // W17 Phase B-Relay — der subworld-net-Kanal trägt den `WebSocket`-Verkehr
