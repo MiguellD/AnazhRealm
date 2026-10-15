@@ -1804,34 +1804,37 @@ class AnazhRealm_Z17c {
                     ...(anger ? { sperr: -1 } : {}),
                 });
         }
-        // DIE VORPLÄTZE (K66, Augen-Runde 15.10.: Gras wuchs über die Türtreppe): vor jeder Tür liegt getretene Erde — Grundriss gegen
-        // Natur gilt für Treppe und Vorplatz wie für den Weg; das Gesetzbuch legt sie (fachwerk `vorplatzFlaeche`, dieselbe Fläche wie die
-        // Erdbau-Platte des Vorplatzes, plan-lokal je Slot — auch im Wege-Rebuild aus dem Export), die Wiese (`_pfadFeldAt`) und die
-        // Natur-Wand (`_aufWeg`) lesen dieselbe Form.
+        // DIE VORPLÄTZE (K66, Augen-Runde 15.10.: Gras wuchs über die Türtreppe): vor jedem Eingang liegt getretene Erde bis an den Weg —
+        // Grundriss gegen Natur gilt für Treppe und Vorplatz wie für den Weg. Die Fläche ist die Erdbau-Platte des Vorplatzes selbst (fachwerk
+        // `ortPlan`, Marke `vorplatz`, im Erdbau der Welt, `_erdbauRoh`) samt dem Saum der Gasse (`vorplatzBoden`) — Akt, Dorf-Zug und
+        // Wege-Rebuild aus dem Export lesen dieselbe Platte; bis K66 malte der Wirt eine eigene Fläche von 1,6 m Tiefe, die Platte reichte
+        // bis zur Gasse, dazwischen wuchs Wiese. Beim HOF-Haus dazu die Stufe vor der Haustür im Hof (fachwerk `eingangVon`). Die Wiese
+        // (`_pfadFeldAt`) und die Natur-Wand (`_aufWeg`) lesen dieselbe Form.
+        const FC = globalThis.__fachwerkCore;
+        const kasten = (vp) => {
+            if (!vp || n >= MAX || !this._landAt(vp.cx, vp.cz, 0.2)) return;
+            form({
+                typ: "kasten",
+                kanal: 0,
+                ax: vp.cx,
+                az: vp.cz,
+                bx: vp.cx,
+                bz: vp.cz,
+                ex: vp.ex,
+                ez: vp.ez,
+                phi: vp.phi || 0,
+                halb: 0,
+            });
+        };
+        let reich = 0; // so weit reicht der Plan um seinen Ursprung (dieselbe Hülle wie die Ort-Wahl, `_ortWahl`)
+        for (const s of plan.slots || []) reich = Math.max(reich, Math.hypot(s.x || 0, s.z || 0) + 16);
+        for (const p of this._erdbauRoh())
+            if (p.vorplatz != null && Math.hypot(p.cx - origin.x, p.cz - origin.z) <= reich)
+                kasten(FC.vorplatzBoden(p));
         for (const sl of plan.slots || []) {
-            if (n >= MAX) break;
-            // der Vorplatz vor dem Eingang und die Stufe vor der Haustür (beim Hof-Haus liegt sie im Hof)
-            const FC = globalThis.__fachwerkCore;
-            const vor = FC.vorplatzFlaeche(sl);
-            const tuer = FC.vorplatzFlaeche(sl, undefined, true);
-            for (const vp of vor && tuer && (vor.cx !== tuer.cx || vor.cz !== tuer.cz) ? [vor, tuer] : [vor]) {
-                if (!vp) continue;
-                const wx = origin.x + vp.cx;
-                const wz = origin.z + vp.cz;
-                if (!this._landAt(wx, wz, 0.2)) continue;
-                form({
-                    typ: "kasten",
-                    kanal: 0,
-                    ax: wx,
-                    az: wz,
-                    bx: wx,
-                    bz: wz,
-                    ex: vp.ex,
-                    ez: vp.ez,
-                    phi: vp.phi || 0,
-                    halb: 0,
-                });
-            }
+            if (!sl.tuer || !FC.eingangVon(sl).hof) continue;
+            const st = FC.vorplatzFlaeche(sl, undefined, true);
+            if (st) kasten({ cx: origin.x + st.cx, cz: origin.z + st.cz, phi: st.phi, ex: st.ex, ez: st.ez });
         }
         // Die ÄCKER (felder-Schicht): je OBB ein gedrehtes Acker-Rechteck (Kanal G) — die Layout-Wahrheit des
         // Gesetzbuchs lebt im Boden.

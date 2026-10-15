@@ -271,7 +271,9 @@ function ortVerdikt(m) {
             `Laterne ${m.laterneWand} m vor einer Hauswand (Soll ≥ ${m.laterneWandSoll} m: die Wand trägt höchstens das Doppelte der Gasse)`
         );
     if (!(m.vorplatzN > 0 && m.vorplatzOk === m.vorplatzN))
-        fehl.push(`Stufe vor der Tür auf dem Weg ${m.vorplatzOk}/${m.vorplatzN}`);
+        fehl.push(
+            `Stufe und Vorplatz bis zur Gasse auf dem Weg ${m.vorplatzOk}/${m.vorplatzN}${m.vorplatzFehl && m.vorplatzFehl.length ? ` (Haus ${m.vorplatzFehl.slice(0, 3).join(" · ")})` : ""}`
+        );
     // eine Wand ohne Vertex ist keine Messung (der Ort am Hang trägt Böschungen): ROT wie eine Wand im Wiesen-Stoff
     if (!(m.terrasseWand > 0 && m.terrasseWiese === 0))
         fehl.push(`Wand der Terrasse mit Wiesen-Stoff ${m.terrasseWiese}/${m.terrasseWand}`);
@@ -924,7 +926,7 @@ const FIXTURES = [
                 /GT auf dem Dorfweg 5.2 m/.test(vs) &&
                 /Häuser 12\/16 des Exports \(4 Slots im Wasser/.test(vs) &&
                 /Laterne 1.45 m vor einer Hauswand/.test(vs) &&
-                /Stufe vor der Tür auf dem Weg 0\/16/.test(vs) &&
+                /Stufe und Vorplatz bis zur Gasse auf dem Weg 0\/16/.test(vs) &&
                 /Wand der Terrasse mit Wiesen-Stoff 87\/120/.test(vs) &&
                 /Wand der Terrasse mit Wiesen-Stoff 0\/0/.test(
                     ortVerdikt(Object.assign({}, gut, { terrasseWand: 0 })).join(" · ")
@@ -1876,18 +1878,39 @@ const FIXTURES = [
                     let vpOk = 0;
                     let vpN = 0;
                     const vpFehl = [];
+                    // und (K66, Prüfung 1: der Boden reichte 1,6 m, die Platte bis zur Gasse — dazwischen Wiese) vom Eingang
+                    // (fachwerk `eingangVon`, beim Hof-Haus das Tor) bis zur Gasse liegt keine Lücke: auf der Achse der Tür je 0,25 m
+                    // bis vorplatzM + gasseM — wer nach einem Punkt ohne Fläche wieder auf eine Fläche tritt, hat Wiese vor der Tür
+                    const OG = window.__fachwerkCore.ORT_GESETZ;
                     if (P.ort)
                         P.slots.forEach((sl, si) => {
                             const tu = sl.tuer;
                             if (!tu || !Number.isFinite(tu.x) || !Number.isFinite(tu.z)) return;
                             const c = Math.cos(sl.phi || 0);
                             const sn = Math.sin(sl.phi || 0);
-                            const lz = tu.z - 0.8;
-                            const wx = P.ort.x + sl.x + tu.x * c + lz * sn;
-                            const wz = P.ort.z + sl.z - tu.x * sn + lz * c;
+                            const welt = (lz) => [
+                                P.ort.x + sl.x + tu.x * c + lz * sn,
+                                P.ort.z + sl.z - tu.x * sn + lz * c,
+                            ];
                             vpN++;
-                            if (r._aufWeg(wx, wz, 0)) vpOk++;
-                            else vpFehl.push(si);
+                            const [wx, wz] = welt(tu.z - 0.8);
+                            const ez = window.__fachwerkCore.eingangVon(sl).z;
+                            let luecke = null;
+                            let frei = null;
+                            for (let t = 0.3; t <= OG.vorplatzM + OG.gasseM; t += 0.25) {
+                                const [qx, qz] = welt(ez - t);
+                                const auf = r._aufWeg(qx, qz, 0);
+                                if (!auf && frei === null) frei = t;
+                                if (auf && frei !== null) {
+                                    luecke = [+frei.toFixed(2), +t.toFixed(2)];
+                                    break;
+                                }
+                            }
+                            if (r._aufWeg(wx, wz, 0) && !luecke) vpOk++;
+                            else
+                                vpFehl.push(
+                                    luecke ? `${si}: Wiese ${luecke[0]}–${luecke[1]} m vor dem Eingang` : `${si}: Stufe`
+                                );
                         });
                     // DIE WAND DER TERRASSE (K66, Augen-Runde 15.10.: die Erdbau-Stufen trugen den Wiesen-Stoff als Flecken auf
                     // steilen Flächen), gezählt am Netz, das der Spieler sieht: der voxel-worker baut die Chunks um den Ort (± 60 m,
@@ -2192,6 +2215,7 @@ const FIXTURES = [
             laterneWandSoll: outO.laterneWandSoll,
             vorplatzOk: outO.vorplatzOk,
             vorplatzN: outO.vorplatzN,
+            vorplatzFehl: outO.vorplatzFehl,
             terrasseWand: outO.terrasseWand,
             terrasseWiese: outO.terrasseWiese,
             planHashGleich,

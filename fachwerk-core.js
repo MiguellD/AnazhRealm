@@ -5265,23 +5265,41 @@
         hangHanghaus: 4, // bis zum Hanghaus; darüber Stelzen
         brueckeM: 8, // so weit hält der FREI-Splat einer Brücke den Grund je Seite des Wegs unberührt (die Böschung staut nicht)
     };
-    // DER VORPLATZ EINES HAUSES (K10-6 · K66, plan-lokal): vor seinem Eingang (die Haustür; beim HOF-Haus das Tor im Torriegel vor dem Hof,
-    // zC = Front − Hof-Tiefe clamp(W, 5, 9)) ein Rechteck der Türbreite samt Saum und der Tiefe `tief` (ohne: ORT_GESETZ.vorplatzM) — EINE Quelle
-    // für die Erdbau-Platte des Vorplatzes (`ortPlan`, die Tiefe bis zur Gasse) und den Boden des Wirts (`_stlWegeBuild`: getretene Erde, die
-    // Stufe vor der Tür trägt keinen Halm). `tuer`: die Fläche vor der Haustür selbst (beim HOF-Haus die Stufe im Hof). null ohne Tür.
-    // Rückgabe {cx, cz, phi, ex, ez} im Rahmen des Plans.
+    // DER EINGANG eines Slots (K10-6 · K66, plan-lokal), den der Gang von der Gasse betritt: z haus-lokal, y seine Schwelle über dem
+    // Boden des Hauses — die Haustür; beim HOF-Haus das Tor im Torriegel vor dem Hof (`hof`: zC = Front − Hof-Tiefe clamp(W, 5, 9),
+    // sein Boden auf der Diele + 0,08 m; am Hof-Tor stand der Gang vor 0,63 m ohne Stufe, W6). EINE Regel: der Plan v2 (`ortPlan`),
+    // der Vorplatz (`vorplatzFlaeche`) und der Wirt (die Stufe im Hof, `_stlWegeBuild`) lesen sie — bis K66 stand sie zweimal.
+    function eingangVon(sl) {
+        var tu = sl.tuer;
+        var pre = PRESETS[sl.kultur];
+        var hof = !!(pre && pre.kind !== "ausstattung" && hausParams(pre, sl.ov || null).grundriss === "hof" && isFinite(tu.W));
+        var ty = isFinite(tu.y) ? tu.y : 0;
+        return hof ? { z: tu.z - Math.min(9, Math.max(5, tu.W)), y: ty + 0.08, hof: true } : { z: tu.z, y: ty, hof: false };
+    }
+    // DER VORPLATZ EINES HAUSES (K10-6 · K66, plan-lokal): vor seinem Eingang (`eingangVon`) ein Rechteck der Türbreite samt Saum und der
+    // Tiefe `tief` (ohne: ORT_GESETZ.vorplatzM) — die Erdbau-Platte des Vorplatzes (`ortPlan`, die Tiefe bis zur Gasse; ihr Boden:
+    // `vorplatzBoden`). `tuer`: die Fläche vor der Haustür selbst (beim HOF-Haus die Stufe im Hof). null ohne Tür. Rückgabe {cx, cz,
+    // phi, ex, ez} im Rahmen des Plans.
     function vorplatzFlaeche(sl, tief, tuer) {
         var tu = sl && sl.tuer;
         if (!tu || !isFinite(tu.x) || !isFinite(tu.z) || !isFinite(tu.w)) return null;
         var O = ORT_GESETZ;
-        var pre = PRESETS[sl.kultur];
-        var hof = !!(pre && pre.kind !== "ausstattung" && hausParams(pre, sl.ov || null).grundriss === "hof" && isFinite(tu.W));
-        var ez0 = hof && !tuer ? tu.z - Math.min(9, Math.max(5, tu.W)) : tu.z;
+        var ez0 = tuer ? tu.z : eingangVon(sl).z;
         var t = isFinite(tief) ? tief : O.vorplatzM;
         var c = Math.cos(sl.phi || 0);
         var s = Math.sin(sl.phi || 0);
         var lz = ez0 - t / 2;
         return { cx: sl.x + tu.x * c + lz * s, cz: sl.z - tu.x * s + lz * c, phi: sl.phi || 0, ex: tu.w / 2 + O.saumM, ez: t / 2 };
+    }
+    // DER BODEN DES VORPLATZES (K66, Augen-Runde 15.10.: Gras wuchs über die Türtreppe; die Prüfung fand den Boden 1,6 m tief, die Platte
+    // bis zur Gasse): getretene Erde auf der Erdbau-Platte des Vorplatzes `p` (absolut, mit ihrer Marke `vorplatz` — dem Saum der Gasse,
+    // den der Gang von der Platte bis an den Weg quert, in m) und über diesen Saum hinaus. EINE Quelle: der Erdbau des Orts trägt die
+    // Platte in der Welt (Akt, Dorf-Zug und Wege-Rebuild aus dem Export lesen sie gleich). Rückgabe {cx, cz, phi, ex, ez} absolut.
+    function vorplatzBoden(p) {
+        var h = (isFinite(p.vorplatz) ? p.vorplatz : 0) / 2;
+        var s = Math.sin(p.phi || 0);
+        var c = Math.cos(p.phi || 0);
+        return { cx: p.cx - s * h, cz: p.cz - c * h, phi: p.phi || 0, ex: p.ex, ez: p.ez + h };
     }
     function ortPlan(plan, origin, ctx) {
         if (
@@ -5477,6 +5495,9 @@
         // über diesen Splats — auf einer Fläche ihre Höhe, sonst null): das Haus und die Laterne lesen die Höhe, auf die ein Fuß
         // tritt, nie eine eigene Rechnung des Erdbaus.
         var auf = ctx.flaeche(wegSaeume.concat(wegKerne, erdbau));
+        // der Weg selbst (die Kerne und der Platz ohne Saum): bis an ihn reicht der Boden des Vorplatzes (`vorplatzBoden`)
+        var platzKern = platzY === null ? [] : [{ art: "platte", cx: r6(ox + pz.cx), cz: r6(oz + pz.cz), phi: r6(pz.phi || 0), ex: r6(pz.ex), ez: r6(pz.ez), y: platzY }];
+        var aufWeg = ctx.flaeche(wegKerne.concat(platzKern));
         var hausPlatten = [];
         var vorplaetze = [];
         var aufY = function (x, z) {
@@ -5495,16 +5516,8 @@
         var hatTuer = function (sl) {
             return !!(sl.tuer && isFinite(sl.tuer.x) && isFinite(sl.tuer.z));
         };
-        // DER EINGANG, den der Gang von der Gasse betritt (z haus-lokal, y seine Schwelle über dem Boden des Hauses): die
-        // Haustür — beim HOF-Haus das Tor im Torriegel vor dem Hof (`hof`: zC = Front − Hof-Tiefe clamp(W, 5, 9), sein Boden
-        // auf der Diele + 0,08 m); vor ihm liegt der Vorplatz (am Hof-Tor stand der Gang vor 0,63 m ohne Stufe, W6).
-        var eingang = function (sl) {
-            var tu = sl.tuer;
-            var pre = PRESETS[sl.kultur];
-            var hof = !!(pre && pre.kind !== "ausstattung" && hausParams(pre, sl.ov || null).grundriss === "hof" && isFinite(tu.W));
-            var ty = isFinite(tu.y) ? tu.y : 0;
-            return hof ? { z: tu.z - Math.min(9, Math.max(5, tu.W)), y: ty + 0.08 } : { z: tu.z, y: ty };
-        };
+        // DER EINGANG, den der Gang von der Gasse betritt (`eingangVon`): vor ihm liegt der Vorplatz
+        var eingang = eingangVon;
         // DAS WASSER DER HÄUSER (K10): ein Slot, dessen Grund samt Saum oder dessen Vorplatz Welt-Wasser trägt (ctx.wasserAt,
         // dasselbe Urteil wie das Brücken-Etikett; das Raster des Wirts, `_fundamentRaster`: je Meter ein Punkt, höchstens 13
         // je Seite), fällt aus dem Plan, BEVOR sein Erdbau entsteht — keine Platte im See, das Dorf ist, was steht.
@@ -5623,6 +5636,16 @@
                 // der Zelle −4,−4, ein Stelzen-Haus: Vorplatz 78,74 → 79,01 → Gasse 78,46, ein Absatz von 0,55 m vor der Tür)
                 var tief = gasseAb[si] !== null ? Math.max(O.vorplatzM, gasseAb[si]) : O.vorplatzM;
                 var vf = vorplatzFlaeche(sl, tief);
+                // der Saum der Gasse, den der Gang von der Platte bis an den Weg quert (K66, die Marke `vorplatz`; 0 ohne Gasse)
+                var saumG = 0;
+                if (gasseAb[si] !== null)
+                    for (var tq = tief; tq <= tief + O.gasseM; tq += 0.1) {
+                        var vq = vorne(sl, ein.z - tq);
+                        if (aufWeg(ox + vq[0], oz + vq[1]) !== null) {
+                            saumG = tq - tief;
+                            break;
+                        }
+                    }
                 vorplaetze.push({
                     art: "platte",
                     cx: r6(ox + vf.cx),
@@ -5631,6 +5654,7 @@
                     ex: r6(vf.ex),
                     ez: r6(vf.ez),
                     y: r6(y + ein.y / 2),
+                    vorplatz: r6(saumG),
                 });
             }
             slots.push(Object.assign({}, sl, { y: y, hang: hang }));
@@ -5786,6 +5810,8 @@
         LICHT_GESETZ: LICHT_GESETZ,
         BOGEN_GESETZ: BOGEN_GESETZ,
         vorplatzFlaeche: vorplatzFlaeche,
+        vorplatzBoden: vorplatzBoden,
+        eingangVon: eingangVon,
         lichtFlackern: lichtFlackern,
         // K11b — die Farbe aus der Farbtemperatur, der Abfall 1/d² mit Kern und Saum (die Welt rechnet ihn im Stoff)
         lichtFarbe: lichtFarbe,

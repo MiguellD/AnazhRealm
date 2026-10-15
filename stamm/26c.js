@@ -1087,6 +1087,11 @@ AnazhRealm.LEGACY_LICHT = Math.PI;
 // linear 0,18) braucht den Fit-Eingang 0,26227, also k·L = 2 · 0,26227 · 0,6 = 0,3147. `max` 1,0 hält die geeichte
 // Nacht, `min` ist nur die Wand gegen ein entartetes Licht.
 AnazhRealm.BELICHTUNG = Object.freeze({ zielKarte: 0.3147, min: 0.25, max: 1.0 });
+// DAS AUGE DER NACHT (K66, die Post-Kette `_ensurePostProcessing`: die Sättigung je Pixel unter der Nacht): das mesopische Band
+// der CIE 191:2010 — unter `staebchenCd` sieht das Auge ohne Farbe (Stäbchen), über `zapfenCd` voll (Zapfen); `luxJeEinheit`
+// die Eichung der Nacht (Vollmond 0,26 lx ≙ der Nacht-Bestrahlung der Welt 0,224, fachwerk LICHT_GESETZ) — eine Leuchtdichte
+// der Welt (Albedo/π · Bestrahlung) mal ihr ist cd/m².
+AnazhRealm.NACHT_AUGE = Object.freeze({ luxJeEinheit: 0.26 / 0.224, staebchenCd: 0.005, zapfenCd: 5 });
 // Slope-Schwellen des Gras-Gates: voll bis `lo` (≈35°), weg bis `hi` (≈52°), sanfter Übergang.
 // `hi` < rock-`SCATTER.slopeMax` (1.45) → Wiese → Mischhang → Geröll → Fels auf DERSELBEN
 // `_slopeAt`-Achse.

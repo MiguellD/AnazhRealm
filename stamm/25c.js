@@ -652,7 +652,18 @@ class AnazhRealm_Z25c {
             const detail = selfLum.sub(localAvg); // >0 heller als Umgebung (Kante/Spitze)
             const combined = bloomed.add(nurBeiStaerke(bloomed.mul(detail.mul(u.localContrast)), u.localContrast));
             const lum = luminance(combined);
-            const saturated = mix(vec3(lum, lum, lum), combined, u.gradeSat);
+            // DAS AUGE DER NACHT (K66, Augen-Runde 15.10.: nachts leuchtete die Giebelwand gesättigt orange, ihr Abfall lief
+            // tiefrot — HSV 0,92 an der Wand, 0,99 im Abfall): unter der Nacht sieht das Auge mesopisch — zwischen den
+            // Leuchtdichten des Stäbchen- und des Zapfen-Sehens (`NACHT_AUGE`, CIE 191:2010) trägt der Zapfen-Anteil die Farbe
+            // (log-linear 0 … 1); die Leuchtdichte des Pixels in cd/m² aus der Eichung der Nacht (der Stoff rechnet Albedo/π ·
+            // Bestrahlung in Welt-Einheiten). Der Tag (`nightFactor` 0) bleibt byte-gleich.
+            const NA = AnazhRealm.NACHT_AUGE;
+            const zapfen = TSL.log(
+                lum.mul(float(NA.luxJeEinheit)).max(float(NA.staebchenCd)).div(float(NA.staebchenCd))
+            )
+                .div(float(Math.log(NA.zapfenCd / NA.staebchenCd)))
+                .clamp(0, 1);
+            const saturated = mix(vec3(lum, lum, lum), combined, u.gradeSat.mul(mix(float(1), zapfen, u.nightFactor)));
             const contrasted = saturated.sub(float(0.5)).mul(u.gradeContrast).add(float(0.5));
 
             // --- Entgrauen: desaturierte Pixel (graue Türme/Wände/Felsen) werden warm verschoben, satte
@@ -672,6 +683,9 @@ class AnazhRealm_Z25c {
             // Die Ausgabe-Wandlung (ACES + sRGB) macht die Pipeline selbst im Ausgabe-Quad — keine Zwischen-Textur.
             pp.outputNode = graded;
             this.state.postProcessing = pp;
+            // die Kette liest die Uhr der Welt ab ihrem ersten Bild (K66): `nightFactor` setzt die Tag-Nacht-Anwendung — bis K66 erst beim
+            // nächsten Uhr-Wechsel, das erste Bild nach dem Bau trug den Tag (die S0-Probe maß ihren ersten Nacht-Schuss ohne das Auge der Nacht)
+            this._applyDayNightToScene();
             // Die Leinwand-Tiefe stellt die Weiche in `_loopRender` (`_leinwandWeg`) je Pfad — nie der Bau.
             // Die Kette steht: ab jetzt rotiert die Dither-Blende (_loopRender liest den Knoten, nie ein Flag).
             this.state.traaNode = traa;
