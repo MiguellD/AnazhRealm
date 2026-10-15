@@ -2407,6 +2407,8 @@ class AnazhRealm_Z25c {
         const pp = this._ensurePostProcessing();
         // DER LICHT-TAKT (K11): die Plätze des Licht-Pools und die Fenster-Glut für dieses Bild (die Kamera steht)
         this._leuchtTakt();
+        // das Spiegel-Feld des Wassers folgt dem Auge (D10, ein Worker-Auftrag zur Zeit)
+        this._spiegelFeldTakt();
         // Die Kehraus-Marke vor dem Frame: was dieser Frame zeichnet, trägt einen höheren Zähler.
         const zaehlerVor = this._gpuKehrausMarke();
         // DIE SZENEN-SKALA am Szenen-Pass: nie je Last (jeder Ziel-Wechsel unter lebenden Bündeln war die Destroyed-Klasse,
@@ -2425,6 +2427,10 @@ class AnazhRealm_Z25c {
                 // V18.113 — renderAsync() ist im PR-#81-Vendor deprecated (Warnung
                 // in der Schöpfer-Konsole); render() ist der eine Pfad.
                 if (this.state.traaNode) this._traaReprojektion();
+                // springt das Auge (K68, `_traaR.sprung`), zeigt der Spiegel des letzten Bilds einen anderen Ort: das Wasser
+                // liest in DIESEM Bild den Himmel allein, der Pass danach rechnet den neuen (D10)
+                const L = this.state.spiegelLeser;
+                if (L && this.state._traaR && this.state._traaR.sprung) L.an.value = 0;
                 pp.render();
             } catch (err) {
                 // r184 baut Post-Kette und Szenen-Pass erst im ersten render() (PostProcessing.render → _update): ein
@@ -2441,6 +2447,8 @@ class AnazhRealm_Z25c {
             this._leinwandWeg(true);
             this.state.renderer.render(this.state.scene, this.state.camera);
         }
+        // DER SPIEGEL DES GESETZES (D10): nach dem Bild der Post-Kette, aus ihrer Tiefe — das Wasser des nächsten liest ihn
+        if (!direkt) this._spiegelPassZeichne();
         // Das erste fertige Weltbild nimmt den Ladeschirm weg (L2: nie die schwarze Leinwand).
         if (!this.state._weltbildDa) this._ankunftsBild();
         // GPU-Last in den perfSense-Frame-Akku (Draw-Calls + Dreiecke, alle Pässe). Im r184-WebGPU-Info ist

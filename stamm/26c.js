@@ -1247,6 +1247,35 @@ AnazhRealm.ZEIT_SCHAERFE = 1;
 // Der Kamera-Sprung der zeitlichen Auflösung (K68, `_traaReprojektion`): weiter in EINEM Frame beginnt die Geschichte neu und
 // läuft als Mittel an — der Wagen bei 200 km/h und 15 fps legt 3,7 m je Frame zurück, ein Tor oder ein Umsetzen viele Meter.
 AnazhRealm.ZEIT_SPRUNG_M = 6;
+// DER SPIEGEL DES GESETZES (D10, `_spiegelFeldTakt` · `_spiegelPass`): das Feld n × n Zellen à texel m um das Auge (Höhen
+// RGBA-Halbfloat + Stoff RGBA8, je Gestalt eine von laubFarben Kronen-Farben; neu bei drift m), gebacken im Worker in
+// Streifen von höchstens `zeilen` Zeilen; der Pass in 1/teil der Ausgabe, je Wasser-Pixel `schritte` Schritte: über der Höchsten eines Blocks von `block` × `block` Zellen ein Sprung an seinen Rand,
+// darunter Lipschitz-Schritte von höchstens `fein` Zellen (mindestens `wachs` der Strecke), dann `halbierungen` vor der
+// Sekante; das Laub im Licht seiner Tiefe unter dem Kronen-Dach (Beer-Lambert: e-Länge `laubTiefe` m, das Himmelslicht unter
+// dem Dach `laubGrund`), die Krone im Feld um `kronenSaum` m gesäumt (die Zelle zählt, die ihr Laub berührt). Die Nachlese
+// backt das Feld neu, wenn neue Kronen darin stehen (höchstens je nachleseMs; die Krone liest das Kronen-Buch, Beipack
+// `__krone` des Foundry-Workers). Der Pass zahlt nur bei Änderung: das Auge weiter als `ruheM` m, der Blick weiter als `ruheRad`,
+// Licht oder Luft um mehr als `ruheLicht` (`_spiegelPassWach`).
+AnazhRealm.SPIEGEL = Object.freeze({
+    n: 384,
+    texel: 2,
+    drift: 60,
+    zeilen: 16,
+    block: 8,
+    teil: 4,
+    schritte: 96,
+    wachs: 0.04,
+    fein: 0.75,
+    halbierungen: 4,
+    laubTiefe: 3,
+    laubGrund: 0.25,
+    laubFarben: 256,
+    kronenSaum: 1,
+    nachleseMs: 4000,
+    ruheM: 0.01,
+    ruheRad: 0.0003,
+    ruheLicht: 0.001,
+});
 // Sekunden-normalisierter Ingest-Takt: Ziel ist eine RATE je echter Sekunde — jeder Frame gibt
 // `rate·dt` Konversionen frei, gedeckelt durch INGEST_BURST_CAP (Schutz gegen LongTasks). So lädt
 // die Welt mit der Wanduhr statt mit der Framerate (fix pro Frame hieß bei 8 fps nur 8–24/s).
@@ -1272,8 +1301,14 @@ AnazhRealm.FOUNDRY_LESEN = [
 AnazhRealm.FOUNDRY_PLATTE_FORMAT = 3;
 // DIE EINE BEIPACK-KARTE der Foundry-Antwort (`_foundryBuildGroup`): Beipack-Name → das Feld der Gruppe (der Flat reicht es
 // als `huelle` · `fern` weiter). `__huelle` (Welle L) die Kollision der gezeigten Stufe, `__fern` (S3) die Fernform der Stufe 3
-// — beide in der EINEN Hüllen-Form (docs/studio-vertrag.md N5, der Leser `_huelleVon`).
-AnazhRealm.FOUNDRY_BEIPACK = Object.freeze({ __huelle: "_huelle", __fern: "_fern", __mass: "_mass" });
+// — beide in der EINEN Hüllen-Form (docs/studio-vertrag.md N5, der Leser `_huelleVon`); `__mass` (K20) der Hub des Schafts,
+// `__krone` (D10) die gezeichnete Krone eines Baums oder Strauchs (das Kronen-Buch, `_foundryBaumKrone`).
+AnazhRealm.FOUNDRY_BEIPACK = Object.freeze({
+    __huelle: "_huelle",
+    __fern: "_fern",
+    __mass: "_mass",
+    __krone: "_krone",
+});
 // Der Keil der Hüllen-Form im Welt-March: die First-Kante → der Typ der Kapsel-Liste (pB.w; 0 Kasten · 1 Ellipsoid). Der
 // Walm (0..1) reist im Bruchteil (Typ + 0,49 · walm), das WGSL (`sdKeil`) schneidet die zwei Stirnen mit der Dach-Neigung.
 AnazhRealm.HUELLE_KEIL_TYP = Object.freeze({ "+z": 2, "-z": 3, "+x": 4, "-x": 5 });

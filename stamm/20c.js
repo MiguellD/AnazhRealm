@@ -305,6 +305,10 @@ class AnazhRealm_Z20c {
             if (!m || !Number.isFinite(m.schaftHub))
                 return AnazhRealm._kernPflichtBruch("phyto:__mass (" + preset + ")");
             hub = m.schaftHub;
+            // die Krone reist mit jedem gewachsenen Körper (D10, das Kronen-Buch): ohne sie ist die Brücke alt
+            const k = group._krone;
+            if (!k || !(k.teile instanceof Float32Array) || (k.teile.length && !Array.isArray(k.farbe)))
+                return AnazhRealm._kernPflichtBruch("phyto:__krone (" + preset + ")");
         }
         let minY = Infinity,
             maxY = -Infinity;
@@ -883,6 +887,9 @@ class AnazhRealm_Z20c {
         // DAS HÖHEN-BUCH: die Höhe eines Baum-Körpers je Körper-Schlüssel — deterministisch (gleicher Schlüssel =
         // gleiche Geometrie), wenige Bytes, nie geräumt: die LRU vergisst die Geometrie, nie die Höhe.
         if (v && v._hoehe > 0) (f.hoehen || (f.hoehen = new Map())).set(key, v._hoehe);
+        // DAS KRONEN-BUCH (D10): die gezeichnete Krone eines Baum-Körpers (Beipack `__krone`) je Körper-Schlüssel — wie die
+        // Höhe deterministisch und klein (höchstens 288 Laub-Teile), nie geräumt; der Leser ist `_foundryBaumKrone`.
+        if (v && v._krone) (f.kronen || (f.kronen = new Map())).set(key, v._krone);
         f.ankunft = (f.ankunft | 0) + 1; // die Ankunfts-Generation: Wartende im Nah-Zweig fragen erst danach wieder
         const CAP = AnazhRealm.FOUNDRY_CACHE_CAP;
         const BYTES = AnazhRealm.FOUNDRY_CACHE_BYTES || Infinity;

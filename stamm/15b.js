@@ -1363,6 +1363,8 @@ class AnazhRealm_Z15b {
                     x: tf.x,
                     z: tf.z,
                     scale: tf.scale, // die Größe der Zelle: ihre Krone (`_naturKrone`, die Natur-Wand räumt die Lichtung)
+                    gestalt,
+                    yaw: tf.yaw,
                 };
             }
             let ff = this._foundryFlattenFor({ seed: fseed }, preset, lod);
@@ -1500,6 +1502,9 @@ class AnazhRealm_Z15b {
             x: tf.x,
             z: tf.z,
             scale: tf.scale, // die Größe der Zelle: ihre Krone (`_naturKrone`, die Natur-Wand räumt die Lichtung)
+            // ihre Gestalt und Drehung (D10: der Spiegel liest ihre Krone im Kronen-Buch, nie eine zweite Rechnung)
+            gestalt,
+            yaw: tf.yaw,
         };
     }
 
@@ -2211,6 +2216,17 @@ class AnazhRealm_Z15b {
             }
         }
         return null;
+    }
+
+    // DIE KRONE EINES BAUM-KÖRPERS (D10) aus dem Kronen-Buch (`_foundryCacheSet`, Beipack `__krone` der Höhen-Stufe): die
+    // Laub-Teile [cx, cy, cz, rXZ, rY] der GEZEICHNETEN Krone im Vorlagen-Maß und ihre Farbe (linear) — derselbe Körper-
+    // Schlüssel (Art · Gestalt · Höhen-Stufe · Prägung) wie die Höhe (`_foundryBaumHoehe`). Ein reiner Leser ohne Bestellung
+    // und ohne Hüllen-Folge: undefined, solange die Höhen-Stufe nicht ankam — bis dahin zeichnet das Bild den Baum auch nicht
+    // (die Stufen-Wahl wartet auf seine Höhe und bestellt sie).
+    _foundryBaumKrone(preset, gestalt, ov) {
+        const f = this._foundry;
+        if (!f || !f.kronen || gestalt == null) return undefined;
+        return f.kronen.get(this._foundryKoerperKey(preset, gestalt, this._foundryHoehenStufe(preset), ov));
     }
 
     // Die Höhen-Stufe eines Baum-Presets: die L1 (sie reist mit jeder L0, der Schatten-Stellvertreter, und trägt
