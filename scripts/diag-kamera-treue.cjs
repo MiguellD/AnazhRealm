@@ -131,7 +131,7 @@ function urteil(z) {
     for (const pfad of ["direkt", "replay"]) {
         const r = s[pfad] || {};
         if (!(r.pruef > 0)) v.push(`STAND ${pfad}: keine Diät-Prüfung gezählt — die Probe ist blind`);
-        if (r.voll !== 0) v.push(`STAND ${pfad}: ${r.voll} Voll-Refreshs je Render ohne Änderung (Soll 0) — ein Refresh je Frame ohne Änderung`);
+        if (r.voll !== 0) v.push(`STAND ${pfad}: ${r.voll} Voll-Refreshs je Render ohne Änderung (Soll 0) — ein Refresh je Frame ohne Änderung (Täter: ein Stoff ohne Diät, r184 hasNode-Kurzschluss — die Diät jedes Stoffs _diaetRefresh fehlt)`);
         if (r.wiederholt !== 0)
             v.push(
                 `STAND ${pfad}: ${r.wiederholt} wiederholte Gänge je Render (${JSON.stringify(r.wer || {})}: k Knoten · v Vorher · g Gruppe) — dieselbe Arbeit je Programm statt EINMAL`
@@ -500,10 +500,6 @@ function buehne() {
             };
             A._diaetRefresh = function (obs, ro, frame, altNR) {
                 const v = diaetRoh(obs, ro, frame, altNR);
-                if (messen) {
-                    zs.pruef++;
-                    if (v) zs.voll++;
-                }
                 // (d) TEILEN: die geteilten Gruppen je Karten-Programm im Hauptbild
                 if (sammle && ro.material && ro.material.isShadowPassMaterial !== true && karten.includes(ro.object)) {
                     const ids = [];
@@ -535,6 +531,17 @@ function buehne() {
             be.updateBinding = function (b) {
                 if (messen && b && b.groupNode && b.groupNode.shared === true) zs.uploads++;
                 return ubRoh.call(this, b);
+            };
+            // Die Prüfungen und Voll-Refreshs zählt die EINE Frage jedes Render-Objekts der Bühne (r184 `_nodes.needsRefresh`),
+            // nicht die Diät: ein Stoff, der sie nicht fährt (bis K62 jeder ohne Erklärung), refreshte sonst ungezählt.
+            const nrRoh = rend._nodes.needsRefresh;
+            rend._nodes.needsRefresh = function (ro) {
+                const v = nrRoh.call(this, ro);
+                if (messen && ro.scene === szene) {
+                    zs.pruef++;
+                    if (v) zs.voll++;
+                }
+                return v;
             };
             // Ein verschachtelter Render (der Schatten, den ein Vorher-Knoten im Gang startet) ist nie der Gang; (g) zählt ihn.
             const szeneMitGang = rend._renderScene;
@@ -712,6 +719,7 @@ function buehne() {
                 stand.verschachtelt = verschachtelt;
             } finally {
                 A._diaetRefresh = diaetRoh;
+                rend._nodes.needsRefresh = nrRoh;
                 A._diaetGeteiltSchreiben = schreibRoh;
                 delete nf.updateNode;
                 delete nf.updateBeforeNode;
