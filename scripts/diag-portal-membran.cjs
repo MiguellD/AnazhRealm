@@ -7,9 +7,9 @@
 //     (Probe-Punkte in der Öffnung treffen keine Box), die PFOSTEN sind
 //     SOLIDE (Probe-Punkte im Rahmen treffen), und der alte Quarz-Riegel
 //     (Alt-Substanz-AABB mitten in der Öffnung) ist GEFALLEN.
-//   Z (Ziel, D8): das Tor wartet auf sein Ziel — die Zeile seiner Ziel-Welt im Atlas der Ziele kommt aus dem EINEN Export der
-//     Welt selbst (der verborgene Rahmen, die Hülle `AnazhHuelle.panorama`) oder von der Platte, mit dem SHA-Stempel ihrer
-//     Quellen; die Membran liest genau diese Zeile (Stoff-Wert `ziel`), der Atlas ist rgba16float, 256 Zeilen je Ziel. N (Absenz):
+//   Z (Ziel, D8): das Fenster wartet auf sein Ziel — die Zeile seiner Ziel-Welt im Atlas der Ziele kommt aus dem EINEN Export der
+//     Welt (die Datei, die das Studio in seiner Welt backt, `worlds/tor-ziele.json`, gate:studio-huelle H5) mit dem SHA-Stempel
+//     ihrer Quellen; die Membran liest genau diese Zeile (Stoff-Wert `ziel`), der Atlas ist rgba16float, 256 Zeilen je Ziel. N (Absenz):
 //     kein Nebel-Kasten, kein Nebel-Gesetz am Tor (D8: der Kasten fiel), kein Host-Panorama der eigenen Welt (`_torPanorama`).
 //   M (Membran): der Membran-Tick baut für das Portal EIN Passage-Mesh
 //     (Registry je entry.id, Material-Marker portalMembran bzw. fail-LAUT-
@@ -17,6 +17,10 @@
 //   W (Hindurchgehen): kreuzt der Spieler die Membran-Ebene INNERHALB der
 //     Apertur, feuert enterPortal (derselbe Chokepoint wie die E-Taste) —
 //     seitlich am Pfosten vorbei feuert NICHT.
+//   O (das Tor ohne Ziel, D8-n1): ein Web-Portal (signierte Adresse, keine Welt auf diesem Boden) und ein Tor auf eine Welt, die der
+//     Export nicht kennt, LEBEN — Eintrag in der Registry, Hindurchgehen feuert, das Licht des Tors brennt, nur das Fenster
+//     fehlt (kein Mesh); das ausbleibende Ziel bricht laut beim Namen. Vorher (eaa3773a) hing der Eintrag am Ziel: kein
+//     Hindurchgehen, keine Flügel, kein Licht.
 //   B (Blick, 0910-4 — echter Frame, WebGPU auf swiftshader, am Genesis-Ring): die Membran trug `frustumCulled = false`
 //     und zeichnete 8 Befehle und 129 600 Dreiecke auch mit dem Ring im Rücken (Spike der Prüfbühne 10.10.). Gezählt wird,
 //     was der Renderer nach dem Culling zeichnet (`_renderObjectDirect` je Objekt im Hauptbild):
@@ -72,7 +76,7 @@ async function blickProbe(opts) {
     if (opts.nurWarten) return { bereit: true };
     const rend = st.renderer;
     rend.setAnimationLoop(null);
-    const recs = [...r._portalMembranes.values()];
+    const recs = [...r._portalMembranes.values()].filter((rec) => rec.mesh);
     if (opts.alt) for (const rec of recs) rec.mesh.frustumCulled = false;
     const nf = rend._nodes && rend._nodes.nodeFrame;
     const roh = rend._renderObjectDirect;
@@ -165,7 +169,7 @@ async function hellProbe() {
     window.__buehne();
     const echtNow = performance.now.bind(performance);
     performance.now = () => 4.2e6; // die Uhr steht: Atem, Puls und Welle gleich in jedem Bild
-    const recs = [...r._portalMembranes.values()];
+    const recs = [...r._portalMembranes.values()].filter((rec) => rec.mesh);
     const vor = recs.map((rec) => rec.mesh.material.colorNode);
     const sicht = recs.map((rec) => rec.mesh.visible);
     const setze = (fm) =>
@@ -638,6 +642,53 @@ async function blickStufe(check) {
         p.z = ez - 1.5;
         r._tickPortalMembranes(4.8);
         res.w.seitlichStumm = entered === 0;
+
+        // ── O: das Tor ohne Ziel lebt (D8-n1) — ein Web-Portal und eine Welt, die der Export nicht kennt ──
+        res.o = {};
+        const brueche = [];
+        const bruchAlt = r._bruchMelden;
+        r._bruchMelden = function (t) {
+            brueche.push(String(t));
+        };
+        let uhrO = 5000;
+        for (const [art, meta] of [
+            ["web", { worldAddress: "anazh://fremd.example/welt", label: "Web-Portal" }],
+            ["fremd", { world: "worlds/nirgendwo/index.html", label: "Nirgendwo", trust: "trusted" }],
+        ]) {
+            const ox = ex + (art === "web" ? 40 : 80);
+            const e2 = r.spawnArchitecture("welt_portal", { x: ox, y: p.y, z: ez }, { precise: true });
+            if (!e2) {
+                res.o[art] = { fehler: "kein Spawn" };
+                continue;
+            }
+            e2.portalMeta = meta;
+            const zw = r._torZielWelt(e2);
+            r._torZielZeile(e2);
+            const zr = r._torZielAtlas && zw ? r._torZielAtlas.welten.get(zw.world) : null;
+            const zeile = zr ? await zr.kommt : null;
+            p.x = e2.position.x;
+            p.z = e2.position.z + 1.5;
+            p.y = e2.position.y + 1.0;
+            uhrO += 10; // je Tor ein eigenes Scan-Fenster (1 Hz)
+            r._tickPortalMembranes(uhrO);
+            r._tickPortalMembranes(uhrO + 1.5);
+            const recO = r._portalMembranes.get(e2.id);
+            entered = 0;
+            r._tickPortalMembranes(uhrO + 1.6);
+            p.z = e2.position.z - 1.5;
+            r._tickPortalMembranes(uhrO + 1.7);
+            res.o[art] = {
+                welt: zw ? zw.world : null,
+                zeile,
+                fehler: zr ? zr.fehler : null,
+                lebt: !!recO,
+                fenster: !!(recO && recO.mesh),
+                feuert: entered === 1,
+                licht: !!(r._portalLeuchte && r._portalLeuchte.L.staerke > 0 && Math.abs(r._portalLeuchte.x - e2.position.x) < 0.01),
+            };
+        }
+        r._bruchMelden = bruchAlt;
+        res.o.brueche = brueche;
         r.enterPortal = origEnter;
         return res;
     });
@@ -668,12 +719,12 @@ async function blickStufe(check) {
         const Z = out.z;
         check(
             `Z: das Ziel des Tors steht (${Z.welt} → Zeile ${Z.zeile}, Quelle ${Z.quelle || "—"})`,
-            Number.isInteger(Z.zeile) && (Z.quelle === "welt" || Z.quelle === "platte"),
+            Number.isInteger(Z.zeile) && Z.quelle === "export",
             Z.fehler || ""
         );
         check(
             "Z: der Export trägt den SHA-Stempel der Quellen seiner Welt",
-            typeof Z.stempel === "string" && /^[0-9a-f]{64}\|p\d+$/.test(Z.stempel),
+            typeof Z.stempel === "string" && /^[0-9a-f]{64}$/.test(Z.stempel),
             String(Z.stempel)
         );
         check(
@@ -724,6 +775,23 @@ async function blickStufe(check) {
         check("W: nach Verlassen der Zone feuert der naechste Durchgang wieder", out.w.rearmWand === true);
         check("W: seitlich am Pfosten vorbei feuert NICHT", out.w.seitlichStumm === true);
     } else check("W: Hindurchgeh-Block erreicht", false);
+    if (out.o && out.o.web && out.o.fremd) {
+        const { web, fremd } = out.o;
+        check("O: ein Web-Portal hat keine Ziel-Welt und kein Fenster", web.welt === null && web.fenster === false, JSON.stringify(web));
+        check("O: das Web-Portal LEBT (Eintrag in der Registry ohne Ziel)", web.lebt === true);
+        check("O: Hindurchgehen durch das Web-Portal feuert enterPortal", web.feuert === true);
+        check("O: das Licht des Tors brennt am Web-Portal", web.licht === true);
+        check(
+            "O: ein Tor auf eine Welt, die der Export nicht kennt, lebt ohne Fenster und feuert",
+            fremd.lebt === true && fremd.fenster === false && fremd.feuert === true && fremd.zeile === null,
+            JSON.stringify(fremd)
+        );
+        check(
+            "O: das ausbleibende Ziel bricht laut beim Namen",
+            out.o.brueche.some((t) => /worlds\/nirgendwo\/index\.html: der Export kennt die Welt nicht/.test(t)),
+            out.o.brueche.join(" | ") || "kein Bruch"
+        );
+    } else check("O: Block des Tors ohne Ziel erreicht", false, JSON.stringify(out.o || null));
     check("keine Page-Errors während der Probe", pageErrors.length === 0, pageErrors.slice(0, 2).join(" | "));
 
     await browser.close();

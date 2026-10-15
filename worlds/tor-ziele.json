@@ -1,0 +1,62 @@
+{
+    "format": 1,
+    "w": 512,
+    "h": 256,
+    "welten": {
+        "worlds/fachwerk/index.html": {
+            "datei": "worlds/fachwerk/panorama.f16",
+            "stempel": "617e5759cafd6ff4ff3e338cc5fc2e1fa2d4a7daabb9ea433f53fd98516e9fa9",
+            "adapter": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)"
+        },
+        "worlds/fluid/index.html": {
+            "datei": "worlds/fluid/panorama.f16",
+            "stempel": "46920211bfb7c158563337744f8fc274a594f2f7de47e532f980305189055221",
+            "adapter": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)"
+        },
+        "worlds/garage/index.html": {
+            "datei": "worlds/garage/panorama.f16",
+            "stempel": "74748df47c0a062e8de000356cbf68cda2fd07ada7dd451d0d7d045ada4749c7",
+            "adapter": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)"
+        },
+        "worlds/klang/index.html": {
+            "datei": "worlds/klang/panorama.f16",
+            "stempel": "a818e38760a19a0af550d51a3065578ed428e92b2e96412af49fc289cf702369",
+            "adapter": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)"
+        },
+        "worlds/koerperstudio/index.html": {
+            "datei": "worlds/koerperstudio/panorama.f16",
+            "stempel": "c4b9428b460f7c394fa0c553407d0c54cc94d6df99e07b266fe95890755344ab",
+            "adapter": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)"
+        },
+        "worlds/portale/index.html": {
+            "datei": "worlds/portale/panorama.f16",
+            "stempel": "2a25d105e691e81c3a0b8519b0608c697bad5f6682f8c499c4eb51c5b799d933",
+            "adapter": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)"
+        },
+        "worlds/schmiede/index.html": {
+            "datei": "worlds/schmiede/panorama.f16",
+            "stempel": "543f66c15025ff54f8b1ce0fce33447a9dd8124cb59b94f81c2b5d6632f9f5f2",
+            "adapter": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)"
+        },
+        "worlds/skeleton/index.html": {
+            "datei": "worlds/skeleton/panorama.f16",
+            "stempel": "3a5b522d423ee993bb6f31bb4605d06626df8a6f854f77505a5c7926fc065e48",
+            "adapter": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)"
+        },
+        "worlds/terrain/index.html": {
+            "datei": "worlds/terrain/panorama.f16",
+            "stempel": "5935d228b872d07628d47643025311a5dad3648c20d32c3b5dc2ce224b1b51d6",
+            "adapter": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)"
+        },
+        "worlds/tetrapoda/index.html": {
+            "datei": "worlds/tetrapoda/panorama.f16",
+            "stempel": "9c8578d84cfc524ebba13c8820e090cd653d30f35f8133f003882e7322a167e6",
+            "adapter": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)"
+        }
+    },
+    "ohne": {
+        "worlds/translated/index.html": "die Szene ist Spieler-Daten und reist erst im enter (stamm PORTAL_TRANSLATED_WORLD) — vor dem Betreten kein Bild",
+        "worlds/begegnung/index.html": "sandgesichert (CSP default-src 'none'), Protokoll: gate:portal-konformanz",
+        "worlds/schwarm/index.html": "sandgesichert (CSP default-src 'none'), Protokoll: gate:portal-konformanz"
+    }
+}

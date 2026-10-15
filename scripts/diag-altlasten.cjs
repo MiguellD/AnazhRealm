@@ -949,6 +949,14 @@ const FORBIDDEN = [
     { token: "_torPanorama", fiel: "D8 — das Host-Panorama der eigenen Welt (Spike); das Ziel kommt aus der Ziel-Welt" },
     { token: "_torPanoMal", fiel: "D8 — die Würfel-Würfe der Heimat (Spike); die Ziel-Welt rendert sich selbst" },
     { token: "_torPanoKamera", fiel: "D8 — die sechs Kameras des Host-Panoramas (Spike)" },
+    // D8-n1: der verborgene Ziel-Rahmen bootete jede Ziel-Welt im Haupt-Faden des Spiels (Prüfer: 3 882 ms lange Aufgabe je
+    // fachwerk, 10 135 ms für sieben Ziele nach dem ersten Weltbild, in der CPU-Gruppe der CI ein WebGL-Bruch je Studio) — das
+    // Studio backt sein Panorama in seiner Welt (gate:studio-huelle H5), die Heimat liest die Datei (`_torZielBuendel`)
+    { token: "_torZielRahmen", fiel: "D8-n1 — der verborgene Rahmen der Ziel-Welt im Spiel; das Studio backt, die Heimat liest" },
+    { token: "_torZielStempel", fiel: "D8-n1 — der Stempel je Boot (jede Quelle geholt und gehasht); H5 hält ihn an den Quellen" },
+    { token: "_torZielPlatte", fiel: "D8-n1 — die IndexedDB der Ziele; die gebackene Datei ist die Platte" },
+    { token: "_torZielReihe", fiel: "D8-n1 — die Reihe der Welt-Aufträge im Spiel" },
+    { token: "anazhTorZiel", fiel: "D8-n1 — die IndexedDB der Ziele" },
     { token: "_weltSeitenPflegen", fiel: "Welle G — die Hülle trägt jeder Eintrag selbst (Texel 0/1)" },
     { token: "_weltSeitenFolge", fiel: "Welle G — der Tiefentest der Hardware wählt den nächsten Treffer" },
     { token: "_weltSeiteDirty", fiel: "Welle G — die Seiten-Ebene fiel (auch der Aufruf der Fernwald-Linse)" },

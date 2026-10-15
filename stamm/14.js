@@ -2139,15 +2139,17 @@ class AnazhRealm_Z14 {
 
     // ═══ DAS ZIEL DER TORE (D8, „Das Tor als Fenster") ═══
     // Jedes Tor zeigt seine Ziel-Welt: das Panorama, das die Welt SELBST rendert (die Hülle der Studios `AnazhHuelle.panorama`,
-    // Labor = Welt) — EIN Export je Welt und SHA ihrer Quellen. Die Heimat rendert die Ziel-Welt nie nach: sie fragt zuerst die
-    // Platte (IndexedDB `anazhTorZiel`, Schlüssel die Welt, der Wert trägt den Stempel = SHA-256 über index.html und jedes lokale
-    // Skript der Welt), bei Miss die Welt selbst — ein verborgener Rahmen mit der Sandbox der Welt, seriell, erst nach dem ersten
-    // Weltbild (`_weltbildKommt`): `ready` → `panorama-bitte` → `panorama` (Halbfloat-Texel, übertragen). Jedes Ziel ist EINE Zeile
-    // EINES Atlas (rgba16float, 512 × 256·N, wächst je Ziel um genau eine Zeile: +1 MB je Ziel); die Membran liest ihre Zeile als
-    // Stoff-Wert `ziel` mit demselben Knoten. Die Membran entsteht erst, wenn ihr Ziel steht — ohne Ziel kein Fenster, kein
-    // Zwischen-Bild; ein Ziel, das nicht kommt, bricht laut beim Namen (`_bruchMelden`).
+    // Labor = Welt) — EIN Export je Welt und SHA ihrer Quellen, gebacken vom Studio in seiner eigenen Welt
+    // (`node scripts/diag-studio-huelle.cjs --panorama`), geliefert als Datei (`worlds/tor-ziele.json` nennt je Welt ihre Datei
+    // rgba16float 512 × 256 und ihren Stempel = SHA-256 der Quellen; gate:studio-huelle H5 hält den Stempel an den Quellen von
+    // heute). Die Heimat rendert und bootet keine Ziel-Welt: sie liest die Datei (der Haupt-Faden trägt einen Abruf und eine
+    // Kopie, nie den Bau einer Welt). Jedes Ziel ist EINE Zeile EINES Atlas (rgba16float, 512 × 256·N, +1 MB je Ziel); die
+    // Membran liest ihre Zeile als Stoff-Wert `ziel` mit demselben Knoten. Das TOR lebt ohne sein Ziel (Hindurchgehen, Flügel,
+    // Licht: `_tickPortalMembranes`), nur das FENSTER wartet darauf — ohne Ziel kein Zwischen-Bild. Eine Welt, die der Export
+    // benannt ohne Panorama führt (`ohne`: die sandgesicherten Welten ohne Skript), zeigt keins; eine, die er nicht kennt, bricht
+    // laut beim Namen (`_bruchMelden`).
     static get TOR_ZIEL() {
-        return { w: 512, h: 256, format: 1, fristMs: 120000 };
+        return { w: 512, h: 256, format: 1, karte: "worlds/tor-ziele.json" };
     }
 
     // Die Ziel-Welt eines Tors: dieselbe Auflösung wie das Betreten (`enterPortal`: Eintrag vor Bauplan, `_sanitizePortalMeta`).
@@ -2170,177 +2172,104 @@ class AnazhRealm_Z14 {
                 knoten: [],
                 uZeilen: TSL.uniform(1),
                 uBelicht: TSL.uniform(1),
-                reihe: null,
-                db: null,
-                auftrag: 0,
+                buendel: null,
             })
         );
     }
 
-    // Die Zeile des Ziels eines Tors: steht sie, ihre Nummer; sonst null — der erste Frager setzt den Auftrag in Gang.
+    // Die Zeile des Ziels eines Tors: steht sie, ihre Nummer; sonst null — der erste Frager setzt den Abruf in Gang. Alle Fragen
+    // EINES Takts (der Scan nennt die Tore des Rings zusammen) bilden EIN Bündel: EIN Einsetzen, EIN Hochladen des Atlas.
+    // `kommt` ist das Versprechen der Zeile (null, wenn das Ziel nicht kommt).
     _torZielZeile(entry) {
         const meta = this._torZielWelt(entry);
         if (!meta) return null;
         const Z = this._torZiele();
         let z = Z.welten.get(meta.world);
         if (!z) {
-            z = { world: meta.world, meta, zeile: null, quelle: null, stempel: null, fehler: null, kommt: null };
+            z = { world: meta.world, meta, zeile: null, quelle: null, stempel: null, fehler: null, ohne: null, kommt: null };
+            z.kommt = new Promise((ja) => (z.ja = ja));
             Z.welten.set(meta.world, z);
-            z.kommt = this._torZielHolen(z);
+            if (!Z.buendel) {
+                const b = (Z.buendel = []);
+                Promise.resolve().then(() => {
+                    Z.buendel = null;
+                    return this._torZielBuendel(b);
+                });
+            }
+            Z.buendel.push(z);
         }
         return z.zeile;
     }
 
-    // Der Auftrag eines Ziels: Stempel → Platte → (nach dem ersten Weltbild, seriell) die Welt selbst → die Zeile.
-    async _torZielHolen(z) {
+    // Die Karte des Exports (`TOR_ZIEL.karte`, je Version EINMAL abgerufen): { format, w, h, welten: { world: { datei, stempel } },
+    // ohne: { world: Grund } }.
+    _torZielKarte() {
         const G = AnazhRealm.TOR_ZIEL;
-        try {
-            const stempel = await this._torZielStempel(z.world);
-            z.stempel = stempel;
-            const p = stempel ? await this._torZielPlatte("get", z.world) : null;
-            if (p && p.stempel === stempel && p.daten instanceof Uint16Array && p.daten.length === G.w * G.h * 4) {
-                this._torZielEinsetzen(z, p.daten, "platte");
-                return z.zeile;
-            }
-            await this._weltbildKommt();
-            const daten = await this._torZielReihe(() => this._torZielRahmen(z.meta));
-            if (stempel) await this._torZielPlatte("put", z.world, { stempel, w: G.w, h: G.h, daten });
-            this._torZielEinsetzen(z, daten, "welt");
-            return z.zeile;
-        } catch (e) {
-            z.fehler = (e && e.message) || String(e);
-            this._bruchMelden(`das Ziel des Tors ${z.world}: ${z.fehler}`);
-            return null;
-        }
-    }
-
-    // Der Stempel einer Welt: SHA-256 über ihre index.html und jedes lokale Skript, das sie lädt (je Teil ein Hash, dann der
-    // Hash der Hashes — kein Byte wird auf dem Haupt-Faden kopiert), mit dem Format des Exports. Ohne WebCrypto keiner.
-    async _torZielStempel(world) {
-        if (typeof crypto === "undefined" || !crypto.subtle || typeof fetch !== "function") return null;
-        const url = new URL(world, document.baseURI);
-        const r0 = await fetch(url, { cache: "no-cache" });
-        if (!r0.ok) throw new Error(`index ${r0.status}`);
-        const html = await r0.text();
-        const teile = [new TextEncoder().encode(html)];
-        const re = /<script\b[^>]*\bsrc\s*=\s*["']([^"']+)["']/gi;
-        for (let m = re.exec(html); m; m = re.exec(html)) {
-            if (/^(?:[a-z][\w+.-]*:)?\/\//i.test(m[1])) continue;
-            const r = await fetch(new URL(m[1], url));
-            if (!r.ok) throw new Error(`die Quelle ${m[1]} antwortet ${r.status}`);
-            teile.push(await r.arrayBuffer());
-        }
-        const hs = await Promise.all(teile.map((t) => crypto.subtle.digest("SHA-256", t)));
-        const alle = new Uint8Array(hs.length * 32);
-        hs.forEach((h, i) => alle.set(new Uint8Array(h), i * 32));
-        const fin = new Uint8Array(await crypto.subtle.digest("SHA-256", alle));
-        return Array.from(fin, (b) => b.toString(16).padStart(2, "0")).join("") + "|p" + AnazhRealm.TOR_ZIEL.format;
-    }
-
-    // Die Platte der Ziele (IndexedDB `anazhTorZiel`/`ziele`, Schlüssel die Welt): get → { stempel, w, h, daten } | null,
-    // put → true | null. Eine Platte, die nicht öffnet, liest null — dann fragt der Auftrag die Welt.
-    _torZielPlatte(art, world, wert) {
-        if (typeof indexedDB === "undefined") return Promise.resolve(null);
-        const Z = this._torZiele();
-        if (!Z.db)
-            Z.db = new Promise((ja) => {
-                const q = indexedDB.open("anazhTorZiel", 1);
-                q.onupgradeneeded = () => q.result.createObjectStore("ziele");
-                q.onsuccess = () => ja(q.result);
-                q.onerror = () => ja(null);
+        if (!this._torZielKarteKommt)
+            this._torZielKarteKommt = fetch(`${G.karte}?v=${AnazhRealm.VERSION}`).then((r) => {
+                if (!r.ok) throw new Error(`${G.karte} antwortet ${r.status}`);
+                return r.json();
             });
-        return Z.db.then((d) =>
-            d
-                ? new Promise((ja) => {
-                      try {
-                          const s = d
-                              .transaction("ziele", art === "put" ? "readwrite" : "readonly")
-                              .objectStore("ziele");
-                          const q = art === "put" ? s.put(wert, world) : s.get(world);
-                          q.onsuccess = () => ja(art === "put" ? true : q.result || null);
-                          q.onerror = () => ja(null);
-                      } catch (_e) {
-                          ja(null);
-                      }
-                  })
-                : null
-        );
+        return this._torZielKarteKommt;
     }
 
-    // Die Reihe der Welt-Aufträge: immer EIN verborgener Rahmen zugleich (jede Welt lädt auf ihrem eigenen Takt).
-    _torZielReihe(auftrag) {
-        const Z = this._torZiele();
-        const p = (Z.reihe || Promise.resolve()).then(auftrag, auftrag);
-        Z.reihe = p.catch(() => null);
-        return p;
-    }
-
-    // Die Welt selbst fragen: ein verborgener Rahmen (die Sandbox der Welt, `_portalSandboxAttr`), ihre Brücke meldet `ready`,
-    // die Heimat bittet um das Panorama, die Welt antwortet mit ihren Texeln — dann fällt der Rahmen. Frist `TOR_ZIEL.fristMs`.
-    _torZielRahmen(meta) {
+    // Ein Bündel von Zielen: nach dem ersten Weltbild (`_weltbildKommt`) die Karte, dann jede Datei zugleich; die angekommenen
+    // Zeilen setzt EIN Schreiber in den Atlas (`_torZielEinsetzen`). Ein Ziel, das nicht kommt, bricht laut beim Namen.
+    async _torZielBuendel(b) {
         const G = AnazhRealm.TOR_ZIEL;
-        return new Promise((ja, nein) => {
-            if (typeof document === "undefined" || !document.body) return nein(new Error("kein Dokument"));
-            const Z = this._torZiele();
-            const reqId = `tor-ziel-${++Z.auftrag}`;
-            const f = document.createElement("iframe");
-            f.title = `Ziel-Bild ${meta.label}`;
-            f.setAttribute("sandbox", this._portalSandboxAttr(meta));
-            f.setAttribute("aria-hidden", "true");
-            f.tabIndex = -1;
-            f.style.cssText = `position:fixed;left:-${G.w * 4}px;top:0;width:${G.w}px;height:${G.h}px;border:0;visibility:hidden;pointer-events:none`;
-            let uhr = null;
-            const ende = (fehler, daten) => {
-                clearTimeout(uhr);
-                window.removeEventListener("message", hoer);
-                f.remove();
-                if (fehler) nein(fehler);
-                else ja(daten);
-            };
-            const hoer = (ev) => {
-                if (ev.source !== f.contentWindow) return;
-                const m = ev.data;
-                if (!m || typeof m !== "object") return;
-                if (m.type === "ready")
-                    f.contentWindow.postMessage(
-                        { type: "panorama-bitte", reqId },
-                        meta.trust === "sandboxed" ? "*" : window.location.origin
-                    );
-                else if (m.type === "panorama" && m.reqId === reqId) {
-                    if (m.fehler) ende(new Error(`die Welt meldet: ${m.fehler}`));
-                    else if (
-                        !(m.daten instanceof Uint16Array) ||
-                        m.w !== G.w ||
-                        m.h !== G.h ||
-                        m.daten.length !== G.w * G.h * 4
-                    )
-                        ende(new Error(`das Panorama trägt ${m.w}×${m.h} statt ${G.w}×${G.h}`));
-                    else ende(null, m.daten);
-                }
-            };
-            window.addEventListener("message", hoer);
-            uhr = setTimeout(() => ende(new Error(`kein Panorama nach ${G.fristMs / 1000} s`)), G.fristMs);
-            f.src = meta.world;
-            document.body.appendChild(f);
-        });
+        const da = [];
+        try {
+            await this._weltbildKommt();
+            const K = await this._torZielKarte();
+            if (!K || K.format !== G.format || K.w !== G.w || K.h !== G.h)
+                throw new Error(`${G.karte} trägt Format ${K && K.format} ${K && K.w}×${K && K.h} statt ${G.format} ${G.w}×${G.h}`);
+            await Promise.all(
+                b.map(async (z) => {
+                    try {
+                        const e = K.welten && K.welten[z.world];
+                        if (!e) {
+                            if (K.ohne && K.ohne[z.world]) return void (z.ohne = K.ohne[z.world]);
+                            throw new Error(`der Export kennt die Welt nicht (${G.karte})`);
+                        }
+                        const r = await fetch(`${e.datei}?v=${String(e.stempel).slice(0, 16)}`);
+                        if (!r.ok) throw new Error(`${e.datei} antwortet ${r.status}`);
+                        const daten = new Uint16Array(await r.arrayBuffer());
+                        if (daten.length !== G.w * G.h * 4)
+                            throw new Error(`${e.datei} trägt ${daten.length} Texel-Werte statt ${G.w * G.h * 4}`);
+                        z.stempel = e.stempel;
+                        da.push([z, daten]);
+                    } catch (e) {
+                        this._torZielBruch(z, e);
+                    }
+                })
+            );
+        } catch (e) {
+            for (const z of b) if (!z.fehler) this._torZielBruch(z, e);
+        }
+        if (da.length) this._torZielEinsetzen(da);
+        for (const z of b) z.ja(z.zeile);
     }
 
-    // Ein Ziel in den Atlas: seine Zeile in DENSELBEN Puffer (needsUpdate). Die erste Ankunft legt den Atlas mit einer Zeile je
-    // ANGEFRAGTER Welt an (der Scan nennt die Tore des Rings im selben Takt, lange bevor das erste Ziel kommt) — eine neue Textur
-    // entsteht nur, wenn danach eine Welt dazukommt (die geteilten Knoten lesen sie, die Zeilenzahl ist eine geteilte Uniform).
-    // Vorher wuchs der Atlas je Ankunft um eine Zeile, sieben Texturen in den ersten Sekunden: r184 lädt beim ersten Binden die
-    // Textur hoch, die der Stoff bei seinem BAU las (`Bindings._init` → `binding.texture`, erst danach liest `update()` den Knoten)
-    // — die schon entsorgte erste Atlas-Textur stieg so wieder auf und blieb (Puffer-Zensus: tex:tor-ziel 512×256, 1 MB).
-    _torZielEinsetzen(z, daten, quelle) {
+    _torZielBruch(z, e) {
+        z.fehler = (e && e.message) || String(e);
+        this._bruchMelden(`das Ziel des Tors ${z.world}: ${z.fehler}`);
+    }
+
+    // Die Ziele in den Atlas: ihre Zeilen in DENSELBEN Puffer, EIN needsUpdate je Bündel. Eine neue Textur entsteht nur, wenn
+    // der Platz nicht reicht — dann mit einer Zeile je ANGEFRAGTER Welt (die geteilten Knoten lesen sie, die Zeilenzahl ist eine
+    // geteilte Uniform): r184 lädt beim ersten Binden die Textur hoch, die der Stoff bei seinem BAU las (`Bindings._init` →
+    // `binding.texture`, erst danach liest `update()` den Knoten) — eine entsorgte Atlas-Textur stieg so wieder auf und blieb
+    // (Puffer-Zensus: tex:tor-ziel 512×256, 1 MB).
+    _torZielEinsetzen(da) {
         const G = AnazhRealm.TOR_ZIEL;
         const Z = this._torZiele();
         const zeile = G.w * G.h * 4;
-        const n = Z.n + 1;
+        const n = Z.n + da.length;
         const platz = Z.tex ? Z.tex.image.height / G.h : 0;
         if (n > platz) {
             const hoch = Math.max(n, Z.welten.size);
             const neu = new Uint16Array(zeile * hoch);
-            if (Z.tex) neu.set(Z.tex.image.data);
+            if (Z.tex) neu.set(Z.tex.image.data.subarray(0, Z.n * zeile));
             const tex = new THREE.DataTexture(neu, G.w, G.h * hoch, THREE.RGBAFormat, THREE.HalfFloatType);
             tex.name = "tor-ziel";
             tex.wrapS = THREE.RepeatWrapping;
@@ -2353,15 +2282,17 @@ class AnazhRealm_Z14 {
             for (const kn of Z.knoten) kn.value = tex;
             if (alt) alt.dispose();
         }
-        Z.tex.image.data.set(daten, Z.n * zeile);
+        for (const [z, daten] of da) {
+            Z.tex.image.data.set(daten, Z.n * zeile);
+            z.zeile = Z.n;
+            z.quelle = "export";
+            Z.n++;
+        }
         Z.tex.needsUpdate = true;
-        z.zeile = Z.n;
-        z.quelle = quelle;
-        Z.n = n;
     }
 
     // Das Ziel einer Membran als lineare Werte (die Linse zielTreue, `werkbank bild`): { w, h, daten Float32 rgba, Zeile 0 unten,
-    // quelle "platte" | "welt", stempel, world } oder null.
+    // quelle "export", stempel, world } oder null.
     _torZielDaten(rec) {
         const G = AnazhRealm.TOR_ZIEL;
         const meta = rec && rec.entry ? this._torZielWelt(rec.entry) : null;
@@ -2410,14 +2341,20 @@ class AnazhRealm_Z14 {
                     // Der Eintrag bleibt registriert, solange er LEBT — lazy beim ersten Sicht-Kontakt gebaut, danach nie
                     // wieder. Nie dispose beim Verlassen: sonst TSL-Bau + Pipeline-Compile pro Grenzübertritt + Geo-Leck.
                     seen.add(entry.id);
-                    if (!reg.has(entry.id)) {
+                    let rec = reg.get(entry.id);
+                    if (!rec) {
                         const dx = entry.position.x - px;
                         const dz = entry.position.z - pz;
                         if (dx * dx + dz * dz > SICHT * SICHT) continue;
-                        // DAS FENSTER WARTET AUF SEIN ZIEL (D8): ohne die Zeile seiner Ziel-Welt kein Bau (der Auftrag läuft)
+                        // DAS TOR LEBT OHNE SEIN ZIEL (D8): Hindurchgehen, Flügel und Licht hängen am Eintrag, nie am Fenster
+                        rec = { entry, tor, mesh: null, u: null, armed: true, lastLz: null };
+                        reg.set(entry.id, rec);
+                    }
+                    // DAS FENSTER WARTET AUF SEIN ZIEL (D8): erst mit der Zeile seiner Ziel-Welt der Bau (der Abruf läuft); ein
+                    // Web-Portal und eine Welt ohne Panorama zeigen keins
+                    if (!rec.mesh) {
                         const ziel = this._torZielZeile(entry);
-                        if (ziel == null) continue;
-                        this._membranBauFor(entry, tor, ziel);
+                        if (ziel != null) this._membranBauFor(rec, ziel);
                     }
                 }
             }
@@ -2466,8 +2403,10 @@ class AnazhRealm_Z14 {
                 if (rec.mesh && rec.mesh.visible) rec.mesh.visible = false;
                 if (rec.mesh && rec.mesh.parent) rec.mesh.parent.remove(rec.mesh);
                 rec.lastLz = null;
+                rec.wach = false;
                 continue;
             }
+            rec.wach = true;
             if (rec.mesh && !rec.mesh.parent) st.scene.add(rec.mesh);
             if (rec.mesh && !rec.mesh.visible) rec.mesh.visible = true;
             let act = Math.max(0, Math.min(1, 1 - (d - reach) / 12));
@@ -2484,10 +2423,13 @@ class AnazhRealm_Z14 {
                 }
             }
             rec._act = act;
-            rec.u.time.value = currentTime;
-            rec.u.act.value = act;
-            rec.u.pulse.value = 0.5 + 0.5 * Math.sin(currentTime * MG.puls);
-            rec.u.waveDepth.value = mu.zFace * (MG.aktivDepth[0] + MG.aktivDepth[1] * act);
+            rec.puls = 0.5 + 0.5 * Math.sin(currentTime * MG.puls);
+            if (rec.u) {
+                rec.u.time.value = currentTime;
+                rec.u.act.value = act;
+                rec.u.pulse.value = rec.puls;
+                rec.u.waveDepth.value = mu.zFace * (MG.aktivDepth[0] + MG.aktivDepth[1] * act);
+            }
             // ── HINDURCHGEHEN: Spieler kreuzt die Membran-Ebene in der Apertur ──
             const lx = (dx * c - dz * s) / scale;
             const lz = (dx * s + dz * c) / scale;
@@ -2533,7 +2475,7 @@ class AnazhRealm_Z14 {
         // zehn): steht am NÄCHSTEN aktiven Tor, atmet (0.3 + act·3.4)·(0.8 + 0.28·puls); kein Tor nah → aus.
         let naeh = null;
         for (const rec of reg.values()) {
-            if (!rec.mesh || !rec.mesh.visible || !(rec._act > 0.02)) continue;
+            if (!rec.wach || !(rec._act > 0.02)) continue;
             if (!naeh || rec._act > naeh._act) naeh = rec;
         }
         this._tickPortalLicht(naeh);
@@ -2566,13 +2508,14 @@ class AnazhRealm_Z14 {
         q.x = e.position.x;
         q.y = e.position.y - 0.5 + mu.springY * G.ySpring * sc;
         q.z = e.position.z;
-        q.L.staerke = PC.glutIntensity(rec._act, rec.u && rec.u.pulse ? rec.u.pulse.value : 1);
+        q.L.staerke = PC.glutIntensity(rec._act, rec.puls);
     }
 
     // Eine Membran für einen Eintrag bauen (fail-LAUT: schlägt der TSL-Bau fehl, bricht er beim Namen —
     // `_stoffBruch`; die schlichte Ersatz-Fläche ist gefallen, K22).
-    _membranBauFor(entry, tor, ziel) {
+    _membranBauFor(rec, ziel) {
         const st = this.state;
+        const { entry, tor } = rec;
         let mesh = null;
         let u = null;
         try {
@@ -2590,7 +2533,8 @@ class AnazhRealm_Z14 {
         // das Culling bleibt an: die Hülle der geteilten Geometrie trägt die Welle (`_membranGeometryFor`)
         mesh.userData.inventar = "portal-membran"; // Identitäts-Stempel (gate:asset-inventory-Familie)
         st.scene.add(mesh);
-        this._portalMembranes.set(entry.id, { entry, tor, mesh, u, armed: true, lastLz: null });
+        rec.mesh = mesh;
+        rec.u = u;
     }
 
     // Flügel drehen im Template-Raum VOR der Welt-Scale auf den gebackenen Geschlossen-Vertices:

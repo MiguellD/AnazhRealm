@@ -17,6 +17,9 @@
 //                     bauMensch · morphAuf · fellStreu · haarStreu · kleidZonen · surfaceNets in der Shell — K45: das tetrapoda-
 //                     Labor zeigte 1 299 852 △ gegen die Welt-Zeile 62 000, K45-2: das koerperstudio-Labor 332 645 △ gegen
 //                     40 000). Im Bild (--bild) ist L0 der Kosten-Leiste über der Budget-Zeile ROT. Keine Ausnahme.
+//   H5 Ziel-Bild      jede Welt der Hülle trägt ihr Panorama (die Tor-Membran der Heimat liest es, D8) im Export
+//                     worlds/tor-ziele.json, gebacken an den Quellen von HEUTE (Stempel SHA-256, `?v=` fällt); ohne
+//                     Bild benannt: die übersetzte Welt (ihre Szene reist im enter) und die sandgesicherten
 // Ausgenommen, benannt: die zwei sandgesicherten Welten begegnung + schwarm (CSP default-src 'none': sie laden kein
 // Skript, ihr Protokoll richtet gate:portal-konformanz). Die terrain-Familie (terrain + gelaende) trägt seit K47 keine
 // Ausnahme mehr.
@@ -27,7 +30,9 @@
 //                                                    Hand-Regler im Gelände-Studio, eine eigene ready im terrain-Labor,
 //                                                    das terrain-Labor ohne Sitzung)
 //                                                    → jede Wand rot beim Namen
-//   node scripts/diag-studio-huelle.cjs              der Baum gegen H1–H3
+//   node scripts/diag-studio-huelle.cjs              der Baum gegen H1–H5
+//   node scripts/diag-studio-huelle.cjs --panorama [welt,…]   H5: je Welt der Hülle ihr Ziel-Bild backen (worlds/<welt>/panorama.f16,
+//                                                    der Stempel in worlds/tor-ziele.json); LINSE_GPU=software wie die CI
 //   node scripts/diag-studio-huelle.cjs --bild <ordner> [--name vorher|nachher]
 //                                                    je Studio die Shell im echten Browser (Hardware-Adapter): ein
 //                                                    Schuss + die Seiten-Zählung (Schieber gesamt · davon Hülle · Undo
@@ -57,6 +62,54 @@ const HAND_RANGE_HTML = /<input\b[^>]*\btype\s*=\s*["']?range\b/gi;
 const HAND_RANGE_JS = /\.type\s*=\s*["']range["']|\btype\s*:\s*["']range["']|<input[^>]*type\s*=\s*\\?["']?range/g;
 const READY_LITERAL = /type\s*:\s*["']ready["']/g;
 const ELEMENT_ADAPTER = /\(\s*op\s*&&\s*op\s*\[\s*0\s*\]\s*\)/g;
+// H5 — DAS ZIEL-BILD (D8, „Das Tor als Fenster"): jede Welt der Hülle rendert ihr Panorama in IHRER Welt (die Brücke
+// `panorama-bitte` → `AnazhHuelle.panorama`, Labor = Welt), gebacken je SHA ihrer Quellen (`--panorama`) und geliefert als
+// Datei; die Heimat liest sie (stamm `_torZielBuendel`) und bootet nie eine Ziel-Welt. Die Karte `worlds/tor-ziele.json` nennt je
+// Welt Datei und Stempel = SHA-256 über index.html und jede lokale Quelle, die sie lädt (Skript, Stil; `?v=` fällt — die
+// Version allein macht kein neues Bild). Ein Stempel, der nicht die Quellen von HEUTE trägt, ist ROT beim Namen; die
+// ausgenommenen Welten stehen benannt unter `ohne`.
+const TOR_ZIELE = "worlds/tor-ziele.json";
+// Ohne Ziel-Bild, benannt: die sandgesicherten Welten (kein Skript, kein Renderer) und die übersetzte Welt (ihre Szene ist
+// Spieler-Daten und reist erst im enter — vor dem Betreten hat sie kein Bild; jedes Tor auf sie zeigt kein Fenster).
+const OHNE_PANORAMA = Object.assign(
+    { translated: "die Szene ist Spieler-Daten und reist erst im enter (stamm PORTAL_TRANSLATED_WORLD) — vor dem Betreten kein Bild" },
+    AUSGENOMMEN
+);
+const PANO = { format: 1, w: 512, h: 256 };
+const panoDatei = (id) => `worlds/${id}/panorama.f16`;
+const crypto = require("crypto");
+// Die Quellen einer Welt in der Reihe ihrer index.html (rel zur Wurzel); `lies(rel)` liest Text (die Karte oder die Platte).
+function quellenDerWelt(id, lies) {
+    const basis = `worlds/${id}`;
+    const html = lies(`${basis}/index.html`);
+    if (html == null) return null;
+    const rels = [`${basis}/index.html`];
+    const re = /<script\b[^>]*\bsrc\s*=\s*["']([^"'?#]+)|<link\b[^>]*\brel\s*=\s*["']stylesheet["'][^>]*\bhref\s*=\s*["']([^"'?#]+)/gi;
+    for (let m = re.exec(html); m; m = re.exec(html)) {
+        const q = m[1] || m[2];
+        if (/^(?:[a-z][\w+.-]*:)?\/\//i.test(q)) continue;
+        const rel = path.posix.normalize(path.posix.join(basis, q));
+        if (!rels.includes(rel)) rels.push(rel);
+    }
+    return rels;
+}
+function panoramaStempel(id, lies) {
+    const rels = quellenDerWelt(id, lies);
+    if (!rels) return null;
+    const h = crypto.createHash("sha256");
+    h.update(`panorama ${PANO.format} ${PANO.w}x${PANO.h}\n`);
+    for (const rel of rels) {
+        const t = lies(rel);
+        if (t == null) return null;
+        h.update(`${rel}\n${crypto.createHash("sha256").update(t.replace(/\?v=[\w.-]+/g, "")).digest("hex")}\n`);
+    }
+    return h.digest("hex");
+}
+const liesAus = (karte) => (rel) => {
+    if (Object.prototype.hasOwnProperty.call(karte, rel)) return karte[rel];
+    const f = path.join(ROOT, rel);
+    return fs.existsSync(f) ? fs.readFileSync(f, "utf8") : null;
+};
 
 // Der Baum als Text-Karte (rel → Inhalt): die Wand und ihr Selbsttest lesen DIESELBE Karte.
 function baum() {
@@ -75,6 +128,7 @@ function baum() {
         if (/^stamm\/23[a-z]?\.js$/.test(rel)) karte[rel] = fs.readFileSync(f, "utf8");
     }
     karte["index.html"] = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+    if (fs.existsSync(path.join(ROOT, TOR_ZIELE))) karte[TOR_ZIELE] = fs.readFileSync(path.join(ROOT, TOR_ZIELE), "utf8");
     return karte;
 }
 
@@ -153,6 +207,46 @@ function pruefe(karte) {
     if (generatorRufe < 2) rot.push(`H3 Werkstatt (stamm/23*): ruft den Generator ${generatorRufe}× (Soll: Rezept-Regler UND Studio-Regler über AnazhHuelle.regler)`);
     if (!/<script src="worlds\/huelle\/huelle\.js\?v=[0-9.]+" defer><\/script>/.test(karte["index.html"] || ""))
         rot.push("H3 index.html: die Heimat lädt worlds/huelle/huelle.js nicht vor dem Stamm");
+    // H5 — das Ziel-Bild je Welt, gebacken an den Quellen von heute
+    let K = null;
+    try {
+        K = JSON.parse(karte[TOR_ZIELE]);
+    } catch (e) {
+        rot.push(`H5 ${TOR_ZIELE}: ${karte[TOR_ZIELE] == null ? "fehlt" : "kein JSON (" + e.message + ")"} — node scripts/diag-studio-huelle.cjs --panorama`);
+    }
+    zahl.panorama = 0;
+    if (K) {
+        if (K.format !== PANO.format || K.w !== PANO.w || K.h !== PANO.h)
+            rot.push(`H5 ${TOR_ZIELE}: Format ${K.format} ${K.w}×${K.h} statt ${PANO.format} ${PANO.w}×${PANO.h}`);
+        const welten = K.welten || {},
+            ohne = K.ohne || {};
+        const lies = liesAus(karte);
+        const soll = [...STUDIOS, ...NEBENWELTEN].filter((id) => !OHNE_PANORAMA[id]);
+        for (const id of soll) {
+            const key = `worlds/${id}/index.html`;
+            const e = welten[key];
+            const bitte = `node scripts/diag-studio-huelle.cjs --panorama ${id}`;
+            if (!e) {
+                rot.push(`H5 ${id}: kein Panorama im Export (${TOR_ZIELE}) — ${bitte}`);
+                continue;
+            }
+            if (e.datei !== panoDatei(id)) rot.push(`H5 ${id}: die Datei heißt ${e.datei} statt ${panoDatei(id)}`);
+            const f = path.join(ROOT, e.datei || panoDatei(id));
+            const groesse = fs.existsSync(f) ? fs.statSync(f).size : -1;
+            if (groesse !== PANO.w * PANO.h * 8)
+                rot.push(`H5 ${id}: ${e.datei} trägt ${groesse < 0 ? "keine Datei" : groesse + " Bytes"} statt ${PANO.w * PANO.h * 8} (rgba16float ${PANO.w}×${PANO.h}) — ${bitte}`);
+            const heute = panoramaStempel(id, lies);
+            if (e.stempel !== heute)
+                rot.push(`H5 ${id}: das Panorama ist veraltet (Stempel ${String(e.stempel).slice(0, 12)} ≠ Quellen ${String(heute).slice(0, 12)}) — ${bitte}`);
+            else zahl.panorama++;
+        }
+        for (const key of Object.keys(welten))
+            if (!soll.some((id) => key === `worlds/${id}/index.html`)) rot.push(`H5 ${key}: ein Panorama ohne Welt der Hülle (verwaist)`);
+        for (const [id, grund] of Object.entries(OHNE_PANORAMA))
+            if (!ohne[`worlds/${id}/index.html`]) rot.push(`H5 ${id}: steht nicht benannt unter ohne (${grund})`);
+        for (const key of Object.keys(ohne))
+            if (!Object.keys(OHNE_PANORAMA).some((id) => key === `worlds/${id}/index.html`)) rot.push(`H5 ${key}: unter ohne, aber keine ausgenommene Welt`);
+    }
     return { rot, zahl };
 }
 
@@ -160,6 +254,7 @@ function bericht(zahl) {
     console.log(`  Hand-Regler: ${zahl.handRegler} (die terrain-Familie ohne Ausnahme)`);
     console.log(`  eigene ready-Meldungen: ${zahl.bruecken.length} (${zahl.bruecken.join(", ") || "—"}) + die EINE der Hülle`);
     console.log(`  Labor = Welt (H4): ${Object.keys(OFEN_STUDIOS).join(", ")} zeigen den Ofen-Körper (keine Ausnahme)`);
+    console.log(`  Ziel-Bild (H5): ${zahl.panorama} von ${STUDIOS.length + NEBENWELTEN.length - Object.keys(OHNE_PANORAMA).filter((id) => !AUSGENOMMEN[id]).length} Panoramen an den Quellen von heute (${TOR_ZIELE}), ohne: ${Object.keys(OHNE_PANORAMA).join(", ")}`);
 }
 
 // ── SELBSTTEST: die Täter in die Karte gespielt (Fundstelle fehlt → rot, die Linse wandert mit dem Code) ──
@@ -257,6 +352,42 @@ function selbsttest() {
             nach: "AnazhHuelle.__kostenFort(",
             soll: /^H3 gelaende: ohne Kosten-Leiste/,
         },
+        {
+            name: "H5 eine Quelle der garage ändert sich, ihr Panorama bleibt (veraltet)",
+            rel: "worlds/garage/garage.js",
+            vor: "AnazhHuelle.bruecke(",
+            nach: "/* ein neuer Look */ AnazhHuelle.bruecke(",
+            soll: /^H5 garage: das Panorama ist veraltet/,
+        },
+        {
+            name: "H5 eine geteilte Quelle (die Hülle) ändert sich — jede Welt veraltet",
+            rel: "worlds/huelle/huelle.js",
+            vor: "function panorama(",
+            nach: "function panoramaNeu() {}\n    function panorama(",
+            soll: /^H5 skeleton: das Panorama ist veraltet/,
+        },
+        {
+            name: "H5 die Version allein macht kein neues Bild (?v= fällt) — die fachwerk bleibt grün",
+            rel: "worlds/fachwerk/index.html",
+            vor: /\?v=[0-9.]+/g,
+            nach: "?v=99.999.9",
+            soll: null,
+            nichtRot: /^H5 fachwerk/,
+        },
+        {
+            name: "H5 der Export ohne die fachwerk",
+            rel: TOR_ZIELE,
+            vor: '"worlds/fachwerk/index.html": {',
+            nach: '"worlds/fachwerk-fort/index.html": {',
+            soll: /^H5 fachwerk: kein Panorama im Export/,
+        },
+        {
+            name: "H5 eine ausgenommene Welt nicht benannt (begegnung fehlt unter ohne)",
+            rel: TOR_ZIELE,
+            vor: '"worlds/begegnung/index.html":',
+            nach: '"worlds/begegnung-fort/index.html":',
+            soll: /^H5 begegnung: steht nicht benannt unter ohne/,
+        },
     ];
     let ok = true;
     const basis = pruefe(echt);
@@ -274,6 +405,12 @@ function selbsttest() {
         }
         const karte = Object.assign({}, echt, { [f.rel]: am ? t.replace(f.vor, f.nach) : t.split(f.vor).join(f.nach) });
         const r = pruefe(karte);
+        if (f.nichtRot) {
+            const falsch = r.rot.find((x) => f.nichtRot.test(x));
+            console.log(`${falsch ? "❌" : "✅"} SELBST-TEST ${f.name}${falsch ? " — rot: " + falsch : ""}`);
+            if (falsch) ok = false;
+            continue;
+        }
         const treffer = r.rot.find((x) => f.soll.test(x));
         console.log(`${treffer ? "✅" : "❌"} SELBST-TEST ${f.name}${treffer ? " — " + treffer : " — nicht rot (" + (r.rot[0] || "grün") + ")"}`);
         if (!treffer) ok = false;
@@ -363,8 +500,110 @@ async function bild(ordner, name) {
     fs.writeFileSync(path.join(ordner, `${name}-zaehlung.json`), JSON.stringify(zeilen, null, 2));
 }
 
+// ── DAS ZIEL-BILD BACKEN (H5, `--panorama [welt,…]`): je Welt der Hülle ihre Seite in einem Rahmen (die Heimat ist eine leere
+// Seite derselben Herkunft), ihre Brücke meldet `ready`, die Welt wächst, dann `panorama-bitte` → `panorama` (Halbfloat-Texel aus
+// IHREM Renderer, `AnazhHuelle.panorama`). Die Datei `worlds/<welt>/panorama.f16` (rgba16float 512 × 256, Zeile 0 unten) und ihr
+// Stempel in `worlds/tor-ziele.json`. Der Adapter folgt der Weiche der WebGL-Linsen (LINSE_GPU=software: swiftshader wie die
+// CI, ohne GPU-Schloss). Port STUDIO_HUELLE_PORT (8742).
+async function panoramaBacken(nur) {
+    const PORT = Number(process.env.STUDIO_HUELLE_PORT || 8742);
+    const s = statikServer({ seiten: { "/__panorama.html": '<!DOCTYPE html><meta charset="utf-8"><title>Panorama</title><body style="margin:0"></body>' } });
+    await new Promise((r) => s.listen(PORT, "127.0.0.1", r));
+    const kp = path.join(ROOT, TOR_ZIELE);
+    const K = fs.existsSync(kp) ? JSON.parse(fs.readFileSync(kp, "utf8")) : {};
+    const neu = { format: PANO.format, w: PANO.w, h: PANO.h, welten: K.welten || {}, ohne: {} };
+    for (const [id, grund] of Object.entries(OHNE_PANORAMA)) neu.ohne[`worlds/${id}/index.html`] = grund;
+    for (const k of Object.keys(neu.welten)) if (!k.startsWith("worlds/") || OHNE_PANORAMA[k.split("/")[1]]) delete neu.welten[k];
+    const browser = await starteBrowser({ art: "webgl", frist: 300000, zusatz: ["--window-size=1400,900"] });
+    const lies = liesAus({});
+    let rot = 0;
+    try {
+        const page = await browser.newPage();
+        await page.setViewport({ width: 1400, height: 900 });
+        const fehler = [];
+        page.on("pageerror", (e) => fehler.push(String((e && e.message) || e).split("\n")[0].slice(0, 160)));
+        await page.goto(`http://127.0.0.1:${PORT}/__panorama.html`, { waitUntil: "load" });
+        const adapter = await page.evaluate(() => {
+            const g = document.createElement("canvas").getContext("webgl2");
+            const d = g && g.getExtension("WEBGL_debug_renderer_info");
+            return g ? String(d ? g.getParameter(d.UNMASKED_RENDERER_WEBGL) : g.getParameter(g.RENDERER)) : "kein webgl2";
+        });
+        console.log(`Panorama backen auf ${adapter}`);
+        for (const id of [...STUDIOS, ...NEBENWELTEN]) {
+            if (OHNE_PANORAMA[id] || (nur && !nur.includes(id))) continue;
+            const t0 = Date.now();
+            const reift = id === "koerperstudio" || id === "fachwerk" || id === "terrain" ? 9000 : 4000;
+            try {
+                const P = await page.evaluate(
+                    (url, reift, frist) =>
+                        new Promise((ja, nein) => {
+                            const f = document.createElement("iframe");
+                            f.style.cssText = "position:fixed;left:0;top:0;width:1280px;height:720px;border:0";
+                            const reqId = `backen-${Date.now()}`;
+                            const ende = (e, x) => {
+                                clearTimeout(uhr);
+                                removeEventListener("message", hoer);
+                                f.remove();
+                                if (e) nein(e);
+                                else ja(x);
+                            };
+                            const hoer = (ev) => {
+                                if (ev.source !== f.contentWindow) return;
+                                const m = ev.data;
+                                if (!m || typeof m !== "object") return;
+                                if (m.type === "ready")
+                                    setTimeout(() => f.contentWindow.postMessage({ type: "panorama-bitte", reqId }, "*"), reift);
+                                else if (m.type === "panorama" && m.reqId === reqId) {
+                                    if (m.fehler) return ende(new Error(`die Welt meldet: ${m.fehler}`));
+                                    const u8 = new Uint8Array(m.daten.buffer, m.daten.byteOffset, m.daten.byteLength);
+                                    let b = "";
+                                    for (let i = 0; i < u8.length; i += 0x8000) b += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000));
+                                    ende(null, { w: m.w, h: m.h, b64: btoa(b) });
+                                }
+                            };
+                            const uhr = setTimeout(() => ende(new Error(`kein Panorama nach ${frist / 1000} s`)), frist);
+                            addEventListener("message", hoer);
+                            f.src = url;
+                            document.body.appendChild(f);
+                        }),
+                    `/worlds/${id}/index.html`,
+                    reift,
+                    180000
+                );
+                const buf = Buffer.from(P.b64, "base64");
+                if (P.w !== PANO.w || P.h !== PANO.h || buf.length !== PANO.w * PANO.h * 8)
+                    throw new Error(`das Panorama trägt ${P.w}×${P.h} (${buf.length} Bytes) statt ${PANO.w}×${PANO.h}`);
+                const u16 = new Uint16Array(buf.buffer, buf.byteOffset, buf.length / 2);
+                let hell = 0;
+                for (let i = 0; i < u16.length; i += 4) if ((u16[i] & 0x7fff) + (u16[i + 1] & 0x7fff) + (u16[i + 2] & 0x7fff) > 0) hell++;
+                if (hell < (PANO.w * PANO.h) / 4) throw new Error(`das Panorama ist leer (${hell} Texel mit Licht)`);
+                fs.writeFileSync(path.join(ROOT, panoDatei(id)), buf);
+                neu.welten[`worlds/${id}/index.html`] = { datei: panoDatei(id), stempel: panoramaStempel(id, lies), adapter };
+                console.log(`  ✅ ${id.padEnd(14)} ${panoDatei(id)} · ${((Date.now() - t0) / 1000).toFixed(1)} s · ${hell} Texel mit Licht`);
+            } catch (e) {
+                rot++;
+                console.log(`  ❌ ${id.padEnd(14)} ${(e && e.message) || e}${fehler.length ? " · Seite: " + fehler.slice(-2).join(" | ") : ""}`);
+            }
+            fehler.length = 0;
+        }
+    } finally {
+        await browser.close();
+        s.close();
+    }
+    const sortiert = {};
+    for (const k of Object.keys(neu.welten).sort()) sortiert[k] = neu.welten[k];
+    neu.welten = sortiert;
+    fs.writeFileSync(kp, JSON.stringify(neu, null, 4) + "\n");
+    if (rot) process.exitCode = 1;
+}
+
 (async () => {
     const a = process.argv;
+    if (a.includes("--panorama")) {
+        const n = a[a.indexOf("--panorama") + 1];
+        await panoramaBacken(n && !n.startsWith("--") ? n.split(",") : null);
+        return;
+    }
     if (a.includes("--bild")) {
         const i = a.indexOf("--bild");
         const n = a.includes("--name") ? a[a.indexOf("--name") + 1] : "nachher";
