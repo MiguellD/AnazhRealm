@@ -394,8 +394,11 @@ class AnazhRealm_Z11c {
                 im.clearUpdateRanges();
                 if (ende) im.addUpdateRange(0, ende);
                 im.needsUpdate = true;
-                a.mesh.instanceColor.clearUpdateRanges();
-                a.mesh.instanceColor.needsUpdate = true;
+                // der Tint wandert im Gleichschritt mit der Matrix (je Slot 3 statt 16 Werte) — nur der Bereich, nie die Kapazität
+                const ic = a.mesh.instanceColor;
+                ic.clearUpdateRanges();
+                if (ende) ic.addUpdateRange(0, (ende / 16) * 3);
+                ic.needsUpdate = true;
             }
             AnazhRealm._instanzZahl(a.mesh, a.anzahl);
         }
