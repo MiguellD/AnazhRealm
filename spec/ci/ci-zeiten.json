@@ -1971,9 +1971,8 @@
       "s": 21,
       "n": 1,
       "lauf": "npm run gate:welt-boot",
-      "geschaetzt": "K67: Selbsttest-Schritt der Diagnose-Läufe 38676084870 (21 s, 03:24:27-03:24:48) und 38677706299",
       "laeufe": [
-        "38676084870"
+        "38694864243"
       ]
     }
   },

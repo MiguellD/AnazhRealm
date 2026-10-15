@@ -11,7 +11,8 @@
 //   buehne()         die Bühne (Mittag · Sonne · Sommer, scripts/lib/ausgabe-aufnahme.cjs)
 //   DIE STALL-AKTE   (K67) jede Seite trägt einen Puls (1 s) und Stempel (Programm-/Pipeline-Bau, synchrone GL-Rückfragen);
 //                    steht der Puls ≥ 20 s oder läuft ein Seiten-Aufruf in seine Frist, schreibt die Lib die Akte ins Log:
-//                    offene Aufrufe, letzter Puls mit Phase, Stempel, CPU je Prozess, der JS-Stapel (Debugger.pause),
+//                    offene Aufrufe, letzter Puls mit Phase, Stempel, CPU je Prozess (unter Linux die Fäden des GPU-
+//                    Prozesses: swiftshader-Raster `Thread<NN>`, CrGpuMain, ANGLE-Link), der JS-Stapel (Debugger.pause),
 //                    Konsole, Chrome-Stderr und das URTEIL (JS-SCHLEIFE · NATIV · GPU-PROZESS · VERKLEMMUNG · AWAIT)
 //                    — `node scripts/lib/welt-boot.cjs --selbsttest` (gate:welt-boot) beweist, dass sie den Täter nennt
 // Die Wand: gate:altlasten DIE BOOT-WAND — ein Start außerhalb dieser Datei ist ROT, die Liste der noch eigenen Starts
