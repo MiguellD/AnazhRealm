@@ -485,6 +485,9 @@ class AnazhRealm_Z17a {
     _tickBlueprintPrebake() {
         const st = this.state;
         if (st._frameOverBudget) return; // erst die Frame-Zeit, dann vorausplanen (V18.282-Wand)
+        // erst das Bild, dann vorausplanen (K60-2): kein Leser des ersten Weltbilds wählt einen Bauplan — unter dem Ladeschirm
+        // (`_ladeTakt`, der kein Budget reißt) wärmte das Vorbacken Radeon kalt 0,71 s Geister vor dem Bild (K602/p1)
+        if (this._ladeTakt()) return;
         if (!st.blueprints) return;
         if (!this._prebakedBlueprints) this._prebakedBlueprints = new Set();
         const done = this._prebakedBlueprints;
