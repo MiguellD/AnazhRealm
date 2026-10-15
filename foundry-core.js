@@ -244,8 +244,13 @@ var ATMO_GESETZ = {
     // DIE LUFT (V18.530): beobachtbare Sichtweiten — ein klarer Sommertag traegt Gelaende-Silhouetten 20 km weit, Starkregen
     // 1,5 km; reine Luft = Rayleigh bei 550 nm auf Meereshoehe (1,16e-5/m); der Dunst sitzt in der Grenzschicht (1 km)
     luft: { sichtKlarM: 20000, sichtSturmM: 1500, betaRayleigh: 1.16e-5, kontrast: 0.02, skalenHoeheM: 1000 },
-    // unter dem Horizont: der Farbton wandert ueber nacht.skala (sin Hoehe) zum Mond-Hue (Purkinje 0x9fb8dc), die Menge zu nacht.lum
-    nacht: { skala: 0.16, lum: 0.06, mond: [0x9f / 255, 0xb8 / 255, 0xdc / 255] },
+    // unter dem Horizont: der Farbton wandert ueber nacht.skala (sin Hoehe) zum Mond-Hue (Purkinje 0x9fb8dc), die Menge zu nacht.lum.
+    // DAS STERNEN-LICHT (D3-2): der Nachthimmel leuchtet selbst (Airglow und das Licht der Sterne) aus einer Schicht glutHoeheM
+    // ueber dem Boden; himmel = seine Leuchtdichte im Zenit (linear, Welt-Einheiten, in der Eichung der Nacht auf dem Deckel 1,0,
+    // wie der Mond): der Nacht-Anker der Gelaende-Welt 0x0a1326 (roh, wie die Luft der Welt ihn las) x 1,3 = 0x0d1931, geeicht
+    // an der Nacht vor D3 (Wiese, Uhr 0,76-0,80 und Mitternacht nicht dunkler). Schraeg gesehen heller (van Rhijn), durch
+    // dieselbe Luft gedaempft wie jeder Strahl; es leuchtet im Mass der Grenzgroesse (sichtbar, wie die Sterne erscheinen)
+    nacht: { skala: 0.16, lum: 0.06, mond: [0x9f / 255, 0xb8 / 255, 0xdc / 255], himmel: [0x0d / 255, 0x19 / 255, 0x31 / 255], glutHoeheM: 90000 },
     durchlassSchritte: 40,         // Marsch-Schritte des Durchlasses (Sonne auf der CPU UND die Transmittance-Tafel)
 };
 __terrainCore.ATMO_GESETZ = ATMO_GESETZ;

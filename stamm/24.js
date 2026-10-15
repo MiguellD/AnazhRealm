@@ -375,6 +375,29 @@ class AnazhRealm_Z24 {
         return Math.max(0, AnazhRealm.KEY_BASE * AnazhRealm.LEGACY_LICHT * (tint ? tint.lightIntensity : 1));
     }
 
+    // DIE EINE DÄMMERUNG (D3-2): 1 im hellen Tag … 0 in astronomischer Nacht, aus der Grenzgröße der Sterne
+    // (`HIMMEL.grenzgroesse`, `_himmelGrenzgroesse`; e = sin Höhe der Sonne). Die Belichtung hebt in ihrem Maß über den
+    // Nacht-Deckel, das Sternen-Licht leuchtet in ihrem Rest — wie die Sterne erscheinen, erscheint ihr Licht.
+    _daemmerung(e) {
+        const A = AnazhRealm.HIMMEL.grenzgroesse;
+        const mTag = A[0][1],
+            mNacht = A[A.length - 1][1];
+        return (mNacht - this._himmelGrenzgroesse(e)) / (mNacht - mTag);
+    }
+
+    // DAS STERNEN-LICHT (D3-2) jetzt: die Zenit-Leuchtdichte des Nachthimmels (`ATMO_GESETZ.nacht.himmel`, Welt-Einheiten) im
+    // Maß der Nacht (1 − Dämmerung). Bis D3-2 trug der Himmel der EINEN Atmosphäre nachts nur die Streuung des Mondes
+    // (Zenit 0,009): der Himmel der Nacht war schwarz, Wiese Mitternacht Luma 4,9 (vor D3 31,7), Dämmerung 0,78 4,2 (38,1).
+    _atmoSternenLicht(e) {
+        const N = this._atmoGesetz().nacht.himmel;
+        const w = Math.max(0, Math.min(1, 1 - this._daemmerung(e)));
+        const o = this._atmoNacht || (this._atmoNacht = [0, 0, 0]);
+        o[0] = N[0] * w;
+        o[1] = N[1] * w;
+        o[2] = N[2] * w;
+        return o;
+    }
+
     // DIE TAFELN (EINMAL je Szene): Fragment-Pässe in RenderTargets — EIN Pfad für WebGPU und WebGL (Compute hätte unter
     // WebGL keinen Himmel). Transmittance 256×64 (Bruneton-Parametrisierung) und Mehrfachstreuung Ψ_ms 32×32 (Hillaire Gl.
     // 5–9) je Medium, die Himmels-Sicht 192×108 (Azimut absolut, Breite quadratisch um den Horizont) je Stufe der Sonne,
@@ -412,6 +435,8 @@ class AnazhRealm_Z24 {
             licht: T.uniform(1),
             // der Mond in Einheiten von E0 (Purkinje-Hue × MOONLIGHT × Wetter / E0)
             mondE: T.uniform(new THREE.Vector3(0, 0, 0)),
+            // das Sternen-Licht in Einheiten von E0 (die Zenit-Leuchtdichte des Gesetzes × der Anteil der Nacht / E0, `_atmoSternenLicht`)
+            nachtE: T.uniform(new THREE.Vector3(0, 0, 0)),
             toenung: T.uniform(new THREE.Vector3(1, 1, 1)),
         });
         const ziel = (w, h, wrapS, name) => {
@@ -679,7 +704,14 @@ class AnazhRealm_Z24 {
                 L.addAssign(thr.mul(S).mul(tr.oneMinus().div(e)));
                 thr.mulAssign(tr);
             });
-            // der Boden unter dem Horizont: Lambert mit der Welt-Albedo im Licht von Sonne und Mond
+            // DAS STERNEN-LICHT (D3-2, `ATMO_GESETZ.nacht`): über dem Horizont leuchtet der Nachthimmel selbst — schräg durch die
+            // leuchtende Schicht gesehen länger (van Rhijn), gedämpft durch dieselbe Luft wie jeder Strahl (`thr`, der Durchlass
+            // bis zum Rand). Der Boden unter dem Horizont: Lambert mit der Welt-Albedo im Licht von Sonne und Mond.
+            If(boden.not(), () => {
+                const q = r0.div(RG + G.nacht.glutHoeheM / 1000);
+                const vanRhijn = float(1).div(sqrt(max(float(1).sub(q.mul(q).mul(float(1).sub(mu.mul(mu)))), 1e-4)));
+                L.addAssign(U.nachtE.mul(vanRhijn).mul(thr));
+            });
             If(boden, () => {
                 const gp = vec3(v.x.mul(tMax), r0.add(v.y.mul(tMax)), v.z.mul(tMax)).toVar();
                 const n = gp.div(length(gp)).toVar();
@@ -826,6 +858,9 @@ class AnazhRealm_Z24 {
         const Mo = AnazhRealm.MOONLIGHT;
         const mi = (Mo.intensity * (tint ? tint.lightMul : 1)) / Math.max(E0, 1e-6);
         U.mondE.value.set(Mo.r * mi, Mo.g * mi, Mo.b * mi);
+        // das Sternen-Licht hängt allein an der Höhe der Sonne (die Dämmerung) — der Schlüssel der Himmels-Sicht trägt es mit
+        const N = this._atmoSternenLicht(sunDir.y);
+        U.nachtE.value.set(N[0], N[1], N[2]).divideScalar(Math.max(E0, 1e-6));
         const s = st._sonne;
         const schluessel = `${s ? s.winkel : 0}:${h}:${A.mediumBeta}`;
         const rend = st.renderer;
@@ -1075,13 +1110,13 @@ class AnazhRealm_Z24 {
     // Konvention der Belichtungsmessung (Sunny 16: ein Körper im Licht wendet sich der Sonne zu, die Blende folgt dem Durchlass,
     // nicht dem Sinus der Höhe). Auf der Waagrechten gemessen hob die tiefe Sonne die Belichtung um 1/sin(Höhe): Uhr 0,72
     // (Sonne 10°) Belichtung 6,2, der Himmel weiß, das Bild Luma 212.
-    // DER DECKEL GILT DER NACHT (D3-N2), nie dem Abend: über ihn hebt die Belichtung nur das Licht des Tags — die Sonne und
-    // der Himmel der EINEN Atmosphäre —, im Maß seines Anteils an der Karte (die Nacht-Lichter, Hemi- und Ambient-Boden und
-    // der Mond, sind auf den Deckel geeicht) und der EINEN Dämmerung: derselben Anker, die die Grenzgröße der Sterne setzen
-    // (`HIMMEL.grenzgroesse`, `_himmelGrenzgroesse`; heller Tag −5 → 1, astronomische Nacht +6 → 0). Dazwischen gleitet sie
-    // geometrisch. Im Tag folgt sie dem Licht ganz (Nordstern Ebene 0: mehrere EV Anpassung). Bis D3-N2 deckelte die
-    // Lichtmenge selbst: mit der EINEN Atmosphäre fällt das Licht der Wiese um Uhr 0,72 auf E 0,89 (Mittag 7,58) — der Deckel
-    // ließ die Karte 2,6 EV unter Mittelgrau + 1, der Abend sah aus wie Nacht.
+    // DER DECKEL GILT DER NACHT (D3-N2), nie dem Abend: über ihn hebt die Belichtung nur das Licht des Himmels — die Sonne und
+    // der Himmel der EINEN Atmosphäre, der in der Dämmerung auch sein Sternen-Licht trägt (D3-2) —, im Maß seines Anteils an der
+    // Karte (die Ersatz-Lichter der Nacht, Hemi- und Ambient-Boden, und der Mond sind auf den Deckel geeicht) und der EINEN
+    // Dämmerung (`_daemmerung`: derselbe Anker, der die Grenzgröße der Sterne setzt; heller Tag 1, astronomische Nacht 0).
+    // Dazwischen gleitet sie geometrisch. Im Tag folgt sie dem Licht ganz (Nordstern Ebene 0: mehrere EV Anpassung). Bis D3-N2
+    // deckelte die Lichtmenge selbst: mit der EINEN Atmosphäre fällt das Licht der Wiese um Uhr 0,72 auf E 0,89 (Mittag
+    // 7,58) — der Deckel ließ die Karte 2,6 EV unter Mittelgrau + 1, der Abend sah aus wie Nacht.
     _dayNightApplyBelichtung(sonneY) {
         const st = this.state;
         const rend = st.renderer;
@@ -1096,15 +1131,11 @@ class AnazhRealm_Z24 {
         const E = 0.2126 * e[0] + 0.7152 * e[1] + 0.0722 * e[2] + richt * (1 - dy);
         const karte = (0.18 / Math.PI) * E;
         const k = karte > 1e-6 ? B.zielKarte / karte : B.max;
-        const A = AnazhRealm.HIMMEL.grenzgroesse;
-        const mTag = A[0][1],
-            mNacht = A[A.length - 1][1];
-        const daemmerung = (mNacht - this._himmelGrenzgroesse(sonneY)) / (mNacht - mTag);
         const env = this._himmelsIrradianz();
         const himmel = env ? Math.PI * (0.2126 * env.oben[0] + 0.7152 * env.oben[1] + 0.0722 * env.oben[2]) : 0;
         const tagAnteil = E > 1e-9 ? Math.min(1, ((sonneY >= 0 ? richt : 0) + himmel) / E) : 0;
         const nacht = Math.min(B.max, k);
-        rend.toneMappingExposure = Math.max(B.min, nacht * Math.pow(k / nacht, daemmerung * tagAnteil));
+        rend.toneMappingExposure = Math.max(B.min, nacht * Math.pow(k / nacht, this._daemmerung(sonneY) * tagAnteil));
     }
 
     // DAS LICHT DES AUGES (K02a, Auge 11 bei 762/−138): wo der Himmel das Auge nicht erreicht, trägt der Leib sein Licht. Die

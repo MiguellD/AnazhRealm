@@ -681,8 +681,13 @@ class AnazhRealm_Z25c {
             // (Belichtung ≤ 1: der Tag 0,6–1 und die Nacht), bleibt es bytegleich; hebt die Belichtung den Abend über 1, dreht der
             // Kontrast um dasselbe belichtete Licht wie bei 1. Ohne das wurde jedes Licht unter 0,028 Szenen-Einheiten schwarz,
             // gleich wie hell die Belichtung es danach hob (gate:post-kette (h): Belichtung 4 schwarz, wo 1 Luma 24 zeigt).
+            // DIE NACHT BEHÄLT IHR DUNKEL (D3-2): die lineare Kurve schneidet 2,5 EV unter dem belichteten Mittelgrau ab — die Nacht
+            // liegt auf dem Deckel 1,0 ganz darunter (die 18-%-Karte im Mondlicht 4,2 EV unter Mittelgrau + 1): der Kontrast fadet
+            // zur Nacht aus wie die Entgrauung (×(1 − nightFactor), dieselbe Tag-Achse) — sonst wurde der Boden der Nacht schwarz
+            // (Wiese Mitternacht 61 % schwarz). Ab ~9° Sonne (nightFactor 0) bleibt der Tag bytegleich.
+            const kontrast = mix(u.gradeContrast, float(1.0), u.nightFactor);
             const drehpunkt = float(0.5).div(max(toneMappingExposure, float(1)));
-            const contrasted = saturated.sub(drehpunkt).mul(u.gradeContrast).add(drehpunkt);
+            const contrasted = saturated.sub(drehpunkt).mul(kontrast).add(drehpunkt);
 
             // --- Entgrauen: desaturierte Pixel (graue Türme/Wände/Felsen) werden warm verschoben, satte
             // (Himmel, Gras, Wasser) bleiben. Luminanz-erhaltend (nur Hue-Shift: R hoch, G gehalten, B runter);
