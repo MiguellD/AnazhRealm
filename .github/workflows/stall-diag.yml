@@ -1,0 +1,59 @@
+name: Stall-Diagnose
+
+# K67 — WEGWERF-LAUF: gate:webgl-probe N-mal je Läufer auf ubuntu-latest (swiftshader-GL), die Stall-Akte der Boot-Lib
+# nennt den Täter. Lebt nur auf dem Zweig webgl-stall und fällt vor dem letzten Push.
+on:
+    push:
+        branches: [webgl-stall]
+
+jobs:
+    probe:
+        name: probe ${{ matrix.laeufer }}
+        strategy:
+            fail-fast: false
+            matrix:
+                laeufer: [1, 2, 3, 4, 5, 6]
+        runs-on: ubuntu-latest
+        timeout-minutes: 40
+        env:
+            CI_KLASSE: gpu
+        steps:
+            - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: "22"
+            - name: Cache-Schlüssel
+              id: schluessel
+              run: node scripts/ci-schluessel.cjs
+            - uses: actions/cache@v4
+              with:
+                  path: ~/.npm
+                  key: npm-${{ runner.os }}-${{ steps.schluessel.outputs.npm }}
+                  restore-keys: npm-${{ runner.os }}-
+            - uses: actions/cache@v4
+              with:
+                  path: ~/.cache/puppeteer
+                  key: puppeteer-${{ runner.os }}-${{ steps.schluessel.outputs.chrome }}
+                  restore-keys: puppeteer-${{ runner.os }}-
+            - name: System-Libs
+              run: |
+                  SO="libnss3.so libatk-1.0.so.0 libatk-bridge-2.0.so.0 libcups.so.2 libdrm.so.2 libxkbcommon.so.0 libXcomposite.so.1 libXdamage.so.1 libXfixes.so.3 libXrandr.so.2 libgbm.so.1 libpango-1.0.so.0 libcairo.so.2 libasound.so.2"
+                  DA=1; for so in $SO; do ldconfig -p | grep -qF "$so (" || DA=0; done
+                  echo "System-Libs da=$DA"; nproc; free -m
+            - run: npm ci --no-audit --no-fund
+            - name: Selbsttest der Stall-Akte
+              run: node scripts/lib/welt-boot.cjs --selbsttest
+            - name: webgl-probe in Folge
+              shell: bash
+              run: |
+                  ROT=0
+                  for i in 1 2 3 4; do
+                    echo "::group::Lauf $i (Läufer ${{ matrix.laeufer }})"
+                    T0=$(date +%s)
+                    node scripts/diag-webgl-probe.cjs; E=$?
+                    echo "LAUF ${{ matrix.laeufer }}.$i EXIT=$E DAUER=$(( $(date +%s) - T0 )) s"
+                    echo "::endgroup::"
+                    [ $E -ne 0 ] && ROT=$((ROT+1))
+                  done
+                  echo "ROT=$ROT von 4"
+                  exit $ROT
