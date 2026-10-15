@@ -612,11 +612,11 @@
 
     // ── DAS PANORAMA DES STUDIOS (D8, Karte „Das Tor als Fenster") — die EINE Quelle des Ziel-Bilds der Tor-Membran ──
     // Das Studio rendert seine EIGENE Welt (seine Szene, sein Renderer, Labor = Welt) einmal von einem Ort aus: sechs
-    // 90°-Würfe in einen Würfel (CubeCamera), gefaltet ins Equirekt 512 × 256 (die Richtung je Texel wie three
+    // 90°-Würfe (je Seite ein ebenes Ziel 256²), gefaltet ins Equirekt 512 × 256 (die Richtung je Texel wie three
     // `equirectUV`: u = atan2(z, x)/2π + ½, v = asin(y)/π + ½, Zeile 0 unten). DER BLICK DES STUDIOS: `opt.kamera` stellt den
     // Ort (ihre Lage), die Tiefe (nah/fern) und dreht das Bild, bis die Mitte der Öffnung (−z des Lesers, u = ¼) zeigt, was die
     // Kamera vor sich hat.
-    // DIE WERTE sind die Bild-Werte des Studios, ins Lineare gelesen: der Würfel schreibt wie der Schirm (sRGB-Kodierung des Ziels
+    // DIE WERTE sind die Bild-Werte des Studios, ins Lineare gelesen: die Würfe schreiben wie der Schirm (sRGB-Kodierung des Ziels
     // — Hintergrund und Nebel stehen in r128 in Bild-Werten, die Stoffe kodiert der Shader), die Faltung dekodiert; ohne
     // Tonabbildung (der Leser belichtet und tont selbst). opt: verbergen (Objekte, die nicht ins Bild gehören — die eigene
     // Membran), nah/fern, lesen (true: die Texel als Halbfloat-Puffer zurück, der Welt-Export). Rückgabe { w, h, rt, daten } —
@@ -646,7 +646,7 @@
             drehung = 0;
         if (kam) {
             // die Tiefe des Blicks ist die der Kamera: was jenseits ihres fern liegt (die Kuppel, der Horizont-Ring), zeigt das
-            // Studio nie — der Würfel auch nicht
+            // Studio nie — die Würfe auch nicht
             if (opt.nah == null) opt.nah = kam.near;
             if (opt.fern == null) opt.fern = kam.far;
             kam.updateMatrixWorld();
@@ -656,16 +656,22 @@
             if (vor.x * vor.x + vor.z * vor.z > 1e-8) drehung = Math.atan2(vor.z, vor.x) + Math.PI / 2;
         }
         var kodiert = T.sRGBEncoding !== undefined;
-        var wuerfel = new T.WebGLCubeRenderTarget(256, {
-            type: T.HalfFloatType,
-            generateMipmaps: false,
-            minFilter: T.LinearFilter,
-            magFilter: T.LinearFilter,
-            encoding: kodiert ? T.sRGBEncoding : undefined,
-        });
-        var cam = new T.CubeCamera(opt.nah || 0.1, opt.fern || 4000, wuerfel);
-        cam.position.set(ort[0], ort[1], ort[2]);
-        scene.add(cam);
+        // SECHS EBENE WÜRFE statt eines Würfel-Ziels: auf der Radeon 890M (ANGLE/D3D11) löschte r128 den Hintergrund nur in EINER
+        // Seite eines WebGLCubeRenderTarget — die übrigen fünf blieben schwarz, wo keine Geometrie stand (der Himmel des Fachwerks
+        // schwarz, Mittel 0,309 statt 0,542 unter swiftshader). Je Seite ein eigenes 2D-Ziel mit eigener Kamera (90°, Seitenverhältnis
+        // 1); die Faltung projiziert jede Richtung in die Seite mit dem größten Anteil.
+        var SEITEN = [
+            [1, 0, 0, 0, 1, 0],
+            [-1, 0, 0, 0, 1, 0],
+            [0, 1, 0, 0, 0, -1],
+            [0, -1, 0, 0, 0, 1],
+            [0, 0, 1, 0, 1, 0],
+            [0, 0, -1, 0, 1, 0],
+        ];
+        var ziele = [],
+            vor6 = [],
+            rechts6 = [],
+            hoch6 = [];
         var verborgen = opt.verbergen || [];
         var sicht = verborgen.map(function (o) {
             return o.visible;
@@ -677,12 +683,32 @@
             alt = renderer.getRenderTarget();
         renderer.toneMapping = T.NoToneMapping;
         try {
-            cam.update(renderer, scene);
+            for (var i = 0; i < 6; i++) {
+                var S = SEITEN[i];
+                var ziel = new T.WebGLRenderTarget(256, 256, {
+                    type: T.HalfFloatType,
+                    generateMipmaps: false,
+                    minFilter: T.LinearFilter,
+                    magFilter: T.LinearFilter,
+                    encoding: kodiert ? T.sRGBEncoding : undefined,
+                });
+                var cam = new T.PerspectiveCamera(90, 1, opt.nah || 0.1, opt.fern || 4000);
+                cam.position.set(ort[0], ort[1], ort[2]);
+                cam.up.set(S[3], S[4], S[5]);
+                cam.lookAt(ort[0] + S[0], ort[1] + S[1], ort[2] + S[2]);
+                cam.updateMatrixWorld(true);
+                var e = cam.matrixWorld.elements;
+                rechts6.push(new T.Vector3(e[0], e[1], e[2]));
+                hoch6.push(new T.Vector3(e[4], e[5], e[6]));
+                vor6.push(new T.Vector3(S[0], S[1], S[2]));
+                renderer.setRenderTarget(ziel);
+                renderer.render(scene, cam);
+                ziele.push(ziel);
+            }
         } finally {
             verborgen.forEach(function (o, i) {
                 o.visible = sicht[i];
             });
-            scene.remove(cam);
         }
         var rt = new T.WebGLRenderTarget(PANO_W, PANO_H, {
             type: T.FloatType,
@@ -692,15 +718,28 @@
         });
         var mat = new T.ShaderMaterial({
             uniforms: {
-                uWuerfel: { value: wuerfel.texture },
+                uSeite: {
+                    value: ziele.map(function (z) {
+                        return z.texture;
+                    }),
+                },
+                uVor: { value: vor6 },
+                uRechts: { value: rechts6 },
+                uHoch: { value: hoch6 },
                 uDreh: { value: drehung },
                 uKodiert: { value: kodiert ? 1 : 0 },
             },
             vertexShader: "varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,0.0,1.0);}",
             fragmentShader:
-                "uniform samplerCube uWuerfel;uniform float uDreh,uKodiert;varying vec2 vUv;void main(){" +
+                "uniform sampler2D uSeite[6];uniform vec3 uVor[6],uRechts[6],uHoch[6];uniform float uDreh,uKodiert;varying vec2 vUv;" +
+                "vec3 seite(sampler2D t,vec3 d,vec3 f,vec3 r,vec3 h){float z=dot(d,f);" +
+                "return texture2D(t,vec2(dot(d,r),dot(d,h))/z*0.5+0.5).rgb;}" +
+                "void main(){" +
                 "float az=(vUv.x-0.5)*6.28318530718+uDreh;float el=(vUv.y-0.5)*3.14159265359;" +
-                "vec3 c=textureCube(uWuerfel,vec3(cos(el)*cos(az),sin(el),cos(el)*sin(az))).rgb;" +
+                "vec3 d=vec3(cos(el)*cos(az),sin(el),cos(el)*sin(az));vec3 a=abs(d);vec3 c;" +
+                "if(a.x>=a.y&&a.x>=a.z)c=d.x>0.0?seite(uSeite[0],d,uVor[0],uRechts[0],uHoch[0]):seite(uSeite[1],d,uVor[1],uRechts[1],uHoch[1]);" +
+                "else if(a.y>=a.z)c=d.y>0.0?seite(uSeite[2],d,uVor[2],uRechts[2],uHoch[2]):seite(uSeite[3],d,uVor[3],uRechts[3],uHoch[3]);" +
+                "else c=d.z>0.0?seite(uSeite[4],d,uVor[4],uRechts[4],uHoch[4]):seite(uSeite[5],d,uVor[5],uRechts[5],uHoch[5]);" +
                 "vec3 l=mix(c/12.92,pow((max(c,0.0)+0.055)/1.055,vec3(2.4)),step(vec3(0.04045),c));" +
                 "gl_FragColor=vec4(mix(c,l,uKodiert),1.0);}",
             depthTest: false,
@@ -723,7 +762,9 @@
         renderer.toneMapping = tm;
         quad.geometry.dispose();
         mat.dispose();
-        wuerfel.dispose();
+        ziele.forEach(function (z) {
+            z.dispose();
+        });
         return { w: PANO_W, h: PANO_H, rt: rt, daten: daten };
     }
     function halbPuffer(f) {

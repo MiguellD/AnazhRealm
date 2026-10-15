@@ -110,7 +110,8 @@ function buildMembrane(){
       " float fw=min(fres+rand*"+GN(FI.rand[2])+"+"+GN(FI.basis)+","+GN(FI.gewichtMax)+")*("+GN(FI.act[0])+"+"+GN(FI.act[1])+"*uActivate);",
       " vec3 spiegel=texture2D(uPano,equi(reflect(rd,N))).rgb;",
       " vec3 glanz=film*spiegel*"+GN(FI.glanz[0])+"*("+GN(FI.glanz[1])+"+"+GN(FI.glanz[2])+"*uPulse);",
-      " gl_FragColor=vec4(mix(ziel,glanz,fw),1.0);",
+      // der Film als Schicht: was er je Kanal zurückwirft, fehlt dem Durchlass (wie die Welt, _membranGraph)
+      " gl_FragColor=vec4(ziel*(1.0-film*fw)+glanz*fw,1.0);",
       " #include <tonemapping_fragment>",
       " #include <encodings_fragment>",
       "}"].join('\n')});

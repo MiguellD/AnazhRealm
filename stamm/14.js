@@ -2112,7 +2112,9 @@ class AnazhRealm_Z14 {
         const RfW = TSL.vec3(Rf.x.mul(cr).add(Rf.z.mul(sr)), Rf.y, Rf.z.mul(cr).sub(Rf.x.mul(sr)));
         const spiegel = TSL.texture(this._himmelUmgebungTex(), TSL.equirectUV(RfW)).level(F(0)).rgb;
         const glanz = film.mul(spiegel).mul(F(FI.glanz[0])).mul(pulse.mul(FI.glanz[2]).add(FI.glanz[1]));
-        const col = TSL.mix(ziel, glanz, filmW);
+        // DER FILM ALS SCHICHT: was er je Kanal zurückwirft (seine Bänder × Gewicht), fehlt dem Durchlass — das Ziel scheint mit
+        // 1 − R hindurch (in der Gegenfarbe der Bänder getönt), der Spiegel liegt mit R darauf; ein dunkles Band lässt das Ziel ganz
+        const col = ziel.mul(F(1.0).sub(film.mul(filmW))).add(glanz.mul(filmW));
         const G = { positionNode, colorNode: TSL.vec4(col, 1.0), opacityNode: keep, anzeige: col };
         this._membranGraphen.set(MG, G);
         return G;
@@ -2306,28 +2308,36 @@ class AnazhRealm_Z14 {
         });
     }
 
-    // Ein Ziel in den Atlas: eine neue Textur mit genau einer Zeile mehr (die geteilten Knoten lesen sie, die Zeilenzahl ist eine
-    // geteilte Uniform), die alte fällt.
+    // Ein Ziel in den Atlas: seine Zeile in DENSELBEN Puffer (needsUpdate). Die erste Ankunft legt den Atlas mit einer Zeile je
+    // ANGEFRAGTER Welt an (der Scan nennt die Tore des Rings im selben Takt, lange bevor das erste Ziel kommt) — eine neue Textur
+    // entsteht nur, wenn danach eine Welt dazukommt (die geteilten Knoten lesen sie, die Zeilenzahl ist eine geteilte Uniform).
+    // Vorher wuchs der Atlas je Ankunft um eine Zeile, sieben Texturen in den ersten Sekunden: r184 lädt beim ersten Binden die
+    // Textur hoch, die der Stoff bei seinem BAU las (`Bindings._init` → `binding.texture`, erst danach liest `update()` den Knoten)
+    // — die schon entsorgte erste Atlas-Textur stieg so wieder auf und blieb (Puffer-Zensus: tex:tor-ziel 512×256, 1 MB).
     _torZielEinsetzen(z, daten, quelle) {
         const G = AnazhRealm.TOR_ZIEL;
         const Z = this._torZiele();
         const zeile = G.w * G.h * 4;
         const n = Z.n + 1;
-        const neu = new Uint16Array(zeile * n);
-        if (Z.tex) neu.set(Z.tex.image.data);
-        neu.set(daten, Z.n * zeile);
-        const tex = new THREE.DataTexture(neu, G.w, G.h * n, THREE.RGBAFormat, THREE.HalfFloatType);
-        tex.name = "tor-ziel";
-        tex.wrapS = THREE.RepeatWrapping;
-        tex.minFilter = THREE.LinearFilter;
-        tex.magFilter = THREE.LinearFilter;
-        tex.generateMipmaps = false;
-        tex.needsUpdate = true;
-        const alt = Z.tex;
-        Z.tex = tex;
-        Z.uZeilen.value = n;
-        for (const kn of Z.knoten) kn.value = tex;
-        if (alt) alt.dispose();
+        const platz = Z.tex ? Z.tex.image.height / G.h : 0;
+        if (n > platz) {
+            const hoch = Math.max(n, Z.welten.size);
+            const neu = new Uint16Array(zeile * hoch);
+            if (Z.tex) neu.set(Z.tex.image.data);
+            const tex = new THREE.DataTexture(neu, G.w, G.h * hoch, THREE.RGBAFormat, THREE.HalfFloatType);
+            tex.name = "tor-ziel";
+            tex.wrapS = THREE.RepeatWrapping;
+            tex.minFilter = THREE.LinearFilter;
+            tex.magFilter = THREE.LinearFilter;
+            tex.generateMipmaps = false;
+            const alt = Z.tex;
+            Z.tex = tex;
+            Z.uZeilen.value = hoch;
+            for (const kn of Z.knoten) kn.value = tex;
+            if (alt) alt.dispose();
+        }
+        Z.tex.image.data.set(daten, Z.n * zeile);
+        Z.tex.needsUpdate = true;
         z.zeile = Z.n;
         z.quelle = quelle;
         Z.n = n;

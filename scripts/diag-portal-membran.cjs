@@ -491,6 +491,7 @@ async function blickStufe(check) {
                 halb: !!(Z.tex && Z.tex.type === window.THREE.HalfFloatType),
                 zeilen: Z.tex ? Z.tex.image.height / G.h : 0,
                 n: Z.n,
+                welten: Z.welten.size,
                 breit: Z.tex ? Z.tex.image.width : 0,
             });
             const D = r._torZielDaten({ entry });
@@ -665,8 +666,8 @@ async function blickStufe(check) {
             String(Z.stempel)
         );
         check(
-            `Z: der Atlas der Ziele ist rgba16float, 512 breit, 256 Zeilen je Ziel (${Z.zeilen} Ziele, ${Z.n} gesetzt)`,
-            Z.halb === true && Z.breit === 512 && Z.zeilen === Z.n && Z.n >= 1
+            `Z: der Atlas der Ziele ist rgba16float, 512 breit, 256 Zeilen je angefragter Welt (${Z.zeilen} Zeilen, ${Z.welten} Welten, ${Z.n} gesetzt)`,
+            Z.halb === true && Z.breit === 512 && Z.zeilen === Z.welten && Z.n >= 1 && Z.n <= Z.zeilen
         );
         check("Z: die Zeile trägt Licht (das Panorama ist nicht leer)", Z.daten === true);
     } else check("Z: Ziel-Block erreicht", false);
