@@ -267,6 +267,7 @@ class AnazhRealm_Z11c {
                 mesh: null,
                 kap: 0,
                 anzahl: 0,
+                anders: false,
                 wachse: 0,
             };
             if (a.quelle) a.quelle._liveRefs = (a.quelle._liveRefs || 0) + 1;
@@ -326,7 +327,13 @@ class AnazhRealm_Z11c {
                 ziel[stufe][v] = vl;
                 if (vl && vl.r + Math.abs(vl.cy) > rMax) rMax = vl.r + Math.abs(vl.cy);
             }
-        for (const a of nw.senken.values()) a.anzahl = 0;
+        // Jede Senke hebt ihre Version nur, wenn sich ihr Inhalt änderte (K71): eine neue Lage des Passes, die dieselben
+        // Büschel wählt (der Spieler atmet in der Third-Sicht), schreibt dieselben Matrizen — eine gehobene Version frischte
+        // jede Senke voll auf und lud ihren Puffer neu (an der Wiese in Ruhe vier Senken je vierten Frame).
+        for (const a of nw.senken.values()) {
+            a.anzahl = 0;
+            a.anders = false;
+        }
         const m4 = this._tmpWieseM4 || (this._tmpWieseM4 = new THREE.Matrix4());
         const mw = this._tmpWieseM4b || (this._tmpWieseM4b = new THREE.Matrix4());
         const ax = we[12];
@@ -346,17 +353,29 @@ class AnazhRealm_Z11c {
                 if (!vl || !this._passTrifft(L, b.x, b.y + vl.cy * b.s, b.z, 0, 0, 0, vl.r * b.s)) continue;
                 m4.fromArray(k.basis, i * 16);
                 for (const a of vl.senken) {
-                    if (a.anzahl >= a.kap) this._senkeMesh(a, Math.ceil(a.kap * 1.5), this.state.scene);
-                    mw.multiplyMatrices(m4, a.lokal).toArray(a.mesh.instanceMatrix.array, a.anzahl * 16);
+                    if (a.anzahl >= a.kap) {
+                        this._senkeMesh(a, Math.ceil(a.kap * 1.5), this.state.scene);
+                        a.anders = true;
+                    }
+                    const e = mw.multiplyMatrices(m4, a.lokal).elements;
+                    const arr = a.mesh.instanceMatrix.array;
+                    const o = a.anzahl * 16;
+                    for (let j = 0; j < 16; j++) {
+                        const alt = arr[o + j];
+                        arr[o + j] = e[j];
+                        if (arr[o + j] !== alt) a.anders = true;
+                    }
                     a.anzahl++;
                 }
             }
         }
         for (const a of nw.senken.values()) {
-            const im = a.mesh.instanceMatrix;
-            im.clearUpdateRanges();
-            if (a.anzahl) im.addUpdateRange(0, a.anzahl * 16);
-            im.needsUpdate = true;
+            if (a.anders) {
+                const im = a.mesh.instanceMatrix;
+                im.clearUpdateRanges();
+                if (a.anzahl) im.addUpdateRange(0, a.anzahl * 16);
+                im.needsUpdate = true;
+            }
             AnazhRealm._instanzZahl(a.mesh, a.anzahl);
         }
     }
