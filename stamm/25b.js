@@ -1556,6 +1556,15 @@ class AnazhRealm_Z25b {
         return !this.state._weltbildDa && !(r && r._isHeadlessNull) && this._ladeschirmSteht();
     }
 
+    // DIE FRIST DES LADE-FRAMES (K60-2): jeder Leser des ersten Weltbilds mit eigener Kappe je Takt (Stück oder ms je Frame)
+    // arbeitet im Lade-Takt bis zu dieser Frist — mindestens seine Kappe, nie weniger. Die Kappen schützen den Takt, den der
+    // Spieler sieht; unter dem Ladeschirm lief der Lade-Frame 3–13-mal je Sekunde, und jede Kappe wurde zur Uhr des Bilds:
+    // Radeon kalt malte der Horizont (600 Punkte und 2 ms Farbe je Frame) bis 16 s, als jeder andere Term seit 11 s stand.
+    // Außerhalb des Lade-Takts −∞ (die Kappe allein gilt). Leser: die Pflanz-Schlange, der Horizont (Höhen, Farben).
+    _ladeFrist() {
+        return this._ladeTakt() ? performance.now() + AnazhRealm.LADE_TAKT_MS : -Infinity;
+    }
+
     // Deferrable-Job-Registry (die Prioritäts-Ordnung als Daten). Terrain vor Deko: der Stream-Job (prio 0) setzt
     // `_frameChunksBuilt`, der Scatter-Deko-Job (prio 2) fragt `_dekoWartet`.
     _buildDeferrableJobs(playerPos) {

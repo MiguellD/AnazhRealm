@@ -485,6 +485,9 @@ class AnazhRealm_Z17a {
     _tickBlueprintPrebake() {
         const st = this.state;
         if (st._frameOverBudget) return; // erst die Frame-Zeit, dann vorausplanen (V18.282-Wand)
+        // erst das Bild, dann vorausplanen (K60-2): kein Leser des ersten Weltbilds wählt einen Bauplan — unter dem Ladeschirm
+        // (`_ladeTakt`, der kein Budget reißt) wärmte das Vorbacken Radeon kalt 0,71 s Geister vor dem Bild (K602/p1)
+        if (this._ladeTakt()) return;
         if (!st.blueprints) return;
         if (!this._prebakedBlueprints) this._prebakedBlueprints = new Set();
         const done = this._prebakedBlueprints;
@@ -1754,53 +1757,70 @@ class AnazhRealm_Z17a {
         return null;
     }
 
-    // V18.390 (Eins W3) → BÄCKER-VEREINIGUNG — der budgetierte Bake-Tick (EIN Bake in
-    // Flug; der Bäcker ist das STUDIO in seinem eigenen Faden, `_foundryBaecker`, Kanal "bake-impostor").
+    // V18.390 (Eins W3) → BÄCKER-VEREINIGUNG — der budgetierte Bake-Tick (JE BÄCKER-BAHN EIN Bake im Flug, K60-2; der Bäcker
+    // ist das STUDIO in seinen eigenen Fäden, `_foundryBaecker`, Kanal "bake-impostor"). Der Flug ist EINE Karte je Schlüssel
+    // (`_impostorBakeFlug`: Schlüssel → { seit, tok }); jeder Tick füllt ihn bis zur Zahl der Bäcker-Fäden
+    // (`_foundryFaedenZahl`), die nächste Karte zuerst. Bis K60-2 flog EINE Karte: Radeon kalt 17 Karten in 11 s nacheinander.
     // Headless/Null-Renderer/vor rendererReady → No-op (dort bäckt nie jemand).
     _tickImpostorBake() {
-        const st = this.state;
         if (!this._impostorBakeQueue || this._impostorBakeQueue.length === 0) return 0;
         const at = this._impostorAtlas();
         if (!at) return 0;
+        const flug = this._impostorBakeFlug || (this._impostorBakeFlug = new Map());
         // Die Karte wartet NICHT auf die Bühne: der Bäcker ist das Studio im Foundry-Worker (die Platte liefert gebackene
         // Karten sofort), kein RTT auf der Boden-GPU — und mit echtem Renderer trägt bis zur Karte nichts (die Zelle zeichnet
         // erst gebacken, `_foundryBuildImpostorFlat`; seit 05.10. hat ein Karten-Ding keinen Satz). Bis 04.10. war das ein Kreis: die
         // Bühne wartete auf die Streu-Regionen, die Regionen auf ihre Karten, die Karten auf die Bühne — gelöst erst vom
         // 90-s-Deckel; beim Boot an der Mess-Wiese standen so 141 Kapsel-Sätze < 64 m.
-        // BAKE-WATCHDOG: ein hängender async Bake klemmte `_impostorBakePending` → die Queue verhungerte still. Nach
+        // BAKE-WATCHDOG: ein hängender async Bake klemmte seinen Flug-Platz → die Queue verhungerte still. Nach
         // der Bake-Uhr (+2 s) bekommt die Zelle einen neuen Versuch (3, dann gescheitert), das Token entwertet die
         // späte finally (sie darf den NÄCHSTEN Bake nicht löschen); ein später Erfolg darf die Schicht noch schreiben.
-        if (this._impostorBakePending) {
-            // Ein Bake-Auftrag, der beim Worker noch offen ist, wartet LEGITIM (die EINE Foundry-Frist zählt
-            // nur Arbeits-Zeit und schließt jedes Versprechen sicher ab) — der Wachhund greift erst, wenn kein
-            // Auftrag mehr offen ist und der Flug-Status trotzdem klemmt. Vorher verwarf er wartende Karten
-            // nach der Uhr ab Senden (01.10.: strauch|16, weide|13, tanne|16 terminal ohne Fernstufe).
+        // Ein Bake-Auftrag, der beim Worker noch offen ist oder in der Schlange wartet, wartet LEGITIM (die EINE
+        // Foundry-Frist zählt nur Arbeits-Zeit und schließt jedes Versprechen sicher ab) — der Wachhund greift erst, wenn
+        // kein Karten-Auftrag mehr offen ist und ein Flug trotzdem klemmt. Vorher verwarf er wartende Karten nach der Uhr
+        // ab Senden (01.10.: strauch|16, weide|13, tanne|16 terminal ohne Fernstufe).
+        if (flug.size) {
             const fb = this._foundry;
-            if (fb && fb.pending) for (const k of fb.pending.keys()) if (k.startsWith("imp")) return 0;
-            if (fb && fb.warte && fb.warte.some((a) => a.praefix === "imp")) return 0; // wartet in der Schlange
-            const since = this._impostorBakePendingSince || 0;
-            if (performance.now() - since > AnazhRealm.IMPOSTOR_BAKE_TIMEOUT_MS + 2000) {
-                const hungKey = this._impostorBakePendingKey;
-                const hung = hungKey ? at.zellen.get(hungKey) : null;
-                // V18.464 (baum-D7-Heilung): bounded Retry (3 Versuche), erst dann gescheitert.
-                if (hung) {
-                    hung.versuche++;
-                    if (hung.versuche < 3) this._impostorBakeQueue.push(hungKey);
-                    else this._karteEndet(hung, false);
+            let offen = !!(fb && fb.warte && fb.warte.some((a) => a.praefix === "imp"));
+            if (!offen && fb && fb.pending) for (const k of fb.pending.keys()) if (k.startsWith("imp")) offen = true;
+            if (!offen) {
+                const jetzt = performance.now();
+                for (const [hungKey, fl] of [...flug]) {
+                    if (jetzt - fl.seit <= AnazhRealm.IMPOSTOR_BAKE_TIMEOUT_MS + 2000) continue;
+                    const hung = at.zellen.get(hungKey);
+                    // V18.464 (baum-D7-Heilung): bounded Retry (3 Versuche), erst dann gescheitert.
+                    if (hung) {
+                        hung.versuche++;
+                        if (hung.versuche < 3) this._impostorBakeQueue.push(hungKey);
+                        else this._karteEndet(hung, false);
+                    }
+                    this._impostorBakeTok = (this._impostorBakeTok || 0) + 1;
+                    flug.delete(hungKey);
+                    at.haengend++;
+                    this.log(
+                        `Impostor-Bake-Watchdog: hängender Bake (${hungKey}) verworfen — die Queue lebt weiter.`,
+                        "WARN"
+                    );
                 }
-                this._impostorBakeTok = (this._impostorBakeTok || 0) + 1;
-                this._impostorBakePending = false;
-                at.haengend++;
-                this.log(
-                    `Impostor-Bake-Watchdog: hängender Bake (${hungKey}) verworfen — die Queue lebt weiter.`,
-                    "WARN"
-                );
-            } else return 0; // ein Bake zur Zeit (async, mehrere Frames)
+            }
         }
+        let gesendet = 0;
+        while (this._impostorBakeQueue.length && flug.size < this._foundryFaedenZahl()) {
+            const n = this._impostorBakeSende(at, flug);
+            if (n < 0) break;
+            gesendet += n;
+        }
+        return gesendet;
+    }
+
+    // Sendet die nächste Karte der Schlange in den Flug: 1 gesendet, 0 verworfen (die Schlange lebt), −1 die Bäcker können
+    // noch nicht (kein Renderer, kein Studio, kein Format — sie wartet).
+    _impostorBakeSende(at, flug) {
+        const st = this.state;
         // Der Impostor bäckt EAGER, ohne `_frameOverBudget`-Gate: er ERSETZT schwere L2-Geometrie durch die
-        // billige Karte (netto last-senkend) — ein Budget-Gate wäre Henne-Ei. Gedeckelt: EIN Bake in Flug.
+        // billige Karte (netto last-senkend) — ein Budget-Gate wäre Henne-Ei. Gedeckelt: je Bäcker-Bahn EIN Bake im Flug.
         const rend = st.renderer;
-        if (!rend || rend._isHeadlessNull || !st.rendererReady) return 0;
+        if (!rend || rend._isHeadlessNull || !st.rendererReady) return -1;
         // Ohne Foundry-Welt kein Bäcker → die Zelle fällt TERMINAL (Zensus „gescheitert", der Flatten serviert
         // Geometrie).
         if (!this._foundryEnabled()) {
@@ -1809,9 +1829,9 @@ class AnazhRealm_Z17a {
             return 0;
         }
         const f = this._ensureAssetFoundry();
-        if (!f || !f.ready || !f.worker) return 0; // das Studio bootet noch — die Zellen warten in der Queue
+        if (!f || !f.ready || !f.worker) return -1; // das Studio bootet noch — die Zellen warten in der Queue
         // Das Schicht-Format steht mit den Texturen (das Buch trägt die Zell-Maße) — vorher wartet die Queue.
-        if (!this._impostorAtlasTexturen(at)) return 0;
+        if (!this._impostorAtlasTexturen(at)) return -1;
         // NAH ZUERST (Lehre 16): die Karte, die der nächste wartende Baum braucht (z._bedarfD2, gestempelt in
         // _foundryBuildImpostorFlat), statt Anfrage-Reihenfolge — Befund 30.09.: 105 von 112 Karten warteten
         // FIFO, der Baum vor der Kamera hinter fernen Arten. Ohne Bedarf-Stempel (Streu) gilt die Reihenfolge.
@@ -1836,10 +1856,8 @@ class AnazhRealm_Z17a {
             this._karteEndet(z, false);
             return 0;
         }
-        this._impostorBakePending = true;
-        this._impostorBakePendingSince = performance.now();
-        this._impostorBakePendingKey = key;
         const _tok = (this._impostorBakeTok = (this._impostorBakeTok || 0) + 1);
+        flug.set(key, { seit: performance.now(), tok: _tok });
         // Seed = die Gestalt der Zelle — dieselbe wie ihre Körper-Stufen. Keine Saison: die Karte ist Golden-Sommer,
         // das Jahr färbt der Karten-Stoff (uSeasonMul). BÄCKER-OV (V18.478): eine geprägte Zelle bäckt ihr UNIKAT. Der
         // Auftrag reist im Rang ihres nächsten Wartenden (z._bedarfD2) durch die EINE Worker-Schlange.
@@ -1858,8 +1876,9 @@ class AnazhRealm_Z17a {
                 }
             })
             .finally(() => {
-                // die späte finally eines vom Watchdog verworfenen Bakes darf den NÄCHSTEN Bake nicht löschen
-                if (this._impostorBakeTok === _tok) this._impostorBakePending = false;
+                // die späte finally eines vom Watchdog verworfenen Bakes darf den NÄCHSTEN Flug nicht löschen
+                const fl = flug.get(key);
+                if (fl && fl.tok === _tok) flug.delete(key);
             });
         return 1;
     }

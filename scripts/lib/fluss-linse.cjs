@@ -26,7 +26,7 @@ function flussLinse() {
         for (const k in x) s += bytesOf(x[k], seen);
         return s;
     };
-    // Beide Studio-Fäden (das Werk und der Bäcker, `_foundryBaecker` — geboren beim ersten Karten-Auftrag): je Antwort
+    // Beide Studio-Fäden (das Werk und der erste Bäcker, `_foundryBaecker` — mit dem Studio oder beim ersten Karten-Auftrag geboren): je Antwort
     // die Bahn, die Worker-Auslastung (FIFO) rechnet je Faden.
     const haken = (w, bahn) => {
         const pm = w.postMessage.bind(w);

@@ -444,8 +444,8 @@ class AnazhRealm_Z08 {
                     if (c && c.size) for (let lod = 0; lod <= 3; lod++) c.delete(`${a},${b},${lod}`);
             }
         this._forestDartsFallen(x0, z0, x1, z1);
-        if (this.state.voxelWorker)
-            this.state.voxelWorker.postMessage({ type: "state-update", delta: { erdbau: this._erdbauRoh() } });
+        // der Erdbau reist an JEDEN Faden am Zustand (Voxel- und Wald-Faden) über den EINEN Sender (`_voxelZustandPost`)
+        this._voxelZustandPost({ type: "state-update", delta: { erdbau: this._erdbauRoh() } });
         const cx = (x0 + x1) / 2;
         const cz = (z0 + z1) / 2;
         const rad = Math.hypot(x1 - x0, z1 - z0) / 2 + R;

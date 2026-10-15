@@ -61,6 +61,7 @@ class AnazhRealm_Z20b {
         const da = zuege.get(key);
         if (da) {
             if (wo != null) this._foundryNaeher(f, preset, variant, lod, wo); // ohne Ort kein Rang (Lehre 17: null ist nie 0)
+            this._streuWartetAuf(da);
             return da;
         }
         if (!f.requested) f.requested = new Set();
@@ -77,6 +78,7 @@ class AnazhRealm_Z20b {
         });
         zuege.set(key, zug);
         if (erst && erst.nach) zug.then(erst.nach);
+        this._streuWartetAuf(zug); // die streuende Region wartet auf diesen Zug (K60-2)
         return zug;
     }
     // DER WECKER: ein Wartender (`wer`) hängt `fn(ok)` GENAU EINMAL an eine Zusage (Zug, Buch `f.buchDa` oder Karte) — kein
@@ -266,15 +268,18 @@ class AnazhRealm_Z20b {
     // seinen Faden in der Nummer (`w<k>_<n>`): seine Bahn ist "werk<k>".
     _foundryBahn(reqIdOderMsg) {
         if (typeof reqIdOderMsg === "string") {
-            if (reqIdOderMsg.startsWith("imp")) return "baecker";
+            if (reqIdOderMsg.startsWith("imp")) {
+                const b = /b(\d+)_\d+$/.exec(reqIdOderMsg);
+                return b ? "baecker" + b[1] : "baecker";
+            }
             const h = /w(\d+)_\d+$/.exec(reqIdOderMsg);
             return h ? "werk" + h[1] : "werk";
         }
         return reqIdOderMsg && reqIdOderMsg.type === "bake-impostor" ? "baecker" : "werk";
     }
     // Die Pumpe speist die Fäden aus der EINEN Schlange: je Faden höchstens FOUNDRY_IM_FLUG im Flug, die Wahl unter den
-    // Wartenden, deren Faden Platz hat — nah zuerst, nie verhungert (die Alters-Wache wie bisher). Der Bäcker wird beim
-    // ersten Karten-Auftrag geboren; bis er bereit ist, wartet die Karte, die Geometrie fließt. Ein Werk-Auftrag geht in
+    // Wartenden, deren Faden Platz hat — nah zuerst, nie verhungert (die Alters-Wache wie bisher). Die Bäcker kommen mit dem
+    // Studio (echter Renderer) oder beim ersten Karten-Auftrag (`_foundryBaecker`); bis er bereit ist, wartet die Karte, die Geometrie fließt. Ein Werk-Auftrag geht in
     // die Werk-Bahn mit den meisten freien Plätzen (das Werk und jeder bereite Helfer, `_foundryHelfer`; unter Gleichen
     // das Werk).
     _foundryPumpe(f) {
@@ -282,25 +287,35 @@ class AnazhRealm_Z20b {
         if (!q || !f.worker) return;
         let werkFrei = 0,
             baeckerFrei = 0,
-            werkZiel = null;
+            werkZiel = null,
+            baeckerZiel = null;
         const werke = [{ bahn: "werk", ziel: f.worker, k: 0 }];
         for (const h of f.helfer || []) if (h.bereit) werke.push({ bahn: "werk" + h.k, ziel: h.w, k: h.k });
+        // die Bäcker-Bahnen (K60-2): der erste Bäcker und jeder bereite weitere (`_foundryBaecker`)
+        const baecker = [];
+        if (f.baecker && f.baeckerBereit) baecker.push({ bahn: "baecker", ziel: f.baecker, k: 0 });
+        for (const h of f.baeckerHelfer || []) if (h.bereit) baecker.push({ bahn: "baecker" + h.k, ziel: h.w, k: h.k });
+        // die Bahn mit den meisten freien Plätzen (unter Gleichen die erste)
+        const freiste = (bahnen, im) => {
+            let frei = 0,
+                ziel = null;
+            for (const w of bahnen) {
+                const fr = AnazhRealm.FOUNDRY_IM_FLUG - (im.get(w.bahn) || 0);
+                if (fr > frei) {
+                    frei = fr;
+                    ziel = w;
+                }
+            }
+            return [frei, ziel];
+        };
         const plaetze = () => {
             const im = new Map();
             for (const k of f.pending.keys()) {
                 const b = this._foundryBahn(k);
                 im.set(b, (im.get(b) || 0) + 1);
             }
-            werkFrei = 0;
-            werkZiel = null;
-            for (const w of werke) {
-                const fr = AnazhRealm.FOUNDRY_IM_FLUG - (im.get(w.bahn) || 0);
-                if (fr > werkFrei) {
-                    werkFrei = fr;
-                    werkZiel = w;
-                }
-            }
-            baeckerFrei = f.baecker && f.baeckerBereit ? AnazhRealm.FOUNDRY_IM_FLUG - (im.get("baecker") || 0) : 0;
+            [werkFrei, werkZiel] = freiste(werke, im);
+            [baeckerFrei, baeckerZiel] = freiste(baecker, im);
         };
         const frei = (a) => (this._foundryBahn(a.msg) === "baecker" ? baeckerFrei : werkFrei) > 0;
         for (plaetze(); q.length; plaetze()) {
@@ -327,8 +342,9 @@ class AnazhRealm_Z20b {
             }
             const a = q.splice(i, 1)[0];
             const imBaecker = this._foundryBahn(a.msg) === "baecker";
-            const reqId = a.praefix + (!imBaecker && werkZiel.k ? "w" + werkZiel.k + "_" : "") + f.reqSeq++;
-            const ziel = imBaecker ? f.baecker : werkZiel.ziel;
+            const bahnZiel = imBaecker ? baeckerZiel : werkZiel;
+            const reqId = a.praefix + (bahnZiel.k ? (imBaecker ? "b" : "w") + bahnZiel.k + "_" : "") + f.reqSeq++;
+            const ziel = bahnZiel.ziel;
             f.pending.set(reqId, a.resolve);
             try {
                 ziel.postMessage(Object.assign({ reqId }, a.msg));
@@ -1011,6 +1027,7 @@ class AnazhRealm_Z20b {
         const rendB = this.state && this.state.renderer;
         if (!z.gebacken && rendB && !rendB._isHeadlessNull) {
             if (wer) wer.wecke(z.ende);
+            this._streuWartetAuf(z.ende); // die streuende Region wartet auf ihre Karte (K60-2)
             return false;
         }
         if (z._flat) return z._flat;
@@ -1025,95 +1042,6 @@ class AnazhRealm_Z20b {
         if (!leaf) return false;
         z._flat = { instanceable: true, reason: "foundry-impostor", foundry: true, lod: 2, leaves: [leaf] };
         return z._flat;
-    }
-    // Vorlagen-Rinden-Normalmap (`makeBarkNormal`, byte-treu portiert): Hauptfissuren + Querrisse +
-    // Knubbel → Höhenfeld → Normalmap. EINE gecachte Textur für alle Rinden; mulberry32(99) wie im Studio.
-    _foundryBarkNormalTexture() {
-        if (this._foundryBarkNormal !== undefined) return this._foundryBarkNormal;
-        this._foundryBarkNormal = null;
-        if (typeof document === "undefined" || typeof THREE === "undefined") return null;
-        try {
-            const N = 512;
-            const c = document.createElement("canvas");
-            c.width = c.height = N;
-            const x = c.getContext("2d");
-            if (!x) return null;
-            const img = x.createImageData(N, N);
-            const h = new Float32Array(N * N);
-            const mk = (a) =>
-                function () {
-                    a |= 0;
-                    a = (a + 0x6d2b79f5) | 0;
-                    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-                    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-                    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-                };
-            const s = mk(99);
-            for (let i = 0; i < 300; i++) {
-                const cx = s() * N,
-                    w = 1 + s() * 3.5,
-                    dep = 0.6 + s() * 0.7; // vertikale Hauptfissuren
-                for (let y = 0; y < N; y++) {
-                    const wob = Math.sin(y * 0.05 + i) * 4 + Math.sin(y * 0.013 + i * 2.1) * 7;
-                    const px = Math.floor(cx + wob);
-                    for (let d = -w; d <= w; d++) {
-                        const xx = (((px + d) % N) + N) % N;
-                        h[y * N + xx] -= Math.exp(-(d * d) / (w * w)) * dep;
-                    }
-                }
-            }
-            for (let i = 0; i < 95; i++) {
-                const cy = s() * N,
-                    len = N * (0.2 + s() * 0.5),
-                    x0 = s() * N,
-                    w = 0.8 + s() * 2.0,
-                    dep = 0.5 + s() * 0.6; // horizontale Querrisse -> Platten
-                for (let t = 0; t < len; t++) {
-                    const wob = Math.sin(t * 0.06 + i) * 3;
-                    const yy = Math.floor(cy + wob),
-                        xx = ((Math.floor(x0 + t) % N) + N) % N;
-                    for (let d = -w; d <= w; d++) {
-                        const y2 = (((yy + d) % N) + N) % N;
-                        h[y2 * N + xx] -= Math.exp(-(d * d) / (w * w)) * dep;
-                    }
-                }
-            }
-            for (let i = 0; i < 1500; i++) {
-                const px = Math.floor(s() * N),
-                    py = Math.floor(s() * N),
-                    r = 2 + s() * 5,
-                    amp = (s() - 0.5) * 0.55; // Knubbel/Rauheit
-                for (let dy = -r; dy <= r; dy++)
-                    for (let dx = -r; dx <= r; dx++) {
-                        const xx = (((px + dx) % N) + N) % N,
-                            yy = (((py + dy) % N) + N) % N;
-                        h[yy * N + xx] += Math.exp(-(dx * dx + dy * dy) / (r * r)) * amp;
-                    }
-            }
-            for (let i = 0; i < h.length; i++) h[i] += (s() - 0.5) * 0.18;
-            const G = 6.5;
-            for (let y = 0; y < N; y++)
-                for (let xx = 0; xx < N; xx++) {
-                    const dx = (h[y * N + ((xx + 1) % N)] - h[y * N + ((xx - 1 + N) % N)]) * G;
-                    const dy = (h[((y + 1) % N) * N + xx] - h[((y - 1 + N) % N) * N + xx]) * G;
-                    const l = Math.sqrt(dx * dx + dy * dy + 1);
-                    const p = (y * N + xx) * 4;
-                    img.data[p] = ((dx / l) * 0.5 + 0.5) * 255;
-                    img.data[p + 1] = ((dy / l) * 0.5 + 0.5) * 255;
-                    img.data[p + 2] = (1 / l) * 255;
-                    img.data[p + 3] = 255;
-                }
-            x.putImageData(img, 0, 0);
-            const tex = new THREE.CanvasTexture(c);
-            tex.name = "rinde-normal";
-            tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-            tex.repeat.set(2, 7);
-            tex.needsUpdate = true;
-            this._foundryBarkNormal = tex;
-        } catch (_e) {
-            throw this._stoffBruch("die Rinden-Normale (Vorlagen-Textur)", _e);
-        }
-        return this._foundryBarkNormal;
     }
     // ═══ DER FLÄCHEN-SPLAT (die EINE Splat-Wurzel aller drei Bäcker) ═══
     // Rastert DREIECKE statt Vertices (ein Vertex-Splat lässt die meisten Oberflächen-Voxel leer → Matsch
@@ -2131,7 +2059,8 @@ class AnazhRealm_Z20b {
         if (isBark) {
             // KEIN Normal-Override auf Vegetations-Stämmen: r184-NodeMaterial-Tangenten (UV-Derivate) kippen auf
             // gestreckten Tube-UVs die Normale → der Stamm liest schwarz. Die Rinde lebt über Albedo (Studio-
-            // Vertex-Farben) + Roughness 0.93; `_foundryBarkNormalTexture` bleibt für einen tangenten-echten Pfad.
+            // Vertex-Farben) + Roughness 0.93. Ihr Spiegel der Studio-Rinden-Normale (`_foundryBarkNormalTexture`) hatte
+            // keinen Leser und fiel mit K60-2; die Normale lebt im Studio (foundry-core `makeBarkNormal`).
             mat.colorNode = TSL.vec4(vcol, 1.0);
         } else if (kind === "foliageTex") {
             // Blatt-Atlas: Alpha schneidet die Blattform aus (kein solides Quad), RGB × Vertex-Farbe (die

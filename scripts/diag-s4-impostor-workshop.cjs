@@ -5,7 +5,7 @@
 //   A — DER IMPOSTOR BÄCKT EAGER: `_tickImpostorBake` hat den `_frameOverBudget`-Gate NICHT mehr
 //       (Henne-Ei: der ferne Wald ist über Budget WEIL seine Bäume noch schwere Geometrie tragen;
 //       der Bake SENKT die Last, er darf nicht vom Budget blockiert werden). Der Bake bleibt streng
-//       gedeckelt (ein RTT/Frame via `_impostorBakePending`, Null-Renderer-Guard).
+//       gedeckelt (je Bäcker-Bahn eine Karte im Flug via `_impostorBakeFlug`, K60-2; Null-Renderer-Guard).
 //   B — WERKSTATT-L2 = BILLBOARD: `_workshopFoundryPreviewGroup` routet einen BAUM bei `_recipeLod===2`
 //       durch `_foundryBuildImpostorFlat` (den 8-Winkel-Impostor) + baut ihn als 1-Instanz-
 //       InstancedMesh (die Karte dekodiert Rotation/Skala aus der Instanz-Matrix). Fels/Kristall
@@ -55,9 +55,10 @@ const server = statikServer();
         const code = (fn) => (typeof window.__codeOf === "function" ? window.__codeOf(fn) : strip(fn));
         const res = { probes: {}, behavior: {} };
         // ===== TEIL A — der Bake ist EAGER (Frame-Budget-Gate raus) =====
-        const bakeSrc = code(r._tickImpostorBake);
+        // der Bake-Pfad: der Tick und sein Sender (`_impostorBakeSende`, K60-2: je Bäcker-Bahn eine Karte)
+        const bakeSrc = code(r._tickImpostorBake) + " " + code(r._impostorBakeSende);
         res.probes.bakeNoFrameBudgetGate = !/_frameOverBudget/.test(bakeSrc); // der Gate ist raus
-        res.probes.bakeOneAtATime = /_impostorBakePending/.test(bakeSrc); // weiter streng gedeckelt
+        res.probes.bakeOneAtATime = /_impostorBakeFlug/.test(bakeSrc) && /_foundryFaedenZahl/.test(bakeSrc); // je Bäcker-Bahn eine Karte (K60-2)
         res.probes.bakeNullGuard = /_isHeadlessNull/.test(bakeSrc); // gate-treu
 
         // ===== TEIL B — Werkstatt-L2 routet durch den Impostor =====
@@ -115,7 +116,7 @@ const server = statikServer();
     console.log("=== WELLE S4 — IMPOSTOR EAGER + WERKSTATT-L2-BILLBOARD ===\n");
     console.log("  TEIL A — Bake eager:");
     console.log(`    _frameOverBudget-Gate raus: ${out.probes.bakeNoFrameBudgetGate} (erw true)`);
-    console.log(`    ein RTT/Frame (gedeckelt):  ${out.probes.bakeOneAtATime} (erw true)`);
+    console.log(`    je Bäcker-Bahn eine Karte:  ${out.probes.bakeOneAtATime} (erw true)`);
     console.log(`    Null-Renderer-Guard:        ${out.probes.bakeNullGuard} (erw true)`);
     console.log("  TEIL B — Werkstatt-L2 = Billboard:");
     console.log(`    routet durch Impostor:      ${out.probes.wsRoutesImpostor} (erw true)`);
@@ -134,7 +135,7 @@ const server = statikServer();
     if (!out.probes.bakeNoFrameBudgetGate)
         errs.push("A: `_tickImpostorBake` trägt noch den `_frameOverBudget`-Gate (nicht eager)");
     if (!out.probes.bakeOneAtATime)
-        errs.push("A: der Bake ist nicht mehr auf ein RTT/Frame gedeckelt (`_impostorBakePending` fehlt)");
+        errs.push("A: der Bake ist nicht mehr je Bäcker-Bahn gedeckelt (`_impostorBakeFlug`/`_foundryFaedenZahl` fehlt)");
     if (!out.probes.bakeNullGuard) errs.push("A: der Null-Renderer-Guard fehlt (nicht gate-treu)");
     if (!out.probes.wsRoutesImpostor)
         errs.push("B: die Werkstatt-Vorschau routet L2 NICHT durch `_foundryBuildImpostorFlat`");

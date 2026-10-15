@@ -547,7 +547,10 @@ async function runPartB() {
         res.preset = preset;
         // die Gestalt des Orts wartet auf den Plan seines Walds (K69: die Schlange des Walds plant im Takt) — die Probe
         // pumpt die Schlange, bis sie steht: die Wärme-Frist unten zählt dann nur Bauten, nie den Plan (Lehre 26)
-        for (let i = 0; i < 2000 && r._foundryGestaltFor(entry, preset) == null; i++) r._tickWaldPlan(Infinity);
+        for (let i = 0; i < 2000 && r._foundryGestaltFor(entry, preset) == null; i++) {
+            r._tickWaldPlan(Infinity);
+            await new Promise((res2) => setTimeout(res2, 0)); // der Wald-Faden rechnet die Schlange (K60-4)
+        }
         res.gestalt = r._foundryGestaltFor(entry, preset);
         // ── ALLE drei Stufen VOR der Baseline wärmen (kein Rewarm-Störer im Sweep):
         //    flatten(0/1/2) bis truthy; der Loop-Pump treibt Worker-Replies + Impostor-Bake. ──
@@ -1380,7 +1383,7 @@ async function runPartB() {
     // (L1) — räumt die L0-Gruppe, fällt keine Geometrie der lebenden L1 (r184 zerstörte sonst die GPU-Puffer des Wurfs
     // und lüde sie neu, der Dispose-Hörer wäre fort); räumt die L1-Gruppe, fällt jede Wurf-Gestalt genau einmal. Am
     // gewärmten Proben-Baum (Eiche, Cache warm), zuletzt (die Probe räumt zwei Cache-Gruppen). ──
-    const kehraus = await page.evaluate(() => {
+    const kehraus = await page.evaluate(async () => {
         const r = window.anazhRealm;
         const key = r._growTreeBlueprintForSpawn("baum_eiche", "w54-band-sweep");
         const ex = 15345,
@@ -1390,7 +1393,10 @@ async function runPartB() {
         const preset = r._foundryPresetForEntry(e);
         // die Gestalt des Orts wartet auf den Plan seines Walds (K69: die Schlange des Walds plant im Takt) — die Probe
         // pumpt die Schlange, bis sie steht (Bau-Ereignisse, nie Wanduhr; bis K69 plante die erste Frage am Stück)
-        for (let i = 0; i < 2000 && r._foundryGestaltFor(e, preset) == null; i++) r._tickWaldPlan(Infinity);
+        for (let i = 0; i < 2000 && r._foundryGestaltFor(e, preset) == null; i++) {
+            r._tickWaldPlan(Infinity);
+            await new Promise((res2) => setTimeout(res2, 0)); // der Wald-Faden rechnet die Schlange (K60-4)
+        }
         const fl0 = r._foundryFlattenFor(e, preset, 0),
             fl1 = r._foundryFlattenFor(e, preset, 1);
         if (!(fl0 && fl0.leaves && fl1 && fl1.leaves))

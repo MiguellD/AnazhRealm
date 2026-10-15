@@ -340,7 +340,7 @@ async function kaltLauf() {
                     streu: !!st.playerMesh && wartet === 0,
                     biblio: !!(f && f.ready && !f._vorrat),
                     // Headless no-opt der RTT-Bake (gate-treu) → Term übersprungen, ehrlich markiert.
-                    impost: headless ? true : (!q || q.length === 0) && !r._impostorBakePending,
+                    impost: headless ? true : (!q || q.length === 0) && !(r._impostorBakeFlug && r._impostorBakeFlug.size > 0),
                     _streuWartet: wartet,
                 };
             };
@@ -429,9 +429,7 @@ async function kaltLauf() {
                 // ihn graziös verwerfen (gescheitert + pending frei + Token entwertet die späte finally).
                 {
                     const A2 = window.AnazhRealm || r.constructor;
-                    const prevPending = r._impostorBakePending;
-                    const prevSince = r._impostorBakePendingSince;
-                    const prevKey = r._impostorBakePendingKey;
+                    const prevFlug = r._impostorBakeFlug;
                     const prevTok = r._impostorBakeTok;
                     const zellen = r._kartenAtlas ? r._kartenAtlas.zellen : null;
                     const anyKey = zellen && zellen.size ? Array.from(zellen.keys())[0] : null;
@@ -440,14 +438,15 @@ async function kaltLauf() {
                     if (anyRec && !r._impostorBakeQueue) r._impostorBakeQueue = [];
                     if (anyRec) {
                         r._impostorBakeQueue.push("__wd_dummy"); // Queue nicht-leer (der Tick läuft an)
-                        r._impostorBakePending = true;
-                        r._impostorBakePendingSince = performance.now() - (A2.IMPOSTOR_BAKE_TIMEOUT_MS + 5000);
-                        r._impostorBakePendingKey = anyKey;
+                        // ein Flug, der „seit 20 s" klemmt (je Bäcker-Bahn einer, K60-2)
+                        r._impostorBakeFlug = new Map([
+                            [anyKey, { seit: performance.now() - (A2.IMPOSTOR_BAKE_TIMEOUT_MS + 5000), tok: -1 }],
+                        ]);
                         const prevTries = anyRec.versuche;
                         const tokBefore = r._impostorBakeTok || 0;
                         r._tickImpostorBake();
                         o.watchdog = {
-                            pendingCleared: r._impostorBakePending === false,
+                            pendingCleared: !r._impostorBakeFlug.has(anyKey),
                             // V18.464 (baum-D7, Lehre 6 — die Linse wandert mit): der Watchdog
                             // verwirft graziös MIT bounded Retry — der erste Hänger RE-QUEUED den
                             // Schlüssel (versuche<3), erst der dritte wird terminal gescheitert.
@@ -463,9 +462,7 @@ async function kaltLauf() {
                         if (qk >= 0) r._impostorBakeQueue.splice(qk, 1);
                         anyRec.gescheitert = prevFailed;
                         anyRec.versuche = prevTries;
-                        r._impostorBakePending = prevPending;
-                        r._impostorBakePendingSince = prevSince;
-                        r._impostorBakePendingKey = prevKey;
+                        r._impostorBakeFlug = prevFlug;
                         r._impostorBakeTok = prevTok;
                     }
                 }
