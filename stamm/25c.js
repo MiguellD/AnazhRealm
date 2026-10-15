@@ -1346,7 +1346,7 @@ class AnazhRealm_Z25c {
             }
             return;
         }
-        const n = this._werferWahlPass(map, L, S.ab);
+        const n = this._werferWahlPass(map, S);
         const z = this._werferZensus || (this._werferZensus = []);
         z[k] = { werfer: n, bundles: map.size, abgewaehlt: S.ab.length };
     }
@@ -1354,17 +1354,52 @@ class AnazhRealm_Z25c {
     // Die Werfer-Wahl eines Schatten-Passes: je Region-Bundle die Werfer-Hülle, darin je werfendes Blatt-Mesh (`_werferKind`,
     // frisch aus der Hülle dieses Takts) — beide nach dem EINEN Gesetz (`_passTrifftBox`); was nicht trifft, ruht für diesen
     // Pass (`ab` merkt es für die Rückkehr). Rückgabe: die Zahl der werfenden Bundles.
-    _werferWahlPass(map, L, ab) {
+    // DIE WAHL STEHT (K72 — Welle C für den letzten Leser der Pass-Wahl): ein Bundle behält die Wahl dieses Passes (`L.key`),
+    // solange seine Lage (`L.gen`), sein Werfer-Stand (`_bundleWerferHuelle`) und die Instanz-Wahl dieses Passes stehen
+    // (`S.wahlNeu` — sie schaltet die Sicht der Wahl-Gruppen, die dieser Gang liest): kein Gang über die Kinder, keine
+    // Prüfung, nur die gemerkte Wahl. Gemessen 15.10. (Radeon, Genesis/Wiese Third, Ruhe): je Kaskaden-Render 18–37
+    // Prüfungen in 22 Gängen, in jedem Render dieselbe Wahl.
+    _werferWahlPass(map, S) {
+        const L = S.lage,
+            ab = S.ab;
+        const instanzSteht = S.wahlNeu === 0;
         let n = 0;
         for (const bg of map.values()) {
             const h = this._bundleWerferHuelle(bg);
+            const u = bg.userData;
+            const je = u._werferJe || (u._werferJe = new Map());
+            let w = je.get(L.key);
+            if (instanzSteht && w && w.gen === L.gen && w.stand === u._werferStand) {
+                bg.visible = w.vis;
+                if (!w.vis) continue;
+                n++;
+                for (let i = 0; i < w.ab.length; i++) {
+                    const c = w.ab[i];
+                    c.visible = false;
+                    ab.push(c);
+                }
+                continue;
+            }
             const vis = h !== null && this._passTrifftBox(L, h, 0);
             bg.visible = vis;
-            if (!vis) continue;
-            n++;
-            this._werferWahl(bg, L, ab);
+            const a0 = ab.length;
+            if (vis) {
+                n++;
+                this._werferWahl(bg, L, ab);
+            }
+            if (!w) je.set(L.key, (w = { gen: 0, stand: 0, vis: false, ab: [] }));
+            this._werferWahlMerke(bg, w, L, vis, ab, a0);
         }
         return n;
+    }
+
+    // Merkt die Wahl eines Bundles für diesen Pass: Lage, Werfer-Stand, ob es wirft und welche Werfer darin ruhen.
+    _werferWahlMerke(bg, w, L, vis, ab, a0) {
+        w.gen = L.gen;
+        w.stand = bg.userData._werferStand;
+        w.vis = vis;
+        w.ab.length = 0;
+        for (let i = a0; i < ab.length; i++) w.ab.push(ab[i]);
     }
 
     _werferWahl(o, L, ab) {
@@ -1776,10 +1811,13 @@ class AnazhRealm_Z25c {
     // (`_instanzWahlArt`): so schreibt kein Pass die Puffer eines anderen, auch nicht der Kaskaden-Pass mitten im
     // Hauptbild. Das Hauptbild nimmt sein Bündel neu auf, wenn die Wahl sich ändert (Zahl oder Ordnung); die Kaskaden
     // zeichnen Bündel-Kinder direkt.
+    // `S.wahlNeu` zählt die Gruppen, deren Wahl dieser Pass neu legte oder fallen ließ (0: die Wahl des Passes stand ganz —
+    // die Werfer-Wahl liest die Sicht der Wahl-Gruppen und hält ihre Wahl nur dann, `_werferWahlPass`).
     _instanzWahlPass(art, S) {
         const set = this._instanzWahlGruppen();
         const liste = art === "haupt" ? S.wahlHaupt : S.wahlSchatten;
         if (liste.length) this._instanzWahlZurueck(liste); // ein Pass ohne Nachher-Haken (Abbruch) hinterlässt nichts
+        S.wahlNeu = 0;
         if (set.size === 0) return;
         const L = S.lage;
         for (const g of set) {
@@ -1791,7 +1829,7 @@ class AnazhRealm_Z25c {
                 // nächste sichtbare Belegung wählt neu). Sonst hielt sie die Marke eines freigegebenen Slots — CI 07.10.,
                 // gate:sicht-arbeit (I): der Stufen-Wechsel einer einzelnen Erle 1→0 leerte f:weide|1|1:0#S, k0 und k1
                 // hielten Slot −1.
-                if (g._wahlJe && L) g._wahlJe.delete(L.key);
+                if (g._wahlJe && L && g._wahlJe.delete(L.key)) S.wahlNeu++;
                 continue;
             }
             // die Wahl steht (Welle C): die Gruppe liegt (wieder), wie dieser Pass sie zuletzt ordnete
@@ -1800,6 +1838,7 @@ class AnazhRealm_Z25c {
                 liste.push(g);
                 continue;
             }
+            S.wahlNeu++;
             const fenster = L.an && this._instanzFensterGilt(g);
             let kk = 0,
                 tausch = 0;
@@ -1842,6 +1881,9 @@ class AnazhRealm_Z25c {
             w.live !== (g.liveCount | 0)
         )
             return false;
+        // DIE ORDNUNG STEHT (K72): tauschte seit der Wahl dieses Passes niemand einen Slot der Gruppe (`_archGroupTausch`
+        // zählt `g._ordnung`), liegen ihre gemerkten Instanzen noch vorn — kein Gang über die Marken
+        if (w.ordnung === (g._ordnung | 0)) return true;
         const refs = w.refs;
         let tausch = 0;
         for (let j = 0; j < refs.length; j++) {
@@ -1850,6 +1892,7 @@ class AnazhRealm_Z25c {
             this._archGroupTausch(g, i, j);
             tausch++;
         }
+        w.ordnung = g._ordnung | 0;
         if (tausch > 0 && g.wahl === "haupt") this._archMeshBundleTouch(m);
         return true;
     }
@@ -1860,7 +1903,18 @@ class AnazhRealm_Z25c {
         if (!w)
             je.set(
                 L.key,
-                (w = { gen: 0, geo: null, mat: null, live: 0, refs: null, belegt: 0, im: null, vMat: 0, vKarte: 0 })
+                (w = {
+                    gen: 0,
+                    geo: null,
+                    mat: null,
+                    live: 0,
+                    refs: null,
+                    belegt: 0,
+                    im: null,
+                    vMat: 0,
+                    vKarte: 0,
+                    ordnung: -1,
+                })
             );
         const m = g.mesh;
         w.gen = L.gen;
@@ -1868,6 +1922,7 @@ class AnazhRealm_Z25c {
         w.mat = g.mat;
         w.live = g.liveCount | 0;
         w.refs = g.slotRef.slice(0, kk);
+        w.ordnung = g._ordnung | 0;
         this._instanzSlotStand(g, w);
     }
 

@@ -211,13 +211,25 @@ class AnazhRealm_Z17c {
     // Schatten-Takt (`_shadowFrame`, die Kaskaden-Box und jeder Schatten-Pass lesen dieselbe Hülle); je Kind hält ein
     // Zahlen-Schlüssel (Instanz-/Positions-Version · Zahl · Geometrie · Welt-Lage) seine Box, nur geänderte Kinder
     // rechnen neu. Ohne Bundle-Version: dieselbe Hülle trägt eine schlichte Gruppe. null = wirft nicht.
+    // DER STAND DER WERFER (K72): derselbe Gang stempelt, was die Werfer-Wahl je Pass liest — die Folge der sichtbaren
+    // Knoten mit Wurf und Kinderzahl und jede neu gerechnete Box; ändert sich etwas, steigt `u._werferStand`. Die Wahl
+    // eines Passes (`_werferWahlSteht`) gilt, solange Lage und Stand stehen — sie geht die Kinder nicht in jedem Render.
     _bundleWerferHuelle(bg) {
         const u = bg.userData;
         const takt = this._shadowFrame || 0;
         if (u._werferTakt === takt && u._werferHuelle !== undefined) return u._werferHuelle;
         const box = u._werferBox || (u._werferBox = new THREE.Box3());
         box.makeEmpty();
+        const spur = this._wfSpur || (this._wfSpur = { h: 0, neu: false });
+        spur.h = bg.children.length | 0;
+        spur.neu = false;
         for (const c of bg.children) this._werferBoxDazu(box, c);
+        if (spur.neu || u._werferSig !== spur.h || u._werferStand === undefined) {
+            u._werferSig = spur.h;
+            u._werferStand = (u._werferStand | 0) + 1;
+            // die gemerkten Wahlen dieses Bundles gelten nicht mehr — sie halten keinen gegangenen Werfer fest
+            if (u._werferJe) u._werferJe.clear();
+        }
         u._werferTakt = takt;
         u._werferHuelle = box.isEmpty() ? null : box.expandByScalar(AnazhRealm.SCHATTEN_KASKADE.randM);
         return u._werferHuelle;
@@ -226,6 +238,12 @@ class AnazhRealm_Z17c {
         // der Zeichner einer Senke (1410-1) wirft mit ihr: ihre Hülle trägt jede Instanz, er ist kein eigener Werfer
         if (!o || o.visible === false || o.isInstanzZeichner === true) return;
         const g = o.geometry;
+        const spur = this._wfSpur;
+        spur.h = Math.imul(
+            spur.h ^ (o.id * 4 + (o.castShadow === true ? 2 : 0) + (o.isMesh === true ? 1 : 0)),
+            0x9e3779b1
+        );
+        spur.h = Math.imul(spur.h ^ o.children.length, 0x85ebca6b);
         if (o.isMesh === true && o.castShadow === true && g && g.attributes && g.attributes.position) {
             const im = o.isInstancedMesh === true ? o.instanceMatrix : null;
             const mw = o.matrixWorld.elements;
@@ -242,6 +260,7 @@ class AnazhRealm_Z17c {
             ) {
                 const b = ud._werferKind || (ud._werferKind = new THREE.Box3());
                 b.makeEmpty();
+                spur.neu = true;
                 if (im) {
                     if (!g.boundingSphere) g.computeBoundingSphere();
                     const bs = g.boundingSphere;
@@ -869,6 +888,7 @@ class AnazhRealm_Z17c {
         const v = im.version,
             vk = ak ? ak.version : 0;
         AnazhRealm._instanzTausch(g.mesh, a, b);
+        g._ordnung = (g._ordnung | 0) + 1; // die Ordnung der Slots (die Wahl eines Passes merkt sie, `_instanzWahlSteht`)
         g._tauschMat = (g._tauschMat | 0) + (im.version - v);
         if (ak) g._tauschKarte = (g._tauschKarte | 0) + (ak.version - vk);
         const ra = g.slotRef[a],

@@ -1152,8 +1152,10 @@ function probe(selbsttest) {
                 return ohneKapsel(S2.lage, () => P._chunkSatzPass.call(this, kamera, nach, k, S2));
             };
         if (abweichung === "werfer")
-            r._werferWahlPass = function (m, L, ab) {
-                return ohneKapsel(L, () => P._werferWahlPass.call(this, m, L, ab));
+            r._werferWahlPass = function (m, S2) {
+                // die gehaltene Wahl gilt nicht (K72: stehen Lage, Werfer-Stand und Instanz-Wahl, urteilt der Leser nie)
+                for (const b of m.values()) if (b.userData._werferJe) b.userData._werferJe.clear();
+                return ohneKapsel(S2.lage, () => P._werferWahlPass.call(this, m, S2));
             };
         if (abweichung === "instanzen")
             r._instanzWahlPass = function (art, S2) {
