@@ -1785,6 +1785,19 @@ function standLeser(root) {
     }
 }
 
+// DER EINE SCHUSS (W1-n1; Prüfer W1 R1: drei Tor-Zeilen trugen denselben Schuss dreimal, 988 Zeilen Kopie): misst ein Schuss
+// mehrere Ziele (`werkbank bild --ist a,b:L1`), trägt ihn das erste, jedes weitere NENNT es („<id>[:L<n>|:wirkung]") — gelesen
+// nur hier, für jedes Maß; ein Name ins Leere oder auf einen Namen ist ein Bruch.
+function schussVon(kl, m, bruch) {
+    const st = m && typeof m === "object" ? Object.keys(m) : [];
+    if (st.length && st.every((L) => /^L\d$/.test(L))) return Object.fromEntries(st.map((L) => [L, schussVon(kl, m[L], bruch)]));
+    if (typeof m !== "string") return m;
+    const [id, teil] = m.split(":"),
+        k = kl.find((x) => x.id === id) || {};
+    const s = teil === "wirkung" ? (k.wirkung || {}).messung : ((k.mass || {}).messung || {})[teil] || (!teil && (k.mass || {}).messung);
+    return s && typeof s === "object" ? s : bruch(`der Schuss „${m}" fehlt in der Tafel`);
+}
+
 // DAS URTEIL DER TAFEL (rein): je Klasse das Soll (eigen, gerechnet oder gelesen), das Budget je LOD-Stufe aus dem Haushalt des
 // Profi-Bands (`budget.haushalt`: die Klassen-Zeile ist L0, L1 ≤ 35 %, L2 ≤ 10 % — Nordstern M4; der VRAM-Anteil der Welt nach dem
 // Dreiecks-Anteil der Zeile) und das Ist, das DIESE Funktion aus der Rohdatei rechnet. ROT/GRÜN aus Ist und Band, ungemessen ist
@@ -1844,7 +1857,8 @@ function sollTafelUrteil(tafel, q) {
                   vramMB: summeTris ? +((welt * hz.dreiecke) / summeTris).toFixed(1) : null,
               }
             : null;
-        const ma = k.mass || {};
+        const bruch = (f) => void fehler.push(`${wo}: ${f}`);
+        const ma = Object.assign({}, k.mass, { messung: schussVon(kl, (k.mass || {}).messung, bruch) });
         if (!SOLL_MASSE.includes(ma.name)) fehler.push(`${wo}: Maß „${ma.name}" unbekannt (${SOLL_MASSE.join(", ")})`);
         for (const f of ["ist", "teile", "taeter"])
             if (ma[f] !== undefined)
@@ -1921,7 +1935,7 @@ function sollTafelUrteil(tafel, q) {
         // der Bildanteil: aus der Messung des Maßes, sonst aus dem Bild der Wirkung (`--ist <id>:wirkung`), von Hand nur ohne Bild
         // und mit Quelle (das Licht: jedes Pixel)
         let anteil = zahl(r.anteil) ? r.anteil : null;
-        const wi = k.wirkung || {};
+        const wi = Object.assign({}, k.wirkung, { messung: schussVon(kl, (k.wirkung || {}).messung, bruch) });
         if (anteil == null && wi.messung) {
             const fw = bildMessungFehler(wi.messung);
             if (fw) fehler.push(`${wo}: das Bild der Wirkung: ${fw}`);
@@ -2384,6 +2398,7 @@ function sollTafelSelbsttest(tafel, q) {
             "liegt nicht unter artifacts/",
         ],
         ["Bild-Paar außerhalb", (t) => heile(t, ["C:/Users/x/a.png", "artifacts/soll-tafel/b.png"]), "liegt nicht unter artifacts/"],
+        ["Schuss ins Leere", (t) => (mitMessung(t).mass.messung = "phantom:L1"), 'Schuss „phantom:L1" fehlt'],
     ];
     for (const [name, fn, wort] of faelle) {
         if (!tafel || !(tafel.klassen || []).length) break;
@@ -2398,6 +2413,12 @@ function sollTafelSelbsttest(tafel, q) {
         if (u.ok || !u.fehler.some((f) => f.includes(wort)))
             v.push(`Tafel-Bruch „${name}": nicht beim Namen (${u.fehler.join(" · ") || "grün"})`);
     }
+    // DER EINE SCHUSS (W1-n1): die Zeile, die den Schuss einer anderen NENNT, liest dasselbe Ist wie sein Träger
+    const tn = klon(),
+        kn = mitMessung(tn) || {};
+    (tn.klassen || []).push(Object.assign(JSON.parse(JSON.stringify(kn)), { id: "x-name", mass: Object.assign({}, kn.mass, { messung: kn.id }) }));
+    const istN = sollTafelUrteil(tn, q).zeilen.filter((z) => z.id === kn.id || z.id === "x-name").map((z) => z.ist);
+    if (!(istN.length === 2 && istN[0] != null && istN[0] === istN[1])) v.push(`der Name eines Schusses liest nicht dessen Ist (${istN})`);
     // das Ist kommt aus der Rohdatei: dieselbe Albedo-Zeile, ihr Verhältnis auf 1 — das Urteil folgt (Prüfer K63 R1: die Kopie
     // in der Tafel blieb grün, als die Albedo-Tafel sich änderte)
     const ka = tafel && mitAlbedo(klon());
@@ -2525,10 +2546,10 @@ function sollTafelSelbsttest(tafel, q) {
         const torRe = new RegExp(k6.mass.rechnung.tor);
         for (const n of Object.keys(k6.mass.messung[s6].klassen))
             if (torRe.test(n)) delete k6.mass.messung[s6].klassen[n];
-        const ab = sollIstAbweisung(klon(), t6, k6.id, q);
+        const ab = sollIstAbweisung(klon(), t6, q);
         if (!ab.some((g) => g.includes(`${s6}: der Schuss zeigt kein Tor`)))
             v.push(`Schreiber: ein Schuss ${s6} ohne Tor der Stufe fiele in die Tafel (${ab.join(" · ") || "keine Abweisung"})`);
-        const gleich = sollIstAbweisung(klon(), klon(), k6.id, q);
+        const gleich = sollIstAbweisung(klon(), klon(), q);
         if (gleich.length) v.push(`Schreiber: die unveränderte Messung wird abgewiesen (${gleich.join(" · ")})`);
     } else v.push("die Tafel trägt kein Maß milchweiss mit Mesh-Stufe (der Fall des Schreibers fehlt)");
     if (sollTafelUrteil({ klassen: [] }, q).ok) v.push("die leere Tafel ist grün");
@@ -2538,17 +2559,16 @@ function sollTafelSelbsttest(tafel, q) {
 // DER SCHREIBER PRÜFT (K63-n7; Prüfer K63-2 Rot B: ein L1-Schuss 14 s nach dem Umstellen zeigte nur Membran und Nebel, das
 // Werkzeug schrieb ihn, die Linse las ihn nicht — tor-fern blieb auf dem Ist von 5a912d6e stehen): eine Messung fällt in die
 // Tafel nur, wenn die Linse sie liest — sie bringt der Klasse keinen neuen Bruch, und wo vorher ein Ist stand, steht wieder eines.
-// `alt` und `neu` sind die Tafel vor und nach dem Schreiben; zurück die Gründe der Abweisung (leer = schreiben).
-function sollIstAbweisung(alt, neu, id, q) {
-    const vor = `Klasse ${id}:`;
+// `alt` und `neu` sind die Tafel vor und nach dem Schreiben; zurück die Gründe der Abweisung (leer = schreiben). Geprüft wird
+// JEDE Zeile (W1-n1, `schussVon`): wer den Schuss eines Ziels nennt, liest den neuen mit.
+function sollIstAbweisung(alt, neu, q) {
     const a = sollTafelUrteil(alt, q),
         n = sollTafelUrteil(neu, q);
-    const altF = new Set(a.fehler.filter((f) => f.startsWith(vor)));
-    const gruende = n.fehler.filter((f) => f.startsWith(vor) && !altF.has(f));
-    const za = a.zeilen.find((x) => x.id === id),
-        zn = n.zeilen.find((x) => x.id === id);
-    if (!gruende.length && za && za.ist != null && !(zn && zn.ist != null))
-        gruende.push(`${vor} die Messung ergibt kein Ist (vorher ${za.ist})`);
+    const altF = new Set(a.fehler);
+    const gruende = n.fehler.filter((f) => !altF.has(f));
+    for (const za of a.zeilen)
+        if (za.ist != null && !n.zeilen.some((x) => x.id === za.id && x.ist != null))
+            gruende.push(`Klasse ${za.id}: die Messung ergibt kein Ist (vorher ${za.ist})`);
     return gruende;
 }
 
