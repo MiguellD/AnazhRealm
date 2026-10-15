@@ -1558,6 +1558,8 @@ function laubGegenlicht(opts) {
                     R: n && nk && sk > 0 ? +((0.18 * (sl / n)) / (sk / nk)).toFixed(4) : null,
                     tau: LL ? [LL.tauNadel, LL.tauLaub] : null,
                     sonneGrad: +((Math.asin(Math.max(-1, Math.min(1, sd.y))) * 180) / Math.PI).toFixed(1),
+                    // die Stufe des Exemplars (die Täter-Klasse seiner Laub-Senke) — der Täter beim Namen
+                    stufe: r._taeterKlasse(ziel.o),
                     png: krone.png,
                 };
                 out.stoffe = laub.map((m) => m.material.userData.laubLicht || "ohne").join(",");

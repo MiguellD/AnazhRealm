@@ -3205,7 +3205,8 @@ async function starte() {
             await rufe("/umstellen", { x: wiese.spieler[0], z: wiese.spieler[1] });
             const plan = (
                 await rufe("/eval", {
-                    code: `const __o = { plan: true, anker: ${JSON.stringify(wiese.spieler)} }; ${c}`,
+                    // `--abstand m`: der Augen-Ort so weit vom Fuß (die Stufe folgt dem Spieler: nah L0, weiter L1)
+                    code: `const __o = { plan: true, anker: ${JSON.stringify(wiese.spieler)}, abstand: ${Number(opt("--abstand", 8)) || 8} }; ${c}`,
                 })
             ).ergebnis;
             if (!plan || plan.fehler) {
