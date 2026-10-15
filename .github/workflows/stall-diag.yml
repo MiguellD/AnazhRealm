@@ -12,7 +12,7 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
-                laeufer: [1, 2, 3, 4, 5, 6]
+                laeufer: [1, 2, 3, 4, 5, 6, 7, 8]
         runs-on: ubuntu-latest
         timeout-minutes: 40
         env:
@@ -43,14 +43,10 @@ jobs:
             - run: npm ci --no-audit --no-fund
             - name: Selbsttest der Stall-Akte
               run: node scripts/lib/welt-boot.cjs --selbsttest
-            - name: Schwelle der Akte fuer die Diagnose (2,5 s statt 20 s)
-              run: |
-                  sed -i 's/stallMs: opts.stallMs || 20000/stallMs: opts.stallMs || 2500/' scripts/lib/welt-boot.cjs
-                  grep -n "stallMs: opts" scripts/lib/welt-boot.cjs
             - name: webgl-probe in Folge
               shell: bash
               run: |
-                  set +e; ROT=0; N=10
+                  set +e; ROT=0; N=12
                   # Läufer 7 und 8 fahren die Reihe der Gruppe 18 vor jeder Probe (der Kontext der Risse)
                   for i in $(seq 1 $N); do
                     if [ ${{ matrix.laeufer }} -ge 7 ] && [ $i -le 6 ]; then
