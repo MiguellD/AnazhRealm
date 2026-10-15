@@ -17,9 +17,12 @@ class AnazhRealm_Z24 {
         return h00 * v1 + h10 * h * m1 + h01 * v2 + h11 * h * m2;
     }
 
-    // Interpoliert DAY_NIGHT_STOPS nach timeOfDay 0..1 → {sky, light, intensity} (THREE.Color).
+    // Interpoliert DAY_NIGHT_STOPS nach timeOfDay 0..1 → {sky} (THREE.Color).
     // Catmull-Rom über die periodische Kurve (C1-stetig): kein Pulsen an den Stops wie bei smoothstep;
     // die Werte AN den Stops bleiben exakt (Hermite reproduziert p1 bei u=0, p2 bei u=1).
+    // DIE TAFEL TRÄGT KEIN LICHT (D3-N2): Farbe und Stärke der Sonne über den Tag rechnet die EINE Atmosphäre (`_atmoSonne`,
+    // die Himmels-Sicht in E0) — die Licht-Kurve der Tafel daneben dimmte die Physik ein zweites Mal (Wiese, Uhr 0,72, Sonne
+    // 10°: Sonne × 0,29, Himmel × 0,68; E 0,50, die 18-%-Karte −3,5 EV unter Mittelgrau + 1 — der Abend sah aus wie Nacht).
     _interpolateDayNight(t) {
         const stops = this.constructor.DAY_NIGHT_STOPS;
         const n = stops.length; // 15, mit stops[0] ≡ stops[n-1] (periodisch)
@@ -51,26 +54,13 @@ class AnazhRealm_Z24 {
         const c1 = new THREE.Color(p1.sky);
         const c2 = new THREE.Color(p2.sky);
         const c3 = new THREE.Color(p3.sky);
-        const l0 = new THREE.Color(p0.light);
-        const l1 = new THREE.Color(p1.light);
-        const l2 = new THREE.Color(p2.light);
-        const l3 = new THREE.Color(p3.light);
         const clamp01 = (x) => Math.max(0, Math.min(1, x));
         const sky = new THREE.Color(
             clamp01(this._catmullDayNight(c0.r, c1.r, c2.r, c3.r, t0, t1, t2, t3, u)),
             clamp01(this._catmullDayNight(c0.g, c1.g, c2.g, c3.g, t0, t1, t2, t3, u)),
             clamp01(this._catmullDayNight(c0.b, c1.b, c2.b, c3.b, t0, t1, t2, t3, u))
         );
-        const light = new THREE.Color(
-            clamp01(this._catmullDayNight(l0.r, l1.r, l2.r, l3.r, t0, t1, t2, t3, u)),
-            clamp01(this._catmullDayNight(l0.g, l1.g, l2.g, l3.g, t0, t1, t2, t3, u)),
-            clamp01(this._catmullDayNight(l0.b, l1.b, l2.b, l3.b, t0, t1, t2, t3, u))
-        );
-        const intensity = Math.max(
-            0,
-            this._catmullDayNight(p0.intensity, p1.intensity, p2.intensity, p3.intensity, t0, t1, t2, t3, u)
-        );
-        return { sky, light, intensity };
+        return { sky };
     }
 
     // [ATMOSPHERE] Wendet timeOfDay + Wetter + Welt-Feld + Emotionen auf Lights + Skybox an.
@@ -109,7 +99,7 @@ class AnazhRealm_Z24 {
         this._himmelSprung = false;
         if (!this.state._skyEnvFailed) this._ensureSkyEnvironment(false, sprung);
         this._dayNightApplyWaterMaterials(lightDir);
-        this._dayNightApplyBelichtung();
+        this._dayNightApplyBelichtung(sunDir.y);
         this._dayNightApplyAugenLicht();
     }
 
@@ -133,8 +123,9 @@ class AnazhRealm_Z24 {
             lightMul = currentTint.lightMul;
         }
         const skyColor = stop.sky.clone();
-        const lightColor = stop.light.clone();
-        let lightIntensity = stop.intensity * lightMul;
+        // das Licht beginnt weiß bei Stärke 1: was die Sonne über den Tag tut, trägt die Atmosphäre (`_atmoSonne`, E0)
+        const lightColor = new THREE.Color(1, 1, 1);
+        let lightIntensity = lightMul;
         // Schicht 2 — Welt-Feld-Tint (Welt-Affinität am Spieler).
         // EIN Stärke-Faktor (`atmosphere.auraTintStrength`, live-justierbar) skaliert alle Feld- und
         // Emotion-Beiträge (Schicht 2+3) — die Aura tönt subtil, sie färbt die Welt nicht um.
@@ -1011,9 +1002,9 @@ class AnazhRealm_Z24 {
         }
         // Sonne (warm) ODER Mond (kühl), je nach stehendem Körper; dessen Helligkeit fadet am Horizont auf 0
         // (`_celestialHorizonFade`) → der Richtungswechsel bei y=0 ist unsichtbar.
-        // Farbe: `atm.col` (Rayleigh, DIE EINE LICHT-QUELLE) × `tint.lightColor` (LUT + Aura/Emotion).
-        // Intensität = KEY_BASE·atm.lum·tint.lightIntensity: die Physik trägt die Tageskurve, die LUT
-        // (⊇ Wetter-lightMul + Emotion) moduliert; Ziel dir/(amb+hemi) ≥ 3:1.
+        // Farbe: `atm.col` (der Durchlass der EINEN Atmosphäre) × `tint.lightColor` (weiß + Aura/Emotion).
+        // Intensität = KEY_BASE·atm.lum·tint.lightIntensity: die Physik trägt die Tageskurve allein, der Tint
+        // (Wetter-lightMul + Emotion) moduliert; Ziel dir/(amb+hemi) ≥ 3:1.
         const a = atm || this._atmoSonne(sunDir.y);
         if (sunUp) {
             dl.color.setRGB(
@@ -1076,20 +1067,44 @@ class AnazhRealm_Z24 {
 
     // DIE BELICHTUNG AUS DEM LICHT (V18.507): die Kamera stellt die 18-%-Karte auf Mittelgrau + 1 EV
     // (die Kamera-Konvention der Profi-Engines, UE5-Belichtungs-Bias +1). Die Karte liest L = 0,18/π · E
-    // mit E = Sonne/Mond auf der Waagrechten + Himmels-Umgebung von oben (`_himmelsIrradianz`) + Hemi +
+    // mit E = Sonne/Mond senkrecht (unten) + Himmels-Umgebung von oben (`_himmelsIrradianz`) + Hemi +
     // Ambient — dieselben Lichter, die jedes Material liest. Vorher stand die Belichtung fest auf 1,0:
     // die Karte las 212 (≈ +1,8 EV über Mittelgrau), Weiß und Himmel liefen in die ACES-Schulter. Die
     // Nacht bleibt, wie sie geeicht ist (Deckel 1,0 — das Auge adaptiert, die Mond-Nacht bleibt dunkel).
-    _dayNightApplyBelichtung() {
+    // DIE KARTE STEHT DER SONNE ZUGEWANDT (D3-N2): die Sonne trifft sie senkrecht, Himmel, Hemi und Ambient von oben — die
+    // Konvention der Belichtungsmessung (Sunny 16: ein Körper im Licht wendet sich der Sonne zu, die Blende folgt dem Durchlass,
+    // nicht dem Sinus der Höhe). Auf der Waagrechten gemessen hob die tiefe Sonne die Belichtung um 1/sin(Höhe): Uhr 0,72
+    // (Sonne 10°) Belichtung 6,2, der Himmel weiß, das Bild Luma 212.
+    // DER DECKEL GILT DER NACHT (D3-N2), nie dem Abend: über ihn hebt die Belichtung nur das Licht des Tags — die Sonne und
+    // der Himmel der EINEN Atmosphäre —, im Maß seines Anteils an der Karte (die Nacht-Lichter, Hemi- und Ambient-Boden und
+    // der Mond, sind auf den Deckel geeicht) und der EINEN Dämmerung: derselben Anker, die die Grenzgröße der Sterne setzen
+    // (`HIMMEL.grenzgroesse`, `_himmelGrenzgroesse`; heller Tag −5 → 1, astronomische Nacht +6 → 0). Dazwischen gleitet sie
+    // geometrisch. Im Tag folgt sie dem Licht ganz (Nordstern Ebene 0: mehrere EV Anpassung). Bis D3-N2 deckelte die
+    // Lichtmenge selbst: mit der EINEN Atmosphäre fällt das Licht der Wiese um Uhr 0,72 auf E 0,89 (Mittag 7,58) — der Deckel
+    // ließ die Karte 2,6 EV unter Mittelgrau + 1, der Abend sah aus wie Nacht.
+    _dayNightApplyBelichtung(sonneY) {
         const st = this.state;
         const rend = st.renderer;
-        if (!rend || !st.directionalLight) return;
+        const dl = st.directionalLight;
+        if (!rend || !dl) return;
         const B = AnazhRealm.BELICHTUNG;
         const e = this._waagrechtIrradianz(this._belichtungE || (this._belichtungE = [0, 0, 0]));
-        const E = 0.2126 * e[0] + 0.7152 * e[1] + 0.0722 * e[2];
+        // die Waagrechte trägt das Richtlicht mit dem Sinus seiner Höhe (`_belichtungRichtung`, eben dort normiert) — die
+        // Karte nimmt es ganz
+        const dy = Math.max(0, this._belichtungRichtung.y);
+        const richt = dl.intensity * (0.2126 * dl.color.r + 0.7152 * dl.color.g + 0.0722 * dl.color.b);
+        const E = 0.2126 * e[0] + 0.7152 * e[1] + 0.0722 * e[2] + richt * (1 - dy);
         const karte = (0.18 / Math.PI) * E;
         const k = karte > 1e-6 ? B.zielKarte / karte : B.max;
-        rend.toneMappingExposure = Math.max(B.min, Math.min(B.max, k));
+        const A = AnazhRealm.HIMMEL.grenzgroesse;
+        const mTag = A[0][1],
+            mNacht = A[A.length - 1][1];
+        const daemmerung = (mNacht - this._himmelGrenzgroesse(sonneY)) / (mNacht - mTag);
+        const env = this._himmelsIrradianz();
+        const himmel = env ? Math.PI * (0.2126 * env.oben[0] + 0.7152 * env.oben[1] + 0.0722 * env.oben[2]) : 0;
+        const tagAnteil = E > 1e-9 ? Math.min(1, ((sonneY >= 0 ? richt : 0) + himmel) / E) : 0;
+        const nacht = Math.min(B.max, k);
+        rend.toneMappingExposure = Math.max(B.min, nacht * Math.pow(k / nacht, daemmerung * tagAnteil));
     }
 
     // DAS LICHT DES AUGES (K02a, Auge 11 bei 762/−138): wo der Himmel das Auge nicht erreicht, trägt der Leib sein Licht. Die

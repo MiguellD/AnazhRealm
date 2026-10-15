@@ -1111,7 +1111,8 @@ AnazhRealm.LEGACY_LICHT = Math.PI;
 // DIE BELICHTUNG (V18.507, `_dayNightApplyBelichtung`): `zielKarte` ist die Leuchtdichte der 18-%-Karte nach
 // der Belichtung, die ACES (three: x·k/0,6, RRT+ODT-Fit) auf Mittelgrau + 1 EV legt — Mittelgrau (sRGB 118 =
 // linear 0,18) braucht den Fit-Eingang 0,26227, also k·L = 2 · 0,26227 · 0,6 = 0,3147. `max` 1,0 hält die geeichte
-// Nacht, `min` ist nur die Wand gegen ein entartetes Licht.
+// Nacht (über ihn hebt nur das Sonnenlicht, D3-N2), `min` ist nur die Wand gegen ein entartetes Licht. Der Kontrast des
+// Gradings dreht um `zielKarte` nach der Belichtung (25c).
 AnazhRealm.BELICHTUNG = Object.freeze({ zielKarte: 0.3147, min: 0.25, max: 1.0 });
 // Slope-Schwellen des Gras-Gates: voll bis `lo` (≈35°), weg bis `hi` (≈52°), sanfter Übergang.
 // `hi` < rock-`SCATTER.slopeMax` (1.45) → Wiese → Mischhang → Geröll → Fels auf DERSELBEN

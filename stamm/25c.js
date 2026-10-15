@@ -451,7 +451,20 @@ class AnazhRealm_Z25c {
                     : typeof THREE.PostProcessing === "function"
                       ? THREE.PostProcessing
                       : null;
-            const { pass, uniform, vec2, vec3, float, luminance, mix, smoothstep, screenUV, max, min } = TSL;
+            const {
+                pass,
+                uniform,
+                vec2,
+                vec3,
+                float,
+                luminance,
+                mix,
+                smoothstep,
+                screenUV,
+                max,
+                min,
+                toneMappingExposure,
+            } = TSL;
             const pp = new PPCtor(this.state.renderer);
             const scenePass = pass(this.state.scene, this.state.camera);
             // DIE EINE SZENEN-SKALA (K50): der Szenen-Pass rendert in ihr, die zeitliche Auflösung löst auf die Ausgabe auf
@@ -663,7 +676,13 @@ class AnazhRealm_Z25c {
             const combined = bloomed.add(nurBeiStaerke(bloomed.mul(detail.mul(u.localContrast)), u.localContrast));
             const lum = luminance(combined);
             const saturated = mix(vec3(lum, lum, lum), combined, u.gradeSat);
-            const contrasted = saturated.sub(float(0.5)).mul(u.gradeContrast).add(float(0.5));
+            // DER DREHPUNKT DES KONTRASTS IST DIE BELICHTETE KARTE (D3-N2): die 18-%-Karte nach der Belichtung
+            // (BELICHTUNG.zielKarte), in Szenen-Einheiten zielKarte / Belichtung — die Belichtung liest der Knoten selbst
+            // (`toneMappingExposure`, EINE Quelle). Bis D3-N2 lag er bei 0,5 in Szenen-Einheiten VOR der Belichtung: jedes Licht
+            // unter 0,028 wurde schwarz, gleich wie hell die Belichtung es danach hob — die Wiese um Uhr 0,72 zu 36 % schwarz.
+            // Jetzt schneidet der Kontrast in jedem Licht dieselbe Tiefe ab (3,1 EV unter dem belichteten Mittelgrau).
+            const drehpunkt = float(AnazhRealm.BELICHTUNG.zielKarte).div(toneMappingExposure);
+            const contrasted = saturated.sub(drehpunkt).mul(u.gradeContrast).add(drehpunkt);
 
             // --- Entgrauen: desaturierte Pixel (graue Türme/Wände/Felsen) werden warm verschoben, satte
             // (Himmel, Gras, Wasser) bleiben. Luminanz-erhaltend (nur Hue-Shift: R hoch, G gehalten, B runter);
