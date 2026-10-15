@@ -219,6 +219,13 @@ const root = path.resolve(__dirname, "..");
 // schreibt, was es gemessen hat, in die EINE Tafel (spec/abnahme/soll-tafel.json, wie `--nachziehen` die Albedo-Tafel) — Ist
 // und Täter rechnet die Linse daraus (abnahme-urteil `sollTafelUrteil`); von Hand steht dort keine Zahl.
 const SOLL_TAFEL = path.join(root, "spec", "abnahme", "soll-tafel.json");
+// DER ORT DER BILDER DER TAFEL (K63-n8, abnahme-urteil `bildPfadFehler`): je Ziel `--ist <id>[:teil]` EIN Name unter
+// artifacts/soll-tafel/ (gitignored, lokal) — Bild, Maske und Begleit-JSON nebeneinander
+const sollAblage = (ziel, endung) => {
+    const d = path.join(root, "artifacts", "soll-tafel");
+    fs.mkdirSync(d, { recursive: true });
+    return path.join(d, String(ziel).replace(/:/g, "-") + endung);
+};
 // der Stand des Arbeitsbaums für das Begleit-JSON eines Bilds (K32) und jede Messung der Tafeln: `gitStand` (SHA, „+geaendert"
 // bei Änderungen an versionierten Dateien außer den Tafeln) und der Code-Abdruck jeder Quelle — EINE Quelle, abnahme-urteil
 const { stammVersion, pruefsumme, kernStand, sollQuelle, gitStand } = require("./lib/abnahme-urteil.cjs").standLeser(root);
@@ -1782,13 +1789,9 @@ async function starte() {
                         if (!Object.keys(kl.klassen).length)
                             throw new Error(`--ist ${b.ist}: die Klasse zeichnet kein Pixel im Bild — die Tafel bleibt, wie sie war`);
                         // DER ORT DES BILDS (K63-n8, abnahme-urteil `bildPfadFehler`): das Bild der Tafel liegt beim Namen des
-                        // Ziels unter artifacts/soll-tafel/ (gitignored, lokal) — nie im Scratch, auf den die Tafel nicht zeigen darf
-                        const ablage = path.join(root, "artifacts", "soll-tafel", String(b.ist).replace(/:/g, "-") + ".png");
-                        fs.mkdirSync(path.dirname(ablage), { recursive: true });
-                        if (path.resolve(ablage) !== datei) {
-                            fs.copyFileSync(datei, ablage);
-                            fs.copyFileSync(kl.maske, ablage.replace(/\.png$/i, ".maske.png"));
-                        }
+                        // Ziels unter artifacts/soll-tafel/ (gitignored, lokal) — nie im Scratch, auf den die Tafel nicht zeigen
+                        // darf; kopiert erst, wenn die Tafel die Messung genommen hat (eine abgewiesene ersetzt kein Bild)
+                        const ablage = sollAblage(b.ist, ".png");
                         o.ist = sollIstSchreiben(b.ist, {
                             werkzeug: "bild",
                             datum: new Date().toISOString(),
@@ -1805,11 +1808,15 @@ async function starte() {
                             gesicht: kl.gesicht || null,
                             bild: path.relative(root, ablage).split(path.sep).join("/"),
                         });
+                        if (ablage !== datei) {
+                            fs.copyFileSync(datei, ablage);
+                            fs.copyFileSync(kl.maske, sollAblage(b.ist, ".maske.png"));
+                        }
                     }
-                    fs.writeFileSync(
-                        datei.replace(/\.png$/i, "") + ".abnahme.json",
-                        JSON.stringify(o.abnahme, null, 1)
-                    );
+                    const begleit = datei.replace(/\.png$/i, "") + ".abnahme.json";
+                    fs.writeFileSync(begleit, JSON.stringify(o.abnahme, null, 1));
+                    if (b.ist && sollAblage(b.ist, ".png") !== datei)
+                        fs.copyFileSync(begleit, sollAblage(b.ist, ".abnahme.json"));
                     const zeile = o.abnahme.zeile;
                     delete o.abnahme;
                     return send(Object.assign(o, { abnahme: zeile, datei, gesamtMs: Date.now() - t0 }));
