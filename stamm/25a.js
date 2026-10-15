@@ -368,9 +368,9 @@ class AnazhRealm_Z25a {
         const esVal = document.getElementById("slider-edgesharp-val");
         if (esS) {
             const e0 =
-                this.state.atmosphere && Number.isFinite(this.state.atmosphere.edgeSharp)
-                    ? this.state.atmosphere.edgeSharp
-                    : 0.5;
+                this.state.atmosphere && Number.isFinite(this.state.atmosphere.kantenSchaerfe)
+                    ? this.state.atmosphere.kantenSchaerfe
+                    : 0;
             esS.value = String(Math.round(e0 * 100));
             if (esVal) esVal.textContent = e0.toFixed(2);
             esS.addEventListener("input", () => {
@@ -1173,10 +1173,14 @@ class AnazhRealm_Z25a {
                       // KEIN-WEBGPU-GESCHICHTE — der EINE forceWebGL-Hook (gate:webgl-probe).
                       forceWebGL: AnazhRealm._forceWebGL(),
                   });
-        // ACES-Filmic-Tone-Mapping: die Lichter sind HDR (Sonne 2.4 + Hemi/Ambient) und klemmten ohne
-        // Tone-Mapping bei 1.0 (ausgewaschen). Reine Render-Output-Stufe.
-        renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.0; // Vorlage phytogenesis Z.1285 (exakt)
+        // DIE TONKURVE (F1, die Foto-Kette): Khronos PBR Neutral (r184 NeutralToneMapping) — bis zur Schulter (0,76) geht die
+        // Farbe des Stoffs unverändert ins Bild (nur der Schwarzpunkt 0,04), darüber rollt sie zu Weiß ohne Farbdrehung. Gemessen
+        // gegen ACES (Filmic, Sättigung und Kontrast in der Kurve) und AgX in EINER Welt (Radeon 890M, 15.10.): die Öffnung der
+        // Tore C*ab ACES 20,9 · AgX 16,8 · Neutral 23,1 (Soll ≥ 20), der Himmel weiß statt blau ACES 53 % · AgX 69 % · Neutral
+        // 40 %, die Wiese C*ab ganzes Bild 24,9 · 21,7 · 31,1 (Soll-Bild 01: 28,3). Die Eichung der Belichtung folgt ihr
+        // (BELICHTUNG, 26c). Reine Ausgabe-Stufe; die Belichtung setzt das Licht (`_dayNightApplyBelichtung`).
+        renderer.toneMapping = THREE.NeutralToneMapping;
+        renderer.toneMappingExposure = 1.0;
         // V10.0-j.b — Stencil-Buffer global deaktivieren. Three.js' Renderer-
         // Default ist `this.stencil = true` → bei JEDEM RenderPass setzt
         // WebGPUBackend stencilLoadOp + stencilStoreOp. Bei Pure-Depth-Format

@@ -1069,9 +1069,7 @@ class AnazhRealm_Z24 {
             // Tageslicht — die Karten tragen ihr eingebackenes SONNEN-Licht).
             if (this.state.atmoUniforms && this.state.atmoUniforms.tagLicht) this.state.atmoUniforms.tagLicht.value = 0;
         }
-        // V18.377 — die Post-FX-Entgrauung (warm-Lift grauer Pixel) WÄSCHT die legitim
-        // entsättigte Nacht → sie fadet zur Nacht aus (das „Filter in meinen Augen"). Der Mond
-        // gibt die Tiefe gerichtet, kein Post-FX-Lift nötig. `nightFactor` 0=Tag → 1=Nacht.
+        // `nightFactor` 0 = Tag → 1 = Nacht: das Auge der Nacht der Post-Kette (K66, mesopisch) liest ihn — am Tag fällt es.
         if (this.state.postProcessingUniforms && this.state.postProcessingUniforms.nightFactor) {
             this.state.postProcessingUniforms.nightFactor.value = Math.max(0, Math.min(1, 1 - (sunDir.y + 0.05) / 0.2));
         }

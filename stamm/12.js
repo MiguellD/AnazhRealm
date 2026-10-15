@@ -123,10 +123,10 @@ class AnazhRealm_Z12 {
                     this.state.atmosphere && Number.isFinite(this.state.atmosphere.cavityAO)
                         ? this.state.atmosphere.cavityAO
                         : 1.0,
-                edgeSharp:
-                    this.state.atmosphere && Number.isFinite(this.state.atmosphere.edgeSharp)
-                        ? this.state.atmosphere.edgeSharp
-                        : 0.5,
+                kantenSchaerfe:
+                    this.state.atmosphere && Number.isFinite(this.state.atmosphere.kantenSchaerfe)
+                        ? this.state.atmosphere.kantenSchaerfe
+                        : 0,
                 triplanar:
                     this.state.atmosphere && Number.isFinite(this.state.atmosphere.triplanar)
                         ? this.state.atmosphere.triplanar

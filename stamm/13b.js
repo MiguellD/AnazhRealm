@@ -855,11 +855,12 @@ class AnazhRealm_Z13b {
             // (waterfallSteep-Restore V18.111 gefallen — A4)
             const df = Number(state.atmosphere.waterDepthFoam);
             if (Number.isFinite(df)) this.state.atmosphere.waterDepthFoam = Math.max(0.1, Math.min(6.0, df));
-            // J4-Regler (cavityAO · edgeSharp · triplanar · colorVar; Default = unverändert) geclampt über die
+            // J4-Regler (cavityAO · kantenSchaerfe · triplanar · colorVar; Default = unverändert) geclampt über die
             // Setter; existieren die Uniforms noch nicht, liest `_ensure*` sie beim Bau.
             const ao = Number(state.atmosphere.cavityAO);
             if (Number.isFinite(ao)) this.setCavityAO(Math.max(0, Math.min(2, ao)));
-            const es = Number(state.atmosphere.edgeSharp);
+            // die Kanten-Schärfe liest nur den Schlüssel der Foto-Kette (F1): das alte `edgeSharp` trug den Default 0,46 jedes Spielstands
+            const es = Number(state.atmosphere.kantenSchaerfe);
             if (Number.isFinite(es)) this.setEdgeSharp(Math.max(0, Math.min(1, es)));
             const tri = Number(state.atmosphere.triplanar);
             if (Number.isFinite(tri)) this.setSurfaceTexture(Math.max(0, Math.min(4, tri)));

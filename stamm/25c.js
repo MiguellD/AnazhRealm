@@ -458,12 +458,10 @@ class AnazhRealm_Z25c {
                 vec3,
                 float,
                 luminance,
-                mix,
                 smoothstep,
                 screenUV,
                 max,
                 min,
-                toneMappingExposure,
             } = TSL;
             const pp = new PPCtor(this.state.renderer);
             const scenePass = pass(this.state.scene, this.state.camera);
@@ -522,27 +520,14 @@ class AnazhRealm_Z25c {
                 bloomThreshold: uniform(0.86),
                 bloomStrength: uniform(0.38),
                 bloomRadius: uniform(2.2),
-                gradeSat: uniform(1.18),
-                gradeContrast: uniform(1.06),
-                // V17.3 — Entgrauen: desaturierte (graue) Pixel warm anheben.
-                // degrayStrength = wie stark, degrayRange = bis zu welcher
-                // Saettigung ein Pixel als "grau" zaehlt. Browser-justierbar.
-                degrayStrength: uniform(0.35),
-                degrayRange: uniform(0.16),
-                // V18.377 — 0=Tag → 1=Nacht (von _dayNightApplyDirectionalLight gesetzt). Die
-                // Entgrauung (warm-Lift grauer Pixel) WÄSCHT die legitim entsättigte Nacht; sie
-                // fadet darum zur Nacht aus → der Mond gibt die Tiefe gerichtet, kein Lift-Filter.
+                // 0 = Tag → 1 = Nacht (`_dayNightApplyDirectionalLight`): das Auge der Nacht liest ihn (unten).
                 nightFactor: uniform(0),
-                // V17.13 — lokaler Kontrast (Unsharp-Mask): hebt Binnen-Kontraste
-                // + Kanten auf ALLEN Oberflaechen → Strukturen/Bauten wirken
-                // plastisch statt pappig (Schoepfer „kaum Kontraste, basic"). Wirkt
-                // global im Post-FX (kein Material angefasst → bricht keine
-                // dynamischen Farben). Browser-justierbar.
-                // J4-Regler „Kanten-Schärfe" — Default 0.5, persistiert via state.atmosphere.edgeSharp.
+                // Der lokale Kontrast (Unsharp-Mask) ist NUR der Spieler-Regler „Kanten-Schärfe" (`kantenSchaerfe`, Default 0 —
+                // die Foto-Kette F1: das Bild trägt die Kante, die der Stoff zeichnet; aus = der Zweig fällt mit seinen 4 Abtastungen).
                 localContrast: uniform(
-                    this.state.atmosphere && Number.isFinite(this.state.atmosphere.edgeSharp)
-                        ? this.state.atmosphere.edgeSharp
-                        : 0.5
+                    this.state.atmosphere && Number.isFinite(this.state.atmosphere.kantenSchaerfe)
+                        ? this.state.atmosphere.kantenSchaerfe
+                        : 0
                 ),
                 // GODRAYS: additiver Screen-Space-Radial-March als NODE in DIESEM Pass (kein zweiter RenderPipeline,
                 // keine MRT-Depth). `godraySun` = Sonnen-Screen-UV (pro Frame projiziert), `godrayStrength` = Pegel
@@ -654,16 +639,15 @@ class AnazhRealm_Z25c {
             }
             const godray = nurBeiStaerke(gacc.mul(u.godrayStrength), u.godrayStrength);
 
-            // --- Color-Grading: Saettigung + Kontrast um 0.5 ---
+            // --- DIE FOTO-KETTE (F1): das Bild, wie die Kamera es sieht — kein Spiel-Filter dazwischen. Bis F1 trug die Kette vier:
+            // Sättigung 1,18, Kontrast 1,06 um 0,5, das Entgrauen (grauer Pixel warm angehoben, ein Pflaster gegen graue Albedo) und
+            // den lokalen Kontrast 0,46; dazu ACES. Die Farbe kommt aus Gesetz und Albedo-Tafel (Lehre 21): was danach grau oder satt
+            // wirkt, ist ein benannter Befund am Stoff, nie ein Regler der Kette.
             const base = mitte;
             const bloomed = base.add(bloom).add(godray);
-            // V17.13 — lokaler Kontrast (Unsharp-Mask): die lokale Umgebungs-
-            // Luminanz aus 4 versetzten Samples mitteln; die Differenz Pixel −
-            // Umgebung verstaerkt → Binnen-Kontraste + Kanten treten hervor
-            // (Strukturen/Bauten plastisch statt pappig). Wirkt global pro Pixel,
-            // kein Material angefasst → dynamische Farben unberuehrt. Der Offset
-            // ist etwas weiter als das Bloom-px (groebere Umgebung = Mikro-Detail).
-            // Kanten-Schärfe 0 (der Regler „aus") → der Zweig fällt mit seinen 4 Abtastungen (`nurBeiStaerke`).
+            // Der lokale Kontrast (Unsharp-Mask, der Spieler-Regler „Kanten-Schärfe", Default 0): die Umgebungs-Luminanz aus 4
+            // versetzten Abtastungen, die Differenz Pixel − Umgebung verstärkt. Stärke 0 → der Zweig fällt mit seinen 4
+            // Abtastungen (`nurBeiStaerke`).
             const lcPx = float(0.0026);
             const lumAt = (uv) => luminance(bild(uv));
             const localAvg = lumAt(screenUV.add(vec2(lcPx, float(0.0))))
@@ -674,47 +658,27 @@ class AnazhRealm_Z25c {
             const selfLum = luminance(bloomed);
             const detail = selfLum.sub(localAvg); // >0 heller als Umgebung (Kante/Spitze)
             const combined = bloomed.add(nurBeiStaerke(bloomed.mul(detail.mul(u.localContrast)), u.localContrast));
-            const lum = luminance(combined);
             // DAS AUGE DER NACHT (K66, Augen-Runde 15.10.: nachts leuchtete die Giebelwand gesättigt orange, ihr Abfall lief
             // tiefrot — HSV 0,92 an der Wand, 0,99 im Abfall): unter der Nacht sieht das Auge mesopisch — zwischen den
             // Leuchtdichten des Stäbchen- und des Zapfen-Sehens (`NACHT_AUGE`, CIE 191:2010) trägt der Zapfen-Anteil die Farbe
             // (log-linear 0 … 1); die Leuchtdichte des Pixels in cd/m² aus der Eichung der Nacht (der Stoff rechnet Albedo/π ·
-            // Bestrahlung in Welt-Einheiten). Der Tag (`nightFactor` 0) bleibt byte-gleich.
+            // Bestrahlung in Welt-Einheiten). Es ist die EINE Sättigung der Kette und nur ein Knoten der Nacht: am Tag
+            // (`nightFactor` 0) fällt der Zweig (`nurBeiStaerke`), das Bild geht unberührt in die Tonkurve.
             const NA = AnazhRealm.NACHT_AUGE;
-            const zapfen = TSL.log(
-                lum.mul(float(NA.luxJeEinheit)).max(float(NA.staebchenCd)).div(float(NA.staebchenCd))
-            )
-                .div(float(Math.log(NA.zapfenCd / NA.staebchenCd)))
-                .clamp(0, 1);
-            const saturated = mix(vec3(lum, lum, lum), combined, u.gradeSat.mul(mix(float(1), zapfen, u.nightFactor)));
-            // DER DREHPUNKT DES KONTRASTS FOLGT DER BELICHTUNG ÜBER 1 (D3-N2): 0,5 / max(Belichtung, 1) in Szenen-Einheiten — die
-            // Belichtung liest der Knoten selbst (`toneMappingExposure`, EINE Quelle). Im Band, in dem das Grading geeicht ist
-            // (Belichtung ≤ 1: der Tag 0,6–1 und die Nacht), bleibt es bytegleich; hebt die Belichtung den Abend über 1, dreht der
-            // Kontrast um dasselbe belichtete Licht wie bei 1. Ohne das wurde jedes Licht unter 0,028 Szenen-Einheiten schwarz,
-            // gleich wie hell die Belichtung es danach hob (gate:post-kette (h): Belichtung 4 schwarz, wo 1 Luma 24 zeigt).
-            // DIE NACHT BEHÄLT IHR DUNKEL (D3-2): die lineare Kurve schneidet 2,5 EV unter dem belichteten Mittelgrau ab — die Nacht
-            // liegt auf dem Deckel 1,0 ganz darunter (die 18-%-Karte im Mondlicht 4,2 EV unter Mittelgrau + 1): der Kontrast fadet
-            // zur Nacht aus wie die Entgrauung (×(1 − nightFactor), dieselbe Tag-Achse) — sonst wurde der Boden der Nacht schwarz
-            // (Wiese Mitternacht 61 % schwarz). Ab ~9° Sonne (nightFactor 0) bleibt der Tag bytegleich.
-            const kontrast = mix(u.gradeContrast, float(1.0), u.nightFactor);
-            const drehpunkt = float(0.5).div(max(toneMappingExposure, float(1)));
-            const contrasted = saturated.sub(drehpunkt).mul(kontrast).add(drehpunkt);
+            const staebchenSicht = () => {
+                const lum = luminance(combined);
+                const zapfen = TSL.log(
+                    lum.mul(float(NA.luxJeEinheit)).max(float(NA.staebchenCd)).div(float(NA.staebchenCd))
+                )
+                    .div(float(Math.log(NA.zapfenCd / NA.staebchenCd)))
+                    .clamp(0, 1);
+                return vec3(lum, lum, lum).sub(combined).mul(float(1).sub(zapfen).mul(u.nightFactor));
+            };
+            const gesehen = combined.add(nurBeiStaerke(staebchenSicht(), u.nightFactor));
+            const graded = gesehen.max(vec3(0, 0, 0));
 
-            // --- Entgrauen: desaturierte Pixel (graue Türme/Wände/Felsen) werden warm verschoben, satte
-            // (Himmel, Gras, Wasser) bleiben. Luminanz-erhaltend (nur Hue-Shift: R hoch, G gehalten, B runter);
-            // die Sättigung steuert die Maske. Render-only, justierbar (degrayStrength/degrayRange).
-            const gMax = max(max(contrasted.r, contrasted.g), contrasted.b);
-            const gMin = min(min(contrasted.r, contrasted.g), contrasted.b);
-            const gSat = gMax.sub(gMin);
-            const greyness = smoothstep(u.degrayRange, float(0.0), gSat);
-            const gLum = luminance(contrasted);
-            const warm = vec3(gLum.mul(float(1.14)), gLum.mul(float(1.0)), gLum.mul(float(0.82)));
-            // V18.377 — die Entgrauung fadet zur Nacht (×(1−nightFactor)) → die Nacht bleibt
-            // entsättigt/dunkel (echtes Mondlicht), kein warmer Wasch-Lift mehr ins Auge.
-            const degrayed = mix(contrasted, warm, greyness.mul(u.degrayStrength).mul(float(1.0).sub(u.nightFactor)));
-            const graded = degrayed.max(vec3(0, 0, 0));
-
-            // Die Ausgabe-Wandlung (ACES + sRGB) macht die Pipeline selbst im Ausgabe-Quad — keine Zwischen-Textur.
+            // Die Ausgabe-Wandlung (die Tonkurve Khronos PBR Neutral + sRGB, `_ensureRenderer`) macht die Pipeline selbst im
+            // Ausgabe-Quad — keine Zwischen-Textur.
             pp.outputNode = graded;
             this.state.postProcessing = pp;
             // die Kette liest die Uhr der Welt ab ihrem ersten Bild (K66): `nightFactor` setzt die Tag-Nacht-Anwendung — bis K66 erst beim

@@ -39807,8 +39807,12 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         // Umgebung — die Karte sieht dort die Sonne allein (Mittag < 1); mit Himmel stellt er sie unter 0,85. Das Verhältnis
         // Sonne : Himmel misst der echte Renderer (werkbank licht, K5 himmel-licht).
         const mitHimmel = !!r._himmelsIrradianz();
+        // in der Eichung der Tonkurve (BELICHTUNG, F1): die Nacht steht am Deckel, der Mittag darunter
+        const B = r.constructor.BELICHTUNG;
         out.belichtungAusLicht =
-            belichtungMittag > 0.4 && belichtungMittag < (mitHimmel ? 0.85 : 1) && Math.abs(belichtungNacht - 1) < 1e-6;
+            belichtungMittag / B.max > 0.4 &&
+            belichtungMittag / B.max < (mitHimmel ? 0.85 : 1) &&
+            Math.abs(belichtungNacht - B.max) < 1e-6;
         out.belichtungZahlen =
             [belichtungMittag, belichtungNacht].map((v) => +(+v).toFixed(3)).join(" / ") +
             (mitHimmel ? " mit Himmel" : " Sonne allein, Null-Renderer");
@@ -40106,7 +40110,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             r.state.atmoUniforms &&
             Math.abs(r.state.atmoUniforms.aoScale.value - 0.3) < 1e-6;
         const esRet = r.setEdgeSharp(0);
-        out.edgeSharpSetter = esRet === 0 && r.state.atmosphere.edgeSharp === 0;
+        out.edgeSharpSetter = esRet === 0 && r.state.atmosphere.kantenSchaerfe === 0;
         const txRet = r.setSurfaceTexture(0);
         out.surfTexSetter =
             txRet === 0 &&
@@ -40138,7 +40142,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             snap2 &&
             snap2.atmosphere &&
             Math.abs(snap2.atmosphere.cavityAO - 0.3) < 1e-6 &&
-            snap2.atmosphere.edgeSharp === 0 &&
+            snap2.atmosphere.kantenSchaerfe === 0 &&
             snap2.atmosphere.triplanar === 0
         );
         r.setCavityAO(1.0);
