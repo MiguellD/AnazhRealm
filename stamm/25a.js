@@ -2147,12 +2147,11 @@ class AnazhRealm_Z25a {
             // fps-unabhängige Freigabe-Rate (gedeckelt) — die Welt lädt mit der Wanduhr, nicht der Framerate.
             this._tickFoundryIngest(wandDelta);
 
-            // Deferierter Avatar-Bau: nach ein paar gerenderten Frames EINMAL bauen — der ~1.9-s-Skin-Bau hängt
-            // einen Frame, nicht den Boot. Eigenes try/catch (darf den Loop nicht reißen); headless setzt
-            // `_deferredAvatarSoul` nie (baut synchron).
+            // Deferierter Avatar-Bau: EINMAL bauen, sobald seine zwei Vorlagen aus dem Faden im Memo liegen (`_leibBereit`,
+            // K60-2 — bis dahin hielt der Guss im sechsten Frame den Haupt-Faden 2,4 s, und nach dem Buch goss er neu).
+            // Eigenes try/catch (darf den Loop nicht reißen); headless setzt `_deferredAvatarSoul` nie (baut synchron).
             if (this.state._deferredAvatarSoul) {
-                this.state._bootAvatarDelay = (this.state._bootAvatarDelay || 0) + 1;
-                if (this.state._bootAvatarDelay >= 6) {
+                if (this._leibBereit()) {
                     const soul = this.state._deferredAvatarSoul;
                     this.state._deferredAvatarSoul = null;
                     try {

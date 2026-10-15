@@ -104,6 +104,7 @@ function ladeschirmVerdict(m) {
         ["karteOffen", "mit der offenen Karte eines fernen Baums", /ferne Bäume/],
         ["weltFehlt", "ohne die Welt (kein Spieler)", /Welt entsteht/],
         ["buchZu", "ohne das Buch der Studios", /Buch der Studios/],
+        ["leibFehlt", "ohne den Leib des Spielers", /Leib/],
         ["pflanzung", "mit einem gepflanzten Baum der Mesh-Zone, der noch nicht steht", /gepflanzt/],
         ["horizont", "ohne den Horizont (der Fern-Ring steht nicht ganz)", /Horizont/],
     ]) {
@@ -528,6 +529,9 @@ async function probe(arg) {
             // (4b) die Welt fehlt (noch kein Spieler)
             const merkPm = st.playerMesh;
             fall("weltFehlt", () => (st.playerMesh = null), () => (st.playerMesh = merkPm));
+            // (4b') der Leib des Spielers steht aus (K60-2: sein Guss kommt aus dem Faden, `_leibBereit`)
+            const merkLeib = st._deferredAvatarSoul;
+            fall("leibFehlt", () => (st._deferredAvatarSoul = "linse:leib"), () => (st._deferredAvatarSoul = merkLeib));
             // (4c) das Buch der Studios ist zu
             const fo = r._foundry;
             const merkBuch = fo ? fo.ready : undefined;
@@ -1518,7 +1522,7 @@ async function probe(arg) {
     const html = fs.readFileSync(path.join(root, "index.html"), "utf8");
     if (process.argv.includes("--selftest")) {
         console.log("=== SELBST-TEST — die Ankunfts-Linse nennt ihre Täter ===");
-        const l2aTerme = ["welt", "boden", "horizont", "buch", "bauten", "pflanzung", "streu", "karten"];
+        const l2aTerme = ["welt", "boden", "horizont", "leib", "buch", "bauten", "pflanzung", "streu", "karten"];
         const l2aFaelle = {
             ohneBoden: { weg: false, stand: "der Boden wächst (Ring 0 von 3)", warn: 0, terme: ["boden"] },
             baumUngebaut: { weg: false, stand: "1 Bäume und Bauten wachsen", warn: 0, terme: ["bauten"] },
@@ -1527,6 +1531,7 @@ async function probe(arg) {
             karteOffen: { weg: false, stand: "1 ferne Bäume werden gemalt", warn: 0, terme: ["karten"] },
             weltFehlt: { weg: false, stand: "die Welt entsteht", warn: 0, terme: ["welt"] },
             buchZu: { weg: false, stand: "das Buch der Studios öffnet sich", warn: 0, terme: ["buch"] },
+            leibFehlt: { weg: false, stand: "der Spieler erhält seinen Leib", warn: 0, terme: ["leib"] },
             pflanzung: { weg: false, stand: "1 Bäume werden gepflanzt", warn: 0, terme: ["pflanzung"] },
             horizont: { weg: false, stand: "der Horizont wächst (0 %)", warn: 0, terme: ["horizont"] },
             allesSteht: { weg: true, stand: "", warn: 0 },

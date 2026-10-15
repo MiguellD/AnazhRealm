@@ -2468,6 +2468,9 @@ class AnazhRealm_Z25c {
             else if (fp && this._weltMarchGezeichnet() && !(fp.panoLaeufe > 0))
                 luecke("horizont", "der Horizont wird gemalt");
         }
+        // DER LEIB DES SPIELERS (K60-2): sein Guss kommt aus dem Faden (`_leibBereit`, die zwei Vorlagen nach dem Buch) — bis
+        // er steht, ist der Spieler der leere Anker, und kein Bild zeigt die Welt ohne ihn.
+        if (st._deferredAvatarSoul) luecke("leib", "der Spieler erhält seinen Leib", !!this._foundry);
         if (!this._foundryEnabled()) return out;
         const f = this._foundry;
         if (!f || !f.ready || !f.recipes) {
