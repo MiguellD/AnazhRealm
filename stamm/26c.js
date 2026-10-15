@@ -1024,6 +1024,7 @@ AnazhRealm.WELTBILD_TERME = Object.freeze([
     "pflanzung",
     "streu",
     "karten",
+    "dorf",
 ]);
 // Start-Ring 0 = EIN Chunk (der Spieler-Chunk): der Fern-Ring (Loch-Deckel) trägt den Rest, der Void-Boden
 // `_softFloorWhileChunkLoading` trägt den Rand, dann wächst der Ramp bei gesundem Frame Ring für

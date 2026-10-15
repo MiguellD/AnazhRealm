@@ -108,6 +108,9 @@ function ladeschirmVerdict(m) {
         ["pflanzung", "mit einem gepflanzten Baum der Mesh-Zone, der noch nicht steht", /gepflanzt/],
         ["saat", "mit einem Chunk im Laub-Radius, dessen Wald noch nicht gesät ist", /bepflanzt/],
         ["horizont", "ohne den Horizont (der Fern-Ring steht nicht ganz)", /Horizont/],
+        ["dorfExport", "mit dem Export eines Dorfs der Ankunft unterwegs", /Dorf/],
+        ["dorfSchlange", "mit den Häusern eines Dorfs der Mesh-Zone in der Schlange", /Dorf/],
+        ["dorfFaellig", "mit einem fälligen, noch nicht bestellten Start-Dorf am Genesis-Ort", /Dorf/],
     ]) {
         const z = f[k];
         if (!z) out.push(`${name}: ${ohne(k)}`);
@@ -576,6 +579,67 @@ async function probe(arg) {
                     else window.__anazhFernRing = merkHook;
                 }
             );
+            // (4f) DAS DORF (K60-4): ein Dorf der Ankunft, das fällig ist, exportiert wird oder dessen Häuser in der Schlange
+            // stehen, hält das Bild — ohne den Term stand das erste Weltbild in 4 von 5 Kalt-Läufen am Kopf von K60-3 ohne das
+            // Start-Dorf (Nicht-Baum-Einträge 107 statt 134). Headless ruht der Dorf-Takt: der Hook trägt ihn für den Fall.
+            const merkDorfHook = window.__anazhAutoSettlement;
+            const dorfAn = () => (window.__anazhAutoSettlement = true);
+            const dorfAus = () => {
+                if (merkDorfHook === undefined) delete window.__anazhAutoSettlement;
+                else window.__anazhAutoSettlement = merkDorfHook;
+            };
+            const merkExport = r._autoSettlementPendingKey;
+            fall(
+                "dorfExport",
+                () => {
+                    dorfAn();
+                    r._autoSettlementPendingKey = "start";
+                },
+                () => {
+                    r._autoSettlementPendingKey = merkExport;
+                    dorfAus();
+                }
+            );
+            const merkSchlange = r._autoSettlementQueue;
+            const dorfPlan = { name: "linse:dorf", slots: [{ kultur: "linse:dorf", x: 0, z: 0, y: pm.y }] };
+            fall(
+                "dorfSchlange",
+                () => {
+                    dorfAn();
+                    r._autoSettlementQueue = { plan: dorfPlan, origin: { x: pm.x, z: pm.z }, idx: 0, cellKey: "start" };
+                },
+                () => {
+                    r._autoSettlementQueue = merkSchlange;
+                    dorfAus();
+                }
+            );
+            // fällig: die Welt trägt noch kein Start-Dorf, der Spieler steht am Genesis-Ort, das Buch trägt den Dorf-Kanal
+            const wmD = st.worldMeta || (st.worldMeta = {});
+            const merkZellen = wmD.settlementCells;
+            const merkHoffnung = r._autoSettlementStartHopeless;
+            const gMD = typeof r._genesisMitte === "function" ? r._genesisMitte() : null;
+            const nearD = (r.constructor.AUTO_SETTLEMENT || {}).nearM;
+            const amOrt = gMD && Math.hypot(pm.x - gMD.x, pm.z - gMD.z) <= nearD;
+            const kanal = typeof r._autoSettlementChannelLive === "function" && r._autoSettlementChannelLive();
+            if (amOrt && kanal)
+                fall(
+                    "dorfFaellig",
+                    () => {
+                        dorfAn();
+                        wmD.settlementCells = Object.assign({}, merkZellen || {});
+                        delete wmD.settlementCells.start;
+                        r._autoSettlementStartHopeless = false;
+                    },
+                    () => {
+                        wmD.settlementCells = merkZellen;
+                        r._autoSettlementStartHopeless = merkHoffnung;
+                        dorfAus();
+                    }
+                );
+            else
+                m.ohneFall.dorfFaellig = !kanal
+                    ? "das Buch trägt keinen Dorf-Kanal (`_autoSettlementChannelLive`)"
+                    : `der Spieler steht ${gMD ? Math.round(Math.hypot(pm.x - gMD.x, pm.z - gMD.z)) : "?"} m vom Genesis-Ort (nearM ${nearD})`;
             // (5) alles steht
             fall("allesSteht", nichts, nichts);
             // (6) eine Lücke ruht (dieselbe Lücke länger als WELTBILD_STILL_MS): der Ladeschirm weicht LAUT
@@ -1542,7 +1606,7 @@ async function probe(arg) {
     const html = fs.readFileSync(path.join(root, "index.html"), "utf8");
     if (process.argv.includes("--selftest")) {
         console.log("=== SELBST-TEST — die Ankunfts-Linse nennt ihre Täter ===");
-        const l2aTerme = ["welt", "boden", "horizont", "leib", "buch", "bauten", "pflanzung", "streu", "karten"];
+        const l2aTerme = ["welt", "boden", "horizont", "leib", "buch", "bauten", "pflanzung", "streu", "karten", "dorf"];
         const l2aFaelle = {
             ohneBoden: { weg: false, stand: "der Boden wächst (Ring 0 von 3)", warn: 0, terme: ["boden"] },
             baumUngebaut: { weg: false, stand: "1 Bäume und Bauten wachsen", warn: 0, terme: ["bauten"] },
@@ -1555,6 +1619,9 @@ async function probe(arg) {
             pflanzung: { weg: false, stand: "1 Bäume werden gepflanzt", warn: 0, terme: ["pflanzung"] },
             saat: { weg: false, stand: "1 Wald-Böden werden bepflanzt", warn: 0, terme: ["pflanzung"] },
             horizont: { weg: false, stand: "der Horizont wächst (0 %)", warn: 0, terme: ["horizont"] },
+            dorfExport: { weg: false, stand: "das Dorf wird geplant", warn: 0, terme: ["dorf"] },
+            dorfSchlange: { weg: false, stand: "1 Häuser des Dorfs wachsen", warn: 0, terme: ["dorf"] },
+            dorfFaellig: { weg: false, stand: "das Dorf wird gegründet", warn: 0, terme: ["dorf"] },
             allesSteht: { weg: true, stand: "", warn: 0 },
             lueckeRuht: { weg: true, stand: "", warn: 1 },
             lueckeFlackert: { weg: true, stand: "", warn: 1 },
@@ -1626,6 +1693,16 @@ async function probe(arg) {
                         "der Fall pflanzung nennt den Term „saat“",
                     ],
                     ["ohne die Terme", { terme: undefined }, "die Terme des ersten Weltbilds fehlen"],
+                    [
+                        "das erste Weltbild ohne Dorf (Prüfung K60-3: 4 von 5 Kalt-Läufen, Nicht-Baum-Einträge 107 statt 134)",
+                        { faelle: Object.assign({}, l2aFaelle, { dorfSchlange: { weg: true, stand: "", warn: 0, terme: [] } }) },
+                        "mit den Häusern eines Dorfs der Mesh-Zone in der Schlange weicht der Ladeschirm",
+                    ],
+                    [
+                        "das fällige Start-Dorf ohne Fall",
+                        { faelle: Object.assign({}, l2aFaelle, { dorfFaellig: undefined }), ohneFall: { dorfFaellig: "der Spieler steht 400 m vom Genesis-Ort (nearM 260)" } },
+                        "mit einem fälligen, noch nicht bestellten Start-Dorf am Genesis-Ort: der Spieler steht 400 m vom Genesis-Ort",
+                    ],
                     [
                         "eine arbeitende Lücke weicht (Prüfung K60-1 m1-6B: das Buch kam nach 19,6 s, der Ladeschirm wich nach 15 s)",
                         { faelle: Object.assign({}, l2aFaelle, { lueckeArbeitet: { weg: true, stand: "", warn: 1, terme: ["buch"] } }) },

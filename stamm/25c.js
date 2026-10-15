@@ -2513,6 +2513,23 @@ class AnazhRealm_Z25c {
             if (dx * dx + dz * dz <= R * R && !this._archIsRendered(e)) ungebaut++;
         }
         if (ungebaut) luecke("bauten", `${ungebaut} Bäume und Bauten wachsen`);
+        // DAS DORF DER ANKUNFT (K60-4): ein Haus, das noch kein Eintrag ist, zählt „bauten" nicht — das Start-Dorf ist fällig
+        // (`_startDorfFaellig`, noch nicht bestellt), sein Export ist unterwegs (`_autoSettlementPendingKey`: der Plan und die
+        // Ort-Wahl) oder seine Häuser der Mesh-Zone stehen in der Schlange (`_autoSettlementQueue`). Ohne den Term stand das
+        // erste Weltbild in 4 von 5 Kalt-Läufen am Kopf von K60-3 ohne das Start-Dorf (Nicht-Baum-Einträge 107 statt 134).
+        if (this._dorfTaktLebt()) {
+            const q = this._autoSettlementQueue;
+            let haeuser = 0;
+            if (q && q.plan && Array.isArray(q.plan.slots) && q.origin)
+                for (let i = q.idx; i < q.plan.slots.length; i++) {
+                    const s = q.plan.slots[i];
+                    if (s && (q.origin.x + s.x - p.x) ** 2 + (q.origin.z + s.z - p.z) ** 2 <= R * R) haeuser++;
+                }
+            if (haeuser) luecke("dorf", `${haeuser} Häuser des Dorfs wachsen`);
+            else if (this._autoSettlementPendingKey) luecke("dorf", "das Dorf wird geplant", true);
+            else if (!q && this._autoSettlementChannelLive() && this._startDorfFaellig(p))
+                luecke("dorf", "das Dorf wird gegründet");
+        }
         // Die Pflanz-Schlange (`pendingVegSpawns`, K60): ein gepflanzter Baum der Mesh-Zone, der noch nicht gesetzt ist, ist
         // noch kein Eintrag — ohne diesen Term stand das Bild vor ihm, und er wuchs im Bild nach.
         let gesetzt = 0;

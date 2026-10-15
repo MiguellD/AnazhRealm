@@ -2349,23 +2349,36 @@ class AnazhRealm_Z20a {
     _tickGenesisOrt(currentTime) {
         const st = this.state;
         const pm = st.playerMesh;
-        if (!pm) return;
-        const hook = typeof window !== "undefined" ? window.__anazhAutoSettlement : undefined;
-        if (hook === false) return;
-        if (hook !== true && st.renderer && st.renderer._isHeadlessNull) return;
+        if (!pm || !this._dorfTaktLebt()) return;
         if (this._genesisOrtT && currentTime - this._genesisOrtT < 1000) return;
         this._genesisOrtT = currentTime; // Instanz-Feld (die _editSaveTimer-Klasse: nicht serialisiert)
         this._genesisPortalRing(pm.position);
         this._portalApproachPrefetch(pm.position);
     }
 
+    // DER DORF-TAKT LEBT (Gate-Treue): headless ruht der Auto-Zug, der Hook `__anazhAutoSettlement` führt — EIN Urteil für
+    // den Siedlungs-Takt, den Genesis-Ort und das erste Weltbild (Term „dorf", `_weltbildLuecken`): ein Dorf, das kein Takt
+    // baut, hält kein Bild.
+    _dorfTaktLebt() {
+        const hook = typeof window !== "undefined" ? window.__anazhAutoSettlement : undefined;
+        if (hook === false) return false;
+        return hook === true || !(this.state.renderer && this.state.renderer._isHeadlessNull);
+    }
+
+    // DAS START-DORF IST FÄLLIG (EIN Urteil für den Takt und das erste Weltbild, K60-4): einmalig je Welt, solange es weder
+    // steht (`settlementCells.start`) noch hoffnungslos ist, und nur nahe des Genesis-Orts (kein Fern-Spawn hinter dem Rücken).
+    _startDorfFaellig(playerPos) {
+        const wm = this.state.worldMeta || {};
+        const cells = wm.settlementCells && typeof wm.settlementCells === "object" ? wm.settlementCells : null;
+        if ((cells && cells.start) || this._autoSettlementStartHopeless) return false;
+        const gM = this._genesisMitte();
+        const n = AnazhRealm.AUTO_SETTLEMENT.nearM;
+        return (playerPos.x - gM.x) ** 2 + (playerPos.z - gM.z) ** 2 <= n * n;
+    }
+
     _tickAutoSettlement(playerPos) {
         const st = this.state;
-        if (!playerPos) return;
-        // Gate-Treue (s. Block-Kommentar): headless ruht der Auto-Zug, der Hook führt.
-        const hook = typeof window !== "undefined" ? window.__anazhAutoSettlement : undefined;
-        if (hook === false) return;
-        if (hook !== true && st.renderer && st.renderer._isHeadlessNull) return;
+        if (!playerPos || !this._dorfTaktLebt()) return;
         const A = AnazhRealm.AUTO_SETTLEMENT; // Wirt-Streaming (perTick/nearM)
         // (a) BUDGETIERTE MATERIALISIERUNG zuerst: ein angekommener Export baut seine
         // Häuser über Ticks verteilt — erst fertig wachsen, dann die nächste Zelle.
@@ -2423,12 +2436,7 @@ class AnazhRealm_Z20a {
         }
         // Start-Dorf zuerst (einmalig je Welt): nur nahe des Genesis-Orts materialisieren (kein Fern-Spawn hinter
         // dem Rücken). Fail-closed + session-gemerkt: eine Welt ohne Fleck urteilt immer gleich.
-        const gM = this._genesisMitte();
-        if (
-            (!cells || !cells.start) &&
-            !this._autoSettlementStartHopeless &&
-            (playerPos.x - gM.x) ** 2 + (playerPos.z - gM.z) ** 2 <= A.nearM * A.nearM
-        ) {
+        if (this._startDorfFaellig(playerPos)) {
             const si = this._autoSettlementStartInfo();
             if (!si)
                 this._autoSettlementStartHopeless = true; // Instanz-Feld (die _editSaveTimer-Klasse)
