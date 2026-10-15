@@ -2735,6 +2735,59 @@ function emitFlower(P) {
 const GRAS_SPITZE_HELL = 1.08;
 // Der Halm-Teppich (K56): Reichweite des Büschels in Einheiten des Understory-Rasters (deriveParamsPlant, Art grass).
 const TEPPICH_REICH = 0.7;
+// DIE WIESEN-FARBE (Spike W1, 16.10.): die Streuung der Wiese als EIN Gesetz für Labor und Welt. (a) je HALM (emitGrass,
+// Vertex-Farbe) aus einem EIGENEN Γ5-Strom (SEED ^ 0x3c6e) — der Gestalt-Strom bleibt byte-gleich: Helligkeit, Farbton
+// gelb- ↔ blaugrün, trockene Halme, strohige Spitzen; (b) je BÜSCHEL (Instanz-Farbe, multiplikativ, `wiesenTint`) der
+// Labor-Tint FIX v27 (Licht × Feuchte × Jitter, phytogenesis addTiled) — das Licht um die offene Wiese zentriert (dort
+// neutral, die Eichung der Halm-Albedo bleibt) — plus ein Makro-Feld λ 2,6/1,1 m: Trocken-Flecken und satte Stellen.
+const WIESEN_FARBE = Object.freeze({
+    halm: Object.freeze({ hell: [0.72, 1.28], ton: 1.0, trockenAnteil: 0.3, trocken: [0.4, 0.9], spitze: 0.8, stroh: 0.62 }),
+    bueschel: Object.freeze({ licht: 0.45, jitter: 0.2, warm: 0.24, nass: 0.12, makroM: [2.6, 1.1], trocken: 0.42, satt: 0.22 }),
+});
+function __wiesenHash(ix, iz, s) {
+    let h = (Math.imul(ix | 0, 73856093) ^ Math.imul(iz | 0, 19349663) ^ s) >>> 0;
+    h = Math.imul(h ^ (h >>> 16), 0x7feb352d);
+    h = Math.imul(h ^ (h >>> 15), 0x846ca68b);
+    return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+}
+function __wiesenWert(x, z, s) {
+    const ix = Math.floor(x),
+        iz = Math.floor(z),
+        fx = x - ix,
+        fz = z - iz,
+        ux = fx * fx * (3 - 2 * fx),
+        uz = fz * fz * (3 - 2 * fz);
+    const a = __wiesenHash(ix, iz, s),
+        b = __wiesenHash(ix + 1, iz, s),
+        c = __wiesenHash(ix, iz + 1, s),
+        d = __wiesenHash(ix + 1, iz + 1, s);
+    return a + (b - a) * ux + (c - a) * uz + (a - b - c + d) * ux * uz;
+}
+// Der Tint eines Büschels am Welt-Ort (x, z) bei Licht `lit` (1 = offene Wiese) und Feuchte `wet` (0..1): [r, g, b], je
+// Kanal ein Faktor in [0, 2] auf die Halm-Farbe.
+function wiesenTint(x, z, lit, wet) {
+    const B = WIESEN_FARBE.bueschel,
+        cl = (v) => Math.max(0, Math.min(1, v)),
+        ss = (a, b, v) => {
+            const t = cl((v - a) / (b - a));
+            return t * t * (3 - 2 * t);
+        };
+    const jt = __wiesenHash(Math.floor(x * 7.3), Math.floor(z * 7.3), 0x51ed) - 0.5;
+    const mk =
+        __wiesenWert(x / B.makroM[0], z / B.makroM[0], 0x2c1b) * 0.65 +
+        __wiesenWert(x / B.makroM[1] + 31.7, z / B.makroM[1] + 17.3, 0x7a3d) * 0.35 -
+        0.5;
+    const tr = ss(0.02, 0.26, mk) * B.trocken,
+        sa = ss(-0.02, -0.26, mk) * B.satt;
+    const val = (lit - 1) * B.licht + jt * B.jitter,
+        warm = (cl(lit * 0.5 + (1 - wet) * 0.5) - 0.5) * B.warm;
+    const t = [
+        val + warm + tr * 0.9 - sa * 0.55,
+        val + warm * 0.35 + tr * 0.12 - sa * 0.2,
+        val - warm * 0.8 + (wet - 0.5) * B.nass + tr * 0.3 + sa * 0.1,
+    ];
+    return t.map((v) => Math.max(0, Math.min(2, 1 + v)));
+}
 // DIE GRASNARBE (K70, Soll-Tafel boden-nah: eine Wiese zeigt aus Augenhöhe ihren Grund erst unter dem Fuß, Grasland-LAI
 // 1,71): die Deckung ist die Blatt-Fläche je Boden-Fläche, und die Stufe trägt sie, nicht die Dreiecks-Zahl. Der Halm
 // WURZELT im Boden (bis K70 begann er eine Segment-Länge darüber: L1/L2 ein Drittel des Halms Luft am Grund), er ist
@@ -2749,7 +2802,23 @@ function emitGrass(P) {
         tipCol = vegFarbe(seasonAccent).multiplyScalar(GRAS_SPITZE_HELL);
     const seedCol = vegFarbe(P.seedTan || 0xc8b27a);
     const SH = P.seedHead || 0;
+    // DIE WIESEN-FARBE je Halm (Spike W1): eigener Strom, fünf Würfe je Halm, gezogen vor jeder Zeile
+    const WH = WIESEN_FARBE.halm,
+        farbStrom = P.__farbe ? mulberry32(((Math.floor(SEED) ^ 0x3c6e) + 7) >>> 0) : null,
+        stroh = seedCol.clone().multiplyScalar(WH.stroh);
     for (let i = 0; i < N; i++) {
+        let hl = 1,
+            ton = 0,
+            trk = 0,
+            spz = 0;
+        if (farbStrom) {
+            hl = WH.hell[0] + (WH.hell[1] - WH.hell[0]) * farbStrom();
+            ton = (farbStrom() - 0.5) * WH.ton;
+            const tw = farbStrom(),
+                tg = farbStrom();
+            trk = tw < WH.trockenAnteil ? WH.trocken[0] + (WH.trocken[1] - WH.trocken[0]) * tg : 0;
+            spz = Math.pow(farbStrom(), 2) * WH.spitze;
+        }
         const a = i * GOLDEN,
             rr = Math.sqrt(i / N) * P.clump;
         const bx = Math.cos(a) * rr,
@@ -2790,6 +2859,13 @@ function emitGrass(P) {
             positions.push(cl[0], cl[1], cl[2], cr[0], cr[1], cr[2]);
             uvs.push(0, f, 1, f);
             const c = baseCol.clone().lerp(tipCol, f);
+            if (farbStrom) {
+                c.r *= hl * (1 + ton);
+                c.g *= hl;
+                c.b *= hl * (1 - ton * 1.2);
+                const sf = f < 0.55 ? 0 : ((f - 0.55) / 0.45) * ((f - 0.55) / 0.45) * (3 - (2 * (f - 0.55)) / 0.45);
+                c.lerp(stroh, Math.min(1, Math.max(trk * (0.4 + 0.6 * f), spz * sf)));
+            }
             for (let q = 0; q < 2; q++) {
                 const sw = Math.pow(f, 1.4) * P.windGain;
                 sway.push(sw, la * 1.3 + i, 1.1 + 0.5 * (1 - f));
@@ -7492,6 +7568,9 @@ __terrainCore.PHYTO_PRESETS = PRESETS;
 __terrainCore.PORTAL_GROUND = PORTAL_GROUND;
 // Die Halm-Spitze des Grases (emitGrass) reist mit: der Stamm hellt den Saison-Akzent um DIESELBE Zahl auf (rein additiv).
 __terrainCore.GRAS_SPITZE_HELL = GRAS_SPITZE_HELL;
+// DIE WIESEN-FARBE (Spike W1): das Büschel-Gesetz für Labor (addTiled) und Welt (Nah-Wiese), rein additiv.
+__terrainCore.WIESEN_FARBE = WIESEN_FARBE;
+__terrainCore.wiesenTint = wiesenTint;
 // DIE PLATZIERUNG (Welt-Skala je Preset) reist mit zum SYNCHRONEN Stamm-Leser (rein additiv, Leben-Schau 2, 09.10.): die
 // Kollision eines Studio-Werks misst in derselben Welt-Skala, in der es gezeichnet wird — ab dem Spawn, nicht erst nach dem
 // async Buch (vorher trug ein Hand-Spiegel nur die Baeume: ein Fels kollidierte bis zum Buch in Vorlagen-Groesse).
