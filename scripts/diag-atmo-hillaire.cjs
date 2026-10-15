@@ -5,7 +5,9 @@
 // Gerechnet wird, was die LUT-Kette des Baus zeigen würde: Transmittance (Sonne) · Mehrfachstreuung Ψ_ms (32²-Gesetz,
 // Gl. 5–9) · Himmels-Leuchtdichte je Richtung (der Sky-View-Marsch) → E_Himmel = ∫ L cosθ dω an der waagrechten Fläche,
 // E_Sonne = E0·T·μs. Die Größe der Tafel: lichtVerhaeltnis = (E_Sonne + E_Himmel) / E_Himmel (Luma Rec.709, wie
-// `__lichtBilanz`), Soll [5; 12,5], gemessen heute 4,226 (soll-tafel himmel-licht).
+// `__lichtBilanz`), Soll [5; 12,5]; vor D3 maß die Welt 4,226, mit der EINEN Atmosphäre 5,156 an der Mess-Wiese gegen
+// diesen Richter 5,138 (soll-tafel himmel-licht, Radeon 15.10.; die Karte steht 45 m über dem Boden des SPIELERS — die Linse
+// gilt nur nach `werkbank umstellen --ort wiese`, am Start-Ort misst sie eine andere Höhe).
 //
 // DAS GESETZ DER WELT, gelesen (nie abgeschrieben): Rayleigh = `ATMO_GESETZ.rayleighTiefe` (Zenit-Tiefe je Kanal,
 // foundry-core) über die Skalenhöhe 8 km; das Aerosol = die EINE Koschmieder-Luft `ATMO_GESETZ.luft` (klare Sicht 20 km bei
