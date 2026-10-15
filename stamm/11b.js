@@ -2544,7 +2544,7 @@ class AnazhRealm_Z11b {
                 depthBuffer: false,
             }
         );
-        rt.texture.name = "spiegel:strahl";
+        rt.name = rt.texture.name = "spiegel:strahl";
         rt.texture.minFilter = rt.texture.magFilter = THREE.LinearFilter;
         rt.texture.generateMipmaps = false;
         // Ansicht und Schalter wechseln je Bild: sie reisen in der GETEILTEN renderGroup (`_uniformHeimatTeilen`, das Pflicht-Paar
