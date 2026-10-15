@@ -16,6 +16,8 @@
 //     Zug der Vorschau: sie wird NACH der Ankunft geweckt. Befund Zweig-CI 38453848494 (voll 8/11): die Vorschau fand den
 //     Schlüssel in der Dedup-Wache `f.requested` und wartete 90 s auf einen Rückruf, den nur der erste Besteller trug
 //     („keine Vorschau-Gestalt"); im Rahmen danach stand dieselbe Eiche sofort (der Körper lag längst im Cache).   Soll ≤ 20 s
+//     Dazu die Wand W7: der Foundry-Pfad pollt nicht — EIN Zeit-Graph über jedes Glied, das die Familie erreicht (Kreise
+//     mit Zeit-Kante, Schleifen mit Schlaf, setInterval, Warten auf ein pollendes Glied); frei nur die Frist-Kette.
 //
 //   V-D3 RAHMEN (K05, Runner WS-01) — JEDE GESTALT FÜLLT DIE VORSCHAU: jedes Rezept des LIVE-Buchs und jeder Bauplan wird
 //     über den Chokepoint des Spielers gewählt (selectStudioRecipeForView · selectBlueprintForEdit), `_workshopRender`
