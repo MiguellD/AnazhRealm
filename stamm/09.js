@@ -674,6 +674,42 @@ class AnazhRealm_Z09 {
         return false;
     }
 
+    // DIE FLUT-SAAT DER NACHBARN (die reaktive Flut über die Chunkgrenze): liegt ein CARVE in der 3×3-Chunk-Region
+    // (`_chunkRegionHasCarve`), seedet der OOB-Ring des Chunks AUCH aus den nassen Nachbar-ZELLEN (`waterCells`) — der
+    // Atlas-Ring kennt nur frozen Körper, ein Carve-Kanal bliebe im Nachbarn trocken. Je Rand-Spalte ein Bit, ob die
+    // angrenzende Spalte des Nachbarn bis `jMax` eine Wasser-Zelle trägt: West · Ost · Nord · Süd, je `dim` (LOD 0, wie
+    // jede Zelle). Der Sync-Bau liest sie (`_buildVoxelChunkWaterCells`), jeder Worker-Auftrag trägt sie als Daten
+    // (`_voxelWorkerComputeChunkMesh` → `buildChunkWaterCells`, bit-identisch) — der Carve-Neubau geht über denselben
+    // Worker-Pfad wie jeder Chunk (K69-2; bis dahin zwang sie den Neubau in den Haupt-Faden). null ohne Carve oder
+    // ohne nasse Nachbar-Spalte (dann atlas-only).
+    _flutSaat(cx, cz) {
+        if (!this.state.voxelChunks || !this._chunkRegionHasCarve(cx, cz)) return null;
+        const { dim, dimY, step, floorDrop } = this._voxelChunkConfig(0);
+        const oy = (this.state.terrainBaseHeight || 0) - floorDrop;
+        const band = this.state.hydroBand;
+        let jMax = Math.floor(((band ? band.top : Infinity) - oy) / step);
+        if (jMax >= dimY) jMax = dimY - 1;
+        const dimSq = dim * dim;
+        const WATER = AnazhRealm.CELL_STATE.WATER;
+        const colWet = (nkey, ni, nk) => {
+            const nb = this.state.voxelChunks.get(nkey);
+            if (!nb || !nb.waterCells) return 0;
+            const nc = nb.waterCells;
+            const b = ni + nk * dim;
+            for (let j = 0; j <= jMax && b + j * dimSq < nc.length; j++) if (nc[b + j * dimSq] === WATER) return 1;
+            return 0;
+        };
+        const saat = new Uint8Array(4 * dim);
+        let n = 0;
+        for (let q = 0; q < dim; q++) {
+            n += saat[q] = colWet(`${cx - 1},${cz}`, dim - 1, q);
+            n += saat[dim + q] = colWet(`${cx + 1},${cz}`, 0, q);
+            n += saat[2 * dim + q] = colWet(`${cx},${cz - 1}`, q, dim - 1);
+            n += saat[3 * dim + q] = colWet(`${cx},${cz + 1}`, q, 0);
+        }
+        return n ? saat : null;
+    }
+
     // `preDensity` = das Grid des Boden-Meshers ((dim+4)·(dimY+1)·(dim+4), Origin `ox-step, oy,
     // oz-step`); Cell-Center-Density = 8-Corner-Avg (spart ~71k Dichte-Calls). Ohne preDensity sampelt es
     // selbst — IDENTISCHE Klassifikation. `lod` wählt dim/dimY wie der Boden-Mesher.
@@ -823,31 +859,18 @@ class AnazhRealm_Z09 {
             if (this._atlasWaterLevelAt(cxw, oz + (dim + 0.5) * step, Infinity) > -Infinity)
                 colSrc[i + (dim - 1) * dim] = 1;
         }
-        // Reaktive Flut über die Chunkgrenze: liegt ein CARVE in der 3×3-Chunk-Region, seedet der OOB-Ring
-        // AUCH aus den nassen Nachbar-ZELLEN (`waterCells`) — der Atlas-Ring kennt nur frozen Körper, ein
-        // Carve-Kanal bliebe im Nachbarn trocken. Main-only; ohne Carve (Worldgen) atlas-only = bit-identisch
-        // zum Worker. `_rebuildVoxelChunk` erzwingt dafür (gleicher Gate) den Main-Rebuild der Nachbarn.
-        const _span = dim * step;
-        const _cx = Math.round(ox / _span);
-        const _cz = Math.round(oz / _span);
-        if (this.state.voxelChunks && this._chunkRegionHasCarve(_cx, _cz)) {
-            const colWet = (nkey, ni, nk) => {
-                const nb = this.state.voxelChunks.get(nkey);
-                if (!nb || !nb.waterCells) return false;
-                const nc = nb.waterCells;
-                const b = ni + nk * dim;
-                for (let j = 0; j <= jMax && b + j * dimSq < nc.length; j++)
-                    if (nc[b + j * dimSq] === WATER) return true;
-                return false;
-            };
-            for (let k = 0; k < dim; k++) {
-                if (colWet(`${_cx - 1},${_cz}`, dim - 1, k)) colSrc[0 + k * dim] = 1;
-                if (colWet(`${_cx + 1},${_cz}`, 0, k)) colSrc[dim - 1 + k * dim] = 1;
-            }
-            for (let i = 0; i < dim; i++) {
-                if (colWet(`${_cx},${_cz - 1}`, i, dim - 1)) colSrc[i + 0 * dim] = 1;
-                if (colWet(`${_cx},${_cz + 1}`, i, 0)) colSrc[i + (dim - 1) * dim] = 1;
-            }
+        // Reaktive Flut über die Chunkgrenze: die Flut-Saat der Nachbarn (`_flutSaat`) — derselbe Schritt im Worker
+        // (`buildChunkWaterCells`), dem sie als Daten mit dem Auftrag reist.
+        {
+            const _span = dim * step;
+            const saat = this._flutSaat(Math.round(ox / _span), Math.round(oz / _span));
+            if (saat)
+                for (let q = 0; q < dim; q++) {
+                    if (saat[q]) colSrc[0 + q * dim] = 1;
+                    if (saat[dim + q]) colSrc[dim - 1 + q * dim] = 1;
+                    if (saat[2 * dim + q]) colSrc[q + 0 * dim] = 1;
+                    if (saat[3 * dim + q]) colSrc[q + (dim - 1) * dim] = 1;
+                }
         }
         // Küsten-Aquifer: die 3D-Roughness (±12 m) taucht echtes Terrain bis −24 m unter den Spiegel, wo das
         // Makro „Land" sagt (colL=−Inf → die BFS füllte die himmel-offene Senke nie). Jede Atlas-lose Spalte,

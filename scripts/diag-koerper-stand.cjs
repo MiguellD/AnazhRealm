@@ -125,8 +125,10 @@ const server = statikServer({
 
 // Die Proben laufen IN der Seite (r = die Welt). Kein Stub: jede Probe ruft die Chokepoints des Spiels.
 // DER UMFANG DER K7-PROBE (die EINE Quelle für Messung und Urteil): Büschel der Nah-Wiese und Pflanzen der Nah-Streu neben dem
-// Rand-Streifen — bei 1 000 Büscheln ist die Unschärfe des Verhältnisses ≈ 3 %
-const K7_UMFANG = Object.freeze({ bueschel: 1000, pflanzen: 100 });
+// Rand-Streifen — bei 1 000 Büscheln ist die Unschärfe des Verhältnisses ≈ 3 %. Die Streu trägt 500 Pflanzen (σ ≈ 0,1): bei 100
+// (gemessen 209 am Umkreis 120 m, σ 0,155, Band ± 46 %) lag ihr Defekt „wiese" (Verhältnis 0,53) auf der Kante des Bands —
+// der Selbsttest feuerte 1 von 2 Mal (K69-2 N2, gates/koerper-stand.log blind, ks-nachher.log 0,533).
+const K7_UMFANG = Object.freeze({ bueschel: 1000, pflanzen: 500 });
 
 async function proben(mitWiese, umfang) {
     const r = window.anazhRealm;
@@ -882,7 +884,11 @@ async function proben(mitWiese, umfang) {
         };
         let last = -1;
         let stabil = 0;
-        for (let t = 0; t < 200 && stabil < 8; t++) {
+        // Ruhe heißt auch: der Wald der Mesh-Zone steht — die EINE Antwort der Welt (`_weltbildLuecken`, Terme `pflanzung` und
+        // `streu`). Seit K69 pflanzt die Schlange des Walds im Takt; die Ruhe der Chunks allein maß die Streu vor ihren Kronen
+        // (K69-2 N2: 209 Pflanzen neben dem Streifen, σ 0,155 — der Selbsttest „wiese" blieb an der Streu blind).
+        const waldOffen = () => r._weltbildLuecken().some((l) => l.term === "pflanzung" || l.term === "streu");
+        for (let t = 0; t < 200 && (stabil < 8 || waldOffen()); t++) {
             setz();
             for (let i = 0; i < 30; i++) {
                 try {
@@ -897,6 +903,7 @@ async function proben(mitWiese, umfang) {
                 last = n;
             }
         }
+        o.k7wald = !waldOffen();
         const C = r._voxelChunkConfig(0);
         // der Rand-Streifen in der Breite der Stufe (ein halber Schritt, K51: die Nah-Zone ist 3 × 3 — die Kacheln jeder Stufe
         // zählen, der Leser liest jede Naht)
@@ -957,15 +964,19 @@ async function proben(mitWiese, umfang) {
         const arten = r._nahStreuArten();
         // der Umkreis wächst in 20-m-Schritten (höchstens 240 m), bis die Probe ihren Umfang trägt (K55-2: an der Mess-Wiese
         // −278/−1038 trug der Umkreis 120 m 866 Büschel und 70 Pflanzen neben dem Streifen, die Aue ist offener als der alte Hang)
+        // Je Probe ihr eigener Umkreis: die Wiese steht, sobald sie ihren Umfang trägt; die Streu wächst weiter bis zu ihrem.
         for (R = 120; R <= 240; R += 20) {
-            o.k7wiese = zaehle(NW.kachel, 0.34, (tx, tz) => r._nahWieseKachelBueschel(tx, tz));
+            if (!(o.k7wiese && o.k7wiese.daneben >= umfang.bueschel)) {
+                o.k7wiese = zaehle(NW.kachel, 0.34, (tx, tz) => r._nahWieseKachelBueschel(tx, tz));
+                o.k7umkreis = R;
+            }
             o.k7streu = zaehle(NS.kachel, 0, (tx, tz) => {
                 const satz = r._nahStreuKachel(tx, tz, arten);
                 return satz ? satz.items : null;
             });
+            o.k7umkreisStreu = R;
             if (o.k7wiese.daneben >= umfang.bueschel && o.k7streu.daneben >= umfang.pflanzen) break;
         }
-        o.k7umkreis = Math.min(R, 240);
     }
     return o;
 }
@@ -1046,6 +1057,8 @@ function urteil(o) {
                 `K7 ${name === "Büschel" ? "Wiese" : "Streu"} im Rand-Streifen: Dichte ${w.dichte[0]} gegen ${w.dichte[1]} je m² daneben (Verhältnis ${w.verh} ± ${w.sigma}, Soll 1 ± ${Math.round(toleranz(w) * 100)} %; ${w.streifen}/${w.daneben} in ${w.kacheln} Kacheln) — Täter: der Leser der Kachel (_nahWieseKachelBueschel/_nahStreuKachel) liest nicht _bodenSichtAt`
             );
     };
+    if (o.k7wald === false)
+        f.push("K7 Aufbau: der Wald der Mesh-Zone steht nicht (Terme pflanzung/streu offen nach 200 Runden)");
     k7(o.k7wiese, "Büschel", K7_UMFANG.bueschel);
     k7(o.k7streu, "Pflanzen", K7_UMFANG.pflanzen);
     return f;
@@ -1069,7 +1082,7 @@ function zeile(o) {
             ? ` · K7 Umkreis ${v(o.k7umkreis)} m · Wiese Streifen/daneben ${v(o.k7wiese.verh)} ± ${v(o.k7wiese.sigma)} (${v(o.k7wiese.streifen)}/${v(o.k7wiese.daneben)} Büschel, ${v(o.k7wiese.dichte[0])}/${v(o.k7wiese.dichte[1])}/${v(o.k7wiese.dichte[2])} je m² Streifen/daneben/Mitte)`
             : "") +
         (o.k7streu
-            ? ` · K7 Streu ${v(o.k7streu.verh)} ± ${v(o.k7streu.sigma)} (${v(o.k7streu.streifen)}/${v(o.k7streu.daneben)} Pflanzen)`
+            ? ` · K7 Streu (Umkreis ${v(o.k7umkreisStreu)} m) ${v(o.k7streu.verh)} ± ${v(o.k7streu.sigma)} (${v(o.k7streu.streifen)}/${v(o.k7streu.daneben)} Pflanzen)`
             : "") +
         (o.hang ? ` · Hang ${o.hang.neig.toFixed(0)}° Gesetz↔Karte ${(o.hang.abstand * 100).toFixed(0)} cm` : "") +
         (o.hoehle ? ` · Höhle ${(o.hoehle.top - o.hoehle.boden).toFixed(1)} m tief` : "")

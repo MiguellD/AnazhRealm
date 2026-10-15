@@ -545,6 +545,10 @@ async function runPartB() {
         if (!entry) return { err: "spawnArchitecture gab null" };
         const preset = r._foundryPresetForEntry(entry);
         res.preset = preset;
+        // die Gestalt des Orts wartet auf den Plan seines Walds (K69: die Schlange des Walds plant im Takt) — die Probe
+        // pumpt die Schlange, bis sie steht: die Wärme-Frist unten zählt dann nur Bauten, nie den Plan (Lehre 26)
+        for (let i = 0; i < 2000 && r._foundryGestaltFor(entry, preset) == null; i++) r._tickWaldPlan(Infinity);
+        res.gestalt = r._foundryGestaltFor(entry, preset);
         // ── ALLE drei Stufen VOR der Baseline wärmen (kein Rewarm-Störer im Sweep):
         //    flatten(0/1/2) bis truthy; der Loop-Pump treibt Worker-Replies + Impostor-Bake. ──
         const warm = { 0: false, 1: false, 2: false };
@@ -1384,9 +1388,19 @@ async function runPartB() {
         const e = r.spawnArchitecture(key, { x: ex, y: r._voxelSurfaceY(ex, ez) || 1, z: ez }, { silent: true, seed: 1 });
         if (!e) return { err: "spawnArchitecture gab null" };
         const preset = r._foundryPresetForEntry(e);
+        // die Gestalt des Orts wartet auf den Plan seines Walds (K69: die Schlange des Walds plant im Takt) — die Probe
+        // pumpt die Schlange, bis sie steht (Bau-Ereignisse, nie Wanduhr; bis K69 plante die erste Frage am Stück)
+        for (let i = 0; i < 2000 && r._foundryGestaltFor(e, preset) == null; i++) r._tickWaldPlan(Infinity);
         const fl0 = r._foundryFlattenFor(e, preset, 0),
             fl1 = r._foundryFlattenFor(e, preset, 1);
-        if (!(fl0 && fl0.leaves && fl1 && fl1.leaves)) return { err: "Stufen nicht warm" };
+        if (!(fl0 && fl0.leaves && fl1 && fl1.leaves))
+            return {
+                err: "Stufen nicht warm",
+                gestalt: r._foundryGestaltFor(e, preset),
+                schlange: r._waldPlanSchlange ? r._waldPlanSchlange.size : null,
+                l0: !!fl0,
+                l1: !!fl1,
+            };
         const tw1 = fl1.leaves.filter((l) => l.shadowTwin),
             tw0 = fl0.leaves.filter((l) => l.shadowTwin);
         const eigen0 = fl0.leaves.find((l) => !l.shadowTwin);
