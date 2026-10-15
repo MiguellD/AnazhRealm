@@ -61,6 +61,7 @@
         "gate:fern-ring": "node scripts/diag-fern-ring.cjs",
         "gate:fern-wasser": "node scripts/diag-fern-wasser.cjs",
         "gate:webgl-probe": "node scripts/diag-webgl-probe.cjs",
+        "gate:welt-boot": "node scripts/lib/welt-boot.cjs --selbsttest",
         "gate:warm-start": "node scripts/diag-warm-start.cjs",
         "gate:wasser-wahrheit": "node scripts/diag-wasser-wahrheit.cjs",
         "gate:kopplung": "node scripts/diag-kopplung.cjs",
