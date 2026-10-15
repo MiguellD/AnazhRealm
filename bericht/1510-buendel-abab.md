@@ -3,7 +3,8 @@
 B = e8a370ad: K10-6 + K64 Tore fern + K38-N2 Werkstatt-Vorschau + K63 Soll-Tafel + K60 Ankunft. Code-gleich mit
 a19ca615, das nur Doku ergänzt.
 
-**Status: ZWISCHENSTAND.** Die GTX-Kalt-Zeile fehlt noch, sie läuft nach der Zerlegung.
+**Status: ZWISCHENSTAND.** Die GTX-Kalt-Zeile ist nachgetragen, siehe unten: B ist kalt +3,9 s langsamer, der Täter ist
+die Streu auf dem Haupt-Faden.
 
 **Urteil (OMEN GTX, Regler voll, freie Tiere; EIN Instrument `abab-pe8a` = B-Kopf):**
 
@@ -77,6 +78,34 @@ a19ca615, das nur Doku ergänzt.
 - **Befehle · Dreiecke gehend:** am Dorfweg 95 · 480–488k auf beiden Seiten, VRAM beim Einströmen 117–122 MB auf beiden.
 - **Geher:** in jeder Sitzung 4 Wege.
 
+## Nachtrag: die GTX-Kalt-Zeile (Frozen B; 15.10. 12:22–12:28, je Seite 3 Boots A B · B A · A B)
+
+- **Ablauf:**
+  - `diag-boot-stage --kalt --echt`, leeres Wegwerf-Profil (IDB leer), Fenster 1920×1080, Holz voll.
+  - EIN Instrument: das Skript des B-Kopfs, sein Statik-Server liefert den Baum der Seite aus (`kalt.cjs`).
+- **Urteil: B ist kalt LANGSAMER.**
+  - t(Weltbild) = t(Kontrolle): A 25,4 · 25,9 · 26,1 s gegen B 29,2 · 29,6 · 30,3 s. Median +3,9 s.
+  - Auf der Radeon meldete K60 22 → 18,5 s. Die GTX zeigt das Gegenteil.
+
+| | A1 | A2 | A3 | B1 | B2 | B3 |
+|---|---|---|---|---|---|---|
+| t(Weltbild) s | 25,41 | 25,91 | 26,07 | 29,24 | 29,58 | 30,33 |
+| Buch der Studios da s | 6,6 | 9,3 | 8,8 | 8,8 | 8,9 | 6,2 |
+| Haupt-Faden blockiert bis zum Bild s (Langaufgaben) | 19,0 | 19,3 | 18,0 | 25,7 | 25,8 | 26,4 |
+| davon **Streu** s | **2,58** | **2,69** | **2,55** | **6,19** | **5,89** | **6,16** |
+| davon Boden · Bauten · Gruppen-Bau s | 0,10 · 0,17 · 0,17 | 0,48 · 0,20 · 0,18 | 0,29 · 0,24 · 0,16 | 0,63 · 0,29 · 0,17 | 0,65 · 0,27 · 0,18 | 0,31 · 0,29 · 0,18 |
+| Erst-Bau der Zeichnung s | 3,29 | 3,08 | 2,94 | 2,92 | 3,02 | 2,97 |
+
+- **Der Täter:** Die Streu auf dem Haupt-Faden vor dem ersten Bild steigt 2,6 → 6,1 s (+3,5 s).
+  - Das Weltbild von B wartet auf mehr: auf die Pflanz-Schlange (K60, „Weltbild zählt die Pflanz-Schlange") und auf den
+    Horizont. Die Zeitleiste von B nennt ab 1 s „der Horizont wächst (0 … 22 %)" und von 17 bis 28 s „der Horizont wird
+    gemalt". A kennt diesen Term nicht.
+  - Das Bild von B ist damit voller, aber es kommt später, und der Haupt-Faden trägt die Streu dafür synchron.
+  - Der Erst-Bau der Zeichnung ist gleich (≈ 3,0 s).
+- **Für B (Pflicht-OFFEN):** Ein Hebel wäre, die Streu des ersten Bilds aus dem Haupt-Faden zu nehmen (Lehre 14) oder die
+  Pflanz-Schlange erst NACH dem ersten Bild zu zählen. Benannt, nicht geschnitten.
+- **Rohdaten:** `kalt/A1..B3.json|txt`, der verworfene erste Versuch in `kalt/verworfen/`.
+
 ## Wachen
 
 - **Seiten-Wache** nie rot. Kein Boot lief neu.
@@ -98,7 +127,8 @@ a19ca615, das nur Doku ergänzt.
 
 ## Pflicht-OFFEN Rest
 
-- **B (Ankunft kalt ≤ 5 s):** Die GTX-Kalt-Zeile je Seite 3 Boots steht aus. Sie läuft nach der Zerlegung (ca. 13:15).
+- **B (Ankunft kalt ≤ 5 s):** Die GTX-Kalt-Zeile steht am Kopf a19ca615 bei 29,2–30,3 s (main vorher 25,4–26,1 s). Die
+  Streu auf dem Haupt-Faden trägt +3,5 s davon.
 - **E:** CPU-Takt p95 B gegen 5,8:
 
   | Ort × Sicht | p95 | gegen 5,8 |

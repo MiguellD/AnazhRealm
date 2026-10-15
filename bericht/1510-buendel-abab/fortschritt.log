@@ -119,3 +119,16 @@ A ende
 11:52:56 kalt B1 exit=0  t(Weltbild) = t(Kontrolle) — (nicht erreicht) ab Navigation
 11:53:27 kalt B2 start [P8, 139 MHz, 61]
 11:55:03 SERIE FERTIG
+12:22:53 kalt A1 start [P8, 139 MHz, 70]
+12:23:20 kalt A1 exit=1  t(Weltbild) = t(Kontrolle) 25.41 s ab Navigation
+12:23:51 kalt B1 start [P0, 1835 MHz, 75]
+12:24:23 kalt B1 exit=1  t(Weltbild) = t(Kontrolle) 29.24 s ab Navigation
+12:24:54 kalt B2 start [P0, 1835 MHz, 75]
+12:25:26 kalt B2 exit=1  t(Weltbild) = t(Kontrolle) 29.57 s ab Navigation
+12:25:57 kalt A2 start [P2, 923 MHz, 73]
+12:26:25 kalt A2 exit=1  t(Weltbild) = t(Kontrolle) 25.91 s ab Navigation
+12:26:56 kalt A3 start [P0, 1835 MHz, 75]
+12:27:25 kalt A3 exit=1  t(Weltbild) = t(Kontrolle) 26.07 s ab Navigation
+12:27:55 kalt B3 start [P0, 1835 MHz, 74]
+12:28:28 kalt B3 exit=1  t(Weltbild) = t(Kontrolle) 30.33 s ab Navigation
+12:28:58 KALT FERTIG
