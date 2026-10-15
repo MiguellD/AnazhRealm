@@ -99,19 +99,17 @@ function wachstumZwischen(grund, kopf, pfade) {
     return nettoZeilen(git(["diff", "--numstat", "--no-renames", grund, ...(kopf ? [kopf] : []), "--", ...pfade]));
 }
 // Die Stände, an denen die Wand misst — je Stand [grund, kopf (null = Arbeitsbaum), Name]. Ein Karten-Zweig misst sich
-// ganz ab der Merge-Basis mit origin/integ-probe. integ-probe misst JEDEN Merge seines Pushes einzeln gegen seinen ersten
-// Eltern (WACHSTUM_VORHER = der Kopf vor dem Push, sonst der letzte Commit): so nennt die Wand den Merge beim Namen, statt
-// die Summe aller Karten seit main zu werten (eine Karte, die Spiel-Code streicht, machte sonst eine fremde rot). main nimmt
-// nur den Vorlauf von integ-probe, dessen jeder Merge an dieser Wand stand — main misst nichts zweimal.
+// ganz ab der Merge-Basis mit origin/integ-probe. integ-probe misst seinen PUSH (WACHSTUM_VORHER = der Kopf vor dem Push,
+// sonst der letzte Commit): der Integrator merget eine Karte oder spult integ-probe auf ihren Kopf vor — dann geht der
+// erste Eltern-Pfad durch die Karte, und je Commit gemessen träfe ihr „Merge integ-probe in <karte>" die Summe fremder
+// Karten. Nie die Summe seit main: eine Karte, die Spiel-Code streicht, machte sonst eine fremde rot. main nimmt nur den
+// Vorlauf von integ-probe, dessen jeder Push an dieser Wand stand — main misst nichts zweimal.
 function wachstumsStaende(zweig, kopfRev) {
     if (zweig === "main") return [];
     if (zweig === "integ-probe") {
         const vorher = process.env.WACHSTUM_VORHER;
-        const bereich = vorher && !/^0+$/.test(vorher) ? `${vorher}..HEAD` : "HEAD~1..HEAD";
-        return git(["rev-list", "--first-parent", bereich])
-            .split("\n")
-            .filter(Boolean)
-            .map((c) => [`${c}^1`, c, `Merge ${c.slice(0, 8)}`]);
+        const grund = vorher && !/^0+$/.test(vorher) ? vorher : "HEAD~1";
+        return [[grund, "HEAD", `Push ${grund.slice(0, 8)}..HEAD`]];
     }
     return [[git(["merge-base", "HEAD", "origin/integ-probe"]).trim(), kopfRev, "Merge-Basis mit origin/integ-probe"]];
 }
@@ -158,7 +156,8 @@ function main() {
             gemessen.push(`${name}: Prüf ${dP >= 0 ? "+" : ""}${dP} / Spiel ${dS >= 0 ? "+" : ""}${dS} Zeilen`);
             errs.push(...wachstumBefund(dP, dS, name));
         }
-        if (!staende.length) gemessen.push(`${zweig}: misst nichts zweimal (jeder Merge stand auf integ-probe an der Wand)`);
+        if (!staende.length)
+            gemessen.push(`${zweig}: misst nichts zweimal (jeder Merge stand auf integ-probe an der Wand)`);
     } catch (e) {
         errs.push(
             `WACHSTUMS-WAND: der Grund des Zweigs ist nicht auflösbar (${String(e.message).split("\n")[0]}) — ` +
@@ -168,7 +167,9 @@ function main() {
 
     // 7) ZITAT-WAND
     try {
-        const gates = new Set(Object.keys(JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8")).scripts));
+        const gates = new Set(
+            Object.keys(JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8")).scripts)
+        );
         const dokumente = git(["ls-files", "CLAUDE.md", "docs", ".claude/agents"])
             .split("\n")
             .filter((p) => p.endsWith(".md"))
@@ -217,8 +218,7 @@ function main() {
         errs.push(`CLAUDE.md Stand trägt ${sz} Zeilen (max 40) — Chronik gehört in git log, nicht in den Stand`);
     if (!claude.includes("## DAS BETRIEBSGESETZ"))
         errs.push("CLAUDE.md trägt kein BETRIEBSGESETZ mehr — stilles Streichen der Gesetze");
-    if (!claude.includes("PFLICHT-OFFEN.md"))
-        errs.push("CLAUDE.md referenziert docs/PFLICHT-OFFEN.md nicht mehr");
+    if (!claude.includes("PFLICHT-OFFEN.md")) errs.push("CLAUDE.md referenziert docs/PFLICHT-OFFEN.md nicht mehr");
     const champ = fs.readFileSync(path.join(root, ".claude", "agents", "champion.md"), "utf8");
     if (!champ.includes("BETRIEBSGESETZ"))
         errs.push("champion.md trägt das BETRIEBSGESETZ nicht mehr — der Arbeiter läuft ungebunden");
@@ -248,7 +248,11 @@ function main() {
         errs.push(`Selbsttest der Siegel-Wort-Wand versagt (t1=${t1} t2=${t2} t3=${t3} t4=${t4})`);
     const l1 = logbuchBefund("> Stand-Stempel: 29.09. · V1.2.3\nA) x").length; // muss feuern
     const l2 = logbuchBefund("# Liste\nA) x — Status: offen").length; // darf nicht feuern
-    const l3 = logbuchBefund(Array(LISTE_MAX_ZEILEN + 5).fill("x").join("\n")).length; // muss feuern
+    const l3 = logbuchBefund(
+        Array(LISTE_MAX_ZEILEN + 5)
+            .fill("x")
+            .join("\n")
+    ).length; // muss feuern
     if (!l1 || l2 || !l3) errs.push(`Selbsttest der Logbuch-Wand versagt (l1=${l1} l2=${l2} l3=${l3})`);
     const w1 = wachstumBefund(600, 1000).length; // +600 Prüf gegen +1000 Spiel: muss feuern
     const w2 = wachstumBefund(400, 1000).length; // +400 gegen +1000: darf nicht
