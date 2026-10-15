@@ -1,0 +1,4 @@
+{
+ "datei": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\k1510k72\\schatten2\\A-0.png",
+ "ms": 2696
+}
