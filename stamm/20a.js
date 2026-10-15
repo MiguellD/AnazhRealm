@@ -457,17 +457,42 @@ class AnazhRealm_Z20a {
             this._waldWarten.delete(bk);
         }
         const R = AnazhRealm.WALD_PLAN.reich;
-        fehlt = null;
-        for (let ax = -R; ax <= R; ax++)
-            for (let az = -R; az <= R; az++) {
-                const k = gx + ax + "," + (gz + az);
-                if (memo.has(k)) continue;
-                (fehlt || (fehlt = [])).push(k);
-                if (!Q.has(k)) Q.set(k, [gx + ax, gz + az]);
-            }
-        if (!fehlt) return true;
+        fehlt = [];
+        if (this._waldPlanKasten(gx - R, gz - R, gx + R, gz + R, fehlt)) return true;
         this._waldWarten.set(bk, fehlt);
         return false;
+    }
+
+    // Der Plan des Walds im Zell-Kasten ga…gb · ha…hb (inklusiv): true = jede Zelle steht im Dart-Gedächtnis des Stands;
+    // sonst bestellt er die fehlenden in der Schlange des Walds (`_tickWaldPlan`), merkt sie in `fehlt` (optional) → false.
+    _waldPlanKasten(ga, ha, gb, hb, fehlt) {
+        const memo = this._forestDartMemo;
+        if (!memo) return false;
+        const Q = this._waldPlanSchlange || (this._waldPlanSchlange = new Map());
+        let steht = true;
+        for (let gx = ga; gx <= gb; gx++)
+            for (let gz = ha; gz <= hb; gz++) {
+                const k = gx + "," + gz;
+                if (memo.has(k)) continue;
+                steht = false;
+                if (fehlt) fehlt.push(k);
+                if (!Q.has(k)) Q.set(k, [gx, gz]);
+            }
+        return steht;
+    }
+
+    // Der Zell-Kasten, den der Pflanz-Gang eines Chunks liest: seine Zellen samt ±2 (das Urteil jedes Darts).
+    _waldPflanzKasten(cx, cz) {
+        const { span } = this._voxelChunkConfig();
+        const C = AnazhRealm.FOREST.cell;
+        const ox = cx * span;
+        const oz = cz * span;
+        return [
+            Math.floor(ox / C) - 2,
+            Math.floor(oz / C) - 2,
+            Math.floor((ox + span) / C) + 2,
+            Math.floor((oz + span) / C) + 2,
+        ];
     }
 
     // DIE SCHLANGE DES WALDS (K69): der Takt-Planer (Job `waldPlan`, Welt-Substanz) plant die bestellten Zellen
@@ -475,8 +500,10 @@ class AnazhRealm_Z20a {
     // gibt sein ganzes Budget). Ihre Regung (`_waldPlanRegung`) liest der Stand-Stempel: sie weckt die Fege-Takte, deren Bäume
     // auf ihre Zellen warten — wenn die Schlange leer ist, und solange sie plant, höchstens alle 250 ms. → die Zahl der Zellen.
     _tickWaldPlan(ms) {
-        const Q = this._waldPlanSchlange;
-        if (!Q || !Q.size || !this._forestGesetzWahr()) return 0;
+        const Q = this._waldPlanSchlange || (this._waldPlanSchlange = new Map());
+        const P = this._waldPflanzWarten;
+        if (!Q.size && !(P && P.size)) return 0;
+        if (!this._forestGesetzWahr()) return 0;
         const seedInt = this._forestSeedInt();
         this._forestDartStand(seedInt);
         const memo = this._forestDartMemo;
@@ -497,6 +524,18 @@ class AnazhRealm_Z20a {
             Q.delete(k);
             n++;
         }
+        // die wartenden Pflanz-Gänge (`_forestPlantChunk`): steht der Plan ihres Chunks, pflanzt die Schlange ihn jetzt
+        if (P && P.size)
+            for (const key of [...P]) {
+                if (!this.state.voxelChunks || !this.state.voxelChunks.has(key)) {
+                    P.delete(key);
+                    continue;
+                }
+                const i = key.indexOf(",");
+                const cx = Number(key.slice(0, i));
+                const cz = Number(key.slice(i + 1));
+                if (this._waldPlanKasten(...this._waldPflanzKasten(cx, cz))) this._forestPlantChunk(cx, cz);
+            }
         if (n > 0 && (!Q.size || !(t0 < this._waldPlanWeckBis))) {
             this._waldPlanRegung = (this._waldPlanRegung | 0) + 1;
             this._waldPlanWeckBis = t0 + 250;

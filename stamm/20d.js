@@ -122,6 +122,20 @@ class AnazhRealm_Z20d {
         const c1x = Math.floor((ox + span) / CELL);
         const c0z = Math.floor(oz / CELL);
         const c1z = Math.floor((oz + span) / CELL);
+        // DER WALD PLANT IM TAKT (K69): der Gang liest die Zellen des Chunks samt ±2 (`_waldPflanzKasten`); fehlt eine, bestellt
+        // er sie in der Schlange des Walds und wartet (`_waldPflanzWarten`) — sie pflanzt den Chunk, sobald sein Plan steht
+        // (`_tickWaldPlan`). Bis K69 plante der Gang frische Zellen am Stück im Chunk-Bau (gehend ins Dorf 41 Zellen in EINEM
+        // Takt, Null-Renderer). Vor der Wahrheit des Gesetzes (vorläufige Darts) und im synchronen Test-/Worldgen-Pfad
+        // (`_vegSpawnImmediate`) plant er selbst.
+        const ck = cx + "," + cz;
+        if (this._forestGesetzWahr() && !this._vegSpawnImmediate) {
+            this._forestDartStand(seedInt);
+            if (!this._waldPlanKasten(...this._waldPflanzKasten(cx, cz))) {
+                (this._waldPflanzWarten || (this._waldPflanzWarten = new Set())).add(ck);
+                return 0;
+            }
+        }
+        if (this._waldPflanzWarten) this._waldPflanzWarten.delete(ck);
         // Born-Dart-Memo (lokal je Aufruf → KEIN chunk-übergreifender mutabler Zustand →
         // Reihenfolge-Unabhängigkeit). `_forestCellDarts` ist rein → jede Zelle einmal.
         const memo = new Map();

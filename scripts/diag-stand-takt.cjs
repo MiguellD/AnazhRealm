@@ -95,8 +95,15 @@ function selbsttest() {
             wahrnehmung: phase(30, 4),
         },
         // BÜHNE: Befund des Selbsttests, kein gesetzter Ort
-        strom: { spielerChunk: true, x: -300, z: -850, takte: 40 },
+        strom: {
+            spielerChunk: true,
+            x: -300,
+            z: -850,
+            takte: 40,
+            wald: { imJob: 412, aussen: 0, ms: 0, taeter: null, maxTakt: 0 },
+        },
         stufe: { wechsel: 2, takte: { nahStreu: 1, nahWiese: 1 }, rufe: {} },
+        // BÜHNE: Befund des Selbsttests, kein gesetzter Ort
         ort: {
             ort: [-182, -1038],
             fern: 240,
@@ -118,6 +125,7 @@ function selbsttest() {
             kamin: { kultur: "alemannisch", gesetzt: true, bau: 0, ms: 0 },
             wald: {
                 gesetzt: true,
+                // BÜHNE: Befund des Selbsttests, kein gesetzter Ort
                 ort: [-182, -618],
                 synchron: 0,
                 ms: 0,
@@ -350,6 +358,22 @@ function selbsttest() {
             "die Ort-Phase setzt keinen Baum in frischem Wald",
             (b) => (b.ort.wald.gesetzt = false),
             /LEER: die Ort-Phase setzte keinen Baum in frischem Wald/,
+        ],
+        [
+            "der Pflanz-Gang plant frische Zellen am Stück (bis K69)",
+            (b) =>
+                Object.assign(b.strom.wald, {
+                    aussen: 96,
+                    ms: 131.2,
+                    maxTakt: 41,
+                    taeter: "_forestDartSteht › _forestPlantChunk › _populateVoxelChunkVegetation › _finalizeVoxelChunkBuild",
+                }),
+            /STROM: 96 frische Wald-Zellen plante nicht die Schlange des Walds, sondern `_forestDartSteht › _forestPlantChunk.*131\.2 ms, bis 41 in EINEM Takt/,
+        ],
+        [
+            "die Strom-Phase sieht keinen frischen Wald",
+            (b) => (b.strom.wald.imJob = 0),
+            /LEER: die Strom-Phase sah keinen frischen Wald/,
         ],
         ["keine Ort-Phase", (b) => delete b.ort, /LEER: keine Ort-Phase/],
         ["keine Ruhe", (b) => delete b.ruhe, /LEER: keine Ruhe-Phase/],
@@ -1237,13 +1261,73 @@ const server = statikServer();
                     st.playerMesh.position.set(x, r._voxelSurfaceY(x, z) + 1.8, z);
                     const span = r._voxelChunkConfig(0).span;
                     const key = `${Math.floor(x / span)},${Math.floor(z / span)}`;
+                    // DER WALD AM FREMDEN ORT (K69): jede frische Wald-Zelle (`planForestCell`) plant die Schlange des Walds
+                    // (`_tickWaldPlan`) — gezählt, was ein anderer Aufrufer am Stück plant, mit dem Namen des ersten
+                    const core = globalThis.__phytoCore;
+                    const roh = core.planForestCell;
+                    const jobEigen = Object.prototype.hasOwnProperty.call(r, "_tickWaldPlan");
+                    const jobRoh = r._tickWaldPlan;
+                    const W = { imJob: 0, aussen: 0, ms: 0, taeter: null, maxTakt: 0 };
+                    let tiefe = 0;
+                    let jetztTakt = 0;
+                    r._tickWaldPlan = function () {
+                        tiefe++;
+                        try {
+                            return jobRoh.apply(this, arguments);
+                        } finally {
+                            tiefe--;
+                        }
+                    };
+                    core.planForestCell = function () {
+                        const t5 = performance.now();
+                        try {
+                            return roh.apply(this, arguments);
+                        } finally {
+                            if (tiefe > 0) W.imJob++;
+                            else {
+                                W.aussen++;
+                                jetztTakt++;
+                                W.ms += performance.now() - t5;
+                                if (!W.taeter)
+                                    W.taeter = (new Error().stack || "")
+                                        .split("\n")
+                                        .map((s) => (s.match(/at (?:[\w$]+\.)?(_[\w$]+)/) || [])[1])
+                                        .filter((m) => m && m !== "_forestCellDarts")
+                                        .slice(0, 4)
+                                        .join(" › ");
+                            }
+                        }
+                    };
                     let n = 0;
-                    for (; n < 600; n++) {
-                        takt();
-                        if (st.voxelChunks && st.voxelChunks.has(key)) break;
-                        if (n % 5 === 0) await pause(10);
+                    let nach = 0;
+                    try {
+                        for (; n < 600; n++) {
+                            jetztTakt = 0;
+                            takt();
+                            W.maxTakt = Math.max(W.maxTakt, jetztTakt);
+                            if (st.voxelChunks && st.voxelChunks.has(key)) break;
+                            if (n % 5 === 0) await pause(10);
+                        }
+                        // der Chunk steht — sein Wald und der seiner Nachbarn kommt in den Takten danach
+                        for (; nach < 240; nach++) {
+                            jetztTakt = 0;
+                            takt();
+                            W.maxTakt = Math.max(W.maxTakt, jetztTakt);
+                            if (nach % 10 === 0) await pause(5);
+                        }
+                    } finally {
+                        core.planForestCell = roh;
+                        if (jobEigen) r._tickWaldPlan = jobRoh;
+                        else delete r._tickWaldPlan;
                     }
-                    aus.strom = { x, z, takte: n, spielerChunk: !!(st.voxelChunks && st.voxelChunks.has(key)) };
+                    W.ms = +W.ms.toFixed(1);
+                    aus.strom = {
+                        x,
+                        z,
+                        takte: n,
+                        spielerChunk: !!(st.voxelChunks && st.voxelChunks.has(key)),
+                        wald: W,
+                    };
                 }
                 L.aus();
                 const code = (f) => (typeof f === "function" ? window.__codeOf(f) : "");
@@ -1348,7 +1432,12 @@ const server = statikServer();
         );
     if (befund.strom)
         console.log(
-            `  Strom: Sprung an (${befund.strom.x}, ${befund.strom.z}) — Spieler-Chunk ${befund.strom.spielerChunk ? "steht" : "FEHLT"} nach ${befund.strom.takte} Takten`
+            `  Strom: Sprung an (${befund.strom.x}, ${befund.strom.z}) — Spieler-Chunk ${befund.strom.spielerChunk ? "steht" : "FEHLT"} nach ${befund.strom.takte} Takten` +
+                (befund.strom.wald
+                    ? ` — frische Wald-Zellen: ${befund.strom.wald.imJob} in der Schlange des Walds, ` +
+                      `${befund.strom.wald.aussen} am Stück (${befund.strom.wald.ms} ms, bis ${befund.strom.wald.maxTakt} je Takt` +
+                      `${befund.strom.wald.taeter ? ", " + befund.strom.wald.taeter : ""})`
+                    : "")
         );
     if (befund.wache) console.log(`  Wache (Takt, geschlafen, Einheiten): ${JSON.stringify(befund.wache)}`);
     const v = urteil(befund);

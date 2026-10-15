@@ -534,6 +534,19 @@ function standUrteil(b) {
         v.push(
             `STROM: nach dem Sprung an (${T.x}, ${T.z}) steht der Spieler-Chunk nach ${T.takte} Takten nicht — das Streaming verhungert`
         );
+    // der Wald am fremden Ort: jede frische Zelle plant die Schlange des Walds (`_tickWaldPlan`, K69) — ein anderer Aufrufer
+    // plant sie am Stück im Takt (bis K69 der Pflanz-Gang des Chunk-Baus: gehend ins Dorf 41 Zellen in EINEM Takt)
+    if (T) {
+        const Wd = T.wald;
+        if (!Wd) v.push("LEER: die Strom-Phase zählte den Wald-Plan nicht");
+        else if (Wd.aussen > 0)
+            v.push(
+                `STROM: ${Wd.aussen} frische Wald-Zellen plante nicht die Schlange des Walds, sondern \`${Wd.taeter}\` ` +
+                    `(${Wd.ms} ms, bis ${Wd.maxTakt} in EINEM Takt) — der Plan liegt am Stück im Aufrufer`
+            );
+        else if (!(Wd.imJob > 0))
+            v.push("LEER: die Strom-Phase sah keinen frischen Wald — der Wald-Plan am fremden Ort ist ungeprüft");
+    }
     const c = b.code || {};
     for (const n of Object.keys(TAKTE)) {
         if (!c[n] || !c[n].fragt) v.push(`CODE: ${TAKTE[n]} fragt die Stand-Wache nicht (\`_standRuht\`)`);
