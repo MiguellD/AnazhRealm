@@ -677,10 +677,9 @@ class AnazhRealm_Z17c {
         mesh.userData.buendelStufe = atlasGruppe ? 9 : Number.isFinite(leaf.stufe) ? leaf.stufe : 0;
         const wahl = satz ? null : this._instanzWahlArt(leaf, castShadow, regional);
         if (wahl) mesh.userData.instanzWahl = wahl;
-        // V18.389 — der Schatten-Zwilling auf SHADOW_TWIN_LAYER (set = NUR Layer 2 → aus Layer 0 raus
-        // → unsichtbar für die Kamera; einzig der Schatten-Pass zählt ihn, s. Licht-Setup). Kein
-        // FOLIAGE_LAYER (kein Laub-Pass-Mitglied).
-        if (leaf.shadowTwin) mesh.layers.set(AnazhRealm.SHADOW_TWIN_LAYER);
+        // V18.389 — der Schatten-Zwilling verlässt die Ebene 0 (unsichtbar für die Kamera); er wirft auf der Wurf-Ebene
+        // SHADOW_TWIN_LAYER, die sein `castShadow` trägt (K72, `_wurfEbene`). Kein FOLIAGE_LAYER (kein Laub-Pass-Mitglied).
+        if (leaf.shadowTwin) mesh.layers.disable(0);
         else this._markFoliageLayer(mesh, regionKey, regional); // Subsystem 5: Laub bekommt ZUSÄTZLICH die FOLIAGE_LAYER
         // Auch die REGIONALE InstancedMesh-Gruppe hängt in der Region-BundleGroup; jede Mutation (Alloc/Free/
         // Slot-Stempel/Matrix/Grow) läuft durch die Chokepoints mit _archMeshBundleTouch. Tür-Flügel
@@ -789,8 +788,8 @@ class AnazhRealm_Z17c {
         if (g.wahl) next.userData.instanzWahl = g.wahl; // Welle 7 — die Instanz-Wahl je Pass reist mit
         // V18.389 — die Layer-Zuordnung des Schatten-Zwillings mitführen (sonst kippt der gewachsene
         // Mesh auf Layer 0 zurück → sichtbar für die Kamera). Nur der Zwilling braucht das; die Laub-
-        // Layer bleibt wie im bestehenden Growth-Pfad (unberührt).
-        if (g.shadowTwin) next.layers.set(AnazhRealm.SHADOW_TWIN_LAYER);
+        // Layer bleibt wie im bestehenden Growth-Pfad (unberührt). Den Wurf trägt `castShadow` (oben, K72 `_wurfEbene`).
+        if (g.shadowTwin) next.layers.disable(0);
         // Die lebenden Instanzen liegen dicht in [0, liveCount) (`_archGroupFree` verdichtet) — nur sie reisen mit.
         const n = g.liveCount || 0;
         const tmp = this._archTmpCopyM || (this._archTmpCopyM = new THREE.Matrix4());

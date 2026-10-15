@@ -1292,6 +1292,49 @@ class AnazhRealm_Z25c {
         }
     }
 
+    // DIE WURF-EBENE (K72): der Wurf eines Knotens IST ein Bit seiner Ebenen — `castShadow` liest und schreibt das Bit
+    // SHADOW_TWIN_LAYER (ein Accessor am Prototyp von THREE.Object3D; r184 weist `castShadow` im Konstruktor NACH den Ebenen
+    // zu, `copy` beide, gate:vendor-anker), und die Schatten-Kamera sieht NUR diese Ebene (Licht-Setup). r184 testet die
+    // Ebene in `_projectObject` VOR Frustum, Liste und Sortierung: ein Nicht-Werfer kostet den Kaskaden-Render einen Ebenen-
+    // Test statt Projektion, Fassade, Listen-Platz, Sortier-Schritt und den Ruf der Schatten-Funktion, die ihn erst dort
+    // verwarf. Befund 15.10. (Radeon, Zerlegung je Kaskaden-Render, Third): Genesis k0 72 Nicht-Werfer neben 42 Werfern in
+    // der Liste, k1 47 neben 8; Wiese 39–48. Der Zwilling ist ein Werfer ohne Ebene 0 (nur die Kaskaden sehen ihn); wer die
+    // Ebenen des Auges schaltet, lässt das Wurf-Bit stehen. Ein eigenes Wurf-Feld neben der Ebene gibt es nicht: der
+    // Accessor steht, bevor die Welt ihren ersten Knoten baut (Konstruktor), gate:schatten-werfer W10 nennt jeden Knoten der
+    // Szene, der ein eigenes Feld trägt oder für die Kaskade gesehen ≠ wirft ist.
+    // JEDES LICHT liegt auf der Wurf-Ebene, sein `castShadow` ist sein eigenes Wort (`_wurfLicht`): r184 hält EINEN Lichter-
+    // Knoten je Szene (`Lighting.getNode(scene)`, gate:vendor-anker), und der Schatten-Pass läuft MITTEN im Hauptbild — sähe
+    // die Kaskade ein anderes Licht-Set als das Auge, setzte ihr Pass den geteilten Knoten um, und alles danach Gezeichnete
+    // verlöre die übrigen Lichter (gate:ego-schatten 15.10.: die Bühne ohne ihr Umgebungslicht, Boden 145 → 98).
+    static _wurfEbene() {
+        const P = THREE.Object3D.prototype;
+        const d = Object.getOwnPropertyDescriptor(P, "castShadow");
+        if (d && typeof d.get === "function") return;
+        const W = 1 << AnazhRealm.SHADOW_TWIN_LAYER;
+        Object.defineProperty(P, "castShadow", {
+            configurable: true,
+            enumerable: true,
+            get() {
+                return (this.layers.mask & W) !== 0;
+            },
+            set(v) {
+                const l = this.layers;
+                l.mask = (v ? l.mask | W : l.mask & ~W) >>> 0;
+            },
+        });
+        Object.defineProperty(THREE.Light.prototype, "castShadow", {
+            configurable: true,
+            enumerable: true,
+            get() {
+                return this._wurfLicht === true;
+            },
+            set(v) {
+                this._wurfLicht = !!v;
+                this.layers.mask = (this.layers.mask | W) >>> 0;
+            },
+        });
+    }
+
     // DIE SICHT JE PASS (scene.onBeforeRender / onAfterRender): die Region-Bundles tragen ihren Cull auf `visible`
     // (three-Culling friert im Replay ein). Bis V18.528 galt das Urteil der Haupt-Kamera für JEDEN Pass: ein Bundle im
     // Blick warf in beide Kaskaden (auch 2 km weit), eines hinter dem Blick oder hinter dem Berg warf nie — auch wenn

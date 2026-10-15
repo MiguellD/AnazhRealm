@@ -360,7 +360,8 @@ function buehne(arg) {
             aus.dritt = { wurf: summe(s3), leib: summe(B3) };
             const egoMessen = async (tag) => {
                 r.setCameraMode("first");
-                wurfAus(true);
+                // der Wurf, wie die Regel ihn lässt (K72: der Wurf ist die Wurf-Ebene — eine Regel, die dem Leib die Ebene
+                // nimmt, nimmt ihm den Wurf; ein `castShadow = true` vor dem Schuss gäbe ihn ihm zurück, die Linse wäre blind)
                 const E1 = await schuss(tag + "-e1-ego-wurf");
                 wurfAus(false);
                 const E0 = await schuss(tag + "-e0-ego-ohne");

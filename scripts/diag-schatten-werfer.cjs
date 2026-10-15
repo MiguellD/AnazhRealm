@@ -61,6 +61,11 @@
 //       ein Punkt P in der Box einer Kaskade, dessen Licht-Kapsel ihre Scheibe verfehlt (aus der Welt gesucht) — dort wirft
 //       weder ein Werfer eines Bündels noch eine Instanz der Wahl in diese Kaskade, und der Boden-Satz zeichnet dort genau
 //       die Zellen des Gesetzes (es schneidet Zellen, die das Frustum allein zöge: nicht vakuös)
+//   W10 DIE WURF-EBENE (K72 — Befund 15.10., Radeon, Third: r184 projizierte je Kaskaden-Render 39–72 Nicht-Werfer, die
+//       die Schatten-Funktion erst nach Frustum-Test, Liste und Sortierung verwarf): der Wurf IST die Ebene SHADOW_TWIN_LAYER
+//       (`castShadow` liest und schreibt ihr Bit, kein Knoten trägt ein eigenes Feld), jede Kaskaden-Kamera sieht NUR sie —
+//       jeder zeichnende Knoten der Szene ist für sie gesehen genau dann, wenn er wirft; jedes Licht sieht sie wie das Auge
+//       (r184 hält EINEN Lichter-Knoten je Szene, auch für den Schatten-Pass mitten im Hauptbild)
 //   Z1  die Karten-Ziele: Farbe r8 ohne GPU-Textur auf WebGPU (kein Pass liest sie — der Filter nur mit transmitted), Tiefe 16 bit, benannt —
 //       gesetzt beim Bau des Ziels (die Hülle um setupRenderTarget), nie umgebaut
 //   Z2  die Bildziele je Leser: KEIN Weg zu compileAsync (die Erst-Zeichnung baut im Pass, `_configureRenderer`), EINE
@@ -80,6 +85,8 @@
 //   S11 Selbsttest: hält die Lage einer Kaskade jede Drehung des Lichts (die Rand-Prüfung fällt), wählt keine Kaskade über
 //       dem Rand neu, und in der Folge fehlen echte Werfer — K8 wird rot
 //   S12 Selbsttest: fällt der Licht-Rand aus `_passTrifft`, fehlen in der Folge echte Werfer — K8 wird rot
+//   S14 Selbsttest: die alte Maske der Kaskaden-Kamera (Welt + Zwilling) sieht Nicht-Werfer — W10 wird rot und nennt sie
+//   S15 Selbsttest: ein Licht ohne Wurf-Ebene sieht die Kaskade nicht — W10 wird rot und nennt es
 //   S13 Selbsttest: fällt die Halb-Regel des Lichts (Halt bis zum ganzen Rand), steht die Grenze beim ganzen Budget — K8
 //       wird rot
 //
@@ -1325,6 +1332,67 @@ function probe(selbsttest) {
         if (tot && tot.parent) r.removeCreature(tot);
     }
 
+    // ── W10 DIE WURF-EBENE (K72): die Kaskaden-Kameras sehen genau die Werfer. Befund 15.10. (Radeon, Genesis/Wiese Third,
+    // Zerlegung je Kaskaden-Render): r184 projizierte je Render 39–72 Nicht-Werfer (Frustum-Test, Fassade, Liste,
+    // Sortierung), die die Schatten-Funktion danach verwarf — die Kaskaden-Kamera sah die Ebene der Welt. Der Wurf IST die
+    // Ebene SHADOW_TWIN_LAYER (`castShadow` liest und schreibt ihr Bit), jede Kaskaden-Kamera sieht NUR sie, und kein
+    // Knoten trägt ein eigenes Wurf-Feld neben der Ebene (sonst schriebe ein Werfer an ihr vorbei). Jeder zeichnende Knoten
+    // der Szene: gesehen ⇔ wirft. ──
+    {
+        const E = 1 << r.constructor.SHADOW_TWIN_LAYER;
+        const kams = st.csmNode && st.csmNode.lights ? st.csmNode.lights.map((l) => l.shadow.camera) : [];
+        const urteil = (maske) => {
+            const fremd = [],
+                eigen = [],
+                lichtBlind = [];
+            let gesehen = 0,
+                werfer = 0,
+                lichter = 0;
+            st.scene.traverse((o) => {
+                const d = Object.getOwnPropertyDescriptor(o, "castShadow");
+                if (d && !d.get) eigen.push(o.name || o.type);
+                // jedes Licht sieht die Kaskade wie das Auge (r184: EIN Lichter-Knoten je Szene, auch im Schatten-Pass)
+                if (o.isLight) {
+                    lichter++;
+                    if (!kams.every((c) => (o.layers.mask & (maske == null ? c.layers.mask : maske)) !== 0))
+                        lichtBlind.push(o.name || o.type);
+                    return;
+                }
+                if (!(o.isMesh || o.isLine || o.isPoints || o.isSprite) || o.visible === false) return;
+                const sieht = kams.some((c) => (o.layers.mask & (maske == null ? c.layers.mask : maske)) !== 0);
+                const wirft = o.castShadow === true;
+                if (sieht) gesehen++;
+                if (wirft) werfer++;
+                if (sieht !== wirft) fremd.push((o.name || o.type) + (wirft ? " (wirft, ungesehen)" : " (gesehen)"));
+            });
+            return {
+                masken: kams.map((c) => (maske == null ? c.layers.mask : maske)),
+                soll: E,
+                gesehen,
+                werfer,
+                n: fremd.length,
+                fremd: [...new Set(fremd)].slice(0, 8),
+                nEigen: eigen.length,
+                eigen: [...new Set(eigen)].slice(0, 6),
+                lichter,
+                nLichtBlind: lichtBlind.length,
+                lichtBlind: [...new Set(lichtBlind)].slice(0, 6),
+            };
+        };
+        // ein Licht ohne Wurf-Ebene (wie vor K72 jedes Licht ohne Wurf): die Kaskade sähe es nicht
+        if (selbsttest) {
+            const amb = new T.AmbientLight(0xffffff, 0);
+            amb.name = "__w10:licht";
+            amb.layers.mask = 1;
+            st.scene.add(amb);
+            aus.s15 = urteil(null);
+            st.scene.remove(amb);
+        }
+        aus.w10 = urteil(null);
+        // die alte Maske der Kaskaden-Kamera (Welt + Zwilling): sie sieht jeden Nicht-Werfer
+        if (selbsttest) aus.s14 = urteil(1 | E);
+    }
+
     // ── Z1: die Karten-Ziele — der Knoten baut sein Ziel durch die Hülle (wie r184 setupRenderTarget) ──
     {
         const rt = new T.RenderTarget(8, 8);
@@ -1612,6 +1680,22 @@ function probe(selbsttest) {
                     ? "der Gefallene wirft, aber die Box kennt ihn nicht (_kaskadenWerferOben liest nur die Wesen)"
                     : "keine fremde Werfer-Klasse, die Box kennt den Gefallenen"
         );
+        const w10t = (w) =>
+            `Masken ${w.masken.join("/")} (Soll ${w.soll}) · ${w.gesehen} gesehen, ${w.werfer} Werfer, ${w.lichter} Lichter` +
+            (w.n ? ` — ${w.n} falsch: ${w.fremd.join(" | ")}` : "") +
+            (w.nEigen ? ` — ${w.nEigen} mit eigenem Wurf-Feld: ${w.eigen.join(" | ")}` : "") +
+            (w.nLichtBlind ? ` — ${w.nLichtBlind} Lichter ohne Wurf-Ebene: ${w.lichtBlind.join(" | ")}` : "");
+        check(
+            "W10 die Wurf-Ebene: jede Kaskaden-Kamera sieht genau die Werfer und jedes Licht, der Wurf ist die Ebene (kein eigenes Feld)",
+            a.w10.masken.length > 0 &&
+                a.w10.masken.every((m) => m === a.w10.soll) &&
+                a.w10.n === 0 &&
+                a.w10.nEigen === 0 &&
+                a.w10.nLichtBlind === 0 &&
+                a.w10.werfer > 0 &&
+                a.w10.lichter > 0,
+            w10t(a.w10)
+        );
         const w7t = (w) =>
             w.paesse.map((p) => `${p.name} ${Math.round(p.tris)}/${Math.round(w.voll)}`).join(" · ") +
             ` · Bau-Satz-Pässe ${w.bauGeprueft}` +
@@ -1732,6 +1816,16 @@ function probe(selbsttest) {
                 "S13 Selbsttest: fällt die Halb-Regel des Lichts (Halt bis zum ganzen Rand), steht die Grenze beim ganzen Budget — K8 rot",
                 !k8gut(a.s13) && !!a.s13 && a.s13.grenze.some((g, k) => g > 1.1 * a.s13.budget[k]),
                 s1x(a.s13)
+            );
+            check(
+                "S14 Selbsttest: die alte Maske der Kaskaden-Kamera (Welt + Zwilling) sieht Nicht-Werfer — W10 rot, beim Namen",
+                !!a.s14 && a.s14.n > 0 && a.s14.fremd.some((x) => /\(gesehen\)$/.test(x)),
+                a.s14 ? w10t(a.s14) : "keine Probe"
+            );
+            check(
+                "S15 Selbsttest: ein Licht ohne Wurf-Ebene sieht die Kaskade nicht — W10 rot, beim Namen",
+                !!a.s15 && a.s15.lichtBlind.includes("__w10:licht"),
+                a.s15 ? w10t(a.s15) : "keine Probe"
             );
             check("S4 Selbsttest: die Absenz-Regel fängt beide alten Frustum-Schreiber der Tiere", a.s4 === true);
             check("S5 Selbsttest: das Addon-_updateShadowBounds schreibt die Kaskaden-Kamera", a.s5 === true);

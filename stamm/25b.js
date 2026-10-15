@@ -1885,19 +1885,22 @@ class AnazhRealm_Z25b {
         const player = this.state.playerMesh;
         if (!player) return;
         const third = this.state.cameraMode === "third";
-        const zwilling = 1 << AnazhRealm.SHADOW_TWIN_LAYER;
+        // K72: der Wurf IST die Wurf-Ebene (`castShadow`, `_wurfEbene`) — der Schalter nimmt nur das Auge (Ebene 0); wer
+        // wirft, wirft weiter, wer nicht wirft, liegt im 1st auf keiner Ebene. 3rd gibt die Ebenen des Auges zurück, der Wurf
+        // bleibt, wie `castShadow` ihn inzwischen schrieb.
+        const wurf = 1 << AnazhRealm.SHADOW_TWIN_LAYER;
         const leib = (o) => {
             const u = o.userData;
             if (u._gehalten) return;
             const m = o.layers.mask;
             if (third) {
                 if (u._maskeVorEgo !== undefined) {
-                    o.layers.mask = u._maskeVorEgo;
+                    o.layers.mask = ((u._maskeVorEgo & ~wurf) | (m & wurf)) >>> 0;
                     u._maskeVorEgo = undefined;
                 }
             } else if (m & 1) {
                 u._maskeVorEgo = m;
-                o.layers.mask = (m & ~1) | zwilling;
+                o.layers.mask = (m & ~1) >>> 0;
             }
             for (const k of o.children) leib(k);
         };
