@@ -1,0 +1,368 @@
+{
+ "vramMB": 105.5,
+ "pufferMB": 25,
+ "texturenMB": 80.5,
+ "gcMB": 0,
+ "puffer": {
+  "mb": 24.86,
+  "halter": {
+   "szene": 24.86,
+   "bild": 0
+  },
+  "klassen": [
+   {
+    "klasse": "szene:bauSatz",
+    "mb": 10.62,
+    "n": 89
+   },
+   {
+    "klasse": "szene:bodenSatz",
+    "mb": 4.33,
+    "n": 7
+   },
+   {
+    "klasse": "szene:spieler",
+    "mb": 2.29,
+    "n": 97
+   },
+   {
+    "klasse": "szene:bauWurf",
+    "mb": 1.22,
+    "n": 7
+   },
+   {
+    "klasse": "szene:formationenSatz",
+    "mb": 0.98,
+    "n": 16
+   },
+   {
+    "klasse": "szene:fern-ring",
+    "mb": 0.93,
+    "n": 19
+   },
+   {
+    "klasse": "szene:streuSatz",
+    "mb": 0.76,
+    "n": 10
+   },
+   {
+    "klasse": "szene:portal-membran",
+    "mb": 0.5,
+    "n": 21
+   },
+   {
+    "klasse": "szene:f:gt:L1",
+    "mb": 0.47,
+    "n": 80
+   },
+   {
+    "klasse": "szene:f:fichte:L1",
+    "mb": 0.44,
+    "n": 81
+   },
+   {
+    "klasse": "szene:f:tanne:L1",
+    "mb": 0.35,
+    "n": 75
+   },
+   {
+    "klasse": "szene:f:fichte:L0",
+    "mb": 0.28,
+    "n": 22
+   },
+   {
+    "klasse": "szene:himmel-sterne",
+    "mb": 0.21,
+    "n": 7
+   },
+   {
+    "klasse": "szene:dsl-insel",
+    "mb": 0.21,
+    "n": 12
+   },
+   {
+    "klasse": "szene:fimp:atlas:L2",
+    "mb": 0.18,
+    "n": 6
+   },
+   {
+    "klasse": "szene:f:drachentor:L0",
+    "mb": 0.17,
+    "n": 32
+   },
+   {
+    "klasse": "szene:f:birke:L1",
+    "mb": 0.17,
+    "n": 38
+   },
+   {
+    "klasse": "szene:f:tanne:L0",
+    "mb": 0.14,
+    "n": 14
+   },
+   {
+    "klasse": "szene:f:mammut:L1",
+    "mb": 0.1,
+    "n": 23
+   },
+   {
+    "klasse": "szene:fscatter:buche:L1",
+    "mb": 0.09,
+    "n": 27
+   },
+   {
+    "klasse": "szene:f:geisttor:L0",
+    "mb": 0.09,
+    "n": 16
+   },
+   {
+    "klasse": "szene:bau:welt_tetrapoda",
+    "mb": 0.05,
+    "n": 6
+   },
+   {
+    "klasse": "szene:fscatter:geroell:L0",
+    "mb": 0.04,
+    "n": 8
+   },
+   {
+    "klasse": "szene:f:eiche:L1",
+    "mb": 0.04,
+    "n": 15
+   },
+   {
+    "klasse": "szene:himmel",
+    "mb": 0.04,
+    "n": 3
+   },
+   {
+    "klasse": "szene:fscatter:blume:L2",
+    "mb": 0.04,
+    "n": 34
+   },
+   {
+    "klasse": "szene:bau:esse",
+    "mb": 0.03,
+    "n": 12
+   },
+   {
+    "klasse": "szene:bau:welt_klang",
+    "mb": 0.02,
+    "n": 9
+   },
+   {
+    "klasse": "szene:nahWiese:L2",
+    "mb": 0.02,
+    "n": 8
+   },
+   {
+    "klasse": "szene:farWater",
+    "mb": 0.02,
+    "n": 6
+   },
+   {
+    "klasse": "szene:himmel-sonne",
+    "mb": 0.01,
+    "n": 3
+   },
+   {
+    "klasse": "szene:bau:welt_koerperstudio",
+    "mb": 0.01,
+    "n": 15
+   },
+   {
+    "klasse": "szene:portal-nebel",
+    "mb": 0,
+    "n": 21
+   },
+   {
+    "klasse": "szene:bau:start_plattform",
+    "mb": 0,
+    "n": 6
+   },
+   {
+    "klasse": "szene:fscatter:fichte:L1",
+    "mb": 0,
+    "n": 10
+   },
+   {
+    "klasse": "szene:fscatter:tanne:L1",
+    "mb": 0,
+    "n": 10
+   },
+   {
+    "klasse": "szene:fscatter:birke:L1",
+    "mb": 0,
+    "n": 7
+   },
+   {
+    "klasse": "szene:dorf-rauch",
+    "mb": 0,
+    "n": 5
+   },
+   {
+    "klasse": "szene:feld-pass",
+    "mb": 0,
+    "n": 3
+   },
+   {
+    "klasse": "bild:vertex",
+    "mb": 0,
+    "n": 2
+   }
+  ]
+ },
+ "gross": [
+  {
+   "k": "tex:TRAANode.history rgba16float 1920x1080x1",
+   "mb": 15.82,
+   "n": 1
+  },
+  {
+   "k": "tex:TRAANode.resolve rgba16float 1920x1080x1",
+   "mb": 15.82,
+   "n": 1
+  },
+  {
+   "k": "buf:szene:bauSatz",
+   "mb": 10.624,
+   "n": 89
+  },
+  {
+   "k": "tex:kaskade0:tiefe depth16unorm 2048x2048x1",
+   "mb": 8,
+   "n": 1
+  },
+  {
+   "k": "tex:kaskade1:tiefe depth16unorm 2048x2048x1",
+   "mb": 8,
+   "n": 1
+  },
+  {
+   "k": "tex:output rg11b10ufloat 1440x810x1",
+   "mb": 4.449,
+   "n": 1
+  },
+  {
+   "k": "tex:depth depth24plus 1440x810x1",
+   "mb": 4.449,
+   "n": 1
+  },
+  {
+   "k": "buf:szene:bodenSatz",
+   "mb": 4.33,
+   "n": 7
+  },
+  {
+   "k": "tex:karte-albedo:atlas bc1-rgba-unorm-srgb 128x2048x20",
+   "mb": 3.333,
+   "n": 1
+  },
+  {
+   "k": "tex:karte-albedo:atlas bc1-rgba-unorm-srgb 128x2048x18",
+   "mb": 2.999,
+   "n": 1
+  },
+  {
+   "k": "buf:szene:spieler",
+   "mb": 2.288,
+   "n": 97
+  },
+  {
+   "k": "tex:szene:tiefenabbild r32float 720x810x1",
+   "mb": 2.225,
+   "n": 1
+  },
+  {
+   "k": "tex:wege-karte:fern rg8unorm 1024x1024x1",
+   "mb": 2,
+   "n": 1
+  },
+  {
+   "k": "tex:wege-karte:nah rg8unorm 1024x1024x1",
+   "mb": 2,
+   "n": 1
+  },
+  {
+   "k": "tex:feld-pass-panorama rgba32float 768x160x1",
+   "mb": 1.875,
+   "n": 1
+  },
+  {
+   "k": "tex:karte-normal:atlas bc5-rg-unorm 64x1024x20",
+   "mb": 1.665,
+   "n": 1
+  },
+  {
+   "k": "tex:karte-normal:atlas bc5-rg-unorm 64x1024x18",
+   "mb": 1.499,
+   "n": 1
+  },
+  {
+   "k": "tex:laub-cluster-atlas bc3-rgba-unorm-srgb 2048x512x1",
+   "mb": 1.333,
+   "n": 1
+  },
+  {
+   "k": "buf:szene:bauWurf",
+   "mb": 1.219,
+   "n": 7
+  },
+  {
+   "k": "tex:fluss-karte:fern r8unorm 1024x1024x1",
+   "mb": 1,
+   "n": 1
+  },
+  {
+   "k": "tex:fluss-karte:nah r8unorm 1024x1024x1",
+   "mb": 1,
+   "n": 1
+  },
+  {
+   "k": "buf:szene:formationenSatz",
+   "mb": 0.984,
+   "n": 16
+  },
+  {
+   "k": "buf:szene:fern-ring",
+   "mb": 0.926,
+   "n": 19
+  },
+  {
+   "k": "buf:szene:streuSatz",
+   "mb": 0.764,
+   "n": 10
+  },
+  {
+   "k": "tex:rausch-atlas rgba8unorm 768x256x1",
+   "mb": 0.75,
+   "n": 1
+  },
+  {
+   "k": "tex:PMREM.cubeUv rgba16float 336x128x1",
+   "mb": 0.656,
+   "n": 2
+  },
+  {
+   "k": "buf:szene:portal-membran",
+   "mb": 0.501,
+   "n": 21
+  },
+  {
+   "k": "tex:welt-march-liste rgba32float 4096x8x1",
+   "mb": 0.5,
+   "n": 1
+  },
+  {
+   "k": "buf:szene:f:gt:L1",
+   "mb": 0.465,
+   "n": 80
+  },
+  {
+   "k": "buf:szene:f:fichte:L1",
+   "mb": 0.441,
+   "n": 81
+  }
+ ],
+ "ms": 483
+}
