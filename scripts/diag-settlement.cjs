@@ -255,6 +255,10 @@ function ortUrteil(v2, hoehe, o) {
 // Das Verdikt des Orts (rein): die Zahlen der Abnahme gegen ihr Ziel — die Liste der verfehlten Namen (leer = gehalten).
 function ortVerdikt(m) {
     const fehl = [];
+    if (!(m.slots > 0 && m.haeuser === m.slots))
+        fehl.push(
+            `Häuser ${m.haeuser}/${m.slots} des Exports${m.wasserSlots ? ` (${m.wasserSlots} Slots im Wasser aus dem Plan v2 geworfen)` : ""}`
+        );
     if (!(m.sockelMax === 0)) fehl.push(`Sockel max ${m.sockelMax} m (Median ${m.sockelMedian})`);
     if (!(m.tuerenN > 0 && m.tuerenOk === m.tuerenN)) fehl.push(`Türen erreichbar ${m.tuerenOk}/${m.tuerenN}`);
     if (!(m.kronen === 0)) fehl.push(`Kronen in Grundrissen ${m.kronen}`);
@@ -813,6 +817,8 @@ const FIXTURES = [
         const u3 = ortUrteil(Object.assign(ortT([haus(-8, 8, 10)]), { roads: [] }), eben, { kappe: 4000 });
         check("Selbst-Test 11: ohne Weg erreicht keine Tür ein Ziel", u3.tuerenOk === 0 && u3.tuerenN === 1);
         const gut = {
+            haeuser: 16,
+            slots: 16,
             sockelMax: 0,
             sockelMedian: 0,
             tuerenOk: 2,
@@ -836,15 +842,18 @@ const FIXTURES = [
             planHashGleich: false,
             sockelMax: 2.72,
             gtWeg: 5.2,
+            haeuser: 12,
+            wasserSlots: 4,
         });
         const vs = ortVerdikt(schlecht).join(" · ");
         check(
-            "Selbst-Test 13: das Verdikt nennt Sockel, Kronen, Laternen, Plan-Hash und den GT auf dem Dorfweg beim Namen",
+            "Selbst-Test 13: das Verdikt nennt Sockel, Kronen, Laternen, Plan-Hash, den GT auf dem Dorfweg und die Häuser des Exports (4 im Wasser geworfen) beim Namen",
             /Sockel max 2.72/.test(vs) &&
                 /Kronen in Grundrissen 3/.test(vs) &&
                 /Laternen Welt 0/.test(vs) &&
                 /Plan-Hash/.test(vs) &&
-                /GT auf dem Dorfweg 5.2 m/.test(vs),
+                /GT auf dem Dorfweg 5.2 m/.test(vs) &&
+                /Häuser 12\/16 des Exports \(4 Slots im Wasser/.test(vs),
             vs
         );
         check(
@@ -1612,7 +1621,10 @@ const FIXTURES = [
                     const neu = r.state.architectures.slice(vorher);
                     const haeuser = neu.filter((e) => typeof e.type === "string" && e.type.indexOf("haus_") === 0);
                     res.haeuser = haeuser.length;
-                    res.slots = P.slots.length;
+                    // gezählt am EXPORT (die Slots des Studios): der Plan v2 wirft nasse Slots, bevor er steht (fachwerk `ortPlan`,
+                    // `wasserSlots`) — an ihm gezählt sähe die Linse die Häuser nie, die ein Ort ohne trockenen Grund verliert
+                    res.slots = plan.slots.length;
+                    res.wasserSlots = (v2 && v2.wasserSlots) || 0;
                     // DER TÄTER JE FEHLENDEM HAUS: die Wand der EINEN Slot-Quelle, an der der Slot fiel — das Wasser
                     // (`_fundamentLand`) oder ein Bau im Weg (`_bauFrei`, mit den Bauten, die keine Natur sind, binnen 8 m)
                     // die Meldung der Ort-Wahl (`_ortWahl`: kein trockener Ort in den Ringen) und ihre Kosten (`_ortWahlMass`:
@@ -1985,6 +1997,9 @@ const FIXTURES = [
         const planHashGleich = outO.planHashGleich === true;
         const u = outO.urteil || {};
         const m = {
+            haeuser: outO.haeuser,
+            slots: outO.slots,
+            wasserSlots: outO.wasserSlots,
             sockelMedian: u.sockelMedian,
             sockelMax: u.sockelMax,
             tuerenOk: u.tuerenOk,
