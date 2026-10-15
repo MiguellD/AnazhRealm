@@ -77,6 +77,13 @@ const ANKER = [
     { file: "vendor/three.webgpu.min.js", sub: "getBindings(){return this._bindings||(this._bindings=this.getNodeBuilderState().createBindings())}", organ: "AnazhRealm._diaetGeteiltSchreiben (ro.getBindings)" },
     { file: "vendor/three.webgpu.min.js", sub: "this.updateNodes=n,this.updateBeforeNodes=a,this.updateAfterNodes=o,this.observer=u", organ: "AnazhRealm._diaetRefresh (NodeBuilderState: updateNodes · updateAfterNodes · observer)" },
     { file: "vendor/three.webgpu.min.js", sub: "equals(e,t,r){const{object:s,material:i,geometry:n}=e,a=this.getRenderObjectData(e);", organ: "AnazhRealm._diaetRefresh (obs.equals)" },
+    // (7) DER WÄCHTER IST DIE GEOMETRIE-PRÜFUNG (K71): equals() prüft die Geometrie je Geometrie und Render (Stempel `_renderId`,
+    // Urteil `_equal`, Id je Objekt `geometryId`) samt drawRange — die Diät stellt diese Daten als geprüft; der Ausschnitt ist ein
+    // Draw-Parameter (jeder Draw liest `geometry.drawRange`).
+    { file: "vendor/three.webgpu.min.js", sub: "if(a.geometryId!==n.id)return a.geometryId=n.id,!1;const u=this.getGeometryData(e.geometry);if(u._renderId!==r){u._renderId=r;", organ: "AnazhRealm._diaetRefresh (7: equals prüft die Geometrie je Geometrie und Render)" },
+    { file: "vendor/three.webgpu.min.js", sub: "u.drawRange.start!==n.drawRange.start||u.drawRange.count!==n.drawRange.count)return u.drawRange.start=n.drawRange.start,u.drawRange.count=n.drawRange.count,u._equal=!1,!1;u._equal=!0}else if(!1===u._equal)return!1;", organ: "AnazhRealm._diaetRefresh (7: der Vendor-Vergleich frischt auf einen anderen Ausschnitt auf)" },
+    { file: "vendor/three.webgpu.min.js", sub: "getGeometryData(e){let t=Ps.get(e);return void 0===t&&(t={_renderId:-1,_equal:!1,", organ: "AnazhRealm._diaetRefresh (7: obs.getGeometryData je Geometrie)" },
+    { file: "vendor/three.webgpu.min.js", sub: "const u=this._objects.get(e,t,r,s,i,this._currentRenderContext,a,o);if(u.drawRange=e.geometry.drawRange,", organ: "AnazhRealm._diaetRefresh (7: der Ausschnitt ist ein Draw-Parameter)" },
     { file: "vendor/three.webgpu.min.js", sub: "getLights(e,t){if(", organ: "AnazhRealm._diaetRefresh (obs.getLights)" },
     { file: "vendor/three.webgpu.min.js", sub: 'needsVelocity(e){const t=e.getMRT();return null!==t&&t.has("velocity")}', organ: "AnazhRealm._diaetRefresh (obs.needsVelocity)" },
     { file: "vendor/three.webgpu.min.js", sub: "firstInitialization(e){return!1===this.renderObjects.has(e)&&(this.getRenderObjectData(e),!0)}", organ: "AnazhRealm._diaetRefresh (obs.renderObjects = Erst-Init)" },

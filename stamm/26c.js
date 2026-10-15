@@ -1742,6 +1742,17 @@ AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
             anders = true;
         }
         if (anders) return true;
+        // (7) DER WÄCHTER IST DIE GEOMETRIE-PRÜFUNG (K71): der Vendor prüft sie in equals() ein zweites Mal, je Geometrie und
+        // Render (Id je Objekt, Attribute, Index, drawRange) — die Diät stellt seine Daten als geprüft. Der Ausschnitt ist ein
+        // Draw-Parameter (r184 liest `geometry.drawRange` bei jedem Draw), kein Grund für einen Refresh: jeder Satz zeichnet je
+        // Pass seinen Abschnitt, und der Vendor-Vergleich frischte jeden Satz in jedem Render voll auf; eine Attribut-Änderung,
+        // die der Wächter schon trug, frischte im nächsten Render ein zweites Mal auf.
+        d.geometryId = geo.id;
+        if (frame) {
+            const gd = obs.getGeometryData(geo);
+            gd._renderId = frame.renderId;
+            gd._equal = true;
+        }
     }
     const rend = frame && frame.renderer;
     if (
