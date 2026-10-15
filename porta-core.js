@@ -935,10 +935,10 @@
             dicke: [0.3, 0.45, 0.22, 0.06, 0.37, 0.9],
             fresnel: [0.04, 5.0],
             rand: [0.6, 1.0, 0.3],
-            basis: 0.12,
+            basis: 0.24,
             gewichtMax: 0.55,
             act: [0.65, 0.35],
-            glanz: [1.6, 0.9, 0.15],
+            glanz: [2.0, 0.9, 0.15],
         },
         puls: 1.25, // uPulse = 0.5+0.5*sin(t*1.25)
         aktivDepth: [0.1, 0.85], // Atem: uWaveDepth = zFace*(0.10+0.85*open)

@@ -1852,9 +1852,8 @@ class AnazhRealm_Z14 {
     }
 
     // TSL-Port des Shell-Shaders (Formel-Referenz: worlds/portale/porta.js buildMembrane); Konstanten aus
-    // MEMBRAN_GESETZ/membranUniforms. Liefert { mat, u } mit fünf Atem-Werten je Tor: time · camL (Kamera in TOR-LOKALEN
-    // Koordinaten — der Marsch läuft im Lab-Rahmen, die Welt-Transform trägt das Mesh) · act · pulse · waveDepth (`u.x.value`,
-    // der Membran-Tick schreibt sie). DIE GESTALT IST EIN STOFF-WERT (1310-18): die Maße, Fenster und Farben des Tors stehen in
+    // MEMBRAN_GESETZ/membranUniforms. Liefert { mat, u } mit vier Atem-Werten je Tor: time · act · pulse · waveDepth
+    // (`u.x.value`, der Membran-Tick schreibt sie); das Auge liest der Graph selbst (`_membranGraph`). DIE GESTALT IST EIN STOFF-WERT (1310-18): die Maße, Fenster und Farben des Tors stehen in
     // `userData.tor` seines Stoffs und reisen als Uniform je Objekt (`_stoffWert`); der Graph entsteht EINMAL je Gesetz
     // (`_membranGraph`) — jedes Tor zeichnet mit DEMSELBEN Programm. Bis dahin faltete der Bau sie als Konstanten ein: je Tor
     // ein Programm, 59–504 ms Knoten-Bau auf dem Haupt-Faden (1310-17: 5 Membranen, 1,01 s). D8: `ziel` ist die Zeile des Ziels im
@@ -1865,7 +1864,6 @@ class AnazhRealm_Z14 {
         const MU = tor.mu;
         const u = {
             time: { value: 0 },
-            camL: { value: new T.Vector3(0, MU.centerY, 8) },
             act: { value: 0 },
             pulse: { value: 1 },
             waveDepth: { value: MU.waveDepth },
@@ -1959,7 +1957,12 @@ class AnazhRealm_Z14 {
         const TSL = THREE.TSL;
         const W = (p, typ) => this._stoffWert(TSL, "userData.tor." + p, typ);
         const time = W("u.time.value");
-        const camL = W("u.camL.value", "vec3");
+        // DAS AUGE IM RAHMEN DES TORS: die Kamera des Renders, in die Geometrie des Tors zurückgerechnet (die Parallaxe rechnet
+        // im Lab-Rahmen) — der Graph liest sie selbst, je Render. Vorher schrieb der Membran-Tick sie als Stoff-Wert aus der
+        // Spieler-Kamera: jeder Render ohne Tick davor (der Schuss der Linse, ein Render vor dem Kamera-Folgen) las ein fremdes
+        // Auge — die Treue des L1-Schusses sprang mit dem letzten Takt (r 0,23–0,46), seither 0,62 stabil, ein Prüf-Muster im
+        // Atlas 0,92 (Radeon, 15.10.).
+        const camL = TSL.modelWorldMatrixInverse.mul(TSL.vec4(TSL.cameraPosition, 1.0)).xyz;
         const act = W("u.act.value");
         const pulse = W("u.pulse.value");
         const waveDepth = W("u.waveDepth.value");
@@ -2112,9 +2115,7 @@ class AnazhRealm_Z14 {
         const RfW = TSL.vec3(Rf.x.mul(cr).add(Rf.z.mul(sr)), Rf.y, Rf.z.mul(cr).sub(Rf.x.mul(sr)));
         const spiegel = TSL.texture(this._himmelUmgebungTex(), TSL.equirectUV(RfW)).level(F(0)).rgb;
         const glanz = film.mul(spiegel).mul(F(FI.glanz[0])).mul(pulse.mul(FI.glanz[2]).add(FI.glanz[1]));
-        // DER FILM ALS SCHICHT: was er je Kanal zurückwirft (seine Bänder × Gewicht), fehlt dem Durchlass — das Ziel scheint mit
-        // 1 − R hindurch (in der Gegenfarbe der Bänder getönt), der Spiegel liegt mit R darauf; ein dunkles Band lässt das Ziel ganz
-        const col = ziel.mul(F(1.0).sub(film.mul(filmW))).add(glanz.mul(filmW));
+        const col = TSL.mix(ziel, glanz, filmW);
         const G = { positionNode, colorNode: TSL.vec4(col, 1.0), opacityNode: keep, anzeige: col };
         this._membranGraphen.set(MG, G);
         return G;
@@ -2471,17 +2472,6 @@ class AnazhRealm_Z14 {
             rec.u.act.value = act;
             rec.u.pulse.value = 0.5 + 0.5 * Math.sin(currentTime * MG.puls);
             rec.u.waveDepth.value = mu.zFace * (MG.aktivDepth[0] + MG.aktivDepth[1] * act);
-            // Kamera in Tor-lokalen Koordinaten (die Parallaxe rechnet im Lab-Rahmen).
-            const cam = st.camera;
-            if (cam && cam.position) {
-                const cxw = cam.position.x - entry.position.x;
-                const czw = cam.position.z - entry.position.z;
-                rec.u.camL.value.set(
-                    (cxw * c - czw * s) / scale,
-                    (cam.position.y - (entry.position.y - 0.5)) / scale,
-                    (cxw * s + czw * c) / scale
-                );
-            }
             // ── HINDURCHGEHEN: Spieler kreuzt die Membran-Ebene in der Apertur ──
             const lx = (dx * c - dz * s) / scale;
             const lz = (dx * s + dz * c) / scale;
