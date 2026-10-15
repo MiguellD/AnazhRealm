@@ -1271,6 +1271,16 @@ class AnazhRealm_Z17c {
         );
     }
 
+    // DAS BODENLICHT unter den STEHENDEN Kronen ∈ [0, 1] (1 offen, → 0 geschlossenes Dach) — das Labor-Gesetz
+    // (phytogenesis `canopyLight`: L = exp(−0,85 · Σ Kronen), eine Krone = 1 in ihrer Mitte), die Kronen-Summe aus der
+    // EINEN Kronen-Karte (`_kronenStreuAt`: `LAUB_STREU.dichte` unter einer Krone). Nah-Wiese und Nah-Streu lesen es;
+    // ihre Kacheln wachsen neu, wo eine Krone kommt oder fällt (`_kronenStreuWiese`). Bis K70 lasen beide das
+    // Kronenlicht-Feld der Platzierung (`_canopyLightAt`, wo Bäume wachsen DÜRFEN) und die Wiese zusätzlich die Karte
+    // (× (1 − 0,85 · Streu)): am Waldrand der Mess-Wiese dünnte das Feld die offene Wiese auf 0,75 Licht.
+    _bodenLichtAt(x, z) {
+        return Math.exp((-AnazhRealm.UNDERGROWTH.canopyK * this._kronenStreuAt(x, z)) / AnazhRealm.LAUB_STREU.dichte);
+    }
+
     // Die EINE Ausdehnung einer Form um ihre Achse (Malen und Siedlungs-Hülle): ein gedrehter Kasten reicht bis zur
     // Diagonale — max(ex, ez) beschnitt die Ecken (ein um 45° gedrehtes Quadrat wurde zum Achteck).
     static _wegeFormRadius(f) {

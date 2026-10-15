@@ -23,8 +23,8 @@ class AnazhRealm_Z11c {
 
     // DIE NAH-WIESE: je Kachel (NAH_WIESE.kachel) die Büschel nach dem Studio-Gesetz (buildForest, Schritt 7):
     // Raster `understory.grassStep` in Welt-Koordinaten, Jitter ±0,34, Wurf gegen
-    // groundCover.grass = clamp(clamp(L·1,08 − rk·0,85 + m·0,22)·1,12) mit den Welt-Feldern (Kronen-Licht,
-    // Feuchte, Hang wie der Strauch-Teppich, Pfad dünnt) × dem Grün-Kanal der Boden-Karte (Büschel nur, wo
+    // groundCover.grass = clamp(clamp(L·1,08 − rk·0,85 + m·0,22)·1,12) mit den Welt-Feldern (das Licht der stehenden
+    // Kronen `_bodenLichtAt`, Feuchte, Hang wie der Strauch-Teppich, Pfad dünnt) × dem Grün-Kanal der Boden-Karte (Büschel nur, wo
     // die Boden-Funktion Wiese zeichnet). Skala Studio: (0,7 + w·0,7) · (m > 0,8 ? 1,45 : 1), zwei Vorlagen.
     // Fuß, Hang und Grün auf dem GERENDERTEN Boden (der EINE Leser `_bodenSichtAt`, am Chunk-Rand die Karte des
     // Nachbarn). Die Würfe hängen nur an der Zelle (Γ5) — dieselbe Wiese bei jedem Besuch. Gibt die Büschel-Liste
@@ -69,14 +69,13 @@ class AnazhRealm_Z11c {
                 if (!(gruen > 0)) continue;
                 if (y < this._koerperWasser(x, z, y) + 0.1) continue; // nie im gezeichneten Wasser (wie die Nah-Streu)
                 const m = this._feuchteAt ? this._feuchteAt(x, z, y) : 0;
-                const L = this._canopyLightAt(x, z, y, m);
+                // das Licht der STEHENDEN Kronen (dieselbe Kronen-Karte wie der Boden): unter einer Krone 0,43, wo Kronen
+                // sich schließen 0,24 — dort wächst die Narbe nach dem Labor-Gesetz auf 52 % bzw. 29 %
+                const L = this._bodenLichtAt(x, z);
                 const hang = this._slopeAt(x, z, boden);
                 const rk = cl((hang - GS.lo) / (GS.hi - GS.lo));
                 const pfad = this._pfadFeldAt(x, z, y);
-                // Unter einer echten Krone liegt Laub, kaum ein Halm (15 %) — dieselbe Kronen-Karte wie der Boden.
-                const streu = this._kronenStreuAt(x, z);
-                const p =
-                    cl(cl(L * 1.08 - rk * 0.85 + m * 0.22) * 1.12) * (1 - pfad * 0.92) * (1 - streu * 0.85) * gruen;
+                const p = cl(cl(L * 1.08 - rk * 0.85 + m * 0.22) * 1.12) * (1 - pfad * 0.92) * gruen;
                 if (wurf >= p) continue;
                 out.push({ x, y, z, s: sk * (m > 0.8 ? 1.45 : 1), rot, vorlage, ordnung });
             }
@@ -427,8 +426,8 @@ class AnazhRealm_Z11c {
         return w;
     }
 
-    // Die Pflanzen einer Kachel nach dem Boden-Gesetz: je Zelle (NAH_STREU.zelle) EINE Umwelt-Messung (Kronen-Licht
-    // · Feuchte · Höhe über dem Wasser · Steinigkeit · Hang, die Welt-Leser), je Art λ = dichte · Zellfläche ·
+    // Die Pflanzen einer Kachel nach dem Boden-Gesetz: je Zelle (NAH_STREU.zelle) EINE Umwelt-Messung (das Licht der
+    // stehenden Kronen `_bodenLichtAt` · Feuchte · Höhe über dem Wasser · Steinigkeit · Hang, die Welt-Leser), je Art λ = dichte · Zellfläche ·
     // Gewicht · Last-Dichte (`_effectiveFoliageDensity`), n = ⌊λ + Wurf⌋. Der Wurf-Strom je (Zelle, Art) hängt nur
     // an der Zelle (Γ5): dieselbe Streu bei jedem Besuch, und eine dünnere Last ist ein Präfix der vollen (die
     // Ernte-Identität `gi|gj|art|i` bleibt). Fuß und Hang auf dem GERENDERTEN Boden (der EINE Leser `_bodenSichtAt`, am
@@ -474,7 +473,7 @@ class AnazhRealm_Z11c {
                 const uf = { see: 0, fluss: null, ufer: 0 };
                 this._waterLevelAt(x, z, uf);
                 const u = {
-                    licht: this._canopyLightAt(x, z, y, feucht),
+                    licht: this._bodenLichtAt(x, z), // das Licht der stehenden Kronen (Labor: `lightAt` der Bäume)
                     feucht,
                     ufer: y - this._koerperWasser(x, z, y),
                     fels: feld ? feld.dichte : null,

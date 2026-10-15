@@ -2839,10 +2839,10 @@ AnazhRealm.ROCK_GEOLOGY_FORMS = Object.freeze({
     aufschluss: Object.freeze(["nadel", "stapel"]), // aufragender Grat-Aufschluss
 });
 
-// UNTERWUCHS: das Kronendach-Licht ist die EINE Quelle für „wie viel Licht den Boden erreicht" (dichter Wald =
-// dunkel, Lichtung = Wiese) — die Nah-Wiese und das Boden-Gesetz der Nah-Streu lesen es. Die Kronen-Deckung nutzt
-// dieselben Treiber wie die Baum-Platzierung (`_placementStandAt("forest")` × wet × Höhe, ohne Slope/Perf) →
-// konsistent mit dem echten Wald. `canopyK` = exp-Dämpfung des Bodenlichts.
+// UNTERWUCHS: `canopyK` ist die EINE Dämpfung des Bodenlichts unter Kronen, L = exp(−canopyK · Deckung) (das Labor-
+// Gesetz phytogenesis `canopyLight`). Das Licht der STEHENDEN Kronen (`_bodenLichtAt`, Deckung aus der Kronen-Karte)
+// lesen Nah-Wiese und Nah-Streu; das Platzierungs-Feld (`_canopyLightAt`, Deckung aus den Treibern der Baum-
+// Platzierung) liest der Strauch-Teppich, der mit dem Wald gepflanzt wird.
 AnazhRealm.UNDERGROWTH = Object.freeze({
     canopyK: 0.85, // exp(-cover·canopyK): Dach-Dämpfung des Bodenlichts (1=Lichtung, →0 dichtes Dach)
 });
