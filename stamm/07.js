@@ -100,7 +100,8 @@ class AnazhRealm_Z07 {
                     if (pending) {
                         this.state.voxelWorkerPending.delete(msg.requestId);
                         pending.resolve({
-                            daten: new Uint16Array(msg.daten),
+                            hoehen: new Uint16Array(msg.hoehen),
+                            stoff: new Uint8Array(msg.stoff),
                             hoechste: new Float32Array(msg.hoechste),
                             wasser: msg.wasser | 0,
                             hMax: msg.hMax,
@@ -340,7 +341,8 @@ class AnazhRealm_Z07 {
     }
 
     // DAS SPIEGEL-FELD off-thread (D10): ein Rechteck der Welt-Zellen (`auftrag`: i0, j0, w, h, texel, bezug, wasserFarbe,
-    // baeume, gestalten, block — `spiegelFeldBacken` im Worker) → { daten (RGBA-Halbfloat), hoechste je Block, wasser, hMax } am
+    // baeume, gestalten, block — `spiegelFeldBacken` im Worker) → { hoehen (RGBA-Halbfloat), stoff (RGBA8), hoechste je Block, wasser,
+    // hMax } am
     // synchronisierten Zustand.
     _voxelWorkerSpiegel(auftrag) {
         const worker = this._getVoxelWorker();

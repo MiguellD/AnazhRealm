@@ -235,19 +235,21 @@ self.onmessage = function (e) {
                 tr
             );
         } else if (msg.type === "spiegel-feld") {
-            // DAS SPIEGEL-FELD (D10): ein Rechteck der Welt-Zellen als RGBA-Halbfloat — die Albedo der obersten Fläche und ihre
-            // Höhe über dem Bezug — aus dem GEBAUTEN Boden dieses Workers (`spiegelFeldBacken`); per Transfer zurück (Lehre 24).
+            // DAS SPIEGEL-FELD (D10): ein Rechteck der Welt-Zellen — die Höhen (untere Fläche, Basis und Dach der Krone, ihre
+            // Gestalt) als RGBA-Halbfloat, der Stoff der unteren Fläche als RGBA8 — aus dem GEBAUTEN Boden dieses Workers
+            // (`spiegelFeldBacken`); per Transfer zurück (Lehre 24).
             const daten = spiegelFeldBacken(msg);
             self.postMessage(
                 {
                     type: "spiegel-feld-result",
                     requestId: msg.requestId,
-                    daten: daten.feld.buffer,
+                    hoehen: daten.hoehen.buffer,
+                    stoff: daten.stoff.buffer,
                     hoechste: daten.hoechste.buffer,
                     wasser: daten.wasser,
                     hMax: daten.hMax,
                 },
-                [daten.feld.buffer, daten.hoechste.buffer]
+                [daten.hoehen.buffer, daten.stoff.buffer, daten.hoechste.buffer]
             );
         } else if (msg.type === "ping") {
             self.postMessage({ type: "pong", requestId: msg.requestId || null });
@@ -671,13 +673,13 @@ function clamp01(v) {
 }
 
 // DAS SPIEGEL-FELD (D10, der See spiegelt die Welt): je Zelle (Kante `texel` m) des Rechtecks [i0, i0 + w) × [j0, j0 + h)
-// die oberste Fläche, die ein gespiegelter Strahl trifft — der GEBAUTE Boden (die Nullstelle der Spalten-Dichte samt
+// die Flächen, die ein gespiegelter Strahl trifft — der GEBAUTE Boden (die Nullstelle der Spalten-Dichte samt
 // Fluss-Kanal, See-Becken und Edits, `terrainDensityAtCol`: die 2D-Höhe trägt den Seegrund nicht), darüber das Wasser des
 // Orts (`waterLevelAt`) und die Kronen der stehenden Bäume (je Laub-Teil ihrer gefühlten Gestalt das Ellipsoid seines Ankers,
-// `_gestaltTeile` im Main — dieselben Teile wie die Hülle des Baums). Die Albedo linear: die EINE Boden-Farbe
-// (`attachFieldColors` = `_bodenFarbeAt`), das Laub der Gestalt, der Wasser-Körper R∞ (`wasserFarbe`); A die Höhe über
-// `bezug`. Das Wasser trägt sein B NEGATIV — die Marke, an der der Pass den Wasser-Punkt erkennt —, das Laub sein R. Rückgabe
-// RGBA-Halbfloat.
+// `_gestaltTeile` im Main — dieselben Teile wie die Hülle des Baums). Rückgabe: `hoehen` RGBA-Halbfloat über `bezug` (die
+// untere Fläche, Basis und Dach der Kronen-Schicht, ihre Gestalt + 1), `stoff` RGBA8 (die Albedo der unteren Fläche linear als
+// Wurzel — die EINE Boden-Farbe `attachFieldColors` = `_bodenFarbeAt`, das Laub der Gestalt, der Wasser-Körper R∞ —, A die Art:
+// 0 Boden, 1 Wasser, 2 Laub) und je Block die Höchste.
 const spiegelGestalten = [];
 // der GEBAUTE Boden an (x, z): die Nullstelle der Spalten-Dichte, zwei Newton-Schritte von der Gesetz-Höhe aus
 function spiegelBoden(x, z) {
@@ -691,15 +693,18 @@ function spiegelBoden(x, z) {
 }
 function spiegelFeldBacken(msg) {
     const { i0, j0, w, h, texel, bezug } = msg;
-    // DER SAUM: eine Zelle rund um das Rechteck. Die Höchst-Höhe eines Blocks (`hoechste`) muss jeden Wert decken, den der Pass
+    // DER SAUM: eine Zelle rund um das Rechteck. Die Höchste eines Blocks (`hoechste`) muss jeden Wert decken, den der Pass
     // in ihm filtert, und der LinearFilter greift bis eine Zelle über den Block-Rand.
     const W2 = w + 2,
-        H2 = h + 2;
-    const H = new Float32Array(W2 * H2);
-    const F = new Float32Array(w * h * 3);
-    const nass = new Uint8Array(W2 * H2);
-    const laub = new Uint8Array(W2 * H2);
-    const pos = new Float32Array(w * 3);
+        H2 = h + 2,
+        N2 = W2 * H2;
+    const unten = new Float32Array(N2); // die untere Fläche: Boden, Wasser oder die Säule eines Buschs
+    const basis = new Float32Array(N2); // die Schicht der Krone: Basis und Dach (keine Krone: beide = unten)
+    const dach = new Float32Array(N2);
+    const krone = new Uint16Array(N2); // Gestalt der Krone + 1 (0: keine)
+    const art = new Uint8Array(N2); // die untere Fläche: 0 Boden, 1 Wasser, 2 Laub
+    const F = new Float32Array(N2 * 3);
+    const pos = new Float32Array(W2 * 3);
     for (let j = -1; j <= h; j++) {
         const z = (j0 + j + 0.5) * texel;
         for (let i = -1; i <= w; i++) {
@@ -707,27 +712,35 @@ function spiegelFeldBacken(msg) {
             const y = spiegelBoden(x, z);
             const p = (j + 1) * W2 + i + 1;
             const wl = waterLevelAt(x, z);
+            // das Wasser 0,6 m unter seinem Spiegel: der Strahl, der von ihm aufsteigt, trifft es nie, eine höhere Stufe
+            // (der Fluss über der Mündung) hält ihn
             if (wl > y + 0.05) {
-                nass[p] = 1;
-                H[p] = wl;
-            } else H[p] = y;
-            if (i >= 0 && i < w) {
-                pos[i * 3] = x;
-                pos[i * 3 + 1] = y;
-                pos[i * 3 + 2] = z;
-            }
+                art[p] = 1;
+                unten[p] = wl - 0.6;
+            } else unten[p] = y;
+            pos[(i + 1) * 3] = x;
+            pos[(i + 1) * 3 + 1] = y;
+            pos[(i + 1) * 3 + 2] = z;
         }
-        if (j >= 0 && j < h) F.set(attachFieldColors(pos), j * w * 3);
+        F.set(attachFieldColors(pos), (j + 1) * W2 * 3);
     }
     // die Gestalten reisen einmal (Index → { teile [cx, cy, cz, rXZ, rY] je Laub-Teil, farbe }), die Bäume je Auftrag:
-    // [x, y, z, Skala, cos θ, sin θ, Gestalt] (θ die Drehung um y; y NaN: der Fuß der Streu ist der gebaute Boden)
+    // [x, y, z, Skala, cos θ, sin θ, Gestalt] (θ die Drehung um y; y NaN: der Fuß der Streu ist der gebaute Boden).
+    // DIE KRONE IST EINE SCHICHT: je Zelle die Spanne jedes Laub-Teils (Unter- bis Oberkante seines Ellipsoids); reicht sie
+    // bis an die untere Fläche (der Busch, die Fichte), wächst die Säule, sonst die Schicht der Krone — darunter läuft der
+    // Strahl hindurch zum Ufer-Busch und zum Boden unter dem Schirm.
     for (const g of msg.gestalten || []) spiegelGestalten[g.i] = g;
     const B = msg.baeume;
     const x0 = (i0 - 1) * texel,
         z0 = (j0 - 1) * texel;
-    const farbe = new Map();
+    const laubFarbe = new Map();
+    // der Saum der Krone: eine Zelle zählt zur Krone, wenn das Laub-Teil sie berührt, nicht erst, wenn es ihre Mitte deckt
+    // (das Raster der Mitten ließ zwischen den Laub-Ballen Löcher, durch die der Spiegel den Himmel las)
+    const saum = msg.kronenSaum;
+    if (!Number.isFinite(saum)) throw new Error("spiegelFeldBacken: kronenSaum fehlt im Auftrag");
     for (let t = 0; B && t + 6 < B.length; t += 7) {
-        const g = spiegelGestalten[B[t + 6]];
+        const gi = B[t + 6];
+        const g = spiegelGestalten[gi];
         if (!g) continue;
         const s = B[t + 3],
             c = B[t + 4],
@@ -740,7 +753,7 @@ function spiegelFeldBacken(msg) {
             const cx = B[t] + lx * c + lz * sn,
                 cz = B[t + 2] - lx * sn + lz * c,
                 cy = fuss + T[k + 1] * s;
-            const r = T[k + 3] * s,
+            const r = T[k + 3] * s + saum,
                 ry = T[k + 4] * s;
             const ia = Math.max(0, Math.floor((cx - r - x0) / texel)),
                 ib = Math.min(W2 - 1, Math.floor((cx + r - x0) / texel));
@@ -752,43 +765,65 @@ function spiegelFeldBacken(msg) {
                         dz = z0 + (jj + 0.5) * texel - cz;
                     const q = (dx * dx + dz * dz) / (r * r);
                     if (q >= 1) continue;
-                    const oben = cy + ry * Math.sqrt(1 - q);
+                    const halb = ry * Math.sqrt(1 - q);
+                    const o = cy + halb,
+                        u = cy - halb;
                     const p = jj * W2 + ii;
-                    if (oben <= H[p]) continue;
-                    nass[p] = 0;
-                    H[p] = oben;
-                    laub[p] = 1;
-                    farbe.set(p, g.farbe);
+                    if (o <= unten[p]) continue;
+                    if (u <= unten[p] + 1) {
+                        unten[p] = o;
+                        art[p] = 2;
+                        laubFarbe.set(p, g.farbe);
+                    } else if (!krone[p]) {
+                        krone[p] = gi + 1;
+                        basis[p] = u;
+                        dach[p] = o;
+                    } else {
+                        if (o > dach[p]) {
+                            dach[p] = o;
+                            krone[p] = gi + 1;
+                        }
+                        if (u < basis[p]) basis[p] = u;
+                    }
                 }
         }
     }
-    const feld = new Uint16Array(w * h * 4);
+    const kroneFarbe = (p) => (spiegelGestalten[krone[p] - 1] || { farbe: [0.035, 0.07, 0.022] }).farbe;
+    // eine Schicht, die bis an die untere Fläche reicht, ist die Säule
+    for (let p = 0; p < N2; p++) {
+        if (krone[p] && basis[p] <= unten[p] + 1) {
+            if (dach[p] > unten[p]) {
+                unten[p] = dach[p];
+                art[p] = 2;
+                laubFarbe.set(p, kroneFarbe(p));
+            }
+            krone[p] = 0;
+        }
+        if (!krone[p]) basis[p] = dach[p] = unten[p];
+    }
+    const hoehen = new Uint16Array(w * h * 4);
+    const stoff = new Uint8Array(w * h * 4);
     const wk = msg.wasserFarbe;
+    // die Albedo als Wurzel in 8 Bit (das dunkle Laub 0,03 trägt so 4 % statt 13 % Stufe)
+    const wurzel = (v) => Math.max(0, Math.min(255, Math.round(Math.sqrt(Math.max(v, 0)) * 255)));
     let hMax = -Infinity,
         wasser = 0;
     for (let j = 0; j < h; j++)
         for (let i = 0; i < w; i++) {
             const p = (j + 1) * W2 + i + 1,
-                q = j * w + i,
-                o = q * 4;
-            if (H[p] > hMax) hMax = H[p];
-            if (nass[p]) {
-                wasser++;
-                feld[o] = zuHalb(wk[0]);
-                feld[o + 1] = zuHalb(wk[1]);
-                feld[o + 2] = zuHalb(-Math.max(wk[2], 1e-3));
-            } else if (laub[p]) {
-                // das Laub trägt sein R NEGATIV — die Marke, an der der Pass die Krone von der Flanke des Bodens trennt
-                const f = farbe.get(p);
-                feld[o] = zuHalb(-Math.max(f[0], 1e-3));
-                feld[o + 1] = zuHalb(f[1]);
-                feld[o + 2] = zuHalb(f[2]);
-            } else {
-                feld[o] = zuHalb(F[q * 3]);
-                feld[o + 1] = zuHalb(F[q * 3 + 1]);
-                feld[o + 2] = zuHalb(F[q * 3 + 2]);
-            }
-            feld[o + 3] = zuHalb(H[p] - bezug);
+                o = (j * w + i) * 4;
+            const top = Math.max(unten[p], dach[p]);
+            if (top > hMax) hMax = top;
+            hoehen[o] = zuHalb(unten[p] - bezug);
+            hoehen[o + 1] = zuHalb(basis[p] - bezug);
+            hoehen[o + 2] = zuHalb(dach[p] - bezug);
+            hoehen[o + 3] = zuHalb(krone[p]);
+            const f = art[p] === 1 ? wk : art[p] === 2 ? laubFarbe.get(p) : [F[p * 3], F[p * 3 + 1], F[p * 3 + 2]];
+            if (art[p] === 1) wasser++;
+            stoff[o] = wurzel(f[0]);
+            stoff[o + 1] = wurzel(f[1]);
+            stoff[o + 2] = wurzel(f[2]);
+            stoff[o + 3] = art[p];
         }
     // DIE HÖCHSTE je Block (`block` × `block` Zellen samt Saum, über dem Bezug): steht der gespiegelte Strahl über ihr, trifft
     // er im Block nichts (er steigt) und springt an dessen Rand — der Busch von 2 m fällt nie mehr durch einen Schritt von 3 m.
@@ -801,12 +836,13 @@ function spiegelFeldBacken(msg) {
             let m = -30000;
             for (let jj = bj * b; jj <= bj * b + b + 1; jj++)
                 for (let ii = bi * b; ii <= bi * b + b + 1; ii++) {
-                    const v = H[jj * W2 + ii];
+                    const p = jj * W2 + ii;
+                    const v = Math.max(unten[p], dach[p]);
                     if (v > m) m = v;
                 }
             hoechste[bj * bw + bi] = m - bezug;
         }
-    return { feld, wasser, hMax: hMax - bezug, hoechste };
+    return { hoehen, stoff, wasser, hMax: hMax - bezug, hoechste };
 }
 
 // float32 → IEEE-Halbfloat (gerundet; über 65504 unendlich, unter 2^−24 null) — die Bits, die ein HalfFloat-Ziel trägt
