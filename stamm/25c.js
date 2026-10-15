@@ -2393,6 +2393,8 @@ class AnazhRealm_Z25c {
         const pp = this._ensurePostProcessing();
         // DER LICHT-TAKT (K11): die Plätze des Licht-Pools und die Fenster-Glut für dieses Bild (die Kamera steht)
         this._leuchtTakt();
+        // das Spiegel-Feld des Wassers folgt dem Auge (D10, ein Worker-Auftrag zur Zeit)
+        this._spiegelFeldTakt();
         // Die Kehraus-Marke vor dem Frame: was dieser Frame zeichnet, trägt einen höheren Zähler.
         const zaehlerVor = this._gpuKehrausMarke();
         // DIE SZENEN-SKALA am Szenen-Pass: nie je Last (jeder Ziel-Wechsel unter lebenden Bündeln war die Destroyed-Klasse,
@@ -2412,6 +2414,8 @@ class AnazhRealm_Z25c {
                 // in der Schöpfer-Konsole); render() ist der eine Pfad.
                 if (this.state.traaNode) this._traaReprojektion();
                 pp.render();
+                // DER SPIEGEL DES GESETZES (D10): nach dem Bild, aus seiner Tiefe — das Wasser des nächsten liest ihn
+                this._spiegelPassZeichne();
             } catch (err) {
                 // r184 baut Post-Kette und Szenen-Pass erst im ersten render() (PostProcessing.render → _update): ein
                 // Knoten-Fehler der Kette bricht HIER — laut beim Namen (K22), der Schirm zeichnet danach direkt

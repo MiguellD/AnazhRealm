@@ -234,6 +234,20 @@ self.onmessage = function (e) {
                 },
                 tr
             );
+        } else if (msg.type === "spiegel-feld") {
+            // DAS SPIEGEL-FELD (D10): ein Rechteck der Welt-Zellen als RGBA-Halbfloat — die Albedo der obersten Fläche und ihre
+            // Höhe über dem Bezug — aus dem GEBAUTEN Boden dieses Workers (`spiegelFeldBacken`); per Transfer zurück (Lehre 24).
+            const daten = spiegelFeldBacken(msg);
+            self.postMessage(
+                {
+                    type: "spiegel-feld-result",
+                    requestId: msg.requestId,
+                    daten: daten.feld.buffer,
+                    wasser: daten.wasser,
+                    hMax: daten.hMax,
+                },
+                [daten.feld.buffer]
+            );
         } else if (msg.type === "ping") {
             self.postMessage({ type: "pong", requestId: msg.requestId || null });
         }
@@ -653,6 +667,127 @@ function hydrosphereLakeAt(x, z) {
 
 function clamp01(v) {
     return v < 0 ? 0 : v > 1 ? 1 : v;
+}
+
+// DAS SPIEGEL-FELD (D10, der See spiegelt die Welt): je Zelle (Kante `texel` m) des Rechtecks [i0, i0 + w) × [j0, j0 + h)
+// die oberste Fläche, die ein gespiegelter Strahl trifft — der GEBAUTE Boden (die Nullstelle der Spalten-Dichte samt
+// Fluss-Kanal, See-Becken und Edits, `terrainDensityAtCol`: die 2D-Höhe trägt den Seegrund nicht), darüber das Wasser des
+// Orts (`waterLevelAt`) und die Kronen der stehenden Bäume (je Laub-Teil ihrer gefühlten Gestalt das Ellipsoid seines Ankers,
+// `_baumGestaltTeile` im Main — dieselben Teile wie die Hülle des Baums). Die Albedo linear: die EINE Boden-Farbe
+// (`attachFieldColors` = `_bodenFarbeAt`), das Laub der Gestalt, der Wasser-Körper R∞ (`wasserFarbe`); A die Höhe über
+// `bezug`. Das Wasser trägt sein B NEGATIV — die Marke, an der der Pass den Wasser-Punkt erkennt. Rückgabe RGBA-Halbfloat.
+const spiegelGestalten = [];
+function spiegelFeldBacken(msg) {
+    const { i0, j0, w, h, texel, bezug } = msg;
+    const H = new Float32Array(w * h);
+    const F = new Float32Array(w * h * 3);
+    const nass = new Uint8Array(w * h);
+    const pos = new Float32Array(w * 3);
+    let wasser = 0;
+    for (let j = 0; j < h; j++) {
+        const z = (j0 + j + 0.5) * texel;
+        for (let i = 0; i < w; i++) {
+            const x = (i0 + i + 0.5) * texel;
+            const ctx = terrainColumnContext(x, z);
+            let y = ctx.surf;
+            for (let k = 0; k < 2; k++) {
+                const d = terrainDensityAtCol(x, y, z, ctx);
+                if (Math.abs(d) < 40) y += d;
+            }
+            const p = j * w + i;
+            const wl = waterLevelAt(x, z);
+            if (wl > y + 0.05) {
+                nass[p] = 1;
+                H[p] = wl;
+                wasser++;
+            } else H[p] = y;
+            pos[i * 3] = x;
+            pos[i * 3 + 1] = y;
+            pos[i * 3 + 2] = z;
+        }
+        F.set(attachFieldColors(pos), j * w * 3);
+    }
+    // die Gestalten reisen einmal (Index → { teile [cx, cy, cz, rXZ, rY] je Laub-Teil, farbe }), die Bäume je Auftrag:
+    // [x, y, z, Skala, cos θ, sin θ, Gestalt] (θ die Drehung um y des Eintrags)
+    for (const g of msg.gestalten || []) spiegelGestalten[g.i] = g;
+    const B = msg.baeume;
+    const x0 = i0 * texel,
+        z0 = j0 * texel;
+    for (let t = 0; B && t + 6 < B.length; t += 7) {
+        const g = spiegelGestalten[B[t + 6]];
+        if (!g) continue;
+        const s = B[t + 3],
+            c = B[t + 4],
+            sn = B[t + 5];
+        const T = g.teile;
+        for (let k = 0; k + 4 < T.length; k += 5) {
+            const lx = T[k] * s,
+                lz = T[k + 2] * s;
+            const cx = B[t] + lx * c + lz * sn,
+                cz = B[t + 2] - lx * sn + lz * c,
+                cy = B[t + 1] + T[k + 1] * s;
+            const r = T[k + 3] * s,
+                ry = T[k + 4] * s;
+            const ia = Math.max(0, Math.floor((cx - r - x0) / texel)),
+                ib = Math.min(w - 1, Math.floor((cx + r - x0) / texel));
+            const ja = Math.max(0, Math.floor((cz - r - z0) / texel)),
+                jb = Math.min(h - 1, Math.floor((cz + r - z0) / texel));
+            for (let jj = ja; jj <= jb; jj++)
+                for (let ii = ia; ii <= ib; ii++) {
+                    const dx = x0 + (ii + 0.5) * texel - cx,
+                        dz = z0 + (jj + 0.5) * texel - cz;
+                    const q = (dx * dx + dz * dz) / (r * r);
+                    if (q >= 1) continue;
+                    const oben = cy + ry * Math.sqrt(1 - q);
+                    const p = jj * w + ii;
+                    if (oben <= H[p]) continue;
+                    if (nass[p]) {
+                        nass[p] = 0;
+                        wasser--;
+                    }
+                    H[p] = oben;
+                    F[p * 3] = g.farbe[0];
+                    F[p * 3 + 1] = g.farbe[1];
+                    F[p * 3 + 2] = g.farbe[2];
+                }
+        }
+    }
+    const feld = new Uint16Array(w * h * 4);
+    const wk = msg.wasserFarbe;
+    let hMax = -Infinity;
+    for (let p = 0; p < w * h; p++) {
+        const o = p * 4;
+        if (H[p] > hMax) hMax = H[p];
+        if (nass[p]) {
+            feld[o] = zuHalb(wk[0]);
+            feld[o + 1] = zuHalb(wk[1]);
+            feld[o + 2] = zuHalb(-Math.max(wk[2], 1e-3));
+        } else {
+            feld[o] = zuHalb(F[p * 3]);
+            feld[o + 1] = zuHalb(F[p * 3 + 1]);
+            feld[o + 2] = zuHalb(F[p * 3 + 2]);
+        }
+        feld[o + 3] = zuHalb(H[p] - bezug);
+    }
+    return { feld, wasser, hMax: hMax - bezug };
+}
+
+// float32 → IEEE-Halbfloat (gerundet; über 65504 unendlich, unter 2^−24 null) — die Bits, die ein HalfFloat-Ziel trägt
+const _halbF = new Float32Array(1),
+    _halbU = new Uint32Array(_halbF.buffer);
+function zuHalb(v) {
+    _halbF[0] = v;
+    const x = _halbU[0];
+    const sign = (x >>> 16) & 0x8000;
+    const e = ((x >>> 23) & 0xff) - 112;
+    let m = x & 0x7fffff;
+    if (e >= 31) return sign | 0x7c00;
+    if (e <= 0) {
+        if (e < -10) return sign;
+        m = (m | 0x800000) >>> (1 - e);
+        return sign | ((m + 0x1000) >>> 13);
+    }
+    return sign | ((e << 10) + ((m + 0x1000) >>> 13));
 }
 
 // =============================================================================

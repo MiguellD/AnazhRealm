@@ -1235,6 +1235,21 @@ AnazhRealm.ZEIT_SCHAERFE = 1;
 // Der Kamera-Sprung der zeitlichen Auflösung (K68, `_traaReprojektion`): weiter in EINEM Frame beginnt die Geschichte neu und
 // läuft als Mittel an — der Wagen bei 200 km/h und 15 fps legt 3,7 m je Frame zurück, ein Tor oder ein Umsetzen viele Meter.
 AnazhRealm.ZEIT_SPRUNG_M = 6;
+// DER SPIEGEL DES GESETZES (D10, `_spiegelFeldTakt` · `_spiegelPass`): das Feld n × n Zellen à texel m um das Auge (RGBA-Halbfloat,
+// neu bei drift m), gebacken im Worker in Streifen von höchstens `zeilen` Zeilen; der Pass in 1/teil der Ausgabe, je
+// Wasser-Pixel `schritte` Lipschitz-Schritte (mindestens `wachs` der Strecke) und `halbierungen` vor der Sekante; die
+// Nachlese backt das Feld neu, wenn neue Bäume darin stehen (höchstens je nachleseMs).
+AnazhRealm.SPIEGEL = Object.freeze({
+    n: 512,
+    texel: 2,
+    drift: 60,
+    zeilen: 16,
+    teil: 4,
+    schritte: 96,
+    wachs: 0.04,
+    halbierungen: 4,
+    nachleseMs: 4000,
+});
 // Sekunden-normalisierter Ingest-Takt: Ziel ist eine RATE je echter Sekunde — jeder Frame gibt
 // `rate·dt` Konversionen frei, gedeckelt durch INGEST_BURST_CAP (Schutz gegen LongTasks). So lädt
 // die Welt mit der Wanduhr statt mit der Framerate (fix pro Frame hieß bei 8 fps nur 8–24/s).

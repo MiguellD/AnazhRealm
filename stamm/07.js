@@ -94,6 +94,13 @@ class AnazhRealm_Z07 {
                             });
                         }
                     }
+                } else if (msg.type === "spiegel-feld-result" && msg.requestId) {
+                    // D10 — ein Rechteck des Spiegel-Felds (`_voxelWorkerSpiegel`), zero-copy per Transferable
+                    const pending = this.state.voxelWorkerPending.get(msg.requestId);
+                    if (pending) {
+                        this.state.voxelWorkerPending.delete(msg.requestId);
+                        pending.resolve({ daten: new Uint16Array(msg.daten), wasser: msg.wasser | 0, hMax: msg.hMax });
+                    }
                 } else if (msg.type === "hoehen-result" && msg.requestId) {
                     // K60 — die Höhen der Ferne aus dem Worker (`_voxelWorkerHoehen`), zero-copy per Transferable
                     const pending = this.state.voxelWorkerPending.get(msg.requestId);
@@ -323,6 +330,22 @@ class AnazhRealm_Z07 {
                 this.state.voxelWorkerPending.set(requestId, { resolve, reject });
             });
             worker.postMessage({ type: "hoehen", punkte, detail: !!includeDetail, schutt: !!mitSchutt, requestId });
+            return promise;
+        });
+    }
+
+    // DAS SPIEGEL-FELD off-thread (D10): ein Rechteck der Welt-Zellen (`auftrag`: i0, j0, w, h, texel, bezug, wasserFarbe,
+    // baeume, gestalten — `spiegelFeldBacken` im Worker) → { daten (RGBA-Halbfloat), wasser } am synchronisierten Zustand.
+    _voxelWorkerSpiegel(auftrag) {
+        const worker = this._getVoxelWorker();
+        if (!worker) return Promise.reject(new Error("voxel-worker not available"));
+        const ensureReady = this.state.voxelWorkerReady ? Promise.resolve(true) : this._voxelWorkerSyncState();
+        return ensureReady.then(() => {
+            const requestId = this.state.voxelWorkerNextRequestId++;
+            const promise = new Promise((resolve, reject) => {
+                this.state.voxelWorkerPending.set(requestId, { resolve, reject });
+            });
+            worker.postMessage(Object.assign({ type: "spiegel-feld", requestId }, auftrag));
             return promise;
         });
     }

@@ -2226,6 +2226,7 @@ class AnazhRealm_Z11c {
             AnazhRealm.Gesetz("terrain:WASSER_GESETZ", null) || AnazhRealm._kernPflichtBruch("terrain:WASSER_GESETZ");
         return this._wasserBlick(_T, WG, {
             n: _T.vec3(0.0, 1.0, 0.0),
+            ort: _T.positionWorld,
             viewDir: _T.normalize(_T.cameraPosition.sub(_T.positionWorld)),
             T: _T.float(0.0),
             koerper: _T.vec3(...this._fernWasserKoerper()),

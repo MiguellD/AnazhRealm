@@ -547,6 +547,17 @@ function bildRauschen(A, B, W, H, schwelle) {
     return { anteil: +(n / (W * H)).toFixed(6), pixel: n, max };
 }
 
+// Pearson r aus den Summen [n, Σa, Σb, Σa², Σb², Σab] (die Spiegel-Treue `klassenMasse` spiegelTreue; in der Seite global,
+// denn `__klassenMasse` ruft sie): null unter 8 Blöcken oder ohne Streuung einer Seite.
+function spiegelPearson(sp) {
+    const n = sp[0];
+    if (!(n >= 8)) return null;
+    const va = sp[3] - (sp[1] * sp[1]) / n,
+        vb = sp[4] - (sp[2] * sp[2]) / n,
+        cab = sp[5] - (sp[1] * sp[2]) / n;
+    return va > 1e-9 && vb > 1e-9 ? cab / Math.sqrt(va * vb) : null;
+}
+
 // DIE KLASSEN-MASSE (rein, in der Seite als `__klassenMasse`): was das Bild F auf den Pixeln der Maske m zeigt (Luma = Rec. 709
 // auf den sRGB-Werten 0–255, wie `bildMasse`):
 //   deckung       Anteil der Klasse am Bild · deckungUnten derselbe Anteil im unteren Drittel (der Boden vor dem Auge)
@@ -747,9 +758,45 @@ function klassenMasse(F, m, W, H, aussen) {
                 }
         }
     }
+    // DIE SPIEGEL-TREUE (D10, Nordstern §4.1 Wasser-Optik): ein ruhiges Wasser zeigt das Bild über seinem Ufer gespiegelt.
+    // Je Spalte die Uferlinie h0 (das oberste Pixel der Klasse), je 8×8-Block ganz in der Klasse das Luma-Mittel gegen das
+    // Mittel seiner Partner (x, 2·h0(x) − y) über der Linie; Pearson r über die Blöcke (`sp` die Summen n, Σa, Σb, Σa², Σb²,
+    // Σab — die Tafel fasst Teil-Klassen über sie). Llyn Padarn in der Abend-Ruhe misst r 0,74, der Himmel allein im Wasser 0.
+    const oben = new Int32Array(W).fill(-1);
+    for (let x = 0; x < W; x++)
+        for (let y = 0; y < H; y++)
+            if (m[y * W + x] === 1) {
+                oben[x] = y;
+                break;
+            }
+    const sp = [0, 0, 0, 0, 0, 0];
+    for (let y0 = 0; y0 + 8 <= H; y0 += 8)
+        bloecke: for (let x0 = 0; x0 + 8 <= W; x0 += 8) {
+            let a = 0,
+                b = 0;
+            for (let j = 0; j < 8; j++)
+                for (let i = 0; i < 8; i++) {
+                    const x = x0 + i,
+                        y = y0 + j;
+                    const yy = 2 * oben[x] - y;
+                    if (m[y * W + x] !== 1 || yy < 0) continue bloecke;
+                    a += L[y * W + x];
+                    b += L[yy * W + x];
+                }
+            a /= 64;
+            b /= 64;
+            sp[0]++;
+            sp[1] += a;
+            sp[2] += b;
+            sp[3] += a * a;
+            sp[4] += b * b;
+            sp[5] += a * b;
+        }
     const mittel = n ? s / n : null;
     const r4 = (x) => (x == null || !Number.isFinite(x) ? null : +x.toFixed(4));
     return {
+        spiegelTreue: r4(spiegelPearson(sp)),
+        sp: sp.map((v, i) => (i ? +v.toFixed(2) : v)),
         zweiton: n ? r4(zt / n) : null,
         zt,
         weiss: n ? r4(wt / n) : null,
@@ -999,6 +1046,7 @@ const SOLL_MASSE = Object.freeze([
     "albedoVerhaeltnis",
     "albedo",
     "gesicht",
+    "spiegelTreue",
 ]);
 // DIE AUFLÖSUNG je Maß (K63-n2): der kleinste Unterschied, den es trägt — der Abstand zum Band ist |ln((Ist + e)/(Rand + e))|,
 // endlich auch an einem Rand 0 (ein Raster-Anteil Soll 0, ein Ist 0; Prüfer K63 R2: Ist 0 gab die Wirkung „Infinity").
@@ -1013,6 +1061,8 @@ const MASS_AUFLOESUNG = Object.freeze({
     albedoVerhaeltnis: 0.01,
     albedo: 0.005,
     gesicht: 0.05,
+    // die Spiegel-Treue ist ein r in [−1, 1]: der Versatz 1 trägt den Abstand auch für ein negatives r (ln über (0, 2])
+    spiegelTreue: 1,
 });
 // DER ORT EINES BILDS der Tafel (K63-n8; Koordinator 15.10.: die `bild`-Felder zeigten in den Scratch, AppData): relativ zur
 // Wurzel des Baums unter `artifacts/` (gitignored, lokal, beim Namen — der Schreiber legt es nach `artifacts/soll-tafel/`), nie
@@ -1135,6 +1185,27 @@ const MASS_RECHNER = {
         }
         if (!n) return { fehler: "kein Inneres in der Klasse" };
         return { ist: +(s / n).toFixed(4), taeter: `${arg[0]} (detail ${arg[1]})`, anteil: pixelSumme(me) / flaeche(me) };
+    },
+    // DIE SPIEGEL-TREUE der Klasse (D10, `klassenMasse` spiegelTreue über die Summen `sp` ihrer Teil-Klassen): Pearson r der
+    // Block-Luma gegen das an der Uferlinie gespiegelte Bild; der Täter die Teil-Klasse mit den meisten Blöcken.
+    spiegelTreue(ma) {
+        const me = ma.messung;
+        const f = bildMessungFehler(me);
+        if (f) return { fehler: f };
+        const sp = [0, 0, 0, 0, 0, 0];
+        let arg = null;
+        for (const [k, z] of Object.entries(me.klassen)) {
+            if (!Array.isArray(z.sp)) return { fehler: `die Messung ohne Spiegel-Summen (${k}) — vor D10 gemessen` };
+            z.sp.forEach((v, i) => (sp[i] += v));
+            if (!arg || z.sp[0] > arg[1]) arg = [k, z.sp[0], z.spiegelTreue];
+        }
+        const r = spiegelPearson(sp);
+        if (r == null) return { fehler: `${sp[0]} Blöcke unter der Uferlinie — kein Spiegel zu messen` };
+        return {
+            ist: +r.toFixed(3),
+            taeter: `${arg[0]} (r ${arg[2]} über ${arg[1]} Blöcke)`,
+            anteil: pixelSumme(me) / flaeche(me),
+        };
     },
     // DER ZWEITON-ANTEIL der Klasse (`klassenMasse` zweiton über die Summen ihrer Teil-Klassen): der Anteil ihrer Pixel im
     // sichtbaren Dither-Raster; der Täter die Teil-Klasse (≥ 5 % der Pixel) mit dem höchsten Anteil.
@@ -1789,6 +1860,40 @@ function sollTafelSelbsttest(tafel, q) {
         ).detail !== 0
     )
         v.push("Maß detail: Flachbild nicht 0");
+    // DIE SPIEGEL-TREUE (D10) geeicht: ein Bild mit seinem exakten Spiegel unter der Linie → 1, der Himmels-Verlauf unter einem
+    // Ufer → nahe 0, das Foto Llyn Padarn (480 × 265, Uferlinie 141) → 0,743 im Soll [0,6, ∞]
+    {
+        const Ws = 64,
+            Hs = 64,
+            h0 = 30;
+        const wert = (x, y) => 40 + ((x * 37 + y * 101 + ((x >> 3) * (y >> 3) * 53)) % 180);
+        const spiegel = new Uint8Array(Ws * Hs * 4),
+            himmel = new Uint8Array(Ws * Hs * 4),
+            mw = new Uint8Array(Ws * Hs);
+        for (let y = 0; y < Hs; y++)
+            for (let x = 0; x < Ws; x++) {
+                const a = y < h0 ? wert(x, y) : wert(x, Math.max(0, 2 * h0 - y));
+                const c = y < h0 ? wert(x, y) : 60 + y;
+                spiegel.set([a, a, a, 255], (y * Ws + x) * 4);
+                himmel.set([c, c, c, 255], (y * Ws + x) * 4);
+                if (y >= h0) mw[y * Ws + x] = 1;
+            }
+        const rs = klassenMasse(spiegel, mw, Ws, Hs).spiegelTreue,
+            rh = klassenMasse(himmel, mw, Ws, Hs).spiegelTreue;
+        if (!(rs > 0.999)) v.push(`Maß spiegelTreue: der exakte Spiegel ${rs} statt 1`);
+        if (!(Math.abs(rh) < 0.3)) v.push(`Maß spiegelTreue: der Himmels-Verlauf ${rh} statt nahe 0`);
+        const fs = require("fs"),
+            path = require("path");
+        const foto = path.join(__dirname, "..", "..", "spec", "abnahme", "llyn-padarn.png");
+        const b = fs.existsSync(foto) ? pngLesen(fs.readFileSync(foto)) : null;
+        if (!b) v.push("Maß spiegelTreue: das Foto spec/abnahme/llyn-padarn.png fehlt");
+        else {
+            const mf = new Uint8Array(b.W * b.H);
+            for (let p = 141 * b.W; p < b.W * b.H; p++) mf[p] = 1;
+            const rf = klassenMasse(b.u8, mf, b.W, b.H).spiegelTreue;
+            if (!(Math.abs(rf - 0.743) < 0.005)) v.push(`Maß spiegelTreue: Llyn Padarn ${rf} statt 0,743`);
+        }
+    }
     const mA = new Uint8Array(W * H);
     for (let p = 0; p < W * H; p++) mA[p] = teil[p] === 1 ? 1 : 0;
     // die Klasse A zeigt 200, das Misch-Pixel 170: Mittel (24·200 + 170)/25
@@ -2214,11 +2319,13 @@ module.exports = {
     verkleinern,
     fixtureMessung,
     abnahmeSelbsttest,
+    spiegelPearson,
     ABNAHME_INSTALL:
         `window.__abnahmeUrteil = (m) => (${abnahmeUrteil.toString()})(m, ${JSON.stringify(SCHWELLEN)});` +
         `window.__bildMasse = ${bildMasse.toString()};` +
         `window.__klassenTeilung = ${klassenTeilung.toString()};` +
         `window.__bildRauschen = ${bildRauschen.toString()};` +
+        `window.spiegelPearson = ${spiegelPearson.toString()};` +
         `window.__klassenMasse = ${klassenMasse.toString()};` +
         `window.__gesichtMasse = ${gesichtMasse.toString()};`,
 };

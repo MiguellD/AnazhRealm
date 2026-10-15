@@ -823,7 +823,7 @@
             "id": "wasser",
             "titel": "Wasser (Wasser-Satz, Fern-Wasser)",
             "wirkung": {
-                "grund": "an Wiese und Genesis steht kein Wasser im Blick (farWater 1 070 m fern)"
+                "grund": "an Wiese und Genesis steht kein Wasser im Blick (farWater 1 070 m fern); gemessen am See 1816/−6168"
             },
             "referenz": [
                 {
@@ -838,13 +838,13 @@
             "soll": {
                 "eigenschaften": [
                     {
-                        "groesse": "detail",
+                        "groesse": "spiegelTreue",
                         "band": [
-                            0.05,
+                            0.6,
                             null
                         ],
-                        "einheit": "Gradient / Mittel im Wasser (ein Spiegel trägt das Detail des Gespiegelten)",
-                        "quelle": "Fresnel ≈ 2 % senkrecht, streifend → 100 % (n 1,333): aus Augenhöhe spiegelt der See Ufer und Wolke (Nordstern §4.1 Wasser-Optik)"
+                        "einheit": "Pearson r der Block-Luma (8×8) im Wasser gegen das an der Uferlinie gespiegelte Bild (abnahme-urteil klassenMasse spiegelTreue)",
+                        "quelle": "ruhiger See spiegelt Ufer, Wald und Wolke: Llyn Padarn in der Abend-Ruhe r 0,743 (spec/abnahme/llyn-padarn.png, Commons, CC BY-SA 2.0 Hefin Owen; K5 Selbst-Test); Fresnel streifend → 100 % (Nordstern §4.1 Wasser-Optik)"
                     }
                 ]
             },
@@ -852,8 +852,8 @@
                 "haushalt": "boden"
             },
             "mass": {
-                "name": "detail",
-                "werkzeug": "werkbank bild <Ufer-Pose> --klasse '^(wasserSatz|farWater|chunk-water-[a-z]+)$' --ist wasser — ein Messort mit Wasser fehlt im Haushalt",
+                "name": "spiegelTreue",
+                "werkzeug": "werkbank bild 1855 2.6 -6168 1700 4.5 -6168 --w 1920 --h 1080 --klasse '^(wasserSatz|farWater|chunk-water-[a-z]+)$' --ist wasser (der See 1816/−6168, Ego; Third dieselbe Linie aus 4 m Höhe hinter dem Spieler)",
                 "messung": {
                     "werkzeug": "bild",
                     "datum": "2026-10-15T03:26:32.615Z",
