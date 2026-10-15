@@ -312,8 +312,10 @@ class AnazhRealm_Z10 {
             if (_p("mond") > 0 && _au.terrainMoonRim) {
                 const _mvd = _T.cameraPosition.sub(_wp).normalize();
                 const _mfres = _T.normalWorld.dot(_mvd).clamp(0.0, 1.0).oneMinus().pow(3.0);
-                const _moonCol = _T.vec3(0.55, 0.66, 1.0);
-                _rgb = _rgb.add(_moonCol.mul(_mfres.mul(_au.terrainMoonRim).mul(_p("mond"))));
+                // der Farbton ist der EINE Mond-Hue des Gesetzes (MOONLIGHT ← ATMO_GESETZ.nacht.mond, D3)
+                const _M = AnazhRealm.MOONLIGHT;
+                const _mondHue = _T.vec3(_M.r, _M.g, _M.b);
+                _rgb = _rgb.add(_mondHue.mul(_mfres.mul(_au.terrainMoonRim).mul(_p("mond"))));
             }
             mat.outputNode = _T.vec4(_rgb, _o.w);
         } catch (_e) {
