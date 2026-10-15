@@ -3993,8 +3993,8 @@ function main() {
                 ],
                 [
                     "Glied aus TSL",
-                    "const { pass, uniform, vec2, vec3, float, luminance, mix, smoothstep, screenUV, max, min } = TSL;",
-                    "const { pass, uniform, vec2, vec3, float, luminance, mix, smoothstep, screenUV, max, min } = TSL; if (!pass) return null;",
+                    "} = TSL;\n            const pp = new PPCtor(",
+                    "} = TSL; if (!pass) return null;\n            const pp = new PPCtor(",
                     /^Ausstattungs-Wenn$/,
                 ],
                 [

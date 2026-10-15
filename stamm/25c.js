@@ -2808,6 +2808,7 @@ class AnazhRealm_Z25c {
             minFilter: THREE.LinearFilter,
             magFilter: THREE.LinearFilter,
         });
+        rt.name = "horizont-karte";
         rt.texture.name = "horizont-karte";
         const U = this._uniformHeimatTeilen({
             karte: T.uniform(new THREE.Matrix4()),
