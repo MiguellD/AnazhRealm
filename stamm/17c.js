@@ -1095,12 +1095,14 @@ class AnazhRealm_Z17c {
         return Math.floor(x / Z) + "," + Math.floor(z / Z);
     }
 
-    // Die Nah-Wiese liest dieselbe Karte (`_kronenStreuAt`): ihre Kacheln unter einer geänderten Krone fallen und wachsen
-    // neu (nur in Reichweite der Wiese — weiter weg steht keine Kachel).
+    // Nah-Wiese und Nah-Streu lesen das Licht derselben Kronen (`_bodenLichtFeld`): ihre Kacheln, so weit Streu ODER
+    // Schatten einer geänderten Krone reichen, fallen und wachsen neu (nur in Reichweite der Wiese — weiter weg steht
+    // keine Kachel).
     _kronenStreuWiese(x, z, radius) {
         const pm = this.state.playerMesh;
         if (!pm) return;
-        const a = radius * AnazhRealm.LAUB_STREU.rand;
+        const U = AnazhRealm.UNDERGROWTH;
+        const a = radius * Math.max(AnazhRealm.LAUB_STREU.rand, U.kronenSigma * Math.sqrt(U.kronenQMax));
         const NW = AnazhRealm.NAH_WIESE;
         if (Math.hypot(x - pm.position.x, z - pm.position.z) - a < NW.radius + NW.rand + NW.kachel * 1.5)
             this._nahWieseNeuIn(x - a, z - a, x + a, z + a);
@@ -1272,13 +1274,43 @@ class AnazhRealm_Z17c {
     }
 
     // DAS BODENLICHT unter den STEHENDEN Kronen ∈ [0, 1] (1 offen, → 0 geschlossenes Dach) — das Labor-Gesetz
-    // (phytogenesis `canopyLight`: L = exp(−0,85 · Σ Kronen), eine Krone = 1 in ihrer Mitte), die Kronen-Summe aus der
-    // EINEN Kronen-Karte (`_kronenStreuAt`: `LAUB_STREU.dichte` unter einer Krone). Nah-Wiese und Nah-Streu lesen es;
-    // ihre Kacheln wachsen neu, wo eine Krone kommt oder fällt (`_kronenStreuWiese`). Bis K70 lasen beide das
-    // Kronenlicht-Feld der Platzierung (`_canopyLightAt`, wo Bäume wachsen DÜRFEN) und die Wiese zusätzlich die Karte
-    // (× (1 − 0,85 · Streu)): am Waldrand der Mess-Wiese dünnte das Feld die offene Wiese auf 0,75 Licht.
-    _bodenLichtAt(x, z) {
-        return Math.exp((-AnazhRealm.UNDERGROWTH.canopyK * this._kronenStreuAt(x, z)) / AnazhRealm.LAUB_STREU.dichte);
+    // (phytogenesis `canopyLight`): je Krone des EINEN Registers (`wegeKarte.kronen`: Mitte, Radius r wie die Kronen-
+    // Schüchternheit) die Deckung exp(−q), q = d² / (σ·r)² bis q < qMax, L = exp(−canopyK · Σ Deckung). Gibt den Leser
+    // (x, z) → L eines Rechtecks: die Kronen, die es erreichen, sammelt er EINMAL (Lehre 25). Nah-Wiese und Nah-Streu lesen
+    // ihn je Kachel; ihre Kacheln wachsen neu, wo eine Krone kommt oder fällt (`_kronenStreuWiese`, bis zur Reichweite des
+    // Lichts). Bis K70 lasen beide das Kronenlicht-Feld der Platzierung (`_canopyLightAt`, wo Bäume wachsen DÜRFEN) und die
+    // Wiese zusätzlich die Kronen-Karte als Faktor — die Streu-Scheibe (voll bis r, Rand 1,7 r) ist breiter als der Schatten
+    // des Labors (an der Kronen-Kante 0,47): am Waldrand der Mess-Wiese dünnte das die offene Wiese auf 0,75 Licht.
+    _bodenLichtFeld(x0, z0, x1, z1) {
+        const U = AnazhRealm.UNDERGROWTH;
+        const wk = this.state.wegeKarte;
+        const reichJeR = U.kronenSigma * Math.sqrt(U.kronenQMax);
+        const kronen = [];
+        if (wk && wk.kronen.size) {
+            const R = (wk.kronenRandMax / AnazhRealm.LAUB_STREU.rand) * reichJeR;
+            const Z = AnazhRealm.LAUB_STREU.zelleM;
+            for (let zz = Math.floor((z0 - R) / Z); zz <= Math.floor((z1 + R) / Z); zz++)
+                for (let zx = Math.floor((x0 - R) / Z); zx <= Math.floor((x1 + R) / Z); zx++) {
+                    const zelle = wk.kronenZellen.get(zx + "," + zz);
+                    if (!zelle) continue;
+                    for (const c of zelle.values()) {
+                        const reich = c[2] * reichJeR;
+                        if (c[0] + reich < x0 || c[0] - reich > x1 || c[1] + reich < z0 || c[1] - reich > z1) continue;
+                        const s = U.kronenSigma * c[2];
+                        kronen.push(c[0], c[1], 1 / (s * s));
+                    }
+                }
+        }
+        return (x, z) => {
+            let deckung = 0;
+            for (let i = 0; i < kronen.length; i += 3) {
+                const dx = x - kronen[i];
+                const dz = z - kronen[i + 1];
+                const q = (dx * dx + dz * dz) * kronen[i + 2];
+                if (q < U.kronenQMax) deckung += Math.exp(-q);
+            }
+            return Math.exp(-U.canopyK * deckung);
+        };
     }
 
     // Die EINE Ausdehnung einer Form um ihre Achse (Malen und Siedlungs-Hülle): ein gedrehter Kasten reicht bis zur

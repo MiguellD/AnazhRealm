@@ -24597,7 +24597,7 @@ async function checkBandNahStreu(ctx) {
         const aSrc = window.__codeOf(r._nahStreuArten);
         out.kettenQuelle =
             /bodenGewicht/.test(kSrc) &&
-            /_bodenLichtAt/.test(kSrc) &&
+            /_bodenLichtFeld/.test(kSrc) &&
             /_feuchteAt/.test(kSrc) &&
             /_nahStreuBodenGewicht\(/.test(kSrc) &&
             /_koerperWasser\(/.test(kSrc) &&
@@ -31200,7 +31200,7 @@ async function checkBandGammaGenese(ctx) {
             out.gatingNah =
                 /bodenGewicht/.test(kSrc) &&
                 /_feuchteAt/.test(kSrc) &&
-                /_bodenLichtAt/.test(kSrc) &&
+                /_bodenLichtFeld/.test(kSrc) &&
                 /_nahStreuBodenGewicht\(/.test(kSrc);
             out.schilfData = !!(
                 boden &&

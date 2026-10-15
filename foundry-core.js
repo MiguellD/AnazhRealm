@@ -401,8 +401,12 @@ const PORTAL_RENDER_CONFIG = {
             // DER HALM-TEPPICH (K56, 14.10.): der Büschel deckt seine Raster-Zelle (TEPPICH_REICH), die Dreiecke wandern
             // von der Rispe in die Halme — L1 Halme 3 Segmente, 0,8 der Labor-Zahl, Rispe 4 × 1 bei 1,6 (862/1 000, vorher
             // 1 188); die Nah-Wiese an der Wiese −278/−1038 74,1k → 74,8k Dreiecke, Halm-Deckung des Bodens 0,230 → 0,460.
+            // DIE GRASNARBE (K70): die Rispe der L1 ist EINE nickende Ähre (1 × 2 Segmente, tastet die Kurve ab) statt vier
+            // gestreckter Grannen (4 × 1), die aus 2–5 m als helle V-Zeichen über der Narbe standen; 8 → 4 Dreiecke je Rispe
+            // (L1 798/990 → 702/858 an den zwei Vorlagen) — die Dreiecke tragen die Narbe, die das Bodenlicht der stehenden
+            // Kronen dichter wirft (`_bodenLichtFeld`).
             grass: {
-                1: { tris: 1000, draws: 1, schatten: false, rispe: { grannen: 4, segmente: 1, breite: 1.6 } },
+                1: { tris: 1000, draws: 1, schatten: false, rispe: { grannen: 1, segmente: 2, breite: 3.2 } },
                 2: { tris: 130, draws: 1, schatten: false, rispe: { grannen: 1, segmente: 1, breite: 2.65 } },
                 fernform: "boden",
             },

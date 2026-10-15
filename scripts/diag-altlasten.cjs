@@ -811,11 +811,11 @@ const FORBIDDEN = [
         token: "1 - this._canopyLightAt(px, pz, fussY)",
         fiel: "Integration W5-Klang — die Laub-Deckung ist _kronenStreuAt",
     },
-    // Nah-Wiese und Nah-Streu lesen das Licht der STEHENDEN Kronen (`_bodenLichtAt`, das Labor-Gesetz über der Kronen-
-    // Karte) — nie das Platzierungs-Feld und nie die Karte ein zweites Mal als Faktor (K70, Soll-Tafel boden-nah).
-    { token: "this._canopyLightAt(x, z, y, m)", fiel: "K70 Boden nah — das Bodenlicht der Nah-Wiese ist _bodenLichtAt" },
-    { token: "(1 - streu * 0.85)", fiel: "K70 Boden nah — die Kronen-Karte wirkt einmal, im Licht (_bodenLichtAt)" },
-    { token: "licht: this._canopyLightAt(", fiel: "K70 Boden nah — das Licht der Nah-Streu ist _bodenLichtAt" },
+    // Nah-Wiese und Nah-Streu lesen das Licht der STEHENDEN Kronen (`_bodenLichtFeld`, das Labor-Gesetz über dem Kronen-
+    // Register) — nie das Platzierungs-Feld und nie die Streu-Karte als Faktor (K70, Soll-Tafel boden-nah).
+    { token: "this._canopyLightAt(x, z, y, m)", fiel: "K70 Boden nah — das Bodenlicht der Nah-Wiese ist _bodenLichtFeld" },
+    { token: "(1 - streu * 0.85)", fiel: "K70 Boden nah — die Kronen-Karte wirkt einmal, im Licht (_bodenLichtFeld)" },
+    { token: "licht: this._canopyLightAt(", fiel: "K70 Boden nah — das Licht der Nah-Streu ist _bodenLichtFeld" },
     // Der Wasser-Hauch klingt nur, wo Wasser ist: jeder Bau und Abbau reicht seine Fußabdrücke (`_nassAt`) — der Aufruf
     // ohne Fußabdruck hauchte bis 06.10. auch fern jedes Ufers (der Stein-Abbau war nie stumm).
     { token: "this._playWaterReactionPing()", fiel: "Integration W5-Klang — _playWaterReactionPing(fussabdruecke)" },

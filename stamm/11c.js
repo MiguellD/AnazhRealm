@@ -24,7 +24,7 @@ class AnazhRealm_Z11c {
     // DIE NAH-WIESE: je Kachel (NAH_WIESE.kachel) die Büschel nach dem Studio-Gesetz (buildForest, Schritt 7):
     // Raster `understory.grassStep` in Welt-Koordinaten, Jitter ±0,34, Wurf gegen
     // groundCover.grass = clamp(clamp(L·1,08 − rk·0,85 + m·0,22)·1,12) mit den Welt-Feldern (das Licht der stehenden
-    // Kronen `_bodenLichtAt`, Feuchte, Hang wie der Strauch-Teppich, Pfad dünnt) × dem Grün-Kanal der Boden-Karte (Büschel nur, wo
+    // Kronen `_bodenLichtFeld`, Feuchte, Hang wie der Strauch-Teppich, Pfad dünnt) × dem Grün-Kanal der Boden-Karte (Büschel nur, wo
     // die Boden-Funktion Wiese zeichnet). Skala Studio: (0,7 + w·0,7) · (m > 0,8 ? 1,45 : 1), zwei Vorlagen.
     // Fuß, Hang und Grün auf dem GERENDERTEN Boden (der EINE Leser `_bodenSichtAt`, am Chunk-Rand die Karte des
     // Nachbarn). Die Würfe hängen nur an der Zelle (Γ5) — dieselbe Wiese bei jedem Besuch. Gibt die Büschel-Liste
@@ -45,6 +45,7 @@ class AnazhRealm_Z11c {
             return v === null ? NaN : v;
         };
         const grund = {};
+        const licht = this._bodenLichtFeld(x0 - 0.34, z0 - 0.34, x0 + NW.kachel + 0.34, z0 + NW.kachel + 0.34);
         const out = [];
         for (let gj = Math.ceil(z0 / step); gj * step < z0 + NW.kachel; gj++) {
             for (let gi = Math.ceil(x0 / step); gi * step < x0 + NW.kachel; gi++) {
@@ -69,9 +70,9 @@ class AnazhRealm_Z11c {
                 if (!(gruen > 0)) continue;
                 if (y < this._koerperWasser(x, z, y) + 0.1) continue; // nie im gezeichneten Wasser (wie die Nah-Streu)
                 const m = this._feuchteAt ? this._feuchteAt(x, z, y) : 0;
-                // das Licht der STEHENDEN Kronen (dieselbe Kronen-Karte wie der Boden): unter einer Krone 0,43, wo Kronen
-                // sich schließen 0,24 — dort wächst die Narbe nach dem Labor-Gesetz auf 52 % bzw. 29 %
-                const L = this._bodenLichtAt(x, z);
+                // das Licht der STEHENDEN Kronen (dasselbe Register wie die Laub-Streu): in der Mitte einer Krone 0,43, an
+                // ihrer Kante 0,67 — dort wächst die Narbe nach dem Labor-Gesetz auf 52 % bzw. 81 %
+                const L = licht(x, z);
                 const hang = this._slopeAt(x, z, boden);
                 const rk = cl((hang - GS.lo) / (GS.hi - GS.lo));
                 const pfad = this._pfadFeldAt(x, z, y);
@@ -427,7 +428,7 @@ class AnazhRealm_Z11c {
     }
 
     // Die Pflanzen einer Kachel nach dem Boden-Gesetz: je Zelle (NAH_STREU.zelle) EINE Umwelt-Messung (das Licht der
-    // stehenden Kronen `_bodenLichtAt` · Feuchte · Höhe über dem Wasser · Steinigkeit · Hang, die Welt-Leser), je Art λ = dichte · Zellfläche ·
+    // stehenden Kronen `_bodenLichtFeld` · Feuchte · Höhe über dem Wasser · Steinigkeit · Hang, die Welt-Leser), je Art λ = dichte · Zellfläche ·
     // Gewicht · Last-Dichte (`_effectiveFoliageDensity`), n = ⌊λ + Wurf⌋. Der Wurf-Strom je (Zelle, Art) hängt nur
     // an der Zelle (Γ5): dieselbe Streu bei jedem Besuch, und eine dünnere Last ist ein Präfix der vollen (die
     // Ernte-Identität `gi|gj|art|i` bleibt). Fuß und Hang auf dem GERENDERTEN Boden (der EINE Leser `_bodenSichtAt`, am
@@ -456,6 +457,7 @@ class AnazhRealm_Z11c {
             return v === null ? NaN : v;
         };
         const items = [];
+        const licht = this._bodenLichtFeld(tx * K, tz * K, (tx + 1) * K, (tz + 1) * K);
         for (let gj = tz * n; gj < tz * n + n; gj++) {
             for (let gi = tx * n; gi < tx * n + n; gi++) {
                 const x = (gi + 0.5) * Z;
@@ -473,7 +475,7 @@ class AnazhRealm_Z11c {
                 const uf = { see: 0, fluss: null, ufer: 0 };
                 this._waterLevelAt(x, z, uf);
                 const u = {
-                    licht: this._bodenLichtAt(x, z), // das Licht der stehenden Kronen (Labor: `lightAt` der Bäume)
+                    licht: licht(x, z), // das Licht der stehenden Kronen (Labor: `lightAt` der Bäume)
                     feucht,
                     ufer: y - this._koerperWasser(x, z, y),
                     fels: feld ? feld.dichte : null,
