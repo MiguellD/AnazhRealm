@@ -269,27 +269,32 @@
                 "werkzeug": "werkbank licht --ist himmel-licht (die Licht-Bilanz an der Mess-Wiese)",
                 "messung": {
                     "werkzeug": "licht",
-                    "datum": "2026-10-15T05:13:10.436Z",
+                    "datum": "2026-10-15T10:15:26.107Z",
                     "stand": {
-                        "sha": "ce0b815eea70b1d98b7b5e3dfe914ae474a93482",
+                        "sha": "5e8beb7bb62f25d14b107c3ea1e02f7ac58a766c+geaendert",
                         "version": "18.546.2"
                     },
                     "geraet": {
                         "adapter": "amd rdna-3"
                     },
-                    "E_alle": 9.44,
-                    "E_umgebung": 2.26,
+                    "E_alle": 7.94,
+                    "E_umgebung": 1.54,
+                    "E_umgebung_zurSonne": 1.16,
+                    "E_umgebung_vonSonne": 0.92,
                     "sonnenRichtung": [
                         0,
                         0.962,
                         0.272
                     ],
                     "quellen": {
-                        "stamm/07.js": "c:49617014f39c824b",
-                        "stamm/10.js": "c:093b1e2ba003f5d2",
+                        "foundry-core.js": "c:331d9edbd5246a96",
+                        "stamm/05b.js": "c:4c12e03cdfb56134",
+                        "stamm/07.js": "c:158f10e6ed0cd9c0",
+                        "stamm/10.js": "c:1b961fac64032e22",
+                        "stamm/11d.js": "c:cd3173474dd3738c",
                         "stamm/19.js": "c:b1a053cba1f64cd1",
-                        "stamm/24.js": "c:26d0da410e4c28a0",
-                        "stamm/25c.js": "c:61e641a0f44d5466"
+                        "stamm/24.js": "c:87ee881db15a7f18",
+                        "stamm/25c.js": "c:a12f2df84d48a16e"
                     }
                 }
             },

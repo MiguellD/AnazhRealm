@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 "use strict";
-// SPIKE D3 (WIP, Entscheidung, kein Bau): DAS LICHT-VERHÄLTNIS aus EINER Atmosphäre, offline nach Hillaire
+// DER RICHTER DES ZAHLENWERTS (D3; Spike 110c3f99): DAS LICHT-VERHÄLTNIS aus EINER Atmosphäre, offline nach Hillaire
 // (EGSR 2020, "A Scalable and Production Ready Sky and Atmosphere Rendering Technique", CGF 39(4)).
 // Gerechnet wird, was die LUT-Kette des Baus zeigen würde: Transmittance (Sonne) · Mehrfachstreuung Ψ_ms (32²-Gesetz,
 // Gl. 5–9) · Himmels-Leuchtdichte je Richtung (der Sky-View-Marsch) → E_Himmel = ∫ L cosθ dω an der waagrechten Fläche,
@@ -16,8 +16,17 @@
 const fs = require("fs");
 const path = require("path");
 
-const RG = 6360e3;
-const RT = 6460e3;
+// DAS ATMOSPHÄREN-GESETZ der Welt (foundry-core `ATMO_GESETZ`, D3): Radien, Rayleigh-Höhe, Mie g und Einfach-Albedo, Ozon-Zelt —
+// gelesen, nie abgeschrieben (der Richter rechnet mit DEMSELBEN Gesetz wie die Tafeln der Welt, `_atmoLutBau`)
+function atmoGesetz() {
+    const t = fs.readFileSync(path.join(__dirname, "..", "foundry-core.js"), "utf8");
+    const m = t.match(/var ATMO_GESETZ = (\{[\s\S]*?\n\});/);
+    if (!m) throw new Error("foundry-core: ATMO_GESETZ nicht gefunden");
+    return require("vm").runInNewContext("(" + m[1] + ")");
+}
+const GESETZ = atmoGesetz();
+const RG = GESETZ.erdeM;
+const RT = GESETZ.randM;
 const LUMA = [0.2126, 0.7152, 0.0722];
 
 // ---------- die Welt-Konstanten lesen (stamm/26c.js, stamm/06b.js), nie abschreiben ----------
@@ -59,6 +68,13 @@ function weltGesetz() {
     const la = zeile("laub"),
         bo = zeile("boden");
     const bodenAlbedo = la.map((v, c) => (v + bo[c]) / 2);
+    // der Boden der Welt-Tafeln (`ATMO_BODEN`, stamm/26c.js) hält die Tafel (±3 %) — sonst rechnet die Welt einen anderen Boden
+    const mb = t26c.match(/AnazhRealm\.ATMO_BODEN\s*=\s*Object\.freeze\(\[([^\]]+)\]\)/);
+    if (!mb) throw new Error("Welt-Gesetz: ATMO_BODEN nicht gefunden");
+    const weltBoden = mb[1].split(",").map(Number);
+    const drift = weltBoden.map((v, c) => Math.abs(v / bodenAlbedo[c] - 1));
+    if (Math.max(...drift) > 0.03)
+        throw new Error(`ATMO_BODEN ${weltBoden.join("/")} weicht von der Albedo-Tafel ${bodenAlbedo.map((x) => x.toFixed(4)).join("/")} ab`);
     return {
         bodenAlbedo,
         rayleighZenitTiefe: [rr, rg, rb],
@@ -71,21 +87,21 @@ function weltGesetz() {
 
 // ---------- das Medium ----------
 function atmosphaere(o) {
-    const HR = o.HR || 8000;
+    const HR = o.HR || GESETZ.rayleighH;
     const betaR = o.rayleighZenitTiefe.map((t) => t / HR); // Streuung = Extinktion (Rayleigh absorbiert nicht)
     const alpha = o.angstroem || 0; // Mie spektral: β(λ) = β550·(λ/550)^-α (Hillaire: grau, α = 0)
     const lam = [680, 550, 440];
     const mieExt = lam.map((l) => o.mieExt550 * Math.pow(l / 550, -alpha));
-    const ssa = o.mieSsa == null ? 0.9 : o.mieSsa;
+    const ssa = o.mieSsa == null ? GESETZ.mieAlbedo : o.mieSsa;
     return {
         betaR,
         HR,
         mieExt,
         mieSca: mieExt.map((e) => e * ssa),
         HM: o.HM,
-        g: o.g == null ? 0.8 : o.g,
+        g: o.g == null ? GESETZ.mieG : o.g,
         phase: o.phase || "hg",
-        ozon: o.ozon || [0.65e-6, 1.881e-6, 0.085e-6], // Hillaire/Bruneton: Absorption je m im Zelt-Gipfel
+        ozon: o.ozon || GESETZ.ozon.absorption, // Absorption je m im Zelt-Gipfel (das Gesetz)
         albedo: Array.isArray(o.albedo) ? o.albedo : [0, 1, 2].map(() => (o.albedo == null ? 0.3 : o.albedo)), // je Kanal
         h0: o.h0 || 0,
     };
@@ -93,7 +109,7 @@ function atmosphaere(o) {
 function dichte(A, h, out) {
     const dR = Math.exp(-h / A.HR);
     const dM = Math.exp(-h / A.HM);
-    const dO = Math.max(0, 1 - Math.abs(h - 25e3) / 15e3);
+    const dO = Math.max(0, 1 - Math.abs(h - GESETZ.ozon.mitteM) / GESETZ.ozon.halbM);
     for (let c = 0; c < 3; c++) {
         const sR = A.betaR[c] * dR;
         const sM = A.mieSca[c] * dM;
