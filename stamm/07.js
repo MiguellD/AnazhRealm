@@ -1375,7 +1375,10 @@ class AnazhRealm_Z07 {
                     if (E.aufruf !== this.info.calls) {
                         E.aufruf = this.info.calls;
                         E.aufrufMs = 0;
-                    } else if (E.aufrufMs >= AnazhRealm.ERST_BAU_MS) {
+                        // unter dem Ladeschirm sieht kein Spieler den Takt: ein Lade-Bild (`_ladeBildFaellig`, alle
+                        // LADE_BILD_MS) baut je Aufruf bis zur Frist des Lade-Frames, nicht nur einen Stoff
+                        E.deckel = welt._ladeTakt() ? AnazhRealm.LADE_TAKT_MS : AnazhRealm.ERST_BAU_MS;
+                    } else if (E.aufrufMs >= E.deckel) {
                         E.verschoben++;
                         if (aufnahme !== null) welt._erstWartet(this.backend, null, aufnahme.bundleGroup);
                         return;
@@ -1406,6 +1409,7 @@ class AnazhRealm_Z07 {
             this._erstZeichnung = {
                 aufruf: -1,
                 aufrufMs: 0,
+                deckel: AnazhRealm.ERST_BAU_MS, // die Bau-Zeit je Render-Aufruf (unter dem Ladeschirm LADE_TAKT_MS)
                 bauN: 0,
                 bauMs: 0,
                 verschoben: 0,
