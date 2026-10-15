@@ -1621,6 +1621,21 @@ const ZWILLINGE = [
         verboten: gelaendeLeser().concat(["gelaende-core.js"]),
         fiel: `K16 — die Landform ersetzt ${was}`,
     })),
+    // D3 — DIE EINE ATMOSPHÄRE als MUSTER (Lehre 7: ein Zwillings-Abdruck ist ein Muster, nie ein Variablen-Name): die Luftmasse
+    // als Kehrwert der Sonnenhöhe (die Luftmassen-Sonne, `1 / (max(e, 0) + 0,06)`) in keiner Datei, und eine Equirekt-Umgebung
+    // nur im Wandel-Pass der Himmels-Sicht (`_atmoLutBau`, stamm/24.js) — jede andere ist eine gemalte Umgebung neben der EINEN.
+    {
+        muster: /1(?:\.0)?\s*\/\s*\(\s*Math\.max\(\s*[\w.]+\s*,\s*0(?:\.0)?\s*\)\s*\+\s*0\.\d+\s*\)/,
+        gefallen: true,
+        verboten: gelaendeLeser().concat(["gelaende-core.js"]),
+        fiel: "D3 — die Sonne ist der Durchlass der EINEN Atmosphäre (ATMO_RECHNUNG.sonne), keine Luftmasse als Kehrwert der Höhe",
+    },
+    {
+        muster: /\bEquirectangularReflectionMapping\b/,
+        gesetzbuch: "stamm/24.js",
+        verboten: gelaendeLeser().filter((d) => !/(?:^|[\\/])stamm[\\/]24\.js$/.test(d)),
+        fiel: "D3 — die Umgebung ist der Wandel-Pass der Himmels-Sicht (_atmoLutBau), keine gemalte Equirekt-Umgebung",
+    },
 ];
 
 // Die Leser des Gelände-Gesetzes, die es nie nachrechnen: jede JS-Datei der Wurzel außer dem Gesetzbuch und dem Seh-

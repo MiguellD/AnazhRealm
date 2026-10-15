@@ -3264,6 +3264,13 @@ function atmosphere(e) {
     _atmS.setRGB(s.col.r, s.col.g, s.col.b);
     return { col: _atmS, lum: s.lum, day: s.day };
 }
+// Die Lichtmenge der Zenit-Sonne aus DEMSELBEN Medium und Auge: die Tages-Achse der Umgebung (`_dimEnvIBL`) ist der Durchlass
+// relativ zu ihr — bis zur D3-Nachbesserung teilte sie durch 0,92, die Zenit-Lichtmenge der gefallenen Luftmassen-Sonne.
+const _atmZ = [0, 0, 0];
+function _atmoLumZenit() {
+    const hKm = Math.max(0.001, (camera ? camera.position.y : 0) / 1000);
+    return ATMO_RECHNUNG.sonne(ATMO_GESETZ, _ATMO_M, hKm, 1, ATMO_GESETZ.durchlassSchritte, _atmZ).lum;
+}
 /* V18.491.264 — Lab weather presets ← WX_GESETZ fail-soft; Host none (WX_VIS). ≠ ATMOS/LUFT; FIB untouched. */
 const WX_GESETZ_FALLBACK = {
     klar: { fog: 0.15, sun: 1.0, grey: 0.0, wind: 0.06, rain: 0.0 },
@@ -3374,7 +3381,7 @@ function updateWorld(dt) {
         day = clamp(e, 0, 1);
     _wSunPos.set(hx * cosE, lift, hz * cosE).normalize();
     const atm = atmosphere(e); // EIN atmosphaerischer Zustand speist alles Licht
-    _dimEnvIBL(clamp(0.06 + (0.94 * atm.lum) / 0.92, 0.06, 1.0)); // Env-IBL (scene.environment ist konstant) nachts dimmen -> Laub bleibt nicht hell
+    _dimEnvIBL(clamp(0.06 + (0.94 * atm.lum) / _atmoLumZenit(), 0.06, 1.0)); // Env-IBL (scene.environment ist konstant) nachts dimmen -> Laub bleibt nicht hell
     if (keyLight) {
         if (forestMode) {
             // Schatten-Kamera dem Spieler nachfuehren: Terrain (192) ist groesser als die Schattenbox -> Box IMMER um den Spieler.

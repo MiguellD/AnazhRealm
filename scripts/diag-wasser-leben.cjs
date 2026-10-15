@@ -441,26 +441,6 @@ function urteil(b) {
             if (!k.peer) v.push("K7 MITSPIELER: die Peer-Probe lief nicht");
             else if (!(Math.abs(k.peer.lehne) > 0.05))
                 v.push(`K7 MITSPIELER: der Peer-Körper an der Brustkorb-Linie schwimmt nicht (Lehne ${k.peer.lehne})`);
-            const li = k.licht;
-            if (!li || !li.himmelVor || !li.himmelGetaucht)
-                v.push("K9 LEER: die Licht-Probe lief nicht (Luft oder Himmels-Umgebung fehlt)");
-            else {
-                if (!(li.nachtUnten < li.nachtOben))
-                    v.push(
-                        `K9 NACHT: unter Wasser ist die Mitternacht heller (${li.nachtUnten}) als die Luft darüber (${li.nachtOben})`
-                    );
-                if (!(li.mittagUnten > li.nachtUnten * 2))
-                    v.push(
-                        `K9 LITERAL: das Wasser kennt Tag und Nacht nicht (Mittag ${li.mittagUnten}, Mitternacht ${li.nachtUnten})`
-                    );
-                // linear (D3: die Umgebung ist die Equirekt-Tafel der EINEN Atmosphäre, Float): 1 % des hellsten Kanals —
-                // die Tafel folgt der Augen-Höhe in 10-m-Stufen, ein Tauchgang darf sie nicht färben
-                const dh = Math.max(...li.himmelVor.map((x, i) => Math.abs(x - li.himmelGetaucht[i])));
-                if (dh > 0.01 * Math.max(...li.himmelVor))
-                    v.push(
-                        `K9 HIMMEL: der Tauchgang färbt die Himmels-Umgebung (${li.himmelVor.join("/")} → ${li.himmelGetaucht.join("/")})`
-                    );
-            }
             const m = k.medium;
             if (!m) v.push("K5 MEDIUM: die Luft-Probe lief nicht (keine Kamera oder Luft)");
             else {
@@ -473,6 +453,29 @@ function urteil(b) {
                         "K5 MEDIUM: die Kamera 10 m über dem Spiegel sieht Unterwasser (die Augen des Körpers sind getaucht)"
                     );
             }
+        }
+    }
+    // K9 DAS LICHT AM WASSER: mit dem echten Renderer (der Himmel der EINEN Atmosphäre lebt auf der GPU, D3) — im Bild-Lauf
+    if (b.bild) {
+        const li = b.licht;
+        if (!li || !li.himmelVor || !li.himmelGetaucht)
+            v.push(`K9 LEER: die Licht-Probe lief nicht (${(li && li.fehler) || "Luft oder Himmels-Umgebung fehlt"})`);
+        else {
+            if (!(li.nachtUnten < li.nachtOben))
+                v.push(
+                    `K9 NACHT: unter Wasser ist die Mitternacht heller (${li.nachtUnten}) als die Luft darüber (${li.nachtOben})`
+                );
+            if (!(li.mittagUnten > li.nachtUnten * 2))
+                v.push(
+                    `K9 LITERAL: das Wasser kennt Tag und Nacht nicht (Mittag ${li.mittagUnten}, Mitternacht ${li.nachtUnten})`
+                );
+            // linear (D3: die Umgebung ist die Equirekt-Tafel der EINEN Atmosphäre, Float): 1 % des hellsten Kanals —
+            // die Tafel folgt der Augen-Höhe in 10-m-Stufen, ein Tauchgang darf sie nicht färben
+            const dh = Math.max(...li.himmelVor.map((x, i) => Math.abs(x - li.himmelGetaucht[i])));
+            if (dh > 0.01 * Math.max(...li.himmelVor))
+                v.push(
+                    `K9 HIMMEL: der Tauchgang färbt die Himmels-Umgebung (${li.himmelVor.join("/")} → ${li.himmelGetaucht.join("/")})`
+                );
         }
     }
     if (b.bild) {
@@ -638,14 +641,14 @@ function selbsttest() {
             ),
             baumlos: { sohleUnterSpiegel: 0.5, soll: 0.5 },
             peer: { lehne: 0.4, meshKind: "soul" },
-            licht: {
-                nachtOben: 0.03,
-                nachtUnten: 0.004,
-                mittagOben: 0.9,
-                mittagUnten: 0.5,
-                himmelVor: [191, 218, 237],
-                himmelGetaucht: [191, 218, 237],
-            },
+        },
+        licht: {
+            nachtOben: 0.03,
+            nachtUnten: 0.004,
+            mittagOben: 0.9,
+            mittagUnten: 0.5,
+            himmelVor: [191, 218, 237],
+            himmelGetaucht: [191, 218, 237],
         },
         bild: {
             uhr60: {
@@ -719,10 +722,10 @@ function selbsttest() {
         ["K6 LAGE", (b) => Object.assign(b.koerper.tier[0], { sohleUnterSpiegel: 0.3, wasserlinie: 0.87 })],
         ["K6 LEER", (b) => (b.koerper.tier = [])],
         ["K7 MITSPIELER", (b) => (b.koerper.peer.lehne = 0)],
-        ["K9 NACHT", (b) => Object.assign(b.koerper.licht, { nachtUnten: 0.17 })],
-        ["K9 LITERAL", (b) => Object.assign(b.koerper.licht, { nachtUnten: 0.17, mittagUnten: 0.17, nachtOben: 0.5 })],
-        ["K9 HIMMEL", (b) => (b.koerper.licht.himmelGetaucht = [81, 132, 170])],
-        ["K9 LEER", (b) => delete b.koerper.licht],
+        ["K9 NACHT", (b) => Object.assign(b.licht, { nachtUnten: 0.17 })],
+        ["K9 LITERAL", (b) => Object.assign(b.licht, { nachtUnten: 0.17, mittagUnten: 0.17, nachtOben: 0.5 })],
+        ["K9 HIMMEL", (b) => (b.licht.himmelGetaucht = [81, 132, 170])],
+        ["K9 LEER", (b) => delete b.licht],
         ["K8 UFER-FLUT", (b) => Object.assign(b.ufer, { geflutet: 37, maxFlutM: 3.15 })],
         ["K12 KLANG", (b) => (b.leser.klang = 163)],
         ["K12 TIER-SCHEU", (b) => (b.leser.scheu = 173)],
@@ -966,6 +969,7 @@ async function lauf() {
             })();
             befund.bild = await page.evaluate((png) => window.__wasserBild({ png }), !!ordner);
             befund.regen = await page.evaluate(() => window.__wasserRegen({}));
+            befund.licht = await page.evaluate(() => window.__wasserLicht({}));
             for (const k of ["png60", "png3600"]) {
                 if (ordner && befund.bild[k]) {
                     fs.mkdirSync(ordner, { recursive: true });
