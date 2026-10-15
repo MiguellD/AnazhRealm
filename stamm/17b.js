@@ -863,7 +863,8 @@ class AnazhRealm_Z17b {
             if (form && amOrt) {
                 const V = this._satzVorrat || (this._satzVorrat = new Map());
                 let vr = V.get(ga.array.constructor);
-                if (!vr || vr.length < n * gis) V.set(ga.array.constructor, (vr = new ga.array.constructor(n * gis * 2)));
+                if (!vr || vr.length < n * gis)
+                    V.set(ga.array.constructor, (vr = new ga.array.constructor(n * gis * 2)));
                 AnazhRealm._satzPacke(form, quelle, is, vr, 0, n, w && geom.attributes[w].array);
                 quelle = vr.subarray(0, n * gis);
             } else if (form) {
@@ -1419,10 +1420,7 @@ class AnazhRealm_Z17b {
             }
             let cur = o;
             for (let i = lo; i < belegt.length && belegt[i][0] < e && cur < e; i++) {
-                if (
-                    belegt[i][0] > cur &&
-                    AnazhRealm._satzSetze(index, a.start + cur, w, belegt[i][0] - cur, L)
-                )
+                if (belegt[i][0] > cur && AnazhRealm._satzSetze(index, a.start + cur, w, belegt[i][0] - cur, L))
                     this._chunkSatzSchreib(s, wer, a.key, a.start + cur + L[0], L[1] - L[0]);
                 if (belegt[i][1] > cur) cur = belegt[i][1];
             }
