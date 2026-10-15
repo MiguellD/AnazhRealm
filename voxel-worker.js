@@ -675,25 +675,32 @@ function clamp01(v) {
 // Orts (`waterLevelAt`) und die Kronen der stehenden Bäume (je Laub-Teil ihrer gefühlten Gestalt das Ellipsoid seines Ankers,
 // `_baumGestaltTeile` im Main — dieselben Teile wie die Hülle des Baums). Die Albedo linear: die EINE Boden-Farbe
 // (`attachFieldColors` = `_bodenFarbeAt`), das Laub der Gestalt, der Wasser-Körper R∞ (`wasserFarbe`); A die Höhe über
-// `bezug`. Das Wasser trägt sein B NEGATIV — die Marke, an der der Pass den Wasser-Punkt erkennt. Rückgabe RGBA-Halbfloat.
+// `bezug`. Das Wasser trägt sein B NEGATIV — die Marke, an der der Pass den Wasser-Punkt erkennt —, das Laub sein R. Rückgabe
+// RGBA-Halbfloat.
 const spiegelGestalten = [];
+// der GEBAUTE Boden an (x, z): die Nullstelle der Spalten-Dichte, zwei Newton-Schritte von der Gesetz-Höhe aus
+function spiegelBoden(x, z) {
+    const ctx = terrainColumnContext(x, z);
+    let y = ctx.surf;
+    for (let k = 0; k < 2; k++) {
+        const d = terrainDensityAtCol(x, y, z, ctx);
+        if (Math.abs(d) < 40) y += d;
+    }
+    return y;
+}
 function spiegelFeldBacken(msg) {
     const { i0, j0, w, h, texel, bezug } = msg;
     const H = new Float32Array(w * h);
     const F = new Float32Array(w * h * 3);
     const nass = new Uint8Array(w * h);
+    const laub = new Uint8Array(w * h);
     const pos = new Float32Array(w * 3);
     let wasser = 0;
     for (let j = 0; j < h; j++) {
         const z = (j0 + j + 0.5) * texel;
         for (let i = 0; i < w; i++) {
             const x = (i0 + i + 0.5) * texel;
-            const ctx = terrainColumnContext(x, z);
-            let y = ctx.surf;
-            for (let k = 0; k < 2; k++) {
-                const d = terrainDensityAtCol(x, y, z, ctx);
-                if (Math.abs(d) < 40) y += d;
-            }
+            const y = spiegelBoden(x, z);
             const p = j * w + i;
             const wl = waterLevelAt(x, z);
             if (wl > y + 0.05) {
@@ -708,7 +715,7 @@ function spiegelFeldBacken(msg) {
         F.set(attachFieldColors(pos), j * w * 3);
     }
     // die Gestalten reisen einmal (Index → { teile [cx, cy, cz, rXZ, rY] je Laub-Teil, farbe }), die Bäume je Auftrag:
-    // [x, y, z, Skala, cos θ, sin θ, Gestalt] (θ die Drehung um y des Eintrags)
+    // [x, y, z, Skala, cos θ, sin θ, Gestalt] (θ die Drehung um y; y NaN: der Fuß der Streu ist der gebaute Boden)
     for (const g of msg.gestalten || []) spiegelGestalten[g.i] = g;
     const B = msg.baeume;
     const x0 = i0 * texel,
@@ -720,12 +727,13 @@ function spiegelFeldBacken(msg) {
             c = B[t + 4],
             sn = B[t + 5];
         const T = g.teile;
+        const fuss = Number.isFinite(B[t + 1]) ? B[t + 1] : spiegelBoden(B[t], B[t + 2]);
         for (let k = 0; k + 4 < T.length; k += 5) {
             const lx = T[k] * s,
                 lz = T[k + 2] * s;
             const cx = B[t] + lx * c + lz * sn,
                 cz = B[t + 2] - lx * sn + lz * c,
-                cy = B[t + 1] + T[k + 1] * s;
+                cy = fuss + T[k + 1] * s;
             const r = T[k + 3] * s,
                 ry = T[k + 4] * s;
             const ia = Math.max(0, Math.floor((cx - r - x0) / texel)),
@@ -746,6 +754,7 @@ function spiegelFeldBacken(msg) {
                         wasser--;
                     }
                     H[p] = oben;
+                    laub[p] = 1;
                     F[p * 3] = g.farbe[0];
                     F[p * 3 + 1] = g.farbe[1];
                     F[p * 3 + 2] = g.farbe[2];
@@ -763,7 +772,8 @@ function spiegelFeldBacken(msg) {
             feld[o + 1] = zuHalb(wk[1]);
             feld[o + 2] = zuHalb(-Math.max(wk[2], 1e-3));
         } else {
-            feld[o] = zuHalb(F[p * 3]);
+            // das Laub trägt sein R NEGATIV — die Marke, an der der Pass die Krone von der Flanke des Bodens trennt
+            feld[o] = zuHalb(laub[p] ? -Math.max(F[p * 3], 1e-3) : F[p * 3]);
             feld[o + 1] = zuHalb(F[p * 3 + 1]);
             feld[o + 2] = zuHalb(F[p * 3 + 2]);
         }

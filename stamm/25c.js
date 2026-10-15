@@ -2413,6 +2413,10 @@ class AnazhRealm_Z25c {
                 // V18.113 — renderAsync() ist im PR-#81-Vendor deprecated (Warnung
                 // in der Schöpfer-Konsole); render() ist der eine Pfad.
                 if (this.state.traaNode) this._traaReprojektion();
+                // springt das Auge (K68, `_traaR.sprung`), zeigt der Spiegel des letzten Bilds einen anderen Ort: das Wasser
+                // liest in DIESEM Bild den Himmel allein, der Pass danach rechnet den neuen (D10)
+                const L = this.state.spiegelLeser;
+                if (L && this.state._traaR && this.state._traaR.sprung) L.an.value = 0;
                 pp.render();
             } catch (err) {
                 // r184 baut Post-Kette und Szenen-Pass erst im ersten render() (PostProcessing.render → _update): ein

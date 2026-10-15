@@ -843,8 +843,8 @@
                             0.6,
                             null
                         ],
-                        "einheit": "Pearson r der Block-Luma (8×8) im Wasser gegen das an der Uferlinie gespiegelte Bild (abnahme-urteil klassenMasse spiegelTreue)",
-                        "quelle": "ruhiger See spiegelt Ufer, Wald und Wolke: Llyn Padarn in der Abend-Ruhe r 0,743 (spec/abnahme/llyn-padarn.png, Commons, CC BY-SA 2.0 Hefin Owen; K5 Selbst-Test); Fresnel streifend → 100 % (Nordstern §4.1 Wasser-Optik)"
+                        "einheit": "Pearson r der Block-Luma (8×8) im Wasser gegen das an der Uferlinie gespiegelte Bild je Block-Zeile, gewogen mit der Struktur über dem Ufer — frei vom Fresnel- und Himmels-Verlauf (abnahme-urteil klassenMasse spiegelTreue)",
+                        "quelle": "ruhiger See spiegelt Ufer, Wald und Wolke: Llyn Padarn in der Abend-Ruhe r 0,922 (spec/abnahme/llyn-padarn.png, Commons, CC BY-SA 2.0 Hefin Owen; K5 Selbst-Test); Fresnel streifend → 100 % (Nordstern §4.1 Wasser-Optik)"
                     }
                 ]
             },

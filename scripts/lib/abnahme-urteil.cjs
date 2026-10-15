@@ -760,8 +760,12 @@ function klassenMasse(F, m, W, H, aussen) {
     }
     // DIE SPIEGEL-TREUE (D10, Nordstern §4.1 Wasser-Optik): ein ruhiges Wasser zeigt das Bild über seinem Ufer gespiegelt.
     // Je Spalte die Uferlinie h0 (das oberste Pixel der Klasse), je 8×8-Block ganz in der Klasse das Luma-Mittel gegen das
-    // Mittel seiner Partner (x, 2·h0(x) − y) über der Linie; Pearson r über die Blöcke (`sp` die Summen n, Σa, Σb, Σa², Σb²,
-    // Σab — die Tafel fasst Teil-Klassen über sie). Llyn Padarn in der Abend-Ruhe misst r 0,74, der Himmel allein im Wasser 0.
+    // Mittel seiner Partner (x, 2·h0(x) − y) über der Linie; Pearson r JE BLOCK-ZEILE, gemittelt mit dem Gewicht Σb² der
+    // Zeile (`sp` = n, 0, 0, ΣW, ΣW, ΣW·r — die Tafel fasst Teil-Klassen über die Summen): was eine Zeile gemeinsam hat, ist
+    // Physik des Blick-Winkels, nie der Spiegel — der Fresnel-Verlauf (2 % senkrecht, streifend → 100 %) und der Himmels-
+    // Verlauf hängen an der Zeile; der Spiegel ist, was längs der Zeile steht (Ufer, Stamm, Lücke). Über die rohen Blöcke
+    // bestrafte das Maß den dunklen Körper des nahen Wassers gegen den hellen Himmel als Partner (D10: der Spiegel am Ufer
+    // stand, r fiel 0,21 → 0,16). Llyn Padarn misst 0,922, der Himmel allein im Wasser 0.
     const oben = new Int32Array(W).fill(-1);
     for (let x = 0; x < W; x++)
         for (let y = 0; y < H; y++)
@@ -770,7 +774,10 @@ function klassenMasse(F, m, W, H, aussen) {
                 break;
             }
     const sp = [0, 0, 0, 0, 0, 0];
-    for (let y0 = 0; y0 + 8 <= H; y0 += 8)
+    const za = [],
+        zb = [];
+    for (let y0 = 0; y0 + 8 <= H; y0 += 8) {
+        za.length = zb.length = 0;
         bloecke: for (let x0 = 0; x0 + 8 <= W; x0 += 8) {
             let a = 0,
                 b = 0;
@@ -783,15 +790,36 @@ function klassenMasse(F, m, W, H, aussen) {
                     a += L[y * W + x];
                     b += L[yy * W + x];
                 }
-            a /= 64;
-            b /= 64;
-            sp[0]++;
-            sp[1] += a;
-            sp[2] += b;
-            sp[3] += a * a;
-            sp[4] += b * b;
-            sp[5] += a * b;
+            za.push(a / 64);
+            zb.push(b / 64);
         }
+        if (za.length < 2) continue;
+        let ma = 0,
+            mb = 0;
+        for (let k = 0; k < za.length; k++) {
+            ma += za[k];
+            mb += zb[k];
+        }
+        ma /= za.length;
+        mb /= za.length;
+        let xx = 0,
+            yy = 0,
+            xy = 0;
+        for (let k = 0; k < za.length; k++) {
+            const a = za[k] - ma,
+                b = zb[k] - mb;
+            xx += a * a;
+            yy += b * b;
+            xy += a * b;
+        }
+        // die Zeile zählt mit dem, was über dem Ufer zu spiegeln steht (Σb²): ein glatter Himmel als Partner wiegt nichts,
+        // ein Wald voll; ihr r ist frei von der Stärke des Spiegels (Fresnel), ein Wasser ohne Struktur vor Struktur 0
+        if (!(yy > 1e-6)) continue;
+        sp[0] += za.length;
+        sp[3] += yy;
+        sp[4] += yy;
+        if (xx > 1e-6) sp[5] += yy * (xy / Math.sqrt(xx * yy));
+    }
     const mittel = n ? s / n : null;
     const r4 = (x) => (x == null || !Number.isFinite(x) ? null : +x.toFixed(4));
     return {
@@ -1860,27 +1888,34 @@ function sollTafelSelbsttest(tafel, q) {
         ).detail !== 0
     )
         v.push("Maß detail: Flachbild nicht 0");
-    // DIE SPIEGEL-TREUE (D10) geeicht: ein Bild mit seinem exakten Spiegel unter der Linie → 1, der Himmels-Verlauf unter einem
-    // Ufer → nahe 0, das Foto Llyn Padarn (480 × 265, Uferlinie 141) → 0,743 im Soll [0,6, ∞]
+    // DIE SPIEGEL-TREUE (D10) geeicht: ein Bild mit seinem exakten Spiegel unter der Linie → 1, derselbe Spiegel unter dem
+    // Fresnel-Verlauf über dunklem Körper (5 % nah → 100 % am Ufer) → nahe 1 (das rohe Block-r las ihn als 0,73), der
+    // Himmels-Verlauf unter einem Ufer → 0, das Foto Llyn Padarn (480 × 265, Uferlinie 141) → 0,922 im Soll [0,6, ∞]
     {
         const Ws = 64,
             Hs = 64,
             h0 = 30;
         const wert = (x, y) => 40 + ((x * 37 + y * 101 + ((x >> 3) * (y >> 3) * 53)) % 180);
         const spiegel = new Uint8Array(Ws * Hs * 4),
+            fresnel = new Uint8Array(Ws * Hs * 4),
             himmel = new Uint8Array(Ws * Hs * 4),
             mw = new Uint8Array(Ws * Hs);
         for (let y = 0; y < Hs; y++)
             for (let x = 0; x < Ws; x++) {
                 const a = y < h0 ? wert(x, y) : wert(x, Math.max(0, 2 * h0 - y));
+                const f = y < h0 ? 1 : 0.05 + 0.95 * Math.pow((Hs - y) / (Hs - h0), 3);
+                const e = y < h0 ? a : Math.round(12 + f * (a - 12));
                 const c = y < h0 ? wert(x, y) : 60 + y;
                 spiegel.set([a, a, a, 255], (y * Ws + x) * 4);
+                fresnel.set([e, e, e, 255], (y * Ws + x) * 4);
                 himmel.set([c, c, c, 255], (y * Ws + x) * 4);
                 if (y >= h0) mw[y * Ws + x] = 1;
             }
         const rs = klassenMasse(spiegel, mw, Ws, Hs).spiegelTreue,
+            rf0 = klassenMasse(fresnel, mw, Ws, Hs).spiegelTreue,
             rh = klassenMasse(himmel, mw, Ws, Hs).spiegelTreue;
         if (!(rs > 0.999)) v.push(`Maß spiegelTreue: der exakte Spiegel ${rs} statt 1`);
+        if (!(rf0 > 0.9)) v.push(`Maß spiegelTreue: der Spiegel unter dem Fresnel-Verlauf ${rf0} statt nahe 1`);
         if (!(Math.abs(rh) < 0.3)) v.push(`Maß spiegelTreue: der Himmels-Verlauf ${rh} statt nahe 0`);
         const fs = require("fs"),
             path = require("path");
@@ -1891,7 +1926,7 @@ function sollTafelSelbsttest(tafel, q) {
             const mf = new Uint8Array(b.W * b.H);
             for (let p = 141 * b.W; p < b.W * b.H; p++) mf[p] = 1;
             const rf = klassenMasse(b.u8, mf, b.W, b.H).spiegelTreue;
-            if (!(Math.abs(rf - 0.743) < 0.005)) v.push(`Maß spiegelTreue: Llyn Padarn ${rf} statt 0,743`);
+            if (!(Math.abs(rf - 0.922) < 0.005)) v.push(`Maß spiegelTreue: Llyn Padarn ${rf} statt 0,922`);
         }
     }
     const mA = new Uint8Array(W * H);

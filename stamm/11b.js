@@ -887,14 +887,24 @@ class AnazhRealm_Z11b {
         }
         entry._huelleG = g;
         const ov = this._foundryGestaltOv(preset, g, entry.studioOv);
+        // der Welt-Name, unter dem die Art ihre Rezept-Zeile trägt (wie `_foundryPresetForEntry` sie fand)
+        return this._gestaltTeile(preset, g, ov, [
+            entry._lodSpecies,
+            entry.type,
+            (entry.type.match(/^grown_(baum_[a-z]+)/) || [])[1],
+        ]);
+    }
+
+    // DIE TEILE EINER GESTALT (K20 · D10): das Skelett, wie der Worker es baut (`_growTreeBlueprintRich` mit `gestalt`, L0),
+    // gemerkt je Art, Gestalt und Prägung — der gefühlte Baum des Eintrags (`_baumGestaltTeile`) und die Krone der Streu-Zelle
+    // im Spiegel des Wassers (`_spiegelKronen`) lesen dieselbe Ableitung. `arten` die Welt-Namen, unter denen die Art ihre
+    // Rezept-Zeile tragen kann.
+    _gestaltTeile(preset, g, ov, arten) {
         const k = preset + "|" + g + "|" + (ov ? JSON.stringify(ov) : "");
         if (!this._baumGestaltMerk) this._baumGestaltMerk = new Map();
         let teile = this._baumGestaltMerk.get(k);
         if (teile === undefined) {
-            // der Welt-Name, unter dem die Art ihre Rezept-Zeile trägt (wie `_foundryPresetForEntry` sie fand)
-            const art = [entry._lodSpecies, entry.type, (entry.type.match(/^grown_(baum_[a-z]+)/) || [])[1]].find(
-                (s) => typeof s === "string" && this._foundryPresetFor(s) === preset
-            );
+            const art = arten.find((s) => typeof s === "string" && this._foundryPresetFor(s) === preset);
             teile = art ? this._growTreeBlueprintRich(art, null, { lod: 0, gestalt: { g, ov } }) : null;
             this._lastTreeSkeleton = null;
             if (!Array.isArray(teile) || !teile.length)
@@ -2365,49 +2375,100 @@ class AnazhRealm_Z11b {
         S.auftraege.push(...neu);
     }
 
-    // DIE KRONEN IM SPIEGEL: die stehenden Pflanzen im Rechteck (x0, z0, w, h; 20 m Rand für die Krone), je Eintrag die
-    // Teile seiner GEFÜHLTEN Gestalt (`_pflanzenTeile`, gemerkt an der Hülle — dieselbe Ableitung wie Kollision und Bild,
-    // `_baumGestaltTeile` ← `skelettDerGestalt`) mit ihrer Welt-Skala. Je Gestalt reisen einmal ihre Laub-Teile (Anker,
-    // Halbachse waagrecht und senkrecht, die Laub-Farbe linear); `nurZahl` zählt die Pflanzen des Rechtecks (die Nachlese).
+    // DIE KRONEN IM SPIEGEL: die stehenden Pflanzen im Rechteck (x0, z0, w, h; 20 m Rand für die Krone) — wie das Bild sie
+    // zeichnet: nah der Eintrag mit den Teilen seiner GEFÜHLTEN Gestalt (`_pflanzenTeile`, gemerkt an der Hülle), 64–384 m die
+    // Baum- und Strauch-Zelle der Streu (`_spiegelStreuGestalt`: ihr Same, ihre Gestalt, ihr Ort) — beide über DIESELBE
+    // Ableitung (`_gestaltTeile` ← `skelettDerGestalt`). Je Gestalt reisen einmal ihre Laub-Teile (Anker, Halbachse
+    // waagrecht und senkrecht) und ihre Laub-Farbe (linear, das Mittel der Teile nach ihrer Fläche von oben); die Streu
+    // reist ohne Höhe (NaN: ihr Fuß ist der gebaute Boden des Workers, wie ihre Instanz auf dem Boden steht). `nurZahl`
+    // zählt die Pflanzen des Rechtecks (die Nachlese). Bis D10-n1 las der Spiegel nur die Einträge: der Wald jenseits von
+    // 64 m (die Streu, am See die Kiefern 65–72 m) fehlte im Feld.
     _spiegelKronen(x0, z0, w, h, S, nurZahl) {
-        const arch = this.state.architectures || [];
         const baeume = nurZahl ? null : [];
         const neu = [];
         let zahl = 0;
-        for (const e of arch) {
-            const teile = e && e._pflanzenTeile;
-            const p = teile ? e.position : null;
-            if (!p || p.x < x0 - 20 || p.x > x0 + w + 20 || p.z < z0 - 20 || p.z > z0 + h + 20) continue;
+        const drin = (x, z) => x >= x0 - 20 && x <= x0 + w + 20 && z >= z0 - 20 && z <= z0 + h + 20;
+        const setze = (teile, x, y, z, s, th) => {
             zahl++;
-            if (nurZahl) continue;
+            if (nurZahl) return;
             let gi = S.gestalten.get(teile);
             if (gi === undefined) {
                 const laub = [];
-                let farbe = null;
+                const f = [0, 0, 0];
+                let fw = 0;
                 for (const t of teile) {
                     if (!t || t.material !== "laub" || !t.position || !t.size) continue;
-                    laub.push(
-                        t.position.x || 0,
-                        t.position.y || 0,
-                        t.position.z || 0,
-                        (t.size.x || 1) / 2,
-                        (t.size.y || 1) / 2
-                    );
-                    if (!farbe && t.color != null) {
-                        const c = new THREE.Color(t.color);
-                        farbe = [c.r, c.g, c.b];
-                    }
+                    const rx = (t.size.x || 1) / 2,
+                        ry = (t.size.y || 1) / 2;
+                    laub.push(t.position.x || 0, t.position.y || 0, t.position.z || 0, rx, ry);
+                    if (t.color == null) continue;
+                    const c = new THREE.Color(t.color);
+                    const a = rx * rx;
+                    f[0] += c.r * a;
+                    f[1] += c.g * a;
+                    f[2] += c.b * a;
+                    fw += a;
                 }
                 gi = laub.length ? S.gestalten.size : -1;
                 S.gestalten.set(teile, gi);
-                if (gi >= 0) neu.push({ i: gi, teile: new Float32Array(laub), farbe: farbe || [0.035, 0.07, 0.022] });
+                if (gi >= 0)
+                    neu.push({
+                        i: gi,
+                        teile: new Float32Array(laub),
+                        farbe: fw > 0 ? [f[0] / fw, f[1] / fw, f[2] / fw] : [0.035, 0.07, 0.022],
+                    });
             }
-            if (gi < 0) continue;
+            if (gi >= 0) baeume.push(x, y, z, s, Math.cos(th), Math.sin(th), gi);
+        };
+        for (const e of this.state.architectures || []) {
+            const teile = e && e._pflanzenTeile;
+            const p = teile ? e.position : null;
+            if (!p || !drin(p.x, p.z)) continue;
             const s = (Number.isFinite(e.scale) && e.scale > 0 ? e.scale : 1) * (e._pflanzenSkala || 1);
-            const th = Number.isFinite(e.rotationY) ? e.rotationY : 0;
-            baeume.push(p.x, p.y - 0.5, p.z, s, Math.cos(th), Math.sin(th), gi);
+            setze(teile, p.x, p.y - 0.5, p.z, s, Number.isFinite(e.rotationY) ? e.rotationY : 0);
         }
+        const regionen = this.state.scatterRegions;
+        if (regionen instanceof Map)
+            for (const region of regionen.values())
+                for (const zelle of region.cells || []) {
+                    if (!zelle || !drin(zelle.x, zelle.z) || zelle.form === "boden" || zelle.wartet) continue;
+                    const sg = this._spiegelStreuGestalt(zelle, S);
+                    if (sg) setze(sg.teile, sg.x, NaN, sg.z, sg.s, sg.yaw);
+                }
         return nurZahl ? zahl : { baeume: new Float32Array(baeume), neu };
+    }
+
+    // DIE GESTALT EINER STREU-ZELLE im Spiegel (gemerkt je Zellen-Datensatz): ihr Ort und ihre Drehung (`_scatterCellTransform`
+    // mit den Maßen ihrer Schicht), der EINE Streu-Same (`_scatterFoundrySeed`) und seine Gestalt (`_foundryVariantFor`, die
+    // Prägung `_foundryGestaltOv`) — dieselbe, die ihre Stufen zeichnen; die Skala × die Welt-Skala des Presets. Null für
+    // Arten ohne Studio-Baum oder -Strauch und solange der Same wartet.
+    _spiegelStreuGestalt(zelle, S) {
+        if (!S.zellen) S.zellen = new WeakMap();
+        let sg = S.zellen.get(zelle);
+        if (sg !== undefined) return sg;
+        sg = null;
+        const preset = this._foundryEnabled() ? this._foundryPresetFor(zelle.species) : null;
+        const tc = typeof globalThis !== "undefined" ? globalThis.__terrainCore : null;
+        const rec = preset && tc && tc.PHYTO_PRESETS ? tc.PHYTO_PRESETS[preset] : null;
+        const schicht = AnazhRealm.SCATTER.layers.find((l) => l.name === zelle.layer);
+        if (rec && (rec.kind === "tree" || rec.kind === "shrub") && schicht) {
+            const tf = this._scatterCellTransform(
+                zelle.cellX,
+                zelle.cellZ,
+                zelle.cellM,
+                schicht.scaleBase,
+                schicht.scaleVar
+            );
+            const same = this._scatterFoundrySeed(zelle.cellX, zelle.cellZ, zelle.variantIndex, zelle.species, tf);
+            const g = same === null ? null : this._foundryVariantFor(same, preset);
+            if (g == null) return null; // der Same wartet: nicht gemerkt, die nächste Frage fragt neu
+            const teile = this._gestaltTeile(preset, g, this._foundryGestaltOv(preset, g, null), [zelle.species]);
+            const k = this._foundryWorldScaleMatrix(preset).elements[0];
+            if (Array.isArray(teile))
+                sg = { teile, x: tf.x, z: tf.z, s: tf.scale * (Number.isFinite(k) && k > 0 ? k : 1), yaw: tf.yaw };
+        }
+        S.zellen.set(zelle, sg);
+        return sg;
     }
 
     // DER LESER DES SPIEGELS (D10): das Ziel des Passes, die Ansicht, aus der er rechnete (der Wasser-Stoff reprojiziert seinen
@@ -2433,7 +2494,13 @@ class AnazhRealm_Z11b {
         rt.texture.name = "spiegel:strahl";
         rt.texture.minFilter = rt.texture.magFilter = THREE.LinearFilter;
         rt.texture.generateMipmaps = false;
-        st.spiegelLeser = { rt, vp: T.uniform(new THREE.Matrix4()), an: T.uniform(0) };
+        // Ansicht und Schalter wechseln je Bild: sie reisen in der GETEILTEN renderGroup (`_uniformHeimatTeilen`, das Pflicht-Paar
+        // der Observer-Diät) — als Objekt-Uniform fror der Wasser-Satz die Ansicht seines ersten Bilds ein (D10-n1: der Spiegel
+        // stand nur im linken Viertel des Schirms, der Rest las den Himmel)
+        st.spiegelLeser = Object.assign(
+            { rt },
+            this._uniformHeimatTeilen({ vp: T.uniform(new THREE.Matrix4()), an: T.uniform(0) })
+        );
         return st.spiegelLeser;
     }
 
@@ -2461,7 +2528,7 @@ class AnazhRealm_Z11b {
         const T = THREE.TSL;
         const { Fn, Loop, If, Break, float, vec2, vec3, vec4, uniform, texture, screenUV, max, abs, smoothstep, mix } =
             T;
-        const { normalize, dot, clamp, ivec2, select } = T;
+        const { normalize, dot, clamp, ivec2, select, floor, mod } = T;
         const K = AnazhRealm.SPIEGEL;
         const S = this._spiegelFeld();
         const L = this._spiegelLeser();
@@ -2481,6 +2548,7 @@ class AnazhRealm_Z11b {
         };
         const kante = S.n * S.texel;
         const feld = (xz) => texture(S.tex, xz.div(kante)).level(float(0));
+        const feldZelle = texture(S.tex);
         const mat = new THREE.MeshBasicNodeMaterial();
         mat.name = "spiegel:strahl";
         mat.fog = false;
@@ -2553,12 +2621,32 @@ class AnazhRealm_Z11b {
                                 0.0,
                                 2.0
                             );
-                            const strahl = abs(feld(q.xz).rgb).mul(HU.irr).mul(neig);
+                            // DAS LAUB IST KEINE WAND: die Krone steht im Feld als Säule bis zum Boden (R negativ, die Marke des
+                            // Workers), ihre Flanke ist die der Säule, nie die der Krone. Laub streut Sonne und Himmel in jede
+                            // Richtung — der Treffer auf Laub trägt das volle Licht des Orts, der Boden seine Neigung (D10-n1: die
+                            // Flanke im Schatten zeichnete den Wald am Ufer schwarz)
+                            // DER STOFF DES TREFFERS: die höchste der vier Zellen um q — die, die den Strahl hielt —, nie das
+                            // Filter-Mittel (zwischen Krone und Wasser mischte es die Marken: der Wald am Ufer las als Wasser)
+                            const zq = floor(q.xz.div(S.texel).sub(0.5));
+                            const zelle = (di, dj) => feldZelle.load(ivec2(mod(zq.add(vec2(di, dj)), float(S.n))));
+                            const z00 = zelle(0, 0),
+                                z10 = zelle(1, 0),
+                                z01 = zelle(0, 1),
+                                z11 = zelle(1, 1);
+                            const za = select(z10.a.greaterThan(z00.a), z10, z00);
+                            const zb = select(z11.a.greaterThan(z01.a), z11, z01);
+                            const fq = select(zb.a.greaterThan(za.a), zb, za);
+                            const strahl = abs(fq.rgb).mul(HU.irr).mul(select(fq.r.lessThan(0.0), float(1.0), neig));
                             const rq = q.xz.sub(U.mitte).div(kante);
+                            // trifft der Strahl eine höhere Wasser-Fläche (der Fluss oberhalb der Mündung steigt in Stufen), sieht er
+                            // ihren Spiegel — streifend den Himmel: kein Treffer, das Wasser liest den Himmel (D10-n1: der Körper
+                            // des Flusses zeichnete das Ufer schwarz)
                             aus.assign(
                                 vec4(
                                     mix(strahl, luft.farbe(P, q), luft.faktor(P, q)),
-                                    float(1).sub(smoothstep(0.42, 0.5, max(abs(rq.x), abs(rq.y))))
+                                    float(1)
+                                        .sub(smoothstep(0.42, 0.5, max(abs(rq.x), abs(rq.y))))
+                                        .mul(select(fq.b.lessThan(0.0), float(0.0), float(1.0)))
                                 )
                             );
                             Break();
