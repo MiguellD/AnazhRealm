@@ -174,7 +174,7 @@ const kurz = (x) =>
 
 // Die Seite: Puls, Phase und Stempel (als Quelltext injiziert; läuft vor jedem Skript der Seite).
 function pulsSeite() {
-    if (window.__weltPulsAn || typeof window.__weltPuls !== "function") return;
+    if (window.top !== window || window.__weltPulsAn || typeof window.__weltPuls !== "function") return;
     window.__weltPulsAn = true;
     const B = window.__weltPuls;
     const Z = { programme: 0, sync: 0, letzt: "", syncLetzt: "" };
