@@ -464,11 +464,10 @@ async function probe(page, welt, mitAbdruck) {
                 out.erbgut = { terme: E.terme.map((t) => t.art), wildnis: E.wildnis, hash: E.hash };
                 out.hoehen = orte.map((o) => ({ id: o.id, y: +r._terrainMacroSurfaceY(o.x, o.z).toFixed(3) }));
             }
-            // DIE HÖHEN DER FERNE (K60): steht der Voxel-Faden, rechnet ER die Punkte von Fern-Ring und Feld-Pass
-            // (`_feldZeichnerHoehen` → `_voxelWorkerHoehen`); ohne Faden rechnen die Scheiben des Main. Beide Wege derselben
-            // Methode, dieselben Punkte (48 × 48 über ±4 km um den Spieler), Makro und Detail, Höhe und Schutt: Wort für Wort
-            // gleich (Float32-Bitmuster). Bis K60-N1 belegte das nur eine Sonde.
-            if (typeof r._feldZeichnerHoehen === "function" && r._getVoxelWorker()) {
+            // DIE HÖHEN DER FERNE (K60, B2): der Fern-Faden rechnet die Punkte von Fern-Ring, Feld-Pass und Fern-Krone
+            // (`_fernAuftrag`) — dieselben Punkte (48 × 48 über ±4 km um den Spieler), Makro und Detail, Höhe und Schutt, gegen
+            // das Gesetzbuch im Main (`_terrainMacroSurfaceY`): Wort für Wort gleich (Float32-Bitmuster).
+            if (typeof r._fernAuftrag === "function" && r._getVoxelWorker()) {
                 const N = 48;
                 const pts = new Float32Array(N * N * 2);
                 const pm = s.playerMesh ? s.playerMesh.position : { x: 0, z: 0 };
@@ -478,15 +477,20 @@ async function probe(page, welt, mitAbdruck) {
                         pts[(i * N + j) * 2 + 1] = pm.z + (j - N / 2) * 167.9;
                     }
                 const lauf = async (imMain, detail) => {
-                    const g = r._getVoxelWorker;
-                    if (imMain) r._getVoxelWorker = () => null;
-                    try {
-                        const sch = new Float32Array(N * N);
-                        const w = await r._feldZeichnerHoehen(pts, detail, sch);
-                        return { w: new Uint32Array(Float32Array.from(w).buffer), sch: new Uint32Array(sch.buffer) };
-                    } finally {
-                        if (imMain) r._getVoxelWorker = g;
+                    const w = new Float32Array(N * N);
+                    const sch = new Float32Array(N * N);
+                    if (imMain) {
+                        const aus = { hang: 0, schutt: 0, wand: 0 };
+                        for (let k = 0; k < N * N; k++) {
+                            w[k] = r._terrainMacroSurfaceY(pts[k * 2], pts[k * 2 + 1], detail, aus);
+                            sch[k] = Math.max(aus.schutt > 0 ? aus.schutt : 0, aus.wand > 0 ? 1 / r.constructor.TERRAIN_GEOLOGY.schutt : 0);
+                        }
+                    } else {
+                        const a = await r._fernAuftrag("teile", { punkte: Float64Array.from(pts), detail, nurHoehe: true });
+                        w.set(a.law);
+                        sch.set(a.schutt);
                     }
+                    return { w: new Uint32Array(w.buffer), sch: new Uint32Array(sch.buffer) };
                 };
                 const fe = (out.ferne = { n: 0, abweichend: 0, erste: null });
                 for (const detail of [false, true]) {

@@ -2332,7 +2332,11 @@ const FIXTURES = [
                                         f === null &&
                                         w.schutt[i] >= 0.5 &&
                                         Math.abs(GC.hoehe(Lg, x, z, false) - GC.hoehe(Lo, x, z, false)) > 0.25 &&
-                                        !(r._fernSchuttAt(x, z) > 0)
+                                        !((a) => (GC.hoehe(r._gelaende(), x, z, false, a), a.schutt > 0 || a.wand > 0))({
+                                            hang: 0,
+                                            schutt: 0,
+                                            wand: 0,
+                                        })
                                     ) {
                                         ferne++;
                                         if (fernFehl.length < 4)
