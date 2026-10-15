@@ -1144,6 +1144,17 @@ class AnazhRealm_Z25a {
         this._applyHolzProfil(holz);
         const holzProf = AnazhRealm.HOLZ_PROFILE[holz] || AnazhRealm.HOLZ_PROFILE.voll;
         this.state._traa = holzProf.antialias !== false; // die Post-Kette liest es (_ensurePostProcessing)
+        // DIE TEXTUR-GRENZE DES GERÄTS: r184 fordert das Gerät mit den Grenzen des WebGPU-Standards (16 Texturen je Stufe), der
+        // Adapter trägt mehr (Radeon 890M 48). Der Boden-Stoff des Fern-Rings sampelt seit der EINEN Atmosphäre und dem Spiegel des
+        // Sees 17 — seine Pipeline wurde abgesagt, der Ring fehlte im Bild und die Beweis-Aufnahme brach an der Mess-Wiese ab
+        // (ERST-ZEICHNUNG OFFEN, renderPipeline_MeshStandardNodeMaterial). Das Gerät trägt, was der Adapter trägt.
+        const adapter =
+            AnazhRealm._forceWebGL() || (typeof window !== "undefined" && window.__anazhHeadlessNullRenderer)
+                ? null
+                : await navigator.gpu.requestAdapter();
+        const requiredLimits = adapter
+            ? { maxSampledTexturesPerShaderStage: adapter.limits.maxSampledTexturesPerShaderStage }
+            : {};
         // Opt-in Headless-Null-Renderer (GPU-frei) für Mechanik-Playtest / Server-Sim, sonst der echte
         // WebGPU-Renderer. trackTimestamp anfordern ist sicher: das vendored r184-Backend fordert
         // timestamp-query nur an, wenn der Adapter es trägt, und schaltet es sonst ab (init() wirft nie);
@@ -1158,6 +1169,7 @@ class AnazhRealm_Z25a {
                       // und 267 MB VRAM (04.10., Radeon 890M).
                       antialias: false,
                       trackTimestamp: true,
+                      requiredLimits,
                       // KEIN-WEBGPU-GESCHICHTE — der EINE forceWebGL-Hook (gate:webgl-probe).
                       forceWebGL: AnazhRealm._forceWebGL(),
                   });
