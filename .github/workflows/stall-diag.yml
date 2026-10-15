@@ -2,8 +2,8 @@ name: Stall-Diagnose
 
 # K67 — WEGWERF-LAUF: gate:webgl-probe N-mal je Läufer auf ubuntu-latest (swiftshader-GL), die Stall-Akte der Boot-Lib
 # nennt den Täter. Lebt nur auf dem Zweig webgl-stall und fällt vor dem letzten Push.
-# Diagnose 6: je Lauf die CPU-Bilanz der Fäden von GPU- und Renderer-Prozess (/proc), drei Arme im Wechsel:
-#   A die Probe wie sie ist · B ohne das Glimmen des Ladeschirms (CSS) · C Compositor auf der CPU (--disable-gpu-compositing)
+# Diagnose 7 (Beweis): die Linse wünscht weniger Bewegung (software-gpu.cjs, CPU_COMPOSITOR), je Lauf die CPU-Bilanz der
+# Fäden von GPU- und Renderer-Prozess (/proc); vorweg je Läufer einmal gate:kamera-leib (WebGPU auf swiftshader).
 on:
     push:
         branches: [webgl-stall]
@@ -43,20 +43,9 @@ jobs:
             - run: npm ci --no-audit --no-fund
             - name: Selbsttest der Stall-Akte
               run: node scripts/lib/welt-boot.cjs --selbsttest
-            - name: Arme und Faden-Bilanz
+            - name: Faden-Bilanz
               shell: bash
               run: |
-                  node - <<'JS'
-                  const fs = require("fs");
-                  const q = fs.readFileSync("scripts/diag-webgl-probe.cjs", "utf8");
-                  const hook = "window.__anazhForceWebGL = true; // der EINE Hook — echter Renderer, erzwungener WebGL2-Backend";
-                  const tick = "r._gameLoopTick(performance.now());\n                    o.tickOk++;";
-                  if (!q.includes(hook) || !q.includes(tick)) throw new Error("Probe-Text verschoben");
-                  fs.writeFileSync("scripts/x-probe-B.cjs", q.replace(hook, hook + '\n        document.addEventListener("DOMContentLoaded", () => { const s = document.createElement("style"); s.textContent = ".ladeschirm-glut{animation:none!important}"; document.head.appendChild(s); });'));
-                  const sb = 'starteBrowser({ art: "webgl", frist: 300000 })';
-                  if (!q.includes(sb)) throw new Error("Start-Text verschoben");
-                  fs.writeFileSync("scripts/x-probe-C.cjs", q.replace(sb, 'starteBrowser({ art: "webgl", frist: 300000, zusatz: ["--disable-gpu-compositing"] })'));
-                  JS
                   cat > /tmp/faeden.cjs <<'JS'
                   // je Sekunde die Fäden aller GPU- und Renderer-Prozesse; bei SIGTERM die Bilanz je Faden-Klasse (CPU-Sekunden)
                   const fs = require("fs");
@@ -88,21 +77,28 @@ jobs:
                     process.exit(0);
                   });
                   JS
-            - name: webgl-probe in Folge (Arme A/B/C im Wechsel)
+            - name: gate:kamera-leib (WebGPU auf swiftshader, einmal je Läufer)
+              shell: bash
+              run: |
+                  set +e
+                  node /tmp/faeden.cjs > /tmp/bilanz.txt & FP=$!
+                  T0=$(date +%s); npm run -s gate:kamera-leib > /tmp/kl.log 2>&1; E=$?
+                  D=$(( $(date +%s) - T0 )); kill -TERM $FP; wait $FP
+                  tail -4 /tmp/kl.log; grep -h "stall-akte] URTEIL" /tmp/kl.log | head -3
+                  echo "KAMERA-LEIB ${{ matrix.laeufer }} EXIT=$E DAUER=$D s $(cat /tmp/bilanz.txt)"
+            - name: webgl-probe in Folge
               shell: bash
               run: |
                   set +e; ROT=0; N=12
                   for i in $(seq 1 $N); do
-                    ARM=$(echo "A B C" | cut -d' ' -f$(( (i + ${{ matrix.laeufer }}) % 3 + 1 )))
-                    case $ARM in A) P=scripts/diag-webgl-probe.cjs;; B) P=scripts/x-probe-B.cjs;; C) P=scripts/x-probe-C.cjs;; esac
-                    echo "::group::Lauf $i Arm $ARM (Läufer ${{ matrix.laeufer }})"
+                    echo "::group::Lauf $i (Läufer ${{ matrix.laeufer }})"
                     node /tmp/faeden.cjs > /tmp/bilanz.txt & FP=$!
                     T0=$(date +%s)
-                    node $P; E=$?
+                    node scripts/diag-webgl-probe.cjs; E=$?
                     D=$(( $(date +%s) - T0 ))
                     kill -TERM $FP; wait $FP
                     echo "::endgroup::"
-                    echo "LAUF ${{ matrix.laeufer }}.$i ARM=$ARM EXIT=$E DAUER=$D s $(cat /tmp/bilanz.txt)"
+                    echo "LAUF ${{ matrix.laeufer }}.$i ARM=N EXIT=$E DAUER=$D s $(cat /tmp/bilanz.txt)"
                     [ $E -ne 0 ] && ROT=$((ROT+1))
                   done
                   echo "ROT=$ROT von $N"
