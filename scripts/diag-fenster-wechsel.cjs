@@ -20,8 +20,9 @@
 //   E5  nicht vakuös: das Wasser zeichnet, das Abbild wurde je Größe neu angelegt, die Pixel-Ratio folgte DPR und Kappe
 //   K   kein Zwilling: der resize-Handler baut keinen Leser der Szenen-Tiefe neu (Quelle, kommentarfrei)
 //   ES  Selbsttest am echten Frame, der letzte Schritt (nach seinen Fehlern rendert der GPU-Prozess des Browsers nicht weiter):
-//       ohne den Wächter (`_diaetVorTextur` → false) MUSS ein Pixel-Ratio-Schritt „Destroyed texture … szene:tiefenabbild"
-//       beim Namen zeigen. Dass ein Größenwechsel keinen anderen Retter hat, hält K in der Quelle.
+//       ohne den Wächter (`_diaetVorTextur` → false) MUSS ein Pixel-Ratio-Schritt „Destroyed texture …" an einem Ziel, das
+//       der Größenwechsel neu anlegt, beim Namen zeigen (`GROESSEN_ZIELE`: die Szenen-Tiefe und seit D10 der Spiegel-Strahl,
+//       der sie liest — welcher Leser zuerst fällt, entscheidet die Reihe im Frame). Dass ein Größenwechsel keinen anderen Retter hat, hält K in der Quelle.
 //
 //   node scripts/diag-fenster-wechsel.cjs
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
@@ -30,6 +31,8 @@ const stammLib = require("./lib/stamm.cjs");
 const { ladeSpec } = require("./lib/band-urteil.cjs");
 
 const PORT = Number(process.env.FENSTER_PORT || 4574);
+// die Ziele, die ein Größenwechsel neu anlegt und deren Leser der Wächter neu bindet (ES erntet einen von ihnen)
+const GROESSEN_ZIELE = /Destroyed texture \[Texture "(szene:tiefenabbild|spiegel:strahl)"\]/;
 const root = path.resolve(__dirname, "..");
 const server = statikServer();
 
@@ -145,7 +148,12 @@ async function uferStellen(opts) {
         if (!fern()) r._ensureFarWaterSheet();
         await warte(100);
     }
-    return { bach: [Math.round(P.x), Math.round(P.z)], wasser: sichtbaresWasser(), fernWasser: fern() ? st.farWater.quads : 0, abbildBreite: abbild() };
+    return {
+        bach: [Math.round(P.x), Math.round(P.z)],
+        wasser: sichtbaresWasser(),
+        fernWasser: fern() ? st.farWater.quads : 0,
+        abbildBreite: abbild(),
+    };
 }
 
 // ein Schritt nach der Änderung: `n` gerenderte Frames im laufenden Loop (die GPU-Leine zählt sie) — mit `pr` erst, bis die
@@ -166,7 +174,8 @@ async function fensterSchritt(o) {
     // rendert nicht verlässlich weiter
     const W0 = (r._gpuWache || { n: 0 }).n;
     const gemeldet = () =>
-        Object.keys(window.__fensterEcht.gpu[window.__fensterEcht.schritt] || {}).length > 0 || (r._gpuWache || { n: 0 }).n > W0;
+        Object.keys(window.__fensterEcht.gpu[window.__fensterEcht.schritt] || {}).length > 0 ||
+        (r._gpuWache || { n: 0 }).n > W0;
     const kappe = o.bisMeldung ? 30000 : 120000;
     while (L() - f0 < o.n && performance.now() - t0 < kappe && !(o.bisMeldung && gemeldet())) await warte();
     const t = r._szeneTiefeKnoten && r._szeneTiefeKnoten.value;
@@ -195,18 +204,23 @@ async function fensterSchritt(o) {
             ),
         koerper === null ? "resize-Handler nicht gefunden" : ""
     );
-    console.log("=== E — der echte Frame mit laufendem Loop (WebGPU auf swiftshader, kienspan, Kappe 1,25, am Bach) ===");
+    console.log(
+        "=== E — der echte Frame mit laufendem Loop (WebGPU auf swiftshader, kienspan, Kappe 1,25, am Bach) ==="
+    );
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
     // Erwartet: der Selbsttest ES schaltet den Wächter ab und MUSS „Destroyed texture … szene:tiefenabbild" ernten — diese
     // Meldung richtet die Linse selbst (TOT, unten, je Phase gezählt); jede andere Meldung bleibt ROT.
-    const browser = await starteBrowser({ art: "linse", frist: 900000, erwartet: /Destroyed texture \[Texture "szene:tiefenabbild"\]/ });
+    const browser = await starteBrowser({ art: "linse", frist: 900000, erwartet: GROESSEN_ZIELE });
     const seitenFehler = [];
     const seiteAmUfer = async (b) => {
         const p = await b.newPage();
         await p.setViewport({ width: 640, height: 360, deviceScaleFactor: 1 });
         await p.evaluateOnNewDocument(fensterSammler);
         p.on("pageerror", (e) => seitenFehler.push((e.message || String(e)).split("\n")[0]));
-        await p.goto(`http://127.0.0.1:${PORT}/index.html?holz=kienspan`, { waitUntil: "domcontentloaded", timeout: 60000 });
+        await p.goto(`http://127.0.0.1:${PORT}/index.html?holz=kienspan`, {
+            waitUntil: "domcontentloaded",
+            timeout: 60000,
+        });
         const u = await p.evaluate(uferStellen, { messort: ladeSpec("wiese").ort.spieler, kappe: 1.25 });
         if (u.fehler) throw new Error(u.fehler);
         return { p, u };
@@ -220,7 +234,9 @@ async function fensterSchritt(o) {
         const schritt = async (name, text, tu, pr, bisMeldung) => {
             await page.evaluate((s) => (window.__fensterEcht.schritt = s), name);
             await tu();
-            const kopfVor = await page.evaluate(() => (window.anazhRealm._gpuWache || { meldungen: [] }).meldungen.length);
+            const kopfVor = await page.evaluate(
+                () => (window.anazhRealm._gpuWache || { meldungen: [] }).meldungen.length
+            );
             // der Selbsttest wartet bis zu 12 Frames (die Device-Meldung kommt asynchron nach dem Submit), endet mit der ersten
             const s = await page.evaluate(fensterSchritt, { n: bisMeldung ? 12 : 3, pr, bisMeldung: !!bisMeldung });
             s.fremd = Object.entries(s.gpu).map(([k, n]) => `${n}× ${k}`);
@@ -235,7 +251,8 @@ async function fensterSchritt(o) {
             return s;
         };
         const befund = (s) =>
-            s.fremd.join(" | ") || (s.wacheNeu ? `GPU-Wache +${s.wacheNeu}: ${s.wacheKoepfe.slice(-2).join(" | ")}` : "");
+            s.fremd.join(" | ") ||
+            (s.wacheNeu ? `GPU-Wache +${s.wacheNeu}: ${s.wacheKoepfe.slice(-2).join(" | ")}` : "");
         const fenster = (w, h, dsf) => () => page.setViewport({ width: w, height: h, deviceScaleFactor: dsf });
         const pixelRatio = (v) => () => page.evaluate((x) => window.anazhRealm.state.renderer.setPixelRatio(x), v);
         const erg = {};
@@ -272,10 +289,10 @@ async function fensterSchritt(o) {
             window.anazhRealm.constructor._diaetVorTextur = () => false;
         });
         const es = await schritt("ES", "setPixelRatio(1.25) ohne Wächter", pixelRatio(1.25), 1.25, true);
-        const TOT = /Destroyed texture \[Texture "szene:tiefenabbild"\]/;
+        const TOT = GROESSEN_ZIELE;
         const faellt = (s) => s.fremd.some((k) => TOT.test(k)) || s.wacheKoepfe.some((k) => TOT.test(k));
         check(
-            "ES Selbsttest: ohne den Wächter fällt „Destroyed texture … szene:tiefenabbild“ beim Pixel-Ratio-Schritt",
+            "ES Selbsttest: ohne den Wächter fällt „Destroyed texture …“ an einem Größen-Ziel beim Pixel-Ratio-Schritt",
             faellt(es),
             [...es.fremd, ...es.wacheKoepfe].join(" | ") || "0"
         );
