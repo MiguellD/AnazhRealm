@@ -2444,18 +2444,20 @@ class AnazhRealm_Z11b {
     }
 
     // DIE KRONEN IM SPIEGEL: die stehenden Pflanzen im Rechteck (x0, z0, w, h; 20 m Rand für die Krone), wie das Bild sie
-    // zeichnet — nah die Einträge um das Rechteck (die Plätze des Blocker-Netzes, Lehre 25: nie der Bestand der Welt), 64–384 m
-    // die Baum- und Strauch-Zellen der Streu (`_spiegelStreuGestalt`). Jede Krone liest das Kronen-Buch (`_foundryBaumKrone`:
-    // die Krone, die der Foundry-Worker mit dem Körper gebaut hat, Beipack `__krone`) — eine Pflanze ohne Krone im Buch
-    // zeichnet auch das Bild noch nicht (ihre Höhen-Stufe lädt) und fehlt, bis die Nachlese sie zählt. Je Gestalt reisen
-    // einmal ihre Laub-Teile und ihre Farbe; die Streu reist ohne Höhe (NaN: ihr Fuß ist der gebaute Boden des Workers, wie
-    // ihre Instanz auf dem Boden steht). `nurZahl` zählt die Kronen des Rechtecks (die Nachlese). Bis D10-n2 leitete der
-    // Spiegel jede Kronen-Gestalt im Haupt-Faden ab (`skelettDerGestalt`, 4–39 ms je Gestalt) und lief über den Bestand.
+    // zeichnet — nah die Einträge um das Rechteck (die Plätze des Blocker-Netzes je Quadrat seiner kurzen Kante, Lehre 25: nie
+    // der Bestand der Welt) mit der Gestalt ihrer Hülle (`_huelleG`), 64–384 m die Baum- und Strauch-Zellen der Streu
+    // (`_spiegelStreuGestalt`). Jede Krone liest das Kronen-Buch (`_foundryBaumKrone`: die Krone, die der Foundry-Worker mit
+    // dem Körper gebaut hat, Beipack `__krone`) — eine Pflanze ohne Krone im Buch zeichnet auch das Bild noch nicht (ihre
+    // Höhen-Stufe lädt) und fehlt, bis die Nachlese sie zählt. Je Gestalt reisen einmal ihre Laub-Teile und ihre Farbe; die
+    // Streu reist ohne Höhe (NaN: ihr Fuß ist der gebaute Boden des Workers, wie ihre Instanz auf dem Boden steht). `nurZahl`
+    // zählt die Kronen des Rechtecks (die Nachlese). Bis D10-n2 leitete der Spiegel jede Kronen-Gestalt im Haupt-Faden ab
+    // (`skelettDerGestalt`, am See bis 51 ms je Gestalt, der Takt bis 59 ms in einem Bild) und lief über den Bestand.
     _spiegelKronen(x0, z0, w, h, S, nurZahl) {
         const baeume = nurZahl ? null : [];
         let zahl = 0;
         if (!this._foundryEnabled()) return nurZahl ? 0 : { baeume: new Float32Array(0) };
-        const drin = (x, z) => x >= x0 - 20 && x <= x0 + w + 20 && z >= z0 - 20 && z <= z0 + h + 20;
+        const R = 20;
+        const drin = (x, z) => x >= x0 - R && x <= x0 + w + R && z >= z0 - R && z <= z0 + h + R;
         const setze = (krone, x, y, z, s, th) => {
             zahl++;
             if (nurZahl) return;
@@ -2473,64 +2475,88 @@ class AnazhRealm_Z11b {
             }
             if (gi >= 0) baeume.push(x, y, z, s, Math.cos(th), Math.sin(th), gi);
         };
+        // die Einträge: je Quadrat der kurzen Kante entlang der langen eine Frage an die Plätze (ein Streifen von 768 × 32 m
+        // fragte als EIN Quadrat das ganze Fenster)
+        const kurz = Math.max(Math.min(w, h), 1),
+            lang = Math.max(w, h);
+        const stuecke = Math.max(1, Math.round(lang / kurz));
+        const nah = S.nah || (S.nah = []),
+            gesehen = S.nahGesehen || (S.nahGesehen = new Set());
+        nah.length = 0;
+        gesehen.clear();
+        for (let q = 0; q < stuecke; q++) {
+            const c = ((q + 0.5) * lang) / stuecke;
+            const n0 = nah.length;
+            const weite = Math.max(lang / stuecke, kurz) / 2 + R;
+            this._blockerUmPlatz(w >= h ? x0 + c : x0 + w / 2, w >= h ? z0 + h / 2 : z0 + c, weite, nah);
+            let k = n0;
+            for (let i = n0; i < nah.length; i++)
+                if (!gesehen.has(nah[i])) {
+                    gesehen.add(nah[i]);
+                    nah[k++] = nah[i];
+                }
+            nah.length = k;
+        }
+        if (!S.arten) S.arten = new WeakMap();
         const tab = this._foundry && this._foundry.recipes;
-        const gewachsen = (preset) => {
-            const rec = preset && tab ? tab[preset] : null;
-            return !!rec && (rec.kind === "tree" || rec.kind === "shrub");
-        };
-        const nah = this._blockerUmPlatz(x0 + w / 2, z0 + h / 2, Math.max(w, h) / 2 + 20, []);
         for (const e of nah) {
             const p = e.position;
-            if (!p || !drin(p.x, p.z)) continue;
-            const preset = this._foundryPresetForEntry(e);
-            if (!gewachsen(preset)) continue;
-            const krone = this._foundryBaumKrone(preset, e);
+            if (!p || !Number.isInteger(e._huelleG) || !drin(p.x, p.z)) continue;
+            // das Preset des Eintrags, wenn es wächst (Baum, Strauch), gemerkt je Eintrag
+            let preset = S.arten.get(e);
+            if (preset === undefined) {
+                const pr = this._foundryPresetForEntry(e);
+                const rec = pr && tab ? tab[pr] : null;
+                preset = rec && (rec.kind === "tree" || rec.kind === "shrub") ? pr : null;
+                S.arten.set(e, preset);
+            }
+            if (!preset) continue;
+            const krone = this._foundryBaumKrone(preset, e._huelleG, this._artifactStudioOv(e));
             if (!krone) continue;
             const s = (Number.isFinite(e.scale) && e.scale > 0 ? e.scale : 1) * this._studioWeltSkala(e);
             setze(krone, p.x, p.y - 0.5, p.z, s, Number.isFinite(e.rotationY) ? e.rotationY : 0);
         }
         const regionen = this.state.scatterRegions;
+        const regM = AnazhRealm.SCATTER.regionM;
         if (regionen instanceof Map)
-            for (const region of regionen.values())
+            for (const region of regionen.values()) {
+                // eine Region, die das Rechteck samt Rand nicht berührt, fragt keine Zelle
+                const rx = region.regX * regM,
+                    rz = region.regZ * regM;
+                if (rx > x0 + w + 2 * R || rx + regM < x0 - 2 * R || rz > z0 + h + 2 * R || rz + regM < z0 - 2 * R)
+                    continue;
                 for (const zelle of region.cells || []) {
                     if (!zelle || !drin(zelle.x, zelle.z) || zelle.form === "boden" || zelle.wartet) continue;
                     const sg = this._spiegelStreuGestalt(zelle, S);
-                    if (!sg || !gewachsen(sg.preset)) continue;
-                    const krone = this._foundryBaumKrone(sg.preset, sg.koerper);
-                    if (krone) setze(krone, sg.x, NaN, sg.z, sg.s, sg.yaw);
+                    if (!sg) continue;
+                    // die Krone der Zelle wechselt nie (das Buch räumt nie): einmal gefunden, gemerkt
+                    if (!sg.krone) sg.krone = this._foundryBaumKrone(sg.preset, sg.g, null);
+                    if (sg.krone) setze(sg.krone, sg.x, NaN, sg.z, sg.s, sg.yaw);
                 }
+            }
         return nurZahl ? zahl : { baeume: new Float32Array(baeume) };
     }
 
-    // DER ORT EINER STREU-ZELLE im Spiegel (gemerkt je Zellen-Datensatz): ihr Ort und ihre Drehung (`_scatterCellTransform`
-    // mit den Maßen ihrer Schicht), ihr Preset und der EINE Streu-Same (`_scatterFoundrySeed`) als Körper `{ seed }` — derselbe,
-    // mit dem ihre Stufen ihre Höhe lesen (`_scatterSichtHoehe`); die Skala × die Welt-Skala des Presets. Null für Zellen ohne
-    // Foundry-Preset; undefined (nicht gemerkt), solange ihr Same auf seinen Ort wartet.
+    // DIE GESTALT EINER STREU-ZELLE im Spiegel (gemerkt je Zellen-Datensatz): ihr Preset, die Gestalt, die Drehung und der Ort,
+    // die ihre Materialisierung trägt (`_scatterMaterializeCell`: der EINE Streu-Same → `_foundryVariantFor`, dieselbe Gestalt
+    // auf jeder Bahn), die Skala × die Welt-Skala des Presets. Null für Zellen ohne Baum oder Strauch der Foundry.
     _spiegelStreuGestalt(zelle, S) {
         if (!S.zellen) S.zellen = new WeakMap();
         let sg = S.zellen.get(zelle);
         if (sg !== undefined) return sg;
         sg = null;
-        const preset = this._foundryPresetFor(zelle.species);
-        const schicht = AnazhRealm.SCATTER.layers.find((l) => l.name === zelle.layer);
-        if (preset && schicht) {
-            const tf = this._scatterCellTransform(
-                zelle.cellX,
-                zelle.cellZ,
-                zelle.cellM,
-                schicht.scaleBase,
-                schicht.scaleVar
-            );
-            const seed = this._scatterFoundrySeed(zelle.cellX, zelle.cellZ, zelle.variantIndex, zelle.species, tf);
-            if (seed === null) return undefined;
+        const preset = Number.isInteger(zelle.gestalt) ? this._foundryPresetFor(zelle.species) : null;
+        const rec = preset && this._foundry && this._foundry.recipes ? this._foundry.recipes[preset] : null;
+        if (rec && (rec.kind === "tree" || rec.kind === "shrub")) {
             const k = this._foundryWorldScaleMatrix(preset).elements[0];
             sg = {
                 preset,
-                koerper: { seed },
-                x: tf.x,
-                z: tf.z,
-                s: tf.scale * (Number.isFinite(k) && k > 0 ? k : 1),
-                yaw: tf.yaw,
+                g: zelle.gestalt,
+                x: zelle.x,
+                z: zelle.z,
+                s: zelle.scale * (Number.isFinite(k) && k > 0 ? k : 1),
+                yaw: Number.isFinite(zelle.yaw) ? zelle.yaw : 0,
+                krone: undefined,
             };
         }
         S.zellen.set(zelle, sg);
