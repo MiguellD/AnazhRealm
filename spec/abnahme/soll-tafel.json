@@ -287,9 +287,9 @@
             "id": "laub",
             "titel": "Laub (Laub- und Nadelbaum, Kronen-Karten L0/L1 und Karte L2)",
             "wirkung": {
-                "grund": "Augen-Befund 14.10.: Nadel-Karten groß und kantig, Laub-Karten mit Dither-Muster",
+                "grund": "Augen-Befund 14.10.: Laub-Karten mit Dither-Muster (der Teil „Nadel-Karten groß und kantig“ trägt laub-kante)",
                 "mangel": {
-                    "befund": "Laub-Karten mit Dither-Muster (Nadelbaum-Karten groß und kantig)",
+                    "befund": "Laub-Karten mit Dither-Muster",
                     "quelle": "UEBERGABE-2026-10-14.md (Zweig koordination) „DER PLAN ZU AAAA“ Nr. 2"
                 }
             },
@@ -460,6 +460,68 @@
                     "datei": "phyto-core.js",
                     "symbol": "BLATT_ATLAS_WEDEL",
                     "was": "der Nadel-Wedel als Hand aus Nadel-Büscheln (Klingen-Index Mip 3 0,834 → 0,680, Soll ≤ 0,70; gate:asset-contract malt den Atlas gegen die Füllung) — die Kante der Karte; die Tafel misst ihr Raster im Bild"
+                }
+            ]
+        },
+        {
+            "id": "laub-kante",
+            "titel": "Laub-Silhouette (der Umriss der Kronen gegen Himmel, Boden und Holz: Karten L0/L1 und Karte L2)",
+            "wirkung": {
+                "grund": "Augen-Befund 14.10.: Nadel-Karten groß und kantig (geteilt aus laub, K68-n2)",
+                "mangel": {
+                    "befund": "Nadelbaum-Karten groß und kantig",
+                    "quelle": "UEBERGABE-2026-10-14.md (Zweig koordination) „DER PLAN ZU AAAA“ Nr. 2"
+                }
+            },
+            "referenz": [
+                {
+                    "titel": "Horizon Zero Dawn (Guerrilla, 2017)",
+                    "technik": "Kronen aus vielen kleinen Blatt-Karten an Ast-Clustern: der Umriss zerfällt in Blätter und Lücken, keine Karten-Kante gegen den Himmel (GDC 2018, Vegetation of Horizon Zero Dawn)"
+                },
+                {
+                    "titel": "The Witcher 4 Tech-Demo / Unreal Engine 5.6 (2025)",
+                    "technik": "Nanite-Laub: Blätter und Zweige als Geometrie bis in die Ferne — der Umriss ist der der Pflanze, nie der einer Karte"
+                }
+            ],
+            "soll": {
+                "eigenschaften": [
+                    {
+                        "groesse": "kante",
+                        "band": [
+                            null,
+                            0.22
+                        ],
+                        "einheit": "Kohärenz des Struktur-Tensors am Umriss gegen das Außen (klassenMasse kante: Maske Gauß σ 2 px, Fenster 17 × 17 px, Mittel über die Rand-Pixel): gerade Kante 1, zerfranster Umriss klein",
+                        "quelle": "die Wirklichkeit, mit derselben Funktion gemessen (Nordstern §4.5; Himmel = Luma > 150 und Buntheit < 45 oder Blau B > R + 40, B > G + 15, B > 140; Außen der Himmel): REF real-mischwald.jpg (Mischwald in Südtirol, CC BY 4.0 Bartleby08, sha256 97117a27…, oberes 60 %) 0,160 · REF real-felsen.jpg (Mischwald am Hang der Rudka, Fichten am Kamm, CC BY-SA 4.0 Jacek Halicki, sha256 577851ed…, oberes 20 %) 0,218 — die Grenze ist die geradeste der beiden"
+                    }
+                ]
+            },
+            "budget": {
+                "haushalt": "baum"
+            },
+            "mass": {
+                "name": "kante",
+                "werkzeug": "werkbank bild -284 +1.7 -1042 -269 34 -1036 --ziel tanne --klasse '^(f:(tanne|fichte|eiche|birke|buche|kiefer|weide|strauch|mammut)[a-z_]*:L[0-2]|fimp:[a-z_]+:L[0-2]|kronendach)$' --ist laub-kante"
+            },
+            "quellen": [
+                "phyto-core.js",
+                "foundry-core.js",
+                "stamm/07.js",
+                "stamm/10.js",
+                "stamm/19.js",
+                "stamm/24.js",
+                "stamm/25c.js",
+                "stamm/17a.js",
+                "stamm/20b.js",
+                "stamm/20c.js",
+                "stamm/20d.js"
+            ],
+            "vorlage": [
+                {
+                    "karte": "K58",
+                    "datei": "phyto-core.js",
+                    "symbol": "BLATT_ATLAS_WEDEL",
+                    "was": "der Nadel-Wedel als Hand aus Nadel-Büscheln (K58) — sein Umriss in der Krone; die Tafel misst, wie gerade er im Bild läuft"
                 }
             ]
         },

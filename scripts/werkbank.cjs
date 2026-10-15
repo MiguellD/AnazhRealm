@@ -1265,10 +1265,13 @@ async function starte() {
                     const rauschen = window.__bildRauschen(G, G2, W, H, schwelle);
                     const { teil, misch } = window.__klassenTeilung(G, Os, W, H, schwelle);
                     const klassen = {};
+                    // das Außen der Silhouette (K68-n2, `klassenMasse` kante): kein gemessener Teil — Himmel, Boden, Holz
+                    const aussen = new Uint8Array(W * H);
+                    for (let p = 0; p < W * H; p++) aussen[p] = teil[p] === 0 ? 1 : 0;
                     namen.forEach((n, j) => {
                         const m = new Uint8Array(W * H);
                         for (let p = 0; p < W * H; p++) m[p] = teil[p] === j + 1 ? 1 : 0;
-                        const ms = window.__klassenMasse(u8, m, W, H);
+                        const ms = window.__klassenMasse(u8, m, W, H, aussen);
                         if (ms.pixel) klassen[n] = Object.assign({ objekte: teile.get(n).length }, ms);
                     });
                     // DIE PROBEN DES GESICHTS (K63-n2, `--gesicht`): je Vertex des Kopfs sein Zug — die Iris an ihrem Gelenk
