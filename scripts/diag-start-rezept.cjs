@@ -5,7 +5,8 @@
 //   W1  kein Skript unter scripts/ trägt `--enable-unsafe-webgpu` oder `--use-webgpu-adapter` als String-Literal
 //       (Kommentare dürfen die Schalter nennen; ein Literal heißt: eine eigene Schalter-Liste) — außer dem Rezept
 //   W2  das Rezept selbst: Linux trägt die Swapchain-Schalter, Windows trägt keinen Vulkan-/ANGLE-Schalter; die Weiche
-//       (13.10., K39) gibt der CI und `LINSE_GPU=software` swiftshader, lokal unter Windows den Hardware-Adapter
+//       (13.10., K39) gibt der CI und `LINSE_GPU=software` swiftshader, lokal unter Windows den Hardware-Adapter, dem
+//       Echt-Läufer (`LINSE_GPU=karte`, K65) die Karte für jede Linse ohne Zeit-Urteil
 //   W3  keine Linse ruft das swiftshader-Rezept (`softwareWebGpuArgs`) an der Weiche vorbei — der Rückweg ist LINSE_GPU
 //   W4  jede Linse an der Weiche nennt ihren Adapter: je Aufruf von `linsenWebGpuArgs()` ein `adapterZeile(…)`
 //   W5  DIE ZEIT-ACHSE (14.10., K39-2): die WebGL-Familie fährt lokal ANGLE auf der Karte (ohne navigator.gpu), die CI
@@ -110,6 +111,11 @@ function wand() {
     if (linsenGpu({ CI: "true" }, "win32") !== "software") w2.push("Weiche: CI=true fährt nicht swiftshader");
     if (linsenGpu({ LINSE_GPU: "software" }, "win32") !== "software") w2.push("Weiche: LINSE_GPU=software fährt nicht swiftshader");
     if (linsenGpu({}, "win32") !== "hardware") w2.push("Weiche: lokal unter Windows nicht der Hardware-Adapter");
+    // K65: der Echt-Läufer (CI=true, LINSE_GPU=karte) fährt die Karte, seine Zeit-Linsen swiftshader, außer Windows nie die Karte
+    if (linsenGpu({ CI: "true", LINSE_GPU: "karte" }, "win32") !== "hardware") w2.push("Weiche: LINSE_GPU=karte fährt nicht die Karte");
+    if (linsenGpu({ CI: "true", LINSE_GPU: "karte" }, "win32", { zeit: true }) !== "software")
+        w2.push("Weiche: LINSE_GPU=karte fährt eine Zeit-Linse auf der Karte (W5)");
+    if (linsenGpu({ CI: "true", LINSE_GPU: "karte" }, "linux") !== "software") w2.push("Weiche: LINSE_GPU=karte fährt außer Windows die Karte");
     if (!gleich(linsenWebGpuArgs({ CI: "true" }, "linux"), softwareWebGpuArgs("linux"))) w2.push("Weiche: CI-Linux nicht das swiftshader-Rezept");
     if (!gleich(linsenWebGpuArgs({}, "win32"), echteWebGpuArgs())) w2.push("Weiche: lokal nicht das Hardware-Rezept");
     // W5: die WebGL-Familie an derselben Weiche, die Zeit-Achse fährt swiftshader, die Zeit-Zeile feuert an der Karte

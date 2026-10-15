@@ -57,9 +57,12 @@ function hardwareWebglArgs() {
 
 // DIE EINE WEICHE: "software" (swiftshader) oder "hardware" (der Adapter der Maschine). `zeit`: die Linse urteilt über
 // eine Zeit (ms, fps) — sie fährt swiftshader wie die CI, außer LINSE_GPU sagt es ausdrücklich.
+// `LINSE_GPU=karte` (K65): der Läufer trägt eine Karte (der Job `echt` auf dem eigenen Läufer, scripts/ci-echt.cjs) — jede
+// Linse ohne Zeit-Urteil fährt sie wie lokal, jede Zeit-Linse swiftshader wie die CI (W5); Hardware nur unter Windows.
 function linsenGpu(env = process.env, plattform = process.platform, { zeit = false } = {}) {
     if (env.LINSE_GPU === "software" || env.LINSE_GPU === "hardware") return env.LINSE_GPU;
-    if (env.LINSE_GPU) throw new Error(`LINSE_GPU=${env.LINSE_GPU} — erlaubt sind software und hardware`);
+    if (env.LINSE_GPU === "karte") return zeit || plattform !== "win32" ? "software" : "hardware";
+    if (env.LINSE_GPU) throw new Error(`LINSE_GPU=${env.LINSE_GPU} — erlaubt sind software, hardware und karte`);
     if (env.CI === "true" || zeit) return "software";
     return plattform === "win32" ? "hardware" : "software";
 }
