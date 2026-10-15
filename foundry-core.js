@@ -798,6 +798,14 @@ function makeBarkNormal() {
     const img = x.createImageData(N, N);
     const h = new Float32Array(N * N);
     let s = mulberry32(99);
+    // DIE SCHREIB-REGEL DES FLOAT32ARRAY (K60-2, Byte-Beweis): ein Index, der keine ganze Zahl ist, schreibt nichts (die
+    // Spezifikation verwirft ihn, sein Lesen ist undefined) — die Kerne laufen ab -w bzw. -r, und eine gebrochene Breite
+    // trifft so keinen Texel. Bis K60-2 nahm jeder solche Zugriff den langsamen Pfad der Eigenschafts-Namen: 1,3 s je Faden
+    // allein, 2,0–3,1 s, wenn die acht Studio-Fäden beim Start zugleich rechneten (Radeon kalt, vor dem Buch und vor jeder
+    // Karte). Jetzt fragt jeder Zugriff zuerst, ob er schreibt — dieselben Bytes (sha 039367ab31640d7f, 1 048 576 Bytes).
+    // Von den 1 181 630 Kern-Zugriffen der Saat 99 schreibt keiner: die Rinde trägt allein ihr Rauschen. Die Kerne auf ganze
+    // Texel zu legen, ändert das Bild — ein Re-Mint, der Vertrags-Akt des Studios.
+    const ganz = (k) => k === Math.floor(k);
     for (let i = 0; i < 300; i++) {
         const cx = s() * N,
             w = 1 + s() * 3.5,
@@ -807,7 +815,8 @@ function makeBarkNormal() {
             const px = Math.floor(cx + wob);
             for (let d = -w; d <= w; d++) {
                 const xx = (((px + d) % N) + N) % N;
-                h[y * N + xx] -= Math.exp(-(d * d) / (w * w)) * dep;
+                const k = y * N + xx;
+                if (ganz(k)) h[k] -= Math.exp(-(d * d) / (w * w)) * dep;
             }
         }
     }
@@ -823,7 +832,8 @@ function makeBarkNormal() {
                 xx = ((Math.floor(x0 + t) % N) + N) % N;
             for (let d = -w; d <= w; d++) {
                 const y2 = (((yy + d) % N) + N) % N;
-                h[y2 * N + xx] -= Math.exp(-(d * d) / (w * w)) * dep;
+                const k = y2 * N + xx;
+                if (ganz(k)) h[k] -= Math.exp(-(d * d) / (w * w)) * dep;
             }
         }
     }
@@ -836,7 +846,8 @@ function makeBarkNormal() {
             for (let dx = -r; dx <= r; dx++) {
                 const xx = (((px + dx) % N) + N) % N,
                     yy = (((py + dy) % N) + N) % N;
-                h[yy * N + xx] += Math.exp(-(dx * dx + dy * dy) / (r * r)) * amp;
+                const k = yy * N + xx;
+                if (ganz(k)) h[k] += Math.exp(-(dx * dx + dy * dy) / (r * r)) * amp;
             }
     }
     for (let i = 0; i < h.length; i++) h[i] += (s() - 0.5) * 0.18;
