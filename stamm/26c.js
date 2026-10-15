@@ -1237,17 +1237,23 @@ AnazhRealm.ZEIT_SCHAERFE = 1;
 AnazhRealm.ZEIT_SPRUNG_M = 6;
 // DER SPIEGEL DES GESETZES (D10, `_spiegelFeldTakt` · `_spiegelPass`): das Feld n × n Zellen à texel m um das Auge (RGBA-Halbfloat,
 // neu bei drift m), gebacken im Worker in Streifen von höchstens `zeilen` Zeilen; der Pass in 1/teil der Ausgabe, je
-// Wasser-Pixel `schritte` Lipschitz-Schritte (mindestens `wachs` der Strecke) und `halbierungen` vor der Sekante; die
-// Nachlese backt das Feld neu, wenn neue Bäume darin stehen (höchstens je nachleseMs).
+// Wasser-Pixel `schritte` Schritte: über der Höchsten eines Blocks von `block` × `block` Zellen ein Sprung an seinen Rand,
+// darunter Lipschitz-Schritte von höchstens `fein` Zellen (mindestens `wachs` der Strecke), dann `halbierungen` vor der
+// Sekante; das Laub im Licht seiner Tiefe unter dem Kronen-Dach (Beer-Lambert: e-Länge `laubTiefe` m, das Himmelslicht unter
+// dem Dach `laubGrund`). Die Nachlese backt das Feld neu, wenn neue Bäume darin stehen (höchstens je nachleseMs).
 AnazhRealm.SPIEGEL = Object.freeze({
     n: 512,
     texel: 2,
     drift: 60,
     zeilen: 16,
+    block: 8,
     teil: 4,
     schritte: 96,
     wachs: 0.04,
+    fein: 0.75,
     halbierungen: 4,
+    laubTiefe: 3,
+    laubGrund: 0.25,
     nachleseMs: 4000,
 });
 // Sekunden-normalisierter Ingest-Takt: Ziel ist eine RATE je echter Sekunde — jeder Frame gibt

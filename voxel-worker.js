@@ -243,10 +243,11 @@ self.onmessage = function (e) {
                     type: "spiegel-feld-result",
                     requestId: msg.requestId,
                     daten: daten.feld.buffer,
+                    hoechste: daten.hoechste.buffer,
                     wasser: daten.wasser,
                     hMax: daten.hMax,
                 },
-                [daten.feld.buffer]
+                [daten.feld.buffer, daten.hoechste.buffer]
             );
         } else if (msg.type === "ping") {
             self.postMessage({ type: "pong", requestId: msg.requestId || null });
@@ -673,7 +674,7 @@ function clamp01(v) {
 // die oberste Fläche, die ein gespiegelter Strahl trifft — der GEBAUTE Boden (die Nullstelle der Spalten-Dichte samt
 // Fluss-Kanal, See-Becken und Edits, `terrainDensityAtCol`: die 2D-Höhe trägt den Seegrund nicht), darüber das Wasser des
 // Orts (`waterLevelAt`) und die Kronen der stehenden Bäume (je Laub-Teil ihrer gefühlten Gestalt das Ellipsoid seines Ankers,
-// `_baumGestaltTeile` im Main — dieselben Teile wie die Hülle des Baums). Die Albedo linear: die EINE Boden-Farbe
+// `_gestaltTeile` im Main — dieselben Teile wie die Hülle des Baums). Die Albedo linear: die EINE Boden-Farbe
 // (`attachFieldColors` = `_bodenFarbeAt`), das Laub der Gestalt, der Wasser-Körper R∞ (`wasserFarbe`); A die Höhe über
 // `bezug`. Das Wasser trägt sein B NEGATIV — die Marke, an der der Pass den Wasser-Punkt erkennt —, das Laub sein R. Rückgabe
 // RGBA-Halbfloat.
@@ -690,36 +691,41 @@ function spiegelBoden(x, z) {
 }
 function spiegelFeldBacken(msg) {
     const { i0, j0, w, h, texel, bezug } = msg;
-    const H = new Float32Array(w * h);
+    // DER SAUM: eine Zelle rund um das Rechteck. Die Höchst-Höhe eines Blocks (`hoechste`) muss jeden Wert decken, den der Pass
+    // in ihm filtert, und der LinearFilter greift bis eine Zelle über den Block-Rand.
+    const W2 = w + 2,
+        H2 = h + 2;
+    const H = new Float32Array(W2 * H2);
     const F = new Float32Array(w * h * 3);
-    const nass = new Uint8Array(w * h);
-    const laub = new Uint8Array(w * h);
+    const nass = new Uint8Array(W2 * H2);
+    const laub = new Uint8Array(W2 * H2);
     const pos = new Float32Array(w * 3);
-    let wasser = 0;
-    for (let j = 0; j < h; j++) {
+    for (let j = -1; j <= h; j++) {
         const z = (j0 + j + 0.5) * texel;
-        for (let i = 0; i < w; i++) {
+        for (let i = -1; i <= w; i++) {
             const x = (i0 + i + 0.5) * texel;
             const y = spiegelBoden(x, z);
-            const p = j * w + i;
+            const p = (j + 1) * W2 + i + 1;
             const wl = waterLevelAt(x, z);
             if (wl > y + 0.05) {
                 nass[p] = 1;
                 H[p] = wl;
-                wasser++;
             } else H[p] = y;
-            pos[i * 3] = x;
-            pos[i * 3 + 1] = y;
-            pos[i * 3 + 2] = z;
+            if (i >= 0 && i < w) {
+                pos[i * 3] = x;
+                pos[i * 3 + 1] = y;
+                pos[i * 3 + 2] = z;
+            }
         }
-        F.set(attachFieldColors(pos), j * w * 3);
+        if (j >= 0 && j < h) F.set(attachFieldColors(pos), j * w * 3);
     }
     // die Gestalten reisen einmal (Index → { teile [cx, cy, cz, rXZ, rY] je Laub-Teil, farbe }), die Bäume je Auftrag:
     // [x, y, z, Skala, cos θ, sin θ, Gestalt] (θ die Drehung um y; y NaN: der Fuß der Streu ist der gebaute Boden)
     for (const g of msg.gestalten || []) spiegelGestalten[g.i] = g;
     const B = msg.baeume;
-    const x0 = i0 * texel,
-        z0 = j0 * texel;
+    const x0 = (i0 - 1) * texel,
+        z0 = (j0 - 1) * texel;
+    const farbe = new Map();
     for (let t = 0; B && t + 6 < B.length; t += 7) {
         const g = spiegelGestalten[B[t + 6]];
         if (!g) continue;
@@ -737,9 +743,9 @@ function spiegelFeldBacken(msg) {
             const r = T[k + 3] * s,
                 ry = T[k + 4] * s;
             const ia = Math.max(0, Math.floor((cx - r - x0) / texel)),
-                ib = Math.min(w - 1, Math.floor((cx + r - x0) / texel));
+                ib = Math.min(W2 - 1, Math.floor((cx + r - x0) / texel));
             const ja = Math.max(0, Math.floor((cz - r - z0) / texel)),
-                jb = Math.min(h - 1, Math.floor((cz + r - z0) / texel));
+                jb = Math.min(H2 - 1, Math.floor((cz + r - z0) / texel));
             for (let jj = ja; jj <= jb; jj++)
                 for (let ii = ia; ii <= ib; ii++) {
                     const dx = x0 + (ii + 0.5) * texel - cx,
@@ -747,39 +753,60 @@ function spiegelFeldBacken(msg) {
                     const q = (dx * dx + dz * dz) / (r * r);
                     if (q >= 1) continue;
                     const oben = cy + ry * Math.sqrt(1 - q);
-                    const p = jj * w + ii;
+                    const p = jj * W2 + ii;
                     if (oben <= H[p]) continue;
-                    if (nass[p]) {
-                        nass[p] = 0;
-                        wasser--;
-                    }
+                    nass[p] = 0;
                     H[p] = oben;
                     laub[p] = 1;
-                    F[p * 3] = g.farbe[0];
-                    F[p * 3 + 1] = g.farbe[1];
-                    F[p * 3 + 2] = g.farbe[2];
+                    farbe.set(p, g.farbe);
                 }
         }
     }
     const feld = new Uint16Array(w * h * 4);
     const wk = msg.wasserFarbe;
-    let hMax = -Infinity;
-    for (let p = 0; p < w * h; p++) {
-        const o = p * 4;
-        if (H[p] > hMax) hMax = H[p];
-        if (nass[p]) {
-            feld[o] = zuHalb(wk[0]);
-            feld[o + 1] = zuHalb(wk[1]);
-            feld[o + 2] = zuHalb(-Math.max(wk[2], 1e-3));
-        } else {
-            // das Laub trägt sein R NEGATIV — die Marke, an der der Pass die Krone von der Flanke des Bodens trennt
-            feld[o] = zuHalb(laub[p] ? -Math.max(F[p * 3], 1e-3) : F[p * 3]);
-            feld[o + 1] = zuHalb(F[p * 3 + 1]);
-            feld[o + 2] = zuHalb(F[p * 3 + 2]);
+    let hMax = -Infinity,
+        wasser = 0;
+    for (let j = 0; j < h; j++)
+        for (let i = 0; i < w; i++) {
+            const p = (j + 1) * W2 + i + 1,
+                q = j * w + i,
+                o = q * 4;
+            if (H[p] > hMax) hMax = H[p];
+            if (nass[p]) {
+                wasser++;
+                feld[o] = zuHalb(wk[0]);
+                feld[o + 1] = zuHalb(wk[1]);
+                feld[o + 2] = zuHalb(-Math.max(wk[2], 1e-3));
+            } else if (laub[p]) {
+                // das Laub trägt sein R NEGATIV — die Marke, an der der Pass die Krone von der Flanke des Bodens trennt
+                const f = farbe.get(p);
+                feld[o] = zuHalb(-Math.max(f[0], 1e-3));
+                feld[o + 1] = zuHalb(f[1]);
+                feld[o + 2] = zuHalb(f[2]);
+            } else {
+                feld[o] = zuHalb(F[q * 3]);
+                feld[o + 1] = zuHalb(F[q * 3 + 1]);
+                feld[o + 2] = zuHalb(F[q * 3 + 2]);
+            }
+            feld[o + 3] = zuHalb(H[p] - bezug);
         }
-        feld[o + 3] = zuHalb(H[p] - bezug);
-    }
-    return { feld, wasser, hMax: hMax - bezug };
+    // DIE HÖCHSTE je Block (`block` × `block` Zellen samt Saum, über dem Bezug): steht der gespiegelte Strahl über ihr, trifft
+    // er im Block nichts (er steigt) und springt an dessen Rand — der Busch von 2 m fällt nie mehr durch einen Schritt von 3 m.
+    const b = msg.block,
+        bw = w / b,
+        bh = h / b;
+    const hoechste = new Float32Array(bw * bh);
+    for (let bj = 0; bj < bh; bj++)
+        for (let bi = 0; bi < bw; bi++) {
+            let m = -30000;
+            for (let jj = bj * b; jj <= bj * b + b + 1; jj++)
+                for (let ii = bi * b; ii <= bi * b + b + 1; ii++) {
+                    const v = H[jj * W2 + ii];
+                    if (v > m) m = v;
+                }
+            hoechste[bj * bw + bi] = m - bezug;
+        }
+    return { feld, wasser, hMax: hMax - bezug, hoechste };
 }
 
 // float32 → IEEE-Halbfloat (gerundet; über 65504 unendlich, unter 2^−24 null) — die Bits, die ein HalfFloat-Ziel trägt

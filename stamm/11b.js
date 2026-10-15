@@ -2232,11 +2232,22 @@ class AnazhRealm_Z11b {
         tex.minFilter = tex.magFilter = THREE.LinearFilter;
         tex.generateMipmaps = false;
         tex.needsUpdate = true;
+        // die Höchste je Block (der Sprung des Passes): nb × nb Blöcke im selben Wiederhol-Raster, leer −30 000 m
+        const nb = n / K.block;
+        const hoechste = new Float32Array(nb * nb).fill(-30000);
+        const hTex = new THREE.DataTexture(hoechste, nb, nb, THREE.RedFormat, THREE.FloatType);
+        hTex.name = "spiegel:hoechste";
+        hTex.minFilter = hTex.magFilter = THREE.NearestFilter;
+        hTex.generateMipmaps = false;
+        hTex.needsUpdate = true;
         st.spiegelFeld = {
             n,
             texel: K.texel,
             daten,
             tex,
+            nb,
+            hoechste,
+            hTex,
             leer,
             // der Bezug der Höhe (der Meeresspiegel): ±256 m um ihn trägt der Halbfloat auf 0,125 m
             bezug: Number.isFinite(st.waterLevel) ? st.waterLevel : 0,
@@ -2289,6 +2300,7 @@ class AnazhRealm_Z11b {
             wasserFarbe: this._fernWasserKoerper(),
             baeume: kr.baeume,
             gestalten: kr.neu,
+            block: AnazhRealm.SPIEGEL.block,
         })
             .then((r) => {
                 S.imFlug = false;
@@ -2310,6 +2322,16 @@ class AnazhRealm_Z11b {
                         D[o + 3] = r.daten[q + 3];
                     }
                 }
+                const b = AnazhRealm.SPIEGEL.block,
+                    nb = S.nb,
+                    bw = a.w / b;
+                for (let q = 0; q < r.hoechste.length; q++) {
+                    const I = a.i0 / b + (q % bw),
+                        J = a.j0 / b + Math.floor(q / bw);
+                    if (I < S.I0 / b || I >= (S.I0 + n) / b || J < S.J0 / b || J >= (S.J0 + n) / b) continue;
+                    S.hoechste[(((J % nb) + nb) % nb) * nb + (((I % nb) + nb) % nb)] = r.hoechste[q];
+                }
+                S.hTex.needsUpdate = true;
                 S.wasser += r.wasser;
                 if (r.hMax > S.hMax) S.hMax = r.hMax;
                 S.tex.needsUpdate = true;
@@ -2321,13 +2343,15 @@ class AnazhRealm_Z11b {
     }
 
     // DAS FENSTER WANDERT: n × n Zellen um das Auge. Stand das alte vollständig, backen nur die Streifen, die neu ins
-    // Fenster treten (ihre Plätze leer, bis der Worker sie füllt); sonst das ganze Fenster neu.
+    // Fenster treten (ihre Plätze leer, bis der Worker sie füllt); sonst das ganze Fenster neu. Die Ecke liegt auf dem Raster
+    // der Blöcke: jeder Auftrag trägt ganze Blöcke, ihre Höchste rechnet der Worker allein.
     _spiegelFeldFenster(auge) {
         const S = this._spiegelFeld();
         const n = S.n,
-            t = S.texel;
-        const I0 = Math.round(auge.x / t) - n / 2,
-            J0 = Math.round(auge.z / t) - n / 2;
+            t = S.texel,
+            b = AnazhRealm.SPIEGEL.block;
+        const I0 = b * Math.round((auge.x / t - n / 2) / b),
+            J0 = b * Math.round((auge.z / t - n / 2) / b);
         const aI = S.I0,
             aJ = S.J0;
         const ganz = aI == null || S.auftraege.length > 0 || Math.abs(I0 - aI) >= n || Math.abs(J0 - aJ) >= n;
@@ -2355,7 +2379,8 @@ class AnazhRealm_Z11b {
     // Ein Rechteck der Zellen in Aufträge zu höchstens SPIEGEL.zeilen × n Zellen, nah am Auge zuerst; `leeren` setzt seine
     // Plätze sofort leer (A = −30 000 m: kein Strahl trifft dort, bis der Worker füllt).
     _spiegelFeldAuftraege(S, i0, j0, w, h, leeren) {
-        const n = S.n;
+        const n = S.n,
+            b = AnazhRealm.SPIEGEL.block;
         if (leeren) {
             for (let j = j0; j < j0 + h; j++) {
                 const zeile = (((j % n) + n) % n) * n;
@@ -2365,9 +2390,14 @@ class AnazhRealm_Z11b {
                     S.daten[o + 3] = S.leer;
                 }
             }
+            const nb = S.nb;
+            for (let J = j0 / b; J < (j0 + h) / b; J++)
+                for (let I = i0 / b; I < (i0 + w) / b; I++)
+                    S.hoechste[(((J % nb) + nb) % nb) * nb + (((I % nb) + nb) % nb)] = -30000;
             S.tex.needsUpdate = true;
+            S.hTex.needsUpdate = true;
         }
-        const zahl = Math.max(1, Math.floor((AnazhRealm.SPIEGEL.zeilen * n) / w));
+        const zahl = Math.max(b, b * Math.floor((AnazhRealm.SPIEGEL.zeilen * n) / w / b));
         const neu = [];
         for (let j = j0; j < j0 + h; j += zahl) neu.push({ i0, j0: j, w, h: Math.min(zahl, j0 + h - j) });
         const mj = S.J0 + n / 2;
@@ -2518,8 +2548,9 @@ class AnazhRealm_Z11b {
     }
 
     // DER PASS DES SPIEGELS (D10): je Pixel in 1/teil der Ausgabe, dessen Tiefe (der Szenen-Pass, das GEZEICHNETE Wasser)
-    // auf einer Wasser-Zelle des Felds liegt, der gespiegelte Strahl gegen die Höhe des Felds — `schritte` Lipschitz-Schritte
-    // gegen die Rest-Höhe (mindestens `wachs` der Strecke + ¾ Zelle), `halbierungen` und die Sekante; am Treffer die Albedo im
+    // auf einer Wasser-Zelle des Felds liegt, der gespiegelte Strahl gegen die Höhe des Felds — `schritte` Schritte: über der
+    // Höchsten des Blocks der Sprung an seinen Rand, darunter Lipschitz-Schritte gegen die Rest-Höhe (höchstens `fein` Zellen),
+    // `halbierungen` und die Sekante; am Treffer die Albedo im
     // Licht des Wassers (uIrr, die Sonne über die Neigung der Fläche relativ zur Ebene) unter der EINEN Luft längs des
     // gespiegelten Wegs. Ausgabe (Strahlung, Treffer); ohne Versatz je Pixel (die Zeit-Auflösung mittelt Kanten, kein Rauschen).
     _spiegelPass() {
@@ -2528,7 +2559,7 @@ class AnazhRealm_Z11b {
         const T = THREE.TSL;
         const { Fn, Loop, If, Break, float, vec2, vec3, vec4, uniform, texture, screenUV, max, abs, smoothstep, mix } =
             T;
-        const { normalize, dot, clamp, ivec2, select, floor, mod } = T;
+        const { normalize, dot, clamp, ivec2, select, floor, mod, step, min, exp, Continue } = T;
         const K = AnazhRealm.SPIEGEL;
         const S = this._spiegelFeld();
         const L = this._spiegelLeser();
@@ -2549,6 +2580,8 @@ class AnazhRealm_Z11b {
         const kante = S.n * S.texel;
         const feld = (xz) => texture(S.tex, xz.div(kante)).level(float(0));
         const feldZelle = texture(S.tex);
+        const hoechste = texture(S.hTex);
+        const blockM = K.block * S.texel;
         const mat = new THREE.MeshBasicNodeMaterial();
         mat.name = "spiegel:strahl";
         mat.fog = false;
@@ -2592,6 +2625,22 @@ class AnazhRealm_Z11b {
                         If(max(abs(rel.x), abs(rel.y)).greaterThan(0.5), () => Break());
                         const y = p.y.sub(U.bezug);
                         If(y.greaterThan(U.hMax), () => Break());
+                        // DER SPRUNG: über der Höchsten seines Blocks trifft der steigende Strahl darin nichts — er springt an den
+                        // Rand des Blocks, der Rand ist der neue Punkt über dem Boden (die Höchste deckt den Filter bis dort)
+                        const zb = floor(p.xz.div(blockM));
+                        const hb = hoechste.load(ivec2(mod(zb, float(S.nb)))).r;
+                        If(y.greaterThan(hb), () => {
+                            const randX = zb.x.add(step(0.0, R.x)).mul(blockM);
+                            const randZ = zb.y.add(step(0.0, R.z)).mul(blockM);
+                            const sprung = min(
+                                abs(randX.sub(p.x)).div(max(abs(R.x), 1e-5)),
+                                abs(randZ.sub(p.z)).div(max(abs(R.z), 1e-5))
+                            );
+                            tVor.assign(t.add(sprung));
+                            gVor.assign(y.add(R.y.mul(sprung)).sub(hb));
+                            t.assign(tVor.add(0.05));
+                            Continue();
+                        });
                         const g = y.sub(hoehe(p.xz));
                         If(g.lessThan(0.0), () => {
                             const ta = tVor.toVar(),
@@ -2623,7 +2672,7 @@ class AnazhRealm_Z11b {
                             );
                             // DAS LAUB IST KEINE WAND: die Krone steht im Feld als Säule bis zum Boden (R negativ, die Marke des
                             // Workers), ihre Flanke ist die der Säule, nie die der Krone. Laub streut Sonne und Himmel in jede
-                            // Richtung — der Treffer auf Laub trägt das volle Licht des Orts, der Boden seine Neigung (D10-n1: die
+                            // Richtung — der Treffer auf Laub trägt das Licht des Orts unter seinem Dach, der Boden seine Neigung (D10-n1: die
                             // Flanke im Schatten zeichnete den Wald am Ufer schwarz)
                             // DER STOFF DES TREFFERS: die höchste der vier Zellen um q — die, die den Strahl hielt —, nie das
                             // Filter-Mittel (zwischen Krone und Wasser mischte es die Marken: der Wald am Ufer las als Wasser)
@@ -2636,7 +2685,14 @@ class AnazhRealm_Z11b {
                             const za = select(z10.a.greaterThan(z00.a), z10, z00);
                             const zb = select(z11.a.greaterThan(z01.a), z11, z01);
                             const fq = select(zb.a.greaterThan(za.a), zb, za);
-                            const strahl = abs(fq.rgb).mul(HU.irr).mul(select(fq.r.lessThan(0.0), float(1.0), neig));
+                            // DAS LICHT UNTER DEM DACH: die Säule trägt nur das Dach der Krone; wo der Strahl tiefer trifft (zwischen
+                            // den Stämmen, unter dem Schirm), kommt das Licht durch das Laub (Beer-Lambert, e-Länge laubTiefe) über dem
+                            // Himmelslicht des Waldbodens (laubGrund) — der Waldsaum im Spiegel dunkel am Fuß, hell am Dach
+                            const dach = max(fq.a.sub(q.y.sub(U.bezug)), 0.0);
+                            const unterDach = mix(float(K.laubGrund), float(1.0), exp(dach.div(-K.laubTiefe)));
+                            const strahl = abs(fq.rgb)
+                                .mul(HU.irr)
+                                .mul(select(fq.r.lessThan(0.0), unterDach, neig));
                             const rq = q.xz.sub(U.mitte).div(kante);
                             // trifft der Strahl eine höhere Wasser-Fläche (der Fluss oberhalb der Mündung steigt in Stufen), sieht er
                             // ihren Spiegel — streifend den Himmel: kein Treffer, das Wasser liest den Himmel (D10-n1: der Körper
@@ -2653,7 +2709,10 @@ class AnazhRealm_Z11b {
                         });
                         tVor.assign(t);
                         gVor.assign(g);
-                        t.addAssign(max(g.mul(0.9), t.mul(K.wachs).add(S.texel * 0.75)));
+                        // unter der Höchsten: Schritte von höchstens `fein` Zellen — kein Busch fällt mehr hindurch
+                        t.addAssign(
+                            min(max(g.mul(0.9), t.mul(K.wachs).add(S.texel * 0.25)), float(S.texel * K.fein))
+                        );
                     });
                 });
             });

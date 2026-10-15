@@ -99,7 +99,12 @@ class AnazhRealm_Z07 {
                     const pending = this.state.voxelWorkerPending.get(msg.requestId);
                     if (pending) {
                         this.state.voxelWorkerPending.delete(msg.requestId);
-                        pending.resolve({ daten: new Uint16Array(msg.daten), wasser: msg.wasser | 0, hMax: msg.hMax });
+                        pending.resolve({
+                            daten: new Uint16Array(msg.daten),
+                            hoechste: new Float32Array(msg.hoechste),
+                            wasser: msg.wasser | 0,
+                            hMax: msg.hMax,
+                        });
                     }
                 } else if (msg.type === "hoehen-result" && msg.requestId) {
                     // K60 — die Höhen der Ferne aus dem Worker (`_voxelWorkerHoehen`), zero-copy per Transferable
@@ -335,7 +340,8 @@ class AnazhRealm_Z07 {
     }
 
     // DAS SPIEGEL-FELD off-thread (D10): ein Rechteck der Welt-Zellen (`auftrag`: i0, j0, w, h, texel, bezug, wasserFarbe,
-    // baeume, gestalten — `spiegelFeldBacken` im Worker) → { daten (RGBA-Halbfloat), wasser } am synchronisierten Zustand.
+    // baeume, gestalten, block — `spiegelFeldBacken` im Worker) → { daten (RGBA-Halbfloat), hoechste je Block, wasser, hMax } am
+    // synchronisierten Zustand.
     _voxelWorkerSpiegel(auftrag) {
         const worker = this._getVoxelWorker();
         if (!worker) return Promise.reject(new Error("voxel-worker not available"));
