@@ -340,6 +340,16 @@ function buehne() {
             kiste.frustumCulled = false;
             gruppe.add(kiste);
         }
+        // DER STOFF OHNE ERKLÄRUNG (K62): ein freier Wert in der Objekt-Gruppe (r184 `uniform` ohne Takt, von außen gesetzt).
+        // Bis K62 refreshte er in jedem Pass jedes Frames (r184 hasNode, keine Diät ohne Erklärung); jetzt prüft er mit der
+        // Diät wie jeder Stoff einer Szene, ihr Wächter (7) lädt den Wert, sobald er sich ändert (ÄNDERUNG unten).
+        const uFrei = TSL.uniform(new T.Color(0x6a4a8a));
+        const frei = new T.Mesh(new T.BoxGeometry(1.5, 2, 1.5), new T.MeshStandardNodeMaterial({ colorNode: uFrei }));
+        frei.position.set(-3, 1, 5);
+        frei.castShadow = true;
+        frei.receiveShadow = true;
+        frei.frustumCulled = false;
+        gruppe.add(frei);
         const kam = new T.PerspectiveCamera(60, 4 / 3, 0.1, 100);
         const blick = (vz) => {
             kam.position.set(1, 7, 15 * vz);
@@ -591,6 +601,7 @@ function buehne() {
                     m4.makeRotationX(-Math.PI / 2 + 0.3 * schritt).setPosition(0, 3.5, -4);
                     laub.setMatrixAt(1, m4);
                     laub.instanceMatrix.needsUpdate = true;
+                    uFrei.value.setHSL((0.13 * schritt) % 1, 0.6, 0.45); // der freie Wert (Wächter 7)
                 };
                 const mitDiaet = async (fn) => {
                     const alt = A._diaetRefresh;
@@ -651,7 +662,15 @@ function buehne() {
                 boden2.castShadow = false;
                 boden2.frustumCulled = false;
                 gruppe2.add(boden2);
-                const werfer = new T.Mesh(new T.BoxGeometry(2, 4, 2), new T.MeshStandardNodeMaterial({ color: 0x8a6a4a }));
+                // der Werfer auf der Vendor-Bahn (seit K62 prüft jeder Stoff einer Szene mit der Diät; die Vendor-Bahn fährt ein
+                // Programm mit Nachher-Knoten, wie jeder Leib mit Animation): ein Knoten, der nach dem Zeichnen nichts tut
+                const nachher = TSL.float(0);
+                nachher.updateAfterType = "render";
+                nachher.updateAfter = () => {};
+                const werfer = new T.Mesh(
+                    new T.BoxGeometry(2, 4, 2),
+                    new T.MeshStandardNodeMaterial({ color: 0x8a6a4a, positionNode: TSL.positionLocal.add(nachher) })
+                );
                 werfer.position.set(3, 2, 0);
                 werfer.renderOrder = 1;
                 werfer.castShadow = true;

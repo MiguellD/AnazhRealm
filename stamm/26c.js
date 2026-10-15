@@ -1589,39 +1589,57 @@ AnazhRealm._diaetGang = function (ro, nbs) {
         knoten = [],
         eigenVor = [],
         eigenKnoten = [];
-    // (7) die Knoten des Takts object: die welt-reinen (`_diaetWeltrein`) deckt equals() über die Welt-Matrix, jeder andere
-    // stellt je Prüfung den Wert des Render-Objekts — die Gruppen-Knoten selbst tragen nichts (ihr Gang hebt nur die Version)
+    // (7) DIE KNOTEN DES TAKTS object: gedeckt sind die welt-reinen (`_diaetWeltrein`: equals() sieht die Welt-Matrix) und die
+    // Stoff-Werte des gezeichneten Stoffs (r184 `refreshUniforms`: equals() vergleicht sie je Stoff und Render); ein Knoten
+    // mit festem Bezug (ein Verweis auf Licht oder Schatten, ein Objekt-Knoten eines festen Objekts) stellt sich EINMAL je
+    // Render-Abschnitt wie die render-Knoten; jeder andere stellt je Prüfung den Wert seines Render-Objekts. Die Gruppen-Knoten
+    // tragen nichts (ihr Gang hebt nur die Version).
     const rein = AnazhRealm._diaetWeltrein(),
-        objekt = [];
+        stoffWerte = (nbs.observer && nbs.observer.refreshUniforms) || [];
+    const gedeckt = (n) =>
+        rein.has(n.id) ||
+        (n.isMaterialReferenceNode === true && n.material === null && stoffWerte.includes(n.property));
+    const fest = (n) =>
+        (n.isMaterialReferenceNode !== true && n.object !== undefined && n.object !== null) ||
+        (n.object3d !== undefined && n.object3d !== null);
+    const gedecktU = new Set();
     for (const n of nbs.updateBeforeNodes) (jeZeichen(n, n.getUpdateBeforeType()) ? eigenVor : vor).push(n);
     for (const n of nbs.updateNodes) {
         const typ = n.getUpdateType();
         if (typ !== "object") (jeZeichen(n, typ) ? eigenKnoten : knoten).push(n);
-        else if (n.isUniformGroup !== true) objekt.push(n);
+        else if (n.isUniformGroup === true) continue;
+        else if (gedeckt(n)) {
+            const u = n.isUniformNode === true ? n : n.uniformNode || n.node;
+            if (u) gedecktU.add(u.id);
+        } else (fest(n) ? knoten : eigenKnoten).push(n);
     }
     const gruppen = [];
-    // (7) DIE EIGENEN GRUPPEN (r184 klont jede nicht geteilte Gruppe je Render-Objekt, `createBindings`): ihr Uniform-Puffer
-    // vergleicht sich je Prüfung, sobald er einen Wert trägt, den equals() nicht sieht — eine Uniform ohne welt-reinen Knoten
-    // (ein Stoff-Wert, ein Verweis, ein Wert je Frame in der Objekt-Gruppe, ein von außen gesetzter `value`); ihre Speicher-
-    // Puffer wacht die Version ihres Attributs
-    const reinU = new Set();
-    for (const n of objekt) if (rein.has(n.id)) reinU.add(n.isUniformNode === true ? n.id : n.uniformNode.id);
-    let vergleich = eigenKnoten.length > 0 || objekt.some((n) => !rein.has(n.id)),
-        speicher = false;
-    for (const g of ro.getBindings()) {
+    // (7) DIE EIGENEN GRUPPEN (r184 klont jede nicht geteilte Gruppe je Render-Objekt, `createBindings`): je Uniform-Puffer die
+    // Uniforms, die equals() nicht deckt (ein Verweis, ein Wert je Frame oder mit festem Bezug in der Objekt-Gruppe, ein von außen
+    // gesetzter `value`) — sie vergleichen sich je Prüfung (Gruppe · Bindung · Uniforms); ihre Speicher-Puffer wacht die Version
+    // ihres Attributs.
+    const vergleich = [];
+    let speicher = false;
+    const gs = ro.getBindings();
+    for (let gi = 0; gi < gs.length; gi++) {
+        const g = gs[gi];
         const b0 = g.bindings && g.bindings[0];
         if (b0 && b0.groupNode && b0.groupNode.shared === true) {
             gruppen.push(g);
             continue;
         }
-        for (const b of g.bindings) {
+        for (let bi = 0; bi < g.bindings.length; bi++) {
+            const b = g.bindings[bi];
             if (b.isStorageBuffer === true) speicher = true;
-            else if (
-                b.isUniformBuffer === true &&
-                (b.isNodeUniformsGroup !== true ||
-                    b.uniforms.some((u) => !u.nodeUniform || !u.nodeUniform.node || !reinU.has(u.nodeUniform.node.id)))
-            )
-                vergleich = true;
+            else if (b.isUniformBuffer === true && b.isNodeUniformsGroup !== true) vergleich.push([gi, bi, null]);
+            else if (b.isUniformBuffer === true) {
+                const ix = [];
+                for (let ui = 0; ui < b.uniforms.length; ui++) {
+                    const nd = b.uniforms[ui].nodeUniform && b.uniforms[ui].nodeUniform.node;
+                    if (!nd || !gedecktU.has(nd.id)) ix.push(ui);
+                }
+                if (ix.length > 0) vergleich.push([gi, bi, ix]);
+            }
         }
     }
     // (6) JEDE Textur des Programms: die Vorher-Knoten, die eine Textur ziehen (ihr `value` kann neu angelegt werden), und
@@ -1632,7 +1650,7 @@ AnazhRealm._diaetGang = function (ro, nbs) {
         for (const b of g.bindings)
             if (b.isSampledTexture === true && b.textureNode && texturen.indexOf(b.textureNode) < 0)
                 texturen.push(b.textureNode);
-    return { vor, knoten, eigenVor, eigenKnoten, objekt, gruppen, texturen, vergleich, speicher };
+    return { vor, knoten, eigenVor, eigenKnoten, gruppen, texturen, vergleich, speicher };
 };
 // (6) Wechselte eine Textur des Programms (Id oder Version) seit dem letzten Blick dieses Render-Objekts?
 AnazhRealm._diaetVorTextur = function (obs, ro) {
@@ -1678,22 +1696,18 @@ AnazhRealm._diaetWeltrein = function () {
     return (AnazhRealm._weltreinIds = ids);
 };
 // (7) Die eigenen Werte eines Render-Objekts je Prüfung: die Speicher-Puffer seiner eigenen Gruppen (Attribut Id · Version —
-// ein Wechsel zieht EINEN Refresh nach sich), die Vorher-Knoten je Zeichen-Objekt, und — trägt sein Programm einen Wert, den
-// equals() nicht sieht — jeder Knoten des Objekts (die welt-reinen mit: ihr EINER Knoten zeigt sonst auf das zuletzt
-// gezeichnete Objekt) und der Vergleich jedes eigenen Uniform-Puffers, der lädt, was sich änderte (wie r184 `_update`).
+// ein Wechsel zieht EINEN Refresh nach sich), die Vorher-Knoten und Knoten je Zeichen-Objekt, und je eigenem Uniform-Puffer
+// der Vergleich genau der Uniforms, die equals() nicht deckt (`_diaetGang`) — er lädt, was sich änderte (wie r184 `_update`).
 // true: ein Refresh ist fällig.
 AnazhRealm._diaetEigen = function (rend, obs, ro, k) {
-    const geteilt = (g) => {
-        const b0 = g.bindings[0];
-        return b0 !== undefined && b0.groupNode != null && b0.groupNode.shared === true;
-    };
     if (k.speicher) {
         const d = obs.getRenderObjectData(ro);
         const v = d._anazhSpV || (d._anazhSpV = []);
         let i = 0,
             anders = false;
         for (const g of ro.getBindings()) {
-            if (geteilt(g)) continue;
+            const b0 = g.bindings[0];
+            if (b0 !== undefined && b0.groupNode != null && b0.groupNode.shared === true) continue;
             for (const b of g.bindings)
                 if (b.isStorageBuffer === true) {
                     const a = b.attribute;
@@ -1711,18 +1725,20 @@ AnazhRealm._diaetEigen = function (rend, obs, ro, k) {
         const nf = rend._nodes.getNodeFrameForRender(ro);
         for (const n of k.eigenVor) nf.updateBeforeNode(n);
     }
-    if (!k.vergleich) return false;
-    const nf = rend._nodes.getNodeFrameForRender(ro);
-    for (const n of k.eigenKnoten) nf.updateNode(n);
-    for (const n of k.objekt) nf.updateNode(n);
-    const be = rend.backend;
-    for (const g of ro.getBindings()) {
-        if (geteilt(g)) continue;
-        for (const b of g.bindings)
-            if (b.isUniformBuffer === true) {
-                if (b.update() === true) be.updateBinding(b);
-                if (b.isBuffer === true && b.updateRanges.length > 0) b.clearUpdateRanges();
-            }
+    if (k.eigenKnoten.length > 0) {
+        const nf = rend._nodes.getNodeFrameForRender(ro);
+        for (const n of k.eigenKnoten) nf.updateNode(n);
+    }
+    if (k.vergleich.length === 0) return false;
+    const be = rend.backend,
+        gs = ro.getBindings();
+    for (const [gi, bi, ix] of k.vergleich) {
+        const b = gs[gi].bindings[bi];
+        let neu = false;
+        if (ix === null) neu = b.update() === true;
+        else for (let i = 0; i < ix.length; i++) if (b.updateByType(b.uniforms[ix[i]]) === true) neu = true;
+        if (neu) be.updateBinding(b);
+        if (b.isBuffer === true && b.updateRanges.length > 0) b.clearUpdateRanges();
     }
     return false;
 };
@@ -1829,7 +1845,11 @@ AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
     if (AnazhRealm._diaetVorTextur(obs, ro)) return true;
     // (7) die eigenen Werte des Render-Objekts (Speicher-Puffer, Vorher-Knoten je Zeichen-Objekt, Uniform-Puffer)
     const k = ro.getNodeBuilderState()._anazhGang;
-    if ((k.speicher || k.vergleich || k.eigenVor.length > 0) && AnazhRealm._diaetEigen(rend, obs, ro, k)) return true;
+    if (
+        (k.speicher || k.vergleich.length > 0 || k.eigenVor.length > 0 || k.eigenKnoten.length > 0) &&
+        AnazhRealm._diaetEigen(rend, obs, ro, k)
+    )
+        return true;
     return obs.equals(ro, obs.getLights(ro.lightsNode, rid), rid) !== true;
 };
 // W17 Phase B-Relay — der subworld-net-Kanal trägt den `WebSocket`-Verkehr

@@ -481,7 +481,7 @@ function diaetLaden(manipuliert) {
         return null;
     if (manipuliert === "eigen" && !ersetze('typ === "object" || (typeof n.property === "string" && n.object === null)', "false"))
         return null;
-    if (manipuliert === "vergleich" && !ersetze("if (b.update() === true) be.updateBinding(b);", "b.update();")) return null;
+    if (manipuliert === "vergleich" && !ersetze("if (neu) be.updateBinding(b);", "")) return null;
     const AnazhRealm = {};
     // r184-TSL: je welt-reinem Knoten EIN Knoten mit eigener Id (der Schein kennt sie nur beim Namen)
     const tslIds = new Map();
@@ -672,7 +672,7 @@ function diaetLauf(fn) {
             updateRanges: [],
             uniforms: [{ nodeUniform: { node: { id: 801 } } }],
             stand: 0,
-            update() {
+            updateByType() {
                 if (this.stand === obj.frei) return false;
                 this.stand = obj.frei;
                 return true;

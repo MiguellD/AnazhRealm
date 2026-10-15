@@ -858,23 +858,22 @@ class AnazhRealm_Z07 {
         // Die Diät galt bis K62 nur Stoffen, die sich erklärten (`_materialObserverDiaet`, sechs Stellen, der Schatten nur über
         // sein Original): gemessen an Genesis Third (Radeon 890M) refreshten je Frame 45,8 von 114,5 Prüfungen, darunter
         // 23 Stoffe ohne Erklärung (Tor-Membranen und -Nebel, Himmel, Sonne, Plattform, Rauch), netto 58 µs je Refresh.
-        // Jetzt prüft JEDER Beobachter eines Render-Objekts der Welt-Szene — Hauptbild und jede Kaskade — mit der EINEN
-        // Diät (`_diaetRefresh`): ihr Wächter (7) sieht auch jeden Wert, den equals() nicht sieht (die eigenen Uniform-Puffer
-        // je Render-Objekt), darum braucht kein Stoff mehr eine Erklärung. Eine fremde Szene (Post-Quad, Umgebung) fährt die
-        // Vendor-Bahn. Die Basisklasse exportiert window.THREE nicht — sie ist der Prototyp von MeshBasicNodeMaterial.
+        // Jetzt prüft JEDER Beobachter eines Render-Objekts einer Szene — Hauptbild und jede Kaskade — mit der EINEN Diät
+        // (`_diaetRefresh`): ihr Wächter (7) sieht auch jeden Wert, den equals() nicht sieht (die eigenen Uniform-Puffer je
+        // Render-Objekt), darum braucht kein Stoff mehr eine Erklärung. Ein Zeichnen ohne Szene (r184 QuadMesh: Post-Kette,
+        // TRAA) fährt die Vendor-Bahn. Die Basisklasse exportiert window.THREE nicht — sie ist der Prototyp von MeshBasicNodeMaterial.
         const NM =
             THREE.MeshBasicNodeMaterial && Object.getPrototypeOf(THREE.MeshBasicNodeMaterial.prototype).constructor;
         if (!NM || !NM.prototype || typeof NM.prototype.setupObserver !== "function")
             this.log("DIÄT: r184-NodeMaterial.setupObserver nicht gefunden (Vendor-Drift)", "ERROR");
         else if (!NM.__anazhWeltDiaet) {
-            const welt = this;
             const beobRoh = NM.prototype.setupObserver;
             NM.prototype.setupObserver = function (builder) {
                 const o = beobRoh.call(this, builder);
                 if (!o || typeof o.needsRefresh !== "function") return o;
                 const altNR = o.needsRefresh;
                 o.needsRefresh = function (ro, frame) {
-                    if (ro.scene !== welt.state.scene) return altNR.call(this, ro, frame);
+                    if (ro.scene.isScene !== true) return altNR.call(this, ro, frame);
                     return AnazhRealm._diaetRefresh(this, ro, frame, altNR);
                 };
                 return o;
