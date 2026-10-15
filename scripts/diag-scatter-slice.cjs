@@ -189,7 +189,8 @@ const server = statikServer();
                 const altWartet = r._streuWartetAuf;
                 const fremde = new Set();
                 r._streuWartetAuf = function (z) {
-                    if (this._streuSammler && z && !zus.includes(z)) fremde.add(z === this._waldLeer ? "wald" : "fremd");
+                    if (this._streuSammler && z && !zus.includes(z))
+                        fremde.add(z === this._waldLeer ? "wald" : "fremd");
                     return altWartet.call(this, z);
                 };
                 wecker.schlange = r._waldPlanSchlange ? r._waldPlanSchlange.size : 0;

@@ -658,7 +658,8 @@ class AnazhRealm_Z20a {
             }
         }
         if (n > 0) this._waldPlanGeplant(performance.now());
-        if (Q && Q.size && this._waldFadenLebt() && this._forestGesetzWahr()) this._waldFadenSchicken(this._forestSeedInt());
+        if (Q && Q.size && this._waldFadenLebt() && this._forestGesetzWahr())
+            this._waldFadenSchicken(this._forestSeedInt());
     }
 
     // Die gepackten Darts des Fadens (je Zelle `anzahl`, je Dart 11 Werte, die Arten als Tafel) → je Zelle die Darts, wie
