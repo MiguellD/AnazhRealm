@@ -528,7 +528,7 @@
                     "datei": "spec/farbe/albedo-tafel.json",
                     "zeile": "haus"
                 },
-                "werkzeug": "werkbank albedo --tafel + diag-albedo-tafel.cjs --labor --echt, dann --nachziehen; der Bildanteil: werkbank bild am Messort dorf --klasse '^(bauSatz|f:alemannisch:L[01])$' --ist haus:wirkung"
+                "werkzeug": "werkbank albedo --tafel + diag-albedo-tafel.cjs --labor --echt, dann --nachziehen; der Bildanteil: am Messort dorf zeichnet kein Haus binnen 60 m (das Dorf wächst um den Spieler) — werkbank umstellen -787 -865 (der Dorfrand, das römische Haus 30 m), dann je Haus des Dorfs das Auge 22 m außerhalb auf der Linie Dorfmitte → Haus, der Blick 6 m vor seine Front (kein Nachbar davor, die eigene Wand verdeckt nicht): werkbank bild <Pose> --wahl 42 --ziel haus --klasse '^(bauSatz|f:alemannisch:L[0-3]|bau:haus_[a-z_]+)$' --ist haus:wirkung"
             },
             "quellen": [
                 "fachwerk-core.js",
