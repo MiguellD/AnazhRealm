@@ -1096,15 +1096,21 @@ class AnazhRealm_Z17c {
     }
 
     // Nah-Wiese und Nah-Streu lesen das Licht derselben Kronen (`_bodenLichtFeld`): ihre Kacheln, so weit Streu ODER
-    // Schatten einer geänderten Krone reichen, fallen und wachsen neu (nur in Reichweite der Wiese — weiter weg steht
-    // keine Kachel).
+    // Schatten einer geänderten Krone reichen, fallen und wachsen neu — so weit der WEITERE der beiden Ringe um ihre EINE
+    // Mitte (die Kamera, `_tickNahWiese` · `_tickNahStreu`) reicht; weiter weg steht keine Kachel. Bis K70-N1 galt die
+    // Reichweite der Wiese (27 m) um den Spieler: die Streu-Kacheln am Ringrand (bis 35 m) behielten das alte Licht.
     _kronenStreuWiese(x, z, radius) {
-        const pm = this.state.playerMesh;
-        if (!pm) return;
+        const mitte = this.state.camera
+            ? this.state.camera.position
+            : this.state.playerMesh && this.state.playerMesh.position;
+        if (!mitte) return;
         const U = AnazhRealm.UNDERGROWTH;
         const a = radius * Math.max(AnazhRealm.LAUB_STREU.rand, U.kronenSigma * Math.sqrt(U.kronenQMax));
-        const NW = AnazhRealm.NAH_WIESE;
-        if (Math.hypot(x - pm.position.x, z - pm.position.z) - a < NW.radius + NW.rand + NW.kachel * 1.5)
+        const reich = (R) => R.radius + R.rand + R.kachel * 1.5;
+        if (
+            Math.hypot(x - mitte.x, z - mitte.z) - a <
+            Math.max(reich(AnazhRealm.NAH_WIESE), reich(AnazhRealm.NAH_STREU))
+        )
             this._nahWieseNeuIn(x - a, z - a, x + a, z + a);
     }
 
