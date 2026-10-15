@@ -1708,8 +1708,11 @@ AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
     // Die Wächter vergleichen Zahlen am EINEN Daten-Satz des Render-Objekts — eine Prüfung ohne Änderung legt nichts an
     // (vorher je Prüfung zwei Versions-Zeichenketten: Instanz und Atlas). Eine Senke zeichnet über ihren Zeichner (1410-1):
     // ihre Instanz-Puffer sind die der Senke.
+    // Beide Wächter merken jeden Blick, bevor einer den Refresh meldet: ein Instanz-Grund, der vor dem Geometrie-Wächter
+    // zurückkehrte, ließ dessen Stempel stehen — jedes neue Instanz-Objekt frischte im Render danach ein zweites Mal auf.
     const senke = obj && obj.isInstanzZeichner === true ? obj.__instanzQuelle : obj;
-    let d = null;
+    let d = null,
+        grund = false;
     if (senke && senke.isInstancedMesh === true) {
         const im = senke.instanceMatrix,
             ic = senke.instanceColor;
@@ -1719,7 +1722,7 @@ AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
             cV = ic ? ic.version : -1;
         d = obs.getRenderObjectData(ro);
         if (d._anazhIId !== iId || d._anazhIV !== iV || d._anazhICId !== cId || d._anazhICV !== cV) {
-            const grund =
+            grund =
                 d._anazhIId !== iId ||
                 d._anazhICId !== cId ||
                 (d._anazhIV !== iV && !AnazhRealm._diaetGetragen(A, im)) ||
@@ -1728,7 +1731,6 @@ AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
             d._anazhIV = iV;
             d._anazhICId = cId;
             d._anazhICV = cV;
-            if (grund) return true;
         }
     }
     // DER GEOMETRIE-WÄCHTER JE RENDER-OBJEKT (Welle 6): der Vendor merkt Attribut-Versionen je GEOMETRIE, nicht je
@@ -1762,7 +1764,7 @@ AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
             g.length = i;
             anders = true;
         }
-        if (anders) return true;
+        if (anders || grund) return true;
         // (7) DER WÄCHTER IST DIE GEOMETRIE-PRÜFUNG (K71): der Vendor prüft sie in equals() ein zweites Mal, je Geometrie und
         // Render (Id je Objekt, Attribute, Index, drawRange) — die Diät stellt seine Daten als geprüft. Der Ausschnitt ist ein
         // Draw-Parameter (r184 liest `geometry.drawRange` bei jedem Draw), kein Grund für einen Refresh: jeder Satz zeichnet je
@@ -1775,6 +1777,7 @@ AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
             gd._equal = true;
         }
     }
+    if (grund) return true;
     const rend = frame && frame.renderer;
     if (
         !rend ||
