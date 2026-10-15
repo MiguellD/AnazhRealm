@@ -525,16 +525,19 @@
     // Zweiglein tragen 16 je `unter` Unter-Zweiglein (`unterLaenge` der Zweig-Länge): jedes Zweiglein ein eigener Sprüh-Büschel,
     // die Lücken zwischen ihnen überleben die tiefen Mips — die Karte liest als Hand aus Nadel-Büscheln, nie als Klinge.
     const WEDEL_ZWEIG = {
-        seiten: 16,
-        laenge: 0.8,
+        seiten: 10,
+        laenge: 0.95,
         stumpf: 3,
-        streu: [0.75, 0.5],
-        unterLaenge: 0.42,
-        winkel: [0.82, 0.18],
-        unter: 7,
-        abstand: 1.6,
-        nadel: 12,
-        breite: 1.6,
+        streu: [0.5, 0.8],
+        unterLaenge: 0.55,
+        unterAb: 0.3,
+        unterWinkel: [0.4, 0.7],
+        biegung: [0.18, 0.9],
+        winkel: [0.55, 0.8],
+        unter: 5,
+        abstand: 1.4,
+        nadel: 14,
+        breite: 2,
         nadelWinkel: 1.05,
         rand: 0.92,
         strom: 0xbeef,
@@ -799,16 +802,17 @@
                         Math.pow(1 - Math.pow(t, WZ.stumpf), 0.5) *
                         (WZ.streu[0] + rg() * WZ.streu[1]);
                 if (L < WZ.nadel) continue;
-                const pz = achse(q, w, L, -sg * 0.18, 1.3, 1);
-                // Unter-Zweiglein am äußeren Teil der langen Zweiglein (der Wedel wird nach außen dichter).
+                const kz = -sg * WZ.biegung[0] + (rg() - 0.5) * WZ.biegung[1];
+                const pz = achse(q, w, L, kz, 1.3, 1);
+                // Unter-Zweiglein am äußeren Teil der langen Zweiglein: die Spitze des Zweigleins fächert zum Büschel.
                 for (let u = 0; u < WZ.unter && L > 6 * WZ.nadel; u++) {
-                    const tu = 0.35 + (0.5 * u) / Math.max(1, WZ.unter - 1),
+                    const tu = WZ.unterAb + ((0.9 - WZ.unterAb) * u) / Math.max(1, WZ.unter - 1),
                         su = (u + i) % 2 ? 1 : -1;
                     achse(
                         pz(tu),
-                        w - sg * 0.18 * tu + su * (0.62 + rg() * 0.2),
-                        L * WZ.unterLaenge * (1 - 0.4 * tu),
-                        0,
+                        w + kz * tu + su * (WZ.unterWinkel[0] + rg() * WZ.unterWinkel[1]),
+                        L * WZ.unterLaenge * (0.6 + rg() * 0.8) * (1 - 0.4 * tu),
+                        (rg() - 0.5) * WZ.biegung[1],
                         0.9,
                         0.9
                     );
