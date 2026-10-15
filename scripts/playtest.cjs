@@ -23201,9 +23201,33 @@ async function checkBandV17118WorkerEngaged(ctx) {
             worldgenSynced: !!r.state.voxelWorkerWorldgenSynced,
             // Source: der Bootstrap lebt in _voxelWorkerSyncWorldgenState (war: early-return).
             bootstrapSrc: /_getVoxelWorker\(\)/.test(window.__codeOf(r._voxelWorkerSyncWorldgenState)),
-            // Source: der Spieler-Chunk baut ASYNC (kein `_voxelChunkIsPlayerChunk`-Sync-Trip) — das
-            // Dichtefeld trägt den Boden global, niemand fällt durch einen ungebauten Chunk.
-            playerAsyncSrc: !/_voxelChunkIsPlayerChunk/.test(window.__codeOf(r._ensureVoxelChunkAt)),
+            // Laufzeit: der Neubau des Spieler-Chunks baut nie synchron (K69-2: der Neubau jedes Chunks geht über den
+            // Worker, die Flut-Saat reist mit dem Auftrag; bis K69-2 baute der Spieler-Chunk am Erdbau 88–261 ms im
+            // Haupt-Faden). Gegenprobe: forceSync (die Test-Naht) baut synchron — der Zähler sieht ihn.
+            spielerNeubau: (() => {
+                const pm = r.state.playerMesh && r.state.playerMesh.position;
+                const span = r._voxelChunkConfig().span;
+                const ch = r.state.voxelChunks;
+                if (!pm || !ch) return null;
+                const kx = [Math.floor(pm.x / span), Math.floor((pm.x + span / 2) / span)];
+                const kz = [Math.floor(pm.z / span), Math.floor((pm.z + span / 2) / span)];
+                const i = ch.has(kx[0] + "," + kz[0]) ? 0 : ch.has(kx[1] + "," + kz[1]) ? 1 : -1;
+                if (i < 0) return null;
+                let sync = 0;
+                const org = r._buildVoxelChunkData;
+                r._buildVoxelChunkData = function () {
+                    sync++;
+                    return org.apply(this, arguments);
+                };
+                try {
+                    r._rebuildVoxelChunk(kx[i], kz[i], null, {});
+                    const asyncSync = sync;
+                    r._rebuildVoxelChunk(kx[i], kz[i], null, { forceSync: true });
+                    return { key: kx[i] + "," + kz[i], sync: asyncSync, gegen: sync - asyncSync };
+                } finally {
+                    delete r._buildVoxelChunkData;
+                }
+            })(),
         };
     });
     if (res.error) {
@@ -23219,9 +23243,11 @@ async function checkBandV17118WorkerEngaged(ctx) {
         "V17.118 E3: _voxelWorkerSyncWorldgenState bootstrappt den Worker (Source, Regressions-Wand)",
         res.bootstrapSrc === true
     );
+    const sn = res.spielerNeubau;
     check(
-        "V18.271: _ensureVoxelChunkAt baut den Spieler-Chunk ASYNC (die V17.118-Sync-Ausnahme abgelöst durch den nicht-blockierenden weichen Boden)",
-        res.playerAsyncSrc === true
+        "K69-2: der Neubau des Spieler-Chunks baut nie synchron im Haupt-Faden (über den Worker), die Gegenprobe forceSync schon",
+        !!sn && sn.sync === 0 && sn.gegen >= 1,
+        JSON.stringify(sn)
     );
 }
 
