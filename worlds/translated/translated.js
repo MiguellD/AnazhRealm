@@ -414,6 +414,9 @@
     let sceneBuilt = false;
     window.AnazhHuelle.bruecke({
         welt: "translated",
+        // DAS ZIEL-BILD (D8): die übersetzte Szene als Panorama aus dem Blick ihrer Kamera; sie steht erst nach dem enter (die
+        // Szene reist mit dem Handshake) — vorher nennt die Welt laut kein Bild
+        panorama: () => (renderer && scene && camera ? { THREE, renderer, scene, kamera: camera } : null),
         wort,
         enter: (avatar, msg) => {
             const name = typeof avatar.name === "string" && avatar.name ? avatar.name : "Reisender";

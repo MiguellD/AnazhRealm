@@ -18,7 +18,8 @@
  *                              Eltern-Rahmen spricht, `["chain", …]` rekursiv, das Einzelwort der Heimat (["w", …args])
  *                              ganz — nie op[0] je Element (aus "gt" wurde "g"). Esc bringt heim, außer die Welt behält ihn.
  *   panorama(T, renderer, scene, ort, opt)  DAS ZIEL-BILD (D8): die Welt des Studios als Equirekt 512 × 256, linear, aus
- *                              ihrem eigenen Renderer — das Labor liest es selbst (rt), die Brücke exportiert es (daten)
+ *                              ihrem eigenen Renderer — das Labor liest es selbst (rt), die Brücke exportiert es (daten);
+ *                              panoramaBild(maler) dasselbe für die flache Welt (sie malt ihr Equirekt selbst)
  *   toast(text, ms) · zufall(seed) · knopfMitText(wurzel, wort)
  *
  * Die Hülle ändert keine Bau-Bytes: sie reicht Werte durch, die Gesetzbücher bauen (gate:asset-contract unverändert).
@@ -612,9 +613,13 @@
     // ── DAS PANORAMA DES STUDIOS (D8, Karte „Das Tor als Fenster") — die EINE Quelle des Ziel-Bilds der Tor-Membran ──
     // Das Studio rendert seine EIGENE Welt (seine Szene, sein Renderer, Labor = Welt) einmal von einem Ort aus: sechs
     // 90°-Würfe in einen Würfel (CubeCamera), gefaltet ins Equirekt 512 × 256 (die Richtung je Texel wie three
-    // `equirectUV`: u = atan2(z, x)/2π + ½, v = asin(y)/π + ½, Zeile 0 unten), LINEAR ohne Tonabbildung (der Leser belichtet
-    // selbst). opt: verbergen (Objekte, die nicht ins Bild gehören — die eigene Membran), nah/fern, lesen (true: die Texel als
-    // Halbfloat-Puffer zurück, der Welt-Export). Rückgabe { w, h, rt, daten } — rt.texture liest das Labor selbst.
+    // `equirectUV`: u = atan2(z, x)/2π + ½, v = asin(y)/π + ½, Zeile 0 unten). DER BLICK DES STUDIOS: `opt.kamera` stellt den
+    // Ort (ihre Lage) und dreht das Bild, bis die Mitte der Öffnung (−z des Lesers, u = ¼) zeigt, was die Kamera vor sich hat.
+    // DIE WERTE sind die Bild-Werte des Studios, ins Lineare gelesen: der Würfel schreibt wie der Schirm (sRGB-Kodierung des Ziels
+    // — Hintergrund und Nebel stehen in r128 in Bild-Werten, die Stoffe kodiert der Shader), die Faltung dekodiert; ohne
+    // Tonabbildung (der Leser belichtet und tont selbst). opt: verbergen (Objekte, die nicht ins Bild gehören — die eigene
+    // Membran), nah/fern, lesen (true: die Texel als Halbfloat-Puffer zurück, der Welt-Export). Rückgabe { w, h, rt, daten } —
+    // rt.texture liest das Labor selbst.
     var PANO_W = 512,
         PANO_H = 256;
     function halb(x) {
@@ -636,11 +641,22 @@
     }
     function panorama(T, renderer, scene, ort, opt) {
         opt = opt || {};
+        var kam = opt.kamera || null,
+            drehung = 0;
+        if (kam) {
+            kam.updateMatrixWorld();
+            ort = [kam.position.x, kam.position.y, kam.position.z];
+            var vor = new T.Vector3();
+            kam.getWorldDirection(vor);
+            if (vor.x * vor.x + vor.z * vor.z > 1e-8) drehung = Math.atan2(vor.z, vor.x) + Math.PI / 2;
+        }
+        var kodiert = T.sRGBEncoding !== undefined;
         var wuerfel = new T.WebGLCubeRenderTarget(256, {
             type: T.HalfFloatType,
             generateMipmaps: false,
             minFilter: T.LinearFilter,
             magFilter: T.LinearFilter,
+            encoding: kodiert ? T.sRGBEncoding : undefined,
         });
         var cam = new T.CubeCamera(opt.nah || 0.1, opt.fern || 4000, wuerfel);
         cam.position.set(ort[0], ort[1], ort[2]);
@@ -670,12 +686,18 @@
             depthBuffer: false,
         });
         var mat = new T.ShaderMaterial({
-            uniforms: { uWuerfel: { value: wuerfel.texture } },
+            uniforms: {
+                uWuerfel: { value: wuerfel.texture },
+                uDreh: { value: drehung },
+                uKodiert: { value: kodiert ? 1 : 0 },
+            },
             vertexShader: "varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,0.0,1.0);}",
             fragmentShader:
-                "uniform samplerCube uWuerfel;varying vec2 vUv;void main(){float az=(vUv.x-0.5)*6.28318530718;" +
-                "float el=(vUv.y-0.5)*3.14159265359;vec3 d=vec3(cos(el)*cos(az),sin(el),cos(el)*sin(az));" +
-                "gl_FragColor=vec4(textureCube(uWuerfel,d).rgb,1.0);}",
+                "uniform samplerCube uWuerfel;uniform float uDreh,uKodiert;varying vec2 vUv;void main(){" +
+                "float az=(vUv.x-0.5)*6.28318530718+uDreh;float el=(vUv.y-0.5)*3.14159265359;" +
+                "vec3 c=textureCube(uWuerfel,vec3(cos(el)*cos(az),sin(el),cos(el)*sin(az))).rgb;" +
+                "vec3 l=mix(c/12.92,pow((max(c,0.0)+0.055)/1.055,vec3(2.4)),step(vec3(0.04045),c));" +
+                "gl_FragColor=vec4(mix(c,l,uKodiert),1.0);}",
             depthTest: false,
             depthWrite: false,
             toneMapped: false,
@@ -690,8 +712,7 @@
         if (opt.lesen) {
             var f = new Float32Array(PANO_W * PANO_H * 4);
             renderer.readRenderTargetPixels(rt, 0, 0, PANO_W, PANO_H, f);
-            daten = new Uint16Array(f.length);
-            for (var i = 0; i < f.length; i++) daten[i] = halb(f[i]);
+            daten = halbPuffer(f);
         }
         renderer.setRenderTarget(alt);
         renderer.toneMapping = tm;
@@ -700,14 +721,46 @@
         wuerfel.dispose();
         return { w: PANO_W, h: PANO_H, rt: rt, daten: daten };
     }
+    function halbPuffer(f) {
+        var d = new Uint16Array(f.length);
+        for (var i = 0; i < f.length; i++) d[i] = halb(f[i]);
+        return d;
+    }
+    // DIE FLACHE WELT (D8): eine Welt ohne Szene (die Skelett-Leere, das Strom-Feld, der Klang) malt ihr Equirekt selbst in
+    // IHRER Technik — `maler(ctx, w, h)` auf eine 2D-Fläche 512 × 256 (Zeile 0 OBEN wie jede Leinwand; die Mitte der Öffnung
+    // ist u = ¼), Bild-Werte sRGB; die Hülle liest sie ins Lineare und legt Zeile 0 nach unten wie das Equirekt des Würfels.
+    function panoramaBild(maler) {
+        var cv = doc.createElement("canvas");
+        cv.width = PANO_W;
+        cv.height = PANO_H;
+        var ctx = cv.getContext("2d");
+        maler(ctx, PANO_W, PANO_H);
+        var px = ctx.getImageData(0, 0, PANO_W, PANO_H).data;
+        var f = new Float32Array(PANO_W * PANO_H * 4);
+        var lin = function (c) {
+            c /= 255;
+            return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+        };
+        for (var y = 0; y < PANO_H; y++)
+            for (var x = 0; x < PANO_W; x++) {
+                var q = ((PANO_H - 1 - y) * PANO_W + x) * 4,
+                    z = (y * PANO_W + x) * 4;
+                f[z] = lin(px[q]);
+                f[z + 1] = lin(px[q + 1]);
+                f[z + 2] = lin(px[q + 2]);
+                f[z + 3] = 1;
+            }
+        return { w: PANO_W, h: PANO_H, rt: null, daten: halbPuffer(f) };
+    }
 
     // ── DIE PORTAL-BRÜCKE + DER DSL-ADAPTER (skeleton-Norm, EINE Kopie) ──
     // opt: welt · label · dsl (Wörter) | manifest (true = ./manifest.json lesen und melden) · wort(w, args) → die Tat ·
     //      enter(avatar, msg) · esc(ev) → false behält Esc in der Welt · sonst(msg) jede andere Nachricht der Heimat (das
     //      terrain-Labor reicht so die Asset-Kanäle an die Foundry-Brücke, foundryKanal) · panorama() → { THREE, renderer,
-    //      scene, ort, verbergen } — DER EXPORT DES ZIEL-BILDS (D8): fragt die Heimat `{ type: "panorama-bitte" }`, rendert die
-    //      Hülle das Panorama der Welt (`panorama`, gelesen) und schickt `{ type: "panorama", world, w, h, daten }` (Halbfloat-
-    //      Texel, übertragen); eine Welt ohne panorama() antwortet laut mit `fehler`
+    //      scene, kamera | ort, verbergen } oder { bild(ctx, w, h) } (die flache Welt), auch als Versprechen — DER EXPORT DES
+    //      ZIEL-BILDS (D8): fragt die Heimat `{ type: "panorama-bitte" }`, rendert die Hülle das Panorama der Welt (`panorama`
+    //      bzw. `panoramaBild`, gelesen) und schickt `{ type: "panorama", world, w, h, daten }` (Halbfloat-Texel, übertragen);
+    //      eine Welt ohne panorama() antwortet laut mit `fehler`
     function bruecke(opt) {
         opt = opt || {};
         var eltern = wurzel.parent && wurzel.parent !== wurzel ? wurzel.parent : null;
@@ -744,25 +797,39 @@
             } else if (m.type === "dsl") wirke(m.program);
             else if (m.type === "panorama-bitte") {
                 var antwort = { type: "panorama", world: opt.welt, reqId: m.reqId };
-                try {
-                    var q = opt.panorama ? opt.panorama() : null;
-                    if (!q || !q.renderer || !q.scene) throw new Error("die Welt nennt kein Panorama (bruecke ohne panorama())");
-                    var P = panorama(q.THREE || wurzel.THREE, q.renderer, q.scene, q.ort || [0, 1.7, 0], {
-                        verbergen: q.verbergen,
-                        lesen: true,
-                    });
-                    P.rt.dispose();
-                    antwort.w = P.w;
-                    antwort.h = P.h;
-                    antwort.daten = P.daten;
-                } catch (e) {
+                var schick = function () {
+                    try {
+                        eltern.postMessage(antwort, "*", antwort.daten ? [antwort.daten.buffer] : []);
+                    } catch (_e) {
+                        /* die Heimat ist fort */
+                    }
+                };
+                var bruch = function (e) {
+                    antwort.daten = null;
                     antwort.fehler = String((e && e.message) || e);
-                }
-                try {
-                    eltern.postMessage(antwort, "*", antwort.daten ? [antwort.daten.buffer] : []);
-                } catch (_e) {
-                    /* die Heimat ist fort */
-                }
+                    schick();
+                };
+                // die Welt nennt ihr Bild — sofort oder als Versprechen, wenn sie erst wachsen muss
+                new Promise(function (ja) {
+                    ja(opt.panorama ? opt.panorama() : null);
+                })
+                    .then(function (q) {
+                        var P = null;
+                        if (q && typeof q.bild === "function") P = panoramaBild(q.bild);
+                        else if (q && q.renderer && q.scene)
+                            P = panorama(q.THREE || wurzel.THREE, q.renderer, q.scene, q.ort || [0, 1.7, 0], {
+                                kamera: q.kamera,
+                                verbergen: q.verbergen,
+                                lesen: true,
+                            });
+                        if (!P) throw new Error("die Welt nennt kein Panorama (bruecke ohne panorama())");
+                        if (P.rt) P.rt.dispose();
+                        antwort.w = P.w;
+                        antwort.h = P.h;
+                        antwort.daten = P.daten;
+                        schick();
+                    })
+                    .catch(bruch);
             } else if (opt.sonst) opt.sonst(m);
         });
         wurzel.addEventListener("keydown", function (ev) {
@@ -808,6 +875,7 @@
         zaehle: zaehle,
         bruecke: bruecke,
         panorama: panorama,
+        panoramaBild: panoramaBild,
         toast: toast,
         zufall: zufall,
         knopfMitText: knopfMitText,

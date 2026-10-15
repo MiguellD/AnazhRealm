@@ -186,7 +186,7 @@ init();
 AnazhHuelle.bruecke({
     welt: "portale",
     panorama: function () {
-        return { THREE: THREE, renderer: renderer, scene: scene, ort: [0, 1.7, 6], verbergen: membrane ? [membrane] : [] };
+        return { THREE: THREE, renderer: renderer, scene: scene, kamera: camera, verbergen: membrane ? [membrane] : [] };
     },
     label: "Porta — Ordnungen & fraktale Tiefe",
     dsl: ["drachentor", "kathedrale", "maschine", "geisttor", "verkalkt", "ruine", "maurentor", "zufall"],

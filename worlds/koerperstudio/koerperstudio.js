@@ -601,6 +601,10 @@ animate();addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;ca
     };
     var B = AnazhHuelle.bruecke({
         welt: "koerperstudio",
+        // DAS ZIEL-BILD (D8): die Hülle rendert diese Welt als Panorama aus dem Blick ihrer Kamera — die Tor-Membran der Heimat zeigt es
+        panorama: function () {
+            return { THREE: THREE, renderer: renderer, scene: scene, kamera: camera };
+        },
         label: "Da Vinci Studio — Lebendiger Mensch",
         dsl: Object.keys(EMOTION).concat(["zufall", "zuruecksetzen"]),
         wort: function (w) {

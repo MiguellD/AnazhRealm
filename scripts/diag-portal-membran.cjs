@@ -7,6 +7,10 @@
 //     (Probe-Punkte in der Öffnung treffen keine Box), die PFOSTEN sind
 //     SOLIDE (Probe-Punkte im Rahmen treffen), und der alte Quarz-Riegel
 //     (Alt-Substanz-AABB mitten in der Öffnung) ist GEFALLEN.
+//   Z (Ziel, D8): das Tor wartet auf sein Ziel — die Zeile seiner Ziel-Welt im Atlas der Ziele kommt aus dem EINEN Export der
+//     Welt selbst (der verborgene Rahmen, die Hülle `AnazhHuelle.panorama`) oder von der Platte, mit dem SHA-Stempel ihrer
+//     Quellen; die Membran liest genau diese Zeile (Stoff-Wert `ziel`), der Atlas ist rgba16float, 256 Zeilen je Ziel. N (Absenz):
+//     kein Nebel-Kasten, kein Nebel-Gesetz am Tor (D8: der Kasten fiel), kein Host-Panorama der eigenen Welt (`_torPanorama`).
 //   M (Membran): der Membran-Tick baut für das Portal EIN Passage-Mesh
 //     (Registry je entry.id, Material-Marker portalMembran bzw. fail-LAUT-
 //     Fallback), und die Uniforms atmen (time/act ändern sich mit Tick+Nähe).
@@ -17,16 +21,15 @@
 //     und zeichnete 8 Befehle und 129 600 Dreiecke auch mit dem Ring im Rücken (Spike der Prüfbühne 10.10.). Gezählt wird,
 //     was der Renderer nach dem Culling zeichnet (`_renderObjectDirect` je Objekt im Hauptbild):
 //       B1 aus der Ring-Mitte nach −x zeichnen Membranen (nicht vakuös), die im Rücken nicht alle
-//       B2 70 m vor dem Ring, Blick vom Ring weg: KEINE Membran und kein Nebel zeichnet — Täter beim Namen (Gestalt, Abstand)
+//       B2 70 m vor dem Ring, Blick vom Ring weg: KEINE Membran zeichnet — Täter beim Namen (Gestalt, Abstand)
 //       B3 die Hülle trägt die Welle: die Kugel jeder Membran-Geometrie reicht in z bis zur Amplitude des Gesetzes
 //       BS Selbsttest am echten Frame: mit `frustumCulled = false` (dem alten Stand) MUSS B2 jede Membran beim Namen nennen
-//       H  (K64-n1) aus der Ring-Mitte, AUSGABE-Pfad gegen das Labor-Bild derselben Pixel: die Welt hebt die Membran nicht über
-//          ihren Anzeige-Wert (Y ≤ 1,15 ×) und brennt nicht aus (Y > 240 ≤ 5 %) — die Shell malt in Bild-Werten, die Welt liest
-//          sie durch das FARB-GESETZ ins Lineare (Lehre 21)
-//       HS Selbsttest: der rohe Leser (Anzeige-Wert als Strahlung, der Stand vor K64-n1) MUSS in H rot werden — in DERSELBEN
-//          Seite, gegen dieselbe Maske und dasselbe Labor-Bild (K64-n2: seine Stoffe SIND die des Labors)
+//       H  (K64-n1, D8) aus der Ring-Mitte, AUSGABE-Pfad: die Öffnung brennt nicht aus (Y > 240 ≤ 5 %) und liest nicht als Milch
+//          (unbunt und hell — dieselbe Regel wie K5 milchweiss: C*ab < 5 bei L* ≥ 50 — ≤ 5 %): sie zeigt das Ziel durch den Film
+//       HS Selbsttest: der Milch-Leser (die Öffnung als helles Weiß, das Bild des Stands vor D8) MUSS in H rot werden — in
+//          DERSELBEN Seite, gegen dieselbe Maske
 //       HM (K64-n3) die Maske zeichnet ohne kaltes Programm (je Bild gezählt: neue Vertex-/Fragment-Programme), HMS Selbsttest:
-//          derselbe Zähler sieht die kalten Programme des rohen Lesers
+//          derselbe Zähler sieht das kalte Programm des Milch-Lesers
 //
 //   node scripts/diag-portal-membran.cjs [--ohne-blick]
 "use strict";
@@ -43,7 +46,7 @@ function check(name, ok, detail) {
 }
 
 // B: die Seite — der Renderer steht, die Membranen sind gebaut; dann ruht der Loop, und je Blick zählt EIN Frame, was der
-// Renderer nach dem Culling zeichnet. `opts.alt`: alle Membranen und Nebel auf `frustumCulled = false` (der Selbsttest).
+// Renderer nach dem Culling zeichnet. `opts.alt`: alle Membranen auf `frustumCulled = false` (der Selbsttest).
 async function blickProbe(opts) {
     const warte = (ms) => new Promise((q) => setTimeout(q, ms));
     const t0 = performance.now();
@@ -63,17 +66,13 @@ async function blickProbe(opts) {
     const rend = st.renderer;
     rend.setAnimationLoop(null);
     const recs = [...r._portalMembranes.values()];
-    if (opts.alt)
-        for (const rec of recs) {
-            rec.mesh.frustumCulled = false;
-            if (rec.nebel) rec.nebel.frustumCulled = false;
-        }
+    if (opts.alt) for (const rec of recs) rec.mesh.frustumCulled = false;
     const nf = rend._nodes && rend._nodes.nodeFrame;
     const roh = rend._renderObjectDirect;
     let zug = null;
     rend._renderObjectDirect = function (object, material, scene, camera, ...rest) {
         const inv = object.userData && object.userData.inventar;
-        if (zug && camera === st.camera && (inv === "portal-membran" || inv === "portal-nebel")) zug.push(object);
+        if (zug && camera === st.camera && inv === "portal-membran") zug.push(object);
         return roh.call(this, object, material, scene, camera, ...rest);
     };
     const g = r._genesisMitte();
@@ -92,14 +91,13 @@ async function blickProbe(opts) {
         const gesehen = zug;
         zug = null;
         const name = (o) => {
-            const rec = recs.find((x) => x.mesh === o || x.nebel === o);
+            const rec = recs.find((x) => x.mesh === o);
             const p = new window.THREE.Vector3();
             o.getWorldPosition(p);
             return `${o.userData.inventar} ${rec ? rec.tor.gestalt : "?"} (${Math.round(p.distanceTo(cam.position))} m)`;
         };
         return {
             membran: gesehen.filter((o) => o.userData.inventar === "portal-membran").length,
-            nebel: gesehen.filter((o) => o.userData.inventar === "portal-nebel").length,
             taeter: gesehen.map(name),
         };
     };
@@ -126,11 +124,11 @@ async function blickProbe(opts) {
     return aus;
 }
 
-// H (K64-n1, die Hellen Tafeln): aus der Ring-Mitte (der Spieler am Spawn, die Tore wach) liest der AUSGABE-Pfad die Pixel jeder
-// Membran. Die Shell malt in Bild-Werten (ACES endet im Anzeige-Wert); roh als lineare Strahlung gelesen hob die Ausgabe ihre
-// dunklen Bänder an, die Membran stand milchig-weiß (entsättigt). EINE Seite, EIN Blick, die Uhr steht — vier Bilder:
+// H (K64-n1, die Hellen Tafeln; D8 das Tor als Fenster): aus der Ring-Mitte (der Spieler am Spawn, die Tore wach) liest der
+// AUSGABE-Pfad die Pixel jeder Membran. Bis D8 stand die Öffnung milchig-weiß (der Nebel-Kasten, der Anzeige-Wert der Shell); seit
+// D8 zeigt sie das Panorama der Ziel-Welt durch den Film. EINE Seite, EIN Blick, die Uhr steht — drei Bilder:
 //   A    die Welt, wie sie die Membran zeigt: der Ausgabe-Pfad der Welt (TRAA, Tonung, Belichtung aus dem Licht), gezeichnet
-//        werden nur die gemessenen Bürger — Membran, Nebel, Himmel (K64-n3). Die Membran ist deckend, wirft und empfängt keinen
+//        werden nur die gemessenen Bürger — Membran und Himmel (K64-n3). Die Membran ist deckend, wirft und empfängt keinen
 //        Schatten (`_membranBauFor`): ihr Pixel hängt an keinem anderen Bürger. Die ganze Welt im Bild baute auf swiftshader jedes
 //        Programm im Blick, das die Bühne neu lichtet, und jedes, das während H ankam (CI Lauf 38674187005: A 10 kalt 113 s,
 //        M 6 kalt 227 s). Die Lichter bleiben (kein Programm wechselt seinen Licht-Schlüssel).
@@ -140,10 +138,7 @@ async function blickProbe(opts) {
 //        steht, TRAA ist bei gleicher Lage gleich), die Differenz-Maske deckt sich mit der magenta (swiftshader: 7 876 von 8 014
 //        Pixeln, 1 außerhalb). HM zählt die kalten Programme je Bild und hält die Maske bei 0.
 // H läuft VOR den Blicken B: deren Frames stoßen die Programme der ganzen Welt an, die der GPU-Prozess sonst während H übersetzt.
-//   R    der rohe Leser (der Stand vor K64-n1): Membran und Nebel zeichnen ihren Anzeige-Wert als Strahlung (HS, zwei Programme)
-//   L    das Labor-Bild derselben Pixel: DIESELBEN rohen Stoffe in ein Ziel im Format des Szenen-Passes, gezeichnet nur Membran
-//        und Nebel — die Shell zeigt ihren Anzeige-Wert als Pixel, ein Ziel, das nicht Ausgabe ist, hält ihn ungewandelt.
-//        Format, Tiefe und Proben gleich dem Szenen-Pass: R und L teilen ihre Programme.
+//   R    der Milch-Leser (HS, EIN Programm): die Öffnung als helles Weiß — das Bild des Stands vor D8, in derselben Maske.
 // K64-n2 (die CI-Frist der Linse): bis dahin zeichnete das Labor die GANZE Szene in ein RGBA8-Ziel (jedes Programm im Blick neu
 // auf swiftshader), je Seite mit eigener Maske, und der Selbsttest fuhr H in einer zweiten Seite — gate:portal-membran 578 s.
 async function hellProbe() {
@@ -164,24 +159,17 @@ async function hellProbe() {
     const echtNow = performance.now.bind(performance);
     performance.now = () => 4.2e6; // die Uhr steht: Atem, Puls und Welle gleich in jedem Bild
     const recs = [...r._portalMembranes.values()];
-    const vor = recs.map((rec) => [rec.mesh.material.colorNode, rec.nebel ? rec.nebel.material.colorNode : null]);
+    const vor = recs.map((rec) => rec.mesh.material.colorNode);
     const sicht = recs.map((rec) => rec.mesh.visible);
-    const setze = (fm, fn) =>
+    const setze = (fm) =>
         recs.forEach((rec) => {
             rec.mesh.material.colorNode = fm(rec);
             rec.mesh.material.needsUpdate = true;
-            if (rec.nebel && fn) {
-                rec.nebel.material.colorNode = fn(rec);
-                rec.nebel.material.needsUpdate = true;
-            }
         });
-    // NUR DIE GEMESSENEN BÜRGER zeichnen (K64-n3): jedes Objekt der Szene außer Membran, Nebel und Himmel fällt aus dem Zeichnen
+    // NUR DIE GEMESSENEN BÜRGER zeichnen (K64-n3): jedes Objekt der Szene außer Membran und Himmel fällt aus dem Zeichnen
     // (die Render-Objekt-Funktion des Renderers; die Ausgabe-Kette und der Hintergrund hängen nicht in der Szene und zeichnen)
     const nur = new Set();
-    for (const rec of recs) {
-        nur.add(rec.mesh);
-        if (rec.nebel) nur.add(rec.nebel);
-    }
+    for (const rec of recs) nur.add(rec.mesh);
     const himmel = st.scene.getObjectByName("himmel");
     if (himmel) nur.add(himmel);
     const rofWelt = rend.getRenderObjectFunction();
@@ -234,97 +222,28 @@ async function hellProbe() {
         zeit[k] = Math.round(echtNow() - t);
         return v;
     };
-    // DAS LABOR-ZIEL: eine Kopie des Szenen-Ziels (Format, Tiefen-Textur, Proben) in der Größe der Aufnahme; gelesen wird der
-    // Anzeige-Wert je Pixel auf 0..255 — rg11b10ufloat (gepackt), rgba16float oder 8 Bit, je nachdem, was das Gerät trägt.
-    const labor = async () => {
-        // neu gebaut, nie geklont: eine geklonte Tiefen-Textur teilt ihre Quelle (Größe) mit dem Szenen-Ziel
-        const sp = st.scenePass && st.scenePass.renderTarget;
-        const rt = new T.RenderTarget(W, H, {
-            type: sp ? sp.texture.type : T.UnsignedByteType,
-            format: sp ? sp.texture.format : T.RGBAFormat,
-            depthBuffer: true,
-            samples: sp ? sp.samples : 0,
-        });
-        if (sp && sp.depthTexture) {
-            rt.depthTexture = new T.DepthTexture(W, H);
-            rt.depthTexture.type = sp.depthTexture.type;
-        }
-        // nur Membran und Nebel (die Render-Objekt-Funktion des Renderers): der Graph der Membran liest keinen Grund (kein
-        // Schirm-, kein Tiefen-Knoten), ihr Anzeige-Wert hängt an keinem anderen Objekt — und kein anderes Programm entsteht
-        const nur = new Set();
-        for (const rec of recs) {
-            nur.add(rec.mesh);
-            if (rec.nebel) nur.add(rec.nebel);
-        }
-        const rof = rend.getRenderObjectFunction();
-        const zeichne = () => {
-            rend.setRenderTarget(rt);
-            rend.setRenderObjectFunction(function (object, ...rest) {
-                if (nur.has(object)) rend.renderObject(object, ...rest);
-            });
-            try {
-                rend.render(st.scene, cam);
-            } finally {
-                rend.setRenderObjectFunction(rof);
-                rend.setRenderTarget(null);
-            }
-        };
-        try {
-            await window.__erstRuhe(zeichne, { erstFristMs: 120000, nurGezeichnete: true }, "das Labor-Bild (H)");
-            zeichne();
-            const roh = await rend.readRenderTargetPixelsAsync(rt, 0, 0, W, H);
-            const gepackt = rt.texture.type === T.UnsignedInt101111Type;
-            // r184 reicht rg11b10ufloat als Bytes: je Texel EIN 32-Bit-Wort
-            const px = gepackt ? new Uint32Array(roh.buffer, roh.byteOffset, roh.byteLength >> 2) : roh;
-            const kanaele = gepackt ? 1 : 4;
-            // WebGPU richtet jede Zeile auf 256 Byte aus (die letzte ohne Polster): die Zeile in Elementen
-            const zeile = (Math.ceil((W * kanaele * px.BYTES_PER_ELEMENT) / 256) * 256) / px.BYTES_PER_ELEMENT;
-            // 11/10-Bit-Gleitkomma ohne Vorzeichen: 5 Bit Exponent (Bias 15), 6 bzw. 5 Bit Mantisse
-            const klein = (v, mant) => {
-                const e = v >> mant,
-                    m = v & ((1 << mant) - 1);
-                if (e === 0) return (m / (1 << mant)) * Math.pow(2, -14);
-                if (e === 31) return 1;
-                return (1 + m / (1 << mant)) * Math.pow(2, e - 15);
-            };
-            const wert = (i) => {
-                if (gepackt) {
-                    const p = px[i];
-                    return [klein(p & 0x7ff, 6), klein((p >>> 11) & 0x7ff, 6), klein((p >>> 22) & 0x3ff, 5)];
-                }
-                if (px instanceof Uint8Array) return [px[i] / 255, px[i + 1] / 255, px[i + 2] / 255];
-                if (px instanceof Uint16Array) return [0, 1, 2].map((k) => T.DataUtils.fromHalfFloat(px[i + k]));
-                return [px[i], px[i + 1], px[i + 2]];
-            };
-            const u = new Uint8Array(W * H * 4);
-            for (let y = 0; y < H; y++)
-                for (let x = 0; x < W; x++) {
-                    const c = wert(y * zeile + x * kanaele);
-                    const o = (y * W + x) * 4;
-                    for (let k = 0; k < 3; k++) u[o + k] = Math.round(Math.min(1, Math.max(0, c[k])) * 255);
-                    u[o + 3] = 255;
-                }
-            return { u, format: gepackt ? "rg11b10ufloat" : px.constructor.name };
-        } finally {
-            rt.dispose();
-        }
-    };
     try {
         const A = await uhr("A", schuss);
         // die Maske: dieselbe Welt ohne Membranen (kein Stoff wechselt, kein Programm entsteht)
         recs.forEach((rec) => (rec.mesh.visible = false));
         const M = await uhr("M", schuss);
         recs.forEach((rec, i) => (rec.mesh.visible = sicht[i]));
-        setze(
-            (rec) => TSL.vec4(r._membranGraph(rec.tor.gesetz).anzeige, 1.0),
-            (rec) => TSL.vec4(r._nebelGraph(rec.tor.gesetz).anzeige, 1.0)
-        );
+        // DER MILCH-LESER (HS): die Öffnung als helles Weiß (dreifach über der Belichtung — die ACES-Schulter, das Bild vor D8)
+        setze(() => TSL.vec4(TSL.vec3(3.0).mul(r._torZiele().uBelicht), 1.0));
         const R = await uhr("R", schuss);
-        const L = await uhr("L", labor);
         const Y = (u, i) => 0.2126 * u[i] + 0.7152 * u[i + 1] + 0.0722 * u[i + 2];
-        const S = (u, i) => {
-            const mx = Math.max(u[i], u[i + 1], u[i + 2]);
-            return mx > 0 ? (mx - Math.min(u[i], u[i + 1], u[i + 2])) / mx : 0;
+        // milchig = unbunt und hell (K5 `klassenMasse` milchweiss: CIELAB D65 aus den linearisierten sRGB-Werten, C*ab < 5, L* ≥ 50)
+        const lin = (c) => ((c /= 255) <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
+        const fl = (t) => (t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116);
+        const milchig = (u, i) => {
+            const R0 = lin(u[i]),
+                G0 = lin(u[i + 1]),
+                B0 = lin(u[i + 2]);
+            const fy = fl(0.2126 * R0 + 0.7152 * G0 + 0.0722 * B0);
+            if (116 * fy - 16 < 50) return false;
+            const a = 500 * (fl((0.4124 * R0 + 0.3576 * G0 + 0.1805 * B0) / 0.95047) - fy),
+                b = 200 * (fy - fl((0.0193 * R0 + 0.1192 * G0 + 0.9505 * B0) / 1.08883));
+            return Math.hypot(a, b) < 5;
         };
         // EINE Maske für alle drei Bilder: die Pixel, in denen die Welt eine Membran zeigt — mit Membran steht ein Kanal um
         // mindestens STUFE anders als ohne (swiftshader: Stufe 10 nimmt 7 876 der 8 014 magenta Pixel, 1 außerhalb; 6 griff
@@ -336,16 +255,16 @@ async function hellProbe() {
                 maske.push(i);
         const mass = (u) => {
             let sY = 0,
-                sat = 0,
+                milch = 0,
                 weiss = 0;
             for (const i of maske) {
                 const y = Y(u, i);
                 sY += y;
                 if (y > 240) weiss++;
-                sat += S(u, i);
+                else if (milchig(u, i)) milch++;
             }
             const n = maske.length;
-            return { Y: n ? sY / n : 0, saettigung: n ? sat / n : 0, weiss: n ? weiss / n : 0 };
+            return { Y: n ? sY / n : 0, weiss: n ? weiss / n : 0, milch: n ? (milch + weiss) / n : 0 };
         };
         const P = new T.Vector3();
         const imBild = recs
@@ -358,9 +277,7 @@ async function hellProbe() {
             n: maske.length,
             anteil: maske.length / (W * H),
             welt: mass(A),
-            roh: mass(R),
-            labor: mass(L.u),
-            laborFormat: L.format,
+            milch: mass(R),
             imBild,
             belichtung: rend.toneMappingExposure,
             zeit,
@@ -370,13 +287,9 @@ async function hellProbe() {
         };
     } finally {
         recs.forEach((rec, i) => {
-            rec.mesh.material.colorNode = vor[i][0];
+            rec.mesh.material.colorNode = vor[i];
             rec.mesh.material.needsUpdate = true;
             rec.mesh.visible = sicht[i];
-            if (rec.nebel) {
-                rec.nebel.material.colorNode = vor[i][1];
-                rec.nebel.material.needsUpdate = true;
-            }
         });
         rend.setRenderObjectFunction(rofWelt);
         window.__erstRuhe = ruheWelt;
@@ -387,14 +300,11 @@ async function hellProbe() {
         performance.now = echtNow;
     }
 }
-// Das Soll (K64-n1): Labor = Welt (Lehre 19) — die Welt hebt die Membran nicht über ihr Labor-Bild: Y der Welt ≤ 1,15 × Y des
-// Anzeige-Werts derselben Tore, sie bleicht ihn nicht (Sättigung ≥ 0,75 × Labor — die weiße Tafel ist hell UND entsättigt) und
-// brennt nicht aus: Y > 240 auf ≤ 5 % der Membran-Pixel (Nordstern Portale). Gemessen swiftshader, Ring-Mitte, Belichtung 0,615
-// (K64-n2, eine Seite): das FARB-GESETZ Y × 0,77, der rohe Leser × 1,22 bei Sättigung 0,093 gegen 0,183; die Welt steht in einem
-// zweiten Zustand (der Lauf vor K64-n2 sah ihn auch) bei × 0,81 und × 1,15 — dort fällt der rohe Leser an der Sättigung
-// (0,080 gegen 0,162). Mit der Differenz-Maske (K64-n3) dieselben zwei Zustände: Radeon × 0,77 / roh × 1,23 bei Sättigung
-// 0,094 gegen 0,184, swiftshader × 0,81 / roh × 1,15 bei 0,089 gegen 0,163.
-const HELL = { hub: 1.15, weiss: 0.05, bleich: 0.75 };
+// Das Soll (K64-n1, D8): die Öffnung zeigt das Ziel durch den Film — sie brennt nicht aus (Y > 240 ≤ 5 % der Membran-Pixel,
+// Nordstern Portale) und liest nicht als Milch (unbunt und hell ≤ 5 %, die Regel von K5 milchweiss). Bis D8 maß H die Welt gegen
+// das Labor-Bild des Anzeige-Werts der Shell (Labor = Welt, Y ≤ 1,15 ×): die Membran malt keinen Anzeige-Wert mehr, sie liest das
+// lineare Panorama der Ziel-Welt durch die Belichtung der Heimat.
+const HELL = { weiss: 0.05, milch: 0.05 };
 
 async function blickStufe(check) {
     const browser = await starteBrowser({ art: "linse", frist: 900000 });
@@ -407,7 +317,7 @@ async function blickStufe(check) {
             waitUntil: "domcontentloaded",
             timeout: 60000,
         });
-        // H und sein Selbsttest HS in DERSELBEN Seite (eine Maske, ein Labor-Bild), VOR den Blicken B (K64-n3); die Seite des
+        // H und sein Selbsttest HS in DERSELBEN Seite (eine Maske), VOR den Blicken B (K64-n3); die Seite des
         // alten Culling-Stands (BS) zählt nur Befehle
         let hell = null;
         if (!alt) {
@@ -431,11 +341,11 @@ async function blickStufe(check) {
         check(
             "B1 aus der Ring-Mitte nach −x zeichnen Membranen, die im Rücken nicht alle",
             b.im.membran > 0 && b.im.membran < b.membranen,
-            `${b.im.membran} von ${b.membranen} Membranen, ${b.im.nebel} Nebel`
+            `${b.im.membran} von ${b.membranen} Membranen`
         );
         check(
-            "B2 70 m vor dem Ring, Blick vom Ring weg: keine Membran und kein Nebel zeichnet",
-            b.weg.membran === 0 && b.weg.nebel === 0,
+            "B2 70 m vor dem Ring, Blick vom Ring weg: keine Membran zeichnet",
+            b.weg.membran === 0,
             b.weg.taeter.length ? b.weg.taeter.join(" · ") : "0 Befehle"
         );
         const loch = b.huelle.filter((h) => !h.zReicht || !h.kugelUmfasst);
@@ -448,44 +358,38 @@ async function blickStufe(check) {
         );
         // je Bild Wanduhr und kalte Programme: „M 512 ms/0 kalt"
         const kaltZeile = (h) =>
-            ["A", "M", "R", "L"]
+            ["A", "M", "R"]
                 .map(
                     (k) =>
                         `${k} ${h.zeit[k]} ms/${h.kalt[k] == null ? "?" : h.kalt[k]} kalt` +
                         (h.ruhe[k] ? `/${h.ruhe[k].n} F ${h.ruhe[k].ms} ms/${h.ruhe[k].offen} offen` : "")
                 )
                 .join(" · ") + `; offen beim Start ${h.offenStart == null ? "?" : h.offenStart}`;
-        // `w`: das Bild unter dem Urteil (welt = das Spiel, roh = der alte Leser), gegen DASSELBE Labor-Bild in DERSELBEN Maske
+        // `w`: das Bild unter dem Urteil (welt = das Spiel, milch = der Milch-Leser) in DERSELBEN Maske
         const hellZeile = (h, w) =>
-            `${h.n} Membran-Pixel (${(h.anteil * 100).toFixed(1)} %), Y ${w === h.welt ? "Welt" : "roh"} ${w.Y.toFixed(1)} gegen Labor ${h.labor.Y.toFixed(1)} (× ${(w.Y / Math.max(1, h.labor.Y)).toFixed(2)}), Sättigung ${w.saettigung.toFixed(3)} gegen Labor ${h.labor.saettigung.toFixed(3)}, ` +
-            `Y > 240 ${(w.weiss * 100).toFixed(1)} %, Belichtung ${h.belichtung.toFixed(3)}, Labor ${h.laborFormat} — ${h.imBild.join(" · ")} [${kaltZeile(h)}]`;
-        const hellRot = (h, w) =>
-            !(
-                h.n > 200 &&
-                h.labor.Y > 0 &&
-                w.Y <= HELL.hub * h.labor.Y &&
-                w.saettigung >= HELL.bleich * h.labor.saettigung &&
-                w.weiss <= HELL.weiss
-            );
+            `${h.n} Membran-Pixel (${(h.anteil * 100).toFixed(1)} %), ${w === h.welt ? "Welt" : "Milch"}: Y ${w.Y.toFixed(1)}, ` +
+            `Y > 240 ${(w.weiss * 100).toFixed(1)} %, milchweiß ${(w.milch * 100).toFixed(1)} %, Belichtung ${h.belichtung.toFixed(3)} — ` +
+            `${h.imBild.join(" · ")} [${kaltZeile(h)}]`;
+        const hellRot = (h, w) => !(h.n > 200 && w.weiss <= HELL.weiss && w.milch <= HELL.milch);
         check(
-            `H aus der Ring-Mitte: die Welt hebt die Membran nicht über ihr Labor-Bild (Y ≤ ${HELL.hub} × Labor), bleicht sie nicht (Sättigung ≥ ${HELL.bleich} × Labor) und brennt nicht aus (Y > 240 ≤ ${HELL.weiss * 100} %)`,
+            `H aus der Ring-Mitte: die Öffnung brennt nicht aus (Y > 240 ≤ ${HELL.weiss * 100} %) und liest nicht als Milch (≤ ${HELL.milch * 100} %)`,
             !hellRot(b.hell, b.hell.welt),
             hellZeile(b.hell, b.hell.welt)
         );
         check(
-            "HS Selbsttest: der rohe Leser (Anzeige-Wert als Strahlung) wird in H rot beim Namen",
-            hellRot(b.hell, b.hell.roh),
-            hellZeile(b.hell, b.hell.roh)
+            "HS Selbsttest: der Milch-Leser (helles Weiß, das Bild vor D8) wird in H rot beim Namen",
+            hellRot(b.hell, b.hell.milch),
+            hellZeile(b.hell, b.hell.milch)
         );
         // HM (K64-n3, die CI-Frist): die Maske übersetzt kein Programm — ein kaltes Programm kostete auf swiftshader in der CI
-        // 195 s (die magenta Maske bis K64-n3); HMS: derselbe Zähler sieht die kalten Programme des rohen Lesers (nicht vakuös)
+        // 195 s (die magenta Maske bis K64-n3); HMS: derselbe Zähler sieht das kalte Programm des Milch-Lesers (nicht vakuös)
         check(
             "HM die Maske zeichnet ohne kaltes Programm",
             b.hell.kalt.M === 0,
             `M: ${b.hell.kalt.M == null ? "Zähler fehlt (r184 _pipelines.programs)" : `${b.hell.kalt.M} kalte Programme`} [${kaltZeile(b.hell)}]`
         );
         check(
-            "HMS Selbsttest: der Zähler sieht die kalten Programme des rohen Lesers",
+            "HMS Selbsttest: der Zähler sieht das kalte Programm des Milch-Lesers",
             b.hell.kalt.R > 0,
             `R: ${b.hell.kalt.R == null ? "Zähler fehlt" : `${b.hell.kalt.R} kalte Programme`}`
         );
@@ -572,6 +476,38 @@ async function blickStufe(check) {
         // Krone-Probe: über dem Scheitel.
         res.k.kroneSolide = hit(ex, ey + mu.apexY + 0.15, ez);
 
+        // ── Z: das Ziel des Tors (D8) — der erste Frager setzt den Auftrag in Gang, das Fenster wartet auf seine Zeile ──
+        const zw = r._torZielWelt(entry);
+        r._torZielZeile(entry);
+        const zr = r._torZielAtlas && zw ? r._torZielAtlas.welten.get(zw.world) : null;
+        res.z = { welt: zw ? zw.world : null, zeile: zr ? await zr.kommt : null };
+        if (zr) {
+            const Z = r._torZielAtlas;
+            const G = r.constructor.TOR_ZIEL;
+            Object.assign(res.z, {
+                quelle: zr.quelle,
+                fehler: zr.fehler,
+                stempel: zr.stempel,
+                halb: !!(Z.tex && Z.tex.type === window.THREE.HalfFloatType),
+                zeilen: Z.tex ? Z.tex.image.height / G.h : 0,
+                n: Z.n,
+                breit: Z.tex ? Z.tex.image.width : 0,
+            });
+            const D = r._torZielDaten({ entry });
+            let hell = 0;
+            if (D)
+                for (let i = 0; i < D.daten.length; i += 4)
+                    hell = Math.max(hell, D.daten[i] + D.daten[i + 1] + D.daten[i + 2]);
+            res.z.daten = !!D && D.daten.length === G.w * G.h * 4 && hell > 0;
+        }
+        // ── N (Absenz, D8): kein Nebel-Kasten, kein Nebel-Gesetz, kein Host-Panorama ──
+        res.n = {
+            gesetz: mu.fog === undefined && globalThis.__portaCore.NEBEL_GESETZ === undefined,
+            methoden: ["_nebelMaterialFor", "_nebelGraph", "_torPanorama", "_torPanoMal"].filter(
+                (m) => typeof r[m] === "function"
+            ),
+        };
+
         // ── M: Membran-Bau + Atem ──
         r._tickPortalMembranes(1.0);
         // 1-Hz-Scan-Throttle überspringen: zweiter Tick nach Scan-Fenster.
@@ -586,25 +522,17 @@ async function blickStufe(check) {
             res.m.echt = !!(
                 rec.mesh.material &&
                 rec.mesh.material.userData &&
-                rec.mesh.material.userData.portalNebel === undefined &&
                 rec.mesh.material.userData.portalMembran
             );
             res.m.marker = res.m.echt || !!rec.mesh.material.isMeshBasicMaterial;
-            // PORTA-NEBEL (18.07.) — die lebende Kette Dial→mu→Uniform→Draw:
-            // das fog-Gesetz trägt (mu.fog > 0), der Kasten hängt gestempelt in
-            // der Szene, und bei Spieler-Nähe (act > 0) speist mu.fog die
-            // nebelAct-Uniform > 0 + der Kasten ist sichtbar.
-            res.n = { gesetz: Number.isFinite(mu.fog) && mu.fog > 0 };
-            res.n.gebaut = !!(rec.nebel && rec.nebel.parent === r.state.scene);
-            res.n.stempel = !!(rec.nebel && rec.nebel.userData.inventar === "portal-nebel");
-            res.n.echt = !!(
-                rec.nebel &&
-                rec.nebel.material &&
-                rec.nebel.material.userData &&
-                rec.nebel.material.userData.portalNebel
-            );
-            res.n.uniform = !!(rec.u.nebelAct && rec.u.nebelAct.value > 0 && rec._act > 0);
-            res.n.sichtbar = !!(rec.nebel && rec.nebel.visible === rec._act > 0.001);
+            // die Membran liest die Zeile IHRES Ziels (Stoff-Wert `ziel`), nichts hängt neben ihr in der Szene
+            res.m.zielZeile = rec.mesh.material.userData.tor ? rec.mesh.material.userData.tor.ziel : null;
+            res.n.keinKasten = rec.nebel === undefined;
+            let fremd = 0;
+            r.state.scene.traverse((o) => {
+                if (o.userData && /nebel/.test(String(o.userData.inventar || ""))) fremd++;
+            });
+            res.n.keinNebelInSzene = fremd === 0;
         }
 
         // ── F: Tür-Flügel öffnen sich dem Reisenden (V18.465) ──
@@ -724,16 +652,42 @@ async function blickStufe(check) {
         check("M: Material trägt den portalMembran-Marker (oder fail-LAUT-Fallback)", out.m.marker === true);
         check("M: der ECHTE TSL-Gesetz-Graph baute (kein Fallback noetig)", out.m.echt === true);
     } else check("M: Membran-Block erreicht", false);
-    if (out.n) {
-        check("N: das fog-Gesetz trägt (mu.fog > 0 — der Dial reist)", out.n.gesetz === true);
-        check("N: der Nebel-Kasten hängt gestempelt in der Szene (portal-nebel)", out.n.gebaut && out.n.stempel);
-        check("N: der ECHTE Nebel-TSL-Graph baute (portalNebel-Marker)", out.n.echt === true);
+    if (out.z) {
+        const Z = out.z;
         check(
-            "N: mu.fog speist die nebelAct-Uniform (> 0 bei Nähe) — die Kette Dial→mu→Uniform lebt",
-            out.n.uniform === true
+            `Z: das Ziel des Tors steht (${Z.welt} → Zeile ${Z.zeile}, Quelle ${Z.quelle || "—"})`,
+            Number.isInteger(Z.zeile) && (Z.quelle === "welt" || Z.quelle === "platte"),
+            Z.fehler || ""
         );
-        check("N: der Kasten lebt nähe-aktiviert (visible == act > 0.001)", out.n.sichtbar === true);
-    } else check("N: Nebel-Block erreicht", false);
+        check(
+            "Z: der Export trägt den SHA-Stempel der Quellen seiner Welt",
+            typeof Z.stempel === "string" && /^[0-9a-f]{64}\|p\d+$/.test(Z.stempel),
+            String(Z.stempel)
+        );
+        check(
+            `Z: der Atlas der Ziele ist rgba16float, 512 breit, 256 Zeilen je Ziel (${Z.zeilen} Ziele, ${Z.n} gesetzt)`,
+            Z.halb === true && Z.breit === 512 && Z.zeilen === Z.n && Z.n >= 1
+        );
+        check("Z: die Zeile trägt Licht (das Panorama ist nicht leer)", Z.daten === true);
+    } else check("Z: Ziel-Block erreicht", false);
+    if (out.m)
+        check(
+            "Z: die Membran liest die Zeile ihres Ziels (Stoff-Wert ziel)",
+            out.m.zielZeile === out.z.zeile,
+            `${out.m.zielZeile} / ${out.z.zeile}`
+        );
+    if (out.n) {
+        check("N: kein Nebel-Gesetz am Tor (mu.fog, NEBEL_GESETZ fielen)", out.n.gesetz === true);
+        check(
+            "N: keine Methode des Nebel-Kastens und des Host-Panoramas",
+            out.n.methoden.length === 0,
+            out.n.methoden.join(" · ")
+        );
+        check(
+            "N: kein Nebel-Kasten an der Membran, keiner in der Szene",
+            out.n.keinKasten === true && out.n.keinNebelInSzene === true
+        );
+    } else check("N: Absenz-Block erreicht", false);
     if (out.f) {
         check(
             `F: Flügel-Meshes durch die Pipe gefunden (${out.f.anzahl})`,

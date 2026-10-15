@@ -4518,6 +4518,10 @@ init();
     const SEASONS = { fruehling: "spring", sommer: "summer", herbst: "autumn", winter: "winter" };
     const B = AnazhHuelle.bruecke({
         welt: "terrain",
+        // DAS ZIEL-BILD (D8): die Hülle rendert diese Welt als Panorama aus dem Blick ihrer Kamera — die Tor-Membran der Heimat zeigt es
+        panorama: function () {
+            return { THREE: THREE, renderer: renderer, scene: scene, kamera: camera };
+        },
         manifest: true,
         wort: (op) => {
             try {

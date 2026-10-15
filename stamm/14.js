@@ -1857,8 +1857,9 @@ class AnazhRealm_Z14 {
     // der Membran-Tick schreibt sie). DIE GESTALT IST EIN STOFF-WERT (1310-18): die Maße, Fenster und Farben des Tors stehen in
     // `userData.tor` seines Stoffs und reisen als Uniform je Objekt (`_stoffWert`); der Graph entsteht EINMAL je Gesetz
     // (`_membranGraph`) — jedes Tor zeichnet mit DEMSELBEN Programm. Bis dahin faltete der Bau sie als Konstanten ein: je Tor
-    // ein Programm, 59–504 ms Knoten-Bau auf dem Haupt-Faden (1310-17: 5 Membranen, 1,01 s).
-    _membranMaterialFor(tor) {
+    // ein Programm, 59–504 ms Knoten-Bau auf dem Haupt-Faden (1310-17: 5 Membranen, 1,01 s). D8: `ziel` ist die Zeile des Ziels im
+    // Atlas der Ziele (`_torZielZeile`), `dreh` die Drehung des Tors (der Spiegel des Films liest den Himmel in der Welt).
+    _membranMaterialFor(tor, ziel, dreh) {
         const T = THREE;
         const MG = tor.gesetz;
         const MU = tor.mu;
@@ -1877,6 +1878,8 @@ class AnazhRealm_Z14 {
             b: new T.Vector4(MU.wave, MU.left, MU.spanW, MU.baseY),
             c: new T.Vector4(MU.height, MU.step, MU.fractal, MU.twist),
             zeile: this._torProfilZeile(MG.profilW, MU.profil),
+            ziel,
+            dreh: Number.isFinite(dreh) ? dreh : 0,
             pa: new T.Vector3(P.PA[0], P.PA[1], P.PA[2]),
             pb: new T.Vector3(P.PB[0], P.PB[1], P.PB[2]),
             pc: new T.Vector3(P.PC[0], P.PC[1], P.PC[2]),
@@ -1943,8 +1946,8 @@ class AnazhRealm_Z14 {
         return A.n++;
     }
 
-    // DER EINE MEMBRAN-GRAPH JE GESETZ — SPIKE D8a (die Membran ohne Milch): die Öffnung ist EIN Parallaxen-Zugriff auf ein
-    // Panorama (`_torPanorama`, Equirekt rgba16float; die Ziel-Welt kommt im Bau aus dem EINEN Studio-Export je SHA) über einer
+    // DER EINE MEMBRAN-GRAPH JE GESETZ — D8 (das Tor als Fenster): die Öffnung ist EIN Parallaxen-Zugriff auf das Panorama der
+    // Ziel-Welt (ihre Zeile im Atlas der Ziele, `_torZielZeile`: der EINE Export der Welt je SHA, Equirekt rgba16float) über einer
     // Stellvertreter-Kugel um die Tor-Mitte (Lagarde & Zanuttini 2012: der Strahl trifft die Kugel, die Richtung von der Mitte
     // zum Treffer liest das Panorama), darüber der Seifenfilm (Dünnschicht-Interferenz: die Filmdicke aus dem Bogen-Radius und
     // der Welle, die Bänder aus `membranPalette`, Gewicht Fresnel + Rand). Der 12-Schritt-March und der Nebel-Kasten fallen.
@@ -1964,6 +1967,8 @@ class AnazhRealm_Z14 {
         const gb = W("b", "vec4"); // wave · left · spanW · baseY
         const gc = W("c", "vec4"); // height · step · fractal · twist
         const zeile = W("zeile");
+        const zielZeile = W("ziel");
+        const dreh = W("dreh");
         const vPA = W("pa", "vec3");
         const vPB = W("pb", "vec3");
         const vPC = W("pc", "vec3");
@@ -2066,8 +2071,18 @@ class AnazhRealm_Z14 {
                 .div(R)
                 .sub(TSL.vec3(N.x, N.y, F(0.0)).mul(FI.brechung))
         );
-        const pano = this._torPanorama();
-        const ziel = TSL.texture(pano, TSL.equirectUV(dir)).rgb;
+        // DAS ZIEL: die Zeile dieses Tors im Atlas (Stoff-Wert `ziel`), die Zeilenhöhe geklemmt (keine Nachbar-Zeile blutet ein),
+        // waagrecht umlaufend; die Bild-Werte der Welt durch die Belichtung der Heimat geteilt — die Heimat tont sie, wie die Welt
+        // sich selbst zeigt
+        const Z = this._torZiele();
+        const zv = 0.5 / AnazhRealm.TOR_ZIEL.h;
+        const eq = TSL.equirectUV(dir);
+        const zielTex = TSL.texture(
+            Z.tex,
+            TSL.vec2(eq.x, zielZeile.add(TSL.clamp(eq.y, F(zv), F(1 - zv))).div(Z.uZeilen))
+        );
+        Z.knoten.push(zielTex);
+        const ziel = zielTex.rgb.mul(Z.uBelicht);
         // ── DER SEIFENFILM: Dicke aus Bogen-Radius (die Ellipse rimAx × rimAy) und Welle, Gangunterschied je Blickwinkel ──
         const rr = TSL.length(xy.sub(centerXY).div(TSL.vec2(ga.y, ga.z)));
         const cosI = TSL.max(TSL.dot(N, Vd), F(0.0));
@@ -2089,9 +2104,13 @@ class AnazhRealm_Z14 {
         const filmW = TSL.min(fres.add(rand.mul(FI.rand[2])).add(F(FI.basis)), F(FI.gewichtMax)).mul(
             act.mul(FI.act[1]).add(FI.act[0])
         );
-        // der Film spiegelt die Welt (dasselbe Panorama in der Spiegel-Richtung) in seinen Interferenz-Farben
+        // der Film spiegelt die Heimat: den EINEN Himmel (`_himmelUmgebungTex`, wie das Wasser) in der Spiegel-Richtung, aus dem
+        // Rahmen des Tors in die Welt gedreht (Stoff-Wert `dreh` = rotationY), in seinen Interferenz-Farben
         const Rf = TSL.reflect(rd, N);
-        const spiegel = TSL.texture(pano, TSL.equirectUV(Rf)).rgb;
+        const cr = TSL.cos(dreh);
+        const sr = TSL.sin(dreh);
+        const RfW = TSL.vec3(Rf.x.mul(cr).add(Rf.z.mul(sr)), Rf.y, Rf.z.mul(cr).sub(Rf.x.mul(sr)));
+        const spiegel = TSL.texture(this._himmelUmgebungTex(), TSL.equirectUV(RfW)).level(F(0)).rgb;
         const glanz = film.mul(spiegel).mul(F(FI.glanz[0])).mul(pulse.mul(FI.glanz[2]).add(FI.glanz[1]));
         const col = TSL.mix(ziel, glanz, filmW);
         const G = { positionNode, colorNode: TSL.vec4(col, 1.0), opacityNode: keep, anzeige: col };
@@ -2099,135 +2118,241 @@ class AnazhRealm_Z14 {
         return G;
     }
 
-    // DAS PANORAMA DER ÖFFNUNG — SPIKE D8a: ein beliebiges Equirekt (512×256 rgba16float), hier einmal aus der eigenen Welt
-    // gerendert (Würfel-Kamera 80 m westlich der Genesis-Mitte, 12 m über dem Boden, Membranen und Spieler verborgen), dann
-    // ins Equirekt gefaltet. Im Bau liest die Membran hier den EINEN Studio-Export des Ziels.
-    _torPanorama() {
-        if (this._torPano) return this._torPano.texture;
-        const T = THREE;
-        const rt = new T.RenderTarget(512, 256, { type: T.HalfFloatType, depthBuffer: false });
-        rt.texture.name = "tor-panorama";
-        rt.texture.minFilter = T.LinearFilter;
-        rt.texture.magFilter = T.LinearFilter;
-        rt.texture.generateMipmaps = false;
-        this._torPano = rt;
-        this._torPanoMal();
-        return rt.texture;
+    // ═══ DAS ZIEL DER TORE (D8, „Das Tor als Fenster") ═══
+    // Jedes Tor zeigt seine Ziel-Welt: das Panorama, das die Welt SELBST rendert (die Hülle der Studios `AnazhHuelle.panorama`,
+    // Labor = Welt) — EIN Export je Welt und SHA ihrer Quellen. Die Heimat rendert die Ziel-Welt nie nach: sie fragt zuerst die
+    // Platte (IndexedDB `anazhTorZiel`, Schlüssel die Welt, der Wert trägt den Stempel = SHA-256 über index.html und jedes lokale
+    // Skript der Welt), bei Miss die Welt selbst — ein verborgener Rahmen mit der Sandbox der Welt, seriell, erst nach dem ersten
+    // Weltbild (`_weltbildKommt`): `ready` → `panorama-bitte` → `panorama` (Halbfloat-Texel, übertragen). Jedes Ziel ist EINE Zeile
+    // EINES Atlas (rgba16float, 512 × 256·N, wächst je Ziel um genau eine Zeile: +1 MB je Ziel); die Membran liest ihre Zeile als
+    // Stoff-Wert `ziel` mit demselben Knoten. Die Membran entsteht erst, wenn ihr Ziel steht — ohne Ziel kein Fenster, kein
+    // Zwischen-Bild; ein Ziel, das nicht kommt, bricht laut beim Namen (`_bruchMelden`).
+    static get TOR_ZIEL() {
+        return { w: 512, h: 256, format: 1, fristMs: 120000 };
     }
 
-    // Das Panorama malen: sechs 90°-Blicke (je ein 2D-Ziel, dieselbe Matrix für Wurf und Lesen — keine Würfel-Konvention),
-    // dann ins Equirekt gefaltet. Die Pipelines eines neuen Ziels entstehen asynchron — der Spike malt mehrmals, bis es ruht.
-    _torPanoMal() {
-        const T = THREE;
-        const TSL = T.TSL;
-        const st = this.state;
-        const rend = st.renderer;
-        const rt = this._torPano;
-        if (!rt || !rend || rend._isHeadlessNull) return;
-        // QuadMesh trägt der THREE-Gürtel nicht (three-bootstrap): der Spike holt es aus dem Modul (window.__WG)
-        const WG = (typeof window !== "undefined" && window.__WG) || T;
-        if (!this._torPanoKamera) {
-            const m = this._genesisMitte();
-            const x = m.x - 80;
-            const z = m.z;
-            const p = new T.Vector3(x, this._voxelSurfaceY(x, z) + 12, z);
-            const achsen = [
-                [1, 0, 0],
-                [-1, 0, 0],
-                [0, 1, 0],
-                [0, -1, 0],
-                [0, 0, 1],
-                [0, 0, -1],
-            ];
-            const oben = [
-                [0, 1, 0],
-                [0, 1, 0],
-                [0, 0, -1],
-                [0, 0, 1],
-                [0, 1, 0],
-                [0, 1, 0],
-            ];
-            const dir = (() => {
-                const u = TSL.uv();
-                const az = u.x.sub(0.5).mul(Math.PI * 2);
-                const el = u.y.sub(0.5).mul(Math.PI);
-                return TSL.vec3(TSL.cos(el).mul(TSL.cos(az)), TSL.sin(el), TSL.cos(el).mul(TSL.sin(az)));
-            })();
-            const ad = TSL.abs(dir);
-            let col = TSL.vec3(0.0, 0.0, 0.0);
-            const flaechen = [];
-            for (let i = 0; i < 6; i++) {
-                const cam = new T.PerspectiveCamera(90, 1, 0.5, 9000);
-                cam.position.copy(p);
-                cam.up.set(oben[i][0], oben[i][1], oben[i][2]);
-                cam.lookAt(p.x + achsen[i][0], p.y + achsen[i][1], p.z + achsen[i][2]);
-                cam.updateMatrixWorld(true);
-                const ziel = new T.RenderTarget(256, 256, { type: T.HalfFloatType });
-                ziel.texture.minFilter = T.LinearFilter;
-                ziel.texture.magFilter = T.LinearFilter;
-                ziel.texture.generateMipmaps = false;
-                // die Blick-Projektion ohne Versatz: Richtung → Bild-Koordinate dieser Fläche
-                const rot = cam.matrixWorldInverse.clone().setPosition(0, 0, 0);
-                const M = TSL.uniform(new T.Matrix4().multiplyMatrices(cam.projectionMatrix, rot));
-                const clip = M.mul(TSL.vec4(dir, 1.0));
-                // ein Render-Ziel liegt in WebGPU kopfüber zur Bild-Koordinate (Zeile 0 oben): die Zeile spiegeln
-                const ndc = clip.xy.div(clip.w);
-                const uv = TSL.vec2(ndc.x.mul(0.5).add(0.5), ndc.y.mul(-0.5).add(0.5));
-                const k = achsen[i].findIndex((v) => v !== 0);
-                const komp = [dir.x, dir.y, dir.z][k];
-                const akomp = [ad.x, ad.y, ad.z][k];
-                const andere = [ad.x, ad.y, ad.z].filter((_v, j) => j !== k);
-                const maske = TSL.step(andere[0], akomp)
-                    .mul(TSL.step(andere[1], akomp))
-                    .mul(achsen[i][k] > 0 ? TSL.step(0.0, komp) : TSL.step(komp, 0.0));
-                col = col.add(TSL.texture(ziel.texture, uv).rgb.mul(maske));
-                flaechen.push({ cam, ziel });
-            }
-            const mat = new T.MeshBasicNodeMaterial();
-            mat.colorNode = col;
-            this._torPanoKamera = { flaechen, quad: new WG.QuadMesh(mat) };
+    // Die Ziel-Welt eines Tors: dieselbe Auflösung wie das Betreten (`enterPortal`: Eintrag vor Bauplan, `_sanitizePortalMeta`).
+    // Ein Web-Portal (signierte Adresse) hat keine Welt auf diesem Boden — sein Tor zeigt keine.
+    _torZielWelt(entry) {
+        const bp = this.state.blueprints && entry ? this.state.blueprints[entry.type] : null;
+        const roh = (entry && entry.portalMeta) || (bp && bp.portalMeta) || null;
+        if (roh && roh.worldAddress) return null;
+        return this._sanitizePortalMeta(roh, entry ? entry.type : "Portal");
+    }
+
+    _torZiele() {
+        const TSL = THREE.TSL;
+        return (
+            this._torZielAtlas ||
+            (this._torZielAtlas = {
+                welten: new Map(),
+                n: 0,
+                tex: null,
+                knoten: [],
+                uZeilen: TSL.uniform(1),
+                uBelicht: TSL.uniform(1),
+                reihe: null,
+                db: null,
+                auftrag: 0,
+            })
+        );
+    }
+
+    // Die Zeile des Ziels eines Tors: steht sie, ihre Nummer; sonst null — der erste Frager setzt den Auftrag in Gang.
+    _torZielZeile(entry) {
+        const meta = this._torZielWelt(entry);
+        if (!meta) return null;
+        const Z = this._torZiele();
+        let z = Z.welten.get(meta.world);
+        if (!z) {
+            z = { world: meta.world, meta, zeile: null, quelle: null, stempel: null, fehler: null, kommt: null };
+            Z.welten.set(meta.world, z);
+            z.kommt = this._torZielHolen(z);
         }
-        const K = this._torPanoKamera;
-        const versteckt = [];
-        st.scene.traverse((o) => {
-            const inv = o.userData && o.userData.inventar;
-            if (inv === "portal-membran" && o.visible) {
-                o.visible = false;
-                versteckt.push(o);
+        return z.zeile;
+    }
+
+    // Der Auftrag eines Ziels: Stempel → Platte → (nach dem ersten Weltbild, seriell) die Welt selbst → die Zeile.
+    async _torZielHolen(z) {
+        const G = AnazhRealm.TOR_ZIEL;
+        try {
+            const stempel = await this._torZielStempel(z.world);
+            z.stempel = stempel;
+            const p = stempel ? await this._torZielPlatte("get", z.world) : null;
+            if (p && p.stempel === stempel && p.daten instanceof Uint16Array && p.daten.length === G.w * G.h * 4) {
+                this._torZielEinsetzen(z, p.daten, "platte");
+                return z.zeile;
             }
+            await this._weltbildKommt();
+            const daten = await this._torZielReihe(() => this._torZielRahmen(z.meta));
+            if (stempel) await this._torZielPlatte("put", z.world, { stempel, w: G.w, h: G.h, daten });
+            this._torZielEinsetzen(z, daten, "welt");
+            return z.zeile;
+        } catch (e) {
+            z.fehler = (e && e.message) || String(e);
+            this._bruchMelden(`das Ziel des Tors ${z.world}: ${z.fehler}`);
+            return null;
+        }
+    }
+
+    // Der Stempel einer Welt: SHA-256 über ihre index.html und jedes lokale Skript, das sie lädt (je Teil ein Hash, dann der
+    // Hash der Hashes — kein Byte wird auf dem Haupt-Faden kopiert), mit dem Format des Exports. Ohne WebCrypto keiner.
+    async _torZielStempel(world) {
+        if (typeof crypto === "undefined" || !crypto.subtle || typeof fetch !== "function") return null;
+        const url = new URL(world, document.baseURI);
+        const r0 = await fetch(url, { cache: "no-cache" });
+        if (!r0.ok) throw new Error(`index ${r0.status}`);
+        const html = await r0.text();
+        const teile = [new TextEncoder().encode(html)];
+        const re = /<script\b[^>]*\bsrc\s*=\s*["']([^"']+)["']/gi;
+        for (let m = re.exec(html); m; m = re.exec(html)) {
+            if (/^(?:[a-z][\w+.-]*:)?\/\//i.test(m[1])) continue;
+            const r = await fetch(new URL(m[1], url));
+            if (!r.ok) throw new Error(`die Quelle ${m[1]} antwortet ${r.status}`);
+            teile.push(await r.arrayBuffer());
+        }
+        const hs = await Promise.all(teile.map((t) => crypto.subtle.digest("SHA-256", t)));
+        const alle = new Uint8Array(hs.length * 32);
+        hs.forEach((h, i) => alle.set(new Uint8Array(h), i * 32));
+        const fin = new Uint8Array(await crypto.subtle.digest("SHA-256", alle));
+        return Array.from(fin, (b) => b.toString(16).padStart(2, "0")).join("") + "|p" + AnazhRealm.TOR_ZIEL.format;
+    }
+
+    // Die Platte der Ziele (IndexedDB `anazhTorZiel`/`ziele`, Schlüssel die Welt): get → { stempel, w, h, daten } | null,
+    // put → true | null. Eine Platte, die nicht öffnet, liest null — dann fragt der Auftrag die Welt.
+    _torZielPlatte(art, world, wert) {
+        if (typeof indexedDB === "undefined") return Promise.resolve(null);
+        const Z = this._torZiele();
+        if (!Z.db)
+            Z.db = new Promise((ja) => {
+                const q = indexedDB.open("anazhTorZiel", 1);
+                q.onupgradeneeded = () => q.result.createObjectStore("ziele");
+                q.onsuccess = () => ja(q.result);
+                q.onerror = () => ja(null);
+            });
+        return Z.db.then((d) =>
+            d
+                ? new Promise((ja) => {
+                      try {
+                          const s = d
+                              .transaction("ziele", art === "put" ? "readwrite" : "readonly")
+                              .objectStore("ziele");
+                          const q = art === "put" ? s.put(wert, world) : s.get(world);
+                          q.onsuccess = () => ja(art === "put" ? true : q.result || null);
+                          q.onerror = () => ja(null);
+                      } catch (_e) {
+                          ja(null);
+                      }
+                  })
+                : null
+        );
+    }
+
+    // Die Reihe der Welt-Aufträge: immer EIN verborgener Rahmen zugleich (jede Welt lädt auf ihrem eigenen Takt).
+    _torZielReihe(auftrag) {
+        const Z = this._torZiele();
+        const p = (Z.reihe || Promise.resolve()).then(auftrag, auftrag);
+        Z.reihe = p.catch(() => null);
+        return p;
+    }
+
+    // Die Welt selbst fragen: ein verborgener Rahmen (die Sandbox der Welt, `_portalSandboxAttr`), ihre Brücke meldet `ready`,
+    // die Heimat bittet um das Panorama, die Welt antwortet mit ihren Texeln — dann fällt der Rahmen. Frist `TOR_ZIEL.fristMs`.
+    _torZielRahmen(meta) {
+        const G = AnazhRealm.TOR_ZIEL;
+        return new Promise((ja, nein) => {
+            if (typeof document === "undefined" || !document.body) return nein(new Error("kein Dokument"));
+            const Z = this._torZiele();
+            const reqId = `tor-ziel-${++Z.auftrag}`;
+            const f = document.createElement("iframe");
+            f.title = `Ziel-Bild ${meta.label}`;
+            f.setAttribute("sandbox", this._portalSandboxAttr(meta));
+            f.setAttribute("aria-hidden", "true");
+            f.tabIndex = -1;
+            f.style.cssText = `position:fixed;left:-${G.w * 4}px;top:0;width:${G.w}px;height:${G.h}px;border:0;visibility:hidden;pointer-events:none`;
+            let uhr = null;
+            const ende = (fehler, daten) => {
+                clearTimeout(uhr);
+                window.removeEventListener("message", hoer);
+                f.remove();
+                if (fehler) nein(fehler);
+                else ja(daten);
+            };
+            const hoer = (ev) => {
+                if (ev.source !== f.contentWindow) return;
+                const m = ev.data;
+                if (!m || typeof m !== "object") return;
+                if (m.type === "ready")
+                    f.contentWindow.postMessage(
+                        { type: "panorama-bitte", reqId },
+                        meta.trust === "sandboxed" ? "*" : window.location.origin
+                    );
+                else if (m.type === "panorama" && m.reqId === reqId) {
+                    if (m.fehler) ende(new Error(`die Welt meldet: ${m.fehler}`));
+                    else if (
+                        !(m.daten instanceof Uint16Array) ||
+                        m.w !== G.w ||
+                        m.h !== G.h ||
+                        m.daten.length !== G.w * G.h * 4
+                    )
+                        ende(new Error(`das Panorama trägt ${m.w}×${m.h} statt ${G.w}×${G.h}`));
+                    else ende(null, m.daten);
+                }
+            };
+            window.addEventListener("message", hoer);
+            uhr = setTimeout(() => ende(new Error(`kein Panorama nach ${G.fristMs / 1000} s`)), G.fristMs);
+            f.src = meta.world;
+            document.body.appendChild(f);
         });
-        if (st.playerMesh && st.playerMesh.visible) {
-            st.playerMesh.visible = false;
-            versteckt.push(st.playerMesh);
+    }
+
+    // Ein Ziel in den Atlas: eine neue Textur mit genau einer Zeile mehr (die geteilten Knoten lesen sie, die Zeilenzahl ist eine
+    // geteilte Uniform), die alte fällt.
+    _torZielEinsetzen(z, daten, quelle) {
+        const G = AnazhRealm.TOR_ZIEL;
+        const Z = this._torZiele();
+        const zeile = G.w * G.h * 4;
+        const n = Z.n + 1;
+        const neu = new Uint16Array(zeile * n);
+        if (Z.tex) neu.set(Z.tex.image.data);
+        neu.set(daten, Z.n * zeile);
+        const tex = new THREE.DataTexture(neu, G.w, G.h * n, THREE.RGBAFormat, THREE.HalfFloatType);
+        tex.name = "tor-ziel";
+        tex.wrapS = THREE.RepeatWrapping;
+        tex.minFilter = THREE.LinearFilter;
+        tex.magFilter = THREE.LinearFilter;
+        tex.generateMipmaps = false;
+        tex.needsUpdate = true;
+        const alt = Z.tex;
+        Z.tex = tex;
+        Z.uZeilen.value = n;
+        for (const kn of Z.knoten) kn.value = tex;
+        if (alt) alt.dispose();
+        z.zeile = Z.n;
+        z.quelle = quelle;
+        Z.n = n;
+    }
+
+    // Das Ziel einer Membran als lineare Werte (die Linse zielTreue, `werkbank bild`): { w, h, daten Float32 rgba, Zeile 0 unten,
+    // quelle "platte" | "welt", stempel, world } oder null.
+    _torZielDaten(rec) {
+        const G = AnazhRealm.TOR_ZIEL;
+        const meta = rec && rec.entry ? this._torZielWelt(rec.entry) : null;
+        const Z = this._torZielAtlas;
+        const z = meta && Z ? Z.welten.get(meta.world) : null;
+        if (!z || z.zeile == null) return null;
+        const o = z.zeile * G.w * G.h * 4;
+        const roh = Z.tex.image.data.subarray(o, o + G.w * G.h * 4);
+        const daten = new Float32Array(roh.length);
+        for (let i = 0; i < roh.length; i++) {
+            const h = roh[i];
+            const e = (h >> 10) & 31,
+                m = h & 1023,
+                s = h & 0x8000 ? -1 : 1;
+            daten[i] =
+                e === 0 ? s * m * 2 ** -24 : e === 31 ? (m ? NaN : s * Infinity) : s * (1 + m / 1024) * 2 ** (e - 15);
         }
-        // die Würfe gehen durch die EINE Kamera der Welt (die Diät der Welt führt Buch über sie; eine fremde Kamera zeichnete
-        // jede Fläche mit den Matrizen der ersten): Pose, Öffnung und Seitenverhältnis je Fläche, danach zurück
-        const alt = rend.getRenderTarget();
-        const kam = st.camera;
-        const sp = kam.position.clone();
-        const sq = kam.quaternion.clone();
-        const sf = kam.fov;
-        const sa = kam.aspect;
-        for (const F of K.flaechen) {
-            kam.position.copy(F.cam.position);
-            kam.quaternion.copy(F.cam.quaternion);
-            kam.fov = 90;
-            kam.aspect = 1;
-            kam.updateProjectionMatrix();
-            kam.updateMatrixWorld(true);
-            rend.setRenderTarget(F.ziel);
-            rend.render(st.scene, kam);
-        }
-        kam.position.copy(sp);
-        kam.quaternion.copy(sq);
-        kam.fov = sf;
-        kam.aspect = sa;
-        kam.updateProjectionMatrix();
-        kam.updateMatrixWorld(true);
-        for (const o of versteckt) o.visible = true;
-        rend.setRenderTarget(rt);
-        K.quad.render(rend);
-        rend.setRenderTarget(alt);
+        return { w: G.w, h: G.h, daten, quelle: z.quelle, stempel: z.stempel, world: z.world };
     }
 
     // Membran-Tick: je sichtbarem Portal-Eintrag mit Tor-Gestalt EINE Membran (Registry je entry.id),
@@ -2262,7 +2387,10 @@ class AnazhRealm_Z14 {
                         const dx = entry.position.x - px;
                         const dz = entry.position.z - pz;
                         if (dx * dx + dz * dz > SICHT * SICHT) continue;
-                        this._membranBauFor(entry, tor);
+                        // DAS FENSTER WARTET AUF SEIN ZIEL (D8): ohne die Zeile seiner Ziel-Welt kein Bau (der Auftrag läuft)
+                        const ziel = this._torZielZeile(entry);
+                        if (ziel == null) continue;
+                        this._membranBauFor(entry, tor, ziel);
                     }
                 }
             }
@@ -2286,6 +2414,9 @@ class AnazhRealm_Z14 {
         }
         // ── pro Frame: Atem + Hindurchgehen ──
         const reach = AnazhRealm.PORTAL_REACH_M;
+        // die Belichtung der Heimat teilt die Bild-Werte des Ziels (die Heimat tont sie danach, wie die Welt sich zeigt)
+        if (this._torZielAtlas && st.renderer)
+            this._torZielAtlas.uBelicht.value = 1 / Math.max(1e-3, st.renderer.toneMappingExposure || 1);
         for (const rec of reg.values()) {
             const entry = rec.entry;
             const mu = rec.tor.mu;
@@ -2424,12 +2555,12 @@ class AnazhRealm_Z14 {
 
     // Eine Membran für einen Eintrag bauen (fail-LAUT: schlägt der TSL-Bau fehl, bricht er beim Namen —
     // `_stoffBruch`; die schlichte Ersatz-Fläche ist gefallen, K22).
-    _membranBauFor(entry, tor) {
+    _membranBauFor(entry, tor, ziel) {
         const st = this.state;
         let mesh = null;
         let u = null;
         try {
-            const built = this._membranMaterialFor(tor);
+            const built = this._membranMaterialFor(tor, ziel, entry.rotationY);
             u = built.u;
             mesh = new THREE.Mesh(this._membranGeometryFor(tor), built.mat);
         } catch (err) {

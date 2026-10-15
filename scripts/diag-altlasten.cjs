@@ -939,6 +939,11 @@ const FORBIDDEN = [
     { token: "buildFog", fiel: "D8 — der Nebel des Labors", auch: ["worlds/portale/porta.js"] },
     { token: "['fog',", fiel: "D8 — der Regler fog (Bodennebel) der Tore", auch: ["porta-core.js", "worlds/portale/porta.js"] },
     { token: "MG.march", fiel: "D8 — der 12-Schritt-March der Membran (MEMBRAN_GESETZ.film)", auch: ["worlds/portale/porta.js"] },
+    // D8: das Spike-Instrument — die Heimat malte ein Panorama ihrer EIGENEN Welt (Würfel-Kamera 80 m westlich der Genesis-Mitte);
+    // die Öffnung liest das Ziel aus dem EINEN Export der Ziel-Welt (`_torZielZeile`, die Hülle `AnazhHuelle.panorama`)
+    { token: "_torPanorama", fiel: "D8 — das Host-Panorama der eigenen Welt (Spike); das Ziel kommt aus der Ziel-Welt" },
+    { token: "_torPanoMal", fiel: "D8 — die Würfel-Würfe der Heimat (Spike); die Ziel-Welt rendert sich selbst" },
+    { token: "_torPanoKamera", fiel: "D8 — die sechs Kameras des Host-Panoramas (Spike)" },
     { token: "_weltSeitenPflegen", fiel: "Welle G — die Hülle trägt jeder Eintrag selbst (Texel 0/1)" },
     { token: "_weltSeitenFolge", fiel: "Welle G — der Tiefentest der Hardware wählt den nächsten Treffer" },
     { token: "_weltSeiteDirty", fiel: "Welle G — die Seiten-Ebene fiel (auch der Aufruf der Fernwald-Linse)" },
