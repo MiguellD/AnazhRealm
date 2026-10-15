@@ -161,6 +161,16 @@ function werkzeug() {
             if (takte >= 40 && stabil >= 15) break;
             await sleep(20);
         }
+        // Einschwingen, bis der Wald steht (K69-2: die Schlange des Walds plant im Takt — die Linse urteilt in
+        // Bau-Ereignissen, nie in Wanduhr-Sekunden, Lehre 26). Auch die Suche der Orte liest danach: die Kronen-Karte
+        // trägt nur gepflanzte Kronen — vor dem Stand des Walds fand sie Deckung 0,6 statt 1 (kz-B6.log).
+        const waldDl = performance.now() + 60000;
+        while (!W.waldSteht() && performance.now() < waldDl) {
+            W.takt();
+            takte++;
+            await sleep(0);
+        }
+        const wald = W.waldSteht();
         // Die Kamera blickt nach Norden (−z), 3 m hinter und 1,6 m über dem Spieler: das Panorama ist definiert.
         const cam = st.camera;
         if (cam) {
@@ -169,8 +179,15 @@ function werkzeug() {
             cam.lookAt(p.x, p.y + 1.2, p.z - 10);
             cam.updateMatrixWorld(true);
         }
-        return { takte, chunks: last };
+        return { takte, chunks: last, wald };
     };
+    // DER WALD STEHT: die Schlange des Walds leer, kein Pflanz-Gang und keine Streu-Region wartet, kein gepflanzter Baum
+    // steht in der Pflanz-Schlange.
+    W.waldSteht = () =>
+        !(r._waldPlanSchlange && r._waldPlanSchlange.size) &&
+        !(r._waldPflanzWarten && r._waldPflanzWarten.size) &&
+        !(st.pendingVegSpawns && st.pendingVegSpawns.length) &&
+        r._streuWartet(st.playerMesh.position) === 0;
     // Die Nässe des Klangs ist SEINE (`_nassAt`: der Boden unter der EINEN Wasser-Wahrheit am Körper) — die Linse rechnet
     // sie nie nach (bis Welle L ein Zwilling über das 3×3-gedehnte `_waterLevelAt`).
     W.nass = (x, z) => r._nassAt(x, z);
@@ -682,21 +699,9 @@ async function messeOrt(page, name, ort, stubs) {
             }
             const syn0 = W.synthese();
             try {
+                // umstellen schwingt ein, bis der Wald steht (`W.waldSteht`); dann läuft der Ring voll, die Stimmen werden
+                // bestellt, geliefert und rampen ein.
                 const um = await W.umstellen(ort.x, ort.z);
-                // Einschwingen: der Wald steht (K69-2: die Schlange des Walds plant im Takt — die Linse urteilt in
-                // Bau-Ereignissen, nie in Wanduhr-Sekunden, Lehre 26: die Schlange leer, kein Pflanz-Gang und keine
-                // Streu-Region wartet, kein gepflanzter Baum steht in der Pflanz-Schlange, höchstens 60 s), dann läuft der Ring voll, die Stimmen werden bestellt, geliefert und
-                // rampen ein.
-                const waldDl = performance.now() + 60000;
-                const waldSteht = () =>
-                    !(r._waldPlanSchlange && r._waldPlanSchlange.size) &&
-                    !(r._waldPflanzWarten && r._waldPflanzWarten.size) &&
-                    !(st.pendingVegSpawns && st.pendingVegSpawns.length) &&
-                    r._streuWartet(st.playerMesh.position) === 0;
-                while (!waldSteht() && performance.now() < waldDl) {
-                    W.takt();
-                    await new Promise((res) => setTimeout(res, 0));
-                }
                 const dl = performance.now() + 2500;
                 while (performance.now() < dl) {
                     W.takt();
