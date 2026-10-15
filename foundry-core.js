@@ -2445,6 +2445,16 @@ function emitTreeRezept(P, stufe) {
     }
     addMerged(barkGeos, P.barkType === "birch" ? barkMatBirch : barkMat); // KEIN Weld -> eigene Normalen, kein verschmierter Blob am Fuss
     emitRoots(P); // Wurzeln zurueck (hochgeladene Version: emitRoots, Farbe barkA*0.72/barkB*0.58, aus dem Flarefuss)
+    // DIE NORMALE DER KRONE (K68): Klingen, Nadeln, Karten und Wedel der Krone lichten mit dem Kronen-Ellipsoid (phyto-core
+    // kronenNormalen) — EINE Krone ueber alle Laub-Teile, damit L0 (Klinge), L1 (Karte) und die gebackene Karte (L2, aus der
+    // L1) dieselbe Licht- und Schattenseite tragen.
+    {
+        const _kn = [...folGeos, ...folGeosTex].filter((g) => g.attributes && g.attributes.normal && g.attributes.position);
+        if (_kn.length)
+            self.__phytoCore.kronenNormalen(
+                _kn.map((g) => ({ pos: g.attributes.position.array, nor: g.attributes.normal.array }))
+            );
+    }
     addMerged(folGeos, foliageMat);
     if (folGeosTex.length) addMerged(folGeosTex, foliageMatTex); // FIX v31: Cluster-Quads als eigenes Submesh (eigener Attributsatz mit uv) — Studio UND Wald, da buildInstance den subject-Sink tauscht
     if (_wurf1) {
