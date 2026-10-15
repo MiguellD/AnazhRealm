@@ -7,9 +7,14 @@
             "titel": "Gras und Boden nah (die Nah-Wiese über dem Boden-Satz)",
             "wirkung": {
                 "grund": "der Boden trägt jedes Ego-Bild; Augen-Befund 14.10. Nr. 4 „Gras als einzelne Büschel auf glattem Grün“",
-                "mangel": {
+                "geheilt": {
                     "befund": "Gras als einzelne Büschel auf glattem Grün",
-                    "quelle": "auge-befunde-1410.md Nr. 4 (Zweig koordination)"
+                    "quelle": "auge-befunde-1410.md Nr. 4 (Zweig koordination)",
+                    "warum": "VORLAEUFIG",
+                    "bildPaar": [
+                        "artifacts/soll-tafel/boden-nah-vorher.png",
+                        "artifacts/soll-tafel/boden-nah.png"
+                    ]
                 }
             },
             "referenz": [
