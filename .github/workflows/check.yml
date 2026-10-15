@@ -1464,8 +1464,9 @@ jobs:
               # erscheint erst an seinem Ort; der Selbsttest setzt die alte Tuer ein und sieht (b) ROT. K23 (c): das Chat-Graben
               # kommt bei B GENAU einmal an (jeder Edit von A, und B traegt keinen mehr); im Hauptlauf wendet B danach jede
               # Graben-Nachricht doppelt an und (c) muss ROT werden (die erste Fassung, ohne die Laenge, blieb gruen).
-              # K60 (d): der Ghost bei B verbraucht erst je 20 angekommene Schritte (lange Takte in Schritten, nie in ms) und
-              # liegt nach jedem Takt hoechstens 12 Schritte hinter dem Empfang; die alte Kappe je Frame muss am Verzug ROT werden.
+              # K60 (d): der Ghost bei B verbraucht erst je 20 angekommene Schritte (lange Takte in Schritten, nie in ms), und
+              # jeder Takt haelt das Gesetz von _lockstepTickPeers: Verbrauch bis zur Kappe der Wanduhr ceil(10 x dt/FIXED_DT)
+              # oder bis zur Reserve (taktBruch); der Schub vor dem Fenster haelt es, die alte Kappe je Frame muss am Gesetz ROT werden.
               run: npm run gate:mp-sync
 
             - name: Die V1-Pfad-Linse (Welle L - Vorschau, Ankunft, Eingabe, Wort, Rezeptbuch, KI-Fehler)
