@@ -493,7 +493,79 @@
             "id": "haus",
             "titel": "Haus (Fachwerk, die Bau-Stoffe Putz · Holz · Dach)",
             "wirkung": {
-                "grund": "Nordstern M0: das Labor zeigt die Bau-Stoffe anders als die Welt"
+                "grund": "Nordstern M0: das Labor zeigt die Bau-Stoffe anders als die Welt",
+                "messung": {
+                    "werkzeug": "bild",
+                    "datum": "2026-10-15T02:07:34.765Z",
+                    "stand": {
+                        "version": "18.546.2",
+                        "sha": "e6d07fff2f68f02ccc4262a40eab0eb5434835b4+geaendert"
+                    },
+                    "geraet": {
+                        "backend": "WebGPU",
+                        "adapter": "amd rdna-3"
+                    },
+                    "leinwand": [
+                        1920,
+                        1080
+                    ],
+                    "kamera": [
+                        -769.57,
+                        43.65,
+                        -846.62
+                    ],
+                    "ausdruck": "^(bauSatz|f:(alemannisch|griechisch|roemisch):L[0-3]|bau:haus_[a-z_]+)$",
+                    "schwelle": 18,
+                    "rauschen": {
+                        "anteil": 0,
+                        "pixel": 0,
+                        "max": 0
+                    },
+                    "misch": 401,
+                    "klassen": {
+                        "f:griechisch:L2": {
+                            "objekte": 18,
+                            "zweiton": 0,
+                            "zt": 0,
+                            "weiss": 0.1087,
+                            "wt": 5693,
+                            "pixel": 52380,
+                            "deckung": 0.0253,
+                            "deckungUnten": 0,
+                            "luma": 157.88,
+                            "kontrast": 0.2629,
+                            "detail": 0.0369,
+                            "nyquist": 0.0754,
+                            "ek": 90248.1,
+                            "eg": 1106622.7,
+                            "silhouette": 10.0757
+                        },
+                        "f:roemisch:L1": {
+                            "objekte": 4,
+                            "zweiton": 0,
+                            "zt": 0,
+                            "weiss": 0.0014,
+                            "wt": 174,
+                            "pixel": 127145,
+                            "deckung": 0.0613,
+                            "deckungUnten": 0,
+                            "luma": 99.59,
+                            "kontrast": 0.3946,
+                            "detail": 0.0597,
+                            "nyquist": 0.0645,
+                            "ek": 192860.2,
+                            "eg": 2797755.7,
+                            "silhouette": 13.683
+                        }
+                    },
+                    "abstand": null,
+                    "gesicht": null,
+                    "bild": "../../../../AppData/Local/Temp/claude/K63-n6/haus.png",
+                    "quellen": {
+                        "fachwerk-core.js": "9630f4e8c6382fe4",
+                        "foundry-core.js": "b957a6823f5b6a9e"
+                    }
+                }
             },
             "referenz": [
                 {
@@ -528,7 +600,7 @@
                     "datei": "spec/farbe/albedo-tafel.json",
                     "zeile": "haus"
                 },
-                "werkzeug": "werkbank albedo --tafel + diag-albedo-tafel.cjs --labor --echt, dann --nachziehen; der Bildanteil: am Messort dorf zeichnet kein Haus binnen 60 m (das Dorf wächst um den Spieler) — werkbank umstellen -787 -865 (der Dorfrand, das römische Haus 30 m), dann je Haus des Dorfs das Auge 22 m außerhalb auf der Linie Dorfmitte → Haus, der Blick 6 m vor seine Front (kein Nachbar davor, die eigene Wand verdeckt nicht): werkbank bild <Pose> --wahl 42 --ziel haus --klasse '^(bauSatz|f:alemannisch:L[0-3]|bau:haus_[a-z_]+)$' --ist haus:wirkung"
+                "werkzeug": "werkbank albedo --tafel + diag-albedo-tafel.cjs --labor --echt, dann --nachziehen; der Bildanteil: am Messort dorf zeichnet kein Haus binnen 60 m (das Dorf wächst um den Spieler) — werkbank umstellen -787 -865 (der Dorfrand, das römische Haus 30 m), dann je Haus des Dorfs das Auge 22 m außerhalb auf der Linie Dorfmitte → Haus (kein Nachbar davor), das Ziel die Haus-Mitte 3 m über dem Grund (das Ziel nimmt sein Haus aus der Verdeckung, auch als Bereich im Bau-Satz: kamera-nah `ohneSatz`): werkbank bild <Pose> --wahl 42 --ziel haus --klasse '^(bauSatz|f:alemannisch:L[0-3]|bau:haus_[a-z_]+)$' --ist haus:wirkung"
             },
             "quellen": [
                 "fachwerk-core.js",

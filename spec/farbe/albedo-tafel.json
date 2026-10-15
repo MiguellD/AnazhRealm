@@ -13,7 +13,7 @@
     },
     "gemessen": {
         "labor": {
-            "datum": "2026-10-15T01:18:05.798Z",
+            "datum": "2026-10-15T02:00:40.886Z",
             "geraet": "ANGLE (AMD, AMD Radeon(TM) 890M Graphics (0x0000150E) Direct3D11 vs_5_0 ps_5_0, D3D11)",
             "echt": true,
             "version": "18.546.2",
@@ -37,8 +37,8 @@
                 "stamm/05a.js": "539370765677f7ec",
                 "stamm/05b.js": "4c23b4440c82e219",
                 "stamm/06a.js": "7a1e2fe0ee9ba9f9",
-                "stamm/06b.js": "6d1b51f3f819ca55",
-                "stamm/06c.js": "18acb23fbd321c8e",
+                "stamm/06b.js": "1a4eacb138d3d2e2",
+                "stamm/06c.js": "6a2056fb77f6617b",
                 "stamm/07.js": "6a3ea63b9ee05a21",
                 "stamm/08.js": "d1965c87808662a7",
                 "stamm/09.js": "0f3d091e173a4ada",
@@ -62,24 +62,24 @@
                 "stamm/18.js": "f80bf3706d0e0e6c",
                 "stamm/19.js": "2bb652c80a58c2a9",
                 "stamm/20a.js": "32632c152bc477e2",
-                "stamm/20b.js": "6a89dd8438ca8da9",
+                "stamm/20b.js": "1998e327e7e3c5f2",
                 "stamm/20c.js": "739572d20e186d24",
                 "stamm/20d.js": "7fc3616ed9846a7b",
-                "stamm/21.js": "b37c86a40352ea19",
+                "stamm/21.js": "9331638bf60daaa9",
                 "stamm/22.js": "75414b2476ec337f",
                 "stamm/23a.js": "6f7beb260c70c123",
                 "stamm/23b.js": "d311e43d74ce825d",
                 "stamm/24.js": "e600eb9cc991ce4c",
                 "stamm/25a.js": "0bd3409907df2983",
                 "stamm/25b.js": "7f2302d3be1d5750",
-                "stamm/25c.js": "c37660b5c7102438",
+                "stamm/25c.js": "8b1cb72fb388564f",
                 "stamm/26a.js": "b08c3819d8cdd7f6",
                 "stamm/26b.js": "3d92ab3600500c1c",
-                "stamm/26c.js": "1485728c3ea0d64f"
+                "stamm/26c.js": "d7bf0ebe17c14e0a"
             }
         },
         "welt": {
-            "datum": "2026-10-15T01:29:09.026Z",
+            "datum": "2026-10-15T02:06:34.114Z",
             "geraet": "amd rdna-3",
             "ort": "genesis",
             "spieler": [
@@ -108,8 +108,8 @@
                 "stamm/05a.js": "539370765677f7ec",
                 "stamm/05b.js": "4c23b4440c82e219",
                 "stamm/06a.js": "7a1e2fe0ee9ba9f9",
-                "stamm/06b.js": "6d1b51f3f819ca55",
-                "stamm/06c.js": "18acb23fbd321c8e",
+                "stamm/06b.js": "1a4eacb138d3d2e2",
+                "stamm/06c.js": "6a2056fb77f6617b",
                 "stamm/07.js": "6a3ea63b9ee05a21",
                 "stamm/08.js": "d1965c87808662a7",
                 "stamm/09.js": "0f3d091e173a4ada",
@@ -133,20 +133,20 @@
                 "stamm/18.js": "f80bf3706d0e0e6c",
                 "stamm/19.js": "2bb652c80a58c2a9",
                 "stamm/20a.js": "32632c152bc477e2",
-                "stamm/20b.js": "6a89dd8438ca8da9",
+                "stamm/20b.js": "1998e327e7e3c5f2",
                 "stamm/20c.js": "739572d20e186d24",
                 "stamm/20d.js": "7fc3616ed9846a7b",
-                "stamm/21.js": "b37c86a40352ea19",
+                "stamm/21.js": "9331638bf60daaa9",
                 "stamm/22.js": "75414b2476ec337f",
                 "stamm/23a.js": "6f7beb260c70c123",
                 "stamm/23b.js": "d311e43d74ce825d",
                 "stamm/24.js": "e600eb9cc991ce4c",
                 "stamm/25a.js": "0bd3409907df2983",
                 "stamm/25b.js": "7f2302d3be1d5750",
-                "stamm/25c.js": "c37660b5c7102438",
+                "stamm/25c.js": "8b1cb72fb388564f",
                 "stamm/26a.js": "b08c3819d8cdd7f6",
                 "stamm/26b.js": "3d92ab3600500c1c",
-                "stamm/26c.js": "1485728c3ea0d64f"
+                "stamm/26c.js": "d7bf0ebe17c14e0a"
             }
         }
     },
@@ -188,16 +188,16 @@
             ],
             "ist": {
                 "labor": {
-                    "Y": 0.0947,
+                    "Y": 0.0946,
                     "rgb": "0.1125/0.0922/0.0661",
-                    "pixel": 15780
+                    "pixel": 15775
                 },
                 "welt": {
-                    "Y": 0.0932,
-                    "rgb": "0.111/0.0908/0.065",
-                    "pixel": 6128
+                    "Y": 0.0929,
+                    "rgb": "0.1106/0.0905/0.0648",
+                    "pixel": 6117
                 },
-                "verhaeltnis": 1.0161
+                "verhaeltnis": 1.0183
             },
             "ratsche": 0.016
         },
@@ -239,18 +239,18 @@
             ],
             "ist": {
                 "labor": {
-                    "Y": 0.1797,
+                    "Y": 0.1796,
                     "rgb": "0.1276/0.2087/0.0447",
-                    "pixel": 143174
+                    "pixel": 143176
                 },
                 "welt": {
                     "Y": 0.1639,
-                    "rgb": "0.0867/0.1991/0.0428",
-                    "pixel": 57290
+                    "rgb": "0.0867/0.199/0.0428",
+                    "pixel": 57267
                 },
-                "verhaeltnis": 1.0964
+                "verhaeltnis": 1.0958
             },
-            "ratsche": 0.092
+            "ratsche": 0.0915
         },
         {
             "id": "fels",
@@ -296,13 +296,13 @@
                     "pixel": 307925
                 },
                 "welt": {
-                    "Y": 0.2325,
-                    "rgb": "0.2572/0.2313/0.1717",
-                    "pixel": 19488
+                    "Y": 0.2388,
+                    "rgb": "0.2641/0.2377/0.1761",
+                    "pixel": 79682
                 },
-                "verhaeltnis": 1.0512
+                "verhaeltnis": 1.0235
             },
-            "ratsche": 0.0275
+            "ratsche": 0.0232
         },
         {
             "id": "boden",
@@ -391,13 +391,13 @@
                     "pixel": 407007
                 },
                 "welt": {
-                    "Y": 0.193,
-                    "rgb": "0.2707/0.1748/0.1442",
-                    "pixel": 218694
+                    "Y": 0.159,
+                    "rgb": "0.2777/0.1309/0.087",
+                    "pixel": 167862
                 },
-                "verhaeltnis": 0.4358
+                "verhaeltnis": 0.5289
             },
-            "ratsche": 0.683
+            "ratsche": 0.637
         },
         {
             "id": "lack",
@@ -421,7 +421,9 @@
                 "exemplar": {
                     "typ": "architektur",
                     "name": "fahrzeug_gt",
-                    "radius": 4
+                    "radius": 4,
+                    "nah": 0,
+                    "seed": 7
                 },
                 "klasse": "^f:gt:L[0-3]$",
                 "stoff": {
@@ -438,7 +440,19 @@
                 "stamm/10.js",
                 "stamm/20b.js"
             ],
-            "ist": null,
+            "ist": {
+                "labor": {
+                    "Y": 0.0066,
+                    "rgb": "0.0056/0.0065/0.0097",
+                    "pixel": 245421
+                },
+                "welt": {
+                    "Y": 0.0175,
+                    "rgb": "0.0129/0.0179/0.0269",
+                    "pixel": 78103
+                },
+                "verhaeltnis": 0.3771
+            },
             "ratsche": 0.0953
         },
         {
@@ -469,7 +483,19 @@
                 "stamm/14.js",
                 "stamm/20b.js"
             ],
-            "ist": null,
+            "ist": {
+                "labor": {
+                    "Y": 0.6496,
+                    "rgb": "0.8196/0.6364/0.2799",
+                    "pixel": 7583
+                },
+                "welt": {
+                    "Y": 0.6493,
+                    "rgb": "0.8196/0.6359/0.2799",
+                    "pixel": 4324
+                },
+                "verhaeltnis": 1.0005
+            },
             "ratsche": 0
         },
         {
@@ -505,18 +531,18 @@
             ],
             "ist": {
                 "labor": {
-                    "Y": 0.0608,
-                    "rgb": "0.1219/0.0463/0.025",
-                    "pixel": 74569
+                    "Y": 0.0609,
+                    "rgb": "0.122/0.0464/0.0251",
+                    "pixel": 74349
                 },
                 "welt": {
-                    "Y": 0.1611,
-                    "rgb": "0.2235/0.1468/0.1198",
-                    "pixel": 33718
+                    "Y": 0.1606,
+                    "rgb": "0.223/0.1462/0.1192",
+                    "pixel": 33838
                 },
-                "verhaeltnis": 0.3774
+                "verhaeltnis": 0.3792
             },
-            "ratsche": 0.9744
+            "ratsche": 0.9697
         },
         {
             "id": "fell",
@@ -553,16 +579,16 @@
             ],
             "ist": {
                 "labor": {
-                    "Y": 0.1688,
-                    "rgb": "0.2059/0.1635/0.1123",
-                    "pixel": 152878
+                    "Y": 0.169,
+                    "rgb": "0.2061/0.1637/0.1124",
+                    "pixel": 152707
                 },
                 "welt": {
-                    "Y": 0.1804,
-                    "rgb": "0.2212/0.1745/0.1186",
-                    "pixel": 47427
+                    "Y": 0.1844,
+                    "rgb": "0.2263/0.1784/0.1209",
+                    "pixel": 50670
                 },
-                "verhaeltnis": 0.9357
+                "verhaeltnis": 0.9165
             },
             "ratsche": 0.0665
         },
@@ -614,9 +640,9 @@
             "ist": {
                 "kL": 0.7482,
                 "ausgabe": [
-                    186,
-                    193,
-                    184
+                    188,
+                    194,
+                    186
                 ]
             },
             "ratsche": 0.866
@@ -634,7 +660,7 @@
         },
         "portale": {
             "ist": {
-                "kL": 0.8023,
+                "kL": 0.8028,
                 "ausgabe": [
                     195,
                     205,
@@ -647,31 +673,31 @@
             "ist": {
                 "kL": 0.6427,
                 "ausgabe": [
-                    173,
-                    161,
-                    149
+                    177,
+                    165,
+                    153
                 ]
             },
             "ratsche": 0.7141
         },
         "fachwerk": {
             "ist": {
-                "kL": 0.4803,
+                "kL": 0.4802,
                 "ausgabe": [
                     197,
                     194,
                     192
                 ]
             },
-            "ratsche": 0.4228
+            "ratsche": 0.4226
         },
         "koerperstudio": {
             "ist": {
                 "kL": 0.699,
                 "ausgabe": [
-                    171,
-                    182,
-                    179
+                    169,
+                    180,
+                    177
                 ]
             },
             "ratsche": 0.798
@@ -680,9 +706,9 @@
             "ist": {
                 "kL": 0.8802,
                 "ausgabe": [
-                    252,
-                    252,
-                    252
+                    255,
+                    255,
+                    255
                 ]
             },
             "ratsche": 1.0285

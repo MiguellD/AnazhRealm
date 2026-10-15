@@ -162,7 +162,8 @@ function albedoSicht(opts) {
                 const ex = (z.welt && z.welt.exemplar) || {};
                 let pos = null,
                     gesetzt = false,
-                    verweigert = null;
+                    verweigert = null,
+                    eintrag = null;
                 if (ex.typ === "architektur") {
                     let best = null;
                     for (const e of st.architectures || [])
@@ -170,7 +171,9 @@ function albedoSicht(opts) {
                             const d = Math.hypot(e.position.x - pp.x, e.position.z - pp.z);
                             // `nah` (K63-n4): nur ein Exemplar so nah am Spieler, dass es in seiner Mesh-Stufe zeichnet — ein fernes
                             // trägt die Karte des Atlas (fimp), deren Stoff keine Zeile trennt; sonst setzt die Linse es
-                            if (d <= (ex.nah || 80) && (!best || d < best.d)) best = { e, d };
+                            // `nah: 0` (K63-n6): nie ein fremdes — die Zeile setzt ihr Exemplar mit ihrer Saat (der Lack des GT
+                            // folgt dem LACK_GESETZ der Saat; ein Wagen der Welt trug am 15.10. Orange gegen das Schwarz des Labors)
+                            if (d <= (ex.nah != null ? ex.nah : 80) && (!best || d < best.d)) best = { e, d };
                         }
                     let e = best && best.e;
                     if (!e) {
@@ -193,6 +196,7 @@ function albedoSicht(opts) {
                         // Ein frisch gesetztes Exemplar zieht seine Instanz-Gruppe erst im nächsten Takt nach.
                         await ticke(gesetzt ? 20 : 0, () => false);
                         pos = new T.Vector3(e.position.x, e.position.y, e.position.z);
+                        eintrag = e;
                     }
                 } else if (ex.typ === "tier") {
                     const tierOf = (c) => {
@@ -222,7 +226,7 @@ function albedoSicht(opts) {
                         pos = new T.Vector3(c.position.x, c.position.y, c.position.z);
                     }
                 } else if (ex.typ === "spieler") pos = pp.clone();
-                exemplare.push({ zeile: z, pos, gesetzt, verweigert });
+                exemplare.push({ zeile: z, pos, gesetzt, verweigert, eintrag });
             }
         }
         const karte = new T.Mesh(
@@ -375,12 +379,84 @@ function albedoSicht(opts) {
             const c = bb.getCenter(new T.Vector3());
             return { c, rad: bb.getSize(new T.Vector3()).length() / 2, d: Math.hypot(c.x - um.x, c.z - um.z) };
         };
+        // DER SATZ DES EXEMPLARS (K63-n6; gemessen 15.10., Radeon: das Tor Kathedrale las in der Welt 0,0226 gegen das Gold
+        // 0,6496 des Labors — der Bau-Satz zeichnete im Schuss die Metalle der Nachbar-Tore mit): ein Stoff-Satz trägt viele
+        // Exemplare in EINEM Mesh (`_bauSatzBlock`: je lebende Instanz ihre n Ecken ab dem Bereichs-Anfang, `slotEntry[i]` ihr
+        // Eintrag). Für den Schuss zeichnet ein Ausschnitt nur die Dreiecke der Instanzen des Exemplars (Ecken kompakt kopiert,
+        // derselbe Stoff); ein Satz ohne sie fällt aus der Wahl (null), ein Mesh, das kein Satz ist, bleibt (es selbst).
+        // DIE BASIS IM SATZ (gemessen 15.10., Radeon: die Nieten des Tors lasen Y 0,0000): der Satz-Stoff liest sein Metall je
+        // Ecke (`aRegler.y`, `_satzBlock`) — `metalness = 0` am Stoff erreicht ihn nie, das Metall blieb schwarz ohne Umgebung;
+        // mit `basis` trägt der Ausschnitt Metall 0 in jeder Ecke (0 ist in jeder Packung 0).
+        const ausschnitte = [];
+        const satzAusschnitt = (m, eintrag, basis) => {
+            let s = null;
+            for (const q of (st.chunkSaetze && st.chunkSaetze.values()) || []) if (q.mesh === m) s = q;
+            if (!s || !st.archInstanceGroups) return m;
+            const tri = [];
+            let bau = false; // ein Satz ohne Instanz-Gruppen (Boden, Streu, Formationen) ist kein Bau-Satz: er bleibt
+            for (const [key, g] of st.archInstanceGroups) {
+                if (!g || g.satz !== s.art || !g.slotEntry) continue;
+                bau = true;
+                const b = s.bloecke.get(key);
+                const n = b && b.idx && g.geom && g.geom.attributes.position ? g.geom.attributes.position.count : 0;
+                for (let i = 0; n && i < Math.floor(b.vAnzahl / n); i++) {
+                    if (g.slotEntry[i] !== eintrag) continue;
+                    const v0 = b.vStart + i * n,
+                        v1 = v0 + n;
+                    for (let t = 0; t + 2 < b.idx.length; t += 3)
+                        if (b.idx[t] >= v0 && b.idx[t] < v1) tri.push(b.idx[t], b.idx[t + 1], b.idx[t + 2]);
+                }
+            }
+            if (!bau) return m;
+            if (!tri.length) return null;
+            const neu = new Map(),
+                alt = [];
+            const ix = new Uint32Array(tri.length);
+            for (let k = 0; k < tri.length; k++) {
+                let j = neu.get(tri[k]);
+                if (j === undefined) {
+                    j = alt.length;
+                    neu.set(tri[k], j);
+                    alt.push(tri[k]);
+                }
+                ix[k] = j;
+            }
+            const g2 = new T.BufferGeometry();
+            for (const [name, a] of Object.entries(m.geometry.attributes)) {
+                if (!a.array) throw new Error(`satzAusschnitt(${s.art}): das Attribut ${name} trägt kein eigenes Feld`);
+                const w = a.itemSize;
+                const out = new a.array.constructor(alt.length * w);
+                for (let j = 0; j < alt.length; j++) for (let c = 0; c < w; c++) out[j * w + c] = a.array[alt[j] * w + c];
+                if (basis && name === "aRegler") for (let j = 0; j < alt.length; j++) out[j * w + 1] = 0;
+                g2.setAttribute(name, new T.BufferAttribute(out, w, a.normalized));
+            }
+            g2.setIndex(new T.BufferAttribute(ix, 1));
+            const t = new T.Mesh(g2, m.material);
+            t.name = m.name;
+            t.userData = Object.assign({}, m.userData, { satzAusschnitt: s.art });
+            t.matrixAutoUpdate = false;
+            t.matrix.copy(m.matrixWorld);
+            t.matrixWorld.copy(m.matrixWorld);
+            t.frustumCulled = false;
+            t.layers.mask = m.layers.mask;
+            t.renderOrder = m.renderOrder;
+            sc.add(t);
+            ausschnitte.push(t);
+            return t;
+        };
+        const ausschnitteFort = () => {
+            for (const t of ausschnitte.splice(0)) {
+                sc.remove(t);
+                t.geometry.dispose();
+            }
+        };
         const ergebnisse = [];
         const metallAlt = new Map();
         const ahnenAlt = new Map();
         try {
             if (opts.zeilen) {
                 for (const ex of exemplare) {
+                    ausschnitteFort(); // der Ausschnitt der vorigen Zeile zeichnet nie in dieser
                     const z = ex.zeile;
                     const w = z.welt || {};
                     const kre = new RegExp(w.klasse || "^$");
@@ -388,6 +464,10 @@ function albedoSicht(opts) {
                         kre.test(kl.get(m)) &&
                         matsOf(m).some((mt) => window.__stoffPasst(w.stoff || null, stoffOf(mt)));
                     let sel = meshes.filter((m) => visAlt.get(m) && passt(m));
+                    if (ex.eintrag)
+                        sel = sel
+                            .map((m) => (m.isInstancedMesh ? m : satzAusschnitt(m, ex.eintrag, z.basis !== false)))
+                            .filter(Boolean);
                     const e = {
                         id: z.id,
                         name: z.id,
@@ -482,6 +562,7 @@ function albedoSicht(opts) {
                     const a = window.__albedoAuswerten(s.hell, s.dunkel, W, H * stellungen.length, 0, z.id);
                     ergebnisse.push(Object.assign(a, e, { zuege: sel.length, stoffe: [...stoffe] }));
                 }
+                ausschnitteFort();
                 // Die Selbst-Eichung der Tafel: die 18-%-Karte liest 0,180 (sonst ist kein Wert der Tafel eine Albedo).
                 cam.position.copy(karte.position).add(new T.Vector3(0, 0, 2.2));
                 cam.lookAt(karte.position);
@@ -521,6 +602,7 @@ function albedoSicht(opts) {
                 }
             }
         } finally {
+            ausschnitteFort();
             if (maskeAlt != null) lu.uLodMaskOn.value = maskeAlt;
             for (const [a, v] of ahnenAlt) a.visible = v;
             for (const [mt, v] of metallAlt) mt.metalness = v;

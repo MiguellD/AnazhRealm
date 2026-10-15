@@ -68,13 +68,41 @@ function nahDeckungInSeite(o) {
     };
     const archNachMesh = new Map();
     for (const e of st.architectures || []) if (e && e.mesh) archNachMesh.set(e.mesh, e);
+    const eintragNachId = new Map();
+    for (const e of st.architectures || []) if (e && e.id != null) eintragNachId.set(e.id, e);
     const eintragVon = (obj, inst) => {
+        // der Pool der Fundamente (`st.archFundament`, EIN Mesh für jedes Bauwerk, `idAt[slot]` = die id des Eintrags;
+        // gemessen 15.10.: der Fuß des griechischen Hauses „verdeckt von bau-fundament" — sein eigener Sockel)
+        const fu = st.archFundament;
+        if (fu && obj === fu.mesh) return eintragNachId.get(fu.idAt[inst]) || null;
         if (obj.isInstancedMesh && obj.userData && obj.userData.archInstanceKey && st.archInstanceGroups) {
             const g = st.archInstanceGroups.get(obj.userData.archInstanceKey);
             return g && g.slotEntry ? g.slotEntry[inst] || null : null;
         }
         for (let p = obj; p; p = p.parent) if (archNachMesh.has(p)) return archNachMesh.get(p);
         return null;
+    };
+    // DAS ZIEL IM SATZ (K63-n6; gemessen 15.10., Radeon: das römische Haus im Dorf „verdeckt von bauSatz in 14,49 m", Ziel
+    // 16,45 m — die eigene Front): der Bau-Satz zeichnet die Instanzen vieler Gruppen in EINEM Mesh (`_bauSatzBlock`: je
+    // lebende Instanz ihre n Ecken in Welt-Lage ab dem Bereichs-Anfang `vStart`), ein Dreieck dort gehört `slotEntry[i]` seiner
+    // Gruppe. Je Satz-Mesh die Ecken-Läufe der Einträge in `o.ohne` — sie decken nie und verdecken nie, wie jedes andere Ziel.
+    const ohneSatz = new Map();
+    if (OHNE.size && st.chunkSaetze && st.archInstanceGroups)
+        for (const [key, g] of st.archInstanceGroups) {
+            const s = g && g.satz && g.slotEntry ? st.chunkSaetze.get(g.satz) : null;
+            const b = s && s.mesh ? s.bloecke.get(key) : null;
+            const n = b && g.geom && g.geom.attributes.position ? g.geom.attributes.position.count : 0;
+            if (!n) continue;
+            const laeufe = ohneSatz.get(s.mesh) || [];
+            for (let i = 0; i < Math.floor(b.vAnzahl / n); i++) {
+                const e = g.slotEntry[i];
+                if (e && OHNE.has(e.id)) laeufe.push(b.vStart + i * n, b.vStart + (i + 1) * n);
+            }
+            if (laeufe.length) ohneSatz.set(s.mesh, laeufe);
+        }
+    const imLauf = (l, v) => {
+        for (let k = 0; k < l.length; k += 2) if (v >= l[k] && v < l[k + 1]) return true;
+        return false;
     };
     const natur = (e) => !!e && typeof r._istNatur === "function" && r._istNatur(e);
     const artVonStoff = (mat) => {
@@ -90,6 +118,9 @@ function nahDeckungInSeite(o) {
         if (nm === "bodenSatz") return { klasse: "Gelände", name: "Gelände" };
         if (nm === "bauSatz") return { klasse: "Bau", name: "bauSatz" };
         if (nm === "formationenSatz") return { klasse: "Fels", name: "Formation" };
+        // die Halm-Senken der Nah-Wiese (`nahWiese:L<stufe>:…`, `_nahWieseSenken`) sind die Boden-Schicht wie die wiegende Streu
+        // (gemessen 15.10.: als „Bau" deckten sie 15,3 % des Vordergrunds vor dem Haus im Dorf)
+        if (nm.startsWith("nahWiese:L")) return { klasse: "Streu", name: nm };
         const art = artVonStoff(mat);
         if (nm === "streuSatz") {
             // die wiegende Nah-Streu (Blume, Farn, Gestrüpp, Schilf) ist die Boden-Schicht
@@ -164,6 +195,7 @@ function nahDeckungInSeite(o) {
                 : [{ start: dr0, count: dr1 - dr0, materialIndex: 0 }];
         const e = eintragVon(obj, inst);
         if (e && OHNE.has(e.id)) return; // das Ziel selbst (o.ohne) deckt nie und verdeckt nie
+        const ohneL = ohneSatz.get(obj) || null; // ... auch als Bereich im Satz (`ohneSatz`)
         for (const gr of gruppen) {
             const mat = mats[gr.materialIndex] || mats[0];
             if (!mat || mat.visible === false) continue;
@@ -177,6 +209,7 @@ function nahDeckungInSeite(o) {
                 const i0 = idx ? idx[t] : t;
                 const i1 = idx ? idx[t + 1] : t + 1;
                 const i2 = idx ? idx[t + 2] : t + 2;
+                if (ohneL && imLauf(ohneL, i0)) continue;
                 va.fromBufferAttribute(pos, i0).applyMatrix4(m4);
                 vb.fromBufferAttribute(pos, i1).applyMatrix4(m4);
                 vc.fromBufferAttribute(pos, i2).applyMatrix4(m4);
