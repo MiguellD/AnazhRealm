@@ -13,14 +13,14 @@
     },
     "gemessen": {
         "labor": {
-            "datum": "2026-10-15T07:11:14.827Z",
+            "datum": "2026-10-15T09:18:23.683Z",
             "geraet": "ANGLE (AMD, AMD Radeon(TM) 890M Graphics (0x0000150E) Direct3D11 vs_5_0 ps_5_0, D3D11)",
             "echt": false,
             "version": "18.546.2",
-            "sha": "434dfd165eb95bbeb3e8a84bbf446b43d50567b8",
+            "sha": "cd945ba093d8a25047fd2fd20effa1f132babbf5",
             "quellen": {
                 "phyto-core.js": "c:db35ea5544d7453c",
-                "foundry-core.js": "c:d0299e324ccd4b59",
+                "foundry-core.js": "c:bcaa4b02d2a0a1ce",
                 "vehicle-core.js": "c:97f0f918c22eb27c",
                 "porta-core.js": "c:986b5e22a9e7eaa5",
                 "schmiede-core.js": "c:b94f4dfa0ae2c2fd",
@@ -46,7 +46,7 @@
                 "stamm/10.js": "c:60d0e92e3969e187",
                 "stamm/11a.js": "c:07de57204b2e88b6",
                 "stamm/11b.js": "c:2b2b48ade183e63b",
-                "stamm/11c.js": "c:4dc86f1dfc695f90",
+                "stamm/11c.js": "c:518597d3391b9a29",
                 "stamm/11d.js": "c:91d2d36882b23e75",
                 "stamm/12.js": "c:0cea101e763e37aa",
                 "stamm/13a.js": "c:52b65195966734b3",
@@ -59,7 +59,7 @@
                 "stamm/16.js": "c:01e3f0cd78cbfa15",
                 "stamm/17a.js": "c:11288a3e76c70a68",
                 "stamm/17b.js": "c:074908c78ad2216f",
-                "stamm/17c.js": "c:8affaee4c6b7bb48",
+                "stamm/17c.js": "c:23bf514b3055a23e",
                 "stamm/18.js": "c:b33a1bf3bfc74ef5",
                 "stamm/19.js": "c:b1a053cba1f64cd1",
                 "stamm/20a.js": "c:5dce1435508f95e3",
@@ -75,12 +75,12 @@
                 "stamm/25b.js": "c:8771e70f17987b2b",
                 "stamm/25c.js": "c:443fb93eb5cee16c",
                 "stamm/26a.js": "c:e45314b7ac61774c",
-                "stamm/26b.js": "c:9205503806767ac7",
+                "stamm/26b.js": "c:dfab70e9d26443a4",
                 "stamm/26c.js": "c:7788e9924f8f7801"
             }
         },
         "welt": {
-            "datum": "2026-10-15T07:10:27.749Z",
+            "datum": "2026-10-15T09:17:30.696Z",
             "geraet": "amd rdna-3",
             "ort": "genesis",
             "spieler": [
@@ -89,10 +89,10 @@
             ],
             "echt": false,
             "version": "18.546.2",
-            "sha": "434dfd165eb95bbeb3e8a84bbf446b43d50567b8",
+            "sha": "cd945ba093d8a25047fd2fd20effa1f132babbf5",
             "quellen": {
                 "phyto-core.js": "c:db35ea5544d7453c",
-                "foundry-core.js": "c:d0299e324ccd4b59",
+                "foundry-core.js": "c:bcaa4b02d2a0a1ce",
                 "vehicle-core.js": "c:97f0f918c22eb27c",
                 "porta-core.js": "c:986b5e22a9e7eaa5",
                 "schmiede-core.js": "c:b94f4dfa0ae2c2fd",
@@ -118,7 +118,7 @@
                 "stamm/10.js": "c:60d0e92e3969e187",
                 "stamm/11a.js": "c:07de57204b2e88b6",
                 "stamm/11b.js": "c:2b2b48ade183e63b",
-                "stamm/11c.js": "c:4dc86f1dfc695f90",
+                "stamm/11c.js": "c:518597d3391b9a29",
                 "stamm/11d.js": "c:91d2d36882b23e75",
                 "stamm/12.js": "c:0cea101e763e37aa",
                 "stamm/13a.js": "c:52b65195966734b3",
@@ -131,7 +131,7 @@
                 "stamm/16.js": "c:01e3f0cd78cbfa15",
                 "stamm/17a.js": "c:11288a3e76c70a68",
                 "stamm/17b.js": "c:074908c78ad2216f",
-                "stamm/17c.js": "c:8affaee4c6b7bb48",
+                "stamm/17c.js": "c:23bf514b3055a23e",
                 "stamm/18.js": "c:b33a1bf3bfc74ef5",
                 "stamm/19.js": "c:b1a053cba1f64cd1",
                 "stamm/20a.js": "c:5dce1435508f95e3",
@@ -147,7 +147,7 @@
                 "stamm/25b.js": "c:8771e70f17987b2b",
                 "stamm/25c.js": "c:443fb93eb5cee16c",
                 "stamm/26a.js": "c:e45314b7ac61774c",
-                "stamm/26b.js": "c:9205503806767ac7",
+                "stamm/26b.js": "c:dfab70e9d26443a4",
                 "stamm/26c.js": "c:7788e9924f8f7801"
             }
         }
@@ -196,12 +196,12 @@
                 "labor": {
                     "Y": 0.0948,
                     "rgb": "0.1127/0.0924/0.0662",
-                    "pixel": 15789
+                    "pixel": 15782
                 },
                 "welt": {
                     "Y": 0.093,
-                    "rgb": "0.1107/0.0906/0.0649",
-                    "pixel": 6119,
+                    "rgb": "0.1107/0.0905/0.0649",
+                    "pixel": 6118,
                     "stufen": [
                         0,
                         1
@@ -255,12 +255,12 @@
                 "labor": {
                     "Y": 0.1796,
                     "rgb": "0.1276/0.2087/0.0447",
-                    "pixel": 143085
+                    "pixel": 143108
                 },
                 "welt": {
                     "Y": 0.1639,
-                    "rgb": "0.0867/0.1991/0.0428",
-                    "pixel": 57270,
+                    "rgb": "0.0867/0.199/0.0428",
+                    "pixel": 57273,
                     "stufen": [
                         0,
                         1
@@ -425,7 +425,7 @@
                 "welt": {
                     "Y": 0.159,
                     "rgb": "0.2773/0.1312/0.0868",
-                    "pixel": 168325,
+                    "pixel": 168326,
                     "stufen": [
                         1
                     ]
@@ -580,13 +580,13 @@
             "ist": {
                 "labor": {
                     "Y": 0.0608,
-                    "rgb": "0.1218/0.0463/0.025",
-                    "pixel": 74321
+                    "rgb": "0.1217/0.0463/0.025",
+                    "pixel": 74182
                 },
                 "welt": {
                     "Y": 0.1554,
-                    "rgb": "0.2184/0.1409/0.114",
-                    "pixel": 36013,
+                    "rgb": "0.2183/0.1408/0.114",
+                    "pixel": 36009,
                     "stufen": []
                 },
                 "verhaeltnis": 0.3912
@@ -628,17 +628,17 @@
             ],
             "ist": {
                 "labor": {
-                    "Y": 0.1689,
-                    "rgb": "0.2059/0.1636/0.1123",
-                    "pixel": 152875
+                    "Y": 0.1688,
+                    "rgb": "0.2059/0.1635/0.1123",
+                    "pixel": 152863
                 },
                 "welt": {
-                    "Y": 0.1772,
-                    "rgb": "0.2173/0.1714/0.1165",
-                    "pixel": 44974,
+                    "Y": 0.1776,
+                    "rgb": "0.2174/0.1719/0.1173",
+                    "pixel": 45182,
                     "stufen": []
                 },
-                "verhaeltnis": 0.9532
+                "verhaeltnis": 0.9505
             },
             "ratsche": 0.0479
         },
@@ -696,9 +696,9 @@
             "ist": {
                 "kL": 0.7482,
                 "ausgabe": [
-                    185,
-                    192,
-                    183
+                    187,
+                    194,
+                    185
                 ]
             },
             "ratsche": 0.866
@@ -716,11 +716,11 @@
         },
         "portale": {
             "ist": {
-                "kL": 0.8026,
+                "kL": 0.8023,
                 "ausgabe": [
                     194,
-                    204,
-                    199
+                    205,
+                    200
                 ]
             },
             "ratsche": 0.9345
@@ -729,23 +729,23 @@
             "ist": {
                 "kL": 0.6427,
                 "ausgabe": [
-                    176,
-                    164,
-                    152
+                    172,
+                    160,
+                    148
                 ]
             },
             "ratsche": 0.7141
         },
         "fachwerk": {
             "ist": {
-                "kL": 0.4809,
+                "kL": 0.4801,
                 "ausgabe": [
                     197,
                     194,
                     192
                 ]
             },
-            "ratsche": 0.4226
+            "ratsche": 0.4224
         },
         "koerperstudio": {
             "ist": {
@@ -762,9 +762,9 @@
             "ist": {
                 "kL": 0.8802,
                 "ausgabe": [
-                    255,
-                    255,
-                    255
+                    252,
+                    252,
+                    252
                 ]
             },
             "ratsche": 1.0285
