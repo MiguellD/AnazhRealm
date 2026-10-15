@@ -370,6 +370,43 @@ async function probe(page, welt, mitAbdruck) {
                 out.erbgut = { terme: E.terme.map((t) => t.art), wildnis: E.wildnis, hash: E.hash };
                 out.hoehen = orte.map((o) => ({ id: o.id, y: +r._terrainMacroSurfaceY(o.x, o.z).toFixed(3) }));
             }
+            // DIE HÖHEN DER FERNE (K60): steht der Voxel-Faden, rechnet ER die Punkte von Fern-Ring und Feld-Pass
+            // (`_feldZeichnerHoehen` → `_voxelWorkerHoehen`); ohne Faden rechnen die Scheiben des Main. Beide Wege derselben
+            // Methode, dieselben Punkte (48 × 48 über ±4 km um den Spieler), Makro und Detail, Höhe und Schutt: Wort für Wort
+            // gleich (Float32-Bitmuster). Bis K60-N1 belegte das nur eine Sonde.
+            if (typeof r._feldZeichnerHoehen === "function" && r._getVoxelWorker()) {
+                const N = 48;
+                const pts = new Float32Array(N * N * 2);
+                const pm = s.playerMesh ? s.playerMesh.position : { x: 0, z: 0 };
+                for (let i = 0; i < N; i++)
+                    for (let j = 0; j < N; j++) {
+                        pts[(i * N + j) * 2] = pm.x + (i - N / 2) * 173.3;
+                        pts[(i * N + j) * 2 + 1] = pm.z + (j - N / 2) * 167.9;
+                    }
+                const lauf = async (imMain, detail) => {
+                    const g = r._getVoxelWorker;
+                    if (imMain) r._getVoxelWorker = () => null;
+                    try {
+                        const sch = new Float32Array(N * N);
+                        const w = await r._feldZeichnerHoehen(pts, detail, sch);
+                        return { w: new Uint32Array(Float32Array.from(w).buffer), sch: new Uint32Array(sch.buffer) };
+                    } finally {
+                        if (imMain) r._getVoxelWorker = g;
+                    }
+                };
+                const fe = (out.ferne = { n: 0, abweichend: 0, erste: null });
+                for (const detail of [false, true]) {
+                    const a = await lauf(true, detail);
+                    const b = await lauf(false, detail);
+                    for (let k = 0; k < N * N; k++) {
+                        fe.n++;
+                        if (a.w[k] !== b.w[k] || a.sch[k] !== b.sch[k]) {
+                            fe.abweichend++;
+                            if (!fe.erste) fe.erste = { detail, x: pts[k * 2], z: pts[k * 2 + 1] };
+                        }
+                    }
+                }
+            }
             return out;
         },
         welt,
@@ -1506,10 +1543,18 @@ async function gebaut(page, fehler) {
             if (rep.befunde.length) rot = true;
         }
         berichte.push(rep);
+        const fe = rep.ferne;
+        console.log(
+            fe
+                ? `    Höhen der Ferne (Main-Scheiben = Voxel-Faden): ${fe.n} Punkte · abweichend ${fe.abweichend}` +
+                      (fe.erste ? ` — erste bei (${Math.round(fe.erste.x)}|${Math.round(fe.erste.z)}) Detail ${fe.erste.detail}` : "")
+                : "    Höhen der Ferne: kein Voxel-Faden — keine Probe"
+        );
+        if (!fe || fe.abweichend > 0) rot = true;
         if (rep.abweichend > 0 || rep.befunde.length) rot = true;
         if (SELBSTTEST && welt === "standard") {
             const v = await probeVerfaelscht(page);
-            selbst = { abweichend: v.abweichend, maxDiff: v.maxDiff, gitter: v.gitter };
+            selbst = { abweichend: v.abweichend, maxDiff: v.maxDiff, gitter: v.gitter, ferne: v.ferne ? v.ferne.abweichend : 0 };
             console.log(
                 `\n  SELBSTTEST (Basis-Höhe + 1 cm nur im Worker): ${v.abweichend} abweichende Ecken in ${v.gitter} Gittern, maxDiff ${v.maxDiff}`
             );
@@ -1550,7 +1595,9 @@ async function gebaut(page, fehler) {
     if (pageErr) rot = true;
     let pass;
     if (SELBSTTEST) {
-        pass = !rot && selbst && selbst.abweichend > 0;
+        // die Höhen der Ferne (K60) fallen mit demselben verfälschten Worker-Term rot
+        pass = !rot && selbst && selbst.abweichend > 0 && selbst.ferne > 0;
+        console.log(`  SELBSTTEST Höhen der Ferne: ${selbst ? selbst.ferne : "?"} abweichende Punkte (Soll > 0)`);
         console.log(
             `\n${pass ? "✅" : "⛔"} SELBSTTEST ${pass ? "GRÜN: der saubere Spiegel ist byte-gleich, der verfälschte Worker-Term fällt rot" : "ROT: " + (rot ? "der saubere Lauf ist schon rot" : "die Verfälschung blieb unentdeckt (die Linse ist blind)")}\n`
         );
