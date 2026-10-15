@@ -1313,7 +1313,9 @@
     // allein (die letzte gewinnt, wo sie sich decken): keine Böschung eines Nachbarn schneidet in einen Grundriss.
     // Der Rahmen einer Platte ist der des Hauses (welt = mitte + (lx·c + lz·s, −lx·s + lz·c)). Ohne Erdbau kostet der Term
     // eine Feld-Probe (`L.erdbau`), die Welt bleibt byte-gleich. Leser: `hoehe` (Stamm, voxel-worker, Foundry-Worker).
-    const ERDBAU = Object.freeze({ boeschung: 0.6, reichweiteM: 16, zelleM: 16 });
+    // `wandM` (K66): das Band der Wand — ein Punkt binnen wandM / 2 über einer Fläche liegt auf ihr (das Netz trägt die Feinform
+    // ±0,2 m, Lehre 22), die Natur mehr als 2 · wandM (entlang der Normale) innen im Kegel der Böschung bleibt Natur (`erdbauWand`)
+    const ERDBAU = Object.freeze({ boeschung: 0.6, reichweiteM: 16, zelleM: 16, wandM: 0.5 });
     const ERDBAU_ZAHL = ["cx", "cz", "phi", "ex", "ez", "y"];
     const TRASSE_ZAHL = ["x0", "z0", "y0", "x1", "z1", "y1", "w"];
     // FREI {cx, cz, phi, ex, ez} (das Brücken-Etikett des Plans v2): in seinem Rechteck gilt der Grund allein — keine Fläche,
@@ -1447,6 +1449,64 @@
         const y = erdbauY(E, x, z, NaN);
         return y === y ? y : null;
     }
+    // DIE WAND DES ERDBAUS (K66, Augen-Runde 15.10.: die Stufen des Dorfs trugen den Wiesen-Stoff als Flecken auf steilen
+    // Flächen): das Gewicht 0 … 1, mit dem der Punkt (x, y, z) eines Boden-Netzes der Lage L (ny das y seiner Normale) an der
+    // Wand des Erdbaus liegt — auf dem Kegel einer Böschung, an der Kante zwischen zwei Flächen oder am Absatz, wo der Kegel
+    // an der Reichweite endet. Wer binnen `wandM` / 2 auf der Fläche liegt, die an (x, z) gilt (`erdbauY`: die letzte gewinnt),
+    // oder unter einer Brücke (frei), trägt 0. Sonst je Splat in Reichweite (d der Abstand zu seiner Fläche, yS ihre Höhe), über
+    // oder unter dessen Fläche der Punkt um mehr als `wandM` / 2 steht: sein Abstand zum Kegel d · boeschung, entlang der Normale
+    // gemessen (e · ny, e = |y − yS| − d · boeschung — das Netz legt den Vertex einer steilen Flanke senkrecht weit neben die Höhe
+    // an (x, z)), voll ab −`wandM`, 0 ab −2 `wandM`; das größte zählt. Bleibt es unter 1, entscheidet der Grund: hebt oder senkt
+    // der Erdbau ihn an (x, z) um mehr als `wandM` / 2 (`hoeheGrund` gegen `erdbauY`), ist der Punkt Wand. Leser: der Fels-Stoff
+    // (`felsStoff`: der Schutt des Erdbaus auf dem steilen Vertex).
+    function erdbauWand(L, x, y, z, ny) {
+        const E = L.erdbau;
+        const Z = ERDBAU.zelleM;
+        const liste = E.zellen.get((Math.floor(x / Z) + 32768) * 65536 + (Math.floor(z / Z) + 32768));
+        if (!liste) return 0;
+        const T = ERDBAU.wandM;
+        const f = erdbauY(E, x, z, NaN);
+        if (f === f && Math.abs(y - f) <= T / 2) return 0;
+        const R = ERDBAU.reichweiteM;
+        const B = ERDBAU.boeschung;
+        let w = 0;
+        for (let k = 0; k < liste.length; k++) {
+            const p = E.splats[liste[k]];
+            let d;
+            let yS;
+            if (p.frei) {
+                const dx = x - p.cx;
+                const dz = z - p.cz;
+                if (Math.abs(dx * p.c - dz * p.s) <= p.ex && Math.abs(dx * p.s + dz * p.c) <= p.ez) return 0;
+                continue;
+            }
+            if (p.platte) {
+                const dx = x - p.cx;
+                const dz = z - p.cz;
+                const u = Math.abs(dx * p.c - dz * p.s) - p.ex;
+                const v = Math.abs(dx * p.s + dz * p.c) - p.ez;
+                d = u > 0 ? (v > 0 ? Math.hypot(u, v) : u) : v > 0 ? v : 0;
+                yS = p.y;
+            } else {
+                let q = p.len2 > 0 ? ((x - p.x0) * p.dx + (z - p.z0) * p.dz) / p.len2 : 0;
+                if (q < 0) q = 0;
+                else if (q > 1) q = 1;
+                d = Math.hypot(x - (p.x0 + p.dx * q), z - (p.z0 + p.dz * q)) - p.hw;
+                if (d < 0) d = 0;
+                yS = p.y0 + p.dy * q;
+            }
+            if (d > R) continue;
+            const dy = Math.abs(y - yS);
+            if (dy <= T / 2) continue;
+            const g = ((dy - d * B) * ny) / T + 2;
+            if (g > w) w = g >= 1 ? 1 : g;
+        }
+        if (w < 1) {
+            const h = hoeheGrund(L, x, z, true);
+            if (Math.abs(erdbauY(E, x, z, h) - h) > T / 2) w = 1;
+        }
+        return w;
+    }
 
     // DER ORT LIEST DAS GELÄNDE (K10): die Lese-Funktionen, die der Plan v2 (fachwerk `ortPlan`) an der Lage L erhält — die
     // Höhe samt dem Erdbau früherer Orte (`hoehe`) und die Fläche seiner eigenen Splats (`erdbauFlaeche`). EIN ctx für den
@@ -1512,6 +1572,19 @@
     // ihn (0: kein Hang-Urteil, wo Insel, Rampe oder Bucht formen), ebenso den Schutt des Schicht-Gesetzes (`aus.schutt`
     // 0..1: der Schutthang der Treppe × Stil, `treppeSchutt` — der Leser ist der Fels-Stoff des Bodens, K17).
     function hoehe(L, x, z, mitDetail = true, aus) {
+        let h = hoeheGrund(L, x, z, mitDetail, aus);
+        // der Erdbau der Orte (K10) liegt als letzter Term auf allem: der Ort vor dem Hang
+        const E = L.erdbau;
+        if (E) {
+            const h2 = erdbauY(E, x, z, h);
+            if (aus && h2 !== h) aus.hang = 0;
+            h = h2;
+        }
+        return h;
+    }
+    // DIE HÖHE UNTER DEM ERDBAU (K66): die Terme des Erbguts allein — `hoehe` legt den Erdbau als letzten Term darauf. Leser:
+    // `hoehe`, die Wand des Erdbaus (`erdbauWand`: was der Erdbau bewegt).
+    function hoeheGrund(L, x, z, mitDetail, aus) {
         const T = L.erbgut.terme;
         const t0 = T[0];
         if (aus) aus.hang = aus.schutt = 0;
@@ -1519,13 +1592,6 @@
         for (let i = 1; i < T.length; i++) {
             const h2 = termY(T[i], h, x, z, L);
             if (aus && h2 !== h) aus.hang = aus.schutt = 0;
-            h = h2;
-        }
-        // der Erdbau der Orte (K10) liegt als letzter Term auf allem: der Ort vor dem Hang
-        const E = L.erdbau;
-        if (E) {
-            const h2 = erdbauY(E, x, z, h);
-            if (aus && h2 !== h) aus.hang = 0;
             h = h2;
         }
         return h;
@@ -3077,6 +3143,16 @@
                     SW[i] = a + (b - a) * fv;
                 }
         }
+        // DIE WAND DES ERDBAUS (K66): der Vertex unter dem Himmel, steiler als `schuttKandidat`, trägt an der Wand des Erdbaus
+        // (`erdbauWand`: Böschung, Kante zwischen zwei Flächen, Absatz an der Reichweite) den Schutt — die Stufe des Dorfs liest
+        // sich als Stein, nie als Wiese; Fläche, Weg und die unbewegte Natur bleiben, wie sie sind. Ohne Erdbau ruht der Term
+        // (byte-gleich).
+        if (L.erdbau)
+            for (let i = 0; i < n; i++) {
+                if (1 - N[3 * i + 1] < o.schuttKandidat || (H && H[i] < 1)) continue;
+                const ew = erdbauWand(L, P[3 * i], P[3 * i + 1], P[3 * i + 2], N[3 * i + 1]);
+                if (ew > SW[i]) SW[i] = ew;
+            }
         const W = new Float32Array(n);
         const KM = new Uint8Array(n);
         let jeder = 0;
@@ -3379,6 +3455,7 @@
         erdbauNormal: erdbauNormal,
         erdbauY: erdbauY,
         erdbauFlaeche: erdbauFlaeche,
+        erdbauWand: erdbauWand,
         ortCtx: ortCtx,
         LAGE_GRUND: LAGE_GRUND,
         lageGrund: lageGrund,

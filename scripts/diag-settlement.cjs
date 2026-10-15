@@ -272,7 +272,9 @@ function ortVerdikt(m) {
         );
     if (!(m.vorplatzN > 0 && m.vorplatzOk === m.vorplatzN))
         fehl.push(`Stufe vor der Tür auf dem Weg ${m.vorplatzOk}/${m.vorplatzN}`);
-    if (!(m.terrasseWiese === 0)) fehl.push(`Wand der Terrasse mit Wiesen-Stoff ${m.terrasseWiese}/${m.terrasseWand}`);
+    // eine Wand ohne Vertex ist keine Messung (der Ort am Hang trägt Böschungen): ROT wie eine Wand im Wiesen-Stoff
+    if (!(m.terrasseWand > 0 && m.terrasseWiese === 0))
+        fehl.push(`Wand der Terrasse mit Wiesen-Stoff ${m.terrasseWiese}/${m.terrasseWand}`);
     if (!(m.fremdBauten === 0)) fehl.push(`fremde Bauten im Erdbau ${m.fremdBauten}`);
     // endet die Kette vor 8 s (der Wagen fuhr den Dorfweg zu Ende), zählt das Tempo bis zum Ende über 8 s: der Weg ist kürzer
     // als das Soll, nie der Wagen langsamer
@@ -922,7 +924,11 @@ const FIXTURES = [
                 /GT auf dem Dorfweg 5.2 m/.test(vs) &&
                 /Häuser 12\/16 des Exports \(4 Slots im Wasser/.test(vs) &&
                 /Laterne 1.45 m vor einer Hauswand/.test(vs) &&
-                /Stufe vor der Tür auf dem Weg 0\/16/.test(vs),
+                /Stufe vor der Tür auf dem Weg 0\/16/.test(vs) &&
+                /Wand der Terrasse mit Wiesen-Stoff 87\/120/.test(vs) &&
+                /Wand der Terrasse mit Wiesen-Stoff 0\/0/.test(
+                    ortVerdikt(Object.assign({}, gut, { terrasseWand: 0 })).join(" · ")
+                ),
             vs
         );
         check(
@@ -1884,31 +1890,60 @@ const FIXTURES = [
                             else vpFehl.push(si);
                         });
                     // DIE WAND DER TERRASSE (K66, Augen-Runde 15.10.: die Erdbau-Stufen trugen den Wiesen-Stoff als Flecken auf
-                    // senkrechten Flächen): jede Fläche, die der Erdbau des Orts um > 0,25 m hebt oder senkt und steiler als der
-                    // Schutt-Kandidat (23°) formt (Raster 1 m um den Ort), trägt den Stoff des Erdbaus — das Boden-Gesetz
-                    // (`hoehe(…, aus).schutt`, der Leser ist der Fels-Stoff des Chunks im Worker); gezählt: die Punkte mit Wiese
+                    // steilen Flächen), gezählt am Netz, das der Spieler sieht: der voxel-worker baut die Chunks um den Ort (± 60 m,
+                    // Stufe 0, `_voxelWorkerComputeChunkMesh` — derselbe Bau wie das Streaming); Wand ist jeder Vertex unter dem
+                    // Himmel, steiler als der Schutt-Kandidat (23°), den der Erdbau um > 0,25 m hebt oder senkt und der auf keiner
+                    // Fläche des Erdbaus liegt (`erdbauFlaeche`); Wiese ist er, wo sein Fels-Stoff (die Steile über rockLo … rockHi
+                    // plus der Schutt im Vertex, gelaende-core `felsStoff`) unter 0,5 bleibt
                     if (P.ort) {
                         const GC = globalThis.__gelaendeCore;
+                        const GG = r.constructor.TERRAIN_GEOLOGY;
                         const Lg = r._gelaende();
                         const Lo = Object.assign({}, Lg, { erdbau: null });
-                        const ausT = {};
+                        const span = r._voxelChunkConfig(0).span;
                         let wand = 0;
                         let wiese = 0;
-                        for (let i = -60; i <= 60; i++)
-                            for (let j = -60; j <= 60; j++) {
-                                const x = P.ort.x + i;
-                                const z = P.ort.z + j;
-                                const hT = GC.hoehe(Lg, x, z, true, ausT);
-                                const st = ausT.schutt;
-                                if (Math.abs(hT - GC.hoehe(Lo, x, z, true)) <= 0.25) continue;
-                                const gx = GC.hoehe(Lg, x + 0.5, z, true) - GC.hoehe(Lg, x - 0.5, z, true);
-                                const gz = GC.hoehe(Lg, x, z + 0.5, true) - GC.hoehe(Lg, x, z - 0.5, true);
-                                if (Math.hypot(gx, gz) < 0.42) continue;
-                                wand++;
-                                if (!(st >= 0.5)) wiese++;
+                        let chunks = 0;
+                        const fehl = [];
+                        for (let a = Math.floor((P.ort.x - 60) / span); a <= Math.floor((P.ort.x + 60) / span); a++)
+                            for (
+                                let b = Math.floor((P.ort.z - 60) / span);
+                                b <= Math.floor((P.ort.z + 60) / span);
+                                b++
+                            ) {
+                                const w = await r._voxelWorkerComputeChunkMesh(a, b, 0);
+                                if (!w || w.empty) continue;
+                                chunks++;
+                                const pos = w.positions;
+                                const nor = w.normals;
+                                for (let i = 0; i < pos.length / 3; i++) {
+                                    const x = pos[3 * i];
+                                    const y = pos[3 * i + 1];
+                                    const z = pos[3 * i + 2];
+                                    if (Math.abs(x - P.ort.x) > 60 || Math.abs(z - P.ort.z) > 60) continue;
+                                    if (w.himmel[i] < 1) continue;
+                                    const st = 1 - nor[3 * i + 1];
+                                    if (st < GG.schuttKandidat) continue;
+                                    const f = GC.erdbauFlaeche(Lg.erdbau, x, z);
+                                    if (f !== null && Math.abs(y - f) <= 0.25) continue;
+                                    const hub = GC.hoehe(Lg, x, z, true) - GC.hoehe(Lo, x, z, true);
+                                    if (Math.abs(hub) <= 0.25) continue;
+                                    wand++;
+                                    let t = (st - GG.rockLo) / (GG.rockHi - GG.rockLo);
+                                    t = t < 0 ? 0 : t > 1 ? 1 : t;
+                                    if (t * t * (3 - 2 * t) + w.schutt[i] < 0.5) {
+                                        wiese++;
+                                        if (fehl.length < 6)
+                                            fehl.push(
+                                                [x, y, z, st, w.schutt[i], hub].map((v) => Math.round(v * 100) / 100)
+                                            );
+                                    }
+                                }
                             }
+                        res.terrasseChunks = chunks;
                         res.terrasseWand = wand;
                         res.terrasseWiese = wiese;
+                        res.terrasseFehl = fehl;
                     }
                     res.vorplatzOk = vpOk;
                     res.vorplatzN = vpN;
@@ -2185,6 +2220,8 @@ const FIXTURES = [
                 )
         );
         if (u.tuerenFehl && u.tuerenFehl.length) console.log("  Türen ohne Gang: " + JSON.stringify(u.tuerenFehl));
+        if (outO.terrasseFehl && outO.terrasseFehl.length)
+            console.log("  Wand im Wiesen-Stoff (x, y, z, Steile, Schutt, Hub): " + JSON.stringify(outO.terrasseFehl));
         if (outO.slotFehl && outO.slotFehl.length) console.log("  Slots ohne Haus: " + JSON.stringify(outO.slotFehl));
         if (outO.ortWahl && outO.ortWahl.length) console.log("  Ort-Wahl: " + outO.ortWahl.join(" | "));
         if (outO.ortMass) console.log("  ORT-WAHL-KOSTEN " + JSON.stringify(outO.ortMass));
