@@ -380,7 +380,7 @@
                 "geheilt": {
                     "befund": "Nadelbaum-Karten groß und kantig",
                     "quelle": "UEBERGABE-2026-10-14.md (Zweig koordination) „DER PLAN ZU AAAA“ Nr. 2",
-                    "warum": "kante 0,334 → 0,211 (Radeon 890M, Tafel-Pose, 1920 × 1080, je zwei Schüsse; Fichte L1 0,267 → 0,178 · Tanne L1 0,299 → 0,161 · Tanne L0 0,567 → 0,263 · Karte L2 0,362 → 0,323): die Wedel-Zelle ist ein Fichten-Zweig aus Büscheln mit Himmel dazwischen bis Mip 3 (Füllung 0,3603 → 0,2713), die Karte wird nie quer gestreckt (Spalten ab wedel.spalte 1,25/1,5 × Stück-Länge; vorher L0 2,3–6,5 × so breit wie lang) und das Kreuz öffnet auf ±40° (vorher ±10°/±5°: von unten standen die Karten auf der Kante)",
+                    "warum": "kante 0,333 → 0,210 (Radeon 890M, Tafel-Pose, umstellen · fenster 1920 × 1080 · bild --w/--h, je zwei Schüsse, Basis a9e21f17 und Kopf a501cbd1 in derselben Folge; Fichte L1 0,262 → 0,186 · Tanne L0 0,581 → 0,190 · Tanne L1 0,300 → 0,172 · Karte L2 0,364 → 0,338): die Wedel-Zelle ist ein Fichten-Zweig aus Fischgräten (9 Unter-Zweiglein, Nadel 9 px) mit Himmel dazwischen bis Mip 2, die Karte wird nie quer gestreckt (Spalten ab wedel.spalte 1,25/1,5 × Stück-Länge; vorher L0 2,3–6,5 × so breit wie lang) und das Kreuz öffnet auf ±40° (vorher ±10°/±5°: von unten standen die Karten auf der Kante)",
                     "bildPaar": [
                         "artifacts/soll-tafel/laub-kante-vorher.png",
                         "artifacts/soll-tafel/laub-kante.png"
@@ -418,10 +418,10 @@
                 "werkzeug": "werkbank bild -284 +1.7 -1042 -269 34 -1036 --ziel tanne --klasse '^(f:(tanne|fichte|eiche|birke|buche|kiefer|weide|strauch|mammut)[a-z_]*:L[0-2]|fimp:[a-z_]+:L[0-2]|kronendach)$' --ist laub-kante",
                 "messung": {
                     "werkzeug": "bild",
-                    "datum": "2026-10-15T21:20:31.757Z",
+                    "datum": "2026-10-15T23:28:05.677Z",
                     "stand": {
                         "version": "18.546.2",
-                        "sha": "11f24e34dbbc9a549319646dfe92c1e0220caa03+geaendert"
+                        "sha": "a501cbd1a0bd0d489bbc8749154fbe73a8e8ab45"
                     },
                     "geraet": {
                         "backend": "WebGPU",
@@ -443,19 +443,19 @@
                         "pixel": 0,
                         "max": 0
                     },
-                    "misch": 145813,
+                    "misch": 227821,
                     "klassen": {
-                        "f:fichte:L1": {"objekte":9,"spiegelTreue":0.6176,"sp":[508,0,0,689882.77,689882.77,426078.23],"zweiton":0,"zt":0,"weiss":0.0078,"wt":2117,"wtZiel":null,"bunt":19.75,"pixel":271166,"deckung":0.1308,"deckungUnten":0.0032,"luma":82.59,"kontrast":0.558,"detail":0.1104,"nyquist":0.1335,"ek":753090.4,"eg":4889945.7,"silhouette":122.7685,"kante":0.1734,"kr":24231},
-                        "f:tanne:L0": {"objekte":4,"spiegelTreue":null,"sp":[0,0,0,0,0,0],"zweiton":0.0007,"zt":50,"weiss":0.0988,"wt":7477,"wtZiel":null,"bunt":13.42,"pixel":75713,"deckung":0.0365,"deckungUnten":0,"luma":88.56,"kontrast":0.543,"detail":0.1447,"nyquist":0.1656,"ek":569849.7,"eg":2871567.5,"silhouette":70.1192,"kante":0.2738,"kr":13498},
-                        "f:tanne:L1": {"objekte":9,"spiegelTreue":0.2921,"sp":[524,0,0,501328.71,501328.71,146435.05],"zweiton":0.0002,"zt":49,"weiss":0.004,"wt":1146,"wtZiel":null,"bunt":20.86,"pixel":285271,"deckung":0.1376,"deckungUnten":0.0046,"luma":75.93,"kontrast":0.5527,"detail":0.1033,"nyquist":0.1387,"ek":699561.1,"eg":4342980.9,"silhouette":105.621,"kante":0.1653,"kr":28971},
-                        "fimp:atlas:L2": {"objekte":1,"spiegelTreue":-0.064,"sp":[2901,0,0,5880835.68,5880835.68,-376657.31],"zweiton":0,"zt":0,"weiss":0.0015,"wt":760,"wtZiel":null,"bunt":35.05,"pixel":513623,"deckung":0.2477,"deckungUnten":0.1614,"luma":78.18,"kontrast":0.5936,"detail":0.0955,"nyquist":0.1061,"ek":1150021,"eg":9684387.5,"silhouette":71.8345,"kante":0.3166,"kr":12908}
+                        "f:fichte:L1": {"objekte":9,"spiegelTreue":0.5931,"sp":[784,0,0,999370.04,999370.04,592706.2],"zweiton":0,"zt":0,"weiss":0.0048,"wt":1378,"wtZiel":null,"bunt":19.33,"pixel":288676,"deckung":0.1392,"deckungUnten":0.003,"luma":86.91,"kontrast":0.4954,"detail":0.0775,"nyquist":0.0294,"ek":62701.5,"eg":2068986.3,"silhouette":86.9016,"kante":0.1858,"kr":13254},
+                        "f:tanne:L0": {"objekte":4,"spiegelTreue":null,"sp":[0,0,0,0,0,0],"zweiton":0,"zt":0,"weiss":0.0237,"wt":2125,"wtZiel":null,"bunt":12.28,"pixel":89770,"deckung":0.0433,"deckungUnten":0,"luma":101,"kontrast":0.4421,"detail":0.0957,"nyquist":0.0333,"ek":39827.8,"eg":1156427.5,"silhouette":50.3544,"kante":0.1903,"kr":8854},
+                        "f:tanne:L1": {"objekte":9,"spiegelTreue":0.0196,"sp":[752,0,0,453267.02,453267.02,8903.29],"zweiton":0,"zt":0,"weiss":0.0039,"wt":1238,"wtZiel":null,"bunt":19.96,"pixel":315006,"deckung":0.1519,"deckungUnten":0.0045,"luma":79.54,"kontrast":0.4918,"detail":0.0866,"nyquist":0.0309,"ek":77187.7,"eg":2420167.7,"silhouette":75.6128,"kante":0.1723,"kr":18803},
+                        "fimp:atlas:L2": {"objekte":1,"spiegelTreue":0.0077,"sp":[3513,0,0,4281422.16,4281422.16,33044.65],"zweiton":0,"zt":0,"weiss":0.0023,"wt":1222,"wtZiel":null,"bunt":34.96,"pixel":520333,"deckung":0.2509,"deckungUnten":0.1635,"luma":77.69,"kontrast":0.5611,"detail":0.0707,"nyquist":0.0206,"ek":78781.9,"eg":3752258.5,"silhouette":51.2074,"kante":0.3375,"kr":9240}
                     },
                     "abstand": null,
                     "gesicht": null,
                     "bild": "artifacts/soll-tafel/laub-kante.png",
                     "quellen": {
-                        "phyto-core.js": "c:e67f032245073bec",
-                        "foundry-core.js": "c:c62ccfdb3b4bf1c8",
+                        "phyto-core.js": "c:3f23e6662a56359d",
+                        "foundry-core.js": "c:1196859e3b932ea9",
                         "stamm/07.js": "c:0012a2d3b8c793b7",
                         "stamm/10.js": "c:1b961fac64032e22",
                         "stamm/19.js": "c:b1a053cba1f64cd1",

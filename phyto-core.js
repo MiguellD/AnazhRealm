@@ -533,7 +533,8 @@
     // DIE FISCHGRÄTE (L2-n1, 16.10.; Prüfer L2: ab Mip 1 lasen die Büschel als Korallen mit runden Löchern, Tanne L0 0,28):
     // 9 Unter-Zweiglein je Zweiglein mit kurzen Nadeln (9 px, Strich 2,5 px alle 2,5 px) — die Zweiglein tragen Gräten
     // statt dicker Bürsten, die Kante bleibt bis Mip 2 gezackt. Echte GPU, Tafel-Pose, dieselbe Welt (Atlas getauscht):
-    // laub-kante 0,226 → 0,211, Tanne L0 0,284 → 0,217; dickere Nadeln (3 px) 0,27, dünnere und lichtere 0,26.
+    // laub-kante 0,226 → 0,209 (Tanne L0 0,284 → 0,190); dickere Nadeln (3 px) 0,27, dünnere und lichtere 0,26. Der Strom
+    // 0xb0a7 ist der Zweig, der auch die Mip-Deckung der Fichten-Karte hält (0xbeef 0,211, ihre Stufe 5 fiel um 4,2 %).
     const WEDEL_ZWEIG = {
         seiten: 10,
         laenge: 0.95,
