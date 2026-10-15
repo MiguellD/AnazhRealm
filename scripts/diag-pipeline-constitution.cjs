@@ -200,9 +200,7 @@ law(
     true,
     /cfg\.kindStages\[rec\.kind\]/.test(anazhNC) &&
         /_foundryServierStufe\([^)]*\) \{\s*lod = this\._foundryDeclaredStage\(preset, lod\);/.test(anazhNC) &&
-        /_foundryFlattenFor\([^)]*\) \{[\s\S]{0,3000}?lod = this\._foundryServierStufe\(preset, lod\)/.test(
-            anazhNC
-        )
+        /_foundryFlattenFor\([^)]*\) \{[\s\S]{0,3000}?lod = this\._foundryServierStufe\(preset, lod\)/.test(anazhNC)
 );
 // W1 (Paritäts-Vollendung, 08.07.) — DIE EINE STREU-DICHTE-QUELLE: `_effectiveFoliageDensity`
 // ist der Chokepoint (Studio-Regime → 1, sonst Regler); Bau (`_scatterPass`), Buchhaltung
@@ -397,9 +395,7 @@ console.log("\nGesetz N4 — die Instance-Straße (eine Naht · mp führt · Tuf
     law(
         "N4.2: mp FÜHRT — der Wirt liest `budgetRegler(kind, mp)` (phyto-core), dort lesen rough/metal/env das Reply-Material zuerst, kind-Literale nur ohne mp",
         true,
-        /_foundryTreeMaterial\([^)]*\) \{[\s\S]{0,1200}?__phytoCore\.budgetRegler\(kind, mp\)/.test(
-            anazhNC
-        ) &&
+        /_foundryTreeMaterial\([^)]*\) \{[\s\S]{0,1200}?__phytoCore\.budgetRegler\(kind, mp\)/.test(anazhNC) &&
             /rough = R\.r,\s*metal = R\.mt,[\s\S]{0,40}?env = R\.env\b/.test(anazhNC) &&
             !/typeof mp\.(roughness|metalness|envMapIntensity)\b/.test(anazhNC) &&
             /r: mp && typeof mp\.roughness === "number" \? mp\.roughness :/.test(reglerKoerper) &&

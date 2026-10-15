@@ -174,7 +174,14 @@ function parameterAnker(name, src, stammSrc) {
     const acorn = require("acorn");
     let toks;
     try {
-        toks = [...acorn.tokenizer(src, { ecmaVersion: "latest", locations: true, allowHashBang: true, allowReturnOutsideFunction: true })];
+        toks = [
+            ...acorn.tokenizer(src, {
+                ecmaVersion: "latest",
+                locations: true,
+                allowHashBang: true,
+                allowReturnOutsideFunction: true,
+            }),
+        ];
     } catch (e) {
         return [`${name}: nicht lesbar (${e.message}) — die Klinge urteilt über jede Linse`];
     }
@@ -184,11 +191,15 @@ function parameterAnker(name, src, stammSrc) {
         if (t.type.label === "regexp") {
             for (const m of t.value.pattern.matchAll(PARAM_ANKER_RX))
                 if (m[2] !== PARAM_FREI)
-                    errs.push(`${z} nagelt die Parameter-Liste von ${m[1]} fest (/${m[0]}/) — am Namen: ${m[1]}\\(${PARAM_FREI}\\)`);
+                    errs.push(
+                        `${z} nagelt die Parameter-Liste von ${m[1]} fest (/${m[0]}/) — am Namen: ${m[1]}\\(${PARAM_FREI}\\)`
+                    );
         } else if (t.type.label === "string" || t.type.label === "template") {
             const k = KOPF_TEXT_RX.exec(String(t.value));
             if (k && stammLib.kopf(stammSrc, k[1]) >= 0)
-                errs.push(`${z} sucht ${k[1]} an seinem Kopf-Text (${JSON.stringify(String(t.value).trim())}) — am Namen: stammLib.kopf(text, "${k[1]}")`);
+                errs.push(
+                    `${z} sucht ${k[1]} an seinem Kopf-Text (${JSON.stringify(String(t.value).trim())}) — am Namen: stammLib.kopf(text, "${k[1]}")`
+                );
         }
     }
     return errs;

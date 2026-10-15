@@ -133,6 +133,14 @@ function zugVerdict(m) {
             out.push(
                 `zug stufe L2 rahmen: die Box der Karte misst ${s.hoch} m, ihre Höhen-Stufe ${s.soll} m — Täter die Box der Karten-Instanz (Einheits-Quad)`
             );
+    // V-D3 VORRAT (K38-N2): der Vorrat zieht über den EINEN Zug je Körper-Schlüssel — ein Leser, der während des
+    // Vorrats-Flugs denselben Körper braucht, hängt sich an, nie ein zweiter Auftrag (bis 15.10. bestellte
+    // `_foundryPrefetchLibrary` an `_foundryZug` vorbei: der Leser fand keinen Zug und bestellte den Körper ein zweites Mal).
+    const vr = m.vorrat;
+    if (!vr) out.push("zug vorrat: keine Probe (vakuös)");
+    else if (!vr.imFlug) out.push(`zug vorrat: ${vr.key} nicht im Flug des Vorrats (vakuös: ${vr.auftraege} Aufträge, Cache ${vr.imCache}, Phase ${vr.phase})`);
+    else if (vr.auftraege !== 1)
+        out.push(`zug vorrat: ${vr.key} ${vr.auftraege}× bestellt — Täter _foundryPrefetchLibrary bestellt an _foundryZug vorbei`);
     return out;
 }
 // V-D3 RAHMEN (K05, WS-01): die projizierte Box3 jeder Gestalt in [0,5; 0,9] der Bildkante, jede Waffe des Buchs gemessen.
@@ -1173,6 +1181,39 @@ async function probe(arg) {
         } finally {
             bpE._recipeLod = lodAlt;
         }
+        // (d) DER VORRAT (K38-N2): eine Boden-Art (kein Baum, der Vorrat wärmt nur sie) wird geräumt, der Vorrat läuft neu
+        // an; sobald ihr Körper im Flug ist, fragt ein Leser denselben Schlüssel — gezählt wird jeder Auftrag an den Worker.
+        const bodenArt = (r._foundryLibrarySpec().species || []).find(
+            (sp) => !r._foundryPresetIsTree(sp) && r._foundryGestalten(sp) > 0
+        );
+        const tV = performance.now();
+        while (f._vorrat && performance.now() < tV + zugFrist) await tick(1, 80); // der Boot-Vorrat läuft aus
+        if (bodenArt && !f._vorrat) {
+            const lodV = (r._foundryKindStages(bodenArt) || [2, 0])[0];
+            const vKey = r._foundryKoerperKey(bodenArt, 1, lodV);
+            r._foundryCacheEvict(vKey);
+            m.vorrat = { key: vKey, imFlug: false, auftraege: 0 };
+            let sd = 1;
+            while (sd < 100000 && r._foundryVariantFor(sd, bodenArt) !== 1) sd++;
+            const echtReq = r._foundryRequest;
+            // der Leser fragt im Flug: nach dem Auftrag des Vorrats (als Mikro-Aufgabe, vor jeder Worker-Antwort)
+            r._foundryRequest = function (preset, variant, lod, ...rest) {
+                const zusage = echtReq.call(this, preset, variant, lod, ...rest);
+                if (r._foundryKoerperKey(preset, variant, lod) === vKey && ++m.vorrat.auftraege === 1)
+                    queueMicrotask(() => {
+                        m.vorrat.imCache = f.cache.has(vKey);
+                        m.vorrat.phase = String(f._vorrat);
+                        m.vorrat.imFlug = !m.vorrat.imCache;
+                        r._foundryFlattenFor({ type: bodenArt, seed: sd }, bodenArt, lodV);
+                    });
+                return zusage;
+            };
+            try {
+                await r._foundryPrefetchLibrary();
+            } finally {
+                r._foundryRequest = echtReq;
+            }
+        }
         m.gestartet = true;
     } catch (e) {
         out.zug = Object.assign(out.zug || {}, { err: (e && e.stack) || String(e) });
@@ -1275,6 +1316,7 @@ async function probe(arg) {
             vorschau: { key: "eiche|2|0", fremd: true, ms: 1500, imCache: true },
             hand: { key: "klinge|1|0", fremd: true, ms: 900, imCache: true },
             stufen: [0, 1, 2].map((lod) => ({ lod, wart: "eiche|2|" + lod, ms: 800, da: true, hoch: 21.4, soll: 21 })),
+            vorrat: { key: "gras|1|1", imFlug: true, auftraege: 1 },
         };
         check("Selbst-Test V-D3 Fremder Zug: gesund == 0 Täter", zugVerdict(zugGesund).length === 0, zugVerdict(zugGesund).join(" · "));
         const zugMit = (wer, z) => Object.assign({}, zugGesund, { [wer]: Object.assign({}, zugGesund[wer], z) });
@@ -1290,6 +1332,9 @@ async function probe(arg) {
                 "zug stufe L2 schläft",
             ],
             ["keine Stufen gemessen (vakuös)", Object.assign({}, zugGesund, { stufen: [] }), "zug stufen: 0 von 3"],
+            ["der Leser bestellt im Flug des Vorrats neu (bis 15.10.)", zugMit("vorrat", { auftraege: 2 }), "zug vorrat: gras|1|1 2×"],
+            ["der Vorrat zieht nicht (vakuös)", zugMit("vorrat", { imFlug: false }), "zug vorrat: gras|1|1 nicht im Flug"],
+            ["keine Vorrats-Probe (vakuös)", Object.assign({}, zugGesund, { vorrat: null }), "zug vorrat: keine Probe"],
             [
                 "die Vorschau rahmt den Stamm (Box des Einheits-Quads, Bild 15.10.)",
                 Object.assign({}, zugGesund, { stufen: [...zugGesund.stufen.slice(0, 2), { lod: 2, wart: "fimp:eiche|2", ms: 900, da: true, hoch: 1.1, soll: 21 }] }),
@@ -1613,7 +1658,7 @@ async function probe(arg) {
     check(
         `V-D3 Fremder Zug jeder Wartende erwacht nach der Ankunft eines fremd gezogenen Körpers, jede Stufe der Vorschau nach ihrem Stoff (≤ ${SOLL.zugMs} ms)`,
         vZ.length === 0,
-        `${zZ("vorschau", zm.vorschau)} · ${zZ("hand", zm.hand)} · Stufen ${(zm.stufen || []).map((q) => `L${q.lod} ${q.ms == null ? "nie" : q.ms + " ms"}${q.lod === 2 ? ` (Box ${q.hoch} m, Höhen-Stufe ${q.soll} m)` : ""}`).join(" · ")}${vZ.length ? " — Täter: " + vZ.join(", ") : ""}`
+        `${zZ("vorschau", zm.vorschau)} · ${zZ("hand", zm.hand)} · Stufen ${(zm.stufen || []).map((q) => `L${q.lod} ${q.ms == null ? "nie" : q.ms + " ms"}${q.lod === 2 ? ` (Box ${q.hoch} m, Höhen-Stufe ${q.soll} m)` : ""}`).join(" · ")} · Vorrat ${zm.vorrat ? `${zm.vorrat.key} im Flug ${zm.vorrat.imFlug} · ${zm.vorrat.auftraege}× bestellt` : "—"}${vZ.length ? " — Täter: " + vZ.join(", ") : ""}`
     );
     const rm = out.rahmen || {};
     if (rm.err) check("V-D3 Rahmen Probe ohne Ausnahme", false, rm.err.split("\n")[0]);
