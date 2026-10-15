@@ -2293,7 +2293,7 @@ function sollTafelSelbsttest(tafel, q) {
         }
         delete k5.wirkung.mangel;
         delete k5.wirkung.geheilt;
-        const z5 =sollTafelUrteil(t5, q).zeilen.find((x) => x.id === k5.id);
+        const z5 = sollTafelUrteil(t5, q).zeilen.find((x) => x.id === k5.id);
         if (!z5 || z5.urteil !== "ROT" || !/ohne Schuss/.test(z5.grund || ""))
             v.push(`${k5.id}: eine Stufe ohne Schuss ist nicht ROT beim Namen (${z5 && z5.urteil} ${z5 && z5.grund})`);
     } else v.push("die Tafel trägt kein Maß milchweiss mit Messung (der Fall der Stufen fehlt)");

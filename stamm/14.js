@@ -2267,7 +2267,9 @@ class AnazhRealm_Z14 {
         const n = Z.n + da.length;
         const platz = Z.tex ? Z.tex.image.height / G.h : 0;
         if (n > platz) {
-            const hoch = Math.max(n, Z.welten.size);
+            let offen = 0; // die angefragten Welten mit Bild (keine benannt ohne, keine gebrochene)
+            for (const x of Z.welten.values()) if (!x.ohne && !x.fehler) offen++;
+            const hoch = Math.max(n, offen);
             const neu = new Uint16Array(zeile * hoch);
             if (Z.tex) neu.set(Z.tex.image.data.subarray(0, Z.n * zeile));
             const tex = new THREE.DataTexture(neu, G.w, G.h * hoch, THREE.RGBAFormat, THREE.HalfFloatType);
