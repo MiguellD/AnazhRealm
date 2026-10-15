@@ -2281,7 +2281,7 @@ class AnazhRealm_Z11b {
             gestalten: new Map(),
             // die Gestalten, die der Worker noch nicht kennt, und die Frist dieses Bilds für neue (`_spiegelFeldTakt`)
             gestaltenNeu: [],
-            kronenFrist: 0,
+            kronenRest: 0,
             // der Stand des Felds: jede Änderung einer seiner Texturen (der Pass liest ihn in seiner Signatur)
             stand: 0,
         };
@@ -2299,10 +2299,11 @@ class AnazhRealm_Z11b {
         const S = this._spiegelFeld();
         const auge = st.camera.getWorldPosition(this._spiegelAuge || (this._spiegelAuge = new THREE.Vector3()));
         const jetzt = performance.now();
-        // DIE FRIST DER KRONEN (Lehre 14): neue Gestalten (ihr Skelett, `_gestaltTeile`) leitet dieses Bild nur bis
-        // `kronenMs` ab — danach wartet die Frage auf das nächste Bild. Bis D10-n1 leitete das erste Fenster jede Gestalt
-        // seines Walds in EINEM Bild ab (Haupt-Faden-Spitzen bis 30,8 ms an der Mess-Wiese).
-        S.kronenFrist = jetzt + K.kronenMs;
+        // DIE FRIST DER KRONEN (Lehre 14): neue Streu-Zellen (ihre Gestalt, das Skelett `_gestaltTeile`) fragt dieses Bild
+        // nur, solange ihre Ableitung zusammen unter `kronenMs` blieb — danach wartet die Frage auf das nächste Bild (jedes
+        // Bild leitet mindestens eine ab). Bis D10-n1 leitete das erste Fenster jede Gestalt seines Walds in EINEM Bild ab
+        // (Haupt-Faden-Spitzen bis 30,8 ms an der Mess-Wiese).
+        S.kronenRest = K.kronenMs;
         if (!S.mitte || Math.hypot(auge.x - S.mitte[0], auge.z - S.mitte[1]) > K.drift) this._spiegelFeldFenster(auge);
         else if (!S.auftraege.length && !S.imFlug && jetzt - S.nachlese > K.nachleseMs) {
             const z = this._spiegelKronen(S.I0 * S.texel, S.J0 * S.texel, S.n * S.texel, S.n * S.texel, S, true);
@@ -2540,9 +2541,22 @@ class AnazhRealm_Z11b {
         if (!S.zellen) S.zellen = new WeakMap();
         let sg = S.zellen.get(zelle);
         if (sg !== undefined) return sg;
-        // eine neue Zelle fragt nur in der Frist des Bilds (`kronenFrist`): undefined = noch nicht gefragt
-        if (performance.now() > S.kronenFrist) return undefined;
-        sg = null;
+        // eine neue Zelle fragt nur, solange die Frist des Bilds reicht (`kronenRest`): undefined = noch nicht gefragt
+        if (!(S.kronenRest > 0)) return undefined;
+        const t0 = performance.now();
+        try {
+            sg = this._spiegelStreuGestaltNeu(zelle);
+        } finally {
+            S.kronenRest -= performance.now() - t0;
+        }
+        if (sg !== undefined) S.zellen.set(zelle, sg);
+        return sg === undefined ? null : sg;
+    }
+
+    // Die Gestalt einer neuen Streu-Zelle (die Ableitung hinter `_spiegelStreuGestalt`); undefined, solange ihr Same wartet
+    // (nicht gemerkt: die nächste Frage fragt neu).
+    _spiegelStreuGestaltNeu(zelle) {
+        let sg = null;
         const preset = this._foundryEnabled() ? this._foundryPresetFor(zelle.species) : null;
         const tc = typeof globalThis !== "undefined" ? globalThis.__terrainCore : null;
         const rec = preset && tc && tc.PHYTO_PRESETS ? tc.PHYTO_PRESETS[preset] : null;
@@ -2557,13 +2571,12 @@ class AnazhRealm_Z11b {
             );
             const same = this._scatterFoundrySeed(zelle.cellX, zelle.cellZ, zelle.variantIndex, zelle.species, tf);
             const g = same === null ? null : this._foundryVariantFor(same, preset);
-            if (g == null) return null; // der Same wartet: nicht gemerkt, die nächste Frage fragt neu
+            if (g == null) return undefined;
             const teile = this._gestaltTeile(preset, g, this._foundryGestaltOv(preset, g, null), [zelle.species]);
             const k = this._foundryWorldScaleMatrix(preset).elements[0];
             if (Array.isArray(teile))
                 sg = { teile, x: tf.x, z: tf.z, s: tf.scale * (Number.isFinite(k) && k > 0 ? k : 1), yaw: tf.yaw };
         }
-        S.zellen.set(zelle, sg);
         return sg;
     }
 
@@ -2611,6 +2624,7 @@ class AnazhRealm_Z11b {
         for (const s of st.chunkSaetze.values()) {
             if (!s.spec || s.spec.name !== "wasserSatz") continue;
             const a = s.abschnitte.get("haupt");
+            S.wasserSatz = s;
             return !!(a && a.n > 0 && s.mesh && s.mesh.visible);
         }
         return false;
@@ -2840,7 +2854,7 @@ class AnazhRealm_Z11b {
     }
 
     // WAS DER PASS LIEST, IST SEINE SIGNATUR: das Auge (`ruheM`), der Blick (`ruheRad`), die Projektion, der Stand des Felds
-    // (jede Antwort des Workers, jedes Leeren, jede Kronen-Farbe) und das Ziel-Maß exakt, das Licht des Wassers (Einstrahlung,
+    // (jede Antwort des Workers, jedes Leeren, jede Kronen-Farbe), der Stand des Wasser-Satzes und das Ziel-Maß exakt, das Licht des Wassers (Einstrahlung,
     // Sonne) und die EINE Luft auf `ruheLicht`. Weicht eine Größe von der des letzten Laufs ab, rechnet er neu und merkt sie.
     _spiegelPassWach(L) {
         const st = this.state;
@@ -2873,9 +2887,10 @@ class AnazhRealm_Z11b {
         v[k++] = e[8];
         v[k++] = e[9];
         v[k++] = e[10];
-        // exakt: Projektion, Stand des Felds, Ziel-Maß
+        // exakt: Projektion, Stand des Felds, Stand des gezeichneten Wassers (seine Tiefe trägt den Wasser-Punkt), Ziel-Maß
         for (const i of sig.proj) v[k++] = pr[i];
         v[k++] = S.stand;
+        v[k++] = S.wasserSatz ? S.wasserSatz.stand : -1;
         v[k++] = m.w;
         v[k++] = m.h;
         // Licht und Luft
