@@ -1313,8 +1313,7 @@
     // allein (die letzte gewinnt, wo sie sich decken): keine Böschung eines Nachbarn schneidet in einen Grundriss.
     // Der Rahmen einer Platte ist der des Hauses (welt = mitte + (lx·c + lz·s, −lx·s + lz·c)). Ohne Erdbau kostet der Term
     // eine Feld-Probe (`L.erdbau`), die Welt bleibt byte-gleich. Leser: `hoehe` (Stamm, voxel-worker, Foundry-Worker).
-    // `stoffM` (K66): bewegt der Erdbau den Grund um mehr, trägt seine Fläche den Stoff des Erdbaus (`hoehe(…, aus).schutt` = 1).
-    const ERDBAU = Object.freeze({ boeschung: 0.6, reichweiteM: 16, zelleM: 16, stoffM: 0.25 });
+    const ERDBAU = Object.freeze({ boeschung: 0.6, reichweiteM: 16, zelleM: 16 });
     const ERDBAU_ZAHL = ["cx", "cz", "phi", "ex", "ez", "y"];
     const TRASSE_ZAHL = ["x0", "z0", "y0", "x1", "z1", "y1", "w"];
     // FREI {cx, cz, phi, ex, ez} (das Brücken-Etikett des Plans v2): in seinem Rechteck gilt der Grund allein — keine Fläche,
@@ -1526,14 +1525,7 @@
         const E = L.erdbau;
         if (E) {
             const h2 = erdbauY(E, x, z, h);
-            if (aus && h2 !== h) {
-                aus.hang = 0;
-                // DIE WAND DER TERRASSE IST ERDE (K66, Augen-Runde 15.10.: die Erdbau-Stufen des Dorfs trugen den Wiesen-Stoff als
-                // Flecken auf senkrechten Flächen): wo der Erdbau den Grund um mehr als `stoffM` abträgt oder aufschüttet, liegt
-                // Erde und Stein des Erdbaus — der Schutt des Fels-Stoffs (`felsStoff`: nur wo die Masche steiler als
-                // schuttKandidat steht, die ebene Platte bleibt, was sie ist); über rockLo trägt die Steile den Fels wie überall.
-                if (Math.abs(h2 - h) > ERDBAU.stoffM) aus.schutt = 1;
-            }
+            if (aus && h2 !== h) aus.hang = 0;
             h = h2;
         }
         return h;
