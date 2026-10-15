@@ -106,16 +106,6 @@ class AnazhRealm_Z07 {
                             hoechste: new Float32Array(msg.hoechste),
                         });
                     }
-                } else if (msg.type === "hoehen-result" && msg.requestId) {
-                    // K60 — die Höhen der Ferne aus dem Worker (`_voxelWorkerHoehen`), zero-copy per Transferable
-                    const pending = this.state.voxelWorkerPending.get(msg.requestId);
-                    if (pending) {
-                        this.state.voxelWorkerPending.delete(msg.requestId);
-                        pending.resolve({
-                            werte: new Float32Array(msg.werte),
-                            schutt: msg.schutt ? new Float32Array(msg.schutt) : null,
-                        });
-                    }
                 } else if (msg.type === "ack" && msg.requestId) {
                     const pending = this.state.voxelWorkerPending.get(msg.requestId);
                     if (pending) {
@@ -207,6 +197,14 @@ class AnazhRealm_Z07 {
             // DER FELS-STOFF reist mit (K17-2): der Worker baut ihn beim Chunk-Bau (gelaende-core `felsStoff`) mit DENSELBEN
             // Tönen und Schwellen wie der Sync-Bau des Stamms (`FELS_STOFF.basis` · `FELS_STOFF.netz`)
             felsStoff: { basis: AnazhRealm.FELS_STOFF.basis, netz: AnazhRealm.FELS_STOFF.netz },
+            // DIE KONSTANTEN DER FERNE reisen mit (B2): der Fern-Faden färbt den Horizont mit DENSELBEN Zahlen (`fernAuftrag`)
+            fern: {
+                forest: AnazhRealm.FOREST,
+                kronenSchatten: AnazhRealm.FERN_FARBE.kronenSchatten,
+                geoSchutt: AnazhRealm.TERRAIN_GEOLOGY.schutt,
+                felsMittel: AnazhRealm.FELS_STOFF.mittel,
+                memo: AnazhRealm.FERN_FARBE.memo,
+            },
         };
         const h = this.state.hydrosphere;
         if (h && h.ready) {
@@ -270,16 +268,17 @@ class AnazhRealm_Z07 {
     }
 
     // DER EINE SENDER DES VOXEL-ZUSTANDS (K60-3): jede Zustands-Nachricht (init · state-set · state-update) reist in
-    // derselben Reihe an JEDEN Faden, der am Zustand rechnet — den Voxel-Faden und, ist er geboren, den Wald-Faden
-    // (`_waldFadenZ`, ohne Rückfrage-Nummer: seine Nummern sind seine Aufträge). Der Wald-Faden bekommt bei der Geburt
+    // derselben Reihe an JEDEN Faden, der am Zustand rechnet — den Voxel-Faden und jeden geborenen Neben-Faden
+    // (`_nebenFaden`: Wald, Ferne — ohne Rückfrage-Nummer: seine Nummern sind seine Aufträge). Der Wald-Faden bekommt bei der Geburt
     // EINEN vollen Stand, danach dieselben Deltas wie der Voxel-Faden. Bis zur Prüfung K60-3-1 schickte er sich je
     // Stand-Wechsel (Generation + Edit-ZAHL) den vollen Zustand samt Hydro-Kacheln ein zweites Mal — ein ersetzter Edit bei
     // gleicher Zahl reiste nie, und jeder Wechsel klonte die Welt im Haupt-Faden.
     _voxelZustandPost(msg) {
         const w = this.state.voxelWorker;
         if (w) w.postMessage(msg);
-        const f = this._waldFadenZ;
-        if (f) f.worker.postMessage(msg.requestId == null ? msg : Object.assign({}, msg, { requestId: null }));
+        if (!this._nebenFaeden) return;
+        const ohne = msg.requestId == null ? msg : Object.assign({}, msg, { requestId: null });
+        for (const f of this._nebenFaeden.values()) f.worker.postMessage(ohne);
     }
 
     // State-Snapshot zum Worker: `op="init"` befüllt erstmalig (ack setzt voxelWorkerReady=true),
@@ -337,23 +336,6 @@ class AnazhRealm_Z07 {
         });
     }
 
-    // DIE HÖHEN DER FERNE off-thread (K60): eine Punkt-Liste (x, z je Punkt, Float32Array — sie wird KOPIERT, der Rufer
-    // braucht sie weiter) → { werte, schutt } aus dem EINEN Gelände-Gesetzbuch im Worker, an seinem synchronisierten
-    // Zustand (Nachrichten laufen in Reihe: ein Stand, der vor dem Auftrag reiste, gilt ihm). Leser: der Feld-Zeichner.
-    _voxelWorkerHoehen(punkte, includeDetail, mitSchutt) {
-        const worker = this._getVoxelWorker();
-        if (!worker) return Promise.reject(new Error("voxel-worker not available"));
-        const ensureReady = this.state.voxelWorkerReady ? Promise.resolve(true) : this._voxelWorkerSyncState();
-        return ensureReady.then(() => {
-            const requestId = this.state.voxelWorkerNextRequestId++;
-            const promise = new Promise((resolve, reject) => {
-                this.state.voxelWorkerPending.set(requestId, { resolve, reject });
-            });
-            worker.postMessage({ type: "hoehen", punkte, detail: !!includeDetail, schutt: !!mitSchutt, requestId });
-            return promise;
-        });
-    }
-
     // DAS SPIEGEL-FELD off-thread (D10): ein Rechteck der Welt-Zellen (`auftrag`: i0, j0, w, h, texel, bezug, wasserFarbe,
     // baeume, gestalten, block — `spiegelFeldBacken` im Worker) → { hoehen (RGBA-Halbfloat), stoff (RGBA8), hoechste je Block, wasser,
     // hMax } am
@@ -380,36 +362,67 @@ class AnazhRealm_Z07 {
     // dieselben Nachrichten wie der Voxel-Faden (Worldgen, Hydro-Kachel, Erdbau, Edits) — Nachrichten laufen in Reihe, der
     // Auftrag rechnet am Zustand, der vor ihm reiste. Leser: die Schlange des Walds (`_waldFadenSchicken`).
     _voxelWorkerWaldDarts(zellen, seedInt, extras) {
-        if (!this.state.voxelWorker || !this._voxelFadenQuelle) return Promise.reject(new Error("kein Voxel-Faden"));
-        let f = this._waldFadenZ;
-        if (!f) {
-            const worker = new Worker(this._voxelFadenQuelle);
-            f = this._waldFadenZ = { worker, pending: new Map(), next: 1 };
-            worker.onmessage = (e) => {
-                const msg = e.data;
-                if (!msg) return;
-                if (msg.type === "error") this._bruchMelden(`WALD: der Wald-Faden warf (${msg.op}) — ${msg.message}`);
-                const p = msg.requestId ? f.pending.get(msg.requestId) : null;
-                if (!p) return;
-                f.pending.delete(msg.requestId);
-                if (msg.type === "wald-darts-result")
-                    p.resolve({
-                        anzahl: new Int32Array(msg.anzahl),
-                        werte: new Float64Array(msg.werte),
-                        arten: msg.arten,
-                    });
-                else p.reject(new Error(msg.message));
-            };
-            worker.onerror = (err) => this._bruchMelden("WALD: der Wald-Faden brach — " + (err && err.message));
-            // der EINE volle Stand bei der Geburt; jede spätere Änderung bringt der Sender des Zustands (`_voxelZustandPost`)
-            worker.postMessage({ type: "state-set", snapshot: this._voxelWorkerSnapshotState() });
-        }
+        return this._nebenAuftrag(
+            "wald",
+            { type: "wald-darts", zellen, seedInt, extras, F: AnazhRealm.FOREST },
+            [zellen.buffer]
+        ).then((msg) => ({
+            anzahl: new Int32Array(msg.anzahl),
+            werte: new Float64Array(msg.werte),
+            arten: msg.arten,
+        }));
+    }
+
+    // DIE NEBEN-FÄDEN DES GESETZES (K60-3, B2): eigene Fäden aus DERSELBEN Quelle wie der Voxel-Faden (`voxel-worker.js`,
+    // derselbe Gelände-Kern, dieselben Spiegel) — der Wald-Faden (die Darts) und der Fern-Faden (der Horizont, `_fernAuftrag`).
+    // Im Voxel-Faden stünde jeder Auftrag hinter jedem Chunk (K60-3: die Darts kamen 3,5 s nach der Bestellung). Den Zustand
+    // bringt der EINE Sender (`_voxelZustandPost`): bei der Geburt ein voller Stand, danach dieselben Nachrichten wie der
+    // Voxel-Faden — ein Auftrag rechnet am Zustand, der vor ihm reiste. Ein Wurf des Fadens bricht laut beim Namen.
+    _nebenFaden(name) {
+        const alle = this._nebenFaeden || (this._nebenFaeden = new Map());
+        let f = alle.get(name);
+        if (f) return f;
+        // der Voxel-Faden zuerst (er trägt die Quelle; lazy wie jeder Chunk-Auftrag) — steht er noch nicht (Blob-Weg), wartet der Rufer
+        if (!this._getVoxelWorker() || !this._voxelFadenQuelle) return null;
+        const worker = new Worker(this._voxelFadenQuelle);
+        f = { worker, pending: new Map(), next: 1 };
+        const NAME = name.toUpperCase();
+        const Name = name[0].toUpperCase() + name.slice(1);
+        worker.onmessage = (e) => {
+            const msg = e.data;
+            if (!msg) return;
+            if (msg.type === "error") this._bruchMelden(`${NAME}: der ${Name}-Faden warf (${msg.op}) — ${msg.message}`);
+            const p = msg.requestId ? f.pending.get(msg.requestId) : null;
+            if (!p) return;
+            f.pending.delete(msg.requestId);
+            if (msg.type === "error") p.reject(new Error(msg.message));
+            else p.resolve(msg);
+        };
+        worker.onerror = (err) => this._bruchMelden(`${NAME}: der ${Name}-Faden brach — ` + (err && err.message));
+        // der EINE volle Stand bei der Geburt; jede spätere Änderung bringt der Sender des Zustands (`_voxelZustandPost`)
+        worker.postMessage({ type: "state-set", snapshot: this._voxelWorkerSnapshotState() });
+        alle.set(name, f);
+        return f;
+    }
+    _nebenAuftrag(name, msg, transfer) {
+        const f = this._nebenFaden(name);
+        if (!f) return Promise.reject(new Error("kein Voxel-Faden"));
         const requestId = f.next++;
         const promise = new Promise((resolve, reject) => f.pending.set(requestId, { resolve, reject }));
-        f.worker.postMessage({ type: "wald-darts", zellen, seedInt, extras, F: AnazhRealm.FOREST, requestId }, [
-            zellen.buffer,
-        ]);
+        f.worker.postMessage(Object.assign(msg, { requestId }), transfer || []);
         return promise;
+    }
+
+    // DER AUFTRAG DER FERNE (B2): Fern-Ring, Feld-Pass, Fern-Krone und die Linsen fragen den Fern-Faden (`fernAuftrag` im
+    // Faden) — mit dem, was die Farbe aus diesem Faden liest: die Studio-Laubfarbe der Arten, der Wasser-Körper, der
+    // Meeresspiegel. Die Antwort trägt die Zahlen per Transfer; ohne Faden gibt es keine Ferne (laut, kein Haupt-Faden-Weg).
+    _fernAuftrag(art, msg, transfer) {
+        const wl = Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : 0;
+        return this._nebenAuftrag(
+            "fern",
+            Object.assign({ type: "fern", art, wl, laub: this._fernLaubLinear(), wasser: this._fernWasserKoerper() }, msg),
+            transfer
+        );
     }
 
     // Wasser-Sheet off-thread: der 3×3-Zell-Block (`entry.waterCells`, KOPIERT — der Main braucht ihn

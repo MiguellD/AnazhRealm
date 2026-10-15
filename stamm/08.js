@@ -1215,98 +1215,6 @@ class AnazhRealm_Z08 {
         return { dist: best, halfW: bestHw, spiegel: bestSp };
     }
 
-    // DIE FLÜSSE UNTER EINEM ABDRUCK (K16, die Fern-Farbe): ein Fern-Punkt steht für eine Fläche der Kante `F` (`fussM`,
-    // `_fernFarbeMasche`), die Netz-Flüsse liegen schmaler darunter (Bett ab 2 m, die Bank 4,5 m, die Krone wenige Meter).
-    // Je Segment in Reichweite (die Buckets bis F/2 weiter): der Abstand `dist`, die Halbbreite `hw`, die Weite `kappa` von
-    // der Kanal-Kante zur Krone, der Spiegel `sp` und das Mittel der Kronen-Blende `mu` über den Abdruck (`_kastenMittel`
-    // quer zum Segment) — die Leser (Feuchte, Pfad, Schlick, Strand) falten ihre Bänder genauso und nehmen das Maximum der
-    // Segmente: stetig im Ort. Befund 12.10. (gate:fern-ring Band 10): neun Punkt-Abtastungen je Masche trafen die schmalen
-    // Bänder oder nicht — mit den Netz-Flüssen stieg der Streifen-Index 0,47 → 0,54 (dieselbe Welt ohne Fluss-Bänder 0,33).
-    // Der Abdruck wächst, wenn mehr Segmente unter ihm liegen, als er fasst (verdoppelt) — bis 12.10. kappte er still bei 32
-    // (1 052 von 1,82 Mio. Rufen, Prüfung K16: ein Fern-Punkt bis 1 300 m Abdruck über einem dichten Netz verlor Bänder).
-    static _flussAbdruckWachse(A) {
-        for (const k of ["dist", "hw", "kappa", "sp", "mu"]) {
-            const neu = new Float64Array(A[k].length * 2);
-            neu.set(A[k]);
-            A[k] = neu;
-        }
-    }
-
-    _flussAbdruck(x, z, F) {
-        const A =
-            this._flussAbdruckMemo ||
-            (this._flussAbdruckMemo = {
-                x: NaN,
-                z: NaN,
-                F: NaN,
-                h: null,
-                bereit: false,
-                n: 0,
-                seg: [],
-                dist: new Float64Array(32),
-                hw: new Float64Array(32),
-                kappa: new Float64Array(32),
-                sp: new Float64Array(32),
-                mu: new Float64Array(32),
-            });
-        const h = this._hydroFor(x, z);
-        const bereit = !!(h && h.ready && h.riverBuckets);
-        if (A.x === x && A.z === z && A.F === F && A.h === h && A.bereit === bereit) return A;
-        A.x = x;
-        A.z = z;
-        A.F = F;
-        A.h = h;
-        A.bereit = bereit;
-        A.n = 0;
-        if (!bereit) return A;
-        const HC = AnazhRealm.HYDROSPHERE;
-        const reich = AnazhRealm.FEUCHTE.flussReichweite;
-        const bs = h.bucketSize;
-        const bd = h.bucketsDim;
-        const bi0 = Math.floor((x - h.originX) / bs);
-        const bj0 = Math.floor((z - h.originZ) / bs);
-        // jedes Segment steht in den Buckets seiner um die Feuchte-Reichweite erweiterten Box (`_hydroBuildCarveIndex`) —
-        // der Abdruck reicht F/2 weiter
-        const nb = Math.ceil(F / 2 / bs);
-        for (let bj = bj0 - nb; bj <= bj0 + nb; bj++) {
-            if (bj < 0 || bj >= bd) continue;
-            for (let bi = bi0 - nb; bi <= bi0 + nb; bi++) {
-                if (bi < 0 || bi >= bd) continue;
-                const list = h.riverBuckets[bj * bd + bi];
-                if (!list) continue;
-                for (let s = 0; s < list.length; s++) {
-                    const seg = list[s];
-                    const ex = seg.bx - seg.ax;
-                    const ez = seg.bz - seg.az;
-                    const len2 = ex * ex + ez * ez || 1;
-                    let t = ((x - seg.ax) * ex + (z - seg.az) * ez) / len2;
-                    if (t < 0) t = 0;
-                    else if (t > 1) t = 1;
-                    const dist = Math.hypot(x - (seg.ax + ex * t), z - (seg.az + ez * t));
-                    const hw = seg.hwA + (seg.hwB - seg.hwA) * t;
-                    const kappa = Math.max(1e-3, (seg.dA + (seg.dB - seg.dA) * t) / HC.bankNeigung);
-                    if (dist - F / 2 >= Math.max(Math.max(1, hw) + reich, hw + kappa)) continue;
-                    let schon = false;
-                    for (let k = 0; k < A.n; k++)
-                        if (A.seg[k] === seg) {
-                            schon = true;
-                            break;
-                        }
-                    if (schon) continue;
-                    if (A.n === A.dist.length) AnazhRealm._flussAbdruckWachse(A); // keine Kappe: jedes Segment unter dem Abdruck zählt
-                    const n = A.n++;
-                    A.seg[n] = seg;
-                    A.dist[n] = dist;
-                    A.hw[n] = hw;
-                    A.kappa[n] = kappa;
-                    A.sp[n] = seg.sA + (seg.sB - seg.sA) * t;
-                    A.mu[n] = AnazhRealm._kastenMittel(AnazhRealm._stammUfer, dist, F, hw, kappa);
-                }
-            }
-        }
-        return A;
-    }
-
     // Γ1 (genese-plan) — die GENESE-Version der Welt: fehlend = 1 (Legacy —
     // bestehende Welten behalten ihr Gesicht; das Drainage-Netz-Gesetz
     // konsequent: Genese ist Welt-Identität). Neue Welten werden mit 2 geboren.
@@ -1317,32 +1225,18 @@ class AnazhRealm_Z08 {
     // Das Feuchte-Feld, abgeleitet aus der HYDROSPHÄRE (Terrain → Wasser → Feuchte → Leben), nicht aus
     // Noise. Lebt am Genese-Leser (Spawn/Scatter/Boden), NICHT in worldFieldAt (Bucket-Walk nicht in den
     // Hot-Path; der Höhen-Term braucht surfY). max() aus (a) Fluss-Nähe (smoothstep über die Segment-
-    // Distanz) und (b) Höhe über dem Wasserspiegel (feuchte Niederungen). `fussM` (optional, die Fern-Farbe): die Kante der
-    // Fläche, für die der Punkt steht — dann trägt jedes Fluss-Band sein Mittel über sie (`_flussAbdruck`).
-    _feuchteAt(x, z, surfY, fussM) {
+    // Distanz) und (b) Höhe über dem Wasserspiegel (feuchte Niederungen). Die Fläche der Ferne (`fussM`, das Mittel der
+    // Fluss-Bänder über den Abdruck) rechnet der Fern-Faden (`feuchteAt` im voxel-worker, B2).
+    _feuchteAt(x, z, surfY) {
         if (this._genVersion() < 2) return 0;
         const F = AnazhRealm.FEUCHTE;
-        const ab = fussM > 0 ? this._flussAbdruck(x, z, fussM) : null;
         let fluss = 0;
-        if (ab) {
-            for (let i = 0; i < ab.n; i++) {
-                const m = AnazhRealm._kastenMittel(
-                    AnazhRealm._stammFeuchte,
-                    ab.dist[i],
-                    fussM,
-                    Math.max(1, ab.hw[i]),
-                    F.flussReichweite
-                );
-                if (m > fluss) fluss = m;
-            }
-        } else {
-            const r = this._hydroDistAt(x, z);
-            if (Number.isFinite(r.dist)) {
-                const inner = Math.max(1, r.halfW);
-                const outer = inner + F.flussReichweite;
-                const t = Math.max(0, Math.min(1, (outer - r.dist) / (outer - inner)));
-                fluss = t * t * (3 - 2 * t);
-            }
+        const r = this._hydroDistAt(x, z);
+        if (Number.isFinite(r.dist)) {
+            const inner = Math.max(1, r.halfW);
+            const outer = inner + F.flussReichweite;
+            const t = Math.max(0, Math.min(1, (outer - r.dist) / (outer - inner)));
+            fluss = t * t * (3 - 2 * t);
         }
         let hoehe = 0;
         const sy = Number.isFinite(surfY) ? surfY : this._voxelSurfaceY ? this._voxelSurfaceY(x, z) : null;
@@ -1355,47 +1249,19 @@ class AnazhRealm_Z08 {
                 return t * t * (3 - 2 * t) * F.hoeheGewicht;
             };
             hoehe = band(sy - uf.see);
-            if (ab) for (let i = 0; i < ab.n; i++) hoehe = Math.max(hoehe, ab.mu[i] * band(sy - ab.sp[i]));
-            else if (uf.fluss !== null) hoehe = Math.max(hoehe, uf.ufer * band(sy - uf.fluss));
+            if (uf.fluss !== null) hoehe = Math.max(hoehe, uf.ufer * band(sy - uf.fluss));
         }
         return Math.max(0, Math.min(1, Math.max(fluss, hoehe)));
     }
 
     // Pfad-Feld: Fluss-Bänke sind getrampelte Erde — knapp außerhalb der Wasserkante (dist ∈ [halfW,
     // halfW+bankW]) auf niedriger Bank (0..5 m über dem Spiegel) → Pfad ∈ [0,1]. Render-only (Boden-
-    // Farbe, Gras unterdrückt); liest den worker-gespiegelten _hydroDistAt → P2P bit-identisch. `fussM` (optional, die
-    // Fern-Farbe): die Bank trägt ihr Mittel über die Fläche des Punkts (`_flussAbdruck`), je Bezug.
-    _pathFieldAt(x, z, surfY, fussM) {
+    // Farbe, Gras unterdrückt); liest den worker-gespiegelten _hydroDistAt → P2P bit-identisch. Die Bank der Ferne (das
+    // Mittel über die Fläche, `fussM`) rechnet der Fern-Faden (`pathFieldAt` im voxel-worker, B2).
+    _pathFieldAt(x, z, surfY) {
         if (this._genVersion() < 2) return 0;
         const bankW = 4.5;
         const niedrig = (above) => (above < 0 || above > 5 ? 0 : 1);
-        if (fussM > 0 && Number.isFinite(surfY)) {
-            const ab = this._flussAbdruck(x, z, fussM);
-            if (!ab.n) return 0;
-            const uf = { see: 0, fluss: null, ufer: 0 };
-            this._waterLevelAt(x, z, uf);
-            const nSee = niedrig(surfY - uf.see);
-            let p = 0;
-            for (let i = 0; i < ab.n; i++) {
-                const inner = Math.max(1, ab.hw[i]);
-                const mSee = nSee
-                    ? AnazhRealm._kastenMittel(AnazhRealm._stammPfad, ab.dist[i], fussM, inner, bankW) * nSee
-                    : 0;
-                const mFluss = niedrig(surfY - ab.sp[i])
-                    ? AnazhRealm._kastenMittel(
-                          AnazhRealm._stammPfadUfer,
-                          ab.dist[i],
-                          fussM,
-                          inner,
-                          bankW,
-                          ab.hw[i],
-                          ab.kappa[i]
-                      )
-                    : 0;
-                p = Math.max(p, mSee, mFluss);
-            }
-            return p;
-        }
         const r = this._hydroDistAt(x, z);
         if (!Number.isFinite(r.dist)) return 0;
         const inner = Math.max(1, r.halfW);
@@ -2398,22 +2264,6 @@ class AnazhRealm_Z08 {
         col.needsUpdate = true;
     }
 
-    // Das Mittel des Magie-Flecks (`_bodenFarbeAt`: ss(0,6, 0,85, Rauschen)) über die Verteilung des Rauschens selbst — 32 × 32
-    // Proben im Raster 7,31, einmal je Rausch-Instanz (die Saat wechselt sie).
-    _fleckMittel(noise) {
-        if (this._fleckMittelRausch === noise) return this._fleckMittelWert;
-        let m = 0;
-        for (let i = 0; i < 32; i++)
-            for (let j = 0; j < 32; j++) {
-                let t = ((noise.noise2D(i * 7.31 + 0.37, j * 7.31 + 0.71) + 1) * 0.5 - 0.6) / 0.25;
-                t = t < 0 ? 0 : t > 1 ? 1 : t;
-                m += t * t * (3 - 2 * t);
-            }
-        this._fleckMittelRausch = noise;
-        this._fleckMittelWert = m / 1024;
-        return this._fleckMittelWert;
-    }
-
     // DIE EINE BODEN-FARBE (V18.530): die Welt-Feld-Farbe eines Boden-Punkts aus derselben fraktalen Sprache
     // (worldFieldAt) → dieselben Biom-Regionen wie der Boden. Der Voxel-Chunk färbt jeden Vertex durch sie, der
     // Fern-Ring und das Feld-Panorama lesen sie für die Ferne (kein vereinfachter Fern-Zwilling); der Worker
@@ -2422,10 +2272,9 @@ class AnazhRealm_Z08 {
     // Werte roh als linear (der Stein 0,42/0,44/0,49 mit dem Magie-Violett darüber: weiß-lavendel, Blick-Tour 05).
     // Magie ist ein AKZENT in Flecken, der Seegrund unter jedem Wasser Schlick. Die Laubstreu liegt NICHT hier: sie
     // folgt den echten Kronen (`_kronenStreuNeu` → `_wegeBodenFarbe`). `out` = [r, g, b] (linear, wie das Vertex-
-    // Attribut). `fussM` (optional, die Fern-Farbe): die Kante der Fläche, für die der Punkt steht — die Flecken, die sie nicht
-    // auflöst (Flechte λ 25 m, Magie λ 11 m), tragen ihr Mittel (phyto-core `forestOktavMittel`); ohne fussM (jeder Chunk, der
-    // Worker-Spiegel) dieselben Zahlen.
-    _bodenFarbeAt(x, y, z, out, fussM) {
+    // Attribut). Die Ferne (das Mittel der Flecken und Bänder über eine Fläche) rechnet der Fern-Faden (`bodenFarbe` im
+    // voxel-worker mit `fussM`, B2) — ohne fussM dieselben Zahlen wie hier.
+    _bodenFarbeAt(x, y, z, out) {
         // V9.60-b.2 — Sand-Variation: lazy-laden des deterministischen
         // Welt-Noises (gleiche Instanz wie `_terrainMacroSurfaceY`). Macht
         // Strand-Breite + Intensität regional variabel statt überall gleich.
@@ -2460,7 +2309,7 @@ class AnazhRealm_Z08 {
         mix(earth, ss(0.25, 0.85, f.lebendig));
         // Feuchte schiebt den Boden Richtung dampEarth. Reihenfolge im mix-Stack ist Pflicht: nach earth, VOR
         // lava/snow/sed/strand. genVersion-Schleuse via _feuchteAt (< 2 → 0); Vertex-y ist die Surface.
-        const feuchte = typeof this._feuchteAt === "function" ? this._feuchteAt(x, z, y, fussM) : 0;
+        const feuchte = typeof this._feuchteAt === "function" ? this._feuchteAt(x, z, y) : 0;
         mix(dampEarth, ss(F_VIS_LO, F_VIS_HI, feuchte));
         // Kein Kronendach im Vertex: bis 06.10. dunkelte das Kronenlicht-Feld der Platzierung (`_canopyLightAt`, wo
         // Bäume wachsen DÜRFEN) den Boden × (0,58 + 0,46 · Licht) — zu 98 % ohne Baum darüber, unter einem Baum
@@ -2469,9 +2318,7 @@ class AnazhRealm_Z08 {
         // NACH dampEarth, VOR lava/snow/sed/strand (die überschreiben den Stein). Schwellen in
         // AnazhRealm.LICHEN (der Worker spiegelt sie hardkodiert), die Farbe ist die Flechte der Palette.
         const LCH = AnazhRealm.LICHEN;
-        let lichenCluster = (sandNoise.noise2D(x * 0.04 + 7.7, z * 0.04 - 3.3) + 1) * 0.5; // [0..1]
-        const oktav = fussM > 0 ? globalThis.__phytoCore.forestOktavMittel : null;
-        if (oktav) lichenCluster += (0.5 - lichenCluster) * oktav(fussM, 1 / 0.04); // das Simplex-Mittel ist 0,5
+        const lichenCluster = (sandNoise.noise2D(x * 0.04 + 7.7, z * 0.04 - 3.3) + 1) * 0.5; // [0..1]
         const lichenMix =
             ss(LCH.feuchteLo, LCH.feuchteHi, feuchte) *
             ss(LCH.dichteLo, LCH.dichteHi, f.dichte || 0) *
@@ -2480,8 +2327,7 @@ class AnazhRealm_Z08 {
         mix(P.flechte, lichenMix);
         mix(lava, ss(0.48, 1.02, f.glut) * 0.65); // dunkles Basalt, gekappt — kein flaches Rot
         // Der Magie-Akzent: Flecken (λ ≈ 11 m, ein Sechstel der Fläche, höchstens 30 %) in den Magie-Regionen — nie die Grundfarbe.
-        let magieFleck = ss(0.6, 0.85, (sandNoise.noise2D(x * 0.09 + 3.1, z * 0.09 - 8.7) + 1) * 0.5);
-        if (oktav) magieFleck += (this._fleckMittel(sandNoise) - magieFleck) * oktav(fussM, 1 / 0.09);
+        const magieFleck = ss(0.6, 0.85, (sandNoise.noise2D(x * 0.09 + 3.1, z * 0.09 - 8.7) + 1) * 0.5);
         mix(violet, ss(0.55, 1.0, f.magieleitung) * magieFleck * 0.3);
         // Die Schneegrenze ist Gesetz (gelaende-core `schnee`: die Höhe über dem Meer, dieselbe Funktion ruft der Worker
         // in `attachFieldColors`).
@@ -2489,13 +2335,11 @@ class AnazhRealm_Z08 {
         // Der Seegrund: unter JEDEM Wasser (Meer, See, Fluss — der Spiegel des Orts) liegt Schlick, voll ab 4 m
         // Tiefe (bis V18.530 nur unter dem Meeresspiegel y < −2: die Bergseen lagen auf Wiese und Streu).
         // Schlick und Strand sind Ufer-Bänder über beiden Bezügen (`_waterLevelAt`): See/Meer voll, der Fluss mit seiner
-        // Kronen-Blende — stetig über die Krone, wo der Fluss-Spiegel endet. Mit `fussM` trägt jedes Fluss-Band das Mittel
-        // seiner Kronen-Blende über die Fläche (`_flussAbdruck`, je Segment sein Spiegel) statt der Punkt-Probe.
+        // Kronen-Blende — stetig über die Krone, wo der Fluss-Spiegel endet.
         const uf = { see: 0, fluss: null, ufer: 0 };
         this._waterLevelAt(x, z, uf);
-        const ab = fussM > 0 ? this._flussAbdruck(x, z, fussM) : null;
         const aboveWater = y - uf.see;
-        const aboveFluss = !ab && uf.fluss !== null ? y - uf.fluss : null;
+        const aboveFluss = uf.fluss !== null ? y - uf.fluss : null;
         let schlick = ss(-0.5, -4, aboveWater);
         if (aboveFluss !== null) schlick = Math.max(schlick, uf.ufer * ss(-0.5, -4, aboveFluss));
         // Strand: Glocken-Profil über dem Wasser (`_waterLevelAt` O(1) für Ozean; See-Vertices bekommen den
@@ -2503,14 +2347,8 @@ class AnazhRealm_Z08 {
         // (λ~290 m), (c) karge Fels-Patches ohne Sand. Die Glocke trägt bis 0,6 + 1,9 m — das Fenster schneidet sie nie
         // (bis Welle L endete es bei 2,0 m: ein Sprung im Strand jeder breiten Glocke).
         const imStrand = (a) => a !== null && a > -1.3 && a < 2.5;
-        let flussStrand = false;
-        if (ab)
-            for (let i = 0; i < ab.n; i++) {
-                schlick = Math.max(schlick, ab.mu[i] * ss(-0.5, -4, y - ab.sp[i]));
-                if (ab.mu[i] > 0 && imStrand(y - ab.sp[i])) flussStrand = true;
-            }
         mix(sed, schlick);
-        if (imStrand(aboveWater) || (uf.ufer > 0 && imStrand(aboveFluss)) || flussStrand) {
+        if (imStrand(aboveWater) || (uf.ufer > 0 && imStrand(aboveFluss))) {
             const widthNoise = (sandNoise.noise2D(x * 0.0018, z * 0.0018) + 1) * 0.5; // [0, 1]
             const intenseNoise = (sandNoise.noise2D(x * 0.0034 + 17, z * 0.0034 - 9) + 1) * 0.5;
             if (widthNoise > 0.18) {
@@ -2519,8 +2357,6 @@ class AnazhRealm_Z08 {
                 const glocke = (a) => Math.max(0, 1 - Math.abs(a - 0.6) / width);
                 let shoreBlend = glocke(aboveWater);
                 if (aboveFluss !== null) shoreBlend = Math.max(shoreBlend, uf.ufer * glocke(aboveFluss));
-                if (ab)
-                    for (let i = 0; i < ab.n; i++) shoreBlend = Math.max(shoreBlend, ab.mu[i] * glocke(y - ab.sp[i]));
                 mix(sand, shoreBlend * intensity);
             }
             // widthNoise <= 0.18 → karge Stelle, Sand bleibt aus (Stone/
@@ -2530,15 +2366,14 @@ class AnazhRealm_Z08 {
         // V18.230 (Ω-OPSIS Säule II Ω-O6) — die PFADE: die Fluss-Bänke sind
         // getrampelte, gepackte Erde (Gras wird zusätzlich unterdrückt, s.
         // _buildVoxelChunkGrass). Lawful aus dem Drainage-Netz (_pathFieldAt).
-        const pathF = this._pathFieldAt(x, z, y, fussM);
+        const pathF = this._pathFieldAt(x, z, y);
         if (pathF > 0.01) mix(packedDirt, pathF * 0.6);
         // DER WIESEN-GRUND (K53, `WIESEN_GRUND`): wo die Wache Grün sagt, deckt das Mittel des Halms den Grund, der Fleck
-        // (λ 7,7 m) lässt karge Stellen; die Fläche, die ihn nicht auflöst (`fussM`), trägt sein Mittel.
+        // (λ 7,7 m) lässt karge Stellen.
         const WG = AnazhRealm.WIESEN_GRUND;
         const gruen = ss(0, WG.schwelle, c[1] - 0.5 * (c[0] + c[2]));
         if (gruen > 0) {
-            let fleck = (sandNoise.noise2D(x * 0.13 + 5.3, z * 0.13 - 2.9) + 1) * 0.5;
-            if (oktav) fleck += (0.5 - fleck) * oktav(fussM, WG.rauschM);
+            const fleck = (sandNoise.noise2D(x * 0.13 + 5.3, z * 0.13 - 2.9) + 1) * 0.5;
             mix(WG.farbe, gruen * (0.5 + 0.5 * fleck));
         }
         out[0] = c[0];

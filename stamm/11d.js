@@ -1199,11 +1199,13 @@ class AnazhRealm_Z11d {
             fr.anchorX = Math.round(playerPos.x / F.anchorQuant) * F.anchorQuant;
             fr.anchorZ = Math.round(playerPos.z / F.anchorQuant) * F.anchorQuant;
             fr.uAnker.value.set(fr.anchorX, fr.anchorZ);
-            fr.cursor = 0; // voller Höhen-Refresh, budgetiert über die nächsten Frames
-            fr.gen = (fr.gen || 0) + 1; // laufende Feld-Flüge sind überholt
+            fr.cursor = 0; // voller Refresh: der Fern-Faden rechnet den Ring am neuen Anker in Scheiben
+            fr.auftrag = 0;
+            fr.flug = 0;
+            fr.einhaengen.length = 0;
+            fr.gen = (fr.gen || 0) + 1; // laufende Scheiben des Fern-Fadens sind überholt
             fr.vollY.fill(NaN); // das volle Gesetz der Bau-Zone gehört zum Anker
             fr.feldY.fill(NaN); // die Feld-Fläche der Naht ebenso
-            fr.gpuFlug = false;
         }
         // Die Schalen leben auf Layer 0 (EIN Szene-Pass) — selbstheilend, falls ein Altstand sie verschob; ihr Wurf bleibt
         // ihr `castShadow` (die Wurf-Ebene, K72 `_wurfEbene`).
@@ -1212,16 +1214,9 @@ class AnazhRealm_Z11d {
             if (m.layers.mask !== soll) m.layers.mask = soll;
         }
         this._fernRingMaske(fr); // der Ring weicht dem Gebauten (`maskNode`)
-        // DER FELD-ZEICHNER: ein anstehender VOLLER Refresh (Boot/Re-Anker)
-        // wird zuerst vom Feld gemalt (EIN GPU-Lauf, Horizont steht sofort);
-        // die CPU-Scheibe darunter verfeinert dieselben Vertices aufs f64-Gesetz.
-        // EIN DURCHGANG UNTER DEM LADESCHIRM (K60): der Maler rechnet seit K16 dasselbe Gesetz auf dem Haupt-Faden wie die
-        // CPU-Scheibe (`_feldZeichnerHoehen`, in Takt-Scheiben) und setzt danach jeden Punkt ab dem Cursor in EINER Aufgabe —
-        // unter dem Ladeschirm sah niemand seinen schnellen Horizont, und beide Wege rechneten den Ring (Radeon kalt: Maler-Höhen
-        // 1,2 s, seine Setz-Aufgabe 2,4 s am Stück, die Scheibe 2,0 s). Bis zum ersten Bild zeichnet die Scheibe allein; der
-        // Maler malt jeden Re-Anker danach (der Spieler sieht den Horizont sofort).
-        if (fr.cursor === 0 && st._weltbildDa) this._fernRingGpuMal(fr);
-        this._fernRingRefresh(F.refreshVertsProTick);
+        // DER HORIZONT AUS DEM FADEN (B2): der Ring bestellt seine Scheiben beim Fern-Faden und hängt die Antworten ein
+        // (`_fernRingRefresh`) — Boot wie Re-Anker, EIN Weg; der Haupt-Faden rechnet kein Gesetz der Ferne.
+        this._fernRingRefresh();
         // DAS EINE WASSER: kam oder ging das Fern-Wasser, legt der Ring seine nassen Punkte neu (`_fernRingWasserTiefe`).
         this._fernRingWasserNeu(fr);
         // DIE KOSTEN AN DER NAHT: die Dreiecke der Schale 0 folgen Maske und Lage (frei · Naht · getragen, `_fernRingTeilung`).
@@ -1229,9 +1224,8 @@ class AnazhRealm_Z11d {
         // DER FELD-PASS (Ring-Besitz): die Ferne jenseits der Schalen — Ensure,
         // Re-Malen bei Anker-Wechsel, Kamera-Uniforms.
         this._tickFeldPass(fr);
-        // DAS FERN-FARB-BUDGET: die Fern-Krone des nahen Bodens, die offenen Ring-Farben (nah zuerst), dann der Farb-Job des
-        // Feld-Passes.
-        this._fernFarbTakt(fr);
+        // DIE FERN-KRONE DES NAHEN BODENS: wechselt das Quadrat, bestellt sie ihre Karte beim Fern-Faden.
+        this._fernKroneNahTakt();
         // Kamera-Klippe: camera.far muss Schalen-Rand + Marge umfassen, sonst clippt der Horizont. Der Ring
         // besitzt diese Voraussetzung (EIN Ort, idempotent über _fernRingCamFar); der Dispose stellt das
         // alte far wieder her.

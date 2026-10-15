@@ -210,31 +210,11 @@ self.onmessage = function (e) {
                     [positions.buffer, indices.buffer, aFlow.buffer, aWave.buffer, aDepth.buffer, aSlope.buffer]
                 );
             }
-        } else if (msg.type === "hoehen") {
-            // DIE HÖHEN DER FERNE (K60): der Feld-Zeichner des Mains (`_feldZeichnerHoehen` — Feld-Pass und Ring-Maler)
-            // fragt das EINE Gelände-Gesetzbuch für eine Punkt-Liste hier, mit DEMSELBEN Zustand wie jeder Chunk (`state`,
-            // der Spiegel der Lage `_gelaende`) — dieselbe Funktion, derselbe Same, nie eine eigene Ableitung. `aus` lebt
-            // wie im Main einmal je Auftrag; der Schutt (`aus.schutt`) reist nur, wenn der Main ihn fragt.
-            const p = msg.punkte;
-            const n = (p.length / 2) | 0;
-            const werte = new Float32Array(n);
-            const schutt = msg.schutt ? new Float32Array(n) : null;
-            const aus = schutt ? { hang: 0, schutt: 0 } : undefined;
-            const detail = !!msg.detail;
-            for (let k = 0; k < n; k++) {
-                werte[k] = G.hoehe(state, p[k * 2], p[k * 2 + 1], detail, aus);
-                if (aus) schutt[k] = aus.schutt > 0 ? aus.schutt : 0;
-            }
-            const tr = schutt ? [werte.buffer, schutt.buffer] : [werte.buffer];
-            self.postMessage(
-                {
-                    type: "hoehen-result",
-                    requestId: msg.requestId,
-                    werte: werte.buffer,
-                    schutt: schutt ? schutt.buffer : null,
-                },
-                tr
-            );
+        } else if (msg.type === "fern") {
+            // DER HORIZONT IM FADEN (B2, `fernAuftrag`): Höhe, Nässe und Fern-Farbe der Ferne an DEMSELBEN Zustand wie jeder
+            // Chunk — per Transfer zurück (Lehre 24); der Main lädt nur hoch und hängt ein.
+            const r = fernAuftrag(msg);
+            self.postMessage(Object.assign({ type: "fern-result", requestId: msg.requestId }, r.antwort), r.transfer);
         } else if (msg.type === "spiegel-feld") {
             // DAS SPIEGEL-FELD (D10): ein Rechteck der Welt-Zellen — die Höhen (untere Fläche, Basis und Dach der Krone, ihre
             // Gestalt) als RGBA-Halbfloat, der Stoff der unteren Fläche als RGBA8 — aus dem GEBAUTEN Boden dieses Workers
@@ -456,6 +436,8 @@ function applyStateSnapshot(snap) {
     // DER ERDBAU DER ORTE (K10): die Splat-Liste des Mains (`_erdbauRoh`), hier in die Normalform des Gesetzbuchs gelegt
     if (snap.erdbau !== undefined) state.erdbau = G.erdbauNormal(snap.erdbau);
     if (snap.felsStoff) state.felsStoff = snap.felsStoff;
+    // DIE KONSTANTEN DER FERNE (B2): FOREST, die Selbstbeschattung der Krone, Schutt-Gewicht, Fels-Mittel, Gedächtnis
+    if (snap.fern) state.fern = snap.fern;
 }
 
 function applyStateDelta(delta) {
@@ -1225,6 +1207,7 @@ function hydroDistAt(x, z) {
     let best = Infinity;
     let bestHw = 0;
     let bestRand = Infinity;
+    let bestSp = NaN;
     for (let dj = -1; dj <= 1; dj++) {
         for (let di = -1; di <= 1; di++) {
             const bi = bi0 + di;
@@ -1250,22 +1233,33 @@ function hydroDistAt(x, z) {
                     bestRand = rand;
                     best = dist;
                     bestHw = hw;
+                    bestSp = seg.sA + (seg.sB - seg.sA) * t; // der Spiegel des Segments (Mirror, Leser: `fernFlussDeckung`)
                 }
             }
         }
     }
-    return { dist: best, halfW: bestHw };
+    return { dist: best, halfW: bestHw, spiegel: bestSp };
 }
 
-function feuchteAt(x, z, surfY) {
+// `fussM` (optional, die Ferne): die Kante der Fläche, für die der Punkt steht — jedes Fluss-Band trägt sein Mittel über sie
+// (`flussAbdruck`, Mirror `_feuchteAt`).
+function feuchteAt(x, z, surfY, fussM) {
     if (state.genVersion < 2) return 0;
-    const r = hydroDistAt(x, z);
+    const ab = fussM > 0 ? flussAbdruck(x, z, fussM) : null;
     let fluss = 0;
-    if (Number.isFinite(r.dist)) {
-        const inner = Math.max(1, r.halfW);
-        const outer = inner + FEUCHTE_FLUSS_REICHWEITE;
-        const t = Math.max(0, Math.min(1, (outer - r.dist) / (outer - inner)));
-        fluss = t * t * (3 - 2 * t);
+    if (ab) {
+        for (let i = 0; i < ab.n; i++) {
+            const m = kastenMittel(stammFeuchte, ab.dist[i], fussM, Math.max(1, ab.hw[i]), FEUCHTE_FLUSS_REICHWEITE);
+            if (m > fluss) fluss = m;
+        }
+    } else {
+        const r = hydroDistAt(x, z);
+        if (Number.isFinite(r.dist)) {
+            const inner = Math.max(1, r.halfW);
+            const outer = inner + FEUCHTE_FLUSS_REICHWEITE;
+            const t = Math.max(0, Math.min(1, (outer - r.dist) / (outer - inner)));
+            fluss = t * t * (3 - 2 * t);
+        }
     }
     let hoehe = 0;
     if (Number.isFinite(surfY)) {
@@ -1276,19 +1270,39 @@ function feuchteAt(x, z, surfY) {
             return t * t * (3 - 2 * t) * FEUCHTE_HOEHE_GEWICHT;
         };
         hoehe = band(surfY - uf.see);
-        if (uf.fluss !== null) hoehe = Math.max(hoehe, uf.ufer * band(surfY - uf.fluss));
+        if (ab) for (let i = 0; i < ab.n; i++) hoehe = Math.max(hoehe, ab.mu[i] * band(surfY - ab.sp[i]));
+        else if (uf.fluss !== null) hoehe = Math.max(hoehe, uf.ufer * band(surfY - uf.fluss));
     }
     return Math.max(0, Math.min(1, Math.max(fluss, hoehe)));
 }
 
 // V18.230 (Ω-OPSIS Säule II Ω-O6) — das PFAD-FELD, Worker-Spiegel (bit-identisch
 // zum Main _pathFieldAt): die Fluss-Bänke als getrampelte Erde.
-function pathFieldAt(x, z, surfY) {
+// `fussM` (optional, die Ferne): die Bank trägt ihr Mittel über die Fläche des Punkts (`flussAbdruck`), je Bezug (Mirror).
+function pathFieldAt(x, z, surfY, fussM) {
     if (state.genVersion < 2) return 0;
+    const bankW = 4.5;
+    if (fussM > 0 && Number.isFinite(surfY)) {
+        const ab = flussAbdruck(x, z, fussM);
+        if (!ab.n) return 0;
+        const niedrigF = (above) => (above < 0 || above > 5 ? 0 : 1);
+        const ufF = { see: 0, fluss: null, ufer: 0 };
+        waterLevelAt(x, z, ufF);
+        const nSee = niedrigF(surfY - ufF.see);
+        let p = 0;
+        for (let i = 0; i < ab.n; i++) {
+            const innerF = Math.max(1, ab.hw[i]);
+            const mSee = nSee ? kastenMittel(stammPfad, ab.dist[i], fussM, innerF, bankW) * nSee : 0;
+            const mFluss = niedrigF(surfY - ab.sp[i])
+                ? kastenMittel(stammPfadUfer, ab.dist[i], fussM, innerF, bankW, ab.hw[i], ab.kappa[i])
+                : 0;
+            p = Math.max(p, mSee, mFluss);
+        }
+        return p;
+    }
     const r = hydroDistAt(x, z);
     if (!Number.isFinite(r.dist)) return 0;
     const inner = Math.max(1, r.halfW);
-    const bankW = 4.5;
     const d = r.dist - inner;
     if (d < 0 || d > bankW) return 0;
     const band = 1 - d / bankW;
@@ -1337,7 +1351,7 @@ function waterLevelAt(x, z, aus) {
 // voller Spiegel; Atlas-Land im 3×3-Rand → Spiegel nur wenn Terrain ≤ BAND
 // darunter (flacher Ufer-Rand); sonst -Infinity (Hang-Schatten weg). Muss 1:1
 // mit der Main-Thread-Methode wandern (Determinismus-Test ist die Wand).
-function atlasWaterLevelAt(x, z, terrainTopY) {
+function atlasWaterLevelAt(x, z, terrainTopY, aus) {
     let level = -Infinity;
     let inRegion = false;
     const h = hydroFor(x, z); // A3 (V18.132): Heimat ODER Kachel
@@ -1384,6 +1398,7 @@ function atlasWaterLevelAt(x, z, terrainTopY) {
         const waterLevel = typeof state.waterLevel === "number" ? state.waterLevel : 0;
         level = waterLevel;
     }
+    if (aus) aus.koerper = level; // der Körper ohne Fluss (Mirror `_atlasWaterLevelAt`; Leser: `fernNass`)
     const river = hydroRiverAt(x, z);
     if (river && river.surfaceY > level) {
         // V18.475 — DIE RIM-WAND GILT AUCH DEM FLUSS (Mirror, F2): bei terrainTopY ===
@@ -2506,113 +2521,104 @@ function gradientNormals(positions, density, ox, oy, oz, step, Nx, Ny, Nz) {
 function attachFieldColors(positions) {
     const n = positions.length / 3;
     const colors = new Float32Array(n * 3);
-    const ss = (e0, e1, x) => {
-        let t = (x - e0) / (e1 - e0);
-        t = t < 0 ? 0 : t > 1 ? 1 : t;
-        return t * t * (3 - 2 * t);
-    };
-    // DIE BODEN-PALETTE kommt vom Main (Init-Schnappschuss `bodenPalette`, dieselben linearen Zahlen wie
-    // `AnazhRealm.BODEN_FARBE`) — ohne sie färbt der Worker nicht (laut, kein stiller Ersatz).
-    const P = state.bodenPalette;
-    if (!P) throw new Error("attachFieldColors: die Boden-Palette fehlt im Worker-Zustand (bodenPalette)");
-    const WG = state.wiesenGrund;
-    if (!WG || !state.noise)
-        throw new Error("attachFieldColors: der Wiesen-Grund (wiesenGrund) oder das Rauschen fehlt im Worker-Zustand");
-    const stone = P.rock;
-    const earth = P.mead;
-    // V18.181-merge-Λ Sub 3h — Γ1-Lesart-4 (V18.178): Mirror von Main
-    // `_bodenFarbeAt`. Die Sichtbarkeits-Kurve hardkodiert (V17.100-Lehre — bit-Vertrag mit Main; bei
-    // Konstanten-Änderung beide mit-ziehen).
-    const dampEarth = P.wet;
-    const F_VIS_LO = 0.3;
-    const F_VIS_HI = 0.85;
-    // V18.199 — Γ-M LICHEN Worker-Mirror (V17.100-Lehre: Konstanten hier
-    // hardkodiert, bit-Vertrag mit Main AnazhRealm.LICHEN; bei Änderung
-    // beide mit-ziehen).
-    const LICHEN_FEUCHTE_LO = 0.5;
-    const LICHEN_FEUCHTE_HI = 0.9;
-    const LICHEN_DICHTE_LO = 0.5;
-    const LICHEN_DICHTE_HI = 0.85;
-    const LICHEN_STRENGTH = 0.22;
-    const lichenTint = P.flechte;
-    const lava = P.basalt; // Ω-OPSIS Säule I — dunkles Basalt
-    const violet = P.magie;
-    const snow = P.schnee;
-    const sed = P.sediment;
-    const sand = P.sand;
-    const packedDirt = P.dirt; // V18.230 (Ω-O6) getrampelte Pfad-Erde
-    const sandNoise = state.noise; // Mirror anazhRealm._voxelNoise (selber Seed)
+    const c = BODEN_FARBE_TMP;
     for (let i = 0; i < n; i++) {
-        const x = positions[i * 3];
-        const y = positions[i * 3 + 1];
-        const z = positions[i * 3 + 2];
-        const f = worldFieldAt(x, z);
-        const c = [stone[0], stone[1], stone[2]];
-        const mix = (target, t) => {
-            c[0] += (target[0] - c[0]) * t;
-            c[1] += (target[1] - c[1]) * t;
-            c[2] += (target[2] - c[2]) * t;
-        };
-        mix(earth, ss(0.25, 0.85, f.lebendig));
-        // V18.181-merge-Λ Sub 3h — Γ1-Lesart-4 (V18.178, Worker-Mirror): DER
-        // BODEN ATMET. Identische Position im Mix-Stack wie Main: nach earth,
-        // vor lava/snow/sed/strand. y ist die Vertex-Y = die Oberfläche,
-        // als surfY-Argument an feuchteAt übergeben.
-        const feuchte = feuchteAt(x, z, y);
-        mix(dampEarth, ss(F_VIS_LO, F_VIS_HI, feuchte));
-        // Kein Kronendach im Vertex (wie Main `_bodenFarbeAt`, 06.10.): die Streu unter den echten Kronen legt der
-        // Boden-Stoff auf, den Schatten wirft die Krone selbst.
-        // V18.199 — Γ-M LICHEN Worker-Mirror: identisch zur Main-Form.
-        const lichenCluster = (sandNoise.noise2D(x * 0.04 + 7.7, z * 0.04 - 3.3) + 1) * 0.5;
-        const lichenMix =
-            ss(LICHEN_FEUCHTE_LO, LICHEN_FEUCHTE_HI, feuchte) *
-            ss(LICHEN_DICHTE_LO, LICHEN_DICHTE_HI, f.dichte || 0) *
-            lichenCluster *
-            LICHEN_STRENGTH;
-        mix(lichenTint, lichenMix);
-        mix(lava, ss(0.48, 1.02, f.glut) * 0.65); // dunkles Basalt, gekappt (Main-Mirror)
-        // Der Magie-Akzent in Flecken (Main-Spiegel `_bodenFarbeAt`).
-        const magieFleck = ss(0.6, 0.85, (sandNoise.noise2D(x * 0.09 + 3.1, z * 0.09 - 8.7) + 1) * 0.5);
-        mix(violet, ss(0.55, 1.0, f.magieleitung) * magieFleck * 0.3);
-        // Die Schneegrenze ist Gesetz (gelaende-core `schnee`, dieselbe Funktion wie Main `_bodenFarbeAt`).
-        mix(snow, G.schnee(state, y, x, z));
-        // Der Seegrund unter JEDEM Wasser (Main-Spiegel): Schlick, voll ab 4 m Tiefe.
-        // Schlick und Strand über beiden Bezügen (Mirror `_bodenFarbeAt`): See/Meer voll, der Fluss mit seiner Kronen-Blende.
-        const uf = { see: 0, fluss: null, ufer: 0 };
-        waterLevelAt(x, z, uf);
-        const aboveWater = y - uf.see;
-        const aboveFluss = uf.fluss !== null ? y - uf.fluss : null;
-        let schlick = ss(-0.5, -4, aboveWater);
-        if (aboveFluss !== null) schlick = Math.max(schlick, uf.ufer * ss(-0.5, -4, aboveFluss));
-        mix(sed, schlick);
-        const imStrand = (a) => a !== null && a > -1.3 && a < 2.5;
-        if ((imStrand(aboveWater) || (uf.ufer > 0 && imStrand(aboveFluss))) && sandNoise) {
-            const widthNoise = (sandNoise.noise2D(x * 0.0018, z * 0.0018) + 1) * 0.5;
-            const intenseNoise = (sandNoise.noise2D(x * 0.0034 + 17, z * 0.0034 - 9) + 1) * 0.5;
-            if (widthNoise > 0.18) {
-                const width = 0.5 + 1.4 * widthNoise;
-                const intensity = 0.25 + 0.55 * intenseNoise;
-                const glocke = (a) => Math.max(0, 1 - Math.abs(a - 0.6) / width);
-                let shoreBlend = glocke(aboveWater);
-                if (aboveFluss !== null) shoreBlend = Math.max(shoreBlend, uf.ufer * glocke(aboveFluss));
-                mix(sand, shoreBlend * intensity);
-            }
-        }
-        // V18.230 (Ω-OPSIS Säule II Ω-O6) — die PFADE (Worker-Spiegel, bit-
-        // identisch): die Fluss-Bänke als getrampelte, gepackte Erde.
-        const pathF = pathFieldAt(x, z, y);
-        if (pathF > 0.01) mix(packedDirt, pathF * 0.6);
-        // DER WIESEN-GRUND (K53, Spiegel von `_bodenFarbeAt`, dieselben Zahlen aus dem Schnappschuss `wiesenGrund`)
-        const gruen = ss(0, WG.schwelle, c[1] - 0.5 * (c[0] + c[2]));
-        if (gruen > 0) {
-            const fleck = (sandNoise.noise2D(x * 0.13 + 5.3, z * 0.13 - 2.9) + 1) * 0.5;
-            mix(WG.farbe, gruen * (0.5 + 0.5 * fleck));
-        }
+        bodenFarbe(positions[i * 3], positions[i * 3 + 1], positions[i * 3 + 2], c);
         colors[i * 3] = c[0];
         colors[i * 3 + 1] = c[1];
         colors[i * 3 + 2] = c[2];
     }
     return colors;
+}
+
+// DIE EINE BODEN-FARBE DES FADENS (Mirror von \`_bodenFarbeAt\`, bit-identisch; gate:worker-dichte): jeder Chunk-Vertex
+// (\`attachFieldColors\`, ohne fussM) und die Ferne (\`fernFarbeTeile\`, B2: mit fussM — die Flecken, die die Fläche nicht
+// auflöst, tragen ihr Mittel aus phyto-core \`forestOktavMittel\`, die Fluss-Bänder ihr Mittel über den Abdruck
+// \`flussAbdruck\`). Die Palette und der Wiesen-Grund kommen vom Main (Schnappschuss \`bodenPalette\` · \`wiesenGrund\`) —
+// ohne sie färbt der Faden nicht (laut, kein stiller Ersatz). Die Sichtbarkeit der Feuchte und die Flechte sind hardkodiert
+// (V17.100-Lehre: bit-Vertrag mit \`AnazhRealm.FEUCHTE\` · \`AnazhRealm.LICHEN\`, bei Änderung beide mit-ziehen).
+const BODEN_FARBE_TMP = new Float64Array(3);
+function bodenFarbe(x, y, z, out, fussM) {
+    const P = state.bodenPalette;
+    if (!P) throw new Error("bodenFarbe: die Boden-Palette fehlt im Worker-Zustand (bodenPalette)");
+    const WG = state.wiesenGrund;
+    if (!WG || !state.noise)
+        throw new Error("bodenFarbe: der Wiesen-Grund (wiesenGrund) oder das Rauschen fehlt im Worker-Zustand");
+    const ss = (e0, e1, v) => {
+        let t = (v - e0) / (e1 - e0);
+        t = t < 0 ? 0 : t > 1 ? 1 : t;
+        return t * t * (3 - 2 * t);
+    };
+    const sandNoise = state.noise;
+    const f = worldFieldAt(x, z);
+    const c = [P.rock[0], P.rock[1], P.rock[2]];
+    const mix = (target, t) => {
+        c[0] += (target[0] - c[0]) * t;
+        c[1] += (target[1] - c[1]) * t;
+        c[2] += (target[2] - c[2]) * t;
+    };
+    mix(P.mead, ss(0.25, 0.85, f.lebendig));
+    // DER BODEN ATMET: nach earth, vor lava/snow/sed/strand; y ist die Oberfläche
+    const feuchte = feuchteAt(x, z, y, fussM);
+    mix(P.wet, ss(0.3, 0.85, feuchte));
+    // Kein Kronendach im Vertex (wie Main, 06.10.): die Streu unter den echten Kronen legt der Boden-Stoff auf.
+    let lichenCluster = (sandNoise.noise2D(x * 0.04 + 7.7, z * 0.04 - 3.3) + 1) * 0.5;
+    const oktav = fussM > 0 ? self.__phytoCore.forestOktavMittel : null;
+    if (oktav) lichenCluster += (0.5 - lichenCluster) * oktav(fussM, 1 / 0.04); // das Simplex-Mittel ist 0,5
+    const lichenMix = ss(0.5, 0.9, feuchte) * ss(0.5, 0.85, f.dichte || 0) * lichenCluster * 0.22;
+    mix(P.flechte, lichenMix);
+    mix(P.basalt, ss(0.48, 1.02, f.glut) * 0.65); // dunkles Basalt, gekappt
+    // Der Magie-Akzent in Flecken.
+    let magieFleck = ss(0.6, 0.85, (sandNoise.noise2D(x * 0.09 + 3.1, z * 0.09 - 8.7) + 1) * 0.5);
+    if (oktav) magieFleck += (fleckMittel(sandNoise) - magieFleck) * oktav(fussM, 1 / 0.09);
+    mix(P.magie, ss(0.55, 1.0, f.magieleitung) * magieFleck * 0.3);
+    // Die Schneegrenze ist Gesetz (gelaende-core \`schnee\`).
+    mix(P.schnee, G.schnee(state, y, x, z));
+    // Schlick und Strand über beiden Bezügen: See/Meer voll, der Fluss mit seiner Kronen-Blende; mit fussM trägt jedes
+    // Fluss-Band das Mittel seiner Kronen-Blende über die Fläche (\`flussAbdruck\`, je Segment sein Spiegel).
+    const uf = { see: 0, fluss: null, ufer: 0 };
+    waterLevelAt(x, z, uf);
+    const ab = fussM > 0 ? flussAbdruck(x, z, fussM) : null;
+    const aboveWater = y - uf.see;
+    const aboveFluss = !ab && uf.fluss !== null ? y - uf.fluss : null;
+    let schlick = ss(-0.5, -4, aboveWater);
+    if (aboveFluss !== null) schlick = Math.max(schlick, uf.ufer * ss(-0.5, -4, aboveFluss));
+    const imStrand = (a) => a !== null && a > -1.3 && a < 2.5;
+    let flussStrand = false;
+    if (ab)
+        for (let i = 0; i < ab.n; i++) {
+            schlick = Math.max(schlick, ab.mu[i] * ss(-0.5, -4, y - ab.sp[i]));
+            if (ab.mu[i] > 0 && imStrand(y - ab.sp[i])) flussStrand = true;
+        }
+    mix(P.sediment, schlick);
+    if (imStrand(aboveWater) || (uf.ufer > 0 && imStrand(aboveFluss)) || flussStrand) {
+        const widthNoise = (sandNoise.noise2D(x * 0.0018, z * 0.0018) + 1) * 0.5;
+        const intenseNoise = (sandNoise.noise2D(x * 0.0034 + 17, z * 0.0034 - 9) + 1) * 0.5;
+        if (widthNoise > 0.18) {
+            const width = 0.5 + 1.4 * widthNoise;
+            const intensity = 0.25 + 0.55 * intenseNoise;
+            const glocke = (a) => Math.max(0, 1 - Math.abs(a - 0.6) / width);
+            let shoreBlend = glocke(aboveWater);
+            if (aboveFluss !== null) shoreBlend = Math.max(shoreBlend, uf.ufer * glocke(aboveFluss));
+            if (ab) for (let i = 0; i < ab.n; i++) shoreBlend = Math.max(shoreBlend, ab.mu[i] * glocke(y - ab.sp[i]));
+            mix(P.sand, shoreBlend * intensity);
+        }
+    }
+    // die PFADE: die Fluss-Bänke als getrampelte, gepackte Erde
+    const pathF = pathFieldAt(x, z, y, fussM);
+    if (pathF > 0.01) mix(P.dirt, pathF * 0.6);
+    // DER WIESEN-GRUND (K53): wo die Wache Grün sagt, deckt das Mittel des Halms den Grund; die Fläche, die den Fleck nicht
+    // auflöst (\`fussM\`), trägt sein Mittel.
+    const gruen = ss(0, WG.schwelle, c[1] - 0.5 * (c[0] + c[2]));
+    if (gruen > 0) {
+        let fleck = (sandNoise.noise2D(x * 0.13 + 5.3, z * 0.13 - 2.9) + 1) * 0.5;
+        if (oktav) fleck += (0.5 - fleck) * oktav(fussM, WG.rauschM);
+        mix(WG.farbe, gruen * (0.5 + 0.5 * fleck));
+    }
+    out[0] = c[0];
+    out[1] = c[1];
+    out[2] = c[2];
+    return out;
 }
 
 // =============================================================================
@@ -3232,4 +3238,500 @@ function buildChunkMesh(cx, cz, lod, saat = null) {
         hKanten: hoehle.kanten,
         hRand: hoehle.rand,
     };
+}
+
+// =============================================================================
+// DIE FERNE IM FADEN (B2): der Horizont entsteht hier, nicht im Haupt-Faden. Der Fern-Ring, der Feld-Pass und die Fern-
+// Krone des nahen Bodens fragen je Auftrag (`type: "fern"`, `art`: ring · feld · krone · teile) das EINE Gelände-
+// Gesetzbuch (Höhe, Schutt) und die EINE Fern-Farbe (Boden unter dem Kronendach, Deckung, Fluss-Anteil) an DEMSELBEN
+// Zustand wie jeder Chunk; zurück reisen die Zahlen per Transfer (Lehre 24). Was die Farbe aus dem Haupt-Faden liest
+// (die Studio-Laubfarbe der Arten, der Wasser-Körper, die Saison, der Meeresspiegel), reist als Eingabe mit dem Auftrag.
+// Bis B2 rechnete der Haupt-Faden all das selbst (Radeon kalt bis zum ersten Bild 3,89 s in `_tickFernRing`, Spike B1).
+// =============================================================================
+
+// DER KASTEN QUER ZUM FLUSS (Mirror `AnazhRealm._kastenMittel`): das Mittel eines Ufer-Bands b(|u|) über [d − F/2, d + F/2]
+// aus der Stammfunktion des Bands C(s) = ∫₀ˢ b — exakt für ein gerades Segment, stetig in d.
+function kastenMittel(C, d, F, p, q, r, s) {
+    const a = d - F / 2;
+    const b = d + F / 2;
+    return (a >= 0 ? C(b, p, q, r, s) - C(a, p, q, r, s) : C(b, p, q, r, s) + C(-a, p, q, r, s)) / F;
+}
+// die Kronen-Blende: 1 bis zur Kanal-Kante `hw`, smoothstep auf 0 über `kappa` bis zur Krone
+function stammUfer(s, hw, kappa) {
+    let w = (s - hw) / kappa;
+    w = w < 0 ? 0 : w > 1 ? 1 : w;
+    return Math.min(s, hw) + kappa * (w - w * w * w + (w * w * w * w) / 2);
+}
+// das Fluss-Band der Feuchte: 1 bis `inner`, smoothstep auf 0 über `reich`
+function stammFeuchte(s, inner, reich) {
+    const q = s < inner ? inner : s > inner + reich ? inner + reich : s;
+    const v = (inner + reich - q) / reich;
+    return Math.min(s, inner) + reich * (0.5 - v * v * v + (v * v * v * v) / 2);
+}
+// die Bank: (1 − (u − inner) / bank)² auf [inner, inner + bank]
+function stammPfad(s, inner, bank) {
+    let q = (s - inner) / bank;
+    q = q < 0 ? 0 : q > 1 ? 1 : q;
+    return (bank * (1 - (1 - q) * (1 - q) * (1 - q))) / 3;
+}
+// die Bank × die Kronen-Blende: auf [inner, Ende] ein Polynom 5. Grades — Gauß-Legendre mit drei Knoten ist exakt
+function stammPfadUfer(s, inner, bank, hw, kappa) {
+    const e = Math.min(s, inner + bank, hw + kappa);
+    if (!(e > inner)) return 0;
+    const m = (inner + e) / 2;
+    const h = (e - inner) / 2;
+    const f = (u) => {
+        const b = 1 - (u - inner) / bank;
+        let w = (u - hw) / kappa;
+        w = w < 0 ? 0 : w > 1 ? 1 : w;
+        return b * b * (1 - w * w * (3 - 2 * w));
+    };
+    const k = h * Math.sqrt(0.6);
+    return h * ((5 / 9) * f(m - k) + (8 / 9) * f(m) + (5 / 9) * f(m + k));
+}
+
+// DIE FLÜSSE UNTER EINEM ABDRUCK (K16): je Segment in Reichweite (die Buckets bis F/2 weiter) Abstand, Halbbreite, Weite der
+// Bank bis zur Krone, Spiegel und das Mittel der Kronen-Blende über den Abdruck — die Leser (Feuchte, Pfad, Schlick, Strand)
+// falten ihre Bänder genauso und nehmen das Maximum der Segmente. Der Abdruck wächst ohne Kappe.
+const flussAbdruckMemo = {
+    x: NaN,
+    z: NaN,
+    F: NaN,
+    h: null,
+    bereit: false,
+    n: 0,
+    seg: [],
+    dist: new Float64Array(32),
+    hw: new Float64Array(32),
+    kappa: new Float64Array(32),
+    sp: new Float64Array(32),
+    mu: new Float64Array(32),
+};
+function flussAbdruck(x, z, F) {
+    const A = flussAbdruckMemo;
+    const h = hydroFor(x, z);
+    const bereit = !!(h && h.ready && h.riverBuckets);
+    if (A.x === x && A.z === z && A.F === F && A.h === h && A.bereit === bereit) return A;
+    A.x = x;
+    A.z = z;
+    A.F = F;
+    A.h = h;
+    A.bereit = bereit;
+    A.n = 0;
+    if (!bereit) return A;
+    const reich = FEUCHTE_FLUSS_REICHWEITE;
+    const bs = h.bucketSize;
+    const bd = h.bucketsDim;
+    const bi0 = Math.floor((x - h.originX) / bs);
+    const bj0 = Math.floor((z - h.originZ) / bs);
+    const nb = Math.ceil(F / 2 / bs);
+    for (let bj = bj0 - nb; bj <= bj0 + nb; bj++) {
+        if (bj < 0 || bj >= bd) continue;
+        for (let bi = bi0 - nb; bi <= bi0 + nb; bi++) {
+            if (bi < 0 || bi >= bd) continue;
+            const list = h.riverBuckets[bj * bd + bi];
+            if (!list) continue;
+            for (let s = 0; s < list.length; s++) {
+                const seg = list[s];
+                const ex = seg.bx - seg.ax;
+                const ez = seg.bz - seg.az;
+                const len2 = ex * ex + ez * ez || 1;
+                let t = ((x - seg.ax) * ex + (z - seg.az) * ez) / len2;
+                if (t < 0) t = 0;
+                else if (t > 1) t = 1;
+                const dist = Math.hypot(x - (seg.ax + ex * t), z - (seg.az + ez * t));
+                const hw = seg.hwA + (seg.hwB - seg.hwA) * t;
+                const kappa = Math.max(1e-3, (seg.dA + (seg.dB - seg.dA) * t) / state.bankNeigung);
+                if (dist - F / 2 >= Math.max(Math.max(1, hw) + reich, hw + kappa)) continue;
+                let schon = false;
+                for (let k = 0; k < A.n; k++)
+                    if (A.seg[k] === seg) {
+                        schon = true;
+                        break;
+                    }
+                if (schon) continue;
+                if (A.n === A.dist.length)
+                    for (const key of ["dist", "hw", "kappa", "sp", "mu"]) {
+                        const neu = new Float64Array(A[key].length * 2);
+                        neu.set(A[key]);
+                        A[key] = neu;
+                    }
+                const n = A.n++;
+                A.seg[n] = seg;
+                A.dist[n] = dist;
+                A.hw[n] = hw;
+                A.kappa[n] = kappa;
+                A.sp[n] = seg.sA + (seg.sB - seg.sA) * t;
+                A.mu[n] = kastenMittel(stammUfer, dist, F, hw, kappa);
+            }
+        }
+    }
+    return A;
+}
+
+// Das Mittel des Magie-Flecks (ss(0,6, 0,85, Rauschen)) über die Verteilung des Rauschens selbst — 32 × 32 Proben, einmal je
+// Rausch-Instanz (Mirror `_fleckMittel`).
+let fleckMerk = null;
+function fleckMittel(noise) {
+    if (fleckMerk && fleckMerk.noise === noise) return fleckMerk.wert;
+    let m = 0;
+    for (let i = 0; i < 32; i++)
+        for (let j = 0; j < 32; j++) {
+            let t = ((noise.noise2D(i * 7.31 + 0.37, j * 7.31 + 0.71) + 1) * 0.5 - 0.6) / 0.25;
+            t = t < 0 ? 0 : t > 1 ? 1 : t;
+            m += t * t * (3 - 2 * t);
+        }
+    fleckMerk = { noise, wert: m / 1024 };
+    return fleckMerk.wert;
+}
+
+// DIE KONSTANTEN DER FERNE: `state.fern` (Schnappschuss: FOREST, kronenSchatten, Schutt-Gewicht, Fels-Mittel, Gedächtnis)
+// und je Auftrag die Laubfarbe der fünf Arten und der Wasser-Körper (`fernAuftrag`). Fehlt etwas, bricht die Ferne laut.
+let fernLaub = null;
+let fernWasser = null;
+function fernK() {
+    const K = state.fern;
+    if (!K || !K.forest) throw new Error("Fern-Faden: die Konstanten der Ferne fehlen im Zustand (fern)");
+    return K;
+}
+
+// DAS GEWICHT DES SCHUTTS aus EINEM Höhen-Ruf (Mirror `AnazhRealm._fernSchuttVon`): der Schutthang oder die Wand des Erdbaus.
+function fernSchuttVon(aus) {
+    const s = aus.schutt > 0 ? aus.schutt : 0;
+    const w = aus.wand > 0 ? 1 / fernK().geoSchutt : 0;
+    return w > s ? w : s;
+}
+const FERN_SCHUTT_AUS = { hang: 0, schutt: 0, wand: 0 };
+function fernSchuttAt(x, z) {
+    G.hoehe(state, x, z, false, FERN_SCHUTT_AUS);
+    return fernSchuttVon(FERN_SCHUTT_AUS);
+}
+// DER SCHUTT DER FERNE (K17-2): der Boden zum Mittel des Fels-Stoffs gemischt und × das Mittel des Gerölls.
+function fernSchutt(s, out) {
+    if (typeof s !== "number" || s !== s) throw new Error("fernSchutt: das Gewicht des Schutts fehlt (" + s + ")");
+    if (!(s > 0)) return out;
+    const K = fernK();
+    const ws = K.geoSchutt * s;
+    const M = K.felsMittel;
+    const k = 1 + (G.schuttMittel() - 1) * (s < 1 ? s : 1);
+    for (let c = 0; c < 3; c++) out[c] = (out[c] + (M[c] - out[c]) * ws) * k;
+    return out;
+}
+
+// DER FLUSS IN DER MASCHE (K16): der Anteil einer Masche (halbe Kante `hs` m; 0 = ein Punkt), den das Wasser eines Flusses
+// deckt — Kasten-Filter des Querschnitts über das nächste Segment.
+function fernFlussDeckung(x, z, hs, aus) {
+    const fl = hydroDistAt(x, z);
+    if (aus) aus.spiegel = fl.spiegel;
+    if (!(fl.dist < Infinity)) return 0;
+    const w = fl.halfW;
+    if (!(hs > 0)) return fl.dist <= w ? 1 : 0;
+    return Math.max(0, Math.min(fl.dist + hs, w) - Math.max(fl.dist - hs, -w)) / (2 * hs);
+}
+function fernFlussTeil(x, z, out, hs) {
+    const c = fernFlussDeckung(x, z, hs);
+    out[7] = c;
+    if (c > 0) out[6] *= 1 - c;
+    return out;
+}
+
+// DIE NÄSSE DER FERNE (K16): die Form des Gewässers, die die Dichte des Chunks trägt (Kanal, Damm, See-Becken — dieselbe
+// Formel wie `terrainBaseDensityCol` bei y = 0), und sein Spiegel aus der EINEN Wasser-Wahrheit (`atlasWaterLevelAt`, der
+// Körper ohne Fluss); vor der Hydrosphäre der Meeresspiegel.
+function fernNass(x, z, law, wl, aus) {
+    const h = state.hydrosphere;
+    if (!h || !h.ready || state.hydroComputing) {
+        aus.y = law;
+        aus.spiegel = wl;
+        return law < wl;
+    }
+    let y = law;
+    const kn = hydrosphereCarveAt(x, z);
+    if (kn) {
+        const dL = kn.L;
+        let hk = Math.max(kn.k - Math.abs(y - dL), 0) / kn.k;
+        const damm = Math.max(y, dL) + hk * hk * kn.k * 0.25;
+        const dP = kn.P;
+        hk = Math.max(kn.k - Math.abs(damm - dP), 0) / kn.k;
+        y = Math.min(damm, dP) - hk * hk * kn.k * 0.25;
+    }
+    const lk = hydrosphereLakeAt(x, z);
+    if (lk) y = y * (1 - lk.w) + lk.bedY * lk.w;
+    aus.y = y;
+    atlasWaterLevelAt(x, z, y, aus);
+    aus.spiegel = aus.koerper;
+    return y < aus.spiegel;
+}
+
+// Der ctx der Nische (phyto-core `forestNische`): die Feuchte unter demselben Abdruck (`fussM`).
+let fernNischeCtxMerk = null;
+function fernNischeCtx() {
+    if (fernNischeCtxMerk && fernNischeCtxMerk.F === fernK().forest) return fernNischeCtxMerk;
+    const ctx = {
+        F: fernK().forest,
+        baseH: 0,
+        fussM: 0,
+        fbm: forestFbm,
+        feuchteAt: (px, pz, sy) => feuchteAt(px, pz, sy, ctx.fussM),
+    };
+    fernNischeCtxMerk = ctx;
+    return ctx;
+}
+
+// DIE TEILE EINES FERN-PUNKTS: `out` = [Boden r, g, b · Kronendach r, g, b · Deckung · Wasser-Anteil] (linear). Das Kronendach
+// ist die Studio-Laubfarbe der Arten, die der Wald-Generator HIER würfelt (phyto-core `forestNische`), × die Selbstbeschattung
+// der Krone; die Deckung ist der gepflanzte Bestand (`forestKronenDeckung`). `fuss` = die Masche, für die der Punkt steht
+// (dann das Mittel über sie, `fernFarbeMasche`); `fussM` die Kante einer Abtastung; `schutt` das Gewicht des Schutts aus dem
+// Höhen-Ruf, der `y` gab (null: EIN eigener Ruf).
+const FERN_KRONEN = [];
+function fernFarbeTeile(x, y, z, out, fuss, fussM, schutt) {
+    if (schutt == null) schutt = fernSchuttAt(x, z);
+    if (fuss) return fernFlussTeil(x, z, fernFarbeMasche(x, y, z, out, fuss, schutt), Math.max(fuss.ht, fuss.hr));
+    if (fussM === undefined) return fernFlussTeil(x, z, fernFarbeTeile(x, y, z, out, null, 0, schutt), 0);
+    const core = self.__phytoCore;
+    if (
+        !core ||
+        typeof core.forestNische !== "function" ||
+        typeof core.forestBestand !== "function" ||
+        typeof core.forestKronenDeckung !== "function"
+    )
+        throw new Error("Fern-Farbe: phyto-core forestNische/forestBestand/forestKronenDeckung fehlen (KERN-PFLICHT)");
+    if (!fernLaub) throw new Error("Fern-Farbe: die Studio-Laubfarbe der Arten fehlt im Auftrag (laub)");
+    bodenFarbe(x, y, z, out, fussM);
+    fernSchutt(schutt, out);
+    const K = fernK();
+    const ctx = fernNischeCtx();
+    const B = core.forestBestand(ctx.fbm, x, z, fussM > 0 ? fussM : 0);
+    const sd = B.sd;
+    ctx.baseH = state.baseHeight || 0;
+    ctx.fussM = fussM > 0 ? fussM : 0;
+    const N = core.forestNische(x, z, y, sd, ctx);
+    const L = fernLaub;
+    const w = [N.wF, N.wT, N.wE, N.wB, N.wW];
+    const C = K.forest.crown;
+    if (!FERN_KRONEN.length || FERN_KRONEN.C !== C) {
+        FERN_KRONEN.length = 0;
+        for (const art of ["baum_kiefer", "baum_tanne", "baum_eiche", "baum_birke", "baum_erle"])
+            FERN_KRONEN.push([0, C[art]]);
+        FERN_KRONEN.C = C;
+    }
+    for (let i = 0; i < 5; i++) FERN_KRONEN[i][0] = w[i];
+    out[6] = core.forestKronenDeckung(sd, B.geburt, FERN_KRONEN, K.forest);
+    const S = K.kronenSchatten;
+    let summe = 0;
+    let r = 0;
+    let g = 0;
+    let b = 0;
+    for (let i = 0; i < 5; i++) {
+        summe += w[i];
+        r += w[i] * L[i][0];
+        g += w[i] * L[i][1];
+        b += w[i] * L[i][2];
+    }
+    const k = summe > 0 ? S / summe : 0;
+    out[3] = r * k;
+    out[4] = g * k;
+    out[5] = b * k;
+    return out;
+}
+
+// DER FUSSABDRUCK DER FERN-FARBE (K16): das Mittel der Masche (`fuss` = { ax, az, ht, hr }) aus 3 × 3 Abtastungen, isotrop über
+// die längere Maschen-Seite × 1,5; exakt für jede Saison (Deckung ā = ⟨a⟩, Krone ⟨k·a⟩/ā, Boden (⟨c⟩ − ⟨c·a⟩)/(1 − ā)).
+const FERN_MASCHE_T = new Float32Array(8);
+const FERN_MASCHE_S = new Float64Array(10);
+const FERN_U = [-2 / 3, 0, 2 / 3];
+function fernFarbeMasche(x, y, z, out, fuss, schutt) {
+    const t = FERN_MASCHE_T;
+    const S = FERN_MASCHE_S;
+    S.fill(0);
+    const dx = x - fuss.ax;
+    const dz = z - fuss.az;
+    const d = Math.hypot(dx, dz) || 1;
+    const rx = dx / d;
+    const rz = dz / d;
+    const h = 1.5 * Math.max(fuss.ht, fuss.hr);
+    const fussM = 2 * Math.max(fuss.ht, fuss.hr);
+    for (let i = 0; i < 3; i++)
+        for (let j = 0; j < 3; j++) {
+            const ur = FERN_U[i] * h;
+            const ut = FERN_U[j] * h;
+            fernFarbeTeile(x + rx * ur - rz * ut, y, z + rz * ur + rx * ut, t, null, fussM, schutt);
+            const a = t[6];
+            for (let c = 0; c < 3; c++) {
+                S[c] += t[c];
+                S[3 + c] += t[c] * a;
+                S[6 + c] += t[3 + c] * a;
+            }
+            S[9] += a;
+        }
+    const a = S[9] / 9;
+    const frei = 9 - S[9];
+    for (let c = 0; c < 3; c++) {
+        out[c] = frei > 1e-6 ? (S[c] - S[3 + c]) / frei : S[c] / 9;
+        out[3 + c] = S[9] > 1e-6 ? S[6 + c] / S[9] : 0;
+    }
+    out[6] = a;
+    return out;
+}
+
+// DAS GEDÄCHTNIS DER RING-FARBEN (zwei Generationen à `memo` Punkte): Schnapp-Punkte sind ganzzahlig, der Schlüssel trägt die
+// Maschen-Breite in Viertel-Oktaven — ein Re-Anker rechnet nur, was neu ist; die Saat wechselt es.
+let fernMemo = { neu: new Map(), alt: new Map(), seed: null };
+function fernRingTeile(x, z, law, fuss, schutt) {
+    if (fernMemo.seed !== state.seed) fernMemo = { neu: new Map(), alt: new Map(), seed: state.seed };
+    const key = x * 4194304 + z + Math.round(4 * Math.log2(Math.max(1, fuss.ht))) * 17592186044416;
+    let f = fernMemo.neu.get(key);
+    if (f) return f;
+    f = fernMemo.alt.get(key) || fernFarbeTeile(x, law, z, new Float32Array(8), fuss, undefined, schutt);
+    if (fernMemo.neu.size >= fernK().memo) {
+        fernMemo.alt = fernMemo.neu;
+        fernMemo.neu = new Map();
+    }
+    fernMemo.neu.set(key, f);
+    return f;
+}
+
+// DER AUFTRAG DER FERNE. ring: je Punkt (x, z, Masche ht/hr, Reihen-Radius, Bau-Zone) die Gesetzes-Höhe (in der Bau-Zone
+// mit dem vollen Gesetz gemischt, die Deck-Mischung), der Schutt, Fläche und Spiegel des Bodens (`fernNass`), der Fluss der
+// Masche (Anteil und Spiegel) und die Teile (trocken; nasse Punkte jenseits der Bau-Zone tragen keine — dort setzt der Main
+// nur den Spiegel). feld: je Texel die Höhe (f32 wie das Feld) und die Fern-Farbe × Saison (y, r, g, b). krone: je Punkt das
+// Kronendach sRGB in 8 Bit und die Deckung (Wasser 0). teile: die Teile an Punkten (die Linsen) — mit `y` an der Höhe, sonst am
+// Gesetz; mit `ht` als Masche; `roh` ohne den Fluss-Anteil (fussM 0); `nurHoehe` nur Höhe, Schutt und Nässe.
+function fernAuftrag(msg) {
+    fernLaub = msg.laub;
+    fernWasser = msg.wasser;
+    const p = msg.punkte;
+    const n = (p.length / 2) | 0;
+    const wl = msg.wl;
+    const aus = { hang: 0, schutt: 0, wand: 0 };
+    const nass = { y: 0, spiegel: 0, koerper: 0 };
+    if (msg.art === "ring") {
+        const law = new Float64Array(n);
+        const voll = new Float64Array(n).fill(NaN);
+        const schutt = new Float32Array(n);
+        const nassY = new Float64Array(n);
+        const spiegel = new Float64Array(n);
+        const flussC = new Float64Array(n);
+        const flussSp = new Float64Array(n);
+        const teile = new Float32Array(n * 8).fill(NaN);
+        const fl = { spiegel: NaN };
+        const fuss = { ax: msg.ax, az: msg.az, ht: 0, hr: 0 };
+        const deck = msg.deckZoneRad;
+        for (let k = 0; k < n; k++) {
+            const x = p[k * 2];
+            const z = p[k * 2 + 1];
+            let L = G.hoehe(state, x, z, false, aus);
+            const s = fernSchuttVon(aus);
+            const zone = msg.zone[k] === 1;
+            if (zone) {
+                const V = G.hoehe(state, x, z, true);
+                voll[k] = V;
+                const rad = msg.rad[k];
+                if (rad <= deck * 1.35) {
+                    const w = rad <= deck ? 1 : (deck * 1.35 - rad) / (deck * 0.35);
+                    L = L + (V - L) * w - 0.3 * w;
+                }
+            }
+            law[k] = L;
+            schutt[k] = s;
+            const wet = fernNass(x, z, L, wl, nass);
+            nassY[k] = nass.y;
+            spiegel[k] = nass.spiegel;
+            fuss.ht = msg.ht[k];
+            fuss.hr = msg.hr[k];
+            flussC[k] = fernFlussDeckung(x, z, Math.max(fuss.ht, fuss.hr), fl);
+            flussSp[k] = fl.spiegel;
+            if (wet && !zone) continue;
+            teile.set(fernRingTeile(x, z, L, fuss, s), k * 8);
+        }
+        const antwort = { law, voll, schutt, nassY, spiegel, flussC, flussSp, teile };
+        return { antwort, transfer: Object.values(antwort).map((a) => a.buffer) };
+    }
+    if (msg.art === "feld") {
+        const daten = new Float32Array(n * 4);
+        let hMax = -Infinity;
+        const fuss = { ax: msg.ax, az: msg.az, ht: 0, hr: msg.hr };
+        const t = new Float32Array(8);
+        const R = fernWasser;
+        const sai = msg.saison;
+        for (let k = 0; k < n; k++) {
+            const px = p[k * 2];
+            const pz = p[k * 2 + 1];
+            // die Höhe und der Schutt in f32, wie das Feld sie trägt
+            const law = Math.fround(G.hoehe(state, px, pz, false, aus));
+            const s = Math.fround(fernSchuttVon(aus));
+            const wet = fernNass(px, pz, law, wl, nass);
+            const y = wet ? nass.spiegel : nass.y;
+            let r = R[0];
+            let g = R[1];
+            let b = R[2];
+            if (!wet) {
+                fuss.ht = (Math.PI * Math.hypot(px - msg.ax, pz - msg.az)) / msg.azN;
+                fernFarbeTeile(px, y, pz, t, fuss, undefined, s);
+                const c = t[7];
+                r = (t[0] + (t[3] * sai.r - t[0]) * t[6]) * (1 - c) + R[0] * c;
+                g = (t[1] + (t[4] * sai.g - t[1]) * t[6]) * (1 - c) + R[1] * c;
+                b = (t[2] + (t[5] * sai.b - t[2]) * t[6]) * (1 - c) + R[2] * c;
+            }
+            daten[k * 4] = y;
+            daten[k * 4 + 1] = r;
+            daten[k * 4 + 2] = g;
+            daten[k * 4 + 3] = b;
+            if (y > hMax) hMax = y;
+        }
+        return { antwort: { daten, hMax }, transfer: [daten.buffer] };
+    }
+    if (msg.art === "krone") {
+        const rgba = new Uint8Array(n * 4);
+        const t = new Float32Array(8);
+        const sRGB = (c) => {
+            const v = c <= 0 ? 0 : c >= 1 ? 1 : c <= 0.0031308 ? c * 12.92 : 1.055 * Math.pow(c, 1 / 2.4) - 0.055;
+            return Math.round(v * 255);
+        };
+        for (let k = 0; k < n; k++) {
+            const x = p[k * 2];
+            const z = p[k * 2 + 1];
+            const o = k * 4;
+            // Wasser trägt keine Krone (der Ring: Deckung 0 auf dem Spiegel)
+            if (fernNass(x, z, G.hoehe(state, x, z, false, aus), wl, nass)) continue;
+            fernFarbeTeile(x, nass.y, z, t, undefined, undefined, fernSchuttVon(aus));
+            rgba[o] = sRGB(t[3]);
+            rgba[o + 1] = sRGB(t[4]);
+            rgba[o + 2] = sRGB(t[5]);
+            rgba[o + 3] = Math.round(Math.max(0, Math.min(1, t[6])) * 255);
+        }
+        return { antwort: { rgba }, transfer: [rgba.buffer] };
+    }
+    if (msg.art === "teile") {
+        const teile = new Float32Array(n * 8);
+        const law = new Float64Array(n);
+        const schutt = new Float32Array(n);
+        const nassA = new Uint8Array(n);
+        const t = new Float32Array(8);
+        const fuss = msg.ht ? { ax: msg.ax, az: msg.az, ht: 0, hr: 0 } : null;
+        for (let k = 0; k < n; k++) {
+            const x = p[k * 2];
+            const z = p[k * 2 + 1];
+            const L = G.hoehe(state, x, z, msg.detail === true, aus);
+            const s = fernSchuttVon(aus);
+            law[k] = L;
+            schutt[k] = s;
+            nassA[k] = fernNass(x, z, L, wl, nass) ? 1 : 0;
+            if (msg.nurHoehe) continue;
+            const y = msg.y ? msg.y[k] : L;
+            if (fuss) {
+                fuss.ht = msg.ht[k];
+                fuss.hr = msg.hr[k];
+            }
+            if (msg.roh && fuss) fernFarbeMasche(x, y, z, t, fuss, s);
+            else if (msg.roh) fernFarbeTeile(x, y, z, t, null, 0, s);
+            else fernFarbeTeile(x, y, z, t, fuss, undefined, s);
+            teile.set(t, k * 8);
+        }
+        return {
+            antwort: { teile, law, schutt, nass: nassA },
+            transfer: [teile.buffer, law.buffer, schutt.buffer, nassA.buffer],
+        };
+    }
+    throw new Error("Fern-Faden: unbekannte Art des Auftrags (" + msg.art + ")");
 }
