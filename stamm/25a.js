@@ -1375,11 +1375,12 @@ class AnazhRealm_Z25a {
         // OrthographicCamera rechnet sie nur im Konstruktor; sonst ist light.shadow.matrix degeneriert
         // und es fällt nie ein Schatten.
         directionalLight.shadow.camera.updateProjectionMatrix();
-        // Schatten-Zwilling: der Schatten-Pass MUSS den Kronen-Zwilling auf SHADOW_TWIN_LAYER sehen, die
-        // Haupt-Kamera (nur Layer 0) NIE; der WebGPU-Schatten-Render testet
-        // `object.layers.test(shadow.camera.layers)`. VOR der CSM-Konstruktion setzen: `light.shadow.clone()`
-        // kopiert den Mask in jede Kaskaden-Kamera; der Fallback (eine Map) nutzt dieselbe shadow.camera.
-        directionalLight.shadow.camera.layers.enable(AnazhRealm.SHADOW_TWIN_LAYER);
+        // DIE WURF-EBENE (K72, `_wurfEbene`): die Schatten-Kamera sieht NUR SHADOW_TWIN_LAYER — die Ebene, die `castShadow`
+        // jedes Knotens trägt; die Haupt-Kamera (nur Layer 0) sieht sie nie. r184 behält eine Schatten-Maske mit einem Bit
+        // jenseits der 0 (`updateShadow`, gate:vendor-anker) und projiziert damit nur Werfer — vorher sah die Kaskade die
+        // Welt-Ebene und verwarf 39–72 Nicht-Werfer je Render erst nach Projektion und Sortierung. VOR der CSM-Konstruktion
+        // setzen: `light.shadow.clone()` kopiert die Maske in jede Kaskaden-Kamera; der Fallback nutzt dieselbe shadow.camera.
+        directionalLight.shadow.camera.layers.set(AnazhRealm.SHADOW_TWIN_LAYER);
         scene.add(directionalLight);
         // Light-Target in den Szenengraph hängen, damit sein matrixWorld pro Frame aktualisiert wird —
         // _applyDayNightToScene setzt es auf den Spieler, das Shadow-Frustum folgt ihm.

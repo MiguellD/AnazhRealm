@@ -1306,6 +1306,49 @@ class AnazhRealm_Z25c {
         }
     }
 
+    // DIE WURF-EBENE (K72): der Wurf eines Knotens IST ein Bit seiner Ebenen — `castShadow` liest und schreibt das Bit
+    // SHADOW_TWIN_LAYER (ein Accessor am Prototyp von THREE.Object3D; r184 weist `castShadow` im Konstruktor NACH den Ebenen
+    // zu, `copy` beide, gate:vendor-anker), und die Schatten-Kamera sieht NUR diese Ebene (Licht-Setup). r184 testet die
+    // Ebene in `_projectObject` VOR Frustum, Liste und Sortierung: ein Nicht-Werfer kostet den Kaskaden-Render einen Ebenen-
+    // Test statt Projektion, Fassade, Listen-Platz, Sortier-Schritt und den Ruf der Schatten-Funktion, die ihn erst dort
+    // verwarf. Befund 15.10. (Radeon, Zerlegung je Kaskaden-Render, Third): Genesis k0 72 Nicht-Werfer neben 42 Werfern in
+    // der Liste, k1 47 neben 8; Wiese 39–48. Der Zwilling ist ein Werfer ohne Ebene 0 (nur die Kaskaden sehen ihn); wer die
+    // Ebenen des Auges schaltet, lässt das Wurf-Bit stehen. Ein eigenes Wurf-Feld neben der Ebene gibt es nicht: der
+    // Accessor steht, bevor die Welt ihren ersten Knoten baut (Konstruktor), gate:schatten-werfer W10 nennt jeden Knoten der
+    // Szene, der ein eigenes Feld trägt oder für die Kaskade gesehen ≠ wirft ist.
+    // JEDES LICHT liegt auf der Wurf-Ebene, sein `castShadow` ist sein eigenes Wort (`_wurfLicht`): r184 hält EINEN Lichter-
+    // Knoten je Szene (`Lighting.getNode(scene)`, gate:vendor-anker), und der Schatten-Pass läuft MITTEN im Hauptbild — sähe
+    // die Kaskade ein anderes Licht-Set als das Auge, setzte ihr Pass den geteilten Knoten um, und alles danach Gezeichnete
+    // verlöre die übrigen Lichter (gate:ego-schatten 15.10.: die Bühne ohne ihr Umgebungslicht, Boden 145 → 98).
+    static _wurfEbene() {
+        const P = THREE.Object3D.prototype;
+        const d = Object.getOwnPropertyDescriptor(P, "castShadow");
+        if (d && typeof d.get === "function") return;
+        const W = 1 << AnazhRealm.SHADOW_TWIN_LAYER;
+        Object.defineProperty(P, "castShadow", {
+            configurable: true,
+            enumerable: true,
+            get() {
+                return (this.layers.mask & W) !== 0;
+            },
+            set(v) {
+                const l = this.layers;
+                l.mask = (v ? l.mask | W : l.mask & ~W) >>> 0;
+            },
+        });
+        Object.defineProperty(THREE.Light.prototype, "castShadow", {
+            configurable: true,
+            enumerable: true,
+            get() {
+                return this._wurfLicht === true;
+            },
+            set(v) {
+                this._wurfLicht = !!v;
+                this.layers.mask = (this.layers.mask | W) >>> 0;
+            },
+        });
+    }
+
     // DIE SICHT JE PASS (scene.onBeforeRender / onAfterRender): die Region-Bundles tragen ihren Cull auf `visible`
     // (three-Culling friert im Replay ein). Bis V18.528 galt das Urteil der Haupt-Kamera für JEDEN Pass: ein Bundle im
     // Blick warf in beide Kaskaden (auch 2 km weit), eines hinter dem Blick oder hinter dem Berg warf nie — auch wenn
@@ -1360,7 +1403,7 @@ class AnazhRealm_Z25c {
             }
             return;
         }
-        const n = this._werferWahlPass(map, L, S.ab);
+        const n = this._werferWahlPass(map, S);
         const z = this._werferZensus || (this._werferZensus = []);
         z[k] = { werfer: n, bundles: map.size, abgewaehlt: S.ab.length };
     }
@@ -1368,17 +1411,52 @@ class AnazhRealm_Z25c {
     // Die Werfer-Wahl eines Schatten-Passes: je Region-Bundle die Werfer-Hülle, darin je werfendes Blatt-Mesh (`_werferKind`,
     // frisch aus der Hülle dieses Takts) — beide nach dem EINEN Gesetz (`_passTrifftBox`); was nicht trifft, ruht für diesen
     // Pass (`ab` merkt es für die Rückkehr). Rückgabe: die Zahl der werfenden Bundles.
-    _werferWahlPass(map, L, ab) {
+    // DIE WAHL STEHT (K72 — Welle C für den letzten Leser der Pass-Wahl): ein Bundle behält die Wahl dieses Passes (`L.key`),
+    // solange seine Lage (`L.gen`), sein Werfer-Stand (`_bundleWerferHuelle`) und die Instanz-Wahl dieses Passes stehen
+    // (`S.wahlNeu` — sie schaltet die Sicht der Wahl-Gruppen, die dieser Gang liest): kein Gang über die Kinder, keine
+    // Prüfung, nur die gemerkte Wahl. Gemessen 15.10. (Radeon, Genesis/Wiese Third, Ruhe): je Kaskaden-Render 18–37
+    // Prüfungen in 22 Gängen, in jedem Render dieselbe Wahl.
+    _werferWahlPass(map, S) {
+        const L = S.lage,
+            ab = S.ab;
+        const instanzSteht = S.wahlNeu === 0;
         let n = 0;
         for (const bg of map.values()) {
             const h = this._bundleWerferHuelle(bg);
+            const u = bg.userData;
+            const je = u._werferJe || (u._werferJe = new Map());
+            let w = je.get(L.key);
+            if (instanzSteht && w && w.gen === L.gen && w.stand === u._werferStand) {
+                bg.visible = w.vis;
+                if (!w.vis) continue;
+                n++;
+                for (let i = 0; i < w.ab.length; i++) {
+                    const c = w.ab[i];
+                    c.visible = false;
+                    ab.push(c);
+                }
+                continue;
+            }
             const vis = h !== null && this._passTrifftBox(L, h, 0);
             bg.visible = vis;
-            if (!vis) continue;
-            n++;
-            this._werferWahl(bg, L, ab);
+            const a0 = ab.length;
+            if (vis) {
+                n++;
+                this._werferWahl(bg, L, ab);
+            }
+            if (!w) je.set(L.key, (w = { gen: 0, stand: 0, vis: false, ab: [] }));
+            this._werferWahlMerke(bg, w, L, vis, ab, a0);
         }
         return n;
+    }
+
+    // Merkt die Wahl eines Bundles für diesen Pass: Lage, Werfer-Stand, ob es wirft und welche Werfer darin ruhen.
+    _werferWahlMerke(bg, w, L, vis, ab, a0) {
+        w.gen = L.gen;
+        w.stand = bg.userData._werferStand;
+        w.vis = vis;
+        w.ab.length = 0;
+        for (let i = a0; i < ab.length; i++) w.ab.push(ab[i]);
     }
 
     _werferWahl(o, L, ab) {
@@ -1790,10 +1868,13 @@ class AnazhRealm_Z25c {
     // (`_instanzWahlArt`): so schreibt kein Pass die Puffer eines anderen, auch nicht der Kaskaden-Pass mitten im
     // Hauptbild. Das Hauptbild nimmt sein Bündel neu auf, wenn die Wahl sich ändert (Zahl oder Ordnung); die Kaskaden
     // zeichnen Bündel-Kinder direkt.
+    // `S.wahlNeu` zählt die Gruppen, deren Wahl dieser Pass neu legte oder fallen ließ (0: die Wahl des Passes stand ganz —
+    // die Werfer-Wahl liest die Sicht der Wahl-Gruppen und hält ihre Wahl nur dann, `_werferWahlPass`).
     _instanzWahlPass(art, S) {
         const set = this._instanzWahlGruppen();
         const liste = art === "haupt" ? S.wahlHaupt : S.wahlSchatten;
         if (liste.length) this._instanzWahlZurueck(liste); // ein Pass ohne Nachher-Haken (Abbruch) hinterlässt nichts
+        S.wahlNeu = 0;
         if (set.size === 0) return;
         const L = S.lage;
         for (const g of set) {
@@ -1805,7 +1886,7 @@ class AnazhRealm_Z25c {
                 // nächste sichtbare Belegung wählt neu). Sonst hielt sie die Marke eines freigegebenen Slots — CI 07.10.,
                 // gate:sicht-arbeit (I): der Stufen-Wechsel einer einzelnen Erle 1→0 leerte f:weide|1|1:0#S, k0 und k1
                 // hielten Slot −1.
-                if (g._wahlJe && L) g._wahlJe.delete(L.key);
+                if (g._wahlJe && L && g._wahlJe.delete(L.key)) S.wahlNeu++;
                 continue;
             }
             // die Wahl steht (Welle C): die Gruppe liegt (wieder), wie dieser Pass sie zuletzt ordnete
@@ -1814,6 +1895,7 @@ class AnazhRealm_Z25c {
                 liste.push(g);
                 continue;
             }
+            S.wahlNeu++;
             const fenster = L.an && this._instanzFensterGilt(g);
             let kk = 0,
                 tausch = 0;
@@ -1856,6 +1938,9 @@ class AnazhRealm_Z25c {
             w.live !== (g.liveCount | 0)
         )
             return false;
+        // DIE ORDNUNG STEHT (K72): tauschte seit der Wahl dieses Passes niemand einen Slot der Gruppe (`_archGroupTausch`
+        // zählt `g._ordnung`), liegen ihre gemerkten Instanzen noch vorn — kein Gang über die Marken
+        if (w.ordnung === (g._ordnung | 0)) return true;
         const refs = w.refs;
         let tausch = 0;
         for (let j = 0; j < refs.length; j++) {
@@ -1864,6 +1949,7 @@ class AnazhRealm_Z25c {
             this._archGroupTausch(g, i, j);
             tausch++;
         }
+        w.ordnung = g._ordnung | 0;
         if (tausch > 0 && g.wahl === "haupt") this._archMeshBundleTouch(m);
         return true;
     }
@@ -1874,7 +1960,18 @@ class AnazhRealm_Z25c {
         if (!w)
             je.set(
                 L.key,
-                (w = { gen: 0, geo: null, mat: null, live: 0, refs: null, belegt: 0, im: null, vMat: 0, vKarte: 0 })
+                (w = {
+                    gen: 0,
+                    geo: null,
+                    mat: null,
+                    live: 0,
+                    refs: null,
+                    belegt: 0,
+                    im: null,
+                    vMat: 0,
+                    vKarte: 0,
+                    ordnung: -1,
+                })
             );
         const m = g.mesh;
         w.gen = L.gen;
@@ -1882,6 +1979,7 @@ class AnazhRealm_Z25c {
         w.mat = g.mat;
         w.live = g.liveCount | 0;
         w.refs = g.slotRef.slice(0, kk);
+        w.ordnung = g._ordnung | 0;
         this._instanzSlotStand(g, w);
     }
 
