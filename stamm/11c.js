@@ -1406,7 +1406,8 @@ class AnazhRealm_Z11c {
             mesh.frustumCulled = false; // der Ring umgibt die Kamera ringsum
             mesh.renderOrder = -1; // hinter der Welt (Depth-Test ordnet den Rest)
             mesh.castShadow = false;
-            mesh.receiveShadow = false;
+            // er empfängt (D3): jenseits der Kaskaden trägt sein Boden-Stoff die Horizont-Karte (`_horizontSicht`)
+            mesh.receiveShadow = true;
             mesh.visible = false; // erst sichtbar, wenn der erste Höhen-Refresh durch ist
             mesh.matrixAutoUpdate = false; // Vertex-XZ sind absolute Welt-Koordinaten
             mesh.userData.inventar = "fern-ring"; // Identitäts-Stempel (H3-Familie)

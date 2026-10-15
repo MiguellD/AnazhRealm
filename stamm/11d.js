@@ -1256,6 +1256,7 @@ class AnazhRealm_Z11d {
         this._fernFarbeMemo = null; // die Fern-Farben gehören der Welt, die den Ring trug
         const fr = this.state.fernRing;
         if (!fr) return;
+        this._horizontKarteLeeren(); // die Zeichen-Meshes der Horizont-Karte lesen die Geometrien des Rings — sie fallen zuerst
         // je gezeichnetes Mesh seine Geometrie (Schale 1, Schale 2, die zwei Teile der Schale 0) und sein Stoff (die zwei
         // Stoffe, frei und Naht, geteilt — ein zweites dispose ist ohne Hörer leer)
         for (const m of fr.meshes || []) {

@@ -2786,4 +2786,205 @@ class AnazhRealm_Z25c {
         const vy = this._voxelSurfaceY(x, z);
         return typeof vy === "number" && Number.isFinite(vy) ? vy : this.state.terrainBaseHeight || 0;
     }
+
+    // DIE HORIZONT-KARTE (D3, `HORIZONT_KARTE`): der Schatten JENSEITS der Kaskaden. Die Kaskaden tragen bis zu ihrer Reichweite
+    // (an der Mess-Wiese 270 m); dahinter warf bis D3 nichts — kein Grat beschattete am Abend das Tal hinter ihm, der Boden der
+    // Chunks bis 540 m und der Fern-Ring bis 8 km lagen im vollen Licht. Das Licht sieht die drei Schalen des Rings (ihre
+    // Geometrien, ein eigener Stoff) orthografisch; je Texel bleibt die Fläche, die ihm am nächsten liegt (Max-Blende auf r16f,
+    // ohne Tiefen-Puffer). Die Karte ist EINE Größe: `U.karte` bildet die Welt auf (u, v, Licht-Tiefe) ab — der Zeichner schreibt
+    // mit ihr, jeder Empfänger liest mit ihr (`_horizontSicht`). Ohne Vendor-Symbol bricht sie laut.
+    _horizontKarte() {
+        const st = this.state;
+        if (st.horizontKarte) return st.horizontKarte;
+        const T = typeof THREE !== "undefined" ? THREE.TSL : null;
+        if (!T || !THREE.RenderTarget || !THREE.MeshBasicNodeMaterial || !THREE.OrthographicCamera)
+            throw new Error("Die Horizont-Karte: THREE trägt TSL/RenderTarget/MeshBasicNodeMaterial nicht (Vendor)");
+        const H = AnazhRealm.HORIZONT_KARTE;
+        const rt = new THREE.RenderTarget(H.texel, H.texel, {
+            type: THREE.HalfFloatType,
+            format: THREE.RedFormat,
+            depthBuffer: false,
+            generateMipmaps: false,
+            minFilter: THREE.LinearFilter,
+            magFilter: THREE.LinearFilter,
+        });
+        rt.texture.name = "horizont-karte";
+        const U = this._uniformHeimatTeilen({
+            karte: T.uniform(new THREE.Matrix4()),
+            aktiv: T.uniform(0),
+            ab: T.uniform(0),
+            bias: T.uniform(100),
+        });
+        const stoff = new THREE.MeshBasicNodeMaterial();
+        stoff.name = "horizont-karte";
+        stoff.colorNode = T.vec4(U.karte.mul(T.vec4(T.positionWorld, 1)).z, 0, 0, 1);
+        stoff.blending = THREE.CustomBlending;
+        stoff.blendEquation = THREE.MaxEquation;
+        stoff.blendSrc = THREE.OneFactor;
+        stoff.blendDst = THREE.OneFactor;
+        stoff.transparent = true;
+        stoff.depthTest = false;
+        stoff.depthWrite = false;
+        stoff.side = THREE.DoubleSide;
+        stoff.fog = false;
+        stoff.toneMapped = false;
+        const szene = new THREE.Scene();
+        szene.name = "horizont-karte";
+        const kamera = new THREE.OrthographicCamera(-H.randM, H.randM, H.randM, -H.randM, 0, 2 * H.hoeheM);
+        szene.userData.kamera = kamera;
+        st.horizontKarte = {
+            rt,
+            U,
+            stoff,
+            szene,
+            kamera,
+            meshes: [],
+            geos: null,
+            licht: new THREE.Vector3(),
+            anker: null,
+            malZahl: 0,
+        };
+        return st.horizontKarte;
+    }
+
+    // DIE SICHT DES LICHTS jenseits der Kaskaden (0 Schatten … 1 Licht) am Fragment: die Karte über ihm minus seine Licht-Tiefe
+    // gegen den Bias, weich über einen Bias; außerhalb der Karte und diesseits der Kaskaden-Reichweite 1 (über `blende` der
+    // Reichweite eingeblendet). Die Abtastung steht im Zweig (`level(0)`, ohne Ableitung) — der nahe Boden zahlt sie nicht.
+    _horizontSicht() {
+        const T = THREE.TSL;
+        const K = this._horizontKarte();
+        const H = AnazhRealm.HORIZONT_KARTE;
+        const U = K.U;
+        return T.Fn(() => {
+            const sicht = T.float(1).toVar();
+            const tiefe = T.positionView.z.negate();
+            const fern = T.smoothstep(U.ab.mul(1 - H.blende), U.ab, tiefe).mul(U.aktiv);
+            T.If(fern.greaterThan(0), () => {
+                const q = U.karte.mul(T.vec4(T.positionWorld, 1));
+                const innen = T.step(0, q.x).mul(T.step(q.x, 1)).mul(T.step(0, q.y)).mul(T.step(q.y, 1));
+                const naeher = T.texture(K.rt.texture, q.xy).level(0).r.sub(q.z);
+                const licht = T.float(1).sub(T.smoothstep(U.bias, U.bias.mul(2), naeher));
+                sicht.assign(T.mix(T.float(1), licht, fern.mul(innen)));
+            });
+            return sicht;
+        })();
+    }
+
+    // DER TAKT DER HORIZONT-KARTE (aus `_atmoTakt`): die Reichweite der Kaskaden je Takt; neu gezeichnet, wenn der Ring voll ist
+    // und das Licht sich um einen Texel über die Karte gedreht hat oder der Anker wandert — Kosten an Änderung (Gebot 7), der
+    // Null-Renderer zeichnet nichts.
+    _horizontKarteTakt() {
+        const st = this.state;
+        const K = st.horizontKarte;
+        if (!K) return null;
+        const H = AnazhRealm.HORIZONT_KARTE;
+        const csm = st.csmNode;
+        const cam = st.camera;
+        K.U.ab.value = csm && cam ? Math.min(csm.maxFar, cam.far) : 0;
+        const fr = st.fernRing;
+        const dl = st.directionalLight;
+        const rend = st.renderer;
+        if (!fr || !fr.ready || fr.cursor < fr.totalVerts || !dl || !rend || rend._isHeadlessNull || !st.rendererReady)
+            return K;
+        const L = this._horizontLicht || (this._horizontLicht = new THREE.Vector3());
+        L.copy(dl.position);
+        if (dl.target) L.sub(dl.target.position);
+        if (!(L.lengthSq() > 0) || !(L.normalize().y > 0)) {
+            K.U.aktiv.value = 0;
+            return K;
+        }
+        const texelM = (2 * H.randM) / H.texel;
+        const gleich =
+            K.anker &&
+            K.anker[0] === fr.anchorX &&
+            K.anker[1] === fr.anchorZ &&
+            K.geos === fr.geos &&
+            K.licht.dot(L) >= Math.cos(texelM / H.randM);
+        if (gleich) {
+            K.U.aktiv.value = 1;
+            return K;
+        }
+        if (K.geos !== fr.geos) {
+            this._horizontKarteLeeren();
+            for (const geo of fr.geos) {
+                const m = new THREE.Mesh(geo, K.stoff);
+                m.matrixAutoUpdate = false;
+                m.frustumCulled = false;
+                K.szene.add(m);
+                K.meshes.push(m);
+            }
+            K.geos = fr.geos;
+        }
+        const wl = Number.isFinite(st.waterLevel) ? st.waterLevel : 0;
+        const c = this._horizontMitte || (this._horizontMitte = new THREE.Vector3());
+        c.set(fr.anchorX, wl, fr.anchorZ);
+        const kam = K.kamera;
+        kam.position.copy(c).addScaledVector(L, H.hoeheM);
+        if (Math.abs(L.y) > 0.99) kam.up.set(0, 0, 1);
+        else kam.up.set(0, 1, 0);
+        kam.lookAt(c);
+        kam.updateMatrixWorld(true);
+        // DIE BREITE DER KARTE quer zum Licht: der Ring (Radius randM, Höhen bis hMax über dem Bezug) liegt im Bild des Lichts in
+        // ±randM waagrecht und ±(randM·sin h + hMax·cos h) senkrecht — die Karte nimmt genau das (am Abend 6,8 statt 32,8 m je
+        // Texel), sonst trüge ein Texel auf ebenem Boden texelM / tan h Licht-Tiefe und der Bias äße jeden Schatten unter 280 m.
+        let hMax = 0;
+        for (const geo of fr.geos) {
+            const a = geo.attributes.position.array;
+            for (let i = 1; i < a.length; i += 3) hMax = Math.max(hMax, Math.abs(a[i] - wl));
+        }
+        const sinH = L.y;
+        const cosH = Math.sqrt(Math.max(0, 1 - sinH * sinH));
+        const randV = Math.min(H.randM, H.randM * sinH + hMax * cosH);
+        kam.top = randV;
+        kam.bottom = -randV;
+        kam.updateProjectionMatrix();
+        // die Karte: u, v aus den Achsen der Kamera, die Licht-Tiefe längs L. Die Zeilen des Ziels liegen im WebGPU-Raum von oben
+        // (NDC +1 in Zeile 0, die Rücklesung 15.10.: 279 von 355 Ring-Ecken treffen ihre Tiefe nur mit 1 − v), und r184 dreht die
+        // Abtastung unter `level()` nicht — v dreht hier, im WebGL2-Raum nicht.
+        const e = kam.matrixWorld.elements;
+        const k = 1 / (2 * H.randM);
+        const kV = 1 / (2 * randV);
+        const dreh = rend.coordinateSystem === THREE.WebGPUCoordinateSystem ? -1 : 1;
+        const X = [e[0], e[1], e[2]];
+        const Y = [e[4] * dreh, e[5] * dreh, e[6] * dreh];
+        const pc = (a) => a[0] * c.x + a[1] * c.y + a[2] * c.z;
+        K.U.karte.value.set(
+            X[0] * k,
+            X[1] * k,
+            X[2] * k,
+            0.5 - k * pc(X),
+            Y[0] * kV,
+            Y[1] * kV,
+            Y[2] * kV,
+            0.5 - kV * pc(Y),
+            L.x,
+            L.y,
+            L.z,
+            H.versatzM - (L.x * c.x + L.y * c.y + L.z * c.z),
+            0,
+            0,
+            0,
+            1
+        );
+        // der Bias: ein Texel deckt auf ebenem Boden seine senkrechte Kante / tan h Licht-Tiefe, am Hang quer bis die halbe waagrechte
+        const texelV = (2 * randV) / H.texel;
+        K.U.bias.value = H.biasTexel * (texelV / Math.max(H.hoeheMin, sinH / Math.max(1e-3, cosH)) + 0.5 * texelM);
+        this._atmoZeichne(K.szene, K.rt, true);
+        K.licht.copy(L);
+        K.anker = [fr.anchorX, fr.anchorZ];
+        K.malZahl++;
+        K.U.aktiv.value = 1;
+        return K;
+    }
+
+    // Die Zeichen-Meshes der Karte fallen (Ring-Abschied, neue Geometrien); die Geometrien gehören dem Ring.
+    _horizontKarteLeeren() {
+        const K = this.state.horizontKarte;
+        if (!K) return;
+        for (const m of K.meshes) K.szene.remove(m);
+        K.meshes = [];
+        K.geos = null;
+        K.anker = null;
+        K.U.aktiv.value = 0;
+    }
 }

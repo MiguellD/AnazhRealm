@@ -772,8 +772,9 @@ class AnazhRealm_Z24 {
         return st.atmoLut;
     }
 
-    // EIN Pass in sein Ziel (der Zustand des Renderers bleibt, wie er war — dieselbe Hülle wie die zeitliche Auflösung).
-    _atmoZeichne(quad, rt) {
+    // EIN Pass in sein Ziel (der Zustand des Renderers bleibt, wie er war — dieselbe Hülle wie die zeitliche Auflösung); `leeren`
+    // setzt das Ziel vorher auf 0 (die Horizont-Karte sammelt per Max-Blende).
+    _atmoZeichne(quad, rt, leeren = false) {
         const r = this.state.renderer;
         const ziel = r.getRenderTarget();
         const mrt = typeof r.getMRT === "function" ? r.getMRT() : null;
@@ -783,6 +784,13 @@ class AnazhRealm_Z24 {
         if (rof) r.setRenderObjectFunction(null);
         r.autoClear = false;
         r.setRenderTarget(rt);
+        if (leeren) {
+            const farbe = r.getClearColor(this._atmoLeerFarbe || (this._atmoLeerFarbe = new THREE.Color()));
+            const alpha = r.getClearAlpha();
+            r.setClearColor(0x000000, 0);
+            r.clear(true, false, false);
+            r.setClearColor(farbe, alpha);
+        }
         r.render(quad, quad.userData.kamera);
         r.setRenderTarget(ziel);
         if (mrt) r.setMRT(mrt);
@@ -833,6 +841,7 @@ class AnazhRealm_Z24 {
             A.himmelSchluessel = schluessel;
             A.himmelVersion++;
         }
+        this._horizontKarteTakt();
         return A;
     }
 

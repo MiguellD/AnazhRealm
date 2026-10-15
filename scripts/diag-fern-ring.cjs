@@ -152,7 +152,7 @@ const server = statikServer();
             if (n.isMesh && n.userData && n.userData.inventar === "fern-ring") res.sceneMeshes++;
         });
         res.visible = fr.meshes.every((m) => m.visible === true);
-        res.flags = fr.meshes.every((m) => m.frustumCulled === false && !m.castShadow && !m.receiveShadow);
+        res.flags = fr.meshes.every((m) => m.frustumCulled === false && !m.castShadow && m.receiveShadow === true);
         // DER LOCH-DECKEL (20.07.): Schale 1 beginnt DIREKT am Spieler (0.5·span)
         // — der Ring deckt jedes Chunk-Loch (die Wasser-Plane samt Spekular bleibt
         // verdeckt); gebaute Chunks decken ihn per Depth. deckZoneRad trägt die
@@ -1505,7 +1505,7 @@ const server = statikServer();
         "1: ZWEI Stoffe — frei (ohne Maske und Weiche) für die Schalen und Schale 0 frei, Maske + Weiche nur auf dem Naht-Mesh",
         out.zweiStoffe === true
     );
-    check("1: sichtbar erst nach vollem Refresh + frustumCulled/Schatten aus", out.ready && out.visible && out.flags);
+    check("1: sichtbar erst nach vollem Refresh + frustumCulled aus, wirft nicht, empfängt (die Horizont-Karte, D3)", out.ready && out.visible && out.flags);
     check("1: LOCH-DECKEL — Schale 1 beginnt am Spieler (0.5·span), deckZoneRad = Ziel-Zone", out.innerRandOk === true);
     check(
         "Bau BUDGETIERT über Ticks (je Tick <= refreshVertsProTick, mehrere Ticks — BOOT_PHASE3-Muster)",

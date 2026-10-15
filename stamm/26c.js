@@ -1464,6 +1464,23 @@ AnazhRealm.SCHATTEN_KASKADE = Object.freeze({
     tiefeTexel: 0.75,
     zuwendungSaum: 0.08,
 });
+// DIE HORIZONT-KARTE (D3, `_horizontKarte`): der Schatten JENSEITS der Kaskaden. Das Licht sieht die drei Schalen des Fern-Rings
+// (dieselben Geometrien, ein eigener Stoff) orthografisch auf `texel`² Texel über ±`randM` um den Anker; je Texel bleibt die
+// Fläche, die dem Licht am nächsten liegt (r16f, Max-Blende, ohne Tiefen-Puffer: 0,5 MB). Ein Empfänger liegt im Schatten,
+// wenn die Karte über ihm mehr als den Bias näher am Licht trägt. Quer zum Licht nimmt die Karte nur das Bild des Rings
+// (±randM · sin h + Höhe · cos h); der Bias ist `biasTexel` × (senkrechte Texel-Kante / tan h, ab `hoeheMin`, + die halbe waagrechte). `versatzM` hält jede Licht-Tiefe positiv (r16f: ≤ 16 m Stufe), die
+// Kamera steht `hoeheM` vor dem Anker. Neu gezeichnet wird, wenn das Licht sich um einen Texel über die Karte gedreht hat
+// (`texelM / randM`), der Anker wandert oder der Ring voll ist — nie je Frame. Die Kaskaden tragen bis `SCHATTEN_FERN_FAKTOR`
+// × Reichweite; die Karte blendet über `blende` dieser Reichweite ein.
+AnazhRealm.HORIZONT_KARTE = Object.freeze({
+    texel: 512,
+    randM: 8400,
+    versatzM: 16384,
+    hoeheM: 30000,
+    biasTexel: 1.5,
+    hoeheMin: 0.08,
+    blende: 0.2,
+});
 // DAS GESETZ DER PASS-WAHL (`_passTrifft`, W7-Vereinigung) — EIN Urteil je Körper und Pass für jeden Leser (Zellen der
 // Sätze · Werfer der Bündel · Instanzen der Wahl-Gruppen · Büschel der Nah-Wiese). `sichtRand` je Meter Abstand zum Auge:
 // die zeitliche Auflösung versetzt die Projektion um höchstens einen halben Pixel (1080p, 75°: 0,0007 je m), der Rand trägt

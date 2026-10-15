@@ -1408,6 +1408,16 @@ class AnazhRealm_Z25a {
                 });
                 csm.fade = true;
                 csm._init = (builder) => this._kaskadenGeburt(csm, builder);
+                // DIE HORIZONT-KARTE (D3) jenseits der Kaskaden: dort gibt die CSM 1 zurück (ihre Kaskaden enden bei maxFar) —
+                // ihr EINER Knoten (einmal je Instanz gebaut, der Eingriff in 07.js) trägt die Sicht der Karte für jeden
+                // Empfänger (Boden, Ring, Baum, Haus); `receivedShadowNode` eines Stoffs wirkt nur je Kaskade.
+                const aufbauEin = csm.setup;
+                const welt = this;
+                let mitHorizont = null;
+                csm.setup = function (builder) {
+                    if (mitHorizont === null) mitHorizont = aufbauEin.call(this, builder).mul(welt._horizontSicht());
+                    return mitHorizont;
+                };
                 // Die Lichter stellt der Haupt-Pass VOR jeder Karte (`_passSicht` → `_kaskadenPassen`). Das Addon
                 // stellte sie im Knoten-updateBefore — r184 ruft es NACH den Kaskaden-Pässen (gemessen 04.10.: k0 · k1
                 // · Fit), jede Karte lief mit der Box des Vor-Frames. Sein zweiter Schreiber fällt mit:
