@@ -2417,6 +2417,9 @@ AnazhRealm.FIELD_RESOLVE_ITERS = 4;
 // position.y − 0.5 = die Grounded-Annahme); STEP_UP = wie hoch der Spieler ohne Sprung aufsteigt.
 AnazhRealm.PLAYER_FOOT_OFFSET = 0.5;
 AnazhRealm.PLAYER_STEP_UP = 0.6;
+// Die Spanne, um die der gezeichnete Boden über dem Gesetz liegen kann (Lehre 22: Surface-Nets auf 1,8 m trägt die Feinform
+// ±0,2 m): der Schritt eines Leibs (`_koerperSchritt`) verlangt über dem Grund des Gesetzes Luft bis Leib-Höhe + Spanne.
+AnazhRealm.KOERPER_SICHT_SPANNE = 0.2;
 // DER DECKEL DES GANGS (rad, ~34°): so weit nickt und wankt ein gehender Leib höchstens — steiler ist Kletterwand, kein Gang.
 // Leser: `_slopePitch` (Mensch und Tier), der Wank der Tier-Proben, die Kletterwand des Tier-Schritts (`_kreaturKletterwand`).
 AnazhRealm.GANG_DECKEL_RAD = 0.6;

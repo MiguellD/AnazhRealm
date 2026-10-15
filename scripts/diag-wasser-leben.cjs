@@ -1019,8 +1019,9 @@ async function lauf() {
             if (soll("ufer"))
                 befund.ufer = await page.evaluate((o) => window.__wasserUfer({ ort: [o.fluss.x, o.fluss.z] }), ORTE);
             if (soll("uferFarbe")) befund.uferFarbe = await page.evaluate(() => window.__wasserUferFarbe({}));
-            // nach der Ufer-Probe steht die Welt am Fluss der Mess-Wiese: die Bank
-            if (soll("bank")) befund.bank = await page.evaluate(() => window.__wasserBank({}));
+            // die Bank am Fluss der Mess-Wiese (die Stichprobe ist das Gesetz dort, nie der Streaming-Stand)
+            if (soll("bank"))
+                befund.bank = await page.evaluate((o) => window.__wasserBank({ ort: [o.fluss.x, o.fluss.z] }), ORTE);
             // (sie stellt die Welt an den See und an die Küste): die Leser der EINEN Wahrheit
             if (soll("leser"))
                 befund.leser = await page.evaluate((o) => window.__wasserLeser({ orte: [o.see.ufer, o.kueste] }), ORTE);

@@ -281,6 +281,24 @@ function ortTaktLebt(haushalt, src) {
 // Golden-Samen) ≤ Haushalt der Klasse. Befund: der Haushalt baum 150 000 stand seit W0, die Studio-Zeile tree[0] 18 000 /
 // tree[1] 10 000 rechnete nie gegen ihn (Band V18.536: baum 417k, die Projektion 421k). Pflicht ab dem Vertrags-Akt (die
 // eingefrorene render-config trägt tree[0].lagen); vorher zeigt sie die Zahl.
+// H1 DIE WIESE (K55): jeder Messort mit Wiesen-Gesetz (`wiese`) hält es am GESETZ — der Wirt ohne Browser ist die echte Klasse im
+// vm (scripts/lib/welt-orte.cjs `wirtAmGesetz`), gemessen von derselben Funktion, die `werkbank umstellen --ort` in der Welt ruft
+// (`wieseMessen`): Hang, Wasser, Kronen-Deckung, Waldrand, Blick und Horizont; das Gras der gebauten Boden-Karte urteilt die
+// Welt. Bis K55 stand die Mess-Wiese als Zahlen-Paar im Haushalt, K16 hob den Boden dort in einen Nadelwald-Hang.
+let _wirt = null;
+function wieseAmGesetz(haushalt) {
+    const WO = require("./lib/welt-orte.cjs");
+    if (!_wirt) _wirt = WO.wirtAmGesetz(root);
+    const aus = { befunde: [], messungen: [] };
+    for (const o of haushalt.messorte || []) {
+        if (!o.wiese) continue;
+        const m = WO.wieseMessen(_wirt, o.spieler[0], o.spieler[1], o.blick, o.wiese);
+        aus.messungen.push(Object.assign({ ort: o.id }, m));
+        for (const x of WO.wieseUrteil(m, o.wiese)) aus.befunde.push(`${o.id}: ${x}`);
+    }
+    return aus;
+}
+
 const ZENSUS = path.join(root, "spec", "profiband", "zensus-wiese.json");
 const GOLDEN = path.join(root, "spec", "asset-contract", "v1", "golden");
 function goldenDreiecke(arten) {
@@ -574,12 +592,13 @@ function selbsttest() {
     const n10 = BAND.ratscheNachziehen(r10, u10, { datum: "selbsttest", eingeschwungen: true });
     const n10b = BAND.ratscheNachziehen(r10, u10, { datum: "selbsttest" });
     t(
-        "Ratsche: null gesetzt, 10 → 7 gesenkt, 3 bleibt (5 hebt nie), Schema hält nur eingeschwungen",
+        "Ratsche: null gesetzt, 10 → 7 gesenkt, 3 bleibt (5 hebt nie), die Gesamt-Zeile höchstens die Summe ihrer Zeilen " +
+            "(gemessen 12, die Zeilen 7 + 3 → 10; H2b), Schema hält nur eingeschwungen",
         n10.ratsche.klassen.boden.haupt.befehle === 7 &&
             n10.ratsche.klassen.boden.haupt.dreiecke === 7000 &&
             n10.ratsche.klassen.bau.haupt.befehle === 3 &&
             n10.ratsche.klassen.bau.haupt.dreiecke === 900 &&
-            n10.ratsche.gesamt.befehle === 12 &&
+            n10.ratsche.gesamt.befehle === 10 &&
             n10.ratsche.gemessen.datum === "selbsttest" &&
             !BAND.ratschePruefen(n10.ratsche, haushalt).length &&
             BAND.ratschePruefen(n10b.ratsche, haushalt).some((f) => /eingeschwungen/.test(f))
@@ -917,7 +936,7 @@ function selbsttest() {
             unbekannt
     );
     // S21 — die Ratsche gehört dem Ort: dieselbe Klasse über der Genesis-Ratsche ist dort rot, gegen die (ungemessene)
-    // Ratsche der Wiese nicht; die Gier des Orts blickt zum Blickpunkt (Wiese +z = 0, Genesis −x = −π/2).
+    // Ratsche der Wiese nicht; die Gier des Orts blickt zum Blickpunkt (Wiese seit K55 −z = π, Genesis −x = −π/2).
     const gen = BAND.ladeSpec("genesis", { geraet: "radeon", sicht: "ego" });
     const r21 = JSON.parse(JSON.stringify(rt));
     r21.klassen.bau.haupt.befehle = 20;
@@ -925,12 +944,12 @@ function selbsttest() {
     const u21 = BAND.bandUrteil({ zensus: { klassen: bauGenesis }, haushalt, ratsche: r21, ort: gen.ort });
     const u21b = BAND.bandUrteil({ zensus: { klassen: bauGenesis }, haushalt, ratsche: rt, ort: BAND.ortOf(haushalt) });
     t(
-        "bau 30 Befehle über der Genesis-Ratsche 20 → rot (Ort genesis im Urteil), gegen die ungemessene nicht; Gier wiese 0, genesis −π/2",
+        "bau 30 Befehle über der Genesis-Ratsche 20 → rot (Ort genesis im Urteil), gegen die ungemessene nicht; Gier wiese π, genesis −π/2",
         hatRot(u21, "ratsche") &&
             u21.ort === "genesis" &&
             !hatRot(u21b, "ratsche") &&
             u21b.ort === "wiese" &&
-            BAND.ortGier(BAND.ortOf(haushalt, "wiese")) === 0 &&
+            Math.abs(Math.abs(BAND.ortGier(BAND.ortOf(haushalt, "wiese"))) - Math.PI) < 1e-12 &&
             Math.abs(BAND.ortGier(gen.ort) + Math.PI / 2) < 1e-12 &&
             !BAND.ratschePruefen(gen.ratsche, haushalt).length
     );
@@ -948,6 +967,29 @@ function selbsttest() {
     t(
         "Tor-Hülle: f:drachentor:L0 368 000 im Hauptbild bei 2 Toren → 184 000 je Tor (3,07×), L1 und Fahrzeug nicht",
         s22.length === 1 && s22[0].huelle === 184000 && s22[0].exemplare === 2 && s22[0].faktor === 3.07
+    );
+    // S20b — DIE WIESE (K55): das Wiesen-Gesetz fehlt der Mess-Wiese, eine Schwelle fehlt, der Kranz beginnt im Ring → rot (Schema);
+    // am Gesetz ist der gefallene Messort ein Hang (Hang, Horizont, Blick rot), der Ort des Haushalts eine Wiese.
+    const w20 = (f) => {
+        const h = JSON.parse(JSON.stringify(haushalt));
+        f(h.messorte.find((o) => o.id === "wiese"));
+        return h;
+    };
+    const wGefallen = wieseAmGesetz(
+        w20((o) => {
+            // BÜHNE: der gefallene Messort (bis K55, K16 hob den Boden dort um 83 m) — die Linse muss ihn ROT nennen
+            o.spieler = [-900, -850];
+            o.blick = [o.spieler[0], o.spieler[1] + 10];
+        })
+    ).befunde;
+    t(
+        "Wiese: ohne Gesetz, ohne hangMax, Kranz im Ring → rot; am Gesetz der gefallene Ort rot (Hang, Horizont), der Haushalt grün",
+        BAND.messortePruefen(w20((o) => delete o.wiese)).some((x) => /Wiesen-Gesetz \(wiese\) fehlt/.test(x)) &&
+            BAND.messortePruefen(w20((o) => delete o.wiese.hangMax)).some((x) => /wiese ohne Zahl hangMax/.test(x)) &&
+            BAND.messortePruefen(w20((o) => (o.wiese.rand = [10, 90]))).some((x) => /beginnt im Ring/.test(x)) &&
+            wGefallen.some((x) => /Hang [\d.]+° über/.test(x)) &&
+            wGefallen.some((x) => /kein Fernblick/.test(x)) &&
+            !wieseAmGesetz(haushalt).befunde.length
     );
     // S23 — H6: ein Ort-Takt oder ein Anker mit einem Namen, den der Stamm nicht trägt, wird rot; der echte nicht. Ein Anker
     // ohne Methoden-Namen bricht das Schema.
@@ -976,7 +1018,7 @@ function selbsttest() {
     // anderer Blick, ein fehlender Ort-Takt, eine andere oder keine Sicht (K26) und ein Lauf ohne Aufzeichnung werden je einzeln
     // beim Namen genannt.
     const wiese = BAND.ortOf(haushalt, "wiese");
-    const gestellt = { ort: "wiese", dorfZug: false, ortTakt: [], gier: 0, sicht: "ego" };
+    const gestellt = { ort: "wiese", dorfZug: false, ortTakt: [], gier: BAND.ortGier(wiese), sicht: "ego" };
     const g24 = (o, z) => BAND.ortGestellt(o, Object.assign({}, gestellt, z));
     t(
         "Orts-Wache: gestellt sauber; Dorf-Zug läuft, ohne --ort, Gier −0,88, Genesis ohne Ort-Takt, Third-Person statt Ego, " +
@@ -1302,6 +1344,24 @@ function selbsttest() {
                 ohne31.linse === "SAUBER" &&
                 u31.rot.every((x) => typeof x.schluessel === "string")
         );
+        // Die Gesamt-Zeile des Mints ist höchstens die Summe ihrer Zeilen: zwei Läufe, je Erzeuger ein anderes Minimum (6,0 + 4,0
+        // und 5,9 + 4,1, beide 10,0 MB) — die Hülle der Erzeuger ist 5,9 + 4,0 = 9,9, die Gesamt-Zeile zieht mit (14.10.).
+        const v32 = (a, b) => ({
+            klassen: [],
+            summe: { gebunden: { befehle: 1, dreiecke: 1 } },
+            vram: { gebunden: 10, mb: 10, erzeuger: [{ erzeuger: "buf:szene", mb: a }, { erzeuger: "tex:output", mb: b }] },
+        });
+        const n32a = BAND.ratscheNachziehen(BAND.ratscheNeu(rt), v32(6, 4), { datum: "x" });
+        const n32 = BAND.ratscheNachziehen(n32a.ratsche, v32(5.9, 4.1), { datum: "x" });
+        t(
+            "Re-Mint: die Gesamt-Zeile vramMB ist höchstens die Summe der Erzeuger (zwei Läufe 6,0 + 4,0 und 5,9 + 4,1 → " +
+                "Erzeuger 5,9 + 4,0, Gesamt 10,0 → 9,9, beim Namen)",
+            n32a.ratsche.gesamt.vramMB === 10 &&
+                n32.ratsche.vramMB["buf:szene"] === 5.9 &&
+                n32.ratsche.vramMB["tex:output"] === 4 &&
+                n32.ratsche.gesamt.vramMB === 9.9 &&
+                n32.aenderungen.some((x) => /gesamt\.vramMB: 10 → 9\.9 \(die Summe ihrer Zeilen/.test(x))
+        );
         // Gerät und Sicht: der Adapter-Text der Radeon und der GTX, ein Software-Raster ohne Schlüssel; der Kamera-Modus des
         // Stamms; der alte Haushalt (EIN Gerät) und eine fremde Kamera brechen das Schema.
         const hAlt = JSON.parse(JSON.stringify(haushalt));
@@ -1337,6 +1397,8 @@ function main() {
     const errs = [];
     const h = BAND.haushaltPruefen(haushalt);
     for (const f of h.fehler) errs.push("H1 " + f);
+    const wiese = wieseAmGesetz(haushalt);
+    for (const f of wiese.befunde) errs.push("H1 " + f);
     // H2 je Ort × Gerät × Sicht: jede Ratsche trägt das Schema (ein Toggle-Ort mit `bank` trägt keine — H1 prüft sein Schema).
     const ratschen = BAND.ratschenAlle(haushalt);
     for (const e of ratschen.filter((x) => x.ratsche))
@@ -1437,7 +1499,7 @@ function main() {
             `H2b ${ratschen.length} Ratschen frisch an V${version}${messungen.length ? ` gegen ${messungen.length} Messungen` : ""} · ` +
             `H3 ${nw.n} Textur-Erzeuger benannt · ` +
             `H4 Täter-Klasse des Stamms: ${tw.n} Schlüssel-Formen · H5 ${nl.n} Haushalt-Namen mit Erzeuger im Stamm · ` +
-            `Messorte ${ortZeile} · H6 ${ot.n} Ort-Takt- und Anker-Methoden im Stamm · H7 die Reihe der Bündel (@global · Regionen · @wahl) und die Reihe im Bündel (Stufe).`
+            `Messorte ${ortZeile} · H1 Wiese am Gesetz ${wiese.messungen.map((m) => `${m.ort} ${m.x}/${m.z} Hang ${m.hang}° · Krone ${m.krone} · Kranz ${m.kranz} · Horizont ${m.horizont}°`).join("; ")} · H6 ${ot.n} Ort-Takt- und Anker-Methoden im Stamm · H7 die Reihe der Bündel (@global · Regionen · @wahl) und die Reihe im Bündel (Stufe).`
     );
 }
 

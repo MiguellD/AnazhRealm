@@ -972,7 +972,7 @@ class AnazhRealm_Z06c {
             // gestoßenes Tier glitt sonst aufs Dach. Der Boden ist der SCHRITT vom Grund des Schritt-Beginns (`_koerperSchritt`):
             // trug er den Leib in die Wand, steht er, wo der Schritt begann, und der Stoß stirbt in der Wand (unelastisch, wie
             // an jeder Hülle).
-            let gesetz = this._koerperSchritt(sx, sz, sg, c.position.x, c.position.z);
+            let gesetz = this._koerperSchritt(sx, sz, sg, c.position.x, c.position.z, leib.hoehe);
             if (gesetz === null) {
                 c.position.x = sx;
                 c.position.z = sz;
@@ -1003,6 +1003,12 @@ class AnazhRealm_Z06c {
             else {
                 const sicht = this._standSicht(c.position.x, c.position.z, gesetz, false);
                 c.position.y = Number.isFinite(sicht) ? sicht : gesetz;
+                // DIE AUFLAGE DER BAUTEN gilt auch hier (dieselbe Regel wie im Frame-Takt, `_kreaturAuflage`): der Leib, den der
+                // Schritt ruhen lässt, steht, wo der Frame-Takt ihn stellen würde. Vorher stellte erst der Frame-Takt ihn auf den
+                // Sockel — bei 60 fps einen Schritt früher als bei gemischten Frames (gate:fahr-leben L8 an der Mess-Wiese
+                // −278/−1038: der Bär 28,017 gegen 27,563 m, der Wagen nach 200 Schritten 1,77 mm anders).
+                const auflage = this._kreaturAuflage(c, L);
+                if (auflage > c.position.y) c.position.y = auflage;
             }
             ud.cachedGroundY = gesetz;
             ud.cachedGroundX = c.position.x;
@@ -1014,6 +1020,15 @@ class AnazhRealm_Z06c {
                 sv.z *= (sp2 - ab) / sp2;
             }
         }
+    }
+
+    // RUHT DER LEIB IM SCHRITT: kein Stoß trägt ihn, und er steht genau, wo ihn sein letzter Stoß-Schritt ließ (`_stossGrund`) —
+    // der Schritt hat seine Lage gegen die Hüllen gelöst und seine Höhe gesetzt; der Sim-Schritt liest sie (die Hülle eines
+    // Wagens, der nächste Stoß). Leser: der Frame-Takt (`updateCreatures`), der ihn dann nicht anfasst.
+    _kreaturRuhtImSchritt(c) {
+        const ud = c.userData;
+        const sg = ud && ud._stossGrund;
+        return !!sg && !ud._stossV && sg.x === c.position.x && sg.z === c.position.z;
     }
 
     // DIE EINE WASSER-REGEL DER TIERE (Welle L Q6 + welle-m-impuls, vereint V18.536): die EINE Wasser-Wahrheit am Körper
@@ -3168,7 +3183,11 @@ class AnazhRealm_Z06c {
             // Der STOSS, den ein Leib trägt, bewegt ihn im festen Sim-Schritt (`_kreaturStossSchritt`, 0710-5), nie hier im
             // Frame-Takt: hier trug `_stossV · delta` ihn je Frame ohne Weg-Prüfung — bei 30 fps (0,46 m je Frame aus 13,7 m/s)
             // sprang ein Bär 9 von 10 Mal durch eine 0,35-m-Wand, und der Wagen las das Frame-Gedächtnis im Sim-Schritt.
-            this._kreaturHuellenKontakt(creature, hueftL, px0, pz0);
+            // DER RUHENDE LEIB GEHÖRT DEM SCHRITT: steht ein Leib, wo ihn sein letzter Stoß-Schritt ließ (`_kreaturRuhtImSchritt`),
+            // löst der Frame-Takt ihn weder gegen die Hüllen noch setzt er seine Höhe — beides tat der Stoß-Schritt mit derselben
+            // Regel; erst wenn er selbst geht, trägt ihn der Frame-Takt.
+            const ruhtImSchritt = this._kreaturRuhtImSchritt(creature);
+            if (!ruhtImSchritt) this._kreaturHuellenKontakt(creature, hueftL, px0, pz0);
 
             // Sanfter Decay des Innenlebens (~17 s Halbwert); ruhige Wesen werden sparse (null = kein Tick-Rest),
             // beim Ausklingen projiziert die Valenz auf "happy" zurück — getroffene Wesen erholen sich.
@@ -3267,7 +3286,8 @@ class AnazhRealm_Z06c {
             }
             // ein gleitender Leib (er trägt einen Stoß) steht auf der Höhe seines Sim-Schritts (`_kreaturStossSchritt`) — an
             // Land wie im Wasser (L8: die Höhe des gestoßenen Schwimmers lebt im Sim-Schritt, gleich bei jeder Bildrate)
-            if (!creature.userData._stossV) creature.position.y = baseY + hopOffset;
+            if (!creature.userData._stossV && !(ruhtImSchritt && !(hopOffset > 0)))
+                creature.position.y = baseY + hopOffset;
             // DER TRÄGER der Pfoten (Welle LF): die Höhe, auf der der Leib steht, und ob ein Bau ihn trägt (_kreaturFussBoden)
             udH._traegerY = baseY;
             udH._traegerStruktur = traegtBau;
