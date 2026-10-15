@@ -951,12 +951,28 @@ function gesichtMasse(F, teil, W, H, proben, haarK) {
     };
 }
 
+// DIE FARBTON-STREUUNG DER WIESE (W1; Spike 789af722): die Probe ist der 2 × 2-Block ab Byte i der Ausgabe (Breite W), sein
+// Flächen-Mittel in linearem Licht nach CIELAB D65; die Kachel k = [Proben, Σcos h, Σsin h, bunte Proben] zählt den Farbton
+// h = atan2(b*, a*) der Proben mit Buntheit C* > 5. Rein (läuft auch in der Seite, ABNAHME_INSTALL).
+function farbtonProbe(k, u8, i, W) {
+    const lin = (u) => (u <= 10.31475 ? u / 3294.6 : Math.pow((u / 255 + 0.055) / 1.055, 2.4));
+    const [r, g, b] = [0, 1, 2].map((c) => [0, 4, 4 * W, 4 * W + 4].reduce((a, d) => a + lin(u8[i + d + c]) / 4, 0));
+    const f = (t) => (t > 216 / 24389 ? Math.cbrt(t) : ((24389 / 27) * t + 16) / 116);
+    const fy = f(0.2126 * r + 0.7152 * g + 0.0722 * b),
+        A = 500 * (f((0.4124 * r + 0.3576 * g + 0.1805 * b) / 0.95047) - fy),
+        B = 200 * (fy - f((0.0193 * r + 0.1192 * g + 0.9505 * b) / 1.08883)),
+        C = Math.hypot(A, B);
+    k[0]++;
+    if (C > 5) [k[1], k[2], k[3]] = [k[1] + A / C, k[2] + B / C, k[3] + 1];
+    return k;
+}
+// σh einer Kachel in Grad: die zirkuläre Standard-Abweichung sqrt(−2 ln R)
+const farbtonSigma = (k) =>
+    (Math.sqrt(-2 * Math.log(Math.max(1e-9, Math.min(1, k[3] ? Math.hypot(k[1], k[2]) / k[3] : 1)))) * 180) / Math.PI;
 // DIE RECHNUNGEN der Soll-Bänder (rein): ein Band, das die Tafel „[gerechnet]" nennt, rechnet DIESE Funktion — die Tafel trägt
 // dann nur die Rechnung, nie ihr Ergebnis (Prüfer K63 R1: das Laub-Band [0,11; 0,16] stand ohne Skript im Baum, nachgerechnet
 // 0,16–0,22).
 //   einsDurch  { von: [a, b] }     das Band [1/b, 1/a] (Licht: E gesamt / E Himmel aus dem Diffus-Anteil des klaren Himmels)
-//   nyquist1f  { beta: [b0, b1] }  `klassenMasse` nyquist auf Bildern mit Leistungsspektrum 1/f^β (zufällige Phase, Saat fest,
-//                                  128², Grau σ 32 um 128, auf 0–255 gerundet wie die Ausgabe), je β das Mittel aus vier Saaten
 // Ein Bild mit Leistungsspektrum 1/f^β (β = 0: weißes Rauschen), n² Pixel (n Zweierpotenz), RGBA grau.
 function rauschBild(n, beta, saat) {
     let z = saat >>> 0 || 1;
@@ -1027,28 +1043,12 @@ function rauschBild(n, beta, saat) {
     }
     return u8;
 }
-const NYQUIST_NATUR = new Map();
-function nyquistNatur(beta) {
-    if (NYQUIST_NATUR.has(beta)) return NYQUIST_NATUR.get(beta);
-    const n = 128,
-        voll = new Uint8Array(n * n).fill(1);
-    let s = 0;
-    for (let saat = 1; saat <= 4; saat++) s += klassenMasse(rauschBild(n, beta, 7919 * saat), voll, n, n).nyquist;
-    NYQUIST_NATUR.set(beta, +(s / 4).toFixed(4));
-    return NYQUIST_NATUR.get(beta);
-}
 function sollRechnung(r) {
     if (!r || typeof r !== "object") return { fehler: "keine Rechnung" };
     const paar = (x) => Array.isArray(x) && x.length === 2 && x.every((v) => typeof v === "number" && v > 0);
     if (r.art === "einsDurch") {
         if (!paar(r.von)) return { fehler: "einsDurch ohne von [a, b] > 0" };
         return { band: [+(1 / r.von[1]).toFixed(4), +(1 / r.von[0]).toFixed(4)] };
-    }
-    if (r.art === "nyquist1f") {
-        if (!paar(r.beta)) return { fehler: "nyquist1f ohne beta [b0, b1] > 0" };
-        const a = nyquistNatur(r.beta[0]),
-            b = nyquistNatur(r.beta[1]);
-        return { band: [Math.min(a, b), Math.max(a, b)] };
     }
     // zweiton1f { beta: [b0, b1] } (b0 ≥ 0, weißes Rauschen eingeschlossen): die obere Grenze [−∞, max] des Zweiton-Anteils in
     // Bildern ohne Muster, je β in Schritten von 0,4. Unschärfe der Kamera fügt nur Zwischentöne hinzu, Rauschen reicht bis β 0
@@ -1061,7 +1061,7 @@ function sollRechnung(r) {
         for (let x = b[0]; x <= b[1] + 1e-9; x += 0.4) max = Math.max(max, zweitonNatur(+x.toFixed(2)));
         return { band: [null, max] };
     }
-    return { fehler: `Rechnung „${r.art}" unbekannt (einsDurch, nyquist1f, zweiton1f)` };
+    return { fehler: `Rechnung „${r.art}" unbekannt (einsDurch, zweiton1f)` };
 }
 const ZWEITON_NATUR = new Map();
 function zweitonNatur(beta) {
@@ -1150,7 +1150,7 @@ function aperturSchuesse(ma, q) {
 // teile, fehler }.
 const SOLL_MASSE = Object.freeze([
     "laiWirk",
-    "nyquist",
+    "farbtonStreuung",
     "zweiton",
     "kante",
     "detail",
@@ -1169,7 +1169,7 @@ const SOLL_MASSE = Object.freeze([
 // endlich auch an einem Rand 0 (ein Raster-Anteil Soll 0, ein Ist 0; Prüfer K63 R2: Ist 0 gab die Wirkung „Infinity").
 const MASS_AUFLOESUNG = Object.freeze({
     laiWirk: 0.05,
-    nyquist: 0.005,
+    farbtonStreuung: 0.1,
     zweiton: 0.01,
     kante: 0.01,
     detail: 0.005,
@@ -1268,26 +1268,28 @@ const MASS_RECHNER = {
             teile: baender.map((b) => `${b.von}–${b.bis} m ${b.lai == null ? "—" : r2(b.lai)}${b.imRing ? "" : " (jenseits)"}`).join(" · "),
         };
     },
-    // DER SCHACHBRETT-ANTEIL der Klasse (`klassenMasse` nyquist über die Summen aller ihrer Teil-Klassen); der Täter die
-    // Teil-Klasse (≥ 5 % der Pixel) mit dem höchsten Anteil.
-    nyquist(ma) {
-        const me = ma.messung;
+    // DIE FARBTON-STREUUNG der Wiese (`farbtonProbe`): das Ist ist das Mittel von σh über die Boden-Kacheln (`rechnung.kachel`
+    // m) im Abstand `rechnung.band` mit ≥ `rechnung.minProben` Proben, gewichtet nach Proben — dieselbe Belichtung wie das
+    // Soll-Bild gilt nur, was die Messung trägt (`farbton.belichtung`). Der Täter ist die einfarbigste Kachel.
+    farbtonStreuung(ma) {
+        const me = ma.messung,
+            rc = ma.rechnung || {};
         const f = bildMessungFehler(me);
         if (f) return { fehler: f };
-        let ek = 0,
-            eg = 0;
-        const px = pixelSumme(me);
-        let arg = null;
-        for (const [n, k] of Object.entries(me.klassen)) {
-            ek += k.ek || 0;
-            eg += k.eg || 0;
-            if (k.pixel >= 0.05 * px && k.nyquist != null && (!arg || k.nyquist > arg[1])) arg = [n, k.nyquist];
-        }
-        if (!(ek + eg > 0)) return { fehler: "keine 2×2-Blöcke in der Klasse" };
+        const ft = me.abstand && me.abstand.farbton;
+        if (!ft || !Array.isArray(ft.kacheln)) return { fehler: "die Messung ohne Farbton-Kacheln (werkbank bild --abstand)" };
+        if (JSON.stringify([ft.kachel, ft.band, me.leinwand]) !== JSON.stringify([rc.kachel, rc.band, rc.leinwand]))
+            return { fehler: `die Messung zählt ${ft.kachel}-m-Kacheln in ${ft.band} m auf ${me.leinwand}, die Rechnung ${rc.kachel} m in ${rc.band} m auf ${rc.leinwand}` };
+        const ks = ft.kacheln.filter((k) => k[1] >= (rc.minProben || 1));
+        if (!ks.length) return { fehler: `keine Kachel mit ≥ ${rc.minProben} Proben in ${ft.band} m` };
+        const n = ks.reduce((a, k) => a + k[1], 0);
+        const ist = ks.reduce((a, k) => a + farbtonSigma(k.slice(1)) * k[1], 0) / n;
+        const arg = ks.reduce((a, k) => (farbtonSigma(k.slice(1)) < farbtonSigma(a.slice(1)) ? k : a));
         return {
-            ist: +(ek / (ek + eg)).toFixed(4),
-            taeter: arg ? `${arg[0]} (nyquist ${arg[1]})` : null,
-            anteil: px / flaeche(me),
+            ist: +ist.toFixed(2),
+            taeter: `die Kachel ${arg[0]} (${arg[1]} Proben): σh ${farbtonSigma(arg.slice(1)).toFixed(2)}° um h ${((Math.atan2(arg[3], arg[2]) * 180) / Math.PI).toFixed(1)}°`,
+            anteil: n / (flaeche(me) / 4),
+            teile: `${ks.length} Kacheln ${rc.kachel} m in ${rc.band.join("–")} m · Belichtung ${ft.belichtung}`,
         };
     },
     // DAS DETAIL der Klasse (`klassenMasse` detail, Pixel-Mittel über ihre Teil-Klassen): glatt → 0
@@ -1783,6 +1785,19 @@ function standLeser(root) {
     }
 }
 
+// DER EINE SCHUSS (W1-n1; Prüfer W1 R1: drei Tor-Zeilen trugen denselben Schuss dreimal, 988 Zeilen Kopie): misst ein Schuss
+// mehrere Ziele (`werkbank bild --ist a,b:L1`), trägt ihn das erste, jedes weitere NENNT es („<id>[:L<n>|:wirkung]") — gelesen
+// nur hier, für jedes Maß; ein Name ins Leere oder auf einen Namen ist ein Bruch.
+function schussVon(kl, m, bruch) {
+    const st = m && typeof m === "object" ? Object.keys(m) : [];
+    if (st.length && st.every((L) => /^L\d$/.test(L))) return Object.fromEntries(st.map((L) => [L, schussVon(kl, m[L], bruch)]));
+    if (typeof m !== "string") return m;
+    const [id, teil] = m.split(":"),
+        k = kl.find((x) => x.id === id) || {};
+    const s = teil === "wirkung" ? (k.wirkung || {}).messung : ((k.mass || {}).messung || {})[teil] || (!teil && (k.mass || {}).messung);
+    return s && typeof s === "object" ? s : bruch(`der Schuss „${m}" fehlt in der Tafel`);
+}
+
 // DAS URTEIL DER TAFEL (rein): je Klasse das Soll (eigen, gerechnet oder gelesen), das Budget je LOD-Stufe aus dem Haushalt des
 // Profi-Bands (`budget.haushalt`: die Klassen-Zeile ist L0, L1 ≤ 35 %, L2 ≤ 10 % — Nordstern M4; der VRAM-Anteil der Welt nach dem
 // Dreiecks-Anteil der Zeile) und das Ist, das DIESE Funktion aus der Rohdatei rechnet. ROT/GRÜN aus Ist und Band, ungemessen ist
@@ -1842,7 +1857,8 @@ function sollTafelUrteil(tafel, q) {
                   vramMB: summeTris ? +((welt * hz.dreiecke) / summeTris).toFixed(1) : null,
               }
             : null;
-        const ma = k.mass || {};
+        const bruch = (f) => void fehler.push(`${wo}: ${f}`);
+        const ma = Object.assign({}, k.mass, { messung: schussVon(kl, (k.mass || {}).messung, bruch) });
         if (!SOLL_MASSE.includes(ma.name)) fehler.push(`${wo}: Maß „${ma.name}" unbekannt (${SOLL_MASSE.join(", ")})`);
         for (const f of ["ist", "teile", "taeter"])
             if (ma[f] !== undefined)
@@ -1919,7 +1935,7 @@ function sollTafelUrteil(tafel, q) {
         // der Bildanteil: aus der Messung des Maßes, sonst aus dem Bild der Wirkung (`--ist <id>:wirkung`), von Hand nur ohne Bild
         // und mit Quelle (das Licht: jedes Pixel)
         let anteil = zahl(r.anteil) ? r.anteil : null;
-        const wi = k.wirkung || {};
+        const wi = Object.assign({}, k.wirkung, { messung: schussVon(kl, (k.wirkung || {}).messung, bruch) });
         if (anteil == null && wi.messung) {
             const fw = bildMessungFehler(wi.messung);
             if (fw) fehler.push(`${wo}: das Bild der Wirkung: ${fw}`);
@@ -2087,12 +2103,7 @@ function sollTafelSelbsttest(tafel, q) {
     for (let p = 0; p < W * H; p++) mA[p] = teil[p] === 1 ? 1 : 0;
     // die Klasse A zeigt 200, das Misch-Pixel 170: Mittel (24·200 + 170)/25
     if (!(Math.abs(klassenMasse(G, mA, W, H).luma - (24 * 200 + 170) / 25) < 1e-6)) v.push("Maß luma: die Klasse liest falsch");
-    // die Rechnungen: weißes Rauschen ⅓, 1/f^β fällt mit β, einsDurch kehrt das Band um
-    const weiss = nyquistNatur(0);
-    if (!(Math.abs(weiss - 1 / 3) < 0.03)) v.push(`Rechnung nyquist1f: weißes Rauschen ${weiss} statt ⅓`);
-    const n16 = nyquistNatur(1.6),
-        n24 = nyquistNatur(2.4);
-    if (!(n16 > n24 && n24 > 0.05)) v.push(`Rechnung nyquist1f: β 1,6 ${n16} nicht über β 2,4 ${n24}`);
+    // die Rechnung einsDurch kehrt das Band um
     const ed = sollRechnung({ art: "einsDurch", von: [0.08, 0.2] }).band;
     if (!(ed && ed[0] === 5 && ed[1] === 12.5)) v.push(`Rechnung einsDurch: [0,08; 0,2] → ${ed} statt [5; 12,5]`);
     // der Blatt-Flächen-Index: eine Wiese mit LAI 2, Lücke je Band exp(−G·LAI/cos θ), liest LAI 2
@@ -2118,6 +2129,17 @@ function sollTafelSelbsttest(tafel, q) {
     };
     const lai = MASS_RECHNER.laiWirk({ messung: laiMe, rechnung: { G: 0.5, halm: "^halm:", grund: "^grund$" } });
     if (!(Math.abs(lai.ist - 2) < 0.02)) v.push(`Maß laiWirk: eine Wiese mit LAI 2 liest ${lai.ist}${lai.fehler ? " — " + lai.fehler : ""}`);
+    // die Farbton-Streuung: ein grauer Block zählt nicht (C* ≤ 5), ein grüner ja; eine Kachel aus zwei Tönen ±10° liest
+    // sqrt(−2 ln cos 10°) = 10,03°, eine einfarbige 0° — das Ist ist das Proben-Mittel, der Täter die einfarbige Kachel
+    const block = (rgb) => new Uint8Array(16).map((_, j) => (j % 4 < 3 ? rgb[j % 4] : 255));
+    const grau = farbtonProbe(farbtonProbe([0, 0, 0, 0], block([128, 128, 128]), 0, 2), block([60, 140, 30]), 0, 2);
+    const zwei = [2, 2 * Math.cos((10 * Math.PI) / 180), 0, 2];
+    const ftMe = Object.assign({}, laiMe, {
+        abstand: { farbton: { kachel: 2, band: [2, 5], belichtung: 1, kacheln: [["0,0", ...zwei], ["1,0", 2, 2, 0, 2]] } },
+    });
+    const ft = MASS_RECHNER.farbtonStreuung({ messung: ftMe, rechnung: { kachel: 2, band: [2, 5], leinwand: [1000, 1000], minProben: 1 } });
+    if (!(grau[0] === 2 && grau[3] === 1 && Math.abs(farbtonSigma(zwei) - 10.03) < 0.01 && ft.ist === 5.01 && /1,0/.test(ft.taeter)))
+        v.push(`Maß farbtonStreuung: Grau ${grau}, ±10° ${farbtonSigma(zwei)}, Ist ${ft.ist} (Soll 5,01), Täter ${ft.taeter || ft.fehler}`);
     // die Tafel: die echte ohne Bruch, jeder eingeschmuggelte Bruch beim Namen
     const echt = sollTafelUrteil(tafel, q);
     for (const f of echt.fehler) v.push(`Tafel: ${f}`);
@@ -2376,6 +2398,7 @@ function sollTafelSelbsttest(tafel, q) {
             "liegt nicht unter artifacts/",
         ],
         ["Bild-Paar außerhalb", (t) => heile(t, ["C:/Users/x/a.png", "artifacts/soll-tafel/b.png"]), "liegt nicht unter artifacts/"],
+        ["Schuss ins Leere", (t) => (mitMessung(t).mass.messung = "phantom:L1"), 'Schuss „phantom:L1" fehlt'],
     ];
     for (const [name, fn, wort] of faelle) {
         if (!tafel || !(tafel.klassen || []).length) break;
@@ -2390,6 +2413,12 @@ function sollTafelSelbsttest(tafel, q) {
         if (u.ok || !u.fehler.some((f) => f.includes(wort)))
             v.push(`Tafel-Bruch „${name}": nicht beim Namen (${u.fehler.join(" · ") || "grün"})`);
     }
+    // DER EINE SCHUSS (W1-n1): die Zeile, die den Schuss einer anderen NENNT, liest dasselbe Ist wie sein Träger
+    const tn = klon(),
+        kn = mitMessung(tn) || {};
+    (tn.klassen || []).push(Object.assign(JSON.parse(JSON.stringify(kn)), { id: "x-name", mass: Object.assign({}, kn.mass, { messung: kn.id }) }));
+    const istN = sollTafelUrteil(tn, q).zeilen.filter((z) => z.id === kn.id || z.id === "x-name").map((z) => z.ist);
+    if (!(istN.length === 2 && istN[0] != null && istN[0] === istN[1])) v.push(`der Name eines Schusses liest nicht dessen Ist (${istN})`);
     // das Ist kommt aus der Rohdatei: dieselbe Albedo-Zeile, ihr Verhältnis auf 1 — das Urteil folgt (Prüfer K63 R1: die Kopie
     // in der Tafel blieb grün, als die Albedo-Tafel sich änderte)
     const ka = tafel && mitAlbedo(klon());
@@ -2517,10 +2546,10 @@ function sollTafelSelbsttest(tafel, q) {
         const torRe = new RegExp(k6.mass.rechnung.tor);
         for (const n of Object.keys(k6.mass.messung[s6].klassen))
             if (torRe.test(n)) delete k6.mass.messung[s6].klassen[n];
-        const ab = sollIstAbweisung(klon(), t6, k6.id, q);
+        const ab = sollIstAbweisung(klon(), t6, q);
         if (!ab.some((g) => g.includes(`${s6}: der Schuss zeigt kein Tor`)))
             v.push(`Schreiber: ein Schuss ${s6} ohne Tor der Stufe fiele in die Tafel (${ab.join(" · ") || "keine Abweisung"})`);
-        const gleich = sollIstAbweisung(klon(), klon(), k6.id, q);
+        const gleich = sollIstAbweisung(klon(), klon(), q);
         if (gleich.length) v.push(`Schreiber: die unveränderte Messung wird abgewiesen (${gleich.join(" · ")})`);
     } else v.push("die Tafel trägt kein Maß milchweiss mit Mesh-Stufe (der Fall des Schreibers fehlt)");
     if (sollTafelUrteil({ klassen: [] }, q).ok) v.push("die leere Tafel ist grün");
@@ -2530,17 +2559,16 @@ function sollTafelSelbsttest(tafel, q) {
 // DER SCHREIBER PRÜFT (K63-n7; Prüfer K63-2 Rot B: ein L1-Schuss 14 s nach dem Umstellen zeigte nur Membran und Nebel, das
 // Werkzeug schrieb ihn, die Linse las ihn nicht — tor-fern blieb auf dem Ist von 5a912d6e stehen): eine Messung fällt in die
 // Tafel nur, wenn die Linse sie liest — sie bringt der Klasse keinen neuen Bruch, und wo vorher ein Ist stand, steht wieder eines.
-// `alt` und `neu` sind die Tafel vor und nach dem Schreiben; zurück die Gründe der Abweisung (leer = schreiben).
-function sollIstAbweisung(alt, neu, id, q) {
-    const vor = `Klasse ${id}:`;
+// `alt` und `neu` sind die Tafel vor und nach dem Schreiben; zurück die Gründe der Abweisung (leer = schreiben). Geprüft wird
+// JEDE Zeile (W1-n1, `schussVon`): wer den Schuss eines Ziels nennt, liest den neuen mit.
+function sollIstAbweisung(alt, neu, q) {
     const a = sollTafelUrteil(alt, q),
         n = sollTafelUrteil(neu, q);
-    const altF = new Set(a.fehler.filter((f) => f.startsWith(vor)));
-    const gruende = n.fehler.filter((f) => f.startsWith(vor) && !altF.has(f));
-    const za = a.zeilen.find((x) => x.id === id),
-        zn = n.zeilen.find((x) => x.id === id);
-    if (!gruende.length && za && za.ist != null && !(zn && zn.ist != null))
-        gruende.push(`${vor} die Messung ergibt kein Ist (vorher ${za.ist})`);
+    const altF = new Set(a.fehler);
+    const gruende = n.fehler.filter((f) => !altF.has(f));
+    for (const za of a.zeilen)
+        if (za.ist != null && !n.zeilen.some((x) => x.id === za.id && x.ist != null))
+            gruende.push(`Klasse ${za.id}: die Messung ergibt kein Ist (vorher ${za.ist})`);
     return gruende;
 }
 
@@ -2556,7 +2584,6 @@ module.exports = {
     zweitonNatur,
     MASS_AUFLOESUNG,
     rauschBild,
-    nyquistNatur,
     sollRechnung,
     sollTafelUrteil,
     standLeser,
@@ -2583,5 +2610,6 @@ module.exports = {
         `window.__bildRauschen = ${bildRauschen.toString()};` +
         `window.spiegelPearson = ${spiegelPearson.toString()};` +
         `window.__klassenMasse = ${klassenMasse.toString()};` +
-        `window.__gesichtMasse = ${gesichtMasse.toString()};`,
+        `window.__gesichtMasse = ${gesichtMasse.toString()};` +
+        `window.__farbtonProbe = ${farbtonProbe.toString()};`,
 };

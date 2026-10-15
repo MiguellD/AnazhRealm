@@ -22,10 +22,11 @@ class AnazhRealm_Z11c {
     }
 
     // DIE NAH-WIESE: je Kachel (NAH_WIESE.kachel) die Büschel nach dem Studio-Gesetz (buildForest, Schritt 7):
-    // Raster `understory.grassStep` in Welt-Koordinaten, Jitter ±0,34, Wurf gegen
-    // groundCover.grass = clamp(clamp(L·1,08 − rk·0,85 + m·0,22)·1,12) mit den Welt-Feldern (das Licht der stehenden
+    // Raster `understory.grassStep` in Welt-Koordinaten, Jitter ±0,34, Wurf gegen die Bodenschicht des Kerns
+    // (terrain:groundCover, das Labor pflanzt danach) mit den Welt-Feldern (das Licht der stehenden
     // Kronen `_bodenLichtFeld`, Feuchte, Hang wie der Strauch-Teppich, Pfad dünnt) × dem Grün-Kanal der Boden-Karte (Büschel nur, wo
-    // die Boden-Funktion Wiese zeichnet). Skala Studio: (0,7 + w·0,7) · (m > 0,8 ? 1,45 : 1), zwei Vorlagen.
+    // die Boden-Funktion Wiese zeichnet). Skala Studio: (0,7 + w·0,7) · (m > 0,8 ? 1,45 : 1), zwei Vorlagen. Jedes Büschel
+    // trägt den Tint des Kerns (terrain:wiesenTint, `f`: der Faktor je Kanal, die Instanz-Farbe der Senke) — W1.
     // Fuß, Hang und Grün auf dem GERENDERTEN Boden (der EINE Leser `_bodenSichtAt`, am Chunk-Rand die Karte des
     // Nachbarn). Die Würfe hängen nur an der Zelle (Γ5) — dieselbe Wiese bei jedem Besuch. Gibt die Büschel-Liste
     // zurück oder null, solange ein Chunk, den die Kachel liest (`_bodenSichtChunks`), noch keine Boden-Karte hat.
@@ -46,6 +47,9 @@ class AnazhRealm_Z11c {
         };
         const grund = {};
         const licht = this._bodenLichtFeld(x0 - 0.34, z0 - 0.34, x0 + NW.kachel + 0.34, z0 + NW.kachel + 0.34);
+        const GC =
+            AnazhRealm.Gesetz("terrain:groundCover", null) || AnazhRealm._kernPflichtBruch("terrain:groundCover");
+        const WT = AnazhRealm.Gesetz("terrain:wiesenTint", null) || AnazhRealm._kernPflichtBruch("terrain:wiesenTint");
         const out = [];
         for (let gj = Math.ceil(z0 / step); gj * step < z0 + NW.kachel; gj++) {
             for (let gi = Math.ceil(x0 / step); gi * step < x0 + NW.kachel; gi++) {
@@ -76,9 +80,11 @@ class AnazhRealm_Z11c {
                 const hang = this._slopeAt(x, z, boden);
                 const rk = cl((hang - GS.lo) / (GS.hi - GS.lo));
                 const pfad = this._pfadFeldAt(x, z, y);
-                const p = cl(cl(L * 1.08 - rk * 0.85 + m * 0.22) * 1.12) * (1 - pfad * 0.92) * gruen;
+                // der Pfad dünnt über sein Welt-Feld (der Labor-Abstand `td` zum Studio-Pfad trägt hier nicht)
+                const p = GC(L, m, rk, Infinity).grass * (1 - pfad * 0.92) * gruen;
                 if (wurf >= p) continue;
-                out.push({ x, y, z, s: sk * (m > 0.8 ? 1.45 : 1), rot, vorlage, ordnung });
+                const f = WT(x, z, L, m, [1, 1, 1], 0);
+                out.push({ x, y, z, s: sk * (m > 0.8 ? 1.45 : 1), rot, vorlage, ordnung, f });
             }
         }
         // Zufällige Ordnung: ein Präfix der Liste ist eine gleichmäßige Ausdünnung (das Rand-Band).
@@ -199,12 +205,13 @@ class AnazhRealm_Z11c {
     }
 
     // Die Daten einer Kachel: je Büschel die Basis-Matrix (Ort · Drehung · Skala — die Welt-Skala des Studio-Teils hängt
-    // der Sicht-Satz an), die Hysterese der Stufe (`l1`) und die Kachel-Kugel ohne Büschel-Radius (grober Cull vor
-    // dem Büschel-Test).
+    // der Sicht-Satz an) und sein Tint (`farben`, n×3), die Hysterese der Stufe (`l1`) und die Kachel-Kugel ohne
+    // Büschel-Radius (grober Cull vor dem Büschel-Test).
     _nahWieseKachelDaten(tx, tz, bueschel) {
         const K = AnazhRealm.NAH_WIESE.kachel;
         const n = bueschel.length;
         const basis = new Float32Array(n * 16);
+        const farben = new Float32Array(n * 3);
         const m4 = this._tmpWieseM4 || (this._tmpWieseM4 = new THREE.Matrix4());
         const q = this._tmpWieseQ || (this._tmpWieseQ = new THREE.Quaternion());
         const pv = this._tmpWieseP || (this._tmpWieseP = new THREE.Vector3());
@@ -219,6 +226,7 @@ class AnazhRealm_Z11c {
             q.setFromAxisAngle(up, b.rot);
             sv.set(b.s, b.s, b.s);
             m4.compose(pv, q, sv).toArray(basis, i * 16);
+            farben.set(b.f, i * 3);
             if (b.y < y0) y0 = b.y;
             if (b.y > y1) y1 = b.y;
             if (b.s > sMax) sMax = b.s;
@@ -226,6 +234,7 @@ class AnazhRealm_Z11c {
         return {
             bueschel,
             basis,
+            farben,
             l1: new Uint8Array(n),
             mx: (tx + 0.5) * K,
             mz: (tz + 0.5) * K,
@@ -365,6 +374,11 @@ class AnazhRealm_Z11c {
                         arr[o + j] = e[j];
                         if (arr[o + j] !== alt) a.anders = true;
                     }
+                    // der Tint des Büschels (W1): ein anderer Tint im Slot ist ein anderes Büschel, also eine andere Matrix
+                    const ca = a.mesh.instanceColor.array;
+                    ca[a.anzahl * 3] = k.farben[i * 3];
+                    ca[a.anzahl * 3 + 1] = k.farben[i * 3 + 1];
+                    ca[a.anzahl * 3 + 2] = k.farben[i * 3 + 2];
                     a.anzahl++;
                 }
             }
@@ -380,6 +394,11 @@ class AnazhRealm_Z11c {
                 im.clearUpdateRanges();
                 if (ende) im.addUpdateRange(0, ende);
                 im.needsUpdate = true;
+                // der Tint wandert im Gleichschritt mit der Matrix (je Slot 3 statt 16 Werte) — nur der Bereich, nie die Kapazität
+                const ic = a.mesh.instanceColor;
+                ic.clearUpdateRanges();
+                if (ende) ic.addUpdateRange(0, (ende / 16) * 3);
+                ic.needsUpdate = true;
             }
             AnazhRealm._instanzZahl(a.mesh, a.anzahl);
         }
@@ -619,8 +638,12 @@ class AnazhRealm_Z11c {
         m.receiveShadow = true;
         m.frustumCulled = false;
         m.userData.leafKey = a.leafKey; // die Studio-Identität (Foundry-Leaf) für Inventur und Linsen
+        // der Tint je Büschel (W1, terrain:wiesenTint): r184 multipliziert die Instanz-Farbe im Farb-Pfad, der Zeichner reicht
+        // sie durch; sie fällt mit der Senke (`_instanzAbschied`)
+        m.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(kap * 3).fill(1), 3);
         if (alt) {
             m.instanceMatrix.array.set(alt.instanceMatrix.array.subarray(0, a.anzahl * 16));
+            m.instanceColor.array.set(alt.instanceColor.array.subarray(0, a.anzahl * 3));
             if (alt.parent) alt.parent.remove(alt);
             this._instanzAbschied(alt);
             a.wachse++;

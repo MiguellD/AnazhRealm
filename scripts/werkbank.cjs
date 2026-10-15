@@ -17,7 +17,7 @@
 //   node scripts/werkbank.cjs bild <px> <py> <pz> <lx> <ly> <lz> [--datei f.png] [--w 640 --h 360] [--ziel name] [--wahl N]
 //                                                           [--uhr 0..1] Bühne + echter Frame (Ausgabe-Pfad); --uhr: dieselbe
 //                                                           Bühne zu dieser Stunde (0,5 Mittag), die Leuchtquellen folgen
-//                                      [--klasse <regex>] [--spieler] [--abstand] [--ist <id>[:L<n>|:wirkung]]
+//                                      [--klasse <regex>] [--spieler] [--abstand] [--ist <id>[:L<n>|:wirkung]] [--fov v]
 //                                                           DIE KLASSEN IM BILD (K63, die Soll-Tafel spec/abnahme/
 //                                                           soll-tafel.json): in voller Puffer-Größe unter EINER Uhr G, G2
 //                                                           und je Teil-Klasse ein Schuss ohne sie → die Teilung des Bilds
@@ -230,28 +230,34 @@ const sollAblage = (ziel, endung) => {
 // der Stand des Arbeitsbaums für das Begleit-JSON eines Bilds (K32) und jede Messung der Tafeln: `gitStand` (SHA, „+geaendert"
 // bei Änderungen an versionierten Dateien außer den Tafeln) und der Code-Abdruck jeder Quelle — EINE Quelle, abnahme-urteil
 const { stammVersion, pruefsumme, kernStand, sollQuelle, gitStand } = require("./lib/abnahme-urteil.cjs").standLeser(root);
-function sollIstSchreiben(ziel, messung) {
-    const [id, teil] = String(ziel).split(":");
+// DER EINE SCHUSS (W1-n1, abnahme-urteil `schussVon`): das erste Ziel von „a,b:L1,…" trägt den Schuss mit dem Abdruck der
+// Quellen ALLER Ziele, jedes weitere NENNT es; geschrieben wird einmal, nach der Prüfung jeder Zeile
+function sollIstSchreiben(ziele, messung) {
     const text = fs.readFileSync(SOLL_TAFEL, "utf8");
     const t = JSON.parse(text);
-    const k = t.klassen.find((x) => x.id === id);
-    if (!k) throw new Error(`--ist ${ziel}: die Soll-Tafel trägt keine Klasse „${id}"`);
+    const liste = String(ziele).split(",").filter(Boolean);
+    const orte = liste.map((ziel) => [t.klassen.find((x) => x.id === ziel.split(":")[0]), ziel.split(":")[1], ziel]);
+    for (const [k, teil, ziel] of orte)
+        if (!k || (teil && teil !== "wirkung" && !/^L\d$/.test(teil)))
+            throw new Error(`--ist ${ziel}: keine Klasse der Soll-Tafel oder Teil unbekannt (L<n> je Stufe, wirkung)`);
     // DER STAND (K63-n2, abnahme-urteil `messStand`): die Version des Stamms und die Prüfsumme jeder Quelle der Klasse, wie sie
     // beim Messen auf der Platte standen — ändert sich eine, ist das Ist veraltet
     messung.stand = Object.assign({}, messung.stand, { version: messung.stand.version || stammVersion() });
-    messung.quellen = Object.fromEntries((k.quellen || []).map((d) => [d, pruefsumme(d)]));
-    if (teil === "wirkung") (k.wirkung = k.wirkung || {}).messung = messung;
-    // je Stufe ein Schuss (K63-n4, `milchweiss`: die Tore des Schusses in der Stufe L<n>)
-    else if (/^L\d$/.test(teil || "")) (k.mass.messung = k.mass.messung || {})[teil] = messung;
-    else if (teil) throw new Error(`--ist ${ziel}: Teil „${teil}" unbekannt (L<n> je Stufe, wirkung)`);
-    else k.mass.messung = messung;
+    messung.quellen = Object.fromEntries([...new Set(orte.flatMap(([k]) => k.quellen || []))].map((d) => [d, pruefsumme(d)]));
+    orte.forEach(([k, teil], i) => {
+        const s = i ? liste[0] : messung;
+        if (teil === "wirkung") (k.wirkung = k.wirkung || {}).messung = s;
+        // je Stufe ein Schuss (K63-n4, `milchweiss`: die Tore des Schusses in der Stufe L<n>)
+        else if (teil) (k.mass.messung = Object(k.mass.messung) === k.mass.messung ? k.mass.messung : {})[teil] = s;
+        else k.mass.messung = s;
+    });
     // DER SCHREIBER PRÜFT (K63-n7, abnahme-urteil `sollIstAbweisung`): in die Tafel fällt nur, was die Linse liest — ein Schuss,
     // in dem die Klasse nicht zeichnete (der L1-Schuss 14 s nach dem Umstellen: Membran und Nebel ohne Tor), bricht laut
-    const ab = require("./lib/abnahme-urteil.cjs").sollIstAbweisung(JSON.parse(text), t, id, sollQuelle());
+    const ab = require("./lib/abnahme-urteil.cjs").sollIstAbweisung(JSON.parse(text), t, sollQuelle());
     if (ab.length)
-        throw new Error(`--ist ${ziel}: die Linse liest die Messung nicht — ${ab.join(" · ")} — die Tafel bleibt, wie sie war`);
+        throw new Error(`--ist ${ziele}: die Linse liest die Messung nicht — ${ab.join(" · ")} — die Tafel bleibt, wie sie war`);
     fs.writeFileSync(SOLL_TAFEL, tafelText(t) + "\n");
-    return `${id}${teil ? ":" + teil : ""} → spec/abnahme/soll-tafel.json`;
+    return `${liste.join(", ")} → spec/abnahme/soll-tafel.json`;
 }
 // DIE TAFEL IN IHRER FORM (F1, Wachstums-Wand): eine Zahlen-Reihe steht auf EINER Zeile — eine Messung (`sp` je Klasse)
 // wuchs sonst um eine Zeile je Zahl, und jedes `--ist` zählte als Prüf-Apparat (+312 Zeilen für eine Messrunde)
@@ -1147,7 +1153,9 @@ async function starte() {
             // die Kamera VOR der Bühne: die Bühne setzt Tag und Nacht neu, und das Licht des Auges steht an der Kamera
             // (`_dayNightApplyAugenLicht`, seine Stärke aus dem Himmel am Auge) — danach gesetzt, stand es an der Kamera des
             // letzten Schusses (K16: das Auge in der Höhle schwarz, Helligkeit 0, das Licht lag draußen unter dem Himmel)
-            const cam = r.state.camera;
+            const cam = r.state.camera,
+                fov0 = cam.fov; // `--fov v`: das Blickfeld (vertikal) dieses Schusses, danach wieder das des Spiels
+            if (k.fov) (cam.fov = Number(k.fov)), cam.updateProjectionMatrix();
             cam.position.set(px, py, pz);
             cam.lookAt(lx, ly, lz + 1e-4);
             cam.updateMatrixWorld(true);
@@ -1578,7 +1586,8 @@ async function starte() {
                         );
                         const zahl = {},
                             cosS = baender.slice(1).map(() => 0),
-                            cosN = baender.slice(1).map(() => 0);
+                            cosN = baender.slice(1).map(() => 0),
+                            ftK = new Map(); // DIE FARBTON-STREUUNG (W1): je 2-m-Kachel des Bodens in 2–5 m die Proben
                         const pos = cam.position.clone();
                         const v = new T.Vector3();
                         const band = (d) => {
@@ -1624,6 +1633,8 @@ async function starte() {
                                 const d = Math.hypot(v.x * hit, v.z * hit);
                                 const bi = band(d);
                                 if (bi < 0) continue;
+                                const kk = d >= 2 && d < 5 && x0 + 1 < W && y0 + 1 < H && `${Math.floor((pos.x + v.x * hit) / 2)},${Math.floor((pos.z + v.z * hit) / 2)}`;
+                                if (kk) window.__farbtonProbe(ftK.get(kk) || ftK.set(kk, [0, 0, 0, 0]).get(kk), u8, (y0 * W + x0) * 4, W);
                                 for (let q = 0; q < 4; q++) {
                                     const x = x0 + (q & 1),
                                         y = y0 + (q >> 1);
@@ -1641,7 +1652,9 @@ async function starte() {
                             augeUeberBoden: +(pos.y - (r._bodenSichtAt(pos.x, pos.z) || 0)).toFixed(2),
                             cos: cosS.map((s, b) => (cosN[b] ? +(s / cosN[b]).toFixed(4) : null)),
                             klassen: zahl,
+                            farbton: { kachel: 2, band: [2, 5], belichtung: +r.state.renderer.toneMappingExposure.toFixed(4) },
                         };
+                        abstand.farbton.kacheln = [...ftK].map(([kk, a]) => [kk, a[0], +a[1].toFixed(3), +a[2].toFixed(3), a[3]]);
                     }
                     // die Maske: jede Klasse in ihrem Ton über dem Bild, der Rest blau-grau
                     const ton = [
@@ -1707,6 +1720,7 @@ async function starte() {
                     k2 += Math.abs(a - lum(i + 4)) + Math.abs(a - lum(i + W * 4));
                     n++;
                 }
+            (cam.fov = fov0), cam.updateProjectionMatrix();
             const cv = document.createElement("canvas");
             cv.width = W;
             cv.height = H;
@@ -1942,7 +1956,7 @@ async function starte() {
                         // Ziels unter artifacts/soll-tafel/ (gitignored, lokal) — nie im Scratch, auf den die Tafel nicht zeigen
                         // darf; kopiert erst, wenn die Tafel die Messung genommen hat (eine abgewiesene ersetzt kein Bild)
                         // MEHRERE ZIELE (D8, `--ist tor-fern:L1,tor-bunt:L1,tor-ziel:L1`): derselbe Schuss misst je Ziel sein
-                        // Maß — jede Klasse trägt ihre Messung, die Linse liest jede für sich
+                        // Maß — das erste Ziel trägt den Schuss, jedes weitere nennt ihn (W1-n1, `sollIstSchreiben`)
                         const ziele = String(b.ist).split(",").filter(Boolean);
                         const ablage = sollAblage(ziele[0], ".png");
                         const messung = () => ({
@@ -1961,7 +1975,7 @@ async function starte() {
                             gesicht: kl.gesicht || null,
                             bild: path.relative(root, ablage).split(path.sep).join("/"),
                         });
-                        o.ist = ziele.map((z) => sollIstSchreiben(z, messung())).join(" · ");
+                        o.ist = sollIstSchreiben(b.ist, messung());
                         if (ablage !== datei) {
                             fs.copyFileSync(datei, ablage);
                             fs.copyFileSync(kl.maske, sollAblage(ziele[0], ".maske.png"));
@@ -3103,6 +3117,7 @@ async function starte() {
             abstand: argv.includes("--abstand"),
             gesicht: opt("--gesicht"),
             ist: opt("--ist"),
+            fov: opt("--fov"),
         });
     else if (cmd === "methode")
         o = await rufe("/methode", { name: a[0], terrain: argv.includes("--terrain"), quelle: opt("--quelle") });
