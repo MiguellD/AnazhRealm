@@ -662,15 +662,18 @@ function buehne() {
                 boden2.castShadow = false;
                 boden2.frustumCulled = false;
                 gruppe2.add(boden2);
-                // der Werfer auf der Vendor-Bahn (seit K62 prüft jeder Stoff einer Szene mit der Diät; die Vendor-Bahn fährt ein
-                // Programm mit Nachher-Knoten, wie jeder Leib mit Animation): ein Knoten, der nach dem Zeichnen nichts tut
-                const nachher = TSL.float(0);
-                nachher.updateAfterType = "render";
-                nachher.updateAfter = () => {};
-                const werfer = new T.Mesh(
-                    new T.BoxGeometry(2, 4, 2),
-                    new T.MeshStandardNodeMaterial({ color: 0x8a6a4a, positionNode: TSL.positionLocal.add(nachher) })
-                );
+                // der Werfer auf der Vendor-Bahn: seit K62 prüft jeder Stoff einer Szene mit der Diät — die Vendor-Bahn fährt in
+                // der Welt jeder Leib mit Skelett (r184 hasAnimation): ein Kasten an EINEM Knochen
+                const werferGeo = new T.BoxGeometry(2, 4, 2);
+                const ecken = werferGeo.attributes.position.count;
+                const gewicht = new Float32Array(ecken * 4);
+                for (let i = 0; i < ecken; i++) gewicht[i * 4] = 1;
+                werferGeo.setAttribute("skinIndex", new T.Uint16BufferAttribute(new Uint16Array(ecken * 4), 4));
+                werferGeo.setAttribute("skinWeight", new T.Float32BufferAttribute(gewicht, 4));
+                const werfer = new T.SkinnedMesh(werferGeo, new T.MeshStandardNodeMaterial({ color: 0x8a6a4a }));
+                const knochen = new T.Bone();
+                werfer.add(knochen);
+                werfer.bind(new T.Skeleton([knochen]));
                 werfer.position.set(3, 2, 0);
                 werfer.renderOrder = 1;
                 werfer.castShadow = true;
