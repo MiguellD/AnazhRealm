@@ -207,18 +207,18 @@
                         }
                     },
                     "gesicht": null,
-                    "bild": "../../../../AppData/Local/Temp/claude/K63-n7/s6/boden.png",
+                    "bild": "artifacts/soll-tafel/boden-nah.png",
                     "quellen": {
-                        "gelaende-core.js": "4aa4f2792bab096e",
-                        "phyto-core.js": "e249254c481eaf69",
-                        "stamm/07.js": "2c0ea1566bde5db0",
-                        "stamm/10.js": "3610b2fda697b950",
-                        "stamm/19.js": "2bb652c80a58c2a9",
-                        "stamm/24.js": "f91a630f9f2e5b4b",
-                        "stamm/25c.js": "8b1cb72fb388564f",
-                        "stamm/11c.js": "d2269993c239da8e",
-                        "stamm/17b.js": "e9a220a4e1af8dbf",
-                        "stamm/20a.js": "1d5a51bec0726efe"
+                        "gelaende-core.js": "c:47e37b262d36dd6e",
+                        "phyto-core.js": "c:d3570c6004de7533",
+                        "stamm/07.js": "c:49617014f39c824b",
+                        "stamm/10.js": "c:60d0e92e3969e187",
+                        "stamm/19.js": "c:b1a053cba1f64cd1",
+                        "stamm/24.js": "c:26d0da410e4c28a0",
+                        "stamm/25c.js": "c:baf3b0d0c63ceb9b",
+                        "stamm/11c.js": "c:978d02155395df69",
+                        "stamm/17b.js": "c:074908c78ad2216f",
+                        "stamm/20a.js": "c:a57174536689608d"
                     }
                 }
             },
@@ -293,11 +293,11 @@
                         0.272
                     ],
                     "quellen": {
-                        "stamm/07.js": "2c0ea1566bde5db0",
-                        "stamm/10.js": "3610b2fda697b950",
-                        "stamm/19.js": "2bb652c80a58c2a9",
-                        "stamm/24.js": "f91a630f9f2e5b4b",
-                        "stamm/25c.js": "8b1cb72fb388564f"
+                        "stamm/07.js": "c:49617014f39c824b",
+                        "stamm/10.js": "c:60d0e92e3969e187",
+                        "stamm/19.js": "c:b1a053cba1f64cd1",
+                        "stamm/24.js": "c:26d0da410e4c28a0",
+                        "stamm/25c.js": "c:baf3b0d0c63ceb9b"
                     }
                 }
             },
@@ -451,19 +451,19 @@
                     },
                     "abstand": null,
                     "gesicht": null,
-                    "bild": "../../../../AppData/Local/Temp/claude/K63-n7/s6/laub.png",
+                    "bild": "artifacts/soll-tafel/laub.png",
                     "quellen": {
-                        "phyto-core.js": "e249254c481eaf69",
-                        "foundry-core.js": "b957a6823f5b6a9e",
-                        "stamm/07.js": "2c0ea1566bde5db0",
-                        "stamm/10.js": "3610b2fda697b950",
-                        "stamm/19.js": "2bb652c80a58c2a9",
-                        "stamm/24.js": "f91a630f9f2e5b4b",
-                        "stamm/25c.js": "8b1cb72fb388564f",
-                        "stamm/17a.js": "3171fb2dc0f872b0",
-                        "stamm/20b.js": "53573e26535aa7a3",
-                        "stamm/20c.js": "739572d20e186d24",
-                        "stamm/20d.js": "e592b8af34c2ac9c"
+                        "phyto-core.js": "c:d3570c6004de7533",
+                        "foundry-core.js": "c:048acefc0b19a374",
+                        "stamm/07.js": "c:49617014f39c824b",
+                        "stamm/10.js": "c:60d0e92e3969e187",
+                        "stamm/19.js": "c:b1a053cba1f64cd1",
+                        "stamm/24.js": "c:26d0da410e4c28a0",
+                        "stamm/25c.js": "c:baf3b0d0c63ceb9b",
+                        "stamm/17a.js": "c:744a802e9be62a5d",
+                        "stamm/20b.js": "c:c862c9370ea83097",
+                        "stamm/20c.js": "c:ab76fd2fae457741",
+                        "stamm/20d.js": "c:f4f05390e67cc1d5"
                     }
                 }
             },
@@ -560,10 +560,10 @@
                     },
                     "abstand": null,
                     "gesicht": null,
-                    "bild": "../../../../AppData/Local/Temp/claude/K63-n7/s6/haus.png",
+                    "bild": "artifacts/soll-tafel/haus-wirkung.png",
                     "quellen": {
-                        "fachwerk-core.js": "f0e1c14768b59e8c",
-                        "foundry-core.js": "b957a6823f5b6a9e"
+                        "fachwerk-core.js": "c:e5726dc98963a032",
+                        "foundry-core.js": "c:048acefc0b19a374"
                     }
                 }
             },
@@ -691,18 +691,18 @@
                     },
                     "abstand": null,
                     "gesicht": null,
-                    "bild": "../../../../AppData/Local/Temp/claude/K63-n7/s6/wasser.png",
+                    "bild": "artifacts/soll-tafel/wasser.png",
                     "quellen": {
-                        "gelaende-core.js": "4aa4f2792bab096e",
-                        "stamm/07.js": "2c0ea1566bde5db0",
-                        "stamm/10.js": "3610b2fda697b950",
-                        "stamm/19.js": "2bb652c80a58c2a9",
-                        "stamm/24.js": "f91a630f9f2e5b4b",
-                        "stamm/25c.js": "8b1cb72fb388564f",
-                        "stamm/08.js": "0b53e7190a8a5d1a",
-                        "stamm/11a.js": "549d9c99924b3ecf",
-                        "stamm/11b.js": "958e160caa28a442",
-                        "stamm/17b.js": "e9a220a4e1af8dbf"
+                        "gelaende-core.js": "c:47e37b262d36dd6e",
+                        "stamm/07.js": "c:49617014f39c824b",
+                        "stamm/10.js": "c:60d0e92e3969e187",
+                        "stamm/19.js": "c:b1a053cba1f64cd1",
+                        "stamm/24.js": "c:26d0da410e4c28a0",
+                        "stamm/25c.js": "c:baf3b0d0c63ceb9b",
+                        "stamm/08.js": "c:77f87597ce6b7d1c",
+                        "stamm/11a.js": "c:07de57204b2e88b6",
+                        "stamm/11b.js": "c:2b2b48ade183e63b",
+                        "stamm/17b.js": "c:074908c78ad2216f"
                     }
                 }
             },
@@ -921,19 +921,19 @@
                         },
                         "abstand": null,
                         "gesicht": null,
-                        "bild": "../../../../AppData/Local/Temp/claude/K63-n7/s6/tor-L1.png",
+                        "bild": "artifacts/soll-tafel/tor-fern-L1.png",
                         "quellen": {
-                            "porta-core.js": "1f5c96131f9bb2be",
-                            "foundry-core.js": "b957a6823f5b6a9e",
-                            "stamm/07.js": "2c0ea1566bde5db0",
-                            "stamm/10.js": "3610b2fda697b950",
-                            "stamm/19.js": "2bb652c80a58c2a9",
-                            "stamm/24.js": "f91a630f9f2e5b4b",
-                            "stamm/25c.js": "8b1cb72fb388564f",
-                            "stamm/14.js": "c8ee5a0ca50e8a1b",
-                            "stamm/17a.js": "3171fb2dc0f872b0",
-                            "stamm/17c.js": "702a08345f3246be",
-                            "stamm/20b.js": "53573e26535aa7a3"
+                            "porta-core.js": "c:1c9ff321ca5adf31",
+                            "foundry-core.js": "c:048acefc0b19a374",
+                            "stamm/07.js": "c:49617014f39c824b",
+                            "stamm/10.js": "c:60d0e92e3969e187",
+                            "stamm/19.js": "c:b1a053cba1f64cd1",
+                            "stamm/24.js": "c:26d0da410e4c28a0",
+                            "stamm/25c.js": "c:baf3b0d0c63ceb9b",
+                            "stamm/14.js": "c:55e8c8355eddc46a",
+                            "stamm/17a.js": "c:744a802e9be62a5d",
+                            "stamm/17c.js": "c:8affaee4c6b7bb48",
+                            "stamm/20b.js": "c:c862c9370ea83097"
                         }
                     },
                     "L3": {
@@ -985,19 +985,19 @@
                         },
                         "abstand": null,
                         "gesicht": null,
-                        "bild": "../../../../AppData/Local/Temp/claude/K63-n7/s6/tor-L3.png",
+                        "bild": "artifacts/soll-tafel/tor-fern-L3.png",
                         "quellen": {
-                            "porta-core.js": "1f5c96131f9bb2be",
-                            "foundry-core.js": "b957a6823f5b6a9e",
-                            "stamm/07.js": "2c0ea1566bde5db0",
-                            "stamm/10.js": "3610b2fda697b950",
-                            "stamm/19.js": "2bb652c80a58c2a9",
-                            "stamm/24.js": "f91a630f9f2e5b4b",
-                            "stamm/25c.js": "8b1cb72fb388564f",
-                            "stamm/14.js": "c8ee5a0ca50e8a1b",
-                            "stamm/17a.js": "3171fb2dc0f872b0",
-                            "stamm/17c.js": "702a08345f3246be",
-                            "stamm/20b.js": "53573e26535aa7a3"
+                            "porta-core.js": "c:1c9ff321ca5adf31",
+                            "foundry-core.js": "c:048acefc0b19a374",
+                            "stamm/07.js": "c:49617014f39c824b",
+                            "stamm/10.js": "c:60d0e92e3969e187",
+                            "stamm/19.js": "c:b1a053cba1f64cd1",
+                            "stamm/24.js": "c:26d0da410e4c28a0",
+                            "stamm/25c.js": "c:baf3b0d0c63ceb9b",
+                            "stamm/14.js": "c:55e8c8355eddc46a",
+                            "stamm/17a.js": "c:744a802e9be62a5d",
+                            "stamm/17c.js": "c:8affaee4c6b7bb48",
+                            "stamm/20b.js": "c:c862c9370ea83097"
                         }
                     }
                 }
@@ -1112,10 +1112,10 @@
                     },
                     "abstand": null,
                     "gesicht": null,
-                    "bild": "../../../artifacts/profiband/soll-tafel/n2/mensch-kopf-third.png",
+                    "bild": "artifacts/soll-tafel/mensch-kopf-wirkung.png",
                     "quellen": {
-                        "koerper-core.js": "94a8359fccad2ea4",
-                        "foundry-core.js": "b957a6823f5b6a9e"
+                        "koerper-core.js": "c:2d740b48e4f78546",
+                        "foundry-core.js": "c:048acefc0b19a374"
                     }
                 }
             },
@@ -1277,18 +1277,18 @@
                             "kappe": "cecbc5"
                         }
                     },
-                    "bild": "../../../../AppData/Local/Temp/claude/K63-n7/s6/kopf.png",
+                    "bild": "artifacts/soll-tafel/mensch-kopf.png",
                     "quellen": {
-                        "koerper-core.js": "94a8359fccad2ea4",
-                        "foundry-core.js": "b957a6823f5b6a9e",
-                        "stamm/07.js": "2c0ea1566bde5db0",
-                        "stamm/10.js": "3610b2fda697b950",
-                        "stamm/19.js": "2bb652c80a58c2a9",
-                        "stamm/24.js": "f91a630f9f2e5b4b",
-                        "stamm/25c.js": "8b1cb72fb388564f",
-                        "stamm/15a.js": "f0610a76b23bfe9e",
-                        "stamm/15c.js": "079dee3b5f4fdc27",
-                        "stamm/25b.js": "a21a3054484ddc2c"
+                        "koerper-core.js": "c:2d740b48e4f78546",
+                        "foundry-core.js": "c:048acefc0b19a374",
+                        "stamm/07.js": "c:49617014f39c824b",
+                        "stamm/10.js": "c:60d0e92e3969e187",
+                        "stamm/19.js": "c:b1a053cba1f64cd1",
+                        "stamm/24.js": "c:26d0da410e4c28a0",
+                        "stamm/25c.js": "c:baf3b0d0c63ceb9b",
+                        "stamm/15a.js": "c:386117a9b5c4f686",
+                        "stamm/15c.js": "c:632b0d73bab306bc",
+                        "stamm/25b.js": "c:afea0832a6adb243"
                     }
                 }
             },

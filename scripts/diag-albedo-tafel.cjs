@@ -4,9 +4,13 @@
 //
 //   node scripts/diag-albedo-tafel.cjs                 (npm run gate:albedo-tafel, GPU-frei) die Tafel trägt Schema und
 //        Messung: jede der acht Klassen eine Zeile, jede Zeile Labor-Y, Welt-Y, Verhältnis und Ratsche, jedes Studio
-//        seine Karte; das gespeicherte Ist liegt in seiner Ratsche UND ist so jung wie die Bytes, die es trägt (K63-n4: je
-//        Zeile ihre `quellen` gegen die Prüfsummen beider Seiten beim Messen — veraltet oder ungeprüft ist ROT); Soll-Stand
-//        (n von N im Rand) steht in der Ausgabe
+//        seine Karte; das gespeicherte Ist liegt in seiner Ratsche UND ist so jung wie der Code, den es trägt (K63-n4, K63-n8:
+//        je Zeile ihre `quellen` gegen den Code-Abdruck beider Seiten beim Messen — ungeprüft bricht, veraltet ist ROT
+//        „veraltet seit <Commit>" ohne Merge-Bruch, auf der Karte in der CI (Job `echt`) misst die Wand sie selbst neu);
+//        Soll-Stand (n von N im Rand) steht in der Ausgabe
+//   node scripts/diag-albedo-tafel.cjs --neu           die veralteten Zeilen auf dem Adapter der Weiche neu messen (lokal die
+//        Karte, unter dem GPU-Schloss): EINE Welt (ALBEDO_WERKBANK_PORT, Standard 4589) + das Labor, Urteil der frischen
+//        Zahlen, die Dateien zum Nachziehen unter artifacts/albedo-neu/
 //   node scripts/diag-albedo-tafel.cjs --selftest      die Rechnung feuert: ein Verhältnis über der Ratsche, eine falsche
 //        Eichung, eine stumme Seite, eine Tafel ohne Klasse werden ROT; der Nachzug senkt und hebt nie — und im echten
 //        r128-Labor (Chrome, die Linse aus der Bibliothek) liest die 18-%-Karte 0,180, ein roh gelesenes Hex (der alte
@@ -23,8 +27,12 @@ const fs = require("fs");
 const path = require("path");
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const AT = require("./lib/albedo-tafel.cjs");
-// die Prüfsumme einer Datei des Baums (abnahme-urteil `standLeser`, dieselbe wie Werkzeug und Soll-Tafel)
-const { pruefsumme } = require("./lib/abnahme-urteil.cjs").standLeser(path.join(__dirname, ".."));
+// der Code-Abdruck einer Datei des Baums und der Stand einer Messung (abnahme-urteil `standLeser`, derselbe wie Werkzeug und
+// Soll-Tafel)
+const AU = require("./lib/abnahme-urteil.cjs");
+const SL = AU.standLeser(path.join(__dirname, ".."));
+const { pruefsumme } = SL;
+const { linsenGpu } = require("./lib/software-gpu.cjs");
 
 const argv = process.argv.slice(2);
 const opt = (k, d) => {
@@ -233,28 +241,52 @@ async function selbsttest() {
     const t = (name, ok) => tests.push({ name, ok: !!ok });
     const T0 = tafelZumTest();
     const hatRot = (u, art) => u.rot.some((r) => r.art === art);
-    // S0 — DER STAND (K63-n4; Prüfer K63 R3: die Wand las das Ist vom 07.10. und stand still grün): beide Seiten an den
-    // Prüfsummen von heute → kein Befund; eine Quelle geändert seit der Messung → `veraltet` beim Namen; eine Messung ohne
-    // Prüfsummen → `ungeprüft`. Die Zeilen-Quellen sind Pflicht des Schemas.
+    // S0 — DER STAND (K63-n4; Prüfer K63 R3: die Wand las das Ist vom 07.10. und stand still grün): beide Seiten am Code-
+    // Abdruck von heute → kein Befund; eine Quelle geändert seit der Messung → `veraltet seit <Commit>` beim Namen; eine Messung
+    // ohne Abdrücke → `ungeprüft`. Die Zeilen-Quellen sind Pflicht des Schemas.
     {
         const S0 = JSON.parse(JSON.stringify(T0));
         const heute = {};
         for (const z of S0.zeilen) for (const d of z.quellen || []) heute[d] = pruefsumme(d);
-        S0.gemessen = { welt: { quellen: Object.assign({}, heute) }, labor: { quellen: Object.assign({}, heute) } };
+        const sha = "0123456789abcdef0123456789abcdef01234567";
+        const seite = () => ({ version: "18.0.0", sha, quellen: Object.assign({}, heute) });
+        S0.gemessen = { welt: seite(), labor: seite() };
         const frisch = AT.tafelStand(S0, pruefsumme);
         const d0 = S0.zeilen[0].quellen[0];
+        // DER CODE-ABDRUCK (K63-n8; Koordinator 15.10.: eine reine Kommentarzeile in stamm/10.js machte jede Zeile veraltet und
+        // sperrte jeden folgenden Merge): dieselbe Quelle mit Kommentarzeilen und neuem Leerraum → kein Befund; ein Token mehr
+        // → `veraltet seit 01234567` beim Namen der Datei, in BEIDEN Seiten jeder Zeile, die sie trägt
+        const text0 = fs.readFileSync(path.join(__dirname, "..", d0), "utf8");
+        const mit = (neu) => (d) => (d === d0 ? AU.codeAbdruck(neu, d) : pruefsumme(d));
+        const kommentar = AT.tafelStand(S0, mit(text0.replace("\n", "\n// eine Kommentarzeile\n\n\t \n") + "\n/* Block */\n"));
+        const code = AT.tafelStand(S0, mit(text0 + "\n;0;\n"));
+        const mitD0 = S0.zeilen.filter((z) => z.quellen.includes(d0)).length;
         S0.gemessen.welt.quellen[d0] = "0000000000000000";
-        const alt = AT.tafelStand(S0, pruefsumme);
+        const altForm = AT.tafelStand(S0, pruefsumme);
         delete S0.gemessen.labor.quellen;
         const ohne = AT.tafelStand(S0, pruefsumme);
         const s0q = JSON.parse(JSON.stringify(T0));
         delete s0q.zeilen[0].quellen;
         t(
-            "Stand: heute gemessen → kein Befund; eine Quelle geändert → veraltet beim Namen; ohne Prüfsummen → ungeprüft; Zeile ohne Quellen → Schema rot",
+            "Stand: heute gemessen → kein Befund; eine Kommentarzeile → kein Befund; ein Token mehr → veraltet seit <Commit> beim Namen; Prüfsumme alter Form oder keine → ungeprüft; Zeile ohne Quellen → Schema rot",
             frisch.length === 0 &&
-                alt.some((r) => r.zeile === S0.zeilen[0].id && /veraltet/.test(r.text) && r.text.includes(d0)) &&
-                ohne.some((r) => /ungeprüft/.test(r.text)) &&
+                kommentar.length === 0 &&
+                code.length === 2 * mitD0 &&
+                code.every((r) => r.art === "veraltet" && r.text.includes("veraltet seit 01234567") && r.text.includes(d0)) &&
+                altForm.some((r) => r.zeile === S0.zeilen[0].id && r.art === "ungeprüft" && /alter Form/.test(r.text)) &&
+                ohne.some((r) => r.art === "ungeprüft" && /ohne Abdruck/.test(r.text)) &&
                 AT.tafelPruefen(s0q).some((f) => /quellen fehlen/.test(f))
+        );
+        // S0w — DIE WAND DES STANDS (K63-n8): ungeprüft bricht (Exit 1), veraltet ist ROT beim Namen und bricht keinen Merge —
+        // jede veraltete Zeile steht in der Liste der Neumessung, keine frische
+        const wv = AT.standWand(code);
+        const wu = AT.standWand(ohne);
+        t(
+            "Wand: veraltet → kein Bruch, jede betroffene Zeile ROT in der Neumessung; ungeprüft → Bruch",
+            wv.brueche.length === 0 &&
+                wv.neu.length === mitD0 &&
+                wv.neu.every((id) => S0.zeilen.find((z) => z.id === id).quellen.includes(d0)) &&
+                wu.brueche.length > 0
         );
     }
     // S1 — gleich auf beiden Seiten: GRÜN, alle Zeilen im Soll.
@@ -318,7 +350,7 @@ async function selbsttest() {
         );
     }
     // S7 — der Nachzug senkt, hebt nie, und zieht ohne Eichung nicht.
-    const n7 =AT.tafelNachziehen(T0, messungZumTest(T0, { [T0.zeilen[2].id]: 1.01 }), { labor: {}, welt: {} });
+    const n7 = AT.tafelNachziehen(T0, messungZumTest(T0, { [T0.zeilen[2].id]: 1.01 }), { labor: {}, welt: {} });
     const n7b = AT.tafelNachziehen(T0, messungZumTest(T0, { [T0.zeilen[2].id]: 1.2 }), { labor: {}, welt: {} });
     // eine stumme Zeile: ihr Ist fällt (kein altes Ist unter dem neuen Stand), die Ratsche bleibt, die Wand nennt sie „ohne Ist"
     const n7c = AT.tafelNachziehen(T0, m4, { labor: {}, welt: {} });
@@ -443,6 +475,72 @@ function gespeichert(t) {
     return m;
 }
 
+// DIE NEUMESSUNG DER VERALTETEN ZEILEN (K63-n8): auf der Karte — der Job `echt` des Messplatzes (CI, die Weiche fährt die
+// Karte, K65) oder lokal `--neu` unter dem GPU-Schloss — misst die Wand selbst: EINE Welt (werkbank `start` auf
+// ALBEDO_WERKBANK_PORT, Standard 4589, die Seite einen Port darunter) am Ort der gespeicherten Messung, `albedo --tafel`; dann
+// die Labor-Seite jedes Studios. Das Urteil der frischen Zahlen (Ratsche + Rand, Eichung, Stufe): ROT heißt, der Code hat die
+// Albedo bewegt (Exit 1); im Rand stehen die Zeilen weiter ROT veraltet, bis die Tafel nachgezogen ist — der Befehl steht in
+// der Ausgabe, die Messungen unter artifacts/albedo-neu/.
+async function neuMessen(t, ids) {
+    const { spawn, spawnSync } = require("child_process");
+    const WP = String(Number(process.env.ALBEDO_WERKBANK_PORT || 4589));
+    const WB = path.join(__dirname, "werkbank.cjs");
+    const ordner = path.join(__dirname, "..", "artifacts", "albedo-neu", new Date().toISOString().replace(/[:.]/g, "-"));
+    fs.mkdirSync(ordner, { recursive: true });
+    const wb = (args) => {
+        const r = spawnSync(process.execPath, [WB, ...args, "--port", WP], {
+            encoding: "utf8",
+            timeout: 1800000,
+            maxBuffer: 1 << 26,
+        });
+        return { exit: r.status, aus: (r.stdout || "") + (r.stderr || "") };
+    };
+    const wlog = path.join(ordner, "werkbank.log");
+    const fd = fs.openSync(wlog, "w");
+    const w = spawn(process.execPath, [WB, "start", "--port", WP], { stdio: ["ignore", fd, fd] });
+    const t0 = Date.now();
+    const wd = path.join(ordner, "welt.json");
+    console.log(`   Neumessung: Welt (werkbank :${WP}) und Labor — ${ordner}`);
+    try {
+        while (!/WERKBANK bereit/.test(fs.readFileSync(wlog, "utf8"))) {
+            if (w.exitCode != null || Date.now() - t0 > 1200000) throw new Error(`die Werkbank startet nicht (${wlog})`);
+            await new Promise((r) => setTimeout(r, 2000));
+        }
+        const gw = t.gemessen.welt || {};
+        const um = wb(gw.ort ? ["umstellen", "--ort", gw.ort] : ["umstellen", ...(gw.spieler || [0, 0]).map(String)]);
+        if (um.exit !== 0) throw new Error("umstellen: " + um.aus.slice(-400));
+        wb(["eval", "await new Promise((x) => setTimeout(x, 10000)); return 1"]);
+        // Exit 1 heißt dort nur: das Urteil gegen das gespeicherte Labor ist ROT — die Datei trägt die Messung
+        const al = wb(["albedo", "--tafel", "--datei", wd, "--ordner", path.join(ordner, "albw")]);
+        if (!fs.existsSync(wd)) throw new Error("albedo --tafel ohne Messung: " + al.aus.slice(-400));
+    } finally {
+        wb(["stop"]);
+        if (w.exitCode == null) w.kill();
+    }
+    const welt = JSON.parse(fs.readFileSync(wd, "utf8"));
+    const labor = await messeLabor({ echt: false, nur: null, tafel: t });
+    Object.assign(labor, { datum: new Date().toISOString(), echt: false, stand: SL.kernStand() });
+    const ld = path.join(ordner, "labor.json");
+    fs.writeFileSync(ld, JSON.stringify(labor, null, 1));
+    const u = AT.tafelUrteil(t, {
+        labor: labor.labor,
+        karten: labor.karten,
+        welt: welt.welt,
+        eichung: { welt: welt.eichung, labor: labor.eichung.labor },
+    });
+    console.log(`   Welt: ${welt.geraet} · Labor: ${labor.geraet}`);
+    console.log(AT.tafelTabelle(u));
+    if (u.urteil !== "GRUEN") {
+        console.log(`⛔ DIE ALBEDO-TAFEL: die Neumessung der veralteten Zeilen ${ids.join(", ")} ist ROT — der Code hat die Albedo bewegt.`);
+        process.exit(1);
+    }
+    console.log(
+        `DIE ALBEDO-TAFEL: die veralteten Zeilen ${ids.join(", ")} neu gemessen, im Rand — sie bleiben ROT veraltet, bis ` +
+            `nachgezogen: node scripts/diag-albedo-tafel.cjs --nachziehen ${path.relative(process.cwd(), wd)} ${path.relative(process.cwd(), ld)}`
+    );
+    process.exit(0);
+}
+
 async function main() {
     if (argv.includes("--selftest")) return selbsttest();
     if (argv.includes("--laub")) return laborLaub();
@@ -458,8 +556,8 @@ async function main() {
         const m = await messeLabor({ echt: argv.includes("--echt"), nur, tafel: t });
         m.datum = new Date().toISOString();
         m.echt = argv.includes("--echt");
-        // DER STAND der Labor-Seite (K63-n3, abnahme-urteil `kernStand`): Version und Prüfsumme jedes Kerns beim Messen
-        m.stand = require("./lib/abnahme-urteil.cjs").standLeser(path.join(__dirname, "..")).kernStand();
+        // DER STAND der Labor-Seite (K63-n3, abnahme-urteil `kernStand`): Version, Commit und Code-Abdruck jeder Quelle beim Messen
+        m.stand = SL.kernStand();
         if (opt("--datei")) fs.writeFileSync(path.resolve(opt("--datei")), JSON.stringify(m, null, 1));
         // Gegen das gespeicherte Welt-Ist: die Labor-Seite lebt, die Welt-Seite steht in der Tafel.
         const g = gespeichert(t);
@@ -490,7 +588,7 @@ async function main() {
             eichung: { welt: welt.eichung, labor: labor.eichung.labor },
         };
         // der Stand beider Seiten reist in die Tafel (K63-n3: die Soll-Tafel prüft Version und Quellen, `messStand`)
-        const st = (s) => (s && s.stand ? { version: s.stand.version, quellen: s.stand.quellen } : {});
+        const st = (s) => (s && s.stand ? { version: s.stand.version, sha: s.stand.sha, quellen: s.stand.quellen } : {});
         const r = AT.tafelNachziehen(t, m, {
             labor: Object.assign({ datum: labor.datum, geraet: labor.geraet, echt: labor.echt }, st(labor)),
             welt: Object.assign(
@@ -501,6 +599,14 @@ async function main() {
         console.log(AT.tafelTabelle(r.u));
         if (!r.tafel) {
             console.log("\nTafel NICHT nachgezogen: " + r.grund);
+            process.exit(1);
+        }
+        // DER SCHREIBER PRÜFT DEN STAND (K63-n8): in die Tafel fällt nur eine Messung am Code von heute — eine ältere schriebe eine
+        // veraltete Zeile, und die Wand bricht nur über ungeprüft, nie über veraltet
+        const sn = AT.standWand(AT.tafelStand(r.tafel, pruefsumme));
+        if (sn.brueche.length || sn.neu.length) {
+            console.log("\nTafel NICHT nachgezogen — die Messung trägt nicht den Code von heute:");
+            for (const x of [...sn.brueche, ...sn.neu.flatMap((id) => sn.veraltet[id])]) console.log("   ❌ " + x);
             process.exit(1);
         }
         fs.writeFileSync(AT.TAFEL_PFAD, JSON.stringify(r.tafel, null, 4) + "\n");
@@ -515,12 +621,29 @@ async function main() {
         if (!k.ist || k.ratsche == null) errs.push(`Karte ${s}: ohne Ist oder Ratsche`);
     const u = AT.tafelUrteil(t, gespeichert(t));
     for (const r of u.rot) errs.push(`[${r.art}] ${r.text}`);
-    // DER STAND (K63-n4): ein Ist, älter als die Bytes, die es trägt, ist kein Beweis — ROT beim Namen der Zeile und Datei
-    for (const r of AT.tafelStand(t, pruefsumme)) errs.push(`[stand] ${r.text}`);
+    // DER STAND (K63-n4, K63-n8): ein Ist, älter als der Code, den es trägt, ist kein Beweis — ungeprüft ist ein Bruch der
+    // Tafel; veraltet ist ROT „veraltet seit <Commit>" beim Namen der Zeile, nie GRÜN, und bricht keinen Merge: die Karte misst
+    // neu (der Job `echt` auf dem Messplatz, K65; lokal `--neu`), swiftshader nicht (K63-n8 gemessen: rinde ×9,9, fell +15 %)
+    const sw = AT.standWand(AT.tafelStand(t, pruefsumme));
+    for (const b of sw.brueche) errs.push(`[stand] ${b}`);
     if (errs.length) {
         console.log("⛔ DIE ALBEDO-TAFEL:");
         for (const e of errs) console.log("   ❌ " + e);
         process.exit(1);
+    }
+    if (sw.neu.length) {
+        console.log(`DIE ALBEDO-TAFEL: ${sw.neu.length} von ${t.zeilen.length} Zeilen ROT (veraltet, nie GRÜN):`);
+        for (const id of sw.neu) for (const x of sw.veraltet[id]) console.log("   ROT " + x);
+        const karte = argv.includes("--neu") || (process.env.CI === "true" && linsenGpu() === "hardware");
+        if (!karte) {
+            console.log(
+                "   → die Neumessung fährt die Karte: der Job `echt` auf dem Messplatz (K65) bzw. lokal " +
+                    "`node scripts/diag-albedo-tafel.cjs --neu` unter dem GPU-Schloss; danach `--nachziehen <welt> <labor>`. " +
+                    "Auf swiftshader misst die Welt-Seite rinde ×9,9 und fell +15 % falsch (K63-n8) — hier kein Urteil."
+            );
+            process.exit(0);
+        }
+        return neuMessen(t, sw.neu);
     }
     const weit = u.zeilen
         .filter((z) => !z.imSoll)

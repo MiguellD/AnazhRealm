@@ -919,12 +919,21 @@ const MASS_AUFLOESUNG = Object.freeze({
     albedo: 0.005,
     gesicht: 0.05,
 });
+// DER ORT EINES BILDS der Tafel (K63-n8; Koordinator 15.10.: die `bild`-Felder zeigten in den Scratch, AppData): relativ zur
+// Wurzel des Baums unter `artifacts/` (gitignored, lokal, beim Namen — der Schreiber legt es nach `artifacts/soll-tafel/`), nie
+// absolut, nie mit `..`, nie mit Backslash.
+function bildPfadFehler(p) {
+    if (typeof p !== "string" || !/^artifacts\/[\w\-./]+\.png$/.test(p) || /(^|\/)\.\.?\//.test(p))
+        return `das Bild „${p}" liegt nicht unter artifacts/ (relativ zur Wurzel, ohne ..)`;
+    return null;
+}
 // Die Messung eines Bilds: vom Werkzeug geschrieben, Stand · Gerät · Leinwand, ihr Rauschen unter der Wand.
 function bildMessungFehler(me) {
     if (!me || typeof me !== "object") return "keine Messung";
     if (me.werkzeug !== "bild") return `die Messung stammt nicht aus \`werkbank bild\` (${me.werkzeug})`;
     for (const f of ["datum", "stand", "geraet", "leinwand", "klassen", "rauschen", "schwelle"])
         if (me[f] == null) return `die Messung ohne ${f}`;
+    if (me.bild != null && bildPfadFehler(me.bild)) return bildPfadFehler(me.bild);
     if (!(me.rauschen.anteil <= RAUSCHEN_MAX))
         return `die Teilung hält ihr Rauschen nicht: ${me.rauschen.anteil} der Pixel zweier gleicher Schüsse über der Schwelle ${me.schwelle} (Wand ${RAUSCHEN_MAX})`;
     if (!Object.keys(me.klassen).length) return "die Messung zeigt keine Klasse";
@@ -1197,24 +1206,29 @@ function albedoZeile(ma, q) {
     return { t, z, stand: `${String(w.datum || "?").slice(0, 10)} ${w.geraet || "?"}`, bloecke: [w, l], quellen: z.quellen || [] };
 }
 // DER STAND einer Messung (K63-n2; Prüfer K63 R2: das Kopf-GRÜN stand auf der Albedo-Tafel vom 07.10., mit dem Datum 2020 blieb
-// es GRÜN): ein Ist gilt nur für den Stamm, an dem es gemessen ist (`stand.version` = AnazhRealm.VERSION), und für die Bytes der
-// Quellen seiner Klasse (`klasse.quellen`: das Gesetzbuch und der Ofen; `messung.quellen` die Prüfsummen, die das Werkzeug beim
-// Schreiben nimmt). Ein Block ohne Version oder Prüfsumme ist ungeprüft, einer mit fremder veraltet — beides ROT, nie GRÜN.
+// es GRÜN): ein Ist gilt für den CODE der Quellen seiner Klasse (`klasse.quellen`: das Gesetzbuch und der Ofen; `messung.quellen`
+// die Code-Abdrücke, die das Werkzeug beim Schreiben nimmt, `codeAbdruck`) — nicht für die Version des Stamms (K63-n8: jede
+// Integration hebt VERSION und machte jede Zeile veraltet, ohne dass ihr Code sich rührte; Version und Commit stehen als Beleg).
+// Ein Block ohne Version, Commit oder Abdruck ist ungeprüft, einer mit fremdem Abdruck „veraltet seit <Commit der Messung>" —
+// beides ROT, nie GRÜN. Dieselbe Regel liest die Albedo-Wand je Zeile (albedo-tafel `tafelStand`).
 function messStand(bloecke, quellen, q) {
-    if (!q.version) return "der Stamm ohne Version (q.version)";
     for (const b of bloecke) {
-        const v = b && ((b.stand && b.stand.version) || b.version);
-        if (!v) return "Stand ungeprüft: die Messung trägt keine Version";
-        if (v !== q.version) return `veraltet: gemessen an V${v}, der Stamm ist V${q.version}`;
+        const st = (b && b.stand) || {};
+        if (!(st.version || (b && b.version))) return "Stand ungeprüft: die Messung trägt keine Version";
+        const sha = st.sha || (b && b.sha);
+        if (!sha) return "Stand ungeprüft: die Messung trägt keinen Commit (stand.sha)";
         for (const d of quellen) {
             const h = b.quellen && b.quellen[d];
-            if (!h) return `Stand ungeprüft: die Messung ohne Prüfsumme von ${d}`;
+            if (!h) return `Stand ungeprüft: die Messung ohne Abdruck von ${d}`;
+            if (!ABDRUCK.test(h)) return `Stand ungeprüft: ${d} trägt eine Prüfsumme alter Form (${h}), keinen Code-Abdruck`;
             const jetzt = q.pruefsumme ? q.pruefsumme(d) : null;
-            if (h !== jetzt) return `veraltet: ${d} geändert seit der Messung (${h} → ${jetzt})`;
+            if (h !== jetzt) return `${veraltetSeit(sha)}: ${d} geändert (${h} → ${jetzt})`;
         }
     }
     return null;
 }
+// „veraltet seit <Commit>": der Commit, an dem die Messung stand (8 Zeichen; „+geändert", wenn der Baum dort nicht sauber war)
+const veraltetSeit = (sha) => `veraltet seit ${String(sha).slice(0, 8)}${/\+geaendert$/.test(sha) ? "+geändert" : ""}`;
 MASS_RECHNER.albedoVerhaeltnis = (ma, q) => {
     const a = albedoZeile(ma, q);
     if (a.fehler) return a;
@@ -1291,13 +1305,55 @@ function eigenschaftBand(e, q, wo) {
     return { fehler: `${wo}: Verweis ${v.datei} ${v.feld} — kein lesbares Band (art toleranz)` };
 }
 
-// DER STAND-LESER (K63-n2): die EINE Stelle, an der Werkzeug (werkbank `--ist`) und Linse (K5) Version und Prüfsummen lesen —
-// AnazhRealm.VERSION aus der Naht des Stamms, sha256 (16 Zeichen) einer Datei des Baums; CI-fest (keine git-Geschichte).
+// DER CODE-ABDRUCK (K63-n8; Koordinator 15.10.: eine Kommentarzeile in stamm/10.js machte jede Zeile der Albedo-Tafel veraltet
+// und sperrte jeden folgenden Merge): die Prüfsumme einer Quelle läuft über ihren CODE — die Token-Folge (acorn), ohne
+// Kommentare und Leerraum zwischen den Token; JSON kanonisch (geparst, neu geschrieben). Eine andere Dateiart trägt keinen
+// Stand (laut, nie still die Bytes); ein Token-Fehler bricht laut. Form `c:` + 16 Hex — eine Prüfsumme anderer Form (die
+// Bytes bis K63-n7) ist ungeprüft, nie gleich.
+const ABDRUCK = /^c:[0-9a-f]{16}$/;
+function codeAbdruck(text, datei) {
+    const h = require("crypto").createHash("sha256");
+    if (/\.(c|m)?js$/.test(datei)) {
+        const acorn = require("acorn");
+        const opt = { ecmaVersion: "latest", sourceType: /\.mjs$/.test(datei) ? "module" : "script", allowHashBang: true };
+        for (const tok of acorn.tokenizer(text, opt)) h.update(text.slice(tok.start, tok.end) + "\u0000");
+    } else if (/\.json$/.test(datei)) h.update(JSON.stringify(JSON.parse(text)));
+    else throw new Error(`Code-Abdruck: ${datei} ist keine Code-Datei (js, cjs, mjs, json)`);
+    return "c:" + h.digest("hex").slice(0, 16);
+}
+
+// DER STAND-LESER (K63-n2): die EINE Stelle, an der Werkzeug (werkbank `--ist`, `albedo --tafel`, diag-albedo-tafel `--labor`)
+// und Linse (K5, gate:albedo-tafel) Version, Commit und Abdrücke lesen — AnazhRealm.VERSION aus der Naht des Stamms, der
+// Code-Abdruck einer Datei des Baums (`codeAbdruck`); das Urteil ist CI-fest (keine git-Geschichte), nur der Schreiber nimmt
+// den Commit, an dem er misst (`gitStand`: SHA, „+geaendert" bei Änderungen an versionierten Dateien außer den Tafeln).
 function standLeser(root) {
     const fs = require("fs"),
-        path = require("path"),
-        crypto = require("crypto");
+        path = require("path");
+    const gitStand = () => {
+        try {
+            const { execFileSync } = require("child_process");
+            const sha = execFileSync("git", ["-C", root, "rev-parse", "HEAD"]).toString().trim();
+            // die Tafeln zählen nicht: in sie schreiben die Werkzeuge selbst ihre Messungen (`--ist`, `--nachziehen`)
+            const neu = execFileSync("git", [
+                "-C",
+                root,
+                "status",
+                "--porcelain",
+                "--untracked-files=no",
+                "--",
+                ".",
+                ":(exclude)spec/abnahme/soll-tafel.json",
+                ":(exclude)spec/farbe/albedo-tafel.json",
+            ])
+                .toString()
+                .trim();
+            return sha + (neu ? "+geaendert" : "");
+        } catch (_e) {
+            return null;
+        }
+    };
     return {
+        gitStand,
         stammVersion: () => {
             const m = /AnazhRealm\.VERSION = "([^"]+)"/.exec(
                 fs.readFileSync(path.join(root, "stamm", "26a.js"), "utf8")
@@ -1314,7 +1370,7 @@ function standLeser(root) {
             for (const c of m) for (const d of c.scripts) quellen[d] = pruefsumme(d);
             for (const d of require("./stamm.cjs").dateien(root)) quellen[d] = pruefsumme(d);
             const v = /AnazhRealm\.VERSION = "([^"]+)"/.exec(fs.readFileSync(path.join(root, "stamm", "26a.js"), "utf8"));
-            return { version: v ? v[1] : null, quellen };
+            return { version: v ? v[1] : null, sha: gitStand(), quellen };
         },
         // DIE QUELLE DES URTEILS (K63-n7, `sollTafelUrteil(tafel, q)`): Haushalt, Datei-Leser, Prüfsumme und die Symbole der Kerne
         // GELESEN — jeder Kern läuft in einer eigenen vm (wie diag-mensch-anatomie), sein Namensraum trägt das Symbol. EINE
@@ -1351,9 +1407,7 @@ function standLeser(root) {
     };
     function pruefsumme(d) {
         const p = path.join(root, d);
-        return fs.existsSync(p)
-            ? crypto.createHash("sha256").update(fs.readFileSync(p)).digest("hex").slice(0, 16)
-            : null;
+        return fs.existsSync(p) ? codeAbdruck(fs.readFileSync(p, "utf8"), d) : null;
     }
 }
 
@@ -1481,6 +1535,7 @@ function sollTafelUrteil(tafel, q) {
         if (gh != null) {
             if (!(gh.befund && gh.quelle && gh.warum && Array.isArray(gh.bildPaar) && gh.bildPaar.length === 2))
                 fehler.push(`${wo}: der geheilte Mangel ohne Befund, Quelle, Warum oder Bild-Paar`);
+            else for (const p of gh.bildPaar) if (bildPfadFehler(p)) fehler.push(`${wo}: das Bild-Paar: ${bildPfadFehler(p)}`);
             else if (urteil !== "GRÜN")
                 fehler.push(`${wo}: der Mangel „${gh.befund}" heißt geheilt, das Maß ${ma.name} ist ${urteil}`);
             if (mg) fehler.push(`${wo}: der Mangel steht und heißt zugleich geheilt`);
@@ -1656,7 +1711,7 @@ function sollTafelSelbsttest(tafel, q) {
     const mitAlbedo = (t) => finde(t, (k) => k.mass && k.mass.rohdatei);
     // eine Messung auf den Stand DIESES Baums setzen (Version + Prüfsummen der Klassen-Quellen)
     const frisch = (k, me) => {
-        me.stand = Object.assign({}, me.stand, { version: q.version });
+        me.stand = Object.assign({ sha: "0123456789abcdef0123456789abcdef01234567" }, me.stand, { version: q.version });
         me.quellen = Object.fromEntries((k.quellen || []).map((d) => [d, q.pruefsumme ? q.pruefsumme(d) : null]));
     };
     const mitMangel = (t) =>
@@ -1801,7 +1856,18 @@ function sollTafelSelbsttest(tafel, q) {
         ],
         ["geheilt ohne Bild-Paar", (t) => heile(t, []), "ohne Befund, Quelle, Warum oder Bild-Paar"],
         // Prüfer K63 R3: die weiße Tafel der Tore hieß geheilt, das heutige Bild zeigte sie — geheilt neben einem ROTEN Maß
-        ["geheilt neben einem roten Maß", (t) => heile(t, ["a.png", "b.png"]), "heißt geheilt, das Maß zweiton ist ROT"],
+        [
+            "geheilt neben einem roten Maß",
+            (t) => heile(t, ["artifacts/soll-tafel/a.png", "artifacts/soll-tafel/b.png"]),
+            "heißt geheilt, das Maß zweiton ist ROT",
+        ],
+        // K63-n8 (Koordinator 15.10.): das Bild der Messung im Scratch (AppData) — ein Verweis aus dem Baum hinaus
+        [
+            "Bild im Scratch",
+            (t) => (mitMessung(t).mass.messung.bild = "../../../../AppData/Local/Temp/claude/x/boden.png"),
+            "liegt nicht unter artifacts/",
+        ],
+        ["Bild-Paar außerhalb", (t) => heile(t, ["C:/Users/x/a.png", "artifacts/soll-tafel/b.png"]), "liegt nicht unter artifacts/"],
     ];
     for (const [name, fn, wort] of faelle) {
         if (!tafel || !(tafel.klassen || []).length) break;
@@ -1859,18 +1925,38 @@ function sollTafelSelbsttest(tafel, q) {
         frisch(k4, k4.mass.messung);
         k4.wirkung.mangel = undefined;
         const gruen = sollTafelUrteil(t4, q).zeilen.find((x) => x.id === k4.id);
-        k4.mass.messung.stand.version = "17.0.0";
-        const alt = sollTafelUrteil(t4, q).zeilen.find((x) => x.id === k4.id);
-        frisch(k4, k4.mass.messung);
+        const zeile = (qq) => sollTafelUrteil(t4, qq).zeilen.find((x) => x.id === k4.id);
+        // DER CODE-ABDRUCK (K63-n8): die erste Quelle der Klasse mit einer Kommentarzeile und neuem Leerraum → derselbe Stand
+        // (GRÜN bleibt GRÜN); mit einem Token mehr → ROT „veraltet seit <Commit der Messung>" beim Namen der Datei
         const d0 = (k4.quellen || [])[0];
+        const text0 = d0 && q.lesen ? q.lesen(d0) : null;
+        const mitText = (neu) => Object.assign({}, q, { pruefsumme: (d) => (d === d0 ? codeAbdruck(neu, d) : q.pruefsumme(d)) });
+        const kommentar = text0 && zeile(mitText(text0.replace("\n", "\n// eine Kommentarzeile\n\n   \n") + "\n/* Block */\n"));
+        const code = text0 && zeile(mitText(text0 + "\n;0;\n"));
+        // die Version des Stamms ist Beleg, kein Stand: eine Messung an V17.0.0 mit heutigem Abdruck bleibt GRÜN
+        k4.mass.messung.stand.version = "17.0.0";
+        const version = zeile(q);
+        frisch(k4, k4.mass.messung);
         if (d0) k4.mass.messung.quellen[d0] = "0000000000000000";
-        const fremd = sollTafelUrteil(t4, q).zeilen.find((x) => x.id === k4.id);
+        const altForm = zeile(q);
+        frisch(k4, k4.mass.messung);
+        delete k4.mass.messung.stand.sha;
+        const ohneSha = zeile(q);
         if (!gruen || gruen.urteil !== "GRÜN")
             v.push(`Stand: die frische Messung ohne Raster ist nicht GRÜN (${gruen && gruen.grund})`);
-        if (!alt || alt.urteil !== "ROT" || !/veraltet/.test(alt.grund || ""))
-            v.push("Stand: eine Messung an V17.0.0 bleibt GRÜN");
-        if (d0 && (!fremd || fremd.urteil !== "ROT" || !/geändert seit/.test(fremd.grund || "")))
-            v.push(`Stand: eine geänderte Quelle ${d0} bleibt GRÜN`);
+        if (!text0) v.push(`Stand: die Quelle ${d0} der Klasse ${k4.id} ist nicht zu lesen`);
+        else {
+            if (!kommentar || kommentar.urteil !== "GRÜN")
+                v.push(`Stand: eine Kommentarzeile in ${d0} veraltet die Messung (${kommentar && kommentar.grund})`);
+            const sha8 = String(k4.mass.messung.stand.sha || gruen.stand || "").slice(0, 8);
+            if (!code || code.urteil !== "ROT" || !/veraltet seit [0-9a-f]{8}/.test(code.grund || "") || !code.grund.includes(d0))
+                v.push(`Stand: ein Token mehr in ${d0} bleibt GRÜN oder nennt Commit und Datei nicht (${code && code.grund}; ${sha8})`);
+        }
+        if (!version || version.urteil !== "GRÜN") v.push(`Stand: eine Messung an V17.0.0 mit heutigem Code ist ROT (${version && version.grund})`);
+        if (d0 && (!altForm || altForm.urteil !== "ROT" || !/alter Form/.test(altForm.grund || "")))
+            v.push(`Stand: eine Prüfsumme alter Form für ${d0} bleibt GRÜN`);
+        if (!ohneSha || ohneSha.urteil !== "ROT" || !/keinen Commit/.test(ohneSha.grund || ""))
+            v.push("Stand: eine Messung ohne Commit bleibt GRÜN");
     }
     // eine Stufe des Kerns ohne Schuss: das Maß bleibt offen — ROT mit der Stufe beim Namen, auch wenn sein Ist im Band läge
     const t5 = klon();
@@ -1940,6 +2026,9 @@ module.exports = {
     sollRechnung,
     sollTafelUrteil,
     standLeser,
+    codeAbdruck,
+    ABDRUCK,
+    veraltetSeit,
     messStand,
     sollTafelZeile,
     sollTafelSelbsttest,

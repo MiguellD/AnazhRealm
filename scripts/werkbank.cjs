@@ -215,34 +215,13 @@ const ZZ = require("./lib/ziel-zensus.cjs");
 const HL = require("./lib/haenger-linse.cjs");
 
 const root = path.resolve(__dirname, "..");
-// der Stand des Arbeitsbaums für das Begleit-JSON eines Bilds (K32): SHA, „+geaendert" bei Änderungen an versionierten Dateien
-const gitStand = () => {
-    try {
-        const { execFileSync } = require("child_process");
-        const sha = execFileSync("git", ["-C", root, "rev-parse", "HEAD"]).toString().trim();
-        // die Soll-Tafel zählt nicht: in sie schreibt die Werkbank selbst ihre Messungen (`--ist`)
-        const neu = execFileSync("git", [
-            "-C",
-            root,
-            "status",
-            "--porcelain",
-            "--untracked-files=no",
-            "--",
-            ".",
-            ":(exclude)spec/abnahme/soll-tafel.json",
-        ])
-            .toString()
-            .trim();
-        return sha + (neu ? "+geaendert" : "");
-    } catch (_e) {
-        return null;
-    }
-};
 // DIE MESSUNG IN DIE SOLL-TAFEL (K63-n1, `bild --klasse … --ist <id>[:L<n>|:wirkung]`, `licht --ist <id>`): das Werkzeug
 // schreibt, was es gemessen hat, in die EINE Tafel (spec/abnahme/soll-tafel.json, wie `--nachziehen` die Albedo-Tafel) — Ist
 // und Täter rechnet die Linse daraus (abnahme-urteil `sollTafelUrteil`); von Hand steht dort keine Zahl.
 const SOLL_TAFEL = path.join(root, "spec", "abnahme", "soll-tafel.json");
-const { stammVersion, pruefsumme, kernStand, sollQuelle } = require("./lib/abnahme-urteil.cjs").standLeser(root);
+// der Stand des Arbeitsbaums für das Begleit-JSON eines Bilds (K32) und jede Messung der Tafeln: `gitStand` (SHA, „+geaendert"
+// bei Änderungen an versionierten Dateien außer den Tafeln) und der Code-Abdruck jeder Quelle — EINE Quelle, abnahme-urteil
+const { stammVersion, pruefsumme, kernStand, sollQuelle, gitStand } = require("./lib/abnahme-urteil.cjs").standLeser(root);
 function sollIstSchreiben(ziel, messung) {
     const [id, teil] = String(ziel).split(":");
     const text = fs.readFileSync(SOLL_TAFEL, "utf8");
@@ -1802,6 +1781,14 @@ async function starte() {
                         const kl = o.klasse;
                         if (!Object.keys(kl.klassen).length)
                             throw new Error(`--ist ${b.ist}: die Klasse zeichnet kein Pixel im Bild — die Tafel bleibt, wie sie war`);
+                        // DER ORT DES BILDS (K63-n8, abnahme-urteil `bildPfadFehler`): das Bild der Tafel liegt beim Namen des
+                        // Ziels unter artifacts/soll-tafel/ (gitignored, lokal) — nie im Scratch, auf den die Tafel nicht zeigen darf
+                        const ablage = path.join(root, "artifacts", "soll-tafel", String(b.ist).replace(/:/g, "-") + ".png");
+                        fs.mkdirSync(path.dirname(ablage), { recursive: true });
+                        if (path.resolve(ablage) !== datei) {
+                            fs.copyFileSync(datei, ablage);
+                            fs.copyFileSync(kl.maske, ablage.replace(/\.png$/i, ".maske.png"));
+                        }
                         o.ist = sollIstSchreiben(b.ist, {
                             werkzeug: "bild",
                             datum: new Date().toISOString(),
@@ -1816,7 +1803,7 @@ async function starte() {
                             klassen: kl.klassen,
                             abstand: kl.abstand,
                             gesicht: kl.gesicht || null,
-                            bild: path.relative(root, datei).split(path.sep).join("/"),
+                            bild: path.relative(root, ablage).split(path.sep).join("/"),
                         });
                     }
                     fs.writeFileSync(
