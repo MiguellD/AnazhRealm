@@ -368,9 +368,9 @@ class AnazhRealm_Z25a {
         const esVal = document.getElementById("slider-edgesharp-val");
         if (esS) {
             const e0 =
-                this.state.atmosphere && Number.isFinite(this.state.atmosphere.edgeSharp)
-                    ? this.state.atmosphere.edgeSharp
-                    : 0.5;
+                this.state.atmosphere && Number.isFinite(this.state.atmosphere.kantenSchaerfe)
+                    ? this.state.atmosphere.kantenSchaerfe
+                    : 0;
             esS.value = String(Math.round(e0 * 100));
             if (esVal) esVal.textContent = e0.toFixed(2);
             esS.addEventListener("input", () => {
@@ -1144,6 +1144,15 @@ class AnazhRealm_Z25a {
         this._applyHolzProfil(holz);
         const holzProf = AnazhRealm.HOLZ_PROFILE[holz] || AnazhRealm.HOLZ_PROFILE.voll;
         this.state._traa = holzProf.antialias !== false; // die Post-Kette liest es (_ensurePostProcessing)
+        // DIE TEXTUR-GRENZE DES GERÄTS: r184 fordert das Gerät mit den Grenzen des WebGPU-Standards (16 Texturen je Stufe), der
+        // Adapter trägt mehr (Radeon 890M 48). Der Boden-Stoff des Fern-Rings sampelt seit der EINEN Atmosphäre und dem Spiegel des
+        // Sees 17 — seine Pipeline wurde abgesagt, der Ring fehlte im Bild und die Beweis-Aufnahme brach an der Mess-Wiese ab
+        // (ERST-ZEICHNUNG OFFEN, renderPipeline_MeshStandardNodeMaterial). Das Gerät trägt, was der Adapter trägt — der EINE,
+        // den die Holz-Wahl gefragt hat (`_holzWahl`, wie r184 ihn fragt; unter dem forceWebGL-Hook keiner).
+        const adapter = this._adapter;
+        const requiredLimits = adapter
+            ? { maxSampledTexturesPerShaderStage: adapter.limits.maxSampledTexturesPerShaderStage }
+            : {};
         // Opt-in Headless-Null-Renderer (GPU-frei) für Mechanik-Playtest / Server-Sim, sonst der echte
         // WebGPU-Renderer. trackTimestamp anfordern ist sicher: das vendored r184-Backend fordert
         // timestamp-query nur an, wenn der Adapter es trägt, und schaltet es sonst ab (init() wirft nie);
@@ -1158,13 +1167,19 @@ class AnazhRealm_Z25a {
                       // und 267 MB VRAM (04.10., Radeon 890M).
                       antialias: false,
                       trackTimestamp: true,
+                      requiredLimits,
                       // KEIN-WEBGPU-GESCHICHTE — der EINE forceWebGL-Hook (gate:webgl-probe).
                       forceWebGL: AnazhRealm._forceWebGL(),
                   });
-        // ACES-Filmic-Tone-Mapping: die Lichter sind HDR (Sonne 2.4 + Hemi/Ambient) und klemmten ohne
-        // Tone-Mapping bei 1.0 (ausgewaschen). Reine Render-Output-Stufe.
-        renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.0; // Vorlage phytogenesis Z.1285 (exakt)
+        // DIE TONKURVE (F1, die Foto-Kette): Khronos PBR Neutral (r184 NeutralToneMapping) — bis zur Schulter (0,76) geht die
+        // Farbe des Stoffs unverändert ins Bild (nur der Schwarzpunkt 0,04), darüber rollt sie zu Weiß ohne Farbdrehung. Gemessen
+        // gegen ACES (Filmic, Sättigung und Kontrast in der Kurve) und AgX in EINER Welt (Radeon 890M, 15.10.): die Öffnung der
+        // Tore C*ab ACES 20,9 · AgX 16,8 · Neutral 23,1 (Soll ≥ 20), der Himmel weiß statt blau ACES 53 % · AgX 69 % · Neutral
+        // 40 %, die Wiese C*ab ganzes Bild 24,9 · 21,7 · 31,1 (Soll-Bild 01: 28,3). Die Eichung der Belichtung folgt ihr
+        // (BELICHTUNG, 26c: die Kurve und ihre Eichung sind EIN Eintrag). Reine Ausgabe-Stufe; die Belichtung setzt das Licht
+        // (`_dayNightApplyBelichtung`).
+        renderer.toneMapping = THREE[AnazhRealm.BELICHTUNG.kurve];
+        renderer.toneMappingExposure = 1.0;
         // V10.0-j.b — Stencil-Buffer global deaktivieren. Three.js' Renderer-
         // Default ist `this.stencil = true` → bei JEDEM RenderPass setzt
         // WebGPUBackend stencilLoadOp + stencilStoreOp. Bei Pure-Depth-Format

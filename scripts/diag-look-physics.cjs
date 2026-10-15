@@ -17,6 +17,7 @@
 
 // Port über LOOK_PHYSICS_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4319.
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const { kartenEichung } = require("./lib/licht-linsen.cjs");
 const PORT = Number(process.env.LOOK_PHYSICS_PORT || 4319);
 const server = statikServer();
 
@@ -57,8 +58,8 @@ function relLuminanceLinear([r, g, b]) {
                 luft: K.LUFT,
                 luftBeta: r._luftBeta ? ["sunny", "rainy", "stormy"].map((w) => r._luftBeta(K.WEATHER_FIELD[w])) : null,
                 toneMapping: rend ? rend.toneMapping : null,
-                acesConst: T.ACESFilmicToneMapping != null ? T.ACESFilmicToneMapping : null,
-                exposure: rend ? rend.toneMappingExposure : null,
+                belichtung: K.BELICHTUNG ? { kurve: K.BELICHTUNG.kurve, zielKarte: K.BELICHTUNG.zielKarte } : null,
+                kurveConst: K.BELICHTUNG && T[K.BELICHTUNG.kurve] != null ? T[K.BELICHTUNG.kurve] : null,
                 colorMgmt: T.ColorManagement ? !!T.ColorManagement.enabled : null,
             };
         });
@@ -130,15 +131,21 @@ function relLuminanceLinear([r, g, b]) {
         );
     } else ok("LUFT lesbar", false, "LUFT/_luftBeta fehlt");
 
-    // 5) HDR-TONE-MAPPING: reale Kameras/das Auge rollen Highlights filmisch ab
-    //    (kein hartes Klemmen bei 1,0). ACES-Filmic + sane Exposure.
-    if (boot.acesConst != null) {
-        ok(
-            "HDR-Tone-Mapping (ACES-Filmic, sane Exposure)",
-            boot.toneMapping === boot.acesConst && boot.exposure > 0.5 && boot.exposure < 2.0,
-            `toneMapping=${boot.toneMapping} (ACES=${boot.acesConst}) · exposure=${boot.exposure}`
-        );
-    } else ok("Tone-Mapping lesbar", false, "THREE.ACESFilmicToneMapping fehlt");
+    // 5) DIE TONKURVE UND IHRE EICHUNG (Lehre 21, F1): der Renderer fährt die Kurve der EINEN Eichung (BELICHTUNG.kurve) —
+    //    eine HDR-Kurve, die Lichter abrollt statt bei 1,0 zu klemmen (nur sie trägt eine Zeile in `kartenEichung`) —, und
+    //    `zielKarte` legt die 18-%-Karte durch DIESE Kurve auf Mittelgrau + 1 EV. Bis F1 verlangte die Linse ACES beim Namen
+    //    (sie wanderte nicht mit der Foto-Kette, CI 38814239566); jetzt nennt sie Kurve und Eichung, wenn eine ohne die andere geht.
+    const B = boot.belichtung || {};
+    const sollKarte = kartenEichung(B.kurve);
+    ok(
+        "Tonkurve = die Kurve der Eichung, die 18-%-Karte auf Mittelgrau + 1 EV",
+        Number.isFinite(boot.kurveConst) &&
+            boot.toneMapping === boot.kurveConst &&
+            sollKarte != null &&
+            Math.abs(B.zielKarte - sollKarte) <= 0.0005,
+        `toneMapping=${boot.toneMapping} · BELICHTUNG.kurve=${B.kurve} (${boot.kurveConst}) · zielKarte ${B.zielKarte}, ` +
+            `die Kurve verlangt ${sollKarte == null ? "– (keine Eichung)" : sollKarte.toFixed(4)}`
+    );
 
     // 6) LINEARE LICHT-MATHE: Lighting in linearem Raum (sRGB-Transfer korrekt
     //    angewandt) — die Grundlage jeder physikalisch plausiblen Farbe.

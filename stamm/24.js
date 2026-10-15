@@ -1069,9 +1069,7 @@ class AnazhRealm_Z24 {
             // Tageslicht — die Karten tragen ihr eingebackenes SONNEN-Licht).
             if (this.state.atmoUniforms && this.state.atmoUniforms.tagLicht) this.state.atmoUniforms.tagLicht.value = 0;
         }
-        // V18.377 — die Post-FX-Entgrauung (warm-Lift grauer Pixel) WÄSCHT die legitim
-        // entsättigte Nacht → sie fadet zur Nacht aus (das „Filter in meinen Augen"). Der Mond
-        // gibt die Tiefe gerichtet, kein Post-FX-Lift nötig. `nightFactor` 0=Tag → 1=Nacht.
+        // `nightFactor` 0 = Tag → 1 = Nacht: das Auge der Nacht der Post-Kette (K66, mesopisch) liest ihn — am Tag fällt es.
         if (this.state.postProcessingUniforms && this.state.postProcessingUniforms.nightFactor) {
             this.state.postProcessingUniforms.nightFactor.value = Math.max(0, Math.min(1, 1 - (sunDir.y + 0.05) / 0.2));
         }
@@ -1104,8 +1102,8 @@ class AnazhRealm_Z24 {
     // (die Kamera-Konvention der Profi-Engines, UE5-Belichtungs-Bias +1). Die Karte liest L = 0,18/π · E
     // mit E = Sonne/Mond senkrecht (unten) + Himmels-Umgebung von oben (`_himmelsIrradianz`) + Hemi +
     // Ambient — dieselben Lichter, die jedes Material liest. Vorher stand die Belichtung fest auf 1,0:
-    // die Karte las 212 (≈ +1,8 EV über Mittelgrau), Weiß und Himmel liefen in die ACES-Schulter. Die
-    // Nacht bleibt, wie sie geeicht ist (Deckel 1,0 — das Auge adaptiert, die Mond-Nacht bleibt dunkel).
+    // die Karte las 212 (≈ +1,8 EV über Mittelgrau), Weiß und Himmel liefen in die Schulter der Kurve. Die
+    // Nacht bleibt, wie sie geeicht ist (Deckel BELICHTUNG.max — das Auge adaptiert, die Mond-Nacht bleibt dunkel).
     // DIE KARTE STEHT DER SONNE ZUGEWANDT (D3-N2): die Sonne trifft sie senkrecht, Himmel, Hemi und Ambient von oben — die
     // Konvention der Belichtungsmessung (Sunny 16: ein Körper im Licht wendet sich der Sonne zu, die Blende folgt dem Durchlass,
     // nicht dem Sinus der Höhe). Auf der Waagrechten gemessen hob die tiefe Sonne die Belichtung um 1/sin(Höhe): Uhr 0,72

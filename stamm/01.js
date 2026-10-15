@@ -311,7 +311,7 @@ class AnazhRealm {
                 // 2.5D-Lichtung 100 % killt die Facetten, der Rest sein bevorzugter Look.
                 // (terrainFlatten V18.106 gebacken → TERRAIN_NORMAL_FLATTEN)
                 cavityAO: 0.35,
-                edgeSharp: 0.46,
+                kantenSchaerfe: 0, // der lokale Kontrast der Post-Kette (F1: aus; der Spieler-Regler bleibt)
                 triplanar: 2.0,
                 colorVar: 1.5,
                 waterCull: 0.0,

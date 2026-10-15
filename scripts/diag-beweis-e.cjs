@@ -138,7 +138,7 @@ const SCHUSS_FN = async (kam) => {
     // Die Schatten-Map markiert sonst nur der Loop (_loopShadowUpdate) — bei ruhendem Loop bliebe sie für
     // die neue Kamera veraltet (Befund 30.09.: schwarzer Boden).
     r._schattenAlleNeu();
-    // DIE EINE AUFNAHME (scripts/lib/ausgabe-aufnahme.cjs): der echte Frame (Post-Pipeline, ACES + sRGB)
+    // DIE EINE AUFNAHME (scripts/lib/ausgabe-aufnahme.cjs): der echte Frame (Post-Pipeline, Tonkurve + sRGB)
     // in ein Render-Target, das der Ausgabe-Puffer IST — ein Warm-Frame, der zweite zählt.
     const auf = await window.__ausgabeAufnahme(640, 360, 1);
     const renderMs = auf.ms;

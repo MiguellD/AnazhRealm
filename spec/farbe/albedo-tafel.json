@@ -1,6 +1,6 @@
 {
     "version": 1,
-    "zweck": "DIE ALBEDO-TAFEL LABOR ↔ WELT (S1 W1e): je Klasse des Studio-Befunds (Rinde · Laub · Fels · Boden · Haus · Metall/Lack · Haut/Fell · Klinge) ein Exemplar im r128-Labor und in der Welt, gemessen mit EINER Rechnung (scripts/lib/albedo-tafel.cjs, scripts/lib/licht-linsen.cjs `albedoAuswerten`): weißes Umgebungslicht, Schuss hell − Schuss dunkel, Metall auf 0 (Basis-Albedo), jeder geschriebene Pixel, geeicht an der 18-%-Karte (0,180 auf beiden Seiten). Je Zeile Labor-Y, Welt-Y (Rec.-709-Luma, linear), das Verhältnis Labor/Welt und die RATSCHE (|ln Verhältnis| des letzten Nachzugs — sie darf nur fallen, solange W5 das FARB-GESETZ in jedem Kern offen hält). SOLL (W5): jede Zeile innerhalb `toleranz`. Je Studio die 18-%-Karte unter dem Labor-Licht (k·L = Belichtung × Leuchtdichte, Soll 0,3147 = AnazhRealm.BELICHTUNG.zielKarte) und der Pixel des Labor-Ausgabe-Wegs (Welt 173). Gemessen: Welt `werkbank.cjs albedo --tafel` am Ort, Labor `diag-albedo-tafel.cjs --labor`, Nachzug `--nachziehen welt.json labor.json`; Wand `npm run gate:albedo-tafel`.",
+    "zweck": "DIE ALBEDO-TAFEL LABOR ↔ WELT (S1 W1e): je Klasse des Studio-Befunds (Rinde · Laub · Fels · Boden · Haus · Metall/Lack · Haut/Fell · Klinge) ein Exemplar im r128-Labor und in der Welt, gemessen mit EINER Rechnung (scripts/lib/albedo-tafel.cjs, scripts/lib/licht-linsen.cjs `albedoAuswerten`): weißes Umgebungslicht, Schuss hell − Schuss dunkel, Metall auf 0 (Basis-Albedo), jeder geschriebene Pixel, geeicht an der 18-%-Karte (0,180 auf beiden Seiten). Je Zeile Labor-Y, Welt-Y (Rec.-709-Luma, linear), das Verhältnis Labor/Welt und die RATSCHE (|ln Verhältnis| des letzten Nachzugs — sie darf nur fallen, solange W5 das FARB-GESETZ in jedem Kern offen hält). SOLL (W5): jede Zeile innerhalb `toleranz`. Je Studio die 18-%-Karte unter dem Labor-Licht (k·L = Belichtung × Leuchtdichte, Soll: Mittelgrau + 1 EV durch die Tonkurve der Labore, `belichtung.kurve`, gerechnet von `kartenEichung` in scripts/lib/licht-linsen.cjs — dieselbe Rechnung eicht die Welt an ihrer Kurve, AnazhRealm.BELICHTUNG) und der Pixel des Labor-Ausgabe-Wegs. Gemessen: Welt `werkbank.cjs albedo --tafel` am Ort, Labor `diag-albedo-tafel.cjs --labor`, Nachzug `--nachziehen welt.json labor.json`; Wand `npm run gate:albedo-tafel`.",
     "toleranz": 0.1,
     "messRand": 0.04,
     "karte": {
@@ -8,8 +8,8 @@
         "eichRand": 0.003
     },
     "belichtung": {
-        "zielKarte": 0.3147,
-        "quelle": "AnazhRealm.BELICHTUNG (anazhRealm.js, V18.507): die 18-%-Karte nach der Belichtung auf Mittelgrau + 1 EV; Welt-Ausgabe 173"
+        "kurve": "ACESFilmicToneMapping",
+        "quelle": "die Tonkurve der r128-Labore (worlds/*: ACESFilmicToneMapping, Belichtung 1,0): die 18-%-Karte nach der Belichtung auf Mittelgrau + 1 EV, k·L 0,3158; die Welt fährt seit F1 Khronos PBR Neutral (AnazhRealm.BELICHTUNG, k·L 0,44)"
     },
     "gemessen": {
         "labor": {

@@ -1440,7 +1440,7 @@ const MASS_RECHNER = {
     },
     // DIE TREUE ZUM ZIEL (D8, Soll-Tafel tor-ziel): je Apertur-Klasse die Rang-Korrelation (Spearman) zwischen dem Bild der Öffnung
     // und dem Ziel-Panorama, das der Parallaxen-Strahl desselben Pixels trifft (`werkbank bild`: `ziel` { r, pixel, grund } je
-    // Klasse) — rang-treu, damit Belichtung, ACES und sRGB (monoton) das Maß nicht tragen. Hält die Welt kein Ziel-Panorama (die
+    // Klasse) — rang-treu, damit Belichtung, Tonkurve und sRGB (monoton) das Maß nicht tragen. Hält die Welt kein Ziel-Panorama (die
     // Membran liest keinen Studio-Export), liest die Klasse r 0 und ist der Täter beim Namen; ein Schuss ohne `ziel` stammt von
     // vor D8.
     zielTreue(ma, q) {

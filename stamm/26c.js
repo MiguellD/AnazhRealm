@@ -1102,20 +1102,21 @@ AnazhRealm.ATMO_LUT = Object.freeze({
 // (spec/farbe/albedo-tafel.json, ist.welt; `werkbank albedo --tafel`), nie ein Grau 0,3. Er trägt die Mehrfachstreuung und
 // die untere Hälfte der Umgebung; `diag-atmo-hillaire` hält ihn an der Tafel (±3 %).
 AnazhRealm.ATMO_BODEN = Object.freeze([0.1003, 0.1385, 0.0449]);
-// Licht-Rig: KEY_BASE skaliert die Rayleigh-Lichtmenge aufs Schlüssellicht (Mittag ≈ 2.6·0.913 unter
-// ACES). Ziel key-dominant (Vorlage dir/(amb+hemi) ≈ 15:1); die Schattenseite trägt der Himmel.
+// Licht-Rig: KEY_BASE skaliert die Rayleigh-Lichtmenge aufs Schlüssellicht (Mittag ≈ 2.6·0.913). Ziel key-dominant (Vorlage dir/(amb+hemi) ≈ 15:1); die Schattenseite trägt der Himmel.
 AnazhRealm.KEY_BASE = 2.6;
 // r128→r184-Licht-Übersetzung (three.js r155, useLegacyLights → physisch): Legacy-Licht hatte keine
 // 1/π-BRDF-Normierung — physikalische Lichter sind bei gleicher Zahl ~π-fach dunkler. Die aus dem
 // r128-Studio kopierten Rig-Werte (Key · Hemi-Tag) laufen durch diesen EINEN Faktor;
 // die Nacht bleibt unberührt (Mond-Pfad eigen, Hemi-Nacht-Floor außerhalb). Kein Tuning-Knopf.
 AnazhRealm.LEGACY_LICHT = Math.PI;
-// DIE BELICHTUNG (V18.507, `_dayNightApplyBelichtung`): `zielKarte` ist die Leuchtdichte der 18-%-Karte nach
-// der Belichtung, die ACES (three: x·k/0,6, RRT+ODT-Fit) auf Mittelgrau + 1 EV legt — Mittelgrau (sRGB 118 =
-// linear 0,18) braucht den Fit-Eingang 0,26227, also k·L = 2 · 0,26227 · 0,6 = 0,3147. `max` 1,0 hält die geeichte
-// Nacht (über ihn hebt nur das Sonnenlicht, D3-N2), `min` ist nur die Wand gegen ein entartetes Licht. Der Kontrast des
-// Gradings dreht über Belichtung 1 um 0,5 nach der Belichtung (25c).
-AnazhRealm.BELICHTUNG = Object.freeze({ zielKarte: 0.3147, min: 0.25, max: 1.0 });
+// DIE BELICHTUNG (V18.507, `_dayNightApplyBelichtung`) — EINE Eichung mit der Tonkurve (F1): `kurve` ist die Tonkurve des
+// Renderers (25a liest sie, three r184: Khronos PBR Neutral), `zielKarte` die Leuchtdichte der 18-%-Karte nach der
+// Belichtung, die DIESE Kurve auf Mittelgrau + 1 EV legt (`npm run look-lens` rechnet sie aus der Kurve nach). Neutral gibt
+// unter der Schulter x − 0,04 aus: Mittelgrau (sRGB 118 = linear 0,18) braucht den Eingang 0,22, also k·L = 2 · 0,22 = 0,44
+// (unter ACES bis F1: 2 · 0,26227 · 0,6 = 0,3147). `max` hält die geeichte Nacht (über ihn hebt nur das Licht des Himmels,
+// D3-N2): die Nacht ist auf die Karte geeicht (Mond, Sternen-Licht, Hemi-Boden) — der Deckel legt sie so weit unter
+// Mittelgrau + 1 wie bis F1 die Belichtung 1,0 unter ACES, 0,44 / 0,3147 = 1,4. `min` ist nur die Wand gegen ein entartetes Licht.
+AnazhRealm.BELICHTUNG = Object.freeze({ kurve: "NeutralToneMapping", zielKarte: 0.44, min: 0.25, max: 1.4 });
 // DAS AUGE DER NACHT (K66, die Post-Kette `_ensurePostProcessing`: die Sättigung je Pixel unter der Nacht): das mesopische Band
 // der CIE 191:2010 — unter `staebchenCd` sieht das Auge ohne Farbe (Stäbchen), über `zapfenCd` voll (Zapfen); `luxJeEinheit`
 // die Eichung der Nacht (Vollmond 0,26 lx ≙ der Nacht-Bestrahlung der Welt 0,224, fachwerk LICHT_GESETZ) — eine Leuchtdichte
