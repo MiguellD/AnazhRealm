@@ -4946,14 +4946,38 @@
                 };
             if (rezeptId === "laterne") vier([[0.84 * m.fr * q, -0.05], [0.84 * 0.62 * m.fr * q, m.fh], [0.84 * m.mr * q, m.fh + 0.22], [0.84 * m.mr * q, m.yK0]]);
             else {
-                // die Wandlaterne (K66-2): Platte, Arm und Haken als Kisten — die Strebe ist dünner als ein Texel der Kaskade
-                teil(ausSetze(ausKiste(0.03, m.pl, 0.14, 0), m.a - 0.015, m.yA - m.pl / 2 + 0.06, 0));
-                teil(ausSetze(ausKiste(m.a, 0.035, 0.035, 0), m.a / 2, m.yA, 0));
-                teil(ausSetze(ausKiste(0.02, m.yA - m.yT, 0.02, 0), 0, (m.yA + m.yT) / 2, 0));
+                // die Wandlaterne (K66-2), gemessen an ihrer L0 (gate:haus-fern W, drei Sonnen): die Platte als Fläche in der Wand,
+                // Arm und Strebe je als Kreuz zweier Flächen; der Kopf trägt statt der Eck-Kreuze je eine Diagonal-Fläche (Stab und
+                // Glas-Kante, 9 cm), über der Haube die Seiten des Kranzes und den Knauf, der den Haken deckt — 44 Dreiecke
+                var yP0 = m.yA - m.pl + 0.06,
+                    yP1 = m.yA + 0.06,
+                    xP = m.a - 0.015,
+                    b = 0.0175,
+                    sA = m.sA,
+                    sB = m.sB,
+                    sx = ((sB[1] - sA[1]) / m.st) * 0.011,
+                    sy = (-(sB[0] - sA[0]) / m.st) * 0.011;
+                flaeche([[[xP, yP0, -0.07], [xP, yP0, 0.07], [xP, yP1, 0.07], [xP, yP1, -0.07]]]);
+                flaeche([[[0, m.yA - b, 0], [m.a, m.yA - b, 0], [m.a, m.yA + b, 0], [0, m.yA + b, 0]], [[0, m.yA, -b], [m.a, m.yA, -b], [m.a, m.yA, b], [0, m.yA, b]]]);
+                flaeche([[[sA[0] - sx, sA[1] - sy, 0], [sB[0] - sx, sB[1] - sy, 0], [sB[0] + sx, sB[1] + sy, 0], [sA[0] + sx, sA[1] + sy, 0]], [[sA[0], sA[1], -0.011], [sB[0], sB[1], -0.011], [sB[0], sB[1], 0.011], [sA[0], sA[1], 0.011]]]);
             }
             platte(-kb, kb, m.yK0, -kb, kb);
-            for (var ex = -1; ex <= 1; ex += 2) for (var ez = -1; ez <= 1; ez += 2) pfosten((ex * m.kb) / 2, (ez * m.kb) / 2, m.yK0, m.yK1, 0.011);
+            for (var ex = -1; ex <= 1; ex += 2)
+                for (var ez = -1; ez <= 1; ez += 2) {
+                    var px = (ex * m.kb) / 2,
+                        pz = (ez * m.kb) / 2,
+                        pd = 0.045;
+                    if (rezeptId === "laterne") pfosten(px, pz, m.yK0, m.yK1, 0.011);
+                    else flaeche([[[px - pd * ez, m.yK0, pz + pd * ex], [px + pd * ez, m.yK0, pz - pd * ex], [px + pd * ez, m.yK1, pz - pd * ex], [px - pd * ez, m.yK1, pz + pd * ex]]]);
+                }
             vier([[m.hb * q, m.yK1], [0, m.yT]]);
+            if (rezeptId === "wandlaterne") {
+                var h = m.hb,
+                    k0 = m.yK1,
+                    k1 = m.yK1 + 0.025;
+                flaeche([[[-h, k0, -h], [h, k0, -h], [h, k1, -h], [-h, k1, -h]], [[-h, k0, h], [h, k0, h], [h, k1, h], [-h, k1, h]], [[-h, k0, -h], [-h, k0, h], [-h, k1, h], [-h, k1, -h]], [[h, k0, -h], [h, k0, h], [h, k1, h], [h, k1, -h]]]);
+                teil(ausSetze(ausKiste(0.035, 0.055, 0.035, 0), 0, m.yT + 0.0275, 0));
+            }
         } else {
             teil(ausDreh([[m.rk, -0.05], [m.rk, m.hK], [0, m.hK]], 8, false, false));
             for (var i = -1; i <= 1; i += 2) pfosten(i * m.px, 0, -0.05, m.yF, 0.07);
