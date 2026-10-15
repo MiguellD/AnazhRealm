@@ -2347,7 +2347,11 @@ class AnazhRealm_Z11c {
     // gemessen 11.10.).
     _fernFarbTakt(fr) {
         const K = AnazhRealm.FERN_FARBE;
-        const ende = performance.now() + (this.state._frameOverBudget ? K.msKnapp : K.msJeTakt);
+        // im Lade-Takt die Frist des Lade-Frames (`_ladeFrist`, K60-2): der Horizont des ersten Bilds malt nie 2 ms je Frame
+        const ende = Math.max(
+            this._ladeFrist(),
+            performance.now() + (this.state._frameOverBudget ? K.msKnapp : K.msJeTakt)
+        );
         this._fernKroneNahTakt(ende, K.mindestJeTakt);
         const rest = this._fernRingFaerben(fr, ende, K.mindestJeTakt);
         const fp = this.state.feldPass;
@@ -2503,7 +2507,7 @@ class AnazhRealm_Z11c {
     // Budgetierter Höhen-Refresh (~`refreshVertsProTick` Vertices/Frame, nie synchron alles): Welt-XZ
     // aufs Snap-Gitter, Höhe = das EINE Gesetz (includeDetail=false), unter Wasser flach auf
     // waterLevel − wasserDrop. Die innerste Reihe jeder Schale taucht −saumDrop (Saum-Tauchkante).
-    // Liefert die Zahl erneuerter Vertices.
+    // Liefert die Zahl erneuerter Vertices. Im Lade-Takt rechnet er bis zur Frist des Lade-Frames (`_ladeFrist`, K60-2).
     _fernRingRefresh(budget) {
         const fr = this.state.fernRing;
         if (!fr) return 0;
@@ -2514,7 +2518,8 @@ class AnazhRealm_Z11c {
         const wl = Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : 0;
         const dirty = [false, false, false];
         let done = 0;
-        while (done < budget && fr.cursor < fr.totalVerts) {
+        const frist = this._ladeFrist();
+        while ((done < budget || performance.now() < frist) && fr.cursor < fr.totalVerts) {
             const p = this._fernRingPunkt(fr, fr.cursor);
             const aus = this._fernRingAus || (this._fernRingAus = { hang: 0, schutt: 0 });
             let law = this._terrainMacroSurfaceY(p.x, p.z, false, aus);

@@ -234,15 +234,15 @@ function schlangenGesetz(src) {
         const zelleF = "fimp:" + r._foundryKartenKey(presetF, r._foundryGestaltFor(ebF, presetF), null);
         const backBuch = [];
         const rang = (z) => (z && Number.isFinite(z._bedarfD2) ? Math.round(Math.sqrt(z._bedarfD2)) : -1);
-        let zuletzt = r._impostorBakePending ? r._impostorBakePendingKey : null;
+        const gesehen = new Set(r._impostorBakeFlug ? r._impostorBakeFlug.keys() : []);
         const buche = (t) => {
             const at = r._kartenAtlas;
-            const k = r._impostorBakePending ? r._impostorBakePendingKey : null;
-            if (at && k && k !== zuletzt) {
+            for (const k of r._impostorBakeFlug ? r._impostorBakeFlug.keys() : []) {
+                if (!at || gesehen.has(k)) continue;
+                gesehen.add(k);
                 const zF = at.zellen.get(zelleF);
                 if (!(zF && zF.gebacken)) backBuch.push({ key: k, d: rang(at.zellen.get(k)), dF: rang(zF), t });
             }
-            zuletzt = k;
         };
         let satzBF = false;
         let slotB = null,

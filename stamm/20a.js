@@ -411,7 +411,7 @@ class AnazhRealm_Z20a {
             worker: null, // P3a: der Studio-Generator als Web-Worker (Geometrie/Daten, kein DOM)
             // P5→BÄCKER-VEREINIGUNG: das GL-Bake-iframe UND der Welt-RTT-Nachbau sind
             // GESCHNITTEN — der Impostor-Atlas backt im STUDIO-Bäcker (Kanal "bake-impostor" → Reply "impostor"). EIN
-            // Bäcker, ein Bake-Pfad — in SEINEM Faden (`_foundryBaecker`: derselbe Boot-Blob, erst beim ersten Bake geboren).
+            // Bake-Pfad — in den Bäcker-Fäden (`_foundryBaecker`: derselbe Boot-Blob, mit dem Studio geboren, K60-2).
             baecker: null,
             baeckerBereit: false,
             bootUrl: null,

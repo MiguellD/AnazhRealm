@@ -28,9 +28,13 @@
 //       Uhr der Späteren, bis der Worker ihn fertig hat (Befund 05.10.: der Wiederholer einer Karte lief ab, während der
 //       Bäcker den Abgelaufenen noch buk — Weide und Eiche je 3 Versuche, der dritte macht die Zelle gescheitert); je
 //       FADEN, auch im Werk-Helfer (K60, `w<k>_<n>`): die Uhr liest die Nummer am Ende, nie NaN (Täter `_foundryUhren`)
+//   T9  DIE KAPPEN DES LADE-TAKTS (K60-2): unter dem Ladeschirm backen die Karten in so vielen Bäcker-Bahnen wie Werk-Fäden
+//       (zwei Karten in zwei Bäcker, `b<k>_`) und die Leser des ersten Bilds mit eigener Kappe je Takt arbeiten bis zur Frist
+//       des Lade-Frames (`_ladeFrist`): der Horizont setzt mehr als seine 600 Punkte, seine Farben bekommen mehr als 2 ms.
+//       Befund Radeon kalt: 17 Karten nacheinander bis 17-18 s, danach malte der Horizont bis 16 s, als alles andere stand.
 // --selftest: ein Takt, der wieder die Tags ALLER Bauten rechnet (die alte Reihenfolge), macht T1 rot; der alte
 // Wer-zuerst-fragt-Takt macht T3 rot; die Schwelle über das ganze Fenster macht T4 rot; die FIFO-Pumpe macht T5 rot,
-// die Nur-der-Nächste-Pumpe T6, die Ein-Faden-Pumpe T7, die löschende Frist T8.
+// die Nur-der-Nächste-Pumpe T6, die Ein-Faden-Pumpe T7, die löschende Frist T8, die Ein-Bäcker-Pumpe und die Kappe allein T9.
 //
 //   node scripts/diag-takt.cjs [--selftest]          (npm run gate:takt)
 "use strict";
@@ -337,6 +341,74 @@ const SELBST = process.argv.includes("--selftest");
                     else delete r._foundryFrist;
                 }
             })();
+            // T9 — die Kappen des Lade-Takts: zwei Karten an zwei bereite Bäcker (der erste und sein Helfer, `_foundryBaecker`)
+            // gehen je in eine Bahn; im Lade-Takt rechnet der Horizont-Refresh mit Budget 5 bis zur Frist, die Fern-Farben
+            // bekommen die Frist des Lade-Frames. Der Selbsttest fährt die Ein-Bäcker-Pumpe (der Helfer unsichtbar) und die
+            // Kappe allein (`_ladeFrist` −∞).
+            const t9 = (() => {
+                const ofen0 = [],
+                    ofen1 = [];
+                const f = {
+                    ready: true,
+                    worker: { postMessage: () => {} },
+                    baecker: { postMessage: (m) => ofen0.push(m.reqId) },
+                    baeckerBereit: true,
+                    baeckerHelfer: [{ k: 1, bereit: true, w: { postMessage: (m) => ofen1.push(m.reqId) } }],
+                    pending: new Map(),
+                    reqSeq: 1,
+                };
+                const echt = {};
+                const setze = (k, v) => {
+                    echt[k] = Object.prototype.hasOwnProperty.call(r, k) ? r[k] : undefined;
+                    r[k] = v;
+                };
+                r._foundry = f;
+                const aus9 = {};
+                try {
+                    if (selbst) {
+                        const pumpe = Object.getPrototypeOf(r)._foundryPumpe;
+                        setze("_foundryPumpe", function (ff) {
+                            const h = ff.baeckerHelfer;
+                            ff.baeckerHelfer = [];
+                            try {
+                                return pumpe.call(this, ff);
+                            } finally {
+                                ff.baeckerHelfer = h;
+                            }
+                        });
+                        setze("_ladeFrist", () => -Infinity);
+                    }
+                    for (const seed of [1, 2])
+                        r._foundryAuftrag(f, "imp", { type: "bake-impostor", presetId: "birke", seed }, 25, 45000, "-");
+                    aus9.ofen = [ofen0.length, ofen1.length];
+                    aus9.nummern = [...ofen0, ...ofen1];
+                    // der Horizont im Lade-Takt: ein Ring mit 100 000 Punkten, Budget 5 je Takt
+                    setze("_ladeTakt", () => true);
+                    setze("_fernRingPunkt", (fr, i) => ({ s: 1, x: i, z: 0, g: i, rad: 1e9 }));
+                    setze("_fernRingSetzVertex", () => {});
+                    setze("_fernRingHoch", () => {});
+                    const ringEcht = st.fernRing;
+                    st.fernRing = { cursor: 0, totalVerts: 100000, refreshed: 0, ready: false, meshes: [] };
+                    try {
+                        aus9.punkte = r._fernRingRefresh(5);
+                        let ende = -Infinity;
+                        setze("_fernKroneNahTakt", (e) => (ende = e));
+                        setze("_fernRingFaerben", () => 0);
+                        const t0 = performance.now();
+                        r._fernFarbTakt(st.fernRing);
+                        aus9.farbMs = Math.round(ende - t0);
+                    } finally {
+                        st.fernRing = ringEcht;
+                    }
+                    return aus9;
+                } finally {
+                    r._foundry = fEcht;
+                    for (const k of Object.keys(echt)) {
+                        if (echt[k] === undefined) delete r[k];
+                        else r[k] = echt[k];
+                    }
+                }
+            })();
             return {
                 t1,
                 t2,
@@ -345,6 +417,7 @@ const SELBST = process.argv.includes("--selftest");
                 t6,
                 t7,
                 t8,
+                t9,
                 n: bauten.length,
                 reichweite: r.constructor.FOCUSING_HEAT_RANGE_M,
                 glasTyp,
@@ -385,8 +458,16 @@ const SELBST = process.argv.includes("--selftest");
         t8.helferErster === "abgelaufen" &&
         t8.helferZweiter === "offen" &&
         t8.helferGeist === true;
+    const t9 = aus.t9;
+    const LADE = 100; // AnazhRealm.LADE_TAKT_MS (stamm/26c.js)
+    const T9 =
+        t9.ofen[0] === 1 &&
+        t9.ofen[1] === 1 &&
+        t9.nummern.some((k) => /^impb1_\d+$/.test(k)) &&
+        t9.punkte > 5 &&
+        t9.farbMs >= LADE * 0.9;
     if (SELBST) {
-        const ok = !T1 && !T3 && !T4 && !T5 && !T6 && !T7 && !T8;
+        const ok = !T1 && !T3 && !T4 && !T5 && !T6 && !T7 && !T8 && !T9;
         console.log(
             `${ok ? "✅" : "❌"} SELBST-TEST: der Takt mit den Tags ALLER Bauten ruft ${aus.t1}× in 10 Takten → T1 ${T1 ? "grün (vakuös!)" : "rot"}; ` +
                 `der Wer-zuerst-fragt-Takt gibt Fenster 2 dem Fernen (${t3.fern2}) → T3 ${T3 ? "grün (vakuös!)" : "rot"}; ` +
@@ -395,7 +476,8 @@ const SELBST = process.argv.includes("--selftest");
                 `die Nur-der-Nächste-Pumpe sendet ${t6.folge.join("·")} → T6 ${T6 ? "grün (vakuös!)" : "rot"}; ` +
                 `die Ein-Faden-Pumpe legt die Karte ins Werk (Bäcker ${t7.ofen.length}, Karten im Werk ${t7.werkKarten}, ` +
                 `Eiche im Werk ${t7.eicheImWerk}) → T7 ${T7 ? "grün (vakuös!)" : "rot"}; ` +
-                `die löschende Frist lässt den Zweiten ablaufen (Werk ${t8.zweiter}, Helfer ${t8.helferZweiter}) → T8 ${T8 ? "grün (vakuös!)" : "rot"}`
+                `die löschende Frist lässt den Zweiten ablaufen (Werk ${t8.zweiter}, Helfer ${t8.helferZweiter}) → T8 ${T8 ? "grün (vakuös!)" : "rot"}; ` +
+                `die Ein-Bäcker-Pumpe und die Kappe allein (Bäcker ${t9.ofen.join("/")}, Horizont ${t9.punkte} Punkte, Farbe ${t9.farbMs} ms) → T9 ${T9 ? "grün (vakuös!)" : "rot"}`
         );
         process.exit(ok ? 0 : 1);
     }
@@ -426,7 +508,16 @@ const SELBST = process.argv.includes("--selftest");
                 ? ""
                 : " — Täter _foundryUhren: die Nummer eines Helfer-Auftrags (w<k>_<n>) liest nicht, seine Uhr läuft ab dem Anmelden")
     );
-    if (!(T1 && T2 && T3 && T4 && T5 && T6 && T7 && T8)) {
+    console.log(
+        `  ${T9 ? "✅" : "❌"} T9 die Kappen des Lade-Takts: zwei Karten in die Bäcker ${t9.ofen.join(" / ")} (${t9.nummern.join(" · ")}) · ` +
+            `Horizont ${t9.punkte} Punkte bei Budget 5 · Farben ${t9.farbMs} ms (Soll ≥ ${LADE * 0.9})` +
+            (T9
+                ? ""
+                : t9.ofen[1] === 0
+                  ? " — Täter _foundryPumpe: eine Bäcker-Bahn, die Karten backen nacheinander"
+                  : " — Täter _ladeFrist: die Kappe je Takt gilt unter dem Ladeschirm")
+    );
+    if (!(T1 && T2 && T3 && T4 && T5 && T6 && T7 && T8 && T9)) {
         console.error("\n❌ ROT — ein Takt rechnet Teures für die ganze Welt.");
         process.exit(1);
     }

@@ -1265,6 +1265,7 @@ const FORBIDDEN = [
             "scripts/mint-asset-packs.cjs",
         ],
     },
+    { token: "_impostorBakePending", fiel: "K60-2 — je Bäcker-Bahn eine Karte im Flug (`_impostorBakeFlug`)" },
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt

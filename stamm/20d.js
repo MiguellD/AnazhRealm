@@ -1357,7 +1357,7 @@ class AnazhRealm_Z20d {
         const queue = this.state.pendingVegSpawns;
         if (!queue || queue.length === 0) return 0;
         let spawned = 0;
-        const frist = this._ladeTakt() ? performance.now() + AnazhRealm.LADE_TAKT_MS : -Infinity;
+        const frist = this._ladeFrist();
         for (let i = 0; (i < maxPerFrame || performance.now() < frist) && queue.length > 0; i++) {
             const task = queue.shift();
             if (!task) continue;

@@ -276,8 +276,8 @@ class AnazhRealm_Z20b {
         return reqIdOderMsg && reqIdOderMsg.type === "bake-impostor" ? "baecker" : "werk";
     }
     // Die Pumpe speist die Fäden aus der EINEN Schlange: je Faden höchstens FOUNDRY_IM_FLUG im Flug, die Wahl unter den
-    // Wartenden, deren Faden Platz hat — nah zuerst, nie verhungert (die Alters-Wache wie bisher). Der Bäcker wird beim
-    // ersten Karten-Auftrag geboren; bis er bereit ist, wartet die Karte, die Geometrie fließt. Ein Werk-Auftrag geht in
+    // Wartenden, deren Faden Platz hat — nah zuerst, nie verhungert (die Alters-Wache wie bisher). Die Bäcker kommen mit dem
+    // Studio (echter Renderer) oder beim ersten Karten-Auftrag (`_foundryBaecker`); bis er bereit ist, wartet die Karte, die Geometrie fließt. Ein Werk-Auftrag geht in
     // die Werk-Bahn mit den meisten freien Plätzen (das Werk und jeder bereite Helfer, `_foundryHelfer`; unter Gleichen
     // das Werk).
     _foundryPumpe(f) {

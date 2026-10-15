@@ -280,7 +280,7 @@ function urteil(z) {
                         bauten > 0 &&
                         !!(f && f.ready && f.pending.size === 0 && !(f.warte && f.warte.length)) &&
                         !(r._impostorBakeQueue && r._impostorBakeQueue.length) &&
-                        !r._impostorBakePending
+                        !(r._impostorBakeFlug && r._impostorBakeFlug.size > 0)
                     );
                 };
             })();

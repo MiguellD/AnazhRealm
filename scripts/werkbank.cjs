@@ -420,7 +420,7 @@ function lauf(k) {
                         (r._foundryIngestQueue ? r._foundryIngestQueue.length : 0),
                     karten:
                         (r._impostorBakeQueue || []).length +
-                        (r._impostorBakePending ? 1 : 0) +
+                        (r._impostorBakeFlug ? r._impostorBakeFlug.size : 0) +
                         (z.wartend || 0) +
                         (z.haengendeBakes || 0),
                     meshOffen: offen,

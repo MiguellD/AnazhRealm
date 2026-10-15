@@ -1726,7 +1726,6 @@ class AnazhRealm_Z17a {
     // (`_foundryFaedenZahl`), die nächste Karte zuerst. Bis K60-2 flog EINE Karte: Radeon kalt 17 Karten in 11 s nacheinander.
     // Headless/Null-Renderer/vor rendererReady → No-op (dort bäckt nie jemand).
     _tickImpostorBake() {
-        const st = this.state;
         if (!this._impostorBakeQueue || this._impostorBakeQueue.length === 0) return 0;
         const at = this._impostorAtlas();
         if (!at) return 0;
