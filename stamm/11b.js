@@ -2279,6 +2279,11 @@ class AnazhRealm_Z11b {
             baumZahl: -1,
             nachlese: 0,
             gestalten: new Map(),
+            // die Gestalten, die der Worker noch nicht kennt, und die Frist dieses Bilds für neue (`_spiegelFeldTakt`)
+            gestaltenNeu: [],
+            kronenFrist: 0,
+            // der Stand des Felds: jede Änderung einer seiner Texturen (der Pass liest ihn in seiner Signatur)
+            stand: 0,
         };
         return st.spiegelFeld;
     }
@@ -2294,20 +2299,32 @@ class AnazhRealm_Z11b {
         const S = this._spiegelFeld();
         const auge = st.camera.getWorldPosition(this._spiegelAuge || (this._spiegelAuge = new THREE.Vector3()));
         const jetzt = performance.now();
+        // DIE FRIST DER KRONEN (Lehre 14): neue Gestalten (ihr Skelett, `_gestaltTeile`) leitet dieses Bild nur bis
+        // `kronenMs` ab — danach wartet die Frage auf das nächste Bild. Bis D10-n1 leitete das erste Fenster jede Gestalt
+        // seines Walds in EINEM Bild ab (Haupt-Faden-Spitzen bis 30,8 ms an der Mess-Wiese).
+        S.kronenFrist = jetzt + K.kronenMs;
         if (!S.mitte || Math.hypot(auge.x - S.mitte[0], auge.z - S.mitte[1]) > K.drift) this._spiegelFeldFenster(auge);
         else if (!S.auftraege.length && !S.imFlug && jetzt - S.nachlese > K.nachleseMs) {
-            S.nachlese = jetzt;
             const z = this._spiegelKronen(S.I0 * S.texel, S.J0 * S.texel, S.n * S.texel, S.n * S.texel, S, true);
-            if (z !== S.baumZahl) {
-                S.baumZahl = z;
-                this._spiegelFeldAuftraege(S, S.I0, S.J0, S.n, S.n, false);
+            // die Nachlese zählt ganz oder fährt im nächsten Bild fort
+            if (z !== null) {
+                S.nachlese = jetzt;
+                if (z !== S.baumZahl) {
+                    S.baumZahl = z;
+                    this._spiegelFeldAuftraege(S, S.I0, S.J0, S.n, S.n, false);
+                }
             }
         }
         if (S.imFlug || !S.auftraege.length || st.voxelWorkerPending.size > 0) return;
-        const a = S.auftraege.shift();
+        const a = S.auftraege[0];
         const t = S.texel;
         const kr = this._spiegelKronen(a.i0 * t, a.j0 * t, a.w * t, a.h * t, S, false);
+        // eine Krone seines Rechtecks wartet auf ihre Gestalt: der Auftrag bleibt vorn, das nächste Bild fragt weiter
+        if (!kr) return;
+        S.auftraege.shift();
         S.imFlug = true;
+        // jede Gestalt reist einmal: die, die der Worker noch nicht kennt (auch aus Fragen, die auf ihre Frist warteten)
+        const gestalten = S.gestaltenNeu.splice(0);
         this._voxelWorkerSpiegel({
             i0: a.i0,
             j0: a.j0,
@@ -2317,7 +2334,7 @@ class AnazhRealm_Z11b {
             bezug: S.bezug,
             wasserFarbe: this._fernWasserKoerper(),
             baeume: kr.baeume,
-            gestalten: kr.neu,
+            gestalten,
             block: AnazhRealm.SPIEGEL.block,
             kronenSaum: AnazhRealm.SPIEGEL.kronenSaum,
         })
@@ -2335,6 +2352,8 @@ class AnazhRealm_Z11b {
                         if (I < S.I0 || I >= S.I0 + n) continue;
                         const o = (zeile + (((I % n) + n) % n)) * 4,
                             q = (j * a.w + i) * 4;
+                        // die Wasser-Zellen des Fensters zählen genau: der Platz verliert seine alte Art, gewinnt die neue
+                        S.wasser += (r.stoff[q + 3] === 1 ? 1 : 0) - (S.stoff[o + 3] === 1 ? 1 : 0);
                         for (let k = 0; k < 4; k++) {
                             D[o + k] = r.hoehen[q + k];
                             S.stoff[o + k] = r.stoff[q + k];
@@ -2352,19 +2371,22 @@ class AnazhRealm_Z11b {
                 }
                 S.hTex.needsUpdate = true;
                 S.stoffTex.needsUpdate = true;
-                S.wasser += r.wasser;
-                if (r.hMax > S.hMax) S.hMax = r.hMax;
+                S.hMax = this._spiegelHoechsteAller(S);
                 S.tex.needsUpdate = true;
+                S.stand++;
             })
             .catch((e) => {
                 S.imFlug = false;
+                S.gestaltenNeu.unshift(...gestalten);
                 this._stoffBruch("das Spiegel-Feld (Worker-Auftrag spiegel-feld)", e);
             });
     }
 
-    // DAS FENSTER WANDERT: n × n Zellen um das Auge. Stand das alte vollständig, backen nur die Streifen, die neu ins
-    // Fenster treten (ihre Plätze leer, bis der Worker sie füllt); sonst das ganze Fenster neu. Die Ecke liegt auf dem Raster
-    // der Blöcke: jeder Auftrag trägt ganze Blöcke, ihre Höchste rechnet der Worker allein.
+    // DAS FENSTER WANDERT: n × n Zellen um das Auge. Backen nur die Streifen, die neu ins Fenster treten (ihre Plätze leer,
+    // bis der Worker sie füllt); offene Aufträge behalten ihren Teil im neuen Fenster (die Antwort schreibt ohnehin nur ihre
+    // Schnittmenge) — ganz neu nur beim ersten Fenster oder einem Sprung über die Kante. Bis D10-n1 leerte jede Drift mit
+    // offenen Aufträgen das ganze Feld: bei schneller Fahrt spiegelte der See den Himmel. Die Ecke liegt auf dem Raster der
+    // Blöcke: jeder Auftrag trägt ganze Blöcke, ihre Höchste rechnet der Worker allein.
     _spiegelFeldFenster(auge) {
         const S = this._spiegelFeld();
         const n = S.n,
@@ -2374,16 +2396,21 @@ class AnazhRealm_Z11b {
             J0 = b * Math.round((auge.z / t - n / 2) / b);
         const aI = S.I0,
             aJ = S.J0;
-        const ganz = aI == null || S.auftraege.length > 0 || Math.abs(I0 - aI) >= n || Math.abs(J0 - aJ) >= n;
+        const ganz = aI == null || Math.abs(I0 - aI) >= n || Math.abs(J0 - aJ) >= n;
         S.I0 = I0;
         S.J0 = J0;
         S.mitte = [(I0 + n / 2) * t, (J0 + n / 2) * t];
-        S.auftraege.length = 0;
+        const offen = S.auftraege.splice(0);
         if (ganz) {
-            S.wasser = 0;
-            S.hMax = -30000;
             this._spiegelFeldAuftraege(S, I0, J0, n, n, true);
             return;
+        }
+        for (const a of offen) {
+            const i0 = Math.max(a.i0, I0),
+                i1 = Math.min(a.i0 + a.w, I0 + n),
+                j0 = Math.max(a.j0, J0),
+                j1 = Math.min(a.j0 + a.h, J0 + n);
+            if (i1 > i0 && j1 > j0) S.auftraege.push({ i0, j0, w: i1 - i0, h: j1 - j0 });
         }
         // der Streifen der Spalten, die neu sind (über alle Zeilen), dann der der Zeilen über die alten Spalten
         const iA = I0 > aI ? aI + n : I0,
@@ -2406,6 +2433,7 @@ class AnazhRealm_Z11b {
                 const zeile = (((j % n) + n) % n) * n;
                 for (let i = i0; i < i0 + w; i++) {
                     const o = (zeile + (((i % n) + n) % n)) * 4;
+                    if (S.stoff[o + 3] === 1) S.wasser--;
                     S.daten[o] = S.daten[o + 1] = S.daten[o + 2] = S.leer;
                     S.daten[o + 3] = 0;
                     S.stoff[o] = S.stoff[o + 1] = S.stoff[o + 2] = S.stoff[o + 3] = 0;
@@ -2415,16 +2443,27 @@ class AnazhRealm_Z11b {
             for (let J = j0 / b; J < (j0 + h) / b; J++)
                 for (let I = i0 / b; I < (i0 + w) / b; I++)
                     S.hoechste[(((J % nb) + nb) % nb) * nb + (((I % nb) + nb) % nb)] = -30000;
+            S.hMax = this._spiegelHoechsteAller(S);
             S.tex.needsUpdate = true;
             S.hTex.needsUpdate = true;
             S.stoffTex.needsUpdate = true;
+            S.stand++;
         }
         const zahl = Math.max(b, b * Math.floor((AnazhRealm.SPIEGEL.zeilen * n) / w / b));
-        const neu = [];
-        for (let j = j0; j < j0 + h; j += zahl) neu.push({ i0, j0: j, w, h: Math.min(zahl, j0 + h - j) });
-        const mj = S.J0 + n / 2;
-        neu.sort((a, b) => Math.abs(a.j0 + a.h / 2 - mj) - Math.abs(b.j0 + b.h / 2 - mj));
-        S.auftraege.push(...neu);
+        for (let j = j0; j < j0 + h; j += zahl) S.auftraege.push({ i0, j0: j, w, h: Math.min(zahl, j0 + h - j) });
+        // die ganze Schlange nah am Auge zuerst (die Mitte des Fensters)
+        const mi = S.I0 + n / 2,
+            mj = S.J0 + n / 2;
+        const ferne = (a) => Math.hypot(a.i0 + a.w / 2 - mi, a.j0 + a.h / 2 - mj);
+        S.auftraege.sort((a, c) => ferne(a) - ferne(c));
+    }
+
+    // Die Höchste des ganzen Fensters (der Deckel des Passes, `hMax`): das Maximum der Höchsten je Block — sie fällt mit dem
+    // Block, der das Fenster verlässt (bis D10-n1 wuchs sie mit jeder Antwort und fiel nie).
+    _spiegelHoechsteAller(S) {
+        let m = -30000;
+        for (let q = 0; q < S.hoechste.length; q++) if (S.hoechste[q] > m) m = S.hoechste[q];
+        return m;
     }
 
     // DIE KRONEN IM SPIEGEL: die stehenden Pflanzen im Rechteck (x0, z0, w, h; 20 m Rand für die Krone) — wie das Bild sie
@@ -2437,7 +2476,6 @@ class AnazhRealm_Z11b {
     // 64 m (die Streu, am See die Kiefern 65–72 m) fehlte im Feld.
     _spiegelKronen(x0, z0, w, h, S, nurZahl) {
         const baeume = nurZahl ? null : [];
-        const neu = [];
         let zahl = 0;
         const drin = (x, z) => x >= x0 - 20 && x <= x0 + w + 20 && z >= z0 - 20 && z <= z0 + h + 20;
         const setze = (teile, x, y, z, s, th) => {
@@ -2464,11 +2502,12 @@ class AnazhRealm_Z11b {
                 gi = laub.length ? S.gestalten.size : -1;
                 S.gestalten.set(teile, gi);
                 const farbe = fw > 0 ? [f[0] / fw, f[1] / fw, f[2] / fw] : [0.035, 0.07, 0.022];
-                if (gi >= 0) neu.push({ i: gi, teile: new Float32Array(laub), farbe });
+                if (gi >= 0) S.gestaltenNeu.push({ i: gi, teile: new Float32Array(laub), farbe });
                 // die Farbe der Krone in ihrer Zeile (`laubTex`): der Pass liest sie an der Gestalt der Schicht
                 if (gi >= 0 && gi < S.laub.length / 4) {
                     S.laub.set([farbe[0], farbe[1], farbe[2], 1], gi * 4);
                     S.laubTex.needsUpdate = true;
+                    S.stand++;
                 }
             }
             if (gi >= 0) baeume.push(x, y, z, s, Math.cos(th), Math.sin(th), gi);
@@ -2486,9 +2525,11 @@ class AnazhRealm_Z11b {
                 for (const zelle of region.cells || []) {
                     if (!zelle || !drin(zelle.x, zelle.z) || zelle.form === "boden" || zelle.wartet) continue;
                     const sg = this._spiegelStreuGestalt(zelle, S);
+                    // die Frist dieses Bilds ist verbraucht: die Antwort wäre unvollständig (null — der Rufer fragt im nächsten)
+                    if (sg === undefined) return null;
                     if (sg) setze(sg.teile, sg.x, NaN, sg.z, sg.s, sg.yaw);
                 }
-        return nurZahl ? zahl : { baeume: new Float32Array(baeume), neu };
+        return nurZahl ? zahl : { baeume: new Float32Array(baeume) };
     }
 
     // DIE GESTALT EINER STREU-ZELLE im Spiegel (gemerkt je Zellen-Datensatz): ihr Ort und ihre Drehung (`_scatterCellTransform`
@@ -2499,6 +2540,8 @@ class AnazhRealm_Z11b {
         if (!S.zellen) S.zellen = new WeakMap();
         let sg = S.zellen.get(zelle);
         if (sg !== undefined) return sg;
+        // eine neue Zelle fragt nur in der Frist des Bilds (`kronenFrist`): undefined = noch nicht gefragt
+        if (performance.now() > S.kronenFrist) return undefined;
         sg = null;
         const preset = this._foundryEnabled() ? this._foundryPresetFor(zelle.species) : null;
         const tc = typeof globalThis !== "undefined" ? globalThis.__terrainCore : null;
@@ -2526,24 +2569,16 @@ class AnazhRealm_Z11b {
 
     // DER LESER DES SPIEGELS (D10): das Ziel des Passes, die Ansicht, aus der er rechnete (der Wasser-Stoff reprojiziert seinen
     // Welt-Punkt in sie — der Pass läuft nach dem Bild, das Wasser liest ihn im nächsten), und ob er lief. Angelegt mit dem
-    // Wasser-Stoff in 1/teil der Ausgabe.
+    // Wasser-Stoff in 1/teil des Schirms (`_spiegelZielMass`).
     _spiegelLeser() {
         const st = this.state;
         if (st.spiegelLeser) return st.spiegelLeser;
         const T = THREE.TSL;
-        const g =
-            st.renderer && st.renderer.getDrawingBufferSize
-                ? st.renderer.getDrawingBufferSize(new THREE.Vector2())
-                : null;
-        const teil = AnazhRealm.SPIEGEL.teil;
-        const rt = new THREE.RenderTarget(
-            g ? Math.max(1, Math.round(g.x / teil)) : 1,
-            g ? Math.max(1, Math.round(g.y / teil)) : 1,
-            {
-                type: THREE.HalfFloatType,
-                depthBuffer: false,
-            }
-        );
+        const m = this._spiegelZielMass();
+        const rt = new THREE.RenderTarget(m.w, m.h, {
+            type: THREE.HalfFloatType,
+            depthBuffer: false,
+        });
         rt.name = rt.texture.name = "spiegel:strahl";
         rt.texture.minFilter = rt.texture.magFilter = THREE.LinearFilter;
         rt.texture.generateMipmaps = false;
@@ -2555,6 +2590,17 @@ class AnazhRealm_Z11b {
             this._uniformHeimatTeilen({ vp: T.uniform(new THREE.Matrix4()), an: T.uniform(0) })
         );
         return st.spiegelLeser;
+    }
+
+    // DAS MASS DES SPIEGEL-ZIELS: 1/teil des Schirms aus der EINEN Quelle (`_schirm`, Gebot 7 — gate:schirm-monotonie Q);
+    // ohne Zeichenpuffer ein Texel, bis der Pass es mit dem Schirm neu anlegt.
+    _spiegelZielMass() {
+        const g = this._schirm();
+        const teil = AnazhRealm.SPIEGEL.teil;
+        const m = this._spiegelMass || (this._spiegelMass = { w: 1, h: 1 });
+        m.w = Math.max(1, Math.round(g.breite / teil));
+        m.h = Math.max(1, Math.round(g.hoehe / teil));
+        return m;
     }
 
     // Läuft der Pass? Wasser im Feld UND der Wasser-Satz zeichnet im Hauptbild (Gebot 7: die Kosten folgen dem Schirm).
@@ -2754,31 +2800,37 @@ class AnazhRealm_Z11b {
             });
             return aus;
         })();
-        // das Vollbild: EINE Fläche vor einer Ortho-Kamera in einer eigenen Szene (ohne Tiefe, ohne Luft der Welt)
-        const szene = new THREE.Scene();
-        szene.name = "spiegel:strahl";
-        const kamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-        const flaeche = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), mat);
-        flaeche.frustumCulled = false;
-        flaeche.position.z = -0.5;
-        szene.add(flaeche);
-        st.spiegelPass = { szene, kamera, mat, U, groesse: new THREE.Vector2(), vp: new THREE.Matrix4() };
+        // DAS VOLLBILD ist ein Pass der Post-Kette: das Quad ihrer Klasse (`pp._quadMesh`, wie der Resolve der Zeit-Auflösung —
+        // EIN Dreieck, keine Szene, kein Licht, keine Luft der Welt); fehlt sie, bricht der Pass LAUT (Vendor-Drift). Bis
+        // D10-n1 zeichnete eine eigene Szene mit Ortho-Kamera über `renderer.render` neben der Bühne (gate:v1-pfad W2).
+        const pp = st.postProcessing;
+        const Quad = pp && pp._quadMesh && pp._quadMesh.constructor;
+        if (typeof Quad !== "function") throw new Error("SPIEGEL-PASS: Quad der Post-Kette fehlt (Vendor-Drift)");
+        const quad = new Quad(mat);
+        quad.name = "spiegel:strahl";
+        st.spiegelPass = { quad, mat, U, vp: new THREE.Matrix4() };
         void L;
         return st.spiegelPass;
     }
 
     // NACH DEM BILD (`_loopRender`, nur auf der Post-Kette — der Szenen-Pass trägt die Tiefe des gezeichneten Wassers): der
     // Pass rechnet aus Tiefe und Ansicht DIESES Bilds, das Wasser des nächsten reprojiziert in diese Ansicht. Läuft er nicht,
-    // liest das Wasser den Himmel allein (`an` 0).
+    // liest das Wasser den Himmel allein (`an` 0). Er ZAHLT NUR BEI ÄNDERUNG (Gebot 7, `_spiegelPassWach`): steht das Bild,
+    // liest das Wasser den Spiegel des letzten Laufs in dessen Ansicht (die Reprojektion ist exakt) — bis D10-n1 rechnete er
+    // jedes Bild neu (0,17–0,43 ms CPU je Bild im Stand, Radeon, See).
     _spiegelPassZeichne() {
         const st = this.state;
         const L = st.spiegelLeser;
         if (!L) return;
         const an = !!st.scenePass && !st.spiegelBruch && this._spiegelWasserImBild();
-        L.an.value = an ? 1 : 0;
-        if (!an) return;
+        if (!an) {
+            L.an.value = 0;
+            return;
+        }
         try {
-            this._spiegelPassRechne(L);
+            // `an` 0: das Ziel ist alt (der Pass ruhte, ein Sprung des Auges, `_loopRender`) — er rechnet in jedem Fall
+            if (this._spiegelPassWach(L) || L.an.value === 0) this._spiegelPassRechne(L);
+            L.an.value = 1;
         } catch (err) {
             // laut beim Namen (der EINE Melder), danach liest das Wasser den Himmel allein — nie still byte-alt
             st.spiegelBruch = true;
@@ -2787,31 +2839,92 @@ class AnazhRealm_Z11b {
         }
     }
 
-    // Der Lauf des Passes: Ziel in 1/teil der Ausgabe, Ansicht dieses Bilds, das Feld-Fenster, ein Vollbild-Dreieck.
+    // WAS DER PASS LIEST, IST SEINE SIGNATUR: das Auge (`ruheM`), der Blick (`ruheRad`), die Projektion, der Stand des Felds
+    // (jede Antwort des Workers, jedes Leeren, jede Kronen-Farbe) und das Ziel-Maß exakt, das Licht des Wassers (Einstrahlung,
+    // Sonne) und die EINE Luft auf `ruheLicht`. Weicht eine Größe von der des letzten Laufs ab, rechnet er neu und merkt sie.
+    _spiegelPassWach(L) {
+        const st = this.state;
+        const K = AnazhRealm.SPIEGEL;
+        const S = st.spiegelFeld;
+        const e = st.camera.matrixWorld.elements;
+        const pr = st.camera.projectionMatrix.elements;
+        const m = this._spiegelZielMass();
+        let sig = L.sig;
+        if (!sig) {
+            const HU = st.hydroSurfaceUniforms;
+            const lu = st.luft && st.luft.U;
+            sig = L.sig = {
+                neu: new Float64Array(32),
+                alt: new Float64Array(32),
+                da: false,
+                k: 0,
+                proj: [0, 5, 8, 9, 10, 14],
+                licht: [HU && HU.irr, HU && HU.sunDir, lu && lu.farbe, lu && lu.sonneFarbe, lu && lu.beta].filter(
+                    Boolean
+                ),
+            };
+        }
+        const v = sig.neu;
+        let k = 0;
+        // Lage: Auge (m) und Blick (die z-Achse der Welt-Matrix, Bogenmaß)
+        v[k++] = e[12];
+        v[k++] = e[13];
+        v[k++] = e[14];
+        v[k++] = e[8];
+        v[k++] = e[9];
+        v[k++] = e[10];
+        // exakt: Projektion, Stand des Felds, Ziel-Maß
+        for (const i of sig.proj) v[k++] = pr[i];
+        v[k++] = S.stand;
+        v[k++] = m.w;
+        v[k++] = m.h;
+        // Licht und Luft
+        const licht = k;
+        for (const u of sig.licht) {
+            const x = u.value;
+            if (typeof x === "number") v[k++] = x;
+            else if (x && (x.isColor || x.isVector3)) {
+                v[k++] = x.isColor ? x.r : x.x;
+                v[k++] = x.isColor ? x.g : x.y;
+                v[k++] = x.isColor ? x.b : x.z;
+            }
+        }
+        const a = sig.alt;
+        let wach = !sig.da || sig.k !== k;
+        for (let i = 0; !wach && i < k; i++) {
+            const d = Math.abs(v[i] - a[i]);
+            wach = i < 3 ? d > K.ruheM : i < 6 ? d > K.ruheRad : i < licht ? d !== 0 : d > K.ruheLicht;
+        }
+        if (wach) {
+            a.set(v);
+            sig.k = k;
+            sig.da = true;
+        }
+        return wach;
+    }
+
+    // Der Lauf des Passes: Ziel in 1/teil des Schirms, Ansicht dieses Bilds, das Feld-Fenster, das Quad der Post-Kette.
     _spiegelPassRechne(L) {
         const st = this.state;
         const P = this._spiegelPass();
         const S = st.spiegelFeld;
         const rend = st.renderer;
         const cam = st.camera;
-        rend.getDrawingBufferSize(P.groesse);
-        const teil = AnazhRealm.SPIEGEL.teil;
-        const w = Math.max(1, Math.round(P.groesse.x / teil)),
-            h = Math.max(1, Math.round(P.groesse.y / teil));
+        const m = this._spiegelZielMass();
         // ein Fenster-Wechsel legt das Ziel neu an; der Versions-Sprung zeigt es dem Wächter der Diät (`_diaetVorTextur`)
-        if (L.rt.width !== w || L.rt.height !== h) {
-            L.rt.setSize(w, h);
+        if (L.rt.width !== m.w || L.rt.height !== m.h) {
+            L.rt.setSize(m.w, m.h);
             L.rt.texture.needsUpdate = true;
         }
-        cam.updateMatrixWorld();
+        // die Matrizen DIESES Bilds (der Render rechnete sie, die Zeit-Auflösung nahm ihren Versatz zurück)
         P.vp.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
         P.U.invVP.value.copy(P.vp).invert();
-        cam.getWorldPosition(P.U.auge.value);
+        P.U.auge.value.setFromMatrixPosition(cam.matrixWorld);
         P.U.mitte.value.set(S.mitte[0], S.mitte[1]);
         P.U.hMax.value = S.hMax + 2;
         const vor = rend.getRenderTarget();
         rend.setRenderTarget(L.rt);
-        rend.render(P.szene, P.kamera);
+        P.quad.render(rend);
         rend.setRenderTarget(vor);
         L.vp.value.copy(P.vp);
     }

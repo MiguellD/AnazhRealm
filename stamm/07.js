@@ -103,8 +103,6 @@ class AnazhRealm_Z07 {
                             hoehen: new Uint16Array(msg.hoehen),
                             stoff: new Uint8Array(msg.stoff),
                             hoechste: new Float32Array(msg.hoechste),
-                            wasser: msg.wasser | 0,
-                            hMax: msg.hMax,
                         });
                     }
                 } else if (msg.type === "hoehen-result" && msg.requestId) {

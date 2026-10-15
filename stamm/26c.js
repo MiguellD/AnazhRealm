@@ -1241,7 +1241,9 @@ AnazhRealm.ZEIT_SPRUNG_M = 6;
 // darunter Lipschitz-Schritte von höchstens `fein` Zellen (mindestens `wachs` der Strecke), dann `halbierungen` vor der
 // Sekante; das Laub im Licht seiner Tiefe unter dem Kronen-Dach (Beer-Lambert: e-Länge `laubTiefe` m, das Himmelslicht unter
 // dem Dach `laubGrund`), die Krone im Feld um `kronenSaum` m gesäumt (die Zelle zählt, die ihr Laub berührt). Die Nachlese
-// backt das Feld neu, wenn neue Bäume darin stehen (höchstens je nachleseMs).
+// backt das Feld neu, wenn neue Bäume darin stehen (höchstens je nachleseMs); neue Kronen-Gestalten leitet ein Bild nur bis
+// `kronenMs` ab (Lehre 14). Der Pass zahlt nur bei Änderung: das Auge weiter als `ruheM` m, der Blick weiter als `ruheRad`,
+// Licht oder Luft um mehr als `ruheLicht` (`_spiegelPassWach`).
 AnazhRealm.SPIEGEL = Object.freeze({
     n: 384,
     texel: 2,
@@ -1258,6 +1260,10 @@ AnazhRealm.SPIEGEL = Object.freeze({
     laubFarben: 256,
     kronenSaum: 1,
     nachleseMs: 4000,
+    kronenMs: 1,
+    ruheM: 0.01,
+    ruheRad: 0.0003,
+    ruheLicht: 0.001,
 });
 // Sekunden-normalisierter Ingest-Takt: Ziel ist eine RATE je echter Sekunde — jeder Frame gibt
 // `rate·dt` Konversionen frei, gedeckelt durch INGEST_BURST_CAP (Schutz gegen LongTasks). So lädt

@@ -246,8 +246,6 @@ self.onmessage = function (e) {
                     hoehen: daten.hoehen.buffer,
                     stoff: daten.stoff.buffer,
                     hoechste: daten.hoechste.buffer,
-                    wasser: daten.wasser,
-                    hMax: daten.hMax,
                 },
                 [daten.hoehen.buffer, daten.stoff.buffer, daten.hoechste.buffer]
             );
@@ -806,20 +804,15 @@ function spiegelFeldBacken(msg) {
     const wk = msg.wasserFarbe;
     // die Albedo als Wurzel in 8 Bit (das dunkle Laub 0,03 trägt so 4 % statt 13 % Stufe)
     const wurzel = (v) => Math.max(0, Math.min(255, Math.round(Math.sqrt(Math.max(v, 0)) * 255)));
-    let hMax = -Infinity,
-        wasser = 0;
     for (let j = 0; j < h; j++)
         for (let i = 0; i < w; i++) {
             const p = (j + 1) * W2 + i + 1,
                 o = (j * w + i) * 4;
-            const top = Math.max(unten[p], dach[p]);
-            if (top > hMax) hMax = top;
             hoehen[o] = zuHalb(unten[p] - bezug);
             hoehen[o + 1] = zuHalb(basis[p] - bezug);
             hoehen[o + 2] = zuHalb(dach[p] - bezug);
             hoehen[o + 3] = zuHalb(krone[p]);
             const f = art[p] === 1 ? wk : art[p] === 2 ? laubFarbe.get(p) : [F[p * 3], F[p * 3 + 1], F[p * 3 + 2]];
-            if (art[p] === 1) wasser++;
             stoff[o] = wurzel(f[0]);
             stoff[o + 1] = wurzel(f[1]);
             stoff[o + 2] = wurzel(f[2]);
@@ -842,7 +835,7 @@ function spiegelFeldBacken(msg) {
                 }
             hoechste[bj * bw + bi] = m - bezug;
         }
-    return { hoehen, stoff, wasser, hMax: hMax - bezug, hoechste };
+    return { hoehen, stoff, hoechste };
 }
 
 // float32 → IEEE-Halbfloat (gerundet; über 65504 unendlich, unter 2^−24 null) — die Bits, die ein HalfFloat-Ziel trägt
