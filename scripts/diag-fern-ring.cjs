@@ -103,22 +103,16 @@ const server = statikServer();
         // Takt mit einer Pause je Takt (die Antworten brauchen die Ereignis-Schleife), bis der Cursor durch ist.
         const sleepT = (ms) => new Promise((rs) => setTimeout(rs, ms));
         // DER TAKT DES RINGS bis zur Bedingung (höchstens `ms`): je Takt die Zahl der eingehängten Punkte
-        const pumpe = async (pos, fertig, ms) => {
-            const fr0 = r.state.fernRing;
+        const pumpe = async (pos, fertig, ms, takt = () => r._tickFernRing(pos)) => {
             let takte = 0;
             let maxD = 0;
-            let vor = fr0 ? fr0.cursor : 0;
-            const dl = performance.now() + ms;
-            while (performance.now() < dl) {
-                r._tickFernRing(pos);
+            let vor = r.state.fernRing ? r.state.fernRing.cursor : 0;
+            for (const dl = performance.now() + ms; performance.now() < dl; await sleepT(16)) {
+                takt();
                 takte++;
                 const f = r.state.fernRing;
-                if (f) {
-                    if (f.cursor - vor > maxD) maxD = f.cursor - vor;
-                    vor = f.cursor;
-                }
+                if (f) [maxD, vor] = [Math.max(maxD, f.cursor - vor), f.cursor];
                 if (f && fertig(f)) break;
-                await sleepT(16);
             }
             return { takte, maxD };
         };
@@ -391,7 +385,6 @@ const server = statikServer();
             r.state.playerMesh.position.x = p2.x;
             r.state.playerMesh.position.z = p2.z;
             const refreshedBefore = fr.refreshed;
-            let prevCursor2 = null;
             const pos2 = { x: p2.x, z: p2.z };
             // DER HAUPT-FADEN RECHNET KEIN FERN-GESETZ (B2): während der Re-Anker eingehängt wird, zählt die Linse jeden Ruf
             // des Höhen-Gesetzes und der Boden-Farbe AUS dem Takt des Rings (die Zähler leben nur um den Ruf von
@@ -415,20 +408,13 @@ const server = statikServer();
                 res.anchorQuantized =
                     fr.anchorX === Math.round(p2.x / F.anchorQuant) * F.anchorQuant &&
                     fr.anchorZ === Math.round(p2.z / F.anchorQuant) * F.anchorQuant;
-                prevCursor2 = fr.cursor;
-                maxDelta2 = prevCursor2;
-                ticks2 = 1;
-                const dl2 = performance.now() + 120000;
-                while (fr.cursor < fr.totalVerts && performance.now() < dl2) {
-                    await sleepT(16);
+                const c1 = fr.cursor; // der erste Takt des Re-Ankers hängt ab 0 ein
+                const b2 = await pumpe(pos2, (f) => f.cursor >= f.totalVerts, 120000, () => {
                     gesetz.an = fr.cursor < fr.totalVerts;
                     r._tickFernRing(pos2);
                     gesetz.an = false;
-                    const d = fr.cursor - prevCursor2;
-                    if (d > maxDelta2) maxDelta2 = d;
-                    prevCursor2 = fr.cursor;
-                    ticks2++;
-                }
+                });
+                [ticks2, maxDelta2] = [b2.takte + 1, Math.max(c1, b2.maxD)];
                 res.gesetzImTakt = gesetz.rufe;
                 gesetz.an = true;
                 r._terrainMacroSurfaceY(p2.x, p2.z, false); // der Selbsttest: EIN Ruf im Fenster
@@ -575,19 +561,17 @@ const server = statikServer();
             res.fpTrefferKonstant = trefferA;
             fp8.mat.outputNode = echterOut;
             fp8.mat.needsUpdate = true;
-            const treffer = async () => {
+            const bild = async () => {
                 await ren8.renderAsync(szene8, cam8);
-                const buf8 = await ren8.readRenderTargetPixelsAsync(rt8, 0, 0, 96, 64);
-                let n = 0;
-                for (let px = 0; px < 96 * 64; px++) {
-                    if (buf8[px * 4 + 3] > 0 && buf8[px * 4] + buf8[px * 4 + 1] + buf8[px * 4 + 2] > 0) n++;
-                }
-                return n;
+                return ren8.readRenderTargetPixelsAsync(rt8, 0, 0, 96, 64);
             };
+            const summe = (b, px) => (b[px * 4 + 3] > 0 ? b[px * 4] + b[px * 4 + 1] + b[px * 4 + 2] : 0);
             // DIE LUFT LIEST DIE EINE ATMOSPHÄRE (D3): ihre In-Streuung ist die Himmels-Sicht der Tafeln, die der Renderer
             // der Welt je Takt zeichnet (`_atmoTakt`) — die Probe zeichnet sie auf IHREM Renderer, wie der Spiel-Frame es
-            // tut. Selbsttest (Konsum): ohne die Tafeln dunstet der Pass in Schwarz (die Ferne jenseits 8 km ist Luft).
-            res.fpTrefferOhneTafeln = await treffer();
+            // tut. Selbsttest (Konsum): ohne die Tafeln fehlt jedem Treffer-Pixel die In-Streuung — die Luft hebt ihn mit den Tafeln
+            // um ≥ 24/765 (die Ferne jenseits 8 km ist Luft). Bis B2 zählte die Probe Pixel über Schwarz: das hing am Licht des
+            // Feldes (`l0c` an der Basis zur Probe noch 0, der Takt lief synchron), nie an der Luft.
+            const ohne8 = await bild();
             const A8 = r._atmoLutBau();
             const welt8 = r.state.renderer;
             r.state.renderer = ren8;
@@ -599,7 +583,10 @@ const server = statikServer();
                 r.state.renderer = welt8;
             }
             ren8.setRenderTarget(rt8);
-            res.fpTreffer = await treffer();
+            const mit8 = await bild();
+            [res.fpTreffer, res.fpLuftGehoben] = [0, 0];
+            for (let px = 0; px < 96 * 64; px++)
+                if (summe(mit8, px) > 0) [res.fpTreffer, res.fpLuftGehoben] = [res.fpTreffer + 1, res.fpLuftGehoben + (summe(mit8, px) - summe(ohne8, px) >= 24)];
             ren8.dispose();
             if (fp8 && alterParent) alterParent.add(fp8.mesh);
         } catch (e8) {
@@ -1336,13 +1323,7 @@ const server = statikServer();
                             sammel.push(x, z);
                             sammelY.push(y);
                         }
-            const deckW = (
-                await r._fernAuftrag("teile", {
-                    punkte: new Float64Array(sammel),
-                    y: new Float64Array(sammelY),
-                    roh: true,
-                })
-            ).teile;
+            const deckW = (await r._fernAuftrag("teile", { punkte: new Float64Array(sammel), y: new Float64Array(sammelY), roh: true })).teile;
             let kW = 0;
             for (let kj = 0; kj < N / K; kj++)
                 for (let ki = 0; ki < N / K; ki++) {
@@ -1402,23 +1383,9 @@ const server = statikServer();
                 hrW[g] = p.fuss.hr;
                 yW[g] = frW.law[g];
             }
-            const mitFluss = await r._fernAuftrag("teile", {
-                punkte: ptsW.slice(),
-                y: yW.slice(),
-                ht: htW.slice(),
-                hr: hrW.slice(),
-                ax: frW.anchorX,
-                az: frW.anchorZ,
-            });
-            const landW = await r._fernAuftrag("teile", {
-                punkte: ptsW,
-                y: yW,
-                ht: htW,
-                hr: hrW,
-                ax: frW.anchorX,
-                az: frW.anchorZ,
-                roh: true,
-            });
+            const auftragW = () => ({ punkte: ptsW.slice(), y: yW.slice(), ht: htW.slice(), hr: hrW.slice(), ax: frW.anchorX, az: frW.anchorZ });
+            const mitFluss = await r._fernAuftrag("teile", auftragW());
+            const landW = await r._fernAuftrag("teile", { ...auftragW(), roh: true });
             const w = {
                 see: 0,
                 verdeckt: 0,
@@ -1558,10 +1525,7 @@ const server = statikServer();
         "1: ZWEI Stoffe — frei (ohne Maske und Weiche) für die Schalen und Schale 0 frei, Maske + Weiche nur auf dem Naht-Mesh",
         out.zweiStoffe === true
     );
-    check(
-        "1: sichtbar erst nach vollem Refresh + frustumCulled aus, wirft nicht, empfängt (die Horizont-Karte, D3)",
-        out.ready && out.visible && out.flags
-    );
+    check("1: sichtbar erst nach vollem Refresh + frustumCulled aus, wirft nicht, empfängt (die Horizont-Karte, D3)", out.ready && out.visible && out.flags);
     check("1: LOCH-DECKEL — Schale 1 beginnt am Spieler (0.5·span), deckZoneRad = Ziel-Zone", out.innerRandOk === true);
     check(
         "Bau IN SCHEIBEN aus dem Fern-Faden über Takte (je Takt <= scheibe × scheibenImFlug, mehrere Takte, Cursor voll)",
@@ -1649,9 +1613,9 @@ const server = statikServer();
         `treffer=${out.fpTreffer}${out.fpRenderErr ? " err=" + out.fpRenderErr : ""}`
     );
     check(
-        "8 SELBSTTEST: die Luft des Passes liest die Himmels-Sicht der EINEN Atmosphäre — ohne ihre Tafeln dunstet die Ferne schwarz",
-        Number.isFinite(out.fpTrefferOhneTafeln) && out.fpTrefferOhneTafeln < out.fpTreffer / 10,
-        `ohne-tafeln=${out.fpTrefferOhneTafeln} mit=${out.fpTreffer}`
+        "8 SELBSTTEST: die Luft des Passes liest die Himmels-Sicht der EINEN Atmosphäre — ohne ihre Tafeln fehlt jedem Treffer die In-Streuung",
+        out.fpTreffer > 50 && out.fpLuftGehoben >= out.fpTreffer * 0.9,
+        `von der Luft gehoben=${out.fpLuftGehoben} von ${out.fpTreffer} Treffern`
     );
     check(
         "8b: DAS EINBLENDEN — ein fern geborener Satz beginnt ganz verworfen und löst sich über WELT_SCHWUND_MS auf, ohne Wunsch erscheint er sofort",
@@ -1785,8 +1749,8 @@ const server = statikServer();
     }
     console.log(
         "\n✅ GRÜN — DER FERN-RING STEHT UND DAS FELD ZEICHNET: 3 Schalen aus dem EINEN Höhen-Gesetz " +
-            "(Fern-Wahrheit includeDetail=false, XZ welt-gesnappt), der Feld-Zeichner malt den vollen " +
-            "Refresh aus dem Gelände-Gesetzbuch in Takt-Scheiben (die CPU verfeinert aufs f64-Gesetz), budgetierter Refresh, " +
+            "(Fern-Wahrheit includeDetail=false, XZ welt-gesnappt), der Fern-Faden rechnet Ring, Feld und Krone in " +
+            "Scheiben aus dem Gelände-Gesetzbuch, der Haupt-Faden hängt nur ein, " +
             "quantisiertes Re-Zentrieren, headless-default ruhig."
     );
     process.exit(0);

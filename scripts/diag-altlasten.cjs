@@ -443,10 +443,7 @@ const FORBIDDEN = [
     { token: "mieAnteil", fiel: "D3 — die Keule zur Sonne trägt die Mie-Phase des Gesetzes" },
     { token: "mieGlanz", fiel: "D3 — die Keule zur Sonne trägt die Mie-Phase des Gesetzes" },
     { token: "nebulaColor", fiel: "D3 — der Träger der Tönung heißt himmelTint (die Nebel-Kuppel fiel)" },
-    {
-        token: "_skyEnvTex",
-        fiel: "D3 — die Umgebung ist der Wandel-Pass der Himmels-Sicht (rtEq → PMREM), keine CPU-Malerei",
-    },
+    { token: "_skyEnvTex", fiel: "D3 — die Umgebung ist der Wandel-Pass der Himmels-Sicht (rtEq → PMREM), keine CPU-Malerei" },
     // ... und im Labor in DERSELBEN Welle: die Luftmassen-Sonne von phytogenesis und ihre Zwillings-Zahlen in phyto-core
     // (die Rayleigh-Tiefe, die Luftmassen-Glättung, der Mond-Hue) — Welt und Labor rufen foundry-core ATMO_RECHNUNG.
     { token: "RAYLEIGH_BETA", fiel: "D3 — die Rayleigh-Tiefe wohnt im Gesetz (ATMO_GESETZ.rayleighTiefe)" },
@@ -460,16 +457,8 @@ const FORBIDDEN = [
         fiel: "D3 — die Luftmassen-Sonne fiel, die Nacht trägt ATMO_GESETZ.nacht",
         auch: ["phyto-core.js", "worlds/terrain/phytogenesis.js"],
     },
-    {
-        token: "_AIR_SOFT",
-        fiel: "D3 — keine Luftmassen-Glättung, der Durchlass ist Hillaire",
-        auch: ["worlds/terrain/phytogenesis.js"],
-    },
-    {
-        token: "_moonCol",
-        fiel: "D3 — der Mond-Hue ist ATMO_GESETZ.nacht.mond",
-        auch: ["worlds/terrain/phytogenesis.js"],
-    },
+    { token: "_AIR_SOFT", fiel: "D3 — keine Luftmassen-Glättung, der Durchlass ist Hillaire", auch: ["worlds/terrain/phytogenesis.js"] },
+    { token: "_moonCol", fiel: "D3 — der Mond-Hue ist ATMO_GESETZ.nacht.mond", auch: ["worlds/terrain/phytogenesis.js"] },
     { token: "_dayNightApplyHemiAndFog", fiel: "V18.530 — _dayNightApplyHemiUndLuft" },
     { token: "_smoothFogEdge", fiel: "V18.530 — kein Lade-Nebel, der Fern-Ring deckt Ungebautes" },
     { token: "_fogEdgeSmooth", fiel: "V18.530" },
@@ -515,62 +504,13 @@ const FORBIDDEN = [
     },
     { token: "farbeJeTakt", fiel: "Integration 05.10. — das Fern-Farb-Budget (FERN_FARBE.msJeTakt, _fernFarbTakt)" },
     // B2 — DER HORIZONT IM FADEN: Höhe, Nässe und Fern-Farbe der Ferne (Ring, Feld-Pass, Fern-Krone) rechnet nur der Fern-Faden
-    {
-        token: "_fernFarbeTeile(",
-        fiel: "B2 — der Horizont rechnet im Fern-Faden (voxel-worker `fernAuftrag`), der Haupt-Faden-Weg fiel",
-    },
-    {
-        token: "_fernFarbeMasche(",
-        fiel: "B2 — der Horizont rechnet im Fern-Faden (voxel-worker `fernAuftrag`), der Haupt-Faden-Weg fiel",
-    },
-    {
-        token: "_fernFarbeAt(",
-        fiel: "B2 — der Horizont rechnet im Fern-Faden (voxel-worker `fernAuftrag`), der Haupt-Faden-Weg fiel",
-    },
-    {
-        token: "_fernRingTeile(",
-        fiel: "B2 — der Horizont rechnet im Fern-Faden (voxel-worker `fernAuftrag`), der Haupt-Faden-Weg fiel",
-    },
-    {
-        token: "_fernRingFaerben(",
-        fiel: "B2 — der Horizont rechnet im Fern-Faden (voxel-worker `fernAuftrag`), der Haupt-Faden-Weg fiel",
-    },
-    {
-        token: "_fernFarbTakt(",
-        fiel: "B2 — der Horizont rechnet im Fern-Faden (voxel-worker `fernAuftrag`), der Haupt-Faden-Weg fiel",
-    },
-    {
-        token: "_fernRingGpuMal(",
-        fiel: "B2 — der Horizont rechnet im Fern-Faden (voxel-worker `fernAuftrag`), der Haupt-Faden-Weg fiel",
-    },
-    {
-        token: "_feldZeichnerHoehen(",
-        fiel: "B2 — der Horizont rechnet im Fern-Faden (voxel-worker `fernAuftrag`), der Haupt-Faden-Weg fiel",
-    },
-    {
-        token: "_voxelWorkerHoehen(",
-        fiel: "B2 — der Horizont rechnet im Fern-Faden (voxel-worker `fernAuftrag`), der Haupt-Faden-Weg fiel",
-    },
-    {
-        token: "_feldPassFaerben(",
-        fiel: "B2 — der Horizont rechnet im Fern-Faden (voxel-worker `fernAuftrag`), der Haupt-Faden-Weg fiel",
-    },
-    {
-        token: "_flussAbdruck(",
-        fiel: "B2 — der Horizont rechnet im Fern-Faden (voxel-worker `fernAuftrag`), der Haupt-Faden-Weg fiel",
-    },
-    {
-        token: "_fernSchuttAt(",
-        fiel: "B2 — der Horizont rechnet im Fern-Faden (voxel-worker `fernAuftrag`), der Haupt-Faden-Weg fiel",
-    },
-    {
-        token: "_fernRingDeckMisch(",
-        fiel: "B2 — der Horizont rechnet im Fern-Faden (voxel-worker `fernAuftrag`), der Haupt-Faden-Weg fiel",
-    },
-    {
-        token: "_fernFlussDeckung(",
-        fiel: "B2 — der Horizont rechnet im Fern-Faden (voxel-worker `fernAuftrag`), der Haupt-Faden-Weg fiel",
-    },
+    // (voxel-worker `fernAuftrag`), der Haupt-Faden-Weg fiel.
+    ...[
+        "_fernFarbeTeile(", "_fernFarbeMasche(", "_fernFarbeAt(", "_fernRingTeile(",
+        "_fernRingFaerben(", "_fernFarbTakt(", "_fernRingGpuMal(", "_feldZeichnerHoehen(",
+        "_voxelWorkerHoehen(", "_feldPassFaerben(", "_flussAbdruck(", "_fernSchuttAt(",
+        "_fernRingDeckMisch(", "_fernFlussDeckung(",
+    ].map((token) => ({ token, fiel: "B2 — der Horizont rechnet im Fern-Faden, der Haupt-Faden-Weg fiel" })),
     // V18.331 fiel Ammo.js (die Physik ist feld-nativ); V18.530 fiel mit ihr der CI-Schritt „Ammo-Memory-Leak-Indikator",
     // der btVector3 gegen destroy zählte und seit dem Abschied an „0\n0" rechnete (rot hinter continue-on-error).
     { token: "new Ammo.", fiel: "V18.331 — Feld-Physik; die Leck-Linse der CI fiel V18.530" },
@@ -907,10 +847,7 @@ const FORBIDDEN = [
     },
     // Nah-Wiese und Nah-Streu lesen das Licht der STEHENDEN Kronen (`_bodenLichtFeld`, das Labor-Gesetz über dem Kronen-
     // Register) — nie das Platzierungs-Feld und nie die Streu-Karte als Faktor (K70, Soll-Tafel boden-nah).
-    {
-        token: "this._canopyLightAt(x, z, y, m)",
-        fiel: "K70 Boden nah — das Bodenlicht der Nah-Wiese ist _bodenLichtFeld",
-    },
+    { token: "this._canopyLightAt(x, z, y, m)", fiel: "K70 Boden nah — das Bodenlicht der Nah-Wiese ist _bodenLichtFeld" },
     { token: "(1 - streu * 0.85)", fiel: "K70 Boden nah — die Kronen-Karte wirkt einmal, im Licht (_bodenLichtFeld)" },
     { token: "licht: this._canopyLightAt(", fiel: "K70 Boden nah — das Licht der Nah-Streu ist _bodenLichtFeld" },
     // Der Wasser-Hauch klingt nur, wo Wasser ist: jeder Bau und Abbau reicht seine Fußabdrücke (`_nassAt`) — der Aufruf
@@ -1039,35 +976,18 @@ const FORBIDDEN = [
     { token: "nebelAct", fiel: "D8 — der Atem des Nebels", auch: ["porta-core.js", "worlds/portale/porta.js"] },
     { token: "NEBEL_VIS", fiel: "D8 — das duale Nebel-Gefühl (glsl-box/tsl-box)", auch: ["porta-core.js"] },
     { token: "buildFog", fiel: "D8 — der Nebel des Labors", auch: ["worlds/portale/porta.js"] },
-    {
-        token: "['fog',",
-        fiel: "D8 — der Regler fog (Bodennebel) der Tore",
-        auch: ["porta-core.js", "worlds/portale/porta.js"],
-    },
-    {
-        token: "MG.march",
-        fiel: "D8 — der 12-Schritt-March der Membran (MEMBRAN_GESETZ.film)",
-        auch: ["worlds/portale/porta.js"],
-    },
+    { token: "['fog',", fiel: "D8 — der Regler fog (Bodennebel) der Tore", auch: ["porta-core.js", "worlds/portale/porta.js"] },
+    { token: "MG.march", fiel: "D8 — der 12-Schritt-March der Membran (MEMBRAN_GESETZ.film)", auch: ["worlds/portale/porta.js"] },
     // D8: das Spike-Instrument — die Heimat malte ein Panorama ihrer EIGENEN Welt (Würfel-Kamera 80 m westlich der Genesis-Mitte);
     // die Öffnung liest das Ziel aus dem EINEN Export der Ziel-Welt (`_torZielZeile`, die Hülle `AnazhHuelle.panorama`)
-    {
-        token: "_torPanorama",
-        fiel: "D8 — das Host-Panorama der eigenen Welt (Spike); das Ziel kommt aus der Ziel-Welt",
-    },
+    { token: "_torPanorama", fiel: "D8 — das Host-Panorama der eigenen Welt (Spike); das Ziel kommt aus der Ziel-Welt" },
     { token: "_torPanoMal", fiel: "D8 — die Würfel-Würfe der Heimat (Spike); die Ziel-Welt rendert sich selbst" },
     { token: "_torPanoKamera", fiel: "D8 — die sechs Kameras des Host-Panoramas (Spike)" },
     // D8-n1: der verborgene Ziel-Rahmen bootete jede Ziel-Welt im Haupt-Faden des Spiels (Prüfer: 3 882 ms lange Aufgabe je
     // fachwerk, 10 135 ms für sieben Ziele nach dem ersten Weltbild, in der CPU-Gruppe der CI ein WebGL-Bruch je Studio) — das
     // Studio backt sein Panorama in seiner Welt (gate:studio-huelle H5), die Heimat liest die Datei (`_torZielBuendel`)
-    {
-        token: "_torZielRahmen",
-        fiel: "D8-n1 — der verborgene Rahmen der Ziel-Welt im Spiel; das Studio backt, die Heimat liest",
-    },
-    {
-        token: "_torZielStempel",
-        fiel: "D8-n1 — der Stempel je Boot (jede Quelle geholt und gehasht); H5 hält ihn an den Quellen",
-    },
+    { token: "_torZielRahmen", fiel: "D8-n1 — der verborgene Rahmen der Ziel-Welt im Spiel; das Studio backt, die Heimat liest" },
+    { token: "_torZielStempel", fiel: "D8-n1 — der Stempel je Boot (jede Quelle geholt und gehasht); H5 hält ihn an den Quellen" },
     { token: "_torZielPlatte", fiel: "D8-n1 — die IndexedDB der Ziele; die gebackene Datei ist die Platte" },
     { token: "_torZielReihe", fiel: "D8-n1 — die Reihe der Welt-Aufträge im Spiel" },
     { token: "anazhTorZiel", fiel: "D8-n1 — die IndexedDB der Ziele" },
@@ -3447,11 +3367,7 @@ function eigenBoots(dateien) {
         if (!/\b(?:launch|createServer)\b/.test(src)) return false;
         let ast;
         try {
-            ast = acorn.parse(src.replace(/^#!.*/, ""), {
-                ecmaVersion: "latest",
-                sourceType: "script",
-                allowReturnOutsideFunction: true,
-            });
+            ast = acorn.parse(src.replace(/^#!.*/, ""), { ecmaVersion: "latest", sourceType: "script", allowReturnOutsideFunction: true });
         } catch (_e) {
             return /\bpuppeteer\s*\.\s*launch\s*\(|\bhttp\s*\.\s*createServer\s*\(/.test(stripComments(src));
         }
@@ -3479,14 +3395,10 @@ function scanBootWand(dateien, rest = BOOT_REST) {
     const errs = [];
     for (const n of eigen)
         if (!rest.includes(n))
-            errs.push(
-                `Boot-Wand: ${n} startet Server/Browser selbst — nimm scripts/lib/welt-boot.cjs (statikServer · starteBrowser)`
-            );
+            errs.push(`Boot-Wand: ${n} startet Server/Browser selbst — nimm scripts/lib/welt-boot.cjs (statikServer · starteBrowser)`);
     for (const n of rest)
         if (!eigen.includes(n))
-            errs.push(
-                `Boot-Wand: ${n} steht auf der Rest-Liste, startet aber nicht mehr selbst — Zeile streichen (sie schrumpft nur)`
-            );
+            errs.push(`Boot-Wand: ${n} steht auf der Rest-Liste, startet aber nicht mehr selbst — Zeile streichen (sie schrumpft nur)`);
     return errs;
 }
 // DIE HÜLLEN-FORM-WAND (S3 haus, K08): der Wirt liest die Hülle eines Baus in der EINEN Form (N5: `{ stufe, teile }`,
@@ -3619,10 +3531,7 @@ function messortPaare() {
 const zahlRe = (v) => String.raw`(?<![\w.])` + String(v).replace(/[.]/g, String.raw`\.`) + String.raw`(?![\d.])`;
 function scanOrtsWand(dateien) {
     const errs = [];
-    const abschrift = messortPaare().map((p) => ({
-        p,
-        re: new RegExp(zahlRe(p[0]) + String.raw`[\s\S]{0,60}?` + zahlRe(p[1]), "g"),
-    }));
+    const abschrift = messortPaare().map((p) => ({ p, re: new RegExp(zahlRe(p[0]) + String.raw`[\s\S]{0,60}?` + zahlRe(p[1]), "g") }));
     for (const [name, src] of dateien) {
         if (name === "scripts/diag-altlasten.cjs") continue; // die Wand selbst trägt ihre Selbsttest-Sätze als Text
         const code = stripComments(src);
@@ -3966,8 +3875,7 @@ function main() {
         const bootFeuert =
             scanBootWand(gates).length === 0 &&
             scanBootWand([["scripts/diag-neu.cjs", `const b = await ${start};\n`]], []).length === 1 &&
-            scanBootWand([["scripts/diag-srv.cjs", "const s = http" + ".createServer((q, r) => r.end());\n"]], [])
-                .length === 1 &&
+            scanBootWand([["scripts/diag-srv.cjs", "const s = http" + ".createServer((q, r) => r.end());\n"]], []).length === 1 &&
             scanBootWand([["scripts/diag-k.cjs", `// früher: ${start}\nconst t = "${start}";\n`]], []).length === 0 &&
             scanBootWand([["scripts/diag-alt.cjs", "const x = 1;\n"]], ["scripts/diag-alt.cjs"]).length === 1;
         if (!bootFeuert) {

@@ -1364,14 +1364,7 @@ const FIXTURES = [
             }
             const nassL = (pl.laternen || []).filter((l) => l.wand && l.slot === nass);
             const bleibt = nassL.filter((l) => W.some((w) => w.x === l.x && w.z === l.z)).length;
-            return {
-                n: W.length,
-                haengt,
-                fremd,
-                nass: nassL.length,
-                bleibt,
-                ok: W.length > 0 && !fremd.length && !bleibt,
-            };
+            return { n: W.length, haengt, fremd, nass: nassL.length, bleibt, ok: W.length > 0 && !fremd.length && !bleibt };
         };
         {
             const pl = FC.exportSettlement({ seed: 7, nH: 16 });
@@ -1399,9 +1392,7 @@ const FIXTURES = [
             check(
                 "Selbst-Test 16: der Ortplan mit den Slot-Nummern des v1-Plans (wie bis N1) fällt — Wandlaternen an fremden Häusern, die des nassen Hauses bleibt",
                 !!alt && !alt.ok && alt.fremd.length > 0 && alt.bleibt > 0,
-                JSON.stringify(
-                    alt && { haengt: alt.haengt, n: alt.n, fremd: alt.fremd.slice(0, 4), bleibt: alt.bleibt }
-                )
+                JSON.stringify(alt && { haengt: alt.haengt, n: alt.n, fremd: alt.fremd.slice(0, 4), bleibt: alt.bleibt })
             );
         }
         {
@@ -1748,10 +1739,7 @@ const FIXTURES = [
             // Materialisierung: je Tick hoechstens perTick Slots (gezaehlt).
             // Gezählt werden die Häuser: jedes trägt seine Wandlaternen (K66-2, `_spawnSettlementSlot`) im selben Schritt.
             const haeuserZahl = () =>
-                r.state.architectures.reduce(
-                    (n, e) => n + (typeof e.type === "string" && e.type.indexOf("haus_") === 0),
-                    0
-                );
+                r.state.architectures.reduce((n, e) => n + (typeof e.type === "string" && e.type.indexOf("haus_") === 0), 0);
             let ticks = 0;
             let maxPerTick = 0;
             let prevCount = haeuserZahl();
@@ -2344,13 +2332,7 @@ const FIXTURES = [
                                         f === null &&
                                         w.schutt[i] >= 0.5 &&
                                         Math.abs(GC.hoehe(Lg, x, z, false) - GC.hoehe(Lo, x, z, false)) > 0.25 &&
-                                        !((a) => (GC.hoehe(r._gelaende(), x, z, false, a), a.schutt > 0 || a.wand > 0))(
-                                            {
-                                                hang: 0,
-                                                schutt: 0,
-                                                wand: 0,
-                                            }
-                                        )
+                                        !((a) => (GC.hoehe(r._gelaende(), x, z, false, a), a.schutt > 0 || a.wand > 0))({ hang: 0, schutt: 0, wand: 0 })
                                     ) {
                                         ferne++;
                                         if (fernFehl.length < 4)
