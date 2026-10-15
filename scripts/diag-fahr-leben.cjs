@@ -718,9 +718,9 @@ function stationVerdict(s) {
         }
     if (!s.lockstep) out.push("lockstep keine Probe");
     else if (s.lockstep.ruhe !== true)
-        out.push("lockstep start: der Wagen kommt vor der Probe nicht zur Ruhe (600 Bilder, der Fahr-Zustand nie drei Bilder gleich)");
+        out.push(`lockstep start: der Wagen kommt vor der Probe nicht zur Ruhe (600 Bilder, der Fahr-Zustand nie drei Bilder lang ≤ 1 nm; zuletzt ${(s.lockstep.unruhe || []).join(" / ")})`);
     else if (s.lockstep.gleicherStart !== true)
-        out.push("lockstep start: die Läufe beginnen an verschiedenen Ständen des ruhenden Wagens");
+        out.push(`lockstep start: die Läufe beginnen an verschiedenen Ständen des ruhenden Wagens (${s.lockstep.startAbw} > 1e-7)`);
     else if (!(s.lockstep.abw <= STATION.lockstepM) || !(s.lockstep.baerAbw <= STATION.lockstepM))
         out.push(
             `lockstep: nach 200 Sim-Schritten steht der Wagen bei gemischten Frames ${s.lockstep.abw.toFixed(3)} m anders als bei 60 fps (Bär ${s.lockstep.baerAbw.toFixed(3)} m)${s.lockstep.erst ? ` — zuerst in Schritt ${s.lockstep.erst.schritt}: ${s.lockstep.erst.groesse} um ${s.lockstep.erst.d}${s.lockstep.erst.tiere ? ` (Tiere nahe dem Wagen ${s.lockstep.erst.tiere.join(" / ")})` : ""}` : ""}`
@@ -2488,17 +2488,25 @@ async function probeLeben(expected) {
                     // Muster ein — wie viele Sim-Schritte das sind, hängt am Rest des Akkumulators: im roten Lauf begann der
                     // 60-fps-Lauf am frisch gesetzten Stand (vy 0), der gemischte einen Schritt später (vy −g·dt) — 1,2 mm
                     // nach 200 Schritten (CI 38712496194; lokal 1 von 4 Läufen). Gewartet wird auf das Ereignis (der
-                    // Fahr-Zustand steht drei Bilder gleich), nie auf die Wanduhr; der Stand reist mit (`start`).
+                    // Fahr-Zustand ändert sich drei Bilder lang um höchstens 1 nm), nie auf die Wanduhr; der Stand reist mit
+                    // (`start`), die Bilder bis zur Ruhe auch.
                     let ruhe = 0;
                     let stand = null;
-                    for (let i = 0; i < 600 && ruhe < 3; i++) {
+                    let bilder = 0;
+                    let unruhe = null; // die Größe, die zuletzt um mehr als 1 nm ging (die Linse nennt sie)
+                    const namen = ["x", "z", "y", "vy", "speed", "yaw", "steig", "wank"];
+                    for (; bilder < 600 && ruhe < 3; bilder++) {
                         tMs += 1000 / 60;
                         r._gameLoopTick(tMs);
                         const fz = gS._fahr;
-                        const jetzt = fz
-                            ? JSON.stringify([fz.x, fz.z, fz.y, fz.vy, fz.speed, fz.yaw, fz.steig, fz.wank])
-                            : null;
-                        ruhe = jetzt !== null && jetzt === stand ? ruhe + 1 : 0;
+                        const jetzt = fz ? [fz.x, fz.z, fz.y, fz.vy, fz.speed, fz.yaw, fz.steig, fz.wank] : null;
+                        const d =
+                            jetzt && stand ? Math.max(...jetzt.map((v, k) => Math.abs(v - stand[k]))) : Infinity;
+                        ruhe = d <= 1e-9 ? ruhe + 1 : 0;
+                        if (d > 1e-9 && jetzt && stand) {
+                            const k = jetzt.findIndex((v, j) => Math.abs(v - stand[j]) === d);
+                            unruhe = namen[k] + " " + d.toExponential(2);
+                        }
                         stand = jetzt;
                     }
                     const kappeL = st.maxCreatures;
@@ -2558,6 +2566,8 @@ async function probeLeben(expected) {
                         lage.spur = spur;
                         lage.start = stand;
                         lage.ruhe = ruhe >= 3;
+                        lage.bilder = bilder;
+                        lage.unruhe = unruhe;
                     }
                     return lage;
                 };
@@ -2585,7 +2595,15 @@ async function probeLeben(expected) {
                               abw: +Math.hypot(l60.x - lMix.x, l60.z - lMix.z).toFixed(6),
                               baerAbw: +Math.hypot(l60.bx - lMix.bx, l60.bz - lMix.bz).toFixed(6),
                               ruhe: l60.ruhe && lMix.ruhe,
-                              gleicherStart: l60.start === lMix.start,
+                              ruheBilder: [l60.bilder, lMix.bilder],
+                              unruhe: [l60.unruhe, lMix.unruhe],
+                              startAbw:
+                                  l60.start && lMix.start
+                                      ? Math.max(...l60.start.map((v, k) => Math.abs(v - lMix.start[k])))
+                                      : null,
+                              gleicherStart:
+                                  !!(l60.start && lMix.start) &&
+                                  Math.max(...l60.start.map((v, k) => Math.abs(v - lMix.start[k]))) <= 1e-7,
                               erst,
                           }
                         : null;
@@ -4145,7 +4163,12 @@ function quellenAbgriff() {
             ],
             [
                 "der 60-fps-Lauf beginnt am frisch gesetzten Stand, der gemischte einen Schritt später (K70-N1: 1,2 mm nach 200 Schritten)",
-                { lockstep: { abw: 0.001239, baerAbw: 0, ruhe: false, gleicherStart: false } },
+                { lockstep: { abw: 0.001239, baerAbw: 0, ruhe: true, gleicherStart: false, startAbw: 0.163 } },
+                "lockstep start",
+            ],
+            [
+                "der Wagen kriecht vor der Probe (der Stand kommt nie zur Ruhe)",
+                { lockstep: { abw: 0, baerAbw: 0, ruhe: false, gleicherStart: true, startAbw: 0 } },
                 "lockstep start",
             ],
             [
@@ -4932,7 +4955,7 @@ function quellenAbgriff() {
         !hat("kern") && !hat("lockstep"),
         (S.lockSchwimmer ? `Schwimmer ${S.lockSchwimmer.abw} m / Höhe ${S.lockSchwimmer.abwY} m · ` : "") +
             (S.lockstep
-                ? `Abweichung Wagen ${S.lockstep.abw} m · Bär ${S.lockstep.baerAbw} m${S.lockstep.erst ? ` · zuerst Schritt ${S.lockstep.erst.schritt}: ${S.lockstep.erst.groesse} ${S.lockstep.erst.d}${S.lockstep.erst.tiere ? ` (Tiere nahe dem Wagen ${S.lockstep.erst.tiere.join(" / ")})` : ""}` : ""}`
+                ? `Start ${S.lockstep.startAbw} nach ${S.lockstep.ruheBilder} Bildern${S.lockstep.ruhe ? "" : ` (unruhig: ${(S.lockstep.unruhe || []).join(" / ")})`} · Abweichung Wagen ${S.lockstep.abw} m · Bär ${S.lockstep.baerAbw} m${S.lockstep.erst ? ` · zuerst Schritt ${S.lockstep.erst.schritt}: ${S.lockstep.erst.groesse} ${S.lockstep.erst.d}${S.lockstep.erst.tiere ? ` (Tiere nahe dem Wagen ${S.lockstep.erst.tiere.join(" / ")})` : ""}` : ""}`
                 : "keine Probe")
     );
     const reiterZeile = (q) =>
