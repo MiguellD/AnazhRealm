@@ -687,7 +687,7 @@ class AnazhRealm_Z17b {
         mesh.renderOrder = spec.renderOrder;
         mesh.visible = s.grundAlt = this._chunkSatzGrund(s);
         Object.assign(mesh.userData, spec.userData);
-        if (spec.nurWurf) mesh.layers.set(AnazhRealm.SHADOW_TWIN_LAYER); // der Wurf-Satz: nur die Kaskaden
+        if (spec.nurWurf) mesh.layers.disable(0); // der Wurf-Satz: nur die Kaskaden (sein Wurf ist die Wurf-Ebene, K72)
         s.mesh = mesh;
         return mesh;
     }

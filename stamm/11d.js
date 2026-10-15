@@ -1205,8 +1205,12 @@ class AnazhRealm_Z11d {
             fr.feldY.fill(NaN); // die Feld-Fläche der Naht ebenso
             fr.gpuFlug = false;
         }
-        // Die Schalen leben auf Layer 0 (EIN Szene-Pass) — selbstheilend, falls ein Altstand sie verschob.
-        for (const m of fr.meshes) if (m.layers.mask !== 1) m.layers.mask = 1;
+        // Die Schalen leben auf Layer 0 (EIN Szene-Pass) — selbstheilend, falls ein Altstand sie verschob; ihr Wurf bleibt
+        // ihr `castShadow` (die Wurf-Ebene, K72 `_wurfEbene`).
+        for (const m of fr.meshes) {
+            const soll = (1 | (m.layers.mask & (1 << AnazhRealm.SHADOW_TWIN_LAYER))) >>> 0;
+            if (m.layers.mask !== soll) m.layers.mask = soll;
+        }
         this._fernRingMaske(fr); // der Ring weicht dem Gebauten (`maskNode`)
         // DER FELD-ZEICHNER: ein anstehender VOLLER Refresh (Boot/Re-Anker)
         // wird zuerst vom Feld gemalt (EIN GPU-Lauf, Horizont steht sofort);

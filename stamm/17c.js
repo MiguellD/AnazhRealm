@@ -211,13 +211,25 @@ class AnazhRealm_Z17c {
     // Schatten-Takt (`_shadowFrame`, die Kaskaden-Box und jeder Schatten-Pass lesen dieselbe Hülle); je Kind hält ein
     // Zahlen-Schlüssel (Instanz-/Positions-Version · Zahl · Geometrie · Welt-Lage) seine Box, nur geänderte Kinder
     // rechnen neu. Ohne Bundle-Version: dieselbe Hülle trägt eine schlichte Gruppe. null = wirft nicht.
+    // DER STAND DER WERFER (K72): derselbe Gang stempelt, was die Werfer-Wahl je Pass liest — die Folge der sichtbaren
+    // Knoten mit Wurf und Kinderzahl und jede neu gerechnete Box; ändert sich etwas, steigt `u._werferStand`. Die Wahl
+    // eines Passes (`_werferWahlSteht`) gilt, solange Lage und Stand stehen — sie geht die Kinder nicht in jedem Render.
     _bundleWerferHuelle(bg) {
         const u = bg.userData;
         const takt = this._shadowFrame || 0;
         if (u._werferTakt === takt && u._werferHuelle !== undefined) return u._werferHuelle;
         const box = u._werferBox || (u._werferBox = new THREE.Box3());
         box.makeEmpty();
+        const spur = this._wfSpur || (this._wfSpur = { h: 0, neu: false });
+        spur.h = bg.children.length | 0;
+        spur.neu = false;
         for (const c of bg.children) this._werferBoxDazu(box, c);
+        if (spur.neu || u._werferSig !== spur.h || u._werferStand === undefined) {
+            u._werferSig = spur.h;
+            u._werferStand = (u._werferStand | 0) + 1;
+            // die gemerkten Wahlen dieses Bundles gelten nicht mehr — sie halten keinen gegangenen Werfer fest
+            if (u._werferJe) u._werferJe.clear();
+        }
         u._werferTakt = takt;
         u._werferHuelle = box.isEmpty() ? null : box.expandByScalar(AnazhRealm.SCHATTEN_KASKADE.randM);
         return u._werferHuelle;
@@ -226,6 +238,12 @@ class AnazhRealm_Z17c {
         // der Zeichner einer Senke (1410-1) wirft mit ihr: ihre Hülle trägt jede Instanz, er ist kein eigener Werfer
         if (!o || o.visible === false || o.isInstanzZeichner === true) return;
         const g = o.geometry;
+        const spur = this._wfSpur;
+        spur.h = Math.imul(
+            spur.h ^ (o.id * 4 + (o.castShadow === true ? 2 : 0) + (o.isMesh === true ? 1 : 0)),
+            0x9e3779b1
+        );
+        spur.h = Math.imul(spur.h ^ o.children.length, 0x85ebca6b);
         if (o.isMesh === true && o.castShadow === true && g && g.attributes && g.attributes.position) {
             const im = o.isInstancedMesh === true ? o.instanceMatrix : null;
             const mw = o.matrixWorld.elements;
@@ -242,6 +260,7 @@ class AnazhRealm_Z17c {
             ) {
                 const b = ud._werferKind || (ud._werferKind = new THREE.Box3());
                 b.makeEmpty();
+                spur.neu = true;
                 if (im) {
                     if (!g.boundingSphere) g.computeBoundingSphere();
                     const bs = g.boundingSphere;
@@ -658,10 +677,9 @@ class AnazhRealm_Z17c {
         mesh.userData.buendelStufe = atlasGruppe ? 9 : Number.isFinite(leaf.stufe) ? leaf.stufe : 0;
         const wahl = satz ? null : this._instanzWahlArt(leaf, castShadow, regional);
         if (wahl) mesh.userData.instanzWahl = wahl;
-        // V18.389 — der Schatten-Zwilling auf SHADOW_TWIN_LAYER (set = NUR Layer 2 → aus Layer 0 raus
-        // → unsichtbar für die Kamera; einzig der Schatten-Pass zählt ihn, s. Licht-Setup). Kein
-        // FOLIAGE_LAYER (kein Laub-Pass-Mitglied).
-        if (leaf.shadowTwin) mesh.layers.set(AnazhRealm.SHADOW_TWIN_LAYER);
+        // V18.389 — der Schatten-Zwilling verlässt die Ebene 0 (unsichtbar für die Kamera); er wirft auf der Wurf-Ebene
+        // SHADOW_TWIN_LAYER, die sein `castShadow` trägt (K72, `_wurfEbene`). Kein FOLIAGE_LAYER (kein Laub-Pass-Mitglied).
+        if (leaf.shadowTwin) mesh.layers.disable(0);
         else this._markFoliageLayer(mesh, regionKey, regional); // Subsystem 5: Laub bekommt ZUSÄTZLICH die FOLIAGE_LAYER
         // Auch die REGIONALE InstancedMesh-Gruppe hängt in der Region-BundleGroup; jede Mutation (Alloc/Free/
         // Slot-Stempel/Matrix/Grow) läuft durch die Chokepoints mit _archMeshBundleTouch. Tür-Flügel
@@ -770,8 +788,8 @@ class AnazhRealm_Z17c {
         if (g.wahl) next.userData.instanzWahl = g.wahl; // Welle 7 — die Instanz-Wahl je Pass reist mit
         // V18.389 — die Layer-Zuordnung des Schatten-Zwillings mitführen (sonst kippt der gewachsene
         // Mesh auf Layer 0 zurück → sichtbar für die Kamera). Nur der Zwilling braucht das; die Laub-
-        // Layer bleibt wie im bestehenden Growth-Pfad (unberührt).
-        if (g.shadowTwin) next.layers.set(AnazhRealm.SHADOW_TWIN_LAYER);
+        // Layer bleibt wie im bestehenden Growth-Pfad (unberührt). Den Wurf trägt `castShadow` (oben, K72 `_wurfEbene`).
+        if (g.shadowTwin) next.layers.disable(0);
         // Die lebenden Instanzen liegen dicht in [0, liveCount) (`_archGroupFree` verdichtet) — nur sie reisen mit.
         const n = g.liveCount || 0;
         const tmp = this._archTmpCopyM || (this._archTmpCopyM = new THREE.Matrix4());
@@ -869,6 +887,7 @@ class AnazhRealm_Z17c {
         const v = im.version,
             vk = ak ? ak.version : 0;
         AnazhRealm._instanzTausch(g.mesh, a, b);
+        g._ordnung = (g._ordnung | 0) + 1; // die Ordnung der Slots (die Wahl eines Passes merkt sie, `_instanzWahlSteht`)
         g._tauschMat = (g._tauschMat | 0) + (im.version - v);
         if (ak) g._tauschKarte = (g._tauschKarte | 0) + (ak.version - vk);
         const ra = g.slotRef[a],

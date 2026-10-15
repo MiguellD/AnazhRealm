@@ -414,7 +414,7 @@ function selbsttest() {
             57,
         ],
         [
-            "die Werfer der Region-Bündel einer ruhenden Kaskade zählen nicht (wie `arbeit`)",
+            "je Pass zählt die Arbeit der Ruhe-Leser, nicht jede Prüfung (wie `arbeit`)",
             {
                 arbeit: 7,
                 jePass: {
@@ -919,13 +919,15 @@ const server = statikServer();
                 });
             };
             // EIN Frame der Sicht: das Hauptbild über `_passSicht`, dann jede Kaskade mit derselben Lage wie in `_passSicht`
-            // (Matrix, Frustum, das Gesetz der Lage; die Instanz-Wahl der Schatten-Gruppen und der EINE Satz-Chokepoint).
+            // (Matrix, Frustum, das Gesetz der Lage; die Instanz-Wahl der Schatten-Gruppen, der EINE Satz-Chokepoint und die
+            // Werfer der Region-Bündel — K72: auch ihre Wahl rechnet nur bei Änderung, die Linse zählt sie wie jeden Leser).
             const frame = () => {
                 r._tickChunkSatz();
                 r._passSicht(cam, false);
                 const wahl = [];
                 for (const g of r._instanzWahlGruppen())
                     if (g.wahl === "haupt" && g.mesh) wahl.push(["haupt", g, g.mesh.count]);
+                const bunde = st._regionBundles;
                 kaskaden.forEach((c, i) => {
                     S.m.multiplyMatrices(c.projectionMatrix, c.matrixWorldInverse);
                     S.frustum.setFromProjectionMatrix(S.m, c.coordinateSystem);
@@ -934,7 +936,15 @@ const server = statikServer();
                     for (const g of r._instanzWahlGruppen())
                         if (g.wahl === "schatten" && g.mesh) wahl.push(["k" + i, g, g.mesh.count]);
                     r._chunkSatzPass(c, false, i, S);
+                    if (bunde && bunde.size) {
+                        r._werferWahlPass(bunde, S);
+                        // die Wahl der Werfer: die ruhenden Werfer und die werfenden Bündel (die Treue vergleicht sie)
+                        const ruhen = S.ab.map((o) => o.id).sort((x, y) => x - y);
+                        const werfen = [...bunde.values()].filter((bg) => bg.visible).map((bg) => bg.id);
+                        wahl.push(["k" + i, "werfer", ruhen.join(",") + "|" + werfen.join(",")]);
+                    }
                     r._chunkSatzPass(c, true, -1, S);
+                    r._passSichtZurueck(S);
                     r._instanzWahlZurueck(S.wahlSchatten);
                 });
                 r._passSicht(cam, true);
@@ -972,7 +982,8 @@ const server = statikServer();
                 const m = new Map();
                 for (const satz of st.chunkSaetze.values())
                     for (const [k, a] of satz.abschnitte) m.set(satz.art + "|" + k, a.liste.slice());
-                for (const [art, g, n] of wahl) m.set("gruppe:" + (g.mesh.name || g.mesh.id) + "|" + art, n);
+                for (const [art, g, n] of wahl)
+                    m.set("gruppe:" + (typeof g === "string" ? g : g.mesh.name || g.mesh.id) + "|" + art, n);
                 return m;
             };
             const halt = stand(frame());
