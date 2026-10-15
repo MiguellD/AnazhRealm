@@ -521,7 +521,7 @@ function wand(src) {
             `Ersatz-Stellen ${ersatz.join("/")}`,
         ],
         [
-            "W7 der Foundry-Pfad pollt nicht (kein setInterval, keine Closure, die sich per setTimeout neu stellt — jeder Wartende am Wecker, jede Frist am Ereignis)",
+            "W7 der Foundry-Pfad pollt nicht (am AST: kein setInterval, kein Zeit-Kreis in einem Glied — keine Closure und kein Glied, das sich per Zeitgeber neu stellt; jeder Wartende am Wecker, jede Frist am Ereignis)",
             WARTENDE.every((n) => foundryNamen.has(n)) && polls.length === 0,
             `${foundryNamen.size} Methoden${WARTENDE.filter((n) => !foundryNamen.has(n)).map((n) => " · ungezählt " + n).join("")} · Polls: ${polls.length ? polls.join(", ") : "0"}`,
         ],
