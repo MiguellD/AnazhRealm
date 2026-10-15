@@ -988,7 +988,7 @@ async function checkBandV1723Harmony(ctx) {
         return out;
     });
     check("V17.23 Harmonie: SKY_TINT_MAX verdrahtet (Tag-Nacht bleibt sichtbar)", res.skyTintMax);
-    check("V17.23 Harmonie: skybox_color setzt eine Tönung (state.skyTint), snappt nicht nebulaColor", res.skyTintSet);
+    check("V17.23 Harmonie: skybox_color setzt eine Tönung (state.skyTint), snappt nicht himmelTint", res.skyTintSet);
     check("V17.23 Harmonie: die Sky-Tönung rampt smooth hoch (kein Snap)", res.skyRamped);
     check("V17.23 Harmonie: die Sky-Tönung fadet (Ziel decayt → verblasst, nicht abrupt)", res.skyDecays);
     check("V17.24 Harmonie: die Sky-FARBE cross-fadet (Farbwechsel springt nicht, er fadet)", res.colorCrossFades);
@@ -39360,12 +39360,23 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         out.setTimeOfDayMethod = typeof r.setTimeOfDay === "function";
         out.setDayLengthMethod = typeof r.setDayLength === "function";
 
-        // _interpolateDayNight Mid-Test: t=0.5 sollte Mittag (klar)
-        const midDay = r._interpolateDayNight(0.5);
-        out.interpolateMiddayClear = midDay && midDay.intensity >= 0.95;
-        const midNight = r._interpolateDayNight(0);
-        out.interpolateMidnightDim = midNight && midNight.intensity < 0.35;
-        out.interpolateWrap = r._interpolateDayNight(1.5).intensity === r._interpolateDayNight(0.5).intensity;
+        // DAS LICHT DES TAGS liest die Quelle (D3, Lehre 2): Farbe und Stärke der Sonne rechnet die EINE Atmosphäre
+        // (`_atmoSonne` am Winkel der Sonne, `_sonnenWinkel`) — die Tag-Nacht-Tafel trägt nur noch die Himmelsfarbe. Mittag hell
+        // (der Durchlass ≥ 0,7), Mitternacht dunkel (der Mond-Pfad unter 0,35 des Mittags), die Uhr wrapt (1,5 ≡ 0,5). Gemessen
+        // in klarer Luft: die Probe misst die Uhr, nicht das Wetter — die Luft der Welt ist klar (`_luftBeta` = die klare
+        // Extinktion des Gesetzes, `betaKlar`; der volle Playtest steht im Dunst: Extinktion 6× klar, Mittag 0,41), und
+        // `_atmoSonne` rechnet selbst (der Leser ruft die Quelle, nie ihren Nachbau: ändert sich `_atmoSonne`, folgt die Probe).
+        const lichtKlar = r._atmoRechnung().betaKlar(r._atmoGesetz());
+        const lichtUm = (t) => r._atmoSonne(r._dayNightSunDirection(r._sonnenWinkel(t)).y).lum;
+        r._luftBeta = () => lichtKlar;
+        try {
+            const lichtMittag = lichtUm(0.5);
+            out.interpolateMiddayClear = lichtMittag >= 0.7;
+            out.interpolateMidnightDim = lichtUm(0) < 0.35 * lichtMittag;
+            out.interpolateWrap = Math.abs(lichtUm(1.5) - lichtMittag) < 1e-9;
+        } finally {
+            delete r._luftBeta;
+        }
 
         // setTimeOfDay setzt korrekt
         r.setTimeOfDay(0.25, "human");
@@ -39546,9 +39557,15 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         check("Welle 6.G3.a: _timeOfDayLabel-Methode existiert", wave6g3Results.timeOfDayLabelMethod);
         check("Welle 6.G3.a: setTimeOfDay-Methode existiert", wave6g3Results.setTimeOfDayMethod);
         check("Welle 6.G3.a: setDayLength-Methode existiert", wave6g3Results.setDayLengthMethod);
-        check("Welle 6.G3.a: Mittag (0.5) hat hohe Intensity (>0.95)", wave6g3Results.interpolateMiddayClear);
-        check("Welle 6.G3.a: Mitternacht (0) hat niedrige Intensity (<0.35)", wave6g3Results.interpolateMidnightDim);
-        check("Welle 6.G3.a: _interpolateDayNight wrapt korrekt (1.5 ≡ 0.5)", wave6g3Results.interpolateWrap);
+        check(
+            "Welle 6.G3.a: Mittag (0.5) trägt das Licht der EINEN Atmosphäre (Durchlass ≥ 0.7)",
+            wave6g3Results.interpolateMiddayClear
+        );
+        check(
+            "Welle 6.G3.a: Mitternacht (0) ist dunkel (Licht der Atmosphäre < 0.35 des Mittags)",
+            wave6g3Results.interpolateMidnightDim
+        );
+        check("Welle 6.G3.a: das Licht der Atmosphäre wrapt mit der Uhr (1.5 ≡ 0.5)", wave6g3Results.interpolateWrap);
         check("Welle 6.G3.a: setTimeOfDay(0.25) setzt state korrekt", wave6g3Results.setTimeOfDayWorks);
         check("Welle 6.G3.a: _timeOfDayLabel hat Doppelpunkt-Format", wave6g3Results.timeLabel0_25HasEmoji);
         check("Welle 6.G3.a: _timeOfDayLabel(0.25) zeigt 06:00", wave6g3Results.timeLabel0_25Hours);
@@ -39714,7 +39731,7 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         r._applyDayNightToScene();
         // V10.0-f-1 Doku-Sync: skyboxMaterial ist jetzt MeshBasicNodeMaterial,
         // Uniforms leben in state.skyboxUniforms (uniform-Knoten mit .value).
-        const skyU = r.state.skyboxUniforms.nebulaColor;
+        const skyU = r.state.skyboxUniforms.himmelTint;
         const skyAtAweZero = { r: skyU.value.r, g: skyU.value.g, b: skyU.value.b };
         r.state.player.emotions.awe = 1.0;
         r._applyDayNightToScene();
@@ -39725,7 +39742,7 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         out.aweRaisesRedToo = skyAtAweHigh.r > skyAtAweZero.r + 0.01;
 
         // --- Vision 5: sorrow entsättigt den Welt-Tint — gemessen am ROHEN Tint via
-        // `_dayNightComputeTint(mkStop)` (gesättigter Stop: sorrow grayt ~40 %), nicht am live `nebulaColor`
+        // `_dayNightComputeTint(mkStop)` (gesättigter Stop: sorrow grayt ~40 %), nicht am live `himmelTint`
         // (der skyTint-Blend verdünnt auf ~3 % → flaky). Gleicher Ort, emotionField leer → nur sorrow zählt.
         const THREE_g3 = window.THREE;
         if (THREE_g3 && THREE_g3.Color && typeof r._dayNightComputeTint === "function") {
@@ -39935,42 +39952,6 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         const r = window.anazhRealm;
         const out = {};
 
-        // Bug 1 — Stern-Stabilität: die Skybox folgt der Kamera (eine Prototyp-Methode trägt
-        // `skybox.position.copy(this.state.camera.position)`) und der Shader sampelt mit lokaler vDir.
-        out.skyboxFollowsCamera = false;
-        try {
-            const proto = Object.getPrototypeOf(r);
-            const names = Object.getOwnPropertyNames(proto);
-            for (const name of names) {
-                try {
-                    const fn = proto[name];
-                    if (typeof fn !== "function") continue;
-                    const src = window.__codeOf(fn);
-                    if (/skybox\.position\.copy\s*\(\s*this\.state\.camera\.position/.test(src)) {
-                        out.skyboxFollowsCamera = true;
-                        break;
-                    }
-                } catch {
-                    /* getter that crashes — skip */
-                }
-            }
-        } catch {
-            out.skyboxFollowsCamera = false;
-        }
-        // Lokale Position als Sample-Achse statt vWorldPosition: im TSL-Tree von createGalaxySkybox
-        // `const vDir = normalize(positionLocal);` plus vDir-Konsumenten im colorNode.
-        out.shaderUsesLocalPosition = false;
-        out.shaderFragmentUsesVDir = false;
-        try {
-            const builderSrc = r.createGalaxySkybox ? window.__codeOf(r.createGalaxySkybox) : "";
-            out.shaderUsesLocalPosition = /const\s+vDir\s*=\s*normalize\s*\(\s*positionLocal\s*\)/.test(builderSrc);
-            // vDir wird im Nebula- + Wolken-Pfad konsumiert (Stern-/Wolken-Stabilität bei Bewegung): das
-            // Fragment sampelt mit vDir, nicht der World-Position — vDir fließt in _nebN/_wn/cp + vDir.y im band.
-            out.shaderFragmentUsesVDir = /\bvDir\.(mul|y)\b/.test(builderSrc) && /\bvDir\.y\b/.test(builderSrc);
-        } catch {
-            // Schöpfer-Browser-Audit-Hilfe: bei Vendor-Bruch defensiv
-        }
-
         // Bug 2 — Sonnenaufgang sanft: 13 Stops + smoothstep im Lerp
         const AnazhRealm = window.AnazhRealm || r.constructor;
         // V8.26 iter2: 15 Stops (13 + 2 Vormittag/Nachmittag-Zwischenstops
@@ -39981,22 +39962,31 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         const t032 = stops.find((s) => s.t === 0.32);
         out.intermediateStopExists = !!t032;
 
-        // Kein Pulsen: Catmull-Rom statt per-Intervall-smoothstep (der hatte Geschwindigkeit 0 an JEDEM
-        // Stop). An t=0.32 STEIGT die Intensität (0.65→0.78→0.9) → die Steigung dort muss klar positiv sein.
+        // Kein Pulsen: das Licht des Tags kommt aus der EINEN Atmosphäre (D3, `_atmoSonne` am Winkel der Sonne) — der Leser
+        // folgt der Quelle (Lehre 2), nie der Tafel (sie trägt kein Licht mehr). Am Morgen (t=0.32, Sonne ~25°) STEIGT es → die
+        // Steigung muss klar positiv sein, und sie knickt nicht (C1: Steigung kurz vor ≈ kurz nach). In klarer Luft wie Welle
+        // 6.G3.a: die Luft der Welt klar (`_luftBeta` = `betaKlar` des Gesetzes), `_atmoSonne` rechnet selbst.
+        const lichtKlar = r._atmoRechnung().betaKlar(r._atmoGesetz());
+        const lichtUm = (t) => r._atmoSonne(r._dayNightSunDirection(r._sonnenWinkel(t)).y).lum;
         const dtN = 0.003;
-        const slopeAtStop =
-            (r._interpolateDayNight(0.32 + dtN).intensity - r._interpolateDayNight(0.32 - dtN).intensity) / (2 * dtN);
-        out.dayNightNoPulse = slopeAtStop > 0.3;
-        // C1-Stetigkeit: Steigung kurz VOR und kurz NACH dem Stop
-        // sind nahezu gleich (kein Knick, glatte Geschwindigkeit).
-        const slopeBefore =
-            (r._interpolateDayNight(0.32).intensity - r._interpolateDayNight(0.32 - dtN).intensity) / dtN;
-        const slopeAfter =
-            (r._interpolateDayNight(0.32 + dtN).intensity - r._interpolateDayNight(0.32).intensity) / dtN;
-        out.dayNightC1 = Math.abs(slopeBefore - slopeAfter) < 0.6;
-        // Stops werden weiterhin EXAKT reproduziert (Hermite trifft
-        // p1 bei u=0): t=0.5 (Mittag) muss intensity 1.0 liefern.
-        out.dayNightStopExact = Math.abs(r._interpolateDayNight(0.5).intensity - 1.0) < 0.001;
+        r._luftBeta = () => lichtKlar;
+        try {
+            const slopeAtStop = (lichtUm(0.32 + dtN) - lichtUm(0.32 - dtN)) / (2 * dtN);
+            out.dayNightNoPulse = slopeAtStop > 0.3;
+            const slopeBefore = (lichtUm(0.32) - lichtUm(0.32 - dtN)) / dtN;
+            const slopeAfter = (lichtUm(0.32 + dtN) - lichtUm(0.32)) / dtN;
+            out.dayNightC1 = Math.abs(slopeBefore - slopeAfter) < 0.6;
+        } finally {
+            delete r._luftBeta;
+        }
+        // Die Tafel reproduziert ihre Stops EXAKT (Hermite trifft p1 bei u=0): t=0.5 trägt den Himmel des Mittags-Stops.
+        const mittagsStop = new THREE.Color(stops.find((s) => s.t === 0.5).sky);
+        const mittagsHimmel = r._interpolateDayNight(0.5).sky;
+        out.dayNightStopExact =
+            Math.abs(mittagsHimmel.r - mittagsStop.r) +
+                Math.abs(mittagsHimmel.g - mittagsStop.g) +
+                Math.abs(mittagsHimmel.b - mittagsStop.b) <
+            0.001;
         // Stop-Differenzen sind klein — kein Sprung über 0.3 in R-Component
         let maxJump = 0;
         for (let i = 1; i < stops.length; i++) {
@@ -40015,50 +40005,24 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         out.noSharpColorJumps = maxJump < 95;
         out.maxJump = maxJump;
 
-        // Polish §6.1 — Frustum-Pool
-        out.frustumPoolExists = !!r._frustumCache && !!r._frustumMatrixCache;
-
-        // Polish §6.3 — _runRaycast-Helper
-        out.runRaycastHelperExists = typeof r._runRaycast === "function";
-
         return out;
     });
 
     if (v826Results && !v826Results.error) {
-        check(
-            "V8.26 Bug 1: Skybox.position folgt camera.position (Stern-Rauschen-Fix)",
-            v826Results.skyboxFollowsCamera
-        );
-        check(
-            "V8.26 Bug 1: Vertex-Shader nutzt lokale `vDir = normalize(position)`",
-            v826Results.shaderUsesLocalPosition
-        );
-        check(
-            "V8.26 Bug 1: Fragment-Shader sampelt mit vDir (nicht vWorldPosition)",
-            v826Results.shaderFragmentUsesVDir
-        );
         check("V8.26 Bug 2: 13 DAY_NIGHT_STOPS (statt 7) für sanftere Übergänge", v826Results.thirteenStops);
         check(
             "V8.26 Bug 2: Zwischen-Stop bei t=0.32 existiert (Sonnenaufgang-Phase)",
             v826Results.intermediateStopExists
         );
-        check("V8.48: Tag-Nacht pulst nicht mehr (Steigung an Stop t=0.32 klar positiv)", v826Results.dayNightNoPulse);
-        check("V8.48: Tag-Nacht-Kurve ist C1-stetig (Steigung vor ≈ nach Stop, kein Knick)", v826Results.dayNightC1);
+        check("V8.48: das Licht des Morgens pulst nicht (Steigung der Atmosphäre an t=0.32 klar positiv)", v826Results.dayNightNoPulse);
+        check("V8.48: das Licht der Atmosphäre ist C1-stetig (Steigung vor ≈ nach t=0.32, kein Knick)", v826Results.dayNightC1);
         check(
-            "V8.48: Catmull-Rom reproduziert Stop-Werte exakt (Mittag t=0.5 → intensity 1.0)",
+            "V8.48: Catmull-Rom reproduziert Stop-Werte exakt (Mittag t=0.5 → der Himmel des Mittags-Stops)",
             v826Results.dayNightStopExact
         );
         check(
             `V8.26 Bug 2: Keine harten Farbsprünge zwischen Stops (max RGB-Komponente <95, ist ${v826Results.maxJump})`,
             v826Results.noSharpColorJumps
-        );
-        check(
-            "V8.26 Polish §6.1: _frustumCache + _frustumMatrixCache statt pro-Frame-Alloc",
-            v826Results.frustumPoolExists
-        );
-        check(
-            "V8.26 Polish §6.3: _runRaycast-Helper existiert (5 Call-Sites konsolidiert)",
-            v826Results.runRaycastHelperExists
         );
     } else {
         check("V8.26: Browser-Bugs + Polish-Tests laufen", false, v826Results ? v826Results.error : "no result");
@@ -40067,39 +40031,22 @@ async function checkBandWelle6G4Atmosphere(ctx) {
     // ### 6.G4.a — Welt unter wandernder Sonne (Hemisphere + Licht-Material + Fog) ###
     // Tiefe statt homogenem Licht: Hemisphere-Light (Sky-Tint oben, Erd-Tint unten) + licht-reaktives
     // Material + atmosphärischer Fog.
-    const v827Results = await safeEvaluate(page, () => {
+    const v827Results = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         const out = {};
 
-        // 0. Stern-Bug fix — Skybox-Position-Copy DIREKT vor render
-        //    (nicht nach time-Uniform-Update). Verifiziere via Source-Pattern.
-        try {
-            const proto = Object.getPrototypeOf(r);
-            const names = Object.getOwnPropertyNames(proto);
-            let foundCount = 0;
-            for (const name of names) {
-                try {
-                    const fn = proto[name];
-                    if (typeof fn !== "function") continue;
-                    const src = window.__codeOf(fn);
-                    if (/skybox\.position\.copy/.test(src)) foundCount++;
-                } catch {
-                    /* skip */
-                }
-            }
-            // Nur EINE Stelle erwartet (direkt vor renderer.render)
-            out.skyboxPositionCopyExists = foundCount >= 1;
-        } catch {
-            out.skyboxPositionCopyExists = false;
-        }
-
         // 1. HemisphereLight im Scene + state-cached
-        out.hemiLightExists = !!r.state.hemiLight && r.state.hemiLight.isHemisphereLight === true;
         out.fogExists = !!r.state.luft && !!r.state.scene.fogNode && !r.state.scene.fog;
-        // Die Luft-Farbe ist gesetzt nach erstem _applyDayNightToScene
+        // Die In-Streuung der Luft IST der Himmel der EINEN Atmosphäre (D3): nach dem ersten _applyDayNightToScene trägt
+        // die Tafel das Licht von Sonne oder Mond (die Farbe über Wasser liest himmelFarbe, nie ein eigenes Uniform)
         r._applyDayNightToScene();
-        const lf = r.state.luft && r.state.luft.U.farbe.value;
-        out.fogColorSet = !!lf && (lf.r > 0 || lf.g > 0 || lf.b > 0);
+        const atmoU = r._atmoLutBau().U;
+        const mE = atmoU.mondE.value;
+        out.fogColorSet =
+            !!r.state.luft &&
+            typeof r.state.luft.farbe === "function" &&
+            atmoU.licht.value > 0 &&
+            mE.x + mE.y + mE.z > 0;
 
         // 2. Hemisphere-skyColor moduliert mit Tageszeit
         r.setTimeOfDay(0.5, "human");
@@ -40119,18 +40066,31 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         // EIN Himmel (V18.507): am Tag IST die Himmels-Umgebung der Himmel — Hemi trägt nur den
         // Nachthimmel-Boden (Mittag 0, Mitternacht > 0). Dazu die Belichtung aus dem Licht: mittags stellt sie
         // die 18-%-Karte auf Mittelgrau + 1 EV (< 1), nachts hält der Deckel die geeichte Nacht (1,0).
+        // Die Himmels-Umgebung der EINEN Atmosphäre kommt EINE Lesung nach der Malung zurück (D3, `_himmelFrisch`): neu
+        // gezeichnet und ihre Lesung abgewartet — eine Lesung der vorigen Stunde trüge deren Himmel in die Karte.
+        const umgebungFrisch = async () => {
+            if (await r._himmelFrisch()) r._applyDayNightToScene();
+        };
         r.setTimeOfDay(0.5, "human");
         r._applyDayNightToScene();
+        await umgebungFrisch();
         const intensityNoon = r.state.hemiLight.intensity;
         const belichtungMittag = r.state.renderer.toneMappingExposure;
         r.setTimeOfDay(0, "human");
         r._applyDayNightToScene();
+        await umgebungFrisch();
         const intensityNight = r.state.hemiLight.intensity;
         const belichtungNacht = r.state.renderer.toneMappingExposure;
         out.hemiNurNachtboden = intensityNoon < 0.01 && intensityNight > 0.05;
+        // Der Himmel der EINEN Atmosphäre lebt auf der GPU (D3): unter dem Null-Renderer gibt es keine Tafel und keine
+        // Umgebung — die Karte sieht dort die Sonne allein (Mittag < 1); mit Himmel stellt er sie unter 0,85. Das Verhältnis
+        // Sonne : Himmel misst der echte Renderer (werkbank licht, K5 himmel-licht).
+        const mitHimmel = !!r._himmelsIrradianz();
         out.belichtungAusLicht =
-            belichtungMittag > 0.4 && belichtungMittag < 0.85 && Math.abs(belichtungNacht - 1) < 1e-6;
-        out.belichtungZahlen = [belichtungMittag, belichtungNacht].map((v) => +(+v).toFixed(3)).join(" / ");
+            belichtungMittag > 0.4 && belichtungMittag < (mitHimmel ? 0.85 : 1) && Math.abs(belichtungNacht - 1) < 1e-6;
+        out.belichtungZahlen =
+            [belichtungMittag, belichtungNacht].map((v) => +(+v).toFixed(3)).join(" / ") +
+            (mitHimmel ? " mit Himmel" : " Sonne allein, Null-Renderer");
 
         // 3. Hemisphere-groundColor moduliert mit Welt-Affinität. Der Feld→Boden-Term ist hinter
         // `tint.auraK` gegated (Default `auraTintStrength` 0) — der MECHANISMUS lebt als Opt-in → das Band
@@ -40206,10 +40166,11 @@ async function checkBandWelle6G4Atmosphere(ctx) {
     });
 
     if (v827Results && !v827Results.error) {
-        check("V8.27: Skybox-position.copy existiert (direkt vor render)", v827Results.skyboxPositionCopyExists);
-        check("V8.27: state.hemiLight ist THREE.HemisphereLight", v827Results.hemiLightExists);
         check("V8.27 → V18.530: die Luft steht (scene.fogNode, kein THREE.Fog)", v827Results.fogExists);
-        check("V8.27: die Luft-Farbe wird von _applyDayNightToScene gesetzt", v827Results.fogColorSet);
+        check(
+            "V8.27/D3: die Luft streut den Himmel der EINEN Atmosphäre, _applyDayNightToScene setzt sein Licht",
+            v827Results.fogColorSet
+        );
         check(
             "V8.27: HemisphereLight.color (sky) folgt Tag-Nacht (Mittag heller als Nacht)",
             v827Results.hemiSkyFollowsDayCycle
@@ -40249,7 +40210,6 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         out.starFieldRotates = !!(sf && sf.rotation);
 
         // --- Phase B: Terrain-Affinität ---
-        out.attachFieldExists = typeof r._attachFieldAttribute === "function";
         // terrainMaterial-Shader liest aField
         const tm = r.state.terrainMaterial;
         out.terrainShaderHasField = !!(
@@ -40285,7 +40245,6 @@ async function checkBandWelle6G4Atmosphere(ctx) {
 
         // --- Phase D: Wind + Wolken + Wasser ---
         // V8.29: Wind lebt jetzt im Instanced-Gras-Material.
-        out.windMatExists = typeof r._grassInstanceMat === "function";
         const wm1 = r._grassInstanceMat ? r._grassInstanceMat() : null;
         const wm2 = r._grassInstanceMat ? r._grassInstanceMat() : null;
         out.windMatCached = !!(wm1 && wm1 === wm2); // geteilt
@@ -40317,7 +40276,6 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         // ===== WELLE J3 — die Himmelskörper folgen der KAMERA, nicht dem Ursprung =====
         // KONSUM: nach fernem Kamera-Teleport steht die Sonne nahe der Kamera (in Himmelsrichtung),
         // nicht um den Welt-Ursprung.
-        out.celestialFollowExists = typeof r._followCelestialBodies === "function";
         out.sunFollowsCamera = false;
         out.sunNotAtOrigin = false;
         if (r.state.sunMesh && r.state.camera && typeof r._updateCelestialBodies === "function") {
@@ -40377,7 +40335,6 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         // ===== WELLE J → W-E — der EINE geteilte Band-Empfänger (Render-Harmonie) =====
         // KONSUM: `_applySubstanceResponse` setzt outputNode IDENTISCH auf Terrain UND Strukturen;
         // transparente Phantome bleiben unberührt, material.color bleibt setzbar (kein colorNode-Override).
-        out.aerialHelperExists = typeof r._applySubstanceResponse === "function";
         // (1) Terrain (vertexColors) bekommt den geteilten Höhen-Aerial-outputNode.
         out.terrainHasAerialOutput = !!(_terrMat && _terrMat.outputNode);
         // (2) Struktur (Flach-Farbe) bekommt DENSELBEN outputNode + Mikro-Tiefe.
@@ -40474,21 +40431,15 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         check("V8.28 A: state.starField ist InstancedMesh (V10.0-i.a)", v828Results.starFieldIsPoints);
         check("V8.28 A: Stern-Feld hat >1000 diskrete Sterne", v828Results.starFieldHasMany);
         check("V8.28 A: Stern-Feld hat Rotation (sidereal)", v828Results.starFieldRotates);
-        check("V8.28 B: _attachFieldAttribute existiert", v828Results.attachFieldExists);
         check(
             "V8.28 C→V18.530: kein Nebel-Regler — die Luft ist Physik (setFogDistance + slider-fog fort, die Luft liest das Wetter)",
             v828Results.fogSliderWorks
         );
-        check("V8.29 D: _grassInstanceMat existiert (Instanced-Gras-Wind)", v828Results.windMatExists);
         check("V8.29 D: _grassInstanceMat ist geteilt/gecached (eine Kompilierung)", v828Results.windMatCached);
         check("V8.28 D: state.windUniforms existiert (uWindTime)", v828Results.windUniformsExist);
         check("V8.28 D: Skybox-Shader hat cloudCover-Uniform", v828Results.skyboxHasClouds);
         check("V8.28 D: Wolken-Cover folgt weather (rainy > sunny)", v828Results.cloudsFollowWeather);
         check("V17.2: Skybox hat sunDir-Uniform (Wolken-Sonnen-Glow)", v828Results.skyboxHasSunDir);
-        check(
-            "V17.J3: _followCelestialBodies existiert (Sonne/Mond kamera-relativ; die Wandelsterne leben im Sternfeld)",
-            v828Results.celestialFollowExists
-        );
         check(
             "V17.J3: die Sonne folgt der Kamera (|Pos−Kamera| ≈ skyOffset, nicht origin-orbit)",
             v828Results.sunFollowsCamera
@@ -40502,10 +40453,6 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             v828Results.terrainColorNodeBuilds === true
         );
         // ===== WELLE J — Render-Harmonie (die EINE geteilte Aerial-Perspektive) =====
-        check(
-            "V17.J→W-E: _applySubstanceResponse existiert (der EINE geteilte Band-Empfänger)",
-            v828Results.aerialHelperExists
-        );
         check(
             "V17.J: Terrain bekommt den geteilten Aerial-outputNode (post-lighting)",
             v828Results.terrainHasAerialOutput
@@ -40688,7 +40635,6 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         }
 
         // --- Genesis-Plattform ---
-        out.genesisMethodExists = typeof r._ensureGenesisPlatform === "function";
         out.startPlattformBlueprint = !!(r.state.blueprints && r.state.blueprints.start_plattform);
         // Nach dem ersten Spawn sollte eine start_plattform-Architektur da sein
         out.genesisArchExists = !!(
@@ -40742,7 +40688,6 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             v829Results.nahWieseStabil
         );
         check("V8.29: Gras-Material ist geteilt (ein Draw-Call-Material)", v829Results.grassMatShared);
-        check("V8.29: _ensureGenesisPlatform existiert", v829Results.genesisMethodExists);
         check("V8.29: start_plattform-Bauplan existiert", v829Results.startPlattformBlueprint);
         check("V8.29: Genesis-Plattform-Architektur nach Spawn vorhanden", v829Results.genesisArchExists);
         check("V8.29: _ensureGenesisPlatform ist idempotent (keine Doppel-Plattform)", v829Results.genesisIdempotent);
@@ -40784,7 +40729,6 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         out.waterCullSetter = typeof r.setWaterCull === "function";
 
         // Wasser-Physik: state.playerUnderwater existiert als Flag
-        out.underwaterFlagExists = typeof r.state.playerUnderwater === "boolean";
         // Render-Loop hat Auftriebs- + Speed-Logik (Source-Pattern)
         {
             let buoy = false;
@@ -40815,7 +40759,6 @@ async function checkBandWelle6G4Atmosphere(ctx) {
     if (v830Results && !v830Results.error) {
         check("V8.30: Sterne testen gegen Tiefenpuffer (kein Overlay)", v830Results.starsDepthTest);
         check("V8.30: Wasser-Shader hat uSunDir-Uniform (Tag-Nacht-Sync)", v830Results.waterHasSunUniform);
-        check("V8.30: state.playerUnderwater-Flag existiert", v830Results.underwaterFlagExists);
         check("V8.30: Render-Loop hat Wasser-Auftrieb", v830Results.waterBuoyancy);
         check("V8.30: Bewegung wird unter Wasser gebremst", v830Results.waterSpeedCut);
         check("V13.5: Wasser-Shader hat Emotions-Kopplungs-Haken (uniform)", v830Results.waterEmotionHook);
@@ -54248,7 +54191,11 @@ async function checkBandRing6Workshop(ctx) {
         // Ring 4: AudioContext im Headless-Modus ohne User-Geste (sonst bleibt er "suspended" und initSymphony tut nix).
         zusatz: REAL_RENDERER
             ? ["--enable-webgl", "--ignore-gpu-blocklist", "--autoplay-policy=no-user-gesture-required"]
-            : ["--disable-software-rasterizer", "--disable-setuid-sandbox", "--autoplay-policy=no-user-gesture-required"],
+            : [
+                  "--disable-software-rasterizer",
+                  "--disable-setuid-sandbox",
+                  "--autoplay-policy=no-user-gesture-required",
+              ],
     });
     const page = await browser.newPage();
     await page.setViewport({ width: 1280, height: 720 });

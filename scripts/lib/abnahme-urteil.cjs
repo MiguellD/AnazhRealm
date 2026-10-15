@@ -1158,6 +1158,8 @@ const SOLL_MASSE = Object.freeze([
     "oeffnungBunt",
     "zielTreue",
     "lichtVerhaeltnis",
+    "schattenAnteil",
+    "umgebungAzimut",
     "albedoVerhaeltnis",
     "albedo",
     "gesicht",
@@ -1175,6 +1177,8 @@ const MASS_AUFLOESUNG = Object.freeze({
     oeffnungBunt: 0.5,
     zielTreue: 0.02,
     lichtVerhaeltnis: 0.05,
+    schattenAnteil: 0.005,
+    umgebungAzimut: 0.02,
     albedoVerhaeltnis: 0.01,
     albedo: 0.005,
     gesicht: 0.05,
@@ -1500,17 +1504,59 @@ const MASS_RECHNER = {
         }
         return { ist: +(drin / n).toFixed(3), taeter: arg ? arg[0] : null, teile: teile.join(" · ") };
     },
-    // DAS LICHT-VERHÄLTNIS: E(Sonne + Himmel) / E(Himmel) an der waagrechten 18-%-Karte (`werkbank licht`, die Licht-Bilanz)
-    lichtVerhaeltnis(ma) {
+    // DAS LICHT-VERHÄLTNIS: E(Sonne + Himmel) / E(Himmel) an der waagrechten 18-%-Karte (`werkbank licht`, die Licht-Bilanz).
+    // Trägt die Klasse daneben die Größen der Licht-Bilanz (D3: `schattenAnteil`, `umgebungAzimut`), urteilt das Maß über alle:
+    // eine Größe außerhalb ihres Bands hält es offen — ROT mit ihrem Namen, nie GRÜN.
+    lichtVerhaeltnis(ma, q, band, sb, baender) {
         const me = ma.messung;
         if (!me || me.werkzeug !== "licht") return { fehler: "keine Messung aus `werkbank licht`" };
         for (const f of ["datum", "stand", "E_alle", "E_umgebung"]) if (me[f] == null) return { fehler: `die Messung ohne ${f}` };
         if (!(me.E_umgebung > 0 && me.E_alle > me.E_umgebung))
             return { fehler: `E alle ${me.E_alle}, E Himmel ${me.E_umgebung} — die Bilanz misst die Sonne nicht` };
+        const ist = +(me.E_alle / me.E_umgebung).toFixed(3);
+        const teile = [`lichtVerhaeltnis ${ist}`];
+        const draussen = [];
+        for (const g of ["schattenAnteil", "umgebungAzimut"]) {
+            const b = baender && baender[g];
+            if (!b) continue;
+            const x = MASS_RECHNER[g](ma);
+            if (x.fehler) {
+                draussen.push(`${g}: ${x.fehler}`);
+                continue;
+            }
+            const [u, o] = b.band;
+            teile.push(`${g} ${x.ist} [${u == null ? "–" : u}; ${o == null ? "–" : o}]`);
+            if ((u != null && x.ist < u) || (o != null && x.ist > o)) draussen.push(`${g} ${x.ist} außerhalb (${x.taeter})`);
+        }
         return {
-            ist: +(me.E_alle / me.E_umgebung).toFixed(3),
+            ist,
             taeter: `E Himmel ${me.E_umgebung} gegen E Sonne ${+(me.E_alle - me.E_umgebung).toFixed(2)}`,
+            teile: teile.join(" · "),
+            offen: draussen.length ? draussen.join(" · ") : null,
         };
+    },
+    // DER SCHATTEN-ANTEIL (D3): die waagrechte 18-%-Karte im Schatten (der Himmel allein) gegen die besonnte — der Diffus-
+    // Anteil des klaren Mittags (Liu & Jordan 1960: 0,08–0,20). Bis D3 0,237: der Schatten trug ein getuntes Viertel der Sonne.
+    schattenAnteil(ma) {
+        const me = ma.messung;
+        if (!me || me.werkzeug !== "licht") return { fehler: "keine Messung aus `werkbank licht`" };
+        if (!(me.E_alle > 0) || me.E_umgebung == null) return { fehler: "die Messung ohne E_alle oder E_umgebung" };
+        return {
+            ist: +(me.E_umgebung / me.E_alle).toFixed(3),
+            taeter: `E Himmel ${me.E_umgebung} von E alle ${me.E_alle}`,
+        };
+    },
+    // DIE UMGEBUNG HAT EINE RICHTUNG (D3): die senkrechte Karte zur Sonne gegen die von ihr weg, im Himmel allein — der klare
+    // Himmel ist zur Sonne heller (Mie-Hof, Rayleigh-Phase; Hillaire mit dem Welt-Gesetz 1,33–1,67). Bis D3 malte die CPU eine
+    // azimut-konstante Umgebung: 1,0.
+    umgebungAzimut(ma) {
+        const me = ma.messung;
+        if (!me || me.werkzeug !== "licht") return { fehler: "keine Messung aus `werkbank licht`" };
+        const z = me.E_umgebung_zurSonne,
+            v = me.E_umgebung_vonSonne;
+        if (z == null || v == null) return { fehler: "die Messung ohne E_umgebung_zurSonne/vonSonne (vor D3 gemessen)" };
+        if (!(v > 0)) return { fehler: `E von der Sonne ${v} — die Bilanz sieht keinen Himmel` };
+        return { ist: +(z / v).toFixed(3), taeter: `zur Sonne ${z} gegen von ihr ${v}` };
     },
 };
 // Die Zeile einer Albedo-Tafel (`mass.rohdatei` { datei, zeile }): gelesen, nie abgeschrieben.
@@ -1812,7 +1858,7 @@ function sollTafelUrteil(tafel, q) {
             ? { fehler: "kein Rechner" }
             : ma.messung == null && !ma.rohdatei
               ? { ungemessen: true }
-              : rechner(ma, q, sb ? sb.band : null, sb);
+              : rechner(ma, q, sb ? sb.band : null, sb, baender);
         if (r.fehler) fehler.push(`${wo}: ${r.fehler}`);
         const ist = zahl(r.ist) ? r.ist : null;
         // der Stand der Messung: veraltet oder ungeprüft ist ROT ohne Wirkung (die Zahl bleibt sichtbar)
@@ -2437,6 +2483,31 @@ function sollTafelSelbsttest(tafel, q) {
         if (!z5 || z5.urteil !== "ROT" || !/ohne Schuss/.test(z5.grund || ""))
             v.push(`${k5.id}: eine Stufe ohne Schuss ist nicht ROT beim Namen (${z5 && z5.urteil} ${z5 && z5.grund})`);
     } else v.push("die Tafel trägt kein Maß milchweiss mit Messung (der Fall der Stufen fehlt)");
+    // DIE LICHT-BILANZ (D3): eine azimut-konstante Umgebung (zur Sonne = von ihr weg, die CPU-gemalte vor D3) hält das
+    // Licht-Verhältnis ROT beim Namen umgebungAzimut, auch wenn das Verhältnis im Band liegt; ein Schatten mit einem Viertel
+    // der Sonne (0,239 vor D3) beim Namen schattenAnteil; Verhältnis, Schatten und Richtung im Band sind GRÜN
+    const t7 = klon();
+    const k7 = finde(t7, (k) => k.mass && k.mass.name === "lichtVerhaeltnis" && k.mass.messung);
+    if (k7 && ((k7.soll && k7.soll.eigenschaften) || []).some((e) => e.groesse === "umgebungAzimut")) {
+        const me7 = k7.mass.messung;
+        frisch(k7, me7);
+        const fall = (werte) => {
+            Object.assign(me7, werte);
+            return sollTafelUrteil(t7, q).zeilen.find((x) => x.id === k7.id) || {};
+        };
+        const flach = fall({ E_alle: 7.8, E_umgebung: 1.5, E_umgebung_zurSonne: 1.0, E_umgebung_vonSonne: 1.0 });
+        if (flach.urteil !== "ROT" || !/umgebungAzimut/.test(flach.grund || ""))
+            v.push(`${k7.id}: eine azimut-konstante Umgebung ist nicht ROT beim Namen (${flach.urteil} ${flach.grund})`);
+        const schatten = fall({ E_alle: 7.8, E_umgebung: 1.5 * 1.0, E_umgebung_zurSonne: 1.4 });
+        const viertel = fall({ E_alle: 6.0, E_umgebung: 1.2 * 1.0, E_umgebung_zurSonne: 1.4 });
+        if (schatten.urteil !== "GRÜN")
+            v.push(`${k7.id}: Verhältnis 5,2 · Schatten 0,19 · Richtung 1,4 ist nicht GRÜN (${schatten.urteil} ${schatten.grund})`);
+        if (viertel.urteil !== "GRÜN" || !(viertel.ist === 5))
+            v.push(`${k7.id}: Verhältnis 5,0 · Schatten 0,20 am Rand ist nicht GRÜN (${viertel.urteil} ${viertel.grund})`);
+        const vorher = fall({ E_alle: 9.44, E_umgebung: 2.26, E_umgebung_zurSonne: 2.29, E_umgebung_vonSonne: 2.29 });
+        if (vorher.urteil !== "ROT" || !/schattenAnteil 0\.239/.test(vorher.grund || "") || !/umgebungAzimut 1/.test(vorher.grund || ""))
+            v.push(`${k7.id}: die Licht-Bilanz vor D3 nennt Schatten und Richtung nicht (${vorher.urteil} ${vorher.grund})`);
+    } else v.push("die Tafel trägt das Licht-Verhältnis ohne umgebungAzimut (der Fall der Licht-Bilanz fehlt)");
     // DER SCHREIBER PRÜFT (K63-n7, `sollIstAbweisung`): der Schuss vom 15.10. 02:14 (K63-n6, 14 s nach dem Umstellen) zeigte nur
     // Membran und Nebel — dieselbe Messung ohne die Tore der Stufe wird abgewiesen beim Namen; dieselbe Messung unverändert nicht
     const t6 = klon();

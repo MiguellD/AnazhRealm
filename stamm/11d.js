@@ -1066,7 +1066,7 @@ class AnazhRealm_Z11d {
 
     // DAS LICHT DER WELT für den Feld-Pass: liest dieselben Quellen wie jedes MeshStandard —
     // Sonne/Mond (Richtung = position − target), Ambient, Hemi (Himmel/Boden)
-    // und die Himmels-Umgebung (Irradianz aus DENSELBEN Bytes wie `_skyEnvTex`, je Normalen-y).
+    // und die Himmels-Umgebung (Irradianz aus der zurückgelesenen Umgebung der EINEN Atmosphäre, `_himmelsIrradianz`).
     // Die Luft legt der Pass-Knoten aus `_luftEnsure` auf (dieselben Fn wie `scene.fogNode`).
     _feldLichtSync(U) {
         const st = this.state;
@@ -1096,8 +1096,7 @@ class AnazhRealm_Z11d {
     }
 
     // Die Himmels-Irradianz (diffuse IBL) für drei Normalen (unten · waagrecht · oben): der
-    // Kosinus-gefaltete Mittelwert der Env-Zeilen (azimut-invariant → nur die Höhe zählt),
-    // sRGB-dekodiert wie die Textur. Neu gerechnet nur, wenn `_skyEnvTex` neu gemalt wurde.
+    // Kosinus-gefaltete Mittelwert der Umgebung (`_himmelsIrradianz`). Neu gerechnet nur, wenn eine neue Lesung kam.
     _feldEnvIrradianz(U) {
         const e = this._himmelsIrradianz();
         if (!e) {
@@ -1111,58 +1110,53 @@ class AnazhRealm_Z11d {
         U.envOben.value.fromArray(e.oben);
     }
 
-    // DIE HIMMELS-IRRADIANZ (diffuse IBL) für drei Normalen (unten · waagrecht · oben): der Kosinus-gefaltete
-    // Mittelwert der Env-Zeilen (azimut-invariant → nur die Höhe zählt), sRGB-dekodiert wie die Textur. Neu
-    // gerechnet nur, wenn `_skyEnvTex` neu gemalt wurde. Leser: der Feld-Pass und die Belichtung.
+    // DIE HIMMELS-IRRADIANZ (diffuse IBL, E/π) für drei Normalen (unten · waagrecht · oben) aus der Umgebung der EINEN
+    // Atmosphäre, wie die CPU sie zurückgelesen hat (`_skyEnvData`, linear, Zeile 0 = Nadir): je Texel L · max(n·ω, 0) dω,
+    // die waagrechte Normale gemittelt über vier Azimute (die Umgebung ist azimut-abhängig). Neu gerechnet nur, wenn eine
+    // neue Lesung kam. Leser: der Feld-Pass, die Belichtung, das Wasser.
     _himmelsIrradianz() {
         const st = this.state;
         const d = st._skyEnvData;
-        const tex = st._skyEnvTex;
+        const A = st.atmoLut;
         const scene = st.scene;
         const env = scene && scene.environment;
         const ei = scene && Number.isFinite(scene.environmentIntensity) ? scene.environmentIntensity : 1;
-        if (!d || !tex || !env) return null;
-        const stempel = (tex.version || 0) + ":" + ei;
+        if (!d || !A || !env) return null;
+        const stempel = (st._skyEnvVersion || 0) + ":" + ei;
         if (this._himmelsIrrStempel === stempel && this._himmelsIrr) return this._himmelsIrr;
         this._himmelsIrrStempel = stempel;
-        const W = tex.image.width;
-        const H = tex.image.height;
-        const lin = (c) => (c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
-        // Zeile y → Elevation (v = y/(H−1): 0 Nadir … 1 Zenit, dieselbe Zeilen-Richtung wie das GPU-Sampling,
-        // `_ensureSkyEnvironment`), Farbe der Zeile (Spalte 0: azimut-konstant)
-        const zeilen = [];
+        const W = A.rtEq.width;
+        const H = A.rtEq.height;
+        const oben = [0, 0, 0],
+            unten = [0, 0, 0],
+            mitte = [0, 0, 0];
+        const dEl = Math.PI / H,
+            dPhi = (2 * Math.PI) / W;
         for (let y = 0; y < H; y++) {
-            const v = y / (H - 1);
-            const el = (v - 0.5) * Math.PI; // −π/2 … π/2
-            const i = y * W * 4;
-            zeilen.push({ el, r: lin(d[i] / 255), g: lin(d[i + 1] / 255), b: lin(d[i + 2] / 255) });
-        }
-        // E(n) = (1/π)∫ L(ω) max(n·ω,0) dω; n in der x-y-Ebene (azimut-invariant), numerisch über
-        // Elevation × Azimut.
-        const falte = (nY) => {
-            const nX = Math.sqrt(Math.max(0, 1 - nY * nY));
-            let r = 0,
-                g = 0,
-                b = 0;
-            const AZ = 32;
-            for (const z of zeilen) {
-                const ce = Math.cos(z.el);
-                const se = Math.sin(z.el);
-                const dA = ((Math.PI / (H - 1)) * ce * (2 * Math.PI)) / AZ;
-                for (let a = 0; a < AZ; a++) {
-                    const phi = ((a + 0.5) / AZ) * 2 * Math.PI;
-                    const cos = nX * ce * Math.cos(phi) + nY * se;
-                    if (cos <= 0) continue;
-                    const w = cos * dA;
-                    r += z.r * w;
-                    g += z.g * w;
-                    b += z.b * w;
+            const el = ((y + 0.5) / H - 0.5) * Math.PI;
+            const ce = Math.cos(el),
+                se = Math.sin(el);
+            const dA = ce * dEl * dPhi;
+            for (let x = 0; x < W; x++) {
+                const phi = ((x + 0.5) / W - 0.5) * 2 * Math.PI;
+                const cx = ce * Math.cos(phi),
+                    cz = ce * Math.sin(phi);
+                // die vier waagrechten Normalen (±x, ±z) zusammen: (|cx| + |cz|) / 4 je Halbraum
+                const wO = Math.max(se, 0) * dA,
+                    wU = Math.max(-se, 0) * dA,
+                    wM = ((Math.abs(cx) + Math.abs(cz)) / 4) * dA;
+                const i = (y * W + x) * 4;
+                for (let c = 0; c < 3; c++) {
+                    const L = d[i + c];
+                    oben[c] += L * wO;
+                    unten[c] += L * wU;
+                    mitte[c] += L * wM;
                 }
             }
-            const k = ei / Math.PI;
-            return [r * k, g * k, b * k];
-        };
-        this._himmelsIrr = { unten: falte(-1), mitte: falte(0), oben: falte(1) };
+        }
+        const k = ei / Math.PI;
+        const s = (v) => v.map((x) => x * k);
+        this._himmelsIrr = { unten: s(unten), mitte: s(mitte), oben: s(oben) };
         return this._himmelsIrr;
     }
 
@@ -1266,6 +1260,7 @@ class AnazhRealm_Z11d {
         this._fernFarbeMemo = null; // die Fern-Farben gehören der Welt, die den Ring trug
         const fr = this.state.fernRing;
         if (!fr) return;
+        this._horizontKarteLeeren(); // die Zeichen-Meshes der Horizont-Karte lesen die Geometrien des Rings — sie fallen zuerst
         // je gezeichnetes Mesh seine Geometrie (Schale 1, Schale 2, die zwei Teile der Schale 0) und sein Stoff (die zwei
         // Stoffe, frei und Naht, geteilt — ein zweites dispose ist ohne Hörer leer)
         for (const m of fr.meshes || []) {

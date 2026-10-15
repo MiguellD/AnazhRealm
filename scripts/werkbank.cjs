@@ -3006,6 +3006,9 @@ async function starte() {
                             geraet: { adapter: await page.evaluate(() => window.__abnahmeMessen({}).geraet.adapter) },
                             E_alle: o.alle && o.alle.oben ? o.alle.oben.E : null,
                             E_umgebung: o.umgebung && o.umgebung.oben ? o.umgebung.oben.E : null,
+                            // die senkrechten Karten im Himmel allein (D3): zur Sonne und von ihr weg (`umgebungAzimut`)
+                            E_umgebung_zurSonne: o.umgebung && o.umgebung.zurSonne ? o.umgebung.zurSonne.E : null,
+                            E_umgebung_vonSonne: o.umgebung && o.umgebung.vonSonne ? o.umgebung.vonSonne.E : null,
                             sonnenRichtung: o.sonnenRichtung,
                         });
                     return send(Object.assign(o, { ms: Date.now() - t0 }));

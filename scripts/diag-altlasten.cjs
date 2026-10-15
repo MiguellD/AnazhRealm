@@ -433,6 +433,32 @@ const FORBIDDEN = [
     // DIE LUFT (V18.530) — der Nebel war eine lineare Wand an der Wald-Kante und verdeckte die gebaute Fernform;
     // die EINE Luftperspektive (`_luftEnsure` → scene.fogNode) ist Physik. Die Nebel-Kulisse ist ganz fort.
     { token: "new THREE.Fog(", fiel: "V18.530 — die Luft ist scene.fogNode, kein linearer Nebel" },
+    // DIE EINE ATMOSPHÄRE (D3, Hillaire) — vier getunte Näherungen fielen in EINER Welle: die Luftmassen-Sonne, die
+    // Nebel-Kuppel aus Rausch-Wolken, der Koschmieder-Mie-Kegel der Horizont-Farbe, die CPU-gemalte Umgebung 128×64.
+    { token: "_atmosphere(", fiel: "D3 — die Sonne ist der Durchlass der EINEN Atmosphäre (_atmoSonne)" },
+    { token: "_fATM", fiel: "D3 — die Sonne ist der Durchlass der EINEN Atmosphäre (_atmoSonne)" },
+    { token: "_nebN", fiel: "D3 — die Kuppel liest die Himmels-Sicht der Tafeln (_atmoLutBau), keine Nebel-Kuppel" },
+    { token: "_hazeCol", fiel: "D3 — die Kuppel liest die Himmels-Sicht der Tafeln, kein Grau-Schleier" },
+    { token: "mieKeule", fiel: "D3 — die Keule zur Sonne trägt die Mie-Phase des Gesetzes (ATMO_GESETZ.mieG)" },
+    { token: "mieAnteil", fiel: "D3 — die Keule zur Sonne trägt die Mie-Phase des Gesetzes" },
+    { token: "mieGlanz", fiel: "D3 — die Keule zur Sonne trägt die Mie-Phase des Gesetzes" },
+    { token: "nebulaColor", fiel: "D3 — der Träger der Tönung heißt himmelTint (die Nebel-Kuppel fiel)" },
+    { token: "_skyEnvTex", fiel: "D3 — die Umgebung ist der Wandel-Pass der Himmels-Sicht (rtEq → PMREM), keine CPU-Malerei" },
+    // ... und im Labor in DERSELBEN Welle: die Luftmassen-Sonne von phytogenesis und ihre Zwillings-Zahlen in phyto-core
+    // (die Rayleigh-Tiefe, die Luftmassen-Glättung, der Mond-Hue) — Welt und Labor rufen foundry-core ATMO_RECHNUNG.
+    { token: "RAYLEIGH_BETA", fiel: "D3 — die Rayleigh-Tiefe wohnt im Gesetz (ATMO_GESETZ.rayleighTiefe)" },
+    {
+        token: "ATMOS_GESETZ",
+        fiel: "D3 — das Labor liest ATMO_GESETZ (foundry-core)",
+        auch: ["phyto-core.js", "worlds/terrain/phytogenesis.js"],
+    },
+    {
+        token: "LUFT_GESETZ",
+        fiel: "D3 — die Luftmassen-Sonne fiel, die Nacht trägt ATMO_GESETZ.nacht",
+        auch: ["phyto-core.js", "worlds/terrain/phytogenesis.js"],
+    },
+    { token: "_AIR_SOFT", fiel: "D3 — keine Luftmassen-Glättung, der Durchlass ist Hillaire", auch: ["worlds/terrain/phytogenesis.js"] },
+    { token: "_moonCol", fiel: "D3 — der Mond-Hue ist ATMO_GESETZ.nacht.mond", auch: ["worlds/terrain/phytogenesis.js"] },
     { token: "_dayNightApplyHemiAndFog", fiel: "V18.530 — _dayNightApplyHemiUndLuft" },
     { token: "_smoothFogEdge", fiel: "V18.530 — kein Lade-Nebel, der Fern-Ring deckt Ungebautes" },
     { token: "_fogEdgeSmooth", fiel: "V18.530" },
@@ -1625,6 +1651,21 @@ const ZWILLINGE = [
         verboten: gelaendeLeser().concat(["gelaende-core.js"]),
         fiel: `K16 — die Landform ersetzt ${was}`,
     })),
+    // D3 — DIE EINE ATMOSPHÄRE als MUSTER (Lehre 7: ein Zwillings-Abdruck ist ein Muster, nie ein Variablen-Name): die Luftmasse
+    // als Kehrwert der Sonnenhöhe (die Luftmassen-Sonne, `1 / (max(e, 0) + 0,06)`) in keiner Datei, und eine Equirekt-Umgebung
+    // nur im Wandel-Pass der Himmels-Sicht (`_atmoLutBau`, stamm/24.js) — jede andere ist eine gemalte Umgebung neben der EINEN.
+    {
+        muster: /1(?:\.0)?\s*\/\s*\(\s*Math\.max\(\s*[\w.]+\s*,\s*0(?:\.0)?\s*\)\s*\+\s*0\.\d+\s*\)/,
+        gefallen: true,
+        verboten: gelaendeLeser().concat(["gelaende-core.js"]),
+        fiel: "D3 — die Sonne ist der Durchlass der EINEN Atmosphäre (ATMO_RECHNUNG.sonne), keine Luftmasse als Kehrwert der Höhe",
+    },
+    {
+        muster: /\bEquirectangularReflectionMapping\b/,
+        gesetzbuch: "stamm/24.js",
+        verboten: gelaendeLeser().filter((d) => !/(?:^|[\\/])stamm[\\/]24\.js$/.test(d)),
+        fiel: "D3 — die Umgebung ist der Wandel-Pass der Himmels-Sicht (_atmoLutBau), keine gemalte Equirekt-Umgebung",
+    },
 ];
 
 // Die Leser des Gelände-Gesetzes, die es nie nachrechnen: jede JS-Datei der Wurzel außer dem Gesetzbuch und dem Seh-
@@ -2003,7 +2044,7 @@ const METHODEN_OHNE = [
     ["_hydroRiverAt", ["_terrainMacroSurfaceY"]], // der Fluss liest das Gesetz, nie die Makro-Fläche
     ["_applySubstanceResponse", ["_T.max(_rgb"]], // das Füll-Licht ohne Helligkeits-Klemme
     ["handleJump", ["playerBody"]], // der Sprung schreibt die Geschwindigkeit, kein Physik-Körper
-    ["createGalaxySkybox", ["cloudShade"]], // EIN Himmel
+    ["createGalaxySkybox", ["cloudShade", "mx_noise_float"]], // EIN Himmel (D3: die Nebel-Kuppel fiel mit der EINEN Atmosphäre)
     ["_buildPbrNodeMaterial", ["__structAerialError"]], // die Luft aus EINER Quelle
     ["_ensureHydroSurfaceMaterial", ["gerstnerWave", "uSkyCol", "d.x).mul(cos(phase))"]], // die Dünung, der EINE Himmel
     ["_wasserBlick", ["uSkyCol"]],
@@ -4026,8 +4067,8 @@ function main() {
             const schmuggel = [
                 [
                     "in",
-                    "const mxNoise = TSL.mx_noise_float;",
-                    'const _hatMx = "mx_noise_float" in TSL; const mxNoise = TSL.mx_noise_float;',
+                    "const bn = TSL.mx_noise_float(positionWorld.mul(float(0.8)));",
+                    'const _hatMx = "mx_noise_float" in TSL; const bn = TSL.mx_noise_float(positionWorld.mul(float(0.8)));',
                     /^Ausstattungs-Wenn$/,
                 ],
                 [
@@ -4044,8 +4085,8 @@ function main() {
                 ],
                 [
                     "Glied aus TSL",
-                    "const { pass, uniform, vec2, vec3, float, luminance, mix, smoothstep, screenUV, max, min } = TSL;",
-                    "const { pass, uniform, vec2, vec3, float, luminance, mix, smoothstep, screenUV, max, min } = TSL; if (!pass) return null;",
+                    "} = TSL;\n            const pp = new PPCtor(",
+                    "} = TSL; if (!pass) return null;\n            const pp = new PPCtor(",
                     /^Ausstattungs-Wenn$/,
                 ],
                 [

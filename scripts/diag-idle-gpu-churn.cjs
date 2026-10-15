@@ -482,14 +482,14 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
     // Env-Identität. Die Linse MUSS dann rot werden (sonst wäre sie blind).
     if (process.argv.includes("--selbsttest-churn")) await ruf("Selbsttest-Schalter", () => (window.__selbsttestChurn = true));
     const regen = { gesamt: 0, wdh: 0, spur: [] };
-    const hatUni = await ruf("Env-Probe", () => { const u = window.anazhRealm.state.skyboxUniforms; window.__ccSpur = []; return !!(u && u.nebulaColor); });
-    if (!hatUni) regen.err = "keine skyboxUniforms.nebulaColor";
+    const hatUni = await ruf("Env-Probe", () => { const u = window.anazhRealm.state.skyboxUniforms; window.__ccSpur = []; return !!(u && u.himmelTint); });
+    if (!hatUni) regen.err = "keine skyboxUniforms.himmelTint";
     else {
         const b0 = await stand();
         for (const c of [[0.85, 0.55, 0.30], [0.55, 0.75, 0.95], [0.30, 0.10, 0.15], [0.70, 0.80, 0.70]]) {
             await ruf(`Env-Regenerierung ${c.join(",")}`, (c) => {
                 const r = window.anazhRealm, s = r.state;
-                s.skyboxUniforms.nebulaColor.value.setRGB(c[0], c[1], c[2]);
+                s.skyboxUniforms.himmelTint.value.setRGB(c[0], c[1], c[2]);
                 s._skyEnvLastRegenMs = -1e9; // die Raten-Drossel umgehen → echte Regenerierung erzwingen
                 try { r._ensureSkyEnvironment(true); } catch (_e) {}
                 if (window.__selbsttestChurn && s.scene && s.scene.environment) s.scene.environment = s.scene.environment.clone();

@@ -877,7 +877,7 @@ class AnazhRealm_Z02a {
                 ctx.log.push({ event: "voxel_filled", x: p.x, y: p.y, z: p.z, r });
             },
             skybox_color: ([color]) => {
-                // Die Farbe überschreibt nebulaColor NICHT (das schriebe _dayNightApplySkybox jeden Frame zurück):
+                // Die Farbe überschreibt himmelTint NICHT (das schriebe _dayNightApplySkybox jeden Frame zurück):
                 // sie setzt eine TÖNUNG, die der Tag-Nacht-Himmel parallel blendet + smooth fadet.
                 if (typeof color !== "string") return;
                 try {

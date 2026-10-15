@@ -3225,7 +3225,6 @@ let wxFog = 0.16,
     wxRainT = 0; // geglaettete Wetter-Faktoren
 const _skNight = new THREE.Color(0x0a1326),
     _skDay = new THREE.Color(0xa6d2ec); // perzeptuelle Himmel-Anker (Tag/Nacht); Daemmerung + Glut leitet das Atmosphaere-Gesetz ab
-const _moonCol = new THREE.Color(0x9fb8dc); // vom Atmosphaere-Gesetz genutzt (Mondlicht-Hue)
 const _wxOver = new THREE.Color(0xc4c9cf),
     _wxStorm = new THREE.Color(0x555d67);
 const _w1 = new THREE.Color(),
@@ -3253,30 +3252,24 @@ function wSS(a, b, x) {
     const t = clamp((x - a) / (b - a), 0, 1);
     return t * t * (3 - 2 * t);
 }
-// ===== ATMOSPHAERE-GESETZ: Sonnenhoehe -> Luftmasse -> spektrale Transmission (Rayleigh ~1/lambda^4) =====
-// EINE Quelle fuer Sonnenfarbe+Intensitaet, Hemi und Impostor-Tint. Sonnenuntergang/Nacht entstehen aus der Physik, nicht aus Lerps.
+// ===== ATMOSPHAERE-GESETZ (D3): DIESELBE Atmosphaere wie die Welt — foundry-core `ATMO_GESETZ` + `ATMO_RECHNUNG` =====
+// EINE Quelle fuer Sonnenfarbe+Intensitaet, Hemi und Impostor-Tint: der Durchlass des Hillaire-Mediums (Rayleigh-Tiefe,
+// die EINE Luft am klaren Tag, Ozon, Erdkruemmung) vom Auge zur Sonne; unter dem Horizont der Mond des Gesetzes.
 const _atmS = new THREE.Color();
-/* V18.491.254 — Lab Rayleigh zenith OD ← ATMOS_GESETZ fail-soft; Host none (ATMOS_VIS). PHYLO/FIB untouched. */
-const _ATMOS = (typeof window !== "undefined" && window.__phytoCore && window.__phytoCore.ATMOS_GESETZ) || null;
-const _BETA_R = (_ATMOS && isFinite(_ATMOS.betaR)) ? _ATMOS.betaR : 0.044,
-    _BETA_G = (_ATMOS && isFinite(_ATMOS.betaG)) ? _ATMOS.betaG : 0.1,
-    _BETA_B = (_ATMOS && isFinite(_ATMOS.betaB)) ? _ATMOS.betaB : 0.23; // Rayleigh optische Tiefe Meereshoehe/Zenit (Bucholtz 1995): blau streut ~5x rot
-/* V18.491.258 — Lab air-mass/night ← LUFT_GESETZ fail-soft; Host none (LUFT_VIS). ≠ ATMOS betas. */
-const _LUFT = (typeof window !== "undefined" && window.__phytoCore && window.__phytoCore.LUFT_GESETZ) || null;
-const _AIR_SOFT = (_LUFT && isFinite(_LUFT.airSoft)) ? _LUFT.airSoft : 0.06;
-const _NIGHT_SCALE = (_LUFT && isFinite(_LUFT.nightScale)) ? _LUFT.nightScale : 0.16;
-const _NIGHT_LUM = (_LUFT && isFinite(_LUFT.nightLum)) ? _LUFT.nightLum : 0.06;
+const _atmT = [0, 0, 0];
+const _ATMO_M = ATMO_RECHNUNG.medium(ATMO_GESETZ, ATMO_RECHNUNG.betaKlar(ATMO_GESETZ), null);
 function atmosphere(e) {
-    const m = 1.0 / (Math.max(e, 0.0) + _AIR_SOFT); // Luftmasse: ~1 im Zenit, gross am Horizont
-    const tr = Math.exp(-_BETA_R * m),
-        tg = Math.exp(-_BETA_G * m),
-        tb = Math.exp(-_BETA_B * m); // durchgelassenes Sonnenspektrum (Beer-Lambert)
-    const lum = 0.21 * tr + 0.72 * tg + 0.07 * tb; // Lichtmenge der direkten Sonne
-    const mx = Math.max(tr, tg, tb, 1e-4);
-    _atmS.setRGB(tr / mx, tg / mx, tb / mx); // Sonnenfarbe = Hue des Spektrums (Sonnenuntergang -> rot)
-    const night = clamp(-e / _NIGHT_SCALE, 0, 1);
-    _atmS.lerp(_moonCol, night); // unter Horizont -> Mond (Purkinje-Blauverschiebung)
-    return { col: _atmS, lum: lum * (1.0 - night) + _NIGHT_LUM * night, day: clamp(e, 0, 1) };
+    const hKm = Math.max(0.001, (camera ? camera.position.y : 0) / 1000); // das Auge ueber dem Bezug
+    const s = ATMO_RECHNUNG.sonne(ATMO_GESETZ, _ATMO_M, hKm, e, ATMO_GESETZ.durchlassSchritte, _atmT);
+    _atmS.setRGB(s.col.r, s.col.g, s.col.b);
+    return { col: _atmS, lum: s.lum, day: s.day };
+}
+// Die Lichtmenge der Zenit-Sonne aus DEMSELBEN Medium und Auge: die Tages-Achse der Umgebung (`_dimEnvIBL`) ist der Durchlass
+// relativ zu ihr — bis zur D3-Nachbesserung teilte sie durch 0,92, die Zenit-Lichtmenge der gefallenen Luftmassen-Sonne.
+const _atmZ = [0, 0, 0];
+function _atmoLumZenit() {
+    const hKm = Math.max(0.001, (camera ? camera.position.y : 0) / 1000);
+    return ATMO_RECHNUNG.sonne(ATMO_GESETZ, _ATMO_M, hKm, 1, ATMO_GESETZ.durchlassSchritte, _atmZ).lum;
 }
 /* V18.491.264 — Lab weather presets ← WX_GESETZ fail-soft; Host none (WX_VIS). ≠ ATMOS/LUFT; FIB untouched. */
 const WX_GESETZ_FALLBACK = {
@@ -3388,7 +3381,7 @@ function updateWorld(dt) {
         day = clamp(e, 0, 1);
     _wSunPos.set(hx * cosE, lift, hz * cosE).normalize();
     const atm = atmosphere(e); // EIN atmosphaerischer Zustand speist alles Licht
-    _dimEnvIBL(clamp(0.06 + (0.94 * atm.lum) / 0.92, 0.06, 1.0)); // Env-IBL (scene.environment ist konstant) nachts dimmen -> Laub bleibt nicht hell
+    _dimEnvIBL(clamp(0.06 + (0.94 * atm.lum) / _atmoLumZenit(), 0.06, 1.0)); // Env-IBL (scene.environment ist konstant) nachts dimmen -> Laub bleibt nicht hell
     if (keyLight) {
         if (forestMode) {
             // Schatten-Kamera dem Spieler nachfuehren: Terrain (192) ist groesser als die Schattenbox -> Box IMMER um den Spieler.
