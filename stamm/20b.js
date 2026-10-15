@@ -1997,15 +1997,15 @@ class AnazhRealm_Z20b {
         // Glut · Fell-/Haut-Ton — dieselbe, mit der das Budget-Gesetz am Studio-Ausgang Stoffe zählt und faltet (die
         // Seite fehlte: ein beidseitiger Stoff teilte das Material eines einseitigen gleicher Regler, first-wins).
         // Dazu die Wirts-Zustände, die kein Studio-Stoff sind: die Dither-Blende und das Wiegen der Nah-Streu.
-        const key0 =
+        // DIE KRONE (K68-N1): Karte immer, Klinge am Baum und Strauch — sie lichtet flip-frei (`_laubStoffNormale`)
+        const _krone = kind === "foliageTex" || (kind === "foliage" && (!!baum || krone === true));
+        const key =
             globalThis.__phytoCore.budgetStoff(kind, mp) +
             (xfade ? "|xf" : "") +
             (wiegen === true ? "|wiegt" : "") +
             (baum ? "|wind:" + baum.ht.toFixed(2) + "/" + baum.delta.toFixed(4) + "/" + baum.an : "") +
-            (satz === true ? "|satz" : "");
-        // DIE KRONE (K68-N1): Karte immer, Klinge am Baum und Strauch — sie lichtet flip-frei (`_laubStoffNormale`)
-        const _krone = kind === "foliageTex" || (kind === "foliage" && (!!baum || krone === true));
-        const key = key0 + (_krone ? "|krone" : "");
+            (satz === true ? "|satz" : "") +
+            (_krone ? "|krone" : "");
         if (this._foundryMats[key]) return this._foundryMats[key];
         let mat;
         // HAUT-VOLLENDUNG (19.07.): die Lab-Haut trägt CLEARCOAT (matSkin

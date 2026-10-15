@@ -455,7 +455,7 @@ function kroneUrteil(fall, T, flipFrei) {
 function kronenLeser(q) {
     const v = [];
     const welt =
-        /_laubStoffNormale\(T, mat\) \{\s*mat\.normalNode = T\.normalViewGeometry;/.test(q.Stamm) &&
+        /_laubStoffNormale\([^)]*\) \{\s*mat\.normalNode = T\.normalViewGeometry;/.test(q.Stamm) &&
         /if \(_krone\) this\._laubStoffNormale\(TSL, mat\)/.test(q.Stamm);
     if (!welt) v.push("Stamm: der Laub-Stoff der Welt liest die Normale der Krone nicht flip-frei (_laubStoffNormale)");
     const ohneSeite = "normal = normalize( vNormal );";
@@ -469,7 +469,7 @@ function kronenLeser(q) {
     if (!baecker) v.push("foundry-bruecke.js: der Normal-Pass des Karten-Bäckers kehrt die Normale der Krone");
     const werkstatt =
         (q.Stamm.match(/this\._kronenNormalenAuf\(g\)/g) || []).length >= 3 &&
-        /_kronenNormalenAuf\(g\) \{[\s\S]{0,240}__phytoCore\.kronenNormalen\(/.test(q.Stamm);
+        /_kronenNormalenAuf\([^)]*\) \{[\s\S]{0,240}__phytoCore\.kronenNormalen\(/.test(q.Stamm);
     if (!werkstatt) v.push("Stamm: der Grammatik-Baum der Werkstatt legt nicht die Normale der Krone (Klingen, Karten, Anker)");
     if (/_stampFoliageDomeNormals/.test(q.Stamm))
         v.push("Stamm: die Kuppel-Normale des Wirts (_stampFoliageDomeNormals) lebt neben dem Kern-Gesetz");
