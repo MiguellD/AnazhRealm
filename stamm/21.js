@@ -650,7 +650,12 @@ class AnazhRealm_Z21 {
                 id: entry.id,
             });
         }
-        if (typeof this.saveState === "function") this.saveState();
+        // DER ABBAU SPEICHERT GEBÜNDELT (K69): der Eintrag ist sofort aus `state.architectures` (kein Verlust im Spiel), die
+        // schwere Persistenz (Snapshot mit der Höhe über Grund JEDES Baus, JSON, Platte) bündelt der EINE Edit-Save. Bis K69
+        // speicherte jeder Abbau die ganze Welt synchron: räumt ein Dorf beim Nähern seinen Grund (`_naturRaeumen`, die Flächen
+        // seiner Wege und Häuser), lagen 82 volle Saves in wenigen Frames (Null-Renderer, Dorfweg gehend); je Save 40 ms
+        // (gate:stand-takt Phase O, Mess-Wiese: 5 Abbauten Σ 200 ms).
+        if (typeof this._scheduleEditSave === "function") this._scheduleEditSave();
         return true;
     }
 

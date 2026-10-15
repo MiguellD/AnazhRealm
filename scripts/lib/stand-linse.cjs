@@ -449,6 +449,51 @@ function standUrteil(b) {
                     `STUFE: ${U.wechsel} Stufen-Wechsel ohne Form-Änderung rufen ${m} ${U.rufe[m]}× (Wald-Setzung, Sichthöhen)`
                 );
     }
+    // (O) ORT (K69): ein Erdbau abseits wirft nur, was er ändern kann — der Stand des Walds (an ihm hängt die Gestalt jedes
+    // Orts), die fernen Wald-Zellen, die fernen Chunk-Gedächtnisse und der Stand eines fernen Chunks bleiben. Bis K69 warf jeder
+    // Erdbau die Gedächtnisse der ganzen Welt: der Gang ins Dorf (der Dorf-Zug legt das nächste) plante danach 2 579 Wald-Zellen
+    // synchron neu — an der Radeon EIN Frame von 3,1 s (`_forestCellDarts › planForestCell`).
+    const O = b.ort;
+    if (!O) v.push("LEER: keine Ort-Phase");
+    else if (!O.gelegt) v.push("LEER: die Ort-Phase legte keinen Erdbau — die Probe ist stumpf");
+    else if (!(O.darts && O.darts.fern > 0))
+        v.push(`LEER: die Ort-Phase sah keine fernen Wald-Zellen (über ${O.fern} m) — die Probe ist stumpf`);
+    else {
+        const wo = `der Erdbau bei (${O.ort})`;
+        const riss =
+            `die ${O.takte} Takte danach planten ${O.plan} Wald-Zellen neu (\`_forestCellDarts › planForestCell\`), ` +
+            `der längste ${O.maxTaktMs} ms`;
+        if (O.standNach !== O.standVor)
+            v.push(
+                `ORT: ${wo} warf das Dart-Gedächtnis der Welt (Stand des Walds ${O.standVor} → ${O.standNach}: die Gestalt ` +
+                    `jedes Orts fällt mit, \`_erdbauSetzen\`) — ${riss}`
+            );
+        if (O.darts.gehalten < O.darts.fern)
+            v.push(
+                `ORT: ${wo} warf ${O.darts.fern - O.darts.gehalten} von ${O.darts.fern} fernen Wald-Zellen (über ${O.fern} m, ` +
+                    `\`_erdbauSetzen\`) — ${riss}`
+            );
+        for (const [n, c] of Object.entries(O.chunks || {}))
+            if (c.gehalten < c.fern)
+                v.push(
+                    `ORT: ${wo} warf ${c.fern - c.gehalten} von ${c.fern} fernen Chunk-Gedächtnissen (${n}, über ${O.fern} m)`
+                );
+        // die Räumung seines Grunds: jeder Abbau speicherte bis K69 die ganze Welt synchron (`removeArchitecture › saveState`)
+        const Q = O.raeumung;
+        if (!Q || !(Q.abbau > 0)) v.push("LEER: die Ort-Phase räumte keine Natur — der Abbau ist ungeprüft");
+        else if (Q.saves > 0)
+            v.push(
+                `ORT: der Abbau von ${Q.abbau} Natur-Stücken speicherte die Welt ${Q.saves}× synchron (\`removeArchitecture › ` +
+                    `saveState\`, Σ ${Q.saveMs} ms) — räumt ein Dorf beim Nähern seinen Grund, liegt je Stück ein voller Save im Takt`
+            );
+        if (!O.stand || !O.stand.key)
+            v.push("LEER: die Ort-Phase fand keinen fernen Chunk für den Stand der Worker-Antworten");
+        else if (!O.stand.gleich)
+            v.push(
+                `ORT: ${wo} verwarf die Worker-Antworten des fernen Chunks ${O.stand.key} (Stand ${O.stand.vor} → ` +
+                    `${O.stand.nach}) — der Worker baut fern neu, was der Erdbau nie berührt`
+            );
+    }
     const T = b.strom;
     if (!T) v.push("LEER: keine Strom-Phase");
     else if (!T.spielerChunk)

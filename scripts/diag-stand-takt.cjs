@@ -97,6 +97,25 @@ function selbsttest() {
         // BÜHNE: Befund des Selbsttests, kein gesetzter Ort
         strom: { spielerChunk: true, x: -300, z: -850, takte: 40 },
         stufe: { wechsel: 2, takte: { nahStreu: 1, nahWiese: 1 }, rufe: {} },
+        ort: {
+            ort: [-182, -1038],
+            fern: 240,
+            takte: 60,
+            gelegt: true,
+            setzMs: 4,
+            standVor: 2,
+            standNach: 2,
+            darts: { fern: 812, gehalten: 812 },
+            chunks: {
+                basis: { fern: 6, gehalten: 6 },
+                dichte: { fern: 0, gehalten: 0 },
+                mesh: { fern: 2, gehalten: 2 },
+            },
+            stand: { key: "-11,-27", vor: "3|0", nach: "3|0", gleich: true },
+            plan: 140,
+            maxTaktMs: 21,
+            raeumung: { abbau: 5, saves: 0, saveMs: 0 },
+        },
         code: Object.fromEntries(namen.map((n) => [n, { fragt: true, meldet: true }])),
         pageErrors: [],
     };
@@ -252,6 +271,45 @@ function selbsttest() {
             (b) => (b.schreiber.schreiber.scatterRegions = []),
             /STUMPF: die Schreiber-Wand sieht keinen Schreiber von scatterRegions/,
         ],
+        [
+            "der Erdbau wirft das Dart-Gedächtnis der Welt (bis K69)",
+            (b) =>
+                Object.assign(b.ort, {
+                    standNach: 3,
+                    darts: { fern: 812, gehalten: 0 },
+                    plan: 2579,
+                    maxTaktMs: 880,
+                }),
+            /ORT: der Erdbau bei \(-182,-1038\) warf das Dart-Gedächtnis der Welt \(Stand des Walds 2 → 3.*2579 Wald-Zellen neu .*planForestCell.*880 ms/,
+        ],
+        [
+            "ferne Wald-Zellen fallen (der Stand bleibt)",
+            (b) => (b.ort.darts.gehalten = 700),
+            /ORT: der Erdbau bei \(-182,-1038\) warf 112 von 812 fernen Wald-Zellen/,
+        ],
+        [
+            "ein fernes Chunk-Gedächtnis fällt",
+            (b) => (b.ort.chunks.basis.gehalten = 0),
+            /ORT: der Erdbau bei \(-182,-1038\) warf 6 von 6 fernen Chunk-Gedächtnissen \(basis/,
+        ],
+        [
+            "der Stand eines fernen Chunks springt",
+            (b) => Object.assign(b.ort.stand, { nach: "4|0", gleich: false }),
+            /ORT: der Erdbau bei \(-182,-1038\) verwarf die Worker-Antworten des fernen Chunks -11,-27 \(Stand 3\|0 → 4\|0\)/,
+        ],
+        [
+            "jeder Abbau speichert die Welt synchron (bis K69)",
+            (b) => Object.assign(b.ort.raeumung, { saves: 5, saveMs: 420 }),
+            /ORT: der Abbau von 5 Natur-Stücken speicherte die Welt 5× synchron \(`removeArchitecture › saveState`, Σ 420 ms\)/,
+        ],
+        ["die Ort-Phase räumt nichts", (b) => (b.ort.raeumung.abbau = 0), /LEER: die Ort-Phase räumte keine Natur/],
+        [
+            "die Ort-Phase sieht keine fernen Zellen",
+            (b) => (b.ort.darts.fern = 0),
+            /LEER: die Ort-Phase sah keine fernen/,
+        ],
+        ["die Ort-Phase legt keinen Erdbau", (b) => (b.ort.gelegt = false), /LEER: die Ort-Phase legte keinen Erdbau/],
+        ["keine Ort-Phase", (b) => delete b.ort, /LEER: keine Ort-Phase/],
         ["keine Ruhe", (b) => delete b.ruhe, /LEER: keine Ruhe-Phase/],
         ["keine Bruch-Phase", (b) => delete b.bruch, /LEER: keine Bruch-Phase/],
         ["Page-Error", (b) => b.pageErrors.push("TypeError: x"), /PAGE-ERROR: TypeError: x/],
@@ -896,6 +954,125 @@ const server = statikServer();
                     }
                     aus.stufe = U;
                 }
+                // (O) ORT (K69): aus der Ruhe legt ein Ort abseits seinen Erdbau (eine Platte 12 × 12 m, 96 m vor dem Spieler — wie
+                // der Dorf-Zug das nächste Dorf legt, während der Spieler ins erste geht). Es fällt nur, was er ändern kann: gezählt
+                // die Gedächtnisse FERN von ihm (über `fern` m) vorher und nachher — der Stand des Walds (`_forestDartStand`, an ihm
+                // hängt die Gestalt jedes Orts), die Wald-Zellen (dieselben Objekte im Dart-Gedächtnis), die Chunk-Gedächtnisse
+                // (Basis-Dichte, Dichte, Mesh) und der Stand eines fernen Chunks (`_voxelStand`, der Filter der Worker-Antworten) —,
+                // dazu in den Takten danach die neu geplanten Wald-Zellen (`planForestCell`) und der längste Takt: der Name des Risses.
+                {
+                    await bisRuhe(900);
+                    const pm = st.playerMesh.position;
+                    const ox = Math.round(pm.x + 96);
+                    const oz = Math.round(pm.z);
+                    const FERN = 240;
+                    const C = r.constructor.FOREST.cell;
+                    const span = r._voxelChunkConfig(0).span;
+                    const weit = (k, kante) => {
+                        const [a, b] = k.split(",").map(Number);
+                        return Math.hypot((a + 0.5) * kante - ox, (b + 0.5) * kante - oz) > FERN;
+                    };
+                    const seedInt = r._forestSeedInt();
+                    const O = { ort: [ox, oz], fern: FERN, takte: 60, standVor: r._forestDartStand(seedInt) };
+                    const memo0 = r._forestDartMemo;
+                    const darts0 = memo0 ? [...memo0.entries()].filter(([k]) => weit(k, C)) : [];
+                    const caches = {
+                        basis: st.voxelBaseDensityCache,
+                        dichte: st.voxelDensityCache,
+                        mesh: st.voxelMeshCache,
+                    };
+                    const caches0 = {};
+                    for (const [n, c] of Object.entries(caches))
+                        caches0[n] = c ? [...c.keys()].filter((k) => weit(k, span)) : [];
+                    let standKey = null;
+                    for (const k of st.voxelChunks.keys())
+                        if (weit(k, span)) {
+                            standKey = k;
+                            break;
+                        }
+                    const standOf = (k) => r._voxelStand(...k.split(",").map(Number));
+                    O.stand = { key: standKey, vor: standKey ? standOf(standKey) : null };
+                    const core = globalThis.__phytoCore;
+                    const pfcRoh = core.planForestCell;
+                    let pfc = 0;
+                    core.planForestCell = function () {
+                        pfc++;
+                        return pfcRoh.apply(this, arguments);
+                    };
+                    try {
+                        const oy = r._voxelSurfaceY(ox, oz);
+                        const t0 = performance.now();
+                        O.gelegt = r._erdbauSetzen("gate-stand-takt-ort", [
+                            { art: "platte", cx: ox, cz: oz, phi: 0, ex: 6, ez: 6, y: Number.isFinite(oy) ? oy : 0 },
+                        ]);
+                        O.setzMs = +(performance.now() - t0).toFixed(1);
+                        O.standNach = r._forestDartStand(seedInt);
+                        const memo1 = r._forestDartMemo;
+                        O.darts = {
+                            fern: darts0.length,
+                            gehalten: darts0.filter(([k, d]) => memo1 && memo1.get(k) === d).length,
+                        };
+                        O.chunks = {};
+                        for (const [n, ks] of Object.entries(caches0)) {
+                            const c =
+                                st[
+                                    {
+                                        basis: "voxelBaseDensityCache",
+                                        dichte: "voxelDensityCache",
+                                        mesh: "voxelMeshCache",
+                                    }[n]
+                                ];
+                            O.chunks[n] = { fern: ks.length, gehalten: ks.filter((k) => c && c.has(k)).length };
+                        }
+                        if (standKey) {
+                            O.stand.nach = standOf(standKey);
+                            O.stand.gleich = O.stand.nach === O.stand.vor;
+                        }
+                        let max = 0;
+                        for (let i = 0; i < O.takte; i++) {
+                            const t1 = performance.now();
+                            takt();
+                            max = Math.max(max, performance.now() - t1);
+                            if (i % 10 === 0) await pause(5);
+                        }
+                        O.plan = pfc;
+                        O.maxTaktMs = +max.toFixed(1);
+                        // DIE RÄUMUNG DES ORTS: ein Dorf räumt beim Nähern die Natur auf seinem Grund (`_naturRaeumen` →
+                        // `removeArchitecture`) — gezählt die synchronen Saves der ganzen Welt, die fünf Abbauten tragen
+                        const natur = (st.architectures || [])
+                            .filter((e) => e && e.position && r._istNatur(e))
+                            .sort(
+                                (a, b) =>
+                                    Math.hypot(a.position.x - ox, a.position.z - oz) -
+                                    Math.hypot(b.position.x - ox, b.position.z - oz)
+                            )
+                            .slice(0, 5);
+                        const saveEigen = Object.prototype.hasOwnProperty.call(r, "saveState");
+                        const saveRoh = r.saveState;
+                        let saves = 0;
+                        let saveMs = 0;
+                        r.saveState = function () {
+                            const t2 = performance.now();
+                            saves++;
+                            try {
+                                return saveRoh.apply(this, arguments);
+                            } finally {
+                                saveMs += performance.now() - t2;
+                            }
+                        };
+                        try {
+                            let ab = 0;
+                            for (const e of natur) if (r.removeArchitecture(e)) ab++;
+                            O.raeumung = { abbau: ab, saves, saveMs: +saveMs.toFixed(1) };
+                        } finally {
+                            if (saveEigen) r.saveState = saveRoh;
+                            else delete r.saveState;
+                        }
+                    } finally {
+                        core.planForestCell = pfcRoh;
+                    }
+                    aus.ort = O;
+                }
                 // (T) STROM: erst Ruhe, dann der Sprung an einen fremden Ort — der Spieler-Chunk muss kommen
                 {
                     await bisRuhe(900);
@@ -988,6 +1165,21 @@ const server = statikServer();
     if (befund.stufe)
         console.log(
             `  Stufe: ${befund.stufe.wechsel} Wechsel ohne Form-Änderung an ${JSON.stringify(befund.stufe.ziel)} (offener Wuchs vor der Ruhe: ${befund.stufe.wuchs} Chunks, Studio ruhte nach ${befund.stufe.studio} Takten, Ankünfte in der Phase ${befund.stufe.ankunft}) — Regung ${JSON.stringify(befund.stufe.regung)} — Einheiten ${JSON.stringify(befund.stufe.takte)} · Rufe ${JSON.stringify(befund.stufe.rufe)}`
+        );
+    const O = befund.ort;
+    if (O)
+        console.log(
+            `  Ort: Erdbau bei (${O.ort}) ${O.gelegt ? "gelegt" : "NICHT gelegt"} in ${O.setzMs} ms — Stand des Walds ` +
+                `${O.standVor} → ${O.standNach}, ferne Wald-Zellen (über ${O.fern} m) ${O.darts ? O.darts.gehalten + "/" + O.darts.fern : "?"} ` +
+                `gehalten, Chunk-Gedächtnisse ${Object.entries(O.chunks || {})
+                    .map(([n, c]) => `${n} ${c.gehalten}/${c.fern}`)
+                    .join(
+                        " · "
+                    )}, ferner Chunk ${O.stand ? O.stand.key : "?"} ${O.stand && O.stand.gleich ? "hält seinen Stand" : "SPRINGT"} — ` +
+                `die ${O.takte} Takte danach planten ${O.plan} Wald-Zellen, der längste ${O.maxTaktMs} ms — die Räumung: ` +
+                (O.raeumung
+                    ? `${O.raeumung.abbau} Abbauten, ${O.raeumung.saves} synchrone Saves (Σ ${O.raeumung.saveMs} ms)`
+                    : "?")
         );
     if (befund.strom)
         console.log(
