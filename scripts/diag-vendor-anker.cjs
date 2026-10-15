@@ -48,9 +48,9 @@ const PINS = [
 // Die Anker: Vendor-Substring → abhängiges Stamm-Organ.
 const ANKER = [
     // Observer-Diät + Batch-Textur-Wächter (setupObserver-Naht + Monitor-Kurzschluss)
-    { file: "vendor/three.webgpu.min.js", sub: "setupObserver(e){return new", organ: "_materialObserverDiaet (Diät-Naht)" },
-    { file: "vendor/three.webgpu.min.js", sub: "this.hasNode=this.containsNode(", organ: "_materialObserverDiaet (hasNode-Kurzschluss)" },
-    { file: "vendor/three.webgpu.min.js", sub: "needsRefresh(e,t){if(this.hasNode||this.hasAnimation", organ: "_materialObserverDiaet (Monitor-Bahn)" },
+    { file: "vendor/three.webgpu.min.js", sub: "setupObserver(e){return new", organ: "Diät jedes Stoffs der Welt (Diät-Naht, _configureRenderer)" },
+    { file: "vendor/three.webgpu.min.js", sub: "this.hasNode=this.containsNode(", organ: "Diät jedes Stoffs der Welt (hasNode-Kurzschluss)" },
+    { file: "vendor/three.webgpu.min.js", sub: "needsRefresh(e,t){if(this.hasNode||this.hasAnimation", organ: "Diät jedes Stoffs der Welt (Monitor-Bahn)" },
     // DIE KAMERA-TREUE der Diät (direkter Draw UND Bundle-Replay): Beobachter UND geteilte Bindegruppe (render · frame: Kamera-Matrizen,
     // uLodAuge) hängen am PROGRAMM (NodeBuilderState), nie an der Welt; die renderId-Wand je Beobachter schreibt sie
     // je Programm und Render. Jede Abkürzung der Diät muss diese Gruppe je Programm und Render selbst schreiben.
@@ -481,8 +481,12 @@ function diaetLaden(manipuliert) {
         return null;
     if (manipuliert === "eigen" && !ersetze('typ === "object" || (typeof n.property === "string" && n.object === null)', "false"))
         return null;
+    if (manipuliert === "vergleich" && !ersetze("if (b.update() === true) be.updateBinding(b);", "b.update();")) return null;
     const AnazhRealm = {};
-    new Function("AnazhRealm", src)(AnazhRealm);
+    // r184-TSL: je welt-reinem Knoten EIN Knoten mit eigener Id (der Schein kennt sie nur beim Namen)
+    const tslIds = new Map();
+    const TSL = new Proxy({}, { get: (_, k) => (tslIds.has(k) || tslIds.set(k, 9000 + tslIds.size), { id: tslIds.get(k) }) });
+    new Function("AnazhRealm", "THREE", src)(AnazhRealm, { TSL });
     const echt = AnazhRealm._diaetRefresh;
     if (manipuliert === "abkuerzung")
         return (obs, ro, frame, altNR) => (obs.renderObjects.has(ro) ? false : echt(obs, ro, frame, altNR));
@@ -492,7 +496,8 @@ function diaetLauf(fn) {
     const N_PROG = 20,
         N_OBJ = 50;
     let geschrieben = null,
-        objektDurchDiaet = 0;
+        objektDurchDiaet = 0,
+        geladen = 0;
     const beobachter = () => ({
         renderObjects: new Map(),
         renderId: -1,
@@ -564,6 +569,7 @@ function diaetLauf(fn) {
         updateNode(n) {
             if (this.camera !== "haupt") fremdeKamera++;
             if (n.object === null) zeichenGaenge.add(this.ro.progId);
+            else if (n.getUpdateType() === "object") return; // (7) je Render-Objekt sein eigener Wert: kein geteilter Gang
             else {
                 const k = abschnitt() + n.id;
                 knotenGaenge.set(k, (knotenGaenge.get(k) || 0) + 1);
@@ -573,6 +579,11 @@ function diaetLauf(fn) {
     };
     const rend = {
         info: { calls: 0 },
+        backend: {
+            updateBinding() {
+                geladen++;
+            },
+        },
         _nodes: {
             updateBefore() {},
             // r184: EIN Node-Frame, getNodeFrameForRender stellt Kamera und Objekt des Render-Objekts. Der Vorher-Knoten
@@ -616,8 +627,8 @@ function diaetLauf(fn) {
         prog: steinProg,
         ro: {
             progId: 20,
-            object: { material: { _anazhDiaet: true }, welt: 0 },
-            material: { _anazhDiaet: true },
+            object: { material: {}, welt: 0 },
+            material: {},
             lightsNode: {},
             getBindings: () => [steinProg.geteilt],
             getNodeBuilderState: () => steinProg.nbs,
@@ -648,10 +659,26 @@ function diaetLauf(fn) {
             isInstancedMesh: true,
             instanceMatrix: { version: 0 },
             instanceColor: null,
-            material: { _anazhDiaet: true },
+            material: {},
             welt: 0,
+            frei: 0,
         };
-        const objektGruppe = { bindings: [{ groupNode: { shared: false } }] };
+        // (7) die eigene Gruppe trägt einen freien Wert (ein Stoff-Wert, von außen gesetzt): ihr Puffer vergleicht sich je Prüfung
+        const puffer = {
+            groupNode: { shared: false },
+            isUniformBuffer: true,
+            isNodeUniformsGroup: true,
+            isBuffer: true,
+            updateRanges: [],
+            uniforms: [{ nodeUniform: { node: { id: 801 } } }],
+            stand: 0,
+            update() {
+                if (this.stand === obj.frei) return false;
+                this.stand = obj.frei;
+                return true;
+            },
+        };
+        const objektGruppe = { bindings: [puffer] };
         objekte.push({
             prog,
             ro: {
@@ -676,6 +703,7 @@ function diaetLauf(fn) {
         fremdeKamera = 0;
         fremdeGruppe = 0;
         objektDurchDiaet = 0;
+        geladen = 0;
         const voll = new Set();
         const steinVoll = fn(stein.prog.obs, stein.ro, frame, altNR);
         if (steinVoll) wert.set(600, "haupt");
@@ -697,7 +725,7 @@ function diaetLauf(fn) {
         for (const n of dieDiaet.values()) if (n > 1) wiederholt += n - 1;
         for (const n of knotenGaenge.values()) if (n > 1) wiederholt += n - 1;
         const zeichenFehlt = [18, 19].filter((p) => !zeichenGaenge.has(p)).length;
-        return { voll, steinVoll, fehlt, objektDurchDiaet, wiederholt, zeichenFehlt, fremdeKamera, fremdeGruppe };
+        return { voll, steinVoll, fehlt, objektDurchDiaet, wiederholt, zeichenFehlt, fremdeKamera, fremdeGruppe, geladen };
     };
     const r1 = render();
     const r2 = render();
@@ -705,7 +733,8 @@ function diaetLauf(fn) {
     const r4 = render(() => objekte[7].ro.object.welt++);
     const r5 = render(() => objekte[11].ro.object.instanceMatrix.version++);
     const r6 = render();
-    return { r1, r2, r3, r4, r5, r6 };
+    const r7 = render(() => objekte[3].ro.object.frei++);
+    return { r1, r2, r3, r4, r5, r6, r7 };
 }
 function diaetProbe(selftest) {
     const fehler = [];
@@ -739,6 +768,11 @@ function diaetProbe(selftest) {
         }
         if (!z.r4.voll.has(7)) f.push("Objekt-Wahrheit: ein bewegtes Objekt refresht voll (equals)");
         if (!z.r5.voll.has(11)) f.push("Instanz-Wächter: eine Instanz-Mutation refresht voll");
+        if (z.r7.geladen !== 1 || z.r7.voll.size !== 0)
+            f.push(
+                `Freier Wert: ein von außen gesetzter Wert der eigenen Gruppe lädt ${z.r7.geladen} Puffer bei ${z.r7.voll.size} Voll-Refreshs (Soll 1 und 0 — der Vergleich der eigenen Uniform-Puffer, Wächter (7))`
+            );
+        if ([z.r2, z.r3, z.r6].some((r) => r.geladen !== 0)) f.push("Freier Wert: im Stand lädt der Vergleich Puffer (Soll 0)");
         return f;
     };
     const z = diaetLauf(fn);
@@ -773,13 +807,17 @@ function diaetProbe(selftest) {
         const verlassenFn = diaetLaden("stempelOhneVerlassen");
         if (!verlassenFn) fehler.push("Selbsttest: der Gang liest seinen Render-Abschnitt nicht aus `rend.info.calls`");
         const ohneVerlassen = verlassenFn ? pruefe(diaetLauf(verlassenFn)) : [];
+        const vergleichFn = diaetLaden("vergleich");
+        if (!vergleichFn) fehler.push("Selbsttest: die Diät vergleicht die eigenen Uniform-Puffer nicht (`_diaetEigen`)");
+        const ohneVergleich = vergleichFn ? pruefe(diaetLauf(vergleichFn)) : [];
         selbstFeuert =
             abk.some((e) => e.startsWith("Kamera-Treue")) &&
             ohneSchreiben.some((e) => e.startsWith("Kamera-Treue")) &&
             wieder.length === 2 &&
             ohneEigen.some((e) => e.startsWith("Zeichen-Objekt")) &&
             frameAlt.some((e) => e.startsWith("Node-Frame")) &&
-            ohneVerlassen.some((e) => e.startsWith("Verschachtelt"));
+            ohneVerlassen.some((e) => e.startsWith("Verschachtelt")) &&
+            ohneVergleich.some((e) => e.startsWith("Freier Wert"));
     }
     return { fehler, selbstFeuert, stand };
 }
@@ -939,7 +977,7 @@ function main() {
         if (a.weich) continue; // dokumentarisch, kein harter Substring (minifier-variabel)
         geprueft++;
         const src = les(a.file).toString("latin1");
-        const sub = selftest && a.organ && a.organ.startsWith("_materialObserverDiaet (hasNode") ? a.sub + "_MANIPULIERT" : a.sub;
+        const sub = selftest && a.organ && a.organ.startsWith("Diät jedes Stoffs der Welt (hasNode") ? a.sub + "_MANIPULIERT" : a.sub;
         if (!src.includes(sub)) errs.push(`ANKER GEFALLEN: "${a.sub}" fehlt in ${a.file} → Organ: ${a.organ}`);
     }
     // (3) DIE DIÄT-PRÜFUNG am Schein-Programm (r184-Semantik: Beobachter + geteilte Gruppe je Programm, renderId-

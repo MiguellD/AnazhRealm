@@ -2600,9 +2600,6 @@ class AnazhRealm_Z05b {
             });
         }
 
-        // OBSERVER-DIÄT (Pflicht-Paar mit der Uniform-Heimat oben): der Gras-
-        // Graph hängt nur an geteilten Wind-Uniforms + Attributen — equals()-Bahn.
-        this._materialObserverDiaet(mat);
         this._leuchtStoff(mat, null); // das Leuchtquellen-Gesetz (K11): der Halm am Feuer trägt sein Licht
         this.state._grassMat = mat;
         return mat;

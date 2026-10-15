@@ -286,6 +286,11 @@ const FORBIDDEN = [
     // Gruppe), ihr Nachziehen aus welle-bild-wahrheit (8cf8cb5, nie integriert) und der Kill-Switch (ein Flag = ein
     // zweiter Weg).
     { token: "_anazhDiaetRid", fiel: "Bundle-Wahrheit — die Diät schreibt je Programm und Render, kein Stempel" },
+    // DIE DIÄT JEDES STOFFS (K62): ein Stoff erklärte sich der Diät (sechs Stellen, der Schatten über sein Original) — jetzt
+    // prüft jeder Beobachter der Welt-Szene mit ihr, ihr Wächter (7) sieht jeden Wert, den equals() nicht sieht.
+    { token: "_materialObserverDiaet", fiel: "K62 — die Diät gilt jedem Stoff der Welt (_configureRenderer), keine Erklärung je Stoff" },
+    { token: "._anazhDiaet", fiel: "K62 — die Diät gilt jedem Stoff der Welt, kein Merker am Stoff" },
+    { token: "__anazhSchattenDiaet", fiel: "K62 — die Schatten-Diät ist die EINE Diät jedes Beobachters" },
     {
         token: "_diaetGeteilteOffen",
         fiel: "Bundle-Wahrheit — das Nachziehen der Abkürzung (8cf8cb5) wird nie integriert",

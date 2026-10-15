@@ -1589,15 +1589,40 @@ AnazhRealm._diaetGang = function (ro, nbs) {
         knoten = [],
         eigenVor = [],
         eigenKnoten = [];
+    // (7) die Knoten des Takts object: die welt-reinen (`_diaetWeltrein`) deckt equals() über die Welt-Matrix, jeder andere
+    // stellt je Prüfung den Wert des Render-Objekts — die Gruppen-Knoten selbst tragen nichts (ihr Gang hebt nur die Version)
+    const rein = AnazhRealm._diaetWeltrein(),
+        objekt = [];
     for (const n of nbs.updateBeforeNodes) (jeZeichen(n, n.getUpdateBeforeType()) ? eigenVor : vor).push(n);
     for (const n of nbs.updateNodes) {
         const typ = n.getUpdateType();
         if (typ !== "object") (jeZeichen(n, typ) ? eigenKnoten : knoten).push(n);
+        else if (n.isUniformGroup !== true) objekt.push(n);
     }
     const gruppen = [];
+    // (7) DIE EIGENEN GRUPPEN (r184 klont jede nicht geteilte Gruppe je Render-Objekt, `createBindings`): ihr Uniform-Puffer
+    // vergleicht sich je Prüfung, sobald er einen Wert trägt, den equals() nicht sieht — eine Uniform ohne welt-reinen Knoten
+    // (ein Stoff-Wert, ein Verweis, ein Wert je Frame in der Objekt-Gruppe, ein von außen gesetzter `value`); ihre Speicher-
+    // Puffer wacht die Version ihres Attributs
+    const reinU = new Set();
+    for (const n of objekt) if (rein.has(n.id)) reinU.add(n.isUniformNode === true ? n.id : n.uniformNode.id);
+    let vergleich = eigenKnoten.length > 0 || objekt.some((n) => !rein.has(n.id)),
+        speicher = false;
     for (const g of ro.getBindings()) {
         const b0 = g.bindings && g.bindings[0];
-        if (b0 && b0.groupNode && b0.groupNode.shared === true) gruppen.push(g);
+        if (b0 && b0.groupNode && b0.groupNode.shared === true) {
+            gruppen.push(g);
+            continue;
+        }
+        for (const b of g.bindings) {
+            if (b.isStorageBuffer === true) speicher = true;
+            else if (
+                b.isUniformBuffer === true &&
+                (b.isNodeUniformsGroup !== true ||
+                    b.uniforms.some((u) => !u.nodeUniform || !u.nodeUniform.node || !reinU.has(u.nodeUniform.node.id)))
+            )
+                vergleich = true;
+        }
     }
     // (6) JEDE Textur des Programms: die Vorher-Knoten, die eine Textur ziehen (ihr `value` kann neu angelegt werden), und
     // jeder Textur-Knoten seiner Bindegruppen (ein Daten-Bild oder Atlas, dessen Version ein Schreiber hebt oder dessen Wert
@@ -1607,7 +1632,7 @@ AnazhRealm._diaetGang = function (ro, nbs) {
         for (const b of g.bindings)
             if (b.isSampledTexture === true && b.textureNode && texturen.indexOf(b.textureNode) < 0)
                 texturen.push(b.textureNode);
-    return { vor, knoten, eigenVor, eigenKnoten, gruppen, texturen };
+    return { vor, knoten, eigenVor, eigenKnoten, objekt, gruppen, texturen, vergleich, speicher };
 };
 // (6) Wechselte eine Textur des Programms (Id oder Version) seit dem letzten Blick dieses Render-Objekts?
 AnazhRealm._diaetVorTextur = function (obs, ro) {
@@ -1629,6 +1654,78 @@ AnazhRealm._diaetVorTextur = function (obs, ro) {
     }
     return anders;
 };
+// (7) Die welt-reinen Knoten des Takts object (r184-TSL, je EIN Knoten für alle Programme): ihr Wert ist eine Funktion der
+// Welt-Matrix des gezeichneten Objekts — equals() sieht jede Änderung. Gemerkt als Knoten-Ids; fehlt einer, bricht es laut.
+AnazhRealm.DIAET_WELTREIN = Object.freeze([
+    "modelWorldMatrix",
+    "modelNormalMatrix",
+    "modelWorldMatrixInverse",
+    "modelPosition",
+    "modelScale",
+    "modelDirection",
+    "modelRadius",
+]);
+AnazhRealm._diaetWeltrein = function () {
+    if (AnazhRealm._weltreinIds) return AnazhRealm._weltreinIds;
+    const T = THREE.TSL || {};
+    const ids = new Set();
+    for (const k of AnazhRealm.DIAET_WELTREIN) if (T[k] && T[k].id !== undefined) ids.add(T[k].id);
+    if (ids.size !== AnazhRealm.DIAET_WELTREIN.length)
+        throw new Error(
+            "DIÄT: r184-TSL trägt nicht jeden welt-reinen Knoten (Vendor-Drift): " +
+                AnazhRealm.DIAET_WELTREIN.join(" · ")
+        );
+    return (AnazhRealm._weltreinIds = ids);
+};
+// (7) Die eigenen Werte eines Render-Objekts je Prüfung: die Speicher-Puffer seiner eigenen Gruppen (Attribut Id · Version —
+// ein Wechsel zieht EINEN Refresh nach sich), die Vorher-Knoten je Zeichen-Objekt, und — trägt sein Programm einen Wert, den
+// equals() nicht sieht — jeder Knoten des Objekts (die welt-reinen mit: ihr EINER Knoten zeigt sonst auf das zuletzt
+// gezeichnete Objekt) und der Vergleich jedes eigenen Uniform-Puffers, der lädt, was sich änderte (wie r184 `_update`).
+// true: ein Refresh ist fällig.
+AnazhRealm._diaetEigen = function (rend, obs, ro, k) {
+    const geteilt = (g) => {
+        const b0 = g.bindings[0];
+        return b0 !== undefined && b0.groupNode != null && b0.groupNode.shared === true;
+    };
+    if (k.speicher) {
+        const d = obs.getRenderObjectData(ro);
+        const v = d._anazhSpV || (d._anazhSpV = []);
+        let i = 0,
+            anders = false;
+        for (const g of ro.getBindings()) {
+            if (geteilt(g)) continue;
+            for (const b of g.bindings)
+                if (b.isStorageBuffer === true) {
+                    const a = b.attribute;
+                    if (v[i] !== a.id || v[i + 1] !== a.version) {
+                        v[i] = a.id;
+                        v[i + 1] = a.version;
+                        anders = true;
+                    }
+                    i += 2;
+                }
+        }
+        if (anders) return true;
+    }
+    if (k.eigenVor.length > 0) {
+        const nf = rend._nodes.getNodeFrameForRender(ro);
+        for (const n of k.eigenVor) nf.updateBeforeNode(n);
+    }
+    if (!k.vergleich) return false;
+    const nf = rend._nodes.getNodeFrameForRender(ro);
+    for (const n of k.eigenKnoten) nf.updateNode(n);
+    for (const n of k.objekt) nf.updateNode(n);
+    const be = rend.backend;
+    for (const g of ro.getBindings()) {
+        if (geteilt(g)) continue;
+        for (const b of g.bindings)
+            if (b.isUniformBuffer === true) {
+                if (b.update() === true) be.updateBinding(b);
+                if (b.isBuffer === true && b.updateRanges.length > 0) b.clearUpdateRanges();
+            }
+    }
+    return false;
+};
 AnazhRealm._diaetGeteiltSchreiben = function (rend, ro, rid) {
     const nbs = ro.getNodeBuilderState();
     const k = nbs._anazhGang || (nbs._anazhGang = AnazhRealm._diaetGang(ro, nbs));
@@ -1646,17 +1743,12 @@ AnazhRealm._diaetGeteiltSchreiben = function (rend, ro, rid) {
         n._anazhVorRid = rid;
         n._anazhVorRuf = rend.info.calls;
     }
-    for (const n of k.eigenVor) rend._nodes.getNodeFrameForRender(ro).updateBeforeNode(n);
     const ruf = rend.info.calls;
     for (const n of k.knoten) {
         if (n._anazhRid === rid && n._anazhRuf === ruf) continue;
         n._anazhRid = rid;
         n._anazhRuf = ruf;
         (nf || (nf = rend._nodes.getNodeFrameForRender(ro))).updateNode(n);
-    }
-    if (k.eigenKnoten.length) {
-        nf = nf || rend._nodes.getNodeFrameForRender(ro);
-        for (const n of k.eigenKnoten) nf.updateNode(n);
     }
     let alle = null;
     for (const g of k.gruppen) {
@@ -1735,6 +1827,9 @@ AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
     }
     // (6) NACH dem Gang: der Zug des ersten Render-Objekts kann die Textur eben neu angelegt haben
     if (AnazhRealm._diaetVorTextur(obs, ro)) return true;
+    // (7) die eigenen Werte des Render-Objekts (Speicher-Puffer, Vorher-Knoten je Zeichen-Objekt, Uniform-Puffer)
+    const k = ro.getNodeBuilderState()._anazhGang;
+    if ((k.speicher || k.vergleich || k.eigenVor.length > 0) && AnazhRealm._diaetEigen(rend, obs, ro, k)) return true;
     return obs.equals(ro, obs.getLights(ro.lightsNode, rid), rid) !== true;
 };
 // W17 Phase B-Relay — der subworld-net-Kanal trägt den `WebSocket`-Verkehr

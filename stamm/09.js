@@ -1908,10 +1908,6 @@ class AnazhRealm_Z09 {
             himmelsSicht: true, // die Verdeckung des Himmels-Lichts und die Normale der Höhle (`_buildPbrNodeMaterial`)
             felsImVertex: true, // die Vertex-Farbe IST der Fels-Stoff (`_felsStoff`), der Shader legt nur die feinen Bänke auf
         });
-        // OBSERVER-DIÄT (Pflicht-Paar): der Chunk-Boden-Graph hängt nur an den
-        // geteilten Atmo-/LOD-/Wind-Sätzen (alle renderGroup) + Vertex-Farben/
-        // Morph-Attributen — die equals()-Bahn sieht Rebuilds (neue Geometrie-id).
-        this._materialObserverDiaet(mat);
         this.state.voxelChunkMaterial = mat;
         return mat;
     }

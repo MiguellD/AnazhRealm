@@ -852,30 +852,34 @@ class AnazhRealm_Z07 {
             };
             IN.__anazhName = true;
         }
-        // DIE SCHATTEN-DIÄT: r184 zeichnet jede Kaskade mit EINEM geteilten Schatten-Material je Licht
-        // (isShadowPassMaterial), in das je Objekt die Knoten des Original-Materials gehängt werden. Sein Beobachter
-        // meldet über context.getShadow immer hasNode → jedes Diät-Objekt refreshte je Kaskade und Frame
-        // (gemessen 04.10. nach der Haupt-Diät: Blume 360, Geröll 224 von 1176 Refreshs je Frame). Trägt das
-        // ORIGINAL die Diät (nur geteilte renderGroup-Uniforms), fährt der Schatten-Beobachter dieselbe EINE Prüfung.
-        // Die Basisklasse exportiert window.THREE nicht — sie ist der Prototyp von MeshBasicNodeMaterial.
+        // DIE DIÄT JEDES STOFFS DER WELT (K62 — ein Befehl, dessen Zustand sich nicht ändert, zahlt keinen Refresh; r184
+        // gelesen): r184s Beobachter schließt needsRefresh auf hasNode kurz (`containsNode`: jeder Knoten-Stoff, und jeder
+        // Schatten-Stoff über context.getShadow) — jedes Render-Objekt frischt in jedem Pass alle Knoten und Bindungen auf.
+        // Die Diät galt bis K62 nur Stoffen, die sich erklärten (`_materialObserverDiaet`, sechs Stellen, der Schatten nur über
+        // sein Original): gemessen an Genesis Third (Radeon 890M) refreshten je Frame 45,8 von 114,5 Prüfungen, darunter
+        // 23 Stoffe ohne Erklärung (Tor-Membranen und -Nebel, Himmel, Sonne, Plattform, Rauch), netto 58 µs je Refresh.
+        // Jetzt prüft JEDER Beobachter eines Render-Objekts der Welt-Szene — Hauptbild und jede Kaskade — mit der EINEN
+        // Diät (`_diaetRefresh`): ihr Wächter (7) sieht auch jeden Wert, den equals() nicht sieht (die eigenen Uniform-Puffer
+        // je Render-Objekt), darum braucht kein Stoff mehr eine Erklärung. Eine fremde Szene (Post-Quad, Umgebung) fährt die
+        // Vendor-Bahn. Die Basisklasse exportiert window.THREE nicht — sie ist der Prototyp von MeshBasicNodeMaterial.
         const NM =
             THREE.MeshBasicNodeMaterial && Object.getPrototypeOf(THREE.MeshBasicNodeMaterial.prototype).constructor;
         if (!NM || !NM.prototype || typeof NM.prototype.setupObserver !== "function")
-            this.log("SCHATTEN-DIÄT: r184-NodeMaterial.setupObserver nicht gefunden (Vendor-Drift)", "ERROR");
-        else if (!NM.__anazhSchattenDiaet) {
+            this.log("DIÄT: r184-NodeMaterial.setupObserver nicht gefunden (Vendor-Drift)", "ERROR");
+        else if (!NM.__anazhWeltDiaet) {
+            const welt = this;
             const beobRoh = NM.prototype.setupObserver;
             NM.prototype.setupObserver = function (builder) {
                 const o = beobRoh.call(this, builder);
-                if (!o || this.isShadowPassMaterial !== true || typeof o.needsRefresh !== "function") return o;
+                if (!o || typeof o.needsRefresh !== "function") return o;
                 const altNR = o.needsRefresh;
                 o.needsRefresh = function (ro, frame) {
-                    const om = ro && ro.object ? ro.object.material : null;
-                    if (!om || om._anazhDiaet !== true) return altNR.call(this, ro, frame);
+                    if (ro.scene !== welt.state.scene) return altNR.call(this, ro, frame);
                     return AnazhRealm._diaetRefresh(this, ro, frame, altNR);
                 };
                 return o;
             };
-            NM.__anazhSchattenDiaet = true;
+            NM.__anazhWeltDiaet = true;
         }
         // DIE SENKE ZEICHNET ÜBER IHREN ZEICHNER (1410-1, `_instanzZeichner`): r184 instanziert in `setupPosition` nur eine
         // InstancedMesh (InstanceNode, der die Puffer des Objekts in den Graphen bindet — und den Schlüssel trägt die uuid).

@@ -2632,10 +2632,8 @@ class AnazhRealm_Z11b {
             lakeRipple: uLakeRipple,
             wind: uWind,
         };
-        // UNIFORM-HEIMAT + OBSERVER-DIÄT (Pflicht-Paar): alle Takt-Uniforms des
-        // Wassers sind geteilt → der Monitor darf auf die equals()-Bahn.
+        // UNIFORM-HEIMAT: alle Takt-Uniforms des Wassers sind geteilt — je Render EIN Upload statt eines Vergleichs je Objekt
         this._uniformHeimatTeilen(this.state.hydroSurfaceUniforms);
-        this._materialObserverDiaet(mat);
         this.state.hydroSurfaceMaterial = mat;
         return mat;
     }

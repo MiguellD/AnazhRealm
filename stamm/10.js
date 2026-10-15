@@ -44,37 +44,6 @@ class AnazhRealm_Z10 {
         return satz;
     }
 
-    // ═══ DIE OBSERVER-DIÄT ═══
-    // r184s Monitor schließt needsRefresh auf hasNode kurz (für JEDES TSL-Material true) → jedes Objekt
-    // wird jeden Frame refresht. Welt-Materialien, deren Graph NUR geteilte renderGroup-Uniforms +
-    // Attribute + Builtins trägt, fahren die ehrliche equals()-Bahn (Änderungen laden weiter hoch; das
-    // erste Objekt je Material/Render refresht). PFLICHT-PAAR mit _uniformHeimatTeilen für ALLE
-    // mutierten Uniforms, sonst frieren per-Objekt-Klone ein. Headless inert.
-    _materialObserverDiaet(mat) {
-        if (!mat || mat._anazhDiaet === true || typeof mat.setupObserver !== "function") return mat;
-        // PFLICHT-PAAR-WÄCHTER (Review-Notiz C): ohne renderGroup-Export wäre die
-        // Uniform-Heimat ein No-op — die Diät fröre dann per-Objekt-Klone ein.
-        // Kein renderGroup → keine Diät (byte-alt, der Vendor refresht weiter).
-        mat._anazhDiaet = true;
-        const alt = mat.setupObserver;
-        mat.setupObserver = function (builder) {
-            const o = alt.call(this, builder);
-            if (!o) return o;
-            o.hasNode = false;
-            // Vendor-Loch: equals() walkt nur geometry.attributes — instanceMatrix/instanceColor leben am MESH
-            // und wären unter der Diät unsichtbar. Der Versions-Wächter prüft sie VOR der Vendor-Bahn (Mutation
-            // → genau EIN Refresh).
-            if (typeof o.needsRefresh === "function") {
-                const altNR = o.needsRefresh;
-                o.needsRefresh = function (ro, frame) {
-                    return AnazhRealm._diaetRefresh(this, ro, frame, altNR);
-                };
-            }
-            return o;
-        };
-        return mat;
-    }
-
     _ensureAtmoUniforms() {
         if (this.state.atmoUniforms) return this.state.atmoUniforms;
         const TSL = THREE.TSL;
