@@ -55,7 +55,7 @@ function quellBefunde(src) {
     const b = [];
     const code = ohneKommentare(src);
     const zeilen = code.split("\n");
-    const kopf = zeilen.findIndex((z) => /^\s*static _instanzZahl\(mesh, n\) \{/.test(z));
+    const kopf = zeilen.findIndex((z) => /^\s*static _instanzZahl\([^)]*\) \{/.test(z));
     if (kopf < 0) b.push("der Chokepoint `static _instanzZahl(mesh, n)` fehlt");
     zeilen.forEach((z, i) => {
         for (const m of z.matchAll(/([A-Za-z_$][\w$.[\]]*)\.count\s*=(?!=)/g)) {
@@ -442,7 +442,7 @@ async function welt() {
     for (const x of q) fails.push("Q: " + x);
     if (process.argv.includes("--selftest")) {
         const schmuggel = quellBefunde(
-            src.replace("    static _instanzZahl(mesh, n) {", "    _schmuggel(g) {\n        g.mesh.count = 7;\n    }\n    static _instanzZahl(mesh, n) {")
+            src.replace(/\n {4}static _instanzZahl\(/, "\n    _schmuggel(g) {\n        g.mesh.count = 7;\n    }\n    static _instanzZahl(")
         );
         const ok = schmuggel.some((x) => /`g\.mesh\.count =`/.test(x));
         console.log(`  ${ok ? "✅" : "❌"} SELBSTTEST Q: eine eingeschmuggelte count-Zeile wird genannt (${schmuggel.length} Befund)`);

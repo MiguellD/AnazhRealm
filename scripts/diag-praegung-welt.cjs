@@ -41,15 +41,20 @@ function check(name, ok, detail) {
     // ── Quell-Proben (Konsum-Tripwires: die Naht-Zeilen leben im Stamm) ──
     console.log("=== PRÄGUNG-WELT — Quell-Proben (die Naht lebt im Stamm) ===");
     const stamm = stammLib.text(root);
+    // Der Stempel reist über den EINEN Zug je Körper-Schlüssel (`_foundryZug`, K38): er reicht sein ov als 4. Arg an
+    // `_foundryRequest` — jeder Besteller reicht den Stempel an den Zug.
+    const zugReicht = /_foundryRequest\(preset, variant, lod, ov \|\| undefined, wo\)/.test(stamm);
     check(
         "Q: _foundryFlattenFor liest den Entry-Stempel + reicht ihn als 4. Arg",
         /const entryOv = this\._artifactStudioOv\(entry\);/.test(stamm) &&
-            /_foundryRequest\(preset, variant, lod, entryOv \|\| undefined\b/.test(stamm)
+            /_foundryZug\(key, preset, variant, lod, entryOv, entry\.position\b/.test(stamm) &&
+            zugReicht
     );
     check(
         "Q: _heldFoundryGroup liest den Bauplan-Stempel + reicht ihn als 4. Arg",
         /const heldOv = this\._artifactStudioOv\(bp\);/.test(stamm) &&
-            /_foundryRequest\(preset, variant, 0, heldOv \|\| undefined\b/.test(stamm)
+            /_foundryZug\(key, preset, variant, 0, heldOv, 0\)/.test(stamm) &&
+            zugReicht
     );
     check(
         "Q: der Guss stempelt (_forgeMaterialAndFreeze + schöpfer-wield rufen _stampStudioOv)",

@@ -691,17 +691,24 @@ class AnazhRealm_Z23a {
         if (lod > 2) lod = 2;
         // W-A1 — die B4-Regler-Overrides dieser Auswahl (ws.studioOv[preset], null wenn leer).
         const ov = this._workshopStudioOvFor(preset);
-        // W-A1 — EHRLICHES INTERIM: bootet der Worker noch, traegt die EINE Quelle das
-        // Warte-Polling + gibt "pending" (KEIN Grammatik-Interim fuer foundry-aufloesbare
+        // W-A1 — EHRLICHES INTERIM: bootet der Worker noch oder fehlt das Buch, haengt die EINE Quelle die Vorschau an
+        // die Buch-Zusage + gibt "pending" (KEIN Grammatik-Interim fuer foundry-aufloesbare
         // Auswahl mehr — die Buehne bleibt leer, der Status sagt „Studio-Asset lädt…").
-        if (!f.ready) return this._workshopStudioPreviewFrom(preset, seedNum, lod, ov);
+        if (!f.ready || !f.recipes) return this._workshopStudioPreviewFrom(preset, seedNum, lod, ov);
         // L2 eines BAUMS ist in der Welt der 8-Winkel-Impostor (`_foundryFlattenFor` →
         // `_foundryBuildImpostorFlat`) — die Vorschau MUSS dasselbe zeigen. Die Impostor-Geometrie ist
         // camera-facing und liest Rotation/Skala aus der INSTANZ-Matrix → als 1-Instanz-InstancedMesh
         // bauen (identity, weiß = kein Tint), nie als plain Mesh. Fels/Kristall/Blume: L2-Geometrie.
         if (lod === 2 && typeof this._foundryPresetIsTree === "function" && this._foundryPresetIsTree(preset)) {
-            const flat = this._foundryBuildImpostorFlat({ seed: seedNum }, preset);
-            if (flat === null) return "pending"; // der Studio-Bake läuft → ehrliches Interim, Vorschau bei Ankunft neu
+            // DER WARTENDE DER KARTE (K38-N2): die Vorschau steht beim Spieler (Rang 0) und hängt sich an die EINE Zusage,
+            // auf die die Karte wartet — das Buch, den Zug ihrer Höhen-Stufe (Rahmen + Sichthöhe) oder ihren Bake —, und
+            // baut bei Ankunft neu. Bis hierher gab sie „pending" ohne Wecker (die Karte kam, die Vorschau schlief) bzw.
+            // zeigte vor dem Bake die L2-Geometrie und wechselte nie zur Karte der Welt.
+            let zusage = null;
+            const flat = this._foundryBuildImpostorFlat({ seed: seedNum }, preset, {
+                wo: 0,
+                wecke: (z) => (zusage = z),
+            });
             if (flat && Array.isArray(flat.leaves) && flat.leaves.length) {
                 const Ti = THREE;
                 const outImp = new Ti.Group();
@@ -712,8 +719,18 @@ class AnazhRealm_Z23a {
                     this._lodSlotStamp({ mesh: inst }, 0, 1, false, lf);
                     // PARITÄT: die Template→Welt-Scale reist in der leaf.localMatrix — die Vorschau
                     // zeigt das Billboard in WELT-Größe (Vorschau == Welt), nicht template-lokal.
-                    inst.setMatrixAt(0, lf.localMatrix ? lf.localMatrix.clone() : new Ti.Matrix4());
+                    const lm = lf.localMatrix ? lf.localMatrix.clone() : new Ti.Matrix4();
+                    inst.setMatrixAt(0, lm);
                     inst.instanceMatrix.needsUpdate = true;
+                    // DER RAHMEN DER KARTE (K38-N2): die Instanz trägt die Box ihrer Karte — Halbbreite und Höhe des Rahmens
+                    // (template-lokal, ab der Stammbasis) × die Template→Welt-Matrix. Das Einheits-Quad allein misst auf
+                    // der Stammachse 1 m (Breite und Höhe reisen erst im Shader, `aKarte`): die Vorschau rahmte den Stamm.
+                    const [hw, hh] = lf.rahmen;
+                    inst.boundingBox = new Ti.Box3(
+                        new Ti.Vector3(-hw, 0, -hw),
+                        new Ti.Vector3(hw, hh, hw)
+                    ).applyMatrix4(lm);
+                    inst.boundingSphere = inst.boundingBox.getBoundingSphere(new Ti.Sphere());
                     if (typeof inst.setColorAt === "function") {
                         inst.setColorAt(0, new Ti.Color(1, 1, 1));
                         if (inst.instanceColor) inst.instanceColor.needsUpdate = true;
@@ -728,7 +745,17 @@ class AnazhRealm_Z23a {
                 }
                 if (outImp.children.length) return outImp;
             }
-            // flat === false (Foundry kann keinen Impostor) → auf die L2-Geometrie unten zurückfallen.
+            if (zusage) {
+                this._foundryWecker(zusage, "werkstatt", () => {
+                    try {
+                        this._workshopRebuildPreviewMesh();
+                    } catch (_e) {
+                        this._stoffBruch("die Werkstatt-Vorschau (Neubau nach der Karte)", _e);
+                    }
+                });
+                return "pending";
+            }
+            // ohne Zusage kann die Foundry keine Karte (die Zelle scheiterte) → auf die L2-Geometrie unten zurückfallen.
         }
         // W-A1 (Gesetz #0) — der Rest laeuft durch DIE EINE Vorschau-Quelle (Bauplan- UND
         // Rezept-Auswahl teilen sie; ov-Vorschauen laufen cache-frei durch den Regler-Kanal).
@@ -820,20 +847,9 @@ class AnazhRealm_Z23a {
                 this._stoffBruch("die Werkstatt-Vorschau (Studio-Neubau)", _e);
             }
         };
-        if (!f.ready) {
-            // Foundry bootet noch → sobald sie bereit ist, die Vorschau EINMAL neu bauen.
-            if (!f._workshopWaiting) {
-                f._workshopWaiting = true;
-                const t0 = performance.now();
-                const poll = () => {
-                    if (f.ready) {
-                        f._workshopWaiting = false;
-                        rebuild();
-                    } else if (performance.now() - t0 < 20000) setTimeout(poll, 150);
-                    else f._workshopWaiting = false;
-                };
-                setTimeout(poll, 150);
-            }
+        if (!f.ready || !f.recipes) {
+            // Foundry bootet / Buch kalt → die Vorschau hängt sich an die EINE Buch-Zusage und baut bei Ankunft EINMAL neu.
+            this._foundryWecker(f.buchDa, "werkstatt", rebuild);
             return "pending";
         }
         // ERFINDER-WELLE — die Ofen-Domaenen (koerper/kreatur/klang) ZUERST: der Host baeckt
@@ -872,16 +888,9 @@ class AnazhRealm_Z23a {
         const key = this._foundryKoerperKey(preset, variant, lod); // Same + LOD aus der Auswahl = echte Pipeline-Daten
         const group = this._foundryCacheGet(key);
         if (group === undefined) {
-            // Noch nicht gezogen → GENAU EINMAL anfragen (die requested-Wache), Vorschau bei Ankunft neu bauen.
-            if (!f.requested) f.requested = new Set();
-            if (!f.requested.has(key)) {
-                f.requested.add(key);
-                this._foundryRequest(preset, variant, lod, undefined, 0).then((meshes) => {
-                    if (meshes) this._foundryCacheSet(key, this._foundryBuildGroup(meshes, { lod, preset }));
-                    else f.requested.delete(key);
-                    rebuild();
-                });
-            }
+            // Noch nicht im Cache → der EINE Zug des Schlüssels (zog ihn schon die Welt oder die Hand, hängt sich die Vorschau
+            // an und hebt seinen Rang auf die Nähe 0); bei Ankunft baut sie neu, nach Ablauf fragt der Neubau frisch an.
+            this._foundryWecker(this._foundryZug(key, preset, variant, lod, null, 0), "werkstatt", rebuild);
             return "pending";
         }
         if (group === null || !group.children || !group.children.length) return false;

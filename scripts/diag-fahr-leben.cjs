@@ -132,9 +132,9 @@ function fnBody(src, sigRe) {
 }
 function taktWand(src) {
     const nc = ohneKommentare(src);
-    const sim = fnBody(nc, /\n {4}_stepFixedSim\(simTime, dt\) \{/);
-    const frame = fnBody(nc, /\n {4}_tickMountedMovement\(_?dt\) \{/);
-    const ritt = fnBody(nc, /\n {4}_rittSchritt\(dt\) \{/);
+    const sim = fnBody(nc, /\n {4}_stepFixedSim\([^)]*\) \{/);
+    const frame = fnBody(nc, /\n {4}_tickMountedMovement\([^)]*\) \{/);
+    const ritt = fnBody(nc, /\n {4}_rittSchritt\([^)]*\) \{/);
     const flag = (nc.match(/_rideSteer(?!Yaw)\b/g) || []).length;
     return [
         [
@@ -155,7 +155,7 @@ function fahrWand(stamm, garage, kern) {
     const st = ohneKommentare(stamm);
     const ga = ohneKommentare(garage);
     const ke = ohneKommentare(kern);
-    const lpm = fnBody(st, /\n {4}_loopPlayerMovement\(currentTime, dtOverride\) \{/) || "";
+    const lpm = fnBody(st, /\n {4}_loopPlayerMovement\([^)]*\) \{/) || "";
     const upd = fnBody(ga, /\nfunction updateVehicle\(dt,t\)\{/) || "";
     const kopieStamm = (st.match(/\bFlatF\b/g) || []).length;
     const kopieLab = (ga.match(/\bFlatF\b/g) || []).length;
@@ -242,7 +242,7 @@ function pflichtWand(stamm) {
 function huelleWand(stamm) {
     const st = ohneKommentare(stamm);
     const schleifen = (st.match(/pl < AnazhRealm\.SLIDE_CLIP_PLANES/g) || []).length;
-    const kapsel = fnBody(st, /\n {4}_stepCharacter\(delta, currentTime\) \{/) || "";
+    const kapsel = fnBody(st, /\n {4}_stepCharacter\([^)]*\) \{/) || "";
     const huelle = fnBody(st, /\n {4}_fahrHuelleKontakt\([^)]*\) \{/) || "";
     const tierHuelle = fnBody(st, /\n {4}_kreaturHuellenKontakt\([^)]*\) \{/) || "";
     const ruftK = /this\._wandGleiten\(/.test(kapsel);
@@ -4335,7 +4335,7 @@ function quellenAbgriff() {
         const vorStand = quelle
             .replace("        this._rittSchritt(dt);\n", "")
             .replace(
-                /(\n {4}_tickMountedMovement\(_?dt\) \{)/,
+                /(\n {4}_tickMountedMovement\([^)]*\) \{)/,
                 "$1\n        const pm = this.state.playerMesh.position;\n        pm.y = 0;\n        entry._rideSteer = false;"
             );
         const rot = taktWand(vorStand);
@@ -4354,7 +4354,7 @@ function quellenAbgriff() {
                 .join(" | ")
         );
         const kRot = fahrWand(
-            quelle.replace(/(\n {4}_loopPlayerMovement\(currentTime, dtOverride\) \{)/, "$1\n        let FlatF = 0;"),
+            quelle.replace(/(\n {4}_loopPlayerMovement\([^)]*\) \{)/, "$1\n        let FlatF = 0;"),
             garage.replace(/(\nfunction updateVehicle\(dt,t\)\{)/, "$1let FlatF=0;"),
             kern.replace("fahrSchritt: fahrSchritt", "")
         );
@@ -4422,10 +4422,10 @@ function quellenAbgriff() {
         const pRot = pflichtWand(
             quelle
                 .replace(
-                    /(\n {4}_fahrSatz\(entry, prof\) \{)/,
+                    /(\n {4}_fahrSatz\([^)]*\) \{)/,
                     '$1\n        const VC = globalThis.__vehicleCore;\n        if (!VC || typeof VC.fahrGesetz !== "function") return null;'
                 )
-                .replace(/(\n {4}_fahrHuelle\(entry\) \{)/, "$1\n        const radR = 0.34;")
+                .replace(/(\n {4}_fahrHuelle\([^)]*\) \{)/, "$1\n        const radR = 0.34;")
         );
         check(
             "Selbst-Test P: der Vor-Stand (typeof → null im Fahr-Satz, Literal-Zwilling in der Hülle) → P2 P3 feuern",

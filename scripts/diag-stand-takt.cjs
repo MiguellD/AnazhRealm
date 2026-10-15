@@ -290,11 +290,11 @@ function schreiberSelbsttest(fehler) {
             (wv.join(" · ") || "jeder Pfad weckt")
     );
     if (wv.length) fehler.push("der Stamm: " + wv.join(" · "));
-    const anker = "\n    _bauRegt() {";
-    if (!stamm.includes(anker)) fehler.push("der Schmuggel-Anker `_bauRegt() {` fehlt im Stamm");
+    const anker = stammLib.kopf(stamm, "_bauRegt"); // am Namen (gate:apparat Klinge 3)
+    if (anker < 0) fehler.push("der Schmuggel-Anker `_bauRegt` fehlt im Stamm");
     else {
         const schmuggel = "\n    _schmuggelSchreiber(e) {\n        this.state.architectures.push(e);\n    }\n";
-        const s = STAND.schreiberWand(stamm.replace(anker, schmuggel + anker));
+        const s = STAND.schreiberWand(stamm.slice(0, anker) + schmuggel + stamm.slice(anker));
         const v = STAND.schreiberUrteil(s);
         const ok =
             v.length === 1 && /SCHREIBER: _schmuggelSchreiber schreibt architectures .* ohne _weltRegt\(\)/.test(v[0]);

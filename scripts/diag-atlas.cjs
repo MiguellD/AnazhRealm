@@ -31,8 +31,9 @@ const ROOT = path.resolve(__dirname, "..");
 const RATSCHE = "spec/stamm/ratsche.json";
 
 const MARKER_RX = /^\s*\/\/ ===== ATLAS §(\d\d)([a-z]?) · ([^—]+) — (.+?) =====\s*$/;
-const METHOD_RX =
-    /^ {4}(?:async )?(?:static (?:get )?)?([a-zA-Z_$][a-zA-Z0-9_$]*)\(.*\) \{|^ {4}static (?:get )?([a-zA-Z_$][a-zA-Z0-9_$]*)\b/;
+// Die Glieder einer Datei am AST (stammLib.glieder, K38-N2): ein Kopf-Muster übersah umbrochene Köpfe und Getter ohne
+// static — die Karte zählte sie nicht, `--find` fand sie nicht, R2 schlug sie nicht vor.
+const gliederVon = (t) => t.glieder || (t.glieder = stammLib.glieder(t.text).map((g) => ({ name: g.name, zeile: g.zeile })));
 // die Datei-Nummer: stamm/02b.js → "02b"; die Zone selbst heißt §NN, ihre Datei NNa, wenn sie Unter-Schnitte trägt
 const idVon = (p) => p.replace(/^.*\/|\.js$/g, "");
 const ordnung = (id) => Number(id.slice(0, 2)) * 32 + Math.max(0, (id.charCodeAt(2) || 97) - 96);
@@ -66,8 +67,7 @@ function zonenVon(teile) {
     for (const t of teile)
         t.marker.forEach((m, i) => {
             const ende = i + 1 < t.marker.length ? t.marker[i + 1].line - 1 : t.zeilen;
-            let methoden = 0;
-            for (let ln = m.line; ln < ende; ln++) if (METHOD_RX.test(t.lines[ln])) methoden++;
+            const methoden = gliederVon(t).filter((g) => g.zeile > m.line && g.zeile <= ende).length;
             out.push({ ...m, pfad: t.pfad, ende, zeilen: ende - m.line + 1, methoden });
         });
     return out;
@@ -186,14 +186,8 @@ function pruefe(root, opt = {}) {
     for (const t of teile)
         if (t.zeilen > R.decke_zeilen) {
             const mitte = Math.round(t.zeilen / 2);
-            let methode = "<methode>";
-            for (let ln = mitte; ln < t.zeilen; ln++) {
-                const m = t.lines[ln].match(METHOD_RX);
-                if (m) {
-                    methode = m[1] || m[2];
-                    break;
-                }
-            }
+            const g = gliederVon(t).find((x) => x.zeile > mitte);
+            const methode = g ? g.name : "<methode>";
             fehler.push(
                 `R2 DECKE: ${t.pfad} trägt ${t.zeilen} Zeilen > ${R.decke_zeilen} — node scripts/stamm-umzug.cjs --teile §${idVon(t.pfad).slice(0, 2)} ${methode}`
             );
@@ -465,15 +459,12 @@ if (findIdx >= 0) {
     const rx = new RegExp(argv[findIdx + 1] || "$^");
     let hits = 0;
     for (const t of teile)
-        t.lines.forEach((l, i) => {
-            const m = l.match(METHOD_RX);
-            const name = m && (m[1] || m[2]);
-            if (name && rx.test(name)) {
-                const z = zonen.filter((z) => z.pfad === t.pfad && z.line <= i + 1).pop();
-                console.log(`  ${(t.pfad + ":" + (i + 1)).padEnd(20)} ${name}  →  §${z ? z.id + " " + z.name : "?"}`);
+        for (const { name, zeile } of gliederVon(t))
+            if (rx.test(name)) {
+                const z = zonen.filter((z) => z.pfad === t.pfad && z.line <= zeile).pop();
+                console.log(`  ${(t.pfad + ":" + zeile).padEnd(20)} ${name}  →  §${z ? z.id + " " + z.name : "?"}`);
                 hits++;
             }
-        });
     if (!hits) console.log("  (kein Treffer)");
     process.exit(0);
 }

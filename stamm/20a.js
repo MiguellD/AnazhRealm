@@ -424,7 +424,7 @@ class AnazhRealm_Z20a {
             _vorrat: false, // die Phase des Vorrats (`VORRAT_PHASE`); false = steht nicht an oder ist durch (warm)
             recipes: null,
             // DAS BUCH IST EIN EREIGNIS (K22, Nachbesserung 4): wer auf das Studio-Buch wartet (der Vorrat, der Dorf-Spawn,
-            // die Portal-Vorschau), wartet auf `buchDa` — `_foundryIngestBook` erfüllt es. Bis hierher wartete der Vorrat
+            // die Portal-Vorschau, die Werkstatt-Vorschau, die Hand), wartet auf `buchDa` — `_foundryIngestBook` erfüllt es. Bis hierher wartete der Vorrat
             // 2 s auf die Uhr und wärmte danach ohne Rezepte (FOUNDRY WARM: fünf kritische Presets fehlen im Buch).
             buchDa: null,
             buchKam: null,
@@ -575,6 +575,8 @@ class AnazhRealm_Z20a {
                 pi(m.payload || null);
             }
         }
+        // die Antwort ist das Ereignis der Fristen: die Uhr des nächsten ihres Fadens läuft an (`_foundryUhren`)
+        this._foundryUhren(f);
     }
     // DER BÄCKER HAT SEINEN FADEN. Die Karte rendert das Studio offscreen mit WebGL (`bakeImpostorAtlas`: Kontext,
     // Programme, 8 Winkel, Rücklesen) und hält dabei den Faden fest, der sie trägt. Bis 05.10. war das der EINE

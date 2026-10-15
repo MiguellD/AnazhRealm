@@ -58,11 +58,11 @@ function check(name, ok, detail) {
     );
     check(
         "Q: _koerperStudioDials trägt die Übergabe als Vorrang-Quelle (EIN Leser)",
-        /_koerperStudioDials\(\) \{[\s\S]{0,1400}studioUebergabe\.koerper[\s\S]{0,900}?\n    \}/.test(stamm)
+        /_koerperStudioDials\([^)]*\) \{[\s\S]{0,1400}studioUebergabe\.koerper[\s\S]{0,900}?\n    \}/.test(stamm)
     );
     check(
         "Q: _tetrapodaStudioDials trägt die Übergabe als Vorrang-Quelle (EIN Leser)",
-        /_tetrapodaStudioDials\(recId\) \{[\s\S]{0,1600}studioUebergabe\.kreatur[\s\S]{0,900}?\n    \}/.test(stamm)
+        /_tetrapodaStudioDials\([^)]*\) \{[\s\S]{0,1600}studioUebergabe\.kreatur[\s\S]{0,900}?\n    \}/.test(stamm)
     );
     check(
         "Q: Snapshot-Zwilling (buildStateSnapshot trägt studioUebergabe + Restore validiert)",

@@ -328,13 +328,16 @@ async function bereit(page, weltId) {
 // EINE Ablage) in den Speicher, `location.reload` steht nur im Welt-Wechsel `_weltWechselNeuLaden`. Jeder andere Ort fällt
 // beim Namen seiner Methode.
 function absenz() {
-    const zeilen = stammLib.text(root).split("\n");
+    const text = stammLib.text(root);
+    const zeilen = text.split("\n");
+    // Die Methode einer Zeile am AST (stammLib.glieder, K38-N2): ein umbrochener Kopf oder ein Getter fiel aus dem
+    // Kopf-Muster, und seine Zeilen gehörten still der Methode davor.
+    const gl = stammLib.glieder(text);
+    const ab = [];
+    for (let i = 0, o = 0; i < zeilen.length; o += zeilen[i].length + 1, i++) ab.push(o);
     const methodeAn = (i) => {
-        for (let j = i; j >= 0; j--) {
-            const m = /^ {4}(?:static |async )*([A-Za-z_$][\w$]*)\(.*\)\s*\{\s*$/.exec(zeilen[j]);
-            if (m) return m[1];
-        }
-        return "?";
+        const g = stammLib.gliedAn(gl, ab[i] + zeilen[i].search(/\S|$/));
+        return g ? g.name : "?";
     };
     const out = [];
     const pruefe = (re, erlaubt, was) =>

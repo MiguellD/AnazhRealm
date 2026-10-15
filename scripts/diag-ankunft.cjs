@@ -327,13 +327,13 @@ function dorfVerdict(m) {
 // ── DIE STATISCHE WAND (Node, kommentarfrei). Liefert [name, ok, detail]. ──
 function wand(src, html) {
     const nc = ohneKommentare(src);
-    const fallback = fnBody(nc, /\n {4}_chatHandleConversationalFallback\(command, appendChatOutput\) \{/) || "";
-    const hilfe = fnBody(nc, /\n {4}_hilfeZeilen\(\) \{/) || "";
+    const fallback = fnBody(nc, /\n {4}_chatHandleConversationalFallback\([^)]*\) \{/) || "";
+    const hilfe = fnBody(nc, /\n {4}_hilfeZeilen\([^)]*\) \{/) || "";
     const siedlung = fnBody(nc, /\n {4}async spawnSettlement\(opts\) \{/) || "";
     const dorfOp = (nc.match(/spawn_village: \(\[positionNode, seed[^\]]*\], ctx\) => \{[\s\S]*?\n {12}\},/) || [""])[0];
-    const autoDorf = fnBody(nc, /\n {4}_autoSettlementSpawnCell\(cx, cz, info\) \{/) || "";
-    const kamera = fnBody(nc, /\n {4}_loopCamera\(currentTime\) \{/) || "";
-    const stoff = fnBody(nc, /\n {4}_foundryTreeMaterial\(kind, mp, wiegen, baum\) \{/) || "";
+    const autoDorf = fnBody(nc, /\n {4}_autoSettlementSpawnCell\([^)]*\) \{/) || "";
+    const kamera = fnBody(nc, /\n {4}_loopCamera\([^)]*\) \{/) || "";
+    const stoff = fnBody(nc, /\n {4}_foundryTreeMaterial\([^)]*\) \{/) || "";
     const ladeIdx = html.indexOf('id="ladeschirm"');
     const ladeTag = ladeIdx >= 0 ? html.slice(html.lastIndexOf("<", ladeIdx), html.indexOf(">", ladeIdx) + 1) : "";
     // die Proben durch die Bildmitte (Gegenprüfung Runde 2): jede nimmt den EINEN Strahl
@@ -350,7 +350,7 @@ function wand(src, html) {
         const b = fnBody(nc, new RegExp("\\n {4}" + sig.replace(/[()=]/g, (c) => "\\" + c) + " \\{")) || "";
         return !/this\._fadenkreuzStrahl\(\)/.test(b) || /getWorldDirection\(/.test(b);
     });
-    const durchNode = fnBody(nc, /\n {4}_kameraDurchsichtNode\(T, art\) \{/) || "";
+    const durchNode = fnBody(nc, /\n {4}_kameraDurchsichtNode\([^)]*\) \{/) || "";
     return [
         [
             "W1 die Hilfe liest die EINEN Tafeln (`_hilfeZeilen`: chatDslPatterns · chatSystemPatterns · KEYBINDING_LABELS), der Satz für Unbekanntes trägt keine Liste von Hand",
@@ -363,12 +363,12 @@ function wand(src, html) {
             "W2 der Ladeschirm steht im HTML vor allem anderen sichtbar (kein `hidden`), das Spiel nimmt ihn nur über `_ankunftsBild`/`_ladeschirmWeg`, und `_ankunftsBild` fragt, was dem Weltbild fehlt (`_weltbildFehlt`)",
             ladeIdx >= 0 &&
                 !/\bhidden\b/.test(ladeTag) &&
-                /this\._ankunftsBild\(\)/.test(fnBody(nc, /\n {4}_loopRender\(currentTime\) \{/) || "") &&
-                /this\._weltbildFehlt\(\)/.test(fnBody(nc, /\n {4}_ankunftsBild\(\) \{/) || ""),
+                /this\._ankunftsBild\(\)/.test(fnBody(nc, /\n {4}_loopRender\([^)]*\) \{/) || "") &&
+                /this\._weltbildFehlt\(\)/.test(fnBody(nc, /\n {4}_ankunftsBild\([^)]*\) \{/) || ""),
         ],
         [
             "W3 die Hotbar trägt im Konstruktor keinen Bauplan-Namen (der Start-Gurt liest den Katalog: `_startGurt`)",
-            /hotbar: \[null, null, null, null, null, null, null, null, null\]/.test(nc) && /_katalogSichtbar/.test(fnBody(nc, /\n {4}_startGurt\(\) \{/) || ""),
+            /hotbar: \[null, null, null, null, null, null, null, null, null\]/.test(nc) && /_katalogSichtbar/.test(fnBody(nc, /\n {4}_startGurt\([^)]*\) \{/) || ""),
         ],
         [
             "W4 das Dorf misst seinen Plan (`_siedlungsAnker`), keine Schätzung `_structureSpawnPos(\"haus_basis\")` in spawnSettlement, spawn_village und dem Welt-Dorf (`_autoSettlementSpawnCell`); spawn_village trägt den Blick des Sprechers",
@@ -1727,11 +1727,11 @@ async function probe(arg) {
             .replace("const anchor = this._siedlungsAnker(plan, o.position || null, o.blick || null);", 'const anchor = this._structureSpawnPos("haus_basis", base, { state: this.state }, 3);')
             .replace("{ durchPflanzen: true }", "{}")
             .replace('const _durch = this._kameraDurchsichtNode(TSL, wiegen === true ? "boden" : isBark ? "rinde" : "laub");', "const _durch = null;")
-            .replace(/(\n {4}_raycastWorldHit\(maxDist = 30\) \{[\s\S]*?)this\._fadenkreuzStrahl\(\)/, "$1this._alterStrahl()")
+            .replace(/(\n {4}_raycastWorldHit\([^)]*\) \{[\s\S]*?)this\._fadenkreuzStrahl\(\)/, "$1this._alterStrahl()")
             .replace("AnazhRealm._durchsichtGewicht(A,", "AnazhRealm._alteDurchsicht(A,")
             .replace("(Welt verändert: ${compName} ${this.describeProgram(reply.program)}.)", "(Welt verändert: ${JSON.stringify(reply.program)})")
             .replace("for (const z of this._hilfeZeilen()) append(z);", "append(\"'Setze Wetter rainy'\");")
-            .replace(/_hilfeZeilen\(\) \{[\s\S]*?\n {4}\}\n/, "_hilfeZeilen() {\n        return [];\n    }\n");
+            .replace(/_hilfeZeilen\([^)]*\) \{[\s\S]*?\n {4}\}\n/, "_hilfeZeilen() {\n        return [];\n    }\n");
         const vorHtml = html.replace('<div id="ladeschirm" role="status" aria-live="polite">', '<div id="ladeschirm" role="status" aria-live="polite" hidden>');
         const rot = wand(vorStand, vorHtml);
         check(

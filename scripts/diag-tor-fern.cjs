@@ -42,17 +42,18 @@ const SOLL = { fernTeile: 24, wurfIou: 0.85, wurfMedian: 0.92, innenP95: 0.1 };
 
 // ── DER EINE LESER DES STAMMS: `AnazhRealm._huelleVon` aus der Quelle (die Fernform liest, was er liest) ──
 const STAMM = stammLib.text(root);
-function methodeAus(src, kopf) {
-    const i = src.indexOf(kopf);
-    if (i < 0) throw new Error("im Stamm nicht gefunden: " + kopf);
-    let j = src.indexOf("{", i),
-        tiefe = 0,
-        k = j;
+// die Methode am NAMEN (gate:apparat Klinge 3): Rumpf und Parameter liest die Probe aus dem Kopf, nie eine eigene Liste
+function methodeAus(src, name) {
+    const i = stammLib.kopf(src, name);
+    if (i < 0) throw new Error("im Stamm nicht gefunden: " + name);
+    const p = src.indexOf("(", i);
+    const args = src.slice(p + 1, src.indexOf(")", p));
+    let j = src.indexOf("{", p + args.length + 1), tiefe = 0, k = j;
     for (; k < src.length; k++) {
         if (src[k] === "{") tiefe++;
         else if (src[k] === "}" && --tiefe === 0) break;
     }
-    return src.slice(j + 1, k);
+    return { args, rumpf: src.slice(j + 1, k) };
 }
 const KEIL_TYP = (() => {
     const m = STAMM.match(/AnazhRealm\.HUELLE_KEIL_TYP = Object\.freeze\((\{[^}]*\})\)/);
@@ -65,9 +66,10 @@ function leser(rumpf) {
             throw new Error("KERN-PFLICHT " + q);
         },
     };
-    return Function("AnazhRealm", "return function _huelleVon(h, rolle, quelle) {" + rumpf + "};")(stub);
+    return Function("AnazhRealm", "return function _huelleVon(" + HUELLE.args + ") {" + rumpf + "};")(stub);
 }
-const RUMPF = methodeAus(STAMM, "    static _huelleVon(h, rolle, quelle) {");
+const HUELLE = methodeAus(STAMM, "_huelleVon");
+const RUMPF = HUELLE.rumpf;
 const huelleVon = leser(RUMPF);
 
 // ── Fußabdruck entlang der Sonne (Raster 5 cm) ──
@@ -327,7 +329,7 @@ const FERN = {
 FERN.rest = FERN.klasse - FERN.fest;
 const STUFE_NACH_GRENZEN = Function(
     "return function _stufeNachGrenzen(d, cur, G, s) {" +
-        methodeAus(STAMM, "    static _stufeNachGrenzen(d, cur, G, s) {") +
+        methodeAus(STAMM, "_stufeNachGrenzen").rumpf +
         "};"
 )();
 function stufeBei(K, d) {
