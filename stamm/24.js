@@ -100,6 +100,14 @@ class AnazhRealm_Z24 {
         this._dayNightApplyAmbient(angle);
         this._updateCelestialBodies(angle, tint.lightMul);
         this._dayNightApplyHemiUndLuft(angle, tint, sunDir);
+        // DIE HIMMELS-UMGEBUNG malt sich aus BEIDEN Quellen, die jetzt gelten — dem Zenit (die Skybox-Tönung, oben) und dem
+        // Horizont (die Luft-Farbe, eben): erst danach, und vor jedem Leser ihrer Bestrahlung (Wasser, Belichtung). Bis K10
+        // malte `_dayNightApplySkybox` sie vor der Luft — die Nacht nach einem Sprung trug den Horizont des Tags (intern
+        // gedrosselt: regeneriert nur bei Farb-Drift; ein Einmal-Fehlschlag versucht es nicht erneut). Ein Sprung des Himmels
+        // (`_himmelSprung`, gesetzt vom Uhr-Schreiber) geht an der Raten-Drossel vorbei, EINMAL.
+        const sprung = this._himmelSprung === true;
+        this._himmelSprung = false;
+        if (!this.state._skyEnvFailed) this._ensureSkyEnvironment(false, sprung);
         this._dayNightApplyWaterMaterials(lightDir);
         this._dayNightApplyBelichtung();
         this._dayNightApplyAugenLicht();
@@ -379,9 +387,6 @@ class AnazhRealm_Z24 {
             // bewölkt), Regen 0.9 (Overcast). Der FBM-Wolken-Layer liest sie als Schwellen-Senker.
             u.cloudCover.value = Math.min(1, this._weatherBlendedValue(0.12, 0.9)); // D5a: [0,1]-Konsument clampt lokal
         }
-        // Ω-OPSIS §7 — die Sky-Env-Map mit der frischen Himmelsfarbe nachziehen (intern
-        // gedrosselt: regeneriert nur bei Farb-Drift). Einmal-Fehlschlag → nicht erneut versuchen.
-        if (!this.state._skyEnvFailed) this._ensureSkyEnvironment();
     }
 
     // Stern-Feld: die Dämmerung setzt die Grenzgröße (Physik der Sichtbarkeit, nie ein Nacht-Faktor), das Wetter
@@ -617,7 +622,7 @@ class AnazhRealm_Z24 {
 
     // DER LICHT-TAKT (K11) — der EINE Schreiber des Licht-Pools und der Fenster-Glut, je Bild vor dem Render (`_gameLoopTick`).
     // Die Plätze gehen an die Leuchtquellen, deren Reichweite dem Auge am nächsten kommt (`_leuchtQuellen`: das Licht des
-    // Auges, jede Glut und jede Quelle mit Datum im Verzeichnis, die Laternen der Pläne, das wache Tor; neu gewählt je `wahlS`
+    // Auges, jede Glut und jede Quelle mit Datum im Verzeichnis (die Laternen der Pläne), das wache Tor; neu gewählt je `wahlS`
     // oder nach `wahlM` Weg). Ein Platz hält seine Quelle, solange sie gewählt ist; eine abgewählte blendet in `blendeS` aus,
     // erst der freie Platz nimmt die nächste auf, und sie blendet ein — kein Licht springt. Die Stärke je Bild: das Emitter-
     // Datum über die EINE Übersetzung Labor → Welt (`_laborLichtStaerke`) × Masse (die Fläche der Glut) × Flackern auf der
@@ -631,7 +636,8 @@ class AnazhRealm_Z24 {
         if (!atmo || !cam) return; // vor der Welt: kein Stoff liest den Pool
         const LP = AnazhRealm.LICHT_POOL;
         const LG = globalThis.__fachwerkCore.LICHT_GESETZ;
-        this._lichtLinear(LG.fenster, atmo.fensterGlut.value).multiplyScalar(this._lichtZeitplan(LG.fenster.zeit));
+        for (const k in atmo.lichtGlut)
+            this._lichtLinear(LG[k], atmo.lichtGlut[k].value).multiplyScalar(this._lichtZeitplan(LG[k].zeit));
         const pool =
             this._leuchtPool ||
             (this._leuchtPool = {
@@ -654,7 +660,7 @@ class AnazhRealm_Z24 {
             pool.x = cp.x;
             pool.y = cp.y;
             pool.z = cp.z;
-            const q = this._leuchtQuellen(cp.x, cp.y, cp.z, LP.umkreisM);
+            const q = this._leuchtQuellen(cp.x, cp.y, cp.z, LP.umkreisM, this._leuchtKegel(cam));
             q.sort((a, b) => a.rang - b.rang);
             pool.wahl = q.slice(0, LP.plaetze);
         }
@@ -740,20 +746,36 @@ class AnazhRealm_Z24 {
         return this._laborLichtStaerke(L.staerke * (1 + fl)) * q.masse * this._lichtZeitplan(L.zeit);
     }
 
+    // DER SICHTKEGEL der Licht-Wahl (K10 × K11): das Frustum der Kamera des Bildes, je Wahl aus ihren Matrizen.
+    _leuchtKegel(cam) {
+        const F = this._leuchtFrustum || (this._leuchtFrustum = new THREE.Frustum());
+        const m = this._leuchtKegelM || (this._leuchtKegelM = new THREE.Matrix4());
+        cam.updateMatrixWorld();
+        return F.setFromProjectionMatrix(
+            m.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse),
+            cam.coordinateSystem
+        );
+    }
+
     // DIE LEUCHTQUELLEN um das Auge (x, y, z) im Umkreis R (K11), je mit stabiler Kennung (`id`) und Rang (der Abstand des
     // Auges zur Kugel ihrer Reichweite, 0 in ihr — dann der Abstand selbst, das Nächste zuerst): das Licht des Auges
     // (`_augenLeuchte`, am Auge: Rang 0), jeder Eintrag des Verzeichnisses „licht" (`_blockerMit`, gestempelt beim Eintritt)
     // mit seinem Emitter-Datum (`_lichtDatum`) — die Masse folgt der Fläche: trägt die Studio-Gestalt das Datum, ist es ihres
     // (Masse = Skala²); eine Glut ohne Datum der Gestalt trägt das Herdfeuer im Verhältnis ihrer Fläche zum Glutbett der
-    // Studio-Feuerstelle (klang `bettRefM`, der Bezug des Knisterns) —, die Laternen der Pläne (`_laternenLesen`, Zellen)
-    // und das wache Tor (`_portalLeuchte`). Eine Quelle, die jetzt nicht brennt (Zeitplan 0), steht nicht zur Wahl.
-    _leuchtQuellen(x, y, z, R) {
+    // Studio-Feuerstelle (klang `bettRefM`, der Bezug des Knisterns); die Laterne eines Plans ist so ein Eintrag (die Gestalt
+    // `laterne_dorf`, ihr Datum LICHT_GESETZ.laterne) — und das wache Tor (`_portalLeuchte`). Eine Quelle, die jetzt nicht brennt (Zeitplan 0), steht nicht zur Wahl.
+    // Mit dem Sichtkegel `F` (`_leuchtKegel`) rangiert jede Quelle, deren Reichweiten-Kugel ihn nicht berührt, hinter allen,
+    // die ihn berühren: sie erhellt kein Pixel des Bildes — die Laterne hinter dem Rücken nahm sonst den Platz der Laterne
+    // vor dem Auge (die Gasse nachts: 1 von 6 Laternen im Bild hell). Freie Plätze nehmen sie weiter (das Drehen blendet).
+    _leuchtQuellen(x, y, z, R, F) {
         const out = [];
         const t = this._windZeit();
+        const kugel = F ? this._leuchtKugel || (this._leuchtKugel = new THREE.Sphere()) : null;
         const nimm = (id, q) => {
             const d = Math.hypot(q.x - x, q.y - y, q.z - z);
             if (d > R + q.L.reichweiteM || !(this._leuchtStaerke(q, t) > 0)) return;
-            out.push(Object.assign(q, { id, rang: Math.max(0, d - q.L.reichweiteM) * 1e3 + d }));
+            const imBild = !F || F.intersectsSphere(kugel.set(kugel.center.set(q.x, q.y, q.z), q.L.reichweiteM));
+            out.push(Object.assign(q, { id, rang: (imBild ? 0 : 1e9) + Math.max(0, d - q.L.reichweiteM) * 1e3 + d }));
         };
         const auge = this._augenLeuchte;
         if (auge) nimm(auge, Object.assign({}, auge, { x, y, z }));
@@ -776,45 +798,9 @@ class AnazhRealm_Z24 {
                 phase: (((p.x * 12.9898 + p.z * 78.233) % 6.2832) + 6.2832) % 6.2832,
             });
         }
-        const LZ = this._laternen;
-        if (LZ) {
-            const Z = AnazhRealm.LICHT_POOL.zelleM;
-            for (let i = Math.floor((x - R) / Z); i <= Math.floor((x + R) / Z); i++)
-                for (let j = Math.floor((z - R) / Z); j <= Math.floor((z + R) / Z); j++)
-                    for (const l of LZ.zellen.get(i + "," + j) || []) nimm(l, Object.assign({}, l));
-        }
         const tor = this._portalLeuchte;
         if (tor) nimm(tor, Object.assign({}, tor));
         return out;
-    }
-
-    // DER LESER DER LATERNEN (K11 ↔ K10): `laternen[]` eines Siedlungs-Plans (fachwerk exportSettlement, je Laterne x/z
-    // plan-lokal) wird Leuchtquelle mit dem Datum LICHT_GESETZ.laterne — der Kopf `hoeheM` über dem Boden des Gesetzes —, je
-    // Plan einmal (der Schlüssel der Siedlung, wie die Wege), abgelegt in Zellen von `LICHT_POOL.zelleM` (die Wahl liest nur die
-    // Zellen um das Auge, nie alle Laternen der Welt). Gerufen aus dem EINEN Hebe-Chokepoint `_spawnSettlementErlebnis`.
-    _laternenLesen(plan, origin, key) {
-        if (!plan || !Array.isArray(plan.laternen) || plan.laternen.length === 0) return 0;
-        const LZ = this._laternen || (this._laternen = { zellen: new Map(), schluessel: new Set() });
-        if (key) {
-            if (LZ.schluessel.has(key)) return 0;
-            LZ.schluessel.add(key);
-        }
-        const L = globalThis.__fachwerkCore.LICHT_GESETZ.laterne;
-        const Z = AnazhRealm.LICHT_POOL.zelleM;
-        let n = 0;
-        for (const l of plan.laternen) {
-            if (!l || !Number.isFinite(l.x) || !Number.isFinite(l.z)) continue;
-            const wx = origin.x + l.x;
-            const wz = origin.z + l.z;
-            const wy = this.getTerrainHeightAt(wx, wz);
-            if (!Number.isFinite(wy)) continue;
-            const zk = Math.floor(wx / Z) + "," + Math.floor(wz / Z);
-            const liste = LZ.zellen.get(zk) || [];
-            liste.push({ quelle: "laterne", x: wx, y: wy + L.hoeheM, z: wz, L, masse: 1, phase: 0 });
-            LZ.zellen.set(zk, liste);
-            n++;
-        }
-        return n;
     }
 
     // DAS EMITTER-DATUM eines Eintrags (K11): die Zeile `fx.licht` des Studio-Rezepts seiner Gestalt (`studioGestalt` im
@@ -1341,6 +1327,8 @@ class AnazhRealm_Z24 {
             );
             return false;
         }
+        // ein Schreiber außer dem Gang springt: der Himmel malt sich beim nächsten Anwenden des Tags neu (`_ensureSkyEnvironment`)
+        if (quelle !== "uhr" && v !== this.state.timeOfDay) this._himmelSprung = true;
         this.state.timeOfDay = v;
         return true;
     }

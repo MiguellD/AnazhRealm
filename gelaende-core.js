@@ -9,7 +9,8 @@
 // REIN: jede Funktion ist f(L, x, z, …). `L` ist die GELÄNDE-LAGE, die der Wirt reicht — der voxel-worker seinen
 // `state`, der Stamm die lebende Sicht `_gelaende()` auf seinen Zustand. Gelesen werden genau diese Namen:
 //   seed · noise (SimplexNoise des Stroms seed + ":voxel") · baseHeight · waterLevel · erbgut ({ terme, wildnis, hash }
-//   — die Normalform) · regionSize (die Kachel-Kante der Hydro-Regionen).
+//   — die Normalform) · regionSize (die Kachel-Kante der Hydro-Regionen) · erdbau (die Normalform `erdbauNormal` der Orte
+//   oder null, K10).
 // Kein this, kein Zustand außer den Rausch-Strömen je Saat (aus der Saat abgeleitet, nie Math.random), keine Zeit.
 //
 // GESETZ-KERN (studio-vertrag §9): STUDIO_VERTRAG = 1 und FUNKTION = 1 — keine Rezepte, keine Gestalt.
@@ -1305,6 +1306,204 @@
         return best;
     }
 
+    // DER ERDBAU (K10, der Ort auf dem Gelände): die Splats eines Siedlungs-Plans v2 (fachwerk `ortPlan` — `platte` {cx, cz,
+    // phi, ex, ez, y} und `trasse` {x0, z0, y0, x1, z1, y1, w}, absolut) legen sich als letzter Term auf die Höhe: innen die
+    // Höhe des Plans, außen die Böschung (`boeschung` = tan, Abtrag wie Auftrag) bis zur Reichweite — h' = clamp(h, y − d·b,
+    // y + d·b), d der Abstand zur Fläche des Splats, in der Reihenfolge des Plans. AUF einer Fläche (d = 0) gilt ihre Höhe
+    // allein (die letzte gewinnt, wo sie sich decken): keine Böschung eines Nachbarn schneidet in einen Grundriss.
+    // Der Rahmen einer Platte ist der des Hauses (welt = mitte + (lx·c + lz·s, −lx·s + lz·c)). Ohne Erdbau kostet der Term
+    // eine Feld-Probe (`L.erdbau`), die Welt bleibt byte-gleich. Leser: `hoehe` (Stamm, voxel-worker, Foundry-Worker).
+    const ERDBAU = Object.freeze({ boeschung: 0.6, reichweiteM: 16, zelleM: 16 });
+    const ERDBAU_ZAHL = ["cx", "cz", "phi", "ex", "ez", "y"];
+    const TRASSE_ZAHL = ["x0", "z0", "y0", "x1", "z1", "y1", "w"];
+    // FREI {cx, cz, phi, ex, ez} (das Brücken-Etikett des Plans v2): in seinem Rechteck gilt der Grund allein — keine Fläche,
+    // keine Böschung (der Weg über das Welt-Wasser staut es nicht).
+    const FREI_ZAHL = ["cx", "cz", "phi", "ex", "ez"];
+    // Die NORMALFORM des Erdbaus: roh = die Splat-Liste (der Wirt fügt die Pläne seiner Orte in ihrer Reihenfolge an) →
+    // { n, splats, zellen } mit einem Raster der Kante `zelleM` (je Zelle die Splats, deren Reichweite sie berührt). Fail-
+    // closed: eine fremde Art oder eine fehlende Zahl wirft. Leer → null (der Term ruht).
+    function erdbauNormal(roh) {
+        if (roh == null) return null;
+        if (!Array.isArray(roh)) throw new Error("gelaende-core: der Erdbau ist keine Liste");
+        if (!roh.length) return null;
+        const R = ERDBAU.reichweiteM;
+        const Z = ERDBAU.zelleM;
+        const splats = [];
+        const zellen = new Map();
+        for (let i = 0; i < roh.length; i++) {
+            const p = roh[i];
+            const art = p && p.art;
+            const namen = art === "platte" ? ERDBAU_ZAHL : art === "trasse" ? TRASSE_ZAHL : art === "frei" ? FREI_ZAHL : null;
+            if (!namen) throw new Error("gelaende-core: Erdbau-Splat " + i + " trägt die fremde Art " + art);
+            for (const k of namen)
+                if (!Number.isFinite(p[k])) throw new Error("gelaende-core: Erdbau-Splat " + i + " ohne Zahl " + k);
+            let s;
+            let x0;
+            let x1;
+            let z0;
+            let z1;
+            if (art === "platte" || art === "frei") {
+                const c = Math.cos(p.phi);
+                const sn = Math.sin(p.phi);
+                const frei = art === "frei";
+                s = { platte: !frei, frei, cx: p.cx, cz: p.cz, c, s: sn, ex: p.ex, ez: p.ez, y: frei ? NaN : p.y };
+                const hx = Math.abs(p.ex * c) + Math.abs(p.ez * sn) + (frei ? 0 : R);
+                const hz = Math.abs(p.ex * sn) + Math.abs(p.ez * c) + (frei ? 0 : R);
+                x0 = p.cx - hx;
+                x1 = p.cx + hx;
+                z0 = p.cz - hz;
+                z1 = p.cz + hz;
+            } else {
+                const dx = p.x1 - p.x0;
+                const dz = p.z1 - p.z0;
+                const len2 = dx * dx + dz * dz;
+                if (p.weg != null && !Number.isFinite(p.weg))
+                    throw new Error("gelaende-core: Erdbau-Splat " + i + " trägt keinen Weg als Zahl");
+                const weg = p.weg == null ? -1 : p.weg;
+                s = { platte: false, x0: p.x0, z0: p.z0, dx, dz, len2, y0: p.y0, dy: p.y1 - p.y0, hw: p.w / 2, weg };
+                const m = p.w / 2 + R;
+                x0 = Math.min(p.x0, p.x1) - m;
+                x1 = Math.max(p.x0, p.x1) + m;
+                z0 = Math.min(p.z0, p.z1) - m;
+                z1 = Math.max(p.z0, p.z1) + m;
+            }
+            splats.push(s);
+            for (let a = Math.floor(x0 / Z); a <= Math.floor(x1 / Z); a++)
+                for (let b = Math.floor(z0 / Z); b <= Math.floor(z1 / Z); b++) {
+                    const key = (a + 32768) * 65536 + (b + 32768);
+                    const liste = zellen.get(key);
+                    if (liste) liste.push(i);
+                    else zellen.set(key, [i]);
+                }
+        }
+        return { n: splats.length, splats, zellen };
+    }
+    // Der Erdbau an (x, z) über der Höhe h (die Normalform E, `erdbauNormal`).
+    function erdbauY(E, x, z, h) {
+        const Z = ERDBAU.zelleM;
+        const liste = E.zellen.get((Math.floor(x / Z) + 32768) * 65536 + (Math.floor(z / Z) + 32768));
+        if (!liste) return h;
+        const R = ERDBAU.reichweiteM;
+        const B = ERDBAU.boeschung;
+        let fest = NaN; // die Fläche, auf der der Punkt liegt (der letzte Splat mit d = 0): ihre Höhe ist Gesetz
+        let festWeg = -2; // der Weg der Fläche (die Strecken EINES Wegs folgen einander: unter ihnen gilt die nächste Mitte)
+        let festMitte = Infinity;
+        for (let k = 0; k < liste.length; k++) {
+            const p = E.splats[liste[k]];
+            if (!p.frei) continue;
+            const dx = x - p.cx;
+            const dz = z - p.cz;
+            if (Math.abs(dx * p.c - dz * p.s) <= p.ex && Math.abs(dx * p.s + dz * p.c) <= p.ez) return h; // unter der Brücke: der Grund
+        }
+        for (let k = 0; k < liste.length; k++) {
+            const p = E.splats[liste[k]];
+            if (p.frei) continue;
+            let d;
+            let y;
+            let mitte = 0;
+            if (p.platte) {
+                const dx = x - p.cx;
+                const dz = z - p.cz;
+                const u = Math.abs(dx * p.c - dz * p.s) - p.ex;
+                const v = Math.abs(dx * p.s + dz * p.c) - p.ez;
+                d = u > 0 ? (v > 0 ? Math.hypot(u, v) : u) : v > 0 ? v : 0;
+                y = p.y;
+            } else {
+                let q = p.len2 > 0 ? ((x - p.x0) * p.dx + (z - p.z0) * p.dz) / p.len2 : 0;
+                if (q < 0) q = 0;
+                else if (q > 1) q = 1;
+                mitte = Math.hypot(x - (p.x0 + p.dx * q), z - (p.z0 + p.dz * q));
+                d = mitte - p.hw;
+                if (d < 0) d = 0;
+                y = p.y0 + p.dy * q;
+            }
+            if (d > R) continue;
+            if (d === 0) {
+                // auf EINEM Weg (dieselbe Weg-Zahl wie die Fläche davor) trägt die Strecke mit der nächsten Mitte — an den Gelenken
+                // überdecken sich die Strecken, und die spätere trüge sonst die Höhe ihres Anfangs (eine Treppe längs des Wegs)
+                if (!p.platte && p.weg >= 0 && p.weg === festWeg) {
+                    if (mitte < festMitte) {
+                        fest = y;
+                        festMitte = mitte;
+                    }
+                } else {
+                    fest = y;
+                    festWeg = p.platte ? -2 : p.weg;
+                    festMitte = p.platte ? Infinity : mitte;
+                }
+                continue;
+            }
+            const b = d * B;
+            if (h > y + b) h = y + b;
+            else if (h < y - b) h = y - b;
+        }
+        return fest === fest ? fest : h;
+    }
+    // Die FLÄCHE des Erdbaus an (x, z): die Höhe der Fläche, auf der der Punkt liegt (dieselbe Regel wie `erdbauY`: die letzte
+    // gewinnt), oder null abseits jeder Fläche. Leser: der Plan v2 (fachwerk `ortPlan` über ctx.flaeche — Haus und Laterne
+    // stehen auf der Höhe, auf die ein Fuß tritt).
+    function erdbauFlaeche(E, x, z) {
+        if (!E) return null;
+        const y = erdbauY(E, x, z, NaN);
+        return y === y ? y : null;
+    }
+
+    // DER ORT LIEST DAS GELÄNDE (K10): die Lese-Funktionen, die der Plan v2 (fachwerk `ortPlan`) an der Lage L erhält — die
+    // Höhe samt dem Erdbau früherer Orte (`hoehe`) und die Fläche seiner eigenen Splats (`erdbauFlaeche`). EIN ctx für den
+    // Wirt (`_ortPlanSetzen` über seine lebende Lage), das Fachwerk-Studio (`buildDorf` über `lageGrund`) und die Linse
+    // (gate:settlement Plan-Hash Studio = Welt): derselbe Export am selben Ort über derselben Lage ⇒ byte-derselbe Plan.
+    // `wasserAt` (optional) nennt das Welt-Wasser für das Brücken-Etikett — der Wirt reicht sein Urteil (`_landAt`: Meer, See
+    // und Fluss), ohne ihn gilt das Meer der Lage (Höhe unter `waterLevel`).
+    function ortCtx(L, wasserAt) {
+        return {
+            hoeheAt: (x, z) => hoehe(L, x, z, true),
+            wasserAt: typeof wasserAt === "function" ? wasserAt : (x, z) => hoehe(L, x, z, true) < L.waterLevel,
+            flaeche: (splats) => {
+                const E = erdbauNormal(splats);
+                return (x, z) => erdbauFlaeche(E, x, z);
+            },
+        };
+    }
+    // DIE LAGE EINER WELT OHNE WIRT (K10): Saat → die Lage, die der Wirt einer Welt ohne Erbgut trägt (die Eingangs-Welt
+    // und jede Welt aus einer Saat): die Basis 0 (Stamm `state.terrainBaseHeight`), der Meeresspiegel Basis − 3 (Stamm
+    // `state.waterLevel`), die Hydro-Kachel 2048 m (Stamm `HYDROSPHERE.regionSize`), das Erbgut [wildnis], kein Erdbau.
+    // `Noise` ist der SimplexNoise-Bau (vendor/simplex-noise.js), der Strom seed + ":voxel" wie im Wirt. Weicht der Wirt
+    // ab, bricht der Plan-Hash Studio = Welt (gate:settlement Teil O) beim Namen. Leser: das Fachwerk-Studio (`buildDorf`),
+    // die Linse.
+    const LAGE_GRUND = Object.freeze({ seed: "anazh-realm-seed", baseHeight: 0, meerUnterBasis: 3, regionSize: 2048 });
+    function lageGrund(seed, Noise) {
+        if (typeof Noise !== "function") throw new Error("gelaende-core: lageGrund braucht den SimplexNoise-Bau");
+        const s = typeof seed === "string" && seed.length ? seed : LAGE_GRUND.seed;
+        const terme = erbgutNormal(undefined);
+        return {
+            seed: s,
+            noise: new Noise(s + ":voxel"),
+            baseHeight: LAGE_GRUND.baseHeight,
+            waterLevel: LAGE_GRUND.baseHeight - LAGE_GRUND.meerUnterBasis,
+            erbgut: { terme, wildnis: 1 },
+            regionSize: LAGE_GRUND.regionSize,
+            erdbau: null,
+        };
+    }
+    // DER HANG EINES ORTS (K10): die Ring-Suche ab r0 (Schritt 40 m, 48 Richtungen) nach dem ersten Ort, dessen Gefälle über
+    // 16 m in [gMin, gMax] liegt und der trocken ist — 3 m über dem Meer und `trocken(x, z)` an acht Punkten in 40 m (der
+    // Wirt reicht sein Wasser-Urteil, das Studio die Höhe über dem Meer). Leser: das Fachwerk-Studio (der Ort des Dorfs ohne
+    // `?ort=`), gate:settlement Teil O (der Ort des Akts).
+    function hangOrt(L, trocken, r0 = 1500, r1 = 4000, gMin = 0.12, gMax = 0.25) {
+        const H = (x, z) => hoehe(L, x, z, true);
+        for (let rr = r0; rr < r1; rr += 40)
+            for (let k = 0; k < 48; k++) {
+                const x = Math.cos((k / 48) * 2 * Math.PI) * rr;
+                const z = Math.sin((k / 48) * 2 * Math.PI) * rr;
+                const g = Math.hypot(H(x + 8, z) - H(x - 8, z), H(x, z + 8) - H(x, z - 8)) / 16;
+                if (!(g >= gMin && g <= gMax) || !(H(x, z) > L.waterLevel + 3)) continue;
+                let land = 0;
+                for (let a = 0; a < 8; a++) if (trocken(x + 40 * Math.cos(a * 0.785), z + 40 * Math.sin(a * 0.785))) land++;
+                if (land === 8) return { x, z, g };
+            }
+        return null;
+    }
+
     // DIE EINE 2D-HÖHE der Welt = der Term-Auswerter ihres Erbguts: der erste Term setzt den Startwert (die Wildnis oder
     // eine Insel), jeder weitere legt sich nach seiner Art darauf — die Rampe addiert, die Bucht schneidet (Minimum).
     // Eine Welt ohne Erbgut trägt [wildnis]. Fehlt der Lage ihr Erbgut, wirft der Auswerter (fail-closed, nie still
@@ -1320,6 +1519,13 @@
         for (let i = 1; i < T.length; i++) {
             const h2 = termY(T[i], h, x, z, L);
             if (aus && h2 !== h) aus.hang = aus.schutt = 0;
+            h = h2;
+        }
+        // der Erdbau der Orte (K10) liegt als letzter Term auf allem: der Ort vor dem Hang
+        const E = L.erdbau;
+        if (E) {
+            const h2 = erdbauY(E, x, z, h);
+            if (aus && h2 !== h) aus.hang = 0;
             h = h2;
         }
         return h;
@@ -3169,6 +3375,14 @@
         RELIEF_KNOTEN: RELIEF_KNOTEN,
         NETZ_KANTE: NETZ_KANTE,
         hoehe: hoehe,
+        ERDBAU: ERDBAU,
+        erdbauNormal: erdbauNormal,
+        erdbauY: erdbauY,
+        erdbauFlaeche: erdbauFlaeche,
+        ortCtx: ortCtx,
+        LAGE_GRUND: LAGE_GRUND,
+        lageGrund: lageGrund,
+        hangOrt: hangOrt,
         HOEHLEN_MUND: HOEHLEN_MUND,
         hoehlenMund: hoehlenMund,
         BODEN_GENERATION: BODEN_GENERATION,

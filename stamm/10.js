@@ -172,7 +172,11 @@ class AnazhRealm_Z10 {
             ),
             lichtErsatz: Array.from({ length: AnazhRealm.LICHT_POOL.plaetze }, () => TSL.uniform(0)),
             lichtKern: Array.from({ length: AnazhRealm.LICHT_POOL.plaetze }, () => TSL.uniform(0)),
-            fensterGlut: TSL.uniform(new THREE.Color(0, 0, 0)),
+            // je Datum des Leuchtquellen-Gesetzes EINE Glut (fachwerk LICHT_GESETZ: die wachen Fenster, der Kopf der Laterne)
+            // — der Stoff, dessen Gesetzbuch das Datum stempelt (`mp.licht`), glüht in SEINER Farbe und Zeit
+            lichtGlut: Object.fromEntries(
+                Object.keys(globalThis.__fachwerkCore.LICHT_GESETZ).map((k) => [k, TSL.uniform(new THREE.Color())])
+            ),
             // Struktur-Boost als LIVE-Uniform: Multiplier auf das micro-Gewicht des werk-Profils, vom Settings-
             // Slider „Struktur-Tiefe" getrieben. Init aus `atmosphere.r5StructureBoost` (persistiert) oder
             // R5_STRUCTURE_TEXTURE.microBoost (1.3); `_applySubstanceResponse` liest ihn live.
@@ -992,8 +996,8 @@ class AnazhRealm_Z10 {
     // — der Stoff-Bau `_buildPbrNodeMaterial` (und mit ihm jeder Toon-Aufruf), der Foundry-Stoff `_foundryTreeMaterial` und
     // jeder Stoff, den eine Schicht selbst baut (Gras, Fern-Ring, Sockel, Wege und Zaun, Rauch, Schatten-Zwilling, Vorschau);
     // die Wand: die S0-Probe der Mess-Bühne (Zensus der Bauer im Stamm UND jedes beleuchteten Stoffs der Szene). Ein Stoff, dessen
-    // Gesetzbuch einen Zeitplan stempelt (`mp.licht` = "fenster", fachwerk `glas`), glüht in der Glut der Tageszeit
-    // (`atmoUniforms.fensterGlut`); die Glut selbst (Seh-Klasse glut, das Leucht-Gesetz) ist Quelle und liest den Pool nicht.
+    // Gesetzbuch ein Datum mit Zeitplan stempelt (`mp.licht`: "fenster" am fachwerk `glas`, "laterne" am `laternenglas`),
+    // glüht in der Glut SEINES Datums (`atmoUniforms.lichtGlut[licht]`, Farbe aus `kelvin` × Zeitplan); die Glut selbst (Seh-Klasse glut, das Leucht-Gesetz) ist Quelle und liest den Pool nicht.
     // `himmel` (ein Knoten 0…1, der Boden: `aHimmel`) ist die Himmels-Sicht der Fläche — ein Platz mit Himmels-Ersatz (das
     // Licht des Auges) trägt nur, wo sie fehlt; ohne sie gilt der Stoff als offen. KEIN Szenen-Licht: r184 sammelt jedes
     // Szenen-Licht in den Licht-Hash jedes beleuchteten Stoffs und rechnet seine BRDF auch auf Stärke 0 — der Pool ist eine
@@ -1010,6 +1014,8 @@ class AnazhRealm_Z10 {
             mat.userData.lichtPool = "quelle";
             return mat;
         }
+        // EIN KNOTEN JE GRAPH UND DATUM: das Leuchten haengt an der Basis, der Himmels-Sicht und dem Licht-Datum des Stoffs
+        // (`mp.licht`, fachwerk LICHT_GESETZ) — ohne Datum glueht der Stoff nur im Pool
         const ohne = this._leuchtOhne || (this._leuchtOhne = {});
         const jeBasis = this._leuchtKnoten || (this._leuchtKnoten = new WeakMap());
         const basis = mat.emissiveNode || ohne;
@@ -1017,13 +1023,17 @@ class AnazhRealm_Z10 {
         const jeHimmel = jeBasis.get(basis);
         if (!jeHimmel.has(himmel || ohne)) jeHimmel.set(himmel || ohne, {});
         const knoten = jeHimmel.get(himmel || ohne);
-        const plan = mp && mp.licht === "fenster" ? "fenster" : "offen";
-        if (!knoten[plan]) {
+        const licht = mp && mp.licht ? String(mp.licht) : "";
+        if (!knoten[licht]) {
             let em = mat.emissiveNode ? Te.vec3(mat.emissiveNode) : Te.materialEmissive;
-            if (plan === "fenster") em = em.add(atmo.fensterGlut);
-            knoten[plan] = em.add(this._lichtPoolTerm(Te, atmo, himmel || null));
+            if (licht) {
+                const glut = atmo.lichtGlut[licht];
+                if (!glut) throw new Error(`_leuchtStoff: das Licht-Datum „${licht}“ fehlt im Leuchtquellen-Gesetz`);
+                em = em.add(glut);
+            }
+            knoten[licht] = em.add(this._lichtPoolTerm(Te, atmo, himmel || null));
         }
-        mat.emissiveNode = knoten[plan];
+        mat.emissiveNode = knoten[licht];
         mat.userData.lichtPool = true;
         return mat;
     }

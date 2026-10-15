@@ -20,6 +20,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const { EINSCHWING_INSTALL } = require("./lib/band-urteil.cjs");
 const PORT = Number(process.env.LV_PORT || 4697);
 const server = statikServer();
 
@@ -34,6 +35,7 @@ const server = statikServer();
     const pageErrors = [];
     page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
+    await page.evaluate(EINSCHWING_INSTALL); // die EINE Liste dessen, was die Welt noch baut (band-urteil `einschwingOffen`)
 
     const out = await page.evaluate(async () => {
         const sleep = (ms) => new Promise((r2) => setTimeout(r2, ms));
@@ -152,19 +154,17 @@ const server = statikServer();
                 };
                 const ringStand = () =>
                     (st.scatterRegions ? Array.from(st.scatterRegions.keys()).sort().join(";") : "") + "|" + ringWartet().length;
-                // ... und die Foundry ist still: kein Auftrag im Flug (`pending`, Werk und Bäcker), keiner in der EINEN
-                // Worker-Schlange (`warte`), keine Lieferung im Ingest-Takt. Ein Bau dauert 0,1–25 s; zwei ruhige Batches
-                // sind ein Takt-Maß, keine Uhr — am langsamen CI-Läufer (11.10., integ-probe b0bcb073 und 03997b3f, 3 Läufe
-                // je 168 Gruppen beim Fenster-Start) lieferte er erst IM Fenster: 18–22 Mints, 168 → 186–190 Gruppen; lokal
-                // mit 3 s späteren Worker-Antworten 88 Mints, 80 → 168. Das Fenster maß den Boot, nicht den Stand.
-                const foundryOffen = () => {
-                    const f = r._foundry;
-                    return (
-                        (f && f.pending ? f.pending.size : 0) +
-                        (f && f.warte ? f.warte.length : 0) +
-                        (r._foundryIngestQueue ? r._foundryIngestQueue.length : 0)
-                    );
-                };
+                // ... und die Welt baut nichts mehr: die EINE Liste des Einschwingens (band-urteil `einschwingOffen`, dieselbe
+                // wie `werkbank band`) ist leer — kein Foundry-Auftrag im Flug oder in der Worker-Schlange, keine Lieferung vor
+                // dem Ingest-Takt, kein Karten-Bake, kein Chunk im Bau, und der DORF-ZUG ruht (kein Export, keine Ort-Wahl,
+                // keine wachsende Siedlung). Ein Bau dauert 0,1–25 s; zwei ruhige Batches sind ein Takt-Maß, keine Uhr — am
+                // langsamen CI-Läufer (11.10., integ-probe b0bcb073 und 03997b3f, 3 Läufe je 168 Gruppen beim Fenster-Start)
+                // lieferte er erst IM Fenster: 18–22 Mints, 168 → 186–190 Gruppen; lokal mit 3 s späteren Worker-Antworten
+                // 88 Mints, 80 → 168. K10-6: der eigene Zähler (Foundry allein) sah den Dorf-Zug nicht — die Ort-Wahl des
+                // Start-Dorfs rechnete in 3 von 3 Läufen noch beim Fenster-Start (18–19 Scheiben), landete im Fenster oder
+                // im Ingest-Takt: CI 12 Mints im Stand (V1), über Budget 0 statt 1 Freigabe (V2, 3 von 6 lokal).
+                const offen = () => window.__einschwingOffen(r);
+                const baut = () => Object.keys(offen()).length;
                 const dlQ = performance.now() + 180000;
                 let ruhigeBatches = 0;
                 while (ruhigeBatches < 2 && performance.now() < dlQ) {
@@ -182,12 +182,13 @@ const server = statikServer();
                         (r._archGruppenMints || 0) === mv &&
                         ring0 === ring1 &&
                         ring1.endsWith("|0") &&
-                        foundryOffen() === 0;
+                        baut() === 0;
                     ruhigeBatches = ruhig ? ruhigeBatches + 1 : 0;
                 }
                 o.quieszent = ruhigeBatches >= 2;
                 o.ringOffen = ringWartet();
-                o.foundryOffen = foundryOffen();
+                o.baut = baut();
+                o.weltOffen = offen();
             }
             // GOLD 4 (19.07.) — V5: DAS SZENE-SPEICHER-BAND. Der Live-Set-Zensus
             // (heapZensus, reine Lese-Linse) misst die CPU-TypedArray-Bytes der
@@ -310,7 +311,7 @@ const server = statikServer();
     console.log("=== DER LEISTUNGS-VERTRAG — die Laufzeit-Ökonomie als Gate ===");
     console.log(`  BOOT-SETTLE: wartende Regionen + Vorrat nicht durch = ${out.wartendNachBoot} (erwartet 0)`);
     console.log(
-        `  QUIESZENZ vor dem Stand-Fenster erreicht: ${out.quieszent} (Foundry offen beim Fenster-Start: ${out.foundryOffen})`
+        `  QUIESZENZ vor dem Stand-Fenster erreicht: ${out.quieszent} (die Welt baut beim Fenster-Start: ${JSON.stringify(out.weltOffen || {})})`
     );
     console.log(`  V1 STAND-CHURN: Mints im Stand-Fenster = ${out.standMints} (erwartet 0)`);
     console.log(`  V3 GRUPPEN-STABILITÄT: ${out.groups0} → max ${out.groupsMax} → ${out.groupsEnde}`);
@@ -331,7 +332,7 @@ const server = statikServer();
         );
     if (!out.quieszent)
         errs.push(
-            `QUIESZENZ: der Boot wurde in 180 s nie still — das Stand-Fenster maß Boot-Streaming, nicht Churn (offen: ${(out.ringOffen || []).join(", ") || "Mints oder Ring-Wechsel"}; Foundry ${out.foundryOffen} Aufträge offen)`
+            `QUIESZENZ: der Boot wurde in 180 s nie still — das Stand-Fenster maß Boot-Streaming, nicht Churn (offen: ${(out.ringOffen || []).join(", ") || "Mints oder Ring-Wechsel"}; die Welt baut: ${JSON.stringify(out.weltOffen || {})})`
         );
     if (!out.v1ChurnNull) errs.push(`V1: ${out.standMints} Gruppen-Mints im Stand (Vertrag: 0)`);
     if (!out.v3Stabil) errs.push(`V3: archInstanceGroups kletterte im Stand (${out.groups0} → ${out.groupsMax})`);

@@ -224,13 +224,14 @@ function seitenPruefer() {
             r._autoSettlementStartHopeless = true;
             r._autoSettlementQueue = { plan: { slots: [], name: T }, origin: { x: 0, z: 0 }, idx: 0, cellKey: T };
             r._stlWegeKeys = new Set([T]);
+            // der Plan v2 je Ort (K10, `_ortWahl`): Saat und Anker sind sein Schlüssel, seine Höhen und sein Erdbau sind A —
+            // eine Welt B mit demselben Samen am selben Anker läse sonst A's Gelände
+            r._ortPlaene = new Map([[T, { herkunft: T }]]);
             const pm = r.state.playerMesh;
             const x = pm ? pm.position.x + 6 : 6;
             const z = pm ? pm.position.z + 6 : 6;
-            // DIE LICHT-GEDÄCHTNISSE (K11) über ihre echten Schreiber: die Laterne eines Plans (`_laternenLesen`, Marke im
-            // Schlüssel), das wache Tor (`_tickPortalLicht`) und der Licht-Pool, der es hält (`_leuchtTakt`)
-            // BÜHNE: die fremde Kachel einer Welt-Grenz-Probe: Ferne ohne Welt — dort steht kein Gelände, nur der Abstand zählt
-            r._laternenLesen({ laternen: [{ x: 0, z: 0 }] }, { x: 12345, z: 12345 }, T);
+            // DIE LICHT-GEDÄCHTNISSE (K11) über ihre echten Schreiber: das wache Tor (`_tickPortalLicht`) und der Licht-Pool,
+            // der es hält (`_leuchtTakt`) — die Laterne eines Plans ist ein Eintrag der Welt (`laterne_dorf`), kein Gedächtnis
             r._tickPortalLicht({
                 entry: { position: { x, y: r.getTerrainHeightAt(x, z) + 1, z }, scale: 1 },
                 tor: { mu: { springY: 1 } },
@@ -243,7 +244,6 @@ function seitenPruefer() {
             const tier = r.spawnCreatureAt(x, r.getTerrainHeightAt(x, z) + 1, z, "happy", null, { precise: true });
             if (tier && tier.userData) tier.userData.name = T;
             const licht = [
-                r._laternen && r._laternen.schluessel.has(T) ? null : "_laternen",
                 r._portalLeuchte && r._portalLeuchte.herkunft === T ? null : "_portalLeuchte",
                 r._leuchtPool && r._leuchtPool.halter.some((h) => h && h.herkunft === T) ? null : "_leuchtPool",
             ].filter(Boolean);
@@ -275,7 +275,7 @@ function seitenPruefer() {
                 _autoSettlementStartHopeless: r._autoSettlementStartHopeless === true,
                 _autoSettlementQueue: !!(r._autoSettlementQueue && r._autoSettlementQueue.cellKey === T),
                 _stlWegeKeys: !!(r._stlWegeKeys && r._stlWegeKeys.has(T)),
-                _laternen: !!(r._laternen && r._laternen.schluessel.has(T)),
+                _ortPlaene: !!(r._ortPlaene && r._ortPlaene.has(T)),
                 _portalLeuchte: !!(r._portalLeuchte && r._portalLeuchte.herkunft === T),
                 _leuchtPool: !!(r._leuchtPool && r._leuchtPool.halter.some((h) => h && h.herkunft === T)),
             };

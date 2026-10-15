@@ -1962,10 +1962,11 @@ class AnazhRealm_Z20b {
                   : null;
         // Die Physical-Klasse lebt in der Node-Bibliothek des Renderers (r184 — die Bootstrap-Brücke reicht sie nicht als
         // THREE-Symbol: die Probe `typeof T.MeshPhysicalNodeMaterial` fiel IMMER auf den Standard, die Haut trug nie ihren
-        // Klarlack). Der Null-Renderer zeichnet nichts und trägt keine Bibliothek.
+        // Klarlack). Der Null-Renderer zeichnet nichts und trägt keine Bibliothek — gefragt wird die Bibliothek selbst, nie
+        // die Flagge (eine Linse lüftet `_isHeadlessNull` am Null-Renderer, gate:leistungs-vertrag: die Lieferung brach).
         const rendM = this.state && this.state.renderer;
         const MatK =
-            ccSoll && rendM && !rendM._isHeadlessNull
+            ccSoll && rendM && rendM.library
                 ? rendM.library.getMaterialNodeClass("MeshPhysicalMaterial")
                 : T.MeshStandardNodeMaterial;
         mat = new MatK({

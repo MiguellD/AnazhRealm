@@ -963,105 +963,6 @@ class AnazhRealm_Z17c {
         return c;
     }
 
-    // (_archInstanceAdd, unten:) eine Instanz je Leaf; entry.instSlots merkt (key, slot). `opts.band`
-    // schreibt stattdessen in `entry.instSlotsBand` (+ `entry._lodBandLevel`) — die ZWEITE Stufe im
-    // Dither-Crossfade-Band. Add/Remove NUR durch diese zwei Chokepoints.
-    // ═══ DAS FUNDAMENT-PODEST ═══
-    // EIN InstancedMesh-Pool für ALLE Haus-Sockel (1 Draw-Call, Verdopplung; dicht wie jede Instanz-Senke: Freigeben
-    // zieht den letzten Sockel in die Lücke, `_instanzUmzug` — ein freier Slot zeichnet nie).
-    // Geometrie = die der Blocker (`_archFundamentBox`, Unterkante 0.6 m unter der tiefsten Footprint-
-    // Ecke); Lebenszyklus an den Instanz-Nähten, kein Snapshot-Feld.
-    _archFundamentEnsure(entry) {
-        if (!entry || !entry.fundament || !this.state.scene) return;
-        const st = this.state;
-        let P = st.archFundament;
-        if (P && P.byId.has(entry.id)) return; // idempotent (LOD-Wechsel etc.)
-        const box = this._archFundamentBox(entry);
-        if (!box) return; // ebenes Land → kein Podest
-        if (!P) {
-            const geo =
-                this._archFundGeo ||
-                (this._archFundGeo = (() => {
-                    const g = new THREE.BoxGeometry(1, 1, 1);
-                    g.translate(0, -0.5, 0); // Ursprung = OBERKANTE (top-anchored)
-                    return g;
-                })());
-            const mat =
-                this._archFundMat ||
-                (this._archFundMat = this._leuchtStoff(
-                    new THREE.MeshStandardNodeMaterial({
-                        color: 0x7a7168,
-                        roughness: 1,
-                        metalness: 0,
-                    }),
-                    null
-                )); // Bruchstein-Grau — Standard liest den EINEN Himmel (Lambert war im Schatten schwarz), der Licht-Pool (K11) das Feuer
-            const mesh = AnazhRealm._poolKennung(AnazhRealm._instanzMesh(geo, mat, 128), "bau-fundament");
-            AnazhRealm._instanzZahl(mesh, 0);
-            mesh.frustumCulled = false; // Welt-weiter Pool, 1 DC — Cull lohnt nicht
-            mesh.receiveShadow = true;
-            st.scene.add(mesh);
-            // byId: Eintrag → Slot; idAt: Slot → Eintrag (der Rückverweis des Umzugs).
-            P = st.archFundament = { mesh, cap: 128, byId: new Map(), idAt: [] };
-        }
-        const slot = P.mesh.count;
-        if (slot >= P.cap) {
-            // Verdopplungs-Wachstum: Matrizen in einen frischen Pool kopieren.
-            const bigger = AnazhRealm._poolKennung(
-                AnazhRealm._instanzMesh(this._archFundGeo, this._archFundMat, P.cap * 2),
-                "bau-fundament"
-            );
-            bigger.instanceMatrix.array.set(P.mesh.instanceMatrix.array);
-            AnazhRealm._instanzZahl(bigger, P.mesh.count);
-            bigger.frustumCulled = false;
-            bigger.receiveShadow = true;
-            st.scene.add(bigger);
-            st.scene.remove(P.mesh);
-            this._instanzAbschied(P.mesh);
-            P.mesh = bigger;
-            P.cap *= 2;
-        }
-        const m = this._archFundTmpM || (this._archFundTmpM = new THREE.Matrix4());
-        const q = this._archFundTmpQ || (this._archFundTmpQ = new THREE.Quaternion());
-        const v = this._archFundTmpV || (this._archFundTmpV = new THREE.Vector3());
-        const sc = this._archFundTmpS || (this._archFundTmpS = new THREE.Vector3());
-        const ax = this._archFundAxisY || (this._archFundAxisY = new THREE.Vector3(0, 1, 0));
-        q.setFromAxisAngle(ax, box.ry);
-        m.compose(v.set(box.x, box.topY, box.z), q, sc.set(box.ex * 2, box.topY - box.botY, box.ez * 2));
-        P.mesh.setMatrixAt(slot, m);
-        AnazhRealm._instanzZahl(P.mesh, slot + 1);
-        P.mesh.instanceMatrix.needsUpdate = true;
-        P.mesh.boundingSphere = null;
-        P.byId.set(entry.id, slot);
-        P.idAt[slot] = entry.id;
-    }
-    _archFundamentFree(entry) {
-        const P = this.state.archFundament;
-        if (!P || !entry) return;
-        const slot = P.byId.get(entry.id);
-        if (slot === undefined) return;
-        P.byId.delete(entry.id);
-        const letzt = P.mesh.count - 1;
-        if (slot !== letzt) {
-            AnazhRealm._instanzUmzug(P.mesh, letzt, slot);
-            const zieht = P.idAt[letzt];
-            P.idAt[slot] = zieht;
-            P.byId.set(zieht, slot);
-        }
-        P.idAt.length = letzt;
-        AnazhRealm._instanzZahl(P.mesh, letzt);
-        P.mesh.boundingSphere = null;
-    }
-    _archFundamentDisposePool() {
-        const P = this.state.archFundament;
-        if (!P) return;
-        if (P.mesh) {
-            if (P.mesh.parent) P.mesh.parent.remove(P.mesh);
-            this._instanzAbschied(P.mesh); // die Instanz-Puffer; Geo/Mat sind geteilt (this._archFund*)
-        }
-        this.state.archFundament = null;
-    }
-
     // ═══ DIE WEGE-KARTE (V18.530): Siedlungs-Wege sind BODEN, kein Bauwerk ═══
     // Befund 04.10. (Blick-Tour 1-nord · 3-markt · 4-west, echte GPU): Straßen, Feldwege, Platz und Äcker lagen als
     // flache Box-Streifen (0,14 m) auf der Gesetz-Höhe — der sichtbare Boden (Surface-Nets, ±0,2 m) schnitt sie:
@@ -1777,7 +1678,7 @@ class AnazhRealm_Z17c {
     }
 
     // ═══ DER ZAUN-POOL ═══
-    // Das _archFundament-Muster: EIN InstancedMesh für die hüfthohen Zaun-Streifen der Siedlungen (1 Draw-Call,
+    // Das Muster der Instanz-Pools: EIN InstancedMesh für die hüfthohen Zaun-Streifen der Siedlungen (1 Draw-Call,
     // per-Instanz-Farbe); Höhe aus `getTerrainHeightAt`, Pitch aus den Endpunkt-Höhen. Kein Snapshot-Feld: die
     // Streifen entstehen je Session deterministisch aus dem Settlement-Export (`_tickAutoSettlement`).
     _stlZaunEnsurePool() {
@@ -2003,7 +1904,6 @@ class AnazhRealm_Z17c {
             }
         }
         if (this._stlWegeKeys) this._stlWegeKeys.clear(); // die Session-Marken fallen mit (Rebuild baut neu)
-        this._laternen = null; // die Laternen der Pläne fallen mit ihren Marken (der Rebuild liest sie neu, `_laternenLesen`)
     }
 
     _archInstanceAdd(entry, flat, opts) {
@@ -2110,9 +2010,6 @@ class AnazhRealm_Z17c {
         // Clamp-Kurzschluss in _switchArchitectureLOD liest sie, damit eine Ein-Stufen-Art (fels [0]) beim
         // Schwellen-Übertritt nicht neu alloziert. Transient (nicht im Snapshot).
         entry._servedLod = flat && flat.foundry && Number.isFinite(flat.lod) ? flat.lod : null;
-        // DORF-IN-TERRAIN — der Sockel lebt mit dem PRIMÄREN Instanz-Leben des
-        // Eintrags (Band-Adds returnen oben früher); ensure ist idempotent.
-        if (entry.fundament) this._archFundamentEnsure(entry);
         // die Trittfläche der Ausstattung (einmal je Eintrag, idempotent) — der Studio-Platz hat das Buch
         if (entry.instFoundry) this._trittFlaecheSetzen(entry);
     }
@@ -2231,9 +2128,6 @@ class AnazhRealm_Z17c {
             entry._bruecke = false; // die Brücke lebt nur mit ihrer Karten-Instanz
             entry._lodHalt = false; // der Halt lebt nur mit seiner Stufe (die Band-Pflege urteilt neu)
             entry._lodHaltWartet = false;
-            // DORF-IN-TERRAIN — der Sockel fällt mit dem primären Instanz-Leben
-            // (Cull/Prune/Remove/LOD-Switch laufen alle durch DIESE Naht).
-            if (entry.fundament) this._archFundamentFree(entry);
         }
         for (const key of geleerte) {
             // Vollständig leer = liveCount 0 (die EINE Leer-Quelle, count folgt ihr).
@@ -2266,9 +2160,6 @@ class AnazhRealm_Z17c {
             }
             this.state._regionBundles.clear();
         }
-        // DORF-IN-TERRAIN — der Fundament-Pool fällt mit (Welt-Wechsel/Restore);
-        // die Respawn-Schleife baut ihn lazy neu.
-        this._archFundamentDisposePool();
         // DORF-ERLEBNIS — Zaun-Pool + Wege-Karte fallen mit; der settlementCells-Rebuild
         // (`_tickAutoSettlement`) baut sie lazy + deterministisch neu.
         this._stlWegeDispose();
@@ -2684,6 +2575,9 @@ class AnazhRealm_Z17c {
         // (schöpfer-Modus ohne Material) erntet 0 (sonst Modus-Wäsche schöpfer→pfad = Material aus dem
         // Nichts). Worldgen/Nexus-Spawns tragen die Marke NICHT.
         if (opts.freeBorn === true) entry.freeBorn = true;
+        // DIE MARKE DES WURFS (K10-6): eine Art des Felds (`FELD_WURF`), die das Feld warf (`_enqueueVegetationSpawn`), weicht
+        // dem Bau (`_weichtDemBau`); dieselbe Art aus dem Satz, dem Bau-Modus oder der KI ist Bau. Sie reist durch den Save.
+        if (opts.feldWurf === true && AnazhRealm.FELD_WURF.includes(type)) entry.feldWurf = true;
         // Der Guss-Stempel reist am Eintrag (Snapshot + P2P): NUR ein non-leeres plain object, tief
         // JSON-kopiert, max 8 KiB (dieselbe Taille-Wand wie _carryUnknown — ein Riesenstempel wäre ein
         // Quota-DoS). _foundryFlattenFor liest ihn als Unikat-ov.

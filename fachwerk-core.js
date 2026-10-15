@@ -1272,17 +1272,22 @@
   const perimWall=(fixed,horiz,alo,ahi,yB,yT,ops)=>{ const seg=(s,e,y0,y1)=>{ if(e-s<0.04||y1-y0<0.03)return; if(horiz)addSolid((s+e)/2,(y0+y1)/2,fixed,e-s,y1-y0,0.3); else addSolid(fixed,(y0+y1)/2,(s+e)/2,0.3,y1-y0,e-s); };
     if(!ops.length){ seg(alo,ahi,yB,yT); return; }
     const yb=Math.max(yB,Math.min(...ops.map(o=>o.y0))), yt=Math.min(yT,Math.max(...ops.map(o=>o.y1))); if(yb>yB+0.02)seg(alo,ahi,yB,yb);
-    const gaps=ops.map(o=>[o.a0,o.a1]).sort((a,b)=>a[0]-b[0]); let p=alo; gaps.forEach(([g0,g1])=>{ seg(p,g0,yb,yt); p=Math.max(p,g1); }); seg(p,ahi,yb,yt);
+    // JEDE Öffnung in IHREM Höhenband (K10): zwischen den Öffnungs-Kanten trägt jeder überdeckte Abschnitt die Wand außerhalb der Bänder, die ihn überdecken — das EINE Band aller Öffnungen ließ die Vorderwand über der Haustür bis zur Traufe offen (im 2. OG ging der Körper hinaus und fiel 5,6 m)
+    const ks=[...new Set([alo,ahi,...ops.flatMap(o=>[o.a0,o.a1])])].filter(a=>a>=alo&&a<=ahi).sort((a,b)=>a-b); let p=alo;
+    for(let i=0;i+1<ks.length;i++){ const a=ks[i], e=ks[i+1], dk=ops.filter(o=>o.a0<=a&&o.a1>=e); if(!dk.length) continue;
+      seg(p,a,yb,yt); p=e; let y=yb; dk.map(o=>[Math.max(yb,o.y0),Math.min(yt,o.y1)]).sort((u,v)=>u[0]-v[0]).forEach(([u,v])=>{ if(u>y) seg(a,e,y,u); y=Math.max(y,v); }); if(yt>y) seg(a,e,y,yt); }
+    seg(p,ahi,yb,yt);
     if(yT>yt+0.02)seg(alo,ahi,yt,yT); };
   const wingOp=sd=>{ const w=wings.find(x=>x.side===sd); if(!(w&&w.door))return [];
     if(!w.outIsX) return [{a0:w.x0+0.2,a1:w.x1-0.2,y0:baseY,y1:eaveY}];                                  // senkrechter (verschmelzender) Flügel: Hauswand über ALLE Geschosse offen → ein Raum
     return [{a0:w.door.lo,a1:w.door.hi,y0:baseY,y1:dpH}]; };
-  perimWall(-W/2,false,-Dp/2,Dp/2,baseY,eaveY, (balcDoor&&balcDoor.side==='W')?[...wingOp('W'),{a0:balcDoor.cx-0.5,a1:balcDoor.cx+0.5,y0:eT,y1:eaveY}]:wingOp('W'));   // +Balkontür-OG falls Balkon hier                                            // −x Seitenwand (W-Durchgang)
-  perimWall( W/2,false,-Dp/2,Dp/2,baseY,eaveY, (balcDoor&&balcDoor.side==='E')?[...wingOp('E'),{a0:balcDoor.cx-0.5,a1:balcDoor.cx+0.5,y0:eT,y1:eaveY}]:wingOp('E'));   // +Balkontür-OG falls Balkon hier                                            // +x Seitenwand (E-Durchgang)
+  const balkOp=sd=>(balcDoor&&balcDoor.side===sd)?levels.slice(1).map(L=>({a0:balcDoor.cx-0.5,a1:balcDoor.cx+0.5,y0:L.y,y1:L.y+2.06})):[];   // die Balkontür je Balkon-Geschoss in IHRER Höhe (das Balkon-Gesetz: Hochhaus je OG, sonst das OG)
+  perimWall(-W/2,false,-Dp/2,Dp/2,baseY,eaveY, [...wingOp('W'),...balkOp('W')]);   // −x Seitenwand (W-Durchgang + Balkontür)
+  perimWall( W/2,false,-Dp/2,Dp/2,baseY,eaveY, [...wingOp('E'),...balkOp('E')]);   // +x Seitenwand (E-Durchgang + Balkontür)
   { const ops=wingOp('N'); if(backDoor)ops.push({a0:backDoor.cx-0.55,a1:backDoor.cx+0.55,y0:baseY,y1:dpH});
     perimWall(Dp/2,true,-W/2,W/2,baseY,eT, ops);                                                        // +z Rückwand EG (Hintertür + N-Durchgang)
-    if(eaveY-eT>0.1) perimWall(Dp/2,true,-W/2,W/2,eT,eaveY, (balcDoor&&balcDoor.side==='N')?[{a0:balcDoor.cx-0.5,a1:balcDoor.cx+0.5,y0:eT,y1:eaveY}]:[]); }   // OG Balkontür
-  { const ops=wingOp('S'); ops.push({a0:-doorW/2,a1:doorW/2,y0:baseY,y1:eaveY});
+    if(eaveY-eT>0.1) perimWall(Dp/2,true,-W/2,W/2,eT,eaveY, balkOp('N')); }   // OG Balkontür
+  { const ops=wingOp('S'); ops.push({a0:-doorW/2,a1:doorW/2,y0:baseY,y1:dpH});
     perimWall(-Dp/2,true,-W/2,W/2,baseY,eaveY, ops); }                                                  // −z Vorderwand (Haustür + S-Durchgang)
 
   function gelaende(){ const g=grp(); g.noDeform=true; if(P.terrain===0) return g;
@@ -1680,6 +1685,7 @@
         stroh: "stoff",
         kupfer: "stoff",
         glasdunkel: "glas",
+        laternenglas: "glas",
         glasfern: "glas",
     };
     // prettier-ignore
@@ -1711,11 +1717,13 @@
   stroh:  new THREE.MeshStandardMaterial({color:0xcaa44e,roughness:1,metalness:0,side:THREE.DoubleSide}),
   kupfer: new THREE.MeshStandardMaterial({color:0x5a917c,roughness:.55,metalness:.35,side:THREE.DoubleSide}),
   glasdunkel: new THREE.MeshStandardMaterial({color:0x2b4457,roughness:.25,metalness:.1,transparent:true,opacity:0.92}),   // SCHLAF-GLAS: Fenster, die nachts dunkel bleiben — nicht jedes Haus wacht
+  laternenglas: new THREE.MeshStandardMaterial({color:0x33576a,roughness:.15,metalness:0,transparent:true,opacity:.42}),   // DAS GLAS DES LATERNEN-KOPFS: der Stoff des Fensterglases, das Datum der Laterne (__licht laterne)
   glasfern: new THREE.MeshStandardMaterial({color:0x46687e,roughness:.22,metalness:.45}),   // FERN-GLAS-GESETZ: Glas trägt fern als OPAKER Spiegelkörper — Transparenz ohne Innenleben liest sich als Geist
       };
       for(const _k in M) _roleByMat.set(M[_k],_k);
       for(const _k in M) if(SEH_DER_ROLLE[_k]) M[_k].userData.__seh=SEH_DER_ROLLE[_k];
       for(const _k in M){ _HEX[_k]=M[_k].color.getHex(); M[_k].color.convertSRGBToLinear(); }   // FARB-GESETZ (Architektur-Welle 05.10.): das Hex ist eine sRGB-ABSICHT — der Stoff zeigt seinen linearen Wert (r128 läse es roh), _HEX hält die Absicht für den Bake (_colFor)
+      M.laternenglas.userData.__licht='laterne';                                               // der Kopf der Laterne glüht nach SEINEM Datum (LICHT_GESETZ.laterne: 1900 K, Zeitplan abends 1) — dasselbe Datum wie ihr Licht-Pool, nie die Fenster-Glut
       M.glas.userData.__licht='fenster';                           // DAS LEUCHTQUELLEN-GESETZ (K11): die wachen Fenster glühen nach dem Zeitplan LICHT_GESETZ.fenster (reist als mat.licht; das Schlaf-Glas bleibt dunkel)
       M.feuer.userData.__leucht=LEUCHT_FEUER;                                                  // DAS LEUCHT-GESETZ (05.10.): die Glut leuchtet in ihrer Vertex-Farbe — heiße Mitte, kühler Rand, gelbe Flammen-Wurzel, rote Spitze (reist als mat.leucht, die Welt webt emissiveNode = Farbe × LEUCHT_FEUER)
       return M; }
@@ -2004,7 +2012,7 @@
     else { teile([scheibe(d1+0.01)], M.putz, innen); teile([scheibe(d1+0.02)], M.glas, eins); }
     const k=d1+0.03, q=(ua,ub,ya,yb)=>[[P(ua,ya,k),P(ub,ya,k),P(ub,yb,k),P(ua,yb,k)],aus];   // das Kreuz: der Pfosten durchgehend, der Kämpfer links und rechts von ihm
     teile([q(u-KREUZ,u+KREUZ,o.cy-ph,o.cy+ph), q(u-pw,u-KREUZ,o.cy-KREUZ,o.cy+KREUZ), q(u+KREUZ,u+pw,o.cy-KREUZ,o.cy+KREUZ)], rahmenM, rahmenF); }
-  const wrap=new THREE.Group(); wrap.rotation.y=B.q.phi; wrap.position.set(B.q.x,0,B.q.z); wrap.add(grp2); wrap.updateMatrixWorld(true);
+  const wrap=bauOrtWrap(B); wrap.add(grp2); wrap.updateMatrixWorld(true);
   bakeLOD(grp2, kol, geoms, 0);
 }
     // DIE DACHHAUT DER L2 (`_mitHaut`, lod2Koerper): der Keil um die Ziegel-Lage gehoben, der Ortgang über die Giebel verlängert.
@@ -2527,7 +2535,7 @@
     const bg=new THREE.BufferGeometry(); bg.setAttribute('position',new THREE.Float32BufferAttribute(G.pos,3)); bg.setAttribute('normal',new THREE.Float32BufferAttribute(G.nrm,3)); bg.setIndex(G.idx);
     if(x.faktor){ const n=G.pos.length/3, att=new Float32Array(n*3); for(let i=0;i<n;i++){ att[i*3]=x.faktor[0]; att[i*3+1]=x.faktor[1]; att[i*3+2]=x.faktor[2]; } bg.setAttribute('color',new THREE.Float32BufferAttribute(att,3)); }
     grp2.add(new THREE.Mesh(bg, M[x.rolle]||M.putz)); }
-  const wrap=new THREE.Group(); wrap.rotation.y=B.q.phi; wrap.position.set(B.q.x,0,B.q.z); wrap.add(grp2); wrap.updateMatrixWorld(true);
+  const wrap=bauOrtWrap(B); wrap.add(grp2); wrap.updateMatrixWorld(true);
   bakeLOD(grp2, B.p.col, geoms, 0);
 }
     // Die Hülle eines Baus in der EINEN Form: die Liste des Fernkörpers (Stufe 3, rolle "sicht").
@@ -2595,6 +2603,13 @@
         return huelleVonBau(B);
     }
     // prettier-ignore
+    // DER BAU-ORT (K10): der Rahmen, in dem ein Haus der Siedlung bakt — Gier phi, Ort x/z und sein BODEN y (der Plan v2,
+    // fachwerk `ortPlan`: das Labor setzt q.y = Slot-y − Bezug; die Einzel-Sonde und der Vertrag stehen auf y = 0). Fail-
+    // closed: ein Bau-Ort ohne Höhe wirft (vorher stand jedes Haus auf y = 0, gleich wo sein Grund lag). Leser: fragFuer,
+    // hofFuer und die Stufen-Bakes.
+    function bauOrtWrap(B){
+      if(!B||!B.q||!Number.isFinite(B.q.y)) throw new Error("fachwerk: der Bau-Ort q trägt keine Höhe y (der Boden des Hauses)");
+      const w=new THREE.Group(); w.rotation.y=B.q.phi; w.position.set(B.q.x,B.q.y,B.q.z); return w; }
     function mischeGeoms(ziel, teil){ for(const role in teil){ const S=teil[role]; if(!S.vo) continue;   // FRAGMENT-MISCHUNG: fertige Bakes verketten — kein Neubau, nur Index-Versatz
   const G=ziel[role]||(ziel[role]={pos:[],nrm:[],col:[],idx:[],uv:[],vo:0}), off=G.vo;
   const P=S.pos,N=S.nrm,C2=S.col,I=S.idx,U=S.uv||[];
@@ -2653,7 +2668,7 @@
   if((B.p.baujahr||1900)<1800 && rnd()<0.35){ const ex3=(rnd()<0.5)?e.x0-0.03:e.x1+0.03;      // SCHICHT-2: EFEU — das Alter begrünt die Wetterecke
     for(let k3=0;k3<3;k3++) box(ex3, 0.7+k3*1.05+rnd()*0.3, e.z1-0.5-k3*0.4-rnd()*0.5, 0.1, 0.9+rnd()*0.5, 0.5+rnd()*0.4, M.laub); }
   if(rolle==='schmiede'){ box(e.x1+0.7, 0.24, e.z0+0.6, 1.35,0.42,0.5, mLay('stein')); }            // ROLLE → TRÄNKTROG
-  const wrap=new THREE.Group(); wrap.rotation.y=B.q.phi; wrap.position.set(B.q.x,0,B.q.z); wrap.add(grp); wrap.updateMatrixWorld(true);
+  const wrap=bauOrtWrap(B); wrap.add(grp); wrap.updateMatrixWorld(true);
   bakeLOD(grp, B.p.col, geoms, 0, true);
   return geoms; }
     // prettier-ignore
@@ -2664,7 +2679,7 @@
   else if(stufe===2&&(B.p.storeys||1)>=6){ lod2Koerper(B, geoms); fensterFern(B.fenster||fensterVon(stapelBau(Object.assign({},B.p,{nur:MASSNUR}),LOD1F)), B, geoms); }   // ferner Turm: der Körper der Liste + seine Fenster, KEIN build
   else { const turm=(B.p.storeys||1)>=6;
     const st=stapelBau(stufe===1?Object.assign({},B.p,{flaechig:1}):B.p, stufe===1?LOD1S:LOD1F, (stufe===2)?DESTNUR:(turm?TURMNUR:null));   // Stufe 2 = DESTNUR (6.7x); Turm-Stufe 1 ohne Paneel-Masse; Stufe 1 = FLÄCHEN-STUFE (Gefach-Fläche + Ziegel-Band je Reihe)
-    const wrap=new THREE.Group(); wrap.rotation.y=B.q.phi; wrap.position.set(B.q.x,0,B.q.z); wrap.add(st.g);
+    const wrap=bauOrtWrap(B); wrap.add(st.g);
     wrap.updateMatrixWorld(true);                                                             // WELTMATRIX-GESETZ: ohne Update bakt der Wrapper bei (0,0)
     bakeLOD(st.g, B.p.col, geoms, stufe===2?KULLVOL:0, true);                                // LÜCKENLOS: Türen/Fenster werden Teil des Bakes
     if(stufe===1&&!turm){                                                                      // FENSTER-SCHLAF-GESETZ: die Nacht hat Rhythmus — der Würfel je Fenster lebt im Bau (fensterSchlaeft), jede Stufe gleich
@@ -2743,14 +2758,12 @@
     // cellM = Welt-Zellen-Raster (m) · rarity = 1 von N Zellen traegt ein Dorf
     // (~7 Doerfer/km² effektiv) · nHMin/nHSpan = Dorf-Groesse nHMin..nHMin+
     // nHSpan-1 Haeuser (deterministisch aus dem Zell-Hash) · slopeMax =
-    // Site-Wand (|grad h| m/m — flach genug zum Siedeln) · fundamentMaxDh =
-    // Klippen-Wand je Haus-Slot (m, max. Hoehendifferenz ueber die vier
-    // obb-Footprint-Ecken; darunter traegt ein Sockel-Podest das Haus in den
-    // Hang). Reist im Buch-Umschlag (get-book, Feld `siedlung`); der Wirt
+    // Site-Wand (|grad h| m/m — flach genug zum Siedeln); die Klippen-Wand je
+    // Haus-Slot fiel mit dem Erdbau des Orts (K10, ortPlan). Reist im Buch-Umschlag (get-book, Feld `siedlung`); der Wirt
     // liest memoisiert + fail-soft byte-gleich (_siedlungGesetz). Seine
     // Streaming-Regler (nearM/perTick/spawnClearM/siteProbeR/startRadiusM)
     // bleiben ehrlich Wirts-Infrastruktur (AUTO_SETTLEMENT). ──
-    const SIEDLUNG = { cellM: 256, rarity: 2, nHMin: 8, nHSpan: 10, slopeMax: 0.35, fundamentMaxDh: 9 };
+    const SIEDLUNG = { cellM: 256, rarity: 2, nHMin: 8, nHSpan: 10, slopeMax: 0.35 };
     // prettier-ignore
     function DORF(DP){
   let s=((Math.round((DP.seed||1)*613+29)*2654435761)>>>0); const rnd=()=>{ s=(s*1664525+1013904223)>>>0; return s/4294967296; };
@@ -2888,17 +2901,15 @@
     // ════════════ STRASSENGRAPH-GESETZ ════════════ Straßen wachsen als Graph: Kurvensegmente von Knoten zu Knoten;
     // SNAP: endet ein Trieb nahe Bestand, VERBINDET er sich (Knoten/Kantensplit) → ZYKLEN → BLÖCKE. Das ist der Unterschied Stadt/Straßendorf.
     // prettier-ignore
-    function strassengraph(rnd, plan, sW, lw, Rw, fluss){
+    function strassengraph(rnd, plan, sW, lw, Rw){
   const staedt=plan.staedtisch, jahr=plan.jahr, DS=3;
   const kruemm= staedt?0.006:(jahr<1500?0.016:jahr<1800?0.010:0.003);
   const grid=(plan.region==='antik')||(staedt&&jahr>=1800);
   const nodes=[{x:0,z:0}], edges=[];
   const deg=k=>{ let d=0; for(const e of edges){ if(e.a===k||e.b===k)d++; } return d; };
-  const dFluss=(x,z)=>{ if(!fluss)return 1e9; let m=1e9; for(const q of fluss.pts){ const d=Math.hypot(x-q.x,z-q.z); if(d<m)m=d; } return m; };
   function walk(x0,z0,th0,len,gen){ const pts=[]; let x=x0,z=z0,dev=0;
     for(let u=0;u<=len;u+=DS){ const th=th0+dev; pts.push({x,z,th});
       if(Rw&&Math.hypot(x,z)>Rw-8){ break; }
-      if(fluss&&gen>0&&dFluss(x+Math.cos(th)*DS, z+Math.sin(th)*DS)<fluss.w/2+2){ break; }   // FLUSS-GESETZ: nur Arterien queren
       dev+=(rnd()-0.5)*2*kruemm*DS - dev*0.028*DS; x+=Math.cos(th0+dev)*DS; z+=Math.sin(th0+dev)*DS; }
     return pts; }
   const nT= staedt? ((plan.groesse==='grossstadt'||plan.groesse==='metropole')?4:(rnd()<0.5?4:3)) : 2;
@@ -2947,13 +2958,7 @@
           if(Math.hypot(pts[k2].x-q.x,pts[k2].z-q.z)<RUNDE.fr){frei=false;break;} } if(!frei)break; } }
         if(!frei)continue;
         edges.push({a:i2,b:j2,pts,w:sW*0.78,gen:1}); added++; } } } }
-  const bruecken=[];
-  if(fluss){ for(const e of edges){ if(e.gen!==0) continue;
-    let i0=-1,i1=-1;
-    e.pts.forEach((q,k)=>{ if(dFluss(q.x,q.z)<fluss.w/2+0.5){ if(i0<0)i0=k; i1=k; } });
-    if(i0>=0){ const A=e.pts[Math.max(0,i0-1)], B=e.pts[Math.min(e.pts.length-1,i1+1)];
-      bruecken.push({x:(A.x+B.x)/2, z:(A.z+B.z)/2, th:Math.atan2(B.z-A.z,B.x-A.x), len:Math.hypot(B.x-A.x,B.z-A.z)+3, w:e.w+1.2}); } } }
-  return {nodes, edges, gates, bruecken};
+  return {nodes, edges, gates};
 }
     // ════════════ dorfLayout v5 — GRAPH-WACHSTUM + MAUER ════════════
     // prettier-ignore
@@ -2965,17 +2970,7 @@
   const DS=3;
   const walled= staedt&&plan.jahr<1750;                                                     // STADTMAUER-GESETZ: die Mauer erzwingt die Dichte
   const Rw= walled? Math.min(195, 26+Math.sqrt(n)*8.4) : 0;
-  let fluss=null;                                                                            // FLUSS-GESETZ: der große Städtebauer
-  if(rnd()<(staedt?0.45:0.30)){ const fth=rnd()*Math.PI, off=(16+rnd()*26)*(rnd()<0.5?1:-1), fw=8+rnd()*6;
-    const fpts=[]; let dev=0; const R0=Math.max(340, Rw*2+120);
-    for(let u=-R0;u<=R0;u+=6){ const th=fth+dev;
-      fpts.push({x:Math.cos(fth)*u - Math.sin(fth)*off + Math.sin(fth)*dev*0, z:Math.sin(fth)*u + Math.cos(fth)*off, th});
-      dev+=(rnd()-0.5)*0.05; }
-    for(let k2=0;k2<fpts.length;k2++){ const b2=(rnd()-0.5); fpts[k2].x+=-Math.sin(fth)*b2; fpts[k2].z+=Math.cos(fth)*b2;
-      if(k2>0) fpts[k2-1].th=Math.atan2(fpts[k2].z-fpts[k2-1].z, fpts[k2].x-fpts[k2-1].x); }
-    fluss={pts:fpts, w:fw}; }
-  const dFl=(x,z)=>{ if(!fluss)return 1e9; let m=1e9; for(const q of fluss.pts){ const d=Math.hypot(x-q.x,z-q.z); if(d<m)m=d; } return m; };
-  const G=strassengraph(rnd, plan, sW, lw, Rw, fluss);
+  const G=strassengraph(rnd, plan, sW, lw, Rw);
   const roads=G.edges;
   const at=(rd,u)=>{ const k=Math.max(0,Math.min(rd.pts.length-2,(u/DS)|0)), f=(u-k*DS)/DS, A=rd.pts[k], B=rd.pts[Math.min(rd.pts.length-1,k+1)];
     const x=A.x+(B.x-A.x)*f, z=A.z+(B.z-A.z)*f, th=A.th; return {x,z,th,nx:-Math.sin(th),nz:Math.cos(th)}; };
@@ -2998,7 +2993,6 @@
           if(Math.abs(Math.sin(qth-P.th))<0.55) continue;                                      /*quer, nicht parallel*/
           let frei9=true;
           for(let u9=3;u9<Q.d-3&&frei9;u9+=3){ const wx=P.x+Math.cos(qth)*u9, wz=P.z+Math.sin(qth)*u9;
-            if(dFl(wx,wz)<(fluss?fluss.w/2:0)+3.5){frei9=false;break;}
             for(let m9=0;m9<roads.length;m9++){ if(m9===i||m9===j)continue; if(punktAuf(roads[m9],wx,wz).d<5.5){frei9=false;break;} } }
           if(!frei9) continue;
           const gp=[]; const gl=Q.d; for(let u9=0;u9<=gl;u9+=DS) gp.push({x:P.x+Math.cos(qth)*Math.min(u9,gl), z:P.z+Math.sin(qth)*Math.min(u9,gl), th:qth});
@@ -3009,7 +3003,6 @@
             if(Q2.d>=13&&Q2.d<=48){ const th2=Math.atan2(Q2.z-P2.z,Q2.x-P2.x);
               if(Math.abs(Math.sin(th2-P2.th))>=0.55){ let fr2=true;
                 for(let u9=3;u9<Q2.d-3&&fr2;u9+=3){ const wx=P2.x+Math.cos(th2)*u9, wz=P2.z+Math.sin(th2)*u9;
-                  if(dFl(wx,wz)<(fluss?fluss.w/2:0)+3.5){fr2=false;break;}
                   for(let m9=0;m9<roads.length;m9++){ if(m9===i||m9===j)continue; if(punktAuf(roads[m9],wx,wz).d<5.5){fr2=false;break;} } }
                 if(fr2){ const gp2=[]; for(let u9=0;u9<=Q2.d;u9+=DS) gp2.push({x:P2.x+Math.cos(th2)*Math.min(u9,Q2.d), z:P2.z+Math.sin(th2)*Math.min(u9,Q2.d), th:th2});
                   gp2.push({x:Q2.x,z:Q2.z,th:th2});
@@ -3071,7 +3064,6 @@
       if(ok) for(let j2=0;j2<obbs.length;j2++){ if(skipPair===obbs[j2].i)continue;
         if(obbSep(o,obbs[j2].o)<gap-1e-6){ ok=false; if(rd.quer)QD.obb++; break; } }
       if(ok&&platzObb&&obbSep(o,platzObb)<0.5) ok=false;
-      if(ok&&fluss&&dFl(ccx,ccz)<fluss.w/2+2+Math.hypot(exH,ezH)) ok=false;                 // UFER-FREIHALTUNG
       if(ok){ const k0=(sc/DS)|0, kw=(((exH+rd.w/2+gw+4)/DS)|0)+1;
         for(let r2=0;r2<roads.length&&ok;r2++){ const rr=roads[r2], own=(r2===cu.rd);
           for(let k5=0;k5<rr.pts.length;k5++){ const q2=rr.pts[k5], thr=(own&&Math.abs(k5-k0)<=kw)?(rr.w/2+0.02):(rr.w/2+0.25);
@@ -3110,7 +3102,6 @@
         if(ok) for(const q2 of obbs){ if(q2.i===j){ if(obbSep(o,q2.o)<0.9)ok=false; }
           else if(obbSep(o,q2.o)<gap-1e-6)ok=false; if(!ok)break; }
         if(ok&&platzObb&&obbSep(o,platzObb)<0.5)ok=false;
-        if(ok&&fluss&&dFl(ccx,ccz)<fluss.w/2+2+Math.hypot(exS,ezS))ok=false;
         if(ok){ for(const rr of roads){ for(const q3 of rr.pts){ if(distPunktOBB(q3.x,q3.z,o)<rr.w/2+0.25){ok=false;break;} } if(!ok)break; } }
         if(ok){ const lcx=(e.x0+e.x1)/2, lcz=(e.z0+e.z1)/2, cc=Math.cos(phi), ss=Math.sin(phi);
           pl[i]={x:ccx-(lcx*cc+lcz*ss), z:ccz-(-lcx*ss+lcz*cc), phi, obb:o, parent:j};
@@ -3127,7 +3118,6 @@
         let ok=true;
         for(const q2 of obbs) if(obbSep(o,q2.o)<gap-1e-6){ok=false;break;}
         if(ok&&platzObb&&obbSep(o,platzObb)<0.5)ok=false;
-        if(ok&&fluss&&dFl(ccx,ccz)<fluss.w/2+2+rq)ok=false;
         if(ok){ for(const rr of roads){ for(const q3 of rr.pts){ if(distPunktOBB(q3.x,q3.z,o)<rr.w/2+0.25){ok=false;break;} } if(!ok)break; } }
         if(ok&&Rw&&Math.abs(Math.hypot(ccx,ccz)-Rw)<2.0+rq)ok=false;
         if(ok){ const lcx=(e.x0+e.x1)/2, lcz=(e.z0+e.z1)/2, cc=Math.cos(phi), ss=Math.sin(phi);
@@ -3168,7 +3158,6 @@
       const fcx=q.x+Math.cos(q.th)*(6+fwd/2)+sgn*nx2*(sW/2+2+fd/2), fcz=q.z+Math.sin(q.th)*(6+fwd/2)+sgn*nz2*(sW/2+2+fd/2);
       const fo={cx:fcx,cz:fcz,phi:q.th,ex:fwd/2,ez:fd/2};
       let ok=true; for(const q2 of obbs) if(obbSep(fo,q2.o)<0.5){ok=false;break;}
-      if(ok&&fluss){ for(const qf of fluss.pts){ if(distPunktOBB(qf.x,qf.z,fo)<fluss.w/2+0.5){ok=false;break;} } }
       if(ok&&Rw){ let mn=1e9; for(let a2=0;a2<12;a2++){ const wx=Math.cos(a2/12*2*Math.PI)*Rw, wz=Math.sin(a2/12*2*Math.PI)*Rw;
         mn=Math.min(mn,distPunktOBB(wx,wz,fo)); } if(Math.hypot(fcx,fcz)<Rw+3&&mn<1.5)ok=false; }
       if(ok) felder.push(fo); } }
@@ -3198,7 +3187,6 @@
     if(ok) for(const rd of roads){ for(let u=0;u<=(rd.len||0);u+=DS){ const q=at(rd,u); if(Math.hypot(tx-q.x,tz-q.z)<rd.w/2+0.9){ok=false;break;} } if(!ok)break; }
     if(ok&&platzObb&&distPunktOBB(tx,tz,platzObb)<(platz&&platz.typ==='weg'?0.8:-1))ok=false;
     if(ok&&felder.some(f=>distPunktOBB(tx,tz,f)<0.8))ok=false;
-    if(ok&&fluss&&dFl(tx,tz)<fluss.w/2+0.8)ok=false;
     if(ok&&brunnen.some(b2=>Math.hypot(tx-b2.x,tz-b2.z)<3.5))ok=false;
     if(ok&&mauer&&Math.abs(Math.hypot(tx,tz)-Rw)<2.6)ok=false;
     if(ok&&trees.some(q2=>Math.hypot(tx-q2.x,tz-q2.z)<3.0))ok=false;
@@ -3210,17 +3198,26 @@
       const lx2=q.x+fl*q.nx*(rd.w/2+gw+0.35), lz2=q.z+fl*q.nz*(rd.w/2+gw+0.35);
       let ok=true;
       for(const q2 of obbs){ if(distPunktOBB(lx2,lz2,q2.o)<0.45){ok=false;break;} }
-      if(ok&&fluss&&dFl(lx2,lz2)<fluss.w/2+0.6)ok=false;
       if(ok&&laternen.some(l=>Math.hypot(lx2-l.x,lz2-l.z)<9))ok=false;
       if(ok){ const dL=Math.min(1, Math.hypot(lx2,lz2)/(R9L*0.80));                          /*LATERNEN-ZEITREISE: jede Laterne liest das JAHR ihres Rings — Gas im Altkern, Elektro am Saum*/
         const R0=globalThis.__ring; const rj=(R0&&R0.ringe)? (R0.gr0+(plan.jahr-R0.gr0)*Math.pow(dL,0.82)) : plan.jahr;
         const gasB=(rj<1895) && (plan.jahr<1930 || dL<0.45);                                /*NACHRUEST-WELLE: ab 1930 elektrifiziert die Moderne von AUSSEN herein — der Altkern behaelt sein Gaslicht (Berlin-Wahrheit)*/
         laternen.push({x:lx2,z:lz2,th:Math.atan2(-fl*q.nz,-fl*q.nx),gas:gasB}); } } } }
+  else { /*DAS DORF-LICHT (K10, Auge 13.10.: das Start-Dorf trug 0 Laternen, die Nacht war ohne ein Licht): jede Laterne vor einer Wand wie in der Stadt (kein Grundriss, 9 m Abstand, nicht am Brunnen) — eine am Platz, eine an jedem Weg-Knoten (Grad ≥ 3), laengs jedes Wegs eine je DORF_LICHT_WEG m*/
+    const DORF_LICHT_WEG=25;
+    const setz=(x,z,th)=>{ for(const q2 of obbs){ if(distPunktOBB(x,z,q2.o)<0.45) return false; }
+      if(laternen.some(l=>Math.hypot(x-l.x,z-l.z)<9)||brunnen.some(b2=>Math.hypot(x-b2.x,z-b2.z)<2)) return false; laternen.push({x,z,th,gas:true}); return true; };
+    const amWeg=(rd,u,fl)=>{ const q=at(rd,u); return setz(q.x+fl*q.nx*(rd.w/2+gw+0.35), q.z+fl*q.nz*(rd.w/2+gw+0.35), Math.atan2(-fl*q.nz,-fl*q.nx)); };
+    if(platz) [[0.25,0],[-0.25,0],[0,0.7],[0,-0.7]].some(([fx,fz])=>setz(platz.cx+fx*platz.ex, platz.cz+fz*platz.ez, 0));
+    const grad=new Array(G.nodes.length).fill(0); for(const rd of roads){ grad[rd.a]++; grad[rd.b]++; }
+    for(const rd of roads){ const L=rd.len||0; for(const [ende,k] of [[0,rd.a],[1,rd.b]]){ if(grad[k]<3) continue; const u0=ende?Math.max(0,L-2):Math.min(L,2); amWeg(rd,u0,1)||amWeg(rd,u0,-1); } }
+    for(const rd of roads){ const L=rd.len||0; for(let u=DORF_LICHT_WEG/2, fl=1; u<L; u+=DORF_LICHT_WEG, fl=-fl){
+      for(let du=0; du<=DORF_LICHT_WEG/2-1; du+=1){ if((u+du<L&&(amWeg(rd,u+du,fl)||amWeg(rd,u+du,-fl)))||(du&&u-du>0&&(amWeg(rd,u-du,fl)||amWeg(rd,u-du,-fl)))) break; } } } }
   const sp=at(roads[0],Math.min(roads[0].len||8,8));
   const nzyk=roads.length-(G.nodes.length-1);                                                // Zyklen = E − V + 1 (zusammenhängend)
   return {pl, roads:roads.map(rd=>({pts:rd.pts.filter((_,k2)=>k2*DS<=(rd.len||0)+DS), w:rd.w, gen:rd.gen, len:rd.len||0, quer:rd.quer||false})),   /*Whitelist +quer — das Flag starb an dieser Kopie (#1-Sonde: 0 Gassen im lay)*/
           feldwege, platz, brunnen, fences, felder, staende, spawn:{x:sp.x,z:sp.z}, trees, jitAmp, DS, mauer,
-          fluss, bruecken:G.bruecken||[], laternen,
+          laternen,
           graph:{nV:G.nodes.length, nE:roads.length, zyklen:Math.max(0,nzyk)},
           welt:{x0:X0-9,x1:X1+9,z0:Z0-9,z1:Z1+9}};
 }
@@ -3352,7 +3349,7 @@
         var bx = new THREE.Box3().setFromObject(mass.g);
         var B = {
             p: p,
-            q: { phi: 0, x: 0, z: 0, obb: { cx: 0, cz: 0 } },
+            q: { phi: 0, x: 0, y: 0, z: 0, obb: { cx: 0, cz: 0 } }, // das Einzel-Haus des Ofens steht im eigenen Rahmen (y = 0; der Wirt setzt es auf seinen Slot)
             lod: "chunk",
             dyn: false,
             ext: { x0: bx.min.x, x1: bx.max.x, z0: bx.min.z, z1: bx.max.z, y1: bx.max.y },
@@ -3705,6 +3702,8 @@
         feuerstelle: { lab: "Feuerstelle · Steinring, Scheite, Glut", gestalten: 2, siteTag: "glut", salz: 0x1f3a, tritt: { typ: "kreis", r: 1.05 }, licht: "feuer" },
         marktstand: { lab: "Marktstand · Plane und Waren", gestalten: 3, siteTag: "platz", salz: 0x2b51, tritt: { typ: "kasten", ex: 1.45, ez: 1.05 } },
         brunnen: { lab: "Ziehbrunnen · Steinkranz, Haspel, Schindeldach", gestalten: 2, siteTag: "platz", salz: 0x3c77, tritt: { typ: "kreis", r: 1.75 } },
+        // DIE LATERNE (K10 × K11, rein additiv): die Leuchte der Gasse als Gestalt — ihr Licht ist das Datum ihres Rezepts
+        laterne: { lab: "Laterne · Eisenmast, Glas-Kopf, Haube", gestalten: 1, siteTag: "weg", salz: 0x4d93, tritt: { typ: "kreis", r: 0.45 }, licht: "laterne" },
     };
     // B4 — die Regler der Ausstattung (die Werkstatt baut ihre Slider daraus, der ov-Kanal liest dieselben ids).
     var AUS_PARAMS = [
@@ -4661,7 +4660,49 @@
         }
     }
 
-    var AUS_BAU = { feuerstelle: ausFeuerstelle, marktstand: ausMarktstand, brunnen: ausBrunnen };
+    // ── DIE LATERNE (K10 × K11): Fuß und Mast aus Guss-Eisen · Glas-Kopf im Eisen-Rahmen · Haube mit Knauf ──
+    // DIE MASSE (die Gaslaterne der Gasse): der Fuß Ø 0,30 m bis 0,55 m, der Mast Ø 9 cm bis unter den Kopf, der Kopf ein
+    // Glas-Kasten 0,26 × 0,40 m mit dem Licht-Mittelpunkt auf LICHT_GESETZ.laterne `hoeheM` (3,6 m), die Haube eine flache
+    // Pyramide (0,40 m breit, 0,2 m hoch), nah mit Kranz und Knauf. ZWEI Rollen (das Budget der Ausstattung: der Stoff und
+    // eine Seh-Klasse): metall und laternenglas — der Kopf ist Glas der Seh-Klasse glas mit dem Datum der Laterne (`__licht` laterne): sein
+    // Glühen und das Licht auf Boden und Wand tragen EIN Datum (fx.licht = LICHT_GESETZ.laterne, 1900 K, Zeitplan) — der Kopf
+    // im Stoff, das Licht im EINEN Licht-Pool der Welt. Stufe 1: dieselbe Silhouette, vier Seiten, ohne Rahmen und Knauf.
+    function ausLaterne(g, p, seed, stufe) {
+        var m = AUS_MASS.laterne(p.groesse),
+            W = p.verwitterung,
+            fein = stufe === 0,
+            ton = ausTon(ausZufall(seed, 0x91), 0.06, 0.02);
+        var eisen = function (geo) {
+            ausFaerbe(geo, "metall", W, function () {
+                return { ton: ton };
+            });
+            ausTeil(g, geo, "metall");
+        };
+        // der Fuß und der Mast als EIN Drehkörper (nah acht Seiten mit Wulst und Kragen unter dem Kopf)
+        var profil = fein
+            ? [[m.fr, -0.2], [m.fr, 0.1], [m.fr * 0.82, 0.16], [m.fr * 0.62, m.fh], [m.mr * 1.5, m.fh + 0.1], [m.mr, m.fh + 0.22], [m.mr, m.yK0 - 0.14], [m.mr * 1.7, m.yK0 - 0.04], [m.mr * 1.7, m.yK0], [0, m.yK0]]
+            : [[m.fr, -0.2], [m.fr * 0.62, m.fh], [m.mr, m.fh + 0.22], [m.mr, m.yK0], [0, m.yK0]];
+        eisen(ausDreh(profil, fein ? 8 : 4, false, false));
+        // der Boden des Kopfs, das Glas, nah die vier Eck-Stäbe des Rahmens
+        eisen(ausSetze(ausKiste(m.kb + 0.04, 0.03, m.kb + 0.04, fein ? 0.008 : 0), 0, m.yK0 + 0.015, 0));
+        var glas = ausSetze(ausKiste(m.kb, m.kh - 0.03, m.kb, 0), 0, m.yL + 0.015, 0);
+        ausFaerbe(glas, "laternenglas", 0, null);
+        ausTeil(g, glas, "laternenglas");
+        var i, j;
+        if (fein) for (i = -1; i <= 1; i += 2) for (j = -1; j <= 1; j += 2) eisen(ausSetze(ausKiste(0.022, m.kh, 0.022, 0), (i * m.kb) / 2, m.yL, (j * m.kb) / 2));
+        // die Haube: nah ein Kranz unter der Pyramide und der Knauf auf ihr
+        var y0 = m.yK1;
+        if (fein) {
+            eisen(ausSetze(ausKiste(2 * m.hb, 0.025, 2 * m.hb, 0.006), 0, m.yK1 + 0.0125, 0));
+            y0 = m.yK1 + 0.025;
+            eisen(ausSetze(ausKiste(0.035, 0.055, 0.035, 0), 0, m.yT + 0.0275, 0));
+        }
+        var h = m.hb,
+            spitze = [0, m.yT, 0];
+        eisen(ausVielecke([[[-h, y0, -h], [h, y0, -h], spitze], [[h, y0, -h], [h, y0, h], spitze], [[h, y0, h], [-h, y0, h], spitze], [[-h, y0, h], [-h, y0, -h], spitze], [[-h, y0, -h], [-h, y0, h], [h, y0, h], [h, y0, -h]]], [0, (y0 + m.yT) / 2, 0]));
+    }
+
+    var AUS_BAU = { feuerstelle: ausFeuerstelle, marktstand: ausMarktstand, brunnen: ausBrunnen, laterne: ausLaterne };
     // DIE STUFE 3 DER AUSSTATTUNG (nurWurf, S3): die Grundform als EIN Gitter in EINEM Stoff (Rolle stein) — sie wirft für
     // die L1 (die L0 wirft selbst: nah, höchstens drei im Bild); ihre Hülle (`ausHuelle`) reist als Beipack `__fern`.
     // Dieselben Maße wie die Stufen 0/1 (Ring R + Steinbreite, Tisch und Plane, Kranz, Pfosten, First): Feuerstelle der
@@ -4689,6 +4730,12 @@
             var ra = 0.92 * G,
                 px = ra + 0.13;
             return { ra: ra, rk: ra + 0.08, hK: 0.66 + 0.07, px: px, yF: 2.62, yT: 2.16, hz: 0.86, lx: 2 * px + 0.5, wx: px + 0.17, yW: 1.5 };
+        },
+        laterne: function (G) {
+            // der Licht-Mittelpunkt (LICHT_GESETZ.laterne hoeheM) ist die Mitte des Glas-Kopfs
+            var kh = 0.4 * G,
+                yL = LICHT_GESETZ.laterne.hoeheM * G;
+            return { fr: 0.15 * G, fh: 0.55 * G, mr: 0.045 * G, kb: 0.26 * G, kh: kh, yL: yL, yK0: yL - kh / 2, yK1: yL + kh / 2, hb: 0.2 * G, yT: yL + kh / 2 + 0.2 * G };
         },
     };
     // Die Wahl einer Gestalt, die nur der Bau kennt (der Strom zieht sie zwischen den Waren): der Marktstand nennt sein Fass
@@ -4752,6 +4799,22 @@
                 for (k = 0; k < 6; k++) deckel.push([fx + Math.cos((k * Math.PI) / 3) * fr, fh, fz + Math.sin((k * Math.PI) / 3) * fr]);
                 flaeche(stern.concat([deckel]));
             }
+        } else if (rezeptId === "laterne") {
+            // Was die L0 wirft, wirft die Stufe 3: das Glas wirft nicht (Glut), also der Kopf als sein Eisen — der Boden
+            // als Platte, die vier Eck-Stäbe, darüber die Pyramide der Haube; Fuß und Mast als Vierkant nach dem Profil der
+            // L1. Die Vierkante achsparallel wie der Kopf (je Halbweite b der Radius b·√2, um 45° gedreht), 46 Dreiecke.
+            // Gekreuzte Flächen warfen den Kopf als Stern und die Haube als Strich (Wurf-IoU 0,587).
+            var q = Math.SQRT2,
+                kb = m.kb / 2 + 0.02,
+                vier = function (profil) {
+                    var geo = ausDreh(profil, 4, false, false);
+                    geo.rotateY(Math.PI / 4);
+                    teil(geo);
+                };
+            vier([[0.84 * m.fr * q, -0.05], [0.84 * 0.62 * m.fr * q, m.fh], [0.84 * m.mr * q, m.fh + 0.22], [0.84 * m.mr * q, m.yK0]]);
+            platte(-kb, kb, m.yK0, -kb, kb);
+            for (var ex = -1; ex <= 1; ex += 2) for (var ez = -1; ez <= 1; ez += 2) pfosten((ex * m.kb) / 2, (ez * m.kb) / 2, m.yK0, m.yK1, 0.011);
+            vier([[m.hb * q, m.yK1], [0, m.yT]]);
         } else {
             teil(ausDreh([[m.rk, -0.05], [m.rk, m.hK], [0, m.hK]], 8, false, false));
             for (var i = -1; i <= 1; i += 2) pfosten(i * m.px, 0, -0.05, m.yF, 0.07);
@@ -4788,6 +4851,13 @@
             for (var sx = -1; sx <= 1; sx += 2)
                 for (var sz = -1; sz <= 1; sz += 2) dazu(huelleTeil("box", sx * m.px - 0.045, sx * m.px + 0.045, 0, sz < 0 ? m.pV : m.pH, sz * m.pz - 0.045, sz * m.pz + 0.045, F("holz")));
             if (wahl && wahl.fass) dazu(huelleTeil("box", wahl.fass[0] - 0.21, wahl.fass[0] + 0.21, 0, 0.6, wahl.fass[1] - 0.21, wahl.fass[1] + 0.21, F("holz")));
+        } else if (rezeptId === "laterne") {
+            var fr = m.fr * 0.8;
+            dazu(huelleTeil("box", -fr, fr, -0.2, m.fh, -fr, fr, F("metall")));
+            dazu(huelleTeil("box", -m.mr, m.mr, m.fh, m.yK0, -m.mr, m.mr, F("metall")));
+            dazu(huelleTeil("box", -m.kb / 2, m.kb / 2, m.yK0, m.yK1, -m.kb / 2, m.kb / 2, F("glas")));
+            dazu(huelleTeil("keil", -m.hb, m.hb, m.yK1, m.yT, -m.hb, 0, F("metall"), { first: "+z", walm: 1 }));
+            dazu(huelleTeil("keil", -m.hb, m.hb, m.yK1, m.yT, 0, m.hb, F("metall"), { first: "-z", walm: 1 }));
         } else {
             dazu(huelleTeil("box", -m.rk + IW, m.rk - IW, -0.05, m.hK, -m.rk + IW, m.rk - IW, F("stein")));
             for (var i = -1; i <= 1; i += 2) dazu(huelleTeil("box", i * m.px - 0.07, i * m.px + 0.07, -0.3, m.yF, -0.07, 0.07, F("holz")));
@@ -4821,6 +4891,7 @@
         };
         if (rezeptId === "feuerstelle") return { stein: pick([0x9a958a, 0x928d83, 0xa19a8f]), holz: pick([0x8a745c, 0x84705a]), lehm: 0xb4afa6 };
         if (rezeptId === "marktstand") return { holz: pick([0x8e7860, 0x977f66, 0x84705c]), tuch: pick(AUS_PLANE), lattung: 0x9a8358, stroh: 0xb39b68 };
+        if (rezeptId === "laterne") return { metall: pick([0x6b706a, 0x6e6b66]) }; // gestrichenes Guss-Eisen, das Glas des Fensters
         return { stein: pick([0xa29b8e, 0x9a9488, 0xaaa397]), holz: pick([0x7c6650, 0x86705a]), lattung: 0x8f7a56, stamm: pick([0x847866, 0x7a6e5e]) };
     }
     // Das Raster der Bytes (plattformgleich): 2^-12, Normalen 2^-14, −0 → 0.
@@ -4985,7 +5056,7 @@
     //    DATEN: name/region/groesse + slots[] (je Haus: Anker x/z/phi [exakt die
     //    Lab-wrap-Semantik: position.set(x,0,z) + rotation.y=phi], obb, kultur,
     //    seed, rolle, baujahr, ov = der volle Haus-P-Vektor als benannte Daten)
-    //    + die BENANNTEN Siedlungs-Schichten (roads/platz/brunnen/mauer/fluss/
+    //    + die BENANNTEN Siedlungs-Schichten (roads/platz/brunnen/mauer/
     //    laternen/… — dürfen v1 unkonsumiert bleiben, must-ignore). Der Fußab-
     //    druck je Haus kommt aus massBau (der MASS-BUILD, Δext=0-bewiesen) —
     //    exakt der buildDorf-Pfad der Shell. DETERMINISTISCH: DORF/dorfLayout
@@ -5081,17 +5152,13 @@
             slots: slots,
             // SCHICHT-VOLLENDUNG (18.07., Vertrags-Akt): NUR gelebte Schichten
             // reisen — Wege/Platz/Zäune/Äcker (_stlWegeBuild), Brunnen + Stände
-            // + Hof-Bäume (Architektur-Spawns). Die Schichten ohne Welt-Wahrheit
-            // (fluss/bruecken = Layout-interner Deko-Fluss, das Welt-Wasser ist
-            // _landAt · graph = Diagnose-Meta · mauer/laternen = Stadt-
-            // Gestalt) sind aus dem Export GESTRICHEN — das Lab liest sein Layout
-            // direkt aus dorfLayout. Der Grund (Welle L, 06.10.; die frühere
-            // Begründung zitierte eine CLAUDE.md-Zeile, die es nie gab): die
-            // Stadt-Genese mit Mauer, Fluss und Brücken in der Welt ist NEUES
-            // Verhalten hinter dem Feature-Stopp bis v1.0 (docs/roadmap.md §0.v1;
-            // Leben-Synthese §5.3, NACH-V1) — offen, benannt: die Welt-Stadt zeigt
-            // keine Mauer, keine Laternen, keinen Siedlungs-Fluss (Messname
-            // gate:settlement „SCHICHT-VOLLENDUNG"); das Lab baut sie als Vorschau.
+            // + Hof-Bäume (Architektur-Spawns) + Laternen. Ohne Welt-Wahrheit sind
+            // graph (Diagnose-Meta) und mauer (Stadt-Gestalt) aus dem Export
+            // GESTRICHEN: die Stadt-Genese mit Mauer in der Welt ist NEUES Verhalten
+            // hinter dem Feature-Stopp bis v1.0 (docs/roadmap.md §0.v1; Messname
+            // gate:settlement „SCHICHT-VOLLENDUNG"). Einen Siedlungs-Fluss plant das
+            // Layout nicht mehr (K10: der Deko-Fluss fiel, das EINE Wasser ist das
+            // der Welt — der Plan v2 etikettiert, wo ein Weg es kreuzt).
             roads: lay.roads,
             feldwege: lay.feldwege,
             platz: lay.platz,
@@ -5100,7 +5167,408 @@
             fences: lay.fences,
             felder: lay.felder,
             staende: lay.staende,
+            // DIE LATERNEN reisen (K10 × K11): ihr Leser ist das Leuchtquellen-Gesetz der Welt (`_laternenLesen`).
+            laternen: lay.laternen,
         };
+    }
+
+    // ── DER ORT AUF DEM GELÄNDE (K10, Plan v2) — ortPlan(plan, origin, ctx): der Export (2D, plan-lokal) auf der Gelände-
+    //    Funktion der Welt-Zelle. ctx = { hoeheAt(x, z), flaeche(splats) }: hoeheAt liest die Höhe an einem WELT-Ort, flaeche
+    //    reicht zu Erdbau-Splats den Leser (x, z) → Höhe auf einer ihrer Flächen oder null (gelaende-core `erdbauY`) — das
+    //    ctx-Muster von phyto `planForestCell`: der Wirt reicht seine Lese-Funktionen, der Kern rechnet. Die Reihenfolge ist
+    //    das Gesetz: der PLATZ
+    //    liegt auf dem Median seines Grunds; jeder WEG trägt ein Höhen-Profil (geglättet über `glaettM`, am Platz und an den
+    //    Knoten der früheren Wege gepinnt, das Gefälle gekappt auf `gefaelle`); jedes HAUS steht auf der Höhe seiner Gasse (die
+    //    Fläche, die der Gang aus der Tür betritt; ein Hof-Haus auf dem Niveau seines Hofs, sonst der Median seines Grundrisses), sein Vorplatz trägt die halbe Diele (zwei Stufen statt
+    //    einer Schwelle von 0,55 m). Ausgabe: der Plan mit `version: 2`, `ort` {x, z}, je Slot `y` (der Boden des Hauses,
+    //    absolut) und `hang` (plattform · hanghaus · stelzen: die Spanne des Grunds unter dem Grundriss), die Wege mit `ys`, der
+    //    Platz und die Laternen mit `y`, und `erdbau[]` — die Splats des ERDBAU-Terms (gelaende-core `erdbauNormal`): `platte`
+    //    {cx, cz, phi, ex, ez, y} und `trasse` {x0, z0, y0, x1, z1, y1, w}, absolut in Welt-Koordinaten, in der Reihenfolge
+    //    ihrer Auswertung (Wege, Platz, je Haus Grundriss und Vorplatz), zuletzt `frei` {cx, cz, phi, ex, ez} unter jeder
+    //    Brücke. ctx.wasserAt(x, z) (optional) nennt das Welt-Wasser: ein Weg darüber trägt `bruecken` [[Widerlager a, b]]. REIN: derselbe Plan + derselbe Ort + dieselbe Höhe ⇒
+    //    byte-derselbe Plan v2 (gate:settlement, Plan-Hash Studio = Welt). Leser: der Wirt (`_ortPlanSetzen`).
+    var ORT_GESETZ = {
+        glaettM: 6, // halbe Fensterbreite der Weg-Glättung (m)
+        gefaelle: 0.12, // die Fuß-Gasse (Nordstern §6: Fuß ≤ 12 %)
+        saumM: 0.6, // so weit steht eine Platte über den Grundriss, eine Trasse über den Weg hinaus
+        vorplatzM: 1.6, // Tiefe des Vorplatzes vor der Haustür (mindestens: er reicht bis zur Gasse des Hauses)
+        gasseM: 5, // so weit vor der Tür (über die halbe Wegbreite hinaus) findet das Haus seine Gasse
+        hangPlattform: 1.5, // Spanne des Grunds unter dem Grundriss bis zur Plattform (m)
+        hangHanghaus: 4, // bis zum Hanghaus; darüber Stelzen
+        brueckeM: 8, // so weit hält der FREI-Splat einer Brücke den Grund je Seite des Wegs unberührt (die Böschung staut nicht)
+    };
+    function ortPlan(plan, origin, ctx) {
+        if (
+            !plan ||
+            !Array.isArray(plan.slots) ||
+            !origin ||
+            !ctx ||
+            typeof ctx.hoeheAt !== "function" ||
+            typeof ctx.flaeche !== "function"
+        )
+            throw new Error("fachwerk ortPlan: Plan, Ort, ctx.hoeheAt und ctx.flaeche sind Pflicht");
+        var O = ORT_GESETZ;
+        var ox = Number(origin.x);
+        var oz = Number(origin.z);
+        if (!isFinite(ox) || !isFinite(oz)) throw new Error("fachwerk ortPlan: der Ort ist keine Zahl");
+        var r6 = function (v) {
+            return Math.round(v * 1e6) / 1e6;
+        };
+        var H = function (x, z) {
+            var h = ctx.hoeheAt(ox + x, oz + z);
+            if (!isFinite(h)) throw new Error("fachwerk ortPlan: keine Höhe an " + r6(ox + x) + "/" + r6(oz + z));
+            return h;
+        };
+        var median = function (a) {
+            var b = a.slice().sort(function (p, q) {
+                return p - q;
+            });
+            var n = b.length;
+            return n % 2 ? b[(n - 1) / 2] : 0.5 * (b[n / 2 - 1] + b[n / 2]);
+        };
+        // die Höhen eines gedrehten Rechtecks (plan-lokal, im Rahmen des Hauses: welt = mitte + (lx·c + lz·s, −lx·s + lz·c))
+        var rechteck = function (cx, cz, phi, ex, ez) {
+            var c = Math.cos(phi);
+            var s = Math.sin(phi);
+            var out = [];
+            for (var i = 0; i < 5; i++)
+                for (var j = 0; j < 5; j++) {
+                    var lx = ex * (i / 2 - 1);
+                    var lz = ez * (j / 2 - 1);
+                    out.push(H(cx + lx * c + lz * s, cz - lx * s + lz * c));
+                }
+            return out;
+        };
+        var erdbau = [];
+        var wegSaeume = [];
+        var wegKerne = [];
+        var freiSplats = [];
+        // 1) DER PLATZ
+        var pz = plan.platz;
+        var platzY = null;
+        if (pz && isFinite(pz.cx) && isFinite(pz.cz) && isFinite(pz.ex) && isFinite(pz.ez))
+            platzY = r6(median(rechteck(pz.cx, pz.cz, pz.phi || 0, pz.ex, pz.ez)));
+        var imPlatz = function (x, z) {
+            if (platzY === null) return false;
+            var c = Math.cos(pz.phi || 0);
+            var s = Math.sin(pz.phi || 0);
+            var dx = x - pz.cx;
+            var dz = z - pz.cz;
+            return Math.abs(dx * c - dz * s) <= pz.ex + 1 && Math.abs(dx * s + dz * c) <= pz.ez + 1;
+        };
+        // 2) DIE WEGE (die Straßen der Gassen; die Feldwege folgen dem Grund)
+        var profil = []; // [x, z, y, halbe Breite] je profiliertem Weg-Punkt (plan-lokal)
+        var wege = [];
+        var roads = Array.isArray(plan.roads) ? plan.roads : [];
+        var k;
+        for (var ri = 0; ri < roads.length; ri++) {
+            var rd = roads[ri];
+            var pts = rd && Array.isArray(rd.pts) ? rd.pts : [];
+            var hw = (isFinite(rd.w) ? rd.w : 3) / 2;
+            var n = pts.length;
+            var sw = [];
+            var roh = [];
+            var pin = [];
+            for (k = 0; k < n; k++) {
+                sw.push(k ? sw[k - 1] + Math.hypot(pts[k].x - pts[k - 1].x, pts[k].z - pts[k - 1].z) : 0);
+                roh.push(H(pts[k].x, pts[k].z));
+                pin.push(null);
+                if (imPlatz(pts[k].x, pts[k].z)) {
+                    pin[k] = platzY;
+                    continue;
+                }
+                var best = Infinity;
+                for (var q = 0; q < profil.length; q++) {
+                    var d = Math.hypot(pts[k].x - profil[q][0], pts[k].z - profil[q][1]);
+                    if (d <= Math.max(1.5, profil[q][3]) && d < best) {
+                        best = d;
+                        pin[k] = profil[q][2];
+                    }
+                }
+            }
+            // das Welt-Wasser unter dem Weg (ctx.wasserAt, das Brücken-Etikett unten): sein Grund ist das Bett, nie der Weg —
+            // die Glättung liest nur trockene Punkte
+            var nass = [];
+            var trocken = 0;
+            for (k = 0; k < n; k++) {
+                nass.push(!!(ctx.wasserAt && ctx.wasserAt(ox + pts[k].x, oz + pts[k].z)));
+                if (!nass[k]) trocken++;
+            }
+            var ys = [];
+            for (k = 0; k < n; k++) {
+                if (pin[k] !== null) {
+                    ys.push(pin[k]);
+                    continue;
+                }
+                var sum = 0;
+                var cnt = 0;
+                for (var m = 0; m < n; m++)
+                    if (Math.abs(sw[m] - sw[k]) <= O.glaettM && (!nass[m] || !trocken)) {
+                        sum += roh[m];
+                        cnt++;
+                    }
+                // ein nasser Punkt, dessen Fenster nur Wasser sieht, hat noch keine Höhe: das Brücken-Deck unten gibt sie ihm
+                ys.push(cnt ? sum / cnt : null);
+            }
+            // das Gefälle gekappt gegen den letzten Punkt MIT Höhe (eine Spanne ohne Höhe trägt die Brücke, nie ein NaN)
+            var pv = -1;
+            for (k = 0; k < n; k++) {
+                if (ys[k] === null) continue;
+                if (pin[k] === null && pv >= 0) {
+                    var g = O.gefaelle * (sw[k] - sw[pv]);
+                    ys[k] = Math.min(ys[pv] + g, Math.max(ys[pv] - g, ys[k]));
+                }
+                pv = k;
+            }
+            pv = -1;
+            for (k = n - 1; k >= 0; k--) {
+                if (ys[k] === null) continue;
+                if (pin[k] === null && pv >= 0) {
+                    var g2 = O.gefaelle * (sw[pv] - sw[k]);
+                    ys[k] = Math.min(ys[pv] + g2, Math.max(ys[pv] - g2, ys[k]));
+                }
+                pv = k;
+            }
+            // DAS BRÜCKEN-ETIKETT: wo der Weg Welt-Wasser kreuzt (ctx.wasserAt), trägt er eine Brücke — ihr Deck spannt gerade
+            // von Widerlager zu Widerlager (den trockenen Punkten davor und danach), unter ihr legt der Erdbau keine Trasse, und
+            // ein FREI-Splat hält den Grund unter der Spanne samt brueckeM je Seite unberührt (der Weg staut das Wasser nicht).
+            var bruecken = [];
+            for (k = 0; k < n; k++) {
+                if (!nass[k] || (k > 0 && nass[k - 1])) continue;
+                var e = k;
+                while (e + 1 < n && nass[e + 1]) e++;
+                var wa = k > 0 ? k - 1 : k;
+                var wb = e + 1 < n ? e + 1 : e;
+                var ya = nass[wa] ? ys[wb] : ys[wa];
+                var yb = nass[wb] ? ya : ys[wb];
+                for (var m2 = k; m2 <= e; m2++) ys[m2] = sw[wb] > sw[wa] ? ya + ((yb - ya) * (sw[m2] - sw[wa])) / (sw[wb] - sw[wa]) : ya;
+                bruecken.push([wa, wb]);
+                var mx = (pts[wa].x + pts[wb].x) / 2;
+                var mz = (pts[wa].z + pts[wb].z) / 2;
+                var phiB = Math.atan2(-(pts[wb].z - pts[wa].z), pts[wb].x - pts[wa].x);
+                freiSplats.push({
+                    art: "frei",
+                    cx: r6(ox + mx),
+                    cz: r6(oz + mz),
+                    phi: r6(phiB),
+                    ex: r6(Math.hypot(pts[wb].x - pts[wa].x, pts[wb].z - pts[wa].z) / 2),
+                    ez: r6(hw + O.brueckeM),
+                });
+            }
+            for (k = 0; k < n; k++) {
+                ys[k] = r6(ys[k]);
+                profil.push([pts[k].x, pts[k].z, ys[k], hw]);
+            }
+            // je Strecke ZWEI Trassen derselben Höhe: der Saum (Weg + saumM je Seite) liegt unter den Grundrissen, der Weg selbst
+            // über ihnen — kein Haus-Saum liegt auf der Gasse, kein Weg-Saum unter einer Wand; eine Strecke an der Brücke trägt keine
+            for (k = 1; k < n; k++)
+                if (!nass[k - 1] && !nass[k])
+                for (var tier = 0; tier < 2; tier++)
+                    (tier ? wegKerne : wegSaeume).push({
+                        art: "trasse",
+                        x0: r6(ox + pts[k - 1].x),
+                        z0: r6(oz + pts[k - 1].z),
+                        y0: ys[k - 1],
+                        x1: r6(ox + pts[k].x),
+                        z1: r6(oz + pts[k].z),
+                        y1: ys[k],
+                        w: r6(2 * (hw + (tier ? 0 : O.saumM))),
+                        weg: 2 * ri + tier, // die Strecken EINES Wegs: unter ihnen trägt die nächste Mitte (gelaende-core erdbauY)
+                    });
+            wege.push(bruecken.length ? Object.assign({}, rd, { ys: ys, bruecken: bruecken }) : Object.assign({}, rd, { ys: ys }));
+        }
+        if (platzY !== null)
+            erdbau.push({
+                art: "platte",
+                cx: r6(ox + pz.cx),
+                cz: r6(oz + pz.cz),
+                phi: r6(pz.phi || 0),
+                ex: r6(pz.ex + O.saumM),
+                ez: r6(pz.ez + O.saumM),
+                y: platzY,
+            });
+        // DIE FLÄCHE der Wege und des Platzes, wie die Gelände-Funktion sie trägt (ctx.flaeche: der Erdbau-Term des Gesetzbuchs
+        // über diesen Splats — auf einer Fläche ihre Höhe, sonst null): das Haus und die Laterne lesen die Höhe, auf die ein Fuß
+        // tritt, nie eine eigene Rechnung des Erdbaus.
+        var auf = ctx.flaeche(wegSaeume.concat(wegKerne, erdbau));
+        var hausPlatten = [];
+        var vorplaetze = [];
+        var aufY = function (x, z) {
+            var y = auf(ox + x, oz + z);
+            return y !== null && isFinite(y) ? r6(y) : null;
+        };
+        // 3) DIE HÄUSER: zuerst jedes Haus an seiner Gasse (die Höhe der Fläche, wo der Gang aus der Tür sie betritt); dann die HOF-Häuser (die Scheune hinter
+        //    dem Wohnhaus — vor ihrer Tür liegt kein Weg, sondern der Grund eines Nachbarn): sie stehen auf der Höhe der ersten
+        //    gesetzten Fläche, die ihr Blick aus der Tür trifft (der Hof ist EIN Niveau), bis keines mehr dazukommt; der Rest
+        //    auf dem Median seines Grundrisses.
+        var vorne = function (sl, lz) {
+            var c = Math.cos(sl.phi || 0);
+            var s = Math.sin(sl.phi || 0);
+            return [sl.x + sl.tuer.x * c + lz * s, sl.z - sl.tuer.x * s + lz * c];
+        };
+        var hatTuer = function (sl) {
+            return !!(sl.tuer && isFinite(sl.tuer.x) && isFinite(sl.tuer.z));
+        };
+        // DER EINGANG, den der Gang von der Gasse betritt (z haus-lokal, y seine Schwelle über dem Boden des Hauses): die
+        // Haustür — beim HOF-Haus das Tor im Torriegel vor dem Hof (`hof`: zC = Front − Hof-Tiefe clamp(W, 5, 9), sein Boden
+        // auf der Diele + 0,08 m); vor ihm liegt der Vorplatz (am Hof-Tor stand der Gang vor 0,63 m ohne Stufe, W6).
+        var eingang = function (sl) {
+            var tu = sl.tuer;
+            var pre = PRESETS[sl.kultur];
+            var hof = !!(pre && pre.kind !== "ausstattung" && hausParams(pre, sl.ov || null).grundriss === "hof" && isFinite(tu.W));
+            var ty = isFinite(tu.y) ? tu.y : 0;
+            return hof ? { z: tu.z - Math.min(9, Math.max(5, tu.W)), y: ty + 0.08 } : { z: tu.z, y: ty };
+        };
+        // DAS WASSER DER HÄUSER (K10): ein Slot, dessen Grund samt Saum oder dessen Vorplatz Welt-Wasser trägt (ctx.wasserAt,
+        // dasselbe Urteil wie das Brücken-Etikett; das Raster des Wirts, `_fundamentRaster`: je Meter ein Punkt, höchstens 13
+        // je Seite), fällt aus dem Plan, BEVOR sein Erdbau entsteht — keine Platte im See, das Dorf ist, was steht.
+        var wasserAm = function (x, z) {
+            return !!(ctx.wasserAt && ctx.wasserAt(ox + x, oz + z));
+        };
+        var imWasser = function (sl) {
+            var ob = sl.obb;
+            if (ob && isFinite(ob.ex) && isFinite(ob.ez)) {
+                var c = Math.cos(ob.phi || 0);
+                var s = Math.sin(ob.phi || 0);
+                var ex = ob.ex + O.saumM;
+                var ez = ob.ez + O.saumM;
+                var nx = Math.min(12, Math.max(1, Math.ceil(ex)));
+                var nz = Math.min(12, Math.max(1, Math.ceil(ez)));
+                for (var i = 0; i <= nx; i++)
+                    for (var j = 0; j <= nz; j++) {
+                        var lx = ex * ((2 * i) / nx - 1);
+                        var lz = ez * ((2 * j) / nz - 1);
+                        if (wasserAm(ob.cx + lx * c + lz * s, ob.cz - lx * s + lz * c)) return true;
+                    }
+            } else if (wasserAm(sl.x, sl.z)) return true;
+            if (hatTuer(sl) && isFinite(sl.tuer.w))
+                for (var t = 0.25; t <= O.vorplatzM; t += 0.75)
+                    for (var u = -1; u <= 1; u++) {
+                        var v = vorne(sl, eingang(sl).z - t);
+                        var cu = Math.cos(sl.phi || 0);
+                        var su = Math.sin(sl.phi || 0);
+                        var du = (u * sl.tuer.w) / 2;
+                        if (wasserAm(v[0] + du * cu, v[1] - du * su)) return true;
+                    }
+            return false;
+        };
+        var ps = [];
+        var wasserSlots = 0;
+        for (var si0 = 0; si0 < plan.slots.length; si0++)
+            if (imWasser(plan.slots[si0])) wasserSlots++;
+            else ps.push(plan.slots[si0]);
+        var NS = ps.length;
+        var hy = [];
+        var gasseAb = []; // so weit vor dem Eingang beginnt die Fläche, die der Gang betritt (null: keine Gasse vor der Tür)
+        var grunde = [];
+        for (var si = 0; si < NS; si++) {
+            var sl = ps[si];
+            var ob = sl.obb;
+            grunde.push(ob ? rechteck(ob.cx, ob.cz, ob.phi || 0, ob.ex, ob.ez) : [H(sl.x, sl.z)]);
+            var y0 = null;
+            if (hatTuer(sl)) {
+                // der erste Meter der Fläche, die der Gang betritt (ihr Median: eine Naht zweier Wege gleich hinter dem Vorplatz
+                // teilt sich in zwei kleine Stufen statt einer großen)
+                var tritt = [];
+                for (var t0 = O.vorplatzM; t0 <= O.vorplatzM + O.gasseM; t0 += 0.25) {
+                    var va = vorne(sl, eingang(sl).z - t0);
+                    var ya = aufY(va[0], va[1]);
+                    if (ya !== null) tritt.push([t0, ya]);
+                    if (tritt.length && t0 >= tritt[0][0] + 1) break;
+                }
+                if (tritt.length)
+                    y0 = r6(
+                        median(
+                            tritt.map(function (p) {
+                                return p[1];
+                            })
+                        )
+                    );
+            }
+            hy.push(y0);
+            gasseAb.push(y0 !== null ? tritt[0][0] : null);
+        }
+        var inPlatte = function (x, z, ob) {
+            var c = Math.cos(ob.phi || 0);
+            var s = Math.sin(ob.phi || 0);
+            var dx = x - ob.cx;
+            var dz = z - ob.cz;
+            return Math.abs(dx * c - dz * s) <= ob.ex + O.saumM && Math.abs(dx * s + dz * c) <= ob.ez + O.saumM;
+        };
+        for (var neu = true; neu; ) {
+            neu = false;
+            for (si = 0; si < NS; si++) {
+                if (hy[si] !== null || !hatTuer(ps[si])) continue;
+                for (var t = O.vorplatzM; t <= O.vorplatzM + O.gasseM && hy[si] === null; t += 0.5) {
+                    var v1 = vorne(ps[si], eingang(ps[si]).z - t);
+                    for (var sj = 0; sj < NS; sj++)
+                        if (sj !== si && hy[sj] !== null && ps[sj].obb && inPlatte(v1[0], v1[1], ps[sj].obb)) {
+                            hy[si] = hy[sj];
+                            neu = true;
+                            break;
+                        }
+                }
+            }
+        }
+        var slots = [];
+        for (si = 0; si < NS; si++) {
+            sl = ps[si];
+            ob = sl.obb;
+            var tu = sl.tuer;
+            var grund = grunde[si];
+            var y = hy[si] !== null ? hy[si] : r6(median(grund));
+            var spanne = 0;
+            for (k = 0; k < grund.length; k++) spanne = Math.max(spanne, Math.abs(grund[k] - y));
+            var hang = spanne <= O.hangPlattform ? "plattform" : spanne <= O.hangHanghaus ? "hanghaus" : "stelzen";
+            if (ob)
+                hausPlatten.push({
+                    art: "platte",
+                    cx: r6(ox + ob.cx),
+                    cz: r6(oz + ob.cz),
+                    phi: r6(ob.phi || 0),
+                    ex: r6(ob.ex + O.saumM),
+                    ez: r6(ob.ez + O.saumM),
+                    y: y,
+                });
+            if (hatTuer(sl) && isFinite(tu.w)) {
+                var ein = eingang(sl);
+                // DER VORPLATZ REICHT BIS ZUR GASSE (K10-6): beginnt die Fläche, deren Höhe das Haus trägt, erst hinter dem
+                // Vorplatz, lag dazwischen ein Streifen ohne Fläche — dort griff die Böschung eines höheren Nachbarn (Auto-Dorf
+                // der Zelle −4,−4, ein Stelzen-Haus: Vorplatz 78,74 → 79,01 → Gasse 78,46, ein Absatz von 0,55 m vor der Tür)
+                var tief = gasseAb[si] !== null ? Math.max(O.vorplatzM, gasseAb[si]) : O.vorplatzM;
+                var vp = vorne(sl, ein.z - tief / 2);
+                vorplaetze.push({
+                    art: "platte",
+                    cx: r6(ox + vp[0]),
+                    cz: r6(oz + vp[1]),
+                    phi: r6(sl.phi || 0),
+                    ex: r6(tu.w / 2 + O.saumM),
+                    ez: r6(tief / 2),
+                    y: r6(y + ein.y / 2),
+                });
+            }
+            slots.push(Object.assign({}, sl, { y: y, hang: hang }));
+        }
+        // 4) DIE LATERNEN stehen auf ihrem Weg (sonst auf dem Grund)
+        var laternen = (Array.isArray(plan.laternen) ? plan.laternen : []).map(function (l) {
+            var yl = aufY(l.x, l.z);
+            return Object.assign({}, l, { y: yl === null ? r6(H(l.x, l.z)) : yl });
+        });
+        var v2 = Object.assign({}, plan, {
+            version: 2,
+            ort: { x: ox, z: oz },
+            slots: slots,
+            roads: wege,
+            platz: platzY === null ? plan.platz : Object.assign({}, pz, { y: platzY }),
+            laternen: laternen,
+            // DIE REIHENFOLGE DER FLÄCHEN (die letzte gewinnt, wo sie sich decken): die Säume der Wege, die Grundrisse, die Wege
+            // selbst und der Platz (der Gang bleibt durchgehend, kein Saum eines Nachbarn liegt auf der Gasse), zuletzt die
+            // Vorplätze (die Stufe vor der Tür liegt auf allem)
+            erdbau: wegSaeume.concat(hausPlatten, wegKerne, erdbau, vorplaetze, freiSplats),
+        });
+        // die Slots, die das Wasser nahm (der Leser zählt das Dorf ehrlich: geplant = stehend + im Wasser gefallen)
+        if (wasserSlots) v2.wasserSlots = wasserSlots;
+        return v2;
     }
 
     // ── KAMIN-RAUCH (.105/.106) — Partikel-Feel als DATEN: Host + Lab lesen
@@ -5220,6 +5688,8 @@
         AUSSTATTUNG: AUSSTATTUNG,
         // N5.7 — der Settlement-Export + die Dorf-Quelle (Shell-Aliasse lesen sie)
         exportSettlement: exportSettlement,
+        ortPlan: ortPlan, // K10 — der Plan v2 auf der Gelände-Funktion (der Wirt reicht ctx.hoeheAt)
+        ORT_GESETZ: ORT_GESETZ,
         RAUCH_GESETZ: RAUCH_GESETZ,
         RAUCH_VIS: RAUCH_VIS,
         BEGEH_GESETZ: BEGEH_GESETZ,

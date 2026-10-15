@@ -73,7 +73,6 @@ class AnazhRealm {
             bauSatzSchmutzig: null, // Map Gruppen-Schlüssel → Bau-Satz-Art, deren Bereich sich neu legt (_tickBauSatz)
             dorfRauchSatz: null, // die EINE Rauch-InstancedMesh (_dorfRauchZeichnen)
             _regionBundles: null, // Map Region → BundleGroup (_archRegionBundleFor)
-            archFundament: null, // der Fundament-Pool (_archFundamentAlloc)
             stlWege: null, // der Wege-Pool der Siedlungen
             _chunkIdbMiss: null, // Set der Chunk-Platten-Fehlgriffe
             _chunkIdbHits: 0,
