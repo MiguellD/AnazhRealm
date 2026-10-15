@@ -144,6 +144,8 @@ function selbsttest() {
                 maxTaktZellen: 3,
                 maxTaktMs: 4.1,
             },
+            // BÜHNE: Befund des Selbsttests, kein gesetzter Ort
+            amSpieler: { ort: [-841, -861], gelegt: true, dirty: 9, takte: 42, heil: true, sync: [] },
         },
         code: Object.fromEntries(namen.map((n) => [n, { fragt: true, meldet: true }])),
         pageErrors: [],
@@ -377,6 +379,36 @@ function selbsttest() {
             "die Ort-Phase setzt keinen Baum in frischem Wald",
             (b) => (b.ort.wald.gesetzt = false),
             /LEER: die Ort-Phase setzte keinen Baum in frischem Wald/,
+        ],
+        [
+            "der Neubau unter dem Spieler baut seinen Chunk synchron (bis K69-2)",
+            (b) =>
+                b.ort.amSpieler.sync.push(
+                    {
+                        ms: 3.1,
+                        kette: "_gameLoopTick › _tickDirtyVoxelChunks › _rebuildVoxelChunk › _acquireVoxelChunkBuild",
+                    },
+                    {
+                        ms: 154.6,
+                        kette: "_gameLoopTick › _tickDirtyVoxelChunks › _rebuildVoxelChunk › _acquireVoxelChunkBuild",
+                    }
+                ),
+            /ORT: der Erdbau unter dem Spieler bei \(-841,-861\) baute 1 Chunk synchron im Haupt-Faden \(`_gameLoopTick › _tickDirtyVoxelChunks › _rebuildVoxelChunk › _acquireVoxelChunkBuild › _buildVoxelChunkData`, der längste 154\.6 ms\)/,
+        ],
+        [
+            "der Boden unter dem Spieler heilt nicht (der Neubau verhungert)",
+            (b) => Object.assign(b.ort.amSpieler, { heil: false, takte: 600 }),
+            /ORT: der Erdbau unter dem Spieler bei \(-841,-861\) heilt nicht — nach 600 Takten warten noch Chunks/,
+        ],
+        [
+            "der Erdbau unter dem Spieler markiert nichts",
+            (b) => (b.ort.amSpieler.dirty = 0),
+            /LEER: der Erdbau unter dem Spieler markierte keinen Chunk zum Neubau/,
+        ],
+        [
+            "die Ort-Phase legt keinen Erdbau unter dem Spieler",
+            (b) => delete b.ort.amSpieler,
+            /LEER: die Ort-Phase legte keinen Erdbau unter dem Spieler/,
         ],
         [
             "der Pflanz-Gang plant frische Zellen am Stück (bis K69)",
@@ -1362,6 +1394,69 @@ const server = statikServer();
                         }
                         O.satzHaus = SH;
                     }
+                    // DER ERDBAU UNTER DEM SPIELER (K69-2): ein Ort legt seine Platte, wo der Spieler steht (wie der Dorf-Zug
+                    // das Dorf um ihn legt) — die Chunks seines Umkreises werden neu gebaut. Gezählt jeder Chunk-Bau, der in
+                    // einem Takt SYNCHRON im Haupt-Faden läuft (`_buildVoxelChunkData`, der Bau ohne Worker), mit der Kette
+                    // seiner Rufer und seiner Zeit, und die Takte, bis kein Chunk mehr auf seinen Neubau wartet (der Boden heilt).
+                    {
+                        await bisRuhe(900);
+                        const pm = st.playerMesh.position;
+                        const sx = Math.round(pm.x);
+                        const sz = Math.round(pm.z);
+                        const sy = r._voxelSurfaceY(sx, sz);
+                        const A = { ort: [sx, sz], gelegt: false, dirty: 0, takte: 0, heil: false, sync: [] };
+                        const bauEigen = Object.prototype.hasOwnProperty.call(r, "_buildVoxelChunkData");
+                        const bauRoh = r._buildVoxelChunkData;
+                        let imTakt = false;
+                        const kette = () =>
+                            new Error().stack
+                                .split("\n")
+                                .map((s) => (s.match(/at (?:AnazhRealm\.|Object\.|r\.)?(_[\w$]+)/) || [])[1])
+                                .filter(Boolean)
+                                .slice(1, 5)
+                                .reverse()
+                                .join(" › ");
+                        r._buildVoxelChunkData = function () {
+                            const t4 = performance.now();
+                            try {
+                                return bauRoh.apply(this, arguments);
+                            } finally {
+                                const ms = performance.now() - t4;
+                                if (imTakt) A.sync.push({ ms: +ms.toFixed(1), kette: kette() });
+                            }
+                        };
+                        try {
+                            A.gelegt = r._erdbauSetzen("gate-stand-takt-am-spieler", [
+                                {
+                                    art: "platte",
+                                    cx: sx,
+                                    cz: sz,
+                                    phi: 0,
+                                    ex: 6,
+                                    ez: 6,
+                                    y: Number.isFinite(sy) ? sy : 0,
+                                },
+                            ]);
+                            A.dirty = st.dirtyVoxelChunks ? st.dirtyVoxelChunks.size : 0;
+                            for (; A.takte < 600; A.takte++) {
+                                imTakt = true;
+                                try {
+                                    takt();
+                                } finally {
+                                    imTakt = false;
+                                }
+                                if (!st.dirtyVoxelChunks || st.dirtyVoxelChunks.size === 0) {
+                                    A.heil = true;
+                                    break;
+                                }
+                                if (A.takte % 5 === 0) await pause(10);
+                            }
+                        } finally {
+                            if (bauEigen) r._buildVoxelChunkData = bauRoh;
+                            else delete r._buildVoxelChunkData;
+                        }
+                        O.amSpieler = A;
+                    }
                     aus.ort = O;
                 }
                 // (T) STROM: erst Ruhe, dann der Sprung an einen fremden Ort — der Spieler-Chunk muss kommen
@@ -1543,6 +1638,11 @@ const server = statikServer();
                 (O.satzHaus && O.satzHaus.gesetzt
                     ? ` — das Haus im Satz (${O.satzHaus.kultur}): ${O.satzHaus.gruppen} Gruppen, ${O.satzHaus.ecken} Ecken ` +
                       `nach ${O.satzHaus.takte} Takten, Wieder-Eintritt ${O.satzHaus.bloecke} Blöcke, ${O.satzHaus.frischKB} KB frisch`
+                    : "") +
+                (O.amSpieler && O.amSpieler.gelegt
+                    ? ` — der Erdbau unter dem Spieler bei (${O.amSpieler.ort}): ${O.amSpieler.dirty} Chunks zum Neubau, ` +
+                      `${O.amSpieler.heil ? "heil" : "NICHT heil"} nach ${O.amSpieler.takte} Takten, synchron im Takt ` +
+                      `${O.amSpieler.sync.length} Chunks (${O.amSpieler.sync.map((s) => s.ms + " ms").join(", ") || "keiner"})`
                     : "")
         );
     if (befund.strom)

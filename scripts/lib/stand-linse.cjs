@@ -284,6 +284,8 @@ function standLauf(k) {
 //   STROM   — ein Sprung an einen fremden Ort baut den Spieler-Chunk (Streaming heilig), auch nach der Ruhe;
 //   CODE    — jeder Fege-Takt fragt `_standRuht` und meldet `_standMeldet`;
 //   PAGE    — kein Page-Error.
+// Die Schwelle eines synchronen Chunk-Baus im Takt (ORT, K69-2): ein halber Frame des Profi-Bands (16,7 ms).
+const SYNC_CHUNK_MS = 8;
 function standUrteil(b) {
     const v = [];
     const namen = b.namen || Object.keys(TAKTE);
@@ -545,6 +547,30 @@ function standUrteil(b) {
                 `ORT: ${wo} verwarf die Worker-Antworten des fernen Chunks ${O.stand.key} (Stand ${O.stand.vor} → ` +
                     `${O.stand.nach}) — der Worker baut fern neu, was der Erdbau nie berührt`
             );
+        // DER ERDBAU UNTER DEM SPIELER (K69-2): der Chunk-Stoff entsteht im Worker, nie im Haupt-Faden (Lehre 14) — ein Takt,
+        // der einen Chunk synchron baut (`_buildVoxelChunkData`) über SYNC_CHUNK_MS, ist der Riss beim Namen seiner Rufer. Bis
+        // K69-2 baute der Neubau den Spieler-Chunk (und jeden Chunk mit einem Schnitt im 3×3) synchron: am Dorf 154–261 ms.
+        const AS = O.amSpieler;
+        if (!AS || !AS.gelegt)
+            v.push("LEER: die Ort-Phase legte keinen Erdbau unter dem Spieler — die Probe ist stumpf");
+        else if (!(AS.dirty > 0))
+            v.push("LEER: der Erdbau unter dem Spieler markierte keinen Chunk zum Neubau — die Probe ist stumpf");
+        else {
+            const riss = (AS.sync || []).filter((s) => s.ms > SYNC_CHUNK_MS);
+            if (riss.length) {
+                const max = riss.reduce((a, s) => (s.ms > a.ms ? s : a), riss[0]);
+                v.push(
+                    `ORT: der Erdbau unter dem Spieler bei (${AS.ort}) baute ${riss.length} Chunk${riss.length > 1 ? "s" : ""} ` +
+                        `synchron im Haupt-Faden (\`${max.kette} › _buildVoxelChunkData\`, der längste ${max.ms} ms) — ` +
+                        `der Chunk-Stoff entsteht im Worker`
+                );
+            }
+            if (!AS.heil)
+                v.push(
+                    `ORT: der Erdbau unter dem Spieler bei (${AS.ort}) heilt nicht — nach ${AS.takte} Takten warten noch ` +
+                        `Chunks auf ihren Neubau`
+                );
+        }
     }
     const T = b.strom;
     if (!T) v.push("LEER: keine Strom-Phase");
