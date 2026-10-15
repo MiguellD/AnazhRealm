@@ -516,24 +516,49 @@ class AnazhRealm_Z05b {
         return Math.max(0, per) * Math.max(0, n);
     }
 
+    // DIE GERÄTE-GRENZEN (G1): was JEDER WebGPURenderer der Seite vom Gerät verlangt (Welt · Feed-/Hof-/Ich-Bühne · Workshop-
+    // Preview) — der EINE forceWebGL-Hook und je Stufe die Grenzen des EINEN Adapters der Holz-Wahl (`GERAET_GRENZEN`). Ohne
+    // `requiredLimits` gibt WebGPU dem Gerät die Standard-Grenzen (16 Texturen · 16 Sampler · 8 Speicher-Puffer je Stufe), auch
+    // wenn der Adapter 48 Texturen trägt: der Boden-Stoff des Fern-Rings (17) sagte ab. Die Bühnen entstehen nach dem Boot und
+    // lesen den Adapter synchron; ein Renderer vor der Holz-Wahl bricht laut (jede Münzstelle meldet ihren Fehlschlag als ERROR).
+    _rendererGeraet() {
+        if (this._adapter === undefined)
+            throw new Error("GERÄTE-GRENZEN: ein Renderer vor der Adapter-Frage der Holz-Wahl (`_holzWahl` beim Boot)");
+        const a = this._adapter;
+        const requiredLimits = {};
+        if (a)
+            for (const k of AnazhRealm.GERAET_GRENZEN)
+                if (Number.isFinite(a.limits[k])) requiredLimits[k] = a.limits[k];
+        return { forceWebGL: AnazhRealm._forceWebGL(), requiredLimits };
+    }
+
     // Holz-Wahl: URL ?holz= schlägt localStorage schlägt AUTO (Adapter-Info: Software-Renderer →
     // kienspan). Läuft VOR dem Renderer-Bau (init) — der Adapter wird billig vorab befragt.
     // Gibt den Profil-Namen zurück, nie null.
     async _holzWahl() {
         const P = AnazhRealm.HOLZ_PROFILE;
-        // DIE EINE ADAPTER-FRAGE (F1): die Holz-Wahl und die Grenzen des Geräts (`requiredLimits`, 25a) lesen DENSELBEN Adapter,
+        // DIE EINE ADAPTER-FRAGE (F1): die Holz-Wahl und die Grenzen des Geräts (`_rendererGeraet`, G1) lesen DENSELBEN Adapter,
         // gefragt, wie r184 ihn für das Gerät fragt (`featureLevel: "compatibility"`, WebGPUBackend.init) — eine andere Frage
         // könnte einen Adapter mit anderen Grenzen liefern, und `requestDevice` scheiterte an der geforderten Grenze. Bis F1
-        // fragten Holz-Wahl, Renderer-Bau und r184 dreimal. Antwortet keiner binnen 4 s, ist er null.
+        // fragten Holz-Wahl, Renderer-Bau und r184 dreimal. Antwortet keiner binnen 4 s, ist er null — und das ist LAUT (G1): die
+        // Grenzen des Geräts (`_rendererGeraet`) fielen sonst still auf den Standard (16 Texturen je Stufe), der Fern-Ring fehlte.
         this._adapter = null;
         try {
-            if (typeof navigator !== "undefined" && navigator.gpu && !AnazhRealm._forceWebGL())
-                this._adapter = await Promise.race([
+            if (typeof navigator !== "undefined" && navigator.gpu && !AnazhRealm._forceWebGL()) {
+                const FRIST = Symbol("frist");
+                const a = await Promise.race([
                     navigator.gpu.requestAdapter({ featureLevel: "compatibility" }),
-                    new Promise((res) => setTimeout(() => res(null), 4000)),
+                    new Promise((res) => setTimeout(() => res(FRIST), 4000)),
                 ]);
+                if (a === FRIST)
+                    this._bruchMelden(
+                        "GERÄTE-GRENZEN: der Adapter antwortet nicht binnen 4 s — das Gerät fährt die Standard-Grenzen " +
+                            "(16 Texturen je Stufe), ein Stoff darüber sagt ab (PIPELINE-ABSAGE)"
+                    );
+                else this._adapter = a;
+            }
         } catch (e) {
-            this.log(`HOLZ-WAHL: der Adapter ließ sich nicht befragen (${(e && e.message) || e})`, "WARN");
+            this._bruchMelden(`GERÄTE-GRENZEN: der Adapter ließ sich nicht befragen (${(e && e.message) || e})`);
         }
         try {
             const url = typeof location !== "undefined" ? new URLSearchParams(location.search).get("holz") : null;

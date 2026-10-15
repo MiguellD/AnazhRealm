@@ -1148,11 +1148,8 @@ class AnazhRealm_Z25a {
         // Adapter trägt mehr (Radeon 890M 48). Der Boden-Stoff des Fern-Rings sampelt seit der EINEN Atmosphäre und dem Spiegel des
         // Sees 17 — seine Pipeline wurde abgesagt, der Ring fehlte im Bild und die Beweis-Aufnahme brach an der Mess-Wiese ab
         // (ERST-ZEICHNUNG OFFEN, renderPipeline_MeshStandardNodeMaterial). Das Gerät trägt, was der Adapter trägt — der EINE,
-        // den die Holz-Wahl gefragt hat (`_holzWahl`, wie r184 ihn fragt; unter dem forceWebGL-Hook keiner).
-        const adapter = this._adapter;
-        const requiredLimits = adapter
-            ? { maxSampledTexturesPerShaderStage: adapter.limits.maxSampledTexturesPerShaderStage }
-            : {};
+        // den die Holz-Wahl gefragt hat (`_holzWahl`, wie r184 ihn fragt; unter dem forceWebGL-Hook keiner); die Grenzen je
+        // Stufe liest jeder Renderer der Seite aus `_rendererGeraet` (G1).
         // Opt-in Headless-Null-Renderer (GPU-frei) für Mechanik-Playtest / Server-Sim, sonst der echte
         // WebGPU-Renderer. trackTimestamp anfordern ist sicher: das vendored r184-Backend fordert
         // timestamp-query nur an, wenn der Adapter es trägt, und schaltet es sonst ab (init() wirft nie);
@@ -1167,9 +1164,8 @@ class AnazhRealm_Z25a {
                       // und 267 MB VRAM (04.10., Radeon 890M).
                       antialias: false,
                       trackTimestamp: true,
-                      requiredLimits,
-                      // KEIN-WEBGPU-GESCHICHTE — der EINE forceWebGL-Hook (gate:webgl-probe).
-                      forceWebGL: AnazhRealm._forceWebGL(),
+                      // KEIN-WEBGPU-GESCHICHTE — der EINE forceWebGL-Hook (gate:webgl-probe) und die Geräte-Grenzen (G1).
+                      ...this._rendererGeraet(),
                   });
         // DIE TONKURVE (F1, die Foto-Kette): Khronos PBR Neutral (r184 NeutralToneMapping) — bis zur Schulter (0,76) geht die
         // Farbe des Stoffs unverändert ins Bild (nur der Schwarzpunkt 0,04), darüber rollt sie zu Weiß ohne Farbdrehung. Gemessen

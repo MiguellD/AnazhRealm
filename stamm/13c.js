@@ -1496,7 +1496,7 @@ class AnazhRealm_Z13c {
         canvas.height = h;
         let renderer;
         try {
-            renderer = new THREE.WebGPURenderer({ canvas, antialias: true, forceWebGL: AnazhRealm._forceWebGL() });
+            renderer = new THREE.WebGPURenderer({ canvas, antialias: true, ...this._rendererGeraet() });
         } catch (err) {
             this.log(`Feed-Vorschau: WebGPU-Renderer fehlgeschlagen (${err && err.message})`, "ERROR");
             return null;

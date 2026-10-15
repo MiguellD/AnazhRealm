@@ -701,6 +701,8 @@ function erstWandInstall() {
         res.rendererArt = rend.isWebGPURenderer ? "webgpu" : rend.isWebGLRenderer ? "webgl" : "?";
         res.headlessNull = !!rend._isHeadlessNull;
         if (rend._isHeadlessNull) return { fatal: "Renderer fiel auf headless-Null zurück — kein echter WebGPU-Lauf" };
+        // DIE GERÄTE-GRENZEN (G1): jede Stufen-Grenze, in der das Gerät der Welt unter seinem Adapter bleibt (ohne requiredLimits)
+        res.grenzenUnter = await navigator.gpu.requestAdapter({ featureLevel: "compatibility" }).then((a) => Object.keys(Object.getPrototypeOf(a.limits)).filter((k) => /PerShaderStage$/.test(k) && rend.backend.device.limits[k] < a.limits[k]).map((k) => `${k} ${rend.backend.device.limits[k]} < ${a.limits[k]}`)); // prettier-ignore
         // ~15 s echte Laufzeit: der rAF-Loop läuft; falls die Frames stocken
         // (headless-Drossel), treiben wir den Loop von Hand (wie diag-blick).
         const frGet = () => r.state.flightRecorder || null;
@@ -1106,6 +1108,7 @@ function erstWandInstall() {
         `Schlange +${wg.offenZuwachs} · wartende Draws +${wg.wartetZuwachs}`
     );
 
+    bandIn(1)(Array.isArray(out.grenzenUnter) && !out.grenzenUnter.length, "GERÄTE-GRENZEN (G1: das Gerät der Welt trägt je Stufe die Grenze seines Adapters)", (out.grenzenUnter || ["nicht gemessen"]).join(" · ") || "jede Stufe = Adapter"); // prettier-ignore
     // Band 6 — kein pageerror.
     band(pageErrors.length === 0, "KEIN PAGE-ERROR", pageErrors.length ? pageErrors.slice(0, 3).join(" | ") : "sauber");
 

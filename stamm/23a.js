@@ -200,7 +200,7 @@ class AnazhRealm_Z23a {
         try {
             // Derselbe WebGPURenderer wie die Haupt-Welt (eigenes Canvas, async init() + rendererReady-Gate):
             // _buildFromBlueprint baut NodeMaterials, die NUR auf WebGPURenderer rendern — WebGL bliebe leer.
-            renderer = new THREE.WebGPURenderer({ canvas, antialias: true, forceWebGL: AnazhRealm._forceWebGL() });
+            renderer = new THREE.WebGPURenderer({ canvas, antialias: true, ...this._rendererGeraet() });
         } catch (err) {
             this.log(
                 `Workshop-Preview: WebGPU-Renderer fehlgeschlagen (${err && err.message}) — Preview deaktiviert`,
