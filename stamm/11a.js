@@ -121,13 +121,6 @@ class AnazhRealm_Z11a {
         return { mesh, kind: "filled", waterCells, lod, surfMap: karte && karte.hoehe, gruenMap: karte && karte.gruen };
     }
 
-    // true, wenn der Spieler in diesem Chunk steht (`state.lastPlayerVoxelChunk`, je Streaming-Tick).
-    // Ein Edit hier MUSS sync rebuilden — der Spieler sieht Carve/Fill am Standort sofort.
-    _voxelChunkIsPlayerChunk(cx, cz) {
-        const lpc = this.state.lastPlayerVoxelChunk;
-        return !!lpc && lpc.cx === cx && lpc.cz === cz;
-    }
-
     // DIE geteilte Build-Kaskade für Streaming UND Edit-Rebuild: 1 Worker-Mesh-Cache (Main nur
     // BufferGeometry + Architektur-Stempel + BVH) · 2 Worker-Density-Cache · 3 Sync-CPU (base-gecacht).
     // Rückgabe: "pending" · null (Fail/degeneriert) · {mesh, kind, waterCells, lod, hasBVH?}.
@@ -190,6 +183,14 @@ class AnazhRealm_Z11a {
             this.state.voxelChunks.set(key, { empty: true });
             this._weltRegt(true); // die Chunk-Menge regt sich: die Stand-Wache weckt die Fege-Takte (Boden-Stempel)
             return null;
+        }
+        // DER EINBAU DES FRAMES (K69-2): die nächste Ring-Distanz, in der dieser Frame einen Chunk einbaut — der Neubau-Takt
+        // (`_tickDirtyVoxelChunks`) baut danach nur Näheres ein (Lehre 25: NAH zuerst); der Frame-Planer setzt sie zurück.
+        {
+            const lpc = this.state.lastPlayerVoxelChunk;
+            const d = lpc ? Math.max(Math.abs(cx - lpc.cx), Math.abs(cz - lpc.cz)) : 0;
+            const b = this.state._bodenEinbau;
+            if (b == null || d < b) this.state._bodenEinbau = d;
         }
         // DER SATZ (Welle B): der Boden ist ein BEREICH im Boden-Satz (ein Befehl je Pass für den ganzen Ring);
         // der Chunk-Mesh bleibt der CPU-Körper (Boden-Karte, Geomorph, Stitch-Quelle) und betritt die Szene nie.
@@ -768,10 +769,12 @@ class AnazhRealm_Z11a {
         // die Stufe, die der alte Chunk zeichnete — seine feineren Nachbarn lösen ihre Naht zu ihm (`_finalizeVoxelChunkBuild`)
         const altLod =
             oldEntry && !oldEntry.empty && oldEntry.mesh ? (Number.isFinite(oldEntry.lod) ? oldEntry.lod : 0) : null;
-        // Implizite Sync-Pflicht (Spieler-Chunk / Carve-Region) nur, solange der Frame Zeit hat
-        // (`!_frameOverBudget`) — sonst ASYNC (alter Mesh bleibt, Kollision ist feld-nativ sofort aktuell),
-        // kein Dauer-Stall aus ~126-ms-Sync-Rebuilds beim Graben. Explizites `opts.forceSync`
-        // (`_syncRebuildEditFootprint`, `_drainDirtyVoxelChunks`) baut IMMER sync.
+        // DER CHUNK-STOFF ENTSTEHT IM WORKER (Lehre 14, K69-2): jeder Neubau geht über den Worker-Pfad — der alte Mesh
+        // bleibt sichtbar bis zum atomaren Swap, die Kollision liest das Dichtefeld (sofort aktuell), die Flut über die
+        // Naht reist als Saat mit dem Auftrag (`_flutSaat`). Synchron baut nur, wer es ausdrücklich verlangt
+        // (`opts.forceSync`: `_syncRebuildEditFootprint`, der Wasser-Fußabdruck eines Baus, `_drainDirtyVoxelChunks`).
+        // Bis K69-2 baute der Neubau den Spieler-Chunk und jeden Chunk mit einem Schnitt im 3×3 synchron, solange der
+        // Frame Zeit hatte — am Erdbau eines Dorfs um den Spieler 154–409 ms in EINEM Takt (gate:stand-takt ORT).
         // DER STUFEN-WECHSEL (K51-5): der Streaming-Takt tauscht nur die Stufe eines stehenden Chunks — keine Form-Änderung
         // wartet (kein Carve/Fill am Gras, kein Edit im Dirty-Satz). Er regt nur die Boden-Karte (`_weltRegt(true, true)`),
         // und sein offener Bau gehört dem Streaming-Takt (er bleibt wach, bis der Bau kommt) — nie dem Dirty-Takt, der
@@ -780,8 +783,7 @@ class AnazhRealm_Z11a {
             (this.state.grassDirtyChunks && this.state.grassDirtyChunks.has(key)) ||
             (this.state.dirtyVoxelChunks && this.state.dirtyVoxelChunks.has(key));
         const stufe = altLod !== null && lod !== null && lod !== altLod && !formWartet;
-        const editPressure = this._voxelChunkIsPlayerChunk(cx, cz) || this._chunkRegionHasCarve(cx, cz);
-        const forceSync = opts.forceSync === true || (editPressure && !this.state._frameOverBudget);
+        const forceSync = opts.forceSync === true;
         // Welle G-fix — das Gras nur disposen, wenn die Oberfläche sich änderte
         // (Carve/Fill markierte den Chunk grass-dirty). Sonst behalten (kein
         // Flackern bei Nexus-Spawn/Skirt/LOD-Rebuild).
@@ -907,14 +909,16 @@ class AnazhRealm_Z11a {
         // der Band-Skip in `_voxelSampleDensityGrid`). Die Schleife läuft übers selbe y-Gitter (bit-exakt),
         // nur die Dichte-Probe entfällt in der Garantie-Luft (~300 → ~25 Proben/Spalte). Fill-Edits können
         // höher bauen → `_voxelEditsFillTop()` hebt die Grenze; Macro nicht endlich → Voll-Scan.
-        const macroSurf = this._terrainMacroSurfaceY(x, z);
+        // Spalten-Hoist: ~61 % jeder Dichte-Probe ist 2D-Spalten-Arbeit (Makro/Erosion/Hydro) → Kontext
+        // EINMAL heben, die Probe liest `_fieldDensityAt(x,y,z,ctx)` — dieselbe Quelle wie die feld-native
+        // Kollision, bit-identisch zu `_terrainDensityAt` (base+Σdelta == baseCol+Σdelta). Die Makro-Höhe der Garantie
+        // ist die des Kontexts (`surf`, dieselbe `hoehe` derselben Spalte) — bis K60-2 rechnete die Spalte sie zweimal
+        // (Radeon kalt 0,7 s bis zum ersten Weltbild, jeder Wald-Dart fragt fünf Spalten).
+        const colCtx = this._terrainColumnContext(x, z);
+        const macroSurf = colCtx.surf;
         const skipAbove = Number.isFinite(macroSurf)
             ? Math.max(macroSurf + 12 + 4 * cfg.step, this._voxelEditsFillTop() + 2)
             : Infinity;
-        // Spalten-Hoist: ~61 % jeder Dichte-Probe ist 2D-Spalten-Arbeit (Makro/Erosion/Hydro) → Kontext
-        // EINMAL heben, die Probe liest `_fieldDensityAt(x,y,z,ctx)` — dieselbe Quelle wie die feld-native
-        // Kollision, bit-identisch zu `_terrainDensityAt` (base+Σdelta == baseCol+Σdelta).
-        const colCtx = this._terrainColumnContext(x, z);
         let prevAir = true;
         let prevD = null; // Dichte der Luft-Probe 1.2 m darüber (null = Garantie-Luft, nicht gemessen)
         for (let y = top; y >= bottom; y -= 1.2) {

@@ -236,6 +236,55 @@ const server = statikServer();
                     o.s6Arch = { start: s6ArchStart, nachPuls: s6ArchNachPuls, nachRuhe: st.architectureCullingRadius };
                     o.s6 = { start: s6Start, nachPuls: s6NachPuls, nachRuhe: st.foliageRadius };
                 }
+                // ── S7: DER LADESCHIRM MISST NICHTS (K60-3, Prüfung Runde 2: Radeon kalt stand das erste Weltbild am Kopf mit dem
+                // Laub-Radius 65 statt 129,6 m — 4 von 25 Chunks bepflanzt, 57 statt 338 Bäume). Unter dem Lade-Takt zeigt kein
+                // Frame die Welt: sein Abstand ist die Kadenz des Lade-Bilds (LADE_BILD_MS), seine Last die Erst-Zeichnung. Der
+                // PID misst ihn nie (loadScale hält den Seed), und die Reichweite des Weltbilds — Laub- und Architektur-Radius —
+                // steht nach zwei Lade-Bildern an ihrem Ziel (das Laub an der Kante des gebauten Rings), nie an der Wand des
+                // sichtbaren Takts (Ruhe + Schritt, S6). ──
+                {
+                    const merk = {
+                        lade: r._ladeTakt,
+                        ring: st._activeRingRadius,
+                        ruhe: r._folRuheSec,
+                    };
+                    try {
+                        st.perfSense = null;
+                        r._folRuheSec = 0; // der Boot: noch keine Ruhe gesammelt
+                        r._ladeTakt = () => true;
+                        st._activeRingRadius = 2;
+                        st.foliageRadius = A.PERF_FOLIAGE_RADIUS_MIN - 5; // der Boot-Stand am Kopf (65 m)
+                        st.architectureCullingRadius = A.ARCH_QUALITY_RADIUS_MIN;
+                        const LADE = Object.assign({}, HONEST, { render: 300, streaming: 1, waterIso: 0 });
+                        feed(A.LADE_BILD_MS, Object.assign({}, LADE));
+                        feed(A.LADE_BILD_MS, Object.assign({}, LADE));
+                        const seed = st.perfSense.seedStart;
+                        const { span } = r._voxelChunkConfig();
+                        const kante = (st._activeRingRadius + 1) * span;
+                        const lerp = (a, b, t) => a + (b - a) * Math.max(0, Math.min(1, t));
+                        const laubZiel = Math.min(
+                            lerp(A.PERF_FOLIAGE_RADIUS_MIN, A.PERF_FOLIAGE_RADIUS_MAX, seed),
+                            kante
+                        );
+                        const archZiel = lerp(A.ARCH_QUALITY_RADIUS_MIN, A.ARCH_QUALITY_RADIUS_MAX, seed);
+                        o.s7 = {
+                            seed,
+                            loadScale: +st.perfSense.loadScale.toFixed(4),
+                            laub: +st.foliageRadius.toFixed(2),
+                            laubZiel: +laubZiel.toFixed(2),
+                            arch: +st.architectureCullingRadius.toFixed(2),
+                            archZiel: +archZiel.toFixed(2),
+                        };
+                        o.s7LoadHaelt = Math.abs(st.perfSense.loadScale - seed) < 1e-9;
+                        o.s7LaubAmZiel = Math.abs(st.foliageRadius - laubZiel) < 1e-6;
+                        o.s7ArchAmZiel = Math.abs(st.architectureCullingRadius - archZiel) < 1e-6;
+                    } finally {
+                        r._ladeTakt = merk.lade;
+                        st._activeRingRadius = merk.ring;
+                        r._folRuheSec = merk.ruhe;
+                        st.perfSense = null;
+                    }
+                }
             } finally {
                 st.renderer._isHeadlessNull = _origHeadless;
                 r._applyRenderScale = _origApplyRS;
@@ -295,6 +344,14 @@ const server = statikServer();
         {
             name: `S6 DIESELBE WAND für den Architektur-Radius: gepulster Kopfraum bewegt ihn NICHT (Δ ${out.s6ArchPulsDelta}) · anhaltende Ruhe wächst (${out.s6Arch ? out.s6Arch.nachPuls + "→" + out.s6Arch.nachRuhe : "?"})`,
             pass: out.s6ArchPulsStill === true && out.s6ArchRuheWaechst === true,
+        },
+        {
+            name: `S7 DER LADESCHIRM MISST NICHTS: der PID hält den Seed (loadScale ${out.s7 ? out.s7.loadScale + " / Seed " + out.s7.seed : "?"})`,
+            pass: out.s7LoadHaelt === true,
+        },
+        {
+            name: `S7 DIE REICHWEITE DES WELTBILDS steht nach zwei Lade-Bildern am Ziel: Laub ${out.s7 ? out.s7.laub + " / " + out.s7.laubZiel : "?"} m, Bauten ${out.s7 ? out.s7.arch + " / " + out.s7.archZiel : "?"} m (sonst die Wand des sichtbaren Takts)`,
+            pass: out.s7LaubAmZiel === true && out.s7ArchAmZiel === true,
         },
         {
             name: `S4 SESSION-ZEIT-INVARIANZ: identischer Input früh vs +2400 Frames ⇒ identische Stellgrößen (maxΔ ${out.s4MaxDrift})`,

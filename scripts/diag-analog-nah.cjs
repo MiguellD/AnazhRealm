@@ -48,8 +48,24 @@ function methode(src, name) {
     const b = src.indexOf("\n    }\n", a);
     return src.slice(a, b).replace(/\/\/.*$/gm, "");
 }
+// Der Rumpf einer Methode MIT ihren Gehilfen (jede eigene `this._x(`-Methode, die sie ruft, eine Ebene tief): eine
+// Linse am Rumpf-TEXT fiel mit jedem Schnitt, der Arbeit in einen Gehilfen trug (K60-2 zog das Senden der Karte aus
+// `_tickImpostorBake` nach `_impostorBakeSende` — S1 sah die Bühne dort nicht mehr; Lehre 6).
+function mitGehilfen(src, name) {
+    const kern = methode(src, name);
+    if (!kern) return null;
+    const teile = [kern];
+    const gesehen = new Set([name]);
+    for (const m of kern.matchAll(/this\.(_[A-Za-z0-9_]+)\(/g)) {
+        if (gesehen.has(m[1])) continue;
+        gesehen.add(m[1]);
+        const g = methode(src, m[1]);
+        if (g) teile.push(g);
+    }
+    return teile.join("\n");
+}
 function klassenWand(src) {
-    const bake = methode(src, "_tickImpostorBake") || "";
+    const bake = mitGehilfen(src, "_tickImpostorBake") || "";
     const sched = methode(src, "_runFrameScheduler") || "";
     const streu = methode(src, "_tickScatterStreaming") || "";
     const req = methode(src, "_foundryBakeImpostorRequest") || "";
@@ -76,6 +92,14 @@ function klassenWand(src) {
                 stamm.replace(
                     "        if (!this._impostorBakeQueue || this._impostorBakeQueue.length === 0) return 0;\n",
                     "        if (!this._impostorBakeQueue || this._impostorBakeQueue.length === 0) return 0;\n        if (!this._buehneSteht()) return 0;\n"
+                ),
+            ],
+            [
+                // derselbe Bruch im Gehilfen des Ticks: die Linse am Rumpf allein war hier blind (K60-3)
+                "S1 Bühnen-Wache im Gehilfen des Bäckers",
+                stamm.replace(
+                    "    _impostorBakeSende(at, flug) {\n        const st = this.state;\n",
+                    "    _impostorBakeSende(at, flug) {\n        const st = this.state;\n        if (!this._buehneSteht()) return -1;\n"
                 ),
             ],
             [
@@ -280,7 +304,7 @@ function urteil(z) {
                         bauten > 0 &&
                         !!(f && f.ready && f.pending.size === 0 && !(f.warte && f.warte.length)) &&
                         !(r._impostorBakeQueue && r._impostorBakeQueue.length) &&
-                        !r._impostorBakePending
+                        !(r._impostorBakeFlug && r._impostorBakeFlug.size > 0)
                     );
                 };
             })();

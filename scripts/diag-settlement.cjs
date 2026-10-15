@@ -267,6 +267,28 @@ function ortVerdikt(m) {
     if (!(m.laternenPlan > 0 && m.laternenWelt === m.laternenPlan))
         fehl.push(`Laternen Welt ${m.laternenWelt} / Plan ${m.laternenPlan}`);
     if (!(m.planHashGleich === true)) fehl.push("Plan-Hash Studio ≠ Welt");
+    // K66: keine Laterne näher an einer Wand, als ihr Licht-Gesetz trägt; jede Stufe vor einer Haustür liegt auf dem Weg
+    if (!(m.laterneWand >= m.laterneWandSoll - 0.01))
+        fehl.push(
+            `Laterne ${m.laterneWand} m vor einer Hauswand (Soll ≥ ${m.laterneWandSoll} m: die Wand trägt höchstens das Doppelte der Gasse)`
+        );
+    // K66, Prüfung 2: keine Laterne steht mit ihrem Fuß im gemalten Weg (der Mast ist ein fester Blocker, `tritt` des Rezepts)
+    if (!(m.laterneWeg >= m.laterneWegSoll - 0.01))
+        fehl.push(
+            `Laterne ${m.laterneWeg} m neben dem Wegrand (Soll ≥ ${m.laterneWegSoll} m: der Fuß steht neben der Fahrbahn, nie in ihr)`
+        );
+    if (!(m.vorplatzN > 0 && m.vorplatzOk === m.vorplatzN))
+        fehl.push(
+            `Stufe und Vorplatz bis zur Gasse auf dem Weg ${m.vorplatzOk}/${m.vorplatzN}${m.vorplatzFehl && m.vorplatzFehl.length ? ` (Haus ${m.vorplatzFehl.slice(0, 3).join(" · ")})` : ""}`
+        );
+    // eine Wand ohne Vertex ist keine Messung (der Ort am Hang trägt Böschungen): ROT wie eine Wand im Wiesen-Stoff
+    if (!(m.terrasseWand > 0 && m.terrasseWiese === 0))
+        fehl.push(`Wand der Terrasse mit Wiesen-Stoff ${m.terrasseWiese}/${m.terrasseWand}`);
+    // K66, Prüfung 2: keine Wiese wächst auf der Wand (der Grün-Kanal, den die Nah-Wiese liest), die Ferne trägt ihren Schutt
+    if (!(m.terrasseWand > 0 && m.terrasseHalm === 0))
+        fehl.push(`Wand der Terrasse mit Halm-Grund ${m.terrasseHalm}/${m.terrasseWand}`);
+    if (!(m.terrasseWand > 0 && m.terrasseFerne === 0))
+        fehl.push(`Wand der Terrasse in der Ferne ohne Schutt ${m.terrasseFerne}/${m.terrasseWand}`);
     if (!(m.fremdBauten === 0)) fehl.push(`fremde Bauten im Erdbau ${m.fremdBauten}`);
     // endet die Kette vor 8 s (der Wagen fuhr den Dorfweg zu Ende), zählt das Tempo bis zum Ende über 8 s: der Weg ist kürzer
     // als das Soll, nie der Wagen langsamer
@@ -878,6 +900,16 @@ const FIXTURES = [
             kronen: 0,
             laternenWelt: 6,
             laternenPlan: 6,
+            laterneWand: 3.1,
+            laterneWandSoll: 2.548,
+            laterneWeg: 1.55,
+            laterneWegSoll: 0.45,
+            vorplatzOk: 16,
+            vorplatzN: 16,
+            terrasseWand: 120,
+            terrasseWiese: 0,
+            terrasseHalm: 0,
+            terrasseFerne: 0,
         };
         Object.assign(gut, {
             planHashGleich: true,
@@ -896,6 +928,12 @@ const FIXTURES = [
             gtWeg: 5.2,
             haeuser: 12,
             wasserSlots: 4,
+            laterneWand: 1.45,
+            laterneWeg: -1.2,
+            vorplatzOk: 0,
+            terrasseWiese: 87,
+            terrasseHalm: 64,
+            terrasseFerne: 120,
         });
         const vs = ortVerdikt(schlecht).join(" · ");
         check(
@@ -905,7 +943,16 @@ const FIXTURES = [
                 /Laternen Welt 0/.test(vs) &&
                 /Plan-Hash/.test(vs) &&
                 /GT auf dem Dorfweg 5.2 m/.test(vs) &&
-                /Häuser 12\/16 des Exports \(4 Slots im Wasser/.test(vs),
+                /Häuser 12\/16 des Exports \(4 Slots im Wasser/.test(vs) &&
+                /Laterne 1.45 m vor einer Hauswand/.test(vs) &&
+                /Laterne -1.2 m neben dem Wegrand/.test(vs) &&
+                /Stufe und Vorplatz bis zur Gasse auf dem Weg 0\/16/.test(vs) &&
+                /Wand der Terrasse mit Wiesen-Stoff 87\/120/.test(vs) &&
+                /Wand der Terrasse mit Halm-Grund 64\/120/.test(vs) &&
+                /Wand der Terrasse in der Ferne ohne Schutt 120\/120/.test(vs) &&
+                /Wand der Terrasse mit Wiesen-Stoff 0\/0/.test(
+                    ortVerdikt(Object.assign({}, gut, { terrasseWand: 0 })).join(" · ")
+                ),
             vs
         );
         check(
@@ -1119,18 +1166,126 @@ const FIXTURES = [
                 stadt.graph === undefined,
             `trees=${Array.isArray(stadt.trees) ? stadt.trees.length : "fehlt"} fences=${Array.isArray(stadt.fences) ? stadt.fences.length : "fehlt"} laternen=${Array.isArray(stadt.laternen) ? stadt.laternen.length : "fehlt"}`
         );
-        // DAS DORF-LICHT (K10, Auge 13.10.): das Start-Dorf trug 0 Laternen, „Dorf-Lichter nachts = Laternenzahl" hielt
-        // mit 0 = 0 vakuös. Jeder Plan mit Wegen trägt je Platz eine und je 25 m Weg eine Laterne (das Dorf-Licht des
-        // Gesetzbuchs, dorfLayout) — über Dörfer, Weiler und Märkte, jede Epoche. Selbsttest: derselbe Plan ohne Laternen.
+        // DAS DORF-LICHT (K10 × K66-2): gemessen wird das Licht je METER der Gasse, nie die Zahl der Laternen. Bis K66-2 hielt „je
+        // Platz und je 25 m Weg eine Laterne" die Zahl, während die dichte Gasse des Auto-Dorfs (Pose nacht-wand) auf 61 m keine
+        // trug (`laterneNah`, nachts 83 % schwarz); bis N1 maß die Linse je 25 m eine Marke ≤ 15 m — grün, während die Wand
+        // zwischen zwei Marken dunkel blieb (nacht-wand 69 %). Gemessen wird jeder Meter der Weg-Achse, sein Maß der Abstand zur
+        // nächsten Quelle des Plans, die nachts brennt (Mast und Wandlaterne, Zeitplan `nacht` > 0): in der Gasse (eine Kern-Wand
+        // näher als LICHT_MARKE_M − armM, dort trägt die Wand ihr Licht) jeder ≤ LICHT_MARKE_M (das Gesetz des Kerns,
+        // wandLaternen), über alle Meter p90 ≤ 10 m. Je
+        // Laterne bleibt ihr Stand: der Mast vor der Wand (LATERNE_WAND aus LICHT_GESETZ.laterne, die Wand trägt höchstens das
+        // Doppelte der Gasse; K66) und mit dem Fuß neben jedem Weg (der Tritt des Rezepts; K66, Prüfung 2: 123/292 standen in
+        // der Fahrbahn), die Wandlaterne mit dem Kopf `armM` vor der Wand eines Kerns (W × D der Tür-Zeile, nie vor der Traufe).
+        const trittR = FC.PRESETS.laterne.fx.tritt.r;
+        const LGd = FC.LICHT_GESETZ.laterne;
+        const LWd = FC.LICHT_GESETZ.wandlaterne;
+        const wandSoll = Math.sqrt(Math.max(0, (LGd.hoeheM ** 2 + LGd.kernM ** 2) / 2 - LGd.kernM ** 2));
+        const MARKE_SOLL = Number.isFinite(FC.LICHT_MARKE_M) ? FC.LICHT_MARKE_M : 10; // ohne das Gesetz misst sie mit 10 m und fällt
+        const MARKE_P90 = 10;
+        const GASSE_M = MARKE_SOLL - (LWd ? LWd.armM : 0);
+        // der Abstand eines Punkts zur Wand des Kerns eines Slots (die Tür-Zeile W × D um den Slot; innen negativ)
+        const kernAbstand = (sl, x, z) => {
+            const tu = sl.tuer;
+            if (!tu || !(tu.W > 0) || !(tu.D > 0)) return Infinity;
+            const c = Math.cos(sl.phi || 0);
+            const sn = Math.sin(sl.phi || 0);
+            const uu = Math.abs((x - sl.x) * c - (z - sl.z) * sn) - tu.W / 2;
+            const vv = Math.abs((x - sl.x) * sn + (z - sl.z) * c) - tu.D / 2;
+            return uu > 0 ? (vv > 0 ? Math.hypot(uu, vv) : uu) : vv > 0 ? vv : Math.max(uu, vv);
+        };
+        const brennt = (l) => ((l.wand ? LWd : LGd) || { zeit: {} }).zeit.nacht > 0;
+        const wegPunkt = (rd, u) => {
+            const P = rd.pts || [];
+            let acc = 0;
+            for (let i = 0; i + 1 < P.length; i++) {
+                const s = Math.hypot(P[i + 1].x - P[i].x, P[i + 1].z - P[i].z);
+                if (acc + s >= u) {
+                    const t = s > 0 ? (u - acc) / s : 0;
+                    return { x: P[i].x + (P[i + 1].x - P[i].x) * t, z: P[i].z + (P[i + 1].z - P[i].z) * t };
+                }
+                acc += s;
+            }
+            return P[P.length - 1];
+        };
         const dorfLicht = (pl) => {
-            let wegM = 0;
-            for (const rd of pl.roads || []) wegM += rd.len || 0;
-            const soll = (pl.platz ? 1 : 0) + Math.floor(wegM / 25);
-            const n = Array.isArray(pl.laternen) ? pl.laternen.length : 0;
-            return { n, soll, wegM: Math.round(wegM), ok: !(wegM > 0) || n >= soll };
+            const L = Array.isArray(pl.laternen) ? pl.laternen : [];
+            const maste = L.filter((l) => !l.wand);
+            const waende = L.filter((l) => l.wand);
+            const ds = [];
+            const dunkel = [];
+            let gasse = 0;
+            (pl.roads || []).forEach((rd, ri) => {
+                for (let u = 0; u <= (rd.len || 0); u += 1) {
+                    const m = wegPunkt(rd, u);
+                    let d = Infinity;
+                    for (const l of L) if (brennt(l)) d = Math.min(d, Math.hypot(l.x - m.x, l.z - m.z));
+                    ds.push(d);
+                    let w = Infinity;
+                    for (const sl of pl.slots || []) w = Math.min(w, kernAbstand(sl, m.x, m.z));
+                    if (!(w <= GASSE_M)) continue;
+                    gasse++;
+                    if (!(d <= MARKE_SOLL)) dunkel.push([ri, u, Math.round(d * 10) / 10]);
+                }
+            });
+            let wand = Infinity;
+            for (const l of maste)
+                for (const sl of pl.slots || []) {
+                    const o = sl.obb;
+                    if (!o) continue;
+                    const c = Math.cos(o.phi || 0);
+                    const sn = Math.sin(o.phi || 0);
+                    const uu = Math.abs((l.x - o.cx) * c - (l.z - o.cz) * sn) - o.ex;
+                    const vv = Math.abs((l.x - o.cx) * sn + (l.z - o.cz) * c) - o.ez;
+                    wand = Math.min(wand, uu > 0 ? (vv > 0 ? Math.hypot(uu, vv) : uu) : vv > 0 ? vv : Math.max(uu, vv));
+                }
+            const wandOk = !(wand < wandSoll - 0.01);
+            let weg = Infinity;
+            for (const l of maste)
+                for (const rd of [...(pl.roads || []), ...(pl.feldwege || [])]) {
+                    const P = rd.pts || [];
+                    const halb = Math.max(1.2, rd.w || 2.5) / 2;
+                    for (let i = 0; i + 1 < P.length; i++) {
+                        const dx = P[i + 1].x - P[i].x;
+                        const dz = P[i + 1].z - P[i].z;
+                        const L2 = dx * dx + dz * dz;
+                        const t =
+                            L2 > 1e-9 ? Math.max(0, Math.min(1, ((l.x - P[i].x) * dx + (l.z - P[i].z) * dz) / L2)) : 0;
+                        weg = Math.min(weg, Math.hypot(l.x - P[i].x - dx * t, l.z - P[i].z - dz * t) - halb);
+                    }
+                }
+            const wegOk = !(weg < trittR - 0.01);
+            // die Wandlaterne hängt: ihr Kopf liegt armM (± 5 cm) vor der Wand eines Kerns (die Tür-Zeile W × D um den Slot)
+            let haengt = 0;
+            for (const l of waende) {
+                let best = Infinity;
+                for (const sl of pl.slots || []) best = Math.min(best, Math.abs(kernAbstand(sl, l.x, l.z) - LWd.armM));
+                if (best <= 0.05) haengt++;
+            }
+            const ueber = dunkel.length;
+            const weiteste = dunkel.reduce((a, b) => (b[2] > a[2] ? b : a), [null, null, 0]);
+            return {
+                n: L.length,
+                nWand: waende.length,
+                ds,
+                gasse,
+                ueber,
+                maxD: weiteste[2],
+                wo: weiteste[0] === null ? "-" : `Weg ${weiteste[0]} bei ${weiteste[1]} m`,
+                wand: Math.round(wand * 100) / 100,
+                weg: Math.round(weg * 100) / 100,
+                wegOk,
+                haengt,
+                haengtOk: haengt === waende.length,
+                ok: ueber === 0 && wandOk && wegOk && haengt === waende.length,
+            };
         };
         const lichtFehl = [];
+        const alleDs = [];
         let lichtN = 0;
+        let wandAlle = 0;
+        let lAlle = 0;
+        let gasseAlle = 0;
+        let dunkelAlle = 0;
         for (const [seed, nH] of [
             [7, 12],
             [12345, 6],
@@ -1138,24 +1293,160 @@ const FIXTURES = [
             [3, 9],
             [7, 18],
             [11, 40],
+            [5, 14],
+            [9, 20],
+            [7, 16],
+            [2, 10],
+            [1, 8],
         ])
             for (const epoche of [undefined, "antike"]) {
                 const pl = FC.exportSettlement({ seed, nH, epoche });
                 const d = dorfLicht(pl);
                 lichtN++;
+                alleDs.push(...d.ds);
+                wandAlle += d.nWand;
+                lAlle += d.n;
+                gasseAlle += d.gasse;
+                dunkelAlle += d.ueber;
                 if (!d.ok)
-                    lichtFehl.push(`${seed}/${nH}/${epoche || "-"}: ${d.n} Laternen < ${d.soll} (${d.wegM} m Weg)`);
+                    lichtFehl.push(
+                        `${seed}/${nH}/${epoche || "-"}: ${d.ueber}/${d.gasse} Meter der Gasse weiter als ${MARKE_SOLL} m von einer brennenden Quelle (der dunkelste ${d.maxD} m, ${d.wo}), der nächste Mast ${d.wand} m vor einer Wand (Soll ≥ ${wandSoll.toFixed(2)} m) und ${d.weg} m neben dem Wegrand (Soll ≥ ${trittR} m), Wandlaternen an der Wand ${d.haengt}/${d.nWand}`
+                    );
             }
+        // die Stadt der Moderne (der Zweig der Gas- und Elektro-Laternen, laterneQuer wie im Dorf): kein Fuß im Weg
+        for (const [seed, nH, epoche] of [[3, 30, "moderne"]]) {
+            const d = dorfLicht(FC.exportSettlement({ seed, nH, epoche }));
+            lichtN++;
+            if (!d.wegOk)
+                lichtFehl.push(
+                    `${seed}/${nH}/${epoche}: die nächste Laterne ${d.weg} m neben dem Wegrand (Soll ≥ ${trittR} m)`
+                );
+        }
+        alleDs.sort((a, b) => a - b);
+        const mq = (q) =>
+            alleDs.length ? alleDs[Math.min(alleDs.length - 1, Math.floor(alleDs.length * q))] : Infinity;
+        if (!Number.isFinite(FC.LICHT_MARKE_M)) lichtFehl.push("der Kern trägt kein LICHT_MARKE_M (das Soll je Meter)");
+        if (!(mq(0.9) <= MARKE_P90)) lichtFehl.push(`p90 je Meter ${mq(0.9).toFixed(1)} m (Soll ≤ ${MARKE_P90} m)`);
+        console.log(
+            `  DORF-LICHT je Meter: dunkle Gasse ${dunkelAlle}/${gasseAlle} Meter weiter als ${MARKE_SOLL} m · alle Meter Median ${mq(0.5).toFixed(1)} m · p90 ${mq(0.9).toFixed(1)} m · max ${(alleDs[alleDs.length - 1] || 0).toFixed(1)} m · Laternen ${lAlle} (Wand ${wandAlle})`
+        );
         check(
-            `DAS DORF-LICHT: jeder Plan mit Wegen trägt je Platz und je 25 m Weg eine Laterne (${lichtN} Pläne)`,
+            `DAS DORF-LICHT je Meter: jeder Meter der Gasse (Kern-Wand ≤ ${GASSE_M.toFixed(1)} m) ≤ ${MARKE_SOLL} m von einer Quelle, die nachts brennt, alle Meter p90 ≤ ${MARKE_P90} m; der Mast vor der Wand und mit dem Fuß neben dem Weg, die Wandlaterne an der Wand (${lichtN} Pläne, ${gasseAlle} Meter Gasse)`,
             lichtFehl.length === 0,
             lichtFehl.slice(0, 3).join(" · ")
         );
+        // DAS LICHT DER WANDLATERNE (K66-2): die Wand in armM trägt höchstens das Doppelte der Gasse unter ihr (das Wand-Gesetz
+        // der Laterne, K66), ihr Licht brennt nachts in der Farbe der Laterne und reist als Datum ihres Rezepts
+        const wandGesetz = LWd
+            ? ((LWd.hoeheM ** 2 + LWd.kernM ** 2) / (LWd.armM ** 2 + LWd.kernM ** 2)) ** (LWd.abfall / 2)
+            : Infinity;
+        const wandRezept = FC.PRESETS.wandlaterne && FC.PRESETS.wandlaterne.fx ? FC.PRESETS.wandlaterne.fx.licht : null;
+        check(
+            `Das Licht der Wandlaterne hält das Wand-Gesetz: die Wand in ${LWd ? LWd.armM : "?"} m trägt ${wandGesetz.toFixed(2)} × die Gasse unter ihr (Soll ≤ 2), ${LWd ? LWd.kelvin : "?"} K wie die Laterne, das Datum ihres Rezepts`,
+            wandGesetz <= 2.001 &&
+                !!LWd &&
+                LWd.zeit.nacht > 0 &&
+                LWd.kelvin === LGd.kelvin &&
+                JSON.stringify(wandRezept) === JSON.stringify(LWd)
+        );
+        // DIE WANDLATERNE IM ORTPLAN (K66-2 N1): fällt ein Slot ins Wasser (ortPlan, auch der Rückfall von `_ortWahl`), hängt jede
+        // Wandlaterne armM vor der Wand des Hauses, mit dem die Welt sie hebt (`v2.slots[l.slot]`, `_spawnSettlementSlot`), und die
+        // des nassen Hauses fällt mit ihm. Bis N1 reiste die Nummer des v1-Plans: 4/4 hingen an einem fremden Haus 8–14 m weiter.
+        const wandImOrt = (pl, v2, nass) => {
+            const W = (v2.laternen || []).filter((l) => l.wand);
+            let haengt = 0;
+            const fremd = [];
+            for (const l of W) {
+                const sl = v2.slots[l.slot];
+                const d = sl ? kernAbstand(sl, l.x, l.z) : Infinity;
+                if (LWd && Math.abs(d - LWd.armM) <= 0.05) haengt++;
+                else fremd.push(Number.isFinite(d) ? Math.round(d * 10) / 10 : "kein Haus");
+            }
+            const nassL = (pl.laternen || []).filter((l) => l.wand && l.slot === nass);
+            const bleibt = nassL.filter((l) => W.some((w) => w.x === l.x && w.z === l.z)).length;
+            return { n: W.length, haengt, fremd, nass: nassL.length, bleibt, ok: W.length > 0 && !fremd.length && !bleibt };
+        };
+        {
+            const pl = FC.exportSettlement({ seed: 7, nH: 16 });
+            const j = (pl.laternen.find((l) => l.wand) || {}).slot;
+            const o = Number.isInteger(j) && pl.slots[j] ? pl.slots[j].obb : null;
+            const v2 = o
+                ? FC.ortPlan(
+                      pl,
+                      { x: 0, z: 0 },
+                      {
+                          hoeheAt: () => 10,
+                          flaeche: () => () => 10,
+                          wasserAt: (x, z) => Math.hypot(x - o.cx, z - o.cz) < 1.0, // nur der Grund von Slot j ist nass
+                      }
+                  )
+                : null;
+            const w = v2 ? wandImOrt(pl, v2, j) : null;
+            check(
+                `Die Wandlaterne hängt im Ortplan an ihrem Haus: Slot ${j} fällt ins Wasser (${v2 ? v2.wasserSlots || 0 : "?"} nass), ${w ? w.haengt : 0}/${w ? w.n : 0} hängen ${LWd ? LWd.armM : "?"} m vor der Wand ihres Slots, ${w ? w.bleibt : "?"}/${w ? w.nass : "?"} des nassen Hauses bleiben`,
+                !!w && w.ok && v2.wasserSlots === 1 && w.nass > 0,
+                JSON.stringify({ fremd: w && w.fremd.slice(0, 6) })
+            );
+            // der Ortplan, wie er bis N1 reiste (die Laternen mit den Nummern des v1-Plans), hängt sie an fremde Häuser
+            const alt = v2 ? wandImOrt(pl, Object.assign({}, v2, { laternen: pl.laternen }), j) : null;
+            check(
+                "Selbst-Test 16: der Ortplan mit den Slot-Nummern des v1-Plans (wie bis N1) fällt — Wandlaternen an fremden Häusern, die des nassen Hauses bleibt",
+                !!alt && !alt.ok && alt.fremd.length > 0 && alt.bleibt > 0,
+                JSON.stringify(alt && { haengt: alt.haengt, n: alt.n, fremd: alt.fremd.slice(0, 4), bleibt: alt.bleibt })
+            );
+        }
         {
             const pl = FC.exportSettlement({ seed: 7, nH: 12 });
+            const o0 = pl.slots[0].obb;
+            const p0 = pl.roads[0].pts[2];
+            const w0 = pl.roads[0].w;
+            const inDerFahrbahn = dorfLicht(
+                Object.assign({}, pl, {
+                    laternen: pl.laternen.concat([
+                        { x: p0.x - Math.sin(p0.th) * (w0 / 4), z: p0.z + Math.cos(p0.th) * (w0 / 4), th: 0 },
+                    ]),
+                })
+            );
+            // DIE DICHTE GASSE (K66-2): derselbe Plan ohne seine Wandlaternen — die Marken der dichten Gasse sind dunkel; eine
+            // Wandlaterne 0,9 m von ihrem Stand weg hängt an keiner Wand
+            const plG = FC.exportSettlement({ seed: 7, nH: 16 });
+            const ohneWand = dorfLicht(Object.assign({}, plG, { laternen: plG.laternen.filter((l) => !l.wand) }));
+            const schwebt = dorfLicht(
+                Object.assign({}, plG, {
+                    laternen: plG.laternen.map((l) =>
+                        l.wand
+                            ? Object.assign({}, l, { x: l.x - Math.cos(l.th) * 0.9, z: l.z - Math.sin(l.th) * 0.9 })
+                            : l
+                    ),
+                })
+            );
             check(
-                "Selbst-Test 15: derselbe Plan ohne Laternen fällt im Dorf-Licht",
-                dorfLicht(pl).ok && !dorfLicht(Object.assign({}, pl, { laternen: [] })).ok
+                "Selbst-Test 15: derselbe Plan ohne Laternen fällt im Dorf-Licht, ein Mast an der Wand (0,45 m wie bis K66) ebenso, einer in der Fahrbahn (rd.w/4 von der Achse wie bis K66-n4) am Weg; die dichte Gasse ohne ihre Wandlaternen an der Marke, eine Wandlaterne 0,9 m vor ihrem Stand an der Wand",
+                dorfLicht(pl).ok &&
+                    !dorfLicht(Object.assign({}, pl, { laternen: [] })).ok &&
+                    !dorfLicht(
+                        Object.assign({}, pl, {
+                            laternen: pl.laternen.concat([
+                                {
+                                    x: o0.cx + (o0.ex + 0.45) * Math.cos(o0.phi || 0),
+                                    z: o0.cz - (o0.ex + 0.45) * Math.sin(o0.phi || 0),
+                                    th: 0,
+                                },
+                            ]),
+                        })
+                    ).ok &&
+                    !inDerFahrbahn.ok &&
+                    !inDerFahrbahn.wegOk &&
+                    dorfLicht(plG).ok &&
+                    plG.laternen.some((l) => l.wand) &&
+                    ohneWand.ueber > 0 &&
+                    !schwebt.haengtOk,
+                JSON.stringify({
+                    weg: inDerFahrbahn.weg,
+                    wegOk: inDerFahrbahn.wegOk,
+                    ohneWand: `${ohneWand.ueber}/${ohneWand.gasse} Meter der Gasse > ${MARKE_SOLL} m, der dunkelste ${ohneWand.maxD} m`,
+                    schwebt: `${schwebt.haengt}/${schwebt.nWand}`,
+                })
             );
         }
     }
@@ -1222,13 +1513,25 @@ const FIXTURES = [
         res.placed1 = r1.placed;
         res.skipped1 = r1.skipped;
         res.placed2 = r2.placed;
-        res.entriesMatch = mid - before === r1.placed && mid2 === before && after - mid2 === r2.placed;
-        const e1 = r.state.architectures.slice(mid2, after);
-        res.allHaus = e1.every((e) => typeof e.type === "string" && e.type.indexOf("haus_") === 0);
+        // Die Buchhaltung (K66-2): der Akt setzt die Häuser seiner Slots und an ihnen ihre Wandlaternen (die Laterne des Plans
+        // mit `wand` und dem Slot des Hauses, `_spawnSettlementSlot`) — sonst nichts.
+        const istHaus = (e) => typeof e.type === "string" && e.type.indexOf("haus_") === 0;
+        const alle1 = r.state.architectures.slice(mid2, after);
+        const e1 = alle1.filter(istHaus);
+        const wandPlan = (plan.laternen || []).filter((l) => l && l.wand).length;
+        res.wand1 = alle1.length - e1.length;
+        res.wandPlan = wandPlan;
+        res.entriesMatch =
+            akt1.filter(istHaus).length === r1.placed &&
+            mid2 === before &&
+            e1.length === r2.placed &&
+            akt1.length === alle1.length &&
+            res.wand1 <= wandPlan;
+        res.allHaus = alle1.every((e) => istHaus(e) || e.type === "wandlaterne_dorf");
         // Offsets relativ zum Anker byte-vergleichen (x/z; y ist Terrain-Wahrheit je Ort).
         const off = (list, o) => list.map((e) => [e[0], e[1] - o.x, e[2] - o.z, e[3], e[4]]);
         res.offsetsDeterministic =
-            r1.placed === r2.placed && JSON.stringify(off(e1Schnitt, o1)) === JSON.stringify(off(schnitt(e1), o1));
+            r1.placed === r2.placed && JSON.stringify(off(e1Schnitt, o1)) === JSON.stringify(off(schnitt(alle1), o1));
         // Slot-Anker == Plan-Slot (K10): JEDER platzierte Eintrag trägt exakt anker + slot.x/z, phi und seed seines Slots und
         // steht auf dem Boden des Plans v2 (y = slot.y + 0,5, `_ortPlanSetzen` — derselbe Plan am selben Anker). Die Welt rückt
         // kein Haus: die Ersatz-Orte und die hMax-Suche fielen mit dem Erdbau des Orts.
@@ -1434,12 +1737,15 @@ const FIXTURES = [
             res.c.budgetWall = res.c.ueberBudget >= 1 && res.c.ueberBudget <= Math.floor(dekoLaeufe / drossel) + 1;
             r.state._frameOverBudget = false;
             // Materialisierung: je Tick hoechstens perTick Slots (gezaehlt).
+            // Gezählt werden die Häuser: jedes trägt seine Wandlaternen (K66-2, `_spawnSettlementSlot`) im selben Schritt.
+            const haeuserZahl = () =>
+                r.state.architectures.reduce((n, e) => n + (typeof e.type === "string" && e.type.indexOf("haus_") === 0), 0);
             let ticks = 0;
             let maxPerTick = 0;
-            let prevCount = r.state.architectures.length;
+            let prevCount = haeuserZahl();
             while (r._autoSettlementQueue && ticks < 500) {
                 r._tickAutoSettlement({ x: cand.x, z: cand.z });
-                const now2 = r.state.architectures.length;
+                const now2 = haeuserZahl();
                 if (now2 - prevCount > maxPerTick) maxPerTick = now2 - prevCount;
                 prevCount = now2;
                 ticks++;
@@ -1460,6 +1766,7 @@ const FIXTURES = [
                             e.type === "brunnen_dorf" ||
                             e.type === "marktstand_dorf" ||
                             e.type === "laterne_dorf" ||
+                            e.type === "wandlaterne_dorf" ||
                             e.type.indexOf("baum_") === 0)
                 );
             // C4 — IDEMPOTENZ: dieselbe Zelle nochmal -> 0 neue (Reservierung traegt).
@@ -1812,7 +2119,9 @@ const FIXTURES = [
                     if (anker)
                         for (const e of r.state.architectures)
                             if (
-                                r._lichtDatumDerGestalt(e) === globalThis.__fachwerkCore.PRESETS.laterne?.fx?.licht &&
+                                (r._lichtDatumDerGestalt(e) === globalThis.__fachwerkCore.PRESETS.laterne?.fx?.licht ||
+                                    r._lichtDatumDerGestalt(e) ===
+                                        globalThis.__fachwerkCore.PRESETS.wandlaterne?.fx?.licht) &&
                                 Math.hypot(e.position.x - anker.x, e.position.z - anker.z) < 250
                             )
                                 lw++;
@@ -1820,6 +2129,237 @@ const FIXTURES = [
                     res.laternenPlan = Array.isArray(P.laternen) ? P.laternen.length : 0;
                     // der Zwilling: ein Licht ohne Leib (der Laternen-Leser bis K10-2 und sein Zellen-Gedächtnis)
                     res.laternenZwilling = ["_laternenLesen", "_laternen"].filter((k) => k in r);
+                    // DIE LATERNE VOR DER WAND (K66, Augen-Runde 15.10.: nachts glühte eine Giebelwand gesättigt orange): je Laterne der
+                    // Welt der Abstand zur nächsten Hauswand des Plans (die Tür-Zeile W × D um den Slot); das Soll aus dem EINEN
+                    // Licht-Gesetz (fachwerk LICHT_GESETZ.laterne, Abfall 1/(d² + k²)): die Wand trägt höchstens das Doppelte der Gasse
+                    const LGl = globalThis.__fachwerkCore.LICHT_GESETZ.laterne;
+                    res.laterneWandSoll =
+                        Math.round(
+                            1000 * Math.sqrt(Math.max(0, (LGl.hoeheM ** 2 + LGl.kernM ** 2) / 2 - LGl.kernM ** 2))
+                        ) / 1000;
+                    let lwMin = Infinity;
+                    if (anker && P.ort)
+                        for (const e of r.state.architectures) {
+                            if (r._lichtDatumDerGestalt(e) !== globalThis.__fachwerkCore.PRESETS.laterne?.fx?.licht)
+                                continue;
+                            if (Math.hypot(e.position.x - anker.x, e.position.z - anker.z) >= 250) continue;
+                            for (const sl of P.slots) {
+                                const tu = sl.tuer;
+                                if (!tu || !Number.isFinite(tu.W) || !Number.isFinite(tu.D)) continue;
+                                const c = Math.cos(sl.phi || 0);
+                                const sn = Math.sin(sl.phi || 0);
+                                const dx = e.position.x - (P.ort.x + sl.x);
+                                const dz = e.position.z - (P.ort.z + sl.z);
+                                const uu = Math.abs(dx * c - dz * sn) - tu.W / 2;
+                                const vv = Math.abs(dx * sn + dz * c) - tu.D / 2;
+                                lwMin = Math.min(lwMin, uu > 0 ? (vv > 0 ? Math.hypot(uu, vv) : uu) : vv > 0 ? vv : 0);
+                            }
+                        }
+                    res.laterneWand = Number.isFinite(lwMin) ? Math.round(lwMin * 100) / 100 : null;
+                    // DIE LATERNE NEBEN DER FAHRBAHN (K66, Prüfung 2: 9/9 Laternen des Auto-Dorfs standen 0,45–1,2 m im gemalten Weg):
+                    // je Laterne der Welt der Abstand zum Rand jedes Wegs der EINEN Wege-Karte (die Segmente der Straßen und Feldwege,
+                    // `_wegeFormAbstand`; der Tritt einer Ausstattung ist ein Segment ohne Länge und zählt nicht) — Soll: der Tritt des Rezepts
+                    const AR = r.constructor;
+                    const GZ = AR.GRUNDRISS_ZELLE;
+                    res.laterneWegSoll = globalThis.__fachwerkCore.PRESETS.laterne.fx.tritt.r;
+                    let lwegMin = Infinity;
+                    if (anker)
+                        for (const e of r.state.architectures) {
+                            if (r._lichtDatumDerGestalt(e) !== globalThis.__fachwerkCore.PRESETS.laterne?.fx?.licht)
+                                continue;
+                            if (Math.hypot(e.position.x - anker.x, e.position.z - anker.z) >= 250) continue;
+                            const x = e.position.x;
+                            const z = e.position.z;
+                            for (let a = -1; a <= 1; a++)
+                                for (let b = -1; b <= 1; b++) {
+                                    const l = r
+                                        ._grundrissStand()
+                                        .wege.get(
+                                            AR._grundrissSchluessel(Math.floor(x / GZ) + a, Math.floor(z / GZ) + b)
+                                        );
+                                    if (l)
+                                        for (const bb of l)
+                                            for (const f of bb.formen)
+                                                if (
+                                                    f.typ === "segment" &&
+                                                    f.kanal >= 0 &&
+                                                    Math.hypot(f.bx - f.ax, f.bz - f.az) > 0.01
+                                                )
+                                                    lwegMin = Math.min(lwegMin, AR._wegeFormAbstand(f, x, z));
+                                }
+                        }
+                    res.laterneWeg = Number.isFinite(lwegMin) ? Math.round(lwegMin * 100) / 100 : null;
+                    // DIE STUFE VOR DER TÜR IST WEG (K66, Augen-Runde 15.10.: Gras wuchs über die Türtreppe): je Haus der Punkt 0,8 m
+                    // vor der Mitte seiner Haustür liegt auf einer Fläche des Dorfs (`_aufWeg`: die Formen der EINEN Wege-Karte, die
+                    // die Wiese über `_pfadFeldAt` und die Natur-Wand lesen) — Grundriss gegen Natur gilt auch für Treppe und Vorplatz
+                    let vpOk = 0;
+                    let vpN = 0;
+                    const vpFehl = [];
+                    // und (K66, Prüfung 1: der Boden reichte 1,6 m, die Platte bis zur Gasse — dazwischen Wiese) vom Eingang
+                    // (fachwerk `eingangVon`, beim Hof-Haus das Tor) bis zur Gasse liegt keine Lücke: auf der Achse der Tür je 0,25 m
+                    // bis vorplatzM + gasseM — wer nach einem Punkt ohne Fläche wieder auf eine Fläche tritt, hat Wiese vor der Tür
+                    const OG = window.__fachwerkCore.ORT_GESETZ;
+                    // und (K66, Prüfung 2: Bild tuer2 trug Halme zwischen Gasse und Stufe, obwohl jeder Punkt in einer Form lag) die
+                    // Wiese liest das GEMALTE Feld (`_pfadFeldAt` → `_wegeFeldAt`: die Bytes der Wege-Karte, weich um ±randM) — zwei Formen, die sich
+                    // nur berühren, tragen an der Naht je 0,5: auf der Achse der Tür bis in die Gasse (die erste Weg-Form, die kein
+                    // Kasten ist) hält das Feld ≥ 0,9 (die Wiese ≤ 17 % ihrer Dichte). Die Karte zieht dafür an den Ort und zurück.
+                    const inGasse = (x, z) => {
+                        const l = r
+                            ._grundrissStand()
+                            .wege.get(AR._grundrissSchluessel(Math.floor(x / GZ), Math.floor(z / GZ)));
+                        if (l)
+                            for (const b of l)
+                                for (const f of b.formen)
+                                    if (f.typ !== "kasten" && f.kanal >= 0 && AR._wegeFormAbstand(f, x, z) < 0)
+                                        return true;
+                        return false;
+                    };
+                    const pmW = r.state.playerMesh;
+                    let feldMin = Infinity;
+                    if (P.ort) r._tickWegeKarte({ x: P.ort.x, z: P.ort.z });
+                    if (P.ort)
+                        P.slots.forEach((sl, si) => {
+                            const tu = sl.tuer;
+                            if (!tu || !Number.isFinite(tu.x) || !Number.isFinite(tu.z)) return;
+                            const c = Math.cos(sl.phi || 0);
+                            const sn = Math.sin(sl.phi || 0);
+                            const welt = (lz) => [
+                                P.ort.x + sl.x + tu.x * c + lz * sn,
+                                P.ort.z + sl.z - tu.x * sn + lz * c,
+                            ];
+                            vpN++;
+                            const [wx, wz] = welt(tu.z - 0.8);
+                            const ez = window.__fachwerkCore.eingangVon(sl).z;
+                            let luecke = null;
+                            let frei = null;
+                            for (let t = 0.3; t <= OG.vorplatzM + OG.gasseM; t += 0.25) {
+                                const [qx, qz] = welt(ez - t);
+                                const auf = r._aufWeg(qx, qz, 0);
+                                if (!auf && frei === null) frei = t;
+                                if (auf && frei !== null) {
+                                    luecke = [+frei.toFixed(2), +t.toFixed(2)];
+                                    break;
+                                }
+                            }
+                            let tief = OG.vorplatzM;
+                            for (let t = 0.3; t <= OG.vorplatzM + OG.gasseM; t += 0.25)
+                                if (inGasse(...welt(ez - t))) {
+                                    tief = t;
+                                    break;
+                                }
+                            // und (K66, Prüfung 3: Bild tuer2 trug Halme über den Flanken der Stufe, die Achse hielt 1,0) in der
+                            // ganzen Breite der Stufe (fachwerk `vorplatzFlaeche`: Türbreite samt Saum) — der Maler fällt an der
+                            // Kante einer Form auf 0,5, die Wiese stand dort mit der Hälfte ihrer Dichte auf der Platte
+                            const exS = window.__fachwerkCore.vorplatzFlaeche(sl).ex;
+                            const quer = (lx, lz) => [
+                                P.ort.x + sl.x + (tu.x + lx) * c + lz * sn,
+                                P.ort.z + sl.z - (tu.x + lx) * sn + lz * c,
+                            ];
+                            let duenn = null;
+                            for (let t = 0.3; t <= tief + 0.01; t += 0.1)
+                                for (const lx of [0, -exS, exS]) {
+                                    const [qx, qz] = quer(lx, ez - t);
+                                    const v = r._wegeFeldAt(qx, qz);
+                                    if (v < feldMin) feldMin = v;
+                                    if (v < 0.9 && duenn === null)
+                                        duenn = [+t.toFixed(2), +v.toFixed(2), +lx.toFixed(2)];
+                                }
+                            if (r._aufWeg(wx, wz, 0) && !luecke && !duenn) vpOk++;
+                            else
+                                vpFehl.push(
+                                    luecke
+                                        ? `${si}: Wiese ${luecke[0]}–${luecke[1]} m vor dem Eingang`
+                                        : duenn
+                                          ? `${si}: Feld ${duenn[1]} ${duenn[0]} m vor dem Eingang${duenn[2] ? `, ${duenn[2]} m quer (Flanke der Stufe)` : ""} (Gasse ab ${tief.toFixed(2)} m)`
+                                          : `${si}: Stufe`
+                                );
+                        });
+                    if (P.ort && pmW) r._tickWegeKarte(pmW.position);
+                    res.vorplatzFeld = Number.isFinite(feldMin) ? Math.round(feldMin * 100) / 100 : null;
+                    // DIE WAND DER TERRASSE (K66, Augen-Runde 15.10.: die Erdbau-Stufen trugen den Wiesen-Stoff als Flecken auf
+                    // steilen Flächen), gezählt am Netz, das der Spieler sieht: der voxel-worker baut die Chunks um den Ort (± 60 m,
+                    // Stufe 0, `_voxelWorkerComputeChunkMesh` — derselbe Bau wie das Streaming); Wand ist jeder Vertex unter dem
+                    // Himmel, steiler als der Schutt-Kandidat (23°), den der Erdbau um > 0,25 m hebt oder senkt und der auf keiner
+                    // Fläche des Erdbaus liegt (`erdbauFlaeche`); Wiese ist er, wo sein Fels-Stoff (die Steile über rockLo … rockHi
+                    // plus der Schutt im Vertex, gelaende-core `felsStoff`) unter 0,5 bleibt
+                    if (P.ort) {
+                        const GC = globalThis.__gelaendeCore;
+                        const GG = r.constructor.TERRAIN_GEOLOGY;
+                        const Lg = r._gelaende();
+                        const Lo = Object.assign({}, Lg, { erdbau: null });
+                        const span = r._voxelChunkConfig(0).span;
+                        let wand = 0;
+                        let wiese = 0;
+                        let halm = 0;
+                        let ferne = 0;
+                        const fernFehl = [];
+                        let chunks = 0;
+                        const fehl = [];
+                        for (let a = Math.floor((P.ort.x - 60) / span); a <= Math.floor((P.ort.x + 60) / span); a++)
+                            for (
+                                let b = Math.floor((P.ort.z - 60) / span);
+                                b <= Math.floor((P.ort.z + 60) / span);
+                                b++
+                            ) {
+                                const w = await r._voxelWorkerComputeChunkMesh(a, b, 0);
+                                if (!w || w.empty) continue;
+                                chunks++;
+                                const pos = w.positions;
+                                const nor = w.normals;
+                                for (let i = 0; i < pos.length / 3; i++) {
+                                    const x = pos[3 * i];
+                                    const y = pos[3 * i + 1];
+                                    const z = pos[3 * i + 2];
+                                    if (Math.abs(x - P.ort.x) > 60 || Math.abs(z - P.ort.z) > 60) continue;
+                                    if (w.himmel[i] < 1) continue;
+                                    const st = 1 - nor[3 * i + 1];
+                                    if (st < GG.schuttKandidat) continue;
+                                    const f = GC.erdbauFlaeche(Lg.erdbau, x, z);
+                                    if (f !== null && Math.abs(y - f) <= 0.25) continue;
+                                    const hub = GC.hoehe(Lg, x, z, true) - GC.hoehe(Lo, x, z, true);
+                                    if (Math.abs(hub) <= 0.25) continue;
+                                    wand++;
+                                    // K66, Prüfung 2: die Halme der Wand — die Nah-Wiese wächst nach dem Grün-Kanal der Boden-Karte
+                                    // (`_bodenKarteAusMesh`: die Wiesen-Wache `gruenSchwelle` über der FERTIGEN Vertex-Farbe), die
+                                    // Ferne nach `_fernSchuttAt` (Ring, Kronen-Karte, Feld-Pass): Wiese ab dem halben Grün, Ferne ohne Schutt
+                                    // — wo das Netz den Stoff der Wand zeigt (Schutt ≥ 0,5) und der Erdbau die Höhe der Ferne bewegt (ohne Detail-Term, wie
+                                    // der Ring); die Ferne ist ein Höhenfeld: unter der Kante einer Fläche zeigt sie die Fläche
+                                    const C3 = w.colors;
+                                    let tg = (C3[3 * i + 1] - 0.5 * (C3[3 * i] + C3[3 * i + 2])) / GG.gruenSchwelle;
+                                    tg = tg < 0 ? 0 : tg > 1 ? 1 : tg;
+                                    if (tg * tg * (3 - 2 * tg) >= 0.5) halm++;
+                                    if (
+                                        f === null &&
+                                        w.schutt[i] >= 0.5 &&
+                                        Math.abs(GC.hoehe(Lg, x, z, false) - GC.hoehe(Lo, x, z, false)) > 0.25 &&
+                                        !(r._fernSchuttAt(x, z) > 0)
+                                    ) {
+                                        ferne++;
+                                        if (fernFehl.length < 4)
+                                            fernFehl.push([x, y, z, hub].map((v) => Math.round(v * 100) / 100));
+                                    }
+                                    let t = (st - GG.rockLo) / (GG.rockHi - GG.rockLo);
+                                    t = t < 0 ? 0 : t > 1 ? 1 : t;
+                                    if (t * t * (3 - 2 * t) + w.schutt[i] < 0.5) {
+                                        wiese++;
+                                        if (fehl.length < 6)
+                                            fehl.push(
+                                                [x, y, z, st, w.schutt[i], hub].map((v) => Math.round(v * 100) / 100)
+                                            );
+                                    }
+                                }
+                            }
+                        res.terrasseChunks = chunks;
+                        res.terrasseWand = wand;
+                        res.terrasseWiese = wiese;
+                        res.terrasseHalm = halm;
+                        res.terrasseFerne = ferne;
+                        res.terrasseFerneFehl = fernFehl;
+                        res.terrasseFehl = fehl;
+                    }
+                    res.vorplatzOk = vpOk;
+                    res.vorplatzN = vpN;
+                    res.vorplatzFehl = vpFehl;
                     // die Altwelten: Bauten, die kein Ort trägt (kein Haus mit Grundriss, keine Ausstattung des Dorfs: brunnen_dorf,
                     // marktstand_dorf), auf dem Erdbau eines Orts
                     let fremd = 0;
@@ -1990,9 +2530,12 @@ const FIXTURES = [
     check(
         "B: der Konsument platziert (placed > 0, Buchhaltung exakt)",
         out.placed1 > 0 && out.entriesMatch === true,
-        `placed=${out.placed1} skipped=${out.skipped1}`
+        `placed=${out.placed1} skipped=${out.skipped1} Wandlaternen ${out.wand1}/${out.wandPlan}`
     );
-    check("B: jeder Eintrag ist ein haus_<kultur>-Blueprint (Tabellen-Regel, kein Literal)", out.allHaus === true);
+    check(
+        "B: jeder Eintrag ist ein haus_<kultur>-Blueprint (Tabellen-Regel, kein Literal) oder die Wandlaterne seines Hauses",
+        out.allHaus === true
+    );
     check(
         "B: POSITIONS-DETERMINISTISCH (derselbe Anker zweimal — identische Offsets/Seeds/Rotationen)",
         out.offsetsDeterministic === true,
@@ -2060,6 +2603,19 @@ const FIXTURES = [
             kronen: outO.kronen,
             laternenWelt: outO.laternenWelt,
             laternenPlan: outO.laternenPlan,
+            laterneWand: outO.laterneWand,
+            laterneWandSoll: outO.laterneWandSoll,
+            laterneWeg: outO.laterneWeg,
+            laterneWegSoll: outO.laterneWegSoll,
+            vorplatzOk: outO.vorplatzOk,
+            vorplatzN: outO.vorplatzN,
+            vorplatzFehl: outO.vorplatzFehl,
+            terrasseWand: outO.terrasseWand,
+            terrasseWiese: outO.terrasseWiese,
+            terrasseHalm: outO.terrasseHalm,
+            terrasseFerne: outO.terrasseFerne,
+            terrasseFerneFehl: outO.terrasseFerneFehl,
+            vorplatzFeld: outO.vorplatzFeld,
             planHashGleich,
             fremdBauten: outO.fremdBauten,
             gtWeg: gtO.gtWeg,
@@ -2086,6 +2642,8 @@ const FIXTURES = [
                 )
         );
         if (u.tuerenFehl && u.tuerenFehl.length) console.log("  Türen ohne Gang: " + JSON.stringify(u.tuerenFehl));
+        if (outO.terrasseFehl && outO.terrasseFehl.length)
+            console.log("  Wand im Wiesen-Stoff (x, y, z, Steile, Schutt, Hub): " + JSON.stringify(outO.terrasseFehl));
         if (outO.slotFehl && outO.slotFehl.length) console.log("  Slots ohne Haus: " + JSON.stringify(outO.slotFehl));
         if (outO.ortWahl && outO.ortWahl.length) console.log("  Ort-Wahl: " + outO.ortWahl.join(" | "));
         if (outO.ortMass) console.log("  ORT-WAHL-KOSTEN " + JSON.stringify(outO.ortMass));

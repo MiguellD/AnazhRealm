@@ -122,6 +122,21 @@
       "vertices": 57,
       "sha256": "131f26dd919ed3acc7599ece2f11cb4534b5d2119e86fc6fe19c592d3589afec"
     },
+    "wandlaterne-s1-L0": {
+      "objects": 2,
+      "vertices": 592,
+      "sha256": "107a8236e2dc59a440c8c70f0cff5d0e9b18636bd3f7954e8f74c7d290bac6c0"
+    },
+    "wandlaterne-s1-L1": {
+      "objects": 2,
+      "vertices": 136,
+      "sha256": "758bf26c9eeb6e1bd05aceb0d02d80ddf958672b18d28e911570b8cc2343d6c9"
+    },
+    "wandlaterne-s1-L3": {
+      "objects": 1,
+      "vertices": 85,
+      "sha256": "97d02a04db6cd1e6e8e1f19c38f161577409c042cee33bbcdae7bb6c599e3c1e"
+    },
     "feuerstelle-s1-L0-ov_fuelle": {
       "objects": 4,
       "vertices": 906,

@@ -229,7 +229,8 @@ function buildDorf(dp){
   let ymax=0;
   { const N=plan.norm;                                                                        // REIHEN-SNAP-GESETZ wohnt im Kern (U6c, __fachwerkCore.reihenSnap) — buildDorf UND exportSettlement rufen DIESELBE Funktion; läuft VOR der Platzierung, damit Solids/OBB konsistent fließen
     const snaps=FC.reihenSnap(dorfB, lay.pl, N.gap);
-    if(snaps) console.log('REIHEN-SNAP: '+snaps+' Paare angedockt (Fuge → '+N.gap+'m)'); }
+    if(snaps) console.log('REIHEN-SNAP: '+snaps+' Paare angedockt (Fuge → '+N.gap+'m)');
+    FC.wandLaternen(dorfB, lay.pl, lay); }                                                     // DIE WANDLATERNE (K66-2): nach dem Snap an der Wand des Kerns — dieselbe Funktion wie exportSettlement
   const ORT=ortAufWelt(dp, plan, lay);                                                      // DER ORT AUF DEM WELTGRUND (K10): jedes q trägt y
   dorfB.forEach((B,i)=>{ const q=lay.pl[i]; B.q=q; ymax=Math.max(ymax, ext[i].y1||0);
     if(B.lod==='voll'){ const wrap=new THREE.Group();
@@ -471,12 +472,14 @@ function buildDorf(dp){
         const d4=new THREE.Mesh(new THREE.BoxGeometry(0.68,0.09,0.5), M.ziegel); d4.position.y=2.16; g4.add(d4);
         dorfGroup.add(g4); } } }
   if(lay.laternen.length){                                                                    /*DIE LATERNE aus dem Gesetzbuch (K10 x K11, fachwerk AUSSTATTUNG laterne): Lab = Welt - derselbe Leib (Eisenmast, Glas-Kopf, Haube), dasselbe Licht-Datum LICHT_GESETZ.laterne; die Elektro-Bauart des Saums fiel mit dem Zwilling*/
-    const lg=FC.buildInstance('laterne', 1, 0), mtx=new THREE.Matrix4(), nL=lay.laternen.length;   /*je Rolle der Gestalt EIN InstancedMesh (metall, glas): zwei Draws fuer alle Laternen*/
-    lg.traverse(o=>{ if(!o.isMesh) return; const im=new THREE.InstancedMesh(o.geometry, o.material, nL); im.name='inst_laternen_'+((o.material.userData&&o.material.userData.__seh)||'teil');
-      lay.laternen.forEach((la,i)=>im.setMatrixAt(i, mtx.makeRotationY(-(la.th||0)).setPosition(la.x,0,la.z)));
-      im.instanceMatrix.needsUpdate=true; im.castShadow=o.castShadow; im.receiveShadow=true; dorfGroup.add(im); });
-    lay.laternen.forEach(la=>solids.push({min:[la.x-0.12,-0.2,la.z-0.12],max:[la.x+0.12,3.4,la.z+0.12]}));
-    if(modernS){ lay.laternen.forEach((la,i)=>{ if(i%2) return;                                /*MUELLEIMER hinter dem Mast: Gehwegseite = GEGEN die Arm-Richtung — nie zur Fahrbahn*/
+    const mtx=new THREE.Matrix4(), maste=lay.laternen.filter(la=>!la.wand);                  /*je Gestalt und Rolle EIN InstancedMesh (metall, glas): der Mast und die Wandlaterne (K66-2) je zwei Draws fuer alle*/
+    for(const [rz,name,liste] of [['laterne','inst_laternen_',maste],['wandlaterne','inst_wandlaternen_',lay.laternen.filter(la=>la.wand)]]){ if(!liste.length) continue;
+      const lg=FC.buildInstance(rz, 1, 0);
+      lg.traverse(o=>{ if(!o.isMesh) return; const im=new THREE.InstancedMesh(o.geometry, o.material, liste.length); im.name=name+((o.material.userData&&o.material.userData.__seh)||'teil');
+        liste.forEach((la,i)=>im.setMatrixAt(i, mtx.makeRotationY(-(la.th||0)).setPosition(la.x,0,la.z)));
+        im.instanceMatrix.needsUpdate=true; im.castShadow=o.castShadow; im.receiveShadow=true; dorfGroup.add(im); }); }
+    maste.forEach(la=>solids.push({min:[la.x-0.12,-0.2,la.z-0.12],max:[la.x+0.12,3.4,la.z+0.12]}));   /*die Wandlaterne haengt ueber dem Kopf: kein Solid*/
+    if(modernS){ maste.forEach((la,i)=>{ if(i%2) return;                                /*MUELLEIMER hinter dem Mast: Gehwegseite = GEGEN die Arm-Richtung — nie zur Fahrbahn*/
       const bx7=la.x-Math.cos(la.th||0)*0.5, bz7=la.z-Math.sin(la.th||0)*0.5;
       const mu=new THREE.Mesh(new THREE.BoxGeometry(0.34,0.55,0.34), M.dunkel); mu.position.set(bx7,0.275,bz7); dorfGroup.add(mu);
       const mr=new THREE.Mesh(new THREE.BoxGeometry(0.38,0.05,0.38), M.metall); mr.position.set(bx7,0.56,bz7); dorfGroup.add(mr); }); }
@@ -777,7 +780,8 @@ $('pTest').onclick=()=>{ const R=[];
     ok('Licht: Laternen '+dorf.lay.laternen.length, dorf.lay.laternen.length>0);
     { const li=dorfGroup.children.find(o=>o.name&&o.name.indexOf('inst_laternen')===0), bi5=dorfGroup.children.find(o=>o.name==='inst_baeume');   /*Zeitreise: gas/e-Gruppen — Praefix statt Exaktname*/
       const lis=dorfGroup.children.filter(o=>o.name&&o.name.indexOf('inst_laternen')===0);   /*die Laterne des Gesetzbuchs: je Rolle EIN InstancedMesh*/
-      ok('Instancing: Laternen als InstancedMesh ('+lis.length+' Rollen × '+dorf.lay.laternen.length+', statt '+(dorf.lay.laternen.length*lis.length)+' Draws)', !!li&&lis.every(o=>o.count===dorf.lay.laternen.length));
+      const nMast=dorf.lay.laternen.filter(la=>!la.wand).length;
+      ok('Instancing: Laternen als InstancedMesh ('+lis.length+' Rollen × '+nMast+', statt '+(nMast*lis.length)+' Draws)', !!li&&lis.every(o=>o.count===nMast));
       ok('Instancing: Bäume als InstancedMesh', !dorf.lay.trees.length||(!!bi5&&bi5.count===dorf.lay.trees.length)); }
     ok('Straße: Bordstein-Solids '+solids.filter(s=>s.gw).length, solids.filter(s=>s.gw).length>0);
     ok('Name: '+dorf.plan.name, !!dorf.plan.name&&dorf.plan.name.length>3);
@@ -1008,6 +1012,10 @@ addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updat
     }
     AnazhHuelle.bruecke({
         welt: "fachwerk",
+        // DAS ZIEL-BILD (D8): die Hülle rendert diese Welt als Panorama aus dem Blick ihrer Kamera — die Tor-Membran der Heimat zeigt es
+        panorama: function () {
+            return { THREE: THREE, renderer: renderer, scene: scene, kamera: camera };
+        },
         label: "Fachwerkhaus — parametrisch, begehbar",
         dsl: FC.KULTNAMES.concat(["dorf", "haus"]),
         wort: function (w) {

@@ -188,8 +188,8 @@ class AnazhRealm_Z20a {
     // trägt Darts (mulberry32 aus Zelle × Seed), ein Dart steht gegen die ±2-Nachbarzellen per reiner Wahl
     // (prio-Maximum im Konflikt-Radius, Positions-Tiebreak) → reihenfolge-unabhängig (Chunk A→B == B→A).
 
-    // Die geteilte Wald-Noise (this._x, wie `_clumpNoise` — seed-gebunden, main-only,
-    // kein Worker-Mirror, kein Snapshot). EIN Instanz, an verschiedenen Frequenzen/Offsets
+    // Die geteilte Wald-Noise (this._x, wie `_clumpNoise` — seed-gebunden, kein Snapshot; der Wald-Faden zieht dieselbe
+    // Noise aus demselben Seed, `waldCtx` in voxel-worker.js, gate:worker-dichte Teil W). EIN Instanz, an verschiedenen Frequenzen/Offsets
     // gelesen (die Vorlage sampelt ihre `fbm2` genauso mehrkanalig). 2-Oktav-fbm → [0,1].
     _forestFbm(px, pz) {
         if (!this._forestNoise) {
@@ -323,6 +323,43 @@ class AnazhRealm_Z20a {
         return this._forestDartGen;
     }
 
+    // DER WALD FÄLLT AM ORT (K69, Lehre 25): legt ein Ort seinen Erdbau über die Flächen im Kasten x0…x1 · z0…z1, ändern sich
+    // die Darts nur in den Zellen, die der Kasten samt Böschung (`ERDBAU.reichweiteM`, dazu die Hang-Probe von 2 m) oder samt der
+    // größten Krone (`KRONE_MAX_M`: `ortFrei` fragt die Krone gegen die Fläche) berührt. Nur sie fallen aus dem Dart-Gedächtnis
+    // des Stands (der Stand bleibt), mit ihnen das Urteil jedes Darts, der sie als Nachbarn liest (±2 Zellen, `_forestDartSteht`),
+    // die Freistand-Antwort jedes Orts, der diese Urteile liest (±4 Zellen darum, `_forestStehtFrei`), und die Gestalt des Orts
+    // dort (`_ortSameFaellt`). Bis K69 fiel das Gedächtnis der ganzen Welt (`_forestDartMemo = null`, ein neuer Stand) — und mit
+    // ihm jede Gestalt jedes Orts. → die Zahl der gefallenen Zellen.
+    _forestDartsFallen(x0, z0, x1, z1) {
+        const memo = this._forestDartMemo;
+        if (!memo || !memo.size) return 0;
+        const C = AnazhRealm.FOREST.cell;
+        const R = Math.max(globalThis.__gelaendeCore.ERDBAU.reichweiteM + 2, AnazhRealm.KRONE_MAX_M);
+        const ga = Math.floor((x0 - R) / C);
+        const gb = Math.floor((x1 + R) / C);
+        const ha = Math.floor((z0 - R) / C);
+        const hb = Math.floor((z1 + R) / C);
+        let n = 0;
+        for (let gx = ga; gx <= gb; gx++) for (let gz = ha; gz <= hb; gz++) if (memo.delete(gx + "," + gz)) n++;
+        const steht = this._forestStehtMemo;
+        if (steht)
+            for (let gx = ga - 2; gx <= gb + 2; gx++)
+                for (let gz = ha - 2; gz <= hb + 2; gz++) {
+                    const d = memo.get(gx + "," + gz);
+                    if (d) for (const o of d) steht.delete(o);
+                }
+        const fm = this._freistandMemo;
+        if (fm && fm.size && this._freistandMemoVon === memo)
+            for (const k of fm.keys()) {
+                const i = k.indexOf(",");
+                const gx = Math.floor(Number(k.slice(0, i)) / C);
+                const gz = Math.floor(Number(k.slice(i + 1, k.indexOf(",", i + 1))) / C);
+                if (gx >= ga - 6 && gx <= gb + 6 && gz >= ha - 6 && gz <= hb + 6) fm.delete(k);
+            }
+        this._ortSameFaellt((ga - 6) * C, (ha - 6) * C, (gb + 7) * C, (hb + 7) * C);
+        return n;
+    }
+
     // BORN-Darts einer Zelle, reine Funktion von (cx,cz,seed): standDensity-Wurf → Boden/Wasser → Slope →
     // Arten-Nische → reverse-J-Größe → Mammut. Nur geborene Darts treten in die Kronen-Schüchternheit ein.
     _forestCellDarts(cx, cz, seedInt) {
@@ -389,6 +426,269 @@ class AnazhRealm_Z20a {
         return out;
     }
 
+    // DER WALD PLANT IM TAKT (K69, Lehre 14 + 25): eine frische Wald-Zelle zu planen kostet 1–3 ms (`planForestCell`, ~160
+    // Sichthöhen); die Gestalt EINES Baums in frischem Wald fragt bis zu 13 × 13 Zellen (der Freistand ±4, das Urteil jedes
+    // Nachbarn ±2: `WALD_PLAN.reich`). Bis K69 plante der erste Frager am Stück — beim Gang ins Dorf die Ausstattung des Dorfs
+    // 366 Zellen in EINER Aufgabe neben dem Takt (551 ms, Null-Renderer), ein Takt 113 Zellen (245 ms). Jetzt fragt die
+    // Gestalt des Orts (`_ortGestaltSame`) hier: steht der Plan um (x, z), gilt ihr Urteil sofort; fehlen Zellen, bestellt sie
+    // sie in der Schlange des Walds (`_tickWaldPlan`) und wartet — wie auf ein kaltes Buch, so warten ihre Leser schon (die
+    // Hülle, die Streu, die Promotion, die Karte). Die Frage merkt ihre fehlenden Zellen je Zelle des Orts: jede weitere
+    // kostet einen Blick, bis die letzte steht. Fiel eine bestellte Zelle aus der Schlange (ein neuer Stand, ein Erdbau),
+    // bestellt die Frage neu.
+    _waldPlanSteht(x, z) {
+        const memo = this._forestDartMemo;
+        if (!memo) return false;
+        const C = AnazhRealm.FOREST.cell;
+        const gx = Math.floor(x / C);
+        const gz = Math.floor(z / C);
+        const bk = gx + "," + gz;
+        if (!this._waldWarten || this._waldWarten.size > 4096) this._waldWarten = new Map();
+        const Q = this._waldPlanSchlange || (this._waldPlanSchlange = new Map());
+        let fehlt = this._waldWarten.get(bk);
+        if (fehlt) {
+            while (fehlt.length && memo.has(fehlt[fehlt.length - 1])) fehlt.pop();
+            if (fehlt.length) {
+                if (!Q.has(fehlt[fehlt.length - 1]))
+                    for (const k of fehlt) {
+                        if (memo.has(k) || Q.has(k)) continue;
+                        const i = k.indexOf(",");
+                        Q.set(k, [Number(k.slice(0, i)), Number(k.slice(i + 1))]);
+                    }
+                return false;
+            }
+            this._waldWarten.delete(bk);
+        }
+        const R = AnazhRealm.WALD_PLAN.reich;
+        fehlt = [];
+        if (this._waldPlanKasten(gx - R, gz - R, gx + R, gz + R, fehlt)) return true;
+        this._waldWarten.set(bk, fehlt);
+        return false;
+    }
+
+    // Der Plan des Walds im Zell-Kasten ga…gb · ha…hb (inklusiv): true = jede Zelle steht im Dart-Gedächtnis des Stands;
+    // sonst bestellt er die fehlenden in der Schlange des Walds (`_tickWaldPlan`), merkt sie in `fehlt` (optional) → false.
+    _waldPlanKasten(ga, ha, gb, hb, fehlt) {
+        const memo = this._forestDartMemo;
+        if (!memo) return false;
+        const Q = this._waldPlanSchlange || (this._waldPlanSchlange = new Map());
+        let steht = true;
+        for (let gx = ga; gx <= gb; gx++)
+            for (let gz = ha; gz <= hb; gz++) {
+                const k = gx + "," + gz;
+                if (memo.has(k)) continue;
+                steht = false;
+                if (fehlt) fehlt.push(k);
+                if (!Q.has(k)) Q.set(k, [gx, gz]);
+            }
+        return steht;
+    }
+
+    // Der Zell-Kasten, den der Pflanz-Gang eines Chunks liest: seine Zellen samt ±2 (das Urteil jedes Darts).
+    _waldPflanzKasten(cx, cz) {
+        const { span } = this._voxelChunkConfig();
+        const C = AnazhRealm.FOREST.cell;
+        const ox = cx * span;
+        const oz = cz * span;
+        return [
+            Math.floor(ox / C) - 2,
+            Math.floor(oz / C) - 2,
+            Math.floor((ox + span) / C) + 2,
+            Math.floor((oz + span) / C) + 2,
+        ];
+    }
+
+    // DIE SCHLANGE DES WALDS (K69): der Takt-Planer (Job `waldPlan`, Welt-Substanz) nimmt die bestellten Zellen
+    // (`_waldPlanSteht`) nah zuerst. IHR RECHNER IST DER WALD-FADEN (K60-3, `_waldFadenSchicken`): wo ein Voxel-Faden lebt,
+    // plant der Haupt-Faden keine Zelle der Schlange — sie reisen in Aufträgen an den Wald-Faden und landen im Gedächtnis
+    // (`_waldDartsAn`). Ohne Faden plant der Takt je Takt höchstens `WALD_PLAN.ms` (mindestens eine Zelle — nie verhungert;
+    // der Lade-Takt gibt sein ganzes Budget). Bis zur Vereinigung K60-4 bestellte die Streu ihre Darts an der Schlange
+    // vorbei beim Faden (`_waldDartsBestellen`), und jeder andere Leser plante im Haupt-Faden: zwei Wege an EIN Gedächtnis.
+    // Ihre Regung (`_waldPlanGeplant`) weckt die Fege-Takte, deren Bäume auf ihre Zellen warten. → die Zahl der Zellen.
+    _tickWaldPlan(ms) {
+        const Q = this._waldPlanSchlange || (this._waldPlanSchlange = new Map());
+        const P = this._waldPflanzWarten;
+        if (!Q.size && !(P && P.size)) return 0;
+        if (!this._forestGesetzWahr()) return 0;
+        const seedInt = this._forestSeedInt();
+        const t0 = performance.now();
+        let n = 0;
+        if (this._waldFadenLebt()) this._waldFadenSchicken(seedInt);
+        else {
+            this._forestDartStand(seedInt);
+            const liste = this._waldPlanListe(null);
+            const budget = Number.isFinite(ms) ? ms : Infinity;
+            const frist = this._ladeTakt() ? budget : Math.min(budget, AnazhRealm.WALD_PLAN.ms);
+            for (const [, k, g] of liste) {
+                if (n > 0 && performance.now() - t0 >= frist) break;
+                this._forestCellDarts(g[0], g[1], seedInt);
+                Q.delete(k);
+                n++;
+            }
+        }
+        // die wartenden Pflanz-Gänge (`_forestPlantChunk`): steht der Plan ihres Chunks, pflanzt die Schlange ihn jetzt — auch
+        // wenn sein Chunk inzwischen ging: die Pflanzung geschieht EINMAL je Chunk (`voxelPopulatedChunks` fällt nie), ein
+        // verworfener Gang ließ seinen Wald für immer leer (K69-2: die Klang-Linse fand am Waldort 5 Bäume ≤ 15 m)
+        if (P && P.size)
+            for (const key of [...P]) {
+                const i = key.indexOf(",");
+                const cx = Number(key.slice(0, i));
+                const cz = Number(key.slice(i + 1));
+                if (this._waldPlanKasten(...this._waldPflanzKasten(cx, cz))) this._forestPlantChunk(cx, cz);
+            }
+        if (n > 0) this._waldPlanGeplant(t0);
+        return n;
+    }
+
+    // Die offenen Zellen der Schlange nah zuerst ([d², Schlüssel, [gx, gz]]): was das Gedächtnis schon trägt, fällt aus ihr;
+    // was im Flug ist (`flug`, optional), bleibt in ihr, aber nicht in der Liste.
+    _waldPlanListe(flug) {
+        const Q = this._waldPlanSchlange;
+        const memo = this._forestDartMemo;
+        const C = AnazhRealm.FOREST.cell;
+        const liste = [];
+        for (const [k, g] of Q) {
+            if (memo.has(k)) Q.delete(k);
+            else if (!flug || !flug.has(k)) liste.push([this._spielerD2((g[0] + 0.5) * C, (g[1] + 0.5) * C), k, g]);
+        }
+        liste.sort((a, b) => a[0] - b[0]);
+        return liste;
+    }
+
+    // Zellen sind geplant (von welchem Rechner auch immer): die Regung (`_waldPlanRegung`) liest der Stand-Stempel — sie
+    // weckt die Fege-Takte, wenn die Schlange leer ist, und solange sie plant, höchstens alle 250 ms.
+    // DIE STREU WARTET AUF DEN WALD WIE AUF IHR ASSET (K69-2): eine Streu-Region, deren Bäume auf die Gestalt ihres Orts
+    // warten (`_scatterFoundrySeed` → null), schiebt sich auf (`_deferredFoundry`) und wartet benannt auf die leere Schlange
+    // (`_waldPlanZusage`, ihr Wecker `_streuWeckerSpannen`). Ohne Nachschub stand sie für immer: Null-Gang an der Mess-Wiese
+    // 6 von 6 Regionen nach geleerter Schlange aufgeschoben (CI 38736568849). Ist die Schlange leer, steht jede bestellte
+    // Zelle — die Region baut neu wie nach einer Lieferung.
+    _waldPlanGeplant(t0) {
+        const Q = this._waldPlanSchlange;
+        const leer = !(Q && Q.size);
+        if (leer || !(t0 < this._waldPlanWeckBis)) {
+            this._waldPlanRegung = (this._waldPlanRegung | 0) + 1;
+            this._waldPlanWeckBis = t0 + 250;
+        }
+        if (!leer) return;
+        this._scatterRefillPending = true;
+        const z = this._waldLeer;
+        if (z) {
+            this._waldLeer = null;
+            z.loesen();
+        }
+    }
+
+    // Die Zusage der leeren Schlange (der Wecker der Streu wartet auf sie, `_streuWartetAuf`): null, wenn nichts bestellt ist.
+    _waldPlanZusage() {
+        const Q = this._waldPlanSchlange;
+        if (!Q || !Q.size) return null;
+        if (!this._waldLeer) {
+            let loesen = null;
+            const z = new Promise((res) => {
+                loesen = res;
+            });
+            z.loesen = loesen;
+            this._waldLeer = z;
+        }
+        return this._waldLeer;
+    }
+
+    // Der Wald-Faden kann rechnen: ein Voxel-Faden lebt, und seine Quelle ist bekannt (`_voxelWorkerWaldDarts`).
+    _waldFadenLebt() {
+        return !!(this.state.voxelWorker && this._voxelFadenQuelle);
+    }
+
+    // DER STOFF DES WALDS IM FADEN (K60-3): die offenen Zellen der Schlange nah zuerst, je Auftrag `WALD_PLAN.faden` Zellen,
+    // höchstens `WALD_PLAN.fadenFlug` Aufträge im Flug (der nächste geht mit der Ankunft des vorigen, nie erst im nächsten
+    // Takt). Die Wahrheit jeder Zelle reist vor ihr (`_ensureHydroTilesAround`), der Zustand über den EINEN Sender. Bis K60-3
+    // rechnete der Haupt-Faden jeden Dart der Streu selbst: Radeon kalt bis zum ersten Bild 1,6 von 2,2 s Streu (K602c/q2:
+    // `_forestCellDarts` 1,9 s, davon die Oberfläche 1,5 s).
+    _waldFadenSchicken(seedInt) {
+        this._forestDartStand(seedInt);
+        const memo = this._forestDartMemo;
+        if (this._waldFlugVon !== memo || !this._waldFlug) {
+            this._waldFlug = new Set(); // die Zellen im Flug gelten dem Gedächtnis, für das sie geschickt wurden
+            this._waldFlugVon = memo;
+            this._waldFlugAuftraege = 0;
+        }
+        const W = AnazhRealm.WALD_PLAN;
+        if (this._waldFlugAuftraege >= W.fadenFlug) return;
+        const flug = this._waldFlug;
+        const liste = this._waldPlanListe(flug);
+        const C = AnazhRealm.FOREST.cell;
+        const extras = this._forestExtraSpecies();
+        for (let a = 0; a < liste.length && this._waldFlugAuftraege < W.fadenFlug; a += W.faden) {
+            const zellen = [];
+            for (let b = a; b < Math.min(liste.length, a + W.faden); b++) {
+                const g = liste[b][2];
+                this._ensureHydroTilesAround((g[0] + 0.5) * C, (g[1] + 0.5) * C, C);
+                flug.add(liste[b][1]);
+                zellen.push(g[0], g[1]);
+            }
+            this._waldFlugAuftraege++;
+            const erd = this._erdbauStand | 0;
+            this._voxelWorkerWaldDarts(new Int32Array(zellen), seedInt, extras).then(
+                (r) => this._waldDartsAn(memo, zellen, r, erd),
+                (e) => {
+                    this._waldDartsAn(memo, zellen, null, erd); // die Zellen bleiben in der Schlange, der Takt schickt neu
+                    this._bruchMelden("WALD: der Faden rechnete die Darts nicht — " + (e && e.message ? e.message : e));
+                }
+            );
+        }
+    }
+
+    // Die Darts des Fadens ins Gedächtnis ihres Stands: ein gewechselter Stand oder ein Erdbau seit dem Auftrag
+    // (`_erdbauStand`, K69: der Faden rechnete am alten Grund) verwirft sie — die Zellen bleiben in der Schlange, ein neuer
+    // Auftrag rechnet sie; eine inzwischen gerechnete Zelle behält ihre Darts (die Urteile der Nachbarn merken die Objekte).
+    // Die Schranke des Gedächtnisses greift VOR der Lieferung, nie mitten in ihr (Prüfung K60-3-1).
+    _waldDartsAn(memo, zellen, r, erd) {
+        if (this._waldFlugVon === memo) {
+            this._waldFlugAuftraege--;
+            for (let i = 0; i < zellen.length; i += 2) this._waldFlug.delete(zellen[i] + "," + zellen[i + 1]);
+        }
+        const Q = this._waldPlanSchlange;
+        let n = 0;
+        if (r && this._forestDartMemo === memo && (this._erdbauStand | 0) === erd) {
+            if (memo.size + zellen.length / 2 > 8192) memo.clear(); // bounded wie `_forestCellDarts`
+            const alle = this._waldDartsEntpacken(r, zellen.length / 2);
+            for (let i = 0; i < alle.length; i++) {
+                const k = zellen[i * 2] + "," + zellen[i * 2 + 1];
+                if (!memo.has(k)) memo.set(k, alle[i]);
+                if (Q) Q.delete(k);
+                n++;
+            }
+        }
+        if (n > 0) this._waldPlanGeplant(performance.now());
+        if (Q && Q.size && this._waldFadenLebt() && this._forestGesetzWahr())
+            this._waldFadenSchicken(this._forestSeedInt());
+    }
+
+    // Die gepackten Darts des Fadens (je Zelle `anzahl`, je Dart 11 Werte, die Arten als Tafel) → je Zelle die Darts, wie
+    // `_forestCellDarts` sie gibt (gate:worker-dichte Teil W vergleicht sie Wort für Wort).
+    _waldDartsEntpacken(r, zellenZahl) {
+        const w = r.werte;
+        const alle = [];
+        let j = 0;
+        for (let i = 0; i < zellenZahl; i++) {
+            const out = [];
+            for (let m = r.anzahl[i]; m > 0; m--, j += 11)
+                out.push({
+                    x: w[j],
+                    z: w[j + 1],
+                    sp: r.arten[w[j + 2]],
+                    s: w[j + 3],
+                    T: w[j + 4],
+                    prio: w[j + 5],
+                    keep: w[j + 6],
+                    totRoll: w[j + 7],
+                    rotY: w[j + 8],
+                    seed: w[j + 9],
+                    surfaceY: Number.isNaN(w[j + 10]) ? null : w[j + 10],
+                });
+            alle.push(out);
+        }
+        return alle;
+    }
+
     // ==================== ASSET-FOUNDRY: die Vorlage pflanzt ihre echten Bäume ====================
     // Der Studio-Generator (die Kerne + die Foundry-Brücke foundry-bruecke.js, K42) läuft als Worker und liefert
     // seine echten Baum-Instanzen (buildInstance, eigenes LOD) als Geometrie-Puffer; AnazhRealm baut daraus
@@ -413,7 +713,7 @@ class AnazhRealm_Z20a {
             worker: null, // P3a: der Studio-Generator als Web-Worker (Geometrie/Daten, kein DOM)
             // P5→BÄCKER-VEREINIGUNG: das GL-Bake-iframe UND der Welt-RTT-Nachbau sind
             // GESCHNITTEN — der Impostor-Atlas backt im STUDIO-Bäcker (Kanal "bake-impostor" → Reply "impostor"). EIN
-            // Bäcker, ein Bake-Pfad — in SEINEM Faden (`_foundryBaecker`: derselbe Boot-Blob, erst beim ersten Bake geboren).
+            // Bake-Pfad — in den Bäcker-Fäden (`_foundryBaecker`: derselbe Boot-Blob, mit dem Studio geboren, K60-2).
             baecker: null,
             baeckerBereit: false,
             bootUrl: null,
@@ -511,6 +811,17 @@ class AnazhRealm_Z20a {
                     f.bootUrl = URL.createObjectURL(new Blob([boot], { type: "text/javascript" }));
                     const worker = new Worker(f.bootUrl);
                     f.worker = worker;
+                    // DER FADEN WARTET NIE AUF DEN HAUPT-FADEN (K60-2): die Buch-Frage reist mit der Geburt — der Faden
+                    // hält sie, bis sein Studio steht (eine Nachricht vor dem Ende seines Start-Skripts wartet auf seinen
+                    // Hörer), und antwortet ohne Rundlauf; Helfer und Bäcker kommen mit ihm (`_foundryHelfer`). Bis K60-2
+                    // fragte erst die Antwort auf „ready" — Radeon kalt ruhte der Buch-Faden 0,8 s, bis der volle Haupt-
+                    // Faden sie las, und die Helfer begannen ihren Start 2,4 s nach ihm (K602c/q2: Buch 6,8 s).
+                    try {
+                        worker.postMessage({ type: "get-book", reqId: "book" });
+                    } catch (_e) {
+                        throw this._stoffBruch("die Buch-Anfrage an den Foundry-Faden (get-book)", _e);
+                    }
+                    this._foundryHelfer(f);
                     // Ein Boot-/Laufzeit-Fehler des Studio-Fadens bricht LAUT (K22): ohne Faden kein Studio-Mesh, und es
                     // gibt keinen Alt-Pfad (`_foundryEnabled`: ein nicht gebackenes Asset heißt KEIN Mesh)
                     worker.onerror = (ev) =>
@@ -522,16 +833,9 @@ class AnazhRealm_Z20a {
                         if (!m || typeof m !== "object") return;
                         if (m.type === "ready" && m.world === "terrain") {
                             f.ready = true; // der Stand-Stempel liest die Antwort selbst (`_standStempel`)
-                            // EIN Umschlag: das komplette Studio-Buch (Rezepte + B4-Tabellen + Welt-Palette + Wahrnehmung) in
-                            // EINEM Roundtrip ziehen, DANN die Assets vorwärmen.
-                            // Der Vorrat wartet ohne Frist auf das Buch (`f.buchDa`): fällt die Anfrage, bricht sie LAUT
-                            // beim Namen (K22), nie wartet der Vorrat still für immer.
-                            try {
-                                worker.postMessage({ type: "get-book", reqId: "book" });
-                            } catch (_e) {
-                                throw this._stoffBruch("die Buch-Anfrage an den Foundry-Faden (get-book)", _e);
-                            }
-                            this._foundryHelfer(f);
+                            // EIN Umschlag: das komplette Studio-Buch (Rezepte + B4-Tabellen + Welt-Palette + Wahrnehmung)
+                            // ist mit der Geburt gefragt, DANN die Assets vorwärmen. Der Vorrat wartet ohne Frist auf das
+                            // Buch (`f.buchDa`): fällt die Anfrage, bricht sie LAUT beim Namen (K22).
                             this._foundryPrefetchLibrary();
                             // DIE EINE PIPE: die Gattungs-Templates off-thread vorwärmen —
                             // Welt-Spawns treffen dann nur noch das Memo (Clone, kein Freeze). Er wartet auf das erste
@@ -591,21 +895,48 @@ class AnazhRealm_Z20a {
     // (derselbe Boot-Blob, dieselbe Schale, dieselbe Platte) in einem zweiten Faden, geboren beim ersten Bake-Auftrag
     // (headless bäckt nie einer). Die EINE Schlange (`_foundryAuftrag`) bleibt — sie speist zwei Bahnen
     // (`_foundryPumpe`), und eine Karte nimmt der Geometrie keinen Platz mehr.
+    // DIE KARTEN BACKEN IN BAHNEN (K60-2): Radeon kalt bis zum ersten Bild buk EIN Bäcker 17 Karten nacheinander, je eine im
+    // Flug — er bootete erst beim ersten Karten-Auftrag (1,65 s, 8 s nach der Navigation), jede Karte wartete danach auf den
+    // Rundlauf durch den vollen Haupt-Faden, und die Bäume der Mesh-Zone, deren Stufe die Karte ist, warteten mit (die Werk-
+    // Fäden ruhten von 10 bis 16 s, der Bäcker lief bis 19 s). Jetzt backen so viele Bäcker-Fäden wie Werk-Fäden
+    // (`_foundryFaedenZahl`, dasselbe Gesetz der Kerne), je eine Karte im Flug (`_tickImpostorBake`); geboren werden sie mit
+    // dem Studio, sobald ein echter Renderer zeichnet (`_foundryHelfer`) — headless bäckt nie einer, dort gebiert sie wie
+    // bisher erst ein Karten-Auftrag. Der erste Bäcker heißt weiter `f.baecker` (Bahn "baecker"), jeder weitere trägt seinen
+    // Faden in der Nummer (`imp` + `b<k>_`, Bahn "baecker<k>", `_foundryBahn`).
     _foundryBaecker(f) {
         if (f.baecker || !f.bootUrl) return f.baecker;
-        const w = new Worker(f.bootUrl);
-        f.baecker = w;
-        // ein Boot-/Laufzeit-Fehler des Bäckers bricht LAUT (K22): ohne ihn wartet jede Karte für immer in der Schlange
-        w.onerror = (ev) =>
-            this._stoffBruch("der Bäcker-Faden fällt — " + ((ev && ev.message) || "Boot-/Laufzeit-Fehler"));
-        w.onmessage = (ev) => {
-            const m = ev.data;
-            if (!m || typeof m !== "object") return;
-            if (m.type === "ready" && m.world === "terrain") f.baeckerBereit = true;
-            else this._foundryAntwort(f, m);
-            this._foundryPumpe(f);
+        const geburt = (k) => {
+            const w = new Worker(f.bootUrl);
+            const h = { k, w, bereit: false };
+            // ein Boot-/Laufzeit-Fehler eines Bäckers bricht LAUT (K22): ohne ihn wartet jede Karte seiner Bahn
+            w.onerror = (ev) =>
+                this._stoffBruch(
+                    `der Bäcker-Faden${k ? " " + k : ""} fällt — ` + ((ev && ev.message) || "Boot-/Laufzeit-Fehler")
+                );
+            w.onmessage = (ev) => {
+                const m = ev.data;
+                if (!m || typeof m !== "object") return;
+                if (m.type === "ready" && m.world === "terrain") {
+                    h.bereit = true;
+                    if (k === 0) f.baeckerBereit = true;
+                } else this._foundryAntwort(f, m);
+                this._foundryPumpe(f);
+            };
+            return h;
         };
-        return w;
+        f.baecker = geburt(0).w;
+        f.baeckerHelfer = [];
+        for (let k = 1; k < this._foundryFaedenZahl(); k++) f.baeckerHelfer.push(geburt(k));
+        return f.baecker;
+    }
+    // Wie viele Studio-Fäden je Arbeit (Werk wie Bäcker): einer je vier Kerne, höchstens FOUNDRY_WERK_FAEDEN — die Kerne
+    // allein entscheiden, nie der Renderer.
+    _foundryFaedenZahl() {
+        const kerne =
+            typeof navigator !== "undefined" && Number.isFinite(navigator.hardwareConcurrency)
+                ? navigator.hardwareConcurrency
+                : 4;
+        return Math.max(1, Math.min(AnazhRealm.FOUNDRY_WERK_FAEDEN, Math.floor(kerne / 4)));
     }
     // DIE WERK-FÄDEN (K60): das Werk baut jeden Körper in EINEM Faden — Radeon kalt bis zum ersten Bild hielt er 19 s Arbeit
     // (Bäume, Bauten, das Dorf), während 20 der 24 Kerne der Maschine ruhten. Jetzt bauen neben ihm Helfer aus DEMSELBEN
@@ -616,11 +947,10 @@ class AnazhRealm_Z20a {
     _foundryHelfer(f) {
         if (f.helfer || !f.bootUrl) return;
         f.helfer = [];
-        const kerne =
-            typeof navigator !== "undefined" && Number.isFinite(navigator.hardwareConcurrency)
-                ? navigator.hardwareConcurrency
-                : 4;
-        const n = Math.max(1, Math.min(AnazhRealm.FOUNDRY_WERK_FAEDEN, Math.floor(kerne / 4)));
+        // die Bäcker kommen mit dem Studio, wo ein echter Renderer zeichnet (`_foundryBaecker`, K60-2)
+        const r = this.state.renderer;
+        if (r && !r._isHeadlessNull) this._foundryBaecker(f);
+        const n = this._foundryFaedenZahl();
         for (let k = 1; k < n; k++) {
             const w = new Worker(f.bootUrl);
             const h = { k, w, bereit: false };
@@ -644,6 +974,9 @@ class AnazhRealm_Z20a {
     _foundryIngestBook(m) {
         if (!m || typeof m !== "object") return;
         this._foundryIngestRecipes(m.book, m.paramsByKind);
+        // der Leib des Spielers zuerst (K60-2): seine zwei Vorlagen gehen vor jedem Baum ins Werk (`_ofenSpielerVorlagen`) —
+        // bestellte erst der nächste Takt, stand der Guss im Faden hinter zwölf Bäumen (Radeon kalt: Leib 7,5 s nach dem Buch)
+        if (this.state._deferredAvatarSoul) this._ofenSpielerVorlagen();
         this._foundryIngestWorldParams(m.worldParams);
         this._foundryIngestRenderConfig(m.renderConfig);
         this._foundryIngestSiedlung(m.siedlung);
@@ -1385,6 +1718,16 @@ class AnazhRealm_Z20a {
         if (!this._fundamentLand(wx, wz, ry, fp, tu, fundament ? globalThis.__fachwerkCore.ORT_GESETZ.saumM : 0))
             return false;
         if (!this._bauFrei(wx, wz, ry, fp || { ex: 0.5, ez: 0.5, ox: 0, oz: 0 }, tu, slot.y)) return false;
+        // DIE WANDLATERNEN DES HAUSES (K66-2): die Laternen des Plans mit seinem Slot (`so.plan`, `so.si`) hängen an seiner
+        // Wand — ihre Wasser- und Bau-Wand fragt VOR dem Haus (das eigene Haus sperrt sie nie), sie stehen NACH ihm. Bis
+        // K66-2 Nachbesserung hob der Dorf-Akt sie vor den Häusern: die Laterne sperrte ihr eigenes Haus (Auto-Dorf 13/16).
+        const wand = [];
+        if (so && so.plan && Array.isArray(so.plan.laternen))
+            so.plan.laternen.forEach((l, k) => {
+                if (!l || !l.wand || l.slot !== so.si) return;
+                const ort = this._dorfLaterneOrt(l, origin);
+                if (ort) wand.push([l, ort, k]);
+            });
         const wy = slot.y + 0.5; // der Bauplan-Boden liegt 0,5 m unter dem Ursprung (`_archEntryWorldMatrix` baseY)
         // AUSLÖSCHUNGS-WELLE — `autonomous` reist durch (spawn_village vom Nexus →
         // die Häuser zählen in den Nexus-Cap, die V18.297-Hort-Lehre).
@@ -1400,14 +1743,47 @@ class AnazhRealm_Z20a {
                 // DORF-ERLEBNIS — die Tür-Zeile des Exports (Blocker-Tür-Lücke +
                 // Flügel-Reichweite; alte Exporte ohne Feld → undefined, byte-alt).
                 tuer: slot.tuer || undefined,
-                // KAMIN-RAUCH (.105): Spitze haus-lokal (exportSettlement) — rauchQuelle.
-                chimney: slot.chimney || undefined,
+                // KAMIN-RAUCH (.105): Spitze haus-lokal (exportSettlement) — rauchQuelle; null ist das Nein des Exports
+                // (kein Kamin: der Host baut das Haus nicht nach), ein Alt-Export ohne Feld bleibt undefined
+                chimney: slot.chimney,
                 // Das Slot-Rezept (exportSettlement ov) reist als Guss-Stempel: die Optik baut aus DERSELBEN Wahrheit
                 // wie Blocker/ext (ov überstimmt den Kultur-Default). Alt-Exporte ohne ov: must-ignore.
                 studioOv: slot.ov && typeof slot.ov === "object" ? slot.ov : undefined,
             }
         );
+        if (entry) for (const [l, ort, k] of wand) this._dorfLaterneSetzen(so.plan, l, ort, k, so);
         return entry || false; // das gesetzte Haus (die Dorf-Mitte summiert, wo es steht)
+    }
+    // DER ORT EINER LATERNE DES PLANS (K10 × K11 × K66-2): die Studio-Gestalt (Bauplan `laterne_dorf` bzw. mit `wand` die
+    // Wandlaterne `wandlaterne_dorf`, ihr Licht LICHT_GESETZ.wandlaterne) am Anker, hinter Wasser- und Bau-Wand — die
+    // Wandlaterne hängt vor der Wand, die Bau-Wand prüft nur ihren Kopf (der Rund-Fußabdruck reichte in die eigene Wand).
+    // Null, wo sie nicht stehen darf. Leser: `_spawnSettlementErlebnis` (der Mast) und `_spawnSettlementSlot` (die Wand).
+    _dorfLaterneOrt(l, origin) {
+        if (!l || !Number.isFinite(l.x) || !Number.isFinite(l.z)) return null;
+        const typ = l.wand ? "wandlaterne_dorf" : "laterne_dorf";
+        if (!this.state.blueprints || !this.state.blueprints[typ]) return null;
+        const wx = origin.x + l.x;
+        const wz = origin.z + l.z;
+        if (!this._landAt(wx, wz, 0.2)) return null;
+        const wy = this.getTerrainHeightAt(wx, wz);
+        if (!Number.isFinite(wy)) return null;
+        const frei = l.wand
+            ? this._bauFrei(wx, wz, 0, { ex: 0.1, ez: 0.1, ox: 0, oz: 0 }, null, wy)
+            : this._bauFreiRund(typ, wx, wz, wy);
+        return frei ? { typ, x: wx, y: wy + 0.5, z: wz } : null; // die Bau-Wand: nie in einem Bau
+    }
+    // Die Laterne des Plans steht: Same je Siedlung und Nummer `k`, gedreht nach ihrem Plan (`th`).
+    _dorfLaterneSetzen(plan, l, ort, k, so) {
+        return this.spawnArchitecture(
+            ort.typ,
+            { x: ort.x, y: ort.y, z: ort.z },
+            {
+                seed: ((plan.seed >>> 0 || 1) + 97 + k * 7919) >>> 0,
+                rotationY: Number.isFinite(l.th) ? -l.th : 0,
+                silent: true,
+                autonomous: !!(so && so.autonomous),
+            }
+        );
     }
     // ═══ DORF-ERLEBNIS: der EINE Hebe-Chokepoint für die Nicht-Haus-Schichten des Exports ═══
     // Wege/Feldwege/Platz → Wege-Pool (`_stlWegeBuild`, dieselbe Höhen-Quelle wie die Häuser); Brunnen
@@ -1422,27 +1798,15 @@ class AnazhRealm_Z20a {
         // DIE LATERNEN (K10 × K11): jede Laterne des Plans steht als Studio-Gestalt (Bauplan `laterne_dorf`, fachwerk
         // AUSSTATTUNG `laterne`) — der Leib und das Licht EINER Quelle: das Verzeichnis „licht" stempelt den Eintrag aus dem
         // Datum seines Rezepts (`_lichtDatumDerGestalt`), der Licht-Takt liest ihn wie jede Feuerstelle. Keine Kappe: das
-        // Gesetz des Plans setzt die Zahl (je Platz eine, je 25 m Weg eine); Wasser- und Bau-Wand wie der Brunnen.
-        if (Array.isArray(plan.laternen) && this.state.blueprints && this.state.blueprints.laterne_dorf) {
+        // Gesetz des Plans setzt die Zahl (je Platz eine, je 25 m Weg eine); Wasser- und Bau-Wand wie der Brunnen. Die Laterne
+        // des Plans mit `wand` (K66-2) ist die Wandlaterne: sie hängt an der Wand ihres Hauses und steht MIT ihm
+        // (`_spawnSettlementSlot`), nie hier.
+        if (Array.isArray(plan.laternen)) {
             let k = 0;
             for (const l of plan.laternen) {
-                if (!l || !Number.isFinite(l.x) || !Number.isFinite(l.z)) continue;
-                const wx = origin.x + l.x;
-                const wz = origin.z + l.z;
-                if (!this._landAt(wx, wz, 0.2)) continue;
-                const wy = this.getTerrainHeightAt(wx, wz);
-                if (!Number.isFinite(wy)) continue;
-                if (!this._bauFreiRund("laterne_dorf", wx, wz, wy)) continue; // die Bau-Wand: nie in einem Bau
-                this.spawnArchitecture(
-                    "laterne_dorf",
-                    { x: wx, y: wy + 0.5, z: wz },
-                    {
-                        seed: ((plan.seed >>> 0 || 1) + 97 + k++ * 7919) >>> 0,
-                        rotationY: Number.isFinite(l.th) ? -l.th : 0,
-                        silent: true,
-                        autonomous: !!(so && so.autonomous),
-                    }
-                );
+                if (!l || l.wand) continue;
+                const ort = this._dorfLaterneOrt(l, origin);
+                if (ort) this._dorfLaterneSetzen(plan, l, ort, k++, so);
             }
         }
         if (!Array.isArray(plan.brunnen) || !this.state.blueprints || !this.state.blueprints.brunnen_dorf) return;
@@ -1536,9 +1900,14 @@ class AnazhRealm_Z20a {
         let mx = 0;
         let mz = 0;
         const haeuser = [];
-        for (const slot of plan.slots) {
-            // das gesetzte Haus (`_spawnSettlementSlot`): am Anker + seinem Slot, auf dem Boden des Plans (K10)
-            const haus = this._spawnSettlementSlot(slot, origin, f, so);
+        for (let si = 0; si < plan.slots.length; si++) {
+            // das gesetzte Haus (`_spawnSettlementSlot`): am Anker + seinem Slot, auf dem Boden des Plans (K10), mit seinen
+            // Wandlaternen (K66-2: `plan` + `si`)
+            const haus = this._spawnSettlementSlot(plan.slots[si], origin, f, {
+                autonomous: !!(so && so.autonomous),
+                plan,
+                si,
+            });
             if (haus) {
                 placed++;
                 haeuser.push(haus);
@@ -2241,23 +2610,36 @@ class AnazhRealm_Z20a {
     _tickGenesisOrt(currentTime) {
         const st = this.state;
         const pm = st.playerMesh;
-        if (!pm) return;
-        const hook = typeof window !== "undefined" ? window.__anazhAutoSettlement : undefined;
-        if (hook === false) return;
-        if (hook !== true && st.renderer && st.renderer._isHeadlessNull) return;
+        if (!pm || !this._dorfTaktLebt()) return;
         if (this._genesisOrtT && currentTime - this._genesisOrtT < 1000) return;
         this._genesisOrtT = currentTime; // Instanz-Feld (die _editSaveTimer-Klasse: nicht serialisiert)
         this._genesisPortalRing(pm.position);
         this._portalApproachPrefetch(pm.position);
     }
 
+    // DER DORF-TAKT LEBT (Gate-Treue): headless ruht der Auto-Zug, der Hook `__anazhAutoSettlement` führt — EIN Urteil für
+    // den Siedlungs-Takt, den Genesis-Ort und das erste Weltbild (Term „dorf", `_weltbildLuecken`): ein Dorf, das kein Takt
+    // baut, hält kein Bild.
+    _dorfTaktLebt() {
+        const hook = typeof window !== "undefined" ? window.__anazhAutoSettlement : undefined;
+        if (hook === false) return false;
+        return hook === true || !(this.state.renderer && this.state.renderer._isHeadlessNull);
+    }
+
+    // DAS START-DORF IST FÄLLIG (EIN Urteil für den Takt und das erste Weltbild, K60-4): einmalig je Welt, solange es weder
+    // steht (`settlementCells.start`) noch hoffnungslos ist, und nur nahe des Genesis-Orts (kein Fern-Spawn hinter dem Rücken).
+    _startDorfFaellig(playerPos) {
+        const wm = this.state.worldMeta || {};
+        const cells = wm.settlementCells && typeof wm.settlementCells === "object" ? wm.settlementCells : null;
+        if ((cells && cells.start) || this._autoSettlementStartHopeless) return false;
+        const gM = this._genesisMitte();
+        const n = AnazhRealm.AUTO_SETTLEMENT.nearM;
+        return (playerPos.x - gM.x) ** 2 + (playerPos.z - gM.z) ** 2 <= n * n;
+    }
+
     _tickAutoSettlement(playerPos) {
         const st = this.state;
-        if (!playerPos) return;
-        // Gate-Treue (s. Block-Kommentar): headless ruht der Auto-Zug, der Hook führt.
-        const hook = typeof window !== "undefined" ? window.__anazhAutoSettlement : undefined;
-        if (hook === false) return;
-        if (hook !== true && st.renderer && st.renderer._isHeadlessNull) return;
+        if (!playerPos || !this._dorfTaktLebt()) return;
         const A = AnazhRealm.AUTO_SETTLEMENT; // Wirt-Streaming (perTick/nearM)
         // (a) BUDGETIERTE MATERIALISIERUNG zuerst: ein angekommener Export baut seine
         // Häuser über Ticks verteilt — erst fertig wachsen, dann die nächste Zelle.
@@ -2274,7 +2656,8 @@ class AnazhRealm_Z20a {
             const f = this._foundry;
             let n = 0;
             while (q.idx < q.plan.slots.length && n < (ueber ? 1 : A.perTick)) {
-                this._spawnSettlementSlot(q.plan.slots[q.idx++], q.origin, f);
+                const si = q.idx++;
+                this._spawnSettlementSlot(q.plan.slots[si], q.origin, f, { plan: q.plan, si }); // mit seinen Wandlaternen (K66-2)
                 n++;
             }
             if (q.idx >= q.plan.slots.length) {
@@ -2315,12 +2698,7 @@ class AnazhRealm_Z20a {
         }
         // Start-Dorf zuerst (einmalig je Welt): nur nahe des Genesis-Orts materialisieren (kein Fern-Spawn hinter
         // dem Rücken). Fail-closed + session-gemerkt: eine Welt ohne Fleck urteilt immer gleich.
-        const gM = this._genesisMitte();
-        if (
-            (!cells || !cells.start) &&
-            !this._autoSettlementStartHopeless &&
-            (playerPos.x - gM.x) ** 2 + (playerPos.z - gM.z) ** 2 <= A.nearM * A.nearM
-        ) {
+        if (this._startDorfFaellig(playerPos)) {
             const si = this._autoSettlementStartInfo();
             if (!si)
                 this._autoSettlementStartHopeless = true; // Instanz-Feld (die _editSaveTimer-Klasse)

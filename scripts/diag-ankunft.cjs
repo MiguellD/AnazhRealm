@@ -104,8 +104,13 @@ function ladeschirmVerdict(m) {
         ["karteOffen", "mit der offenen Karte eines fernen Baums", /ferne Bäume/],
         ["weltFehlt", "ohne die Welt (kein Spieler)", /Welt entsteht/],
         ["buchZu", "ohne das Buch der Studios", /Buch der Studios/],
+        ["leibFehlt", "ohne den Leib des Spielers", /Leib/],
         ["pflanzung", "mit einem gepflanzten Baum der Mesh-Zone, der noch nicht steht", /gepflanzt/],
+        ["saat", "mit einem Chunk im Laub-Radius, dessen Wald noch nicht gesät ist", /bepflanzt/],
         ["horizont", "ohne den Horizont (der Fern-Ring steht nicht ganz)", /Horizont/],
+        ["dorfExport", "mit dem Export eines Dorfs der Ankunft unterwegs", /Dorf/],
+        ["dorfSchlange", "mit den Häusern eines Dorfs der Mesh-Zone in der Schlange", /Dorf/],
+        ["dorfFaellig", "mit einem fälligen, noch nicht bestellten Start-Dorf am Genesis-Ort", /Dorf/],
     ]) {
         const z = f[k];
         if (!z) out.push(`${name}: ${ohne(k)}`);
@@ -528,6 +533,9 @@ async function probe(arg) {
             // (4b) die Welt fehlt (noch kein Spieler)
             const merkPm = st.playerMesh;
             fall("weltFehlt", () => (st.playerMesh = null), () => (st.playerMesh = merkPm));
+            // (4b') der Leib des Spielers steht aus (K60-2: sein Guss kommt aus dem Faden, `_leibBereit`)
+            const merkLeib = st._deferredAvatarSoul;
+            fall("leibFehlt", () => (st._deferredAvatarSoul = "linse:leib"), () => (st._deferredAvatarSoul = merkLeib));
             // (4c) das Buch der Studios ist zu
             const fo = r._foundry;
             const merkBuch = fo ? fo.ready : undefined;
@@ -540,6 +548,21 @@ async function probe(arg) {
                 () => (st.pendingVegSpawns = (st.pendingVegSpawns || []).concat([pflanze])),
                 () => (st.pendingVegSpawns = (st.pendingVegSpawns || []).filter((t) => t !== pflanze))
             );
+            // (4d') der Chunk des Spielers liegt im Laub-Radius und wartet auf seine Saat (`pendingFoliageChunks`, K60-3: der
+            // Radius wuchs, sein Wald war noch nicht in der Schlange)
+            const sp = r._voxelChunkConfig().span;
+            const saatKey = `${Math.floor(pm.x / sp)},${Math.floor(pm.z / sp)}`;
+            const hatteSaat = !!(st.pendingFoliageChunks && st.pendingFoliageChunks.has(saatKey));
+            if (st.voxelChunks && st.voxelChunks.has(saatKey) && !hatteSaat)
+                fall(
+                    "saat",
+                    () => (st.pendingFoliageChunks = st.pendingFoliageChunks || new Set()).add(saatKey),
+                    () => st.pendingFoliageChunks.delete(saatKey)
+                );
+            else
+                m.ohneFall.saat = hatteSaat
+                    ? `der Chunk des Spielers (${saatKey}) wartet nach dem Boot noch auf seine Saat`
+                    : `der Chunk des Spielers (${saatKey}) steht nach dem Boot nicht`;
             // (4e) der Horizont steht nicht ganz (K60): der Ring gehört zur Welt (der Linsen-Hook, headless ruht er sonst) und
             // ist noch nicht voll gezeichnet (`fr.ready`)
             const merkHook = window.__anazhFernRing;
@@ -556,6 +579,67 @@ async function probe(arg) {
                     else window.__anazhFernRing = merkHook;
                 }
             );
+            // (4f) DAS DORF (K60-4): ein Dorf der Ankunft, das fällig ist, exportiert wird oder dessen Häuser in der Schlange
+            // stehen, hält das Bild — ohne den Term stand das erste Weltbild in 4 von 5 Kalt-Läufen am Kopf von K60-3 ohne das
+            // Start-Dorf (Nicht-Baum-Einträge 107 statt 134). Headless ruht der Dorf-Takt: der Hook trägt ihn für den Fall.
+            const merkDorfHook = window.__anazhAutoSettlement;
+            const dorfAn = () => (window.__anazhAutoSettlement = true);
+            const dorfAus = () => {
+                if (merkDorfHook === undefined) delete window.__anazhAutoSettlement;
+                else window.__anazhAutoSettlement = merkDorfHook;
+            };
+            const merkExport = r._autoSettlementPendingKey;
+            fall(
+                "dorfExport",
+                () => {
+                    dorfAn();
+                    r._autoSettlementPendingKey = "start";
+                },
+                () => {
+                    r._autoSettlementPendingKey = merkExport;
+                    dorfAus();
+                }
+            );
+            const merkSchlange = r._autoSettlementQueue;
+            const dorfPlan = { name: "linse:dorf", slots: [{ kultur: "linse:dorf", x: 0, z: 0, y: pm.y }] };
+            fall(
+                "dorfSchlange",
+                () => {
+                    dorfAn();
+                    r._autoSettlementQueue = { plan: dorfPlan, origin: { x: pm.x, z: pm.z }, idx: 0, cellKey: "start" };
+                },
+                () => {
+                    r._autoSettlementQueue = merkSchlange;
+                    dorfAus();
+                }
+            );
+            // fällig: die Welt trägt noch kein Start-Dorf, der Spieler steht am Genesis-Ort, das Buch trägt den Dorf-Kanal
+            const wmD = st.worldMeta || (st.worldMeta = {});
+            const merkZellen = wmD.settlementCells;
+            const merkHoffnung = r._autoSettlementStartHopeless;
+            const gMD = typeof r._genesisMitte === "function" ? r._genesisMitte() : null;
+            const nearD = (r.constructor.AUTO_SETTLEMENT || {}).nearM;
+            const amOrt = gMD && Math.hypot(pm.x - gMD.x, pm.z - gMD.z) <= nearD;
+            const kanal = typeof r._autoSettlementChannelLive === "function" && r._autoSettlementChannelLive();
+            if (amOrt && kanal)
+                fall(
+                    "dorfFaellig",
+                    () => {
+                        dorfAn();
+                        wmD.settlementCells = Object.assign({}, merkZellen || {});
+                        delete wmD.settlementCells.start;
+                        r._autoSettlementStartHopeless = false;
+                    },
+                    () => {
+                        wmD.settlementCells = merkZellen;
+                        r._autoSettlementStartHopeless = merkHoffnung;
+                        dorfAus();
+                    }
+                );
+            else
+                m.ohneFall.dorfFaellig = !kanal
+                    ? "das Buch trägt keinen Dorf-Kanal (`_autoSettlementChannelLive`)"
+                    : `der Spieler steht ${gMD ? Math.round(Math.hypot(pm.x - gMD.x, pm.z - gMD.z)) : "?"} m vom Genesis-Ort (nearM ${nearD})`;
             // (5) alles steht
             fall("allesSteht", nichts, nichts);
             // (6) eine Lücke ruht (dieselbe Lücke länger als WELTBILD_STILL_MS): der Ladeschirm weicht LAUT
@@ -1263,7 +1347,11 @@ async function probe(arg) {
                         ["third", 4],
                     ]) {
                         const z = (ds[modus] = { anlaeufe: 0, faellt: 0, abstand: [], wMin: 1, punkte: 0 });
-                        for (const baum of baeume.slice(0, n)) {
+                        // die Probe stellt ihren Fall her: Bäume, bis n Anläufe Rinde jenseits des Ziels tragen (höchstens 12) —
+                        // bis zur Prüfung K60-3-1 nahm sie die ersten n, und je nach Halt des Körpers trug in 3rd keiner (1 von 2
+                        // Läufen am Kopf: „kein Anlauf (Vorbedingung)")
+                        for (const baum of baeume.slice(0, 12)) {
+                            if (z.anlaeufe >= n) break;
                             await anlauf(baum, modus);
                             const u = urteil(baum);
                             if (!u.punkte) continue;
@@ -1518,7 +1606,7 @@ async function probe(arg) {
     const html = fs.readFileSync(path.join(root, "index.html"), "utf8");
     if (process.argv.includes("--selftest")) {
         console.log("=== SELBST-TEST — die Ankunfts-Linse nennt ihre Täter ===");
-        const l2aTerme = ["welt", "boden", "horizont", "buch", "bauten", "pflanzung", "streu", "karten"];
+        const l2aTerme = ["welt", "boden", "horizont", "leib", "buch", "bauten", "pflanzung", "streu", "karten", "dorf"];
         const l2aFaelle = {
             ohneBoden: { weg: false, stand: "der Boden wächst (Ring 0 von 3)", warn: 0, terme: ["boden"] },
             baumUngebaut: { weg: false, stand: "1 Bäume und Bauten wachsen", warn: 0, terme: ["bauten"] },
@@ -1527,8 +1615,13 @@ async function probe(arg) {
             karteOffen: { weg: false, stand: "1 ferne Bäume werden gemalt", warn: 0, terme: ["karten"] },
             weltFehlt: { weg: false, stand: "die Welt entsteht", warn: 0, terme: ["welt"] },
             buchZu: { weg: false, stand: "das Buch der Studios öffnet sich", warn: 0, terme: ["buch"] },
+            leibFehlt: { weg: false, stand: "der Spieler erhält seinen Leib", warn: 0, terme: ["leib"] },
             pflanzung: { weg: false, stand: "1 Bäume werden gepflanzt", warn: 0, terme: ["pflanzung"] },
+            saat: { weg: false, stand: "1 Wald-Böden werden bepflanzt", warn: 0, terme: ["pflanzung"] },
             horizont: { weg: false, stand: "der Horizont wächst (0 %)", warn: 0, terme: ["horizont"] },
+            dorfExport: { weg: false, stand: "das Dorf wird geplant", warn: 0, terme: ["dorf"] },
+            dorfSchlange: { weg: false, stand: "1 Häuser des Dorfs wachsen", warn: 0, terme: ["dorf"] },
+            dorfFaellig: { weg: false, stand: "das Dorf wird gegründet", warn: 0, terme: ["dorf"] },
             allesSteht: { weg: true, stand: "", warn: 0 },
             lueckeRuht: { weg: true, stand: "", warn: 1 },
             lueckeFlackert: { weg: true, stand: "", warn: 1 },
@@ -1600,6 +1693,16 @@ async function probe(arg) {
                         "der Fall pflanzung nennt den Term „saat“",
                     ],
                     ["ohne die Terme", { terme: undefined }, "die Terme des ersten Weltbilds fehlen"],
+                    [
+                        "das erste Weltbild ohne Dorf (Prüfung K60-3: 4 von 5 Kalt-Läufen, Nicht-Baum-Einträge 107 statt 134)",
+                        { faelle: Object.assign({}, l2aFaelle, { dorfSchlange: { weg: true, stand: "", warn: 0, terme: [] } }) },
+                        "mit den Häusern eines Dorfs der Mesh-Zone in der Schlange weicht der Ladeschirm",
+                    ],
+                    [
+                        "das fällige Start-Dorf ohne Fall",
+                        { faelle: Object.assign({}, l2aFaelle, { dorfFaellig: undefined }), ohneFall: { dorfFaellig: "der Spieler steht 400 m vom Genesis-Ort (nearM 260)" } },
+                        "mit einem fälligen, noch nicht bestellten Start-Dorf am Genesis-Ort: der Spieler steht 400 m vom Genesis-Ort",
+                    ],
                     [
                         "eine arbeitende Lücke weicht (Prüfung K60-1 m1-6B: das Buch kam nach 19,6 s, der Ladeschirm wich nach 15 s)",
                         { faelle: Object.assign({}, l2aFaelle, { lueckeArbeitet: { weg: true, stand: "", warn: 1, terme: ["buch"] } }) },

@@ -2,8 +2,8 @@
     "version": 1,
     "zweck": "DIE RATSCHE wiese × gtx × third (K26): ungemessen bis zur Re-Mint-Serie dieses Orts × Geräts × Sicht (werkbank ratsche --neu); Gesetz (Toleranz, freie Klassen) und Form wie ratsche-wiese-radeon-ego.json. Das Band-Urteil nennt sie rot („ungemessen\"), gate:profiband H2b ebenso.",
     "gemessen": {
-        "datum": "2026-10-14T12:52:33.119Z",
-        "version": "18.546.0",
+        "datum": "2026-10-15T15:48:26.133Z",
+        "version": "18.546.2",
         "ort": "wiese",
         "geraet": "gtx",
         "geraetText": "nvidia pascal",
@@ -34,23 +34,23 @@
         "tier": "Weltzustand, nicht Kosten: die Tiere wandern — in der Serie 04./05.10. 11 bis 101 Befehle im Hauptbild (0 bis 3 Arten im Bild, je Art 11 bis 42 Befehle mit Schatten). Die Kosten je Tier hält gate:kreatur-kosten (ein Draw je Material, Körper-Kugel-Cull); im Band zählt die Klasse voll."
     },
     "gesamt": {
-        "befehle": 85,
-        "dreiecke": 323944,
-        "vramMB": 96.2
+        "befehle": 86,
+        "dreiecke": 326703,
+        "vramMB": 94.6
     },
     "klassen": {
         "boden": {
             "haupt": {
                 "befehle": 7,
-                "dreiecke": 56124
+                "dreiecke": 52997
             },
             "k0": {
                 "befehle": 1,
-                "dreiecke": 15976
+                "dreiecke": 12870
             },
             "k1": {
                 "befehle": 1,
-                "dreiecke": 8362
+                "dreiecke": 5798
             }
         },
         "karten": {
@@ -98,7 +98,7 @@
         "nahWiese": {
             "haupt": {
                 "befehle": 4,
-                "dreiecke": 60452
+                "dreiecke": 75572
             },
             "k0": {
                 "befehle": 0,
@@ -111,12 +111,12 @@
         },
         "streu": {
             "haupt": {
-                "befehle": 7,
-                "dreiecke": 30796
+                "befehle": 9,
+                "dreiecke": 29058
             },
             "k0": {
-                "befehle": 2,
-                "dreiecke": 5668
+                "befehle": 1,
+                "dreiecke": 3840
             },
             "k1": {
                 "befehle": 0,
@@ -168,11 +168,11 @@
         "einzelstuecke": {
             "haupt": {
                 "befehle": 12,
-                "dreiecke": 42472
+                "dreiecke": 42471
             },
             "k0": {
                 "befehle": 5,
-                "dreiecke": 13514
+                "dreiecke": 13517
             },
             "k1": {
                 "befehle": 0,
@@ -209,16 +209,16 @@
         }
     },
     "vramMB": {
-        "buf:szene": 17.3,
         "tex:TRAANode.history": 15.8,
         "tex:TRAANode.resolve": 15.8,
+        "buf:szene": 15.2,
         "tex:kaskade0": 8,
         "tex:kaskade1": 8,
-        "tex:karte-albedo": 5.3,
+        "tex:karte-albedo": 5.7,
         "tex:output": 4.4,
         "tex:depth": 4.4,
         "tex:wege-karte": 4,
-        "tex:karte-normal": 2.7,
+        "tex:karte-normal": 2.8,
         "tex:szene": 2.2,
         "tex:fluss-karte": 2,
         "tex:feld-pass-panorama": 1.9,

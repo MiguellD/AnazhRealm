@@ -95,9 +95,60 @@ function selbsttest() {
             wahrnehmung: phase(30, 4),
         },
         // BÜHNE: Befund des Selbsttests, kein gesetzter Ort
-        strom: { spielerChunk: true, x: -300, z: -850, takte: 40 },
+        strom: {
+            spielerChunk: true,
+            x: -300,
+            z: -850,
+            takte: 40,
+            wald: { imJob: 412, aussen: 0, ms: 0, taeter: null, maxTakt: 0 },
+        },
         stufe: { wechsel: 2, takte: { nahStreu: 1, nahWiese: 1 }, rufe: {} },
+        // BÜHNE: Befund des Selbsttests, kein gesetzter Ort
+        ort: {
+            ort: [-182, -1038],
+            fern: 240,
+            takte: 60,
+            gelegt: true,
+            setzMs: 4,
+            standVor: 2,
+            standNach: 2,
+            darts: { fern: 812, gehalten: 812 },
+            chunks: {
+                basis: { fern: 6, gehalten: 6 },
+                dichte: { fern: 0, gehalten: 0 },
+                mesh: { fern: 2, gehalten: 2 },
+            },
+            stand: { key: "-11,-27", vor: "3|0", nach: "3|0", gleich: true },
+            plan: 140,
+            maxTaktMs: 21,
+            raeumung: { abbau: 5, saves: 0, saveMs: 0 },
+            kamin: { kultur: "alemannisch", gesetzt: true, bau: 0, ms: 0 },
+            satzHaus: {
+                kultur: "alemannisch",
+                gesetzt: true,
+                takte: 3,
+                gruppen: 7,
+                ecken: 26800,
+                bloecke: 7,
+                frischKB: 0,
+            },
+            wald: {
+                gesetzt: true,
+                // BÜHNE: Befund des Selbsttests, kein gesetzter Ort
+                ort: [-182, -618],
+                synchron: 0,
+                ms: 0,
+                takte: 64,
+                gestalt: 2,
+                imTakt: 169,
+                maxTaktZellen: 3,
+                maxTaktMs: 4.1,
+            },
+            // BÜHNE: Befund des Selbsttests, kein gesetzter Ort
+            amSpieler: { ort: [-293, -1071], gelegt: true, dirty: 9, takte: 42, heil: true, sync: [] },
+        },
         code: Object.fromEntries(namen.map((n) => [n, { fragt: true, meldet: true }])),
+        nachschub: { takte: 31, schlange: 0, foundry: 0, warten: [] },
         pageErrors: [],
     };
     const klon = () => JSON.parse(JSON.stringify(gruen));
@@ -252,9 +303,140 @@ function selbsttest() {
             (b) => (b.schreiber.schreiber.scatterRegions = []),
             /STUMPF: die Schreiber-Wand sieht keinen Schreiber von scatterRegions/,
         ],
+        [
+            "der Erdbau wirft das Dart-Gedächtnis der Welt (bis K69)",
+            (b) =>
+                Object.assign(b.ort, {
+                    standNach: 3,
+                    darts: { fern: 812, gehalten: 0 },
+                    plan: 2579,
+                    maxTaktMs: 880,
+                }),
+            /ORT: der Erdbau bei \(-182,-1038\) warf das Dart-Gedächtnis der Welt \(Stand des Walds 2 → 3.*2579 Wald-Zellen neu .*planForestCell.*880 ms/,
+        ],
+        [
+            "ferne Wald-Zellen fallen (der Stand bleibt)",
+            (b) => (b.ort.darts.gehalten = 700),
+            /ORT: der Erdbau bei \(-182,-1038\) warf 112 von 812 fernen Wald-Zellen/,
+        ],
+        [
+            "ein fernes Chunk-Gedächtnis fällt",
+            (b) => (b.ort.chunks.basis.gehalten = 0),
+            /ORT: der Erdbau bei \(-182,-1038\) warf 6 von 6 fernen Chunk-Gedächtnissen \(basis/,
+        ],
+        [
+            "der Stand eines fernen Chunks springt",
+            (b) => Object.assign(b.ort.stand, { nach: "4|0", gleich: false }),
+            /ORT: der Erdbau bei \(-182,-1038\) verwarf die Worker-Antworten des fernen Chunks -11,-27 \(Stand 3\|0 → 4\|0\)/,
+        ],
+        [
+            "jeder Abbau speichert die Welt synchron (bis K69)",
+            (b) => Object.assign(b.ort.raeumung, { saves: 5, saveMs: 420 }),
+            /ORT: der Abbau von 5 Natur-Stücken speicherte die Welt 5× synchron \(`removeArchitecture › saveState`, Σ 420 ms\)/,
+        ],
+        ["die Ort-Phase räumt nichts", (b) => (b.ort.raeumung.abbau = 0), /LEER: die Ort-Phase räumte keine Natur/],
+        [
+            "die Ort-Phase sieht keine fernen Zellen",
+            (b) => (b.ort.darts.fern = 0),
+            /LEER: die Ort-Phase sah keine fernen/,
+        ],
+        ["die Ort-Phase legt keinen Erdbau", (b) => (b.ort.gelegt = false), /LEER: die Ort-Phase legte keinen Erdbau/],
+        [
+            "das Haus ohne Kamin baut seinen Kern nach (bis K69)",
+            (b) => Object.assign(b.ort.kamin, { bau: 1, ms: 52.4 }),
+            /ORT: das Haus ohne Kamin \(alemannisch\) baute seinen Kern 1× nach .*chimneyTipFromParams.*52\.4 ms/,
+        ],
+        [
+            "die Ort-Phase setzt kein Haus ohne Kamin",
+            (b) => (b.ort.kamin.gesetzt = false),
+            /LEER: die Ort-Phase setzte kein Haus ohne Kamin/,
+        ],
+        [
+            "der Satz-Block legt die Ecken eines Hauses frisch an (bis K69)",
+            (b) => Object.assign(b.ort.satzHaus, { frischKB: 2048 }),
+            /ORT: das Haus im Satz \(alemannisch, 26800 Ecken in 7 Gruppen\) legte beim Wieder-Eintritt 2\.0 MB frisch an .*_tickBauSatz › _bauSatzBlock › _satzBlock/,
+        ],
+        [
+            "die Ort-Phase bringt kein Haus in den Bau-Satz",
+            (b) => Object.assign(b.ort.satzHaus, { gruppen: 0, ecken: 0, bloecke: 0, takte: 600 }),
+            /LEER: die Ort-Phase brachte kein Haus in den Bau-Satz \(alemannisch, 0 Gruppen, 0 Ecken nach 600 Takten\)/,
+        ],
+        [
+            "der Baum in frischem Wald plant seine Zellen synchron (bis K69)",
+            (b) => Object.assign(b.ort.wald, { synchron: 169, ms: 271.4, takte: 0, imTakt: 0, maxTaktZellen: 0 }),
+            /ORT: der Baum in frischem Wald bei \(-182,-618\) plante 169 Wald-Zellen synchron .*_ortGestaltSame.*planForestCell.*271\.4 ms/,
+        ],
+        [
+            "die Gestalt des Baums in frischem Wald steht nie",
+            (b) => Object.assign(b.ort.wald, { gestalt: null, takte: 600 }),
+            /ORT: die Gestalt des Baums in frischem Wald steht nach 600 Takten nicht/,
+        ],
+        [
+            "die Schlange des Walds plant am Stück",
+            (b) => Object.assign(b.ort.wald, { maxTaktMs: 271.4, maxTaktZellen: 169 }),
+            /ORT: die Schlange des Walds plante in EINEM Takt 271\.4 ms \(169 Zellen\)/,
+        ],
+        [
+            "die Ort-Phase setzt keinen Baum in frischem Wald",
+            (b) => (b.ort.wald.gesetzt = false),
+            /LEER: die Ort-Phase setzte keinen Baum in frischem Wald/,
+        ],
+        [
+            "der Neubau unter dem Spieler baut seinen Chunk synchron (bis K69-2)",
+            (b) =>
+                b.ort.amSpieler.sync.push(
+                    {
+                        ms: 3.1,
+                        kette: "_gameLoopTick › _tickDirtyVoxelChunks › _rebuildVoxelChunk › _acquireVoxelChunkBuild",
+                    },
+                    {
+                        ms: 154.6,
+                        kette: "_gameLoopTick › _tickDirtyVoxelChunks › _rebuildVoxelChunk › _acquireVoxelChunkBuild",
+                    }
+                ),
+            /ORT: der Erdbau unter dem Spieler bei \(-293,-1071\) baute 1 Chunk synchron im Haupt-Faden \(`_gameLoopTick › _tickDirtyVoxelChunks › _rebuildVoxelChunk › _acquireVoxelChunkBuild › _buildVoxelChunkData`, der längste 154\.6 ms\)/,
+        ],
+        [
+            "der Boden unter dem Spieler heilt nicht (der Neubau verhungert)",
+            (b) => Object.assign(b.ort.amSpieler, { heil: false, takte: 600 }),
+            /ORT: der Erdbau unter dem Spieler bei \(-293,-1071\) heilt nicht — nach 600 Takten warten noch Chunks/,
+        ],
+        [
+            "der Erdbau unter dem Spieler markiert nichts",
+            (b) => (b.ort.amSpieler.dirty = 0),
+            /LEER: der Erdbau unter dem Spieler markierte keinen Chunk zum Neubau/,
+        ],
+        [
+            "die Ort-Phase legt keinen Erdbau unter dem Spieler",
+            (b) => delete b.ort.amSpieler,
+            /LEER: die Ort-Phase legte keinen Erdbau unter dem Spieler/,
+        ],
+        [
+            "der Pflanz-Gang plant frische Zellen am Stück (bis K69)",
+            (b) =>
+                Object.assign(b.strom.wald, {
+                    aussen: 96,
+                    ms: 131.2,
+                    maxTakt: 41,
+                    taeter: "_forestDartSteht › _forestPlantChunk › _populateVoxelChunkVegetation › _finalizeVoxelChunkBuild",
+                }),
+            /STROM: 96 frische Wald-Zellen plante nicht die Schlange des Walds, sondern `_forestDartSteht › _forestPlantChunk.*131\.2 ms, bis 41 in EINEM Takt/,
+        ],
+        [
+            "die Strom-Phase sieht keinen frischen Wald",
+            (b) => (b.strom.wald.imJob = 0),
+            /LEER: die Strom-Phase sah keinen frischen Wald/,
+        ],
+        ["keine Ort-Phase", (b) => delete b.ort, /LEER: keine Ort-Phase/],
         ["keine Ruhe", (b) => delete b.ruhe, /LEER: keine Ruhe-Phase/],
         ["keine Bruch-Phase", (b) => delete b.bruch, /LEER: keine Bruch-Phase/],
         ["Page-Error", (b) => b.pageErrors.push("TypeError: x"), /PAGE-ERROR: TypeError: x/],
+        [
+            "die Streu wartet nach geleerter Schlange des Walds (K69-2, CI 38736568849)",
+            (b) => (b.nachschub.warten = ["-3,-5 wartet auf ihr Asset"]),
+            /NACHSCHUB: 1 Streu-Regionen warten, obwohl die Schlange des Walds leer ist/,
+        ],
+        ["keine Nachschub-Probe", (b) => delete b.nachschub, /LEER: keine Nachschub-Probe/],
     ];
     for (const [name, tat, muss] of faelle) {
         const b = klon();
@@ -513,9 +695,13 @@ const server = statikServer();
                 let t = performance.now();
                 const takt = () => {
                     t += 1000 / 60;
+                    // ein Takt, der wirft, ist ein Befund (PAGE-ERROR im Urteil), nie still: bis K69-2 schluckte die Linse ihn
                     try {
                         r._gameLoopTick(t);
-                    } catch (_e) {}
+                    } catch (e) {
+                        const tf = window.__standTaktFehler || (window.__standTaktFehler = []);
+                        if (tf.length < 5) tf.push("Takt: " + String((e && e.stack) || e).split("\n")[0]);
+                    }
                 };
                 const foundryOffen = () => {
                     const f = r._foundry;
@@ -533,7 +719,13 @@ const server = statikServer();
                             stabil = 0;
                             last = sz;
                         }
-                        const offen = (st.voxelMeshPending && st.voxelMeshPending.size > 0) || foundryOffen() > 0;
+                        // offen ist, was die Welt noch baut: Chunks, die Foundry und die Schlange des Walds samt ihren
+                        // Pflanz-Gängen (K69: sie plant im Takt — solange sie plant, weckt ihre Regung die Fege-Takte)
+                        const offen =
+                            (st.voxelMeshPending && st.voxelMeshPending.size > 0) ||
+                            foundryOffen() > 0 ||
+                            (r._waldPlanSchlange && r._waldPlanSchlange.size > 0) ||
+                            (r._waldPflanzWarten && r._waldPflanzWarten.size > 0);
                         if (i > 60 && stabil > 80 && !offen) break;
                         if (i % 5 === 0) await pause(10);
                     }
@@ -896,6 +1088,394 @@ const server = statikServer();
                     }
                     aus.stufe = U;
                 }
+                // (O) ORT (K69): aus der Ruhe legt ein Ort abseits seinen Erdbau (eine Platte 12 × 12 m, 96 m vor dem Spieler — wie
+                // der Dorf-Zug das nächste Dorf legt, während der Spieler ins erste geht). Es fällt nur, was er ändern kann: gezählt
+                // die Gedächtnisse FERN von ihm (über `fern` m) vorher und nachher — der Stand des Walds (`_forestDartStand`, an ihm
+                // hängt die Gestalt jedes Orts), die Wald-Zellen (dieselben Objekte im Dart-Gedächtnis), die Chunk-Gedächtnisse
+                // (Basis-Dichte, Dichte, Mesh) und der Stand eines fernen Chunks (`_voxelStand`, der Filter der Worker-Antworten) —,
+                // dazu in den Takten danach die neu geplanten Wald-Zellen (`planForestCell`) und der längste Takt: der Name des Risses.
+                {
+                    await bisRuhe(900);
+                    const pm = st.playerMesh.position;
+                    const ox = Math.round(pm.x + 96);
+                    const oz = Math.round(pm.z);
+                    const FERN = 240;
+                    const C = r.constructor.FOREST.cell;
+                    const span = r._voxelChunkConfig(0).span;
+                    const weit = (k, kante) => {
+                        const [a, b] = k.split(",").map(Number);
+                        return Math.hypot((a + 0.5) * kante - ox, (b + 0.5) * kante - oz) > FERN;
+                    };
+                    const seedInt = r._forestSeedInt();
+                    const O = { ort: [ox, oz], fern: FERN, takte: 60, standVor: r._forestDartStand(seedInt) };
+                    const memo0 = r._forestDartMemo;
+                    const darts0 = memo0 ? [...memo0.entries()].filter(([k]) => weit(k, C)) : [];
+                    const caches = {
+                        basis: st.voxelBaseDensityCache,
+                        dichte: st.voxelDensityCache,
+                        mesh: st.voxelMeshCache,
+                    };
+                    const caches0 = {};
+                    for (const [n, c] of Object.entries(caches))
+                        caches0[n] = c ? [...c.keys()].filter((k) => weit(k, span)) : [];
+                    let standKey = null;
+                    for (const k of st.voxelChunks.keys())
+                        if (weit(k, span)) {
+                            standKey = k;
+                            break;
+                        }
+                    const standOf = (k) => r._voxelStand(...k.split(",").map(Number));
+                    O.stand = { key: standKey, vor: standKey ? standOf(standKey) : null };
+                    const core = globalThis.__phytoCore;
+                    const pfcRoh = core.planForestCell;
+                    let pfc = 0;
+                    core.planForestCell = function () {
+                        pfc++;
+                        return pfcRoh.apply(this, arguments);
+                    };
+                    try {
+                        const oy = r._voxelSurfaceY(ox, oz);
+                        const t0 = performance.now();
+                        O.gelegt = r._erdbauSetzen("gate-stand-takt-ort", [
+                            { art: "platte", cx: ox, cz: oz, phi: 0, ex: 6, ez: 6, y: Number.isFinite(oy) ? oy : 0 },
+                        ]);
+                        O.setzMs = +(performance.now() - t0).toFixed(1);
+                        O.standNach = r._forestDartStand(seedInt);
+                        const memo1 = r._forestDartMemo;
+                        O.darts = {
+                            fern: darts0.length,
+                            gehalten: darts0.filter(([k, d]) => memo1 && memo1.get(k) === d).length,
+                        };
+                        O.chunks = {};
+                        for (const [n, ks] of Object.entries(caches0)) {
+                            const c =
+                                st[
+                                    {
+                                        basis: "voxelBaseDensityCache",
+                                        dichte: "voxelDensityCache",
+                                        mesh: "voxelMeshCache",
+                                    }[n]
+                                ];
+                            O.chunks[n] = { fern: ks.length, gehalten: ks.filter((k) => c && c.has(k)).length };
+                        }
+                        if (standKey) {
+                            O.stand.nach = standOf(standKey);
+                            O.stand.gleich = O.stand.nach === O.stand.vor;
+                        }
+                        let max = 0;
+                        for (let i = 0; i < O.takte; i++) {
+                            const t1 = performance.now();
+                            takt();
+                            max = Math.max(max, performance.now() - t1);
+                            if (i % 10 === 0) await pause(5);
+                        }
+                        O.plan = pfc;
+                        O.maxTaktMs = +max.toFixed(1);
+                        // DIE RÄUMUNG DES ORTS: ein Dorf räumt beim Nähern die Natur auf seinem Grund (`_naturRaeumen` →
+                        // `removeArchitecture`) — gezählt die synchronen Saves der ganzen Welt, die fünf Abbauten tragen
+                        const natur = (st.architectures || [])
+                            .filter((e) => e && e.position && r._istNatur(e))
+                            .sort(
+                                (a, b) =>
+                                    Math.hypot(a.position.x - ox, a.position.z - oz) -
+                                    Math.hypot(b.position.x - ox, b.position.z - oz)
+                            )
+                            .slice(0, 5);
+                        const saveEigen = Object.prototype.hasOwnProperty.call(r, "saveState");
+                        const saveRoh = r.saveState;
+                        let saves = 0;
+                        let saveMs = 0;
+                        r.saveState = function () {
+                            const t2 = performance.now();
+                            saves++;
+                            try {
+                                return saveRoh.apply(this, arguments);
+                            } finally {
+                                saveMs += performance.now() - t2;
+                            }
+                        };
+                        try {
+                            let ab = 0;
+                            for (const e of natur) if (r.removeArchitecture(e)) ab++;
+                            O.raeumung = { abbau: ab, saves, saveMs: +saveMs.toFixed(1) };
+                        } finally {
+                            if (saveEigen) r.saveState = saveRoh;
+                            else delete r.saveState;
+                        }
+                    } finally {
+                        core.planForestCell = pfcRoh;
+                    }
+                    // DAS HAUS OHNE KAMIN (K69): ein Slot des Dorfs, dessen Export „kein Kamin" sagt (`chimney: null`), steht über
+                    // die EINE Slot-Quelle (`_spawnSettlementSlot`) — gezählt, wie oft der Wirt das ganze Haus im Kern baut, um
+                    // die Spitze zu finden (`chimneyTipFromParams` → `massBau`), und wie lange
+                    {
+                        const fc = globalThis.__fachwerkCore;
+                        const recs = (r._foundry && r._foundry.recipes) || {};
+                        const kultur = Object.keys(recs).find((k) => {
+                            const pol = r.constructor.KIND_POLICY[recs[k] && recs[k].kind];
+                            return pol && pol.prefix === "haus_" && st.blueprints["haus_" + k];
+                        });
+                        const kx = ox - 40;
+                        const kz = oz + 40;
+                        const ky = r._voxelSurfaceY(kx, kz);
+                        const tipRoh = fc.chimneyTipFromParams;
+                        let n = 0;
+                        let ms = 0;
+                        fc.chimneyTipFromParams = function () {
+                            const t3 = performance.now();
+                            n++;
+                            try {
+                                return tipRoh.apply(this, arguments);
+                            } finally {
+                                ms += performance.now() - t3;
+                            }
+                        };
+                        let gesetzt = false;
+                        try {
+                            if (kultur && Number.isFinite(ky)) {
+                                const slot = { kultur, x: 0, z: 0, y: ky, phi: 0, seed: 4711, chimney: null };
+                                const e = r._spawnSettlementSlot(slot, { x: kx, z: kz }, r._foundry);
+                                gesetzt = !!e;
+                                if (e) r.removeArchitecture(e);
+                            }
+                        } finally {
+                            fc.chimneyTipFromParams = tipRoh;
+                        }
+                        O.kamin = { kultur: kultur || null, gesetzt, bau: n, ms: +ms.toFixed(1) };
+                    }
+                    // DER BAUM IN FRISCHEM WALD (K69): ein Hof-Baum des Dorfs (`_naturSetzen`, wie die Ausstattung
+                    // `_spawnSettlementErlebnis`) an einem Ort, dessen Wald nie geplant wurde — gezählt die Wald-Zellen, die
+                    // sein Setzen SYNCHRON plant (`planForestCell` im Aufrufer), dann die Takte, bis seine Gestalt steht, und
+                    // die längste Plan-Arbeit eines Takts (die Schlange des Walds, `_tickWaldPlan`)
+                    {
+                        const core = globalThis.__phytoCore;
+                        const roh = core.planForestCell;
+                        let n = 0;
+                        let ms = 0;
+                        core.planForestCell = function () {
+                            const t4 = performance.now();
+                            n++;
+                            try {
+                                return roh.apply(this, arguments);
+                            } finally {
+                                ms += performance.now() - t4;
+                            }
+                        };
+                        const Wd = { gesetzt: false };
+                        try {
+                            const C = r.constructor.FOREST.cell;
+                            for (const [dx, dz] of [
+                                [0, 420],
+                                [420, 0],
+                                [0, -420],
+                                [-420, 0],
+                                [300, 300],
+                                [-300, 300],
+                            ]) {
+                                const wx = ox + dx;
+                                const wz = oz + dz;
+                                const memo = r._forestDartMemo;
+                                if (memo && memo.has(Math.floor(wx / C) + "," + Math.floor(wz / C))) continue;
+                                if (!r._landAt(wx, wz, 0.2)) continue;
+                                const wy = r.getTerrainHeightAt(wx, wz);
+                                if (!Number.isFinite(wy)) continue;
+                                n = 0;
+                                ms = 0;
+                                const e = r._naturSetzen(
+                                    "baum_eiche",
+                                    { x: wx, y: wy, z: wz },
+                                    { seed: 4711, scale: 0.6, rotationY: 0, silent: true }
+                                );
+                                if (!e) continue;
+                                Object.assign(Wd, { gesetzt: true, ort: [wx, wz], synchron: n, ms: +ms.toFixed(1) });
+                                const preset = r._foundryPresetForEntry(e);
+                                let g = r._foundryGestaltFor(e, preset);
+                                let takte = 0;
+                                let maxN = 0;
+                                let maxMs = 0;
+                                n = 0;
+                                while (!Number.isInteger(g) && takte < 600) {
+                                    const n0 = n;
+                                    const m0 = ms;
+                                    takt();
+                                    takte++;
+                                    if (ms - m0 > maxMs) maxMs = ms - m0;
+                                    maxN = Math.max(maxN, n - n0);
+                                    g = r._foundryGestaltFor(e, preset);
+                                    if (takte % 20 === 0) await pause(5);
+                                }
+                                Object.assign(Wd, {
+                                    takte,
+                                    gestalt: Number.isInteger(g) ? g : null,
+                                    imTakt: n,
+                                    maxTaktZellen: maxN,
+                                    maxTaktMs: +maxMs.toFixed(1),
+                                });
+                                r.removeArchitecture(e);
+                                break;
+                            }
+                        } finally {
+                            core.planForestCell = roh;
+                        }
+                        O.wald = Wd;
+                    }
+                    // DAS HAUS IM SATZ (K69): ein Dorf-Haus tritt in den Bau-Satz seiner Stoffe (`_tickBauSatz › _bauSatzBlock ›
+                    // _satzBlock`), dann ein zweites Mal, jede Gruppe markiert wie bei jedem Stufen-Wechsel — gezählt die Bytes,
+                    // die der Block dabei FRISCH anlegt. Bis K69 legte jeder Eintritt seine Ecken neu im Heap an (ein Haus der
+                    // Stufe 0: 142k Ecken, ~10 MB), die volle Sammlung fiel in den Takt (Null-Gang ins Dorf: 137 ms)
+                    {
+                        const recs = (r._foundry && r._foundry.recipes) || {};
+                        const kultur = Object.keys(recs).find((k) => {
+                            const pol = r.constructor.KIND_POLICY[recs[k] && recs[k].kind];
+                            return pol && pol.prefix === "haus_" && st.blueprints["haus_" + k];
+                        });
+                        const hx = ox + 40;
+                        const hz = oz - 40;
+                        const hy = r._voxelSurfaceY(hx, hz);
+                        const SH = { kultur: kultur || null, gesetzt: false };
+                        const e =
+                            kultur && Number.isFinite(hy)
+                                ? r._spawnSettlementSlot(
+                                      { kultur, x: 0, z: 0, y: hy, phi: 0, seed: 4712, chimney: null },
+                                      { x: hx, z: hz },
+                                      r._foundry
+                                  )
+                                : null;
+                        if (e) {
+                            SH.gesetzt = true;
+                            const gruppen = () =>
+                                (e.instSlots || [])
+                                    .map((s) => st.archInstanceGroups && st.archInstanceGroups.get(s.key))
+                                    .filter((g) => g && g.satz && (g.liveCount | 0) > 0);
+                            const drin = () => {
+                                const gs = gruppen();
+                                return (
+                                    gs.length > 0 &&
+                                    gs.every((g) => {
+                                        const s = st.chunkSaetze && st.chunkSaetze.get(g.satz);
+                                        return (
+                                            s &&
+                                            s.bloecke.has(g.key) &&
+                                            !(st.bauSatzSchmutzig && st.bauSatzSchmutzig.has(g.key))
+                                        );
+                                    })
+                                );
+                            };
+                            let takte = 0;
+                            while (!drin() && takte < 600) {
+                                takt();
+                                takte++;
+                                if (takte % 20 === 0) await pause(5);
+                            }
+                            const gs = gruppen();
+                            Object.assign(SH, {
+                                takte,
+                                gruppen: gs.length,
+                                ecken: gs.reduce((a, g) => a + g.geom.attributes.position.count * (g.liveCount | 0), 0),
+                                bloecke: 0,
+                            });
+                            if (drin()) {
+                                const T = { F: globalThis.Float32Array, U: globalThis.Uint32Array };
+                                const roh = r._satzBlock;
+                                let frisch = 0;
+                                const zaehl = (Typ) =>
+                                    new Proxy(Typ, {
+                                        construct(t, a) {
+                                            const x = Reflect.construct(t, a);
+                                            frisch += x.byteLength;
+                                            return x;
+                                        },
+                                    });
+                                r._satzBlock = function () {
+                                    SH.bloecke++;
+                                    globalThis.Float32Array = zaehl(T.F);
+                                    globalThis.Uint32Array = zaehl(T.U);
+                                    try {
+                                        return roh.apply(this, arguments);
+                                    } finally {
+                                        globalThis.Float32Array = T.F;
+                                        globalThis.Uint32Array = T.U;
+                                    }
+                                };
+                                try {
+                                    for (const g of gs) r._bauSatzMarke(g.key, g.satz);
+                                    r._tickBauSatz();
+                                } finally {
+                                    delete r._satzBlock;
+                                    globalThis.Float32Array = T.F;
+                                    globalThis.Uint32Array = T.U;
+                                }
+                                SH.frischKB = Math.round(frisch / 1024);
+                            }
+                            r.removeArchitecture(e);
+                        }
+                        O.satzHaus = SH;
+                    }
+                    // DER ERDBAU UNTER DEM SPIELER (K69-2): ein Ort legt seine Platte, wo der Spieler steht (wie der Dorf-Zug
+                    // das Dorf um ihn legt) — die Chunks seines Umkreises werden neu gebaut. Gezählt jeder Chunk-Bau, der in
+                    // einem Takt SYNCHRON im Haupt-Faden läuft (`_buildVoxelChunkData`, der Bau ohne Worker), mit der Kette
+                    // seiner Rufer und seiner Zeit, und die Takte, bis kein Chunk mehr auf seinen Neubau wartet (der Boden heilt).
+                    {
+                        await bisRuhe(900);
+                        const pm = st.playerMesh.position;
+                        const sx = Math.round(pm.x);
+                        const sz = Math.round(pm.z);
+                        const sy = r._voxelSurfaceY(sx, sz);
+                        const A = { ort: [sx, sz], gelegt: false, dirty: 0, takte: 0, heil: false, sync: [] };
+                        const bauEigen = Object.prototype.hasOwnProperty.call(r, "_buildVoxelChunkData");
+                        const bauRoh = r._buildVoxelChunkData;
+                        let imTakt = false;
+                        const kette = () =>
+                            new Error().stack
+                                .split("\n")
+                                .map((s) => (s.match(/at (?:AnazhRealm\.|Object\.|r\.)?(_[\w$]+)/) || [])[1])
+                                .filter(Boolean)
+                                .slice(1, 5)
+                                .reverse()
+                                .join(" › ");
+                        r._buildVoxelChunkData = function () {
+                            const t4 = performance.now();
+                            try {
+                                return bauRoh.apply(this, arguments);
+                            } finally {
+                                const ms = performance.now() - t4;
+                                if (imTakt) A.sync.push({ ms: +ms.toFixed(1), kette: kette() });
+                            }
+                        };
+                        try {
+                            A.gelegt = r._erdbauSetzen("gate-stand-takt-am-spieler", [
+                                {
+                                    art: "platte",
+                                    cx: sx,
+                                    cz: sz,
+                                    phi: 0,
+                                    ex: 6,
+                                    ez: 6,
+                                    y: Number.isFinite(sy) ? sy : 0,
+                                },
+                            ]);
+                            A.dirty = st.dirtyVoxelChunks ? st.dirtyVoxelChunks.size : 0;
+                            for (; A.takte < 600; A.takte++) {
+                                imTakt = true;
+                                try {
+                                    takt();
+                                } finally {
+                                    imTakt = false;
+                                }
+                                if (!st.dirtyVoxelChunks || st.dirtyVoxelChunks.size === 0) {
+                                    A.heil = true;
+                                    break;
+                                }
+                                if (A.takte % 5 === 0) await pause(10);
+                            }
+                        } finally {
+                            if (bauEigen) r._buildVoxelChunkData = bauRoh;
+                            else delete r._buildVoxelChunkData;
+                        }
+                        O.amSpieler = A;
+                    }
+                    aus.ort = O;
+                }
                 // (T) STROM: erst Ruhe, dann der Sprung an einen fremden Ort — der Spieler-Chunk muss kommen
                 {
                     await bisRuhe(900);
@@ -904,13 +1484,83 @@ const server = statikServer();
                     st.playerMesh.position.set(x, r._voxelSurfaceY(x, z) + 1.8, z);
                     const span = r._voxelChunkConfig(0).span;
                     const key = `${Math.floor(x / span)},${Math.floor(z / span)}`;
+                    // DER WALD AM FREMDEN ORT (K69): jede frische Wald-Zelle (`planForestCell`) plant die Schlange des Walds
+                    // (`_tickWaldPlan`) — gezählt, was ein anderer Aufrufer am Stück plant, mit dem Namen des ersten
+                    const core = globalThis.__phytoCore;
+                    const roh = core.planForestCell;
+                    const jobEigen = Object.prototype.hasOwnProperty.call(r, "_tickWaldPlan");
+                    const jobRoh = r._tickWaldPlan;
+                    const W = { imJob: 0, aussen: 0, ms: 0, taeter: null, maxTakt: 0 };
+                    let tiefe = 0;
+                    let jetztTakt = 0;
+                    r._tickWaldPlan = function () {
+                        tiefe++;
+                        try {
+                            return jobRoh.apply(this, arguments);
+                        } finally {
+                            tiefe--;
+                        }
+                    };
+                    // der Rechner der Schlange ist der Wald-Faden (K60-4): seine Lieferungen (`_waldDartsAn`) plante die
+                    // Schlange — sie zählen wie ihre Zellen im Job
+                    const anEigen = Object.prototype.hasOwnProperty.call(r, "_waldDartsAn");
+                    const anRoh = r._waldDartsAn;
+                    r._waldDartsAn = function (memo, zellen, res) {
+                        if (res && zellen) W.imJob += zellen.length / 2;
+                        return anRoh.apply(this, arguments);
+                    };
+                    core.planForestCell = function () {
+                        const t5 = performance.now();
+                        try {
+                            return roh.apply(this, arguments);
+                        } finally {
+                            if (tiefe > 0) W.imJob++;
+                            else {
+                                W.aussen++;
+                                jetztTakt++;
+                                W.ms += performance.now() - t5;
+                                if (!W.taeter)
+                                    W.taeter = (new Error().stack || "")
+                                        .split("\n")
+                                        .map((s) => (s.match(/at (?:[\w$]+\.)?(_[\w$]+)/) || [])[1])
+                                        .filter((m) => m && m !== "_forestCellDarts")
+                                        .slice(0, 4)
+                                        .join(" › ");
+                            }
+                        }
+                    };
                     let n = 0;
-                    for (; n < 600; n++) {
-                        takt();
-                        if (st.voxelChunks && st.voxelChunks.has(key)) break;
-                        if (n % 5 === 0) await pause(10);
+                    let nach = 0;
+                    try {
+                        for (; n < 600; n++) {
+                            jetztTakt = 0;
+                            takt();
+                            W.maxTakt = Math.max(W.maxTakt, jetztTakt);
+                            if (st.voxelChunks && st.voxelChunks.has(key)) break;
+                            if (n % 5 === 0) await pause(10);
+                        }
+                        // der Chunk steht — sein Wald und der seiner Nachbarn kommt in den Takten danach
+                        for (; nach < 240; nach++) {
+                            jetztTakt = 0;
+                            takt();
+                            W.maxTakt = Math.max(W.maxTakt, jetztTakt);
+                            if (nach % 10 === 0) await pause(5);
+                        }
+                    } finally {
+                        core.planForestCell = roh;
+                        if (jobEigen) r._tickWaldPlan = jobRoh;
+                        else delete r._tickWaldPlan;
+                        if (anEigen) r._waldDartsAn = anRoh;
+                        else delete r._waldDartsAn;
                     }
-                    aus.strom = { x, z, takte: n, spielerChunk: !!(st.voxelChunks && st.voxelChunks.has(key)) };
+                    W.ms = +W.ms.toFixed(1);
+                    aus.strom = {
+                        x,
+                        z,
+                        takte: n,
+                        spielerChunk: !!(st.voxelChunks && st.voxelChunks.has(key)),
+                        wald: W,
+                    };
                 }
                 L.aus();
                 const code = (f) => (typeof f === "function" ? window.__codeOf(f) : "");
@@ -923,6 +1573,25 @@ const server = statikServer();
                 }
                 aus.wache =
                     st && r._standWache ? [...r._standWache.takte].map(([n, x]) => [n, x.ruht, x.arbeit]) : null;
+                // (N) DER NACHSCHUB DES WALDS (K69-2): wartet die Gestalt einer Streu-Zelle auf den Plan des Walds, schiebt
+                // sich ihre Region auf — steht der Plan (die Schlange leer) und steht kein Asset aus, baut sie neu. Bis K69-2
+                // baute sie nur die Lieferung eines Assets neu: 6 von 6 Regionen standen für immer (CI 38736568849).
+                {
+                    const p = st.playerMesh.position;
+                    const schlange = () =>
+                        (r._waldPlanSchlange ? r._waldPlanSchlange.size : 0) +
+                        (r._waldPflanzWarten ? r._waldPflanzWarten.size : 0);
+                    let i = 0;
+                    for (; i < 2000; i++) {
+                        if (schlange() === 0 && foundryOffen() === 0 && r._streuWartet(p) === 0) break;
+                        takt();
+                        if (i % 10 === 0) await pause(5);
+                    }
+                    const warten = [];
+                    r._streuWartet(p, warten);
+                    aus.nachschub = { takte: i, schlange: schlange(), foundry: foundryOffen(), warten };
+                }
+                aus.taktFehler = window.__standTaktFehler || [];
                 return aus;
             },
             MESS,
@@ -937,7 +1606,7 @@ const server = statikServer();
         console.log("❌ LAUF-FEHLER: " + (befund ? befund.fehler : "kein Befund"));
         process.exit(1);
     }
-    befund.pageErrors = pageErrors;
+    befund.pageErrors = pageErrors.concat(befund.taktFehler || []);
     befund.schreiber = STAND.schreiberWand(stammLib.text(root));
     const namen = Object.keys(STAND.TAKTE);
     const zeile = (n, x) =>
@@ -947,7 +1616,10 @@ const server = statikServer();
             ? " · wirkt " + namen.map((k) => `${k} ${x.takte[k].wirkt}`).join(" ")
             : "");
     console.log(
-        `  Ring ${befund.ring} Chunks · ${befund.architekturen} Bauten · die Wache schlief nach ${befund.bisRuhe} Takten`
+        `  Ring ${befund.ring} Chunks · ${befund.architekturen} Bauten · die Wache schlief nach ${befund.bisRuhe} Takten` +
+            (befund.nachschub
+                ? ` · Nachschub: die Schlange des Walds leer nach ${befund.nachschub.takte} Takten, ${befund.nachschub.warten.length} Streu-Regionen warten`
+                : "")
     );
     for (const n of ["ruhe", "bruch", "gehen"]) if (befund[n]) console.log(zeile(n, befund[n]));
     const rundeZeile = (wo, ph) =>
@@ -989,9 +1661,47 @@ const server = statikServer();
         console.log(
             `  Stufe: ${befund.stufe.wechsel} Wechsel ohne Form-Änderung an ${JSON.stringify(befund.stufe.ziel)} (offener Wuchs vor der Ruhe: ${befund.stufe.wuchs} Chunks, Studio ruhte nach ${befund.stufe.studio} Takten, Ankünfte in der Phase ${befund.stufe.ankunft}) — Regung ${JSON.stringify(befund.stufe.regung)} — Einheiten ${JSON.stringify(befund.stufe.takte)} · Rufe ${JSON.stringify(befund.stufe.rufe)}`
         );
+    const O = befund.ort;
+    if (O)
+        console.log(
+            `  Ort: Erdbau bei (${O.ort}) ${O.gelegt ? "gelegt" : "NICHT gelegt"} in ${O.setzMs} ms — Stand des Walds ` +
+                `${O.standVor} → ${O.standNach}, ferne Wald-Zellen (über ${O.fern} m) ${O.darts ? O.darts.gehalten + "/" + O.darts.fern : "?"} ` +
+                `gehalten, Chunk-Gedächtnisse ${Object.entries(O.chunks || {})
+                    .map(([n, c]) => `${n} ${c.gehalten}/${c.fern}`)
+                    .join(
+                        " · "
+                    )}, ferner Chunk ${O.stand ? O.stand.key : "?"} ${O.stand && O.stand.gleich ? "hält seinen Stand" : "SPRINGT"} — ` +
+                `die ${O.takte} Takte danach planten ${O.plan} Wald-Zellen, der längste ${O.maxTaktMs} ms — die Räumung: ` +
+                (O.raeumung
+                    ? `${O.raeumung.abbau} Abbauten, ${O.raeumung.saves} synchrone Saves (Σ ${O.raeumung.saveMs} ms)`
+                    : "?") +
+                (O.kamin
+                    ? ` — das Haus ohne Kamin (${O.kamin.kultur}) ${O.kamin.gesetzt ? "gesetzt" : "NICHT gesetzt"}, ` +
+                      `${O.kamin.bau} Kern-Nachbauten (${O.kamin.ms} ms)`
+                    : "") +
+                (O.wald && O.wald.gesetzt
+                    ? ` — der Baum in frischem Wald bei (${O.wald.ort}): ${O.wald.synchron} Zellen synchron ` +
+                      `(${O.wald.ms} ms), Gestalt ${O.wald.gestalt} nach ${O.wald.takte} Takten, ${O.wald.imTakt} Zellen im ` +
+                      `Takt (der längste ${O.wald.maxTaktMs} ms, ${O.wald.maxTaktZellen} Zellen)`
+                    : "") +
+                (O.satzHaus && O.satzHaus.gesetzt
+                    ? ` — das Haus im Satz (${O.satzHaus.kultur}): ${O.satzHaus.gruppen} Gruppen, ${O.satzHaus.ecken} Ecken ` +
+                      `nach ${O.satzHaus.takte} Takten, Wieder-Eintritt ${O.satzHaus.bloecke} Blöcke, ${O.satzHaus.frischKB} KB frisch`
+                    : "") +
+                (O.amSpieler && O.amSpieler.gelegt
+                    ? ` — der Erdbau unter dem Spieler bei (${O.amSpieler.ort}): ${O.amSpieler.dirty} Chunks zum Neubau, ` +
+                      `${O.amSpieler.heil ? "heil" : "NICHT heil"} nach ${O.amSpieler.takte} Takten, synchron im Takt ` +
+                      `${O.amSpieler.sync.length} Chunks (${O.amSpieler.sync.map((s) => s.ms + " ms").join(", ") || "keiner"})`
+                    : "")
+        );
     if (befund.strom)
         console.log(
-            `  Strom: Sprung an (${befund.strom.x}, ${befund.strom.z}) — Spieler-Chunk ${befund.strom.spielerChunk ? "steht" : "FEHLT"} nach ${befund.strom.takte} Takten`
+            `  Strom: Sprung an (${befund.strom.x}, ${befund.strom.z}) — Spieler-Chunk ${befund.strom.spielerChunk ? "steht" : "FEHLT"} nach ${befund.strom.takte} Takten` +
+                (befund.strom.wald
+                    ? ` — frische Wald-Zellen: ${befund.strom.wald.imJob} in der Schlange des Walds, ` +
+                      `${befund.strom.wald.aussen} am Stück (${befund.strom.wald.ms} ms, bis ${befund.strom.wald.maxTakt} je Takt` +
+                      `${befund.strom.wald.taeter ? ", " + befund.strom.wald.taeter : ""})`
+                    : "")
         );
     if (befund.wache) console.log(`  Wache (Takt, geschlafen, Einheiten): ${JSON.stringify(befund.wache)}`);
     const v = urteil(befund);

@@ -256,7 +256,7 @@ function einschwingOffen(r) {
     if (f && f.pending && f.pending.size) o.foundryImFlug = f.pending.size;
     // eine Lieferung, die angekommen ist und auf die Freigabe des Ingest-Takts wartet (`_foundryIngestTakt`), baut noch
     if (r._foundryIngestQueue && r._foundryIngestQueue.length) o.foundryIngest = r._foundryIngestQueue.length;
-    const kb = (r._impostorBakeQueue || []).length + (r._impostorBakePending ? 1 : 0);
+    const kb = (r._impostorBakeQueue || []).length + (r._impostorBakeFlug ? r._impostorBakeFlug.size : 0);
     if (kb) o.kartenBake = kb;
     if (r._scatterRefillPending) o.streuNachschub = 1;
     if (st.voxelMeshPending && st.voxelMeshPending.size) o.chunkBau = st.voxelMeshPending.size;

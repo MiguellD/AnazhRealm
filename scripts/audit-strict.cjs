@@ -625,7 +625,6 @@ async function auditStateAndMethods() {
                 "_loopErrorCount", // V18.278 — Loop-Error-Boundary-Zähler, `state.X || 0`
                 "_bootPhase3", // V18.308 — deferierte Boot-Arbeit (Kreaturen), `if (!state.X) return` (in _bootDeferCreatures gesetzt, im Loop gedraint, dann null)
                 "_deferredAvatarSoul", // V18.304 — deferierter Avatar-Bau, am Boot gesetzt, im Loop `if (state.X)` gedraint, dann null
-                "_bootAvatarDelay", // V18.304 — Boot-Frame-Zähler vor dem Avatar-Bau, `(state.X || 0) + 1`
                 "_bpEditTick", // V18.358 — Bauplan-Part-Edit-Zähler für die Recipe-Book-Signatur, `(state.X || 0) + 1`
                 "treeImpostors", // Subsystem S2 (V18.387) — Impostor-Toggle, `state.X !== false` (undefined = an), lazy/undefined-sicher
                 "lodUniforms", // Subsystem A (V18.387) — lazy TSL-LOD-Uniforms via `_ensureLodUniforms()`, wie windUniforms (nicht in init())

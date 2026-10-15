@@ -569,7 +569,7 @@ function spiegelPearson(sp) {
 //   silhouette    Rand-Pixel / √Fläche (der Kreis 2√π ≈ 3,5; eine zerfranste Krone, ein Gitter weit darüber)
 //   weiss/wt      Anteil und Zahl der Pixel, die als Weiß lesen statt als Farbe (s. MILCHWEISS unten)
 //   kante/kr      die Geradheit des Umrisses gegen das Außen (s. DIE KANTE DER SILHOUETTE unten) und die Zahl seiner Pixel
-function klassenMasse(F, m, W, H, aussen) {
+function klassenMasse(F, m, W, H, aussen, ohne) {
     const L = new Float32Array(W * H);
     for (let p = 0; p < W * H; p++) L[p] = 0.2126 * F[p * 4] + 0.7152 * F[p * 4 + 1] + 0.0722 * F[p * 4 + 2];
     let n = 0,
@@ -650,23 +650,36 @@ function klassenMasse(F, m, W, H, aussen) {
     // MILCHWEISS (K63-n4, die weiße Tafel): ein Pixel, das als Weiß liest statt als Farbe — ausgebrannt (Y > 240) oder unbunt
     // und hell (CIELAB D65 aus den linearisierten sRGB-Werten: C*ab < 5, zwei eben merkliche Unterschiede ΔE*ab 2,3 vom Grau,
     // Mahy et al. 1994; L* ≥ 50, heller als die 18-%-Karte)
-    let wt = 0;
+    // DIE BUNTHEIT (D8, `oeffnungBunt`): je Pixel der Klasse C*ab im selben CIELAB — ihr Mittel `bunt` (ein Ziel in der Öffnung
+    // trägt Farbe, Milch, Nebel und Grau lesen ≈ 0)
+    // DIE MILCH DES FILMS (D8): trägt der Aufruf das Bild derselben Pose OHNE den Film (`ohne`, die Membran zeigt nur ihr Ziel —
+    // `__membranOhneFilm`), zählt ein Pixel nur, wenn es weiß liest UND sein Ziel nicht: Milch ist, was der Film dem Ziel
+    // hinzufügt; ein blasses Ziel (der helle Grund des Fachwerk-Studios) ist das Ziel, nicht Milch (`wtZiel` zählt es). Dieselbe
+    // Regel liest beide Bilder.
+    let wt = 0,
+        wtZiel = 0,
+        cs = 0;
     const lin = (c) => ((c /= 255) <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
     const fl = (t) => (t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116);
-    for (let p = 0; p < W * H; p++) {
-        if (m[p] !== 1) continue;
-        if (L[p] > 240) {
-            wt++;
-            continue;
-        }
-        const R = lin(F[p * 4]),
-            G2 = lin(F[p * 4 + 1]),
-            B = lin(F[p * 4 + 2]);
+    let cab = 0;
+    const weissIn = (U, p) => {
+        const R = lin(U[p * 4]),
+            G2 = lin(U[p * 4 + 1]),
+            B = lin(U[p * 4 + 2]);
         const fy = fl(0.2126 * R + 0.7152 * G2 + 0.0722 * B);
-        if (116 * fy - 16 < 50) continue;
         const a = 500 * (fl((0.4124 * R + 0.3576 * G2 + 0.1805 * B) / 0.95047) - fy),
             b = 200 * (fy - fl((0.0193 * R + 0.1192 * G2 + 0.9505 * B) / 1.08883));
-        if (Math.hypot(a, b) < 5) wt++;
+        cab = Math.hypot(a, b);
+        if (0.2126 * U[p * 4] + 0.7152 * U[p * 4 + 1] + 0.0722 * U[p * 4 + 2] > 240) return true;
+        return 116 * fy - 16 >= 50 && cab < 5;
+    };
+    for (let p = 0; p < W * H; p++) {
+        if (m[p] !== 1) continue;
+        const w = weissIn(F, p);
+        cs += cab;
+        if (!w) continue;
+        if (ohne && weissIn(ohne, p)) wtZiel++;
+        else wt++;
     }
     // DIE KANTE DER SILHOUETTE (K68-n2, Augen-Befund 14.10. „Nadelbaum-Karten groß und kantig"): je Rand-Pixel der Klasse,
     // das ans Außen grenzt (`aussen`: kein gemessener Teil — Himmel, Boden, Holz; ohne `aussen` jedes Pixel außerhalb der
@@ -829,6 +842,8 @@ function klassenMasse(F, m, W, H, aussen) {
         zt,
         weiss: n ? r4(wt / n) : null,
         wt,
+        wtZiel: ohne ? wtZiel : null,
+        bunt: n ? +(cs / n).toFixed(2) : null,
         pixel: n,
         deckung: r4(n / (W * H)),
         deckungUnten: r4(unten / (W * (H - y3))),
@@ -1059,6 +1074,76 @@ function zweitonNatur(beta) {
     return ZWEITON_NATUR.get(beta);
 }
 
+// DIE SCHÜSSE DER APERTUR (K63-n4; D8: geteilt von milchweiss · oeffnungBunt · zielTreue): je Stufe ein Schuss (`messung.L<n>`, die
+// Tore des Schusses in ihrer Stufe beim Namen, `rechnung.tor`), die Stufen liest die Linse im Kern (`rechnung.stufen`: porta-core
+// PORTAL_RENDER_CONFIG lod.kindStages.gate ab der Stufe `ab`) — eine Stufe ohne Schuss lässt das Maß offen (ROT), ein Schuss, der
+// seine Tore in einer anderen Stufe zeigt, ist ein Bruch. Rückgabe { schuesse: [{ s, m, ap: [[name, klasse]…] }], anteil,
+// bloecke, offen } oder { fehler }; der Bildanteil ist der Schuss mit der größten Apertur.
+function aperturSchuesse(ma, q) {
+    const me = ma.messung || {},
+        rc = ma.rechnung || {};
+    if (!(rc.apertur && rc.tor && rc.stufen)) return { fehler: `${ma.name} ohne rechnung { apertur, tor, stufen }` };
+    const apRe = new RegExp(rc.apertur),
+        tor = new RegExp(rc.tor);
+    const sv = rc.stufen;
+    const K0 = q && q.kern ? q.kern(sv.datei, sv.symbol) : undefined;
+    const pfad = (p) => {
+        let v = K0;
+        for (const f of String(p || "").split(".").filter(Boolean)) v = v == null ? v : v[f];
+        return v;
+    };
+    const S = pfad(sv.feld);
+    if (!Array.isArray(S) || !S.length)
+        return { fehler: `die Stufen ${sv.datei} ${sv.symbol}.${sv.feld} sind dort nicht definiert` };
+    // DIE NUR-WURF-STUFE (Studio-Vertrag B2c `lod.budget[kind][s].nurWurf`, der Wirt `_foundryDeclaredStage`): sie wird nie als
+    // Mesh gezeigt — ihr Bild ist die Fernform jenseits der Mesh-Zone (der Spieler jenseits des Cull-Radius, die Membran wach).
+    // Ihr Schuss zeigt darum KEIN Tor in einer Mesh-Stufe, aber die Apertur; das Budget liest die Linse im selben Kern.
+    const B = sv.budget ? pfad(sv.budget) : null;
+    if (sv.budget && (!B || typeof B !== "object"))
+        return { fehler: `das Budget ${sv.datei} ${sv.symbol}.${sv.budget} ist dort nicht definiert` };
+    const nurWurf = (s) => !!(B && B[s] && B[s].nurWurf === true);
+    const soll = S.filter((s) => s >= (sv.ab || 0));
+    const namen = Object.keys(me).filter((k) => /^L\d$/.test(k));
+    if (!namen.length) return { fehler: `${ma.name} ohne Schuss je Stufe (messung.L<n>)` };
+    let anteil = 0;
+    const schuesse = [];
+    for (const s of namen.sort()) {
+        const m = me[s];
+        const f = bildMessungFehler(m);
+        if (f) return { fehler: `${s}: ${f}` };
+        const je = {};
+        for (const [n, k] of Object.entries(m.klassen)) {
+            const t = tor.exec(n);
+            if (t && k.pixel >= 50) je[t[t.length - 1]] = (je[t[t.length - 1]] || 0) + k.pixel;
+        }
+        const st = Object.entries(je).sort((a, b) => b[1] - a[1])[0];
+        if (nurWurf(+s.slice(1))) {
+            if (st)
+                return {
+                    fehler: `${s}: der Schuss zeigt die Tore in Stufe L${st[0]} — die Stufe ${s} (nurWurf) zeigt nur die Fernform`,
+                };
+        } else {
+            if (!st) return { fehler: `${s}: der Schuss zeigt kein Tor mit Stufe im Namen (${rc.tor})` };
+            if (`L${st[0]}` !== s) return { fehler: `${s}: der Schuss zeigt die Tore in Stufe L${st[0]}` };
+        }
+        const ap = Object.entries(m.klassen).filter(([n]) => apRe.test(n));
+        const pa = ap.reduce((a, [, k]) => a + k.pixel, 0);
+        if (pa < 50)
+            return { fehler: `${s}: der Schuss zeigt keine Apertur (${pa} Pixel — die Membran schläft jenseits ihrer Sicht?)` };
+        anteil = Math.max(anteil, pa / flaeche(m));
+        schuesse.push({ s, m, ap });
+    }
+    const fehlt = soll.filter((s) => !namen.includes(`L${s}`));
+    return {
+        schuesse,
+        anteil,
+        bloecke: schuesse.map((x) => x.m),
+        offen: fehlt.length
+            ? `Stufe ${fehlt.map((s) => "L" + s).join(", ")} ohne Schuss (${sv.datei} ${sv.feld} = [${S.join(", ")}])`
+            : null,
+    };
+}
+
 // DIE MASSE der Tafel (rein): je Maß-Name die Rechnung, die das Ist aus seiner Rohdatei LIEST — der Messung, die das Werkzeug in
 // die Tafel schreibt (`mass.messung`, `werkbank bild --klasse … --ist <id>` bzw. `werkbank licht --ist <id>`), oder der Zeile
 // einer anderen Tafel (`mass.rohdatei`: die Albedo-Tafel). Ein Ist von Hand gibt es nicht. Rückgabe { ist, taeter, anteil,
@@ -1070,6 +1155,8 @@ const SOLL_MASSE = Object.freeze([
     "kante",
     "detail",
     "milchweiss",
+    "oeffnungBunt",
+    "zielTreue",
     "lichtVerhaeltnis",
     "albedoVerhaeltnis",
     "albedo",
@@ -1085,6 +1172,8 @@ const MASS_AUFLOESUNG = Object.freeze({
     kante: 0.01,
     detail: 0.005,
     milchweiss: 0.01,
+    oeffnungBunt: 0.5,
+    zielTreue: 0.02,
     lichtVerhaeltnis: 0.05,
     albedoVerhaeltnis: 0.01,
     albedo: 0.005,
@@ -1288,76 +1377,95 @@ const MASS_RECHNER = {
     // Schuss, der seine Tore in einer anderen Stufe zeigt, ist ein Bruch. Der Täter ist Schuss × Klasse mit den meisten weißen
     // Pixeln, der Bildanteil der Schuss mit der größten Apertur.
     milchweiss(ma, q) {
-        const me = ma.messung || {},
-            rc = ma.rechnung || {};
-        if (!(rc.apertur && rc.tor && rc.stufen)) return { fehler: "milchweiss ohne rechnung { apertur, tor, stufen }" };
-        const ap = new RegExp(rc.apertur),
-            tor = new RegExp(rc.tor);
-        const sv = rc.stufen;
-        const K0 = q && q.kern ? q.kern(sv.datei, sv.symbol) : undefined;
-        const pfad = (p) => {
-            let v = K0;
-            for (const f of String(p || "").split(".").filter(Boolean)) v = v == null ? v : v[f];
-            return v;
-        };
-        const S = pfad(sv.feld);
-        if (!Array.isArray(S) || !S.length)
-            return { fehler: `die Stufen ${sv.datei} ${sv.symbol}.${sv.feld} sind dort nicht definiert` };
-        // DIE NUR-WURF-STUFE (Studio-Vertrag B2c `lod.budget[kind][s].nurWurf`, der Wirt `_foundryDeclaredStage`): sie wird nie als
-        // Mesh gezeigt — ihr Bild ist die Fernform jenseits der Mesh-Zone (der Spieler jenseits des Cull-Radius, die Membran wach).
-        // Ihr Schuss zeigt darum KEIN Tor in einer Mesh-Stufe, aber die Apertur; das Budget liest die Linse im selben Kern.
-        const B = sv.budget ? pfad(sv.budget) : null;
-        if (sv.budget && (!B || typeof B !== "object"))
-            return { fehler: `das Budget ${sv.datei} ${sv.symbol}.${sv.budget} ist dort nicht definiert` };
-        const nurWurf = (s) => !!(B && B[s] && B[s].nurWurf === true);
-        const soll = S.filter((s) => s >= (sv.ab || 0));
-        const schuesse = Object.keys(me).filter((k) => /^L\d$/.test(k));
-        if (!schuesse.length) return { fehler: "milchweiss ohne Schuss je Stufe (messung.L<n>)" };
+        const A = aperturSchuesse(ma, q);
+        if (A.fehler) return A;
         let w = 0,
             px = 0,
-            arg = null,
-            anteil = 0;
-        const teile = [],
-            bloecke = [];
-        for (const s of schuesse.sort()) {
-            const m = me[s];
-            const f = bildMessungFehler(m);
-            if (f) return { fehler: `${s}: ${f}` };
-            const je = {};
-            for (const [n, k] of Object.entries(m.klassen)) {
-                const t = tor.exec(n);
-                if (t && k.pixel >= 50) je[t[t.length - 1]] = (je[t[t.length - 1]] || 0) + k.pixel;
-            }
-            const st = Object.entries(je).sort((a, b) => b[1] - a[1])[0];
-            if (nurWurf(+s.slice(1))) {
-                if (st) return { fehler: `${s}: der Schuss zeigt die Tore in Stufe L${st[0]} — die Stufe ${s} (nurWurf) zeigt nur die Fernform` };
-            } else {
-                if (!st) return { fehler: `${s}: der Schuss zeigt kein Tor mit Stufe im Namen (${rc.tor})` };
-                if (`L${st[0]}` !== s) return { fehler: `${s}: der Schuss zeigt die Tore in Stufe L${st[0]}` };
-            }
-            let pa = 0;
-            for (const [n, k] of Object.entries(m.klassen)) {
-                if (!ap.test(n)) continue;
+            arg = null;
+        const teile = [];
+        for (const { s, ap } of A.schuesse)
+            for (const [n, k] of ap) {
                 if (k.wt == null) return { fehler: `${s}: die Messung ohne Milchweiß (${n}) — vor K63-n4 gemessen` };
+                if (k.wtZiel == null)
+                    return {
+                        fehler: `${s}: die Messung ohne das Bild ohne Film (${n}) — vor D8 gemessen, ein blasses Ziel läse als Milch`,
+                    };
                 w += k.wt;
                 px += k.pixel;
-                pa += k.pixel;
-                teile.push(`${s} ${n} ${(k.wt / Math.max(1, k.pixel)).toFixed(2)} (${k.pixel} px)`);
+                teile.push(
+                    `${s} ${n} ${(k.wt / Math.max(1, k.pixel)).toFixed(2)} (${k.pixel} px, Ziel weiß ${(k.wtZiel / Math.max(1, k.pixel)).toFixed(2)})`
+                );
                 if (!arg || k.wt > arg[2]) arg = [s, n, k.wt, k.pixel];
             }
-            if (pa < 50) return { fehler: `${s}: der Schuss zeigt keine Apertur (${pa} Pixel — die Membran schläft jenseits ihrer Sicht?)` };
-            anteil = Math.max(anteil, pa / flaeche(m));
-            bloecke.push(m);
-        }
-        if (!px) return { fehler: "kein Apertur-Pixel in den Schüssen (Membran und Nebel schlafen — der Spieler am Ring?)" };
-        const fehlt = soll.filter((s) => !schuesse.includes(`L${s}`));
         return {
             ist: +(w / px).toFixed(4),
             taeter: `${arg[1]} in ${arg[0]} (${arg[2]} von ${arg[3]} Pixeln weiß)`,
-            anteil,
+            anteil: A.anteil,
             teile: teile.join(" · "),
-            bloecke,
-            offen: fehlt.length ? `Stufe ${fehlt.map((s) => "L" + s).join(", ")} ohne Schuss (${sv.datei} ${sv.feld} = [${S.join(", ")}])` : null,
+            bloecke: A.bloecke,
+            offen: A.offen,
+        };
+    },
+    // DIE BUNTE ÖFFNUNG (D8, Soll-Tafel tor-bunt; Nordstern §4.8 „die Membran zeigt das Ziel wie ein Seifenfilm"): das Mittel der
+    // Buntheit C*ab (`klassenMasse` bunt) über alle Apertur-Pixel der Stufen-Schüsse — dieselben Schüsse wie milchweiss
+    // (`aperturSchuesse`). Eine Öffnung, die ihr Ziel zeigt, trägt seine Farbe; Milch, Nebel und unbuntes Grau lesen ≈ 0. Der
+    // Täter ist Schuss × Klasse mit der kleinsten Buntheit.
+    oeffnungBunt(ma, q) {
+        const A = aperturSchuesse(ma, q);
+        if (A.fehler) return A;
+        let cs = 0,
+            px = 0,
+            arg = null;
+        const teile = [];
+        for (const { s, ap } of A.schuesse)
+            for (const [n, k] of ap) {
+                if (k.bunt == null) return { fehler: `${s}: die Messung ohne Buntheit (${n}) — vor D8 gemessen` };
+                cs += k.bunt * k.pixel;
+                px += k.pixel;
+                teile.push(`${s} ${n} C*ab ${k.bunt} (${k.pixel} px)`);
+                if (!arg || k.bunt < arg[2]) arg = [s, n, k.bunt, k.pixel];
+            }
+        return {
+            ist: +(cs / px).toFixed(2),
+            taeter: `${arg[1]} in ${arg[0]} (C*ab ${arg[2]} über ${arg[3]} Pixel)`,
+            anteil: A.anteil,
+            teile: teile.join(" · "),
+            bloecke: A.bloecke,
+            offen: A.offen,
+        };
+    },
+    // DIE TREUE ZUM ZIEL (D8, Soll-Tafel tor-ziel): je Apertur-Klasse die Rang-Korrelation (Spearman) zwischen dem Bild der Öffnung
+    // und dem Ziel-Panorama, das der Parallaxen-Strahl desselben Pixels trifft (`werkbank bild`: `ziel` { r, pixel, grund } je
+    // Klasse) — rang-treu, damit Belichtung, ACES und sRGB (monoton) das Maß nicht tragen. Hält die Welt kein Ziel-Panorama (die
+    // Membran liest keinen Studio-Export), liest die Klasse r 0 und ist der Täter beim Namen; ein Schuss ohne `ziel` stammt von
+    // vor D8.
+    zielTreue(ma, q) {
+        const zahl = (x) => typeof x === "number" && Number.isFinite(x);
+        const A = aperturSchuesse(ma, q);
+        if (A.fehler) return A;
+        let rs = 0,
+            px = 0,
+            arg = null;
+        const teile = [];
+        for (const { s, ap } of A.schuesse)
+            for (const [n, k] of ap) {
+                const z = k.ziel;
+                if (z === undefined) return { fehler: `${s}: die Messung ohne Ziel (${n}) — vor D8 gemessen` };
+                if (!z || typeof z !== "object") return { fehler: `${s}: das Ziel von ${n} ist keine Messung` };
+                const r = zahl(z.r) ? z.r : 0;
+                const p = zahl(z.pixel) && z.pixel > 0 ? z.pixel : k.pixel;
+                rs += r * p;
+                px += p;
+                teile.push(`${s} ${n} r ${zahl(z.r) ? z.r : "—"}${z.grund ? " (" + z.grund + ")" : ""} (${p} px)`);
+                if (!arg || r < arg[2]) arg = [s, n, r, p, z.grund || null];
+            }
+        return {
+            ist: +(rs / px).toFixed(3),
+            taeter: `${arg[1]} in ${arg[0]} (r ${arg[2]} über ${arg[3]} Pixel${arg[4] ? " — " + arg[4] : ""})`,
+            anteil: A.anteil,
+            teile: teile.join(" · "),
+            bloecke: A.bloecke,
+            offen: A.offen,
         };
     },
     // DAS GESICHT IM BILD (K63-n2, `werkbank bild --gesicht`): die Züge des Kopfs, wie die Ausgabe sie zeigt (`gesichtMasse`:
@@ -2062,23 +2170,30 @@ function sollTafelSelbsttest(tafel, q) {
     });
     // MILCHWEISS: ein unbunt-heller Fleck liest 1 (auch ohne Ausbrand), ein bunter 0, Mittelgrau unter der 18-%-Karte 0; die
     // Stufen des Kerns: eine Stufe ohne Schuss lässt das Maß offen, ein Schuss mit den Toren in fremder Stufe ist ein Bruch
-    const fleck = (ton) => {
-        const F = new Uint8Array(W * H * 4);
-        for (let p = 0; p < W * H; p++) F.set([ton[0], ton[1], ton[2], 255], p * 4);
-        return klassenMasse(F, new Uint8Array(W * H).fill(1), W, H);
+    // `zielTon`: das Bild ohne Film (D8) — die Membran zeigt nur ihr Ziel; ein weißer Fleck über einem weißen Ziel ist keine Milch
+    const fleck = (ton, zielTon) => {
+        const bild = (t) => {
+            const F = new Uint8Array(W * H * 4);
+            for (let p = 0; p < W * H; p++) F.set([t[0], t[1], t[2], 255], p * 4);
+            return F;
+        };
+        return klassenMasse(bild(ton), new Uint8Array(W * H).fill(1), W, H, null, zielTon ? bild(zielTon) : null);
     };
     if (!(fleck([200, 200, 202]).weiss === 1 && fleck([99, 99, 99]).weiss === 0 && fleck([60, 140, 200]).weiss === 0))
         v.push(
             `Maß milchweiss: Weiß ${fleck([200, 200, 202]).weiss} statt 1, Grau 99 ${fleck([99, 99, 99]).weiss} und Blau ${fleck([60, 140, 200]).weiss} statt 0`
         );
-    const apMe = (stufe, ton) =>
+    // das Ziel der Apertur-Schüsse ist bunt (Himmelblau), solange der Fall kein anderes nennt
+    const BLAU = [60, 140, 200];
+    const apMe = (stufe, ton, zielTon = BLAU) =>
         Object.assign(stufeMe([]), {
-            klassen: { [`f:tor:L${stufe}`]: { pixel: 400, luma: 100 }, "portal-nebel": fleck(ton) },
+            klassen: { [`f:tor:L${stufe}`]: { pixel: 400, luma: 100 }, "portal-membran": fleck(ton, zielTon) },
         });
     // die Stufe 3 ist (wie im Kern der Tore) eine NUR-WURF-Stufe: ihr Schuss zeigt die Fernform — die Apertur ohne Tor-Mesh
-    const fernMe = (ton) => Object.assign(stufeMe([]), { klassen: { "portal-nebel": fleck(ton) } });
+    const fernMe = (ton, zielTon = BLAU) =>
+        Object.assign(stufeMe([]), { klassen: { "portal-membran": fleck(ton, zielTon) } });
     const rcW = {
-        apertur: "^portal-(membran|nebel)$",
+        apertur: "^portal-membran$",
         tor: "^(?:f|fimp):tor:L(\\d)$",
         stufen: { datei: "x.js", symbol: "CFG", feld: "lod.stufen", budget: "lod.budget", ab: 1 },
     };
@@ -2088,7 +2203,7 @@ function sollTafelSelbsttest(tafel, q) {
     };
     const mw = (messung) => MASS_RECHNER.milchweiss({ messung, rechnung: rcW }, qW);
     const mwVoll = mw({ L1: apMe(1, [235, 235, 236]), L3: fernMe([200, 200, 200]) });
-    if (!(mwVoll.ist === 1 && !mwVoll.offen && /portal-nebel/.test(mwVoll.taeter || "")))
+    if (!(mwVoll.ist === 1 && !mwVoll.offen && /portal-membran/.test(mwVoll.taeter || "")))
         v.push(`Maß milchweiss: zwei weiße Stufen lesen ${mwVoll.ist}${mwVoll.fehler ? " — " + mwVoll.fehler : ""}`);
     if (mw({ L1: apMe(1, [120, 60, 150]), L3: fernMe([60, 140, 200]) }).ist !== 0)
         v.push("Maß milchweiss: bunte Membranen lesen nicht 0");
@@ -2104,6 +2219,40 @@ function sollTafelSelbsttest(tafel, q) {
     const mwFremd = mw({ L3: apMe(1, [235, 235, 236]) });
     if (!(mwFremd.fehler && /in Stufe L1/.test(mwFremd.fehler)))
         v.push("Maß milchweiss: ein Schuss L3 mit Toren in L1 nicht beim Namen");
+    // DIE MILCH DES FILMS (D8): eine weiße Öffnung über einem weißen Ziel ist das Ziel, keine Milch; über einem bunten Ziel Milch;
+    // ein Schuss ohne das Bild ohne Film ist vor D8 gemessen (ein blasses Ziel läse als Milch)
+    const mwBlass = mw({ L1: apMe(1, [235, 235, 236], [236, 236, 236]), L3: fernMe([200, 200, 200], [201, 201, 201]) });
+    if (mwBlass.ist !== 0)
+        v.push(`Maß milchweiss: ein weißes Ziel liest als Milch (${mwBlass.ist}${mwBlass.fehler ? " — " + mwBlass.fehler : ""})`);
+    const mwOhne = mw({ L1: apMe(1, [235, 235, 236], null), L3: fernMe([200, 200, 200], null) });
+    if (!(mwOhne.fehler && /ohne Film/.test(mwOhne.fehler)))
+        v.push("Maß milchweiss: ein Schuss ohne das Bild ohne Film nicht beim Namen");
+    // OEFFNUNG-BUNT (D8): die milchige Öffnung liest unter 5, die bunte (Rotviolett) über 20, der Täter ist die unbunteste Klasse
+    if (!(fleck([200, 200, 202]).bunt < 5 && fleck([120, 60, 150]).bunt > 20))
+        v.push(`Maß oeffnungBunt: Weiß C*ab ${fleck([200, 200, 202]).bunt}, Violett ${fleck([120, 60, 150]).bunt}`);
+    const ob = (messung) => MASS_RECHNER.oeffnungBunt({ name: "oeffnungBunt", messung, rechnung: rcW }, qW);
+    const obMilch = ob({ L1: apMe(1, [235, 235, 236]), L3: fernMe([200, 200, 200]) });
+    const obBunt = ob({ L1: apMe(1, [120, 60, 150]), L3: fernMe([60, 140, 200]) });
+    if (!(obMilch.ist < 5 && obBunt.ist > 20 && /portal-membran/.test(obMilch.taeter || "")))
+        v.push(`Maß oeffnungBunt: Milch ${obMilch.ist}${obMilch.fehler ? " — " + obMilch.fehler : ""}, bunt ${obBunt.ist}`);
+    // ZIEL-TREUE (D8): r je Klasse gewichtet mit ihren Pixeln; ohne Ziel-Panorama r 0 und der Grund beim Namen; ohne `ziel` vor D8
+    const zt = (messung) => MASS_RECHNER.zielTreue({ name: "zielTreue", messung, rechnung: rcW }, qW);
+    const mitZiel = (me, ziel) => {
+        me.klassen["portal-membran"] = Object.assign({}, me.klassen["portal-membran"], { ziel });
+        return me;
+    };
+    const ztTreu = zt({
+        L1: mitZiel(apMe(1, [120, 60, 150]), { r: 0.8, pixel: 300 }),
+        L3: mitZiel(fernMe([60, 140, 200]), { r: 0.6, pixel: 100 }),
+    });
+    const ztLeer = zt({
+        L1: mitZiel(apMe(1, [120, 60, 150]), { r: null, pixel: 400, grund: "kein Ziel-Panorama" }),
+        L3: mitZiel(fernMe([60, 140, 200]), { r: 0.9, pixel: 400 }),
+    });
+    const ztAlt = zt({ L1: apMe(1, [120, 60, 150]), L3: fernMe([60, 140, 200]) });
+    if (!(ztTreu.ist === 0.75 && ztLeer.ist === 0.45 && /kein Ziel-Panorama/.test(ztLeer.taeter || "")))
+        v.push(`Maß zielTreue: treu ${ztTreu.ist} statt 0,75, leer ${ztLeer.ist} statt 0,45 (${ztLeer.taeter})`);
+    if (!(ztAlt.fehler && /vor D8/.test(ztAlt.fehler))) v.push("Maß zielTreue: ein Schuss ohne Ziel nicht beim Namen");
     const ge = MASS_RECHNER.gesicht(
         { messung: Object.assign(stufeMe([["spieler:kopf/haut", 100]]), { gesicht: { augeFrei: 0.45, lippeA: 6 } }) },
         q,
@@ -2283,6 +2432,7 @@ function sollTafelSelbsttest(tafel, q) {
             for (const z of Object.values(k5.mass.messung[s].klassen)) if (z.wt != null) z.wt = 0;
         }
         delete k5.wirkung.mangel;
+        delete k5.wirkung.geheilt;
         const z5 = sollTafelUrteil(t5, q).zeilen.find((x) => x.id === k5.id);
         if (!z5 || z5.urteil !== "ROT" || !/ohne Schuss/.test(z5.grund || ""))
             v.push(`${k5.id}: eine Stufe ohne Schuss ist nicht ROT beim Namen (${z5 && z5.urteil} ${z5 && z5.grund})`);

@@ -122,6 +122,20 @@ class AnazhRealm_Z20d {
         const c1x = Math.floor((ox + span) / CELL);
         const c0z = Math.floor(oz / CELL);
         const c1z = Math.floor((oz + span) / CELL);
+        // DER WALD PLANT IM TAKT (K69): der Gang liest die Zellen des Chunks samt ±2 (`_waldPflanzKasten`); fehlt eine, bestellt
+        // er sie in der Schlange des Walds und wartet (`_waldPflanzWarten`) — sie pflanzt den Chunk, sobald sein Plan steht
+        // (`_tickWaldPlan`). Bis K69 plante der Gang frische Zellen am Stück im Chunk-Bau (gehend ins Dorf 41 Zellen in EINEM
+        // Takt, Null-Renderer). Vor der Wahrheit des Gesetzes (vorläufige Darts) und im synchronen Test-/Worldgen-Pfad
+        // (`_vegSpawnImmediate`) plant er selbst.
+        const ck = cx + "," + cz;
+        if (this._forestGesetzWahr() && !this._vegSpawnImmediate) {
+            this._forestDartStand(seedInt);
+            if (!this._waldPlanKasten(...this._waldPflanzKasten(cx, cz))) {
+                (this._waldPflanzWarten || (this._waldPflanzWarten = new Set())).add(ck);
+                return 0;
+            }
+        }
+        if (this._waldPflanzWarten) this._waldPflanzWarten.delete(ck);
         // Born-Dart-Memo (lokal je Aufruf → KEIN chunk-übergreifender mutabler Zustand →
         // Reihenfolge-Unabhängigkeit). `_forestCellDarts` ist rein → jede Zelle einmal.
         const memo = new Map();
@@ -1004,16 +1018,22 @@ class AnazhRealm_Z20d {
     // (Mess-Wiese gehend, Null-Renderer, 15 s: 14 Fälle, 10 772 `_forestStehtFrei`, 288 311 Sichthöhen). Ohne Kasten fällt alles.
     _grundrissFaellt(x0, z0, x1, z1) {
         this._grundrissGitter = null;
-        const M = this._ortSame;
-        if (!M) return;
+        if (!this._ortSame) return;
         if (![x0, z0, x1, z1].every(Number.isFinite)) {
             this._ortSame = null;
             return;
         }
-        const B = AnazhRealm.ORT_SAME_EIMER;
         const R = AnazhRealm.ORT_SAME_REICH;
-        for (let bx = Math.floor((x0 - R) / B); bx <= Math.floor((x1 + R) / B); bx++)
-            for (let bz = Math.floor((z0 - R) / B); bz <= Math.floor((z1 + R) / B); bz++) {
+        this._ortSameFaellt(x0 - R, z0 - R, x1 + R, z1 + R);
+    }
+    // Die Gestalt des Orts fällt in den Eimern, die der Kasten x0…x1 · z0…z1 (m) berührt — der EINE Räumer ihres Gedächtnisses
+    // für jeden, der ihre Eingaben am Ort ändert: den Grundriss (`_grundrissFaellt`) und den Wald (`_forestDartsFallen`).
+    _ortSameFaellt(x0, z0, x1, z1) {
+        const M = this._ortSame;
+        if (!M) return;
+        const B = AnazhRealm.ORT_SAME_EIMER;
+        for (let bx = Math.floor(x0 / B); bx <= Math.floor(x1 / B); bx++)
+            for (let bz = Math.floor(z0 / B); bz <= Math.floor(z1 / B); bz++) {
                 const ek = bx + "," + bz;
                 const eimer = M.get(ek);
                 if (!eimer) continue;
@@ -1357,7 +1377,7 @@ class AnazhRealm_Z20d {
         const queue = this.state.pendingVegSpawns;
         if (!queue || queue.length === 0) return 0;
         let spawned = 0;
-        const frist = this._ladeTakt() ? performance.now() + AnazhRealm.LADE_TAKT_MS : -Infinity;
+        const frist = this._ladeFrist();
         for (let i = 0; (i < maxPerFrame || performance.now() < frist) && queue.length > 0; i++) {
             const task = queue.shift();
             if (!task) continue;
