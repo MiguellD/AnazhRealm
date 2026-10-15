@@ -1,14 +1,19 @@
 // ci-zeiten.cjs — DIE ZEITEN DER CI (K14, CI in zwei Stufen, 11.10.): je Schritt von check.yml der Median seiner Laufzeit
 // über die letzten 5 grünen Läufe, die ihn tragen, aus der GitHub-API → spec/ci/ci-zeiten.json. Die Datei liest die Waage
-// von gate:ci-deckung (jede Puls-Gruppe ≤ 2 min, jede Voll-Gruppe ≤ 11 min, Median samt Vorbereitung); die CI selbst
-// fragt die API nie. Ein Schritt wird über Umbenennungen hinweg erkannt: sein Name ODER sein run-Text (aus check.yml am
-// Kopf des jeweiligen Laufs). Ein Schritt ohne Lauf behält einen Eintrag mit `geschaetzt` (lokal gemessen, mit Quelle).
+// von gate:ci-deckung (jede Puls-Gruppe ≤ 2 min, jede Voll-Gruppe ≤ 7 min, Median samt Vorbereitung); die CI selbst
+// fragt die API nie. Ein Schritt misst nur, wo er DENSELBEN Befehl fuhr: sein run-Text an diesem Lauf (aus check.yml am
+// Kopf des jeweiligen Laufs) gleicht dem jetzigen — eine Umbenennung misst weiter, ein Umbau (anderer Befehl unter altem
+// Namen) misst erst ab seinem eigenen Lauf, auf jedem Zweig (K61: die Lauf-Id-Schwelle `seit` ließ main und integ-probe
+// mit dem alten haus-welt unter dem neuen Namen mitzählen, Median 421 s statt 293 s). Ein Schritt ohne Lauf behält einen
+// Eintrag mit `geschaetzt` (lokal gemessen, mit Quelle).
 //
 //   node scripts/ci-zeiten.cjs [--zuerst <lauf-id,…>] [--verteilen]
 //     --zuerst    diese Läufe zuerst (die eigenen Messläufe nach einem Umbau), dann die neuesten grünen
-//     --verteilen schlägt die Voll-Gruppen vor: die Schritte nach Median absteigend, je in die leichteste Gruppe
-//                 (Bin-Packing, größte zuerst), so viele Gruppen, dass jede ≤ 7,5 min Median trägt — Rand 1,47-fach zum
-//                 11-min-Deckel der Waage (dieselbe Gruppe lief auf verschiedenen Läufern bis 2-fach lang)
+//     --verteilen schlägt die Voll-Gruppen vor, JE KLASSE getrennt (K61: cpu · gpu, scripts/lib/ci-klasse.cjs): so viele
+//                 Gruppen, wie Läufer-Plätze neben dem Puls frei sind (gate:ci-deckung (T) PLÄTZE — ein Job über den
+//                 Plätzen wartet auf einen freien und trägt die Wanduhr doppelt), der volle Playtest in seiner eigenen,
+//                 der Rest je Klasse nach Median absteigend in die leichteste Gruppe (Bin-Packing, größte zuerst), die
+//                 Aufteilung cpu:gpu mit der kleinsten schwersten Gruppe
 // Der Schlüssel: GITHUB_TOKEN oder die git-Anmeldung (git credential fill).
 "use strict";
 const fs = require("fs");
@@ -25,8 +30,8 @@ const JE_SCHRITT = 5;
 // höchstens so viele Messungen (ein neuer Schritt, den erst wenige Läufe tragen, liest sonst die ganze Liste)
 const HOECHSTENS = 40;
 const VORBEREITUNG =
-    /^(Set up job|Run actions\/checkout@|Run actions\/setup-node@|System-Libs|Dependencies installieren|Post Run |Complete job)/;
-const ZIEL_VOLL_S = 7.5 * 60;
+    /^(Set up job|Run actions\/checkout@|Run actions\/setup-node@|Run actions\/cache@|Cache-Schlüssel|System-Libs|Dependencies installieren|Post Run |Complete job)/;
+const { klasseDesLaufs, LAEUFER_PLAETZE } = require("./lib/ci-klasse.cjs");
 
 const token =
     process.env.GITHUB_TOKEN ||
@@ -82,6 +87,7 @@ function schritteAus(doc) {
     for (const r of gruen) if (!zuerst.includes(r.id)) laeufe.push({ r, a: r.run_attempt, lauf: String(r.id) });
     // je Schritt die ersten JE_SCHRITT Messungen, die ihn tragen
     const proben = new Map([...soll.keys()].map((n) => [n, []]));
+    const altDatei = fs.existsSync(path.join(root, AUS)) ? JSON.parse(fs.readFileSync(path.join(root, AUS), "utf8")) : {};
     const vorb = [];
     const ymlAm = new Map();
     let gelesen = 0;
@@ -95,10 +101,11 @@ function schritteAus(doc) {
         const damals = ymlAm.get(r.head_sha);
         const jobs = (await api(`/actions/runs/${r.id}/attempts/${a}/jobs?per_page=100`)).jobs;
         const rot = jobs.filter((j) => !["success", "skipped"].includes(j.conclusion));
-        if (rot.length)
+        // ein genannter Messlauf (--zuerst) misst nur seine grünen Jobs; ein roter Job misst nie
+        if (rot.length && !zuerst.includes(r.id))
             throw new Error(`Lauf ${messung} trägt ${rot.map((j) => j.name + " " + j.conclusion).join(", ")}`);
         for (const job of jobs) {
-            if (job.conclusion === "skipped") continue;
+            if (job.conclusion !== "success") continue;
             let v = 0;
             for (const s of job.steps || []) {
                 const t = sek(s.started_at, s.completed_at);
@@ -109,17 +116,13 @@ function schritteAus(doc) {
                 }
                 const dLauf = damals.get(s.name);
                 for (const [n, l] of soll)
-                    if (
-                        (n === s.name || (dLauf && dLauf === l)) &&
-                        proben.get(n).length < JE_SCHRITT &&
-                        !proben.get(n).some((p) => p.lauf === messung)
-                    )
+                    if (dLauf && dLauf === l && proben.get(n).length < JE_SCHRITT && !proben.get(n).some((p) => p.lauf === messung))
                         proben.get(n).push({ lauf: messung, s: t });
             }
             if (vorb.length < 25) vorb.push(v);
         }
     }
-    const alt = fs.existsSync(path.join(root, AUS)) ? JSON.parse(fs.readFileSync(path.join(root, AUS), "utf8")) : {};
+    const alt = altDatei;
     const schritte = {};
     const ohne = [];
     for (const [n, l] of soll) {
@@ -153,24 +156,48 @@ function schritteAus(doc) {
     if (ohne.length) console.log(`  ohne Messung (Eintrag mit „geschaetzt" nötig): ${ohne.join(" · ")}`);
     if (args.includes("--verteilen")) {
         const v = jetzt.jobs.voll;
-        const gs = v.steps.filter((s) => s.name && schritte[s.name] && !VORBEREITUNG.test(s.name));
-        const summe = gs.reduce((a, s) => a + schritte[s.name].s, 0);
-        let k = Math.max(1, Math.ceil(summe / (ZIEL_VOLL_S - out.vorbereitung_s)));
-        for (; ; k++) {
+        const skripte = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8")).scripts || {};
+        const alle = v.steps.filter((s) => s.name && s.run && schritte[s.name] && !VORBEREITUNG.test(s.name));
+        // in k Gruppen: größte zuerst in die leichteste (LPT)
+        const packe = (gs, k) => {
             const last = Array.from({ length: k }, () => ({ s: out.vorbereitung_s, n: [] }));
-            for (const s of [...gs].sort((a, b) => schritte[b.name].s - schritte[a.name].s)) {
+            for (const s of [...gs].sort((x, y) => schritte[y.name].s - schritte[x.name].s)) {
                 const g = last.reduce((m, x) => (x.s < m.s ? x : m), last[0]);
                 g.s += schritte[s.name].s;
                 g.n.push(s.name);
             }
-            if (last.every((g) => g.s <= ZIEL_VOLL_S)) {
-                last.forEach((g, i) =>
-                    console.log(`  voll ${i + 1}/${k}: ${(g.s / 60).toFixed(1)} min — ${g.n.length} Schritte`)
-                );
-                console.log(JSON.stringify(Object.fromEntries(last.flatMap((g, i) => g.n.map((n) => [n, i + 1])))));
-                break;
-            }
+            return last;
+        };
+        // je Klasse die Gruppen (ein bedingter Schritt läuft als CPU: die Weiche urteilt zur Laufzeit)
+        const gpu = (s) => klasseDesLaufs(s.run, skripte).klasse === "gpu";
+        // der volle Playtest trägt seine EIGENE Gruppe (gate:ci-deckung (P) EIGEN)
+        const pt = (s) => /\bnpm run playtest\b(?!:)/.test(s.run);
+        // die Plätze neben dem Puls (ein Job, auf den die Batterie wartet — der Kopf-Richter —, endet vor ihr)
+        const puls = ((jetzt.jobs.puls.strategy || {}).matrix || {}).gruppe || [1];
+        const frei = LAEUFER_PLAETZE - puls.length - alle.filter(pt).length;
+        const cpu = alle.filter((s) => !gpu(s) && !pt(s));
+        const gp = alle.filter(gpu);
+        let best = null;
+        for (let kc = 1; kc < frei; kc++) {
+            const a = packe(cpu, kc);
+            const b = packe(gp, frei - kc);
+            const max = Math.max(...a.concat(b).map((g) => g.s));
+            if (!best || max < best.max) best = { max, a, b };
         }
+        const gruppen = [
+            ...alle.filter(pt).map((s) => ({ s: out.vorbereitung_s + schritte[s.name].s, n: [s.name], klasse: "cpu" })),
+            ...best.a.map((g) => ({ ...g, klasse: "cpu" })),
+            ...best.b.map((g) => ({ ...g, klasse: "gpu" })),
+        ];
+        gruppen.forEach((g, i) =>
+            console.log(`  voll ${i + 1}/${gruppen.length} ${g.klasse}: ${(g.s / 60).toFixed(1)} min — ${g.n.length} Schritte`)
+        );
+        console.log(
+            JSON.stringify({
+                klassen: gruppen.map((g) => g.klasse),
+                schritte: Object.fromEntries(gruppen.flatMap((g, i) => g.n.map((n) => [n, i + 1]))),
+            })
+        );
     }
 })().catch((e) => {
     console.error(e);

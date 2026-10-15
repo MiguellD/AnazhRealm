@@ -1445,7 +1445,7 @@ class AnazhRealm_Z06c {
         }
         const gl = this._kreaturTrefferGlieder(ziel);
         if (!gl) return null;
-        ziel.updateMatrixWorld(true);
+        this._leibMatrix(ziel);
         const v = this._maulVek2 || (this._maulVek2 = [new THREE.Vector3(), new THREE.Vector3()]);
         let best = Infinity;
         for (const g of gl) {
@@ -1474,7 +1474,7 @@ class AnazhRealm_Z06c {
         } else {
             const gl = this._kreaturTrefferGlieder(ziel);
             if (!gl) return null;
-            ziel.updateMatrixWorld(true);
+            this._leibMatrix(ziel);
             const v = this._maulVek2 || (this._maulVek2 = [new THREE.Vector3(), new THREE.Vector3()]);
             for (const g of gl) {
                 const pa = v[0].copy(g.a).applyMatrix4(g.anker.matrixWorld);
@@ -2459,10 +2459,6 @@ class AnazhRealm_Z06c {
     _tickKreaturZiegel(playerPos) {
         const st = this.state;
         if (!playerPos || (st.renderer && st.renderer._isHeadlessNull)) return;
-        const N = AnazhRealm.KREATUR_NAH_MESH;
-        const ein2 = N.ein * N.ein,
-            aus2 = N.aus * N.aus;
-        const an = st.creaturesHidden !== true;
         // jeder Leib im Bild trägt seine Gestalt — die Wesen UND die Gefallenen (ein Leichnam liegt fern als Feld, nah als
         // Studio-Tier, wie er lag, bis er versunken ist)
         const W = st.creatures,
@@ -2470,45 +2466,56 @@ class AnazhRealm_Z06c {
         for (let k = 0, n = W.length + LG.length; k < n; k++) {
             const cr = k < W.length ? W[k] : LG[k - W.length];
             if (!cr || !cr.position) continue;
-            const dx = cr.position.x - playerPos.x;
-            const dz = cr.position.z - playerPos.z;
-            const d2 = dx * dx + dz * dz;
-            const u = cr.userData || (cr.userData = {});
-            u._kzNah = u._kzNah === true ? d2 < aus2 : d2 < ein2;
-            if (u._kzNah) {
-                u._kzNahGewesen = true; // das Studio-Tier stand schon im Bild — sein Satz übernimmt später, ohne Einblenden
-                // Der schwindende Satz folgt den Knochen weiter (sonst geisterte er 0,5 s an der alten Pose).
-                if (u._kzGlieder)
-                    for (const gl of u._kzGlieder) {
-                        if (gl.handle._schwundT0 !== undefined) this._weltFeldMatrix(gl.handle, gl.teil.matrixWorld);
-                        this._weltFeldAktiv(gl.handle, false);
-                    }
-                continue; // das Studio-Tier trägt (gecullt je Pass an seiner Körper-Kugel)
-            }
-            if (!u._kzGlieder) {
-                if (u._kzVersuch) {
-                    // Fern-Fit gescheitert (Atlas voll) — das Fehlen ist sichtbar, laut im Register.
-                    cr.visible = false;
-                    continue;
-                }
-                if (!this._weltBakeErlaubt(d2)) continue; // getaktet — bis dahin trägt der Körper
-                u._kzVersuch = true;
-                cr.updateMatrixWorld(true);
-                // Fern geboren (nie nah im Bild): die Glieder blenden bei ihrer Geburt ein, statt zu ploppen.
-                u._kzGlieder = this._kreaturGliederBacken(cr, !u._kzNahGewesen);
-                if (!u._kzGlieder) {
-                    cr.visible = false;
-                    continue;
-                }
-            }
-            // DIE KNOCHEN TRAGEN DIE FELDER (die Pose der letzten Animations-Auswertung als inverse
-            // Welt-Matrix je Glied):
-            for (const gl of u._kzGlieder) {
-                this._weltFeldMatrix(gl.handle, gl.teil.matrixWorld);
-                this._weltFeldAktiv(gl.handle, an);
-            }
-            cr.visible = false; // fern IST das Feld die Gestalt
+            // der ruhende Leib (K59) zeichnet nirgends: sein Satz ist aus (`_tickKreaturRuhe`), er schreibt keine Glied-Matrix
+            // und lädt die Liste nicht hoch; erwacht, schreibt er im selben Takt (`_kzLeib`)
+            if (cr.userData && cr.userData._ruht === true) continue;
+            this._kzLeib(cr, playerPos);
         }
+    }
+
+    // DER ZIEGEL EINES LEIBS: nah das Studio-Tier (mit Hysterese), fern seine Glieder ins Feld — je Takt aus dem Ziegel, und
+    // für einen Leib, den der Blick des Bilds weckt (`_ruheImBild`), direkt vor dem Zeichnen.
+    _kzLeib(cr, playerPos) {
+        const N = AnazhRealm.KREATUR_NAH_MESH;
+        const dx = cr.position.x - playerPos.x;
+        const dz = cr.position.z - playerPos.z;
+        const d2 = dx * dx + dz * dz;
+        const u = cr.userData || (cr.userData = {});
+        u._kzNah = u._kzNah === true ? d2 < N.aus * N.aus : d2 < N.ein * N.ein;
+        if (u._kzNah) {
+            u._kzNahGewesen = true; // das Studio-Tier stand schon im Bild — sein Satz übernimmt später, ohne Einblenden
+            // Der schwindende Satz folgt den Knochen weiter (sonst geisterte er 0,5 s an der alten Pose).
+            if (u._kzGlieder)
+                for (const gl of u._kzGlieder) {
+                    if (gl.handle._schwundT0 !== undefined) this._weltFeldMatrix(gl.handle, gl.teil.matrixWorld);
+                    this._weltFeldAktiv(gl.handle, false);
+                }
+            return; // das Studio-Tier trägt (gecullt je Pass an seiner Körper-Kugel)
+        }
+        if (!u._kzGlieder) {
+            if (u._kzVersuch) {
+                // Fern-Fit gescheitert (Atlas voll) — das Fehlen ist sichtbar, laut im Register.
+                cr.visible = false;
+                return;
+            }
+            if (!this._weltBakeErlaubt(d2)) return; // getaktet — bis dahin trägt der Körper
+            u._kzVersuch = true;
+            this._leibMatrix(cr);
+            // Fern geboren (nie nah im Bild): die Glieder blenden bei ihrer Geburt ein, statt zu ploppen.
+            u._kzGlieder = this._kreaturGliederBacken(cr, !u._kzNahGewesen);
+            if (!u._kzGlieder) {
+                cr.visible = false;
+                return;
+            }
+        }
+        // DIE KNOCHEN TRAGEN DIE FELDER (die Pose der letzten Animations-Auswertung als inverse
+        // Welt-Matrix je Glied):
+        const an = this.state.creaturesHidden !== true;
+        for (const gl of u._kzGlieder) {
+            this._weltFeldMatrix(gl.handle, gl.teil.matrixWorld);
+            this._weltFeldAktiv(gl.handle, an);
+        }
+        cr.visible = false; // fern IST das Feld die Gestalt
     }
 
     // Gehört dieses Tier dem Feld? Nur FERN und sobald ein Bake-Versuch lief (mit Gliedern oder
@@ -2628,6 +2635,166 @@ class AnazhRealm_Z06c {
         return fern;
     }
 
+    // ═══ DER RUHENDE LEIB (K59, Gebot 7: Kosten an Schirm + Änderung) ═══
+    // Vorher ging jedes Tier jeden Frame voll: an Genesis (Third, OMEN) kosteten 10 ferne Tiere außer Bild 0,72 ms
+    // Kreatur-Takt (der Ziegel schrieb 120 Glied-Matrizen und lud die Feld-Liste hoch) und 0,23 ms Matrix-Gang der Szene
+    // (750 ihrer 1 070 Knoten sind diese Skelette). Je Takt entscheidet `_kreaturRuht` (KREATUR_RUHE) neu. Ein ruhender
+    // Leib ZEICHNET NIRGENDS: er ruht nur, wenn das Feld seine Gestalt trägt (`_kzBesitztFeld` — sein Mesh zeichnet und
+    // wirft nicht), sein Satz geht beim Ruhe-Beginn sofort aus, und der Blick des Bilds (`_ruheImBild`, im Render-Pfad)
+    // weckt jeden, den die Kamera dieses Bilds sieht. Er geht im groben Takt (`_kreaturTaktDt`), schreibt kein Feld
+    // (`_tickKreaturZiegel`) und verlässt den Matrix-Gang (`AnazhRealm._ruhendeWurzel` an seiner Wurzel). Wer seine Glieder
+    // liest, liest sie frisch (`_kreaturTrefferGlieder`, `_leibMatrix`: Biss, Treffer, Tod); wer erwacht, zieht den ganzen
+    // Leib nach, bevor das Feld ihn liest. Die Gefallenen ruhen nie. Linse: gate:kreatur-kosten (G).
+    _tickKreaturRuhe(delta, playerPos) {
+        const R = AnazhRealm.KREATUR_RUHE;
+        const st = this.state;
+        const W = st.creatures;
+        for (const c of st.leichname) if (c && c.userData && c.userData._ruht === true) this._kreaturErwacht(c);
+        const fr = this._frustumCache;
+        const cam = st.camera;
+        // DER RAND DES BLICKS: der Frustum ist der des Vor-Frames, die Kamera dreht bis zum Render dieses Frames weiter —
+        // der Rand wächst um die doppelte Drehung des Vor-Frames; dreht sie schneller als ~69°, ruht in diesem Frame keiner.
+        let rand = -1;
+        if (fr && cam && playerPos) {
+            const q = this._ruheKamQ || (this._ruheKamQ = cam.quaternion.clone());
+            const dreh = 2 * Math.acos(Math.min(1, Math.abs(q.dot(cam.quaternion))));
+            q.copy(cam.quaternion);
+            const winkel = R.randGrad * (Math.PI / 180) + 2 * dreh;
+            if (winkel < 1.2) rand = Math.tan(winkel);
+        }
+        for (let i = 0; i < W.length; i++) {
+            const c = W[i];
+            if (!c || !c.userData) continue;
+            if (rand >= 0 && this._kreaturRuht(c, playerPos, fr, rand, delta)) {
+                if (c.userData._ruht !== true) {
+                    c.userData._ruht = true;
+                    c.updateMatrixWorld = AnazhRealm._ruhendeWurzel;
+                    // sein Satz geht SOFORT aus (außer Bild, kein Mesh übernimmt): sonst stünde er, wo die Ruhe begann
+                    if (c.userData._kzGlieder)
+                        for (const gl of c.userData._kzGlieder) this._weltFeldAktiv(gl.handle, false, true);
+                }
+            } else if (c.userData._ruht === true) this._kreaturErwacht(c);
+        }
+    }
+
+    // Ruht dieser Leib in diesem Takt? Billige Filter zuerst (Lehre 25): der Zustand, die Gestalt, die Ferne, das Tempo,
+    // die Jäger des Takts (`_kreaturJaeger`, die EINE Liste — in ihrer Witterung ruht kein Tier, der Biss liest die Glieder
+    // der Beute) — der Blick zuletzt (die Körper-Kugel samt Saum und Rand gegen den Frustum).
+    _kreaturRuht(c, playerPos, frustum, rand, delta) {
+        const R = AnazhRealm.KREATUR_RUHE;
+        const u = c.userData;
+        if (u._stossV || (u._hopH || 0) > 0 || (u._hopV || 0) > 0) return false;
+        const z = u._motionZustand;
+        if (z === "jagd" || z === "hetzen" || z === "flucht" || z === "schwimmen") return false;
+        if (u._verhaltenAktion && u._verhaltenAktion.biss) return false;
+        const task = this._getCreatureTask(c);
+        if (task && task.name !== "wander") return false;
+        // nur wem das Feld die Gestalt trägt (fern UND gebacken): ungebacken oder nah (`_kzNah`, auch im Takt, in dem er
+        // `aus` nach außen kreuzt) zeichnet sein Mesh und wirft in die Kaskaden — er ruht nie
+        if (!this._kzBesitztFeld(c)) return false;
+        const p = c.position;
+        const N = AnazhRealm.KREATUR_NAH_MESH;
+        const dx = p.x - playerPos.x,
+            dz = p.z - playerPos.z;
+        if (dx * dx + dz * dz < N.aus * N.aus) return false;
+        const v = u._steuer ? Math.abs(u._steuer.v) : 0;
+        if (v * R.takt * delta > R.wegMax) return false;
+        const w2 = R.witterungM * R.witterungM;
+        const jaeger = this._kreaturJaeger;
+        if (jaeger)
+            for (const j of jaeger) {
+                if (j === c) continue;
+                const jx = j.position.x - p.x,
+                    jz = j.position.z - p.z;
+                if (jx * jx + jz * jz < w2) return false;
+            }
+        // die Körper-Kugel: Reichweite des Leibs waagrecht, die halbe Höhe senkrecht (je Leib und Größe einmal)
+        if (!(u._ruheKugelR > 0) || u._ruheKugelS !== c.scale.x) {
+            const leib = this._kreaturLeib(c, 0, this._ruheLeib || (this._ruheLeib = {}));
+            u._ruheKugelR = leib.reichweite + 0.5 * leib.hoehe;
+            u._ruheKugelH = 0.5 * leib.hoehe;
+            u._ruheKugelS = c.scale.x;
+        }
+        const s = this._ruheKugel || (this._ruheKugel = new THREE.Sphere(new THREE.Vector3(), 0));
+        s.center.set(p.x, p.y + u._ruheKugelH, p.z);
+        const cp = this.state.camera.position;
+        s.radius = u._ruheKugelR + R.saumM + s.center.distanceTo(cp) * rand;
+        return !frustum.intersectsSphere(s);
+    }
+
+    // DIE ZEIT DES SCHRITTS (der grobe Takt): ein ruhender Leib sammelt die Frame-Zeit und geht nur in seinem Fenster
+    // (`slot` % takt === 0) mit allem Gesammelten — null = kein Schritt in diesem Frame; ein erwachter trägt den Rest in
+    // seinen ersten Schritt. `_taktN` = die Frames, die dieser Schritt trägt (wach 1): die KI rechnet, wenn in ihre Spanne
+    // ein KI-Takt fiel (die Kadenz, nie die Entscheidung).
+    _kreaturTaktDt(creature, slot, delta) {
+        const u = creature.userData;
+        if (u._ruht === true) {
+            u._ruheDt = (u._ruheDt || 0) + delta;
+            u._ruheN = (u._ruheN || 0) + 1;
+            if (slot % AnazhRealm.KREATUR_RUHE.takt !== 0) return null;
+        } else if (!(u._ruheDt > 0)) {
+            u._taktN = 1;
+            return delta;
+        } else {
+            u._ruheDt += delta;
+            u._ruheN = (u._ruheN || 0) + 1;
+        }
+        const dt = u._ruheDt;
+        u._taktN = u._ruheN;
+        u._ruheDt = 0;
+        u._ruheN = 0;
+        return dt;
+    }
+
+    // DAS ERWACHEN: die eigene Matrix-Wurzel fällt (der Szenen-Gang steigt wieder ins Skelett), und der ganze Leib zieht
+    // JETZT nach — vor dem Ziegel, der seine Glieder ins Feld schreibt, und vor jedem Leser dieses Takts.
+    _kreaturErwacht(c) {
+        c.userData._ruht = false;
+        delete c.updateMatrixWorld;
+        c.updateMatrixWorld(true);
+    }
+
+    // DER CHOKEPOINT DER GLIED-LESER (K59): wer die Welt-Matrizen eines Leibs liest (Biss, Treffer, Tod, das Backen des
+    // Felds), zieht sie hier nach — mit der Methode seiner Klasse, an der Wurzel eines ruhenden Leibs vorbei (deren eigene
+    // `updateMatrixWorld` hält nur den Szenen-Gang aus dem Skelett).
+    _leibMatrix(c) {
+        Object.getPrototypeOf(c).updateMatrixWorld.call(c, true);
+    }
+
+    // DER BLICK DES BILDS (im Render-Pfad `_loopRender` — dem EINEN, durch den auch die Ausgabe-Aufnahme zeichnet): die Ruhe
+    // entschied der Takt am Frustum des Vor-Frames; danach kann die Kamera springen (Teleport, Portal, Respawn), schneller
+    // drehen als der Rand oder ohne Takt gesetzt werden (die Aufnahme). Hier steht der Blick DIESES Bilds: jeder ruhende Leib,
+    // der unter ihm nicht mehr ruht (`_kreaturRuht` mit seinem Frustum, ohne Rand — im Bild oder dem Spieler jetzt nah),
+    // erwacht und schreibt Feld (`_kzLeib`) und Sicht (`_leibSicht`), bevor das Bild ihn zeichnet. Rückgabe: die Geweckten.
+    _ruheImBild() {
+        const st = this.state;
+        const cam = st.camera;
+        const pm = st.playerMesh && st.playerMesh.position;
+        if (!cam || !pm) return 0;
+        let fr = null;
+        let n = 0;
+        for (const c of st.creatures) {
+            if (!c || !c.userData || c.userData._ruht !== true) continue;
+            if (!fr) {
+                cam.updateWorldMatrix(true, false);
+                const m = (this._ruheBildM || (this._ruheBildM = new THREE.Matrix4())).multiplyMatrices(
+                    cam.projectionMatrix,
+                    cam.matrixWorldInverse
+                );
+                fr = (this._ruheBildF || (this._ruheBildF = new THREE.Frustum())).setFromProjectionMatrix(m);
+            }
+            if (this._kreaturRuht(c, pm, fr, 0, 0)) continue;
+            this._kreaturErwacht(c);
+            n++;
+            if (st.renderer && st.renderer._isHeadlessNull) continue;
+            this._kzLeib(c, pm);
+            const dx = c.position.x - pm.x,
+                dz = c.position.z - pm.z;
+            this._leibSicht(c, dx * dx + dz * dz, true);
+        }
+        return n;
+    }
+
     updateCreatures(delta) {
         this.state.creatureAnimationTime += delta;
         // W4 (V17.48) — die emotionale CONTAGION + das Wachsen der Bindung leben HIER
@@ -2637,12 +2804,9 @@ class AnazhRealm_Z06c {
         // allokieren (bei 120 Kreaturen waren das ~400 Allokationen/Frame → GC-Ruckeln).
         const scratchDir = this._creatureScratchDir || (this._creatureScratchDir = new THREE.Vector3());
         const playerPos = this.state.playerMesh.position;
-        // DER KREATUR-ZIEGEL (Analog A): Tiere sind Kapsel-Feld — das Feld
-        // WANDERT mit dem Tier (lebende Knochen-Matrix, Matrix der Matrix).
-        this._tickKreaturZiegel(playerPos);
-        this._tickLeichname(delta, playerPos); // die Gefallenen: kippen, liegen, sinken — kein Wesen mehr, ihre Sicht wie jede
         // DIE JÄGER dieses Takts (Q11): wer jagt (der Zustand des Vor-Takts), ist eine Bedrohung für jede Beute in seiner
-        // Witterung — _creatureWariness liest die Liste (die Beute floh vorher nur vor dem Spieler, R-D4/K-D11).
+        // Witterung — _creatureWariness liest die Liste (die Beute floh vorher nur vor dem Spieler, R-D4/K-D11), und in
+        // ihr ruht kein Tier (`_kreaturRuht`, K59: der Biss liest die Glieder der Beute). EINE Liste je Takt, VOR der Ruhe.
         const jaeger = this._kreaturJaeger || (this._kreaturJaeger = []);
         jaeger.length = 0;
         // DER WEITESTE RAUM dieses Takts (Lehre 25: billige Filter zuerst): die Separation und der freie Weg prüfen ein
@@ -2655,6 +2819,13 @@ class AnazhRealm_Z06c {
             if (c && c.userData) raumMax = Math.max(raumMax, this._kreaturRaum(c));
         }
         this._raumMaxTakt = raumMax;
+        // DER RUHENDE LEIB (K59): wer außer Bild, fern und ohne Zustand ist, ruht in diesem Takt — VOR dem Ziegel (ein
+        // ruhender Leib schreibt kein Feld; ein erwachender zieht seine Matrizen nach, bevor das Feld sie liest).
+        this._tickKreaturRuhe(delta, playerPos);
+        // DER KREATUR-ZIEGEL (Analog A): Tiere sind Kapsel-Feld — das Feld
+        // WANDERT mit dem Tier (lebende Knochen-Matrix, Matrix der Matrix).
+        this._tickKreaturZiegel(playerPos);
+        this._tickLeichname(delta, playerPos); // die Gefallenen: kippen, liegen, sinken — kein Wesen mehr, ihre Sicht wie jede
         // DER LAUF DES SPIELERS in diesem Takt (die Lage-Änderung, gleich welcher Weg ihn bewegt): ein Jäger hetzt, wenn
         // sein Ziel davonläuft (_kreaturJagdZug).
         {
@@ -2713,6 +2884,11 @@ class AnazhRealm_Z06c {
             const i = this._kreaturTaktI;
             const creature = this.state.creatures[i];
             const emotion = this.state.creatureEmotions[i];
+            // DER GROBE TAKT (K59): ein ruhender Leib geht nur in seinem Fenster (jeder `takt`-te Frame, gestaffelt am Index)
+            // mit der aufgelaufenen Zeit; ein erwachter trägt die Rest-Zeit in seinen ersten Schritt. Der Takt ändert die
+            // Kadenz, nie die Entscheidung (Q11): derselbe Schritt, dieselbe Zeit, der Kontakt hält über `wegMax`.
+            const dt = this._kreaturTaktDt(creature, aiFrame + i, delta);
+            if (dt === null) continue;
             // DAS TEMPO IN m/s (Q3): die Tempo-Einheit des Verhaltens aus dem Gang-Gesetz (tetrapoda tempoEinheit,
             // tempo·√(g·L) an der Hüft-Höhe L — ein großes Tier läuft schneller, ein kleines kürzer), darauf der Charakter
             // (computeCreatureStats.speed / 7, geklemmt [0.6, 1.6], gecacht pro Soul×bodySize) und die Freude
@@ -2738,7 +2914,11 @@ class AnazhRealm_Z06c {
             const distSqToPlayer = dxToPlayer * dxToPlayer + dzToPlayer * dzToPlayer;
             const distToPlayer = Math.sqrt(distSqToPlayer);
             const aiBand = this._detailBand(distToPlayer / 43.2);
-            const recomputeAI = aiBand.aiDiv <= 1 || !creature.userData.aiDir || (aiFrame + i) % aiBand.aiDiv === 0;
+            // (der grobe Schritt eines ruhenden Leibs trägt `_taktN` Frames: fiel in sie ein KI-Takt, rechnet er — K59)
+            const recomputeAI =
+                aiBand.aiDiv <= 1 ||
+                !creature.userData.aiDir ||
+                (aiFrame + i) % aiBand.aiDiv < creature.userData._taktN;
             // Ein non-wander-Task hat Vorrang (follow_player / wait …); sonst Emotions-/Charakter-Bewegung.
             // Ferne Kreaturen (Band 2/3) rechnen die Richtung nur jeden aiDiv-ten Frame (Cache → glatt).
             let task = null;
@@ -2969,20 +3149,20 @@ class AnazhRealm_Z06c {
             // Tempo-Sprünge ~290 m/s².
             const udS = creature.userData;
             const steuer = udS._steuer || (udS._steuer = { gier: creature.rotation.y || 0, v: 0 });
-            AnazhRealm._steuerGesetz().steuerSchritt(steuer, direction.x, direction.z, delta, hueftL);
+            AnazhRealm._steuerGesetz().steuerSchritt(steuer, direction.x, direction.z, dt, hueftL);
             creature.rotation.y = steuer.gier;
             const px0 = creature.position.x;
             const pz0 = creature.position.z;
-            creature.position.x += Math.sin(steuer.gier) * steuer.v * delta;
-            creature.position.z += Math.cos(steuer.gier) * steuer.v * delta;
+            creature.position.x += Math.sin(steuer.gier) * steuer.v * dt;
+            creature.position.z += Math.cos(steuer.gier) * steuer.v * dt;
             // STRÖMUNG trägt SCHWIMMENDE Kreaturen (waterSurface !== null ⇔ die Säule ist tiefer als ihre Wasserlinie —
             // Land-Läufer nie): eine Drift des Wassers, kein Wunsch des Tiers (Quelle = DIESELBE `_waterFlowAt` wie beim
             // Spieler).
             if (waterSurface !== null) {
                 const _fl = this._waterFlowAt(creature.position.x, creature.position.z);
                 if (_fl) {
-                    creature.position.x += _fl.x * delta;
-                    creature.position.z += _fl.z * delta;
+                    creature.position.x += _fl.x * dt;
+                    creature.position.z += _fl.z * dt;
                 }
             }
             // Der STOSS, den ein Leib trägt, bewegt ihn im festen Sim-Schritt (`_kreaturStossSchritt`, 0710-5), nie hier im
@@ -2993,7 +3173,7 @@ class AnazhRealm_Z06c {
             // Sanfter Decay des Innenlebens (~17 s Halbwert); ruhige Wesen werden sparse (null = kein Tick-Rest),
             // beim Ausklingen projiziert die Valenz auf "happy" zurück — getroffene Wesen erholen sich.
             if (creature.userData.emotions) {
-                const dk = Math.max(0, 1 - delta * 0.04);
+                const dk = Math.max(0, 1 - dt * 0.04);
                 let live = false;
                 const em = creature.userData.emotions;
                 for (const ax in em) {
@@ -3058,7 +3238,7 @@ class AnazhRealm_Z06c {
                 // Root-Lage exp-geglättet (NaN-Wand vor dem Gedächtnis, Lehre 13): Nick längs der Gier, Wank quer —
                 // Euler YXZ, erst die Gier, dann Nick und Wank im Leib-Rahmen (in XYZ kippte der Nick um die Welt-x).
                 const udP = creature.userData;
-                const pk = 1 - Math.exp(-8 * Math.min(0.1, delta || 0.016));
+                const pk = 1 - Math.exp(-8 * Math.min(0.1, dt || 0.016));
                 let hp = (udP._hangPitch || 0) + (pitchZiel - (udP._hangPitch || 0)) * pk;
                 if (!Number.isFinite(hp)) hp = 0;
                 let hr = (udP._hangRoll || 0) + (rollZiel - (udP._hangRoll || 0)) * pk;
@@ -3069,7 +3249,7 @@ class AnazhRealm_Z06c {
                 creature.rotation.z = hr;
             }
             // DER HÜPFER (Q1): ein Versatz ON TOP der geerdeten baseY (die Erdung bleibt Wahrheit), EIN Integrator auf
-            // dem Takt `delta` — die Parabel des Gesetzes (g des Gang-Gesetzes), je Schritt exakt (h += v·dt − g·dt²/2),
+            // dem Takt `dt` — die Parabel des Gesetzes (g des Gang-Gesetzes), je Schritt exakt (h += v·dt − g·dt²/2),
             // darum dieselbe Flugzeit bei jeder Bildrate; er startet nur aus einer Aktion (bound/pounce) über das EINE
             // Sprung-Gesetz creatureJump (Höhe aus der Freude). Vorher rechnete er je Frame feste 0,05 s (bei 144 Hz
             // ein Sechstel der Flugzeit) und ein Würfel je Frame zündete ihn (Leben-Prüfung R-D3: 21–26 % Luft-Frames).
@@ -3077,8 +3257,8 @@ class AnazhRealm_Z06c {
             const udH = creature.userData;
             if (udH._hopV > 0 || udH._hopH > 0) {
                 const g = AnazhRealm._hopSchwere();
-                const h = (udH._hopH || 0) + (udH._hopV || 0) * delta - 0.5 * g * delta * delta;
-                udH._hopV = (udH._hopV || 0) - g * delta;
+                const h = (udH._hopH || 0) + (udH._hopV || 0) * dt - 0.5 * g * dt * dt;
+                udH._hopV = (udH._hopV || 0) - g * dt;
                 if (!(h > 0)) {
                     udH._hopH = 0;
                     udH._hopV = 0;
@@ -3092,7 +3272,7 @@ class AnazhRealm_Z06c {
             udH._traegerY = baseY;
             udH._traegerStruktur = traegtBau;
             // DER LAUF DES LEIBS (Welle LF, der ferne Gang): wer läuft, dem laufen die Beine in jeder Ferne
-            this._kreaturLaufTakt(creature, delta);
+            this._kreaturLaufTakt(creature, dt);
 
             // Emergente Bewegung aus den Soul-Parts (Beine schwingen, Flügel schlagen, Schwänze wellen) — NACH der Lage des
             // Takts (Welle LF): die Beine stellen sich auf den Boden unter jeder Pfote (_animateTierBaum liest Höhe, Nick und
@@ -3102,7 +3282,7 @@ class AnazhRealm_Z06c {
                 const mroles = this._motionRolesForSoul(creature.userData.soul);
                 if (mroles) {
                     const movingNow = steuer.v > 0.1; // der Leib läuft (das Tempo des Steuer-Schritts), nicht der Wunsch
-                    creature.userData.walkPhase = (creature.userData.walkPhase || 0) + (movingNow ? delta * 5.0 : 0);
+                    creature.userData.walkPhase = (creature.userData.walkPhase || 0) + (movingNow ? dt * 5.0 : 0);
                     // ANIM-RATEN-LOD: walkPhase + creatureAnimationTime akkumulieren JEDEN Frame (Gang gleich schnell),
                     // ferne Wesen werten nur 1/2 · 1/4 aus ((aiFrame+i)-Stagger, kein Spike). Jenseits der Stufen-Grenze
                     // tickt nur, wer läuft (1/8) — wer steht, friert EINMAL in der Stand-Pose ein (die Grobstufe trägt
@@ -3116,7 +3296,7 @@ class AnazhRealm_Z06c {
                     // sieht — ein ferner Läufer hinter der Kamera steht still, bis er ins Bild kommt (39 Tiere, 32 fern:
                     // der Kreatur-Takt kostete mit jedem fernen Läufer 0,78 ms statt 0,41)
                     const laeuft = this._kreaturLaeuft(creature) && (inFrustum || distToPlayer < fernDist);
-                    let animDiv = this._creatureAnimDiv(distToPlayer, fernDist, omegaGang, delta, laeuft);
+                    let animDiv = this._creatureAnimDiv(distToPlayer, fernDist, omegaGang, dt, laeuft);
                     // ein offener Biss braucht seine Pose in jedem Takt (Posten 5): ob das Maul den Leib berührt, entscheidet
                     // der geneigte Kopf (_kreaturBissTakt), auch ungesehen — die Kosten trägt nur der Ansprung (unter 1 s)
                     const VAb = creature.userData._verhaltenAktion;

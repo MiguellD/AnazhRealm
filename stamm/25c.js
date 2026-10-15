@@ -2136,6 +2136,9 @@ class AnazhRealm_Z25c {
 
     _loopRender(currentTime) {
         // ### Rendering ###
+        // DER BLICK DES BILDS (K59): die Kamera dieses Bilds steht — wen sie sieht, der ruht nicht mehr (`_ruheImBild`
+        // weckt ihn und schreibt sein Feld, bevor er gezeichnet wird; Teleport, Portal, Schwenk, die Ausgabe-Aufnahme).
+        this._ruheImBild();
         // DER SATZ (Welle B): alle Chunk-Ein-/Austritte dieses Frames legen ihren Index JETZT, direkt vor dem
         // Zeichnen — ein frei gewordener und im selben Frame neu vergebener Bereich ist nie ungelegt sichtbar.
         this._tickChunkSatz();
