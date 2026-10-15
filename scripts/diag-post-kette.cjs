@@ -41,6 +41,8 @@
 //       und bei beiden Belichtungen gleich. Vorher lag der Drehpunkt des Kontrasts bei 0,5 in Szenen-Einheiten VOR der
 //       Belichtung (y = 1,06·x − 0,03): jedes Licht unter 0,028 wurde schwarz, gleich wie hell die Belichtung es hob — seit die
 //       Belichtung dem Tag über 1 folgt, wurde der Abend schwarz. Jetzt dreht er über Belichtung 1 um 0,5 nach der Belichtung (25c).
+//       DIE NACHT (D3-2): 0,02 bei Belichtung 1 und nightFactor 1 (der Boden im Mondlicht, unter dem Schnitt der Tag-Kurve) ist
+//       nicht schwarz — der Kontrast fadet zur Nacht aus wie die Entgrauung (25c).
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): die Shader-Kosten-Linse an gebauten WGSL-Stücken und das
 // Urteil über einen grünen Lauf und je einen injizierten Täter — jeder fällt rot und wird genannt.
 //   node scripts/diag-post-kette.cjs [--selftest]   (npm run gate:post-kette; Port POST_KETTE_PORT, Standard 4583)
@@ -74,6 +76,10 @@ const SAUM_KANTEN_MIN = 10;
 // Mittelgrau ab (0,028 belichtet), die ACES-Kurve der Ausgabe (r184 RRTAndODTFit) erst unter 0,0022; 0,05 liegt über beiden.
 const DUNKEL_LUMA_MIN = 3;
 const DUNKEL_TOL = 1.5;
+// (h) Die Nacht (D3-2): das Licht des Bodens im Mondlicht (0,02 Szenen-Einheiten bei Belichtung 1, unter dem Schnitt der
+// Tag-Kurve bei 0,028) bei nightFactor 1 zeigt mindestens DUNKEL_LUMA_MIN Luma — der Kontrast fadet zur Nacht aus wie die
+// Entgrauung. Vorher schnitt er auch nachts: der Boden der Wiese um Mitternacht soff ab (61 % schwarz).
+const DUNKEL_NACHT_LICHT = 0.02;
 
 function urteil(z) {
     const v = [];
@@ -225,6 +231,12 @@ function urteil(z) {
         v.push(
             `DUNKEL: dasselbe belichtete Licht zeigt bei Belichtung 1 Luma ${dk.luma1}, bei 4 Luma ${dk.luma4} (Soll ≤ ${DUNKEL_TOL} Abstand) — das Grading hängt an der Belichtung`
         );
+    if (dk && dk.nachtFaktor !== 1)
+        v.push(`DUNKEL: die Nacht stand bei nightFactor ${dk.nachtFaktor} statt 1 (die Probe ist blind)`);
+    else if (dk && !(dk.lumaNacht >= DUNKEL_LUMA_MIN))
+        v.push(
+            `DUNKEL: das Licht der Nacht (${DUNKEL_NACHT_LICHT} bei Belichtung 1, nightFactor 1) zeigt Luma ${dk.lumaNacht} (Soll ≥ ${DUNKEL_LUMA_MIN}) — der Kontrast des Gradings schwärzt die Nacht (Post-Kette 25c: er fadet nicht über nightFactor)`
+        );
     const g = z.godray || {};
     if (!(g.staerke > 0)) v.push(`GODRAYS: die Sonne im Bild gibt Stärke ${g.staerke} (die Probe ist blind)`);
     else if (!(g.aenderungPct >= GODRAY_MIN_PCT))
@@ -286,7 +298,7 @@ function selbsttest() {
         },
         saum: { leinwand: [321, 241], kanten: 30, abweichend: 0, dMax: 3, paritaeten: 2, gpuFehler: [] },
         rahmenEnde: { ziele: 0, n: 0, mb: 0 },
-        dunkel: { k1: 1, k4: 4, luma1: 8, luma4: 8 },
+        dunkel: { k1: 1, k4: 4, luma1: 8, luma4: 8, nachtFaktor: 1, lumaNacht: 6 },
     };
     if (urteil(gruen).length) fehler.push("der grüne Lauf fällt rot: " + urteil(gruen).join(" · "));
     const mit = (f) => {
@@ -435,6 +447,16 @@ function selbsttest() {
             muss: /DUNKEL: .*hängt an der Belichtung/,
         },
         { name: "Dunkel-Probe fehlt", z: mit((z) => delete z.dunkel), muss: /DUNKEL: die Probe lief nicht/ },
+        {
+            name: "Kontrast schwärzt die Nacht",
+            z: mit((z) => (z.dunkel.lumaNacht = 0)),
+            muss: /DUNKEL: das Licht der Nacht .*Post-Kette 25c/,
+        },
+        {
+            name: "Nacht-Probe blind",
+            z: mit((z) => (z.dunkel.nachtFaktor = 0)),
+            muss: /DUNKEL: die Nacht stand bei nightFactor 0/,
+        },
     ];
     for (const f of faelle) {
         const v = urteil(f.z);
@@ -589,7 +611,7 @@ function saumProbe() {
 }
 
 // DIE BÜHNE (Seiten-Kontext): die echte Welt-Szene, der echte Frame, eigene Gegenstände vor der Kamera.
-function buehne(nFrames) {
+function buehne(nFrames, nachtLicht) {
     return (async () => {
         const r = window.anazhRealm,
             st = r.state,
@@ -881,9 +903,12 @@ function buehne(nFrames) {
             flach.position.set(x0, y0, z0 - 2);
             st.scene.add(flach);
             const kVor = rend.toneMappingExposure;
-            const dunkel = async (k, c) => {
+            const nachtU = st.postProcessingUniforms && st.postProcessingUniforms.nightFactor;
+            const nachtVor = nachtU ? nachtU.value : null;
+            const dunkel = async (k, c, nacht) => {
                 flach.material.color.setRGB(c, c, c);
                 rend.toneMappingExposure = k;
+                if (nacht && nachtU) nachtU.value = 1;
                 for (let i = 0; i < nFrames; i++) {
                     setzeKamera();
                     frame();
@@ -892,13 +917,16 @@ function buehne(nFrames) {
                 const { u8 } = await window.__ausgabeAufnahme(32, 24, 1, { satz: "messung" });
                 let s = 0;
                 for (let i = 0; i < u8.length; i += 4) s += 0.2126 * u8[i] + 0.7152 * u8[i + 1] + 0.0722 * u8[i + 2];
-                return { luma: +(s / (u8.length / 4)).toFixed(1), k: rend.toneMappingExposure };
+                return { luma: +(s / (u8.length / 4)).toFixed(1), k: rend.toneMappingExposure, nacht: nachtU ? nachtU.value : null };
             };
             try {
                 const a = await dunkel(1, 0.05);
                 const b = await dunkel(4, 0.0125);
-                aus.dunkel = { k1: a.k, luma1: a.luma, k4: b.k, luma4: b.luma };
+                // die Nacht (D3-2): das Licht des Bodens im Mondlicht unter dem Schnitt der Tag-Kurve, nightFactor 1
+                const n = await dunkel(1, nachtLicht, true);
+                aus.dunkel = { k1: a.k, luma1: a.luma, k4: b.k, luma4: b.luma, nachtFaktor: n.nacht, lumaNacht: n.luma };
             } finally {
+                if (nachtU) nachtU.value = nachtVor;
                 rend.toneMappingExposure = kVor;
                 st.scene.remove(flach);
                 flach.geometry.dispose();
@@ -968,7 +996,7 @@ function buehne(nFrames) {
         log(`Renderer und Post-Kette bereit nach ${Math.round(bereit.ms / 1000)} s`);
         await page.evaluate(AUSGABE_INSTALL);
         await page.evaluate(SK.SHADER_INSTALL);
-        out = await page.evaluate(buehne, N_FRAMES);
+        out = await page.evaluate(buehne, N_FRAMES, DUNKEL_NACHT_LICHT);
         if (out.abbruch) log(`ABBRUCH: ${out.abbruch}`);
         // (f) die ungerade Leinwand: die Seite wächst um ein Pixel je Achse, die Welt zieht nach (Resize, Leser neu gebunden)
         await page.setViewport({ width: 321, height: 241 });
@@ -1039,6 +1067,6 @@ function buehne(nFrames) {
             `die Ausgabe tastet unbedingt ${a.unbedingt}×, ${a.zweig}× nur hinter ihrer Stärke; die Godrays tragen mit der Sonne im Bild ` +
             `(${out.godray.aenderungPct} % der Pixel gegen ${out.godray.rauschenPct} % Rauschen); das Wasser liest das Tiefen-Abbild wie r184s Tiefe ` +
             `(${JSON.stringify(out.wasser.abbild)} gegen ${JSON.stringify(out.wasser.r184)}, ohne Grund ${JSON.stringify(out.wasser.ohneGrund)}); ` +
-            `das Dunkel trägt (Luma ${out.dunkel.luma1} bei Belichtung 1, ${out.dunkel.luma4} bei 4).`
+            `das Dunkel trägt (Luma ${out.dunkel.luma1} bei Belichtung 1, ${out.dunkel.luma4} bei 4, die Nacht ${out.dunkel.lumaNacht}).`
     );
 })();
