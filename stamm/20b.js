@@ -61,6 +61,7 @@ class AnazhRealm_Z20b {
         const da = zuege.get(key);
         if (da) {
             if (wo != null) this._foundryNaeher(f, preset, variant, lod, wo); // ohne Ort kein Rang (Lehre 17: null ist nie 0)
+            this._streuWartetAuf(da);
             return da;
         }
         if (!f.requested) f.requested = new Set();
@@ -77,6 +78,7 @@ class AnazhRealm_Z20b {
         });
         zuege.set(key, zug);
         if (erst && erst.nach) zug.then(erst.nach);
+        this._streuWartetAuf(zug); // die streuende Region wartet auf diesen Zug (K60-2)
         return zug;
     }
     // DER WECKER: ein Wartender (`wer`) hängt `fn(ok)` GENAU EINMAL an eine Zusage (Zug, Buch `f.buchDa` oder Karte) — kein
@@ -1025,6 +1027,7 @@ class AnazhRealm_Z20b {
         const rendB = this.state && this.state.renderer;
         if (!z.gebacken && rendB && !rendB._isHeadlessNull) {
             if (wer) wer.wecke(z.ende);
+            this._streuWartetAuf(z.ende); // die streuende Region wartet auf ihre Karte (K60-2)
             return false;
         }
         if (z._flat) return z._flat;

@@ -734,7 +734,12 @@ class AnazhRealm_Z20c {
     // Gestalt synchron am Spawn, das Bild mit der Zahl des Buchs (für die Fels-Arten dieselbe; gate:kollision-bild misst es).
     _foundryVariantFor(seed, preset, Vk) {
         const V = Number.isInteger(Vk) && Vk >= 1 ? Vk : this._foundryGestalten(preset);
-        if (!V) return null;
+        if (!V) {
+            // Buch kalt: die streuende Region wartet auf es (ein offenes Buch ohne Gestalten-Zeile ist keine Zusage)
+            const f = this._foundry;
+            if (f && !(f.ready && f.recipes)) this._streuWartetAuf(f.buchDa);
+            return null;
+        }
         const h = Math.imul(seed >>> 0 || 0, 2654435761) >>> 0; // Knuth-Mix
         return 1 + Math.floor((h * V) / 4294967296);
     }

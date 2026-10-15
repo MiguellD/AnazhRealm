@@ -16,6 +16,9 @@
 //       steht NIE in der Map (die _sampleBakedField-Wand).
 //   (4) DISPOSE-STORNO: ein Dispose MITTEN in der Fortsetzung tötet den cont —
 //       kein Throw, die Map ist sauber, ein frischer One-Shot baut normal.
+//   (5) DER WECKER (K60-2): eine aufgeschobene Region wartet auf IHRE Zusagen — eine fremde Lieferung
+//       (`_scatterRefillPending`) wirft sie nicht weg; erst wenn jede ihrer Zusagen kam, baut der Refill sie neu.
+//       Täter beim Namen: der Refill in `_tickScatterStreaming`, der jede aufgeschobene Region bei jeder Lieferung warf.
 // ─────────────────────────────────────────────────────────────────────────
 
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
@@ -150,6 +153,44 @@ const server = statikServer();
                 storno.threw = String((e && e.message) || e);
             }
             o.storno = storno;
+            // ── (5) DER WECKER: zwei offene Zusagen, eine fremde Lieferung, dann die eigenen ──
+            const wecker = { fremd: null, eine: null, beide: null, threw: false };
+            try {
+                clean();
+                const loes = [];
+                const zus = [0, 1].map(() => new Promise((res) => loes.push(res)));
+                const altPass = r._scatterPass;
+                r._scatterPass = function (region, ...a) {
+                    region._deferredFoundry = true; // jede Zelle wartet (wie bei kaltem Asset)
+                    if (typeof this._streuWartetAuf === "function") for (const z of zus) this._streuWartetAuf(z);
+                    return altPass.call(this, region, ...a);
+                };
+                let reg5;
+                try {
+                    reg5 = r._scatterRegion(rx, rz, pos);
+                } finally {
+                    r._scatterPass = altPass;
+                }
+                const steht = () => st.scatterRegions.get(key) === reg5;
+                const tick = async () => {
+                    await new Promise((res) => setTimeout(res, 0));
+                    r._tickScatterStreaming(pos);
+                };
+                r._scatterRefillPending = true; // eine FREMDE Lieferung
+                await tick();
+                wecker.fremd = steht();
+                loes[0]();
+                r._scatterRefillPending = true;
+                await tick();
+                wecker.eine = steht();
+                loes[1]();
+                await tick();
+                wecker.beide = steht();
+                clean();
+            } catch (e) {
+                wecker.threw = String((e && e.message) || e);
+            }
+            o.wecker = wecker;
             return o;
         });
     } catch (e) {
@@ -183,6 +224,20 @@ const server = statikServer();
         {
             name: `DISPOSE-STORNO: mitten in der Fortsetzung disposen → cont tot, kein Throw, frischer One-Shot byte-gleich (${JSON.stringify(out.storno)})`,
             pass: out.storno.threw === false && out.storno.contDead === true && out.storno.rebuildOk === true,
+        },
+        {
+            name:
+                `DER WECKER: die aufgeschobene Region überlebt eine fremde Lieferung und die erste ihrer zwei Zusagen, nach der ` +
+                `zweiten baut der Refill sie neu (${JSON.stringify(out.wecker)})` +
+                (out.wecker && out.wecker.fremd === false
+                    ? " — TÄTER: der Refill in _tickScatterStreaming warf sie bei einer fremden Lieferung weg"
+                    : ""),
+            pass:
+                !!out.wecker &&
+                out.wecker.threw === false &&
+                out.wecker.fremd === true &&
+                out.wecker.eine === true &&
+                out.wecker.beide === false,
         },
     ];
     let fails = 0;
