@@ -133,6 +133,9 @@ function ladeschirmVerdict(m) {
     if (!f.lueckeRuht) out.push(`eine ruhende Lücke: ${ohne("lueckeRuht")}`);
     else if (!f.lueckeRuht.weg) out.push("eine ruhende Lücke hält den Spieler vor der Welt fest");
     else if (!f.lueckeRuht.warn) out.push("eine ruhende Lücke weicht ohne Wort im Log");
+    if (!f.lueckeArbeitet) out.push(`eine arbeitende Lücke: ${ohne("lueckeArbeitet")}`);
+    else if (f.lueckeArbeitet.weg)
+        out.push("eine arbeitende Lücke weicht wie eine ruhende (das halbe Weltbild unter Last, Prüfung K60-1 m1-6B)");
     if (!f.lueckeFlackert) out.push(`eine flackernde Lücke: ${ohne("lueckeFlackert")}`);
     else if (!f.lueckeFlackert.weg) out.push("eine flackernde Lücke hält den Ladeschirm ohne Grenze (kein Deckel)");
     else if (!f.lueckeFlackert.warn) out.push("eine flackernde Lücke weicht ohne Wort im Log");
@@ -385,7 +388,7 @@ function wand(src, html) {
             ladeIdx >= 0 &&
                 !/\bhidden\b/.test(ladeTag) &&
                 /this\._ankunftsBild\(\)/.test(fnBody(nc, /\n {4}_loopRender\(currentTime\) \{/) || "") &&
-                /this\._weltbildFehlt\(\)/.test(fnBody(nc, /\n {4}_ankunftsBild\(\) \{/) || ""),
+                /this\._weltbild(Fehlt|Luecken)\(\)/.test(fnBody(nc, /\n {4}_ankunftsBild\(\) \{/) || ""),
         ],
         [
             "W3 die Hotbar trägt im Konstruktor keinen Bauplan-Namen (der Start-Gurt liest den Katalog: `_startGurt`)",
@@ -562,6 +565,19 @@ async function probe(arg) {
                     st._weltbildLuecke = sig;
                     st._weltbildLueckeSeit = performance.now() - (r.constructor.WELTBILD_STILL_MS || 0) - 1;
                 });
+            // (6b) eine Lücke ARBEITET (K60, Prüfung K60-1 m1-6B): ihr Satz blieb länger als WELTBILD_STILL_MS gleich, aber für sie
+            // ist etwas unterwegs (das Buch im bootenden Studio-Faden) — der Ladeschirm bleibt, nie das halbe Bild unter Last
+            if (fo && fo.worker)
+                fall(
+                    "lueckeArbeitet",
+                    () => (fo.ready = false),
+                    () => (fo.ready = merkBuch),
+                    () => {
+                        st._weltbildLuecke = typeof r._weltbildFehlt === "function" ? r._weltbildFehlt().join(" · ") : "";
+                        st._weltbildLueckeSeit = performance.now() - (r.constructor.WELTBILD_STILL_MS || 0) - 1;
+                    }
+                );
+            else m.ohneFall.lueckeArbeitet = "kein Studio-Faden nach dem Boot";
             // (7) eine Lücke flackert (Gegenprüfung Runde 2: ihre Zahl wechselt je Frage, die Ruhe-Uhr beginnt je Wechsel neu)
             // seit über einer Minute: der Ladeschirm weicht LAUT
             if (baum)
@@ -1513,6 +1529,7 @@ async function probe(arg) {
             allesSteht: { weg: true, stand: "", warn: 0 },
             lueckeRuht: { weg: true, stand: "", warn: 1 },
             lueckeFlackert: { weg: true, stand: "", warn: 1 },
+            lueckeArbeitet: { weg: false, stand: "das Buch der Studios öffnet sich", warn: 0, terme: ["buch"] },
         };
         const faelle = [
             [
@@ -1580,6 +1597,11 @@ async function probe(arg) {
                         "der Fall pflanzung nennt den Term „saat“",
                     ],
                     ["ohne die Terme", { terme: undefined }, "die Terme des ersten Weltbilds fehlen"],
+                    [
+                        "eine arbeitende Lücke weicht (Prüfung K60-1 m1-6B: das Buch kam nach 19,6 s, der Ladeschirm wich nach 15 s)",
+                        { faelle: Object.assign({}, l2aFaelle, { lueckeArbeitet: { weg: true, stand: "", warn: 1, terme: ["buch"] } }) },
+                        "eine arbeitende Lücke weicht wie eine ruhende",
+                    ],
                     ["ohne Streamer weicht der Ladeschirm (Befund 09.10.)", { faelle: Object.assign({}, l2aFaelle, { streuNie: { weg: true, stand: "", warn: 0 } }) }, "ohne eine gestreamte Streu-Region (der Streamer lief noch nie) weicht der Ladeschirm"],
                     ["ein Fall ohne Grund", { faelle: Object.assign({}, l2aFaelle, { karteOffen: undefined }) }, "mit der offenen Karte eines fernen Baums: die Probe stellte den Fall nicht her und nennt keinen Grund"],
                     ["kein Ladeschirm (Befund)", { imHtml: false }, "kein Ladeschirm im HTML"],
@@ -1789,7 +1811,7 @@ async function probe(arg) {
         check("Selbst-Test W: der Arbeitsbaum ist grün", gruen.every((w) => w[1]), gruen.filter((w) => !w[1]).map((w) => w[0]).join(" | "));
         const vorStand = quelle
             .replace("if (!this.state._weltbildDa) this._ankunftsBild();", "")
-            .replace("const fehlt = this._weltbildFehlt();", 'const fehlt = this._builtRingRadius() >= 0 ? [] : ["Boden"];')
+            .replace("const luecken = this._weltbildLuecken();", 'const luecken = this._builtRingRadius() >= 0 ? [] : [{ satz: "Boden" }];')
             .replace("hotbar: [null, null, null, null, null, null, null, null, null],", 'hotbar: ["stein_block", "waterfall", "damm", null, null, null, null, null, null],')
             .replace("const anchor = this._siedlungsAnker(plan, o.position || null, o.blick || null);", 'const anchor = this._structureSpawnPos("haus_basis", base, { state: this.state }, 3);')
             .replace("{ durchPflanzen: true }", "{}")

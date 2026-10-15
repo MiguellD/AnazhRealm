@@ -2361,12 +2361,17 @@ class AnazhRealm_Z25c {
     _ankunftsBild() {
         const st = this.state;
         if (st._weltbildDa) return true;
-        const fehlt = this._weltbildFehlt();
+        const luecken = this._weltbildLuecken();
+        const fehlt = luecken.map((l) => l.satz);
         if (fehlt.length) {
             const jetzt = performance.now();
             const sig = fehlt.join(" · ");
             if (st._weltbildErsteFrage == null) st._weltbildErsteFrage = jetzt;
-            if (st._weltbildLuecke !== sig) {
+            // DIE RUHE IST RUHE (K60): die Uhr läuft nur, solange für keine Lücke etwas unterwegs ist (`arbeitet`). Befund
+            // Prüfung K60-1 (m1-6B, Radeon kalt unter Fremdlast): Ring 1 von 4 s bis 19 s, das Buch kam nach 19,6 s — die
+            // Stand-Zeile blieb gleich, während beide Fäden arbeiteten, und der Ladeschirm wich nach 15 s „Ruhe" mit dem
+            // halben Bild (kein Baum, kein Horizont). Was nie kommt, fängt der Deckel.
+            if (st._weltbildLuecke !== sig || luecken.some((l) => l.arbeitet)) {
                 st._weltbildLuecke = sig;
                 st._weltbildLueckeSeit = jetzt;
             }
@@ -2429,7 +2434,8 @@ class AnazhRealm_Z25c {
     _weltbildLuecken() {
         const st = this.state;
         const out = [];
-        const luecke = (term, satz) => out.push({ term, satz });
+        // `arbeitet`: für diese Lücke ist etwas unterwegs (ein Faden baut an ihr) — die Ruhe-Uhr von `_ankunftsBild` steht
+        const luecke = (term, satz, arbeitet) => out.push({ term, satz, arbeitet: !!arbeitet });
         const pm = st.playerMesh;
         if (!pm) {
             luecke("welt", "die Welt entsteht");
@@ -2438,7 +2444,11 @@ class AnazhRealm_Z25c {
         const ring = this._builtRingRadius();
         const ringSoll = AnazhRealm.RING_EXIST_FLOOR;
         if (!(ring != null && ring >= ringSoll))
-            luecke("boden", `der Boden wächst (Ring ${ring != null && ring >= 0 ? ring + 1 : 0} von ${ringSoll + 1})`);
+            luecke(
+                "boden",
+                `der Boden wächst (Ring ${ring != null && ring >= 0 ? ring + 1 : 0} von ${ringSoll + 1})`,
+                st.voxelWorkerPending && st.voxelWorkerPending.size > 0
+            );
         // DER HORIZONT (K60): der Fern-Ring zeigt seine Schalen erst ganz (`fr.ready`), das Feld-Panorama die Ferne erst
         // gemalt (`panoLaeufe`). Seit K60 zeichnet unter dem Ladeschirm die Scheibe den Ring allein (`_tickFernRing`) —
         // ohne diesen Term stand das Bild ohne Horizont (Prüfung K60-1: in 1 von 4 Kalt-Läufen am Kopf).
@@ -2458,7 +2468,7 @@ class AnazhRealm_Z25c {
         if (!this._foundryEnabled()) return out;
         const f = this._foundry;
         if (!f || !f.ready || !f.recipes) {
-            luecke("buch", "das Buch der Studios öffnet sich");
+            luecke("buch", "das Buch der Studios öffnet sich", !!(f && f.worker));
             return out;
         }
         const p = pm.position;
