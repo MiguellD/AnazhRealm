@@ -2842,7 +2842,7 @@ class AnazhRealm_Z05b {
 
     // DIE UMGEBUNG ZURÜCK AUF DIE CPU (je Neuzeichnung, asynchron): die Equirekt-Tafel als lineare Leuchtdichte je Texel
     // (`_skyEnvData`, Float32 rgba, Zeile 0 = Nadir wie three sie sampelt) — der Leser `_himmelsIrradianz` (Belichtung,
-    // Feld-Pass, Wasser). Eine spätere Lesung überholt eine frühere. DIE LESUNG DIESER MALUNG ist ein Versprechen
+    // Feld-Pass, Wasser). Eine spätere Lesung überholt eine frühere (wer auf die frühere wartet, wartet auf sie). DIE LESUNG DIESER MALUNG ist ein Versprechen
     // (`state._skyEnvLesung`, true sobald sie liegt): wer nach einem Sprung der Uhr die Bestrahlung der neuen Stunde braucht,
     // wartet auf sie — die CPU sieht den Himmel EINE Lesung nach der Malung, nie davor. Ein echter Renderer ohne Rücklesung
     // bricht laut (bis zur Nachbesserung kehrte die Lesung still zurück, und jeder Leser sah keinen Himmel).
@@ -2859,7 +2859,7 @@ class AnazhRealm_Z05b {
         const nr = (st._skyEnvLeseNr = (st._skyEnvLeseNr || 0) + 1);
         st._skyEnvLesung = r.readRenderTargetPixelsAsync(A.rtEq, 0, 0, W, H).then(
             (px) => {
-                if (nr !== st._skyEnvLeseNr) return false;
+                if (nr !== st._skyEnvLeseNr) return st._skyEnvLesung; // überholt: das Versprechen der neueren Lesung
                 const d = st._skyEnvData || (st._skyEnvData = new Float32Array(W * H * 4));
                 const schritt = Math.floor(px.length / H); // die Zeilen liegen ausgerichtet (bytesPerRow)
                 const halb = px instanceof Uint16Array;

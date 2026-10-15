@@ -298,14 +298,16 @@ async function s0Probe(page, station, schein) {
             if (!(await r._himmelFrisch())) out.befunde.push("S0 Himmel: keine Lesung der Umgebung (die Probe ist blind)");
             for (const t of [0.5, 0]) {
                 if (schein) r._ensureSkyEnvironment = () => true; // der taube Maler
+                const nr0 = s._skyEnvLeseNr || 0;
                 uhr(t);
+                const gemalt = (s._skyEnvLeseNr || 0) !== nr0; // der Sprung malt die Umgebung der neuen Stunde
                 await s._skyEnvLesung;
                 const sprung = lum(r._waagrechtIrradianz([0, 0, 0]));
                 delete r._ensureSkyEnvironment;
                 await r._himmelFrisch(); // die Umgebung frisch aus den Quellen, die jetzt gelten
                 const frisch = lum(r._waagrechtIrradianz([0, 0, 0]));
                 out.himmel.push({ uhr: t, sprung: +sprung.toFixed(4), frisch: +frisch.toFixed(4) });
-                if (!(Math.abs(sprung - frisch) <= tol * frisch + 0.005))
+                if (!gemalt || !(Math.abs(sprung - frisch) <= tol * frisch + 0.005))
                     out.befunde.push(
                         `S0 Himmel: nach dem Sprung auf ${t === 0 ? "Mitternacht" : "Mittag"} trägt die Umgebung die Bestrahlung ` +
                             `${sprung.toFixed(3)}, der geltende Himmel ${frisch.toFixed(3)} — die Himmels-Umgebung ` +
