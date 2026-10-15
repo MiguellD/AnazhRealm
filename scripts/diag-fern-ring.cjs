@@ -10,7 +10,7 @@
 //       waterLevel-Klemme; Reihe 0 trägt die Saum-Tauchkante), XZ exakt gesnappt.
 //   (3) RE-ZENTRIEREN — Spieler 400 m teleportieren + Ticks pumpen → der Anker
 //       wandert QUANTISIERT, der Höhen-Refresh läuft BUDGETIERT durch
-//       (≤ refreshVertsProTick je Tick, mehrere Ticks), die Proben stimmen am
+//       (in Scheiben aus dem Fern-Faden, mehrere Takte), die Proben stimmen am
 //       neuen Ort.
 //   (4) HEADLESS-DEFAULT — ohne Hook entsteht KEIN Ring (Null-Renderer ruht).
 //   (5) kein pageerror.
@@ -78,6 +78,16 @@ const server = statikServer();
         const F = r.constructor.FERN_RING;
         // je Schale ihre volle Geometrie (der Träger: das ganze Index-Muster); vor der Teilung (K16 Runde 3) je Schale ein Mesh
         const geosVon = (f) => f.geos || f.meshes.map((m) => m.geometry);
+        // DER FLUSS IN DER MASCHE als Erwartung der Linse (die Formel des Fern-Fadens `fernFlussDeckung`, B2): der Anteil einer
+        // Masche (halbe Kante hs), den das Wasser des nächsten Segments deckt (`_hydroDistAt`)
+        const flussDeckungL = (x, z, hs, aus) => {
+            const f = r._hydroDistAt(x, z);
+            if (aus) aus.spiegel = f.spiegel;
+            if (!(f.dist < Infinity)) return 0;
+            const w = f.halfW;
+            if (!(hs > 0)) return f.dist <= w ? 1 : 0;
+            return Math.max(0, Math.min(f.dist + hs, w) - Math.max(f.dist - hs, -w)) / (2 * hs);
+        };
         const p0 = { x: r.state.playerMesh.position.x, z: r.state.playerMesh.position.z };
 
         // ===== (4) HEADLESS-DEFAULT: ohne Hook entsteht KEIN Ring =====
@@ -87,34 +97,40 @@ const server = statikServer();
         for (let t = 0; t < 5; t++) r._tickFernRing(r.state.playerMesh.position);
         res.headlessQuiet = r.state.fernRing === null || r.state.fernRing === undefined;
 
-        // ===== Hook AN: der Ring entsteht, der Refresh läuft budgetiert =====
+        // ===== Hook AN: der Ring entsteht in Scheiben aus dem Fern-Faden (B2) =====
         window.__anazhFernRing = true;
-        // SYNCHRONER Pump-Block (kein await dazwischen — der RAF-Loop darf die
-        // Budget-Zählung nicht verwischen): Tick 1 baut + erste Scheibe, dann
-        // weiter bis der Cursor durch ist. Je Tick <= refreshVertsProTick.
+        // Der Takt bestellt Scheiben (`FERN_RING.scheibe`) beim Fern-Faden und hängt die Antworten ein — die Linse pumpt den
+        // Takt mit einer Pause je Takt (die Antworten brauchen die Ereignis-Schleife), bis der Cursor durch ist.
+        const sleepT = (ms) => new Promise((rs) => setTimeout(rs, ms));
+        // DER TAKT DES RINGS bis zur Bedingung (höchstens `ms`): je Takt die Zahl der eingehängten Punkte
+        const pumpe = async (pos, fertig, ms, takt = () => r._tickFernRing(pos)) => {
+            let takte = 0;
+            let maxD = 0;
+            let vor = r.state.fernRing ? r.state.fernRing.cursor : 0;
+            for (const dl = performance.now() + ms; performance.now() < dl; await sleepT(16)) {
+                takt();
+                takte++;
+                const f = r.state.fernRing;
+                if (f) [maxD, vor] = [Math.max(maxD, f.cursor - vor), f.cursor];
+                if (f && fertig(f)) break;
+            }
+            return { takte, maxD };
+        };
         let ticks = 0;
         let maxDelta = 0;
         {
-            let prevCursor = 0;
             r._tickFernRing(r.state.playerMesh.position);
-            const fr0 = r.state.fernRing;
-            if (!fr0) return { fatal: "Hook an, aber kein fernRing entstand" };
-            prevCursor = fr0.cursor;
-            maxDelta = prevCursor;
-            ticks = 1;
-            while (fr0.cursor < fr0.totalVerts && ticks < 100) {
-                r._tickFernRing(r.state.playerMesh.position);
-                const d = fr0.cursor - prevCursor;
-                if (d > maxDelta) maxDelta = d;
-                prevCursor = fr0.cursor;
-                ticks++;
-            }
+            if (!r.state.fernRing) return { fatal: "Hook an, aber kein fernRing entstand" };
+            const b = await pumpe(r.state.playerMesh.position, (f) => f.cursor >= f.totalVerts, 120000);
+            ticks = b.takte + 1;
+            maxDelta = b.maxD;
         }
         const fr = r.state.fernRing;
         const frBau = fr;
         res.buildTicks = ticks;
         res.buildMaxDelta = maxDelta;
-        res.buildBudgeted = maxDelta > 0 && maxDelta <= F.refreshVertsProTick && ticks >= 2;
+        res.buildBudgeted =
+            maxDelta > 0 && maxDelta <= F.scheibe * F.scheibenImFlug && ticks >= 2 && fr.cursor === fr.totalVerts;
         res.ready = fr.ready === true;
 
         // ===== (1) STRUKTUR: 3 Schalen, deklarierte Vertex-Zahlen, EIN Material =====
@@ -221,7 +237,7 @@ const server = statikServer();
             if (!nassHier) {
                 const pf = r._fernRingPunkt(fr, gIdx).fuss;
                 const fl = {};
-                const c = r._fernFlussDeckung(sx, sz, pf ? Math.max(pf.ht, pf.hr) : 0, fl);
+                const c = flussDeckungL(sx, sz, pf ? Math.max(pf.ht, pf.hr) : 0, fl);
                 if (c > 0 && fl.spiegel === fl.spiegel) expY += (fl.spiegel - expY) * c;
             }
             if (row === 0) expY -= F.saumDrop;
@@ -271,7 +287,7 @@ const server = statikServer();
                 const hs = [];
                 let nass0 = 0;
                 for (let g = 0; g < bis; g++) {
-                    const h = fr.farbLaw[g];
+                    const h = fr.law[g];
                     if (fr.nass[g]) nass0++;
                     if (h === h) hs.push(h);
                 }
@@ -297,7 +313,7 @@ const server = statikServer();
                     const pp = r._fernRingPunkt(fr, g);
                     if (pp.s === 0 && pp.row === 0) continue; // die Saum-Tauchkante liegt ohnehin tiefer
                     const y = geosVon(fr)[pp.s].attributes.position.getY(pp.li);
-                    r._fernRingY(fr, pp, fr.farbLaw[g], wlW, aus);
+                    r._fernRingY(fr, pp, wlW, aus);
                     const talP = aus.spiegel - hub;
                     if (talP < tal) tal = talP;
                     nass++;
@@ -307,12 +323,20 @@ const server = statikServer();
                 return { nass, klumpen, tal: +tal.toFixed(2), hoechster: +hoechster.toFixed(2) };
             };
             const tiefe0 = Object.getPrototypeOf(r)._fernRingWasserTiefe;
+            // der Spiegel der Probe: jenseits der Kacheln ist er das Meer — der Faden gab jedem Punkt seinen Spiegel
+            // (`fr.spiegel`), die Probe hebt ihn für die Punkte unter wlW und legt ihn danach zurück
+            const spiegel0 = fr.spiegel.slice();
+            const probeSpiegel = (an) => {
+                for (let g = 0; g < Math.min(fr.totalVerts, fr.cursor); g++)
+                    if (fr.law[g] < wlW) {
+                        fr.spiegel[g] = an ? Math.max(spiegel0[g], wlW) : spiegel0[g];
+                        r._fernRingSetzVertex(fr, r._fernRingPunkt(fr, g), an ? wlW : wl0);
+                    }
+            };
             try {
                 if (!fwAlt || !fwAlt.mesh) r.state.farWater = { mesh: { stellvertreter: true } };
                 // der Spiegel der Probe nässt jenseits der Kacheln (dort ist er das Meer): die EINE Naht setzt die Punkte neu
-                if (wlW !== wl0)
-                    for (let g = 0; g < Math.min(fr.totalVerts, fr.cursor); g++)
-                        if (fr.farbLaw[g] < wlW) r._fernRingSetzVertex(fr, r._fernRingPunkt(fr, g), fr.farbLaw[g], wlW);
+                if (wlW !== wl0) probeSpiegel(true);
                 fr.wasserTiefe = undefined;
                 r._fernRingWasserNeu(fr);
                 res.wasser = zaehlen();
@@ -326,9 +350,7 @@ const server = statikServer();
                 r.state.farWater = fwAlt;
                 r.state.waterLevel = wl0;
                 // die Punkte, die nur der Spiegel der Probe nässte, liegen wieder auf ihrem Gesetz
-                if (wlW !== wl0)
-                    for (let g = 0; g < Math.min(fr.totalVerts, fr.cursor); g++)
-                        if (fr.farbLaw[g] < wlW) r._fernRingSetzVertex(fr, r._fernRingPunkt(fr, g), fr.farbLaw[g], wl0);
+                if (wlW !== wl0) probeSpiegel(false);
                 fr.wasserTiefe = undefined;
                 r._fernRingWasserNeu(fr);
             }
@@ -363,22 +385,44 @@ const server = statikServer();
             r.state.playerMesh.position.x = p2.x;
             r.state.playerMesh.position.z = p2.z;
             const refreshedBefore = fr.refreshed;
-            let prevCursor2 = null;
             const pos2 = { x: p2.x, z: p2.z };
-            r._tickFernRing(pos2); // Re-Anker: Cursor 0 + erste Scheibe
-            res.anchorMoved = fr.anchorX !== oldAnchorX;
-            res.anchorQuantized =
-                fr.anchorX === Math.round(p2.x / F.anchorQuant) * F.anchorQuant &&
-                fr.anchorZ === Math.round(p2.z / F.anchorQuant) * F.anchorQuant;
-            prevCursor2 = fr.cursor;
-            maxDelta2 = prevCursor2;
-            ticks2 = 1;
-            while (fr.cursor < fr.totalVerts && ticks2 < 100) {
-                r._tickFernRing(pos2);
-                const d = fr.cursor - prevCursor2;
-                if (d > maxDelta2) maxDelta2 = d;
-                prevCursor2 = fr.cursor;
-                ticks2++;
+            // DER HAUPT-FADEN RECHNET KEIN FERN-GESETZ (B2): während der Re-Anker eingehängt wird, zählt die Linse jeden Ruf
+            // des Höhen-Gesetzes und der Boden-Farbe AUS dem Takt des Rings (die Zähler leben nur um den Ruf von
+            // `_tickFernRing`, solange der Cursor läuft) — Soll 0; der Selbsttest ruft das Gesetz einmal im Fenster.
+            const gesetz = { rufe: 0, an: false };
+            const tms = r._terrainMacroSurfaceY;
+            const bfa = r._bodenFarbeAt;
+            r._terrainMacroSurfaceY = function (...a) {
+                if (gesetz.an) gesetz.rufe++;
+                return tms.apply(this, a);
+            };
+            r._bodenFarbeAt = function (...a) {
+                if (gesetz.an) gesetz.rufe++;
+                return bfa.apply(this, a);
+            };
+            try {
+                gesetz.an = true;
+                r._tickFernRing(pos2); // Re-Anker: Cursor 0 + die ersten Scheiben bestellt
+                gesetz.an = false;
+                res.anchorMoved = fr.anchorX !== oldAnchorX;
+                res.anchorQuantized =
+                    fr.anchorX === Math.round(p2.x / F.anchorQuant) * F.anchorQuant &&
+                    fr.anchorZ === Math.round(p2.z / F.anchorQuant) * F.anchorQuant;
+                const c1 = fr.cursor; // der erste Takt des Re-Ankers hängt ab 0 ein
+                const b2 = await pumpe(pos2, (f) => f.cursor >= f.totalVerts, 120000, () => {
+                    gesetz.an = fr.cursor < fr.totalVerts;
+                    r._tickFernRing(pos2);
+                    gesetz.an = false;
+                });
+                [ticks2, maxDelta2] = [b2.takte + 1, Math.max(c1, b2.maxD)];
+                res.gesetzImTakt = gesetz.rufe;
+                gesetz.an = true;
+                r._terrainMacroSurfaceY(p2.x, p2.z, false); // der Selbsttest: EIN Ruf im Fenster
+                gesetz.an = false;
+                res.gesetzSelbsttest = gesetz.rufe - res.gesetzImTakt;
+            } finally {
+                delete r._terrainMacroSurfaceY;
+                delete r._bodenFarbeAt;
             }
             res.refreshRan = fr.refreshed - refreshedBefore === fr.totalVerts;
             const p3 = probeAll(0);
@@ -386,45 +430,7 @@ const server = statikServer();
             res.probes2Worst = p3.worst;
         }
         res.reanchorTicks = ticks2;
-        res.reanchorBudgeted = maxDelta2 > 0 && maxDelta2 <= F.refreshVertsProTick && ticks2 >= 2;
-
-        // ===== (3b) DAS FERN-FARB-BUDGET: der GPU-Rückruf färbt nicht synchron =====
-        // Nach dem ersten Bild rechnet die Setz-Naht keine Fern-Farbe mehr: der Rückruf eines Re-Ankers setzt die
-        // Höhen, neue Punkte warten in der Farb-Schlange, die Takte (`_fernFarbTakt`) färben sie leer. Gezählt wird
-        // jede Fern-Farbe außerhalb des Budgets (der alte Rückruf rechnete ~8 000 in einem Frame, 10–29 ms).
-        {
-            const sleep3 = (ms) => new Promise((rs) => setTimeout(rs, ms));
-            let ausser = 0;
-            let imBudget = false;
-            const ffa = r._fernFarbeAt;
-            const fft = r._fernFarbTakt;
-            r._fernFarbeAt = function (...a) {
-                if (!imBudget) ausser++;
-                return ffa.apply(this, a);
-            };
-            r._fernFarbTakt = function (...a) {
-                imBudget = true;
-                try {
-                    return fft.apply(this, a);
-                } finally {
-                    imBudget = false;
-                }
-            };
-            const pos3 = { x: p2.x + 400, z: p2.z };
-            r.state.playerMesh.position.x = pos3.x;
-            const laeufe0 = fr.gpuLaeufe || 0;
-            r._tickFernRing(pos3); // Re-Anker: der GPU-Flug startet, die erste CPU-Scheibe läuft
-            const dl3 = performance.now() + 90000;
-            while ((fr.gpuLaeufe || 0) === laeufe0 && performance.now() < dl3) await sleep3(50);
-            res.budgetGpu = (fr.gpuLaeufe || 0) > laeufe0;
-            res.budgetOffen = fr.farbN; // nach dem Rückruf, vor dem nächsten Takt
-            for (let t = 0; t < 600 && (fr.farbN > 0 || fr.cursor < fr.totalVerts); t++) r._tickFernRing(pos3);
-            res.budgetLeer = fr.farbN === 0;
-            res.budgetAusser = ausser;
-            delete r._fernFarbeAt;
-            delete r._fernFarbTakt;
-            r.state.playerMesh.position.x = p2.x;
-        }
+        res.reanchorBudgeted = maxDelta2 > 0 && maxDelta2 <= F.scheibe * F.scheibenImFlug && ticks2 >= 2;
 
         // ===== (6) SICHT-BESITZ: Kamera-Weitung + Höhen-Öffnung + Rücknahme =====
         // Die Weitung geschah beim Pump (Ring wurde ready): far = Schale-3 + 500.
@@ -476,46 +482,12 @@ const server = statikServer();
         r._fernRingDispose();
         res.disposeRestored = r.state.camera.far === altVorDispose && r.state.fernRing === null;
 
-        // ===== (7) DER FELD-ZEICHNER (Stufe-2-Vollausbau): das Feld malt =====
-        // Neubau nach dem Dispose: Tick 1 baut den Ring, startet den EINEN
-        // Feld-Flug (das Gelände-Gesetzbuch durch _feldZeichnerHoehen) UND läuft die
-        // erste CPU-Scheibe. Dann OHNE weitere Ticks auf den Flug warten:
-        // malt das Feld, ist der Ring BEREIT obwohl der CPU-Cursor noch vorn
-        // steht — der Horizont steht vor der CPU. Proben: |GPU-Höhe − f64-
-        // Gesetz| ≤ 0.5 m (SEH-Band; die Linse gate:dritter-spiegel misst mm,
-        // hier zählt der 8-km-Blick). Danach CPU zu Ende pumpen → Band 2 hat
-        // bereits bewiesen, dass die Verfeinerung exakt ist.
-        const sleep7 = (ms) => new Promise((rs) => setTimeout(rs, ms));
+        // ===== (7) DER NEUBAU AUS DEM FADEN: nach dem Dispose entsteht der Ring wieder ganz (B2) =====
+        const sleep7 = sleepT;
         r._tickFernRing(r.state.playerMesh.position);
         const fr7 = r.state.fernRing;
-        res.fzStart = !!(fr7 && (fr7.gpuFlug === true || (fr7.gpuLaeufe || 0) >= 1));
-        const dl7 = performance.now() + 90000;
-        while (fr7 && (fr7.gpuLaeufe || 0) < 1 && fr7.gpuFlug === true && performance.now() < dl7) await sleep7(100);
-        res.fzLaeufe = fr7 ? fr7.gpuLaeufe || 0 : 0;
-        res.fzCursor = fr7 ? fr7.cursor : -1;
-        res.fzTotal = fr7 ? fr7.totalVerts : -1;
-        res.fzReadyVorCpu = !!(fr7 && fr7.ready === true && fr7.cursor < fr7.totalVerts);
-        let fzWorst = -1;
-        let fzProben = 0;
-        if (fr7 && res.fzLaeufe >= 1) {
-            fzWorst = 0;
-            // DIESELBE Erwartung wie Band 2 (`probeVertex`: Snap · Deck-Zone mit vollem Gesetz · Wasser-Klemme · Saum ·
-            // der Ring unter dem Gebauten) — eine eigene Teil-Formel ohne Deck-Zone und Weich-Wand maß 61 m
-            // „Abweichung", wo der Ring nur dem gebauten Chunk wich.
-            for (let k = 0; k < 60; k++) {
-                const g = (fr7.cursor + 1 + ((k * 47) % (fr7.totalVerts - fr7.cursor - 1))) | 0;
-                const pv = probeVertex(g, 0, fr7);
-                const d7 = pv.okXZ ? pv.dy : Infinity;
-                if (d7 > fzWorst) fzWorst = d7;
-                fzProben++;
-            }
-        }
-        res.fzWorst = fzWorst;
-        res.fzProben = fzProben;
-        // CPU zu Ende (die Verfeinerung läuft über den GPU-Anstrich):
-        for (let t = 0; t < 100 && fr7 && fr7.cursor < fr7.totalVerts; t++)
-            r._tickFernRing(r.state.playerMesh.position);
-        res.fzCpuFertig = !!(fr7 && fr7.cursor >= fr7.totalVerts);
+        await pumpe(r.state.playerMesh.position, (f) => f.cursor >= f.totalVerts, 120000);
+        res.fzCpuFertig = !!(fr7 && fr7.cursor >= fr7.totalVerts && fr7.ready === true);
 
         // ===== (8) DER FELD-PASS: die Ferne ganz ohne Schalen-Geometrie =====
         // Der Pass ist Ring-Besitz (_tickFeldPass aus _tickFernRing): warte auf
@@ -589,19 +561,17 @@ const server = statikServer();
             res.fpTrefferKonstant = trefferA;
             fp8.mat.outputNode = echterOut;
             fp8.mat.needsUpdate = true;
-            const treffer = async () => {
+            const bild = async () => {
                 await ren8.renderAsync(szene8, cam8);
-                const buf8 = await ren8.readRenderTargetPixelsAsync(rt8, 0, 0, 96, 64);
-                let n = 0;
-                for (let px = 0; px < 96 * 64; px++) {
-                    if (buf8[px * 4 + 3] > 0 && buf8[px * 4] + buf8[px * 4 + 1] + buf8[px * 4 + 2] > 0) n++;
-                }
-                return n;
+                return ren8.readRenderTargetPixelsAsync(rt8, 0, 0, 96, 64);
             };
+            const summe = (b, px) => (b[px * 4 + 3] > 0 ? b[px * 4] + b[px * 4 + 1] + b[px * 4 + 2] : 0);
             // DIE LUFT LIEST DIE EINE ATMOSPHÄRE (D3): ihre In-Streuung ist die Himmels-Sicht der Tafeln, die der Renderer
             // der Welt je Takt zeichnet (`_atmoTakt`) — die Probe zeichnet sie auf IHREM Renderer, wie der Spiel-Frame es
-            // tut. Selbsttest (Konsum): ohne die Tafeln dunstet der Pass in Schwarz (die Ferne jenseits 8 km ist Luft).
-            res.fpTrefferOhneTafeln = await treffer();
+            // tut. Selbsttest (Konsum): ohne die Tafeln fehlt jedem Treffer-Pixel die In-Streuung — die Luft hebt ihn mit den Tafeln
+            // um ≥ 24/765 (die Ferne jenseits 8 km ist Luft). Bis B2 zählte die Probe Pixel über Schwarz: das hing am Licht des
+            // Feldes (`l0c` an der Basis zur Probe noch 0, der Takt lief synchron), nie an der Luft.
+            const ohne8 = await bild();
             const A8 = r._atmoLutBau();
             const welt8 = r.state.renderer;
             r.state.renderer = ren8;
@@ -613,7 +583,10 @@ const server = statikServer();
                 r.state.renderer = welt8;
             }
             ren8.setRenderTarget(rt8);
-            res.fpTreffer = await treffer();
+            const mit8 = await bild();
+            [res.fpTreffer, res.fpLuftGehoben] = [0, 0];
+            for (let px = 0; px < 96 * 64; px++)
+                if (summe(mit8, px) > 0) [res.fpTreffer, res.fpLuftGehoben] = [res.fpTreffer + 1, res.fpLuftGehoben + (summe(mit8, px) - summe(ohne8, px) >= 24)];
             ren8.dispose();
             if (fp8 && alterParent) alterParent.add(fp8.mesh);
         } catch (e8) {
@@ -705,11 +678,8 @@ const server = statikServer();
             };
             r._fernRingDispose();
             const pos9 = r.state.playerMesh.position;
-            for (let t = 0; t < 400; t++) {
-                r._tickFernRing(pos9);
-                const f9 = r.state.fernRing;
-                if (f9 && f9.cursor >= f9.totalVerts && f9.farbN === 0) break;
-            }
+            r._tickFernRing(pos9);
+            await pumpe(pos9, (f) => f.cursor >= f.totalVerts, 120000);
             // DIE DECK-WACHE SCHWINGT EIN (K16): der Rand der Naht misst die Fläche des Feldes in der Wache, gedeckelt je
             // Takt (`_fernRingFeldY`, FERN_RING.feldJeTakt) — wie im Spiel nach jedem Anker: die Linse pumpt, bis jeder
             // Rand-Punkt sie trägt (höchstens 3 000 Takte), und nennt die Takte und die Kosten einer Spalten-Probe.
@@ -912,12 +882,11 @@ const server = statikServer();
                         if (!r._chunkDecktRing(xf, zf)) {
                             const yf = hoch(ringMesh, xf, zf);
                             const radF = Math.hypot(xf - fr9.anchorX, zf - fr9.anchorZ);
-                            const lawF = r._fernRingDeckMisch(
-                                fr9,
-                                radF,
-                                r._terrainMacroSurfaceY(xf, zf, false),
-                                r._terrainMacroSurfaceY(xf, zf, true)
-                            );
+                            // die Deck-Mischung der Bau-Zone (die Formel des Fern-Fadens, B2)
+                            const mak = r._terrainMacroSurfaceY(xf, zf, false);
+                            const dz = fr9.deckZoneRad;
+                            const wF = radF <= dz ? 1 : radF <= dz * 1.35 ? (dz * 1.35 - radF) / (dz * 0.35) : 0;
+                            const lawF = mak + (r._terrainMacroSurfaceY(xf, zf, true) - mak) * wF - 0.3 * wF;
                             if (yf !== null && !(lawF < wl9)) sehne.push(Math.abs(yf - lawF));
                         }
                     }
@@ -1339,6 +1308,23 @@ const server = statikServer();
             let alt = 0;
             let na = 0;
             const K = 32;
+            // DIE DECKUNG AN DER STELLE aus dem Fern-Faden (B2): erst die Land-Punkte sammeln, EIN Auftrag (fussM 0, ohne
+            // Fluss-Anteil), dann in derselben Folge lesen
+            const sammel = [];
+            const sammelY = [];
+            for (let kj = 0; kj < N / K; kj++)
+                for (let ki = 0; ki < N / K; ki++)
+                    for (let j = 2; j < K; j += 4)
+                        for (let i = 2; i < K; i += 4) {
+                            const x = x0 + ki * K + i;
+                            const z = z0 + kj * K + j;
+                            const y = r._terrainMacroSurfaceY(x, z, true);
+                            if (!(y > wl + 0.4)) continue;
+                            sammel.push(x, z);
+                            sammelY.push(y);
+                        }
+            const deckW = (await r._fernAuftrag("teile", { punkte: new Float64Array(sammel), y: new Float64Array(sammelY), roh: true })).teile;
+            let kW = 0;
             for (let kj = 0; kj < N / K; kj++)
                 for (let ki = 0; ki < N / K; ki++) {
                     let gk = 0;
@@ -1352,8 +1338,7 @@ const server = statikServer();
                             const y = r._terrainMacroSurfaceY(x, z, true);
                             if (!(y > wl + 0.4)) continue;
                             land++;
-                            r._fernFarbeTeile(x, y, z, t, null, 0);
-                            ak += t[6];
+                            ak += deckW[kW++ * 8 + 6];
                             altK += core.forestBestand(fbm, x, z, 0).geburt;
                         }
                     if (land < 48) continue;
@@ -1381,9 +1366,26 @@ const server = statikServer();
         // Selbsttest: die alte Regel (kein Anteil, keine Senkung) verfehlt jeden deutlichen Fluss-Punkt.
         try {
             const frW = r.state.fernRing;
-            for (let t = 0; t < 400 && frW.cursor < frW.totalVerts; t++) r._fernRingRefresh(4096);
-            r._fernRingFaerben(frW, performance.now() + 60000, frW.totalVerts);
+            await pumpe(r.state.playerMesh.position, (f) => f.cursor >= f.totalVerts, 120000);
             const wl = Number.isFinite(r.state.waterLevel) ? r.state.waterLevel : 0;
+            // die Erwartung je Punkt aus dem Fern-Faden: der Fluss-Anteil der Masche (Slot 7 mit Fuß) und das Land der Masche
+            // (die Teile ohne Fluss-Anteil), an der Höhe, die der Ring dem Punkt gab
+            const nW = frW.totalVerts;
+            const ptsW = new Float64Array(nW * 2);
+            const htW = new Float64Array(nW);
+            const hrW = new Float64Array(nW);
+            const yW = new Float64Array(nW);
+            for (let g = 0; g < nW; g++) {
+                const p = r._fernRingPunkt(frW, g);
+                ptsW[g * 2] = p.x;
+                ptsW[g * 2 + 1] = p.z;
+                htW[g] = p.fuss.ht;
+                hrW[g] = p.fuss.hr;
+                yW[g] = frW.law[g];
+            }
+            const auftragW = () => ({ punkte: ptsW.slice(), y: yW.slice(), ht: htW.slice(), hr: hrW.slice(), ax: frW.anchorX, az: frW.anchorZ });
+            const mitFluss = await r._fernAuftrag("teile", auftragW());
+            const landW = await r._fernAuftrag("teile", { ...auftragW(), roh: true });
             const w = {
                 see: 0,
                 verdeckt: 0,
@@ -1397,7 +1399,7 @@ const server = statikServer();
                 altHoehe: 0,
                 hebMax: 0,
                 ohneAttribut: 0,
-                offen: frW.farbN,
+                offen: 0,
                 orte: [],
             };
             const geos = geosVon(frW);
@@ -1415,8 +1417,8 @@ const server = statikServer();
                     if (!(geos[p.s].attributes.position.getY(p.li) < aus.koerper)) w.verdeckt++;
                 }
                 if (frW.nass[g]) continue;
-                const hs = p.fuss ? Math.max(p.fuss.ht, p.fuss.hr) : 0;
-                const c = r._fernFlussDeckung(p.x, p.z, hs, fl);
+                const c = mitFluss.teile[g * 8 + 7];
+                fl.spiegel = frW.flussSp[g];
                 if (!(c >= 0.05)) continue;
                 w.fluss++;
                 if (c >= 0.25) w.sichtbar++;
@@ -1429,13 +1431,13 @@ const server = statikServer();
                         w.orte.push([Math.round(p.x), Math.round(p.z), +c.toFixed(2), +an.toFixed(2)]);
                 }
                 if (c > 0.05 && Math.abs(0 - c) > 0.05) w.alt++;
-                r._fernFarbeMasche(p.x, frW.farbLaw[g], p.z, land, p.fuss);
+                land.set(landW.teile.subarray(g * 8, g * 8 + 8));
                 const col = geos[p.s].attributes.color;
                 const d = Math.hypot(col.getX(p.li) - land[0], col.getY(p.li) - land[1], col.getZ(p.li) - land[2]);
                 if (p.fuss && d > 0.01) w.zwilling++;
                 const naht = (p.s === 0 && randV && randV[p.li]) || r._fernRingNaht(frW, p);
                 if (naht || !(fl.spiegel === fl.spiegel)) continue;
-                r._fernNass(p.x, p.z, frW.farbLaw[g], wl, nass);
+                r._fernNass(p.x, p.z, frW.law[g], wl, nass);
                 const boden = nass.y - (p.row === 0 ? saum : 0);
                 const soll = boden + (fl.spiegel - (p.row === 0 ? saum : 0) - boden) * c;
                 const y = geos[p.s].attributes.position.getY(p.li);
@@ -1482,7 +1484,7 @@ const server = statikServer();
                         const nz = (seg.bx - seg.ax) / l;
                         // daneben heißt: 2 Texel um den Punkt kein Wasser — auch keins des Nachbar-Bogens (der Mäander
                         // legt seine Schleifen eng; ein Punkt-Test traf den Rand der nächsten Schleife)
-                        const aussen = r._fernFlussDeckung(mx + nx * (hw + 2 * t), mz + nz * (hw + 2 * t), 2 * t);
+                        const aussen = flussDeckungL(mx + nx * (hw + 2 * t), mz + nz * (hw + 2 * t), 2 * t);
                         const d = lies(mx + nx * (hw + 2 * t), mz + nz * (hw + 2 * t));
                         if (aussen === 0 && d > 0.08) w.karteDanebenFehl++;
                     }
@@ -1526,7 +1528,7 @@ const server = statikServer();
     check("1: sichtbar erst nach vollem Refresh + frustumCulled aus, wirft nicht, empfängt (die Horizont-Karte, D3)", out.ready && out.visible && out.flags);
     check("1: LOCH-DECKEL — Schale 1 beginnt am Spieler (0.5·span), deckZoneRad = Ziel-Zone", out.innerRandOk === true);
     check(
-        "Bau BUDGETIERT über Ticks (je Tick <= refreshVertsProTick, mehrere Ticks — BOOT_PHASE3-Muster)",
+        "Bau IN SCHEIBEN aus dem Fern-Faden über Takte (je Takt <= scheibe × scheibenImFlug, mehrere Takte, Cursor voll)",
         out.buildBudgeted === true,
         `ticks=${out.buildTicks} maxDelta=${out.buildMaxDelta}`
     );
@@ -1561,14 +1563,15 @@ const server = statikServer();
         out.anchorMoved === true && out.anchorQuantized === true
     );
     check(
-        "3: der Höhen-Refresh läuft budgetiert durch (Budget-Zähler == totalVerts)",
+        "3: der Re-Anker hängt in Scheiben voll ein (Zähler == totalVerts)",
         out.refreshRan === true && out.reanchorBudgeted === true,
         `ticks=${out.reanchorTicks}`
     );
     check(
-        "3b: DAS FERN-FARB-BUDGET — der GPU-Rückruf eines Re-Ankers stellt neue Punkte in die Farb-Schlange, die Takte färben sie leer, keine Fern-Farbe außerhalb des Budgets",
-        out.budgetGpu === true && out.budgetOffen > 0 && out.budgetLeer === true && out.budgetAusser === 0,
-        `gpu=${out.budgetGpu} offen=${out.budgetOffen} leer=${out.budgetLeer} außerhalb=${out.budgetAusser}`
+        "3b: DER HAUPT-FADEN RECHNET KEIN FERN-GESETZ (B2) — während ein Re-Anker einhängt, ruft der Takt des Rings weder das Höhen-Gesetz noch die Boden-Farbe; Selbsttest: EIN Ruf im Fenster zählt",
+        out.gesetzImTakt === 0 && out.gesetzSelbsttest === 1,
+        `Rufe im Takt ${out.gesetzImTakt}, Selbsttest ${out.gesetzSelbsttest}` +
+            (out.gesetzImTakt ? " — TÄTER: der Takt des Rings rechnet das Gesetz der Ferne im Haupt-Faden" : "")
     );
     check(
         "3: die Proben stimmen am NEUEN Ort (Höhen schwimmen nicht)",
@@ -1587,21 +1590,9 @@ const server = statikServer();
     );
     check("6: DISPOSE-RÜCKNAHME — camera.far kehrt zum alten Wert zurück, Ring entsorgt", out.disposeRestored === true);
     check(
-        "7: DER FELD-ZEICHNER startet den Feld-Flug beim vollen Refresh (gelaende-core hoehe im SPIEL konsumiert)",
-        out.fzStart === true && out.fzLaeufe >= 1,
-        `laeufe=${out.fzLaeufe}`
+        "7: nach dem Dispose entsteht der Ring aus dem Fern-Faden wieder ganz (Cursor voll, sichtbar)",
+        out.fzCpuFertig === true
     );
-    check(
-        "7: das Feld malt den Horizont VOR der CPU (ready bei cursor < totalVerts)",
-        out.fzReadyVorCpu === true,
-        `cursor=${out.fzCursor}/${out.fzTotal}`
-    );
-    check(
-        "7: GPU-Höhen im SEH-Band des dritten Spiegels (≤ 0.5 m auf 8 km, 60 Proben)",
-        out.fzProben >= 40 && out.fzWorst >= 0 && out.fzWorst <= 0.5,
-        `worst=${Number.isFinite(out.fzWorst) ? out.fzWorst.toFixed(4) : out.fzWorst} proben=${out.fzProben}`
-    );
-    check("7: die CPU verfeinert danach aufs f64-Gesetz durch (Cursor läuft voll)", out.fzCpuFertig === true);
     check(
         "8: DER FELD-PASS existiert, das Feld malte, das PANORAMA ist gebacken (Persistenz)",
         out.fpDa === true &&
@@ -1622,9 +1613,9 @@ const server = statikServer();
         `treffer=${out.fpTreffer}${out.fpRenderErr ? " err=" + out.fpRenderErr : ""}`
     );
     check(
-        "8 SELBSTTEST: die Luft des Passes liest die Himmels-Sicht der EINEN Atmosphäre — ohne ihre Tafeln dunstet die Ferne schwarz",
-        Number.isFinite(out.fpTrefferOhneTafeln) && out.fpTrefferOhneTafeln < out.fpTreffer / 10,
-        `ohne-tafeln=${out.fpTrefferOhneTafeln} mit=${out.fpTreffer}`
+        "8 SELBSTTEST: die Luft des Passes liest die Himmels-Sicht der EINEN Atmosphäre — ohne ihre Tafeln fehlt jedem Treffer die In-Streuung",
+        out.fpTreffer > 50 && out.fpLuftGehoben >= out.fpTreffer * 0.9,
+        `von der Luft gehoben=${out.fpLuftGehoben} von ${out.fpTreffer} Treffern`
     );
     check(
         "8b: DAS EINBLENDEN — ein fern geborener Satz beginnt ganz verworfen und löst sich über WELT_SCHWUND_MS auf, ohne Wunsch erscheint er sofort",
@@ -1758,8 +1749,8 @@ const server = statikServer();
     }
     console.log(
         "\n✅ GRÜN — DER FERN-RING STEHT UND DAS FELD ZEICHNET: 3 Schalen aus dem EINEN Höhen-Gesetz " +
-            "(Fern-Wahrheit includeDetail=false, XZ welt-gesnappt), der Feld-Zeichner malt den vollen " +
-            "Refresh aus dem Gelände-Gesetzbuch in Takt-Scheiben (die CPU verfeinert aufs f64-Gesetz), budgetierter Refresh, " +
+            "(Fern-Wahrheit includeDetail=false, XZ welt-gesnappt), der Fern-Faden rechnet Ring, Feld und Krone in " +
+            "Scheiben aus dem Gelände-Gesetzbuch, der Haupt-Faden hängt nur ein, " +
             "quantisiertes Re-Zentrieren, headless-default ruhig."
     );
     process.exit(0);

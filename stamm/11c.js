@@ -1531,147 +1531,24 @@ class AnazhRealm_Z11c {
             feldY: new Float32Array(off).fill(NaN),
             cursor: 0, // der budgetierte Höhen-Refresh beginnt am Vertex 0
             totalVerts: off,
-            // DIE FARB-SCHLANGE (`_fernRingFaerben`): je Vertex ein offenes Flag + seine Höhe; `farbMin` = der kleinste
-            // offene Index (nah zuerst: Schale 0 innen → außen, dann die äußeren Schalen).
-            farbOffen: new Uint8Array(off),
-            farbLaw: new Float32Array(off),
-            farbSchutt: new Float32Array(off), // je Punkt das Gewicht des Schutts aus demselben Höhen-Ruf (`aus.schutt`)
-            nass: new Uint8Array(off), // je Punkt: trägt der Boden dort Wasser (`_fernNass`)
-            farbN: 0,
-            farbMin: off,
-            refreshed: 0, // Budget-Zähler (Linse)
+            // DAS GESETZ JE PUNKT AUS DEM FERN-FADEN (B2, `_fernRingEinhaengen`): die Höhe (in der Bau-Zone deck-gemischt), der
+            // Schutt, Fläche und Spiegel des Bodens, der Fluss der Masche (Anteil, Spiegel) und die acht Teile der Farbe
+            law: new Float64Array(off),
+            schutt: new Float32Array(off),
+            nassY: new Float64Array(off),
+            spiegel: new Float64Array(off),
+            flussC: new Float64Array(off),
+            flussSp: new Float64Array(off),
+            teile: new Float32Array(off * 8).fill(NaN),
+            nass: new Uint8Array(off), // je Punkt: trägt der Boden dort Wasser
+            // die Bestellung: der nächste Index (`auftrag`), die Scheiben im Flug, die Antworten vor dem Einhängen
+            auftrag: 0,
+            flug: 0,
+            einhaengen: [],
+            refreshed: 0, // eingehängte Punkte (Linse)
             ready: false,
         };
         return st.fernRing;
-    }
-
-    // DIE FERN-FARBE (V18.530): die Ferne trägt die Funktion — die Boden-Farbe (`_bodenFarbeAt`, dieselbe wie jeder
-    // Chunk-Vertex) unter dem Kronendach des Waldes mit der Deckung, die der Wald-Generator würfelt (phyto-core
-    // `forestGeburt` aus der Bestandsdichte); Wasser liegt flach auf dem Spiegel. Befund 04.10. (Blick-Tour, Luft
-    // offen): eine eigene Höhen-Rampe (Gras-Grün 0,30/0,46/0,24 roh als linear) malte die Ferne hell-gelbgrün und
-    // kahl, wo der Wald steht — der vereinfachte Fern-Zwilling ist gefallen.
-    // DIE TEILE (Integration 05.10.): `out` = [Boden r, g, b · Kronendach r, g, b · Deckung] (linear). Das Kronendach
-    // ist die Studio-Laubfarbe der Arten, die der Wald-Generator HIER würfelt (phyto-core `forestNische`: dieselben
-    // Nischen-Gewichte wie planForestCell), × die Selbstbeschattung der Krone (`FERN_FARBE.kronenSchatten`) — die feste
-    // Sommer-Konstante neben dem Studio-Laub (ohne Art, ohne Saison) ist gefallen. Die Saison legt der Leser auf.
-    // `fuss` (optional, `_fernFarbeMasche`): die Masche, für die der Punkt steht — dann das Mittel über sie. `fussM` (die
-    // Abtastung einer Masche): ihre Kante in Metern — die Nische trägt darunter das Mosaik-Mittel (phyto-core `forestNische`).
-    // DAS WASSER DES FLUSSES (K16): die Masche (oder der Punkt ohne Abtastung) trägt den Anteil, den der Fluss deckt
-    // (`_fernFlussDeckung`), als Wasser-Farbe ohne Krone — dieselbe Farbe, die ein nasser Ring-Punkt trägt.
-    // DER SCHUTT (`schutt`, K17-2 Nachbesserung 1): das Gewicht des Schutthangs aus dem Höhen-Ruf, der `y` gab (`aus.schutt`
-    // von `_terrainMacroSurfaceY`) — der Rufer zieht die Höhe ohnehin, das Gesetz läuft nie zweimal. Fehlt er (null: ein Leser
-    // ohne eigenen Höhen-Ruf), zieht ihn `_fernSchuttAt` EINMAL je Punkt bzw. Masche (die Abtastungen der Masche teilen ihn
-    // wie die Höhe `y`). Bis zur Nachbesserung zog `_fernSchutt` das ganze Höhen-Gesetz je Abtastung neu (je Masche 9 ×).
-    _fernFarbeTeile(x, y, z, out, fuss, fussM, schutt) {
-        if (schutt == null) schutt = this._fernSchuttAt(x, z);
-        if (fuss)
-            return this._fernFlussTeil(
-                x,
-                z,
-                this._fernFarbeMasche(x, y, z, out, fuss, schutt),
-                Math.max(fuss.ht, fuss.hr)
-            );
-        if (fussM === undefined)
-            return this._fernFlussTeil(x, z, this._fernFarbeTeile(x, y, z, out, null, 0, schutt), 0);
-        const core = typeof globalThis !== "undefined" ? globalThis.__phytoCore : null;
-        if (
-            !core ||
-            typeof core.forestNische !== "function" ||
-            typeof core.forestGeburt !== "function" ||
-            typeof core.forestBestand !== "function" ||
-            typeof core.forestKronenDeckung !== "function"
-        )
-            throw new Error(
-                "Fern-Farbe: phyto-core forestNische/forestGeburt/forestBestand/forestKronenDeckung fehlen (KERN-PFLICHT)"
-            );
-        this._bodenFarbeAt(x, y, z, out, fussM);
-        this._fernSchutt(schutt, out);
-        const ctx =
-            this._fernNischeCtx ||
-            (this._fernNischeCtx = {
-                F: AnazhRealm.FOREST,
-                baseH: 0,
-                fbm: (px, pz) => this._forestFbm(px, pz),
-                // die Nische liest die Feuchte unter demselben Abdruck (`fussM`, `_flussAbdruck`)
-                feuchteAt: (px, pz, sy) => this._feuchteAt(px, pz, sy, this._fernNischeCtx.fussM),
-            });
-        // Der Bestand unter dem Fußabdruck (phyto-core `forestBestand`: ohne fussM die Zahlen von forestStandDensity und
-        // forestGeburt) — die feine Bestands-Oktave (λ 26 m) faltete die Deckung jeder Masche (Streifen-Index der Deckung 0,82–1,09).
-        const B = core.forestBestand(ctx.fbm, x, z, fussM > 0 ? fussM : 0);
-        const sd = B.sd;
-        ctx.baseH = (this.state && this.state.terrainBaseHeight) || 0;
-        ctx.fussM = fussM > 0 ? fussM : 0;
-        const N = core.forestNische(x, z, y, sd, ctx);
-        const L = this._fernLaubLinear();
-        const w = [N.wF, N.wT, N.wE, N.wB, N.wW];
-        // DIE DECKUNG IST DER GEPFLANZTE BESTAND (K16, die Naht): der Anteil unter Kronen, den der Wald-Generator mit seiner
-        // Schüchternheit an diesem Ort stehen lässt (phyto-core `forestKronenDeckung` aus Geburt, Bestandsdichte und der
-        // Arten-Mischung mit ihren Kronen, `FOREST.crown`) — bis K16 las das Dach die Geburt (0,90) als Deckung, der gepflanzte
-        // Wald deckt 0,16: jenseits des Karten-Horizonts stand geschlossenes Grün vor offenem Wald (gate:fern-ring Band 11).
-        const C = AnazhRealm.FOREST.crown;
-        const kr =
-            this._fernKronenTmp ||
-            (this._fernKronenTmp = [
-                [0, C.baum_kiefer],
-                [0, C.baum_tanne],
-                [0, C.baum_eiche],
-                [0, C.baum_birke],
-                [0, C.baum_erle],
-            ]);
-        for (let i = 0; i < 5; i++) kr[i][0] = w[i];
-        out[6] = core.forestKronenDeckung(sd, B.geburt, kr, AnazhRealm.FOREST);
-        const S = AnazhRealm.FERN_FARBE.kronenSchatten;
-        let summe = 0;
-        let r = 0;
-        let g = 0;
-        let b = 0;
-        for (let i = 0; i < 5; i++) {
-            summe += w[i];
-            r += w[i] * L[i][0];
-            g += w[i] * L[i][1];
-            b += w[i] * L[i][2];
-        }
-        const k = summe > 0 ? S / summe : 0;
-        out[3] = r * k;
-        out[4] = g * k;
-        out[5] = b * k;
-        return out;
-    }
-
-    // DER SCHUTT DER FERNE (K17-2, nah = fern aus EINEM Gesetz): wo das Schicht-Gesetz den Schutthang legt (gelaende-core
-    // `hoehe(…, aus).schutt`), trägt die Ferne das Mittel dessen, was der Chunk dort zeichnet — den Boden mit dem Gewicht
-    // `TERRAIN_GEOLOGY.schutt` × Schutt zum Mittel des Fels-Stoffs gemischt (`FELS_STOFF.mittel`; im Chunk `felsStoff` je
-    // Vertex) und × das Mittel des Gerölls (`schuttMittel`: es wirft Schatten in sich; im Chunk der Detail-Term mit dem Gewicht
-    // des Schutts). Bis K17-2 trug die Ferne keinen Schutt (`_terrainGeologyAlbedo` liest `aSchutt` nur am Chunk): jenseits der
-    // Bau-Kante lag der graue Schutthang in der Farbe der Säule. Ring, Kronen-Karte und Feld-Pass lesen ihn über die Fern-Farbe.
-    // `s` = das Gewicht des Schutts am Punkt (`_fernSchuttVon` des Höhen-Rufs; fehlt es, bricht die Ferne laut — nie still 0);
-    // das Geröll trägt höchstens den vollen Schutt (die Wand des Erdbaus liegt mit 1 / `schutt` darüber, ihr Stoff voll).
-    _fernSchutt(s, out) {
-        if (typeof s !== "number" || s !== s) throw new Error("_fernSchutt: das Gewicht des Schutts fehlt (" + s + ")");
-        if (!(s > 0)) return out;
-        const GK = globalThis.__gelaendeCore;
-        const ws = AnazhRealm.TERRAIN_GEOLOGY.schutt * s;
-        const M = AnazhRealm.FELS_STOFF.mittel;
-        const k = 1 + (GK.schuttMittel() - 1) * (s < 1 ? s : 1);
-        for (let c = 0; c < 3; c++) out[c] = (out[c] + (M[c] - out[c]) * ws) * k;
-        return out;
-    }
-
-    // DAS GEWICHT DES SCHUTTS DER FERNE aus EINEM Höhen-Ruf (`aus` von gelaende-core `hoehe`): der Schutthang des Schicht-Gesetzes
-    // (`aus.schutt`) oder die Wand des Erdbaus (`aus.wand`, K66, Prüfung 1: die Ferne las nur den Schutthang, an der Naht zur Ferne
-    // wechselte die Böschung des Dorfs auf Wiese) — die Wand trägt im Netz den Stoff voll (`felsStoff`), in Einheiten des Schutts
-    // 1 / `TERRAIN_GEOLOGY.schutt`. Leser: Ring, Kronen-Karte, Feld-Pass und `_fernSchuttAt`.
-    static _fernSchuttVon(aus) {
-        const s = aus.schutt > 0 ? aus.schutt : 0;
-        const w = aus.wand > 0 ? 1 / AnazhRealm.TERRAIN_GEOLOGY.schutt : 0;
-        return w > s ? w : s;
-    }
-
-    // Der Schutt am Punkt für einen Leser ohne eigenen Höhen-Ruf (die Kronen-Karte, Linsen): EIN Ruf des Höhen-Gesetzes.
-    _fernSchuttAt(x, z) {
-        const aus = this._fernSchuttAus || (this._fernSchuttAus = { hang: 0, schutt: 0, wand: 0 });
-        this._terrainMacroSurfaceY(x, z, false, aus);
-        return AnazhRealm._fernSchuttVon(aus);
     }
 
     // Die Studio-Laubfarbe der fünf Wald-Arten (Kiefer · Tanne · Eiche · Birke · Erle, die Folge von `forestNische`),
@@ -1688,80 +1565,6 @@ class AnazhRealm_Z11c {
             return [c.r, c.g, c.b];
         });
         return this._fernLaubLin;
-    }
-
-    // Die zusammengesetzte Fern-Farbe (CPU-Leser, der Feld-Pass): Wasser flach, sonst der Boden unter dem Kronendach ×
-    // die Saison (`saison` = `_saisonMul` der laufenden Phase — dieselbe Zahl, die `uSeasonMul` trägt) zur Deckung.
-    // `out` = [r, g, b] (linear).
-    _fernFarbeAt(x, y, z, wet, out, saison, fuss, schutt) {
-        const R = this._fernWasserKoerper();
-        if (wet) {
-            out[0] = R[0];
-            out[1] = R[1];
-            out[2] = R[2];
-            return out;
-        }
-        const t = this._fernFarbeTeile(
-            x,
-            y,
-            z,
-            this._fernTeileTmp || (this._fernTeileTmp = new Float32Array(8)),
-            fuss,
-            undefined,
-            schutt
-        );
-        const c = t[7];
-        out[0] = (t[0] + (t[3] * saison.r - t[0]) * t[6]) * (1 - c) + R[0] * c;
-        out[1] = (t[1] + (t[4] * saison.g - t[1]) * t[6]) * (1 - c) + R[1] * c;
-        out[2] = (t[2] + (t[5] * saison.b - t[2]) * t[6]) * (1 - c) + R[2] * c;
-        return out;
-    }
-
-    // DER FUSSABDRUCK DER FERN-FARBE (K16): ein Ring-Punkt oder Feld-Texel steht für eine Masche (`fuss` = { ax, az, ht, hr }:
-    // der Anker, die halbe Breite tangential und die halbe Tiefe radial in Metern) — seine Farbe ist das Mittel der Masche aus
-    // 3 × 3 Abtastungen, nie der Punkt. Befund 11.10. (Makro-Blick, Vorschau): das Bestands-Mosaik des Wald-Generators
-    // (phyto-core `forestNische`, patch λ ≈ 20 m) wechselte unter einer 11 × 34-m-Masche je Punkt die Art (Kronen-Grün
-    // 0,035 … 0,128) — jede Masche zog als radialer Streifen um den Spieler. Das Mittel ist exakt für jede Saison s:
-    // Deckung ā = ⟨a⟩, Krone k' = ⟨k·a⟩/ā, Boden c' = (⟨c⟩ − ⟨c·a⟩)/(1 − ā), also c' + (k'·s − c')·ā = ⟨c + (k·s − c)·a⟩.
-    _fernFarbeMasche(x, y, z, out, fuss, schutt) {
-        const t = this._fernMascheTmp || (this._fernMascheTmp = new Float32Array(8));
-        const S = this._fernMascheSumme || (this._fernMascheSumme = new Float64Array(10));
-        S.fill(0);
-        const dx = x - fuss.ax;
-        const dz = z - fuss.az;
-        const d = Math.hypot(dx, dz) || 1;
-        const rx = dx / d;
-        const rz = dz / d;
-        // Isotrop über die längere Maschen-Seite × 1,5: eine Box nur so breit wie die Masche liess das 20-m-Mosaik quer zur
-        // 11-m-Teilung stehen (Werkbank 11.10., Makro 300 m: die Streifen blieben), die runde, weitere Box dämpft es (Rest im
-        // Mittelfeld offen: 3 × 3 Abtastungen auf λ 20 m bleiben teils kohärent).
-        const h = 1.5 * Math.max(fuss.ht, fuss.hr);
-        // DAS MOSAIK IM KERN (K16): was die Masche nicht mehr auflöst (das Bestands-Mosaik λ 20 m, das Klima λ 83 m), trägt in
-        // jeder Abtastung sein Mittel (phyto-core `forestNische` mit fussM = die längere Maschen-Kante) — neun Abtastungen auf
-        // λ 20 m blieben kohärent (Streifen-Index 0,89, gate:fern-ring Band 10).
-        const fussM = 2 * Math.max(fuss.ht, fuss.hr);
-        const U = [-2 / 3, 0, 2 / 3];
-        for (let i = 0; i < 3; i++)
-            for (let j = 0; j < 3; j++) {
-                const ur = U[i] * h;
-                const ut = U[j] * h;
-                this._fernFarbeTeile(x + rx * ur - rz * ut, y, z + rz * ur + rx * ut, t, null, fussM, schutt);
-                const a = t[6];
-                for (let c = 0; c < 3; c++) {
-                    S[c] += t[c];
-                    S[3 + c] += t[c] * a;
-                    S[6 + c] += t[3 + c] * a;
-                }
-                S[9] += a;
-            }
-        const a = S[9] / 9;
-        const frei = 9 - S[9];
-        for (let c = 0; c < 3; c++) {
-            out[c] = frei > 1e-6 ? (S[c] - S[3 + c]) / frei : S[c] / 9;
-            out[3 + c] = S[9] > 1e-6 ? S[6 + c] / S[9] : 0;
-        }
-        out[6] = a;
-        return out;
     }
 
     // Die Saison der laufenden Phase als {r, g, b} (der CPU-Spiegel von `uSeasonMul`, `_saisonMul` ist die EINE Formel).
@@ -2144,66 +1947,57 @@ class AnazhRealm_Z11c {
         return sMax;
     }
 
-    // DER EINE SETZ-HELFER (CPU und GPU schreiben durch DIESELBE Naht): Höhe →
-    // Wasser-Klemme (waterLevel − wasserDrop) + Saum-Tauchkante (Reihe 0) +
-    // Weich-Wand unter Gebautem + Farbrampe. Kein Parallelpfad.
-    _fernRingSetzVertex(fr, p, law, wl, schutt) {
+    // DER EINE SETZ-HELFER (jeder Weg, der einen Ring-Punkt legt, schreibt durch DIESELBE Naht): die Höhe aus dem Gesetz des
+    // Punkts (`_fernRingY`) und die Teile, die der Fern-Faden für ihn rechnete (`fr.teile`, B2) — nass trägt der Punkt das
+    // Wasser (Deckung 0, Wasser-Anteil 1). Ein trockener Punkt ohne Teile ist ein Bruch des Fadens (laut).
+    _fernRingSetzVertex(fr, p, wl) {
         const geo = fr.geos[p.s];
         const pos = geo.attributes.position;
         if (p.s === 0 && (pos.getX(p.li) !== p.x || pos.getZ(p.li) !== p.z)) fr.xzGen++; // die Teilung folgt der Lage
         const nass = this._fernRingNass || (this._fernRingNass = { y: 0, spiegel: 0 });
-        pos.setXYZ(p.li, p.x, this._fernRingY(fr, p, law, wl, nass), p.z);
+        pos.setXYZ(p.li, p.x, this._fernRingY(fr, p, wl, nass), p.z);
         const wet = nass.y < nass.spiegel;
         fr.nass[p.g] = wet ? 1 : 0;
-        // DIE FARBE: ein gemerkter Schnapp-Punkt färbt sofort; ein neuer wartet im Fern-Farb-Budget (`_fernFarbTakt`,
-        // nah zuerst) — ein Anker-Sprung rechnete die Farbe von ~8 000 neuen Punkten in EINEM Frame (gemessen 05.10.,
-        // echte GPU: 10–18 ms Rückruf, auf 8× langsamerem Holz > 100 ms). Vor dem ersten Bild (!ready) rechnet die
-        // Naht sofort — der Horizont erscheint nie schwarz.
-        const g = p.g;
-        fr.farbLaw[g] = law;
-        // der Schutt aus dem Höhen-Ruf des Rufers; ein Rufer ohne ihn (Linsen) zieht ihn EINMAL hier
-        fr.farbSchutt[g] = schutt = schutt == null ? this._fernSchuttAt(p.x, p.z) : schutt;
-        const f = this._fernRingTeile(p.x, p.z, law, wet, !fr.ready, p.fuss, schutt);
-        if (f) {
-            AnazhRealm._fernRingSchreibe(geo, p.li, f);
-            if (fr.farbOffen[g]) {
-                fr.farbOffen[g] = 0;
-                fr.farbN--;
-            }
-        } else if (!fr.farbOffen[g]) {
-            fr.farbOffen[g] = 1;
-            fr.farbN++;
-            if (g < fr.farbMin) fr.farbMin = g;
-        }
+        const o = p.g * 8;
+        if (!wet && !(fr.teile[o] === fr.teile[o]))
+            throw new Error("Fern-Ring: der trockene Punkt " + p.g + " trägt keine Teile aus dem Fern-Faden");
+        AnazhRealm._fernRingSchreibe(geo, p.li, wet ? this._fernRingWasserTeile() : fr.teile.subarray(o, o + 8));
+    }
+
+    // Die Teile des Wassers: der Wasser-Körper des Gesetzes, ohne Krone, Wasser-Anteil 1 (der Ring-Stoff zeichnet den Blick).
+    _fernRingWasserTeile() {
+        if (this._fernWasserTeile) return this._fernWasserTeile;
+        const w = this._fernWasserKoerper();
+        return (this._fernWasserTeile = new Float32Array([w[0], w[1], w[2], 0, 0, 0, 0, 1]));
     }
 
     // Die Höhe EINES Ring-Punkts aus seinem Gesetz: unter Wasser flach unter dem Spiegel (`_fernRingWasserTiefe`), die
-    // innerste Reihe jeder Schale taucht −saumDrop (die Saum-Tauchkante). DIE NAHT (K16, `_fernRingNaht`): wo ein gebauter
-    // Chunk den Punkt oder einen Nachbarn trägt, liegt der Ring auf dem VOLLEN Gesetz (`vollY`, dieselbe Höhe wie der Chunk,
-    // ohne die Loch-Senkung) — die Masche über die Chunk-Kante trägt draußen die Sehne des Gesetzes. Im Gebauten zeichnet er
-    // nicht (die Masken-Karte, `_fernRingMaske`): bis 12.10. tauchte er dort 2 m, an der Naht 0,2 m, und das Gebaute deckte
-    // ihn per Tiefe — über jeder Höhlen-Mündung lag er als Platte, an der Naht stach seine Sehne durch.
-    // Das Wasser des Punkts ist das Wasser des Bodens (`_fernNass`: Kanal, See, Meer; `nass` trägt Fläche und Spiegel).
-    _fernRingY(fr, p, law, wl, nass) {
+    // innerste Reihe jeder Schale taucht −saumDrop (die Saum-Tauchkante). Gesetz, Fläche, Spiegel und Fluss der Masche rechnete
+    // der Fern-Faden (`fr.nassY` · `fr.spiegel` · `fr.flussC` · `fr.flussSp`, B2). DIE NAHT (K16, `_fernRingNaht`): wo ein
+    // gebauter Chunk den Punkt oder einen Nachbarn trägt, liegt der Ring auf dem VOLLEN Gesetz (`vollY`, dieselbe Höhe wie der
+    // Chunk, ohne die Loch-Senkung), die Ecke eines Naht-Dreiecks auf der Fläche des Feldes (`feldY`) — nur dort fragt der
+    // Haupt-Faden das Wasser des Bodens selbst (`_fernNass`: Kanal, See, Meer), denn nur er kennt das Gebaute. Im Gebauten
+    // zeichnet der Ring nicht (die Masken-Karte, `_fernRingMaske`). DIE HÖHE DES FLUSSES (K16): wo ein Fluss die Masche zum
+    // Anteil c deckt, liegt der trockene Punkt auf Boden × (1 − c) + dem Spiegel des Flusses × c.
+    _fernRingY(fr, p, wl, nass) {
         const F = AnazhRealm.FERN_RING;
+        const g = p.g;
         const rand = fr.teilung.randV;
-        const f = p.s === 0 && rand && rand[p.li] ? fr.feldY[p.g] : NaN; // die Ecke eines Naht-Dreiecks: das Feld
-        if (f === f) law = f;
-        else if (this._fernRingNaht(fr, p)) {
-            const v = fr.vollY[p.g];
-            if (v === v) law = v;
-        }
+        let law = p.s === 0 && rand && rand[p.li] ? fr.feldY[g] : NaN; // die Ecke eines Naht-Dreiecks: das Feld
+        if (!(law === law) && this._fernRingNaht(fr, p)) law = fr.vollY[g];
         const aus = nass || this._fernRingNass || (this._fernRingNass = { y: 0, spiegel: 0 });
-        const wet = this._fernNass(p.x, p.z, law, wl, aus);
+        let wet;
+        if (law === law) wet = this._fernNass(p.x, p.z, law, wl, aus);
+        else {
+            aus.y = fr.nassY[g];
+            aus.spiegel = fr.spiegel[g];
+            wet = aus.y < aus.spiegel;
+        }
         let y = wet ? aus.spiegel - this._fernRingWasserTiefe() : aus.y;
-        // DIE HÖHE DES FLUSSES (K16, die Naht des Wassers): der Punkt steht für seine Masche — wo ein Fluss sie zum Anteil c
-        // deckt (`_fernFlussDeckung`, derselbe Kasten-Filter, der den Wasser-Anteil aNass trägt), liegt er auf dem Mittel der
-        // sichtbaren Fläche: Boden × (1 − c) + der Spiegel des Flusses × c. Ein ganz getauchter Punkt riss Gruben in den Ring
-        // (Werkbank 13.10.), ein nie getauchter trug den Fluss nur als Farbe auf der Bank (Prüfung 13.10.).
         if (!wet) {
-            const fl = this._fernRingFluss || (this._fernRingFluss = { spiegel: NaN });
-            const c = this._fernFlussDeckung(p.x, p.z, p.fuss ? Math.max(p.fuss.ht, p.fuss.hr) : 0, fl);
-            if (c > 0 && fl.spiegel === fl.spiegel) y += (fl.spiegel - y) * c;
+            const c = fr.flussC[g];
+            const sp = fr.flussSp[g];
+            if (c > 0 && sp === sp) y += (sp - y) * c;
         }
         if (p.row === 0) y -= F.saumDrop;
         return y;
@@ -2231,25 +2025,6 @@ class AnazhRealm_Z11c {
         return y < aus.spiegel;
     }
 
-    // DER FLUSS IN DER MASCHE (K16, die Naht): der Anteil einer Masche (halbe Kante `hs` m; 0 = ein Punkt), den das Wasser
-    // eines Flusses deckt — der Querschnitt als Kasten-Filter: die Überdeckung von [d − hs, d + hs] mit dem Wasser
-    // [−halbe Breite, +halbe Breite] des nächsten Segments (`_hydroDistAt`).
-    _fernFlussDeckung(x, z, hs, aus) {
-        const fl = this._hydroDistAt(x, z);
-        if (aus) aus.spiegel = fl.spiegel;
-        if (!(fl.dist < Infinity)) return 0;
-        const w = fl.halfW;
-        if (!(hs > 0)) return fl.dist <= w ? 1 : 0;
-        return Math.max(0, Math.min(fl.dist + hs, w) - Math.max(fl.dist - hs, -w)) / (2 * hs);
-    }
-    // Der Anteil des Wassers in die Teile (Slot 7): das Wasser trägt keine Krone; seine Farbe ist der Blick des Wassers im
-    // Ring-Stoff (`_wasserBlick`) bzw. der Wasser-Körper im Feld-Pass (`_fernFarbeAt`), nie eine Fern-Konstante.
-    _fernFlussTeil(x, z, out, hs) {
-        const c = this._fernFlussDeckung(x, z, hs);
-        out[7] = c;
-        if (c > 0) out[6] *= 1 - c;
-        return out;
-    }
     // Der Blick des Wassers für den Ring-Stoff: eine ruhige Fläche (Normale nach oben) über tiefem Wasser (T = 0), im Licht
     // des Wasser-Stoffs (`hydroSurfaceUniforms`, EIN Schreiber `_dayNightApplyWaterMaterials`). Ohne Wasser-Stoff bricht er laut.
     _fernWasserBlickNode(_T) {
@@ -2291,7 +2066,7 @@ class AnazhRealm_Z11c {
     }
 
     // Wechselt die Tiefe des Ring-Wassers (das Fern-Wasser kommt oder geht), setzt der Ring jeden nassen Punkt neu — durch
-    // die EINE Setz-Naht, mit dem Gesetz, das er dem Punkt zuletzt gab (`farbLaw`, kein neues Gesetz).
+    // die EINE Setz-Naht, mit dem Gesetz, das der Fern-Faden dem Punkt gab (kein neues Gesetz).
     _fernRingWasserNeu(fr) {
         const tiefe = this._fernRingWasserTiefe();
         if (fr.wasserTiefe === tiefe) return 0;
@@ -2303,7 +2078,7 @@ class AnazhRealm_Z11c {
         for (let g = 0; g < bis; g++) {
             if (!fr.nass[g]) continue;
             const p = this._fernRingPunkt(fr, g);
-            this._fernRingSetzVertex(fr, p, fr.farbLaw[g], wl, fr.farbSchutt[g]);
+            this._fernRingSetzVertex(fr, p, wl);
             dirty[p.s] = true;
             n++;
         }
@@ -2321,63 +2096,6 @@ class AnazhRealm_Z11c {
             AnazhRealm._fernRingAttributeHoch(geo);
             geo.computeVertexNormals();
         }
-    }
-
-    // Die Farb-TEILE EINES Ring-Punkts (Boden · Kronendach · Deckung, `_fernFarbeTeile`): Wasser flach (der Spiegel,
-    // Deckung 0), trocken aus dem Gedächtnis — oder, mit `rechnen`, frisch und gemerkt. null = offen (das Budget färbt
-    // ihn). Die Saison legt der Ring-Stoff auf (`uSeasonMul`), das Gedächtnis bleibt über das Jahr gültig.
-    _fernRingTeile(x, z, law, wet, rechnen, fuss, schutt) {
-        if (wet) {
-            const w = this._fernWasserKoerper();
-            return (
-                this._fernWasserTeile || (this._fernWasserTeile = new Float32Array([w[0], w[1], w[2], 0, 0, 0, 0, 1]))
-            );
-        }
-        // Schnapp-Punkte sind ganzzahlig, |x|, |z| < 2^21 m; die Maschen-Breite (Viertel-Oktaven) steht über 2^44 — eindeutig.
-        // Ohne `fuss` steht der Punkt für sich (wie in `_fernFarbeTeile`): die Masche unter 1 m — die Nah-Fern-Linse ruft so
-        // das Gesetz an der Stelle und brach seit dem Fußabdruck (K16) an `fuss.ht`.
-        const key = x * 4194304 + z + Math.round(4 * Math.log2(Math.max(1, fuss ? fuss.ht : 0))) * 17592186044416;
-        const m = this._fernFarbeMemo || (this._fernFarbeMemo = { neu: new Map(), alt: new Map() });
-        let f = m.neu.get(key);
-        if (f) return f;
-        f = m.alt.get(key) || null;
-        if (!f && !rechnen) return null;
-        if (!f) f = this._fernFarbeTeile(x, law, z, new Float32Array(8), fuss, undefined, schutt);
-        // ZWEI GENERATIONEN: ist `neu` voll, wird es `alt` (die jüngsten 2 × memo Punkte bleiben) — das alte clear()
-        // leerte das Gedächtnis jeden zweiten Re-Anker ganz (9216 Punkte je Ring, Kappe 16384).
-        if (m.neu.size >= AnazhRealm.FERN_FARBE.memo) {
-            m.alt = m.neu;
-            m.neu = new Map();
-        }
-        m.neu.set(key, f);
-        return f;
-    }
-
-    // Die offenen Ring-Farben im Budget färben: Index-Folge ab `farbMin` (nah zuerst), bis die Frist `ende` steht —
-    // mindestens `mindest` Punkte (nie verhungert). Liefert den Rest des Mindest-Kontingents.
-    _fernRingFaerben(fr, ende, mindest) {
-        if (!fr.farbN) return mindest;
-        const dirty = [false, false, false];
-        let n = 0;
-        let g = fr.farbMin;
-        for (; g < fr.totalVerts && fr.farbN > 0; g++) {
-            if (!fr.farbOffen[g]) continue;
-            const p = this._fernRingPunkt(fr, g);
-            const f = this._fernRingTeile(p.x, p.z, fr.farbLaw[g], fr.nass[g] === 1, true, p.fuss, fr.farbSchutt[g]);
-            AnazhRealm._fernRingSchreibe(fr.geos[p.s], p.li, f);
-            dirty[p.s] = true;
-            fr.farbOffen[g] = 0;
-            fr.farbN--;
-            n++;
-            if ((n & 15) === 0 && n >= mindest && performance.now() > ende) {
-                g++;
-                break;
-            }
-        }
-        fr.farbMin = fr.farbN > 0 ? g : fr.totalVerts;
-        for (let s = 0; s < dirty.length; s++) if (dirty[s]) AnazhRealm._fernRingAttributeHoch(fr.geos[s]);
-        fr.gefaerbt = (fr.gefaerbt || 0) + n; // Linse
-        return Math.max(0, mindest - n);
     }
 
     // Die Teile in die drei Farb-Attribute EINES Vertex: color = der Boden, aKrone = (Kronendach, Deckung), aNass = der Anteil
@@ -2399,24 +2117,6 @@ class AnazhRealm_Z11c {
         geo.attributes.color.needsUpdate = true;
         geo.attributes.aKrone.needsUpdate = true;
         geo.attributes.aNass.needsUpdate = true;
-    }
-
-    // DAS FERN-FARB-BUDGET (EIN Zeit-Budget je Takt, nah zuerst, Lehren 14/25): erst die Fern-Krone des nahen Bodens (das
-    // Quadrat um den Spieler), dann die offenen Ring-Farben, dann der Farb-Job des Feld-Passes. Über dem Frame-Budget das
-    // knappe Maß; nie null — die Krone und der Ring je mindestens `mindestJeTakt` Punkte. Als Letzte im Budget verhungerte die
-    // Krone hinter dem Ring: nach dem Wechsel an die Wiese stand ihre Karte nach dem Einschwingen noch leer (`bereit` 0,
-    // gemessen 11.10.).
-    _fernFarbTakt(fr) {
-        const K = AnazhRealm.FERN_FARBE;
-        // im Lade-Takt die Frist des Lade-Frames (`_ladeFrist`, K60-2): der Horizont des ersten Bilds malt nie 2 ms je Frame
-        const ende = Math.max(
-            this._ladeFrist(),
-            performance.now() + (this.state._frameOverBudget ? K.msKnapp : K.msJeTakt)
-        );
-        this._fernKroneNahTakt(ende, K.mindestJeTakt);
-        const rest = this._fernRingFaerben(fr, ende, K.mindestJeTakt);
-        const fp = this.state.feldPass;
-        if (fp && fp.farbJob) this._feldPassFaerben(fp, ende, rest);
     }
 
     // DIE FERN-KRONE DES NAHEN BODENS (0910-8, „die weiße Masse“): der Fern-Ring trägt den Wald als Kronendach × Deckung
@@ -2458,13 +2158,7 @@ class AnazhRealm_Z11c {
         return st.fernKroneNah;
     }
 
-    // Der Takt der Karte: Wald-Radius und Spieler je Takt; die Karte liegt auf dem Chunk-Quadrat — ihre Mitte ist die Mitte
-    // des Chunks unter dem Spieler (die Mitte des Rings), ihre Größe (2·Ring + 1 + rand)·span: der Rand von rand/2 Chunks je
-    // Seite trägt das neue Quadrat, solange sie nach einem Chunk-Wechsel neu füllt. Der Anker auf einem Raster von einem
-    // Viertel der Karte lag bis 59 m neben der Mitte des Quadrats, weiter als sein Rand von 43 m: aus 420 m blieb am Rand des
-    // Quadrats ein Streifen von 22 m blass (11.10.). Sie füllt sich, bis die Frist `ende` steht — mindestens `mindest` Punkte
-    // je Takt.
-    _fernKroneNahTakt(ende, mindest) {
+    _fernKroneNahTakt() {
         const st = this.state;
         const k = st.fernKroneNah || this._fernKroneNahEnsure();
         const pm = st.playerMesh;
@@ -2478,45 +2172,33 @@ class AnazhRealm_Z11c {
         const mx = (Math.floor(pm.position.x / span) + 0.5) * span;
         const mz = (Math.floor(pm.position.z / span) + 0.5) * span;
         const a = k.anker;
-        if (!k.job && (!a || a.x !== mx || a.z !== mz || a.groesse !== groesse)) k.job = { mx, mz, groesse, i: 0 };
-        const j = k.job;
-        if (!j) return;
+        if (k.job || (a && a.x === mx && a.z === mz && a.groesse === groesse) || !this._nebenFaden("fern")) return;
+        // DIE KARTE AUS DEM FADEN (B2): je Texel die Teile am ganzzahligen Punkt (Wasser ohne Krone) — der Fern-Faden packt sie
+        // sRGB in 8 Bit, der Haupt-Faden tauscht die Karte erst, wenn sie ganz steht (`bereit`)
         const N = k.N;
-        const wl = Number.isFinite(st.waterLevel) ? st.waterLevel : 0;
-        const t = k.teile || (k.teile = new Float32Array(8));
-        const sRGB = (c) => {
-            const v = c <= 0 ? 0 : c >= 1 ? 1 : c <= 0.0031308 ? c * 12.92 : 1.055 * Math.pow(c, 1 / 2.4) - 0.055;
-            return Math.round(v * 255);
-        };
-        let n = 0;
-        while (j.i < N * N && (n++ < mindest || performance.now() < ende)) {
-            const ix = j.i % N;
-            const iz = (j.i / N) | 0;
-            const x = Math.round(j.mx - j.groesse / 2 + ((ix + 0.5) * j.groesse) / N);
-            const z = Math.round(j.mz - j.groesse / 2 + ((iz + 0.5) * j.groesse) / N);
-            const nass = k.nass || (k.nass = { y: 0, spiegel: 0 });
-            const o = j.i * 4;
-            // Wasser trägt keine Krone (der Ring: Deckung 0 auf dem Spiegel)
-            const aus = k.aus || (k.aus = { hang: 0, schutt: 0, wand: 0 });
-            if (this._fernNass(x, z, this._terrainMacroSurfaceY(x, z, false, aus), wl, nass))
-                k.puffer[o] = k.puffer[o + 1] = k.puffer[o + 2] = k.puffer[o + 3] = 0;
-            else {
-                this._fernFarbeTeile(x, nass.y, z, t, undefined, undefined, AnazhRealm._fernSchuttVon(aus));
-                k.puffer[o] = sRGB(t[3]);
-                k.puffer[o + 1] = sRGB(t[4]);
-                k.puffer[o + 2] = sRGB(t[5]);
-                k.puffer[o + 3] = Math.round(Math.max(0, Math.min(1, t[6])) * 255);
-            }
-            j.i++;
+        const punkte = new Float64Array(N * N * 2);
+        for (let i = 0; i < N * N; i++) {
+            const ix = i % N;
+            const iz = (i / N) | 0;
+            punkte[i * 2] = Math.round(mx - groesse / 2 + ((ix + 0.5) * groesse) / N);
+            punkte[i * 2 + 1] = Math.round(mz - groesse / 2 + ((iz + 0.5) * groesse) / N);
         }
-        if (j.i < N * N) return;
-        k.daten.set(k.puffer);
-        k.tex.needsUpdate = true;
-        k.U.mitte.value.set(j.mx, j.mz);
-        k.U.groesse.value = j.groesse;
-        k.U.bereit.value = 1;
-        k.anker = { x: j.mx, z: j.mz, groesse: j.groesse };
-        k.job = null;
+        const job = (k.job = { mx, mz, groesse });
+        this._fernAuftrag("krone", { punkte }, [punkte.buffer])
+            .then((antwort) => {
+                if (k.job === job) k.job = null;
+                if (st.fernKroneNah !== k) return;
+                k.daten.set(antwort.rgba);
+                k.tex.needsUpdate = true;
+                k.U.mitte.value.set(mx, mz);
+                k.U.groesse.value = groesse;
+                k.U.bereit.value = 1;
+                k.anker = { x: mx, z: mz, groesse };
+            })
+            .catch((e) => {
+                if (k.job === job) k.job = null;
+                this._stoffBruch("die Fern-Krone des nahen Bodens (der Fern-Faden)", e);
+            });
     }
 
     // Die Mischung im Boden-Stoff (TSL): wo kein echter Wald zeichnet — jenseits des Laub-Radius vom Spieler (mit Saum)
@@ -2556,54 +2238,104 @@ class AnazhRealm_Z11c {
         return _T.mix(alb, krone.rgb.mul(su.uSeasonMul), krone.a.mul(ohneWald));
     }
 
-    // DIE EINE DECK-FORMEL (CPU-Refresh UND GPU-Maler mischen durch sie — kein
-    // Zahlen-Zwilling): innerhalb der Zone volles Gesetz −0.3 gesenkt, ×1.35-
-    // Blende auf Makro. Das Gate spiegelt exakt diese Formel.
-    _fernRingDeckMisch(fr, rad, makro, voll) {
-        if (!(rad <= fr.deckZoneRad * 1.35)) return makro;
-        const w = rad <= fr.deckZoneRad ? 1 : (fr.deckZoneRad * 1.35 - rad) / (fr.deckZoneRad * 0.35);
-        return makro + (voll - makro) * w - 0.3 * w;
-    }
-
-    // Budgetierter Höhen-Refresh (~`refreshVertsProTick` Vertices/Frame, nie synchron alles): Welt-XZ
-    // aufs Snap-Gitter, Höhe = das EINE Gesetz (includeDetail=false), unter Wasser flach auf
-    // waterLevel − wasserDrop. Die innerste Reihe jeder Schale taucht −saumDrop (Saum-Tauchkante).
-    // Liefert die Zahl erneuerter Vertices. Im Lade-Takt rechnet er bis zur Frist des Lade-Frames (`_ladeFrist`, K60-2).
-    _fernRingRefresh(budget) {
+    // DER HORIZONT AUS DEM FADEN (B2): der Ring bestellt seine Punkte in Scheiben (`FERN_RING.scheibe`) beim Fern-Faden
+    // (`_fernAuftrag` „ring“: Gesetzes-Höhe mit Deck-Mischung, Schutt, Fläche und Spiegel, Fluss der Masche, Teile) — höchstens
+    // `scheibenImFlug` zugleich, in Index-Folge (nah zuerst) — und hängt die Antworten im Takt ein (`_fernRingEinhaengen`). Der
+    // Haupt-Faden rechnet kein Gesetz der Ferne: bis B2 rechnete die Scheibe hier Höhe und Fern-Farbe (Radeon kalt bis zum
+    // ersten Bild 3,89 s, Spike B1), und jeden Re-Anker malte der GPU-Maler ein zweites Mal. Liefert die eingehängten Punkte.
+    _fernRingRefresh() {
         const fr = this.state.fernRing;
         if (!fr) return 0;
+        const done = this._fernRingEinhaengen(fr);
         if (fr.cursor >= fr.totalVerts) {
             this._fernRingDeckWache(fr);
-            return 0;
+            return done;
         }
+        const F = AnazhRealm.FERN_RING;
+        if (!this._nebenFaden("fern")) return done; // der Fern-Faden steht noch nicht (der Voxel-Faden kommt) — der Ring wartet
+        while (fr.flug < F.scheibenImFlug && fr.auftrag < fr.totalVerts) {
+            const von = fr.auftrag;
+            const n = Math.min(fr.totalVerts, von + F.scheibe) - von;
+            fr.auftrag = von + n;
+            fr.flug++;
+            const punkte = new Float64Array(n * 2);
+            const ht = new Float64Array(n);
+            const hr = new Float64Array(n);
+            const rad = new Float64Array(n);
+            const zone = new Uint8Array(n);
+            for (let k = 0; k < n; k++) {
+                const p = this._fernRingPunkt(fr, von + k);
+                punkte[k * 2] = p.x;
+                punkte[k * 2 + 1] = p.z;
+                ht[k] = p.fuss.ht;
+                hr[k] = p.fuss.hr;
+                rad[k] = p.rad;
+                // die Bau-Zone: dort trägt der Punkt das volle Gesetz (Loch-Deckel und Naht) und immer seine Teile
+                zone[k] = p.s === 0 && p.rad <= fr.bauZoneRad ? 1 : 0;
+            }
+            const gen = fr.gen | 0;
+            this._fernAuftrag(
+                "ring",
+                {
+                    punkte,
+                    ht,
+                    hr,
+                    rad,
+                    zone,
+                    ax: fr.anchorX,
+                    az: fr.anchorZ,
+                    deckZoneRad: fr.deckZoneRad,
+                    memo: this._fernMemoGen | 0,
+                },
+                [punkte.buffer, ht.buffer, hr.buffer, rad.buffer, zone.buffer]
+            )
+                .then((antwort) => {
+                    if (this.state.fernRing !== fr || (fr.gen | 0) !== gen) return; // überholt (Re-Anker/Dispose)
+                    fr.flug--;
+                    fr.einhaengen.push({ von, antwort });
+                })
+                .catch((e) => {
+                    if (this.state.fernRing === fr && (fr.gen | 0) === gen) fr.flug--;
+                    this._stoffBruch("der Fern-Ring (der Fern-Faden)", e);
+                });
+        }
+        return done;
+    }
+
+    // DAS EINHÄNGEN (B2): die Antworten des Fern-Fadens in Index-Folge — je Punkt das Gesetz in die Gedächtnisse des Rings
+    // (Höhe, Schutt, voll, Fläche, Spiegel, Fluss, Teile), dann Lage und Farbe durch die EINE Setz-Naht; EIN Hochladen je Takt.
+    // Erst der volle Ring wird sichtbar (kein Null-Blob).
+    _fernRingEinhaengen(fr) {
+        if (!fr.einhaengen.length) return 0;
         const wl = Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : 0;
         const dirty = [false, false, false];
         let done = 0;
-        const frist = this._ladeFrist();
-        while ((done < budget || performance.now() < frist) && fr.cursor < fr.totalVerts) {
-            const p = this._fernRingPunkt(fr, fr.cursor);
-            const aus = this._fernRingAus || (this._fernRingAus = { hang: 0, schutt: 0, wand: 0 });
-            let law = this._terrainMacroSurfaceY(p.x, p.z, false, aus);
-            const schutt = AnazhRealm._fernSchuttVon(aus);
-            // Loch-Deckel + Naht-Veredelung, EINE Formel (_fernRingDeckMisch, geteilt mit dem GPU-Maler):
-            // Schale-0-Reihen in der Chunk-Ziel-Zone tragen das VOLLE Gesetz (includeDetail), −0.3 gesenkt —
-            // stehende Chunks decken sie per Depth, fehlende zeigen wahres Terrain statt der Wasser-Plane. In der Bau-Zone
-            // merkt sich jeder Punkt das volle Gesetz (die Naht, `_fernRingY`).
-            if (p.s === 0 && p.rad <= fr.bauZoneRad) {
-                const voll = this._terrainMacroSurfaceY(p.x, p.z, true);
-                fr.vollY[p.g] = voll;
-                law = this._fernRingDeckMisch(fr, p.rad, law, voll);
+        fr.einhaengen.sort((a, b) => a.von - b.von);
+        while (fr.einhaengen.length && fr.einhaengen[0].von === fr.cursor) {
+            const { von, antwort: a } = fr.einhaengen.shift();
+            const n = a.law.length;
+            fr.law.set(a.law, von);
+            fr.schutt.set(a.schutt, von);
+            fr.nassY.set(a.nassY, von);
+            fr.spiegel.set(a.spiegel, von);
+            fr.flussC.set(a.flussC, von);
+            fr.flussSp.set(a.flussSp, von);
+            fr.teile.set(a.teile, von * 8);
+            for (let k = 0; k < n; k++) {
+                const v = a.voll[k];
+                if (v === v) fr.vollY[von + k] = v;
+                const p = this._fernRingPunkt(fr, von + k);
+                this._fernRingSetzVertex(fr, p, wl);
+                dirty[p.s] = true;
             }
-            this._fernRingSetzVertex(fr, p, law, wl, schutt);
-            dirty[p.s] = true;
-            fr.cursor++;
-            done++;
+            fr.cursor = von + n;
+            done += n;
         }
         this._fernRingHoch(fr, dirty);
         fr.refreshed += done;
         if (!fr.ready && fr.cursor >= fr.totalVerts) {
             fr.ready = true;
-            for (const m of fr.meshes) m.visible = true; // erst voll, dann sichtbar (kein Null-Blob)
+            for (const m of fr.meshes) m.visible = true;
         }
         return done;
     }
@@ -2655,15 +2387,8 @@ class AnazhRealm_Z11c {
         if (this._standRuht("deckWache", fr.zoneVerts, (fr.gen | 0) * 1048576 + (fr.feldEditGen | 0), "boden")) return;
         const wl = Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : 0;
         fr.deckCursor = fr.deckCursor || 0;
-        // DAS GESETZ DES SAUMS, EINMAL JE ANKER: die gemischte Deck-Höhe (Makro + volles Gesetz, `_fernRingDeckMisch`)
-        // eines Punkts ist eine reine Funktion seines Orts — vorher rechnete die Wache sie je Takt für 128 Punkte neu (256
-        // Gesetz-Höhen, ~6 000 noise2D je Frame im Stand, gemessen 07.10.); jetzt einmal je Anker-Generation (`fr.gen`)
-        // und Wasserspiegel (das Gesetz misst Tarn und Senke an ihm).
-        if (!fr.deckLaw || fr.deckLawGen !== (fr.gen | 0) || fr.deckLawWl !== wl) {
-            fr.deckLaw = new Float64Array(fr.zoneVerts).fill(NaN);
-            fr.deckLawGen = fr.gen | 0;
-            fr.deckLawWl = wl;
-        }
+        // DAS GESETZ DES SAUMS kommt aus dem Fern-Faden (B2, `fr.law` · `fr.vollY`, einmal je Anker): die Wache rechnet keine
+        // Höhe, sie fragt nur, ob die Naht den Punkt jetzt anders legt.
         const pos = fr.geos[0].attributes.position;
         let neu = false;
         let feldMessungen = 0;
@@ -2671,13 +2396,6 @@ class AnazhRealm_Z11c {
         for (let n = 0; n < 128; n++) {
             const i = fr.deckCursor % fr.zoneVerts;
             const p = this._fernRingPunkt(fr, i);
-            let law = fr.deckLaw[i];
-            if (law !== law) {
-                const makro = this._terrainMacroSurfaceY(p.x, p.z, false);
-                const voll = this._terrainMacroSurfaceY(p.x, p.z, true);
-                fr.vollY[p.g] = voll;
-                law = fr.deckLaw[i] = this._fernRingDeckMisch(fr, p.rad, makro, voll);
-            }
             // DIE ECKE EINES NAHT-DREIECKS misst die Fläche des Feldes (gedeckelt je Takt: eine Spalten-Probe liest die
             // Dichte von der Garantie-Luft bis zum Boden)
             if (fr.feldY[p.g] !== fr.feldY[p.g] && fr.teilung.randV && fr.teilung.randV[p.li]) {
@@ -2686,8 +2404,8 @@ class AnazhRealm_Z11c {
                     feldMessungen++;
                 } else offen = true;
             }
-            if (Math.fround(this._fernRingY(fr, p, law, wl)) !== pos.getY(p.li)) {
-                this._fernRingSetzVertex(fr, p, law, wl, fr.farbSchutt[p.g]);
+            if (Math.fround(this._fernRingY(fr, p, wl)) !== pos.getY(p.li)) {
+                this._fernRingSetzVertex(fr, p, wl);
                 neu = true;
             }
             fr.deckCursor++;
@@ -2695,47 +2413,6 @@ class AnazhRealm_Z11c {
         this._standMeldet("deckWache", 128, neu, offen);
         if (!neu) return;
         this._fernRingHoch(fr, [true]);
-    }
-
-    // ===== DER FELD-ZEICHNER =====
-    // Ein voller Fern-Ring-Refresh (Boot + Re-Anker) und der Feld-Pass lesen die Höhen der Ferne aus dem EINEN Gelände-
-    // Gesetzbuch (gelaende-core `hoehe`, K16: das Flussnetz ist memoisierter Zustand je Saat — ein WGSL-Spiegel des
-    // alten Rausch-Gesetzes malte die Ferne falsch und fiel). Zeitgeschnitten: je Makro-Task so viele Punkte, wie das
-    // Takt-Budget des Streamings trägt (`_voxelStreamBudgetMs`, der Regler atmet es), mindestens 16 — nie eine feste Zahl
-    // (bis K16 fest 1 500 je Task: bei 25 µs je Spalte 37 ms am Stück auf dem Haupt-Thread, Lehre 14).
-    // `schutt` (optional, Float32Array n): je Punkt das Gewicht des Schutts aus DEMSELBEN Ruf (`aus.schutt`).
-    // DER FADEN DER FERNE (K60): steht der Voxel-Faden, rechnet ER die Punkte (`_voxelWorkerHoehen`, dasselbe Gesetzbuch am
-    // selben Zustand wie jeder Chunk) — Radeon kalt bis zum ersten Bild hielten die Scheiben des Feld-Passes (9 216 Punkte)
-    // den Haupt-Faden 2,0 s, während der Voxel-Faden zu 95 % ruhte. Die Scheiben bleiben nur, solange kein Faden steht (der
-    // Blob-Weg der Sandbox ist unterwegs, `_getVoxelWorker`).
-    _feldZeichnerHoehen(punkte, includeDetail, schutt) {
-        if (this._getVoxelWorker())
-            return this._voxelWorkerHoehen(punkte, includeDetail, !!schutt).then((r) => {
-                if (schutt) schutt.set(r.schutt);
-                return r.werte;
-            });
-        const n = (punkte.length / 2) | 0;
-        const werte = new Float32Array(n);
-        const aus = schutt ? { hang: 0, schutt: 0, wand: 0 } : undefined;
-        let k = 0;
-        return new Promise((fertig) => {
-            const scheibe = () => {
-                const budget = this.state._voxelStreamBudgetMs;
-                const frist = performance.now() + (Number.isFinite(budget) && budget > 0 ? budget : 4);
-                const mindest = k + 16;
-                for (; k < n; k++) {
-                    werte[k] = this._terrainMacroSurfaceY(punkte[k * 2], punkte[k * 2 + 1], includeDetail, aus);
-                    if (aus) schutt[k] = AnazhRealm._fernSchuttVon(aus);
-                    if (k >= mindest && (k & 15) === 0 && performance.now() > frist) {
-                        k++;
-                        break;
-                    }
-                }
-                if (k < n) setTimeout(scheibe, 0);
-                else fertig(werte);
-            };
-            scheibe();
-        });
     }
 
     // Zeichen-Device des Feld-Panoramas: ZUERST das des Renderers (r184 WebGPUBackend, geteilt), sonst lazy ein eigenes
@@ -2759,69 +2436,6 @@ class AnazhRealm_Z11c {
         return this._feldZeichnerEigenDevP;
     }
 
-    // Ring-Maler: alle Punkte des Ankers packen, EIN Feld-Lauf, Ergebnis durch dieselbe Setz-Naht wie
-    // die CPU. Generations-Stempel verwirft überholte Flüge (Re-Anker/Dispose); fr.cursor bleibt.
-    _fernRingGpuMal(fr) {
-        if (fr.gpuFlug) return;
-        const n = fr.totalVerts;
-        const punkte = new Float32Array(n * 2);
-        const pts = new Array(n);
-        for (let g = 0; g < n; g++) {
-            const p = this._fernRingPunkt(fr, g);
-            pts[g] = p;
-            punkte[g * 2] = p.x;
-            punkte[g * 2 + 1] = p.z;
-        }
-        fr.gpuFlug = true;
-        const gen = (fr.gen = (fr.gen || 0) + 1);
-        // Mittel-Ring: in der Deck-Zone das VOLLE Gesetz (mit Detail). Zwei Flüge
-        // (Makro für alle + VOLL für die Zonen-Vertices), gemischt über _fernRingDeckMisch → ab dem ersten
-        // GPU-Anstrich wahr geformt, kein Makro→Voll-Sprung im Loch.
-        const zonenIdx = [];
-        for (let g = 0; g < n; g++) {
-            const p = pts[g];
-            if (p.s === 0 && p.rad <= fr.bauZoneRad) zonenIdx.push(g);
-        }
-        const zonenPunkte = new Float32Array(zonenIdx.length * 2);
-        for (let k = 0; k < zonenIdx.length; k++) {
-            zonenPunkte[k * 2] = punkte[zonenIdx[k] * 2];
-            zonenPunkte[k * 2 + 1] = punkte[zonenIdx[k] * 2 + 1];
-        }
-        const ringSchutt = new Float32Array((punkte.length / 2) | 0);
-        Promise.all([
-            this._feldZeichnerHoehen(punkte, false, ringSchutt),
-            zonenIdx.length ? this._feldZeichnerHoehen(zonenPunkte, true) : Promise.resolve(null),
-        ])
-            .then(([werte, vollWerte]) => {
-                if (this.state.fernRing !== fr || fr.gen !== gen) return; // überholt (Re-Anker/Dispose)
-                fr.gpuFlug = false;
-                if (!werte) return; // kein Device/Fehler → die CPU zeichnet das Gesetz
-                if (vollWerte) {
-                    for (let k = 0; k < zonenIdx.length; k++) {
-                        const g = zonenIdx[k];
-                        fr.vollY[g] = vollWerte[k];
-                        werte[g] = this._fernRingDeckMisch(fr, pts[g].rad, werte[g], vollWerte[k]);
-                    }
-                }
-                const wl = Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : 0;
-                // NUR ab dem Live-Cursor malen: Vertices davor hat die CPU schon
-                // aufs f64-Gesetz verfeinert — f32 überschreibt nie exakter.
-                for (let g = fr.cursor; g < n; g++) this._fernRingSetzVertex(fr, pts[g], werte[g], wl, ringSchutt[g]);
-                this._fernRingHoch(fr, [true, true, true]);
-                this._fernRingTeilung(fr); // die Ecken der Schale 0 stehen am neuen Anker: die Teilung folgt im selben Takt
-                fr.gpuLaeufe = (fr.gpuLaeufe || 0) + 1;
-                fr.gpuVerts = (fr.gpuVerts || 0) + n;
-                if (!fr.ready) {
-                    fr.ready = true;
-                    for (const m of fr.meshes) m.visible = true; // das Feld malte — der Horizont steht JETZT
-                }
-            })
-            .catch((e) => {
-                if (this.state.fernRing === fr && fr.gen === gen) fr.gpuFlug = false;
-                this._stoffBruch("der Fern-Ring (GPU-Malen)", e);
-            });
-    }
-
     // ===== DER FELD-PASS: die Ferne ohne Schalen-Geometrie =====
     // Jenseits der letzten Schale das PANORAMA (null Vertices, Kosten am Schirm) und davor der Analog-March — zwei
     // Draws mit EINER Aufgabe je Draw, die Kosten an den Pixeln, die etwas zeigen (Welle G, 06.10.): ein Vollbild-Draw,
@@ -2833,7 +2447,7 @@ class AnazhRealm_Z11c {
     //     Hardware wählt den nächsten Treffer über alle Stellvertreter.
     //   DAS PANORAMA: Vollbild-Dreieck auf der festen Tiefe 0,999999 OHNE Fragment-Tiefe — der frühe Tiefentest verwirft
     //     jedes Pixel, vor dem Szene oder Satz stehen; nur Himmels-Pixel schlagen das Panorama nach.
-    // Höhen aus _feldZeichnerHoehen als polares Höhen+Farb-Feld (RGBA-Textur); das Fragment liest nur Texturen (kein
+    // Höhen und Farben aus dem Fern-Faden (`_feldPassMal`) als polares Höhen+Farb-Feld (RGBA-Textur); das Fragment liest nur Texturen (kein
     // Gesetz im Fragment → keine Drift). Ohne Device/TSL kein Pass, die Schalen tragen den Blick.
     _feldPassEnsure(fr) {
         const st = this.state;
@@ -3445,13 +3059,12 @@ class AnazhRealm_Z11c {
         return st.feldPass;
     }
 
-    // Das Feld malt das polare Höhen+Farb-Feld: EIN Compute-Lauf des Zeichners über az×rad Polar-Punkte um den
-    // Ring-Anker, die CPU packt Höhe (Wasser flach auf wl) + die EINE Fern-Farbe budgetiert in die RGBA-Textur
-    // (`_feldPassFaerben`). Re-Anker → neu.
+    // Das Feld malt das polare Höhen+Farb-Feld: az×rad Polar-Punkte um den Ring-Anker, der Fern-Faden rechnet je Texel Höhe
+    // (Wasser flach auf dem Spiegel) und die EINE Fern-Farbe × Saison (`_fernAuftrag` „feld“, B2), der Haupt-Faden legt die
+    // Antwort in die RGBA-Textur und backt das Panorama. Re-Anker oder Saison-Drift → neu; das alte Feld bleibt sichtbar, bis
+    // das neue steht.
     _feldPassMal(fp, fr) {
-        if (fp.flug) return;
-        // Der Anker eines laufenden Farb-Jobs ist schon unterwegs — erst ein NEUER Anker malt neu.
-        if (fp.farbJob && fp.farbJob.ankerX === fr.anchorX && fp.farbJob.ankerZ === fr.anchorZ) return;
+        if (fp.flug || !this._nebenFaden("fern")) return;
         const P = AnazhRealm.FELD_PASS;
         const F = AnazhRealm.FERN_RING;
         const rMin = F.schalen[F.schalen.length - 1].aussen;
@@ -3471,38 +3084,33 @@ class AnazhRealm_Z11c {
         const ankerX = fr.anchorX;
         const ankerZ = fr.anchorZ;
         const saison = this._fernSaison({ r: 1, g: 1, b: 1 });
-        const feldSchutt = new Float32Array((punkte.length / 2) | 0);
-        this._feldZeichnerHoehen(punkte, false, feldSchutt)
-            .then((werte) => {
+        // die Masche des Texels: Azimut-Breite am Radius (im Faden je Texel), die radiale Zeile des Felds
+        const hr = (P.rMaxM - rMin) / (2 * P.rad);
+        this._fernAuftrag("feld", { punkte, ax: ankerX, az: ankerZ, azN: P.az, hr, saison }, [punkte.buffer])
+            .then((antwort) => {
                 if (this.state.feldPass !== fp || fp.gen !== gen) return;
                 fp.flug = false;
-                if (!werte) return; // kein Device → der Pass bleibt unsichtbar, die Schalen tragen
-                // DIE FERN-FARBE kostet je Texel ~15 µs (az×rad Texel ≈ 0,1 s): sie malt budgetiert im Pass-Takt
-                // (`_feldPassFaerben`), das alte Feld bleibt sichtbar, bis das neue steht.
-                fp.farbJob = {
-                    werte,
-                    schutt: feldSchutt,
-                    punkte,
-                    k: 0,
-                    n,
-                    rMin,
-                    ankerX,
-                    ankerZ,
-                    hMax: -Infinity,
-                    daten: new Float32Array(n * 4),
-                    saison,
-                };
+                fp.daten.set(antwort.daten);
+                fp.tex.needsUpdate = true;
+                fp.U.rMin.value = rMin;
+                fp.U.hMax.value = antwort.hMax + 5;
+                fp.anchorX = ankerX;
+                fp.anchorZ = ankerZ;
+                fp.saison = saison;
+                fp.laeufe++;
+                // SCHATTIERUNGS-PERSISTENZ: sichtbar wird der Pass erst mit gebackenem Panorama (_feldPanoramaMal setzt
+                // visible) — das Fragment liest NUR noch das Panorama, nie das rohe Feld.
+                this._feldPanoramaMal(fp);
             })
             .catch((e) => {
                 if (this.state.feldPass === fp && fp.gen === gen) fp.flug = false;
-                // die Höhen reisen durch den Voxel-Faden (`_voxelWorkerHoehen`, K60): sein Bruch meldet sich beim Namen
-                this._stoffBruch("der Feld-Pass (die Höhen der Ferne)", e);
+                this._stoffBruch("der Feld-Pass (der Fern-Faden)", e);
             });
     }
 
     // Ist die Saison seit dem Bild des Feldes gewandert (je Kanal > `FERN_FARBE.saisonDrift`)? Ohne Bild nie.
     _feldSaisonDrift(fp) {
-        if (!fp.saison || fp.farbJob || fp.flug) return false;
+        if (!fp.saison || fp.flug) return false;
         const jetzt = this._fernSaison(this._feldSaisonTmp || (this._feldSaisonTmp = { r: 1, g: 1, b: 1 }));
         const d = AnazhRealm.FERN_FARBE.saisonDrift;
         return (
@@ -3510,53 +3118,5 @@ class AnazhRealm_Z11c {
             Math.abs(jetzt.g - fp.saison.g) > d ||
             Math.abs(jetzt.b - fp.saison.b) > d
         );
-    }
-
-    // Der Farb-Job des Feld-Malers: Texel durch die EINE Fern-Farbe (`_fernFarbeAt`) bis zur Frist `frist` des
-    // Fern-Farb-Budgets (mindestens `mindest`), dann steht das neue Feld (Textur, Uniforms, Anker) und das Panorama
-    // backt. Liefert die gemalten Texel. Die feste Zahl (768 je Takt) kostete auf jedem Holz dieselben Texel.
-    _feldPassFaerben(fp, frist, mindest) {
-        const job = fp.farbJob;
-        if (!job) return 0;
-        const wl = Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : 0;
-        const f = [0, 0, 0];
-        const k0 = job.k;
-        let ende = job.n;
-        for (let k = job.k; k < ende; k++) {
-            // die Masche des Texels (`_fernFarbeMasche`): Azimut-Breite am Radius, die radiale Zeile des Felds
-            const P = AnazhRealm.FELD_PASS;
-            const px = job.punkte[k * 2];
-            const pz = job.punkte[k * 2 + 1];
-            const nass = job.nass || (job.nass = { y: 0, spiegel: 0 });
-            const wet = this._fernNass(px, pz, job.werte[k], wl, nass);
-            const y = wet ? nass.spiegel : nass.y;
-            const fuss = job.fuss || (job.fuss = { ax: job.ankerX, az: job.ankerZ, ht: 0, hr: 0 });
-            fuss.ht = (Math.PI * Math.hypot(px - job.ankerX, pz - job.ankerZ)) / P.az;
-            fuss.hr =
-                (P.rMaxM - AnazhRealm.FERN_RING.schalen[AnazhRealm.FERN_RING.schalen.length - 1].aussen) / (2 * P.rad);
-            this._fernFarbeAt(px, y, pz, wet, f, job.saison, fuss, job.schutt[k]);
-            job.daten[k * 4] = y;
-            job.daten[k * 4 + 1] = f[0];
-            job.daten[k * 4 + 2] = f[1];
-            job.daten[k * 4 + 3] = f[2];
-            if (y > job.hMax) job.hMax = y;
-            const n = k + 1 - k0;
-            if ((n & 15) === 0 && n >= mindest && performance.now() > frist) ende = k + 1;
-        }
-        job.k = ende;
-        if (job.k < job.n) return ende - k0;
-        fp.farbJob = null;
-        fp.daten.set(job.daten);
-        fp.tex.needsUpdate = true;
-        fp.U.rMin.value = job.rMin;
-        fp.U.hMax.value = job.hMax + 5;
-        fp.anchorX = job.ankerX;
-        fp.anchorZ = job.ankerZ;
-        fp.saison = job.saison;
-        fp.laeufe++;
-        // SCHATTIERUNGS-PERSISTENZ: sichtbar wird der Pass erst mit gebackenem Panorama (_feldPanoramaMal setzt
-        // visible) — das Fragment liest NUR noch das Panorama, nie das rohe Feld.
-        this._feldPanoramaMal(fp);
-        return ende - k0;
     }
 }

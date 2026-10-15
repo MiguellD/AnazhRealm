@@ -460,7 +460,7 @@ function schlangenGesetz(src) {
                             fehlt:
                                 `der Feld-Pass steht nach ${n} Takten nicht (` +
                                 (fp
-                                    ? `gemalt ${fp.laeufe}× · Farb-Job ${fp.farbJob ? fp.farbJob.k + "/" + fp.farbJob.n : "keiner"} · ` +
+                                    ? `gemalt ${fp.laeufe}× · im Flug ${fp.flug ? "ja" : "nein"} · ` +
                                       `Panorama ${fp.panoLaeufe || 0}× · sichtbar ${!!(fp.mesh && fp.mesh.visible)}`
                                     : "kein Feld-Pass") +
                                 ")",

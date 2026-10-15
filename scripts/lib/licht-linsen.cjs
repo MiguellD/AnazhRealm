@@ -916,7 +916,7 @@ function nahFernSicht(opts) {
                 [-fuss, fuss],
                 [-fuss, -fuss],
             ].every(([a, b]) => drin(x + a, z + b));
-        const teile = new Float32Array(7);
+        // die Deckung an der Stelle aus dem Fern-Faden (B2: die Fern-Farbe rechnet nur er) — EIN Auftrag für alle Kandidaten
         const kand = [];
         for (let dx = -220; dx <= 220; dx += 11)
             for (let dz = -220; dz <= 220; dz += 11) {
@@ -925,9 +925,15 @@ function nahFernSicht(opts) {
                 if (!gedeckt(x, z)) continue;
                 const y = r._voxelSurfaceY(x, z);
                 if (!(y > wl + 1)) continue;
-                r._fernFarbeTeile(x, y, z, teile);
-                kand.push({ x, z, y, deckung: teile[6] });
+                kand.push({ x, z, y, deckung: NaN });
             }
+        if (kand.length) {
+            const a = await r._fernAuftrag("teile", {
+                punkte: new Float64Array(kand.flatMap((k) => [k.x, k.z])),
+                y: new Float64Array(kand.map((k) => k.y)),
+            });
+            kand.forEach((k, i) => (k.deckung = a.teile[i * 8 + 6]));
+        }
         const waehle = (liste) => {
             const aus = [];
             for (const k of liste) if (aus.every((a) => Math.hypot(a.x - k.x, a.z - k.z) >= 30)) aus.push(k);
@@ -994,15 +1000,21 @@ function nahFernSicht(opts) {
         // Fern-Ring an seinen Schnapp-Punkten (Schale 0: 24 m), die Karte des Boden-Stoffs im Raster N — hier das Mittel
         // derselben Formel (Boden unter dem Kronendach × Saison zur Deckung) fein über den Fußabdruck (32 × 32 Punkte).
         const saison = r._fernSaison();
-        const gesetz = (x0, z0) => {
+        const gesetz = async (x0, z0) => {
             const c = [0, 0, 0];
             let d = 0;
+            // die Teile am Gesetz aus dem Fern-Faden (B2), unter dem Meeresspiegel das Wasser des Rings
+            const pts = new Float64Array(2048);
             for (let i = 0; i < 32; i++)
                 for (let j = 0; j < 32; j++) {
-                    const x = Math.round(x0 - halb + ((i + 0.5) * 2 * halb) / 32),
-                        z = Math.round(z0 - halb + ((j + 0.5) * 2 * halb) / 32);
-                    const law = r._terrainMacroSurfaceY(x, z, false);
-                    const t = r._fernRingTeile(x, z, law, law < wl, true);
+                    pts[(i * 32 + j) * 2] = Math.round(x0 - halb + ((i + 0.5) * 2 * halb) / 32);
+                    pts[(i * 32 + j) * 2 + 1] = Math.round(z0 - halb + ((j + 0.5) * 2 * halb) / 32);
+                }
+            const a = await r._fernAuftrag("teile", { punkte: pts });
+            for (let i = 0; i < 32; i++)
+                for (let j = 0; j < 32; j++) {
+                    const k = i * 32 + j;
+                    const t = a.law[k] < wl ? r._fernRingWasserTeile() : a.teile.subarray(k * 8, k * 8 + 8);
                     const sm = [saison.r, saison.g, saison.b];
                     for (let k = 0; k < 3; k++) c[k] += t[k] + (t[3 + k] * sm[k] - t[k]) * t[6];
                     d += t[6];
@@ -1155,7 +1167,7 @@ function nahFernSicht(opts) {
                     fern: jetzt.fern,
                     runden,
                     verworfen: verworfen.length ? verworfen : undefined,
-                    gesetz: gesetz(o.x, o.z),
+                    gesetz: await gesetz(o.x, o.z),
                 });
             }
         } finally {

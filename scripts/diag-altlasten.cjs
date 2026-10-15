@@ -503,6 +503,14 @@ const FORBIDDEN = [
         fiel: "Integration 05.10. — _fernFarbeTeile (Art × kronenSchatten), uSeasonMul",
     },
     { token: "farbeJeTakt", fiel: "Integration 05.10. — das Fern-Farb-Budget (FERN_FARBE.msJeTakt, _fernFarbTakt)" },
+    // B2 — DER HORIZONT IM FADEN: Höhe, Nässe und Fern-Farbe der Ferne (Ring, Feld-Pass, Fern-Krone) rechnet nur der Fern-Faden
+    // (voxel-worker `fernAuftrag`), der Haupt-Faden-Weg fiel.
+    ...[
+        "_fernFarbeTeile(", "_fernFarbeMasche(", "_fernFarbeAt(", "_fernRingTeile(",
+        "_fernRingFaerben(", "_fernFarbTakt(", "_fernRingGpuMal(", "_feldZeichnerHoehen(",
+        "_voxelWorkerHoehen(", "_feldPassFaerben(", "_flussAbdruck(", "_fernSchuttAt(",
+        "_fernRingDeckMisch(", "_fernFlussDeckung(",
+    ].map((token) => ({ token, fiel: "B2 — der Horizont rechnet im Fern-Faden, der Haupt-Faden-Weg fiel" })),
     // V18.331 fiel Ammo.js (die Physik ist feld-nativ); V18.530 fiel mit ihr der CI-Schritt „Ammo-Memory-Leak-Indikator",
     // der btVector3 gegen destroy zählte und seit dem Abschied an „0\n0" rechnete (rot hinter continue-on-error).
     { token: "new Ammo.", fiel: "V18.331 — Feld-Physik; die Leck-Linse der CI fiel V18.530" },

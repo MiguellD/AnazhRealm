@@ -396,24 +396,6 @@ const SELBST = process.argv.includes("--selftest");
                         r._foundryAuftrag(f, "imp", { type: "bake-impostor", presetId: "birke", seed }, 25, 45000, "-");
                     aus9.ofen = [ofen0.length, ofen1.length];
                     aus9.nummern = [...ofen0, ...ofen1];
-                    // der Horizont im Lade-Takt: ein Ring mit 100 000 Punkten, Budget 5 je Takt
-                    setze("_ladeTakt", () => true);
-                    setze("_fernRingPunkt", (fr, i) => ({ s: 1, x: i, z: 0, g: i, rad: 1e9 }));
-                    setze("_fernRingSetzVertex", () => {});
-                    setze("_fernRingHoch", () => {});
-                    const ringEcht = st.fernRing;
-                    st.fernRing = { cursor: 0, totalVerts: 100000, refreshed: 0, ready: false, meshes: [] };
-                    try {
-                        aus9.punkte = r._fernRingRefresh(5);
-                        let ende = -Infinity;
-                        setze("_fernKroneNahTakt", (e) => (ende = e));
-                        setze("_fernRingFaerben", () => 0);
-                        const t0 = performance.now();
-                        r._fernFarbTakt(st.fernRing);
-                        aus9.farbMs = Math.round(ende - t0);
-                    } finally {
-                        st.fernRing = ringEcht;
-                    }
                     return aus9;
                 } finally {
                     r._foundry = fEcht;
@@ -516,12 +498,7 @@ const SELBST = process.argv.includes("--selftest");
         t8.helferGeist === true;
     const t9 = aus.t9;
     const LADE = 100; // AnazhRealm.LADE_TAKT_MS (stamm/26c.js)
-    const T9 =
-        t9.ofen[0] === 1 &&
-        t9.ofen[1] === 1 &&
-        t9.nummern.some((k) => /^impb1_\d+$/.test(k)) &&
-        t9.punkte > 5 &&
-        t9.farbMs >= LADE * 0.9;
+    const T9 = t9.ofen[0] === 1 && t9.ofen[1] === 1 && t9.nummern.some((k) => /^impb1_\d+$/.test(k));
     const t10 = aus.t10;
     const T10 = t10.geboren && t10.vorBereit.includes("get-book") && t10.helfer === t10.helferSoll;
     if (SELBST) {
@@ -535,7 +512,7 @@ const SELBST = process.argv.includes("--selftest");
                 `die Ein-Faden-Pumpe legt die Karte ins Werk (Bäcker ${t7.ofen.length}, Karten im Werk ${t7.werkKarten}, ` +
                 `Eiche im Werk ${t7.eicheImWerk}) → T7 ${T7 ? "grün (vakuös!)" : "rot"}; ` +
                 `die löschende Frist lässt den Zweiten ablaufen (Werk ${t8.zweiter}, Helfer ${t8.helferZweiter}) → T8 ${T8 ? "grün (vakuös!)" : "rot"}; ` +
-                `die Ein-Bäcker-Pumpe und die Kappe allein (Bäcker ${t9.ofen.join("/")}, Horizont ${t9.punkte} Punkte, Farbe ${t9.farbMs} ms) → T9 ${T9 ? "grün (vakuös!)" : "rot"}; ` +
+                `die Ein-Bäcker-Pumpe und die Kappe allein (Bäcker ${t9.ofen.join("/")}) → T9 ${T9 ? "grün (vakuös!)" : "rot"}; ` +
                 `der alte Weg fragt das Buch erst auf „ready" (vor ihm: ${t10.vorBereit.join("·") || "nichts"}, Helfer ${t10.helfer}/${t10.helferSoll}) → T10 ${T10 ? "grün (vakuös!)" : "rot"}`
         );
         process.exit(ok ? 0 : 1);
@@ -571,7 +548,7 @@ const SELBST = process.argv.includes("--selftest");
     );
     console.log(
         `  ${T9 ? "✅" : "❌"} T9 die Kappen des Lade-Takts: zwei Karten in die Bäcker ${t9.ofen.join(" / ")} (${t9.nummern.join(" · ")}) · ` +
-            `Horizont ${t9.punkte} Punkte bei Budget 5 · Farben ${t9.farbMs} ms (Soll ≥ ${LADE * 0.9})` +
+            `der Horizont rechnet im Fern-Faden (B2), nicht im Lade-Takt` +
             (T9
                 ? ""
                 : t9.ofen[1] === 0
