@@ -139,6 +139,12 @@ function tafelPruefen(t) {
         }
         if (z.ratsche !== null && z.ratsche !== undefined && !zahl(z.ratsche))
             f.push(`${z.id}: ratsche ist weder null noch Zahl`);
+        // DIE STUFEN-PFLICHT (K63-n7): eine Welt-Klasse der Foundry (`:L<n>`, der Bau-Satz) erklärt die Stufen ihres Exemplars —
+        // eine Klasse, die still weitere Stufen zulässt, misst die gefaltete Stufe (der Lack las am 15.10. Chrom und Glas mit)
+        const wk = String((z.welt && z.welt.klasse) || "");
+        const st = z.welt && z.welt.stufen;
+        if (/:L|bauSatz/.test(wk) && !(Array.isArray(st) && st.length && st.every((s) => Number.isInteger(s) && s >= 0)))
+            f.push(`${z.id}: welt.stufen fehlt — die Klasse ${wk} zeigt Foundry-Stufen, die Zeile erklärt keine`);
         // DIE QUELLEN der Zeile (K63-n4): die Kerne und Stamm-Zonen, deren Bytes ihre Albedo tragen — der Stand des Ists
         if (!(Array.isArray(z.quellen) && z.quellen.length && z.quellen.every((d) => typeof d === "string" && d)))
             f.push(`${z.id}: quellen fehlen (die Dateien, deren Bytes die Albedo der Zeile tragen)`);
@@ -209,6 +215,20 @@ function tafelUrteil(t, messung) {
             rot.push({ art: "stumm", text: `${z.id}: das Labor maß nichts (${(L && L.fehler) || "keine Zeile"})` });
         if (!W || !zahl(W.Y) || !(W.Y > 0))
             rot.push({ art: "stumm", text: `${z.id}: die Welt maß nichts (${(W && W.fehler) || "keine Zeile"})` });
+        // DIE STUFE DES EXEMPLARS (K63-n7; gemessen 15.10., Radeon: der Wagen gt stand in der Blende L0/L1, die Stufe 1 faltet
+        // die Stoffe ihrer Seh-Klasse — Chrom und Glas lasen im Lack, Welt 0,0175 gegen 0,0066): eine Zeile erklärt die Stufen,
+        // in denen die Welt ihr Exemplar zeigt (`welt.stufen`); zeichnet der Schuss eine andere, misst er einen anderen Stoff
+        const ds = z.welt && Array.isArray(z.welt.stufen) ? z.welt.stufen : null;
+        if (ds && W && zahl(W.Y)) {
+            const fremd = Array.isArray(W.stufen) ? W.stufen.filter((s) => !ds.includes(s)) : null;
+            if (!fremd)
+                rot.push({ art: "stufe", text: `${z.id}: die Welt-Messung nennt ihre Stufen nicht (erklärt L${ds.join("/L")})` });
+            else if (fremd.length)
+                rot.push({
+                    art: "stufe",
+                    text: `${z.id}: die Welt zeichnet das Exemplar in L${W.stufen.join("/L")}, erklärt ist L${ds.join("/L")} — ein anderer Stoff im Schuss`,
+                });
+        }
         if (L && W && L.Y > 0 && W.Y > 0) {
             e.verhaeltnis = +(L.Y / W.Y).toFixed(4);
             e.abweichung = +abweichung(e.verhaeltnis).toFixed(4);
@@ -271,7 +291,8 @@ function tafelNachziehen(t, messung, gemessen) {
             aenderungen.push(`${z.id}: das Ist fällt (${r ? r.text : "stumm"})`);
             continue;
         }
-        const knapp = (m) => ({ Y: m.Y, rgb: m.rgb, pixel: m.pixel });
+        // die Stufen der Welt reisen mit dem Ist (K63-n7): die Wand prüft sie gegen `welt.stufen` auch am gespeicherten Stand
+        const knapp = (m) => Object.assign({ Y: m.Y, rgb: m.rgb, pixel: m.pixel }, Array.isArray(m.stufen) ? { stufen: m.stufen } : {});
         z.ist = { labor: knapp(e.labor), welt: knapp(e.welt), verhaeltnis: e.verhaeltnis };
         if (z.ratsche == null || e.abweichung < z.ratsche) {
             aenderungen.push(`${z.id}: ${z.ratsche == null ? "–" : z.ratsche} → ${e.abweichung}`);

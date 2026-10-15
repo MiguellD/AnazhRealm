@@ -241,10 +241,11 @@ const gitStand = () => {
 // schreibt, was es gemessen hat, in die EINE Tafel (spec/abnahme/soll-tafel.json, wie `--nachziehen` die Albedo-Tafel) — Ist
 // und Täter rechnet die Linse daraus (abnahme-urteil `sollTafelUrteil`); von Hand steht dort keine Zahl.
 const SOLL_TAFEL = path.join(root, "spec", "abnahme", "soll-tafel.json");
-const { stammVersion, pruefsumme, kernStand } = require("./lib/abnahme-urteil.cjs").standLeser(root);
+const { stammVersion, pruefsumme, kernStand, sollQuelle } = require("./lib/abnahme-urteil.cjs").standLeser(root);
 function sollIstSchreiben(ziel, messung) {
     const [id, teil] = String(ziel).split(":");
-    const t = JSON.parse(fs.readFileSync(SOLL_TAFEL, "utf8"));
+    const text = fs.readFileSync(SOLL_TAFEL, "utf8");
+    const t = JSON.parse(text);
     const k = t.klassen.find((x) => x.id === id);
     if (!k) throw new Error(`--ist ${ziel}: die Soll-Tafel trägt keine Klasse „${id}"`);
     // DER STAND (K63-n2, abnahme-urteil `messStand`): die Version des Stamms und die Prüfsumme jeder Quelle der Klasse, wie sie
@@ -256,6 +257,11 @@ function sollIstSchreiben(ziel, messung) {
     else if (/^L\d$/.test(teil || "")) (k.mass.messung = k.mass.messung || {})[teil] = messung;
     else if (teil) throw new Error(`--ist ${ziel}: Teil „${teil}" unbekannt (L<n> je Stufe, wirkung)`);
     else k.mass.messung = messung;
+    // DER SCHREIBER PRÜFT (K63-n7, abnahme-urteil `sollIstAbweisung`): in die Tafel fällt nur, was die Linse liest — ein Schuss,
+    // in dem die Klasse nicht zeichnete (der L1-Schuss 14 s nach dem Umstellen: Membran und Nebel ohne Tor), bricht laut
+    const ab = require("./lib/abnahme-urteil.cjs").sollIstAbweisung(JSON.parse(text), t, id, sollQuelle());
+    if (ab.length)
+        throw new Error(`--ist ${ziel}: die Linse liest die Messung nicht — ${ab.join(" · ")} — die Tafel bleibt, wie sie war`);
     fs.writeFileSync(SOLL_TAFEL, JSON.stringify(t, null, 4) + "\n");
     return `${id}${teil ? ":" + teil : ""} → spec/abnahme/soll-tafel.json`;
 }
@@ -2055,6 +2061,7 @@ async function starte() {
                                       zuege: e.zuege,
                                       stoffe: e.stoffe,
                                       gesetzt: e.gesetzt,
+                                      stufen: e.stufen,
                                   }
                                 : { Y: null, fehler: e.fehler || "kein Pixel" };
                     }

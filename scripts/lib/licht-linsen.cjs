@@ -226,6 +226,47 @@ function albedoSicht(opts) {
                         pos = new T.Vector3(c.position.x, c.position.y, c.position.z);
                     }
                 } else if (ex.typ === "spieler") pos = pp.clone();
+                else if (ex.typ === "boden" && ex.wald) {
+                    // DER WALD-BODEN (K63-n7; gemessen 15.10., Radeon: unter dem Spieler am Genesis-Ring liegt seit K52 der Platz —
+                    // Gesetz-Farbe 0,0721 wie `dirt` —, das Labor zeigt den Wald-Boden der Pflanzen-Welt): die nächste Stelle um
+                    // den Spieler, an der das Wald-Gesetz steht (`_forestCellDarts` → `_forestDartSteht` → `_wildnisTraegt`, derselbe
+                    // Gang wie `_forestPlantChunk`): ≥ `baeume` stehende Bäume binnen `r` m, keiner näher als `frei` m, trockenes Land
+                    const W0 = ex.wald,
+                        C = r.constructor.FOREST.cell,
+                        seedInt = r._forestSeedInt(),
+                        memo = new Map();
+                    const zelle = (gx, gz) => {
+                        const k = gx + "," + gz;
+                        let d = memo.get(k);
+                        if (!d) memo.set(k, (d = r._forestCellDarts(gx, gz, seedInt)));
+                        return d;
+                    };
+                    const wald = (x, z) => {
+                        let b = 0,
+                            nah = Infinity;
+                        for (let gz = Math.floor((z - W0.r) / C); gz <= Math.floor((z + W0.r) / C); gz++)
+                            for (let gx = Math.floor((x - W0.r) / C); gx <= Math.floor((x + W0.r) / C); gx++)
+                                for (const d of zelle(gx, gz)) {
+                                    const dd = Math.hypot(d.x - x, d.z - z);
+                                    if (dd < W0.r && r._forestDartSteht(d, gx, gz, zelle) && r._wildnisTraegt(d.x, d.z)) {
+                                        b++;
+                                        nah = Math.min(nah, dd);
+                                    }
+                                }
+                        return b >= W0.baeume && nah > W0.frei;
+                    };
+                    for (let rr = W0.ab; rr <= W0.bis && !pos; rr += 8) {
+                        const n = Math.max(1, Math.round((2 * Math.PI * rr) / 8));
+                        for (let q = 0; q < n && !pos; q++) {
+                            const a = (q / n) * Math.PI * 2,
+                                x = pp.x + Math.cos(a) * rr,
+                                zz = pp.z + Math.sin(a) * rr;
+                            if (!r._landAt(x, zz) || (r._nassAt && r._nassAt(x, zz)) || !wald(x, zz)) continue;
+                            pos = new T.Vector3(x, r._voxelSurfaceY(x, zz), zz);
+                        }
+                    }
+                    if (!pos) verweigert = `kein Wald-Boden binnen ${W0.ab}–${W0.bis} m um den Spieler`;
+                }
                 exemplare.push({ zeile: z, pos, gesetzt, verweigert, eintrag });
             }
         }
@@ -393,6 +434,7 @@ function albedoSicht(opts) {
             for (const q of (st.chunkSaetze && st.chunkSaetze.values()) || []) if (q.mesh === m) s = q;
             if (!s || !st.archInstanceGroups) return m;
             const tri = [];
+            const stufen = new Set(); // die Stufen der Gruppen des Exemplars (der Schlüssel `f:<preset>|<gestalt>|<stufe>:<teil>`)
             let bau = false; // ein Satz ohne Instanz-Gruppen (Boden, Streu, Formationen) ist kein Bau-Satz: er bleibt
             for (const [key, g] of st.archInstanceGroups) {
                 if (!g || g.satz !== s.art || !g.slotEntry) continue;
@@ -401,6 +443,8 @@ function albedoSicht(opts) {
                 const n = b && b.idx && g.geom && g.geom.attributes.position ? g.geom.attributes.position.count : 0;
                 for (let i = 0; n && i < Math.floor(b.vAnzahl / n); i++) {
                     if (g.slotEntry[i] !== eintrag) continue;
+                    const sk = /\|(\d+):\d+$/.exec(String(key));
+                    if (sk) stufen.add(+sk[1]);
                     const v0 = b.vStart + i * n,
                         v1 = v0 + n;
                     for (let t = 0; t + 2 < b.idx.length; t += 3)
@@ -433,7 +477,7 @@ function albedoSicht(opts) {
             g2.setIndex(new T.BufferAttribute(ix, 1));
             const t = new T.Mesh(g2, m.material);
             t.name = m.name;
-            t.userData = Object.assign({}, m.userData, { satzAusschnitt: s.art });
+            t.userData = Object.assign({}, m.userData, { satzAusschnitt: s.art, satzStufen: [...stufen] });
             t.matrixAutoUpdate = false;
             t.matrix.copy(m.matrixWorld);
             t.matrixWorld.copy(m.matrixWorld);
@@ -560,7 +604,18 @@ function albedoSicht(opts) {
                     for (const [mt, v] of metallAlt) mt.metalness = v;
                     metallAlt.clear();
                     const a = window.__albedoAuswerten(s.hell, s.dunkel, W, H * stellungen.length, 0, z.id);
-                    ergebnisse.push(Object.assign(a, e, { zuege: sel.length, stoffe: [...stoffe] }));
+                    // DIE STUFEN DES SCHUSSES (K63-n7; gemessen 15.10., Radeon: der Wagen gt des Lacks stand 11,3 m vor dem Spieler,
+                    // in der Blende L0/L1 — die Stufe 1 faltet die Stoffe ihrer Seh-Klasse, Chrom und Glas lasen im Lack, 0,0175
+                    // gegen 0,0066): je Zug seine Foundry-Stufe (`:L<n>` der Täter-Klasse, im Satz die Gruppen des Exemplars)
+                    const stufen = new Set();
+                    for (const m of sel) {
+                        const sk = /:L(\d+)$/.exec(kl.get(m) || "");
+                        if (sk) stufen.add(+sk[1]);
+                        for (const x of (m.userData && m.userData.satzStufen) || []) stufen.add(x);
+                    }
+                    ergebnisse.push(
+                        Object.assign(a, e, { zuege: sel.length, stoffe: [...stoffe], stufen: [...stufen].sort() })
+                    );
                 }
                 ausschnitteFort();
                 // Die Selbst-Eichung der Tafel: die 18-%-Karte liest 0,180 (sonst ist kein Wert der Tafel eine Albedo).

@@ -1194,32 +1194,8 @@ async function probe(arg) {
         // Band ohne Rechnung, eine Messung über ihrem Rauschen, eine Haushalt-Klasse fehlt), Teilung und Maße geeicht, jeder
         // eingeschmuggelte Bruch fällt beim Namen; ein ROTES Maß ist der Auftrag der nächsten AAAA-Karte, nie ein Bruch der Wand.
         const sollTafel = JSON.parse(fs.readFileSync(path.join(fdir, "soll-tafel.json"), "utf8"));
-        const kerne = {};
-        const stand = AU.standLeser(root);
-        const sollQ = {
-            version: stand.stammVersion(),
-            pruefsumme: stand.pruefsumme,
-            haushalt: JSON.parse(fs.readFileSync(path.join(root, "spec", "profiband", "haushalt.json"), "utf8")),
-            lesen: (d) => (fs.existsSync(path.join(root, d)) ? fs.readFileSync(path.join(root, d), "utf8") : null),
-            // ein Symbol eines Kerns, GELESEN: der Kern läuft in einer eigenen vm (wie diag-mensch-anatomie), sein Namensraum trägt
-            // das Symbol
-            kern: (d, sym) => {
-                if (!(d in kerne)) {
-                    const sb = { console, Math };
-                    sb.self = sb;
-                    sb.window = sb;
-                    sb.globalThis = sb;
-                    require("vm").createContext(sb);
-                    try {
-                        require("vm").runInContext(fs.readFileSync(path.join(root, d), "utf8"), sb, { filename: d });
-                    } catch (_e) {}
-                    kerne[d] = sb;
-                }
-                for (const v of Object.values(kerne[d]))
-                    if (v && typeof v === "object" && v !== kerne[d] && Object.prototype.hasOwnProperty.call(v, sym)) return v[sym];
-                return undefined;
-            },
-        };
+        // die Quelle des Urteils (abnahme-urteil `sollQuelle`): dieselbe, mit der der Schreiber der Tafel jede Messung prüft
+        const sollQ = AU.standLeser(root).sollQuelle();
         const sollBrueche = AU.sollTafelSelbsttest(sollTafel, sollQ);
         check("K5 Selbst-Test: die Soll-Tafel ohne Bruch, Teilung und Maße geeicht, das Ist aus der Rohdatei, jeder Tafel-Bruch beim Namen", sollBrueche.length === 0, sollBrueche.join(" · "));
         const sollU = AU.sollTafelUrteil(sollTafel, sollQ);

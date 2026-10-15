@@ -218,6 +218,7 @@ function messungZumTest(t, faktor) {
     const m = { labor: {}, welt: {}, karten: {}, eichung: { welt: 0.18, labor: {} } };
     for (const z of t.zeilen) {
         m.welt[z.id] = { Y: 0.2, rgb: "0.2/0.2/0.2" };
+        if (z.welt && Array.isArray(z.welt.stufen)) m.welt[z.id].stufen = z.welt.stufen.slice();
         m.labor[z.id] = { Y: 0.2 * ((faktor && faktor[z.id]) || 1), rgb: "x" };
     }
     for (const s of Object.keys(t.karten)) {
@@ -296,8 +297,27 @@ async function selbsttest() {
             AT.tafelPruefen(s6c).some((f) => /nicht Labor\/Welt/.test(f)) &&
             !AT.tafelPruefen(AT.ladeTafel()).length
     );
+    // S6s — DIE STUFE (K63-n7; der Lack am 15.10.: der Wagen in der Blende L0/L1, die Stufe 1 faltet Chrom und Glas in den Lack,
+    // Welt 0,0175 gegen 0,0066): die Zeile erklärt L0, die Welt zeichnet L0 und L1 → ROT `stufe` beim Namen; nur L0 → kein
+    // Befund; eine Messung ohne Stufen → ROT; eine Foundry-Klasse ohne erklärte Stufen → Schema rot.
+    {
+        const zs = T0.zeilen.find((z) => z.welt && Array.isArray(z.welt.stufen));
+        const mS = messungZumTest(T0);
+        mS.welt[zs.id].stufen = [0, 1];
+        const mO = messungZumTest(T0);
+        delete mO.welt[zs.id].stufen;
+        const s6s = JSON.parse(JSON.stringify(T0));
+        delete s6s.zeilen.find((z) => z.id === zs.id).welt.stufen;
+        t(
+            "Stufe: erklärt L0, gezeichnet L0/L1 → ROT `stufe` beim Namen; nur L0 → kein Befund; ohne Stufen → ROT; Foundry-Klasse ohne Stufen → Schema rot",
+            AT.tafelUrteil(T0, mS).rot.some((r) => r.art === "stufe" && r.text.startsWith(`${zs.id}:`) && /L0\/L1/.test(r.text)) &&
+                !hatRot(AT.tafelUrteil(T0, messungZumTest(T0)), "stufe") &&
+                AT.tafelUrteil(T0, mO).rot.some((r) => r.art === "stufe" && /nennt ihre Stufen nicht/.test(r.text)) &&
+                AT.tafelPruefen(s6s).some((f) => f.startsWith(`${zs.id}: welt.stufen fehlt`))
+        );
+    }
     // S7 — der Nachzug senkt, hebt nie, und zieht ohne Eichung nicht.
-    const n7 = AT.tafelNachziehen(T0, messungZumTest(T0, { [T0.zeilen[2].id]: 1.01 }), { labor: {}, welt: {} });
+    const n7 =AT.tafelNachziehen(T0, messungZumTest(T0, { [T0.zeilen[2].id]: 1.01 }), { labor: {}, welt: {} });
     const n7b = AT.tafelNachziehen(T0, messungZumTest(T0, { [T0.zeilen[2].id]: 1.2 }), { labor: {}, welt: {} });
     // eine stumme Zeile: ihr Ist fällt (kein altes Ist unter dem neuen Stand), die Ratsche bleibt, die Wand nennt sie „ohne Ist"
     const n7c = AT.tafelNachziehen(T0, m4, { labor: {}, welt: {} });

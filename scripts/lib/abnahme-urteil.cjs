@@ -1316,6 +1316,38 @@ function standLeser(root) {
             const v = /AnazhRealm\.VERSION = "([^"]+)"/.exec(fs.readFileSync(path.join(root, "stamm", "26a.js"), "utf8"));
             return { version: v ? v[1] : null, quellen };
         },
+        // DIE QUELLE DES URTEILS (K63-n7, `sollTafelUrteil(tafel, q)`): Haushalt, Datei-Leser, Prüfsumme und die Symbole der Kerne
+        // GELESEN — jeder Kern läuft in einer eigenen vm (wie diag-mensch-anatomie), sein Namensraum trägt das Symbol. EINE
+        // Quelle für die Linse (K5) und den Schreiber der Tafel (`werkbank … --ist`): beide urteilen mit denselben Zahlen.
+        sollQuelle: () => {
+            const kerne = {};
+            const vm = require("vm");
+            return {
+                version: (/AnazhRealm\.VERSION = "([^"]+)"/.exec(
+                    fs.readFileSync(path.join(root, "stamm", "26a.js"), "utf8")
+                ) || [])[1],
+                pruefsumme,
+                haushalt: JSON.parse(fs.readFileSync(path.join(root, "spec", "profiband", "haushalt.json"), "utf8")),
+                lesen: (d) => (fs.existsSync(path.join(root, d)) ? fs.readFileSync(path.join(root, d), "utf8") : null),
+                kern: (d, sym) => {
+                    if (!(d in kerne)) {
+                        const sb = { console, Math };
+                        sb.self = sb;
+                        sb.window = sb;
+                        sb.globalThis = sb;
+                        vm.createContext(sb);
+                        try {
+                            vm.runInContext(fs.readFileSync(path.join(root, d), "utf8"), sb, { filename: d });
+                        } catch (_e) {}
+                        kerne[d] = sb;
+                    }
+                    for (const v of Object.values(kerne[d]))
+                        if (v && typeof v === "object" && v !== kerne[d] && Object.prototype.hasOwnProperty.call(v, sym))
+                            return v[sym];
+                    return undefined;
+                },
+            };
+        },
     };
     function pruefsumme(d) {
         const p = path.join(root, d);
@@ -1856,8 +1888,40 @@ function sollTafelSelbsttest(tafel, q) {
         if (!z5 || z5.urteil !== "ROT" || !/ohne Schuss/.test(z5.grund || ""))
             v.push(`${k5.id}: eine Stufe ohne Schuss ist nicht ROT beim Namen (${z5 && z5.urteil} ${z5 && z5.grund})`);
     } else v.push("die Tafel trägt kein Maß milchweiss mit Messung (der Fall der Stufen fehlt)");
+    // DER SCHREIBER PRÜFT (K63-n7, `sollIstAbweisung`): der Schuss vom 15.10. 02:14 (K63-n6, 14 s nach dem Umstellen) zeigte nur
+    // Membran und Nebel — dieselbe Messung ohne die Tore der Stufe wird abgewiesen beim Namen; dieselbe Messung unverändert nicht
+    const t6 = klon();
+    const k6 = finde(t6, (k) => k.mass && k.mass.name === "milchweiss" && k.mass.messung);
+    const s6 = k6 && Object.keys(k6.mass.messung).find((s) => /^L\d$/.test(s) && !/^L3$/.test(s));
+    if (k6 && s6) {
+        const torRe = new RegExp(k6.mass.rechnung.tor);
+        for (const n of Object.keys(k6.mass.messung[s6].klassen))
+            if (torRe.test(n)) delete k6.mass.messung[s6].klassen[n];
+        const ab = sollIstAbweisung(klon(), t6, k6.id, q);
+        if (!ab.some((g) => g.includes(`${s6}: der Schuss zeigt kein Tor`)))
+            v.push(`Schreiber: ein Schuss ${s6} ohne Tor der Stufe fiele in die Tafel (${ab.join(" · ") || "keine Abweisung"})`);
+        const gleich = sollIstAbweisung(klon(), klon(), k6.id, q);
+        if (gleich.length) v.push(`Schreiber: die unveränderte Messung wird abgewiesen (${gleich.join(" · ")})`);
+    } else v.push("die Tafel trägt kein Maß milchweiss mit Mesh-Stufe (der Fall des Schreibers fehlt)");
     if (sollTafelUrteil({ klassen: [] }, q).ok) v.push("die leere Tafel ist grün");
     return v;
+}
+
+// DER SCHREIBER PRÜFT (K63-n7; Prüfer K63-2 Rot B: ein L1-Schuss 14 s nach dem Umstellen zeigte nur Membran und Nebel, das
+// Werkzeug schrieb ihn, die Linse las ihn nicht — tor-fern blieb auf dem Ist von 5a912d6e stehen): eine Messung fällt in die
+// Tafel nur, wenn die Linse sie liest — sie bringt der Klasse keinen neuen Bruch, und wo vorher ein Ist stand, steht wieder eines.
+// `alt` und `neu` sind die Tafel vor und nach dem Schreiben; zurück die Gründe der Abweisung (leer = schreiben).
+function sollIstAbweisung(alt, neu, id, q) {
+    const vor = `Klasse ${id}:`;
+    const a = sollTafelUrteil(alt, q),
+        n = sollTafelUrteil(neu, q);
+    const altF = new Set(a.fehler.filter((f) => f.startsWith(vor)));
+    const gruende = n.fehler.filter((f) => f.startsWith(vor) && !altF.has(f));
+    const za = a.zeilen.find((x) => x.id === id),
+        zn = n.zeilen.find((x) => x.id === id);
+    if (!gruende.length && za && za.ist != null && !(zn && zn.ist != null))
+        gruende.push(`${vor} die Messung ergibt kein Ist (vorher ${za.ist})`);
+    return gruende;
 }
 
 module.exports = {
@@ -1879,6 +1943,7 @@ module.exports = {
     messStand,
     sollTafelZeile,
     sollTafelSelbsttest,
+    sollIstAbweisung,
     abnahmeUrteil,
     bildMasse,
     paarUrteil,

@@ -307,7 +307,7 @@
         {
             "id": "boden",
             "gruppe": "Boden",
-            "titel": "Boden von oben (Labor: der Wald-Boden der Pflanzen-Welt aus PORTAL_GROUND; Welt: der Boden-Satz unter dem Spieler)",
+            "titel": "Boden von oben (Labor: der Wald-Boden der Pflanzen-Welt aus PORTAL_GROUND; Welt: der Boden-Satz des Wald-Bodens — die nächste Stelle um den Spieler mit ≥ 4 stehenden Bäumen binnen 8 m, nie der Genesis-Platz, den K52 als Grundriss trägt)",
             "labor": {
                 "studio": "terrain",
                 "aktion": {
@@ -321,7 +321,14 @@
             },
             "welt": {
                 "exemplar": {
-                    "typ": "boden"
+                    "typ": "boden",
+                    "wald": {
+                        "baeume": 4,
+                        "r": 8,
+                        "frei": 2,
+                        "ab": 20,
+                        "bis": 160
+                    }
                 },
                 "klasse": "^bodenSatz$",
                 "blick": "oben"
@@ -402,7 +409,7 @@
         {
             "id": "lack",
             "gruppe": "Metall/Lack",
-            "titel": "Wagen gt, der Lack (Seh-Klasse metall mit Klarlack; die Gestalt der Welt wählt ihn aus dem LACK_GESETZ, das Labor-Farbfeld derselbe)",
+            "titel": "Wagen gt, der Lack Tiefschwarz (Seh-Klasse metall mit Klarlack, LACK_GESETZ der Saat 7 — dasselbe Feld wie die Lack-Leiste des Labors); die Welt zeigt das Exemplar in L0 (5,7 m, diesseits der Blende 8–12 m): die Stufe 1 faltet die Stoffe ihrer Seh-Klasse",
             "labor": {
                 "studio": "garage",
                 "aktion": {
@@ -423,16 +430,23 @@
                     "name": "fahrzeug_gt",
                     "radius": 4,
                     "nah": 0,
-                    "seed": 7
+                    "seed": 7,
+                    "versatz": [
+                        4,
+                        4
+                    ]
                 },
-                "klasse": "^f:gt:L[0-3]$",
+                "klasse": "^f:gt:L0$",
                 "stoff": {
                     "seh": "metall",
                     "cc": [
                         0.5,
                         1
                     ]
-                }
+                },
+                "stufen": [
+                    0
+                ]
             },
             "quellen": [
                 "vehicle-core.js",
@@ -611,7 +625,10 @@
                 "klasse": "^f:langschwert:L0$",
                 "stoff": {
                     "seh": "metall"
-                }
+                },
+                "stufen": [
+                    0
+                ]
             },
             "quellen": [
                 "schmiede-core.js",
