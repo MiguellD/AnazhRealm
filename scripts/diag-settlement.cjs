@@ -1446,13 +1446,25 @@ const FIXTURES = [
         res.placed1 = r1.placed;
         res.skipped1 = r1.skipped;
         res.placed2 = r2.placed;
-        res.entriesMatch = mid - before === r1.placed && mid2 === before && after - mid2 === r2.placed;
-        const e1 = r.state.architectures.slice(mid2, after);
-        res.allHaus = e1.every((e) => typeof e.type === "string" && e.type.indexOf("haus_") === 0);
+        // Die Buchhaltung (K66-2): der Akt setzt die Häuser seiner Slots und an ihnen ihre Wandlaternen (die Laterne des Plans
+        // mit `wand` und dem Slot des Hauses, `_spawnSettlementSlot`) — sonst nichts.
+        const istHaus = (e) => typeof e.type === "string" && e.type.indexOf("haus_") === 0;
+        const alle1 = r.state.architectures.slice(mid2, after);
+        const e1 = alle1.filter(istHaus);
+        const wandPlan = (plan.laternen || []).filter((l) => l && l.wand).length;
+        res.wand1 = alle1.length - e1.length;
+        res.wandPlan = wandPlan;
+        res.entriesMatch =
+            akt1.filter(istHaus).length === r1.placed &&
+            mid2 === before &&
+            e1.length === r2.placed &&
+            akt1.length === alle1.length &&
+            res.wand1 <= wandPlan;
+        res.allHaus = alle1.every((e) => istHaus(e) || e.type === "wandlaterne_dorf");
         // Offsets relativ zum Anker byte-vergleichen (x/z; y ist Terrain-Wahrheit je Ort).
         const off = (list, o) => list.map((e) => [e[0], e[1] - o.x, e[2] - o.z, e[3], e[4]]);
         res.offsetsDeterministic =
-            r1.placed === r2.placed && JSON.stringify(off(e1Schnitt, o1)) === JSON.stringify(off(schnitt(e1), o1));
+            r1.placed === r2.placed && JSON.stringify(off(e1Schnitt, o1)) === JSON.stringify(off(schnitt(alle1), o1));
         // Slot-Anker == Plan-Slot (K10): JEDER platzierte Eintrag trägt exakt anker + slot.x/z, phi und seed seines Slots und
         // steht auf dem Boden des Plans v2 (y = slot.y + 0,5, `_ortPlanSetzen` — derselbe Plan am selben Anker). Die Welt rückt
         // kein Haus: die Ersatz-Orte und die hMax-Suche fielen mit dem Erdbau des Orts.
@@ -1658,12 +1670,15 @@ const FIXTURES = [
             res.c.budgetWall = res.c.ueberBudget >= 1 && res.c.ueberBudget <= Math.floor(dekoLaeufe / drossel) + 1;
             r.state._frameOverBudget = false;
             // Materialisierung: je Tick hoechstens perTick Slots (gezaehlt).
+            // Gezählt werden die Häuser: jedes trägt seine Wandlaternen (K66-2, `_spawnSettlementSlot`) im selben Schritt.
+            const haeuserZahl = () =>
+                r.state.architectures.reduce((n, e) => n + (typeof e.type === "string" && e.type.indexOf("haus_") === 0), 0);
             let ticks = 0;
             let maxPerTick = 0;
-            let prevCount = r.state.architectures.length;
+            let prevCount = haeuserZahl();
             while (r._autoSettlementQueue && ticks < 500) {
                 r._tickAutoSettlement({ x: cand.x, z: cand.z });
-                const now2 = r.state.architectures.length;
+                const now2 = haeuserZahl();
                 if (now2 - prevCount > maxPerTick) maxPerTick = now2 - prevCount;
                 prevCount = now2;
                 ticks++;
@@ -2448,9 +2463,12 @@ const FIXTURES = [
     check(
         "B: der Konsument platziert (placed > 0, Buchhaltung exakt)",
         out.placed1 > 0 && out.entriesMatch === true,
-        `placed=${out.placed1} skipped=${out.skipped1}`
+        `placed=${out.placed1} skipped=${out.skipped1} Wandlaternen ${out.wand1}/${out.wandPlan}`
     );
-    check("B: jeder Eintrag ist ein haus_<kultur>-Blueprint (Tabellen-Regel, kein Literal)", out.allHaus === true);
+    check(
+        "B: jeder Eintrag ist ein haus_<kultur>-Blueprint (Tabellen-Regel, kein Literal) oder die Wandlaterne seines Hauses",
+        out.allHaus === true
+    );
     check(
         "B: POSITIONS-DETERMINISTISCH (derselbe Anker zweimal — identische Offsets/Seeds/Rotationen)",
         out.offsetsDeterministic === true,

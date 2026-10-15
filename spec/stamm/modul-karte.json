@@ -504,6 +504,8 @@
   "_disposeVoxelChunkWaterIso": "Wasser",
   "_distToPolygonEdge2D": "Bau",
   "_domainProcess": "Bau",
+  "_dorfLaterneOrt": "Siedlung",
+  "_dorfLaterneSetzen": "Siedlung",
   "_dorfRauchZeichnen": "Siedlung",
   "_drainDirtyVoxelChunks": "Gelaende",
   "_drainMana": "Koerper",

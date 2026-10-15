@@ -1385,6 +1385,16 @@ class AnazhRealm_Z20a {
         if (!this._fundamentLand(wx, wz, ry, fp, tu, fundament ? globalThis.__fachwerkCore.ORT_GESETZ.saumM : 0))
             return false;
         if (!this._bauFrei(wx, wz, ry, fp || { ex: 0.5, ez: 0.5, ox: 0, oz: 0 }, tu, slot.y)) return false;
+        // DIE WANDLATERNEN DES HAUSES (K66-2): die Laternen des Plans mit seinem Slot (`so.plan`, `so.si`) hängen an seiner
+        // Wand — ihre Wasser- und Bau-Wand fragt VOR dem Haus (das eigene Haus sperrt sie nie), sie stehen NACH ihm. Bis
+        // K66-2 Nachbesserung hob der Dorf-Akt sie vor den Häusern: die Laterne sperrte ihr eigenes Haus (Auto-Dorf 13/16).
+        const wand = [];
+        if (so && so.plan && Array.isArray(so.plan.laternen))
+            so.plan.laternen.forEach((l, k) => {
+                if (!l || !l.wand || l.slot !== so.si) return;
+                const ort = this._dorfLaterneOrt(l, origin);
+                if (ort) wand.push([l, ort, k]);
+            });
         const wy = slot.y + 0.5; // der Bauplan-Boden liegt 0,5 m unter dem Ursprung (`_archEntryWorldMatrix` baseY)
         // AUSLÖSCHUNGS-WELLE — `autonomous` reist durch (spawn_village vom Nexus →
         // die Häuser zählen in den Nexus-Cap, die V18.297-Hort-Lehre).
@@ -1407,7 +1417,39 @@ class AnazhRealm_Z20a {
                 studioOv: slot.ov && typeof slot.ov === "object" ? slot.ov : undefined,
             }
         );
+        if (entry) for (const [l, ort, k] of wand) this._dorfLaterneSetzen(so.plan, l, ort, k, so);
         return entry || false; // das gesetzte Haus (die Dorf-Mitte summiert, wo es steht)
+    }
+    // DER ORT EINER LATERNE DES PLANS (K10 × K11 × K66-2): die Studio-Gestalt (Bauplan `laterne_dorf` bzw. mit `wand` die
+    // Wandlaterne `wandlaterne_dorf`, ihr Licht LICHT_GESETZ.wandlaterne) am Anker, hinter Wasser- und Bau-Wand — die
+    // Wandlaterne hängt vor der Wand, die Bau-Wand prüft nur ihren Kopf (der Rund-Fußabdruck reichte in die eigene Wand).
+    // Null, wo sie nicht stehen darf. Leser: `_spawnSettlementErlebnis` (der Mast) und `_spawnSettlementSlot` (die Wand).
+    _dorfLaterneOrt(l, origin) {
+        if (!l || !Number.isFinite(l.x) || !Number.isFinite(l.z)) return null;
+        const typ = l.wand ? "wandlaterne_dorf" : "laterne_dorf";
+        if (!this.state.blueprints || !this.state.blueprints[typ]) return null;
+        const wx = origin.x + l.x;
+        const wz = origin.z + l.z;
+        if (!this._landAt(wx, wz, 0.2)) return null;
+        const wy = this.getTerrainHeightAt(wx, wz);
+        if (!Number.isFinite(wy)) return null;
+        const frei = l.wand
+            ? this._bauFrei(wx, wz, 0, { ex: 0.1, ez: 0.1, ox: 0, oz: 0 }, null, wy)
+            : this._bauFreiRund(typ, wx, wz, wy);
+        return frei ? { typ, x: wx, y: wy + 0.5, z: wz } : null; // die Bau-Wand: nie in einem Bau
+    }
+    // Die Laterne des Plans steht: Same je Siedlung und Nummer `k`, gedreht nach ihrem Plan (`th`).
+    _dorfLaterneSetzen(plan, l, ort, k, so) {
+        return this.spawnArchitecture(
+            ort.typ,
+            { x: ort.x, y: ort.y, z: ort.z },
+            {
+                seed: ((plan.seed >>> 0 || 1) + 97 + k * 7919) >>> 0,
+                rotationY: Number.isFinite(l.th) ? -l.th : 0,
+                silent: true,
+                autonomous: !!(so && so.autonomous),
+            }
+        );
     }
     // ═══ DORF-ERLEBNIS: der EINE Hebe-Chokepoint für die Nicht-Haus-Schichten des Exports ═══
     // Wege/Feldwege/Platz → Wege-Pool (`_stlWegeBuild`, dieselbe Höhen-Quelle wie die Häuser); Brunnen
@@ -1423,33 +1465,14 @@ class AnazhRealm_Z20a {
         // AUSSTATTUNG `laterne`) — der Leib und das Licht EINER Quelle: das Verzeichnis „licht" stempelt den Eintrag aus dem
         // Datum seines Rezepts (`_lichtDatumDerGestalt`), der Licht-Takt liest ihn wie jede Feuerstelle. Keine Kappe: das
         // Gesetz des Plans setzt die Zahl (je Platz eine, je 25 m Weg eine); Wasser- und Bau-Wand wie der Brunnen. Die Laterne
-        // des Plans mit `wand` (K66-2) ist die Wandlaterne (Bauplan `wandlaterne_dorf`, ihr Licht LICHT_GESETZ.wandlaterne): sie
-        // hängt vor der Wand ihres Hauses, die Bau-Wand prüft nur ihren Kopf (der Rund-Fußabdruck reichte in die eigene Wand).
-        if (Array.isArray(plan.laternen) && this.state.blueprints && this.state.blueprints.laterne_dorf) {
+        // des Plans mit `wand` (K66-2) ist die Wandlaterne: sie hängt an der Wand ihres Hauses und steht MIT ihm
+        // (`_spawnSettlementSlot`), nie hier.
+        if (Array.isArray(plan.laternen)) {
             let k = 0;
             for (const l of plan.laternen) {
-                if (!l || !Number.isFinite(l.x) || !Number.isFinite(l.z)) continue;
-                const typ = l.wand ? "wandlaterne_dorf" : "laterne_dorf";
-                if (!this.state.blueprints[typ]) continue;
-                const wx = origin.x + l.x;
-                const wz = origin.z + l.z;
-                if (!this._landAt(wx, wz, 0.2)) continue;
-                const wy = this.getTerrainHeightAt(wx, wz);
-                if (!Number.isFinite(wy)) continue;
-                const frei = l.wand
-                    ? this._bauFrei(wx, wz, 0, { ex: 0.1, ez: 0.1, ox: 0, oz: 0 }, null, wy)
-                    : this._bauFreiRund(typ, wx, wz, wy);
-                if (!frei) continue; // die Bau-Wand: nie in einem Bau
-                this.spawnArchitecture(
-                    typ,
-                    { x: wx, y: wy + 0.5, z: wz },
-                    {
-                        seed: ((plan.seed >>> 0 || 1) + 97 + k++ * 7919) >>> 0,
-                        rotationY: Number.isFinite(l.th) ? -l.th : 0,
-                        silent: true,
-                        autonomous: !!(so && so.autonomous),
-                    }
-                );
+                if (!l || l.wand) continue;
+                const ort = this._dorfLaterneOrt(l, origin);
+                if (ort) this._dorfLaterneSetzen(plan, l, ort, k++, so);
             }
         }
         if (!Array.isArray(plan.brunnen) || !this.state.blueprints || !this.state.blueprints.brunnen_dorf) return;
@@ -1543,9 +1566,14 @@ class AnazhRealm_Z20a {
         let mx = 0;
         let mz = 0;
         const haeuser = [];
-        for (const slot of plan.slots) {
-            // das gesetzte Haus (`_spawnSettlementSlot`): am Anker + seinem Slot, auf dem Boden des Plans (K10)
-            const haus = this._spawnSettlementSlot(slot, origin, f, so);
+        for (let si = 0; si < plan.slots.length; si++) {
+            // das gesetzte Haus (`_spawnSettlementSlot`): am Anker + seinem Slot, auf dem Boden des Plans (K10), mit seinen
+            // Wandlaternen (K66-2: `plan` + `si`)
+            const haus = this._spawnSettlementSlot(plan.slots[si], origin, f, {
+                autonomous: !!(so && so.autonomous),
+                plan,
+                si,
+            });
             if (haus) {
                 placed++;
                 haeuser.push(haus);
@@ -2281,7 +2309,8 @@ class AnazhRealm_Z20a {
             const f = this._foundry;
             let n = 0;
             while (q.idx < q.plan.slots.length && n < (ueber ? 1 : A.perTick)) {
-                this._spawnSettlementSlot(q.plan.slots[q.idx++], q.origin, f);
+                const si = q.idx++;
+                this._spawnSettlementSlot(q.plan.slots[si], q.origin, f, { plan: q.plan, si }); // mit seinen Wandlaternen (K66-2)
                 n++;
             }
             if (q.idx >= q.plan.slots.length) {

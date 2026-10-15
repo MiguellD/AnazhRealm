@@ -5159,7 +5159,7 @@
             var B = dorfB[i],
                 q = pl[i];
             if (!B || !q || !B.dims || !(B.dims.W > 2 * ecke) || !(B.dims.D > 2 * ecke)) continue;
-            H.push({ B: B, q: q, c: Math.cos(q.phi || 0), s: Math.sin(q.phi || 0), hw: B.dims.W / 2, hd: B.dims.D / 2 });
+            H.push({ B: B, q: q, i: i, c: Math.cos(q.phi || 0), s: Math.sin(q.phi || 0), hw: B.dims.W / 2, hd: B.dims.D / 2 });
         }
         var welt = function (h, lx, lz) {
             return { x: h.q.x + lx * h.c + lz * h.s, z: h.q.z - lx * h.s + lz * h.c };
@@ -5178,7 +5178,7 @@
         var stand = function (h, lx, lz, nx, nz) {
             var k = welt(h, lx + nx * a, lz + nz * a),
                 w = welt(h, lx, lz);
-            return fremd(k.x, k.z, h) ? null : { x: k.x, z: k.z, th: Math.atan2(w.z - k.z, w.x - k.x), gas: true, wand: true };
+            return fremd(k.x, k.z, h) ? null : { x: k.x, z: k.z, th: Math.atan2(w.z - k.z, w.x - k.x), gas: true, wand: true, haus: h.i };
         };
         var setze = function (l) {
             if (!l) return false;
@@ -5346,11 +5346,13 @@
             plan.norm.gap
         );
         wandLaternen(Bs, lay.pl, lay); // DIE WANDLATERNE (K66-2): nach dem Snap, an der Wand des Kerns — dieselbe Funktion wie buildDorf
-        var slots = [];
+        var slots = [],
+            slotVon = {};
         for (i = 0; i < plan.houses.length; i++) {
             var q = lay.pl[i];
             if (!q || !q.obb || Math.abs(q.obb.cx) > 5000 || Math.abs(q.obb.cz) > 5000) continue;
             var hp = plan.houses[i];
+            slotVon[i] = slots.length;
             slots.push({
                 x: q.x,
                 z: q.z,
@@ -5421,8 +5423,16 @@
             fences: lay.fences,
             felder: lay.felder,
             staende: lay.staende,
-            // DIE LATERNEN reisen (K10 × K11): ihr Leser ist das Leuchtquellen-Gesetz der Welt (`_laternenLesen`).
-            laternen: lay.laternen,
+            // DIE LATERNEN reisen (K10 × K11): ihr Leser ist das Leuchtquellen-Gesetz der Welt (`_laternenLesen`). Die
+            // Wandlaterne (K66-2) trägt den Slot ihres Hauses (`slot`): die Welt hebt sie MIT ihm (`_spawnSettlementSlot`) —
+            // vorher gehoben sperrte sie ihr eigenes Haus (Auto-Dorf 13/16 Häuser); ohne Slot hängt sie an keiner Wand.
+            laternen: lay.laternen
+                .filter(function (l) {
+                    return !l.wand || slotVon[l.haus] !== undefined;
+                })
+                .map(function (l) {
+                    return l.wand ? { x: l.x, z: l.z, th: l.th, gas: l.gas, wand: true, slot: slotVon[l.haus] } : l;
+                }),
         };
     }
 
