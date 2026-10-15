@@ -371,17 +371,32 @@ function wand(src) {
     const buehne = fnBody(nc, /\n {4}_buehneRender\([^)]*\) \{/) || "";
     // Jeder Neben-Renderer (Werkstatt-Vorschau `p`, Feed/Hof/Ich-Bühne `s`) zeichnet nur über die Bühne, und jeder nennt
     // sich (`wer`, K22): ein Render-Fehler der Bühne bricht laut beim Namen des Renderers.
-    // Gezählt wird JEDER Render-Ruf `x.render(szene, kamera)` am Namen seiner Methode: zeichnen darf nur die Bühne und der
-    // Loop (`_loopRender`, die Welt selbst). Bis K38-N2 zählte W2 die Bühnen-Rufe gegen die feste Zahl 4 — ein fünfter
-    // Renderer über die Bühne (oder einer weniger) machte die Linse rot, ein Renderer unter fremdem Namen blieb ungesehen.
-    const kopfRx = /\n {4}(?:static |async )*([A-Za-z_$][\w$]*)\([^)\n]*\) \{/g;
-    const koepfe = [];
-    for (let k; (k = kopfRx.exec(nc)); ) koepfe.push([k.index, k[1]]);
-    const methodeAn = (i) => koepfe.reduce((n, [at, name]) => (at < i ? name : n), "?");
-    const renderOrte = [...nc.matchAll(/\b[\w$.]+\.render\(\s*[\w$.]+\s*,\s*[\w$.]+\s*\)/g)].map((m) => methodeAn(m.index));
-    const direktOrte = renderOrte.filter((n) => n !== "_buehneRender" && n !== "_loopRender");
+    // Gezählt wird am AST (stammLib.rufe) JEDER Render-Ruf mit ≥ 2 Argumenten bei seinem Glied — `render`/`renderAsync`,
+    // auch über `.call`/`.apply`, ein Argument ist ein Knoten (`s.cam || s.camera`, `a ? b : c`, `f(x, y)` je EINES): zeichnen
+    // darf nur die Bühne und der Loop (`_loopRender`, die Welt selbst). Bis K38-N2 zählte W2 die Bühnen-Rufe gegen die feste
+    // Zahl 4; Runde 2 las die Rufe an einem Muster reiner Bezeichner-Argumente und ordnete sie über ein Kopf-Muster ihrer
+    // Methode zu — `s.renderer.render(s.scene, s.cam || s.camera)` blieb still grün (Prüfer K38-N2 Runde 3, mut-w2b).
+    const rufe = stammLib.rufe(src);
+    const RENDER = /^render(?:Async)?$/;
+    const istRender = (r) => {
+        if (RENDER.test(r.name || "")) return r.args.length >= 2;
+        const c = r.knoten.callee;
+        if ((r.name !== "call" && r.name !== "apply") || c.type !== "MemberExpression" || c.object.type !== "MemberExpression") return false;
+        const o = c.object;
+        const innen = o.computed ? (o.property.type === "Literal" ? String(o.property.value) : "") : o.property.name;
+        return RENDER.test(innen) && (r.name === "apply" || r.args.length >= 3);
+    };
+    const renderRufe = rufe.filter(istRender);
+    const renderOrte = renderRufe.map((r) => r.glied || "(außerhalb jeder Methode)");
+    const direktRufe = renderRufe.filter((r) => r.glied !== "_buehneRender" && r.glied !== "_loopRender");
+    const direktOrte = direktRufe.map((r) => `${r.glied || "(außerhalb)"}: ${r.ziel}(${r.args.map((a) => src.slice(a.start, a.end)).join(", ")}) ${stammLib.ort(root, stammLib.zeileVon(src, r.start))}`);
     const direkt = direktOrte.length;
-    const buehnen = [...nc.matchAll(/this\._buehneRender\([\w$.]+, [\w$.]+, [\w$.]+, "([^"]+)"\)/g)].map((m) => m[1]);
+    const buehnen = rufe
+        .filter((r) => r.ziel === "this._buehneRender")
+        .map((r) => {
+            const wer = r.args[r.args.length - 1];
+            return wer && wer.type === "Literal" ? String(wer.value) : wer ? src.slice(wer.start, wer.end) : "?";
+        });
     const evalPos = fnBody(nc, /\n {4}dslEvalPos\(node, ctx\) \{/) || "";
     const effekte = fnBody(nc, /\n {4}get dslEffects\(\) \{/) || "";
     const wachen = (effekte.match(/if \(!pos\)/g) || []).length;
@@ -405,15 +420,74 @@ function wand(src) {
     // stellt sich selbst neu: poll · cachePoll · pruefe bis K38), oder ein setInterval.
     // Die Zählung belegt ihre Nicht-Leere am NAMEN der Wartenden (der Zug, der Wecker, die Werkstatt-Vorschau, die Hand),
     // nie an einer Mindestzahl von Methoden: ein Schnitt, der Methoden zusammenlegt, macht sie nie rot.
+    // Gelesen am AST (Runde 3): die Glieder der Familie am Namen (stammLib.glieder — ein Kopf mit Default-Parametern, ein
+    // umbrochener oder ein async-Kopf fiel aus dem Kopf-Muster und seine Polls blieben ungesehen). Je Glied ein Graph: das
+    // Glied und jede Closure darin (const/let = Funktion, function-Deklaration) sind Knoten, eine Kante führt zu jedem Knoten
+    // desselben Glieds, den ein Knoten beim Namen nennt (die Closure beim Bezeichner, das Glied über `this.<name>`), eine
+    // ZEIT-Kante, wenn die Nennung im Rückruf eines Zeitgebers steht (setTimeout · setInterval · requestAnimationFrame, auch
+    // `window.`). Ein Poll ist ein Kreis mit einer Zeit-Kante (die Closure, die sich neu stellt, auch über eine zweite Closure
+    // oder einen Block-Rumpf; das Glied, das sich per Zeitgeber neu ruft) oder ein setInterval. Eine Kette über ZWEI Glieder
+    // (`_foundryUhren` stellt `_foundryAblauf`, dessen Geist-Fall die Uhr des nächsten Auftrags stellt) ist die Frist am
+    // Ereignis je Auftrag, kein Poll.
     const polls = [];
     const foundryNamen = new Set();
-    const sigF = /\n {4}(_foundry\w*|_heldFoundryGroup|_workshop\w*Preview\w*|_impostor\w*|_karte\w*|_tickImpostorBake)\([^)\n]*\) \{/g;
-    for (let m; (m = sigF.exec(nc)); ) {
-        const b = fnBody(nc.slice(m.index), /^\n {4}\w+\([^)\n]*\) \{/) || "";
-        foundryNamen.add(m[1]);
-        if (/\bsetInterval\(/.test(b)) polls.push(`${m[1]} setInterval`);
-        for (const t of b.matchAll(/\bsetTimeout\(\s*(?:\(\)\s*=>\s*)?(\w+)\s*[,(]/g))
-            if (new RegExp(`(?:const|let|function)\\s+${t[1]}\\b`).test(b)) polls.push(`${m[1]} ${t[1]}`);
+    const FAMILIE = /^(?:_foundry\w*|_heldFoundryGroup|_workshop\w*Preview\w*|_impostor\w*|_karte\w*|_tickImpostorBake)$/;
+    const ZEITGEBER = /^(?:setTimeout|setInterval|requestAnimationFrame)$/;
+    for (const g of stammLib.glieder(src)) {
+        if (!FAMILIE.test(g.name)) continue;
+        foundryNamen.add(g.name);
+        const closures = [];
+        const zeit = [];
+        stammLib.wandere(g.knoten.value || g.knoten, (n) => {
+            if (n.type === "VariableDeclarator" && n.id.type === "Identifier" && n.init && /FunctionExpression$/.test(n.init.type))
+                closures.push({ name: n.id.name, start: n.init.start, ende: n.init.end, id: n.id });
+            else if (n.type === "FunctionDeclaration" && n.id) closures.push({ name: n.id.name, start: n.start, ende: n.end, id: n.id });
+            else if (n.type === "CallExpression") {
+                const c = n.callee;
+                const nm = c.type === "Identifier" ? c.name : c.type === "MemberExpression" && !c.computed ? c.property.name : "";
+                if (nm === "setInterval") polls.push(`${g.name} setInterval`);
+                if (ZEITGEBER.test(nm) && n.arguments[0]) zeit.push(n.arguments[0]);
+            }
+            return true;
+        });
+        const namen = new Set(closures.map((c) => c.name));
+        const knotenAn = (i) => {
+            let k = null;
+            for (const c of closures) if (c.start <= i && i < c.ende && (!k || c.start >= k.start)) k = c;
+            return k ? k.name : g.name;
+        };
+        const kanten = new Map(); // von → Map(zu → Zeit-Kante?)
+        const kante = (von, zu, i) => {
+            const z = zeit.some((a) => a.start <= i && i < a.end);
+            if (!kanten.has(von)) kanten.set(von, new Map());
+            kanten.get(von).set(zu, kanten.get(von).get(zu) || z);
+        };
+        stammLib.wandere(g.knoten.value || g.knoten, (n, ahnen) => {
+            const p = ahnen[ahnen.length - 1];
+            if (n.type === "MemberExpression" && n.object.type === "ThisExpression" && !n.computed && n.property.name === g.name)
+                kante(knotenAn(n.start), g.name, n.start);
+            else if (
+                n.type === "Identifier" &&
+                namen.has(n.name) &&
+                !closures.some((c) => c.id === n) &&
+                !(p && p.type === "MemberExpression" && p.property === n && !p.computed) &&
+                !(p && p.type === "Property" && p.key === n && !p.computed && !p.shorthand)
+            )
+                kante(knotenAn(n.start), n.name, n.start);
+            return true;
+        });
+        // ein Kreis mit einer Zeit-Kante: die Kante von → zu, und zu erreicht von
+        const erreicht = (a, b) => {
+            const offen = [a];
+            const gesehen = new Set([a]);
+            while (offen.length) {
+                const x = offen.pop();
+                if (x === b) return true;
+                for (const y of (kanten.get(x) || new Map()).keys()) if (!gesehen.has(y)) gesehen.add(y), offen.push(y);
+            }
+            return false;
+        };
+        for (const [von, m] of kanten) for (const [zu, z] of m) if (z && erreicht(zu, von)) polls.push(`${g.name} ${zu === g.name ? "stellt sich neu" : zu}`);
     }
     return [
         [
@@ -1459,6 +1533,65 @@ async function probe(arg) {
             "Selbst-Test W: ein Renderer weniger über die Bühne bleibt grün (W2 zählt am Namen, keine feste Zahl)",
             quelle.includes('"Hof-Bühne");') && weniger.every((w) => w[1]),
             weniger.filter((w) => !w[1]).map((w) => `${w[0].slice(0, 2)} ${w[2] || ""}`).join(" | ")
+        );
+        // DER TÄTER DER RUNDE 3 (Prüfer K38-N2-3, mut-w2b) und seine Klasse in EINEM Text: zusammengesetzte Argumente (||, ?:,
+        // ein Aufruf im Argument), renderAsync, `.call`, ein Kopf mit Default-Parameter direkt hinter der Bühne (das Kopf-Muster
+        // gab seinen Ruf `_buehneRender`); dazu die Polls der Familie, die das Kopf- und das setTimeout-Muster übersahen
+        // (Default-Parameter, async-Kopf, Block-Rumpf, zwei Closures im Kreis) — jeder fällt beim Namen, die einmalige Frist
+        // (`_foundryEinmal`) bleibt still.
+        const bue = stammLib.glieder(quelle).find((g) => g.name === "_buehneRender");
+        const ichRuf = 'this._buehneRender(s.renderer, s.scene, s.camera, "Ich-Bühne");';
+        const klasse = (quelle.slice(0, bue.ende) +
+            [
+                "",
+                "    _fremdeBuehne(s, k = f(1)) {",
+                "        s.renderer.render(s.scene, s.cam ? s.cam : s.camera);",
+                "    }",
+                "    _bauBuehne(s) {",
+                "        s.renderer.render(this._szeneVon(s, 1), s.camera);",
+                "        s.renderer.renderAsync(s.scene, s.camera);",
+                "        s.renderer.render.call(s.renderer, s.scene, s.camera);",
+                "    }",
+                "    _foundryLauscher(k, o = f(1)) {",
+                "        const warte = () => {",
+                "            if (!this._foundry) {",
+                "                window.setTimeout(() => {",
+                "                    warte();",
+                "                }, 150);",
+                "            }",
+                "        };",
+                "        warte();",
+                "    }",
+                "    async _foundryNachfrage(k) {",
+                "        if (!this._foundry) setTimeout(() => this._foundryNachfrage(k), 150);",
+                "    }",
+                "    _foundryPingPong() {",
+                "        const ping = () => pong();",
+                "        function pong() {",
+                "            requestAnimationFrame(ping);",
+                "        }",
+                "        ping();",
+                "    }",
+                "    _foundryEinmal(k) {",
+                "        const ab = () => this._foundryAblauf(k);",
+                "        setTimeout(ab, 5000);",
+                "    }",
+            ].join("\n") +
+            quelle.slice(bue.ende)).replace(ichRuf, "s.renderer.render(s.scene, s.cam || s.camera);");
+        const wk = wand(klasse);
+        const w2 = wk.find((w) => w[0].startsWith("W2"));
+        const w7 = wk.find((w) => w[0].startsWith("W7"));
+        const w2Soll = ["_ichStartRAF", "_fremdeBuehne", "_bauBuehne: s.renderer.render(this", "renderAsync", "render.call"];
+        const w7Soll = ["_foundryLauscher warte", "_foundryNachfrage stellt sich neu", "_foundryPingPong"];
+        check(
+            "Selbst-Test W: der Täter der Runde 3 (s.cam || s.camera) und seine Klasse (?:, Aufruf im Argument, renderAsync, .call, Default-Parameter im Kopf) → W2 nennt jeden",
+            quelle.includes(ichRuf) && !w2[1] && w2Soll.every((n) => w2[2].includes(n)) && (w2[2].match(/stamm\/\d\d[a-z]?\.js:\d+/g) || []).length === 5,
+            w2[2]
+        );
+        check(
+            "Selbst-Test W: die Polls hinter Default-Parameter, async-Kopf, Block-Rumpf und zwei Closures im Kreis → W7 nennt jeden, die einmalige Frist schweigt",
+            !w7[1] && w7Soll.every((n) => w7[2].includes(n)) && !w7[2].includes("_foundryEinmal"),
+            w7[2]
         );
         const rot = wand(vorStand);
         check(

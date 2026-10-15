@@ -33,7 +33,9 @@ const law = (name, present, cond, detail) => {
     }
 };
 
-const anazhNC = stripComments(require("./lib/stamm.cjs").text(ROOT));
+const stammLib = require("./lib/stamm.cjs");
+const anazhRoh = stammLib.text(ROOT);
+const anazhNC = stripComments(anazhRoh);
 const foundryNC = stripComments(read("foundry-core.js"));
 const pkg = read("package.json");
 
@@ -363,45 +365,49 @@ console.log("\nGesetz N4 — die Instance-Straße (eine Naht · mp führt · Tuf
     // der Vorrat in den EINEN Zug zog (5 → 4 Leser, Zweig-CI 38661623802): die Linse strafte den Schnitt, den sie bewacht.
     // Jetzt zählt sie ALLE Aufrufe (ein Aufruf ohne Leser ist ein Leck aus der Naht), liest den Handler-Parameter am
     // Namen und belegt ihre Nicht-Leere am Namen des EINEN Zugs (`_foundryZug`) plus einem Selbsttest am Täter.
+    // Gelesen am AST (stammLib.rufe, Prüfer K38-N2 Runde 3): bis dahin ordnete ein Kopf-Muster jeden Aufruf seiner Methode
+    // zu und benannte ihn an `)` in einem Default-Parameter falsch (der Aufruf fiel der Methode davor zu); der Handler und
+    // sein Parameter sind Knoten, der Ruf in die Naht ein Aufruf mit diesem Parameter als erstem Argument.
     // DIE EINE PIPE (V18.458): der Kreatur-Ofen ist das zweite legitime Tor — `_ofenAssembleAsset` routet durch DIESELBE
     // Mesh-Konversion (`_foundryBuildMesh`; N4.1a zählt weiterhin GENAU EINE Roh-Naht).
+    const NAHT_RX = /^(?:_foundryBuildGroup|_ofenAssembleAsset)$/;
+    const vonThis = (r) => r.knoten.callee.type === "MemberExpression" && r.knoten.callee.object.type === "ThisExpression";
     const leserZensus = (src) => {
-        const koepfe = [];
-        const kopfRx = /\n {4}(?:static |async )*([A-Za-z_$][\w$]*)\([^)\n]*\) \{/g;
-        for (let k; (k = kopfRx.exec(src)); ) koepfe.push([k.index, k[1]]);
-        const methodeAn = (i) => {
-            let name = "?";
-            for (const [at, n] of koepfe) if (at < i) name = n;
-            return name;
-        };
-        const schliesst = (t, i) => {
-            // i steht auf "(" — der Index hinter der passenden ")"
-            let d = 0;
-            for (; i < t.length; i++) {
-                if (t[i] === "(") d++;
-                else if (t[i] === ")" && --d === 0) return i + 1;
-            }
-            return -1;
-        };
-        const sites = [];
-        const ruf = "this._foundryRequest(";
-        for (let idx = src.indexOf(ruf); idx !== -1; idx = src.indexOf(ruf, idx + 1)) {
-            const ende = schliesst(src, idx + ruf.length - 1);
-            const rest = ende < 0 ? "" : src.slice(ende);
-            const then = /^\s*\.then\(\s*\(?\s*([A-Za-z_$][\w$]*)\s*\)?\s*=>/.exec(rest);
-            const handler = then ? rest.slice(0, schliesst(rest, rest.indexOf("("))) : "";
-            const p = then ? then[1].replace(/\$/g, "\\$") : "";
-            const routed = !!then && new RegExp(`(?:_foundryBuildGroup|_ofenAssembleAsset)\\(${p}\\b`).test(handler);
-            sites.push({ methode: methodeAn(idx), routed, leser: !!then });
+        const rufe = stammLib.rufe(src);
+        const thenAn = new Map(); // der Anfrage-Knoten → sein `.then(...)`
+        for (const r of rufe) {
+            const c = r.knoten.callee;
+            if (r.name === "then" && c.type === "MemberExpression" && c.object.type === "CallExpression") thenAn.set(c.object, r);
         }
-        return sites;
+        return rufe
+            .filter((r) => r.name === "_foundryRequest" && vonThis(r))
+            .map((a) => {
+                const then = thenAn.get(a.knoten);
+                const h = then && then.args[0];
+                const p =
+                    h && /FunctionExpression$/.test(h.type) && h.params[0] && h.params[0].type === "Identifier" ? h.params[0].name : null;
+                const routed =
+                    !!p &&
+                    rufe.some(
+                        (r) =>
+                            r.start >= h.start &&
+                            r.ende <= h.end &&
+                            NAHT_RX.test(r.name || "") &&
+                            vonThis(r) &&
+                            r.args[0] &&
+                            r.args[0].type === "Identifier" &&
+                            r.args[0].name === p
+                    );
+                return { methode: a.glied || "?", routed, leser: !!then };
+            });
     };
     {
-        // Selbsttest am Täter: ein Leser am Bau vorbei, ein Aufruf ohne Leser und ein Leser mit fremdem Parameter-Namen
-        // fallen; der Leser durch die Naht hält.
+        // Selbsttest am Täter: ein Leser am Bau vorbei, ein Aufruf ohne Leser, ein Leser mit fremdem Parameter-Namen und
+        // ein Leser hinter einem Kopf mit Default-Parameter (`_versteckt(a, o = f(1))`, das Kopf-Muster gab ihn `_ohneLeser`)
+        // fallen beim Namen; der Leser durch die Naht hält, auch über Zeilen umbrochen und mit Block-Rumpf.
         const probe = leserZensus(
             [
-                "",
+                "class P {",
                 "    _gut(a) {",
                 "        this._foundryRequest(a, 0, 1).then((m) => { this._foundryCacheSet(a, this._foundryBuildGroup(m, {})); });",
                 "    }",
@@ -411,22 +417,34 @@ console.log("\nGesetz N4 — die Instance-Straße (eine Naht · mp führt · Tuf
                 "    _ohneLeser(a) {",
                 "        return this._foundryRequest(a, 0, 1);",
                 "    }",
+                "    _versteckt(a, o = f(1)) {",
+                "        this._foundryRequest(a, 0, 1).then((meshes) => this._eigenerBau(meshes));",
+                "    }",
                 "    _fremd(a) {",
                 "        this._foundryRequest(a, 0, f(1)).then((r) => this._foundryBuildGroup(meshes));",
                 "    }",
-                "",
+                "    _umbrochen(",
+                "        a,",
+                "        b",
+                "    ) {",
+                "        this._foundryRequest(a, b, g(1, 2))",
+                "            .then(function (teile) {",
+                "                return this._foundryBuildGroup(teile, {});",
+                "            });",
+                "    }",
+                "}",
             ].join("\n")
         );
         const sieht =
-            probe.length === 4 &&
-            probe.map((s) => `${s.methode}:${s.routed ? 1 : 0}`).join(",") === "_gut:1,_vorbei:0,_ohneLeser:0,_fremd:0";
+            probe.map((s) => `${s.methode}:${s.routed ? 1 : 0}`).join(",") ===
+            "_gut:1,_vorbei:0,_ohneLeser:0,_versteckt:0,_fremd:0,_umbrochen:1";
         law(
-            "N4.1: die Leser-Zählung sieht den Täter (Selbsttest: vorbei · ohne Leser · fremder Parameter fallen)",
+            "N4.1: die Leser-Zählung sieht den Täter (Selbsttest: vorbei · ohne Leser · Default-Parameter im Kopf · fremder Parameter fallen beim Namen)",
             true,
             sieht,
             JSON.stringify(probe)
         );
-        const sites = leserZensus(anazhNC);
+        const sites = leserZensus(anazhRoh);
         const routed = sites.filter((s) => s.routed);
         const lecks = sites.filter((s) => !s.routed).map((s) => `${s.methode}${s.leser ? "" : " (ohne Leser)"}`);
         law(
