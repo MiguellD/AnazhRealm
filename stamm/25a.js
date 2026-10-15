@@ -2158,12 +2158,11 @@ class AnazhRealm_Z25a {
             // fps-unabhängige Freigabe-Rate (gedeckelt) — die Welt lädt mit der Wanduhr, nicht der Framerate.
             this._tickFoundryIngest(wandDelta);
 
-            // Deferierter Avatar-Bau: nach ein paar gerenderten Frames EINMAL bauen — der ~1.9-s-Skin-Bau hängt
-            // einen Frame, nicht den Boot. Eigenes try/catch (darf den Loop nicht reißen); headless setzt
-            // `_deferredAvatarSoul` nie (baut synchron).
+            // Deferierter Avatar-Bau: EINMAL bauen, sobald seine zwei Vorlagen aus dem Faden im Memo liegen (`_leibBereit`,
+            // K60-2 — bis dahin hielt der Guss im sechsten Frame den Haupt-Faden 2,4 s, und nach dem Buch goss er neu).
+            // Eigenes try/catch (darf den Loop nicht reißen); headless setzt `_deferredAvatarSoul` nie (baut synchron).
             if (this.state._deferredAvatarSoul) {
-                this.state._bootAvatarDelay = (this.state._bootAvatarDelay || 0) + 1;
-                if (this.state._bootAvatarDelay >= 6) {
+                if (this._leibBereit()) {
                     const soul = this.state._deferredAvatarSoul;
                     this.state._deferredAvatarSoul = null;
                     try {
@@ -2200,8 +2199,25 @@ class AnazhRealm_Z25a {
             L.ausgesetzt++;
             return false;
         }
+        if (!this._ladeBildFaellig(L)) return false;
         L.versuch = true;
         return true;
+    }
+    // DAS BILD DES LADESCHIRMS (K60-2): unter dem Ladeschirm (`_ladeTakt`) zeigt kein Frame die Welt, und keine Lücke des ersten
+    // Weltbilds schließt erst im Bild (`_weltbildLuecken`: Boden, Horizont, Buch, Bauten, Pflanzung, Streu und Karten stehen im
+    // Takt und in den Fäden, das Panorama rechnet seine eigene GPU-Arbeit). Ein Lade-Takt schickt sein Bild darum nur, wenn es
+    // fällig ist: alle LADE_BILD_MS — die Erst-Zeichnung baut die Knoten der neuen Stoffe und stößt ihre Pipelines an, lange
+    // bevor das Bild steht — und sobald keine Lücke mehr fehlt: das Bild, nach dem `_ankunftsBild` urteilt. Radeon kalt
+    // zeichnete jeder Lade-Takt (3,3 s Render bis zum Bild, K602/p2.cpuprofile), die Erst-Zeichnung trug davon ~1,6 s.
+    _ladeBildFaellig(L) {
+        if (!this._ladeTakt()) return true;
+        const jetzt = performance.now();
+        if (jetzt - (L.ladeBild || -Infinity) >= AnazhRealm.LADE_BILD_MS || this._weltbildLuecken().length === 0) {
+            L.ladeBild = jetzt;
+            return true;
+        }
+        L.ladeAus = (L.ladeAus || 0) + 1;
+        return false;
     }
     _gpuLeineAnlegen() {
         const L = this._gpuLeine;

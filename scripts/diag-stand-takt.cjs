@@ -1501,6 +1501,14 @@ const server = statikServer();
                             tiefe--;
                         }
                     };
+                    // der Rechner der Schlange ist der Wald-Faden (K60-4): seine Lieferungen (`_waldDartsAn`) plante die
+                    // Schlange — sie zählen wie ihre Zellen im Job
+                    const anEigen = Object.prototype.hasOwnProperty.call(r, "_waldDartsAn");
+                    const anRoh = r._waldDartsAn;
+                    r._waldDartsAn = function (memo, zellen, res) {
+                        if (res && zellen) W.imJob += zellen.length / 2;
+                        return anRoh.apply(this, arguments);
+                    };
                     core.planForestCell = function () {
                         const t5 = performance.now();
                         try {
@@ -1542,6 +1550,8 @@ const server = statikServer();
                         core.planForestCell = roh;
                         if (jobEigen) r._tickWaldPlan = jobRoh;
                         else delete r._tickWaldPlan;
+                        if (anEigen) r._waldDartsAn = anRoh;
+                        else delete r._waldDartsAn;
                     }
                     W.ms = +W.ms.toFixed(1);
                     aus.strom = {

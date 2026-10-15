@@ -5,8 +5,9 @@
 // der Weg dorthin: die Welt bleibt stehen, eine Methode aus dem Arbeitsbaum wird in die laufende
 // Seite getauscht, das Terrain-Material neu gebaut, das Bild ist in Sekunden da.
 //
-//   node scripts/werkbank.cjs start [--port 4490] [--holz voll|nah|kienspan]
-//                                                           Welt + Steuer-Server (bleibt offen)
+//   node scripts/werkbank.cjs start [--port 4490] [--holz voll|nah|kienspan] [--ort <id>]
+//                                                           Welt + Steuer-Server (bleibt offen); `--ort` der Messort vor
+//                                                           dem Boot (ohne Dorf-Zug ruht der Zug ab dem ersten Skript)
 //   node scripts/werkbank.cjs umstellen <x> <z>            Spieler setzen, einschwingen
 //   node scripts/werkbank.cjs umstellen --ort <id> [--pose p] [--sicht ego|third] an einen MESSORT (spec/profiband/haushalt.json
 //                                                           `messorte`: wiese · genesis · dorf · buehne): Spieler, Blick, Dorf-Zug,
@@ -266,6 +267,12 @@ const ECHT = argv.includes("--echt");
 // DIE GPU-FEHLER-LINSE nur auf Zuruf (`start --gpu-fehler`): sie hüllt jeden Draw in eine JS-Probe — eine Zeit-Messung
 // (lauf, gpu-bank, band) liefe sonst mit ihrer Last.
 const GPU_FEHLER = argv.includes("--gpu-fehler");
+// DER MESSORT VOR DEM BOOT (`start --ort <id>`, OMEN 15.10.): ein Ort ohne Dorf-Zug (`dorfZug: false` im Haushalt) sperrt den
+// Auto-Zug ab dem ersten Skript der Seite. Vorher schaltete ihn erst die Folge nach dem Boot ab — ein Auftrag, der im Boot
+// losging, kam danach an: sein Plan stand (Wege, Platz, der Wald wich dem Grundriss), das Dorf wuchs nie (`dorfWaechst 0/18`),
+// und jeder Boot maß eine andere Szene (Genesis Ego −2 Baum-Befehle, −18k Dreiecke, +6 fps; 1510-k72-abab). `umstellen --ort`
+// stellt den Ort, wie er im Haushalt steht — der Dorf-Ort schaltet den Zug dort wieder an.
+const START_ORT = argv[0] === "start" ? opt("--ort", null) : null;
 // DIE SEITE der echten Welt: `--seite` (oder WERKBANK_SEITE) hat EINE Bedeutung — die URL des save-servers
 // (Ursprung, z. B. http://localhost:4312), nie eine Portnummer. Alles andere bricht laut ab, statt still eine
 // falsche Adresse („5312/") zu bauen.
@@ -420,7 +427,7 @@ function lauf(k) {
                         (r._foundryIngestQueue ? r._foundryIngestQueue.length : 0),
                     karten:
                         (r._impostorBakeQueue || []).length +
-                        (r._impostorBakePending ? 1 : 0) +
+                        (r._impostorBakeFlug ? r._impostorBakeFlug.size : 0) +
                         (z.wartend || 0) +
                         (z.haengendeBakes || 0),
                     meshOffen: offen,
@@ -866,6 +873,10 @@ async function starte() {
     await page.evaluateOnNewDocument(vramAbgriff);
     // DIE GPU-FEHLER-LINSE (V-D7): jede WebGPU-Validierung mit Pass und Objekt beim Namen (scripts/lib/gpu-fehler.cjs).
     if (GPU_FEHLER) await page.evaluateOnNewDocument(GPU_FEHLER_INSTALL);
+    if (START_ORT && BAND.ladeSpec(START_ORT).ort.dorfZug === false)
+        await page.evaluateOnNewDocument(() => {
+            window.__anazhAutoSettlement = false;
+        });
     const fehler = [];
     const zerstoert = { n: 0 };
     // Der Zeuge des vollen Stempel-Pools (r184 warnt nur EINMAL je Seite — warnOnce): die Zahl zählt
@@ -1062,12 +1073,22 @@ async function starte() {
                     throw new Error(
                         `Messort ${o.ort}: der Ring steht nach ${takte} Takten bei ${r._builtRingRadius()}, Ziel ${stell.ring}`
                     );
+                // ein Dorf, das vor dem Ort losging (ein Ort ohne Dorf-Zug, der Zug lief im Boot): sein Plan schwebt — Wege und
+                // Platz stehen, der Wald weicht, das Dorf wächst nie. Beim Namen (die Folge startet mit `start --ort`).
+                const q = r._autoSettlementQueue;
+                const dorfSchwebt =
+                    o && o.dorfZug === false && (q || r._autoSettlementPendingKey)
+                        ? q && q.plan && q.plan.slots
+                            ? `Plan ${q.idx}/${q.plan.slots.length} (Zelle ${q.cellKey})`
+                            : `Export ${r._autoSettlementPendingKey || "?"}`
+                        : null;
                 return {
                     takte,
                     chunks: last,
                     gier: +r.state.yaw.toFixed(4),
                     dorfZug: window.__anazhAutoSettlement !== false,
                     ortTakt: window.__ortTakt,
+                    dorfSchwebt,
                 };
             },
             x,

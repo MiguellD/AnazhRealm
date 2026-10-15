@@ -852,7 +852,7 @@
     return lf; }
   function tueren(){const g=grp(); if(ROUND)return g; const z=-Dp/2+0.07, lw=doorW/2-0.03, lh=doorH-0.08, cy=baseY+doorH/2, openA=1.15, openB=1.05;
     beam(g,-doorW/2-0.06,cy,-Dp/2,0.14,doorH+0.12,0.26,'holz'); beam(g,doorW/2+0.06,cy,-Dp/2,0.14,doorH+0.12,0.26,'holz'); // Türstock
-    beam(g,0,baseY+doorH+0.05,-Dp/2,doorW+0.36,0.16,0.26,'holz'); if(P.bogenTyp&&P.bogenTyp!=='none')bogenRahmen(g,0,baseY+doorH+0.13,-Dp/2,doorW*0.62,true,P.bogenTyp,'holz');                                                          // Sturz
+    beam(g,0,baseY+doorH+0.05,-Dp/2,doorW+0.36,0.16,0.26,'holz'); if(P.bogenTyp&&P.bogenTyp!=='none')bogenRahmen(g,0,baseY+doorH+0.13,-Dp/2,doorW*0.62,true,P.bogenTyp,'holz',{art:'tuer',cap:roofUnderY(0,-Dp/2)});                                                          // Sturz
     const olY0=baseY+doorH+0.13, olY1=Math.min(baseY+P.egH-P.raehm-0.02,olY0+0.42), olH=olY1-olY0;                            // Oberlicht
     if(olH>0.12){ beam(g,0,olY0,-Dp/2,doorW+0.22,0.08,0.24,'holz');
       beam(g,0,(olY0+olY1)/2,-Dp/2+0.03,doorW,olH,0.035,'glas');
@@ -888,17 +888,65 @@
       beam(sg,0,h/2-sw/2,0,t,sw,w,role); beam(sg,0,-h/2+sw/2,0,t,sw,w,role);
       beam(sg,0,0,0,0.045,h,0.04,role); beam(sg,0,0,0,0.045,0.04,w,role); beam(sg,-0.012,0,0,0.025,h-2*sw,w-2*sw,gl); }
     return sg; }
-  function bogenRahmen(g,cx,yS,cz,R,horiz,typ,role){   // BOGEN-GESETZ über jeder Öffnung (rund/spitz/hufeisen) — dieselbe Kurve wie die Arkade, ein Vektor
-    const N=10, dp=0.42, deeper=0.14; for(let i=0;i<N;i++){ const t=i/(N-1), a=Math.PI*t; let lat=-R*Math.cos(a), off=R*Math.sin(a);
-      if(typ==='spitz'){ off=R*Math.sin(a)+0.62*R*Math.sin(a)*(1-Math.abs(Math.cos(a))); lat=-R*Math.cos(a)*(1-0.16*Math.sin(a)); }
-      if(typ==='hufeisen'){ if(t<0.14||t>0.86) lat+=(t<0.5?1:-1)*0.2*R; }
-      const rot=a-Math.PI/2, oz=(cz<0?-deeper:deeper), ox=(cx<0?-deeper:deeper); if(horiz) beam(g,cx+lat,yS+off,cz+oz,0.30,0.19,dp,role,[0,0,rot]); else beam(g,cx+ox,yS+off,cz+lat,dp,0.19,0.30,role,[rot,0,0]); } }
+  // ════ DAS BOGEN-GESETZ (K66): Keilsteine im VERBAND — jede Stoßfuge radial zur Mitte ihrer Kurve, jeder Stein ein Keil zwischen zwei Fugen
+  //    (gleiche Bogenlänge, N ungerade: der Schlussstein im Scheitel, 2 cm vorstehend), die Kämpfersteine mit ihrem Lager auf dem Kämpfer
+  //    (Höhe yS); die Kurve rund · spitz (zwei Mittelpunkte ±spitzE·R) · hufeisen (Mitte R·tan α über dem Kämpfer, darunter der Kämpferstein)
+  //    · stich (Segment mit dem Stich o.stich). Bis K66 lagen zehn gleiche Kästen AUF der Kurve, gedreht um a − π/2 statt π/2 − a (in jeder
+  //    Wand längs x um bis zu 90° verdreht), ab R ≈ 0,9 m mit Lücken, die Kämpfersteine halb in der Öffnung, und kein Deckel prüfte den
+  //    Scheitel (gate:fachwerk-contract BOGEN-VERBAND: 821 von 821 Bögen rot). o: { t die Bogenstärke, tiefe, versatz (die Lage in der
+  //    Wandtiefe; Öffnungen 0,14 nach außen), cap (die Unterkante des Dachs darüber: reicht der Scheitel samt Stärke darüber, entsteht der
+  //    Bogen nicht), stich, zwickel [uL, uR, vTop] (die Mauer über dem Bogen bis vTop, seitlich bis uL/uR — die Laube), art, pfeiler }.
+  //    Rückgabe: die Marke des Bogens oder null. Jeder Keilstein trägt die Marke `keil`, jede Mauer `zwickel` (die Linse liest sie).
+  function bogenSteig(kurve,R,f){ const BG=BOGEN_GESETZ; return kurve==='spitz'?R*Math.sqrt(1+2*BG.spitzE) : kurve==='hufeisen'?R*(Math.tan(BG.hufeisenAlpha)+1/Math.cos(BG.hufeisenAlpha)) : kurve==='stich'?f : R; }
+  function bogenAussen(kurve,R){ return kurve==='hufeisen'?R/Math.cos(BOGEN_GESETZ.hufeisenAlpha):R; }   // die weiteste Laibung von der Achse
+  function bogenKurve(kurve,R,f,s){ const BG=BOGEN_GESETZ;   // der Punkt der Laibung und seine Normale (nach außen) am Parameter s ∈ [0, 1] (hufeisen: nur über der Mitte)
+    if(kurve==='spitz'){ const e=BG.spitzE*R, rho=R+e, ta=Math.acos(-e/rho), h=s<=0.5?s*2:(1-s)*2, th=Math.PI-(Math.PI-ta)*h, sg=s<=0.5?1:-1; return [sg*(e+rho*Math.cos(th)), rho*Math.sin(th), sg*Math.cos(th), Math.sin(th)]; }
+    if(kurve==='hufeisen'){ const h0=R*Math.tan(BG.hufeisenAlpha), rho=R/Math.cos(BG.hufeisenAlpha), a=Math.PI*s; return [-rho*Math.cos(a), h0+rho*Math.sin(a), -Math.cos(a), Math.sin(a)]; }
+    if(kurve==='stich'){ const rho=(R*R+f*f)/(2*f), be=Math.asin(Math.min(1,R/rho)), a=Math.PI/2+be-2*be*s; return [rho*Math.cos(a), f-rho+rho*Math.sin(a), Math.cos(a), Math.sin(a)]; }
+    const a=Math.PI*s; return [-R*Math.cos(a), R*Math.sin(a), -Math.cos(a), Math.sin(a)]; }
+  function prisma(g,polys,eb,role,merk){   // ebene Polygone (konvex oder sternförmig von der ersten Ecke, gegen den Uhrzeiger in u-v) um die Tiefe w0…w1 — EIN Mesh, jeder Punkt durch deform
+    const W=(u,v,w)=>deform(eb.horiz?eb.cx+u:eb.cx+w, v, eb.horiz?eb.cz+w:eb.cz+u), P=[], sp=eb.horiz;   // x-y-Ebene: (u, v, w) rechtshändig; z-y-Ebene: gespiegelt — die Wicklung kehrt
+    const push=(a,b,c)=>{ if(sp)P.push(a[0],a[1],a[2],b[0],b[1],b[2],c[0],c[1],c[2]); else P.push(a[0],a[1],a[2],c[0],c[1],c[2],b[0],b[1],b[2]); };
+    let mu=0,mv=0,k=0;
+    for(const q of polys){ const n=q.length, A=q.map(p=>W(p[0],p[1],eb.w0)), B=q.map(p=>W(p[0],p[1],eb.w1)); for(const p of q){ mu+=p[0]; mv+=p[1]; k++; }
+      for(let i=1;i<n-1;i++){ push(A[0],A[i+1],A[i]); push(B[0],B[i],B[i+1]); }
+      for(let i=0;i<n;i++){ const j=(i+1)%n; push(A[i],A[j],B[j]); push(A[i],B[j],B[i]); } }
+    const geo=new THREE.BufferGeometry(); geo.setAttribute('position',new THREE.Float32BufferAttribute(P,3)); geo.computeVertexNormals();
+    const m=new THREE.Mesh(geo,mat(role)); m.castShadow=!NOSHADOW[role]; m.receiveShadow=true; if(merk)Object.assign(m.userData,merk); g.add(m);
+    const c=W(mu/k,mv/k,(eb.w0+eb.w1)/2); return tintWood(m,role,c[0],c[1],c[2]); }
+  function bogenRahmen(g,cx,yS,cz,R,horiz,typ,role,o){   // BOGEN-GESETZ über jeder Öffnung (rund/spitz/hufeisen/stich) — dieselbe Kurve wie die Laube, ein Gesetz
+    o=o||{}; const kurve=typ||'rund', f=kurve==='stich'?o.stich:0, t=(o.t!=null?o.t:0.19), steig=bogenSteig(kurve,R,f), cap=(o.cap!=null?o.cap:Infinity);
+    if(!(R>0.05) || (kurve==='stich' && !(f>0.02)) || yS+steig+t*1.12>cap-0.02) return null;   // der Deckel: kein Scheitel durch das Dach
+    const dp=(o.tiefe!=null?o.tiefe:0.42), vs=(o.versatz!=null?o.versatz:((horiz?cz:cx)<0?-0.14:0.14));
+    const B={cx,cz,yS,R,t,horiz,kurve,stich:f,art:o.art||'oeffnung',cap,pfeiler:o.pfeiler||null,intrados:[]};   // DIE MARKE DES BOGENS (gate:fachwerk-contract BOGEN-VERBAND)
+    const BG=BOGEN_GESETZ, h0=kurve==='hufeisen'?R*Math.tan(BG.hufeisenAlpha):0, rhoH=R/Math.cos(BG.hufeisenAlpha);
+    if(kurve==='hufeisen'){ for(let k=0;k<=48;k++){ const a=-BG.hufeisenAlpha+(Math.PI+2*BG.hufeisenAlpha)*k/48; B.intrados.push([-rhoH*Math.cos(a),h0+rhoH*Math.sin(a)]); } }
+    else for(let k=0;k<=48;k++){ const q=bogenKurve(kurve,R,f,k/48); B.intrados.push([q[0],q[1]]); }
+    // die Bogenlänge der Laibung (dicht abgetastet) → N Keile gleicher Länge
+    const M=96, tab=[], L=[0]; for(let k=0;k<=M;k++){ tab.push(bogenKurve(kurve,R,f,k/M)); if(k)L.push(L[k-1]+Math.hypot(tab[k][0]-tab[k-1][0],tab[k][1]-tab[k-1][1])); }
+    const at=(l)=>{ let k=1; while(k<M && L[k]<l)k++; const a=tab[k-1], b=tab[k], q=(L[k]-L[k-1])>0?Math.max(0,Math.min(1,(l-L[k-1])/(L[k]-L[k-1]))):0, nu=a[2]+(b[2]-a[2])*q, nv=a[3]+(b[3]-a[3])*q, nl=Math.hypot(nu,nv)||1; return [a[0]+(b[0]-a[0])*q, a[1]+(b[1]-a[1])*q, nu/nl, nv/nl]; };
+    const Lg=L[M], rM=Math.max(R,steig); let N=Math.max(5,Math.round(Lg*(1+t/(2*rM))/0.34)); if(N%2===0)N++;
+    const eb=(d)=>({horiz,cx,cz,w0:vs-d/2,w1:vs+d/2}), ext=(q,tt)=>[q[0]+q[2]*tt, q[1]+q[3]*tt], vO=(q)=>[q[0],yS+q[1]];
+    const Q=[]; for(let i=0;i<=N;i++){ const q=at(Lg*i/N); Q.push({p:[q[0],q[1]], n:q, r:ext(q,t)}); }
+    for(let i=0;i<N;i++){ const sch=(i===(N-1)/2), tt=sch?t*1.12:t, a=Q[i], b=Q[i+1];
+      prisma(g,[[vO(a.p),vO(b.p),vO(ext(b.n,tt)),vO(ext(a.n,tt))]],eb(sch?dp+0.04:dp),role,{keil:{bogen:B,i}}); }
+    const zw=[];   // die Kämpfer-Stücke und die Mauer über dem Bogen (Zwickel)
+    const fernStufe=!!(P.nur&&P.nur.kaempfer===false);   // die Stufe 2 (DESTNUR) trägt den Bogen als Keile ohne Kämpfer und Widerlager (K66: marokkanisch L2 7224 → 7280 > 7250)
+    if(kurve==='hufeisen'&&!fernStufe) for(const sg of [-1,1]){ const pl=[[sg*(rhoH+t),yS],[sg*R,yS]];   // der Kämpferstein unter der Mitte: sein Lager auf yS, oben die Fuge durch die Mitte
+      for(let k=1;k<=6;k++){ const a=-BG.hufeisenAlpha+BG.hufeisenAlpha*k/6; pl.push([sg*rhoH*Math.cos(a), yS+h0+rhoH*Math.sin(a)]); } pl.push([sg*(rhoH+t),yS+h0]); zw.push(sg<0?pl:pl.reverse()); }
+    if(kurve==='stich'&&!fernStufe){ const q0=Q[0].r, qN=Q[N].r; zw.push([[q0[0],yS],[Q[0].p[0],yS],vO(q0)]); zw.push([[Q[N].p[0],yS],[qN[0],yS],vO(qN)]); }   // das Widerlager unter dem schrägen Lager
+    if(o.zwickel){ const uL=o.zwickel[0], uR=o.zwickel[1], top=o.zwickel[2];
+      if(Q[0].r[0]-uL>0.005) zw.push([[uL,yS],[Q[0].r[0],yS],[Q[0].r[0],top],[uL,top]]);
+      if(uR-Q[N].r[0]>0.005) zw.push([[Q[N].r[0],yS],[uR,yS],[uR,top],[Q[N].r[0],top]]);
+      for(let i=0;i<N;i++){ const a=Q[i].r, b=Q[i+1].r; if(b[0]-a[0]>1e-4 && top-yS-Math.max(a[1],b[1])>1e-4) zw.push([vO(a),vO(b),[b[0],top],[a[0],top]]); } }
+    if(zw.length) prisma(g,zw,eb(dp-0.06),role,{zwickel:{bogen:B}});
+    return B; }
   function fensterAt(g,cx,cy,cz,w,h,horiz,capY){ const fr='holz', gl=fensterSchlaeft(P.seed,horiz?'z':'x',horiz?cz:cx,horiz?cx:cz,cy)?'glasdunkel':'glas', _cap=(capY!=null?capY:Math.min(roofUnderY(cx,cz),roofUnderY(cx+(horiz?0.22:0),cz+(horiz?0.22:0))));   // BOGEN-DECKEL-GESETZ: lokale Dachgrenze schlägt Hauptdach; Doppel-Sample gegen Randfälle
-    if(horiz){ beam(g,cx,cy+h/2+0.05,cz,w+0.2,0.1,0.18,fr); if(P.bogenTyp&&P.bogenTyp!=='none' && (cy+h/2+0.12+w*0.58)<_cap-0.10)bogenRahmen(g,cx,cy+h/2+0.12,cz,w*0.58,true,P.bogenTyp,fr); beam(g,cx,cy-h/2-0.05,cz,w+0.22,0.1,0.24,fr);     // Sturz + Fensterbank
+    if(horiz){ beam(g,cx,cy+h/2+0.05,cz,w+0.2,0.1,0.18,fr); if(P.bogenTyp&&P.bogenTyp!=='none')bogenRahmen(g,cx,cy+h/2+0.12,cz,w*0.58,true,P.bogenTyp,fr,{art:'fenster',cap:_cap}); beam(g,cx,cy-h/2-0.05,cz,w+0.22,0.1,0.24,fr);     // Sturz + Fensterbank
       beam(g,cx-w/2-0.05,cy,cz,0.1,h+0.1,0.18,fr); beam(g,cx+w/2+0.05,cy,cz,0.1,h+0.1,0.18,fr);              // Pfosten
       const L=grp(); const inner=windowSash(w,h,true,fr,gl); inner.position.x=w/2; L.add(inner);
       L.position.set(...deform(cx-w/2,cy,cz)); L.rotation.y=(cz<0?0.62:-0.62)+(DEF_bk>0?(cx-w/2)*DEF_bk:0); L.userData={window:true,openA:L.rotation.y}; g.add(L);
-    } else { beam(g,cx,cy+h/2+0.05,cz,0.18,0.1,w+0.2,fr); if(P.bogenTyp&&P.bogenTyp!=='none' && (cy+h/2+0.12+w*0.58)<_cap-0.10)bogenRahmen(g,cx,cy+h/2+0.12,cz,w*0.58,false,P.bogenTyp,fr); beam(g,cx,cy-h/2-0.05,cz,0.24,0.1,w+0.22,fr);
+    } else { beam(g,cx,cy+h/2+0.05,cz,0.18,0.1,w+0.2,fr); if(P.bogenTyp&&P.bogenTyp!=='none')bogenRahmen(g,cx,cy+h/2+0.12,cz,w*0.58,false,P.bogenTyp,fr,{art:'fenster',cap:_cap}); beam(g,cx,cy-h/2-0.05,cz,0.24,0.1,w+0.22,fr);
       beam(g,cx,cy,cz-w/2-0.05,0.18,h+0.1,0.1,fr); beam(g,cx,cy,cz+w/2+0.05,0.18,h+0.1,0.1,fr);
       const L=grp(); const inner=windowSash(w,h,false,fr,gl); inner.position.z=w/2; L.add(inner);
       L.position.set(...deform(cx,cy,cz-w/2)); L.rotation.y=(cx<0?-0.62:0.62)+(DEF_bk>0?cx*DEF_bk:0); L.userData={window:true,openA:L.rotation.y}; g.add(L); } }
@@ -1447,22 +1495,37 @@
     if(dt==='zwiebel'||P.kuppel){ const base=wallTop,bands=16,prof=t=>[rad*Math.pow(Math.cos(t*Math.PI*0.5),0.6)*(1+0.3*Math.sin(t*Math.PI)),base+rad*1.7*t]; for(let bd=0;bd<bands;bd++){const A=prof(bd/bands),B=prof((bd+1)/bands); for(let s=0;s<seg;s++){const a0=s/seg*2*Math.PI,a1=(s+1)/seg*2*Math.PI; tri(g,[A[0]*Math.cos(a0),A[1],A[0]*Math.sin(a0)],[B[0]*Math.cos(a0),B[1],B[0]*Math.sin(a0)],[B[0]*Math.cos(a1),B[1],B[0]*Math.sin(a1)],'kupfer'); tri(g,[A[0]*Math.cos(a0),A[1],A[0]*Math.sin(a0)],[B[0]*Math.cos(a1),B[1],B[0]*Math.sin(a1)],[A[0]*Math.cos(a1),A[1],A[0]*Math.sin(a1)],'kupfer');}} }
     else { const apexY=wallTop+rad*1.3; for(let s=0;s<seg;s++){ const a0=s/seg*2*Math.PI,a1=(s+1)/seg*2*Math.PI; tri(g,[rad*Math.cos(a0),wallTop,rad*Math.sin(a0)],[rad*Math.cos(a1),wallTop,rad*Math.sin(a1)],[0,apexY,0],'ziegel'); } beam(g,0,apexY+0.2,0,0.1,0.5,0.1,'metall'); }
     return g; }
-  function bogenAuf(g,cx,y0,cz,halfW,pierH,depthB,role,typ,horiz){ horiz=(horiz!==false);   // DAS BOGEN-GESETZ: Rund/Spitz/Hufeisen — Pfeiler + Archivolte aus Keilsteinen. Daraus wachsen Arkade, Gewölbe, echte Kuppel
-    const yS=y0+pierH, R=halfW; if(horiz){ beam(g,cx-halfW-0.16,(y0+yS)/2,cz,0.32,pierH,depthB,role); beam(g,cx+halfW+0.16,(y0+yS)/2,cz,0.32,pierH,depthB,role); } else { beam(g,cx,(y0+yS)/2,cz-halfW-0.16,depthB,pierH,0.32,role); beam(g,cx,(y0+yS)/2,cz+halfW+0.16,depthB,pierH,0.32,role); }
-    bogenRahmen(g,cx,yS,cz,R,horiz,typ,role); }   // EINE Bogenkurve: Arkade nutzt jetzt dasselbe Gesetz wie die Fenster/Tür-Öffnungen
-  function arkade(){ const g=grp(); if(!P.arkade) return g;   // ARKADE/KREUZGANG (Rom/Romanik/Islam/Gotik) — folgt jetzt dem GETEILTEN Grundriss-Umriss (eachFootEdge) wie zinnen/vorkragung/veranda; Orientierung via bogenAuf-horiz
-    const typ=P.bogenTyp==='none'?'rund':P.bogenTyp, pierH=Math.min(3.4,Math.max(2.4,eaveY-baseY-0.5)), d=1.8, rH=pierH+0.9, tilt=Math.PI*0.14;
+  function arkade(){ const g=grp(); if(!P.arkade) return g;   // ARKADE/KREUZGANG (Rom/Romanik/Islam/Gotik) — folgt dem GETEILTEN Grundriss-Umriss (eachFootEdge) wie zinnen/vorkragung/veranda
+    // DIE LAUBE UNTER DER TRAUFE (K66): ihr flaches Dach liegt bündig mit dem Dach des Hauses (einstöckig: auf der Traufe) bzw. auf dem Boden des
+    // Obergeschosses; über den Bögen die Mauer (Zwickel) bis unter die Platte. Die Pfeiler stehen GETEILT in der Flucht (n + 1 für n Bögen; ein
+    // Rechteck: die Flucht läuft bis in die Ecken, die Ecke trägt EIN Pfeiler), auf jedem der Kämpfer. Der Bogen folgt der Höhe, die ihm die
+    // Traufe lässt: die Bogen-Art des Hauses, wo ihr Scheitel unter die Platte passt (lichte Höhe am Kämpfer ≥ lichtK), sonst der Stichbogen mit dem
+    // Stich, der bleibt; ist der flacher als R/5, trägt ein Sturz (die Säulenhalle). Bis K66 stand je Bogen ein eigenes Pfeilerpaar (Doppelpfeiler
+    // 4 cm versetzt), der Kämpfer auf 2,4–3,4 m, das Pultdach 0,9 m darüber — der Scheitel ragte bis 1,1 m über die Traufe.
+    const typ=P.bogenTyp==='none'?'rund':P.bogenTyp, d=1.8, pd=0.5, kH=0.18, dachT=0.12, gesims=0.12, lichtK=1.9, ue=0.15;
+    const yZ=(P.storeys>=2?levels[0].top:eaveY), eins=(FOOTPRINT.length===1);
     eachFootEdge((x0,x1,z0,z1,axis,side,r)=>{
-      if(axis==='z'){ const len=x1-x0, zf=z0+side*d, n=Math.max(2,Math.round(len/2.6));
-        for(let i=0;i<n;i++){ const x=x0+(i+0.5)*len/n; bogenAuf(g,x,baseY,zf,len/n/2-0.18,pierH,0.5,'stein',typ,true); }
-        beam(g,(x0+x1)/2,baseY+0.05,z0+side*d/2,len+0.4,0.1,d,'weg');
-        beam(g,(x0+x1)/2,baseY+(pierH+rH)/2,z0+side*d*0.5,len+0.6,0.12,d+0.5,'ziegel',[side*tilt,0,0]);
-        addMasse({art:'vordach',x0,x1,z0:Math.min(z0,z0+side*(d+0.25)),z1:Math.max(z0,z0+side*(d+0.25)),yB:baseY+pierH,yT:baseY+rH,first:side<0?'+z':'-z'}); }
-      else { const len=z1-z0, xf=x0+side*d, n=Math.max(2,Math.round(len/2.6));
-        for(let i=0;i<n;i++){ const z=z0+(i+0.5)*len/n; bogenAuf(g,xf,baseY,z,len/n/2-0.18,pierH,0.5,'stein',typ,false); }
-        beam(g,x0+side*d/2,baseY+0.05,(z0+z1)/2,d,0.1,len+0.4,'weg');
-        beam(g,x0+side*d*0.5,baseY+(pierH+rH)/2,(z0+z1)/2,d+0.5,0.12,len+0.6,'ziegel',[0,0,-side*tilt]);
-        addMasse({art:'vordach',x0:Math.min(x0,x0+side*(d+0.25)),x1:Math.max(x0,x0+side*(d+0.25)),z0,z1,yB:baseY+pierH,yT:baseY+rH,first:side<0?'+x':'-x'}); }
+      const horiz=(axis==='z'), wl=horiz?z0:x0, lf=wl+side*d, e0=horiz?x0:z0, e1=horiz?x1:z1;   // Wandflucht · Pfeilerflucht · die Kante
+      const a0=e0-(eins?d:0), a1=e1+(eins?d:0), len=a1-a0, n=Math.max(2,Math.round(len/2.6)), b=len/n, pw=Math.min(0.6,Math.max(0.44,0.2*b)), R=b/2-pw/2;
+      const P3=(u,v,lx,ly,lz,role)=>horiz?beam(g,u,v,lf,lx,ly,lz,role):beam(g,lf,v,u,lz,ly,lx,role);   // ein Kasten in der Flucht (lx längs, lz quer)
+      const stueck=(u0,u1,q0,q1,y0,y1,role)=>{ const qa=Math.min(q0,q1), qb=Math.max(q0,q1); if(horiz) beam(g,(u0+u1)/2,(y0+y1)/2,(qa+qb)/2,u1-u0,y1-y0,qb-qa,role); else beam(g,(qa+qb)/2,(y0+y1)/2,(u0+u1)/2,qb-qa,y1-y0,u1-u0,role); };
+      let kurve=typ, steig=bogenSteig(typ,R,0), stich=0;
+      let t=Math.min(0.3,Math.max(0.2,0.22*R)); t=Math.min(t, pw/2-(bogenAussen(kurve,R)-R)-0.01);
+      if(baseY+lichtK+steig+t*1.12+gesims>yZ){ kurve='stich'; t=Math.min(Math.min(0.3,Math.max(0.2,0.22*R)), pw/2-0.01); stich=Math.min(R, yZ-gesims-t*1.12-lichtK-baseY); steig=stich; }
+      const sturz=(kurve==='stich' && stich<0.2*R), yS=sturz? yZ-0.3 : yZ-gesims-t*1.12-steig;   // der Kämpfer: so hoch, dass der Scheitel unter die Platte reicht
+      for(let i=0;i<=n;i++){ if(eins && !horiz && (i===0||i===n)) continue;   // die Eck-Pfeiler trägt die Flucht längs x
+        const u=a0+i*b; P3(u,(baseY+yS-kH)/2,pw,yS-kH-baseY,pd,'stein'); P3(u,yS-kH/2,pw+0.08,kH,pd+0.08,'stein'); }   // Pfeiler + Kämpfer
+      const uA=(eins&&!horiz)?a0+pw/2:a0-pw/2, uB=(eins&&!horiz)?a1-pw/2:a1+pw/2;   // die Flucht der Mauer über den Bögen (die Ecke gehört der Flucht längs x)
+      if(sturz) P3((uA+uB)/2,(yS+yZ)/2,uB-uA,yZ-yS,pd-0.04,'stein').userData.sturz=true;   // der Sturz der Säulenhalle
+      else for(let i=0;i<n;i++){ const c=a0+(i+0.5)*b;
+        bogenRahmen(g,horiz?c:lf,yS,horiz?lf:c,R,horiz,kurve,'stein',{art:'arkade',t,tiefe:pd-0.02,versatz:0,cap:yZ,stich,zwickel:[-b/2,b/2,yZ],pfeiler:[[-R-pw,-R],[R,R+pw]]}); }
+      if(!sturz && eins && horiz) for(const [u0,u1] of [[a0-pw/2,a0],[a1,a1+pw/2]]) P3((u0+u1)/2,(yS+yZ)/2,u1-u0,yZ-yS,pd-0.06,'stein');   // die Mauer über der äußeren Hälfte der Eck-Pfeiler
+      const fA=(eins&&!horiz)?e0:uA, fB=(eins&&!horiz)?e1:uB;   // der Boden und das Dach der Laube: längs x samt den Ecken, quer nur die Kante
+      stueck(fA,fB,wl,lf+side*pd/2,baseY,baseY+0.1,'weg');
+      const dA=(eins&&!horiz)?e0:uA-ue, dB=(eins&&!horiz)?e1:uB+ue, q1=lf+side*(pd/2+ue);
+      stueck(dA,dB,wl-side*0.05,q1,yZ,yZ+dachT,'stein');
+      if(horiz) addMasse({art:'vordach',x0:dA,x1:dB,z0:Math.min(wl,q1),z1:Math.max(wl,q1),yB:yZ,yT:yZ+dachT,first:side<0?'+z':'-z'});
+      else addMasse({art:'vordach',x0:Math.min(wl,q1),x1:Math.max(wl,q1),z0:dA,z1:dB,yB:yZ,yT:yZ+dachT,first:side<0?'+x':'-x'});
     });
     return g; }
   function turm(){ const g=grp(); if(!P.turm) return g;   // TURM — HOHL (LOCHWAND-GESETZ: echte Fenster + echtes Portal + Geschossböden), an die Ringmauer gebunden, Standort aus der BELEGUNGS-QUELLE, bei Burg ZINNENKRANZ
@@ -1821,7 +1884,7 @@
     // prettier-ignore
     const KULLVOL=0.012;
     // prettier-ignore
-    const DESTNUR={dachdeckung:false,dachwerk:false,fenster:false,gefache:false,boeden:false,innenwaende:false,treppe:false,moebel:false,geruest:false,zimmermann:false,tueren:false,anbau:false,balkon:false,portikus:false,veranda:false,terrasse:false,arkade:false,giebel:false,dachAlt:false}; // GIEBEL-KOPLANAR-FIX: DESTNUR-Giebelwände lagen EXAKT auf den dachPrisma-Gabeln (GEMESSEN: barock 21.7k / antike 13.5k Z-Fight-Paare auf Traufhöhe) — fern IST der Körper der Giebel   // Stufe 2: 6.7x — Kull-Opfer entstehen gar nicht erst. dachwerk AUS: nackte Sparren über dem dims-Körper lasen sich als Ruine — der Körper trägt das Dach
+    const DESTNUR={kaempfer:false,dachdeckung:false,dachwerk:false,fenster:false,gefache:false,boeden:false,innenwaende:false,treppe:false,moebel:false,geruest:false,zimmermann:false,tueren:false,anbau:false,balkon:false,portikus:false,veranda:false,terrasse:false,arkade:false,giebel:false,dachAlt:false}; // GIEBEL-KOPLANAR-FIX: DESTNUR-Giebelwände lagen EXAKT auf den dachPrisma-Gabeln (GEMESSEN: barock 21.7k / antike 13.5k Z-Fight-Paare auf Traufhöhe) — fern IST der Körper der Giebel   // Stufe 2: 6.7x — Kull-Opfer entstehen gar nicht erst. dachwerk AUS: nackte Sparren über dem dims-Körper lasen sich als Ruine — der Körper trägt das Dach
     // prettier-ignore
     const TURMNUR={gefache:false,riegel:false,streben:false,zimmermann:false,fenster:false,geruest:false,boeden:false,innenwaende:false,treppe:false,moebel:false}; // Turm-Fassade: Paneele x 11 Geschosse waren die Masse
     // prettier-ignore
@@ -2662,9 +2725,7 @@
       box(lx,0.8,za, 0.07,1.6,0.07, mLay('holz')); box(lx,0.8,zb, 0.07,1.6,0.07, mLay('holz'));
       box(lx,1.52,(za+zb)/2, 0.025,0.025, zb-za, M.dunkel); } }
   if(rolle==='gasthaus'){ for(let k2=0;k2<3;k2++) box(e.x0+0.5+((k2%2)*0.6), 0.28+((k2/2)|0)*0.56, e.z0-0.55, 0.55,0.55,0.55, mLay('holz')); }   // ROLLE → KISTEN am Eingang
-  if(rolle==='gasthaus'||rolle==='schmiede'){ const wx3=sp.x+1.1;                             // SCHICHT-2: WANDLATERNE neben der Tür — der Kopf ist GLAS und zündet nachts mit den Fenstern
-    box(wx3, 2.3, e.z0+0.06, 0.07,0.07,0.34, M.dunkel);
-    const kopf3=new THREE.Mesh(new THREE.BoxGeometry(0.2,0.28,0.2), M.glas); kopf3.position.set(wx3,2.16,e.z0-0.26); grp.add(kopf3); }
+  /*SCHICHT-2: die WANDLATERNE neben der Tuer von Gasthaus und Schmiede reist seit K66-2 mit dem Dorf-Licht (wandLaternen: die Gestalt wandlaterne mit ihrem Licht an der Wand des Kerns) — bis K66-2 ein Glas-Kopf ohne Lichtquelle vor der Traufe*/
   if((B.p.baujahr||1900)<1800 && rnd()<0.35){ const ex3=(rnd()<0.5)?e.x0-0.03:e.x1+0.03;      // SCHICHT-2: EFEU — das Alter begrünt die Wetterecke
     for(let k3=0;k3<3;k3++) box(ex3, 0.7+k3*1.05+rnd()*0.3, e.z1-0.5-k3*0.4-rnd()*0.5, 0.1, 0.9+rnd()*0.5, 0.5+rnd()*0.4, M.laub); }
   if(rolle==='schmiede'){ box(e.x1+0.7, 0.24, e.z0+0.6, 1.35,0.42,0.5, mLay('stein')); }            // ROLLE → TRÄNKTROG
@@ -3191,13 +3252,17 @@
     if(ok&&mauer&&Math.abs(Math.hypot(tx,tz)-Rw)<2.6)ok=false;
     if(ok&&trees.some(q2=>Math.hypot(tx-q2.x,tz-q2.z)<3.0))ok=false;
     if(ok) trees.push({x:tx,z:tz,h:2.6+rnd()*1.8}); }
-  const laternen=[];                                                                          // LATERNEN-GESETZ: die moderne Stadt leuchtet
+  const laternen=[], marken=[];                                                               // LATERNEN-GESETZ: die moderne Stadt leuchtet; die Marken des Dorf-Lichts (jeder Meter Weg) liest die Wandlaterne (wandLaternen)
+  const LG9=LICHT_GESETZ.laterne, LATERNE_WAND=Math.sqrt(Math.max(0,(LG9.hoeheM*LG9.hoeheM+LG9.kernM*LG9.kernM)/2-LG9.kernM*LG9.kernM));   /*DIE LATERNE VOR DER WAND (K66): ihr Licht trifft keine Wand mit mehr als dem Doppelten der Gasse unter ihr — (h²+k²)/(d²+k²) ≤ 2, d ≥ 2,55 m; bis K66 stand sie 0,45 m vor dem Grundriss, die Giebelwand trug nachts das Sechsfache*/
+  const LATERNE_FUSS=AUSSTATTUNG.laterne.tritt.r, laterneWege=roads.map(rd=>({pts:rd.pts.filter((_,k2)=>k2*DS<=(rd.len||0)+DS), h:rd.w/2})).concat(feldwege.map(fw=>({pts:fw.pts, h:fw.w/2})));   /*DER FUSS DER LATERNE (K66, Pruefung 2): ihr Tritt aus dem Rezept (AUSSTATTUNG laterne, der Blocker der Welt) und die Wege, wie der Export sie traegt — Strasse und Feldweg*/
+  const laterneImWeg=(x,z)=>laterneWege.some(wl=>{ const P=wl.pts, h=wl.h+LATERNE_FUSS; for(let k=0;k+1<P.length;k++){ const A=P[k], B=P[k+1], dx=B.x-A.x, dz=B.z-A.z, L2=dx*dx+dz*dz; let t=L2>1e-9?((x-A.x)*dx+(z-A.z)*dz)/L2:0; t=t<0?0:t>1?1:t; if(Math.hypot(x-A.x-dx*t, z-A.z-dz*t)<h) return true; } return false; });
+  const laterneFrei=(x,z)=>obbs.every(q2=>distPunktOBB(x,z,q2.o)>=LATERNE_WAND)&&!laterneImWeg(x,z);   /*DER EINE STAND DER LATERNE: vor der Wand (LATERNE_WAND) UND mit dem Fuss neben jedem Weg — Stadt, Platz, Knoten und Gasse fragen hier*/
+  const laterneQuer=(rd,q,fl)=>{ const lo=rd.w/2+LATERNE_FUSS; for(let o=rd.w/2+gw+0.35; ; o=Math.max(lo,o-0.25)){ const x=q.x+fl*q.nx*o, z=q.z+fl*q.nz*o; if(laterneFrei(x,z)) return {x,z}; if(o<=lo) return null; } };   /*DER STAND QUER ZUR GASSE (K66): vom alten Stand 0,35 m hinter dem Gehweg in 0,25-m-Schritten bis an den Bordstein (der Fuss am Wegrand), nie in die Fahrbahn — bis K66-n4 rueckte er bis rd.w/4 an die Achse, 123/292 Laternen standen im Weg (der Spieler lief gegen den Mast); wo die Wand keinen Stand traegt, sucht der Weg weiter*/
   let R9L=30; for(const rd9 of roads) for(const q9 of rd9.pts){ const d9=Math.hypot(q9.x,q9.z); if(d9>R9L)R9L=d9; }   /*ZEITREISE-Referenz: der ECHTE Stadtradius (Strassen-Max), nicht Mauer-Rw — GEMESSEN 0 Gas*/
   if(staedt&&plan.jahr>1850){ for(const rd of roads){ if(rd.gen>=2)continue;
     for(let u=6, fl=1; u<(rd.len||0)-4; u+=DORF_NORM.laneiv-4+((u*7)%5), fl=-fl){ const q=at(rd,u);   /*laneiv KONSUMIERT: 13..17 byte-gleich (laneiv-4 == 13)*/
-      const lx2=q.x+fl*q.nx*(rd.w/2+gw+0.35), lz2=q.z+fl*q.nz*(rd.w/2+gw+0.35);
-      let ok=true;
-      for(const q2 of obbs){ if(distPunktOBB(lx2,lz2,q2.o)<0.45){ok=false;break;} }
+      const lq=laterneQuer(rd,q,fl), lx2=lq?lq.x:0, lz2=lq?lq.z:0;
+      let ok=!!lq;
       if(ok&&laternen.some(l=>Math.hypot(lx2-l.x,lz2-l.z)<9))ok=false;
       if(ok){ const dL=Math.min(1, Math.hypot(lx2,lz2)/(R9L*0.80));                          /*LATERNEN-ZEITREISE: jede Laterne liest das JAHR ihres Rings — Gas im Altkern, Elektro am Saum*/
         const R0=globalThis.__ring; const rj=(R0&&R0.ringe)? (R0.gr0+(plan.jahr-R0.gr0)*Math.pow(dL,0.82)) : plan.jahr;
@@ -3205,19 +3270,20 @@
         laternen.push({x:lx2,z:lz2,th:Math.atan2(-fl*q.nz,-fl*q.nx),gas:gasB}); } } } }
   else { /*DAS DORF-LICHT (K10, Auge 13.10.: das Start-Dorf trug 0 Laternen, die Nacht war ohne ein Licht): jede Laterne vor einer Wand wie in der Stadt (kein Grundriss, 9 m Abstand, nicht am Brunnen) — eine am Platz, eine an jedem Weg-Knoten (Grad ≥ 3), laengs jedes Wegs eine je DORF_LICHT_WEG m*/
     const DORF_LICHT_WEG=25;
-    const setz=(x,z,th)=>{ for(const q2 of obbs){ if(distPunktOBB(x,z,q2.o)<0.45) return false; }
+    const setz=(x,z,th)=>{ if(!laterneFrei(x,z)) return false;
       if(laternen.some(l=>Math.hypot(x-l.x,z-l.z)<9)||brunnen.some(b2=>Math.hypot(x-b2.x,z-b2.z)<2)) return false; laternen.push({x,z,th,gas:true}); return true; };
-    const amWeg=(rd,u,fl)=>{ const q=at(rd,u); return setz(q.x+fl*q.nx*(rd.w/2+gw+0.35), q.z+fl*q.nz*(rd.w/2+gw+0.35), Math.atan2(-fl*q.nz,-fl*q.nx)); };
+    const amWeg=(rd,u,fl)=>{ const q=at(rd,u), lq=laterneQuer(rd,q,fl); return !!lq&&setz(lq.x, lq.z, Math.atan2(-fl*q.nz,-fl*q.nx)); };
     if(platz) [[0.25,0],[-0.25,0],[0,0.7],[0,-0.7]].some(([fx,fz])=>setz(platz.cx+fx*platz.ex, platz.cz+fz*platz.ez, 0));
     const grad=new Array(G.nodes.length).fill(0); for(const rd of roads){ grad[rd.a]++; grad[rd.b]++; }
-    for(const rd of roads){ const L=rd.len||0; for(const [ende,k] of [[0,rd.a],[1,rd.b]]){ if(grad[k]<3) continue; const u0=ende?Math.max(0,L-2):Math.min(L,2); amWeg(rd,u0,1)||amWeg(rd,u0,-1); } }
-    for(const rd of roads){ const L=rd.len||0; for(let u=DORF_LICHT_WEG/2, fl=1; u<L; u+=DORF_LICHT_WEG, fl=-fl){
+    for(const rd of roads){ const L=rd.len||0; for(const [ende,k] of [[0,rd.a],[1,rd.b]]){ if(grad[k]<3) continue; for(let du=2; du<=Math.max(2,Math.min(8,L/2)); du+=1){ const u0=ende?Math.max(0,L-du):Math.min(L,du); if(amWeg(rd,u0,1)||amWeg(rd,u0,-1)) break; } } }   /*der Knoten sucht seinen Stand bis 8 m in den Weg hinein (K66: vor der Wand fand er ihn 2 m vom Knoten selten)*/
+    for(const rd of roads){ const L=rd.len||0; for(let um=0; um<=L; um+=1){ const mq=at(rd,um); marken.push({x:mq.x,z:mq.z}); }   /*DIE MARKE (K66-2 N1): JEDER Meter des Wegs — wandLaternen haengt nach dem Snap eine Laterne an die naechste Hauswand, wo kein Licht in LICHT_MARKE_M brennt (die dichte Gasse: beidseits Wand naeher als LATERNE_WAND, nur der Bordstein frei, und die Luecke zwischen zwei Masten); bis N1 je 25 m eine Marke, zwischen ihnen blieb die Wand der Gasse schwarz (nacht-wand 69 %)*/
+      for(let u=DORF_LICHT_WEG/2, fl=1; u<L; u+=DORF_LICHT_WEG, fl=-fl){
       for(let du=0; du<=DORF_LICHT_WEG/2-1; du+=1){ if((u+du<L&&(amWeg(rd,u+du,fl)||amWeg(rd,u+du,-fl)))||(du&&u-du>0&&(amWeg(rd,u-du,fl)||amWeg(rd,u-du,-fl)))) break; } } } }
   const sp=at(roads[0],Math.min(roads[0].len||8,8));
   const nzyk=roads.length-(G.nodes.length-1);                                                // Zyklen = E − V + 1 (zusammenhängend)
   return {pl, roads:roads.map(rd=>({pts:rd.pts.filter((_,k2)=>k2*DS<=(rd.len||0)+DS), w:rd.w, gen:rd.gen, len:rd.len||0, quer:rd.quer||false})),   /*Whitelist +quer — das Flag starb an dieser Kopie (#1-Sonde: 0 Gassen im lay)*/
           feldwege, platz, brunnen, fences, felder, staende, spawn:{x:sp.x,z:sp.z}, trees, jitAmp, DS, mauer,
-          laternen,
+          laternen, marken,
           graph:{nV:G.nodes.length, nE:roads.length, zyklen:Math.max(0,nzyk)},
           welt:{x0:X0-9,x1:X1+9,z0:Z0-9,z1:Z1+9}};
 }
@@ -3658,11 +3724,39 @@
     // Welt (`_leuchtTakt`: Feuerstelle, Glut, jeder Eintrag mit Datum — die Laternen eines Plans, K10; `_leuchtStoff`:
     // Fenster). Das Labor (r128, Legacy-Licht) zeichnet den Abfall als (1 − d/R)^abfall — r128 kennt 1/d² nur für die ganze
     // Szene (physicallyCorrectLights).
+    // DAS BOGEN-GESETZ (K66): die Kurven der Bögen — hufeisen: der Mittelpunkt um R·tan(hufeisenAlpha) über dem Kämpfer, der Bogen
+    // läuft um hufeisenAlpha unter die Mitte; spitz: zwei Mittelpunkte im Abstand spitzE·R von der Achse auf der Kämpferlinie
+    // (Radius (1 + spitzE)·R, Scheitel 1,61 R). Leser: bogenRahmen (Keilsteine im Verband) und die Linse gate:fachwerk-contract BOGEN-VERBAND.
+    var BOGEN_GESETZ = Object.freeze({ hufeisenAlpha: 0.35, spitzE: 0.8 });
     var LICHT_GESETZ = {
         feuer: { kelvin: 2000, staerke: 1, zeit: { mittag: 1.6, morgen: 1.6, abend: 2.2, nacht: 45 }, reichweiteM: 9, abfall: 2, kernM: 0.76, hoeheM: 0.35, flacker: { amp: 0.18, hz: [6.3, 9.7] } },
         fenster: { kelvin: 2800, zeit: { mittag: 0, morgen: 0, abend: 0.42, nacht: 0.85 } },
         laterne: { kelvin: 1900, staerke: 19, reichweiteM: 12, abfall: 2, kernM: 0.1, hoeheM: 3.6, zeit: { mittag: 0, morgen: 0, abend: 1, nacht: 1 } },
     };
+    // DIE WANDLATERNE (K66-2): die Leuchte der dichten Gasse hängt an der Hauswand, wo kein Mast vor der Wand und neben dem Weg
+    // steht — ihr Licht ist das der Laterne (Farbtemperatur, Zeitplan, Reichweite, Abfall), abgeleitet aus zwei Maßen ihres Leibs:
+    // der Kopf `hoeheM` über der Gasse, `armM` vor der Wand. Der Kern folgt aus dem Wand-Gesetz der Laterne (K66: die Wand trägt
+    // höchstens das Doppelte der Gasse unter ihr, ((h² + k²)/(a² + k²))^(abfall/2) ≤ 2 — mit dem Kern des Masts trug die Wand in
+    // 0,4 m das Fünfzigfache, die Sättigung von K66), die Stärke aus der Gasse: unter ihr trägt der Boden, was er unter dem Mast
+    // trägt. Leser: das Rezept der Wandlaterne (fx.licht), der Licht-Takt der Welt, gate:settlement DORF-LICHT.
+    LICHT_GESETZ.wandlaterne = (function (L, h, a) {
+        var q = Math.pow(2, 2 / L.abfall),
+            k2 = Math.max(L.kernM * L.kernM, (h * h - q * a * a) / (q - 1)),
+            boden = L.staerke * Math.pow((1 + L.kernM * L.kernM) / (L.hoeheM * L.hoeheM + L.kernM * L.kernM), L.abfall / 2),
+            r3 = function (v) {
+                return Math.round(v * 1000) / 1000;
+            };
+        return {
+            kelvin: L.kelvin,
+            staerke: r3(boden * Math.pow((h * h + k2) / (1 + k2), L.abfall / 2)),
+            reichweiteM: L.reichweiteM,
+            abfall: L.abfall,
+            kernM: r3(Math.sqrt(k2)),
+            hoeheM: h,
+            armM: a,
+            zeit: JSON.parse(JSON.stringify(L.zeit)),
+        };
+    })(LICHT_GESETZ.laterne, 2.8, 0.4);
     // DIE LICHTFARBE einer Farbtemperatur (K11b): der Planck-Ort (Kim, Kang et al. 2002, kubische Näherung 1 667–25 000 K)
     // als Farbort x, y → XYZ (Y = 1) → lineares sRGB (IEC 61966-2-1, Weiß D65), negativ außerhalb des Gamuts geklemmt, auf den
     // hellsten Kanal 1 normiert. Linear — das FARB-GESETZ (das Hex ist eine sRGB-Absicht) gilt so ohne Hex: 1 900 K ist
@@ -3704,6 +3798,9 @@
         brunnen: { lab: "Ziehbrunnen · Steinkranz, Haspel, Schindeldach", gestalten: 2, siteTag: "platz", salz: 0x3c77, tritt: { typ: "kreis", r: 1.75 } },
         // DIE LATERNE (K10 × K11, rein additiv): die Leuchte der Gasse als Gestalt — ihr Licht ist das Datum ihres Rezepts
         laterne: { lab: "Laterne · Eisenmast, Glas-Kopf, Haube", gestalten: 1, siteTag: "weg", salz: 0x4d93, tritt: { typ: "kreis", r: 0.45 }, licht: "laterne" },
+        // DIE WANDLATERNE (K66-2): derselbe Kopf am Arm vor der Hauswand — die Leuchte der dichten Gasse und der Tür von Gasthaus
+        // und Schmiede; ihr Licht LICHT_GESETZ.wandlaterne. Der Tritt ist der Kopf (sie hängt, kein Fuß steht im Weg).
+        wandlaterne: { lab: "Wandlaterne · Arm, Glas-Kopf, Haube", gestalten: 1, siteTag: "wand", salz: 0x5ea7, tritt: { typ: "kreis", r: 0.15 }, licht: "wandlaterne" },
     };
     // B4 — die Regler der Ausstattung (die Werkstatt baut ihre Slider daraus, der ov-Kanal liest dieselben ids).
     var AUS_PARAMS = [
@@ -4683,7 +4780,11 @@
             ? [[m.fr, -0.2], [m.fr, 0.1], [m.fr * 0.82, 0.16], [m.fr * 0.62, m.fh], [m.mr * 1.5, m.fh + 0.1], [m.mr, m.fh + 0.22], [m.mr, m.yK0 - 0.14], [m.mr * 1.7, m.yK0 - 0.04], [m.mr * 1.7, m.yK0], [0, m.yK0]]
             : [[m.fr, -0.2], [m.fr * 0.62, m.fh], [m.mr, m.fh + 0.22], [m.mr, m.yK0], [0, m.yK0]];
         eisen(ausDreh(profil, fein ? 8 : 4, false, false));
-        // der Boden des Kopfs, das Glas, nah die vier Eck-Stäbe des Rahmens
+        ausLaterneKopf(g, m, eisen, fein);
+    }
+    // DER KOPF DER LATERNE (Mast und Wand tragen denselben, K66-2): der Boden, das Glas um die Licht-Höhe `yL`, nah die vier
+    // Eck-Stäbe des Rahmens, die Haube.
+    function ausLaterneKopf(g, m, eisen, fein) {
         eisen(ausSetze(ausKiste(m.kb + 0.04, 0.03, m.kb + 0.04, fein ? 0.008 : 0), 0, m.yK0 + 0.015, 0));
         var glas = ausSetze(ausKiste(m.kb, m.kh - 0.03, m.kb, 0), 0, m.yL + 0.015, 0);
         ausFaerbe(glas, "laternenglas", 0, null);
@@ -4701,8 +4802,27 @@
             spitze = [0, m.yT, 0];
         eisen(ausVielecke([[[-h, y0, -h], [h, y0, -h], spitze], [[h, y0, -h], [h, y0, h], spitze], [[h, y0, h], [-h, y0, h], spitze], [[-h, y0, h], [-h, y0, -h], spitze], [[-h, y0, -h], [-h, y0, h], [h, y0, h], [h, y0, -h]]], [0, (y0 + m.yT) / 2, 0]));
     }
+    // DIE WANDLATERNE (K66-2): der Ursprung liegt im Boden unter dem Licht, +x zeigt zur Wand (sie steht in x = armM). Die
+    // Wandplatte, der Arm über dem Knauf der Haube, der Haken, an dem der Kopf hängt, nah die Strebe von der Platte zum Arm.
+    function ausWandlaterne(g, p, seed, stufe) {
+        var m = AUS_MASS.wandlaterne(p.groesse),
+            W = p.verwitterung,
+            fein = stufe === 0,
+            ton = ausTon(ausZufall(seed, 0x91), 0.06, 0.02);
+        var eisen = function (geo) {
+            ausFaerbe(geo, "metall", W, function () {
+                return { ton: ton };
+            });
+            ausTeil(g, geo, "metall");
+        };
+        eisen(ausSetze(ausKiste(0.03, m.pl, 0.14, fein ? 0.006 : 0), m.a - 0.015, m.yA - m.pl / 2 + 0.06, 0));
+        eisen(ausSetze(ausKiste(m.a, 0.035, 0.035, fein ? 0.006 : 0), m.a / 2, m.yA, 0));
+        eisen(ausSetze(ausKiste(0.02, m.yA - m.yT, 0.02, 0), 0, (m.yA + m.yT) / 2, 0));
+        if (fein) eisen(ausStrecke(ausSetze(ausKiste(0.022, m.st, 0.022, 0), 0, m.st / 2, 0), m.sA, m.sB));
+        ausLaterneKopf(g, m, eisen, fein);
+    }
 
-    var AUS_BAU = { feuerstelle: ausFeuerstelle, marktstand: ausMarktstand, brunnen: ausBrunnen, laterne: ausLaterne };
+    var AUS_BAU = { feuerstelle: ausFeuerstelle, marktstand: ausMarktstand, brunnen: ausBrunnen, laterne: ausLaterne, wandlaterne: ausWandlaterne };
     // DIE STUFE 3 DER AUSSTATTUNG (nurWurf, S3): die Grundform als EIN Gitter in EINEM Stoff (Rolle stein) — sie wirft für
     // die L1 (die L0 wirft selbst: nah, höchstens drei im Bild); ihre Hülle (`ausHuelle`) reist als Beipack `__fern`.
     // Dieselben Maße wie die Stufen 0/1 (Ring R + Steinbreite, Tisch und Plane, Kranz, Pfosten, First): Feuerstelle der
@@ -4736,6 +4856,20 @@
             var kh = 0.4 * G,
                 yL = LICHT_GESETZ.laterne.hoeheM * G;
             return { fr: 0.15 * G, fh: 0.55 * G, mr: 0.045 * G, kb: 0.26 * G, kh: kh, yL: yL, yK0: yL - kh / 2, yK1: yL + kh / 2, hb: 0.2 * G, yT: yL + kh / 2 + 0.2 * G };
+        },
+        wandlaterne: function (G) {
+            // der Kopf der Laterne in 0,85 ihrer Maße um die Licht-Höhe LICHT_GESETZ.wandlaterne `hoeheM`; die Wand in `armM`
+            // (das Gesetz des Plans, nie skaliert), der Arm 6 cm über dem Knauf, die Platte 0,34 m hoch, die Strebe unter dem Arm
+            var L = LICHT_GESETZ.wandlaterne,
+                kh = 0.34 * G,
+                yL = L.hoeheM * G,
+                yT = yL + kh / 2 + 0.17 * G,
+                yA = yT + 0.06,
+                a = L.armM,
+                pl = 0.34,
+                sA = [a - 0.03, yA - pl + 0.1, 0],
+                sB = [a * 0.35, yA, 0];
+            return { kb: 0.22 * G, kh: kh, yL: yL, yK0: yL - kh / 2, yK1: yL + kh / 2, hb: 0.17 * G, yT: yT, yA: yA, a: a, pl: pl, sA: sA, sB: sB, st: Math.hypot(sB[0] - sA[0], sB[1] - sA[1]) };
         },
     };
     // Die Wahl einer Gestalt, die nur der Bau kennt (der Strom zieht sie zwischen den Waren): der Marktstand nennt sein Fass
@@ -4799,7 +4933,7 @@
                 for (k = 0; k < 6; k++) deckel.push([fx + Math.cos((k * Math.PI) / 3) * fr, fh, fz + Math.sin((k * Math.PI) / 3) * fr]);
                 flaeche(stern.concat([deckel]));
             }
-        } else if (rezeptId === "laterne") {
+        } else if (rezeptId === "laterne" || rezeptId === "wandlaterne") {
             // Was die L0 wirft, wirft die Stufe 3: das Glas wirft nicht (Glut), also der Kopf als sein Eisen — der Boden
             // als Platte, die vier Eck-Stäbe, darüber die Pyramide der Haube; Fuß und Mast als Vierkant nach dem Profil der
             // L1. Die Vierkante achsparallel wie der Kopf (je Halbweite b der Radius b·√2, um 45° gedreht), 46 Dreiecke.
@@ -4811,10 +4945,40 @@
                     geo.rotateY(Math.PI / 4);
                     teil(geo);
                 };
-            vier([[0.84 * m.fr * q, -0.05], [0.84 * 0.62 * m.fr * q, m.fh], [0.84 * m.mr * q, m.fh + 0.22], [0.84 * m.mr * q, m.yK0]]);
+            if (rezeptId === "laterne") vier([[0.84 * m.fr * q, -0.05], [0.84 * 0.62 * m.fr * q, m.fh], [0.84 * m.mr * q, m.fh + 0.22], [0.84 * m.mr * q, m.yK0]]);
+            else {
+                // die Wandlaterne (K66-2), gemessen an ihrer L0 (gate:haus-fern W, drei Sonnen): die Platte als Fläche in der Wand,
+                // Arm und Strebe je als Kreuz zweier Flächen; der Kopf trägt statt der Eck-Kreuze je eine Diagonal-Fläche (Stab und
+                // Glas-Kante, 9 cm), über der Haube die Seiten des Kranzes und den Knauf, der den Haken deckt — 44 Dreiecke
+                var yP0 = m.yA - m.pl + 0.06,
+                    yP1 = m.yA + 0.06,
+                    xP = m.a - 0.015,
+                    b = 0.0175,
+                    sA = m.sA,
+                    sB = m.sB,
+                    sx = ((sB[1] - sA[1]) / m.st) * 0.011,
+                    sy = (-(sB[0] - sA[0]) / m.st) * 0.011;
+                flaeche([[[xP, yP0, -0.07], [xP, yP0, 0.07], [xP, yP1, 0.07], [xP, yP1, -0.07]]]);
+                flaeche([[[0, m.yA - b, 0], [m.a, m.yA - b, 0], [m.a, m.yA + b, 0], [0, m.yA + b, 0]], [[0, m.yA, -b], [m.a, m.yA, -b], [m.a, m.yA, b], [0, m.yA, b]]]);
+                flaeche([[[sA[0] - sx, sA[1] - sy, 0], [sB[0] - sx, sB[1] - sy, 0], [sB[0] + sx, sB[1] + sy, 0], [sA[0] + sx, sA[1] + sy, 0]], [[sA[0], sA[1], -0.011], [sB[0], sB[1], -0.011], [sB[0], sB[1], 0.011], [sA[0], sA[1], 0.011]]]);
+            }
             platte(-kb, kb, m.yK0, -kb, kb);
-            for (var ex = -1; ex <= 1; ex += 2) for (var ez = -1; ez <= 1; ez += 2) pfosten((ex * m.kb) / 2, (ez * m.kb) / 2, m.yK0, m.yK1, 0.011);
+            for (var ex = -1; ex <= 1; ex += 2)
+                for (var ez = -1; ez <= 1; ez += 2) {
+                    var px = (ex * m.kb) / 2,
+                        pz = (ez * m.kb) / 2,
+                        pd = 0.045;
+                    if (rezeptId === "laterne") pfosten(px, pz, m.yK0, m.yK1, 0.011);
+                    else flaeche([[[px - pd * ez, m.yK0, pz + pd * ex], [px + pd * ez, m.yK0, pz - pd * ex], [px + pd * ez, m.yK1, pz - pd * ex], [px - pd * ez, m.yK1, pz + pd * ex]]]);
+                }
             vier([[m.hb * q, m.yK1], [0, m.yT]]);
+            if (rezeptId === "wandlaterne") {
+                var h = m.hb,
+                    k0 = m.yK1,
+                    k1 = m.yK1 + 0.025;
+                flaeche([[[-h, k0, -h], [h, k0, -h], [h, k1, -h], [-h, k1, -h]], [[-h, k0, h], [h, k0, h], [h, k1, h], [-h, k1, h]], [[-h, k0, -h], [-h, k0, h], [-h, k1, h], [-h, k1, -h]], [[h, k0, -h], [h, k0, h], [h, k1, h], [h, k1, -h]]]);
+                teil(ausSetze(ausKiste(0.035, 0.055, 0.035, 0), 0, m.yT + 0.0275, 0));
+            }
         } else {
             teil(ausDreh([[m.rk, -0.05], [m.rk, m.hK], [0, m.hK]], 8, false, false));
             for (var i = -1; i <= 1; i += 2) pfosten(i * m.px, 0, -0.05, m.yF, 0.07);
@@ -4851,10 +5015,15 @@
             for (var sx = -1; sx <= 1; sx += 2)
                 for (var sz = -1; sz <= 1; sz += 2) dazu(huelleTeil("box", sx * m.px - 0.045, sx * m.px + 0.045, 0, sz < 0 ? m.pV : m.pH, sz * m.pz - 0.045, sz * m.pz + 0.045, F("holz")));
             if (wahl && wahl.fass) dazu(huelleTeil("box", wahl.fass[0] - 0.21, wahl.fass[0] + 0.21, 0, 0.6, wahl.fass[1] - 0.21, wahl.fass[1] + 0.21, F("holz")));
-        } else if (rezeptId === "laterne") {
-            var fr = m.fr * 0.8;
-            dazu(huelleTeil("box", -fr, fr, -0.2, m.fh, -fr, fr, F("metall")));
-            dazu(huelleTeil("box", -m.mr, m.mr, m.fh, m.yK0, -m.mr, m.mr, F("metall")));
+        } else if (rezeptId === "laterne" || rezeptId === "wandlaterne") {
+            if (rezeptId === "laterne") {
+                var fr = m.fr * 0.8;
+                dazu(huelleTeil("box", -fr, fr, -0.2, m.fh, -fr, fr, F("metall")));
+                dazu(huelleTeil("box", -m.mr, m.mr, m.fh, m.yK0, -m.mr, m.mr, F("metall")));
+            } else {
+                dazu(huelleTeil("box", m.a - 0.03, m.a, m.yA - m.pl + 0.06, m.yA + 0.06, -0.07, 0.07, F("metall")));
+                dazu(huelleTeil("box", 0, m.a, m.yA - 0.0175, m.yA + 0.0175, -0.0175, 0.0175, F("metall")));
+            }
             dazu(huelleTeil("box", -m.kb / 2, m.kb / 2, m.yK0, m.yK1, -m.kb / 2, m.kb / 2, F("glas")));
             dazu(huelleTeil("keil", -m.hb, m.hb, m.yK1, m.yT, -m.hb, 0, F("metall"), { first: "+z", walm: 1 }));
             dazu(huelleTeil("keil", -m.hb, m.hb, m.yK1, m.yT, 0, m.hb, F("metall"), { first: "-z", walm: 1 }));
@@ -4891,7 +5060,7 @@
         };
         if (rezeptId === "feuerstelle") return { stein: pick([0x9a958a, 0x928d83, 0xa19a8f]), holz: pick([0x8a745c, 0x84705a]), lehm: 0xb4afa6 };
         if (rezeptId === "marktstand") return { holz: pick([0x8e7860, 0x977f66, 0x84705c]), tuch: pick(AUS_PLANE), lattung: 0x9a8358, stroh: 0xb39b68 };
-        if (rezeptId === "laterne") return { metall: pick([0x6b706a, 0x6e6b66]) }; // gestrichenes Guss-Eisen, das Glas des Fensters
+        if (rezeptId === "laterne" || rezeptId === "wandlaterne") return { metall: pick([0x6b706a, 0x6e6b66]) }; // gestrichenes Guss-Eisen, das Glas des Fensters
         return { stein: pick([0xa29b8e, 0x9a9488, 0xaaa397]), holz: pick([0x7c6650, 0x86705a]), lattung: 0x8f7a56, stamm: pick([0x847866, 0x7a6e5e]) };
     }
     // Das Raster der Bytes (plattformgleich): 2^-12, Normalen 2^-14, −0 → 0.
@@ -4972,6 +5141,93 @@
           snaps++; } }
       }
       return snaps;
+    }
+    // DIE WANDLATERNE IM DORF (K66-2) — KONSUM BEIDSEITIG wie reihenSnap: buildDorf (Lab) und exportSettlement rufen sie NACH
+    // dem Snap (die Wand steht, wo das Haus steht). Zwei Stände der Gestalt wandlaterne (Kopf `armM` vor der Wand des Kerns
+    // W × D, nie vor der Traufe der Hülle): (1) die Tür von Gasthaus und Schmiede trägt sie 1,1 m neben der Tür (bis K66-2 ein
+    // Glas-Kopf des Hofs ohne Licht); (2) jede Marke des Dorf-Lichts (jeder Meter Weg, `lay.marken`), deren nächste Laterne weiter
+    // als LICHT_MARKE_M liegt — die dichte Gasse, in der kein Mast vor der Wand und neben dem Weg steht, und die Lücke zwischen
+    // zwei Masten —, trägt sie an der Hauswand, die ihr am nächsten liegt (der Stand ≥ 0,6 m von der Ecke, der Kopf in keiner
+    // fremden Hülle); die Marken laufen den Weg entlang, jede neue Laterne deckt die folgenden. Bis K66-2 setzte `laterneNah`
+    // die Laterne einer dunklen Marke an irgendeinen freien Stand des Dorfs; bis N1 lag je 25 m eine Marke, zwischen ihnen blieb
+    // die Wand der Gasse schwarz (nacht-wand 69 %). Leser von LICHT_MARKE_M: gate:settlement DORF-LICHT (das Soll je Meter).
+    // dorfB: [{p, dims}] · pl: lay.pl · lay: das Layout (laternen wird ERGÄNZT). Rückgabe: die Zahl der Wandlaternen.
+    var LICHT_MARKE_M = 10;
+    function wandLaternen(dorfB, pl, lay) {
+        var a = LICHT_GESETZ.wandlaterne.armM,
+            ecke = 0.6,
+            n = 0,
+            H = [];
+        for (var i = 0; i < dorfB.length; i++) {
+            var B = dorfB[i],
+                q = pl[i];
+            if (!B || !q || !B.dims || !(B.dims.W > 2 * ecke) || !(B.dims.D > 2 * ecke)) continue;
+            H.push({ B: B, q: q, i: i, c: Math.cos(q.phi || 0), s: Math.sin(q.phi || 0), hw: B.dims.W / 2, hd: B.dims.D / 2 });
+        }
+        var welt = function (h, lx, lz) {
+            return { x: h.q.x + lx * h.c + lz * h.s, z: h.q.z - lx * h.s + lz * h.c };
+        };
+        var fremd = function (x, z, h) {
+            for (var j = 0; j < pl.length; j++) {
+                var o = pl[j] && pl[j].obb;
+                if (!o || pl[j] === h.q) continue;
+                var c = Math.cos(o.phi || 0),
+                    s = Math.sin(o.phi || 0);
+                if (Math.abs((x - o.cx) * c - (z - o.cz) * s) < o.ex && Math.abs((x - o.cx) * s + (z - o.cz) * c) < o.ez) return true;
+            }
+            return false;
+        };
+        // der Stand an der Wand (lx, lz) mit der Normale (nx, nz) nach außen, lokal: der Kopf armM davor, +x der Gestalt zur Wand
+        var stand = function (h, lx, lz, nx, nz) {
+            var k = welt(h, lx + nx * a, lz + nz * a),
+                w = welt(h, lx, lz);
+            return fremd(k.x, k.z, h) ? null : { x: k.x, z: k.z, th: Math.atan2(w.z - k.z, w.x - k.x), gas: true, wand: true, haus: h.i };
+        };
+        var setze = function (l) {
+            if (!l) return false;
+            lay.laternen.push(l);
+            n++;
+            return true;
+        };
+        var k, t;
+        for (k = 0; k < H.length; k++) {
+            var r = H[k].B.p && H[k].B.p.rolle;
+            t = H[k].B.dims.tuer;
+            if ((r === "gasthaus" || r === "schmiede") && t) {
+                var sz = t.z > 0 ? 1 : -1;
+                setze(stand(H[k], Math.max(-H[k].hw + ecke, Math.min(H[k].hw - ecke, t.x + 1.1)), sz * H[k].hd, 0, sz));
+            }
+        }
+        var M = lay.marken || [];
+        for (var mi = 0; mi < M.length; mi++) {
+            var m = M[mi],
+                d0 = Infinity;
+            for (t = 0; t < lay.laternen.length; t++) d0 = Math.min(d0, Math.hypot(lay.laternen[t].x - m.x, lay.laternen[t].z - m.z));
+            if (!(d0 > LICHT_MARKE_M)) continue;
+            var kand = [];
+            for (k = 0; k < H.length; k++) {
+                var h = H[k],
+                    dx = m.x - h.q.x,
+                    dz = m.z - h.q.z,
+                    px = dx * h.c - dz * h.s,
+                    pz = dx * h.s + dz * h.c;
+                // die Wände, vor denen die Marke liegt: der Stand ihr gegenüber, auf der Wand gehalten
+                if (Math.abs(px) > h.hw) kand.push([h, (px > 0 ? 1 : -1) * h.hw, Math.max(-h.hd + ecke, Math.min(h.hd - ecke, pz)), px > 0 ? 1 : -1, 0]);
+                if (Math.abs(pz) > h.hd) kand.push([h, Math.max(-h.hw + ecke, Math.min(h.hw - ecke, px)), (pz > 0 ? 1 : -1) * h.hd, 0, pz > 0 ? 1 : -1]);
+            }
+            var best = null,
+                bestD = d0;
+            for (k = 0; k < kand.length; k++) {
+                var l = stand(kand[k][0], kand[k][1], kand[k][2], kand[k][3], kand[k][4]);
+                var d = l ? Math.hypot(l.x - m.x, l.z - m.z) : Infinity;
+                if (d < bestD) {
+                    bestD = d;
+                    best = l;
+                }
+            }
+            setze(best);
+        }
+        return n;
     }
     // BRANDWAND-GESETZ: verdichtetes Bauen wie in der Stadtgeschichte — parallele
     // Nachbarn mit anliegender Fuge machen die anliegende Seite zur fensterlosen
@@ -5092,11 +5348,14 @@
             }),
             plan.norm.gap
         );
-        var slots = [];
+        wandLaternen(Bs, lay.pl, lay); // DIE WANDLATERNE (K66-2): nach dem Snap, an der Wand des Kerns — dieselbe Funktion wie buildDorf
+        var slots = [],
+            slotVon = {};
         for (i = 0; i < plan.houses.length; i++) {
             var q = lay.pl[i];
             if (!q || !q.obb || Math.abs(q.obb.cx) > 5000 || Math.abs(q.obb.cz) > 5000) continue;
             var hp = plan.houses[i];
+            slotVon[i] = slots.length;
             slots.push({
                 x: q.x,
                 z: q.z,
@@ -5167,8 +5426,16 @@
             fences: lay.fences,
             felder: lay.felder,
             staende: lay.staende,
-            // DIE LATERNEN reisen (K10 × K11): ihr Leser ist das Leuchtquellen-Gesetz der Welt (`_laternenLesen`).
-            laternen: lay.laternen,
+            // DIE LATERNEN reisen (K10 × K11): ihr Leser ist das Leuchtquellen-Gesetz der Welt (`_laternenLesen`). Die
+            // Wandlaterne (K66-2) trägt den Slot ihres Hauses (`slot`): die Welt hebt sie MIT ihm (`_spawnSettlementSlot`) —
+            // vorher gehoben sperrte sie ihr eigenes Haus (Auto-Dorf 13/16 Häuser); ohne Slot hängt sie an keiner Wand.
+            laternen: lay.laternen
+                .filter(function (l) {
+                    return !l.wand || slotVon[l.haus] !== undefined;
+                })
+                .map(function (l) {
+                    return l.wand ? { x: l.x, z: l.z, th: l.th, gas: l.gas, wand: true, slot: slotVon[l.haus] } : l;
+                }),
         };
     }
 
@@ -5197,6 +5464,42 @@
         hangHanghaus: 4, // bis zum Hanghaus; darüber Stelzen
         brueckeM: 8, // so weit hält der FREI-Splat einer Brücke den Grund je Seite des Wegs unberührt (die Böschung staut nicht)
     };
+    // DER EINGANG eines Slots (K10-6 · K66, plan-lokal), den der Gang von der Gasse betritt: z haus-lokal, y seine Schwelle über dem
+    // Boden des Hauses — die Haustür; beim HOF-Haus das Tor im Torriegel vor dem Hof (`hof`: zC = Front − Hof-Tiefe clamp(W, 5, 9),
+    // sein Boden auf der Diele + 0,08 m; am Hof-Tor stand der Gang vor 0,63 m ohne Stufe, W6). EINE Regel: der Plan v2 (`ortPlan`),
+    // der Vorplatz (`vorplatzFlaeche`) und der Wirt (die Stufe im Hof, `_stlWegeBuild`) lesen sie — bis K66 stand sie zweimal.
+    function eingangVon(sl) {
+        var tu = sl.tuer;
+        var pre = PRESETS[sl.kultur];
+        var hof = !!(pre && pre.kind !== "ausstattung" && hausParams(pre, sl.ov || null).grundriss === "hof" && isFinite(tu.W));
+        var ty = isFinite(tu.y) ? tu.y : 0;
+        return hof ? { z: tu.z - Math.min(9, Math.max(5, tu.W)), y: ty + 0.08, hof: true } : { z: tu.z, y: ty, hof: false };
+    }
+    // DER VORPLATZ EINES HAUSES (K10-6 · K66, plan-lokal): vor seinem Eingang (`eingangVon`) ein Rechteck der Türbreite samt Saum und der
+    // Tiefe `tief` (ohne: ORT_GESETZ.vorplatzM) — die Erdbau-Platte des Vorplatzes (`ortPlan`, die Tiefe bis zur Gasse; ihr Boden:
+    // `vorplatzBoden`). `tuer`: die Fläche vor der Haustür selbst (beim HOF-Haus die Stufe im Hof). null ohne Tür. Rückgabe {cx, cz,
+    // phi, ex, ez} im Rahmen des Plans.
+    function vorplatzFlaeche(sl, tief, tuer) {
+        var tu = sl && sl.tuer;
+        if (!tu || !isFinite(tu.x) || !isFinite(tu.z) || !isFinite(tu.w)) return null;
+        var O = ORT_GESETZ;
+        var ez0 = tuer ? tu.z : eingangVon(sl).z;
+        var t = isFinite(tief) ? tief : O.vorplatzM;
+        var c = Math.cos(sl.phi || 0);
+        var s = Math.sin(sl.phi || 0);
+        var lz = ez0 - t / 2;
+        return { cx: sl.x + tu.x * c + lz * s, cz: sl.z - tu.x * s + lz * c, phi: sl.phi || 0, ex: tu.w / 2 + O.saumM, ez: t / 2 };
+    }
+    // DER BODEN DES VORPLATZES (K66, Augen-Runde 15.10.: Gras wuchs über die Türtreppe; die Prüfung fand den Boden 1,6 m tief, die Platte
+    // bis zur Gasse): getretene Erde auf der Erdbau-Platte des Vorplatzes `p` (absolut, mit ihrer Marke `vorplatz` — dem Saum der Gasse,
+    // den der Gang von der Platte bis an den Weg quert, in m) und über diesen Saum hinaus. EINE Quelle: der Erdbau des Orts trägt die
+    // Platte in der Welt (Akt, Dorf-Zug und Wege-Rebuild aus dem Export lesen sie gleich). Rückgabe {cx, cz, phi, ex, ez} absolut.
+    function vorplatzBoden(p) {
+        var h = (isFinite(p.vorplatz) ? p.vorplatz : 0) / 2;
+        var s = Math.sin(p.phi || 0);
+        var c = Math.cos(p.phi || 0);
+        return { cx: p.cx - s * h, cz: p.cz - c * h, phi: p.phi || 0, ex: p.ex, ez: p.ez + h };
+    }
     function ortPlan(plan, origin, ctx) {
         if (
             !plan ||
@@ -5391,6 +5694,9 @@
         // über diesen Splats — auf einer Fläche ihre Höhe, sonst null): das Haus und die Laterne lesen die Höhe, auf die ein Fuß
         // tritt, nie eine eigene Rechnung des Erdbaus.
         var auf = ctx.flaeche(wegSaeume.concat(wegKerne, erdbau));
+        // der Weg selbst (die Kerne und der Platz ohne Saum): bis an ihn reicht der Boden des Vorplatzes (`vorplatzBoden`)
+        var platzKern = platzY === null ? [] : [{ art: "platte", cx: r6(ox + pz.cx), cz: r6(oz + pz.cz), phi: r6(pz.phi || 0), ex: r6(pz.ex), ez: r6(pz.ez), y: platzY }];
+        var aufWeg = ctx.flaeche(wegKerne.concat(platzKern));
         var hausPlatten = [];
         var vorplaetze = [];
         var aufY = function (x, z) {
@@ -5409,16 +5715,8 @@
         var hatTuer = function (sl) {
             return !!(sl.tuer && isFinite(sl.tuer.x) && isFinite(sl.tuer.z));
         };
-        // DER EINGANG, den der Gang von der Gasse betritt (z haus-lokal, y seine Schwelle über dem Boden des Hauses): die
-        // Haustür — beim HOF-Haus das Tor im Torriegel vor dem Hof (`hof`: zC = Front − Hof-Tiefe clamp(W, 5, 9), sein Boden
-        // auf der Diele + 0,08 m); vor ihm liegt der Vorplatz (am Hof-Tor stand der Gang vor 0,63 m ohne Stufe, W6).
-        var eingang = function (sl) {
-            var tu = sl.tuer;
-            var pre = PRESETS[sl.kultur];
-            var hof = !!(pre && pre.kind !== "ausstattung" && hausParams(pre, sl.ov || null).grundriss === "hof" && isFinite(tu.W));
-            var ty = isFinite(tu.y) ? tu.y : 0;
-            return hof ? { z: tu.z - Math.min(9, Math.max(5, tu.W)), y: ty + 0.08 } : { z: tu.z, y: ty };
-        };
+        // DER EINGANG, den der Gang von der Gasse betritt (`eingangVon`): vor ihm liegt der Vorplatz
+        var eingang = eingangVon;
         // DAS WASSER DER HÄUSER (K10): ein Slot, dessen Grund samt Saum oder dessen Vorplatz Welt-Wasser trägt (ctx.wasserAt,
         // dasselbe Urteil wie das Brücken-Etikett; das Raster des Wirts, `_fundamentRaster`: je Meter ein Punkt, höchstens 13
         // je Seite), fällt aus dem Plan, BEVOR sein Erdbau entsteht — keine Platte im See, das Dorf ist, was steht.
@@ -5454,9 +5752,19 @@
         };
         var ps = [];
         var wasserSlots = 0;
+        // DIE NUMMER JEDES SLOTS IM ORTPLAN (K66-2 N1): was eine Nummer in plan.slots trägt (die Wandlaterne ihr Haus, `slot`),
+        // folgt ihr hier — ein nasser Slot fällt, seine Nachfolger rücken auf (-1: das Wasser nahm ihn). Bis N1 reiste die
+        // Nummer des v1-Plans ungerührt: die Welt hob die Wandlaterne mit einem fremden Haus 8–14 m weiter, die eines nassen
+        // Hauses hing vor einer Wand, die es nicht gab.
+        var neuSi = [];
         for (var si0 = 0; si0 < plan.slots.length; si0++)
-            if (imWasser(plan.slots[si0])) wasserSlots++;
-            else ps.push(plan.slots[si0]);
+            if (imWasser(plan.slots[si0])) {
+                wasserSlots++;
+                neuSi.push(-1);
+            } else {
+                neuSi.push(ps.length);
+                ps.push(plan.slots[si0]);
+            }
         var NS = ps.length;
         var hy = [];
         var gasseAb = []; // so weit vor dem Eingang beginnt die Fläche, die der Gang betritt (null: keine Gasse vor der Tür)
@@ -5536,24 +5844,41 @@
                 // Vorplatz, lag dazwischen ein Streifen ohne Fläche — dort griff die Böschung eines höheren Nachbarn (Auto-Dorf
                 // der Zelle −4,−4, ein Stelzen-Haus: Vorplatz 78,74 → 79,01 → Gasse 78,46, ein Absatz von 0,55 m vor der Tür)
                 var tief = gasseAb[si] !== null ? Math.max(O.vorplatzM, gasseAb[si]) : O.vorplatzM;
-                var vp = vorne(sl, ein.z - tief / 2);
+                var vf = vorplatzFlaeche(sl, tief);
+                // der Saum der Gasse, den der Gang von der Platte bis an den Weg quert (K66, die Marke `vorplatz`; 0 ohne Gasse)
+                var saumG = 0;
+                if (gasseAb[si] !== null)
+                    for (var tq = tief; tq <= tief + O.gasseM; tq += 0.1) {
+                        var vq = vorne(sl, ein.z - tq);
+                        if (aufWeg(ox + vq[0], oz + vq[1]) !== null) {
+                            saumG = tq - tief;
+                            break;
+                        }
+                    }
                 vorplaetze.push({
                     art: "platte",
-                    cx: r6(ox + vp[0]),
-                    cz: r6(oz + vp[1]),
-                    phi: r6(sl.phi || 0),
-                    ex: r6(tu.w / 2 + O.saumM),
-                    ez: r6(tief / 2),
+                    cx: r6(ox + vf.cx),
+                    cz: r6(oz + vf.cz),
+                    phi: r6(vf.phi),
+                    ex: r6(vf.ex),
+                    ez: r6(vf.ez),
                     y: r6(y + ein.y / 2),
+                    vorplatz: r6(saumG),
                 });
             }
             slots.push(Object.assign({}, sl, { y: y, hang: hang }));
         }
-        // 4) DIE LATERNEN stehen auf ihrem Weg (sonst auf dem Grund)
-        var laternen = (Array.isArray(plan.laternen) ? plan.laternen : []).map(function (l) {
-            var yl = aufY(l.x, l.z);
-            return Object.assign({}, l, { y: yl === null ? r6(H(l.x, l.z)) : yl });
-        });
+        // 4) DIE LATERNEN stehen auf ihrem Weg (sonst auf dem Grund); die Wandlaterne hängt an ihrem Haus: sie trägt seine Nummer
+        // im Ortplan (`neuSi`) und fällt mit ihm ins Wasser
+        var laternen = (Array.isArray(plan.laternen) ? plan.laternen : [])
+            .filter(function (l) {
+                return !l.wand || neuSi[l.slot] >= 0;
+            })
+            .map(function (l) {
+                var yl = aufY(l.x, l.z);
+                var y1 = { y: yl === null ? r6(H(l.x, l.z)) : yl };
+                return Object.assign({}, l, l.wand ? { slot: neuSi[l.slot], y: y1.y } : y1);
+            });
         var v2 = Object.assign({}, plan, {
             version: 2,
             ort: { x: ox, z: oz },
@@ -5698,6 +6023,10 @@
         ZEIT_VIS: ZEIT_VIS,
         // K11 — das Leuchtquellen-Gesetz (Labor und Welt lesen dasselbe Datum)
         LICHT_GESETZ: LICHT_GESETZ,
+        BOGEN_GESETZ: BOGEN_GESETZ,
+        vorplatzFlaeche: vorplatzFlaeche,
+        vorplatzBoden: vorplatzBoden,
+        eingangVon: eingangVon,
         lichtFlackern: lichtFlackern,
         // K11b — die Farbe aus der Farbtemperatur, der Abfall 1/d² mit Kern und Saum (die Welt rechnet ihn im Stoff)
         lichtFarbe: lichtFarbe,
@@ -5706,6 +6035,8 @@
         EXPL_VIS: EXPL_VIS,
         // U6c — die drei gewanderten Lab-Gesetze (buildDorf + exportSettlement rufen sie)
         reihenSnap: reihenSnap,
+        wandLaternen: wandLaternen,
+        LICHT_MARKE_M: LICHT_MARKE_M, // das Soll des Dorf-Lichts je Meter Weg (K66-2 N1; Leser gate:settlement DORF-LICHT)
         brandwand: brandwand,
         metaParams: metaParams,
         DORF: DORF,

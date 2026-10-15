@@ -19,7 +19,8 @@
 //       seinem Stempel; ein anderes Werk hält dort das Wasser über dem Boden im Umkreis von 18 m fest (1-m-Gitter, Bild UND
 //       Gesetz — ein Stempel verdrängt danach das gezeichnete), und gemessen wird, wenn es STEHT: jede Box seiner Hülle, die
 //       den Boden trägt (die Solids des Gesetzbuchs samt Fundament-Podest — das Haus, mit dem der Körper kollidiert; nie die
-//       Grundriss-Rechnung des Wirts), auf einem Raster ≤ 1 m.                                              Soll 0 im Wasser
+//       Grundriss-Rechnung des Wirts), auf einem Raster ≤ 1 m; ein Werk an der Wand (Rezept-Ort „wand", die Wandlaterne)
+//       trägt keinen Boden: es hängt an der Hülle eines stehenden Hauses (≤ 0,6 m), sonst hängt es an keiner Wand.  Soll 0
 //   L — DIE LESER (kommentarfrei, Node): keine Zwillings-Probe des Lands mehr (`_isAboveWaterAt` fiel), `_waterLevelAt`
 //       nur noch als Bezug der Ufer-Bänder (jeder Aufruf mit `aus`), der Wald plant gegen das Gesetz des Wassers
 //       (`_atlasWaterLevelAt`), die Natur-Wand fragt das Land (`_landAt`), die Pflanze stempelt keine Wasser-Zelle, ein Bau
@@ -150,6 +151,10 @@ function urteil(b) {
         if (!(Z.haeuser >= S.haeuserMin)) v.push(`Z LEER: nur ${Z.haeuser} Häuser im Zensus (Soll ≥ ${S.haeuserMin})`);
         for (const w of Z.ohneHuelle || [])
             v.push(`Z LEER: ${w.typ} #${w.id} (${w.quelle}) stand ohne Hülle — sein Fundament blieb ungemessen`);
+        for (const w of Z.ohneWand || [])
+            v.push(
+                `Z: ${w.typ} #${w.id} (${m(w.x)}/${m(w.z)}) hängt an keiner Wand — kein stehendes Haus trägt es (${w.quelle})`
+            );
         for (const w of Z.imWasser || [])
             v.push(
                 `Z: ${w.typ} #${w.id} (${m(w.x)}/${m(w.z)}) ${w.wo} ${m(w.tiefe)} m im Wasser${w.punkte ? ` (${w.punkte})` : ""} (${w.quelle})`
@@ -653,7 +658,16 @@ async function probe(A) {
     // ── Z: der Setz-Punkt als Beobachtungs-Punkt ──
     // Ein Stamm misst VOR seinem Stempel; jedes andere Werk (kein Fahrzeug) hält am Setz-Punkt das Wasser über dem Boden im
     // Umkreis von `gitterR` m fest (1-m-Gitter, Bild UND Gesetz) und wird gemessen, wenn es steht (`werkeMessen`: seine Hülle).
-    const zensus = { werke: 0, haeuser: 0, baeume: 0, imWasser: [], ohneHuelle: [], quelle: "strom" };
+    const zensus = {
+        werke: 0,
+        haeuser: 0,
+        baeume: 0,
+        imWasser: [],
+        ohneHuelle: [],
+        ohneWand: [],
+        anDerWand: 0,
+        quelle: "strom",
+    };
     const werke = [];
     const R = A.gitterR;
     const gitter = (x0, z0) => {
@@ -711,12 +725,50 @@ async function probe(A) {
     // Jedes festgehaltene Werk, wenn es steht: ein Haus wartet auf die Hülle seines Gesetzbuchs (`_hausHuelle`, die Solids
     // der Stufe 0), jedes andere misst seine Blocker. Gemessen wird jede Box, die den Boden trägt (Unterkante ≤ 0,6 m über
     // der Haus-Basis: das Podest, die Wände des Erdgeschosses, Treppe und Tritt — nie ein Balkon), auf einem Raster ≤ 1 m.
+    // DAS WERK AN DER WAND (K66-2 N1): was hängt — das Rezept seiner Studio-Gestalt nennt den Ort „wand" (fachwerk PRESETS
+    // fx.place.siteTag, die Wandlaterne) —, trägt keinen Boden: sein Fundament ist die Wand eines stehenden Hauses. Gemessen wird,
+    // dass die Hülle eines Hauses (seine Boxen am Boden, wie das Fundament) höchstens `wandM` von der Achse des Werks liegt; das
+    // Haus misst sein Fundament selbst. Ohne Haus hängt es an keiner Wand (ein Haus, das ins Wasser fiel, eine fremde Nummer).
+    // Bis N1 suchte der Zensus an ihm die Box am Boden: „wandlaterne_dorf stand ohne Hülle".
+    const FCw = globalThis.__fachwerkCore;
+    const anDerWand = (e) => {
+        const bp = st.blueprints && st.blueprints[e.type];
+        const p =
+            bp && typeof bp.studioGestalt === "string" && FCw && FCw.PRESETS ? FCw.PRESETS[bp.studioGestalt] : null;
+        return !!(p && p.fx && p.fx.place && p.fx.place.siteTag === "wand");
+    };
+    const traegerHaus = (e) => {
+        for (const h of st.architectures) {
+            if (!/^haus_/.test(h.type) || !h._hausHuelle) continue;
+            for (const b of h.blockerAABBs || []) {
+                if (!b || !Number.isFinite(b.botY) || b.botY > h.position.y - 0.5 + 0.6) continue;
+                const o = b.obb || {
+                    cx: (b.minX + b.maxX) / 2,
+                    cz: (b.minZ + b.maxZ) / 2,
+                    c: 1,
+                    s: 0,
+                    hx: (b.maxX - b.minX) / 2,
+                    hz: (b.maxZ - b.minZ) / 2,
+                };
+                const dx = e.position.x - o.cx;
+                const dz = e.position.z - o.cz;
+                const lx = Math.abs(dx * o.c - dz * o.s) - o.hx;
+                const lz = Math.abs(dx * o.s + dz * o.c) - o.hz;
+                if (Math.hypot(Math.max(0, lx), Math.max(0, lz)) <= A.wandM) return h;
+            }
+        }
+        return null;
+    };
     const werkeMessen = async () => {
         const dl = performance.now() + A.huelleMs;
         const fertig = (w) =>
             w.done ||
             !st.architectures.includes(w.e) ||
-            (/^haus_/.test(w.e.type) ? !!w.e._hausHuelle : !!(w.e.blockerAABBs && w.e.blockerAABBs.length));
+            (anDerWand(w.e)
+                ? !!traegerHaus(w.e)
+                : /^haus_/.test(w.e.type)
+                  ? !!w.e._hausHuelle
+                  : !!(w.e.blockerAABBs && w.e.blockerAABBs.length));
         while (performance.now() < dl && !werke.every(fertig)) {
             for (let i = 0; i < 30; i++)
                 try {
@@ -729,6 +781,12 @@ async function probe(A) {
             const e = w.e;
             if (w.done || !st.architectures.includes(e)) continue;
             w.done = true;
+            if (anDerWand(e)) {
+                zensus.anDerWand++;
+                if (!traegerHaus(e))
+                    zensus.ohneWand.push({ typ: e.type, id: e.id, x: e.position.x, z: e.position.z, quelle: w.quelle });
+                continue;
+            }
             const boxen = (e.blockerAABBs || []).filter(
                 (b) => b && Number.isFinite(b.botY) && b.botY <= e.position.y - 0.5 + 0.6
             );
@@ -1998,7 +2056,7 @@ function selbsttest() {
             caChunks: 0,
             staemme: Array.from({ length: 7 }, (_, i) => ({ typ: "baum_eiche", id: i, x: 0, z: 0, tiefe: -0.4 })),
         },
-        zensus: { werke: 80, haeuser: 12, baeume: 68, imWasser: [], ohneHuelle: [] },
+        zensus: { werke: 80, haeuser: 12, baeume: 68, imWasser: [], ohneHuelle: [], ohneWand: [], anDerWand: 4 },
         satz: { orte: 9, haeuser: 9, fern: [] },
         leser: [],
         wagen: { vEin: 11, v1: 3, tiefe: 0.61, kameraUnter: 0, kameraTiefe: 0 },
@@ -2134,6 +2192,11 @@ function selbsttest() {
             "Z ohne Hülle",
             (b) => b.zensus.ohneHuelle.push({ typ: "haus_x", id: 7, quelle: "Haus-Satz" }),
             /Z LEER: haus_x #7 \(Haus-Satz\) stand ohne Hülle/,
+        ],
+        [
+            "Z ohne Wand",
+            (b) => b.zensus.ohneWand.push({ typ: "wandlaterne_dorf", id: 9, x: 12.5, z: -3, quelle: "Dorf" }),
+            /Z: wandlaterne_dorf #9 \(12\.50\/-3\.00\) hängt an keiner Wand — kein stehendes Haus trägt es \(Dorf\)/,
         ],
         ["S keine Orte", (b) => (b.satz.orte = 2), /S LEER: nur 2 Uferorte/],
         ["S keine Häuser", (b) => (b.satz.haeuser = 0), /S LEER: der Haus-Satz setzte 0 Häuser/],
@@ -2698,6 +2761,7 @@ async function lauf() {
             aussteigTief: SCHWELLE.aussteigTiefMin, // A: so tief steht der Wagen mindestens beim Aussteigen (tiefste Stelle der Rampe)
             gitterR: 18,
             huelleMs: 60000,
+            wandM: 0.6, // Z: so weit liegt die Hülle des tragenden Hauses höchstens von der Achse eines Werks an der Wand (armM 0,4 m)
             satzJe: 3,
             satzAbstandMax: SCHWELLE.satzAbstandMax,
             satzNah: [ORTE.ufer, [ORTE.fluss.x, ORTE.fluss.z]],

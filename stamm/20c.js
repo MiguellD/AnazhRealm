@@ -734,7 +734,12 @@ class AnazhRealm_Z20c {
     // Gestalt synchron am Spawn, das Bild mit der Zahl des Buchs (für die Fels-Arten dieselbe; gate:kollision-bild misst es).
     _foundryVariantFor(seed, preset, Vk) {
         const V = Number.isInteger(Vk) && Vk >= 1 ? Vk : this._foundryGestalten(preset);
-        if (!V) return null;
+        if (!V) {
+            // Buch kalt: die streuende Region wartet auf es (ein offenes Buch ohne Gestalten-Zeile ist keine Zusage)
+            const f = this._foundry;
+            if (f && !(f.ready && f.recipes)) this._streuWartetAuf(f.buchDa);
+            return null;
+        }
         const h = Math.imul(seed >>> 0 || 0, 2654435761) >>> 0; // Knuth-Mix
         return 1 + Math.floor((h * V) / 4294967296);
     }
@@ -789,8 +794,15 @@ class AnazhRealm_Z20c {
         const same = this._foundryGestaltSame(seed, preset, () => {
             if (!(T > 0)) return false;
             // die Wahrheit des Gesetzes und der Plan des Walds um den Ort (`_waldPlanSteht`, K69): fehlt eins, wartet sie
-            if (!this._forestGesetzWahr() || !this._waldPlanSteht(x, z)) {
+            if (!this._forestGesetzWahr()) {
                 wartet = true;
+                return false;
+            }
+            // fehlt der Plan, bestellt ihn die Frage in der EINEN Schlange des Walds (ihr Rechner ist der Wald-Faden, K60-3);
+            // wer warten kann (die Streu-Scheibe), wartet benannt auf ihre leere Schlange (`_waldPlanZusage`)
+            if (!this._waldPlanSteht(x, z)) {
+                wartet = true;
+                if (this._streuSammler) this._streuWartetAuf(this._waldPlanZusage());
                 return false;
             }
             return this._forestStehtFrei(x, z, T, (gx, gz) => this._forestCellDarts(gx, gz, seedInt));

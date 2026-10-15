@@ -675,7 +675,18 @@ class AnazhRealm_Z25c {
             const detail = selfLum.sub(localAvg); // >0 heller als Umgebung (Kante/Spitze)
             const combined = bloomed.add(nurBeiStaerke(bloomed.mul(detail.mul(u.localContrast)), u.localContrast));
             const lum = luminance(combined);
-            const saturated = mix(vec3(lum, lum, lum), combined, u.gradeSat);
+            // DAS AUGE DER NACHT (K66, Augen-Runde 15.10.: nachts leuchtete die Giebelwand gesättigt orange, ihr Abfall lief
+            // tiefrot — HSV 0,92 an der Wand, 0,99 im Abfall): unter der Nacht sieht das Auge mesopisch — zwischen den
+            // Leuchtdichten des Stäbchen- und des Zapfen-Sehens (`NACHT_AUGE`, CIE 191:2010) trägt der Zapfen-Anteil die Farbe
+            // (log-linear 0 … 1); die Leuchtdichte des Pixels in cd/m² aus der Eichung der Nacht (der Stoff rechnet Albedo/π ·
+            // Bestrahlung in Welt-Einheiten). Der Tag (`nightFactor` 0) bleibt byte-gleich.
+            const NA = AnazhRealm.NACHT_AUGE;
+            const zapfen = TSL.log(
+                lum.mul(float(NA.luxJeEinheit)).max(float(NA.staebchenCd)).div(float(NA.staebchenCd))
+            )
+                .div(float(Math.log(NA.zapfenCd / NA.staebchenCd)))
+                .clamp(0, 1);
+            const saturated = mix(vec3(lum, lum, lum), combined, u.gradeSat.mul(mix(float(1), zapfen, u.nightFactor)));
             // DER DREHPUNKT DES KONTRASTS FOLGT DER BELICHTUNG ÜBER 1 (D3-N2): 0,5 / max(Belichtung, 1) in Szenen-Einheiten — die
             // Belichtung liest der Knoten selbst (`toneMappingExposure`, EINE Quelle). Im Band, in dem das Grading geeicht ist
             // (Belichtung ≤ 1: der Tag 0,6–1 und die Nacht), bleibt es bytegleich; hebt die Belichtung den Abend über 1, dreht der
@@ -706,6 +717,9 @@ class AnazhRealm_Z25c {
             // Die Ausgabe-Wandlung (ACES + sRGB) macht die Pipeline selbst im Ausgabe-Quad — keine Zwischen-Textur.
             pp.outputNode = graded;
             this.state.postProcessing = pp;
+            // die Kette liest die Uhr der Welt ab ihrem ersten Bild (K66): `nightFactor` setzt die Tag-Nacht-Anwendung — bis K66 erst beim
+            // nächsten Uhr-Wechsel, das erste Bild nach dem Bau trug den Tag (die S0-Probe maß ihren ersten Nacht-Schuss ohne das Auge der Nacht)
+            this._applyDayNightToScene();
             // Die Leinwand-Tiefe stellt die Weiche in `_loopRender` (`_leinwandWeg`) je Pfad — nie der Bau.
             // Die Kette steht: ab jetzt rotiert die Dither-Blende (_loopRender liest den Knoten, nie ein Flag).
             this.state.traaNode = traa;
@@ -2572,7 +2586,8 @@ class AnazhRealm_Z25c {
     // Was dem ersten Weltbild fehlt — leer heißt: es steht. Je Lücke ein Satz für die Stand-Zeile (mit ihrer Zahl, die sinkt,
     // solange die Welt wächst): der Boden bis zum Existenz-Boden des Rings (RING_EXIST_FLOOR, die Ringe ohne fps-Tor), das
     // Buch der Studios, jeder Bau und Baum der Mesh-Zone (`architectureCullingRadius`) gezeichnet, jede Streu-Region, die der
-    // Streamer holt, gebaut (`_streuWartet`: keine fehlt, keine wartet auf ihr Asset), keine Karte eines fernen Baums offen.
+    // Streamer holt, gebaut (`_streuWartet`: keine fehlt, keine wartet auf ihr Asset), keine Karte eines fernen Baums offen,
+    // kein Dorf der Ankunft im Werden (fällig, im Export oder mit Häusern der Mesh-Zone in der Schlange).
     // Jede Lücke hat ihren Leser im ersten Frame; der Vorrat (`_foundryPrefetchLibrary`) hat keinen und hält das Bild nie
     // (K30: das Tor wartete auf `f._prefetching` — Wagen, Siedlungs-Probe, alle Gestalten des Buchs; kalt 25–30 s).
     _weltbildFehlt() {
@@ -2616,6 +2631,9 @@ class AnazhRealm_Z25c {
             else if (fp && this._weltMarchGezeichnet() && !(fp.panoLaeufe > 0))
                 luecke("horizont", "der Horizont wird gemalt");
         }
+        // DER LEIB DES SPIELERS (K60-2): sein Guss kommt aus dem Faden (`_leibBereit`, die zwei Vorlagen nach dem Buch) — bis
+        // er steht, ist der Spieler der leere Anker, und kein Bild zeigt die Welt ohne ihn.
+        if (st._deferredAvatarSoul) luecke("leib", "der Spieler erhält seinen Leib", !!this._foundry);
         if (!this._foundryEnabled()) return out;
         const f = this._foundry;
         if (!f || !f.ready || !f.recipes) {
@@ -2632,6 +2650,23 @@ class AnazhRealm_Z25c {
             if (dx * dx + dz * dz <= R * R && !this._archIsRendered(e)) ungebaut++;
         }
         if (ungebaut) luecke("bauten", `${ungebaut} Bäume und Bauten wachsen`);
+        // DAS DORF DER ANKUNFT (K60-4): ein Haus, das noch kein Eintrag ist, zählt „bauten" nicht — das Start-Dorf ist fällig
+        // (`_startDorfFaellig`, noch nicht bestellt), sein Export ist unterwegs (`_autoSettlementPendingKey`: der Plan und die
+        // Ort-Wahl) oder seine Häuser der Mesh-Zone stehen in der Schlange (`_autoSettlementQueue`). Ohne den Term stand das
+        // erste Weltbild in 4 von 5 Kalt-Läufen am Kopf von K60-3 ohne das Start-Dorf (Nicht-Baum-Einträge 107 statt 134).
+        if (this._dorfTaktLebt()) {
+            const q = this._autoSettlementQueue;
+            let haeuser = 0;
+            if (q && q.plan && Array.isArray(q.plan.slots) && q.origin)
+                for (let i = q.idx; i < q.plan.slots.length; i++) {
+                    const s = q.plan.slots[i];
+                    if (s && (q.origin.x + s.x - p.x) ** 2 + (q.origin.z + s.z - p.z) ** 2 <= R * R) haeuser++;
+                }
+            if (haeuser) luecke("dorf", `${haeuser} Häuser des Dorfs wachsen`);
+            else if (this._autoSettlementPendingKey) luecke("dorf", "das Dorf wird geplant", true);
+            else if (!q && this._autoSettlementChannelLive() && this._startDorfFaellig(p))
+                luecke("dorf", "das Dorf wird gegründet");
+        }
         // Die Pflanz-Schlange (`pendingVegSpawns`, K60): ein gepflanzter Baum der Mesh-Zone, der noch nicht gesetzt ist, ist
         // noch kein Eintrag — ohne diesen Term stand das Bild vor ihm, und er wuchs im Bild nach.
         let gesetzt = 0;
@@ -2639,8 +2674,21 @@ class AnazhRealm_Z25c {
             const q = t && t.position;
             if (q && (q.x - p.x) ** 2 + (q.z - p.z) ** 2 <= R * R) gesetzt++;
         }
-        // Der Pflanz-Gang, der auf den Plan seines Walds wartet (`_waldPflanzWarten`, K69): sein Chunk trägt noch keinen Baum —
-        // ohne diesen Term wich der Ladeschirm, und der Wald der Mesh-Zone wuchs im Bild nach (K69-2).
+        // Die Saat (K60-3): ein gebauter Chunk im Laub-Radius, dessen Pflanzung aussteht (`pendingFoliageChunks` — er wartete auf
+        // den Radius, `_tickFoliageGrowth` sät zwei je Takt), hat noch keinen Baum in der Schlange: ohne ihn stand das Bild im
+        // Takt, in dem der Radius wuchs, bevor sein Wald gesät war.
+        let saat = 0;
+        for (const key of st.pendingFoliageChunks || []) {
+            const ci = key.indexOf(",");
+            if (
+                st.voxelChunks &&
+                st.voxelChunks.has(key) &&
+                this._foliageChunkInRadius(Number(key.slice(0, ci)), Number(key.slice(ci + 1)))
+            )
+                saat++;
+        }
+        // Der Pflanz-Gang, der auf den Plan seines Walds wartet (`_waldPflanzWarten`, K69 — die Stufe nach der Saat): sein Chunk
+        // trägt noch keinen Baum — ohne diesen Term wich der Ladeschirm, und der Wald der Mesh-Zone wuchs im Bild nach (K69-2).
         const PW = this._waldPflanzWarten;
         if (PW && PW.size) {
             const { span } = this._voxelChunkConfig();
@@ -2648,14 +2696,21 @@ class AnazhRealm_Z25c {
                 const i = key.indexOf(",");
                 const mx = (Number(key.slice(0, i)) + 0.5) * span;
                 const mz = (Number(key.slice(i + 1)) + 0.5) * span;
-                if ((mx - p.x) ** 2 + (mz - p.z) ** 2 <= R * R) gesetzt++;
+                if ((mx - p.x) ** 2 + (mz - p.z) ** 2 <= R * R) saat++;
             }
         }
-        if (gesetzt) luecke("pflanzung", `${gesetzt} Bäume werden gepflanzt`);
+        if (gesetzt || saat)
+            luecke(
+                "pflanzung",
+                [gesetzt ? `${gesetzt} Bäume werden gepflanzt` : "", saat ? `${saat} Wald-Böden werden bepflanzt` : ""]
+                    .filter(Boolean)
+                    .join(", ")
+            );
         const warten = this._streuWartet(p);
         if (warten) luecke("streu", `${warten} Wald-Stücke warten auf ihre Gestalt`);
         const karten =
-            (this._impostorBakeQueue ? this._impostorBakeQueue.length : 0) + (this._impostorBakePending ? 1 : 0);
+            (this._impostorBakeQueue ? this._impostorBakeQueue.length : 0) +
+            (this._impostorBakeFlug ? this._impostorBakeFlug.size : 0);
         if (karten) luecke("karten", `${karten} ferne Bäume werden gemalt`);
         return out;
     }

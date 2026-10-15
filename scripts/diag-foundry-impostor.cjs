@@ -136,8 +136,17 @@ async function driveImpostor(page) {
                 String(x)
                     .replace(/\/\*[\s\S]*?\*\//g, "")
                     .replace(/\/\/[^\n]*/g, "");
+            // der Tick MIT seinen Gehilfen (jede eigene Methode, die er ruft, eine Ebene tief): bis K60-3 las die Linse nur
+            // den Rumpf des Ticks und fiel, als K60-2 das Senden nach `_impostorBakeSende` zog (Lehre 6)
+            const mitGehilfen = (name) => {
+                const kern = typeof r[name] === "function" ? strip(r[name]) : "";
+                const teile = [kern];
+                for (const m of new Set([...kern.matchAll(/this\.(_[A-Za-z0-9_]+)\(/g)].map((x) => x[1])))
+                    if (m !== name && typeof r[m] === "function") teile.push(strip(r[m]));
+                return teile.join("\n");
+            };
             out.vereinigung = {
-                kanalImTick: /bake-impostor|_foundryBakeImpostorRequest/.test(strip(r._tickImpostorBake)),
+                kanalImTick: /bake-impostor|_foundryBakeImpostorRequest/.test(mitGehilfen("_tickImpostorBake")),
                 requestMethode: typeof r._foundryBakeImpostorRequest === "function",
                 payloadKonsument: typeof r._applyStudioImpostorPayload === "function",
                 rttNachbau: typeof r._bakeImpostorAtlasRTT,
@@ -850,7 +859,7 @@ function strichWand(src) {
     }
     if (A.vereinigung) {
         if (!A.vereinigung.kanalImTick)
-            errs.push("A: `_tickImpostorBake` spricht NICHT den Studio-Kanal (bake-impostor)");
+            errs.push("A: `_tickImpostorBake` (mit seinen Gehilfen) spricht NICHT den Studio-Kanal (bake-impostor)");
         if (!A.vereinigung.requestMethode) errs.push("A: `_foundryBakeImpostorRequest` fehlt");
         if (!A.vereinigung.payloadKonsument) errs.push("A: `_applyStudioImpostorPayload` fehlt");
         if (A.vereinigung.rttNachbau !== "undefined")

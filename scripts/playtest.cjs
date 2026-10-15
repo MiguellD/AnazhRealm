@@ -40735,18 +40735,20 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         // DAS LICHT DES TAGS liest die Quelle (D3, Lehre 2): Farbe und Stärke der Sonne rechnet die EINE Atmosphäre
         // (`_atmoSonne` am Winkel der Sonne, `_sonnenWinkel`) — die Tag-Nacht-Tafel trägt nur noch die Himmelsfarbe. Mittag hell
         // (der Durchlass ≥ 0,7), Mitternacht dunkel (der Mond-Pfad unter 0,35 des Mittags), die Uhr wrapt (1,5 ≡ 0,5). Gemessen
-        // in klarer Luft: die Probe misst die Uhr, nicht das Wetter — dieselbe Rechnung wie `_atmoSonne`, mit dem Medium der
-        // klaren Luft statt des Wetter-Felds am Spieler (der volle Playtest steht im Dunst: Extinktion 6× klar, Mittag 0,41).
-        const G = r._atmoGesetz();
-        const R = r._atmoRechnung();
-        const klar = r._atmoMedium(R.betaKlar(G));
-        const N = AnazhRealm.ATMO_LUT.schritte.durchlass;
-        const lichtUm = (t) =>
-            R.sonne(G, klar, r._atmoAugeKm(), r._dayNightSunDirection(r._sonnenWinkel(t)).y, N, [0, 0, 0]).lum;
-        const lichtMittag = lichtUm(0.5);
-        out.interpolateMiddayClear = lichtMittag >= 0.7;
-        out.interpolateMidnightDim = lichtUm(0) < 0.35 * lichtMittag;
-        out.interpolateWrap = Math.abs(lichtUm(1.5) - lichtMittag) < 1e-9;
+        // in klarer Luft: die Probe misst die Uhr, nicht das Wetter — die Luft der Welt ist klar (`_luftBeta` = die klare
+        // Extinktion des Gesetzes, `betaKlar`; der volle Playtest steht im Dunst: Extinktion 6× klar, Mittag 0,41), und
+        // `_atmoSonne` rechnet selbst (der Leser ruft die Quelle, nie ihren Nachbau: ändert sich `_atmoSonne`, folgt die Probe).
+        const lichtKlar = r._atmoRechnung().betaKlar(r._atmoGesetz());
+        const lichtUm = (t) => r._atmoSonne(r._dayNightSunDirection(r._sonnenWinkel(t)).y).lum;
+        r._luftBeta = () => lichtKlar;
+        try {
+            const lichtMittag = lichtUm(0.5);
+            out.interpolateMiddayClear = lichtMittag >= 0.7;
+            out.interpolateMidnightDim = lichtUm(0) < 0.35 * lichtMittag;
+            out.interpolateWrap = Math.abs(lichtUm(1.5) - lichtMittag) < 1e-9;
+        } finally {
+            delete r._luftBeta;
+        }
 
         // setTimeOfDay setzt korrekt
         r.setTimeOfDay(0.25, "human");
@@ -41375,19 +41377,20 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         // Kein Pulsen: das Licht des Tags kommt aus der EINEN Atmosphäre (D3, `_atmoSonne` am Winkel der Sonne) — der Leser
         // folgt der Quelle (Lehre 2), nie der Tafel (sie trägt kein Licht mehr). Am Morgen (t=0.32, Sonne ~25°) STEIGT es → die
         // Steigung muss klar positiv sein, und sie knickt nicht (C1: Steigung kurz vor ≈ kurz nach). In klarer Luft wie Welle
-        // 6.G3.a: dieselbe Rechnung wie `_atmoSonne`, das Medium der klaren Luft statt des Wetter-Felds am Spieler.
-        const G = r._atmoGesetz();
-        const R = r._atmoRechnung();
-        const klar = r._atmoMedium(R.betaKlar(G));
-        const N = AnazhRealm.ATMO_LUT.schritte.durchlass;
-        const lichtUm = (t) =>
-            R.sonne(G, klar, r._atmoAugeKm(), r._dayNightSunDirection(r._sonnenWinkel(t)).y, N, [0, 0, 0]).lum;
+        // 6.G3.a: die Luft der Welt klar (`_luftBeta` = `betaKlar` des Gesetzes), `_atmoSonne` rechnet selbst.
+        const lichtKlar = r._atmoRechnung().betaKlar(r._atmoGesetz());
+        const lichtUm = (t) => r._atmoSonne(r._dayNightSunDirection(r._sonnenWinkel(t)).y).lum;
         const dtN = 0.003;
-        const slopeAtStop = (lichtUm(0.32 + dtN) - lichtUm(0.32 - dtN)) / (2 * dtN);
-        out.dayNightNoPulse = slopeAtStop > 0.3;
-        const slopeBefore = (lichtUm(0.32) - lichtUm(0.32 - dtN)) / dtN;
-        const slopeAfter = (lichtUm(0.32 + dtN) - lichtUm(0.32)) / dtN;
-        out.dayNightC1 = Math.abs(slopeBefore - slopeAfter) < 0.6;
+        r._luftBeta = () => lichtKlar;
+        try {
+            const slopeAtStop = (lichtUm(0.32 + dtN) - lichtUm(0.32 - dtN)) / (2 * dtN);
+            out.dayNightNoPulse = slopeAtStop > 0.3;
+            const slopeBefore = (lichtUm(0.32) - lichtUm(0.32 - dtN)) / dtN;
+            const slopeAfter = (lichtUm(0.32 + dtN) - lichtUm(0.32)) / dtN;
+            out.dayNightC1 = Math.abs(slopeBefore - slopeAfter) < 0.6;
+        } finally {
+            delete r._luftBeta;
+        }
         // Die Tafel reproduziert ihre Stops EXAKT (Hermite trifft p1 bei u=0): t=0.5 trägt den Himmel des Mittags-Stops.
         const mittagsStop = new THREE.Color(stops.find((s) => s.t === 0.5).sky);
         const mittagsHimmel = r._interpolateDayNight(0.5).sky;

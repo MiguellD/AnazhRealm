@@ -233,7 +233,12 @@ class AnazhRealm_Z05b {
         const throttleMs = Number.isFinite(st.perfTargetMs) ? st.perfTargetMs : AnazhRealm.PERF_TARGET_MS;
         const growMs = Math.max(1, throttleMs - AnazhRealm.PERF_HEADROOM_MS);
         let err; // skaleninvariant; 0 im Totband
-        if (sense.frameMs > throttleMs)
+        // DER LADESCHIRM MISST NICHTS (K60-3): unter dem Lade-Takt zeigt kein Frame die Welt — sein Abstand ist die Kadenz des
+        // Lade-Bilds (LADE_BILD_MS), seine Last die Erst-Zeichnung, nie die Last des Spiels. Das Integral hält, der Seed trägt das
+        // erste Weltbild; gemessen wird ab dem ersten Frame, der die Welt zeigt. Prüfung K60-3 Runde 2 (Radeon kalt): der PID
+        // trieb loadScale an 500-ms-Lade-Bildern auf 0 (gate:regler-sim S7: 0 statt Seed 0,7).
+        if (this._ladeTakt()) err = 0;
+        else if (sense.frameMs > throttleMs)
             err = (sense.frameMs - throttleMs) / throttleMs; // zu langsam → drosseln (loadScale ↓)
         else if (sense.frameMs < growMs)
             err = (sense.frameMs - growMs) / growMs; // Kopfraum → wachsen (loadScale ↑)
@@ -345,13 +350,16 @@ class AnazhRealm_Z05b {
                       ? Math.max(ziel, cur - schritt * 2)
                       : cur;
             const TOT = AnazhRealm.PERF_FOLIAGE_SHRINK_TOTBAND;
-            st.foliageRadius = wand(frCur, frTarget, step, TOT, true);
-            st.architectureCullingRadius = wand(
+            // DIE REICHWEITE DES ERSTEN WELTBILDS (K60-3): die Wand schützt den Takt, den der Spieler sieht — unter dem Lade-Takt
+            // sieht keiner den Radius atmen, und sie hielt das Weltbild klein. Laub- und Architektur-Radius stehen dort an ihrem
+            // Ziel (das Laub an der Kante des gebauten Rings), `_weltbildLuecken` urteilt an der ganzen Reichweite. Prüfung K60-3
+            // Runde 2 (Radeon kalt): das Bild stand mit 65 statt 129,6 m Laub, 4 von 25 Chunks bepflanzt, 57 statt 338 Bäume —
+            // der Radius wuchs nur in ruhigen Takten, und unter dem Ladeschirm (ein Bild je LADE_BILD_MS) kam keiner.
+            const reichweite = (cur, ziel) => (this._ladeTakt() ? ziel : wand(cur, ziel, step, TOT, true));
+            st.foliageRadius = reichweite(frCur, frTarget);
+            st.architectureCullingRadius = reichweite(
                 Number.isFinite(st.architectureCullingRadius) ? st.architectureCullingRadius : archZiel,
-                archZiel,
-                step,
-                TOT,
-                true
+                archZiel
             );
             // Kapazitäts-gewachsene Dichte: `_foliageDensityScale` skaliert die Instanz-Zahl je Zelle (die Last-Dichte der
             // Nah-Streu, `_nahStreuKachel`) → unter Last weniger Dreiecke. Kaltstart-Wand: das Laub ist ~90 % der GPU-Last,

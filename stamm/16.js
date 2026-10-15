@@ -1151,6 +1151,37 @@ class AnazhRealm_Z16 {
                     },
                 ],
             },
+            // DIE WANDLATERNE (K66-2) — derselbe Kopf am Arm vor der Hauswand (fachwerk AUSSTATTUNG `wandlaterne`, ihr Licht
+            // LICHT_GESETZ.wandlaterne): die Leuchte der dichten Gasse und der Tür von Gasthaus und Schmiede, gehoben über
+            // denselben Chokepoint `_spawnSettlementErlebnis`. Der Ursprung liegt im Boden unter dem Licht, +x zeigt zur Wand
+            // (armM 0,4 m); die Parts sind ihre Substanz über dem Kopf des Spielers: Kopf, Arm, Wandplatte.
+            wandlaterne_dorf: {
+                name: "wandlaterne_dorf",
+                label: "Wandlaterne",
+                builtIn: true,
+                instanced: true,
+                studioGestalt: "wandlaterne",
+                parts: [
+                    {
+                        shape: "box",
+                        material: "eisen",
+                        position: { x: 0, y: 2.8, z: 0 },
+                        size: { x: 0.22, y: 0.34, z: 0.22 },
+                    },
+                    {
+                        shape: "box",
+                        material: "eisen",
+                        position: { x: 0.2, y: 3.2, z: 0 },
+                        size: { x: 0.4, y: 0.035, z: 0.035 },
+                    },
+                    {
+                        shape: "box",
+                        material: "eisen",
+                        position: { x: 0.385, y: 3.09, z: 0 },
+                        size: { x: 0.03, y: 0.34, z: 0.14 },
+                    },
+                ],
+            },
             // W6.G P3 Phase 1 — Felsformationen (emergente Welt-Bürger)
             felsbogen: { name: "felsbogen", label: "Felsbogen", builtIn: true, instanced: true, parts: felsbogenParts },
             felsturm: { name: "felsturm", label: "Felsturm", builtIn: true, instanced: true, parts: felsturmParts },

@@ -221,7 +221,7 @@ function standLauf(k) {
                 return [
                     st.voxelChunks ? st.voxelChunks.size : 0,
                     (f && f.pending ? f.pending.size : 0) + (f && f.warte ? f.warte.length : 0),
-                    (r._impostorBakeQueue || []).length + (r._impostorBakePending ? 1 : 0),
+                    (r._impostorBakeQueue || []).length + (r._impostorBakeFlug ? r._impostorBakeFlug.size : 0),
                 ].join("|");
             };
             const t0 = performance.now();

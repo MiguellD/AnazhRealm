@@ -949,8 +949,9 @@ der Flachland-Glieder `maeanderZahl`, die Messung `MESSUNG` (das Mess-Raster, de
 `abdruckFeld`, `messStatistik`, `schichtSchritte`/`schichtMessung`, und der Natur-Korridor `KORRIDOR` mit seinem `urteil`.
 DIE PLAN-TÜR (K16b): `PLAN_ART`, `PLAN_VERSION`, `planNormal`, `planErbgut`, `planAbbild`, `planLage` auf dem Grund `GRUND`,
 die Lage `lageAus`/`lageAbbild` mit ihrem Rausch-Strom `lageRausch`. DER ORT (K10): DER ERDBAU `ERDBAU` der Siedlungs-Pläne
-(Platte, Trasse, Brücken-Etikett als letzter Term der Höhe) mit seiner Normalform `erdbauNormal`, der Höhe `erdbauY` und der
-Fläche `erdbauFlaeche`, der Lese-Kontext eines Orts `ortCtx` (Höhe samt Erdbau, Fläche, Welt-Wasser — EIN ctx für Wirt,
+(Platte, Trasse, Brücken-Etikett als letzter Term der Höhe) mit seiner Normalform `erdbauNormal`, der Höhe `erdbauY`, der
+Fläche `erdbauFlaeche` und seiner Wand `erdbauWand` (K66: Böschung und Kante zwischen zwei Flächen tragen im Fels-Stoff den
+Schutt), der Lese-Kontext eines Orts `ortCtx` (Höhe samt Erdbau, Fläche, Welt-Wasser — EIN ctx für Wirt,
 Fachwerk-Studio und Linse), die Lage einer Welt ohne Wirt `LAGE_GRUND`/`lageGrund` und die Hang-Suche eines Orts `hangOrt`.
 DIE ERKLÄRUNG: `VERSION`, `STUDIO_VERTRAG`, `FUNKTION`.
 Geladen vom Stamm (vor `stamm/`), vom Terrain-Labor (vor `foundry-core.js`), vom voxel-worker (`importScripts` mit `?v=`),

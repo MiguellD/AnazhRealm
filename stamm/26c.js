@@ -1018,11 +1018,13 @@ AnazhRealm.WELTBILD_TERME = Object.freeze([
     "welt",
     "boden",
     "horizont",
+    "leib",
     "buch",
     "bauten",
     "pflanzung",
     "streu",
     "karten",
+    "dorf",
 ]);
 // Start-Ring 0 = EIN Chunk (der Spieler-Chunk): der Fern-Ring (Loch-Deckel) trägt den Rest, der Void-Boden
 // `_softFloorWhileChunkLoading` trägt den Rand, dann wächst der Ramp bei gesundem Frame Ring für
@@ -1114,6 +1116,11 @@ AnazhRealm.LEGACY_LICHT = Math.PI;
 // Nacht (über ihn hebt nur das Sonnenlicht, D3-N2), `min` ist nur die Wand gegen ein entartetes Licht. Der Kontrast des
 // Gradings dreht über Belichtung 1 um 0,5 nach der Belichtung (25c).
 AnazhRealm.BELICHTUNG = Object.freeze({ zielKarte: 0.3147, min: 0.25, max: 1.0 });
+// DAS AUGE DER NACHT (K66, die Post-Kette `_ensurePostProcessing`: die Sättigung je Pixel unter der Nacht): das mesopische Band
+// der CIE 191:2010 — unter `staebchenCd` sieht das Auge ohne Farbe (Stäbchen), über `zapfenCd` voll (Zapfen); `luxJeEinheit`
+// die Eichung der Nacht (Vollmond 0,26 lx ≙ der Nacht-Bestrahlung der Welt 0,224, fachwerk LICHT_GESETZ) — eine Leuchtdichte
+// der Welt (Albedo/π · Bestrahlung) mal ihr ist cd/m².
+AnazhRealm.NACHT_AUGE = Object.freeze({ luxJeEinheit: 0.26 / 0.224, staebchenCd: 0.005, zapfenCd: 5 });
 // Slope-Schwellen des Gras-Gates: voll bis `lo` (≈35°), weg bis `hi` (≈52°), sanfter Übergang.
 // `hi` < rock-`SCATTER.slopeMax` (1.45) → Wiese → Mischhang → Geröll → Fels auf DERSELBEN
 // `_slopeAt`-Achse.
@@ -1199,6 +1206,8 @@ AnazhRealm.FRAME_SCHED_DEKO_FLOOR_MS = 2.5;
 // Das Budget eines Lade-Frames (ms, `_ladeTakt`): unter dem Ladeschirm trägt jeder Frame so viel aufschiebbare Arbeit
 // (Streu, Gras, Wasser), dass der Boot mit der Arbeit läuft, nicht mit der Frame-Rate.
 AnazhRealm.LADE_TAKT_MS = 100;
+// Der Abstand der Bilder unter dem Ladeschirm (ms, `_ladeBildFaellig`): dazwischen schickt der Lade-Takt nichts an die GPU.
+AnazhRealm.LADE_BILD_MS = 500;
 // Der Neubau der dirty Chunks (`_tickDirtyVoxelChunks`, K69-2): so viele der nächsten gehen je Takt als Auftrag an den
 // Worker voraus (er baut sie nacheinander, ~150 ms je Chunk) — eingebaut wird je Takt höchstens EINER, der nächste fertige.
 AnazhRealm.DIRTY_IM_FLUG = 3;
@@ -1338,8 +1347,9 @@ AnazhRealm.KRONE_MAX_M = 36;
 AnazhRealm.ORT_SAME_EIMER = 48;
 AnazhRealm.ORT_SAME_REICH = 5 * AnazhRealm.FOREST.cell + AnazhRealm.KRONE_MAX_M;
 // DER WALD PLANT IM TAKT (K69, `_waldPlanSteht` · `_tickWaldPlan`): die Gestalt eines Baums liest die Wald-Zellen bis ±`reich`
-// um seine Zelle (der Freistand ±4, das Urteil jedes Nachbarn ±2); je Takt plant der Wald frische Zellen höchstens `ms` lang.
-AnazhRealm.WALD_PLAN = Object.freeze({ reich: 6, ms: 3 });
+// um seine Zelle (der Freistand ±4, das Urteil jedes Nachbarn ±2); ohne Wald-Faden plant der Takt frische Zellen höchstens
+// `ms` lang, mit ihm reisen sie in Aufträgen von `faden` Zellen, höchstens `fadenFlug` im Flug (`_waldFadenSchicken`, K60-4).
+AnazhRealm.WALD_PLAN = Object.freeze({ reich: 6, ms: 3, faden: 64, fadenFlug: 2 });
 AnazhRealm.STAND_RAND_FERN_M = 1;
 // Der Horizont-Saum (m): über so viele Meter vor `SCATTER.outerM` liegen die Ränder der Karten-Dinge, je Eintrag aus
 // seinem Samen (Salz: der Hash-Kanal des Saums, `_pcg2d`) — der Wald dünnt aus, jeder Baum steht ganz oder gar nicht.
