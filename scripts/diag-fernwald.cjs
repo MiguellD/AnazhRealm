@@ -33,6 +33,7 @@
 //
 //   node scripts/diag-fernwald.cjs        (Port: FERNWALD_PORT)
 "use strict";
+const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.FERNWALD_PORT || 4598);
@@ -54,6 +55,7 @@ function check(name, ok, detail) {
     });
     const pageErrors = [];
     page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
+    await page.evaluateOnNewDocument(WELT_ORTE_INSTALL); // der Messort aus spec/profiband/haushalt.json (`__messWiese`)
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
 
     const out = await page.evaluate(async () => {
@@ -269,6 +271,7 @@ function check(name, ok, detail) {
         };
         const pm = st.playerMesh.position;
         const stelle = (x, z) => pm.set(x, r._voxelSurfaceY(x, z) + 1.8, z);
+        const [MX, MZ] = window.__messWiese;
         const H = AR.SCATTER.outerM;
         const TOT = AR.KARTEN_HORIZONT_TOTBAND_M;
         res.horizont = H;
@@ -340,7 +343,7 @@ function check(name, ok, detail) {
             return z;
         };
         // ── Die Mess-Wiese: der Wald wächst, die Karten stehen ──
-        stelle(-900, -850);
+        stelle(MX, MZ);
         await tick(60);
         res.A = await einschwingen(240000);
 
@@ -506,12 +509,12 @@ function check(name, ok, detail) {
             delete r._foundryLodBandPartner;
             await tick(60);
             res.S3.zurueck = rieseZustand(e);
-            stelle(-900, -850);
+            stelle(MX, MZ);
             await tick(10);
         }
 
         // ── C: der Horizont — der Spieler zieht weiter, die Ferne räumt, die Karten-Zone trägt ──
-        stelle(-900 + 320, -850);
+        stelle(MX + 320, MZ);
         const zC = await einschwingen(240000);
         const jenseits = [];
         let nJ = 0,
@@ -531,7 +534,7 @@ function check(name, ok, detail) {
         res.C = { zone: zC, jenseitsN: nJ, jenseits, randMin, randMax, saum: AR.KARTEN_HORIZONT_SAUM_M };
 
         // ── SELBSTTEST (1): der alte Weg — kein Karten-Ding: jenseits der Mesh-Zone geräumt ──
-        stelle(-900, -850);
+        stelle(MX, MZ);
         await einschwingen(120000);
         const D1 = r.constructor.prototype._archKartenPreset;
         const kandS1 = await uebergang(); // der Kandidat unter dem echten Weg (der Baum steht am Rand)

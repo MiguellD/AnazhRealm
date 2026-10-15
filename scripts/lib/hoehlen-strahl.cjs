@@ -6,9 +6,10 @@
 // Vertex-Shader) — ein xz-Raster und eine 2D-DDA tragen die Suche.
 //
 // `window.__hoehlenStrahl(r, kamera, liste, opt)` — DAS BILD: je Strahl durch das Bild der Kamera (perspektivisch vom Auge,
-// orthogonal von weit vor der Nah-Ebene) das ERSTE getroffene Dreieck; seine Zelle MUSS in `liste` (dem Abschnitt des
-// Passes) stehen, sonst sähe der Spieler dort ein Loch. Rückgabe { strahlen, treffer, hoehle (Strahlen mit Höhlen-Treffer),
-// zellenGetroffen, hoehleZellenGetroffen, hoehleTriGetroffen, fehlend: [{ bereich, knoten, hoehle, ndc, punkt }] }.
+// orthogonal von weit vor der Nah-Ebene) das ERSTE getroffene Dreieck (eine ungezeichnete versiegelte Zelle lässt er aus);
+// seine Zelle MUSS in `liste` (dem Abschnitt des Passes) stehen, sonst sähe der Spieler dort ein Loch. Rückgabe { strahlen,
+// treffer, hoehle (Strahlen mit Höhlen-Treffer), versiegelt (Strahlen durch eine versiegelte Zelle), zellenGetroffen,
+// hoehleZellenGetroffen, hoehleTriGetroffen, fehlend: [{ bereich, knoten, hoehle, ndc, punkt }] }.
 //
 // `window.__hoehlenSchatten(r, auge, licht, liste, opt)` — DER SCHATTEN: je Strahl des Auges der erste Treffer (der
 // Empfänger, den das Bild zeigt), von dort ein Strahl zum Licht (gegen die Blick-Achse der Licht-Kamera). Trifft er im
@@ -170,8 +171,8 @@ function installHoehlenStrahl() {
                 }
             }
         };
-        // der nächste Treffer: [Dreieck, t] oder null
-        const erster = (ox, oy, oz, dx, dy, dz, tMin, tMax) => {
+        // der nächste Treffer: [Dreieck, t] oder null; `durch(tt, h)` lässt ein Dreieck aus (der Strahl läuft durch es weiter)
+        const erster = (ox, oy, oz, dx, dy, dz, tMin, tMax, durch) => {
             let best = Infinity,
                 bestT = -1;
             durchlauf(
@@ -184,6 +185,7 @@ function installHoehlenStrahl() {
                 tMin,
                 tMax,
                 (tt, h) => {
+                    if (durch && durch(tt, h)) return false;
                     if (h < best) {
                         best = h;
                         bestT = tt;
@@ -240,9 +242,24 @@ function installHoehlenStrahl() {
         };
         const getroffen = new Set();
         const WEIT = o.weit || 400;
+        // DIE VERSIEGELTE ZELLE (Zelle 0 des Graphs, `_voxelHoehlenGraph`: keine Mündung, kein Portal, kein Rand-Band) erreicht
+        // aus der Luft kein Strahl, die Sicht zeichnet sie nie. Trifft ein Strahl sie doch zuerst, hob der Geomorph der Stufe
+        // ihre Flächen durch eine gezeichnete (K55-5, Blick hinaus bei 2,−5: bis 2 m durch den Boden von #83, ohne Geomorph
+        // trifft derselbe Strahl zuerst #83) — kein Loch: der Strahl läuft durch sie weiter, solange der Pass sie nicht zeichnet;
+        // `versiegelt` zählt diese Strahlen.
+        aus.versiegelt = 0;
+        let sieg = Infinity;
+        const durch = (tt, h) => {
+            const z = R.zellen[R.ZI[tt]];
+            if (z.knoten === undefined || z.knoten.id !== 0 || imAbschnitt.has(z)) return false;
+            if (h < sieg) sieg = h;
+            return true;
+        };
         strahlen(kamera, o.nx || 160, o.ny || 90, ortho ? 2000 : 0, (ox, oy, oz, dx, dy, dz, vor, tEnde, nx, ny) => {
             aus.strahlen++;
-            const h = R.erster(ox, oy, oz, dx, dy, dz, 0, ortho ? tEnde : Math.min(tEnde, WEIT));
+            sieg = Infinity;
+            const h = R.erster(ox, oy, oz, dx, dy, dz, 0, ortho ? tEnde : Math.min(tEnde, WEIT), durch);
+            if (sieg < (h ? h[1] : Infinity)) aus.versiegelt++;
             if (!h) return;
             // orthogonal: ein erster Treffer VOR der Nah-Ebene liegt außerhalb der Karte — dieser Pass sagt nichts über ihn
             if (h[1] < vor) {

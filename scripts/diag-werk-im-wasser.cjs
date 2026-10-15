@@ -115,7 +115,10 @@ function urteil(b) {
     const H = b.hain;
     if (!H || H.fehler) v.push(`H: ${H ? H.fehler : "die Hain-Probe lief nicht"}`);
     else {
-        if (!(H.satz >= S.hainMin)) v.push(`H LEER: der Satz setzte ${H.satz} von ${S.hainMin} Eichen`);
+        if (!(H.satz >= S.hainMin))
+            v.push(
+                `H LEER: der Satz setzte ${H.satz} von ${S.hainMin} Eichen${H.chat ? ` — „${H.chat}"` : ""}${H.bauten && H.bauten.length ? ` — Bauten am Ufer: ${H.bauten.join(", ")}` : ""}${b.uferWahl ? ` — Ufer-Wahl ${JSON.stringify(b.uferWahl)}` : ""}`
+            );
         for (const s of H.staemme || [])
             if (s.tiefe > S.tiefeStamm)
                 v.push(
@@ -448,7 +451,9 @@ function leserUrteil(srcRoh) {
     // jeder Kandidat nahe am Spieler auf dem Kreis der Klemme, das Haus am Gleithang stand 13,5 m vom Wasser
     const wos = fnBody(src, /\n {4}_werkOrtSuchen\([^)]*\) \{/);
     if (!wos || !/p0\.x \+ Math\.cos\(a\) \* r/.test(wos) || !/Math\.hypot\(q\.x - p0\.x, q\.z - p0\.z\)/.test(wos))
-        v.push("die Ort-Suche (`_werkOrtSuchen`) misst ihre Kandidaten nicht am geklemmten Ort `p0` (Ringe und Abstand)");
+        v.push(
+            "die Ort-Suche (`_werkOrtSuchen`) misst ihre Kandidaten nicht am geklemmten Ort `p0` (Ringe und Abstand)"
+        );
     const slot = fnBody(src, /\n {4}_spawnSettlementSlot\([^)]*\) \{/);
     if (!slot || !/_fundamentLand\(/.test(slot))
         v.push("die Siedlung (`_spawnSettlementSlot`) fragt nicht das Land des Fundaments (`_fundamentLand`)");
@@ -852,14 +857,41 @@ async function probe(A) {
         }
     };
     try {
-        const X = A.ort[0];
-        const Z = A.ort[1];
         const worker = st.voxelWorker;
         st.voxelWorker = null;
-        await stroemen(X, Z, 240);
+        // DIE WAHL DES UFERS (K55-5): das erste Ufer der Kandidaten (`weltOrte`), an dem nach dem Strömen kein Bau mit
+        // Grundriss binnen 25 m steht — im Grundriss eines Baus wächst nichts (die Natur-Wand); an der Mess-Wiese −278/−1038
+        // trug das erste Ufer drei Glutbrunnen, der Hain setzte 3 von 6 Eichen. Alle besetzt: das letzte, die Probe nennt sie.
+        const bautenAm = (x, z) =>
+            st.architectures.filter(
+                (a) =>
+                    a &&
+                    a.position &&
+                    !r._istNatur(a) &&
+                    r._grundrissVon(a) &&
+                    Math.hypot(a.position.x - x, a.position.z - z) <= 25
+            ).length;
+        const uferListe =
+            A.uferKandidaten && A.uferKandidaten.length ? A.uferKandidaten : [{ ufer: A.ort, eiche: A.eiche }];
+        let X = A.ort[0];
+        let Z = A.ort[1];
+        out.uferWahl = [];
+        for (const c of uferListe) {
+            X = c.ufer[0];
+            Z = c.ufer[1];
+            A.eiche = c.eiche;
+            await stroemen(X, Z, 240);
+            const n = bautenAm(X, Z);
+            out.uferWahl.push({ ufer: [+X.toFixed(1), +Z.toFixed(1)], bauten: n });
+            if (!n) break;
+        }
         // ── H: der Schau-Ablauf ──
         if (soll("hain"))
             try {
+                // die Linse nennt, wer am Ufer steht (`out.hain.bauten`): was am Ufer steht, weiß erst die gestreamte Welt (die
+                // Glutbrunnen des Affinitäts-Felds wachsen mit dem Chunk) — an der Mess-Wiese −278/−1038 standen drei am ersten Ufer
+                const hx = X,
+                    hz = Z;
                 st.yaw = Math.PI / 2;
                 const caVor = st.waterCAActive ? st.waterCAActive.size : 0;
                 zensus.quelle = "Bau-Eiche";
@@ -892,6 +924,20 @@ async function probe(A) {
                     })),
                 };
                 out.hain.satz = neu.length; // die Eichen des Satzes (die Bau-Eiche steht mit in der Flut-Probe)
+                // der Satz des Ergebnisses (`_ergebnisSatz`): die Linse nennt den Grund jeder gefallenen Eiche beim Namen
+                const co = document.getElementById("chat-output");
+                out.hain.chat = co && co.lastElementChild ? co.lastElementChild.textContent : null;
+                // und die Bauten mit Grundriss am Ufer (≤ 25 m): wer die Würfe trug
+                out.hain.bauten = st.architectures
+                    .filter(
+                        (a) =>
+                            a &&
+                            a.position &&
+                            !r._istNatur(a) &&
+                            r._grundrissVon(a) &&
+                            Math.hypot(a.position.x - hx, a.position.z - hz) <= 25
+                    )
+                    .map((a) => `${a.type} #${a.id} (${a.position.x.toFixed(1)}/${a.position.z.toFixed(1)})`);
             } catch (e) {
                 out.hain = { fehler: String((e && e.stack) || e).split("\n")[0] };
             }
@@ -2412,13 +2458,19 @@ async function weltOrte(A) {
     // das Wasser des Atlas) — das Atlas-Wasser allein fand Flüsse, an denen kein Körper-Wasser steht
     const nass = (x, z) => tiefe(x, z) > 0 && r._nassAt(x, z);
     const out = { fluss: null, ufer: null, eiche: null, see: null, seeUfer: null, rampe: null };
-    // 1) der Fluss: der nächste gerade Querschnitt 2–14 m (das Kriterium der Damm-Probe), auf Ringen um die Mess-Wiese
-    for (let R = 0; R <= A.R && !out.fluss; R += 6) {
+    // 1) der Fluss: der nächste gerade Querschnitt 2–14 m (das Kriterium der Damm-Probe), auf Ringen um die Mess-Wiese — und
+    // bis zu drei weitere, je mehr als 150 m von den anderen und höchstens 480 m hinter dem ersten (`uferKandidaten`): ob ein
+    // Ufer frei von Bauten ist, weiß erst die gestreamte Welt (die Glutbrunnen des Affinitäts-Felds wachsen mit dem Chunk) —
+    // die Hain-Probe wählt dort das erste freie (K55-5)
+    out.uferKandidaten = [];
+    let R1 = null;
+    for (let R = 0; R <= A.R && out.uferKandidaten.length < 4 && !(R1 !== null && R > R1 + 480); R += 6) {
         if (R % 192 === 0) r._ensureHydroTilesAround(MX, MZ, R);
         const n = R ? Math.ceil((2 * Math.PI * R) / 6) : 1;
-        for (let k = 0; k < n && !out.fluss; k++) {
+        for (let k = 0; k < n && out.uferKandidaten.length < 4; k++) {
             const x = Math.round(MX + R * Math.cos((k / n) * 2 * Math.PI));
             const z = Math.round(MZ + R * Math.sin((k / n) * 2 * Math.PI));
+            if (out.uferKandidaten.some((c) => Math.hypot(c.fluss.x - x, c.fluss.z - z) <= 150)) continue;
             const rv = r._hydroRiverAt(x, z);
             if (!rv || !(rv.centerness > 0.7) || !nass(x, z)) continue;
             const fm = Math.hypot(rv.flowX, rv.flowZ);
@@ -2432,12 +2484,19 @@ async function weltOrte(A) {
             }
             const breite = rand[0] + rand[1];
             if (!(breite > 2 && breite < 14)) continue;
-            out.fluss = { x, z, quer, breite };
             // das Ufer: 4 m hinter der Wasserkante auf der Seite zur Mess-Wiese; die Bau-Eiche 12 m weiter landein
             const sg = (MX - x) * quer[0] + (MZ - z) * quer[1] >= 0 ? 1 : -1;
             const k0 = sg === 1 ? rand[0] : rand[1];
-            out.ufer = [x + quer[0] * sg * (k0 + 4), z + quer[1] * sg * (k0 + 4)];
-            out.eiche = [x + quer[0] * sg * (k0 + 16), z + quer[1] * sg * (k0 + 16)];
+            const ufer = [x + quer[0] * sg * (k0 + 4), z + quer[1] * sg * (k0 + 4)];
+            const eiche = [x + quer[0] * sg * (k0 + 16), z + quer[1] * sg * (k0 + 16)];
+            // (ob das Ufer frei von Bauten ist, weiß erst die gestreamte Welt: die Hain-Probe prüft es dort, `bauNah`)
+            out.uferKandidaten.push({ fluss: { x, z, quer, breite }, ufer, eiche });
+            if (R1 === null) {
+                R1 = R;
+                out.fluss = { x, z, quer, breite };
+                out.ufer = ufer;
+                out.eiche = eiche;
+            }
         }
     }
     // 2) der See: die nächste benannte Senke, deren Kachel einen gerenderten See trägt (Spiegel > Meer + 2 m, ≥ 16 Zellen)
@@ -2556,6 +2615,7 @@ async function lauf() {
             throw new Error("ORTE LEER: kein Fluss (2–14 m) oder kein See nächst der Mess-Wiese");
         const out = await page.evaluate(probe, {
             ort: ORTE.ufer,
+            uferKandidaten: ORTE.uferKandidaten,
             eiche: ORTE.eiche,
             takte: 1200,
             hainMin: SCHWELLE.hainMin,
@@ -2612,7 +2672,10 @@ async function lauf() {
                 if (!S6) throw new Error("D: keine Station s6-klamm in spec/pruefbuehne/stationen.json");
                 const weltId = await p2.evaluate(async (json) => {
                     const t0 = performance.now();
-                    while (!(window.anazhRealm && window.anazhRealm.importWorldBeside) && performance.now() - t0 < 120000)
+                    while (
+                        !(window.anazhRealm && window.anazhRealm.importWorldBeside) &&
+                        performance.now() - t0 < 120000
+                    )
                         await new Promise((res) => setTimeout(res, 200));
                     const r = window.anazhRealm;
                     if (!r || !r.importWorldBeside) return null;

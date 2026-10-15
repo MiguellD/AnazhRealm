@@ -122,7 +122,7 @@
 //     MESSFOLGE am ruhigen Messplatz (keine fremde Last, Port 3000 frei; Zeiten nur ruhig, ~3 min je Lauf):
 //       npm start                                           (save-server :4312, eigenes Fenster)
 //       node scripts/werkbank.cjs start --echt              (eigenes Fenster; wartet auf „WERKBANK bereit")
-//       node scripts/werkbank.cjs umstellen -900 -850
+//       node scripts/werkbank.cjs umstellen --ort wiese
 //       node scripts/werkbank.cjs lauf 10 --ein 30 --ruhe 300 --tiere frei   (einschwingen: der Bau ruht)
 //       node scripts/werkbank.cjs zerlegen --selbsttest     (die Linse prüft sich: Posten gefunden, plausibel, weg)
 //       node scripts/werkbank.cjs zerlegen --runden 6 --json artifacts/werkbank/zerlegen-omen.json
@@ -206,6 +206,8 @@ const BAND = require("./lib/band-urteil.cjs");
 const ZL = require("./lib/zerlege-linse.cjs");
 const SK = require("./lib/shader-kosten.cjs");
 const AT = require("./lib/albedo-tafel.cjs");
+// DIE WIESE des Messorts (K55): die EINE Messung und ihr Urteil, in die Seite getragen beim Umstellen
+const { WIESE_INSTALL } = require("./lib/welt-orte.cjs");
 // DER VRAM-ABGRIFF (jede GPU-Allokation beim Namen, dazu der Grund des Ziel-Zensus) — EINE Quelle für Werkbank und Gates.
 const { vramAbgriff } = require("./lib/vram-abgriff.cjs");
 const ZZ = require("./lib/ziel-zensus.cjs");
@@ -1723,9 +1725,30 @@ async function starte() {
                             stell: ort.stell || null,
                             kamera: haushalt.sichten[sicht].kamera,
                         });
+                        // DIE WIESE (K55): ein Ort mit Wiesen-Gesetz (`wiese`) hält es in der Welt, die eben stand — dieselbe
+                        // Messung wie gate:profiband H1 (scripts/lib/welt-orte.cjs), dazu das Gras der gebauten Boden-Karte. Ein
+                        // Ort, der keine Wiese ist, bricht die Aufstellung laut: bis K55 stand die Mess-Wiese nach K16 in einem
+                        // Nadelwald-Hang (Hang 16,8°), und die ABAB 1410-2 verglich zwei Szenen.
+                        let wiese = null;
+                        if (ort.wiese && !pose) {
+                            wiese = await page.evaluate(
+                                (install, x, z, blick, S) => {
+                                    (0, eval)(install);
+                                    const m = window.__wieseMessen(window.anazhRealm, x, z, blick, S);
+                                    return { messung: m, befunde: window.__wieseUrteil(m, S, true) };
+                                },
+                                WIESE_INSTALL,
+                                ort.spieler[0],
+                                ort.spieler[1],
+                                ort.blick,
+                                ort.wiese
+                            );
+                            if (wiese.befunde.length)
+                                throw new Error(`Messort ${ort.id} ist keine Wiese: ${wiese.befunde.join(" · ")}`);
+                        }
                         return send(
                             Object.assign(
-                                { ort: ort.id, sicht, pose: pose ? pose.id : null, welt, spieler: stelle.spieler },
+                                { ort: ort.id, sicht, pose: pose ? pose.id : null, welt, spieler: stelle.spieler, wiese },
                                 o,
                                 {
                                     ms: Date.now() - t0,

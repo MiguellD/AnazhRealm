@@ -34,6 +34,7 @@ const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
+const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
 
 const PORT = Number(process.env.SCHIRM_PORT || 4579);
 const root = path.resolve(__dirname, "..");
@@ -157,6 +158,7 @@ async function welt() {
     });
     const seitenFehler = [];
     page.on("pageerror", (e) => seitenFehler.push((e.stack || e.message || String(e)).split("\n")[0]));
+    await page.evaluateOnNewDocument(WELT_ORTE_INSTALL); // der Messort aus spec/profiband/haushalt.json (`__messWiese`)
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
     await page.evaluate(AUSGABE_INSTALL);
     const ende = async () => {
@@ -234,8 +236,7 @@ async function welt() {
             lauf(st.scene);
             return z;
         };
-        const x = -900,
-            z = -850;
+        const [x, z] = window.__messWiese;
         st.playerMesh.position.set(x, r._voxelSurfaceY(x, z) + 1.8, z);
         const offen = () =>
             (f.pending ? f.pending.size : 0) +

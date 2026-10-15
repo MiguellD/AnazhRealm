@@ -1730,18 +1730,28 @@ class AnazhRealm_Z11a {
     // der Leib über eine Stufe, muss über seinem alten Stand Luft bis über den neuen Grund sein, sonst liegt Fels dazwischen
     // (die Decke der Höhle, ein Überhang) und der Schritt geht in die Wand. Vorher trug jeder Schritt im Fels die Oberkante
     // der Säule: ein in der Höhle an die Wand gestoßener Wolf stand auf ihrem Dach (11,88 m über dem Grund), ein in sie
-    // laufender ebenso (11,73 m). Leser: `_creatureGroundY`, `_kreaturStossSchritt`.
-    _koerperSchritt(vx, vz, vg, x, z) {
-        const y0 = vg + AnazhRealm.PLAYER_STEP_UP;
+    // laufender ebenso (11,73 m). Und nie UNTER EIN DACH (K55-2): über dem neuen Grund steht Luft bis über den Leib — seine
+    // Höhe `hoehe` (`_kreaturLeib`, ohne sie eine Stufe) und die Spanne, um die der gezeichnete Boden über dem Gesetz liegt
+    // (`KOERPER_SICHT_SPANNE`, Lehre 22: Surface-Nets auf 1,8 m trägt ±0,2 m), sonst ist der Spalt niedriger als der Leib und der
+    // Schritt geht in die Wand. In der Höhle 2,6/72,0 fällt der Grund unter einen Überhang (der Keil: 1,1 m Luft, dann 0,8,
+    // dann 0,4), ein an die Wand gestoßener Wolf glitt hinein und lag 0,6 m über seinem Fuß im Fels (gate:fall-waechter O3, die
+    // Höhle aus der Welt). Leser: `_creatureGroundY`, `_kreaturStossSchritt`, der Blick voraus, der Gang bis zur Wand.
+    _koerperSchritt(vx, vz, vg, x, z, hoehe) {
+        const stufe = AnazhRealm.PLAYER_STEP_UP;
+        const y0 = vg + stufe;
+        let g;
         if (!this._fieldSolid(x, y0, z)) {
-            const g = this._fieldSurfaceBelow(x, y0, z, 40);
-            return g !== null ? g : this._koerperBodenUnter(x, NaN, z);
+            g = this._fieldSurfaceBelow(x, y0, z, 40);
+            if (g === null) return this._koerperBodenUnter(x, NaN, z);
+        } else {
+            g = this._koerperBodenUnter(x, vg, z);
+            const oben = g + 0.2;
+            if (this._fieldSolid(vx, oben, vz)) return null;
+            const fels = this._fieldSurfaceBelow(vx, oben, vz, oben - vg);
+            if (fels !== null && fels > y0) return null;
         }
-        const g = this._koerperBodenUnter(x, vg, z);
-        const oben = g + 0.2;
-        if (this._fieldSolid(vx, oben, vz)) return null;
-        const fels = this._fieldSurfaceBelow(vx, oben, vz, oben - vg);
-        return fels !== null && fels > y0 ? null : g;
+        const kopf = (hoehe > 0 ? hoehe : stufe) + AnazhRealm.KOERPER_SICHT_SPANNE;
+        return this._fieldSolid(x, g + kopf, z) ? null : g;
     }
 
     // DER FELS-BEWEIS (Welle L, R2): liegt `_voxelSurfaceY(x, z)` sicher über `hoehe`? Der Scan läuft von oben über sein
@@ -1835,7 +1845,14 @@ class AnazhRealm_Z11a {
         if (this._creatureGroundBudget > 0 || ud.cachedGroundY === undefined) {
             if (this._creatureGroundBudget > 0) this._creatureGroundBudget--;
             let gY = schritt
-                ? this._koerperSchritt(ud.cachedGroundX, ud.cachedGroundZ, ud.cachedGroundY, cx, cz)
+                ? this._koerperSchritt(
+                      ud.cachedGroundX,
+                      ud.cachedGroundZ,
+                      ud.cachedGroundY,
+                      cx,
+                      cz,
+                      this._kreaturLeib(creature, 0, this._kreaturSchrittLeib || (this._kreaturSchrittLeib = {})).hoehe
+                  )
                 : this._koerperBodenUnter(cx, creature.position.y - (ud._hopH || 0), cz);
             const hl = this._kreaturHalbLaenge(creature);
             if (schritt) {

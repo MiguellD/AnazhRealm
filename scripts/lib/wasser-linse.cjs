@@ -2306,7 +2306,9 @@ function wasserFlora(opts) {
 }
 
 // ── Q7-Gestalt: die Bank (Gegenprüfung 07.10.: „die neuen Kanal-Banken sind Steilwände mit Rauten-Muster") ──
-// Je Fluss-Punkt (Heimat-Region und Kacheln) in einem geladenen Nah-Chunk (LOD 0) ein Profil-Schnitt quer zum Lauf: der
+// Je Fluss-Punkt binnen `r` m (Vorgabe 240) um den Fluss der Mess-Wiese (`ort`, Vorgabe `__wasserOrte` fluss; die Kacheln
+// dort rechnet die Probe selbst) ein Profil-Schnitt quer zum Lauf — die Stichprobe ist das GESETZ an diesem Ort (K55-5: bis
+// dahin zählten nur Punkte in schon gestreamten LOD-0-Chunks; die Zahl hing am Streaming-Stand, CI 12–22, lokal 4): der
 // Boden des Gesetzes (`_voxelSurfaceY`, 0,1-m-Schritte) von der Wasserlinie (der erste Boden über dem Spiegel) 6 m weit —
 // die BANK, die der Kanal schneidet — und ihre steilste Neigung über 0,5 m je Seite. Gegen das Geologie-Gesetz des Bodens
 // (`TERRAIN_GEOLOGY`, wie `_terrainGeologyAlbedo`): ab rockLo (1 − n.y = 0,42, ≈ 54,5°) trägt der Hang Fels; Geröll-Kandidat
@@ -2321,15 +2323,14 @@ function wasserBank(opts) {
     if (!h || !h.ready || !Array.isArray(h.rivers)) return { fehler: "keine Hydrosphäre" };
     const HC = r.constructor.HYDROSPHERE;
     const G = r.constructor.TERRAIN_GEOLOGY;
-    const span = r._voxelChunkConfig(0).span;
     const R = (x, n = 2) => (Number.isFinite(x) ? Math.round(x * 10 ** n) / 10 ** n : null);
     const grad = (steile) => (Math.acos(1 - steile) * 180) / Math.PI;
     const felsGrad = grad(G.rockLo),
         geroellGrad = grad(G.schuttKandidat);
-    const nah = (x, z) => {
-        const e = st.voxelChunks && st.voxelChunks.get(Math.floor(x / span) + "," + Math.floor(z / span));
-        return e && e.mesh && e.lod === 0 ? e : null;
-    };
+    const ort = o.ort || (({ fluss }) => fluss && [fluss.x, fluss.z])(window.__wasserOrte({}));
+    if (!ort) return { fehler: "kein Fluss an der Mess-Wiese" };
+    const rad = o.r || 240;
+    r._ensureHydroTilesAround(ort[0], ort[1], rad + 64);
     const punkte = [];
     // Heimat-Region und Kacheln (der Fluss der Mess-Wiese liegt jenseits ±1024 m)
     const regionen = [h].concat(st.hydroTiles ? [...st.hydroTiles.values()].filter((t) => t && t.ready) : []);
@@ -2338,7 +2339,7 @@ function wasserBank(opts) {
         for (let k = 0; k + 1 < P.length; k++) {
             const a = P[k],
                 b = P[k + 1];
-            if (a.inLake || b.inLake || !nah(a.x, a.z)) continue;
+            if (a.inLake || b.inLake || Math.hypot(a.x - ort[0], a.z - ort[1]) > rad) continue;
             punkte.push([a, b]);
         }
     }
@@ -2448,6 +2449,9 @@ function wasserBank(opts) {
     const s = winkel.slice().sort((x, y) => x - y);
     const q = (p) => (s.length ? s[Math.min(s.length - 1, Math.floor(p * s.length))] : 0);
     return {
+        ort,
+        r: rad,
+        segmente: punkte.length,
         profile: s.length,
         felsGrad: R(felsGrad, 1),
         winkelP50: R(q(0.5), 1),
