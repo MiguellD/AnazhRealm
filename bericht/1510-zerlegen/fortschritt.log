@@ -31,3 +31,10 @@
 12:31:36 loop-probe2 A start
 12:33:38 loop-probe2 A ende
 12:34:08 LOOP-PROBE2 FERTIG
+14:24:10 probe3 B-an1
+14:24:34 probe3 B-aus1
+14:24:58 probe3 B-aus2
+14:25:22 probe3 B-an2
+14:27:01 probe3 A-1
+14:27:25 probe3 A-2
+14:27:30 PROBE3 FERTIG

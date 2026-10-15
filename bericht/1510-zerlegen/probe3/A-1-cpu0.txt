@@ -1,0 +1,10 @@
+browser 23412 6.5625
+crashpad-handler 400 0.015625
+crashpad-handler 21756 0.03125
+gpu-process 14332 79.65625
+utility 4604 0.8125
+utility 20992 0.15625
+renderer 2384 0.140625
+renderer 8116 110.03125
+renderer 22172 0.0625
+renderer 15460 0.046875

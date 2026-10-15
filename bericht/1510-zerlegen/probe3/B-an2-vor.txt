@@ -1,0 +1,17 @@
+{
+ "ergebnis": {
+  "helfer": [
+   {
+    "k": 1,
+    "bereit": true
+   },
+   {
+    "k": 2,
+    "bereit": true
+   }
+  ],
+  "warte": 0,
+  "imFlug": {}
+ },
+ "ms": 2
+}

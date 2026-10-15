@@ -102,6 +102,42 @@ OMEN GTX 1060, `werkbank zerlegen --runden 6`: gpu-bank je Schalter, ABBA 6 Rund
   - B in EINER Welt mit `FOUNDRY_WERK_FAEDEN` 4 gegen 1, lauf 30 je Stand, ABBA;
   - dazu die CPU-Zeit je Chrome-Prozess über den Lauf.
 
+## Nachtrag: Probe 3 (15.10. 14:22–14:27) — die Werk-Fäden fallen als Täter, der Befund ist sitzungsabhängig
+
+- **Ablauf:**
+  - B (a19ca615-Code, `abab-pe8a`) in EINER Welt an Genesis Ego. Die zwei Helfer-Fäden arbeiten (`bereit`) oder ruhen
+    (die Pumpe nimmt nur das Werk), ABBA, je lauf 20.
+  - Dazu A (0bbee8fc) mit zwei Läufen. Je Lauf die CPU-Zeit je Chrome-Prozess und die Foundry-Schlange.
+
+| Lauf | fps | GPU-Durchsatz p50/p95 | Verzug p50 | Leine aus % | CPU-Zeit s (renderer · gpu-process) | Foundry wartend · im Flug |
+|---|---|---|---|---|---|---|
+| B Fäden an 1 | 78,3 | 12,8 / 15,8 | 16,7 | 34,6 | 15,3 · 8,8 | 0 · 0 |
+| B Fäden aus 1 | 78,8 | 12,6 / 15,4 | 16,6 | 34,2 | 14,7 · 7,7 | 0 · 0 |
+| B Fäden aus 2 | 78,0 | 12,7 / 15,4 | 16,7 | 34,1 | 11,8 · 7,3 | 0 · 0 |
+| B Fäden an 2 | 78,5 | 12,6 / 15,5 | 16,6 | 34,0 | 13,5 · 8,1 | 0 · 0 |
+| A 1 | 78,6 | 12,8 / 15,2 | 16,7 | 34,3 | 12,7 · 7,7 | – |
+| A 2 | 78,8 | 12,8 / 15,2 | 16,7 | 34,2 | 12,4 · 8,5 | – |
+
+- **Die Werk-Fäden fallen als Täter:** Die Schlange ist leer, nichts ist im Flug, und An gegen Aus ändert nichts.
+- **In dieser Sitzung trägt B den Befund NICHT:** 78,0–78,8 fps gleich A (78,6 · 78,8), Durchsatz 12,6–12,8 gleich.
+- **Genesis Ego mit demselben B-Code (a19ca615 = e8a370ad) über den Tag:**
+
+  | Zeit | Reihe | Instrument | fps · Durchsatz |
+  |---|---|---|---|
+  | 10:19 / 10:24 | Bündel B1/B2 | `pe8a` | 73,7 / 73,5 · 13,7 |
+  | 12:17 | Loop-Probe 1 | `pe8a` | 74,0 · 13,7 |
+  | 12:29 | Loop-Probe 2 | `pe8a` | 74,5 · 13,6 |
+  | 13:20 | K68 A-Seite | `p658` | 79,7 · 12,4 (Szene 326k statt 338k) |
+  | 14:24 | Probe 3 | `pe8a` | 78,3 · 12,8 |
+
+  Die A-Seite 0bbee8fc lag immer bei 78–79.
+- **Was gleich blieb:** Kamera (0 / 93,4 / 0, Blick −x), Szene (336–339k Dreiecke, 83 Befehle), Spieluhr (gehalten),
+  Wetter (sonnig), Saison (Sommer), die Pass-Stempel (haupt 1,13–1,14, TRAA 0,68, post 0,67).
+- **Urteil:** Der Genesis-Ego-Befund ist KEIN belegter Code-Term von e8a370ad. Er hängt an einem Zustand der Sitzung, den
+  weder die Szene noch die Bank sieht. Zwischen 12:29 und 14:24 wechselte er. Benannt und offen.
+- **Folge für K68:** Dessen Genesis-Ego-Befund (65854e26 72,7 gegen 79,7) kann derselbe Zustand sein. Die Laub-Zerlegung
+  Genesis Ego A/B und die nächste ABAB (K70) messen dort wieder.
+
 ## Rohdaten
 
 - **Pfad:** `bericht/1510-zerlegen/`.

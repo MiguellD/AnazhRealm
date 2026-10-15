@@ -1,0 +1,8 @@
+{
+ "ergebnis": {
+  "helfer": null,
+  "warte": 0,
+  "imFlug": {}
+ },
+ "ms": 2
+}
