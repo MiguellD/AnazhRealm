@@ -144,7 +144,8 @@ function statisch(src) {
     // Körper-Stufe, der Fahrzeug-Vorrat wärmt nur die Platte.
     const preS = pre ? strip(pre) : "";
     const iSkip = preS.indexOf("if (this._foundryPresetIsTree(sp)) continue;");
-    const iReq = preS.indexOf("this._foundryRequest(sp, sd, lod)");
+    // der Vorrat bestellt über den EINEN Zug je Körper-Schlüssel (K38-N2: bis 15.10. am Zug vorbei per _foundryRequest)
+    const iReq = preS.indexOf("this._foundryZug(key, sp, sd, lod)");
     pruef(
         "S6a der Vorrat bestellt für Karten-Arten keine Geometrie (kein L2-Körper ohne Leser)",
         iSkip >= 0 && iReq > iSkip && !/lods:\s*\[2\]/.test(code)
