@@ -280,7 +280,10 @@ async function blickStufe(check) {
         await page.setViewport({ width: 480, height: 270 });
         const seite = [];
         page.on("pageerror", (e) => seite.push((e.message || String(e)).split("\n")[0]));
-        await page.goto(`http://127.0.0.1:${PORT}/index.html?holz=kienspan`, { waitUntil: "domcontentloaded", timeout: 60000 });
+        await page.goto(`http://127.0.0.1:${PORT}/index.html?holz=kienspan`, {
+            waitUntil: "domcontentloaded",
+            timeout: 60000,
+        });
         const o = await page.evaluate(blickProbe, { alt });
         if (!o.fehler) {
             await page.evaluate(AUSGABE_INSTALL);
@@ -293,7 +296,9 @@ async function blickStufe(check) {
     try {
         const b = await lauf(false);
         if (b.fehler) throw new Error(b.fehler);
-        console.log(`=== B — der Blick am Genesis-Ring ${JSON.stringify(b.mitte)} (WebGPU auf swiftshader, ${b.membranen} Membranen) ===`);
+        console.log(
+            `=== B — der Blick am Genesis-Ring ${JSON.stringify(b.mitte)} (WebGPU auf swiftshader, ${b.membranen} Membranen) ===`
+        );
         check(
             "B1 aus der Ring-Mitte nach −x zeichnen Membranen, die im Rücken nicht alle",
             b.im.membran > 0 && b.im.membran < b.membranen,
@@ -337,7 +342,11 @@ async function blickStufe(check) {
             s.weg.membran === s.membranen,
             `${s.weg.membran} von ${s.membranen}: ${s.weg.taeter.slice(0, 4).join(" · ")}${s.weg.taeter.length > 4 ? " …" : ""}`
         );
-        check("HS Selbsttest: der rohe Leser (Anzeige-Wert als Strahlung) wird in H rot beim Namen", hellRot(s.hell), hellZeile(s.hell));
+        check(
+            "HS Selbsttest: der rohe Leser (Anzeige-Wert als Strahlung) wird in H rot beim Namen",
+            hellRot(s.hell),
+            hellZeile(s.hell)
+        );
     } catch (e) {
         check("B Lauf", false, (e && e.message) || String(e));
     }
@@ -444,7 +453,7 @@ async function blickStufe(check) {
                 rec.nebel.material.userData.portalNebel
             );
             res.n.uniform = !!(rec.u.nebelAct && rec.u.nebelAct.value > 0 && rec._act > 0);
-            res.n.sichtbar = !!(rec.nebel && rec.nebel.visible === (rec._act > 0.001));
+            res.n.sichtbar = !!(rec.nebel && rec.nebel.visible === rec._act > 0.001);
         }
 
         // ── F: Tür-Flügel öffnen sich dem Reisenden (V18.465) ──
@@ -568,7 +577,10 @@ async function blickStufe(check) {
         check("N: das fog-Gesetz trägt (mu.fog > 0 — der Dial reist)", out.n.gesetz === true);
         check("N: der Nebel-Kasten hängt gestempelt in der Szene (portal-nebel)", out.n.gebaut && out.n.stempel);
         check("N: der ECHTE Nebel-TSL-Graph baute (portalNebel-Marker)", out.n.echt === true);
-        check("N: mu.fog speist die nebelAct-Uniform (> 0 bei Nähe) — die Kette Dial→mu→Uniform lebt", out.n.uniform === true);
+        check(
+            "N: mu.fog speist die nebelAct-Uniform (> 0 bei Nähe) — die Kette Dial→mu→Uniform lebt",
+            out.n.uniform === true
+        );
         check("N: der Kasten lebt nähe-aktiviert (visible == act > 0.001)", out.n.sichtbar === true);
     } else check("N: Nebel-Block erreicht", false);
     if (out.f) {

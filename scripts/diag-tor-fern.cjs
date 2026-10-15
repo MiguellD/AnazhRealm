@@ -376,7 +376,8 @@ function fernStufe(K, verfaelsche) {
                 ist.push(`${id} L${st} ${n}`);
                 if (FERN.genesisThird.includes(id)) summe += n;
             }
-            if (zeile && n > zeile.tris) bruch.push(`${id} bei ${d} m Stufe ${st}: ${n} Dreiecke > Zeile ${zeile.tris}`);
+            if (zeile && n > zeile.tris)
+                bruch.push(`${id} bei ${d} m Stufe ${st}: ${n} Dreiecke > Zeile ${zeile.tris}`);
             for (const k of stoffe(g)) if (!L0.has(k)) bruch.push(`${id} Stufe ${st}: Stoff ${k} nicht in der L0`);
         }
     }
@@ -434,7 +435,9 @@ const f = fernStufe(PC);
 check(
     `F FERNE STUFE: Genesis Third — die fünf fernen Tore ≤ ${FERN.rest} Dreiecke (Klasse ≤ ${FERN.klasse}), jede Fläche ein Stoff der L0`,
     f.bruch.length === 0,
-    f.bruch.length ? f.bruch.slice(0, 6).join(" · ") : `Summe ${f.summe} (Klasse ${FERN.fest + f.summe}) · bei ${FERN.dM[0]} m: ${f.ist.join(" · ")}`
+    f.bruch.length
+        ? f.bruch.slice(0, 6).join(" · ")
+        : `Summe ${f.summe} (Klasse ${FERN.fest + f.summe}) · bei ${FERN.dM[0]} m: ${f.ist.join(" · ")}`
 );
 if (SELBST) {
     // S5: die Stufe 2 mit dem Gesetz der Stufe 1 — die Linse nennt die Tore beim Namen
