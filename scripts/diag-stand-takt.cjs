@@ -145,7 +145,7 @@ function selbsttest() {
                 maxTaktMs: 4.1,
             },
             // BÜHNE: Befund des Selbsttests, kein gesetzter Ort
-            amSpieler: { ort: [-841, -861], gelegt: true, dirty: 9, takte: 42, heil: true, sync: [] },
+            amSpieler: { ort: [-293, -1071], gelegt: true, dirty: 9, takte: 42, heil: true, sync: [] },
         },
         code: Object.fromEntries(namen.map((n) => [n, { fragt: true, meldet: true }])),
         pageErrors: [],
@@ -393,12 +393,12 @@ function selbsttest() {
                         kette: "_gameLoopTick › _tickDirtyVoxelChunks › _rebuildVoxelChunk › _acquireVoxelChunkBuild",
                     }
                 ),
-            /ORT: der Erdbau unter dem Spieler bei \(-841,-861\) baute 1 Chunk synchron im Haupt-Faden \(`_gameLoopTick › _tickDirtyVoxelChunks › _rebuildVoxelChunk › _acquireVoxelChunkBuild › _buildVoxelChunkData`, der längste 154\.6 ms\)/,
+            /ORT: der Erdbau unter dem Spieler bei \(-293,-1071\) baute 1 Chunk synchron im Haupt-Faden \(`_gameLoopTick › _tickDirtyVoxelChunks › _rebuildVoxelChunk › _acquireVoxelChunkBuild › _buildVoxelChunkData`, der längste 154\.6 ms\)/,
         ],
         [
             "der Boden unter dem Spieler heilt nicht (der Neubau verhungert)",
             (b) => Object.assign(b.ort.amSpieler, { heil: false, takte: 600 }),
-            /ORT: der Erdbau unter dem Spieler bei \(-841,-861\) heilt nicht — nach 600 Takten warten noch Chunks/,
+            /ORT: der Erdbau unter dem Spieler bei \(-293,-1071\) heilt nicht — nach 600 Takten warten noch Chunks/,
         ],
         [
             "der Erdbau unter dem Spieler markiert nichts",
