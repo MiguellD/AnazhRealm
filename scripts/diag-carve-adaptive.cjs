@@ -29,8 +29,21 @@ const server = statikServer();
         await page.waitForFunction(() => window.anazhRealm && typeof window.anazhRealm._gameLoopTick === "function", {
             timeout: 60000,
         });
-        // ein paar Ticks, damit der Spieler-Chunk steht
-        for (let i = 0; i < 20; i++) await page.evaluate(() => window.anazhRealm._gameLoopTick());
+        // Takte, bis der Chunk unter dem Spieler GEBAUT steht — das Bau-Ereignis, nie eine feste Takt-Zahl: seit K69-2
+        // baut der Worker auch den Spieler-Chunk (nach 33 Takten statt in 20, Prüfung K69-2-2); die Decke 600 schützt
+        // nur vor dem Hängen, ihr Erreichen ist ROT (der Spieler-Chunk entstand nie).
+        let takte = 0;
+        for (; takte < 600; takte++) {
+            const steht = await page.evaluate(() => {
+                const r = window.anazhRealm;
+                const st = r.state;
+                const pc = st.lastPlayerVoxelChunk;
+                return !!(pc && st.voxelChunks && st.voxelChunks.has(pc.cx + "," + pc.cz));
+            });
+            if (steht) break;
+            await page.evaluate(() => window.anazhRealm._gameLoopTick());
+        }
+        console.log(`  der Spieler-Chunk steht nach ${takte} Takten`);
         out = await page.evaluate(() => {
             const r = window.anazhRealm,
                 st = r.state;

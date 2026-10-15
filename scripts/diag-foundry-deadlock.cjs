@@ -113,12 +113,21 @@ const server = statikServer();
 
             // JETZT: ÜBER-Budget erzwingen + den Konvert-Tick pumpen. Vor der Heilung (bakeBudget=0)
             // würde KEIN kalter Baum konvergieren; mit der Heilung (bakeBudget=2) konvergieren sie.
+            // Der Takt unter Dauer-Last ist BEIDES, was das Spiel dann trägt: die Schlange des Walds mit dem Boden der
+            // Welt-Substanz (`_dispatchFrameJobs`: prio 1 bekommt über Budget `FRAME_SCHED_SUBSTANZ_FLOOR_MS`) und der
+            // Rewarm — seit K69 wartet die Gestalt eines Baums auf den Plan seines Walds (`_ortGestaltSame`), ein Pumpen
+            // nur des Rewarms ließ 8 von 8 kalt (CI 38759430399, Gruppe 12).
+            const A = window.AnazhRealm || r.constructor;
             for (let i = 0; i < 400; i++) {
                 r.state._frameOverBudget = true; // Dauer-Last simulieren
                 r.state._frameChunksBuilt = false; // das terrain-first-Gate offen halten
                 try {
+                    r._tickWaldPlan(A.FRAME_SCHED_SUBSTANZ_FLOOR_MS);
                     r._foundryRewarmColdTrees();
-                } catch (_e) {}
+                } catch (e) {
+                    // ein Wurf im Takt ist ROT beim Namen, nie still verschluckt
+                    out.err = out.err || "Takt " + i + ": " + ((e && e.message) || String(e));
+                }
                 await new Promise((res) => setTimeout(res, 0)); // dem Worker die Message-Runde geben
                 out.ticks++;
             }
@@ -150,10 +159,12 @@ const server = statikServer();
 
     const converged = S.foundryAfter - S.foundryBefore;
     // Nicht vakuös: ohne kalte Nähe gibt es nichts zu beweisen (die Voraussetzung baut der Lauf oben).
-    const ok = S.ready && S.coldBefore > 0 && converged > 0;
+    const ok = S.ready && !S.err && S.coldBefore > 0 && converged > 0;
     if (!ok) {
         console.error(
-            S.coldBefore > 0
+            S.err
+                ? `\n❌ ROT — der Takt warf: ${S.err}`
+                : S.coldBefore > 0
                 ? `\n❌ ROT — unter Über-Budget konvergierte NICHTS (Δ=${converged}) → der Deadlock lebt.`
                 : `\n❌ ROT — keine kalte Nähe (auch nach dem Heran-Treten) → die Linse wäre vakuös.`
         );

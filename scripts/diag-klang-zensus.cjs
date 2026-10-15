@@ -164,10 +164,12 @@ function werkzeug() {
         // Einschwingen, bis der Wald steht (K69-2: die Schlange des Walds plant im Takt — die Linse urteilt in
         // Bau-Ereignissen, nie in Wanduhr-Sekunden, Lehre 26). Auch die Suche der Orte liest danach: die Kronen-Karte
         // trägt nur gepflanzte Kronen — vor dem Stand des Walds fand sie Deckung 0,6 statt 1 (kz-B6.log).
-        const waldDl = performance.now() + 60000;
-        while (!W.waldSteht() && performance.now() < waldDl) {
+        // Die Decke zählt Takte (Bau-Gelegenheiten), nie Sekunden; steht der Wald nach ihr nicht, ist der Ort ROT (`urteile`).
+        let waldTakte = 0;
+        while (!W.waldSteht() && waldTakte < 3000) {
             W.takt();
             takte++;
+            waldTakte++;
             await sleep(0);
         }
         const wald = W.waldSteht();
@@ -179,7 +181,7 @@ function werkzeug() {
             cam.lookAt(p.x, p.y + 1.2, p.z - 10);
             cam.updateMatrixWorld(true);
         }
-        return { takte, chunks: last, wald };
+        return { takte, chunks: last, wald, waldTakte };
     };
     // DER WALD STEHT: die Schlange des Walds leer, kein Pflanz-Gang und keine Streu-Region wartet, kein gepflanzter Baum
     // steht in der Pflanz-Schlange.
@@ -1246,6 +1248,9 @@ function urteile(daten, offline, lab, ereig, phasen, spitzen) {
                         .join(" ← ")} trägt kein Gesetz`
                 );
         }
+        // (O) der Ort steht: die Stimmen des Walds hört nur, wer ihn gepflanzt findet (`W.waldSteht`)
+        if (d.um && d.um.wald === false)
+            rot.push(`O ${name}: der Wald steht nach ${d.um.waldTakte} Takten nicht (Schlange, Pflanz-Gang oder Streu wartet)`);
         // (W) die Welt rechnet in der Werkstatt
         werkstatt(name, d.hauptSynthese);
         if (d.zensus && !(d.zensus.werkstatt && d.zensus.werkstatt.laeuft)) rot.push(`W ${name}: keine Klang-Werkstatt`);
