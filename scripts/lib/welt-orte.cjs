@@ -23,6 +23,9 @@ function messort(id) {
 //   hang      — die Neigung des Gesetzes (zentrale Differenz über 2 m) zwischen `min` und `max` Grad, Land ohne Nässe
 //   hangfuss  — eine ebene Stelle (Neigung ≤ `fussMax` Grad), hinter der binnen `bis` m ein Hang ≥ `hangMin` Grad steigt;
 //               zurück kommt auch die Richtung `gier` (rad, rotation.y-Sinn: 0 = +z), die auf den Hang zeigt
+//   ufer      — eine trockene, flache Stelle (Neigung ≤ `fussMax` Grad, Vorgabe 8), vor der binnen `bis` m (Vorgabe 30) Wasser
+//               steht (`_nassAt`: Wasser über dem Boden) und über `breite` m (Vorgabe 10) Wasser bleibt — ein Gewässer, keine
+//               Pfütze; zurück kommen `gier` zum Wasser und `wasserBei` (m) — der Bild-Ort der Soll-Tafel für das Wasser (K63-n4)
 // opts: { mitte: [x, z] (Vorgabe der Messort `__messWiese`), rMax (m, Vorgabe 400), schritt (m, Vorgabe 6), ... }
 function weltOrt(art, opts) {
     const o = opts || {};
@@ -79,6 +82,26 @@ function weltOrt(art, opts) {
                     if (!trocken(px, pz)) break;
                     if (neigung(px, pz) >= (o.hangMin == null ? 15 : o.hangMin) && H(px, pz) > H(x, z) + 0.5)
                         return { gier: Math.round(a * 1000) / 1000, hangBei: d };
+                }
+            }
+            return null;
+        },
+        ufer: (x, z) => {
+            if (!trocken(x, z) || unterFels(x, z)) return null;
+            if (neigung(x, z) > (o.fussMax == null ? 8 : o.fussMax)) return null;
+            const bis = o.bis || 30,
+                breite = o.breite || 10;
+            const nass = (px, pz) => typeof r._nassAt === "function" && r._nassAt(px, pz);
+            for (let k = 0; k < 16; k++) {
+                const a = (k / 16) * Math.PI * 2;
+                const dx = Math.sin(a),
+                    dz = Math.cos(a);
+                for (let d = 3; d <= bis; d += 3) {
+                    if (!nass(x + dx * d, z + dz * d)) continue;
+                    let bleibt = true;
+                    for (let e = d + 2; e <= d + breite && bleibt; e += 2) bleibt = nass(x + dx * e, z + dz * e);
+                    if (bleibt) return { gier: Math.round(a * 1000) / 1000, wasserBei: d };
+                    break;
                 }
             }
             return null;

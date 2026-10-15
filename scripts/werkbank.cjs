@@ -15,7 +15,7 @@
 //                                                           und Lade-Ring fest, `--pose` stellt an eine seiner Stationen
 //   node scripts/werkbank.cjs bild <px> <py> <pz> <lx> <ly> <lz> [--datei f.png] [--w 640 --h 360] [--ziel name] [--wahl N]
 //                                                           Bühne + echter Frame (Ausgabe-Pfad)
-//                                      [--klasse <regex>] [--spieler] [--abstand] [--ist <id>[:nah|:fern|:wirkung]]
+//                                      [--klasse <regex>] [--spieler] [--abstand] [--ist <id>[:L<n>|:wirkung]]
 //                                                           DIE KLASSEN IM BILD (K63, die Soll-Tafel spec/abnahme/
 //                                                           soll-tafel.json): in voller Puffer-Größe unter EINER Uhr G, G2
 //                                                           und je Teil-Klasse ein Schuss ohne sie → die Teilung des Bilds
@@ -235,7 +235,7 @@ const gitStand = () => {
         return null;
     }
 };
-// DIE MESSUNG IN DIE SOLL-TAFEL (K63-n1, `bild --klasse … --ist <id>[:nah|:fern|:wirkung]`, `licht --ist <id>`): das Werkzeug
+// DIE MESSUNG IN DIE SOLL-TAFEL (K63-n1, `bild --klasse … --ist <id>[:L<n>|:wirkung]`, `licht --ist <id>`): das Werkzeug
 // schreibt, was es gemessen hat, in die EINE Tafel (spec/abnahme/soll-tafel.json, wie `--nachziehen` die Albedo-Tafel) — Ist
 // und Täter rechnet die Linse daraus (abnahme-urteil `sollTafelUrteil`); von Hand steht dort keine Zahl.
 const SOLL_TAFEL = path.join(root, "spec", "abnahme", "soll-tafel.json");
@@ -250,8 +250,9 @@ function sollIstSchreiben(ziel, messung) {
     messung.stand = Object.assign({}, messung.stand, { version: messung.stand.version || stammVersion() });
     messung.quellen = Object.fromEntries((k.quellen || []).map((d) => [d, pruefsumme(d)]));
     if (teil === "wirkung") (k.wirkung = k.wirkung || {}).messung = messung;
-    else if (teil === "nah" || teil === "fern") (k.mass.messung = k.mass.messung || {})[teil] = messung;
-    else if (teil) throw new Error(`--ist ${ziel}: Teil „${teil}" unbekannt (nah, fern, wirkung)`);
+    // je Stufe ein Schuss (K63-n4, `milchweiss`: die Tore des Schusses in der Stufe L<n>)
+    else if (/^L\d$/.test(teil || "")) (k.mass.messung = k.mass.messung || {})[teil] = messung;
+    else if (teil) throw new Error(`--ist ${ziel}: Teil „${teil}" unbekannt (L<n> je Stufe, wirkung)`);
     else k.mass.messung = messung;
     fs.writeFileSync(SOLL_TAFEL, JSON.stringify(t, null, 4) + "\n");
     return `${id}${teil ? ":" + teil : ""} → spec/abnahme/soll-tafel.json`;
@@ -911,6 +912,8 @@ async function starte() {
         await page.evaluate(`window.__tierZahl = ${tierZahl.toString()};`);
         await page.evaluate(STAND.STAND_INSTALL);
         await page.evaluate(FERNWALD_INSTALL);
+        // die Orte aus der Welt (`__weltOrt`: eben · hang · hangfuss · ufer — der Wasser-Ort der Soll-Tafel, K63-n4)
+        await page.evaluate(require("./lib/welt-orte.cjs").WELT_ORTE_INSTALL);
         await page.evaluate(ZL.ZERLEGE_INSTALL);
         await page.evaluate(SK.SHADER_INSTALL);
         await page.evaluate(ZZ.ZIEL_INSTALL);
@@ -1751,7 +1754,7 @@ async function starte() {
                     }
                     // DAS BEGLEIT-JSON (K32): die Abnahme des Bilds mit dem Stand des Arbeitsbaums (SHA, geändert ja/nein)
                     o.abnahme.stand.sha = gitStand();
-                    // DIE MESSUNG IN DIE SOLL-TAFEL (K63-n1, `--ist <id>[:nah|:fern|:wirkung]`)
+                    // DIE MESSUNG IN DIE SOLL-TAFEL (K63-n1, `--ist <id>[:L<n>|:wirkung]`)
                     if (b.ist) {
                         if (!o.klasse) throw new Error("--ist braucht --klasse (die Teilung des Bilds)");
                         const kl = o.klasse;

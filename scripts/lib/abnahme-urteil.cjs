@@ -556,6 +556,7 @@ function bildRauschen(A, B, W, H, schwelle) {
 //                 gegen gx, gy): ein Dither- oder Hash-Muster → 1, weißes Rauschen 1/3, eine glatte Fläche 0; `ek`/`eg` die
 //                 Energien selbst (die Tafel fasst Klassen über ihre Summen zusammen)
 //   silhouette    Rand-Pixel / √Fläche (der Kreis 2√π ≈ 3,5; eine zerfranste Krone, ein Gitter weit darüber)
+//   weiss/wt      Anteil und Zahl der Pixel, die als Weiß lesen statt als Farbe (s. MILCHWEISS unten)
 function klassenMasse(F, m, W, H) {
     const L = new Float32Array(W * H);
     for (let p = 0; p < W * H; p++) L[p] = 0.2126 * F[p * 4] + 0.7152 * F[p * 4 + 1] + 0.0722 * F[p * 4 + 2];
@@ -634,11 +635,34 @@ function klassenMasse(F, m, W, H) {
         }
     let zt = 0;
     for (let p = 0; p < W * H; p++) if (m[p] === 1 && zmark[p]) zt++;
+    // MILCHWEISS (K63-n4, die weiße Tafel): ein Pixel, das als Weiß liest statt als Farbe — ausgebrannt (Y > 240) oder unbunt
+    // und hell (CIELAB D65 aus den linearisierten sRGB-Werten: C*ab < 5, zwei eben merkliche Unterschiede ΔE*ab 2,3 vom Grau,
+    // Mahy et al. 1994; L* ≥ 50, heller als die 18-%-Karte)
+    let wt = 0;
+    const lin = (c) => ((c /= 255) <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
+    const fl = (t) => (t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116);
+    for (let p = 0; p < W * H; p++) {
+        if (m[p] !== 1) continue;
+        if (L[p] > 240) {
+            wt++;
+            continue;
+        }
+        const R = lin(F[p * 4]),
+            G2 = lin(F[p * 4 + 1]),
+            B = lin(F[p * 4 + 2]);
+        const fy = fl(0.2126 * R + 0.7152 * G2 + 0.0722 * B);
+        if (116 * fy - 16 < 50) continue;
+        const a = 500 * (fl((0.4124 * R + 0.3576 * G2 + 0.1805 * B) / 0.95047) - fy),
+            b = 200 * (fy - fl((0.0193 * R + 0.1192 * G2 + 0.9505 * B) / 1.08883));
+        if (Math.hypot(a, b) < 5) wt++;
+    }
     const mittel = n ? s / n : null;
     const r4 = (x) => (x == null || !Number.isFinite(x) ? null : +x.toFixed(4));
     return {
         zweiton: n ? r4(zt / n) : null,
         zt,
+        weiss: n ? r4(wt / n) : null,
+        wt,
         pixel: n,
         deckung: r4(n / (W * H)),
         deckungUnten: r4(unten / (W * (H - y3))),
@@ -876,7 +900,7 @@ const SOLL_MASSE = Object.freeze([
     "nyquist",
     "zweiton",
     "detail",
-    "stufenTreue",
+    "milchweiss",
     "lichtVerhaeltnis",
     "albedoVerhaeltnis",
     "albedo",
@@ -889,7 +913,7 @@ const MASS_AUFLOESUNG = Object.freeze({
     nyquist: 0.005,
     zweiton: 0.01,
     detail: 0.005,
-    stufenTreue: 0.01,
+    milchweiss: 0.01,
     lichtVerhaeltnis: 0.05,
     albedoVerhaeltnis: 0.01,
     albedo: 0.005,
@@ -1029,70 +1053,67 @@ const MASS_RECHNER = {
             anteil: px / flaeche(me),
         };
     },
-    // DIE STUFEN-TREUE: Luma desselben Exemplars aus der Ferne / aus der Nähe ÜBER EINEN STUFEN-WECHSEL. Das Exemplar ist der
-    // Name ohne Stufe (`f:tor_x:L0` und `fimp:tor_x:L2` sind dasselbe Tor, je Schuss die Stufe mit den meisten Pixeln); gezählt
-    // nur Exemplare, die beide Schüsse zeigen (nah ≥ 200, fern ≥ 50 Pixel) und fern eine HÖHERE Stufe zeichnen als nah. Ein
-    // Name ohne Stufe oder ein Paar ohne Wechsel ist ein Bruch: die Treue misst dann keine Stufe (Prüfer K63 R2: drei
-    // Bau-Gruppen ohne LOD-Takt, fern = nah blieb 1,0 GRÜN). Der Bildanteil ist der des FERN-Schusses (dort zeigt sich die Stufe).
-    stufenTreue(ma) {
-        const me = ma.messung || {};
-        const fn = bildMessungFehler(me.nah),
-            ff = bildMessungFehler(me.fern);
-        if (fn || ff) return { fehler: `nah: ${fn || "ok"} · fern: ${ff || "ok"}` };
-        const stufe = (n) => {
-            const m = /^(?:f|fimp):(.+):L(\d)$/.exec(n);
-            return m ? { ex: m[1], s: +m[2] } : null;
-        };
-        const ohne = [...Object.keys(me.nah.klassen), ...Object.keys(me.fern.klassen)].filter((n) => !stufe(n));
-        if (ohne.length)
-            return {
-                fehler: `ohne LOD-Stufe im Namen: ${[...new Set(ohne)].join(", ")} — die Treue misst nur Exemplare mit Stufe`,
-            };
-        const sammle = (s) => {
-            const o = {};
-            for (const [n, k] of Object.entries(s.klassen)) {
-                const e = stufe(n);
-                const z = o[e.ex] || (o[e.ex] = { pixel: 0, ls: 0, je: {} });
-                z.pixel += k.pixel;
-                z.ls += k.luma * k.pixel;
-                z.je[e.s] = (z.je[e.s] || 0) + k.pixel;
+    // MILCHWEISS (K63-n4; Prüfer K63 R3: die weiße Tafel der Tore hieß „geheilt", weil die Kamera den Spieler mitnahm — der
+    // Portal-Nebel wacht am SPIELER, nicht am Auge): der Anteil der Apertur-Pixel (`rechnung.apertur`: Membran und Nebel), die
+    // als Weiß lesen statt als Farbe (`klassenMasse` wt), über die Schüsse JE STUFE (`messung.L<n>`, die Tore des Schusses in
+    // ihrer Stufe beim Namen, `rechnung.tor`). Die Stufen liest die Linse im Kern (`rechnung.stufen`: porta-core
+    // PORTAL_RENDER_CONFIG lod.kindStages.gate ab der Stufe `ab`) — eine Stufe ohne Schuss lässt das Maß offen (ROT), ein
+    // Schuss, der seine Tore in einer anderen Stufe zeigt, ist ein Bruch. Der Täter ist Schuss × Klasse mit den meisten weißen
+    // Pixeln, der Bildanteil der Schuss mit der größten Apertur.
+    milchweiss(ma, q) {
+        const me = ma.messung || {},
+            rc = ma.rechnung || {};
+        if (!(rc.apertur && rc.tor && rc.stufen)) return { fehler: "milchweiss ohne rechnung { apertur, tor, stufen }" };
+        const ap = new RegExp(rc.apertur),
+            tor = new RegExp(rc.tor);
+        const sv = rc.stufen;
+        let S = q && q.kern ? q.kern(sv.datei, sv.symbol) : undefined;
+        for (const f of String(sv.feld || "").split(".").filter(Boolean)) S = S == null ? S : S[f];
+        if (!Array.isArray(S) || !S.length)
+            return { fehler: `die Stufen ${sv.datei} ${sv.symbol}.${sv.feld} sind dort nicht definiert` };
+        const soll = S.filter((s) => s >= (sv.ab || 0));
+        const schuesse = Object.keys(me).filter((k) => /^L\d$/.test(k));
+        if (!schuesse.length) return { fehler: "milchweiss ohne Schuss je Stufe (messung.L<n>)" };
+        let w = 0,
+            px = 0,
+            arg = null,
+            anteil = 0;
+        const teile = [],
+            bloecke = [];
+        for (const s of schuesse.sort()) {
+            const m = me[s];
+            const f = bildMessungFehler(m);
+            if (f) return { fehler: `${s}: ${f}` };
+            const je = {};
+            for (const [n, k] of Object.entries(m.klassen)) {
+                const t = tor.exec(n);
+                if (t && k.pixel >= 50) je[t[t.length - 1]] = (je[t[t.length - 1]] || 0) + k.pixel;
             }
-            for (const z of Object.values(o)) {
-                z.luma = z.ls / Math.max(1, z.pixel);
-                z.s = +Object.entries(z.je).sort((a, b) => b[1] - a[1])[0][0];
+            const st = Object.entries(je).sort((a, b) => b[1] - a[1])[0];
+            if (!st) return { fehler: `${s}: der Schuss zeigt kein Tor mit Stufe im Namen (${rc.tor})` };
+            if (`L${st[0]}` !== s) return { fehler: `${s}: der Schuss zeigt die Tore in Stufe L${st[0]}` };
+            let pa = 0;
+            for (const [n, k] of Object.entries(m.klassen)) {
+                if (!ap.test(n)) continue;
+                if (k.wt == null) return { fehler: `${s}: die Messung ohne Milchweiß (${n}) — vor K63-n4 gemessen` };
+                w += k.wt;
+                px += k.pixel;
+                pa += k.pixel;
+                teile.push(`${s} ${n} ${(k.wt / Math.max(1, k.pixel)).toFixed(2)} (${k.pixel} px)`);
+                if (!arg || k.wt > arg[2]) arg = [s, n, k.wt, k.pixel];
             }
-            return o;
-        };
-        const N = sammle(me.nah),
-            F = sammle(me.fern);
-        const beide = Object.keys(N).filter((e) => N[e].pixel >= 200 && F[e] && F[e].pixel >= 50);
-        if (!beide.length)
-            return { fehler: "nah und fern zeigen kein gemeinsames Exemplar (nah ≥ 200, fern ≥ 50 Pixel)" };
-        const gemein = beide.filter((e) => F[e].s > N[e].s);
-        if (!gemein.length)
-            return {
-                fehler: `kein Exemplar wechselt die Stufe zwischen nah und fern (${beide.map((e) => `${e} L${N[e].s}→L${F[e].s}`).join(", ")}) — die Treue misst keine Stufe`,
-            };
-        let ln = 0,
-            pn = 0,
-            lf = 0,
-            pf = 0,
-            arg = null;
-        for (const e of gemein) {
-            ln += N[e].ls;
-            pn += N[e].pixel;
-            lf += F[e].ls;
-            pf += F[e].pixel;
-            const q = F[e].luma / Math.max(1e-6, N[e].luma);
-            if (!arg || Math.abs(Math.log(q)) > Math.abs(Math.log(arg[1]))) arg = [e, q];
+            anteil = Math.max(anteil, pa / flaeche(m));
+            bloecke.push(m);
         }
+        if (!px) return { fehler: "kein Apertur-Pixel in den Schüssen (Membran und Nebel schlafen — der Spieler am Ring?)" };
+        const fehlt = soll.filter((s) => !schuesse.includes(`L${s}`));
         return {
-            ist: +(lf / pf / Math.max(1e-6, ln / pn)).toFixed(3),
-            taeter: `${arg[0]} L${N[arg[0]].s}→L${F[arg[0]].s} (fern/nah ${arg[1].toFixed(2)})`,
-            anteil: pf / flaeche(me.fern),
-            teile: gemein
-                .map((e) => `${e} L${N[e].s}→L${F[e].s} ${(F[e].luma / Math.max(1e-6, N[e].luma)).toFixed(2)}`)
-                .join(" · "),
+            ist: +(w / px).toFixed(4),
+            taeter: `${arg[1]} in ${arg[0]} (${arg[2]} von ${arg[3]} Pixeln weiß)`,
+            anteil,
+            teile: teile.join(" · "),
+            bloecke,
+            offen: fehlt.length ? `Stufe ${fehlt.map((s) => "L" + s).join(", ")} ohne Schuss (${sv.datei} ${sv.feld} = [${S.join(", ")}])` : null,
         };
     },
     // DAS GESICHT IM BILD (K63-n2, `werkbank bild --gesicht`): die Züge des Kopfs, wie die Ausgabe sie zeigt (`gesichtMasse`:
@@ -1156,7 +1177,7 @@ function albedoZeile(ma, q) {
     const w = (t.gemessen && t.gemessen.welt) || {},
         l = (t.gemessen && t.gemessen.labor) || {};
     // beide Seiten tragen ihren Stand (`kernStand`, geschrieben von werkbank `albedo --tafel` und `--labor --datei`)
-    return { t, z, stand: `${String(w.datum || "?").slice(0, 10)} ${w.geraet || "?"}`, bloecke: [w, l] };
+    return { t, z, stand: `${String(w.datum || "?").slice(0, 10)} ${w.geraet || "?"}`, bloecke: [w, l], quellen: z.quellen || [] };
 }
 // DER STAND einer Messung (K63-n2; Prüfer K63 R2: das Kopf-GRÜN stand auf der Albedo-Tafel vom 07.10., mit dem Datum 2020 blieb
 // es GRÜN): ein Ist gilt nur für den Stamm, an dem es gemessen ist (`stand.version` = AnazhRealm.VERSION), und für die Bytes der
@@ -1186,6 +1207,7 @@ MASS_RECHNER.albedoVerhaeltnis = (ma, q) => {
         taeter: `Labor ${a.z.ist.labor.Y} gegen Welt ${a.z.ist.welt.Y} (${ma.rohdatei.zeile})`,
         stand: a.stand,
         bloecke: a.bloecke,
+        quellen: a.quellen,
     };
 };
 MASS_RECHNER.albedo = (ma, q) => {
@@ -1196,6 +1218,7 @@ MASS_RECHNER.albedo = (ma, q) => {
         taeter: `Welt-Albedo ${a.z.ist.welt.Y} (${ma.rohdatei.zeile})`,
         stand: a.stand,
         bloecke: a.bloecke,
+        quellen: a.quellen,
     };
 };
 
@@ -1266,11 +1289,13 @@ function standLeser(root) {
         },
         pruefsumme,
         // der Stand einer Messung, die viele Klassen trägt (die Albedo-Tafel, K63-n3): die Version und die Prüfsumme JEDES Kerns
-        // (cores.manifest.json) — jede Klasse prüft daraus die Quellen, die sie trägt
+        // (cores.manifest.json) und JEDER Stamm-Zone (K63-n4, der Stand über den Inhalt: die Liste der Stamm-Tags,
+        // scripts/lib/stamm.cjs `dateien`) — jede Klasse und jede Zeile prüft daraus die Quellen, die sie trägt
         kernStand: () => {
             const m = JSON.parse(fs.readFileSync(path.join(root, "cores.manifest.json"), "utf8"));
             const quellen = {};
             for (const c of m) for (const d of c.scripts) quellen[d] = pruefsumme(d);
+            for (const d of require("./stamm.cjs").dateien(root)) quellen[d] = pruefsumme(d);
             const v = /AnazhRealm\.VERSION = "([^"]+)"/.exec(fs.readFileSync(path.join(root, "stamm", "26a.js"), "utf8"));
             return { version: v ? v[1] : null, quellen };
         },
@@ -1362,10 +1387,12 @@ function sollTafelUrteil(tafel, q) {
         if (r.fehler) fehler.push(`${wo}: ${r.fehler}`);
         const ist = zahl(r.ist) ? r.ist : null;
         // der Stand der Messung: veraltet oder ungeprüft ist ROT ohne Wirkung (die Zahl bleibt sichtbar)
-        const bloecke =
-            r.bloecke ||
-            (ma.messung ? (ma.messung.nah || ma.messung.fern ? [ma.messung.nah, ma.messung.fern] : [ma.messung]) : []);
-        const stand = ist != null && Array.isArray(k.quellen) ? messStand(bloecke, k.quellen, q) : null;
+        const bloecke = r.bloecke || (ma.messung ? [ma.messung] : []);
+        // die Quellen der Klasse und die der gelesenen Zeile (die Albedo-Tafel trägt je Zeile ihre Kerne und Stamm-Zonen)
+        const stand =
+            ist != null && Array.isArray(k.quellen)
+                ? messStand(bloecke, [...new Set([...k.quellen, ...(r.quellen || [])])], q)
+                : null;
         const e = MASS_AUFLOESUNG[ma.name] || 0.01;
         const weit = (rand) => Math.abs(Math.log((ist + e) / (rand + e)));
         let urteil = "ROT",
@@ -1382,6 +1409,12 @@ function sollTafelUrteil(tafel, q) {
         } else if (band) {
             urteil = "GRÜN";
             abstand = 0;
+        }
+        // ein Maß, das nicht jede Stufe sah (milchweiss: eine Stufe des Kerns ohne Schuss), ist offen — ROT, nie GRÜN
+        if (ist != null && !stand && r.offen) {
+            if (urteil === "GRÜN") abstand = null;
+            urteil = "ROT";
+            grund = grund ? `${grund} · ${r.offen}` : `${ma.name} ${ist} — ${r.offen}`;
         }
         // DER BENANNTE MANGEL (K63-n2; Prüfer K63 R2: Kopf, Laub und Tore standen GRÜN, ihre Maße sahen den Mangel des Plans nicht):
         // trägt die Klasse einen Mangel mit Quelle (Augen-Befund, Plan), muss ihr Maß ihn sehen — ein GRÜNES Maß neben einem
@@ -1418,7 +1451,7 @@ function sollTafelUrteil(tafel, q) {
             else if (!wi.quelle) fehler.push(`${wo}: der Bildanteil von Hand ohne Quelle`);
             else anteil = wi.anteil;
         }
-        const me = ma.messung && (ma.messung.nah || ma.messung);
+        const me = (r.bloecke && r.bloecke[0]) || ma.messung;
         zeilen.push({
             id: k.id,
             titel: k.titel,
@@ -1579,6 +1612,12 @@ function sollTafelSelbsttest(tafel, q) {
     };
     const mitMangel = (t) =>
         finde(t, (k) => k.wirkung && k.wirkung.mangel && k.mass && k.mass.name === "zweiton" && k.mass.messung);
+    // den benannten Mangel als geheilt erklären (mit oder ohne Bild-Paar) — das Maß bleibt, wie es misst
+    const heile = (t, bildPaar) => {
+        const k = mitMangel(t);
+        k.wirkung.geheilt = { befund: k.wirkung.mangel.befund, quelle: k.wirkung.mangel.quelle, warum: "x", bildPaar };
+        delete k.wirkung.mangel;
+    };
     // DIE MASSE DES MANGELS (K63-n2): das Raster aus zwei Tönen ist Zweiton 1, ein Verlauf 0, Bilder ohne Muster 0; die
     // Stufen-Treue ohne Stufen-Wechsel ist ein Bruch, mit Wechsel ein Verhältnis; das Gesicht nennt den Zug außerhalb
     const zw = klassenMasse(
@@ -1610,20 +1649,39 @@ function sollTafelSelbsttest(tafel, q) {
         rauschen: { anteil: 0 },
         klassen: Object.fromEntries(namen.map(([n, l]) => [n, { pixel: 400, luma: l }])),
     });
-    const gleich = MASS_RECHNER.stufenTreue({
-        messung: { nah: stufeMe([["f:tor:L0", 100]]), fern: stufeMe([["f:tor:L0", 100]]) },
-    });
-    if (!(gleich.fehler && gleich.fehler.includes("wechselt die Stufe")))
-        v.push(`Maß stufenTreue: fern = nah ohne Stufen-Wechsel nicht beim Namen (${gleich.fehler || gleich.ist})`);
-    const ohneSt = MASS_RECHNER.stufenTreue({
-        messung: { nah: stufeMe([["bau:tor", 100]]), fern: stufeMe([["bau:tor", 100]]) },
-    });
-    if (!(ohneSt.fehler && ohneSt.fehler.includes("ohne LOD-Stufe")))
-        v.push("Maß stufenTreue: ein Name ohne Stufe nicht beim Namen");
-    const weiss2 = MASS_RECHNER.stufenTreue({
-        messung: { nah: stufeMe([["f:tor:L0", 100]]), fern: stufeMe([["fimp:tor:L1", 220]]) },
-    });
-    if (!(weiss2.ist === 2.2)) v.push(`Maß stufenTreue: L0 100 → L1 220 liest ${weiss2.ist} statt 2,2`);
+    // MILCHWEISS: ein unbunt-heller Fleck liest 1 (auch ohne Ausbrand), ein bunter 0, Mittelgrau unter der 18-%-Karte 0; die
+    // Stufen des Kerns: eine Stufe ohne Schuss lässt das Maß offen, ein Schuss mit den Toren in fremder Stufe ist ein Bruch
+    const fleck = (ton) => {
+        const F = new Uint8Array(W * H * 4);
+        for (let p = 0; p < W * H; p++) F.set([ton[0], ton[1], ton[2], 255], p * 4);
+        return klassenMasse(F, new Uint8Array(W * H).fill(1), W, H);
+    };
+    if (!(fleck([200, 200, 202]).weiss === 1 && fleck([99, 99, 99]).weiss === 0 && fleck([60, 140, 200]).weiss === 0))
+        v.push(
+            `Maß milchweiss: Weiß ${fleck([200, 200, 202]).weiss} statt 1, Grau 99 ${fleck([99, 99, 99]).weiss} und Blau ${fleck([60, 140, 200]).weiss} statt 0`
+        );
+    const apMe = (stufe, ton) =>
+        Object.assign(stufeMe([]), {
+            klassen: { [`f:tor:L${stufe}`]: { pixel: 400, luma: 100 }, "portal-nebel": fleck(ton) },
+        });
+    const rcW = {
+        apertur: "^portal-(membran|nebel)$",
+        tor: "^(?:f|fimp):tor:L(\\d)$",
+        stufen: { datei: "x.js", symbol: "CFG", feld: "lod.stufen", ab: 1 },
+    };
+    const qW = { kern: (d, s) => (d === "x.js" && s === "CFG" ? { lod: { stufen: [0, 1, 3] } } : undefined) };
+    const mw = (messung) => MASS_RECHNER.milchweiss({ messung, rechnung: rcW }, qW);
+    const mwVoll = mw({ L1: apMe(1, [235, 235, 236]), L3: apMe(3, [200, 200, 200]) });
+    if (!(mwVoll.ist === 1 && !mwVoll.offen && /portal-nebel/.test(mwVoll.taeter || "")))
+        v.push(`Maß milchweiss: zwei weiße Stufen lesen ${mwVoll.ist}${mwVoll.fehler ? " — " + mwVoll.fehler : ""}`);
+    if (mw({ L1: apMe(1, [120, 60, 150]), L3: apMe(3, [60, 140, 200]) }).ist !== 0)
+        v.push("Maß milchweiss: bunte Membranen lesen nicht 0");
+    const mwHalb = mw({ L1: apMe(1, [235, 235, 236]) });
+    if (!(mwHalb.offen && /L3 ohne Schuss/.test(mwHalb.offen)))
+        v.push(`Maß milchweiss: die Stufe L3 ohne Schuss nicht beim Namen (${mwHalb.offen || mwHalb.fehler})`);
+    const mwFremd = mw({ L3: apMe(1, [235, 235, 236]) });
+    if (!(mwFremd.fehler && /in Stufe L1/.test(mwFremd.fehler)))
+        v.push("Maß milchweiss: ein Schuss L3 mit Toren in L1 nicht beim Namen");
     const ge = MASS_RECHNER.gesicht(
         { messung: Object.assign(stufeMe([["spieler:kopf/haut", 100]]), { gesicht: { augeFrei: 0.45, lippeA: 6 } }) },
         q,
@@ -1681,19 +1739,9 @@ function sollTafelSelbsttest(tafel, q) {
             },
             "es sieht ihn nicht",
         ],
-        [
-            "geheilt ohne Bild-Paar",
-            (t) => (finde(t, (k) => k.wirkung && k.wirkung.geheilt).wirkung.geheilt.bildPaar = []),
-            "ohne Befund, Quelle, Warum oder Bild-Paar",
-        ],
-        [
-            "geheilt neben einem roten Maß",
-            (t) => {
-                const k = finde(t, (x) => x.wirkung && x.wirkung.geheilt && x.mass.name === "stufenTreue");
-                for (const z of Object.values(k.mass.messung.fern.klassen)) z.luma *= 2;
-            },
-            "heißt geheilt, das Maß stufenTreue ist ROT",
-        ],
+        ["geheilt ohne Bild-Paar", (t) => heile(t, []), "ohne Befund, Quelle, Warum oder Bild-Paar"],
+        // Prüfer K63 R3: die weiße Tafel der Tore hieß geheilt, das heutige Bild zeigte sie — geheilt neben einem ROTEN Maß
+        ["geheilt neben einem roten Maß", (t) => heile(t, ["a.png", "b.png"]), "heißt geheilt, das Maß zweiton ist ROT"],
     ];
     for (const [name, fn, wort] of faelle) {
         if (!tafel || !(tafel.klassen || []).length) break;
@@ -1764,6 +1812,21 @@ function sollTafelSelbsttest(tafel, q) {
         if (d0 && (!fremd || fremd.urteil !== "ROT" || !/geändert seit/.test(fremd.grund || "")))
             v.push(`Stand: eine geänderte Quelle ${d0} bleibt GRÜN`);
     }
+    // eine Stufe des Kerns ohne Schuss: das Maß bleibt offen — ROT mit der Stufe beim Namen, auch wenn sein Ist im Band läge
+    const t5 = klon();
+    const k5 = finde(t5, (k) => k.mass && k.mass.name === "milchweiss" && k.mass.messung);
+    if (k5) {
+        const st5 = Object.keys(k5.mass.messung).filter((s) => /^L\d$/.test(s));
+        delete k5.mass.messung[st5[st5.length - 1]];
+        for (const s of st5.slice(0, -1)) {
+            frisch(k5, k5.mass.messung[s]);
+            for (const z of Object.values(k5.mass.messung[s].klassen)) if (z.wt != null) z.wt = 0;
+        }
+        delete k5.wirkung.mangel;
+        const z5 = sollTafelUrteil(t5, q).zeilen.find((x) => x.id === k5.id);
+        if (!z5 || z5.urteil !== "ROT" || !/ohne Schuss/.test(z5.grund || ""))
+            v.push(`${k5.id}: eine Stufe ohne Schuss ist nicht ROT beim Namen (${z5 && z5.urteil} ${z5 && z5.grund})`);
+    } else v.push("die Tafel trägt kein Maß milchweiss mit Messung (der Fall der Stufen fehlt)");
     if (sollTafelUrteil({ klassen: [] }, q).ok) v.push("die leere Tafel ist grün");
     return v;
 }

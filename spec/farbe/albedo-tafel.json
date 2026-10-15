@@ -21,7 +21,10 @@
             "datum": "2026-10-07T01:37:39.928Z",
             "geraet": "amd rdna-3",
             "ort": "genesis",
-            "spieler": [0, 0],
+            "spieler": [
+                0,
+                0
+            ],
             "echt": true
         }
     },
@@ -50,6 +53,12 @@
                     "kind": "^bark$"
                 }
             },
+            "quellen": [
+                "phyto-core.js",
+                "foundry-core.js",
+                "stamm/10.js",
+                "stamm/20b.js"
+            ],
             "ist": {
                 "labor": {
                     "Y": 0.0906,
@@ -89,6 +98,13 @@
                     "kind": "^foliage(Tex)?$"
                 }
             },
+            "quellen": [
+                "phyto-core.js",
+                "foundry-core.js",
+                "stamm/10.js",
+                "stamm/20b.js",
+                "stamm/20c.js"
+            ],
             "ist": {
                 "labor": {
                     "Y": 0.1813,
@@ -114,7 +130,10 @@
                     "klick": "#ui [data-p=\"zacken\"]"
                 },
                 "stoff": {
-                    "r": [0.5, 1]
+                    "r": [
+                        0.5,
+                        1
+                    ]
                 }
             },
             "welt": {
@@ -126,9 +145,18 @@
                 "klasse": "^formationenSatz$",
                 "stoff": {
                     "kind": "^unknown$",
-                    "r": [0.5, 1]
+                    "r": [
+                        0.5,
+                        1
+                    ]
                 }
             },
+            "quellen": [
+                "gelaende-core.js",
+                "stamm/08.js",
+                "stamm/10.js",
+                "stamm/26b.js"
+            ],
             "ist": {
                 "labor": {
                     "Y": 0.2432,
@@ -154,7 +182,9 @@
                     "wald": true
                 },
                 "wurzel": "scene",
-                "nur": ["_terMat"],
+                "nur": [
+                    "_terMat"
+                ],
                 "blick": "oben"
             },
             "welt": {
@@ -164,6 +194,12 @@
                 "klasse": "^bodenSatz$",
                 "blick": "oben"
             },
+            "quellen": [
+                "gelaende-core.js",
+                "stamm/10.js",
+                "stamm/17b.js",
+                "stamm/20a.js"
+            ],
             "ist": {
                 "labor": {
                     "Y": 0.3231,
@@ -209,6 +245,13 @@
                     "seh": "stoff"
                 }
             },
+            "quellen": [
+                "fachwerk-core.js",
+                "foundry-core.js",
+                "stamm/10.js",
+                "stamm/17c.js",
+                "stamm/20b.js"
+            ],
             "ist": {
                 "labor": {
                     "Y": 0.0841,
@@ -236,7 +279,10 @@
                 },
                 "stoff": {
                     "seh": "metall",
-                    "cc": [0.5, 1]
+                    "cc": [
+                        0.5,
+                        1
+                    ]
                 }
             },
             "welt": {
@@ -248,9 +294,18 @@
                 "klasse": "^f:gt:L0$",
                 "stoff": {
                     "seh": "metall",
-                    "cc": [0.5, 1]
+                    "cc": [
+                        0.5,
+                        1
+                    ]
                 }
             },
+            "quellen": [
+                "vehicle-core.js",
+                "foundry-core.js",
+                "stamm/10.js",
+                "stamm/20b.js"
+            ],
             "ist": {
                 "labor": {
                     "Y": 0.0066,
@@ -287,6 +342,13 @@
                     "seh": "metall"
                 }
             },
+            "quellen": [
+                "porta-core.js",
+                "foundry-core.js",
+                "stamm/10.js",
+                "stamm/14.js",
+                "stamm/20b.js"
+            ],
             "ist": {
                 "labor": {
                     "Y": 0.6496,
@@ -326,6 +388,13 @@
                     "kind": "^(haut|skin)$"
                 }
             },
+            "quellen": [
+                "koerper-core.js",
+                "foundry-core.js",
+                "stamm/10.js",
+                "stamm/15a.js",
+                "stamm/15c.js"
+            ],
             "ist": {
                 "labor": {
                     "Y": 0.2411,
@@ -351,7 +420,10 @@
                     "klick": "[data-p=\"wolf\"]"
                 },
                 "stoff": {
-                    "r": [0.85, 1]
+                    "r": [
+                        0.85,
+                        1
+                    ]
                 }
             },
             "welt": {
@@ -365,6 +437,12 @@
                     "kind": "^fell$"
                 }
             },
+            "quellen": [
+                "tetrapoda-core.js",
+                "stamm/06a.js",
+                "stamm/10.js",
+                "stamm/20b.js"
+            ],
             "ist": {
                 "labor": {
                     "Y": 0.2272,
@@ -401,6 +479,12 @@
                     "seh": "metall"
                 }
             },
+            "quellen": [
+                "schmiede-core.js",
+                "foundry-core.js",
+                "stamm/10.js",
+                "stamm/20b.js"
+            ],
             "ist": {
                 "labor": {
                     "Y": 0.3322,
@@ -421,49 +505,77 @@
         "terrain": {
             "ist": {
                 "kL": 0.7482,
-                "ausgabe": [186, 193, 184]
+                "ausgabe": [
+                    186,
+                    193,
+                    184
+                ]
             },
             "ratsche": 0.866
         },
         "garage": {
             "ist": {
                 "kL": 0.6468,
-                "ausgabe": [207, 210, 212]
+                "ausgabe": [
+                    207,
+                    210,
+                    212
+                ]
             },
             "ratsche": 0.7204
         },
         "portale": {
             "ist": {
                 "kL": 0.8023,
-                "ausgabe": [197, 207, 202]
+                "ausgabe": [
+                    197,
+                    207,
+                    202
+                ]
             },
             "ratsche": 0.9359
         },
         "schmiede": {
             "ist": {
                 "kL": 0.6427,
-                "ausgabe": [170, 158, 146]
+                "ausgabe": [
+                    170,
+                    158,
+                    146
+                ]
             },
             "ratsche": 0.7141
         },
         "fachwerk": {
             "ist": {
                 "kL": 0.4922,
-                "ausgabe": [198, 196, 193]
+                "ausgabe": [
+                    198,
+                    196,
+                    193
+                ]
             },
             "ratsche": 0.4472
         },
         "koerperstudio": {
             "ist": {
                 "kL": 0.699,
-                "ausgabe": [170, 181, 178]
+                "ausgabe": [
+                    170,
+                    181,
+                    178
+                ]
             },
             "ratsche": 0.798
         },
         "tetrapoda": {
             "ist": {
                 "kL": 0.8802,
-                "ausgabe": [255, 255, 255]
+                "ausgabe": [
+                    255,
+                    255,
+                    255
+                ]
             },
             "ratsche": 1.0285
         }

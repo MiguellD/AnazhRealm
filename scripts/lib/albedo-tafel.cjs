@@ -139,6 +139,12 @@ function tafelPruefen(t) {
         }
         if (z.ratsche !== null && z.ratsche !== undefined && !zahl(z.ratsche))
             f.push(`${z.id}: ratsche ist weder null noch Zahl`);
+        // DIE QUELLEN der Zeile (K63-n4): die Kerne und Stamm-Zonen, deren Bytes ihre Albedo tragen — der Stand des Ists
+        if (!(Array.isArray(z.quellen) && z.quellen.length && z.quellen.every((d) => typeof d === "string" && d)))
+            f.push(`${z.id}: quellen fehlen (die Dateien, deren Bytes die Albedo der Zeile tragen)`);
+        else
+            for (const d of z.quellen)
+                if (!fs.existsSync(path.join(ROOT, d))) f.push(`${z.id}: Quelle ${d} fehlt im Baum`);
     }
     for (const g of PFLICHT_GRUPPEN)
         if (!(t.zeilen || []).some((z) => z.gruppe === g)) f.push(`die Klasse ${g} trägt keine Zeile`);
@@ -154,6 +160,32 @@ function tafelPruefen(t) {
     if (t.gemessen !== null && t.gemessen !== undefined && (!t.gemessen.labor || !t.gemessen.welt))
         f.push("gemessen braucht {labor, welt} (Gerät, Datum, Ort der beiden Seiten)");
     return f;
+}
+
+// DER STAND DES ISTS (K63-n4; Prüfer K63 R3: die Wand las die Werte vom 07.10. und stand still grün): je Zeile jede ihrer
+// Quellen gegen die Prüfsumme, die BEIDE Seiten beim Messen nahmen (`gemessen.welt.quellen`, `gemessen.labor.quellen` — der
+// `kernStand` des Werkzeugs: jeder Kern und jede Stamm-Zone). Fehlt sie, ist das Ist ungeprüft; weicht sie ab, ist es älter als
+// der Stand, den die Wand bewacht — beides ROT beim Namen der Zeile und der Datei. `pruefsumme(d)` liest den Baum von heute.
+function tafelStand(t, pruefsumme) {
+    const rot = [];
+    const g = t.gemessen || {};
+    for (const z of t.zeilen || [])
+        for (const seite of ["welt", "labor"]) {
+            const q = (g[seite] && g[seite].quellen) || null;
+            const ohne = (z.quellen || []).filter((d) => !(q && q[d]));
+            const neu = (z.quellen || []).filter((d) => q && q[d] && q[d] !== pruefsumme(d));
+            if (ohne.length)
+                rot.push({
+                    zeile: z.id,
+                    text: `${z.id}: das Ist der ${seite} ungeprüft — ohne Prüfsumme von ${ohne.join(", ")}`,
+                });
+            if (neu.length)
+                rot.push({
+                    zeile: z.id,
+                    text: `${z.id}: das Ist der ${seite} ist veraltet — geändert seit der Messung: ${neu.join(", ")}`,
+                });
+        }
+    return rot;
 }
 
 // DAS URTEIL einer Messung (`messung` = { labor: {id: {Y, rgb}}, welt: {id: {Y, rgb}}, karten: {studio: {kL}},
@@ -789,6 +821,7 @@ module.exports = {
     STUDIOS,
     ladeTafel,
     tafelPruefen,
+    tafelStand,
     tafelUrteil,
     tafelNachziehen,
     tafelTabelle,

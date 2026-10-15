@@ -4,7 +4,9 @@
 //
 //   node scripts/diag-albedo-tafel.cjs                 (npm run gate:albedo-tafel, GPU-frei) die Tafel trägt Schema und
 //        Messung: jede der acht Klassen eine Zeile, jede Zeile Labor-Y, Welt-Y, Verhältnis und Ratsche, jedes Studio
-//        seine Karte; das gespeicherte Ist liegt in seiner Ratsche; Soll-Stand (n von N im Rand) steht in der Ausgabe
+//        seine Karte; das gespeicherte Ist liegt in seiner Ratsche UND ist so jung wie die Bytes, die es trägt (K63-n4: je
+//        Zeile ihre `quellen` gegen die Prüfsummen beider Seiten beim Messen — veraltet oder ungeprüft ist ROT); Soll-Stand
+//        (n von N im Rand) steht in der Ausgabe
 //   node scripts/diag-albedo-tafel.cjs --selftest      die Rechnung feuert: ein Verhältnis über der Ratsche, eine falsche
 //        Eichung, eine stumme Seite, eine Tafel ohne Klasse werden ROT; der Nachzug senkt und hebt nie — und im echten
 //        r128-Labor (Chrome, die Linse aus der Bibliothek) liest die 18-%-Karte 0,180, ein roh gelesenes Hex (der alte
@@ -21,6 +23,8 @@ const fs = require("fs");
 const path = require("path");
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const AT = require("./lib/albedo-tafel.cjs");
+// die Prüfsumme einer Datei des Baums (abnahme-urteil `standLeser`, dieselbe wie Werkzeug und Soll-Tafel)
+const { pruefsumme } = require("./lib/abnahme-urteil.cjs").standLeser(path.join(__dirname, ".."));
 
 const argv = process.argv.slice(2);
 const opt = (k, d) => {
@@ -228,6 +232,30 @@ async function selbsttest() {
     const t = (name, ok) => tests.push({ name, ok: !!ok });
     const T0 = tafelZumTest();
     const hatRot = (u, art) => u.rot.some((r) => r.art === art);
+    // S0 — DER STAND (K63-n4; Prüfer K63 R3: die Wand las das Ist vom 07.10. und stand still grün): beide Seiten an den
+    // Prüfsummen von heute → kein Befund; eine Quelle geändert seit der Messung → `veraltet` beim Namen; eine Messung ohne
+    // Prüfsummen → `ungeprüft`. Die Zeilen-Quellen sind Pflicht des Schemas.
+    {
+        const S0 = JSON.parse(JSON.stringify(T0));
+        const heute = {};
+        for (const z of S0.zeilen) for (const d of z.quellen || []) heute[d] = pruefsumme(d);
+        S0.gemessen = { welt: { quellen: Object.assign({}, heute) }, labor: { quellen: Object.assign({}, heute) } };
+        const frisch = AT.tafelStand(S0, pruefsumme);
+        const d0 = S0.zeilen[0].quellen[0];
+        S0.gemessen.welt.quellen[d0] = "0000000000000000";
+        const alt = AT.tafelStand(S0, pruefsumme);
+        delete S0.gemessen.labor.quellen;
+        const ohne = AT.tafelStand(S0, pruefsumme);
+        const s0q = JSON.parse(JSON.stringify(T0));
+        delete s0q.zeilen[0].quellen;
+        t(
+            "Stand: heute gemessen → kein Befund; eine Quelle geändert → veraltet beim Namen; ohne Prüfsummen → ungeprüft; Zeile ohne Quellen → Schema rot",
+            frisch.length === 0 &&
+                alt.some((r) => r.zeile === S0.zeilen[0].id && /veraltet/.test(r.text) && r.text.includes(d0)) &&
+                ohne.some((r) => /ungeprüft/.test(r.text)) &&
+                AT.tafelPruefen(s0q).some((f) => /quellen fehlen/.test(f))
+        );
+    }
     // S1 — gleich auf beiden Seiten: GRÜN, alle Zeilen im Soll.
     const u1 = AT.tafelUrteil(T0, messungZumTest(T0));
     t(
@@ -457,6 +485,8 @@ async function main() {
         if (!k.ist || k.ratsche == null) errs.push(`Karte ${s}: ohne Ist oder Ratsche`);
     const u = AT.tafelUrteil(t, gespeichert(t));
     for (const r of u.rot) errs.push(`[${r.art}] ${r.text}`);
+    // DER STAND (K63-n4): ein Ist, älter als die Bytes, die es trägt, ist kein Beweis — ROT beim Namen der Zeile und Datei
+    for (const r of AT.tafelStand(t, pruefsumme)) errs.push(`[stand] ${r.text}`);
     if (errs.length) {
         console.log("⛔ DIE ALBEDO-TAFEL:");
         for (const e of errs) console.log("   ❌ " + e);
