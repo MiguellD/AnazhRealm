@@ -72,8 +72,46 @@ function archivBefund(dateien) {
     ];
 }
 
+// 6) WACHSTUMS-WAND (V1 Prüf-Diät, 15.10.): der Prüf-Apparat wächst nie schneller als die halbe Welt. Seit main 062ec357
+//    (14.10.) wuchsen scripts/ + spec/ um +16 349 Zeilen, der Spiel-Code um +3 334 — jede echte Änderung brach 2–6 Text-Linsen.
+//    Gezählt wird am Baum (git grep -c, ohne Binärdateien); der GRUND ist der Stand nach der Diät und sinkt mit jeder Diät über
+//    RATSCHE Zeilen nach (die Ratsche geht nur abwärts). `--grund <rev>` / `--kopf <rev>` messen zwischen zwei Ständen.
+const PRUEF_PFADE = ["scripts", "spec"];
+const SPIEL_PFADE = ["stamm", ":(glob)*.js", "index.html", "worlds", ":(exclude)worlds/**/lib/**"];
+const WACHSTUM_GRUND = { pruef: 229684, spiel: 181820 };
+const RATSCHE = 3000;
+function zeilenAm(rev, pfade) {
+    const args = ["grep", "-I", "-c", "", ...(rev ? [rev] : []), "--", ...pfade];
+    const aus = require("child_process").execFileSync("git", args, { cwd: root, encoding: "utf8", maxBuffer: 1 << 26 });
+    return aus.split("\n").filter(Boolean).reduce((s, z) => s + Number(z.slice(z.lastIndexOf(":") + 1)), 0);
+}
+function wachstumBefund(ist, grund) {
+    const dP = ist.pruef - grund.pruef;
+    const dS = ist.spiel - grund.spiel;
+    const erlaubt = Math.floor(Math.max(0, dS) / 2);
+    if (dP > erlaubt)
+        return [
+            `WACHSTUMS-WAND: der Prüf-Apparat (scripts/ + spec/) wuchs um ${dP} Zeilen, der Spiel-Code um ${dS} — ` +
+                `erlaubt ist die Hälfte des Spiel-Wachstums (${erlaubt})`,
+        ];
+    if (dP < -RATSCHE)
+        return [
+            `WACHSTUMS-WAND: der Prüf-Apparat liegt ${-dP} Zeilen unter dem Grund — die Ratsche zieht nach: ` +
+                `WACHSTUM_GRUND = { pruef: ${ist.pruef}, spiel: ${ist.spiel} }`,
+        ];
+    return [];
+}
+
 function main() {
     const errs = [];
+    const argRev = (n) => (process.argv.indexOf(n) > 0 ? process.argv[process.argv.indexOf(n) + 1] : null);
+    const grundRev = argRev("--grund");
+    const kopfRev = argRev("--kopf");
+    const grund = grundRev
+        ? { pruef: zeilenAm(grundRev, PRUEF_PFADE), spiel: zeilenAm(grundRev, SPIEL_PFADE) }
+        : WACHSTUM_GRUND;
+    const ist = { pruef: zeilenAm(kopfRev, PRUEF_PFADE), spiel: zeilenAm(kopfRev, SPIEL_PFADE) };
+    errs.push(...wachstumBefund(ist, grund));
 
     // 2) FROZEN-LISTEN-WAND
     const listePfad = path.join(root, "docs", "PFLICHT-OFFEN.md");
@@ -147,6 +185,14 @@ function main() {
     const l2 = logbuchBefund("# Liste\nA) x — Status: offen").length; // darf nicht feuern
     const l3 = logbuchBefund(Array(LISTE_MAX_ZEILEN + 5).fill("x").join("\n")).length; // muss feuern
     if (!l1 || l2 || !l3) errs.push(`Selbsttest der Logbuch-Wand versagt (l1=${l1} l2=${l2} l3=${l3})`);
+    const G = { pruef: 1000, spiel: 1000 };
+    const w1 = wachstumBefund({ pruef: 1600, spiel: 2000 }, G).length; // +600 Prüf gegen +1000 Spiel: muss feuern
+    const w2 = wachstumBefund({ pruef: 1400, spiel: 2000 }, G).length; // +400 gegen +1000: darf nicht
+    const w3 = wachstumBefund({ pruef: 1010, spiel: 500 }, G).length; // die Welt schrumpft, der Apparat wächst: feuert
+    const w4 = wachstumBefund({ pruef: 1000 - RATSCHE - 1, spiel: 1000 }, G).length; // Diät ohne Nachzug: feuert
+    const w5 = wachstumBefund({ pruef: 900, spiel: 700 }, G).length; // beide schrumpfen: darf nicht
+    if (!w1 || w2 || !w3 || !w4 || w5)
+        errs.push(`Selbsttest der Wachstums-Wand versagt (w1=${w1} w2=${w2} w3=${w3} w4=${w4} w5=${w5})`);
 
     if (errs.length) {
         console.error("gate:betriebsgesetz ROT");
@@ -155,7 +201,9 @@ function main() {
     }
     console.log(
         `gate:betriebsgesetz GRÜN — Pflicht-OFFEN ${posten.length}/5 · Stand ${sz}/40 Zeilen · ` +
-            `Siegel-Wand + Logbuch-Wand + Absenz-Wand + Archiv-Wand stehen · Selbsttest feuert`
+            `Prüf ${ist.pruef - grund.pruef >= 0 ? "+" : ""}${ist.pruef - grund.pruef} / Spiel ` +
+            `${ist.spiel - grund.spiel >= 0 ? "+" : ""}${ist.spiel - grund.spiel} Zeilen · ` +
+            `Siegel-Wand + Logbuch-Wand + Absenz-Wand + Archiv-Wand + Wachstums-Wand stehen · Selbsttest feuert`
     );
 }
 
