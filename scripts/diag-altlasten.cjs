@@ -1625,16 +1625,12 @@ const ZWILLINGE = [
         verboten: gelaendeLeser().concat(["gelaende-core.js"]),
         fiel: `K16 — die Landform ersetzt ${was}`,
     })),
-    // W1 (16.10., Grok-Zwilling G3-4): die Wiese hat EIN Gesetz für Labor und Welt — die Bodenschicht (`groundCover`) und
-    // der Büschel-Tint (`wiesenTint`, bis W1 die Inline-Formel FIX v27 im Labor) wohnen im Kern, Labor und Stamm rufen sie.
-    ...[
-        ["L * 1.08 - rk * 0.85 + m * 0.22", "die Bodenschicht (groundCover)"],
-        ["lit * 0.5 + (1 - wet) * 0.5", "der Wiesen-Tint (wiesenTint)"],
-    ].map(([fingerprint, was]) => ({
+    // W1 (16.10., Grok-Zwilling G3-4): die Wiese hat EIN Gesetz für Labor und Welt — Labor und Stamm rufen es im Kern.
+    ...["L * 1.08 - rk * 0.85 + m * 0.22", "lit * 0.5 + (1 - wet) * 0.5"].map((fingerprint) => ({
         fingerprint,
         gesetzbuch: "foundry-core.js",
         verboten: ["worlds/terrain/phytogenesis.js", ...STAMM],
-        fiel: `W1 — ${was} wohnt im Kern, __terrainCore`,
+        fiel: "W1 — die Bodenschicht (groundCover) und der Wiesen-Tint (wiesenTint, bis W1 FIX v27 im Labor) wohnen im Kern",
     })),
 ];
 

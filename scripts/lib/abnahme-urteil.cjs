@@ -1196,8 +1196,8 @@ const MASS_RECHNER = {
         if (f) return { fehler: f };
         const ft = me.abstand && me.abstand.farbton;
         if (!ft || !Array.isArray(ft.kacheln)) return { fehler: "die Messung ohne Farbton-Kacheln (werkbank bild --abstand)" };
-        if (ft.kachel !== rc.kachel || JSON.stringify(ft.band) !== JSON.stringify(rc.band))
-            return { fehler: `die Messung zählt ${ft.kachel}-m-Kacheln in ${ft.band}, die Rechnung ${rc.kachel} m in ${rc.band}` };
+        if (JSON.stringify([ft.kachel, ft.band, me.leinwand]) !== JSON.stringify([rc.kachel, rc.band, rc.leinwand]))
+            return { fehler: `die Messung zählt ${ft.kachel}-m-Kacheln in ${ft.band} m auf ${me.leinwand}, die Rechnung ${rc.kachel} m in ${rc.band} m auf ${rc.leinwand}` };
         const ks = ft.kacheln.filter((k) => k[1] >= (rc.minProben || 1));
         if (!ks.length) return { fehler: `keine Kachel mit ≥ ${rc.minProben} Proben in ${ft.band} m` };
         const n = ks.reduce((a, k) => a + k[1], 0);
@@ -1937,7 +1937,7 @@ function sollTafelSelbsttest(tafel, q) {
     const ftMe = Object.assign({}, laiMe, {
         abstand: { farbton: { kachel: 2, band: [2, 5], belichtung: 1, kacheln: [["0,0", ...zwei], ["1,0", 2, 2, 0, 2]] } },
     });
-    const ft = MASS_RECHNER.farbtonStreuung({ messung: ftMe, rechnung: { kachel: 2, band: [2, 5], minProben: 1 } });
+    const ft = MASS_RECHNER.farbtonStreuung({ messung: ftMe, rechnung: { kachel: 2, band: [2, 5], leinwand: [1000, 1000], minProben: 1 } });
     if (!(grau[0] === 2 && grau[3] === 1 && Math.abs(farbtonSigma(zwei) - 10.03) < 0.01 && ft.ist === 5.01 && /1,0/.test(ft.taeter)))
         v.push(`Maß farbtonStreuung: Grau ${grau}, ±10° ${farbtonSigma(zwei)}, Ist ${ft.ist} (Soll 5,01), Täter ${ft.taeter || ft.fehler}`);
     // die Tafel: die echte ohne Bruch, jeder eingeschmuggelte Bruch beim Namen

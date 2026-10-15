@@ -205,8 +205,8 @@ class AnazhRealm_Z11c {
     }
 
     // Die Daten einer Kachel: je Büschel die Basis-Matrix (Ort · Drehung · Skala — die Welt-Skala des Studio-Teils hängt
-    // der Sicht-Satz an) und sein Tint (`farben`, n×3), die Hysterese der Stufe (`l1`) und die Kachel-Kugel ohne Büschel-Radius (grober Cull vor
-    // dem Büschel-Test).
+    // der Sicht-Satz an) und sein Tint (`farben`, n×3), die Hysterese der Stufe (`l1`) und die Kachel-Kugel ohne
+    // Büschel-Radius (grober Cull vor dem Büschel-Test).
     _nahWieseKachelDaten(tx, tz, bueschel) {
         const K = AnazhRealm.NAH_WIESE.kachel;
         const n = bueschel.length;

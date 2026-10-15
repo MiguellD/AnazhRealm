@@ -17,7 +17,7 @@
 //   node scripts/werkbank.cjs bild <px> <py> <pz> <lx> <ly> <lz> [--datei f.png] [--w 640 --h 360] [--ziel name] [--wahl N]
 //                                                           [--uhr 0..1] Bühne + echter Frame (Ausgabe-Pfad); --uhr: dieselbe
 //                                                           Bühne zu dieser Stunde (0,5 Mittag), die Leuchtquellen folgen
-//                                      [--klasse <regex>] [--spieler] [--abstand] [--ist <id>[:L<n>|:wirkung]]
+//                                      [--klasse <regex>] [--spieler] [--abstand] [--ist <id>[:L<n>|:wirkung]] [--fov v]
 //                                                           DIE KLASSEN IM BILD (K63, die Soll-Tafel spec/abnahme/
 //                                                           soll-tafel.json): in voller Puffer-Größe unter EINER Uhr G, G2
 //                                                           und je Teil-Klasse ein Schuss ohne sie → die Teilung des Bilds
@@ -1135,7 +1135,9 @@ async function starte() {
             // die Kamera VOR der Bühne: die Bühne setzt Tag und Nacht neu, und das Licht des Auges steht an der Kamera
             // (`_dayNightApplyAugenLicht`, seine Stärke aus dem Himmel am Auge) — danach gesetzt, stand es an der Kamera des
             // letzten Schusses (K16: das Auge in der Höhle schwarz, Helligkeit 0, das Licht lag draußen unter dem Himmel)
-            const cam = r.state.camera;
+            const cam = r.state.camera,
+                fov0 = cam.fov; // `--fov v`: das Blickfeld (vertikal) dieses Schusses, danach wieder das des Spiels
+            if (k.fov) (cam.fov = Number(k.fov)), cam.updateProjectionMatrix();
             cam.position.set(px, py, pz);
             cam.lookAt(lx, ly, lz + 1e-4);
             cam.updateMatrixWorld(true);
@@ -1700,6 +1702,7 @@ async function starte() {
                     k2 += Math.abs(a - lum(i + 4)) + Math.abs(a - lum(i + W * 4));
                     n++;
                 }
+            (cam.fov = fov0), cam.updateProjectionMatrix();
             const cv = document.createElement("canvas");
             cv.width = W;
             cv.height = H;
@@ -3093,6 +3096,7 @@ async function starte() {
             abstand: argv.includes("--abstand"),
             gesicht: opt("--gesicht"),
             ist: opt("--ist"),
+            fov: opt("--fov"),
         });
     else if (cmd === "methode")
         o = await rufe("/methode", { name: a[0], terrain: argv.includes("--terrain"), quelle: opt("--quelle") });
