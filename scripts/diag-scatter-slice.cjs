@@ -185,12 +185,30 @@ const server = statikServer();
                     if (typeof this._streuWartetAuf === "function") for (const z of zus) this._streuWartetAuf(z);
                     return altPass.call(this, region, ...a);
                 };
+                // die Zusagen der Region beim Namen: ihre zwei, die Schlange des Walds und jede fremde (Karte, Zug, Buch)
+                const altWartet = r._streuWartetAuf;
+                const fremde = new Set();
+                r._streuWartetAuf = function (z) {
+                    if (this._streuSammler && z && !zus.includes(z)) fremde.add(z === this._waldLeer ? "wald" : "fremd");
+                    return altWartet.call(this, z);
+                };
+                wecker.schlange = r._waldPlanSchlange ? r._waldPlanSchlange.size : 0;
                 let reg5;
                 try {
                     reg5 = r._scatterRegion(rx, rz, pos);
                 } finally {
                     r._scatterPass = altPass;
+                    r._streuWartetAuf = altWartet;
                 }
+                wecker.fremde = [...fremde];
+                // wartet ihre Gestalt noch auf den Plan des Walds, wartet die Region benannt auch auf die leere Schlange
+                // (`_waldPlanZusage`, K60-4): die Linse leert sie zuerst (der Takt schickt sie an den Faden) — danach steht
+                // die Region NUR noch auf ihren zwei Zusagen
+                for (let i = 0; i < 4000 && r._waldPlanSchlange && r._waldPlanSchlange.size; i++) {
+                    r._tickWaldPlan(Infinity);
+                    await new Promise((res) => setTimeout(res, 10));
+                }
+                wecker.schlangeNach = r._waldPlanSchlange ? r._waldPlanSchlange.size : 0;
                 const steht = () => st.scatterRegions.get(key) === reg5;
                 const tick = async () => {
                     await new Promise((res) => setTimeout(res, 0));

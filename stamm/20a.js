@@ -649,33 +649,43 @@ class AnazhRealm_Z20a {
         let n = 0;
         if (r && this._forestDartMemo === memo && (this._erdbauStand | 0) === erd) {
             if (memo.size + zellen.length / 2 > 8192) memo.clear(); // bounded wie `_forestCellDarts`
-            let j = 0;
-            for (let i = 0; i < zellen.length / 2; i++) {
+            const alle = this._waldDartsEntpacken(r, zellen.length / 2);
+            for (let i = 0; i < alle.length; i++) {
                 const k = zellen[i * 2] + "," + zellen[i * 2 + 1];
-                const out = [];
-                for (let m = r.anzahl[i]; m > 0; m--, j += 11) {
-                    const w = r.werte;
-                    out.push({
-                        x: w[j],
-                        z: w[j + 1],
-                        sp: r.arten[w[j + 2]],
-                        s: w[j + 3],
-                        T: w[j + 4],
-                        prio: w[j + 5],
-                        keep: w[j + 6],
-                        totRoll: w[j + 7],
-                        rotY: w[j + 8],
-                        seed: w[j + 9],
-                        surfaceY: Number.isNaN(w[j + 10]) ? null : w[j + 10],
-                    });
-                }
-                if (!memo.has(k)) memo.set(k, out);
+                if (!memo.has(k)) memo.set(k, alle[i]);
                 if (Q) Q.delete(k);
                 n++;
             }
         }
         if (n > 0) this._waldPlanGeplant(performance.now());
         if (Q && Q.size && this._waldFadenLebt() && this._forestGesetzWahr()) this._waldFadenSchicken(this._forestSeedInt());
+    }
+
+    // Die gepackten Darts des Fadens (je Zelle `anzahl`, je Dart 11 Werte, die Arten als Tafel) → je Zelle die Darts, wie
+    // `_forestCellDarts` sie gibt (gate:worker-dichte Teil W vergleicht sie Wort für Wort).
+    _waldDartsEntpacken(r, zellenZahl) {
+        const w = r.werte;
+        const alle = [];
+        let j = 0;
+        for (let i = 0; i < zellenZahl; i++) {
+            const out = [];
+            for (let m = r.anzahl[i]; m > 0; m--, j += 11)
+                out.push({
+                    x: w[j],
+                    z: w[j + 1],
+                    sp: r.arten[w[j + 2]],
+                    s: w[j + 3],
+                    T: w[j + 4],
+                    prio: w[j + 5],
+                    keep: w[j + 6],
+                    totRoll: w[j + 7],
+                    rotY: w[j + 8],
+                    seed: w[j + 9],
+                    surfaceY: Number.isNaN(w[j + 10]) ? null : w[j + 10],
+                });
+            alle.push(out);
+        }
+        return alle;
     }
 
     // ==================== ASSET-FOUNDRY: die Vorlage pflanzt ihre echten Bäume ====================

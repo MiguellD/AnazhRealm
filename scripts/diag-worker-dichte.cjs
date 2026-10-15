@@ -503,7 +503,7 @@ async function probe(page, welt, mitAbdruck) {
             }
             // TEIL W — DER STOFF DES WALDS (K60-3): die Darts der Wald-Zellen um jeden Ort (9 × 9 Zellen) im Main
             // (`_forestCellDarts`, frisches Gedächtnis) und im Voxel-Faden (`_voxelWorkerWaldDarts`, entpackt über
-            // `_waldDartsAn`) — jede Zelle Wort für Wort gleich (JSON ihrer Darts). Die Streu wartet auf die Darts des Fadens;
+            // `_waldDartsEntpacken`, wie die Schlange des Walds sie ins Gedächtnis legt) — jede Zelle Wort für Wort gleich (JSON ihrer Darts). Die Streu wartet auf die Darts des Fadens;
             // drifteten sie, stünde die Gestalt der Ferne auf einer anderen Wahrheit als der Wald der Nähe.
             if (typeof r._voxelWorkerWaldDarts === "function" && r._getVoxelWorker() && r._forestGesetzWahr()) {
                 const wa = (out.wald = { zellen: 0, darts: 0, abweichend: 0, erste: null });
@@ -518,14 +518,10 @@ async function probe(page, welt, mitAbdruck) {
                     for (let k = 0; k < zellen.length; k += 2)
                         main.push(r._forestCellDarts(zellen[k], zellen[k + 1], seedInt));
                     const res = await r._voxelWorkerWaldDarts(new Int32Array(zellen), seedInt, r._forestExtraSpecies());
-                    const alt = r._forestDartMemo;
-                    const faden = new Map();
-                    r._forestDartMemo = faden;
-                    r._waldDartsAn(faden, zellen, res);
-                    r._forestDartMemo = alt;
+                    const faden = r._waldDartsEntpacken(res, zellen.length / 2);
                     for (let k = 0; k < zellen.length; k += 2) {
                         const m = main[k / 2];
-                        const w = faden.get(zellen[k] + "," + zellen[k + 1]);
+                        const w = faden[k / 2];
                         wa.zellen++;
                         wa.darts += m.length;
                         if (JSON.stringify(m) === JSON.stringify(w)) continue;
