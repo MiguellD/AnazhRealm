@@ -813,7 +813,10 @@ const FORBIDDEN = [
     },
     // Nah-Wiese und Nah-Streu lesen das Licht der STEHENDEN Kronen (`_bodenLichtFeld`, das Labor-Gesetz über dem Kronen-
     // Register) — nie das Platzierungs-Feld und nie die Streu-Karte als Faktor (K70, Soll-Tafel boden-nah).
-    { token: "this._canopyLightAt(x, z, y, m)", fiel: "K70 Boden nah — das Bodenlicht der Nah-Wiese ist _bodenLichtFeld" },
+    {
+        token: "this._canopyLightAt(x, z, y, m)",
+        fiel: "K70 Boden nah — das Bodenlicht der Nah-Wiese ist _bodenLichtFeld",
+    },
     { token: "(1 - streu * 0.85)", fiel: "K70 Boden nah — die Kronen-Karte wirkt einmal, im Licht (_bodenLichtFeld)" },
     { token: "licht: this._canopyLightAt(", fiel: "K70 Boden nah — das Licht der Nah-Streu ist _bodenLichtFeld" },
     // Der Wasser-Hauch klingt nur, wo Wasser ist: jeder Bau und Abbau reicht seine Fußabdrücke (`_nassAt`) — der Aufruf
@@ -942,18 +945,35 @@ const FORBIDDEN = [
     { token: "nebelAct", fiel: "D8 — der Atem des Nebels", auch: ["porta-core.js", "worlds/portale/porta.js"] },
     { token: "NEBEL_VIS", fiel: "D8 — das duale Nebel-Gefühl (glsl-box/tsl-box)", auch: ["porta-core.js"] },
     { token: "buildFog", fiel: "D8 — der Nebel des Labors", auch: ["worlds/portale/porta.js"] },
-    { token: "['fog',", fiel: "D8 — der Regler fog (Bodennebel) der Tore", auch: ["porta-core.js", "worlds/portale/porta.js"] },
-    { token: "MG.march", fiel: "D8 — der 12-Schritt-March der Membran (MEMBRAN_GESETZ.film)", auch: ["worlds/portale/porta.js"] },
+    {
+        token: "['fog',",
+        fiel: "D8 — der Regler fog (Bodennebel) der Tore",
+        auch: ["porta-core.js", "worlds/portale/porta.js"],
+    },
+    {
+        token: "MG.march",
+        fiel: "D8 — der 12-Schritt-March der Membran (MEMBRAN_GESETZ.film)",
+        auch: ["worlds/portale/porta.js"],
+    },
     // D8: das Spike-Instrument — die Heimat malte ein Panorama ihrer EIGENEN Welt (Würfel-Kamera 80 m westlich der Genesis-Mitte);
     // die Öffnung liest das Ziel aus dem EINEN Export der Ziel-Welt (`_torZielZeile`, die Hülle `AnazhHuelle.panorama`)
-    { token: "_torPanorama", fiel: "D8 — das Host-Panorama der eigenen Welt (Spike); das Ziel kommt aus der Ziel-Welt" },
+    {
+        token: "_torPanorama",
+        fiel: "D8 — das Host-Panorama der eigenen Welt (Spike); das Ziel kommt aus der Ziel-Welt",
+    },
     { token: "_torPanoMal", fiel: "D8 — die Würfel-Würfe der Heimat (Spike); die Ziel-Welt rendert sich selbst" },
     { token: "_torPanoKamera", fiel: "D8 — die sechs Kameras des Host-Panoramas (Spike)" },
     // D8-n1: der verborgene Ziel-Rahmen bootete jede Ziel-Welt im Haupt-Faden des Spiels (Prüfer: 3 882 ms lange Aufgabe je
     // fachwerk, 10 135 ms für sieben Ziele nach dem ersten Weltbild, in der CPU-Gruppe der CI ein WebGL-Bruch je Studio) — das
     // Studio backt sein Panorama in seiner Welt (gate:studio-huelle H5), die Heimat liest die Datei (`_torZielBuendel`)
-    { token: "_torZielRahmen", fiel: "D8-n1 — der verborgene Rahmen der Ziel-Welt im Spiel; das Studio backt, die Heimat liest" },
-    { token: "_torZielStempel", fiel: "D8-n1 — der Stempel je Boot (jede Quelle geholt und gehasht); H5 hält ihn an den Quellen" },
+    {
+        token: "_torZielRahmen",
+        fiel: "D8-n1 — der verborgene Rahmen der Ziel-Welt im Spiel; das Studio backt, die Heimat liest",
+    },
+    {
+        token: "_torZielStempel",
+        fiel: "D8-n1 — der Stempel je Boot (jede Quelle geholt und gehasht); H5 hält ihn an den Quellen",
+    },
     { token: "_torZielPlatte", fiel: "D8-n1 — die IndexedDB der Ziele; die gebackene Datei ist die Platte" },
     { token: "_torZielReihe", fiel: "D8-n1 — die Reihe der Welt-Aufträge im Spiel" },
     { token: "anazhTorZiel", fiel: "D8-n1 — die IndexedDB der Ziele" },
@@ -1624,6 +1644,17 @@ const ZWILLINGE = [
         gefallen: true,
         verboten: gelaendeLeser().concat(["gelaende-core.js"]),
         fiel: `K16 — die Landform ersetzt ${was}`,
+    })),
+    // W1 (16.10., Grok-Zwilling G3-4): die Wiese hat EIN Gesetz für Labor und Welt — die Bodenschicht (`groundCover`) und
+    // der Büschel-Tint (`wiesenTint`, bis W1 die Inline-Formel FIX v27 im Labor) wohnen im Kern, Labor und Stamm rufen sie.
+    ...[
+        ["L * 1.08 - rk * 0.85 + m * 0.22", "die Bodenschicht (groundCover)"],
+        ["lit * 0.5 + (1 - wet) * 0.5", "der Wiesen-Tint (wiesenTint)"],
+    ].map(([fingerprint, was]) => ({
+        fingerprint,
+        gesetzbuch: "foundry-core.js",
+        verboten: ["worlds/terrain/phytogenesis.js", ...STAMM],
+        fiel: `W1 — ${was} wohnt im Kern, __terrainCore`,
     })),
 ];
 
@@ -3280,7 +3311,11 @@ function eigenBoots(dateien) {
         if (!/\b(?:launch|createServer)\b/.test(src)) return false;
         let ast;
         try {
-            ast = acorn.parse(src.replace(/^#!.*/, ""), { ecmaVersion: "latest", sourceType: "script", allowReturnOutsideFunction: true });
+            ast = acorn.parse(src.replace(/^#!.*/, ""), {
+                ecmaVersion: "latest",
+                sourceType: "script",
+                allowReturnOutsideFunction: true,
+            });
         } catch (_e) {
             return /\bpuppeteer\s*\.\s*launch\s*\(|\bhttp\s*\.\s*createServer\s*\(/.test(stripComments(src));
         }
@@ -3308,10 +3343,14 @@ function scanBootWand(dateien, rest = BOOT_REST) {
     const errs = [];
     for (const n of eigen)
         if (!rest.includes(n))
-            errs.push(`Boot-Wand: ${n} startet Server/Browser selbst — nimm scripts/lib/welt-boot.cjs (statikServer · starteBrowser)`);
+            errs.push(
+                `Boot-Wand: ${n} startet Server/Browser selbst — nimm scripts/lib/welt-boot.cjs (statikServer · starteBrowser)`
+            );
     for (const n of rest)
         if (!eigen.includes(n))
-            errs.push(`Boot-Wand: ${n} steht auf der Rest-Liste, startet aber nicht mehr selbst — Zeile streichen (sie schrumpft nur)`);
+            errs.push(
+                `Boot-Wand: ${n} steht auf der Rest-Liste, startet aber nicht mehr selbst — Zeile streichen (sie schrumpft nur)`
+            );
     return errs;
 }
 // DIE HÜLLEN-FORM-WAND (S3 haus, K08): der Wirt liest die Hülle eines Baus in der EINEN Form (N5: `{ stufe, teile }`,
@@ -3444,7 +3483,10 @@ function messortPaare() {
 const zahlRe = (v) => String.raw`(?<![\w.])` + String(v).replace(/[.]/g, String.raw`\.`) + String.raw`(?![\d.])`;
 function scanOrtsWand(dateien) {
     const errs = [];
-    const abschrift = messortPaare().map((p) => ({ p, re: new RegExp(zahlRe(p[0]) + String.raw`[\s\S]{0,60}?` + zahlRe(p[1]), "g") }));
+    const abschrift = messortPaare().map((p) => ({
+        p,
+        re: new RegExp(zahlRe(p[0]) + String.raw`[\s\S]{0,60}?` + zahlRe(p[1]), "g"),
+    }));
     for (const [name, src] of dateien) {
         if (name === "scripts/diag-altlasten.cjs") continue; // die Wand selbst trägt ihre Selbsttest-Sätze als Text
         const code = stripComments(src);
@@ -3779,7 +3821,8 @@ function main() {
         const bootFeuert =
             scanBootWand(gates).length === 0 &&
             scanBootWand([["scripts/diag-neu.cjs", `const b = await ${start};\n`]], []).length === 1 &&
-            scanBootWand([["scripts/diag-srv.cjs", "const s = http" + ".createServer((q, r) => r.end());\n"]], []).length === 1 &&
+            scanBootWand([["scripts/diag-srv.cjs", "const s = http" + ".createServer((q, r) => r.end());\n"]], [])
+                .length === 1 &&
             scanBootWand([["scripts/diag-k.cjs", `// früher: ${start}\nconst t = "${start}";\n`]], []).length === 0 &&
             scanBootWand([["scripts/diag-alt.cjs", "const x = 1;\n"]], ["scripts/diag-alt.cjs"]).length === 1;
         if (!bootFeuert) {
@@ -4217,11 +4260,13 @@ function main() {
             feuert("gelaende-core.js", maske, "Massiv-Maske") &&
             feuert("scripts/playtest.cjs", mulde, "Tarn-Mulde") &&
             feuert("gelaende-core.js", mulde, "Tarn-Mulde") &&
+            feuert("worlds/terrain/phytogenesis.js", "const t = lit * 0.5 + (1 - wet) * 0.5;", "Wiesen-Tint") &&
+            feuert(STAMM[0], "const p = L * 1.08 - rk * 0.85 + m * 0.22;", "Bodenschicht") &&
             still("voxel-worker.js", cont0) &&
             still(STAMM[0], maske);
         console.log(
             zwillingFeuert
-                ? "✅ SELBST-TEST: die Zwillings-Wand feuert (Kontinentalität im Worker, die gefallene Massiv-Maske in Stamm und Gesetzbuch, die gefallene Tarn-Mulde in Linse und Gesetzbuch — je mit Zeile; der Kommentar nicht)"
+                ? "✅ SELBST-TEST: die Zwillings-Wand feuert (Kontinentalität im Worker, die gefallene Massiv-Maske in Stamm und Gesetzbuch, die gefallene Tarn-Mulde in Linse und Gesetzbuch, der Wiesen-Tint im Labor, die Bodenschicht im Stamm — je mit Zeile; der Kommentar nicht)"
                 : "❌ SELBST-TEST: die Zwillings-Wand feuert nicht"
         );
         if (!zwillingFeuert) process.exit(1);

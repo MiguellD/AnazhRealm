@@ -1641,19 +1641,8 @@ function trailDist(x, z, paths) {
     return best;
 }
 
-/* GROUND-COVER-GESETZ: aus Licht x Feuchte x Substrat x Störung wächst die Bodenschicht */
-function groundCover(L, m, rk, td) {
-    if (td < 3.0) return { grass: 0, flower: 0, shrub: 0, pebble: 0.2, bare: 1 }; // breiter gepflegter Pfad: nackte Erde, sichtbarer Weg
-    const edge = td < 3.4 ? 0.55 : 0.3;
-    const meadow = clamp(L * 1.08 - rk * 0.85 + m * 0.22, 0, 1); // hell+feucht+nicht steinig = Wiese
-    return {
-        grass: clamp(meadow * 1.12, 0, 1), // TEPPICH in Lichtungen
-        flower: sstep(0.4, 0.7, L) * (1 - rk) * edge, // Saum/Sonne
-        shrub: Math.exp(-((L - 0.4) * (L - 0.4)) / (2 * 0.16 * 0.16)) * (1 - rk) * 0.42, // Halbschatten
-        pebble: clamp(rk * 1.05 - L * 0.15, 0, 1) * 0.3, // FIX v27: steinige Flecken, aber sparsam (0.55->0.30) -> kein Konfetti-Rauschen
-        bare: 0,
-    };
-}
+/* GROUND-COVER-GESETZ: wohnt im Kern (foundry-core `groundCover`, __terrainCore.groundCover, W1) — die Nah-Wiese der Welt
+   liest dasselbe */
 /* Findet ein schönes Lichtungs-Zentrum nahe dem Hauptpfad (viel Licht, nicht zu steil) */
 function findClearing(trees, R, seedInt) {
     const L = canopyLight(trees);
@@ -2178,22 +2167,14 @@ function buildForest() {
                     const im = new THREE.InstancedMesh(geo, o.material, b.it.length);
                     const isGrassSub = o.material === grassMat,
                         tint = isGrassSub ? new Float32Array(b.it.length * 3) : null; // FIX v27: Gras-Tint pro Halm aus dem Standort
-                    const _jh = (x, z) => {
-                        let n = Math.sin(x * 12.9898 + z * 78.233) * 43758.5453;
-                        return n - Math.floor(n);
-                    };
                     for (let j = 0; j < b.it.length; j++) {
                         const p = b.it[j];
                         im.setMatrixAt(j, compose(p.x, p.y, p.z, p.rotY, p.s));
                         if (isGrassSub) {
-                            const lit = lightAt(p.x, p.z),
-                                wet = moistAt(p.x, p.z),
-                                jt = _jh(p.x, p.z) - 0.5;
-                            const val = (lit - 0.5) * 0.45 + jt * 0.18,
-                                warm = (clamp(lit * 0.5 + (1 - wet) * 0.5, 0, 1) - 0.5) * 0.24; // hell+trocken -> waermeres Oliv; Schatten/nass -> tiefes kuehles Gruen; +Helligkeits-Jitter pro Halm
-                            tint[j * 3] = val + warm;
-                            tint[j * 3 + 1] = val + warm * 0.35;
-                            tint[j * 3 + 2] = val - warm * 0.8 + (wet - 0.5) * 0.12;
+                            // DER TINT ist das Kern-Gesetz der Wiese (W1, __terrainCore.wiesenTint — die Nah-Wiese der Welt
+                            // schreibt ihn als Instanz-Farbe); `aTintI` trägt ihn als Abweichung von 1
+                            __terrainCore.wiesenTint(p.x, p.z, lightAt(p.x, p.z), moistAt(p.x, p.z), tint, j * 3);
+                            for (let c = 0; c < 3; c++) tint[j * 3 + c] -= 1;
                         }
                     }
                     if (isGrassSub) geo.setAttribute("aTintI", new THREE.InstancedBufferAttribute(tint, 3));
