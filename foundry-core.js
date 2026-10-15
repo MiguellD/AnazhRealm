@@ -401,8 +401,12 @@ const PORTAL_RENDER_CONFIG = {
             // DER HALM-TEPPICH (K56, 14.10.): der Büschel deckt seine Raster-Zelle (TEPPICH_REICH), die Dreiecke wandern
             // von der Rispe in die Halme — L1 Halme 3 Segmente, 0,8 der Labor-Zahl, Rispe 4 × 1 bei 1,6 (862/1 000, vorher
             // 1 188); die Nah-Wiese an der Wiese −278/−1038 74,1k → 74,8k Dreiecke, Halm-Deckung des Bodens 0,230 → 0,460.
+            // DIE GRASNARBE (K70): die Rispe der L1 ist EINE nickende Ähre (1 × 2 Segmente, tastet die Kurve ab) statt vier
+            // gestreckter Grannen (4 × 1), die aus 2–5 m als helle V-Zeichen über der Narbe standen; 8 → 4 Dreiecke je Rispe
+            // (L1 798/990 → 702/858 an den zwei Vorlagen) — die Dreiecke tragen die Narbe, die das Bodenlicht der stehenden
+            // Kronen dichter wirft (`_bodenLichtFeld`).
             grass: {
-                1: { tris: 1000, draws: 1, schatten: false, rispe: { grannen: 4, segmente: 1, breite: 1.6 } },
+                1: { tris: 1000, draws: 1, schatten: false, rispe: { grannen: 1, segmente: 2, breite: 3.2 } },
                 2: { tris: 130, draws: 1, schatten: false, rispe: { grannen: 1, segmente: 1, breite: 2.65 } },
                 fernform: "boden",
             },
@@ -661,7 +665,9 @@ function baumWindGlsl(foliage) {
         (foliage ? "transformed+=normalize(normal)*(" + w.flattern + "*_wAn/_wSk);\n" : "")
     );
 }
-function injectWind(mat, foliage, isGrass, baum) {
+// `krone` (K68-N1): das Laub einer Krone (emitTreeRezept: Karte, Klinge, Nadel) trägt die Normale der Krone (phyto-core
+// kronenNormalen) und liest sie FLIP-FREI — die doppelseitige Rückseite kehrte sie nach innen (die Welt: `_laubStoffNormale`).
+function injectWind(mat, foliage, isGrass, baum, krone) {
     mat.onBeforeCompile = function (sh) {
         sh.uniforms.uTime = WIND.uTime;
         if (baum) sh.uniforms.uWindBaum = WIND.uWindBaum;
@@ -756,14 +762,20 @@ function injectWind(mat, foliage, isGrass, baum) {
                         ";\n#ifndef PHYSICALLY_CORRECT_LIGHTS\n _irr *= PI;\n#endif\n reflectedLight.directDiffuse += _irr * RECIPROCAL_PI * material.diffuseColor;\n}\n#undef RE_Direct\n#define RE_Direct RE_Direct_Laub"
                 );
             }
-            // DIE BLATT-UNTERSEITE (phyto-core BLATT_UNTERSEITE, 05.10.): die gesehene Seite nach unten gewandt (die
-            // Normale ist nach normal_fragment_begin seiten-gespiegelt) → heller und matter. Laub und Blüte, nie Gras;
-            // dieselben Zahlen liest der Laub-Stoff der Welt.
+            // DIE BLATT-UNTERSEITE (phyto-core BLATT_UNTERSEITE, 05.10.): die gesehene FLÄCHE nach unten gewandt (K68-N1: die
+            // Fläche aus den Ableitungen, zum Auge gewandt — nie die Licht-Normale, die an der Krone die Krone ist) → heller
+            // und matter. Laub und Blüte, nie Gras; dieselben Zahlen liest der Laub-Stoff der Welt (`_laubUnterseite`).
+            // DIE KRONE FLIP-FREI (K68-N1): nach normal_fragment_begin trägt `normal` wieder die Normale der Krone ohne Seite.
             if (!isGrass) {
                 const BU = self.__phytoCore.BLATT_UNTERSEITE;
+                if (krone)
+                    sh.fragmentShader = sh.fragmentShader.replace(
+                        "#include <normal_fragment_begin>",
+                        "#include <normal_fragment_begin>\n#ifndef FLAT_SHADED\n normal = normalize( vNormal );\n#endif"
+                    );
                 sh.fragmentShader = sh.fragmentShader.replace(
                     "#include <normal_fragment_maps>",
-                    "#include <normal_fragment_maps>\n{ float _ny=dot(normal,normalize((viewMatrix*vec4(0.0,1.0,0.0,0.0)).xyz)); float _uw=clamp(0.5-_ny*" +
+                    "#include <normal_fragment_maps>\n{ float _ny=dot(normalize(cross(dFdx(vViewPosition),dFdy(vViewPosition))),normalize((viewMatrix*vec4(0.0,1.0,0.0,0.0)).xyz)); float _uw=clamp(0.5-_ny*" +
                         BU.steil.toFixed(3) +
                         ",0.0,1.0); float _ul=dot(diffuseColor.rgb,vec3(0.2126,0.7152,0.0722)); diffuseColor.rgb=mix(diffuseColor.rgb,mix(diffuseColor.rgb,vec3(_ul)," +
                         BU.grau.toFixed(3) +
@@ -775,7 +787,11 @@ function injectWind(mat, foliage, isGrass, baum) {
         }
     };
     mat.customProgramCacheKey = function () {
-        return "wind_" + (foliage ? (isGrass ? "grass_v8tint" : "fol_v9laublicht") : "bark") + "_v9overlap";
+        return (
+            "wind_" +
+            (foliage ? (isGrass ? "grass_v8tint" : "fol_v10seite" + (krone ? "_krone" : "")) : "bark") +
+            "_v9overlap"
+        );
     };
     return mat;
 }
@@ -891,6 +907,15 @@ function buildMaterials() {
         false,
         true
     );
+    // DAS KLINGEN-LAUB DER KRONE (K68-N1): Klinge und Nadel eines Baums und Strauchs tragen die Normale der Krone — ihr Stoff
+    // liest sie flip-frei; Farn, Blüte, Schilf und Gestrüpp (foliageMat) tragen ihre eigene Fläche und lesen die Seite.
+    foliageMatKrone = injectWind(
+        new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.62, metalness: 0, side: THREE.DoubleSide }),
+        true,
+        false,
+        true,
+        true
+    );
     foliageMatTex = injectWind(
         new THREE.MeshStandardMaterial({
             vertexColors: true,
@@ -901,6 +926,7 @@ function buildMaterials() {
         }),
         true,
         false,
+        true,
         true
     ); // FIX v31: MULTI-BLATT-KARTEN — ein Quad traegt ~6 GEMALTE Blaetter aus _leafAtlas (map wird nach dem Malen gesetzt). map haelt den WERT um sein Mittel `wert` (bakeLeafAtlasBild; color = 1/wert teilt ihn heraus), die Artfarbe kommt wie ueberall aus vertexColors -> Saison/Tint-Pipeline unveraendert. 28 Dreiecke je Blatt werden 2 je ~6 Blaetter (Faktor ~14 im Mittelfeld).
     grassMat = injectWind(
@@ -2445,7 +2471,17 @@ function emitTreeRezept(P, stufe) {
     }
     addMerged(barkGeos, P.barkType === "birch" ? barkMatBirch : barkMat); // KEIN Weld -> eigene Normalen, kein verschmierter Blob am Fuss
     emitRoots(P); // Wurzeln zurueck (hochgeladene Version: emitRoots, Farbe barkA*0.72/barkB*0.58, aus dem Flarefuss)
-    addMerged(folGeos, foliageMat);
+    // DIE NORMALE DER KRONE (K68): Klingen, Nadeln, Karten und Wedel der Krone lichten mit dem Kronen-Ellipsoid (phyto-core
+    // kronenNormalen) — EINE Krone ueber alle Laub-Teile, damit L0 (Klinge), L1 (Karte) und die gebackene Karte (L2, aus der
+    // L1) dieselbe Licht- und Schattenseite tragen.
+    {
+        const _kn = [...folGeos, ...folGeosTex].filter((g) => g.attributes && g.attributes.normal && g.attributes.position);
+        if (_kn.length)
+            self.__phytoCore.kronenNormalen(
+                _kn.map((g) => ({ pos: g.attributes.position.array, nor: g.attributes.normal.array }))
+            );
+    }
+    addMerged(folGeos, foliageMatKrone);
     if (folGeosTex.length) addMerged(folGeosTex, foliageMatTex); // FIX v31: Cluster-Quads als eigenes Submesh (eigener Attributsatz mit uv) — Studio UND Wald, da buildInstance den subject-Sink tauscht
     if (_wurf1) {
         // DER SCHATTEN-TEIL: das Geruest als Dreikant (aDeckt 1) und die Schatten-Karten (aDeckt 0) — EIN Gitter, EIN Stoff.
@@ -2688,9 +2724,15 @@ function emitFlower(P) {
 const GRAS_SPITZE_HELL = 1.08;
 // Der Halm-Teppich (K56): Reichweite des Büschels in Einheiten des Understory-Rasters (deriveParamsPlant, Art grass).
 const TEPPICH_REICH = 0.7;
+// DIE GRASNARBE (K70, Soll-Tafel boden-nah: eine Wiese zeigt aus Augenhöhe ihren Grund erst unter dem Fuß, Grasland-LAI
+// 1,71): die Deckung ist die Blatt-Fläche je Boden-Fläche, und die Stufe trägt sie, nicht die Dreiecks-Zahl. Der Halm
+// WURZELT im Boden (bis K70 begann er eine Segment-Länge darüber: L1/L2 ein Drittel des Halms Luft am Grund), er ist
+// LINEAL wie ein Grasblatt — parallele Ränder, die Spitze erst im letzten Drittel (Breite 1 − 0,86·f³, Fläche 0,76 statt
+// 0,57 des Rechtecks bei denselben Dreiecken) —, und die Fernstufe L2 ist ein gerader Halm (ein Segment, 2 Dreiecke) in
+// 2,4-facher Zahl: L2 trägt 59 % der L1-Fläche je Büschel statt 38 %.
 function emitGrass(P) {
     const geos = [];
-    const lf = __lod === 0 ? 1 : __lod === 1 ? 0.8 : 0.14;
+    const lf = __lod === 0 ? 1 : __lod === 1 ? 0.92 : 0.333;
     const N = Math.max(3, Math.round(lerp(50, 150, P.density) * lf));
     const baseCol = vegFarbe(seasonTint).multiplyScalar(0.6),
         tipCol = vegFarbe(seasonAccent).multiplyScalar(GRAS_SPITZE_HELL);
@@ -2702,14 +2744,14 @@ function emitGrass(P) {
         const bx = Math.cos(a) * rr,
             bz = Math.sin(a) * rr;
         const isCulm = SH > 0 && rnd() < SH * 0.5; // Teil der Halme -> Rispenstaengel
-        const wMul = __lod === 0 ? 1 : __lod === 1 ? 2.6 : 6.0;
+        const wMul = __lod === 0 ? 1 : __lod === 1 ? 3.0 : 6.5;
         const L = P.bladeLen * (isCulm ? rrange(1.25, 1.6) : rrange(0.6, 1.15)),
             w = P.bladeW * wMul * (isCulm ? 0.5 : 0.74) * rrange(0.8, 1.1);
         const lean = rrange(0.1, 0.4),
             la = rnd() * 6.28,
             bendDir = [Math.cos(la), 0, Math.sin(la)],
             droop = isCulm ? P.droop * 0.45 : P.droop;
-        const K = __lod === 0 ? (isCulm ? 7 : 10) : __lod === 1 ? 3 : 3,
+        const K = __lod === 0 ? (isCulm ? 7 : 10) : __lod === 1 ? 3 : 1,
             positions = [],
             idx = [],
             uvs = [],
@@ -2723,11 +2765,14 @@ function emitGrass(P) {
         for (let s = 0; s <= K; s++) {
             const f = s / K,
                 dd = Math.pow(f, 1.8) * droop;
-            dir = vnorm(vadd(dir, vscl(bendDir, dd * 0.12)));
-            dir = vnorm(vadd(dir, [0, -dd * 0.1, 0]));
-            p = vadd(p, vscl(dir, L / K));
+            // die erste Zeile steht am Fuß (K70), jede weitere eine Segment-Länge entlang der gebogenen Richtung
+            if (s > 0) {
+                dir = vnorm(vadd(dir, vscl(bendDir, dd * 0.12)));
+                dir = vnorm(vadd(dir, [0, -dd * 0.1, 0]));
+                p = vadd(p, vscl(dir, L / K));
+            }
             tip = p.slice();
-            const halfW = w * (1 - f * 0.86) * 0.5,
+            const halfW = w * (1 - f * f * f * 0.86) * 0.5,
                 rt = vnorm(vcross(dir, [0, 1, 0]));
             const cl = vadd(p, vscl(rt, -halfW)),
                 cr = vadd(p, vscl(rt, halfW));
@@ -4484,7 +4529,9 @@ function deriveParamsPlant(pre) {
         const fine = clamp(api, 0, 1); // api: breitblaettrig(0) -> feinhalmig(1)
         return {
             kind: "grass",
-            bladeLen: lerp(0.55, 2.0, slim) * J(0.16),
+            // K70: der Halm wurzelt (emitGrass) — 1,35 × die Länge hält die Höhe der Narbe (vorher schwebte L1/L2 ein Drittel
+            // über dem Grund) und füllt sie bis zum Boden.
+            bladeLen: lerp(0.74, 2.7, slim) * J(0.16),
             bladeW: lerp(0.1, 0.035, fine) * J(0.15),
             density: clamp(leaf * J(0.2), 0.06, 1),
             // DER HALM-TEPPICH (K56): der Büschel deckt seine Zelle des Understory-Rasters — Radius in der Welt

@@ -11,7 +11,7 @@
 //   npm run gate:asset-contract
 const fs = require("fs");
 const path = require("path");
-const { runWithWorker, fingerprintMeshes } = require("./lib/asset-worker-harness.cjs");
+const { runWithWorker, fingerprintMeshes, DATEN_KANAELE, ersteAbweichung } = require("./lib/asset-worker-harness.cjs");
 const { probeWand } = require("./lib/plattform-probe.cjs");
 const {
     bildDeckung,
@@ -517,17 +517,18 @@ function bildUrteil(mess, tafel) {
         // SYNERGIE-WELLE — DER EINE UMSCHLAG (get-book): die drei Daten-Payloads reisen
         // in EINEM Reply; die eingefrorenen JSONs (recipes/world-params/render-config)
         // bleiben die BYTE-Wahrheit der Payloads (nur der Umschlag wechselte).
+        // K64-n2: die Abweichung nennt ihren Schlüssel (Ist ≠ eingefroren) und den Vertrags-Akt, der sie heilt.
         const bookReply = await getData("get-book");
-        for (const [key, field] of [
-            ["recipes", "book"],
-            ["world-params", "worldParams"],
-            ["render-config", "renderConfig"],
-        ]) {
+        for (const [field, key] of DATEN_KANAELE) {
             const goldPath = path.join(DIR, key + ".json");
             if (!fs.existsSync(goldPath)) continue;
             const gold = fs.readFileSync(goldPath, "utf8").trim();
             const live = JSON.stringify(bookReply[field]);
-            if (live !== gold) fails.push(`${key}: divergiert vom eingefrorenen JSON`);
+            if (live === gold) continue;
+            const a = live === undefined ? null : ersteAbweichung(bookReply[field], JSON.parse(gold));
+            fails.push(
+                `${key}: divergiert vom eingefrorenen JSON${a ? ` — ${a.pfad}: ${a.ist} ≠ eingefroren ${a.soll}` : " (fehlt im Umschlag)"} (Vertrags-Akt: MINT_NUR_DATEN=1 node scripts/mint-asset-goldens.cjs)`
+            );
         }
         const buch = bookReply.book || {};
         // DER UMSCHLAG WIE DER WIRT IHN LIEST (W8): die Zweit-Kern-Blöcke (Stufen · Budget · Gestalten) fallen über

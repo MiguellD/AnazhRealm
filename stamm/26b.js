@@ -791,9 +791,10 @@ AnazhRealm.FERN_FARBE = Object.freeze({
 });
 
 // Lockstep-MP (nur Inputs übers Netz): `jitterReserve` = Frame-Reserve gegen Netz-Jitter (2 Frames
-// ≈ 33 ms Anzeige-Latenz des Fremd-Charakters), `maxStepsPerTick` = Aufhol-Burst-Kappe je Frame,
+// ≈ 33 ms Anzeige-Latenz des Fremd-Charakters), `aufholJeSchritt` = Aufhol-Burst-Kappe je Fix-Schritt WANDUHR (ein Takt
+// von dt Sekunden verbraucht höchstens aufholJeSchritt × dt/FIXED_DT, mindestens aufholJeSchritt — `_lockstepTickPeers`),
 // `driftMax` (m) = Ghost-vs-pos-Schwelle fürs Ent-Seeden (der 1-Hz-Anker heilt danach).
-AnazhRealm.LOCKSTEP = Object.freeze({ jitterReserve: 2, maxStepsPerTick: 10, driftMax: 2.5 });
+AnazhRealm.LOCKSTEP = Object.freeze({ jitterReserve: 2, aufholJeSchritt: 10, driftMax: 2.5 });
 
 AnazhRealm.DETAIL_CASCADE = Object.freeze([
     // Band 0 ist 5×5 (maxRing 2): seine Kante (~108 m) teilt Kaskade 0 und 1 des Schattens. (Die Deko-Bänder fielen 04.10.
@@ -2838,12 +2839,15 @@ AnazhRealm.ROCK_GEOLOGY_FORMS = Object.freeze({
     aufschluss: Object.freeze(["nadel", "stapel"]), // aufragender Grat-Aufschluss
 });
 
-// UNTERWUCHS: das Kronendach-Licht ist die EINE Quelle für „wie viel Licht den Boden erreicht" (dichter Wald =
-// dunkel, Lichtung = Wiese) — die Nah-Wiese und das Boden-Gesetz der Nah-Streu lesen es. Die Kronen-Deckung nutzt
-// dieselben Treiber wie die Baum-Platzierung (`_placementStandAt("forest")` × wet × Höhe, ohne Slope/Perf) →
-// konsistent mit dem echten Wald. `canopyK` = exp-Dämpfung des Bodenlichts.
+// UNTERWUCHS: `canopyK` ist die EINE Dämpfung des Bodenlichts unter Kronen, L = exp(−canopyK · Deckung) (das Labor-
+// Gesetz phytogenesis `canopyLight`). Das Licht der STEHENDEN Kronen (`_bodenLichtFeld`: je Krone des Registers
+// exp(−d² / (kronenSigma · r)²) bis q < kronenQMax, wie das Labor) lesen Nah-Wiese und Nah-Streu; das Platzierungs-Feld
+// (`_canopyLightAt`, Deckung aus den Treibern der Baum-Platzierung) liest der Strauch-Teppich, der mit dem Wald
+// gepflanzt wird.
 AnazhRealm.UNDERGROWTH = Object.freeze({
     canopyK: 0.85, // exp(-cover·canopyK): Dach-Dämpfung des Bodenlichts (1=Lichtung, →0 dichtes Dach)
+    kronenSigma: 1.15, // der Schatten einer Krone: Gauß-Breite in Kronen-Radien (Labor `cr = T · 1,15`)
+    kronenQMax: 6, // bis q = d² / (σ·r)² < 6 wirft eine Krone Schatten (Labor) — Reichweite 2,82 Kronen-Radien
 });
 
 // DIE PLATZIERUNG DES KERNS (Leben-Schau 2, 09.10.): die Welt-Skala je Preset (`placement.scale`, `treeScaleMul`) lebt

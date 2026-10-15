@@ -16,6 +16,15 @@
 //   node scripts/werkbank.cjs bild <px> <py> <pz> <lx> <ly> <lz> [--datei f.png] [--w 640 --h 360] [--ziel name] [--wahl N]
 //                                                           [--uhr 0..1] Bühne + echter Frame (Ausgabe-Pfad); --uhr: dieselbe
 //                                                           Bühne zu dieser Stunde (0,5 Mittag), die Leuchtquellen folgen
+//                                      [--klasse <regex>] [--spieler] [--abstand] [--ist <id>[:L<n>|:wirkung]]
+//                                                           DIE KLASSEN IM BILD (K63, die Soll-Tafel spec/abnahme/
+//                                                           soll-tafel.json): in voller Puffer-Größe unter EINER Uhr G, G2
+//                                                           und je Teil-Klasse ein Schuss ohne sie → die Teilung des Bilds
+//                                                           (`<datei>.maske.png`, je Klasse ein Ton), ihr Rauschen und die
+//                                                           Maße je Klasse (abnahme-urteil `klassenMasse`) im Begleit-JSON;
+//                                                           `--abstand` zählt je Klasse den Boden-Abstand in Bändern,
+//                                                           `--ist` schreibt die Messung in die Tafel, `--spieler` lässt
+//                                                           den Spieler-Leib im Bild
 //   node scripts/werkbank.cjs methode <name> [--terrain] [--quelle datei]  Methode aus anazhRealm.js (Arbeitsbaum;
 //                                                           `--quelle`: aus einem anderen Stand, die Basis eines A/B)
 //                                                           live tauschen; --terrain baut das EINE
@@ -29,7 +38,8 @@
 //                                                           Züge ihrer Klasse und ihres Stoffs, Basis-Albedo; Eichung 0,180.
 //                                                           Urteil gegen das Labor-Ist der Tafel; Nachzug mit
 //                                                           diag-albedo-tafel.cjs --nachziehen
-//   node scripts/werkbank.cjs licht                        DIE LICHT-BILANZ (18-%-Karte, je Licht)
+//   node scripts/werkbank.cjs licht [--ist <id>]           DIE LICHT-BILANZ (18-%-Karte, je Licht); `--ist` schreibt
+//                                                           E alle / E Umgebung in die Soll-Tafel (K63-n1)
 //   node scripts/werkbank.cjs licht --laub [eiche,birke] [--ordner d] | --selbsttest  DAS LAUB IM GEGENLICHT (K19, phyto-core
 //                                                           `laubDurchlass`): Luma Gegenlicht/Auflicht je Art ≥ 1,3
 //   node scripts/werkbank.cjs fernwald [--blicke nord,ost] DIE FERNWALD-LINSE: der gesetzte Fernwald im Bild (glatte
@@ -50,7 +60,7 @@
 //                                                           Wiederholung je Render · Uploads · writeBuffer) und NETTO kosten
 //                                                           — jeder verschachtelte Render (der Schatten im ersten Licht-
 //                                                           Empfänger) ist abgezogen und beim Pfad genannt
-//                                                           (scripts/lib/diaet-linse.cjs; Exit 1: Wiederholung im Stand)
+//                                                           (scripts/lib/diaet-linse.cjs; Exit 1: Wiederholung oder Refresh ohne Änderung im Stand)
 //   node scripts/werkbank.cjs takt [n] [--extra a,b]       DIE TAKT-LINSE: CPU je Loop-Subsystem, n Takte, Render
 //                                                           ruht (scripts/lib/takt-linse.cjs)
 //   node scripts/werkbank.cjs stand [n] [--ein s] [--ruhe max-s] [--regler voll|frei] [--tiere frei|halten]
@@ -205,19 +215,43 @@ const ZZ = require("./lib/ziel-zensus.cjs");
 const HL = require("./lib/haenger-linse.cjs");
 
 const root = path.resolve(__dirname, "..");
-// der Stand des Arbeitsbaums für das Begleit-JSON eines Bilds (K32): SHA, „+geaendert" bei Änderungen an versionierten Dateien
-const gitStand = () => {
-    try {
-        const { execFileSync } = require("child_process");
-        const sha = execFileSync("git", ["-C", root, "rev-parse", "HEAD"]).toString().trim();
-        const neu = execFileSync("git", ["-C", root, "status", "--porcelain", "--untracked-files=no"])
-            .toString()
-            .trim();
-        return sha + (neu ? "+geaendert" : "");
-    } catch (_e) {
-        return null;
-    }
+// DIE MESSUNG IN DIE SOLL-TAFEL (K63-n1, `bild --klasse … --ist <id>[:L<n>|:wirkung]`, `licht --ist <id>`): das Werkzeug
+// schreibt, was es gemessen hat, in die EINE Tafel (spec/abnahme/soll-tafel.json, wie `--nachziehen` die Albedo-Tafel) — Ist
+// und Täter rechnet die Linse daraus (abnahme-urteil `sollTafelUrteil`); von Hand steht dort keine Zahl.
+const SOLL_TAFEL = path.join(root, "spec", "abnahme", "soll-tafel.json");
+// DER ORT DER BILDER DER TAFEL (K63-n8, abnahme-urteil `bildPfadFehler`): je Ziel `--ist <id>[:teil]` EIN Name unter
+// artifacts/soll-tafel/ (gitignored, lokal) — Bild, Maske und Begleit-JSON nebeneinander
+const sollAblage = (ziel, endung) => {
+    const d = path.join(root, "artifacts", "soll-tafel");
+    fs.mkdirSync(d, { recursive: true });
+    return path.join(d, String(ziel).replace(/:/g, "-") + endung);
 };
+// der Stand des Arbeitsbaums für das Begleit-JSON eines Bilds (K32) und jede Messung der Tafeln: `gitStand` (SHA, „+geaendert"
+// bei Änderungen an versionierten Dateien außer den Tafeln) und der Code-Abdruck jeder Quelle — EINE Quelle, abnahme-urteil
+const { stammVersion, pruefsumme, kernStand, sollQuelle, gitStand } = require("./lib/abnahme-urteil.cjs").standLeser(root);
+function sollIstSchreiben(ziel, messung) {
+    const [id, teil] = String(ziel).split(":");
+    const text = fs.readFileSync(SOLL_TAFEL, "utf8");
+    const t = JSON.parse(text);
+    const k = t.klassen.find((x) => x.id === id);
+    if (!k) throw new Error(`--ist ${ziel}: die Soll-Tafel trägt keine Klasse „${id}"`);
+    // DER STAND (K63-n2, abnahme-urteil `messStand`): die Version des Stamms und die Prüfsumme jeder Quelle der Klasse, wie sie
+    // beim Messen auf der Platte standen — ändert sich eine, ist das Ist veraltet
+    messung.stand = Object.assign({}, messung.stand, { version: messung.stand.version || stammVersion() });
+    messung.quellen = Object.fromEntries((k.quellen || []).map((d) => [d, pruefsumme(d)]));
+    if (teil === "wirkung") (k.wirkung = k.wirkung || {}).messung = messung;
+    // je Stufe ein Schuss (K63-n4, `milchweiss`: die Tore des Schusses in der Stufe L<n>)
+    else if (/^L\d$/.test(teil || "")) (k.mass.messung = k.mass.messung || {})[teil] = messung;
+    else if (teil) throw new Error(`--ist ${ziel}: Teil „${teil}" unbekannt (L<n> je Stufe, wirkung)`);
+    else k.mass.messung = messung;
+    // DER SCHREIBER PRÜFT (K63-n7, abnahme-urteil `sollIstAbweisung`): in die Tafel fällt nur, was die Linse liest — ein Schuss,
+    // in dem die Klasse nicht zeichnete (der L1-Schuss 14 s nach dem Umstellen: Membran und Nebel ohne Tor), bricht laut
+    const ab = require("./lib/abnahme-urteil.cjs").sollIstAbweisung(JSON.parse(text), t, id, sollQuelle());
+    if (ab.length)
+        throw new Error(`--ist ${ziel}: die Linse liest die Messung nicht — ${ab.join(" · ")} — die Tafel bleibt, wie sie war`);
+    fs.writeFileSync(SOLL_TAFEL, JSON.stringify(t, null, 4) + "\n");
+    return `${id}${teil ? ":" + teil : ""} → spec/abnahme/soll-tafel.json`;
+}
 const argv = process.argv.slice(2);
 const opt = (k, d) => {
     const i = argv.indexOf(k);
@@ -873,6 +907,8 @@ async function starte() {
         await page.evaluate(`window.__tierZahl = ${tierZahl.toString()};`);
         await page.evaluate(STAND.STAND_INSTALL);
         await page.evaluate(FERNWALD_INSTALL);
+        // die Orte aus der Welt (`__weltOrt`: eben · hang · hangfuss · ufer — der Wasser-Ort der Soll-Tafel, K63-n4)
+        await page.evaluate(require("./lib/welt-orte.cjs").WELT_ORTE_INSTALL);
         await page.evaluate(ZL.ZERLEGE_INSTALL);
         await page.evaluate(SK.SHADER_INSTALL);
         await page.evaluate(ZZ.ZIEL_INSTALL);
@@ -1045,13 +1081,36 @@ async function starte() {
             const rend = r.state.renderer;
             const boden = (x, z, v) =>
                 typeof v === "string" && v[0] === "+" ? r._voxelSurfaceY(x, z) + Number(v.slice(1)) : Number(v);
-            const px = Number(k.px),
-                pz = Number(k.pz),
-                lx = Number(k.lx),
-                lz = Number(k.lz);
-            const py = boden(px, pz, k.py),
-                ly = boden(lx, lz, k.ly);
+            // DAS GESICHT (K63-n2, `--gesicht <m>`): die Kamera steht <m> vor dem Kopf des Spielers (sein Kopf-Gelenk, 8 cm darüber
+            // die Augenhöhe, seine Blick-Richtung) und blickt ihn an — die Pose kommt aus dem Leib, nie von Hand
+            let gpos = null;
+            if (k.gesicht != null) {
+                const T = window.THREE;
+                const pm = r.state.playerMesh;
+                let kopf = null;
+                pm.updateMatrixWorld(true);
+                pm.traverse((o) => {
+                    if (!kopf && o.name === "head") kopf = o;
+                });
+                if (!kopf) throw new Error("--gesicht: der Spieler trägt kein Kopf-Gelenk „head“");
+                const h = kopf.getWorldPosition(new T.Vector3()).add(new T.Vector3(0, 0.08, 0));
+                const fw = new T.Vector3(0, 0, 1).applyQuaternion(pm.getWorldQuaternion(new T.Quaternion()));
+                const c = h.clone().addScaledVector(fw, Number(k.gesicht));
+                gpos = [c.x, c.y, c.z, h.x, h.y, h.z];
+            }
+            const px = gpos ? gpos[0] : Number(k.px),
+                pz = gpos ? gpos[2] : Number(k.pz),
+                lx = gpos ? gpos[3] : Number(k.lx),
+                lz = gpos ? gpos[5] : Number(k.lz);
+            const py = gpos ? gpos[1] : boden(px, pz, k.py),
+                ly = gpos ? gpos[4] : boden(lx, lz, k.ly);
             rend.setAnimationLoop(null);
+            // DIE KLASSE (K63, die Soll-Tafel): das Bild in voller Puffer-Größe — Dither und Kanten leben im Pixel des Schirms
+            if (k.klasse) {
+                const db = rend.getDrawingBufferSize(new window.THREE.Vector2());
+                k.w = Math.round(db.x);
+                k.h = Math.round(db.y);
+            }
             // die Kamera VOR der Bühne: die Bühne setzt Tag und Nacht neu, und das Licht des Auges steht an der Kamera
             // (`_dayNightApplyAugenLicht`, seine Stärke aus dem Himmel am Auge) — danach gesetzt, stand es an der Kamera des
             // letzten Schusses (K16: das Auge in der Höhle schwarz, Helligkeit 0, das Licht lag draußen unter dem Himmel)
@@ -1072,7 +1131,7 @@ async function starte() {
                     await new Promise((ok) => setTimeout(ok, 50));
                 }
             }
-            if (r.state.playerMesh) r.state.playerMesh.visible = false;
+            if (r.state.playerMesh) r.state.playerMesh.visible = !!k.spieler;
             // DAS ZIEL des Bilds ist der Blick-Punkt (K32): die Aufnahme prüft, ob es im Bild und frei ist, und die Blick-Wahl
             // sucht bis zu `wahl` Posen um den Ort (Standard drei Runden, 42 — gemessen 13.10. am Dreier-Hain: frei erst in Pose 26;
             // `--wahl 0` schießt nur die genannte Pose)
@@ -1080,13 +1139,15 @@ async function starte() {
             const wahl = k.wahl != null ? Number(k.wahl) : 42;
             let auf = null;
             let gewaehlt = null;
+            // DIE EINE UHR der Klassen-Messung (K63-n1): das Bild und jeder Schuss der Teilung rendern zu derselben Zeit
+            const fest = k.klasse ? performance.now() : null;
             for (let i = 0; i < 2; i++) {
                 try {
                     if (r.state.fernRing && typeof r._tickFeldPass === "function") r._tickFeldPass(r.state.fernRing);
                 } catch (_e) {}
                 r._schattenAlleNeu();
                 // die Blick-Wahl im ersten Schuss, der zweite steht an ihrer Pose; das Bild trägt die Wahl des ersten
-                auf = await window.__ausgabeAufnahme(k.w, k.h, 1, { ziel, wahl: i === 0 ? wahl : 0 });
+                auf = await window.__ausgabeAufnahme(k.w, k.h, 1, { ziel, wahl: i === 0 ? wahl : 0, fest: i === 1 ? fest : null });
                 if (i === 0) gewaehlt = auf.abnahme.wahl || null;
             }
             if (gewaehlt) {
@@ -1099,6 +1160,394 @@ async function starte() {
             const u8 = auf.u8,
                 W = k.w,
                 H = k.h;
+            // DIE KLASSEN IM BILD (K63-n1, scripts/lib/abnahme-urteil.cjs `klassenTeilung` · `bildRauschen` · `klassenMasse`): an
+            // derselben Pose unter der EINEN Uhr des Bilds (`fest`) G — die Szene, jede gemessene Klasse ohne Schattenwurf —, G2
+            // derselbe Schuss (das Rauschen der Messung) und je Teil-Klasse (`_taeterKlasse`, jeder Name unter dem Ausdruck
+            // `k.klasse` für sich) O ohne sie. Die Teilung gibt jedes Pixel höchstens EINER Klasse; die Maße liest das Bild selbst
+            // (mit Schatten). `k.abstand`: je 2×2-Block der Teilung der Strahl der Block-Mitte bis zum gezeichneten Boden
+            // (`_bodenSichtAt`), gezählt je Klasse in Abstands-Bändern, dazu cos θ des Blicks je Band. Die Nah-Wiese ruht, solange
+            // Objekte verborgen sind (ihr Takt setzt je Kachel `visible`), jedes Bündel nimmt neu auf; danach steht alles wie vorher.
+            let klasse = null;
+            if (k.klasse) {
+                const re = new RegExp(k.klasse);
+                const zeichnet = (o) =>
+                    o.visible === true && !!o.geometry && (o.isMesh || o.isLine || o.isPoints || o.isSprite);
+                // DER KOPF IN STOFFEN (K63-n2, `--gesicht`): ein Teil des Spielers, dessen Gewichte am Kopf hängen (head, Augen,
+                // Lider) oder der am Kopf-Gelenk sitzt, heißt `spieler:kopf/<Stoff>` (Stoff = `__klasse`, sonst `auge`), der Rest
+                // `spieler:leib/…` — die Teilung zeigt dann jeden Stoff des Kopfs für sich
+                const KOPF_GELENK = /^(head|eye[LR]|iris[LR]|lid[TB][LR])$/;
+                const kopfGewicht = (o) => {
+                    for (let p = o; p; p = p.parent) if (p.name === "head") return 1;
+                    const a = o.geometry.attributes.skinIndex,
+                        w = o.geometry.attributes.skinWeight;
+                    if (!a || !o.skeleton) return 0;
+                    let kz = 0,
+                        n = 0;
+                    for (let i = 0; i < a.count; i++)
+                        for (let c = 0; c < 4; c++) {
+                            const wt = w.getComponent(i, c);
+                            n += wt;
+                            if (KOPF_GELENK.test(o.skeleton.bones[a.getComponent(i, c)].name)) kz += wt;
+                        }
+                    return n ? kz / n : 0;
+                };
+                const teilName = (o) => {
+                    const kl = r._taeterKlasse(o);
+                    if (k.gesicht == null || kl !== "spieler") return kl;
+                    const auge =
+                        o.isSkinnedMesh && o.skeleton && o.skeleton.bones.some((b) => /^iris[LR]$/.test(b.name));
+                    return `spieler:${kopfGewicht(o) >= 0.3 ? "kopf" : "leib"}/${o.userData.__klasse || (auge ? "auge" : "stoff")}`;
+                };
+                const teile = new Map();
+                const nimm = (kl, o) => {
+                    if (!teile.has(kl)) teile.set(kl, []);
+                    teile.get(kl).push(o);
+                };
+                // DER BAU-SATZ IN BEREICHEN (K63-n3, `_bauSatzArt` · `_tickBauSatz`): ein Bau-Satz zeichnet die Instanz-Gruppen
+                // vieler Exemplare als EIN Mesh — die Teilung führt jeden Bereich beim Namen seiner Gruppe (`_taeterGruppe`:
+                // Exemplar und Stufe, f:drachentor:L1), nie den Satz. Ein Bereich verbirgt sich, indem er den Satz verlässt
+                // (`_chunkSatzAus`), und kehrt über den EINEN Weg zurück (`_bauSatzMarke` → `_tickBauSatz`); ein Nur-Wurf-Satz
+                // zeichnet nie ins Bild und bleibt, wie er ist. Vorher hieß das ganze Tor ab L1 „bauSatz“.
+                const bauSaetze = new Map();
+                for (const [art, s] of r.state.chunkSaetze || [])
+                    if (s.mesh && s.mesh.userData && s.mesh.userData.bauSatz && !s.spec.nurWurf)
+                        bauSaetze.set(s.mesh, { art, s });
+                r.state.scene.traverse((o) => {
+                    if (!zeichnet(o)) return;
+                    const bs = bauSaetze.get(o);
+                    if (bs) {
+                        for (const key of bs.s.bloecke.keys()) {
+                            const kl = r._taeterGruppe(key);
+                            if (re.test(kl)) nimm(kl, { bereich: true, art: bs.art, key, mesh: o });
+                        }
+                        return;
+                    }
+                    const kl = teilName(o);
+                    if (re.test(kl)) nimm(kl, o);
+                });
+                if (!teile.size)
+                    throw new Error(
+                        `Klasse /${k.klasse}/: kein gezeichnetes Objekt in der Szene — die Soll-Messung braucht ihr Exemplar`
+                    );
+                const namen = [...teile.keys()].sort();
+                if (namen.length > 250) throw new Error(`Klasse /${k.klasse}/: ${namen.length} Teil-Klassen (höchstens 250)`);
+                const alle = [].concat(...teile.values());
+                // der Wurf eines Bereichs ist der seines Satzes: der Satz wirft für die Messung nicht
+                const wurf = new Map(alle.map((o) => (o.bereich ? o.mesh : o)).map((o) => [o, o.castShadow]));
+                const verbirg = (o) => (o.bereich ? r._chunkSatzAus(o.art, o.key) : (o.visible = false));
+                const zeig = (o) => (o.bereich ? r._bauSatzMarke(o.key, o.art) : (o.visible = true));
+                const bundlesNeu = () =>
+                    r.state.scene.traverse((o) => {
+                        if (o.isBundleGroup) o.needsUpdate = true;
+                    });
+                const wieseEigen = Object.prototype.hasOwnProperty.call(r, "_tickNahWiese");
+                const wieseAlt = r._tickNahWiese;
+                r._tickNahWiese = () => 0;
+                const schuss = async (aus) => {
+                    for (const o of aus) verbirg(o);
+                    bundlesNeu();
+                    try {
+                        r._schattenAlleNeu();
+                        return (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung", fest })).u8;
+                    } finally {
+                        for (const o of aus) zeig(o);
+                        r._tickBauSatz();
+                        bundlesNeu();
+                    }
+                };
+                try {
+                    for (const o of wurf.keys()) o.castShadow = false;
+                    const G = await schuss([]);
+                    const G2 = await schuss([]);
+                    const Os = [];
+                    for (const n of namen) Os.push(await schuss(teile.get(n)));
+                    const schwelle = 18;
+                    const rauschen = window.__bildRauschen(G, G2, W, H, schwelle);
+                    const { teil, misch } = window.__klassenTeilung(G, Os, W, H, schwelle);
+                    const klassen = {};
+                    // das Außen der Silhouette (K68-n2, `klassenMasse` kante): kein gemessener Teil — Himmel, Boden, Holz
+                    const aussen = new Uint8Array(W * H);
+                    for (let p = 0; p < W * H; p++) aussen[p] = teil[p] === 0 ? 1 : 0;
+                    namen.forEach((n, j) => {
+                        const m = new Uint8Array(W * H);
+                        for (let p = 0; p < W * H; p++) m[p] = teil[p] === j + 1 ? 1 : 0;
+                        const ms = window.__klassenMasse(u8, m, W, H, aussen);
+                        if (ms.pixel) klassen[n] = Object.assign({ objekte: teile.get(n).length }, ms);
+                    });
+                    // DIE PROBEN DES GESICHTS (K63-n2, `--gesicht`): je Vertex des Kopfs sein Zug — die Iris an ihrem Gelenk
+                    // (irisL/R), auf der Kopf-Haut (Gewicht am Gelenk head) der Ton, den der Ofen ihm gab (koerper `kopfToene`:
+                    // Lippe, Höhle; der Haar-Ton der Kappe; die Haut) —, projiziert auf den Schirm; `__gesichtMasse` liest das BILD dort,
+                    // wo die Teilung den Teil des Vertex zeigt (abnahme-urteil). Die Töne kommen aus dem Leib selbst (der häufigste
+                    // Vertex-Ton der Kopf-Haut ist die Haut, der der Strähnen das Haar), nie von Hand.
+                    let gesicht = null;
+                    if (k.gesicht != null) {
+                        const T = window.THREE;
+                        const K = window.__koerperCore;
+                        if (!K || typeof K.kopfToene !== "function" || !K.KOPF_SOLL)
+                            throw new Error("--gesicht: koerper-core ohne kopfToene/KOPF_SOLL in der Seite");
+                        const lin = (hx) =>
+                            [(hx >> 16) & 255, (hx >> 8) & 255, hx & 255].map((c) =>
+                                c / 255 <= 0.04045 ? c / 255 / 12.92 : Math.pow((c / 255 + 0.055) / 1.055, 2.4)
+                            );
+                        const hexAus = (c) =>
+                            c.reduce((h, x0) => {
+                                const x = x0 <= 0.0031308 ? 12.92 * x0 : 1.055 * Math.pow(x0, 1 / 2.4) - 0.055;
+                                return h * 256 + Math.max(0, Math.min(255, Math.round(x * 255)));
+                            }, 0);
+                        const knochen = (o, i) => {
+                            const si = o.geometry.attributes.skinIndex,
+                                sw = o.geometry.attributes.skinWeight;
+                            if (!si || !o.skeleton) return o.parent && o.parent.name === "head" ? "head" : null;
+                            let best = null,
+                                bw = 0;
+                            for (let c = 0; c < 4; c++) {
+                                const wt = sw.getComponent(i, c);
+                                if (wt > bw) {
+                                    bw = wt;
+                                    best = o.skeleton.bones[si.getComponent(i, c)].name;
+                                }
+                            }
+                            return best;
+                        };
+                        const modus = (liste) => {
+                            const z = new Map();
+                            for (const c of liste) {
+                                const key = c.map((x) => x.toFixed(3)).join(",");
+                                z.set(key, (z.get(key) || 0) + 1);
+                            }
+                            const best = [...z.entries()].sort((a, b) => b[1] - a[1])[0];
+                            return best ? best[0].split(",").map(Number) : null;
+                        };
+                        const farbe = (o, i) => {
+                            const ca = o.geometry.attributes.color;
+                            return ca
+                                ? [ca.getX(i), ca.getY(i), ca.getZ(i)]
+                                : [o.material.color.r, o.material.color.g, o.material.color.b];
+                        };
+                        const hautVs = [],
+                            haarVs = [];
+                        for (const [n, os] of teile) {
+                            if (!/^spieler:kopf\//.test(n)) continue;
+                            for (const o of os) {
+                                const pa = o.geometry.attributes.position;
+                                for (let i = 0; i < pa.count; i++) {
+                                    if (/\/hair$/.test(n)) haarVs.push(farbe(o, i));
+                                    else if (/\/(haut|skin)$/.test(n) && knochen(o, i) === "head")
+                                        hautVs.push(farbe(o, i));
+                                }
+                            }
+                        }
+                        const hautLin = modus(hautVs),
+                            haarLin = modus(haarVs);
+                        if (!hautLin) throw new Error("--gesicht: keine Kopf-Haut am Gelenk head");
+                        const KT = K.kopfToene(hexAus(hautLin));
+                        const toene = { haut: hautLin, lippe: lin(KT.lips), hoehle: lin(KT.socket) };
+                        if (haarLin) toene.kappe = haarLin;
+                        const v = new T.Vector3();
+                        const roh = [];
+                        let minY = Infinity,
+                            maxY = -Infinity,
+                            nm = 0;
+                        const mitte = new T.Vector3();
+                        for (const [n, os] of teile) {
+                            if (!/^spieler:kopf\/(auge|haut|skin)$/.test(n)) continue;
+                            const kix = namen.indexOf(n) + 1;
+                            for (const o of os) {
+                                const pa = o.geometry.attributes.position;
+                                for (let i = 0; i < pa.count; i++) {
+                                    const kn = knochen(o, i);
+                                    let z = null,
+                                        seite = null;
+                                    if (/\/auge$/.test(n) && /^iris[LR]$/.test(kn)) {
+                                        z = "iris";
+                                        seite = kn;
+                                    } else if (kn === "head" && /\/(haut|skin)$/.test(n)) {
+                                        const c = farbe(o, i);
+                                        let bd = 1e-4;
+                                        for (const [t, tc] of Object.entries(toene)) {
+                                            const d = (c[0] - tc[0]) ** 2 + (c[1] - tc[1]) ** 2 + (c[2] - tc[2]) ** 2;
+                                            if (d < bd) {
+                                                bd = d;
+                                                z = t;
+                                            }
+                                        }
+                                    }
+                                    if (!z) continue;
+                                    o.getVertexPosition(i, v);
+                                    v.applyMatrix4(o.matrixWorld);
+                                    if (z !== "iris") {
+                                        minY = Math.min(minY, v.y);
+                                        maxY = Math.max(maxY, v.y);
+                                        mitte.add(v);
+                                        nm++;
+                                    }
+                                    const ndc = v.clone().project(cam);
+                                    roh.push({
+                                        z,
+                                        seite,
+                                        k: kix,
+                                        w: v.clone(),
+                                        d: v.distanceTo(cam.position),
+                                        x: Math.floor(((ndc.x + 1) / 2) * W),
+                                        y: Math.floor(((1 - ndc.y) / 2) * H),
+                                    });
+                                }
+                            }
+                        }
+                        mitte.divideScalar(Math.max(1, nm));
+                        const zurCam = cam.position.clone().sub(mitte);
+                        const yHaar = minY + K.KOPF_SOLL.haarLinie * (maxY - minY);
+                        const median = {};
+                        for (const sd of ["irisL", "irisR"]) {
+                            const ds = roh
+                                .filter((p) => p.seite === sd)
+                                .map((p) => p.d)
+                                .sort((a, b) => a - b);
+                            median[sd] = ds.length ? ds[Math.floor(ds.length / 2)] : null;
+                        }
+                        const proben = roh
+                            .filter((p) => p.x >= 0 && p.y >= 0 && p.x < W && p.y < H)
+                            .map((p) => ({
+                                z: p.z,
+                                x: p.x,
+                                y: p.y,
+                                k: p.k,
+                                vorn: p.z === "iris" ? p.d < median[p.seite] : p.w.clone().sub(mitte).dot(zurCam) > 0,
+                                kalotte: p.z !== "iris" && p.w.y > yHaar,
+                            }));
+                        const haarK = namen.map((n, j) => (/^spieler:kopf\/hair$/.test(n) ? j + 1 : 0)).filter(Boolean);
+                        gesicht = window.__gesichtMasse(u8, teil, W, H, proben, haarK);
+                        gesicht.toene = Object.fromEntries(
+                            Object.entries(toene).map(([t, c]) => [t, hexAus(c).toString(16).padStart(6, "0")])
+                        );
+                    }
+                    let abstand = null;
+                    if (k.abstand) {
+                        const T = window.THREE;
+                        // die Bänder: der Ring der Nah-Wiese (ihr Radius in DIESER Welt) ist eine Kante
+                        const ring = r.constructor.NAH_WIESE ? r.constructor.NAH_WIESE.radius : null;
+                        const baender = [...new Set([0, 2, 5, 10, ring, 30, 80, 200].filter((x) => x != null))].sort(
+                            (a, b2) => a - b2
+                        );
+                        const zahl = {},
+                            cosS = baender.slice(1).map(() => 0),
+                            cosN = baender.slice(1).map(() => 0);
+                        const pos = cam.position.clone();
+                        const v = new T.Vector3();
+                        const band = (d) => {
+                            for (let b = 0; b < baender.length - 1; b++) if (d < baender[b + 1]) return b;
+                            return -1;
+                        };
+                        for (let y0 = 0; y0 < H; y0 += 2)
+                            for (let x0 = 0; x0 < W; x0 += 2) {
+                                let jemand = false;
+                                for (let q = 0; q < 4; q++) {
+                                    const x = x0 + (q & 1),
+                                        y = y0 + (q >> 1);
+                                    if (x < W && y < H && teil[y * W + x]) jemand = true;
+                                }
+                                if (!jemand) continue;
+                                v.set(((x0 + 1) / W) * 2 - 1, -(((y0 + 1) / H) * 2 - 1), 0.5)
+                                    .unproject(cam)
+                                    .sub(pos)
+                                    .normalize();
+                                if (v.y >= -1e-4) continue;
+                                // der Strahl bis zum gezeichneten Boden: Schritte wachsen mit dem Abstand, dann halbiert
+                                let t0 = 0,
+                                    t = 0.2,
+                                    hit = -1;
+                                while (t < baender[baender.length - 1]) {
+                                    const gy = r._bodenSichtAt(pos.x + v.x * t, pos.z + v.z * t);
+                                    if (gy != null && pos.y + v.y * t <= gy) {
+                                        let a = t0,
+                                            b = t;
+                                        for (let it = 0; it < 8; it++) {
+                                            const m2 = (a + b) / 2;
+                                            const g2 = r._bodenSichtAt(pos.x + v.x * m2, pos.z + v.z * m2);
+                                            if (g2 != null && pos.y + v.y * m2 <= g2) b = m2;
+                                            else a = m2;
+                                        }
+                                        hit = b;
+                                        break;
+                                    }
+                                    t0 = t;
+                                    t += Math.max(0.05, 0.04 * t);
+                                }
+                                if (hit < 0) continue;
+                                const d = Math.hypot(v.x * hit, v.z * hit);
+                                const bi = band(d);
+                                if (bi < 0) continue;
+                                for (let q = 0; q < 4; q++) {
+                                    const x = x0 + (q & 1),
+                                        y = y0 + (q >> 1);
+                                    const c = x < W && y < H ? teil[y * W + x] : 0;
+                                    if (!c) continue;
+                                    const n = namen[c - 1];
+                                    (zahl[n] || (zahl[n] = baender.slice(1).map(() => 0)))[bi]++;
+                                    cosS[bi] += -v.y;
+                                    cosN[bi]++;
+                                }
+                            }
+                        abstand = {
+                            baender,
+                            ring,
+                            augeUeberBoden: +(pos.y - (r._bodenSichtAt(pos.x, pos.z) || 0)).toFixed(2),
+                            cos: cosS.map((s, b) => (cosN[b] ? +(s / cosN[b]).toFixed(4) : null)),
+                            klassen: zahl,
+                        };
+                    }
+                    // die Maske: jede Klasse in ihrem Ton über dem Bild, der Rest blau-grau
+                    const ton = [
+                        [255, 80, 80],
+                        [80, 255, 80],
+                        [80, 120, 255],
+                        [255, 220, 60],
+                        [255, 80, 255],
+                        [60, 230, 230],
+                        [255, 150, 40],
+                        [180, 120, 255],
+                    ];
+                    const mu8 = new Uint8Array(W * H * 4);
+                    for (let p = 0; p < W * H; p++) {
+                        const i = p * 4;
+                        const c = teil[p];
+                        if (c) {
+                            const f = ton[(c - 1) % ton.length];
+                            for (let ch = 0; ch < 3; ch++) mu8[i + ch] = Math.round(0.6 * u8[i + ch] + 0.4 * f[ch]);
+                        } else {
+                            const g = 0.25 * (0.2126 * u8[i] + 0.7152 * u8[i + 1] + 0.0722 * u8[i + 2]);
+                            mu8[i] = g;
+                            mu8[i + 1] = g;
+                            mu8[i + 2] = g + 40;
+                        }
+                        mu8[i + 3] = 255;
+                    }
+                    const cv2 = document.createElement("canvas");
+                    cv2.width = W;
+                    cv2.height = H;
+                    const ctx2 = cv2.getContext("2d");
+                    const img2 = ctx2.createImageData(W, H);
+                    img2.data.set(mu8);
+                    ctx2.putImageData(img2, 0, 0);
+                    klasse = {
+                        ausdruck: k.klasse,
+                        schwelle,
+                        rauschen,
+                        misch,
+                        toene: namen.map((n, j) => `${n}=${ton[j % ton.length].join("/")}`),
+                        klassen,
+                        abstand,
+                        gesicht,
+                        maske: cv2.toDataURL("image/png"),
+                    };
+                } finally {
+                    for (const [o, c] of wurf) o.castShadow = c;
+                    bundlesNeu();
+                    r._schattenAlleNeu();
+                    if (wieseEigen) r._tickNahWiese = wieseAlt;
+                    else delete r._tickNahWiese;
+                }
+            }
             const lum = (i) => 0.2126 * u8[i] + 0.7152 * u8[i + 1] + 0.0722 * u8[i + 2];
             let n = 0,
                 l = 0,
@@ -1126,6 +1575,7 @@ async function starte() {
                 dc: auf.info.drawCalls,
                 dreiecke: auf.info.triangles,
                 ms: Math.round(auf.ms),
+                klasse,
                 png: cv.toDataURL("image/png"),
             };
         }, k);
@@ -1326,12 +1776,50 @@ async function starte() {
                     fs.mkdirSync(path.dirname(datei), { recursive: true });
                     fs.writeFileSync(datei, Buffer.from(o.png.split(",")[1], "base64"));
                     delete o.png;
+                    // DIE KLASSE (K63): die Maske neben dem Bild, die Maße im Begleit-JSON
+                    if (o.klasse) {
+                        const mdatei = datei.replace(/\.png$/i, "") + ".maske.png";
+                        fs.writeFileSync(mdatei, Buffer.from(o.klasse.maske.split(",")[1], "base64"));
+                        o.klasse.maske = mdatei;
+                        o.abnahme.klasse = o.klasse;
+                    }
                     // DAS BEGLEIT-JSON (K32): die Abnahme des Bilds mit dem Stand des Arbeitsbaums (SHA, geändert ja/nein)
                     o.abnahme.stand.sha = gitStand();
-                    fs.writeFileSync(
-                        datei.replace(/\.png$/i, "") + ".abnahme.json",
-                        JSON.stringify(o.abnahme, null, 1)
-                    );
+                    // DIE MESSUNG IN DIE SOLL-TAFEL (K63-n1, `--ist <id>[:L<n>|:wirkung]`)
+                    if (b.ist) {
+                        if (!o.klasse) throw new Error("--ist braucht --klasse (die Teilung des Bilds)");
+                        const kl = o.klasse;
+                        if (!Object.keys(kl.klassen).length)
+                            throw new Error(`--ist ${b.ist}: die Klasse zeichnet kein Pixel im Bild — die Tafel bleibt, wie sie war`);
+                        // DER ORT DES BILDS (K63-n8, abnahme-urteil `bildPfadFehler`): das Bild der Tafel liegt beim Namen des
+                        // Ziels unter artifacts/soll-tafel/ (gitignored, lokal) — nie im Scratch, auf den die Tafel nicht zeigen
+                        // darf; kopiert erst, wenn die Tafel die Messung genommen hat (eine abgewiesene ersetzt kein Bild)
+                        const ablage = sollAblage(b.ist, ".png");
+                        o.ist = sollIstSchreiben(b.ist, {
+                            werkzeug: "bild",
+                            datum: new Date().toISOString(),
+                            stand: { version: o.abnahme.stand.version, sha: o.abnahme.stand.sha },
+                            geraet: { backend: o.abnahme.geraet.backend, adapter: o.abnahme.geraet.adapter },
+                            leinwand: [o.abnahme.bild.w, o.abnahme.bild.h],
+                            kamera: o.kamera,
+                            ausdruck: kl.ausdruck,
+                            schwelle: kl.schwelle,
+                            rauschen: kl.rauschen,
+                            misch: kl.misch,
+                            klassen: kl.klassen,
+                            abstand: kl.abstand,
+                            gesicht: kl.gesicht || null,
+                            bild: path.relative(root, ablage).split(path.sep).join("/"),
+                        });
+                        if (ablage !== datei) {
+                            fs.copyFileSync(datei, ablage);
+                            fs.copyFileSync(kl.maske, sollAblage(b.ist, ".maske.png"));
+                        }
+                    }
+                    const begleit = datei.replace(/\.png$/i, "") + ".abnahme.json";
+                    fs.writeFileSync(begleit, JSON.stringify(o.abnahme, null, 1));
+                    if (b.ist && sollAblage(b.ist, ".png") !== datei)
+                        fs.copyFileSync(begleit, sollAblage(b.ist, ".abnahme.json"));
                     const zeile = o.abnahme.zeile;
                     delete o.abnahme;
                     return send(Object.assign(o, { abnahme: zeile, datei, gesamtMs: Date.now() - t0 }));
@@ -1553,11 +2041,19 @@ async function starte() {
                 if (req.url === "/albedo" && b.tafel) {
                     // DIE WELT-SEITE DER ALBEDO-TAFEL: dieselbe Linse, je Tafel-Zeile Exemplar · Klasse · Stoff.
                     const t = AT.ladeTafel();
+                    // DAS AUGE DER STUFE (`exemplar.stufeNah`, K63-n7) wählt die Stufe JEDES Exemplars neu (gemessen 15.10., Radeon:
+                    // das Haus sprang mit dem Auge am Wagen von L1 auf L2) — jede solche Zeile misst in ihrem eigenen Gang NACH
+                    // den übrigen, die Karte der Eichung liest der erste Gang
+                    const nahZ = t.zeilen.filter((z) => ((z.welt || {}).exemplar || {}).stufeNah);
                     const liste = await page.evaluate((o) => window.__albedoSicht(o), {
-                        zeilen: t.zeilen,
+                        zeilen: t.zeilen.filter((z) => !nahZ.includes(z)),
                         w: 640,
                         h: 400,
                     });
+                    for (const z of nahZ) {
+                        const l2 = await page.evaluate((o) => window.__albedoSicht(o), { zeilen: [z], w: 640, h: 400 });
+                        for (const e of l2) if (e.name !== "graukarte") liste.push(e);
+                    }
                     const ordner = path.resolve(b.ordner || path.join(root, "artifacts", "werkbank", "albedo-tafel"));
                     fs.mkdirSync(ordner, { recursive: true });
                     const welt = {};
@@ -1583,6 +2079,7 @@ async function starte() {
                                       zuege: e.zuege,
                                       stoffe: e.stoffe,
                                       gesetzt: e.gesetzt,
+                                      stufen: e.stufen,
                                   }
                                 : { Y: null, fehler: e.fehler || "kein Pixel" };
                     }
@@ -1593,6 +2090,8 @@ async function starte() {
                     });
                     const messung = {
                         datum: new Date().toISOString(),
+                        // der Stand der Welt-Seite (K63-n3, abnahme-urteil `kernStand`): Version und Prüfsumme jedes Kerns
+                        stand: kernStand(),
                         echt: ECHT,
                         geraet,
                         ort: aktOrt,
@@ -2356,10 +2855,22 @@ async function starte() {
                         ms: Date.now() - t0,
                     });
                 }
-                if (req.url === "/licht")
-                    return send(
-                        Object.assign(await page.evaluate(() => window.__lichtBilanz()), { ms: Date.now() - t0 })
-                    );
+                if (req.url === "/licht") {
+                    const o = await page.evaluate(() => window.__lichtBilanz());
+                    // DIE MESSUNG IN DIE SOLL-TAFEL (K63-n1, `licht --ist <id>`): E an der waagrechten Karte, alle Lichter und
+                    // nur die Umgebung (der Himmel)
+                    if (b.ist)
+                        o.ist = sollIstSchreiben(b.ist, {
+                            werkzeug: "licht",
+                            datum: new Date().toISOString(),
+                            stand: { sha: gitStand() },
+                            geraet: { adapter: await page.evaluate(() => window.__abnahmeMessen({}).geraet.adapter) },
+                            E_alle: o.alle && o.alle.oben ? o.alle.oben.E : null,
+                            E_umgebung: o.umgebung && o.umgebung.oben ? o.umgebung.oben.E : null,
+                            sonnenRichtung: o.sonnenRichtung,
+                        });
+                    return send(Object.assign(o, { ms: Date.now() - t0 }));
+                }
                 if (req.url === "/fernwald")
                     return send(
                         Object.assign(
@@ -2433,6 +2944,11 @@ async function starte() {
             h: Number(opt("--h", 360)),
             ziel: opt("--ziel"),
             wahl: opt("--wahl"),
+            klasse: opt("--klasse"),
+            spieler: argv.includes("--spieler"),
+            abstand: argv.includes("--abstand"),
+            gesicht: opt("--gesicht"),
+            ist: opt("--ist"),
         });
     else if (cmd === "methode")
         o = await rufe("/methode", { name: a[0], terrain: argv.includes("--terrain"), quelle: opt("--quelle") });
@@ -2661,6 +3177,16 @@ async function starte() {
                 ],
                 [LL.laubLichtUrteil({ welt: { birke: { fehler: "keine Laub-Senke" } } }).urteil, "ROT"],
                 [LL.laubLichtUrteil({}).urteil, "ROT"],
+                // die Krone von oben (K68-N3): Zwei-Strom-Band über der gemessenen Blatt-Albedo
+                [LL.kronenReflexionSoll(0.164, [0.5, 1]).join("/"), "0.0705/0.099"],
+                [LL.kronenObenUrteil({ welt: { fichte: { oben: { R: 0.08, A: 0.164, tau: [0.5, 1] } } } }).urteil, "GRUEN"],
+                [
+                    LL.kronenObenUrteil({ welt: { fichte: { oben: { R: 0.15, A: 0.164, tau: [0.5, 1] } } } }).befunde.join(),
+                    /fichte: Reflexion 0\.15 außerhalb \[0\.0705, 0\.099\].*besonnte Schale/,
+                ],
+                [LL.kronenObenUrteil({ welt: { fichte: { oben: { R: 0.03, A: 0.164, tau: [0.5, 1] } } } }).urteil, "ROT"],
+                [LL.kronenObenUrteil({ welt: { fichte: { fehler: "keine Laub-Senke" } } }).urteil, "ROT"],
+                [LL.kronenObenUrteil({}).urteil, "ROT"],
             ];
             const fehl = f.filter(([ist, soll]) => (soll instanceof RegExp ? !soll.test(ist) : ist !== soll));
             console.log(`LAUB-LICHT Selbsttest: ${f.length - fehl.length}/${f.length}`);
@@ -2669,13 +3195,18 @@ async function starte() {
         const welt = {};
         // Das Exemplar je Art: das nächste zum Messort Wiese (spec/profiband/haushalt.json) — derselbe Baum in jedem Lauf.
         const wiese = require("../spec/profiband/haushalt.json").messorte.find((m) => m.id === "wiese");
-        for (const art of String(opt("--laub", "eiche,birke")).split(",")) {
+        // `--oben` (K68-N3): dasselbe Exemplar lotrecht von oben, die Reflexion der Krone gegen das Zwei-Strom-Band
+        // (`kronenObenUrteil`). Die Arten stehen hinter `--laub`, ohne Liste eiche,birke (ein folgender Schalter ist keine Art).
+        const oben = argv.includes("--oben");
+        const arten = opt("--laub") && !String(opt("--laub")).startsWith("--") ? opt("--laub") : "eiche,birke";
+        for (const art of String(arten).split(",")) {
             const c = `return await window.__laubGegenlicht(Object.assign({ art: ${JSON.stringify(art)} }, __o));`;
             // am Anker stehen: welche Bäume eine nahe Stufe (eine Laub-Senke) tragen, folgt dem Spieler
             await rufe("/umstellen", { x: wiese.spieler[0], z: wiese.spieler[1] });
             const plan = (
                 await rufe("/eval", {
-                    code: `const __o = { plan: true, anker: ${JSON.stringify(wiese.spieler)} }; ${c}`,
+                    // `--abstand m`: der Augen-Ort so weit vom Fuß (die Stufe folgt dem Spieler: nah L0, weiter L1)
+                    code: `const __o = { plan: true, anker: ${JSON.stringify(wiese.spieler)}, abstand: ${Number(opt("--abstand", 8)) || 8} }; ${c}`,
                 })
             ).ergebnis;
             if (!plan || plan.fehler) {
@@ -2683,9 +3214,18 @@ async function starte() {
                 continue;
             }
             await rufe("/umstellen", { x: plan.auge[0], z: plan.auge[1] });
-            const w = (await rufe("/eval", { code: `const __o = { ziel: ${JSON.stringify(plan.ziel)} }; ${c}` }))
-                .ergebnis;
+            const w = (
+                await rufe("/eval", { code: `const __o = { ziel: ${JSON.stringify(plan.ziel)}, oben: ${oben} }; ${c}` })
+            ).ergebnis;
             const ordner = opt("--ordner");
+            if (w && w.oben && w.oben.png) {
+                if (ordner)
+                    fs.writeFileSync(
+                        path.join(ordner, `krone-${art}-oben.png`),
+                        Buffer.from(w.oben.png.split(",")[1], "base64")
+                    );
+                delete w.oben.png;
+            }
             if (w && w.gegen)
                 for (const k of ["gegen", "auf"]) {
                     if (ordner)
@@ -2697,13 +3237,19 @@ async function starte() {
                 }
             welt[art] = w;
         }
+        if (oben) {
+            const u = LL.kronenObenUrteil({ welt });
+            console.log(JSON.stringify({ welt, zeilen: u.zeilen }, null, 1));
+            console.log(`KRONE-OBEN ${u.urteil}${u.befunde.length ? ": " + u.befunde.join(" | ") : ""}`);
+            process.exit(u.urteil === "GRUEN" ? 0 : 1);
+        }
         const u = LL.laubLichtUrteil({ welt });
         // `--datei`: die Welt-Seite für das Labor-Urteil (diag-albedo-tafel.cjs --laub --welt <datei>)
         if (opt("--datei")) fs.writeFileSync(path.resolve(opt("--datei")), JSON.stringify({ welt }, null, 1));
         console.log(JSON.stringify({ welt, zeilen: u.zeilen }, null, 1));
         console.log(`LAUB-LICHT ${u.urteil}${u.befunde.length ? ": " + u.befunde.join(" | ") : ""}`);
         process.exit(u.urteil === "GRUEN" ? 0 : 1);
-    } else if (cmd === "licht") o = await rufe("/licht");
+    } else if (cmd === "licht") o = await rufe("/licht", { ist: opt("--ist") });
     else if (cmd === "fernwald") o = await rufe("/fernwald", { blicke: opt("--blicke"), w: opt("--w"), h: opt("--h") });
     else if (cmd === "fluss") o = await rufe("/fluss", {});
     else if (cmd === "puffer") o = await rufe("/puffer", { top: opt("--top") });
@@ -2714,7 +3260,7 @@ async function starte() {
             console.log(
                 f.length
                     ? "SELBSTTEST ROT:\n  " + f.join("\n  ")
-                    : "SELBSTTEST GRÜN: das Diät-Urteil nennt die Wiederholung im Stand und eine blinde Linse beim Namen"
+                    : "SELBSTTEST GRÜN: das Diät-Urteil nennt die Wiederholung im Stand, den Refresh ohne Änderung und eine blinde Linse beim Namen"
             );
             process.exit(f.length ? 1 : 0);
         }

@@ -367,12 +367,12 @@ function leserUrteil(srcRoh) {
         zeilen++;
     }
     if (!zeilen) v.push("kein Aufruf von `_waterLevelAt` gefunden (die Probe prüft nichts)");
-    const wald = fnBody(src, /\n {4}_forestCellDarts\(cx, cz, seedInt\) \{/);
+    const wald = fnBody(src, /\n {4}_forestCellDarts\([^)]*\) \{/);
     const waldWasser = wald ? /waterYAt:([\s\S]*?)slopeAt:/.exec(wald) : null;
     if (!waldWasser) v.push("`_forestCellDarts` mit waterYAt nicht gefunden");
     else if (!/_atlasWaterLevelAt\(/.test(waldWasser[1]) || /_waterLevelAt\(/.test(waldWasser[1]))
         v.push("der Wald (`_forestCellDarts` waterYAt) plant nicht gegen das Gesetz des Wassers `_atlasWaterLevelAt`");
-    const wand = fnBody(src, /\n {4}_naturWand\(name, position, opts\) \{/);
+    const wand = fnBody(src, /\n {4}_naturWand\([^)]*\) \{/);
     if (!wand || !/_stammFussLand\(/.test(wand))
         v.push("die Natur-Wand (`_naturWand`) fragt den Fuß des Stamms nicht (`_stammFussLand`)");
     const fuss = fnBody(src, /\n {4}_stammFussLand\([^)]*\) \{/);
@@ -2286,8 +2286,8 @@ function selbsttest() {
             "Zwilling zurück",
             (s) =>
                 s.replace(
-                    "    _nassAt(x, z, marge = -0.05) {",
-                    "    _isAboveWaterAt(x, z) {\n        return true;\n    }\n    _nassAt(x, z, marge = -0.05) {"
+                    /\n {4}_nassAt\(/,
+                    "\n    _isAboveWaterAt(x, z) {\n        return true;\n    }\n    _nassAt("
                 ),
             /Zwillings-Probe/,
         ],
@@ -2315,8 +2315,8 @@ function selbsttest() {
             "zweite Wahrheit zurück (die Weck-Frage am Gesetz samt Rand, Kopf f5b331ae)",
             (s) =>
                 s.replace(
-                    "    _stempelSpanne(aabb, ox, oy, oz, dim, dimY, step) {",
-                    "    _stempelImWasser(aabbs) {\n        return !!aabbs;\n    }\n    _stempelSpanne(aabb, ox, oy, oz, dim, dimY, step) {"
+                    /\n {4}_stempelSpanne\(/,
+                    "\n    _stempelImWasser(aabbs) {\n        return !!aabbs;\n    }\n    _stempelSpanne("
                 ),
             /zweite Wasser-Wahrheit/,
         ],

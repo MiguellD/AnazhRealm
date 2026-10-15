@@ -39,6 +39,10 @@ const PORT = Number(process.env.HITCH_PORT || 4463);
 // Laufzeit nach dem Welt-Settle: ~15 s echte Loop-Zeit, damit Sekunden-Grenzen,
 // EWMA und Ringe wirklich GEFÜLLT sind (nicht nur initialisiert).
 const LAUFZEIT_MS = 15000;
+// Die Frist JE BAU der Erst-Zeichnungs-Wand (`ruf`): so lange darf EIN Pipeline-Bau im Flug sein (swiftshader am Läufer:
+// 1–292 s je Pipeline), bevor die Wand den GPU-Prozess für hängend erklärt. HITCH_BAU_FRIST_S verkürzt sie für die Probe der
+// Wand selbst (die Summe einer Probe darf jede Frist übersteigen, solange jeder Bau sich erfüllt).
+const BAU_FRIST_MS = Number(process.env.HITCH_BAU_FRIST_S || 600) * 1000;
 const TEIL = Number((process.argv.find((a) => a.startsWith("--teil=")) || "--teil=0").slice(7));
 if (![0, 1, 2].includes(TEIL)) throw new Error(`--teil=${TEIL}: erlaubt 1 oder 2`);
 // trägt dieser Lauf den Teil t? (ohne --teil beide)
@@ -82,7 +86,7 @@ function bauUhrInstall() {
             const p = roh.call(this, d);
             const t0 = performance.now();
             U.angelegt++;
-            U.imFlug.set(p, (d && d.label) || name);
+            U.imFlug.set(p, { name: (d && d.label) || name, t0 });
             const ende = (ok) => {
                 const ms = performance.now() - t0;
                 U.imFlug.delete(p);
@@ -197,6 +201,19 @@ function erstWandInstall() {
     // Bau, ohne Knoten-Bau und ohne verschobenen Erst-Bau. Dann kann nichts mehr kommen, was `ziel` wahr macht, und die
     // Probe urteilt. Ein langsamer Runner wartet länger, sein Urteil ist dasselbe (bis K25: 60 s und 120 s Wanduhr).
     const STILL_BILDER = 3;
+    // DER GEGENDRUCK DER GPU (K60-N3): jedes geschaltete Bild wartet, bis das Gerät seine Arbeit abgegeben hat
+    // (`queue.onSubmittedWorkDone`), bevor das nächste kommt. Ohne ihn schob die Probe alle 20 ms ein Bild in den GPU-Prozess,
+    // gleich wie schnell swiftshader rastert: der Rückstau wuchs über die Probe, und die Rückmeldung jedes asynchronen
+    // Pipeline-Baus wartete hinter ihm (ein unbeleuchteter Würfel 46 s asynchron, derselbe Stoff synchron < 1 s; am Läufer
+    // Probe 222 s und Neubau über 600 s, CI 38670118945). `gpuStau` trägt die längste Wartezeit je Probe.
+    const gpuStau = { maxMs: 0 };
+    const gpuTakt = async () => {
+        const d = rend.backend && rend.backend.device;
+        if (!d || !d.queue || typeof d.queue.onSubmittedWorkDone !== "function") return;
+        const t0 = performance.now();
+        await d.queue.onSubmittedWorkDone();
+        gpuStau.maxMs = Math.max(gpuStau.maxMs, performance.now() - t0);
+    };
     const bisEreignis = async (ziel, pauseMs) => {
         let bilder = 0,
             still = 0;
@@ -206,6 +223,7 @@ function erstWandInstall() {
                 a0 = U ? U.angelegt : 0;
             bild();
             bilder++;
+            await gpuTakt();
             await sleep(pauseMs);
             const ruhig =
                 (!U || (U.imFlug.size === 0 && U.angelegt === a0)) &&
@@ -423,6 +441,7 @@ function erstWandInstall() {
             bild();
             frames++;
             nachBereit++;
+            await gpuTakt();
             await sleep(20);
         }
         return {
@@ -613,6 +632,7 @@ function erstWandInstall() {
         aufnahme,
         absage,
         zurueck: () => Object.prototype.hasOwnProperty.call(rend, "_renderObjectDirect"),
+        gpuStau,
     };
 }
 
@@ -768,15 +788,75 @@ function erstWandInstall() {
     }, IN(1) ? LAUFZEIT_MS : 0);
     // Welle K — DIE ERST-ZEICHNUNG: Installation, Probe, Gegen-Lauf, Neubau, Neubau ohne Gedächtnis — je ein Aufruf
     if (out && !out.fatal) {
-        // eine Probe ohne Sekunden-Frist: hängt der GPU-Prozess selbst (ein Bau, der sich nie erfüllt), bricht erst die
-        // Protokoll-Frist (600 s) — dann nennt der Wurf die Probe beim Namen
+        // DIE FRIST GILT JE BAU, NIE JE PROBE (K60-N3): eine Probe ohne Sekunden-Frist — sie läuft auf der Seite als
+        // Versprechen, Node fragt in kurzen Aufrufen nach. Gerissen wird nur, wenn EIN Bau länger als BAU_FRIST_MS im Flug
+        // ist (der GPU-Prozess hängt: ein Bau, der sich nie erfüllt — er steht beim Namen im Wurf) oder so lange kein Bau-
+        // Ereignis kommt, während die Probe läuft. Bis K60-N3 trug EIN Protokoll-Aufruf die ganze Probe samt ihrer Ruhe:
+        // seine Frist (600 s) urteilte über die Summe der Bauten des Läufers (CI 38670118945: Probe 222 s, der Neubau riss
+        // nach 600 s ohne einen Namen; an 91dff111 mit demselben Code 39 s).
         const ruf = async (name, fn, arg) => {
             const t0 = Date.now();
-            await page.evaluate(() => (window.__erstWandRuhe = null));
-            const v = await page.evaluate(fn, arg).catch((e) => {
-                throw new Error(`[Erst-Zeichnung] ${name} nach ${Math.round((Date.now() - t0) / 1000)} s: ${(e && e.message) || e}`);
+            const sek = () => Math.round((Date.now() - t0) / 1000);
+            await page.evaluate(
+                `(() => { window.__erstWandRuhe = null; if (window.__erstWand) window.__erstWand.gpuStau.maxMs = 0; const lauf = (window.__erstRuf = { fertig: false, wert: undefined, fehler: null });` +
+                    ` Promise.resolve().then(() => (${fn.toString()})(${JSON.stringify(arg)})).then(` +
+                    `(v) => { lauf.wert = v; lauf.fertig = true; }, (e) => { lauf.fehler = String((e && e.stack) || e); lauf.fertig = true; }); })()`
+            );
+            let ereignis = null,
+                ereignisAm = Date.now(),
+                meldungAm = Date.now();
+            for (;;) {
+                const s = await page
+                    .evaluate(() => {
+                        const lauf = window.__erstRuf;
+                        const U = window.__bauUhr;
+                        const jetzt = performance.now();
+                        let alt = null;
+                        if (U)
+                            for (const b of U.imFlug.values())
+                                if (!alt || b.t0 < alt.t0) alt = b;
+                        return {
+                            fertig: lauf.fertig,
+                            fehler: lauf.fehler,
+                            ereignis: U ? `${U.angelegt}/${U.gebaut}/${U.abgesagt}` : "",
+                            imFlug: U ? U.imFlug.size : 0,
+                            gebaut: U ? U.gebaut : 0,
+                            aeltester: alt ? { name: alt.name, ms: Math.round(jetzt - alt.t0) } : null,
+                        };
+                    })
+                    .catch((e) => {
+                        throw new Error(`[Erst-Zeichnung] ${name} nach ${sek()} s: ${(e && e.message) || e}`);
+                    });
+                if (s.fehler) throw new Error(`[Erst-Zeichnung] ${name} nach ${sek()} s: ${s.fehler}`);
+                if (s.fertig) break;
+                if (s.ereignis !== ereignis) {
+                    ereignis = s.ereignis;
+                    ereignisAm = Date.now();
+                }
+                if (s.aeltester && s.aeltester.ms > BAU_FRIST_MS)
+                    throw new Error(
+                        `[Erst-Zeichnung] ${name} nach ${sek()} s: der Bau „${s.aeltester.name}" hängt seit ${Math.round(s.aeltester.ms / 1000)} s (Frist je Bau ${BAU_FRIST_MS / 1000} s, ${s.imFlug} im Flug)`
+                    );
+                if (Date.now() - ereignisAm > BAU_FRIST_MS)
+                    throw new Error(
+                        `[Erst-Zeichnung] ${name} nach ${sek()} s: kein Bau-Ereignis seit ${Math.round((Date.now() - ereignisAm) / 1000)} s, die Probe steht (Bau-Uhr angelegt/gebaut/abgesagt ${s.ereignis})`
+                    );
+                if (Date.now() - meldungAm >= 60000) {
+                    meldungAm = Date.now();
+                    console.log(
+                        `  [Erst-Zeichnung] ${name}: ${sek()} s, ${s.imFlug} Bauten im Flug` +
+                            (s.aeltester ? ` (ältester „${s.aeltester.name}" seit ${Math.round(s.aeltester.ms / 1000)} s)` : "") +
+                            `, Bau-Uhr angelegt/gebaut/abgesagt ${s.ereignis}`
+                    );
+                }
+                await new Promise((r) => setTimeout(r, 250));
+            }
+            const { v, stauMs } = await page.evaluate(() => {
+                const w = window.__erstRuf.wert;
+                window.__erstRuf = null;
+                return { v: w, stauMs: window.__erstWand ? Math.round(window.__erstWand.gpuStau.maxMs) : -1 };
             });
-            console.log(`  [Erst-Zeichnung] ${name}: ${Math.round((Date.now() - t0) / 1000)} s`);
+            console.log(`  [Erst-Zeichnung] ${name}: ${sek()} s (GPU-Gegendruck je Bild bis ${stauMs} ms)`);
             const ru = await page.evaluate(() => window.__erstWandRuhe);
             if (ru && ru.offen)
                 console.log(

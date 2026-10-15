@@ -231,11 +231,11 @@ function pruefe(src, phytoSrc = PHYTO, kernSrc = KERN) {
     if (!weich) fehler.push("keine Art mit weichem Gewebe geprüft — das Farb-Gesetz der Nah-Streu bliebe ungesehen");
     // (3) DER STOFF der Nah-Streu: der Studio-Stoff, wiegend nur über den EINEN Wind.
     const nc = ohneKommentare(src);
-    const senke = rumpf(nc, /\n {4}_streuNahSenke\(art, v, stufe, p, lf, wiegt\)\s*\{/) || "";
+    const senke = rumpf(nc, /\n {4}_streuNahSenke\([^)]*\)\s*\{/) || "";
     if (!senke) fehler.push("_streuNahSenke(art, v, stufe, p, lf, wiegt) nicht gefunden");
-    else if (!/mat: wiegt \? this\._foundryTreeMaterial\(u\.foundryKind, u\.foundryMp, true\) : lf\.mat,/.test(senke))
+    else if (!/mat: wiegt \? this\._foundryTreeMaterial\(u\.foundryKind, u\.foundryMp, true[^)]*\) : lf\.mat,/.test(senke))
         fehler.push("_streuNahSenke: der Senken-Stoff ist nicht der Studio-Stoff (lf.mat bzw. _foundryTreeMaterial wiegend)");
-    const stoff = rumpf(nc, /\n {4}_foundryTreeMaterial\(kind, mp, wiegen, baum\)\s*\{/) || "";
+    const stoff = rumpf(nc, /\n {4}_foundryTreeMaterial\([^)]*\)\s*\{/) || "";
     if (!stoff) fehler.push("_foundryTreeMaterial(kind, mp, wiegen, baum) nicht gefunden");
     else {
         if (!/: T\.MeshStandardNodeMaterial;/.test(stoff))
@@ -252,7 +252,7 @@ function pruefe(src, phytoSrc = PHYTO, kernSrc = KERN) {
     // jeder übrige Stoff steht unter der Lambert-Wand oben
     // (5) DIE KARTEN-FARBE — am echten Codec (phyto-core); die Welt-Schicht ist sRGB markiert
     for (const f of kartenFarbe(phytoSrc)) fehler.push(f);
-    const texturen = rumpf(nc, /\n {4}_impostorAtlasTexturen\(at, bedarf\)\s*\{/) || "";
+    const texturen = rumpf(nc, /\n {4}_impostorAtlasTexturen\([^)]*\)\s*\{/) || "";
     // beide Format-Stufen (BC1 und rgba8) markieren ihre Albedo sRGB
     if ((texturen.match(/map\.colorSpace = T\.SRGBColorSpace;/g) || []).length !== 2)
         fehler.push("die Atlas-Albedo ist nicht in jeder Format-Stufe sRGB markiert — die GPU läse die kodierten Bytes linear");
@@ -276,7 +276,7 @@ function main() {
             [
                 "Senken-Stoff am Studio vorbei",
                 QUELLE.replace(
-                    "mat: wiegt ? this._foundryTreeMaterial(u.foundryKind, u.foundryMp, true) : lf.mat,",
+                    /mat: wiegt \? this\._foundryTreeMaterial\(u\.foundryKind, u\.foundryMp, true[^)]*\) : lf\.mat,/,
                     "mat: new THREE.MeshStandardNodeMaterial(),"
                 ),
                 /Senken-Stoff ist nicht der Studio-Stoff/,

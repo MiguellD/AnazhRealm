@@ -434,4 +434,83 @@ function fingerprintMeshes(meshes) {
     });
 }
 
-module.exports = { runWithWorker, fingerprintMeshes, istBeipack, WORKER_SCRIPTS, WORKER_BOOT };
+// DIE DREI DATEN-KANÄLE des EINEN Umschlags (get-book) und ihre eingefrorenen JSONs (Feld der Antwort → Golden-Name).
+const DATEN_KANAELE = [
+    ["book", "recipes"],
+    ["worldParams", "world-params"],
+    ["renderConfig", "render-config"],
+];
+
+// DER UMSCHLAG OHNE BROWSER (K64-n2): die drei Daten-Kanäle sind reine Daten — DIESELBEN Dateien wie der Worker
+// (WORKER_SCRIPTS: lib, Kerne in Manifest-Reihenfolge, die Brücke zuletzt) laufen in EINEM Node-vm, und DERSELBE Kanal
+// (`foundryKanal` "get-book") antwortet. Die Leinwand des Blatt-Atlas (OffscreenCanvas) schluckt ein Absorber: der Atlas
+// reist neben den drei Kanälen. Gemessen K64-n2: recipes 74 838 und world-params 38 Byte byte-gleich mit dem Worker, ~0,6 s
+// statt eines Browser-Boots — die Statik (gate:studio-vertrag U) fängt im Puls jede Kern-Änderung, die den eingefrorenen
+// Umschlag verlässt (bis K64-n2 fiel sie erst in der vollen Batterie, Gruppe 5 Schritt 37, ohne Namen). `quellen`:
+// { "<datei>": "<quelltext>" } ersetzt eine Datei (der Selbsttest).
+function umschlagImVm(quellen = {}) {
+    const vm = require("vm");
+    const absorber = () => {
+        const a = new Proxy(function () {}, {
+            get: (_t, k) => (k === Symbol.toPrimitive ? () => 0 : a),
+            apply: () => a,
+            construct: () => a,
+        });
+        return a;
+    };
+    const posts = [];
+    const ctx = vm.createContext({
+        console: { log() {}, warn() {}, error() {} },
+        performance: { now: () => 0 },
+        OffscreenCanvas: absorber(),
+        __anazhCores: CORES_MANIFEST,
+        postMessage: (p) => posts.push(p),
+    });
+    ctx.self = ctx;
+    ctx.globalThis = ctx;
+    for (const p of WORKER_SCRIPTS) {
+        const f = p.replace(/^\//, "");
+        const src = Object.prototype.hasOwnProperty.call(quellen, f)
+            ? quellen[f]
+            : fs.readFileSync(path.join(ROOT, f), "utf8");
+        vm.runInContext(src, ctx, { filename: f, timeout: 60000 });
+    }
+    vm.runInContext('foundryKanal({ type: "get-book", reqId: "umschlag" })', ctx, { timeout: 60000 });
+    const r = posts.find((p) => p && p.type === "book");
+    if (!r) throw new Error("der Kanal get-book antwortete im vm nicht");
+    return { book: r.book, worldParams: r.worldParams, renderConfig: r.renderConfig };
+}
+
+// DIE ERSTE ABWEICHUNG zweier JSON-Werte beim Pfad: eine Linse, die nur „divergiert" sagt, nennt den Täter nicht — diese
+// nennt Schlüssel, Ist und Soll (`lod.zusatzBudget.porta.gate.2.tris: 12500 ≠ 15000`). null = byte-gleich als JSON.
+function ersteAbweichung(ist, soll, pfad = "") {
+    if (JSON.stringify(ist) === JSON.stringify(soll)) return null;
+    const obj = (v) => v !== null && typeof v === "object";
+    const wo = pfad || "(Wurzel)";
+    if (obj(ist) && obj(soll) && Array.isArray(ist) === Array.isArray(soll)) {
+        const ks = Object.keys(soll);
+        for (const k of Object.keys(ist)) if (!ks.includes(k)) ks.push(k);
+        for (const k of ks) {
+            const a = ersteAbweichung(ist[k], soll[k], pfad ? `${pfad}.${k}` : k);
+            if (a) return a;
+        }
+        return { pfad: wo, ist: `Reihe ${Object.keys(ist).join(",")}`, soll: `Reihe ${Object.keys(soll).join(",")}` };
+    }
+    const kurz = (v) => {
+        if (v === undefined) return "fehlt";
+        const s = JSON.stringify(v);
+        return s.length > 80 ? s.slice(0, 77) + "…" : s;
+    };
+    return { pfad: wo, ist: kurz(ist), soll: kurz(soll) };
+}
+
+module.exports = {
+    runWithWorker,
+    fingerprintMeshes,
+    istBeipack,
+    WORKER_SCRIPTS,
+    WORKER_BOOT,
+    DATEN_KANAELE,
+    umschlagImVm,
+    ersteAbweichung,
+};

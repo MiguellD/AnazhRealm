@@ -15,6 +15,11 @@
 //   (c) GRABEN    das Chat-Graben reist (K23): A tippt „voxel carve“ und „voxel fill“ im Gespräch, B trägt GENAU dieselben
 //                 zwei Edits (Ort, Radius, Art) — keiner fehlt (Täter `_chatTryVoxelDebugCommand`: schnitzt direkt statt
 //                 über dslRun) und keiner doppelt (Täter: der Empfang wendet eine Graben-Nachricht mehrfach an).
+//   (d) LANGE TAKTE B trägt Takte, in denen je Takt mindestens 2 × `aufholJeSchritt` Schritte von A ankommen (K60): B sieht A
+//                 an dessen Ort, und JEDER Takt hält das Gesetz (`taktBruch`): er verbraucht bis zur Kappe der Wanduhr
+//                 ceil(aufholJeSchritt × dt/FIXED_DT) oder bis zur Jitter-Reserve, nie weniger, nie mehr (Täter
+//                 `_lockstepTickPeers`: die Kappe zählt Frames statt Wanduhr). Der Selbsttest im Hauptlauf setzt die alte
+//                 Kappe ein → (d) ROT am Gesetz; der aufgenommene Schub vor dem Fenster (`SCHUB_VOR_DEM_FENSTER`) hält es.
 // Dazu der Spielpfad: Seite A über den KNOPF (`#p2p-toggle`, zweiter Klick im Aufbau startet kein zweites Init, der
 // Knopf liest die EINE Absicht), Seite B über den BOOT (die gemerkte Absicht aus `p2pPersist`). A läuft nach dem
 // Ladeschirm über die Tastatur (`_stepCharacter`; A bootete zuerst, sein Ladeschirm fällt zuerst), B sieht A an dessen
@@ -29,7 +34,7 @@
 //
 //   node scripts/diag-mp-sync.cjs [--selftest] [--roh <datei>]
 "use strict";
-const { starteBrowser } = require("./lib/welt-boot.cjs");
+const { starteBrowser, halteBis } = require("./lib/welt-boot.cjs");
 const { spawn } = require("child_process");
 const fs = require("fs");
 const path = require("path");
@@ -48,8 +53,54 @@ const ROH = (() => {
 const REJOIN_DECKEL_S = 31;
 const ABSTAND_M = 0.3;
 const LATENZ_MS = 150;
+// Der Lauf von A: W hält, bis A LAUF_M vom Start steht (das Urteil verlangt > 1 m), höchstens LAUF_FRIST_MS — nie eine feste Uhr.
+const LAUF_M = 1.5;
+const LAUF_FRIST_MS = 30000;
+// (d) der lange Takt bei B, in Schritten: B tickt erst, wenn ZUFLUSS_FAKTOR × aufholJeSchritt Schritte von A angekommen sind —
+// das Szenario steht in Schritten je Takt, nie in Millisekunden des Läufers (CI 38670118945: mit 300-ms-Takten hielt die alte
+// Kappe bei langsamem Sender fast Schritt, der Selbsttest war blind).
+const ZUFLUSS_FAKTOR = 2;
 // Nachlauf nach dem Eintreffen der Edits bei B: eine zweite Anwendung derselben Nachricht kann nach der ersten landen.
 const GRABEN_NACHLAUF_MS = 800;
+
+// (d) DAS GESETZ JE TAKT, wie `_lockstepTickPeers` es trägt: ein Takt von dt ms (seit dem vorigen Verbrauchs-Takt) verbraucht
+// höchstens ceil(aufholJeSchritt × max(1, dt / FIXED_DT)) Schritte und hört davor nur an der Jitter-Reserve auf. Gebrochen ist
+// es, wenn ein Takt mehr verbraucht als seine Kappe, oder weniger, während der Puffer über der Reserve steht. Ein Takt ohne
+// Anschluss (ent-seedet, Lücke vor dem Anker) wartet auf den Anker, nicht auf die Kappe — er wird nicht gewertet.
+const kappeDesGesetzes = (dt, g) => Math.ceil(g.aufhol * (dt === null ? 1 : Math.max(1, dt / g.fixMs)));
+function taktBruch(t, g) {
+    if (!t.anschluss) return null;
+    const k = kappeDesGesetzes(t.dt, g);
+    const wo = `dt ${t.dt === null ? "n/a" : Math.round(t.dt) + " ms"}, Kappe ${k}`;
+    if (t.n > k) return `${t.n} Schritte über der Kappe (${wo})`;
+    if (t.n < k && t.nach > g.reserve) return `${t.n} Schritte bei Puffer ${t.nach} über der Reserve ${g.reserve} (${wo})`;
+    return null;
+}
+const dTaeter = (m) =>
+    m.some((x) => x.includes("über der Kappe"))
+        ? " — Täter _lockstepTickPeers: der Aufhol-Burst ist ungedeckelt"
+        : m.some((x) => x.startsWith("GESETZ"))
+          ? " — Täter _lockstepTickPeers: die Aufhol-Kappe zählt Frames statt Wanduhr"
+          : m.some((x) => x.startsWith("Abstand"))
+            ? " — das Gesetz hält, der Ort weicht: Täter der Schritt des Ghosts (_lockstepStepGhost) oder sein Anker"
+            : "";
+// DER SCHUB VOR DEM FENSTER (Prüfer K60 Runde 4, B gedrosselt × 8; dieselbe Form CI 38677065212): ein Puffer, der VOR dem
+// Fenster auflief, steht nach dem ersten Takt (dt 25 ms, Kappe 15) bei 235 Schritten — das Gesetz trug ihn, das Urteil mit
+// festem Verzug (≤ Reserve + aufholJeSchritt) nannte `_lockstepTickPeers` als Täter. Je Takt [dt ms, Schritte, Puffer danach].
+const SCHUB_VOR_DEM_FENSTER = [
+    [25, 15, 235],
+    [633, 273, 2],
+    [1113, 52, 2],
+    [430, 44, 2],
+    [402, 25, 2],
+    [371, 21, 2],
+    [216, 20, 2],
+    [422, 24, 2],
+    [435, 28, 2],
+    [381, 20, 2],
+    [290, 20, 2],
+].map(([dt, n, nach]) => ({ dt, n, nach, anschluss: true }));
+const SCHUB_GESETZ = { reserve: 2, aufhol: 10, fixMs: 1000 / 60 }; // das Gesetz, unter dem er aufgenommen wurde
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -184,6 +235,15 @@ function installiere(alteTuer) {
         }
         return res;
     };
+    // DER TAKT DES GHOSTS: jeder Verbrauch (`_lockstepTickPeers`, aus `p2pTick`) zählt; (d) legt seine langen Takte um
+    // diesen Zähler, nie an ihm vorbei
+    const lsEcht = Object.getPrototypeOf(r)._lockstepTickPeers;
+    mp.lsTakte = 0;
+    mp.lsZaehler = function (nowMs) {
+        mp.lsTakte++;
+        return lsEcht.call(this, nowMs);
+    };
+    r._lockstepTickPeers = mp.lsZaehler;
     window.__mpPumpe = setInterval(() => {
         try {
             r._gameLoopTick(performance.now());
@@ -226,6 +286,18 @@ function bericht(p) {
         if (!ok) fehler.push(name);
     };
     const t0 = Date.now();
+    if (!SELBSTTEST) {
+        // das Urteil von (d) am aufgenommenen Schub: das Gesetz hält jeden Takt, ein fester Verzug hätte ihn ROT genannt
+        const brueche = SCHUB_VOR_DEM_FENSTER.map((t) => taktBruch(t, SCHUB_GESETZ)).filter(Boolean);
+        const verzugMax = Math.max(...SCHUB_VOR_DEM_FENSTER.map((t) => t.nach));
+        const festGrenze = SCHUB_GESETZ.reserve + SCHUB_GESETZ.aufhol;
+        check(
+            "(d) Urteil am Schub vor dem Fenster: jeder Takt hält das Gesetz (ein fester Verzug sähe einen Täter)",
+            brueche.length === 0 && verzugMax > festGrenze,
+            `${SCHUB_VOR_DEM_FENSTER.length} Takte, Gesetz gebrochen in ${brueche.length}${brueche.length ? " (" + brueche[0] + ")" : ""}` +
+                ` · fester Verzug max ${verzugMax} ${verzugMax > festGrenze ? ">" : "≤"} ${festGrenze}`
+        );
+    }
     const saveServer = await startProc("save-server.js", /läuft/);
     let signaling = null;
     const browser = await starteBrowser({ art: "webgl", frist: 180000, zusatz: ["--ignore-gpu-blocklist", "--autoplay-policy=no-user-gesture-required", "--disable-background-timer-throttling", "--disable-backgrounding-occluded-windows", "--disable-renderer-backgrounding"] });
@@ -378,69 +450,233 @@ function bericht(p) {
         );
         await sleep(800);
 
-        // ── A läuft über die Tastatur, B sieht zu ──
-        const vorLauf = await pageA.evaluate(() => {
-            const p = window.anazhRealm.state.playerMesh.position;
-            return { x: p.x, y: p.y, z: p.z };
-        });
-        await pageB.evaluate((id) => {
-            const e = window.anazhRealm.state.p2p.peers.get(id);
-            window.__mp.blick = { pid: id, x: e.mesh.position.x, z: e.mesh.position.z };
-            window.__mp.blickBewegtAm = null;
-        }, idA);
-        await pageA.bringToFront();
-        await pageA.evaluate(() => {
-            if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
-            const p = window.anazhRealm.state.playerMesh.position;
-            window.__mp.eigenStart = { x: p.x, z: p.z };
-            window.__mp.eigenBewegtAm = null;
-        });
-        await pageA.keyboard.down("w");
-        await sleep(1600);
-        await pageA.keyboard.up("w");
-        await waitFor(
-            pageA,
-            () => {
+        // ── A läuft über die Tastatur, B sieht zu ── (ein Lauf: A geht LAUF_M, steht wieder, B zeigt ihn an dessen Ort)
+        const laufUndSicht = async () => {
+            const vorLauf = await pageA.evaluate(() => {
                 const p = window.anazhRealm.state.playerMesh.position;
-                const prev = window.__mpP;
-                window.__mpP = { x: p.x, z: p.z };
-                return prev !== undefined && Math.hypot(p.x - prev.x, p.z - prev.z) < 0.005;
-            },
-            15000,
-            "A steht wieder"
-        );
-        await sleep(1200);
-        const wahrA = await pageA.evaluate(() => {
-            const p = window.anazhRealm.state.playerMesh.position;
-            return { x: p.x, y: p.y, z: p.z, bewegtAm: window.__mp.eigenBewegtAm };
-        });
-        const sichtB = await pageB.evaluate((id) => {
-            const e = window.anazhRealm.state.p2p.peers.get(id);
-            const p = e.mesh.position;
-            return {
-                x: p.x,
-                y: p.y,
-                z: p.z,
-                art: e.meshKind,
-                sichtbar: e.mesh.visible,
-                gesehenAm: window.__mp.blickBewegtAm,
-            };
-        }, idA);
-        const lauf = Math.hypot(wahrA.x - vorLauf.x, wahrA.z - vorLauf.z);
-        const abstand = Math.hypot(sichtB.x - wahrA.x, sichtB.z - wahrA.z);
-        const latenz = wahrA.bewegtAm && sichtB.gesehenAm ? sichtB.gesehenAm - wahrA.bewegtAm : null;
-        roh.lauf = { ladeschirmMs: ladeMs, laufM: lauf, abstandM: abstand, latenzMs: latenz, wahrA, sichtB };
-        check("A lief über die Tastatur (> 1 m)", lauf > 1, `${lauf.toFixed(2)} m`);
+                return { x: p.x, y: p.y, z: p.z };
+            });
+            await pageB.evaluate((id) => {
+                const e = window.anazhRealm.state.p2p.peers.get(id);
+                window.__mp.blick = { pid: id, x: e.mesh.position.x, z: e.mesh.position.z };
+                window.__mp.blickBewegtAm = null;
+            }, idA);
+            await pageA.bringToFront();
+            await pageA.evaluate(() => {
+                if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+                const p = window.anazhRealm.state.playerMesh.position;
+                window.__mp.eigenStart = { x: p.x, z: p.z };
+                window.__mp.eigenBewegtAm = null;
+                window.__mpP = undefined;
+            });
+            // W bis zu seinem EREIGNIS (A steht LAUF_M vom Start), nie nach der Uhr: unter Last lief A in 1,6 s 0,77 m (CI 38683406115)
+            const halt = await halteBis(pageA, {
+                taste: "w",
+                ziel: (soll) => {
+                    const p = window.anazhRealm.state.playerMesh.position;
+                    const s = window.__mp.eigenStart;
+                    return Math.hypot(p.x - s.x, p.z - s.z) >= soll;
+                },
+                args: [LAUF_M],
+                frist: LAUF_FRIST_MS,
+            });
+            await waitFor(
+                pageA,
+                () => {
+                    const p = window.anazhRealm.state.playerMesh.position;
+                    const prev = window.__mpP;
+                    window.__mpP = { x: p.x, z: p.z };
+                    return prev !== undefined && Math.hypot(p.x - prev.x, p.z - prev.z) < 0.005;
+                },
+                15000,
+                "A steht wieder"
+            );
+            await sleep(1200);
+            // B urteilt nach seinem EREIGNIS: zwei eigene Takte, seit A steht — nie nach der Uhr des Läufers (ein Hintergrund-
+            // Takt unter Last kam lokal 1,9 s nach dem Stand noch nicht: Abstand 1,905 m bei Rückstau 111, K60-N3/mp-3.txt)
+            const takteB = await pageB.evaluate(() => window.__mp.lsTakte);
+            await waitFor(pageB, (n) => window.__mp.lsTakte >= n + 2, 60000, "B: zwei Ghost-Takte nach dem Stand von A", takteB);
+            const wahrA = await pageA.evaluate(() => {
+                const p = window.anazhRealm.state.playerMesh.position;
+                return { x: p.x, y: p.y, z: p.z, bewegtAm: window.__mp.eigenBewegtAm };
+            });
+            const sichtB = await pageB.evaluate((id) => {
+                const e = window.anazhRealm.state.p2p.peers.get(id);
+                const p = e.mesh.position;
+                const ls = e.lockstep;
+                return {
+                    x: p.x,
+                    y: p.y,
+                    z: p.z,
+                    art: e.meshKind,
+                    sichtbar: e.mesh.visible,
+                    gesehenAm: window.__mp.blickBewegtAm,
+                    rueckstau: ls ? ls.buf.length : null,
+                };
+            }, idA);
+            const lauf = Math.hypot(wahrA.x - vorLauf.x, wahrA.z - vorLauf.z);
+            const abstand = Math.hypot(sichtB.x - wahrA.x, sichtB.z - wahrA.z);
+            const latenz = wahrA.bewegtAm && sichtB.gesehenAm ? sichtB.gesehenAm - wahrA.bewegtAm : null;
+            return { lauf, abstand, latenz, wahrA, sichtB, haltMs: halt.ms, haltErreicht: halt.erreicht };
+        };
+        const sichtSatz = (l) =>
+            `Abstand ${l.abstand.toFixed(3)} m, Leib ${l.sichtB.art}, sichtbar=${l.sichtB.sichtbar}, ` +
+            `Rückstau ${l.sichtB.rueckstau} Schritte, Latenz ${l.latenz === null ? "n/a" : l.latenz + " ms"}`;
+        const l0 = await laufUndSicht();
+        roh.lauf = Object.assign({ ladeschirmMs: ladeMs }, l0);
+        check("A lief über die Tastatur (> 1 m)", l0.lauf > 1, `${l0.lauf.toFixed(2)} m nach ${l0.haltMs} ms W`);
         check(
             `B sieht A an dessen Ort (±${ABSTAND_M} m waagrecht)`,
-            sichtB.sichtbar && abstand <= ABSTAND_M,
-            `Abstand ${abstand.toFixed(3)} m, Leib ${sichtB.art}, sichtbar=${sichtB.sichtbar}`
+            l0.sichtB.sichtbar && l0.abstand <= ABSTAND_M,
+            sichtSatz(l0)
         );
         console.log(
-            `  INFO Latenz A bewegt → B sieht: ${latenz === null ? "n/a" : latenz + " ms"} (Soll lokal ≤ ${LATENZ_MS} ms, in der CI berichtet)`
+            `  INFO Latenz A bewegt → B sieht: ${l0.latenz === null ? "n/a" : l0.latenz + " ms"} (Soll lokal ≤ ${LATENZ_MS} ms, in der CI berichtet)`
         );
-        if (!process.env.CI && latenz !== null)
-            check(`Latenz ≤ ${LATENZ_MS} ms (lokal)`, latenz <= LATENZ_MS, `${latenz} ms`);
+        if (!process.env.CI && l0.latenz !== null)
+            check(`Latenz ≤ ${LATENZ_MS} ms (lokal)`, l0.latenz <= LATENZ_MS, `${l0.latenz} ms`);
+
+        // ── (d) LANGE TAKTE (K60): B trägt lange Takte (der Lade-Takt eines Mitspielers unter seinem Ladeschirm, ein
+        // langsames Gerät) — der Ghost hält mit dem Sender Schritt, sein Verbrauch liest die Wanduhr, nie den Frame
+        // (`_lockstepTickPeers`). Befund CI 38639169868: B unter seinem Ladeschirm, 56 Peer-Takte, A nach dem Lauf 1,924 m
+        // daneben ohne eine Regung — je Takt höchstens 10 Schritte, der Sender schickt 60 je Sekunde. Der Selbsttest gleich
+        // danach setzt die alte Kappe wieder ein (jeder Takt gilt als ein Frame von 1/60 s): (d) muss ROT werden.
+        // DAS URTEIL LIEST JE TAKT DAS GESETZ (`taktBruch`), nie nur den Ort am Ende und nie einen festen Verzug: der Ort
+        // allein war blind (CI 38670118945, die alte Kappe holte den kurzen Lauf vor dem Urteil fast ein), der feste Verzug
+        // las einen Schub vor dem Fenster als Täter (CI 38677065212).
+        const lsGesetz = await pageB.evaluate(() => {
+            const K = window.anazhRealm.constructor;
+            return { reserve: K.LOCKSTEP.jitterReserve, aufhol: K.LOCKSTEP.aufholJeSchritt, fixMs: K.FIXED_DT * 1000 };
+        });
+        // DER LANGE TAKT IN SCHRITTEN: der Ghost bei B verbraucht erst, wenn seit seinem letzten Takt ZUFLUSS_SOLL Schritte von A angekommen
+        // sind — ein Takt trägt so immer das Doppelte der alten Kappe, gleich wie schnell A sendet und wie belastet der Läufer
+        // ist (CI 38670118945 lief mit 300 ms Wanduhr-Takten; lokal unter Last kam je Takt kein einziger Schritt, K60-N3/mp-4.txt)
+        const ZUFLUSS_SOLL = ZUFLUSS_FAKTOR * lsGesetz.aufhol;
+        const langeTakte = (an, alteKappe) =>
+            pageB.evaluate(
+                (an, soll, alteKappe, pid) => {
+                    const r = window.anazhRealm;
+                    const mp = window.__mp;
+                    const fenster = mp.langFenster || null; // das Fenster, das hier endet
+                    mp.langFenster = null;
+                    r._lockstepTickPeers = mp.lsZaehler;
+                    if (mp.schrittEcht) r._lockstepStepGhost = mp.schrittEcht;
+                    if (!an) return fenster;
+                    const f = (mp.langFenster = { takte: [], zufluss: [], hoch: null, schritte: 0 });
+                    const echt = Object.getPrototypeOf(r)._lockstepTickPeers;
+                    // der Verbrauch je Takt zählt die Schritte des Ghosts selbst (ein Anker, der den Puffer kürzt, ist keiner)
+                    const schritt = (mp.schrittEcht = r._lockstepStepGhost);
+                    r._lockstepStepGhost = function (...a) {
+                        f.schritte++;
+                        return schritt.apply(this, a);
+                    };
+                    // nur der Verbrauch des Ghosts wartet (der lange Takt), `p2pTick` selbst läuft weiter: Peer-Pflege,
+                    // Zeichnen und das eigene Senden bleiben am Leben, die Verbindung hält
+                    r._lockstepTickPeers = function (nowMs) {
+                        const p2p = this.state.p2p;
+                        const e = p2p.peers.get(pid);
+                        const ls = e && e.lockstep;
+                        // der Empfangs-Stand (nächster erwarteter Schritt): Verbrauch und Anker lassen ihn stehen
+                        const hoch = ls ? ls.bufStart + ls.buf.length : null;
+                        if (f.hoch !== null && hoch !== null && hoch - f.hoch < soll) return undefined; // der lange Takt
+                        // die Wanduhr dieses Takts, wie das Gesetz sie liest — vor der alten Kappe, die sie fälscht
+                        const dt = Number.isFinite(p2p._lockstepTickMs) ? nowMs - p2p._lockstepTickMs : null;
+                        // die alte Kappe: jeder Takt gilt als EIN Frame von 1/60 s (je Takt höchstens aufholJeSchritt Schritte)
+                        if (alteKappe) p2p._lockstepTickMs = nowMs - 1000 / 60;
+                        mp.lsTakte++;
+                        const s0 = f.schritte;
+                        const res = echt.call(this, nowMs);
+                        if (ls) {
+                            if (f.hoch !== null) f.zufluss.push(hoch - f.hoch);
+                            f.hoch = hoch;
+                            f.takte.push({
+                                dt,
+                                n: f.schritte - s0,
+                                nach: ls.buf.length,
+                                anschluss: !!ls.seeded && ls.bufStart === ls.doneSeq + 1,
+                            });
+                        }
+                        return res;
+                    };
+                    return null;
+                },
+                an,
+                ZUFLUSS_SOLL,
+                !!alteKappe,
+                idA
+            );
+        // DIE EINE PRÜF-FUNKTION von (d) — der Lauf und sein Selbsttest gehen durch denselben Code
+        const zuflussMedian = (f) => {
+            const z = [...f.zufluss].sort((a, b) => a - b);
+            return z.length ? z[z.length >> 1] : 0;
+        };
+        const gesetzTakte = (f) => (f ? f.takte.filter((t) => t.anschluss) : []);
+        const dMaengel = (l, f) => {
+            const m = [];
+            const g = gesetzTakte(f);
+            if (!(l.lauf > 1))
+                m.push(
+                    `LEER: A lief ${l.lauf.toFixed(2)} m (≤ 1 m) nach ${l.haltMs} ms W` +
+                        (l.haltErreicht ? "" : ` (${LAUF_M} m nicht in ${LAUF_FRIST_MS} ms)`)
+                );
+            if (g.length < 3) m.push(`LEER: ${g.length} lange Takte mit dem Ghost von A im Anschluss (< 3)`);
+            if (!l.sichtB.sichtbar) m.push("A bei B unsichtbar");
+            if (l.abstand > ABSTAND_M) m.push(`Abstand ${l.abstand.toFixed(3)} m > ${ABSTAND_M} m`);
+            const brueche = g.map((t) => taktBruch(t, lsGesetz)).filter(Boolean);
+            if (brueche.length) m.push(`GESETZ gebrochen in ${brueche.length} von ${g.length} Takten (erster: ${brueche[0]})`);
+            return m;
+        };
+        const fensterSatz = (f) => {
+            if (!f) return "kein Fenster";
+            const g = gesetzTakte(f);
+            const max = (k) => g.reduce((a, t) => Math.max(a, t[k] || 0), 0);
+            const gehalten = g.filter((t) => !taktBruch(t, lsGesetz)).length;
+            return (
+                `${g.length} Takte (dt bis ${Math.round(max("dt"))} ms), Zufluss je Takt Median ${zuflussMedian(f)} Schritte, ` +
+                `Verbrauch je Takt bis ${max("n")}, Puffer nach dem Takt bis ${max("nach")}, Gesetz gehalten ${gehalten}/${g.length}`
+            );
+        };
+        console.log(
+            `  INFO (d) der Ghost bei B verbraucht erst je ${ZUFLUSS_SOLL} angekommene Schritte von A (${ZUFLUSS_FAKTOR} × aufholJeSchritt ${lsGesetz.aufhol}); ` +
+                `je Takt das Gesetz: Kappe ceil(${lsGesetz.aufhol} × dt / ${lsGesetz.fixMs.toFixed(2)} ms) oder Reserve ${lsGesetz.reserve}`
+        );
+        // das Fenster endet nach seinem Ereignis (drei lange Takte mit dem Ghost von A), nie nach der Uhr des Läufers
+        const fensterZu = async () => {
+            await waitFor(
+                pageB,
+                () => !!window.__mp.langFenster && window.__mp.langFenster.takte.filter((t) => t.anschluss).length >= 3,
+                60000,
+                "B: drei lange Takte"
+            ).catch(() => {});
+            return langeTakte(false);
+        };
+        await langeTakte(true, false);
+        const l1 = await laufUndSicht();
+        const f1 = await fensterZu();
+        const m1 = dMaengel(l1, f1);
+        roh.langeTakte = Object.assign({ zuflussSoll: ZUFLUSS_SOLL, gesetz: lsGesetz, fenster: f1 }, l1);
+        check(
+            `(d) lange Takte bei B (je ${ZUFLUSS_SOLL} Schritte von A): B sieht A an dessen Ort (±${ABSTAND_M} m waagrecht), jeder Takt hält das Gesetz`,
+            m1.length === 0,
+            `Lauf ${l1.lauf.toFixed(2)} m · ${sichtSatz(l1)} · ${fensterSatz(f1)}` + (m1.length ? ` — ${m1.join(" · ")}${dTaeter(m1)}` : "")
+        );
+        await sleep(1500); // B holt bei kurzen Takten auf
+        await langeTakte(true, true);
+        const l2 = await laufUndSicht();
+        const f2 = await fensterZu();
+        const m2 = dMaengel(l2, f2);
+        roh.langeTakteAlteKappe = Object.assign({ fenster: f2 }, l2);
+        // das Szenario stresst die alte Kappe (Zufluss je Takt über ihr), und (d) fällt am Gesetz
+        const gestresst = zuflussMedian(f2) > lsGesetz.aufhol;
+        const amGesetz = m2.some((x) => x.startsWith("GESETZ"));
+        check(
+            "(d) Selbsttest: die alte Kappe je Frame macht (d) ROT am Gesetz",
+            gestresst && amGesetz && !m2.some((x) => x.startsWith("LEER")),
+            `Lauf ${l2.lauf.toFixed(2)} m · ${sichtSatz(l2)} · ${fensterSatz(f2)} — (d) ${
+                m2.length ? "ROT: " + m2.join(" · ") + dTaeter(m2) : "GRÜN, die Linse ist blind"
+            }${gestresst ? "" : ` — das Szenario stresst die alte Kappe nicht (Zufluss ≤ ${lsGesetz.aufhol} je Takt)`}`
+        );
+        await sleep(1500);
 
         // ── (c) DAS CHAT-GRABEN REIST (K23) ──
         // A öffnet das Gespräch mit der Chat-Taste und tippt „voxel carve" und „voxel fill" (der Spielpfad); B muss

@@ -64,14 +64,15 @@ function autoStaticLaws(anazhSrc) {
             'C-S2: die Zell-Wahrheit zieht aus dem ":dorf"-Stream (Γ5, kein Math.random im Auto-Pfad)',
             /:dorf:/.test(nc) &&
                 (() => {
-                    const i = nc.indexOf("_autoSettlementCellInfo(cx, cz) {");
+                    const k = stammLib.kopf(nc, "_autoSettlementCellInfo");
+                    const i = k < 0 ? -1 : k + 5;
                     const j = i >= 0 ? nc.indexOf("_tickAutoSettlement(", i) : -1;
                     return i >= 0 && j > i && !/Math\.random/.test(nc.slice(i, j));
                 })(),
         ],
         [
             "C-S3: der Tick platziert durch DIE EINE Slot-Quelle (_spawnSettlementSlot — kein Parallel-Platzierer)",
-            /_tickAutoSettlement\(playerPos\) \{[\s\S]{0,4000}_spawnSettlementSlot\(/.test(nc),
+            /_tickAutoSettlement\([^)]*\) \{[\s\S]{0,4000}_spawnSettlementSlot\(/.test(nc),
         ],
         [
             "C-S4: der Auto-Zug ruht headless (Null-Renderer-Wand + __anazhAutoSettlement-Hook)",
@@ -91,7 +92,8 @@ function autoStaticLaws(anazhSrc) {
             // Parallel-System), Zäune durch den Zaun-Pool, Wege + Äcker durch die Wege-Karte (V18.530: Boden).
             "C-S6: der Erlebnis-Hebel konsumiert trees/staende (spawnArchitecture) + fences (Zaun-Pool) / felder (Wege-Karte)",
             (() => {
-                const i = nc.indexOf("_spawnSettlementErlebnis(plan, origin, so) {");
+                const k = stammLib.kopf(nc, "_spawnSettlementErlebnis");
+                const i = k < 0 ? -1 : k + 5;
                 const j = i >= 0 ? nc.indexOf("_spawnSettlementFromExport(", i) : -1;
                 const erlebnis = i >= 0 && j > i ? nc.slice(i, j) : "";
                 return (

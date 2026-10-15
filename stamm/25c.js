@@ -122,8 +122,9 @@ class AnazhRealm_Z25c {
     // die Varianz-Klemme spannt dieselben 3×3 Texel (im Stand ZEIT_GAMMA_RUHE σ: das gröbere Gitter streut weiter). Geschichte und Resolve bleiben rgba16float in der Ausgabe-Auflösung (W7:
     // 11/11/10 posterisierte die Geschichte). DIE VORTIEFE lebt im Kanal a der Geschichte (die Sicht-Tiefe des Vorbilds je
     // Ausgabe-Pixel, float16 relativ 2⁻¹¹ — 0,05 mm Tiefen-Stufe auf 1 m gegen die Disokklusions-Schwelle 0,0005): kein
-    // eigenes Tiefen-Ziel der Geschichte, kein Vollbild-Zug je Frame. Ein Größenwechsel der Ausgabe startet die Geschichte
-    // neu (ein Frame ohne Geschichte); ein Wechsel der Skala lässt sie stehen (sie lebt in der Ausgabe). Basis ist r184s
+    // eigenes Tiefen-Ziel der Geschichte, kein Vollbild-Zug je Frame. Ein Größenwechsel der Ausgabe oder ein Kamera-Sprung
+    // (`_traaReprojektion`, ZEIT_SPRUNG_M) startet die Geschichte neu, danach läuft sie als Mittel an (K68: das Jetzt wiegt
+    // mindestens 1/(n+1)); ein Wechsel der Skala lässt sie stehen (sie lebt in der Ausgabe). Basis ist r184s
     // TRAANode (vendor/TRAANode.js unverändert): Bau, Ziele, Halton-Folge, Kamera-Uniformen und `clearViewOffset` erbt der
     // Knoten, Resolve, Größen und Lauf sind seine. Das Quad nimmt die Klasse des Quads der Post-Kette (`pp._quadMesh`,
     // gate:vendor-anker); fehlt sie, bricht die Kette LAUT.
@@ -148,6 +149,8 @@ class AnazhRealm_Z25c {
                 this._historyRenderTarget.depthTexture = null;
                 this._zitter = uniform(new THREE.Vector2());
                 this._neustart = uniform(1);
+                // DAS ANLAUFEN (K68): Frames seit dem Beginn der Geschichte (Größen-Wechsel, Kamera-Sprung `_traaR.sprung`)
+                this._anlauf = uniform(0);
                 this._kern = uniform(AnazhRealm.ZEIT_KERN);
                 this._gammaRuhe = uniform(AnazhRealm.ZEIT_GAMMA_RUHE);
                 this._quad = new Quad(this._resolveMaterial);
@@ -197,6 +200,8 @@ class AnazhRealm_Z25c {
                     r.initRenderTarget(this._resolveRenderTarget);
                 }
                 this._neustart.value = neu ? 1 : 0;
+                const sprung = !!(realm.state._traaR && realm.state._traaR.sprung === true);
+                this._anlauf.value = neu || sprung ? 0 : Math.min(this._anlauf.value + 1, 1e6);
                 r.setRenderTarget(this._resolveRenderTarget);
                 this._quad.render(r);
                 r.setRenderTarget(null);
@@ -282,7 +287,12 @@ class AnazhRealm_Z25c {
                     const pw = max(phase, phase.oneMinus());
                     const alpha = float(0.05).add(pw.x.mul(pw.y).oneMinus().div(0.75).mul(0.25)).toVar();
                     alpha.mulAssign(wNah);
-                    alpha.assign(gueltig.select(alpha.add(lauf).saturate(), float(1)));
+                    // DAS ANLAUFEN (K68): nach dem Beginn der Geschichte ist sie das MITTEL aller Frames seither — das Jetzt
+                    // wiegt mindestens 1/(n+1). Bis K68 wog der erste Frame (Gewicht 1) nach 32 Frames noch 44 % (0,05 ×
+                    // Deckung je Frame): die rotierende Dither-Blende stand als Schachbrett im Bild (Radeon, Mess-Wiese,
+                    // zweiton des ganzen Bilds 0,0228 nach 32 Frames, 0,0037 nach 120).
+                    const anlauf = float(1).div(this._anlauf.add(1));
+                    alpha.assign(gueltig.select(max(alpha.add(lauf), anlauf).saturate(), float(1)));
                     // die Varianz-Klemme der Geschichte über die 3×3 Eingangs-Texel
                     const gamma = mix(float(0.5), this._gammaRuhe, lauf.oneMinus().pow2());
                     const mittel = m1.div(9);
@@ -737,6 +747,15 @@ class AnazhRealm_Z25c {
         cam.updateMatrixWorld();
         z.vor.copy(z.jetzt);
         z.jetzt.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
+        // DER KAMERA-SPRUNG (K68): springt das Auge in EINEM Frame weiter als ZEIT_SPRUNG_M (Tor, Umsetzen, Aufnahme), beginnt
+        // die Geschichte neu und läuft als Mittel an (`_zeitAufloesung` `_anlauf`) — sonst trug der erste Frame nach dem Sprung
+        // das Bild noch eine halbe Sekunde lang.
+        if (!z.ort) z.ort = new THREE.Vector3().setFromMatrixPosition(cam.matrixWorld);
+        const ox = z.ort.x,
+            oy = z.ort.y,
+            oz = z.ort.z;
+        z.ort.setFromMatrixPosition(cam.matrixWorld);
+        z.sprung = z.neu || Math.hypot(z.ort.x - ox, z.ort.y - oy, z.ort.z - oz) > AnazhRealm.ZEIT_SPRUNG_M;
         if (z.neu) {
             z.vor.copy(z.jetzt);
             z.neu = false;
@@ -2216,6 +2235,13 @@ class AnazhRealm_Z25c {
         if (this.state.lodUniforms) {
             const _lu = this.state.lodUniforms;
             if (_lu.uDitherT && this.state.traaNode) _lu.uDitherT.value = (_lu.uDitherT.value + 0.61803398875) % 1;
+            // die Kante des Laubs (K68, `_laubSchwelle`): unter der zeitlichen Auflösung dreht ihre Schwelle um 1/g (die
+            // Plastik-Zahl, gleichverteilt neben der Goldenen Drehung der Blende), ohne sie steht sie bei 0,5
+            if (_lu.uLaubKante) {
+                const _k = _lu.uLaubKante.value;
+                _k.y = this.state.traaNode ? 1 : 0;
+                if (_k.y) _k.x = (_k.x + 0.75487766625) % 1;
+            }
             if (_lu.uLodRef)
                 _lu.uLodRef.value =
                     Number.isFinite(this.state.lodRef) && this.state.lodRef > 0 ? +this.state.lodRef : 14;
@@ -2378,12 +2404,17 @@ class AnazhRealm_Z25c {
     _ankunftsBild() {
         const st = this.state;
         if (st._weltbildDa) return true;
-        const fehlt = this._weltbildFehlt();
+        const luecken = this._weltbildLuecken();
+        const fehlt = luecken.map((l) => l.satz);
         if (fehlt.length) {
             const jetzt = performance.now();
             const sig = fehlt.join(" · ");
             if (st._weltbildErsteFrage == null) st._weltbildErsteFrage = jetzt;
-            if (st._weltbildLuecke !== sig) {
+            // DIE RUHE IST RUHE (K60): die Uhr läuft nur, solange für keine Lücke etwas unterwegs ist (`arbeitet`). Befund
+            // Prüfung K60-1 (m1-6B, Radeon kalt unter Fremdlast): Ring 1 von 4 s bis 19 s, das Buch kam nach 19,6 s — die
+            // Stand-Zeile blieb gleich, während beide Fäden arbeiteten, und der Ladeschirm wich nach 15 s „Ruhe" mit dem
+            // halben Bild (kein Baum, kein Horizont). Was nie kommt, fängt der Deckel.
+            if (st._weltbildLuecke !== sig || luecken.some((l) => l.arbeitet)) {
                 st._weltbildLuecke = sig;
                 st._weltbildLueckeSeit = jetzt;
             }
@@ -2437,18 +2468,50 @@ class AnazhRealm_Z25c {
     // Jede Lücke hat ihren Leser im ersten Frame; der Vorrat (`_foundryPrefetchLibrary`) hat keinen und hält das Bild nie
     // (K30: das Tor wartete auf `f._prefetching` — Wagen, Siedlungs-Probe, alle Gestalten des Buchs; kalt 25–30 s).
     _weltbildFehlt() {
+        return this._weltbildLuecken().map((l) => l.satz);
+    }
+
+    // DIE TERME DES ERSTEN WELTBILDS (K60): je Leser des ersten Frames EIN Term mit Namen aus der Liste `WELTBILD_TERME` und
+    // seinem Satz. Die Ankunfts-Linse (gate:ankunft L2a) liest die Liste und stellt je Term einen Fall her — ein Term ohne
+    // Fall ist ROT beim Namen (die Pflanz-Schlange kam in K60 ohne Fall dazu: ihr Streichen wäre grün geblieben).
+    _weltbildLuecken() {
         const st = this.state;
-        const pm = st.playerMesh;
-        if (!pm) return ["die Welt entsteht"];
         const out = [];
+        // `arbeitet`: für diese Lücke ist etwas unterwegs (ein Faden baut an ihr) — die Ruhe-Uhr von `_ankunftsBild` steht
+        const luecke = (term, satz, arbeitet) => out.push({ term, satz, arbeitet: !!arbeitet });
+        const pm = st.playerMesh;
+        if (!pm) {
+            luecke("welt", "die Welt entsteht");
+            return out;
+        }
         const ring = this._builtRingRadius();
         const ringSoll = AnazhRealm.RING_EXIST_FLOOR;
         if (!(ring != null && ring >= ringSoll))
-            out.push(`der Boden wächst (Ring ${ring != null && ring >= 0 ? ring + 1 : 0} von ${ringSoll + 1})`);
+            luecke(
+                "boden",
+                `der Boden wächst (Ring ${ring != null && ring >= 0 ? ring + 1 : 0} von ${ringSoll + 1})`,
+                st.voxelWorkerPending && st.voxelWorkerPending.size > 0
+            );
+        // DER HORIZONT (K60): der Fern-Ring zeigt seine Schalen erst ganz (`fr.ready`), das Feld-Panorama die Ferne erst
+        // gemalt (`panoLaeufe`). Seit K60 zeichnet unter dem Ladeschirm die Scheibe den Ring allein (`_tickFernRing`) —
+        // ohne diesen Term stand das Bild ohne Horizont (Prüfung K60-1: in 1 von 4 Kalt-Läufen am Kopf).
+        if (this._fernRingGilt()) {
+            const fr = st.fernRing;
+            const fp = st.feldPass;
+            if (!fr || !fr.ready)
+                luecke(
+                    "horizont",
+                    `der Horizont wächst (${fr && fr.totalVerts ? Math.floor((100 * fr.cursor) / fr.totalVerts) : 0} %)`
+                );
+            // das Panorama malt nur, wer die Ferne auf der GPU zeichnet (`_weltMarchGezeichnet`; der Linsen-Hook trägt den Pass
+            // auch headless, dort malt nie ein Panorama)
+            else if (fp && this._weltMarchGezeichnet() && !(fp.panoLaeufe > 0))
+                luecke("horizont", "der Horizont wird gemalt");
+        }
         if (!this._foundryEnabled()) return out;
         const f = this._foundry;
         if (!f || !f.ready || !f.recipes) {
-            out.push("das Buch der Studios öffnet sich");
+            luecke("buch", "das Buch der Studios öffnet sich", !!(f && f.worker));
             return out;
         }
         const p = pm.position;
@@ -2460,12 +2523,20 @@ class AnazhRealm_Z25c {
             const dz = e.position.z - p.z;
             if (dx * dx + dz * dz <= R * R && !this._archIsRendered(e)) ungebaut++;
         }
-        if (ungebaut) out.push(`${ungebaut} Bäume und Bauten wachsen`);
+        if (ungebaut) luecke("bauten", `${ungebaut} Bäume und Bauten wachsen`);
+        // Die Pflanz-Schlange (`pendingVegSpawns`, K60): ein gepflanzter Baum der Mesh-Zone, der noch nicht gesetzt ist, ist
+        // noch kein Eintrag — ohne diesen Term stand das Bild vor ihm, und er wuchs im Bild nach.
+        let gesetzt = 0;
+        for (const t of st.pendingVegSpawns || []) {
+            const q = t && t.position;
+            if (q && (q.x - p.x) ** 2 + (q.z - p.z) ** 2 <= R * R) gesetzt++;
+        }
+        if (gesetzt) luecke("pflanzung", `${gesetzt} Bäume werden gepflanzt`);
         const warten = this._streuWartet(p);
-        if (warten) out.push(`${warten} Wald-Stücke warten auf ihre Gestalt`);
+        if (warten) luecke("streu", `${warten} Wald-Stücke warten auf ihre Gestalt`);
         const karten =
             (this._impostorBakeQueue ? this._impostorBakeQueue.length : 0) + (this._impostorBakePending ? 1 : 0);
-        if (karten) out.push(`${karten} ferne Bäume werden gemalt`);
+        if (karten) luecke("karten", `${karten} ferne Bäume werden gemalt`);
         return out;
     }
 

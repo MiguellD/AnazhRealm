@@ -1012,6 +1012,18 @@ AnazhRealm.WELTBILD_STILL_MS = 15000;
 // Der Deckel des ersten Weltbilds (ms ab der ersten Frage): danach weicht der Ladeschirm laut, auch wenn die Lücke nie ruht
 // (ihre Zahl flackert). Auf der Radeon stand das ganze Weltbild nach 31,8 s.
 AnazhRealm.WELTBILD_DECKEL_MS = 60000;
+// Die Terme des ersten Weltbilds (`_weltbildLuecken`, K60): je Leser des ersten Frames ein Name — gate:ankunft L2a stellt je
+// Term einen Fall her, ein Term ohne Fall ist ROT.
+AnazhRealm.WELTBILD_TERME = Object.freeze([
+    "welt",
+    "boden",
+    "horizont",
+    "buch",
+    "bauten",
+    "pflanzung",
+    "streu",
+    "karten",
+]);
 // Start-Ring 0 = EIN Chunk (der Spieler-Chunk): der Fern-Ring (Loch-Deckel) trägt den Rest, der Void-Boden
 // `_softFloorWhileChunkLoading` trägt den Rand, dann wächst der Ramp bei gesundem Frame Ring für
 // Ring — ein großer Start-Ring (25 Chunks) fror den Boot ein.
@@ -1174,6 +1186,9 @@ AnazhRealm.FRAME_SCHED_MIN_MS = 2;
 // render-gebundener Maschine monoton. Existenz vor Framerate.
 AnazhRealm.FRAME_SCHED_SUBSTANZ_FLOOR_MS = 4;
 AnazhRealm.FRAME_SCHED_DEKO_FLOOR_MS = 2.5;
+// Das Budget eines Lade-Frames (ms, `_ladeTakt`): unter dem Ladeschirm trägt jeder Frame so viel aufschiebbare Arbeit
+// (Streu, Gras, Wasser), dass der Boot mit der Arbeit läuft, nicht mit der Frame-Rate.
+AnazhRealm.LADE_TAKT_MS = 100;
 // V18.355 — PHASE C (Fixed-Timestep, Fiedler): die FIXE Sim-Schrittweite (60 Hz). TAKT_DECKEL_S (K21) ist
 // die EINE Obergrenze des Spiel-Takts, an der Wurzel in startEternalLoop: ein 2-s-Hitch akkumuliert nicht
 // 120 Steps, eine 10-s-Pause trägt kein Tier 40 m weit (jede Bewegung liest den gedeckelten Takt, nie die
@@ -1222,6 +1237,9 @@ AnazhRealm.SZENE_SKALA_MIN = 0.5;
 AnazhRealm.ZEIT_KERN = 7;
 AnazhRealm.ZEIT_GAMMA_RUHE = 1.25;
 AnazhRealm.ZEIT_SCHAERFE = 1;
+// Der Kamera-Sprung der zeitlichen Auflösung (K68, `_traaReprojektion`): weiter in EINEM Frame beginnt die Geschichte neu und
+// läuft als Mittel an — der Wagen bei 200 km/h und 15 fps legt 3,7 m je Frame zurück, ein Tor oder ein Umsetzen viele Meter.
+AnazhRealm.ZEIT_SPRUNG_M = 6;
 // Sekunden-normalisierter Ingest-Takt: Ziel ist eine RATE je echter Sekunde — jeder Frame gibt
 // `rate·dt` Konversionen frei, gedeckelt durch INGEST_BURST_CAP (Schutz gegen LongTasks). So lädt
 // die Welt mit der Wanduhr statt mit der Framerate (fix pro Frame hieß bei 8 fps nur 8–24/s).
@@ -1315,6 +1333,8 @@ AnazhRealm.KARTEN_HORIZONT_SALZ = 0x4b48;
 // 20,4 s · 0,4/0,9 s; 4: 15,2 s; 8: 13,2 s; 12: 12,3 s · 0,9/1,4 s — zwölf halten den Worker ohne Lücke beschäftigt.
 AnazhRealm.FOUNDRY_IM_FLUG = 12;
 AnazhRealm.FOUNDRY_ALTER_MS = 6000;
+// Die Werk-Fäden (`_foundryHelfer`, K60): höchstens so viele Fäden bauen Körper (das Werk zählt mit), einer je vier Kerne.
+AnazhRealm.FOUNDRY_WERK_FAEDEN = 4;
 // Wie lange ein abgelaufener Auftrag als Geist seinen Faden hält (× seine Frist, `_foundryFrist`): auf CPU-Raster unter
 // Fremdlast lief ein Karten-Bake über zwei Fristen (gate:arch-feld 05.10.: die Weide dreimal gesendet in ~1000 Takten) —
 // vier tragen ihn, ein toter Auftrag fällt.
@@ -1678,13 +1698,29 @@ AnazhRealm._diaetGeteiltSchreiben = function (rend, ro, rid) {
         rend._bindings._update(g, alle || (alle = ro.getBindings()));
     }
 };
+// (8) GETRAGEN (K71): trägt die GPU die Version dieses Attributs schon? r184 lädt ein Attribut EINMAL je Version für alle
+// Render-Objekte (`Attributes.update`: Daten je Attribut-Objekt, `version` die hochgeladene) — hat ein anderer Pass es
+// hochgeladen, bringt ein Refresh dieses Render-Objekts nichts Neues zur GPU.
+AnazhRealm._diaetGetragen = function (A, a) {
+    if (!A || !A.has(a)) return false;
+    const v = A.get(a).version;
+    return v !== undefined && v >= (a.isInterleavedBufferAttribute ? a.data.version : a.version);
+};
 AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
     const obj = ro && ro.object;
+    // (8) eine neue VERSION desselben Attributs (Id gleich) ist ein Refresh-Grund nur, solange die GPU sie nicht trägt: der
+    // erste Pass, der sie sieht, lädt sie hoch, jeder weitere frischte bis K71 voll auf und lud nichts (an Genesis Third in
+    // Ruhe die Kaskaden-Zeichner der @wahl-Senken nach jedem Tausch ihres Hauptbilds, jeder Satz nach dem Index-Schreiben
+    // eines anderen Passes). Eine neue Id (ein gewachsener Puffer) bleibt ein Grund für jedes Render-Objekt.
+    const A = frame && frame.renderer ? frame.renderer._attributes : null;
     // Die Wächter vergleichen Zahlen am EINEN Daten-Satz des Render-Objekts — eine Prüfung ohne Änderung legt nichts an
     // (vorher je Prüfung zwei Versions-Zeichenketten: Instanz und Atlas). Eine Senke zeichnet über ihren Zeichner (1410-1):
     // ihre Instanz-Puffer sind die der Senke.
+    // Beide Wächter merken jeden Blick, bevor einer den Refresh meldet: ein Instanz-Grund, der vor dem Geometrie-Wächter
+    // zurückkehrte, ließ dessen Stempel stehen — jedes neue Instanz-Objekt frischte im Render danach ein zweites Mal auf.
     const senke = obj && obj.isInstanzZeichner === true ? obj.__instanzQuelle : obj;
-    let d = null;
+    let d = null,
+        grund = false;
     if (senke && senke.isInstancedMesh === true) {
         const im = senke.instanceMatrix,
             ic = senke.instanceColor;
@@ -1694,11 +1730,15 @@ AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
             cV = ic ? ic.version : -1;
         d = obs.getRenderObjectData(ro);
         if (d._anazhIId !== iId || d._anazhIV !== iV || d._anazhICId !== cId || d._anazhICV !== cV) {
+            grund =
+                d._anazhIId !== iId ||
+                d._anazhICId !== cId ||
+                (d._anazhIV !== iV && !AnazhRealm._diaetGetragen(A, im)) ||
+                (d._anazhICV !== cV && !AnazhRealm._diaetGetragen(A, ic));
             d._anazhIId = iId;
             d._anazhIV = iV;
             d._anazhICId = cId;
             d._anazhICV = cV;
-            return true;
         }
     }
     // DER GEOMETRIE-WÄCHTER JE RENDER-OBJEKT (Welle 6): der Vendor merkt Attribut-Versionen je GEOMETRIE, nicht je
@@ -1711,7 +1751,10 @@ AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
         if (d === null) d = obs.getRenderObjectData(ro);
         const g = d._anazhGeoV || (d._anazhGeoV = []);
         const ix = geo.index;
-        let anders = g[0] !== geo.id || g[1] !== (ix ? ix.id : -1) || g[2] !== (ix ? ix.version : -1);
+        let anders =
+            g[0] !== geo.id ||
+            g[1] !== (ix ? ix.id : -1) ||
+            (g[2] !== (ix ? ix.version : -1) && !(ix && AnazhRealm._diaetGetragen(A, ix)));
         g[0] = geo.id;
         g[1] = ix ? ix.id : -1;
         g[2] = ix ? ix.version : -1;
@@ -1719,9 +1762,9 @@ AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
         for (const k in geo.attributes) {
             const a = geo.attributes[k];
             if (g[i] !== a.id || g[i + 1] !== a.version) {
+                if (g[i] !== a.id || !AnazhRealm._diaetGetragen(A, a)) anders = true;
                 g[i] = a.id;
                 g[i + 1] = a.version;
-                anders = true;
             }
             i += 2;
         }
@@ -1729,8 +1772,20 @@ AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
             g.length = i;
             anders = true;
         }
-        if (anders) return true;
+        if (anders || grund) return true;
+        // (7) DER WÄCHTER IST DIE GEOMETRIE-PRÜFUNG (K71): der Vendor prüft sie in equals() ein zweites Mal, je Geometrie und
+        // Render (Id je Objekt, Attribute, Index, drawRange) — die Diät stellt seine Daten als geprüft. Der Ausschnitt ist ein
+        // Draw-Parameter (r184 liest `geometry.drawRange` bei jedem Draw), kein Grund für einen Refresh: jeder Satz zeichnet je
+        // Pass seinen Abschnitt, und der Vendor-Vergleich frischte jeden Satz in jedem Render voll auf; eine Attribut-Änderung,
+        // die der Wächter schon trug, frischte im nächsten Render ein zweites Mal auf.
+        d.geometryId = geo.id;
+        if (frame) {
+            const gd = obs.getGeometryData(geo);
+            gd._renderId = frame.renderId;
+            gd._equal = true;
+        }
     }
+    if (grund) return true;
     const rend = frame && frame.renderer;
     if (
         !rend ||

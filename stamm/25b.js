@@ -1526,6 +1526,7 @@ class AnazhRealm_Z25b {
     _deferrableBudgetMs() {
         const st = this.state;
         if (st.renderer && st.renderer._isHeadlessNull) return Infinity;
+        if (this._ladeTakt()) return AnazhRealm.LADE_TAKT_MS;
         const throttleMs = Number.isFinite(st.perfTargetMs) ? st.perfTargetMs : AnazhRealm.PERF_TARGET_MS;
         const sense = st.perfSense;
         if (!sense || !sense.phase) return Math.max(AnazhRealm.FRAME_SCHED_MIN_MS, throttleMs - 8);
@@ -1539,7 +1540,20 @@ class AnazhRealm_Z25b {
     // Budget), dann trägt sie ihren Boden-Anteil. Bis K40 wartete sie, solange der Strom Chunks lieferte: auf dem Radeon
     // baute jeder von 160 Takten nach einem Umzug Terrain, die Nah-Wiese lief 0-mal und 925 Büschel blieben am alten Ort.
     _dekoWartet() {
+        if (this._ladeTakt()) return false;
         return !!this.state._frameChunksBuilt && (this._schedFrameNo || 0) % 4 !== 0;
+    }
+
+    // DER LADE-TAKT (K60): steht der Ladeschirm (`_ladeschirmSteht`, die DOM-Wahrheit) vor dem ersten Weltbild, zeigt kein
+    // Frame die Welt — und keine Taste gehört ihr. Die Drosseln des Spiels (das Frame-Budget des Takt-Planers, die
+    // Terrain-zuerst-Regel, `_frameOverBudget` mit seinen Lesern: Platzieren 1 je Takt, Karten 4/s, ein Dorf-Slot je
+    // Drossel-Takt, Gras 1 Chunk je Frame) schützen den Takt, den der Spieler sieht. Unter dem Ladeschirm hielten sie die
+    // Welt fest: Radeon kalt rissen ALLE Frames das Budget, der Takt-Planer gab der Welt 2 ms je Frame, und jeder Leser
+    // des ersten Weltbilds lief mit der Frame-Rate des Boots (4–8 Frames je Sekunde) statt mit der Arbeit. Jetzt trägt
+    // jeder Lade-Frame LADE_TAKT_MS Arbeit, und keine Drossel des Spiels greift.
+    _ladeTakt() {
+        const r = this.state.renderer;
+        return !this.state._weltbildDa && !(r && r._isHeadlessNull) && this._ladeschirmSteht();
     }
 
     // Deferrable-Job-Registry (die Prioritäts-Ordnung als Daten). Terrain vor Deko: der Stream-Job (prio 0) setzt
@@ -1583,13 +1597,16 @@ class AnazhRealm_Z25b {
                     // Last wird attribuiert). Das ms-Budget fließt durch: der Region-Bau läuft in ≤SCATTER_SLICE_MS-
                     // Scheiben statt atomar (~54 ms), damit die Deko den Ring-Kopfraum-Timer nicht resetet.
                     // Headless: budget=Infinity → One-Shot; im Takt mit Terrain-Bau trägt die Deko nur ihren Boden.
-                    const msDeko = st._frameChunksBuilt ? Math.min(ms, AnazhRealm.FRAME_SCHED_DEKO_FLOOR_MS) : ms;
+                    // Der Lade-Takt (`_ladeTakt`) gibt der Deko das ganze Budget des Lade-Frames, das Gras baut darin.
+                    const lade = this._ladeTakt();
+                    const msDeko =
+                        st._frameChunksBuilt && !lade ? Math.min(ms, AnazhRealm.FRAME_SCHED_DEKO_FLOOR_MS) : ms;
                     const _dl = Number.isFinite(msDeko)
-                        ? performance.now() + Math.min(msDeko, AnazhRealm.SCATTER_SLICE_MS)
+                        ? performance.now() + (lade ? msDeko : Math.min(msDeko, AnazhRealm.SCATTER_SLICE_MS))
                         : undefined;
                     const _sct = performance.now();
                     this._tickScatterStreaming(playerPos, _dl);
-                    this._tickPendingGrass(1);
+                    this._tickPendingGrass(lade ? Infinity : 1, lade ? _dl : undefined);
                     this._tickScatterRegrow(performance.now());
                     this._tickNahWiese(_dl);
                     this._tickNahStreu(_dl);
@@ -1814,7 +1831,7 @@ class AnazhRealm_Z25b {
         this._tickDirtyVoxelChunks(playerPos);
         // `_frameOverBudget` als FOLGE des leeren Budgets (zusätzliches Signal; der Regler setzt
         // es am Frame-Ende weiter aus frameMs — die volle Vereinheitlichung kommt mit dem Default-an).
-        if (B.remainingMs() <= 0) st._frameOverBudget = true;
+        if (B.remainingMs() <= 0 && !this._ladeTakt()) st._frameOverBudget = true;
     }
 
     _loopVoxelStreaming() {

@@ -2014,7 +2014,15 @@ class AnazhRealm_Z06a {
     }
     // Boot-Prefetch (nach Book-Ingest): die Gattungen off-thread backen — die
     // Welt-Spawns treffen dann NUR noch das Memo (Clone ~1 ms, kein Freeze).
-    _ofenPrefetchKreaturen() {
+    // DER OFEN-VORRAT NACH DEM ERSTEN BILD (K60, die Regel des Vorrats aus K30): kein Leser des ersten Bildes liest ihn —
+    // den Leib des Spielers gießt sein eigener Bau (`_deferredAvatarSoul`), die Kreaturen kommen nach dem Bild
+    // (`_tickBootPhase3`). Bis K60 stellte er sich beim Worker-Start vor das Buch-Werk: acht Güsse (Mensch, Reh, Wolf,
+    // Fuchs je zwei Stufen) hielten den Faden kalt 7 s, und jeder nahe Baum wartete hinter ihnen (Radeon, Kalt-Zeile
+    // 24,9 s: die erste Baum-Antwort bei 13,8 s). Er wartet auf das EREIGNIS des Bildes (`_weltbildKommt`), nie auf die
+    // Uhr; `_ofenVorratSteht` sagt Boot-Phase 3, dass jede Gattung im Memo liegt (oder laut fehlt).
+    async _ofenPrefetchKreaturen() {
+        await this._weltbildKommt();
+        const auftraege = [];
         const map = AnazhRealm.TETRAPODA_SOUL_MAP || {};
         const memo = AnazhRealm._tierOfenMemo || (AnazhRealm._tierOfenMemo = new Map());
         const gesehen = new Set();
@@ -2036,7 +2044,7 @@ class AnazhRealm_Z06a {
                     this._ofenVorlage(keyM, false, () => null, true);
                     continue;
                 }
-                this._foundryRequest("mensch", 0, lodM, {
+                const auftrag = this._foundryRequest("mensch", 0, lodM, {
                     dials: dM,
                     skinColor: fM.skin,
                     hairColor: fM.hair,
@@ -2050,6 +2058,7 @@ class AnazhRealm_Z06a {
                     }
                     this._ofenVorlage(keyM, false, () => this._ofenAssembleAsset(meshes), true);
                 });
+                auftraege.push(auftrag);
             }
         }
         for (const soulKey of Object.keys(map)) {
@@ -2064,7 +2073,7 @@ class AnazhRealm_Z06a {
                     this._ofenVorlage(key, false, () => null, true);
                     continue;
                 }
-                this._foundryRequest(recId, 0, lod, d.istDefault ? null : d.dials).then((meshes) => {
+                const auftrag = this._foundryRequest(recId, 0, lod, d.istDefault ? null : d.dials).then((meshes) => {
                     if (!meshes || !meshes.length) {
                         if (!memo.has(key))
                             this.log(`OFEN-PREFETCH LEER: ${recId} lod${lod} (Buch kalt/Timeout)`, "WARN");
@@ -2072,8 +2081,11 @@ class AnazhRealm_Z06a {
                     }
                     this._ofenVorlage(key, false, () => this._ofenAssembleAsset(meshes), true);
                 });
+                auftraege.push(auftrag);
             }
         }
+        await Promise.all(auftraege);
+        this._ofenVorratSteht = true;
     }
     // DAS BEIN-MASS der Gestalt (Welle 5, die Zwei-Knochen-IK des Gang-Gesetzes): je Bein an der Vorlage in der Ruhe-Pose
     // (alle Gelenke 0) in der Sagittal-Ebene (y, z) des Rumpfs vermessen — a = Bein-Gelenk → Unterglied-Gelenk (Kette[2]),

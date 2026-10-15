@@ -13,16 +13,143 @@
     },
     "gemessen": {
         "labor": {
-            "datum": "2026-10-07T01:39:26.250Z",
+            "datum": "2026-10-15T09:18:23.683Z",
             "geraet": "ANGLE (AMD, AMD Radeon(TM) 890M Graphics (0x0000150E) Direct3D11 vs_5_0 ps_5_0, D3D11)",
-            "echt": true
+            "echt": false,
+            "version": "18.546.2",
+            "sha": "cd945ba093d8a25047fd2fd20effa1f132babbf5",
+            "quellen": {
+                "phyto-core.js": "c:db35ea5544d7453c",
+                "foundry-core.js": "c:bcaa4b02d2a0a1ce",
+                "vehicle-core.js": "c:97f0f918c22eb27c",
+                "porta-core.js": "c:986b5e22a9e7eaa5",
+                "schmiede-core.js": "c:b94f4dfa0ae2c2fd",
+                "fachwerk-core.js": "c:e5726dc98963a032",
+                "klang-core.js": "c:8e668691b9eb131c",
+                "koerper-core.js": "c:2d740b48e4f78546",
+                "tetrapoda-core.js": "c:14a2c4d068438f19",
+                "gelaende-core.js": "c:47e37b262d36dd6e",
+                "stamm/01.js": "c:a566251f9b6aee74",
+                "stamm/02a.js": "c:535bb81592a53fd0",
+                "stamm/02b.js": "c:07c20016205e5e86",
+                "stamm/03a.js": "c:24260351ef810643",
+                "stamm/03b.js": "c:51b51437adaa7782",
+                "stamm/04.js": "c:f3701da31b3afa5d",
+                "stamm/05a.js": "c:87f4680772d0a67a",
+                "stamm/05b.js": "c:6a0ed6001822d74a",
+                "stamm/06a.js": "c:e9afa5f4a503640c",
+                "stamm/06b.js": "c:a96a229371e2a3a9",
+                "stamm/06c.js": "c:2ca5cdf25f593d21",
+                "stamm/07.js": "c:158f10e6ed0cd9c0",
+                "stamm/08.js": "c:77f87597ce6b7d1c",
+                "stamm/09.js": "c:640e0f8c47824f6a",
+                "stamm/10.js": "c:60d0e92e3969e187",
+                "stamm/11a.js": "c:07de57204b2e88b6",
+                "stamm/11b.js": "c:2b2b48ade183e63b",
+                "stamm/11c.js": "c:518597d3391b9a29",
+                "stamm/11d.js": "c:91d2d36882b23e75",
+                "stamm/12.js": "c:0cea101e763e37aa",
+                "stamm/13a.js": "c:52b65195966734b3",
+                "stamm/13b.js": "c:6648f26d752bb96d",
+                "stamm/13c.js": "c:5c6c98977824abeb",
+                "stamm/14.js": "c:92e61a077759efcb",
+                "stamm/15a.js": "c:386117a9b5c4f686",
+                "stamm/15b.js": "c:03227410c827ed8b",
+                "stamm/15c.js": "c:632b0d73bab306bc",
+                "stamm/16.js": "c:01e3f0cd78cbfa15",
+                "stamm/17a.js": "c:11288a3e76c70a68",
+                "stamm/17b.js": "c:074908c78ad2216f",
+                "stamm/17c.js": "c:23bf514b3055a23e",
+                "stamm/18.js": "c:b33a1bf3bfc74ef5",
+                "stamm/19.js": "c:b1a053cba1f64cd1",
+                "stamm/20a.js": "c:5dce1435508f95e3",
+                "stamm/20b.js": "c:6c1b7142739458bf",
+                "stamm/20c.js": "c:da14ccf91cefc490",
+                "stamm/20d.js": "c:61c5db83cc0f8799",
+                "stamm/21.js": "c:38ad56cce63d4b2b",
+                "stamm/22.js": "c:72a6c5e7028af2be",
+                "stamm/23a.js": "c:cecfd519d82216e1",
+                "stamm/23b.js": "c:72656601cb13a947",
+                "stamm/24.js": "c:5cadba33d1361342",
+                "stamm/25a.js": "c:138344d782c1fc93",
+                "stamm/25b.js": "c:8771e70f17987b2b",
+                "stamm/25c.js": "c:443fb93eb5cee16c",
+                "stamm/26a.js": "c:e45314b7ac61774c",
+                "stamm/26b.js": "c:dfab70e9d26443a4",
+                "stamm/26c.js": "c:7788e9924f8f7801"
+            }
         },
         "welt": {
-            "datum": "2026-10-07T01:37:39.928Z",
+            "datum": "2026-10-15T09:17:30.696Z",
             "geraet": "amd rdna-3",
             "ort": "genesis",
-            "spieler": [0, 0],
-            "echt": true
+            "spieler": [
+                0,
+                0
+            ],
+            "echt": false,
+            "version": "18.546.2",
+            "sha": "cd945ba093d8a25047fd2fd20effa1f132babbf5",
+            "quellen": {
+                "phyto-core.js": "c:db35ea5544d7453c",
+                "foundry-core.js": "c:bcaa4b02d2a0a1ce",
+                "vehicle-core.js": "c:97f0f918c22eb27c",
+                "porta-core.js": "c:986b5e22a9e7eaa5",
+                "schmiede-core.js": "c:b94f4dfa0ae2c2fd",
+                "fachwerk-core.js": "c:e5726dc98963a032",
+                "klang-core.js": "c:8e668691b9eb131c",
+                "koerper-core.js": "c:2d740b48e4f78546",
+                "tetrapoda-core.js": "c:14a2c4d068438f19",
+                "gelaende-core.js": "c:47e37b262d36dd6e",
+                "stamm/01.js": "c:a566251f9b6aee74",
+                "stamm/02a.js": "c:535bb81592a53fd0",
+                "stamm/02b.js": "c:07c20016205e5e86",
+                "stamm/03a.js": "c:24260351ef810643",
+                "stamm/03b.js": "c:51b51437adaa7782",
+                "stamm/04.js": "c:f3701da31b3afa5d",
+                "stamm/05a.js": "c:87f4680772d0a67a",
+                "stamm/05b.js": "c:6a0ed6001822d74a",
+                "stamm/06a.js": "c:e9afa5f4a503640c",
+                "stamm/06b.js": "c:a96a229371e2a3a9",
+                "stamm/06c.js": "c:2ca5cdf25f593d21",
+                "stamm/07.js": "c:158f10e6ed0cd9c0",
+                "stamm/08.js": "c:77f87597ce6b7d1c",
+                "stamm/09.js": "c:640e0f8c47824f6a",
+                "stamm/10.js": "c:60d0e92e3969e187",
+                "stamm/11a.js": "c:07de57204b2e88b6",
+                "stamm/11b.js": "c:2b2b48ade183e63b",
+                "stamm/11c.js": "c:518597d3391b9a29",
+                "stamm/11d.js": "c:91d2d36882b23e75",
+                "stamm/12.js": "c:0cea101e763e37aa",
+                "stamm/13a.js": "c:52b65195966734b3",
+                "stamm/13b.js": "c:6648f26d752bb96d",
+                "stamm/13c.js": "c:5c6c98977824abeb",
+                "stamm/14.js": "c:92e61a077759efcb",
+                "stamm/15a.js": "c:386117a9b5c4f686",
+                "stamm/15b.js": "c:03227410c827ed8b",
+                "stamm/15c.js": "c:632b0d73bab306bc",
+                "stamm/16.js": "c:01e3f0cd78cbfa15",
+                "stamm/17a.js": "c:11288a3e76c70a68",
+                "stamm/17b.js": "c:074908c78ad2216f",
+                "stamm/17c.js": "c:23bf514b3055a23e",
+                "stamm/18.js": "c:b33a1bf3bfc74ef5",
+                "stamm/19.js": "c:b1a053cba1f64cd1",
+                "stamm/20a.js": "c:5dce1435508f95e3",
+                "stamm/20b.js": "c:6c1b7142739458bf",
+                "stamm/20c.js": "c:da14ccf91cefc490",
+                "stamm/20d.js": "c:61c5db83cc0f8799",
+                "stamm/21.js": "c:38ad56cce63d4b2b",
+                "stamm/22.js": "c:72a6c5e7028af2be",
+                "stamm/23a.js": "c:cecfd519d82216e1",
+                "stamm/23b.js": "c:72656601cb13a947",
+                "stamm/24.js": "c:5cadba33d1361342",
+                "stamm/25a.js": "c:138344d782c1fc93",
+                "stamm/25b.js": "c:8771e70f17987b2b",
+                "stamm/25c.js": "c:443fb93eb5cee16c",
+                "stamm/26a.js": "c:e45314b7ac61774c",
+                "stamm/26b.js": "c:dfab70e9d26443a4",
+                "stamm/26c.js": "c:7788e9924f8f7801"
+            }
         }
     },
     "zeilen": [
@@ -43,27 +170,46 @@
                 "exemplar": {
                     "typ": "architektur",
                     "name": "baum_eiche",
-                    "radius": 5
+                    "radius": 5,
+                    "nah": 20,
+                    "versatz": [
+                        12,
+                        12
+                    ]
                 },
-                "klasse": "^f:eiche:L[01]$",
+                "klasse": "^f:eiche:L[0-3]$",
                 "stoff": {
                     "kind": "^bark$"
-                }
+                },
+                "stufen": [
+                    0,
+                    1
+                ]
             },
+            "quellen": [
+                "phyto-core.js",
+                "foundry-core.js",
+                "stamm/10.js",
+                "stamm/20b.js"
+            ],
             "ist": {
                 "labor": {
-                    "Y": 0.0906,
-                    "rgb": "0.1084/0.0881/0.0629",
-                    "pixel": 76240
+                    "Y": 0.0948,
+                    "rgb": "0.1127/0.0924/0.0662",
+                    "pixel": 15782
                 },
                 "welt": {
-                    "Y": 0.0941,
-                    "rgb": "0.1123/0.0915/0.0657",
-                    "pixel": 23629
+                    "Y": 0.093,
+                    "rgb": "0.1107/0.0905/0.0649",
+                    "pixel": 6118,
+                    "stufen": [
+                        0,
+                        1
+                    ]
                 },
-                "verhaeltnis": 0.9628
+                "verhaeltnis": 1.0194
             },
-            "ratsche": 0.0379
+            "ratsche": 0.016
         },
         {
             "id": "laub",
@@ -82,27 +228,47 @@
                 "exemplar": {
                     "typ": "architektur",
                     "name": "baum_eiche",
-                    "radius": 5
+                    "radius": 5,
+                    "nah": 20,
+                    "versatz": [
+                        12,
+                        12
+                    ]
                 },
-                "klasse": "^f:eiche:L[01]$",
+                "klasse": "^f:eiche:L[0-3]$",
                 "stoff": {
                     "kind": "^foliage(Tex)?$"
-                }
+                },
+                "stufen": [
+                    0,
+                    1
+                ]
             },
+            "quellen": [
+                "phyto-core.js",
+                "foundry-core.js",
+                "stamm/10.js",
+                "stamm/20b.js",
+                "stamm/20c.js"
+            ],
             "ist": {
                 "labor": {
-                    "Y": 0.1813,
-                    "rgb": "0.1284/0.2108/0.0451",
-                    "pixel": 161543
+                    "Y": 0.1796,
+                    "rgb": "0.1276/0.2087/0.0447",
+                    "pixel": 143108
                 },
                 "welt": {
-                    "Y": 0.2242,
-                    "rgb": "0.1241/0.2711/0.0535",
-                    "pixel": 58741
+                    "Y": 0.1639,
+                    "rgb": "0.0867/0.199/0.0428",
+                    "pixel": 57273,
+                    "stufen": [
+                        0,
+                        1
+                    ]
                 },
-                "verhaeltnis": 0.8087
+                "verhaeltnis": 1.0958
             },
-            "ratsche": 0.2123
+            "ratsche": 0.0915
         },
         {
             "id": "fels",
@@ -114,7 +280,10 @@
                     "klick": "#ui [data-p=\"zacken\"]"
                 },
                 "stoff": {
-                    "r": [0.5, 1]
+                    "r": [
+                        0.5,
+                        1
+                    ]
                 }
             },
             "welt": {
@@ -126,58 +295,86 @@
                 "klasse": "^formationenSatz$",
                 "stoff": {
                     "kind": "^unknown$",
-                    "r": [0.5, 1]
+                    "r": [
+                        0.5,
+                        1
+                    ]
                 }
             },
+            "quellen": [
+                "gelaende-core.js",
+                "stamm/08.js",
+                "stamm/10.js",
+                "stamm/26b.js"
+            ],
             "ist": {
                 "labor": {
-                    "Y": 0.2432,
-                    "rgb": "0.2692/0.2419/0.1801",
+                    "Y": 0.2444,
+                    "rgb": "0.2705/0.243/0.1811",
                     "pixel": 307925
                 },
                 "welt": {
-                    "Y": 0.2366,
-                    "rgb": "0.2617/0.2354/0.1746",
-                    "pixel": 19618
+                    "Y": 0.2388,
+                    "rgb": "0.2641/0.2377/0.1761",
+                    "pixel": 79682,
+                    "stufen": [
+                        0
+                    ]
                 },
-                "verhaeltnis": 1.0279
+                "verhaeltnis": 1.0235
             },
-            "ratsche": 0.0275
+            "ratsche": 0.0232
         },
         {
             "id": "boden",
             "gruppe": "Boden",
-            "titel": "Boden von oben (Labor: der Wald-Boden der Pflanzen-Welt aus PORTAL_GROUND; Welt: der Boden-Satz unter dem Spieler)",
+            "titel": "Boden von oben (Labor: der Wald-Boden der Pflanzen-Welt aus PORTAL_GROUND; Welt: der Boden-Satz des Wald-Bodens — die nächste Stelle um den Spieler mit ≥ 4 stehenden Bäumen binnen 8 m, nie der Genesis-Platz, den K52 als Grundriss trägt)",
             "labor": {
                 "studio": "terrain",
                 "aktion": {
                     "wald": true
                 },
                 "wurzel": "scene",
-                "nur": ["_terMat"],
+                "nur": [
+                    "_terMat"
+                ],
                 "blick": "oben"
             },
             "welt": {
                 "exemplar": {
-                    "typ": "boden"
+                    "typ": "boden",
+                    "wald": {
+                        "baeume": 4,
+                        "r": 8,
+                        "frei": 2,
+                        "ab": 20,
+                        "bis": 160
+                    }
                 },
                 "klasse": "^bodenSatz$",
                 "blick": "oben"
             },
+            "quellen": [
+                "gelaende-core.js",
+                "stamm/10.js",
+                "stamm/17b.js",
+                "stamm/20a.js"
+            ],
             "ist": {
                 "labor": {
-                    "Y": 0.3231,
-                    "rgb": "0.3875/0.3152/0.2113",
+                    "Y": 0.0867,
+                    "rgb": "0.1238/0.0807/0.0364",
                     "pixel": 256000
                 },
                 "welt": {
-                    "Y": 0.0995,
-                    "rgb": "0.1167/0.0962/0.0813",
-                    "pixel": 256000
+                    "Y": 0.0833,
+                    "rgb": "0.1139/0.0779/0.047",
+                    "pixel": 256000,
+                    "stufen": []
                 },
-                "verhaeltnis": 3.2472
+                "verhaeltnis": 1.0408
             },
-            "ratsche": 1.1778
+            "ratsche": 0.04
         },
         {
             "id": "haus",
@@ -207,8 +404,18 @@
                 "klasse": "^(bauSatz|f:alemannisch:L[01])$",
                 "stoff": {
                     "seh": "stoff"
-                }
+                },
+                "stufen": [
+                    1
+                ]
             },
+            "quellen": [
+                "fachwerk-core.js",
+                "foundry-core.js",
+                "stamm/10.js",
+                "stamm/17c.js",
+                "stamm/20b.js"
+            ],
             "ist": {
                 "labor": {
                     "Y": 0.0841,
@@ -216,18 +423,21 @@
                     "pixel": 407007
                 },
                 "welt": {
-                    "Y": 0.1665,
-                    "rgb": "0.285/0.1385/0.0947",
-                    "pixel": 174392
+                    "Y": 0.159,
+                    "rgb": "0.2773/0.1312/0.0868",
+                    "pixel": 168326,
+                    "stufen": [
+                        1
+                    ]
                 },
-                "verhaeltnis": 0.5051
+                "verhaeltnis": 0.5289
             },
-            "ratsche": 0.683
+            "ratsche": 0.637
         },
         {
             "id": "lack",
             "gruppe": "Metall/Lack",
-            "titel": "Wagen gt, der Lack (Seh-Klasse metall mit Klarlack; die Gestalt der Welt wählt ihn aus dem LACK_GESETZ, das Labor-Farbfeld derselbe)",
+            "titel": "Wagen gt, der Lack Tiefschwarz (Seh-Klasse metall mit Klarlack, LACK_GESETZ der Saat 7 — dasselbe Feld wie die Lack-Leiste des Labors); die Welt zeigt das Exemplar in der Stufe 0 des Labors (das Auge der Stufen 4,2 m vor ihm): in der Stufe 1 faltet das Budget-Gesetz die Teile seiner Seh-Klasse in den Lack-Zug",
             "labor": {
                 "studio": "garage",
                 "aktion": {
@@ -236,21 +446,39 @@
                 },
                 "stoff": {
                     "seh": "metall",
-                    "cc": [0.5, 1]
+                    "cc": [
+                        0.5,
+                        1
+                    ]
                 }
             },
             "welt": {
                 "exemplar": {
                     "typ": "architektur",
                     "name": "fahrzeug_gt",
-                    "radius": 4
+                    "radius": 4,
+                    "nah": 0,
+                    "seed": 7,
+                    "stufeNah": true
                 },
                 "klasse": "^f:gt:L0$",
                 "stoff": {
                     "seh": "metall",
-                    "cc": [0.5, 1]
-                }
+                    "cc": [
+                        0.5,
+                        1
+                    ]
+                },
+                "stufen": [
+                    0
+                ]
             },
+            "quellen": [
+                "vehicle-core.js",
+                "foundry-core.js",
+                "stamm/10.js",
+                "stamm/20b.js"
+            ],
             "ist": {
                 "labor": {
                     "Y": 0.0066,
@@ -258,11 +486,14 @@
                     "pixel": 245421
                 },
                 "welt": {
-                    "Y": 0.006,
-                    "rgb": "0.0051/0.006/0.0089",
-                    "pixel": 82646
+                    "Y": 0.0058,
+                    "rgb": "0.005/0.0058/0.0087",
+                    "pixel": 77839,
+                    "stufen": [
+                        0
+                    ]
                 },
-                "verhaeltnis": 1.1
+                "verhaeltnis": 1.1379
             },
             "ratsche": 0.0953
         },
@@ -282,11 +513,21 @@
                     "name": "welt_portale",
                     "radius": 5
                 },
-                "klasse": "^f:kathedrale:L0$",
+                "klasse": "^(bauSatz|f:kathedrale:L[0-3])$",
                 "stoff": {
                     "seh": "metall"
-                }
+                },
+                "stufen": [
+                    1
+                ]
             },
+            "quellen": [
+                "porta-core.js",
+                "foundry-core.js",
+                "stamm/10.js",
+                "stamm/14.js",
+                "stamm/20b.js"
+            ],
             "ist": {
                 "labor": {
                     "Y": 0.6496,
@@ -294,11 +535,14 @@
                     "pixel": 7583
                 },
                 "welt": {
-                    "Y": 0.6496,
-                    "rgb": "0.8196/0.6364/0.2799",
-                    "pixel": 2561
+                    "Y": 0.6493,
+                    "rgb": "0.8196/0.6359/0.2799",
+                    "pixel": 4324,
+                    "stufen": [
+                        1
+                    ]
                 },
-                "verhaeltnis": 1
+                "verhaeltnis": 1.0005
             },
             "ratsche": 0
         },
@@ -321,25 +565,33 @@
                     "typ": "spieler",
                     "radius": 2
                 },
-                "klasse": "^spieler$",
+                "klasse": "^spieler(:.*)?$",
                 "stoff": {
                     "kind": "^(haut|skin)$"
                 }
             },
+            "quellen": [
+                "koerper-core.js",
+                "foundry-core.js",
+                "stamm/10.js",
+                "stamm/15a.js",
+                "stamm/15c.js"
+            ],
             "ist": {
                 "labor": {
-                    "Y": 0.2411,
-                    "rgb": "0.3626/0.2146/0.145",
-                    "pixel": 76529
+                    "Y": 0.0608,
+                    "rgb": "0.1217/0.0463/0.025",
+                    "pixel": 74182
                 },
                 "welt": {
-                    "Y": 0.0546,
-                    "rgb": "0.1149/0.0402/0.0205",
-                    "pixel": 59569
+                    "Y": 0.1554,
+                    "rgb": "0.2183/0.1408/0.114",
+                    "pixel": 36009,
+                    "stufen": []
                 },
-                "verhaeltnis": 4.4158
+                "verhaeltnis": 0.3912
             },
-            "ratsche": 1.4852
+            "ratsche": 0.9322
         },
         {
             "id": "fell",
@@ -351,7 +603,10 @@
                     "klick": "[data-p=\"wolf\"]"
                 },
                 "stoff": {
-                    "r": [0.85, 1]
+                    "r": [
+                        0.85,
+                        1
+                    ]
                 }
             },
             "welt": {
@@ -365,20 +620,27 @@
                     "kind": "^fell$"
                 }
             },
+            "quellen": [
+                "tetrapoda-core.js",
+                "stamm/06a.js",
+                "stamm/10.js",
+                "stamm/20b.js"
+            ],
             "ist": {
                 "labor": {
-                    "Y": 0.2272,
-                    "rgb": "0.2472/0.2247/0.1941",
-                    "pixel": 142609
+                    "Y": 0.1688,
+                    "rgb": "0.2059/0.1635/0.1123",
+                    "pixel": 152863
                 },
                 "welt": {
-                    "Y": 0.1932,
-                    "rgb": "0.2384/0.1867/0.125",
-                    "pixel": 48389
+                    "Y": 0.1776,
+                    "rgb": "0.2174/0.1719/0.1173",
+                    "pixel": 45182,
+                    "stufen": []
                 },
-                "verhaeltnis": 1.176
+                "verhaeltnis": 0.9505
             },
-            "ratsche": 0.1621
+            "ratsche": 0.0479
         },
         {
             "id": "klinge",
@@ -399,8 +661,17 @@
                 "klasse": "^f:langschwert:L0$",
                 "stoff": {
                     "seh": "metall"
-                }
+                },
+                "stufen": [
+                    0
+                ]
             },
+            "quellen": [
+                "schmiede-core.js",
+                "foundry-core.js",
+                "stamm/10.js",
+                "stamm/20b.js"
+            ],
             "ist": {
                 "labor": {
                     "Y": 0.3322,
@@ -410,7 +681,10 @@
                 "welt": {
                     "Y": 0.3493,
                     "rgb": "0.388/0.3419/0.3081",
-                    "pixel": 6473
+                    "pixel": 6474,
+                    "stufen": [
+                        0
+                    ]
                 },
                 "verhaeltnis": 0.951
             },
@@ -421,49 +695,77 @@
         "terrain": {
             "ist": {
                 "kL": 0.7482,
-                "ausgabe": [186, 193, 184]
+                "ausgabe": [
+                    187,
+                    194,
+                    185
+                ]
             },
             "ratsche": 0.866
         },
         "garage": {
             "ist": {
                 "kL": 0.6468,
-                "ausgabe": [207, 210, 212]
+                "ausgabe": [
+                    207,
+                    210,
+                    212
+                ]
             },
             "ratsche": 0.7204
         },
         "portale": {
             "ist": {
                 "kL": 0.8023,
-                "ausgabe": [197, 207, 202]
+                "ausgabe": [
+                    194,
+                    205,
+                    200
+                ]
             },
-            "ratsche": 0.9359
+            "ratsche": 0.9345
         },
         "schmiede": {
             "ist": {
                 "kL": 0.6427,
-                "ausgabe": [170, 158, 146]
+                "ausgabe": [
+                    172,
+                    160,
+                    148
+                ]
             },
             "ratsche": 0.7141
         },
         "fachwerk": {
             "ist": {
-                "kL": 0.4922,
-                "ausgabe": [198, 196, 193]
+                "kL": 0.4801,
+                "ausgabe": [
+                    197,
+                    194,
+                    192
+                ]
             },
-            "ratsche": 0.4472
+            "ratsche": 0.4224
         },
         "koerperstudio": {
             "ist": {
                 "kL": 0.699,
-                "ausgabe": [170, 181, 178]
+                "ausgabe": [
+                    171,
+                    182,
+                    179
+                ]
             },
             "ratsche": 0.798
         },
         "tetrapoda": {
             "ist": {
                 "kL": 0.8802,
-                "ausgabe": [255, 255, 255]
+                "ausgabe": [
+                    252,
+                    252,
+                    252
+                ]
             },
             "ratsche": 1.0285
         }

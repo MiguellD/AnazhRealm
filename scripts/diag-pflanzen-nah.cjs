@@ -29,6 +29,13 @@
 //      (Blick-Tour Bild 01, Raycast f:weide|1|1:2) — jede L1-Krone ist Karte oder Strähne. Vorher Weide 3 344 Dreiecke.
 //  (U) UNTERSEITE — die Blatt-Unterseite (phyto-core BLATT_UNTERSEITE) hat ihre zwei Leser: den Laub-Shader des Labors
 //      (foundry-core) und den Laub-Stoff der Welt (anazhRealm).
+//  (V) VOLUMEN — die Normale der Krone (K68-N1, Prüfer K68): jede Laub-Stufe eines Baums und Strauchs (L0, L1) trägt die
+//      Normale der Krone (phyto-core kronenNormalen) — aus 8 Peilungen zeigt die GELICHTETE Normale der nahen Kronen-Hälfte
+//      aus der Krone hinaus (Anteil nach innen ≤ KRONE_WEG_MAX). Gelichtet ist, was die Leser tun: lesen Welt-Stoff, Labor und Bäcker der
+//      Karte die Normale flip-frei (`_laubStoffNormale` = normalViewGeometry · injectWind `krone` · der Normal-Pass), ist sie
+//      die Normale; sonst kehrt r184 sie auf jeder Rückseite (front ? n : −n). Dazu das EINE Gesetz: der Grammatik-Baum der
+//      Werkstatt legt dieselbe Normale (`_kronenNormalenAuf` → kronenNormalen), keine zweite Kronen-Normale im Stamm.
+//      Vorher (bbaaff31): die Hälfte der nahen Dreiecke nach innen, der Wirt mit seiner Kuppel vom Kronen-Boden.
 //  (W) WEIDE — jede Karte der Trauer-Krone (L0 und L1) liest die Weiden-Zelle (BLATT_ATLAS_WEIDE: lanzettliche Blätter an
 //      der hängenden Rute). Vorher die Großblatt-Zelle: runde Hasel-Blätter an der Weide (Prüfer W5, Bild weide-8m).
 //  (Z) KORN — das Kanten-Flimmern der Laub-Karte in der Mittelsicht (K20): die Zelle als Karte auf dem Schirm, trilinear,
@@ -47,6 +54,9 @@
 //      0,7…1,4, volle Wiese) und parallel unter TEPPICH_NEIGUNG projiziert (der Boden 4,4 m vor dem Ego-Auge): der Anteil
 //      des Bodens, den Halme decken, ≥ TEPPICH_MIN. Vorher Büschel von 0,15 m auf dem 0,72-m-Raster (Augen-Befund 14.10.:
 //      Büschel auf glattem Grün). Konsum-Leser: die Nah-Wiese (`_nahWieseSenken`) und der Studio-Wald (grassT).
+//      DIE GRASNARBE (K70, Soll-Tafel boden-nah laiWirk ≥ 1,7): die Schwellen tragen die geschlossene Narbe, und der Halm
+//      WURZELT — die tiefste Ecke der Vorlage liegt am Boden (≤ FUSS_MAX der Büschel-Höhe); bis K70 begann jeder Halm eine
+//      Segment-Länge über dem Grund (L1/L2: ein Drittel des Halms Luft, Fuß 7–9 % der Höhe).
 // SELBSTTEST: jede Probe MUSS an einer kranken Kopie der gemessenen Puffer feuern (gipsweiße Birke, Ringel-Stamm,
 // Klingen-Strauch, einfarbige Blüte, Blatt ×3, Strauch-Blatt ×½, Nadel ×3, Klingen-L1, Leser entfernt, BC1 gerade gelesen,
 // Atlas-Leser ohne ÷ alpha) — die Linse
@@ -89,6 +99,7 @@ function teile(meshes) {
             pos: f32(m.attrs.position.b64),
             col: m.attrs.color ? f32(m.attrs.color.b64) : null,
             uv: m.attrs.uv ? f32(m.attrs.uv.b64) : null,
+            nor: m.attrs.normal ? f32(m.attrs.normal.b64) : null,
             idx: m.index ? u32(m.index) : null,
         }));
 }
@@ -319,7 +330,28 @@ function klingenL1(fall, T) {
 // Fenster ist das Bild des Boden-Quadrats [−1, 1]² m, Raster 5 mm, die Kacheln reichen 3 m weit (jeder Halm, der ins
 // Fenster ragt). Rückgabe: der gedeckte Anteil des Fensters.
 const TEPPICH_NEIGUNG = 20;
-const TEPPICH_MIN = { 1: 0.85, 2: 0.55 }; // vorher L1 0,425/0,504 · L2 0,322/0,415, K56 L1 0,901/0,954 · L2 0,586/0,702
+// vorher L1 0,425/0,504 · L2 0,322/0,415, K56 L1 0,901/0,954 · L2 0,586/0,702, K70 L1 0,996/0,999 · L2 0,959/0,980
+const TEPPICH_MIN = { 1: 0.97, 2: 0.9 };
+const FUSS_MAX = 0.01;
+// Der Fuß der Halme: je Halm-Fußzeile (uv.v = 0, grün — die Rispe beginnt ebenfalls bei v = 0, aber gelb an der Spitze) ihre
+// Höhe über der Grundebene der Vorlage (der Ofen setzt die tiefste Ecke auf 0); das 90. Perzentil in Teilen der Büschel-Höhe.
+function teppichFuss(T) {
+    let hi = -Infinity,
+        lo = Infinity;
+    const fuss = [];
+    for (const t of T) {
+        if (!t.idx) continue;
+        for (let k = 0; k < t.pos.length / 3; k++) {
+            const y = t.pos[k * 3 + 1];
+            hi = Math.max(hi, y);
+            lo = Math.min(lo, y);
+            if (t.uv && t.col && t.uv[k * 2 + 1] === 0 && t.col[k * 3 + 1] > t.col[k * 3]) fuss.push(y);
+        }
+    }
+    if (!fuss.length || !(hi > lo)) return Infinity;
+    fuss.sort((a, b) => a - b);
+    return (fuss[Math.floor(fuss.length * 0.9)] - lo) / (hi - lo);
+}
 function teppichDeckung(T, step, skala, neigung = TEPPICH_NEIGUNG) {
     const e = (neigung * Math.PI) / 180,
         se = Math.sin(e),
@@ -382,14 +414,91 @@ function teppichDeckung(T, step, skala, neigung = TEPPICH_NEIGUNG) {
 }
 function teppichUrteil(fall, T, lod, step, skala) {
     const d = teppichDeckung(T, step, skala),
-        min = TEPPICH_MIN[lod];
-    return {
-        v:
-            min != null && d >= min
-                ? []
-                : [`${fall}: Halm-Deckung des Bodens unter ${TEPPICH_NEIGUNG}° ${d.toFixed(3)} < ${min} (Büschel auf glattem Grün)`],
-        m: { teppich: d },
-    };
+        min = TEPPICH_MIN[lod],
+        fuss = teppichFuss(T);
+    const v =
+        min != null && d >= min
+            ? []
+            : [`${fall}: Halm-Deckung des Bodens unter ${TEPPICH_NEIGUNG}° ${d.toFixed(3)} < ${min} (Büschel auf glattem Grün)`];
+    if (!(fuss <= FUSS_MAX))
+        v.push(`${fall}: der Halm schwebt — sein Fuß steht ${(100 * fuss).toFixed(1)} % der Büschel-Höhe über dem Boden`);
+    return { v, m: { teppich: d, fuss } };
+}
+// (V) DIE NORMALE DER KRONE — gelichtet, wie die Leser lesen (flipFrei), aus 8 Peilungen (Höhe 0,25) über der nahen Hälfte.
+const KRONE_WEG_MAX = 0.05;
+function kroneUrteil(fall, T, flipFrei) {
+    const v = [],
+        m = {};
+    for (const t of T) {
+        if ((t.kind !== "foliage" && t.kind !== "foliageTex") || !t.nor || !t.idx) continue;
+        const P = t.pos,
+            N = t.nor,
+            I = t.idx;
+        const mn = [Infinity, Infinity, Infinity],
+            mx = [-Infinity, -Infinity, -Infinity];
+        for (let i = 0; i < P.length; i += 3)
+            for (let a = 0; a < 3; a++) {
+                mn[a] = Math.min(mn[a], P[i + a]);
+                mx[a] = Math.max(mx[a], P[i + a]);
+            }
+        const c = [0, 1, 2].map((a) => (mn[a] + mx[a]) / 2);
+        let nah = 0,
+            weg = 0;
+        for (let k = 0; k < 8; k++) {
+            const w0 = (k / 8) * 2 * Math.PI,
+                e = [Math.cos(w0), 0.25, Math.sin(w0)];
+            for (let q = 0; q + 2 < I.length; q += 3) {
+                const a = I[q] * 3,
+                    b = I[q + 1] * 3,
+                    d = I[q + 2] * 3;
+                const pc = [0, 1, 2].map((j) => (P[a + j] + P[b + j] + P[d + j]) / 3 - c[j]);
+                if (pc[0] * e[0] + pc[1] * e[1] + pc[2] * e[2] <= 0) continue;
+                nah++;
+                const e1 = [P[b] - P[a], P[b + 1] - P[a + 1], P[b + 2] - P[a + 2]],
+                    e2 = [P[d] - P[a], P[d + 1] - P[a + 1], P[d + 2] - P[a + 2]];
+                const fl = [e1[1] * e2[2] - e1[2] * e2[1], e1[2] * e2[0] - e1[0] * e2[2], e1[0] * e2[1] - e1[1] * e2[0]];
+                const vorn = fl[0] * e[0] + fl[1] * e[1] + fl[2] * e[2] > 0;
+                const n = [0, 1, 2].map((j) => N[a + j] + N[b + j] + N[d + j]);
+                const sg = flipFrei || vorn ? 1 : -1;
+                // nach INNEN: die gelichtete Normale zeigt in die Krone (gegen die Lage des Dreiecks zur Mitte)
+                if (sg * (n[0] * pc[0] + n[1] * pc[1] + n[2] * pc[2]) < 0) weg++;
+            }
+        }
+        if (!nah) continue;
+        const anteil = weg / nah;
+        m["weg:" + t.kind] = anteil;
+        if (anteil > KRONE_WEG_MAX)
+            v.push(
+                `${fall} ${t.kind}: ${(100 * anteil).toFixed(1)} % der nahen Dreiecke lichten nach innen (> ${100 * KRONE_WEG_MAX} %) — ` +
+                    (flipFrei ? "die Krone trägt keine Normale der Krone" : "der Leser kehrt die Normale der Krone auf der Rückseite")
+            );
+    }
+    return { v, m };
+}
+// Die Leser der Normale der Krone (K68-N1): Welt-Stoff, Labor und Bäcker der Karte lesen flip-frei; der Grammatik-Baum legt
+// dieselbe Normale wie das Studio. Rückgabe { flipFrei, v } — v nennt den Leser, der kehrt, oder das zweite Gesetz.
+function kronenLeser(q) {
+    const v = [];
+    const welt =
+        /_laubStoffNormale\([^)]*\) \{\s*mat\.normalNode = T\.normalViewGeometry;/.test(q.Stamm) &&
+        /if \(_krone\) this\._laubStoffNormale\(TSL, mat\)/.test(q.Stamm);
+    if (!welt) v.push("Stamm: der Laub-Stoff der Welt liest die Normale der Krone nicht flip-frei (_laubStoffNormale)");
+    const ohneSeite = "normal = normalize( vNormal );";
+    const kc = q["foundry-core.js"];
+    const ki = kc.indexOf("if (krone)");
+    const labor = ki > 0 && kc.slice(ki, ki + 400).includes("#include <normal_fragment_begin>") && kc.slice(ki, ki + 400).includes(ohneSeite);
+    if (!labor) v.push("foundry-core.js: der Laub-Shader des Labors kehrt die Normale der Krone (injectWind krone)");
+    const br = q["foundry-bruecke.js"] || "";
+    const bi = br.indexOf("_impNrmOv.onBeforeCompile");
+    const baecker = bi > 0 && br.slice(bi, bi + 400).includes(ohneSeite);
+    if (!baecker) v.push("foundry-bruecke.js: der Normal-Pass des Karten-Bäckers kehrt die Normale der Krone");
+    const werkstatt =
+        (q.Stamm.match(/this\._kronenNormalenAuf\(g\)/g) || []).length >= 3 &&
+        /_kronenNormalenAuf\([^)]*\) \{[\s\S]{0,240}__phytoCore\.kronenNormalen\(/.test(q.Stamm);
+    if (!werkstatt) v.push("Stamm: der Grammatik-Baum der Werkstatt legt nicht die Normale der Krone (Klingen, Karten, Anker)");
+    if (/_stampFoliageDomeNormals/.test(q.Stamm))
+        v.push("Stamm: die Kuppel-Normale des Wirts (_stampFoliageDomeNormals) lebt neben dem Kern-Gesetz");
+    return { flipFrei: welt && labor && baecker, v };
 }
 function unterseiteUrteil(quellen) {
     const v = [];
@@ -962,8 +1071,9 @@ function windLeserUrteil(quellen) {
     const ohneHalm = h < 0 ? labor : labor.slice(0, h) + labor.slice(labor.indexOf("\n}\n", h));
     if (/_theta=clamp\(_sw\*uWindStrength/.test(ohneHalm))
         v.push("foundry-core.js: das Labor biegt mit eigener Formel");
-    const baeume = (labor.match(/,\s*(true|false),\s*false,\s*true\s*\)/g) || []).length;
-    if (baeume < 4) v.push(`foundry-core.js: nur ${baeume} von 4 Baum-Stoffen (Rinde ×2, Laub ×2) lesen den Baum-Wind`);
+    // die Baum-Stoffe: Rinde ×2, Laub ×3 (Boden-Laub, das Klingen-Laub der Krone und die Karte; K68-N1 `krone`)
+    const baeume = (labor.match(/,\s*(true|false),\s*false,\s*true(?:,\s*true)?\s*\)/g) || []).length;
+    if (baeume < 5) v.push(`foundry-core.js: nur ${baeume} von 5 Baum-Stoffen (Rinde ×2, Laub ×3) lesen den Baum-Wind`);
     const bestand = code(quellen["worlds/terrain/phytogenesis.js"] || "");
     if ((bestand.match(/windStempel\(geo,/g) || []).length < 4)
         v.push("phytogenesis.js: der Bestand des Labors trägt den Wind-Stempel nicht an jedem Klon");
@@ -1036,10 +1146,12 @@ function windDatenUrteil(quellen) {
         const ohne = [...new Set(namen)].filter((a) => !gelesen(a));
         if (ohne.length) v.push(`${wo}: ${name} erzeugt ${ohne.join(" · ")} — kein Stoff liest es`);
     };
-    for (const m of welt.matchAll(/\n    (_buildTree\w*|_stampFoliage\w*)\(/g)) {
-        const rumpf = welt.slice(m.index, welt.indexOf("\n    }\n", m.index));
+    // die Bauer der Welt am AST (stammLib.glieder, K38-N2): ein umbrochener oder async-Kopf fiel aus dem Kopf-Muster
+    for (const g of stammLib.glieder(quellen.Stamm)) {
+        if (!/^(?:_buildTree\w*|_stampFoliage\w*)$/.test(g.name)) continue;
+        const rumpf = code(quellen.Stamm.slice(g.start, g.ende));
         const namen = [...rumpf.matchAll(/setAttribute\(\s*"(a[A-Z]\w*)"/g)].map((x) => x[1]);
-        urteil("Stamm", m[1], namen, inWelt);
+        urteil("Stamm", g.name, namen, inWelt);
     }
     for (const f of KERN_GEOMETRIE_BAUER) {
         const k = kern.indexOf("\n    function " + f + "(");
@@ -1094,6 +1206,14 @@ function windDatenUrteil(quellen) {
     const skala = (p) => (pl.scale && pl.scale[p]) * (buch[p] && buch[p].kind === "tree" ? pl.treeScaleMul || 1 : 1);
     const zeilen = [];
     const ergebnis = {};
+    const quellen = {
+        "foundry-core.js": fs.readFileSync(path.join(ROOT, "foundry-core.js"), "utf8"),
+        Stamm:stammLib.text(ROOT),
+    };
+    // (V) die Leser der Normale der Krone (Welt, Labor, Bäcker, Werkstatt) — aus den Quellen, VOR dem Urteil je Fall
+    const qBr = { "foundry-bruecke.js": fs.readFileSync(path.join(ROOT, "foundry-bruecke.js"), "utf8") };
+    const kl = kronenLeser(Object.assign({}, qBr, quellen));
+    fails.push(...kl.v);
     for (const [k, f] of Object.entries(roh)) {
         const kind = buch[f.presetId].kind;
         // Rinde und Nadel-Art sind der Phänotyp der Art (K24: phyto-core artPhaenotyp aus Reglern und Phänotyp-Zeile).
@@ -1122,6 +1242,11 @@ function windDatenUrteil(quellen) {
             Object.assign(u.m, b.m);
         } else if (kind === "flower") u = bluetenUrteil(k, f.T);
         else if (kind === "grass") u = teppichUrteil(k, f.T, f.lod, rc.understory.grassStep, skala(f.presetId));
+        if (kind === "tree" || kind === "shrub") {
+            const kv = kroneUrteil(k, f.T, kl.flipFrei);
+            u.v.push(...kv.v);
+            Object.assign(u.m, kv.m);
+        }
         if (kind === "tree" && trauerArt) {
             const w = weidenZelle(k, f.T);
             u.v.push(...w.v);
@@ -1140,10 +1265,6 @@ function windDatenUrteil(quellen) {
                     .join(" · ")
         );
     }
-    const quellen = {
-        "foundry-core.js": fs.readFileSync(path.join(ROOT, "foundry-core.js"), "utf8"),
-        Stamm:stammLib.text(ROOT),
-    };
     // der Bestand des Labors liest nur die Wind-Probe (die Unterseiten-Probe geht jede Quelle), der Kern nur die Wind-Daten
     const laborBestand = fs.readFileSync(path.join(ROOT, "worlds/terrain/phytogenesis.js"), "utf8");
     const kernQuelle = fs.readFileSync(path.join(ROOT, "phyto-core.js"), "utf8");
@@ -1274,6 +1395,20 @@ function windDatenUrteil(quellen) {
             ).v.length > 0,
         ]);
     else st.push(["Weide-L1 gebaut", false]);
+    // (V) die Normale der Krone nach innen (gekehrt), der kehrende Leser, der Welt-Stoff mit Seite, die Kuppel des Wirts zurück
+    if (tanne) {
+        const innen = tanne.T.map((t) =>
+            (t.kind === "foliage" || t.kind === "foliageTex") && t.nor ? Object.assign({}, t, { nor: t.nor.map((x) => -x) }) : t
+        );
+        st.push(["Krone nach innen", kroneUrteil("innen", innen, true).v.length > 0]);
+        st.push(["Leser kehrt die Krone", kroneUrteil("kehrt", tanne.T, false).v.length > 0]);
+    } else st.push(["Tanne gebaut", false]);
+    const mitSeite = quellen.Stamm.replace("mat.normalNode = T.normalViewGeometry;", "mat.normalNode = T.normalView;");
+    st.push(["Welt-Stoff liest die Krone mit Seite", kronenLeser(Object.assign({}, qBr, quellen, { Stamm: mitSeite })).flipFrei === false]);
+    st.push([
+        "die Kuppel des Wirts zurück",
+        kronenLeser(Object.assign({}, qBr, quellen, { Stamm: quellen.Stamm + "\n_stampFoliageDomeNormals(g) {}" })).v.length > 0,
+    ]);
     st.push([
         "Leser der Unterseite entfernt",
         unterseiteUrteil({ Stamm:quellen.Stamm.replace(/__phytoCore\.BLATT_UNTERSEITE/g, "X") })
@@ -1427,6 +1562,23 @@ function windDatenUrteil(quellen) {
         st.push([
             "Büschel gestaucht (0,3)",
             teppichUrteil("gestaucht", T, 1, rc.understory.grassStep, skala("gras")).v.length > 0,
+        ]);
+        // (T) die Fußzeile jedes zweiten Halms um ein Zehntel der Büschel-Höhe angehoben (das Bild vor K70: der Fuß eine
+        // Segment-Länge über dem Grund, je Halm nach seiner Länge — der Ofen setzt nur den tiefsten auf 0)
+        let hiG = 0,
+            n = 0;
+        for (const t of gras1.T) for (let i = 1; i < t.pos.length; i += 3) hiG = Math.max(hiG, t.pos[i]);
+        const hoch = gras1.T.map((t) => {
+            const p = Float32Array.from(t.pos);
+            if (t.uv && t.col)
+                for (let k = 0; k < p.length / 3; k++)
+                    if (t.uv[k * 2 + 1] === 0 && t.col[k * 3 + 1] > t.col[k * 3] && Math.floor(n++ / 2) % 2)
+                        p[k * 3 + 1] += hiG * 0.1;
+            return Object.assign({}, t, { pos: p });
+        });
+        st.push([
+            "Halm schwebt (+0,1)",
+            teppichUrteil("schwebt", hoch, 1, rc.understory.grassStep, skala("gras")).v.some((x) => /schwebt/.test(x)),
         ]);
     } else st.push(["Gras-Fall fehlt", false]);
     console.log("Selbsttest: " + st.map(([n, ok]) => `${n} ${ok ? "✅" : "❌"}`).join(" · "));

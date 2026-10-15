@@ -132,9 +132,9 @@ function fnBody(src, sigRe) {
 }
 function taktWand(src) {
     const nc = ohneKommentare(src);
-    const sim = fnBody(nc, /\n {4}_stepFixedSim\(simTime, dt\) \{/);
-    const frame = fnBody(nc, /\n {4}_tickMountedMovement\(_?dt\) \{/);
-    const ritt = fnBody(nc, /\n {4}_rittSchritt\(dt\) \{/);
+    const sim = fnBody(nc, /\n {4}_stepFixedSim\([^)]*\) \{/);
+    const frame = fnBody(nc, /\n {4}_tickMountedMovement\([^)]*\) \{/);
+    const ritt = fnBody(nc, /\n {4}_rittSchritt\([^)]*\) \{/);
     const flag = (nc.match(/_rideSteer(?!Yaw)\b/g) || []).length;
     return [
         [
@@ -155,7 +155,7 @@ function fahrWand(stamm, garage, kern) {
     const st = ohneKommentare(stamm);
     const ga = ohneKommentare(garage);
     const ke = ohneKommentare(kern);
-    const lpm = fnBody(st, /\n {4}_loopPlayerMovement\(currentTime, dtOverride\) \{/) || "";
+    const lpm = fnBody(st, /\n {4}_loopPlayerMovement\([^)]*\) \{/) || "";
     const upd = fnBody(ga, /\nfunction updateVehicle\(dt,t\)\{/) || "";
     const kopieStamm = (st.match(/\bFlatF\b/g) || []).length;
     const kopieLab = (ga.match(/\bFlatF\b/g) || []).length;
@@ -242,7 +242,7 @@ function pflichtWand(stamm) {
 function huelleWand(stamm) {
     const st = ohneKommentare(stamm);
     const schleifen = (st.match(/pl < AnazhRealm\.SLIDE_CLIP_PLANES/g) || []).length;
-    const kapsel = fnBody(st, /\n {4}_stepCharacter\(delta, currentTime\) \{/) || "";
+    const kapsel = fnBody(st, /\n {4}_stepCharacter\([^)]*\) \{/) || "";
     const huelle = fnBody(st, /\n {4}_fahrHuelleKontakt\([^)]*\) \{/) || "";
     const tierHuelle = fnBody(st, /\n {4}_kreaturHuellenKontakt\([^)]*\) \{/) || "";
     const ruftK = /this\._wandGleiten\(/.test(kapsel);
@@ -717,6 +717,10 @@ function stationVerdict(s) {
                 out.push(`leib-wand ${k}: der gestoßene Bär geht ${m.durch}/${m.n} Mal durch die 0,35-m-Wand`);
         }
     if (!s.lockstep) out.push("lockstep keine Probe");
+    else if (s.lockstep.ruhe !== true)
+        out.push(`lockstep start: der Wagen kommt vor der Probe nicht zur Ruhe (600 Bilder, der Fahr-Zustand nie drei Bilder lang ≤ 1 nm; zuletzt ${(s.lockstep.unruhe || []).join(" / ")})`);
+    else if (s.lockstep.gleicherStart !== true)
+        out.push(`lockstep start: die Läufe beginnen an verschiedenen Ständen des ruhenden Wagens (${s.lockstep.startAbw} > 1e-7)`);
     else if (!(s.lockstep.abw <= STATION.lockstepM) || !(s.lockstep.baerAbw <= STATION.lockstepM))
         out.push(
             `lockstep: nach 200 Sim-Schritten steht der Wagen bei gemischten Frames ${s.lockstep.abw.toFixed(3)} m anders als bei 60 fps (Bär ${s.lockstep.baerAbw.toFixed(3)} m)${s.lockstep.erst ? ` — zuerst in Schritt ${s.lockstep.erst.schritt}: ${s.lockstep.erst.groesse} um ${s.lockstep.erst.d}${s.lockstep.erst.tiere ? ` (Tiere nahe dem Wagen ${s.lockstep.erst.tiere.join(" / ")})` : ""}` : ""}`
@@ -2480,6 +2484,31 @@ async function probeLeben(expected) {
                     for (const cr of (st.creatures || []).slice())
                         if (cr && cr.position && Math.hypot(cr.position.x - bx, cr.position.z - bz) < 60)
                             r.removeCreature(cr);
+                    // DER GLEICHE START (K70-N1): beide Läufe beginnen am RUHENDEN Wagen. `setzen` schwingt 12 Bilder im
+                    // Muster ein — wie viele Sim-Schritte das sind, hängt am Rest des Akkumulators: im roten Lauf begann der
+                    // 60-fps-Lauf am frisch gesetzten Stand (vy 0), der gemischte einen Schritt später (vy −g·dt) — 1,2 mm
+                    // nach 200 Schritten (CI 38712496194; lokal 1 von 4 Läufen). Gewartet wird auf das Ereignis (der
+                    // Fahr-Zustand ändert sich drei Bilder lang um höchstens 1 nm), nie auf die Wanduhr; der Stand reist mit
+                    // (`start`), die Bilder bis zur Ruhe auch.
+                    let ruhe = 0;
+                    let stand = null;
+                    let bilder = 0;
+                    let unruhe = null; // die Größe, die zuletzt um mehr als 1 nm ging (die Linse nennt sie)
+                    const namen = ["x", "z", "y", "vy", "speed", "yaw", "steig", "wank"];
+                    for (; bilder < 600 && ruhe < 3; bilder++) {
+                        tMs += 1000 / 60;
+                        r._gameLoopTick(tMs);
+                        const fz = gS._fahr;
+                        const jetzt = fz ? [fz.x, fz.z, fz.y, fz.vy, fz.speed, fz.yaw, fz.steig, fz.wank] : null;
+                        const d =
+                            jetzt && stand ? Math.max(...jetzt.map((v, k) => Math.abs(v - stand[k]))) : Infinity;
+                        ruhe = d <= 1e-9 ? ruhe + 1 : 0;
+                        if (d > 1e-9 && jetzt && stand) {
+                            const k = jetzt.findIndex((v, j) => Math.abs(v - stand[j]) === d);
+                            unruhe = namen[k] + " " + d.toExponential(2);
+                        }
+                        stand = jetzt;
+                    }
                     const kappeL = st.maxCreatures;
                     st.maxCreatures = st.creatures.length + 1;
                     const b = r.spawnCreatureAt(bx, hh(bx, bz) + 0.5, bz, "calm", "baer", {
@@ -2533,7 +2562,13 @@ async function probeLeben(expected) {
                     }
                     weg(gS);
                     r.removeCreature(b);
-                    if (lage) lage.spur = spur;
+                    if (lage) {
+                        lage.spur = spur;
+                        lage.start = stand;
+                        lage.ruhe = ruhe >= 3;
+                        lage.bilder = bilder;
+                        lage.unruhe = unruhe;
+                    }
                     return lage;
                 };
                 const l60 = await lockProbe(KADENZ[60]);
@@ -2559,6 +2594,16 @@ async function probeLeben(expected) {
                         ? {
                               abw: +Math.hypot(l60.x - lMix.x, l60.z - lMix.z).toFixed(6),
                               baerAbw: +Math.hypot(l60.bx - lMix.bx, l60.bz - lMix.bz).toFixed(6),
+                              ruhe: l60.ruhe && lMix.ruhe,
+                              ruheBilder: [l60.bilder, lMix.bilder],
+                              unruhe: [l60.unruhe, lMix.unruhe],
+                              startAbw:
+                                  l60.start && lMix.start
+                                      ? Math.max(...l60.start.map((v, k) => Math.abs(v - lMix.start[k])))
+                                      : null,
+                              gleicherStart:
+                                  !!(l60.start && lMix.start) &&
+                                  Math.max(...l60.start.map((v, k) => Math.abs(v - lMix.start[k]))) <= 1e-7,
                               erst,
                           }
                         : null;
@@ -3972,7 +4017,7 @@ function quellenAbgriff() {
                 b: { minAbstand: 0, spielerDv: 3.2, angestossen: true },
             },
             leibWand: { 60: { durch: 0, n: 10 }, 30: { durch: 0, n: 10 }, gemischt: { durch: 0, n: 10 } },
-            lockstep: { abw: 0, baerAbw: 0 },
+            lockstep: { abw: 0, baerAbw: 0, ruhe: true, gleicherStart: true },
             reiter: [
                 {
                     typ: "fahrzeug_gt",
@@ -4113,8 +4158,18 @@ function quellenAbgriff() {
             ],
             [
                 "der Wagen steht je nach Bildrate anders (Gegenprüfung 0710-5: 0,06 m nach 200 Schritten)",
-                { lockstep: { abw: 0.06, baerAbw: 0 } },
+                { lockstep: { abw: 0.06, baerAbw: 0, ruhe: true, gleicherStart: true } },
                 "lockstep",
+            ],
+            [
+                "der 60-fps-Lauf beginnt am frisch gesetzten Stand, der gemischte einen Schritt später (K70-N1: 1,2 mm nach 200 Schritten)",
+                { lockstep: { abw: 0.001239, baerAbw: 0, ruhe: true, gleicherStart: false, startAbw: 0.163 } },
+                "lockstep start",
+            ],
+            [
+                "der Wagen kriecht vor der Probe (der Stand kommt nie zur Ruhe)",
+                { lockstep: { abw: 0, baerAbw: 0, ruhe: false, gleicherStart: true, startAbw: 0 } },
+                "lockstep start",
             ],
             [
                 "der Reiter ragt aus dem GT, schwebt über dem Sitz und schaut mit der Maus (Gegenprüfung 0710-4 Klasse 4)",
@@ -4175,7 +4230,7 @@ function quellenAbgriff() {
             ],
             [
                 "der Bär steht je nach Bildrate anders, der Wagen gleich (Gegenprüfung 0710-5: 1,39 m)",
-                { lockstep: { abw: 0, baerAbw: 1.39 } },
+                { lockstep: { abw: 0, baerAbw: 1.39, ruhe: true, gleicherStart: true } },
                 "lockstep",
             ],
             [
@@ -4335,7 +4390,7 @@ function quellenAbgriff() {
         const vorStand = quelle
             .replace("        this._rittSchritt(dt);\n", "")
             .replace(
-                /(\n {4}_tickMountedMovement\(_?dt\) \{)/,
+                /(\n {4}_tickMountedMovement\([^)]*\) \{)/,
                 "$1\n        const pm = this.state.playerMesh.position;\n        pm.y = 0;\n        entry._rideSteer = false;"
             );
         const rot = taktWand(vorStand);
@@ -4354,7 +4409,7 @@ function quellenAbgriff() {
                 .join(" | ")
         );
         const kRot = fahrWand(
-            quelle.replace(/(\n {4}_loopPlayerMovement\(currentTime, dtOverride\) \{)/, "$1\n        let FlatF = 0;"),
+            quelle.replace(/(\n {4}_loopPlayerMovement\([^)]*\) \{)/, "$1\n        let FlatF = 0;"),
             garage.replace(/(\nfunction updateVehicle\(dt,t\)\{)/, "$1let FlatF=0;"),
             kern.replace("fahrSchritt: fahrSchritt", "")
         );
@@ -4422,10 +4477,10 @@ function quellenAbgriff() {
         const pRot = pflichtWand(
             quelle
                 .replace(
-                    /(\n {4}_fahrSatz\(entry, prof\) \{)/,
+                    /(\n {4}_fahrSatz\([^)]*\) \{)/,
                     '$1\n        const VC = globalThis.__vehicleCore;\n        if (!VC || typeof VC.fahrGesetz !== "function") return null;'
                 )
-                .replace(/(\n {4}_fahrHuelle\(entry\) \{)/, "$1\n        const radR = 0.34;")
+                .replace(/(\n {4}_fahrHuelle\([^)]*\) \{)/, "$1\n        const radR = 0.34;")
         );
         check(
             "Selbst-Test P: der Vor-Stand (typeof → null im Fahr-Satz, Literal-Zwilling in der Hülle) → P2 P3 feuern",
@@ -4900,7 +4955,7 @@ function quellenAbgriff() {
         !hat("kern") && !hat("lockstep"),
         (S.lockSchwimmer ? `Schwimmer ${S.lockSchwimmer.abw} m / Höhe ${S.lockSchwimmer.abwY} m · ` : "") +
             (S.lockstep
-                ? `Abweichung Wagen ${S.lockstep.abw} m · Bär ${S.lockstep.baerAbw} m${S.lockstep.erst ? ` · zuerst Schritt ${S.lockstep.erst.schritt}: ${S.lockstep.erst.groesse} ${S.lockstep.erst.d}${S.lockstep.erst.tiere ? ` (Tiere nahe dem Wagen ${S.lockstep.erst.tiere.join(" / ")})` : ""}` : ""}`
+                ? `Start ${S.lockstep.startAbw} nach ${S.lockstep.ruheBilder} Bildern${S.lockstep.ruhe ? "" : ` (unruhig: ${(S.lockstep.unruhe || []).join(" / ")})`} · Abweichung Wagen ${S.lockstep.abw} m · Bär ${S.lockstep.baerAbw} m${S.lockstep.erst ? ` · zuerst Schritt ${S.lockstep.erst.schritt}: ${S.lockstep.erst.groesse} ${S.lockstep.erst.d}${S.lockstep.erst.tiere ? ` (Tiere nahe dem Wagen ${S.lockstep.erst.tiere.join(" / ")})` : ""}` : ""}`
                 : "keine Probe")
     );
     const reiterZeile = (q) =>

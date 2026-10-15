@@ -42,18 +42,18 @@ const server = statikServer();
 //   S2 die Karte reist im Rang ihres nächsten Wartenden durch die Worker-Schlange, nie mit Vorrats-Rang (null)
 //   S3 der Nah-Gang der Mesh-Zone bricht nie ab (kein `break`): ein erschöpftes Bau-Budget beendet nur das Bauen,
 //      gedockte Studio-Stufen dahinter werden platziert
-function methode(src, kopf) {
-    const a = src.indexOf("\n    " + kopf);
+function methode(src, name) {
+    const a = stammLib.kopf(src, name); // am Namen, nie an der Parameter-Liste (gate:apparat Klinge 3)
     if (a < 0) return null;
     const b = src.indexOf("\n    }\n", a);
     return src.slice(a, b).replace(/\/\/.*$/gm, "");
 }
 function klassenWand(src) {
-    const bake = methode(src, "_tickImpostorBake() {") || "";
-    const sched = methode(src, "_runFrameScheduler(playerPos) {") || "";
-    const streu = methode(src, "_tickScatterStreaming(playerPos, deadlineMs) {") || "";
-    const req = methode(src, "_foundryBakeImpostorRequest(") || "";
-    const cull = methode(src, "tickArchitectureCulling() {") || "";
+    const bake = methode(src, "_tickImpostorBake") || "";
+    const sched = methode(src, "_runFrameScheduler") || "";
+    const streu = methode(src, "_tickScatterStreaming") || "";
+    const req = methode(src, "_foundryBakeImpostorRequest") || "";
+    const cull = methode(src, "tickArchitectureCulling") || "";
     const nahA = cull.indexOf("for (const entry of nahOffen) {");
     const nahB = cull.indexOf("nahOffen.length = 0;", nahA);
     const nah = nahA >= 0 && nahB > nahA ? cull.slice(nahA, nahB) : "";

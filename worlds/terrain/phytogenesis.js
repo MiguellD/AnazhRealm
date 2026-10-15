@@ -190,7 +190,7 @@ let framedOnce = false;
 /* ---------- Aufbau / Sitz / Rahmung / Abbau ------------------------------- */
 function disposeSubject() {
     if (!subject) return;
-    const shared = [barkMat, barkMatBirch, foliageMat, grassMat, stemMat, schattenMat];
+    const shared = [barkMat, barkMatBirch, foliageMat, foliageMatKrone, grassMat, stemMat, schattenMat];
     subject.traverse((o) => {
         if (o.isMesh) {
             o.geometry.dispose();
@@ -1773,12 +1773,15 @@ function buildForest() {
     const tg = new THREE.PlaneGeometry(TS, TS, SEG, SEG),
         tp = tg.attributes.position,
         tcol = [];
-    const cLit = new THREE.Color(PORTAL_GROUND.lit),
-        cMead = new THREE.Color(PORTAL_GROUND.mead),
-        cDirt = new THREE.Color(PORTAL_GROUND.dirt),
-        cRock = new THREE.Color(PORTAL_GROUND.rock),
-        cWet = new THREE.Color(PORTAL_GROUND.wet),
-        cSand = new THREE.Color(PORTAL_GROUND.sand);
+    // DIE BODEN-PALETTE NACH DEM FARB-GESETZ (W5, K70): jedes Hex ist eine sRGB-Absicht, die Albedo sein linearer Wert —
+    // derselbe Dekoder wie jede Vertex-Farbe des Ofens (`vegFarbe`) und die Welt (`AnazhRealm.BODEN_FARBE`). Bis K70 las
+    // das r128-Labor die Hex ROH (Wiese 0,32 statt 0,11, Waldboden Labor/Welt 4,07, spec/farbe/albedo-tafel.json).
+    const cLit = vegFarbe(PORTAL_GROUND.lit),
+        cMead = vegFarbe(PORTAL_GROUND.mead),
+        cDirt = vegFarbe(PORTAL_GROUND.dirt),
+        cRock = vegFarbe(PORTAL_GROUND.rock),
+        cWet = vegFarbe(PORTAL_GROUND.wet),
+        cSand = vegFarbe(PORTAL_GROUND.sand);
     // DER FELS DES BODENS ist das Fels-Gesetz (gelaende-core `felsFarbe`, K17) — dasselbe, das der Welt-Boden und die
     // Fels-Gestalten lesen: Pakete, die Mittel der Bänke, Kanten und Klüfte, die Rinde an konvexen Kanten aus der Krümmung,
     // Flechte und Moos. Der Palette-Stein ist eine sRGB-Absicht (FARB-GESETZ), sein linearer Wert der Grundton; die Masche
@@ -1786,7 +1789,7 @@ function buildForest() {
     const GK = window.__gelaendeCore;
     if (!GK || typeof GK.felsFarbe !== "function" || typeof GK.felsKruemmung !== "function")
         throw new Error("phytogenesis: gelaende-core felsFarbe fehlt (Kern-Pflicht, worlds/terrain/index.html)");
-    const felsB = GK.felsBasis(cRock.clone().convertSRGBToLinear().toArray());
+    const felsB = GK.felsBasis(cRock.toArray());
     for (let i = 0; i < tp.count; i++) tp.setZ(i, forestGroundH(tp.getX(i), -tp.getY(i)));
     tg.computeVertexNormals();
     const tn = tg.attributes.normal;
@@ -2284,7 +2287,7 @@ function buildForest() {
                     if (o.isMesh) {
                         const geo = o.geometry.clone();
                         if (dy) geo.translate(0, dy, 0);
-                        const isFol = o.material === foliageMat || o.material === foliageMatTex; // FIX v31: Cluster-Quads sind Laub
+                        const isFol = o.material === foliageMat || o.material === foliageMatKrone || o.material === foliageMatTex; // FIX v31: Cluster-Quads sind Laub
                         windStempel(geo, poolL[0][sp][v], SCALE[sp] * TREE_SCALE_MUL);
                         geo.setAttribute(
                             "aLodLevel",
@@ -2596,7 +2599,7 @@ function buildForest() {
         if (
             o.isMesh &&
             !o.userData.shadowProxy &&
-            (o.material === foliageMat || o.material === foliageMatTex || o.material === grassMat)
+            (o.material === foliageMat || o.material === foliageMatKrone || o.material === foliageMatTex || o.material === grassMat)
         )
             o.layers.set(1);
     }); // Laub (Blaetter+Gras) -> Layer 1 (Halb-Aufloesungs-Pass); Schatten-Zwillinge bleiben auf Layer 2
@@ -3322,7 +3325,7 @@ function fmtHM(h) {
     return (hh < 10 ? "0" : "") + hh + ":" + (mm < 10 ? "0" : "") + mm;
 }
 function _dimEnvIBL(f) {
-    const list = _envMats.length ? _envMats : [foliageMat, grassMat, barkMat, barkMatBirch, stemMat, _terMat];
+    const list = _envMats.length ? _envMats : [foliageMat, foliageMatKrone, grassMat, barkMat, barkMatBirch, stemMat, _terMat];
     for (const m of list) {
         if (!m) continue;
         if (m.userData.bEnv === undefined) m.userData.bEnv = m.envMapIntensity !== undefined ? m.envMapIntensity : 1.0;

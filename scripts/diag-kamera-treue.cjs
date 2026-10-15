@@ -27,6 +27,10 @@
 //   (e) STAND — je Pfad (direkt · Replay) vier Frames ohne Änderung: kein Voll-Refresh, kein Upload einer geteilten
 //       Gruppe, kein zweiter Gang über einen Knoten, Vorher-Knoten oder eine geteilte Gruppe im selben Render (ein
 //       verschachtelter Render ist nie der Gang). V18.534: 136 wiederholte Gänge je Render.
+//       DER SATZ (K71): ein Diät-Objekt wechselt seinen Ausschnitt (drawRange) je Pass wie ein Chunk-Satz der Welt — der
+//       Ausschnitt ist ein Draw-Parameter, kein Refresh-Grund (am Kopf vor K71: SATZ ×2 je Render, an Genesis Third jeder
+//       Satz in jedem Render). EINMAL: eine Attribut-Änderung trägt je Bürger EINEN Voll-Refresh, der Frame danach keinen
+//       (vor K71: KISTE ×1 — der Vendor-Vergleich prüfte die Geometrie ein zweites Mal).
 //   (f) ÄNDERUNG — im Stand rückt eine Kiste, ein Blatt dreht: das Bild der Diät gleicht dem Bild, in dem jedes Objekt
 //       voll refresht (≥ 0,999); Lauf-Kontrolle: eine Diät, die nie refresht, weicht ab (< 0,98). So fiel der gemerkte
 //       Node-Frame (Hauptbild mit der Schatten-Kamera: 0,10) beim Bau des Gangs auf.
@@ -54,6 +58,11 @@ const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const BILD_SOLL = 0.999; // der Replay zeichnet wie der direkte Pfad
 const BLIND_GRENZE = 0.98; // die Lauf-Kontrollen MÜSSEN darunter liegen
 const BLICK_GRENZE = 0.9; // Blick X und Blick Y sind verschiedene Bilder
+
+const namen = (w) =>
+    Object.entries(w || {})
+        .map(([k, n]) => `${k} ×${n}`)
+        .join(" · ") || "?";
 
 function urteil(z) {
     const v = [];
@@ -104,7 +113,16 @@ function urteil(z) {
     for (const pfad of ["direkt", "replay"]) {
         const r = s[pfad] || {};
         if (!(r.pruef > 0)) v.push(`STAND ${pfad}: keine Diät-Prüfung gezählt — die Probe ist blind`);
-        if (r.voll !== 0) v.push(`STAND ${pfad}: ${r.voll} Voll-Refreshs je Render ohne Änderung (Soll 0) — ein Refresh je Frame ohne Änderung`);
+        if (r.voll !== 0)
+            v.push(
+                `STAND ${pfad}: ${r.voll} Voll-Refreshs je Render ohne Änderung (Soll 0: ${namen(r.vollWer)}) — ein Refresh je Frame ohne Änderung`
+            );
+        const e1 = r.einmal || {};
+        if (!(e1.erst > 0)) v.push(`EINMAL ${pfad}: die Attribut-Änderung der Kiste frischt nichts auf — die Probe ist blind`);
+        if (e1.danach !== 0)
+            v.push(
+                `EINMAL ${pfad}: der Frame nach einer Attribut-Änderung frischt ${e1.danach}× ein zweites Mal auf (Soll 0: ${namen(e1.wer)}) — ein Refresh ohne Änderung, die Geometrie zweimal geprüft`
+            );
         if (r.wiederholt !== 0)
             v.push(
                 `STAND ${pfad}: ${r.wiederholt} wiederholte Gänge je Render (${JSON.stringify(r.wer || {})}: k Knoten · v Vorher · g Gruppe) — dieselbe Arbeit je Programm statt EINMAL`
@@ -130,7 +148,7 @@ function urteil(z) {
 }
 
 function selbsttest() {
-    const ruhig = { pruef: 13, voll: 0, uploads: 0, wiederholt: 0, wer: {} };
+    const ruhig = { pruef: 13, voll: 0, vollWer: {}, uploads: 0, wiederholt: 0, wer: {}, einmal: { erst: 2, danach: 0, wer: {} } };
     const gruen = {
         lauf: { spielBilder: 0, kehraus: 0 },
         aufnahme: { gezeichnet: 13, verfolgt: 13, schattenRenders: 1, unterOverride: 0 },
@@ -163,6 +181,17 @@ function selbsttest() {
         { name: "Override-Probe blind", z: mit("bild", { schattenBundle: 1 }), muss: /die Override-Probe ist blind/ },
         { name: "Bühne blind", z: mit("bild", { xGegenY: 0.99 }), muss: /die Bühne ist blind/ },
         { name: "Refresh je Frame ohne Änderung", z: mit("stand.direkt", { voll: 2 }), muss: /STAND direkt: 2 Voll-Refreshs/ },
+        {
+            name: "Ausschnitt je Pass frischt auf (K71)",
+            z: mit("stand.replay", { voll: 2, vollWer: { SATZ: 2 } }),
+            muss: /STAND replay: 2 Voll-Refreshs je Render ohne Änderung \(Soll 0: SATZ ×2\)/,
+        },
+        {
+            name: "Geometrie zweimal geprüft (K71)",
+            z: mit("stand.direkt", { einmal: { erst: 2, danach: 2, wer: { KISTE: 2 } } }),
+            muss: /EINMAL direkt: der Frame nach einer Attribut-Änderung frischt 2× ein zweites Mal auf \(Soll 0: KISTE ×2\)/,
+        },
+        { name: "Einmal-Probe blind", z: mit("stand.replay", { einmal: { erst: 0, danach: 0, wer: {} } }), muss: /EINMAL replay: .* die Probe ist blind/ },
         { name: "Gang je Programm (Replay)", z: mit("stand.replay", { wiederholt: 31, wer: { k: 28, g: 3 } }), muss: /STAND replay: 31 wiederholte Gänge/ },
         { name: "Upload ohne Änderung", z: mit("stand.direkt", { uploads: 1 }), muss: /1 Uploads geteilter Gruppen/ },
         { name: "vergessener Refresh", z: mit("stand.aenderung.replay", { diaet: 0.9 }), muss: /ÄNDERUNG replay: .* ein vergessener Refresh/ },
@@ -302,6 +331,19 @@ function buehne() {
             kiste.frustumCulled = false;
             gruppe.add(kiste);
         }
+        // DER SATZ (K71): ein Diät-Objekt, dessen Ausschnitt (drawRange) je Pass wechselt wie ein Chunk-Satz der Welt
+        // (`_chunkSatzPass`: das Hauptbild zeichnet seinen Abschnitt, die Kaskade ihren). Der Ausschnitt ist ein Draw-Parameter
+        // (r184 liest ihn bei jedem Draw) — die STAND-Wand nennt jeden Voll-Refresh, den er auslöst, beim Namen.
+        const satz = new T.Mesh(new T.BoxGeometry(2, 1, 2), diaet(new T.MeshStandardNodeMaterial({ color: 0x6a8aaa })));
+        satz.name = "SATZ";
+        satz.position.set(-4, 0.5, 6);
+        satz.castShadow = true;
+        satz.receiveShadow = true;
+        satz.frustumCulled = false;
+        gruppe.add(satz);
+        // je Pass sein Abschnitt, danach wieder der des Hauptbilds (der Schatten-Render läuft mitten im Hauptbild)
+        szene.onBeforeRender = (_rr, _sc, cam) => satz.geometry.setDrawRange(0, cam === kam ? Infinity : 18);
+        szene.onAfterRender = () => satz.geometry.setDrawRange(0, Infinity);
         const kam = new T.PerspectiveCamera(60, 4 / 3, 0.1, 100);
         const blick = (vz) => {
             kam.position.set(1, 7, 15 * vz);
@@ -445,7 +487,7 @@ function buehne() {
             let messen = false,
                 imSchreib = false,
                 sammle = null;
-            const zs = { pruef: 0, voll: 0, besuche: new Map(), uploads: 0 };
+            const zs = { pruef: 0, voll: 0, besuche: new Map(), uploads: 0, wer: {} };
             const besuch = (art, id) => {
                 const k = nf.renderId + ":" + rend.info.calls + ":" + art + id;
                 zs.besuche.set(k, (zs.besuche.get(k) || 0) + 1);
@@ -454,7 +496,11 @@ function buehne() {
                 const v = diaetRoh(obs, ro, frame, altNR);
                 if (messen) {
                     zs.pruef++;
-                    if (v) zs.voll++;
+                    if (v) {
+                        zs.voll++;
+                        const nm = (ro.object && ro.object.name) || (ro.object && ro.object.type) || "?";
+                        zs.wer[nm] = (zs.wer[nm] || 0) + 1;
+                    }
                 }
                 // (d) TEILEN: die geteilten Gruppen je Karten-Programm im Hauptbild
                 if (sammle && ro.material && ro.material.isShadowPassMaterial !== true && karten.includes(ro.object)) {
@@ -522,7 +568,7 @@ function buehne() {
                     gruppe.needsUpdate = true;
                     await schuss();
                     await schuss();
-                    Object.assign(zs, { pruef: 0, voll: 0, uploads: 0 });
+                    Object.assign(zs, { pruef: 0, voll: 0, uploads: 0, wer: {} });
                     zs.besuche.clear();
                     messen = true;
                     for (let i = 0; i < 4; i++) await schuss();
@@ -536,7 +582,23 @@ function buehne() {
                             wer[art] = (wer[art] || 0) + n - 1;
                         }
                     for (const k in wer) wer[k] /= 4;
-                    return { pruef: zs.pruef / 4, voll: zs.voll / 4, uploads: zs.uploads / 4, wiederholt: wiederholt / 4, wer };
+                    const vollWer = {};
+                    for (const k in zs.wer) vollWer[k] = zs.wer[k] / 4;
+                    const still = { pruef: zs.pruef / 4, voll: zs.voll / 4, vollWer, uploads: zs.uploads / 4, wiederholt: wiederholt / 4, wer };
+                    // EINMAL JE ÄNDERUNG (K71): ein Attribut der Kiste hebt seine Version — der Frame trägt je Bürger (Haupt-
+                    // und Schatten-Pass) EINEN Voll-Refresh, der Frame danach keinen (der Vendor-Vergleich der Geometrie frischte
+                    // ihn ein zweites Mal auf).
+                    kisten[2].name = "KISTE";
+                    kisten[2].geometry.attributes.uv.needsUpdate = true;
+                    Object.assign(zs, { voll: 0, wer: {} });
+                    messen = true;
+                    await schuss();
+                    const erst = zs.voll;
+                    Object.assign(zs, { voll: 0, wer: {} });
+                    await schuss();
+                    messen = false;
+                    still.einmal = { erst, danach: zs.voll, wer: Object.assign({}, zs.wer) };
+                    return still;
                 };
                 stand.direkt = await ruhe(false);
                 stand.replay = await ruhe(true);
@@ -811,7 +873,7 @@ function buehne() {
             `kein Bundle unter dem Override-Stoff; der Replay zeichnet Blick Y wie der direkte Pfad (${out.bild.replay}, mit fremdem ` +
             `Schatten-Stoff ${out.bild.fremd}); ohne den Chokepoint ${out.bild.ohneStapel}, ein Schatten-Bundle ${out.bild.schattenBundle}. ` +
             `SENKE: zwei Senken EINES Stoffs zeichnen aus EINEM Knoten-Zustand (zwei r184-InstancedMesh: zwei), bild-gleich mit r184s InstancedMesh (${out.senke.bild}; ohne die Senke ${out.senke.blind}). ` +
-            `STAND: ${out.stand.teilen.programme} Karten-Programme tragen ${out.stand.teilen.gruppen} geteilte Gruppe(n); je Render ${out.stand.direkt.pruef} Prüfungen, 0 Voll-Refreshs, 0 Uploads, 0 wiederholte Gänge (direkt und Replay); nach einer Änderung im Stand zeichnet die Diät ${out.stand.aenderung.direkt.diaet}/${out.stand.aenderung.replay.diaet} wie der volle Refresh (nie-Refresh ${out.stand.aenderung.direkt.taeter}/${out.stand.aenderung.replay.taeter}); ` +
+            `STAND: ${out.stand.teilen.programme} Karten-Programme tragen ${out.stand.teilen.gruppen} geteilte Gruppe(n); je Render ${out.stand.direkt.pruef} Prüfungen, 0 Voll-Refreshs (auch der SATZ mit Ausschnitt je Pass), 0 Uploads, 0 wiederholte Gänge (direkt und Replay); eine Attribut-Änderung frischt ${out.stand.direkt.einmal.erst}× auf und im Frame danach 0×; nach einer Änderung im Stand zeichnet die Diät ${out.stand.aenderung.direkt.diaet}/${out.stand.aenderung.replay.diaet} wie der volle Refresh (nie-Refresh ${out.stand.aenderung.direkt.taeter}/${out.stand.aenderung.replay.taeter}); ` +
             `VERSCHACHTELT (Werfer ohne Diät) ${out.stand.verschachtelt.direkt.diaet}/${out.stand.verschachtelt.replay.diaet} (Stempel nur aus der Render-Id ${out.stand.verschachtelt.direkt.taeter}/${out.stand.verschachtelt.replay.taeter}).`
     );
 })();

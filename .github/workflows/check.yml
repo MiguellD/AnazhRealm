@@ -1085,7 +1085,10 @@ jobs:
               # --selftest zuerst: Verhaeltnis ueber der Ratsche, falsche Eichung, stumme Seite, fehlende Klasse werden rot, und
               # im echten r128 (swiftshader) liest die Labor-Linse die Karte 0,180 und ein roh gelesenes Hex (der alte Defekt
               # des Labors, als Taeter eingespielt) steht ueber dem Rand. Die Messung selbst: werkbank albedo --tafel (Welt,
-              # echte GPU) und diag-albedo-tafel.cjs --labor (Labor).
+              # echte GPU) und diag-albedo-tafel.cjs --labor (Labor). Der Stand je Zeile ist der Code-Abdruck ihrer Quellen
+              # (K63-n8: Token ohne Kommentar und Leerraum): eine veraltete Zeile steht ROT "veraltet seit <Commit>" und bricht
+              # keinen Merge; auf der Karte (Job echt des Messplatzes) misst dieser Schritt sie selbst neu und urteilt die
+              # frischen Zahlen - auf swiftshader nicht (gemessen 15.10.: die Welt-Seite liest rinde x0,10, fell +15 %).
               run: npm run gate:albedo-tafel
 
             - name: Die Albedo nah gegen fern (0910-8 — EINE Boden-Farbe je Ort, die weisse Masse)
@@ -1407,6 +1410,12 @@ jobs:
               # Render trägt Substanz.
               run: npm run gate:webgl-probe
 
+            - name: Stall-Akte (die Boot-Lib nennt eine stehende Seite beim Namen - JS-Schleife mit Stapel, Versprechen am Fristriss)
+              if: matrix.gruppe == 8
+              # K67: jede Seite der Boot-Lib trägt Puls und Stempel; steht der Puls ≥ 20 s oder reißt eine Frist, schreibt
+              # scripts/lib/welt-boot.cjs die Akte ins Log (Phase, Stempel, CPU je Prozess, Stapel, GPU-Spur, Stderr, Urteil).
+              run: npm run gate:welt-boot
+
             - name: Fern-Wasser (die Atlas-Kulisse jenseits des Chunk-Rings baut mit vollem Material-Vertrag)
               if: matrix.gruppe == 7
               run: npm run gate:fern-wasser
@@ -1464,6 +1473,9 @@ jobs:
               # erscheint erst an seinem Ort; der Selbsttest setzt die alte Tuer ein und sieht (b) ROT. K23 (c): das Chat-Graben
               # kommt bei B GENAU einmal an (jeder Edit von A, und B traegt keinen mehr); im Hauptlauf wendet B danach jede
               # Graben-Nachricht doppelt an und (c) muss ROT werden (die erste Fassung, ohne die Laenge, blieb gruen).
+              # K60 (d): der Ghost bei B verbraucht erst je 20 angekommene Schritte (lange Takte in Schritten, nie in ms), und
+              # jeder Takt haelt das Gesetz von _lockstepTickPeers: Verbrauch bis zur Kappe der Wanduhr ceil(10 x dt/FIXED_DT)
+              # oder bis zur Reserve (taktBruch); der Schub vor dem Fenster haelt es, die alte Kappe je Frame muss am Gesetz ROT werden.
               run: npm run gate:mp-sync
 
             - name: Die V1-Pfad-Linse (Welle L - Vorschau, Ankunft, Eingabe, Wort, Rezeptbuch, KI-Fehler)

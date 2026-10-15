@@ -1806,7 +1806,9 @@ class AnazhRealm_Z24 {
         const birthCd = this.constructor.FAUNA_BIRTH_COOLDOWN_MS;
         const deathCd = this.constructor.FAUNA_DEATH_COOLDOWN_MS;
         const now = Date.now();
-        if (count < target) {
+        // die Geburt folgt der EINEN Regel der Kreaturen (`_kreaturenBereit`, K60): unter dem Ladeschirm goss sie, sobald
+        // Boot-Phase 3 wartete, die Gattung synchron (Radeon kalt 0,7 s vor dem ersten Bild)
+        if (count < target && this._kreaturenBereit()) {
             const sinceBirth = now - (this.state.faunaLifecycle.lastBirthAt || 0);
             // Emotion-Modulation: hope beschleunigt Geburt, peace verlangsamt
             const baseBirth = this.constructor.FAUNA_BIRTH_PROBABILITY;

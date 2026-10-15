@@ -2132,16 +2132,21 @@ class AnazhRealm_Z15b {
     // Die Höhe eines Baum-Körpers (Art · Gestalt · Prägung) aus dem Höhen-Buch (_foundryCacheSet: Körper-Schlüssel
     // der Höhen-Stufe → _foundryGruppenHoehe). Unbekannt: die Höhen-Stufe wird bestellt (der EINE Bestell-Weg
     // _foundryFlattenFor, nah zuerst über die Eintrags-Position) und null kommt zurück — der Aufrufer wartet wie auf
-    // ein ladendes Asset. Kann das Studio die Höhen-Stufe nicht bauen, meldet sich das einmal je Körper LAUT.
-    _foundryBaumHoehe(preset, entry) {
+    // ein ladendes Asset. Kann das Studio die Höhen-Stufe nicht bauen, meldet sich das einmal je Körper LAUT. `wer`
+    // (optional, K38-N2): ein Wartender { wo, wecke(zusage) } bekommt den EINEN Zug der Höhen-Stufe, in seinem Rang.
+    _foundryBaumHoehe(preset, entry, wer) {
         const f = this._foundry;
         const gestalt = f ? this._foundryGestaltFor(entry, preset) : null;
         if (gestalt == null) return null; // Buch kalt
         const stufe = this._foundryHoehenStufe(preset);
-        const key = this._foundryKoerperKey(preset, gestalt, stufe, this._artifactStudioOv(entry));
+        const ovH = this._artifactStudioOv(entry);
+        const key = this._foundryKoerperKey(preset, gestalt, stufe, ovH);
         const h0 = f.hoehen ? f.hoehen.get(key) : undefined;
         if (h0 > 0) return h0;
-        if (this._foundryFlattenFor(entry, preset, stufe) === false) {
+        const bestellt = this._foundryFlattenFor(entry, preset, stufe);
+        // bestellt (null): der Zug läuft — der Wartende hängt sich an und hebt seinen Rang (`_foundryZug` im Flug)
+        if (bestellt === null && wer) wer.wecke(this._foundryZug(key, preset, gestalt, stufe, ovH, wer.wo));
+        if (bestellt === false) {
             if (!f.hoeheFehlt) f.hoeheFehlt = new Set();
             if (!f.hoeheFehlt.has(key)) {
                 f.hoeheFehlt.add(key);

@@ -522,15 +522,13 @@ class AnazhRealm_Z20c {
                 for (const lod of _lods) {
                     const key = this._foundryKoerperKey(sp, sd, lod);
                     if (f.cache.has(key)) continue;
+                    // der EINE Zug je Körper-Schlüssel (`_foundryZug`): ein Leser, der den Körper im Flug des Vorrats braucht,
+                    // hängt sich an, statt ihn ein zweites Mal zu bestellen (bis 15.10. bestellte der Vorrat am Zug vorbei;
+                    // gate:v1-pfad V-D3 Vorrat); ein Ablauf cacht nie null, die Art bleibt auf Abruf nachfragbar.
                     jobs.push(
-                        this._foundryRequest(sp, sd, lod)
-                            .then((meshes) => {
-                                // Nur bei ECHTER Antwort cachen. Ein Timeout (meshes null) NICHT null
-                                // cachen -> die Art bleibt on-demand nachfragbar.
-                                if (meshes)
-                                    this._foundryCacheSet(key, this._foundryBuildGroup(meshes, { lod, preset: sp }));
-                            })
-                            .catch((e) => this._stoffBruch("die Bibliothek (Vorab-Bau " + key + ")", e))
+                        this._foundryZug(key, sp, sd, lod).catch((e) =>
+                            this._stoffBruch("die Bibliothek (Vorab-Bau " + key + ")", e)
+                        )
                     );
                 }
             }
@@ -1010,28 +1008,20 @@ class AnazhRealm_Z20c {
         const key = this._foundryKoerperKey(preset, variant, lod, entryOv);
         const group = this._foundryCacheGet(key);
         if (group === undefined) {
-            if (!f.requested) f.requested = new Set();
-            if (!f.requested.has(key)) {
-                f.requested.add(key);
+            this._foundryZug(key, preset, variant, lod, entryOv, entry.position, {
                 // Wirft die Stufe mit einer ANDEREN Gestalt (Budget `schatten`: der L0-Baum wirft seine L1), reist diese
-                // im selben Zug — sonst stellte sie sich erst nach der Ankunft ans Ende der Worker-Schlange, und die
+                // im selben Zug davor — sonst stellte sie sich erst nach der Ankunft ans Ende der Worker-Schlange, und die
                 // Stufe wartete doppelt.
-                if (!entryOv) {
+                vor: () => {
+                    if (entryOv) return;
                     const _wurf = this._foundryBudgetZeile(preset, lod).schatten;
                     if (_wurf !== false && _wurf !== lod) this._foundryFlattenFor(entry, preset, _wurf);
-                }
-                this._foundryRequest(preset, variant, lod, entryOv || undefined, entry.position).then((meshes) => {
-                    if (meshes) {
-                        this._foundryCacheSet(key, this._foundryBuildGroup(meshes, { lod, preset }));
-                        this._scatterRefillPending = true; // ein Studio-Asset kam an → deferrierte Fern-Regionen neu streamen
-                    } else {
-                        // Timeout/Fehler: NICHT null cachen (das doomt die Art dauerhaft zu
-                        // Grammatik) -> aus der requested-Wache loesen -> naechster Tick fragt neu.
-                        f.requested.delete(key);
-                    }
-                    this._foundryRewarmColdTrees(); // das eben geladene Asset -> wartende Eintraege bauen
-                });
-            } else if (!entryOv) this._foundryNaeher(f, preset, variant, lod, entry.position);
+                },
+                nach: (ok) => {
+                    if (ok) this._scatterRefillPending = true; // ein Studio-Asset kam an → deferrierte Fern-Regionen neu streamen
+                    this._foundryRewarmColdTrees(); // das eben geladene Asset → wartende Einträge bauen
+                },
+            });
             return null;
         }
         // null (Anfrage fehlgeschlagen) ODER leere Geometrie (z.B. Kristall-Merge gab nichts) ->

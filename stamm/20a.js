@@ -148,7 +148,9 @@ class AnazhRealm_Z20a {
         return f < 0 ? 0 : f;
     }
 
-    // Bodenlicht unter dem Kronendach, [0,1] (1 = Lichtung, →0 geschlossen): liest dieselben Treiber,
+    // Das Kronenlicht-Feld der PLATZIERUNG, [0,1] (1 = Lichtung, →0 geschlossen): wo Kronen stehen DÜRFEN — der
+    // Strauch-Teppich des Chunk-Streuers liest es (er wird mit dem Wald gepflanzt, vor dessen Kronen); das Licht der
+    // STEHENDEN Kronen, das Nah-Wiese und Nah-Streu lesen, ist `_bodenLichtFeld`. Liest dieselben Treiber,
     // aus denen der Wald gepflanzt wird (`_placementStandAt("forest")` × wet × Höhe), statt Baum-
     // Positionen (der Wald streamt chunkweise); ohne Slope/Perf (Ökologie ist perf-unabhängig). Rein +
     // seed-gebunden (Γ5); `wetHint` spart den `_feuchteAt`-Zweitaufruf.
@@ -424,7 +426,7 @@ class AnazhRealm_Z20a {
             _vorrat: false, // die Phase des Vorrats (`VORRAT_PHASE`); false = steht nicht an oder ist durch (warm)
             recipes: null,
             // DAS BUCH IST EIN EREIGNIS (K22, Nachbesserung 4): wer auf das Studio-Buch wartet (der Vorrat, der Dorf-Spawn,
-            // die Portal-Vorschau), wartet auf `buchDa` — `_foundryIngestBook` erfüllt es. Bis hierher wartete der Vorrat
+            // die Portal-Vorschau, die Werkstatt-Vorschau, die Hand), wartet auf `buchDa` — `_foundryIngestBook` erfüllt es. Bis hierher wartete der Vorrat
             // 2 s auf die Uhr und wärmte danach ohne Rezepte (FOUNDRY WARM: fünf kritische Presets fehlen im Buch).
             buchDa: null,
             buchKam: null,
@@ -529,10 +531,12 @@ class AnazhRealm_Z20a {
                             } catch (_e) {
                                 throw this._stoffBruch("die Buch-Anfrage an den Foundry-Faden (get-book)", _e);
                             }
+                            this._foundryHelfer(f);
                             this._foundryPrefetchLibrary();
                             // DIE EINE PIPE: die Gattungs-Templates off-thread vorwärmen —
-                            // Welt-Spawns treffen dann nur noch das Memo (Clone, kein Freeze).
-                            this._ofenPrefetchKreaturen();
+                            // Welt-Spawns treffen dann nur noch das Memo (Clone, kein Freeze). Er wartet auf das erste
+                            // Bild (K60) wie der Vorrat der Bibliothek; ein Bruch seines Gusses meldet sich laut.
+                            this._ofenPrefetchKreaturen().catch((e) => this._stoffBruch("der Ofen-Vorrat", e));
                         } else if (m.type === "book") {
                             this._foundryIngestBook(m);
                         } else this._foundryAntwort(f, m);
@@ -575,6 +579,8 @@ class AnazhRealm_Z20a {
                 pi(m.payload || null);
             }
         }
+        // die Antwort ist das Ereignis der Fristen: die Uhr des nächsten ihres Fadens läuft an (`_foundryUhren`)
+        this._foundryUhren(f);
     }
     // DER BÄCKER HAT SEINEN FADEN. Die Karte rendert das Studio offscreen mit WebGL (`bakeImpostorAtlas`: Kontext,
     // Programme, 8 Winkel, Rücklesen) und hält dabei den Faden fest, der sie trägt. Bis 05.10. war das der EINE
@@ -600,6 +606,36 @@ class AnazhRealm_Z20a {
             this._foundryPumpe(f);
         };
         return w;
+    }
+    // DIE WERK-FÄDEN (K60): das Werk baut jeden Körper in EINEM Faden — Radeon kalt bis zum ersten Bild hielt er 19 s Arbeit
+    // (Bäume, Bauten, das Dorf), während 20 der 24 Kerne der Maschine ruhten. Jetzt bauen neben ihm Helfer aus DEMSELBEN
+    // Boot-Blob (dieselbe Schale, dieselbe Platte, dasselbe Studio — der Bäcker-Weg, `_foundryBaecker`); die EINE Schlange
+    // speist sie (`_foundryPumpe`). Ihre Zahl folgt der Maschine: ein Werk-Faden je vier Kerne, höchstens
+    // FOUNDRY_WERK_FAEDEN (das Werk zählt mit). Die Kerne allein entscheiden, nie der Renderer: bis zur Prüfung K60-1 baute
+    // unter dem Null-Renderer das Werk allein — kein Tor fuhr die Mehrbahn-Pumpe (gate:fluss W6 gibt der Seite 16 Kerne).
+    _foundryHelfer(f) {
+        if (f.helfer || !f.bootUrl) return;
+        f.helfer = [];
+        const kerne =
+            typeof navigator !== "undefined" && Number.isFinite(navigator.hardwareConcurrency)
+                ? navigator.hardwareConcurrency
+                : 4;
+        const n = Math.max(1, Math.min(AnazhRealm.FOUNDRY_WERK_FAEDEN, Math.floor(kerne / 4)));
+        for (let k = 1; k < n; k++) {
+            const w = new Worker(f.bootUrl);
+            const h = { k, w, bereit: false };
+            // ein Boot-/Laufzeit-Fehler eines Helfers bricht LAUT (K22) wie der des Werks
+            w.onerror = (ev) =>
+                this._stoffBruch(`der Werk-Faden ${k} fällt — ` + ((ev && ev.message) || "Boot-/Laufzeit-Fehler"));
+            w.onmessage = (ev) => {
+                const m = ev.data;
+                if (!m || typeof m !== "object") return;
+                if (m.type === "ready" && m.world === "terrain") h.bereit = true;
+                else this._foundryAntwort(f, m);
+                this._foundryPumpe(f);
+            };
+            f.helfer.push(h);
+        }
     }
     // DER EINE INGEST-CHOKEPOINT für das Studio-Buch (Kanal "get-book" → Reply "book"): das Rezeptbuch
     // (PRESETS: Regler s + fx) wird die EINE Quelle, der Blueprint liest daraus statt Hardcodes. Feste

@@ -1042,6 +1042,63 @@
         return { positions, normals, colors, uvs, indices, count: qi };
     }
 
+    // DIE NORMALE DER KRONE (K68, Soll-Tafel laub): jede Karte der Krone lichtet mit der Normale des Kronen-Ellipsoids an
+    // ihrer Stelle — der Gradient von Σ((p − c)/r)² über die Kartenwolke (c die Mitte, r die halben Ausdehnungen, mindestens
+    // KRONEN_NORMALE.rMin) —, gemischt mit ihrer eigenen, zur Außenseite gewendeten Karten-Normale (Anteil KRONEN_NORMALE.karte):
+    // die Krone hat eine Licht- und eine Schattenseite und liest als Volumen, nie als Stapel flacher Tafeln (SpeedTree,
+    // Kugel-Normalen der Laub-Karten). Bis K68 trug jede Karte ihre flache Normale (buildFoliageQuads): je Karte EIN Ton, die
+    // Nachbar-Karte im Gegenlicht schwarz neben einer im Licht. `teile`: [{ pos, nor }] (Float32Arrays je Geometrie, xyz je
+    // Ecke), gemeinsam EINE Krone; die Normalen werden an Ort und Stelle überschrieben. Rein, kein THREE.
+    const KRONEN_NORMALE = { karte: 0.3, rMin: 0.25 };
+    function kronenNormalen(teile, opts) {
+        const karte = opts && opts.karte != null ? opts.karte : KRONEN_NORMALE.karte;
+        const rMin = opts && opts.rMin != null ? opts.rMin : KRONEN_NORMALE.rMin;
+        const mn = [Infinity, Infinity, Infinity],
+            mx = [-Infinity, -Infinity, -Infinity];
+        for (const t of teile || [])
+            for (let i = 0; i + 2 < t.pos.length; i += 3)
+                for (let a = 0; a < 3; a++) {
+                    const v = t.pos[i + a];
+                    if (v < mn[a]) mn[a] = v;
+                    if (v > mx[a]) mx[a] = v;
+                }
+        if (!(mx[0] >= mn[0])) return 0;
+        const c = [0, 1, 2].map((a) => (mn[a] + mx[a]) / 2);
+        const r2 = [0, 1, 2].map((a) => Math.pow(Math.max((mx[a] - mn[a]) / 2, rMin), 2));
+        let n = 0;
+        for (const t of teile) {
+            const P = t.pos,
+                N = t.nor;
+            for (let i = 0; i + 2 < P.length; i += 3) {
+                let dx = (P[i] - c[0]) / r2[0],
+                    dy = (P[i + 1] - c[1]) / r2[1],
+                    dz = (P[i + 2] - c[2]) / r2[2];
+                const dl = Math.hypot(dx, dy, dz);
+                if (dl < 1e-9) {
+                    dx = 0;
+                    dy = 1;
+                    dz = 0;
+                } else {
+                    dx /= dl;
+                    dy /= dl;
+                    dz /= dl;
+                }
+                // die Karten-Normale zur Außenseite gewendet (eine Karte hat zwei Seiten; die Krone nur eine Außenseite)
+                const s = N[i] * dx + N[i + 1] * dy + N[i + 2] * dz < 0 ? -karte : karte;
+                const x = dx * (1 - karte) + N[i] * s,
+                    y = dy * (1 - karte) + N[i + 1] * s,
+                    z = dz * (1 - karte) + N[i + 2] * s;
+                const l = Math.hypot(x, y, z) || 1;
+                // Reste unter 1e-9 sind Rauschen der Plattform (vgl. buildFoliageQuads): 0, die Krone ist überall bitgleich
+                N[i] = Math.abs(x / l) < 1e-9 ? 0 : x / l;
+                N[i + 1] = Math.abs(y / l) < 1e-9 ? 0 : y / l;
+                N[i + 2] = Math.abs(z / l) < 1e-9 ? 0 : z / l;
+                n++;
+            }
+        }
+        return n;
+    }
+
     // DIE LAGEN EINER KRONE (S3, 09.10.) — der Bau-Regler der Karten-Wahl: wie viele Karten-Lagen ein Kronen-Pixel trägt,
     // wenn JEDE Blattstelle ihre Karte trüge (Kante `kante` Blatt-Größen, Kern `kern`; dieselbe Karten-Geometrie wie
     // buildFoliageQuads). Gerastert in 8 Ansichten (4 Azimute × Blick 0° und 45° von unten), `aufl` Pixel über die
@@ -2217,6 +2274,24 @@
     // Die Kronen: T = Art-Krone × Größe (forestTreeSize über ihre Quantile samt der Überhälter). Befund 11.10.: das Dach las die
     // Geburt (0,90) als Deckung, der gepflanzte Bestand deckt 0,16 — die Ferne stand als geschlossenes Grün vor offenem Wald.
     // kronen = [[Gewicht, Kronen-Radius bei Größe 1], …] (die Arten-Mischung am Ort); F = { cell, dartsPerCell, pack }.
+    // OHNE GARBAGE, JEDE GRÖSSE EINMAL (K60): die Fern-Farbe ruft die Deckung je Abtastung einer Masche (Radeon kalt bis zum
+    // ersten Bild ~70 000 Rufe, 1,3 s Selbstzeit, dazu der Sammler) — bis K60 legte jeder Ruf 61 + 300 kleine Arrays an und
+    // rechnete 60 Exponentiale je Art, obwohl die 60 Quantile nur 16 Größen tragen (12 Quantile, die Überhälter sind die
+    // Quantil-Größe oder eine der 4 festen). Jetzt leben Anteile und Größen in festen Puffern dieses Kerns, der Matérn-Faktor
+    // (1 − e^(−λA))/A wird je Art und Größe EINMAL gerechnet, und jede Summe läuft in DERSELBEN Folge aus DENSELBEN
+    // Rechnungen wie zuvor — bitgleich (Byte-Beweis K60: 300 000 Fälle samt Rand, NaN und 7 Arten, 0 ungleich).
+    const _deckNQ = 12;
+    const _deckNU = 4;
+    const _deckG = _deckNQ * (1 + _deckNU);
+    const _deckAnteil = new Float64Array(_deckG); // der Anteil je Quantil in der Folge der Summe (fest)
+    for (let i = 0; i < _deckNQ; i++) {
+        _deckAnteil[i * (1 + _deckNU)] = 0.95 / _deckNQ;
+        for (let j = 0; j < _deckNU; j++) _deckAnteil[i * (1 + _deckNU) + 1 + j] = 0.05 / _deckNQ / _deckNU;
+    }
+    const _deckStufe = new Uint8Array(_deckG); // je Quantil seine Größe: 0..11 die Quantil-Größe, 12..15 ein fester Überhälter
+    const _deckWert = new Float64Array(_deckNQ + _deckNU); // die geklemmte Größe je Stufe (je Ruf aus sd)
+    const _deckFaktor = new Float64Array(_deckNQ + _deckNU); // der Matérn-Faktor je Stufe (je Art)
+    const _deckHat = new Uint8Array(_deckNQ + _deckNU);
     function forestKronenDeckung(sd, geburt, kronen, F) {
         const lambda = (F.dartsPerCell / (F.cell * F.cell)) * (geburt > 0 ? geburt : 0);
         if (!(lambda > 0) || !kronen || !kronen.length) return 0;
@@ -2224,36 +2299,50 @@
         for (let k = 0; k < kronen.length; k++) wSumme += kronen[k][0] > 0 ? kronen[k][0] : 0;
         if (!(wSumme > 0)) return 0;
         // Die Größen-Verteilung (forestTreeSize): ue gleichverteilt auf [0, 1 − 0,52·sd], s = 0,55 + 1,45·ue^1,45; mit 5 % ein
-        // Überhälter max(s, 1,3 + 0,55·u). 12 × 4 Quantile.
-        const NQ = 12;
-        const NU = 4;
+        // Überhälter max(s, 1,3 + 0,55·u). 12 × 4 Quantile, geklemmt auf [0,5; 1,95].
+        const NQ = _deckNQ;
+        const NU = _deckNU;
         const oben = 1 - 0.52 * (sd < 0 ? 0 : sd > 1 ? 1 : sd);
-        const groesse = [];
+        const V = _deckWert;
+        const S = _deckStufe;
+        const klemme = (v) => (v < 0.5 ? 0.5 : v > 1.95 ? 1.95 : v);
+        for (let j = 0; j < NU; j++) V[NQ + j] = klemme(1.3 + 0.55 * ((j + 0.5) / NU));
         for (let i = 0; i < NQ; i++) {
             const s = 0.55 + 1.45 * Math.pow(((i + 0.5) / NQ) * oben, 1.45);
-            groesse.push([0.95 / NQ, s]);
-            for (let j = 0; j < NU; j++) groesse.push([0.05 / NQ / NU, Math.max(s, 1.3 + 0.55 * ((j + 0.5) / NU))]);
-        }
-        const T = [];
-        for (let k = 0; k < kronen.length; k++) {
-            const w = kronen[k][0] > 0 ? kronen[k][0] / wSumme : 0;
-            if (!(w > 0)) continue;
-            for (let g = 0; g < groesse.length; g++) {
-                const s = groesse[g][1] < 0.5 ? 0.5 : groesse[g][1] > 1.95 ? 1.95 : groesse[g][1];
-                T.push([w * groesse[g][0], kronen[k][1] * s]);
-            }
+            V[i] = klemme(s);
+            S[i * (1 + NU)] = i;
+            // max(s, c) ist s, wo s nicht unter c liegt (auch NaN und Gleichstand), sonst c
+            for (let j = 0; j < NU; j++) S[i * (1 + NU) + 1 + j] = s < 1.3 + 0.55 * ((j + 0.5) / NU) ? NQ + j : i;
         }
         let mT = 0;
         let mT2 = 0;
-        for (let i = 0; i < T.length; i++) {
-            mT += T[i][0] * T[i][1];
-            mT2 += T[i][0] * T[i][1] * T[i][1];
+        for (let k = 0; k < kronen.length; k++) {
+            const w = kronen[k][0] > 0 ? kronen[k][0] / wSumme : 0;
+            if (!(w > 0)) continue;
+            for (let g = 0; g < _deckG; g++) {
+                const tw = w * _deckAnteil[g];
+                const t = kronen[k][1] * V[S[g]];
+                mT += tw * t;
+                mT2 += tw * t * t;
+            }
         }
         let deckung = 0;
-        for (let i = 0; i < T.length; i++) {
-            const t = T[i][1];
-            const A = Math.PI * F.pack * F.pack * (t * t + 2 * t * mT + mT2);
-            deckung += T[i][0] * Math.PI * t * t * ((1 - Math.exp(-lambda * A)) / A);
+        const H = _deckHat;
+        const Q = _deckFaktor;
+        for (let k = 0; k < kronen.length; k++) {
+            const w = kronen[k][0] > 0 ? kronen[k][0] / wSumme : 0;
+            if (!(w > 0)) continue;
+            H.fill(0);
+            for (let g = 0; g < _deckG; g++) {
+                const st = S[g];
+                const t = kronen[k][1] * V[st];
+                if (!H[st]) {
+                    const A = Math.PI * F.pack * F.pack * (t * t + 2 * t * mT + mT2);
+                    Q[st] = (1 - Math.exp(-lambda * A)) / A;
+                    H[st] = 1;
+                }
+                deckung += w * _deckAnteil[g] * Math.PI * t * t * Q[st];
+            }
         }
         return deckung > 1 ? 1 : deckung;
     }
@@ -4860,6 +4949,8 @@
         blattAtlasFracht: blattAtlasFracht, // die Fracht des Atlas je Format: BC3 ab Stufe 0 (K20), rgba ab Stufe 1 (05.10.)
         BLATT_ATLAS_ZELLE: BLATT_ATLAS_ZELLE, // die Zelle des Atlas in Pixeln (512, 05.10.)
         buildFoliageQuads: buildFoliageQuads,
+        kronenNormalen: kronenNormalen, // K68: die Normale der Krone (Ellipsoid × Karte) — foundry-core vor dem Laub-Merge
+        KRONEN_NORMALE: KRONEN_NORMALE,
         kronenLagen: kronenLagen, // S3: die Lagen einer Krone — der Bau-Regler der Karten-Wahl (foundry-core __lagenWahl)
         quadLagen: quadLagen, // S3: die Lagen beliebiger Karten (Strähnen der Trauer-Krone)
         BLATT_ATLAS_BREIT: BLATT_ATLAS_BREIT, // der Atlas-Steckbrief (Zellen + Kern + Füllung) der Breitblatt-Zellen

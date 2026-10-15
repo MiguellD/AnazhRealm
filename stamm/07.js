@@ -94,6 +94,16 @@ class AnazhRealm_Z07 {
                             });
                         }
                     }
+                } else if (msg.type === "hoehen-result" && msg.requestId) {
+                    // K60 — die Höhen der Ferne aus dem Worker (`_voxelWorkerHoehen`), zero-copy per Transferable
+                    const pending = this.state.voxelWorkerPending.get(msg.requestId);
+                    if (pending) {
+                        this.state.voxelWorkerPending.delete(msg.requestId);
+                        pending.resolve({
+                            werte: new Float32Array(msg.werte),
+                            schutt: msg.schutt ? new Float32Array(msg.schutt) : null,
+                        });
+                    }
                 } else if (msg.type === "ack" && msg.requestId) {
                     const pending = this.state.voxelWorkerPending.get(msg.requestId);
                     if (pending) {
@@ -296,6 +306,23 @@ class AnazhRealm_Z07 {
                 this.state.voxelWorkerPending.set(requestId, { resolve, reject });
             });
             worker.postMessage({ type: "chunk-mesh", cx, cz, lod: lod | 0, requestId });
+            return promise;
+        });
+    }
+
+    // DIE HÖHEN DER FERNE off-thread (K60): eine Punkt-Liste (x, z je Punkt, Float32Array — sie wird KOPIERT, der Rufer
+    // braucht sie weiter) → { werte, schutt } aus dem EINEN Gelände-Gesetzbuch im Worker, an seinem synchronisierten
+    // Zustand (Nachrichten laufen in Reihe: ein Stand, der vor dem Auftrag reiste, gilt ihm). Leser: der Feld-Zeichner.
+    _voxelWorkerHoehen(punkte, includeDetail, mitSchutt) {
+        const worker = this._getVoxelWorker();
+        if (!worker) return Promise.reject(new Error("voxel-worker not available"));
+        const ensureReady = this.state.voxelWorkerReady ? Promise.resolve(true) : this._voxelWorkerSyncState();
+        return ensureReady.then(() => {
+            const requestId = this.state.voxelWorkerNextRequestId++;
+            const promise = new Promise((resolve, reject) => {
+                this.state.voxelWorkerPending.set(requestId, { resolve, reject });
+            });
+            worker.postMessage({ type: "hoehen", punkte, detail: !!includeDetail, schutt: !!mitSchutt, requestId });
             return promise;
         });
     }

@@ -1184,12 +1184,10 @@ class AnazhRealm_Z11d {
     // durch alle Schalen), Refresh-Scheibe.
     _tickFernRing(playerPos) {
         const st = this.state;
-        const hook = typeof window !== "undefined" ? window.__anazhFernRing : undefined;
-        if (hook === false) {
+        if (!this._fernRingGilt()) {
             if (st.fernRing) this._fernRingDispose();
             return;
         }
-        if (hook !== true && st.renderer && st.renderer._isHeadlessNull) return;
         if (!playerPos || !st.scene || typeof THREE === "undefined") return;
         const F = AnazhRealm.FERN_RING;
         let fr = st.fernRing;
@@ -1219,7 +1217,12 @@ class AnazhRealm_Z11d {
         // DER FELD-ZEICHNER: ein anstehender VOLLER Refresh (Boot/Re-Anker)
         // wird zuerst vom Feld gemalt (EIN GPU-Lauf, Horizont steht sofort);
         // die CPU-Scheibe darunter verfeinert dieselben Vertices aufs f64-Gesetz.
-        if (fr.cursor === 0) this._fernRingGpuMal(fr);
+        // EIN DURCHGANG UNTER DEM LADESCHIRM (K60): der Maler rechnet seit K16 dasselbe Gesetz auf dem Haupt-Faden wie die
+        // CPU-Scheibe (`_feldZeichnerHoehen`, in Takt-Scheiben) und setzt danach jeden Punkt ab dem Cursor in EINER Aufgabe —
+        // unter dem Ladeschirm sah niemand seinen schnellen Horizont, und beide Wege rechneten den Ring (Radeon kalt: Maler-Höhen
+        // 1,2 s, seine Setz-Aufgabe 2,4 s am Stück, die Scheibe 2,0 s). Bis zum ersten Bild zeichnet die Scheibe allein; der
+        // Maler malt jeden Re-Anker danach (der Spieler sieht den Horizont sofort).
+        if (fr.cursor === 0 && st._weltbildDa) this._fernRingGpuMal(fr);
         this._fernRingRefresh(F.refreshVertsProTick);
         // DAS EINE WASSER: kam oder ging das Fern-Wasser, legt der Ring seine nassen Punkte neu (`_fernRingWasserTiefe`).
         this._fernRingWasserNeu(fr);
@@ -1240,6 +1243,16 @@ class AnazhRealm_Z11d {
             st.camera.far = aussen + 500;
             st.camera.updateProjectionMatrix();
         }
+    }
+
+    // Gehört der Horizont zu dieser Welt? Die EINE Frage für seinen Takt (`_tickFernRing`) und das erste Weltbild
+    // (`_weltbildLuecken`, Term „horizont"): der Linsen-Hook `__anazhFernRing` (false: aus, true: auch headless), sonst
+    // jede Welt mit Renderer — headless ruht der Ring.
+    _fernRingGilt() {
+        const hook = typeof window !== "undefined" ? window.__anazhFernRing : undefined;
+        if (hook === false) return false;
+        const r = this.state.renderer;
+        return hook === true || !(r && r._isHeadlessNull);
     }
 
     // Welt-Wechsel/Restore/Hook-aus: Schalen + das eigene Material entsorgen
@@ -1310,10 +1323,19 @@ class AnazhRealm_Z11d {
         // V18.263 — der PID-Regelkreis fährt diese zwei Stellgrößen (statt fix 4/6):
         // unter gemessener Last sinkt das Streaming-Budget → weniger Chunk-Builds pro
         // Frame → kleinerer Spike. `?? 4/6` = sicherer Default (alte Welten/Tests).
-        const FRAME_BUDGET_MS = Number.isFinite(this.state._voxelStreamBudgetMs) ? this.state._voxelStreamBudgetMs : 4;
-        const MAX_PER_FRAME = Number.isFinite(this.state._voxelStreamMaxPerFrame)
-            ? this.state._voxelStreamMaxPerFrame
-            : 6;
+        // Im Lade-Takt (`_ladeTakt`) trägt der Strom das Budget des Lade-Frames, ohne Stück-Deckel: der Boden des ersten
+        // Weltbilds (RING_EXIST_FLOOR) wuchs sonst mit einem Chunk je Lade-Frame.
+        const lade = this._ladeTakt();
+        const FRAME_BUDGET_MS = lade
+            ? AnazhRealm.LADE_TAKT_MS
+            : Number.isFinite(this.state._voxelStreamBudgetMs)
+              ? this.state._voxelStreamBudgetMs
+              : 4;
+        const MAX_PER_FRAME = lade
+            ? Infinity
+            : Number.isFinite(this.state._voxelStreamMaxPerFrame)
+              ? this.state._voxelStreamMaxPerFrame
+              : 6;
         // DIE STAND-WACHE: steht der Ring (jede Zelle in ihrer Stufe, keiner wartet) und regt sich nichts, geht der Gang
         // nicht — Ring, Prune und Wasser-Weckruf lesen die Stufen-Zelle (`_stufenZelle`: die Spieler-Zelle und das Fach der
         // Lage zwischen den Stufen-Schwellen in Metern, K51-3) und die Chunk-Menge. Nachwuchs läuft weiter.
