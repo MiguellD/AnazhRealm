@@ -996,9 +996,52 @@ class AnazhRealm_Z15b {
     // Die Bau-Arbeit (One-Shot UND Scheiben-Fortsetzung, EIN Chokepoint): Bake-Phase (j-Zeilen) →
     // Schicht-Pässe. Bei erschöpfter Deadline zurück mit stehendem `region._cont`; der nächste Aufruf
     // (finish-first im Streaming-Tick) setzt exakt fort.
+    // DIE REGION SAMMELT IHRE ZUSAGEN (K60-2): solange ihre Scheibe läuft, ist sie der Wartende (`_streuSammler`) — jede
+    // Zusage, auf die eine ihrer Zellen wartet (Zug, Buch, Karte: `_streuWartetAuf`), landet in ihrem Satz; vollendet und
+    // aufgeschoben spannt sie ihren Wecker (`_streuWeckerSpannen`).
     _scatterRegionWork(region, regX, regZ, key, deadlineMs, playerPos) {
-        const SC = AnazhRealm.SCATTER;
         this._weltRegt(); // jede Scheibe setzt Streu-Zellen: die Stand-Wache weckt die Fege-Takte
+        const vorher = this._streuSammler;
+        this._streuSammler = region._zusagen || (region._zusagen = new Set());
+        try {
+            const r = this._scatterRegionScheibe(region, regX, regZ, key, deadlineMs, playerPos);
+            if (!region._cont && region._deferredFoundry) this._streuWeckerSpannen(region);
+            return r;
+        } finally {
+            this._streuSammler = vorher;
+        }
+    }
+
+    // DER WECKER DER AUFGESCHOBENEN REGION (K60-2): sie baut neu, wenn JEDE ihrer Zusagen kam (`region._geweckt`) — nie bei
+    // jeder fremden Lieferung. Bis K60-2 warf jede Ankunft eines Körpers oder einer Karte jede aufgeschobene Region weg, und
+    // die vier Wald-Stücke der Ankunft streuten ab dem Buch bis zum Bild immer neu (Radeon kalt, K602b/s2-1D: Streu 0,1–0,6 s
+    // je Sekunde von 3 s bis 17 s). Wartet sie auf nichts Benanntes (die Wahrheit des Walds), weckt sie jede Lieferung wie zuvor.
+    _streuWeckerSpannen(region) {
+        const zusagen = region._zusagen;
+        region._zusagen = null;
+        region._geweckt = false;
+        if (!zusagen || zusagen.size === 0) {
+            region._geweckt = true;
+            return;
+        }
+        let offen = zusagen.size;
+        const kam = () => {
+            if (--offen > 0) return;
+            region._geweckt = true;
+            this._scatterRefillPending = true;
+        };
+        for (const z of zusagen) z.then(kam, kam);
+    }
+
+    // Ein Wartender der Streu-Scheibe meldet seine Zusage (der Zug eines Körpers, das Buch, die Karte) — nur, solange eine
+    // Region streut (`_streuSammler`); jeder andere Leser fragt wie bisher.
+    _streuWartetAuf(zusage) {
+        const s = this._streuSammler;
+        if (s && zusage && typeof zusage.then === "function") s.add(zusage);
+    }
+
+    _scatterRegionScheibe(region, regX, regZ, key, deadlineMs, playerPos) {
+        const SC = AnazhRealm.SCATTER;
         const cont = region._cont || null;
         if (cont && cont.phase === "bake") {
             const bcfg = this._bakeRegionConfig();
@@ -1910,7 +1953,15 @@ class AnazhRealm_Z15b {
         }
         // (1) fehlende Ring-Regionen generieren (bounded) — nur, wenn im Radius (der Boden ist da,
         // `_streuRegionInReichweite`); W3.3c: mit Deadline (Scheiben-Modus) + nie, wenn eine Fortsetzung den Frame schon füllte.
-        for (let dz = -SC.ringRegions; dz <= SC.ringRegions && work < SC.maxRegionsPerFrame && !_sliceFull; dz++) {
+        // DIE STREU BEGINNT MIT DEM BUCH (K60-2): bei lebender Foundry trägt jede Streu-Art ihr Studio-Asset — vor dem Buch
+        // schob jede Zelle auf, und die Region streute ganz, nur um nach dem Buch neu zu streuen (Radeon kalt bis 8 s ab Navigation).
+        const _fb = this._foundryEnabled() ? this._foundry : null;
+        const _buchKalt = this._foundryEnabled() && !(_fb && _fb.ready && _fb.recipes);
+        for (
+            let dz = -SC.ringRegions;
+            dz <= SC.ringRegions && work < SC.maxRegionsPerFrame && !_sliceFull && !_buchKalt;
+            dz++
+        ) {
             for (let dx = -SC.ringRegions; dx <= SC.ringRegions && work < SC.maxRegionsPerFrame; dx++) {
                 const rk = `${pRegX + dx},${pRegZ + dz}`;
                 if (!map.has(rk) && this._streuRegionInReichweite(pRegX + dx, pRegZ + dz, playerPos)) {
@@ -1939,7 +1990,7 @@ class AnazhRealm_Z15b {
             this._scatterRefillPending = false;
             for (const rk of Array.from(map.keys())) {
                 const region = map.get(rk);
-                if (!region || !region._deferredFoundry) continue;
+                if (!region || !region._deferredFoundry || !region._geweckt) continue;
                 if (Math.abs(region.regX - pRegX) <= disposeR && Math.abs(region.regZ - pRegZ) <= disposeR) {
                     this._disposeScatterRegion(rk); // Schritt (1) im nächsten Tick baut sie mit dem Studio-Asset neu
                 }

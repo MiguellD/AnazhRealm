@@ -111,20 +111,24 @@ function check(name, ok, detail) {
             const kr = AR.FOREST.crown.baum_eiche;
             // DIE FRAGE IN BAU-EREIGNISSEN (K69: die Schlange des Walds plant im Takt): wartet die Gestalt einer Eiche auf den Plan
             // ihres Walds, pumpt die Linse die Schlange (`_tickWaldPlan`), bis sie steht — dieselben Zellen, die bis K69 die
-            // erste Frage am Stück plante; jede plant ihre Wahrheit zuerst (`_forestCellDarts` → `_ensureHydroTilesAround`).
-            const frag = (e) => {
+            // erste Frage am Stück plante; jede plant ihre Wahrheit zuerst (`_ensureHydroTilesAround`). Ihr Rechner ist der
+            // Wald-Faden (K60-4): zwischen zwei Pumpen bekommt er die Nachrichten-Runde.
+            const frag = async (e) => {
                 let g = r._foundryGestaltFor(e, "eiche");
                 for (let i = 0; g == null && i < 4000; i++) {
                     r._forestDartStand(r._forestSeedInt());
                     r._tickWaldPlan(Infinity);
+                    await new Promise((res) => setTimeout(res, 0));
                     g = r._foundryGestaltFor(e, "eiche");
                 }
                 return g;
             };
-            const frischAlle = (proben) => {
+            const frischAlle = async (proben) => {
                 r._forestDartMemo = null; // alle Gedächtnisse des Walds fort: die Antwort aus dem Nichts
                 r._ortSame = null; // das EINE Gedächtnis der Gestalt des Orts (`_ortGestaltSame`)
-                return proben.map(frag);
+                const g = [];
+                for (const e of proben) g.push(await frag(e));
+                return g;
             };
             // der Eintrag einer Eiche am Ort (x, z) mit Same s im Gedächtnis — es liegt in Eimern (`ORT_SAME_EIMER`, K51-5)
             const ortEintrag = (x, z, s) => {
@@ -136,12 +140,12 @@ function check(name, ok, detail) {
                 return null;
             };
             // die Probe von F an einer Kachel: eine Eiche im Bestand mit genau EINEM stehenden Nachbarn (Abstand > 4 m)
-            const wahlF = (proben) => {
-                frischAlle(proben);
+            const wahlF = async (proben) => {
+                await frischAlle(proben);
                 const seedInt = r._forestSeedInt();
                 const darts = (gx, gz) => r._forestCellDarts(gx, gz, seedInt);
                 for (const e of proben) {
-                    if (frag(e) === V) continue;
+                    if ((await frag(e)) === V) continue;
                     const gx = Math.floor(e.position.x / CELL);
                     const gz = Math.floor(e.position.z / CELL);
                     const nah = [];
@@ -175,17 +179,18 @@ function check(name, ok, detail) {
                         scale: 1,
                     });
                 }
-                for (const e of proben) frag(e);
+                for (const e of proben) await frag(e);
                 r._ensureHydroTilesAround(KX, KZ, 400); // der Spieler kommt: die Kachel steht
-                const alt = proben.map(frag);
-                const frisch = frischAlle(proben);
+                const alt = [];
+                for (const e of proben) alt.push(await frag(e));
+                const frisch = await frischAlle(proben);
                 proben.forEach((e, i) => {
                     if (alt[i] !== frisch[i])
                         taeter.push(`Eiche (${e.position.x}, ${e.position.z}): Gestalt ${alt[i]} statt ${frisch[i]}`);
                 });
                 const frei = frisch.filter((g) => g === V).length;
                 if (!(frei >= 1 && frei < proben.length)) continue;
-                wahl = wahlF(proben);
+                wahl = await wahlF(proben);
                 if (!wahl) continue;
                 gewaehlt = { KX, KZ, proben, frei };
                 break;
@@ -210,7 +215,7 @@ function check(name, ok, detail) {
                 }
                 // Selbsttest: ein Gedächtnis am gültigen Stand mit gekippter Gestalt muss beim Namen feuern
                 const p0 = proben[0];
-                const g0 = frag(p0);
+                const g0 = await frag(p0);
                 const k0 = ortEintrag(p0.position.x, p0.position.z, p0.seed);
                 if (k0)
                     k0.eimer.set(
@@ -218,7 +223,7 @@ function check(name, ok, detail) {
                         r._foundryGestaltSame(p0.seed, "eiche", () => g0 !== V)
                     );
                 const sAlt = r._foundryGestaltFor(p0, "eiche");
-                const sFrisch = frischAlle(proben)[0];
+                const sFrisch = (await frischAlle(proben))[0];
                 Object.assign(res.E, {
                     n: proben.length,
                     frei: gewaehlt.frei,
@@ -235,16 +240,16 @@ function check(name, ok, detail) {
             if (wahl && gewaehlt) {
                 const { proben } = gewaehlt;
                 const { e, o } = wahl;
-                frischAlle(proben);
-                const vorher = frag(e);
+                await frischAlle(proben);
+                const vorher = await frag(e);
                 let grund = null;
                 const haus = r.spawnArchitecture(
                     "haus_alemannisch",
                     { x: o.x, y: o.surfaceY, z: o.z },
                     { fundament: { ex: 1.5, ez: 1.5 }, silent: true, absage: (g) => (grund = g) }
                 );
-                const gemerkt = frag(e);
-                const frischF = frischAlle(proben)[proben.indexOf(e)];
+                const gemerkt = await frag(e);
+                const frischF = (await frischAlle(proben))[proben.indexOf(e)];
                 if (haus) r.removeArchitecture(haus);
                 // Selbsttest: dasselbe Haus OHNE Grundriss hält den Wurf nicht — die Eiche bleibt Bestand (die Linse
                 // unterscheidet: frei macht nur der Grundriss). Seit K52 trägt jeder Bau einen (die Hülle seiner Blocker-Boxen):
@@ -260,7 +265,7 @@ function check(name, ok, detail) {
                     ohne.blockerAABBs = null;
                     r._grundrissFaellt();
                 }
-                res.E.F.selbst = !!ohne && frag(e) !== V;
+                res.E.F.selbst = !!ohne && (await frag(e)) !== V;
                 if (ohne) r.removeArchitecture(ohne);
                 Object.assign(res.E.F, {
                     ort: `Eiche (${e.position.x}, ${e.position.z}), Nachbar ${o.sp} (${o.x.toFixed(1)}, ${o.z.toFixed(1)})`,

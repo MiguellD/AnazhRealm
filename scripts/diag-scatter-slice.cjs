@@ -21,6 +21,13 @@
 //       steht NIE in der Map (die _sampleBakedField-Wand).
 //   (4) DISPOSE-STORNO: ein Dispose MITTEN in der Fortsetzung tötet den cont —
 //       kein Throw, die Map ist sauber, ein frischer One-Shot baut normal.
+//   (5) DER WECKER (K60-2): eine aufgeschobene Region wartet auf IHRE Zusagen — eine fremde Lieferung
+//       (`_scatterRefillPending`) wirft sie nicht weg; erst wenn jede ihrer Zusagen kam, baut der Refill sie neu.
+//       Täter beim Namen: der Refill in `_tickScatterStreaming`, der jede aufgeschobene Region bei jeder Lieferung warf.
+//   (6) DER STOFF DES WALDS (K60-3, vereint K60-4): die Gestalt der Streu (`_ortGestaltSame`) bestellt die Darts in der EINEN
+//       Schlange des Walds, ihr Rechner ist der Wald-Faden (`_waldFadenSchicken`) — unter der Streu-Scheibe rechnet der
+//       Haupt-Faden keinen Dart, die Region wartet benannt auf die leere Schlange und steht nach der Lieferung byte-gleich
+//       zur Referenz ohne Faden (der Takt plant die Schlange im Haupt-Faden). Täter beim Namen: `_forestCellDarts` unter `_scatterRegionWork`.
 // ─────────────────────────────────────────────────────────────────────────
 
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
@@ -166,6 +173,130 @@ const server = statikServer();
                 storno.threw = String((e && e.message) || e);
             }
             o.storno = storno;
+            // ── (5) DER WECKER: zwei offene Zusagen, eine fremde Lieferung, dann die eigenen ──
+            const wecker = { fremd: null, eine: null, beide: null, threw: false };
+            try {
+                clean();
+                const loes = [];
+                const zus = [0, 1].map(() => new Promise((res) => loes.push(res)));
+                const altPass = r._scatterPass;
+                r._scatterPass = function (region, ...a) {
+                    region._deferredFoundry = true; // jede Zelle wartet (wie bei kaltem Asset)
+                    if (typeof this._streuWartetAuf === "function") for (const z of zus) this._streuWartetAuf(z);
+                    return altPass.call(this, region, ...a);
+                };
+                // die Zusagen der Region beim Namen: ihre zwei, die Schlange des Walds und jede fremde (Karte, Zug, Buch)
+                const altWartet = r._streuWartetAuf;
+                const fremde = new Set();
+                r._streuWartetAuf = function (z) {
+                    if (this._streuSammler && z && !zus.includes(z))
+                        fremde.add(z === this._waldLeer ? "wald" : "fremd");
+                    return altWartet.call(this, z);
+                };
+                wecker.schlange = r._waldPlanSchlange ? r._waldPlanSchlange.size : 0;
+                let reg5;
+                try {
+                    reg5 = r._scatterRegion(rx, rz, pos);
+                } finally {
+                    r._scatterPass = altPass;
+                    r._streuWartetAuf = altWartet;
+                }
+                wecker.fremde = [...fremde];
+                // wartet ihre Gestalt noch auf den Plan des Walds, wartet die Region benannt auch auf die leere Schlange
+                // (`_waldPlanZusage`, K60-4): die Linse leert sie zuerst (der Takt schickt sie an den Faden) — danach steht
+                // die Region NUR noch auf ihren zwei Zusagen
+                for (let i = 0; i < 4000 && r._waldPlanSchlange && r._waldPlanSchlange.size; i++) {
+                    r._tickWaldPlan(Infinity);
+                    await new Promise((res) => setTimeout(res, 10));
+                }
+                wecker.schlangeNach = r._waldPlanSchlange ? r._waldPlanSchlange.size : 0;
+                const steht = () => st.scatterRegions.get(key) === reg5;
+                const tick = async () => {
+                    await new Promise((res) => setTimeout(res, 0));
+                    r._tickScatterStreaming(pos);
+                };
+                r._scatterRefillPending = true; // eine FREMDE Lieferung
+                await tick();
+                wecker.fremd = steht();
+                loes[0]();
+                r._scatterRefillPending = true;
+                await tick();
+                wecker.eine = steht();
+                loes[1]();
+                await tick();
+                wecker.beide = steht();
+                clean();
+            } catch (e) {
+                wecker.threw = String((e && e.message) || e);
+            }
+            o.wecker = wecker;
+            // ── (6) DER STOFF DES WALDS (K60-3): die Gestalt der Streu wartet auf die Darts des Fadens ──
+            const stoff = {
+                buch: false,
+                wahr: false,
+                faden: false,
+                haupt: -1,
+                nachher: -1,
+                gewartet: false,
+                gleich: null,
+                zellen: 0,
+                threw: false,
+            };
+            try {
+                clean();
+                const t0 = performance.now();
+                const bereit = () => !!(r._foundry && r._foundry.ready && r._foundry.recipes && r._forestGesetzWahr());
+                while (!bereit() && performance.now() - t0 < 90000) await new Promise((res) => setTimeout(res, 200));
+                stoff.buch = !!(r._foundry && r._foundry.recipes);
+                stoff.wahr = r._forestGesetzWahr();
+                stoff.faden = !!st.voxelWorker;
+                // mit Faden, frisches Gedächtnis: wie viele Darts rechnet der Haupt-Faden UNTER der Streu-Scheibe (`_streuSammler`)?
+                r._forestDartMemo = null;
+                let zaehler = 0;
+                const altCD = r._forestCellDarts;
+                r._forestCellDarts = function (cx, cz, seedInt) {
+                    if (this._streuSammler && !(this._forestDartMemo && this._forestDartMemo.has(cx + "," + cz)))
+                        zaehler++;
+                    return altCD.call(this, cx, cz, seedInt);
+                };
+                const vw = st.voxelWorker;
+                try {
+                    const reg6 = r._scatterRegion(rx, rz, pos);
+                    stoff.haupt = zaehler;
+                    const t1 = performance.now();
+                    // der Takt schickt die Schlange an den Faden (`_tickWaldPlan`, Job `waldPlan`) — die Linse ist sein Takt
+                    while (reg6._deferredFoundry && !reg6._geweckt && performance.now() - t1 < 60000) {
+                        r._tickWaldPlan(Infinity);
+                        await new Promise((res) => setTimeout(res, 50));
+                    }
+                    stoff.gewartet = reg6._deferredFoundry === true && reg6._geweckt === true;
+                    // der Neubau nach der Lieferung und die Referenz ohne Faden (der Main rechnet jeden Dart selbst, frisches
+                    // Gedächtnis) Rücken an Rücken, ohne Warten dazwischen: kein Asset kommt zwischen die beiden Bauten
+                    clean();
+                    zaehler = 0;
+                    const neu = r._scatterRegion(rx, rz, pos);
+                    stoff.nachher = zaehler;
+                    stoff.zellen = neu && neu.cells ? neu.cells.length : 0;
+                    const neuSnap = snapshot(neu);
+                    clean();
+                    st.voxelWorker = null;
+                    r._forestDartMemo = null;
+                    // ohne Faden plant der Takt die Schlange im Haupt-Faden: die Referenz pumpt sie leer (ohne Warten — kein
+                    // Asset kommt dazwischen) und baut die Region dann neu
+                    r._scatterRegion(rx, rz, pos);
+                    for (let i = 0; i < 20000 && r._waldPlanSchlange && r._waldPlanSchlange.size; i++)
+                        r._tickWaldPlan(Infinity);
+                    clean();
+                    stoff.gleich = snapshot(r._scatterRegion(rx, rz, pos)) === neuSnap;
+                } finally {
+                    st.voxelWorker = vw;
+                    r._forestCellDarts = altCD;
+                }
+                clean();
+            } catch (e) {
+                stoff.threw = String((e && e.message) || e);
+            }
+            o.stoff = stoff;
             return o;
         });
     } catch (e) {
@@ -199,6 +330,39 @@ const server = statikServer();
         {
             name: `DISPOSE-STORNO: mitten in der Fortsetzung disposen → cont tot, kein Throw, frischer One-Shot byte-gleich (${JSON.stringify(out.storno)})`,
             pass: out.storno.threw === false && out.storno.contDead === true && out.storno.rebuildOk === true,
+        },
+        {
+            name:
+                `DER WECKER: die aufgeschobene Region überlebt eine fremde Lieferung und die erste ihrer zwei Zusagen, nach der ` +
+                `zweiten baut der Refill sie neu (${JSON.stringify(out.wecker)})` +
+                (out.wecker && out.wecker.fremd === false
+                    ? " — TÄTER: der Refill in _tickScatterStreaming warf sie bei einer fremden Lieferung weg"
+                    : ""),
+            pass:
+                !!out.wecker &&
+                out.wecker.threw === false &&
+                out.wecker.fremd === true &&
+                out.wecker.eine === true &&
+                out.wecker.beide === false,
+        },
+        {
+            name:
+                `DER STOFF DES WALDS: unter der Streu-Scheibe rechnet der Haupt-Faden keinen Dart, die Region wartet auf den ` +
+                `Voxel-Faden und steht danach byte-gleich zur Referenz ohne Faden (${JSON.stringify(out.stoff)})` +
+                (out.stoff && out.stoff.haupt > 0
+                    ? ` — TÄTER: _forestCellDarts unter _scatterRegionWork (${out.stoff.haupt} Darts im Haupt-Faden)`
+                    : ""),
+            pass:
+                !!out.stoff &&
+                out.stoff.threw === false &&
+                out.stoff.buch === true &&
+                out.stoff.wahr === true &&
+                out.stoff.faden === true &&
+                out.stoff.haupt === 0 &&
+                out.stoff.gewartet === true &&
+                out.stoff.nachher === 0 &&
+                out.stoff.gleich === true &&
+                out.stoff.zellen > 5,
         },
     ];
     let fails = 0;

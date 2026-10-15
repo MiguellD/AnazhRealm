@@ -654,7 +654,7 @@ const SCHUSS_FN = async (kam) => {
                 const zensus =
                     `Bühne ${r.state._buehneStand ? "steht" : "OFFEN"} · Karten ${z.zellen || 0}: gebacken ${z.gebacken || 0} (Platte ${z.vonPlatte || 0})` +
                     ` · gescheitert ${z.gescheitert || 0} · wartend ${z.wartend || 0} · hängend ${z.haengendeBakes || 0}` +
-                    ` · Queue ${(r._impostorBakeQueue || []).length}${r._impostorBakePending ? " (Bake in Flug)" : ""}` +
+                    ` · Queue ${(r._impostorBakeQueue || []).length}${r._impostorBakeFlug && r._impostorBakeFlug.size ? ` (${r._impostorBakeFlug.size} Bakes im Flug)` : ""}` +
                     (z.gescheitertArten && z.gescheitertArten.length
                         ? ` · Fehler: ${z.gescheitertArten.join(", ").slice(0, 80)}`
                         : "");

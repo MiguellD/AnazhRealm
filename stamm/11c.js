@@ -1620,23 +1620,34 @@ class AnazhRealm_Z11c {
     // Vertex) und × das Mittel des Gerölls (`schuttMittel`: es wirft Schatten in sich; im Chunk der Detail-Term mit dem Gewicht
     // des Schutts). Bis K17-2 trug die Ferne keinen Schutt (`_terrainGeologyAlbedo` liest `aSchutt` nur am Chunk): jenseits der
     // Bau-Kante lag der graue Schutthang in der Farbe der Säule. Ring, Kronen-Karte und Feld-Pass lesen ihn über die Fern-Farbe.
-    // `s` = das Gewicht des Schutts am Punkt (`aus.schutt` des Höhen-Rufs; fehlt es, bricht die Ferne laut — nie still 0).
+    // `s` = das Gewicht des Schutts am Punkt (`_fernSchuttVon` des Höhen-Rufs; fehlt es, bricht die Ferne laut — nie still 0);
+    // das Geröll trägt höchstens den vollen Schutt (die Wand des Erdbaus liegt mit 1 / `schutt` darüber, ihr Stoff voll).
     _fernSchutt(s, out) {
         if (typeof s !== "number" || s !== s) throw new Error("_fernSchutt: das Gewicht des Schutts fehlt (" + s + ")");
         if (!(s > 0)) return out;
         const GK = globalThis.__gelaendeCore;
         const ws = AnazhRealm.TERRAIN_GEOLOGY.schutt * s;
         const M = AnazhRealm.FELS_STOFF.mittel;
-        const k = 1 + (GK.schuttMittel() - 1) * s;
+        const k = 1 + (GK.schuttMittel() - 1) * (s < 1 ? s : 1);
         for (let c = 0; c < 3; c++) out[c] = (out[c] + (M[c] - out[c]) * ws) * k;
         return out;
     }
 
+    // DAS GEWICHT DES SCHUTTS DER FERNE aus EINEM Höhen-Ruf (`aus` von gelaende-core `hoehe`): der Schutthang des Schicht-Gesetzes
+    // (`aus.schutt`) oder die Wand des Erdbaus (`aus.wand`, K66, Prüfung 1: die Ferne las nur den Schutthang, an der Naht zur Ferne
+    // wechselte die Böschung des Dorfs auf Wiese) — die Wand trägt im Netz den Stoff voll (`felsStoff`), in Einheiten des Schutts
+    // 1 / `TERRAIN_GEOLOGY.schutt`. Leser: Ring, Kronen-Karte, Feld-Pass und `_fernSchuttAt`.
+    static _fernSchuttVon(aus) {
+        const s = aus.schutt > 0 ? aus.schutt : 0;
+        const w = aus.wand > 0 ? 1 / AnazhRealm.TERRAIN_GEOLOGY.schutt : 0;
+        return w > s ? w : s;
+    }
+
     // Der Schutt am Punkt für einen Leser ohne eigenen Höhen-Ruf (die Kronen-Karte, Linsen): EIN Ruf des Höhen-Gesetzes.
     _fernSchuttAt(x, z) {
-        const aus = this._fernSchuttAus || (this._fernSchuttAus = { hang: 0, schutt: 0 });
+        const aus = this._fernSchuttAus || (this._fernSchuttAus = { hang: 0, schutt: 0, wand: 0 });
         this._terrainMacroSurfaceY(x, z, false, aus);
-        return aus.schutt > 0 ? aus.schutt : 0;
+        return AnazhRealm._fernSchuttVon(aus);
     }
 
     // Die Studio-Laubfarbe der fünf Wald-Arten (Kiefer · Tanne · Eiche · Birke · Erle, die Folge von `forestNische`),
@@ -2372,7 +2383,11 @@ class AnazhRealm_Z11c {
     // gemessen 11.10.).
     _fernFarbTakt(fr) {
         const K = AnazhRealm.FERN_FARBE;
-        const ende = performance.now() + (this.state._frameOverBudget ? K.msKnapp : K.msJeTakt);
+        // im Lade-Takt die Frist des Lade-Frames (`_ladeFrist`, K60-2): der Horizont des ersten Bilds malt nie 2 ms je Frame
+        const ende = Math.max(
+            this._ladeFrist(),
+            performance.now() + (this.state._frameOverBudget ? K.msKnapp : K.msJeTakt)
+        );
         this._fernKroneNahTakt(ende, K.mindestJeTakt);
         const rest = this._fernRingFaerben(fr, ende, K.mindestJeTakt);
         const fp = this.state.feldPass;
@@ -2457,11 +2472,11 @@ class AnazhRealm_Z11c {
             const nass = k.nass || (k.nass = { y: 0, spiegel: 0 });
             const o = j.i * 4;
             // Wasser trägt keine Krone (der Ring: Deckung 0 auf dem Spiegel)
-            const aus = k.aus || (k.aus = { hang: 0, schutt: 0 });
+            const aus = k.aus || (k.aus = { hang: 0, schutt: 0, wand: 0 });
             if (this._fernNass(x, z, this._terrainMacroSurfaceY(x, z, false, aus), wl, nass))
                 k.puffer[o] = k.puffer[o + 1] = k.puffer[o + 2] = k.puffer[o + 3] = 0;
             else {
-                this._fernFarbeTeile(x, nass.y, z, t, undefined, undefined, aus.schutt > 0 ? aus.schutt : 0);
+                this._fernFarbeTeile(x, nass.y, z, t, undefined, undefined, AnazhRealm._fernSchuttVon(aus));
                 k.puffer[o] = sRGB(t[3]);
                 k.puffer[o + 1] = sRGB(t[4]);
                 k.puffer[o + 2] = sRGB(t[5]);
@@ -2528,7 +2543,7 @@ class AnazhRealm_Z11c {
     // Budgetierter Höhen-Refresh (~`refreshVertsProTick` Vertices/Frame, nie synchron alles): Welt-XZ
     // aufs Snap-Gitter, Höhe = das EINE Gesetz (includeDetail=false), unter Wasser flach auf
     // waterLevel − wasserDrop. Die innerste Reihe jeder Schale taucht −saumDrop (Saum-Tauchkante).
-    // Liefert die Zahl erneuerter Vertices.
+    // Liefert die Zahl erneuerter Vertices. Im Lade-Takt rechnet er bis zur Frist des Lade-Frames (`_ladeFrist`, K60-2).
     _fernRingRefresh(budget) {
         const fr = this.state.fernRing;
         if (!fr) return 0;
@@ -2539,11 +2554,12 @@ class AnazhRealm_Z11c {
         const wl = Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : 0;
         const dirty = [false, false, false];
         let done = 0;
-        while (done < budget && fr.cursor < fr.totalVerts) {
+        const frist = this._ladeFrist();
+        while ((done < budget || performance.now() < frist) && fr.cursor < fr.totalVerts) {
             const p = this._fernRingPunkt(fr, fr.cursor);
-            const aus = this._fernRingAus || (this._fernRingAus = { hang: 0, schutt: 0 });
+            const aus = this._fernRingAus || (this._fernRingAus = { hang: 0, schutt: 0, wand: 0 });
             let law = this._terrainMacroSurfaceY(p.x, p.z, false, aus);
-            const schutt = aus.schutt > 0 ? aus.schutt : 0;
+            const schutt = AnazhRealm._fernSchuttVon(aus);
             // Loch-Deckel + Naht-Veredelung, EINE Formel (_fernRingDeckMisch, geteilt mit dem GPU-Maler):
             // Schale-0-Reihen in der Chunk-Ziel-Zone tragen das VOLLE Gesetz (includeDetail), −0.3 gesenkt —
             // stehende Chunks decken sie per Depth, fehlende zeigen wahres Terrain statt der Wasser-Plane. In der Bau-Zone
@@ -2675,7 +2691,7 @@ class AnazhRealm_Z11c {
             });
         const n = (punkte.length / 2) | 0;
         const werte = new Float32Array(n);
-        const aus = schutt ? { hang: 0, schutt: 0 } : undefined;
+        const aus = schutt ? { hang: 0, schutt: 0, wand: 0 } : undefined;
         let k = 0;
         return new Promise((fertig) => {
             const scheibe = () => {
@@ -2684,7 +2700,7 @@ class AnazhRealm_Z11c {
                 const mindest = k + 16;
                 for (; k < n; k++) {
                     werte[k] = this._terrainMacroSurfaceY(punkte[k * 2], punkte[k * 2 + 1], includeDetail, aus);
-                    if (aus) schutt[k] = aus.schutt > 0 ? aus.schutt : 0;
+                    if (aus) schutt[k] = AnazhRealm._fernSchuttVon(aus);
                     if (k >= mindest && (k & 15) === 0 && performance.now() > frist) {
                         k++;
                         break;

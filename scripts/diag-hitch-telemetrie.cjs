@@ -126,7 +126,6 @@ function erstWandInstall() {
         boot: ESt
             ? { bauN: ESt.bauN, bauMs: Math.round(ESt.bauMs), verschoben: ESt.verschoben, pipeAsync: ESt.pipeAsync }
             : null,
-        budgetMs: r.constructor.ERST_BAU_MS,
         bauUhr: U ? { angelegt: U.angelegt, gebaut: U.gebaut, imFlug: U.imFlug.size } : null,
     };
     const welt = r.state.scene;
@@ -163,7 +162,10 @@ function erstWandInstall() {
         const aus = gfr.apply(this, arguments);
         if (kalt && Z.cur === welt) {
             const k = rend.info.calls;
-            const b = Z.bau.get(k) || { n: 0, ms: 0, vorMs: [] };
+            // der Deckel DIESES Aufrufs, wie ihn der EINE Ort gesetzt hat (`E.deckel`: im Spiel ERST_BAU_MS, unter dem
+            // Ladeschirm LADE_TAKT_MS) — nie eine Konstante der Linse (bis K60-3 las sie ERST_BAU_MS und fiel am Lade-Takt)
+            const E = r._erstZeichnung;
+            const b = Z.bau.get(k) || { n: 0, ms: 0, vorMs: [], deckel: E ? E.deckel : NaN };
             b.vorMs.push(b.ms);
             b.n++;
             b.ms += performance.now() - t0;
@@ -252,6 +254,13 @@ function erstWandInstall() {
     };
     const probe = (vendor) => buehne(() => probeAufDerBuehne(vendor));
     const probeAufDerBuehne = async (vendor) => {
+        // DIE PROBE STEHT IM SPIEL: sie misst den Takt, den der Spieler fühlt (der Deckel ERST_BAU_MS je Aufruf). Unter
+        // dem Ladeschirm baut der EINE Ort je Aufruf bis LADE_TAKT_MS (233ccebf) — am Runner steht er beim Einbau der Wand
+        // oft noch (swiftshader); die Probe nimmt ihn für ihre Dauer weg und stellt ihn danach zurück.
+        const lade = document.getElementById("ladeschirm");
+        const ladeVor = lade ? lade.hidden : null;
+        if (lade) lade.hidden = true;
+        const imSpiel = !r._ladeTakt();
         const ruheMs = await ruhe();
         Z.sync = Z.async = 0;
         Z.bau.clear();
@@ -290,6 +299,7 @@ function erstWandInstall() {
         } finally {
             rend.backend.draw = drawRoh;
             if (vendor && eigen) rend._renderObjectDirect = stamm;
+            if (lade) lade.hidden = ladeVor;
             for (const m of meshes) {
                 welt.remove(m);
                 m.geometry.dispose();
@@ -297,9 +307,11 @@ function erstWandInstall() {
         }
         let maxBau = 0,
             ueberBudget = 0;
+        const deckel = new Set();
         for (const b of Z.bau.values()) {
             maxBau = Math.max(maxBau, b.n);
-            for (let j = 1; j < b.vorMs.length; j++) if (b.vorMs[j] >= res.erst.budgetMs) ueberBudget++;
+            deckel.add(b.deckel);
+            for (let j = 1; j < b.vorMs.length; j++) if (!(b.vorMs[j] < b.deckel)) ueberBudget++;
         }
         return {
             sync: Z.sync,
@@ -307,6 +319,8 @@ function erstWandInstall() {
             aufrufeMitBau: Z.bau.size,
             maxBau,
             ueberBudget,
+            deckel: [...deckel],
+            imSpiel,
             gezeichnet: gezeichnet.size,
             frames,
             ms: Math.round(performance.now() - t0),
@@ -991,10 +1005,15 @@ function erstWandInstall() {
     );
     const pr = ez.probe || {};
     bandIn(1)(
-        pr.gezeichnet === 3 && pr.sync === 0 && pr.async >= 3 && pr.ueberBudget === 0 && pr.ruheOffen === 0,
+        pr.imSpiel === true &&
+            pr.gezeichnet === 3 &&
+            pr.sync === 0 &&
+            pr.async >= 3 &&
+            pr.ueberBudget === 0 &&
+            pr.ruheOffen === 0,
         "ERST-ZEICHNUNG (Probe: drei neue Stoffe — gezeichnet, 0 synchrone Pipelines der Welt, kein Bau über dem Budget)",
         `Ruhe davor ${pr.ruheMs} ms (offen danach ${pr.ruheOffen}) · gezeichnet ${pr.gezeichnet}/3 nach ${pr.frames} Frames (${pr.ms} ms) · synchron ${pr.sync} · asynchron ${pr.async} · ` +
-            `Aufrufe mit Bau ${pr.aufrufeMitBau} · max ${pr.maxBau} Bauten je Aufruf · über dem Budget (${ez.budgetMs} ms) ${pr.ueberBudget}`
+            `Aufrufe mit Bau ${pr.aufrufeMitBau} · max ${pr.maxBau} Bauten je Aufruf · über dem Deckel des Aufrufs (${(pr.deckel || []).join("/")} ms, im Spiel ${pr.imSpiel}) ${pr.ueberBudget}`
     );
     const gg = ez.gegen || {};
     bandIn(1)(

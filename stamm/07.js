@@ -15,6 +15,7 @@ class AnazhRealm_Z07 {
             let worker;
             try {
                 worker = new Worker(srcUrl || `voxel-worker.js?v=${AnazhRealm.VERSION}`);
+                this._voxelFadenQuelle = srcUrl || `voxel-worker.js?v=${AnazhRealm.VERSION}`; // der Wald-Faden lädt dieselbe
             } catch (_workerErr) {
                 // Der Sandbox-Weg ist EIN Versuch (K22): scheitert der Faden über die Blob-URL oder ein zweites Mal, bricht
                 // er laut (der äußere Fang meldet ERROR) — nie wieder still mit null, während der Haupt-Thread jeden Chunk
@@ -257,6 +258,19 @@ class AnazhRealm_Z07 {
         return edits.map((ed) => ({ ...ed }));
     }
 
+    // DER EINE SENDER DES VOXEL-ZUSTANDS (K60-3): jede Zustands-Nachricht (init · state-set · state-update) reist in
+    // derselben Reihe an JEDEN Faden, der am Zustand rechnet — den Voxel-Faden und, ist er geboren, den Wald-Faden
+    // (`_waldFadenZ`, ohne Rückfrage-Nummer: seine Nummern sind seine Aufträge). Der Wald-Faden bekommt bei der Geburt
+    // EINEN vollen Stand, danach dieselben Deltas wie der Voxel-Faden. Bis zur Prüfung K60-3-1 schickte er sich je
+    // Stand-Wechsel (Generation + Edit-ZAHL) den vollen Zustand samt Hydro-Kacheln ein zweites Mal — ein ersetzter Edit bei
+    // gleicher Zahl reiste nie, und jeder Wechsel klonte die Welt im Haupt-Faden.
+    _voxelZustandPost(msg) {
+        const w = this.state.voxelWorker;
+        if (w) w.postMessage(msg);
+        const f = this._waldFadenZ;
+        if (f) f.worker.postMessage(msg.requestId == null ? msg : Object.assign({}, msg, { requestId: null }));
+    }
+
     // State-Snapshot zum Worker: `op="init"` befüllt erstmalig (ack setzt voxelWorkerReady=true),
     // `op="state-set"` = voller Re-Sync nach Welt-Wechsel/Worldgen. Promise<true> beim ack.
     _voxelWorkerSyncState(opts = {}) {
@@ -270,7 +284,7 @@ class AnazhRealm_Z07 {
         const promise = new Promise((resolve, reject) => {
             this.state.voxelWorkerPending.set(requestId, { resolve, reject });
         });
-        worker.postMessage({ type: op, snapshot: this._voxelWorkerSnapshotState(), requestId });
+        this._voxelZustandPost({ type: op, snapshot: this._voxelWorkerSnapshotState(), requestId });
         return promise.then(() => {
             this.state.voxelWorkerReady = true;
             return true;
@@ -327,6 +341,46 @@ class AnazhRealm_Z07 {
             worker.postMessage({ type: "hoehen", punkte, detail: !!includeDetail, schutt: !!mitSchutt, requestId });
             return promise;
         });
+    }
+
+    // DER STOFF DES WALDS off-thread (K60-3): die Wald-Zellen (cx, cz je Zelle, Int32Array) → die gepackten Darts aus dem
+    // EINEN Wald-Plan (phyto-core `planForestCell`) mit den Lesern des Fadens. Er rechnet im WALD-FADEN: einem eigenen Faden
+    // desselben Gesetzes (`voxel-worker.js`, dieselbe Quelle wie der Voxel-Faden) — im Voxel-Faden stand der Auftrag hinter
+    // jedem Chunk und jeder Höhe der Ferne (Radeon kalt: die Darts kamen 3,5 s nach der Bestellung, das Bild 2 s später als
+    // ohne, K603/s2-6C). Den Zustand bringt der EINE Sender (`_voxelZustandPost`): bei der Geburt ein voller Stand, danach
+    // dieselben Nachrichten wie der Voxel-Faden (Worldgen, Hydro-Kachel, Erdbau, Edits) — Nachrichten laufen in Reihe, der
+    // Auftrag rechnet am Zustand, der vor ihm reiste. Leser: die Schlange des Walds (`_waldFadenSchicken`).
+    _voxelWorkerWaldDarts(zellen, seedInt, extras) {
+        if (!this.state.voxelWorker || !this._voxelFadenQuelle) return Promise.reject(new Error("kein Voxel-Faden"));
+        let f = this._waldFadenZ;
+        if (!f) {
+            const worker = new Worker(this._voxelFadenQuelle);
+            f = this._waldFadenZ = { worker, pending: new Map(), next: 1 };
+            worker.onmessage = (e) => {
+                const msg = e.data;
+                if (!msg) return;
+                if (msg.type === "error") this._bruchMelden(`WALD: der Wald-Faden warf (${msg.op}) — ${msg.message}`);
+                const p = msg.requestId ? f.pending.get(msg.requestId) : null;
+                if (!p) return;
+                f.pending.delete(msg.requestId);
+                if (msg.type === "wald-darts-result")
+                    p.resolve({
+                        anzahl: new Int32Array(msg.anzahl),
+                        werte: new Float64Array(msg.werte),
+                        arten: msg.arten,
+                    });
+                else p.reject(new Error(msg.message));
+            };
+            worker.onerror = (err) => this._bruchMelden("WALD: der Wald-Faden brach — " + (err && err.message));
+            // der EINE volle Stand bei der Geburt; jede spätere Änderung bringt der Sender des Zustands (`_voxelZustandPost`)
+            worker.postMessage({ type: "state-set", snapshot: this._voxelWorkerSnapshotState() });
+        }
+        const requestId = f.next++;
+        const promise = new Promise((resolve, reject) => f.pending.set(requestId, { resolve, reject }));
+        f.worker.postMessage({ type: "wald-darts", zellen, seedInt, extras, F: AnazhRealm.FOREST, requestId }, [
+            zellen.buffer,
+        ]);
+        return promise;
     }
 
     // Wasser-Sheet off-thread: der 3×3-Zell-Block (`entry.waterCells`, KOPIERT — der Main braucht ihn
@@ -848,7 +902,7 @@ class AnazhRealm_Z07 {
                     for (let lod = 0; lod <= 3; lod++) cache.delete(`${cx},${cz},${lod}`);
         }
         try {
-            this.state.voxelWorker.postMessage({
+            this._voxelZustandPost({
                 type: "state-update",
                 delta: {
                     voxelEditAppend: { x: ed.x, y: ed.y, z: ed.z, r: ed.r, strength: ed.strength, mode: ed.mode },
@@ -1377,7 +1431,10 @@ class AnazhRealm_Z07 {
                     if (E.aufruf !== this.info.calls) {
                         E.aufruf = this.info.calls;
                         E.aufrufMs = 0;
-                    } else if (E.aufrufMs >= AnazhRealm.ERST_BAU_MS) {
+                        // unter dem Ladeschirm sieht kein Spieler den Takt: ein Lade-Bild (`_ladeBildFaellig`, alle
+                        // LADE_BILD_MS) baut je Aufruf bis zur Frist des Lade-Frames, nicht nur einen Stoff
+                        E.deckel = welt._ladeTakt() ? AnazhRealm.LADE_TAKT_MS : AnazhRealm.ERST_BAU_MS;
+                    } else if (E.aufrufMs >= E.deckel) {
                         E.verschoben++;
                         if (aufnahme !== null) welt._erstWartet(this.backend, null, aufnahme.bundleGroup);
                         return;
@@ -1408,6 +1465,7 @@ class AnazhRealm_Z07 {
             this._erstZeichnung = {
                 aufruf: -1,
                 aufrufMs: 0,
+                deckel: AnazhRealm.ERST_BAU_MS, // die Bau-Zeit je Render-Aufruf (unter dem Ladeschirm LADE_TAKT_MS)
                 bauN: 0,
                 bauMs: 0,
                 verschoben: 0,
