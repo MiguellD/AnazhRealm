@@ -45,6 +45,10 @@ const SICHT_NEU = ["_satzAbschnittMerke", "_instanzWahlMerke"];
 // (`dicht`), das Umlegen aller Abschnitte (`umlegen`). Der Grund ist der innerste Schreiber im Stapel.
 const SICHT_GRUND = ["_chunkSatzRuht", "_chunkSatzUmlegen"];
 const SICHT_SCHREIB = "_chunkSatzSchreib";
+// DAS NEULEGEN BEIM GRUND (K71): seit der vergleichende Schreiber (`_satzSetze`) nur geänderte Indizes lädt, kostet ein
+// Abschnitt, der sich ohne Schuld dicht neu legt, kein Byte mehr — wohl aber den Gang über jede seiner Zellen. Die Linse
+// bucht darum den Gang selbst (die Indizes, die `_chunkSatzDicht` ab der ersten Abweichung prüft) beim Grund wie die Bytes.
+const SICHT_LEGE = "_chunkSatzDicht";
 // Leser, deren Prüfungen in Ruhe 0 sein MÜSSEN; die Werfer der Region-Bündel (eine Handvoll Bündel-Hüllen je Schatten-
 // Pass) zählt die Linse mit, das Urteil nennt sie, verlangt dort aber keine Null.
 // Der echte Loop: höchstens so viele Ruhe-Frames dürfen ein Ereignis der Welt tragen (die Wand fordert 0).
@@ -67,6 +71,8 @@ function sichtLinse(cfg) {
         jePass: {},
         // die Index-Bytes je „Familie Grund" und warum eine Satz-Wahl nicht stand (je „Familie Grund")
         bytesGrund: {},
+        // die neu gelegten Indizes je „Familie Grund Pass" (`SICHT_LEGE`)
+        legeGrund: {},
         warum: {},
         // je Kaskaden-Pass: drehte das Licht seit dem letzten Pass DIESER Kaskade? (`lichtJe`)
         lichtJe: {},
@@ -162,8 +168,8 @@ function sichtLinse(cfg) {
                     } else if (!inWahl) schuld.delete(fam);
                 }
             }
-            if (art === "schreib") {
-                // der innerste Schreiber im Stapel nennt den Grund der Bytes
+            if (art === "schreib" || art === "lege") {
+                // der innerste Schreiber im Stapel nennt den Grund der Bytes bzw. des Neulegens
                 let g = "?";
                 for (let i = stapel.length - 1; i >= 0; i--) {
                     const n = stapel[i];
@@ -172,8 +178,27 @@ function sichtLinse(cfg) {
                     else continue;
                     break;
                 }
-                const k = familie(a[0]) + " " + g + " " + a[1];
-                z.bytesGrund[k] = (z.bytesGrund[k] || 0) + 4 * a[4];
+                if (art === "schreib") {
+                    // `_chunkSatzSchreib(s, wer, wen, ab, n)`
+                    const k = familie(a[0]) + " " + g + " " + a[1];
+                    z.bytesGrund[k] = (z.bytesGrund[k] || 0) + 4 * a[4];
+                } else {
+                    // `_chunkSatzDicht(s, ab, liste, n, wer, abUnterschied)`: der Gang ab der ersten Zelle, die sich
+                    // unterscheidet (wie der Schreiber ihn rechnet) — gebucht VOR dem Lauf, der die Liste ersetzt
+                    const ab = a[1],
+                        liste = a[2] || [];
+                    let p = 0;
+                    if (a[5] && ab && ab.dicht) {
+                        const alt = ab.liste || [];
+                        while (p < alt.length && p < liste.length && alt[p] === liste[p]) p++;
+                    }
+                    let m = 0;
+                    for (let i = p; i < liste.length; i++) m += liste[i].idx.length;
+                    if (m > 0) {
+                        const k = familie(a[0]) + " " + g + " " + a[4];
+                        z.legeGrund[k] = (z.legeGrund[k] || 0) + m;
+                    }
+                }
                 return f.apply(this, a);
             }
             if (art === "kette") {
@@ -459,6 +484,7 @@ function sichtLinse(cfg) {
             for (const n of cfg.neu) huelle(n, "neu");
             for (const n of cfg.grund) huelle(n, "grund");
             huelle(cfg.schreib, "schreib");
+            huelle(cfg.lege, "lege");
             z = neu();
             b0 = bytes();
             bj0 = bytesJe();
@@ -609,11 +635,12 @@ function sichtSatzInhalt(vor, jetzt, offen) {
 // Stand zählte). Bytes, die der Schreiber-Haken nicht sah, haben keinen Grund („? ungesehen" — die Linse ist blind). Die Lage
 // eines Passes ändert sich mit der Kamera über den Halt (`kamera`) und der Blende über den Halt (`blende`, jeder Pass) oder
 // dem Licht (nur die Kaskaden `k<i>`: im Frame selbst oder seit dem letzten Pass dieser Kaskade, `lichtJe`). Ein Inhalt ohne
-// `grund` (nur die Zähler des Spiels) entschuldigt nichts.
-function sichtBytesKlasse(f) {
+// `grund` (nur die Zähler des Spiels) entschuldigt nichts. Mit `feld` = "legeGrund" klassiert dieselbe Regel die neu gelegten
+// Indizes (K71, `SICHT_LEGE`) — ungesehen gibt es dort nicht (der Gang hat keinen Zähler außerhalb der Linse).
+function sichtBytesKlasse(f, feld) {
     const aus = { aenderung: 0, folge: 0, ohne: 0, aenderungJe: {}, folgeJe: {}, ohneJe: {} };
     let gesehen = 0;
-    for (const [k, b] of Object.entries(f.bytesGrund || {})) {
+    for (const [k, b] of Object.entries(f[feld || "bytesGrund"] || {})) {
         gesehen += b;
         const [fam, g, pass] = k.split(" ");
         let kl = "ohne";
@@ -630,7 +657,7 @@ function sichtBytesKlasse(f) {
         aus[kl] += b;
         aus[kl + "Je"][k] = (aus[kl + "Je"][k] || 0) + b;
     }
-    if ((f.bytes || 0) > gesehen) {
+    if (!feld && (f.bytes || 0) > gesehen) {
         aus.ohne += f.bytes - gesehen;
         aus.ohneJe["? ungesehen"] = (aus.ohneJe["? ungesehen"] || 0) + f.bytes - gesehen;
     }
@@ -694,7 +721,10 @@ const sichtAenderung = (f) =>
 // Die Statistik einer Phase: je Zähl-Größe Mittel · Median · Maximum über die Frames (ab `ab`).
 function sichtPhase(frames, ab) {
     const fs = frames.slice(ab || 0).filter((f) => f.paesse > 0);
-    for (const f of fs) f.klasse = window.__sichtBytesKlasse(f);
+    for (const f of fs) {
+        f.klasse = window.__sichtBytesKlasse(f);
+        f.legeKlasse = window.__sichtBytesKlasse(f, "legeGrund");
+    }
     const reihe = (g) => fs.map(g).sort((a, b) => a - b);
     const st = (g) => {
         const x = reihe(g);
@@ -753,9 +783,9 @@ function sichtPhase(frames, ab) {
             });
     });
     // je Klasse die Summe je „Familie Grund" über die Phase (die Änderung beim Namen, der Täter beim Namen)
-    const klasseJe = (kl) => {
+    const klasseJe = (kl, wo = "klasse") => {
         const o = {};
-        for (const f of fs) for (const k in f.klasse[kl + "Je"]) o[k] = (o[k] || 0) + f.klasse[kl + "Je"][k];
+        for (const f of fs) for (const k in f[wo][kl + "Je"]) o[k] = (o[k] || 0) + f[wo][kl + "Je"][k];
         return o;
     };
     // der Inhalt, der sich in der Phase mit BENANNTEM Grund änderte (je Familie die Belege und die ersten Schlüssel) — und die
@@ -821,6 +851,10 @@ function sichtPhase(frames, ab) {
         bytesOhneJe: klasseJe("ohne"),
         bytesOhne: st((f) => f.klasse.ohne),
         ohneFrames: fs.filter((f) => f.klasse.ohne > 0).length,
+        // die neu gelegten Indizes ohne Grund (K71): je „Familie Grund Pass" über die Phase, je Frame, die Frames
+        legeOhneJe: klasseJe("ohne", "legeKlasse"),
+        legeOhne: st((f) => f.legeKlasse.ohne),
+        legeOhneFrames: fs.filter((f) => f.legeKlasse.ohne > 0).length,
         inhaltJe,
         inhaltFrames,
         inhaltOhneJe,
@@ -866,14 +900,16 @@ function sichtPhase(frames, ab) {
 //       prüfte die Linse nichts). Eine Änderung ist ein gedrehtes Licht (die Sonne läuft im Spiel) oder ein Satz-Inhalt mit
 //       BENANNTEM Grund (ein Bereich, ein Anker, eine Hülle: Streaming, ein Bau, ein Geomorph — `sichtSatzInhalt`); ihre
 //       Arbeit und ihre Bytes nennt die Linse, sie fallen nie rot. Ein Byte ohne Grund fällt in jedem Frame rot, beim Namen
-//       („Familie Grund"), ebenso Satz-Arbeit ohne Ursache (ein Stand oder ein Verdichten, den kein Beleg trägt — „Familie
-//       stand:ohne"). Die Arbeit ohne Änderung: `b.streng` (die Wand, eingefrorene Welt) in KEINEM Frame, und dort ist auch
+//       („Familie Grund"), ebenso ein Neulegen ohne Grund (K71: ein Abschnitt, der seine Zellen ohne Schuld neu legt — der
+//       vergleichende Schreiber lädt dabei kein Byte, der Gang kostet trotzdem) und Satz-Arbeit ohne Ursache (ein Stand oder
+//       ein Verdichten, den kein Beleg trägt — „Familie stand:ohne"). Die Arbeit ohne Änderung: `b.streng` (die Wand, eingefrorene Welt) in KEINEM Frame, und dort ist auch
 //       jede Inhalts-Änderung rot (die Welt steht); sonst (der echte Loop — eine Gruppe wird geräumt) der Median 0 und
 //       höchstens `RUHE_EREIGNIS` der Frames;
 //   (B) BEWEGUNG: wer dreht oder geht, rechnet neu — eine Phase ohne Arbeit hielte eine Wahl über eine neue Lage (Loch);
 //   (T) TREUE: die gehaltene Wahl ist die frisch gerechnete (`b.treue`: je Satz × Pass die Zellen, je Gruppe die Zahl);
 //   (S) SCHARF: ein eingeschmuggelter Cache-Bruch (`b.bruch`, eine Ruhe-Phase mit gebrochenem Cache) fällt rot; ein
-//       eingeschmuggelter Stand-Bruch (`b.standBruch`: jeder Satz zählt je Frame seinen Stand, kein Beleg ändert sich) zählt
+//       eingeschmuggelter Lege-Bruch (`b.legeBruch`: jeder ruhende Abschnitt legt sich je Pass dicht neu) zählt als Neulegen
+//       ohne Änderung und steht als `dicht:ohne` beim Namen; ein eingeschmuggelter Stand-Bruch (`b.standBruch`: jeder Satz zählt je Frame seinen Stand, kein Beleg ändert sich) zählt
 //       als Arbeit ohne Änderung und steht als `stand:ohne` beim Namen;
 //   (L) RUHE MIT LAUFENDER SONNE (`b.sonne`, die Tageslänge des Spiels — der Tag steht im Spiel nie): das Licht hat eine
 //       Stufe (`state._sonne.stufe`) und dreht nur an ihr (höchstens doppelt so oft wie die Drehung der Sonne durch die
@@ -951,6 +987,17 @@ function sichtUrteil(b) {
                         .map(([k, n]) => `${k} ${n} B`)
                         .join(" · ")
             );
+        // das Neulegen ohne Grund (K71): der vergleichende Schreiber lädt kein Byte, doch der Pass geht jede Zelle seines
+        // Abschnitts durch — Arbeit ohne Änderung, beim Namen („Familie Grund Pass")
+        if (R.legeOhneFrames > 0)
+            v.push(
+                `RUHE: ${R.legeOhne.mittel} Indizes je Frame neu gelegt ohne Änderung (max ${R.legeOhne.max}, in ` +
+                    `${R.legeOhneFrames} von ${R.frames} Frames) — ein Pass legt seinen Abschnitt ohne Änderung neu: ` +
+                    Object.entries(R.legeOhneJe || {})
+                        .sort((x, y) => y[1] - x[1])
+                        .map(([k, n]) => `${k} ${n}`)
+                        .join(" · ")
+            );
         // die Satz-Arbeit ohne Ursache: der Cache-Schlüssel eines Satzes zählt (Stand, Verdichten), ohne dass ein Bereich, ein
         // Anker oder eine Hülle sich änderte — jede Wahl dieses Satzes rechnet neu, in jedem Frame ein Bruch
         if (R.inhaltOhneFrames > 0)
@@ -995,14 +1042,17 @@ function sichtUrteil(b) {
                 "LINSE STUMPF: ein eingeschmuggelter Cache-Bruch (die Lage jedes Passes neu) arbeitet in Ruhe nicht"
             );
     }
-    // der Byte-Bruch (`b.byteBruch`): jeder ruhende Abschnitt legt sich je Pass dicht neu, ohne dass eine Wahl es schuldet —
-    // die Linse muss die Bytes OHNE Änderung zählen und den Grund `dicht:ohne` beim Namen nennen
-    if (b.byteBruch !== undefined) {
-        const x = b.byteBruch;
-        if (!x || !(x.ohneFrames > 0) || !Object.keys(x.bytesOhneJe || {}).some((k) => / dicht:ohne /.test(k)))
+    // der Lege-Bruch (`b.legeBruch`): jeder ruhende Abschnitt legt sich je Pass dicht neu, ohne dass eine Wahl es schuldet —
+    // die Linse muss das Neulegen OHNE Änderung zählen und den Grund `dicht:ohne` beim Namen nennen. Bis K71 hieß er
+    // Byte-Bruch und zählte Bytes; seit der vergleichende Schreiber (`_satzSetze`) nur Geändertes lädt, legt derselbe Bruch
+    // 0 Bytes (die Linse stand STUMPF, CI 38714975114) — sein Preis ist der Gang über die Zellen, und den zählt sie.
+    if (b.legeBruch !== undefined) {
+        const x = b.legeBruch;
+        if (!x || !(x.legeOhneFrames > 0) || !Object.keys(x.legeOhneJe || {}).some((k) => / dicht:ohne /.test(k)))
             v.push(
-                "LINSE STUMPF: ein eingeschmuggelter Byte-Bruch (jeder ruhende Abschnitt legt sich je Pass dicht neu) zählt " +
-                    `nicht als Bytes ohne Änderung (${x ? x.ohneFrames : "?"} Frames, ${JSON.stringify((x && x.bytesOhneJe) || {})})`
+                "LINSE STUMPF: ein eingeschmuggelter Lege-Bruch (jeder ruhende Abschnitt legt sich je Pass dicht neu) zählt " +
+                    `nicht als Neulegen ohne Änderung (${x ? x.legeOhneFrames : "?"} Frames, ` +
+                    `${JSON.stringify((x && x.legeOhneJe) || {})})`
             );
     }
     // das atmende Auge (`b.auge`, Gegenprüfung 07.10.): die Kamera und mit ihr das Auge jeder Maske atmen ±1 mm quer, unter
@@ -1182,6 +1232,7 @@ module.exports = {
             neu: SICHT_NEU,
             grund: SICHT_GRUND,
             schreib: SICHT_SCHREIB,
+            lege: SICHT_LEGE,
             ruheLeser: RUHE_LESER,
         })});` +
         `window.__sichtKameraBewegt = ${sichtKameraBewegt.toString()};` +

@@ -24597,7 +24597,7 @@ async function checkBandNahStreu(ctx) {
         const aSrc = window.__codeOf(r._nahStreuArten);
         out.kettenQuelle =
             /bodenGewicht/.test(kSrc) &&
-            /_canopyLightAt/.test(kSrc) &&
+            /_bodenLichtFeld/.test(kSrc) &&
             /_feuchteAt/.test(kSrc) &&
             /_nahStreuBodenGewicht\(/.test(kSrc) &&
             /_koerperWasser\(/.test(kSrc) &&
@@ -24675,14 +24675,34 @@ async function checkBandNahStreu(ctx) {
             if (weichK.has(u.foundryKind)) e.weich = true;
             e.senken.push(a);
         }
+        // STEHEN heißt still, nicht knotenlos: Holz ohne Wind-Daten (Totstamm, Stumpf) teilt das EINE Programm der Rinde
+        // (`_baumWindStoff`, 1310-18) mit an 0 — ein stehender Stoff trägt keinen Knoten oder den Rinden-Knoten mit an 0;
+        // der wiegende trägt einen EIGENEN Knoten (nie den der Bäume). Der Verstoß nennt Senke und Grund.
+        const baumK = r._baumWindKnoten || {};
+        const still = (m) =>
+            !m.positionNode ||
+            (m.positionNode === baumK.ast && !!m.userData.windArt && m.userData.windArt.z === 0);
         out.wind = { wiegend: [], stehend: [], verstoss: [] };
         for (const [preset, e] of jeArt) {
             (e.weich ? out.wind.wiegend : out.wind.stehend).push(preset);
             for (const a of e.senken) {
                 const satz = r.state.chunkSaetze ? r.state.chunkSaetze.get(a.satz) : null;
                 const wiege = !!(satz && satz.geom.attributes.aWiege);
-                if (!!a.mat.positionNode !== e.weich || !satz || satz.mesh.material !== a.mat || wiege !== e.weich)
-                    out.wind.verstoss.push(a.key);
+                const knoten = e.weich
+                    ? !!a.mat.positionNode && a.mat.positionNode !== baumK.ast && a.mat.positionNode !== baumK.laub
+                    : still(a.mat);
+                const grund = !knoten
+                    ? e.weich
+                        ? "wiegt nicht"
+                        : "steht nicht still"
+                    : !satz
+                      ? "ohne Satz"
+                      : satz.mesh.material !== a.mat
+                        ? "Satz-Stoff fremd"
+                        : wiege !== e.weich
+                          ? "aWiege"
+                          : null;
+                if (grund) out.wind.verstoss.push(a.key + " (" + grund + ")");
             }
         }
         out.windQuelle =
@@ -31199,7 +31219,7 @@ async function checkBandGammaGenese(ctx) {
             out.gatingNah =
                 /bodenGewicht/.test(kSrc) &&
                 /_feuchteAt/.test(kSrc) &&
-                /_canopyLightAt/.test(kSrc) &&
+                /_bodenLichtFeld/.test(kSrc) &&
                 /_nahStreuBodenGewicht\(/.test(kSrc);
             out.schilfData = !!(
                 boden &&

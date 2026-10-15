@@ -7,9 +7,14 @@
             "titel": "Gras und Boden nah (die Nah-Wiese über dem Boden-Satz)",
             "wirkung": {
                 "grund": "der Boden trägt jedes Ego-Bild; Augen-Befund 14.10. Nr. 4 „Gras als einzelne Büschel auf glattem Grün“",
-                "mangel": {
+                "geheilt": {
                     "befund": "Gras als einzelne Büschel auf glattem Grün",
-                    "quelle": "auge-befunde-1410.md Nr. 4 (Zweig koordination)"
+                    "quelle": "auge-befunde-1410.md Nr. 4 (Zweig koordination)",
+                    "warum": "laiWirk (Nilson-Lücke im Ring der Nah-Wiese, Radeon 890M --echt, Mess-Wiese −278/−1038, Waldrand-Blick der Tafel) 0,671 → 1,917 (2–5 m 0,85 → 2,11 · 5–10 m 0,44 → 1,59 · 10–14 m 0,35 → 1,77; nach dem Merge mit K68 an 9fdc7a18 1,855: 2–5 m 2,05 · 5–10 m 1,54 · 10–14 m 1,66; offener Blick 0,676 → 2,009): der Halm wurzelt im Boden (Fuß 13–15 % der Büschelhöhe → 0, gate:pflanzen-nah T), die Fernstufe L2 trägt 2,4-mal so viele gerade Halme, und die Narbe liest das Licht der stehenden Kronen nach dem Labor-Gesetz (_bodenLichtFeld, Wurf 0,776 → 0,931)",
+                    "bildPaar": [
+                        "artifacts/soll-tafel/boden-nah-vorher.png",
+                        "artifacts/soll-tafel/boden-nah.png"
+                    ]
                 }
             },
             "referenz": [
@@ -49,10 +54,10 @@
                 "werkzeug": "werkbank bild -278 +1.7 -1038 -276 +1.2 -1026 --wahl 0 --klasse '^(nahWiese:.*|streuSatz|bodenSatz)$' --abstand --ist boden-nah (Mess-Wiese K55)",
                 "messung": {
                     "werkzeug": "bild",
-                    "datum": "2026-10-15T05:13:08.854Z",
+                    "datum": "2026-10-15T11:09:09.983Z",
                     "stand": {
                         "version": "18.546.2",
-                        "sha": "ce0b815eea70b1d98b7b5e3dfe914ae474a93482"
+                        "sha": "9fdc7a180cf3551bd855702eb4b74ecbd957780e"
                     },
                     "geraet": {
                         "backend": "WebGPU",
@@ -74,58 +79,83 @@
                         "pixel": 0,
                         "max": 0
                     },
-                    "misch": 155293,
+                    "misch": 83571,
                     "klassen": {
                         "bodenSatz": {
                             "objekte": 1,
-                            "zweiton": 0.0001,
-                            "zt": 49,
-                            "weiss": 0.0001,
-                            "wt": 64,
-                            "pixel": 536790,
-                            "deckung": 0.2589,
-                            "deckungUnten": 0.4284,
-                            "luma": 87.8,
-                            "kontrast": 0.5042,
-                            "detail": 0.0804,
-                            "nyquist": 0.0582,
-                            "ek": 375831.3,
-                            "eg": 6081248.9,
-                            "silhouette": 184.3558
+                            "zweiton": 0,
+                            "zt": 0,
+                            "weiss": 0.0003,
+                            "wt": 61,
+                            "pixel": 195648,
+                            "deckung": 0.0944,
+                            "deckungUnten": 0.0979,
+                            "luma": 103.46,
+                            "kontrast": 0.4628,
+                            "detail": 0.0869,
+                            "nyquist": 0.0481,
+                            "ek": 170239.8,
+                            "eg": 3369938.1,
+                            "silhouette": 108.584,
+                            "kante": 0.5058,
+                            "kr": 5877
                         },
                         "nahWiese:L1": {
                             "objekte": 2,
-                            "zweiton": 0.0005,
-                            "zt": 190,
+                            "zweiton": 0,
+                            "zt": 19,
                             "weiss": 0,
                             "wt": 0,
-                            "pixel": 358709,
-                            "deckung": 0.173,
-                            "deckungUnten": 0.5067,
-                            "luma": 73.22,
-                            "kontrast": 0.3782,
-                            "detail": 0.1077,
-                            "nyquist": 0.1471,
-                            "ek": 845816.5,
-                            "eg": 4903994.6,
-                            "silhouette": 165.1915
+                            "pixel": 547171,
+                            "deckung": 0.2639,
+                            "deckungUnten": 0.7608,
+                            "luma": 77.72,
+                            "kontrast": 0.2883,
+                            "detail": 0.0839,
+                            "nyquist": 0.1129,
+                            "ek": 843748.7,
+                            "eg": 6626364.9,
+                            "silhouette": 97.4314,
+                            "kante": 0.3355,
+                            "kr": 11628
                         },
                         "nahWiese:L2": {
                             "objekte": 2,
-                            "zweiton": 0.0004,
-                            "zt": 71,
+                            "zweiton": 0.0008,
+                            "zt": 218,
                             "weiss": 0,
                             "wt": 0,
-                            "pixel": 166363,
-                            "deckung": 0.0802,
-                            "deckungUnten": 0.0585,
-                            "luma": 69.34,
-                            "kontrast": 0.3452,
-                            "detail": 0.1203,
-                            "nyquist": 0.1435,
-                            "ek": 366101.7,
-                            "eg": 2185978.1,
-                            "silhouette": 143.1366
+                            "pixel": 276432,
+                            "deckung": 0.1333,
+                            "deckungUnten": 0.0757,
+                            "luma": 81.27,
+                            "kontrast": 0.3016,
+                            "detail": 0.1229,
+                            "nyquist": 0.1563,
+                            "ek": 1039215.9,
+                            "eg": 5608059,
+                            "silhouette": 85.0546,
+                            "kante": 0.3141,
+                            "kr": 5699
+                        },
+                        "streuSatz": {
+                            "objekte": 4,
+                            "zweiton": 0,
+                            "zt": 0,
+                            "weiss": 0.0001,
+                            "wt": 2,
+                            "pixel": 37707,
+                            "deckung": 0.0182,
+                            "deckungUnten": 0.0526,
+                            "luma": 47.17,
+                            "kontrast": 0.5702,
+                            "detail": 0.0884,
+                            "nyquist": 0.1648,
+                            "ek": 29389.7,
+                            "eg": 148939.9,
+                            "silhouette": 68.8063,
+                            "kante": 0.3082,
+                            "kr": 947
                         }
                     },
                     "abstand": {
@@ -144,36 +174,45 @@
                         "cos": [
                             null,
                             0.4699,
-                            0.2621,
-                            0.1556,
+                            0.261,
+                            0.1557,
                             0.0884,
-                            0.0464,
-                            0.041
+                            0.0463,
+                            0.0452
                         ],
                         "klassen": {
                             "bodenSatz": [
                                 0,
-                                226013,
-                                127891,
-                                30402,
-                                108531,
-                                32316,
-                                2771
+                                58412,
+                                14384,
+                                421,
+                                80852,
+                                32320,
+                                1414
                             ],
                             "nahWiese:L2": [
                                 0,
-                                391,
-                                88248,
-                                55043,
-                                22681,
+                                753,
+                                139367,
+                                86191,
+                                50121,
+                                0,
+                                0
+                            ],
+                            "streuSatz": [
+                                0,
+                                34316,
+                                2401,
+                                723,
+                                267,
                                 0,
                                 0
                             ],
                             "nahWiese:L1": [
                                 0,
-                                292704,
-                                65991,
-                                14,
+                                425598,
+                                121344,
+                                229,
                                 0,
                                 0,
                                 0
@@ -184,21 +223,25 @@
                     "bild": "artifacts/soll-tafel/boden-nah.png",
                     "quellen": {
                         "gelaende-core.js": "c:47e37b262d36dd6e",
-                        "phyto-core.js": "c:71fcf1b4be4e4597",
-                        "stamm/07.js": "c:49617014f39c824b",
-                        "stamm/10.js": "c:093b1e2ba003f5d2",
+                        "phyto-core.js": "c:611dfb4c0b65042c",
+                        "foundry-core.js": "c:cab2ad3ee4313e43",
+                        "stamm/07.js": "c:158f10e6ed0cd9c0",
+                        "stamm/10.js": "c:1b961fac64032e22",
                         "stamm/19.js": "c:b1a053cba1f64cd1",
-                        "stamm/24.js": "c:26d0da410e4c28a0",
-                        "stamm/25c.js": "c:61e641a0f44d5466",
-                        "stamm/11c.js": "c:978d02155395df69",
+                        "stamm/24.js": "c:5cadba33d1361342",
+                        "stamm/25c.js": "c:a12f2df84d48a16e",
+                        "stamm/11c.js": "c:b6c0a2add7a7c512",
                         "stamm/17b.js": "c:074908c78ad2216f",
-                        "stamm/20a.js": "c:fd05cfe1eaab8cbd"
+                        "stamm/17c.js": "c:1cae4bf5a764f54f",
+                        "stamm/20a.js": "c:5dce1435508f95e3",
+                        "stamm/26b.js": "c:dfab70e9d26443a4"
                     }
                 }
             },
             "quellen": [
                 "gelaende-core.js",
                 "phyto-core.js",
+                "foundry-core.js",
                 "stamm/07.js",
                 "stamm/10.js",
                 "stamm/19.js",
@@ -206,7 +249,9 @@
                 "stamm/25c.js",
                 "stamm/11c.js",
                 "stamm/17b.js",
-                "stamm/20a.js"
+                "stamm/17c.js",
+                "stamm/20a.js",
+                "stamm/26b.js"
             ]
         },
         {
