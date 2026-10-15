@@ -2688,9 +2688,15 @@ function emitFlower(P) {
 const GRAS_SPITZE_HELL = 1.08;
 // Der Halm-Teppich (K56): Reichweite des Büschels in Einheiten des Understory-Rasters (deriveParamsPlant, Art grass).
 const TEPPICH_REICH = 0.7;
+// DIE GRASNARBE (K70, Soll-Tafel boden-nah: eine Wiese zeigt aus Augenhöhe ihren Grund erst unter dem Fuß, Grasland-LAI
+// 1,71): die Deckung ist die Blatt-Fläche je Boden-Fläche, und die Stufe trägt sie, nicht die Dreiecks-Zahl. Der Halm
+// WURZELT im Boden (bis K70 begann er eine Segment-Länge darüber: L1/L2 ein Drittel des Halms Luft am Grund), er ist
+// LINEAL wie ein Grasblatt — parallele Ränder, die Spitze erst im letzten Drittel (Breite 1 − 0,86·f³, Fläche 0,76 statt
+// 0,57 des Rechtecks bei denselben Dreiecken) —, und die Fernstufe L2 ist ein gerader Halm (ein Segment, 2 Dreiecke) in
+// 2,4-facher Zahl: L2 trägt 59 % der L1-Fläche je Büschel statt 38 %.
 function emitGrass(P) {
     const geos = [];
-    const lf = __lod === 0 ? 1 : __lod === 1 ? 0.8 : 0.14;
+    const lf = __lod === 0 ? 1 : __lod === 1 ? 0.92 : 0.333;
     const N = Math.max(3, Math.round(lerp(50, 150, P.density) * lf));
     const baseCol = vegFarbe(seasonTint).multiplyScalar(0.6),
         tipCol = vegFarbe(seasonAccent).multiplyScalar(GRAS_SPITZE_HELL);
@@ -2702,14 +2708,14 @@ function emitGrass(P) {
         const bx = Math.cos(a) * rr,
             bz = Math.sin(a) * rr;
         const isCulm = SH > 0 && rnd() < SH * 0.5; // Teil der Halme -> Rispenstaengel
-        const wMul = __lod === 0 ? 1 : __lod === 1 ? 2.6 : 6.0;
+        const wMul = __lod === 0 ? 1 : __lod === 1 ? 3.0 : 6.5;
         const L = P.bladeLen * (isCulm ? rrange(1.25, 1.6) : rrange(0.6, 1.15)),
             w = P.bladeW * wMul * (isCulm ? 0.5 : 0.74) * rrange(0.8, 1.1);
         const lean = rrange(0.1, 0.4),
             la = rnd() * 6.28,
             bendDir = [Math.cos(la), 0, Math.sin(la)],
             droop = isCulm ? P.droop * 0.45 : P.droop;
-        const K = __lod === 0 ? (isCulm ? 7 : 10) : __lod === 1 ? 3 : 3,
+        const K = __lod === 0 ? (isCulm ? 7 : 10) : __lod === 1 ? 3 : 1,
             positions = [],
             idx = [],
             uvs = [],
@@ -2723,11 +2729,14 @@ function emitGrass(P) {
         for (let s = 0; s <= K; s++) {
             const f = s / K,
                 dd = Math.pow(f, 1.8) * droop;
-            dir = vnorm(vadd(dir, vscl(bendDir, dd * 0.12)));
-            dir = vnorm(vadd(dir, [0, -dd * 0.1, 0]));
-            p = vadd(p, vscl(dir, L / K));
+            // die erste Zeile steht am Fuß (K70), jede weitere eine Segment-Länge entlang der gebogenen Richtung
+            if (s > 0) {
+                dir = vnorm(vadd(dir, vscl(bendDir, dd * 0.12)));
+                dir = vnorm(vadd(dir, [0, -dd * 0.1, 0]));
+                p = vadd(p, vscl(dir, L / K));
+            }
             tip = p.slice();
-            const halfW = w * (1 - f * 0.86) * 0.5,
+            const halfW = w * (1 - f * f * f * 0.86) * 0.5,
                 rt = vnorm(vcross(dir, [0, 1, 0]));
             const cl = vadd(p, vscl(rt, -halfW)),
                 cr = vadd(p, vscl(rt, halfW));
@@ -4484,7 +4493,9 @@ function deriveParamsPlant(pre) {
         const fine = clamp(api, 0, 1); // api: breitblaettrig(0) -> feinhalmig(1)
         return {
             kind: "grass",
-            bladeLen: lerp(0.55, 2.0, slim) * J(0.16),
+            // K70: der Halm wurzelt (emitGrass) — 1,35 × die Länge hält die Höhe der Narbe (vorher schwebte L1/L2 ein Drittel
+            // über dem Grund) und füllt sie bis zum Boden.
+            bladeLen: lerp(0.74, 2.7, slim) * J(0.16),
             bladeW: lerp(0.1, 0.035, fine) * J(0.15),
             density: clamp(leaf * J(0.2), 0.06, 1),
             // DER HALM-TEPPICH (K56): der Büschel deckt seine Zelle des Understory-Rasters — Radius in der Welt
