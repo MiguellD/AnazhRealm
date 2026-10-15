@@ -1034,19 +1034,16 @@ AnazhRealm.RING_RAMP_SETTLE_MS = 350; // der „Atem" zwischen zwei Ring-Wachstu
 // Sichtweiten (Kontrast eines Gelände-Pixels fällt unter `kontrast`): ein klarer Sommertag trägt Gelände-
 // Silhouetten 20 km weit (Mitteleuropa, Sommer-Dunst 15–30 km), Starkregen im Sturm 1,5 km. Die reine Luft ist
 // Rayleigh bei 550 nm auf Meereshöhe (1,16·10⁻⁵/m, V ≈ 340 km). Der Dunst sitzt in der Grenzschicht: Skalenhöhe
-// 1 km über dem Meeresspiegel. Die Keule: Anteil und Schärfe der Sonnen-Vorwärtsstreuung im Dunst (Henyey-
-// Greenstein g ≈ 0,7 ≈ cos^8 in der Keule), Glanz = ihre Helligkeit relativ zum Horizont-Himmel.
-AnazhRealm.LUFT = Object.freeze({
-    sichtKlarM: 20000,
-    sichtSturmM: 1500,
-    betaRayleigh: 1.16e-5,
-    kontrast: 0.02,
-    skalenHoeheM: 1000,
-    unterwasserM: 30,
-    mieKeule: 8,
-    mieAnteil: 0.45,
-    mieGlanz: 1.6,
-});
+// 1 km über dem Meeresspiegel — dieselbe Luft ist das Aerosol der EINEN Atmosphäre (D3, `_atmoMedium`): ihre Keule zur
+// Sonne trägt die Mie-Phase des Gesetzes. Die Anker wohnen EINMAL im Gesetz (foundry-core `ATMO_GESETZ.luft`, auch das Labor
+// liest sie); hier kommt nur die Sicht unter Wasser hinzu. Fehlt der Kern, bricht es laut.
+AnazhRealm._atmoKern = function () {
+    const tc = typeof globalThis !== "undefined" ? globalThis.__terrainCore : null;
+    const G = tc ? tc.ATMO_GESETZ : null;
+    if (!G || !G.luft || !G.nacht) throw new Error("Die Atmosphäre: foundry-core.js fehlt (__terrainCore.ATMO_GESETZ)");
+    return G;
+};
+AnazhRealm.LUFT = Object.freeze(Object.assign({}, AnazhRealm._atmoKern().luft, { unterwasserM: 30 }));
 // DER HIMMEL (V18.530): die Sichtbarkeit seiner Punkte ist Physik. `grenzgroesse` = Dämmerungs-Anker [Sonnenhöhe
 // in Grad, Grenzgröße des bloßen Auges]: im hellen Tag (≥ 10°) ist nichts zu sehen, nahe dem Horizont gerade die
 // Venus, bei Sonnenuntergang der Abendstern (−3), am Ende der bürgerlichen Dämmerung (−6°) die hellsten Sterne
@@ -1081,13 +1078,30 @@ AnazhRealm.HIMMEL = Object.freeze({
 });
 // MONDLICHT: nachts wird das Haupt-Richtlicht zur Mondquelle (gegenüber der Sonne, kühl + gedämpft →
 // gerichtete Nacht-Schattierung mit tiefen Schwärzen) statt die Nacht per Post-FX aufzuhellen.
-// `r/g/b` = HUE (Purkinje-Mond 0x9fb8dc, die EINE Mond-Farb-Quelle — `_atmosphere(e)` lerpt unter dem
-// Horizont exakt hierher; b>r = kühl), `intensity` = Helligkeit; Wetter dimmt den Mond.
-AnazhRealm.MOONLIGHT = Object.freeze({ r: 0x9f / 255, g: 0xb8 / 255, b: 0xdc / 255, intensity: 0.22 });
-// V18.390 — Eins W1: DAS ATMOSPHÄRE-GESETZ (Port Vorlage phytogenesis.js Z.2111). Rayleigh
-// optische Tiefe auf Meereshöhe/Zenit (Bucholtz 1995): blau streut ~5× rot → Beer-Lambert
-// über die Luftmasse gibt Sonnenfarbe+Lichtmenge für JEDEN Winkel spektral-korrekt.
-AnazhRealm.RAYLEIGH_BETA = Object.freeze({ r: 0.044, g: 0.1, b: 0.23 });
+// `r/g/b` = HUE (Purkinje-Mond 0x9fb8dc aus dem Gesetz `ATMO_GESETZ.nacht.mond` — `_atmoSonne(e)` und das Labor lerpen
+// unter dem Horizont exakt hierher; b>r = kühl), `intensity` = Helligkeit; Wetter dimmt den Mond.
+AnazhRealm.MOONLIGHT = Object.freeze({
+    r: AnazhRealm._atmoKern().nacht.mond[0],
+    g: AnazhRealm._atmoKern().nacht.mond[1],
+    b: AnazhRealm._atmoKern().nacht.mond[2],
+    intensity: 0.22,
+});
+// DIE TAFELN DER EINEN ATMOSPHÄRE (D3, Hillaire 2020; `_atmoLutBau`): Größen (Texel) und Marsch-Schritte. Transmittance
+// 256×64 und Ψ_ms 32×32 je Medium, die Himmels-Sicht 192×108 je Stufe der Sonne, die Umgebung 128×64 (Equirekt, PMREM).
+// mediumStufe: die Stufe des Mediums im Logarithmus der Extinktion (`_atmoMediumJetzt`) — 2 % halten den Zenit-Durchlass
+// der klaren Luft (Aerosol-Tiefe 0,18) unter einer 8-bit-Stufe; ein Übergang klar → Sturm (Faktor 13) sind 130 Stufen.
+AnazhRealm.ATMO_LUT = Object.freeze({
+    mediumStufe: 0.02,
+    durchlass: Object.freeze([256, 64]),
+    mehrfach: Object.freeze([32, 32]),
+    himmel: Object.freeze([192, 108]),
+    umgebung: Object.freeze([128, 64]),
+    schritte: Object.freeze({ durchlass: AnazhRealm._atmoKern().durchlassSchritte, mehrfach: 20, himmel: 32 }),
+});
+// DER BODEN DER ATMOSPHÄRE (D3): die gemessene Welt-Albedo (linear) — das Mittel aus Laub und Wald-Boden der Albedo-Tafel
+// (spec/farbe/albedo-tafel.json, ist.welt; `werkbank albedo --tafel`), nie ein Grau 0,3. Er trägt die Mehrfachstreuung und
+// die untere Hälfte der Umgebung; `diag-atmo-hillaire` hält ihn an der Tafel (±3 %).
+AnazhRealm.ATMO_BODEN = Object.freeze([0.1003, 0.1385, 0.0449]);
 // Licht-Rig: KEY_BASE skaliert die Rayleigh-Lichtmenge aufs Schlüssellicht (Mittag ≈ 2.6·0.913 unter
 // ACES). Ziel key-dominant (Vorlage dir/(amb+hemi) ≈ 15:1); die Schattenseite trägt der Himmel.
 AnazhRealm.KEY_BASE = 2.6;
@@ -1099,7 +1113,8 @@ AnazhRealm.LEGACY_LICHT = Math.PI;
 // DIE BELICHTUNG (V18.507, `_dayNightApplyBelichtung`): `zielKarte` ist die Leuchtdichte der 18-%-Karte nach
 // der Belichtung, die ACES (three: x·k/0,6, RRT+ODT-Fit) auf Mittelgrau + 1 EV legt — Mittelgrau (sRGB 118 =
 // linear 0,18) braucht den Fit-Eingang 0,26227, also k·L = 2 · 0,26227 · 0,6 = 0,3147. `max` 1,0 hält die geeichte
-// Nacht, `min` ist nur die Wand gegen ein entartetes Licht.
+// Nacht (über ihn hebt nur das Sonnenlicht, D3-N2), `min` ist nur die Wand gegen ein entartetes Licht. Der Kontrast des
+// Gradings dreht über Belichtung 1 um 0,5 nach der Belichtung (25c).
 AnazhRealm.BELICHTUNG = Object.freeze({ zielKarte: 0.3147, min: 0.25, max: 1.0 });
 // DAS AUGE DER NACHT (K66, die Post-Kette `_ensurePostProcessing`: die Sättigung je Pixel unter der Nacht): das mesopische Band
 // der CIE 191:2010 — unter `staebchenCd` sieht das Auge ohne Farbe (Stäbchen), über `zapfenCd` voll (Zapfen); `luxJeEinheit`
@@ -1247,6 +1262,35 @@ AnazhRealm.ZEIT_SCHAERFE = 1;
 // Der Kamera-Sprung der zeitlichen Auflösung (K68, `_traaReprojektion`): weiter in EINEM Frame beginnt die Geschichte neu und
 // läuft als Mittel an — der Wagen bei 200 km/h und 15 fps legt 3,7 m je Frame zurück, ein Tor oder ein Umsetzen viele Meter.
 AnazhRealm.ZEIT_SPRUNG_M = 6;
+// DER SPIEGEL DES GESETZES (D10, `_spiegelFeldTakt` · `_spiegelPass`): das Feld n × n Zellen à texel m um das Auge (Höhen
+// RGBA-Halbfloat + Stoff RGBA8, je Gestalt eine von laubFarben Kronen-Farben; neu bei drift m), gebacken im Worker in
+// Streifen von höchstens `zeilen` Zeilen; der Pass in 1/teil der Ausgabe, je Wasser-Pixel `schritte` Schritte: über der Höchsten eines Blocks von `block` × `block` Zellen ein Sprung an seinen Rand,
+// darunter Lipschitz-Schritte von höchstens `fein` Zellen (mindestens `wachs` der Strecke), dann `halbierungen` vor der
+// Sekante; das Laub im Licht seiner Tiefe unter dem Kronen-Dach (Beer-Lambert: e-Länge `laubTiefe` m, das Himmelslicht unter
+// dem Dach `laubGrund`), die Krone im Feld um `kronenSaum` m gesäumt (die Zelle zählt, die ihr Laub berührt). Die Nachlese
+// backt das Feld neu, wenn neue Kronen darin stehen (höchstens je nachleseMs; die Krone liest das Kronen-Buch, Beipack
+// `__krone` des Foundry-Workers). Der Pass zahlt nur bei Änderung: das Auge weiter als `ruheM` m, der Blick weiter als `ruheRad`,
+// Licht oder Luft um mehr als `ruheLicht` (`_spiegelPassWach`).
+AnazhRealm.SPIEGEL = Object.freeze({
+    n: 384,
+    texel: 2,
+    drift: 60,
+    zeilen: 16,
+    block: 8,
+    teil: 4,
+    schritte: 96,
+    wachs: 0.04,
+    fein: 0.75,
+    halbierungen: 4,
+    laubTiefe: 3,
+    laubGrund: 0.25,
+    laubFarben: 256,
+    kronenSaum: 1,
+    nachleseMs: 4000,
+    ruheM: 0.01,
+    ruheRad: 0.0003,
+    ruheLicht: 0.001,
+});
 // Sekunden-normalisierter Ingest-Takt: Ziel ist eine RATE je echter Sekunde — jeder Frame gibt
 // `rate·dt` Konversionen frei, gedeckelt durch INGEST_BURST_CAP (Schutz gegen LongTasks). So lädt
 // die Welt mit der Wanduhr statt mit der Framerate (fix pro Frame hieß bei 8 fps nur 8–24/s).
@@ -1272,8 +1316,14 @@ AnazhRealm.FOUNDRY_LESEN = [
 AnazhRealm.FOUNDRY_PLATTE_FORMAT = 3;
 // DIE EINE BEIPACK-KARTE der Foundry-Antwort (`_foundryBuildGroup`): Beipack-Name → das Feld der Gruppe (der Flat reicht es
 // als `huelle` · `fern` weiter). `__huelle` (Welle L) die Kollision der gezeigten Stufe, `__fern` (S3) die Fernform der Stufe 3
-// — beide in der EINEN Hüllen-Form (docs/studio-vertrag.md N5, der Leser `_huelleVon`).
-AnazhRealm.FOUNDRY_BEIPACK = Object.freeze({ __huelle: "_huelle", __fern: "_fern", __mass: "_mass" });
+// — beide in der EINEN Hüllen-Form (docs/studio-vertrag.md N5, der Leser `_huelleVon`); `__mass` (K20) der Hub des Schafts,
+// `__krone` (D10) die gezeichnete Krone eines Baums oder Strauchs (das Kronen-Buch, `_foundryBaumKrone`).
+AnazhRealm.FOUNDRY_BEIPACK = Object.freeze({
+    __huelle: "_huelle",
+    __fern: "_fern",
+    __mass: "_mass",
+    __krone: "_krone",
+});
 // Der Keil der Hüllen-Form im Welt-March: die First-Kante → der Typ der Kapsel-Liste (pB.w; 0 Kasten · 1 Ellipsoid). Der
 // Walm (0..1) reist im Bruchteil (Typ + 0,49 · walm), das WGSL (`sdKeil`) schneidet die zwei Stirnen mit der Dach-Neigung.
 AnazhRealm.HUELLE_KEIL_TYP = Object.freeze({ "+z": 2, "-z": 3, "+x": 4, "-x": 5 });
@@ -1470,6 +1520,23 @@ AnazhRealm.SCHATTEN_KASKADE = Object.freeze({
     normalTexel: 0.5,
     tiefeTexel: 0.75,
     zuwendungSaum: 0.08,
+});
+// DIE HORIZONT-KARTE (D3, `_horizontKarte`): der Schatten JENSEITS der Kaskaden. Das Licht sieht die drei Schalen des Fern-Rings
+// (dieselben Geometrien, ein eigener Stoff) orthografisch auf `texel`² Texel über ±`randM` um den Anker; je Texel bleibt die
+// Fläche, die dem Licht am nächsten liegt (r16f, Max-Blende, ohne Tiefen-Puffer: 0,5 MB). Ein Empfänger liegt im Schatten,
+// wenn die Karte über ihm mehr als den Bias näher am Licht trägt. Quer zum Licht nimmt die Karte nur das Bild des Rings
+// (±randM · sin h + Höhe · cos h); der Bias ist `biasTexel` × (senkrechte Texel-Kante / tan h, ab `hoeheMin`, + die halbe waagrechte). `versatzM` hält jede Licht-Tiefe positiv (r16f: ≤ 16 m Stufe), die
+// Kamera steht `hoeheM` vor dem Anker. Neu gezeichnet wird, wenn das Licht sich um einen Texel über die Karte gedreht hat
+// (`texelM / randM`), der Anker wandert oder der Ring voll ist — nie je Frame. Die Kaskaden tragen bis `SCHATTEN_FERN_FAKTOR`
+// × Reichweite; die Karte blendet über `blende` dieser Reichweite ein.
+AnazhRealm.HORIZONT_KARTE = Object.freeze({
+    texel: 512,
+    randM: 8400,
+    versatzM: 16384,
+    hoeheM: 30000,
+    biasTexel: 1.5,
+    hoeheMin: 0.08,
+    blende: 0.2,
 });
 // DAS GESETZ DER PASS-WAHL (`_passTrifft`, W7-Vereinigung) — EIN Urteil je Körper und Pass für jeden Leser (Zellen der
 // Sätze · Werfer der Bündel · Instanzen der Wahl-Gruppen · Büschel der Nah-Wiese). `sichtRand` je Meter Abstand zum Auge:

@@ -755,6 +755,16 @@ function lichtBilanz() {
         );
         const basis = new T.Vector3(pp.x + 6, gy + 45, pp.z + 6);
         sc.add(karte);
+        // DIE ATMOSPHÄRE AM AUGE DER KARTE (D3): Sonne, Himmel und Umgebung rechnet die Welt für die Höhe des Auges
+        // (`_atmoSonne`, `_atmoTakt`; Hillaire) — die Linse misst das Licht an der Karte, also mit dem Auge dort (45 m über dem
+        // Boden; der Hillaire-Richter des D3-Spikes rechnete dieselbe Höhe, git 637de30b), die Umgebung frisch gezeichnet; danach gilt das Auge des Spielers.
+        const kamAlt = { p: st.camera.position.clone(), q: st.camera.quaternion.clone() };
+        if (typeof r._atmoTakt === "function") {
+            st.camera.position.copy(basis.clone().add(new T.Vector3(0, 1.5, 0)));
+            st.camera.updateMatrixWorld(true);
+            r._applyDayNightToScene();
+            r._ensureSkyEnvironment(true);
+        }
         const meshes = [];
         sc.traverse((o) => {
             if ((o.isMesh || o.isSprite || o.isPoints) && o !== karte) meshes.push(o);
@@ -768,7 +778,6 @@ function lichtBilanz() {
         // Die Linse misst ohne Luft (die Extinktion der Szene ruht während des Schusses).
         const luftU = st.luft && st.luft.U;
         const luftAlt = luftU ? luftU.beta.value : null;
-        const kamAlt = { p: st.camera.position.clone(), q: st.camera.quaternion.clone() };
         const cam = st.camera;
         const rt = new T.RenderTarget(W, H, { depthBuffer: true, samples: 0, type: T.HalfFloatType });
         const lagen = { oben: new T.Vector3(0, 1, 0), zurSonne: hz.clone(), vonSonne: hz.clone().negate() };

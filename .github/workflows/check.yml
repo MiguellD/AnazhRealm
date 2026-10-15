@@ -42,6 +42,12 @@ jobs:
         timeout-minutes: 10
         steps:
             - uses: actions/checkout@v4
+              # Die Wachstums-Wand (gate:betriebsgesetz in der Statik) misst je Zweig ab der Merge-Basis mit dem Mutter-Zweig:
+              # die ganze Geschichte ohne Blobs (Commits + Bäume ~7 MB), die Blobs der geänderten Dateien holt `git diff` in
+              # einem Zug nach. Ohne Geschichte ist die Wand ROT (Grund nicht auflösbar), nie still grün.
+              with:
+                  fetch-depth: 0
+                  filter: blob:none
 
             # V7 — Node 22 (Node 20 ist EOL seit 30.04.2026; der breite `node --check`-Loop
             # brach unter 20 an den eingecheckten ESM-Vendor-Dateien = „lokal grün, CI rot").
@@ -118,7 +124,10 @@ jobs:
               # und die CI-Deckung: jeder Gate-Schritt trägt genau EINE Gruppe, und in der Gegenrichtung läuft jedes
               # `gate:*` und jeder Teil dieser Statik in einem Workflow — oder steht mit Klasse und Grund in der
               # Ausnahme-Liste von scripts/diag-ci-deckung.cjs. gate:taille startet den save-server selbst (TAILLE_PORT,
-              # sonst 4312 — auf dem Läufer frei) und liest ihn mit einem Chromium.
+              # sonst 4312 — auf dem Läufer frei) und liest ihn mit einem Chromium. WACHSTUM_VORHER: der Kopf vor dem Push —
+              # auf integ-probe misst die Wachstums-Wand jeden Merge des Pushes einzeln.
+              env:
+                  WACHSTUM_VORHER: ${{ github.event.before }}
               run: npm run check:statik
 
             - name: Streu-Wahrheit (die Studio-Arten der Nah-Streu tragen das Farb-Gesetz, ihr Stoff liest den EINEN Himmel)
@@ -528,7 +537,9 @@ jobs:
               # Mitternacht still, das Auge 2 m vor dem Feuer, aufgenommen ueber den Ausgabe-Pfad (ACES, sRGB, Post) - der Schuss
               # zeichnet die Naehe des Feuers (Saetze, Feuer, Leib; Huellen >= 1 km und ferne Bauten fallen, 8 Programme); der Boden
               # in 0,75 / 1,25 / 1,75 m um das Feuer traegt Luma >= 0,15 (K11 Abnahme). Der Selbsttest leert den Licht-Pool:
-              # der Kreis faellt unter die Schwelle und nennt den Pool.
+              # der Kreis faellt unter die Schwelle und nennt den Pool. Dazu der Himmel folgt dem Sprung (K10, seit D3 hier: der
+              # Himmel lebt auf der GPU): nach Mittag und Mitternacht ueber den Pfad des Spielers traegt die zurueckgelesene
+              # Umgebung die Bestrahlung des geltenden Himmels; der Selbsttest macht den Maler taub und nennt ihn.
               run: npm run gate:pruefbuehne-licht
 
             - name: Weltgrenze (kein Feld einer Welt reist in die naechste, keine geht verloren - Laden, Ersetzen, world-pull, Portal, Einladung, Geburt, Reload)

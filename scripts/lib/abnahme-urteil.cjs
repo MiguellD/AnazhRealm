@@ -547,6 +547,17 @@ function bildRauschen(A, B, W, H, schwelle) {
     return { anteil: +(n / (W * H)).toFixed(6), pixel: n, max };
 }
 
+// Pearson r aus den Summen [n, Σa, Σb, Σa², Σb², Σab] (die Spiegel-Treue `klassenMasse` spiegelTreue; in der Seite global,
+// denn `__klassenMasse` ruft sie): null unter 8 Blöcken oder ohne Streuung einer Seite.
+function spiegelPearson(sp) {
+    const n = sp[0];
+    if (!(n >= 8)) return null;
+    const va = sp[3] - (sp[1] * sp[1]) / n,
+        vb = sp[4] - (sp[2] * sp[2]) / n,
+        cab = sp[5] - (sp[1] * sp[2]) / n;
+    return va > 1e-9 && vb > 1e-9 ? cab / Math.sqrt(va * vb) : null;
+}
+
 // DIE KLASSEN-MASSE (rein, in der Seite als `__klassenMasse`): was das Bild F auf den Pixeln der Maske m zeigt (Luma = Rec. 709
 // auf den sRGB-Werten 0–255, wie `bildMasse`):
 //   deckung       Anteil der Klasse am Bild · deckungUnten derselbe Anteil im unteren Drittel (der Boden vor dem Auge)
@@ -760,9 +771,73 @@ function klassenMasse(F, m, W, H, aussen, ohne) {
                 }
         }
     }
+    // DIE SPIEGEL-TREUE (D10, Nordstern §4.1 Wasser-Optik): ein ruhiges Wasser zeigt das Bild über seinem Ufer gespiegelt.
+    // Je Spalte die Uferlinie h0 (das oberste Pixel der Klasse), je 8×8-Block ganz in der Klasse das Luma-Mittel gegen das
+    // Mittel seiner Partner (x, 2·h0(x) − y) über der Linie; Pearson r JE BLOCK-ZEILE, gemittelt mit dem Gewicht Σb² der
+    // Zeile (`sp` = n, 0, 0, ΣW, ΣW, ΣW·r — die Tafel fasst Teil-Klassen über die Summen): was eine Zeile gemeinsam hat, ist
+    // Physik des Blick-Winkels, nie der Spiegel — der Fresnel-Verlauf (2 % senkrecht, streifend → 100 %) und der Himmels-
+    // Verlauf hängen an der Zeile; der Spiegel ist, was längs der Zeile steht (Ufer, Stamm, Lücke). Über die rohen Blöcke
+    // bestrafte das Maß den dunklen Körper des nahen Wassers gegen den hellen Himmel als Partner (D10: der Spiegel am Ufer
+    // stand, r fiel 0,21 → 0,16). Llyn Padarn misst 0,922, der Himmel allein im Wasser 0.
+    const oben = new Int32Array(W).fill(-1);
+    for (let x = 0; x < W; x++)
+        for (let y = 0; y < H; y++)
+            if (m[y * W + x] === 1) {
+                oben[x] = y;
+                break;
+            }
+    const sp = [0, 0, 0, 0, 0, 0];
+    const za = [],
+        zb = [];
+    for (let y0 = 0; y0 + 8 <= H; y0 += 8) {
+        za.length = zb.length = 0;
+        bloecke: for (let x0 = 0; x0 + 8 <= W; x0 += 8) {
+            let a = 0,
+                b = 0;
+            for (let j = 0; j < 8; j++)
+                for (let i = 0; i < 8; i++) {
+                    const x = x0 + i,
+                        y = y0 + j;
+                    const yy = 2 * oben[x] - y;
+                    if (m[y * W + x] !== 1 || yy < 0) continue bloecke;
+                    a += L[y * W + x];
+                    b += L[yy * W + x];
+                }
+            za.push(a / 64);
+            zb.push(b / 64);
+        }
+        if (za.length < 2) continue;
+        let ma = 0,
+            mb = 0;
+        for (let k = 0; k < za.length; k++) {
+            ma += za[k];
+            mb += zb[k];
+        }
+        ma /= za.length;
+        mb /= za.length;
+        let xx = 0,
+            yy = 0,
+            xy = 0;
+        for (let k = 0; k < za.length; k++) {
+            const a = za[k] - ma,
+                b = zb[k] - mb;
+            xx += a * a;
+            yy += b * b;
+            xy += a * b;
+        }
+        // die Zeile zählt mit dem, was über dem Ufer zu spiegeln steht (Σb²): ein glatter Himmel als Partner wiegt nichts,
+        // ein Wald voll; ihr r ist frei von der Stärke des Spiegels (Fresnel), ein Wasser ohne Struktur vor Struktur 0
+        if (!(yy > 1e-6)) continue;
+        sp[0] += za.length;
+        sp[3] += yy;
+        sp[4] += yy;
+        if (xx > 1e-6) sp[5] += yy * (xy / Math.sqrt(xx * yy));
+    }
     const mittel = n ? s / n : null;
     const r4 = (x) => (x == null || !Number.isFinite(x) ? null : +x.toFixed(4));
     return {
+        spiegelTreue: r4(spiegelPearson(sp)),
+        sp: sp.map((v, i) => (i ? +v.toFixed(2) : v)),
         zweiton: n ? r4(zt / n) : null,
         zt,
         weiss: n ? r4(wt / n) : null,
@@ -1083,9 +1158,12 @@ const SOLL_MASSE = Object.freeze([
     "oeffnungBunt",
     "zielTreue",
     "lichtVerhaeltnis",
+    "schattenAnteil",
+    "umgebungAzimut",
     "albedoVerhaeltnis",
     "albedo",
     "gesicht",
+    "spiegelTreue",
 ]);
 // DIE AUFLÖSUNG je Maß (K63-n2): der kleinste Unterschied, den es trägt — der Abstand zum Band ist |ln((Ist + e)/(Rand + e))|,
 // endlich auch an einem Rand 0 (ein Raster-Anteil Soll 0, ein Ist 0; Prüfer K63 R2: Ist 0 gab die Wirkung „Infinity").
@@ -1099,9 +1177,13 @@ const MASS_AUFLOESUNG = Object.freeze({
     oeffnungBunt: 0.5,
     zielTreue: 0.02,
     lichtVerhaeltnis: 0.05,
+    schattenAnteil: 0.005,
+    umgebungAzimut: 0.02,
     albedoVerhaeltnis: 0.01,
     albedo: 0.005,
     gesicht: 0.05,
+    // die Spiegel-Treue ist ein r in [−1, 1]: der Versatz 1 trägt den Abstand auch für ein negatives r (ln über (0, 2])
+    spiegelTreue: 1,
 });
 // DER ORT EINES BILDS der Tafel (K63-n8; Koordinator 15.10.: die `bild`-Felder zeigten in den Scratch, AppData): relativ zur
 // Wurzel des Baums unter `artifacts/` (gitignored, lokal, beim Namen — der Schreiber legt es nach `artifacts/soll-tafel/`), nie
@@ -1226,6 +1308,27 @@ const MASS_RECHNER = {
         }
         if (!n) return { fehler: "kein Inneres in der Klasse" };
         return { ist: +(s / n).toFixed(4), taeter: `${arg[0]} (detail ${arg[1]})`, anteil: pixelSumme(me) / flaeche(me) };
+    },
+    // DIE SPIEGEL-TREUE der Klasse (D10, `klassenMasse` spiegelTreue über die Summen `sp` ihrer Teil-Klassen): Pearson r der
+    // Block-Luma gegen das an der Uferlinie gespiegelte Bild; der Täter die Teil-Klasse mit den meisten Blöcken.
+    spiegelTreue(ma) {
+        const me = ma.messung;
+        const f = bildMessungFehler(me);
+        if (f) return { fehler: f };
+        const sp = [0, 0, 0, 0, 0, 0];
+        let arg = null;
+        for (const [k, z] of Object.entries(me.klassen)) {
+            if (!Array.isArray(z.sp)) return { fehler: `die Messung ohne Spiegel-Summen (${k}) — vor D10 gemessen` };
+            z.sp.forEach((v, i) => (sp[i] += v));
+            if (!arg || z.sp[0] > arg[1]) arg = [k, z.sp[0], z.spiegelTreue];
+        }
+        const r = spiegelPearson(sp);
+        if (r == null) return { fehler: `${sp[0]} Blöcke unter der Uferlinie — kein Spiegel zu messen` };
+        return {
+            ist: +r.toFixed(3),
+            taeter: `${arg[0]} (r ${arg[2]} über ${arg[1]} Blöcke)`,
+            anteil: pixelSumme(me) / flaeche(me),
+        };
     },
     // DER ZWEITON-ANTEIL der Klasse (`klassenMasse` zweiton über die Summen ihrer Teil-Klassen): der Anteil ihrer Pixel im
     // sichtbaren Dither-Raster; der Täter die Teil-Klasse (≥ 5 % der Pixel) mit dem höchsten Anteil.
@@ -1403,17 +1506,59 @@ const MASS_RECHNER = {
         }
         return { ist: +(drin / n).toFixed(3), taeter: arg ? arg[0] : null, teile: teile.join(" · ") };
     },
-    // DAS LICHT-VERHÄLTNIS: E(Sonne + Himmel) / E(Himmel) an der waagrechten 18-%-Karte (`werkbank licht`, die Licht-Bilanz)
-    lichtVerhaeltnis(ma) {
+    // DAS LICHT-VERHÄLTNIS: E(Sonne + Himmel) / E(Himmel) an der waagrechten 18-%-Karte (`werkbank licht`, die Licht-Bilanz).
+    // Trägt die Klasse daneben die Größen der Licht-Bilanz (D3: `schattenAnteil`, `umgebungAzimut`), urteilt das Maß über alle:
+    // eine Größe außerhalb ihres Bands hält es offen — ROT mit ihrem Namen, nie GRÜN.
+    lichtVerhaeltnis(ma, q, band, sb, baender) {
         const me = ma.messung;
         if (!me || me.werkzeug !== "licht") return { fehler: "keine Messung aus `werkbank licht`" };
         for (const f of ["datum", "stand", "E_alle", "E_umgebung"]) if (me[f] == null) return { fehler: `die Messung ohne ${f}` };
         if (!(me.E_umgebung > 0 && me.E_alle > me.E_umgebung))
             return { fehler: `E alle ${me.E_alle}, E Himmel ${me.E_umgebung} — die Bilanz misst die Sonne nicht` };
+        const ist = +(me.E_alle / me.E_umgebung).toFixed(3);
+        const teile = [`lichtVerhaeltnis ${ist}`];
+        const draussen = [];
+        for (const g of ["schattenAnteil", "umgebungAzimut"]) {
+            const b = baender && baender[g];
+            if (!b) continue;
+            const x = MASS_RECHNER[g](ma);
+            if (x.fehler) {
+                draussen.push(`${g}: ${x.fehler}`);
+                continue;
+            }
+            const [u, o] = b.band;
+            teile.push(`${g} ${x.ist} [${u == null ? "–" : u}; ${o == null ? "–" : o}]`);
+            if ((u != null && x.ist < u) || (o != null && x.ist > o)) draussen.push(`${g} ${x.ist} außerhalb (${x.taeter})`);
+        }
         return {
-            ist: +(me.E_alle / me.E_umgebung).toFixed(3),
+            ist,
             taeter: `E Himmel ${me.E_umgebung} gegen E Sonne ${+(me.E_alle - me.E_umgebung).toFixed(2)}`,
+            teile: teile.join(" · "),
+            offen: draussen.length ? draussen.join(" · ") : null,
         };
+    },
+    // DER SCHATTEN-ANTEIL (D3): die waagrechte 18-%-Karte im Schatten (der Himmel allein) gegen die besonnte — der Diffus-
+    // Anteil des klaren Mittags (Liu & Jordan 1960: 0,08–0,20). Bis D3 0,237: der Schatten trug ein getuntes Viertel der Sonne.
+    schattenAnteil(ma) {
+        const me = ma.messung;
+        if (!me || me.werkzeug !== "licht") return { fehler: "keine Messung aus `werkbank licht`" };
+        if (!(me.E_alle > 0) || me.E_umgebung == null) return { fehler: "die Messung ohne E_alle oder E_umgebung" };
+        return {
+            ist: +(me.E_umgebung / me.E_alle).toFixed(3),
+            taeter: `E Himmel ${me.E_umgebung} von E alle ${me.E_alle}`,
+        };
+    },
+    // DIE UMGEBUNG HAT EINE RICHTUNG (D3): die senkrechte Karte zur Sonne gegen die von ihr weg, im Himmel allein — der klare
+    // Himmel ist zur Sonne heller (Mie-Hof, Rayleigh-Phase; Hillaire mit dem Welt-Gesetz 1,33–1,67). Bis D3 malte die CPU eine
+    // azimut-konstante Umgebung: 1,0.
+    umgebungAzimut(ma) {
+        const me = ma.messung;
+        if (!me || me.werkzeug !== "licht") return { fehler: "keine Messung aus `werkbank licht`" };
+        const z = me.E_umgebung_zurSonne,
+            v = me.E_umgebung_vonSonne;
+        if (z == null || v == null) return { fehler: "die Messung ohne E_umgebung_zurSonne/vonSonne (vor D3 gemessen)" };
+        if (!(v > 0)) return { fehler: `E von der Sonne ${v} — die Bilanz sieht keinen Himmel` };
+        return { ist: +(z / v).toFixed(3), taeter: `zur Sonne ${z} gegen von ihr ${v}` };
     },
 };
 // Die Zeile einer Albedo-Tafel (`mass.rohdatei` { datei, zeile }): gelesen, nie abgeschrieben.
@@ -1715,7 +1860,7 @@ function sollTafelUrteil(tafel, q) {
             ? { fehler: "kein Rechner" }
             : ma.messung == null && !ma.rohdatei
               ? { ungemessen: true }
-              : rechner(ma, q, sb ? sb.band : null, sb);
+              : rechner(ma, q, sb ? sb.band : null, sb, baender);
         if (r.fehler) fehler.push(`${wo}: ${r.fehler}`);
         const ist = zahl(r.ist) ? r.ist : null;
         // der Stand der Messung: veraltet oder ungeprüft ist ROT ohne Wirkung (die Zahl bleibt sichtbar)
@@ -1899,6 +2044,47 @@ function sollTafelSelbsttest(tafel, q) {
         ).detail !== 0
     )
         v.push("Maß detail: Flachbild nicht 0");
+    // DIE SPIEGEL-TREUE (D10) geeicht: ein Bild mit seinem exakten Spiegel unter der Linie → 1, derselbe Spiegel unter dem
+    // Fresnel-Verlauf über dunklem Körper (5 % nah → 100 % am Ufer) → nahe 1 (das rohe Block-r las ihn als 0,73), der
+    // Himmels-Verlauf unter einem Ufer → 0, das Foto Llyn Padarn (480 × 265, Uferlinie 141) → 0,922 im Soll [0,6, ∞]
+    {
+        const Ws = 64,
+            Hs = 64,
+            h0 = 30;
+        const wert = (x, y) => 40 + ((x * 37 + y * 101 + ((x >> 3) * (y >> 3) * 53)) % 180);
+        const spiegel = new Uint8Array(Ws * Hs * 4),
+            fresnel = new Uint8Array(Ws * Hs * 4),
+            himmel = new Uint8Array(Ws * Hs * 4),
+            mw = new Uint8Array(Ws * Hs);
+        for (let y = 0; y < Hs; y++)
+            for (let x = 0; x < Ws; x++) {
+                const a = y < h0 ? wert(x, y) : wert(x, Math.max(0, 2 * h0 - y));
+                const f = y < h0 ? 1 : 0.05 + 0.95 * Math.pow((Hs - y) / (Hs - h0), 3);
+                const e = y < h0 ? a : Math.round(12 + f * (a - 12));
+                const c = y < h0 ? wert(x, y) : 60 + y;
+                spiegel.set([a, a, a, 255], (y * Ws + x) * 4);
+                fresnel.set([e, e, e, 255], (y * Ws + x) * 4);
+                himmel.set([c, c, c, 255], (y * Ws + x) * 4);
+                if (y >= h0) mw[y * Ws + x] = 1;
+            }
+        const rs = klassenMasse(spiegel, mw, Ws, Hs).spiegelTreue,
+            rf0 = klassenMasse(fresnel, mw, Ws, Hs).spiegelTreue,
+            rh = klassenMasse(himmel, mw, Ws, Hs).spiegelTreue;
+        if (!(rs > 0.999)) v.push(`Maß spiegelTreue: der exakte Spiegel ${rs} statt 1`);
+        if (!(rf0 > 0.9)) v.push(`Maß spiegelTreue: der Spiegel unter dem Fresnel-Verlauf ${rf0} statt nahe 1`);
+        if (!(Math.abs(rh) < 0.3)) v.push(`Maß spiegelTreue: der Himmels-Verlauf ${rh} statt nahe 0`);
+        const fs = require("fs"),
+            path = require("path");
+        const foto = path.join(__dirname, "..", "..", "spec", "abnahme", "llyn-padarn.png");
+        const b = fs.existsSync(foto) ? pngLesen(fs.readFileSync(foto)) : null;
+        if (!b) v.push("Maß spiegelTreue: das Foto spec/abnahme/llyn-padarn.png fehlt");
+        else {
+            const mf = new Uint8Array(b.W * b.H);
+            for (let p = 141 * b.W; p < b.W * b.H; p++) mf[p] = 1;
+            const rf = klassenMasse(b.u8, mf, b.W, b.H).spiegelTreue;
+            if (!(Math.abs(rf - 0.922) < 0.005)) v.push(`Maß spiegelTreue: Llyn Padarn ${rf} statt 0,922`);
+        }
+    }
     const mA = new Uint8Array(W * H);
     for (let p = 0; p < W * H; p++) mA[p] = teil[p] === 1 ? 1 : 0;
     // die Klasse A zeigt 200, das Misch-Pixel 170: Mittel (24·200 + 170)/25
@@ -2305,6 +2491,31 @@ function sollTafelSelbsttest(tafel, q) {
         if (!z5 || z5.urteil !== "ROT" || !/ohne Schuss/.test(z5.grund || ""))
             v.push(`${k5.id}: eine Stufe ohne Schuss ist nicht ROT beim Namen (${z5 && z5.urteil} ${z5 && z5.grund})`);
     } else v.push("die Tafel trägt kein Maß milchweiss mit Messung (der Fall der Stufen fehlt)");
+    // DIE LICHT-BILANZ (D3): eine azimut-konstante Umgebung (zur Sonne = von ihr weg, die CPU-gemalte vor D3) hält das
+    // Licht-Verhältnis ROT beim Namen umgebungAzimut, auch wenn das Verhältnis im Band liegt; ein Schatten mit einem Viertel
+    // der Sonne (0,239 vor D3) beim Namen schattenAnteil; Verhältnis, Schatten und Richtung im Band sind GRÜN
+    const t7 = klon();
+    const k7 = finde(t7, (k) => k.mass && k.mass.name === "lichtVerhaeltnis" && k.mass.messung);
+    if (k7 && ((k7.soll && k7.soll.eigenschaften) || []).some((e) => e.groesse === "umgebungAzimut")) {
+        const me7 = k7.mass.messung;
+        frisch(k7, me7);
+        const fall = (werte) => {
+            Object.assign(me7, werte);
+            return sollTafelUrteil(t7, q).zeilen.find((x) => x.id === k7.id) || {};
+        };
+        const flach = fall({ E_alle: 7.8, E_umgebung: 1.5, E_umgebung_zurSonne: 1.0, E_umgebung_vonSonne: 1.0 });
+        if (flach.urteil !== "ROT" || !/umgebungAzimut/.test(flach.grund || ""))
+            v.push(`${k7.id}: eine azimut-konstante Umgebung ist nicht ROT beim Namen (${flach.urteil} ${flach.grund})`);
+        const schatten = fall({ E_alle: 7.8, E_umgebung: 1.5 * 1.0, E_umgebung_zurSonne: 1.4 });
+        const viertel = fall({ E_alle: 6.0, E_umgebung: 1.2 * 1.0, E_umgebung_zurSonne: 1.4 });
+        if (schatten.urteil !== "GRÜN")
+            v.push(`${k7.id}: Verhältnis 5,2 · Schatten 0,19 · Richtung 1,4 ist nicht GRÜN (${schatten.urteil} ${schatten.grund})`);
+        if (viertel.urteil !== "GRÜN" || !(viertel.ist === 5))
+            v.push(`${k7.id}: Verhältnis 5,0 · Schatten 0,20 am Rand ist nicht GRÜN (${viertel.urteil} ${viertel.grund})`);
+        const vorher = fall({ E_alle: 9.44, E_umgebung: 2.26, E_umgebung_zurSonne: 2.29, E_umgebung_vonSonne: 2.29 });
+        if (vorher.urteil !== "ROT" || !/schattenAnteil 0\.239/.test(vorher.grund || "") || !/umgebungAzimut 1/.test(vorher.grund || ""))
+            v.push(`${k7.id}: die Licht-Bilanz vor D3 nennt Schatten und Richtung nicht (${vorher.urteil} ${vorher.grund})`);
+    } else v.push("die Tafel trägt das Licht-Verhältnis ohne umgebungAzimut (der Fall der Licht-Bilanz fehlt)");
     // DER SCHREIBER PRÜFT (K63-n7, `sollIstAbweisung`): der Schuss vom 15.10. 02:14 (K63-n6, 14 s nach dem Umstellen) zeigte nur
     // Membran und Nebel — dieselbe Messung ohne die Tore der Stufe wird abgewiesen beim Namen; dieselbe Messung unverändert nicht
     const t6 = klon();
@@ -2371,11 +2582,13 @@ module.exports = {
     verkleinern,
     fixtureMessung,
     abnahmeSelbsttest,
+    spiegelPearson,
     ABNAHME_INSTALL:
         `window.__abnahmeUrteil = (m) => (${abnahmeUrteil.toString()})(m, ${JSON.stringify(SCHWELLEN)});` +
         `window.__bildMasse = ${bildMasse.toString()};` +
         `window.__klassenTeilung = ${klassenTeilung.toString()};` +
         `window.__bildRauschen = ${bildRauschen.toString()};` +
+        `window.spiegelPearson = ${spiegelPearson.toString()};` +
         `window.__klassenMasse = ${klassenMasse.toString()};` +
         `window.__gesichtMasse = ${gesichtMasse.toString()};` +
         `window.__farbtonProbe = ${farbtonProbe.toString()};`,

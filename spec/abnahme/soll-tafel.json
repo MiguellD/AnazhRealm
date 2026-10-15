@@ -608,6 +608,24 @@
                         },
                         "einheit": "E(Sonne + Himmel) / E(Himmel) an der waagrechten 18-%-Karte, Mittag klar",
                         "quelle": "Diffus-Anteil des klaren Himmels 0,08–0,2 (Liu & Jordan 1960, Solar Energy 4(3):1), das Verhältnis ist sein Kehrwert [gerechnet]; Frostbite PBR (Sonne 100 klx, Himmel 10–20 klx) liegt darin"
+                    },
+                    {
+                        "groesse": "schattenAnteil",
+                        "band": [
+                            0.08,
+                            0.2
+                        ],
+                        "einheit": "E(Himmel) / E(Sonne + Himmel) an der waagrechten 18-%-Karte, Mittag klar (der Schatten gegen die besonnte Fläche)",
+                        "quelle": "Diffus-Anteil des klaren Himmels 0,08–0,2 (Liu & Jordan 1960, Solar Energy 4(3):1)"
+                    },
+                    {
+                        "groesse": "umgebungAzimut",
+                        "band": [
+                            1.2,
+                            null
+                        ],
+                        "einheit": "E(Himmel) an der senkrechten 18-%-Karte zur Sonne / von der Sonne weg, Mittag klar",
+                        "quelle": "der klare Himmel ist zur Sonne heller (Mie-Hof, Rayleigh-Phase): Hillaire 2020 (CGF 39(4)) mit dem Welt-Gesetz 1,33–1,67 (scripts/diag-atmo-hillaire.cjs, Spike D3 110c3f99); Plan D3 (koordination auftrag/durchbruch-1510.md) ≥ 1,2"
                     }
                 ]
             },
@@ -619,33 +637,41 @@
                 "werkzeug": "werkbank licht --ist himmel-licht (die Licht-Bilanz an der Mess-Wiese)",
                 "messung": {
                     "werkzeug": "licht",
-                    "datum": "2026-10-15T05:13:10.436Z",
+                    "datum": "2026-10-15T14:20:35.850Z",
                     "stand": {
-                        "sha": "ce0b815eea70b1d98b7b5e3dfe914ae474a93482",
+                        "sha": "09beab07178b841c39ca72f4d3ab156acc53bb67",
                         "version": "18.546.2"
                     },
                     "geraet": {
                         "adapter": "amd rdna-3"
                     },
-                    "E_alle": 9.44,
-                    "E_umgebung": 2.26,
+                    "E_alle": 7.94,
+                    "E_umgebung": 1.54,
+                    "E_umgebung_zurSonne": 1.17,
+                    "E_umgebung_vonSonne": 0.92,
                     "sonnenRichtung": [
                         0,
                         0.962,
                         0.272
                     ],
                     "quellen": {
-                        "stamm/07.js": "c:49617014f39c824b",
-                        "stamm/10.js": "c:093b1e2ba003f5d2",
+                        "foundry-core.js": "c:bf0a74087482c5e7",
+                        "stamm/05b.js": "c:328812df4679d6d7",
+                        "stamm/07.js": "c:158f10e6ed0cd9c0",
+                        "stamm/10.js": "c:bb6631653fcc0994",
+                        "stamm/11d.js": "c:25bdfb59ce2628e0",
                         "stamm/19.js": "c:b1a053cba1f64cd1",
-                        "stamm/24.js": "c:26d0da410e4c28a0",
-                        "stamm/25c.js": "c:61e641a0f44d5466"
+                        "stamm/24.js": "c:e8c08dcfc7f18bb8",
+                        "stamm/25c.js": "c:86a711bb5249e722"
                     }
                 }
             },
             "quellen": [
+                "foundry-core.js",
+                "stamm/05b.js",
                 "stamm/07.js",
                 "stamm/10.js",
+                "stamm/11d.js",
                 "stamm/19.js",
                 "stamm/24.js",
                 "stamm/25c.js"
@@ -1146,7 +1172,7 @@
             "id": "wasser",
             "titel": "Wasser (Wasser-Satz, Fern-Wasser)",
             "wirkung": {
-                "grund": "an Wiese und Genesis steht kein Wasser im Blick (farWater 1 070 m fern)"
+                "grund": "an Wiese und Genesis steht kein Wasser im Blick (farWater 1 070 m fern); gemessen am See 1816/−6168"
             },
             "referenz": [
                 {
@@ -1161,13 +1187,13 @@
             "soll": {
                 "eigenschaften": [
                     {
-                        "groesse": "detail",
+                        "groesse": "spiegelTreue",
                         "band": [
-                            0.05,
+                            0.6,
                             null
                         ],
-                        "einheit": "Gradient / Mittel im Wasser (ein Spiegel trägt das Detail des Gespiegelten)",
-                        "quelle": "Fresnel ≈ 2 % senkrecht, streifend → 100 % (n 1,333): aus Augenhöhe spiegelt der See Ufer und Wolke (Nordstern §4.1 Wasser-Optik)"
+                        "einheit": "Pearson r der Block-Luma (8×8) im Wasser gegen das an der Uferlinie gespiegelte Bild je Block-Zeile, gewogen mit der Struktur über dem Ufer — frei vom Fresnel- und Himmels-Verlauf (abnahme-urteil klassenMasse spiegelTreue)",
+                        "quelle": "ruhiger See spiegelt Ufer, Wald und Wolke: Llyn Padarn in der Abend-Ruhe r 0,922 (spec/abnahme/llyn-padarn.png, Commons, CC BY-SA 2.0 Hefin Owen; K5 Selbst-Test); Fresnel streifend → 100 % (Nordstern §4.1 Wasser-Optik)"
                     }
                 ]
             },
@@ -1175,14 +1201,14 @@
                 "haushalt": "boden"
             },
             "mass": {
-                "name": "detail",
-                "werkzeug": "werkbank bild <Ufer-Pose> --klasse '^(wasserSatz|farWater|chunk-water-[a-z]+)$' --ist wasser — ein Messort mit Wasser fehlt im Haushalt",
+                "name": "spiegelTreue",
+                "werkzeug": "werkbank bild 1855 2.6 -6168 1700 4.5 -6168 --w 1920 --h 1080 --klasse '^(wasserSatz|farWater|chunk-water-[a-z]+)$' --ist wasser (der See 1816/−6168, Ego; Third dieselbe Linie aus 4 m Höhe hinter dem Spieler)",
                 "messung": {
                     "werkzeug": "bild",
-                    "datum": "2026-10-15T03:26:32.615Z",
+                    "datum": "2026-10-15T17:01:22.717Z",
                     "stand": {
                         "version": "18.546.2",
-                        "sha": "eeb0afbe40bb9178cae628ffe83aedb6a2034003"
+                        "sha": "a9cf43e725d97646a28e3029d032680f9ccdd6fd"
                     },
                     "geraet": {
                         "backend": "WebGPU",
@@ -1193,9 +1219,9 @@
                         1080
                     ],
                     "kamera": [
-                        -125.8,
-                        47.48,
-                        241.4
+                        1855,
+                        2.6,
+                        -6168
                     ],
                     "ausdruck": "^(wasserSatz|farWater|chunk-water-[a-z]+)$",
                     "schwelle": 18,
@@ -1208,20 +1234,31 @@
                     "klassen": {
                         "wasserSatz": {
                             "objekte": 1,
+                            "spiegelTreue": 0.5244,
+                            "sp": [
+                                14644,
+                                0,
+                                0,
+                                33286042.32,
+                                33286042.32,
+                                17455238.68
+                            ],
                             "zweiton": 0,
                             "zt": 0,
-                            "weiss": 0.0713,
-                            "wt": 22847,
-                            "pixel": 320645,
-                            "deckung": 0.1546,
-                            "deckungUnten": 0.3891,
-                            "luma": 70.35,
-                            "kontrast": 0.6291,
-                            "detail": 0.0291,
-                            "nyquist": 0.1223,
-                            "ek": 105608.8,
-                            "eg": 757710.9,
-                            "silhouette": 9.7694
+                            "weiss": 0.0005,
+                            "wt": 468,
+                            "pixel": 949580,
+                            "deckung": 0.4579,
+                            "deckungUnten": 1,
+                            "luma": 61.4,
+                            "kontrast": 0.7093,
+                            "detail": 0.0347,
+                            "nyquist": 0.0678,
+                            "ek": 215727.5,
+                            "eg": 2964202.7,
+                            "silhouette": 6.0238,
+                            "kante": 0.7422,
+                            "kr": 3043
                         }
                     },
                     "abstand": null,
@@ -1229,15 +1266,15 @@
                     "bild": "artifacts/soll-tafel/wasser.png",
                     "quellen": {
                         "gelaende-core.js": "c:47e37b262d36dd6e",
-                        "stamm/07.js": "c:49617014f39c824b",
-                        "stamm/10.js": "c:60d0e92e3969e187",
+                        "stamm/07.js": "c:916759e4a63a965e",
+                        "stamm/10.js": "c:1b961fac64032e22",
                         "stamm/19.js": "c:b1a053cba1f64cd1",
-                        "stamm/24.js": "c:26d0da410e4c28a0",
-                        "stamm/25c.js": "c:baf3b0d0c63ceb9b",
+                        "stamm/24.js": "c:5cadba33d1361342",
+                        "stamm/25c.js": "c:7f29c888c23f6422",
                         "stamm/08.js": "c:77f87597ce6b7d1c",
-                        "stamm/11a.js": "c:07de57204b2e88b6",
-                        "stamm/11b.js": "c:2b2b48ade183e63b",
-                        "stamm/17b.js": "c:074908c78ad2216f"
+                        "stamm/11a.js": "c:2376a2c6f3b1090d",
+                        "stamm/11b.js": "c:2417fd098d2a48c3",
+                        "stamm/17b.js": "c:66d155efb1fde801"
                     }
                 }
             },

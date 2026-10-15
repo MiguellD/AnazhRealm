@@ -20,8 +20,8 @@
 //   E5  nicht vakuös: das Wasser zeichnet, das Abbild wurde je Größe neu angelegt, die Pixel-Ratio folgte DPR und Kappe
 //   K   kein Zwilling: der resize-Handler baut keinen Leser der Szenen-Tiefe neu (Quelle, kommentarfrei)
 //   ES  Selbsttest am echten Frame, der letzte Schritt (nach seinen Fehlern rendert der GPU-Prozess des Browsers nicht weiter):
-//       ohne den Wächter (`_diaetVorTextur` → false) MUSS ein Pixel-Ratio-Schritt „Destroyed texture … szene:tiefenabbild"
-//       beim Namen zeigen. Dass ein Größenwechsel keinen anderen Retter hat, hält K in der Quelle.
+//       ohne den Wächter (`_diaetVorTextur` → false) MUSS ein Pixel-Ratio-Schritt „Destroyed texture …" an einem Größen-Ziel
+//       beim Namen zeigen (`GROESSEN_ZIELE`: Szenen-Tiefe oder ihr Leser, seit D10 der Spiegel-Strahl). K hält den Rest.
 //
 //   node scripts/diag-fenster-wechsel.cjs
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
@@ -30,6 +30,7 @@ const stammLib = require("./lib/stamm.cjs");
 const { ladeSpec } = require("./lib/band-urteil.cjs");
 
 const PORT = Number(process.env.FENSTER_PORT || 4574);
+const GROESSEN_ZIELE = /Destroyed texture \[Texture "(szene:tiefenabbild|spiegel:strahl)"\]/;
 const root = path.resolve(__dirname, "..");
 const server = statikServer();
 
@@ -197,9 +198,8 @@ async function fensterSchritt(o) {
     );
     console.log("=== E — der echte Frame mit laufendem Loop (WebGPU auf swiftshader, kienspan, Kappe 1,25, am Bach) ===");
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
-    // Erwartet: der Selbsttest ES schaltet den Wächter ab und MUSS „Destroyed texture … szene:tiefenabbild" ernten — diese
-    // Meldung richtet die Linse selbst (TOT, unten, je Phase gezählt); jede andere Meldung bleibt ROT.
-    const browser = await starteBrowser({ art: "linse", frist: 900000, erwartet: /Destroyed texture \[Texture "szene:tiefenabbild"\]/ });
+    // Erwartet: ES erntet ein Größen-Ziel — die Linse richtet die Meldung selbst (je Phase gezählt), jede andere bleibt ROT.
+    const browser = await starteBrowser({ art: "linse", frist: 900000, erwartet: GROESSEN_ZIELE });
     const seitenFehler = [];
     const seiteAmUfer = async (b) => {
         const p = await b.newPage();
@@ -272,10 +272,10 @@ async function fensterSchritt(o) {
             window.anazhRealm.constructor._diaetVorTextur = () => false;
         });
         const es = await schritt("ES", "setPixelRatio(1.25) ohne Wächter", pixelRatio(1.25), 1.25, true);
-        const TOT = /Destroyed texture \[Texture "szene:tiefenabbild"\]/;
+        const TOT = GROESSEN_ZIELE;
         const faellt = (s) => s.fremd.some((k) => TOT.test(k)) || s.wacheKoepfe.some((k) => TOT.test(k));
         check(
-            "ES Selbsttest: ohne den Wächter fällt „Destroyed texture … szene:tiefenabbild“ beim Pixel-Ratio-Schritt",
+            "ES Selbsttest: ohne den Wächter fällt „Destroyed texture …“ an einem Größen-Ziel beim Pixel-Ratio-Schritt",
             faellt(es),
             [...es.fremd, ...es.wacheKoepfe].join(" | ") || "0"
         );
