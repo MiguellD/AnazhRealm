@@ -190,7 +190,7 @@ let framedOnce = false;
 /* ---------- Aufbau / Sitz / Rahmung / Abbau ------------------------------- */
 function disposeSubject() {
     if (!subject) return;
-    const shared = [barkMat, barkMatBirch, foliageMat, grassMat, stemMat, schattenMat];
+    const shared = [barkMat, barkMatBirch, foliageMat, foliageMatKrone, grassMat, stemMat, schattenMat];
     subject.traverse((o) => {
         if (o.isMesh) {
             o.geometry.dispose();
@@ -2287,7 +2287,7 @@ function buildForest() {
                     if (o.isMesh) {
                         const geo = o.geometry.clone();
                         if (dy) geo.translate(0, dy, 0);
-                        const isFol = o.material === foliageMat || o.material === foliageMatTex; // FIX v31: Cluster-Quads sind Laub
+                        const isFol = o.material === foliageMat || o.material === foliageMatKrone || o.material === foliageMatTex; // FIX v31: Cluster-Quads sind Laub
                         windStempel(geo, poolL[0][sp][v], SCALE[sp] * TREE_SCALE_MUL);
                         geo.setAttribute(
                             "aLodLevel",
@@ -2599,7 +2599,7 @@ function buildForest() {
         if (
             o.isMesh &&
             !o.userData.shadowProxy &&
-            (o.material === foliageMat || o.material === foliageMatTex || o.material === grassMat)
+            (o.material === foliageMat || o.material === foliageMatKrone || o.material === foliageMatTex || o.material === grassMat)
         )
             o.layers.set(1);
     }); // Laub (Blaetter+Gras) -> Layer 1 (Halb-Aufloesungs-Pass); Schatten-Zwillinge bleiben auf Layer 2
@@ -3325,7 +3325,7 @@ function fmtHM(h) {
     return (hh < 10 ? "0" : "") + hh + ":" + (mm < 10 ? "0" : "") + mm;
 }
 function _dimEnvIBL(f) {
-    const list = _envMats.length ? _envMats : [foliageMat, grassMat, barkMat, barkMatBirch, stemMat, _terMat];
+    const list = _envMats.length ? _envMats : [foliageMat, foliageMatKrone, grassMat, barkMat, barkMatBirch, stemMat, _terMat];
     for (const m of list) {
         if (!m) continue;
         if (m.userData.bEnv === undefined) m.userData.bEnv = m.envMapIntensity !== undefined ? m.envMapIntensity : 1.0;

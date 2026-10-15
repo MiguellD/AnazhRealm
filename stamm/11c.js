@@ -534,7 +534,7 @@ class AnazhRealm_Z11c {
             preset: art.id,
             ernte: art.ernte,
             geo: lf.geom,
-            mat: wiegt ? this._foundryTreeMaterial(u.foundryKind, u.foundryMp, true) : lf.mat,
+            mat: wiegt ? this._foundryTreeMaterial(u.foundryKind, u.foundryMp, true, null, u.krone === true) : lf.mat,
             lokal: lf.localMatrix,
             wiegt: !!wiegt,
             leafKey: lf.leafKey,

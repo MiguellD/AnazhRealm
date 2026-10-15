@@ -557,7 +557,8 @@ function bildRauschen(A, B, W, H, schwelle) {
 //                 Energien selbst (die Tafel fasst Klassen über ihre Summen zusammen)
 //   silhouette    Rand-Pixel / √Fläche (der Kreis 2√π ≈ 3,5; eine zerfranste Krone, ein Gitter weit darüber)
 //   weiss/wt      Anteil und Zahl der Pixel, die als Weiß lesen statt als Farbe (s. MILCHWEISS unten)
-function klassenMasse(F, m, W, H) {
+//   kante/kr      die Geradheit des Umrisses gegen das Außen (s. DIE KANTE DER SILHOUETTE unten) und die Zahl seiner Pixel
+function klassenMasse(F, m, W, H, aussen) {
     const L = new Float32Array(W * H);
     for (let p = 0; p < W * H; p++) L[p] = 0.2126 * F[p * 4] + 0.7152 * F[p * 4 + 1] + 0.0722 * F[p * 4 + 2];
     let n = 0,
@@ -656,6 +657,96 @@ function klassenMasse(F, m, W, H) {
             b = 200 * (fy - fl((0.0193 * R + 0.1192 * G2 + 0.9505 * B) / 1.08883));
         if (Math.hypot(a, b) < 5) wt++;
     }
+    // DIE KANTE DER SILHOUETTE (K68-n2, Augen-Befund 14.10. „Nadelbaum-Karten groß und kantig"): je Rand-Pixel der Klasse,
+    // das ans Außen grenzt (`aussen`: kein gemessener Teil — Himmel, Boden, Holz; ohne `aussen` jedes Pixel außerhalb der
+    // Klasse), die Kohärenz des Struktur-Tensors der geglätteten Maske (Gauß σ 2 px, Fenster 17 × 17 px):
+    // ((Jxx − Jyy)² + 4 Jxy²) / (Jxx + Jyy)² — die gerade Kante einer Karte → 1, ein Umriss aus Blättern, Zweigen und Lücken
+    // → klein. `kante` ist das Mittel über den Rand, `kr` die Zahl seiner Pixel (die Tafel fasst Teil-Klassen über sie).
+    let kr = 0,
+        ks = 0;
+    {
+        const sig = 2,
+            R = 6,
+            r = 8,
+            pad = R + r + 2;
+        let bx0 = W,
+            by0 = H,
+            bx1 = -1,
+            by1 = -1;
+        for (let y = 0; y < H; y++)
+            for (let x = 0; x < W; x++)
+                if (m[y * W + x] === 1) {
+                    if (x < bx0) bx0 = x;
+                    if (x > bx1) bx1 = x;
+                    if (y < by0) by0 = y;
+                    if (y > by1) by1 = y;
+                }
+        if (bx1 >= 0) {
+            const x0 = Math.max(0, bx0 - pad),
+                y0 = Math.max(0, by0 - pad),
+                w = Math.min(W - 1, bx1 + pad) - x0 + 1,
+                h = Math.min(H - 1, by1 + pad) - y0 + 1;
+            const gk = [];
+            let gs = 0;
+            for (let i = -R; i <= R; i++) {
+                gk.push(Math.exp((-i * i) / (2 * sig * sig)));
+                gs += gk[i + R];
+            }
+            for (let i = 0; i < gk.length; i++) gk[i] /= gs;
+            const t = new Float32Array(w * h),
+                sm = new Float32Array(w * h);
+            for (let y = 0; y < h; y++)
+                for (let x = 0; x < w; x++) {
+                    let a = 0;
+                    for (let i = -R; i <= R; i++) {
+                        const xx = Math.min(w - 1, Math.max(0, x + i));
+                        a += gk[i + R] * (m[(y0 + y) * W + x0 + xx] === 1 ? 1 : 0);
+                    }
+                    t[y * w + x] = a;
+                }
+            for (let y = 0; y < h; y++)
+                for (let x = 0; x < w; x++) {
+                    let a = 0;
+                    for (let i = -R; i <= R; i++) a += gk[i + R] * t[Math.min(h - 1, Math.max(0, y + i)) * w + x];
+                    sm[y * w + x] = a;
+                }
+            // die Summen-Tafeln der Tensor-Teile (Fenster in O(1))
+            const w1 = w + 1,
+                Sxx = new Float64Array(w1 * (h + 1)),
+                Syy = new Float64Array(w1 * (h + 1)),
+                Sxy = new Float64Array(w1 * (h + 1));
+            for (let y = 0; y < h; y++)
+                for (let x = 0; x < w; x++) {
+                    const p = y * w + x;
+                    const gx = x > 0 && x < w - 1 ? (sm[p + 1] - sm[p - 1]) / 2 : 0,
+                        gy = y > 0 && y < h - 1 ? (sm[p + w] - sm[p - w]) / 2 : 0;
+                    const q = (y + 1) * w1 + x + 1;
+                    Sxx[q] = gx * gx + Sxx[q - 1] + Sxx[q - w1] - Sxx[q - w1 - 1];
+                    Syy[q] = gy * gy + Syy[q - 1] + Syy[q - w1] - Syy[q - w1 - 1];
+                    Sxy[q] = gx * gy + Sxy[q - 1] + Sxy[q - w1] - Sxy[q - w1 - 1];
+                }
+            const box = (S, a0, b0, a1, b1) => S[(b1 + 1) * w1 + a1 + 1] - S[b0 * w1 + a1 + 1] - S[(b1 + 1) * w1 + a0] + S[b0 * w1 + a0];
+            const aus = (x, y) =>
+                x >= 0 && y >= 0 && x < W && y < H && m[y * W + x] !== 1 && (!aussen || aussen[y * W + x] === 1);
+            for (let y = Math.max(1, by0); y <= Math.min(H - 2, by1); y++)
+                for (let x = Math.max(1, bx0); x <= Math.min(W - 2, bx1); x++) {
+                    if (m[y * W + x] !== 1 || !(aus(x - 1, y) || aus(x + 1, y) || aus(x, y - 1) || aus(x, y + 1))) continue;
+                    const lx = x - x0,
+                        ly = y - y0;
+                    const a0 = Math.max(0, lx - r),
+                        a1 = Math.min(w - 1, lx + r),
+                        b0 = Math.max(0, ly - r),
+                        b1 = Math.min(h - 1, ly + r);
+                    const jxx = box(Sxx, a0, b0, a1, b1),
+                        jyy = box(Syy, a0, b0, a1, b1),
+                        jxy = box(Sxy, a0, b0, a1, b1);
+                    const tr = jxx + jyy;
+                    if (!(tr > 1e-12)) continue;
+                    kr++;
+                    ks += ((jxx - jyy) * (jxx - jyy) + 4 * jxy * jxy) / (tr * tr);
+                }
+        }
+    }
     const mittel = n ? s / n : null;
     const r4 = (x) => (x == null || !Number.isFinite(x) ? null : +x.toFixed(4));
     return {
@@ -673,6 +764,8 @@ function klassenMasse(F, m, W, H) {
         ek: +ek.toFixed(1),
         eg: +eg.toFixed(1),
         silhouette: n ? r4(rand / Math.sqrt(n)) : null,
+        kante: kr ? r4(ks / kr) : null,
+        kr,
     };
 }
 
@@ -899,6 +992,7 @@ const SOLL_MASSE = Object.freeze([
     "laiWirk",
     "nyquist",
     "zweiton",
+    "kante",
     "detail",
     "milchweiss",
     "lichtVerhaeltnis",
@@ -912,6 +1006,7 @@ const MASS_AUFLOESUNG = Object.freeze({
     laiWirk: 0.05,
     nyquist: 0.005,
     zweiton: 0.01,
+    kante: 0.01,
     detail: 0.005,
     milchweiss: 0.01,
     lichtVerhaeltnis: 0.05,
@@ -1059,6 +1154,30 @@ const MASS_RECHNER = {
         return {
             ist: +(zt / px).toFixed(4),
             taeter: arg ? `${arg[0]} (${Math.round(arg[1] * 1000) / 10} % ihrer Pixel im Raster)` : null,
+            anteil: px / flaeche(me),
+        };
+    },
+    // DIE KANTE DER SILHOUETTE (K68-n2; `klassenMasse` kante über die Rand-Pixel ihrer Teil-Klassen gemittelt): wie gerade der
+    // Umriss der Krone gegen das Außen läuft; der Täter die Teil-Klasse (≥ 5 % der Pixel) mit der geradesten Kante.
+    kante(ma) {
+        const me = ma.messung;
+        const f = bildMessungFehler(me);
+        if (f) return { fehler: f };
+        let s = 0,
+            nr = 0,
+            arg = null;
+        const px = pixelSumme(me);
+        for (const [n, k] of Object.entries(me.klassen)) {
+            if (k.kr == null) return { fehler: `die Messung ohne Kante (${n}) — vor K68-n2 gemessen` };
+            if (k.kante == null) continue;
+            s += k.kante * k.kr;
+            nr += k.kr;
+            if (k.pixel >= 0.05 * px && (!arg || k.kante > arg[1])) arg = [n, k.kante, k.kr];
+        }
+        if (!nr) return { fehler: "die Klasse zeigt keinen Rand gegen das Außen" };
+        return {
+            ist: +(s / nr).toFixed(4),
+            taeter: arg ? `${arg[0]} (kante ${arg[1]} über ${arg[2]} Rand-Pixel)` : null,
             anteil: px / flaeche(me),
         };
     },
@@ -1744,6 +1863,50 @@ function sollTafelSelbsttest(tafel, q) {
     const zb = sollRechnung({ art: "zweiton1f", beta: [0, 2.4] });
     if (!(zb.band && zb.band[1] === 0))
         v.push(`Rechnung zweiton1f: Bilder ohne Muster tragen Raster (${JSON.stringify(zb)})`);
+    // DIE KANTE DER SILHOUETTE (K68-n2): die Karte (ein Quadrat, gerade und gedreht gleich) liest gerade, der Umriss einer
+    // Höhenlinie natürlichen Rauschens (1/f^β, β 1–3: Mischwald 0,160 ≈ β 2,4, Rudka 0,218 ≈ β 3) zerfranst und im Band der
+    // Laub-Silhouette; nur der Rand gegen das Außen zählt
+    {
+        const n = 128,
+            F0 = new Uint8Array(n * n * 4),
+            q0 = new Uint8Array(n * n),
+            q1 = new Uint8Array(n * n),
+            halb = new Uint8Array(n * n);
+        for (let y = 0; y < n; y++)
+            for (let x = 0; x < n; x++) {
+                if (x >= 24 && x < 104 && y >= 24 && y < 104) q0[y * n + x] = 1;
+                const u = (x - 64) * 0.8 + (y - 64) * 0.6,
+                    w = -(x - 64) * 0.6 + (y - 64) * 0.8;
+                if (Math.abs(u) < 40 && Math.abs(w) < 40) q1[y * n + x] = 1;
+                halb[y * n + x] = x < 64 ? 1 : 0;
+            }
+        const kq = klassenMasse(F0, q0, n, n),
+            kd = klassenMasse(F0, q1, n, n);
+        if (!(kq.kante > 0.75 && Math.abs(kq.kante - kd.kante) < 0.05))
+            v.push(`Maß kante: die Karte liest ${kq.kante}, gedreht ${kd.kante} (Soll > 0,75, gleich)`);
+        const ka = klassenMasse(F0, q0, n, n, halb);
+        if (!(ka.kr > 0 && ka.kr < 0.6 * kq.kr)) v.push(`Maß kante: der Rand zählt ${ka.kr} von ${kq.kr} Pixeln, nur das Außen zählt`);
+        const linie = (beta) => {
+            let s = 0;
+            for (let saat = 1; saat <= 4; saat++) {
+                const R = rauschBild(n, beta, 7919 * saat);
+                const v0 = [];
+                for (let p = 0; p < n * n; p++) v0.push(R[p * 4]);
+                const med = v0.sort((a, b) => a - b)[(n * n) >> 1];
+                const m = new Uint8Array(n * n);
+                for (let p = 0; p < n * n; p++) m[p] = R[p * 4] > med ? 1 : 0;
+                s += klassenMasse(R, m, n, n).kante;
+            }
+            return s / 4;
+        };
+        const l1 = linie(1),
+            l24 = linie(2.4),
+            l3 = linie(3);
+        const lb = (tafel && tafel.klassen ? tafel.klassen : []).find((k) => k.id === "laub-kante");
+        const grenze = lb ? ((lb.soll.eigenschaften || []).find((e) => e.groesse === "kante") || {}).band : null;
+        if (!(l1 < l24 && l24 < l3 && l3 < kq.kante)) v.push(`Maß kante: β 1 ${l1} · 2,4 ${l24} · 3 ${l3} steigt nicht bis zur Karte`);
+        if (grenze && !(l24 <= grenze[1])) v.push(`Maß kante: die Höhenlinie β 2,4 (${l24}) liegt über dem Band der Laub-Silhouette`);
+    }
     const stufeMe = (namen) => ({
         werkzeug: "bild",
         datum: "x",

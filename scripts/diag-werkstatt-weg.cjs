@@ -354,9 +354,15 @@ function wand(src) {
         })(),
         (() => {
             const geist = fnBody(nc, /\n {4}_ghostMaterialFor\([^)]*\) \{/) || "";
+            // die Zahl regiert den Schnitt auch dort, wo ein Stoff einen Schwellen-Knoten trägt (K68-N1, Prüfer K68: der Klon
+            // erbte `alphaTestNode` 0,5, die gesenkte Zahl wirkte nicht — unter kienspan verwarf das Baum-Phantom jedes Blatt)
+            const knoten = (nc.match(/\.alphaTestNode = /g) || []).length;
+            const schwelle = fnBody(nc, /\n {4}_laubSchwelle\([^)]*\) \{/) || "";
+            const zahl = knoten === 0 || /materialAlphaTest/.test(schwelle);
             return [
-                "W6 das Phantom übersteht den Alpha-Test (`_ghostMaterialFor`: alphaTest × Deckkraft)",
-                geist.includes("g.alphaTest = (Number.isFinite(mat.alphaTest) ? mat.alphaTest : 0) * g.opacity;"),
+                "W6 das Phantom übersteht den Alpha-Test (`_ghostMaterialFor`: alphaTest × Deckkraft; der Schwellen-Knoten des Laubs liest die Zahl seines Stoffs, `_laubSchwelle`)",
+                geist.includes("g.alphaTest = (Number.isFinite(mat.alphaTest) ? mat.alphaTest : 0) * g.opacity;") && zahl,
+                zahl ? "" : `${knoten} Schwellen-Knoten ohne die Zahl des Stoffs (_laubSchwelle liest materialAlphaTest nicht)`,
             ];
         })(),
         (() => {
@@ -1655,6 +1661,11 @@ async function probe(argW) {
                 "das Brennglas erhitzt wieder den ganzen 4-m-Kreis",
                 quelle.replace("if (this._traegtPunkt(target, targetBp, p)) {", "if (true) {"),
                 "W5",
+            ],
+            [
+                "der Schwellen-Knoten des Laubs ohne die Zahl des Stoffs (das Phantom erbt 0,5)",
+                quelle.replace("T.materialAlphaTest.mul(", "T.float(0.5).mul("),
+                "W6",
             ],
             [
                 "das Phantom verwirft wieder jedes Fragment",
