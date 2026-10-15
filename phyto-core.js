@@ -409,10 +409,10 @@
     // Integration 05.10.: die zweite Baum-Zelle war ein Zwilling der ersten (derselbe Zweig, derselbe Strom — Prüfer W5:
     // „die zwei Baum-Zellen sind fast gleich"); sie trägt seither den Weiden-Zweig, die Bäume lesen Zelle 0.
     const BLATT_ATLAS_BREIT = { zellen: 1, kern: 0.72, fuellung: 0.1796 };
-    // Die Wedel-Zelle (S3, 09.10.): der Wedel reicht bis 0,998 der halben Zelle (kern 1), Füllung 0,2713 gemessen (gate:asset-contract
+    // Die Wedel-Zelle (S3, 09.10.): der Wedel reicht bis zum Rand der halben Zelle (kern 1), Füllung 0,2742 gemessen (gate:asset-contract
     // malt den Atlas und hält die Zahl gegen den Maler; vorher die Nadel-Zweiglein 0,2537, die Lanzette bis K58 0,2811, die Hand
-    // aus Nadel-Büscheln bis L2 0,3603).
-    const BLATT_ATLAS_WEDEL = { zelle: 3, kern: 1, fuellung: 0.2713 };
+    // aus Nadel-Büscheln bis L2 0,3603, die Büschel-Spitze bis L2-n1 0,2713).
+    const BLATT_ATLAS_WEDEL = { zelle: 3, kern: 1, fuellung: 0.31 };
     // DIE GROSSBLATT-ZELLE (05.10.): das Blatt-Mass ist eine Eigenschaft der Art — die Baum-Karten (Zelle 0) tragen
     // das Natur-Blatt der Baeume (14 px in der 512er-Zelle), die kleine Karte des Strauchs und die gestreckte Straehne
     // der Weide trugen damit 0,026 bzw. 0,039 m (Hasel und Weide: 0,06–0,15 m). Zelle 2 traegt ihr den Zweig mit
@@ -530,23 +530,27 @@
     // eigener Biegung (`biegung` [Gegen-Schwung, Zufall] rad) und ab `unterAb` in `unter` Unter-Zweiglein gefächert (Winkel
     // `unterWinkel` [Basis, Zufall], Länge `unterLaenge` × 0,6–1,4): ein Fichten-Zweig aus Büscheln mit Himmel dazwischen
     // bis Mip 3, die Kante zerfällt in Richtungen statt in parallele Striche.
+    // DIE FISCHGRÄTE (L2-n1, 16.10.; Prüfer L2: ab Mip 1 lasen die Büschel als Korallen mit runden Löchern, Tanne L0 0,28):
+    // 9 Unter-Zweiglein je Zweiglein mit kurzen Nadeln (9 px, Strich 2,5 px alle 2,5 px) — die Zweiglein tragen Gräten
+    // statt dicker Bürsten, die Kante bleibt bis Mip 2 gezackt. Echte GPU, Tafel-Pose, dieselbe Welt (Atlas getauscht):
+    // laub-kante 0,226 → 0,211, Tanne L0 0,284 → 0,217; dickere Nadeln (3 px) 0,27, dünnere und lichtere 0,26.
     const WEDEL_ZWEIG = {
         seiten: 10,
         laenge: 0.95,
         stumpf: 3,
         streu: [0.5, 0.8],
-        unterLaenge: 0.55,
+        unterLaenge: 0.45,
         unterAb: 0.3,
         unterWinkel: [0.4, 0.7],
         biegung: [0.18, 0.9],
         winkel: [0.55, 0.8],
-        unter: 5,
-        abstand: 1.4,
-        nadel: 14,
-        breite: 2,
+        unter: 9,
+        abstand: 2.5,
+        nadel: 9,
+        breite: 2.5,
         nadelWinkel: 1.05,
         rand: 0.92,
-        strom: 0xbeef,
+        strom: 0xb0a7,
     };
 
     // DER BLATT-ATLAS — EINE Quelle für jeden Leser (Studio, Foundry-Worker, Host): er trägt NUR den WERT

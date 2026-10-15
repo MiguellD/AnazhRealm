@@ -286,9 +286,9 @@ was eine GELIEFERTE Stufe kosten darf, als Daten neben `kindStages`.
       feinere Strang ist seine Karte (das Atlas-Bild ist ein belaubter Zweig) bzw. Strähne. Ein Baum OHNE Krone (Totholz)
       hat keine Karte, die ihn trüge: seine L1 trägt jeden Strang ab einem Bild-Pixel an der Nahkante (STUFEN_BILD_PX) —
       mit dem Gerüst ab 0,25·trunkR verlor das Totholz-L1 bis 16 % seiner Ansicht;
-    - `wedel` ({ab, teile, breite, nadel, rand, winkel, spalte, holz}; tree[0] {0,35, 1, 1,65, 0,025 m, 0,5, 40°, 1,25, 0,15}
-      · tree[1] {0, 2, 2,03, 0,07 m, 0,3, 40°, 1,5, 0,15}): der Nadel-Ast (jeder Seitenast des Leittriebs) ist bis `ab` seiner Bahn Röhre
-      und läuft dort spitz aus; sein Wedel — Strähnen aus der Wedel-Zelle (`BLATT_ATLAS_WEDEL`, Zelle 3, Füllung 0,2713: ein Fichten-Zweig aus Büscheln, L2),
+    - `wedel` ({ab, teile, breite, nadel, rand, winkel, spalte, holz}; tree[0] {0,35, 1, 1,65, 0,016 m, 0,5, 40°, 1,25, 0,15}
+      · tree[1] {0, 2, 2,03, 0,045 m, 0,3, 40°, 1,5, 0,15}): der Nadel-Ast (jeder Seitenast des Leittriebs) ist bis `ab` seiner Bahn Röhre
+      und läuft dort spitz aus; sein Wedel — Strähnen aus der Wedel-Zelle (`BLATT_ATLAS_WEDEL`, Zelle 3, Füllung 0,2742: ein Fichten-Zweig aus Büscheln mit Gräten, L2-n1),
       mindestens `teile` und so viele Stücke, dass die Nadel in der Welt `nadel` misst — trägt die ganze Bahn: je Stück so
       breit wie die Hülle seiner Nadel-Wolke (Abstand zur Bahn + `rand` × Nadel-Größe, unter 45° um ihre Stelle) ×
       `breite`, vom Röhren-Ende bis zur Spitze in Kette (mindestens der Saum `rand` × Nadel-Größe: kein Stück schwebt).
