@@ -254,11 +254,7 @@ function quellWand(quelle) {
         if (istTakt(name)) {
             gesehen.add(name);
             lauf(body, (n) => {
-                if (
-                    n.type === "CallExpression" &&
-                    n.callee.type === "MemberExpression" &&
-                    WUCHS.has(feld(n.callee))
-                )
+                if (n.type === "CallExpression" && n.callee.type === "MemberExpression" && WUCHS.has(feld(n.callee)))
                     meld(n, `leitet ein Skelett im Haupt-Faden ab (.${feld(n.callee)})`);
                 if ((n.type === "ForOfStatement" || n.type === "ForInStatement") && istBestand(n.right))
                     meld(n, "läuft über den Bestand (for-of)");
@@ -438,11 +434,27 @@ if (process.argv.includes("--selftest")) {
         ["fremde Hitze +=", klasse("feuer(e) { e.heatBuildup += 0.1; }"), "außerhalb des Brennglas-Takts"],
         ["fremde Hitze ++", klasse("feuer(e) { e.heatBuildup++; }"), "außerhalb des Brennglas-Takts"],
         ["tote Ausnahme", `class X { ${TAKTE.map((x) => `${x}() {}`).join(" ")} }`, "TOTE AUSNAHME"],
-        ["Spiegel-Kronen über den Bestand", takt("_spiegelKronen", "for (const e of this.state.architectures) e;"), BESTAND],
-        ["Spiegel-Familie über den Bestand", klasse("_spiegelHilfe() { (this.state.architectures || []).some((e) => e); }"), BESTAND],
+        [
+            "Spiegel-Kronen über den Bestand",
+            takt("_spiegelKronen", "for (const e of this.state.architectures) e;"),
+            BESTAND,
+        ],
+        [
+            "Spiegel-Familie über den Bestand",
+            klasse("_spiegelHilfe() { (this.state.architectures || []).some((e) => e); }"),
+            BESTAND,
+        ],
         ["Wuchs im Takt", takt("_spiegelKronen", "this._gestaltTeile(p, g, null, []);"), WUCHS_SATZ],
-        ["Wuchs in der Spiegel-Familie", klasse("_spiegelGestalt(z) { return this._growTreeBlueprintRich(z.art, null, {}); }"), WUCHS_SATZ],
-        ["Skelett im Takt", takt("_spiegelFeldTakt", "globalThis.__terrainCore.skelettDerGestalt('eiche', 1, 0);"), WUCHS_SATZ],
+        [
+            "Wuchs in der Spiegel-Familie",
+            klasse("_spiegelGestalt(z) { return this._growTreeBlueprintRich(z.art, null, {}); }"),
+            WUCHS_SATZ,
+        ],
+        [
+            "Skelett im Takt",
+            takt("_spiegelFeldTakt", "globalThis.__terrainCore.skelettDerGestalt('eiche', 1, 0);"),
+            WUCHS_SATZ,
+        ],
     ];
     for (const [was, src, satz] of proben) {
         const b = quellWand(src);

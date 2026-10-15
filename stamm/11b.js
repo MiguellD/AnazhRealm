@@ -2502,19 +2502,28 @@ class AnazhRealm_Z11b {
         for (const e of nah) {
             const p = e.position;
             if (!p || !Number.isInteger(e._huelleG) || !drin(p.x, p.z)) continue;
-            // das Preset des Eintrags, wenn es wächst (Baum, Strauch), gemerkt je Eintrag
-            let preset = S.arten.get(e);
-            if (preset === undefined) {
+            // je Eintrag gemerkt: sein Preset, wenn es wächst (Baum, Strauch), seine Welt-Skala und die Krone seiner Gestalt —
+            // neu gelesen, wenn die Gestalt der Hülle oder die Prägung wechselt
+            let a = S.arten.get(e);
+            if (a === undefined) {
                 const pr = this._foundryPresetForEntry(e);
                 const rec = pr && tab ? tab[pr] : null;
-                preset = rec && (rec.kind === "tree" || rec.kind === "shrub") ? pr : null;
-                S.arten.set(e, preset);
+                a =
+                    rec && (rec.kind === "tree" || rec.kind === "shrub")
+                        ? { preset: pr, k: this._studioWeltSkala(e) }
+                        : null;
+                S.arten.set(e, a);
             }
-            if (!preset) continue;
-            const krone = this._foundryBaumKrone(preset, e._huelleG, this._artifactStudioOv(e));
-            if (!krone) continue;
-            const s = (Number.isFinite(e.scale) && e.scale > 0 ? e.scale : 1) * this._studioWeltSkala(e);
-            setze(krone, p.x, p.y - 0.5, p.z, s, Number.isFinite(e.rotationY) ? e.rotationY : 0);
+            if (!a) continue;
+            if (a.g !== e._huelleG || a.ov !== e.studioOv) {
+                a.g = e._huelleG;
+                a.ov = e.studioOv;
+                a.krone = undefined;
+            }
+            if (!a.krone) a.krone = this._foundryBaumKrone(a.preset, a.g, this._artifactStudioOv(e));
+            if (!a.krone) continue;
+            const s = (Number.isFinite(e.scale) && e.scale > 0 ? e.scale : 1) * a.k;
+            setze(a.krone, p.x, p.y - 0.5, p.z, s, Number.isFinite(e.rotationY) ? e.rotationY : 0);
         }
         const regionen = this.state.scatterRegions;
         const regM = AnazhRealm.SCATTER.regionM;

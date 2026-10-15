@@ -1291,7 +1291,12 @@ AnazhRealm.FOUNDRY_PLATTE_FORMAT = 3;
 // als `huelle` · `fern` weiter). `__huelle` (Welle L) die Kollision der gezeigten Stufe, `__fern` (S3) die Fernform der Stufe 3
 // — beide in der EINEN Hüllen-Form (docs/studio-vertrag.md N5, der Leser `_huelleVon`); `__mass` (K20) der Hub des Schafts,
 // `__krone` (D10) die gezeichnete Krone eines Baums oder Strauchs (das Kronen-Buch, `_foundryBaumKrone`).
-AnazhRealm.FOUNDRY_BEIPACK = Object.freeze({ __huelle: "_huelle", __fern: "_fern", __mass: "_mass", __krone: "_krone" });
+AnazhRealm.FOUNDRY_BEIPACK = Object.freeze({
+    __huelle: "_huelle",
+    __fern: "_fern",
+    __mass: "_mass",
+    __krone: "_krone",
+});
 // Der Keil der Hüllen-Form im Welt-March: die First-Kante → der Typ der Kapsel-Liste (pB.w; 0 Kasten · 1 Ellipsoid). Der
 // Walm (0..1) reist im Bruchteil (Typ + 0,49 · walm), das WGSL (`sdKeil`) schneidet die zwei Stirnen mit der Dach-Neigung.
 AnazhRealm.HUELLE_KEIL_TYP = Object.freeze({ "+z": 2, "-z": 3, "+x": 4, "-x": 5 });
