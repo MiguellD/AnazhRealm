@@ -19,6 +19,9 @@
 //   (5) DER WECKER (K60-2): eine aufgeschobene Region wartet auf IHRE Zusagen — eine fremde Lieferung
 //       (`_scatterRefillPending`) wirft sie nicht weg; erst wenn jede ihrer Zusagen kam, baut der Refill sie neu.
 //       Täter beim Namen: der Refill in `_tickScatterStreaming`, der jede aufgeschobene Region bei jeder Lieferung warf.
+//   (6) DER STOFF DES WALDS (K60-3): die Gestalt der Streu (`_ortGestaltSame`) bestellt die Darts beim Voxel-Faden
+//       (`_waldDartsBestellen`) — unter der Streu-Scheibe rechnet der Haupt-Faden keinen Dart, die Region wartet und steht
+//       nach der Lieferung byte-gleich zur Referenz ohne Faden. Täter beim Namen: `_forestCellDarts` unter `_scatterRegionWork`.
 // ─────────────────────────────────────────────────────────────────────────
 
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
@@ -191,6 +194,64 @@ const server = statikServer();
                 wecker.threw = String((e && e.message) || e);
             }
             o.wecker = wecker;
+            // ── (6) DER STOFF DES WALDS (K60-3): die Gestalt der Streu wartet auf die Darts des Fadens ──
+            const stoff = {
+                buch: false,
+                wahr: false,
+                faden: false,
+                haupt: -1,
+                nachher: -1,
+                gewartet: false,
+                gleich: null,
+                zellen: 0,
+                threw: false,
+            };
+            try {
+                clean();
+                const t0 = performance.now();
+                const bereit = () => !!(r._foundry && r._foundry.ready && r._foundry.recipes && r._forestGesetzWahr());
+                while (!bereit() && performance.now() - t0 < 90000) await new Promise((res) => setTimeout(res, 200));
+                stoff.buch = !!(r._foundry && r._foundry.recipes);
+                stoff.wahr = r._forestGesetzWahr();
+                stoff.faden = !!st.voxelWorker;
+                // mit Faden, frisches Gedächtnis: wie viele Darts rechnet der Haupt-Faden UNTER der Streu-Scheibe (`_streuSammler`)?
+                r._forestDartMemo = null;
+                let zaehler = 0;
+                const altCD = r._forestCellDarts;
+                r._forestCellDarts = function (cx, cz, seedInt) {
+                    if (this._streuSammler && !(this._forestDartMemo && this._forestDartMemo.has(cx + "," + cz)))
+                        zaehler++;
+                    return altCD.call(this, cx, cz, seedInt);
+                };
+                const vw = st.voxelWorker;
+                try {
+                    const reg6 = r._scatterRegion(rx, rz, pos);
+                    stoff.haupt = zaehler;
+                    const t1 = performance.now();
+                    while (reg6._deferredFoundry && !reg6._geweckt && performance.now() - t1 < 60000)
+                        await new Promise((res) => setTimeout(res, 50));
+                    stoff.gewartet = reg6._deferredFoundry === true && reg6._geweckt === true;
+                    // der Neubau nach der Lieferung und die Referenz ohne Faden (der Main rechnet jeden Dart selbst, frisches
+                    // Gedächtnis) Rücken an Rücken, ohne Warten dazwischen: kein Asset kommt zwischen die beiden Bauten
+                    clean();
+                    zaehler = 0;
+                    const neu = r._scatterRegion(rx, rz, pos);
+                    stoff.nachher = zaehler;
+                    stoff.zellen = neu && neu.cells ? neu.cells.length : 0;
+                    const neuSnap = snapshot(neu);
+                    clean();
+                    st.voxelWorker = null;
+                    r._forestDartMemo = null;
+                    stoff.gleich = snapshot(r._scatterRegion(rx, rz, pos)) === neuSnap;
+                } finally {
+                    st.voxelWorker = vw;
+                    r._forestCellDarts = altCD;
+                }
+                clean();
+            } catch (e) {
+                stoff.threw = String((e && e.message) || e);
+            }
+            o.stoff = stoff;
             return o;
         });
     } catch (e) {
@@ -238,6 +299,25 @@ const server = statikServer();
                 out.wecker.fremd === true &&
                 out.wecker.eine === true &&
                 out.wecker.beide === false,
+        },
+        {
+            name:
+                `DER STOFF DES WALDS: unter der Streu-Scheibe rechnet der Haupt-Faden keinen Dart, die Region wartet auf den ` +
+                `Voxel-Faden und steht danach byte-gleich zur Referenz ohne Faden (${JSON.stringify(out.stoff)})` +
+                (out.stoff && out.stoff.haupt > 0
+                    ? ` — TÄTER: _forestCellDarts unter _scatterRegionWork (${out.stoff.haupt} Darts im Haupt-Faden)`
+                    : ""),
+            pass:
+                !!out.stoff &&
+                out.stoff.threw === false &&
+                out.stoff.buch === true &&
+                out.stoff.wahr === true &&
+                out.stoff.faden === true &&
+                out.stoff.haupt === 0 &&
+                out.stoff.gewartet === true &&
+                out.stoff.nachher === 0 &&
+                out.stoff.gleich === true &&
+                out.stoff.zellen > 5,
         },
     ];
     let fails = 0;

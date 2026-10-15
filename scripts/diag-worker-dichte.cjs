@@ -408,6 +408,46 @@ async function probe(page, welt, mitAbdruck) {
                     }
                 }
             }
+            // TEIL W — DER STOFF DES WALDS (K60-3): die Darts der Wald-Zellen um jeden Ort (9 × 9 Zellen) im Main
+            // (`_forestCellDarts`, frisches Gedächtnis) und im Voxel-Faden (`_voxelWorkerWaldDarts`, entpackt über
+            // `_waldDartsAn`) — jede Zelle Wort für Wort gleich (JSON ihrer Darts). Die Streu wartet auf die Darts des Fadens;
+            // drifteten sie, stünde die Gestalt der Ferne auf einer anderen Wahrheit als der Wald der Nähe.
+            if (typeof r._voxelWorkerWaldDarts === "function" && r._getVoxelWorker() && r._forestGesetzWahr()) {
+                const wa = (out.wald = { zellen: 0, darts: 0, abweichend: 0, erste: null });
+                const seedInt = r._forestSeedInt();
+                const C = r.constructor.FOREST.cell;
+                for (const ort of orte) {
+                    const zellen = [];
+                    for (let i = -4; i <= 4; i++)
+                        for (let j = -4; j <= 4; j++) zellen.push(Math.floor(ort.x / C) + i, Math.floor(ort.z / C) + j);
+                    r._forestDartMemo = null; // frisches Gedächtnis: der Main rechnet jede Zelle selbst
+                    const main = [];
+                    for (let k = 0; k < zellen.length; k += 2)
+                        main.push(r._forestCellDarts(zellen[k], zellen[k + 1], seedInt));
+                    const res = await r._voxelWorkerWaldDarts(new Int32Array(zellen), seedInt, r._forestExtraSpecies());
+                    const alt = r._forestDartMemo;
+                    const faden = new Map();
+                    r._forestDartMemo = faden;
+                    r._waldDartsAn(faden, zellen, res);
+                    r._forestDartMemo = alt;
+                    for (let k = 0; k < zellen.length; k += 2) {
+                        const m = main[k / 2];
+                        const w = faden.get(zellen[k] + "," + zellen[k + 1]);
+                        wa.zellen++;
+                        wa.darts += m.length;
+                        if (JSON.stringify(m) === JSON.stringify(w)) continue;
+                        wa.abweichend++;
+                        if (!wa.erste)
+                            wa.erste = {
+                                ort: ort.id,
+                                gx: zellen[k],
+                                gz: zellen[k + 1],
+                                main: m[0] || null,
+                                faden: (w && w[0]) || null,
+                            };
+                    }
+                }
+            }
             return out;
         },
         welt,
@@ -1549,14 +1589,32 @@ async function gebaut(page, fehler) {
         console.log(
             fe
                 ? `    Höhen der Ferne (Main-Scheiben = Voxel-Faden): ${fe.n} Punkte · abweichend ${fe.abweichend}` +
-                      (fe.erste ? ` — erste bei (${Math.round(fe.erste.x)}|${Math.round(fe.erste.z)}) Detail ${fe.erste.detail}` : "")
+                      (fe.erste
+                          ? ` — erste bei (${Math.round(fe.erste.x)}|${Math.round(fe.erste.z)}) Detail ${fe.erste.detail}`
+                          : "")
                 : "    Höhen der Ferne: kein Voxel-Faden — keine Probe"
         );
         if (!fe || fe.abweichend > 0) rot = true;
+        const wa = rep.wald;
+        console.log(
+            wa
+                ? `    Stoff des Walds (Main = Voxel-Faden, Teil W): ${wa.zellen} Zellen · ${wa.darts} Darts · abweichend ${wa.abweichend}` +
+                      (wa.erste
+                          ? ` — erste Zelle ${wa.erste.gx},${wa.erste.gz} am Ort ${wa.erste.ort}: Main ${JSON.stringify(wa.erste.main)} · Faden ${JSON.stringify(wa.erste.faden)}`
+                          : "")
+                : "    Stoff des Walds: kein Voxel-Faden oder keine Wahrheit — keine Probe"
+        );
+        if (welt === "standard" && (!wa || !(wa.darts > 0) || wa.abweichend > 0)) rot = true;
         if (rep.abweichend > 0 || rep.befunde.length) rot = true;
         if (SELBSTTEST && welt === "standard") {
             const v = await probeVerfaelscht(page);
-            selbst = { abweichend: v.abweichend, maxDiff: v.maxDiff, gitter: v.gitter, ferne: v.ferne ? v.ferne.abweichend : 0 };
+            selbst = {
+                abweichend: v.abweichend,
+                maxDiff: v.maxDiff,
+                gitter: v.gitter,
+                ferne: v.ferne ? v.ferne.abweichend : 0,
+                wald: v.wald ? v.wald.abweichend : 0,
+            };
             console.log(
                 `\n  SELBSTTEST (Basis-Höhe + 1 cm nur im Worker): ${v.abweichend} abweichende Ecken in ${v.gitter} Gittern, maxDiff ${v.maxDiff}`
             );
@@ -1598,7 +1656,8 @@ async function gebaut(page, fehler) {
     let pass;
     if (SELBSTTEST) {
         // die Höhen der Ferne (K60) fallen mit demselben verfälschten Worker-Term rot
-        pass = !rot && selbst && selbst.abweichend > 0 && selbst.ferne > 0;
+        pass = !rot && selbst && selbst.abweichend > 0 && selbst.ferne > 0 && selbst.wald > 0;
+        console.log(`  SELBSTTEST Stoff des Walds: ${selbst ? selbst.wald : "?"} abweichende Zellen (Soll > 0)`);
         console.log(`  SELBSTTEST Höhen der Ferne: ${selbst ? selbst.ferne : "?"} abweichende Punkte (Soll > 0)`);
         console.log(
             `\n${pass ? "✅" : "⛔"} SELBSTTEST ${pass ? "GRÜN: der saubere Spiegel ist byte-gleich, der verfälschte Worker-Term fällt rot" : "ROT: " + (rot ? "der saubere Lauf ist schon rot" : "die Verfälschung blieb unentdeckt (die Linse ist blind)")}\n`

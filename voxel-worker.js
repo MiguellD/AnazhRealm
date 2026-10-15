@@ -234,6 +234,43 @@ self.onmessage = function (e) {
                 },
                 tr
             );
+        } else if (msg.type === "wald-darts") {
+            // DER STOFF DES WALDS (K60-3): die geborenen Darts der Wald-Zellen (phyto-core `planForestCell`) mit den Lesern
+            // DIESES Fadens — derselbe Plan wie `_forestCellDarts` im Main, Wort für Wort (gate:worker-dichte Teil W), am
+            // Zustand, der vor dem Auftrag reiste (Hydro-Kacheln, Erdbau, Edits). Gepackt per Transfer: je Dart WALD_FELDER
+            // Zahlen, die Art als Index in `arten`; der Main legt sie ins Dart-Gedächtnis seines Stands (`_waldDartsAn`).
+            const z = msg.zellen;
+            const n = (z.length / 2) | 0;
+            const ctx = waldCtx(msg);
+            const arten = [];
+            const artIdx = new Map();
+            const zahl = [];
+            const anzahl = new Int32Array(n);
+            for (let k = 0; k < n; k++) {
+                const out = self.__phytoCore.planForestCell(z[k * 2], z[k * 2 + 1], msg.seedInt, ctx);
+                anzahl[k] = out.length;
+                for (const d of out) {
+                    let ai = artIdx.get(d.sp);
+                    if (ai === undefined) {
+                        ai = arten.length;
+                        arten.push(d.sp);
+                        artIdx.set(d.sp, ai);
+                    }
+                    zahl.push(d.x, d.z, ai, d.s, d.T, d.prio, d.keep, d.totRoll, d.rotY, d.seed);
+                    zahl.push(d.surfaceY == null ? NaN : d.surfaceY);
+                }
+            }
+            const werte = new Float64Array(zahl);
+            self.postMessage(
+                {
+                    type: "wald-darts-result",
+                    requestId: msg.requestId,
+                    anzahl: anzahl.buffer,
+                    werte: werte.buffer,
+                    arten,
+                },
+                [anzahl.buffer, werte.buffer]
+            );
         } else if (msg.type === "ping") {
             self.postMessage({ type: "pong", requestId: msg.requestId || null });
         }
@@ -246,6 +283,131 @@ self.onmessage = function (e) {
         });
     }
 };
+
+// =============================================================================
+// DIE LESER DES WALDS (K60-3) — Mirror der Welt-Leser, die `_forestCellDarts` dem Wald-Plan reicht (Oberfläche · Wasser ·
+// Steilheit · Feuchte · fbm · Ort). Bei jeder Anpassung dort: hier mit-wandern (gate:worker-dichte Teil W vergleicht die
+// Darts Main = Worker Wort für Wort).
+// =============================================================================
+
+// Mirror von `_voxelSurfaceY`: von oben durchs Band bis zur ersten Luft→Fest-Grenze, der Nulldurchgang linear.
+function voxelSurfaceY(x, z) {
+    const base = state.baseHeight || 0;
+    const cfg = voxelChunkConfig(0);
+    const floorY = base - cfg.floorDrop;
+    const top = floorY + cfg.dimY * cfg.step - 8;
+    const bottom = floorY + 12;
+    const colCtx = terrainColumnContext(x, z);
+    const macroSurf = colCtx.surf;
+    const skipAbove = Number.isFinite(macroSurf)
+        ? Math.max(macroSurf + 12 + 4 * cfg.step, editsFillTop() + 2)
+        : Infinity;
+    let prevAir = true;
+    let prevD = null;
+    for (let y = top; y >= bottom; y -= 1.2) {
+        if (y > skipAbove) continue;
+        const d = terrainDensityAtCol(x, y, z, colCtx);
+        const solid = d > 0;
+        if (solid && prevAir) {
+            const dLuft = prevD != null ? prevD : terrainDensityAtCol(x, y + 1.2, z, colCtx);
+            const t = d - dLuft > 1e-9 ? d / (d - dLuft) : 0;
+            return y + 1.2 * Math.min(1, Math.max(0, t));
+        }
+        prevAir = !solid;
+        prevD = d;
+    }
+    return null;
+}
+
+// Mirror von `_voxelEditsFillTop`: die höchste Füll-Kugel (Krone y + r), gemerkt je Edit-Liste und Länge.
+let fillTopMerk = null;
+function editsFillTop() {
+    const edits = state.voxelEdits;
+    const len = edits ? edits.length : 0;
+    if (fillTopMerk && fillTopMerk.edits === edits && fillTopMerk.len === len) return fillTopMerk.top;
+    let topY = -Infinity;
+    for (let i = 0; i < len; i++) {
+        const e = edits[i];
+        if (e && e.mode === "fill") {
+            const t = (Number(e.y) || 0) + (Number(e.r) || 0);
+            if (t > topY) topY = t;
+        }
+    }
+    fillTopMerk = { edits, len, top: topY };
+    return topY;
+}
+
+// Mirror von `_forestFbm` (der Wald-Rausch am Same + ":forest").
+let waldRausch = null;
+function forestFbm(px, pz) {
+    const seed = state.seed || "anazh-realm-seed";
+    if (!waldRausch || waldRausch.seed !== seed) waldRausch = { seed, n: new SimplexNoise(seed + ":forest") };
+    const n = waldRausch.n;
+    const a = (n.noise2D(px, pz) + 1) * 0.5;
+    const b = (n.noise2D(px * 2.7 + 11.3, pz * 2.7 - 5.9) + 1) * 0.5;
+    return a * 0.65 + b * 0.35;
+}
+
+// Mirror von `_ortFrei`: trägt der Grund an (x, z) eine Krone vom Radius T, ohne einen Erdbau zu berühren?
+function ortFrei(x, z, T) {
+    const E = state.erdbau;
+    if (!E) return true;
+    const Zm = G.ERDBAU.zelleM;
+    const liste = E.zellen.get((Math.floor(x / Zm) + 32768) * 65536 + (Math.floor(z / Zm) + 32768));
+    if (!liste) return true;
+    for (const i of liste) {
+        const p = E.splats[i];
+        if (p.frei) continue;
+        let d;
+        if (p.platte) {
+            const dx = x - p.cx;
+            const dz = z - p.cz;
+            const u = Math.max(0, Math.abs(dx * p.c - dz * p.s) - p.ex);
+            const v = Math.max(0, Math.abs(dx * p.s + dz * p.c) - p.ez);
+            d = Math.hypot(u, v);
+        } else {
+            let q = p.len2 > 0 ? ((x - p.x0) * p.dx + (z - p.z0) * p.dz) / p.len2 : 0;
+            q = q < 0 ? 0 : q > 1 ? 1 : q;
+            d = Math.max(0, Math.hypot(x - (p.x0 + p.dx * q), z - (p.z0 + p.dz * q)) - p.hw);
+        }
+        if (d < T) return false;
+    }
+    return true;
+}
+
+// Der ctx des Wald-Plans — Mirror des ctx in `_forestCellDarts` (der Boden reist vom Oberflächen- zum Wasser-Leser).
+function waldCtx(msg) {
+    let bodenX = NaN;
+    let bodenZ = NaN;
+    let bodenY = null;
+    const hoehe = (px, pz) => {
+        const vy = voxelSurfaceY(px, pz);
+        return typeof vy === "number" && Number.isFinite(vy) ? vy : state.baseHeight || 0;
+    };
+    return {
+        F: msg.F,
+        baseH: state.baseHeight || 0,
+        extras: msg.extras,
+        fbm: forestFbm,
+        surfaceYAt: (x, z) => {
+            bodenX = x;
+            bodenZ = z;
+            bodenY = voxelSurfaceY(x, z);
+            return bodenY;
+        },
+        waterYAt: (x, z) => atlasWaterLevelAt(x, z, x === bodenX && z === bodenZ ? bodenY : voxelSurfaceY(x, z)),
+        slopeAt: (x, z) => {
+            const yE = hoehe(x + 2, z);
+            const yW = hoehe(x - 2, z);
+            const yN = hoehe(x, z - 2);
+            const yS = hoehe(x, z + 2);
+            if (!Number.isFinite(yE) || !Number.isFinite(yW) || !Number.isFinite(yN) || !Number.isFinite(yS)) return 0;
+            return Math.hypot((yE - yW) / 4, (yS - yN) / 4);
+        },
+        feuchteAt: (x, z, sy) => feuchteAt(x, z, sy),
+        ortFrei: (x, z, T) => ortFrei(x, z, T),
+    };
+}
 
 function applyStateSnapshot(snap) {
     if (!snap) return;

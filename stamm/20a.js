@@ -387,6 +387,79 @@ class AnazhRealm_Z20a {
         return out;
     }
 
+    // DER STOFF DES WALDS IM FADEN (K60-3): ein Leser, der warten kann (die Streu-Scheibe, `_streuSammler`), bestellt die
+    // Darts der Zellen [gx0..gx1] × [gz0..gz1], die das Dart-Gedächtnis seines Stands nicht trägt, beim Voxel-Faden
+    // (`_voxelWorkerWaldDarts`) — null: jede steht im Gedächtnis, oder es gibt keinen Faden oder keine Wahrheit (dann rechnet
+    // `_forestCellDarts` wie jeder andere Leser); sonst die Zusage, die eintrifft, wenn die Darts im Gedächtnis liegen. Bis
+    // K60-3 rechnete der Haupt-Faden jeden Dart der Streu selbst: die Gestalt des Orts fragt 81 Zellen je Baum, Radeon kalt
+    // bis zum ersten Bild 1,6 von 2,2 s Streu (K602c/q2: `_forestCellDarts` 1,9 s, davon die Oberfläche 1,5 s).
+    _waldDartsBestellen(gx0, gz0, gx1, gz1) {
+        if (!this.state.voxelWorker || !this._forestGesetzWahr()) return null;
+        const seedInt = this._forestSeedInt();
+        this._forestDartStand(seedInt);
+        const memo = this._forestDartMemo;
+        if (this._waldBestelltVon !== memo || !this._waldBestellt) {
+            this._waldBestellt = new Map(); // die Zusagen je Zelle gelten dem Gedächtnis, für das sie bestellt wurden
+            this._waldBestelltVon = memo;
+        }
+        const im = this._waldBestellt;
+        const C = AnazhRealm.FOREST.cell;
+        const neu = [];
+        let warte = null;
+        for (let gx = gx0; gx <= gx1; gx++)
+            for (let gz = gz0; gz <= gz1; gz++) {
+                const k = gx + "," + gz;
+                if (memo.has(k)) continue;
+                const z = im.get(k);
+                if (z) {
+                    warte = z;
+                    continue;
+                }
+                this._ensureHydroTilesAround((gx + 0.5) * C, (gz + 0.5) * C, C); // die Wahrheit der Zelle reist vor ihr
+                neu.push(gx, gz);
+            }
+        if (!neu.length) return warte;
+        const zusage = this._voxelWorkerWaldDarts(new Int32Array(neu), seedInt, this._forestExtraSpecies()).then(
+            (r) => this._waldDartsAn(memo, neu, r),
+            (e) => {
+                for (let i = 0; i < neu.length; i += 2) im.delete(neu[i] + "," + neu[i + 1]); // der Wartende bestellt neu
+                this._bruchMelden("WALD: der Faden rechnete die Darts nicht — " + (e && e.message ? e.message : e));
+            }
+        );
+        for (let i = 0; i < neu.length; i += 2) im.set(neu[i] + "," + neu[i + 1], zusage);
+        return zusage;
+    }
+    // Die Darts des Fadens ins Gedächtnis ihres Stands: ein gewechselter Stand verwirft sie (der Wartende bestellt neu), eine
+    // inzwischen gerechnete Zelle behält ihre Darts (die Urteile der Nachbarn merken die Objekte).
+    _waldDartsAn(memo, zellen, r) {
+        const im = this._waldBestelltVon === memo ? this._waldBestellt : null;
+        let j = 0;
+        for (let i = 0; i < zellen.length / 2; i++) {
+            const k = zellen[i * 2] + "," + zellen[i * 2 + 1];
+            if (im) im.delete(k);
+            const out = [];
+            for (let n = r.anzahl[i]; n > 0; n--, j += 11) {
+                const w = r.werte;
+                out.push({
+                    x: w[j],
+                    z: w[j + 1],
+                    sp: r.arten[w[j + 2]],
+                    s: w[j + 3],
+                    T: w[j + 4],
+                    prio: w[j + 5],
+                    keep: w[j + 6],
+                    totRoll: w[j + 7],
+                    rotY: w[j + 8],
+                    seed: w[j + 9],
+                    surfaceY: Number.isNaN(w[j + 10]) ? null : w[j + 10],
+                });
+            }
+            if (this._forestDartMemo !== memo || memo.has(k)) continue;
+            if (memo.size > 8192) memo.clear(); // bounded wie `_forestCellDarts`
+            memo.set(k, out);
+        }
+    }
+
     // ==================== ASSET-FOUNDRY: die Vorlage pflanzt ihre echten Bäume ====================
     // Der Studio-Generator (die Kerne + die Foundry-Brücke foundry-bruecke.js, K42) läuft als Worker und liefert
     // seine echten Baum-Instanzen (buildInstance, eigenes LOD) als Geometrie-Puffer; AnazhRealm baut daraus

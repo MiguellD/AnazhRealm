@@ -797,6 +797,19 @@ class AnazhRealm_Z20c {
                 wartet = true;
                 return false;
             }
+            // Wer warten kann (die Streu-Scheibe), wartet auf den Stoff des Walds aus dem Faden (`_waldDartsBestellen`, K60-3):
+            // das Urteil liest die Darts ±4 Zellen um den Ort und das Urteil jedes Nachbarn ±2 um ihn.
+            if (this._streuSammler) {
+                const C = AnazhRealm.FOREST.cell;
+                const gx = Math.floor(x / C);
+                const gz = Math.floor(z / C);
+                const zusage = this._waldDartsBestellen(gx - 6, gz - 6, gx + 6, gz + 6);
+                if (zusage) {
+                    wartet = true;
+                    this._streuWartetAuf(zusage);
+                    return false;
+                }
+            }
             return this._forestStehtFrei(x, z, T, (gx, gz) => this._forestCellDarts(gx, gz, seedInt));
         });
         if (wartet) return null;

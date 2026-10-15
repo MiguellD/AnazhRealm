@@ -104,6 +104,17 @@ class AnazhRealm_Z07 {
                             schutt: msg.schutt ? new Float32Array(msg.schutt) : null,
                         });
                     }
+                } else if (msg.type === "wald-darts-result" && msg.requestId) {
+                    // K60-3 — die Darts der Wald-Zellen aus dem Worker (`_voxelWorkerWaldDarts`), zero-copy per Transferable
+                    const pending = this.state.voxelWorkerPending.get(msg.requestId);
+                    if (pending) {
+                        this.state.voxelWorkerPending.delete(msg.requestId);
+                        pending.resolve({
+                            anzahl: new Int32Array(msg.anzahl),
+                            werte: new Float64Array(msg.werte),
+                            arten: msg.arten,
+                        });
+                    }
                 } else if (msg.type === "ack" && msg.requestId) {
                     const pending = this.state.voxelWorkerPending.get(msg.requestId);
                     if (pending) {
@@ -323,6 +334,25 @@ class AnazhRealm_Z07 {
                 this.state.voxelWorkerPending.set(requestId, { resolve, reject });
             });
             worker.postMessage({ type: "hoehen", punkte, detail: !!includeDetail, schutt: !!mitSchutt, requestId });
+            return promise;
+        });
+    }
+
+    // DER STOFF DES WALDS off-thread (K60-3): die Wald-Zellen (cx, cz je Zelle, Int32Array) → die gepackten Darts aus dem
+    // EINEN Wald-Plan (phyto-core `planForestCell`) mit den Lesern des Fadens, an seinem synchronisierten Zustand (Nachrichten
+    // laufen in Reihe: die Hydro-Kachel und der Erdbau, die vor dem Auftrag reisten, gelten ihm). Leser: `_waldDartsBestellen`.
+    _voxelWorkerWaldDarts(zellen, seedInt, extras) {
+        const worker = this._getVoxelWorker();
+        if (!worker) return Promise.reject(new Error("voxel-worker not available"));
+        const ensureReady = this.state.voxelWorkerReady ? Promise.resolve(true) : this._voxelWorkerSyncState();
+        return ensureReady.then(() => {
+            const requestId = this.state.voxelWorkerNextRequestId++;
+            const promise = new Promise((resolve, reject) => {
+                this.state.voxelWorkerPending.set(requestId, { resolve, reject });
+            });
+            worker.postMessage({ type: "wald-darts", zellen, seedInt, extras, F: AnazhRealm.FOREST, requestId }, [
+                zellen.buffer,
+            ]);
             return promise;
         });
     }
