@@ -164,11 +164,11 @@ async function fensterSchritt(o) {
     }
     const f0 = L();
     // der Selbsttest (`bisMeldung`) endet mit der ersten Meldung des Schritts: nach ihr ist der Befehlspuffer verworfen, die Seite
-    // rendert nicht verlässlich weiter
+    // rendert nicht verlässlich weiter; seine Kappe 90 s (swiftshader ~15 s je Frame: 30 s trugen 2 Frames ohne Leser, CI 38821564272)
     const W0 = (r._gpuWache || { n: 0 }).n;
     const gemeldet = () =>
         Object.keys(window.__fensterEcht.gpu[window.__fensterEcht.schritt] || {}).length > 0 || (r._gpuWache || { n: 0 }).n > W0;
-    const kappe = o.bisMeldung ? 30000 : 120000;
+    const kappe = o.bisMeldung ? 90000 : 120000;
     while (L() - f0 < o.n && performance.now() - t0 < kappe && !(o.bisMeldung && gemeldet())) await warte();
     const t = r._szeneTiefeKnoten && r._szeneTiefeKnoten.value;
     const W = r._gpuWache || { n: 0, meldungen: [] };
