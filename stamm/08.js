@@ -393,8 +393,13 @@ class AnazhRealm_Z08 {
         return this._erdbauNorm;
     }
     // Ein Ort legt seinen Erdbau (einmal je Schlüssel): die Gelände-Funktion, ihre Caches, der Worker, die Chunks und Felder im
-    // Umkreis folgen, und der Wald plant den Ort frei (das Dart-Memo fällt). Fail-closed: eine fremde Splat-Art wirft, bevor
-    // die Welt sie trägt.
+    // Umkreis folgen, und der Wald plant den Ort frei. Fail-closed: eine fremde Splat-Art wirft, bevor die Welt sie trägt.
+    // DER ERDBAU FÄLLT AM ORT (K69, das Gesetz der Edits seit K23): der Term wirkt nur bis `ERDBAU.reichweiteM` um seine
+    // Flächen (gelaende-core `erdbauY`) — so fallen nur die Gedächtnisse, die er ändern kann: Dichte, Basis-Dichte und Mesh
+    // der Chunks im Umkreis, die Antworten des Workers im Flug nur dort (`_voxelStand`), der Wald seiner Zellen samt allem,
+    // was sie liest (`_forestDartsFallen`). Bis K69 warf jeder Erdbau die Gedächtnisse der ganzen Welt: der Gang in ein Dorf
+    // (der Dorf-Zug legt das nächste) plante danach 2 579 Wald-Zellen synchron neu, der längste Takt 880 ms (Null-Renderer,
+    // Dorfweg gehend), an der Radeon ein Frame von 3,1 s (`_forestCellDarts › planForestCell`, die Hänger-Linse).
     _erdbauSetzen(key, splats) {
         const wm = this.state.worldMeta || (this.state.worldMeta = {});
         if (!wm.erdbau || typeof wm.erdbau !== "object") wm.erdbau = {};
@@ -404,14 +409,6 @@ class AnazhRealm_Z08 {
         const amWasser = this._erdbauAmWasser(G.erdbauNormal(splats));
         wm.erdbau[key] = splats;
         this._erdbauStand = (this._erdbauStand || 0) + 1;
-        if (this.state.voxelBaseDensityCache) this.state.voxelBaseDensityCache.clear();
-        if (this.state.voxelDensityCache) this.state.voxelDensityCache.clear();
-        if (this.state.voxelMeshCache) this.state.voxelMeshCache.clear();
-        this._forestDartMemo = null;
-        if (this.state.voxelWorker) {
-            this.state.voxelWorkerStateGen++;
-            this._voxelZustandPost({ type: "state-update", delta: { erdbau: this._erdbauRoh() } });
-        }
         let x0 = Infinity;
         let x1 = -Infinity;
         let z0 = Infinity;
@@ -430,11 +427,29 @@ class AnazhRealm_Z08 {
                 z1 = Math.max(z1, z + r);
             }
         }
+        const R = G.ERDBAU.reichweiteM;
+        const { span } = this._voxelChunkConfig();
+        // die Chunks des Umkreises samt einem Chunk Rand (der Mesher liest eine Zelle in den Nachbarn), je Stufe
+        const ka = Math.floor((x0 - R) / span) - 1;
+        const kb = Math.floor((x1 + R) / span) + 1;
+        const la = Math.floor((z0 - R) / span) - 1;
+        const lb = Math.floor((z1 + R) / span) + 1;
+        const caches = [this.state.voxelBaseDensityCache, this.state.voxelDensityCache, this.state.voxelMeshCache];
+        const genKarte = this._erdbauGenKarte || (this._erdbauGenKarte = new Map());
+        this._editGenZaehler = (this._editGenZaehler || 0) + 1; // EIN steigender Zähler mit den Edits (nie wiederholt)
+        for (let a = ka; a <= kb; a++)
+            for (let b = la; b <= lb; b++) {
+                genKarte.set((a + 32768) * 65536 + (b + 32768), this._editGenZaehler);
+                for (const c of caches)
+                    if (c && c.size) for (let lod = 0; lod <= 3; lod++) c.delete(`${a},${b},${lod}`);
+            }
+        this._forestDartsFallen(x0, z0, x1, z1);
+        // der Erdbau reist an JEDEN Faden am Zustand (Voxel- und Wald-Faden) über den EINEN Sender (`_voxelZustandPost`)
+        this._voxelZustandPost({ type: "state-update", delta: { erdbau: this._erdbauRoh() } });
         const cx = (x0 + x1) / 2;
         const cz = (z0 + z1) / 2;
-        const rad = Math.hypot(x1 - x0, z1 - z0) / 2 + G.ERDBAU.reichweiteM;
+        const rad = Math.hypot(x1 - x0, z1 - z0) / 2 + R;
         if (!this.state.grassDirtyChunks) this.state.grassDirtyChunks = new Set();
-        const { span } = this._voxelChunkConfig();
         for (let a = Math.floor((cx - rad) / span); a <= Math.floor((cx + rad) / span); a++)
             for (let b = Math.floor((cz - rad) / span); b <= Math.floor((cz + rad) / span); b++)
                 this.state.grassDirtyChunks.add(`${a},${b}`);
@@ -979,15 +994,19 @@ class AnazhRealm_Z08 {
     }
 
     // Der Stand eines Chunks für den Stale-Filter der Worker- und Platten-Antworten: der Welt-Sync
-    // (`voxelWorkerStateGen`) und die jüngste Edit-Generation im 3×3 um ihn. Ein Edit verwirft nur die Antworten seiner
-    // Nachbarschaft, nie die der ganzen Welt.
+    // (`voxelWorkerStateGen`) und die jüngste Generation eines Edits oder eines Erdbaus (`_erdbauSetzen`, K69) im 3×3 um
+    // ihn. Ein Edit und ein Ort verwerfen nur die Antworten ihrer Nachbarschaft, nie die der ganzen Welt.
     _voxelStand(cx, cz) {
         const gen = this._voxelEditKarte().gen;
+        const erd = this._erdbauGenKarte;
         let g = 0;
         for (let dx = -1; dx <= 1; dx++) {
             for (let dz = -1; dz <= 1; dz++) {
-                const v = gen.get((cx + dx + 32768) * 65536 + (cz + dz + 32768));
+                const k = (cx + dx + 32768) * 65536 + (cz + dz + 32768);
+                const v = gen.get(k);
                 if (v > g) g = v;
+                const w = erd ? erd.get(k) : undefined;
+                if (w > g) g = w;
             }
         }
         return `${this.state.voxelWorkerStateGen}|${g}`;

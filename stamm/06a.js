@@ -746,8 +746,9 @@ class AnazhRealm_Z06a {
             g.istFern = fern;
             g.nah.visible = !fern;
             g.fern.visible = fern || g.zwilling;
-            const ebene = fern ? 0 : AnazhRealm.SHADOW_TWIN_LAYER;
-            for (const m of g.meshes) m.layers.set(ebene);
+            // das Auge (Ebene 0) schaltet; den Wurf trägt die Wurf-Ebene, die `castShadow` schreibt (K72, `_wurfEbene`)
+            const W = 1 << AnazhRealm.SHADOW_TWIN_LAYER;
+            for (const m of g.meshes) m.layers.mask = ((fern ? 1 : 0) | (m.layers.mask & W)) >>> 0;
             // wer läuft, behält seinen Schritt (Welle LF, der ferne Gang: die Raten-Leiter wertet ihn jenseits weiter aus); eine
             // Gestalt, die ihre Haltung hält (`haltungFest`, gesetzt vom Fall `_kreaturFaellt`: die Tod-Lage rechnete mit ihr),
             // bleibt in ihr (Tod-Zensus „haltung": der stehend gefallene Hirsch drehte jenseits der Grenze legFL um 1,66 rad)

@@ -328,6 +328,10 @@ init();
     }
     var B = AnazhHuelle.bruecke({
         welt: "tetrapoda",
+        // DAS ZIEL-BILD (D8): die Hülle rendert diese Welt als Panorama aus dem Blick ihrer Kamera — die Tor-Membran der Heimat zeigt es
+        panorama: function () {
+            return { THREE: THREE, renderer: renderer, scene: scene, kamera: camera };
+        },
         label: "Tetrapoda — Evolution Lab",
         dsl: Object.keys(GATTUNG).concat(Object.keys(EMOTION)),
         wort: function (w) {

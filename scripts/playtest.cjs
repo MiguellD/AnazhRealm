@@ -13,7 +13,9 @@ const stammLib = require("./lib/stamm.cjs");
 // der count-basierte Pump unten (pumpt, bis die Ziel-Chunks WIRKLICH gebaut sind, statt Timer).
 // Default 30 s = CI-Wert (.github/workflows/check.yml).
 const DURATION_MS = Number(process.env.PLAYTEST_SECONDS || 30) * 1000;
-const SERVER_URL = "http://127.0.0.1:4312/index.html";
+// der Port des save-servers (PLAYTEST_PORT, sonst 4312): ein Prüfer fährt den vollen Playtest in seinem Port-Band
+const PLAYTEST_PORT = Number(process.env.PLAYTEST_PORT) || 4312;
+const SERVER_URL = `http://127.0.0.1:${PLAYTEST_PORT}/index.html`;
 const STRICT = process.env.PLAYTEST_STRICT !== "0";
 // Default GPU-frei (Null-Renderer): kein Band liest Pixel, der echte GPU-Kontext wäre nur Crash-Quelle
 // (swiftshader unter Last). PLAYTEST_REAL_RENDERER=1 = echter WebGPU-Renderer + End-Screenshot
@@ -24,7 +26,10 @@ const SCREENSHOT_PATH = path.join(ARTIFACT_DIR, "playtest.png");
 
 function startSaveServer() {
     return new Promise((resolve, reject) => {
-        const proc = spawn("node", ["save-server.js"], { stdio: ["ignore", "pipe", "pipe"] });
+        const proc = spawn("node", ["save-server.js"], {
+            stdio: ["ignore", "pipe", "pipe"],
+            env: Object.assign({}, process.env, { PORT: String(PLAYTEST_PORT) }),
+        });
         let ready = false;
         const timeout = setTimeout(() => {
             if (!ready) reject(new Error("Save-Server startete nicht innerhalb 5 s"));
@@ -17644,7 +17649,7 @@ async function checkBandWelle6GHylomorphism(ctx) {
     // ### Hylomorphismus-Unification ###
     // Bäume laufen durchs Architektur-System (spawn_tree-DSL-Op → spawnArchitecture): EINE Sprache,
     // EIN Renderpfad. Inseln + UFOs bleiben Sonderpfad (Inseln = floating-chunk-Disziplin).
-    const wave6gResults = await safeEvaluate(page, () => {
+    const wave6gResults = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
         const out = {};
@@ -17758,6 +17763,20 @@ async function checkBandWelle6GHylomorphism(ctx) {
 
         const newTreeArch = archsAfter > archsBefore ? r.state.architectures[archsAfter - 1] : null;
         out.newTreeIsBaumEiche = !!(newTreeArch && newTreeArch.type === "baum_eiche");
+        // DER WALD PLANT IM TAKT (K69): die Gestalt des Baums wartet auf den Plan der Wald-Zellen um seinen Ort, wie auf ein
+        // kaltes Buch — die Schlange des Walds (`_tickWaldPlan`) plant sie im Takt, dann steht er mit Gestalt und Hülle. Der
+        // Band läuft den Takt, bis er steht (höchstens 900 Takte), und nennt, wie lange er wartete.
+        out.newTreeWaldWartet = !!(newTreeArch && !r._waldPlanSteht(newTreeArch.position.x, newTreeArch.position.z));
+        out.newTreeTakte = 0;
+        const steht = () =>
+            !!(newTreeArch && (newTreeArch.mesh || newTreeArch.instanced)) &&
+            Array.isArray(newTreeArch.blockerAABBs) &&
+            newTreeArch.blockerAABBs.length > 0;
+        while (newTreeArch && !steht() && out.newTreeTakte < 900) {
+            r._gameLoopTick();
+            out.newTreeTakte++;
+            if (out.newTreeTakte % 10 === 0) await new Promise((ok) => setTimeout(ok, 0));
+        }
         // V12.0-perf.c.2 — instancierter Baum: gerendert via Instance-Slot
         // (entry.instanced), nicht via entry.mesh.
         out.newTreeHasMesh = !!(newTreeArch && (newTreeArch.mesh || newTreeArch.instanced));
@@ -17993,6 +18012,9 @@ async function checkBandWelle6GHylomorphism(ctx) {
             wave6gResults.treeNotAddedToVegetation
         );
         check("Welle 6.G P1.5: neu-gespawnter Baum hat type='baum_eiche'", wave6gResults.newTreeIsBaumEiche);
+        console.log(
+            `  Welle 6.G P1.5: der neue Baum stand nach ${wave6gResults.newTreeTakte} Takten (Plan des Walds wartete: ${wave6gResults.newTreeWaldWartet})`
+        );
         check("Welle 6.G P1.5: neu-gespawnter Baum ist gerendert (Mesh oder instanced)", wave6gResults.newTreeHasMesh);
         check(
             "Welle 6.G P1.5: neu-gespawnter Baum hat feld-native Kollision via blockerAABBs (solider Stamm)",
@@ -23179,9 +23201,33 @@ async function checkBandV17118WorkerEngaged(ctx) {
             worldgenSynced: !!r.state.voxelWorkerWorldgenSynced,
             // Source: der Bootstrap lebt in _voxelWorkerSyncWorldgenState (war: early-return).
             bootstrapSrc: /_getVoxelWorker\(\)/.test(window.__codeOf(r._voxelWorkerSyncWorldgenState)),
-            // Source: der Spieler-Chunk baut ASYNC (kein `_voxelChunkIsPlayerChunk`-Sync-Trip) — das
-            // Dichtefeld trägt den Boden global, niemand fällt durch einen ungebauten Chunk.
-            playerAsyncSrc: !/_voxelChunkIsPlayerChunk/.test(window.__codeOf(r._ensureVoxelChunkAt)),
+            // Laufzeit: der Neubau des Spieler-Chunks baut nie synchron (K69-2: der Neubau jedes Chunks geht über den
+            // Worker, die Flut-Saat reist mit dem Auftrag; bis K69-2 baute der Spieler-Chunk am Erdbau 88–261 ms im
+            // Haupt-Faden). Gegenprobe: forceSync (die Test-Naht) baut synchron — der Zähler sieht ihn.
+            spielerNeubau: (() => {
+                const pm = r.state.playerMesh && r.state.playerMesh.position;
+                const span = r._voxelChunkConfig().span;
+                const ch = r.state.voxelChunks;
+                if (!pm || !ch) return null;
+                const kx = [Math.floor(pm.x / span), Math.floor((pm.x + span / 2) / span)];
+                const kz = [Math.floor(pm.z / span), Math.floor((pm.z + span / 2) / span)];
+                const i = ch.has(kx[0] + "," + kz[0]) ? 0 : ch.has(kx[1] + "," + kz[1]) ? 1 : -1;
+                if (i < 0) return null;
+                let sync = 0;
+                const org = r._buildVoxelChunkData;
+                r._buildVoxelChunkData = function () {
+                    sync++;
+                    return org.apply(this, arguments);
+                };
+                try {
+                    r._rebuildVoxelChunk(kx[i], kz[i], null, {});
+                    const asyncSync = sync;
+                    r._rebuildVoxelChunk(kx[i], kz[i], null, { forceSync: true });
+                    return { key: kx[i] + "," + kz[i], sync: asyncSync, gegen: sync - asyncSync };
+                } finally {
+                    delete r._buildVoxelChunkData;
+                }
+            })(),
         };
     });
     if (res.error) {
@@ -23197,9 +23243,11 @@ async function checkBandV17118WorkerEngaged(ctx) {
         "V17.118 E3: _voxelWorkerSyncWorldgenState bootstrappt den Worker (Source, Regressions-Wand)",
         res.bootstrapSrc === true
     );
+    const sn = res.spielerNeubau;
     check(
-        "V18.271: _ensureVoxelChunkAt baut den Spieler-Chunk ASYNC (die V17.118-Sync-Ausnahme abgelöst durch den nicht-blockierenden weichen Boden)",
-        res.playerAsyncSrc === true
+        "K69-2: der Neubau des Spieler-Chunks baut nie synchron im Haupt-Faden (über den Worker), die Gegenprobe forceSync schon",
+        !!sn && sn.sync === 0 && sn.gegen >= 1,
+        JSON.stringify(sn)
     );
 }
 
@@ -24959,15 +25007,35 @@ async function checkBandVoxelP3AndInventory(ctx) {
         out.drainRebuilt = built > 0;
         out.drainEmptiesSet = r.state.dirtyVoxelChunks.size === 0;
         out.drainReturnedCount = built === dirtyMid;
-        // Tick rebuildet max 1/Frame. `_rebuildVoxelChunk` geht nur bei `!_frameOverBudget` sync; headless
-        // setzt das ~1-Hz-rAF `_frameOverBudget=true` (Tick ginge async). Geprüft wird die Verteilung, die
-        // adaptive Wahl prüft `diag-carve-adaptive` → gesunden Frame setzen.
+        // Der Tick baut je Frame höchstens EINEN Chunk ein, nah zuerst, und keinen synchron (K69-2: die Aufträge der
+        // nächsten gehen an den Worker voraus; ohne Worker baut er einen je Frame synchron). Ein frischer Frame: der
+        // Einbau-Merker des Edits (`_bodenEinbau`, der Frame-Planer setzt ihn je Frame zurück) gilt nicht.
         r.state._frameOverBudget = false;
         r.carveVoxelSphere(pm.x, cy, pm.z, 3.5);
         const dirtyPostEdit = r.state.dirtyVoxelChunks.size;
         if (dirtyPostEdit > 1) {
-            r._tickDirtyVoxelChunks(pm);
-            out.tickRebuildsOne = r.state.dirtyVoxelChunks.size === dirtyPostEdit - 1;
+            const st = r.state;
+            const worker = !!(st.voxelWorker && st.voxelWorkerReady && st.voxelWorkerWorldgenSynced);
+            st._bodenEinbau = null;
+            let fin = 0;
+            let sync = 0;
+            const finRoh = r._finalizeVoxelChunkBuild;
+            const bauRoh = r._buildVoxelChunkData;
+            r._finalizeVoxelChunkBuild = function () {
+                fin++;
+                return finRoh.apply(this, arguments);
+            };
+            r._buildVoxelChunkData = function () {
+                sync++;
+                return bauRoh.apply(this, arguments);
+            };
+            try {
+                r._tickDirtyVoxelChunks(pm);
+            } finally {
+                delete r._finalizeVoxelChunkBuild;
+                delete r._buildVoxelChunkData;
+            }
+            out.tickRebuildsOne = fin <= 1 && (worker ? sync === 0 : sync <= 1);
         } else {
             out.tickRebuildsOne = true; // skip-OK bei 0/1 dirty
         }
@@ -25004,7 +25072,10 @@ async function checkBandVoxelP3AndInventory(ctx) {
             "V9.40-c: _drainDirtyVoxelChunks liefert die Anzahl der rebuildeten Chunks",
             voxelV940cResults.drainReturnedCount
         );
-        check("V9.40-c: der Game-Loop-Tick rebuildet pro Frame max 1 Chunk", voxelV940cResults.tickRebuildsOne);
+        check(
+            "V9.40-c: der Game-Loop-Tick baut pro Frame max 1 Chunk ein, keinen synchron (K69-2)",
+            voxelV940cResults.tickRebuildsOne
+        );
         check(
             "V9.40-c: _disposeVoxelChunk räumt den dirty-Marker mit (gegen stale-rebuild)",
             voxelV940cResults.disposeClearsDirty
@@ -30938,11 +31009,10 @@ async function checkBandStoffSignatur(ctx) {
         const tb = tor("kathedrale");
         const ma = r._membranMaterialFor(ta);
         const mb = r._membranMaterialFor(tb);
-        const fa = ma.mat.userData.tor.w;
-        const fb = mb.mat.userData.tor.w;
-        out.fensterVerschieden = fa.x > 0.001 !== fb.x > 0.001 || fa.w > 0.001 !== fb.w > 0.001;
+        const sa = ma.mat.userData.tor;
+        const sb = mb.mat.userData.tor;
+        out.gestaltVerschieden = !sa.a.equals(sb.a) && !sa.pd.equals(sb.pd);
         out.membran = k(ma.mat) === k(mb.mat);
-        out.nebel = k(r._nebelMaterialFor(ta, ma.u).mat) === k(r._nebelMaterialFor(tb, mb.u).mat);
         out.atem = typeof ma.u.time.value === "number" && ma.u !== mb.u;
         const bau = () => {
             const m = new T.MeshStandardNodeMaterial();
@@ -30966,8 +31036,8 @@ async function checkBandStoffSignatur(ctx) {
     );
     check("1310-18 Schlüssel: verschiedene Signaturen tragen verschiedene Programm-Schlüssel", res.trennt === true);
     check(
-        "1310-18 Schlüssel: zwei Tore mit verschiedenen Realm-Fenstern tragen EINE Membran und EINEN Nebel",
-        res.fensterVerschieden === true && res.membran === true && res.nebel === true && res.atem === true
+        "1310-18 Schlüssel: zwei Tore verschiedener Gestalt (Bogen, Palette) tragen EINE Membran (D8: der Nebel fiel)",
+        res.gestaltVerschieden === true && res.membran === true && res.atem === true
     );
     check(
         "1310-18 Lauf-Kontrolle: zwei frisch und gleich gebaute Graphen tragen zwei Schlüssel (r184 schlüsselt nach Identität)",
@@ -41920,8 +41990,9 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         // --- Avatar-Hide im 1st-Person ---
         out.avatarHideMethods = typeof r.setCameraMode === "function" && !!r.state.playerMesh;
         // Die Ego-Sicht ist EIN Ebenen-Schalter (0910-5, Chokepoint `_applyEgoSicht`): im 1st liegt jeder Knoten des Leibs
-        // (Kopf-Part + _creatureSkin-Hülle, ohne das Gerät in der Hand), der im 3rd auf Ebene 0 lag, nicht mehr dort und auf
-        // SHADOW_TWIN_LAYER (die Kaskaden werfen ihn); 3rd gibt jede Maske genau zurück; `visible` wechselt nie.
+        // (Kopf-Part + _creatureSkin-Hülle, ohne das Gerät in der Hand), der im 3rd auf Ebene 0 lag, nicht mehr dort; jeder,
+        // der im 3rd warf, liegt weiter auf SHADOW_TWIN_LAYER (der Wurf-Ebene, K72 — die Kaskaden werfen ihn); 3rd gibt jede
+        // Maske genau zurück; `visible` wechselt nie.
         {
             const pm = r.state.playerMesh;
             const E = r.constructor.SHADOW_TWIN_LAYER;
@@ -41945,7 +42016,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
                 if (o.visible !== sicht[i]) ego = false;
                 if (!(dritt[i] & 1)) return;
                 leib++;
-                if (o.layers.isEnabled(0) || !o.layers.isEnabled(E)) ego = false;
+                if (o.layers.isEnabled(0) || (dritt[i] & (1 << E) && !o.layers.isEnabled(E))) ego = false;
             });
             r.setCameraMode("third");
             const zurueck = knoten.every((o, i) => o.layers.mask === dritt[i] && o.visible === sicht[i]);

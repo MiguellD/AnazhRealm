@@ -331,6 +331,52 @@ function buehne() {
     return { saison: st.season, phase: st.seasonPhase, wetter: st.weather };
 }
 
+// DIE MEMBRAN OHNE FILM (D8, die Linse milchweiss — K5 `klassenMasse` liest Milch gegen das Bild ohne Film): `an` setzt jeder
+// Membran der Welt den Ziel-Knoten ihres Graphen (`_membranGraph` → ohneFilm: nur das Panorama der Ziel-Welt) als Farbe, `an`
+// false den Stoff zurück. Dieselbe Pose, dieselbe Uhr, derselbe Ausgabe-Pfad: der Unterschied zweier Bilder ist der Film.
+// EINE MEMBRAN OHNE ZIEL IM GRAPHEN (D8-n1, Prüfer: der stille Rückfall las die Milch der Basis als Ziel — milchweiss 0,0004 auf
+// dem milchigen Bild): ihre Schicht hat nichts, was als Ziel gälte — das Bild ohne sie zeigt die Öffnung OHNE die Schicht (jedes
+// Mesh des Eintrags, auch ein Nebel-Kasten von vor D8, über die Sichtbarkeit seines Stoffs, die der Membran-Tick nie setzt). So
+// liest dieselbe Regel jede Basis: Milch ist, was die Schicht dem hinzufügt, was ohne sie dort stünde. Zurück die Zahl der
+// Membranen und wie viele davon ohne Ziel standen.
+function membranOhneFilm(an) {
+    const r = window.anazhRealm;
+    let n = 0,
+        ohneZiel = 0;
+    for (const rec of r._portalMembranes ? r._portalMembranes.values() : []) {
+        const mat = rec.mesh && rec.mesh.material;
+        if (!mat) continue;
+        n++;
+        const G = typeof r._membranGraph === "function" && rec.tor && rec.tor.gesetz ? r._membranGraph(rec.tor.gesetz) : null;
+        if (G && G.ohneFilm) {
+            if (an) {
+                rec.__farbeVorFilm = mat.colorNode;
+                mat.colorNode = G.ohneFilm;
+            } else if (Object.prototype.hasOwnProperty.call(rec, "__farbeVorFilm")) {
+                mat.colorNode = rec.__farbeVorFilm;
+                delete rec.__farbeVorFilm;
+            }
+            mat.needsUpdate = true;
+            continue;
+        }
+        ohneZiel++;
+        if (an) {
+            const stoffe = [];
+            for (const v of Object.values(rec))
+                if (v && v.isObject3D)
+                    v.traverse((o) => {
+                        for (const m of [].concat(o.material || [])) if (m && !stoffe.includes(m)) stoffe.push(m);
+                    });
+            rec.__sichtVorFilm = stoffe.map((m) => [m, m.visible]);
+            for (const m of stoffe) m.visible = false;
+        } else if (rec.__sichtVorFilm) {
+            for (const [m, v] of rec.__sichtVorFilm) m.visible = v;
+            delete rec.__sichtVorFilm;
+        }
+    }
+    return { n, ohneZiel };
+}
+
 // DIE TIERE HALTEN STILL: zwischen Blick-Wahl und Schuss liegen hunderte Takte, in denen Tiere wandern —
 // gemessen 01.10. (aaa13 Haus fern, aaa14 Kreatur fern): ein Tier lief in die Kamera und füllte das
 // Bild. Nach jedem Kreatur-Tick fallen x/z auf den Stand davor zurück; Animation, Haut, Boden-Höhe
@@ -1239,5 +1285,6 @@ module.exports = {
         `window.__uhrBuch = ${uhrBuch.toString()};` +
         `window.__buehne = ${buehne.toString()};` +
         `window.__tiereHalten = ${tiereHalten.toString()};` +
+        `window.__membranOhneFilm = ${membranOhneFilm.toString()};` +
         `(${saisonFest.toString()})();`,
 };

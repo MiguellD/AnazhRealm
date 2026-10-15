@@ -38,7 +38,7 @@ const SICHT_PRUEFUNG = ["_passTrifft", "_hoehlenRect", "_hoehlenLichtLage", "_in
 // Die Treffer: eine Wahl, deren Lage steht (true = Cache-Treffer).
 const SICHT_TREFFER = ["_satzAbschnittSteht", "_instanzWahlSteht"];
 // Die Täter beim NAMEN: jede neu gerechnete Wahl (der Satz und sein Pass, die Gruppe).
-const SICHT_NEU = ["_satzAbschnittMerke", "_instanzWahlMerke"];
+const SICHT_NEU = ["_satzAbschnittMerke", "_instanzWahlMerke", "_werferWahlMerke"];
 // DIE BYTES BEIM GRUND (K, 07.10.): jedes Index-Byte eines Satzes (`_chunkSatzSchreib`) trägt den Grund seines Schreibers —
 // die neue Wahl eines Passes (`wahl:<warum die Wahl nicht stand>`: `stand` = der Satz änderte Bereich, Hülle oder Ordnung,
 // `neu` = der Abschnitt fehlte, `lage` = die Lage des Passes, `liste`/`hoehle`), das Verdichten einer ruhenden Wahl
@@ -49,11 +49,19 @@ const SICHT_SCHREIB = "_chunkSatzSchreib";
 // Abschnitt, der sich ohne Schuld dicht neu legt, kein Byte mehr — wohl aber den Gang über jede seiner Zellen. Die Linse
 // bucht darum den Gang selbst (die Indizes, die `_chunkSatzDicht` ab der ersten Abweichung prüft) beim Grund wie die Bytes.
 const SICHT_LEGE = "_chunkSatzDicht";
-// Leser, deren Prüfungen in Ruhe 0 sein MÜSSEN; die Werfer der Region-Bündel (eine Handvoll Bündel-Hüllen je Schatten-
-// Pass) zählt die Linse mit, das Urteil nennt sie, verlangt dort aber keine Null.
+// Leser, deren Prüfungen in Ruhe 0 sein MÜSSEN — jeder Leser der Pass-Wahl. Bis K72 nahm die Linse die Werfer der Region-
+// Bündel aus („eine Handvoll Bündel-Hüllen je Schatten-Pass"); gemessen 15.10. (Radeon, Genesis/Wiese Third, Ruhe) prüfte
+// `_werferWahlPass` je Kaskaden-Render 18–37 Körper in 22 Gängen über die Kinder der Bündel — in jedem Render dieselbe Wahl.
 // Der echte Loop: höchstens so viele Ruhe-Frames dürfen ein Ereignis der Welt tragen (die Wand fordert 0).
 const RUHE_EREIGNIS = 0.05;
-const RUHE_LESER = ["_chunkSatzAbschnitt", "_hoehlenSicht", "_hoehlenSichtLicht", "_instanzWahlPass", "_nahWieseSicht"];
+const RUHE_LESER = [
+    "_chunkSatzAbschnitt",
+    "_hoehlenSicht",
+    "_hoehlenSichtLicht",
+    "_instanzWahlPass",
+    "_nahWieseSicht",
+    "_werferWahlPass",
+];
 
 function sichtLinse(cfg) {
     const r = window.anazhRealm;
@@ -235,8 +243,7 @@ function sichtLinse(cfg) {
                             break;
                         }
                     z.trifft[wer] = (z.trifft[wer] || 0) + 1;
-                    // die Arbeit je Pass zählt wie `arbeit`: die Prüfungen der Leser, deren Ruhe 0 sein muss (die Werfer der
-                    // Region-Bündel nennt die Linse, verlangt dort aber keine Null)
+                    // die Arbeit je Pass zählt wie `arbeit`: die Prüfungen der Leser, deren Ruhe 0 sein muss
                     if (cfg.ruheLeser.includes(wer)) jp.arbeit++;
                 } else jp.arbeit++;
             } else if (art === "treffer") {
@@ -267,7 +274,9 @@ function sichtLinse(cfg) {
                 const w =
                     name === "_satzAbschnittMerke"
                         ? "satz " + String(a[0].art).split("|")[0] + "|" + a[1].key
-                        : "gruppe " + ((a[0].mesh && a[0].mesh.name) || a[0].key || "?");
+                        : name === "_werferWahlMerke"
+                          ? "werfer " + (a[0].name || a[0].id) + "|" + a[2].key
+                          : "gruppe " + ((a[0].mesh && a[0].mesh.name) || a[0].key || "?");
                 z.neu[w] = (z.neu[w] || 0) + 1;
                 // die neue Wahl schuldet ihrem Abschnitt ein Verdichten und ihrem Satz ein Umlegen
                 if (name === "_satzAbschnittMerke") {
@@ -703,7 +712,7 @@ function sichtArbeitOhne(f) {
     const lj = f.lichtJe || {};
     if (!f.licht && !Object.keys(lj).length) return f.arbeit;
     // das Licht erklärt die Arbeit der Kaskaden, die es seit ihrem letzten Pass gedreht sah (bzw. im Frame selbst drehte);
-    // je Pass zählt dieselbe Arbeit wie `arbeit` (ohne die Werfer der Region-Bündel)
+    // je Pass zählt dieselbe Arbeit wie `arbeit`
     let n = 0;
     for (const [k, x] of Object.entries(f.jePass || {}))
         if (!/^k\d+$/.test(k) || !(f.licht || lj[k])) n += x.arbeit != null ? x.arbeit : x.pruefung;
@@ -974,7 +983,8 @@ function sichtUrteil(b) {
                 `RUHE: die Sicht-Kette arbeitet in Ruhe ohne Änderung (Median ${A.median}, max ${A.max} Prüfungen, in ` +
                     `${A.frames} von ${R.frames} Frames, ${R.aenderungFrames} mit Änderung; alle Frames Ø ${R.arbeit.mittel}, ` +
                     `Höhlen-Sicht ${R.hoehlenSicht.mittel} + Licht ${R.hoehlenSichtLicht.mittel} Aufrufe, ` +
-                    `Abschnitte ${R.abschnitt.mittel}, Ecken ${R.ecken.mittel}, Instanzen ${R.instanzBehalten.mittel}) — ` +
+                    `Abschnitte ${R.abschnitt.mittel}, Ecken ${R.ecken.mittel}, Instanzen ${R.instanzBehalten.mittel}, ` +
+                    `Werfer ${R.werferTrifft.mittel} (_werferWahlPass)) — ` +
                     "nichts hat sich geändert, jede Prüfung ist ein Cache-Bruch" +
                     (R.taeter && R.taeter.length ? `; neu gerechnet je Frame: ${R.taeter.join(", ")}` : "")
             );

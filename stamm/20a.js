@@ -323,6 +323,43 @@ class AnazhRealm_Z20a {
         return this._forestDartGen;
     }
 
+    // DER WALD FÄLLT AM ORT (K69, Lehre 25): legt ein Ort seinen Erdbau über die Flächen im Kasten x0…x1 · z0…z1, ändern sich
+    // die Darts nur in den Zellen, die der Kasten samt Böschung (`ERDBAU.reichweiteM`, dazu die Hang-Probe von 2 m) oder samt der
+    // größten Krone (`KRONE_MAX_M`: `ortFrei` fragt die Krone gegen die Fläche) berührt. Nur sie fallen aus dem Dart-Gedächtnis
+    // des Stands (der Stand bleibt), mit ihnen das Urteil jedes Darts, der sie als Nachbarn liest (±2 Zellen, `_forestDartSteht`),
+    // die Freistand-Antwort jedes Orts, der diese Urteile liest (±4 Zellen darum, `_forestStehtFrei`), und die Gestalt des Orts
+    // dort (`_ortSameFaellt`). Bis K69 fiel das Gedächtnis der ganzen Welt (`_forestDartMemo = null`, ein neuer Stand) — und mit
+    // ihm jede Gestalt jedes Orts. → die Zahl der gefallenen Zellen.
+    _forestDartsFallen(x0, z0, x1, z1) {
+        const memo = this._forestDartMemo;
+        if (!memo || !memo.size) return 0;
+        const C = AnazhRealm.FOREST.cell;
+        const R = Math.max(globalThis.__gelaendeCore.ERDBAU.reichweiteM + 2, AnazhRealm.KRONE_MAX_M);
+        const ga = Math.floor((x0 - R) / C);
+        const gb = Math.floor((x1 + R) / C);
+        const ha = Math.floor((z0 - R) / C);
+        const hb = Math.floor((z1 + R) / C);
+        let n = 0;
+        for (let gx = ga; gx <= gb; gx++) for (let gz = ha; gz <= hb; gz++) if (memo.delete(gx + "," + gz)) n++;
+        const steht = this._forestStehtMemo;
+        if (steht)
+            for (let gx = ga - 2; gx <= gb + 2; gx++)
+                for (let gz = ha - 2; gz <= hb + 2; gz++) {
+                    const d = memo.get(gx + "," + gz);
+                    if (d) for (const o of d) steht.delete(o);
+                }
+        const fm = this._freistandMemo;
+        if (fm && fm.size && this._freistandMemoVon === memo)
+            for (const k of fm.keys()) {
+                const i = k.indexOf(",");
+                const gx = Math.floor(Number(k.slice(0, i)) / C);
+                const gz = Math.floor(Number(k.slice(i + 1, k.indexOf(",", i + 1))) / C);
+                if (gx >= ga - 6 && gx <= gb + 6 && gz >= ha - 6 && gz <= hb + 6) fm.delete(k);
+            }
+        this._ortSameFaellt((ga - 6) * C, (ha - 6) * C, (gb + 7) * C, (hb + 7) * C);
+        return n;
+    }
+
     // BORN-Darts einer Zelle, reine Funktion von (cx,cz,seed): standDensity-Wurf → Boden/Wasser → Slope →
     // Arten-Nische → reverse-J-Größe → Mammut. Nur geborene Darts treten in die Kronen-Schüchternheit ein.
     _forestCellDarts(cx, cz, seedInt) {
@@ -389,79 +426,256 @@ class AnazhRealm_Z20a {
         return out;
     }
 
-    // DER STOFF DES WALDS IM FADEN (K60-3): ein Leser, der warten kann (die Streu-Scheibe, `_streuSammler`), bestellt die
-    // Darts der Zellen [gx0..gx1] × [gz0..gz1], die das Dart-Gedächtnis seines Stands nicht trägt, beim Voxel-Faden
-    // (`_voxelWorkerWaldDarts`) — null: jede steht im Gedächtnis, oder es gibt keinen Faden oder keine Wahrheit (dann rechnet
-    // `_forestCellDarts` wie jeder andere Leser); sonst die Zusage, die eintrifft, wenn die Darts im Gedächtnis liegen. Bis
-    // K60-3 rechnete der Haupt-Faden jeden Dart der Streu selbst: die Gestalt des Orts fragt 81 Zellen je Baum, Radeon kalt
-    // bis zum ersten Bild 1,6 von 2,2 s Streu (K602c/q2: `_forestCellDarts` 1,9 s, davon die Oberfläche 1,5 s).
-    _waldDartsBestellen(gx0, gz0, gx1, gz1) {
-        if (!this.state.voxelWorker || !this._forestGesetzWahr()) return null;
-        const seedInt = this._forestSeedInt();
-        this._forestDartStand(seedInt);
+    // DER WALD PLANT IM TAKT (K69, Lehre 14 + 25): eine frische Wald-Zelle zu planen kostet 1–3 ms (`planForestCell`, ~160
+    // Sichthöhen); die Gestalt EINES Baums in frischem Wald fragt bis zu 13 × 13 Zellen (der Freistand ±4, das Urteil jedes
+    // Nachbarn ±2: `WALD_PLAN.reich`). Bis K69 plante der erste Frager am Stück — beim Gang ins Dorf die Ausstattung des Dorfs
+    // 366 Zellen in EINER Aufgabe neben dem Takt (551 ms, Null-Renderer), ein Takt 113 Zellen (245 ms). Jetzt fragt die
+    // Gestalt des Orts (`_ortGestaltSame`) hier: steht der Plan um (x, z), gilt ihr Urteil sofort; fehlen Zellen, bestellt sie
+    // sie in der Schlange des Walds (`_tickWaldPlan`) und wartet — wie auf ein kaltes Buch, so warten ihre Leser schon (die
+    // Hülle, die Streu, die Promotion, die Karte). Die Frage merkt ihre fehlenden Zellen je Zelle des Orts: jede weitere
+    // kostet einen Blick, bis die letzte steht. Fiel eine bestellte Zelle aus der Schlange (ein neuer Stand, ein Erdbau),
+    // bestellt die Frage neu.
+    _waldPlanSteht(x, z) {
         const memo = this._forestDartMemo;
-        if (this._waldBestelltVon !== memo || !this._waldBestellt) {
-            this._waldBestellt = new Map(); // die Zusagen je Zelle gelten dem Gedächtnis, für das sie bestellt wurden
-            this._waldBestelltVon = memo;
-        }
-        const im = this._waldBestellt;
+        if (!memo) return false;
         const C = AnazhRealm.FOREST.cell;
-        const neu = [];
-        let warte = null;
-        for (let gx = gx0; gx <= gx1; gx++)
-            for (let gz = gz0; gz <= gz1; gz++) {
+        const gx = Math.floor(x / C);
+        const gz = Math.floor(z / C);
+        const bk = gx + "," + gz;
+        if (!this._waldWarten || this._waldWarten.size > 4096) this._waldWarten = new Map();
+        const Q = this._waldPlanSchlange || (this._waldPlanSchlange = new Map());
+        let fehlt = this._waldWarten.get(bk);
+        if (fehlt) {
+            while (fehlt.length && memo.has(fehlt[fehlt.length - 1])) fehlt.pop();
+            if (fehlt.length) {
+                if (!Q.has(fehlt[fehlt.length - 1]))
+                    for (const k of fehlt) {
+                        if (memo.has(k) || Q.has(k)) continue;
+                        const i = k.indexOf(",");
+                        Q.set(k, [Number(k.slice(0, i)), Number(k.slice(i + 1))]);
+                    }
+                return false;
+            }
+            this._waldWarten.delete(bk);
+        }
+        const R = AnazhRealm.WALD_PLAN.reich;
+        fehlt = [];
+        if (this._waldPlanKasten(gx - R, gz - R, gx + R, gz + R, fehlt)) return true;
+        this._waldWarten.set(bk, fehlt);
+        return false;
+    }
+
+    // Der Plan des Walds im Zell-Kasten ga…gb · ha…hb (inklusiv): true = jede Zelle steht im Dart-Gedächtnis des Stands;
+    // sonst bestellt er die fehlenden in der Schlange des Walds (`_tickWaldPlan`), merkt sie in `fehlt` (optional) → false.
+    _waldPlanKasten(ga, ha, gb, hb, fehlt) {
+        const memo = this._forestDartMemo;
+        if (!memo) return false;
+        const Q = this._waldPlanSchlange || (this._waldPlanSchlange = new Map());
+        let steht = true;
+        for (let gx = ga; gx <= gb; gx++)
+            for (let gz = ha; gz <= hb; gz++) {
                 const k = gx + "," + gz;
                 if (memo.has(k)) continue;
-                const z = im.get(k);
-                if (z) {
-                    warte = z;
-                    continue;
-                }
-                this._ensureHydroTilesAround((gx + 0.5) * C, (gz + 0.5) * C, C); // die Wahrheit der Zelle reist vor ihr
-                neu.push(gx, gz);
+                steht = false;
+                if (fehlt) fehlt.push(k);
+                if (!Q.has(k)) Q.set(k, [gx, gz]);
             }
-        if (!neu.length) return warte;
-        const zusage = this._voxelWorkerWaldDarts(new Int32Array(neu), seedInt, this._forestExtraSpecies()).then(
-            (r) => this._waldDartsAn(memo, neu, r),
-            (e) => {
-                for (let i = 0; i < neu.length; i += 2) im.delete(neu[i] + "," + neu[i + 1]); // der Wartende bestellt neu
-                this._bruchMelden("WALD: der Faden rechnete die Darts nicht — " + (e && e.message ? e.message : e));
-            }
-        );
-        for (let i = 0; i < neu.length; i += 2) im.set(neu[i] + "," + neu[i + 1], zusage);
-        return zusage;
+        return steht;
     }
-    // Die Darts des Fadens ins Gedächtnis ihres Stands: ein gewechselter Stand verwirft sie (der Wartende bestellt neu), eine
-    // inzwischen gerechnete Zelle behält ihre Darts (die Urteile der Nachbarn merken die Objekte).
-    // Die Schranke des Gedächtnisses greift VOR der Lieferung, nie mitten in ihr: bis zur Prüfung K60-3-1 leerte ein volles
-    // Gedächtnis die gerade gelieferten Zellen, und die Region bestellte sie neu.
-    _waldDartsAn(memo, zellen, r) {
-        const im = this._waldBestelltVon === memo ? this._waldBestellt : null;
-        if (this._forestDartMemo === memo && memo.size + zellen.length / 2 > 8192) memo.clear(); // bounded wie `_forestCellDarts`
-        let j = 0;
-        for (let i = 0; i < zellen.length / 2; i++) {
-            const k = zellen[i * 2] + "," + zellen[i * 2 + 1];
-            if (im) im.delete(k);
-            const out = [];
-            for (let n = r.anzahl[i]; n > 0; n--, j += 11) {
-                const w = r.werte;
-                out.push({
-                    x: w[j],
-                    z: w[j + 1],
-                    sp: r.arten[w[j + 2]],
-                    s: w[j + 3],
-                    T: w[j + 4],
-                    prio: w[j + 5],
-                    keep: w[j + 6],
-                    totRoll: w[j + 7],
-                    rotY: w[j + 8],
-                    seed: w[j + 9],
-                    surfaceY: Number.isNaN(w[j + 10]) ? null : w[j + 10],
-                });
+
+    // Der Zell-Kasten, den der Pflanz-Gang eines Chunks liest: seine Zellen samt ±2 (das Urteil jedes Darts).
+    _waldPflanzKasten(cx, cz) {
+        const { span } = this._voxelChunkConfig();
+        const C = AnazhRealm.FOREST.cell;
+        const ox = cx * span;
+        const oz = cz * span;
+        return [
+            Math.floor(ox / C) - 2,
+            Math.floor(oz / C) - 2,
+            Math.floor((ox + span) / C) + 2,
+            Math.floor((oz + span) / C) + 2,
+        ];
+    }
+
+    // DIE SCHLANGE DES WALDS (K69): der Takt-Planer (Job `waldPlan`, Welt-Substanz) nimmt die bestellten Zellen
+    // (`_waldPlanSteht`) nah zuerst. IHR RECHNER IST DER WALD-FADEN (K60-3, `_waldFadenSchicken`): wo ein Voxel-Faden lebt,
+    // plant der Haupt-Faden keine Zelle der Schlange — sie reisen in Aufträgen an den Wald-Faden und landen im Gedächtnis
+    // (`_waldDartsAn`). Ohne Faden plant der Takt je Takt höchstens `WALD_PLAN.ms` (mindestens eine Zelle — nie verhungert;
+    // der Lade-Takt gibt sein ganzes Budget). Bis zur Vereinigung K60-4 bestellte die Streu ihre Darts an der Schlange
+    // vorbei beim Faden (`_waldDartsBestellen`), und jeder andere Leser plante im Haupt-Faden: zwei Wege an EIN Gedächtnis.
+    // Ihre Regung (`_waldPlanGeplant`) weckt die Fege-Takte, deren Bäume auf ihre Zellen warten. → die Zahl der Zellen.
+    _tickWaldPlan(ms) {
+        const Q = this._waldPlanSchlange || (this._waldPlanSchlange = new Map());
+        const P = this._waldPflanzWarten;
+        if (!Q.size && !(P && P.size)) return 0;
+        if (!this._forestGesetzWahr()) return 0;
+        const seedInt = this._forestSeedInt();
+        const t0 = performance.now();
+        let n = 0;
+        if (this._waldFadenLebt()) this._waldFadenSchicken(seedInt);
+        else {
+            this._forestDartStand(seedInt);
+            const liste = this._waldPlanListe(null);
+            const budget = Number.isFinite(ms) ? ms : Infinity;
+            const frist = this._ladeTakt() ? budget : Math.min(budget, AnazhRealm.WALD_PLAN.ms);
+            for (const [, k, g] of liste) {
+                if (n > 0 && performance.now() - t0 >= frist) break;
+                this._forestCellDarts(g[0], g[1], seedInt);
+                Q.delete(k);
+                n++;
             }
-            if (this._forestDartMemo !== memo || memo.has(k)) continue;
-            memo.set(k, out);
         }
+        // die wartenden Pflanz-Gänge (`_forestPlantChunk`): steht der Plan ihres Chunks, pflanzt die Schlange ihn jetzt — auch
+        // wenn sein Chunk inzwischen ging: die Pflanzung geschieht EINMAL je Chunk (`voxelPopulatedChunks` fällt nie), ein
+        // verworfener Gang ließ seinen Wald für immer leer (K69-2: die Klang-Linse fand am Waldort 5 Bäume ≤ 15 m)
+        if (P && P.size)
+            for (const key of [...P]) {
+                const i = key.indexOf(",");
+                const cx = Number(key.slice(0, i));
+                const cz = Number(key.slice(i + 1));
+                if (this._waldPlanKasten(...this._waldPflanzKasten(cx, cz))) this._forestPlantChunk(cx, cz);
+            }
+        if (n > 0) this._waldPlanGeplant(t0);
+        return n;
+    }
+
+    // Die offenen Zellen der Schlange nah zuerst ([d², Schlüssel, [gx, gz]]): was das Gedächtnis schon trägt, fällt aus ihr;
+    // was im Flug ist (`flug`, optional), bleibt in ihr, aber nicht in der Liste.
+    _waldPlanListe(flug) {
+        const Q = this._waldPlanSchlange;
+        const memo = this._forestDartMemo;
+        const C = AnazhRealm.FOREST.cell;
+        const liste = [];
+        for (const [k, g] of Q) {
+            if (memo.has(k)) Q.delete(k);
+            else if (!flug || !flug.has(k)) liste.push([this._spielerD2((g[0] + 0.5) * C, (g[1] + 0.5) * C), k, g]);
+        }
+        liste.sort((a, b) => a[0] - b[0]);
+        return liste;
+    }
+
+    // Zellen sind geplant (von welchem Rechner auch immer): die Regung (`_waldPlanRegung`) liest der Stand-Stempel — sie
+    // weckt die Fege-Takte, wenn die Schlange leer ist, und solange sie plant, höchstens alle 250 ms.
+    // DIE STREU WARTET AUF DEN WALD WIE AUF IHR ASSET (K69-2): eine Streu-Region, deren Bäume auf die Gestalt ihres Orts
+    // warten (`_scatterFoundrySeed` → null), schiebt sich auf (`_deferredFoundry`) und wartet benannt auf die leere Schlange
+    // (`_waldPlanZusage`, ihr Wecker `_streuWeckerSpannen`). Ohne Nachschub stand sie für immer: Null-Gang an der Mess-Wiese
+    // 6 von 6 Regionen nach geleerter Schlange aufgeschoben (CI 38736568849). Ist die Schlange leer, steht jede bestellte
+    // Zelle — die Region baut neu wie nach einer Lieferung.
+    _waldPlanGeplant(t0) {
+        const Q = this._waldPlanSchlange;
+        const leer = !(Q && Q.size);
+        if (leer || !(t0 < this._waldPlanWeckBis)) {
+            this._waldPlanRegung = (this._waldPlanRegung | 0) + 1;
+            this._waldPlanWeckBis = t0 + 250;
+        }
+        if (!leer) return;
+        this._scatterRefillPending = true;
+        const z = this._waldLeer;
+        if (z) {
+            this._waldLeer = null;
+            z.loesen();
+        }
+    }
+
+    // Die Zusage der leeren Schlange (der Wecker der Streu wartet auf sie, `_streuWartetAuf`): null, wenn nichts bestellt ist.
+    _waldPlanZusage() {
+        const Q = this._waldPlanSchlange;
+        if (!Q || !Q.size) return null;
+        if (!this._waldLeer) {
+            let loesen = null;
+            const z = new Promise((res) => {
+                loesen = res;
+            });
+            z.loesen = loesen;
+            this._waldLeer = z;
+        }
+        return this._waldLeer;
+    }
+
+    // Der Wald-Faden kann rechnen: ein Voxel-Faden lebt, und seine Quelle ist bekannt (`_voxelWorkerWaldDarts`).
+    _waldFadenLebt() {
+        return !!(this.state.voxelWorker && this._voxelFadenQuelle);
+    }
+
+    // DER STOFF DES WALDS IM FADEN (K60-3): die offenen Zellen der Schlange nah zuerst, je Auftrag `WALD_PLAN.faden` Zellen,
+    // höchstens `WALD_PLAN.fadenFlug` Aufträge im Flug (der nächste geht mit der Ankunft des vorigen, nie erst im nächsten
+    // Takt). Die Wahrheit jeder Zelle reist vor ihr (`_ensureHydroTilesAround`), der Zustand über den EINEN Sender. Bis K60-3
+    // rechnete der Haupt-Faden jeden Dart der Streu selbst: Radeon kalt bis zum ersten Bild 1,6 von 2,2 s Streu (K602c/q2:
+    // `_forestCellDarts` 1,9 s, davon die Oberfläche 1,5 s).
+    _waldFadenSchicken(seedInt) {
+        this._forestDartStand(seedInt);
+        const memo = this._forestDartMemo;
+        if (this._waldFlugVon !== memo || !this._waldFlug) {
+            this._waldFlug = new Set(); // die Zellen im Flug gelten dem Gedächtnis, für das sie geschickt wurden
+            this._waldFlugVon = memo;
+            this._waldFlugAuftraege = 0;
+        }
+        const W = AnazhRealm.WALD_PLAN;
+        if (this._waldFlugAuftraege >= W.fadenFlug) return;
+        const flug = this._waldFlug;
+        const liste = this._waldPlanListe(flug);
+        const C = AnazhRealm.FOREST.cell;
+        const extras = this._forestExtraSpecies();
+        for (let a = 0; a < liste.length && this._waldFlugAuftraege < W.fadenFlug; a += W.faden) {
+            const zellen = [];
+            for (let b = a; b < Math.min(liste.length, a + W.faden); b++) {
+                const g = liste[b][2];
+                this._ensureHydroTilesAround((g[0] + 0.5) * C, (g[1] + 0.5) * C, C);
+                flug.add(liste[b][1]);
+                zellen.push(g[0], g[1]);
+            }
+            this._waldFlugAuftraege++;
+            const erd = this._erdbauStand | 0;
+            this._voxelWorkerWaldDarts(new Int32Array(zellen), seedInt, extras).then(
+                (r) => this._waldDartsAn(memo, zellen, r, erd),
+                (e) => {
+                    this._waldDartsAn(memo, zellen, null, erd); // die Zellen bleiben in der Schlange, der Takt schickt neu
+                    this._bruchMelden("WALD: der Faden rechnete die Darts nicht — " + (e && e.message ? e.message : e));
+                }
+            );
+        }
+    }
+
+    // Die Darts des Fadens ins Gedächtnis ihres Stands: ein gewechselter Stand oder ein Erdbau seit dem Auftrag
+    // (`_erdbauStand`, K69: der Faden rechnete am alten Grund) verwirft sie — die Zellen bleiben in der Schlange, ein neuer
+    // Auftrag rechnet sie; eine inzwischen gerechnete Zelle behält ihre Darts (die Urteile der Nachbarn merken die Objekte).
+    // Die Schranke des Gedächtnisses greift VOR der Lieferung, nie mitten in ihr (Prüfung K60-3-1).
+    _waldDartsAn(memo, zellen, r, erd) {
+        if (this._waldFlugVon === memo) {
+            this._waldFlugAuftraege--;
+            for (let i = 0; i < zellen.length; i += 2) this._waldFlug.delete(zellen[i] + "," + zellen[i + 1]);
+        }
+        const Q = this._waldPlanSchlange;
+        let n = 0;
+        if (r && this._forestDartMemo === memo && (this._erdbauStand | 0) === erd) {
+            if (memo.size + zellen.length / 2 > 8192) memo.clear(); // bounded wie `_forestCellDarts`
+            let j = 0;
+            for (let i = 0; i < zellen.length / 2; i++) {
+                const k = zellen[i * 2] + "," + zellen[i * 2 + 1];
+                const out = [];
+                for (let m = r.anzahl[i]; m > 0; m--, j += 11) {
+                    const w = r.werte;
+                    out.push({
+                        x: w[j],
+                        z: w[j + 1],
+                        sp: r.arten[w[j + 2]],
+                        s: w[j + 3],
+                        T: w[j + 4],
+                        prio: w[j + 5],
+                        keep: w[j + 6],
+                        totRoll: w[j + 7],
+                        rotY: w[j + 8],
+                        seed: w[j + 9],
+                        surfaceY: Number.isNaN(w[j + 10]) ? null : w[j + 10],
+                    });
+                }
+                if (!memo.has(k)) memo.set(k, out);
+                if (Q) Q.delete(k);
+                n++;
+            }
+        }
+        if (n > 0) this._waldPlanGeplant(performance.now());
+        if (Q && Q.size && this._waldFadenLebt() && this._forestGesetzWahr()) this._waldFadenSchicken(this._forestSeedInt());
     }
 
     // ==================== ASSET-FOUNDRY: die Vorlage pflanzt ihre echten Bäume ====================
@@ -1508,8 +1722,9 @@ class AnazhRealm_Z20a {
                 // DORF-ERLEBNIS — die Tür-Zeile des Exports (Blocker-Tür-Lücke +
                 // Flügel-Reichweite; alte Exporte ohne Feld → undefined, byte-alt).
                 tuer: slot.tuer || undefined,
-                // KAMIN-RAUCH (.105): Spitze haus-lokal (exportSettlement) — rauchQuelle.
-                chimney: slot.chimney || undefined,
+                // KAMIN-RAUCH (.105): Spitze haus-lokal (exportSettlement) — rauchQuelle; null ist das Nein des Exports
+                // (kein Kamin: der Host baut das Haus nicht nach), ein Alt-Export ohne Feld bleibt undefined
+                chimney: slot.chimney,
                 // Das Slot-Rezept (exportSettlement ov) reist als Guss-Stempel: die Optik baut aus DERSELBEN Wahrheit
                 // wie Blocker/ext (ov überstimmt den Kultur-Default). Alt-Exporte ohne ov: must-ignore.
                 studioOv: slot.ov && typeof slot.ov === "object" ? slot.ov : undefined,

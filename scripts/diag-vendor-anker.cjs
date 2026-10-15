@@ -110,12 +110,12 @@ const ANKER = [
     { file: "vendor/three.webgpu.min.js", sub: "getUpdateBeforeType(){return this.updateBeforeType}", organ: "AnazhRealm._diaetGang (Vorher-Takt: object geht je Programm)" },
     { file: "vendor/three.webgpu.min.js", sub: "updateBeforeNode(e){const t=e.getUpdateBeforeType(),r=e.updateReference(this);if(t===ri.FRAME){", organ: "AnazhRealm._diaetGeteiltSchreiben (NodeFrame.updateBeforeNode je Vorher-Knoten, wie Nodes.updateBefore)" },
     { file: "vendor/three.webgpu.min.js", sub: "updateReference(e){return this.reference=null!==this.object?this.object:e.object,this.reference}", organ: "AnazhRealm._diaetGang (ein Verweis ohne festes Objekt liest frame.object — sein Programm geht seinen eigenen Gang) · _stoffWert (der Wert je Stoff liest den Stoff des zeichnenden Objekts, in jedem Pass)" },
-    // EIN GRAPH JE SIGNATUR (1310-18, `_foundryTreeMaterial` · `_membranGraph` · `_nebelGraph`): r184 schlüsselt ein Programm
+    // EIN GRAPH JE SIGNATUR (1310-18, `_foundryTreeMaterial` · `_membranGraph`): r184 schlüsselt ein Programm
     // nach der IDENTITÄT seiner Knoten — der Knoten-Schlüssel endet in `customCacheKey` = Knoten-id; frisch gebaute Knoten
     // hießen ein Programm je Stoff. Und je InstancedMesh hängt r184 die Objekt-uuid an den Schlüssel (der InstanceNode bindet
     // die Matrix-Puffer des Objekts in den Graphen): die instanzierten Foundry-Teile bauen je Objekt, auch mit EINEM Graphen —
     // fällt dieser Term, teilen sie ihr Programm ohne Umbau.
-    { file: "vendor/three.webgpu.min.js", sub: "customCacheKey(){return this.id}", organ: "EIN GRAPH JE SIGNATUR (_foundryTreeMaterial · _membranGraph · _nebelGraph: Programm-Schlüssel = Knoten-Identität)" },
+    { file: "vendor/three.webgpu.min.js", sub: "customCacheKey(){return this.id}", organ: "EIN GRAPH JE SIGNATUR (_foundryTreeMaterial · _membranGraph: Programm-Schlüssel = Knoten-Identität)" },
     { file: "vendor/three.webgpu.min.js", sub: '(e.isInstancedMesh||e.count>1||Array.isArray(e.morphTargetInfluences))&&(s+=e.uuid+",")', organ: "EIN GRAPH JE SIGNATUR (je InstancedMesh ein Programm — darum zeichnet die Senke über ihren Zeichner, `_instanzZeichner`)" },
     // DIE SENKE ZEICHNET ÜBER IHREN ZEICHNER (1410-1, `_instanzZeichner` · `_senkenKnoten` · der setupPosition-Haken in
     // `_configureRenderer`): ein LOD ohne Takt zeichnet nicht, seine Kinder schon; die Zahl eines Draws ist instanceCount der
@@ -425,6 +425,14 @@ const ANKER = [
     // SHADOW_TWIN_LAYER und zeichnet doch im Auge).
     { file: "vendor/three.webgpu.min.js", sub: "_projectObject(e,t,r,s,i){if(!1===e.visible)return;if(e.layers.test(t.layers))", organ: "_applyEgoSicht (jede Kamera zeichnet nur ihre Ebenen)" },
     { file: "vendor/three.webgpu.min.js", sub: "const n=e.children;for(let e=0,a=n.length;e<a;e++)this._projectObject(n[e],t,r,s,i)", organ: "_applyEgoSicht (die Kinder ohne Ebenen-Test: das Gerät unter Ebene-2-Knochen zeichnet)" },
+    // DIE WURF-EBENE (K72): `castShadow` ist ein Accessor auf das Bit SHADOW_TWIN_LAYER — der Konstruktor legt die Ebenen VOR der
+    // ersten Zuweisung an, `copy` trägt beide; die Schatten-Kamera behält eine Maske mit einem Bit jenseits der 0 (sonst nähme
+    // r184 die Maske der Haupt-Kamera und die Kaskade sähe keinen Werfer); die Schatten-Funktion liest `castShadow`.
+    { file: "vendor/three.core.min.js", sub: "this.layers=new lr,this.visible=!0,this.castShadow=!1", organ: "_wurfEbene (die Ebenen stehen vor der ersten Zuweisung des Wurfs)" },
+    { file: "vendor/three.core.min.js", sub: "this.layers.mask=t.layers.mask,this.visible=t.visible,this.castShadow=t.castShadow", organ: "_wurfEbene (copy trägt Ebenen und Wurf)" },
+    { file: "vendor/three.webgpu.min.js", sub: "4294967294&s.camera.layers.mask||(s.camera.layers.mask=a.layers.mask)", organ: "_wurfEbene (die Schatten-Kamera behält ihre Wurf-Maske)" },
+    { file: "vendor/three.webgpu.min.js", sub: "(!0===i.castShadow||i.receiveShadow&&r===pt)", organ: "_wurfEbene (die Schatten-Funktion liest den Wurf)" },
+    { file: "vendor/three.webgpu.min.js", sub: "getNode(e){if(e.isQuadMesh)return ES;let t=wS.get(e);", organ: "_wurfEbene (EIN Lichter-Knoten je Szene, auch im Schatten-Pass: jedes Licht liegt auf der Wurf-Ebene)" },
 ];
 
 // DIE DIÄT-PRÜFUNG (Kamera-Treue je Programm): die Diät-Funktionen aus dem Stamm schneiden (vom ersten

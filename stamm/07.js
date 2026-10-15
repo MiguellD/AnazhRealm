@@ -309,7 +309,8 @@ class AnazhRealm_Z07 {
 
     // Voller Chunk-Mesh im Worker → {empty, positions, indices, normals, colors, waterCells, lod}
     // (`empty` = kein Iso). Density/Iso/Cells/Colors (~145 ms) laufen off-thread; der Main baut nur
-    // BufferGeometry + Architektur-Cell-Stempel + BVH + Scene-Attach.
+    // BufferGeometry + Architektur-Cell-Stempel + BVH + Scene-Attach. Der Auftrag trägt die Flut-Saat der Nachbarn
+    // (`_flutSaat`, null ohne Carve im 3×3) — der Worker flutet damit wie der Sync-Bau.
     _voxelWorkerComputeChunkMesh(cx, cz, lod) {
         const worker = this._getVoxelWorker();
         if (!worker) return Promise.reject(new Error("voxel-worker not available"));
@@ -319,7 +320,8 @@ class AnazhRealm_Z07 {
             const promise = new Promise((resolve, reject) => {
                 this.state.voxelWorkerPending.set(requestId, { resolve, reject });
             });
-            worker.postMessage({ type: "chunk-mesh", cx, cz, lod: lod | 0, requestId });
+            const saat = this._flutSaat(cx, cz);
+            worker.postMessage({ type: "chunk-mesh", cx, cz, lod: lod | 0, saat, requestId });
             return promise;
         });
     }
@@ -347,7 +349,7 @@ class AnazhRealm_Z07 {
     // jedem Chunk und jeder Höhe der Ferne (Radeon kalt: die Darts kamen 3,5 s nach der Bestellung, das Bild 2 s später als
     // ohne, K603/s2-6C). Den Zustand bringt der EINE Sender (`_voxelZustandPost`): bei der Geburt ein voller Stand, danach
     // dieselben Nachrichten wie der Voxel-Faden (Worldgen, Hydro-Kachel, Erdbau, Edits) — Nachrichten laufen in Reihe, der
-    // Auftrag rechnet am Zustand, der vor ihm reiste. Leser: `_waldDartsBestellen`.
+    // Auftrag rechnet am Zustand, der vor ihm reiste. Leser: die Schlange des Walds (`_waldFadenSchicken`).
     _voxelWorkerWaldDarts(zellen, seedInt, extras) {
         if (!this.state.voxelWorker || !this._voxelFadenQuelle) return Promise.reject(new Error("kein Voxel-Faden"));
         let f = this._waldFadenZ;

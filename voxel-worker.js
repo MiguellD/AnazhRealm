@@ -112,8 +112,9 @@ self.onmessage = function (e) {
             // Transferable. Main-Thread macht nur noch BufferGeometry-
             // Konstruktion + Architektur-Cell-Stempel + BVH-Collision +
             // Scene-Attach (~30 ms statt 100-150 ms).
-            const { cx, cz, lod, requestId } = msg;
-            const mesh = buildChunkMesh(cx, cz, lod);
+            // die Flut-Saat der Nachbarn (Main `_flutSaat`, null ohne Carve im 3×3) reist als Daten mit dem Auftrag
+            const { cx, cz, lod, saat, requestId } = msg;
+            const mesh = buildChunkMesh(cx, cz, lod, saat || null);
             if (mesh.empty) {
                 self.postMessage({ type: "chunk-mesh-result", requestId, empty: true, lod: lod | 0 });
             } else {
@@ -2417,7 +2418,7 @@ function attachFieldColors(positions) {
 // Water-Cells (Mirror von _buildVoxelChunkWaterCells, OHNE Architektur-Stempel)
 // =============================================================================
 
-function buildChunkWaterCells(ox, oy, oz, step, lod, density) {
+function buildChunkWaterCells(ox, oy, oz, step, lod, density, saat = null) {
     const cfg = voxelChunkConfig(lod);
     const dim = cfg.dim;
     const dimY = cfg.dimY;
@@ -2537,6 +2538,16 @@ function buildChunkWaterCells(ox, oy, oz, step, lod, density) {
         if (atlasWaterLevelAt(cxw, oz - 0.5 * step, Infinity) > -Infinity) colSrc[i + 0 * dim] = 1;
         if (atlasWaterLevelAt(cxw, oz + (dim + 0.5) * step, Infinity) > -Infinity) colSrc[i + (dim - 1) * dim] = 1;
     }
+    // Reaktive Flut über die Chunkgrenze (Mirror von `_buildVoxelChunkWaterCells`, MUSS bit-identisch): die Flut-Saat der
+    // Nachbarn (Main `_flutSaat`: je Rand-Spalte West · Ost · Nord · Süd, ob die angrenzende Spalte des Nachbarn nass ist)
+    // seedet den OOB-Ring auch aus den nassen Nachbar-ZELLEN — ein Carve-Kanal läuft über die Naht.
+    if (saat)
+        for (let q = 0; q < dim; q++) {
+            if (saat[q]) colSrc[0 + q * dim] = 1;
+            if (saat[dim + q]) colSrc[dim - 1 + q * dim] = 1;
+            if (saat[2 * dim + q]) colSrc[q + 0 * dim] = 1;
+            if (saat[3 * dim + q]) colSrc[q + (dim - 1) * dim] = 1;
+        }
     // V18.125 — KÜSTEN-AQUIFER (Mirror von `_buildVoxelChunkWaterCells`, MUSS
     // bit-identisch): jede Atlas-lose Spalte, deren himmel-offenes ECHTES
     // Terrain (erste SOLID-Zelle von oben) klar unter dem Wassertisch liegt,
@@ -2889,7 +2900,7 @@ function stufeZielNetz(fein, feinNormal, feinFarbe, ox, oy, oz, grobLod) {
     ]);
 }
 
-function buildChunkMesh(cx, cz, lod) {
+function buildChunkMesh(cx, cz, lod, saat = null) {
     const cfg = voxelChunkConfig(lod);
     const { dim, step, span, dimY, floorDrop } = cfg;
     const base = state.baseHeight || 0;
@@ -2976,7 +2987,7 @@ function buildChunkMesh(cx, cz, lod) {
     let waterCells;
     if (chunkHasAnyWater(cx, cz, lod)) {
         if (lod === 0) {
-            waterCells = buildChunkWaterCells(ox, oy, oz, step, 0, density);
+            waterCells = buildChunkWaterCells(ox, oy, oz, step, 0, density, saat);
         } else {
             const lod0Cfg = voxelChunkConfig(0);
             const lod0SampleDimX = lod0Cfg.dim + 3;
@@ -2994,7 +3005,7 @@ function buildChunkMesh(cx, cz, lod) {
                 lod0SampleDimZ,
                 lod0Cfg.step
             );
-            waterCells = buildChunkWaterCells(ox, oy, oz, lod0Cfg.step, 0, lod0Density);
+            waterCells = buildChunkWaterCells(ox, oy, oz, lod0Cfg.step, 0, lod0Density, saat);
         }
     } else {
         waterCells = new Uint8Array(0); // sentinel: chunk has no water

@@ -793,22 +793,17 @@ class AnazhRealm_Z20c {
         let wartet = false;
         const same = this._foundryGestaltSame(seed, preset, () => {
             if (!(T > 0)) return false;
+            // die Wahrheit des Gesetzes und der Plan des Walds um den Ort (`_waldPlanSteht`, K69): fehlt eins, wartet sie
             if (!this._forestGesetzWahr()) {
                 wartet = true;
                 return false;
             }
-            // Wer warten kann (die Streu-Scheibe), wartet auf den Stoff des Walds aus dem Faden (`_waldDartsBestellen`, K60-3):
-            // das Urteil liest die Darts ±4 Zellen um den Ort und das Urteil jedes Nachbarn ±2 um ihn.
-            if (this._streuSammler) {
-                const C = AnazhRealm.FOREST.cell;
-                const gx = Math.floor(x / C);
-                const gz = Math.floor(z / C);
-                const zusage = this._waldDartsBestellen(gx - 6, gz - 6, gx + 6, gz + 6);
-                if (zusage) {
-                    wartet = true;
-                    this._streuWartetAuf(zusage);
-                    return false;
-                }
+            // fehlt der Plan, bestellt ihn die Frage in der EINEN Schlange des Walds (ihr Rechner ist der Wald-Faden, K60-3);
+            // wer warten kann (die Streu-Scheibe), wartet benannt auf ihre leere Schlange (`_waldPlanZusage`)
+            if (!this._waldPlanSteht(x, z)) {
+                wartet = true;
+                if (this._streuSammler) this._streuWartetAuf(this._waldPlanZusage());
+                return false;
             }
             return this._forestStehtFrei(x, z, T, (gx, gz) => this._forestCellDarts(gx, gz, seedInt));
         });

@@ -10,7 +10,12 @@
 //   (2) HISM-SLOT-BILANZ: die Gruppen tragen nach dem Scheiben-Bau dieselben
 //       count/free-Stände wie nach dem One-Shot — ein Doppel-Add über die
 //       Scheiben-Grenze wäre im cells-Vergleich UNSICHTBAR (die Instanz landet
-//       trotzdem in der Gruppe), die Bilanz fängt ihn.
+//       trotzdem in der Gruppe), die Bilanz fängt ihn. Die Bilanz liest die GANZE Welt —
+//       darum steht die Welt zwischen One-Shot und letzter Scheibe still (keine
+//       Ereignis-Runde): ein Rewarm aus der Foundry-Lieferung
+//       (`_foundryPrefetchLibrary › _foundryRewarmColdTrees › _archGroupAlloc`) setzte
+//       sonst einen fremden Baum in die Bilanz (K69-2: CI 2 von 2 rot, lokal mit
+//       80 statt 150 Takten Vorlauf nachgestellt: f:kristalle 13 → 14).
 //   (3) KALT-BAKE-SCHEIBEN: der Region-Feld-Bake läuft in j-Zeilen-Scheiben und
 //       das Ergebnis ist Float32-BYTE-GLEICH zum One-Shot-Bake; ein HALBER Bake
 //       steht NIE in der Map (die _sampleBakedField-Wand).
@@ -19,9 +24,10 @@
 //   (5) DER WECKER (K60-2): eine aufgeschobene Region wartet auf IHRE Zusagen — eine fremde Lieferung
 //       (`_scatterRefillPending`) wirft sie nicht weg; erst wenn jede ihrer Zusagen kam, baut der Refill sie neu.
 //       Täter beim Namen: der Refill in `_tickScatterStreaming`, der jede aufgeschobene Region bei jeder Lieferung warf.
-//   (6) DER STOFF DES WALDS (K60-3): die Gestalt der Streu (`_ortGestaltSame`) bestellt die Darts beim Voxel-Faden
-//       (`_waldDartsBestellen`) — unter der Streu-Scheibe rechnet der Haupt-Faden keinen Dart, die Region wartet und steht
-//       nach der Lieferung byte-gleich zur Referenz ohne Faden. Täter beim Namen: `_forestCellDarts` unter `_scatterRegionWork`.
+//   (6) DER STOFF DES WALDS (K60-3, vereint K60-4): die Gestalt der Streu (`_ortGestaltSame`) bestellt die Darts in der EINEN
+//       Schlange des Walds, ihr Rechner ist der Wald-Faden (`_waldFadenSchicken`) — unter der Streu-Scheibe rechnet der
+//       Haupt-Faden keinen Dart, die Region wartet benannt auf die leere Schlange und steht nach der Lieferung byte-gleich
+//       zur Referenz ohne Faden (der Takt plant die Schlange im Haupt-Faden). Täter beim Namen: `_forestCellDarts` unter `_scatterRegionWork`.
 // ─────────────────────────────────────────────────────────────────────────
 
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
@@ -45,7 +51,18 @@ const server = statikServer();
             const r = window.anazhRealm;
             const old = r.state.voxelWorker;
             r.state.voxelWorker = null;
-            for (let i = 0; i < 150; i++) {
+            // der Vorlauf endet am Bau-Ereignis, nie an einer Takt-Zahl allein: mindestens 150 Takte, dann bis die Welt
+            // die Region unter dem Spieler selbst ganz gebaut hat (Zellen ohne Fortsetzung) — Decke 900 gegen das Hängen
+            const SC = (window.AnazhRealm || r.constructor).SCATTER;
+            const steht = () => {
+                const p = r.state.playerMesh && r.state.playerMesh.position;
+                if (!p || !r.state.scatterRegions) return false;
+                const reg = r.state.scatterRegions.get(
+                    `${Math.floor(p.x / SC.regionM)},${Math.floor(p.z / SC.regionM)}`
+                );
+                return !!(reg && !reg._cont && reg.cells && reg.cells.length);
+            };
+            for (let i = 0; i < 900 && (i < 150 || !steht()); i++) {
                 r._gameLoopTick();
                 await new Promise((res) => setTimeout(res, 0));
             }
@@ -113,7 +130,7 @@ const server = statikServer();
                     const e = st.bakedRegionFields && st.bakedRegionFields.get(bKey);
                     if (e && e.dirty !== false && reg._cont.phase === "bake") halfBakeSeen = true;
                 } else break;
-                await new Promise((res) => setTimeout(res, 0));
+                // KEINE Ereignis-Runde zwischen den Scheiben: beide Bauten lesen dieselbe Welt (Kopf-Kommentar (2))
             }
             o.slices = slices;
             o.contPhases = Array.from(contSeenPhases);
@@ -228,8 +245,11 @@ const server = statikServer();
                     const reg6 = r._scatterRegion(rx, rz, pos);
                     stoff.haupt = zaehler;
                     const t1 = performance.now();
-                    while (reg6._deferredFoundry && !reg6._geweckt && performance.now() - t1 < 60000)
+                    // der Takt schickt die Schlange an den Faden (`_tickWaldPlan`, Job `waldPlan`) — die Linse ist sein Takt
+                    while (reg6._deferredFoundry && !reg6._geweckt && performance.now() - t1 < 60000) {
+                        r._tickWaldPlan(Infinity);
                         await new Promise((res) => setTimeout(res, 50));
+                    }
                     stoff.gewartet = reg6._deferredFoundry === true && reg6._geweckt === true;
                     // der Neubau nach der Lieferung und die Referenz ohne Faden (der Main rechnet jeden Dart selbst, frisches
                     // Gedächtnis) Rücken an Rücken, ohne Warten dazwischen: kein Asset kommt zwischen die beiden Bauten
@@ -242,6 +262,12 @@ const server = statikServer();
                     clean();
                     st.voxelWorker = null;
                     r._forestDartMemo = null;
+                    // ohne Faden plant der Takt die Schlange im Haupt-Faden: die Referenz pumpt sie leer (ohne Warten — kein
+                    // Asset kommt dazwischen) und baut die Region dann neu
+                    r._scatterRegion(rx, rz, pos);
+                    for (let i = 0; i < 20000 && r._waldPlanSchlange && r._waldPlanSchlange.size; i++)
+                        r._tickWaldPlan(Infinity);
+                    clean();
                     stoff.gleich = snapshot(r._scatterRegion(rx, rz, pos)) === neuSnap;
                 } finally {
                     st.voxelWorker = vw;

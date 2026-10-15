@@ -103,7 +103,7 @@
       ['wMason','Mauerwerk',0,1,0.01,0.0,'',1],['wBraid','Geflecht',0,1,0.01,1.0,'',1],['wMono','Monolith',0,1,0.01,0.0,'',1],['wLace','Filigran',0,1,0.01,0.25,'',1],
       ['DEP','h'],
       ['orders','Ordnungen',1,9,1,3,'Staffel-Ebenen (Türfreiheit autom.)',2],['depth','Tiefe',0,1,0.01,0.45,'z-Staffelung Rahmen',2],['wave','Welle',0,1,0.01,0.45,'Oberflächen-Verformung (z)',2],['tunnel','Innentiefe',0,1,0.01,0.6,'Raymarch-Tiefe',2],['fractal','Fraktal',0,1,0.01,0.6,'Innen-Selbstähnlichkeit',2],['twist','Drall',0,1,0.01,0.4,'Drall',2],
-      ['realm','Innenwelt',0,1,0.01,0.0,'Wurmloch↔Kristall',2],['swirl','Sog',0,1,0.01,0.3,'Gravitationslinse',2],['reflect','Spiegel',0,1,0.01,0.5,'Oberflächen-Spiegelung',2],['fog','Nebel',0,1.6,0.01,0.85,'Bodennebel (volumetrisch)',2],
+      ['realm','Innenwelt',0,1,0.01,0.0,'Wurmloch↔Kristall',2],['swirl','Sog',0,1,0.01,0.3,'Gravitationslinse',2],['reflect','Spiegel',0,1,0.01,0.5,'Oberflächen-Spiegelung',2],
       ['FORM','h'],
       ['k','Spitze',1.0,3.4,0.01,2.6,''],['rise','Stich',0.55,1.25,0.01,1.0,''],['ogee','Ogee',0,1,0.01,0,''],['horse','Hufeisen',0,1,0.01,0,''],['aspect','Schlank',1.4,2.8,0.01,2.4,''],['mass','Dicke',0,1,0.01,0.7,''],
       ['MAT','h'],
@@ -918,37 +918,32 @@
         swirlK: 0.5, // uSwirl = swirl*0.5
         openK: [0.4, 0.6], // uOpen = clamp(0.4+energy*0.6, 0, 1)
         centerK: 0.55, // Zentrum-Y = baseY + jambH*0.55
-        march: {
-            steps: 12,
-            t0: 0.04, // Strahl-Versatz je Schritt: i*uStep + 0.04
-            depK: [1.6, 0.1], // dep = i*uStep*1.6 + r*0.1
-            spK: [0.3, 0.6], // sp = t*(0.3 + energy*0.6)
-            lpK: 2.0, // lp = log(r)*2.0 - sp
-            frqK: [1.0, 2.2], // frq = 1.0 + fractal*2.2
-            win: 0.4, // Realm-Fenster-Breite
-            winC: [0.0, 0.34, 0.67, 1.0], // Realm-Fenster-Zentren
-            vCut: [0.1, 1.4], // v = max(0, v-0.10)*1.4
-            gDen: [2.2, 0.35], // g = v/(1 + r²*2.2 + dep*0.35)
-            att: 0.9, // Transmissions-Dämpfung je Schritt
-            // die vier Innenwelt-Modi (Wurmloch·Facette·Plasma·Nebel) —
-            // positional, Referenz: porta.js Fragment w0..w3-Zeilen.
-            wurm: [3.0, 2.0, 4.0, 0.15, 0.5],
-            facet: [8.0, 9.0, 4.0, 1.5, 0.1],
-            plasma: [0.7, 0.6, 0.2, 2.4, 3.5, 1.4, 0.5, 3.0, 1.25, 1.3, 0.08, 0.15],
-            nebel: [1.0, 0.6, 0.7, 0.12, 2.2, 1.5, 1.3, 0.2, 2.0, 2.0, 1.0, 1.2, 0.18],
-        },
-        look: {
-            star: [0.955, 95.0, 5.0, 0.42], // step(0.955, hash(Rf*95+z*5))*0.42
-            skyK: [0.5, 0.5, 0.3], // pal(Rf.y*0.5+0.5)*0.30
-            fresPow: 3.0,
-            specDir: [0.4, 0.7, 0.6],
-            specPow: 60.0,
-            specCol: [1.0, 0.95, 0.85],
-            specK: 1.5,
-            core: [12.0, 0.5, 0.5, 0.7, 0.3, 1.4], // exp(-dc²*12)*(0.5+open*0.5)*(0.7+0.3*sin(t*1.4))
-            corePal: 0.1,
-            mixK: [1.35, 0.55, 1.5, 1.0], // inter·1.35 + sky·fres·refl·0.55 + spec·1.5 + core·1.0
-            finalK: [1.4, 0.55, 0.55, 0.9, 0.13], // ·1.4·(0.55+0.55·act)·(0.90+0.13·pulse)
+        // DER FILM ÜBER DEM ZIEL (D8, Vertrags-Akt 15.10.: der 12-Schritt-March, die vier Innenwelt-Modi und der Look-Block
+        // fallen — die Öffnung zeigt das Ziel). Die Öffnung liest das Ziel-Panorama (Equirekt, das Studio rendert es in seiner
+        // Welt, AnazhHuelle.panorama) über eine Stellvertreter-Kugel um die Tor-Mitte: Radius = Tor-Höhe × kugel (Lagarde &
+        // Zanuttini 2012), der Strahl trifft die Kugel, die Richtung von der Mitte zum Treffer liest das Panorama; die Wellen-
+        // Normale bricht den Blick um brechung. Darüber der Seifenfilm (Dünnschicht-Interferenz, Brechzahl n: Gangunterschied
+        // 2·d·cos θt, die Bänder aus membranPalette): Dicke d = dicke[0] + dicke[1]·rr + dicke[2]·Welle/Tiefe +
+        // dicke[3]·sin(t·dicke[4] + y·dicke[5]) (rr = Rand-Abstand in der Öffnungs-Ellipse); Gewicht = min(F0 + (1 − F0)·
+        // (1 − cos θ)^fresnel[1] + rand[2]·smoothstep(rand[0], rand[1], rr) + basis, gewichtMax) · (act[0] + act[1]·act) —
+        // der Rand gezähmt (Spanne der Dicke 0,45 statt 0,85, Rand-Gewicht 0,3 statt 0,5, Deckel 0,55: bei streifendem Blick
+        // bleibt das Ziel sichtbar); der Glanz: Film · Spiegel · glanz[0] · (glanz[1] + glanz[2]·Puls), der Film mit der Dispersion
+        // welle je Farbe und der Buntheit farbe um seine Helligkeit (D8: der Film tönt ein blasses Ziel, statt es zu Milch zu waschen).
+        film: {
+            kugel: 4.0,
+            n: 1.33,
+            brechung: 0.12,
+            dicke: [0.3, 0.45, 0.22, 0.06, 0.37, 0.9],
+            fresnel: [0.04, 5.0],
+            rand: [0.6, 1.0, 0.3],
+            basis: 0.24,
+            gewichtMax: 0.55,
+            act: [0.65, 0.35],
+            glanz: [0.8, 0.9, 0.15],
+            // die Dispersion: der Gangunterschied in Wellenlängen je Farbe, λ_R / λ (650 / 650, 650 / 532, 650 / 450 nm)
+            welle: [1.0, 1.22, 1.44],
+            // die Buntheit der Bänder um ihre Helligkeit (1 = die Palette, mehr = Farbe statt Licht)
+            farbe: 2.6,
         },
         puls: 1.25, // uPulse = 0.5+0.5*sin(t*1.25)
         aktivDepth: [0.1, 0.85], // Atem: uWaveDepth = zFace*(0.10+0.85*open)
@@ -1001,29 +996,6 @@
         var p = isFinite(pulse) ? pulse : 1;
         return (G.i0 + o * G.iOpen) * (G.pulseBase + G.pulseAmp * p);
     }
-
-    // NEBEL_GESETZ — Lab uAct + Host nebelAct (·127). Shader/TSL untouched.
-    var NEBEL_GESETZ = {
-        fogDefault: 0.85,
-        actBase: 0.7,
-        actOpen: 0.35,
-    };
-    function nebelAct(fog, openM) {
-        var N = NEBEL_GESETZ;
-        var f = isFinite(fog) ? fog : N.fogDefault;
-        var o = isFinite(openM) ? openM : 0;
-        return f * (N.actBase + N.actOpen * o);
-    }
-
-    // NEBEL_VIS — intentional dual fog pass (Feel-Entscheid .128). Do NOT merge.
-    // lab:"glsl-box" = ShaderMaterial volumetric box + depthRT (porta.js).
-    // host:"tsl-box" = TSL `_nebelMaterialFor` box (anazhRealm).
-    // Like STEER_VIS .124 / RAUCH_VIS .125 / ZONE_PICK .117: naming the Feel, not Fake-zu.
-    // Shader/TSL rewrite = Redesign later. NEBEL_GESETZ numbers stay the one source for uAct/nebelAct.
-    var NEBEL_VIS = {
-        lab: "glsl-box",
-        host: "tsl-box",
-    };
 
     // membranUniforms(p) — die REINE Ableitung der Membran-Uniform-Zahlen aus
     // einem vollen Parametersatz (gateParams-Ausgang). Byte-treu zur Shell
@@ -1081,7 +1053,6 @@
             realm: p.realm,
             reflect: p.reflect,
             glow: p.glow,
-            fog: p.fog,
             profil: profil,
             pal: membranPalette(p),
         };
@@ -1123,9 +1094,6 @@
         TOR_HUELLE: TOR_HUELLE,
         GLUT_GESETZ: GLUT_GESETZ,
         glutIntensity: glutIntensity,
-        NEBEL_GESETZ: NEBEL_GESETZ,
-        nebelAct: nebelAct,
-        NEBEL_VIS: NEBEL_VIS,
         membranUniforms: membranUniforms,
         archProfile: archProfile,
         interpTop: interpTop,

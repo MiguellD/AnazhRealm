@@ -209,6 +209,22 @@ function wort(op, args) {
 // Vokabular (inkl. „flut", das NICHT im Registry-Literal steht) von der Welt selbst. Esc bringt heim.
 bruecke = window.AnazhHuelle.bruecke({
     welt: "fluid",
+    // DAS ZIEL-BILD (D8): das Feld malt sich selbst als Panorama — anderthalb Sekunden Strom aus der wandernden Quelle (wie der
+    // Auto-Strom), dann das Bild des Felds, um die Öffnung gelegt; die Tor-Membran der Heimat zeigt es
+    panorama: () => ({
+        bild: (ctx, w, h) => {
+            if (!renderer || !fluid || !display) throw new Error("die Strom-Welt hat kein Feld (WebGL2 + HalfFloat fehlen)");
+            renderer.setSize(w, h, false);
+            for (let i = 0; i < 90; i++) {
+                if (i % 12 === 0) autoSplat(0.2);
+                fluid.step(1 / 60);
+            }
+            display.material.uniforms.tFluid.value = fluid.densityTexture;
+            display.material.uniforms.tVel.value = fluid.velocityTexture;
+            display.render(renderer, null);
+            ctx.drawImage(renderer.domElement, 0, 0, w, h);
+        },
+    }),
     manifest: true,
     wort,
     enter: (avatar) => {

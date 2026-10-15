@@ -1188,6 +1188,9 @@ AnazhRealm.FRAME_SCHED_DEKO_FLOOR_MS = 2.5;
 AnazhRealm.LADE_TAKT_MS = 100;
 // Der Abstand der Bilder unter dem Ladeschirm (ms, `_ladeBildFaellig`): dazwischen schickt der Lade-Takt nichts an die GPU.
 AnazhRealm.LADE_BILD_MS = 500;
+// Der Neubau der dirty Chunks (`_tickDirtyVoxelChunks`, K69-2): so viele der nächsten gehen je Takt als Auftrag an den
+// Worker voraus (er baut sie nacheinander, ~150 ms je Chunk) — eingebaut wird je Takt höchstens EINER, der nächste fertige.
+AnazhRealm.DIRTY_IM_FLUG = 3;
 // V18.355 — PHASE C (Fixed-Timestep, Fiedler): die FIXE Sim-Schrittweite (60 Hz). TAKT_DECKEL_S (K21) ist
 // die EINE Obergrenze des Spiel-Takts, an der Wurzel in startEternalLoop: ein 2-s-Hitch akkumuliert nicht
 // 120 Steps, eine 10-s-Pause trägt kein Tier 40 m weit (jede Bewegung liest den gedeckelten Takt, nie die
@@ -1222,10 +1225,10 @@ AnazhRealm.PERF_FOLIAGE_DENSITY_GROW_STEP = 0.012; // pro Aktuator-Tick — sanf
 // trägt die Layer ZUSÄTZLICH (Layer 0 bleibt → Render/Schatten unverändert), ist so aber für einen
 // Laub-Pass (`pass.setLayers(FOLIAGE_LAYER)`) isoliert wählbar. Headless → 1.
 AnazhRealm.FOLIAGE_LAYER = 1; // eigene Render-Layer für den reduziert aufgelösten Laub-Pass (Layer 0 bleibt aktiv)
-// Schatten-Zwilling-Layer (0 = Welt, 1 = Laub-Pass, 2 = Zwilling): `mesh.layers.set(2)` nimmt den
-// opaken Kronen-Caster AUS Layer 0 → die Haupt-Kamera sieht ihn nie;
-// `directionalLight.shadow.camera.layers.enable(2)` (vor der CSM-Konstruktion, die Kaskaden erben
-// es) lässt nur den Schatten-Render ihn als Caster zählen.
+// Die Wurf-Ebene (0 = Welt, 1 = Laub-Pass, 2 = Wurf): K72 — `castShadow` IST das Bit dieser Ebene (`_wurfEbene`), jedes
+// Licht liegt auf ihr, die Schatten-Kamera sieht NUR sie (`layers.set(2)` vor der CSM-Konstruktion, die Kaskaden erben
+// es). Der Zwilling (der opake Kronen-Caster, die Grobstufe nah, der Wurf-Satz, der Leib im 1st) verlässt Ebene 0 und
+// wirft auf ihr — die Haupt-Kamera sieht ihn nie.
 AnazhRealm.SHADOW_TWIN_LAYER = 2;
 // DIE EINE SZENEN-SKALA (K50, `_szeneSkalaWirk`): die Szene rendert in SZENE_SKALA × Ausgabe, die zeitliche Auflösung
 // (`_zeitAufloesung`, TAAU) löst auf die Ausgabe auf. 0,75 = 56 % der Pixel-Arbeit; der Spieler stellt sie im Menü (0,5..1).
@@ -1318,9 +1321,15 @@ AnazhRealm.KARTEN_HORIZONT_TOTBAND_M = 16;
 // (Totband 16 m): ihm genügt ein Meter (`STAND_RAND_FERN_M`) — beim Gehen geht er viermal seltener.
 AnazhRealm.STAND_RAND_M = 0.25;
 // DAS GEDÄCHTNIS DER GESTALT DES ORTS (K51-5, `_ortGestaltSame`): Eimer in Metern und die Reichweite eines Grundrisses — ein
-// Baum fragt die Natur-Wand für Nachbarn bis ±4 Wald-Zellen (5 × 12 m bis zur fernsten Ecke) samt deren Krone (≤ 36 m)
+// Baum fragt die Natur-Wand für Nachbarn bis ±4 Wald-Zellen (5 × 12 m bis zur fernsten Ecke) samt deren Krone (≤ 36 m,
+// `KRONE_MAX_M`: die größte Krone eines Darts; auch die Reichweite, in der ein Erdbau Darts fällt, `_forestDartsFallen`)
+AnazhRealm.KRONE_MAX_M = 36;
 AnazhRealm.ORT_SAME_EIMER = 48;
-AnazhRealm.ORT_SAME_REICH = 96;
+AnazhRealm.ORT_SAME_REICH = 5 * AnazhRealm.FOREST.cell + AnazhRealm.KRONE_MAX_M;
+// DER WALD PLANT IM TAKT (K69, `_waldPlanSteht` · `_tickWaldPlan`): die Gestalt eines Baums liest die Wald-Zellen bis ±`reich`
+// um seine Zelle (der Freistand ±4, das Urteil jedes Nachbarn ±2); ohne Wald-Faden plant der Takt frische Zellen höchstens
+// `ms` lang, mit ihm reisen sie in Aufträgen von `faden` Zellen, höchstens `fadenFlug` im Flug (`_waldFadenSchicken`, K60-4).
+AnazhRealm.WALD_PLAN = Object.freeze({ reich: 6, ms: 3, faden: 64, fadenFlug: 2 });
 AnazhRealm.STAND_RAND_FERN_M = 1;
 // Der Horizont-Saum (m): über so viele Meter vor `SCATTER.outerM` liegen die Ränder der Karten-Dinge, je Eintrag aus
 // seinem Samen (Salz: der Hash-Kanal des Saums, `_pcg2d`) — der Wald dünnt aus, jeder Baum steht ganz oder gar nicht.
