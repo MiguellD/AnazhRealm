@@ -395,7 +395,7 @@ function taeterRinde(sb) {
     // 5) DER START DES OFENS (K60-2): die Rinden-Normale jedes Studio-Fadens greift nie an einen gebrochenen Index.
     const start = ofenStart();
     check(
-        `Start des Ofens (buildMaterials): makeBarkNormal greift ${start.gebrochen}-mal an einen gebrochenen Index (Soll 0, ${start.arrays} Start-Arrays)`,
+        `Start des Ofens (die Brücke im Faden, foundryModus): makeBarkNormal greift ${start.gebrochen}-mal an einen gebrochenen Index (Soll 0, ${start.arrays} Start-Arrays)`,
         start.gebrochen === 0,
         `${start.ms} ms`
     );

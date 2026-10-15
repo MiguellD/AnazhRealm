@@ -509,6 +509,17 @@ class AnazhRealm_Z20a {
                     f.bootUrl = URL.createObjectURL(new Blob([boot], { type: "text/javascript" }));
                     const worker = new Worker(f.bootUrl);
                     f.worker = worker;
+                    // DER FADEN WARTET NIE AUF DEN HAUPT-FADEN (K60-2): die Buch-Frage reist mit der Geburt — der Faden
+                    // hält sie, bis sein Studio steht (eine Nachricht vor dem Ende seines Start-Skripts wartet auf seinen
+                    // Hörer), und antwortet ohne Rundlauf; Helfer und Bäcker kommen mit ihm (`_foundryHelfer`). Bis K60-2
+                    // fragte erst die Antwort auf „ready" — Radeon kalt ruhte der Buch-Faden 0,8 s, bis der volle Haupt-
+                    // Faden sie las, und die Helfer begannen ihren Start 2,4 s nach ihm (K602c/q2: Buch 6,8 s).
+                    try {
+                        worker.postMessage({ type: "get-book", reqId: "book" });
+                    } catch (_e) {
+                        throw this._stoffBruch("die Buch-Anfrage an den Foundry-Faden (get-book)", _e);
+                    }
+                    this._foundryHelfer(f);
                     // Ein Boot-/Laufzeit-Fehler des Studio-Fadens bricht LAUT (K22): ohne Faden kein Studio-Mesh, und es
                     // gibt keinen Alt-Pfad (`_foundryEnabled`: ein nicht gebackenes Asset heißt KEIN Mesh)
                     worker.onerror = (ev) =>
@@ -520,16 +531,9 @@ class AnazhRealm_Z20a {
                         if (!m || typeof m !== "object") return;
                         if (m.type === "ready" && m.world === "terrain") {
                             f.ready = true; // der Stand-Stempel liest die Antwort selbst (`_standStempel`)
-                            // EIN Umschlag: das komplette Studio-Buch (Rezepte + B4-Tabellen + Welt-Palette + Wahrnehmung) in
-                            // EINEM Roundtrip ziehen, DANN die Assets vorwärmen.
-                            // Der Vorrat wartet ohne Frist auf das Buch (`f.buchDa`): fällt die Anfrage, bricht sie LAUT
-                            // beim Namen (K22), nie wartet der Vorrat still für immer.
-                            try {
-                                worker.postMessage({ type: "get-book", reqId: "book" });
-                            } catch (_e) {
-                                throw this._stoffBruch("die Buch-Anfrage an den Foundry-Faden (get-book)", _e);
-                            }
-                            this._foundryHelfer(f);
+                            // EIN Umschlag: das komplette Studio-Buch (Rezepte + B4-Tabellen + Welt-Palette + Wahrnehmung)
+                            // ist mit der Geburt gefragt, DANN die Assets vorwärmen. Der Vorrat wartet ohne Frist auf das
+                            // Buch (`f.buchDa`): fällt die Anfrage, bricht sie LAUT beim Namen (K22).
                             this._foundryPrefetchLibrary();
                             // DIE EINE PIPE: die Gattungs-Templates off-thread vorwärmen —
                             // Welt-Spawns treffen dann nur noch das Memo (Clone, kein Freeze). Er wartet auf das erste
