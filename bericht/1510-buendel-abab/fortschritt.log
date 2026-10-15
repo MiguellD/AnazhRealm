@@ -1,0 +1,121 @@
+09:37:19 SCHLOSS genommen
+09:37:19 SERIE START A=0bbee8fc B=e8a370ad Instrument=e8a370ad (Instrument lokal: Wiese K55, beide Seiten dasselbe)
+09:37:26 w-ego-A1 start gpu[67, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+09:40:15 w-ego-A1 exit=1 gpu[82, 1771 MHz, 4006 MHz, P0, 0x0000000000000001] [folge] band …  laufVoll: 96.3 fps · Frame p50/p95/max 8.4/16.7/41.9 ms · CPU p50/p95 4/5.4 · render-Wanduhr (EWMA, mit CPU-Zustand) 2.58 · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; bear 5, deer 4, fox 1) 
+09:40:16 w-ego-A1 rot NUR am Band-Urteil (BAND-LINSE ratsche/weit) — Befund, Messung gilt, kein Neulauf
+09:41:23 w-ego-B1 start gpu[68, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+09:44:07 w-ego-B1 exit=0 gpu[81, 1721 MHz, 4006 MHz, P0, 0x0000000000000001] [folge] band …  laufVoll: 101.5 fps · Frame p50/p95/max 8.4/16.7/41.6 ms · CPU p50/p95 3.5/5.1 · render-Wanduhr (EWMA, mit CPU-Zustand) 2.37 · Tiere 11 (Sicht 0, nah 0, Schatten k0 0 / k1 0; bear 7, fox 2, deer 2) 
+09:45:12 w-ego-A2 start gpu[68, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+09:47:56 w-ego-A2 exit=1 gpu[82, 1746 MHz, 4006 MHz, P0, 0x0000000000000001] [folge] band …  laufVoll: 96.6 fps · Frame p50/p95/max 8.4/16.7/41.6 ms · CPU p50/p95 3.8/5.3 · render-Wanduhr (EWMA, mit CPU-Zustand) 2.75 · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; bear 4, deer 2, fox 4) 
+09:47:56 w-ego-A2 rot NUR am Band-Urteil (BAND-LINSE ratsche/weit) — Befund, Messung gilt, kein Neulauf
+09:49:01 w-ego-B2 start gpu[69, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+09:51:46 w-ego-B2 exit=0 gpu[82, 1822 MHz, 4006 MHz, P0, 0x0000000000000000] [folge] band …  laufVoll: 96.6 fps · Frame p50/p95/max 8.4/16.7/58.3 ms · CPU p50/p95 3.9/5.6 · render-Wanduhr (EWMA, mit CPU-Zustand) 2.34 · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; bear 5, fox 1, deer 4) 
+09:52:52 w-third-A1 start gpu[69, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+09:56:42 w-third-A1 exit=1 gpu[79, 1797 MHz, 4006 MHz, P0, 0x0000000000000001] [folge] band …  laufVoll: 91.5 fps · Frame p50/p95/max 8.4/16.8/41.7 ms · CPU p50/p95 4.6/6.2 · render-Wanduhr (EWMA, mit CPU-Zustand) 3.23 · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; bear 5, deer 4, fox 1) 
+09:56:43 w-third-A1 rot NUR am Band-Urteil (BAND-LINSE ratsche/weit) — Befund, Messung gilt, kein Neulauf
+09:57:48 w-third-B1 start gpu[67, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+10:04:30 w-third-B1 exit=0 gpu[78, 1759 MHz, 4006 MHz, P0, 0x0000000000000001] [folge] band …  laufVoll: 90.6 fps · Frame p50/p95/max 8.4/16.8/41.6 ms · CPU p50/p95 4.5/6.1 · render-Wanduhr (EWMA, mit CPU-Zustand) 3.17 · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; bear 5, fox 1, deer 4) 
+10:05:38 w-third-A2 start gpu[69, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+10:09:38 w-third-A2 exit=1 gpu[80, 1784 MHz, 4006 MHz, P0, 0x0000000000000001] [folge] band …  laufVoll: 90.2 fps · Frame p50/p95/max 8.4/16.7/41.7 ms · CPU p50/p95 5/7.1 · render-Wanduhr (EWMA, mit CPU-Zustand) 3.62 · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; bear 5, deer 4, fox 1) 
+10:09:38 w-third-A2 rot NUR am Band-Urteil (BAND-LINSE ratsche/weit) — Befund, Messung gilt, kein Neulauf
+10:10:43 w-third-B2 start gpu[68, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+10:14:35 w-third-B2 exit=0 gpu[80, 1759 MHz, 4006 MHz, P0, 0x0000000000000001] [folge] band …  laufVoll: 89.8 fps · Frame p50/p95/max 8.4/16.7/49.9 ms · CPU p50/p95 4.8/7.2 · render-Wanduhr (EWMA, mit CPU-Zustand) 3.57 · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; bear 5, fox 1, deer 4) 
+10:15:40 g-ego-A1 start gpu[67, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+10:17:07 g-ego-A1 exit=1 gpu[80, 1721 MHz, 4006 MHz, P0, 0x0000000000000001] [folge] band …  laufVoll: 78.7 fps · Frame p50/p95/max 16.5/16.8/25.1 ms · CPU p50/p95 4/5.4 · render-Wanduhr (EWMA, mit CPU-Zustand) 2.93 · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; bear 3, deer 4, fox 3) 
+10:17:07 g-ego-A1 rot NUR am Band-Urteil (BAND-LINSE ratsche/weit) — Befund, Messung gilt, kein Neulauf
+10:18:12 g-ego-B1 start gpu[70, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+10:19:41 g-ego-B1 exit=0 gpu[81, 1809 MHz, 4006 MHz, P0, 0x0000000000000000] [folge] band …  laufVoll: 73.7 fps · Frame p50/p95/max 16.6/16.8/33.3 ms · CPU p50/p95 3.8/5.4 · render-Wanduhr (EWMA, mit CPU-Zustand) 2.55 · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; bear 3, deer 5, fox 2) 
+10:20:46 g-ego-A2 start gpu[70, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+10:22:14 g-ego-A2 exit=1 gpu[81, 1721 MHz, 4006 MHz, P0, 0x0000000000000001] [folge] band …  laufVoll: 78.3 fps · Frame p50/p95/max 16.5/16.8/25.1 ms · CPU p50/p95 4/5.6 · render-Wanduhr (EWMA, mit CPU-Zustand) 2.6 · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; bear 3, deer 5, fox 2) 
+10:22:14 g-ego-A2 rot NUR am Band-Urteil (BAND-LINSE ratsche/weit) — Befund, Messung gilt, kein Neulauf
+10:23:20 g-ego-B2 start gpu[71, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+10:24:49 g-ego-B2 exit=0 gpu[80, 1721 MHz, 4006 MHz, P0, 0x0000000000000001] [folge] band …  laufVoll: 73.5 fps · Frame p50/p95/max 16.6/16.8/33.3 ms · CPU p50/p95 3.9/5.7 · render-Wanduhr (EWMA, mit CPU-Zustand) 2.8 · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; bear 3, deer 5, fox 2) 
+10:25:55 g-third-A1 start gpu[70, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+10:27:22 g-third-A1 exit=1 gpu[81, 1721 MHz, 4006 MHz, P0, 0x0000000000000001] [folge] band …  laufVoll: 74.5 fps · Frame p50/p95/max 16.6/16.8/33.4 ms · CPU p50/p95 4.9/6.8 · render-Wanduhr (EWMA, mit CPU-Zustand) 3.55 · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; bear 3, deer 5, fox 2) 
+10:27:22 g-third-A1 rot NUR am Band-Urteil (BAND-LINSE ratsche/weit) — Befund, Messung gilt, kein Neulauf
+10:28:27 g-third-B1 start gpu[71, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+10:29:53 g-third-B1 exit=0 gpu[80, 1721 MHz, 4006 MHz, P0, 0x0000000000000001] [folge] band …  laufVoll: 74.6 fps · Frame p50/p95/max 16.6/16.8/66.6 ms · CPU p50/p95 4.7/6.5 · render-Wanduhr (EWMA, mit CPU-Zustand) 3 · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; bear 3, deer 5, fox 2) 
+10:30:59 g-third-A2 start gpu[70, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+10:32:26 g-third-A2 exit=1 gpu[80, 1721 MHz, 4006 MHz, P0, 0x0000000000000001] [folge] band …  laufVoll: 75.3 fps · Frame p50/p95/max 16.6/16.8/27.7 ms · CPU p50/p95 4.8/6.4 · render-Wanduhr (EWMA, mit CPU-Zustand) 3.58 · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; bear 3, deer 5, fox 2) 
+10:32:26 g-third-A2 rot NUR am Band-Urteil (BAND-LINSE ratsche/weit) — Befund, Messung gilt, kein Neulauf
+10:33:32 g-third-B2 start gpu[70, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+10:35:00 g-third-B2 exit=0 gpu[81, 1721 MHz, 4006 MHz, P0, 0x0000000000000001] [folge] band …  laufVoll: 73.6 fps · Frame p50/p95/max 16.6/16.8/33.4 ms · CPU p50/p95 4.7/6.8 · render-Wanduhr (EWMA, mit CPU-Zustand) 3.48 · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; bear 3, deer 5, fox 2) 
+10:36:06 d-ego-A1 start gpu[71, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+10:37:36 d-ego-A1 exit=1 gpu[75, 1835 MHz, 4006 MHz, P0, 0x0000000000000000] [folge] band … 
+10:37:36 d-ego-A1 rot NUR am Band-Urteil (BAND-LINSE ratsche/weit) — Befund, Messung gilt, kein Neulauf
+10:38:41 d-ego-B1 start gpu[68, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+10:40:08 d-ego-B1 exit=1 gpu[74, 1835 MHz, 4006 MHz, P0, 0x0000000000000000] [folge] band … 
+10:40:08 d-ego-B1 rot NUR am Band-Urteil (BAND-LINSE ratsche/weit) — Befund, Messung gilt, kein Neulauf
+10:41:14 d-ego-A2 start gpu[68, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+10:42:43 d-ego-A2 exit=1 gpu[73, 1835 MHz, 4006 MHz, P0, 0x0000000000000000] [folge] band … 
+10:42:43 d-ego-A2 rot NUR am Band-Urteil (BAND-LINSE ratsche/weit) — Befund, Messung gilt, kein Neulauf
+10:43:48 d-ego-B2 start gpu[67, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+10:45:11 d-ego-B2 exit=1 gpu[73, 1797 MHz, 4006 MHz, P0, 0x0000000000000001] [folge] band … 
+10:45:12 d-ego-B2 rot NUR am Band-Urteil (BAND-LINSE ratsche/weit) — Befund, Messung gilt, kein Neulauf
+10:46:17 d-third-A1 start gpu[68, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+10:47:50 d-third-A1 exit=1 gpu[73, 1835 MHz, 4006 MHz, P0, 0x0000000000000000] [folge] band … 
+10:47:50 d-third-A1 rot NUR am Band-Urteil (BAND-LINSE ratsche/weit) — Befund, Messung gilt, kein Neulauf
+10:48:55 d-third-B1 start gpu[67, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+10:50:17 d-third-B1 exit=1 gpu[73, 1835 MHz, 4006 MHz, P0, 0x0000000000000000] [folge] band … 
+10:50:17 d-third-B1 rot NUR am Band-Urteil (BAND-LINSE ratsche/weit) — Befund, Messung gilt, kein Neulauf
+10:51:23 d-third-A2 start gpu[66, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+10:52:55 d-third-A2 exit=1 gpu[71, 1721 MHz, 4006 MHz, P0, 0x0000000000000001] [folge] band … 
+10:52:56 d-third-A2 rot NUR am Band-Urteil (BAND-LINSE ratsche/weit) — Befund, Messung gilt, kein Neulauf
+10:54:01 d-third-B2 start gpu[66, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+10:55:29 d-third-B2 exit=1 gpu[73, 1835 MHz, 4006 MHz, P0, 0x0000000000000000] [folge] band … 
+10:55:29 d-third-B2 rot NUR am Band-Urteil (BAND-LINSE ratsche/weit) — Befund, Messung gilt, kein Neulauf
+10:56:33 SERIE ENDE
+10:56:33 gehen s1 A start [P8, 139 MHz, 67]
+A ende
+10:58:44 gehen s1 A ende
+10:59:44 gehen s1 B start [P8, 139 MHz, 67]
+B ende
+11:01:58 gehen s1 B ende
+11:02:59 gehen s2 B start [P8, 139 MHz, 67]
+B ende
+11:05:13 gehen s2 B ende
+11:06:13 gehen s2 A start [P8, 139 MHz, 67]
+A ende
+11:08:22 gehen s2 A ende
+11:09:22 gehen s3 A start [P8, 139 MHz, 68]
+A ende
+11:11:37 gehen s3 A ende
+11:12:37 gehen s3 B start [P8, 139 MHz, 67]
+B ende
+11:14:54 gehen s3 B ende
+11:15:54 gehen s4 B start [P8, 139 MHz, 67]
+B ende
+11:18:08 gehen s4 B ende
+11:19:08 gehen s4 A start [P8, 139 MHz, 67]
+A ende
+11:21:23 gehen s4 A ende
+11:22:23 gehen-dorf d1 A start [P8, 139 MHz, 67]
+A ende
+11:24:33 gehen-dorf d1 A ende
+11:25:33 gehen-dorf d1 B start [P8, 139 MHz, 68]
+B ende
+11:27:49 gehen-dorf d1 B ende
+11:28:49 gehen-dorf d2 B start [P8, 139 MHz, 67]
+B ende
+11:31:04 gehen-dorf d2 B ende
+11:32:05 gehen-dorf d2 A start [P8, 139 MHz, 68]
+A ende
+11:34:15 gehen-dorf d2 A ende
+11:35:15 gehen-dorf d3 A start [P8, 139 MHz, 68]
+A ende
+11:37:28 gehen-dorf d3 A ende
+11:38:28 gehen-dorf d3 B start [P8, 139 MHz, 67]
+B ende
+11:40:44 gehen-dorf d3 B ende
+11:41:44 gehen-dorf d4 B start [P8, 139 MHz, 67]
+B ende
+11:44:03 gehen-dorf d4 B ende
+11:45:03 gehen-dorf d4 A start [P8, 139 MHz, 68]
+A ende
+11:47:20 gehen-dorf d4 A ende
+11:48:20 kalt A1 start [P8, 139 MHz, 67]
+11:50:23 kalt A1 exit=0  t(Weltbild) = t(Kontrolle) — (nicht erreicht) ab Navigation
+11:50:54 kalt B1 start [P8, 139 MHz, 61]
+11:52:56 kalt B1 exit=0  t(Weltbild) = t(Kontrolle) — (nicht erreicht) ab Navigation
+11:53:27 kalt B2 start [P8, 139 MHz, 61]
+11:55:03 SERIE FERTIG

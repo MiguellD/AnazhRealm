@@ -1,0 +1,286 @@
+{
+ "regler": "voll",
+ "sekunden": 25,
+ "frames": 1953,
+ "fps": 77.9,
+ "frameMs": {
+  "p50": 8.4,
+  "p95": 25.1,
+  "p99": 49.9,
+  "max": 99.9
+ },
+ "cpuTaktMs": {
+  "p50": 4.1,
+  "p95": 26.3,
+  "p99": 45,
+  "max": 61.8
+ },
+ "taktMs": {
+  "p50": 8.3,
+  "p95": 25,
+  "p99": 41.7,
+  "max": 91.7
+ },
+ "leine": {
+  "ausgesetztPct": 17,
+  "imFlug": 0
+ },
+ "gpuMs": {
+  "p50": 1.87,
+  "p95": 2.28,
+  "p99": 2.43,
+  "max": 2.66,
+  "n": 1052,
+  "quelle": "echt"
+ },
+ "gpuDurchsatzMs": {
+  "p50": 11,
+  "p95": 27.4,
+  "p99": 46,
+  "max": 98.5
+ },
+ "gpuVerzugMs": {
+  "p50": 12.4,
+  "p95": 28.4,
+  "p99": 47.4,
+  "max": 98.7
+ },
+ "gpuJePassMs": {
+  "post": {
+   "p50": 0.66,
+   "p95": 0.86,
+   "frames": 1953
+  },
+  "TRAA": {
+   "p50": 0.67,
+   "p95": 0.86,
+   "frames": 1953
+  },
+  "haupt": {
+   "p50": 0.37,
+   "p95": 0.69,
+   "frames": 1953
+  },
+  "k0": {
+   "p50": 0.16,
+   "p95": 0.55,
+   "frames": 1674
+  },
+  "k1": {
+   "p50": 0.03,
+   "p95": 0.4,
+   "frames": 620
+  }
+ },
+ "stempel": {
+  "imLauf": 0,
+  "seitBoot": 0,
+  "spitze": 26,
+  "pool": {
+   "stand": 10,
+   "max": 2048
+  },
+  "gueltig": true,
+  "warnung": 0
+ },
+ "befehle": {
+  "frames": 1953,
+  "mittel": 70,
+  "p95": 79,
+  "max": 80,
+  "jePass": {
+   "k0": {
+    "anteil": 0.86,
+    "p50": 25,
+    "max": 25
+   },
+   "haupt": {
+    "anteil": 1,
+    "p50": 45,
+    "max": 45
+   },
+   "TRAA": {
+    "anteil": 1,
+    "p50": 1,
+    "max": 1
+   },
+   "post": {
+    "anteil": 1,
+    "p50": 1,
+    "max": 1
+   },
+   "k1": {
+    "anteil": 0.32,
+    "p50": 7,
+    "max": 8
+   }
+  }
+ },
+ "dreiecke": {
+  "frames": 1953,
+  "mittel": 332035,
+  "p95": 354577,
+  "max": 358179,
+  "jePass": {
+   "k0": {
+    "anteil": 0.86,
+    "p50": 58112,
+    "max": 58238
+   },
+   "haupt": {
+    "anteil": 1,
+    "p50": 283479,
+    "max": 283479
+   },
+   "TRAA": {
+    "anteil": 1,
+    "p50": 1,
+    "max": 1
+   },
+   "post": {
+    "anteil": 1,
+    "p50": 1,
+    "max": 1
+   },
+   "k1": {
+    "anteil": 0.32,
+    "p50": 12858,
+    "max": 16586
+   }
+  }
+ },
+ "ueber17": 8.7,
+ "ueber33": 3,
+ "vramMB": {
+  "jetzt": 93.4,
+  "puffer": 15.4,
+  "texturen": 78,
+  "spitze": 114.6,
+  "nPuffer": 692,
+  "nTexturen": 32,
+  "wuchsImFenster": -11.3,
+  "gross": [
+   {
+    "k": "tex:TRAANode.history rgba16float 1920x1080x1",
+    "mb": 15.82,
+    "n": 1
+   },
+   {
+    "k": "tex:TRAANode.resolve rgba16float 1920x1080x1",
+    "mb": 15.82,
+    "n": 1
+   },
+   {
+    "k": "buf:?",
+    "mb": 15.292,
+    "n": 519
+   },
+   {
+    "k": "tex:kaskade0:tiefe depth16unorm 2048x2048x1",
+    "mb": 8,
+    "n": 1
+   },
+   {
+    "k": "tex:kaskade1:tiefe depth16unorm 2048x2048x1",
+    "mb": 8,
+    "n": 1
+   },
+   {
+    "k": "tex:output rg11b10ufloat 1440x810x1",
+    "mb": 4.449,
+    "n": 1
+   },
+   {
+    "k": "tex:depth depth24plus 1440x810x1",
+    "mb": 4.449,
+    "n": 1
+   },
+   {
+    "k": "tex:karte-albedo:atlas bc1-rgba-unorm-srgb 128x2048x18",
+    "mb": 2.999,
+    "n": 1
+   },
+   {
+    "k": "tex:szene:tiefenabbild r32float 720x810x1",
+    "mb": 2.225,
+    "n": 1
+   },
+   {
+    "k": "tex:wege-karte:fern rg8unorm 1024x1024x1",
+    "mb": 2,
+    "n": 1
+   },
+   {
+    "k": "tex:wege-karte:nah rg8unorm 1024x1024x1",
+    "mb": 2,
+    "n": 1
+   },
+   {
+    "k": "tex:feld-pass-panorama rgba32float 768x160x1",
+    "mb": 1.875,
+    "n": 1
+   },
+   {
+    "k": "tex:karte-albedo:atlas bc1-rgba-unorm-srgb 128x2048x10",
+    "mb": 1.666,
+    "n": 1
+   },
+   {
+    "k": "tex:karte-normal:atlas bc5-rg-unorm 64x1024x18",
+    "mb": 1.499,
+    "n": 1
+   }
+  ]
+ },
+ "stellgroessen": {
+  "loadScale": 1,
+  "szeneSkala": 0.75,
+  "pixelRatio": 1,
+  "foliageRadius": 216,
+  "foliageDichte": 1,
+  "archRadius": 150,
+  "ring": 4,
+  "schattenIntervall": 1,
+  "holz": "voll"
+ },
+ "phasenEwmaMs": {
+  "streaming": 0.22,
+  "waterIso": 0,
+  "archCulling": 0,
+  "creatures": 0.34,
+  "physics": 0.11,
+  "render": 2.83,
+  "gpuMs": 1.85
+ },
+ "kamera": {
+  "pos": [
+   -278,
+   29.7,
+   -1038
+  ],
+  "blick": [
+   0,
+   0,
+   -1
+  ]
+ },
+ "chunks": 81,
+ "ruhe": null,
+ "wetter": "sunny",
+ "wetterHalt": {
+  "vorher": "sunny",
+  "nachher": "sunny",
+  "uhrVorher": -999999994.2,
+  "uhrNachher": -999999959.5,
+  "buch": [],
+  "urteil": "GRUEN",
+  "taeter": [],
+  "verweigert": {}
+ },
+ "saison": "summer",
+ "fehler": [
+  "[konsole] [AnazhRealm V18.546.2] [INFO] WebGPU-Renderer instantiiert — init() läuft asynchron …",
+  "[konsole] [AnazhRealm V18.546.2] [INFO] WebGPU-Renderer init() abgeschlossen — die Welt rendert jetzt auf der GPU."
+ ],
+ "ms": 35208
+}
