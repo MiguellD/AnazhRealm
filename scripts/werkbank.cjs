@@ -1566,7 +1566,8 @@ async function starte() {
                         );
                         const zahl = {},
                             cosS = baender.slice(1).map(() => 0),
-                            cosN = baender.slice(1).map(() => 0);
+                            cosN = baender.slice(1).map(() => 0),
+                            ftK = new Map(); // DIE FARBTON-STREUUNG (W1): je 2-m-Kachel des Bodens in 2–5 m die Proben
                         const pos = cam.position.clone();
                         const v = new T.Vector3();
                         const band = (d) => {
@@ -1612,6 +1613,8 @@ async function starte() {
                                 const d = Math.hypot(v.x * hit, v.z * hit);
                                 const bi = band(d);
                                 if (bi < 0) continue;
+                                const kk = d >= 2 && d < 5 && x0 + 1 < W && y0 + 1 < H && `${Math.floor((pos.x + v.x * hit) / 2)},${Math.floor((pos.z + v.z * hit) / 2)}`;
+                                if (kk) window.__farbtonProbe(ftK.get(kk) || ftK.set(kk, [0, 0, 0, 0]).get(kk), u8, (y0 * W + x0) * 4, W);
                                 for (let q = 0; q < 4; q++) {
                                     const x = x0 + (q & 1),
                                         y = y0 + (q >> 1);
@@ -1629,7 +1632,9 @@ async function starte() {
                             augeUeberBoden: +(pos.y - (r._bodenSichtAt(pos.x, pos.z) || 0)).toFixed(2),
                             cos: cosS.map((s, b) => (cosN[b] ? +(s / cosN[b]).toFixed(4) : null)),
                             klassen: zahl,
+                            farbton: { kachel: 2, band: [2, 5], belichtung: +r.state.renderer.toneMappingExposure.toFixed(4) },
                         };
+                        abstand.farbton.kacheln = [...ftK].map(([kk, a]) => [kk, a[0], +a[1].toFixed(3), +a[2].toFixed(3), a[3]]);
                     }
                     // die Maske: jede Klasse in ihrem Ton über dem Bild, der Rest blau-grau
                     const ton = [

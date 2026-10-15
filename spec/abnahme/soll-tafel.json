@@ -255,6 +255,66 @@
             ]
         },
         {
+            "id": "boden-nah-farbe",
+            "titel": "Gras und Boden nah: die Farbe der Wiese aus 2–5 m (Halm-Strom und Büschel-Tint über dem Boden-Satz)",
+            "wirkung": {
+                "mangel": {
+                    "befund": "die Wiese nah in EINEM Lime-Grün — ohne Oliv, Stroh, dunkle und gelbgrüne Halme",
+                    "quelle": "Spike W1 789af722 (16.10., Radeon --echt, Mess-Wiese 2–5 m: Farbton-Streuung 6,34° gegen das Soll-Bild 10,73°)"
+                }
+            },
+            "referenz": [
+                {
+                    "titel": "Ghost of Tsushima (Sucker Punch, 2020)",
+                    "technik": "die Halm-Farbe je Büschel aus Klumpen-Daten und Feldern über der Welt — Wurzel- und Spitzen-Ton, trockene Halme, kein Halm wie der andere (GDC 2021, „Procedural Grass in Ghost of Tsushima“)"
+                }
+            ],
+            "soll": {
+                "eigenschaften": [
+                    {
+                        "groesse": "farbtonStreuung",
+                        "band": [
+                            10.7,
+                            null
+                        ],
+                        "einheit": "Grad: zirkuläre Streuung des Farbtons h = atan2(b*, a*) (CIELAB D65, Buntheit C* > 5) je 2-m-Kachel des Bodens in 2–5 m, Mittel nach Proben",
+                        "quelle": "das Soll-Bild der Grasnarbe nah (Grok-Paket 15.10., artifacts/grok/paket-1510/soll-bilder/02-grasnarbe-nah.png: Halme stark wechselnder Grüntöne, gelbbraune trockene Spitzen, Klee, Wegerich) mit derselben Rechnung: 10,73° (Spike W1); Bilder nur im selben Belichtungs-Zustand"
+                    }
+                ]
+            },
+            "budget": {
+                "haushalt": "nahWiese"
+            },
+            "mass": {
+                "name": "farbtonStreuung",
+                "rechnung": {
+                    "kachel": 2,
+                    "band": [
+                        2,
+                        5
+                    ],
+                    "minProben": 400,
+                    "quelle": "eine Probe = ein 2 × 2-Block der Leinwand 1920 × 1080 (die Leinwand 960 × 540 des Spikes); eine Kachel zählt ab 400 Proben"
+                },
+                "werkzeug": "werkbank bild -278 +1.7 -1038 -276 +1.2 -1026 --wahl 0 --klasse '^(nahWiese:.*|streuSatz|bodenSatz)$' --abstand --ist boden-nah-farbe (Mess-Wiese K55)"
+            },
+            "quellen": [
+                "gelaende-core.js",
+                "phyto-core.js",
+                "foundry-core.js",
+                "stamm/07.js",
+                "stamm/10.js",
+                "stamm/19.js",
+                "stamm/24.js",
+                "stamm/25c.js",
+                "stamm/11c.js",
+                "stamm/17b.js",
+                "stamm/17c.js",
+                "stamm/20a.js",
+                "stamm/26b.js"
+            ]
+        },
+        {
             "id": "himmel-licht",
             "titel": "Himmel und Licht (Sonne gegen Himmel am Mittag)",
             "wirkung": {
