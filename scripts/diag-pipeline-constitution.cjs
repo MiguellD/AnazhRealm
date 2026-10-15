@@ -327,7 +327,7 @@ law(
 // N4 (Nervensystem-Plan Phase γ, „Instance-Straße") — DIE EINE MESH→GROUP-NAHT + DAS REPLY-
 // MATERIAL FÜHRT + DIE TUFT-WAND + IMPOSTOR-POLITIK ALS DATEN. Vier Gesetze, jedes als Struktur:
 // N4.1 der Worker-Reply wird EXAKT EINMAL zu THREE-Geometrie (in `_foundryBuildGroup`) — jeder
-//      `_foundryRequest(...).then((meshes)`-Leser routet durch diese eine Naht (kein zweiter
+//      `this._foundryRequest(...)`-Aufruf ist ein `.then`-Leser und routet durch diese eine Naht (kein zweiter
 //      Bau-Pfad kann still entstehen; die IDB-Persistenz in `_foundryRequest` selbst speichert
 //      den Reply UNVERÄNDERT, sie baut nicht → zählt nicht als Leser).
 // N4.2 wo `m.mat` reist, FÜHRT es — die kind-Defaults (Rinde 0.93 · Laub 0.62 · Gras 0.7/0.18)
@@ -358,24 +358,84 @@ console.log("\nGesetz N4 — die Instance-Straße (eine Naht · mp führt · Tuf
     // N4.1a — die Roh-Reply→Geometrie-Konversion existiert genau EINMAL (die eine Naht):
     const rawConv = (anazhNC.match(/new T\.BufferAttribute\(m\.position\.array/g) || []).length;
     law("N4.1: die Reply→Geometrie-Konversion lebt genau EINMAL (`_foundryBuildGroup`)", true, rawConv === 1);
-    // N4.1b — jeder `_foundryRequest`-Aufrufer mit meshes-Handler routet durch die Naht:
-    {
-        let sites = 0,
-            routed = 0;
-        let idx = -1;
-        while ((idx = anazhNC.indexOf("this._foundryRequest(", idx + 1)) !== -1) {
-            const win = anazhNC.slice(idx, idx + 700);
-            if (!/\.then\(\(meshes\)/.test(win)) continue; // kein Reply-Leser (gibt es heute nicht)
-            sites++;
-            // DIE EINE PIPE (V18.458): der Kreatur-Ofen ist das zweite legitime Tor —
-            // _ofenAssembleAsset routet durch DIESELBE Mesh-Konversion
-            // (_foundryBuildMesh; N4.1a zählt weiterhin GENAU EINE Roh-Naht).
-            if (/_foundryBuildGroup\(meshes|_ofenAssembleAsset\(meshes/.test(win)) routed++;
+    // N4.1b — JEDER `this._foundryRequest(`-Aufruf ist ein Reply-Leser, der durch die Naht routet. Bis K38-N2 übersprang
+    // die Zählung jeden Aufruf ohne `.then((meshes)` still und bewachte ihre Leere mit der Mindestzahl ≥ 5 — die fiel, als
+    // der Vorrat in den EINEN Zug zog (5 → 4 Leser, Zweig-CI 38661623802): die Linse strafte den Schnitt, den sie bewacht.
+    // Jetzt zählt sie ALLE Aufrufe (ein Aufruf ohne Leser ist ein Leck aus der Naht), liest den Handler-Parameter am
+    // Namen und belegt ihre Nicht-Leere am Namen des EINEN Zugs (`_foundryZug`) plus einem Selbsttest am Täter.
+    // DIE EINE PIPE (V18.458): der Kreatur-Ofen ist das zweite legitime Tor — `_ofenAssembleAsset` routet durch DIESELBE
+    // Mesh-Konversion (`_foundryBuildMesh`; N4.1a zählt weiterhin GENAU EINE Roh-Naht).
+    const leserZensus = (src) => {
+        const koepfe = [];
+        const kopfRx = /\n {4}(?:static |async )*([A-Za-z_$][\w$]*)\([^)\n]*\) \{/g;
+        for (let k; (k = kopfRx.exec(src)); ) koepfe.push([k.index, k[1]]);
+        const methodeAn = (i) => {
+            let name = "?";
+            for (const [at, n] of koepfe) if (at < i) name = n;
+            return name;
+        };
+        const schliesst = (t, i) => {
+            // i steht auf "(" — der Index hinter der passenden ")"
+            let d = 0;
+            for (; i < t.length; i++) {
+                if (t[i] === "(") d++;
+                else if (t[i] === ")" && --d === 0) return i + 1;
+            }
+            return -1;
+        };
+        const sites = [];
+        const ruf = "this._foundryRequest(";
+        for (let idx = src.indexOf(ruf); idx !== -1; idx = src.indexOf(ruf, idx + 1)) {
+            const ende = schliesst(src, idx + ruf.length - 1);
+            const rest = ende < 0 ? "" : src.slice(ende);
+            const then = /^\s*\.then\(\s*\(?\s*([A-Za-z_$][\w$]*)\s*\)?\s*=>/.exec(rest);
+            const handler = then ? rest.slice(0, schliesst(rest, rest.indexOf("("))) : "";
+            const p = then ? then[1].replace(/\$/g, "\\$") : "";
+            const routed = !!then && new RegExp(`(?:_foundryBuildGroup|_ofenAssembleAsset)\\(${p}\\b`).test(handler);
+            sites.push({ methode: methodeAn(idx), routed, leser: !!then });
         }
+        return sites;
+    };
+    {
+        // Selbsttest am Täter: ein Leser am Bau vorbei, ein Aufruf ohne Leser und ein Leser mit fremdem Parameter-Namen
+        // fallen; der Leser durch die Naht hält.
+        const probe = leserZensus(
+            [
+                "",
+                "    _gut(a) {",
+                "        this._foundryRequest(a, 0, 1).then((m) => { this._foundryCacheSet(a, this._foundryBuildGroup(m, {})); });",
+                "    }",
+                "    _vorbei(a) {",
+                "        this._foundryRequest(a, 0, 1).then((meshes) => this._eigenerBau(meshes));",
+                "    }",
+                "    _ohneLeser(a) {",
+                "        return this._foundryRequest(a, 0, 1);",
+                "    }",
+                "    _fremd(a) {",
+                "        this._foundryRequest(a, 0, f(1)).then((r) => this._foundryBuildGroup(meshes));",
+                "    }",
+                "",
+            ].join("\n")
+        );
+        const sieht =
+            probe.length === 4 &&
+            probe.map((s) => `${s.methode}:${s.routed ? 1 : 0}`).join(",") === "_gut:1,_vorbei:0,_ohneLeser:0,_fremd:0";
         law(
-            `N4.1: jeder Reply-Leser routet durch die EINE Naht (${routed}/${sites} Sites, erwartet ≥5)`,
+            "N4.1: die Leser-Zählung sieht den Täter (Selbsttest: vorbei · ohne Leser · fremder Parameter fallen)",
             true,
-            sites >= 5 && routed === sites
+            sieht,
+            JSON.stringify(probe)
+        );
+        const sites = leserZensus(anazhNC);
+        const routed = sites.filter((s) => s.routed);
+        const lecks = sites.filter((s) => !s.routed).map((s) => `${s.methode}${s.leser ? "" : " (ohne Leser)"}`);
+        law(
+            `N4.1: jeder Reply-Leser routet durch die EINE Naht (${routed.length}/${sites.length} Sites: ${sites
+                .map((s) => s.methode)
+                .join(" · ")})`,
+            true,
+            routed.length === sites.length && routed.some((s) => s.methode === "_foundryZug"),
+            lecks.length ? "am Bau vorbei: " + lecks.join(", ") : "der EINE Zug `_foundryZug` liest nicht durch die Naht"
         );
     }
     // N4.2 — die Naht reicht das Reply-Material herein + mp FÜHRT (kind-Defaults nur Fallback):

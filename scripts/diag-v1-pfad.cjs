@@ -99,6 +99,9 @@ function fnBody(src, sigRe) {
 
 // ── DIE VERDIKTE (pure Funktionen; Browser-Probe UND Selbst-Test). Rückgabe: die Täter beim Namen. ──
 const SOLL = { vorschauAnteil: 0.99, rahmenMin: 0.5, rahmenMax: 0.9, zugMs: 20000, karteMin: 0.5, karteMax: 1.5 };
+// W7: die Wartenden auf eine Foundry-Antwort beim Namen — der Zug, der Wecker, die Hand, die Werkstatt-Vorschau (L0/L1 und
+// die L2-Karte). Fehlt einer in der Zählung, ist sie blind geworden (oder er umbenannt: die Linse wandert mit).
+const WARTENDE = ["_foundryZug", "_foundryWecker", "_heldFoundryGroup", "_workshopStudioPreviewFrom", "_workshopFoundryPreviewGroup"];
 // V-D3 FREMDER ZUG (K38): jeder Wartende erwacht nach der Ankunft eines Körpers, den ein ANDERER zuerst zog.
 function zugVerdict(m) {
     if (!m || m.gestartet !== true) return ["zug start"];
@@ -368,8 +371,17 @@ function wand(src) {
     const buehne = fnBody(nc, /\n {4}_buehneRender\([^)]*\) \{/) || "";
     // Jeder Neben-Renderer (Werkstatt-Vorschau `p`, Feed/Hof/Ich-Bühne `s`) zeichnet nur über die Bühne, und jeder nennt
     // sich (`wer`, K22): ein Render-Fehler der Bühne bricht laut beim Namen des Renderers.
-    const direkt = (nc.match(/\b[ps]\.renderer\.render\(/g) || []).length;
-    const ueber = (nc.match(/this\._buehneRender\([ps]\.renderer, [ps]\.scene, [ps]\.camera, "[^"]+"\)/g) || []).length;
+    // Gezählt wird JEDER Render-Ruf `x.render(szene, kamera)` am Namen seiner Methode: zeichnen darf nur die Bühne und der
+    // Loop (`_loopRender`, die Welt selbst). Bis K38-N2 zählte W2 die Bühnen-Rufe gegen die feste Zahl 4 — ein fünfter
+    // Renderer über die Bühne (oder einer weniger) machte die Linse rot, ein Renderer unter fremdem Namen blieb ungesehen.
+    const kopfRx = /\n {4}(?:static |async )*([A-Za-z_$][\w$]*)\([^)\n]*\) \{/g;
+    const koepfe = [];
+    for (let k; (k = kopfRx.exec(nc)); ) koepfe.push([k.index, k[1]]);
+    const methodeAn = (i) => koepfe.reduce((n, [at, name]) => (at < i ? name : n), "?");
+    const renderOrte = [...nc.matchAll(/\b[\w$.]+\.render\(\s*[\w$.]+\s*,\s*[\w$.]+\s*\)/g)].map((m) => methodeAn(m.index));
+    const direktOrte = renderOrte.filter((n) => n !== "_buehneRender" && n !== "_loopRender");
+    const direkt = direktOrte.length;
+    const buehnen = [...nc.matchAll(/this\._buehneRender\([\w$.]+, [\w$.]+, [\w$.]+, "([^"]+)"\)/g)].map((m) => m[1]);
     const evalPos = fnBody(nc, /\n {4}dslEvalPos\(node, ctx\) \{/) || "";
     const effekte = fnBody(nc, /\n {4}get dslEffects\(\) \{/) || "";
     const wachen = (effekte.match(/if \(!pos\)/g) || []).length;
@@ -391,12 +403,14 @@ function wand(src) {
     // Der Foundry-Pfad pollt nicht (K38-N2): jeder Wartende auf eine Foundry-Antwort hängt am Wecker (Zug, Buch, Karte),
     // jede Frist startet am Ereignis (`_foundryUhren`). Ein Poll ist eine Closure der Methode, die setTimeout bekommt (sie
     // stellt sich selbst neu: poll · cachePoll · pruefe bis K38), oder ein setInterval.
+    // Die Zählung belegt ihre Nicht-Leere am NAMEN der Wartenden (der Zug, der Wecker, die Werkstatt-Vorschau, die Hand),
+    // nie an einer Mindestzahl von Methoden: ein Schnitt, der Methoden zusammenlegt, macht sie nie rot.
     const polls = [];
-    let foundryMethoden = 0;
+    const foundryNamen = new Set();
     const sigF = /\n {4}(_foundry\w*|_heldFoundryGroup|_workshop\w*Preview\w*|_impostor\w*|_karte\w*|_tickImpostorBake)\([^)\n]*\) \{/g;
     for (let m; (m = sigF.exec(nc)); ) {
         const b = fnBody(nc.slice(m.index), /^\n {4}\w+\([^)\n]*\) \{/) || "";
-        foundryMethoden++;
+        foundryNamen.add(m[1]);
         if (/\bsetInterval\(/.test(b)) polls.push(`${m[1]} setInterval`);
         for (const t of b.matchAll(/\bsetTimeout\(\s*(?:\(\)\s*=>\s*)?(\w+)\s*[,(]/g))
             if (new RegExp(`(?:const|let|function)\\s+${t[1]}\\b`).test(b)) polls.push(`${m[1]} ${t[1]}`);
@@ -407,9 +421,9 @@ function wand(src) {
             /lu\.uLodMaskOn\.value = 0;/.test(buehne) && /finally\s*\{[^}]*lu\.uLodMaskOn\.value = an;/.test(buehne),
         ],
         [
-            "W2 jeder Neben-Renderer zeichnet über die Bühne (0 direkte p/s.renderer.render, 4 über `_buehneRender`)",
-            direkt === 0 && ueber === 4,
-            `${direkt} direkt · ${ueber} über die Bühne`,
+            "W2 jeder Neben-Renderer zeichnet über die Bühne (jeder `x.render(szene, kamera)` lebt in `_buehneRender` oder `_loopRender`, die Werkstatt-Vorschau ruft die Bühne beim Namen)",
+            direkt === 0 && renderOrte.includes("_buehneRender") && buehnen.includes("Werkstatt-Vorschau"),
+            `${direkt} direkt${direkt ? " (" + direktOrte.join(", ") + ")" : ""} · über die Bühne: ${buehnen.join(", ") || "keiner"}`,
         ],
         [
             "W3 der Orts-Vertrag sitzt an der Engstelle (`dslEvalPos` wirft `_dslKeinOrt`, liefert nie null; den Default-Spawn nur ohne Knoten, `node == null`)",
@@ -434,8 +448,8 @@ function wand(src) {
         ],
         [
             "W7 der Foundry-Pfad pollt nicht (kein setInterval, keine Closure, die sich per setTimeout neu stellt — jeder Wartende am Wecker, jede Frist am Ereignis)",
-            foundryMethoden >= 40 && polls.length === 0,
-            `${foundryMethoden} Methoden · Polls: ${polls.length ? polls.join(", ") : "0"}`,
+            WARTENDE.every((n) => foundryNamen.has(n)) && polls.length === 0,
+            `${foundryNamen.size} Methoden${WARTENDE.filter((n) => !foundryNamen.has(n)).map((n) => " · ungezählt " + n).join("")} · Polls: ${polls.length ? polls.join(", ") : "0"}`,
         ],
     ];
 }
@@ -1439,6 +1453,13 @@ async function probe(arg) {
                 'this._foundryWecker(f.buchDa, "hand", () => {',
                 "const poll = () => {\n if (f.ready && f.recipes) this._refreshHeldMesh();\n else setTimeout(poll, 150);\n };\n setTimeout(poll, 150);\n (() => {"
             );
+        // die Klasse der festen Stellen-Zahl (K38-N2): ein Renderer weniger über die Bühne bleibt grün
+        const weniger = wand(quelle.replace('this._buehneRender(s.renderer, s.scene, s.camera, "Hof-Bühne");', ""));
+        check(
+            "Selbst-Test W: ein Renderer weniger über die Bühne bleibt grün (W2 zählt am Namen, keine feste Zahl)",
+            quelle.includes('"Hof-Bühne");') && weniger.every((w) => w[1]),
+            weniger.filter((w) => !w[1]).map((w) => `${w[0].slice(0, 2)} ${w[2] || ""}`).join(" | ")
+        );
         const rot = wand(vorStand);
         check(
             "Selbst-Test W: der Vor-Stand (Vorschau direkt, Bühne maskiert, null-Ort, Op-Wache, Plattform-Zwilling, Ersatz-Ort, Warte-Poll der Hand) → W1–W7 feuern",
