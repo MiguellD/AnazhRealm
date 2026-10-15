@@ -80,8 +80,8 @@
         },
         "v6a": {
             "kern": "fachwerk-core.js",
-            "faelle": 22,
-            "probe": "jede Ausstattung (Feuerstelle, Marktstand, Brunnen) x Gestalt x Stufe (0/1/3) + ov",
+            "faelle": 25,
+            "probe": "jede Ausstattung (Feuerstelle, Marktstand, Brunnen, Laterne) x Gestalt x Stufe (0/1/3) + ov",
             "kippt": {},
             "soll": "0 - erreicht: ausRaster am Ausgang der Ausstattung (Architektur-Welle 05.10.)"
         },

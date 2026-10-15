@@ -2790,7 +2790,7 @@ class AnazhRealm_Z05b {
     // Darum eine prozedurale Sky-Env (kein HDRI): Gradient Zenit → Horizont → Boden aus der live
     // `nebulaColor`, PMREM-gefiltert. Feature-detected + try/catch (Fehler → environment null);
     // regeneriert nur bei Farb-Drift, nie pro Frame.
-    _ensureSkyEnvironment(force) {
+    _ensureSkyEnvironment(force, sprung) {
         const st = this.state;
         if (typeof THREE === "undefined" || !st.scene || !st.renderer) return false;
         if (!st.rendererReady) return false; // das Env-Sampling braucht den initialisierten Renderer
@@ -2811,15 +2811,18 @@ class AnazhRealm_Z05b {
         // Idle-Freeze-Wand: die Tag-Nacht-Uhr driftet die Himmelsfarbe auch im Stehen; jede Regeneration
         // mit NEUER Texture-Identität ließ WebGPU die Pipelines aller env-samplenden PBR-Materialien neu
         // kompilieren (Multi-Sekunden-Stall). Darum (a) SKY_ENV_REGEN_MIN_MS deckelt die Rate, (b) das
-        // Render-Target wird wiederverwendet (unten) → stabile Texture-Identität.
+        // Render-Target wird wiederverwendet (unten) → stabile Texture-Identität. Die Raten-Drossel gilt dem GLEITEN (der
+        // Gang der Uhr, ein Wetter-Übergang); ein SPRUNG (`sprung`: ein Schreiber der Uhr außer ihrem Gang, `_uhrSetzen`) malt
+        // beim ersten Drift — bis K10 hielt die Drossel den Sprung auf Mitternacht 6 s mit der Bestrahlung des Tags (2,32 statt 0,22).
         const nowMs = typeof performance !== "undefined" && performance.now ? performance.now() : Date.now();
         const drift = last ? Math.abs(last.r - sky.r) + Math.abs(last.g - sky.g) + Math.abs(last.b - sky.b) : Infinity;
         if (
             !force &&
             last &&
-            (drift < 0.04 || nowMs - (st._skyEnvLastRegenMs || -Infinity) < AnazhRealm.SKY_ENV_REGEN_MIN_MS)
+            (drift < 0.04 ||
+                (!sprung && nowMs - (st._skyEnvLastRegenMs || -Infinity) < AnazhRealm.SKY_ENV_REGEN_MIN_MS))
         ) {
-            return true; // Farbe stabil ODER eben erst regeneriert → nichts tun (Drift- + Raten-Drossel)
+            return true; // Farbe stabil ODER gleitend und eben erst regeneriert → nichts tun (Drift- + Raten-Drossel)
         }
         try {
             const tex = this._himmelUmgebungTex();

@@ -175,6 +175,8 @@ class AnazhRealm_Z07 {
             // DAS ERBGUT reist in seiner Normalform mit (die Terme der EINEN 2D-Höhe, das Wildnis-Gewicht): der Worker
             // rechnet dieselben Zahlen, nie eine eigene Ableitung.
             erbgut: this._erbgut(),
+            // DER ERDBAU DER ORTE (K10): die Splat-Liste in der Reihenfolge der Orte — der Worker legt sie in die Normalform
+            erdbau: this._erdbauRoh(),
             // DIE BODEN-PALETTE reist mit: der Worker färbt mit DENSELBEN linearen Zahlen (`attachFieldColors`),
             // kein hartkodierter Spiegel der Farben.
             bodenPalette: AnazhRealm.BODEN_FARBE,
@@ -517,9 +519,17 @@ class AnazhRealm_Z07 {
     // `_chunkRegionHasCarve`, aber ohne mode-Filter (auch fill ändert die Density). r ≤ 12 < span 43.2
     // und Pad ±1 Cell → die Box deckt den Mesh-Footprint konservativ.
     _chunkFootprintEditFrei(cx, cz) {
+        const { span } = this._voxelChunkConfig();
+        // der Erdbau eines Orts (K10) formt den Boden wie ein Edit: sein Umkreis liest nie alte Bytes der Platte
+        const E = this._erdbauLage();
+        if (E) {
+            const Z = globalThis.__gelaendeCore.ERDBAU.zelleM;
+            for (let a = Math.floor(((cx - 1) * span) / Z); a <= Math.floor(((cx + 2) * span) / Z); a++)
+                for (let b = Math.floor(((cz - 1) * span) / Z); b <= Math.floor(((cz + 2) * span) / Z); b++)
+                    if (E.zellen.has((a + 32768) * 65536 + (b + 32768))) return false;
+        }
         const edits = this._voxelEditsNah(cx, cz);
         if (!edits.length) return true;
-        const { span } = this._voxelChunkConfig();
         const loX = (cx - 1) * span,
             hiX = (cx + 2) * span,
             loZ = (cz - 1) * span,

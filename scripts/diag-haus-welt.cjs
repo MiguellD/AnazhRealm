@@ -28,8 +28,8 @@
 //       vor keiner Haustür steht dessen Wand — Grundriss und Tür-Vorplatz, abgetastet gegen die Hülle jedes Nicht-Natur-
 //       Baus über dem Boden des Hauses; dann derselbe Akt ein zweites Mal am selben Anker: kein Haus, kein Brunnen, kein
 //       Stand des zweiten Dorfs steht im ersten (seit „vor dir" vorn liegt, gründet das Dorf vor dem Spieler: an der
-//       Start-Plattform stand ein Haus 3,6 m tief in ihr). Dazu der Selbsttest „raster": die Höhe des Footprints aus der
-//       Mitte allein (das gröbste Raster) legt am Hang des Dorf-Orts eine Haustür in den Boden — W1 wird rot.
+//       Start-Plattform stand ein Haus 3,6 m tief in ihr). Der Selbsttest „raster" fiel mit K10 (der Plan v2 trägt den Boden
+//       y, die Tür am Hang wacht in gate:settlement Teil O).
 //   W8  DIE LICHTUNG (Entscheid D3): die Genesis-Plattform ist ein Grundriss derselben Wand — über ihrer Scheibe keine Krone
 //       (Wald-Gesetz × Welt-Skala) eines Natur-Eintrags oder einer Streu-Zelle, keine Kachel-Pflanze auf ihr; der Hain der
 //       KI wächst weder dort noch im Grundriss eines Dorf-Hauses (Gegenprobe 150 m weiter: er wächst), jede Absage steht im
@@ -121,7 +121,7 @@ const BASIS = {
     // EIN BAU OHNE HAUS-ZEILE TRÄGT KEINEN GRUNDRISS (K52): Tor, Esse, Brunnen, Damm — die Natur wirft in ihn, nichts räumt
     baugrund: [["if (!(e.affordances && e.affordances.moveable) && !this._istNatur(e)) {", "if (false) {"]],
     // DIE WAND KENNT DEN WEG NICHT (K52): Weg, Platz und Acker eines Dorfs urteilen nur über die Wiese
-    weg: [['return this._aufWeg(x, z, rand) ? "weg" : false;', "return false;"]],
+    weg: [['return this._aufWeg(x, z, rand, ohne && ohne._trittBox) ? "weg" : false;', "return false;"]],
     // DAS WERK IM STEIN (K52): der Satz setzt seine Werke auf den Boden des Gesetzes, nie auf den Bau, der dort trägt
     dach: [["? this._bauDachUnter(x, z, sy) + 0.5 : pos.y;", "? sy + 0.5 : pos.y;"]],
     // eine Quelle geht an der Wand vorbei: die Wald-Schlange setzt ihre Würfe direkt
@@ -143,27 +143,17 @@ const BASIS = {
             "var hb = new THREE.Box3().setFromObject(g); var huelle = stufe === 0 ? { stufe: 0, boxen: gm.__solids } : { stufe: stufe, boxen: [hb.min.x, hb.min.y, hb.min.z, hb.max.x, hb.max.y, hb.max.z] };",
         ],
     ],
-    // die Siedlung baut ohne Bau-Wand (ein Haus darf in einem bestehenden Bau stehen)
+    // die Siedlung baut ohne Bau-Wand (ein Haus darf in einem bestehenden Bau stehen): die Slot-Quelle und die Ort-Wahl
+    // (`_ortTraegt`, K10-6) lesen dieselbe Wand — der Defekt nimmt sie beiden
     bauwand: [
         ["if (!this._bauFrei(wx, wz, ry,", "if (false && !this._bauFrei(wx, wz, ry,"],
+        ["if (wand && !this._bauFrei(wx, wz, ry,", "if (false && wand && !this._bauFrei(wx, wz, ry,"],
         ["const R = Math.max(0.5, (this._blueprintFootprintRadius(type, 1) || 0) * Math.SQRT1_2);", "return true;"],
     ],
-    // die Höhe des Footprints aus der Mitte allein, ohne den Tür-Vorplatz (das gröbste Raster) — das Raster lebt seit der
-    // Gegenprüfung 10.10. im EINEN `_fundamentRaster` (Höhe der Siedlung und Land jedes Fundaments). Bis K16 vier Ecken + Mitte
-    // (der Stand vor dem Raster): die neue Landform trägt keine Kuppe zwischen den Ecken (am Hang 0,52 und an einer Kuppe
-    // 0,09 je m blieb die Tür 1–6 m über dem Gelände) — die Mitte allein legt am Hang die bergseitige Tür in den Boden.
-    raster: [
-        ["const nx = Math.min(deckel, Math.max(1, Math.ceil((2 * fp.ex) / schritt)));", "const nx = 1;"],
-        ["const nz = Math.min(deckel, Math.max(1, Math.ceil((2 * fp.ez) / schritt)));", "const nz = 1;"],
-        [
-            "out.push([ox + fp.ex * ((2 * i) / nx - 1), oz + fp.ez * ((2 * j) / nz - 1), true]);",
-            "out.push([ox, oz, true]);",
-        ],
-        [
-            "out.push([tuer.x + (i * tuer.w) / 2, tuer.z - 0.25, false]);\n                out.push([tuer.x + (i * tuer.w) / 2, tuer.z - 1, false]);",
-            "void 0;",
-        ],
-    ],
+    // Der Täter „raster" (die Höhe des Footprints aus der Mitte allein) fiel mit K10: die Welt rechnet keine Haus-Höhe mehr
+    // aus dem Raster, der Plan v2 trägt den Boden y und sein Erdbau den Grund. Die Klasse „Tür im Boden am Hang" wacht dort,
+    // wo ihr Chokepoint lebt: gate:settlement Teil O (Türen erreichbar, Sockel, Selbst-Test V6 „ein Absatz vor der Tür") —
+    // hier blieb das Gift ohne Erdbau blind (die Türen des Plans liegen zum Weg, W1 8/8 auch ohne Erdbau).
     // vor der ersten Studio-Stufe die geschlossene Kern-Box ohne Tür-Lücke
     kern: [["boxen = this._hausKernHuelle(t);", "boxen = [-t.W / 2, 0, -t.D / 2, t.W / 2, 3.1, t.D / 2];"]],
 };
@@ -450,7 +440,8 @@ async function proben(phasen) {
         }
     }
     // W7 BAU IM BAU: Grundriss (Raster 5 × 5) und Tür-Vorplatz (1,2 m vor der Front, 3 × 2) jedes Dorf-Hauses gegen die
-    // Boxen jedes Baus, der vor dem Dorf stand und keine Natur ist — eine Box zählt über dem Boden des Hauses (+ Stufe)
+    // Boxen jedes Baus, der vor dem Dorf stand und nicht weicht (Natur und Würfe des Felds weichen, `_weichtDemBau`; das Haus
+    // räumt sie) — eine Box zählt über dem Boden des Hauses (+ Stufe)
     if (P.has("haus")) {
         const STEP = A.PLAYER_STEP_UP;
         const w7 = { haeuser: H.length, imBau: 0, taeter: [] };
@@ -471,7 +462,7 @@ async function proben(phasen) {
                 if (!b.blockerAABBs || !b.position) continue;
                 if (Math.hypot(b.position.x - e.position.x, b.position.z - e.position.z) > 40 + (b._blockerReach || 0))
                     continue;
-                if (r._istNatur(b)) continue;
+                if (r._weichtDemBau(b)) continue; // was weicht, räumt das Haus (`_naturRaeumen`)
                 let n = 0;
                 for (const q of pkt)
                     if (b.blockerAABBs.some((bx) => bx.topY > boden + STEP && r._boxAbstand2(bx, q.x, q.z) === 0)) n++;
@@ -527,7 +518,7 @@ async function proben(phasen) {
                         30 + (b._blockerReach || 0)
                     )
                         continue;
-                    if (r._istNatur(b)) continue;
+                    if (r._weichtDemBau(b)) continue;
                     const boden = e.position.y - 0.5;
                     if (
                         b.blockerAABBs.some(
@@ -543,16 +534,9 @@ async function proben(phasen) {
         }
         o.w7 = w7;
     }
-    // W4 GRUNDRISS: keine Natur im Grundriss — nach dem Pumpen der Natur-Schlange. Natur = ein Eintrag, dessen Art das
-    // Gesetzbuch des Terrain-Studios trägt (`__terrainCore.PHYTO_PRESETS`: Baum, Strauch, Fels, Farn, Totholz …) oder
-    // seine Wald-/Bauplan-Zeile (vor dem Buch); nie ein Tor oder Wagen (die tragen auch eine Impostor-Zeile).
-    const PHYTO = (window.__terrainCore && window.__terrainCore.PHYTO_PRESETS) || {};
-    const istNatur = (e) => {
-        if (!e || typeof e.type !== "string") return false;
-        if (e._lodSpecies || e.type === "stamm_gefallen" || /^(baum_|busch_|grown_)/.test(e.type)) return true;
-        const pr = r._foundryPresetForEntry(e);
-        return !!(pr && Object.prototype.hasOwnProperty.call(PHYTO, pr));
-    };
+    // W4 GRUNDRISS: keine Natur im Grundriss — nach dem Pumpen der Natur-Schlange. Was Natur ist und was dem Bau weicht,
+    // fragt die Linse den Stamm (`_istNatur`, `_weichtDemBau`: die Natur und jeder Wurf des Felds, die Feuerstelle des
+    // Menschen ist Bau) — bis K10-6 Nachbesserung 3 rechnete sie beide Regeln nach (ein Zwilling, still leer ohne das Buch).
     const imGrundrissVon = (liste, x, z) => {
         for (const hs of liste) {
             const lx = lokal(hs, x, z);
@@ -566,7 +550,7 @@ async function proben(phasen) {
         let natur = 0;
         const taeter = [];
         for (const e of s.architectures) {
-            if (!istNatur(e)) continue;
+            if (!r._weichtDemBau(e)) continue;
             natur++;
             const hs = imGrundrissVon(liste, e.position.x, e.position.z);
             if (hs) {
@@ -625,7 +609,7 @@ async function proben(phasen) {
                 fehler.push(String(e).slice(0, 80));
             }
         }
-        const neu = s.architectures.filter((e) => !vor.has(e) && istNatur(e));
+        const neu = s.architectures.filter((e) => !vor.has(e) && r._istNatur(e));
         if (!bleibt) for (const e of neu) r.removeArchitecture(e);
         return { neu, fehler, weicht };
     };
@@ -812,7 +796,7 @@ async function proben(phasen) {
             w8.naturUeber = 0;
             w8.taeter = [];
             for (const e of s.architectures) {
-                if (!istNatur(e) || !e.position) continue;
+                if (!r._istNatur(e) || !e.position) continue;
                 const d = abstand(e.position.x, e.position.z);
                 if (d < 60 && /^baum_/.test(e._lodSpecies || e.type)) w8.baeume++;
                 const k = krone(e._lodSpecies || e.type, e.scale);
@@ -839,7 +823,7 @@ async function proben(phasen) {
                 } catch (e) {
                     w8.kiFehler.push(String(e).slice(0, 80));
                 }
-                const neuC = s.architectures.filter((e) => !vorC.has(e) && istNatur(e));
+                const neuC = s.architectures.filter((e) => !vorC.has(e) && r._istNatur(e));
                 w8.chatBaeume = neuC.filter(
                     (e) => abstand(e.position.x, e.position.z) < L.r + krone(e._lodSpecies || e.type, e.scale)
                 ).length;
@@ -918,7 +902,24 @@ async function proben(phasen) {
     if (P.has("w4")) {
         stell(dorfMitte.x, (r.getTerrainHeightAt(dorfMitte.x, dorfMitte.z) || start.y) + 3, dorfMitte.z);
         await pumpe(200);
+        // DER WURF IN DEN GRUNDRISS (K10-6): je Haus ein Wurf jeder Art des Felds in seine Mitte, durch die EINE Natur-Wand
+        // (`_naturSetzen`) — keiner steht. Ohne ihn hing W4 an der Natur, die zufällig im Grundriss wuchs (der Selbsttest
+        // „grundriss" sah 1 Busch, nach dem Umzug des Dorfs keinen: blind).
+        const wurf = [];
+        for (const hs of H) {
+            const f = hs.fundament;
+            const m = welt(hs, f.ox || 0, f.oz || 0);
+            for (const t of A.FELD_WURF) {
+                const e = r._naturSetzen(t, { x: m.x, y: (r.getTerrainHeightAt(m.x, m.z) || 0) + 0.5, z: m.z }, {
+                    silent: true,
+                    seed: 4711,
+                });
+                if (e) wurf.push(e);
+            }
+        }
         o.w4 = naturImHaus(H);
+        o.w4.wurf = H.length * A.FELD_WURF.length;
+        for (const e of wurf) if (s.architectures.includes(e)) r.removeArchitecture(e);
         // W4 WEG (K52): keine Natur (Eintrag, lebende Streu-Zelle, Kachel-Pflanze) auf Straße, Feldweg, Platz, Anger oder Acker
         // des Drehbuch-Dorfs — die Formen der Wege-Karte, ihr Abstand hier eigens gerechnet (Kapsel um das Segment, gedrehter
         // Kasten); auf dem Gras-Anger gilt seine Grenze (`sperr`, das Gesetzbuch: kein Baum tiefer als 1 m im Anger)
@@ -953,7 +954,7 @@ async function proben(phasen) {
                     }
             };
             for (const e of s.architectures)
-                if (e.position && istNatur(e)) pruef(e.type, e.position.x, e.position.z, "Eintrag");
+                if (e.position && r._istNatur(e)) pruef(e.type, e.position.x, e.position.z, "Eintrag");
             for (const region of (s.scatterRegions && s.scatterRegions.values()) || [])
                 for (const c of region.cells || [])
                     if ((c.slots && c.slots.length) || c.feld) pruef(c.species || c.layer, c.x, c.z, "Streu");
@@ -1248,7 +1249,7 @@ async function proben(phasen) {
                     // die Suche fand (K16: „viktorianisch: Slot fiel", seit das Dorf am Hang und das ferne Dorf im Westen stehen)
                     if (
                         !grund &&
-                        (!r._fundamentLand(cx, cz, gier, fu, tu, A.FUNDAMENT_SOCKEL_M) ||
+                        (!r._fundamentLand(cx, cz, gier, fu, tu, globalThis.__fachwerkCore.ORT_GESETZ.saumM) ||
                             !r._bauFrei(cx, cz, gier, fu, tu, hi))
                     )
                         grund = "wand";
@@ -1339,7 +1340,11 @@ async function proben(phasen) {
                 },
             };
             const vorSlot = new Set(s.architectures);
-            r._spawnSettlementSlot(slot, { x: 0, z: 0 }, r._foundry);
+            // K10: der Slot geht den Weg des Plans v2 — `_ortPlanSetzen` legt seinen Boden y und den Erdbau, bevor das Haus
+            // steht (je Haus ein eigener Ort: der Samen trägt die Kultur)
+            const v2 = r._ortPlanSetzen({ seed: 700 + orte.length, slots: [slot], roads: [], laternen: [] }, { x: 0, z: 0 });
+            const slotV2 = v2 && Array.isArray(v2.slots) ? v2.slots[0] : null;
+            if (slotV2) r._spawnSettlementSlot(slotV2, { x: 0, z: 0 }, r._foundry);
             const e = s.architectures.find((q) => !vorSlot.has(q) && q.type === "haus_" + k);
             if (!e) {
                 w.fehler = "Slot fiel";
@@ -1348,7 +1353,7 @@ async function proben(phasen) {
             // der Anlauf-Korridor (2 m breit, 6 m vor der Front bis zur Front) ist frei: die Natur darin räumt die Linse wie
             // einen Weg (ein Baum im Weg ist kein Haus-Befund)
             for (const q of s.architectures.slice()) {
-                if (q === e || !istNatur(q)) continue;
+                if (q === e || !r._istNatur(q)) continue;
                 const lq = lokal(e, q.position.x, q.position.z);
                 if (Math.abs(lq.x - tu.x) <= 2 && lq.z >= z0 - 7 && lq.z <= z0) r.removeArchitecture(q);
             }
@@ -1709,7 +1714,6 @@ function zeile(o) {
                 fernstufe: ["W6 Fernstufe"],
                 kern: ["W6 Kern-Hülle"],
                 bauwand: ["W7 Bau im Bau"],
-                raster: ["W1 Tür"],
             };
             // die Phase je Täter (eine Welt fährt nur, was ihr Selbsttest rot machen soll — der Hauptlauf fährt alle)
             const phasenVon = {
@@ -1732,7 +1736,6 @@ function zeile(o) {
                 fernstufe: ["w6"],
                 kern: ["w6"],
                 bauwand: ["haus"],
-                raster: ["haus"],
             };
             selbst = Object.keys(soll)
                 .filter((k) => !NUR.length || NUR.includes(k))

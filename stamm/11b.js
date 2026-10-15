@@ -155,8 +155,6 @@ class AnazhRealm_Z11b {
         // 0,50 m unter der Diele (Leben-Prüfung N-D2 bis N-D4), das Solo-Haus stieß an `haus_basis` (3,09 m in der Wand).
         const hausBoxes = this._hausBlockerBoxen(entry);
         if (hausBoxes) {
-            const fuH = this._archFundamentBox(entry);
-            if (fuH) hausBoxes.push(fuH);
             if (hausBoxes.length) {
                 entry.blockerAABBs = hausBoxes;
                 this._blockerStampReach(entry);
@@ -235,11 +233,6 @@ class AnazhRealm_Z11b {
                 aabb.dick = Math.min(Math.abs(part.size.x) || 0, Math.abs(part.size.z) || 0) * scD;
             solidAABBs.push(aabb);
         }
-        // Das FUNDAMENT ist Blocker-Wahrheit: der Sockel vom tiefsten Footprint-Punkt bis zur Haus-Basis
-        // ist SOLID (Kapsel, Cell-Stempel, Wasser urteilen gleich — nicht unters Haus am Hang). Gedreht trägt es seine
-        // `obb` (Kapsel, Strahl und Zellen-Stempel im Rahmen des Podests), die Welt-AABB bleibt Vorfilter.
-        const fu = this._archFundamentBox(entry);
-        if (fu) solidAABBs.push(fu);
         if (solidAABBs.length === 0) return;
         entry.blockerAABBs = solidAABBs;
         this._blockerStampReach(entry);
@@ -366,66 +359,6 @@ class AnazhRealm_Z11b {
             topY: oy + y1 * sc,
             botY: oy + y0 * sc,
             obb: { cx, cz, c, s: sn, hx, hz },
-        };
-    }
-
-    // Die EINE Fundament-Geometrie (Blocker UND Render-Podest): aus entry.fundament {ex,ez} um seine Mitte
-    // {ox,oz} (haus-lokal) + LIVE-Terrain-Ecken. null ohne fundament-Feld oder auf ebenem Land (Podest < 0.25 m).
-    // Tiefe stets aus dem Dichte-Feld, nie persistiert (deterministisch).
-    _archFundamentBox(entry) {
-        const f = entry && entry.fundament;
-        if (!f || !Number.isFinite(f.ex) || !Number.isFinite(f.ez)) return null;
-        if (typeof this.getTerrainHeightAt !== "function") return null;
-        const ry = Number.isFinite(entry.rotationY) ? entry.rotationY : 0;
-        const rc = Math.cos(ry);
-        const rs = Math.sin(ry);
-        const lox = Number.isFinite(f.ox) ? f.ox : 0;
-        const loz = Number.isFinite(f.oz) ? f.oz : 0;
-        const ox = (entry.position.x || 0) + lox * rc + loz * rs;
-        const oz = (entry.position.z || 0) - lox * rs + loz * rc;
-        // Marge FUNDAMENT_SOCKEL_M: der Sockel steht sichtbar unter der Schwelle hervor
-        // (Sockel-Look) und deckt die Fachwerk-Traufkante; die Wasser-Wand fragt dieselbe Fläche (`_fundamentLand`).
-        const ex = f.ex + AnazhRealm.FUNDAMENT_SOCKEL_M;
-        const ez = f.ez + AnazhRealm.FUNDAMENT_SOCKEL_M;
-        let hMin = Infinity;
-        let halfX = 0;
-        let halfZ = 0;
-        for (let k = 0; k < 4; k++) {
-            const lx = k & 1 ? ex : -ex;
-            const lz = k & 2 ? ez : -ez;
-            const cxw = lx * rc + lz * rs;
-            const czw = -lx * rs + lz * rc;
-            if (Math.abs(cxw) > halfX) halfX = Math.abs(cxw);
-            if (Math.abs(czw) > halfZ) halfZ = Math.abs(czw);
-            const h = this.getTerrainHeightAt(ox + cxw, oz + czw);
-            if (Number.isFinite(h) && h < hMin) hMin = h;
-        }
-        if (!Number.isFinite(hMin)) return null;
-        // Oberkante knapp unter der Haus-Basis (entry.y − 0.5 = Bauplan-Boden,
-        // s. _archEntryWorldMatrix baseY) — 5 cm Überlapp gegen Licht-Spalte;
-        // Unterkante 0.6 m UNTER der tiefsten Ecke (im Fels versiegelt).
-        const top = (Number.isFinite(entry.position.y) ? entry.position.y : 0) - 0.45;
-        const bot = hMin - 0.6;
-        if (!(top - bot > 0.25)) return null; // eben → kein Podest
-        // AABB-Felder = Vorfilter und Spanne des Zell-Stempels (konservativ, rotations-überdeckt);
-        // ex/ez/ry/x/z = Render-Leser (das GEDREHTE dichte Podest), obb = Kapsel, Strahl und die Zellen des Stempels.
-        return {
-            minX: ox - halfX,
-            maxX: ox + halfX,
-            minZ: oz - halfZ,
-            maxZ: oz + halfZ,
-            topY: top,
-            botY: bot,
-            ex,
-            ez,
-            ry,
-            x: ox,
-            z: oz,
-            // DIE GEDREHTE BOX (Welle L, Kollision == Optik): Kapsel und Strahl lösen im Rahmen des gezeichneten Podests
-            // (`_resolveCapsuleVsAABB`, `_segmentAABB`) und der Zell-Stempel stempelt nur die Zellen, die sie berührt (Karte
-            // K02) — die Welt-AABB bleibt ihr Vorfilter. Vorher trug die rotations-überdeckende AABB die Ecken eines gedrehten
-            // Hauses als Podest in der Luft.
-            obb: { cx: ox, cz: oz, c: rc, s: rs, hx: ex, hz: ez },
         };
     }
 
