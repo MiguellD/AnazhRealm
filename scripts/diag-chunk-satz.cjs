@@ -861,7 +861,25 @@ function check(name, ok, detail) {
             const bereichTreu = (satz, b) => {
                 const geo = satz.mesh.geometry;
                 if (satz.bloecke.get(b.key) !== b) return false;
-                const g = b.geom;
+                // ein FLÜCHTIGER Block (K69, `_satzBlock`) hält seine Werte nicht: die Linse rechnet ihn aus seiner Quelle
+                // nach (Geometrie × Instanz-Matrizen, dieselbe Rechnung) — gepackte Werte und Index gegen den Satz
+                const fl = b.geom.fluechtig === true;
+                if (fl && (b.geom.index !== null || !Array.isArray(b.geom.quelle))) return false;
+                const nach = fl ? r._satzBlock(...b.geom.quelle) : null;
+                const g = fl
+                    ? {
+                          attributes: Object.fromEntries(
+                              Object.entries(b.geom.attributes).map(([k, a]) => [
+                                  k,
+                                  a.array === null ? nach.attributes[k] : a,
+                              ])
+                          ),
+                          index: nach.index,
+                      }
+                    : b.geom;
+                if (fl)
+                    for (const fa of satz.attr || [])
+                        if (fa.form && b.geom.attributes[fa.name].array !== null) return false;
                 // ein Satz ohne Formen-Liste (vor K44) trägt jedes Attribut als View
                 for (const fa of satz.attr || satz.attrNamen.map((name) => ({ name, form: null }))) {
                     const a = fa.name;

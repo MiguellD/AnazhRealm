@@ -520,6 +520,24 @@ function standUrteil(b) {
                         `ihr Budget (\`WALD_PLAN.ms\`) hält nicht`
                 );
         }
+        // das Haus im Satz: sein Wieder-Eintritt (jeder Stufen-Wechsel) legt keine Ecke frisch an — bis K69 schrieb der Block
+        // jede Ecke in neue Arrays (`_satzBlock`), ein Haus der Stufe 0 ~10 MB je Wechsel, die volle Sammlung fiel in den Takt
+        const SH = O.satzHaus;
+        if (!SH || !SH.gesetzt || !(SH.bloecke > 0) || !(SH.ecken >= 1000))
+            v.push(
+                `LEER: die Ort-Phase brachte kein Haus in den Bau-Satz (` +
+                    (SH && SH.gesetzt
+                        ? `${SH.kultur}, ${SH.gruppen || 0} Gruppen, ${SH.ecken || 0} Ecken nach ${SH.takte} Takten`
+                        : "keins gesetzt") +
+                    `) — der Satz-Block ist ungeprüft`
+            );
+        else if (SH.frischKB > 64)
+            v.push(
+                `ORT: das Haus im Satz (${SH.kultur}, ${SH.ecken} Ecken in ${SH.gruppen} Gruppen) legte beim Wieder-Eintritt ` +
+                    `${(SH.frischKB / 1024).toFixed(1)} MB frisch an (\`_tickBauSatz › _bauSatzBlock › _satzBlock\`, ` +
+                    `${SH.bloecke} Blöcke) — jeder Stufen-Wechsel eines Hauses schreibt seine Ecken neu in den Heap, die volle ` +
+                    `Sammlung fällt in den Takt`
+            );
         if (!O.stand || !O.stand.key)
             v.push("LEER: die Ort-Phase fand keinen fernen Chunk für den Stand der Worker-Antworten");
         else if (!O.stand.gleich)

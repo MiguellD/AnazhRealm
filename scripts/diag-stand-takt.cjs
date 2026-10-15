@@ -123,6 +123,15 @@ function selbsttest() {
             maxTaktMs: 21,
             raeumung: { abbau: 5, saves: 0, saveMs: 0 },
             kamin: { kultur: "alemannisch", gesetzt: true, bau: 0, ms: 0 },
+            satzHaus: {
+                kultur: "alemannisch",
+                gesetzt: true,
+                takte: 3,
+                gruppen: 7,
+                ecken: 26800,
+                bloecke: 7,
+                frischKB: 0,
+            },
             wald: {
                 gesetzt: true,
                 // BÜHNE: Befund des Selbsttests, kein gesetzter Ort
@@ -338,6 +347,16 @@ function selbsttest() {
             "die Ort-Phase setzt kein Haus ohne Kamin",
             (b) => (b.ort.kamin.gesetzt = false),
             /LEER: die Ort-Phase setzte kein Haus ohne Kamin/,
+        ],
+        [
+            "der Satz-Block legt die Ecken eines Hauses frisch an (bis K69)",
+            (b) => Object.assign(b.ort.satzHaus, { frischKB: 2048 }),
+            /ORT: das Haus im Satz \(alemannisch, 26800 Ecken in 7 Gruppen\) legte beim Wieder-Eintritt 2\.0 MB frisch an .*_tickBauSatz › _bauSatzBlock › _satzBlock/,
+        ],
+        [
+            "die Ort-Phase bringt kein Haus in den Bau-Satz",
+            (b) => Object.assign(b.ort.satzHaus, { gruppen: 0, ecken: 0, bloecke: 0, takte: 600 }),
+            /LEER: die Ort-Phase brachte kein Haus in den Bau-Satz \(alemannisch, 0 Gruppen, 0 Ecken nach 600 Takten\)/,
         ],
         [
             "der Baum in frischem Wald plant seine Zellen synchron (bis K69)",
@@ -1251,6 +1270,98 @@ const server = statikServer();
                         }
                         O.wald = Wd;
                     }
+                    // DAS HAUS IM SATZ (K69): ein Dorf-Haus tritt in den Bau-Satz seiner Stoffe (`_tickBauSatz › _bauSatzBlock ›
+                    // _satzBlock`), dann ein zweites Mal, jede Gruppe markiert wie bei jedem Stufen-Wechsel — gezählt die Bytes,
+                    // die der Block dabei FRISCH anlegt. Bis K69 legte jeder Eintritt seine Ecken neu im Heap an (ein Haus der
+                    // Stufe 0: 142k Ecken, ~10 MB), die volle Sammlung fiel in den Takt (Null-Gang ins Dorf: 137 ms)
+                    {
+                        const recs = (r._foundry && r._foundry.recipes) || {};
+                        const kultur = Object.keys(recs).find((k) => {
+                            const pol = r.constructor.KIND_POLICY[recs[k] && recs[k].kind];
+                            return pol && pol.prefix === "haus_" && st.blueprints["haus_" + k];
+                        });
+                        const hx = ox + 40;
+                        const hz = oz - 40;
+                        const hy = r._voxelSurfaceY(hx, hz);
+                        const SH = { kultur: kultur || null, gesetzt: false };
+                        const e =
+                            kultur && Number.isFinite(hy)
+                                ? r._spawnSettlementSlot(
+                                      { kultur, x: 0, z: 0, y: hy, phi: 0, seed: 4712, chimney: null },
+                                      { x: hx, z: hz },
+                                      r._foundry
+                                  )
+                                : null;
+                        if (e) {
+                            SH.gesetzt = true;
+                            const gruppen = () =>
+                                (e.instSlots || [])
+                                    .map((s) => st.archInstanceGroups && st.archInstanceGroups.get(s.key))
+                                    .filter((g) => g && g.satz && (g.liveCount | 0) > 0);
+                            const drin = () => {
+                                const gs = gruppen();
+                                return (
+                                    gs.length > 0 &&
+                                    gs.every((g) => {
+                                        const s = st.chunkSaetze && st.chunkSaetze.get(g.satz);
+                                        return (
+                                            s &&
+                                            s.bloecke.has(g.key) &&
+                                            !(st.bauSatzSchmutzig && st.bauSatzSchmutzig.has(g.key))
+                                        );
+                                    })
+                                );
+                            };
+                            let takte = 0;
+                            while (!drin() && takte < 600) {
+                                takt();
+                                takte++;
+                                if (takte % 20 === 0) await pause(5);
+                            }
+                            const gs = gruppen();
+                            Object.assign(SH, {
+                                takte,
+                                gruppen: gs.length,
+                                ecken: gs.reduce((a, g) => a + g.geom.attributes.position.count * (g.liveCount | 0), 0),
+                                bloecke: 0,
+                            });
+                            if (drin()) {
+                                const T = { F: globalThis.Float32Array, U: globalThis.Uint32Array };
+                                const roh = r._satzBlock;
+                                let frisch = 0;
+                                const zaehl = (Typ) =>
+                                    new Proxy(Typ, {
+                                        construct(t, a) {
+                                            const x = Reflect.construct(t, a);
+                                            frisch += x.byteLength;
+                                            return x;
+                                        },
+                                    });
+                                r._satzBlock = function () {
+                                    SH.bloecke++;
+                                    globalThis.Float32Array = zaehl(T.F);
+                                    globalThis.Uint32Array = zaehl(T.U);
+                                    try {
+                                        return roh.apply(this, arguments);
+                                    } finally {
+                                        globalThis.Float32Array = T.F;
+                                        globalThis.Uint32Array = T.U;
+                                    }
+                                };
+                                try {
+                                    for (const g of gs) r._bauSatzMarke(g.key, g.satz);
+                                    r._tickBauSatz();
+                                } finally {
+                                    delete r._satzBlock;
+                                    globalThis.Float32Array = T.F;
+                                    globalThis.Uint32Array = T.U;
+                                }
+                                SH.frischKB = Math.round(frisch / 1024);
+                            }
+                            r.removeArchitecture(e);
+                        }
+                        O.satzHaus = SH;
+                    }
                     aus.ort = O;
                 }
                 // (T) STROM: erst Ruhe, dann der Sprung an einen fremden Ort — der Spieler-Chunk muss kommen
@@ -1428,6 +1539,10 @@ const server = statikServer();
                     ? ` — der Baum in frischem Wald bei (${O.wald.ort}): ${O.wald.synchron} Zellen synchron ` +
                       `(${O.wald.ms} ms), Gestalt ${O.wald.gestalt} nach ${O.wald.takte} Takten, ${O.wald.imTakt} Zellen im ` +
                       `Takt (der längste ${O.wald.maxTaktMs} ms, ${O.wald.maxTaktZellen} Zellen)`
+                    : "") +
+                (O.satzHaus && O.satzHaus.gesetzt
+                    ? ` — das Haus im Satz (${O.satzHaus.kultur}): ${O.satzHaus.gruppen} Gruppen, ${O.satzHaus.ecken} Ecken ` +
+                      `nach ${O.satzHaus.takte} Takten, Wieder-Eintritt ${O.satzHaus.bloecke} Blöcke, ${O.satzHaus.frischKB} KB frisch`
                     : "")
         );
     if (befund.strom)
