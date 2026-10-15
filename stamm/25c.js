@@ -451,18 +451,7 @@ class AnazhRealm_Z25c {
                     : typeof THREE.PostProcessing === "function"
                       ? THREE.PostProcessing
                       : null;
-            const {
-                pass,
-                uniform,
-                vec2,
-                vec3,
-                float,
-                luminance,
-                smoothstep,
-                screenUV,
-                max,
-                min,
-            } = TSL;
+            const { pass, uniform, vec2, vec3, float, luminance, smoothstep, screenUV, max, min } = TSL;
             const pp = new PPCtor(this.state.renderer);
             const scenePass = pass(this.state.scene, this.state.camera);
             // DIE EINE SZENEN-SKALA (K50): der Szenen-Pass rendert in ihr, die zeitliche Auflösung löst auf die Ausgabe auf
