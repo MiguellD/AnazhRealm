@@ -1265,10 +1265,13 @@ async function starte() {
                     const rauschen = window.__bildRauschen(G, G2, W, H, schwelle);
                     const { teil, misch } = window.__klassenTeilung(G, Os, W, H, schwelle);
                     const klassen = {};
+                    // das Außen der Silhouette (K68-n2, `klassenMasse` kante): kein gemessener Teil — Himmel, Boden, Holz
+                    const aussen = new Uint8Array(W * H);
+                    for (let p = 0; p < W * H; p++) aussen[p] = teil[p] === 0 ? 1 : 0;
                     namen.forEach((n, j) => {
                         const m = new Uint8Array(W * H);
                         for (let p = 0; p < W * H; p++) m[p] = teil[p] === j + 1 ? 1 : 0;
-                        const ms = window.__klassenMasse(u8, m, W, H);
+                        const ms = window.__klassenMasse(u8, m, W, H, aussen);
                         if (ms.pixel) klassen[n] = Object.assign({ objekte: teile.get(n).length }, ms);
                     });
                     // DIE PROBEN DES GESICHTS (K63-n2, `--gesicht`): je Vertex des Kopfs sein Zug — die Iris an ihrem Gelenk
@@ -3174,6 +3177,16 @@ async function starte() {
                 ],
                 [LL.laubLichtUrteil({ welt: { birke: { fehler: "keine Laub-Senke" } } }).urteil, "ROT"],
                 [LL.laubLichtUrteil({}).urteil, "ROT"],
+                // die Krone von oben (K68-N3): Zwei-Strom-Band über der gemessenen Blatt-Albedo
+                [LL.kronenReflexionSoll(0.164, [0.5, 1]).join("/"), "0.0705/0.099"],
+                [LL.kronenObenUrteil({ welt: { fichte: { oben: { R: 0.08, A: 0.164, tau: [0.5, 1] } } } }).urteil, "GRUEN"],
+                [
+                    LL.kronenObenUrteil({ welt: { fichte: { oben: { R: 0.15, A: 0.164, tau: [0.5, 1] } } } }).befunde.join(),
+                    /fichte: Reflexion 0\.15 außerhalb \[0\.0705, 0\.099\].*besonnte Schale/,
+                ],
+                [LL.kronenObenUrteil({ welt: { fichte: { oben: { R: 0.03, A: 0.164, tau: [0.5, 1] } } } }).urteil, "ROT"],
+                [LL.kronenObenUrteil({ welt: { fichte: { fehler: "keine Laub-Senke" } } }).urteil, "ROT"],
+                [LL.kronenObenUrteil({}).urteil, "ROT"],
             ];
             const fehl = f.filter(([ist, soll]) => (soll instanceof RegExp ? !soll.test(ist) : ist !== soll));
             console.log(`LAUB-LICHT Selbsttest: ${f.length - fehl.length}/${f.length}`);
@@ -3182,13 +3195,18 @@ async function starte() {
         const welt = {};
         // Das Exemplar je Art: das nächste zum Messort Wiese (spec/profiband/haushalt.json) — derselbe Baum in jedem Lauf.
         const wiese = require("../spec/profiband/haushalt.json").messorte.find((m) => m.id === "wiese");
-        for (const art of String(opt("--laub", "eiche,birke")).split(",")) {
+        // `--oben` (K68-N3): dasselbe Exemplar lotrecht von oben, die Reflexion der Krone gegen das Zwei-Strom-Band
+        // (`kronenObenUrteil`). Die Arten stehen hinter `--laub`, ohne Liste eiche,birke (ein folgender Schalter ist keine Art).
+        const oben = argv.includes("--oben");
+        const arten = opt("--laub") && !String(opt("--laub")).startsWith("--") ? opt("--laub") : "eiche,birke";
+        for (const art of String(arten).split(",")) {
             const c = `return await window.__laubGegenlicht(Object.assign({ art: ${JSON.stringify(art)} }, __o));`;
             // am Anker stehen: welche Bäume eine nahe Stufe (eine Laub-Senke) tragen, folgt dem Spieler
             await rufe("/umstellen", { x: wiese.spieler[0], z: wiese.spieler[1] });
             const plan = (
                 await rufe("/eval", {
-                    code: `const __o = { plan: true, anker: ${JSON.stringify(wiese.spieler)} }; ${c}`,
+                    // `--abstand m`: der Augen-Ort so weit vom Fuß (die Stufe folgt dem Spieler: nah L0, weiter L1)
+                    code: `const __o = { plan: true, anker: ${JSON.stringify(wiese.spieler)}, abstand: ${Number(opt("--abstand", 8)) || 8} }; ${c}`,
                 })
             ).ergebnis;
             if (!plan || plan.fehler) {
@@ -3196,9 +3214,18 @@ async function starte() {
                 continue;
             }
             await rufe("/umstellen", { x: plan.auge[0], z: plan.auge[1] });
-            const w = (await rufe("/eval", { code: `const __o = { ziel: ${JSON.stringify(plan.ziel)} }; ${c}` }))
-                .ergebnis;
+            const w = (
+                await rufe("/eval", { code: `const __o = { ziel: ${JSON.stringify(plan.ziel)}, oben: ${oben} }; ${c}` })
+            ).ergebnis;
             const ordner = opt("--ordner");
+            if (w && w.oben && w.oben.png) {
+                if (ordner)
+                    fs.writeFileSync(
+                        path.join(ordner, `krone-${art}-oben.png`),
+                        Buffer.from(w.oben.png.split(",")[1], "base64")
+                    );
+                delete w.oben.png;
+            }
             if (w && w.gegen)
                 for (const k of ["gegen", "auf"]) {
                     if (ordner)
@@ -3209,6 +3236,12 @@ async function starte() {
                     delete w[k].png;
                 }
             welt[art] = w;
+        }
+        if (oben) {
+            const u = LL.kronenObenUrteil({ welt });
+            console.log(JSON.stringify({ welt, zeilen: u.zeilen }, null, 1));
+            console.log(`KRONE-OBEN ${u.urteil}${u.befunde.length ? ": " + u.befunde.join(" | ") : ""}`);
+            process.exit(u.urteil === "GRUEN" ? 0 : 1);
         }
         const u = LL.laubLichtUrteil({ welt });
         // `--datei`: die Welt-Seite für das Labor-Urteil (diag-albedo-tafel.cjs --laub --welt <datei>)

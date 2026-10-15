@@ -392,7 +392,7 @@ function laborAlbedo(o) {
         const artOf = (m) => {
             if (m && (m === g("barkMat") || m === g("barkMatBirch"))) return "bark";
             if (m && m === g("foliageMatTex")) return "foliageTex";
-            if (m && m === g("foliageMat")) return "foliage";
+            if (m && (m === g("foliageMat") || m === g("foliageMatKrone"))) return "foliage";
             if (m && m === g("grassMat")) return "grass";
             if (m && m === g("stemMat")) return "stem";
             const k = m && m.userData && m.userData.__klasse;
@@ -711,7 +711,7 @@ function laborLaubGegenlicht(o) {
     gl.getExtension("EXT_color_buffer_float");
     const W = o.w || 320,
         H = o.h || 240;
-    const laubStoffe = [g("foliageMat"), g("foliageMatTex")].filter(Boolean);
+    const laubStoffe = [g("foliageMat"), g("foliageMatKrone"), g("foliageMatTex")].filter(Boolean);
     const laub = [],
         alle = [];
     sc.traverse((x) => {

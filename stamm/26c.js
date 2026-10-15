@@ -1232,6 +1232,9 @@ AnazhRealm.SZENE_SKALA_MIN = 0.5;
 AnazhRealm.ZEIT_KERN = 7;
 AnazhRealm.ZEIT_GAMMA_RUHE = 1.25;
 AnazhRealm.ZEIT_SCHAERFE = 1;
+// Der Kamera-Sprung der zeitlichen Auflösung (K68, `_traaReprojektion`): weiter in EINEM Frame beginnt die Geschichte neu und
+// läuft als Mittel an — der Wagen bei 200 km/h und 15 fps legt 3,7 m je Frame zurück, ein Tor oder ein Umsetzen viele Meter.
+AnazhRealm.ZEIT_SPRUNG_M = 6;
 // Sekunden-normalisierter Ingest-Takt: Ziel ist eine RATE je echter Sekunde — jeder Frame gibt
 // `rate·dt` Konversionen frei, gedeckelt durch INGEST_BURST_CAP (Schutz gegen LongTasks). So lädt
 // die Welt mit der Wanduhr statt mit der Framerate (fix pro Frame hieß bei 8 fps nur 8–24/s).
