@@ -225,8 +225,9 @@ function inhaltText(ih, n) {
         .join(" · ");
 }
 
-// WAS DIE WELT NOCH BAUT (Seiten-Kontext, die EINE Liste des Einschwingens der Band-Messung, `werkbank band`): die
-// Foundry-Schlange und Aufträge im Flug, offene Karten-Bakes, der Streu-Nachschub, ein Chunk im Bau, aufgeschobene
+// WAS DIE WELT NOCH BAUT (Seiten-Kontext, die EINE Liste des Einschwingens der Band-Messung, `werkbank band`, und der
+// Ruhe vor dem Stand-Fenster von gate:leistungs-vertrag): die Foundry-Schlange, Aufträge im Flug und Lieferungen vor dem
+// Ingest-Takt, offene Karten-Bakes, der Streu-Nachschub, ein Chunk im Bau, aufgeschobene
 // Streu-Regionen — und der DORF-ZUG (S3 haus, Messort dorf: der Zug läuft): ein Export unterwegs
 // (`_autoSettlementPendingKey`) oder eine Siedlung, die über die Takte wächst (`_autoSettlementQueue`, ihre Häuser
 // entstehen budgetiert). Ohne die Dorf-Wache zählte die Messung ein halbes Dorf. Und DER SATZ, DER NOCH SCHRUMPFT (1310-1):
@@ -240,6 +241,8 @@ function einschwingOffen(r) {
     const o = {};
     if (f && f.warte && f.warte.length) o.foundryWarte = f.warte.length;
     if (f && f.pending && f.pending.size) o.foundryImFlug = f.pending.size;
+    // eine Lieferung, die angekommen ist und auf die Freigabe des Ingest-Takts wartet (`_foundryIngestTakt`), baut noch
+    if (r._foundryIngestQueue && r._foundryIngestQueue.length) o.foundryIngest = r._foundryIngestQueue.length;
     const kb = (r._impostorBakeQueue || []).length + (r._impostorBakePending ? 1 : 0);
     if (kb) o.kartenBake = kb;
     if (r._scatterRefillPending) o.streuNachschub = 1;
