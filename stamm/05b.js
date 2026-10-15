@@ -2085,11 +2085,10 @@ class AnazhRealm_Z05b {
         // weiß über dem Blau und die Nacht-Wolke dunkler als die 18-%-Karte im Mondlicht.
         const U = A.U;
         const rW = U.hKm.add(A.RG + 2);
-        const lichtWolke = U.sonneE
-            .mul(A.durchlass(rW, U.sonne.y))
+        const lichtWolke = A.durchlass(rW, U.sonne.y)
             .mul(max(U.sonne.y, 0))
             .add(U.mondE.mul(A.durchlass(rW, U.mond.y)).mul(max(U.mond.y, 0)))
-            .div(Math.PI)
+            .mul(U.licht.div(Math.PI))
             .add(A.himmelFarbe(vec3(0, 1, 0)));
         const wolkeHell = dot(lichtWolke, vec3(0.2126, 0.7152, 0.0722));
         const finalColor = mix(A.himmelFarbe(vDir), cloudColor.mul(wolkeHell), cloudAmt);
@@ -2791,7 +2790,7 @@ class AnazhRealm_Z05b {
             sz: U.sonne.value.z,
             my: U.mond.value.y,
             t: t.x + t.y + t.z,
-            e: U.sonneE.value.x + U.mondE.value.x,
+            e: U.licht.value,
             m: A.mediumBeta,
             h: U.hKm.value,
         };
@@ -2843,18 +2842,24 @@ class AnazhRealm_Z05b {
 
     // DIE UMGEBUNG ZURÜCK AUF DIE CPU (je Neuzeichnung, asynchron): die Equirekt-Tafel als lineare Leuchtdichte je Texel
     // (`_skyEnvData`, Float32 rgba, Zeile 0 = Nadir wie three sie sampelt) — der Leser `_himmelsIrradianz` (Belichtung,
-    // Feld-Pass, Wasser). Eine spätere Lesung überholt eine frühere.
+    // Feld-Pass, Wasser). Eine spätere Lesung überholt eine frühere. DIE LESUNG DIESER MALUNG ist ein Versprechen
+    // (`state._skyEnvLesung`, true sobald sie liegt): wer nach einem Sprung der Uhr die Bestrahlung der neuen Stunde braucht,
+    // wartet auf sie — die CPU sieht den Himmel EINE Lesung nach der Malung, nie davor. Ein echter Renderer ohne Rücklesung
+    // bricht laut (bis zur Nachbesserung kehrte die Lesung still zurück, und jeder Leser sah keinen Himmel).
     _himmelUmgebungLesen() {
         const st = this.state;
         const A = st.atmoLut;
         const r = st.renderer;
-        if (!A || !r || typeof r.readRenderTargetPixelsAsync !== "function") return;
+        if (typeof r.readRenderTargetPixelsAsync !== "function")
+            throw new Error(
+                "Die Umgebung: der Renderer liest kein Ziel zurück (readRenderTargetPixelsAsync fehlt, Vendor)"
+            );
         const W = A.rtEq.width,
             H = A.rtEq.height;
         const nr = (st._skyEnvLeseNr = (st._skyEnvLeseNr || 0) + 1);
-        r.readRenderTargetPixelsAsync(A.rtEq, 0, 0, W, H).then(
+        st._skyEnvLesung = r.readRenderTargetPixelsAsync(A.rtEq, 0, 0, W, H).then(
             (px) => {
-                if (nr !== st._skyEnvLeseNr) return;
+                if (nr !== st._skyEnvLeseNr) return false;
                 const d = st._skyEnvData || (st._skyEnvData = new Float32Array(W * H * 4));
                 const schritt = Math.floor(px.length / H); // die Zeilen liegen ausgerichtet (bytesPerRow)
                 const halb = px instanceof Uint16Array;
@@ -2864,9 +2869,24 @@ class AnazhRealm_Z05b {
                         d[y * W * 4 + x] = halb ? AnazhRealm._halbZuFloat(v) : v;
                     }
                 st._skyEnvVersion = (st._skyEnvVersion || 0) + 1;
+                return true;
             },
-            (e) => this.log(`Die Umgebung kam nicht zurück (${e && e.message})`, "ERROR")
+            (e) => {
+                this.log(`Die Umgebung kam nicht zurück (${e && e.message})`, "ERROR");
+                return false;
+            }
         );
+        return st._skyEnvLesung;
+    }
+
+    // DER HIMMEL DER STUNDE AUF DER CPU (ein Versprechen): die Umgebung frisch aus den Quellen, die jetzt gelten, und ihre
+    // Lesung abgewartet — true, sobald `_himmelsIrradianz` sie trägt. Der Null-Renderer malt keinen Himmel (die Tafeln leben
+    // auf der GPU, Lehre 16): dort false, und wer den Himmel messen will, misst mit dem echten Renderer.
+    _himmelFrisch() {
+        const st = this.state;
+        if (!st.renderer || st.renderer._isHeadlessNull) return Promise.resolve(false);
+        if (!this._ensureSkyEnvironment(true) || !st._skyEnvLesung) return Promise.resolve(false);
+        return st._skyEnvLesung;
     }
 
     // Halb-Float (IEEE 754 binary16) → Zahl.

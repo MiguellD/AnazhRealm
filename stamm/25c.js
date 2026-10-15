@@ -451,21 +451,7 @@ class AnazhRealm_Z25c {
                     : typeof THREE.PostProcessing === "function"
                       ? THREE.PostProcessing
                       : null;
-            const {
-                pass,
-                uniform,
-                vec2,
-                vec3,
-                float,
-                luminance,
-                mix,
-                smoothstep,
-                screenUV,
-                max,
-                min,
-                pow,
-                toneMappingExposure,
-            } = TSL;
+            const { pass, uniform, vec2, vec3, float, luminance, mix, smoothstep, screenUV, max, min } = TSL;
             const pp = new PPCtor(this.state.renderer);
             const scenePass = pass(this.state.scene, this.state.camera);
             // DIE EINE SZENEN-SKALA (K50): der Szenen-Pass rendert in ihr, die zeitliche Auflösung löst auf die Ausgabe auf
@@ -677,14 +663,7 @@ class AnazhRealm_Z25c {
             const combined = bloomed.add(nurBeiStaerke(bloomed.mul(detail.mul(u.localContrast)), u.localContrast));
             const lum = luminance(combined);
             const saturated = mix(vec3(lum, lum, lum), combined, u.gradeSat);
-            // DER KONTRAST UM DAS MITTELGRAU DER BELICHTUNG (D3, die Nacht-Eichung): logarithmisch um das belichtete Mittelgrau
-            // (BELICHTUNG.zielKarte / 2 — die Karte steht auf Mittelgrau + 1 EV), wie die Profi-Kette ihn rechnet (UE5: Potenz um
-            // 0,18 nach der Belichtung). Vorher lag der Drehpunkt bei 0,5 in Szenen-Einheiten VOR der Belichtung: linear hieß
-            // das y = 1,06·x − 0,03, jedes Szenen-Licht unter 0,028 wurde schwarz — die Mond-Nacht (Boden 0,006, Himmel 0,005)
-            // ganz (Abnahme Wiese 0,8: Luma 4,1, schwarz 86 %). Jetzt ist der Kontrast unabhängig von der Belichtung und
-            // schneidet nichts ab; die Belichtung liest der Knoten selbst (`toneMappingExposure`, EINE Quelle).
-            const grauMitte = float(AnazhRealm.BELICHTUNG.zielKarte / 2).div(toneMappingExposure);
-            const contrasted = pow(saturated.max(vec3(0, 0, 0)).div(grauMitte), u.gradeContrast).mul(grauMitte);
+            const contrasted = saturated.sub(float(0.5)).mul(u.gradeContrast).add(float(0.5));
 
             // --- Entgrauen: desaturierte Pixel (graue Türme/Wände/Felsen) werden warm verschoben, satte
             // (Himmel, Gras, Wasser) bleiben. Luminanz-erhaltend (nur Hue-Shift: R hoch, G gehalten, B runter);

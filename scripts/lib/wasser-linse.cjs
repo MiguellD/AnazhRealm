@@ -462,15 +462,9 @@ function wasserKoerper(opts) {
                 const weltZeitAlt = st.world ? st.world.timeOfDay : undefined;
                 const lum = (c) => 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b;
                 const augenAltL = st.playerEyesUnderwater;
-                // Die Umgebung der EINEN Atmosphäre (D3) kommt asynchron auf die CPU zurück (`_himmelUmgebungLesen`, linear
-                // Float32): neu gezeichnet und auf die NEUE Lesung gewartet — eine alte Lesung trüge die vorige Uhrzeit.
-                const frisch = async () => {
-                    if (typeof r._ensureSkyEnvironment !== "function" || !r._ensureSkyEnvironment(true)) return false;
-                    const v0 = st._skyEnvVersion || 0;
-                    for (let w = 0; w < 150 && (st._skyEnvVersion || 0) === v0; w++)
-                        await new Promise((ok) => setTimeout(ok, 20));
-                    return (st._skyEnvVersion || 0) !== v0;
-                };
+                // Die Umgebung der EINEN Atmosphäre (D3) kommt EINE Lesung nach der Malung auf die CPU (`_himmelFrisch`, linear
+                // Float32): neu gezeichnet und ihre Lesung abgewartet — eine alte Lesung trüge die vorige Uhrzeit.
+                const frisch = () => r._himmelFrisch();
                 const luft = async (zeit, camY) => {
                     // Kamera UND Augen im selben Medium (vor der Welle L folgte die Luft den Augen, nachher der Kamera).
                     st.playerEyesUnderwater = camY < spiegel;

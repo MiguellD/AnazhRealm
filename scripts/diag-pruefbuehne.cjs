@@ -289,15 +289,20 @@ async function s0Probe(page, station, schein) {
             const uhr = (t) => {
                 if (r.setTimeOfDay(t, "human") !== true) throw new Error("S0: die Uhr nimmt den Spieler nicht (" + t + ")");
             };
-            // DER HIMMEL FOLGT DEM SPRUNG: Mittag, dann sofort Mitternacht (die zweite Malung liegt in der Raten-Drossel)
+            // DER HIMMEL FOLGT DEM SPRUNG: Mittag, dann sofort Mitternacht (die zweite Malung liegt in der Raten-Drossel). Die
+            // Umgebung der EINEN Atmosphäre kommt EINE Lesung nach der Malung auf die CPU (D3, `state._skyEnvLesung`): nach dem
+            // Sprung wartet die Probe auf die Lesung, die der Sprung angestoßen hat — malt der Maler nicht, bleibt die Lesung der
+            // vorigen Stunde stehen. Ohne Himmel auf der CPU (kein echter Renderer) ist die Probe blind.
             const lum = (e) => 0.2126 * e[0] + 0.7152 * e[1] + 0.0722 * e[2];
             out.himmel = [];
+            if (!(await r._himmelFrisch())) out.befunde.push("S0 Himmel: keine Lesung der Umgebung (die Probe ist blind)");
             for (const t of [0.5, 0]) {
                 if (schein) r._ensureSkyEnvironment = () => true; // der taube Maler
                 uhr(t);
+                await s._skyEnvLesung;
                 const sprung = lum(r._waagrechtIrradianz([0, 0, 0]));
                 delete r._ensureSkyEnvironment;
-                P._ensureSkyEnvironment.call(r, true); // die Umgebung frisch aus den Quellen, die jetzt gelten
+                await r._himmelFrisch(); // die Umgebung frisch aus den Quellen, die jetzt gelten
                 const frisch = lum(r._waagrechtIrradianz([0, 0, 0]));
                 out.himmel.push({ uhr: t, sprung: +sprung.toFixed(4), frisch: +frisch.toFixed(4) });
                 if (!(Math.abs(sprung - frisch) <= tol * frisch + 0.005))

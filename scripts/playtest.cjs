@@ -41414,7 +41414,8 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         out.fogColorSet =
             !!r.state.luft &&
             typeof r.state.luft.farbe === "function" &&
-            (atmoU.sonneE.value.x > 0 || mE.x + mE.y + mE.z > 0);
+            atmoU.licht.value > 0 &&
+            mE.x + mE.y + mE.z > 0;
 
         // 2. Hemisphere-skyColor moduliert mit Tageszeit
         r.setTimeOfDay(0.5, "human");
@@ -41434,14 +41435,10 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         // EIN Himmel (V18.507): am Tag IST die Himmels-Umgebung der Himmel — Hemi trägt nur den
         // Nachthimmel-Boden (Mittag 0, Mitternacht > 0). Dazu die Belichtung aus dem Licht: mittags stellt sie
         // die 18-%-Karte auf Mittelgrau + 1 EV (< 1), nachts hält der Deckel die geeichte Nacht (1,0).
-        // Die Himmels-Umgebung der EINEN Atmosphäre kommt asynchron zurück (D3, `_himmelUmgebungLesen`): neu gezeichnet und
-        // auf die NEUE Lesung gewartet — eine Lesung der vorigen Stunde trüge deren Himmel in die Karte.
+        // Die Himmels-Umgebung der EINEN Atmosphäre kommt EINE Lesung nach der Malung zurück (D3, `_himmelFrisch`): neu
+        // gezeichnet und ihre Lesung abgewartet — eine Lesung der vorigen Stunde trüge deren Himmel in die Karte.
         const umgebungFrisch = async () => {
-            const v0 = r.state._skyEnvVersion || 0;
-            if (!r._ensureSkyEnvironment(true)) return;
-            for (let w = 0; w < 150 && (r.state._skyEnvVersion || 0) === v0; w++)
-                await new Promise((ok) => setTimeout(ok, 20));
-            r._applyDayNightToScene();
+            if (await r._himmelFrisch()) r._applyDayNightToScene();
         };
         r.setTimeOfDay(0.5, "human");
         r._applyDayNightToScene();

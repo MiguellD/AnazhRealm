@@ -342,8 +342,8 @@ class AnazhRealm_Z24 {
         );
     }
 
-    _atmoMedium(wf) {
-        return this._atmoRechnung().medium(this._atmoGesetz(), this._luftBeta(wf), AnazhRealm.ATMO_BODEN);
+    _atmoMedium(betaLuft) {
+        return this._atmoRechnung().medium(this._atmoGesetz(), betaLuft, AnazhRealm.ATMO_BODEN);
     }
 
     // DIE SONNE aus dem Medium: e = sin(Höhe) der Sonne, der Durchlass vom Auge (Kamera über dem Bezug) zur Sonne
@@ -357,12 +357,17 @@ class AnazhRealm_Z24 {
         return this._atmoRechnung().sonne(this._atmoGesetz(), this._atmoMediumJetzt(), this._atmoAugeKm(), e, N, T);
     }
 
-    // Das Medium des Wetters jetzt (gemerkt je Extinktion der Luft — ein Wetter-Übergang rechnet neu).
+    // Das Medium des Wetters jetzt, in STUFEN der Extinktion um die klare Luft (`ATMO_LUT.mediumStufe`, logarithmisch; die
+    // klare Luft selbst ist exakt eine Stufe): ein Wetter-Übergang zeichnet die Tafeln je Stufe neu, nie je Anwendung — bis
+    // zur Nachbesserung zeichnete jedes Anwenden eines Übergangs Durchlass, Ψ_ms und Himmels-Sicht neu. Sonne und Tafeln
+    // lesen dasselbe gestufte Medium.
     _atmoMediumJetzt() {
-        const b = this._luftBeta();
+        const klar = this._atmoRechnung().betaKlar(this._atmoGesetz());
+        const k = AnazhRealm.ATMO_LUT.mediumStufe;
+        const b = klar * Math.exp(Math.round(Math.log(this._luftBeta() / klar) / k) * k);
         if (this._atmoM && this._atmoMBeta === b) return this._atmoM;
         this._atmoMBeta = b;
-        return (this._atmoM = this._atmoMedium());
+        return (this._atmoM = this._atmoMedium(b));
     }
 
     // Die Höhe des Auges über dem Bezug der Luft (km, ≥ 1 m): die Kamera, ohne sie der Bezug.
@@ -411,7 +416,10 @@ class AnazhRealm_Z24 {
             hKm: T.uniform(0.002),
             sonne: T.uniform(new THREE.Vector3(0, 1, 0)),
             mond: T.uniform(new THREE.Vector3(0, -1, 0)),
-            sonneE: T.uniform(new THREE.Vector3(1, 1, 1)),
+            // DAS LICHT JETZT (E0, `_atmoE0`): die Tafeln tragen den Himmel je Einheit der Sonne über der Atmosphäre, der Leser
+            // (`himmelFarbe`, die Wolke) multipliziert E0 — die Tages-Intensität ist linear und zeichnet keine Tafel neu
+            licht: T.uniform(1),
+            // der Mond in Einheiten von E0 (Purkinje-Hue × MOONLIGHT × Wetter / E0)
             mondE: T.uniform(new THREE.Vector3(0, 0, 0)),
             toenung: T.uniform(new THREE.Vector3(1, 1, 1)),
         });
@@ -664,12 +672,9 @@ class AnazhRealm_Z24 {
                 const sca = sR.add(sM).toVar();
                 const muS = dot(p, U.sonne).div(ri).toVar();
                 const muM = dot(p, U.mond).div(ri).toVar();
-                const S = U.sonneE
-                    .mul(
-                        durchlass(ri, muS)
-                            .mul(sR.mul(pS.x).add(sM.mul(pS.y)))
-                            .add(mehrfach(hi, muS).mul(sca))
-                    )
+                const S = durchlass(ri, muS)
+                    .mul(sR.mul(pS.x).add(sM.mul(pS.y)))
+                    .add(mehrfach(hi, muS).mul(sca))
                     .add(
                         U.mondE.mul(
                             durchlass(ri, muM)
@@ -690,8 +695,7 @@ class AnazhRealm_Z24 {
                 const gr = length(gp).toVar();
                 const ls = max(dot(n, U.sonne), 0).toVar();
                 const lm = max(dot(n, U.mond), 0).toVar();
-                const E = U.sonneE
-                    .mul(durchlass(gr, ls))
+                const E = durchlass(gr, ls)
                     .mul(ls)
                     .add(U.mondE.mul(durchlass(gr, lm)).mul(lm));
                 L.addAssign(
@@ -717,9 +721,10 @@ class AnazhRealm_Z24 {
             const ce = el.cos().toVar();
             return vec4(marsch(vec3(ce.mul(phi.cos()), el.sin(), ce.mul(phi.sin())).toVar()), 1);
         });
-        // DIE FARBE DES HIMMELS in Richtung `dir` (Welt): die Himmels-Sicht × die Tönung (Wetter, Feld, Gefühl, DSL — relativ
-        // zum Tag-Nacht-Stop, `_dayNightApplySkybox`). Leser: die Kuppel, die Umgebung, die Luft.
-        const himmelFarbe = (dir) => texture(rtSV.texture, himmelUv(dir)).level(float(0)).rgb.mul(U.toenung);
+        // DIE FARBE DES HIMMELS in Richtung `dir` (Welt): die Himmels-Sicht (je Einheit E0) × das Licht jetzt (E0) × die Tönung
+        // (Wetter, Feld, Gefühl, DSL — relativ zum Tag-Nacht-Stop, `_dayNightApplySkybox`). Leser: die Kuppel, die Umgebung, die Luft.
+        const himmelFarbe = (dir) =>
+            texture(rtSV.texture, himmelUv(dir)).level(float(0)).rgb.mul(U.licht).mul(U.toenung);
         // ── die Umgebung: Equirekt (three `equirectUV`: u = atan(z, x)/2π + ½, v = asin(y)/π + ½) aus der Himmels-Sicht ──
         const passUmgebung = Fn(() => {
             const q = uv();
@@ -773,7 +778,8 @@ class AnazhRealm_Z24 {
     }
 
     // EIN Pass in sein Ziel (der Zustand des Renderers bleibt, wie er war — dieselbe Hülle wie die zeitliche Auflösung); `leeren`
-    // setzt das Ziel vorher auf 0 (die Horizont-Karte sammelt per Max-Blende).
+    // setzt das Ziel vorher auf 0 (die Horizont-Karte sammelt per Max-Blende). Gezeichnet wird über die EINE Bühne
+    // (`_buehneRender`, gate:v1-pfad W2): ein Bruch des Passes meldet sich laut beim Namen.
     _atmoZeichne(quad, rt, leeren = false) {
         const r = this.state.renderer;
         const ziel = r.getRenderTarget();
@@ -791,16 +797,18 @@ class AnazhRealm_Z24 {
             r.clear(true, false, false);
             r.setClearColor(farbe, alpha);
         }
-        r.render(quad, quad.userData.kamera);
+        this._buehneRender(r, quad, quad.userData.kamera, "Atmosphäre");
         r.setRenderTarget(ziel);
         if (mrt) r.setMRT(mrt);
         if (rof) r.setRenderObjectFunction(rof);
         r.autoClear = auto;
     }
 
-    // DER TAKT DER ATMOSPHÄRE (je Anwendung von Tag und Nacht): das Medium folgt dem Wetter (Transmittance und Ψ_ms neu, wenn
-    // die Luft sich ändert), die Himmels-Sicht der Stufe der Sonne (`_sonnenWinkel`), dem Mond, der Höhe des Auges (10 m)
-    // und E0 — Kosten an Änderung (Gebot 7); der Null-Renderer zeichnet nichts.
+    // DER TAKT DER ATMOSPHÄRE (je Anwendung von Tag und Nacht): das Medium folgt dem Wetter in seinen Stufen (Transmittance und
+    // Ψ_ms neu je Stufe, `_atmoMediumJetzt`), die Himmels-Sicht der Stufe der Sonne (`_sonnenWinkel`, mit ihr der Mond), der
+    // Höhe des Auges (10 m) und dem Medium — Kosten an Änderung (Gebot 7). Das Licht jetzt (E0) und der Mond in Einheiten von
+    // E0 sind Uniforms der Leser: ihr stetiger Gang über den Tag zeichnet keine Tafel (bis zur Nachbesserung trug der Schlüssel
+    // E0 auf 4 Stellen — am Abend 60 von 60 Frames eine neue Himmels-Sicht). Der Null-Renderer zeichnet nichts.
     _atmoTakt(sunDir, moonDir, tint) {
         const st = this.state;
         const A = this._atmoLutBau();
@@ -822,12 +830,13 @@ class AnazhRealm_Z24 {
         U.hKm.value = h;
         U.sonne.value.copy(sunDir).normalize();
         U.mond.value.copy(moonDir).normalize();
-        U.sonneE.value.setScalar(this._atmoE0(tint));
+        const E0 = this._atmoE0(tint);
+        U.licht.value = E0;
         const Mo = AnazhRealm.MOONLIGHT;
-        const mi = Mo.intensity * (tint ? tint.lightMul : 1);
+        const mi = (Mo.intensity * (tint ? tint.lightMul : 1)) / Math.max(E0, 1e-6);
         U.mondE.value.set(Mo.r * mi, Mo.g * mi, Mo.b * mi);
         const s = st._sonne;
-        const schluessel = `${s ? s.winkel : 0}:${h}:${U.sonneE.value.x.toFixed(4)}:${mi.toFixed(4)}:${A.mediumBeta}`;
+        const schluessel = `${s ? s.winkel : 0}:${h}:${A.mediumBeta}`;
         const rend = st.renderer;
         if (!rend || rend._isHeadlessNull || !st.rendererReady) return A;
         if (!A.tafelnFrisch) {

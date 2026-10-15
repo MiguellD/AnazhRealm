@@ -1086,7 +1086,10 @@ AnazhRealm.MOONLIGHT = Object.freeze({
 });
 // DIE TAFELN DER EINEN ATMOSPHÄRE (D3, Hillaire 2020; `_atmoLutBau`): Größen (Texel) und Marsch-Schritte. Transmittance
 // 256×64 und Ψ_ms 32×32 je Medium, die Himmels-Sicht 192×108 je Stufe der Sonne, die Umgebung 128×64 (Equirekt, PMREM).
+// mediumStufe: die Stufe des Mediums im Logarithmus der Extinktion (`_atmoMediumJetzt`) — 2 % halten den Zenit-Durchlass
+// der klaren Luft (Aerosol-Tiefe 0,18) unter einer 8-bit-Stufe; ein Übergang klar → Sturm (Faktor 13) sind 130 Stufen.
 AnazhRealm.ATMO_LUT = Object.freeze({
+    mediumStufe: 0.02,
     durchlass: Object.freeze([256, 64]),
     mehrfach: Object.freeze([32, 32]),
     himmel: Object.freeze([192, 108]),
