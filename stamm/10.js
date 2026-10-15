@@ -398,6 +398,12 @@ class AnazhRealm_Z10 {
             emissiveIntensity = Math.min(1.5, _glimmen * 0.6 * _boost);
             mat.emissiveIntensity = emissiveIntensity;
         }
+        // SPIKE D5 (Zweig spike-d5-boden, nie Default): der Modus des Chunk-Boden-Stoffs je Bau, gelesen aus
+        // `globalThis.__d5Modus` — voll (heute) · konst (die Prozedur aus: Albedo = Vertex-Farbe, Rauheit konstant, kein
+        // Relief, keine Wege-/Kronen-Karte, keine Halm-Parallaxe) · A (die blickunabhängigen Terme aus, die Parallaxe bleibt)
+        // · B (nur die Parallaxe aus). Nur der Chunk-Boden (geomorph) liest ihn; Treiber: scripts/spike-d5-boden.cjs.
+        const _d5 = opts.geomorph === true ? String(globalThis.__d5Modus || "voll") : "voll";
+        const _d5Proz = _d5 === "voll" || _d5 === "B";
         if (!opts.transparent && typeof this._applySubstanceResponse === "function") {
             let albedoNode = null;
             try {
@@ -427,10 +433,11 @@ class AnazhRealm_Z10 {
                         // Roughness-Variation für den Boden aus DEMSELBEN Substanz-Kern wie die Geologie
                         // (`_terrainGeologyAlbedo` → `_substanceCharacter`), sonst uniform 0.7 = Plastik-Sheen unterm IBL.
                         // Out-Param statt neuem Rückgabe-Typ → die `_terrainGeologyAlbedo`-Tests bleiben unberührt.
-                        const _terrRough = {};
+                        const _terrRough = { d5: _d5 };
                         // DIE WEGE-KARTE (Chunk-Boden, V18.530): der Weg IST die Boden-Farbe des Fragments — die
                         // Vertex-Farbe mischt zur Pfad-Erde (`_wegeBodenFarbe`), und DIESE Farbe liest die Geologie.
-                        const _bodenVc = opts.wegeKarte === true ? this._wegeBodenFarbe(_Ta, albedoNode) : null;
+                        const _bodenVc =
+                            opts.wegeKarte === true && _d5Proz ? this._wegeBodenFarbe(_Ta, albedoNode) : null;
                         const _geo = this._terrainGeologyAlbedo(
                             _Ta,
                             _bodenVc || albedoNode,
@@ -443,7 +450,7 @@ class AnazhRealm_Z10 {
                             // das Kronendach × Saison nach der Deckung (`_fernKroneNahMisch`) — der Chunk-Boden UND der Fern-Ring,
                             // derselbe Stoff; der Ring reicht seine Ecken-Krone (`opts.kroneVertex`) für den Ort jenseits der Karte.
                             let _alb =
-                                opts.wegeKarte === true
+                                opts.wegeKarte === true && _d5Proz
                                     ? this._fernKroneNahMisch(_Ta, _geo, opts.kroneVertex || null)
                                     : _geo;
                             // DAS WASSER DES RINGS (K16, die Naht des Wassers): der Anteil des Wassers (`opts.wasserVertex`,
@@ -856,7 +863,7 @@ class AnazhRealm_Z10 {
                     let _baseN = _hS ? _Tn.mix(_nWG, _up, _flat.mul(_hS)) : _Tn.mix(_nGeo, _up, _flat);
                     // Mikro-Relief (s. TERRAIN_BUMP): ein Noise-Höhengradient (zwei Oktaven: Klumpen + Korn) kippt die
                     // geflattete Normale entgegen dem Gradienten, LOD-gegated. Render-only, try/catch.
-                    {
+                    if (_d5Proz) {
                         const _B = AnazhRealm.TERRAIN_BUMP;
                         const _ra = this._rauschAtlas();
                         const _wp = _Tn.positionWorld;
@@ -1408,6 +1415,10 @@ class AnazhRealm_Z10 {
             const G = AnazhRealm.TERRAIN_GEOLOGY;
             const au = this.state.atmoUniforms;
             const _ra = this._rauschAtlas();
+            // SPIKE D5: der Modus des Boden-Stoffs (`_buildPbrNodeMaterial` reicht ihn im Out-Param)
+            const _d5 = (roughOut && roughOut.d5) || "voll";
+            const _d5Proz = _d5 === "voll" || _d5 === "B";
+            const _d5Halm = _d5 === "voll" || _d5 === "A";
             // STEILE ∈ [0,1] aus der ROHEN Geometrie-Normale (NICHT der geflatteten
             // Shading-Normale, die `normalWorld` im Farb-Knoten trägt) = die echte Hangneigung.
             const _steep = _T.float(1.0).sub(_T.normalWorldGeometry.y).clamp(0.0, 1.0);
@@ -1428,54 +1439,58 @@ class AnazhRealm_Z10 {
             // ihre Lage je Paket, an der Fuge nur ein Versatz). EINE Probe im Rausch-Atlas wellt die Schichten im Großen,
             // das Auge blendet aus, was der Pixel nicht trägt. Bis zur Nachbesserung lasen sich gleich hohe Bänke mit
             // geraden Strich-Fugen und je Bank neu ansetzenden Klüften als Ziegelmauer.
-            const FS = AnazhRealm.FELS_STOFF;
-            const FF = FS.gesetz.fein;
-            const GK = globalThis.__gelaendeCore;
-            // EIN Rechenwerk (K17, Nachbesserung 2): der Fein-Term IST das Gesetz (gelaende-core `felsFein`, `schuttKorn`) —
-            // derselbe Code wie im Vertex, hier mit TSL-Knoten gerechnet (`_felsRechenwerkTSL`, dieselbe 32-Bit-Ziehung, die Welle
-            // aus EINER Probe im Rausch-Atlas — der Vertex liest denselben Wert, gelaende-core `rauschRaum`). Er läuft nur, wo Fels oder Schutt liegt (ein Zweig: die Wiese zahlt ihn nicht), das Auge blendet aus, was
-            // der Pixel nicht trägt: Bänke und Klüfte `fern` m, Kanten `fugeFern` m, das Schutt-Korn nach seinen Pixeln (die
-            // Kante eines Steins unter 1,5 … 4 Pixeln — Schirm-Meter je Pixel aus Abstand, Projektion und Schirmhöhe).
-            const _O = AnazhRealm._felsRechenwerkTSL(_T, _ra.raum);
-            const _camD = wp.sub(_T.cameraPosition).length();
-            const _nahB = _T.float(1).sub(_T.smoothstep(FF.fern[0], FF.fern[1], _camD));
-            const _nahF = _T.float(1).sub(_T.smoothstep(FF.fugeFern[0], FF.fugeFern[1], _camD));
-            const _pxM = _camD.mul(2).div(_T.cameraProjectionMatrix.element(1).y.mul(_T.screenSize.y));
-            const _kornSicht = _T.smoothstep(1.5, 4, _T.float(FS.gesetz.geroell.korn).div(_pxM));
-            const _gate = _rockW.add(_screeW).mul(_gRock);
-            // DIE FELS-FUNKTION (K17-3): das Gesetz rechnet in EINER WGSL-Funktion (`felsFein`), ihre Wiederholungen als Schleifen
-            // (gelaende-core `falte`: die neun Zellen des Schutts, die vier Bank-Grenzen) und die Ziehung als EINE Funktion
-            // (`felsZufall`) — ausgeschrieben stand jede Ziehung 78-mal im Boden-Programm (96 050 → 149 521 Zeichen WGSL), und
-            // swiftshader übersetzte sie vor dem ersten Bild. Die Welle liest der Graph (EINE Probe im Rausch-Atlas, `felsWelle`)
-            // und reicht sie hinein; der Aufruf steht im Zweig (die Wiese zahlt ihn nicht).
-            const _welle = GK.felsWelle(_O, wp.x, wp.y, wp.z);
-            const _felsFn = _T
-                .Fn(([x, y, z, w]) => {
-                    const _f = GK.felsFein(_O, FS.basis, x, y, z, w);
-                    return _T.vec3(_f.bank, _f.kante, GK.schuttKorn(_O, x, z));
-                })
-                .setLayout({
-                    name: "felsFein",
-                    type: "vec3",
-                    inputs: [
-                        { name: "x", type: "float" },
-                        { name: "y", type: "float" },
-                        { name: "z", type: "float" },
-                        { name: "w", type: "float" },
-                    ],
-                });
-            const _feinV = AnazhRealm._zweigTSL(_T)(_felsFn(wp.x, wp.y, wp.z, _welle), _gate);
-            const _fein = _T.mix(_T.float(1), _feinV.x, _nahB).mul(_T.mix(_T.float(1), _feinV.y, _nahF));
-            const _felsGrund = felsImVertex ? albedo : _T.vec3(FS.mittel[0], FS.mittel[1], FS.mittel[2]);
-            const _rockCol = _felsGrund.mul(_fein);
-            // Der Schutthang trägt sein Korn mit dem Gewicht des Schutts im Vertex (`aSchutt`, `_felsStoff`); der Fels dominiert.
-            // Wo der Pixel den Stein nicht trägt, bleibt das Mittel des Gerölls (`schuttMittel`: es wirft Schatten in sich).
-            // Die Steine liegen, wo das Gesetz Schutt sagt, ganz (`aSchutt` / `schutt`): die 15 % Boden im Ton des Vertex tragen
-            // kein eigenes Korn — mit dem Gewicht des Tons (0,85) fehlte dem Hang ein Sechstel seiner Streuung.
-            const _kornFern = _T.mix(_T.float(GK.schuttMittel()), _feinV.z, _kornSicht);
-            const _kornW = _screeW.div(G.schutt).clamp(0, 1).mul(_gRock);
-            let _out = albedo.mul(_T.mix(_T.float(1), _kornFern, _kornW));
-            _out = _T.mix(_out, _rockCol, _rockW.mul(_gRock));
+            // SPIKE D5: der Fels- und Schutt-Term als ein Teil (konst und A rechnen ihn nicht)
+            const _felsTeil = () => {
+                const FS = AnazhRealm.FELS_STOFF;
+                const FF = FS.gesetz.fein;
+                const GK = globalThis.__gelaendeCore;
+                // EIN Rechenwerk (K17, Nachbesserung 2): der Fein-Term IST das Gesetz (gelaende-core `felsFein`, `schuttKorn`) —
+                // derselbe Code wie im Vertex, hier mit TSL-Knoten gerechnet (`_felsRechenwerkTSL`, dieselbe 32-Bit-Ziehung, die Welle
+                // aus EINER Probe im Rausch-Atlas — der Vertex liest denselben Wert, gelaende-core `rauschRaum`). Er läuft nur, wo Fels oder Schutt liegt (ein Zweig: die Wiese zahlt ihn nicht), das Auge blendet aus, was
+                // der Pixel nicht trägt: Bänke und Klüfte `fern` m, Kanten `fugeFern` m, das Schutt-Korn nach seinen Pixeln (die
+                // Kante eines Steins unter 1,5 … 4 Pixeln — Schirm-Meter je Pixel aus Abstand, Projektion und Schirmhöhe).
+                const _O = AnazhRealm._felsRechenwerkTSL(_T, _ra.raum);
+                const _camD = wp.sub(_T.cameraPosition).length();
+                const _nahB = _T.float(1).sub(_T.smoothstep(FF.fern[0], FF.fern[1], _camD));
+                const _nahF = _T.float(1).sub(_T.smoothstep(FF.fugeFern[0], FF.fugeFern[1], _camD));
+                const _pxM = _camD.mul(2).div(_T.cameraProjectionMatrix.element(1).y.mul(_T.screenSize.y));
+                const _kornSicht = _T.smoothstep(1.5, 4, _T.float(FS.gesetz.geroell.korn).div(_pxM));
+                const _gate = _rockW.add(_screeW).mul(_gRock);
+                // DIE FELS-FUNKTION (K17-3): das Gesetz rechnet in EINER WGSL-Funktion (`felsFein`), ihre Wiederholungen als Schleifen
+                // (gelaende-core `falte`: die neun Zellen des Schutts, die vier Bank-Grenzen) und die Ziehung als EINE Funktion
+                // (`felsZufall`) — ausgeschrieben stand jede Ziehung 78-mal im Boden-Programm (96 050 → 149 521 Zeichen WGSL), und
+                // swiftshader übersetzte sie vor dem ersten Bild. Die Welle liest der Graph (EINE Probe im Rausch-Atlas, `felsWelle`)
+                // und reicht sie hinein; der Aufruf steht im Zweig (die Wiese zahlt ihn nicht).
+                const _welle = GK.felsWelle(_O, wp.x, wp.y, wp.z);
+                const _felsFn = _T
+                    .Fn(([x, y, z, w]) => {
+                        const _f = GK.felsFein(_O, FS.basis, x, y, z, w);
+                        return _T.vec3(_f.bank, _f.kante, GK.schuttKorn(_O, x, z));
+                    })
+                    .setLayout({
+                        name: "felsFein",
+                        type: "vec3",
+                        inputs: [
+                            { name: "x", type: "float" },
+                            { name: "y", type: "float" },
+                            { name: "z", type: "float" },
+                            { name: "w", type: "float" },
+                        ],
+                    });
+                const _feinV = AnazhRealm._zweigTSL(_T)(_felsFn(wp.x, wp.y, wp.z, _welle), _gate);
+                const _fein = _T.mix(_T.float(1), _feinV.x, _nahB).mul(_T.mix(_T.float(1), _feinV.y, _nahF));
+                const _felsGrund = felsImVertex ? albedo : _T.vec3(FS.mittel[0], FS.mittel[1], FS.mittel[2]);
+                const _rockCol = _felsGrund.mul(_fein);
+                // Der Schutthang trägt sein Korn mit dem Gewicht des Schutts im Vertex (`aSchutt`, `_felsStoff`); der Fels dominiert.
+                // Wo der Pixel den Stein nicht trägt, bleibt das Mittel des Gerölls (`schuttMittel`: es wirft Schatten in sich).
+                // Die Steine liegen, wo das Gesetz Schutt sagt, ganz (`aSchutt` / `schutt`): die 15 % Boden im Ton des Vertex tragen
+                // kein eigenes Korn — mit dem Gewicht des Tons (0,85) fehlte dem Hang ein Sechstel seiner Streuung.
+                const _kornFern = _T.mix(_T.float(GK.schuttMittel()), _feinV.z, _kornSicht);
+                const _kornW = _screeW.div(G.schutt).clamp(0, 1).mul(_gRock);
+                const _o1 = albedo.mul(_T.mix(_T.float(1), _kornFern, _kornW));
+                return _T.mix(_o1, _rockCol, _rockW.mul(_gRock));
+            };
+            let _out = _d5Proz ? _felsTeil() : albedo;
             // Moos + Ton/Korn/Kavität aus dem EINEN Substanz-Kern (wie Werke + Rinde); die Geologie-Basis
             // (Fels/Geröll) bleibt terrain-eigen. objectLocal:false (absolute Welt-Höhe). Feucht-/Grün-Treiber
             // × Flachheit speisen das Moos; `wp·0.16` = welt-kohärente Feature-Skala (naht-frei).
@@ -1507,7 +1522,7 @@ class AnazhRealm_Z10 {
             // Gras als Oberflächen-Funktion: keine Halm-Geometrie — die Wiese lebt als hochfrequente Blatt-
             // Schattierung des Bodens, NAH eingeblendet (fern trägt der Meadow-Grund). ≈0 Kosten (Noise + Mix),
             // DIESELBEN Gras-Farben wie das Nah-Gras.
-            {
+            if (_d5Halm) {
                 // Die Wiese mit Tiefe: die Halme sind eine PARALLAX-FUNKTION — ein Halm-Noise-Höhenfeld, das der
                 // Blick in 8 Schichten durchsticht (Relief-March): hohe Halme fangen den Strahl früh (helle Spitze),
                 // Lücken lassen ihn zum dunklen Wurzelgrund. Das Höhenfeld wird per smoothstep an die ECHTE
@@ -1594,6 +1609,7 @@ class AnazhRealm_Z10 {
             // Die Geologie treibt die Bruch-Struktur: wo Fels/Geröll durchbricht (`rockW`+`screeW`), bricht der
             // Boden karstig (hardDrive); die flache Wiese bleibt weich (Basis-härte 0.36). Kein neuer Noise.
             const _hardDrive = _rockW.add(_screeW).clamp(0.0, 1.0);
+            if (!_d5Proz) return _out; // SPIKE D5: konst und A ohne den Substanz-Kern (Rauheit konstant)
             const _r = this._substanceCharacter(_T, _out, {
                 pos: wp.mul(_T.float(0.16)),
                 worldPos: wp,
