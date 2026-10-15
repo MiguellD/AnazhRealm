@@ -1456,10 +1456,20 @@ AnazhRealm.ARCH_LEER_GNADE_MS = 10000;
 AnazhRealm.GPU_KEHRAUS_MS = 2000;
 // Der EINE forceWebGL-Hook: die Boot-Probe (gate:webgl-probe) erzwingt den r184-WebGL2-Rückfall;
 // alle fünf Renderer-Münzstellen (Welt · Feed-/Hof-/Ich-Bühne · Workshop-Preview) lesen diesen
-// Chokepoint → die erzwungene Welt fährt EIN Backend.
+// Chokepoint über `_rendererGeraet` → die erzwungene Welt fährt EIN Backend.
 AnazhRealm._forceWebGL = function () {
     return typeof window !== "undefined" && window.__anazhForceWebGL === true;
 };
+// DIE GERÄTE-GRENZEN (G1): die Grenzen je Shader-Stufe, die jedes Gerät der Seite in der Höhe seines Adapters verlangt
+// (`_rendererGeraet` → `requiredLimits`) — die WebGPU-Standards (16 Texturen · 16 Sampler · 8 Speicher-Puffer · 4 Speicher-
+// Texturen · 12 Uniform-Puffer) gelten sonst auch auf einem Adapter, der mehr trägt (Radeon 890M: 48 · 16 · 16 · 8 · 12).
+AnazhRealm.GERAET_GRENZEN = Object.freeze([
+    "maxSampledTexturesPerShaderStage",
+    "maxSamplersPerShaderStage",
+    "maxStorageBuffersPerShaderStage",
+    "maxStorageTexturesPerShaderStage",
+    "maxUniformBuffersPerShaderStage",
+]);
 // Performance-Regelkreis: die Loop-Phasen, deren Kosten der Nexus pro Frame misst (perfSense.phase).
 AnazhRealm.PERF_PHASES = Object.freeze(["streaming", "waterIso", "archCulling", "creatures", "physics", "render"]);
 // Die DECKE: über dieser Frame-Zeit drosselt der Regler die Qualität (≈59 fps); der Wachstums-Boden
