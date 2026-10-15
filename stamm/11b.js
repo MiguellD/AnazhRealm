@@ -2412,12 +2412,24 @@ class AnazhRealm_Z11b {
 
     // DER LESER DES SPIEGELS (D10): das Ziel des Passes, die Ansicht, aus der er rechnete (der Wasser-Stoff reprojiziert seinen
     // Welt-Punkt in sie — der Pass läuft nach dem Bild, das Wasser liest ihn im nächsten), und ob er lief. Angelegt mit dem
-    // Wasser-Stoff; das Ziel wächst erst mit dem ersten Pass auf 1/teil der Ausgabe.
+    // Wasser-Stoff in 1/teil der Ausgabe.
     _spiegelLeser() {
         const st = this.state;
         if (st.spiegelLeser) return st.spiegelLeser;
         const T = THREE.TSL;
-        const rt = new THREE.RenderTarget(1, 1, { type: THREE.HalfFloatType, depthBuffer: false });
+        const g =
+            st.renderer && st.renderer.getDrawingBufferSize
+                ? st.renderer.getDrawingBufferSize(new THREE.Vector2())
+                : null;
+        const teil = AnazhRealm.SPIEGEL.teil;
+        const rt = new THREE.RenderTarget(
+            g ? Math.max(1, Math.round(g.x / teil)) : 1,
+            g ? Math.max(1, Math.round(g.y / teil)) : 1,
+            {
+                type: THREE.HalfFloatType,
+                depthBuffer: false,
+            }
+        );
         rt.texture.name = "spiegel:strahl";
         rt.texture.minFilter = rt.texture.magFilter = THREE.LinearFilter;
         rt.texture.generateMipmaps = false;
@@ -2449,13 +2461,15 @@ class AnazhRealm_Z11b {
         const T = THREE.TSL;
         const { Fn, Loop, If, Break, float, vec2, vec3, vec4, uniform, texture, screenUV, max, abs, smoothstep, mix } =
             T;
-        const { normalize, dot, clamp, ivec2 } = T;
+        const { normalize, dot, clamp, ivec2, select } = T;
         const K = AnazhRealm.SPIEGEL;
         const S = this._spiegelFeld();
         const L = this._spiegelLeser();
         this._ensureHydroSurfaceMaterial();
         const HU = st.hydroSurfaceUniforms;
-        const luft = this._luftEnsure();
+        // die EINE Luft (Pflicht jeder Szene: `_luftEnsure` legt sie an, der Pass läuft nur mit Szene und Szenen-Pass)
+        this._luftEnsure();
+        const luft = st.luft;
         const tiefe = T.texture(st.scenePass.getTextureNode("depth").value);
         const webgpuRaum = st.renderer.coordinateSystem === THREE.WebGPUCoordinateSystem;
         const U = {
@@ -2491,6 +2505,14 @@ class AnazhRealm_Z11b {
                     .and(abs(P.y.sub(U.bezug).sub(f0.a)).lessThan(1.5))
                     .and(max(abs(r0.x), abs(r0.y)).lessThan(0.48));
                 If(wasser, () => {
+                    // das Wasser des Orts trägt den Strahl nicht: eine Wasser-Zelle bis 0,5 m über dem Spiegel des Punkts ist
+                    // keine Wand (der streifende Strahl träfe sonst die eigene Fläche — der dunkle Körper statt des Ufers); sie
+                    // steht 0,1 m unter dem Punkt, damit der Lipschitz-Schritt über ihr mit dem Strahl wächst, nie springt
+                    const y0 = P.y.sub(U.bezug).add(0.5);
+                    const hoehe = (xz) => {
+                        const s = feld(xz);
+                        return select(s.b.lessThan(0.0).and(s.a.lessThan(y0)), y0.sub(0.6), s.a);
+                    };
                     const v = normalize(P.sub(U.auge));
                     const R = vec3(v.x, abs(v.y), v.z);
                     const t = float(1.25).toVar();
@@ -2502,7 +2524,7 @@ class AnazhRealm_Z11b {
                         If(max(abs(rel.x), abs(rel.y)).greaterThan(0.5), () => Break());
                         const y = p.y.sub(U.bezug);
                         If(y.greaterThan(U.hMax), () => Break());
-                        const g = y.sub(feld(p.xz).a);
+                        const g = y.sub(hoehe(p.xz));
                         If(g.lessThan(0.0), () => {
                             const ta = tVor.toVar(),
                                 tb = t.toVar(),
@@ -2511,7 +2533,7 @@ class AnazhRealm_Z11b {
                             for (let k = 0; k < K.halbierungen; k++) {
                                 const m = ta.add(tb).mul(0.5);
                                 const pm = P.add(R.mul(m));
-                                const gm = pm.y.sub(U.bezug).sub(feld(pm.xz).a);
+                                const gm = pm.y.sub(U.bezug).sub(hoehe(pm.xz));
                                 If(gm.lessThan(0.0), () => {
                                     tb.assign(m);
                                     gB.assign(gm);
@@ -2549,9 +2571,15 @@ class AnazhRealm_Z11b {
             });
             return aus;
         })();
-        const quad = new THREE.QuadMesh(mat);
-        quad.name = "spiegel:strahl";
-        st.spiegelPass = { quad, mat, U, groesse: new THREE.Vector2(), vp: new THREE.Matrix4() };
+        // das Vollbild: EINE Fläche vor einer Ortho-Kamera in einer eigenen Szene (ohne Tiefe, ohne Luft der Welt)
+        const szene = new THREE.Scene();
+        szene.name = "spiegel:strahl";
+        const kamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+        const flaeche = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), mat);
+        flaeche.frustumCulled = false;
+        flaeche.position.z = -0.5;
+        szene.add(flaeche);
+        st.spiegelPass = { szene, kamera, mat, U, groesse: new THREE.Vector2(), vp: new THREE.Matrix4() };
         void L;
         return st.spiegelPass;
     }
@@ -2563,9 +2591,22 @@ class AnazhRealm_Z11b {
         const st = this.state;
         const L = st.spiegelLeser;
         if (!L) return;
-        const an = !!st.scenePass && this._spiegelWasserImBild();
+        const an = !!st.scenePass && !st.spiegelBruch && this._spiegelWasserImBild();
         L.an.value = an ? 1 : 0;
         if (!an) return;
+        try {
+            this._spiegelPassRechne(L);
+        } catch (err) {
+            // laut beim Namen (der EINE Melder), danach liest das Wasser den Himmel allein — nie still byte-alt
+            st.spiegelBruch = true;
+            L.an.value = 0;
+            this._stoffBruch("der Spiegel-Pass des Wassers (D10) — das Wasser spiegelt nur den Himmel", err);
+        }
+    }
+
+    // Der Lauf des Passes: Ziel in 1/teil der Ausgabe, Ansicht dieses Bilds, das Feld-Fenster, ein Vollbild-Dreieck.
+    _spiegelPassRechne(L) {
+        const st = this.state;
         const P = this._spiegelPass();
         const S = st.spiegelFeld;
         const rend = st.renderer;
@@ -2574,7 +2615,11 @@ class AnazhRealm_Z11b {
         const teil = AnazhRealm.SPIEGEL.teil;
         const w = Math.max(1, Math.round(P.groesse.x / teil)),
             h = Math.max(1, Math.round(P.groesse.y / teil));
-        if (L.rt.width !== w || L.rt.height !== h) L.rt.setSize(w, h);
+        // ein Fenster-Wechsel legt das Ziel neu an; der Versions-Sprung zeigt es dem Wächter der Diät (`_diaetVorTextur`)
+        if (L.rt.width !== w || L.rt.height !== h) {
+            L.rt.setSize(w, h);
+            L.rt.texture.needsUpdate = true;
+        }
         cam.updateMatrixWorld();
         P.vp.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
         P.U.invVP.value.copy(P.vp).invert();
@@ -2583,7 +2628,7 @@ class AnazhRealm_Z11b {
         P.U.hMax.value = S.hMax + 2;
         const vor = rend.getRenderTarget();
         rend.setRenderTarget(L.rt);
-        P.quad.render(rend);
+        rend.render(P.szene, P.kamera);
         rend.setRenderTarget(vor);
         L.vp.value.copy(P.vp);
     }

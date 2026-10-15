@@ -856,10 +856,10 @@
                 "werkzeug": "werkbank bild 1855 2.6 -6168 1700 4.5 -6168 --w 1920 --h 1080 --klasse '^(wasserSatz|farWater|chunk-water-[a-z]+)$' --ist wasser (der See 1816/−6168, Ego; Third dieselbe Linie aus 4 m Höhe hinter dem Spieler)",
                 "messung": {
                     "werkzeug": "bild",
-                    "datum": "2026-10-15T03:26:32.615Z",
+                    "datum": "2026-10-15T15:34:30.128Z",
                     "stand": {
                         "version": "18.546.2",
-                        "sha": "eeb0afbe40bb9178cae628ffe83aedb6a2034003"
+                        "sha": "92d2a613001271526cee911221e41888a3096bec+geaendert"
                     },
                     "geraet": {
                         "backend": "WebGPU",
@@ -870,9 +870,9 @@
                         1080
                     ],
                     "kamera": [
-                        -125.8,
-                        47.48,
-                        241.4
+                        1855,
+                        2.6,
+                        -6168
                     ],
                     "ausdruck": "^(wasserSatz|farWater|chunk-water-[a-z]+)$",
                     "schwelle": 18,
@@ -883,22 +883,61 @@
                     },
                     "misch": 0,
                     "klassen": {
-                        "wasserSatz": {
+                        "farWater": {
                             "objekte": 1,
+                            "spiegelTreue": null,
+                            "sp": [
+                                0,
+                                0,
+                                0,
+                                0,
+                                0,
+                                0
+                            ],
                             "zweiton": 0,
                             "zt": 0,
-                            "weiss": 0.0713,
-                            "wt": 22847,
-                            "pixel": 320645,
-                            "deckung": 0.1546,
-                            "deckungUnten": 0.3891,
-                            "luma": 70.35,
-                            "kontrast": 0.6291,
-                            "detail": 0.0291,
-                            "nyquist": 0.1223,
-                            "ek": 105608.8,
-                            "eg": 757710.9,
-                            "silhouette": 9.7694
+                            "weiss": 0,
+                            "wt": 0,
+                            "pixel": 20,
+                            "deckung": 0,
+                            "deckungUnten": 0,
+                            "luma": 144.19,
+                            "kontrast": 0.0054,
+                            "detail": null,
+                            "nyquist": null,
+                            "ek": 0,
+                            "eg": 0,
+                            "silhouette": 4.4721,
+                            "kante": 0.567,
+                            "kr": 20
+                        },
+                        "wasserSatz": {
+                            "objekte": 1,
+                            "spiegelTreue": 0.2078,
+                            "sp": [
+                                14618,
+                                1223764.23,
+                                1788055.21,
+                                133564095.09,
+                                246018951.4,
+                                155747129.45
+                            ],
+                            "zweiton": 0,
+                            "zt": 0,
+                            "weiss": 0.0002,
+                            "wt": 209,
+                            "pixel": 943180,
+                            "deckung": 0.4549,
+                            "deckungUnten": 1,
+                            "luma": 84.49,
+                            "kontrast": 0.5538,
+                            "detail": 0.0048,
+                            "nyquist": 0.0268,
+                            "ek": 4038.6,
+                            "eg": 146547.9,
+                            "silhouette": 5.2452,
+                            "kante": 0.9045,
+                            "kr": 2276
                         }
                     },
                     "abstand": null,
@@ -906,15 +945,15 @@
                     "bild": "artifacts/soll-tafel/wasser.png",
                     "quellen": {
                         "gelaende-core.js": "c:47e37b262d36dd6e",
-                        "stamm/07.js": "c:49617014f39c824b",
-                        "stamm/10.js": "c:60d0e92e3969e187",
+                        "stamm/07.js": "c:611b81e18b60c31a",
+                        "stamm/10.js": "c:1b961fac64032e22",
                         "stamm/19.js": "c:b1a053cba1f64cd1",
-                        "stamm/24.js": "c:26d0da410e4c28a0",
-                        "stamm/25c.js": "c:baf3b0d0c63ceb9b",
+                        "stamm/24.js": "c:5cadba33d1361342",
+                        "stamm/25c.js": "c:f4902f7308657eed",
                         "stamm/08.js": "c:77f87597ce6b7d1c",
-                        "stamm/11a.js": "c:07de57204b2e88b6",
-                        "stamm/11b.js": "c:2b2b48ade183e63b",
-                        "stamm/17b.js": "c:074908c78ad2216f"
+                        "stamm/11a.js": "c:2376a2c6f3b1090d",
+                        "stamm/11b.js": "c:7626dfa8b7f42a3e",
+                        "stamm/17b.js": "c:66d155efb1fde801"
                     }
                 }
             },

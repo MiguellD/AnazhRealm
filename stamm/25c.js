@@ -2414,8 +2414,6 @@ class AnazhRealm_Z25c {
                 // in der Schöpfer-Konsole); render() ist der eine Pfad.
                 if (this.state.traaNode) this._traaReprojektion();
                 pp.render();
-                // DER SPIEGEL DES GESETZES (D10): nach dem Bild, aus seiner Tiefe — das Wasser des nächsten liest ihn
-                this._spiegelPassZeichne();
             } catch (err) {
                 // r184 baut Post-Kette und Szenen-Pass erst im ersten render() (PostProcessing.render → _update): ein
                 // Knoten-Fehler der Kette bricht HIER — laut beim Namen (K22), der Schirm zeichnet danach direkt
@@ -2431,6 +2429,8 @@ class AnazhRealm_Z25c {
             this._leinwandWeg(true);
             this.state.renderer.render(this.state.scene, this.state.camera);
         }
+        // DER SPIEGEL DES GESETZES (D10): nach dem Bild der Post-Kette, aus ihrer Tiefe — das Wasser des nächsten liest ihn
+        if (!direkt) this._spiegelPassZeichne();
         // Das erste fertige Weltbild nimmt den Ladeschirm weg (L2: nie die schwarze Leinwand).
         if (!this.state._weltbildDa) this._ankunftsBild();
         // GPU-Last in den perfSense-Frame-Akku (Draw-Calls + Dreiecke, alle Pässe). Im r184-WebGPU-Info ist
