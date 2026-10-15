@@ -451,6 +451,23 @@ window.__bereit = true;
         await b.close();
         server.close();
     }
+    // S10 — DIE KRONE VON OBEN (K68-N4, `werkbank licht --laub --oben`): das Zwei-Strom-Band über der gemessenen Blatt-Albedo,
+    // der Täter beim Namen (Radeon 15.10.: Tanne R 0,0739 über [0,0381, 0,0521] — die Krone als EINE besonnte Schale).
+    {
+        const LL = require("./lib/licht-linsen.cjs");
+        const o = (R, A) => ({ oben: { R, A, tau: [0.5, 1], pixel: 1 }, stoffe: "atlas" });
+        const rotT = LL.kronenObenUrteil({ welt: { tanne: o(0.0739, 0.0942), fichte: o(0.0547, 0.1027) } });
+        t(
+            "Krone von oben: Band aus der Blatt-Albedo (A 0,164 → [0,0705, 0,099]), Tanne als besonnte Schale ROT beim Namen, Fichte im Band still, ohne Messung ROT",
+            LL.kronenReflexionSoll(0.164, [0.5, 1]).join("/") === "0.0705/0.099" &&
+                rotT.urteil === "ROT" &&
+                rotT.befunde.length === 1 &&
+                /tanne: Reflexion 0\.0739 .*besonnte Schale/.test(rotT.befunde[0]) &&
+                LL.kronenObenUrteil({ welt: { fichte: o(0.0547, 0.1027) } }).urteil === "GRUEN" &&
+                LL.kronenObenUrteil({ welt: { eiche: o(0.0797, 0.2143) } }).befunde.join().includes("schluckt") &&
+                LL.kronenObenUrteil({}).urteil === "ROT"
+        );
+    }
     const rot = tests.filter((x) => !x.ok);
     for (const x of tests) console.log(`${x.ok ? "✅" : "❌"} SELBST-TEST: ${x.name}`);
     if (rot.length) {

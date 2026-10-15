@@ -56,7 +56,10 @@ function check(name, ok, detail) {
     const pageErrors = [];
     page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await page.evaluateOnNewDocument(WELT_ORTE_INSTALL); // der Messort aus spec/profiband/haushalt.json (`__messWiese`)
-    await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
+    // das Holz der Mess-Wiese ist „voll" (Ring 4): seit die Holz-Wahl auf dem WebGL2-Rückfall den GL-Renderer fragt (K67),
+    // wählt swiftshader kienspan (Ring 2) — die Karten-Zone trüge dann 18 statt ≥ 100 Bäume, A wäre vakuös. Der Null-
+    // Renderer baut kein Programm: „voll" kostet hier nichts.
+    await page.goto(`http://127.0.0.1:${PORT}/index.html?holz=voll`, { waitUntil: "domcontentloaded", timeout: 60000 });
 
     const out = await page.evaluate(async () => {
         const res = { boot: false };
