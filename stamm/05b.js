@@ -2872,7 +2872,10 @@ class AnazhRealm_Z05b {
                 return true;
             },
             (e) => {
-                this.log(`Die Umgebung kam nicht zurück (${e && e.message})`, "ERROR");
+                // nie still: die Bestrahlung trägt die vorige Lesung weiter, der Bruch steht beim EINEN Melder (D3-N2)
+                this._bruchMelden(
+                    `STOFF: die Umgebung kam nicht zurück — die Bestrahlung trägt die vorige Lesung (${e && e.message})`
+                );
                 return false;
             }
         );

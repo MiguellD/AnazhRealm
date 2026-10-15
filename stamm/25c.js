@@ -676,12 +676,12 @@ class AnazhRealm_Z25c {
             const combined = bloomed.add(nurBeiStaerke(bloomed.mul(detail.mul(u.localContrast)), u.localContrast));
             const lum = luminance(combined);
             const saturated = mix(vec3(lum, lum, lum), combined, u.gradeSat);
-            // DER DREHPUNKT DES KONTRASTS IST DIE BELICHTETE KARTE (D3-N2): die 18-%-Karte nach der Belichtung
-            // (BELICHTUNG.zielKarte), in Szenen-Einheiten zielKarte / Belichtung — die Belichtung liest der Knoten selbst
-            // (`toneMappingExposure`, EINE Quelle). Bis D3-N2 lag er bei 0,5 in Szenen-Einheiten VOR der Belichtung: jedes Licht
-            // unter 0,028 wurde schwarz, gleich wie hell die Belichtung es danach hob — die Wiese um Uhr 0,72 zu 36 % schwarz.
-            // Jetzt schneidet der Kontrast in jedem Licht dieselbe Tiefe ab (3,1 EV unter dem belichteten Mittelgrau).
-            const drehpunkt = float(AnazhRealm.BELICHTUNG.zielKarte).div(toneMappingExposure);
+            // DER DREHPUNKT DES KONTRASTS FOLGT DER BELICHTUNG ÜBER 1 (D3-N2): 0,5 / max(Belichtung, 1) in Szenen-Einheiten — die
+            // Belichtung liest der Knoten selbst (`toneMappingExposure`, EINE Quelle). Im Band, in dem das Grading geeicht ist
+            // (Belichtung ≤ 1: der Tag 0,6–1 und die Nacht), bleibt es bytegleich; hebt die Belichtung den Abend über 1, dreht der
+            // Kontrast um dasselbe belichtete Licht wie bei 1. Ohne das wurde jedes Licht unter 0,028 Szenen-Einheiten schwarz,
+            // gleich wie hell die Belichtung es danach hob (gate:post-kette (h): Belichtung 4 schwarz, wo 1 Luma 24 zeigt).
+            const drehpunkt = float(0.5).div(max(toneMappingExposure, float(1)));
             const contrasted = saturated.sub(drehpunkt).mul(u.gradeContrast).add(drehpunkt);
 
             // --- Entgrauen: desaturierte Pixel (graue Türme/Wände/Felsen) werden warm verschoben, satte

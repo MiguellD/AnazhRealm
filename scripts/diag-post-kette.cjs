@@ -36,6 +36,11 @@
 //       (`rahmenZielBefunde`) nennt es.
 //       DIE DRIFT (Gegenprüfung 0910-1 A): fehlt r184s Abschied am Leinwand-Ziel, fällt das Ziel trotzdem, und `_rahmenZielAbschied`
 //       meldet ERROR — eine ERROR-Zeile von ihm außerhalb der Probe und jede andere ERROR-Zeile der Seite sind rot.
+//   (h) DUNKEL (D3-N2, der Abend) — eine flache Fläche füllt das Bild mit dunklem Szenen-Licht, belichtet gleich hell
+//       (0,05 bei Belichtung 1, 0,0125 bei 4 — ein Schatten 1,6 EV unter dem belichteten Mittelgrau): das Bild ist nicht schwarz
+//       und bei beiden Belichtungen gleich. Vorher lag der Drehpunkt des Kontrasts bei 0,5 in Szenen-Einheiten VOR der
+//       Belichtung (y = 1,06·x − 0,03): jedes Licht unter 0,028 wurde schwarz, gleich wie hell die Belichtung es hob — seit die
+//       Belichtung dem Tag über 1 folgt, wurde der Abend schwarz. Jetzt dreht er über Belichtung 1 um 0,5 nach der Belichtung (25c).
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): die Shader-Kosten-Linse an gebauten WGSL-Stücken und das
 // Urteil über einen grünen Lauf und je einen injizierten Täter — jeder fällt rot und wird genannt.
 //   node scripts/diag-post-kette.cjs [--selftest]   (npm run gate:post-kette; Port POST_KETTE_PORT, Standard 4583)
@@ -64,6 +69,11 @@ const WASSER_TIEFE_MIN = 15;
 // höchstens um mehr als 8 Luma abweichen (Rauschen), und so viele Kanten-Pixel braucht die Probe mindestens (sonst blind).
 const SAUM_MAX = 2;
 const SAUM_KANTEN_MIN = 10;
+// (h) Das Dunkel: die dunkle Fläche zeigt im Mittel mindestens DUNKEL_LUMA_MIN Luma, und die zwei Belichtungen desselben
+// belichteten Lichts weichen höchstens DUNKEL_TOL Luma voneinander ab. Die lineare Kurve schneidet 2,5 EV unter dem belichteten
+// Mittelgrau ab (0,028 belichtet), die ACES-Kurve der Ausgabe (r184 RRTAndODTFit) erst unter 0,0022; 0,05 liegt über beiden.
+const DUNKEL_LUMA_MIN = 3;
+const DUNKEL_TOL = 1.5;
 
 function urteil(z) {
     const v = [];
@@ -203,6 +213,18 @@ function urteil(z) {
     if (z.gpuFehler && z.gpuFehler.length) v.push(`GPU: ${z.gpuFehler.length} Validierungs-Fehler: ${z.gpuFehler[0]}`);
     if (!z.ausgabe) v.push("SHADER: kein Fragment der Ausgabe gefunden (die Linse ist blind)");
     else for (const x of SK.kostenUrteil(z.ausgabe, BUDGET_AUSGABE, "SHADER: Ausgabe der Post-Kette")) v.push(x);
+    const dk = z.dunkel;
+    if (!dk) v.push("DUNKEL: die Probe lief nicht");
+    else if (!(dk.k1 === 1 && dk.k4 === 4))
+        v.push(`DUNKEL: die Belichtung stand bei ${dk.k1} / ${dk.k4} statt 1 / 4 (die Probe ist blind)`);
+    else if (!(Math.min(dk.luma1, dk.luma4) >= DUNKEL_LUMA_MIN))
+        v.push(
+            `DUNKEL: dunkles Szenen-Licht (0,05 bei Belichtung 1, 0,0125 bei 4) zeigt Luma ${dk.luma1} / ${dk.luma4} (Soll ≥ ${DUNKEL_LUMA_MIN}) — die Kette schneidet dunkles Licht ab (der Kontrast des Gradings vor der Belichtung)`
+        );
+    else if (!(Math.abs(dk.luma1 - dk.luma4) <= DUNKEL_TOL))
+        v.push(
+            `DUNKEL: dasselbe belichtete Licht zeigt bei Belichtung 1 Luma ${dk.luma1}, bei 4 Luma ${dk.luma4} (Soll ≤ ${DUNKEL_TOL} Abstand) — das Grading hängt an der Belichtung`
+        );
     const g = z.godray || {};
     if (!(g.staerke > 0)) v.push(`GODRAYS: die Sonne im Bild gibt Stärke ${g.staerke} (die Probe ist blind)`);
     else if (!(g.aenderungPct >= GODRAY_MIN_PCT))
@@ -264,6 +286,7 @@ function selbsttest() {
         },
         saum: { leinwand: [321, 241], kanten: 30, abweichend: 0, dMax: 3, paritaeten: 2, gpuFehler: [] },
         rahmenEnde: { ziele: 0, n: 0, mb: 0 },
+        dunkel: { k1: 1, k4: 4, luma1: 8, luma4: 8 },
     };
     if (urteil(gruen).length) fehler.push("der grüne Lauf fällt rot: " + urteil(gruen).join(" · "));
     const mit = (f) => {
@@ -401,6 +424,17 @@ function selbsttest() {
         { name: "Bühne bricht ab", z: mit((z) => (z.abbruch = "TypeError: x")), muss: /ABBRUCH/ },
         { name: "Godray-Zweig trägt nicht", z: mit((z) => (z.godray.aenderungPct = 0)), muss: /der Zweig trägt nicht/ },
         { name: "Godray-Probe blind", z: mit((z) => (z.godray.staerke = 0)), muss: /die Probe ist blind/ },
+        {
+            name: "Grading schneidet dunkles Licht ab",
+            z: mit((z) => Object.assign(z.dunkel, { luma1: 0, luma4: 0 })),
+            muss: /DUNKEL: .*schneidet dunkles Licht ab/,
+        },
+        {
+            name: "Grading hängt an der Belichtung",
+            z: mit((z) => Object.assign(z.dunkel, { luma1: 12, luma4: 7 })),
+            muss: /DUNKEL: .*hängt an der Belichtung/,
+        },
+        { name: "Dunkel-Probe fehlt", z: mit((z) => delete z.dunkel), muss: /DUNKEL: die Probe lief nicht/ },
     ];
     for (const f of faelle) {
         const v = urteil(f.z);
@@ -839,7 +873,38 @@ function buehne(nFrames) {
                 aenderungPct: diff(mit1, ohne),
                 rauschenPct: diff(mit1, mit2),
             };
-            // (g) am Ende: nach Wasser und Godrays (Post-Kette) steht kein Rahmen-Ziel mehr
+            // (h) DAS DUNKEL: eine flache, unbeleuchtete Fläche ohne Luft füllt das Bild (die Bühne verborgen, Godrays aus),
+            // zweimal mit demselben belichteten Licht — Belichtung 1 mit 0,05, Belichtung 4 mit 0,0125 —, gemessen im Ausgabe-Pfad
+            const flach = new T.Mesh(new T.PlaneGeometry(60, 40), new T.MeshBasicNodeMaterial({ color: 0xffffff }));
+            flach.material.fog = false;
+            flach.frustumCulled = false;
+            flach.position.set(x0, y0, z0 - 2);
+            st.scene.add(flach);
+            const kVor = rend.toneMappingExposure;
+            const dunkel = async (k, c) => {
+                flach.material.color.setRGB(c, c, c);
+                rend.toneMappingExposure = k;
+                for (let i = 0; i < nFrames; i++) {
+                    setzeKamera();
+                    frame();
+                }
+                setzeKamera();
+                const { u8 } = await window.__ausgabeAufnahme(32, 24, 1, { satz: "messung" });
+                let s = 0;
+                for (let i = 0; i < u8.length; i += 4) s += 0.2126 * u8[i] + 0.7152 * u8[i + 1] + 0.0722 * u8[i + 2];
+                return { luma: +(s / (u8.length / 4)).toFixed(1), k: rend.toneMappingExposure };
+            };
+            try {
+                const a = await dunkel(1, 0.05);
+                const b = await dunkel(4, 0.0125);
+                aus.dunkel = { k1: a.k, luma1: a.luma, k4: b.k, luma4: b.luma };
+            } finally {
+                rend.toneMappingExposure = kVor;
+                st.scene.remove(flach);
+                flach.geometry.dispose();
+                flach.material.dispose();
+            }
+            // (g) am Ende: nach Wasser, Godrays und Dunkel (Post-Kette) steht kein Rahmen-Ziel mehr
             await dev.queue.onSubmittedWorkDone();
             aus.rahmenEnde = rahmenZiel();
         } catch (e) {
@@ -973,6 +1038,7 @@ function buehne(nFrames) {
         `\n✅ GRÜN — fünf Wege durch die Weiche ohne Fehler (mit der Drift ohne r184s Abschied), der Direktpfad zeichnet mit Tiefe, die Post-Kette ohne Leinwand-Tiefe und ohne Rahmen-Ziel; ` +
             `die Ausgabe tastet unbedingt ${a.unbedingt}×, ${a.zweig}× nur hinter ihrer Stärke; die Godrays tragen mit der Sonne im Bild ` +
             `(${out.godray.aenderungPct} % der Pixel gegen ${out.godray.rauschenPct} % Rauschen); das Wasser liest das Tiefen-Abbild wie r184s Tiefe ` +
-            `(${JSON.stringify(out.wasser.abbild)} gegen ${JSON.stringify(out.wasser.r184)}, ohne Grund ${JSON.stringify(out.wasser.ohneGrund)}).`
+            `(${JSON.stringify(out.wasser.abbild)} gegen ${JSON.stringify(out.wasser.r184)}, ohne Grund ${JSON.stringify(out.wasser.ohneGrund)}); ` +
+            `das Dunkel trägt (Luma ${out.dunkel.luma1} bei Belichtung 1, ${out.dunkel.luma4} bei 4).`
     );
 })();
