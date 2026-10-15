@@ -317,7 +317,9 @@ async function hellProbe() {
 // Das Soll (K64-n1): Labor = Welt (Lehre 19) — die Welt hebt die Membran nicht über ihr Labor-Bild: Y der Welt ≤ 1,15 × Y des
 // Anzeige-Werts derselben Tore, sie bleicht ihn nicht (Sättigung ≥ 0,75 × Labor — die weiße Tafel ist hell UND entsättigt) und
 // brennt nicht aus: Y > 240 auf ≤ 5 % der Membran-Pixel (Nordstern Portale). Gemessen swiftshader, Ring-Mitte, Belichtung 0,615
-// (K64-n1f1): das FARB-GESETZ Y × 0,76, der rohe Leser × 1,20 bei Sättigung 0,12 gegen 0,29.
+// (K64-n2, eine Seite): das FARB-GESETZ Y × 0,77, der rohe Leser × 1,22 bei Sättigung 0,093 gegen 0,183; die Welt steht in einem
+// zweiten Zustand (der Lauf vor K64-n2 sah ihn auch) bei × 0,81 und × 1,15 — dort fällt der rohe Leser an der Sättigung
+// (0,080 gegen 0,162).
 const HELL = { hub: 1.15, weiss: 0.05, bleich: 0.75 };
 
 async function blickStufe(check) {
