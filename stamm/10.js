@@ -607,6 +607,37 @@ class AnazhRealm_Z10 {
                                         _fb
                                     );
                                     _alpha = _samp.a;
+                                    // SPIKE L1 (a): die Hash-Rausch-Kante der Karte — im Atlas-Texel-Raum (dasselbe Bild wie eine
+                                    // gebackene Alpha): die geglättete Deckung (Stufe uSpikeKante.z) gegen ein Wert-Rauschen der
+                                    // Zelle (Merkmal uSpikeKante.y Texel, zwei Oktaven) — nur am Rand (b < w) fällt Deckung.
+                                    {
+                                        if (!AnazhRealm._spikeKanteU)
+                                            AnazhRealm._spikeKanteU = this._uniformHeimatTeilen({
+                                                u: _Ta.uniform(new THREE.Vector4(0, 4, 3, 0.95)),
+                                            }).u;
+                                        const _sk = AnazhRealm._spikeKanteU;
+                                        const _bl = _Ta.mix(
+                                            _at.mapNode.sample(_uvA).depth(_schicht).level(_sk.z).a,
+                                            _at.mapNode.sample(_uvB).depth(_schicht).level(_sk.z).a,
+                                            _fb
+                                        );
+                                        const _h2 = (p) =>
+                                            _Ta.fract(_Ta.sin(p.dot(_Ta.vec2(127.1, 311.7)).add(_schicht.mul(17.13))).mul(43758.5453));
+                                        const _vn = (p) => {
+                                            const i = _Ta.floor(p),
+                                                f = _Ta.fract(p);
+                                            const u = f.mul(f).mul(_Ta.float(3.0).sub(f.mul(2.0)));
+                                            const a = _h2(i),
+                                                b = _h2(i.add(_Ta.vec2(1.0, 0.0))),
+                                                c = _h2(i.add(_Ta.vec2(0.0, 1.0))),
+                                                d = _h2(i.add(_Ta.vec2(1.0, 1.0)));
+                                            return _Ta.mix(_Ta.mix(a, b, u.x), _Ta.mix(c, d, u.x), u.y);
+                                        };
+                                        const _pt = _Ta.vec2(_uv.x.mul(_at.cw), _vIn.mul(_at.ch)).div(_sk.y);
+                                        const _rz = _vn(_pt).mul(0.65).add(_vn(_pt.mul(2.03).add(_Ta.vec2(5.2, 1.3))).mul(0.35));
+                                        const _bleibt = _Ta.step(_rz.mul(_sk.w), _bl);
+                                        _alpha = _alpha.mul(_Ta.mix(_Ta.float(1.0), _bleibt, _sk.x));
+                                    }
                                     // fin-Einblendung des Billboards aus der EINEN Quelle `__phytoCore.lodCrossfadeMask` lod=2 (via
                                     // `_lodCrossfadeMaskNode`); Distanz = Fragment-Anker-Peilung (√_hl2), Sichthöhe = der Stempel
                                     // |aKarte.w| (die Höhe der Höhen-Stufe × Instanz-Skala — dieselbe Zahl wie der aH0-Stempel der L1
