@@ -1175,7 +1175,9 @@ const FIXTURES = [
         // K66, Prüfung 2 (die Laterne in der Fahrbahn): der Stand quer zur Gasse rückte bis rd.w/4 an die Achse — 123/292 Laternen
         // der Pläne standen im Weg, der Mast ein fester Blocker der Welt. Gemessen je Laterne der Abstand zum Rand jedes Wegs
         // (Straße und Feldweg, die Kapsel um die Achse mit der halben Breite, die der Wirt malt): Soll ≥ der Tritt des Rezepts
-        // (fachwerk AUSSTATTUNG laterne `tritt`) — der Fuß steht neben der Fahrbahn, nie in ihr; auch in der Stadt.
+        // (fachwerk AUSSTATTUNG laterne `tritt`) — der Fuß steht neben der Fahrbahn, nie in ihr; auch in der Stadt. Die Zahl hält
+        // die dichte Gasse ohne Stand vor der Wand und neben dem Weg, weil ihre Marke den nächsten Stand des Dorfs nimmt
+        // (`laterneNah`); die Pläne 7/16 und 2/10 (antike) fielen dort zuerst um eine Laterne und stehen darum in der Liste.
         const trittR = FC.PRESETS.laterne.fx.tritt.r;
         const LGd = FC.LICHT_GESETZ.laterne;
         const wandSoll = Math.sqrt(Math.max(0, (LGd.hoeheM ** 2 + LGd.kernM ** 2) / 2 - LGd.kernM ** 2));
