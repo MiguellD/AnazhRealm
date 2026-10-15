@@ -648,50 +648,58 @@ async function probe(page, welt, wuerfe, evolutionen, schein) {
 // auf alles, was davor in die Schlange der CPU-Rasterung fiel — die Wildnis des ersten Ladens, der Blick des Spielers in den
 // Warte-Takten (gemessen 12.10., 24 Kerne: der erste Schuss las 90–176 s, die Zeichnung selbst 2 s). Bis zum Schuss zeichnet
 // die Seite nichts (`_loopRender` ruht); der Schuss zeichnet alles selbst (Erst-Zeichnung, Warm-Frames).
-// DIE NAH-BÜHNE DES SCHUSSES (swiftshader — die CI; `--echt` zeichnet die ganze Welt): der Schuss zeichnet über den
-// Spielpfad (`_loopRender`, die Stoffe der Welt, der Ausgabe-Pfad) nur die Nähe des Feuers — jedes Objekt der Welt-Szene,
-// dessen Hülle (Kugel in Welt-Lage, Instanz- und Batch-Hülle eingeschlossen) die Kugel um das Feuer schneidet. Die Sätze
-// (`bodenSatz`, `bauSatz`: Boden und Bauten je Stoff in EINEM Mesh) tragen die Überall-Hülle (1e9) und zeichnen; eine
-// Hülle ≥ 1 km ist die Ferne (das Panorama) und fällt, der Fern-Ring fällt an seinem Stempel (`userData.inventar`
-// "fern-ring", wie `licht-linsen` ihn liest): seit K16 trägt seine Schale 0 die Hülle 803 m (vorher 1 413 m) in zwei Teilen
-// (frei und Naht), die Kilometer-Regel nahm beide in die Nähe — der Schuss übersetzte 13 statt 11 Programme (lokal Schuss
-// 14 → 21 s, auf dem Runner riss die Frist 170 s viermal in Folge). Der Portal-Nebel (`userData.inventar` "portal-nebel") fällt
-// an seinem Stempel: ein durchsichtiger Schleier vor dem Tor (kein Boden, kein Werfer, kein Empfänger), dessen Hülle (r 4,7–5,7 m
-// in 7,9–13,4 m) die Kugel streift — er trug das größte Programm des Schusses (139 967 Zeichen Fragment-WGSL von 354 645; auf dem
-// Runner Schuss 84 s neben 7–8 s je Schein ohne Übersetzen, die Frist riss im Schein farbe bei 145–171 s); ohne ihn Luma 0,7105 →
-// 0,7104, Farbton 37,6° gleich (gemessen 14.10.). Fremde Szenen (Post, PMREM) und die Lichter bleiben.
-// Gemessen 12.10. (24 Kerne):
-// die ganze Welt übersetzte im ersten Schuss 54 Programme (1,5 MB Fragment-WGSL, 90–176 s am Rücklesen); auf dem Runner
-// mit 4 Kernen riss so die Protokoll-Grenze von 900 s. Der Feuerkreis liest nur Boden, Feuer, Pool und Ausgabe.
+// DIE NAH-BÜHNE DES SCHUSSES (swiftshader — die CI; `--echt` zeichnet die ganze Welt): der Feuerkreis liest nur Boden, Feuer,
+// Pool und Ausgabe — der Schuss zeichnet über den Spielpfad (`_loopRender`, die Stoffe der Welt, der Ausgabe-Pfad) aus der
+// Welt-Szene GENAU das: den Boden-Satz und die Feuerstelle (ihren Bau-Satz, ihre Gruppe), dazu die fremden Szenen (Post,
+// PMREM) und die Lichter; die Zellen beider Sätze und jede gewählte Instanz urteilt das EINE Gesetz der Pass-Wahl
+// (`_passTrifft`) mit der Kugel um das Feuer. Gemessen 12.10.: die ganze Welt übersetzte im ersten Schuss 54 Programme
+// (1,5 MB Fragment-WGSL, auf dem Runner riss die Protokoll-Grenze von 900 s). Bis K60-N2 urteilte die Hülle (Kugel in Welt-
+// Lage gegen die Kugel um das Feuer, Sätze mit der Überall-Hülle 1e9 immer nah) und je Befund ein Stempel (der Fern-Ring K16,
+// der Portal-Nebel 14.10.) — jedes Mal riss die Frist, ehe der nächste Gast seinen Stempel bekam. K60-N2: die Tore des
+// Genesis-Platzes (Bau-Satz, Hülle 2–4 m vom Feuer) standen im Schuss, wenn die Welt sie vor ihm gebaut hatte — Kopf
+// 91dff111 lokal 11 Befehle, Programme/Pipelines [10,11,11] neben 6 und [8,8,8] (je nach Rennen), auf dem Runner riss die
+// Frist zweimal in Folge (CI 38628426005, 38662750291); der Himmel und seine Sterne zeichneten in jedem Schuss.
+// DIE WAND: was der Renderer im Schuss zeichnet (`_objects.get`) und der Feuerkreis nicht liest, ist ROT beim Namen (Bau-
+// Sätze mit den Formen ihrer Bereiche), ebenso jede Satz-Zelle jenseits der Kugel. Selbsttests: die Kugel 1 km versetzt
+// (jede gezeichnete Zelle liegt jenseits), der Feuerkreis liest nichts (Boden und Feuerstelle werden fremd).
 const S0_NAH_INSTALL = () => {
-    window.__s0Nah = (mitte, radius) => {
+    window.__s0Nah = (mitte, radius, mit) => {
         const st = window.anazhRealm.state;
         const rend = st.renderer;
         const welt = st.scene;
-        const kugel = new window.THREE.Sphere();
+        // WAS DER FEUERKREIS LIEST: der Boden-Satz, die Feuerstelle (ihr Bau-Satz, ihre Gruppe oder ihr eigenes Mesh) und, was
+        // der Aufrufer zeigt (`mit`: die Figur des Beweisbilds)
+        // — gefragt beim Zeichnen: der Bau-Satz entsteht erst im ersten Frame des Schusses (`_tickBauSatz` vor dem Render)
+        const feuer = window.__s0Feuer;
+        const gruppen = () => st.archInstanceGroups || new Map();
+        const feuerGruppe = (g) => !!g && !!g.slotEntry && g.slotEntry.includes(feuer);
+        const satzVon = (o) => {
+            for (const s of (st.chunkSaetze || new Map()).values()) if (s.mesh === o) return s;
+            return null;
+        };
+        const liest = (o, ohne) => {
+            if (ohne) return false;
+            for (let p = o; p; p = p.parent) {
+                if ((mit && mit.includes(p)) || (feuer && p === feuer.mesh)) return true;
+                const s = satzVon(p);
+                if (s) {
+                    if (s.art === "boden") return true;
+                    for (const key of s.bloecke.keys()) if (feuerGruppe(gruppen().get(key))) return true;
+                    return false;
+                }
+                if (p.isInstancedMesh && feuerGruppe(gruppen().get(p.userData && p.userData.archInstanceKey))) return true;
+            }
+            return false;
+        };
         const urteil = new WeakMap();
         const zaehl = { nah: 0, fern: 0 };
+        // fremde Szenen (Post, PMREM) zeichnen; aus der Welt-Szene nur, was der Feuerkreis liest
         const nah = (o) => {
             let u = urteil.get(o);
             if (u !== undefined) return u;
             let wurzel = o;
             while (wurzel.parent) wurzel = wurzel.parent;
-            let k = null;
-            if ((o.isInstancedMesh || o.isBatchedMesh) && typeof o.computeBoundingSphere === "function") {
-                if (!o.boundingSphere) o.computeBoundingSphere();
-                k = o.boundingSphere;
-            } else if (o.geometry) {
-                if (!o.geometry.boundingSphere) o.geometry.computeBoundingSphere();
-                k = o.geometry.boundingSphere;
-            }
-            if (wurzel !== welt || !k) u = true;
-            else if (o.userData && (o.userData.inventar === "fern-ring" || o.userData.inventar === "portal-nebel")) u = false;
-            else {
-                kugel.copy(k).applyMatrix4(o.matrixWorld);
-                u =
-                    kugel.radius >= 1e8 ||
-                    (kugel.radius < 1000 && kugel.center.distanceTo(mitte) - kugel.radius < radius);
-            }
+            u = wurzel !== welt || liest(o, false);
             urteil.set(o, u);
             zaehl[u ? "nah" : "fern"]++;
             return u;
@@ -703,8 +711,74 @@ const S0_NAH_INSTALL = () => {
             }
             return Object.getPrototypeOf(this)._projectObject.call(this, o, ...rest);
         };
+        // DIE WAHL JE PASS TRÄGT DIE KUGEL: ein Satz (Hülle 1e9) zeichnet, was das EINE Gesetz der Pass-Wahl (`_passTrifft`) in
+        // seinen Zellen trifft, eine Wahl-Gruppe ihre Instanzen ebenso — die Kugel urteilt mit (Körper: Box mit Saum), sonst
+        // zeichnete der Schuss jeden Bau, jede Zelle Boden im Blick bis zum Horizont
+        const r0 = window.anazhRealm;
+        zaehl.verworfen = 0;
+        r0._passTrifft = function (L, cx, cy, cz, hx, hy, hz, rand) {
+            if (!Object.getPrototypeOf(this)._passTrifft.call(this, L, cx, cy, cz, hx, hy, hz, rand)) return false;
+            const dx = Math.max(0, Math.abs(mitte.x - cx) - hx - rand);
+            const dy = Math.max(0, Math.abs(mitte.y - cy) - hy - rand);
+            const dz = Math.max(0, Math.abs(mitte.z - cz) - hz - rand);
+            if (dx * dx + dy * dy + dz * dz <= radius * radius) return true;
+            zaehl.verworfen++;
+            return false;
+        };
+        // WAS DER SCHUSS ZEICHNET (die Wand, unabhängig von der Regel oben): jedes Objekt, das der Renderer zeichnet (sein
+        // Render-Objekt, `_objects.get`) — eines der Welt-Szene, das nicht in `lies` steht (selbst oder ein Vorfahr), ist fremd
+        const objs = rend._objects;
+        const getAlt = objs.get;
+        const gezeichnet = new Set();
+        objs.get = function (o, ...rest) {
+            if (o) gezeichnet.add(o);
+            return getAlt.call(this, o, ...rest);
+        };
+        // der Name: ein Bau-Satz mit den Formen seiner Bereiche, eine Senke (Instanz-Zeichner) mit dem Namen der Senke
+        const name = (o) => {
+            const q = o.__instanzQuelle || o;
+            const s = satzVon(q);
+            if (s && s.art !== "boden") {
+                const formen = new Set();
+                for (const k of s.bloecke.keys()) for (const m of String(k).matchAll(/f:([^|]+)/g)) formen.add(m[1]);
+                return `${q.name}(${[...formen].join(",")})`;
+            }
+            return q.name || (q.userData && q.userData.inventar) || q.type;
+        };
+        const fremd = (ohne) => {
+            const out = {};
+            for (const o of gezeichnet) {
+                let w = o;
+                while (w.parent) w = w.parent;
+                if (w === welt && !liest(o, ohne)) out[name(o)] = (out[name(o)] || 0) + 1;
+            }
+            return out;
+        };
+        // DIE ZELLEN JENSEITS DER KUGEL: je gezeichnetem Satz (Name des Satz-Meshes) die Zellen des Hauptbilds (sein Abschnitt
+        // „haupt", `_chunkSatzAbschnitt`), deren Hülle die Kugel um `m` nicht schneidet
+        const jenseits = (m) => {
+            const out = {};
+            for (const s of (st.chunkSaetze || new Map()).values()) {
+                const a = s.abschnitte && s.abschnitte.get("haupt");
+                if (!a || !(a.n > 0) || !gezeichnet.has(s.mesh)) continue;
+                let n = 0;
+                for (const z of a.liste || []) if (z && z.huelle && !z.huelle.isEmpty() && z.huelle.distanceToPoint(m) > radius) n++;
+                const k = (s.mesh && s.mesh.name) || s.art;
+                if (n) out[k] = (out[k] || 0) + n;
+            }
+            return out;
+        };
         return () => {
             delete rend._projectObject;
+            delete r0._passTrifft;
+            objs.get = getAlt;
+            // die Wand und ihr Selbsttest (der Feuerkreis läse nichts: jedes gezeichnete Objekt der Welt ist fremd)
+            zaehl.fremd = fremd(false);
+            zaehl.fremdOhneLesen = fremd(true);
+            // die Zellen des letzten Hauptbilds: jenseits der Kugel (die Wand) und gegen die um 1 km versetzte Kugel (der
+            // Selbsttest: jede gezeichnete Zelle liegt dort jenseits)
+            zaehl.jenseits = jenseits(mitte);
+            zaehl.versetzt = jenseits(mitte.clone().add(new window.THREE.Vector3(1000, 0, 0)));
             return zaehl;
         };
     };
@@ -1145,7 +1219,10 @@ async function lichtLauf() {
             cam.updateMatrixWorld(true);
             await new Promise((res) => setTimeout(res, 700));
             let auf = null;
-            const nahLos = nahM ? window.__s0Nah(new window.THREE.Vector3(f.x, g(f.x, f.z), f.z), nahM) : null;
+            // die Figuren im Licht des Pools zeichnen mit (der Feuerkreis allein läse sie nicht)
+            const nahLos = nahM
+                ? window.__s0Nah(new window.THREE.Vector3(f.x, g(f.x, f.z), f.z), nahM, [wolf, s.playerMesh].filter(Boolean))
+                : null;
             try {
                 for (let i = 0; i < 2; i++) {
                     r._schattenAlleNeu();
@@ -1227,6 +1304,24 @@ async function lichtLauf() {
             if (aus) fs.writeFileSync(aus.replace(/(\.wgsl)?$/, i ? `-${i + 1}.wgsl` : ".wgsl"), wgsl);
         });
     }
+    // DIE WAND DER NAH-BÜHNE: kein Satz zeichnet im Schuss eine Zelle jenseits der Kugel (sonst übersetzt der Schuss die Stoffe
+    // der Welt, nicht die des Feuers)
+    const s0Jenseits = (e) => Object.entries((e && e.nah && e.nah.jenseits) || {});
+    const s0Liste = (o) =>
+        Object.entries(o || {})
+            .map(([k, n]) => `${k} ${n}`)
+            .join(" · ");
+    if (sauber && !sauber.fehler && sauber.nah && Object.keys(sauber.nah.fremd || {}).length)
+        befunde.push(
+            `S0 Nah-Bühne: der Schuss zeichnet, was der Feuerkreis nicht liest (${s0Liste(sauber.nah.fremd)}) — jeder fremde Stoff ` +
+                "übersetzt sein Programm im Schuss, und was davon steht, entscheidet das Rennen der Welt bis zum Schuss"
+        );
+    if (sauber && !sauber.fehler && sauber.nah && s0Jenseits(sauber).length)
+        befunde.push(
+            `S0 Nah-Bühne: der Schuss zeichnet Zellen jenseits der Kugel von ${S0_NAH_M} m (${s0Jenseits(sauber)
+                .map(([k, n]) => `${k} ${n}`)
+                .join(" · ")}) — die Wahl je Pass (\`_passTrifft\`) trägt die Kugel nicht, jeder Stoff der Welt im Blick übersetzt sein Programm`
+        );
     if (sauber && !sauber.fehler && sauber.ton && !(sauber.ton.sat <= S0_TON.satMax))
         console.log(
             `    OFFEN S0 Bild: Sättigung ${sauber.ton.sat} (Soll der Karte ≤ ${S0_TON.satMax}) — der Fuß der ACES-Kurve bei der Nacht-Belichtung ${sauber.belichtung}`
@@ -1250,7 +1345,18 @@ async function lichtLauf() {
         console.log(
             `  SELBSTTEST S0 PROGRAMM-GRÖSSE (die Decke ein Zeichen unter dem Boden-Programm): ${grossGetroffen ? `getroffen — ${gross.rot[0].split(" — ")[0]}` : "BLIND"}`
         );
-        pass = pass && getroffen && farbGetroffen && grossGetroffen;
+        const nb = (sauber && !sauber.fehler && sauber.nah) || {};
+        const vers = Object.keys(nb.versetzt || {});
+        const nahGetroffen = vers.length > 0;
+        console.log(
+            `  SELBSTTEST S0 NAH-BÜHNE (die Kugel 1 km versetzt): ${nahGetroffen ? `getroffen — jenseits ${s0Liste(nb.versetzt)}` : "BLIND"}`
+        );
+        const ohne = Object.keys(nb.fremdOhneLesen || {});
+        const liesGetroffen = ohne.includes("bodenSatz") && ohne.some((k) => k.startsWith("bauSatz("));
+        console.log(
+            `  SELBSTTEST S0 NAH-BÜHNE (der Feuerkreis liest nichts): ${liesGetroffen ? `getroffen — fremd ${s0Liste(nb.fremdOhneLesen)}` : "BLIND"}`
+        );
+        pass = pass && getroffen && farbGetroffen && grossGetroffen && nahGetroffen && liesGetroffen;
     }
     console.log(
         `\n${pass ? "✅" : "⛔"} S0 BILD ${pass ? "GRÜN: die Feuerstelle trägt den Feuerkreis aus 2 m in der Ausgabe" : "ROT"} (${Math.round((Date.now() - t0) / 1000)} s, ${ECHT ? "echte GPU" : adapter.fehlt || adapter.vendor + "/" + adapter.architecture} · Holz ${HOLZ})\n`
