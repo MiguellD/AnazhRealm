@@ -26,7 +26,8 @@
 //       der kalte Bake einer Birken-Karte hielt den EINEN Worker 387 Takte, die nahe Eichen-L0 brauchte danach 5).
 //   T8  der Abgelaufene bleibt im Faden (`_foundryFrist`): sein Besteller bekommt null, aber als Geist hält er Platz und
 //       Uhr der Späteren, bis der Worker ihn fertig hat (Befund 05.10.: der Wiederholer einer Karte lief ab, während der
-//       Bäcker den Abgelaufenen noch buk — Weide und Eiche je 3 Versuche, der dritte macht die Zelle gescheitert)
+//       Bäcker den Abgelaufenen noch buk — Weide und Eiche je 3 Versuche, der dritte macht die Zelle gescheitert); je
+//       FADEN, auch im Werk-Helfer (K60, `w<k>_<n>`): die Uhr liest die Nummer am Ende, nie NaN (Täter `_foundryUhren`)
 // --selftest: ein Takt, der wieder die Tags ALLER Bauten rechnet (die alte Reihenfolge), macht T1 rot; der alte
 // Wer-zuerst-fragt-Takt macht T3 rot; die Schwelle über das ganze Fenster macht T4 rot; die FIFO-Pumpe macht T5 rot,
 // die Nur-der-Nächste-Pumpe T6, die Ein-Faden-Pumpe T7, die löschende Frist T8.
@@ -305,22 +306,30 @@ const SELBST = process.argv.includes("--selftest");
                     beiAblauf();
                 });
             };
+            // DER HELFER-FADEN (K60): ein bereiter Werk-Helfer (`_foundryHelfer`) trägt seinen Faden in der Nummer (`rw1_2`);
+            // die Pumpe legt die vier Aufträge abwechselnd in Werk und Helfer, je Faden gilt dieselbe Reihe. Die Uhr liest die
+            // Nummer am ENDE — die Lesart vom Anfang (`/^\D+/`) machte aus `rw1_4` NaN, seine Uhr lief ab dem Anmelden.
             const t8 = await (async () => {
-                const f = { ready: true, worker: { postMessage: () => {} }, pending: new Map(), reqSeq: 1 };
+                const still = { postMessage: () => {} };
+                const f = { ready: true, worker: still, helfer: [{ k: 1, bereit: true, w: still }], pending: new Map(), reqSeq: 1 };
                 r._foundry = f;
                 if (selbst) r._foundryFrist = fristAlt;
-                const aus8 = { erster: "offen", zweiter: "offen" };
+                const aus8 = { erster: "offen", zweiter: "offen", helferErster: "offen", helferZweiter: "offen" };
                 try {
                     const auftrag = (name, k) =>
                         r
                             ._foundryAuftrag(f, "r", { type: "build-asset", presetId: name }, null, 600, "-")
                             .then((x) => (aus8[k] = x === null ? "abgelaufen" : "beantwortet"));
                     auftrag("lang", "erster");
+                    auftrag("helfer-lang", "helferErster");
                     auftrag("dahinter", "zweiter");
+                    auftrag("helfer-dahinter", "helferZweiter");
+                    aus8.nummern = [...f.pending.keys()];
                     await new Promise((res) => setTimeout(res, 2000));
-                    // der Geist des ersten (r1) hält noch seinen Platz — die Welt läuft weiter und darf derweil eigene
-                    // Aufträge an das Doppel stellen (spätere Nummern, sie berühren keine der beiden Uhren)
+                    // die Geister der ersten (r1, rw1_2) halten noch ihren Platz — die Welt läuft weiter und darf derweil
+                    // eigene Aufträge an das Doppel stellen (spätere Nummern, sie berühren keine der Uhren)
                     aus8.geist = f.pending.has("r1");
+                    aus8.helferGeist = f.pending.has("rw1_2");
                     return aus8;
                 } finally {
                     r._foundry = fEcht;
@@ -366,7 +375,16 @@ const SELBST = process.argv.includes("--selftest");
         t7.eicheImWerk &&
         t7.werkN === t5.K;
     const t8 = aus.t8;
-    const T8 = t8.erster === "abgelaufen" && t8.zweiter === "offen" && t8.geist === true;
+    // je Faden dieselbe Reihe: Werk (r1 → r3) und Helfer (rw1_2 → rw1_4); der Helfer-Faden trug wirklich zwei (nicht vakuös)
+    const helferNr = (t8.nummern || []).filter((k) => /w1_\d+$/.test(k));
+    const T8 =
+        t8.erster === "abgelaufen" &&
+        t8.zweiter === "offen" &&
+        t8.geist === true &&
+        helferNr.length === 2 &&
+        t8.helferErster === "abgelaufen" &&
+        t8.helferZweiter === "offen" &&
+        t8.helferGeist === true;
     if (SELBST) {
         const ok = !T1 && !T3 && !T4 && !T5 && !T6 && !T7 && !T8;
         console.log(
@@ -377,7 +395,7 @@ const SELBST = process.argv.includes("--selftest");
                 `die Nur-der-Nächste-Pumpe sendet ${t6.folge.join("·")} → T6 ${T6 ? "grün (vakuös!)" : "rot"}; ` +
                 `die Ein-Faden-Pumpe legt die Karte ins Werk (Bäcker ${t7.ofen.length}, Karten im Werk ${t7.werkKarten}, ` +
                 `Eiche im Werk ${t7.eicheImWerk}) → T7 ${T7 ? "grün (vakuös!)" : "rot"}; ` +
-                `die löschende Frist lässt den Zweiten ablaufen (${t8.zweiter}) → T8 ${T8 ? "grün (vakuös!)" : "rot"}`
+                `die löschende Frist lässt den Zweiten ablaufen (Werk ${t8.zweiter}, Helfer ${t8.helferZweiter}) → T8 ${T8 ? "grün (vakuös!)" : "rot"}`
         );
         process.exit(ok ? 0 : 1);
     }
@@ -402,7 +420,11 @@ const SELBST = process.argv.includes("--selftest");
     );
     console.log(
         `  ${T8 ? "✅" : "❌"} T8 der Abgelaufene bleibt im Faden: erster ${t8.erster} · zweiter ${t8.zweiter} (seine Uhr wartet ` +
-            `auf den Geist) · Geist des ersten im Faden ${t8.geist}`
+            `auf den Geist) · Geist des ersten im Faden ${t8.geist}; Helfer-Faden (${helferNr.join(" → ") || "leer"}): erster ` +
+            `${t8.helferErster} · zweiter ${t8.helferZweiter} · Geist ${t8.helferGeist}` +
+            (T8 || t8.helferZweiter !== "abgelaufen" || t8.zweiter !== "offen"
+                ? ""
+                : " — Täter _foundryUhren: die Nummer eines Helfer-Auftrags (w<k>_<n>) liest nicht, seine Uhr läuft ab dem Anmelden")
     );
     if (!(T1 && T2 && T3 && T4 && T5 && T6 && T7 && T8)) {
         console.error("\n❌ ROT — ein Takt rechnet Teures für die ganze Welt.");
