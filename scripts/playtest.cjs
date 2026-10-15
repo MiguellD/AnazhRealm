@@ -31009,11 +31009,10 @@ async function checkBandStoffSignatur(ctx) {
         const tb = tor("kathedrale");
         const ma = r._membranMaterialFor(ta);
         const mb = r._membranMaterialFor(tb);
-        const fa = ma.mat.userData.tor.w;
-        const fb = mb.mat.userData.tor.w;
-        out.fensterVerschieden = fa.x > 0.001 !== fb.x > 0.001 || fa.w > 0.001 !== fb.w > 0.001;
+        const sa = ma.mat.userData.tor;
+        const sb = mb.mat.userData.tor;
+        out.gestaltVerschieden = !sa.a.equals(sb.a) && !sa.pd.equals(sb.pd);
         out.membran = k(ma.mat) === k(mb.mat);
-        out.nebel = k(r._nebelMaterialFor(ta, ma.u).mat) === k(r._nebelMaterialFor(tb, mb.u).mat);
         out.atem = typeof ma.u.time.value === "number" && ma.u !== mb.u;
         const bau = () => {
             const m = new T.MeshStandardNodeMaterial();
@@ -31037,8 +31036,8 @@ async function checkBandStoffSignatur(ctx) {
     );
     check("1310-18 Schlüssel: verschiedene Signaturen tragen verschiedene Programm-Schlüssel", res.trennt === true);
     check(
-        "1310-18 Schlüssel: zwei Tore mit verschiedenen Realm-Fenstern tragen EINE Membran und EINEN Nebel",
-        res.fensterVerschieden === true && res.membran === true && res.nebel === true && res.atem === true
+        "1310-18 Schlüssel: zwei Tore verschiedener Gestalt (Bogen, Palette) tragen EINE Membran (D8: der Nebel fiel)",
+        res.gestaltVerschieden === true && res.membran === true && res.atem === true
     );
     check(
         "1310-18 Lauf-Kontrolle: zwei frisch und gleich gebaute Graphen tragen zwei Schlüssel (r184 schlüsselt nach Identität)",

@@ -87,6 +87,32 @@
     // die Heimat lernt die Welt-Sprache von der WELT selbst. Esc bringt heim.
     B = AnazhHuelle.bruecke({
         welt: "skeleton",
+        // DAS ZIEL-BILD (D8): die Leere malt sich selbst als Panorama — der Schein der Seite (die Ellipse der Leere, ihr Ton) mit
+        // dem Tor-Glyph in der Mitte der Öffnung (u = ¼); die Tor-Membran der Heimat zeigt es
+        panorama: () => ({
+            bild: (ctx, w, h) => {
+                const ton = /^#?[0-9a-f]{6}$/i.test(document.body.style.background || "")
+                    ? document.body.style.background
+                    : null;
+                const g = ctx.createRadialGradient(w / 4, h / 2, 0, w / 4, h / 2, w * 0.6);
+                g.addColorStop(0, ton || "#141a2e");
+                g.addColorStop(0.78, "#05060a");
+                g.addColorStop(1, "#05060a");
+                ctx.fillStyle = g;
+                ctx.fillRect(0, 0, w, h);
+                const glyph = byId("glyph");
+                const rand = glyph ? getComputedStyle(glyph).borderTopColor : "#43c98a";
+                ctx.save();
+                ctx.shadowColor = rand;
+                ctx.shadowBlur = 18;
+                ctx.strokeStyle = rand;
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.ellipse(w / 4, h / 2, h * 0.11, h * 0.11, 0, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.restore();
+            },
+        }),
         manifest: true,
         wort,
         enter: (avatar) => {

@@ -17,6 +17,9 @@
  *   bruecke(opt)               die Portal-Brücke + der DSL-Adapter (skeleton-Norm): ready EINMAL (kein Echo), nur der
  *                              Eltern-Rahmen spricht, `["chain", …]` rekursiv, das Einzelwort der Heimat (["w", …args])
  *                              ganz — nie op[0] je Element (aus "gt" wurde "g"). Esc bringt heim, außer die Welt behält ihn.
+ *   panorama(T, renderer, scene, ort, opt)  DAS ZIEL-BILD (D8): die Welt des Studios als Equirekt 512 × 256, linear, aus
+ *                              ihrem eigenen Renderer — das Labor liest es selbst (rt), die Brücke exportiert es (daten);
+ *                              panoramaBild(maler) dasselbe für die flache Welt (sie malt ihr Equirekt selbst)
  *   toast(text, ms) · zufall(seed) · knopfMitText(wurzel, wort)
  *
  * Die Hülle ändert keine Bau-Bytes: sie reicht Werte durch, die Gesetzbücher bauen (gate:asset-contract unverändert).
@@ -607,10 +610,203 @@
         return K;
     }
 
+    // ── DAS PANORAMA DES STUDIOS (D8, Karte „Das Tor als Fenster") — die EINE Quelle des Ziel-Bilds der Tor-Membran ──
+    // Das Studio rendert seine EIGENE Welt (seine Szene, sein Renderer, Labor = Welt) einmal von einem Ort aus: sechs
+    // 90°-Würfe (je Seite ein ebenes Ziel 256²), gefaltet ins Equirekt 512 × 256 (die Richtung je Texel wie three
+    // `equirectUV`: u = atan2(z, x)/2π + ½, v = asin(y)/π + ½, Zeile 0 unten). DER BLICK DES STUDIOS: `opt.kamera` stellt den
+    // Ort (ihre Lage), die Tiefe (nah/fern) und dreht das Bild, bis die Mitte der Öffnung (−z des Lesers, u = ¼) zeigt, was die
+    // Kamera vor sich hat.
+    // DIE WERTE sind die Bild-Werte des Studios, ins Lineare gelesen: die Würfe schreiben wie der Schirm (sRGB-Kodierung des Ziels
+    // — Hintergrund und Nebel stehen in r128 in Bild-Werten, die Stoffe kodiert der Shader), die Faltung dekodiert; ohne
+    // Tonabbildung (der Leser belichtet und tont selbst). opt: verbergen (Objekte, die nicht ins Bild gehören — die eigene
+    // Membran), nah/fern, lesen (true: die Texel als Halbfloat-Puffer zurück, der Welt-Export). Rückgabe { w, h, rt, daten } —
+    // rt.texture liest das Labor selbst.
+    var PANO_W = 512,
+        PANO_H = 256;
+    function halb(x) {
+        // float32 → float16 (IEEE 754 binary16, gerundet zur nächsten, Überlauf → ∞, unter dem Normalbereich subnormal)
+        var f = halb.f || (halb.f = new Float32Array(1)),
+            u = halb.u || (halb.u = new Uint32Array(f.buffer));
+        f[0] = x;
+        var b = u[0],
+            s = (b >>> 16) & 0x8000,
+            e = ((b >>> 23) & 0xff) - 112,
+            m = b & 0x7fffff;
+        if (e >= 31) return s | (((b >>> 23) & 0xff) === 0xff && m ? 0x7e00 : 0x7c00);
+        if (e <= 0) {
+            if (e < -10) return s;
+            m = (m | 0x800000) >> (1 - e);
+            return s | ((m + 0x1000) >> 13);
+        }
+        return s | ((e << 10) + ((m + 0x1000) >> 13));
+    }
+    function panorama(T, renderer, scene, ort, opt) {
+        opt = opt || {};
+        var kam = opt.kamera || null,
+            drehung = 0;
+        if (kam) {
+            // die Tiefe des Blicks ist die der Kamera: was jenseits ihres fern liegt (die Kuppel, der Horizont-Ring), zeigt das
+            // Studio nie — die Würfe auch nicht
+            if (opt.nah == null) opt.nah = kam.near;
+            if (opt.fern == null) opt.fern = kam.far;
+            kam.updateMatrixWorld();
+            ort = [kam.position.x, kam.position.y, kam.position.z];
+            var vor = new T.Vector3();
+            kam.getWorldDirection(vor);
+            if (vor.x * vor.x + vor.z * vor.z > 1e-8) drehung = Math.atan2(vor.z, vor.x) + Math.PI / 2;
+        }
+        var kodiert = T.sRGBEncoding !== undefined;
+        // SECHS EBENE WÜRFE statt eines Würfel-Ziels: auf der Radeon 890M (ANGLE/D3D11) löschte r128 den Hintergrund nur in EINER
+        // Seite eines WebGLCubeRenderTarget — die übrigen fünf blieben schwarz, wo keine Geometrie stand (der Himmel des Fachwerks
+        // schwarz, Mittel 0,309 statt 0,542 unter swiftshader). Je Seite ein eigenes 2D-Ziel mit eigener Kamera (90°, Seitenverhältnis
+        // 1); die Faltung projiziert jede Richtung in die Seite mit dem größten Anteil.
+        var SEITEN = [
+            [1, 0, 0, 0, 1, 0],
+            [-1, 0, 0, 0, 1, 0],
+            [0, 1, 0, 0, 0, -1],
+            [0, -1, 0, 0, 0, 1],
+            [0, 0, 1, 0, 1, 0],
+            [0, 0, -1, 0, 1, 0],
+        ];
+        var ziele = [],
+            vor6 = [],
+            rechts6 = [],
+            hoch6 = [];
+        var verborgen = opt.verbergen || [];
+        var sicht = verborgen.map(function (o) {
+            return o.visible;
+        });
+        verborgen.forEach(function (o) {
+            o.visible = false;
+        });
+        var tm = renderer.toneMapping,
+            alt = renderer.getRenderTarget();
+        renderer.toneMapping = T.NoToneMapping;
+        try {
+            for (var i = 0; i < 6; i++) {
+                var S = SEITEN[i];
+                var ziel = new T.WebGLRenderTarget(256, 256, {
+                    type: T.HalfFloatType,
+                    generateMipmaps: false,
+                    minFilter: T.LinearFilter,
+                    magFilter: T.LinearFilter,
+                    encoding: kodiert ? T.sRGBEncoding : undefined,
+                });
+                var cam = new T.PerspectiveCamera(90, 1, opt.nah || 0.1, opt.fern || 4000);
+                cam.position.set(ort[0], ort[1], ort[2]);
+                cam.up.set(S[3], S[4], S[5]);
+                cam.lookAt(ort[0] + S[0], ort[1] + S[1], ort[2] + S[2]);
+                cam.updateMatrixWorld(true);
+                var e = cam.matrixWorld.elements;
+                rechts6.push(new T.Vector3(e[0], e[1], e[2]));
+                hoch6.push(new T.Vector3(e[4], e[5], e[6]));
+                vor6.push(new T.Vector3(S[0], S[1], S[2]));
+                renderer.setRenderTarget(ziel);
+                renderer.render(scene, cam);
+                ziele.push(ziel);
+            }
+        } finally {
+            verborgen.forEach(function (o, i) {
+                o.visible = sicht[i];
+            });
+        }
+        var rt = new T.WebGLRenderTarget(PANO_W, PANO_H, {
+            type: T.FloatType,
+            minFilter: T.LinearFilter,
+            magFilter: T.LinearFilter,
+            depthBuffer: false,
+        });
+        var mat = new T.ShaderMaterial({
+            uniforms: {
+                uSeite: {
+                    value: ziele.map(function (z) {
+                        return z.texture;
+                    }),
+                },
+                uVor: { value: vor6 },
+                uRechts: { value: rechts6 },
+                uHoch: { value: hoch6 },
+                uDreh: { value: drehung },
+                uKodiert: { value: kodiert ? 1 : 0 },
+            },
+            vertexShader: "varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,0.0,1.0);}",
+            fragmentShader:
+                "uniform sampler2D uSeite[6];uniform vec3 uVor[6],uRechts[6],uHoch[6];uniform float uDreh,uKodiert;varying vec2 vUv;" +
+                "vec3 seite(sampler2D t,vec3 d,vec3 f,vec3 r,vec3 h){float z=dot(d,f);" +
+                "return texture2D(t,vec2(dot(d,r),dot(d,h))/z*0.5+0.5).rgb;}" +
+                "void main(){" +
+                "float az=(vUv.x-0.5)*6.28318530718+uDreh;float el=(vUv.y-0.5)*3.14159265359;" +
+                "vec3 d=vec3(cos(el)*cos(az),sin(el),cos(el)*sin(az));vec3 a=abs(d);vec3 c;" +
+                "if(a.x>=a.y&&a.x>=a.z)c=d.x>0.0?seite(uSeite[0],d,uVor[0],uRechts[0],uHoch[0]):seite(uSeite[1],d,uVor[1],uRechts[1],uHoch[1]);" +
+                "else if(a.y>=a.z)c=d.y>0.0?seite(uSeite[2],d,uVor[2],uRechts[2],uHoch[2]):seite(uSeite[3],d,uVor[3],uRechts[3],uHoch[3]);" +
+                "else c=d.z>0.0?seite(uSeite[4],d,uVor[4],uRechts[4],uHoch[4]):seite(uSeite[5],d,uVor[5],uRechts[5],uHoch[5]);" +
+                "vec3 l=mix(c/12.92,pow((max(c,0.0)+0.055)/1.055,vec3(2.4)),step(vec3(0.04045),c));" +
+                "gl_FragColor=vec4(mix(c,l,uKodiert),1.0);}",
+            depthTest: false,
+            depthWrite: false,
+            toneMapped: false,
+        });
+        var quad = new T.Mesh(new T.PlaneGeometry(2, 2), mat);
+        quad.frustumCulled = false;
+        var buehne = new T.Scene();
+        buehne.add(quad);
+        renderer.setRenderTarget(rt);
+        renderer.render(buehne, new T.Camera());
+        var daten = null;
+        if (opt.lesen) {
+            var f = new Float32Array(PANO_W * PANO_H * 4);
+            renderer.readRenderTargetPixels(rt, 0, 0, PANO_W, PANO_H, f);
+            daten = halbPuffer(f);
+        }
+        renderer.setRenderTarget(alt);
+        renderer.toneMapping = tm;
+        quad.geometry.dispose();
+        mat.dispose();
+        ziele.forEach(function (z) {
+            z.dispose();
+        });
+        return { w: PANO_W, h: PANO_H, rt: rt, daten: daten };
+    }
+    function halbPuffer(f) {
+        var d = new Uint16Array(f.length);
+        for (var i = 0; i < f.length; i++) d[i] = halb(f[i]);
+        return d;
+    }
+    // DIE FLACHE WELT (D8): eine Welt ohne Szene (die Skelett-Leere, das Strom-Feld, der Klang) malt ihr Equirekt selbst in
+    // IHRER Technik — `maler(ctx, w, h)` auf eine 2D-Fläche 512 × 256 (Zeile 0 OBEN wie jede Leinwand; die Mitte der Öffnung
+    // ist u = ¼), Bild-Werte sRGB; die Hülle liest sie ins Lineare und legt Zeile 0 nach unten wie das Equirekt des Würfels.
+    function panoramaBild(maler) {
+        var cv = doc.createElement("canvas");
+        cv.width = PANO_W;
+        cv.height = PANO_H;
+        var ctx = cv.getContext("2d");
+        maler(ctx, PANO_W, PANO_H);
+        var px = ctx.getImageData(0, 0, PANO_W, PANO_H).data;
+        var f = new Float32Array(PANO_W * PANO_H * 4);
+        var lin = function (c) {
+            c /= 255;
+            return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+        };
+        for (var y = 0; y < PANO_H; y++)
+            for (var x = 0; x < PANO_W; x++) {
+                var q = ((PANO_H - 1 - y) * PANO_W + x) * 4,
+                    z = (y * PANO_W + x) * 4;
+                f[z] = lin(px[q]);
+                f[z + 1] = lin(px[q + 1]);
+                f[z + 2] = lin(px[q + 2]);
+                f[z + 3] = 1;
+            }
+        return { w: PANO_W, h: PANO_H, rt: null, daten: halbPuffer(f) };
+    }
+
     // ── DIE PORTAL-BRÜCKE + DER DSL-ADAPTER (skeleton-Norm, EINE Kopie) ──
     // opt: welt · label · dsl (Wörter) | manifest (true = ./manifest.json lesen und melden) · wort(w, args) → die Tat ·
     //      enter(avatar, msg) · esc(ev) → false behält Esc in der Welt · sonst(msg) jede andere Nachricht der Heimat (das
-    //      terrain-Labor reicht so die Asset-Kanäle an die Foundry-Brücke, foundryKanal)
+    //      terrain-Labor reicht so die Asset-Kanäle an die Foundry-Brücke, foundryKanal) · panorama() → { THREE, renderer,
+    //      scene, kamera | ort, verbergen } oder { bild(ctx, w, h) } (die flache Welt), auch als Versprechen — DER EXPORT DES
+    //      ZIEL-BILDS (D8): fragt die Heimat `{ type: "panorama-bitte" }`, rendert die Hülle das Panorama der Welt (`panorama`
+    //      bzw. `panoramaBild`, gelesen) und schickt `{ type: "panorama", world, w, h, daten }` (Halbfloat-Texel, übertragen);
+    //      eine Welt ohne panorama() antwortet laut mit `fehler`
     function bruecke(opt) {
         opt = opt || {};
         var eltern = wurzel.parent && wurzel.parent !== wurzel ? wurzel.parent : null;
@@ -645,7 +841,42 @@
             if (m.type === "enter") {
                 if (opt.enter) opt.enter(m.avatar && typeof m.avatar === "object" ? m.avatar : {}, m);
             } else if (m.type === "dsl") wirke(m.program);
-            else if (opt.sonst) opt.sonst(m);
+            else if (m.type === "panorama-bitte") {
+                var antwort = { type: "panorama", world: opt.welt, reqId: m.reqId };
+                var schick = function () {
+                    try {
+                        eltern.postMessage(antwort, "*", antwort.daten ? [antwort.daten.buffer] : []);
+                    } catch (_e) {
+                        /* die Heimat ist fort */
+                    }
+                };
+                var bruch = function (e) {
+                    antwort.daten = null;
+                    antwort.fehler = String((e && e.message) || e);
+                    schick();
+                };
+                // die Welt nennt ihr Bild — sofort oder als Versprechen, wenn sie erst wachsen muss
+                new Promise(function (ja) {
+                    ja(opt.panorama ? opt.panorama() : null);
+                })
+                    .then(function (q) {
+                        var P = null;
+                        if (q && typeof q.bild === "function") P = panoramaBild(q.bild);
+                        else if (q && q.renderer && q.scene)
+                            P = panorama(q.THREE || wurzel.THREE, q.renderer, q.scene, q.ort || [0, 1.7, 0], {
+                                kamera: q.kamera,
+                                verbergen: q.verbergen,
+                                lesen: true,
+                            });
+                        if (!P) throw new Error("die Welt nennt kein Panorama (bruecke ohne panorama())");
+                        if (P.rt) P.rt.dispose();
+                        antwort.w = P.w;
+                        antwort.h = P.h;
+                        antwort.daten = P.daten;
+                        schick();
+                    })
+                    .catch(bruch);
+            } else if (opt.sonst) opt.sonst(m);
         });
         wurzel.addEventListener("keydown", function (ev) {
             if (ev.key !== "Escape") return;
@@ -689,6 +920,8 @@
         kosten: kosten,
         zaehle: zaehle,
         bruecke: bruecke,
+        panorama: panorama,
+        panoramaBild: panoramaBild,
         toast: toast,
         zufall: zufall,
         knopfMitText: knopfMitText,

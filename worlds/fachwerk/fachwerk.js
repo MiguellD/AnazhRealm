@@ -1008,6 +1008,10 @@ addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updat
     }
     AnazhHuelle.bruecke({
         welt: "fachwerk",
+        // DAS ZIEL-BILD (D8): die Hülle rendert diese Welt als Panorama aus dem Blick ihrer Kamera — die Tor-Membran der Heimat zeigt es
+        panorama: function () {
+            return { THREE: THREE, renderer: renderer, scene: scene, kamera: camera };
+        },
         label: "Fachwerkhaus — parametrisch, begehbar",
         dsl: FC.KULTNAMES.concat(["dorf", "haus"]),
         wort: function (w) {
