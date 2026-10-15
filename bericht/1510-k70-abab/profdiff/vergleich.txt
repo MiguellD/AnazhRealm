@@ -1,0 +1,72 @@
+Lauf | fps | Frame p50/p95 | CPU-Takt p50/p95
+lauf-A1.txt | 73.8 | 16.6/16.8 | 4.8/7.4
+lauf-A2.txt | 72.5 | 16.6/16.8 | 4.8/8.3
+lauf-B1.txt | 73.2 | 16.6/16.8 | 4.7/7.6
+lauf-B2.txt | 72.7 | 16.6/16.8 | 4.5/8
+cpuTaktMs p50: A 4.8|4.8 (4.80) → B 4.7|4.5 (4.60) Δ -0.20
+cpuTaktMs p95: A 7.4|8.3 (7.85) → B 7.6|8 (7.80) Δ -0.05
+frameMs p95: A 16.8|16.8 (16.80) → B 16.8|16.8 (16.80) Δ 0.00
+
+gesamt (µs je Frame, A → B, Δ):
+ 15533.44 →  15778.57     245.13  (root)
+  2672.44 →   2889.16     216.71  (program)
+  4262.71 →   4153.05    -109.66  renderer._renderObjectDirect 07.js
+  4265.09 →   4155.45    -109.64  _renderObjects three.webgpu.min.js
+  4263.73 →   4154.42    -109.31  renderObject three.webgpu.min.js
+  4264.75 →   4155.45    -109.30  renderer.renderObject 07.js
+  4227.72 →   4119.86    -107.86  zeichne 07.js
+  4181.16 →   4075.73    -105.43  updateBefore three.webgpu.min.js
+  4519.24 →   4415.12    -104.12  _loopRender 25c.js
+  4177.08 →   4073.34    -103.74  updateBefore 25c.js
+  4386.75 →   4288.88     -97.88  _renderScene three.webgpu.min.js
+  4409.85 →   4312.14     -97.71  render three.webgpu.min.js
+  4393.89 →   4299.48     -94.41  renderer._renderScene 07.js
+  5782.04 →   5874.08      92.04  (idle)
+  6815.95 →   6747.10     -68.85  loop 25a.js
+  6962.06 →   6904.82     -57.24  e three.webgpu.min.js
+  6908.71 →   6856.24     -52.47  (anonym) pptr
+  1450.83 →   1399.62     -51.22  AnazhRealm._diaetRefresh 26c.js
+  1470.89 →   1422.54     -48.35  o.needsRefresh 10.js
+   192.29 →    145.41     -46.88  equals three.webgpu.min.js
+  1189.25 →   1144.72     -44.53  renderer._renderBundles 07.js
+  1181.77 →   1137.88     -43.90  _renderBundles three.webgpu.min.js
+  1179.39 →   1136.85     -42.54  renderer._renderBundle 07.js
+  1160.04 →   1119.75     -40.29  _renderBundle three.webgpu.min.js
+   735.91 →    697.95     -37.96  _update three.webgpu.min.js
+     0.00 →     34.89      34.89  _kreaturHuellenKontakt 06c.js
+   790.00 →    758.13     -31.86  renderShadow three.webgpu.min.js
+   526.67 →    496.74     -29.93  i three.webgpu.min.js
+   793.73 →    764.29     -29.44  updateShadow three.webgpu.min.js
+    28.10 →      0.00     -28.10  _sonnenRichtung 24.js
+
+selbst (µs je Frame, A → B, Δ):
+  2672.44 →   2889.16     216.71  (program)
+  5782.04 →   5874.08      92.04  (idle)
+   173.61 →    130.36     -43.25  equals three.webgpu.min.js
+   186.54 →    165.25     -21.29  updateByType three.webgpu.min.js
+   158.32 →    138.22     -20.10  updateForRender three.webgpu.min.js
+   147.10 →    128.29     -18.81  _update three.webgpu.min.js
+   217.11 →    200.15     -16.96  zeichne 07.js
+   218.45 →    203.22     -15.23  loop 25a.js
+   198.05 →    183.36     -14.69  get three.webgpu.min.js
+   165.16 →    178.92      13.76  AnazhRealm._diaetRefresh 26c.js
+   257.52 →    245.65     -11.87  _projectObject three.webgpu.min.js
+    18.69 →     30.45      11.76  _kreaturHuellenKontakt 06c.js
+    11.56 →      0.00     -11.56  _renderBundle three.webgpu.min.js
+     0.00 →     10.60      10.60  animatePlayerSoul 15c.js
+    30.92 →     41.04      10.12  _passSicht 25c.js
+    69.98 →     80.05      10.07  flaeche gelaende-core.js
+    15.63 →     25.67      10.04  _tickFocusingAffordances 15a.js
+     0.00 →      9.92       9.92  _dayNightApplyWaterMaterials 24.js
+     9.51 →      0.00      -9.51  onSubmittedWorkDone
+     0.00 →      9.24       9.24  o.needsRefresh 07.js
+   170.27 →    161.14      -9.14  updateMatrixWorld three.core.min.js
+    16.65 →      7.88      -8.77  _kreaturRuht 06c.js
+    63.86 →     72.56       8.69  _blockerUmPlatz 11b.js
+    13.94 →      5.46      -8.48  updateAttributes three.webgpu.min.js
+    71.04 →     78.69       7.66  getForRender three.webgpu.min.js
+     7.45 →      0.00      -7.45  _dayNightSunDirection 24.js
+    11.89 →      5.12      -6.77  _stepCharacter 25b.js
+    17.66 →     24.29       6.63  updateReference three.webgpu.min.js
+    38.39 →     44.83       6.44  _renderScene three.webgpu.min.js
+    28.54 →     34.90       6.36  renderObject three.webgpu.min.js
