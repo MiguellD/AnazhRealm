@@ -719,7 +719,13 @@ const server = statikServer();
                             stabil = 0;
                             last = sz;
                         }
-                        const offen = (st.voxelMeshPending && st.voxelMeshPending.size > 0) || foundryOffen() > 0;
+                        // offen ist, was die Welt noch baut: Chunks, die Foundry und die Schlange des Walds samt ihren
+                        // Pflanz-Gängen (K69: sie plant im Takt — solange sie plant, weckt ihre Regung die Fege-Takte)
+                        const offen =
+                            (st.voxelMeshPending && st.voxelMeshPending.size > 0) ||
+                            foundryOffen() > 0 ||
+                            (r._waldPlanSchlange && r._waldPlanSchlange.size > 0) ||
+                            (r._waldPflanzWarten && r._waldPflanzWarten.size > 0);
                         if (i > 60 && stabil > 80 && !offen) break;
                         if (i % 5 === 0) await pause(10);
                     }

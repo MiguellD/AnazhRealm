@@ -353,7 +353,7 @@
         "38629080926"
       ]
     },
-    "Adaptiver Carve-Rebuild (der Grab-Stall an der Wurzel)": {
+    "Carve-Neubau ueber den Worker (der Grab-Stall an der Wurzel)": {
       "s": 6,
       "n": 5,
       "lauf": "npm run gate:carve",
@@ -2100,7 +2100,7 @@
             5
           ],
           [
-            "Adaptiver Carve-Rebuild (der Grab-Stall an der Wurzel)",
+            "Carve-Neubau ueber den Worker (der Grab-Stall an der Wurzel)",
             3,
             5
           ],

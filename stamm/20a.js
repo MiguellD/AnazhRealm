@@ -524,13 +524,11 @@ class AnazhRealm_Z20a {
             Q.delete(k);
             n++;
         }
-        // die wartenden Pflanz-Gänge (`_forestPlantChunk`): steht der Plan ihres Chunks, pflanzt die Schlange ihn jetzt
+        // die wartenden Pflanz-Gänge (`_forestPlantChunk`): steht der Plan ihres Chunks, pflanzt die Schlange ihn jetzt — auch
+        // wenn sein Chunk inzwischen ging: die Pflanzung geschieht EINMAL je Chunk (`voxelPopulatedChunks` fällt nie), ein
+        // verworfener Gang ließ seinen Wald für immer leer (K69-2: die Klang-Linse fand am Waldort 5 Bäume ≤ 15 m)
         if (P && P.size)
             for (const key of [...P]) {
-                if (!this.state.voxelChunks || !this.state.voxelChunks.has(key)) {
-                    P.delete(key);
-                    continue;
-                }
                 const i = key.indexOf(",");
                 const cx = Number(key.slice(0, i));
                 const cz = Number(key.slice(i + 1));
