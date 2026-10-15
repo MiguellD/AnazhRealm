@@ -1570,14 +1570,21 @@
     // Wildnis). Leser: jeder Leser der Höhe (Dichte, Hydrosphäre, Fern-Ring, Spawn-Ort) in Stamm und Worker.
     // `aus` (optional) trägt den Hang der Wildnis-Fläche (tan, `flaeche`) — ein Term darüber, der die Höhe ändert, nimmt
     // ihn (0: kein Hang-Urteil, wo Insel, Rampe oder Bucht formen), ebenso den Schutt des Schicht-Gesetzes (`aus.schutt`
-    // 0..1: der Schutthang der Treppe × Stil, `treppeSchutt` — der Leser ist der Fels-Stoff des Bodens, K17).
+    // 0..1: der Schutthang der Treppe × Stil, `treppeSchutt` — der Leser ist der Fels-Stoff des Bodens, K17) und die Wand des
+    // Erdbaus (`aus.wand` 0 | 1, K66: der Grund-Zweig von `erdbauWand` — der Erdbau hebt oder senkt den Grund um mehr als
+    // `wandM` / 2, und (x, z) liegt auf keiner Fläche; der Leser ist die Ferne, die keine Normale kennt — Ring, Kronen-Karte,
+    // Feld-Pass: der Schutt des Fels-Stoffs mit dem vollen Gewicht wie im Netz).
     function hoehe(L, x, z, mitDetail = true, aus) {
         let h = hoeheGrund(L, x, z, mitDetail, aus);
+        if (aus) aus.wand = 0;
         // der Erdbau der Orte (K10) liegt als letzter Term auf allem: der Ort vor dem Hang
         const E = L.erdbau;
         if (E) {
             const h2 = erdbauY(E, x, z, h);
-            if (aus && h2 !== h) aus.hang = 0;
+            if (aus && h2 !== h) {
+                aus.hang = 0;
+                if (Math.abs(h2 - h) > ERDBAU.wandM / 2 && !(erdbauY(E, x, z, NaN) === erdbauY(E, x, z, NaN))) aus.wand = 1;
+            }
             h = h2;
         }
         return h;
@@ -3146,12 +3153,14 @@
         // DIE WAND DES ERDBAUS (K66): der Vertex unter dem Himmel, steiler als `schuttKandidat`, trägt an der Wand des Erdbaus
         // (`erdbauWand`: Böschung, Kante zwischen zwei Flächen, Absatz an der Reichweite) den Schutt — die Stufe des Dorfs liest
         // sich als Stein, nie als Wiese; Fläche, Weg und die unbewegte Natur bleiben, wie sie sind. Ohne Erdbau ruht der Term
-        // (byte-gleich).
-        if (L.erdbau)
+        // (byte-gleich). Die Wand trägt den Stoff mit vollem Gewicht, nie × `schutt` wie der Schutthang des Schicht-Gesetzes
+        // (K66, Prüfung 1: mit 0,85 blieb ein Siebtel der Wiesen-Farbe im Vertex, die Wiesen-Wache `gruenSchwelle` las sie als
+        // Wiese — die Nah-Wiese setzte Halme auf die Böschung, ihr Leser ist der Grün-Kanal der Boden-Karte).
+        const EW = L.erdbau ? new Float32Array(n) : null;
+        if (EW)
             for (let i = 0; i < n; i++) {
                 if (1 - N[3 * i + 1] < o.schuttKandidat || (H && H[i] < 1)) continue;
-                const ew = erdbauWand(L, P[3 * i], P[3 * i + 1], P[3 * i + 2], N[3 * i + 1]);
-                if (ew > SW[i]) SW[i] = ew;
+                EW[i] = erdbauWand(L, P[3 * i], P[3 * i + 1], P[3 * i + 2], N[3 * i + 1]);
             }
         const W = new Float32Array(n);
         const KM = new Uint8Array(n);
@@ -3166,7 +3175,7 @@
             let t = (st - o.rockLo) / (o.rockHi - o.rockLo);
             t = t < 0 ? 0 : t > 1 ? 1 : t;
             const wr = t * t * (3 - 2 * t);
-            const ws = o.schutt * SW[i] * (1 - wr);
+            const ws = (EW && EW[i] > o.schutt * SW[i] ? EW[i] : o.schutt * SW[i]) * (1 - wr);
             SW[i] = ws;
             const w = Math.max(H ? 1 - H[i] : 0, wr + ws);
             if (!(w > 0)) continue;

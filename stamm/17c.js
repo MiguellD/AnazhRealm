@@ -1301,6 +1301,14 @@ class AnazhRealm_Z17c {
         return Math.hypot(px - (f.ax + dx * h), pz - (f.az + dz * h)) - f.halb;
     }
 
+    // Das Gewicht EINER Form am Punkt (0 … 1): voll ab −rand innen, 0 ab +rand außen, dazwischen smoothstep — an der Kante 0,5.
+    // Leser: der Maler (`_wegeKarteMale`) und die Linse des Vorplatzes (gate:settlement Teil O) — DIESELBE Zahl.
+    static _wegeFormGewicht(f, px, pz, rand) {
+        const q = (rand - AnazhRealm._wegeFormAbstand(f, px, pz)) / (2 * rand);
+        if (q <= 0) return 0;
+        return q >= 1 ? 1 : q * q * (3 - 2 * q);
+    }
+
     // Die Grenze der NAH-Stufe als Bruchteil ihres Fensters (relativ zur Mitte, je Achse): zwei Texel vor dem Rand,
     // damit die bilineare Probe nie den leeren Rand-Texel liest. CPU-Leser und Boden-Shader lesen dieselbe Zahl.
     static _wegeStufeNah(N) {
@@ -1338,10 +1346,8 @@ class AnazhRealm_Z17c {
             const pz = z0w + (j + 0.5) * t;
             for (let i = i0; i <= i1; i++) {
                 const px = x0w + (i + 0.5) * t;
-                const d = AnazhRealm._wegeFormAbstand(f, px, pz);
-                let q = (rand - d) / (2 * rand);
-                if (q <= 0) continue;
-                q = q >= 1 ? 1 : q * q * (3 - 2 * q);
+                const q = AnazhRealm._wegeFormGewicht(f, px, pz, rand);
+                if (!(q > 0)) continue;
                 const k = (j * N + i) * 2 + f.kanal;
                 const v = Math.round(q * 255);
                 if (v > daten[k]) daten[k] = v;
@@ -1828,13 +1834,36 @@ class AnazhRealm_Z17c {
         };
         let reich = 0; // so weit reicht der Plan um seinen Ursprung (dieselbe Hülle wie die Ort-Wahl, `_ortWahl`)
         for (const s of plan.slots || []) reich = Math.max(reich, Math.hypot(s.x || 0, s.z || 0) + 16);
+        // Der Maler malt weich (±`WEGE_KARTE.randM`, `_wegeFormGewicht`): zwei Formen, die sich nur berühren, tragen an ihrer Naht je
+        // die Hälfte — dort wuchs die Wiese mit 54 % ihrer Dichte zwischen Gasse und Stufe (K66, Prüfung 1: Bild tuer2, das Feld
+        // fiel auf 0,5; an der Schwelle, wo die Fläche an der Hauswand endet, auf 0,8). Der Boden des Vorplatzes greift darum um den
+        // Rand des Malers unter die Schwelle und um sein ganzes Band (2 · randM) über den Saum hinaus in die Gasse (mit einem randM
+        // blieben am Akt zwei Häuser bei 0,89 am Rand der Gasse).
+        const RW = AnazhRealm.WEGE_KARTE.randM;
         for (const p of this._erdbauRoh())
-            if (p.vorplatz != null && Math.hypot(p.cx - origin.x, p.cz - origin.z) <= reich)
-                kasten(FC.vorplatzBoden(p));
+            if (p.vorplatz != null && Math.hypot(p.cx - origin.x, p.cz - origin.z) <= reich) {
+                const b = FC.vorplatzBoden(p);
+                const sn = Math.sin(b.phi);
+                const cs = Math.cos(b.phi);
+                kasten({
+                    cx: b.cx - (sn * RW) / 2,
+                    cz: b.cz - (cs * RW) / 2,
+                    phi: b.phi,
+                    ex: b.ex,
+                    ez: b.ez + 1.5 * RW,
+                });
+            }
         for (const sl of plan.slots || []) {
             if (!sl.tuer || !FC.eingangVon(sl).hof) continue;
             const st = FC.vorplatzFlaeche(sl, undefined, true);
-            if (st) kasten({ cx: origin.x + st.cx, cz: origin.z + st.cz, phi: st.phi, ex: st.ex, ez: st.ez });
+            if (st)
+                kasten({
+                    cx: origin.x + st.cx,
+                    cz: origin.z + st.cz,
+                    phi: st.phi,
+                    ex: st.ex,
+                    ez: st.ez + AnazhRealm.WEGE_KARTE.randM,
+                });
         }
         // Die ÄCKER (felder-Schicht): je OBB ein gedrehtes Acker-Rechteck (Kanal G) — die Layout-Wahrheit des
         // Gesetzbuchs lebt im Boden.

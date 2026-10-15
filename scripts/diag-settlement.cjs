@@ -277,6 +277,11 @@ function ortVerdikt(m) {
     // eine Wand ohne Vertex ist keine Messung (der Ort am Hang trägt Böschungen): ROT wie eine Wand im Wiesen-Stoff
     if (!(m.terrasseWand > 0 && m.terrasseWiese === 0))
         fehl.push(`Wand der Terrasse mit Wiesen-Stoff ${m.terrasseWiese}/${m.terrasseWand}`);
+    // K66, Prüfung 2: keine Wiese wächst auf der Wand (der Grün-Kanal, den die Nah-Wiese liest), die Ferne trägt ihren Schutt
+    if (!(m.terrasseWand > 0 && m.terrasseHalm === 0))
+        fehl.push(`Wand der Terrasse mit Halm-Grund ${m.terrasseHalm}/${m.terrasseWand}`);
+    if (!(m.terrasseWand > 0 && m.terrasseFerne === 0))
+        fehl.push(`Wand der Terrasse in der Ferne ohne Schutt ${m.terrasseFerne}/${m.terrasseWand}`);
     if (!(m.fremdBauten === 0)) fehl.push(`fremde Bauten im Erdbau ${m.fremdBauten}`);
     // endet die Kette vor 8 s (der Wagen fuhr den Dorfweg zu Ende), zählt das Tempo bis zum Ende über 8 s: der Weg ist kürzer
     // als das Soll, nie der Wagen langsamer
@@ -894,6 +899,8 @@ const FIXTURES = [
             vorplatzN: 16,
             terrasseWand: 120,
             terrasseWiese: 0,
+            terrasseHalm: 0,
+            terrasseFerne: 0,
         };
         Object.assign(gut, {
             planHashGleich: true,
@@ -915,6 +922,8 @@ const FIXTURES = [
             laterneWand: 1.45,
             vorplatzOk: 0,
             terrasseWiese: 87,
+            terrasseHalm: 64,
+            terrasseFerne: 120,
         });
         const vs = ortVerdikt(schlecht).join(" · ");
         check(
@@ -928,6 +937,8 @@ const FIXTURES = [
                 /Laterne 1.45 m vor einer Hauswand/.test(vs) &&
                 /Stufe und Vorplatz bis zur Gasse auf dem Weg 0\/16/.test(vs) &&
                 /Wand der Terrasse mit Wiesen-Stoff 87\/120/.test(vs) &&
+                /Wand der Terrasse mit Halm-Grund 64\/120/.test(vs) &&
+                /Wand der Terrasse in der Ferne ohne Schutt 120\/120/.test(vs) &&
                 /Wand der Terrasse mit Wiesen-Stoff 0\/0/.test(
                     ortVerdikt(Object.assign({}, gut, { terrasseWand: 0 })).join(" · ")
                 ),
@@ -1882,6 +1893,26 @@ const FIXTURES = [
                     // (fachwerk `eingangVon`, beim Hof-Haus das Tor) bis zur Gasse liegt keine Lücke: auf der Achse der Tür je 0,25 m
                     // bis vorplatzM + gasseM — wer nach einem Punkt ohne Fläche wieder auf eine Fläche tritt, hat Wiese vor der Tür
                     const OG = window.__fachwerkCore.ORT_GESETZ;
+                    // und (K66, Prüfung 2: Bild tuer2 trug Halme zwischen Gasse und Stufe, obwohl jeder Punkt in einer Form lag) die
+                    // Wiese liest das GEMALTE Feld (`_pfadFeldAt` → `_wegeFeldAt`: die Bytes der Wege-Karte, weich um ±randM) — zwei Formen, die sich
+                    // nur berühren, tragen an der Naht je 0,5: auf der Achse der Tür bis in die Gasse (die erste Weg-Form, die kein
+                    // Kasten ist) hält das Feld ≥ 0,9 (die Wiese ≤ 17 % ihrer Dichte). Die Karte zieht dafür an den Ort und zurück.
+                    const AR = r.constructor;
+                    const GZ = AR.GRUNDRISS_ZELLE;
+                    const inGasse = (x, z) => {
+                        const l = r
+                            ._grundrissStand()
+                            .wege.get(AR._grundrissSchluessel(Math.floor(x / GZ), Math.floor(z / GZ)));
+                        if (l)
+                            for (const b of l)
+                                for (const f of b.formen)
+                                    if (f.typ !== "kasten" && f.kanal >= 0 && AR._wegeFormAbstand(f, x, z) < 0)
+                                        return true;
+                        return false;
+                    };
+                    const pmW = r.state.playerMesh;
+                    let feldMin = Infinity;
+                    if (P.ort) r._tickWegeKarte({ x: P.ort.x, z: P.ort.z });
                     if (P.ort)
                         P.slots.forEach((sl, si) => {
                             const tu = sl.tuer;
@@ -1906,12 +1937,31 @@ const FIXTURES = [
                                     break;
                                 }
                             }
-                            if (r._aufWeg(wx, wz, 0) && !luecke) vpOk++;
+                            let tief = OG.vorplatzM;
+                            for (let t = 0.3; t <= OG.vorplatzM + OG.gasseM; t += 0.25)
+                                if (inGasse(...welt(ez - t))) {
+                                    tief = t;
+                                    break;
+                                }
+                            let duenn = null;
+                            for (let t = 0.3; t <= tief + 0.01; t += 0.1) {
+                                const [qx, qz] = welt(ez - t);
+                                const v = r._wegeFeldAt(qx, qz);
+                                if (v < feldMin) feldMin = v;
+                                if (v < 0.9 && duenn === null) duenn = [+t.toFixed(2), +v.toFixed(2)];
+                            }
+                            if (r._aufWeg(wx, wz, 0) && !luecke && !duenn) vpOk++;
                             else
                                 vpFehl.push(
-                                    luecke ? `${si}: Wiese ${luecke[0]}–${luecke[1]} m vor dem Eingang` : `${si}: Stufe`
+                                    luecke
+                                        ? `${si}: Wiese ${luecke[0]}–${luecke[1]} m vor dem Eingang`
+                                        : duenn
+                                          ? `${si}: Feld ${duenn[1]} ${duenn[0]} m vor dem Eingang (Gasse ab ${tief.toFixed(2)} m)`
+                                          : `${si}: Stufe`
                                 );
                         });
+                    if (P.ort && pmW) r._tickWegeKarte(pmW.position);
+                    res.vorplatzFeld = Number.isFinite(feldMin) ? Math.round(feldMin * 100) / 100 : null;
                     // DIE WAND DER TERRASSE (K66, Augen-Runde 15.10.: die Erdbau-Stufen trugen den Wiesen-Stoff als Flecken auf
                     // steilen Flächen), gezählt am Netz, das der Spieler sieht: der voxel-worker baut die Chunks um den Ort (± 60 m,
                     // Stufe 0, `_voxelWorkerComputeChunkMesh` — derselbe Bau wie das Streaming); Wand ist jeder Vertex unter dem
@@ -1926,6 +1976,9 @@ const FIXTURES = [
                         const span = r._voxelChunkConfig(0).span;
                         let wand = 0;
                         let wiese = 0;
+                        let halm = 0;
+                        let ferne = 0;
+                        const fernFehl = [];
                         let chunks = 0;
                         const fehl = [];
                         for (let a = Math.floor((P.ort.x - 60) / span); a <= Math.floor((P.ort.x + 60) / span); a++)
@@ -1952,6 +2005,25 @@ const FIXTURES = [
                                     const hub = GC.hoehe(Lg, x, z, true) - GC.hoehe(Lo, x, z, true);
                                     if (Math.abs(hub) <= 0.25) continue;
                                     wand++;
+                                    // K66, Prüfung 2: die Halme der Wand — die Nah-Wiese wächst nach dem Grün-Kanal der Boden-Karte
+                                    // (`_bodenKarteAusMesh`: die Wiesen-Wache `gruenSchwelle` über der FERTIGEN Vertex-Farbe), die
+                                    // Ferne nach `_fernSchuttAt` (Ring, Kronen-Karte, Feld-Pass): Wiese ab dem halben Grün, Ferne ohne Schutt
+                                    // — wo das Netz den Stoff der Wand zeigt (Schutt ≥ 0,5) und der Erdbau die Höhe der Ferne bewegt (ohne Detail-Term, wie
+                                    // der Ring); die Ferne ist ein Höhenfeld: unter der Kante einer Fläche zeigt sie die Fläche
+                                    const C3 = w.colors;
+                                    let tg = (C3[3 * i + 1] - 0.5 * (C3[3 * i] + C3[3 * i + 2])) / GG.gruenSchwelle;
+                                    tg = tg < 0 ? 0 : tg > 1 ? 1 : tg;
+                                    if (tg * tg * (3 - 2 * tg) >= 0.5) halm++;
+                                    if (
+                                        f === null &&
+                                        w.schutt[i] >= 0.5 &&
+                                        Math.abs(GC.hoehe(Lg, x, z, false) - GC.hoehe(Lo, x, z, false)) > 0.25 &&
+                                        !(r._fernSchuttAt(x, z) > 0)
+                                    ) {
+                                        ferne++;
+                                        if (fernFehl.length < 4)
+                                            fernFehl.push([x, y, z, hub].map((v) => Math.round(v * 100) / 100));
+                                    }
                                     let t = (st - GG.rockLo) / (GG.rockHi - GG.rockLo);
                                     t = t < 0 ? 0 : t > 1 ? 1 : t;
                                     if (t * t * (3 - 2 * t) + w.schutt[i] < 0.5) {
@@ -1966,6 +2038,9 @@ const FIXTURES = [
                         res.terrasseChunks = chunks;
                         res.terrasseWand = wand;
                         res.terrasseWiese = wiese;
+                        res.terrasseHalm = halm;
+                        res.terrasseFerne = ferne;
+                        res.terrasseFerneFehl = fernFehl;
                         res.terrasseFehl = fehl;
                     }
                     res.vorplatzOk = vpOk;
@@ -2218,6 +2293,10 @@ const FIXTURES = [
             vorplatzFehl: outO.vorplatzFehl,
             terrasseWand: outO.terrasseWand,
             terrasseWiese: outO.terrasseWiese,
+            terrasseHalm: outO.terrasseHalm,
+            terrasseFerne: outO.terrasseFerne,
+            terrasseFerneFehl: outO.terrasseFerneFehl,
+            vorplatzFeld: outO.vorplatzFeld,
             planHashGleich,
             fremdBauten: outO.fremdBauten,
             gtWeg: gtO.gtWeg,
