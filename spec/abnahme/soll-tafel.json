@@ -49,10 +49,10 @@
                 "werkzeug": "werkbank bild -278 +1.7 -1038 -276 +1.2 -1026 --wahl 0 --klasse '^(nahWiese:.*|streuSatz|bodenSatz)$' --abstand --ist boden-nah (Mess-Wiese K55)",
                 "messung": {
                     "werkzeug": "bild",
-                    "datum": "2026-10-15T01:05:35.711Z",
+                    "datum": "2026-10-15T02:16:07.795Z",
                     "stand": {
                         "version": "18.546.2",
-                        "sha": "22bb0d9cbba712086fcff76b704071ea9047fb96"
+                        "sha": "8675423b21b47443dad7d3ccd4515f7fc3706c94"
                     },
                     "geraet": {
                         "backend": "WebGPU",
@@ -74,75 +74,75 @@
                         "pixel": 0,
                         "max": 0
                     },
-                    "misch": 143449,
+                    "misch": 140908,
                     "klassen": {
                         "bodenSatz": {
                             "objekte": 1,
-                            "zweiton": 0.0002,
-                            "zt": 93,
+                            "zweiton": 0.0004,
+                            "zt": 198,
                             "weiss": 0.0001,
-                            "wt": 60,
-                            "pixel": 519738,
-                            "deckung": 0.2506,
-                            "deckungUnten": 0.4043,
-                            "luma": 90.18,
-                            "kontrast": 0.5018,
-                            "detail": 0.0763,
-                            "nyquist": 0.0882,
-                            "ek": 543806.2,
-                            "eg": 5621958.9,
-                            "silhouette": 182.0763
+                            "wt": 61,
+                            "pixel": 527653,
+                            "deckung": 0.2545,
+                            "deckungUnten": 0.4156,
+                            "luma": 90.3,
+                            "kontrast": 0.4991,
+                            "detail": 0.0752,
+                            "nyquist": 0.088,
+                            "ek": 543528.1,
+                            "eg": 5631744.3,
+                            "silhouette": 182.0973
                         },
                         "nahWiese:L1": {
                             "objekte": 2,
-                            "zweiton": 0.0013,
-                            "zt": 428,
+                            "zweiton": 0.0021,
+                            "zt": 759,
                             "weiss": 0,
                             "wt": 0,
-                            "pixel": 339331,
-                            "deckung": 0.1636,
-                            "deckungUnten": 0.4797,
-                            "luma": 74.82,
-                            "kontrast": 0.381,
-                            "detail": 0.1006,
-                            "nyquist": 0.1474,
-                            "ek": 936503.8,
-                            "eg": 5418989.1,
-                            "silhouette": 175.1988
+                            "pixel": 364011,
+                            "deckung": 0.1755,
+                            "deckungUnten": 0.5152,
+                            "luma": 74.98,
+                            "kontrast": 0.3742,
+                            "detail": 0.1055,
+                            "nyquist": 0.1476,
+                            "ek": 1086017.3,
+                            "eg": 6270482.5,
+                            "silhouette": 164.0967
                         },
                         "nahWiese:L2": {
                             "objekte": 2,
-                            "zweiton": 0.001,
-                            "zt": 171,
-                            "weiss": 0,
-                            "wt": 1,
-                            "pixel": 166659,
-                            "deckung": 0.0804,
-                            "deckungUnten": 0.0592,
-                            "luma": 68.91,
-                            "kontrast": 0.3302,
-                            "detail": 0.1116,
-                            "nyquist": 0.1342,
-                            "ek": 351104.9,
-                            "eg": 2264812.3,
-                            "silhouette": 144.1386
-                        },
-                        "streuSatz": {
-                            "objekte": 4,
-                            "zweiton": 0.0012,
-                            "zt": 40,
+                            "zweiton": 0.0003,
+                            "zt": 44,
                             "weiss": 0,
                             "wt": 0,
-                            "pixel": 34452,
-                            "deckung": 0.0166,
-                            "deckungUnten": 0.0496,
-                            "luma": 44.52,
-                            "kontrast": 0.6112,
-                            "detail": 0.0825,
-                            "nyquist": 0.1914,
-                            "ek": 27698,
-                            "eg": 116983.7,
-                            "silhouette": 59.107
+                            "pixel": 167391,
+                            "deckung": 0.0807,
+                            "deckungUnten": 0.0605,
+                            "luma": 69.56,
+                            "kontrast": 0.3266,
+                            "detail": 0.1103,
+                            "nyquist": 0.1442,
+                            "ek": 369239.8,
+                            "eg": 2191258.3,
+                            "silhouette": 144.8375
+                        },
+                        "streuSatz": {
+                            "objekte": 3,
+                            "zweiton": 0,
+                            "zt": 0,
+                            "weiss": 0,
+                            "wt": 0,
+                            "pixel": 1267,
+                            "deckung": 0.0006,
+                            "deckungUnten": 0.0018,
+                            "luma": 36.4,
+                            "kontrast": 0.1,
+                            "detail": 0.0164,
+                            "nyquist": 0.0751,
+                            "ek": 9.3,
+                            "eg": 114.9,
+                            "silhouette": 9.6362
                         }
                     },
                     "abstand": {
@@ -164,32 +164,32 @@
                             0.2621,
                             0.1556,
                             0.0884,
-                            0.0464,
+                            0.0465,
                             0.0447
                         ],
                         "klassen": {
                             "bodenSatz": [
                                 0,
-                                210027,
-                                127188,
-                                30722,
-                                108609,
-                                32587,
-                                1675
+                                218696,
+                                126355,
+                                30598,
+                                108881,
+                                32530,
+                                1678
                             ],
                             "nahWiese:L2": [
                                 0,
-                                363,
-                                89307,
-                                54667,
-                                22322,
+                                401,
+                                90181,
+                                54738,
+                                22071,
                                 0,
                                 0
                             ],
                             "nahWiese:L1": [
                                 0,
-                                276257,
-                                63057,
+                                298582,
+                                65412,
                                 17,
                                 0,
                                 0,
@@ -197,8 +197,8 @@
                             ],
                             "streuSatz": [
                                 0,
-                                32124,
-                                2328,
+                                1267,
+                                0,
                                 0,
                                 0,
                                 0,
@@ -207,7 +207,7 @@
                         }
                     },
                     "gesicht": null,
-                    "bild": "../../../../AppData/Local/Temp/claude/K63-n4/boden.png",
+                    "bild": "../../../../AppData/Local/Temp/claude/K63-n6/boden.png",
                     "quellen": {
                         "gelaende-core.js": "f1d87533ace49a59",
                         "phyto-core.js": "95f967fc8a37fd95",
@@ -215,7 +215,7 @@
                         "stamm/10.js": "32d29d540373569b",
                         "stamm/19.js": "2bb652c80a58c2a9",
                         "stamm/24.js": "e600eb9cc991ce4c",
-                        "stamm/25c.js": "c37660b5c7102438",
+                        "stamm/25c.js": "8b1cb72fb388564f",
                         "stamm/11c.js": "d2269993c239da8e",
                         "stamm/17b.js": "e9a220a4e1af8dbf",
                         "stamm/20a.js": "32632c152bc477e2"
@@ -277,15 +277,15 @@
                 "werkzeug": "werkbank licht --ist himmel-licht (die Licht-Bilanz an der Mess-Wiese)",
                 "messung": {
                     "werkzeug": "licht",
-                    "datum": "2026-10-15T01:05:41.512Z",
+                    "datum": "2026-10-15T02:16:12.641Z",
                     "stand": {
-                        "sha": "22bb0d9cbba712086fcff76b704071ea9047fb96",
+                        "sha": "8675423b21b47443dad7d3ccd4515f7fc3706c94",
                         "version": "18.546.2"
                     },
                     "geraet": {
                         "adapter": "amd rdna-3"
                     },
-                    "E_alle": 9.52,
+                    "E_alle": 9.55,
                     "E_umgebung": 2.26,
                     "sonnenRichtung": [
                         0,
@@ -297,7 +297,7 @@
                         "stamm/10.js": "32d29d540373569b",
                         "stamm/19.js": "2bb652c80a58c2a9",
                         "stamm/24.js": "e600eb9cc991ce4c",
-                        "stamm/25c.js": "c37660b5c7102438"
+                        "stamm/25c.js": "8b1cb72fb388564f"
                     }
                 }
             },
@@ -353,10 +353,10 @@
                 "werkzeug": "werkbank bild -284 +1.7 -1042 -269 34 -1036 --ziel tanne --klasse '^(f:(tanne|fichte|eiche|birke|buche|kiefer|weide|strauch|mammut)[a-z_]*:L[0-2]|fimp:[a-z_]+:L[0-2]|kronendach)$' --ist laub",
                 "messung": {
                     "werkzeug": "bild",
-                    "datum": "2026-10-15T01:05:41.051Z",
+                    "datum": "2026-10-15T02:16:12.043Z",
                     "stand": {
                         "version": "18.546.2",
-                        "sha": "22bb0d9cbba712086fcff76b704071ea9047fb96"
+                        "sha": "8675423b21b47443dad7d3ccd4515f7fc3706c94"
                     },
                     "geraet": {
                         "backend": "WebGPU",
@@ -378,80 +378,80 @@
                         "pixel": 0,
                         "max": 0
                     },
-                    "misch": 92858,
+                    "misch": 92888,
                     "klassen": {
                         "f:fichte:L1": {
                             "objekte": 9,
-                            "zweiton": 0.0148,
-                            "zt": 3840,
-                            "weiss": 0.0037,
-                            "wt": 956,
-                            "pixel": 259659,
-                            "deckung": 0.1252,
+                            "zweiton": 0.014,
+                            "zt": 3608,
+                            "weiss": 0.0007,
+                            "wt": 170,
+                            "pixel": 257450,
+                            "deckung": 0.1242,
                             "deckungUnten": 0.0033,
-                            "luma": 52.6,
-                            "kontrast": 0.4018,
-                            "detail": 0.1076,
-                            "nyquist": 0.1784,
-                            "ek": 646009.2,
-                            "eg": 2975140.6,
-                            "silhouette": 115.0348
+                            "luma": 52.5,
+                            "kontrast": 0.3694,
+                            "detail": 0.1021,
+                            "nyquist": 0.1735,
+                            "ek": 511153.9,
+                            "eg": 2435012.7,
+                            "silhouette": 119.5833
                         },
                         "f:tanne:L0": {
                             "objekte": 4,
-                            "zweiton": 0.0582,
-                            "zt": 3834,
-                            "weiss": 0.0486,
-                            "wt": 3202,
-                            "pixel": 65870,
-                            "deckung": 0.0318,
+                            "zweiton": 0.0422,
+                            "zt": 2693,
+                            "weiss": 0,
+                            "wt": 2,
+                            "pixel": 63853,
+                            "deckung": 0.0308,
                             "deckungUnten": 0,
-                            "luma": 69.7,
-                            "kontrast": 0.5534,
-                            "detail": 0.1108,
-                            "nyquist": 0.1873,
-                            "ek": 507250.7,
-                            "eg": 2201128.8,
-                            "silhouette": 45.7741
+                            "luma": 64.78,
+                            "kontrast": 0.4228,
+                            "detail": 0.0726,
+                            "nyquist": 0.1733,
+                            "ek": 127278.1,
+                            "eg": 607327.7,
+                            "silhouette": 45.6525
                         },
                         "f:tanne:L1": {
                             "objekte": 9,
-                            "zweiton": 0.0106,
-                            "zt": 3344,
-                            "weiss": 0.0054,
-                            "wt": 1694,
-                            "pixel": 316224,
-                            "deckung": 0.1525,
-                            "deckungUnten": 0.0053,
-                            "luma": 56.14,
-                            "kontrast": 0.3885,
-                            "detail": 0.1039,
-                            "nyquist": 0.184,
-                            "ek": 1193357.1,
-                            "eg": 5291334.9,
-                            "silhouette": 79.7243
+                            "zweiton": 0.0092,
+                            "zt": 2921,
+                            "weiss": 0.0123,
+                            "wt": 3907,
+                            "pixel": 318073,
+                            "deckung": 0.1534,
+                            "deckungUnten": 0.0052,
+                            "luma": 57.88,
+                            "kontrast": 0.4476,
+                            "detail": 0.1154,
+                            "nyquist": 0.1847,
+                            "ek": 1730094,
+                            "eg": 7634778.8,
+                            "silhouette": 79.9763
                         },
                         "fimp:atlas:L2": {
                             "objekte": 1,
-                            "zweiton": 0.0625,
-                            "zt": 26736,
-                            "weiss": 0.0028,
-                            "wt": 1199,
-                            "pixel": 427951,
-                            "deckung": 0.2064,
-                            "deckungUnten": 0.1057,
-                            "luma": 62.17,
-                            "kontrast": 0.5731,
-                            "detail": 0.1208,
-                            "nyquist": 0.2096,
-                            "ek": 2694327.6,
-                            "eg": 10161368.7,
-                            "silhouette": 96.0042
+                            "zweiton": 0.0631,
+                            "zt": 27054,
+                            "weiss": 0.0027,
+                            "wt": 1164,
+                            "pixel": 428511,
+                            "deckung": 0.2067,
+                            "deckungUnten": 0.1058,
+                            "luma": 62.31,
+                            "kontrast": 0.5666,
+                            "detail": 0.1207,
+                            "nyquist": 0.2138,
+                            "ek": 2796534,
+                            "eg": 10284941.7,
+                            "silhouette": 95.141
                         }
                     },
                     "abstand": null,
                     "gesicht": null,
-                    "bild": "../../../../AppData/Local/Temp/claude/K63-n4/laub.png",
+                    "bild": "../../../../AppData/Local/Temp/claude/K63-n6/laub.png",
                     "quellen": {
                         "phyto-core.js": "95f967fc8a37fd95",
                         "foundry-core.js": "b957a6823f5b6a9e",
@@ -459,9 +459,9 @@
                         "stamm/10.js": "32d29d540373569b",
                         "stamm/19.js": "2bb652c80a58c2a9",
                         "stamm/24.js": "e600eb9cc991ce4c",
-                        "stamm/25c.js": "c37660b5c7102438",
+                        "stamm/25c.js": "8b1cb72fb388564f",
                         "stamm/17a.js": "3171fb2dc0f872b0",
-                        "stamm/20b.js": "6a89dd8438ca8da9",
+                        "stamm/20b.js": "1998e327e7e3c5f2",
                         "stamm/20c.js": "739572d20e186d24",
                         "stamm/20d.js": "7fc3616ed9846a7b"
                     }
@@ -644,10 +644,10 @@
                 "werkzeug": "werkbank bild <Ufer-Pose> --klasse '^(wasserSatz|farWater|chunk-water-[a-z]+)$' --ist wasser — ein Messort mit Wasser fehlt im Haushalt",
                 "messung": {
                     "werkzeug": "bild",
-                    "datum": "2026-10-15T01:16:53.792Z",
+                    "datum": "2026-10-15T02:15:46.408Z",
                     "stand": {
                         "version": "18.546.2",
-                        "sha": "5a912d6edc5977ff8ceb2df7d4ef41e099502cbd+geaendert"
+                        "sha": "8675423b21b47443dad7d3ccd4515f7fc3706c94"
                     },
                     "geraet": {
                         "backend": "WebGPU",
@@ -675,30 +675,30 @@
                             "objekte": 1,
                             "zweiton": 0,
                             "zt": 0,
-                            "weiss": 0.0848,
-                            "wt": 27613,
-                            "pixel": 325670,
-                            "deckung": 0.1571,
-                            "deckungUnten": 0.4001,
-                            "luma": 70.23,
-                            "kontrast": 0.6821,
-                            "detail": 0.0327,
-                            "nyquist": 0.121,
-                            "ek": 175702.2,
-                            "eg": 1276196.7,
-                            "silhouette": 10.4841
+                            "weiss": 0.1261,
+                            "wt": 36373,
+                            "pixel": 288347,
+                            "deckung": 0.1391,
+                            "deckungUnten": 0.3379,
+                            "luma": 83.68,
+                            "kontrast": 0.6336,
+                            "detail": 0.0281,
+                            "nyquist": 0.1302,
+                            "ek": 104527.7,
+                            "eg": 698277.3,
+                            "silhouette": 6.9928
                         }
                     },
                     "abstand": null,
                     "gesicht": null,
-                    "bild": "../../../../AppData/Local/Temp/claude/K63-n5/wasser.png",
+                    "bild": "../../../../AppData/Local/Temp/claude/K63-n6/wasser.png",
                     "quellen": {
                         "gelaende-core.js": "f1d87533ace49a59",
                         "stamm/07.js": "6a3ea63b9ee05a21",
                         "stamm/10.js": "32d29d540373569b",
                         "stamm/19.js": "2bb652c80a58c2a9",
                         "stamm/24.js": "e600eb9cc991ce4c",
-                        "stamm/25c.js": "c37660b5c7102438",
+                        "stamm/25c.js": "8b1cb72fb388564f",
                         "stamm/08.js": "d1965c87808662a7",
                         "stamm/11a.js": "86af9a9f0519b1d6",
                         "stamm/11b.js": "3c6f010d0961e8ec",
@@ -904,10 +904,10 @@
                     },
                     "L3": {
                         "werkzeug": "bild",
-                        "datum": "2026-10-15T01:24:41.672Z",
+                        "datum": "2026-10-15T02:15:39.127Z",
                         "stand": {
                             "version": "18.546.2",
-                            "sha": "5a912d6edc5977ff8ceb2df7d4ef41e099502cbd+geaendert"
+                            "sha": "8675423b21b47443dad7d3ccd4515f7fc3706c94"
                         },
                         "geraet": {
                             "backend": "WebGPU",
@@ -935,23 +935,23 @@
                                 "objekte": 8,
                                 "zweiton": 0,
                                 "zt": 0,
-                                "weiss": 0.1894,
-                                "wt": 82,
-                                "pixel": 433,
+                                "weiss": 0.4179,
+                                "wt": 163,
+                                "pixel": 390,
                                 "deckung": 0.0002,
                                 "deckungUnten": 0,
-                                "luma": 100.73,
-                                "kontrast": 0.6424,
-                                "detail": 0.3225,
-                                "nyquist": 0.1098,
-                                "ek": 7002.6,
-                                "eg": 56767.6,
-                                "silhouette": 10.3322
+                                "luma": 132.18,
+                                "kontrast": 0.4391,
+                                "detail": 0.2373,
+                                "nyquist": 0.1021,
+                                "ek": 4105.4,
+                                "eg": 36088.7,
+                                "silhouette": 8.9627
                             }
                         },
                         "abstand": null,
                         "gesicht": null,
-                        "bild": "../../../../AppData/Local/Temp/claude/K63-n5/tor-L3.png",
+                        "bild": "../../../../AppData/Local/Temp/claude/K63-n6/tor-L3.png",
                         "quellen": {
                             "porta-core.js": "1f5c96131f9bb2be",
                             "foundry-core.js": "b957a6823f5b6a9e",
@@ -959,11 +959,11 @@
                             "stamm/10.js": "32d29d540373569b",
                             "stamm/19.js": "2bb652c80a58c2a9",
                             "stamm/24.js": "e600eb9cc991ce4c",
-                            "stamm/25c.js": "c37660b5c7102438",
+                            "stamm/25c.js": "8b1cb72fb388564f",
                             "stamm/14.js": "c8ee5a0ca50e8a1b",
                             "stamm/17a.js": "3171fb2dc0f872b0",
                             "stamm/17c.js": "d848b70d6294c19a",
-                            "stamm/20b.js": "6a89dd8438ca8da9"
+                            "stamm/20b.js": "1998e327e7e3c5f2"
                         }
                     }
                 }
@@ -1120,10 +1120,10 @@
                 "werkzeug": "werkbank umstellen --ort wiese --sicht third; werkbank bild 0 0 0 0 0 0 --gesicht 0.7 --wahl 0 --spieler --klasse '^spieler:kopf/' --ist mensch-kopf; der Bildanteil: werkbank bild (Third-Blick) --spieler --klasse '^spieler$' --ist mensch-kopf:wirkung",
                 "messung": {
                     "werkzeug": "bild",
-                    "datum": "2026-10-15T01:05:50.055Z",
+                    "datum": "2026-10-15T02:16:21.442Z",
                     "stand": {
                         "version": "18.546.2",
-                        "sha": "22bb0d9cbba712086fcff76b704071ea9047fb96"
+                        "sha": "8675423b21b47443dad7d3ccd4515f7fc3706c94"
                     },
                     "geraet": {
                         "backend": "WebGPU",
@@ -1134,107 +1134,107 @@
                         1080
                     ],
                     "kamera": [
-                        -900.06,
+                        -900.02,
                         108.98,
-                        -849.42
+                        -849.46
                     ],
                     "ausdruck": "^spieler:kopf/",
                     "schwelle": 18,
                     "rauschen": {
-                        "anteil": 0.000005,
-                        "pixel": 10,
-                        "max": 400
+                        "anteil": 0.000006,
+                        "pixel": 13,
+                        "max": 108
                     },
-                    "misch": 663,
+                    "misch": 617,
                     "klassen": {
                         "spieler:kopf/auge": {
                             "objekte": 2,
                             "zweiton": 0,
                             "zt": 0,
-                            "weiss": 0.0678,
-                            "wt": 27,
-                            "pixel": 398,
+                            "weiss": 0.2044,
+                            "wt": 84,
+                            "pixel": 411,
                             "deckung": 0.0002,
                             "deckungUnten": 0,
-                            "luma": 87.46,
-                            "kontrast": 0.8092,
-                            "detail": 0.2499,
-                            "nyquist": 0.0363,
-                            "ek": 1938,
-                            "eg": 51455.5,
-                            "silhouette": 5.6642
+                            "luma": 92.16,
+                            "kontrast": 0.7709,
+                            "detail": 0.2392,
+                            "nyquist": 0.1116,
+                            "ek": 7091.9,
+                            "eg": 56433.8,
+                            "silhouette": 5.2779
                         },
                         "spieler:kopf/hair": {
                             "objekte": 2,
                             "zweiton": 0,
                             "zt": 0,
-                            "weiss": 0.0789,
-                            "wt": 40,
-                            "pixel": 507,
-                            "deckung": 0.0002,
+                            "weiss": 0.0733,
+                            "wt": 39,
+                            "pixel": 532,
+                            "deckung": 0.0003,
                             "deckungUnten": 0,
-                            "luma": 58.51,
-                            "kontrast": 0.6634,
-                            "detail": 0.3113,
-                            "nyquist": 0.2152,
-                            "ek": 2854.1,
-                            "eg": 10406.6,
-                            "silhouette": 17.5426
+                            "luma": 59.09,
+                            "kontrast": 0.6818,
+                            "detail": 0.3521,
+                            "nyquist": 0.1301,
+                            "ek": 2089.3,
+                            "eg": 13969.6,
+                            "silhouette": 16.952
                         },
                         "spieler:kopf/haut": {
                             "objekte": 2,
                             "zweiton": 0,
                             "zt": 0,
-                            "weiss": 0.0441,
-                            "wt": 1183,
-                            "pixel": 26825,
-                            "deckung": 0.0129,
+                            "weiss": 0.05,
+                            "wt": 1318,
+                            "pixel": 26338,
+                            "deckung": 0.0127,
                             "deckungUnten": 0,
-                            "luma": 50.74,
-                            "kontrast": 0.8301,
-                            "detail": 0.0672,
-                            "nyquist": 0.0927,
-                            "ek": 18739.1,
-                            "eg": 183309.7,
-                            "silhouette": 8.7371
+                            "luma": 49.76,
+                            "kontrast": 0.8179,
+                            "detail": 0.0676,
+                            "nyquist": 0.0854,
+                            "ek": 14752.6,
+                            "eg": 158018.3,
+                            "silhouette": 8.4417
                         },
                         "spieler:kopf/skin": {
                             "objekte": 1,
                             "zweiton": 0,
                             "zt": 0,
-                            "weiss": 0,
-                            "wt": 0,
-                            "pixel": 567,
-                            "deckung": 0.0003,
+                            "weiss": 0.0041,
+                            "wt": 2,
+                            "pixel": 485,
+                            "deckung": 0.0002,
                             "deckungUnten": 0,
-                            "luma": 21.58,
-                            "kontrast": 0.2581,
-                            "detail": 0.0478,
-                            "nyquist": 0.2605,
-                            "ek": 58.2,
-                            "eg": 165.3,
-                            "silhouette": 11.5909
+                            "luma": 21.95,
+                            "kontrast": 0.599,
+                            "detail": 0.0883,
+                            "nyquist": 0.194,
+                            "ek": 121,
+                            "eg": 502.9,
+                            "silhouette": 10.1259
                         }
                     },
                     "abstand": null,
                     "gesicht": {
-                        "augeFrei": 0.422,
-                        "lippeL": -8,
-                        "lippeA": 1.55,
-                        "hoehleL": -2.73,
-                        "hoehleA": -1.18,
-                        "haarDeckung": 0.613,
+                        "augeFrei": 0.461,
+                        "lippeL": -8.05,
+                        "lippeA": 0.93,
+                        "hoehleL": -2.71,
+                        "hoehleA": -1.24,
+                        "haarDeckung": 0.467,
                         "proben": {
                             "iris": 180,
-                            "irisSicht": 76,
+                            "irisSicht": 83,
                             "lippe": 175,
-                            "wange": 626,
-                            "kalotte": 80,
-                            "haarPixel": 507
+                            "wange": 637,
+                            "kalotte": 75,
+                            "haarPixel": 532
                         },
                         "zeilen": {
-                            "auge": 523.7,
-                            "mund": 596.5
+                            "auge": 521.7,
+                            "mund": 592.7
                         },
                         "toene": {
                             "haut": "6a4230",
@@ -1243,7 +1243,7 @@
                             "kappe": "cecbc5"
                         }
                     },
-                    "bild": "../../../../AppData/Local/Temp/claude/K63-n4/kopf.png",
+                    "bild": "../../../../AppData/Local/Temp/claude/K63-n6/kopf.png",
                     "quellen": {
                         "koerper-core.js": "94a8359fccad2ea4",
                         "foundry-core.js": "b957a6823f5b6a9e",
@@ -1251,7 +1251,7 @@
                         "stamm/10.js": "32d29d540373569b",
                         "stamm/19.js": "2bb652c80a58c2a9",
                         "stamm/24.js": "e600eb9cc991ce4c",
-                        "stamm/25c.js": "c37660b5c7102438",
+                        "stamm/25c.js": "8b1cb72fb388564f",
                         "stamm/15a.js": "f0610a76b23bfe9e",
                         "stamm/15c.js": "079dee3b5f4fdc27",
                         "stamm/25b.js": "7f2302d3be1d5750"
