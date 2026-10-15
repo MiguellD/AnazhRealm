@@ -1,0 +1,26 @@
+14:27:55 START Kopf=65854e26 (K68: B integ-probe 65854e26, A main a19ca615 = abab-pe8a)
+14:27:55 wiese-ego-A start [P8, 139 MHz, 72]
+14:29:57 wiese-ego-A selbsttest exit=0
+14:30:51 wiese-ego-A zerlegen exit=0
+14:30:57 wiese-ego-A ende
+14:31:57 wiese-ego start [P8, 139 MHz, 68]
+14:34:00 wiese-ego selbsttest exit=0
+14:34:56 wiese-ego zerlegen exit=0
+14:35:01 wiese-ego ende
+14:36:01 wiese-third start [P8, 139 MHz, 67]
+14:38:00 wiese-third selbsttest exit=0
+14:38:55 wiese-third zerlegen exit=0
+14:39:01 wiese-third ende
+14:40:01 wiese-third-A start [P8, 139 MHz, 69]
+14:42:05 wiese-third-A selbsttest exit=0
+14:43:00 wiese-third-A zerlegen exit=0
+14:43:05 wiese-third-A ende
+14:44:05 genesis-ego start [P8, 139 MHz, 67]
+14:46:21 genesis-ego selbsttest exit=0
+14:47:28 genesis-ego zerlegen exit=0
+14:47:34 genesis-ego ende
+14:48:34 genesis-ego-A start [P8, 139 MHz, 68]
+14:50:42 genesis-ego-A selbsttest exit=0
+14:51:48 genesis-ego-A zerlegen exit=0
+14:51:54 genesis-ego-A ende
+14:52:54 ZERLEGEN FERTIG
