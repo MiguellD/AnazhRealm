@@ -15,6 +15,7 @@ class AnazhRealm_Z07 {
             let worker;
             try {
                 worker = new Worker(srcUrl || `voxel-worker.js?v=${AnazhRealm.VERSION}`);
+                this._voxelFadenQuelle = srcUrl || `voxel-worker.js?v=${AnazhRealm.VERSION}`; // der Wald-Faden lädt dieselbe
             } catch (_workerErr) {
                 // Der Sandbox-Weg ist EIN Versuch (K22): scheitert der Faden über die Blob-URL oder ein zweites Mal, bricht
                 // er laut (der äußere Fang meldet ERROR) — nie wieder still mit null, während der Haupt-Thread jeden Chunk
@@ -102,17 +103,6 @@ class AnazhRealm_Z07 {
                         pending.resolve({
                             werte: new Float32Array(msg.werte),
                             schutt: msg.schutt ? new Float32Array(msg.schutt) : null,
-                        });
-                    }
-                } else if (msg.type === "wald-darts-result" && msg.requestId) {
-                    // K60-3 — die Darts der Wald-Zellen aus dem Worker (`_voxelWorkerWaldDarts`), zero-copy per Transferable
-                    const pending = this.state.voxelWorkerPending.get(msg.requestId);
-                    if (pending) {
-                        this.state.voxelWorkerPending.delete(msg.requestId);
-                        pending.resolve({
-                            anzahl: new Int32Array(msg.anzahl),
-                            werte: new Float64Array(msg.werte),
-                            arten: msg.arten,
                         });
                     }
                 } else if (msg.type === "ack" && msg.requestId) {
@@ -339,22 +329,47 @@ class AnazhRealm_Z07 {
     }
 
     // DER STOFF DES WALDS off-thread (K60-3): die Wald-Zellen (cx, cz je Zelle, Int32Array) → die gepackten Darts aus dem
-    // EINEN Wald-Plan (phyto-core `planForestCell`) mit den Lesern des Fadens, an seinem synchronisierten Zustand (Nachrichten
-    // laufen in Reihe: die Hydro-Kachel und der Erdbau, die vor dem Auftrag reisten, gelten ihm). Leser: `_waldDartsBestellen`.
+    // EINEN Wald-Plan (phyto-core `planForestCell`) mit den Lesern des Fadens. Er rechnet im WALD-FADEN: einem eigenen Faden
+    // desselben Gesetzes (`voxel-worker.js`, dieselbe Quelle wie der Voxel-Faden) — im Voxel-Faden stand der Auftrag hinter
+    // jedem Chunk und jeder Höhe der Ferne (Radeon kalt: die Darts kamen 3,5 s nach der Bestellung, das Bild 2 s später als
+    // ohne, K603/s2-6C). Vor jedem Auftrag reist der volle Zustand, wenn sich der Stand des Voxel-Fadens
+    // (`voxelWorkerStateGen`: Worldgen, Hydro-Kachel, Erdbau) oder die Edits seither änderten — Nachrichten laufen in Reihe,
+    // der Auftrag rechnet am Zustand, der vor ihm reiste. Leser: `_waldDartsBestellen`.
     _voxelWorkerWaldDarts(zellen, seedInt, extras) {
-        const worker = this._getVoxelWorker();
-        if (!worker) return Promise.reject(new Error("voxel-worker not available"));
-        const ensureReady = this.state.voxelWorkerReady ? Promise.resolve(true) : this._voxelWorkerSyncState();
-        return ensureReady.then(() => {
-            const requestId = this.state.voxelWorkerNextRequestId++;
-            const promise = new Promise((resolve, reject) => {
-                this.state.voxelWorkerPending.set(requestId, { resolve, reject });
-            });
-            worker.postMessage({ type: "wald-darts", zellen, seedInt, extras, F: AnazhRealm.FOREST, requestId }, [
-                zellen.buffer,
-            ]);
-            return promise;
-        });
+        if (!this.state.voxelWorker || !this._voxelFadenQuelle) return Promise.reject(new Error("kein Voxel-Faden"));
+        let f = this._waldFadenZ;
+        if (!f) {
+            const worker = new Worker(this._voxelFadenQuelle);
+            f = this._waldFadenZ = { worker, pending: new Map(), next: 1, stand: null };
+            worker.onmessage = (e) => {
+                const msg = e.data;
+                if (!msg) return;
+                if (msg.type === "error") this._bruchMelden(`WALD: der Wald-Faden warf (${msg.op}) — ${msg.message}`);
+                const p = msg.requestId ? f.pending.get(msg.requestId) : null;
+                if (!p) return;
+                f.pending.delete(msg.requestId);
+                if (msg.type === "wald-darts-result")
+                    p.resolve({
+                        anzahl: new Int32Array(msg.anzahl),
+                        werte: new Float64Array(msg.werte),
+                        arten: msg.arten,
+                    });
+                else p.reject(new Error(msg.message));
+            };
+            worker.onerror = (err) => this._bruchMelden("WALD: der Wald-Faden brach — " + (err && err.message));
+        }
+        const edits = this.state.worldMeta && this.state.worldMeta.voxelEdits;
+        const stand = this.state.voxelWorkerStateGen + "|" + (Array.isArray(edits) ? edits.length : 0);
+        if (f.stand !== stand) {
+            f.stand = stand;
+            f.worker.postMessage({ type: "state-set", snapshot: this._voxelWorkerSnapshotState() });
+        }
+        const requestId = f.next++;
+        const promise = new Promise((resolve, reject) => f.pending.set(requestId, { resolve, reject }));
+        f.worker.postMessage({ type: "wald-darts", zellen, seedInt, extras, F: AnazhRealm.FOREST, requestId }, [
+            zellen.buffer,
+        ]);
+        return promise;
     }
 
     // Wasser-Sheet off-thread: der 3×3-Zell-Block (`entry.waterCells`, KOPIERT — der Main braucht ihn
