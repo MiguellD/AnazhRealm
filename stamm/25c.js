@@ -122,8 +122,9 @@ class AnazhRealm_Z25c {
     // die Varianz-Klemme spannt dieselben 3×3 Texel (im Stand ZEIT_GAMMA_RUHE σ: das gröbere Gitter streut weiter). Geschichte und Resolve bleiben rgba16float in der Ausgabe-Auflösung (W7:
     // 11/11/10 posterisierte die Geschichte). DIE VORTIEFE lebt im Kanal a der Geschichte (die Sicht-Tiefe des Vorbilds je
     // Ausgabe-Pixel, float16 relativ 2⁻¹¹ — 0,05 mm Tiefen-Stufe auf 1 m gegen die Disokklusions-Schwelle 0,0005): kein
-    // eigenes Tiefen-Ziel der Geschichte, kein Vollbild-Zug je Frame. Ein Größenwechsel der Ausgabe startet die Geschichte
-    // neu (ein Frame ohne Geschichte); ein Wechsel der Skala lässt sie stehen (sie lebt in der Ausgabe). Basis ist r184s
+    // eigenes Tiefen-Ziel der Geschichte, kein Vollbild-Zug je Frame. Ein Größenwechsel der Ausgabe oder ein Kamera-Sprung
+    // (`_traaReprojektion`, ZEIT_SPRUNG_M) startet die Geschichte neu, danach läuft sie als Mittel an (K68: das Jetzt wiegt
+    // mindestens 1/(n+1)); ein Wechsel der Skala lässt sie stehen (sie lebt in der Ausgabe). Basis ist r184s
     // TRAANode (vendor/TRAANode.js unverändert): Bau, Ziele, Halton-Folge, Kamera-Uniformen und `clearViewOffset` erbt der
     // Knoten, Resolve, Größen und Lauf sind seine. Das Quad nimmt die Klasse des Quads der Post-Kette (`pp._quadMesh`,
     // gate:vendor-anker); fehlt sie, bricht die Kette LAUT.
@@ -148,6 +149,8 @@ class AnazhRealm_Z25c {
                 this._historyRenderTarget.depthTexture = null;
                 this._zitter = uniform(new THREE.Vector2());
                 this._neustart = uniform(1);
+                // DAS ANLAUFEN (K68): Frames seit dem Beginn der Geschichte (Größen-Wechsel, Kamera-Sprung `_traaR.sprung`)
+                this._anlauf = uniform(0);
                 this._kern = uniform(AnazhRealm.ZEIT_KERN);
                 this._gammaRuhe = uniform(AnazhRealm.ZEIT_GAMMA_RUHE);
                 this._quad = new Quad(this._resolveMaterial);
@@ -197,6 +200,8 @@ class AnazhRealm_Z25c {
                     r.initRenderTarget(this._resolveRenderTarget);
                 }
                 this._neustart.value = neu ? 1 : 0;
+                const sprung = !!(realm.state._traaR && realm.state._traaR.sprung === true);
+                this._anlauf.value = neu || sprung ? 0 : Math.min(this._anlauf.value + 1, 1e6);
                 r.setRenderTarget(this._resolveRenderTarget);
                 this._quad.render(r);
                 r.setRenderTarget(null);
@@ -282,7 +287,12 @@ class AnazhRealm_Z25c {
                     const pw = max(phase, phase.oneMinus());
                     const alpha = float(0.05).add(pw.x.mul(pw.y).oneMinus().div(0.75).mul(0.25)).toVar();
                     alpha.mulAssign(wNah);
-                    alpha.assign(gueltig.select(alpha.add(lauf).saturate(), float(1)));
+                    // DAS ANLAUFEN (K68): nach dem Beginn der Geschichte ist sie das MITTEL aller Frames seither — das Jetzt
+                    // wiegt mindestens 1/(n+1). Bis K68 wog der erste Frame (Gewicht 1) nach 32 Frames noch 44 % (0,05 ×
+                    // Deckung je Frame): die rotierende Dither-Blende stand als Schachbrett im Bild (Radeon, Mess-Wiese,
+                    // zweiton des ganzen Bilds 0,0228 nach 32 Frames, 0,0037 nach 120).
+                    const anlauf = float(1).div(this._anlauf.add(1));
+                    alpha.assign(gueltig.select(max(alpha.add(lauf), anlauf).saturate(), float(1)));
                     // die Varianz-Klemme der Geschichte über die 3×3 Eingangs-Texel
                     const gamma = mix(float(0.5), this._gammaRuhe, lauf.oneMinus().pow2());
                     const mittel = m1.div(9);
@@ -723,6 +733,15 @@ class AnazhRealm_Z25c {
         cam.updateMatrixWorld();
         z.vor.copy(z.jetzt);
         z.jetzt.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
+        // DER KAMERA-SPRUNG (K68): springt das Auge in EINEM Frame weiter als ZEIT_SPRUNG_M (Tor, Umsetzen, Aufnahme), beginnt
+        // die Geschichte neu und läuft als Mittel an (`_zeitAufloesung` `_anlauf`) — sonst trug der erste Frame nach dem Sprung
+        // das Bild noch eine halbe Sekunde lang.
+        if (!z.ort) z.ort = new THREE.Vector3().setFromMatrixPosition(cam.matrixWorld);
+        const ox = z.ort.x,
+            oy = z.ort.y,
+            oz = z.ort.z;
+        z.ort.setFromMatrixPosition(cam.matrixWorld);
+        z.sprung = z.neu || Math.hypot(z.ort.x - ox, z.ort.y - oy, z.ort.z - oz) > AnazhRealm.ZEIT_SPRUNG_M;
         if (z.neu) {
             z.vor.copy(z.jetzt);
             z.neu = false;
@@ -2202,6 +2221,13 @@ class AnazhRealm_Z25c {
         if (this.state.lodUniforms) {
             const _lu = this.state.lodUniforms;
             if (_lu.uDitherT && this.state.traaNode) _lu.uDitherT.value = (_lu.uDitherT.value + 0.61803398875) % 1;
+            // die Kante des Laubs (K68, `_laubSchwelle`): unter der zeitlichen Auflösung dreht ihre Schwelle um 1/g (die
+            // Plastik-Zahl, gleichverteilt neben der Goldenen Drehung der Blende), ohne sie steht sie bei 0,5
+            if (_lu.uLaubKante) {
+                const _k = _lu.uLaubKante.value;
+                _k.y = this.state.traaNode ? 1 : 0;
+                if (_k.y) _k.x = (_k.x + 0.75487766625) % 1;
+            }
             if (_lu.uLodRef)
                 _lu.uLodRef.value =
                     Number.isFinite(this.state.lodRef) && this.state.lodRef > 0 ? +this.state.lodRef : 14;

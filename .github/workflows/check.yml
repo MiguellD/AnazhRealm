@@ -1410,6 +1410,12 @@ jobs:
               # Render trägt Substanz.
               run: npm run gate:webgl-probe
 
+            - name: Stall-Akte (die Boot-Lib nennt eine stehende Seite beim Namen - JS-Schleife mit Stapel, Versprechen am Fristriss)
+              if: matrix.gruppe == 8
+              # K67: jede Seite der Boot-Lib trägt Puls und Stempel; steht der Puls ≥ 20 s oder reißt eine Frist, schreibt
+              # scripts/lib/welt-boot.cjs die Akte ins Log (Phase, Stempel, CPU je Prozess, Stapel, GPU-Spur, Stderr, Urteil).
+              run: npm run gate:welt-boot
+
             - name: Fern-Wasser (die Atlas-Kulisse jenseits des Chunk-Rings baut mit vollem Material-Vertrag)
               if: matrix.gruppe == 7
               run: npm run gate:fern-wasser

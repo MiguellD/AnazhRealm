@@ -668,7 +668,9 @@ class AnazhRealm_Z17a {
     // Pixeln, die Silhouette bleibt scharf und die Deckung je Stufe treu (die Alpha-Stufe ist unberührt). Befund Radeon,
     // Ausgabe-Pfad, Eiche 25 m nur L1: Δ-Luma beim ½-Pixel-Versatz 3,41, davon 2,49 im Kronen-Inneren — das Detail der Atlas-
     // Farbe unter zwei Pixeln (flache Farbe 2,04); Oktave 1 → 2,94, Oktave 2 → 2,62 (K20n10/g2). Linse: gate:pflanzen-nah (Z2).
-    _blattAtlasProbe(T) {
+    // DIE KANTE (K68): `a` ist die Deckung als Kante von EINEM Pixel um die Schwelle `c` (`_laubKante`), `schwelle` der
+    // Knoten, mit dem der Bild-Pass sie schneidet (`alphaTestNode`, `_laubSchwelle`); der Stoff setzt alphaTest 0,5.
+    _blattAtlasProbe(T, c) {
         const tex = this._ensureFoliageClusterAtlas();
         if (!tex) return null;
         const uv = T.attribute("uv", "vec2");
@@ -678,8 +680,48 @@ class AnazhRealm_Z17a {
         return {
             tex,
             rgb: s.rgb.div(s.a.max(T.float(1e-3))).mul(T.vec3(1 / w[0], 1 / w[1], 1 / w[2])),
-            a: deckung.a,
+            a: this._laubKante(T, deckung.a, c),
+            schwelle: this._laubSchwelle(T),
         };
+    }
+
+    // DIE KANTE DES LAUBS (K68): der alphaTest schnitt jede Blatt-Karte binär an der Schwelle — die Nadel-Wedel standen im
+    // Pixel-Takt als Raster aus Nadel und Himmel (Soll-Tafel laub, Maß zweiton: Täter f:tanne:L0, Radeon, Mess-Wiese).
+    // Die Deckung um die Schwelle `c`, geteilt durch ihre Änderung je Pixel (fwidth), ist der Anteil des Pixels, der
+    // deckt: die Kante ist auf jeder Stufe EIN Pixel breit (vergrößert keine Texel-Treppe, verkleinert kein Bit-Muster).
+    // Der Bild-Pass vergleicht ihn mit dem Rauschen der zeitlichen Auflösung (`_laubSchwelle`), ihr Mittel ist die
+    // geglättete Kante (Hashed Alpha unter TAA: Horizon Zero Dawn, GDC 2018). Der Schatten-Pass liest die ZAHL alphaTest
+    // 0,5 (r184 `renderObject` setzt sie je Objekt, nie den Knoten): a' > 0,5 ⇔ a > c — der Wurf bleibt binär wie vorher.
+    _laubKante(T, a, c) {
+        const s = T.float(c == null ? 0.5 : c);
+        return a
+            .sub(s)
+            .div(T.fwidth(a).max(T.float(1e-4)))
+            .add(T.float(0.5))
+            .clamp(0.0, 1.0);
+    }
+
+    // DIE SCHWELLE DER KANTE (K68): das Interleaved-Gradient-Rauschen über den gespiegelten Achsen (y, x) — unabhängig vom
+    // Rauschen der Stufen-Blende und der Durchsicht (`__phytoCore.lodDitherIGN` über (x, y)) —, je Frame um 1/g (die
+    // Plastik-Zahl, `uLaubKante.x`) gedreht: neben der Goldenen Drehung der Blende (`uDitherT`) ist das Paar je Pixel über
+    // die Frames gleichverteilt, Blende und Kante multiplizieren ihre Deckung. Ohne zeitliche Auflösung (`uLaubKante.y` 0,
+    // Holz kienspan) ist die Schwelle 0,5: der binäre Schnitt von vorher, kein stehendes Rauschen. EIN Knoten je Welt.
+    // DIE ZAHL DES STOFFS TRÄGT DIE SCHWELLE (K68-N1, Prüfer K68: das Phantom klont den Knoten, `_ghostMaterialFor` senkt nur
+    // die Zahl — bei Deckkraft 0,4 fiel unter kienspan jedes Laub-Fragment, das Baum-Phantom war wieder unsichtbar): die
+    // Schwelle ist alphaTest × (1 | 2·Rauschen), gelesen je Objekt aus SEINEM Stoff (r184 `materialAlphaTest`, derselbe Leser
+    // wie der Test ohne Knoten). Der Stoff mit 0,5 schneidet wie oben; jeder Klon, der die Zahl ändert, ändert den Schnitt mit.
+    _laubSchwelle(T) {
+        if (this._laubSchwelleKnoten) return this._laubSchwelleKnoten;
+        const lu = this._ensureLodUniforms();
+        if (!lu || !lu.uLaubKante) throw this._blendeBruch("der LOD-Uniform-Satz trägt keine uLaubKante");
+        const fc = T.screenCoordinate;
+        const h = T.fract(
+            T.float(52.9829189)
+                .mul(T.fract(fc.y.mul(0.06711056).add(fc.x.mul(0.00583715))))
+                .add(lu.uLaubKante.x)
+        );
+        this._laubSchwelleKnoten = T.materialAlphaTest.mul(T.mix(T.float(1), h.mul(2), lu.uLaubKante.y));
+        return this._laubSchwelleKnoten;
     }
 
     // Stempelt die pro-Baum-konstanten Wahrnehmungs-Höhen (aH0/aH0L) auf eine Laub-Geometrie — EINE Quelle
@@ -703,45 +745,37 @@ class AnazhRealm_Z17a {
         return g;
     }
 
-    // ANALYTISCHE KUPPEL-NORMALE: das Laub-Shading liest die Richtung vom KRONEN-BODEN (min-Y der
-    // Kartenwolke − 0.5) + Up-Bias, NIE die Facing-Normale. Boden statt Mitte: darunter zeigten die
-    // Normalen nach unten (dunkle Unterkrone); facing-unabhängig, weil DoubleSide back-facende Normalen
-    // negiert. Konsum flip-frei via mat.normalNode (_buildPbrNodeMaterial, foliageLeaf); EINE Quelle
-    // für Karten + phyto-Klingen.
-    _stampFoliageDomeNormals(g) {
+    // DIE NORMALE DER KRONE AUF EINER LAUB-GEOMETRIE (K68-N1): das EINE Gesetz ist der Kern (phyto-core `kronenNormalen`, das
+    // Kronen-Ellipsoid × die zur Außenseite gewendete Karte) — derselbe, den der Ofen der Welt über jede Studio-Krone legt
+    // (foundry-core `emitTreeRezept`). Der Grammatik-Baum der Werkstatt (Klingen, Karten, Anker-Karten) liest ihn hier; die
+    // Kuppel vom Kronen-Boden mit Up-Bias des Wirts (bis K68) war sein Zwilling und ist gefallen. Der Stoff liest die Normale
+    // flip-frei (`_laubStoffNormale`).
+    _kronenNormalenAuf(g) {
         if (!g || !g.attributes || !g.attributes.position || !g.attributes.normal) return g;
-        const pos = g.attributes.position.array;
-        const nor = g.attributes.normal.array;
-        const vc = g.attributes.position.count;
-        if (!(vc > 0)) return g;
-        let cx = 0,
-            cz = 0,
-            minY = Infinity;
-        for (let i = 0; i < vc; i++) {
-            cx += pos[i * 3];
-            cz += pos[i * 3 + 2];
-            if (pos[i * 3 + 1] < minY) minY = pos[i * 3 + 1];
-        }
-        cx /= vc;
-        cz /= vc;
-        const oy = minY - 0.5; // Kuppel-Ursprung: der Kronen-BODEN, nie die Mitte
-        const UP = 0.3; // Up-Bias: Rand-Karten sampeln Himmel statt Horizont
-        for (let i = 0; i < vc; i++) {
-            const i3 = i * 3;
-            let nx = pos[i3] - cx;
-            let ny = pos[i3 + 1] - oy;
-            let nz = pos[i3 + 2] - cz;
-            const l = Math.sqrt(nx * nx + ny * ny + nz * nz) || 1;
-            nx /= l;
-            ny = ny / l + UP;
-            nz /= l;
-            const l2 = Math.sqrt(nx * nx + ny * ny + nz * nz) || 1;
-            nor[i3] = nx / l2;
-            nor[i3 + 1] = ny / l2;
-            nor[i3 + 2] = nz / l2;
-        }
+        globalThis.__phytoCore.kronenNormalen([{ pos: g.attributes.position.array, nor: g.attributes.normal.array }]);
         g.attributes.normal.needsUpdate = true;
         return g;
+    }
+
+    // DIE NORMALE DES LAUB-STOFFS (K68-N1): eine Krone mit der Normale der Krone lichtet FLIP-FREI — r184 kehrt die Normale
+    // back-facender Fragmente eines doppelseitigen Stoffs um (normalView = normalViewGeometry × faceDirection), die Rückseite
+    // einer Karte läse das Ellipsoid nach innen (Prüfer K68: 45–51 % der nahen Dreiecke vom Auge weg, die Nadel-Wedel
+    // milchig). Die Normale ist die Geometrie-Normale des Renderers selbst (Instanz-, Batch- und Modell-Rotation), ohne die
+    // Seite: beide Seiten einer Karte tragen die Krone an ihrer Stelle. EIN Ort für jeden Kronen-Stoff (Studio, Grammatik).
+    _laubStoffNormale(T, mat) {
+        mat.normalNode = T.normalViewGeometry;
+        return mat;
+    }
+
+    // DIE BLATT-UNTERSEITE (phyto-core BLATT_UNTERSEITE, 05.10.; K68-N1): ist die GESEHENE Seite des Blatts nach unten gewandt,
+    // trägt das Laub die hellere, mattere Unterseite — die Seite ist die Fläche selbst (`normalFlat`, zum Auge gewandt), nie die
+    // Licht-Normale: mit der Normale der Krone hieß von unten die ganze Krone Unterseite (Prüfer K68: Nadel-Wedel von unten
+    // mint-weiß, Kronen-Luma +15–49 %). Dieselben Zahlen wie das Labor (foundry-core `injectWind`). EIN Ort für jeden Laub-Stoff.
+    _laubUnterseite(T, farbe) {
+        const BU = globalThis.__phytoCore.BLATT_UNTERSEITE;
+        const ny = T.normalFlat.transformDirection(T.cameraViewMatrix).y;
+        const grau = T.mix(farbe, T.vec3(farbe.dot(T.vec3(0.2126, 0.7152, 0.0722))), BU.grau).mul(BU.hell);
+        return T.mix(farbe, grau, T.float(0.5).sub(ny.mul(BU.steil)).clamp(0.0, 1.0));
     }
 
     // DIE EINE BLATT-FARB-QUELLE für Phyto-Pfad UND Anker-Fallback (der Phyto-Pfad gewinnt). Das Farb-Gesetz
@@ -782,10 +816,8 @@ class AnazhRealm_Z17a {
         g.setAttribute("color", new THREE.BufferAttribute(q.colors, 3));
         g.setAttribute("uv", new THREE.BufferAttribute(q.uvs, 2));
         g.setIndex(new THREE.BufferAttribute(q.indices, 1));
-        // KUPPEL-NORMALE auch für die Klingen (22.07.): die Core-cup-Normalen litten
-        // denselben DoubleSide-Flip — der Host überstempelt das Shading-Attribut
-        // (phyto-core unberührt, seine Rückgabe bleibt byte-identisch).
-        this._stampFoliageDomeNormals(g);
+        // DIE NORMALE DER KRONE auch für die Klingen (K68-N1, das EINE Kern-Gesetz)
+        this._kronenNormalenAuf(g);
         // S1-SHADER — dieselben Wahrnehmungs-Höhen wie die Karten → das Dither-Crossfade
         // blendet die Klingen am L0→L1-Band weich aus (kein Pop auf die Karten-Krone).
         this._stampFoliageVisHeights(g, Math.max(1, skeleton.totalH));
@@ -831,6 +863,8 @@ class AnazhRealm_Z17a {
                 g.setAttribute("color", new THREE.BufferAttribute(q.colors, 3));
                 g.setAttribute("uv", new THREE.BufferAttribute(q.uvs, 2));
                 g.setIndex(new THREE.BufferAttribute(q.indices, 1));
+                // DIE NORMALE DER KRONE (K68-N1): die Karten lichten wie die Studio-Krone (bis K68-N1 flach)
+                this._kronenNormalenAuf(g);
                 // S1-SHADER — die Wahrnehmungs-Höhen (aH0/aH0L) für die SSE-LOD-Crossfade-Metrik.
                 this._stampFoliageVisHeights(g, Math.max(1, skeleton.totalH));
                 g.computeBoundingBox();
@@ -861,7 +895,7 @@ class AnazhRealm_Z17a {
         const cardH = baseSize * _hByKind * _lodCardBoost;
         const totalH = Math.max(1, skeleton.totalH);
         // Kronen-Zentrum (Mitte der Anchor-Wolke, leicht angehoben) — NUR für Positionen (innerFill-Pull +
-        // Spitzen-Curl); die Shading-Normale stempelt _stampFoliageDomeNormals.
+        // Spitzen-Curl); die Shading-Normale stempelt die Normale der Krone (`_kronenNormalenAuf`).
         let cx = 0,
             cy = 0,
             cz = 0;
@@ -961,7 +995,7 @@ class AnazhRealm_Z17a {
                 const cR = Math.cos(rot),
                     sR = Math.sin(rot);
                 // Tangenten (um y gedreht): t1=(cR,0,−sR), t2=(sR,0,cR) (⟂). Keine Facing-Normale:
-                // _stampFoliageDomeNormals überschreibt das normal-Attribut nach dem Bau.
+                // `_kronenNormalenAuf` überschreibt das normal-Attribut nach dem Bau.
                 // Eck-Halbbreiten (Blatt-Form): unten ±hw, oben ±tw.
                 const lxs = [-hw, hw, tw, -tw];
                 const lys = [-hh, -hh, hh, hh];
@@ -1016,8 +1050,8 @@ class AnazhRealm_Z17a {
         g.setAttribute("color", new THREE.BufferAttribute(colors, 3));
         g.setAttribute("uv", new THREE.BufferAttribute(uvs, 2)); // Ω-O14: weiche Blatt-Alpha
         g.setIndex(new THREE.BufferAttribute(indices, 1));
-        // Kuppel-Normale vom Kronen-Boden (facing-unabhängig, s. Helper).
-        this._stampFoliageDomeNormals(g);
+        // die Normale der Krone (K68-N1, das EINE Kern-Gesetz)
+        this._kronenNormalenAuf(g);
         // S1-SHADER — die Wahrnehmungs-Höhen (aH0/aH0L) für die SSE-LOD-Crossfade-Metrik.
         this._stampFoliageVisHeights(g, totalH);
         g.computeBoundingBox();

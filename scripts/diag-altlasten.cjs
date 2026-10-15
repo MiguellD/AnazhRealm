@@ -3956,8 +3956,8 @@ function main() {
                 ],
                 [
                     "?.",
-                    "mat.normalNode = _Ta.modelViewMatrix.transformDirection(_Ta.normalLocal);",
-                    "mat.normalNode = _Ta.modelViewMatrix?.transformDirection(_Ta.normalLocal);",
+                    "        const ny = T.normalFlat.transformDirection(T.cameraViewMatrix).y;",
+                    "        const ny = T.normalFlat?.transformDirection(T.cameraViewMatrix).y;",
                     /^Ausstattungs-Wenn$/,
                 ],
                 [

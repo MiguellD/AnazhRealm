@@ -661,7 +661,9 @@ function baumWindGlsl(foliage) {
         (foliage ? "transformed+=normalize(normal)*(" + w.flattern + "*_wAn/_wSk);\n" : "")
     );
 }
-function injectWind(mat, foliage, isGrass, baum) {
+// `krone` (K68-N1): das Laub einer Krone (emitTreeRezept: Karte, Klinge, Nadel) trägt die Normale der Krone (phyto-core
+// kronenNormalen) und liest sie FLIP-FREI — die doppelseitige Rückseite kehrte sie nach innen (die Welt: `_laubStoffNormale`).
+function injectWind(mat, foliage, isGrass, baum, krone) {
     mat.onBeforeCompile = function (sh) {
         sh.uniforms.uTime = WIND.uTime;
         if (baum) sh.uniforms.uWindBaum = WIND.uWindBaum;
@@ -756,14 +758,20 @@ function injectWind(mat, foliage, isGrass, baum) {
                         ";\n#ifndef PHYSICALLY_CORRECT_LIGHTS\n _irr *= PI;\n#endif\n reflectedLight.directDiffuse += _irr * RECIPROCAL_PI * material.diffuseColor;\n}\n#undef RE_Direct\n#define RE_Direct RE_Direct_Laub"
                 );
             }
-            // DIE BLATT-UNTERSEITE (phyto-core BLATT_UNTERSEITE, 05.10.): die gesehene Seite nach unten gewandt (die
-            // Normale ist nach normal_fragment_begin seiten-gespiegelt) → heller und matter. Laub und Blüte, nie Gras;
-            // dieselben Zahlen liest der Laub-Stoff der Welt.
+            // DIE BLATT-UNTERSEITE (phyto-core BLATT_UNTERSEITE, 05.10.): die gesehene FLÄCHE nach unten gewandt (K68-N1: die
+            // Fläche aus den Ableitungen, zum Auge gewandt — nie die Licht-Normale, die an der Krone die Krone ist) → heller
+            // und matter. Laub und Blüte, nie Gras; dieselben Zahlen liest der Laub-Stoff der Welt (`_laubUnterseite`).
+            // DIE KRONE FLIP-FREI (K68-N1): nach normal_fragment_begin trägt `normal` wieder die Normale der Krone ohne Seite.
             if (!isGrass) {
                 const BU = self.__phytoCore.BLATT_UNTERSEITE;
+                if (krone)
+                    sh.fragmentShader = sh.fragmentShader.replace(
+                        "#include <normal_fragment_begin>",
+                        "#include <normal_fragment_begin>\n#ifndef FLAT_SHADED\n normal = normalize( vNormal );\n#endif"
+                    );
                 sh.fragmentShader = sh.fragmentShader.replace(
                     "#include <normal_fragment_maps>",
-                    "#include <normal_fragment_maps>\n{ float _ny=dot(normal,normalize((viewMatrix*vec4(0.0,1.0,0.0,0.0)).xyz)); float _uw=clamp(0.5-_ny*" +
+                    "#include <normal_fragment_maps>\n{ float _ny=dot(normalize(cross(dFdx(vViewPosition),dFdy(vViewPosition))),normalize((viewMatrix*vec4(0.0,1.0,0.0,0.0)).xyz)); float _uw=clamp(0.5-_ny*" +
                         BU.steil.toFixed(3) +
                         ",0.0,1.0); float _ul=dot(diffuseColor.rgb,vec3(0.2126,0.7152,0.0722)); diffuseColor.rgb=mix(diffuseColor.rgb,mix(diffuseColor.rgb,vec3(_ul)," +
                         BU.grau.toFixed(3) +
@@ -775,7 +783,11 @@ function injectWind(mat, foliage, isGrass, baum) {
         }
     };
     mat.customProgramCacheKey = function () {
-        return "wind_" + (foliage ? (isGrass ? "grass_v8tint" : "fol_v9laublicht") : "bark") + "_v9overlap";
+        return (
+            "wind_" +
+            (foliage ? (isGrass ? "grass_v8tint" : "fol_v10seite" + (krone ? "_krone" : "")) : "bark") +
+            "_v9overlap"
+        );
     };
     return mat;
 }
@@ -891,6 +903,15 @@ function buildMaterials() {
         false,
         true
     );
+    // DAS KLINGEN-LAUB DER KRONE (K68-N1): Klinge und Nadel eines Baums und Strauchs tragen die Normale der Krone — ihr Stoff
+    // liest sie flip-frei; Farn, Blüte, Schilf und Gestrüpp (foliageMat) tragen ihre eigene Fläche und lesen die Seite.
+    foliageMatKrone = injectWind(
+        new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.62, metalness: 0, side: THREE.DoubleSide }),
+        true,
+        false,
+        true,
+        true
+    );
     foliageMatTex = injectWind(
         new THREE.MeshStandardMaterial({
             vertexColors: true,
@@ -901,6 +922,7 @@ function buildMaterials() {
         }),
         true,
         false,
+        true,
         true
     ); // FIX v31: MULTI-BLATT-KARTEN — ein Quad traegt ~6 GEMALTE Blaetter aus _leafAtlas (map wird nach dem Malen gesetzt). map haelt den WERT um sein Mittel `wert` (bakeLeafAtlasBild; color = 1/wert teilt ihn heraus), die Artfarbe kommt wie ueberall aus vertexColors -> Saison/Tint-Pipeline unveraendert. 28 Dreiecke je Blatt werden 2 je ~6 Blaetter (Faktor ~14 im Mittelfeld).
     grassMat = injectWind(
@@ -2445,7 +2467,17 @@ function emitTreeRezept(P, stufe) {
     }
     addMerged(barkGeos, P.barkType === "birch" ? barkMatBirch : barkMat); // KEIN Weld -> eigene Normalen, kein verschmierter Blob am Fuss
     emitRoots(P); // Wurzeln zurueck (hochgeladene Version: emitRoots, Farbe barkA*0.72/barkB*0.58, aus dem Flarefuss)
-    addMerged(folGeos, foliageMat);
+    // DIE NORMALE DER KRONE (K68): Klingen, Nadeln, Karten und Wedel der Krone lichten mit dem Kronen-Ellipsoid (phyto-core
+    // kronenNormalen) — EINE Krone ueber alle Laub-Teile, damit L0 (Klinge), L1 (Karte) und die gebackene Karte (L2, aus der
+    // L1) dieselbe Licht- und Schattenseite tragen.
+    {
+        const _kn = [...folGeos, ...folGeosTex].filter((g) => g.attributes && g.attributes.normal && g.attributes.position);
+        if (_kn.length)
+            self.__phytoCore.kronenNormalen(
+                _kn.map((g) => ({ pos: g.attributes.position.array, nor: g.attributes.normal.array }))
+            );
+    }
+    addMerged(folGeos, foliageMatKrone);
     if (folGeosTex.length) addMerged(folGeosTex, foliageMatTex); // FIX v31: Cluster-Quads als eigenes Submesh (eigener Attributsatz mit uv) — Studio UND Wald, da buildInstance den subject-Sink tauscht
     if (_wurf1) {
         // DER SCHATTEN-TEIL: das Geruest als Dreikant (aDeckt 1) und die Schatten-Karten (aDeckt 0) — EIN Gitter, EIN Stoff.

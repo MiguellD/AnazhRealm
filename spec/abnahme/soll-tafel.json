@@ -49,10 +49,10 @@
                 "werkzeug": "werkbank bild -278 +1.7 -1038 -276 +1.2 -1026 --wahl 0 --klasse '^(nahWiese:.*|streuSatz|bodenSatz)$' --abstand --ist boden-nah (Mess-Wiese K55)",
                 "messung": {
                     "werkzeug": "bild",
-                    "datum": "2026-10-15T04:11:58.958Z",
+                    "datum": "2026-10-15T05:13:08.854Z",
                     "stand": {
                         "version": "18.546.2",
-                        "sha": "671b0e09f5f9abcf1c5628c4ce26673bbd7342a2"
+                        "sha": "ce0b815eea70b1d98b7b5e3dfe914ae474a93482"
                     },
                     "geraet": {
                         "backend": "WebGPU",
@@ -74,75 +74,58 @@
                         "pixel": 0,
                         "max": 0
                     },
-                    "misch": 120989,
+                    "misch": 155293,
                     "klassen": {
                         "bodenSatz": {
                             "objekte": 1,
-                            "zweiton": 0.0005,
-                            "zt": 273,
+                            "zweiton": 0.0001,
+                            "zt": 49,
                             "weiss": 0.0001,
-                            "wt": 76,
-                            "pixel": 520723,
-                            "deckung": 0.2511,
-                            "deckungUnten": 0.4133,
-                            "luma": 89.59,
-                            "kontrast": 0.5078,
-                            "detail": 0.0747,
-                            "nyquist": 0.0826,
-                            "ek": 477442.9,
-                            "eg": 5302131.6,
-                            "silhouette": 185.5043
+                            "wt": 64,
+                            "pixel": 536790,
+                            "deckung": 0.2589,
+                            "deckungUnten": 0.4284,
+                            "luma": 87.8,
+                            "kontrast": 0.5042,
+                            "detail": 0.0804,
+                            "nyquist": 0.0582,
+                            "ek": 375831.3,
+                            "eg": 6081248.9,
+                            "silhouette": 184.3558
                         },
                         "nahWiese:L1": {
                             "objekte": 2,
-                            "zweiton": 0.0016,
-                            "zt": 600,
+                            "zweiton": 0.0005,
+                            "zt": 190,
                             "weiss": 0,
                             "wt": 0,
-                            "pixel": 364177,
-                            "deckung": 0.1756,
-                            "deckungUnten": 0.5151,
-                            "luma": 73.81,
-                            "kontrast": 0.3795,
-                            "detail": 0.1038,
-                            "nyquist": 0.1515,
-                            "ek": 1080510.2,
-                            "eg": 6050472.5,
-                            "silhouette": 165.6286
+                            "pixel": 358709,
+                            "deckung": 0.173,
+                            "deckungUnten": 0.5067,
+                            "luma": 73.22,
+                            "kontrast": 0.3782,
+                            "detail": 0.1077,
+                            "nyquist": 0.1471,
+                            "ek": 845816.5,
+                            "eg": 4903994.6,
+                            "silhouette": 165.1915
                         },
                         "nahWiese:L2": {
                             "objekte": 2,
-                            "zweiton": 0.0005,
-                            "zt": 79,
+                            "zweiton": 0.0004,
+                            "zt": 71,
                             "weiss": 0,
                             "wt": 0,
-                            "pixel": 171404,
-                            "deckung": 0.0827,
-                            "deckungUnten": 0.0609,
-                            "luma": 68.93,
-                            "kontrast": 0.336,
-                            "detail": 0.115,
-                            "nyquist": 0.1429,
-                            "ek": 411067.6,
-                            "eg": 2466018.2,
-                            "silhouette": 143.214
-                        },
-                        "streuSatz": {
-                            "objekte": 2,
-                            "zweiton": 0,
-                            "zt": 0,
-                            "weiss": 0,
-                            "wt": 0,
-                            "pixel": 2800,
-                            "deckung": 0.0014,
-                            "deckungUnten": 0.0038,
-                            "luma": 117.4,
-                            "kontrast": 0.2968,
-                            "detail": 0.0728,
-                            "nyquist": 0.2235,
-                            "ek": 9693.7,
-                            "eg": 33687.6,
-                            "silhouette": 14.1359
+                            "pixel": 166363,
+                            "deckung": 0.0802,
+                            "deckungUnten": 0.0585,
+                            "luma": 69.34,
+                            "kontrast": 0.3452,
+                            "detail": 0.1203,
+                            "nyquist": 0.1435,
+                            "ek": 366101.7,
+                            "eg": 2185978.1,
+                            "silhouette": 143.1366
                         }
                     },
                     "abstand": {
@@ -164,42 +147,33 @@
                             0.2621,
                             0.1556,
                             0.0884,
-                            0.0465,
-                            0.0449
+                            0.0464,
+                            0.041
                         ],
                         "klassen": {
                             "bodenSatz": [
                                 0,
-                                217961,
-                                123772,
-                                29202,
-                                107614,
-                                31791,
-                                1599
+                                226013,
+                                127891,
+                                30402,
+                                108531,
+                                32316,
+                                2771
                             ],
                             "nahWiese:L2": [
                                 0,
-                                400,
-                                91671,
-                                56130,
-                                23203,
+                                391,
+                                88248,
+                                55043,
+                                22681,
                                 0,
                                 0
                             ],
                             "nahWiese:L1": [
                                 0,
-                                298116,
-                                66045,
-                                16,
-                                0,
-                                0,
-                                0
-                            ],
-                            "streuSatz": [
-                                0,
-                                2543,
-                                257,
-                                0,
+                                292704,
+                                65991,
+                                14,
                                 0,
                                 0,
                                 0
@@ -210,15 +184,15 @@
                     "bild": "artifacts/soll-tafel/boden-nah.png",
                     "quellen": {
                         "gelaende-core.js": "c:47e37b262d36dd6e",
-                        "phyto-core.js": "c:d3570c6004de7533",
+                        "phyto-core.js": "c:71fcf1b4be4e4597",
                         "stamm/07.js": "c:49617014f39c824b",
-                        "stamm/10.js": "c:60d0e92e3969e187",
+                        "stamm/10.js": "c:093b1e2ba003f5d2",
                         "stamm/19.js": "c:b1a053cba1f64cd1",
                         "stamm/24.js": "c:26d0da410e4c28a0",
-                        "stamm/25c.js": "c:baf3b0d0c63ceb9b",
+                        "stamm/25c.js": "c:61e641a0f44d5466",
                         "stamm/11c.js": "c:978d02155395df69",
                         "stamm/17b.js": "c:074908c78ad2216f",
-                        "stamm/20a.js": "c:a57174536689608d"
+                        "stamm/20a.js": "c:fd05cfe1eaab8cbd"
                     }
                 }
             },
@@ -277,15 +251,15 @@
                 "werkzeug": "werkbank licht --ist himmel-licht (die Licht-Bilanz an der Mess-Wiese)",
                 "messung": {
                     "werkzeug": "licht",
-                    "datum": "2026-10-15T03:27:10.651Z",
+                    "datum": "2026-10-15T05:13:10.436Z",
                     "stand": {
-                        "sha": "eeb0afbe40bb9178cae628ffe83aedb6a2034003",
+                        "sha": "ce0b815eea70b1d98b7b5e3dfe914ae474a93482",
                         "version": "18.546.2"
                     },
                     "geraet": {
                         "adapter": "amd rdna-3"
                     },
-                    "E_alle": 9.55,
+                    "E_alle": 9.44,
                     "E_umgebung": 2.26,
                     "sonnenRichtung": [
                         0,
@@ -294,10 +268,10 @@
                     ],
                     "quellen": {
                         "stamm/07.js": "c:49617014f39c824b",
-                        "stamm/10.js": "c:60d0e92e3969e187",
+                        "stamm/10.js": "c:093b1e2ba003f5d2",
                         "stamm/19.js": "c:b1a053cba1f64cd1",
                         "stamm/24.js": "c:26d0da410e4c28a0",
-                        "stamm/25c.js": "c:baf3b0d0c63ceb9b"
+                        "stamm/25c.js": "c:61e641a0f44d5466"
                     }
                 }
             },
@@ -313,9 +287,9 @@
             "id": "laub",
             "titel": "Laub (Laub- und Nadelbaum, Kronen-Karten L0/L1 und Karte L2)",
             "wirkung": {
-                "grund": "Augen-Befund 14.10.: Nadel-Karten groß und kantig, Laub-Karten mit Dither-Muster",
+                "grund": "Augen-Befund 14.10.: Laub-Karten mit Dither-Muster (der Teil „Nadel-Karten groß und kantig“ trägt laub-kante)",
                 "mangel": {
-                    "befund": "Laub-Karten mit Dither-Muster (Nadelbaum-Karten groß und kantig)",
+                    "befund": "Laub-Karten mit Dither-Muster",
                     "quelle": "UEBERGABE-2026-10-14.md (Zweig koordination) „DER PLAN ZU AAAA“ Nr. 2"
                 }
             },
@@ -353,10 +327,10 @@
                 "werkzeug": "werkbank bild -284 +1.7 -1042 -269 34 -1036 --ziel tanne --klasse '^(f:(tanne|fichte|eiche|birke|buche|kiefer|weide|strauch|mammut)[a-z_]*:L[0-2]|fimp:[a-z_]+:L[0-2]|kronendach)$' --ist laub",
                 "messung": {
                     "werkzeug": "bild",
-                    "datum": "2026-10-15T03:27:09.898Z",
+                    "datum": "2026-10-15T06:41:15.537Z",
                     "stand": {
                         "version": "18.546.2",
-                        "sha": "eeb0afbe40bb9178cae628ffe83aedb6a2034003"
+                        "sha": "c95beb12b403c3fd9cc047a93e6fe60007b83fec"
                     },
                     "geraet": {
                         "backend": "WebGPU",
@@ -378,91 +352,99 @@
                         "pixel": 0,
                         "max": 0
                     },
-                    "misch": 92004,
+                    "misch": 89667,
                     "klassen": {
                         "f:fichte:L1": {
                             "objekte": 9,
-                            "zweiton": 0.0134,
-                            "zt": 3453,
-                            "weiss": 0.002,
-                            "wt": 523,
-                            "pixel": 257079,
-                            "deckung": 0.124,
-                            "deckungUnten": 0.0033,
-                            "luma": 52.75,
-                            "kontrast": 0.3795,
-                            "detail": 0.1025,
-                            "nyquist": 0.1797,
-                            "ek": 561066.7,
-                            "eg": 2561257.2,
-                            "silhouette": 118.9359
+                            "zweiton": 0,
+                            "zt": 0,
+                            "weiss": 0.0048,
+                            "wt": 1645,
+                            "pixel": 345498,
+                            "deckung": 0.1666,
+                            "deckungUnten": 0.0067,
+                            "luma": 78.05,
+                            "kontrast": 0.5148,
+                            "detail": 0.0931,
+                            "nyquist": 0.1299,
+                            "ek": 731282.2,
+                            "eg": 4897913.1,
+                            "silhouette": 86.3862,
+                            "kante": 0.2763,
+                            "kr": 27891
                         },
                         "f:tanne:L0": {
                             "objekte": 4,
-                            "zweiton": 0.0526,
-                            "zt": 3470,
-                            "weiss": 0.0402,
-                            "wt": 2651,
-                            "pixel": 65908,
-                            "deckung": 0.0318,
-                            "deckungUnten": 0,
-                            "luma": 69.83,
-                            "kontrast": 0.5488,
-                            "detail": 0.1126,
-                            "nyquist": 0.1823,
-                            "ek": 516059.1,
-                            "eg": 2314406.7,
-                            "silhouette": 45.574
+                            "zweiton": 0.0039,
+                            "zt": 338,
+                            "weiss": 0.0525,
+                            "wt": 4557,
+                            "pixel": 86768,
+                            "deckung": 0.0418,
+                            "deckungUnten": 0.0004,
+                            "luma": 84.47,
+                            "kontrast": 0.4863,
+                            "detail": 0.0885,
+                            "nyquist": 0.1909,
+                            "ek": 364841.8,
+                            "eg": 1546781.2,
+                            "silhouette": 73.6512,
+                            "kante": 0.4293,
+                            "kr": 9842
                         },
                         "f:tanne:L1": {
                             "objekte": 9,
-                            "zweiton": 0.0099,
-                            "zt": 3157,
-                            "weiss": 0.0081,
-                            "wt": 2561,
-                            "pixel": 317803,
-                            "deckung": 0.1533,
-                            "deckungUnten": 0.0053,
-                            "luma": 57.32,
-                            "kontrast": 0.426,
-                            "detail": 0.1111,
-                            "nyquist": 0.1857,
-                            "ek": 1547722.9,
-                            "eg": 6787450,
-                            "silhouette": 81.0693
+                            "zweiton": 0,
+                            "zt": 0,
+                            "weiss": 0.0061,
+                            "wt": 2075,
+                            "pixel": 339732,
+                            "deckung": 0.1638,
+                            "deckungUnten": 0.0069,
+                            "luma": 69.51,
+                            "kontrast": 0.5479,
+                            "detail": 0.0751,
+                            "nyquist": 0.1496,
+                            "ek": 519439.2,
+                            "eg": 2953793.8,
+                            "silhouette": 83.6248,
+                            "kante": 0.2619,
+                            "kr": 20223
                         },
                         "fimp:atlas:L2": {
                             "objekte": 1,
-                            "zweiton": 0.0635,
-                            "zt": 27244,
-                            "weiss": 0.0013,
-                            "wt": 561,
-                            "pixel": 429034,
-                            "deckung": 0.2069,
-                            "deckungUnten": 0.1057,
-                            "luma": 61.93,
-                            "kontrast": 0.5629,
-                            "detail": 0.1182,
-                            "nyquist": 0.2077,
-                            "ek": 2412020.2,
-                            "eg": 9199742.2,
-                            "silhouette": 97.9623
+                            "zweiton": 0,
+                            "zt": 0,
+                            "weiss": 0.0011,
+                            "wt": 380,
+                            "pixel": 335828,
+                            "deckung": 0.162,
+                            "deckungUnten": 0.137,
+                            "luma": 80.72,
+                            "kontrast": 0.5506,
+                            "detail": 0.0826,
+                            "nyquist": 0.0912,
+                            "ek": 523480.5,
+                            "eg": 5218782.1,
+                            "silhouette": 48.0529,
+                            "kante": 0.3596,
+                            "kr": 10157
                         }
                     },
                     "abstand": null,
                     "gesicht": null,
                     "bild": "artifacts/soll-tafel/laub.png",
                     "quellen": {
-                        "phyto-core.js": "c:d3570c6004de7533",
-                        "foundry-core.js": "c:048acefc0b19a374",
+                        "phyto-core.js": "c:71fcf1b4be4e4597",
+                        "foundry-core.js": "c:2ccacf2543c36e25",
                         "stamm/07.js": "c:49617014f39c824b",
-                        "stamm/10.js": "c:60d0e92e3969e187",
+                        "stamm/10.js": "c:1b961fac64032e22",
                         "stamm/19.js": "c:b1a053cba1f64cd1",
                         "stamm/24.js": "c:26d0da410e4c28a0",
-                        "stamm/25c.js": "c:baf3b0d0c63ceb9b",
-                        "stamm/17a.js": "c:744a802e9be62a5d",
-                        "stamm/20b.js": "c:c862c9370ea83097",
-                        "stamm/20c.js": "c:ab76fd2fae457741",
+                        "stamm/25c.js": "c:61e641a0f44d5466",
+                        "stamm/17a.js": "c:1cf91f73137a3952",
+                        "stamm/20b.js": "c:99f1a421be17e6e3",
+                        "stamm/20c.js": "c:da14ccf91cefc490",
                         "stamm/20d.js": "c:f4f05390e67cc1d5"
                     }
                 }
@@ -486,6 +468,191 @@
                     "datei": "phyto-core.js",
                     "symbol": "BLATT_ATLAS_WEDEL",
                     "was": "der Nadel-Wedel als Hand aus Nadel-Büscheln (Klingen-Index Mip 3 0,834 → 0,680, Soll ≤ 0,70; gate:asset-contract malt den Atlas gegen die Füllung) — die Kante der Karte; die Tafel misst ihr Raster im Bild"
+                }
+            ]
+        },
+        {
+            "id": "laub-kante",
+            "titel": "Laub-Silhouette (der Umriss der Kronen gegen Himmel, Boden und Holz: Karten L0/L1 und Karte L2)",
+            "wirkung": {
+                "grund": "Augen-Befund 14.10.: Nadel-Karten groß und kantig (geteilt aus laub, K68-n2)",
+                "mangel": {
+                    "befund": "Nadelbaum-Karten groß und kantig",
+                    "quelle": "UEBERGABE-2026-10-14.md (Zweig koordination) „DER PLAN ZU AAAA“ Nr. 2"
+                }
+            },
+            "referenz": [
+                {
+                    "titel": "Horizon Zero Dawn (Guerrilla, 2017)",
+                    "technik": "Kronen aus vielen kleinen Blatt-Karten an Ast-Clustern: der Umriss zerfällt in Blätter und Lücken, keine Karten-Kante gegen den Himmel (GDC 2018, Vegetation of Horizon Zero Dawn)"
+                },
+                {
+                    "titel": "The Witcher 4 Tech-Demo / Unreal Engine 5.6 (2025)",
+                    "technik": "Nanite-Laub: Blätter und Zweige als Geometrie bis in die Ferne — der Umriss ist der der Pflanze, nie der einer Karte"
+                }
+            ],
+            "soll": {
+                "eigenschaften": [
+                    {
+                        "groesse": "kante",
+                        "band": [
+                            null,
+                            0.22
+                        ],
+                        "einheit": "Kohärenz des Struktur-Tensors am Umriss gegen das Außen (klassenMasse kante: Maske Gauß σ 2 px, Fenster 17 × 17 px, Mittel über die Rand-Pixel): gerade Kante 1, zerfranster Umriss klein",
+                        "quelle": "die Wirklichkeit, mit derselben Funktion gemessen (Nordstern §4.5; Himmel = Luma > 150 und Buntheit < 45 oder Blau B > R + 40, B > G + 15, B > 140; Außen der Himmel): REF real-mischwald.jpg (Mischwald in Südtirol, CC BY 4.0 Bartleby08, sha256 97117a27…, oberes 60 %) 0,160 · REF real-felsen.jpg (Mischwald am Hang der Rudka, Fichten am Kamm, CC BY-SA 4.0 Jacek Halicki, sha256 577851ed…, oberes 20 %) 0,218 — die Grenze ist die geradeste der beiden"
+                    }
+                ]
+            },
+            "budget": {
+                "haushalt": "baum"
+            },
+            "mass": {
+                "name": "kante",
+                "werkzeug": "werkbank bild -284 +1.7 -1042 -269 34 -1036 --ziel tanne --klasse '^(f:(tanne|fichte|eiche|birke|buche|kiefer|weide|strauch|mammut)[a-z_]*:L[0-2]|fimp:[a-z_]+:L[0-2]|kronendach)$' --ist laub-kante",
+                "messung": {
+                    "werkzeug": "bild",
+                    "datum": "2026-10-15T06:41:30.627Z",
+                    "stand": {
+                        "version": "18.546.2",
+                        "sha": "c95beb12b403c3fd9cc047a93e6fe60007b83fec"
+                    },
+                    "geraet": {
+                        "backend": "WebGPU",
+                        "adapter": "amd rdna-3"
+                    },
+                    "leinwand": [
+                        1920,
+                        1080
+                    ],
+                    "kamera": [
+                        -284,
+                        29.34,
+                        -1042
+                    ],
+                    "ausdruck": "^(f:(tanne|fichte|eiche|birke|buche|kiefer|weide|strauch|mammut)[a-z_]*:L[0-2]|fimp:[a-z_]+:L[0-2]|kronendach)$",
+                    "schwelle": 18,
+                    "rauschen": {
+                        "anteil": 0,
+                        "pixel": 0,
+                        "max": 0
+                    },
+                    "misch": 89467,
+                    "klassen": {
+                        "f:fichte:L1": {
+                            "objekte": 9,
+                            "zweiton": 0,
+                            "zt": 0,
+                            "weiss": 0.0049,
+                            "wt": 1699,
+                            "pixel": 345290,
+                            "deckung": 0.1665,
+                            "deckungUnten": 0.0067,
+                            "luma": 78.07,
+                            "kontrast": 0.5145,
+                            "detail": 0.0932,
+                            "nyquist": 0.1312,
+                            "ek": 731642,
+                            "eg": 4843757.9,
+                            "silhouette": 86.5892,
+                            "kante": 0.2737,
+                            "kr": 28027
+                        },
+                        "f:tanne:L0": {
+                            "objekte": 4,
+                            "zweiton": 0.0067,
+                            "zt": 579,
+                            "weiss": 0.0517,
+                            "wt": 4488,
+                            "pixel": 86760,
+                            "deckung": 0.0418,
+                            "deckungUnten": 0.0004,
+                            "luma": 84.42,
+                            "kontrast": 0.4871,
+                            "detail": 0.0891,
+                            "nyquist": 0.1888,
+                            "ek": 360218.5,
+                            "eg": 1547999,
+                            "silhouette": 73.3898,
+                            "kante": 0.4361,
+                            "kr": 9726
+                        },
+                        "f:tanne:L1": {
+                            "objekte": 9,
+                            "zweiton": 0.0001,
+                            "zt": 47,
+                            "weiss": 0.0059,
+                            "wt": 1992,
+                            "pixel": 339741,
+                            "deckung": 0.1638,
+                            "deckungUnten": 0.0069,
+                            "luma": 69.44,
+                            "kontrast": 0.5472,
+                            "detail": 0.0748,
+                            "nyquist": 0.1471,
+                            "ek": 506852,
+                            "eg": 2939477.8,
+                            "silhouette": 83.9891,
+                            "kante": 0.2591,
+                            "kr": 20346
+                        },
+                        "fimp:atlas:L2": {
+                            "objekte": 1,
+                            "zweiton": 0,
+                            "zt": 0,
+                            "weiss": 0.0012,
+                            "wt": 387,
+                            "pixel": 335892,
+                            "deckung": 0.162,
+                            "deckungUnten": 0.137,
+                            "luma": 80.75,
+                            "kontrast": 0.5508,
+                            "detail": 0.0826,
+                            "nyquist": 0.0923,
+                            "ek": 531541.9,
+                            "eg": 5225634.7,
+                            "silhouette": 48.1398,
+                            "kante": 0.3573,
+                            "kr": 10203
+                        }
+                    },
+                    "abstand": null,
+                    "gesicht": null,
+                    "bild": "artifacts/soll-tafel/laub-kante.png",
+                    "quellen": {
+                        "phyto-core.js": "c:71fcf1b4be4e4597",
+                        "foundry-core.js": "c:2ccacf2543c36e25",
+                        "stamm/07.js": "c:49617014f39c824b",
+                        "stamm/10.js": "c:1b961fac64032e22",
+                        "stamm/19.js": "c:b1a053cba1f64cd1",
+                        "stamm/24.js": "c:26d0da410e4c28a0",
+                        "stamm/25c.js": "c:61e641a0f44d5466",
+                        "stamm/17a.js": "c:1cf91f73137a3952",
+                        "stamm/20b.js": "c:99f1a421be17e6e3",
+                        "stamm/20c.js": "c:da14ccf91cefc490",
+                        "stamm/20d.js": "c:f4f05390e67cc1d5"
+                    }
+                }
+            },
+            "quellen": [
+                "phyto-core.js",
+                "foundry-core.js",
+                "stamm/07.js",
+                "stamm/10.js",
+                "stamm/19.js",
+                "stamm/24.js",
+                "stamm/25c.js",
+                "stamm/17a.js",
+                "stamm/20b.js",
+                "stamm/20c.js",
+                "stamm/20d.js"
+            ],
+            "vorlage": [
+                {
+                    "karte": "K58",
+                    "datei": "phyto-core.js",
+                    "symbol": "BLATT_ATLAS_WEDEL",
+                    "was": "der Nadel-Wedel als Hand aus Nadel-Büscheln (K58) — sein Umriss in der Krone; die Tafel misst, wie gerade er im Bild läuft"
                 }
             ]
         },
