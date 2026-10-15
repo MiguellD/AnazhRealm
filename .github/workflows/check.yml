@@ -531,6 +531,15 @@ jobs:
               # der Kreis faellt unter die Schwelle und nennt den Pool.
               run: npm run gate:pruefbuehne-licht
 
+            - name: Weltgrenze (kein Feld einer Welt reist in die naechste, keine geht verloren - Laden, Ersetzen, world-pull, Portal, Einladung, Geburt, Reload)
+              if: matrix.gruppe == 7
+              # Faehrt die echte Welt (Null-Renderer) je Weg in einem frischen Browser-Kontext: Welt A traegt ein Zeichen in
+              # jedem welt-eigenen Feld (Erbgut der Pruefbuehne, Anker, Edits, Dorf-Zellen, Stempel, Rolle, Gedaechtnisse der
+              # Seite, ein Tier), Welt B ist eine Wildnis-Welt ohne all das. Nach jedem Weg nennt die Linse jedes Feld von A,
+              # das B in der Seite, in ihren Lesern, im Worker-Spiegel oder im Speicher traegt, beim Namen. Der Selbsttest
+              # mischt den alten Spread am Lade-Engpass zum Schein darunter und muss rot werden.
+              run: npm run gate:weltgrenze
+
             - name: Boot-Rettung (der Boot verliert die Welt des Aktiv-Zeigers nie - Platz, .bak, IndexedDB, dann erst frisch und laut)
               if: matrix.gruppe == 6
               # Faehrt die neun Speicher-Formen der Boot-Sonde (Platz ohne worldId, ohne worldMeta, Legacy ohne worldId, ohne
@@ -827,6 +836,15 @@ jobs:
               # unter erzwungenem Dauer-Über-Budget kalte Nah-Bäume zu Foundry konvergieren (vorher: 0).
               run: npm run gate:foundry-deadlock
 
+            - name: Fernwald (der gesetzte Wald ist jenseits der Mesh-Zone seine Karte, kein Satz, kein Pop)
+              if: matrix.gruppe == 15
+              # Studio-Vertrag B2c fernform "karte": bis 05.10. trug jeder gesetzte Baum jenseits des Cull-Radius
+              # einen Kegel-und-Lappen-Satz im Welt-March (glatte, gestreifte, einfarbig hellgruene Ellipsoide,
+              # 895 an der Mess-Wiese). Beweist headless: jedes Karten-Ding der Karten-Zone traegt seine Karte
+              # (Stufe 2, voll), keins einen Satz, jenseits des Horizonts geraeumt, am Radius dieselben Slots.
+              # Der Selbsttest macht den alten Weg (A, D) und einen injizierten Satz (B) rot.
+              run: npm run gate:fernwald
+
             - name: Luft-Sicht (die Luftperspektive ist Physik, keine Nebel-Wand)
               if: matrix.gruppe == 12
               # V18.530: der Nebel war eine lineare Wand an der Wald-Kante (unter Last 60 m) und verdeckte die
@@ -946,6 +964,14 @@ jobs:
               # sich als Auto-Blueprint + wird vom Wald-Generator gestreut — ohne AnazhRealm-Edit.
               run: npm run gate:nervensystem
 
+            - name: Der Zweit-Kern (Studio-Vertrag Phase 1 — vehicle-core dockt an, W7b)
+              if: matrix.gruppe == 14
+              # DER ZWEIT-KERN-BEWEIS: der Foundry-Worker importiert vehicle-core (v1.1 N7.2), das
+              # LIVE-Buch trägt die kind:vehicle-Presets, der N7.5-Merge lebt am EINEN Ingest-
+              # Chokepoint (first-wins, disjunkt, fail-closed [0]), der Auto-Blueprint fahrzeug_<id>
+              # entsteht + der Worker liefert das Fahrzeug-Asset — ohne eine Zeile AnazhRealm-Edit.
+              run: npm run gate:nervensystem-vehicle
+
             - name: Die Place-Policy-Weiche (N5/H8 — wie eine Buch-Art in die Welt kommt)
               if: matrix.gruppe == 14
               # DER PLACE-BEWEIS (Phase δ, headless foundry-ON): die EINE Auflösung (_placePolicyFor —
@@ -986,6 +1012,31 @@ jobs:
               # der Tacho in km/h aus FAHR.kmh (vorher x12), Preset-Wechsel und erstes Laden ohne Leck (P = DEFAULT_P +
               # Preset + Kultur), die Kultur abwaehlbar. Inklusive Selbst-Test.
               run: npm run gate:garage-labor
+
+            - name: Der ε-Beweis (Nervensystem TEIL VIII Punkt 4 — porta-core dockt nur über Daten an)
+              if: matrix.gruppe == 15
+              # DER ε-BEWEIS: die Tor-Domäne dockt AUSSCHLIESSLICH über die Checkliste §ε an —
+              # Manifest-Zeile (porta-core, __portaCore) + KIND_POLICY-gate-Zeile + tor_basis-
+              # Donor-DATENBLOCK + fx.place-Rezept-Daten; der Stamm bekam KEINEN neuen kind-Zweig
+              # (M8, Diff-Beweis). Statisch (Manifest/Policy/Donor/kindStages/place als Daten) +
+              # Browser foundry-ON (7 Tor-Rezepte im LIVE-Buch · kindStages.gate [0] gemerged ·
+              # Auto-Blueprint tor_drachentor am EINEN Chokepoint · Tor-Asset end-to-end durch den
+              # Worker · site streut nicht [N5.6] · Fail-Closed-Clamp auf Stufe 0). Inklusive
+              # Selbst-Test (injizierte Verletzungen feuern).
+              run: npm run gate:nervensystem-porta
+
+            - name: Der ε-Beweis Schmiede (W-A4a — schmiede-core dockt nur über Daten an)
+              if: matrix.gruppe == 18
+              # DER ε-BEWEIS DER WAFFEN-DOMÄNE (Katalysator-Bogen): die Klingen-Domäne dockt
+              # AUSSCHLIESSLICH über die Checkliste §ε an — Manifest-Zeile (schmiede-core,
+              # __schmiedeCore) + KIND_POLICY-weapon-Zeile + geraet_schwert-Donor-DATENBLOCK +
+              # fx.place-Rezept-Daten (mode hand); der Stamm bekam KEINEN neuen kind-Zweig (M8,
+              # Diff = 13 Zeilen Daten). Statisch + Browser foundry-ON (21 Klingen-Rezepte im
+              # LIVE-Buch [Waffen UND Werkzeuge, tool-Marke] · kindStages.weapon [0] gemerged ·
+              # B4-paramsByKind.weapon 18 Dials · Auto-Blueprint klinge_<id> am EINEN Chokepoint ·
+              # Klingen-Asset end-to-end durch den Worker · hand streut nicht [N5.5] ·
+              # Fail-Closed-Clamp auf Stufe 0). Inklusive Selbst-Test (injizierte Verletzungen).
+              run: npm run gate:nervensystem-schmiede
 
             - name: Kampf und Maus (Welle L — das EINE Treffer-Urteil, die Maus-Absicht, die Blick-Wahrheit)
               if: matrix.gruppe == 6
@@ -1050,6 +1101,21 @@ jobs:
               # zuerst. Lokal 40-47 s (die CI-Zeit fuehrt spec/ci/ci-zeiten.json).
               run: npm run gate:nah-fern
 
+            - name: Der ε-Beweis Fachwerk (W-A5a — fachwerk-core dockt nur über Daten an)
+              if: matrix.gruppe == 13
+              # DER ε-BEWEIS DER HAUS-DOMÄNE (Katalysator-Bogen): die Haus-Domäne dockt
+              # AUSSCHLIESSLICH über die Checkliste §ε an — Manifest-Zeile (fachwerk-core,
+              # __fachwerkCore) + KIND_POLICY-haus-Zeile + begehbarer haus_basis-Donor-
+              # DATENBLOCK (Tür-Lücke ist KEIN Part) + fx.place-Rezept-Daten (mode site,
+              # siteTag haus — settlement N5.7 ist seit W-A5b der deliberate Kanal); der Stamm bekam
+              # KEINEN neuen kind-Zweig (M8). Statisch + Browser foundry-ON (32 Kultur-Rezepte
+              # im LIVE-Buch · kindStages.haus [0,1,2] gemerged — die ERSTE Mehr-Stufen-Domäne
+              # außerhalb der Bäume · B4-paramsByKind.haus 21 Dials · Auto-Blueprint haus_<id>
+              # am EINEN Chokepoint · Haus-Asset end-to-end auf ALLEN drei Stufen · der
+              # Flatten-Chokepoint bedient die Wahlen 1/2 mit den ECHTEN Stufen statt
+              # [0]-Kollaps). Inklusive Selbst-Test (injizierte Verletzungen).
+              run: npm run gate:nervensystem-fachwerk
+
             - name: Haus-Asset-Vertrag v6 (W-A5a — fachwerk-core buildInstance byte-eingefroren)
               if: matrix.gruppe == 7
               # cv:6 (spec/asset-contract/v6): 194 frozen sha256-Goldens (32 Kulturen × 2 Seeds ×
@@ -1084,6 +1150,15 @@ jobs:
               # Keller-Decke ist nie die Wiesen-Platte · B5 von oben zeigt der Fluss Wasser · B6 Antike × 18/40/120 baut.
               # --selftest: je Defekt serviert der Server die Basis-Zeile (Lab-Shell bzw. fachwerk-core) → genau seine Probe rot.
               run: npm run gate:studio-begehen
+
+            - name: Der Körper steht, wo das Auge ihn sieht (Welle L — Träger, Luft-Sperre, Höhle, Tier am Hang, Tod-Lage)
+              if: matrix.gruppe == 6
+              # Headless (Null-Renderer, die Boden-Karte ist das Mesh des Workers): K1 Becken auf dem Träger und im Sprung ·
+              # K2 die Fuß-Probe in der Höhle liest den Höhlen-Boden · K3 das Tier bleibt auf dem Höhlen-Boden · K4 die
+              # Sohlen stehen am Hang auf der Boden-Karte, keine Cache-Treppe · K5 das tote Tier liegt auf dem trockenen Boden (die Rad-
+              # Ebene steht auf dem Gesetz, Entscheid D1) · K6 das Tier am Chunk-Rand · K7 Wiese und Streu im Rand-Streifen so dicht
+              # wie daneben (K21, der EINE Boden-Leser). --selftest: je Defekt die Basis-Zeile serviert → genau seine Probe rot.
+              run: npm run gate:koerper-stand
 
             - name: Das Haus der Welt ist begehbar, wie es gezeichnet ist (Welle L — Hülle der Stufe, Treppe, Grundriss)
               if: matrix.gruppe == 3
@@ -1126,6 +1201,18 @@ jobs:
               # Audio-Konsument lebt (das Lofi-Pad faehrt das Genesis-Tempo, fail-soft
               # byte-alt auf LOFI_BPM). Inkl. Selbst-Test.
               run: npm run gate:nervensystem-labs
+
+            - name: Tier-Gang ohne Gleiten (Welle 5 — das Gang-Gesetz am echten Chokepoint)
+              if: matrix.gruppe == 9
+              # Headless (Null-Renderer, Produktions-Boot): jede Gattung läuft bei 0,8 · 1,6 · 3,0 m/s geradeaus durch
+              # _animateCompoundMotion; gemessen wird der Aufsetz-Punkt jeder Pfote im Stand — Schlupf = Weg des
+              # Stand-Fußes / Weg des Leibs, Soll ≤ 0,05 (K07, Ratsche von 0,2). Derselbe Punkt am Spieler-Leib
+              # (animatePlayerSoul: Gehen 1,15, Laufen 5,16, Spitze 6,75 m/s) mit Kadenz, Schritt-Tönen, Becken (Hub/Tiefe
+              # in Beinlängen) und Lock-Lösern im Stand-Fenster (Soll 0), dazu das Körper-Studio (Schlupf, Becken-Hub)
+              # und die Schwere (Mensch und Wolf unter 1,62 m/s² nach der Schwere der Welt, Schritt und Becken aus EINER
+              # Zeile, kein Literal-Zwilling). --selftest zuerst: mit gestubbtem Gang-Gesetz (fester Takt, feste
+              # Auslenkung) gleitet jede Pfote, die Zeile ohne die Schwere der Welt macht die Schwere-Wand rot.
+              run: npm run gate:tier-gang
 
             - name: Die Kreatur-Linse (Welle L — der Kreatur-Takt am echten Chokepoint)
               if: matrix.gruppe == 4
@@ -1171,6 +1258,21 @@ jobs:
               # Determinismus, Samen-Invarianz, Plattform-Probe (pow 0, sin/cos benannt), Selbst-Test: ein
               # verschobenes Gelenk und eine falsche Stoff-Zuordnung werden rot beim Namen.
               run: npm run gate:ofen-contract
+
+            - name: Die Klang-Linse (Welle 5 Klang — jede klingende Quelle traegt ein Gesetz)
+              if: matrix.gruppe == 8
+              # An den vier Mess-Orten (Mess-Wiese · Seeufer · Waldinneres · Dorf, aus dem Gesetz gefunden):
+              # jede laufende Quelle ist im klang-Gesetzbuch gebaut oder ein benannter Wirt-Leser (sonst
+              # beim Namen rot) · dauernde Quellen nur fuer hoerbare Stimmen · SOLL-Klang je Ort · der
+              # Offline-Render des Studio-Graphen trifft den Gesetz-Pegel (±1,5 dB) und das Band · die
+              # Welt-Abfragen je Klang-Takt wachsen nicht mit 4000 Bauten + 200 Fluss-Laeufen · Lab = Welt.
+              # Die Klang-Werkstatt (Worker) rechnet jede Textur und jeden Ruf, der Haupt-Thread keinen Sample.
+              # Statisch: jede Quell-Stelle des Stamms liegt in einem Wirt-Leser. Die Ereignis-Tour trifft auch
+              # Inventar, Auftrag und Aufstieg (das Tier antwortet mit seiner Stimme); der Wald-Ort steht am Bestand.
+              # Inkl. Selbst-Test (Drohn-Zwilling, stumme Schleife, Ufer ohne Wasser, Voll-Umlauf, Ereignis-
+              # Glocke, Graph ohne Werkstatt, Ruf im Spiel-Takt, Glut ohne Spitzen-Wand, Ping-Zwilling im Stamm,
+              # Wald ohne Bestand).
+              run: npm run gate:klang-zensus
 
             - name: Der Rezept-Katalog + B4-Regler (W-A1 — Katalysator-Bogen)
               if: matrix.gruppe == 14
@@ -1364,6 +1466,17 @@ jobs:
               if: matrix.gruppe == 10
               run: npm run gate:seam
 
+            - name: Mehrspieler-Wand (zwei Seiten, echter signaling-server - Tuer, Knopf, Boot, kein Mitspieler im Ursprung)
+              if: matrix.gruppe == 15
+              # K04: der nackte Aufruf heilt nach Server-Ausfall (Rejoin), der Knopf liest die EINE Absicht, der Mitspieler
+              # erscheint erst an seinem Ort; der Selbsttest setzt die alte Tuer ein und sieht (b) ROT. K23 (c): das Chat-Graben
+              # kommt bei B GENAU einmal an (jeder Edit von A, und B traegt keinen mehr); im Hauptlauf wendet B danach jede
+              # Graben-Nachricht doppelt an und (c) muss ROT werden (die erste Fassung, ohne die Laenge, blieb gruen).
+              # K60 (d): der Ghost bei B verbraucht erst je 20 angekommene Schritte (lange Takte in Schritten, nie in ms), und
+              # jeder Takt haelt das Gesetz von _lockstepTickPeers: Verbrauch bis zur Kappe der Wanduhr ceil(10 x dt/FIXED_DT)
+              # oder bis zur Reserve (taktBruch); der Schub vor dem Fenster haelt es, die alte Kappe je Frame muss am Gesetz ROT werden.
+              run: npm run gate:mp-sync
+
             - name: Die V1-Pfad-Linse (Welle L - Vorschau, Ankunft, Eingabe, Wort, Rezeptbuch, KI-Fehler)
               if: matrix.gruppe == 10
               # Die Defekte der Leben-Pruefung auf dem gespielten v1.0-Pfad, je beim Namen: jede Probe ruft den
@@ -1417,6 +1530,22 @@ jobs:
               # Seiten nebeneinander (WASSER_QUELL_TEILE), jede Seite stellt die Kacheln selbst her, das Ganze urteilt
               # über dieselben Quellen (F5 KACHELN: eine fehlende Kachel ist rot).
               run: npm run gate:wasser-leben
+
+            - name: Werk im Wasser (Schau-2 — der Hain am Fluss, das Dorf am Ufer, der Wagen in der Furt, der Damm im Reload)
+              if: matrix.gruppe == 18
+              # Der Schau-Ablauf am Fluss −872/−1127 im echten Spiel-Takt (Bau-Eiche, „pflanz mir einen eichenhain am
+              # wasser", 1200 Takte): kein Stamm unter dem gezeichneten Wasser, der Wasser-Automat schläft; jedes gesetzte
+              # Werk (Wald, Hain, Dorf mit Fundament) vor seinem Stempel gegen Bild UND Gesetz des Wassers; der GT in einer
+              # Furt bremst (1 s nach dem Eintauchen ≤ 50 %), die Kamera nie unter dem Spiegel; die Leser der EINEN
+              # Wasser-Wahrheit statisch; der Wasser-Term des Kerns (ohne Tiefe byte-gleich, die EINE Masse des Wagens).
+              # D: ein Damm quer über den Fluss in einer frischen Welt, 1200 Takte, gespeichert, neu geladen — der Stausee
+              # bildet sich neu (nasse Punkte ± 10 % des Staus), sein Abbau weckt den Automaten. R: das Nexus-Dorf am Seerand
+              # weckt den Automaten nicht, das Wasser bleibt (± 1 %). E: jeder Setz-Op mit erzwungenem Fehl-Grund sagt die
+              # tatsächliche Zahl und den Grund. A (Karte K02, FZ-01): der GT fährt mit Vollgas die Rampe der Furt hinab —
+              # 3 s nach der Ansaugung ≤ 0,5 m/s, kein Vortrieb, nie über das Dach im Wasser; der Ausstieg an Land steht
+              # neben dem Wagen, im See (≥ 1,35 m) schwimmt er; K6: der Wasserschlag sperrt die Räder am Hang.
+              # --selftest zuerst. ~3 min.
+              run: npm run gate:werk-im-wasser
 
             - name: GPU-Churn-Linse (echter Renderer — die Klasse hinter dem V18.322-Idle-Freeze)
               if: matrix.gruppe == 13
