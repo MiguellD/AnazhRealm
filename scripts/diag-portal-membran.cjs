@@ -177,11 +177,15 @@ async function hellProbe(opt) {
         const roh = async () => {
             const rt = new T.RenderTarget(W, H, { depthBuffer: true, samples: 0 });
             try {
-                // die neuen Stoff-Werte kompilieren erst (r184 überspringt ein Objekt, dessen Programm noch baut)
-                if (typeof rend.compileAsync === "function") await rend.compileAsync(st.scene, cam);
-                rend.setRenderTarget(rt);
-                rend.render(st.scene, cam);
-                rend.render(st.scene, cam);
+                // DIE ERST-ZEICHNUNG (`_configureRenderer`): die Pipeline je Stoff UND Ziel-Format entsteht asynchron, ein
+                // Objekt mit offener Pipeline fällt aus dem Bild — das Labor-Bild wartet ihre Ruhe ab wie die Aufnahme
+                // (`__erstRuhe`); vorher zeichnete das eigene Ziel keine Membran (0 Labor-Pixel, H rot am Werkzeug)
+                const zeichne = () => {
+                    rend.setRenderTarget(rt);
+                    rend.render(st.scene, cam);
+                };
+                await window.__erstRuhe(zeichne, { erstFristMs: 240000 }, "das Labor-Bild (H)");
+                zeichne();
                 const px = await rend.readRenderTargetPixelsAsync(rt, 0, 0, W, H);
                 const u = px instanceof Uint8Array ? px : new Uint8Array(px.buffer || px);
                 // WebGPU richtet jede Zeile auf 256 Byte aus (480 px → 2 048 Byte): das Polster fällt (wie in der Aufnahme)
@@ -207,12 +211,18 @@ async function hellProbe(opt) {
         );
         const LM = await roh();
         const Y = (u, i) => 0.2126 * u[i] + 0.7152 * u[i + 1] + 0.0722 * u[i + 2];
+        const S = (u, i) => {
+            const mx = Math.max(u[i], u[i + 1], u[i + 2]);
+            return mx > 0 ? (mx - Math.min(u[i], u[i + 1], u[i + 2])) / mx : 0;
+        };
         let nL = 0,
-            sL = 0;
+            sL = 0,
+            satL = 0;
         for (let i = 0; i < W * H * 4; i += 4)
             if (LM[i] > LM[i + 1] + 70 && LM[i + 2] > LM[i + 1] + 70) {
                 nL++;
                 sL += Y(L, i);
+                satL += S(L, i);
             }
         let n = 0,
             weiss = 0,
@@ -224,8 +234,7 @@ async function hellProbe(opt) {
             const y = Y(A, i);
             sY += y;
             if (y > 240) weiss++;
-            const mx = Math.max(A[i], A[i + 1], A[i + 2]);
-            sat += mx > 0 ? (mx - Math.min(A[i], A[i + 1], A[i + 2])) / mx : 0;
+            sat += S(A, i);
         }
         const P = new T.Vector3();
         const imBild = recs
@@ -241,6 +250,7 @@ async function hellProbe(opt) {
             Y: n ? sY / n : 0,
             saettigung: n ? sat / n : 0,
             Ylabor: nL ? sL / nL : 0,
+            satLabor: nL ? satL / nL : 0,
             nLabor: nL,
             imBild,
             belichtung: rend.toneMappingExposure,
@@ -258,9 +268,10 @@ async function hellProbe(opt) {
     }
 }
 // Das Soll (K64-n1): Labor = Welt (Lehre 19) — die Welt hebt die Membran nicht über ihr Labor-Bild: Y der Welt ≤ 1,15 × Y des
-// Anzeige-Werts derselben Tore (gemessen swiftshader, Ring-Mitte, Belichtung 0,615: der rohe Leser hob um ≈ 1,6 ×, das FARB-
-// GESETZ zeigt ≈ 0,9 ×), und kein Ausbrand: Y > 240 auf ≤ 5 % der Membran-Pixel (Nordstern Portale).
-const HELL = { hub: 1.15, weiss: 0.05 };
+// Anzeige-Werts derselben Tore, sie bleicht ihn nicht (Sättigung ≥ 0,75 × Labor — die weiße Tafel ist hell UND entsättigt) und
+// brennt nicht aus: Y > 240 auf ≤ 5 % der Membran-Pixel (Nordstern Portale). Gemessen swiftshader, Ring-Mitte, Belichtung 0,615
+// (K64-n1f1): das FARB-GESETZ Y × 0,76, der rohe Leser × 1,20 bei Sättigung 0,12 gegen 0,29.
+const HELL = { hub: 1.15, weiss: 0.05, bleich: 0.75 };
 
 async function blickStufe(check) {
     const browser = await starteBrowser({ art: "linse", frist: 900000 });
@@ -302,11 +313,18 @@ async function blickStufe(check) {
                 : b.huelle.map((h) => `${h.gestalt} ±${h.amplitude.toFixed(2)} m`).join(" · ")
         );
         const hellZeile = (h) =>
-            `${h.n} Membran-Pixel (${(h.anteil * 100).toFixed(1)} %), Y Welt ${h.Y.toFixed(1)} gegen Labor ${h.Ylabor.toFixed(1)} (× ${(h.Y / Math.max(1, h.Ylabor)).toFixed(2)}), Sättigung ${h.saettigung.toFixed(3)}, ` +
+            `${h.n} Membran-Pixel (${(h.anteil * 100).toFixed(1)} %), Y Welt ${h.Y.toFixed(1)} gegen Labor ${h.Ylabor.toFixed(1)} (× ${(h.Y / Math.max(1, h.Ylabor)).toFixed(2)}), Sättigung ${h.saettigung.toFixed(3)} gegen Labor ${h.satLabor.toFixed(3)}, ` +
             `Y > 240 ${(h.weiss * 100).toFixed(1)} %, Belichtung ${h.belichtung.toFixed(3)} — ${h.imBild.join(" · ")}`;
-        const hellRot = (h) => !(h.n > 200 && h.nLabor > 200 && h.Y <= HELL.hub * h.Ylabor && h.weiss <= HELL.weiss);
+        const hellRot = (h) =>
+            !(
+                h.n > 200 &&
+                h.nLabor > 200 &&
+                h.Y <= HELL.hub * h.Ylabor &&
+                h.saettigung >= HELL.bleich * h.satLabor &&
+                h.weiss <= HELL.weiss
+            );
         check(
-            `H aus der Ring-Mitte: die Welt hebt die Membran nicht über ihr Labor-Bild (Y ≤ ${HELL.hub} × Labor) und brennt nicht aus (Y > 240 ≤ ${HELL.weiss * 100} %)`,
+            `H aus der Ring-Mitte: die Welt hebt die Membran nicht über ihr Labor-Bild (Y ≤ ${HELL.hub} × Labor), bleicht sie nicht (Sättigung ≥ ${HELL.bleich} × Labor) und brennt nicht aus (Y > 240 ≤ ${HELL.weiss * 100} %)`,
             !hellRot(b.hell),
             hellZeile(b.hell)
         );

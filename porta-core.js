@@ -79,12 +79,13 @@
                 // K64 (DIE STUFE 2, Kosten ins Asset): derselbe Bau unter TOR_DETAIL_2 ab 12 m × Welt-Skala (hinein ab 13,2 m,
                 // zurück unter 10,8 m — die Ring-Tore bei 11 m liegen im Band: wer aus der Mitte kommt, sieht die Stufe 1, wer
                 // von außen kommt, die Stufe 2 bis 10,8 m; die Third-Sicht und die Vorschauen fallen hinein). tris = die
-                // Regler-Hülle der Stufe 2 (gemessen 11 974 an verkalkt orders=9; die Rezepte 2 394–7 810, die Stufe 1 trug
-                // 4 608–23 276), band = das Nordstern-Soll L2 (offen, solange ein Rezept darüber liegt).
+                // Regler-Hülle der Stufe 2 (gemessen 11 974 an verkalkt orders=9, die Zeile 12 500 streng über der Stufe 3 —
+                // Studio-Vertrag B2c; die Rezepte 2 394–7 810, die Stufe 1 trug 4 608–23 276), band = das Nordstern-Soll L2
+                // (offen, solange ein Rezept darüber liegt).
                 gate: {
                     0: { tris: 76000, band: 60000, draws: 9, schatten: 3 },
                     1: { tris: 34000, draws: 6, schatten: 3, ab: 9.5 },
-                    2: { tris: 12000, band: 6000, draws: 6, schatten: 3, ab: 12 },
+                    2: { tris: 12500, band: 6000, draws: 6, schatten: 3, ab: 12 },
                     3: { tris: 12000, draws: 1, schatten: 3, nurWurf: true },
                     fernform: "huelle",
                     hyst: 0.1,
