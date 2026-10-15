@@ -220,7 +220,9 @@ function tafelUrteil(t, messung) {
         // in denen die Welt ihr Exemplar zeigt (`welt.stufen`); zeichnet der Schuss eine andere, misst er einen anderen Stoff
         const ds = z.welt && Array.isArray(z.welt.stufen) ? z.welt.stufen : null;
         if (ds && W && zahl(W.Y)) {
-            const fremd = Array.isArray(W.stufen) ? W.stufen.filter((s) => !ds.includes(s)) : null;
+            // eine leere Liste ist keine Antwort: der Schuss trug keinen Zug mit Stufe (ein ganzer Satz statt seines Exemplars)
+            const fremd =
+                Array.isArray(W.stufen) && W.stufen.length ? W.stufen.filter((s) => !ds.includes(s)) : null;
             if (!fremd)
                 rot.push({ art: "stufe", text: `${z.id}: die Welt-Messung nennt ihre Stufen nicht (erklärt L${ds.join("/L")})` });
             else if (fremd.length)

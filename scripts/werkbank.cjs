@@ -2031,11 +2031,19 @@ async function starte() {
                 if (req.url === "/albedo" && b.tafel) {
                     // DIE WELT-SEITE DER ALBEDO-TAFEL: dieselbe Linse, je Tafel-Zeile Exemplar · Klasse · Stoff.
                     const t = AT.ladeTafel();
+                    // DAS AUGE DER STUFE (`exemplar.stufeNah`, K63-n7) wählt die Stufe JEDES Exemplars neu (gemessen 15.10., Radeon:
+                    // das Haus sprang mit dem Auge am Wagen von L1 auf L2) — jede solche Zeile misst in ihrem eigenen Gang NACH
+                    // den übrigen, die Karte der Eichung liest der erste Gang
+                    const nahZ = t.zeilen.filter((z) => ((z.welt || {}).exemplar || {}).stufeNah);
                     const liste = await page.evaluate((o) => window.__albedoSicht(o), {
-                        zeilen: t.zeilen,
+                        zeilen: t.zeilen.filter((z) => !nahZ.includes(z)),
                         w: 640,
                         h: 400,
                     });
+                    for (const z of nahZ) {
+                        const l2 = await page.evaluate((o) => window.__albedoSicht(o), { zeilen: [z], w: 640, h: 400 });
+                        for (const e of l2) if (e.name !== "graukarte") liste.push(e);
+                    }
                     const ordner = path.resolve(b.ordner || path.join(root, "artifacts", "werkbank", "albedo-tafel"));
                     fs.mkdirSync(ordner, { recursive: true });
                     const welt = {};

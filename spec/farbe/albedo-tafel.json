@@ -13,7 +13,7 @@
     },
     "gemessen": {
         "labor": {
-            "datum": "2026-10-15T02:00:40.886Z",
+            "datum": "2026-10-15T03:13:25.234Z",
             "geraet": "ANGLE (AMD, AMD Radeon(TM) 890M Graphics (0x0000150E) Direct3D11 vs_5_0 ps_5_0, D3D11)",
             "echt": true,
             "version": "18.546.2",
@@ -29,7 +29,7 @@
                 "tetrapoda-core.js": "5bcaa2822e2844f2",
                 "gelaende-core.js": "f1d87533ace49a59",
                 "stamm/01.js": "f9e48600facd5f5b",
-                "stamm/02a.js": "fb27034c0b544373",
+                "stamm/02a.js": "f7bcdf64c1e36842",
                 "stamm/02b.js": "88ba28f4cbe4afbf",
                 "stamm/03a.js": "ab335f0021b8fd74",
                 "stamm/03b.js": "906ac60537545f91",
@@ -38,12 +38,12 @@
                 "stamm/05b.js": "4c23b4440c82e219",
                 "stamm/06a.js": "7a1e2fe0ee9ba9f9",
                 "stamm/06b.js": "1a4eacb138d3d2e2",
-                "stamm/06c.js": "6a2056fb77f6617b",
+                "stamm/06c.js": "088e61ca626f3bdc",
                 "stamm/07.js": "6a3ea63b9ee05a21",
                 "stamm/08.js": "d1965c87808662a7",
                 "stamm/09.js": "0f3d091e173a4ada",
                 "stamm/10.js": "32d29d540373569b",
-                "stamm/11a.js": "86af9a9f0519b1d6",
+                "stamm/11a.js": "549d9c99924b3ecf",
                 "stamm/11b.js": "3c6f010d0961e8ec",
                 "stamm/11c.js": "d2269993c239da8e",
                 "stamm/11d.js": "fd895fc97babb8fb",
@@ -75,11 +75,11 @@
                 "stamm/25c.js": "8b1cb72fb388564f",
                 "stamm/26a.js": "b08c3819d8cdd7f6",
                 "stamm/26b.js": "3d92ab3600500c1c",
-                "stamm/26c.js": "d7bf0ebe17c14e0a"
+                "stamm/26c.js": "498ce5808c916fec"
             }
         },
         "welt": {
-            "datum": "2026-10-15T02:06:34.114Z",
+            "datum": "2026-10-15T03:17:10.297Z",
             "geraet": "amd rdna-3",
             "ort": "genesis",
             "spieler": [
@@ -100,7 +100,7 @@
                 "tetrapoda-core.js": "5bcaa2822e2844f2",
                 "gelaende-core.js": "f1d87533ace49a59",
                 "stamm/01.js": "f9e48600facd5f5b",
-                "stamm/02a.js": "fb27034c0b544373",
+                "stamm/02a.js": "f7bcdf64c1e36842",
                 "stamm/02b.js": "88ba28f4cbe4afbf",
                 "stamm/03a.js": "ab335f0021b8fd74",
                 "stamm/03b.js": "906ac60537545f91",
@@ -109,12 +109,12 @@
                 "stamm/05b.js": "4c23b4440c82e219",
                 "stamm/06a.js": "7a1e2fe0ee9ba9f9",
                 "stamm/06b.js": "1a4eacb138d3d2e2",
-                "stamm/06c.js": "6a2056fb77f6617b",
+                "stamm/06c.js": "088e61ca626f3bdc",
                 "stamm/07.js": "6a3ea63b9ee05a21",
                 "stamm/08.js": "d1965c87808662a7",
                 "stamm/09.js": "0f3d091e173a4ada",
                 "stamm/10.js": "32d29d540373569b",
-                "stamm/11a.js": "86af9a9f0519b1d6",
+                "stamm/11a.js": "549d9c99924b3ecf",
                 "stamm/11b.js": "3c6f010d0961e8ec",
                 "stamm/11c.js": "d2269993c239da8e",
                 "stamm/11d.js": "fd895fc97babb8fb",
@@ -146,7 +146,7 @@
                 "stamm/25c.js": "8b1cb72fb388564f",
                 "stamm/26a.js": "b08c3819d8cdd7f6",
                 "stamm/26b.js": "3d92ab3600500c1c",
-                "stamm/26c.js": "d7bf0ebe17c14e0a"
+                "stamm/26c.js": "498ce5808c916fec"
             }
         }
     },
@@ -178,7 +178,11 @@
                 "klasse": "^f:eiche:L[0-3]$",
                 "stoff": {
                     "kind": "^bark$"
-                }
+                },
+                "stufen": [
+                    0,
+                    1
+                ]
             },
             "quellen": [
                 "phyto-core.js",
@@ -188,16 +192,20 @@
             ],
             "ist": {
                 "labor": {
-                    "Y": 0.0946,
-                    "rgb": "0.1125/0.0922/0.0661",
-                    "pixel": 15775
+                    "Y": 0.0948,
+                    "rgb": "0.1127/0.0924/0.0662",
+                    "pixel": 15755
                 },
                 "welt": {
-                    "Y": 0.0929,
-                    "rgb": "0.1106/0.0905/0.0648",
-                    "pixel": 6117
+                    "Y": 0.0933,
+                    "rgb": "0.111/0.0908/0.0651",
+                    "pixel": 6121,
+                    "stufen": [
+                        0,
+                        1
+                    ]
                 },
-                "verhaeltnis": 1.0183
+                "verhaeltnis": 1.0161
             },
             "ratsche": 0.016
         },
@@ -228,7 +236,11 @@
                 "klasse": "^f:eiche:L[0-3]$",
                 "stoff": {
                     "kind": "^foliage(Tex)?$"
-                }
+                },
+                "stufen": [
+                    0,
+                    1
+                ]
             },
             "quellen": [
                 "phyto-core.js",
@@ -241,12 +253,16 @@
                 "labor": {
                     "Y": 0.1796,
                     "rgb": "0.1276/0.2087/0.0447",
-                    "pixel": 143176
+                    "pixel": 143142
                 },
                 "welt": {
                     "Y": 0.1639,
                     "rgb": "0.0867/0.199/0.0428",
-                    "pixel": 57267
+                    "pixel": 57274,
+                    "stufen": [
+                        0,
+                        1
+                    ]
                 },
                 "verhaeltnis": 1.0958
             },
@@ -298,7 +314,10 @@
                 "welt": {
                     "Y": 0.2388,
                     "rgb": "0.2641/0.2377/0.1761",
-                    "pixel": 79682
+                    "pixel": 79682,
+                    "stufen": [
+                        0
+                    ]
                 },
                 "verhaeltnis": 1.0235
             },
@@ -346,13 +365,14 @@
                     "pixel": 256000
                 },
                 "welt": {
-                    "Y": 0.063,
-                    "rgb": "0.0887/0.0579/0.0384",
-                    "pixel": 256000
+                    "Y": 0.0794,
+                    "rgb": "0.1051/0.075/0.0478",
+                    "pixel": 256000,
+                    "stufen": []
                 },
-                "verhaeltnis": 5.1254
+                "verhaeltnis": 4.0668
             },
-            "ratsche": 1.1778
+            "ratsche": 1.4029
         },
         {
             "id": "haus",
@@ -382,7 +402,10 @@
                 "klasse": "^(bauSatz|f:alemannisch:L[01])$",
                 "stoff": {
                     "seh": "stoff"
-                }
+                },
+                "stufen": [
+                    1
+                ]
             },
             "quellen": [
                 "fachwerk-core.js",
@@ -399,8 +422,11 @@
                 },
                 "welt": {
                     "Y": 0.159,
-                    "rgb": "0.2777/0.1309/0.087",
-                    "pixel": 167862
+                    "rgb": "0.2776/0.131/0.0869",
+                    "pixel": 167927,
+                    "stufen": [
+                        1
+                    ]
                 },
                 "verhaeltnis": 0.5289
             },
@@ -409,7 +435,7 @@
         {
             "id": "lack",
             "gruppe": "Metall/Lack",
-            "titel": "Wagen gt, der Lack Tiefschwarz (Seh-Klasse metall mit Klarlack, LACK_GESETZ der Saat 7 — dasselbe Feld wie die Lack-Leiste des Labors); die Welt zeigt das Exemplar in L0 (5,7 m, diesseits der Blende 8–12 m): die Stufe 1 faltet die Stoffe ihrer Seh-Klasse",
+            "titel": "Wagen gt, der Lack Tiefschwarz (Seh-Klasse metall mit Klarlack, LACK_GESETZ der Saat 7 — dasselbe Feld wie die Lack-Leiste des Labors); die Welt zeigt das Exemplar in der Stufe 0 des Labors (das Auge der Stufen 4,2 m vor ihm): in der Stufe 1 faltet das Budget-Gesetz die Teile seiner Seh-Klasse in den Lack-Zug",
             "labor": {
                 "studio": "garage",
                 "aktion": {
@@ -431,10 +457,7 @@
                     "radius": 4,
                     "nah": 0,
                     "seed": 7,
-                    "versatz": [
-                        4,
-                        4
-                    ]
+                    "stufeNah": true
                 },
                 "klasse": "^f:gt:L0$",
                 "stoff": {
@@ -461,11 +484,14 @@
                     "pixel": 245421
                 },
                 "welt": {
-                    "Y": 0.0175,
-                    "rgb": "0.0129/0.0179/0.0269",
-                    "pixel": 78103
+                    "Y": 0.0058,
+                    "rgb": "0.005/0.0058/0.0087",
+                    "pixel": 77839,
+                    "stufen": [
+                        0
+                    ]
                 },
-                "verhaeltnis": 0.3771
+                "verhaeltnis": 1.1379
             },
             "ratsche": 0.0953
         },
@@ -488,7 +514,10 @@
                 "klasse": "^(bauSatz|f:kathedrale:L[0-3])$",
                 "stoff": {
                     "seh": "metall"
-                }
+                },
+                "stufen": [
+                    1
+                ]
             },
             "quellen": [
                 "porta-core.js",
@@ -506,7 +535,10 @@
                 "welt": {
                     "Y": 0.6493,
                     "rgb": "0.8196/0.6359/0.2799",
-                    "pixel": 4324
+                    "pixel": 4324,
+                    "stufen": [
+                        1
+                    ]
                 },
                 "verhaeltnis": 1.0005
             },
@@ -545,18 +577,19 @@
             ],
             "ist": {
                 "labor": {
-                    "Y": 0.0609,
-                    "rgb": "0.122/0.0464/0.0251",
-                    "pixel": 74349
+                    "Y": 0.0608,
+                    "rgb": "0.1218/0.0463/0.025",
+                    "pixel": 74503
                 },
                 "welt": {
-                    "Y": 0.1606,
-                    "rgb": "0.223/0.1462/0.1192",
-                    "pixel": 33838
+                    "Y": 0.155,
+                    "rgb": "0.218/0.1405/0.1136",
+                    "pixel": 36114,
+                    "stufen": []
                 },
-                "verhaeltnis": 0.3792
+                "verhaeltnis": 0.3923
             },
-            "ratsche": 0.9697
+            "ratsche": 0.9357
         },
         {
             "id": "fell",
@@ -595,14 +628,15 @@
                 "labor": {
                     "Y": 0.169,
                     "rgb": "0.2061/0.1637/0.1124",
-                    "pixel": 152707
+                    "pixel": 152717
                 },
                 "welt": {
-                    "Y": 0.1844,
-                    "rgb": "0.2263/0.1784/0.1209",
-                    "pixel": 50670
+                    "Y": 0.1856,
+                    "rgb": "0.2278/0.1796/0.1218",
+                    "pixel": 49722,
+                    "stufen": []
                 },
-                "verhaeltnis": 0.9165
+                "verhaeltnis": 0.9106
             },
             "ratsche": 0.0665
         },
@@ -645,7 +679,10 @@
                 "welt": {
                     "Y": 0.3493,
                     "rgb": "0.388/0.3419/0.3081",
-                    "pixel": 6474
+                    "pixel": 6474,
+                    "stufen": [
+                        0
+                    ]
                 },
                 "verhaeltnis": 0.951
             },
@@ -657,9 +694,9 @@
             "ist": {
                 "kL": 0.7482,
                 "ausgabe": [
-                    188,
-                    194,
-                    186
+                    184,
+                    191,
+                    182
                 ]
             },
             "ratsche": 0.866
@@ -677,11 +714,11 @@
         },
         "portale": {
             "ist": {
-                "kL": 0.8028,
+                "kL": 0.8026,
                 "ausgabe": [
-                    195,
-                    205,
-                    200
+                    197,
+                    207,
+                    202
                 ]
             },
             "ratsche": 0.9359
@@ -690,16 +727,16 @@
             "ist": {
                 "kL": 0.6427,
                 "ausgabe": [
-                    177,
-                    165,
-                    153
+                    173,
+                    161,
+                    149
                 ]
             },
             "ratsche": 0.7141
         },
         "fachwerk": {
             "ist": {
-                "kL": 0.4802,
+                "kL": 0.4813,
                 "ausgabe": [
                     197,
                     194,
@@ -723,9 +760,9 @@
             "ist": {
                 "kL": 0.8802,
                 "ausgabe": [
-                    255,
-                    255,
-                    255
+                    253,
+                    253,
+                    253
                 ]
             },
             "ratsche": 1.0285

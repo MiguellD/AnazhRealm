@@ -269,6 +269,31 @@ function albedoSicht(opts) {
                 }
                 exemplare.push({ zeile: z, pos, gesetzt, verweigert, eintrag });
             }
+            // DAS AUGE DER STUFE AM EXEMPLAR (K63-n7, `exemplar.stufeNah`; gemessen 15.10., Radeon: der Genesis-Platz ist Grundriss,
+            // der gesetzte Wagen gt rückte auf 19,4 m — dort zeigt er die Stufe 1, und das Budget-Gesetz faltet in ihren Lack-Zug
+            // die Teile seiner Seh-Klasse, Welt 0,0175 gegen 0,0066): das Labor zeigt die Stufe 0, also wählt die Welt die Stufe
+            // ihres Exemplars von einem Auge 4,2 m vor ihm (`_lodAuge`, das EINE Auge der Stufen), bis seine Stufe 0 steht. Die
+            // Schüsse danach ticken nicht — die Wahl bleibt bis zur Inventur; EIN solches Exemplar je Messung.
+            const nahe = exemplare.filter((x) => x.eintrag && (x.zeile.welt.exemplar || {}).stufeNah);
+            if (nahe.length > 1) throw new Error(`stufeNah: ${nahe.length} Exemplare — das Auge der Stufen steht an EINEM`);
+            for (const x of nahe) {
+                const e = x.eintrag;
+                const l0 = () => {
+                    for (const g of (st.archInstanceGroups && st.archInstanceGroups.values()) || [])
+                        if (g && g.slotEntry && g.mesh && /:L0$/.test(r._taeterKlasse(g.mesh) || ""))
+                            for (let i = 0; i < (g.liveCount || 0); i++) if (g.slotEntry[i] === e) return true;
+                    return false;
+                };
+                const auge = new T.Vector3(e.position.x + 3, e.position.y + 1.7, e.position.z + 3);
+                r._lodAuge = () => auge;
+                try {
+                    await ticke(600, l0);
+                    await ticke(20, () => false);
+                } finally {
+                    delete r._lodAuge;
+                }
+                if (!l0()) x.verweigert = `das Exemplar zeigt seine Stufe 0 nicht (das Auge 4,2 m vor ihm, 30 s)`;
+            }
         }
         const karte = new T.Mesh(
             new T.PlaneGeometry(2, 2),
@@ -330,9 +355,14 @@ function albedoSicht(opts) {
             q: st.camera.quaternion.clone(),
             fov: st.camera.fov,
             aspect: st.camera.aspect,
+            layers: st.camera.layers.mask,
         };
         if (luftU) luftU.beta.value = 0;
         sc.environment = null;
+        // DIE SCHICHTEN (K63-n7; gemessen 15.10., Radeon: die Haut las „kein Pixel" — in der Ich-Sicht trägt der eigene Leib
+        // nur seinen Schatten-Zwilling, alle 14 Spieler-Meshes auf Schicht 2, die das Auge nie zeichnet): der Schuss zeichnet
+        // jeden gewählten Zug, auf welcher Schicht er lebt — die übrigen stehen ohnehin unsichtbar
+        st.camera.layers.enableAll();
         const rt = new T.RenderTarget(W, H, { depthBuffer: true, samples: 0, type: T.HalfFloatType });
         const cam = st.camera;
         const half = (h) => {
@@ -434,7 +464,7 @@ function albedoSicht(opts) {
             for (const q of (st.chunkSaetze && st.chunkSaetze.values()) || []) if (q.mesh === m) s = q;
             if (!s || !st.archInstanceGroups) return m;
             const tri = [];
-            const stufen = new Set(); // die Stufen der Gruppen des Exemplars (der Schlüssel `f:<preset>|<gestalt>|<stufe>:<teil>`)
+            const stufen = new Set(); // die Stufen der Gruppen des Exemplars (die Täter-Klasse der Gruppe `f:<art>:L<n>`)
             let bau = false; // ein Satz ohne Instanz-Gruppen (Boden, Streu, Formationen) ist kein Bau-Satz: er bleibt
             for (const [key, g] of st.archInstanceGroups) {
                 if (!g || g.satz !== s.art || !g.slotEntry) continue;
@@ -443,7 +473,7 @@ function albedoSicht(opts) {
                 const n = b && b.idx && g.geom && g.geom.attributes.position ? g.geom.attributes.position.count : 0;
                 for (let i = 0; n && i < Math.floor(b.vAnzahl / n); i++) {
                     if (g.slotEntry[i] !== eintrag) continue;
-                    const sk = /\|(\d+):\d+$/.exec(String(key));
+                    const sk = /:L(\d+)$/.exec(r._taeterKlasse(g.mesh) || "");
                     if (sk) stufen.add(+sk[1]);
                     const v0 = b.vStart + i * n,
                         v1 = v0 + n;
@@ -675,6 +705,7 @@ function albedoSicht(opts) {
             cam.quaternion.copy(kamAlt.q);
             cam.fov = kamAlt.fov;
             cam.aspect = kamAlt.aspect;
+            cam.layers.mask = kamAlt.layers;
             cam.updateProjectionMatrix();
             cam.updateMatrixWorld(true);
             rt.dispose();

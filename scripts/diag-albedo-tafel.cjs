@@ -301,16 +301,17 @@ async function selbsttest() {
     // Welt 0,0175 gegen 0,0066): die Zeile erklärt L0, die Welt zeichnet L0 und L1 → ROT `stufe` beim Namen; nur L0 → kein
     // Befund; eine Messung ohne Stufen → ROT; eine Foundry-Klasse ohne erklärte Stufen → Schema rot.
     {
-        const zs = T0.zeilen.find((z) => z.welt && Array.isArray(z.welt.stufen));
+        const zs = T0.zeilen.find((z) => z.welt && Array.isArray(z.welt.stufen) && z.welt.stufen.length === 1);
+        const s0 = zs.welt.stufen[0];
         const mS = messungZumTest(T0);
-        mS.welt[zs.id].stufen = [0, 1];
+        mS.welt[zs.id].stufen = [s0, s0 + 1];
         const mO = messungZumTest(T0);
         delete mO.welt[zs.id].stufen;
         const s6s = JSON.parse(JSON.stringify(T0));
         delete s6s.zeilen.find((z) => z.id === zs.id).welt.stufen;
         t(
             "Stufe: erklärt L0, gezeichnet L0/L1 → ROT `stufe` beim Namen; nur L0 → kein Befund; ohne Stufen → ROT; Foundry-Klasse ohne Stufen → Schema rot",
-            AT.tafelUrteil(T0, mS).rot.some((r) => r.art === "stufe" && r.text.startsWith(`${zs.id}:`) && /L0\/L1/.test(r.text)) &&
+            AT.tafelUrteil(T0, mS).rot.some((r) => r.art === "stufe" && r.text.startsWith(`${zs.id}:`) && r.text.includes(`L${s0}/L${s0 + 1}`)) &&
                 !hatRot(AT.tafelUrteil(T0, messungZumTest(T0)), "stufe") &&
                 AT.tafelUrteil(T0, mO).rot.some((r) => r.art === "stufe" && /nennt ihre Stufen nicht/.test(r.text)) &&
                 AT.tafelPruefen(s6s).some((f) => f.startsWith(`${zs.id}: welt.stufen fehlt`))
@@ -382,7 +383,10 @@ window.__bereit = true;
         const vRoh = y("roh") ? y("roh").Y / weltY : null;
         const vGes = y("gesetz") ? y("gesetz").Y / weltY : null;
         const T8 = JSON.parse(JSON.stringify(T0));
-        T8.zeilen = [Object.assign({}, T0.zeilen[0], { id: "probe", ratsche: 0 })];
+        // die Probe prüft das Hex-Gesetz, nicht die Stufe des Exemplars (sie trägt keine erklärte Stufe)
+        const z8 = Object.assign(JSON.parse(JSON.stringify(T0.zeilen[0])), { id: "probe", ratsche: 0 });
+        delete z8.welt.stufen;
+        T8.zeilen = [z8];
         T8.karten = {};
         const m8 = (vY) => ({
             labor: { probe: { Y: vY, rgb: "x" } },
