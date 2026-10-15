@@ -1656,7 +1656,10 @@ function sollTafelUrteil(tafel, q) {
                 fehler.push(`${wo}: der geheilte Mangel ohne Befund, Quelle, Warum oder Bild-Paar`);
             else {
                 for (const p of gh.bildPaar) if (bildPfadFehler(p)) fehler.push(`${wo}: das Bild-Paar: ${bildPfadFehler(p)}`);
-                if (urteil !== "GRÜN") fehler.push(`${wo}: der Mangel „${gh.befund}" heißt geheilt, das Maß ${ma.name} ist ${urteil}`);
+                // ein VERALTETES Maß ist kein Widerspruch (Koordinator 15.10., K71-Merge): die Messung kennt den neuen Code nicht, die Zeile
+                // steht ROT „veraltet seit …" bis zur Neumessung — sonst sperrte jede Welle, die eine Quelle der Klasse berührt, check:statik
+                if (urteil !== "GRÜN" && !stand)
+                    fehler.push(`${wo}: der Mangel „${gh.befund}" heißt geheilt, das Maß ${ma.name} ist ${urteil}`);
             }
             if (mg) fehler.push(`${wo}: der Mangel steht und heißt zugleich geheilt`);
         }
@@ -2021,8 +2024,14 @@ function sollTafelSelbsttest(tafel, q) {
         ["geheilt ohne Bild-Paar", (t) => heile(t, []), "ohne Befund, Quelle, Warum oder Bild-Paar"],
         // Prüfer K63 R3: die weiße Tafel der Tore hieß geheilt, das heutige Bild zeigte sie — geheilt neben einem ROTEN Maß
         [
+            // das Maß FRISCH gestempelt (am heutigen Code), sonst stünde es veraltet und der Widerspruch ruhte bis zur Neumessung
             "geheilt neben einem roten Maß",
-            (t) => heile(t, ["artifacts/soll-tafel/a.png", "artifacts/soll-tafel/b.png"]),
+            (t) => {
+                const k = mitMangel(t);
+                for (const z of Object.values(k.mass.messung.klassen)) z.zt = Math.max(z.zt || 0, 0.5);
+                frisch(k, k.mass.messung);
+                heile(t, ["artifacts/soll-tafel/a.png", "artifacts/soll-tafel/b.png"]);
+            },
             "heißt geheilt, das Maß zweiton ist ROT",
         ],
         // K63-n8 (Koordinator 15.10.): das Bild der Messung im Scratch (AppData) — ein Verweis aus dem Baum hinaus

@@ -54,6 +54,9 @@
 //      0,7…1,4, volle Wiese) und parallel unter TEPPICH_NEIGUNG projiziert (der Boden 4,4 m vor dem Ego-Auge): der Anteil
 //      des Bodens, den Halme decken, ≥ TEPPICH_MIN. Vorher Büschel von 0,15 m auf dem 0,72-m-Raster (Augen-Befund 14.10.:
 //      Büschel auf glattem Grün). Konsum-Leser: die Nah-Wiese (`_nahWieseSenken`) und der Studio-Wald (grassT).
+//      DIE GRASNARBE (K70, Soll-Tafel boden-nah laiWirk ≥ 1,7): die Schwellen tragen die geschlossene Narbe, und der Halm
+//      WURZELT — die tiefste Ecke der Vorlage liegt am Boden (≤ FUSS_MAX der Büschel-Höhe); bis K70 begann jeder Halm eine
+//      Segment-Länge über dem Grund (L1/L2: ein Drittel des Halms Luft, Fuß 7–9 % der Höhe).
 // SELBSTTEST: jede Probe MUSS an einer kranken Kopie der gemessenen Puffer feuern (gipsweiße Birke, Ringel-Stamm,
 // Klingen-Strauch, einfarbige Blüte, Blatt ×3, Strauch-Blatt ×½, Nadel ×3, Klingen-L1, Leser entfernt, BC1 gerade gelesen,
 // Atlas-Leser ohne ÷ alpha) — die Linse
@@ -327,7 +330,28 @@ function klingenL1(fall, T) {
 // Fenster ist das Bild des Boden-Quadrats [−1, 1]² m, Raster 5 mm, die Kacheln reichen 3 m weit (jeder Halm, der ins
 // Fenster ragt). Rückgabe: der gedeckte Anteil des Fensters.
 const TEPPICH_NEIGUNG = 20;
-const TEPPICH_MIN = { 1: 0.85, 2: 0.55 }; // vorher L1 0,425/0,504 · L2 0,322/0,415, K56 L1 0,901/0,954 · L2 0,586/0,702
+// vorher L1 0,425/0,504 · L2 0,322/0,415, K56 L1 0,901/0,954 · L2 0,586/0,702, K70 L1 0,996/0,999 · L2 0,959/0,980
+const TEPPICH_MIN = { 1: 0.97, 2: 0.9 };
+const FUSS_MAX = 0.01;
+// Der Fuß der Halme: je Halm-Fußzeile (uv.v = 0, grün — die Rispe beginnt ebenfalls bei v = 0, aber gelb an der Spitze) ihre
+// Höhe über der Grundebene der Vorlage (der Ofen setzt die tiefste Ecke auf 0); das 90. Perzentil in Teilen der Büschel-Höhe.
+function teppichFuss(T) {
+    let hi = -Infinity,
+        lo = Infinity;
+    const fuss = [];
+    for (const t of T) {
+        if (!t.idx) continue;
+        for (let k = 0; k < t.pos.length / 3; k++) {
+            const y = t.pos[k * 3 + 1];
+            hi = Math.max(hi, y);
+            lo = Math.min(lo, y);
+            if (t.uv && t.col && t.uv[k * 2 + 1] === 0 && t.col[k * 3 + 1] > t.col[k * 3]) fuss.push(y);
+        }
+    }
+    if (!fuss.length || !(hi > lo)) return Infinity;
+    fuss.sort((a, b) => a - b);
+    return (fuss[Math.floor(fuss.length * 0.9)] - lo) / (hi - lo);
+}
 function teppichDeckung(T, step, skala, neigung = TEPPICH_NEIGUNG) {
     const e = (neigung * Math.PI) / 180,
         se = Math.sin(e),
@@ -390,14 +414,15 @@ function teppichDeckung(T, step, skala, neigung = TEPPICH_NEIGUNG) {
 }
 function teppichUrteil(fall, T, lod, step, skala) {
     const d = teppichDeckung(T, step, skala),
-        min = TEPPICH_MIN[lod];
-    return {
-        v:
-            min != null && d >= min
-                ? []
-                : [`${fall}: Halm-Deckung des Bodens unter ${TEPPICH_NEIGUNG}° ${d.toFixed(3)} < ${min} (Büschel auf glattem Grün)`],
-        m: { teppich: d },
-    };
+        min = TEPPICH_MIN[lod],
+        fuss = teppichFuss(T);
+    const v =
+        min != null && d >= min
+            ? []
+            : [`${fall}: Halm-Deckung des Bodens unter ${TEPPICH_NEIGUNG}° ${d.toFixed(3)} < ${min} (Büschel auf glattem Grün)`];
+    if (!(fuss <= FUSS_MAX))
+        v.push(`${fall}: der Halm schwebt — sein Fuß steht ${(100 * fuss).toFixed(1)} % der Büschel-Höhe über dem Boden`);
+    return { v, m: { teppich: d, fuss } };
 }
 // (V) DIE NORMALE DER KRONE — gelichtet, wie die Leser lesen (flipFrei), aus 8 Peilungen (Höhe 0,25) über der nahen Hälfte.
 const KRONE_WEG_MAX = 0.05;
@@ -1537,6 +1562,23 @@ function windDatenUrteil(quellen) {
         st.push([
             "Büschel gestaucht (0,3)",
             teppichUrteil("gestaucht", T, 1, rc.understory.grassStep, skala("gras")).v.length > 0,
+        ]);
+        // (T) die Fußzeile jedes zweiten Halms um ein Zehntel der Büschel-Höhe angehoben (das Bild vor K70: der Fuß eine
+        // Segment-Länge über dem Grund, je Halm nach seiner Länge — der Ofen setzt nur den tiefsten auf 0)
+        let hiG = 0,
+            n = 0;
+        for (const t of gras1.T) for (let i = 1; i < t.pos.length; i += 3) hiG = Math.max(hiG, t.pos[i]);
+        const hoch = gras1.T.map((t) => {
+            const p = Float32Array.from(t.pos);
+            if (t.uv && t.col)
+                for (let k = 0; k < p.length / 3; k++)
+                    if (t.uv[k * 2 + 1] === 0 && t.col[k * 3 + 1] > t.col[k * 3] && Math.floor(n++ / 2) % 2)
+                        p[k * 3 + 1] += hiG * 0.1;
+            return Object.assign({}, t, { pos: p });
+        });
+        st.push([
+            "Halm schwebt (+0,1)",
+            teppichUrteil("schwebt", hoch, 1, rc.understory.grassStep, skala("gras")).v.some((x) => /schwebt/.test(x)),
         ]);
     } else st.push(["Gras-Fall fehlt", false]);
     console.log("Selbsttest: " + st.map(([n, ok]) => `${n} ${ok ? "✅" : "❌"}`).join(" · "));

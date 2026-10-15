@@ -1016,17 +1016,24 @@ class AnazhRealm_Z11a {
     // Start-y, EIN Spalten-Kontext + Bisektion. Start in Luft → abwärts zur ersten Luft→Solid-Grenze;
     // Start im Soliden → AUFWÄRTS zur Solid→Luft-Grenze (sonst clippt der steckende Spieler auf eine
     // Höhlen-Schicht). null ohne Grenze in Reichweite.
+    // DAS RASTER DER WELT (K70-N1): die Proben liegen auf y = k · 0,5 m, nie im Abstand von der Start-Höhe — so trägt jeder
+    // Ort EINEN Grund, gleich von wo gesucht wird. Bis dahin hing er um bis zu 7,8 mm an der Höhe des Suchenden: ein Werk,
+    // das ab seiner eigenen Höhe sucht (`_werkBoden`), fand im Stand je Bild einen anderen Grund (der GT an der Gasse zitterte
+    // 0,39 mm je Bild, nie in Ruhe) — zwei Läufe mit verschiedener Vorgeschichte trafen nie denselben Stand (gate:fahr-leben
+    // L8: 1,2 mm nach 200 Schritten, CI 38712496194). Nur wenn das Raster-Fach über dem Start Fels trägt (eine Decke) oder
+    // unter dem Start Luft (eine dünne Schicht), grenzt die Start-Höhe die Bisektion wie zuvor.
     _fieldSurfaceBelow(x, y, z, maxDist) {
         const ctx = this._terrainColumnContext(x, z);
         const step = 0.5;
         if (this._fieldSolid(x, y, z, ctx)) {
             // Start IM Soliden → aufwärts die Oberkante suchen (Penetrations-Heilung).
             const top = y + maxDist;
-            for (let yy = y; yy <= top; yy += step) {
+            for (let yy = Math.ceil(y / step) * step; yy <= top; yy += step) {
                 if (!this._fieldSolid(x, yy, z, ctx)) {
                     // Grenze zwischen yy−step (solid) und yy (Luft) → Bisektion auf die Oberkante.
-                    let lo = Math.max(y, yy - step),
+                    let lo = yy - step,
                         hi = yy;
+                    if (lo < y && !this._fieldSolid(x, lo, z, ctx)) lo = y;
                     for (let b = 0; b < 6; b++) {
                         const mid = (lo + hi) / 2;
                         if (this._fieldSolid(x, mid, z, ctx)) lo = mid;
@@ -1038,11 +1045,12 @@ class AnazhRealm_Z11a {
             return null;
         }
         const end = y - maxDist;
-        for (let yy = y; yy >= end; yy -= step) {
+        for (let yy = Math.floor(y / step) * step; yy >= end; yy -= step) {
             if (this._fieldSolid(x, yy, z, ctx)) {
                 // Grenze zwischen yy (solid) und yy+step (Luft) → Bisektion verfeinern.
                 let lo = yy,
-                    hi = Math.min(y, yy + step);
+                    hi = yy + step;
+                if (hi > y && this._fieldSolid(x, hi, z, ctx)) hi = y;
                 for (let b = 0; b < 6; b++) {
                     const mid = (lo + hi) / 2;
                     if (this._fieldSolid(x, mid, z, ctx)) lo = mid;
