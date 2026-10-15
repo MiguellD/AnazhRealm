@@ -425,18 +425,6 @@
         "38629080926"
       ]
     },
-    "Weltgrenze (kein Feld einer Welt reist in die naechste, keine geht verloren - Laden, Ersetzen, world-pull, Portal, Einladung, Geburt, Reload)": {
-      "s": 119,
-      "n": 5,
-      "lauf": "npm run gate:weltgrenze",
-      "laeufe": [
-        "38638755900",
-        "38636923264",
-        "38632403330",
-        "38631780033",
-        "38629080926"
-      ]
-    },
     "Boot-Rettung (der Boot verliert die Welt des Aktiv-Zeigers nie - Platz, .bak, IndexedDB, dann erst frisch und laut)": {
       "s": 73,
       "n": 5,
@@ -821,18 +809,6 @@
         "38629080926"
       ]
     },
-    "Fernwald (der gesetzte Wald ist jenseits der Mesh-Zone seine Karte, kein Satz, kein Pop)": {
-      "s": 48,
-      "n": 5,
-      "lauf": "npm run gate:fernwald",
-      "laeufe": [
-        "38638755900",
-        "38636923264",
-        "38632403330",
-        "38631780033",
-        "38629080926"
-      ]
-    },
     "Luft-Sicht (die Luftperspektive ist Physik, keine Nebel-Wand)": {
       "s": 7,
       "n": 5,
@@ -1001,18 +977,6 @@
         "38629080926"
       ]
     },
-    "Der Zweit-Kern (Studio-Vertrag Phase 1 — vehicle-core dockt an, W7b)": {
-      "s": 11,
-      "n": 5,
-      "lauf": "npm run gate:nervensystem-vehicle",
-      "laeufe": [
-        "38638755900",
-        "38636923264",
-        "38632403330",
-        "38631780033",
-        "38629080926"
-      ]
-    },
     "Die Place-Policy-Weiche (N5/H8 — wie eine Buch-Art in die Welt kommt)": {
       "s": 9,
       "n": 5,
@@ -1053,30 +1017,6 @@
       "s": 48,
       "n": 5,
       "lauf": "npm run gate:garage-labor",
-      "laeufe": [
-        "38638755900",
-        "38636923264",
-        "38632403330",
-        "38631780033",
-        "38629080926"
-      ]
-    },
-    "Der ε-Beweis (Nervensystem TEIL VIII Punkt 4 — porta-core dockt nur über Daten an)": {
-      "s": 9,
-      "n": 5,
-      "lauf": "npm run gate:nervensystem-porta",
-      "laeufe": [
-        "38638755900",
-        "38636923264",
-        "38632403330",
-        "38631780033",
-        "38629080926"
-      ]
-    },
-    "Der ε-Beweis Schmiede (W-A4a — schmiede-core dockt nur über Daten an)": {
-      "s": 11,
-      "n": 5,
-      "lauf": "npm run gate:nervensystem-schmiede",
       "laeufe": [
         "38638755900",
         "38636923264",
@@ -1145,18 +1085,6 @@
         "38629080926"
       ]
     },
-    "Der ε-Beweis Fachwerk (W-A5a — fachwerk-core dockt nur über Daten an)": {
-      "s": 11,
-      "n": 5,
-      "lauf": "npm run gate:nervensystem-fachwerk",
-      "laeufe": [
-        "38638755900",
-        "38636923264",
-        "38632403330",
-        "38631780033",
-        "38629080926"
-      ]
-    },
     "Haus-Asset-Vertrag v6 (W-A5a — fachwerk-core buildInstance byte-eingefroren)": {
       "s": 81,
       "n": 5,
@@ -1185,18 +1113,6 @@
       "s": 267,
       "n": 5,
       "lauf": "npm run gate:studio-begehen",
-      "laeufe": [
-        "38638755900",
-        "38636923264",
-        "38632403330",
-        "38631780033",
-        "38629080926"
-      ]
-    },
-    "Der Körper steht, wo das Auge ihn sieht (Welle L — Träger, Luft-Sperre, Höhle, Tier am Hang, Tod-Lage)": {
-      "s": 133,
-      "n": 5,
-      "lauf": "npm run gate:koerper-stand",
       "laeufe": [
         "38638755900",
         "38636923264",
@@ -1259,18 +1175,6 @@
         "38629080926"
       ]
     },
-    "Tier-Gang ohne Gleiten (Welle 5 — das Gang-Gesetz am echten Chokepoint)": {
-      "s": 27,
-      "n": 5,
-      "lauf": "npm run gate:tier-gang",
-      "laeufe": [
-        "38638755900",
-        "38636923264",
-        "38632403330",
-        "38631780033",
-        "38629080926"
-      ]
-    },
     "Die Kreatur-Linse (Welle L — der Kreatur-Takt am echten Chokepoint)": {
       "s": 51,
       "n": 5,
@@ -1311,18 +1215,6 @@
       "s": 162,
       "n": 5,
       "lauf": "npm run gate:ofen-contract",
-      "laeufe": [
-        "38638755900",
-        "38636923264",
-        "38632403330",
-        "38631780033",
-        "38629080926"
-      ]
-    },
-    "Die Klang-Linse (Welle 5 Klang — jede klingende Quelle traegt ein Gesetz)": {
-      "s": 101,
-      "n": 5,
-      "lauf": "npm run gate:klang-zensus",
       "laeufe": [
         "38638755900",
         "38636923264",
@@ -1727,18 +1619,6 @@
         "38629080926"
       ]
     },
-    "Mehrspieler-Wand (zwei Seiten, echter signaling-server - Tuer, Knopf, Boot, kein Mitspieler im Ursprung)": {
-      "s": 77,
-      "n": 5,
-      "lauf": "npm run gate:mp-sync",
-      "laeufe": [
-        "38638755900",
-        "38636923264",
-        "38632403330",
-        "38631780033",
-        "38629080926"
-      ]
-    },
     "Die V1-Pfad-Linse (Welle L - Vorschau, Ankunft, Eingabe, Wort, Rezeptbuch, KI-Fehler)": {
       "s": 36,
       "n": 5,
@@ -1815,18 +1695,6 @@
       "s": 299,
       "n": 5,
       "lauf": "npm run gate:wasser-leben",
-      "laeufe": [
-        "38638755900",
-        "38636923264",
-        "38632403330",
-        "38631780033",
-        "38629080926"
-      ]
-    },
-    "Werk im Wasser (Schau-2 — der Hain am Fluss, das Dorf am Ufer, der Wagen in der Furt, der Damm im Reload)": {
-      "s": 86,
-      "n": 5,
-      "lauf": "npm run gate:werk-im-wasser",
       "laeufe": [
         "38638755900",
         "38636923264",
