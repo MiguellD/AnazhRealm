@@ -55,8 +55,14 @@ async function blickProbe(opts) {
     while (performance.now() - t0 < 300000) {
         r = window.anazhRealm;
         st = r && r.state;
-        if (st && st.rendererReady && st.renderer && st.renderer.backend && st.camera && r._portalMembranes)
+        if (st && st.rendererReady && st.renderer && st.renderer.backend && st.camera && r._portalMembranes && r._torZielAtlas) {
+            // DAS FENSTER WARTET AUF SEIN ZIEL (D8): erst wenn jedes angefragte Ziel steht (oder bricht) und der nächste 1-Hz-Scan
+            // lief, stehen alle Membranen des Rings — vorher hing B1 an der Reihenfolge der Ankünfte (15.10.: drei Membranen ohne
+            // das Drachentor im Blick nach −x, 0 von 3; dieselbe Welt mit allen vier: 1 von 4)
+            await Promise.all([...r._torZielAtlas.welten.values()].map((z) => z.kommt));
+            await warte(1500);
             if (r._portalMembranes.size >= 3) break;
+        }
         await warte(250);
     }
     if (!st || !st.renderer || st.renderer.backend.isWebGPUBackend !== true) return { fehler: "kein WebGPU-Renderer" };
