@@ -49,18 +49,18 @@
                 "werkzeug": "werkbank bild -278 +1.7 -1038 -276 +1.2 -1026 --wahl 0 --klasse '^(nahWiese:.*|streuSatz|bodenSatz)$' --abstand --ist boden-nah (Mess-Wiese K55)",
                 "messung": {
                     "werkzeug": "bild",
-                    "datum": "2026-10-14T22:45:12.845Z",
+                    "datum": "2026-10-14T23:59:21.813Z",
                     "stand": {
                         "version": "18.546.2",
-                        "sha": "1f03a99f1d9c0c3abdc38c81d5672d0453f02443"
+                        "sha": "1335d9f5da489db7b9b180adeda1f6096366ea21"
                     },
                     "geraet": {
                         "backend": "WebGPU",
                         "adapter": "amd rdna-3"
                     },
                     "leinwand": [
-                        640,
-                        360
+                        1920,
+                        1080
                     ],
                     "kamera": [
                         -278,
@@ -74,59 +74,67 @@
                         "pixel": 0,
                         "max": 0
                     },
-                    "misch": 35680,
+                    "misch": 142160,
                     "klassen": {
                         "bodenSatz": {
                             "objekte": 1,
-                            "pixel": 64444,
-                            "deckung": 0.2797,
-                            "deckungUnten": 0.4789,
-                            "luma": 86.96,
-                            "kontrast": 0.4766,
-                            "detail": 0.104,
-                            "nyquist": 0.1175,
-                            "ek": 114798.1,
-                            "eg": 862002.2,
-                            "silhouette": 96.1757
+                            "zweiton": 0.0005,
+                            "zt": 239,
+                            "pixel": 520392,
+                            "deckung": 0.251,
+                            "deckungUnten": 0.405,
+                            "luma": 89.63,
+                            "kontrast": 0.5095,
+                            "detail": 0.0768,
+                            "nyquist": 0.088,
+                            "ek": 550193.8,
+                            "eg": 5699681.2,
+                            "silhouette": 181.4808
                         },
                         "nahWiese:L1": {
                             "objekte": 2,
-                            "pixel": 36140,
-                            "deckung": 0.1569,
-                            "deckungUnten": 0.4606,
-                            "luma": 72.3,
-                            "kontrast": 0.3166,
-                            "detail": 0.1338,
-                            "nyquist": 0.1723,
-                            "ek": 100475.8,
-                            "eg": 482784.6,
-                            "silhouette": 90.129
+                            "zweiton": 0.0016,
+                            "zt": 530,
+                            "pixel": 339260,
+                            "deckung": 0.1636,
+                            "deckungUnten": 0.4793,
+                            "luma": 73.7,
+                            "kontrast": 0.3855,
+                            "detail": 0.1023,
+                            "nyquist": 0.1531,
+                            "ek": 985004.7,
+                            "eg": 5446705.4,
+                            "silhouette": 173.823
                         },
                         "nahWiese:L2": {
                             "objekte": 2,
-                            "pixel": 17649,
-                            "deckung": 0.0766,
-                            "deckungUnten": 0.053,
-                            "luma": 72.14,
-                            "kontrast": 0.2894,
-                            "detail": 0.1509,
-                            "nyquist": 0.1876,
-                            "ek": 51227.7,
-                            "eg": 221879.2,
-                            "silhouette": 69.733
+                            "zweiton": 0.0006,
+                            "zt": 97,
+                            "pixel": 166346,
+                            "deckung": 0.0802,
+                            "deckungUnten": 0.059,
+                            "luma": 67.79,
+                            "kontrast": 0.3342,
+                            "detail": 0.1123,
+                            "nyquist": 0.1438,
+                            "ek": 366826.9,
+                            "eg": 2184500.3,
+                            "silhouette": 143.0973
                         },
                         "streuSatz": {
-                            "objekte": 3,
-                            "pixel": 110,
-                            "deckung": 0.0005,
-                            "deckungUnten": 0.0014,
-                            "luma": 35.03,
-                            "kontrast": 0.0744,
-                            "detail": 0.0299,
-                            "nyquist": 0.0836,
-                            "ek": 1,
-                            "eg": 10.7,
-                            "silhouette": 6.5789
+                            "objekte": 4,
+                            "zweiton": 0.001,
+                            "zt": 33,
+                            "pixel": 34336,
+                            "deckung": 0.0166,
+                            "deckungUnten": 0.0494,
+                            "luma": 43.95,
+                            "kontrast": 0.6343,
+                            "detail": 0.0848,
+                            "nyquist": 0.2019,
+                            "ek": 30599.6,
+                            "eg": 120988,
+                            "silhouette": 58.9963
                         }
                     },
                     "abstand": {
@@ -148,41 +156,41 @@
                             0.2622,
                             0.1556,
                             0.0884,
-                            0.0483,
-                            0.0452
+                            0.0463,
+                            0.0449
                         ],
                         "klassen": {
                             "bodenSatz": [
                                 0,
-                                27972,
-                                15851,
-                                3274,
-                                12274,
-                                3656,
-                                163
+                                210324,
+                                127459,
+                                30577,
+                                108595,
+                                32725,
+                                1628
                             ],
                             "nahWiese:L2": [
                                 0,
-                                28,
-                                9027,
-                                6315,
-                                2279,
+                                359,
+                                88808,
+                                54857,
+                                22322,
                                 0,
                                 0
                             ],
                             "nahWiese:L1": [
                                 0,
-                                29479,
-                                6658,
-                                3,
+                                275855,
+                                63397,
+                                8,
                                 0,
                                 0,
                                 0
                             ],
                             "streuSatz": [
                                 0,
-                                110,
-                                0,
+                                32033,
+                                2303,
                                 0,
                                 0,
                                 0,
@@ -190,7 +198,12 @@
                             ]
                         }
                     },
-                    "bild": "../../../artifacts/profiband/soll-tafel/n1/boden.png"
+                    "gesicht": null,
+                    "bild": "../../../artifacts/profiband/soll-tafel/n3/boden-nah.png",
+                    "quellen": {
+                        "gelaende-core.js": "f1d87533ace49a59",
+                        "phyto-core.js": "95f967fc8a37fd95"
+                    }
                 }
             },
             "quellen": [
@@ -240,20 +253,22 @@
                 "werkzeug": "werkbank licht --ist himmel-licht (die Licht-Bilanz an der Mess-Wiese)",
                 "messung": {
                     "werkzeug": "licht",
-                    "datum": "2026-10-14T22:45:08.333Z",
+                    "datum": "2026-10-14T23:59:04.496Z",
                     "stand": {
-                        "sha": "1f03a99f1d9c0c3abdc38c81d5672d0453f02443"
+                        "sha": "1335d9f5da489db7b9b180adeda1f6096366ea21",
+                        "version": "18.546.2"
                     },
                     "geraet": {
                         "adapter": "amd rdna-3"
                     },
-                    "E_alle": 9.53,
+                    "E_alle": 9.46,
                     "E_umgebung": 2.26,
                     "sonnenRichtung": [
                         0,
                         0.962,
                         0.272
-                    ]
+                    ],
+                    "quellen": {}
                 }
             },
             "quellen": []
