@@ -24939,15 +24939,35 @@ async function checkBandVoxelP3AndInventory(ctx) {
         out.drainRebuilt = built > 0;
         out.drainEmptiesSet = r.state.dirtyVoxelChunks.size === 0;
         out.drainReturnedCount = built === dirtyMid;
-        // Tick rebuildet max 1/Frame. `_rebuildVoxelChunk` geht nur bei `!_frameOverBudget` sync; headless
-        // setzt das ~1-Hz-rAF `_frameOverBudget=true` (Tick ginge async). Geprüft wird die Verteilung, die
-        // adaptive Wahl prüft `diag-carve-adaptive` → gesunden Frame setzen.
+        // Der Tick baut je Frame höchstens EINEN Chunk ein, nah zuerst, und keinen synchron (K69-2: die Aufträge der
+        // nächsten gehen an den Worker voraus; ohne Worker baut er einen je Frame synchron). Ein frischer Frame: der
+        // Einbau-Merker des Edits (`_bodenEinbau`, der Frame-Planer setzt ihn je Frame zurück) gilt nicht.
         r.state._frameOverBudget = false;
         r.carveVoxelSphere(pm.x, cy, pm.z, 3.5);
         const dirtyPostEdit = r.state.dirtyVoxelChunks.size;
         if (dirtyPostEdit > 1) {
-            r._tickDirtyVoxelChunks(pm);
-            out.tickRebuildsOne = r.state.dirtyVoxelChunks.size === dirtyPostEdit - 1;
+            const st = r.state;
+            const worker = !!(st.voxelWorker && st.voxelWorkerReady && st.voxelWorkerWorldgenSynced);
+            st._bodenEinbau = null;
+            let fin = 0;
+            let sync = 0;
+            const finRoh = r._finalizeVoxelChunkBuild;
+            const bauRoh = r._buildVoxelChunkData;
+            r._finalizeVoxelChunkBuild = function () {
+                fin++;
+                return finRoh.apply(this, arguments);
+            };
+            r._buildVoxelChunkData = function () {
+                sync++;
+                return bauRoh.apply(this, arguments);
+            };
+            try {
+                r._tickDirtyVoxelChunks(pm);
+            } finally {
+                delete r._finalizeVoxelChunkBuild;
+                delete r._buildVoxelChunkData;
+            }
+            out.tickRebuildsOne = fin <= 1 && (worker ? sync === 0 : sync <= 1);
         } else {
             out.tickRebuildsOne = true; // skip-OK bei 0/1 dirty
         }
@@ -24984,7 +25004,10 @@ async function checkBandVoxelP3AndInventory(ctx) {
             "V9.40-c: _drainDirtyVoxelChunks liefert die Anzahl der rebuildeten Chunks",
             voxelV940cResults.drainReturnedCount
         );
-        check("V9.40-c: der Game-Loop-Tick rebuildet pro Frame max 1 Chunk", voxelV940cResults.tickRebuildsOne);
+        check(
+            "V9.40-c: der Game-Loop-Tick baut pro Frame max 1 Chunk ein, keinen synchron (K69-2)",
+            voxelV940cResults.tickRebuildsOne
+        );
         check(
             "V9.40-c: _disposeVoxelChunk räumt den dirty-Marker mit (gegen stale-rebuild)",
             voxelV940cResults.disposeClearsDirty

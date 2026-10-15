@@ -1,13 +1,14 @@
 #!/usr/bin/env node
 // ─────────────────────────────────────────────────────────────────────────
-// diag-carve-adaptive.cjs — DER ADAPTIVE CARVE-REBUILD (npm run gate:carve)
+// diag-carve-adaptive.cjs — DER CARVE-REBUILD GEHT ÜBER DEN WORKER (npm run gate:carve)
 //
 // Schöpfer-Hardware-Befund (echtes Log): `Gegraben: 5× erde` → `FPS: 4`. Der Edit-/
 // Spieler-Chunk-Rebuild zwang den Mesh-Bau SYNC (instant-Carve-Feedback) → auf
-// schwacher HW ein ~200-ms-Stall pro Abbau-Hieb. FIX (V18.362, adaptiv): die
-// Sync-Pflicht gilt NUR bei gesundem Frame (`!_frameOverBudget`) — starke HW behält
-// das instant-Feedback, schwache HW baut ASYNC (alter Mesh bleibt, Kollision feld-nativ
-// = sofort) → KEIN Stall. Diese Linse beweist die Entscheidung headless (GPU-frei).
+// schwacher HW ein ~200-ms-Stall pro Abbau-Hieb. V18.362 machte die Sync-Pflicht adaptiv
+// (nur bei gesundem Frame); K69-2 nahm sie ganz: der Neubau des Spieler-Chunks (und jedes
+// Chunks mit einem Schnitt im 3×3) geht über den Worker, auch bei gesundem Frame — am Erdbau
+// eines Dorfs um den Spieler baute er sonst 154–409 ms in EINEM Takt (gate:stand-takt ORT).
+// Synchron baut nur ein ausdrückliches `forceSync`. Die Linse beweist die Entscheidung headless.
 // ─────────────────────────────────────────────────────────────────────────
 
 // Port über CARVE_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4330.
@@ -37,7 +38,7 @@ const server = statikServer();
             if (!pc) return { err: "kein Spieler-Chunk" };
             const cx = pc.cx,
                 cz = pc.cz;
-            const o = { isPlayerChunk: !!r._voxelChunkIsPlayerChunk(cx, cz) };
+            const o = { isPlayerChunk: pc.cx === cx && pc.cz === cz };
             // den Build-Aufruf bespitzeln → die forceSync-ENTSCHEIDUNG ablesen (unabhängig
             // vom headless-no-worker-Sync-Fallback)
             let lastForceSync = null;
@@ -47,12 +48,12 @@ const server = statikServer();
                 return orig(a, b, c, opts);
             };
             try {
-                // (1) gesunder Frame → der Carve baut SYNC (instant Feedback)
+                // (1) gesunder Frame → der Neubau geht über den Worker (kein Sync-Trip im Takt)
                 st._frameOverBudget = false;
                 lastForceSync = null;
                 r._rebuildVoxelChunk(cx, cz);
                 o.syncWhenHealthy = lastForceSync;
-                // (2) Frame über Budget (schwache HW) → der Carve baut ASYNC (KEIN Stall)
+                // (2) Frame über Budget → ebenso über den Worker
                 st._frameOverBudget = true;
                 lastForceSync = null;
                 r._rebuildVoxelChunk(cx, cz);
@@ -79,13 +80,13 @@ const server = statikServer();
     }
 
     const checks = [
-        { name: "Der Test-Chunk IST der Spieler-Chunk (Edit-Druck)", pass: out.isPlayerChunk },
+        { name: "Der Test-Chunk IST der Spieler-Chunk", pass: out.isPlayerChunk },
         {
-            name: "Gesunder Frame → Carve baut SYNC (instant-Feedback bleibt auf starker HW)",
-            pass: out.syncWhenHealthy === true,
+            name: "Gesunder Frame → der Neubau des Spieler-Chunks geht über den Worker (kein Sync-Trip im Takt)",
+            pass: out.syncWhenHealthy === false,
         },
         {
-            name: "Frame über Budget → Carve baut ASYNC (KEIN ~200-ms-Stall auf schwacher HW)",
+            name: "Frame über Budget → der Neubau geht über den Worker (KEIN ~200-ms-Stall)",
             pass: out.syncWhenStruggling === false,
         },
         {
@@ -93,7 +94,7 @@ const server = statikServer();
             pass: out.explicitForceSyncWins === true,
         },
     ];
-    console.log("\n=== Adaptiver Carve-Rebuild (Grab-Stall an der Wurzel) ===");
+    console.log("\n=== Carve-Rebuild über den Worker (Grab-Stall an der Wurzel) ===");
     let fails = 0;
     for (const c of checks) {
         console.log(`  ${c.pass ? "✅" : "❌"} ${c.name}`);
@@ -101,9 +102,9 @@ const server = statikServer();
     }
     console.log(`\n${checks.length - fails}/${checks.length} Carve-Invarianten OK.`);
     if (fails) {
-        console.log("⛔ Der adaptive Carve-Rebuild greift nicht — das Graben stallt schwache HW noch.");
+        console.log("⛔ Der Neubau des Spieler-Chunks baut synchron im Takt — Graben und Erdbau stallen.");
         process.exit(1);
     }
-    console.log("✅ Graben stallt schwache HW nicht mehr (async unter Budget), starke HW behält instant-Feedback.");
+    console.log("✅ Der Neubau des Spieler-Chunks geht über den Worker, ein ausdrückliches forceSync bleibt synchron.");
     process.exit(0);
 })();

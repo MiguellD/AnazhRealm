@@ -1818,6 +1818,7 @@ class AnazhRealm_Z25b {
         B.totalMs = this._deferrableBudgetMs();
         B.startFrame();
         st._frameChunksBuilt = false;
+        st._bodenEinbau = null; // der Einbau des Frames (`_finalizeVoxelChunkBuild` → `_tickDirtyVoxelChunks`, K69-2)
         this._dispatchFrameJobs(this._buildDeferrableJobs(playerPos), B);
         // die fixen, NICHT budget-gegateten Ticks (UNGATED Welt-Substanz + billige Ticks)
         this._tickPendingVegSpawns(4);

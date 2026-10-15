@@ -295,7 +295,8 @@ class AnazhRealm_Z07 {
 
     // Voller Chunk-Mesh im Worker → {empty, positions, indices, normals, colors, waterCells, lod}
     // (`empty` = kein Iso). Density/Iso/Cells/Colors (~145 ms) laufen off-thread; der Main baut nur
-    // BufferGeometry + Architektur-Cell-Stempel + BVH + Scene-Attach.
+    // BufferGeometry + Architektur-Cell-Stempel + BVH + Scene-Attach. Der Auftrag trägt die Flut-Saat der Nachbarn
+    // (`_flutSaat`, null ohne Carve im 3×3) — der Worker flutet damit wie der Sync-Bau.
     _voxelWorkerComputeChunkMesh(cx, cz, lod) {
         const worker = this._getVoxelWorker();
         if (!worker) return Promise.reject(new Error("voxel-worker not available"));
@@ -305,7 +306,8 @@ class AnazhRealm_Z07 {
             const promise = new Promise((resolve, reject) => {
                 this.state.voxelWorkerPending.set(requestId, { resolve, reject });
             });
-            worker.postMessage({ type: "chunk-mesh", cx, cz, lod: lod | 0, requestId });
+            const saat = this._flutSaat(cx, cz);
+            worker.postMessage({ type: "chunk-mesh", cx, cz, lod: lod | 0, saat, requestId });
             return promise;
         });
     }

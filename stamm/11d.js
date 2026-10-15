@@ -1528,9 +1528,8 @@ class AnazhRealm_Z11d {
         return { ok: false, reason: "kein Material" };
     }
 
-    // Liegt ein CARVE-Edit in der 3×3-Chunk-Region um (cx,cz)? Nur dort seedet die Flut aus Nachbar-
-    // Zellen (`_buildVoxelChunkWaterCells`) und baut der Chunk SYNC-MAIN (`_rebuildVoxelChunk`), damit
-    // die Flut über die Naht läuft; unberührte Chunks bleiben atlas-only = bit-identisch zum Worker.
+    // Liegt ein CARVE-Edit in der 3×3-Chunk-Region um (cx,cz)? Nur dort seedet die Flut aus Nachbar-Zellen (`_flutSaat`,
+    // im Sync-Bau wie im Worker-Auftrag), damit sie über die Naht läuft; unberührte Chunks bleiben atlas-only.
     _chunkRegionHasCarve(cx, cz) {
         const edits = this._voxelEditsNah(cx, cz);
         if (!edits.length) return false;
@@ -1598,39 +1597,50 @@ class AnazhRealm_Z11d {
         }
     }
 
-    // Game-Loop-Hook: rebuildet je Frame max EINEN dirty Chunk, den nächsten zum Spieler (Manhattan) —
-    // der Klick-Ort zuerst, Skirt-Nachbarn folgen. Leeres Set kostet eine `size`-Prüfung; Pending/Fail
-    // re-dirtyt `_rebuildVoxelChunk` selbst.
+    // Game-Loop-Hook: der Neubau der dirty Chunks über den Worker, NAH ZUERST (Lehre 25). Je Takt gehen die Aufträge der
+    // nächsten `DIRTY_IM_FLUG` voraus (billig, der Worker baut sie nacheinander), eingebaut wird höchstens EINER — der
+    // nächste fertige (`_finalizeVoxelChunkBuild`, am Dorf 15–60 ms je Chunk). Hat der Strom-Takt in diesem Frame schon
+    // einen Chunk eingebaut (`state._bodenEinbau`, seine Ring-Distanz), wartet ein fertiger, der nicht näher liegt, auf
+    // den nächsten Frame: zwei Einbauten trägt ein Frame nur für den nächsten Chunk. Bis K69-2 kam je Frame EIN Chunk
+    // dran (Manhattan), sein Auftrag allein im Flug, und der Spieler-Chunk baute synchron. Pending/Fail re-dirtyt
+    // `_rebuildVoxelChunk` selbst; ohne Worker baut jeder Neubau synchron — dann einer je Frame.
     _tickDirtyVoxelChunks(playerPos) {
-        if (!this.state.dirtyVoxelChunks || this.state.dirtyVoxelChunks.size === 0) return;
+        const dirty = this.state.dirtyVoxelChunks;
+        if (!dirty || dirty.size === 0) return;
         if (!this.state.voxelChunks || !playerPos) return;
         const { span } = this._voxelChunkConfig();
         const pcx = Math.floor(playerPos.x / span);
         const pcz = Math.floor(playerPos.z / span);
-        let bestKey = null;
-        let bestDist = Infinity;
-        for (const key of this.state.dirtyVoxelChunks) {
-            // Streaming-Prune kann dirty Chunks aus voxelChunks entfernt
-            // haben (Spieler ging weg) — Marker stumm verwerfen.
+        const reihe = [];
+        for (const key of dirty) {
+            // Streaming-Prune kann dirty Chunks aus voxelChunks entfernt haben (Spieler ging weg) — Marker stumm verwerfen.
             if (!this.state.voxelChunks.has(key)) {
-                this.state.dirtyVoxelChunks.delete(key);
+                dirty.delete(key);
                 continue;
             }
             const comma = key.indexOf(",");
             const cx = parseInt(key.slice(0, comma), 10);
             const cz = parseInt(key.slice(comma + 1), 10);
-            const d = Math.abs(cx - pcx) + Math.abs(cz - pcz);
-            if (d < bestDist) {
-                bestDist = d;
-                bestKey = key;
-            }
+            reihe.push({ key, cx, cz, d: Math.max(Math.abs(cx - pcx), Math.abs(cz - pcz)) });
         }
-        if (!bestKey) return;
-        this.state.dirtyVoxelChunks.delete(bestKey);
-        const comma = bestKey.indexOf(",");
-        const cx = parseInt(bestKey.slice(0, comma), 10);
-        const cz = parseInt(bestKey.slice(comma + 1), 10);
-        this._rebuildVoxelChunk(cx, cz);
+        reihe.sort((a, b) => a.d - b.d);
+        const st = this.state;
+        const worker = !!(st.voxelWorker && st.voxelWorkerReady && st.voxelWorkerWorldgenSynced);
+        const imFlug = worker ? AnazhRealm.DIRTY_IM_FLUG : 1;
+        const strom = st._bodenEinbau; // die Ring-Distanz des Einbaus, den der Strom in diesem Frame schon tat
+        let einbau = false;
+        for (let i = 0; i < reihe.length && i < imFlug; i++) {
+            const c = reihe[i];
+            if (einbau || (Number.isFinite(strom) && c.d >= strom)) {
+                // der Frame hat seinen Einbau: ein fertiger Chunk wartet (sein Netz liegt im Cache), ein offener fragt an
+                const e = this.state.voxelChunks.get(c.key);
+                const lod = e && Number.isFinite(e.lod) ? e.lod : 0;
+                if (st.voxelMeshCache && st.voxelMeshCache.has(`${c.cx},${c.cz},${lod}`)) continue;
+            }
+            dirty.delete(c.key);
+            this._rebuildVoxelChunk(c.cx, c.cz);
+            if (!dirty.has(c.key)) einbau = true; // eingebaut (oder aufgegeben)
+        }
     }
 
     // Test-Naht: rebuildet ALLE dirty Chunks sofort mit `forceSync: true` (sonst liefe der Drain
