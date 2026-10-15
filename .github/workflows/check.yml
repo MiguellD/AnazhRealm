@@ -1638,3 +1638,41 @@ jobs:
               # Der gerenderte Golden-Vergleich (--render/--mint) gehört auf echte GPU + einen
               # Schöpfer-Sign-off — hier läuft nur der gate-taugliche Linsen-Selbst-Test.
               run: npm run look-golden
+
+    echt:
+        # DIE ECHT-GRUPPE (K65, 15.10.): die Schritte der GPU-Klasse der vollen Batterie (die Gruppen mit `klasse: gpu`)
+        # ZUSÄTZLICH auf dem eigenen Läufer mit der echten Karte — dem Messplatz (GTX 1060, Label omen-gpu). Die Cloud-Gruppen
+        # bleiben die Wand jedes Laufs; die Karte sieht, was swiftshader verbirgt (Lehre 17: der Fern-Ring 3,5 m auf 8 km nur
+        # auf der Radeon). Nur bei push auf integ-probe und main, hinter dem Kopf-Richter: nie pull_request (das Repo ist
+        # öffentlich, der Läufer trägt die Anmeldung des Messplatzes — seine Hooks lassen nur push von MiguellD auf dieses Repo
+        # durch und warten auf das GPU-Schloss, damit kein Job eine ABAB fälscht; timeout-minutes trägt das Warten), nie auf
+        # Karten-Zweigen (ein serieller Läufer würde jede Batterie verlangsamen und die Messungen blockieren). EIN Schritt fährt
+        # die Gruppen seriell: scripts/ci-echt.cjs liest sie aus `voll` (jeder Schritt steht GENAU einmal in dieser Datei), die
+        # Weiche `LINSE_GPU=karte` gibt jeder Linse ohne Zeit-Urteil die Karte und jeder Zeit-Linse swiftshader (W5).
+        # gate:ci-deckung (E) hält die Form.
+        name: echt (GPU-Gruppen auf der Karte)
+        needs: kopf
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/integ-probe' || github.ref == 'refs/heads/main') && needs.kopf.outputs.voll == 'ja'
+        runs-on: [self-hosted, omen-gpu]
+        timeout-minutes: 150
+        env:
+            CI_KLASSE: gpu
+            LINSE_GPU: karte
+        steps:
+            - uses: actions/checkout@v4
+
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: "22"
+
+            - name: Dependencies installieren (Echt-Läufer, der puppeteer-Chrome bleibt auf der Platte des Läufers)
+              shell: bash
+              run: npm ci --no-audit --no-fund
+
+            - name: Die Echt-Gruppe (die GPU-Schritte der vollen Batterie auf der echten Karte, seriell)
+              shell: bash
+              run: node scripts/ci-echt.cjs
+
+            - name: Frost-Wand auf der Karte (der Spielpfad im sichtbaren Chrome auf der GTX — Ankunft, dritte Person, Werkstatt; das Weltbild folgt der Kamera)
+              shell: bash
+              run: npm run gate:weltbild-frost:echt

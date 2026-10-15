@@ -70,6 +70,17 @@
 //                des Schritts greift „Alle Invarianten OK" aus dem Log, das `tee` aus dem Playtest schrieb (ein grüner
 //                Zähler reicht nicht — unter PLAYTEST_STRICT=0 endet der Playtest mit 0 trotz verletzter Invarianten).
 //
+// DIE ECHT-GRUPPE (K65, 15.10.). Befund: 89 Schritte in 10 GPU-Gruppen fuhren nur swiftshader (Pipeline-Bau 42–292 s je
+// Programm), und swiftshader verbirgt, was eine echte GPU anders zeichnet (Lehre 17); eine Wand, die die Karte braucht, stand
+// als Ausnahme „echte GPU nötig" draußen. Der eigene Läufer am Messplatz (GTX 1060, Label omen-gpu) fährt die GPU-Klasse
+// ZUSÄTZLICH — ein dritter Job neben Puls und Batterie, außerhalb der Waage (kein Platz des Kontos):
+//   (E) ECHT      der Job `echt`: runs-on genau self-hosted + omen-gpu, nur bei push auf integ-probe und main hinter dem
+//                Kopf-Richter (ECHT_WENN — nie pull_request: das Repo ist öffentlich), ohne Matrix, nie stumm, env CI_KLASSE gpu
+//                und LINSE_GPU karte, der Deckel trägt das Warten am GPU-Schloss; nach checkout · setup-node · npm ci GENAU EIN
+//                Schritt scripts/ci-echt.cjs (er liest die GPU-Klasse aus `voll`: nicht leer, jeder Schritt fahrbar), daneben
+//                nur Wände, die die Karte brauchen (npm run gate:…, ohne Bedingung). In dieser Form hält sein Rot den Weg nach
+//                main wie die volle Stufe (S); die Klasse „echte GPU nötig" der Ausnahme-Liste ist gefallen.
+//
 //   node scripts/diag-ci-deckung.cjs [--selftest] [--gegen <git-ref>]     (npm run gate:ci-deckung; in npm run check)
 "use strict";
 const fs = require("fs");
@@ -79,6 +90,7 @@ const yaml = require("js-yaml");
 const { klasseDesLaufs, LAEUFER_PLAETZE } = require("./lib/ci-klasse.cjs");
 const { schluessel } = require("./ci-schluessel.cjs");
 const { kopfUrteil } = require("./ci-kopf.cjs");
+const { echtSchritte } = require("./ci-echt.cjs");
 
 const root = path.resolve(__dirname, "..");
 const DATEI = ".github/workflows/check.yml";
@@ -100,6 +112,18 @@ const KOPF_JOB = "kopf";
 const KOPF_LAUF = /^node scripts\/ci-kopf\.cjs$/;
 const VOLL_NACH_KOPF = "needs.kopf.outputs.voll == 'ja'";
 const needsVon = (J) => [].concat((J && J.needs) || []);
+// DIE ECHT-GRUPPE (K65): der eigene Läufer mit der Karte fährt die GPU-Klasse der vollen Batterie ZUSÄTZLICH — nur bei push
+// auf integ-probe und main (nie pull_request: das Repo ist öffentlich), hinter dem Kopf-Richter, EIN Schritt
+// scripts/ci-echt.cjs (er liest die Schritte aus `voll`), dazu nur Wände, die ohne Karte nicht laufen. Er steht außerhalb der
+// Waage (kein Platz des Kontos); sein timeout trägt das Warten des Läufers am GPU-Schloss (Hook, höchstens 120 min).
+const ECHT_JOB = "echt";
+const ECHT_WENN =
+    "github.event_name == 'push' && (github.ref == 'refs/heads/integ-probe' || github.ref == 'refs/heads/main') && " +
+    VOLL_NACH_KOPF;
+const ECHT_LAEUFER = ["self-hosted", "omen-gpu"];
+const ECHT_LAUF = /^node scripts\/ci-echt\.cjs$/;
+const ECHT_DECKEL_MIN = 150;
+const ECHT_ENV = { CI_KLASSE: "gpu", LINSE_GPU: "karte" };
 // die volle Stufe: der Kopf-Richter unter VOLL_WENN und die Batterie hinter ihm (ihr Rot hält den Merge, (S))
 function vollArt(doc, job) {
     const J = doc && doc.jobs && doc.jobs[job];
@@ -137,21 +161,15 @@ const name = (s) => String(s.name || s.uses || lauf(s).split("\n")[0]).replace(/
 const WORKFLOWS = ".github/workflows";
 // Die Klassen, aus denen eine Wand der CI fernbleiben darf. Jede nennt eine Eigenschaft der Wand, keinen Zeitplan. (Die
 // Klasse „echter Renderer nötig" fiel am 10.10.: der Läufer rastert swiftshader-WebGPU und -GL — gate:webgl-probe läuft
-// in Gruppe 2; was dort nicht steht, steht wegen einer anderen Eigenschaft.)
+// in Gruppe 2; was dort nicht steht, steht wegen einer anderen Eigenschaft. Die Klasse „echte GPU nötig" fiel am 15.10.
+// (K65): der eigene Läufer trägt die Karte — eine Wand, die sie braucht, fährt im Job `echt`, gate:weltbild-frost:echt zuerst.)
 const KLASSEN = {
-    GPU: "echte GPU nötig", // der Läufer hat keinen Hardware-Adapter (Werkbank `--echt`)
     MESS: "Messwerkzeug, kein Urteil", // gibt Zahlen aus, kennt kein Rot
     FRIST: "Zeitfrist/Einschwingen > CI-Budget", // ein Lauf trägt den Deckel einer Gruppe nicht
     ROT: "rot an der Basis", // rot auf main, Täter benannt — die Heilung ist größer als diese Wand
 };
 // Die EINE Ausnahme-Liste: Wand → { klasse, grund }. Wer hier steht, hält in keinem Workflow den Merge — mit Grund.
 const AUSNAHMEN = {
-    "gate:weltbild-frost:echt": {
-        klasse: KLASSEN.GPU,
-        grund:
-            "fährt die Frost-Wand mit dem Hardware-Adapter der Werkbank (--echt, echteWebGpuArgs); der Läufer hat keine " +
-            "GPU — die swiftshader-Fassung gate:weltbild-frost läuft in der vollen Batterie (Frost-Wand)",
-    },
     "gate:arch-feld": {
         klasse: KLASSEN.FRIST,
         grund:
@@ -316,7 +334,8 @@ function schrittStumm(datei, doc, job, j, s) {
     if (an(j["continue-on-error"])) return `continue-on-error am Job „${job}"`;
     // die volle Stufe hält den Merge: der Kopf-Richter feuert unter VOLL_WENN, die Batterie hinter ihm läuft, solange
     // der Kopf kein grünes Urteil der vollen Batterie trägt — wo sie nicht läuft, steht das Urteil des Kopfs schon
-    const vollStufe = datei === path.basename(DATEI) && imVollenLauf(doc, job);
+    // die Echt-Gruppe (K65) feuert auf integ-probe und main wie die volle Stufe — in ihrer Form (E) hält ihr Rot den Weg nach main
+    const vollStufe = datei === path.basename(DATEI) && (imVollenLauf(doc, job) || (job === ECHT_JOB && !echtForm(doc).length));
     if (j.if !== undefined && !IMMER.test(String(j.if)) && !vollStufe) return `der Job „${job}" läuft nur unter „${j.if}"`;
     if (an(s["continue-on-error"])) return "continue-on-error am Schritt";
     if (s.if !== undefined && !IMMER.test(String(s.if))) {
@@ -492,10 +511,11 @@ function gateSchritte(doc) {
 function urteil(doc) {
     const v = [];
     for (const job of Object.keys((doc && doc.jobs) || {}))
-        if (!GRUPPEN_JOBS.includes(job) && job !== KOPF_JOB)
+        if (!GRUPPEN_JOBS.includes(job) && job !== KOPF_JOB && job !== ECHT_JOB)
             v.push(
-                `(V) JOB: „${job}" steht außerhalb von ${GRUPPEN_JOBS.join(" und ")} (und dem Kopf-Richter „${KOPF_JOB}") — die Waage sähe ihn nicht`
+                `(V) JOB: „${job}" steht außerhalb von ${GRUPPEN_JOBS.join(" und ")} (und dem Kopf-Richter „${KOPF_JOB}", der Echt-Gruppe „${ECHT_JOB}") — die Waage sähe ihn nicht`
             );
+    if (doc && doc.jobs && doc.jobs[ECHT_JOB]) v.push(...echtForm(doc));
     for (const job of GRUPPEN_JOBS) {
         const J = doc && doc.jobs && doc.jobs[job];
         if (!J) {
@@ -615,6 +635,57 @@ function kopfForm(doc) {
         if (!soll || normWenn((K.outputs || {}).voll) !== soll)
             v.push(`(V) KOPF: „${KOPF_JOB}" reicht outputs.voll nicht aus dem Richter-Schritt (Soll ${soll || "eine id am Schritt"})`);
     }
+    return v;
+}
+
+// (E) DIE ECHT-GRUPPE (K65): der Job `echt` fährt auf dem eigenen Läufer (runs-on genau self-hosted + omen-gpu) nur bei push
+// auf integ-probe und main hinter dem Kopf-Richter (ECHT_WENN — nie pull_request, nie ein Karten-Zweig), ohne Matrix und nie
+// stumm, mit der Klasse gpu und der Weiche `karte` (ECHT_ENV), den Deckel für Warten am Schloss plus Lauf; nach der
+// Vorbereitung (checkout · setup-node · npm ci, ohne Bedingung) GENAU EIN Schritt scripts/ci-echt.cjs — er liest die
+// GPU-Klasse aus `voll`, die nicht leer und ganz fahrbar ist —, daneben nur Schritte, die eine Wand fahren (ohne Bedingung).
+// → [Befund]
+function echtForm(doc) {
+    const v = [];
+    const E = doc && doc.jobs && doc.jobs[ECHT_JOB];
+    if (!E) return v;
+    const an = (x) => x !== undefined && x !== false && x !== "false";
+    if (normWenn(E.if) !== normWenn(ECHT_WENN))
+        v.push(`(E) ECHT: „${ECHT_JOB}" läuft unter „${E.if}" statt nur bei push auf integ-probe und main hinter dem Kopf-Richter (${ECHT_WENN})`);
+    if (!needsVon(E).includes(KOPF_JOB)) v.push(`(E) ECHT: „${ECHT_JOB}" wartet nicht auf „${KOPF_JOB}" — ein schon gerichteter Kopf führe die Karte noch einmal`);
+    const ro = [].concat(E["runs-on"] || []);
+    if (ro.length !== ECHT_LAEUFER.length || !ECHT_LAEUFER.every((x) => ro.includes(x)))
+        v.push(`(E) ECHT: „${ECHT_JOB}" läuft auf ${JSON.stringify(E["runs-on"])} statt ${JSON.stringify(ECHT_LAEUFER)} — der Läufer mit der Karte`);
+    if (E.strategy) v.push(`(E) ECHT: „${ECHT_JOB}" trägt eine Matrix — ein Läufer, die Gruppen seriell in EINEM Schritt`);
+    if (an(E["continue-on-error"])) v.push(`(E) ECHT: „${ECHT_JOB}" trägt continue-on-error — sein Rot verpuffte`);
+    if (!(Number(E["timeout-minutes"]) > 0 && Number(E["timeout-minutes"]) <= ECHT_DECKEL_MIN))
+        v.push(`(E) ECHT: „${ECHT_JOB}" timeout-minutes ${E["timeout-minutes"]} (Soll 1–${ECHT_DECKEL_MIN}: Warten am Schloss plus Lauf)`);
+    for (const [k, w] of Object.entries(ECHT_ENV))
+        if (!E.env || String(E.env[k]) !== w) v.push(`(E) ECHT: „${ECHT_JOB}" env ${k} ist „${E.env && E.env[k]}" statt „${w}"`);
+    const steps = E.steps || [];
+    const VORB_ECHT = VORBEREITUNG.filter(([n]) => n !== "System-Libs");
+    VORB_ECHT.forEach(([n, f], i) => {
+        const s = steps[i];
+        if (!s || !f(s)) v.push(`(E) VORBEREITUNG: „${ECHT_JOB}" Schritt ${i + 1} ist nicht „${n}" (${s ? name(s) : "fehlt"})`);
+        else if (s.if) v.push(`(E) VORBEREITUNG: „${ECHT_JOB}" „${n}" trägt eine Bedingung (${s.if})`);
+    });
+    const eigen = steps.slice(VORB_ECHT.length);
+    const laeufer = eigen.filter((s) => ECHT_LAUF.test(lauf(s)));
+    if (laeufer.length !== 1)
+        v.push(`(E) ECHT: „${ECHT_JOB}" trägt ${laeufer.length} Schritte node scripts/ci-echt.cjs statt GENAU EINEM`);
+    for (const s of eigen) {
+        if (s.if !== undefined) v.push(`(E) ECHT: „${name(s)}" trägt die Bedingung „${s.if}" — jeder Schritt der Echt-Gruppe läuft`);
+        if (an(s["continue-on-error"])) v.push(`(E) ECHT: „${name(s)}" trägt continue-on-error`);
+        if (!ECHT_LAUF.test(lauf(s)) && !/^npm run gate:[\w:.-]+$/.test(lauf(s)))
+            v.push(`(E) ECHT: „${name(s)}" ist weder der Läufer noch EINE Wand (npm run gate:…) — „${lauf(s).split("\n")[0]}"`);
+    }
+    let gpu = [];
+    try {
+        gpu = echtSchritte(doc);
+    } catch (e) {
+        v.push(`(E) ECHT: die GPU-Klasse ist nicht zu lesen (${e.message})`);
+    }
+    if (!gpu.length) v.push(`(E) ECHT: die volle Batterie trägt keinen Schritt der Klasse gpu — die Echt-Gruppe führe leer`);
+    for (const s of gpu.filter((x) => x.fehler)) v.push(`(E) ECHT: „${s.name}" (Gruppe ${s.gruppe}) ist auf dem Läufer nicht zu fahren: ${s.fehler}`);
     return v;
 }
 
@@ -1167,8 +1238,57 @@ function selbsttest() {
         selbsttestPlaytest(),
         selbsttestKlasse(),
         selbsttestSchluessel(),
-        selbsttestKopf()
+        selbsttestKopf(),
+        selbsttestEcht()
     );
+}
+
+// (E) Die Echt-Gruppe gegen das heutige check.yml und seine Täter: die Form steht grün; ein PR-Weg, ein Cloud-Läufer, kein
+// Kopf-Richter, eine andere Weiche, ein zweiter Läufer-Schritt, eine Bedingung, ein Fremd-Schritt, ein Deckel über dem Warten
+// und eine Batterie ohne GPU-Klasse fallen beim Namen; mit falscher Bedingung ist die Wand im Echt-Job STUMM (S).
+function selbsttestEcht() {
+    const f = [];
+    const echt = () => JSON.parse(JSON.stringify(yaml.load(fs.readFileSync(path.join(root, DATEI), "utf8"))));
+    const grund = echtForm(echt());
+    const ok0 = grund.length === 0;
+    console.log(`  ${ok0 ? "✅" : "❌"} Selbsttest „Echt-Gruppe in check.yml" → ${ok0 ? "die Form steht" : grund.join(" · ")}`);
+    if (!ok0) f.push("(E) das heutige check.yml trägt die Form der Echt-Gruppe nicht");
+    const E = (d) => d.jobs[ECHT_JOB];
+    const faelle = [
+        ["PR-Weg", (d) => (E(d).if += " || github.event_name == 'pull_request'"), /\(E\) ECHT: „echt" läuft unter/],
+        ["Cloud-Läufer", (d) => (E(d)["runs-on"] = "ubuntu-latest"), /\(E\) ECHT: „echt" läuft auf "ubuntu-latest"/],
+        ["ohne Kopf-Richter", (d) => delete E(d).needs, /wartet nicht auf „kopf"/],
+        ["Weiche hardware", (d) => (E(d).env.LINSE_GPU = "hardware"), /env LINSE_GPU ist „hardware"/],
+        ["zweiter Läufer", (d) => E(d).steps.push({ name: "noch einmal", run: "node scripts/ci-echt.cjs" }), /2 Schritte node scripts\/ci-echt\.cjs/],
+        ["Bedingung", (d) => (E(d).steps[E(d).steps.length - 1].if = "always()"), /trägt die Bedingung „always\(\)"/],
+        ["Fremd-Schritt", (d) => E(d).steps.push({ name: "Hallo", run: "echo hallo" }), /„Hallo" ist weder der Läufer noch EINE Wand/],
+        ["Deckel", (d) => (E(d)["timeout-minutes"] = 600), /timeout-minutes 600/],
+        [
+            "ohne GPU-Klasse",
+            (d) => d.jobs[VOLL_JOB].strategy.matrix.include.forEach((e) => (e.klasse = "cpu")),
+            /keinen Schritt der Klasse gpu/,
+        ],
+    ];
+    for (const [n, mut, re] of faelle) {
+        const d = echt();
+        mut(d);
+        const b = echtForm(d);
+        const ok = b.some((x) => re.test(x));
+        console.log(`  ${ok ? "✅" : "❌"} Selbsttest (E) „${n}" → ${b.find((x) => re.test(x)) || b.join(" · ") || "grün"}`);
+        if (!ok) f.push(`(E) „${n}" fällt nicht beim Namen`);
+    }
+    // (S): die Wand im Echt-Job hält den Merge nur in seiner Form
+    const d1 = echt();
+    const wand = E(d1).steps.find((s) => /^npm run gate:/.test(lauf(s)));
+    const s1 = wand ? schrittStumm(path.basename(DATEI), d1, ECHT_JOB, E(d1), wand) : "kein Wand-Schritt";
+    const d2 = echt();
+    E(d2).if = "github.event_name == 'push'";
+    const wand2 = E(d2).steps.find((s) => /^npm run gate:/.test(lauf(s)));
+    const s2 = wand2 ? schrittStumm(path.basename(DATEI), d2, ECHT_JOB, E(d2), wand2) : null;
+    const okS = s1 === null && !!s2;
+    console.log(`  ${okS ? "✅" : "❌"} Selbsttest (E)/(S) „Wand im Echt-Job" → in Form ${s1 === null ? "hält den Merge" : s1} · falsche Bedingung: ${s2 || "hält (falsch)"}`);
+    if (!okS) f.push("(E)/(S) die Wand im Echt-Job hält den Merge außerhalb seiner Form oder nie");
+    return f;
 }
 
 // (T) Die Waage gegen ein Fixture — und gegen das heutige check.yml (b5eb02e9, das eingefrorene `vorher` in ci-zeiten.json):
@@ -1320,7 +1440,7 @@ function selbsttestGegenrichtung() {
         },
     });
     const aus = () => ({
-        "gate:d": { klasse: KLASSEN.GPU, grund: "fährt den Hardware-Adapter der Werkbank (--echt)" },
+        "gate:d": { klasse: KLASSEN.MESS, grund: "gibt Zahlen aus, kennt kein Rot" },
     });
     const C = (d) => d["check.yml"].jobs.playtest.steps[0];
     const f = [];
@@ -1606,5 +1726,5 @@ if (v.length) {
     process.exit(1);
 }
 console.log(
-    `✅ GRÜN — jeder Gate-Schritt läuft genau einmal, jede Gruppe trägt die Vorbereitung und ihre Schritte und liegt unter ihrem Deckel (Puls 2 min, Voll 7 min), ein voller Lauf fährt höchstens ${LAEUFER_PLAETZE} Jobs zugleich und sein längster Weg ≤ 8 min, der Kopf-Richter lässt keinen Kopf zweimal durch die Batterie, kein Cache-Schlüssel hasht die Projektversion; jede Voll-Gruppe trägt ihre Klasse cpu oder gpu; jede Wand läuft in einem Workflow oder steht mit Klasse und Grund in der Ausnahme-Liste; der volle Playtest urteilt in seiner eigenen Voll-Gruppe am Verdikt.`
+    `✅ GRÜN — jeder Gate-Schritt läuft genau einmal, jede Gruppe trägt die Vorbereitung und ihre Schritte und liegt unter ihrem Deckel (Puls 2 min, Voll 7 min), ein voller Lauf fährt höchstens ${LAEUFER_PLAETZE} Jobs zugleich und sein längster Weg ≤ 8 min, der Kopf-Richter lässt keinen Kopf zweimal durch die Batterie, kein Cache-Schlüssel hasht die Projektversion; jede Voll-Gruppe trägt ihre Klasse cpu oder gpu; jede Wand läuft in einem Workflow oder steht mit Klasse und Grund in der Ausnahme-Liste; der volle Playtest urteilt in seiner eigenen Voll-Gruppe am Verdikt; die Echt-Gruppe fährt die GPU-Klasse zusätzlich auf der Karte, nur bei push auf integ-probe und main.`
 );

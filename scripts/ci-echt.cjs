@@ -31,7 +31,8 @@ function echtSchritte(doc) {
     const voll = doc && doc.jobs && doc.jobs.voll;
     if (!voll) throw new Error(`${DATEI}: kein Job voll`);
     const klasse = new Map();
-    for (const e of (voll.strategy && voll.strategy.matrix && voll.strategy.matrix.include) || []) klasse.set(e.gruppe, e.klasse);
+    for (const e of (voll.strategy && voll.strategy.matrix && voll.strategy.matrix.include) || [])
+        klasse.set(e.gruppe, e.klasse);
     const out = [];
     for (const s of voll.steps || []) {
         const m = GRUPPE_RE.exec(String(s.if || ""));
@@ -40,18 +41,23 @@ function echtSchritte(doc) {
         let fehler = null;
         if (s.uses) fehler = `uses ${s.uses} (eine Aktion, kein run)`;
         else if (s.shell && s.shell !== "bash") fehler = `shell ${s.shell} (der Echt-Läufer fährt bash)`;
-        else if (Object.values(s.env || {}).some((v) => /\$\{\{/.test(String(v)))) fehler = "env mit ${{ … }} (hier nicht aufzulösen)";
+        else if (Object.values(s.env || {}).some((v) => /\$\{\{/.test(String(v))))
+            fehler = "env mit ${{ … }} (hier nicht aufzulösen)";
         out.push({ gruppe: +m[1], name, run: s.run || "", env: s.env || {}, fehler });
     }
     // Gruppen-Ordnung, in der Gruppe die Ordnung der Datei
-    return out.map((s, i) => ({ s, i })).sort((a, b) => a.s.gruppe - b.s.gruppe || a.i - b.i).map((x) => x.s);
+    return out
+        .map((s, i) => ({ s, i }))
+        .sort((a, b) => a.s.gruppe - b.s.gruppe || a.i - b.i)
+        .map((x) => x.s);
 }
 
 // die Bash wie in der CI: unter Windows die Git-Bash (ECHT_BASH überschreibt), sonst `bash`
 function bashPfad(env = process.env, plattform = process.platform) {
     if (env.ECHT_BASH) return env.ECHT_BASH;
     if (plattform !== "win32") return "bash";
-    for (const p of ["C:\\Program Files\\Git\\bin\\bash.exe", "C:\\Program Files (x86)\\Git\\bin\\bash.exe"]) if (fs.existsSync(p)) return p;
+    for (const p of ["C:\\Program Files\\Git\\bin\\bash.exe", "C:\\Program Files (x86)\\Git\\bin\\bash.exe"])
+        if (fs.existsSync(p)) return p;
     throw new Error("keine Git-Bash gefunden (ECHT_BASH setzen)");
 }
 
@@ -76,7 +82,11 @@ function fahre(schritt, { bash, env, log }) {
         kind.stderr.on("data", lies);
         kind.on("close", (code) => {
             aus.end();
-            res({ exit: code == null ? 1 : code, sek: Math.round((Date.now() - t0) / 100) / 10, adapter: [...adapter] });
+            res({
+                exit: code == null ? 1 : code,
+                sek: Math.round((Date.now() - t0) / 100) / 10,
+                adapter: [...adapter],
+            });
         });
     });
 }
@@ -94,7 +104,11 @@ async function lauf(opt) {
     const bash = bashPfad();
     const prot = path.resolve(opt.protokoll || path.join(ROOT, "ci-echt-protokoll"));
     fs.mkdirSync(prot, { recursive: true });
-    const env = Object.assign({}, process.env, { CI_KLASSE: "gpu", LINSE_GPU: process.env.LINSE_GPU || "karte", npm_config_script_shell: bash });
+    const env = Object.assign({}, process.env, {
+        CI_KLASSE: "gpu",
+        LINSE_GPU: process.env.LINSE_GPU || "karte",
+        npm_config_script_shell: bash,
+    });
     const t0 = Date.now();
     const ergebnis = [];
     let nr = 0;
@@ -108,16 +122,31 @@ async function lauf(opt) {
         }
         const log = path.join(prot, `${String(nr).padStart(2, "0")}-g${s.gruppe}.log`);
         const e = await fahre(s, { bash, env, log });
-        console.log(`${e.exit === 0 ? "✅" : "❌"} ${kopf} — ${e.sek} s${e.adapter.length ? " · " + e.adapter.join(", ") : ""}${e.exit === 0 ? "" : ` · EXIT=${e.exit} (${path.basename(log)})`}`);
+        console.log(
+            `${e.exit === 0 ? "✅" : "❌"} ${kopf} — ${e.sek} s${e.adapter.length ? " · " + e.adapter.join(", ") : ""}${e.exit === 0 ? "" : ` · EXIT=${e.exit} (${path.basename(log)})`}`
+        );
         ergebnis.push(Object.assign({ gruppe: s.gruppe, name: s.name, log: path.basename(log) }, e));
     }
     const sek = Math.round((Date.now() - t0) / 1000);
     const rot = ergebnis.filter((e) => e.exit !== 0);
     const jeGruppe = {};
     for (const e of ergebnis) jeGruppe[e.gruppe] = Math.round(((jeGruppe[e.gruppe] || 0) + e.sek) * 10) / 10;
-    fs.writeFileSync(path.join(prot, "echt.json"), JSON.stringify({ sek, rot: rot.length, jeGruppe, schritte: ergebnis }, null, 1));
-    console.log(`\nECHT-GRUPPE: ${ergebnis.length} Schritte in ${Math.floor(sek / 60)} min ${sek % 60} s — je Gruppe ${Object.entries(jeGruppe).map(([g, s]) => `G${g} ${Math.round(s)} s`).join(" · ")}`);
-    console.log(rot.length ? `❌ ROT — ${rot.length} Schritte: ${rot.map((e) => `G${e.gruppe} ${e.name}`).join(" · ")}` : "✅ GRÜN — jede GPU-Wand hält auf der echten Karte");
+    fs.writeFileSync(
+        path.join(prot, "echt.json"),
+        JSON.stringify({ sek, rot: rot.length, jeGruppe, schritte: ergebnis }, null, 1)
+    );
+    console.log(
+        `\nECHT-GRUPPE: ${ergebnis.length} Schritte in ${Math.floor(sek / 60)} min ${sek % 60} s — je Gruppe ${Object.entries(
+            jeGruppe
+        )
+            .map(([g, s]) => `G${g} ${Math.round(s)} s`)
+            .join(" · ")}`
+    );
+    console.log(
+        rot.length
+            ? `❌ ROT — ${rot.length} Schritte: ${rot.map((e) => `G${e.gruppe} ${e.name}`).join(" · ")}`
+            : "✅ GRÜN — jede GPU-Wand hält auf der echten Karte"
+    );
     return rot.length ? 1 : 0;
 }
 
@@ -162,12 +191,17 @@ jobs:
     const l = echtSchritte(fix);
     const namen = l.map((s) => s.name).join(",");
     if (namen !== "gpu-a,gpu-ausdruck,gpu-b,gpu-pwsh") fehl.push(`Auswahl/Ordnung: ${namen}`);
-    if (!/shell pwsh/.test((l.find((s) => s.name === "gpu-pwsh") || {}).fehler || "")) fehl.push("fremde Shell nicht rot");
-    if (!/\$\{\{/.test((l.find((s) => s.name === "gpu-ausdruck") || {}).fehler || "")) fehl.push("Ausdruck im env nicht rot");
+    if (!/shell pwsh/.test((l.find((s) => s.name === "gpu-pwsh") || {}).fehler || ""))
+        fehl.push("fremde Shell nicht rot");
+    if (!/\$\{\{/.test((l.find((s) => s.name === "gpu-ausdruck") || {}).fehler || ""))
+        fehl.push("Ausdruck im env nicht rot");
     // das Exit trägt: ein roter und ein grüner Schritt mit der echten Bash
     const tmp = fs.mkdtempSync(path.join(require("os").tmpdir(), "ci-echt-"));
     const bash = bashPfad();
-    const rot = await fahre({ run: "echo '[linse-gpu] nvidia/pascal'; exit 3", env: {} }, { bash, env: process.env, log: path.join(tmp, "a.log") });
+    const rot = await fahre(
+        { run: "echo '[linse-gpu] nvidia/pascal'; exit 3", env: {} },
+        { bash, env: process.env, log: path.join(tmp, "a.log") }
+    );
     const gruen = await fahre({ run: "true | cat", env: {} }, { bash, env: process.env, log: path.join(tmp, "b.log") });
     const pipe = await fahre({ run: "false | cat", env: {} }, { bash, env: process.env, log: path.join(tmp, "c.log") });
     if (rot.exit !== 3) fehl.push(`Exit trägt nicht (${rot.exit})`);
@@ -179,8 +213,13 @@ jobs:
     const echt = echtSchritte(yaml.load(fs.readFileSync(path.join(ROOT, DATEI), "utf8")));
     const unfahrbar = echt.filter((s) => s.fehler);
     if (!echt.length) fehl.push("check.yml trägt keinen GPU-Schritt");
-    if (unfahrbar.length) fehl.push(`check.yml: ${unfahrbar.map((s) => `G${s.gruppe} ${s.name}: ${s.fehler}`).join(" · ")}`);
-    console.log(fehl.length ? `❌ SELBSTTEST ROT — ${fehl.join(" · ")}` : `✅ SELBSTTEST GRÜN — Auswahl, Ordnung, rote Formen, Exit und pipefail (check.yml: ${echt.length} GPU-Schritte fahrbar)`);
+    if (unfahrbar.length)
+        fehl.push(`check.yml: ${unfahrbar.map((s) => `G${s.gruppe} ${s.name}: ${s.fehler}`).join(" · ")}`);
+    console.log(
+        fehl.length
+            ? `❌ SELBSTTEST ROT — ${fehl.join(" · ")}`
+            : `✅ SELBSTTEST GRÜN — Auswahl, Ordnung, rote Formen, Exit und pipefail (check.yml: ${echt.length} GPU-Schritte fahrbar)`
+    );
     return fehl.length ? 1 : 0;
 }
 
@@ -189,11 +228,19 @@ if (require.main === module) {
     const wert = (k) => (a.includes(k) ? a[a.indexOf(k) + 1] : null);
     const p = a.includes("--selbsttest")
         ? selbsttest()
-        : lauf({ liste: a.includes("--liste"), gruppe: wert("--gruppe") ? +wert("--gruppe") : null, nur: wert("--nur"), protokoll: wert("--protokoll") });
-    p.then((c) => process.exit(c), (e) => {
-        console.error("❌ ci-echt:", e.message);
-        process.exit(2);
-    });
+        : lauf({
+              liste: a.includes("--liste"),
+              gruppe: wert("--gruppe") ? +wert("--gruppe") : null,
+              nur: wert("--nur"),
+              protokoll: wert("--protokoll"),
+          });
+    p.then(
+        (c) => process.exit(c),
+        (e) => {
+            console.error("❌ ci-echt:", e.message);
+            process.exit(2);
+        }
+    );
 }
 
 module.exports = { echtSchritte, bashPfad };
