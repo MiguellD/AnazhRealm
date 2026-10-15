@@ -1004,16 +1004,22 @@ class AnazhRealm_Z20d {
     // (Mess-Wiese gehend, Null-Renderer, 15 s: 14 Fälle, 10 772 `_forestStehtFrei`, 288 311 Sichthöhen). Ohne Kasten fällt alles.
     _grundrissFaellt(x0, z0, x1, z1) {
         this._grundrissGitter = null;
-        const M = this._ortSame;
-        if (!M) return;
+        if (!this._ortSame) return;
         if (![x0, z0, x1, z1].every(Number.isFinite)) {
             this._ortSame = null;
             return;
         }
-        const B = AnazhRealm.ORT_SAME_EIMER;
         const R = AnazhRealm.ORT_SAME_REICH;
-        for (let bx = Math.floor((x0 - R) / B); bx <= Math.floor((x1 + R) / B); bx++)
-            for (let bz = Math.floor((z0 - R) / B); bz <= Math.floor((z1 + R) / B); bz++) {
+        this._ortSameFaellt(x0 - R, z0 - R, x1 + R, z1 + R);
+    }
+    // Die Gestalt des Orts fällt in den Eimern, die der Kasten x0…x1 · z0…z1 (m) berührt — der EINE Räumer ihres Gedächtnisses
+    // für jeden, der ihre Eingaben am Ort ändert: den Grundriss (`_grundrissFaellt`) und den Wald (`_forestDartsFallen`).
+    _ortSameFaellt(x0, z0, x1, z1) {
+        const M = this._ortSame;
+        if (!M) return;
+        const B = AnazhRealm.ORT_SAME_EIMER;
+        for (let bx = Math.floor(x0 / B); bx <= Math.floor(x1 / B); bx++)
+            for (let bz = Math.floor(z0 / B); bz <= Math.floor(z1 / B); bz++) {
                 const ek = bx + "," + bz;
                 const eimer = M.get(ek);
                 if (!eimer) continue;

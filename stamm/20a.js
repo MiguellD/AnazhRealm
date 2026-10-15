@@ -321,6 +321,43 @@ class AnazhRealm_Z20a {
         return this._forestDartGen;
     }
 
+    // DER WALD FÄLLT AM ORT (K69, Lehre 25): legt ein Ort seinen Erdbau über die Flächen im Kasten x0…x1 · z0…z1, ändern sich
+    // die Darts nur in den Zellen, die der Kasten samt Böschung (`ERDBAU.reichweiteM`, dazu die Hang-Probe von 2 m) oder samt der
+    // größten Krone (`KRONE_MAX_M`: `ortFrei` fragt die Krone gegen die Fläche) berührt. Nur sie fallen aus dem Dart-Gedächtnis
+    // des Stands (der Stand bleibt), mit ihnen das Urteil jedes Darts, der sie als Nachbarn liest (±2 Zellen, `_forestDartSteht`),
+    // die Freistand-Antwort jedes Orts, der diese Urteile liest (±4 Zellen darum, `_forestStehtFrei`), und die Gestalt des Orts
+    // dort (`_ortSameFaellt`). Bis K69 fiel das Gedächtnis der ganzen Welt (`_forestDartMemo = null`, ein neuer Stand) — und mit
+    // ihm jede Gestalt jedes Orts. → die Zahl der gefallenen Zellen.
+    _forestDartsFallen(x0, z0, x1, z1) {
+        const memo = this._forestDartMemo;
+        if (!memo || !memo.size) return 0;
+        const C = AnazhRealm.FOREST.cell;
+        const R = Math.max(globalThis.__gelaendeCore.ERDBAU.reichweiteM + 2, AnazhRealm.KRONE_MAX_M);
+        const ga = Math.floor((x0 - R) / C);
+        const gb = Math.floor((x1 + R) / C);
+        const ha = Math.floor((z0 - R) / C);
+        const hb = Math.floor((z1 + R) / C);
+        let n = 0;
+        for (let gx = ga; gx <= gb; gx++) for (let gz = ha; gz <= hb; gz++) if (memo.delete(gx + "," + gz)) n++;
+        const steht = this._forestStehtMemo;
+        if (steht)
+            for (let gx = ga - 2; gx <= gb + 2; gx++)
+                for (let gz = ha - 2; gz <= hb + 2; gz++) {
+                    const d = memo.get(gx + "," + gz);
+                    if (d) for (const o of d) steht.delete(o);
+                }
+        const fm = this._freistandMemo;
+        if (fm && fm.size && this._freistandMemoVon === memo)
+            for (const k of fm.keys()) {
+                const i = k.indexOf(",");
+                const gx = Math.floor(Number(k.slice(0, i)) / C);
+                const gz = Math.floor(Number(k.slice(i + 1, k.indexOf(",", i + 1))) / C);
+                if (gx >= ga - 6 && gx <= gb + 6 && gz >= ha - 6 && gz <= hb + 6) fm.delete(k);
+            }
+        this._ortSameFaellt((ga - 6) * C, (ha - 6) * C, (gb + 7) * C, (hb + 7) * C);
+        return n;
+    }
+
     // BORN-Darts einer Zelle, reine Funktion von (cx,cz,seed): standDensity-Wurf → Boden/Wasser → Slope →
     // Arten-Nische → reverse-J-Größe → Mammut. Nur geborene Darts treten in die Kronen-Schüchternheit ein.
     _forestCellDarts(cx, cz, seedInt) {
