@@ -369,11 +369,16 @@ class AnazhRealm_Z11c {
                 }
             }
         }
+        // Der Vergleich liest das CPU-Array als Spiegel der GPU: ein offener Bereich (geschrieben, noch nicht hochgeladen —
+        // r184 leert die Bereiche erst nach dem Upload) fällt darum nie, der neue umfasst ihn (sonst lüde ein späterer Pass mit
+        // denselben Bytes in den oberen Slots nichts, und die GPU hielte die Matrizen von vorher).
         for (const a of nw.senken.values()) {
             if (a.anders) {
                 const im = a.mesh.instanceMatrix;
+                let ende = a.anzahl * 16;
+                for (const r of im.updateRanges) if (r.start + r.count > ende) ende = r.start + r.count;
                 im.clearUpdateRanges();
-                if (a.anzahl) im.addUpdateRange(0, a.anzahl * 16);
+                if (ende) im.addUpdateRange(0, ende);
                 im.needsUpdate = true;
             }
             AnazhRealm._instanzZahl(a.mesh, a.anzahl);
