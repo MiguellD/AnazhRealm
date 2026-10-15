@@ -301,7 +301,7 @@ const PORTAL_RENDER_CONFIG = {
         // je Stufe streng, draws steigt nie). Die Kosten-Regler der Kronen wohnen in ihrer Zeile: blattKarte (Kante der
         // Laub-Karte in Blatt-Groessen), lagen · quote · geruest · wedel (S3, docs/studio-vertrag.md B2c „Die Kronen-Kosten";
         // wedel.holz und straehne.holz: der Holz-Anteil an der Farbe von Wedel und Straehne, geeicht an der Kronenfarbe der
-        // Karten von V18.536), straehne (Trauer L0 und L1: Kartenbreite in Blattlaengen, Stuecke je Peitsche —
+        // Karten von V18.536; wedel.spalte: die groesste Breite einer Wedel-Karte in Stueck-Laengen, L2 15.10.), straehne (Trauer L0 und L1: Kartenbreite in Blattlaengen, Stuecke je Peitsche —
         // 05.10.: die schlanke Trauer-Klinge der L1 ist gefallen, sie las als Papier-Streifen), rinde (L0: ast/reisig in
         // trunkR — darunter jeder 2./3. Ring, ohne Traeger faellt der Strang), boden (tree[0], die Trauer-L1 liest
         // dieselbe Zahl: tiefstes Laub in Baumhoehen), deckung (tree[1]: das Band, in dem die gebaute L1-Krone die
@@ -2425,9 +2425,10 @@ function emitTreeRezept(P, stufe) {
     // Strähne aus der Wedel-Zelle entlang seiner ganzen gewachsenen Bahn, je Stück so breit, wie die Nadel-Wolke dort reicht
     // (`__wedelBreiten` × `wedel.breite`, die Kette vom Röhren-Ende bis zur Spitze), nie unter `boden`·Baumhoehe; Farbe und
     // Wind tragen seine Nadeln. Die Röhre der L0 (bis `wedel.ab`) läuft im Wedel spitz aus. Die zwei Karten je Stück
-    // kreuzen um die Bahn, ±`wedel.winkel` aus der Lotrechten (die Nadel-Wolke ist rund um den Ast: von der Seite deckt sie
-    // wie V18.536 — waagrecht und lotrecht gekreuzt deckten die Koniferen von unten 12–35 % mehr, von der Seite 9–34 %
-    // weniger); der Schatten-Teil (L1) trägt je Stück die waagrechte.
+    // kreuzen um die Bahn, ±`wedel.winkel` aus der Lotrechten (die Nadel-Wolke ist rund um den Ast); der Schatten-Teil (L1)
+    // trägt je Stück die waagrechte. L2 (15.10.): das Kreuz öffnet auf ±40° — bei ±10°/±5° stand jede Karte von unten auf der
+    // Kante und las als Strich (der Spieler sieht die Krone von unten); ein Stück breiter als `wedel.spalte` × lang trägt die
+    // Zelle in Spalten (pushStraehne), nie quer gestreckt.
     if (_wedel) {
         const _bodenY = nodes.height * _b0.boden;
         const nadelFarbe = vegFarbe(0x2e5526).lerp(lc, 0.2);

@@ -286,14 +286,16 @@ was eine GELIEFERTE Stufe kosten darf, als Daten neben `kindStages`.
       feinere Strang ist seine Karte (das Atlas-Bild ist ein belaubter Zweig) bzw. Strähne. Ein Baum OHNE Krone (Totholz)
       hat keine Karte, die ihn trüge: seine L1 trägt jeden Strang ab einem Bild-Pixel an der Nahkante (STUFEN_BILD_PX) —
       mit dem Gerüst ab 0,25·trunkR verlor das Totholz-L1 bis 16 % seiner Ansicht;
-    - `wedel` ({ab, teile, breite, nadel, rand, winkel, holz}; tree[0] {0,35, 1, 1,65, 0,025 m, 0,5, 10°, 0,15} · tree[1]
-      {0, 2, 2,03, 0,05 m, 0,3, 5°, 0,15}): der Nadel-Ast (jeder Seitenast des Leittriebs) ist bis `ab` seiner Bahn Röhre
-      und läuft dort spitz aus; sein Wedel — Strähnen aus der Wedel-Zelle (`BLATT_ATLAS_WEDEL`, Zelle 3, Füllung 0,2811),
+    - `wedel` ({ab, teile, breite, nadel, rand, winkel, spalte, holz}; tree[0] {0,35, 1, 1,65, 0,025 m, 0,5, 40°, 1,25, 0,15}
+      · tree[1] {0, 2, 2,03, 0,07 m, 0,3, 40°, 1,5, 0,15}): der Nadel-Ast (jeder Seitenast des Leittriebs) ist bis `ab` seiner Bahn Röhre
+      und läuft dort spitz aus; sein Wedel — Strähnen aus der Wedel-Zelle (`BLATT_ATLAS_WEDEL`, Zelle 3, Füllung 0,2713: ein Fichten-Zweig aus Büscheln, L2),
       mindestens `teile` und so viele Stücke, dass die Nadel in der Welt `nadel` misst — trägt die ganze Bahn: je Stück so
       breit wie die Hülle seiner Nadel-Wolke (Abstand zur Bahn + `rand` × Nadel-Größe, unter 45° um ihre Stelle) ×
       `breite`, vom Röhren-Ende bis zur Spitze in Kette (mindestens der Saum `rand` × Nadel-Größe: kein Stück schwebt).
-      Die Nadel-Wolke ist rund um den Ast (Flaschenbürste) — die zwei Karten kreuzen ±`winkel` aus der Lotrechten (waagrecht
-      und lotrecht gekreuzt deckten die Koniferen von unten 12–35 % mehr, von der Seite 9–34 % weniger als V18.536); der
+      Die Nadel-Wolke ist rund um den Ast (Flaschenbürste) — die zwei Karten kreuzen ±`winkel` aus der Lotrechten (L2: bei
+      ±10°/±5° stand jede Karte von unten auf der Kante und las als Strich); ein Stück, dessen Hülle breiter reicht als
+      `spalte` × seine Länge, trägt die Zelle in Spalten nebeneinander — nie quer gestreckt (die L0 trug Karten 2,3–6,5 × so
+      breit wie lang: die Zweiglein lasen als gerade Striche, Soll-Tafel laub-kante 0,33 → 0,21); der
       Leittrieb trägt seinen Wedel, wo er benadelt ist (die Spitze stand sonst kahl). `holz` ist der Anteil des Holzes
       (das Mittel der Rinden-Farben des Baums) an der Farbe des Wedels — die Nadel deckt in der Zelle ihr Holz zu 99,9 %,
       die Karte war ohne Holz um ΔE 2,4–5,2 heller und grüner; geeicht an der Kronenfarbe der Karten von V18.536. Was am

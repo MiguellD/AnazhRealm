@@ -409,9 +409,10 @@
     // Integration 05.10.: die zweite Baum-Zelle war ein Zwilling der ersten (derselbe Zweig, derselbe Strom — Prüfer W5:
     // „die zwei Baum-Zellen sind fast gleich"); sie trägt seither den Weiden-Zweig, die Bäume lesen Zelle 0.
     const BLATT_ATLAS_BREIT = { zellen: 1, kern: 0.72, fuellung: 0.1796 };
-    // Die Wedel-Zelle (S3, 09.10.): der Wedel reicht bis 0,936 der halben Zelle (kern 1), Füllung 0,3603 gemessen (gate:asset-contract
-    // malt den Atlas und hält die Zahl gegen den Maler; vorher die Nadel-Zweiglein 0,2537, die Lanzette bis K58 0,2811).
-    const BLATT_ATLAS_WEDEL = { zelle: 3, kern: 1, fuellung: 0.3603 };
+    // Die Wedel-Zelle (S3, 09.10.): der Wedel reicht bis 0,998 der halben Zelle (kern 1), Füllung 0,2713 gemessen (gate:asset-contract
+    // malt den Atlas und hält die Zahl gegen den Maler; vorher die Nadel-Zweiglein 0,2537, die Lanzette bis K58 0,2811, die Hand
+    // aus Nadel-Büscheln bis L2 0,3603).
+    const BLATT_ATLAS_WEDEL = { zelle: 3, kern: 1, fuellung: 0.2713 };
     // DIE GROSSBLATT-ZELLE (05.10.): das Blatt-Mass ist eine Eigenschaft der Art — die Baum-Karten (Zelle 0) tragen
     // das Natur-Blatt der Baeume (14 px in der 512er-Zelle), die kleine Karte des Strauchs und die gestreckte Straehne
     // der Weide trugen damit 0,026 bzw. 0,039 m (Hasel und Weide: 0,06–0,15 m). Zelle 2 traegt ihr den Zweig mit
@@ -524,6 +525,11 @@
     // zur Spitze und bricht stumpf (`(1 − t^stumpf)^0,5`), je Zweiglein um `streu` [Basis, Zufall] zerfranst, und statt 36 dichter
     // Zweiglein tragen 16 je `unter` Unter-Zweiglein (`unterLaenge` der Zweig-Länge): jedes Zweiglein ein eigener Sprüh-Büschel,
     // die Lücken zwischen ihnen überleben die tiefen Mips — die Karte liest als Hand aus Nadel-Büscheln, nie als Klinge.
+    // DIE BÜSCHEL-SPITZE (L2, 15.10.): die Unter-Zweiglein füllten ab 0,35 jedes Zweigleins die äußere Hälfte — ab Mip 1
+    // ein glattes Oval (Soll-Tafel laub-kante 0,33 an der Mess-Wiese). Jetzt 10 Zweiglein, offener (`winkel`), jedes mit
+    // eigener Biegung (`biegung` [Gegen-Schwung, Zufall] rad) und ab `unterAb` in `unter` Unter-Zweiglein gefächert (Winkel
+    // `unterWinkel` [Basis, Zufall], Länge `unterLaenge` × 0,6–1,4): ein Fichten-Zweig aus Büscheln mit Himmel dazwischen
+    // bis Mip 3, die Kante zerfällt in Richtungen statt in parallele Striche.
     const WEDEL_ZWEIG = {
         seiten: 10,
         laenge: 0.95,
