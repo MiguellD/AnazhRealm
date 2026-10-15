@@ -534,19 +534,9 @@ async function proben(phasen) {
         }
         o.w7 = w7;
     }
-    // W4 GRUNDRISS: keine Natur im Grundriss — nach dem Pumpen der Natur-Schlange. Natur = ein Eintrag, dessen Art das
-    // Gesetzbuch des Terrain-Studios trägt (`__terrainCore.PHYTO_PRESETS`: Baum, Strauch, Fels, Farn, Totholz …) oder
-    // seine Wald-/Bauplan-Zeile (vor dem Buch); nie ein Tor oder Wagen (die tragen auch eine Impostor-Zeile).
-    const PHYTO = (window.__terrainCore && window.__terrainCore.PHYTO_PRESETS) || {};
-    const istNatur = (e) => {
-        if (!e || typeof e.type !== "string") return false;
-        if (e._lodSpecies || e.type === "stamm_gefallen" || /^(baum_|busch_|grown_)/.test(e.type)) return true;
-        const pr = r._foundryPresetForEntry(e);
-        return !!(pr && Object.prototype.hasOwnProperty.call(PHYTO, pr));
-    };
-    // was dem Bau weicht: die Natur und jeder Wurf des Felds (die Marke `feldWurf` einer Art aus `FELD_WURF` — die Feuerstelle
-    // des Glut-Felds, K10-6; die Feuerstelle des Menschen ist Bau)
-    const weichtDemBau = (e) => istNatur(e) || (!!e && e.feldWurf === true && A.FELD_WURF.includes(e.type));
+    // W4 GRUNDRISS: keine Natur im Grundriss — nach dem Pumpen der Natur-Schlange. Was Natur ist und was dem Bau weicht,
+    // fragt die Linse den Stamm (`_istNatur`, `_weichtDemBau`: die Natur und jeder Wurf des Felds, die Feuerstelle des
+    // Menschen ist Bau) — bis K10-6 Nachbesserung 3 rechnete sie beide Regeln nach (ein Zwilling, still leer ohne das Buch).
     const imGrundrissVon = (liste, x, z) => {
         for (const hs of liste) {
             const lx = lokal(hs, x, z);
@@ -560,7 +550,7 @@ async function proben(phasen) {
         let natur = 0;
         const taeter = [];
         for (const e of s.architectures) {
-            if (!weichtDemBau(e)) continue;
+            if (!r._weichtDemBau(e)) continue;
             natur++;
             const hs = imGrundrissVon(liste, e.position.x, e.position.z);
             if (hs) {
@@ -619,7 +609,7 @@ async function proben(phasen) {
                 fehler.push(String(e).slice(0, 80));
             }
         }
-        const neu = s.architectures.filter((e) => !vor.has(e) && istNatur(e));
+        const neu = s.architectures.filter((e) => !vor.has(e) && r._istNatur(e));
         if (!bleibt) for (const e of neu) r.removeArchitecture(e);
         return { neu, fehler, weicht };
     };
@@ -806,7 +796,7 @@ async function proben(phasen) {
             w8.naturUeber = 0;
             w8.taeter = [];
             for (const e of s.architectures) {
-                if (!istNatur(e) || !e.position) continue;
+                if (!r._istNatur(e) || !e.position) continue;
                 const d = abstand(e.position.x, e.position.z);
                 if (d < 60 && /^baum_/.test(e._lodSpecies || e.type)) w8.baeume++;
                 const k = krone(e._lodSpecies || e.type, e.scale);
@@ -833,7 +823,7 @@ async function proben(phasen) {
                 } catch (e) {
                     w8.kiFehler.push(String(e).slice(0, 80));
                 }
-                const neuC = s.architectures.filter((e) => !vorC.has(e) && istNatur(e));
+                const neuC = s.architectures.filter((e) => !vorC.has(e) && r._istNatur(e));
                 w8.chatBaeume = neuC.filter(
                     (e) => abstand(e.position.x, e.position.z) < L.r + krone(e._lodSpecies || e.type, e.scale)
                 ).length;
@@ -964,7 +954,7 @@ async function proben(phasen) {
                     }
             };
             for (const e of s.architectures)
-                if (e.position && istNatur(e)) pruef(e.type, e.position.x, e.position.z, "Eintrag");
+                if (e.position && r._istNatur(e)) pruef(e.type, e.position.x, e.position.z, "Eintrag");
             for (const region of (s.scatterRegions && s.scatterRegions.values()) || [])
                 for (const c of region.cells || [])
                     if ((c.slots && c.slots.length) || c.feld) pruef(c.species || c.layer, c.x, c.z, "Streu");
@@ -1363,7 +1353,7 @@ async function proben(phasen) {
             // der Anlauf-Korridor (2 m breit, 6 m vor der Front bis zur Front) ist frei: die Natur darin räumt die Linse wie
             // einen Weg (ein Baum im Weg ist kein Haus-Befund)
             for (const q of s.architectures.slice()) {
-                if (q === e || !istNatur(q)) continue;
+                if (q === e || !r._istNatur(q)) continue;
                 const lq = lokal(e, q.position.x, q.position.z);
                 if (Math.abs(lq.x - tu.x) <= 2 && lq.z >= z0 - 7 && lq.z <= z0) r.removeArchitecture(q);
             }
