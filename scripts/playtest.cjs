@@ -40734,8 +40734,15 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
 
         // DAS LICHT DES TAGS liest die Quelle (D3, Lehre 2): Farbe und Stärke der Sonne rechnet die EINE Atmosphäre
         // (`_atmoSonne` am Winkel der Sonne, `_sonnenWinkel`) — die Tag-Nacht-Tafel trägt nur noch die Himmelsfarbe. Mittag hell
-        // (der Durchlass ≥ 0,7), Mitternacht dunkel (der Mond-Pfad unter 0,35 des Mittags), die Uhr wrapt (1,5 ≡ 0,5).
-        const lichtUm = (t) => r._atmoSonne(r._dayNightSunDirection(r._sonnenWinkel(t)).y).lum;
+        // (der Durchlass ≥ 0,7), Mitternacht dunkel (der Mond-Pfad unter 0,35 des Mittags), die Uhr wrapt (1,5 ≡ 0,5). Gemessen
+        // in klarer Luft: die Probe misst die Uhr, nicht das Wetter — dieselbe Rechnung wie `_atmoSonne`, mit dem Medium der
+        // klaren Luft statt des Wetter-Felds am Spieler (der volle Playtest steht im Dunst: Extinktion 6× klar, Mittag 0,41).
+        const G = r._atmoGesetz();
+        const R = r._atmoRechnung();
+        const klar = r._atmoMedium(R.betaKlar(G));
+        const N = AnazhRealm.ATMO_LUT.schritte.durchlass;
+        const lichtUm = (t) =>
+            R.sonne(G, klar, r._atmoAugeKm(), r._dayNightSunDirection(r._sonnenWinkel(t)).y, N, [0, 0, 0]).lum;
         const lichtMittag = lichtUm(0.5);
         out.interpolateMiddayClear = lichtMittag >= 0.7;
         out.interpolateMidnightDim = lichtUm(0) < 0.35 * lichtMittag;
@@ -41367,8 +41374,14 @@ async function checkBandWelle6G4Atmosphere(ctx) {
 
         // Kein Pulsen: das Licht des Tags kommt aus der EINEN Atmosphäre (D3, `_atmoSonne` am Winkel der Sonne) — der Leser
         // folgt der Quelle (Lehre 2), nie der Tafel (sie trägt kein Licht mehr). Am Morgen (t=0.32, Sonne ~25°) STEIGT es → die
-        // Steigung muss klar positiv sein, und sie knickt nicht (C1: Steigung kurz vor ≈ kurz nach).
-        const lichtUm = (t) => r._atmoSonne(r._dayNightSunDirection(r._sonnenWinkel(t)).y).lum;
+        // Steigung muss klar positiv sein, und sie knickt nicht (C1: Steigung kurz vor ≈ kurz nach). In klarer Luft wie Welle
+        // 6.G3.a: dieselbe Rechnung wie `_atmoSonne`, das Medium der klaren Luft statt des Wetter-Felds am Spieler.
+        const G = r._atmoGesetz();
+        const R = r._atmoRechnung();
+        const klar = r._atmoMedium(R.betaKlar(G));
+        const N = AnazhRealm.ATMO_LUT.schritte.durchlass;
+        const lichtUm = (t) =>
+            R.sonne(G, klar, r._atmoAugeKm(), r._dayNightSunDirection(r._sonnenWinkel(t)).y, N, [0, 0, 0]).lum;
         const dtN = 0.003;
         const slopeAtStop = (lichtUm(0.32 + dtN) - lichtUm(0.32 - dtN)) / (2 * dtN);
         out.dayNightNoPulse = slopeAtStop > 0.3;
