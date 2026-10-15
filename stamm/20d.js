@@ -363,19 +363,9 @@ class AnazhRealm_Z20d {
         // der Baum scheitert (sonst verschöbe ihre Tag-Drift die Baum-Verteilung). baum_totholz fiel W1 aus den
         // Kandidaten: ein Baum-Sieg setzt hier keinen Baum (Wald-Marker, Bäume pflanzt `_forestPlantChunk`), gezeichnet
         // hat Totholz nur die Streu-Schicht litter — als belaubte Alias-Eiche (das Studio hat keinen Totholz-Körper).
-        // Grammatik, Baum-Parameter und Tag-Variation der Art fielen 05.10. mit (gate:altlasten).
-        const candidates = [
-            "baum_eiche",
-            "baum_kiefer",
-            "baum_birke",
-            "baum_erle",
-            "baum_buche",
-            "baum_tanne",
-            "baum_karst",
-            "stein_block",
-            "kristall_geode",
-            "glutbrunnen",
-        ];
+        // Grammatik, Baum-Parameter und Tag-Variation der Art fielen 05.10. mit (gate:altlasten). Die Liste ist die EINE
+        // der Würfe des Felds (`FELD_WURF`): was sie trägt, weicht dem Bau (`_weichtDemBau`).
+        const candidates = AnazhRealm.FELD_WURF;
         // Nie Math.random im Worldgen: worldFieldAt() initialisiert state.worldField (inkl. rngNoise, seed-
         // gebunden) lazy — sonst würfelt jeder Peer anders (P2P-Drift).
         // Das Welt-Feld dieser Stelle EINMAL (es initialisiert auch den Rausch-Satz samt rngNoise): jede Affinität und
@@ -658,6 +648,9 @@ class AnazhRealm_Z20d {
     _enqueueVegetationSpawn(name, position, opts) {
         // Ein Wurf des Feldes (Wald, Unterholz, Totholz, Fels-Streu): wo die Wildnis nicht trägt, fällt er.
         if (!this._wildnisTraegt(position.x, position.z)) return;
+        // DIE MARKE DES WURFS: was das Feld wirft, trägt sie (`feldWurf`, am Eintrag und im Save) — `_weichtDemBau` liest die
+        // Herkunft, nie die Art (die Feuerstelle des Menschen ist Bau)
+        opts = Object.assign({}, opts, { feldWurf: true });
         if (this._vegSpawnImmediate) {
             this._naturSetzen(name, position, opts);
             return;
@@ -757,7 +750,7 @@ class AnazhRealm_Z20d {
         const g = this._werkGrundriss(type, opts, seed);
         if (!g) return false;
         const ry = opts && Number.isFinite(opts.rotationY) ? opts.rotationY : 0;
-        return !this._fundamentLand(position.x, position.z, ry, g.fp, g.tuer, g.sockel);
+        return !this._fundamentLand(position.x, position.z, ry, g.fp, g.tuer, g.saum);
     }
 
     // DER ORT EINES WERKS AM UFER (Schau-2 wasser-wahrheit, Gegenprüfung): wo die Welt ein Werk mit Grundriss-Gesetz hinstellt
@@ -913,8 +906,9 @@ class AnazhRealm_Z20d {
     // und die Lichtung eines Baus, dessen Bauplan sie trägt (der Genesis-Platz: Scheibe und Ring der Tore plus die Reichweite
     // des Wurfs, `max(rand, krone)` — über ihm steht keine Krone). Das Gitter (32 m, Zahlen-Schlüssel — die Streu fragt je
     // Zelle) hält die Bauten, die Lichtungen stehen daneben (eine je Welt); es entsteht faul aus den Einträgen und fällt bei
-    // jedem Spawn/Abriss eines Baus mit Grundriss. Rückgabe: "lichtung" | "haus" | "bau" | "weg" | false.
-    _imGrundriss(x, z, rand = 0.8, krone = 0) {
+    // jedem Spawn/Abriss eines Baus mit Grundriss. `ohne`: ein Eintrag, dessen eigener Grund nicht zählt (der Wurf, den die
+    // Räumung fragt — `_naturRaeumen`). Rückgabe: "lichtung" | "haus" | "bau" | "weg" | false.
+    _imGrundriss(x, z, rand = 0.8, krone = 0, ohne = null) {
         const G = AnazhRealm.GRUNDRISS_ZELLE;
         const schluessel = AnazhRealm._grundrissSchluessel;
         const gitter = this._grundrissStand();
@@ -923,6 +917,7 @@ class AnazhRealm_Z20d {
         const l = gitter.zellen.size ? gitter.zellen.get(schluessel(Math.floor(x / G), Math.floor(z / G))) : null;
         if (l)
             for (const e of l) {
+                if (e === ohne) continue;
                 const fp = this._grundrissVon(e);
                 if (!fp) continue;
                 // die Hülle eines Baus liegt achsparallel in der Welt (`welt`), das Haus gedreht um seine Gier
@@ -937,7 +932,7 @@ class AnazhRealm_Z20d {
                 )
                     return fp.welt ? "bau" : "haus";
             }
-        return this._aufWeg(x, z, rand) ? "weg" : false;
+        return this._aufWeg(x, z, rand, ohne && ohne._trittBox) ? "weg" : false;
     }
 
     // Liegt (x, z) auf einer Fläche, die ein Dorf dem Boden gibt (K52) — Straße, Feldweg, Platz, Anger, Acker, die
@@ -947,13 +942,15 @@ class AnazhRealm_Z20d {
     // derselben Regel neben Weg, Platz und Acker (fachwerk-core). Vorher urteilte nur die Wiese über den Weg: im Dorf der
     // Zelle −4,−4 standen 3 Tannen und 1 Birke auf seinen Wegen. Die Flächen stehen im Gitter der Grundrisse (`wege`, jede
     // Fläche mit 1 m Rand — der Stamm-Rand ist 0,8 m): die Frage kostet die Flächen ihrer Zelle, nie alle besuchten Dörfer.
-    _aufWeg(x, z, rand) {
+    // `ohneFlaeche`: eine Fläche, die nicht zählt (die Trittfläche des Wurfs, den die Räumung fragt).
+    _aufWeg(x, z, rand, ohneFlaeche = null) {
         const G = AnazhRealm.GRUNDRISS_ZELLE;
         const l = this._grundrissStand().wege.get(
             AnazhRealm._grundrissSchluessel(Math.floor(x / G), Math.floor(z / G))
         );
         if (!l) return false;
         for (const b of l) {
+            if (b === ohneFlaeche) continue;
             if (x < b.x0 - rand || x > b.x1 + rand || z < b.z0 - rand || z > b.z1 + rand) continue;
             for (const f of b.formen)
                 if (AnazhRealm._wegeFormAbstand(f, x, z) < (f.sperr !== undefined ? f.sperr : rand)) return true;
@@ -1037,6 +1034,17 @@ class AnazhRealm_Z20d {
             AnazhRealm.Gesetz("terrain:PHYTO_PRESETS", null) || AnazhRealm._kernPflichtBruch("terrain:PHYTO_PRESETS");
         const pr = this._foundryPresetForEntry(e);
         return !!(pr && Object.prototype.hasOwnProperty.call(tab, pr));
+    }
+
+    // Weicht der Eintrag dem Bau? Die Natur (`_istNatur`) und jeder Wurf des Felds (die Marke `feldWurf`, die nur der Wurf
+    // trägt: `_enqueueVegetationSpawn` → `spawnArchitecture`, eine Art aus `FELD_WURF`; die Feuerstelle des Glut-Felds ist Bau
+    // ihrer Gestalt nach — Kollision, Grundriss, Trittfläche —, aber ein Wurf). Was weicht, sperrt keinem Ort den Grund
+    // (`_bauFrei`) und fällt im Grundriss eines Baus und auf dem Weg eines Dorfs (`_naturRaeumen`). Bis K10-6 wich der Wurf nur,
+    // wenn er NACH dem Bau kam: eine Feuerstelle im Grundriss des Orts 80 m weit schob die Ort-Wahl im Spiel auf 96 m. Es
+    // entscheidet die HERKUNFT, nie die Art: bis K10-6 Nachbesserung 2 wich auch die Feuerstelle des Satzes und des Bau-Modus
+    // jedem späteren Bau (gate:settlement Teil O „das Werk derselben Art").
+    _weichtDemBau(e) {
+        return this._istNatur(e) || (!!e && e.feldWurf === true);
     }
 
     // Der Grundriss eines Baus (halbe Maße und Mitte, bau-lokal): der Footprint eines Hauses — oder die LICHTUNG eines Baus,
@@ -1151,7 +1159,7 @@ class AnazhRealm_Z20d {
             return {
                 fp: { ex: f.ex, ez: f.ez, ox: Number.isFinite(f.ox) ? f.ox : 0, oz: Number.isFinite(f.oz) ? f.oz : 0 },
                 tuer: o.tuer || null,
-                sockel: AnazhRealm.FUNDAMENT_SOCKEL_M, // das Fundament trägt sein Podest (`_archFundamentBox`)
+                saum: globalThis.__fachwerkCore.ORT_GESETZ.saumM, // der Grund des Orts: Grundriss samt Saum (der Erdbau)
             };
         const t = o.tuer;
         if (t && Number.isFinite(t.W) && Number.isFinite(t.D))
@@ -1253,9 +1261,10 @@ class AnazhRealm_Z20d {
         for (const e of this.state.architectures || []) {
             if (e === ausser || !e.position) continue;
             if (Math.abs(e.position.x - hx) > r + weit || Math.abs(e.position.z - hz) > r + weit) continue;
-            if (!this._istNatur(e)) continue;
+            if (!this._weichtDemBau(e)) continue;
             const k = mitKrone ? this._naturKrone(e.type, e) : 0;
-            if (!this._imGrundriss(e.position.x, e.position.z, 0.8, k)) continue;
+            // ein Wurf mit eigenem Grund (die Feuerstelle: ihr Grundriss, ihre Trittfläche) liegt nie in sich selbst
+            if (!this._imGrundriss(e.position.x, e.position.z, 0.8, k, e)) continue;
             weg.push(e);
         }
         for (const e of weg) this.removeArchitecture(e);
@@ -1895,7 +1904,7 @@ class AnazhRealm_Z20d {
         const barrier = new Float64Array(w * h);
         const init = new Float64Array(w * h).fill(Infinity);
         let anySource = false;
-        let teil = 0; // Spalten, deren Boden das Makro trägt (Chunk noch nicht geladen)
+        const fehlend = new Set(); // die Chunks, deren Boden das Makro trägt (noch nicht geladen)
         for (let kz = 0; kz < h; kz++) {
             for (let ix = 0; ix < w; ix++) {
                 const gx = gx0 + ix;
@@ -1920,7 +1929,7 @@ class AnazhRealm_Z20d {
                 } else {
                     const m = this._terrainMacroSurfaceY(x, z);
                     bY = Number.isFinite(m) ? m : oy;
-                    teil++;
+                    fehlend.add(`${ccx},${ccz}`);
                 }
                 barrier[c] = bY;
                 if (this._atlasWaterLevelAt(x, z, Infinity) > -Infinity) anySource = true;
@@ -1938,28 +1947,25 @@ class AnazhRealm_Z20d {
             // DAS FELD AUS HALBER WAHRHEIT IST VORLÄUFIG (K37): las es Rand-Spalten aus dem Makro, baut es neu, sobald ein
             // Chunk seines Fensters seine Zellen bringt (`_stauFeldVorlaeufig`, gerufen vom Zell-Stempel jedes Chunks). Nach dem
             // Reload baute der Damm im Tal 26/−120 sein Feld im ersten Takt mit 894 Makro-Spalten, das gecachte wich vom
-            // vollen in 70 Spalten ab — der Stausee stand nach dem Reload 2 271 statt 2 252 nasse Punkte.
-            field = { gx0, gz0, w, h, fillY: Float32Array.from(fill), teil: teil > 0 };
+            // vollen in 70 Spalten ab — der Stausee stand nach dem Reload 2 271 statt 2 252 nasse Punkte. Es merkt sich, WELCHE
+            // Chunks fehlten (`fehlend`): ein Chunk, dessen Zellen es schon las, bringt bei einem Neubau nichts Neues (K10: der
+            // Erdbau eines Dorfs am Seerand baute 13 Chunks neu, jedes weckte den Automaten, ohne Wasser zu verdrängen).
+            field = { gx0, gz0, w, h, fillY: Float32Array.from(fill), fehlend: fehlend.size ? fehlend : null };
         }
         this.state.waterStauFields.set(cluster.key, field);
         return field;
     }
 
-    // Ein Chunk (Ursprung ox/oz) bringt seine Zellen: jedes vorläufige Stau-Feld (`teil`, aus Makro-Rand gebaut), dessen
-    // Fenster ihn schneidet, fällt samt den Kappen um sein Fenster, der Automat wacht — der nächste Kappen-Bau liest die Zellen.
+    // Ein Chunk (Ursprung ox/oz) bringt seine Zellen: jedes vorläufige Stau-Feld, das ihn aus dem Makro las (`fehlend`), fällt
+    // samt den Kappen um sein Fenster, der Automat wacht — der nächste Kappen-Bau liest die Zellen.
     _stauFeldVorlaeufig(ox, oz) {
         const felder = this.state.waterStauFields;
         if (!felder || felder.size === 0) return;
         const cfg = this._voxelChunkConfig(0);
-        const gxA = Math.round(ox / cfg.step);
-        const gzA = Math.round(oz / cfg.step);
+        const schluessel = `${Math.round(ox / cfg.span)},${Math.round(oz / cfg.span)}`;
         let fallen = null;
-        for (const f of felder.values()) {
-            if (!f || !f.teil) continue;
-            if (f.gx0 > gxA + cfg.dim - 1 || f.gx0 + f.w - 1 < gxA) continue;
-            if (f.gz0 > gzA + cfg.dim - 1 || f.gz0 + f.h - 1 < gzA) continue;
-            (fallen || (fallen = [])).push(f);
-        }
+        for (const f of felder.values())
+            if (f && f.fehlend && f.fehlend.has(schluessel)) (fallen || (fallen = [])).push(f);
         if (!fallen) return;
         for (const f of fallen)
             this._invalidateWaterCapsAround(

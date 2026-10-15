@@ -87,7 +87,7 @@ class AnazhRealm_Z25b {
     // `_resolveCapsuleVsAABB`): das Rechteck der Hülle (Mitte an pos + Bug-Achse · mitte) gegen die Box, getrennt auf
     // den vier Achsen (die zwei der Box, Bug, Quer); überlappt die Box das Band der Hülle, schiebt der kürzeste Weg den
     // Wagen heraus (pos mutiert, der Schub reist in h.schub für die Fahrt). DIE GEDREHTE BOX (D5, Welle L — die Haus-Hülle
-    // und das Podest, `_hausObb`/`_archFundamentBox`): ihre Achsen und Halb-Maße sind die der `obb`, die Welt-AABB bleibt
+    // `_hausObb`): ihre Achsen und Halb-Maße sind die der `obb`, die Welt-AABB bleibt
     // der Vorfilter der Leser. Vorher löste die Hülle gegen die Welt-AABB (eine 34° gedrehte Wand 12 × 0,8 m: der Wagen
     // hielt 2,36 m vor der Wand).
     _resolveHuelleVsAABB(box, pos, h) {

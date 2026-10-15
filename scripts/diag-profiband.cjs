@@ -742,7 +742,7 @@ function selbsttest() {
     // S16 — H5: ein Muster mit einem Namen, den der Stamm nicht mehr vergibt, wird rot; der echte Haushalt nicht, ein Name
     // mit Namens-Schwanz (`"voxelChunk:" + key`) lebt.
     const h16 = JSON.parse(JSON.stringify(haushalt));
-    h16.klassen.find((k) => k.id === "bau").regeln.push({ muster: "^(bau-fundament|siedlung-wege)$" });
+    h16.klassen.find((k) => k.id === "bau").regeln.push({ muster: "^(siedlung-zaun|siedlung-wege)$" });
     const n16 = namenLeben(h16, stamm);
     t(
         "H5: ein toter Name (siedlung-wege) wird rot, der echte Haushalt nicht, voxelChunk mit Schwanz lebt",
@@ -1165,9 +1165,10 @@ function selbsttest() {
         );
     const o28 = BAND.einschwingOffen(welt28({ _autoSettlementQueue: { plan: { slots: [1, 2, 3] }, idx: 1 } }));
     t(
-        "Einschwingen: eine wachsende Siedlung (1/3) und ein Export unterwegs halten offen, die ruhige Welt nicht",
+        "Einschwingen: eine wachsende Siedlung (1/3), ein Export unterwegs und zwei Lieferungen vor dem Ingest-Takt halten offen, die ruhige Welt nicht",
         o28.dorfWaechst === "1/3" &&
             BAND.einschwingOffen(welt28({ _autoSettlementPendingKey: "-4,-4" })).dorfExport === "-4,-4" &&
+            BAND.einschwingOffen(welt28({ _foundryIngestQueue: [1, 2] })).foundryIngest === 2 &&
             Object.keys(BAND.einschwingOffen(welt28({}))).length === 0 &&
             /window\.__einschwingOffen = function einschwingOffen/.test(BAND.EINSCHWING_INSTALL)
     );

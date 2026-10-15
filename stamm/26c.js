@@ -1143,12 +1143,6 @@ AnazhRealm.SETZ_GRUND = Object.freeze({
 // −906/−634): eine Kiefer stand 0,5 m neben 2,4 m tiefem Wasser, zwei Hasel 0,23 und 0,52 m im Uferwasser — die Wand fragte
 // nur die Achse.
 AnazhRealm.STAMM_FUSS_M = 0.5;
-// DER SOCKEL EINES FUNDAMENTS (m): so weit steht das Podest über den Grundriss hinaus (`_archFundamentBox`, der Sockel-Look
-// deckt die Fachwerk-Traufkante) — und so weit fragt die Wasser-Wand des Fundaments das Land (`_fundamentLand`). EINE Zahl
-// für Podest und Land (Integration V18.540, K02b × S3-Haus): die Wand fragte den Grundriss ohne Sockel, der Stempel und
-// gate:werk-im-wasser Z messen das Podest — am vereinigten Baum standen drei Dorf-Häuser mit 1 Punkt der Hülle 0,25–0,81 m
-// im Fluss, jeder am Rand des Sockels.
-AnazhRealm.FUNDAMENT_SOCKEL_M = 0.35;
 // DER STUDIO-SATZ (Leser: die letzte Chat-Regel und `_studioSatzAbsage`): Verb · Zahl · Art (auch leer vor einem Hain) ·
 // Hain/Wald/Gruppe · am Wasser | hier/vor mir.
 AnazhRealm.STUDIO_SATZ =

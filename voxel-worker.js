@@ -85,6 +85,8 @@ const state = {
     // DAS ERBGUT der Welt in der Normalform des Mains (`_erbgut()`: { terme, wildnis, hash }) — die Terme der EINEN
     // 2D-Höhe. Der Main schickt es mit jedem Snapshot; fehlt es, wirft der Auswerter (fail-closed, nie still Wildnis).
     erbgut: null,
+    // der Erdbau der Orte (K10, gelaende-core `erdbauNormal`) oder null
+    erdbau: null,
     // DER FELS-STOFF des Mains (`FELS_STOFF.basis` · `FELS_STOFF.netz`, K17-2): die Töne und Schwellen, mit denen
     // `buildChunkMesh` den Stoff baut (gelaende-core `felsStoff`). Fehlt er, wirft der Bau (fail-closed).
     felsStoff: null,
@@ -273,6 +275,8 @@ function applyStateSnapshot(snap) {
     if (snap.wiesenGrund) state.wiesenGrund = snap.wiesenGrund;
     if (typeof snap.regionSize === "number") state.regionSize = snap.regionSize;
     if (snap.erbgut !== undefined) state.erbgut = snap.erbgut;
+    // DER ERDBAU DER ORTE (K10): die Splat-Liste des Mains (`_erdbauRoh`), hier in die Normalform des Gesetzbuchs gelegt
+    if (snap.erdbau !== undefined) state.erdbau = G.erdbauNormal(snap.erdbau);
     if (snap.felsStoff) state.felsStoff = snap.felsStoff;
 }
 

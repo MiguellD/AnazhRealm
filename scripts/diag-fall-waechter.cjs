@@ -95,7 +95,6 @@ const OBERKANTE_BENANNT = {
         "Platzierung: die Todes-Ebene hebt den Spieler unter der Welt auf die Oberfläche",
     ],
     _creatureWaterContextAt: [["_voxelSurfaceY"], "Ufer-Suche: Land in den Nachbar-Spalten, nie der Boden des Leibs"],
-    _archFundamentBox: [["getTerrainHeightAt"], "Bauwerk: das Podest eines Hauses (kein Leib)"],
     _bergSchattenVerdeckt: [["_terrainMacroSurfaceY"], "Sicht: die Berg-Verdeckung einer Region (kein Leib)"],
     _bodenUmzug: [
         ["_voxelSurfaceY"],
