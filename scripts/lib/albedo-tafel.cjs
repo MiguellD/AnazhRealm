@@ -139,6 +139,18 @@ function tafelPruefen(t) {
         }
         if (z.ratsche !== null && z.ratsche !== undefined && !zahl(z.ratsche))
             f.push(`${z.id}: ratsche ist weder null noch Zahl`);
+        // DIE STUFEN-PFLICHT (K63-n7): eine Welt-Klasse der Foundry (`:L<n>`, der Bau-Satz) erklärt die Stufen ihres Exemplars —
+        // eine Klasse, die still weitere Stufen zulässt, misst die gefaltete Stufe (der Lack las am 15.10. Chrom und Glas mit)
+        const wk = String((z.welt && z.welt.klasse) || "");
+        const st = z.welt && z.welt.stufen;
+        if (/:L|bauSatz/.test(wk) && !(Array.isArray(st) && st.length && st.every((s) => Number.isInteger(s) && s >= 0)))
+            f.push(`${z.id}: welt.stufen fehlt — die Klasse ${wk} zeigt Foundry-Stufen, die Zeile erklärt keine`);
+        // DIE QUELLEN der Zeile (K63-n4): die Kerne und Stamm-Zonen, deren Bytes ihre Albedo tragen — der Stand des Ists
+        if (!(Array.isArray(z.quellen) && z.quellen.length && z.quellen.every((d) => typeof d === "string" && d)))
+            f.push(`${z.id}: quellen fehlen (die Dateien, deren Bytes die Albedo der Zeile tragen)`);
+        else
+            for (const d of z.quellen)
+                if (!fs.existsSync(path.join(ROOT, d))) f.push(`${z.id}: Quelle ${d} fehlt im Baum`);
     }
     for (const g of PFLICHT_GRUPPEN)
         if (!(t.zeilen || []).some((z) => z.gruppe === g)) f.push(`die Klasse ${g} trägt keine Zeile`);
@@ -154,6 +166,40 @@ function tafelPruefen(t) {
     if (t.gemessen !== null && t.gemessen !== undefined && (!t.gemessen.labor || !t.gemessen.welt))
         f.push("gemessen braucht {labor, welt} (Gerät, Datum, Ort der beiden Seiten)");
     return f;
+}
+
+// DER STAND DES ISTS (K63-n4; Prüfer K63 R3: die Wand las die Werte vom 07.10. und stand still grün): je Zeile und Seite die
+// EINE Regel der Soll-Tafel (abnahme-urteil `messStand`, K63-n8): jede Quelle der Zeile gegen den Code-Abdruck, den die Seite
+// beim Messen nahm (`gemessen.welt|labor` { version, sha, quellen } — der `kernStand` des Werkzeugs: jeder Kern und jede
+// Stamm-Zone). Ohne Version, Commit oder Abdruck → `ungeprüft` (ein Bruch der Tafel: das Werkzeug schreibt sie immer); ein
+// fremder Abdruck → `veraltet` „veraltet seit <Commit der Messung>: <Datei> geändert" — eine Kommentarzeile ändert keinen
+// Abdruck. `pruefsumme(d)` liest den Baum von heute.
+function tafelStand(t, pruefsumme) {
+    const { messStand } = require("./abnahme-urteil.cjs");
+    const rot = [];
+    const g = t.gemessen || {};
+    for (const z of t.zeilen || [])
+        for (const seite of ["welt", "labor"]) {
+            const s = messStand([g[seite] || {}], z.quellen || [], { pruefsumme });
+            if (s)
+                rot.push({
+                    zeile: z.id,
+                    seite,
+                    art: /^veraltet/.test(s) ? "veraltet" : "ungeprüft",
+                    text: `${z.id}: das Ist der ${seite} — ${s}`,
+                });
+        }
+    return rot;
+}
+// DIE WAND DES STANDS (K63-n8; Koordinator 15.10.: die Stand-Wand sperrte jeden Merge, der eine Quelle berührte, und die
+// Neumessung brauchte die Radeon von Hand): `ungeprüft` ist ein Bruch der Tafel (das Werkzeug schreibt Version, Commit und
+// Abdruck immer — Exit 1); `veraltet` ist ROT „veraltet seit <Commit>" beim Namen der Zeile, nie GRÜN, und bricht keinen
+// Merge — die Neumessung fährt die Karte (`neu`: die Zeilen, die eine Welt + ihr Labor neu messen).
+function standWand(rot) {
+    const brueche = rot.filter((r) => r.art !== "veraltet").map((r) => r.text);
+    const veraltet = {};
+    for (const r of rot) if (r.art === "veraltet") (veraltet[r.zeile] = veraltet[r.zeile] || []).push(r.text);
+    return { brueche, veraltet, neu: Object.keys(veraltet) };
 }
 
 // DAS URTEIL einer Messung (`messung` = { labor: {id: {Y, rgb}}, welt: {id: {Y, rgb}}, karten: {studio: {kL}},
@@ -177,6 +223,22 @@ function tafelUrteil(t, messung) {
             rot.push({ art: "stumm", text: `${z.id}: das Labor maß nichts (${(L && L.fehler) || "keine Zeile"})` });
         if (!W || !zahl(W.Y) || !(W.Y > 0))
             rot.push({ art: "stumm", text: `${z.id}: die Welt maß nichts (${(W && W.fehler) || "keine Zeile"})` });
+        // DIE STUFE DES EXEMPLARS (K63-n7; gemessen 15.10., Radeon: der Wagen gt stand in der Blende L0/L1, die Stufe 1 faltet
+        // die Stoffe ihrer Seh-Klasse — Chrom und Glas lasen im Lack, Welt 0,0175 gegen 0,0066): eine Zeile erklärt die Stufen,
+        // in denen die Welt ihr Exemplar zeigt (`welt.stufen`); zeichnet der Schuss eine andere, misst er einen anderen Stoff
+        const ds = z.welt && Array.isArray(z.welt.stufen) ? z.welt.stufen : null;
+        if (ds && W && zahl(W.Y)) {
+            // eine leere Liste ist keine Antwort: der Schuss trug keinen Zug mit Stufe (ein ganzer Satz statt seines Exemplars)
+            const fremd =
+                Array.isArray(W.stufen) && W.stufen.length ? W.stufen.filter((s) => !ds.includes(s)) : null;
+            if (!fremd)
+                rot.push({ art: "stufe", text: `${z.id}: die Welt-Messung nennt ihre Stufen nicht (erklärt L${ds.join("/L")})` });
+            else if (fremd.length)
+                rot.push({
+                    art: "stufe",
+                    text: `${z.id}: die Welt zeichnet das Exemplar in L${W.stufen.join("/L")}, erklärt ist L${ds.join("/L")} — ein anderer Stoff im Schuss`,
+                });
+        }
         if (L && W && L.Y > 0 && W.Y > 0) {
             e.verhaeltnis = +(L.Y / W.Y).toFixed(4);
             e.abweichung = +abweichung(e.verhaeltnis).toFixed(4);
@@ -223,15 +285,24 @@ function tafelUrteil(t, messung) {
 
 // DER NACHZUG (nur aus einer Messung beider Seiten mit grüner Eichung und ohne stumme Zeile): Ist setzen, die Ratsche
 // SENKEN (nie heben — eine Zeile über der Ratsche ist ROT, heben ist ein begründeter Akt von Hand im Commit).
+// EINE STUMME ZEILE (K63-n5) hält den Nachzug nicht mehr auf: der Stand reist je Messung in die Tafel (`gemessen`, die Wand
+// prüft ihn je Zeile), und ein altes Ist unter dem neuen Stand wäre still veraltet — darum FÄLLT ihr Ist (die Wand: „ohne Ist",
+// ROT beim Namen), die Ratsche bleibt. Nur eine falsche Eichung zieht nichts.
 function tafelNachziehen(t, messung, gemessen) {
     const u = tafelUrteil(t, messung);
-    if (u.rot.some((r) => r.art === "eichung" || r.art === "stumm"))
-        return { tafel: null, aenderungen: [], u, grund: "Eichung oder stumme Zeile — kein Nachzug" };
+    if (u.rot.some((r) => r.art === "eichung")) return { tafel: null, aenderungen: [], u, grund: "Eichung — kein Nachzug" };
     const neu = JSON.parse(JSON.stringify(t));
     const aenderungen = [];
     for (const z of neu.zeilen) {
         const e = u.zeilen.find((x) => x.id === z.id);
-        const knapp = (m) => ({ Y: m.Y, rgb: m.rgb, pixel: m.pixel });
+        if (!(e && zahl(e.verhaeltnis))) {
+            const r = u.rot.find((x) => x.art === "stumm" && x.text.startsWith(`${z.id}:`));
+            z.ist = null;
+            aenderungen.push(`${z.id}: das Ist fällt (${r ? r.text : "stumm"})`);
+            continue;
+        }
+        // die Stufen der Welt reisen mit dem Ist (K63-n7): die Wand prüft sie gegen `welt.stufen` auch am gespeicherten Stand
+        const knapp = (m) => Object.assign({ Y: m.Y, rgb: m.rgb, pixel: m.pixel }, Array.isArray(m.stufen) ? { stufen: m.stufen } : {});
         z.ist = { labor: knapp(e.labor), welt: knapp(e.welt), verhaeltnis: e.verhaeltnis };
         if (z.ratsche == null || e.abweichung < z.ratsche) {
             aenderungen.push(`${z.id}: ${z.ratsche == null ? "–" : z.ratsche} → ${e.abweichung}`);
@@ -789,6 +860,8 @@ module.exports = {
     STUDIOS,
     ladeTafel,
     tafelPruefen,
+    tafelStand,
+    standWand,
     tafelUrteil,
     tafelNachziehen,
     tafelTabelle,

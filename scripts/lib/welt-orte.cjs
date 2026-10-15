@@ -229,6 +229,9 @@ function wieseUrteil(m, S, mitGras) {
 //               ≥ `luft` m, dann ein Grund aus Fels (≥ 1 m); im Umkreis `R` m ein GRUND (der Fels im Abstand d höchstens d/3
 //               über oder unter dem der Spalte, darüber Luft bis +2,4 m); `wand`: verlangt die Wand der Höhle binnen 2,5 m (16
 //               Richtungen, Fels vom Fuß + Stufe bis 2,1 m darüber) — zurück `grund`, `dach`, `wand` { dx, dz, d } oder null
+//   ufer      — eine trockene, flache Stelle (Neigung ≤ `fussMax` Grad, Vorgabe 8), vor der binnen `bis` m (Vorgabe 30) Wasser
+//               steht (`_nassAt`: Wasser über dem Boden) und über `breite` m (Vorgabe 10) Wasser bleibt — ein Gewässer, keine
+//               Pfütze; zurück kommen `gier` zum Wasser und `wasserBei` (m) — der Bild-Ort der Soll-Tafel für das Wasser (K63-n4)
 //   wiese     — das Gesetz der Mess-Wiese (`o.wiese`, Vorgabe die Schwellen des Messorts `__wieseGesetz`)
 // opts: { mitte: [x, z] (Vorgabe die Mitte der Welt), rMax (m, Vorgabe 400), schritt (m, Vorgabe 6), anzahl (Vorgabe 1),
 // abstand (m zwischen zwei Funden, Vorgabe 5), ... }. Findet die Suche nichts, kommt eine leere Liste (die Probe nennt das
@@ -310,6 +313,26 @@ function weltOrte(art, opts) {
                     if (!trocken(px, pz)) break;
                     if (neigung(px, pz) >= (o.hangMin == null ? 15 : o.hangMin) && H(px, pz) > H(x, z) + 0.5)
                         return { gier: Math.round(a * 1000) / 1000, hangBei: d };
+                }
+            }
+            return null;
+        },
+        ufer: (x, z) => {
+            if (!trocken(x, z) || unterFels(x, z)) return null;
+            if (neigung(x, z) > (o.fussMax == null ? 8 : o.fussMax)) return null;
+            const bis = o.bis || 30,
+                breite = o.breite || 10;
+            const nass = (px, pz) => typeof r._nassAt === "function" && r._nassAt(px, pz);
+            for (let k = 0; k < 16; k++) {
+                const a = (k / 16) * Math.PI * 2;
+                const dx = Math.sin(a),
+                    dz = Math.cos(a);
+                for (let d = 3; d <= bis; d += 3) {
+                    if (!nass(x + dx * d, z + dz * d)) continue;
+                    let bleibt = true;
+                    for (let e = d + 2; e <= d + breite && bleibt; e += 2) bleibt = nass(x + dx * e, z + dz * e);
+                    if (bleibt) return { gier: Math.round(a * 1000) / 1000, wasserBei: d };
+                    break;
                 }
             }
             return null;
