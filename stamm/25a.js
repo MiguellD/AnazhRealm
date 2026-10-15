@@ -1147,11 +1147,9 @@ class AnazhRealm_Z25a {
         // DIE TEXTUR-GRENZE DES GERÄTS: r184 fordert das Gerät mit den Grenzen des WebGPU-Standards (16 Texturen je Stufe), der
         // Adapter trägt mehr (Radeon 890M 48). Der Boden-Stoff des Fern-Rings sampelt seit der EINEN Atmosphäre und dem Spiegel des
         // Sees 17 — seine Pipeline wurde abgesagt, der Ring fehlte im Bild und die Beweis-Aufnahme brach an der Mess-Wiese ab
-        // (ERST-ZEICHNUNG OFFEN, renderPipeline_MeshStandardNodeMaterial). Das Gerät trägt, was der Adapter trägt.
-        const adapter =
-            AnazhRealm._forceWebGL() || (typeof window !== "undefined" && window.__anazhHeadlessNullRenderer)
-                ? null
-                : await navigator.gpu.requestAdapter();
+        // (ERST-ZEICHNUNG OFFEN, renderPipeline_MeshStandardNodeMaterial). Das Gerät trägt, was der Adapter trägt — der EINE,
+        // den die Holz-Wahl gefragt hat (`_holzWahl`, wie r184 ihn fragt; unter dem forceWebGL-Hook keiner).
+        const adapter = this._adapter;
         const requiredLimits = adapter
             ? { maxSampledTexturesPerShaderStage: adapter.limits.maxSampledTexturesPerShaderStage }
             : {};
@@ -1178,8 +1176,9 @@ class AnazhRealm_Z25a {
         // gegen ACES (Filmic, Sättigung und Kontrast in der Kurve) und AgX in EINER Welt (Radeon 890M, 15.10.): die Öffnung der
         // Tore C*ab ACES 20,9 · AgX 16,8 · Neutral 23,1 (Soll ≥ 20), der Himmel weiß statt blau ACES 53 % · AgX 69 % · Neutral
         // 40 %, die Wiese C*ab ganzes Bild 24,9 · 21,7 · 31,1 (Soll-Bild 01: 28,3). Die Eichung der Belichtung folgt ihr
-        // (BELICHTUNG, 26c). Reine Ausgabe-Stufe; die Belichtung setzt das Licht (`_dayNightApplyBelichtung`).
-        renderer.toneMapping = THREE.NeutralToneMapping;
+        // (BELICHTUNG, 26c: die Kurve und ihre Eichung sind EIN Eintrag). Reine Ausgabe-Stufe; die Belichtung setzt das Licht
+        // (`_dayNightApplyBelichtung`).
+        renderer.toneMapping = THREE[AnazhRealm.BELICHTUNG.kurve];
         renderer.toneMappingExposure = 1.0;
         // V10.0-j.b — Stencil-Buffer global deaktivieren. Three.js' Renderer-
         // Default ist `this.stencil = true` → bei JEDEM RenderPass setzt

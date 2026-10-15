@@ -1102,8 +1102,8 @@ class AnazhRealm_Z24 {
     // (die Kamera-Konvention der Profi-Engines, UE5-Belichtungs-Bias +1). Die Karte liest L = 0,18/π · E
     // mit E = Sonne/Mond senkrecht (unten) + Himmels-Umgebung von oben (`_himmelsIrradianz`) + Hemi +
     // Ambient — dieselben Lichter, die jedes Material liest. Vorher stand die Belichtung fest auf 1,0:
-    // die Karte las 212 (≈ +1,8 EV über Mittelgrau), Weiß und Himmel liefen in die ACES-Schulter. Die
-    // Nacht bleibt, wie sie geeicht ist (Deckel 1,0 — das Auge adaptiert, die Mond-Nacht bleibt dunkel).
+    // die Karte las 212 (≈ +1,8 EV über Mittelgrau), Weiß und Himmel liefen in die Schulter der Kurve. Die
+    // Nacht bleibt, wie sie geeicht ist (Deckel BELICHTUNG.max — das Auge adaptiert, die Mond-Nacht bleibt dunkel).
     // DIE KARTE STEHT DER SONNE ZUGEWANDT (D3-N2): die Sonne trifft sie senkrecht, Himmel, Hemi und Ambient von oben — die
     // Konvention der Belichtungsmessung (Sunny 16: ein Körper im Licht wendet sich der Sonne zu, die Blende folgt dem Durchlass,
     // nicht dem Sinus der Höhe). Auf der Waagrechten gemessen hob die tiefe Sonne die Belichtung um 1/sin(Höhe): Uhr 0,72

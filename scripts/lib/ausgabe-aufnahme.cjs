@@ -7,7 +7,7 @@
 // Screenshot pixelgleich im Bild).
 //
 // Der Weg hier: das Render-Target wird per `setOutputRenderTarget` zum Ausgabe-Puffer, dann läuft
-// der ECHTE Frame (`_loopRender` → Post-Pipeline → ACES + sRGB + Post-FX) hinein. Gelesen wird
+// der ECHTE Frame (`_loopRender` → Post-Pipeline → Tonkurve + sRGB + Post-FX) hinein. Gelesen wird
 // TOP-DOWN RGBA. Der Aufrufer pausiert den Spiel-Loop (Lehre 17) und setzt Kamera/Schatten selbst.
 //
 // Gebrauch: einmal `await page.evaluate(AUSGABE_INSTALL)` nach dem Laden, im Seiten-Kontext

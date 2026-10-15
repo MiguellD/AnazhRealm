@@ -2,7 +2,7 @@
 // bis man nicht mehr sagen kann, welches welches ist). Rendert BEIDE Welten sequenziell auf
 // swiftshader (nie zwei Seiten zugleich — Container-Wand) mit vergleichbarer Rahmung:
 //   1) STUDIO (worlds/terrain, WebGL r128): enterForest, UI aus, Wald-Blick → parity-studio.png
-//   2) ANAZHREALM (WebGPU, bare render — ACES-Tonemapping ist im Renderer, das Bild-Urteil gilt):
+//   2) ANAZHREALM (WebGPU, bare render — die Tonkurve ist im Renderer, das Bild-Urteil gilt):
 //      kleine dichte Welt, Kamera IN den Wald (hoher standDensity-Spot), Augenhöhe → parity-anazh.png
 //   3) ANALYSE (2D-Canvas, GPU-frei): Himmel-/Boden-Palette · Grün-Deckung · Vergleichs-Tabelle.
 // Die Bilder sind das GATE der Vollendungs-Welle; die Zahlen sind die Zwischen-Linse.
@@ -80,7 +80,7 @@ async function renderAnazh() {
         await page.setViewport({ width: W, height: H });
         page.on("pageerror", (e) => console.log("[anazh PE]", (e.stack || e.message).split("\n")[0]));
         await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
-        // Laden: Render gestubbt, Worker sync, Post-FX aus (bare Render trägt ACES) — der Light-Pfad.
+        // Laden: Render gestubbt, Worker sync, Post-FX aus (bare Render trägt die Tonkurve) — der Light-Pfad.
         const loaded = await page.evaluate(async () => {
             let stubbed = false;
             const start = performance.now();

@@ -27,6 +27,7 @@ const fs = require("fs");
 const path = require("path");
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const AT = require("./lib/albedo-tafel.cjs");
+const { kartenEichung } = require("./lib/licht-linsen.cjs");
 // der Code-Abdruck einer Datei des Baums und der Stand einer Messung (abnahme-urteil `standLeser`, derselbe wie Werkzeug und
 // Soll-Tafel)
 const AU = require("./lib/abnahme-urteil.cjs");
@@ -224,13 +225,14 @@ function tafelZumTest() {
 }
 function messungZumTest(t, faktor) {
     const m = { labor: {}, welt: {}, karten: {}, eichung: { welt: 0.18, labor: {} } };
+    const kL = kartenEichung(t.belichtung.kurve);
     for (const z of t.zeilen) {
         m.welt[z.id] = { Y: 0.2, rgb: "0.2/0.2/0.2" };
         if (z.welt && Array.isArray(z.welt.stufen)) m.welt[z.id].stufen = z.welt.stufen.slice();
         m.labor[z.id] = { Y: 0.2 * ((faktor && faktor[z.id]) || 1), rgb: "x" };
     }
     for (const s of Object.keys(t.karten)) {
-        m.karten[s] = { kL: 0.3147, ausgabe: [173, 173, 173] };
+        m.karten[s] = { kL, ausgabe: [168, 168, 168] };
         m.eichung.labor[s] = 0.18;
     }
     return m;

@@ -16,8 +16,9 @@
 //   SOLL     a ≤ ln(1 + Toleranz) (die Toleranz steht in der Tafel, W5: „Albedo Lab ↔ Welt je Klasse innerhalb einer
 //            gesetzten Toleranz") — benannt, gezählt (n von N innerhalb), nie Teil des Ratschen-Urteils.
 //   KARTE    je Studio die 18-%-Karte unter dem Labor-Licht: k·L = Belichtung × Leuchtdichte (der Eingang der Tonkurve),
-//            Soll 0,3147 (AnazhRealm.BELICHTUNG.zielKarte: Mittelgrau + 1 EV, Synthese W5 „die 18-%-Karte im Labor trifft
-//            0,3147"), dazu der Pixel, den der Ausgabe-Weg des Labors zeigt (Welt: 173). Ratsche und Soll wie oben.
+//            Soll: Mittelgrau + 1 EV durch die Kurve der Labore (Tafel `belichtung.kurve`, r128 ACESFilmicToneMapping;
+//            `kartenEichung`, scripts/lib/licht-linsen.cjs — dieselbe Rechnung, mit der die Welt ihre Kurve eicht, BELICHTUNG),
+//            dazu der Pixel, den der Ausgabe-Weg des Labors zeigt. Ratsche und Soll wie oben.
 //
 // Werkzeuge:  node scripts/werkbank.cjs albedo --tafel --datei welt.json     (die Welt-Seite, echte GPU, am Ort)
 //             node scripts/diag-albedo-tafel.cjs --labor [--echt] --datei labor.json   (die Labor-Seite, r128 je Studio)
@@ -26,7 +27,7 @@
 "use strict";
 const fs = require("fs");
 const path = require("path");
-const { albedoAuswerten, stoffPasst, TAFEL_BLICKE } = require("./licht-linsen.cjs");
+const { albedoAuswerten, stoffPasst, TAFEL_BLICKE, kartenEichung } = require("./licht-linsen.cjs");
 
 const ROOT = path.resolve(__dirname, "..", "..");
 const TAFEL_PFAD = path.join(ROOT, "spec", "farbe", "albedo-tafel.json");
@@ -97,7 +98,8 @@ function tafelPruefen(t) {
     if (!(zahl(t.messRand) && t.messRand >= 0 && t.messRand < 0.2)) f.push("messRand (Rand der Ratsche, 0..0,2) fehlt");
     if (!t.karte || t.karte.albedo !== 0.18 || !(zahl(t.karte.eichRand) && t.karte.eichRand > 0))
         f.push("karte {albedo 0.18, eichRand} fehlt (die Selbst-Eichung)");
-    if (!t.belichtung || t.belichtung.zielKarte !== 0.3147) f.push("belichtung.zielKarte ist nicht 0.3147");
+    if (!t.belichtung || !(kartenEichung(t.belichtung.kurve) > 0))
+        f.push("belichtung.kurve (die Tonkurve der Labore) trägt keine Eichung (kartenEichung)");
     const ids = new Set();
     for (const z of t.zeilen || []) {
         if (!z.id || !/^[a-z][a-z0-9-]*$/.test(z.id) || ids.has(z.id)) f.push(`Zeile ohne/mit doppelter id: ${z.id}`);
@@ -257,13 +259,13 @@ function tafelUrteil(t, messung) {
         const e = { studio: s, ist: m || null, ratsche: k.ratsche };
         if (!m || !(m.kL > 0)) rot.push({ art: "stumm", text: `Karte ${s}: das Labor maß keine Karte` });
         else {
-            e.verhaeltnis = +(m.kL / t.belichtung.zielKarte).toFixed(4);
+            e.verhaeltnis = +(m.kL / kartenEichung(t.belichtung.kurve)).toFixed(4);
             e.abweichung = +abweichung(e.verhaeltnis).toFixed(4);
             e.imSoll = e.abweichung <= sollA;
             if (zahl(k.ratsche) && e.abweichung > k.ratsche + randA)
                 rot.push({
                     art: "ratsche",
-                    text: `Karte ${s}: k·L ${m.kL} (|ln| ${e.abweichung} zu 0,3147) über der Ratsche ${k.ratsche}`,
+                    text: `Karte ${s}: k·L ${m.kL} (|ln| ${e.abweichung} zur Eichung der Kurve) über der Ratsche ${k.ratsche}`,
                 });
         }
         karten.push(e);
@@ -354,9 +356,9 @@ function tafelTabelle(u) {
     z.push(
         pad("Karte (18 %)", 16) +
             lpad("k·L", 8) +
-            lpad("/0,3147", 9) +
+            lpad("/Eichung", 9) +
             lpad("Ratsche", 9) +
-            "  Soll  Ausgabe-Pixel (Welt 173)"
+            "  Soll  Ausgabe-Pixel"
     );
     for (const k of u.karten)
         z.push(

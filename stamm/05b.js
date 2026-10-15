@@ -521,6 +521,20 @@ class AnazhRealm_Z05b {
     // Gibt den Profil-Namen zurück, nie null.
     async _holzWahl() {
         const P = AnazhRealm.HOLZ_PROFILE;
+        // DIE EINE ADAPTER-FRAGE (F1): die Holz-Wahl und die Grenzen des Geräts (`requiredLimits`, 25a) lesen DENSELBEN Adapter,
+        // gefragt, wie r184 ihn für das Gerät fragt (`featureLevel: "compatibility"`, WebGPUBackend.init) — eine andere Frage
+        // könnte einen Adapter mit anderen Grenzen liefern, und `requestDevice` scheiterte an der geforderten Grenze. Bis F1
+        // fragten Holz-Wahl, Renderer-Bau und r184 dreimal. Antwortet keiner binnen 4 s, ist er null.
+        this._adapter = null;
+        try {
+            if (typeof navigator !== "undefined" && navigator.gpu && !AnazhRealm._forceWebGL())
+                this._adapter = await Promise.race([
+                    navigator.gpu.requestAdapter({ featureLevel: "compatibility" }),
+                    new Promise((res) => setTimeout(() => res(null), 4000)),
+                ]);
+        } catch (e) {
+            this.log(`HOLZ-WAHL: der Adapter ließ sich nicht befragen (${(e && e.message) || e})`, "WARN");
+        }
         try {
             const url = typeof location !== "undefined" ? new URLSearchParams(location.search).get("holz") : null;
             if (url && P[url]) {
@@ -546,15 +560,10 @@ class AnazhRealm_Z05b {
         // 60–170 s auf ihn (gate:webgl-probe riss in 14 von 192 Läufen, die Stall-Akte der Boot-Lib nannte es).
         let sig = null;
         try {
-            if (typeof navigator !== "undefined" && navigator.gpu && !AnazhRealm._forceWebGL()) {
-                const a = await Promise.race([
-                    navigator.gpu.requestAdapter(),
-                    new Promise((res) => setTimeout(() => res(null), 4000)),
-                ]);
-                if (a) {
-                    const info = a.info || {};
-                    sig = `${info.vendor || ""} ${info.architecture || ""} ${info.description || ""}`;
-                }
+            const a = this._adapter;
+            if (a) {
+                const info = a.info || {};
+                sig = `${info.vendor || ""} ${info.architecture || ""} ${info.description || ""}`;
             }
             if (sig === null && typeof document !== "undefined") {
                 const gl = document.createElement("canvas").getContext("webgl2");

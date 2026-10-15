@@ -1317,7 +1317,7 @@ async function starte() {
                     // `mu.profil`), der nächste Treffer; von dort die Stellvertreter-Kugel um die Tor-Mitte (Radius Tor-Höhe × Kugel-Faktor
                     // des Gesetzes, `MEMBRAN_GESETZ.film.kugel`) und ihre Richtung → das Ziel-Panorama der Membran (`r._torZielDaten(rec)`:
                     // { w, h, daten } linear rgba, Zeile 0 unten wie equirectUV). r = Spearman zwischen der Luma des Bilds und der des Ziels
-                    // — rang-treu über Belichtung, ACES und sRGB. Die Welle (≤ Amplitude) und die Brechung des Films sind nicht gerechnet.
+                    // — rang-treu über Belichtung, Tonkurve und sRGB. Die Welle (≤ Amplitude) und die Brechung des Films sind nicht gerechnet.
                     const zielTreue = (m) => {
                         const T = window.THREE;
                         if (typeof r._torZielDaten !== "function")

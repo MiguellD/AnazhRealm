@@ -1679,7 +1679,35 @@ function kronenObenUrteil(messung) {
     return { urteil: befunde.length ? "ROT" : "GRUEN", befunde, zeilen };
 }
 
+// DIE EICHUNG DER TONKURVE (Lehre 21, F1): die Kurven von three (r184 TSL, r128 GLSL gleich) auf einem GRAUEN Eingang
+// (Belichtung × Leuchtdichte; die Farb-Matrizen von ACES halten Grau). `kartenEichung(kurve)` ist das k·L, das die 18-%-Karte
+// auf Mittelgrau + 1 EV legt: kurve(k·L / 2) = 0,18. Eine Kurve ohne Zeile hat keine Eichung (null) — die Linse nennt sie.
+const TONKURVE_GRAU = {
+    ACESFilmicToneMapping: (v) => {
+        const x = v / 0.6;
+        return Math.min(1, (x * (x + 0.0245786) - 0.000090537) / (x * (0.983729 * x + 0.432951) + 0.238081));
+    },
+    NeutralToneMapping: (v) => {
+        const c = v - (v < 0.08 ? v - 6.25 * v * v : 0.04);
+        return c < 0.76 ? c : 1 - (0.24 * 0.24) / (c + 0.24 - 0.76);
+    },
+};
+function kartenEichung(kurve) {
+    const f = TONKURVE_GRAU[kurve];
+    if (!f) return null;
+    let lo = 0;
+    let hi = 4;
+    for (let i = 0; i < 60; i++) {
+        const m = (lo + hi) / 2;
+        if (f(m) < 0.18) lo = m;
+        else hi = m;
+    }
+    return 2 * lo;
+}
+
 module.exports = {
+    TONKURVE_GRAU,
+    kartenEichung,
     laubLichtUrteil,
     kronenObenUrteil,
     kronenReflexionSoll,

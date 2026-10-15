@@ -646,7 +646,7 @@ async function probe(page, welt, wuerfe, evolutionen, schein) {
 // (7) DAS BILD DER S0-PROBE (`--licht`, K11 Abnahme): ECHTER Renderer (swiftshader und das Holz kienspan; `--echt` die
 // Hardware-GPU im Fenster), dieselbe Bühne, dieselbe Feuerstelle über den Satz des Menschen, die Nacht still (Mitternacht,
 // Sonne, Sommer — `__buehne`, Lehre 17), das Auge 2 m vor dem Feuer in Augenhöhe, Blick auf das Bett; aufgenommen über den
-// AUSGABE-PFAD (`__ausgabeAufnahme`: ACES + sRGB + Post, was der Spieler sieht). Gemessen wird der FEUERKREIS: der Boden in
+// AUSGABE-PFAD (`__ausgabeAufnahme`: Tonkurve + sRGB + Post, was der Spieler sieht). Gemessen wird der FEUERKREIS: der Boden in
 // 0,75 / 1,25 / 1,75 m um die Feuerstelle (je 24 Winkel, auf den Schirm projiziert, 3×3 gemittelt), Luma der Ausgabe. Die
 // Abnahme der Karte: Luma ≥ 0,15. Konsum-Leser: der Licht-Takt (`_leuchtTakt`) und der Licht-Pool in jedem Stoff
 // (`_lichtPoolTerm`). Der Selbsttest leert den Pool (jeder Platz ohne Reichweite) — der Kreis MUSS unter die Schwelle fallen

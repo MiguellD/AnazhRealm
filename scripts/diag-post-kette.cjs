@@ -73,7 +73,7 @@ const SAUM_MAX = 2;
 const SAUM_KANTEN_MIN = 10;
 // (h) Das Dunkel: die dunkle Fläche zeigt im Mittel mindestens DUNKEL_LUMA_MIN Luma, und die zwei Belichtungen desselben
 // belichteten Lichts weichen höchstens DUNKEL_TOL Luma voneinander ab. Die lineare Kurve schneidet 2,5 EV unter dem belichteten
-// Mittelgrau ab (0,028 belichtet), die ACES-Kurve der Ausgabe (r184 RRTAndODTFit) erst unter 0,0022; 0,05 liegt über beiden.
+// Mittelgrau ab (0,028 belichtet), die Tonkurve der Ausgabe (BELICHTUNG.kurve, Neutral: Fuß 6,25·x²) gar nicht; 0,05 liegt über beiden.
 const DUNKEL_LUMA_MIN = 3;
 const DUNKEL_TOL = 1.5;
 // (h) Die Nacht (D3-2): das Licht des Bodens im Mondlicht (0,02 Szenen-Einheiten bei Belichtung 1, unter dem Schnitt der
