@@ -44,7 +44,9 @@ jobs:
             - name: Selbsttest der Stall-Akte
               run: node scripts/lib/welt-boot.cjs --selbsttest
             - name: Schwelle der Akte fuer die Diagnose (2,5 s statt 20 s)
-              run: sed -i 's/stallMs: opts.stallMs || 20000/stallMs: opts.stallMs || 2500/' scripts/lib/welt-boot.cjs && grep -n "stallMs: opts" scripts/lib/welt-boot.cjs
+              run: |
+                  sed -i 's/stallMs: opts.stallMs || 20000/stallMs: opts.stallMs || 2500/' scripts/lib/welt-boot.cjs
+                  grep -n "stallMs: opts" scripts/lib/welt-boot.cjs
             - name: webgl-probe in Folge
               shell: bash
               run: |
