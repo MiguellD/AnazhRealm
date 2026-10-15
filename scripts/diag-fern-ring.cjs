@@ -589,13 +589,31 @@ const server = statikServer();
             res.fpTrefferKonstant = trefferA;
             fp8.mat.outputNode = echterOut;
             fp8.mat.needsUpdate = true;
-            await ren8.renderAsync(szene8, cam8);
-            const buf8 = await ren8.readRenderTargetPixelsAsync(rt8, 0, 0, 96, 64);
-            let treffer8 = 0;
-            for (let px = 0; px < 96 * 64; px++) {
-                if (buf8[px * 4 + 3] > 0 && buf8[px * 4] + buf8[px * 4 + 1] + buf8[px * 4 + 2] > 0) treffer8++;
+            const treffer = async () => {
+                await ren8.renderAsync(szene8, cam8);
+                const buf8 = await ren8.readRenderTargetPixelsAsync(rt8, 0, 0, 96, 64);
+                let n = 0;
+                for (let px = 0; px < 96 * 64; px++) {
+                    if (buf8[px * 4 + 3] > 0 && buf8[px * 4] + buf8[px * 4 + 1] + buf8[px * 4 + 2] > 0) n++;
+                }
+                return n;
+            };
+            // DIE LUFT LIEST DIE EINE ATMOSPHÄRE (D3): ihre In-Streuung ist die Himmels-Sicht der Tafeln, die der Renderer
+            // der Welt je Takt zeichnet (`_atmoTakt`) — die Probe zeichnet sie auf IHREM Renderer, wie der Spiel-Frame es
+            // tut. Selbsttest (Konsum): ohne die Tafeln dunstet der Pass in Schwarz (die Ferne jenseits 8 km ist Luft).
+            res.fpTrefferOhneTafeln = await treffer();
+            const A8 = r._atmoLutBau();
+            const welt8 = r.state.renderer;
+            r.state.renderer = ren8;
+            try {
+                r._atmoZeichne(A8.qT, A8.rtT);
+                r._atmoZeichne(A8.qMS, A8.rtMS);
+                r._atmoZeichne(A8.qSV, A8.rtSV);
+            } finally {
+                r.state.renderer = welt8;
             }
-            res.fpTreffer = treffer8;
+            ren8.setRenderTarget(rt8);
+            res.fpTreffer = await treffer();
             ren8.dispose();
             if (fp8 && alterParent) alterParent.add(fp8.mesh);
         } catch (e8) {
@@ -1602,6 +1620,11 @@ const server = statikServer();
         "8: die ECHTE Render-Probe trifft — der Fullscreen-Raymarch zeichnet Horizont-Pixel",
         Number.isFinite(out.fpTreffer) && out.fpTreffer > 50,
         `treffer=${out.fpTreffer}${out.fpRenderErr ? " err=" + out.fpRenderErr : ""}`
+    );
+    check(
+        "8 SELBSTTEST: die Luft des Passes liest die Himmels-Sicht der EINEN Atmosphäre — ohne ihre Tafeln dunstet die Ferne schwarz",
+        Number.isFinite(out.fpTrefferOhneTafeln) && out.fpTrefferOhneTafeln < out.fpTreffer / 10,
+        `ohne-tafeln=${out.fpTrefferOhneTafeln} mit=${out.fpTreffer}`
     );
     check(
         "8b: DAS EINBLENDEN — ein fern geborener Satz beginnt ganz verworfen und löst sich über WELT_SCHWUND_MS auf, ohne Wunsch erscheint er sofort",
