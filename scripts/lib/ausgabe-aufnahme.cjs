@@ -655,6 +655,8 @@ function ausgabeAufnahme(W, H, warm, opt) {
             // DIE ZEITLICHE AUFLÖSUNG (TRAA) zeigt ein ruhendes Bild erst nach ihrer Geschichte: die Halton-Folge
             // läuft 31 Versätze, die Dither-Blende rotiert je Frame — die Aufnahme zeigt, was der Spieler nach einer
             // halben Sekunde Stillstand sieht (32 Frames), nie den ersten, ungemittelten Frame nach dem Kamera-Sprung.
+            // Nach dem Sprung läuft die Geschichte als MITTEL an (K68, `_zeitAufloesung` `_anlauf`): jeder der 32 Frames
+            // wiegt gleich, die Dither-Blende steht als Mischton im Bild, nie als Schachbrett des ersten Frames.
             if (opt && opt.fest != null) {
                 const tn = r.state.traaNode;
                 if (tn) {
@@ -666,6 +668,7 @@ function ausgabeAufnahme(W, H, warm, opt) {
                 if (r.state._traaR) r.state._traaR.neu = true;
                 const lu = r.state.lodUniforms;
                 if (lu && lu.uDitherT) lu.uDitherT.value = 0;
+                if (lu && lu.uLaubKante) lu.uLaubKante.value.x = 0; // die Kante des Laubs (K68, `_laubSchwelle`)
             }
             const nWarm = Math.max(warm == null ? 1 : warm, r.state.traaNode ? 32 : 0);
             for (let k = 0; k < nWarm; k++) frame();

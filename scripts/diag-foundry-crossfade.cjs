@@ -495,7 +495,7 @@ function stilleBlende(srcNC) {
         /"(INFO|WARN|WARNING)"/.test(melder)
     )
         v.push("_blendeBruch meldet nicht laut beim Namen");
-    const stoff = fnBody(srcNC, /_foundryTreeMaterial\(kind, mp, wiegen, baum\)\s*/) || "";
+    const stoff = fnBody(srcNC, /\n {4}_foundryTreeMaterial\([^)]*\)\s*\{/) || "";
     if (!stoff) v.push("_foundryTreeMaterial(kind, mp, wiegen, baum) fehlt");
     if (/if \(_keepX\)/.test(stoff)) v.push("der Baum-Stoff zeichnet ohne Maske weiter, wenn sie fehlt (if (_keepX))");
     if (!/else\s+throw this\._blendeBruch\(/.test(stoff) || /if \(kanal\)/.test(stoff)) v.push("der Baum-Stoff ohne Kanal verliert die Maske still");
@@ -1473,7 +1473,7 @@ function schattenWahrheit(srcNC, fcSrc = foundrySrc) {
         !/cam\.getWorldPosition\(/.test(augeQuelle)
     )
         v.push("uLodAuge fehlt im Uniform-Satz oder im Frame-Spiegel aus der Haupt-Kamera");
-    const stoff = fnBody(srcNC, /_foundryTreeMaterial\(kind, mp, wiegen, baum\)\s*/) || "";
+    const stoff = fnBody(srcNC, /\n {4}_foundryTreeMaterial\([^)]*\)\s*\{/) || "";
     if (!stoff) v.push("_foundryTreeMaterial(kind, mp, wiegen, baum) fehlt");
     else {
         // kein Stoff schneidet über opacityNode aus (die Fell-Schale samt Kopf-Schalen trägt ihn in colorNode.a, K28) — nur die
@@ -1516,7 +1516,7 @@ function schattenWahrheit(srcNC, fcSrc = foundrySrc) {
         v.push("eine Stufe ohne Schatten-Teil wirft still nicht (fail-soft) statt KERN-PFLICHT");
     if (/lf\.wurf|__wurf/.test(flat + gestalt))
         v.push("der drawRange-Vorsatz (lf.wurf/__wurf) lebt noch — der Zwilling würfe einen Index-Vorsatz");
-    const stoffS = fnBody(srcNC, /_foundryTreeMaterial\(kind, mp, wiegen, baum\)\s*/) || "";
+    const stoffS = fnBody(srcNC, /\n {4}_foundryTreeMaterial\([^)]*\)\s*\{/) || "";
     if (!/kind === "schatten"[\s\S]*?mat\.colorNode = TSL\.vec4\(TSL\.vec3\(0\.0\), atl \? TSL\.max\(deckt, atl\.a\) : deckt\);/.test(stoffS))
         v.push("der Schatten-Stoff schneidet nicht über colorNode.a = max(aDeckt, Atlas-Alpha) aus");
     const fassade = fnBody(srcNC, /\n {4}_lodInstanceFacade\([^)]*\)\s*\{/) || "";

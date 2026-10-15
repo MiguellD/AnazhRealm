@@ -1966,6 +1966,14 @@
         "38631780033",
         "38629080926"
       ]
+    },
+    "Stall-Akte (die Boot-Lib nennt eine stehende Seite beim Namen - JS-Schleife mit Stapel, Versprechen am Fristriss)": {
+      "s": 21,
+      "n": 1,
+      "lauf": "npm run gate:welt-boot",
+      "laeufe": [
+        "38694864243"
+      ]
     }
   },
   "vorher": {

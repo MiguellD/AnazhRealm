@@ -13,16 +13,16 @@
     },
     "gemessen": {
         "labor": {
-            "datum": "2026-10-15T03:29:57.339Z",
+            "datum": "2026-10-15T09:18:23.683Z",
             "geraet": "ANGLE (AMD, AMD Radeon(TM) 890M Graphics (0x0000150E) Direct3D11 vs_5_0 ps_5_0, D3D11)",
-            "echt": true,
+            "echt": false,
             "version": "18.546.2",
-            "sha": "eeb0afbe40bb9178cae628ffe83aedb6a2034003",
+            "sha": "cd945ba093d8a25047fd2fd20effa1f132babbf5",
             "quellen": {
-                "phyto-core.js": "c:d3570c6004de7533",
-                "foundry-core.js": "c:048acefc0b19a374",
+                "phyto-core.js": "c:db35ea5544d7453c",
+                "foundry-core.js": "c:bcaa4b02d2a0a1ce",
                 "vehicle-core.js": "c:97f0f918c22eb27c",
-                "porta-core.js": "c:1c9ff321ca5adf31",
+                "porta-core.js": "c:986b5e22a9e7eaa5",
                 "schmiede-core.js": "c:b94f4dfa0ae2c2fd",
                 "fachwerk-core.js": "c:e5726dc98963a032",
                 "klang-core.js": "c:8e668691b9eb131c",
@@ -32,69 +32,69 @@
                 "stamm/01.js": "c:a566251f9b6aee74",
                 "stamm/02a.js": "c:535bb81592a53fd0",
                 "stamm/02b.js": "c:07c20016205e5e86",
-                "stamm/03a.js": "c:afdf453df1cb12a3",
+                "stamm/03a.js": "c:24260351ef810643",
                 "stamm/03b.js": "c:51b51437adaa7782",
                 "stamm/04.js": "c:f3701da31b3afa5d",
                 "stamm/05a.js": "c:87f4680772d0a67a",
-                "stamm/05b.js": "c:d8cfd0c6db4a7ac3",
-                "stamm/06a.js": "c:cf983d959affcaff",
+                "stamm/05b.js": "c:6a0ed6001822d74a",
+                "stamm/06a.js": "c:e9afa5f4a503640c",
                 "stamm/06b.js": "c:a96a229371e2a3a9",
-                "stamm/06c.js": "c:cd57867fc691b6ca",
-                "stamm/07.js": "c:49617014f39c824b",
+                "stamm/06c.js": "c:2ca5cdf25f593d21",
+                "stamm/07.js": "c:158f10e6ed0cd9c0",
                 "stamm/08.js": "c:77f87597ce6b7d1c",
                 "stamm/09.js": "c:640e0f8c47824f6a",
                 "stamm/10.js": "c:60d0e92e3969e187",
                 "stamm/11a.js": "c:07de57204b2e88b6",
                 "stamm/11b.js": "c:2b2b48ade183e63b",
-                "stamm/11c.js": "c:978d02155395df69",
-                "stamm/11d.js": "c:5aa4c74ac3ecb46b",
+                "stamm/11c.js": "c:518597d3391b9a29",
+                "stamm/11d.js": "c:91d2d36882b23e75",
                 "stamm/12.js": "c:0cea101e763e37aa",
                 "stamm/13a.js": "c:52b65195966734b3",
                 "stamm/13b.js": "c:6648f26d752bb96d",
-                "stamm/13c.js": "c:ad96b98a29ee739e",
-                "stamm/14.js": "c:55e8c8355eddc46a",
+                "stamm/13c.js": "c:5c6c98977824abeb",
+                "stamm/14.js": "c:92e61a077759efcb",
                 "stamm/15a.js": "c:386117a9b5c4f686",
-                "stamm/15b.js": "c:1a8736d4bc91ec65",
+                "stamm/15b.js": "c:03227410c827ed8b",
                 "stamm/15c.js": "c:632b0d73bab306bc",
                 "stamm/16.js": "c:01e3f0cd78cbfa15",
-                "stamm/17a.js": "c:744a802e9be62a5d",
+                "stamm/17a.js": "c:11288a3e76c70a68",
                 "stamm/17b.js": "c:074908c78ad2216f",
-                "stamm/17c.js": "c:8affaee4c6b7bb48",
+                "stamm/17c.js": "c:23bf514b3055a23e",
                 "stamm/18.js": "c:b33a1bf3bfc74ef5",
                 "stamm/19.js": "c:b1a053cba1f64cd1",
-                "stamm/20a.js": "c:a57174536689608d",
-                "stamm/20b.js": "c:c862c9370ea83097",
-                "stamm/20c.js": "c:ab76fd2fae457741",
-                "stamm/20d.js": "c:f4f05390e67cc1d5",
+                "stamm/20a.js": "c:5dce1435508f95e3",
+                "stamm/20b.js": "c:6c1b7142739458bf",
+                "stamm/20c.js": "c:da14ccf91cefc490",
+                "stamm/20d.js": "c:61c5db83cc0f8799",
                 "stamm/21.js": "c:38ad56cce63d4b2b",
                 "stamm/22.js": "c:72a6c5e7028af2be",
-                "stamm/23a.js": "c:c4a4a7a81586fb4c",
+                "stamm/23a.js": "c:cecfd519d82216e1",
                 "stamm/23b.js": "c:72656601cb13a947",
-                "stamm/24.js": "c:26d0da410e4c28a0",
+                "stamm/24.js": "c:5cadba33d1361342",
                 "stamm/25a.js": "c:138344d782c1fc93",
-                "stamm/25b.js": "c:afea0832a6adb243",
-                "stamm/25c.js": "c:baf3b0d0c63ceb9b",
+                "stamm/25b.js": "c:8771e70f17987b2b",
+                "stamm/25c.js": "c:443fb93eb5cee16c",
                 "stamm/26a.js": "c:e45314b7ac61774c",
-                "stamm/26b.js": "c:b7978f44de5cd2f4",
-                "stamm/26c.js": "c:79c07cd10615f40c"
+                "stamm/26b.js": "c:dfab70e9d26443a4",
+                "stamm/26c.js": "c:7788e9924f8f7801"
             }
         },
         "welt": {
-            "datum": "2026-10-15T03:26:22.224Z",
+            "datum": "2026-10-15T09:17:30.696Z",
             "geraet": "amd rdna-3",
             "ort": "genesis",
             "spieler": [
                 0,
                 0
             ],
-            "echt": true,
+            "echt": false,
             "version": "18.546.2",
-            "sha": "eeb0afbe40bb9178cae628ffe83aedb6a2034003",
+            "sha": "cd945ba093d8a25047fd2fd20effa1f132babbf5",
             "quellen": {
-                "phyto-core.js": "c:d3570c6004de7533",
-                "foundry-core.js": "c:048acefc0b19a374",
+                "phyto-core.js": "c:db35ea5544d7453c",
+                "foundry-core.js": "c:bcaa4b02d2a0a1ce",
                 "vehicle-core.js": "c:97f0f918c22eb27c",
-                "porta-core.js": "c:1c9ff321ca5adf31",
+                "porta-core.js": "c:986b5e22a9e7eaa5",
                 "schmiede-core.js": "c:b94f4dfa0ae2c2fd",
                 "fachwerk-core.js": "c:e5726dc98963a032",
                 "klang-core.js": "c:8e668691b9eb131c",
@@ -104,51 +104,51 @@
                 "stamm/01.js": "c:a566251f9b6aee74",
                 "stamm/02a.js": "c:535bb81592a53fd0",
                 "stamm/02b.js": "c:07c20016205e5e86",
-                "stamm/03a.js": "c:afdf453df1cb12a3",
+                "stamm/03a.js": "c:24260351ef810643",
                 "stamm/03b.js": "c:51b51437adaa7782",
                 "stamm/04.js": "c:f3701da31b3afa5d",
                 "stamm/05a.js": "c:87f4680772d0a67a",
-                "stamm/05b.js": "c:d8cfd0c6db4a7ac3",
-                "stamm/06a.js": "c:cf983d959affcaff",
+                "stamm/05b.js": "c:6a0ed6001822d74a",
+                "stamm/06a.js": "c:e9afa5f4a503640c",
                 "stamm/06b.js": "c:a96a229371e2a3a9",
-                "stamm/06c.js": "c:cd57867fc691b6ca",
-                "stamm/07.js": "c:49617014f39c824b",
+                "stamm/06c.js": "c:2ca5cdf25f593d21",
+                "stamm/07.js": "c:158f10e6ed0cd9c0",
                 "stamm/08.js": "c:77f87597ce6b7d1c",
                 "stamm/09.js": "c:640e0f8c47824f6a",
                 "stamm/10.js": "c:60d0e92e3969e187",
                 "stamm/11a.js": "c:07de57204b2e88b6",
                 "stamm/11b.js": "c:2b2b48ade183e63b",
-                "stamm/11c.js": "c:978d02155395df69",
-                "stamm/11d.js": "c:5aa4c74ac3ecb46b",
+                "stamm/11c.js": "c:518597d3391b9a29",
+                "stamm/11d.js": "c:91d2d36882b23e75",
                 "stamm/12.js": "c:0cea101e763e37aa",
                 "stamm/13a.js": "c:52b65195966734b3",
                 "stamm/13b.js": "c:6648f26d752bb96d",
-                "stamm/13c.js": "c:ad96b98a29ee739e",
-                "stamm/14.js": "c:55e8c8355eddc46a",
+                "stamm/13c.js": "c:5c6c98977824abeb",
+                "stamm/14.js": "c:92e61a077759efcb",
                 "stamm/15a.js": "c:386117a9b5c4f686",
-                "stamm/15b.js": "c:1a8736d4bc91ec65",
+                "stamm/15b.js": "c:03227410c827ed8b",
                 "stamm/15c.js": "c:632b0d73bab306bc",
                 "stamm/16.js": "c:01e3f0cd78cbfa15",
-                "stamm/17a.js": "c:744a802e9be62a5d",
+                "stamm/17a.js": "c:11288a3e76c70a68",
                 "stamm/17b.js": "c:074908c78ad2216f",
-                "stamm/17c.js": "c:8affaee4c6b7bb48",
+                "stamm/17c.js": "c:23bf514b3055a23e",
                 "stamm/18.js": "c:b33a1bf3bfc74ef5",
                 "stamm/19.js": "c:b1a053cba1f64cd1",
-                "stamm/20a.js": "c:a57174536689608d",
-                "stamm/20b.js": "c:c862c9370ea83097",
-                "stamm/20c.js": "c:ab76fd2fae457741",
-                "stamm/20d.js": "c:f4f05390e67cc1d5",
+                "stamm/20a.js": "c:5dce1435508f95e3",
+                "stamm/20b.js": "c:6c1b7142739458bf",
+                "stamm/20c.js": "c:da14ccf91cefc490",
+                "stamm/20d.js": "c:61c5db83cc0f8799",
                 "stamm/21.js": "c:38ad56cce63d4b2b",
                 "stamm/22.js": "c:72a6c5e7028af2be",
-                "stamm/23a.js": "c:c4a4a7a81586fb4c",
+                "stamm/23a.js": "c:cecfd519d82216e1",
                 "stamm/23b.js": "c:72656601cb13a947",
-                "stamm/24.js": "c:26d0da410e4c28a0",
+                "stamm/24.js": "c:5cadba33d1361342",
                 "stamm/25a.js": "c:138344d782c1fc93",
-                "stamm/25b.js": "c:afea0832a6adb243",
-                "stamm/25c.js": "c:baf3b0d0c63ceb9b",
+                "stamm/25b.js": "c:8771e70f17987b2b",
+                "stamm/25c.js": "c:443fb93eb5cee16c",
                 "stamm/26a.js": "c:e45314b7ac61774c",
-                "stamm/26b.js": "c:b7978f44de5cd2f4",
-                "stamm/26c.js": "c:79c07cd10615f40c"
+                "stamm/26b.js": "c:dfab70e9d26443a4",
+                "stamm/26c.js": "c:7788e9924f8f7801"
             }
         }
     },
@@ -194,14 +194,14 @@
             ],
             "ist": {
                 "labor": {
-                    "Y": 0.0947,
-                    "rgb": "0.1125/0.0922/0.0661",
-                    "pixel": 15765
+                    "Y": 0.0948,
+                    "rgb": "0.1127/0.0924/0.0662",
+                    "pixel": 15782
                 },
                 "welt": {
-                    "Y": 0.0929,
-                    "rgb": "0.1106/0.0905/0.0648",
-                    "pixel": 6103,
+                    "Y": 0.093,
+                    "rgb": "0.1107/0.0905/0.0649",
+                    "pixel": 6118,
                     "stufen": [
                         0,
                         1
@@ -253,20 +253,20 @@
             ],
             "ist": {
                 "labor": {
-                    "Y": 0.1797,
-                    "rgb": "0.1277/0.2087/0.0447",
-                    "pixel": 143113
+                    "Y": 0.1796,
+                    "rgb": "0.1276/0.2087/0.0447",
+                    "pixel": 143108
                 },
                 "welt": {
                     "Y": 0.1639,
-                    "rgb": "0.0867/0.1991/0.0428",
-                    "pixel": 57292,
+                    "rgb": "0.0867/0.199/0.0428",
+                    "pixel": 57273,
                     "stufen": [
                         0,
                         1
                     ]
                 },
-                "verhaeltnis": 1.0964
+                "verhaeltnis": 1.0958
             },
             "ratsche": 0.0915
         },
@@ -362,19 +362,19 @@
             ],
             "ist": {
                 "labor": {
-                    "Y": 0.3229,
-                    "rgb": "0.3873/0.315/0.2111",
+                    "Y": 0.0867,
+                    "rgb": "0.1238/0.0807/0.0364",
                     "pixel": 256000
                 },
                 "welt": {
-                    "Y": 0.0794,
-                    "rgb": "0.1051/0.075/0.0478",
+                    "Y": 0.0833,
+                    "rgb": "0.1139/0.0779/0.047",
                     "pixel": 256000,
                     "stufen": []
                 },
-                "verhaeltnis": 4.0668
+                "verhaeltnis": 1.0408
             },
-            "ratsche": 1.4029
+            "ratsche": 0.04
         },
         {
             "id": "haus",
@@ -424,8 +424,8 @@
                 },
                 "welt": {
                     "Y": 0.159,
-                    "rgb": "0.2776/0.131/0.0869",
-                    "pixel": 167919,
+                    "rgb": "0.2773/0.1312/0.0868",
+                    "pixel": 168326,
                     "stufen": [
                         1
                     ]
@@ -579,17 +579,17 @@
             ],
             "ist": {
                 "labor": {
-                    "Y": 0.0609,
-                    "rgb": "0.122/0.0464/0.0251",
-                    "pixel": 74293
+                    "Y": 0.0608,
+                    "rgb": "0.1217/0.0463/0.025",
+                    "pixel": 74182
                 },
                 "welt": {
-                    "Y": 0.1547,
-                    "rgb": "0.2177/0.1401/0.1133",
-                    "pixel": 36070,
+                    "Y": 0.1554,
+                    "rgb": "0.2183/0.1408/0.114",
+                    "pixel": 36009,
                     "stufen": []
                 },
-                "verhaeltnis": 0.3937
+                "verhaeltnis": 0.3912
             },
             "ratsche": 0.9322
         },
@@ -629,18 +629,18 @@
             "ist": {
                 "labor": {
                     "Y": 0.1688,
-                    "rgb": "0.2058/0.1635/0.1123",
-                    "pixel": 152889
+                    "rgb": "0.2059/0.1635/0.1123",
+                    "pixel": 152863
                 },
                 "welt": {
-                    "Y": 0.1607,
-                    "rgb": "0.1937/0.156/0.1102",
-                    "pixel": 42204,
+                    "Y": 0.1776,
+                    "rgb": "0.2174/0.1719/0.1173",
+                    "pixel": 45182,
                     "stufen": []
                 },
-                "verhaeltnis": 1.0504
+                "verhaeltnis": 0.9505
             },
-            "ratsche": 0.0492
+            "ratsche": 0.0479
         },
         {
             "id": "klinge",
@@ -696,9 +696,9 @@
             "ist": {
                 "kL": 0.7482,
                 "ausgabe": [
-                    186,
-                    193,
-                    184
+                    187,
+                    194,
+                    185
                 ]
             },
             "ratsche": 0.866
@@ -716,11 +716,11 @@
         },
         "portale": {
             "ist": {
-                "kL": 0.8012,
+                "kL": 0.8023,
                 "ausgabe": [
-                    196,
-                    207,
-                    202
+                    194,
+                    205,
+                    200
                 ]
             },
             "ratsche": 0.9345
@@ -729,23 +729,23 @@
             "ist": {
                 "kL": 0.6427,
                 "ausgabe": [
-                    177,
-                    165,
-                    153
+                    172,
+                    160,
+                    148
                 ]
             },
             "ratsche": 0.7141
         },
         "fachwerk": {
             "ist": {
-                "kL": 0.4814,
+                "kL": 0.4801,
                 "ausgabe": [
                     197,
                     194,
                     192
                 ]
             },
-            "ratsche": 0.4226
+            "ratsche": 0.4224
         },
         "koerperstudio": {
             "ist": {
@@ -762,9 +762,9 @@
             "ist": {
                 "kL": 0.8802,
                 "ausgabe": [
-                    255,
-                    255,
-                    255
+                    252,
+                    252,
+                    252
                 ]
             },
             "ratsche": 1.0285
