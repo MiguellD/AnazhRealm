@@ -298,10 +298,13 @@ const server = statikServer();
             const mf = g && g.userData && g.userData._gelenk;
             o.checks.cFernGebaut = !!(mf && mf.nah && mf.fern);
             // die Stufen eines Zustands: nah = die feine sichtbar, die Grobstufe nur in den Kaskaden; fern = umgekehrt
+            // (K72: der Wurf ist die Ebene SHADOW_TWIN_LAYER — nah liegt kein Teil der Grobstufe auf Ebene 0, ihre werfenden
+            // Teile liegen auf der Wurf-Ebene, und ist sie der Zwilling, wirft mindestens eins)
             const istNah = () =>
                 mf.istFern === false &&
                 mf.nah.visible === true &&
-                mf.meshes.every((m) => !m.layers.isEnabled(0) && m.layers.isEnabled(A.SHADOW_TWIN_LAYER));
+                mf.meshes.every((m) => !m.layers.isEnabled(0) && m.castShadow === m.layers.isEnabled(A.SHADOW_TWIN_LAYER)) &&
+                (!mf.zwilling || mf.meshes.some((m) => m.layers.isEnabled(A.SHADOW_TWIN_LAYER)));
             const istFern = () =>
                 mf.istFern === true && mf.nah.visible === false && mf.meshes.every((m) => m.layers.isEnabled(0));
             if (mf && mf.nah && mf.fern) {

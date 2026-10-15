@@ -189,6 +189,7 @@ das Radeon-ABAB am Kopf steht aus. Quelle: das letzte ABAB vom 14.10. (Zweig `ko
     neu. Ein normalNode liest nie `normalWorld` (EINE Variable je Programm), sondern `normalWorldGeometry` × `faceDirection`. CPU-Raster-Linsen
     fahren `?holz=kienspan` (swiftshader kompiliert synchron, 42–292 s je Pipeline); `_gameLoopTick` rendert selbst, darum trägt jeder benannte
     Linsen-Aufruf höchstens EINEN kalten Programm-Schlüssel (`gpu-lens`); Wände urteilen in Bau-Ereignissen, nie in Wanduhr-Sekunden.
+    castShadow IST die Wurf-Ebene (`_wurfEbene`, K72): die Kaskade sieht nur Werfer und Lichter, r184 projiziert keinen Nicht-Werfer.
 27. **Die GPU hält, was das Bild zeichnet:** r184 hält jedes Attribut (`info.memoryMap`) bis `_attributes.delete` — `InstancedMesh.dispose()` gibt
     nichts frei, `geometry.dispose()` nur das erste Render-Objekt, dessen Geometrie-Hörer fällt (`_renderObjektRegister`), jede Textur hält die
     Bindegruppen ihrer Leser; Senken fallen über `_instanzAbschied`, Ungezeichnetes nimmt `_gpuKehraus`, ein Attribut unter der Observer-Diät nie
