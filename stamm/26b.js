@@ -1816,9 +1816,10 @@ AnazhRealm.SCATTER_VARIANT_POOL = Object.freeze({
     kristall_geode: Object.freeze({ prefix: "kristall", n: 8 }),
 });
 // DIE WÜRFE DES FELDS (K10-6) — die Arten, die das Affinitäts-Feld wirft (`_vegetationSampleSpawn`: der Sieger der Affinität
-// je Sample): die Baumarten, der Fels, die Geode und die Feuerstelle des Glut-Felds. Was das Feld wirft, weicht dem Bau wie
-// die Natur (`_weichtDemBau`): es sperrt keinem Ort den Grund (`_bauFrei`), und der Grundriss eines Baus und der Weg eines
-// Dorfs räumen es (`_naturRaeumen`). Die Feuerstelle ist keine Art des Terrain-Studios (ihre Gestalt trägt das Fachwerk) —
+// je Sample): die Baumarten, der Fels, die Geode und die Feuerstelle des Glut-Felds. Was das Feld wirft, trägt die Marke des
+// Wurfs (`feldWurf`, `_enqueueVegetationSpawn`) und weicht dem Bau wie die Natur (`_weichtDemBau`): es sperrt keinem Ort den
+// Grund (`_bauFrei`), und der Grundriss eines Baus und der Weg eines Dorfs räumen es (`_naturRaeumen`); dieselbe Art aus dem
+// Satz, dem Bau-Modus oder der KI ist Bau. Die Feuerstelle ist keine Art des Terrain-Studios (ihre Gestalt trägt das Fachwerk) —
 // bis K10-6 stand sie als Bau: eine im Grundriss des Dorfs der Zelle −4,−4 schob die Ort-Wahl von 80 auf 96 m, je nach
 // Lade-Stand der Würfe.
 AnazhRealm.FELD_WURF = Object.freeze([

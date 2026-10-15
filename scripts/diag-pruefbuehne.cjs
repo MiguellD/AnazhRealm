@@ -742,6 +742,64 @@ const S0_NAH_INSTALL = () => {
         };
     };
 };
+// DAS URTEIL ÜBER DIE GESTALT DER FEUERSTELLE (K10-6 Nachbesserung 2): wartet die Linse auf die Feuerstelle, nennt sie, was
+// fehlt, beim Namen — fiel sie aus der Welt, steht der Rufer von `removeArchitecture` (die Wache, `__s0Wache`) im Urteil, und
+// die Linse bricht sofort ab (sie wächst nie mehr); reißt die Frist, nennt sie die Lage der Foundry (das Buch, die Schlange,
+// was im Flug ist, wo die Gestalt der Feuerstelle steht) und den längsten Takt. Befund (CI 38660872064, voll 11/18): „die
+// Feuerstelle wächst" 158 s lang, ohne Täter — lokal und in jedem anderen Lauf stand sie nach 1–3 s.
+const S0_GESTALT_INSTALL = () => {
+    const r = window.anazhRealm;
+    const weg = Object.getPrototypeOf(r).removeArchitecture;
+    r.removeArchitecture = function (e, ...rest) {
+        if (e && e === window.__s0Wache && !e.__s0Fiel)
+            e.__s0Fiel =
+                String(new Error().stack || "")
+                    .split("\n")
+                    .slice(2, 7)
+                    .map((z) => z.trim().replace(/^at /, "").split(" ")[0])
+                    // nur Namen (ein Rahmen ohne Namen trägt seine Datei: pptr:evaluate;…, http://…)
+                    .filter((n) => n && !/[:/%(]/.test(n) && !/^(async|Promise|new|<anonymous>)$/.test(n))
+                    .join(" ← ") || "ein Rufer ohne Namen";
+        return weg.call(this, e, ...rest);
+    };
+    window.__s0Gestalt = (feuer) => {
+        const s = r.state;
+        if (!feuer || !s.architectures.includes(feuer))
+            return { fiel: (feuer && feuer.__s0Fiel) || "nicht über removeArchitecture", fehlt: [] };
+        const fehlt = [];
+        if (!r._archIsRendered(feuer)) fehlt.push("die Feuerstelle wächst");
+        const ring = r._builtRingRadius();
+        const K = r.constructor;
+        if (!(ring != null && ring >= K.RING_EXIST_FLOOR)) fehlt.push(`der Boden wächst (Ring ${ring} von ${K.RING_EXIST_FLOOR})`);
+        return { fiel: null, fehlt };
+    };
+    window.__s0FoundryLage = (feuer) => {
+        const f = r._foundry;
+        if (!f) return "keine Foundry";
+        let pr = null;
+        try {
+            pr = r._foundryPresetForEntry(feuer);
+        } catch (_e) {
+            pr = null;
+        }
+        const q = f.warte || [];
+        const platz = q.findIndex((a) => a && a.msg && a.msg.presetId === pr);
+        const meine = f.requested ? [...f.requested].filter((k) => String(k).startsWith(pr + "|")) : [];
+        const gebaut = meine.filter((k) => r._foundryCacheGet(k) !== undefined);
+        const wo =
+            platz >= 0
+                ? `wartet an Platz ${platz + 1} der Schlange`
+                : gebaut.length
+                  ? `ist gebaut (${gebaut.join(", ")}), der Eintrag setzt sie nicht ein`
+                  : meine.length
+                    ? `ist im Flug (${meine.join(", ")})`
+                    : "ist nicht angefragt";
+        return (
+            `Foundry ${f.ready ? "bereit" : "nicht bereit"}${f.recipes ? "" : ", Buch kalt"} · Schlange ${q.length} · im Flug ` +
+            `${f.pending ? f.pending.size : 0} · die Gestalt ${pr || "?"} ${wo}`
+        );
+    };
+};
 const S0_NAH_M = 4;
 const S0_LUMA_2M = 0.15;
 // DER FARBTON DES FEUERS (K11b, Auge V18.542: „der Boden glüht lava-rot"): ein Holzfeuer leuchtet warm-orange (Schwarzkörper
@@ -861,6 +919,7 @@ async function lichtLauf() {
     const url = `http://127.0.0.1:${PORT}/index.html?holz=${HOLZ}`;
     const json = JSON.parse(fs.readFileSync(BUEHNE_DATEI, "utf8"));
     const ergebnis = {};
+    let wache = null; // der Schein der Wache (Selbsttest): das Urteil über ein Werk, das ein benannter Rufer räumte
     try {
         await phase("Laden", async (rest) => {
             await page.goto(url, { waitUntil: "domcontentloaded", timeout: rest });
@@ -889,6 +948,7 @@ async function lichtLauf() {
             zeit("die Bühne gebootet");
             await page.evaluate(AUSGABE_INSTALL);
             await page.evaluate(S0_NAH_INSTALL);
+            await page.evaluate(S0_GESTALT_INSTALL);
         });
         // der Satz des Menschen, bis die Welt ihn trägt (direkt nach dem Boot lädt das Gesetzbuch noch) — und die Gestalt
         // der Feuerstelle (der Bau der Foundry), ehe der Schuss misst
@@ -903,13 +963,16 @@ async function lichtLauf() {
                         const s = r.state;
                         const fristEnde = performance.now() + rest - 5000; // die Seite nennt, was fehlt, ehe die Uhr reißt
                         s.renderer.setAnimationLoop(null);
+                        let laengsterTakt = 0; // der längste Takt dieser Phase (ms): hielt ein Takt die Seite an, steht er im Urteil
                         const takt = async (n) => {
                             for (let i = 0; i < n; i++) {
+                                const t = performance.now();
                                 try {
-                                    r._gameLoopTick(performance.now());
+                                    r._gameLoopTick(t);
                                 } catch (_e) {
                                     /* ein Takt-Fehler zählt der Page-Error */
                                 }
+                                laengsterTakt = Math.max(laengsterTakt, performance.now() - t);
                                 await new Promise((res) => setTimeout(res, 16));
                             }
                         };
@@ -943,26 +1006,28 @@ async function lichtLauf() {
                                 );
                             }
                             window.__s0Feuer = feuer;
+                            window.__s0Wache = feuer; // wer sie ab jetzt aus der Welt nimmt, steht im Urteil beim Namen
                             return feuer ? null : "die Feuerstelle steht nicht (der Satz `spawn_studio feuerstelle`)";
                         }
                         // DIE GESTALT, die der Schuss liest: die Feuerstelle gebaut (ein Mesh oder ein Slot im Instanz-Pool,
                         // `_archIsRendered`) und ihr Boden gemesht (der Boden-Teil des EINEN Weltbild-Urteils `_weltbildFehlt`:
                         // der Ring bis `RING_EXIST_FLOOR`). Bis 12.10. wartete die Linse auf das ganze Urteil — dessen
                         // Streu-Regionen der Bühne warten im stillen Takt ohne Ende auf ihr Asset (der Schuss misst den Boden
-                        // im Feuerkreis, nie die Streu), davor fragte sie das eigene Mesh der instanziert stehenden Feuerstelle
+                        // im Feuerkreis, nie die Streu), davor fragte sie das eigene Mesh der instanziert stehenden Feuerstelle.
+                        // Das Urteil (`__s0Gestalt`) nennt den Täter: fiel sie aus der Welt, bricht die Linse sofort ab.
                         const feuer = window.__s0Feuer;
-                        const K = r.constructor;
                         let fehlt = [];
                         while (performance.now() < fristEnde) {
-                            fehlt = [];
-                            if (!r._archIsRendered(feuer)) fehlt.push("die Feuerstelle wächst");
-                            const ring = r._builtRingRadius();
-                            if (!(ring != null && ring >= K.RING_EXIST_FLOOR))
-                                fehlt.push(`der Boden wächst (Ring ${ring} von ${K.RING_EXIST_FLOOR})`);
+                            const u = window.__s0Gestalt(feuer);
+                            if (u.fiel) return `die Feuerstelle fiel aus der Welt (${u.fiel}) — sie wächst nie mehr`;
+                            fehlt = u.fehlt;
                             if (!fehlt.length) return null;
                             await takt(5);
                         }
-                        return `die Feuerstelle und ihr Boden standen nicht in der Frist (${fehlt.join(" · ")})`;
+                        return (
+                            `die Feuerstelle und ihr Boden standen nicht in der Frist (${fehlt.join(" · ")}) — ` +
+                            `${window.__s0FoundryLage(feuer)} · längster Takt ${Math.round(laengsterTakt)} ms`
+                        );
                     },
                     S0,
                     gestalt,
@@ -975,6 +1040,31 @@ async function lichtLauf() {
             }
             zeit(gestalt ? "die Gestalt steht" : "der Satz steht");
         }
+        // DER SCHEIN DER WACHE: ein Werk fällt durch einen benannten Rufer — das Urteil MUSS ihn nennen (ohne Wache stand
+        // 158 s lang nur „die Feuerstelle wächst"). Ein zweites Werk 60 m abseits, die Feuerstelle des Schusses bleibt.
+        if (SELBSTTEST && !ergebnis.sauber)
+            wache = await phase("Schein Wache", () =>
+                page.evaluate(() => {
+                    const r = window.anazhRealm;
+                    const p = window.__s0Feuer.position;
+                    const x = p.x + 60;
+                    const z = p.z;
+                    const e = r.spawnArchitecture(
+                        "glutbrunnen",
+                        { x, y: r.getTerrainHeightAt(x, z) + 0.5, z },
+                        { precise: true, seed: 4711 }
+                    );
+                    if (!e) return { fehler: "kein Werk für den Schein" };
+                    const wache = window.__s0Wache;
+                    window.__s0Wache = e;
+                    function selbstScheinRaeumt(x) {
+                        r.removeArchitecture(x);
+                    }
+                    selbstScheinRaeumt(e);
+                    window.__s0Wache = wache;
+                    return window.__s0Gestalt(e);
+                })
+            );
         for (const schein of SELBSTTEST && !ergebnis.sauber ? [false, "pool", "farbe"] : ergebnis.sauber ? [] : [false]) {
             ergebnis[schein ? (schein === "pool" ? "schein" : "farbe") : "sauber"] = await phase(schein ? "Schein " + schein : "Schuss", () =>
                 page.evaluate(async (schein, nahM, palette) => {
@@ -1273,7 +1363,12 @@ async function lichtLauf() {
         console.log(
             `  SELBSTTEST S0 PROGRAMM-GRÖSSE (die Decke ein Zeichen unter dem Boden-Programm): ${grossGetroffen ? `getroffen — ${gross.rot[0].split(" — ")[0]}` : "BLIND"}`
         );
-        pass = pass && getroffen && farbGetroffen && grossGetroffen;
+        const wa = wache;
+        const wacheGetroffen = !!wa && !wa.fehler && typeof wa.fiel === "string" && wa.fiel.includes("selbstScheinRaeumt");
+        console.log(
+            `  SELBSTTEST S0 WACHE (ein Werk fällt durch einen benannten Rufer): ${wacheGetroffen ? `getroffen — das Urteil nennt ${wa.fiel}` : "BLIND " + JSON.stringify(wa)}`
+        );
+        pass = pass && getroffen && farbGetroffen && grossGetroffen && wacheGetroffen;
     }
     console.log(
         `\n${pass ? "✅" : "⛔"} S0 BILD ${pass ? "GRÜN: die Feuerstelle trägt den Feuerkreis aus 2 m in der Ausgabe" : "ROT"} (${Math.round((Date.now() - t0) / 1000)} s, ${ECHT ? "echte GPU" : adapter.fehlt || adapter.vendor + "/" + adapter.architecture} · Holz ${HOLZ})\n`

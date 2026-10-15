@@ -1195,6 +1195,8 @@ class AnazhRealm_Z13b {
                 precise: true,
                 // Ω5 — die Gratis-Geburt reist durch den Reload mit.
                 freeBorn: a.freeBorn === true,
+                // die Marke des Wurfs des Felds reist durch den Reload mit (`_weichtDemBau`)
+                feldWurf: a.feldWurf === true,
                 // PRÄGUNG-WELT — der Guss-Stempel reist durch den Reload mit
                 // (spawnArchitecture ist der EINE Sanitize-Chokepoint).
                 studioOv: a.studioOv,

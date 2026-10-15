@@ -544,10 +544,14 @@ async function gtDorfweg(v2, anker, sek) {
 // K10-6 stand die Feuerstelle als Bau: lag eine im Grundriss des Orts 80 m weit, wählte das Spiel den Ort 96 m weit — die Wahl
 // hing am Lade-Stand der Würfe, und die Linse (ohne Glut-Feld) maß einen anderen Ort als das Spiel. Je Art ein Wurf an einem
 // freien Ort (die Wand in jeder Höhe der Platte: im Hang liegt die Platte tiefer als der Wurf), in der Mitte eines Hauses
-// und auf dem Weg. `defekt` ist der Selbst-Schein: die Feuerstelle gilt wieder als Bau.
+// und auf dem Weg. DAS WERK DERSELBEN ART weicht nie: die Feuerstelle des Satzes oder des Bau-Modus ist Bau (sie sperrt den
+// Grund, kein Grundriss und kein Weg räumt sie) — es entscheidet die HERKUNFT (die Marke `feldWurf`, die nur der Wurf des
+// Felds trägt: `_enqueueVegetationSpawn`), nie die Art. Bis zur Nachbesserung 2 entschied die Art: die Feuerstelle des
+// Menschen wich jedem späteren Bau. `defekt` ist der Selbst-Schein: "bau" — die Feuerstelle gilt wieder als Bau (der Wurf
+// MUSS sperren); "art" — die Art entscheidet (das Werk MUSS weichen).
 // Läuft im Browser (page.evaluate) — selbstgenügsam.
 function feldWurfImOrt(anker, defekt) {
-    const res = { sperrt: [], grundriss: [], weg: [], fehl: [] };
+    const res = { sperrt: [], grundriss: [], weg: [], fehl: [], werk: { arten: [], weicht: [] } };
     const r = window.anazhRealm;
     const A = r.constructor;
     // die Arten des Felds (`_vegetationSampleSpawn`), wie die Linse sie kennt — die Welt trägt sie als EINE Liste
@@ -565,10 +569,33 @@ function feldWurfImOrt(anker, defekt) {
     ];
     res.arten = LISTE.length;
     res.quelle = Array.isArray(A.FELD_WURF) && A.FELD_WURF.join() === LISTE.join();
-    if (defekt)
+    if (defekt === "bau")
         r._weichtDemBau = function (e) {
             return this._istNatur(e);
         };
+    if (defekt === "art")
+        r._weichtDemBau = function (e) {
+            return this._istNatur(e) || (!!e && A.FELD_WURF.includes(e.type));
+        };
+    // die Marke trägt der EINE Wurf-Pfad des Felds (`_enqueueVegetationSpawn`): seine Optionen, am Setzen abgegriffen
+    let feldOpts = null;
+    {
+        const sofort = r._vegSpawnImmediate;
+        r._naturSetzen = (name, pos, o) => {
+            feldOpts = o;
+            return null;
+        };
+        r._wildnisTraegt = () => true;
+        r._vegSpawnImmediate = true;
+        try {
+            r._enqueueVegetationSpawn("glutbrunnen", { x: anker.x, y: 0, z: anker.z }, { silent: true, seed: 4711 });
+        } finally {
+            delete r._naturSetzen; // die Methoden des Prototyps gelten wieder
+            delete r._wildnisTraegt;
+            r._vegSpawnImmediate = sofort;
+        }
+    }
+    res.feldMarke = !!(feldOpts && feldOpts.feldWurf === true);
     const neu = [];
     try {
         const H = (x, z) => r.getTerrainHeightAt(x, z);
@@ -602,13 +629,36 @@ function feldWurfImOrt(anker, defekt) {
             res.err = `kein ${weg ? "freier Ort" : "Punkt des Wegs"} um ${anker.x.toFixed(0)}/${anker.z.toFixed(0)}`;
             return res;
         }
-        const wirf = (t, x, z, wo) => {
-            const e = r.spawnArchitecture(t, { x, y: H(x, z) + 0.5, z }, { silent: true, seed: 4711 });
-            if (!e) res.fehl.push(t + "@" + wo);
+        // der Wurf mit den Optionen des Felds (samt seiner Marke), das Werk präzise ohne sie (der Satz, der Bau-Modus)
+        const wirf = (t, x, z, wo, werk) => {
+            const o = werk ? { precise: true, seed: 4711 } : Object.assign({}, feldOpts || {}, { seed: 4711 });
+            const e = r.spawnArchitecture(t, { x, y: H(x, z) + 0.5, z }, o);
+            if (!e && werk) res.werk.weicht.push(`${t} (kein Werk @${wo})`);
+            else if (!e) res.fehl.push(t + "@" + wo);
             else neu.push(e);
             return e;
         };
         const steht = (e) => r.state.architectures.includes(e);
+        for (const t of LISTE) {
+            if (r._istNatur({ type: t })) continue; // die Natur weicht in jeder Herkunft (das Natur-Gesetz)
+            res.werk.arten.push(t);
+            const wo = [];
+            const w1 = wirf(t, frei.x, frei.z, "frei", true);
+            if (w1 && r._bauFrei(frei.x, frei.z, 0, box, null, -Infinity)) wo.push("sperrt nicht");
+            if (w1) r.removeArchitecture(w1);
+            const w2 = wirf(t, hx, hz, "haus", true);
+            if (w2) {
+                r._grundrissRaeumen(haus);
+                if (!steht(w2)) wo.push("im Grundriss geräumt");
+            }
+            const w3 = wirf(t, weg.x, weg.z, "weg", true);
+            if (w3) {
+                r._naturRaeumen(weg.x, weg.z, 2, false, "dem Weg des Dorfs", null);
+                if (!steht(w3)) wo.push("auf dem Weg geräumt");
+            }
+            if (wo.length) res.werk.weicht.push(`${t} (${wo.join(" · ")})`);
+            for (const e of [w1, w2, w3]) if (e && steht(e)) r.removeArchitecture(e);
+        }
         for (const t of LISTE) {
             const e1 = wirf(t, frei.x, frei.z, "frei");
             if (e1 && !r._bauFrei(frei.x, frei.z, 0, box, null, -Infinity)) res.sperrt.push(t);
@@ -1923,7 +1973,8 @@ const FIXTURES = [
     const OA = await messeOrt("auto", MESSORT_DORF);
     // die Würfe des Felds am Auto-Dorf (`feldWurfImOrt`) und ihr Selbst-Schein
     const FW = OA.outO.anker ? await page.evaluate(feldWurfImOrt, OA.outO.anker, false) : { err: "kein Ort" };
-    const FWd = OA.outO.anker ? await page.evaluate(feldWurfImOrt, OA.outO.anker, true) : { err: "kein Ort" };
+    const FWd = OA.outO.anker ? await page.evaluate(feldWurfImOrt, OA.outO.anker, "bau") : { err: "kein Ort" };
+    const FWa = OA.outO.anker ? await page.evaluate(feldWurfImOrt, OA.outO.anker, "art") : { err: "kein Ort" };
 
     await browser.close();
     server.close();
@@ -2063,11 +2114,12 @@ const FIXTURES = [
     console.log("  FELD-WURF IM ORT " + JSON.stringify(FW));
     check(
         "O Auto-Dorf: jeder Wurf des Felds weicht dem Ort wie die Natur — keiner sperrt der Wahl Grund (_bauFrei), Grundriss und Weg räumen ihn (die Arten aus EINER Liste, FELD_WURF)",
-        !FW.err && FW.quelle === true && FW.weichen === FW.arten,
+        !FW.err && FW.quelle === true && FW.feldMarke === true && FW.weichen === FW.arten,
         FW.err
             ? FW.err.split("\n")[0]
             : `${FW.weichen}/${FW.arten} Arten weichen` +
                   (FW.quelle ? "" : " · die Liste ist nicht EINE Quelle") +
+                  (FW.feldMarke ? "" : " · der Wurf des Felds trägt keine Marke (feldWurf, _enqueueVegetationSpawn)") +
                   (FW.sperrt.length ? " · sperrt: " + FW.sperrt.join(", ") : "") +
                   (FW.grundriss.length ? " · im Grundriss: " + FW.grundriss.join(", ") : "") +
                   (FW.weg.length ? " · auf dem Weg: " + FW.weg.join(", ") : "") +
@@ -2079,6 +2131,19 @@ const FIXTURES = [
         FWd.err
             ? FWd.err.split("\n")[0]
             : `sperrt: ${FWd.sperrt.join(", ") || "—"} · im Grundriss: ${FWd.grundriss.join(", ") || "—"}`
+    );
+    check(
+        "O Auto-Dorf: das Werk derselben Art (die Feuerstelle des Satzes, des Bau-Modus) weicht nie — es sperrt den Grund, kein Grundriss und kein Weg räumt es (die Herkunft entscheidet, die Marke feldWurf, nie die Art)",
+        !FW.err && FW.werk.arten.includes("glutbrunnen") && FW.werk.weicht.length === 0,
+        FW.err
+            ? FW.err.split("\n")[0]
+            : `Werk-Arten ${FW.werk.arten.join(", ") || "—"}` +
+                  (FW.werk.weicht.length ? " · weicht als Werk: " + FW.werk.weicht.join(", ") : " · keins weicht")
+    );
+    check(
+        "O Auto-Dorf: Selbst-Schein — entscheidet die Art, weicht die Feuerstelle des Menschen (die Linse sieht den Täter)",
+        !FWa.err && FWa.werk.weicht.some((w) => w.startsWith("glutbrunnen")),
+        FWa.err ? FWa.err.split("\n")[0] : `weicht als Werk: ${FWa.werk.weicht.join(", ") || "—"}`
     );
     console.log("\n=== TEIL C: WORLDGEN-AUTO-DÖRFER (Nachlese-Welle) ===");
     for (const [name, ok] of autoStaticLaws(stammLib.text(root))) check(name, ok);

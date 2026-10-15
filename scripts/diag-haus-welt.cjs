@@ -544,8 +544,9 @@ async function proben(phasen) {
         const pr = r._foundryPresetForEntry(e);
         return !!(pr && Object.prototype.hasOwnProperty.call(PHYTO, pr));
     };
-    // was dem Bau weicht: die Natur und jeder Wurf des Felds (`FELD_WURF` — die Feuerstelle des Glut-Felds, K10-6)
-    const weichtDemBau = (e) => istNatur(e) || (!!e && A.FELD_WURF.includes(e.type));
+    // was dem Bau weicht: die Natur und jeder Wurf des Felds (die Marke `feldWurf` einer Art aus `FELD_WURF` — die Feuerstelle
+    // des Glut-Felds, K10-6; die Feuerstelle des Menschen ist Bau)
+    const weichtDemBau = (e) => istNatur(e) || (!!e && e.feldWurf === true && A.FELD_WURF.includes(e.type));
     const imGrundrissVon = (liste, x, z) => {
         for (const hs of liste) {
             const lx = lokal(hs, x, z);

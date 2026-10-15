@@ -612,6 +612,9 @@ class AnazhRealm_Z20d {
     _enqueueVegetationSpawn(name, position, opts) {
         // Ein Wurf des Feldes (Wald, Unterholz, Totholz, Fels-Streu): wo die Wildnis nicht trägt, fällt er.
         if (!this._wildnisTraegt(position.x, position.z)) return;
+        // DIE MARKE DES WURFS: was das Feld wirft, trägt sie (`feldWurf`, am Eintrag und im Save) — `_weichtDemBau` liest die
+        // Herkunft, nie die Art (die Feuerstelle des Menschen ist Bau)
+        opts = Object.assign({}, opts, { feldWurf: true });
         if (this._vegSpawnImmediate) {
             this._naturSetzen(name, position, opts);
             return;
@@ -997,13 +1000,15 @@ class AnazhRealm_Z20d {
         return !!(pr && Object.prototype.hasOwnProperty.call(tab, pr));
     }
 
-    // Weicht der Eintrag dem Bau? Die Natur (`_istNatur`) und jeder Wurf des Felds (`FELD_WURF`: die Feuerstelle des
-    // Glut-Felds ist Bau ihrer Gestalt nach — Kollision, Grundriss, Trittfläche —, aber ein Wurf: sie kam durch die Natur-Wand,
-    // `_enqueueVegetationSpawn`). Was weicht, sperrt keinem Ort den Grund (`_bauFrei`) und fällt im Grundriss eines Baus und
-    // auf dem Weg eines Dorfs (`_naturRaeumen`). Bis K10-6 wich der Wurf nur, wenn er NACH dem Bau kam: eine Feuerstelle im
-    // Grundriss des Orts 80 m weit schob die Ort-Wahl im Spiel auf 96 m — die Wahl hing am Lade-Stand der Würfe.
+    // Weicht der Eintrag dem Bau? Die Natur (`_istNatur`) und jeder Wurf des Felds (die Marke `feldWurf`, die nur der Wurf
+    // trägt: `_enqueueVegetationSpawn` → `spawnArchitecture`, eine Art aus `FELD_WURF`; die Feuerstelle des Glut-Felds ist Bau
+    // ihrer Gestalt nach — Kollision, Grundriss, Trittfläche —, aber ein Wurf). Was weicht, sperrt keinem Ort den Grund
+    // (`_bauFrei`) und fällt im Grundriss eines Baus und auf dem Weg eines Dorfs (`_naturRaeumen`). Bis K10-6 wich der Wurf nur,
+    // wenn er NACH dem Bau kam: eine Feuerstelle im Grundriss des Orts 80 m weit schob die Ort-Wahl im Spiel auf 96 m. Es
+    // entscheidet die HERKUNFT, nie die Art: bis K10-6 Nachbesserung 2 wich auch die Feuerstelle des Satzes und des Bau-Modus
+    // jedem späteren Bau (gate:settlement Teil O „das Werk derselben Art").
     _weichtDemBau(e) {
-        return this._istNatur(e) || (!!e && AnazhRealm.FELD_WURF.includes(e.type));
+        return this._istNatur(e) || (!!e && e.feldWurf === true);
     }
 
     // Der Grundriss eines Baus (halbe Maße und Mitte, bau-lokal): der Footprint eines Hauses — oder die LICHTUNG eines Baus,
