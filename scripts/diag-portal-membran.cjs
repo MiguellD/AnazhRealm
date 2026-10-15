@@ -25,6 +25,8 @@
 //          sie durch das FARB-GESETZ ins Lineare (Lehre 21)
 //       HS Selbsttest: der rohe Leser (Anzeige-Wert als Strahlung, der Stand vor K64-n1) MUSS in H rot werden — in DERSELBEN
 //          Seite, gegen dieselbe Maske und dasselbe Labor-Bild (K64-n2: seine Stoffe SIND die des Labors)
+//       HM (K64-n3) die Maske zeichnet ohne kaltes Programm (je Bild gezählt: neue Vertex-/Fragment-Programme), HMS Selbsttest:
+//          derselbe Zähler sieht die kalten Programme des rohen Lesers
 //
 //   node scripts/diag-portal-membran.cjs [--ohne-blick]
 "use strict";
@@ -127,7 +129,11 @@ async function blickProbe(opts) {
 // Membran. Die Shell malt in Bild-Werten (ACES endet im Anzeige-Wert); roh als lineare Strahlung gelesen hob die Ausgabe ihre
 // dunklen Bänder an, die Membran stand milchig-weiß (entsättigt). EINE Seite, EIN Blick, die Uhr steht — vier Bilder:
 //   A    die Welt, wie sie ist (warm: der Blick B hat jedes Programm gebaut)
-//   M    die Maske: die Membranen in Magenta, der Nebel verborgen (EIN kaltes Programm)
+//   M    die Maske OHNE Programm (K64-n3): dieselbe Welt mit verborgenen Membranen — Membran-Pixel sind die, in denen die Welt
+//        mit Membran sichtbar anders steht (ein Kanal ≥ MASKE_STUFE). Bis K64-n3 malte M die Membranen magenta: EIN kaltes
+//        Programm, in der CI 195 s von 233 s des Gates (Lauf 38670064375); A gegen A wiederholt weicht kein Pixel ab (die Uhr
+//        steht, TRAA ist bei gleicher Lage gleich), die Differenz-Maske deckt sich mit der magenta (swiftshader: 7 876 von 8 014
+//        Pixeln, 1 außerhalb). HM zählt die kalten Programme je Bild und hält die Maske bei 0.
 //   R    der rohe Leser (der Stand vor K64-n1): Membran und Nebel zeichnen ihren Anzeige-Wert als Strahlung (HS, zwei Programme)
 //   L    das Labor-Bild derselben Pixel: DIESELBEN rohen Stoffe in ein Ziel im Format des Szenen-Passes, gezeichnet nur Membran
 //        und Nebel — die Shell zeigt ihren Anzeige-Wert als Pixel, ein Ziel, das nicht Ausgabe ist, hält ihn ungewandelt.
@@ -153,7 +159,7 @@ async function hellProbe() {
     performance.now = () => 4.2e6; // die Uhr steht: Atem, Puls und Welle gleich in jedem Bild
     const recs = [...r._portalMembranes.values()];
     const vor = recs.map((rec) => [rec.mesh.material.colorNode, rec.nebel ? rec.nebel.material.colorNode : null]);
-    const nebelSicht = recs.map((rec) => (rec.nebel ? rec.nebel.visible : false));
+    const sicht = recs.map((rec) => rec.mesh.visible);
     const setze = (fm, fn) =>
         recs.forEach((rec) => {
             rec.mesh.material.colorNode = fm(rec);
@@ -165,9 +171,19 @@ async function hellProbe() {
         });
     const schuss = async () => (await window.__ausgabeAufnahme(W, H, 1, { wahl: 0 })).u8;
     const zeit = {};
+    // je Bild die Wanduhr und die KALTEN PROGRAMME (HM): Vertex- und Fragment-Programme, die der Renderer in diesem Bild neu
+    // übersetzt (r184 hält sie je Quelltext in `_pipelines.programs`) — auf swiftshader kostet ein kaltes Programm bis Minuten
+    const kalt = {};
+    const programme = () => {
+        const P = rend._pipelines && rend._pipelines.programs;
+        return P ? new Set([...P.vertex.keys(), ...P.fragment.keys()]) : null;
+    };
     const uhr = async (k, f) => {
         const t = echtNow();
+        const vor = programme();
         const v = await f();
+        const nach = programme();
+        kalt[k] = vor && nach ? [...nach].filter((c) => !vor.has(c)).length : null;
         zeit[k] = Math.round(echtNow() - t);
         return v;
     };
@@ -248,14 +264,10 @@ async function hellProbe() {
     };
     try {
         const A = await uhr("A", schuss);
-        setze(() => TSL.vec4(1, 0, 1, 1), null);
-        recs.forEach((rec) => {
-            if (rec.nebel) rec.nebel.visible = false;
-        });
+        // die Maske: dieselbe Welt ohne Membranen (kein Stoff wechselt, kein Programm entsteht)
+        recs.forEach((rec) => (rec.mesh.visible = false));
         const M = await uhr("M", schuss);
-        recs.forEach((rec, i) => {
-            if (rec.nebel) rec.nebel.visible = nebelSicht[i];
-        });
+        recs.forEach((rec, i) => (rec.mesh.visible = sicht[i]));
         setze(
             (rec) => TSL.vec4(r._membranGraph(rec.tor.gesetz).anzeige, 1.0),
             (rec) => TSL.vec4(r._nebelGraph(rec.tor.gesetz).anzeige, 1.0)
@@ -267,9 +279,14 @@ async function hellProbe() {
             const mx = Math.max(u[i], u[i + 1], u[i + 2]);
             return mx > 0 ? (mx - Math.min(u[i], u[i + 1], u[i + 2])) / mx : 0;
         };
-        // EINE Maske für alle drei Bilder: die Pixel, in denen die Welt eine Membran zeigt
+        // EINE Maske für alle drei Bilder: die Pixel, in denen die Welt eine Membran zeigt — mit Membran steht ein Kanal um
+        // mindestens STUFE anders als ohne (swiftshader: Stufe 10 nimmt 7 876 der 8 014 magenta Pixel, 1 außerhalb; 6 griff
+        // 71 Pixel neben die Membran, 16 ließ 353 Rand-Pixel fallen)
+        const STUFE = 10;
         const maske = [];
-        for (let i = 0; i < W * H * 4; i += 4) if (M[i] > M[i + 1] + 70 && M[i + 2] > M[i + 1] + 70) maske.push(i);
+        for (let i = 0; i < W * H * 4; i += 4)
+            if (Math.max(Math.abs(A[i] - M[i]), Math.abs(A[i + 1] - M[i + 1]), Math.abs(A[i + 2] - M[i + 2])) >= STUFE)
+                maske.push(i);
         const mass = (u) => {
             let sY = 0,
                 sat = 0,
@@ -300,15 +317,16 @@ async function hellProbe() {
             imBild,
             belichtung: rend.toneMappingExposure,
             zeit,
+            kalt,
         };
     } finally {
         recs.forEach((rec, i) => {
             rec.mesh.material.colorNode = vor[i][0];
             rec.mesh.material.needsUpdate = true;
+            rec.mesh.visible = sicht[i];
             if (rec.nebel) {
                 rec.nebel.material.colorNode = vor[i][1];
                 rec.nebel.material.needsUpdate = true;
-                rec.nebel.visible = nebelSicht[i];
             }
         });
         performance.now = echtNow;
@@ -319,7 +337,8 @@ async function hellProbe() {
 // brennt nicht aus: Y > 240 auf ≤ 5 % der Membran-Pixel (Nordstern Portale). Gemessen swiftshader, Ring-Mitte, Belichtung 0,615
 // (K64-n2, eine Seite): das FARB-GESETZ Y × 0,77, der rohe Leser × 1,22 bei Sättigung 0,093 gegen 0,183; die Welt steht in einem
 // zweiten Zustand (der Lauf vor K64-n2 sah ihn auch) bei × 0,81 und × 1,15 — dort fällt der rohe Leser an der Sättigung
-// (0,080 gegen 0,162).
+// (0,080 gegen 0,162). Mit der Differenz-Maske (K64-n3) dieselben zwei Zustände: Radeon × 0,77 / roh × 1,23 bei Sättigung
+// 0,094 gegen 0,184, swiftshader × 0,81 / roh × 1,15 bei 0,089 gegen 0,163.
 const HELL = { hub: 1.15, weiss: 0.05, bleich: 0.75 };
 
 async function blickStufe(check) {
@@ -368,10 +387,15 @@ async function blickStufe(check) {
                 ? loch.map((h) => `${h.gestalt} (Amplitude ${h.amplitude})`).join(" · ")
                 : b.huelle.map((h) => `${h.gestalt} ±${h.amplitude.toFixed(2)} m`).join(" · ")
         );
+        // je Bild Wanduhr und kalte Programme: „M 512 ms/0 kalt"
+        const kaltZeile = (h) =>
+            ["A", "M", "R", "L"]
+                .map((k) => `${k} ${h.zeit[k]} ms/${h.kalt[k] == null ? "?" : h.kalt[k]} kalt`)
+                .join(" · ");
         // `w`: das Bild unter dem Urteil (welt = das Spiel, roh = der alte Leser), gegen DASSELBE Labor-Bild in DERSELBEN Maske
         const hellZeile = (h, w) =>
             `${h.n} Membran-Pixel (${(h.anteil * 100).toFixed(1)} %), Y ${w === h.welt ? "Welt" : "roh"} ${w.Y.toFixed(1)} gegen Labor ${h.labor.Y.toFixed(1)} (× ${(w.Y / Math.max(1, h.labor.Y)).toFixed(2)}), Sättigung ${w.saettigung.toFixed(3)} gegen Labor ${h.labor.saettigung.toFixed(3)}, ` +
-            `Y > 240 ${(w.weiss * 100).toFixed(1)} %, Belichtung ${h.belichtung.toFixed(3)}, Labor ${h.laborFormat} — ${h.imBild.join(" · ")} [ms A ${h.zeit.A} · M ${h.zeit.M} · R ${h.zeit.R} · L ${h.zeit.L}]`;
+            `Y > 240 ${(w.weiss * 100).toFixed(1)} %, Belichtung ${h.belichtung.toFixed(3)}, Labor ${h.laborFormat} — ${h.imBild.join(" · ")} [${kaltZeile(h)}]`;
         const hellRot = (h, w) =>
             !(
                 h.n > 200 &&
@@ -389,6 +413,18 @@ async function blickStufe(check) {
             "HS Selbsttest: der rohe Leser (Anzeige-Wert als Strahlung) wird in H rot beim Namen",
             hellRot(b.hell, b.hell.roh),
             hellZeile(b.hell, b.hell.roh)
+        );
+        // HM (K64-n3, die CI-Frist): die Maske übersetzt kein Programm — ein kaltes Programm kostete auf swiftshader in der CI
+        // 195 s (die magenta Maske bis K64-n3); HMS: derselbe Zähler sieht die kalten Programme des rohen Lesers (nicht vakuös)
+        check(
+            "HM die Maske zeichnet ohne kaltes Programm",
+            b.hell.kalt.M === 0,
+            `M: ${b.hell.kalt.M == null ? "Zähler fehlt (r184 _pipelines.programs)" : `${b.hell.kalt.M} kalte Programme`} [${kaltZeile(b.hell)}]`
+        );
+        check(
+            "HMS Selbsttest: der Zähler sieht die kalten Programme des rohen Lesers",
+            b.hell.kalt.R > 0,
+            `R: ${b.hell.kalt.R == null ? "Zähler fehlt" : `${b.hell.kalt.R} kalte Programme`}`
         );
         check("B keine Page-Errors", b.seite.length === 0, b.seite.slice(0, 2).join(" | "));
         // BS: der alte Stand (frustumCulled = false) in einer frischen Seite — B2 MUSS jede Membran beim Namen nennen
