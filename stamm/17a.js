@@ -694,7 +694,11 @@ class AnazhRealm_Z17a {
     // 0,5 (r184 `renderObject` setzt sie je Objekt, nie den Knoten): a' > 0,5 ⇔ a > c — der Wurf bleibt binär wie vorher.
     _laubKante(T, a, c) {
         const s = T.float(c == null ? 0.5 : c);
-        return a.sub(s).div(T.fwidth(a).max(T.float(1e-4))).add(T.float(0.5)).clamp(0.0, 1.0);
+        return a
+            .sub(s)
+            .div(T.fwidth(a).max(T.float(1e-4)))
+            .add(T.float(0.5))
+            .clamp(0.0, 1.0);
     }
 
     // DIE SCHWELLE DER KANTE (K68): das Interleaved-Gradient-Rauschen über den gespiegelten Achsen (y, x) — unabhängig vom
