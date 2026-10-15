@@ -57,7 +57,6 @@ const ERLAUBT = {
     _installHelpPopovers: "UI-Lage (Hilfe-Popover im Fenster)",
     _installResizeHandle: "UI-Lage (Panel-Griff)",
 };
-const KOPF = /^ {4}(?:static\s+)?(?:async\s+)?([A-Za-z_$][\w$]*)\s*\([^)]*\)\s*\{\s*$/;
 // Block-Kommentare behalten ihre Zeilenumbrüche (die Zeilennummern der Befunde bleiben die der Datei).
 function ohneKommentare(src) {
     return src
@@ -72,13 +71,19 @@ const ALIAS_ZUWEISUNG = /(?:^|[\s,(;{])([A-Za-z_$][\w$]*)\s*=\s*[^;=]*?\bdomElem
 function quellBefunde(src) {
     const b = [];
     const zeilen = ohneKommentare(src).split("\n");
+    // Die Methode einer Zeile am AST (stammLib.glieder, K38-N2): ein umbrochener Kopf oder ein Kopf mit `)` im
+    // Default-Parameter fiel aus dem Kopf-Muster, und seine Zeilen lasen still unter dem Namen der Methode davor.
+    const gl = stammLib.glieder(src);
+    const roh = src.split("\n");
+    const ab = [];
+    for (let i = 0, o = 0; i < roh.length; o += roh[i].length + 1, i++) ab.push(o);
     let methode = null;
     let quelleLiest = false;
     let aliase = new Set();
     zeilen.forEach((z, i) => {
-        const k = KOPF.exec(z);
-        if (k) {
-            methode = k[1];
+        const g = stammLib.gliedAn(gl, ab[i] + roh[i].search(/\S|$/));
+        if ((g ? g.name : null) !== methode) {
+            methode = g ? g.name : null;
             aliase = new Set();
         }
         ALIAS_ZUWEISUNG.lastIndex = 0;

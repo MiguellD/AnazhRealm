@@ -74,11 +74,11 @@ const SCHWELLE = {
 // ±π beliebig ungenau, der alte Hash fract(sin(dot(p, ·)) · 43758) zerfiel auf dem Radeon mit Welt-Ort und Wasser-Uhr zum Zebra
 // (B2 1,434; swiftshader rechnet sin genau und sah nichts). Die Wand liest die Quelle (Kommentare fallen) und nennt die Zeile.
 function hashSin(quelle) {
-    const a = stammLib.kopf(quelle, "_ensureHydroSurfaceMaterial"); // am Namen (gate:apparat Klinge 3)
-    if (a < 0) return "der Wasser-Stoff _ensureHydroSurfaceMaterial fehlt in der Quelle";
-    const rest = quelle.slice(a + 1);
-    const ende = rest.search(/\n {4}[_A-Za-z$][\w$]*\([^)]*\) \{\n/);
-    const zeilen = (ende > 0 ? rest.slice(0, ende) : rest).split("\n");
+    // das Glied am Namen und sein Bereich am AST (stammLib.glieder, K38-N2): das Ende las bis dahin ein Kopf-Muster der
+    // nächsten Methode — ein umbrochener Kopf danach verlängerte den Stoff still um die Nachbarn
+    const g = stammLib.glieder(quelle).find((x) => x.name === "_ensureHydroSurfaceMaterial");
+    if (!g) return "der Wasser-Stoff _ensureHydroSurfaceMaterial fehlt in der Quelle";
+    const zeilen = quelle.slice(g.start, g.ende).split("\n");
     for (const z of zeilen) {
         const code = z.replace(/\/\/.*$/, "");
         if (/\bsin\s*\(/.test(code)) return z.trim();
@@ -88,9 +88,9 @@ function hashSin(quelle) {
 
 // Der Täter des Selbsttests: der Hash vor K40, im Gewand des Stoffs.
 const HASH_ALT =
-    "\n    _ensureHydroSurfaceMaterial() {\n        const hash2 = Fn(([p]) => {\n" +
+    "class A {\n    _ensureHydroSurfaceMaterial(\n        opts = f(1)\n    ) {\n        const hash2 = Fn(([p]) => {\n" +
     "            return fract(sin(dot(p, vec2(41.3, 289.1))).mul(43758.5453));\n        });\n    }\n" +
-    "    _naechster() {\n";
+    "    _naechster() {}\n}\n";
 
 // Das Urteil über einen Befund: Liste der Verstöße (leer = grün). Rein — im Selbsttest wie im Lauf.
 function urteil(b) {

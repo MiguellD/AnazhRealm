@@ -1974,15 +1974,28 @@ function scanNormalWand(srcRoh) {
     // NORMAL-Fassung (die Geometrie-Normale mit Flächen-Vorzeichen: am Boden nach unten, der Boden lag im eigenen
     // Schatten). Die Geometrie-Normale heißt im Graphen `normalWorldGeometry` (× `faceDirection`). Geprüft wird der
     // Rechte-Hand-Ausdruck jeder normalNode-Zuweisung und transitiv jede lokale Größe (`_name`), die er in seiner Methode liest.
+    // Die Methode der Zuweisung am AST (stammLib.glieder, K38-N2): bis dahin suchte ein Kopf-Muster den letzten Kopf davor —
+    // ein umbrochener Kopf oder `)` im Default-Parameter gab der Spur die Methode davor (die lokale Größe blieb ungelesen).
     const zuweisung = /([\w$.]+)\.normalNode\s*=\s*([^;]+);/g;
-    const kopfRe = /\n {4}[_a-zA-Z$][\w$]*\([^)\n]*\)\s*\{\n/g;
     const quelleRe = /\.normalWorld\b(?!Geometry)/;
+    // Der Strip hält jede Zeile (er kennt keine Regex-Literale, sein Text ist kein JS mehr): das Glied liest der AST am
+    // Rohtext, die Zuweisung trifft es über ihre Zeile.
+    const gl = stammLib.glieder(srcRoh);
+    const codeAb = [0];
+    for (let i = code.indexOf("\n"); i !== -1; i = code.indexOf("\n", i + 1)) codeAb.push(i + 1);
     while ((m = zuweisung.exec(code))) {
-        let anfang = 0,
-            k;
-        kopfRe.lastIndex = 0;
-        while ((k = kopfRe.exec(code)) && k.index < m.index) anfang = k.index;
-        const rumpf = code.slice(anfang, m.index);
+        let lo = 0,
+            hi = codeAb.length - 1;
+        while (lo < hi) {
+            const mid = (lo + hi + 1) >> 1;
+            if (codeAb[mid] <= m.index) lo = mid;
+            else hi = mid - 1;
+        }
+        const zeile = lo + 1;
+        const g = gl.find((x) => x.zeile <= zeile && zeile <= x.bisZeile);
+        // außerhalb jeder Methode (eine Anweisung hinter der Klasse): ab der Zeile nach dem Glied davor
+        const davor = g ? null : gl.filter((x) => x.bisZeile < zeile).pop();
+        const rumpf = code.slice(g ? codeAb[g.zeile - 1] : davor ? codeAb[davor.bisZeile] : 0, m.index);
         const offen = [m[2]];
         const gesehen = new Set();
         let treffer = null;

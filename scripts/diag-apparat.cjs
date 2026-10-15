@@ -14,12 +14,14 @@
 // zieht ein Symbol um, wird HIER die eine Katalog-Zeile rot, nie N Proben.
 //
 // Dritte Aufgabe (Klinge 3, K38-N2): jede Linse findet eine Methode am NAMEN, nie an ihrer Parameter-Liste.
+// Vierte Aufgabe (Klinge 4, K38-N2 Runde 3): jede Linse ordnet Code seiner Methode am AST zu, nie an einem Kopf-Muster.
 //
-// Selbst-Test: --selftest beweist alle drei Klingen (kein vakuöses Grün):
+// Selbst-Test: --selftest beweist alle vier Klingen (kein vakuöses Grün):
 // (1) eine injizierte .toString()-Probe hebt den Zähler über den Ratchet,
 //     ein bloßer Kommentar hebt ihn NICHT; (2) ein erfundenes Katalog-Symbol
 // feuert die Katalog-Prüfung; (3) ein Regex- und ein Text-Anker mit Parameter-Liste
-// werden mit Datei:Zeile genannt, der Name allein, ein Aufruf und eine fremde Methode schweigen.
+// werden mit Datei:Zeile genannt, der Name allein, ein Aufruf und eine fremde Methode schweigen;
+// (4) jede Form des Kopf-Musters fällt mit Datei:Zeile, Kopf am Namen, Schlüssel und Zugriff schweigen.
 // ============================================================================
 "use strict";
 const fs = require("fs");
@@ -170,6 +172,31 @@ function scanAnker(playtestSrc, stammSrc) {
 const PARAM_ANKER_RX = /(_[\w$]+)\\\(((?:[^\\)\n]|\\[^()])*?)\\\)(?:\\s\*|\\s\+| )?\\\{/g;
 const PARAM_FREI = "[^)]*";
 const KOPF_TEXT_RX = /^\n?[ ]*(?:static\s+|async\s+)*([A-Za-z_$][\w$]*)\(([^()]*)\)\s*\{\s*$/;
+// KLINGE 4 (K38-N2, Prüfer Runde 3) — eine Linse ordnet Code seiner Methode am AST zu (stammLib.glieder · gliedAn · rufe),
+// nie an einem KOPF-MUSTER: ein Regex, der Methoden-Köpfe an einem Namens-Muster sucht (Einzug der Klasse + `\w` oder eine
+// Zeichenklasse + `\(`), übersieht still jeden Kopf mit `)` im Default-Parameter, jeden umbrochenen, jeden Getter — der
+// Aufruf fiel der Methode davor zu (N4.1 und W2 bis Runde 3; am Kopf von haus-fenster 14163541 neun Stellen in acht
+// Linsen). Ein Kopf am NAMEN (`_x\([^)]*\)`) ist Klinge 3. Gelesen wird jedes Regex-Literal, Token für Token.
+const KOPF_EINZUG_RX = /(?:\\n|\^)(?: \{4\}| {4}|\\s\{4\}|\[ \]\{4\})/g;
+const NAMENS_MUSTER_RX = /\\w|\[[^\]]*(?:a-z|A-Z)[^\]]*\]/;
+// Die EINE Stelle ohne AST: die Rehome-Benennung liest Text mit Konflikt-Markern (<<<<<<<), den kein Parser liest, und
+// urteilt nicht (sie benennt Hunks für den Menschen). Frei ist genau dieses Muster in genau dieser Datei.
+const KOPF_MUSTER_FREI = new Map([
+    ["scripts/stamm-rehome.cjs", "^ {4}(?:static\\s+)?(?:async\\s+)?(?:get\\s+|set\\s+)?\\*?([A-Za-z_$][\\w$]*)\\s*\\("],
+]);
+function kopfMuster(pattern) {
+    const out = [];
+    for (const m of pattern.matchAll(KOPF_EINZUG_RX)) {
+        const rest = pattern.slice(m.index + m[0].length);
+        const k = rest.indexOf("\\(");
+        if (k < 0) continue;
+        const name = rest.slice(0, k);
+        // ein Schlüssel (`(\w+): …`) oder ein Zugriff (`a\.b\(`) ist kein Kopf
+        if (/:|\\\./.test(name.replace(/\(\?:/g, ""))) continue;
+        if (NAMENS_MUSTER_RX.test(name)) out.push(m[0] + name + "\\(");
+    }
+    return out;
+}
 function parameterAnker(name, src, stammSrc) {
     const acorn = require("acorn");
     let toks;
@@ -193,6 +220,11 @@ function parameterAnker(name, src, stammSrc) {
                 if (m[2] !== PARAM_FREI)
                     errs.push(
                         `${z} nagelt die Parameter-Liste von ${m[1]} fest (/${m[0]}/) — am Namen: ${m[1]}\\(${PARAM_FREI}\\)`
+                    );
+            if (KOPF_MUSTER_FREI.get(name) !== t.value.pattern)
+                for (const k of kopfMuster(t.value.pattern))
+                    errs.push(
+                        `${z} ordnet Methoden an einem Kopf-Muster zu (/${k}/) — am AST: stammLib.glieder · gliedAn · rufe (Klinge 4)`
                     );
         } else if (t.type.label === "string" || t.type.label === "template") {
             const k = KOPF_TEXT_RX.exec(String(t.value));
@@ -244,6 +276,37 @@ function selftest() {
     ];
     for (const q of gruen)
         if (parameterAnker("probe.cjs", q, stammFake).length) fails.push(`Klinge 3 feuert am Namen-Anker: ${q}`);
+    // Klinge 4: jedes Kopf-Muster der Klasse (die Formen der neun Stellen bis Runde 3) fällt mit Datei:Zeile; der Kopf am
+    // Namen, ein Objekt-Schlüssel, ein Zugriff und die eine freie Stelle in ihrer Datei schweigen — in fremder Datei nicht.
+    const kopfRot = [
+        "const r = /\\n {4}(?:static |async )*([A-Za-z_$][\\w$]*)\\([^)\\n]*\\) \\{/g;",
+        "const r = /\\n {4}(_foundry\\w*|_heldFoundryGroup)\\([^)\\n]*\\) \\{/g;",
+        "const r = /^\\n {4}\\w+\\([^)\\n]*\\) \\{/;",
+        "const r = /\\n    (_buildTree\\w*|_stampFoliage\\w*)\\(/g;",
+        "const r = /^    (?:static |async |get |set )*([A-Za-z_$][\\w$]*)\\s*\\(/;",
+        "const r = /^ {4}(?:static\\s+)?(?:async\\s+)?([A-Za-z_$][\\w$]*)\\s*\\([^)]*\\)\\s*\\{\\s*$/;",
+        "const r = /\\n {4}[_A-Za-z$][\\w$]*\\([^)]*\\) \\{\\n/;",
+        "const r = /^\\s{4}([A-Za-z_$][\\w$]*)\\(/;",
+        "const r = /\\n[ ]{4}(\\w+)\\(/;",
+    ];
+    for (const q of kopfRot) {
+        const e = parameterAnker("probe.cjs", q, stammFake).filter((x) => /Klinge 4/.test(x));
+        if (e.length !== 1 || !/^probe\.cjs:1 ordnet Methoden an einem Kopf-Muster/.test(e[0]))
+            fails.push(`Klinge 4 nennt das Kopf-Muster nicht: ${q}`);
+    }
+    const frei = [...KOPF_MUSTER_FREI][0];
+    const kopfStill = [
+        ["probe.cjs", "const r = /\\n {4}_echt\\([^)]*\\)\\s*\\{/;"],
+        ["probe.cjs", "const r = /\\n    (\\w+): Object\\.freeze\\(\\{/;"],
+        ["probe.cjs", "const r = /\\n {4}this\\.(\\w+)\\(/;"],
+        ["probe.cjs", "const r = /^(?:_foundry\\w*|_karte\\w*)$/;"],
+        ["probe.cjs", "const g = stammLib.gliedAn(stammLib.glieder(t), i);"],
+        [frei[0], `const r = /${frei[1]}/;`],
+    ];
+    for (const [datei, q] of kopfStill)
+        if (parameterAnker(datei, q, stammFake).length) fails.push(`Klinge 4 feuert ohne Kopf-Muster: ${datei} ${q}`);
+    if (!parameterAnker("probe.cjs", `const r = /${frei[1]}/;`, stammFake).some((x) => /Klinge 4/.test(x)))
+        fails.push("Klinge 4: die freie Stelle schweigt auch in fremder Datei");
     // Klinge 1a: eine injizierte Probe hebt den Zähler über den Ratchet.
     const inject = "const x = 1;\n" + "y.toString();\n".repeat(FROZEN_TOSTRING + 1);
     if (scanRatchet(inject).errs.length !== 1) fails.push("Ratchet feuert nicht bei Injektion");
@@ -267,7 +330,7 @@ function selftest() {
         process.exit(1);
     }
     console.log(
-        "✅ SELBST-TEST: alle drei Klingen feuern (Ratchet + Katalog + Parameter-Anker beim Namen), Kommentare zählen nicht"
+        "✅ SELBST-TEST: alle vier Klingen feuern (Ratchet + Katalog + Parameter-Anker beim Namen + Kopf-Muster am AST), Kommentare zählen nicht"
     );
     process.exit(0);
 }
@@ -298,7 +361,7 @@ function main() {
         `✅ DIE APPARAT-LINSE steht — ${ratchet.n}/${FROZEN_TOSTRING} rohe .toString()-Zitate + ` +
             `${ratchet.nT}/${FROZEN_TYPEOF} typeof-Existenz-Proben (beide Ratchets nur-sinkend), ` +
             `${anker.entries.length} Anker zeigen auf lebenden Stamm-Code, __consumes + __anker installiert, ` +
-            `${param.n} Linsen finden jede Methode am Namen (0 Parameter-Anker).`
+            `${param.n} Linsen finden jede Methode am Namen (0 Parameter-Anker) und ordnen Code am AST zu (0 Kopf-Muster).`
     );
 }
 

@@ -512,7 +512,7 @@ const WIRT_LESER = {
 // (G) DIE STAMM-KLASSE, statisch: jede Stelle im Stamm, die eine Quelle baut (createOscillator · createBufferSource ·
 // createConstantSource), liegt in einer Methode, die ein benannter Wirt-Leser ist — sonst ist sie ein STAMM-LITERAL,
 // beim Namen und mit Zeile, auch wenn keine Tour sie je auslöst. Kommentare zählen nicht. Die Methode einer Zeile ist
-// der letzte Klassen-Kopf darüber (4 Leerzeichen eingerückt).
+// das Glied der Klasse, in dem sie steht (am AST, stammLib.glieder — ein Kopf-Muster gab umbrochene Köpfe der Methode davor).
 // Der Stamm der Überlagerung, wenn sie einen trägt (eine Form; beide wirft scripts/lib/stamm.cjs), sonst der des Baums.
 const STAMM_WURZEL =
     UEBER &&
@@ -522,12 +522,12 @@ const STAMM_WURZEL =
 function stammQuellen(src) {
     const rot = [];
     let stellen = 0;
-    let methode = null;
     const zeilen = src.split("\n");
-    for (let i = 0; i < zeilen.length; i++) {
+    const gl = stammLib.glieder(src);
+    for (let i = 0, o = 0; i < zeilen.length; o += zeilen[i].length + 1, i++) {
         const z = zeilen[i];
-        const kopf = /^    (?:static |async |get |set )*([A-Za-z_$][\w$]*)\s*\(/.exec(z);
-        if (kopf) methode = kopf[1];
+        const g = stammLib.gliedAn(gl, o + z.search(/\S|$/));
+        const methode = g ? g.name : null;
         const t = z.trimStart();
         if (t.startsWith("//") || t.startsWith("*") || t.startsWith("/*")) continue;
         const m = /\.create(Oscillator|BufferSource|ConstantSource)\(/.exec(z);
@@ -1519,9 +1519,12 @@ function drucke(zeilen, offline, kostenErg, lab) {
                 fehl.push(`S8: die Glut auf Armlänge ohne Spitzen-Wand bleibt unbemerkt (${s8 && s8.spitzeDbfs} dBFS)`);
             // S9: ein Ping-Zwilling im Stamm-Text — eine Methode, die einen Oszillator baut, ohne Wirt-Leser zu sein (keine
             // Tour löst sie aus; die statische Linse nennt sie trotzdem beim Namen).
+            const s9Text = stammLib.text(STAMM_WURZEL);
+            const s9Nach = stammLib.glieder(s9Text)[0].ende; // hinter das erste Glied der Klasse (die Methode am AST)
             const s9 = stammQuellen(
-                stammLib.text(STAMM_WURZEL) +
-                    "\n    zwillingPing(tags) {\n        const o = this.state.symphony.ctx.createOscillator();\n    }\n"
+                s9Text.slice(0, s9Nach) +
+                    "\n    zwillingPing(\n        tags\n    ) {\n        const o = this.state.symphony.ctx.createOscillator();\n    }" +
+                    s9Text.slice(s9Nach)
             );
             if (!s9.rot.some((t) => /^G Stamm: zwillingPing baut Oscillator ohne Gesetz/.test(t)))
                 fehl.push("S9: der Ping-Zwilling im Stamm bleibt unbenannt");
