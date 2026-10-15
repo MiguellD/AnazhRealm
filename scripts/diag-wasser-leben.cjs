@@ -453,8 +453,10 @@ function urteil(b) {
                     v.push(
                         `K9 LITERAL: das Wasser kennt Tag und Nacht nicht (Mittag ${li.mittagUnten}, Mitternacht ${li.nachtUnten})`
                     );
+                // linear (D3: die Umgebung ist die Equirekt-Tafel der EINEN Atmosphäre, Float): 1 % des hellsten Kanals —
+                // die Tafel folgt der Augen-Höhe in 10-m-Stufen, ein Tauchgang darf sie nicht färben
                 const dh = Math.max(...li.himmelVor.map((x, i) => Math.abs(x - li.himmelGetaucht[i])));
-                if (dh > 2)
+                if (dh > 0.01 * Math.max(...li.himmelVor))
                     v.push(
                         `K9 HIMMEL: der Tauchgang färbt die Himmels-Umgebung (${li.himmelVor.join("/")} → ${li.himmelGetaucht.join("/")})`
                     );

@@ -41357,7 +41357,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
     // ### 6.G4.a — Welt unter wandernder Sonne (Hemisphere + Licht-Material + Fog) ###
     // Tiefe statt homogenem Licht: Hemisphere-Light (Sky-Tint oben, Erd-Tint unten) + licht-reaktives
     // Material + atmosphärischer Fog.
-    const v827Results = await safeEvaluate(page, () => {
+    const v827Results = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         const out = {};
 
@@ -41386,10 +41386,15 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         // 1. HemisphereLight im Scene + state-cached
         out.hemiLightExists = !!r.state.hemiLight && r.state.hemiLight.isHemisphereLight === true;
         out.fogExists = !!r.state.luft && !!r.state.scene.fogNode && !r.state.scene.fog;
-        // Die Luft-Farbe ist gesetzt nach erstem _applyDayNightToScene
+        // Die In-Streuung der Luft IST der Himmel der EINEN Atmosphäre (D3): nach dem ersten _applyDayNightToScene trägt
+        // die Tafel das Licht von Sonne oder Mond (die Farbe über Wasser liest himmelFarbe, nie ein eigenes Uniform)
         r._applyDayNightToScene();
-        const lf = r.state.luft && r.state.luft.U.farbe.value;
-        out.fogColorSet = !!lf && (lf.r > 0 || lf.g > 0 || lf.b > 0);
+        const atmoU = r._atmoLutBau().U;
+        const mE = atmoU.mondE.value;
+        out.fogColorSet =
+            !!r.state.luft &&
+            typeof r.state.luft.farbe === "function" &&
+            (atmoU.sonneE.value.x > 0 || mE.x + mE.y + mE.z > 0);
 
         // 2. Hemisphere-skyColor moduliert mit Tageszeit
         r.setTimeOfDay(0.5, "human");
@@ -41409,18 +41414,35 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         // EIN Himmel (V18.507): am Tag IST die Himmels-Umgebung der Himmel — Hemi trägt nur den
         // Nachthimmel-Boden (Mittag 0, Mitternacht > 0). Dazu die Belichtung aus dem Licht: mittags stellt sie
         // die 18-%-Karte auf Mittelgrau + 1 EV (< 1), nachts hält der Deckel die geeichte Nacht (1,0).
+        // Die Himmels-Umgebung der EINEN Atmosphäre kommt asynchron zurück (D3, `_himmelUmgebungLesen`): neu gezeichnet und
+        // auf die NEUE Lesung gewartet — eine Lesung der vorigen Stunde trüge deren Himmel in die Karte.
+        const umgebungFrisch = async () => {
+            const v0 = r.state._skyEnvVersion || 0;
+            if (!r._ensureSkyEnvironment(true)) return;
+            for (let w = 0; w < 150 && (r.state._skyEnvVersion || 0) === v0; w++)
+                await new Promise((ok) => setTimeout(ok, 20));
+            r._applyDayNightToScene();
+        };
         r.setTimeOfDay(0.5, "human");
         r._applyDayNightToScene();
+        await umgebungFrisch();
         const intensityNoon = r.state.hemiLight.intensity;
         const belichtungMittag = r.state.renderer.toneMappingExposure;
         r.setTimeOfDay(0, "human");
         r._applyDayNightToScene();
+        await umgebungFrisch();
         const intensityNight = r.state.hemiLight.intensity;
         const belichtungNacht = r.state.renderer.toneMappingExposure;
         out.hemiNurNachtboden = intensityNoon < 0.01 && intensityNight > 0.05;
+        // Der Himmel der EINEN Atmosphäre lebt auf der GPU (D3): unter dem Null-Renderer gibt es keine Tafel und keine
+        // Umgebung — die Karte sieht dort die Sonne allein (Mittag < 1); mit Himmel stellt er sie unter 0,85. Das Verhältnis
+        // Sonne : Himmel misst der echte Renderer (werkbank licht, K5 himmel-licht).
+        const mitHimmel = !!r._himmelsIrradianz();
         out.belichtungAusLicht =
-            belichtungMittag > 0.4 && belichtungMittag < 0.85 && Math.abs(belichtungNacht - 1) < 1e-6;
-        out.belichtungZahlen = [belichtungMittag, belichtungNacht].map((v) => +(+v).toFixed(3)).join(" / ");
+            belichtungMittag > 0.4 && belichtungMittag < (mitHimmel ? 0.85 : 1) && Math.abs(belichtungNacht - 1) < 1e-6;
+        out.belichtungZahlen =
+            [belichtungMittag, belichtungNacht].map((v) => +(+v).toFixed(3)).join(" / ") +
+            (mitHimmel ? " mit Himmel" : " Sonne allein, Null-Renderer");
 
         // 3. Hemisphere-groundColor moduliert mit Welt-Affinität. Der Feld→Boden-Term ist hinter
         // `tint.auraK` gegated (Default `auraTintStrength` 0) — der MECHANISMUS lebt als Opt-in → das Band
@@ -41499,7 +41521,10 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         check("V8.27: Skybox-position.copy existiert (direkt vor render)", v827Results.skyboxPositionCopyExists);
         check("V8.27: state.hemiLight ist THREE.HemisphereLight", v827Results.hemiLightExists);
         check("V8.27 → V18.530: die Luft steht (scene.fogNode, kein THREE.Fog)", v827Results.fogExists);
-        check("V8.27: die Luft-Farbe wird von _applyDayNightToScene gesetzt", v827Results.fogColorSet);
+        check(
+            "V8.27/D3: die Luft streut den Himmel der EINEN Atmosphäre, _applyDayNightToScene setzt sein Licht",
+            v827Results.fogColorSet
+        );
         check(
             "V8.27: HemisphereLight.color (sky) folgt Tag-Nacht (Mittag heller als Nacht)",
             v827Results.hemiSkyFollowsDayCycle
@@ -41637,9 +41662,10 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             skySrc.includes("fbm2") &&
             skySrc.includes("litW") &&
             !skySrc.includes("cloudShade");
-        // V17.10 — die Wolken-Wurzel: der Himmel nutzt jetzt mx_noise (dieselbe
-        // Noise-Sprache wie Terrain/Vegetation) statt des hash3-Präzisions-Chaos.
-        out.skyboxMxNoise = skySrc.includes("mxNoise") && skySrc.includes("mx_noise_float");
+        // D3 — der Himmel IST die EINE Atmosphäre: die Kuppel liest die Himmels-Sicht der Tafeln (Hillaire), die Nebel-Kuppel
+        // aus Rausch-Wolken (V17.10, mx_noise) fiel mit ihr; die Wolken trägt das Studio-Gesetz (oben, HIMMEL_GESETZ).
+        out.skyboxAtmosphaere =
+            skySrc.includes("_atmoLutBau") && skySrc.includes("himmelFarbe") && !skySrc.includes("mx_noise_float");
         // Der Terrain-colorNode (triplanar + Wiese + Aerial) baut OHNE Stoff-Bruch — der Zeuge zählt jede Meldung
         // „STOFF: …" über den Bau (K22; der Marker `__toonColorNodeError` hatte keinen Schreiber mehr).
         const _zTerr = window.__stoffZeuge(r);
@@ -41815,7 +41841,10 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             v828Results.sunNotAtOrigin
         );
         check("W9: Wolken-Feld folgt dem STUDIO-GESETZ (HIMMEL_GESETZ + fbm2 + litW)", v828Results.skyboxCloudFbm);
-        check("V17.10: Himmel nutzt mx_noise (eine Noise-Sprache, kein hash3-Flackern)", v828Results.skyboxMxNoise);
+        check(
+            "D3: die Kuppel liest die Himmels-Sicht der EINEN Atmosphäre (keine Nebel-Kuppel)",
+            v828Results.skyboxAtmosphaere
+        );
         check(
             `V17.12: Terrain-colorNode (triplanar-Textur) baut OHNE geschluckte Exception${v828Results.terrainColorNodeError ? " — " + v828Results.terrainColorNodeError : ""}`,
             v828Results.terrainColorNodeBuilds === true
@@ -55838,7 +55867,11 @@ async function checkBandRing6Workshop(ctx) {
         // Ring 4: AudioContext im Headless-Modus ohne User-Geste (sonst bleibt er "suspended" und initSymphony tut nix).
         zusatz: REAL_RENDERER
             ? ["--enable-webgl", "--ignore-gpu-blocklist", "--autoplay-policy=no-user-gesture-required"]
-            : ["--disable-software-rasterizer", "--disable-setuid-sandbox", "--autoplay-policy=no-user-gesture-required"],
+            : [
+                  "--disable-software-rasterizer",
+                  "--disable-setuid-sandbox",
+                  "--autoplay-policy=no-user-gesture-required",
+              ],
     });
     const page = await browser.newPage();
     await page.setViewport({ width: 1280, height: 720 });

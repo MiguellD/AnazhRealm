@@ -462,7 +462,16 @@ function wasserKoerper(opts) {
                 const weltZeitAlt = st.world ? st.world.timeOfDay : undefined;
                 const lum = (c) => 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b;
                 const augenAltL = st.playerEyesUnderwater;
-                const luft = (zeit, camY) => {
+                // Die Umgebung der EINEN Atmosphäre (D3) kommt asynchron auf die CPU zurück (`_himmelUmgebungLesen`, linear
+                // Float32): neu gezeichnet und auf die NEUE Lesung gewartet — eine alte Lesung trüge die vorige Uhrzeit.
+                const frisch = async () => {
+                    if (typeof r._ensureSkyEnvironment !== "function" || !r._ensureSkyEnvironment(true)) return false;
+                    const v0 = st._skyEnvVersion || 0;
+                    for (let w = 0; w < 150 && (st._skyEnvVersion || 0) === v0; w++)
+                        await new Promise((ok) => setTimeout(ok, 20));
+                    return (st._skyEnvVersion || 0) !== v0;
+                };
+                const luft = async (zeit, camY) => {
                     // Kamera UND Augen im selben Medium (vor der Welle L folgte die Luft den Augen, nachher der Kamera).
                     st.playerEyesUnderwater = camY < spiegel;
                     st.timeOfDay = zeit;
@@ -470,27 +479,33 @@ function wasserKoerper(opts) {
                     camL.position.set(mx, camY, mz);
                     camL.updateMatrixWorld(true);
                     r._applyDayNightToScene();
-                    return lum(luftL.U.farbe.value);
+                    if (!(await frisch())) return null;
+                    r._applyDayNightToScene();
+                    // unter Wasser: das Medium der Kamera (`U.farbe`); darüber streut die Luft den Himmel der Atmosphäre
+                    // (D3, `himmelFarbe`) — seine Leuchtdichte über dem Wasser ist E/π der waagrechten Normale
+                    if (luftL.U.unterWasser.value > 0.5) return lum(luftL.U.farbe.value);
+                    const e = r._himmelsIrradianz();
+                    return e ? 0.2126 * e.mitte[0] + 0.7152 * e.mitte[1] + 0.0722 * e.mitte[2] : null;
                 };
-                const himmel = () => {
-                    if (typeof r._ensureSkyEnvironment !== "function" || !r._ensureSkyEnvironment(true)) return null;
+                const himmel = async () => {
+                    if (!(await frisch())) return null;
                     const tx = r._himmelUmgebungTex();
                     const W = tx.image.width,
                         H = tx.image.height,
                         d = st._skyEnvData;
                     if (!d) return null;
                     const i = ((H >> 1) * W + (W >> 1)) * 4;
-                    return [d[i], d[i + 1], d[i + 2]];
+                    return [d[i], d[i + 1], d[i + 2]].map((x) => R(x, 5));
                 };
                 try {
-                    const nachtOben = luft(0.0, spiegel + 10);
-                    const nachtUnten = luft(0.0, spiegel - 3);
-                    const mittagUnten = luft(0.5, spiegel - 3);
-                    const mittagOben = luft(0.5, spiegel + 10);
-                    const vorTauchen = himmel();
-                    luft(0.5, spiegel - 3);
-                    const getaucht = himmel();
-                    luft(0.5, spiegel + 10);
+                    const nachtOben = await luft(0.0, spiegel + 10);
+                    const nachtUnten = await luft(0.0, spiegel - 3);
+                    const mittagUnten = await luft(0.5, spiegel - 3);
+                    const mittagOben = await luft(0.5, spiegel + 10);
+                    const vorTauchen = await himmel();
+                    await luft(0.5, spiegel - 3);
+                    const getaucht = await himmel();
+                    await luft(0.5, spiegel + 10);
                     aus.licht = {
                         nachtOben: R(nachtOben, 4),
                         nachtUnten: R(nachtUnten, 4),
