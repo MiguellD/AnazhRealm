@@ -11,10 +11,7 @@
                     "befund": "Gras als einzelne Büschel auf glattem Grün",
                     "quelle": "auge-befunde-1410.md Nr. 4 (Zweig koordination)",
                     "warum": "laiWirk (Nilson-Lücke im Ring der Nah-Wiese, Radeon 890M --echt, Mess-Wiese −278/−1038, Waldrand-Blick der Tafel) 0,671 → 1,917 (2–5 m 0,85 → 2,11 · 5–10 m 0,44 → 1,59 · 10–14 m 0,35 → 1,77; nach dem Merge mit K68 an 9fdc7a18 1,855: 2–5 m 2,05 · 5–10 m 1,54 · 10–14 m 1,66; offener Blick 0,676 → 2,009): der Halm wurzelt im Boden (Fuß 13–15 % der Büschelhöhe → 0, gate:pflanzen-nah T), die Fernstufe L2 trägt 2,4-mal so viele gerade Halme, und die Narbe liest das Licht der stehenden Kronen nach dem Labor-Gesetz (_bodenLichtFeld, Wurf 0,776 → 0,931)",
-                    "bildPaar": [
-                        "artifacts/soll-tafel/boden-nah-vorher.png",
-                        "artifacts/soll-tafel/boden-nah.png"
-                    ]
+                    "bildPaar": ["artifacts/soll-tafel/boden-nah-vorher.png", "artifacts/soll-tafel/boden-nah.png"]
                 }
             },
             "referenz": [
@@ -31,10 +28,7 @@
                 "eigenschaften": [
                     {
                         "groesse": "laiWirk",
-                        "band": [
-                            1.7,
-                            null
-                        ],
+                        "band": [1.7, null],
                         "einheit": "wirksamer Blatt-Flächen-Index der Wiese, aus ihrer Lücke im Bild (Nilson 1971: P(θ) = exp(−G·LAI/cos θ))",
                         "quelle": "Grasland-LAI im Mittel 1,71 (Asner, Scurlock & Hicke 2003, Global Ecol. Biogeogr. 12:191, Tab. 2): eine Wiese aus Augenhöhe zeigt ihren Grund erst unter dem Fuß"
                     }
@@ -63,15 +57,8 @@
                         "backend": "WebGPU",
                         "adapter": "amd rdna-3"
                     },
-                    "leinwand": [
-                        1920,
-                        1080
-                    ],
-                    "kamera": [
-                        -278,
-                        29.28,
-                        -1038
-                    ],
+                    "leinwand": [1920, 1080],
+                    "kamera": [-278, 29.28, -1038],
                     "ausdruck": "^(nahWiese:.*|streuSatz|bodenSatz)$",
                     "schwelle": 18,
                     "rauschen": {
@@ -84,14 +71,7 @@
                         "bodenSatz": {
                             "objekte": 1,
                             "spiegelTreue": -0.0394,
-                            "sp": [
-                                1383,
-                                0,
-                                0,
-                                1238573.72,
-                                1238573.72,
-                                -48814.23
-                            ],
+                            "sp": [1383, 0, 0, 1238573.72, 1238573.72, -48814.23],
                             "zweiton": 0,
                             "zt": 0,
                             "weiss": 0,
@@ -114,14 +94,7 @@
                         "nahWiese:L1": {
                             "objekte": 2,
                             "spiegelTreue": 0.0911,
-                            "sp": [
-                                4752,
-                                0,
-                                0,
-                                3958911.12,
-                                3958911.12,
-                                360694.94
-                            ],
+                            "sp": [4752, 0, 0, 3958911.12, 3958911.12, 360694.94],
                             "zweiton": 0,
                             "zt": 0,
                             "weiss": 0,
@@ -144,14 +117,7 @@
                         "nahWiese:L2": {
                             "objekte": 2,
                             "spiegelTreue": 0.1768,
-                            "sp": [
-                                2475,
-                                0,
-                                0,
-                                2600597.53,
-                                2600597.53,
-                                459808.69
-                            ],
+                            "sp": [2475, 0, 0, 2600597.53, 2600597.53, 459808.69],
                             "zweiton": 0,
                             "zt": 0,
                             "weiss": 0,
@@ -174,14 +140,7 @@
                         "streuSatz": {
                             "objekte": 4,
                             "spiegelTreue": -0.0865,
-                            "sp": [
-                                52,
-                                0,
-                                0,
-                                1677.59,
-                                1677.59,
-                                -145.15
-                            ],
+                            "sp": [52, 0, 0, 1677.59, 1677.59, -145.15],
                             "zweiton": 0,
                             "zt": 0,
                             "weiss": 0,
@@ -203,64 +162,15 @@
                         }
                     },
                     "abstand": {
-                        "baender": [
-                            0,
-                            2,
-                            5,
-                            10,
-                            14,
-                            30,
-                            80,
-                            200
-                        ],
+                        "baender": [0, 2, 5, 10, 14, 30, 80, 200],
                         "ring": 14,
                         "augeUeberBoden": 1.71,
-                        "cos": [
-                            null,
-                            0.4705,
-                            0.2597,
-                            0.1557,
-                            0.0883,
-                            0.0467,
-                            0.0446
-                        ],
+                        "cos": [null, 0.4705, 0.2597, 0.1557, 0.0883, 0.0467, 0.0446],
                         "klassen": {
-                            "bodenSatz": [
-                                0,
-                                62749,
-                                20281,
-                                227,
-                                82187,
-                                33845,
-                                1113
-                            ],
-                            "nahWiese:L2": [
-                                0,
-                                521,
-                                125413,
-                                86921,
-                                49611,
-                                0,
-                                0
-                            ],
-                            "streuSatz": [
-                                0,
-                                29125,
-                                2140,
-                                744,
-                                264,
-                                0,
-                                0
-                            ],
-                            "nahWiese:L1": [
-                                0,
-                                419463,
-                                113961,
-                                152,
-                                0,
-                                0,
-                                0
-                            ]
+                            "bodenSatz": [0, 62749, 20281, 227, 82187, 33845, 1113],
+                            "nahWiese:L2": [0, 521, 125413, 86921, 49611, 0, 0],
+                            "streuSatz": [0, 29125, 2140, 744, 264, 0, 0],
+                            "nahWiese:L1": [0, 419463, 113961, 152, 0, 0, 0]
                         }
                     },
                     "gesicht": null,
@@ -282,21 +192,7 @@
                     }
                 }
             },
-            "quellen": [
-                "gelaende-core.js",
-                "phyto-core.js",
-                "foundry-core.js",
-                "stamm/07.js",
-                "stamm/10.js",
-                "stamm/19.js",
-                "stamm/24.js",
-                "stamm/25c.js",
-                "stamm/11c.js",
-                "stamm/17b.js",
-                "stamm/17c.js",
-                "stamm/20a.js",
-                "stamm/26b.js"
-            ]
+            "quellen": ["gelaende-core.js", "phyto-core.js", "foundry-core.js", "stamm/07.js", "stamm/10.js", "stamm/19.js", "stamm/24.js", "stamm/25c.js", "stamm/11c.js", "stamm/17b.js", "stamm/17c.js", "stamm/20a.js", "stamm/26b.js"]
         },
         {
             "id": "himmel-licht",
@@ -322,29 +218,20 @@
                         "groesse": "lichtVerhaeltnis",
                         "rechnung": {
                             "art": "einsDurch",
-                            "von": [
-                                0.08,
-                                0.2
-                            ]
+                            "von": [0.08, 0.2]
                         },
                         "einheit": "E(Sonne + Himmel) / E(Himmel) an der waagrechten 18-%-Karte, Mittag klar",
                         "quelle": "Diffus-Anteil des klaren Himmels 0,08–0,2 (Liu & Jordan 1960, Solar Energy 4(3):1), das Verhältnis ist sein Kehrwert [gerechnet]; Frostbite PBR (Sonne 100 klx, Himmel 10–20 klx) liegt darin"
                     },
                     {
                         "groesse": "schattenAnteil",
-                        "band": [
-                            0.08,
-                            0.2
-                        ],
+                        "band": [0.08, 0.2],
                         "einheit": "E(Himmel) / E(Sonne + Himmel) an der waagrechten 18-%-Karte, Mittag klar (der Schatten gegen die besonnte Fläche)",
                         "quelle": "Diffus-Anteil des klaren Himmels 0,08–0,2 (Liu & Jordan 1960, Solar Energy 4(3):1)"
                     },
                     {
                         "groesse": "umgebungAzimut",
-                        "band": [
-                            1.2,
-                            null
-                        ],
+                        "band": [1.2, null],
                         "einheit": "E(Himmel) an der senkrechten 18-%-Karte zur Sonne / von der Sonne weg, Mittag klar",
                         "quelle": "der klare Himmel ist zur Sonne heller (Mie-Hof, Rayleigh-Phase): Hillaire 2020 (CGF 39(4)) mit dem Welt-Gesetz 1,33–1,67 (scripts/diag-atmo-hillaire.cjs, Spike D3 110c3f99); Plan D3 (koordination auftrag/durchbruch-1510.md) ≥ 1,2"
                     }
@@ -370,11 +257,7 @@
                     "E_umgebung": 1.54,
                     "E_umgebung_zurSonne": 1.17,
                     "E_umgebung_vonSonne": 0.92,
-                    "sonnenRichtung": [
-                        0,
-                        0.962,
-                        0.272
-                    ],
+                    "sonnenRichtung": [0, 0.962, 0.272],
                     "quellen": {
                         "foundry-core.js": "c:577492bfc91b4367",
                         "stamm/05b.js": "c:a4d007e1764d7fe5",
@@ -387,16 +270,7 @@
                     }
                 }
             },
-            "quellen": [
-                "foundry-core.js",
-                "stamm/05b.js",
-                "stamm/07.js",
-                "stamm/10.js",
-                "stamm/11d.js",
-                "stamm/19.js",
-                "stamm/24.js",
-                "stamm/25c.js"
-            ]
+            "quellen": ["foundry-core.js", "stamm/05b.js", "stamm/07.js", "stamm/10.js", "stamm/11d.js", "stamm/19.js", "stamm/24.js", "stamm/25c.js"]
         },
         {
             "id": "laub",
@@ -424,10 +298,7 @@
                         "groesse": "zweiton",
                         "rechnung": {
                             "art": "zweiton1f",
-                            "beta": [
-                                0,
-                                2.4
-                            ]
+                            "beta": [0, 2.4]
                         },
                         "einheit": "Anteil der Kronen-Pixel im Dither-Raster (klassenMasse zweiton: Fenster 8×8 aus zwei Tönen im Pixel-Takt, ≤ 20 % Zwischentöne, Wechsel in beiden Achsen)",
                         "quelle": "Horizon Zero Dawn: kein sichtbares Raster im Blätterdach (zeitlich aufgelöstes Alpha); Bilder ohne Muster (Leistungsspektrum 1/f^β, β 0–2,4, weißes Rauschen eingeschlossen) zeigen kein Raster-Fenster — Unschärfe fügt nur Zwischentöne hinzu, das Band gilt für jede Kamera [gerechnet]"
@@ -451,15 +322,8 @@
                         "backend": "WebGPU",
                         "adapter": "amd rdna-3"
                     },
-                    "leinwand": [
-                        1920,
-                        1080
-                    ],
-                    "kamera": [
-                        -284,
-                        29.34,
-                        -1042
-                    ],
+                    "leinwand": [1920, 1080],
+                    "kamera": [-284, 29.34, -1042],
                     "ausdruck": "^(f:(tanne|fichte|eiche|birke|buche|kiefer|weide|strauch|mammut)[a-z_]*:L[0-2]|fimp:[a-z_]+:L[0-2]|kronendach)$",
                     "schwelle": 18,
                     "rauschen": {
@@ -564,19 +428,7 @@
                     }
                 }
             },
-            "quellen": [
-                "phyto-core.js",
-                "foundry-core.js",
-                "stamm/07.js",
-                "stamm/10.js",
-                "stamm/19.js",
-                "stamm/24.js",
-                "stamm/25c.js",
-                "stamm/17a.js",
-                "stamm/20b.js",
-                "stamm/20c.js",
-                "stamm/20d.js"
-            ],
+            "quellen": ["phyto-core.js", "foundry-core.js", "stamm/07.js", "stamm/10.js", "stamm/19.js", "stamm/24.js", "stamm/25c.js", "stamm/17a.js", "stamm/20b.js", "stamm/20c.js", "stamm/20d.js"],
             "vorlage": [
                 {
                     "karte": "K58",
@@ -610,10 +462,7 @@
                 "eigenschaften": [
                     {
                         "groesse": "kante",
-                        "band": [
-                            null,
-                            0.22
-                        ],
+                        "band": [null, 0.22],
                         "einheit": "Kohärenz des Struktur-Tensors am Umriss gegen das Außen (klassenMasse kante: Maske Gauß σ 2 px, Fenster 17 × 17 px, Mittel über die Rand-Pixel): gerade Kante 1, zerfranster Umriss klein",
                         "quelle": "die Wirklichkeit, mit derselben Funktion gemessen (Nordstern §4.5; Himmel = Luma > 150 und Buntheit < 45 oder Blau B > R + 40, B > G + 15, B > 140; Außen der Himmel): REF real-mischwald.jpg (Mischwald in Südtirol, CC BY 4.0 Bartleby08, sha256 97117a27…, oberes 60 %) 0,160 · REF real-felsen.jpg (Mischwald am Hang der Rudka, Fichten am Kamm, CC BY-SA 4.0 Jacek Halicki, sha256 577851ed…, oberes 20 %) 0,218 — die Grenze ist die geradeste der beiden"
                     }
@@ -636,15 +485,8 @@
                         "backend": "WebGPU",
                         "adapter": "amd rdna-3"
                     },
-                    "leinwand": [
-                        1920,
-                        1080
-                    ],
-                    "kamera": [
-                        -284,
-                        29.34,
-                        -1042
-                    ],
+                    "leinwand": [1920, 1080],
+                    "kamera": [-284, 29.34, -1042],
                     "ausdruck": "^(f:(tanne|fichte|eiche|birke|buche|kiefer|weide|strauch|mammut)[a-z_]*:L[0-2]|fimp:[a-z_]+:L[0-2]|kronendach)$",
                     "schwelle": 18,
                     "rauschen": {
@@ -749,19 +591,7 @@
                     }
                 }
             },
-            "quellen": [
-                "phyto-core.js",
-                "foundry-core.js",
-                "stamm/07.js",
-                "stamm/10.js",
-                "stamm/19.js",
-                "stamm/24.js",
-                "stamm/25c.js",
-                "stamm/17a.js",
-                "stamm/20b.js",
-                "stamm/20c.js",
-                "stamm/20d.js"
-            ],
+            "quellen": ["phyto-core.js", "foundry-core.js", "stamm/07.js", "stamm/10.js", "stamm/19.js", "stamm/24.js", "stamm/25c.js", "stamm/17a.js", "stamm/20b.js", "stamm/20c.js", "stamm/20d.js"],
             "vorlage": [
                 {
                     "karte": "K58",
@@ -787,15 +617,8 @@
                         "backend": "WebGPU",
                         "adapter": "amd rdna-3"
                     },
-                    "leinwand": [
-                        1920,
-                        1080
-                    ],
-                    "kamera": [
-                        -816.35,
-                        86.74,
-                        -813.24
-                    ],
+                    "leinwand": [1920, 1080],
+                    "kamera": [-816.35, 86.74, -813.24],
                     "ausdruck": "^(bauSatz|f:(alemannisch|griechisch|roemisch):L[0-3]|bau:haus_[a-z_]+)$",
                     "schwelle": 18,
                     "rauschen": {
@@ -884,10 +707,7 @@
                 },
                 "werkzeug": "werkbank albedo --tafel + diag-albedo-tafel.cjs --labor --echt, dann --nachziehen; der Bildanteil: am Messort dorf zeichnet kein Haus binnen 60 m (das Dorf wächst um den Spieler) — werkbank umstellen -787 -865 (der Dorfrand, das römische Haus 30 m), dann je Haus des Dorfs das Auge 22 m außerhalb auf der Linie Dorfmitte → Haus (kein Nachbar davor), das Ziel die Haus-Mitte 3 m über dem Grund (das Ziel nimmt sein Haus aus der Verdeckung, auch als Bereich im Bau-Satz: kamera-nah `ohneSatz`): werkbank bild <Pose> --wahl 42 --ziel haus --klasse '^(bauSatz|f:alemannisch:L[0-3]|bau:haus_[a-z_]+)$' --ist haus:wirkung"
             },
-            "quellen": [
-                "fachwerk-core.js",
-                "foundry-core.js"
-            ]
+            "quellen": ["fachwerk-core.js", "foundry-core.js"]
         },
         {
             "id": "wasser",
@@ -909,10 +729,7 @@
                 "eigenschaften": [
                     {
                         "groesse": "spiegelTreue",
-                        "band": [
-                            0.6,
-                            null
-                        ],
+                        "band": [0.6, null],
                         "einheit": "Pearson r der Block-Luma (8×8) im Wasser gegen das an der Uferlinie gespiegelte Bild je Block-Zeile, gewogen mit der Struktur über dem Ufer — frei vom Fresnel- und Himmels-Verlauf (abnahme-urteil klassenMasse spiegelTreue)",
                         "quelle": "ruhiger See spiegelt Ufer, Wald und Wolke: Llyn Padarn in der Abend-Ruhe r 0,922 (spec/abnahme/llyn-padarn.png, Commons, CC BY-SA 2.0 Hefin Owen; K5 Selbst-Test); Fresnel streifend → 100 % (Nordstern §4.1 Wasser-Optik)"
                     }
@@ -935,15 +752,8 @@
                         "backend": "WebGPU",
                         "adapter": "amd rdna-3"
                     },
-                    "leinwand": [
-                        1920,
-                        1080
-                    ],
-                    "kamera": [
-                        1855,
-                        2.6,
-                        -6168
-                    ],
+                    "leinwand": [1920, 1080],
+                    "kamera": [1855, 2.6, -6168],
                     "ausdruck": "^(wasserSatz|farWater|chunk-water-[a-z]+)$",
                     "schwelle": 18,
                     "rauschen": {
@@ -956,14 +766,7 @@
                         "wasserSatz": {
                             "objekte": 1,
                             "spiegelTreue": 0.5244,
-                            "sp": [
-                                14644,
-                                0,
-                                0,
-                                33286042.32,
-                                33286042.32,
-                                17455238.68
-                            ],
+                            "sp": [14644, 0, 0, 33286042.32, 33286042.32, 17455238.68],
                             "zweiton": 0,
                             "zt": 0,
                             "weiss": 0.0005,
@@ -999,18 +802,7 @@
                     }
                 }
             },
-            "quellen": [
-                "gelaende-core.js",
-                "stamm/07.js",
-                "stamm/10.js",
-                "stamm/19.js",
-                "stamm/24.js",
-                "stamm/25c.js",
-                "stamm/08.js",
-                "stamm/11a.js",
-                "stamm/11b.js",
-                "stamm/17b.js"
-            ]
+            "quellen": ["gelaende-core.js", "stamm/07.js", "stamm/10.js", "stamm/19.js", "stamm/24.js", "stamm/25c.js", "stamm/08.js", "stamm/11a.js", "stamm/11b.js", "stamm/17b.js"]
         },
         {
             "id": "tor-fern",
@@ -1021,10 +813,7 @@
                     "befund": "aus 30 m weiße Tafeln (Stufe 1/3): der Portal-Nebel als weißer Kasten und die Membran milchig-weiß, mit dem Spieler am Ring",
                     "quelle": "UEBERGABE-2026-10-14.md (Zweig koordination) „DER PLAN ZU AAAA“ Nr. 3, Bild auge/1410/genesis-aussen.png (V18.546.0); die Ursache Prüfer K63 R3 (K63-n3/tor-weiss.out)",
                     "warum": "milchweiss — das Weiß, das die Schicht der Öffnung dem hinzufügt, was ohne sie dort stünde (gegen das Bild ohne Film; eine Membran ohne Ziel im Graphen wird für dieses Bild ausgeblendet, D8-n1) — 0,0369 über die Stufen (L1 0,040 · L2 0,030 · L3 0,029; Radeon 890M, Genesis-Ring, Kopf a2de3d38); vorher nach DERSELBEN Regel 0,183 an L1 (das Basis-Spiel 2031b3e4 mit der Linse des Kopfs, 782 von 4 278 Pixeln weiß, Nebel-Kasten und milchige Membran): der Nebel-Kasten fiel, die Öffnung zeigt das Panorama der Ziel-Welt (EIN Export je SHA, vom Studio gebacken, gate:studio-huelle H5), der Film tönt mit Dispersion (welle) und Buntheit (farbe 2,6) bei glanz 0,8",
-                    "bildPaar": [
-                        "artifacts/soll-tafel/tor-L1-vorher.png",
-                        "artifacts/soll-tafel/tor-fern-L1.png"
-                    ]
+                    "bildPaar": ["artifacts/soll-tafel/tor-L1-vorher.png", "artifacts/soll-tafel/tor-fern-L1.png"]
                 }
             },
             "referenz": [
@@ -1041,10 +830,7 @@
                 "eigenschaften": [
                     {
                         "groesse": "milchweiss",
-                        "band": [
-                            null,
-                            0.05
-                        ],
+                        "band": [null, 0.05],
                         "einheit": "Anteil der Apertur-Pixel (Membran) über alle Stufen-Schüsse, die als Weiß lesen statt als Farbe — Y > 240 (Ausbrand) oder unbunt-hell (C*ab < 5, zwei eben merkliche Unterschiede ΔE*ab 2,3 vom Grau, Mahy et al. 1994; L* ≥ 50, heller als die 18-%-Karte) —, während dasselbe Pixel im Bild ohne Film (dieselbe Pose und Uhr, die Membran zeigt nur ihr Ziel) nicht weiß liest: Milch ist, was der Film dem Ziel hinzufügt, nie ein blasses Ziel (D8)",
                         "quelle": "Nordstern §4.8 Portale „Membran zeigt das Ziel“: Y > 240 im Apertur-Fenster ≤ 5 %, Farbe in Dünnfilm-Bändern (Soap Film 1, Simon Raffy CC BY 4.0: Farbe aus der Filmdicke, nichts brennt aus)"
                     }
@@ -1079,15 +865,8 @@
                             "backend": "WebGPU",
                             "adapter": "amd rdna-3"
                         },
-                        "leinwand": [
-                            1920,
-                            1080
-                        ],
-                        "kamera": [
-                            -11.6,
-                            90.24,
-                            36.48
-                        ],
+                        "leinwand": [1920, 1080],
+                        "kamera": [-11.6, 90.24, 36.48],
                         "ausdruck": "^(portal-membran|(f|fimp):(drachentor|maurentor|verkalkt|maschine|ruine|geisttor|kathedrale):L[0-3])$",
                         "schwelle": 18,
                         "rauschen": {
@@ -1100,14 +879,7 @@
                             "f:drachentor:L1": {
                                 "objekte": 5,
                                 "spiegelTreue": null,
-                                "sp": [
-                                    0,
-                                    0,
-                                    0,
-                                    0,
-                                    0,
-                                    0
-                                ],
+                                "sp": [0, 0, 0, 0, 0, 0],
                                 "zweiton": 0,
                                 "zt": 0,
                                 "weiss": 0.0882,
@@ -1130,14 +902,7 @@
                             "f:drachentor:L2": {
                                 "objekte": 5,
                                 "spiegelTreue": -0.1827,
-                                "sp": [
-                                    182,
-                                    0,
-                                    0,
-                                    227908.52,
-                                    227908.52,
-                                    -41647.47
-                                ],
+                                "sp": [182, 0, 0, 227908.52, 227908.52, -41647.47],
                                 "zweiton": 0,
                                 "zt": 0,
                                 "weiss": 0.0195,
@@ -1160,14 +925,7 @@
                             "f:kathedrale:L1": {
                                 "objekte": 3,
                                 "spiegelTreue": -0.2296,
-                                "sp": [
-                                    220,
-                                    0,
-                                    0,
-                                    339874.71,
-                                    339874.71,
-                                    -78026.67
-                                ],
+                                "sp": [220, 0, 0, 339874.71, 339874.71, -78026.67],
                                 "zweiton": 0,
                                 "zt": 0,
                                 "weiss": 0.0017,
@@ -1190,14 +948,7 @@
                             "f:maschine:L1": {
                                 "objekte": 6,
                                 "spiegelTreue": -0.2009,
-                                "sp": [
-                                    133,
-                                    0,
-                                    0,
-                                    240605.91,
-                                    240605.91,
-                                    -48339.11
-                                ],
+                                "sp": [133, 0, 0, 240605.91, 240605.91, -48339.11],
                                 "zweiton": 0,
                                 "zt": 0,
                                 "weiss": 0.0085,
@@ -1220,14 +971,7 @@
                             "f:maurentor:L1": {
                                 "objekte": 5,
                                 "spiegelTreue": null,
-                                "sp": [
-                                    0,
-                                    0,
-                                    0,
-                                    0,
-                                    0,
-                                    0
-                                ],
+                                "sp": [0, 0, 0, 0, 0, 0],
                                 "zweiton": 0,
                                 "zt": 0,
                                 "weiss": 0.0003,
@@ -1250,14 +994,7 @@
                             "f:ruine:L1": {
                                 "objekte": 3,
                                 "spiegelTreue": null,
-                                "sp": [
-                                    0,
-                                    0,
-                                    0,
-                                    0,
-                                    0,
-                                    0
-                                ],
+                                "sp": [0, 0, 0, 0, 0, 0],
                                 "zweiton": 0,
                                 "zt": 0,
                                 "weiss": 0,
@@ -1280,14 +1017,7 @@
                             "f:verkalkt:L1": {
                                 "objekte": 5,
                                 "spiegelTreue": -0.0163,
-                                "sp": [
-                                    163,
-                                    0,
-                                    0,
-                                    162663.62,
-                                    162663.62,
-                                    -2651.59
-                                ],
+                                "sp": [163, 0, 0, 162663.62, 162663.62, -2651.59],
                                 "zweiton": 0,
                                 "zt": 0,
                                 "weiss": 0.0042,
@@ -1310,14 +1040,7 @@
                             "portal-membran": {
                                 "objekte": 8,
                                 "spiegelTreue": 0.1817,
-                                "sp": [
-                                    392,
-                                    0,
-                                    0,
-                                    635199.67,
-                                    635199.67,
-                                    115423.87
-                                ],
+                                "sp": [392, 0, 0, 635199.67, 635199.67, 115423.87],
                                 "zweiton": 0,
                                 "zt": 0,
                                 "weiss": 0.0087,
@@ -1371,15 +1094,8 @@
                             "backend": "WebGPU",
                             "adapter": "amd rdna-3"
                         },
-                        "leinwand": [
-                            640,
-                            360
-                        ],
-                        "kamera": [
-                            69.5,
-                            95.95,
-                            -120.7
-                        ],
+                        "leinwand": [640, 360],
+                        "kamera": [69.5, 95.95, -120.7],
                         "ausdruck": "^(portal-membran|(f|fimp):(drachentor|maurentor|verkalkt|maschine|ruine|geisttor|kathedrale):L[0-3])$",
                         "schwelle": 18,
                         "rauschen": {
@@ -1444,15 +1160,8 @@
                             "backend": "WebGPU",
                             "adapter": "amd rdna-3"
                         },
-                        "leinwand": [
-                            640,
-                            360
-                        ],
-                        "kamera": [
-                            -14.6,
-                            89.63,
-                            48.3
-                        ],
+                        "leinwand": [640, 360],
+                        "kamera": [-14.6, 89.63, 48.3],
                         "ausdruck": "^(portal-membran|(f|fimp):(drachentor|maurentor|verkalkt|maschine|ruine|geisttor|kathedrale):L[0-3])$",
                         "schwelle": 18,
                         "rauschen": {
@@ -1634,19 +1343,7 @@
                     }
                 }
             },
-            "quellen": [
-                "porta-core.js",
-                "foundry-core.js",
-                "stamm/07.js",
-                "stamm/10.js",
-                "stamm/19.js",
-                "stamm/24.js",
-                "stamm/25c.js",
-                "stamm/14.js",
-                "stamm/17a.js",
-                "stamm/17c.js",
-                "stamm/20b.js"
-            ]
+            "quellen": ["porta-core.js", "foundry-core.js", "stamm/07.js", "stamm/10.js", "stamm/19.js", "stamm/24.js", "stamm/25c.js", "stamm/14.js", "stamm/17a.js", "stamm/17c.js", "stamm/20b.js"]
         },
         {
             "id": "tor-bunt",
@@ -1657,10 +1354,7 @@
                     "befund": "die Öffnung der Tore liest unbunt: Milch und Nebel-Kasten (V18.546) bzw. die Wellen-Bänder ohne Ziel",
                     "quelle": "Karte D8 (Zweig koordination, auftrag D8 Tor als Fenster; Spike spike-d8a-membran bfb79739: milchweiss 0,245)",
                     "warum": "oeffnungBunt 26,2 über die Stufen (L1 27,7 · L2 23,2 · L3 21,4; Radeon 890M, Genesis-Ring, Kopf a2de3d38), vorher C*ab 4,9 an L1 (das Basis-Spiel 2031b3e4, dieselbe Linse): die Öffnung zeigt das Panorama der Ziel-Welt, die Bänder des Films laufen je Farbe mit ihrer Wellenlänge (welle λ_R/λ, die Newton-Folge) und tragen ihre Buntheit um die Helligkeit (farbe 2,6)",
-                    "bildPaar": [
-                        "artifacts/soll-tafel/tor-L1-vorher.png",
-                        "artifacts/soll-tafel/tor-fern-L1.png"
-                    ]
+                    "bildPaar": ["artifacts/soll-tafel/tor-L1-vorher.png", "artifacts/soll-tafel/tor-fern-L1.png"]
                 }
             },
             "referenz": [
@@ -1677,10 +1371,7 @@
                 "eigenschaften": [
                     {
                         "groesse": "oeffnungBunt",
-                        "band": [
-                            20,
-                            null
-                        ],
+                        "band": [20, null],
                         "einheit": "das Mittel der Buntheit C*ab (CIELAB D65 aus den linearisierten sRGB-Pixeln) über alle Apertur-Pixel der Stufen-Schüsse",
                         "quelle": "Nordstern §4.8 Portale „Farbe in Dünnfilm-Bändern“ (Soap Film 1, Simon Raffy CC BY 4.0); C*ab 20 = eine deutlich bunte Fläche (Fairchild, Color Appearance Models, 3. Aufl. 2013, Kap. 10: Buntheit unter 10 liest als nahezu unbunt)"
                     }
@@ -1715,15 +1406,8 @@
                             "backend": "WebGPU",
                             "adapter": "amd rdna-3"
                         },
-                        "leinwand": [
-                            1920,
-                            1080
-                        ],
-                        "kamera": [
-                            -11.6,
-                            90.24,
-                            36.48
-                        ],
+                        "leinwand": [1920, 1080],
+                        "kamera": [-11.6, 90.24, 36.48],
                         "ausdruck": "^(portal-membran|(f|fimp):(drachentor|maurentor|verkalkt|maschine|ruine|geisttor|kathedrale):L[0-3])$",
                         "schwelle": 18,
                         "rauschen": {
@@ -1736,14 +1420,7 @@
                             "f:drachentor:L1": {
                                 "objekte": 5,
                                 "spiegelTreue": null,
-                                "sp": [
-                                    0,
-                                    0,
-                                    0,
-                                    0,
-                                    0,
-                                    0
-                                ],
+                                "sp": [0, 0, 0, 0, 0, 0],
                                 "zweiton": 0,
                                 "zt": 0,
                                 "weiss": 0.0882,
@@ -1766,14 +1443,7 @@
                             "f:drachentor:L2": {
                                 "objekte": 5,
                                 "spiegelTreue": -0.1827,
-                                "sp": [
-                                    182,
-                                    0,
-                                    0,
-                                    227908.52,
-                                    227908.52,
-                                    -41647.47
-                                ],
+                                "sp": [182, 0, 0, 227908.52, 227908.52, -41647.47],
                                 "zweiton": 0,
                                 "zt": 0,
                                 "weiss": 0.0195,
@@ -1796,14 +1466,7 @@
                             "f:kathedrale:L1": {
                                 "objekte": 3,
                                 "spiegelTreue": -0.2296,
-                                "sp": [
-                                    220,
-                                    0,
-                                    0,
-                                    339874.71,
-                                    339874.71,
-                                    -78026.67
-                                ],
+                                "sp": [220, 0, 0, 339874.71, 339874.71, -78026.67],
                                 "zweiton": 0,
                                 "zt": 0,
                                 "weiss": 0.0017,
@@ -1826,14 +1489,7 @@
                             "f:maschine:L1": {
                                 "objekte": 6,
                                 "spiegelTreue": -0.2009,
-                                "sp": [
-                                    133,
-                                    0,
-                                    0,
-                                    240605.91,
-                                    240605.91,
-                                    -48339.11
-                                ],
+                                "sp": [133, 0, 0, 240605.91, 240605.91, -48339.11],
                                 "zweiton": 0,
                                 "zt": 0,
                                 "weiss": 0.0085,
@@ -1856,14 +1512,7 @@
                             "f:maurentor:L1": {
                                 "objekte": 5,
                                 "spiegelTreue": null,
-                                "sp": [
-                                    0,
-                                    0,
-                                    0,
-                                    0,
-                                    0,
-                                    0
-                                ],
+                                "sp": [0, 0, 0, 0, 0, 0],
                                 "zweiton": 0,
                                 "zt": 0,
                                 "weiss": 0.0003,
@@ -1886,14 +1535,7 @@
                             "f:ruine:L1": {
                                 "objekte": 3,
                                 "spiegelTreue": null,
-                                "sp": [
-                                    0,
-                                    0,
-                                    0,
-                                    0,
-                                    0,
-                                    0
-                                ],
+                                "sp": [0, 0, 0, 0, 0, 0],
                                 "zweiton": 0,
                                 "zt": 0,
                                 "weiss": 0,
@@ -1916,14 +1558,7 @@
                             "f:verkalkt:L1": {
                                 "objekte": 5,
                                 "spiegelTreue": -0.0163,
-                                "sp": [
-                                    163,
-                                    0,
-                                    0,
-                                    162663.62,
-                                    162663.62,
-                                    -2651.59
-                                ],
+                                "sp": [163, 0, 0, 162663.62, 162663.62, -2651.59],
                                 "zweiton": 0,
                                 "zt": 0,
                                 "weiss": 0.0042,
@@ -1946,14 +1581,7 @@
                             "portal-membran": {
                                 "objekte": 8,
                                 "spiegelTreue": 0.1817,
-                                "sp": [
-                                    392,
-                                    0,
-                                    0,
-                                    635199.67,
-                                    635199.67,
-                                    115423.87
-                                ],
+                                "sp": [392, 0, 0, 635199.67, 635199.67, 115423.87],
                                 "zweiton": 0,
                                 "zt": 0,
                                 "weiss": 0.0087,
@@ -2007,15 +1635,8 @@
                             "backend": "WebGPU",
                             "adapter": "amd rdna-3"
                         },
-                        "leinwand": [
-                            640,
-                            360
-                        ],
-                        "kamera": [
-                            69.5,
-                            95.95,
-                            -120.7
-                        ],
+                        "leinwand": [640, 360],
+                        "kamera": [69.5, 95.95, -120.7],
                         "ausdruck": "^(portal-membran|(f|fimp):(drachentor|maurentor|verkalkt|maschine|ruine|geisttor|kathedrale):L[0-3])$",
                         "schwelle": 18,
                         "rauschen": {
@@ -2080,15 +1701,8 @@
                             "backend": "WebGPU",
                             "adapter": "amd rdna-3"
                         },
-                        "leinwand": [
-                            640,
-                            360
-                        ],
-                        "kamera": [
-                            -14.6,
-                            89.63,
-                            48.3
-                        ],
+                        "leinwand": [640, 360],
+                        "kamera": [-14.6, 89.63, 48.3],
                         "ausdruck": "^(portal-membran|(f|fimp):(drachentor|maurentor|verkalkt|maschine|ruine|geisttor|kathedrale):L[0-3])$",
                         "schwelle": 18,
                         "rauschen": {
@@ -2270,19 +1884,7 @@
                     }
                 }
             },
-            "quellen": [
-                "porta-core.js",
-                "foundry-core.js",
-                "stamm/07.js",
-                "stamm/10.js",
-                "stamm/19.js",
-                "stamm/24.js",
-                "stamm/25c.js",
-                "stamm/14.js",
-                "stamm/17a.js",
-                "stamm/17c.js",
-                "stamm/20b.js"
-            ]
+            "quellen": ["porta-core.js", "foundry-core.js", "stamm/07.js", "stamm/10.js", "stamm/19.js", "stamm/24.js", "stamm/25c.js", "stamm/14.js", "stamm/17a.js", "stamm/17c.js", "stamm/20b.js"]
         },
         {
             "id": "tor-ziel",
@@ -2293,10 +1895,7 @@
                     "befund": "die Öffnung zeigt kein Ziel: am Kopf ein Wellen-March ohne Ziel, im Spike ein Host-Panorama der eigenen Welt (`_torPanorama`)",
                     "quelle": "Karte D8 (Zweig koordination, auftrag D8 Tor als Fenster): Ziel aus dem EINEN Studio-Export je SHA",
                     "warum": "zielTreue 0,685 über die Stufen (L1 0,64 · L2 0,79 · L3 0,69; Radeon 890M, Genesis-Ring, Kopf a2de3d38), vorher r 0 an L1 (das Basis-Spiel 2031b3e4: kein Ziel hinter dem Nebel-Kasten): die Öffnung liest das Panorama der Ziel-Welt (EIN Export je SHA, die Datei des Studios, Atlas rgba16float) über die Stellvertreter-Kugel, das Auge liest der Graph je Render",
-                    "bildPaar": [
-                        "artifacts/soll-tafel/tor-L1-vorher.png",
-                        "artifacts/soll-tafel/tor-fern-L1.png"
-                    ]
+                    "bildPaar": ["artifacts/soll-tafel/tor-L1-vorher.png", "artifacts/soll-tafel/tor-fern-L1.png"]
                 }
             },
             "referenz": [
@@ -2313,10 +1912,7 @@
                 "eigenschaften": [
                     {
                         "groesse": "zielTreue",
-                        "band": [
-                            0.5,
-                            null
-                        ],
+                        "band": [0.5, null],
                         "einheit": "Rang-Korrelation (Spearman) je Apertur-Pixel zwischen dem Bild der Öffnung und dem Ziel-Panorama, das der Parallaxen-Strahl desselben Pixels trifft, gewichtet über die Stufen-Schüsse",
                         "quelle": "Nordstern §4.8 Portale „Membran zeigt das Ziel“ (Portal, Valve 2007; Lengyel 2005); r ≥ 0,5 = starke Korrelation (Cohen 1988)"
                     }
@@ -2351,15 +1947,8 @@
                             "backend": "WebGPU",
                             "adapter": "amd rdna-3"
                         },
-                        "leinwand": [
-                            1920,
-                            1080
-                        ],
-                        "kamera": [
-                            -11.6,
-                            90.24,
-                            36.48
-                        ],
+                        "leinwand": [1920, 1080],
+                        "kamera": [-11.6, 90.24, 36.48],
                         "ausdruck": "^(portal-membran|(f|fimp):(drachentor|maurentor|verkalkt|maschine|ruine|geisttor|kathedrale):L[0-3])$",
                         "schwelle": 18,
                         "rauschen": {
@@ -2372,14 +1961,7 @@
                             "f:drachentor:L1": {
                                 "objekte": 5,
                                 "spiegelTreue": null,
-                                "sp": [
-                                    0,
-                                    0,
-                                    0,
-                                    0,
-                                    0,
-                                    0
-                                ],
+                                "sp": [0, 0, 0, 0, 0, 0],
                                 "zweiton": 0,
                                 "zt": 0,
                                 "weiss": 0.0882,
@@ -2402,14 +1984,7 @@
                             "f:drachentor:L2": {
                                 "objekte": 5,
                                 "spiegelTreue": -0.1827,
-                                "sp": [
-                                    182,
-                                    0,
-                                    0,
-                                    227908.52,
-                                    227908.52,
-                                    -41647.47
-                                ],
+                                "sp": [182, 0, 0, 227908.52, 227908.52, -41647.47],
                                 "zweiton": 0,
                                 "zt": 0,
                                 "weiss": 0.0195,
@@ -2432,14 +2007,7 @@
                             "f:kathedrale:L1": {
                                 "objekte": 3,
                                 "spiegelTreue": -0.2296,
-                                "sp": [
-                                    220,
-                                    0,
-                                    0,
-                                    339874.71,
-                                    339874.71,
-                                    -78026.67
-                                ],
+                                "sp": [220, 0, 0, 339874.71, 339874.71, -78026.67],
                                 "zweiton": 0,
                                 "zt": 0,
                                 "weiss": 0.0017,
@@ -2462,14 +2030,7 @@
                             "f:maschine:L1": {
                                 "objekte": 6,
                                 "spiegelTreue": -0.2009,
-                                "sp": [
-                                    133,
-                                    0,
-                                    0,
-                                    240605.91,
-                                    240605.91,
-                                    -48339.11
-                                ],
+                                "sp": [133, 0, 0, 240605.91, 240605.91, -48339.11],
                                 "zweiton": 0,
                                 "zt": 0,
                                 "weiss": 0.0085,
@@ -2492,14 +2053,7 @@
                             "f:maurentor:L1": {
                                 "objekte": 5,
                                 "spiegelTreue": null,
-                                "sp": [
-                                    0,
-                                    0,
-                                    0,
-                                    0,
-                                    0,
-                                    0
-                                ],
+                                "sp": [0, 0, 0, 0, 0, 0],
                                 "zweiton": 0,
                                 "zt": 0,
                                 "weiss": 0.0003,
@@ -2522,14 +2076,7 @@
                             "f:ruine:L1": {
                                 "objekte": 3,
                                 "spiegelTreue": null,
-                                "sp": [
-                                    0,
-                                    0,
-                                    0,
-                                    0,
-                                    0,
-                                    0
-                                ],
+                                "sp": [0, 0, 0, 0, 0, 0],
                                 "zweiton": 0,
                                 "zt": 0,
                                 "weiss": 0,
@@ -2552,14 +2099,7 @@
                             "f:verkalkt:L1": {
                                 "objekte": 5,
                                 "spiegelTreue": -0.0163,
-                                "sp": [
-                                    163,
-                                    0,
-                                    0,
-                                    162663.62,
-                                    162663.62,
-                                    -2651.59
-                                ],
+                                "sp": [163, 0, 0, 162663.62, 162663.62, -2651.59],
                                 "zweiton": 0,
                                 "zt": 0,
                                 "weiss": 0.0042,
@@ -2582,14 +2122,7 @@
                             "portal-membran": {
                                 "objekte": 8,
                                 "spiegelTreue": 0.1817,
-                                "sp": [
-                                    392,
-                                    0,
-                                    0,
-                                    635199.67,
-                                    635199.67,
-                                    115423.87
-                                ],
+                                "sp": [392, 0, 0, 635199.67, 635199.67, 115423.87],
                                 "zweiton": 0,
                                 "zt": 0,
                                 "weiss": 0.0087,
@@ -2643,15 +2176,8 @@
                             "backend": "WebGPU",
                             "adapter": "amd rdna-3"
                         },
-                        "leinwand": [
-                            640,
-                            360
-                        ],
-                        "kamera": [
-                            69.5,
-                            95.95,
-                            -120.7
-                        ],
+                        "leinwand": [640, 360],
+                        "kamera": [69.5, 95.95, -120.7],
                         "ausdruck": "^(portal-membran|(f|fimp):(drachentor|maurentor|verkalkt|maschine|ruine|geisttor|kathedrale):L[0-3])$",
                         "schwelle": 18,
                         "rauschen": {
@@ -2716,15 +2242,8 @@
                             "backend": "WebGPU",
                             "adapter": "amd rdna-3"
                         },
-                        "leinwand": [
-                            640,
-                            360
-                        ],
-                        "kamera": [
-                            -14.6,
-                            89.63,
-                            48.3
-                        ],
+                        "leinwand": [640, 360],
+                        "kamera": [-14.6, 89.63, 48.3],
                         "ausdruck": "^(portal-membran|(f|fimp):(drachentor|maurentor|verkalkt|maschine|ruine|geisttor|kathedrale):L[0-3])$",
                         "schwelle": 18,
                         "rauschen": {
@@ -2906,19 +2425,7 @@
                     }
                 }
             },
-            "quellen": [
-                "porta-core.js",
-                "foundry-core.js",
-                "stamm/07.js",
-                "stamm/10.js",
-                "stamm/19.js",
-                "stamm/24.js",
-                "stamm/25c.js",
-                "stamm/14.js",
-                "stamm/17a.js",
-                "stamm/17c.js",
-                "stamm/20b.js"
-            ]
+            "quellen": ["porta-core.js", "foundry-core.js", "stamm/07.js", "stamm/10.js", "stamm/19.js", "stamm/24.js", "stamm/25c.js", "stamm/14.js", "stamm/17a.js", "stamm/17c.js", "stamm/20b.js"]
         },
         {
             "id": "fels",
@@ -2936,10 +2443,7 @@
                 "eigenschaften": [
                     {
                         "groesse": "albedo",
-                        "band": [
-                            0.1,
-                            0.3
-                        ],
+                        "band": [0.1, 0.3],
                         "einheit": "Albedo (linear, Rec.-709-Luma) des Fels-Stoffs in der Welt",
                         "quelle": "Fels ≤ 0,30 (PSU EARTH 103, Albedo-Tabelle; Nordstern §4.1); photogrammetrischer Fels 0,1–0,3"
                     }
@@ -2956,9 +2460,7 @@
                 },
                 "werkzeug": "werkbank albedo --tafel (Zeile fels) + --nachziehen"
             },
-            "quellen": [
-                "gelaende-core.js"
-            ]
+            "quellen": ["gelaende-core.js"]
         },
         {
             "id": "mensch-kopf",
@@ -2980,15 +2482,8 @@
                         "backend": "WebGPU",
                         "adapter": "amd rdna-3"
                     },
-                    "leinwand": [
-                        1920,
-                        1080
-                    ],
-                    "kamera": [
-                        -900.6,
-                        109.87,
-                        -856
-                    ],
+                    "leinwand": [1920, 1080],
+                    "kamera": [-900.6, 109.87, -856],
                     "ausdruck": "^spieler$",
                     "schwelle": 18,
                     "rauschen": {
@@ -3036,14 +2531,7 @@
                         "verweis": {
                             "datei": "koerper-core.js",
                             "symbol": "KOPF_SOLL",
-                            "felder": [
-                                "augeFrei",
-                                "lippeL",
-                                "lippeA",
-                                "hoehleL",
-                                "hoehleA",
-                                "haarDeckung"
-                            ]
+                            "felder": ["augeFrei", "lippeL", "lippeA", "hoehleL", "hoehleA", "haarDeckung"]
                         },
                         "einheit": "Anteil der Züge des Gesichts, die das BILD in ihrem KOPF_SOLL-Band zeigt (gesichtMasse: Iris frei, Lippe und Höhle gegen die Wange in CIELAB, Haar über der Haarlinie)",
                         "quelle": "K57 KOPF_SOLL (Farkas-Normen, CIELAB der Lippe und Höhle gegen die Wange, Haar als Volumen) — gelesen, nie kopiert; MetaHuman: jeder Zug im Band"
@@ -3067,15 +2555,8 @@
                         "backend": "WebGPU",
                         "adapter": "amd rdna-3"
                     },
-                    "leinwand": [
-                        1920,
-                        1080
-                    ],
-                    "kamera": [
-                        -277.94,
-                        29.21,
-                        -1038.7
-                    ],
+                    "leinwand": [1920, 1080],
+                    "kamera": [-277.94, 29.21, -1038.7],
                     "ausdruck": "^spieler:kopf/",
                     "schwelle": 18,
                     "rauschen": {
@@ -3088,14 +2569,7 @@
                         "spieler:kopf/auge": {
                             "objekte": 2,
                             "spiegelTreue": null,
-                            "sp": [
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0
-                            ],
+                            "sp": [0, 0, 0, 0, 0, 0],
                             "zweiton": 0,
                             "zt": 0,
                             "weiss": 0,
@@ -3118,14 +2592,7 @@
                         "spieler:kopf/hair": {
                             "objekte": 2,
                             "spiegelTreue": null,
-                            "sp": [
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0
-                            ],
+                            "sp": [0, 0, 0, 0, 0, 0],
                             "zweiton": 0,
                             "zt": 0,
                             "weiss": 0,
@@ -3148,14 +2615,7 @@
                         "spieler:kopf/haut": {
                             "objekte": 2,
                             "spiegelTreue": -0.0893,
-                            "sp": [
-                                375,
-                                0,
-                                0,
-                                663288.6,
-                                663288.6,
-                                -59241.06
-                            ],
+                            "sp": [375, 0, 0, 663288.6, 663288.6, -59241.06],
                             "zweiton": 0,
                             "zt": 0,
                             "weiss": 0.0543,
@@ -3178,14 +2638,7 @@
                         "spieler:kopf/skin": {
                             "objekte": 1,
                             "spiegelTreue": null,
-                            "sp": [
-                                0,
-                                0,
-                                0,
-                                0,
-                                0,
-                                0
-                            ],
+                            "sp": [0, 0, 0, 0, 0, 0],
                             "zweiton": 0,
                             "zt": 0,
                             "weiss": 0,
@@ -3248,18 +2701,7 @@
                     }
                 }
             },
-            "quellen": [
-                "koerper-core.js",
-                "foundry-core.js",
-                "stamm/07.js",
-                "stamm/10.js",
-                "stamm/19.js",
-                "stamm/24.js",
-                "stamm/25c.js",
-                "stamm/15a.js",
-                "stamm/15c.js",
-                "stamm/25b.js"
-            ]
+            "quellen": ["koerper-core.js", "foundry-core.js", "stamm/07.js", "stamm/10.js", "stamm/19.js", "stamm/24.js", "stamm/25c.js", "stamm/15a.js", "stamm/15c.js", "stamm/25b.js"]
         }
     ]
 }

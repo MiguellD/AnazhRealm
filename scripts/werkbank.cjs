@@ -250,8 +250,20 @@ function sollIstSchreiben(ziel, messung) {
     const ab = require("./lib/abnahme-urteil.cjs").sollIstAbweisung(JSON.parse(text), t, id, sollQuelle());
     if (ab.length)
         throw new Error(`--ist ${ziel}: die Linse liest die Messung nicht — ${ab.join(" · ")} — die Tafel bleibt, wie sie war`);
-    fs.writeFileSync(SOLL_TAFEL, JSON.stringify(t, null, 4) + "\n");
+    fs.writeFileSync(SOLL_TAFEL, tafelText(t) + "\n");
     return `${id}${teil ? ":" + teil : ""} → spec/abnahme/soll-tafel.json`;
+}
+// DIE TAFEL IN IHRER FORM (F1, Wachstums-Wand): eine Zahlen-Reihe steht auf EINER Zeile — eine Messung (`sp` je Klasse)
+// wuchs sonst um eine Zeile je Zahl, und jedes `--ist` zählte als Prüf-Apparat (+312 Zeilen für eine Messrunde)
+function tafelText(v, ein = "") {
+    if (Array.isArray(v) && v.every((x) => x === null || typeof x !== "object")) return JSON.stringify(v).replace(/,/g, ", ");
+    if (!v || typeof v !== "object") return JSON.stringify(v);
+    const innen = ein + "    ";
+    const teile = Array.isArray(v)
+        ? v.map((x) => innen + tafelText(x, innen))
+        : Object.keys(v).map((k) => `${innen}${JSON.stringify(k)}: ${tafelText(v[k], innen)}`);
+    if (!teile.length) return Array.isArray(v) ? "[]" : "{}";
+    return (Array.isArray(v) ? "[\n" : "{\n") + teile.join(",\n") + "\n" + ein + (Array.isArray(v) ? "]" : "}");
 }
 const argv = process.argv.slice(2);
 const opt = (k, d) => {
