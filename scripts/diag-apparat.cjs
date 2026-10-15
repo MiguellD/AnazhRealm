@@ -13,14 +13,17 @@
 // wahr, wenn jedes katalogisierte Symbol im lebenden Stamm-CODE existiert —
 // zieht ein Symbol um, wird HIER die eine Katalog-Zeile rot, nie N Proben.
 //
-// Dritte Aufgabe (K60-N5): keine Probe in scripts/ hält eine Taste über einen
-// Zeitgeber statt bis zu ihrem Ereignis (halteBis, scripts/lib/welt-boot.cjs).
+// Dritte Aufgabe (Klinge 3, K38-N2): jede Linse findet eine Methode am NAMEN, nie an ihrer Parameter-Liste.
+// Vierte Aufgabe (Klinge 4, K38-N2 Runde 3): jede Linse ordnet Code seiner Methode am AST zu, nie an einem Kopf-Muster.
+// Fünfte Aufgabe (Klinge 5, K60-N5): keine Linse hält eine Taste über einen Zeitgeber statt bis zu ihrem Ereignis.
 //
-// Selbst-Test: --selftest beweist alle drei Klingen (kein vakuöses Grün):
+// Selbst-Test: --selftest beweist alle fünf Klingen (kein vakuöses Grün):
 // (1) eine injizierte .toString()-Probe hebt den Zähler über den Ratchet,
 //     ein bloßer Kommentar hebt ihn NICHT; (2) ein erfundenes Katalog-Symbol
-// feuert die Katalog-Prüfung; (3) der alte Lauf von gate:mp-sync (W 1,6 s nach
-// der Uhr) feuert, das Halten bis zum Ereignis und ein bloßer Druck nicht.
+// feuert die Katalog-Prüfung; (3) ein Regex- und ein Text-Anker mit Parameter-Liste
+// werden mit Datei:Zeile genannt, der Name allein, ein Aufruf und eine fremde Methode schweigen;
+// (4) jede Form des Kopf-Musters fällt mit Datei:Zeile, Kopf am Namen, Schlüssel und Zugriff schweigen;
+// (5) der alte Lauf von gate:mp-sync (W 1,6 s nach der Uhr) fällt mit Datei:Zeile, das Halten bis zum Ereignis schweigt.
 // ============================================================================
 "use strict";
 const fs = require("fs");
@@ -35,8 +38,7 @@ const FROZEN_TOSTRING = 1;
 
 // Kommentare strippen, Strings BEWAHREN (die diag-source-probes-Methode:
 // zeichenweise, string-bewusst — ein naiver Regex frisst echten Code).
-// `maske`: Kommentare werden Leerzeichen (Zeilenumbrüche bleiben) — Index und Zeile stimmen mit der Quelle überein.
-function stripComments(src, maske = false) {
+function stripComments(src) {
     let out = "";
     let i = 0;
     const n = src.length;
@@ -47,13 +49,11 @@ function stripComments(src, maske = false) {
         if (mode === "code") {
             if (c === "/" && c2 === "/") {
                 mode = "line";
-                if (maske) out += "  ";
                 i += 2;
                 continue;
             }
             if (c === "/" && c2 === "*") {
                 mode = "block";
-                if (maske) out += "  ";
                 i += 2;
                 continue;
             }
@@ -68,18 +68,16 @@ function stripComments(src, maske = false) {
             if (c === "\n") {
                 mode = "code";
                 out += c;
-            } else if (maske) out += " ";
+            }
             i++;
             continue;
         }
         if (mode === "block") {
             if (c === "*" && c2 === "/") {
                 mode = "code";
-                if (maske) out += "  ";
                 i += 2;
                 continue;
             }
-            if (maske) out += c === "\n" ? c : " ";
             i++;
             continue;
         }
@@ -134,59 +132,6 @@ function scanRatchet(playtestSrc) {
     return { n, nT, errs };
 }
 
-// K60-N5 — DIE TASTE NACH DER WANDUHR (Klinge 3): eine Probe hält eine Taste über einen Zeitgeber statt bis zu ihrem
-// Ereignis. Auf dem CPU-Raster der CI läuft der Spieler in derselben Zeit einen Bruchteil des Wegs (gate:mp-sync (d) LEER:
-// „A lief 0.77 m“ nach 1,6 s W, CI 38683406115; die Garage fuhr in 1,8 s 1,1 m/s). Zwischen dem Druck (`keyboard.down`,
-// `KeyboardEvent("keydown")`) und dem Loslassen steht kein Zeitgeber — das Halten geht über `halteBis`
-// (scripts/lib/welt-boot.cjs), das am Ereignis loslässt. Gelesen wird jede Probe in scripts/ und scripts/lib/.
-const TASTE_DRUCK = /\.keyboard\.down\(|KeyboardEvent\(\s*["'`]keydown["'`]/g;
-const TASTE_LOS = /\.keyboard\.up\(|KeyboardEvent\(\s*["'`]keyup["'`]/g;
-const ZEITGEBER = /\bawait\s+(?:sleep|warte|warten|pause)\s*\(|\.waitForTimeout\s*\(|\bsetTimeout\s*\(/;
-
-// Die Taste eines Drucks bzw. Loslassens: die Zeichenketten des Aufrufs bis zu seiner Klammer („KeyW“ heißt „w“) —
-// gehalten ist eine Taste nur, wenn dieselbe später losgelassen wird; ein Druck ohne Loslassen (Enter, Strg+K) hält nichts.
-function tastenVon(code, m) {
-    const ende = code.indexOf(")", m.index + m[0].length);
-    const seg = code.slice(m.index + m[0].length, ende < 0 ? m.index + 200 : ende);
-    const tasten = new Set(
-        [...seg.matchAll(/["'`]([^"'`\n]{1,24})["'`]/g)].map((t) =>
-            (/^Key[A-Z]$/.test(t[1]) ? t[1].slice(3) : t[1]).toLowerCase()
-        )
-    );
-    if (!tasten.size && seg.trim()) tasten.add(seg.trim()); // die Taste als Name (`keyboard.down(taste)`)
-    return tasten;
-}
-
-function tasteNachWanduhr(src) {
-    const code = stripComments(src, true);
-    const los = [...code.matchAll(TASTE_LOS)].map((m) => ({ i: m.index, tasten: tastenVon(code, m) }));
-    const funde = [];
-    for (const m of code.matchAll(TASTE_DRUCK)) {
-        const tasten = tastenVon(code, m);
-        const ende = los.find((l) => l.i > m.index && [...l.tasten].some((t) => tasten.has(t)));
-        if (!ende) continue; // ein Druck, kein Halten
-        const fenster = code.slice(m.index, ende.i);
-        const z = fenster.match(ZEITGEBER);
-        if (z) funde.push({ zeile: code.slice(0, m.index).split("\n").length, zeitgeber: z[0].replace(/\s+/g, " ") });
-    }
-    return funde;
-}
-
-function scanTasten(root) {
-    const errs = [];
-    const dateien = [];
-    for (const dir of ["scripts", path.join("scripts", "lib")])
-        for (const f of fs.readdirSync(path.join(root, dir)))
-            if (/\.(c|m)?js$/.test(f) && f !== "diag-apparat.cjs") dateien.push(path.join(dir, f));
-    for (const rel of dateien)
-        for (const f of tasteNachWanduhr(fs.readFileSync(path.join(root, rel), "utf8")))
-            errs.push(
-                `Taste nach Wanduhr: ${rel.replace(/\\/g, "/")}:${f.zeile} hält die Taste über „${f.zeitgeber}“ statt bis zu ` +
-                    `ihrem Ereignis — Täter der Lauf dieser Probe; halteBis (scripts/lib/welt-boot.cjs) lässt am Ereignis los.`
-            );
-    return { dateien: dateien.length, errs };
-}
-
 // Den ANKER-KATALOG aus playtest.cjs lesen (die EINE frozen Tabelle).
 function parseAnker(playtestSrc) {
     const m = playtestSrc.match(/window\.__anker = Object\.freeze\(\{([\s\S]*?)\}\);/);
@@ -221,8 +166,223 @@ function scanAnker(playtestSrc, stammSrc) {
     return { entries, errs };
 }
 
+// KLINGE 3 (K38-N2, 15.10.) — die Linse findet eine Methode an ihrem NAMEN, nie an ihrer Parameter-Liste. Ein Anker, der
+// die Liste festnagelt (im Regex `_x\(a, b\)\s*\{`, als Text "    _x(a, b) {"), bricht bei jedem neuen Parameter, obwohl das
+// geprüfte Gesetz steht: gate:foundry-crossfade fiel so an `_foundryBaumHoehe(preset, entry, wer)` (Zweig-CI 38651527401,
+// voll 4/11). Der Name wandert mit: im Regex `_x\([^)]*\)`, im Text `stammLib.kopf(text, "_x")`. Die Klinge liest JEDE Linse
+// (scripts/, spec/) Token für Token (acorn) und nennt jede Stelle mit Datei:Zeile; der Bestand ist 0 und bleibt 0.
+const PARAM_ANKER_RX = /(_[\w$]+)\\\(((?:[^\\)\n]|\\[^()])*?)\\\)(?:\\s\*|\\s\+| )?\\\{/g;
+const PARAM_FREI = "[^)]*";
+const KOPF_TEXT_RX = /^\n?[ ]*(?:static\s+|async\s+)*([A-Za-z_$][\w$]*)\(([^()]*)\)\s*\{\s*$/;
+// KLINGE 4 (K38-N2, Prüfer Runde 3) — eine Linse ordnet Code seiner Methode am AST zu (stammLib.glieder · gliedAn · rufe),
+// nie an einem KOPF-MUSTER: ein Regex, der Methoden-Köpfe an einem Namens-Muster sucht (Einzug der Klasse + `\w` oder eine
+// Zeichenklasse + `\(`), übersieht still jeden Kopf mit `)` im Default-Parameter, jeden umbrochenen, jeden Getter — der
+// Aufruf fiel der Methode davor zu (N4.1 und W2 bis Runde 3; am Kopf von haus-fenster 14163541 neun Stellen in acht
+// Linsen). Ein Kopf am NAMEN (`_x\([^)]*\)`) ist Klinge 3. Gelesen wird jedes Regex-Literal, Token für Token.
+const KOPF_EINZUG_RX = /(?:\\n|\^)(?: \{4\}| {4}|\\s\{4\}|\[ \]\{4\})/g;
+const NAMENS_MUSTER_RX = /\\w|\[[^\]]*(?:a-z|A-Z)[^\]]*\]/;
+// Die EINE Stelle ohne AST: die Rehome-Benennung liest Text mit Konflikt-Markern (<<<<<<<), den kein Parser liest, und
+// urteilt nicht (sie benennt Hunks für den Menschen). Frei ist genau dieses Muster in genau dieser Datei.
+const KOPF_MUSTER_FREI = new Map([
+    ["scripts/stamm-rehome.cjs", "^ {4}(?:static\\s+)?(?:async\\s+)?(?:get\\s+|set\\s+)?\\*?([A-Za-z_$][\\w$]*)\\s*\\("],
+]);
+function kopfMuster(pattern) {
+    const out = [];
+    for (const m of pattern.matchAll(KOPF_EINZUG_RX)) {
+        const rest = pattern.slice(m.index + m[0].length);
+        const k = rest.indexOf("\\(");
+        if (k < 0) continue;
+        const name = rest.slice(0, k);
+        // ein Schlüssel (`(\w+): …`) oder ein Zugriff (`a\.b\(`) ist kein Kopf
+        if (/:|\\\./.test(name.replace(/\(\?:/g, ""))) continue;
+        if (NAMENS_MUSTER_RX.test(name)) out.push(m[0] + name + "\\(");
+    }
+    return out;
+}
+function parameterAnker(name, src, stammSrc) {
+    const acorn = require("acorn");
+    let toks;
+    try {
+        toks = [
+            ...acorn.tokenizer(src, {
+                ecmaVersion: "latest",
+                locations: true,
+                allowHashBang: true,
+                allowReturnOutsideFunction: true,
+            }),
+        ];
+    } catch (e) {
+        return [`${name}: nicht lesbar (${e.message}) — die Klinge urteilt über jede Linse`];
+    }
+    const errs = [];
+    for (const t of toks) {
+        const z = `${name}:${t.loc.start.line}`;
+        if (t.type.label === "regexp") {
+            for (const m of t.value.pattern.matchAll(PARAM_ANKER_RX))
+                if (m[2] !== PARAM_FREI)
+                    errs.push(
+                        `${z} nagelt die Parameter-Liste von ${m[1]} fest (/${m[0]}/) — am Namen: ${m[1]}\\(${PARAM_FREI}\\)`
+                    );
+            if (KOPF_MUSTER_FREI.get(name) !== t.value.pattern)
+                for (const k of kopfMuster(t.value.pattern))
+                    errs.push(
+                        `${z} ordnet Methoden an einem Kopf-Muster zu (/${k}/) — am AST: stammLib.glieder · gliedAn · rufe (Klinge 4)`
+                    );
+        } else if (t.type.label === "string" || t.type.label === "template") {
+            const k = KOPF_TEXT_RX.exec(String(t.value));
+            if (k && stammLib.kopf(stammSrc, k[1]) >= 0)
+                errs.push(
+                    `${z} sucht ${k[1]} an seinem Kopf-Text (${JSON.stringify(String(t.value).trim())}) — am Namen: stammLib.kopf(text, "${k[1]}")`
+                );
+        }
+    }
+    return errs;
+}
+// Jede Linse (scripts/, spec/) — die EINE Dateiliste der Klingen 3 bis 5.
+function linsenDateien(root) {
+    const dateien = [];
+    const lauf = (d) => {
+        for (const e of fs.readdirSync(d, { withFileTypes: true })) {
+            if (e.name === "node_modules" || e.name.startsWith(".")) continue;
+            const p = path.join(d, e.name);
+            if (e.isDirectory()) lauf(p);
+            else if (/\.(c?js|mjs)$/.test(e.name)) dateien.push(p);
+        }
+    };
+    for (const d of ["scripts", "spec"]) if (fs.existsSync(path.join(root, d))) lauf(path.join(root, d));
+    return dateien.map((p) => ({ name: path.relative(root, p).replace(/\\/g, "/"), src: fs.readFileSync(p, "utf8") }));
+}
+function scanParameterAnker(dateien, stammSrc) {
+    const errs = [];
+    for (const d of dateien) errs.push(...parameterAnker(d.name, d.src, stammSrc));
+    return { n: dateien.length, errs };
+}
+
+// KLINGE 5 (K60-N5, 15.10.) — DIE TASTE NACH DER WANDUHR: eine Linse hält eine Taste über einen Zeitgeber statt bis zu
+// ihrem Ereignis. Auf dem CPU-Raster der CI läuft der Spieler in derselben Zeit einen Bruchteil des Wegs (gate:mp-sync (d)
+// „LEER: A lief 0.77 m“ nach 1,6 s W, Zweig-CI 38683406115; die Garage fuhr in 1,8 s 1,1 m/s). Gehalten ist eine Taste,
+// die gedrückt (`keyboard.down`, `KeyboardEvent("keydown")`) und später DIESELBE losgelassen wird; dazwischen steht kein
+// Zeitgeber — das Halten geht über `halteBis` (scripts/lib/welt-boot.cjs), das am Ereignis loslässt. Ein Druck ohne
+// Loslassen (Enter, Strg+K) hält nichts. Kommentare zählen nicht (acorn, `onComment`); der Bestand ist 0 und bleibt 0.
+const TASTE_DRUCK = /\.keyboard\.down\(|KeyboardEvent\(\s*["'`]keydown["'`]/g;
+const TASTE_LOS = /\.keyboard\.up\(|KeyboardEvent\(\s*["'`]keyup["'`]/g;
+const ZEITGEBER = /\bawait\s+(?:sleep|warte|warten|pause)\s*\(|\.waitForTimeout\s*\(|\bsetTimeout\s*\(/;
+// Die Taste eines Drucks bzw. Loslassens: die Zeichenketten des Aufrufs bis zu seiner Klammer („KeyW“ heißt „w“), ohne
+// Zeichenkette der Name des Arguments (`keyboard.down(taste)`).
+function tastenVon(code, m) {
+    const ende = code.indexOf(")", m.index + m[0].length);
+    const seg = code.slice(m.index + m[0].length, ende < 0 ? m.index + 200 : ende);
+    const tasten = new Set(
+        [...seg.matchAll(/["'`]([^"'`\n]{1,24})["'`]/g)].map((t) =>
+            (/^Key[A-Z]$/.test(t[1]) ? t[1].slice(3) : t[1]).toLowerCase()
+        )
+    );
+    if (!tasten.size && seg.trim()) tasten.add(seg.trim());
+    return tasten;
+}
+function tasteNachWanduhr(name, src) {
+    const acorn = require("acorn");
+    const kommentare = [];
+    let texte;
+    try {
+        texte = [
+            ...acorn.tokenizer(src, {
+                ecmaVersion: "latest",
+                allowHashBang: true,
+                allowReturnOutsideFunction: true,
+                onComment: (_block, _text, a, b) => kommentare.push([a, b]),
+            }),
+        ].filter((t) => t.type.label === "string" || t.type.label === "template");
+    } catch {
+        return []; // nicht lesbar: das nennt Klinge 3 beim Namen
+    }
+    const teile = [];
+    let bis = 0;
+    for (const [a, b] of kommentare) {
+        teile.push(src.slice(bis, a), src.slice(a, b).replace(/[^\n]/g, " "));
+        bis = b;
+    }
+    teile.push(src.slice(bis));
+    const code = teile.join("");
+    // ein Druck IN einer Zeichenkette ist Text, kein Code (die Proben des Selbsttests unten)
+    const imText = (i) => texte.some((t) => t.start <= i && i < t.end);
+    const los = [...code.matchAll(TASTE_LOS)].map((m) => ({ i: m.index, tasten: tastenVon(code, m) }));
+    const errs = [];
+    for (const m of code.matchAll(TASTE_DRUCK)) {
+        if (imText(m.index)) continue;
+        const tasten = tastenVon(code, m);
+        const ende = los.find((l) => l.i > m.index && [...l.tasten].some((t) => tasten.has(t)));
+        if (!ende) continue; // ein Druck, kein Halten
+        const z = code.slice(m.index, ende.i).match(ZEITGEBER);
+        if (z)
+            errs.push(
+                `${name}:${code.slice(0, m.index).split("\n").length} hält die Taste über „${z[0].replace(/\s+/g, " ")}“ ` +
+                    `statt bis zu ihrem Ereignis — Täter der Lauf dieser Linse; halteBis (scripts/lib/welt-boot.cjs) lässt am ` +
+                    `Ereignis los (Klinge 5)`
+            );
+    }
+    return errs;
+}
+function scanTasten(dateien) {
+    const errs = [];
+    for (const d of dateien) errs.push(...tasteNachWanduhr(d.name, d.src));
+    return { n: dateien.length, errs };
+}
+
 function selftest() {
     const fails = [];
+    // Klinge 3: ein Regex-Anker mit Parameter-Liste und ein Kopf-Text einer Stamm-Methode feuern beim Namen, der Name
+    // allein, ein Aufruf und der Kopf einer fremden Methode schweigen.
+    const stammFake = "class A {\n    _echt(a, b) {\n        return a;\n    }\n}\n";
+    const rot = [
+        "const r = /\\n {4}_echt\\(a, b\\)\\s*\\{/;",
+        'const k = s.indexOf("    _echt(a, b) {");',
+        "const r = /_echt\\(\\) \\{/;",
+    ];
+    for (const q of rot) {
+        const e = parameterAnker("probe.cjs", q, stammFake);
+        if (e.length !== 1 || !/probe\.cjs:1 .*_echt/.test(e[0])) fails.push(`Klinge 3 nennt den Anker nicht: ${q}`);
+    }
+    const gruen = [
+        "const r = /\\n {4}_echt\\([^)]*\\)\\s*\\{/;",
+        "const r = /this\\._echt\\(a, b\\);/;",
+        'const k = stammLib.kopf(s, "_echt");',
+        'const k = s.indexOf("    _fremd(a, b) {");',
+        "// const r = /\\n {4}_echt\\(a, b\\) \\{/;",
+    ];
+    for (const q of gruen)
+        if (parameterAnker("probe.cjs", q, stammFake).length) fails.push(`Klinge 3 feuert am Namen-Anker: ${q}`);
+    // Klinge 4: jedes Kopf-Muster der Klasse (die Formen der neun Stellen bis Runde 3) fällt mit Datei:Zeile; der Kopf am
+    // Namen, ein Objekt-Schlüssel, ein Zugriff und die eine freie Stelle in ihrer Datei schweigen — in fremder Datei nicht.
+    const kopfRot = [
+        "const r = /\\n {4}(?:static |async )*([A-Za-z_$][\\w$]*)\\([^)\\n]*\\) \\{/g;",
+        "const r = /\\n {4}(_foundry\\w*|_heldFoundryGroup)\\([^)\\n]*\\) \\{/g;",
+        "const r = /^\\n {4}\\w+\\([^)\\n]*\\) \\{/;",
+        "const r = /\\n    (_buildTree\\w*|_stampFoliage\\w*)\\(/g;",
+        "const r = /^    (?:static |async |get |set )*([A-Za-z_$][\\w$]*)\\s*\\(/;",
+        "const r = /^ {4}(?:static\\s+)?(?:async\\s+)?([A-Za-z_$][\\w$]*)\\s*\\([^)]*\\)\\s*\\{\\s*$/;",
+        "const r = /\\n {4}[_A-Za-z$][\\w$]*\\([^)]*\\) \\{\\n/;",
+        "const r = /^\\s{4}([A-Za-z_$][\\w$]*)\\(/;",
+        "const r = /\\n[ ]{4}(\\w+)\\(/;",
+    ];
+    for (const q of kopfRot) {
+        const e = parameterAnker("probe.cjs", q, stammFake).filter((x) => /Klinge 4/.test(x));
+        if (e.length !== 1 || !/^probe\.cjs:1 ordnet Methoden an einem Kopf-Muster/.test(e[0]))
+            fails.push(`Klinge 4 nennt das Kopf-Muster nicht: ${q}`);
+    }
+    const frei = [...KOPF_MUSTER_FREI][0];
+    const kopfStill = [
+        ["probe.cjs", "const r = /\\n {4}_echt\\([^)]*\\)\\s*\\{/;"],
+        ["probe.cjs", "const r = /\\n    (\\w+): Object\\.freeze\\(\\{/;"],
+        ["probe.cjs", "const r = /\\n {4}this\\.(\\w+)\\(/;"],
+        ["probe.cjs", "const r = /^(?:_foundry\\w*|_karte\\w*)$/;"],
+        ["probe.cjs", "const g = stammLib.gliedAn(stammLib.glieder(t), i);"],
+        [frei[0], `const r = /${frei[1]}/;`],
+    ];
+    for (const [datei, q] of kopfStill)
+        if (parameterAnker(datei, q, stammFake).length) fails.push(`Klinge 4 feuert ohne Kopf-Muster: ${datei} ${q}`);
+    if (!parameterAnker("probe.cjs", `const r = /${frei[1]}/;`, stammFake).some((x) => /Klinge 4/.test(x)))
+        fails.push("Klinge 4: die freie Stelle schweigt auch in fremder Datei");
     // Klinge 1a: eine injizierte Probe hebt den Zähler über den Ratchet.
     const inject = "const x = 1;\n" + "y.toString();\n".repeat(FROZEN_TOSTRING + 1);
     if (scanRatchet(inject).errs.length !== 1) fails.push("Ratchet feuert nicht bei Injektion");
@@ -241,37 +401,33 @@ function selftest() {
     const r = scanAnker(fakePlaytest, "class A { echteMethode() {} }");
     if (r.errs.length !== 1 || !/phantom/.test(r.errs[0]))
         fails.push("Katalog-Prüfung feuert nicht bei Phantom-Symbol");
-    // Klinge 3: der alte Lauf von gate:mp-sync (W 1,6 s nach der Uhr) und der Druck im Rahmen samt `warte` feuern; das
-    // Halten bis zum Ereignis, ein Kommentar und ein Zeitgeber NACH dem Loslassen nicht.
-    const sw = (s) => tasteNachWanduhr(s).length;
-    if (sw('await pageA.keyboard.down("w");\nawait sleep(1600);\nawait pageA.keyboard.up("w");\n') !== 1)
-        fails.push("Klinge 3 feuert nicht am alten Lauf (keyboard.down + sleep)");
-    const rahmen =
+    // Klinge 5: der alte Lauf von gate:mp-sync (W 1,6 s nach der Uhr), der Druck im Rahmen samt `warte` und eine Taste mit
+    // Namen fallen mit Datei:Zeile; das Halten bis zum Ereignis, ein Kommentar und ein Druck ohne Loslassen schweigen.
+    const tasteRot = [
+        'await pageA.keyboard.down("w");\nawait sleep(1600);\nawait pageA.keyboard.up("w");\n',
         'await fr.evaluate(() => window.dispatchEvent(new KeyboardEvent("keydown", { code: "KeyW" })));\nawait warte(1600);\n' +
-        'await fr.evaluate(() => window.dispatchEvent(new KeyboardEvent("keyup", { code: "KeyW" })));\n';
-    if (sw(rahmen) !== 1) fails.push("Klinge 3 feuert nicht am Druck im Rahmen (keydown + warte)");
-    if (
-        sw(
-            'await page.keyboard.down("w");\nawait page.waitForFunction(() => weit(), { polling: 100 });\nawait page.keyboard.up("w");\nawait sleep(800);\n'
-        ) !== 0
-    )
-        fails.push("Klinge 3 feuert am Halten bis zum Ereignis");
-    if (sw('// keyboard.down("w"); await sleep(1600); keyboard.up("w")\nconst a = 1;\n') !== 0)
-        fails.push("Klinge 3 zählt Kommentare mit");
-    if (
-        sw(
-            'el.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter" }));\nawait sleep(300);\nawait page.keyboard.up("w");\n'
-        ) !== 0
-    )
-        fails.push("Klinge 3 liest einen Druck ohne Loslassen als Halten");
-    if (sw("await seite.keyboard.down(taste);\nawait sleep(900);\nawait seite.keyboard.up(taste);\n") !== 1)
-        fails.push("Klinge 3 feuert nicht an einer Taste mit Namen");
+            'await fr.evaluate(() => window.dispatchEvent(new KeyboardEvent("keyup", { code: "KeyW" })));\n',
+        "await seite.keyboard.down(taste);\nawait sleep(900);\nawait seite.keyboard.up(taste);\n",
+    ];
+    for (const q of tasteRot) {
+        const e = tasteNachWanduhr("probe.cjs", q);
+        if (e.length !== 1 || !/^probe\.cjs:1 hält die Taste/.test(e[0]))
+            fails.push(`Klinge 5 nennt den Lauf nicht: ${q}`);
+    }
+    const tasteStill = [
+        'await page.keyboard.down("w");\nawait page.waitForFunction(() => weit(), { polling: 100 });\nawait page.keyboard.up("w");\nawait sleep(800);\n',
+        '// await page.keyboard.down("w"); await sleep(1600); await page.keyboard.up("w");\nconst a = /"/;\n',
+        'el.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter" }));\nawait sleep(300);\nawait page.keyboard.up("w");\n',
+        'const probe = \'await pageA.keyboard.down("w");\\nawait sleep(1600);\\nawait pageA.keyboard.up("w");\';\n',
+    ];
+    for (const q of tasteStill)
+        if (tasteNachWanduhr("probe.cjs", q).length) fails.push(`Klinge 5 feuert ohne Lauf nach der Uhr: ${q}`);
     if (fails.length) {
         console.log("❌ SELBST-TEST: " + fails.join(" · "));
         process.exit(1);
     }
     console.log(
-        "✅ SELBST-TEST: alle drei Klingen feuern (Ratchet + Katalog + Taste nach Wanduhr), Kommentare zählen nicht"
+        "✅ SELBST-TEST: alle fünf Klingen feuern (Ratchet + Katalog + Parameter-Anker beim Namen + Kopf-Muster am AST + Taste nach der Wanduhr), Kommentare zählen nicht"
     );
     process.exit(0);
 }
@@ -283,8 +439,10 @@ function main() {
     const stammSrc = stammLib.text(root);
     const ratchet = scanRatchet(playtestSrc);
     const anker = scanAnker(playtestSrc, stammSrc);
-    const tasten = scanTasten(root);
-    const errs = ratchet.errs.concat(anker.errs, tasten.errs);
+    const dateien = linsenDateien(root);
+    const param = scanParameterAnker(dateien, stammSrc);
+    const tasten = scanTasten(dateien);
+    const errs = ratchet.errs.concat(anker.errs, param.errs, tasten.errs);
     if (errs.length) {
         console.log("⛔ DIE APPARAT-LINSE:");
         for (const e of errs) console.log("   ❌ " + e);
@@ -302,7 +460,8 @@ function main() {
         `✅ DIE APPARAT-LINSE steht — ${ratchet.n}/${FROZEN_TOSTRING} rohe .toString()-Zitate + ` +
             `${ratchet.nT}/${FROZEN_TYPEOF} typeof-Existenz-Proben (beide Ratchets nur-sinkend), ` +
             `${anker.entries.length} Anker zeigen auf lebenden Stamm-Code, __consumes + __anker installiert, ` +
-            `${tasten.dateien} Proben halten keine Taste nach der Wanduhr.`
+            `${param.n} Linsen finden jede Methode am Namen (0 Parameter-Anker) und ordnen Code am AST zu (0 Kopf-Muster), ` +
+            `keine hält eine Taste nach der Wanduhr (0 von ${tasten.n}).`
     );
 }
 

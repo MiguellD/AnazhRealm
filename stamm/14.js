@@ -2190,7 +2190,13 @@ class AnazhRealm_Z14 {
         // ACES (Shell-verbatim) — die Welt-Ausgabe-Transform bleibt Leser-Sache.
         const aces = (x) =>
             TSL.clamp(x.mul(x.mul(2.51).add(0.03)).div(x.mul(x.mul(2.43).add(0.59)).add(0.14)), F(0.0), F(1.0));
-        const G = { positionNode, colorNode: TSL.vec4(aces(col), 1.0), opacityNode: keep };
+        // DIE SHELL MALT IN BILD-WERTEN (K64-n1): ihr ACES endet im Anzeige-Wert, im Labor ist er das Pixel (r128-ShaderMaterial
+        // ohne Ausgabe-Schritt). Die Welt liest jeden Stoff linear und wandelt EINMAL aus (Belichtung · ACES · sRGB); roh gelesen
+        // hob die sRGB-Kurve die dunklen Bänder an (Anzeige 0,1 → 0,39), die Membran stand milchig-weiß. Das FARB-GESETZ
+        // (Lehre 21: Bild-Wert = sRGB, Stoff linear) liest den Anzeige-Wert ins Lineare zurück — `anzeige` bleibt für die Linse
+        // lesbar (gate:portal-membran H: ihr Selbsttest zeichnet ihn roh).
+        const anzeige = aces(col);
+        const G = { positionNode, colorNode: TSL.vec4(TSL.sRGBTransferEOTF(anzeige), 1.0), opacityNode: keep, anzeige };
         this._membranGraphen.set(MG, G);
         return G;
     }
@@ -2352,7 +2358,14 @@ class AnazhRealm_Z14 {
             acc = acc.add(lum.mul(a2).mul(trans));
             trans = trans.mul(F(1.0).sub(a2));
         }
-        const G = { colorNode: TSL.vec4(acc, 1.0), opacityNode: F(1.0).sub(trans) };
+        // Der Nebel malt wie die Membran in Bild-Werten (Lab buildFog: das Pixel klemmt bei 1): die Welt liest ihn durch
+        // dasselbe FARB-GESETZ ins Lineare (K64-n1, `_membranGraph`).
+        const anzeige = TSL.clamp(acc, F(0.0), F(1.0));
+        const G = {
+            colorNode: TSL.vec4(TSL.sRGBTransferEOTF(anzeige), 1.0),
+            opacityNode: F(1.0).sub(trans),
+            anzeige,
+        };
         this._nebelGraphen.set(MG, G);
         return G;
     }

@@ -1036,10 +1036,12 @@ function windDatenUrteil(quellen) {
         const ohne = [...new Set(namen)].filter((a) => !gelesen(a));
         if (ohne.length) v.push(`${wo}: ${name} erzeugt ${ohne.join(" · ")} — kein Stoff liest es`);
     };
-    for (const m of welt.matchAll(/\n    (_buildTree\w*|_stampFoliage\w*)\(/g)) {
-        const rumpf = welt.slice(m.index, welt.indexOf("\n    }\n", m.index));
+    // die Bauer der Welt am AST (stammLib.glieder, K38-N2): ein umbrochener oder async-Kopf fiel aus dem Kopf-Muster
+    for (const g of stammLib.glieder(quellen.Stamm)) {
+        if (!/^(?:_buildTree\w*|_stampFoliage\w*)$/.test(g.name)) continue;
+        const rumpf = code(quellen.Stamm.slice(g.start, g.ende));
         const namen = [...rumpf.matchAll(/setAttribute\(\s*"(a[A-Z]\w*)"/g)].map((x) => x[1]);
-        urteil("Stamm", m[1], namen, inWelt);
+        urteil("Stamm", g.name, namen, inWelt);
     }
     for (const f of KERN_GEOMETRIE_BAUER) {
         const k = kern.indexOf("\n    function " + f + "(");

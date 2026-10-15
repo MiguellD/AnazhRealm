@@ -31,6 +31,7 @@ const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
+const kernStufen = require("./lib/kern-stufen.cjs");
 
 const PORT = Number(process.env.NERV_FACHWERK_PORT || 4434);
 const root = path.resolve(__dirname, "..");
@@ -88,7 +89,7 @@ function staticLaws(anazhSrc, fcSrc, manifestSrc) {
     // ABSCHIEDS-WELLE (V9.56-i + die V18.440-fnBody-Lehre): die Probe ankert auf der
     // DEFINITIONS-Form (\\(book\\)\\s*\\{) — die CALL-SITE in _foundryIngestRecipes steht
     // im File VOR der Definition und schnitte sonst den falschen Body.
-    const autoReg = fnBody(anazhNC, /_foundryAutoRegisterSpecies\(book\)\s*\{/);
+    const autoReg = fnBody(anazhNC, /_foundryAutoRegisterSpecies\([^)]*\)\s*\{/);
     out.push([
         "S3: der Auto-Register-Chokepoint laeuft die Policy-Tabelle (kein kind-String-Vergleich, M8 — s. a. gate:constitution N1)",
         autoReg !== null && /KIND_POLICY/.test(autoReg) && !/kind\s*[!=]==?\s*"/.test(autoReg),
@@ -227,10 +228,7 @@ function ksRow(src, name) {
                 : 0;
         res.b.paramsHaus = f && f.paramsByKind && Array.isArray(f.paramsByKind.haus) ? f.paramsByKind.haus.length : -1;
         res.b.ksHaus = ks ? JSON.stringify(ks.haus) : null;
-        res.b.ksTree = ks ? JSON.stringify(ks.tree) : null;
-        res.b.ksVehicle = ks ? JSON.stringify(ks.vehicle) : null;
-        res.b.ksGate = ks ? JSON.stringify(ks.gate) : null;
-        res.b.ksWeapon = ks ? JSON.stringify(ks.weapon) : null;
+        res.b.ks = ks ? JSON.parse(JSON.stringify(ks)) : null;
         // ===== D: der AUTO-BLUEPRINT (Donor-Klon am EINEN Chokepoint) =====
         try {
             const bp = r.state.blueprints && r.state.blueprints.haus_alemannisch;
@@ -325,6 +323,8 @@ function ksRow(src, name) {
         }
         return res;
     });
+    // Die Erwartung der Stufen: die Kerne in der Seite (dieselben Dateien wie der Worker), nie eine Abschrift (K64).
+    const kern = await page.evaluate(kernStufen.seitenStufen, kernStufen.kernRaeume());
 
     await browser.close();
     server.close();
@@ -351,10 +351,12 @@ function ksRow(src, name) {
         out.b.ksHaus === "[0,1,2,3]",
         String(out.b.ksHaus)
     );
-    check("B: foundry-core-kinds UNANGETASTET (tree [0,1,2])", out.b.ksTree === "[0,1,2]", String(out.b.ksTree));
-    check("B: vehicle-kindStages UNANGETASTET ([0,1] — die Stufe 1 seit K43-2)", out.b.ksVehicle === "[0,1]", String(out.b.ksVehicle));
-    check("B: gate-kindStages UNANGETASTET ([0,1,3] — die Stufe 1 seit K43, die NUR-WURF-Stufe 3, 1110-9)", out.b.ksGate === "[0,1,3]", String(out.b.ksGate));
-    check("B: weapon-kindStages UNANGETASTET ([0])", out.b.ksWeapon === "[0]", String(out.b.ksWeapon));
+    const abweichung = kernStufen.stufenAbweichung(out.b.ks, kern);
+    check(
+        "B: der Ingest-Merge traegt die Stufen-Liste JEDES Kerns (kein Kern ueberschreibt einen anderen)",
+        abweichung.length === 0,
+        abweichung.join(" · ") || `${Object.keys(kern).length} Arten`
+    );
     check(
         "D: Auto-Blueprint haus_alemannisch registriert (Donor-Klon, 6 begehbare Judge-Parts)",
         out.d.blueprint === true && out.d.parts === 6,

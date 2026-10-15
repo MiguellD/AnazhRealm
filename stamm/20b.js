@@ -46,6 +46,52 @@ class AnazhRealm_Z20b {
             .then((meshes) => (nurPlatte && !(meshes && meshes.length) ? null : meshes))
             .then((ergebnis) => this._foundryIngestTakt(ergebnis));
     }
+    // DER EINE ZUG je Körper-Schlüssel: die Dedup-Wache `f.requested` wusste, DASS ein Schlüssel unterwegs war, nie WER auf
+    // ihn wartet — den Rückruf trug nur der erste Besteller. Die Werkstatt-Vorschau hinter dem Zug der Welt wartete darum
+    // für immer (Zweig-CI 38453848494: „keine Vorschau-Gestalt" nach 90 s, der Körper lag längst im Cache), die Hand trug
+    // dafür ihren eigenen 45-s-Poll. Jetzt hält `f.zuege` je Schlüssel im Flug EINE Zusage: der erste Besteller stellt den
+    // Auftrag, jeder spätere hängt sich an (`_foundryWecker`) und hebt den Rang auf seine Nähe (`_foundryNaeher`). Die
+    // Zusage löst mit true, wenn der Körper im Cache liegt, mit false nach Ablauf (die Wache gibt den Schlüssel frei, der
+    // nächste Leser fragt neu). `erst` gilt nur dem ersten Besteller: `vor` läuft vor dem Auftrag (der Wurf-Körper reist
+    // im selben Zug davor), `nach(ok)` nach der Ankunft.
+    _foundryZug(key, preset, variant, lod, ov, wo, erst) {
+        const f = this._foundry;
+        if (!f) return Promise.resolve(false);
+        const zuege = f.zuege || (f.zuege = new Map());
+        const da = zuege.get(key);
+        if (da) {
+            if (wo != null) this._foundryNaeher(f, preset, variant, lod, wo); // ohne Ort kein Rang (Lehre 17: null ist nie 0)
+            return da;
+        }
+        if (!f.requested) f.requested = new Set();
+        f.requested.add(key);
+        if (erst && erst.vor) erst.vor();
+        const zug = this._foundryRequest(preset, variant, lod, ov || undefined, wo).then((meshes) => {
+            if (zuege.get(key) === zug) zuege.delete(key);
+            if (meshes) {
+                this._foundryCacheSet(key, this._foundryBuildGroup(meshes, { lod, preset }));
+                return true;
+            }
+            f.requested.delete(key); // Ablauf/Fehler: nie null cachen (das doomte die Art) — der nächste Leser fragt neu
+            return false;
+        });
+        zuege.set(key, zug);
+        if (erst && erst.nach) zug.then(erst.nach);
+        return zug;
+    }
+    // DER WECKER: ein Wartender (`wer`) hängt `fn(ok)` GENAU EINMAL an eine Zusage (Zug, Buch `f.buchDa` oder Karte) — kein
+    // Poll, keine Frist (bis K38 gab je Wartendem auf das Buch ein 20-s-Poll still auf);
+    // fragt er im selben Warten erneut, bleibt es der eine Wecker. Seinen Neubau fängt der Wartende selbst LAUT beim Namen
+    // (`_stoffBruch`, K22: der Versuch steht dort, wo die Stoff-Wand ihn sieht); jede Zusage trägt je Wartenden eine
+    // eigene Kette — ein gerissener Neubau stoppt keinen anderen.
+    _foundryWecker(zusage, wer, fn) {
+        const hoerer = this._foundryHoerer || (this._foundryHoerer = new WeakMap());
+        let w = hoerer.get(zusage);
+        if (!w) hoerer.set(zusage, (w = new Set()));
+        if (w.has(wer)) return;
+        w.add(wer);
+        zusage.then(fn);
+    }
     // Der Takt-Wächter: hält ein Request-Ergebnis zurück, bis der Loop-Tick es
     // freigibt (die Konversion des Aufrufers folgt als Microtask im selben Frame).
     _foundryIngestTakt(x) {
@@ -92,17 +138,32 @@ class AnazhRealm_Z20b {
     // (höchstens GEIST_FACHE × die Frist, dann fällt er: nie verklemmt). Bis 05.10. startete die Uhr des Wiederholers,
     // während der Bäcker den Abgelaufenen noch buk (gate:arch-feld, CPU-Raster unter Fremdlast: Weide und Eiche je 3
     // Versuche, die Karte der fernen Eiche kam in Takt 3281; der dritte Ablauf macht eine Zelle für immer gescheitert).
+    // DIE UHR STARTET AM EREIGNIS (K38-N2): ein Auftrag meldet seine Frist an (`f.fristen`), `_foundryUhren` stellt sie,
+    // sobald kein früherer seines Fadens offen ist — beim Anmelden, nach jeder Antwort und beim Fall eines Geistes. Bis
+    // K38-N2 fragte je Auftrag im Flug ein 1-s-Poll, ob er schon der älteste sei (die Uhr lief bis 1 s zu spät an).
     _foundryFrist(f, reqId, dauerMs, beiAblauf) {
+        const fristen = f.fristen || (f.fristen = new Map());
+        fristen.set(reqId, { dauerMs, beiAblauf, uhr: null });
+        this._foundryUhren(f);
+    }
+    _foundryUhren(f) {
+        const fristen = f.fristen;
+        if (!fristen || !fristen.size) return;
         // die Nummer steht am Ende (die Bahn eines Werk-Helfers trägt ihren Faden davor, `_foundryPumpe`)
         const nr = (id) => {
             const m = /(\d+)$/.exec(String(id));
             return m ? Number(m[1]) : NaN;
         };
-        const meine = nr(reqId);
-        const bahn = this._foundryBahn(reqId);
-        let start = null;
-        const pruefe = () => {
-            if (!f.pending.has(reqId)) return; // beantwortet
+        for (const [reqId, fr] of fristen) {
+            if (!f.pending.has(reqId)) {
+                // beantwortet: die Uhr fällt mit
+                if (fr.uhr !== null) clearTimeout(fr.uhr);
+                fristen.delete(reqId);
+                continue;
+            }
+            if (fr.uhr !== null) continue;
+            const meine = nr(reqId);
+            const bahn = this._foundryBahn(reqId);
             let vorMir = false;
             for (const k of f.pending.keys()) {
                 if (nr(k) < meine && this._foundryBahn(k) === bahn) {
@@ -110,24 +171,24 @@ class AnazhRealm_Z20b {
                     break;
                 }
             }
-            const jetzt = performance.now();
-            if (vorMir) start = null;
-            else if (start === null) start = jetzt;
-            if (start !== null && jetzt - start > dauerMs) {
-                const geist = () => {};
-                f.pending.set(reqId, geist); // die späte Antwort löst den Geist ein (`_foundryAntwort`)
-                setTimeout(() => {
-                    if (f.pending.get(reqId) === geist) {
-                        f.pending.delete(reqId);
-                        this._foundryPumpe(f);
-                    }
-                }, dauerMs * AnazhRealm.FOUNDRY_GEIST_FACH);
-                beiAblauf();
-                return;
+            if (!vorMir) fr.uhr = setTimeout(() => this._foundryAblauf(f, reqId), fr.dauerMs);
+        }
+    }
+    _foundryAblauf(f, reqId) {
+        const fr = f.fristen && f.fristen.get(reqId);
+        if (!fr) return;
+        f.fristen.delete(reqId);
+        if (!f.pending.has(reqId)) return; // beantwortet im selben Takt
+        const geist = () => {};
+        f.pending.set(reqId, geist); // die späte Antwort löst den Geist ein (`_foundryAntwort`)
+        setTimeout(() => {
+            if (f.pending.get(reqId) === geist) {
+                f.pending.delete(reqId);
+                this._foundryPumpe(f);
+                this._foundryUhren(f); // der Geist fällt: die Uhr des nächsten seines Fadens läuft an
             }
-            setTimeout(pruefe, 1000);
-        };
-        setTimeout(pruefe, 1000);
+        }, fr.dauerMs * AnazhRealm.FOUNDRY_GEIST_FACH);
+        fr.beiAblauf();
     }
     _foundryWorkerRequest(presetId, seed, lod, ov, platte, nurPlatte, wo) {
         const f = this._foundry;
@@ -866,8 +927,9 @@ class AnazhRealm_Z20b {
     // Die ZELLE einer (Art, Gestalt[, ov]) im EINEN Karten-Atlas (`_impostorAtlas`): null = die Geometrie für den
     // Rahmen lädt (Null-Renderer), false = gescheitert (der Aufrufer serviert Geometrie), sonst die Zelle. Mit echtem
     // Renderer entsteht sie rahmenlos und reiht ihren Bake sofort ein — Rahmen und Pixel liefert die Schicht; keine
-    // Körper-Stufe wird für die Karte gezogen.
-    _foundryEnsureImpostorRecord(preset, variant, ov) {
+    // Körper-Stufe wird für die Karte gezogen. `wer` (optional, K38-N2): ein Wartender { wo, wecke(zusage) } — er bekommt
+    // den Zug der Rahmen-Stufe und stellt ihn in seinen Rang.
+    _foundryEnsureImpostorRecord(preset, variant, ov, wer) {
         const at = this._impostorAtlas();
         if (!at) return null;
         // BÄCKER-OV (V18.478) — ein GEPRÄGTES Entry (ov) trägt seine eigene Zelle: Schlüssel und Bake tragen den
@@ -888,29 +950,24 @@ class AnazhRealm_Z20b {
         const gkey = this._foundryKoerperKey(preset, variant, bakeLod, ovK);
         const group = this._foundryCacheGet(gkey);
         if (group === undefined) {
-            const f = this._ensureAssetFoundry();
-            if (!f) return null;
-            if (!f.requested) f.requested = new Set();
-            if (!f.requested.has(gkey)) {
-                f.requested.add(gkey);
-                this._foundryRequest(preset, variant, bakeLod, ov || undefined).then((meshes) => {
-                    if (meshes) {
-                        this._foundryCacheSet(gkey, this._foundryBuildGroup(meshes, { lod: bakeLod, preset }));
+            if (!this._ensureAssetFoundry()) return null;
+            const zug = this._foundryZug(gkey, preset, variant, bakeLod, ov, wer ? wer.wo : undefined, {
+                nach: (ok) => {
+                    if (ok) {
                         this._scatterRefillPending = true;
                         // Im Ankunfts-Moment die Zelle anlegen (Cache-Hit → Rahmen) — sonst entsteht sie erst beim
                         // nächsten zufälligen Leser.
                         this._foundryEnsureImpostorRecord(preset, variant, ov || undefined);
-                    } else {
-                        f.requested.delete(gkey); // Timeout: nicht dauerhaft doomen
                     }
                     this._foundryRewarmColdTrees();
-                });
-            }
+                },
+            });
+            if (wer) wer.wecke(zug);
             return null; // die Geometrie lädt (der Aufrufer lässt L2 kalt)
         }
         const z = this._impostorZelleNeu(at, key, preset, variant, ovK);
         if (group === null || !group.children || !group.children.some((c) => c.geometry && c.material)) {
-            z.gescheitert = true; // Foundry kann das nicht → Aufrufer nimmt Geometrie
+            this._karteEndet(z, false); // Foundry kann das nicht → Aufrufer nimmt Geometrie
             return false;
         }
         const box = new THREE.Box3().setFromObject(group);
@@ -927,35 +984,40 @@ class AnazhRealm_Z20b {
     // L2 — die Studio-Karte als HISM-Flat: das Einheits-Quad des Atlas mit dem EINEN Karten-Material, Schicht und
     // Rahmen der Zelle reisen je Instanz. Gecacht auf der Zelle. null solange der Rahmen lädt, false bei Fehler oder —
     // mit echtem Renderer — bis die Schicht gebacken ist (der Aufrufer serviert Geometrie, die Stufen-Klammer).
-    _foundryBuildImpostorFlat(entry, preset) {
+    // `wer` (optional, K38-N2): ein Wartender { wo, wecke(zusage) } — die Werkstatt-Vorschau. Liefert die Karte noch nichts,
+    // bekommt er die EINE Zusage, auf die sie wartet (das Buch, der Zug ihrer Höhen-Stufe, ihr Bake), und `wo` ist sein
+    // Rang in Schlange und Bäcker; ohne Zusage kann die Karte nicht kommen. Die Welt ruft ohne `wer` (ihr Tick baut nach).
+    _foundryBuildImpostorFlat(entry, preset, wer) {
         const variant = this._foundryGestaltFor(entry, preset);
-        if (variant == null) return null; // Buch kalt — L2 kalt, der Tick baut nach
+        if (variant == null) {
+            if (wer && this._foundry) wer.wecke(this._foundry.buchDa);
+            return null; // Buch kalt — L2 kalt, der Tick baut nach
+        }
         // Ein geprägtes Entry zieht seine ov-Zelle; ist sie noch nicht da (null), fällt der Pfad auf GEOMETRIE (nie
         // kalt, nie die ungeprägte Karte). Ungeprägt: ovE null.
         const ovE = this._artifactStudioOv(entry);
-        const z = this._foundryEnsureImpostorRecord(preset, variant, ovE || undefined);
+        const z = this._foundryEnsureImpostorRecord(preset, variant, ovE || undefined, ovE ? undefined : wer);
         if (z === null) return ovE ? false : null; // geprägt+backend → Geometrie · sonst L2 kalt
         if (!z) return false;
-        // Bedarf-Stempel für den Bäcker (nah zuerst): die kleinste Distanz² eines wartenden Eintrags zum Spieler.
-        if (!z.gebacken && entry && entry.position) {
-            const pp = this.state.playerMesh && this.state.playerMesh.position;
-            if (pp) {
-                const bx = entry.position.x - pp.x,
-                    bz = entry.position.z - pp.z;
-                const d2 = bx * bx + bz * bz;
-                if (!(z._bedarfD2 <= d2)) z._bedarfD2 = d2;
-            }
+        // Bedarf-Stempel für den Bäcker (nah zuerst): die kleinste Distanz² eines wartenden Lesers zum Spieler — der
+        // Eintrag an seinem Ort, der Wartende in seinem Rang (`_foundryAuftragD2`, ohne Ort ∞).
+        if (!z.gebacken) {
+            const d2 = this._foundryAuftragD2(wer ? wer.wo : entry && entry.position);
+            if (!(z._bedarfD2 <= d2)) z._bedarfD2 = d2;
         }
         // Mit echtem Renderer trägt die Karte erst gebacken: bis dahin liefert der Flatten für die Baum-Fernstufe NICHTS
         // (false), nie Geometrie — nah trägt die Wunsch-Stufe, fern wartet der Baum (ein Karten-Ding hat keinen Satz).
         // Headless/Null-Renderer trägt der Rahmen aus der L1-Geometrie (dort bäckt nie einer).
         const rendB = this.state && this.state.renderer;
-        if (!z.gebacken && rendB && !rendB._isHeadlessNull) return false;
+        if (!z.gebacken && rendB && !rendB._isHeadlessNull) {
+            if (wer) wer.wecke(z.ende);
+            return false;
+        }
         if (z._flat) return z._flat;
         // Die Karte blendet nach DERSELBEN Sichthöhe wie ihre 3D-Stufen (das Studio: die Karten-Instanz trägt bh, die
         // Sichthöhe des echten Baums): die Höhe der Höhen-Stufe aus dem Höhen-Buch, je Slot × Instanz-Skala gestempelt
         // (|aKarte.w|) — nie die Rahmen-Höhe des Bakes (sie wich bis ~2 % + Bake-Rand ab). Unbekannt: die Karte wartet.
-        const hz = this._foundryBaumHoehe(preset, entry);
+        const hz = this._foundryBaumHoehe(preset, entry, wer);
         if (hz == null) return null;
         // PARITÄT: der Rahmen ist TEMPLATE-lokal → dieselbe Template→Welt-Übersetzung wie die 3D-Stufen
         // (localMatrix), sonst wäre der ferne Baum ⅓ so groß wie sein nahes Pendant (LOD-Pop beim Übergang).

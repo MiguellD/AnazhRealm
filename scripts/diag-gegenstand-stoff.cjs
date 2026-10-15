@@ -136,7 +136,8 @@ function transport(phytoSrc, pcSrc, anazhSrc) {
         out.push("transport: __extractAssetMesh reicht Klarlack/Durchsicht nicht");
     if (!/\bcc:\s*mp\b/.test(pcSrc) || !/\bop:\s*mp\b/.test(pcSrc))
         out.push("transport: budgetRegler liest Klarlack/Durchsicht nicht");
-    const i = anazhSrc.indexOf("_foundryTreeMaterial(kind, mp, wiegen, baum) {");
+    const k = stammLib.kopf(anazhSrc, "_foundryTreeMaterial"); // am Namen (gate:apparat Klinge 3)
+    const i = k < 0 ? -1 : k + 5;
     const body = i >= 0 ? anazhSrc.slice(i, i + 6000) : "";
     if (!/R\.cc\s*>\s*0/.test(body) || !/R\.op\s*<\s*1/.test(body))
         out.push("transport: _foundryTreeMaterial baut Klarlack/Durchsicht nicht");

@@ -137,9 +137,9 @@ function fnBody(src, sigRe) {
 }
 function wand(quelle, studio) {
     const nc = ohneKommentare(quelle);
-    const pick = fnBody(nc, /\n {4}_pickArchitectureAtCrosshair\(\) \{/) || "";
-    const streu = fnBody(nc, /\n {4}_pickScatterAtCrosshair\(\) \{/) || "";
-    const kam = fnBody(nc, /\n {4}_loopCamera\(currentTime\) \{/) || "";
+    const pick = fnBody(nc, /\n {4}_pickArchitectureAtCrosshair\([^)]*\) \{/) || "";
+    const streu = fnBody(nc, /\n {4}_pickScatterAtCrosshair\([^)]*\) \{/) || "";
+    const kam = fnBody(nc, /\n {4}_loopCamera\([^)]*\) \{/) || "";
     const lab = ohneKommentare(studio || "");
     return [
         [
@@ -1188,6 +1188,20 @@ async function probe(arg) {
         check("K4 Selbst-Test: die Abnahme-Zeile nennt jeden eingeschmuggelten Fall und jede Fixture beim Namen", abnahmeBrueche.length === 0, abnahmeBrueche.join(" · "));
         for (const f of JSON.parse(fs.readFileSync(path.join(fdir, "faelle.json"), "utf8")).faelle)
             console.log(`   Fixture ${f.name}: ${AU.abnahmeUrteil(AU.fixtureMessung(f, fdir), AU.SCHWELLEN).zeile}`);
+        // K5 — DIE SOLL-TAFEL (K63, spec/abnahme/soll-tafel.json, AAAA Schritt 0): je sichtbarer Klasse das Soll (eigen,
+        // gerechnet oder GELESEN — KOPF_SOLL aus dem Kern, die Toleranz der Albedo-Tafel), das Budget je LOD-Stufe aus dem
+        // Haushalt und EIN Maß, dessen Ist die Linse aus der Rohdatei rechnet (die Messung der Werkbank in der Tafel, die Zeile der
+        // Albedo-Tafel). Die Wand: kein Bruch der Tafel (ein Ist von Hand, ein Verweis ohne Ziel oder ohne Leser, ein gerechnetes
+        // Band ohne Rechnung, eine Messung über ihrem Rauschen, eine Haushalt-Klasse fehlt), Teilung und Maße geeicht, jeder
+        // eingeschmuggelte Bruch fällt beim Namen; ein ROTES Maß ist der Auftrag der nächsten AAAA-Karte, nie ein Bruch der Wand.
+        const sollTafel = JSON.parse(fs.readFileSync(path.join(fdir, "soll-tafel.json"), "utf8"));
+        // die Quelle des Urteils (abnahme-urteil `sollQuelle`): dieselbe, mit der der Schreiber der Tafel jede Messung prüft
+        const sollQ = AU.standLeser(root).sollQuelle();
+        const sollBrueche = AU.sollTafelSelbsttest(sollTafel, sollQ);
+        check("K5 Selbst-Test: die Soll-Tafel ohne Bruch, Teilung und Maße geeicht, das Ist aus der Rohdatei, jeder Tafel-Bruch beim Namen", sollBrueche.length === 0, sollBrueche.join(" · "));
+        const sollU = AU.sollTafelUrteil(sollTafel, sollQ);
+        console.log(`   SOLL-TAFEL: ${sollU.rot} von ${sollU.zeilen.length} Klassen ROT (nach Wirkung):`);
+        for (const z of sollU.zeilen) console.log(`     ${AU.sollTafelZeile(z)}`);
         const aufWand = (q) =>
             /window\.__abnahmeUrteil\(m\)/.test(q) &&
             /fehler\.abnahme = m;\s*throw fehler;/.test(q) &&

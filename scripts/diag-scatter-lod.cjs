@@ -62,13 +62,14 @@ function check(name, ok, detail) {
     const fernConstUses = (src.match(/AnazhRealm\.SCATTER_FERN_SUPERREGION/g) || []).length;
     // (Welle B: der platzierte Bau trägt kein p:-Präfix mehr — der Super-Key BEGINNT mit "s:")
     const fernDeriveSites = (src.match(/"s:" \+ Math\.floor/g) || []).length;
-    const gfIdx = src.indexOf("_archInstanceGroupFor(name, leafIdx, leaf, regionKey) {");
+    const gfK = stammLib.kopf(src, "_archInstanceGroupFor"); // am Namen (gate:apparat Klinge 3)
+    const gfIdx = gfK < 0 ? -1 : gfK + 5;
     // 8000 Zeichen: der Granularitäts-Kollaps-Block (V18.491.14) sitzt zwischen
     // Keying und Batch-Zweig — das Fenster muss BEIDE Anker tragen.
     const gfHead = gfIdx >= 0 ? src.slice(gfIdx, gfIdx + 8000) : "";
     check(
         "F(Quelle): SCATTER_FERN_SUPERREGION hat genau 5 Code-Vorkommen (Definition + _archFernRegionKey + 3 T3-Kugel-Radius-Leser)",
-        fernConstUses === 5 && src.includes("_archFernRegionKey(name, leaf, regionKey) {"),
+        fernConstUses === 5 && stammLib.kopf(src, "_archFernRegionKey") >= 0,
         `vorkommen=${fernConstUses}`
     );
     check(

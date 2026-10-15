@@ -289,7 +289,7 @@ function wand(src) {
     const nc = ohneKommentare(src);
     const muster = fnBody(nc, /\n {4}get chatDslPatterns\(\) \{/) || "";
     const ctx = fnBody(nc, /\n {4}dslCtx\(opts = \{\}\) \{/) || "";
-    const streu = fnBody(nc, /\n {4}_dslSpawnStudioItems\(name, pos, n, seed, ctx, jitter\) \{/) || "";
+    const streu = fnBody(nc, /\n {4}_dslSpawnStudioItems\([^)]*\) \{/) || "";
     const zufall = [muster, ctx, streu].map((b) => (b.match(/Math\.random/g) || []).length);
     return [
         [
@@ -304,9 +304,9 @@ function wand(src) {
                 !/ctx\.rng\(\)/.test(streu),
         ],
         (() => {
-            const aufl = fnBody(nc, /\n {4}_studioBlueprintForWord\(word\) \{/) || "";
-            const kat = fnBody(nc, /\n {4}_studioWortKatalog\(\) \{/) || "";
-            const wl = fnBody(nc, /\n {4}_studioWordsForPrompt\(nennen = false\) \{/) || "";
+            const aufl = fnBody(nc, /\n {4}_studioBlueprintForWord\([^)]*\) \{/) || "";
+            const kat = fnBody(nc, /\n {4}_studioWortKatalog\([^)]*\) \{/) || "";
+            const wl = fnBody(nc, /\n {4}_studioWordsForPrompt\([^)]*\) \{/) || "";
             const hand =
                 (aufl + kat + wl).match(
                     /"(?:baum_|haus_|fels|stein|kristall|eiche|kiefer|birke|tanne|buche|hain|wald)\w*"/g
@@ -322,7 +322,7 @@ function wand(src) {
             const setzen = fnBody(nc, /\n {4}confirmBuild\(\) \{/) || "";
             const craft = fnBody(nc, /\n {4}craftFromRecipe\(name\) \{/) || "";
             const fert = fnBody(nc, /\n {4}fertigeBlueprint\(name\) \{/) || "";
-            const modus = fnBody(nc, /\n {4}_bauModusFuer\(name\) \{/) || "";
+            const modus = fnBody(nc, /\n {4}_bauModusFuer\([^)]*\) \{/) || "";
             const logs = (setzen.match(/this\.log\(/g) || []).length;
             const sagt = (setzen.match(/this\._spielerSagt\(/g) || []).length;
             return [
@@ -339,7 +339,7 @@ function wand(src) {
             ];
         })(),
         (() => {
-            const brenn = fnBody(nc, /\n {4}_tickFocusingAffordances\(dt\) \{/) || "";
+            const brenn = fnBody(nc, /\n {4}_tickFocusingAffordances\([^)]*\) \{/) || "";
             const formel = (nc.match(/\* Math\.PI \* 2 - Math\.PI \/ 2/g) || []).length;
             return [
                 "W5 das Brennglas bündelt die Sonne in den Brennpunkt (`_sonnenRichtung` · `_brennpunkte` · `_traegtPunkt`), die Zerstörung spricht der Spieler-Kanal, der Sonnen-Winkel ist EINE Formel",
@@ -353,7 +353,7 @@ function wand(src) {
             ];
         })(),
         (() => {
-            const geist = fnBody(nc, /\n {4}_ghostMaterialFor\(mat\) \{/) || "";
+            const geist = fnBody(nc, /\n {4}_ghostMaterialFor\([^)]*\) \{/) || "";
             return [
                 "W6 das Phantom übersteht den Alpha-Test (`_ghostMaterialFor`: alphaTest × Deckkraft)",
                 geist.includes("g.alphaTest = (Number.isFinite(mat.alphaTest) ? mat.alphaTest : 0) * g.opacity;"),
@@ -364,7 +364,7 @@ function wand(src) {
                 spawnArchitecture: /\n {4}spawnArchitecture\(type, position, opts = \{\}\) \{/,
                 spawnIslandAt: /\n {4}spawnIslandAt\(x, y, z, height = 6, opts = \{\}\) \{/,
                 spawnUfoAt: /\n {4}spawnUfoAt\(x, y, z\) \{/,
-                _workshopRecipeSpec: /\n {4}_workshopRecipeSpec\(bp, kind\) \{/,
+                _workshopRecipeSpec: /\n {4}_workshopRecipeSpec\([^)]*\) \{/,
                 dslCompose: /\n {4}dslCompose\(opts = \{\}\) \{/,
                 generateEvolution: /\n {4}generateEvolution\(\) \{/,
                 confirmBuild: /\n {4}confirmBuild\(\) \{/,
@@ -376,7 +376,7 @@ function wand(src) {
                 if (!b) fehlt.push(n);
                 else if (/Math\.random/.test(b)) zuege.push(`${n} ${b.match(/Math\.random/g).length}`);
             }
-            const same = fnBody(nc, /\n {4}_bauSame\(art\) \{/) || "";
+            const same = fnBody(nc, /\n {4}_bauSame\([^)]*\) \{/) || "";
             const zaehler = (nc.match(/_bauSameZaehler/g) || []).length;
             return [
                 "W7 kein Werk würfelt aus Math.random (spawnArchitecture · spawnIslandAt · spawnUfoAt · Werkstatt-Würfel · dslCompose · generateEvolution · confirmBuild), der Zähler des Welt-Stroms reist im Welt-Gedächtnis",
@@ -388,17 +388,17 @@ function wand(src) {
             const setzen = fnBody(nc, /\n {4}confirmBuild\(\) \{/) || "";
             const hash = (nc.match(/Math\.imul\(\w+, 131\)/g) || []).length;
             const leser = {
-                Vorschau: /\n {4}_workshopFoundryPreviewGroup\(bpName\) \{/,
-                Hand: /\n {4}_heldFoundryGroup\(bpName\) \{/,
+                Vorschau: /\n {4}_workshopFoundryPreviewGroup\([^)]*\) \{/,
+                Hand: /\n {4}_heldFoundryGroup\([^)]*\) \{/,
                 // das Werk des Phantoms (K20: mit seinem Ort — die Gestalt des Orts); der Ghost liest es (unten)
-                Phantom: /\n {4}_phantomWerk\(bp, wo\) \{/,
+                Phantom: /\n {4}_phantomWerk\([^)]*\) \{/,
                 Setzen: /\n {4}confirmBuild\(\) \{/,
             };
             const ohne = Object.entries(leser)
                 .filter(([, re]) => !/this\._werkSame\(/.test(fnBody(nc, re) || ""))
                 .map(([n]) => n);
             const null0 = /"spawn_blueprint", bm\.blueprintName, posNode, 0\b/.test(setzen);
-            const ghost = fnBody(nc, /\n {4}_buildStudioPlacementGhost\(bp, wo\) \{/) || "";
+            const ghost = fnBody(nc, /\n {4}_buildStudioPlacementGhost\([^)]*\) \{/) || "";
             if (!/this\._phantomWerk\(bp, wo\)/.test(ghost)) ohne.push("Phantom-Ghost (_phantomWerk)");
             return [
                 "W8 EIN Same je Werk (`_werkSame`: Vorschau · Hand · Phantom · Setzen), das Setzen trägt Same und Drehung des Phantoms, die Nachricht an den Mitspieler den Samen des Werks",
@@ -407,15 +407,15 @@ function wand(src) {
             ];
         })(),
         (() => {
-            const geist = fnBody(nc, /\n {4}_ghostMaterialFor\(mat\) \{/) || "";
-            const toen = fnBody(nc, /\n {4}_applyPhantomTint\(phantom, isStable\) \{/) || "";
+            const geist = fnBody(nc, /\n {4}_ghostMaterialFor\([^)]*\) \{/) || "";
+            const toen = fnBody(nc, /\n {4}_applyPhantomTint\([^)]*\) \{/) || "";
             return [
                 "W10 die Tönung des Phantoms wirkt im Stoff: der Geist-Stoff mischt den EINEN Tönungs-Uniform in seinen colorNode (`_phantomTint`), `_applyPhantomTint` setzt ihn",
                 /this\._phantomTint\(\)/.test(geist) && /g\.colorNode = /.test(geist) && /\.value\.set\(/.test(toen),
             ];
         })(),
         (() => {
-            const strom = fnBody(nc, /\n {4}_streamRng\(streamName\) \{/) || "";
+            const strom = fnBody(nc, /\n {4}_streamRng\([^)]*\) \{/) || "";
             return [
                 "W9 EIN Strom-Gesetz: `_streamRng` ist der Strom seines Samens (`_samenStrom`), kein zweites LCG",
                 /this\._samenStrom\(/.test(strom) && !/1664525/.test(strom),

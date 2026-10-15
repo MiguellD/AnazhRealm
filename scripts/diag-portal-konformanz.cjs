@@ -87,7 +87,7 @@ async function probefahrt(page, fr) {
         // sichtbar = berechnet nicht „none" (die Garage darf den HUD als block oder flex zeigen); dann gibt W Gas
         return !!h && getComputedStyle(h).display !== "none";
     });
-    // W hält, bis der Tacho steigt — nie nach der Uhr (gate:apparat Klinge 3: auf dem CPU-Raster kommen in 1,6 s wenige Frames)
+    // W hält, bis der Tacho steigt — nie nach der Uhr (gate:apparat Klinge 5: auf dem CPU-Raster kommen in 1,6 s wenige Frames)
     const halt = await halteBis(fr, {
         druck: () => fr.evaluate(() => window.dispatchEvent(new KeyboardEvent("keydown", { code: "KeyW" }))),
         los: () => fr.evaluate(() => window.dispatchEvent(new KeyboardEvent("keyup", { code: "KeyW" }))),

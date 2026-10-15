@@ -21,8 +21,9 @@ const KERN = lies("foundry-core.js");
 const SHELL = lies("worlds/terrain/phytogenesis.js");
 
 const strip = (src) => src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:\\"'`])\/\/.*$/gm, "$1");
-function methode(src, kopf) {
-    const a = src.indexOf("\n    " + kopf);
+// am NAMEN, nie an der Parameter-Liste (gate:apparat Klinge 3)
+function methode(src, name) {
+    const a = require("./lib/stamm.cjs").kopf(src, name);
     if (a < 0) return null;
     const b = src.indexOf("\n    }\n", a);
     return b < 0 ? null : src.slice(a + 1, b + 6);
@@ -78,7 +79,7 @@ function pruefe(stamm, kern, shell) {
                 "return (t) => { seasonColors(t); return ['r', 'g', 'b'].map((k) => clamp(seasonTint[k] / Math.max(bau[k], 1e-3), SAISON_GESETZ.mulMin, SAISON_GESETZ.mulMax)); };"
         )(SG, C128);
     } catch (_e) {}
-    const smQ = methode(stamm, "_saisonMul(phase, out) {");
+    const smQ = methode(stamm, "_saisonMul");
     let welt = null;
     try {
         welt = smQ ? new Function("AnazhRealm", "return {" + smQ + "};")({ _saisonGesetz: () => SG }) : null;
@@ -120,13 +121,13 @@ function pruefe(stamm, kern, shell) {
     );
     const st = strip(stamm);
     pruef("F2b keine dritte Palette im Stamm (_seasonTint fort, keine Keyframe-Tabelle)", !/_seasonTint\b/.test(st));
-    const tick = methode(stamm, "_tickSeason(currentTime) {");
+    const tick = methode(stamm, "_tickSeason");
     pruef(
         "F3a _tickSeason fährt uSeasonMul aus _saisonMul (kein Neubau)",
         tick && /this\._saisonMul\(st\.seasonPhase, su\.uSeasonMul\.value\)/.test(strip(tick)) && !/_foundry/.test(strip(tick))
     );
-    const gras = methode(stamm, "_grassInstanceMat() {");
-    const baum = methode(stamm, "_foundryTreeMaterial(kind, mp, wiegen, baum) {");
+    const gras = methode(stamm, "_grassInstanceMat");
+    const baum = methode(stamm, "_foundryTreeMaterial");
     pruef(
         "F3b die Nah-Wiese und das Foundry-Laub/-Gras lesen uSeasonMul",
         gras && /uSeasonMul/.test(strip(gras)) && baum && /vcol\.mul\(_suF\.uSeasonMul\)/.test(strip(baum)) && /atl\.rgb\.mul\(laubFarbe\)/.test(strip(baum))

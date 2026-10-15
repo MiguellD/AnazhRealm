@@ -89,7 +89,7 @@ function fingerprint(group) {
 // ── Die eingefrorenen Fälle: Ordnungen × Seeds × LODs (+ ov-Override-Kanal) ──
 const ORDNUNGEN = ["drachentor", "kathedrale", "maschine", "geisttor", "verkalkt", "ruine", "maurentor"];
 const SEEDS = [7, 12345];
-const LODS = [0]; // kindStages.gate = [0, 1, 3] — die feine Stufe je Seed; die Stufe 1 und die NUR-WURF-Stufe 3 tragen je Ordnung EINEN Fall (unten)
+const LODS = [0]; // kindStages.gate = [0, 1, 2, 3] — die feine Stufe je Seed; die Stufe 1 und die NUR-WURF-Stufe 3 tragen je Ordnung EINEN Fall (unten)
 const CASES = [];
 for (const g of ORDNUNGEN) for (const s of SEEDS) for (const l of LODS) CASES.push({ rezeptId: g, seed: s, lod: l });
 // ov-Kanal (Parameter-Override) — friert auch die Merge-Semantik ein.
@@ -100,6 +100,9 @@ for (const g of ORDNUNGEN) CASES.push({ rezeptId: g, seed: 7, lod: 3 });
 // die STUFE 1 (K43, Kosten ins Asset: derselbe Bau unter TOR_DETAIL_1, die Flügel fest) — additiv, je Ordnung EIN Fall; die 23
 // Fälle davor blieben byte-gleich
 for (const g of ORDNUNGEN) CASES.push({ rezeptId: g, seed: 7, lod: 1 });
+// die STUFE 2 (K64, Kosten ins Asset: derselbe Bau unter TOR_DETAIL_2 — das Feine unter einem Szenen-Pixel fällt, das Geflecht
+// trägt jeden zweiten Strang mit der Deckung aller) — additiv, je Ordnung EIN Fall; die 30 Fälle davor blieben byte-gleich
+for (const g of ORDNUNGEN) CASES.push({ rezeptId: g, seed: 7, lod: 2 });
 
 function buildCase(c) {
     return PC.buildInstance(c.rezeptId, c.seed, c.lod, c.ov || undefined);
@@ -151,12 +154,15 @@ function compare(golden, actual) {
         actual["drachentor-s7-L0"].sha256 !== actual["drachentor-s7-L0-ov_mass"].sha256
     );
 
-    // 4) lod-Klemme: jede Stufe klemmt auf die größte deklarierte ≤ lod (kindStages.gate = [0, 1, 3]): 2 → 1, 5 → 3.
+    // 4) lod-Klemme: jede Stufe klemmt auf die größte deklarierte ≤ lod (kindStages.gate = [0, 1, 2, 3]): 5 → 3, und die Stufe 2
+    //    ist eine eigene (nicht die Stufe 1).
     const l2 = fingerprint(PC.buildInstance("drachentor", 7, 2));
     const l5 = fingerprint(PC.buildInstance("drachentor", 7, 5));
     check(
-        "lod-Klemme: buildInstance(…, lod 2) == Stufe 1, lod 5 == Stufe 3 (kindStages.gate=[0,1,3])",
-        l2.sha256 === actual["drachentor-s7-L1"].sha256 && l5.sha256 === actual["drachentor-s7-L3"].sha256
+        "lod-Klemme: buildInstance(…, lod 2) == Stufe 2 != Stufe 1, lod 5 == Stufe 3 (kindStages.gate=[0,1,2,3])",
+        l2.sha256 === actual["drachentor-s7-L2"].sha256 &&
+            l2.sha256 !== actual["drachentor-s7-L1"].sha256 &&
+            l5.sha256 === actual["drachentor-s7-L3"].sha256
     );
 
     // 5) Goldens: einfrieren beim ersten Lauf, danach byte-exakt vergleichen.

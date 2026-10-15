@@ -8,7 +8,7 @@
 //                    Absturz der Seite, Trennung des Browsers ohne Abbau — jeder Fehler macht den Lauf ROT mit Namen,
 //                    nie Exit 0 (die Wache sitzt am Prozess-Ende: ein Exit 0 mit gesammeltem Fehler wird Exit 1)
 //   oeffneWelt()     Seite laden und auf die Welt warten (anazhRealm mit _gameLoopTick), wahlweise Null-Renderer
-//   halteBis()       eine Taste halten, bis ihr Ereignis eintritt (nie nach der Wanduhr, gate:apparat Klinge 3)
+//   halteBis()       eine Taste halten, bis ihr Ereignis eintritt (nie nach der Wanduhr, gate:apparat Klinge 5)
 //   buehne()         die Bühne (Mittag · Sonne · Sommer, scripts/lib/ausgabe-aufnahme.cjs)
 // Die Wand: gate:altlasten DIE BOOT-WAND — ein Start außerhalb dieser Datei ist ROT, die Liste der noch eigenen Starts
 // darf nur schrumpfen.
@@ -214,7 +214,7 @@ async function oeffneWelt(
 // Eine Taste HALTEN, bis ihr Ereignis eintritt (`ziel` wird wahr auf `seite`, Page oder Frame) — nie nach der Wanduhr:
 // auf dem CPU-Raster der CI läuft der Spieler in derselben Zeit einen Bruchteil des Wegs (gate:mp-sync (d) „A lief 0.77 m“
 // nach 1,6 s W, CI 38683406115). `taste` drückt über die Tastatur der Seite; ein Rahmen ohne Tastatur reicht `druck` und
-// `los`. Losgelassen wird immer, auch nach der Frist. Die Wand: gate:apparat Klinge 3. → { erreicht, ms, wert } (`wert`:
+// `los`. Losgelassen wird immer, auch nach der Frist. Die Wand: gate:apparat Klinge 5. → { erreicht, ms, wert } (`wert`:
 // was `ziel` im Moment des Ereignisses zurückgab)
 async function halteBis(seite, { taste, druck, los, ziel, args = [], frist = 30000 }) {
     const t0 = Date.now();

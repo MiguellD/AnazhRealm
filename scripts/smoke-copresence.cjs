@@ -246,7 +246,7 @@ async function waitFor(page, evalFn, timeoutMs, label, ...args) {
         // das iframe — exakt der Input-Brücken-Fall.
         await pageA.bringToFront();
         await pageA.evaluate(() => document.body.focus());
-        // W hält bis zu seinem Ereignis (die Gestalt wanderte 0,5 m), nie nach der Uhr (gate:apparat Klinge 3)
+        // W hält bis zu seinem Ereignis (die Gestalt wanderte 0,5 m), nie nach der Uhr (gate:apparat Klinge 5)
         const halt = await halteBis(pageA, {
             taste: "KeyW",
             ziel: (beforeZ) => {

@@ -419,23 +419,26 @@ async function messen(h, opts) {
 // Regel wirft nie von der teureren Stufe. Die Zeile der NUR-WURF-Stufe ist das Rezept-Maß (gate:asset-contract), am
 // Regler-Rand richtet die Regel — die Probe nennt jede Stelle, an der die Stufe selbst wirft, mit ihren Kosten.
 const stammLib = require("./lib/stamm.cjs");
-function statischeMethode(src, kopf, args) {
-    const i = src.indexOf(kopf);
-    if (i < 0) throw new Error("im Stamm nicht gefunden: " + kopf);
-    const j = src.indexOf("{", i);
+// Die Methode am NAMEN (gate:apparat Klinge 3), ihre Parameter liest die Probe aus dem Kopf — nie eine eigene Liste.
+function statischeMethode(src, name) {
+    const i = stammLib.kopf(src, name);
+    if (i < 0) throw new Error("im Stamm nicht gefunden: " + name);
+    const p = src.indexOf("(", i);
+    const args = src.slice(p + 1, src.indexOf(")", p));
+    const j = src.indexOf("{", p + args.length + 1);
     let tiefe = 0,
         k = j;
     for (; k < src.length; k++) {
         if (src[k] === "{") tiefe++;
         else if (src[k] === "}" && --tiefe === 0) break;
     }
-    return { rumpf: src.slice(j + 1, k), fn: new Function(...args, src.slice(j + 1, k)) };
+    return { rumpf: src.slice(j + 1, k), fn: new Function(args, src.slice(j + 1, k)) };
 }
 function stammRegel(src) {
     const s = src || stammLib.text(ROOT);
     return {
-        teilWirft: statischeMethode(s, "static _teilWirft(m) {", ["m"]).fn,
-        vonBilligerer: statischeMethode(s, "static _wurfVonBilligerer(eigen, zwilling) {", ["eigen", "zwilling"]).fn,
+        teilWirft: statischeMethode(s, "_teilWirft").fn,
+        vonBilligerer: statischeMethode(s, "_wurfVonBilligerer").fn,
     };
 }
 function budgetVonArt(rc, art) {
