@@ -1,0 +1,18 @@
+{
+ "ergebnis": {
+  "membranen": 8,
+  "tor": "welt_terrain",
+  "torLage": [
+   3.4,
+   89.29,
+   10.46
+  ],
+  "abstandVorher": 11,
+  "spieler": [
+   3.4,
+   6.46
+  ],
+  "yaw": 0
+ },
+ "ms": 3
+}

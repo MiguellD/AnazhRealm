@@ -1,0 +1,68 @@
+{
+ "zeilen": [
+  {
+   "boot": "d-ego-A1",
+   "seite": "A",
+   "start": "2026-10-15T19:37:54.491Z",
+   "urteil": "GRUEN",
+   "frameP50": null,
+   "frameP95": null,
+   "cpuP95": null,
+   "cpuP95frei": null,
+   "band": 13.88,
+   "befehle": 100,
+   "dreiecke": 362991,
+   "vram": 98.9
+  },
+  {
+   "boot": "d-ego-B1",
+   "seite": "B",
+   "start": "2026-10-15T19:40:20.255Z",
+   "urteil": "ROT",
+   "frameP50": null,
+   "frameP95": null,
+   "cpuP95": null,
+   "cpuP95frei": null,
+   "band": 14.09,
+   "befehle": 103,
+   "dreiecke": 370485,
+   "vram": 98.9
+  },
+  {
+   "boot": "d-ego-A2",
+   "seite": "A",
+   "start": "2026-10-15T19:42:43.021Z",
+   "urteil": "GRUEN",
+   "frameP50": null,
+   "frameP95": null,
+   "cpuP95": null,
+   "cpuP95frei": null,
+   "band": 13.65,
+   "befehle": 100,
+   "dreiecke": 362979,
+   "vram": 98.9
+  },
+  {
+   "boot": "d-ego-B2",
+   "seite": "B",
+   "start": "2026-10-15T19:45:09.422Z",
+   "urteil": "ROT",
+   "frameP50": null,
+   "frameP95": null,
+   "cpuP95": null,
+   "cpuP95frei": null,
+   "band": 14.07,
+   "befehle": 103,
+   "dreiecke": 370483,
+   "vram": 98.6
+  }
+ ],
+ "urteile": [
+  {
+   "titel": "Band GPU ms je Frame",
+   "u": "LANGSAMER",
+   "d": 0.3149999999999995,
+   "sig": 0.11543396380615215
+  }
+ ]
+}
