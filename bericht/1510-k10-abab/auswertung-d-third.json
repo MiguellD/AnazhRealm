@@ -1,0 +1,68 @@
+{
+ "zeilen": [
+  {
+   "boot": "d-third-A1",
+   "seite": "A",
+   "start": "2026-10-15T04:53:22.400Z",
+   "urteil": "ROT",
+   "frameP50": null,
+   "frameP95": null,
+   "cpuP95": null,
+   "cpuP95frei": null,
+   "band": 14.51,
+   "befehle": 108,
+   "dreiecke": 409565,
+   "vram": 100.8
+  },
+  {
+   "boot": "d-third-B1",
+   "seite": "B",
+   "start": "2026-10-15T04:55:58.166Z",
+   "urteil": "ROT",
+   "frameP50": null,
+   "frameP95": null,
+   "cpuP95": null,
+   "cpuP95frei": null,
+   "band": 13.53,
+   "befehle": 106,
+   "dreiecke": 410567,
+   "vram": 99.9
+  },
+  {
+   "boot": "d-third-A2",
+   "seite": "A",
+   "start": "2026-10-15T04:58:33.576Z",
+   "urteil": "ROT",
+   "frameP50": null,
+   "frameP95": null,
+   "cpuP95": null,
+   "cpuP95frei": null,
+   "band": 13.82,
+   "befehle": 106,
+   "dreiecke": 394605,
+   "vram": 99.7
+  },
+  {
+   "boot": "d-third-B2",
+   "seite": "B",
+   "start": "2026-10-15T05:01:09.437Z",
+   "urteil": "ROT",
+   "frameP50": null,
+   "frameP95": null,
+   "cpuP95": null,
+   "cpuP95frei": null,
+   "band": 13.45,
+   "befehle": 105,
+   "dreiecke": 407841,
+   "vram": 99.8
+  }
+ ],
+ "urteile": [
+  {
+   "titel": "Band GPU ms je Frame",
+   "u": "nicht langsamer",
+   "d": -0.6750000000000007,
+   "sig": 0.34731109973624485
+  }
+ ]
+}
