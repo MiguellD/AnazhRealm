@@ -927,7 +927,8 @@
         // dicke[3]·sin(t·dicke[4] + y·dicke[5]) (rr = Rand-Abstand in der Öffnungs-Ellipse); Gewicht = min(F0 + (1 − F0)·
         // (1 − cos θ)^fresnel[1] + rand[2]·smoothstep(rand[0], rand[1], rr) + basis, gewichtMax) · (act[0] + act[1]·act) —
         // der Rand gezähmt (Spanne der Dicke 0,45 statt 0,85, Rand-Gewicht 0,3 statt 0,5, Deckel 0,55: bei streifendem Blick
-        // bleibt das Ziel sichtbar); der Glanz spiegelt dasselbe Panorama: Film · Spiegel · glanz[0] · (glanz[1] + glanz[2]·Puls).
+        // bleibt das Ziel sichtbar); der Glanz: Film · Spiegel · glanz[0] · (glanz[1] + glanz[2]·Puls), der Film mit der Dispersion
+        // welle je Farbe und der Buntheit farbe um seine Helligkeit (D8: der Film tönt ein blasses Ziel, statt es zu Milch zu waschen).
         film: {
             kugel: 4.0,
             n: 1.33,
@@ -938,8 +939,11 @@
             basis: 0.24,
             gewichtMax: 0.55,
             act: [0.65, 0.35],
-            glanz: [2.0, 0.9, 0.15],
-            welle: [1.0, 1.0, 1.0],
+            glanz: [0.8, 0.9, 0.15],
+            // die Dispersion: der Gangunterschied in Wellenlängen je Farbe, λ_R / λ (650 / 650, 650 / 532, 650 / 450 nm)
+            welle: [1.0, 1.22, 1.44],
+            // die Buntheit der Bänder um ihre Helligkeit (1 = die Palette, mehr = Farbe statt Licht)
+            farbe: 2.6,
         },
         puls: 1.25, // uPulse = 0.5+0.5*sin(t*1.25)
         aktivDepth: [0.1, 0.85], // Atem: uWaveDepth = zFace*(0.10+0.85*open)

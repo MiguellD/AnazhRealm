@@ -2099,13 +2099,17 @@ class AnazhRealm_Z14 {
             .add(rr.mul(FI.dicke[1]))
             .add(d0V.div(TSL.max(waveDepth, F(1e-3))).mul(FI.dicke[2]))
             .add(TSL.sin(time.mul(FI.dicke[4]).add(xy.y.mul(FI.dicke[5]))).mul(FI.dicke[3]));
-        // DIE DISPERSION (D8): der Gangunterschied 2·n·d·cos θt in Wellenlängen ist je Farbe ein anderer (λ_R / λ) — die Bänder
-        // laufen in Blau schneller als in Rot (die Newton-Folge), weiß nur beim dünnsten Film
+        // DIE DISPERSION (D8): der Gangunterschied 2·n·d·cos θt in Wellenlängen ist je Farbe ein anderer (λ_R / λ, `film.welle`) —
+        // die Bänder laufen in Blau schneller als in Rot (die Newton-Folge)
         const welle = TSL.vec3(FI.welle[0], FI.welle[1], FI.welle[2]);
-        const film = TSL.max(
+        const filmRoh = TSL.max(
             vPA.add(vPB.mul(TSL.cos(vPC.mul(welle).mul(dicke.mul(cosT).mul(2.0)).add(vPD).mul(F(6.28318))))),
             F(0.0)
         );
+        // DIE FARBE DER BÄNDER (`film.farbe`): die Buntheit des Films um seine Helligkeit — Farbe statt Licht, damit der Film ein
+        // blasses Ziel tönt, statt es zu Milch zu waschen
+        const filmL = TSL.dot(filmRoh, TSL.vec3(0.2126, 0.7152, 0.0722));
+        const film = TSL.max(TSL.mix(TSL.vec3(filmL, filmL, filmL), filmRoh, F(FI.farbe)), F(0.0));
         const fres = F(FI.fresnel[0]).add(F(1 - FI.fresnel[0]).mul(TSL.pow(F(1.0).sub(cosI), F(FI.fresnel[1]))));
         const rand = TSL.smoothstep(F(FI.rand[0]), F(FI.rand[1]), rr);
         // DER RAND GEZÄHMT (D8): das Gewicht des Films trägt einen Deckel — bei streifendem Blick bleibt das Ziel sichtbar

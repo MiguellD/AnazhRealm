@@ -104,7 +104,7 @@ function buildMembrane(){
       " float rr=length((vXY-uCenter.xy)/vec2(uRimAx,uRimAy));float cosI=max(dot(N,Vd),0.0);",
       " float cosT=sqrt(1.0-(1.0-cosI*cosI)/("+GN(FI.n)+"*"+GN(FI.n)+"));",
       " float dk="+GN(FI.dicke[0])+"+rr*"+GN(FI.dicke[1])+"+vWelle/max(uWaveDepth,1e-3)*"+GN(FI.dicke[2])+"+sin(uTime*"+GN(FI.dicke[4])+"+vXY.y*"+GN(FI.dicke[5])+")*"+GN(FI.dicke[3])+";",
-      " vec3 film=max(pal(dk*cosT*2.0),vec3(0.0));",
+      " vec3 f0=max(pal(dk*cosT*2.0),vec3(0.0));float fL=dot(f0,vec3(0.2126,0.7152,0.0722));vec3 film=max(mix(vec3(fL),f0,"+GN(FI.farbe)+"),vec3(0.0));",
       " float fres="+GN(FI.fresnel[0])+"+(1.0-"+GN(FI.fresnel[0])+")*pow(1.0-cosI,"+GN(FI.fresnel[1])+");",
       " float rand=smoothstep("+GN(FI.rand[0])+","+GN(FI.rand[1])+",rr);",
       " float fw=min(fres+rand*"+GN(FI.rand[2])+"+"+GN(FI.basis)+","+GN(FI.gewichtMax)+")*("+GN(FI.act[0])+"+"+GN(FI.act[1])+"*uActivate);",
