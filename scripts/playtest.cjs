@@ -40732,12 +40732,14 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         out.setTimeOfDayMethod = typeof r.setTimeOfDay === "function";
         out.setDayLengthMethod = typeof r.setDayLength === "function";
 
-        // _interpolateDayNight Mid-Test: t=0.5 sollte Mittag (klar)
-        const midDay = r._interpolateDayNight(0.5);
-        out.interpolateMiddayClear = midDay && midDay.intensity >= 0.95;
-        const midNight = r._interpolateDayNight(0);
-        out.interpolateMidnightDim = midNight && midNight.intensity < 0.35;
-        out.interpolateWrap = r._interpolateDayNight(1.5).intensity === r._interpolateDayNight(0.5).intensity;
+        // DAS LICHT DES TAGS liest die Quelle (D3, Lehre 2): Farbe und Stärke der Sonne rechnet die EINE Atmosphäre
+        // (`_atmoSonne` am Winkel der Sonne, `_sonnenWinkel`) — die Tag-Nacht-Tafel trägt nur noch die Himmelsfarbe. Mittag hell
+        // (der Durchlass ≥ 0,7), Mitternacht dunkel (der Mond-Pfad unter 0,35 des Mittags), die Uhr wrapt (1,5 ≡ 0,5).
+        const lichtUm = (t) => r._atmoSonne(r._dayNightSunDirection(r._sonnenWinkel(t)).y).lum;
+        const lichtMittag = lichtUm(0.5);
+        out.interpolateMiddayClear = lichtMittag >= 0.7;
+        out.interpolateMidnightDim = lichtUm(0) < 0.35 * lichtMittag;
+        out.interpolateWrap = Math.abs(lichtUm(1.5) - lichtMittag) < 1e-9;
 
         // setTimeOfDay setzt korrekt
         r.setTimeOfDay(0.25, "human");
@@ -40918,9 +40920,15 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         check("Welle 6.G3.a: _timeOfDayLabel-Methode existiert", wave6g3Results.timeOfDayLabelMethod);
         check("Welle 6.G3.a: setTimeOfDay-Methode existiert", wave6g3Results.setTimeOfDayMethod);
         check("Welle 6.G3.a: setDayLength-Methode existiert", wave6g3Results.setDayLengthMethod);
-        check("Welle 6.G3.a: Mittag (0.5) hat hohe Intensity (>0.95)", wave6g3Results.interpolateMiddayClear);
-        check("Welle 6.G3.a: Mitternacht (0) hat niedrige Intensity (<0.35)", wave6g3Results.interpolateMidnightDim);
-        check("Welle 6.G3.a: _interpolateDayNight wrapt korrekt (1.5 ≡ 0.5)", wave6g3Results.interpolateWrap);
+        check(
+            "Welle 6.G3.a: Mittag (0.5) trägt das Licht der EINEN Atmosphäre (Durchlass ≥ 0.7)",
+            wave6g3Results.interpolateMiddayClear
+        );
+        check(
+            "Welle 6.G3.a: Mitternacht (0) ist dunkel (Licht der Atmosphäre < 0.35 des Mittags)",
+            wave6g3Results.interpolateMidnightDim
+        );
+        check("Welle 6.G3.a: das Licht der Atmosphäre wrapt mit der Uhr (1.5 ≡ 0.5)", wave6g3Results.interpolateWrap);
         check("Welle 6.G3.a: setTimeOfDay(0.25) setzt state korrekt", wave6g3Results.setTimeOfDayWorks);
         check("Welle 6.G3.a: _timeOfDayLabel hat Doppelpunkt-Format", wave6g3Results.timeLabel0_25HasEmoji);
         check("Welle 6.G3.a: _timeOfDayLabel(0.25) zeigt 06:00", wave6g3Results.timeLabel0_25Hours);
@@ -41357,22 +41365,24 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         const interpSrc = window.__codeOf(r._interpolateDayNight);
         out.interpUsesCatmull = /_catmullDayNight/.test(interpSrc);
 
-        // Kein Pulsen: Catmull-Rom statt per-Intervall-smoothstep (der hatte Geschwindigkeit 0 an JEDEM
-        // Stop). An t=0.32 STEIGT die Intensität (0.65→0.78→0.9) → die Steigung dort muss klar positiv sein.
+        // Kein Pulsen: das Licht des Tags kommt aus der EINEN Atmosphäre (D3, `_atmoSonne` am Winkel der Sonne) — der Leser
+        // folgt der Quelle (Lehre 2), nie der Tafel (sie trägt kein Licht mehr). Am Morgen (t=0.32, Sonne ~25°) STEIGT es → die
+        // Steigung muss klar positiv sein, und sie knickt nicht (C1: Steigung kurz vor ≈ kurz nach).
+        const lichtUm = (t) => r._atmoSonne(r._dayNightSunDirection(r._sonnenWinkel(t)).y).lum;
         const dtN = 0.003;
-        const slopeAtStop =
-            (r._interpolateDayNight(0.32 + dtN).intensity - r._interpolateDayNight(0.32 - dtN).intensity) / (2 * dtN);
+        const slopeAtStop = (lichtUm(0.32 + dtN) - lichtUm(0.32 - dtN)) / (2 * dtN);
         out.dayNightNoPulse = slopeAtStop > 0.3;
-        // C1-Stetigkeit: Steigung kurz VOR und kurz NACH dem Stop
-        // sind nahezu gleich (kein Knick, glatte Geschwindigkeit).
-        const slopeBefore =
-            (r._interpolateDayNight(0.32).intensity - r._interpolateDayNight(0.32 - dtN).intensity) / dtN;
-        const slopeAfter =
-            (r._interpolateDayNight(0.32 + dtN).intensity - r._interpolateDayNight(0.32).intensity) / dtN;
+        const slopeBefore = (lichtUm(0.32) - lichtUm(0.32 - dtN)) / dtN;
+        const slopeAfter = (lichtUm(0.32 + dtN) - lichtUm(0.32)) / dtN;
         out.dayNightC1 = Math.abs(slopeBefore - slopeAfter) < 0.6;
-        // Stops werden weiterhin EXAKT reproduziert (Hermite trifft
-        // p1 bei u=0): t=0.5 (Mittag) muss intensity 1.0 liefern.
-        out.dayNightStopExact = Math.abs(r._interpolateDayNight(0.5).intensity - 1.0) < 0.001;
+        // Die Tafel reproduziert ihre Stops EXAKT (Hermite trifft p1 bei u=0): t=0.5 trägt den Himmel des Mittags-Stops.
+        const mittagsStop = new THREE.Color(stops.find((s) => s.t === 0.5).sky);
+        const mittagsHimmel = r._interpolateDayNight(0.5).sky;
+        out.dayNightStopExact =
+            Math.abs(mittagsHimmel.r - mittagsStop.r) +
+                Math.abs(mittagsHimmel.g - mittagsStop.g) +
+                Math.abs(mittagsHimmel.b - mittagsStop.b) <
+            0.001;
         // Stop-Differenzen sind klein — kein Sprung über 0.3 in R-Component
         let maxJump = 0;
         for (let i = 1; i < stops.length; i++) {
@@ -41422,10 +41432,10 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             "V8.48: _interpolateDayNight nutzt Catmull-Rom (_catmullDayNight) statt smoothstep",
             v826Results.interpUsesCatmull
         );
-        check("V8.48: Tag-Nacht pulst nicht mehr (Steigung an Stop t=0.32 klar positiv)", v826Results.dayNightNoPulse);
-        check("V8.48: Tag-Nacht-Kurve ist C1-stetig (Steigung vor ≈ nach Stop, kein Knick)", v826Results.dayNightC1);
+        check("V8.48: das Licht des Morgens pulst nicht (Steigung der Atmosphäre an t=0.32 klar positiv)", v826Results.dayNightNoPulse);
+        check("V8.48: das Licht der Atmosphäre ist C1-stetig (Steigung vor ≈ nach t=0.32, kein Knick)", v826Results.dayNightC1);
         check(
-            "V8.48: Catmull-Rom reproduziert Stop-Werte exakt (Mittag t=0.5 → intensity 1.0)",
+            "V8.48: Catmull-Rom reproduziert Stop-Werte exakt (Mittag t=0.5 → der Himmel des Mittags-Stops)",
             v826Results.dayNightStopExact
         );
         check(
