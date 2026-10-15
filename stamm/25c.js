@@ -2106,6 +2106,51 @@ class AnazhRealm_Z25c {
                 }
             alt.set(me);
         }
+        // SPIKE B (spike-schatten 15.10., Probe per `werkbank methode`): in Ruhe rendert eine Kaskade NUR, wenn sich ihr
+        // Eingang seit ihrem letzten Render geändert hat — die Sonne um `texel` Texel ihrer Karte (Winkel × längster
+        // Licht-Weg der Box / Texel), der Spieler (Matrizen seines Leibs, `spieler`) oder ein wacher Leib (`wesen`) in ihrer
+        // Box auf ihrem Takt; in Bewegung, beim Sonnen-Sprung und ohne Kaskaden das Gesetz von 1410-3. Der Wind der
+        // Laub-Schatten ist KEIN Eingang (sonnig: Stamm-Pendel ~7 mm an 20 m, Kaskaden-Texel 0,10-0,17 m).
+        const B = this.state._spikeSchattenB || { wesen: true, texel: 1 };
+        const SB = L.b || (L.b = []);
+        const ldx = dl ? dl.target.position.x - dl.position.x : 0,
+            ldy = dl ? dl.target.position.y - dl.position.y : -1,
+            ldz = dl ? dl.target.position.z - dl.position.z : 0;
+        const lLen = Math.hypot(ldx, ldy, ldz) || 1;
+        const pm = this.state.playerMesh;
+        let spielerSig = 0;
+        if (pm && pm.visible !== false)
+            pm.traverse((o) => {
+                const e = o.matrixWorld.elements;
+                spielerSig += e[12] * 1.3 + e[13] * 1.7 + e[14] * 1.1 + e[0] + e[5] + e[10];
+            });
+        const fits = csm && csm._anazhFit;
+        const pv = this._spikeV || (this._spikeV = new THREE.Vector3());
+        const imBox = (f, p, rad) => {
+            pv.copy(p).applyMatrix4(f.basisInv);
+            return !(pv.x + rad < f.x0 || pv.x - rad > f.x1 || pv.y + rad < f.y0 || pv.y - rad > f.y1);
+        };
+        // die Sonne feuert, sobald sie den Texel verbraucht hat; ein bewegter Werfer nur auf dem Takt von 1410-3 (`faellig`)
+        const grund = (i, faellig) => {
+            const m = SB[i];
+            const f = fits && fits[i];
+            if (!m || !f) return "neu";
+            const dot = Math.min(1, (m.dx * ldx + m.dy * ldy + m.dz * ldz) / lLen);
+            if (f.texelMin > 0 && f.weg > 0 && (Math.acos(dot) * f.weg) / f.texelMin >= B.texel) return "sonne";
+            if (!faellig) return null;
+            if (B.spieler !== false && pm && spielerSig !== m.spieler && imBox(f, pm.position, 4)) return "spieler";
+            if (B.wesen)
+                for (const liste of [this.state.creatures || [], this.state.leichname || []])
+                    for (const c of liste)
+                        if (
+                            c &&
+                            c.visible !== false &&
+                            !(c.userData && c.userData._ruht === true) &&
+                            imBox(f, c.position, 6)
+                        )
+                            return "wesen";
+            return null;
+        };
         let gerendert = false;
         for (let i = 0; i < lichter.length; i++) {
             const sh = lichter[i].shadow;
@@ -2119,7 +2164,12 @@ class AnazhRealm_Z25c {
                   ? T.nahMax
                   : Math.max(T.nahMax, minInterval) * T.fernFaktor;
             const faellig = !(frame - (L.k[i] != null ? L.k[i] : -1e9) < takt);
-            if (sunMoved || (faellig && (bewegt || !gerendert))) {
+            const ruhB = !bewegt && !sunMoved && !!fits;
+            const g = ruhB ? (gerendert ? null : grund(i, faellig)) : sunMoved ? "sprung" : bewegt ? "bewegt" : "takt";
+            const feuert = ruhB ? g !== null : sunMoved || (faellig && (bewegt || !gerendert));
+            if (feuert) {
+                (this._spikeGrund || (this._spikeGrund = []))[i] = g;
+                SB[i] = { dx: ldx / lLen, dy: ldy / lLen, dz: ldz / lLen, spieler: spielerSig, frame };
                 sh.needsUpdate = true;
                 L.k[i] = frame;
                 gerendert = true;
