@@ -756,10 +756,12 @@ class AnazhRealm_Z10 {
                             // `_ensureFoliageClusterAtlas` laut (KERN-PFLICHT) — die stille Ellipsen-Maske hinter einem
                             // catch ist gefallen (05.10.: kein Stoff ohne seinen Atlas, wie der Laub-Stoff der Welt);
                             // headless (kein document) zeichnet kein Stoff.
-                            const _atl = this._blattAtlasProbe(_Ta);
+                            const _atl = this._blattAtlasProbe(_Ta, 0.5);
                             if (_atl) {
                                 _alpha = _atl.a;
                                 albedoNode = albedoNode.mul(_atl.rgb);
+                                // die Kante von EINEM Pixel (K68, `_laubKante`): Bild-Pass am Rauschen, Schatten an 0,5
+                                mat.alphaTestNode = _atl.schwelle;
                             }
                             mat.alphaTest = 0.5;
                         }
@@ -1631,6 +1633,9 @@ class AnazhRealm_Z10 {
             uLodRef: _T.uniform(_ref),
             uLodMaskOn: _T.uniform(st.lodMaskOn === false ? 0 : 1),
             uDitherT: _T.uniform(0),
+            // DIE KANTE DES LAUBS (K68, `_laubSchwelle`): x die Drehung der Schwelle je Frame (1/g), y 1 unter der
+            // zeitlichen Auflösung (sonst 0: die Schwelle 0,5) — beide aus `_loopRender`
+            uLaubKante: _T.uniform(new THREE.Vector2(0, 0)),
             uLodD0: _T.uniform(Number.isFinite(_D.thresh01) ? _D.thresh01 : 20),
             uLodD1: _T.uniform(Number.isFinite(_D.thresh12) ? _D.thresh12 : 40),
             uLodFade: _T.uniform(Number.isFinite(_D.fade) ? _D.fade : 8),

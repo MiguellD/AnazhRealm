@@ -2221,6 +2221,13 @@ class AnazhRealm_Z25c {
         if (this.state.lodUniforms) {
             const _lu = this.state.lodUniforms;
             if (_lu.uDitherT && this.state.traaNode) _lu.uDitherT.value = (_lu.uDitherT.value + 0.61803398875) % 1;
+            // die Kante des Laubs (K68, `_laubSchwelle`): unter der zeitlichen Auflösung dreht ihre Schwelle um 1/g (die
+            // Plastik-Zahl, gleichverteilt neben der Goldenen Drehung der Blende), ohne sie steht sie bei 0,5
+            if (_lu.uLaubKante) {
+                const _k = _lu.uLaubKante.value;
+                _k.y = this.state.traaNode ? 1 : 0;
+                if (_k.y) _k.x = (_k.x + 0.75487766625) % 1;
+            }
             if (_lu.uLodRef)
                 _lu.uLodRef.value =
                     Number.isFinite(this.state.lodRef) && this.state.lodRef > 0 ? +this.state.lodRef : 14;

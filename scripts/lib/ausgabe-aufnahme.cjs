@@ -658,6 +658,7 @@ function ausgabeAufnahme(W, H, warm, opt) {
                 if (r.state._traaR) r.state._traaR.neu = true;
                 const lu = r.state.lodUniforms;
                 if (lu && lu.uDitherT) lu.uDitherT.value = 0;
+                if (lu && lu.uLaubKante) lu.uLaubKante.value.x = 0; // die Kante des Laubs (K68, `_laubSchwelle`)
             }
             const nWarm = Math.max(warm == null ? 1 : warm, r.state.traaNode ? 32 : 0);
             for (let k = 0; k < nWarm; k++) frame();
