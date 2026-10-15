@@ -90,16 +90,16 @@ class AnazhRealm_Z24 {
         // Wasser-Glitzer, Gras-Translucency; die Skybox behält sunDir (der Wolken-Glow ist Sonne).
         const moonDir = this._dayNightSunDirection(angle + Math.PI);
         const lightDir = sunDir.y >= 0 ? sunDir : moonDir;
-        // V18.390 — Eins W1: die Rayleigh-Atmosphäre EINMAL pro Anwendung gerechnet
-        // (reine Funktion der Sonnenhöhe) und an das Licht-Rig durchgereicht — die
-        // EINE Licht-Quelle (Gesetz #0), kein Leser leitet die Sonnenfarbe selbst her.
-        const atm = this._atmosphere(sunDir.y);
+        // DIE EINE ATMOSPHÄRE (D3): der Durchlass zur Sonne EINMAL je Anwendung (das Richtlicht), die Tafeln im Takt ihrer
+        // Änderung (Medium, Stufe der Sonne, Mond, Auge) — Kuppel, Umgebung und Luft lesen dieselbe Himmels-Sicht.
+        const atm = this._atmoSonne(sunDir.y);
+        this._atmoTakt(sunDir, moonDir, tint);
         this._dayNightApplySkybox(tint);
         this._dayNightApplyStarField(t, tint.skyMul);
         this._dayNightApplyDirectionalLight(sunDir, tint, moonDir, atm);
         this._dayNightApplyAmbient(angle);
         this._updateCelestialBodies(angle, tint.lightMul);
-        this._dayNightApplyHemiUndLuft(angle, tint, sunDir);
+        this._dayNightApplyHemiUndLuft(angle, tint);
         // DIE HIMMELS-UMGEBUNG malt sich aus BEIDEN Quellen, die jetzt gelten — dem Zenit (die Skybox-Tönung, oben) und dem
         // Horizont (die Luft-Farbe, eben): erst danach, und vor jedem Leser ihrer Bestrahlung (Wasser, Belichtung). Bis K10
         // malte `_dayNightApplySkybox` sie vor der Luft — die Nacht nach einem Sprung trug den Horizont des Tags (intern
@@ -228,6 +228,7 @@ class AnazhRealm_Z24 {
             skyR: skyColor.r * skyMul,
             skyG: skyColor.g * skyMul,
             skyB: skyColor.b * skyMul,
+            basis: stop.sky, // der Himmel des Tag-Nacht-Stops ohne Wetter, Feld und Gefühl: der Nenner der Tönung (D3)
         };
     }
 
@@ -323,32 +324,569 @@ class AnazhRealm_Z24 {
         return horizon * clarity;
     }
 
-    // DAS ATMOSPHÄRE-GESETZ (Port der Vorlage phytogenesis.js, byte-treu in der Mathematik):
-    // e=sin(Elevation) → Luftmasse → spektrale Beer-Lambert-Transmission (Rayleigh ~1/λ⁴).
-    // DIE EINE LICHT-QUELLE: `atm.col` (Sonnen-Hue) + `atm.lum` (Lichtmenge) speisen Key/Fill;
-    // Sonnenuntergang und Mond-Nacht (MOONLIGHT-Hue) entstehen aus der Physik, DAY_NIGHT_STOPS
-    // bleibt nur Tint-TRÄGER. Rein in e → headless verifizierbar (diag-atmosphere.cjs).
-    _atmosphere(e) {
+    // ═══ DIE EINE ATMOSPHÄRE (D3, Hillaire EGSR 2020, CGF 39(4)) ═══
+    // Sonne, Himmel, Umgebung und Luft lesen EIN Medium: Rayleigh = `RAYLEIGH_BETA` (Zenit-Tiefe je Kanal) über die
+    // Skalenhöhe aus foundry-core `ATMO_GESETZ`, das Aerosol = die EINE Luft (`_luftBeta` des Wetters abzüglich ihres
+    // Rayleigh-Anteils, Skalenhöhe `LUFT.skalenHoeheM`), Mie-Phase g · Einfach-Albedo · Ozon-Zelt · Radien aus dem Gesetz, der
+    // Boden die gemessene Welt-Albedo (`ATMO_BODEN`). Einheiten des Mediums: km und 1/km (Hillaire), Höhen über dem Bezug der
+    // Luft (`waterLevel`). Bis D3 standen vier getunte Näherungen nebeneinander (die Luftmassen-Sonne `_atmosphere`, die
+    // Nebel-Kuppel, die Horizont-Farbe der Luft, die CPU-gemalte Umgebung 128×64) — das Verhältnis Sonne : Himmel war gesetzt
+    // (4,2), nicht gerechnet (gerechnet 5,1; `diag-atmo-hillaire`).
+    _atmoMedium(wf) {
+        const G = AnazhRealm.Gesetz("terrain:ATMO_GESETZ", null) || AnazhRealm._kernPflichtBruch("terrain:ATMO_GESETZ");
         const B = AnazhRealm.RAYLEIGH_BETA;
-        const m = 1.0 / (Math.max(e, 0.0) + 0.06); // Luftmasse: ~1 im Zenit, groß am Horizont
-        const tr = Math.exp(-B.r * m);
-        const tg = Math.exp(-B.g * m);
-        const tb = Math.exp(-B.b * m); // durchgelassenes Sonnenspektrum (Beer-Lambert)
-        const lum = 0.21 * tr + 0.72 * tg + 0.07 * tb; // Lichtmenge der direkten Sonne
-        const mx = Math.max(tr, tg, tb, 1e-4);
-        let cr = tr / mx;
-        let cg = tg / mx;
-        let cb = tb / mx; // Sonnenfarbe = Hue des Spektrums (Sonnenuntergang → rot)
-        const night = Math.max(0, Math.min(1, -e / 0.16)); // unter Horizont → Mond (Purkinje)
-        const M = AnazhRealm.MOONLIGHT;
-        cr += (M.r - cr) * night;
-        cg += (M.g - cg) * night;
-        cb += (M.b - cb) * night;
+        const L = AnazhRealm.LUFT;
+        const HR = G.rayleighH / 1000;
+        const mie = Math.max(0, this._luftBeta(wf) - L.betaRayleigh) * 1000;
+        return {
+            RG: G.erdeM / 1000,
+            RT: G.randM / 1000,
+            HR,
+            betaR: [B.r / HR, B.g / HR, B.b / HR],
+            HM: L.skalenHoeheM / 1000,
+            mieExt: mie,
+            mieSca: mie * G.mieAlbedo,
+            g: G.mieG,
+            ozon: G.ozon.absorption.map((x) => x * 1000),
+            ozonMitte: G.ozon.mitteM / 1000,
+            ozonHalb: G.ozon.halbM / 1000,
+            albedo: AnazhRealm.ATMO_BODEN,
+        };
+    }
+
+    // DER DURCHLASS des Mediums (rgb) von der Höhe h (km über dem Bezug) längs cos Zenit mu bis zum Rand; trifft der Strahl
+    // den Boden, ist es der Erdschatten (0). Dieselbe Rechnung, die die Transmittance-Tafel je Texel trägt (`_atmoLutBau`).
+    _atmoDurchlass(M, h, mu, out) {
+        const r = M.RG + Math.max(0, h);
+        const dB = r * r * (mu * mu - 1) + M.RG * M.RG;
+        if (mu < 0 && dB >= 0) {
+            out[0] = out[1] = out[2] = 0;
+            return out;
+        }
+        const d = -r * mu + Math.sqrt(Math.max(0, r * r * (mu * mu - 1) + M.RT * M.RT));
+        const N = AnazhRealm.ATMO_LUT.schritte.durchlass;
+        const dt = d / N;
+        let t0 = 0,
+            t1 = 0,
+            t2 = 0;
+        for (let s = 0; s < N; s++) {
+            const t = (s + 0.5) * dt;
+            const hi = Math.max(0, Math.sqrt(t * t + 2 * r * mu * t + r * r) - M.RG);
+            const dR = Math.exp(-hi / M.HR);
+            const dM = Math.exp(-hi / M.HM) * M.mieExt;
+            const dO = Math.max(0, 1 - Math.abs(hi - M.ozonMitte) / M.ozonHalb);
+            t0 += (M.betaR[0] * dR + dM + M.ozon[0] * dO) * dt;
+            t1 += (M.betaR[1] * dR + dM + M.ozon[1] * dO) * dt;
+            t2 += (M.betaR[2] * dR + dM + M.ozon[2] * dO) * dt;
+        }
+        out[0] = Math.exp(-t0);
+        out[1] = Math.exp(-t1);
+        out[2] = Math.exp(-t2);
+        return out;
+    }
+
+    // DIE SONNE aus dem Medium: e = sin(Höhe) der Sonne, der Durchlass vom Auge (Kamera über dem Bezug) zur Sonne. `col` = sein
+    // Farbton (unter dem Horizont zum Mond-Hue, Purkinje), `lum` = sein hellster Kanal — `col`·`lum` IST der Durchlass; das
+    // Richtlicht trägt E0 · Durchlass (E0 = die Sonne über der Atmosphäre, `_atmoE0`), dieselbe E0, mit der die Tafeln den
+    // Himmel rechnen: das Verhältnis Sonne : Himmel ist Physik.
+    _atmoSonne(e) {
+        const M = this._atmoMediumJetzt();
+        const T = this._atmoDurchlass(M, this._atmoAugeKm(), e, this._atmoT || (this._atmoT = [0, 0, 0]));
+        const mx = Math.max(T[0], T[1], T[2], 1e-4);
+        let cr = T[0] / mx;
+        let cg = T[1] / mx;
+        let cb = T[2] / mx;
+        const night = Math.max(0, Math.min(1, -e / 0.16));
+        const Mo = AnazhRealm.MOONLIGHT;
+        cr += (Mo.r - cr) * night;
+        cg += (Mo.g - cg) * night;
+        cb += (Mo.b - cb) * night;
         return {
             col: { r: cr, g: cg, b: cb },
-            lum: lum * (1.0 - night) + 0.06 * night,
+            lum: mx * (1.0 - night) + 0.06 * night,
             day: Math.max(0, Math.min(1, e)),
         };
+    }
+
+    // Das Medium des Wetters jetzt (gemerkt je Extinktion der Luft — ein Wetter-Übergang rechnet neu).
+    _atmoMediumJetzt() {
+        const b = this._luftBeta();
+        if (this._atmoM && this._atmoMBeta === b) return this._atmoM;
+        this._atmoMBeta = b;
+        return (this._atmoM = this._atmoMedium());
+    }
+
+    // Die Höhe des Auges über dem Bezug der Luft (km, ≥ 1 m): die Kamera, ohne sie der Bezug.
+    _atmoAugeKm() {
+        const st = this.state;
+        const wl = Number.isFinite(st.waterLevel) ? st.waterLevel : 0;
+        const y = st.camera ? st.camera.position.y : wl;
+        return Math.max(0.001, (y - wl) / 1000);
+    }
+
+    // E0 — DIE SONNE ÜBER DER ATMOSPHÄRE in Welt-Einheiten: das Schlüssellicht (KEY_BASE, r128 → r184 über LEGACY_LICHT)
+    // × die Tages-Intensität des Tints (Wetter, Aura). Das Richtlicht trägt E0 · Durchlass, die Tafeln den Himmel in E0.
+    _atmoE0(tint) {
+        return Math.max(0, AnazhRealm.KEY_BASE * AnazhRealm.LEGACY_LICHT * (tint ? tint.lightIntensity : 1));
+    }
+
+    // DIE TAFELN (EINMAL je Szene): Fragment-Pässe in RenderTargets — EIN Pfad für WebGPU und WebGL (Compute hätte unter
+    // WebGL keinen Himmel). Transmittance 256×64 (Bruneton-Parametrisierung) und Mehrfachstreuung Ψ_ms 32×32 (Hillaire Gl.
+    // 5–9) je Medium, die Himmels-Sicht 192×108 (Azimut absolut, Breite quadratisch um den Horizont) je Stufe der Sonne,
+    // die Umgebung 128×64 (Equirekt, die Vorlage von PMREM) im groben Takt der Umgebung. Die Leser: die Kuppel und die Luft
+    // (`himmelFarbe`), die Umgebung, das Wasser (`_himmelUmgebungTex`). Die Uniforms leben in der renderGroup
+    // (`_uniformHeimatTeilen`): Kuppel und Luft sind Stoffe der Szene.
+    _atmoLutBau() {
+        const st = this.state;
+        if (st.atmoLut) return st.atmoLut;
+        if (typeof THREE === "undefined" || !THREE.TSL || !THREE.MeshBasicNodeMaterial || !THREE.RenderTarget)
+            throw new Error("Die Atmosphäre: THREE trägt TSL/MeshBasicNodeMaterial/RenderTarget nicht (Vendor)");
+        const T = THREE.TSL;
+        const { Fn, float, vec2, vec3, vec4, uv, texture, exp, sqrt, max, clamp, select, Loop, If, dot, length } = T;
+        const G = AnazhRealm.Gesetz("terrain:ATMO_GESETZ", null) || AnazhRealm._kernPflichtBruch("terrain:ATMO_GESETZ");
+        const Z = AnazhRealm.ATMO_LUT;
+        const RG = G.erdeM / 1000,
+            RT = G.randM / 1000;
+        const H = Math.sqrt(RT * RT - RG * RG);
+        const PI = Math.PI;
+        const M = this._atmoMediumJetzt();
+        const U = this._uniformHeimatTeilen({
+            betaR: T.uniform(new THREE.Vector3().fromArray(M.betaR)),
+            HR: T.uniform(M.HR),
+            HM: T.uniform(M.HM),
+            mieExt: T.uniform(M.mieExt),
+            mieSca: T.uniform(M.mieSca),
+            g: T.uniform(M.g),
+            ozon: T.uniform(new THREE.Vector3().fromArray(M.ozon)),
+            albedo: T.uniform(new THREE.Vector3().fromArray(M.albedo)),
+            hKm: T.uniform(0.002),
+            sonne: T.uniform(new THREE.Vector3(0, 1, 0)),
+            mond: T.uniform(new THREE.Vector3(0, -1, 0)),
+            sonneE: T.uniform(new THREE.Vector3(1, 1, 1)),
+            mondE: T.uniform(new THREE.Vector3(0, 0, 0)),
+            toenung: T.uniform(new THREE.Vector3(1, 1, 1)),
+        });
+        const ziel = (w, h, wrapS) => {
+            const rt = new THREE.RenderTarget(w, h, {
+                type: THREE.HalfFloatType,
+                depthBuffer: false,
+                generateMipmaps: false,
+                minFilter: THREE.LinearFilter,
+                magFilter: THREE.LinearFilter,
+            });
+            rt.texture.wrapS = wrapS || THREE.ClampToEdgeWrapping;
+            rt.texture.wrapT = THREE.ClampToEdgeWrapping;
+            return rt;
+        };
+        const rtT = ziel(Z.durchlass[0], Z.durchlass[1]);
+        const rtMS = ziel(Z.mehrfach[0], Z.mehrfach[1]);
+        const rtSV = ziel(Z.himmel[0], Z.himmel[1], THREE.RepeatWrapping);
+        const rtEq = ziel(Z.umgebung[0], Z.umgebung[1], THREE.RepeatWrapping);
+        rtT.texture.name = "atmo-durchlass";
+        rtMS.texture.name = "atmo-mehrfach";
+        rtSV.texture.name = "atmo-himmel";
+        rtEq.texture.name = "himmel-umgebung";
+        rtEq.texture.mapping = THREE.EquirectangularReflectionMapping;
+        // ── das Medium als Knoten (h in km über dem Bezug) ──
+        const dichteO = (h) =>
+            max(
+                float(1).sub(
+                    h
+                        .sub(G.ozon.mitteM / 1000)
+                        .abs()
+                        .div(G.ozon.halbM / 1000)
+                ),
+                0
+            );
+        const streuR = (h) => U.betaR.mul(exp(h.negate().div(U.HR)));
+        const streuM = (h) => U.mieSca.mul(exp(h.negate().div(U.HM)));
+        const ext = (h) =>
+            streuR(h)
+                .add(U.mieExt.mul(exp(h.negate().div(U.HM))))
+                .add(U.ozon.mul(dichteO(h)));
+        const subUv = (x, n) =>
+            clamp(x, 0, 1)
+                .mul(1 - 1 / n)
+                .add(0.5 / n);
+        const ausUv = (u, n) => clamp(u.sub(0.5 / n).div(1 - 1 / n), 0, 1);
+        const amBoden = (r, mu) =>
+            T.and(
+                mu.lessThan(0),
+                r
+                    .mul(r)
+                    .mul(mu.mul(mu).sub(1))
+                    .add(RG * RG)
+                    .greaterThanEqual(0)
+            );
+        const zumRand = (r, mu) =>
+            r
+                .negate()
+                .mul(mu)
+                .add(
+                    sqrt(
+                        max(
+                            r
+                                .mul(r)
+                                .mul(mu.mul(mu).sub(1))
+                                .add(RT * RT),
+                            0
+                        )
+                    )
+                );
+        const zumBoden = (r, mu) =>
+            r
+                .negate()
+                .mul(mu)
+                .sub(
+                    sqrt(
+                        max(
+                            r
+                                .mul(r)
+                                .mul(mu.mul(mu).sub(1))
+                                .add(RG * RG),
+                            0
+                        )
+                    )
+                );
+        const durchlass = (r, mu) => {
+            const rho = sqrt(max(r.mul(r).sub(RG * RG), 0));
+            const d = max(zumRand(r, mu), 0);
+            const dMin = float(RT).sub(r);
+            const dMax = rho.add(H);
+            const xmu = d.sub(dMin).div(max(dMax.sub(dMin), 1e-4));
+            const t = texture(rtT.texture, vec2(subUv(xmu, Z.durchlass[0]), subUv(rho.div(H), Z.durchlass[1]))).level(
+                float(0)
+            ).rgb;
+            return select(amBoden(r, mu), vec3(0), t);
+        };
+        const mehrfach = (h, mus) =>
+            texture(
+                rtMS.texture,
+                vec2(subUv(mus.add(1).mul(0.5), Z.mehrfach[0]), subUv(h.div(RT - RG), Z.mehrfach[1]))
+            ).level(float(0)).rgb;
+        const phaseR = (nu) =>
+            nu
+                .mul(nu)
+                .add(1)
+                .mul(3 / (16 * PI));
+        const phaseM = (nu) => {
+            const g2 = U.g.mul(U.g);
+            return g2.oneMinus().div(
+                g2
+                    .add(1)
+                    .sub(U.g.mul(nu).mul(2))
+                    .pow(1.5)
+                    .mul(4 * PI)
+            );
+        };
+        // ── Transmittance: je Texel der Durchlass (r, mu) bis zum Rand ──
+        const passDurchlass = Fn(() => {
+            const q = uv();
+            const xmu = ausUv(q.x, Z.durchlass[0]);
+            const rho = ausUv(q.y, Z.durchlass[1]).mul(H).toVar();
+            const r = sqrt(rho.mul(rho).add(RG * RG)).toVar();
+            const dMin = float(RT).sub(r);
+            const d = dMin.add(xmu.mul(rho.add(H).sub(dMin))).toVar();
+            const mu = clamp(
+                select(
+                    d.lessThan(1e-4),
+                    float(1),
+                    float(H * H)
+                        .sub(rho.mul(rho))
+                        .sub(d.mul(d))
+                        .div(r.mul(d).mul(2))
+                ),
+                -1,
+                1
+            ).toVar();
+            const tau = vec3(0).toVar();
+            const N = Z.schritte.durchlass;
+            const dt = d.div(N).toVar();
+            Loop({ start: 0, end: N, type: "float", name: "s" }, ({ s }) => {
+                const t = s.add(0.5).mul(dt);
+                const hi = max(sqrt(t.mul(t).add(r.mul(mu).mul(t).mul(2)).add(r.mul(r))).sub(RG), 0);
+                tau.addAssign(ext(hi).mul(dt));
+            });
+            return vec4(exp(tau.negate()), 1);
+        });
+        // ── Ψ_ms: je (cos Sonnen-Zenit, Höhe) die Mehrfachstreuung (Hillaire Gl. 5–9), 8 × 8 Richtungen, Boden = Welt-Albedo ──
+        const passMehrfach = Fn(() => {
+            const q = uv();
+            const mus = ausUv(q.x, Z.mehrfach[0]).mul(2).sub(1).toVar();
+            const h = max(ausUv(q.y, Z.mehrfach[1]).mul(RT - RG), 0.001).toVar();
+            const r = h.add(RG).toVar();
+            const sun = vec3(sqrt(max(float(1).sub(mus.mul(mus)), 0)), mus, 0).toVar();
+            const Lsum = vec3(0).toVar();
+            const Fsum = vec3(0).toVar();
+            const N = Z.schritte.mehrfach;
+            Loop({ start: 0, end: 64, type: "float", name: "k" }, ({ k }) => {
+                const a = k.div(8).floor();
+                const b = k.sub(a.mul(8));
+                const mu = a
+                    .add(0.5)
+                    .mul(2 / 8)
+                    .sub(1)
+                    .toVar();
+                const sv = sqrt(max(float(1).sub(mu.mul(mu)), 0));
+                const phi = b.add(0.5).mul((2 * PI) / 8);
+                const v = vec3(sv.mul(phi.cos()), mu, sv.mul(phi.sin())).toVar();
+                const boden = amBoden(r, mu).toVar();
+                const tMax = select(boden, zumBoden(r, mu), zumRand(r, mu)).toVar();
+                const thr = vec3(1).toVar();
+                const L = vec3(0).toVar();
+                const F = vec3(0).toVar();
+                const tAlt = float(0).toVar();
+                Loop({ start: 0, end: N, type: "float", name: "s" }, ({ s }) => {
+                    const tE = tMax.mul(s.add(1).div(N).pow(2)).toVar();
+                    const tM = tMax.mul(s.add(0.5).div(N).pow(2));
+                    const dt = tE.sub(tAlt).toVar();
+                    tAlt.assign(tE);
+                    const p = vec3(v.x.mul(tM), r.add(v.y.mul(tM)), v.z.mul(tM)).toVar();
+                    const ri = length(p).toVar();
+                    const hi = max(ri.sub(RG), 0).toVar();
+                    const sca = streuR(hi).add(streuM(hi)).toVar();
+                    const e = max(ext(hi), vec3(1e-7)).toVar();
+                    const tr = exp(e.negate().mul(dt)).toVar();
+                    const integ = tr.oneMinus().div(e).toVar();
+                    L.addAssign(
+                        thr
+                            .mul(sca)
+                            .mul(durchlass(ri, dot(p, sun).div(ri)))
+                            .mul(integ)
+                            .mul(1 / (4 * PI))
+                    );
+                    F.addAssign(thr.mul(sca).mul(integ));
+                    thr.mulAssign(tr);
+                });
+                If(boden, () => {
+                    const gp = vec3(v.x.mul(tMax), r.add(v.y.mul(tMax)), v.z.mul(tMax)).toVar();
+                    const gr = length(gp).toVar();
+                    const nl = max(dot(gp, sun).div(gr), 0).toVar();
+                    L.addAssign(
+                        thr
+                            .mul(durchlass(gr, nl))
+                            .mul(nl)
+                            .mul(U.albedo)
+                            .mul(1 / PI)
+                    );
+                });
+                Lsum.addAssign(L);
+                Fsum.addAssign(F);
+            });
+            const fms = Fsum.div(64);
+            return vec4(Lsum.div(64).div(max(fms.oneMinus(), vec3(1e-4))), 1);
+        });
+        // ── die Himmels-Sicht: Richtung ↔ Texel (Azimut absolut, Breite quadratisch um den Horizont des Auges) ──
+        const horizontEl = () => T.acos(float(RG).div(U.hKm.add(RG))).negate();
+        const himmelUv = (dir) => {
+            const el = T.asin(clamp(dir.y, -1, 1)).toVar();
+            const hz = horizontEl().toVar();
+            const oben = sqrt(max(el.sub(hz).div(float(PI / 2).sub(hz)), 0))
+                .mul(0.5)
+                .add(0.5);
+            const unten = float(0.5).sub(sqrt(max(hz.sub(el).div(float(PI / 2).add(hz)), 0)).mul(0.5));
+            const u = T.atan(dir.z, dir.x)
+                .div(2 * PI)
+                .add(1)
+                .fract();
+            return vec2(u, subUv(select(el.greaterThanEqual(hz), oben, unten), Z.himmel[1]));
+        };
+        const marsch = (v) => {
+            const r0 = U.hKm.add(RG).toVar();
+            const mu = v.y;
+            const boden = amBoden(r0, mu).toVar();
+            const tMax = select(boden, zumBoden(r0, mu), zumRand(r0, mu)).toVar();
+            const nuS = dot(v, U.sonne);
+            const nuM = dot(v, U.mond);
+            const pS = vec2(phaseR(nuS), phaseM(nuS)).toVar();
+            const pM = vec2(phaseR(nuM), phaseM(nuM)).toVar();
+            const thr = vec3(1).toVar();
+            const L = vec3(0).toVar();
+            const tAlt = float(0).toVar();
+            const N = Z.schritte.himmel;
+            Loop({ start: 0, end: N, type: "float", name: "s" }, ({ s }) => {
+                const tE = tMax.mul(s.add(1).div(N).pow(2)).toVar();
+                const tM = tMax.mul(s.add(0.5).div(N).pow(2));
+                const dt = tE.sub(tAlt).toVar();
+                tAlt.assign(tE);
+                const p = vec3(v.x.mul(tM), r0.add(v.y.mul(tM)), v.z.mul(tM)).toVar();
+                const ri = length(p).toVar();
+                const hi = max(ri.sub(RG), 0).toVar();
+                const sR = streuR(hi).toVar();
+                const sM = streuM(hi).toVar();
+                const sca = sR.add(sM).toVar();
+                const muS = dot(p, U.sonne).div(ri).toVar();
+                const muM = dot(p, U.mond).div(ri).toVar();
+                const S = U.sonneE
+                    .mul(
+                        durchlass(ri, muS)
+                            .mul(sR.mul(pS.x).add(sM.mul(pS.y)))
+                            .add(mehrfach(hi, muS).mul(sca))
+                    )
+                    .add(
+                        U.mondE.mul(
+                            durchlass(ri, muM)
+                                .mul(sR.mul(pM.x).add(sM.mul(pM.y)))
+                                .add(mehrfach(hi, muM).mul(sca))
+                        )
+                    )
+                    .toVar();
+                const e = max(ext(hi), vec3(1e-7)).toVar();
+                const tr = exp(e.negate().mul(dt)).toVar();
+                L.addAssign(thr.mul(S).mul(tr.oneMinus().div(e)));
+                thr.mulAssign(tr);
+            });
+            // der Boden unter dem Horizont: Lambert mit der Welt-Albedo im Licht von Sonne und Mond
+            If(boden, () => {
+                const gp = vec3(v.x.mul(tMax), r0.add(v.y.mul(tMax)), v.z.mul(tMax)).toVar();
+                const n = gp.div(length(gp)).toVar();
+                const gr = length(gp).toVar();
+                const ls = max(dot(n, U.sonne), 0).toVar();
+                const lm = max(dot(n, U.mond), 0).toVar();
+                const E = U.sonneE
+                    .mul(durchlass(gr, ls))
+                    .mul(ls)
+                    .add(U.mondE.mul(durchlass(gr, lm)).mul(lm));
+                L.addAssign(
+                    thr
+                        .mul(E)
+                        .mul(U.albedo)
+                        .mul(1 / PI)
+                );
+            });
+            return L;
+        };
+        const passHimmel = Fn(() => {
+            const q = uv();
+            const phi = q.x.mul(2 * PI).toVar();
+            const w = ausUv(q.y, Z.himmel[1]);
+            const hz = horizontEl().toVar();
+            const c = w.sub(0.5).mul(2).toVar();
+            const el = select(
+                c.greaterThanEqual(0),
+                hz.add(c.mul(c).mul(float(PI / 2).sub(hz))),
+                hz.sub(c.mul(c).mul(float(PI / 2).add(hz)))
+            ).toVar();
+            const ce = el.cos().toVar();
+            return vec4(marsch(vec3(ce.mul(phi.cos()), el.sin(), ce.mul(phi.sin())).toVar()), 1);
+        });
+        // DIE FARBE DES HIMMELS in Richtung `dir` (Welt): die Himmels-Sicht × die Tönung (Wetter, Feld, Gefühl, DSL — relativ
+        // zum Tag-Nacht-Stop, `_dayNightApplySkybox`). Leser: die Kuppel, die Umgebung, die Luft.
+        const himmelFarbe = (dir) => texture(rtSV.texture, himmelUv(dir)).level(float(0)).rgb.mul(U.toenung);
+        // ── die Umgebung: Equirekt (three `equirectUV`: u = atan(z, x)/2π + ½, v = asin(y)/π + ½) aus der Himmels-Sicht ──
+        const passUmgebung = Fn(() => {
+            const q = uv();
+            const phi = q.x
+                .sub(0.5)
+                .mul(2 * PI)
+                .toVar();
+            const el = q.y.sub(0.5).mul(PI).toVar();
+            const ce = el.cos().toVar();
+            return vec4(himmelFarbe(vec3(ce.mul(phi.cos()), el.sin(), ce.mul(phi.sin())).toVar()), 1);
+        });
+        // DER PASS: ein Dreieck über den ganzen Schirm in der Form von r184 `QuadMesh` (Lage [-1,3 · -1,-1 · 3,-1], uv [0,-1 ·
+        // 0,1 · 2,1], Ortho-Kamera ±1) — dieselbe uv-Lage, in der jeder Leser die Tafel abtastet, in beiden Backends.
+        const dreieck = new THREE.BufferGeometry();
+        dreieck.setAttribute("position", new THREE.Float32BufferAttribute([-1, 3, 0, -1, -1, 0, 3, -1, 0], 3));
+        dreieck.setAttribute("uv", new THREE.Float32BufferAttribute([0, -1, 0, 1, 2, 1], 2));
+        const kamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+        const quad = (fn, name) => {
+            const m = new THREE.MeshBasicNodeMaterial();
+            m.name = name;
+            m.fragmentNode = fn();
+            m.depthTest = false;
+            m.depthWrite = false;
+            m.toneMapped = false;
+            m.fog = false;
+            const q = new THREE.Mesh(dreieck, m);
+            q.name = name;
+            q.frustumCulled = false;
+            q.userData.kamera = kamera;
+            return q;
+        };
+        st.atmoLut = {
+            U,
+            rtT,
+            rtMS,
+            rtSV,
+            rtEq,
+            qT: quad(passDurchlass, "atmo-durchlass"),
+            qMS: quad(passMehrfach, "atmo-mehrfach"),
+            qSV: quad(passHimmel, "atmo-himmel"),
+            qEq: quad(passUmgebung, "atmo-umgebung"),
+            himmelFarbe,
+            durchlass,
+            RG,
+            mediumBeta: null,
+            himmelSchluessel: null,
+            himmelVersion: 0,
+            tafelnFrisch: false,
+        };
+        return st.atmoLut;
+    }
+
+    // EIN Pass in sein Ziel (der Zustand des Renderers bleibt, wie er war — dieselbe Hülle wie die zeitliche Auflösung).
+    _atmoZeichne(quad, rt) {
+        const r = this.state.renderer;
+        const ziel = r.getRenderTarget();
+        const mrt = typeof r.getMRT === "function" ? r.getMRT() : null;
+        const rof = typeof r.getRenderObjectFunction === "function" ? r.getRenderObjectFunction() : null;
+        const auto = r.autoClear;
+        if (mrt) r.setMRT(null);
+        if (rof) r.setRenderObjectFunction(null);
+        r.autoClear = false;
+        r.setRenderTarget(rt);
+        r.render(quad, quad.userData.kamera);
+        r.setRenderTarget(ziel);
+        if (mrt) r.setMRT(mrt);
+        if (rof) r.setRenderObjectFunction(rof);
+        r.autoClear = auto;
+    }
+
+    // DER TAKT DER ATMOSPHÄRE (je Anwendung von Tag und Nacht): das Medium folgt dem Wetter (Transmittance und Ψ_ms neu, wenn
+    // die Luft sich ändert), die Himmels-Sicht der Stufe der Sonne (`_sonnenWinkel`), dem Mond, der Höhe des Auges (10 m)
+    // und E0 — Kosten an Änderung (Gebot 7); der Null-Renderer zeichnet nichts.
+    _atmoTakt(sunDir, moonDir, tint) {
+        const st = this.state;
+        const A = this._atmoLutBau();
+        const U = A.U;
+        const M = this._atmoMediumJetzt();
+        if (A.mediumBeta !== this._atmoMBeta) {
+            U.betaR.value.fromArray(M.betaR);
+            U.HR.value = M.HR;
+            U.HM.value = M.HM;
+            U.mieExt.value = M.mieExt;
+            U.mieSca.value = M.mieSca;
+            U.g.value = M.g;
+            U.ozon.value.fromArray(M.ozon);
+            U.albedo.value.fromArray(M.albedo);
+            A.mediumBeta = this._atmoMBeta;
+            A.tafelnFrisch = false;
+        }
+        const h = Math.max(0.001, Math.round(this._atmoAugeKm() * 100) / 100);
+        U.hKm.value = h;
+        U.sonne.value.copy(sunDir).normalize();
+        U.mond.value.copy(moonDir).normalize();
+        U.sonneE.value.setScalar(this._atmoE0(tint));
+        const Mo = AnazhRealm.MOONLIGHT;
+        const mi = Mo.intensity * (tint ? tint.lightMul : 1);
+        U.mondE.value.set(Mo.r * mi, Mo.g * mi, Mo.b * mi);
+        const s = st._sonne;
+        const schluessel = `${s ? s.winkel : 0}:${h}:${U.sonneE.value.x.toFixed(4)}:${mi.toFixed(4)}:${A.mediumBeta}`;
+        const rend = st.renderer;
+        if (!rend || rend._isHeadlessNull || !st.rendererReady) return A;
+        if (!A.tafelnFrisch) {
+            this._atmoZeichne(A.qT, A.rtT);
+            this._atmoZeichne(A.qMS, A.rtMS);
+            A.tafelnFrisch = true;
+            A.himmelSchluessel = null;
+        }
+        if (A.himmelSchluessel !== schluessel) {
+            this._atmoZeichne(A.qSV, A.rtSV);
+            A.himmelSchluessel = schluessel;
+            A.himmelVersion++;
+        }
+        return A;
     }
 
     // V18.377 — die Helligkeit eines Himmelskörpers fadet smooth auf 0, sobald er den Horizont
@@ -380,6 +918,16 @@ class AnazhRealm_Z24 {
                 // magenta-Wäsche). Der Mensch kann auraTintStrength heben, will er es satt.
                 const _aK = tint && Number.isFinite(tint.auraK) ? tint.auraK : 1;
                 if (st.skyTintStrength * _aK > 0.002) u.nebulaColor.value.lerp(st.skyTint, st.skyTintStrength * _aK);
+            }
+            // DIE TÖNUNG DES PHYSIKALISCHEN HIMMELS (D3): der Himmel selbst ist die Himmels-Sicht der EINEN Atmosphäre — was
+            // der Tint daneben trägt (Wetter, Welt-Feld, Gefühl, DSL-Tönung), wirkt als Verhältnis zum blanken Tag-Nacht-Stop.
+            // Ohne all das ist die Tönung 1: der Himmel ist reine Physik.
+            const A = st.atmoLut;
+            const b = tint && tint.basis;
+            if (A && b) {
+                const nc = u.nebulaColor.value;
+                const q = (x, y) => Math.max(0, Math.min(4, y > 1e-4 ? x / y : 1));
+                A.U.toenung.value.set(q(nc.r, b.r), q(nc.g, b.g), q(nc.b, b.b));
             }
         }
         if (u.cloudCover) {
@@ -421,7 +969,7 @@ class AnazhRealm_Z24 {
     }
 
     // Die Leuchtdichte des Tageshimmels relativ zum Mittag (0,045 Nacht … 1 Tag) aus der Sonnenhöhe — DIE EINE
-    // Himmels-Helligkeit: die In-Streu-Farbe der Luft und die Blässe des Mondes lesen sie.
+    // Himmels-Helligkeit: die Blässe des Mondes liest sie (der Himmel selbst ist die Himmels-Sicht der Atmosphäre, D3).
     _himmelHell(sunHeight) {
         let q = (sunHeight + 0.18) / 0.6;
         q = q < 0 ? 0 : q > 1 ? 1 : q;
@@ -501,7 +1049,7 @@ class AnazhRealm_Z24 {
         // Farbe: `atm.col` (Rayleigh, DIE EINE LICHT-QUELLE) × `tint.lightColor` (LUT + Aura/Emotion).
         // Intensität = KEY_BASE·atm.lum·tint.lightIntensity: die Physik trägt die Tageskurve, die LUT
         // (⊇ Wetter-lightMul + Emotion) moduliert; Ziel dir/(amb+hemi) ≥ 3:1.
-        const a = atm || this._atmosphere(sunDir.y);
+        const a = atm || this._atmoSonne(sunDir.y);
         if (sunUp) {
             dl.color.setRGB(
                 a.col.r * tint.lightColor.r * tint.lightMul,
@@ -547,9 +1095,9 @@ class AnazhRealm_Z24 {
         if (this.state.skyboxUniforms && this.state.skyboxUniforms.sunDir) {
             this.state.skyboxUniforms.sunDir.value.copy(sunDir).normalize();
         }
-        // W9 — die Wolken-Beleuchtung des Studio-Gesetzes liest die Rayleigh-
-        // Sonnenfarbe der EINEN _atmosphere-Quelle (nachts wird sie zur Mond-
-        // Farbe — die Nacht-Wolken folgen gratis). Raw als linear (r128-Gesetz).
+        // W9 — die Wolken-Beleuchtung des Studio-Gesetzes liest den Farbton der Sonne aus dem Durchlass der EINEN
+        // Atmosphäre (`_atmoSonne`; nachts der Mond-Hue — die Nacht-Wolken folgen gratis), ihre Stärke liest die Kuppel
+        // aus den Tafeln. Raw als linear (r128-Gesetz).
         if (this.state.skyboxUniforms && this.state.skyboxUniforms.sunCol && a && a.col) {
             this.state.skyboxUniforms.sunCol.value.setRGB(a.col.r, a.col.g, a.col.b);
         }
@@ -981,7 +1529,7 @@ class AnazhRealm_Z24 {
 
     // Die Luft-Knoten (EINMAL je Szene): Uniforms in der geteilten renderGroup (Observer-Diät-Pflicht-Paar),
     // `faktor(auge, punkt)` = 1 − e^{−τ} mit τ = β·e^{−(yAuge−y0)/H}·d·(1−e^{−k})/k (k = Δy/H, k→0: 1 − k/2),
-    // `farbe(auge, punkt)` = Horizont-Himmel, zur Sonne hin die Keule. `scene.fogNode` ist der Leser jedes
+    // `farbe(auge, punkt)` = die Himmels-Sicht der EINEN Atmosphäre in Blickrichtung. `scene.fogNode` ist der Leser jedes
     // Materials (r184 `getFogNode`), der Feld-Pass ruft dieselben Fn.
     _luftEnsure() {
         const st = this.state;
@@ -993,13 +1541,13 @@ class AnazhRealm_Z24 {
         if (!T || !T.fog || !T.Fn || !T.uniform || !T.positionWorld || !T.cameraPosition)
             throw new Error("Die Luft: THREE.TSL trägt fog/Fn/uniform/positionWorld/cameraPosition nicht (Vendor)");
         const L = AnazhRealm.LUFT;
+        const A = this._atmoLutBau();
         const U = this._uniformHeimatTeilen({
             beta: T.uniform(this._luftBeta(AnazhRealm.WEATHER_FIELD.sunny)),
             hoehe: T.uniform(L.skalenHoeheM),
             bezugY: T.uniform(0),
-            farbe: T.uniform(new THREE.Color(0.651, 0.824, 0.925)),
-            sonneFarbe: T.uniform(new THREE.Color(0.651, 0.824, 0.925)),
-            sonneDir: T.uniform(new THREE.Vector3(0, 1, 0)),
+            farbe: T.uniform(new THREE.Color(0, 0, 0)),
+            unterWasser: T.uniform(0),
         });
         const faktor = T.Fn(([auge, punkt]) => {
             const v = punkt.sub(auge);
@@ -1016,30 +1564,31 @@ class AnazhRealm_Z24 {
             const tau = U.beta.mul(hoehenTerm).mul(d).mul(fk);
             return T.float(1).sub(T.exp(tau.negate()));
         });
+        // DIE IN-STREUUNG ist der Himmel selbst (D3): die Himmels-Sicht der EINEN Atmosphäre in Blickrichtung — zur Sonne hin
+        // trägt sie die Mie-Keule des Aerosols aus der Phase (g des Gesetzes), am Horizont das Blau der Rayleigh-Streuung;
+        // ein Blick unter den Horizont (auf das Gelände) liest den Horizont-Himmel (die In-Streuung längs eines langen
+        // Wegs). Unter Wasser trägt `farbe` das Medium der Kamera.
         const farbe = T.Fn(([auge, punkt]) => {
             const dir = punkt.sub(auge).normalize();
-            const keule = T.pow(T.max(T.dot(dir, U.sonneDir), 0.0), L.mieKeule).mul(L.mieAnteil);
-            return T.mix(U.farbe, U.sonneFarbe, keule);
+            const himmel = A.himmelFarbe(T.vec3(dir.x, T.max(dir.y, 0.0), dir.z).normalize());
+            return T.select(U.unterWasser.greaterThan(0.5), U.farbe, himmel);
         });
         st.scene.fogNode = T.fog(farbe(T.cameraPosition, T.positionWorld), faktor(T.cameraPosition, T.positionWorld));
-        // `himmelFarbe`: die Farbe der LUFT ÜBER DEM WASSER (die In-Streu des Himmels), auch wenn die Kamera taucht — die
-        // Himmels-Umgebung malt sich aus ihr (`_ensureSkyEnvironment`), nie aus dem Medium der Kamera.
-        st.luft = { U, faktor, farbe, himmelFarbe: new THREE.Color(0.651, 0.824, 0.925) };
+        st.luft = { U, faktor, farbe };
         return st.luft;
     }
 
-    // HemisphereLight + die Luft synchron aus Tag-Nacht-Sky-Color × Welt-Feld am Spieler × Wetter × Sonne; die
-    // In-Streu-Farbe = Himmel mit kleinem Erd-Anteil (gMix, unten) — Luft ist Luft, keine Dreck-Schicht.
-    // Unterwasser (die KAMERA unter dem Spiegel) trägt dieselbe Formel mit Wasser-Trübung im Licht des Orts.
-    _dayNightApplyHemiUndLuft(angle, tint, sunDir) {
+    // HemisphereLight (der Nachthimmel-Boden) und die Luft synchron aus Tag-Nacht-Sky-Color × Welt-Feld am Spieler × Wetter.
+    // Die In-Streu-Farbe der Luft über Wasser ist der Himmel der EINEN Atmosphäre (`_luftEnsure`); unter Wasser (die KAMERA
+    // unter dem Spiegel) trägt dieselbe Extinktion die Wasser-Trübung im Licht des Orts.
+    _dayNightApplyHemiUndLuft(angle, tint) {
         const hl = this.state.hemiLight;
         const pm = this.state.playerMesh;
         if (hl) {
             hl.color.setRGB(tint.skyR * 1.1, tint.skyG * 1.1, tint.skyB * 1.1);
             const earth = new THREE.Color(0x463c2e); // Vorlagen-Hemi-Boden (phytogenesis Z.1291, warmes Braun statt 0x3a2818)
-            // `tint.auraK` gated auch den Feld-Term des Hemi-BODENS (er fließt über gMix in die Luft-Farbe):
-            // bei Default auraK=0 sind Luft/Boden rein Tag-Nacht+Wetter; Feld-Tönung nur über
-            // `atmosphere.auraTintStrength`.
+            // `tint.auraK` gated den Feld-Term des Hemi-BODENS: bei Default auraK=0 ist der Boden rein Tag-Nacht+Wetter;
+            // Feld-Tönung nur über `atmosphere.auraTintStrength`.
             const _aKGround = tint && Number.isFinite(tint.auraK) ? tint.auraK : 0;
             if (_aKGround > 0 && pm && typeof this.auraAt === "function") {
                 const field = this.auraAt(pm.position.x, pm.position.z); // §5 (V17.25): via auraAt (living)
@@ -1060,33 +1609,6 @@ class AnazhRealm_Z24 {
             // zählte die Himmels-Umgebung doppelt; die Mond-Nacht bleibt eigen getuned.
             hl.intensity = 0.1 * this._nachtAnteil(angle) * tint.lightMul;
         }
-        // Erd-Anteil der In-Streu-Farbe (gMix): fernes Terrain bleibt ein dunklerer Dunst mit lesbarer Silhouette
-        // — mit zu viel Himmelsanteil wird es deckungsgleich und die Sonne „scheint durch" die Berge. gMix
-        // skaliert mit der Sonnenhöhe → nachts 0, sonst dominiert der warme groundColor den dunklen Himmel.
-        const dayAmt = 1 - this._nachtAnteil(angle); // 1 ab ~15° Sonne, 0 am/unter Horizont
-        const gMix = 0.26 * dayAmt;
-        const fogRn = tint.skyR * (1 - gMix) + (hl ? hl.groundColor.r : 0.3) * gMix;
-        const fogGn = tint.skyG * (1 - gMix) + (hl ? hl.groundColor.g : 0.25) * gMix;
-        const fogBn = tint.skyB * (1 - gMix) + (hl ? hl.groundColor.b : 0.2) * gMix;
-        // Tag-Luft nach dem Studio-Gesetz (EINE Quelle für Himmel+Luft+Ferne): Helligkeit skyB aus der
-        // Sonnenhöhe zwischen den Ankern Tag 0xa6d2ec · Nacht 0x0a1326, die Dämmerungs-Glut ist atm.col.
-        // r128 las Hex als LINEAR → Rohwerte per setRGB, nie per Hex (sRGB→linear wäre zu dunkel).
-        const sunHeightF = Math.max(0, Math.sin(angle));
-        const _fATM = this._atmosphere(sunHeightF);
-        const skyB = this._himmelHell(sunHeightF);
-        let fdR = 0.039 + (0.651 - 0.039) * skyB; // 0x0a1326 → 0xa6d2ec, raw als LINEAR (r128-treu)
-        let fdG = 0.075 + (0.824 - 0.075) * skyB;
-        let fdB = 0.149 + (0.925 - 0.149) * skyB;
-        const lowSun = Math.max(0, 1 - Math.abs(sunHeightF) / 0.28) * Math.max(0, Math.min(1, 1 + sunHeightF * 3.5));
-        const glut = lowSun * lowSun * 0.6;
-        fdR += (_fATM.col.r - fdR) * glut;
-        fdG += (_fATM.col.g - fdG) * glut;
-        fdB += (_fATM.col.b - fdB) * glut;
-        // Wetter dämpft wie bisher über den EINEN Tint-Kanal (skyMul: sunny 1 → stormy 0.42).
-        const wDim = 0.35 + 0.65 * tint.skyMul;
-        const fogR = fogRn * (1 - dayAmt) + fdR * wDim * dayAmt;
-        const fogG = fogGn * (1 - dayAmt) + fdG * wDim * dayAmt;
-        const fogB = fogBn * (1 - dayAmt) + fdB * wDim * dayAmt;
         // DAS MEDIUM DER KAMERA (W-L-d): unter Wasser ist, wessen AUGE unter dem Spiegel liegt — das der Kamera, nie das
         // des Körpers (bis V18.531: eine Kamera 20 m über dem Ufer zeigte Voll-Bild-Unterwasser, solange die Augen des
         // Körpers in der Ufer-Flut lagen; die Verfolger-Kamera am Seegrund sah klare Luft). Die Kamera-Höhe ist ihr
@@ -1100,39 +1622,25 @@ class AnazhRealm_Z24 {
             const L = AnazhRealm.LUFT;
             const U = luft.U;
             U.bezugY.value = Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : 0;
-            luft.himmelFarbe.setRGB(fogR, fogG, fogB);
+            U.unterWasser.value = kameraUnterWasser ? 1 : 0;
             if (kameraUnterWasser) {
-                // Unter Wasser: DIESELBE Formel, Wasser-Trübung ohne Höhen-Abnahme (H → ∞), keine Sonnen-Keule. Die
-                // Farbe ist das Unterwasser-Gesetz des Terrain-Studios: der Durchlass der ersten 0,3 m (WASSER_GESETZ.wK,
-                // Beer-Lambert) × das Tageslicht — in der Welt die Helligkeit der Luft über dem Wasser (die EINE
-                // tag-, nacht- und wetter-kohärente Himmels-Quelle): mittags türkis, halb so hell wie die Luft, nachts
-                // dunkler als die Nacht darüber, im Sturm trüb. Bis V18.531 ein Literal 0,06/0,19/0,32 zu jeder Stunde —
-                // Mitternacht unter Wasser war heller als Mittag unter Wasser und 2,5× heller als die Nacht darüber (W-L-a).
+                // Unter Wasser: DIESELBE Formel, Wasser-Trübung ohne Höhen-Abnahme (H → ∞). Die Farbe ist das Unterwasser-
+                // Gesetz des Terrain-Studios: der Durchlass der ersten 0,3 m (WASSER_GESETZ.wK, Beer-Lambert) × das Tageslicht
+                // — die Leuchtdichte des Himmels über dem Wasser (E/π einer waagrechten Normale aus der Umgebung der EINEN
+                // Atmosphäre, `_himmelsIrradianz`): mittags türkis, nachts dunkler als die Nacht darüber, im Sturm trüb.
                 const WGu =
                     AnazhRealm.Gesetz("terrain:WASSER_GESETZ", null) ||
                     AnazhRealm._kernPflichtBruch("terrain:WASSER_GESETZ");
-                const tagesLicht = 0.2126 * fogR + 0.7152 * fogG + 0.0722 * fogB;
+                const e = this._himmelsIrradianz();
+                const tagesLicht = e ? 0.2126 * e.mitte[0] + 0.7152 * e.mitte[1] + 0.0722 * e.mitte[2] : 0;
                 U.farbe.value.setRGB(
                     Math.exp(-WGu.wK[0] * 0.3) * tagesLicht,
                     Math.exp(-WGu.wK[1] * 0.3) * tagesLicht,
                     Math.exp(-WGu.wK[2] * 0.3) * tagesLicht
                 );
-                U.sonneFarbe.value.copy(U.farbe.value);
                 U.beta.value = -Math.log(L.kontrast) / L.unterwasserM;
                 U.hoehe.value = 1e9;
             } else {
-                U.farbe.value.setRGB(fogR, fogG, fogB);
-                // Die Keule: zur Sonne hin streut der Dunst ihr (Rayleigh-gefiltertes) Licht vorwärts — der Glast
-                // im Gegenlicht, warm bei tiefer Sonne. Unter dem Horizont fällt sie mit der Sonne (Horizont-Fade).
-                const sd = sunDir || this._dayNightSunDirection(angle);
-                U.sonneDir.value.set(sd.x, sd.y, sd.z).normalize();
-                const sonnig = sd.y > 0 ? this._celestialHorizonFade(sd.y) * tint.skyMul : 0;
-                const hell = (0.2126 * fogR + 0.7152 * fogG + 0.0722 * fogB) * L.mieGlanz;
-                U.sonneFarbe.value.setRGB(
-                    fogR + (_fATM.col.r * hell - fogR) * sonnig,
-                    fogG + (_fATM.col.g * hell - fogG) * sonnig,
-                    fogB + (_fATM.col.b * hell - fogB) * sonnig
-                );
                 U.beta.value = this._luftBeta();
                 U.hoehe.value = L.skalenHoeheM;
             }

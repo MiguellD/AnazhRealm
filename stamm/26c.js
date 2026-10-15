@@ -1032,8 +1032,8 @@ AnazhRealm.RING_RAMP_SETTLE_MS = 350; // der „Atem" zwischen zwei Ring-Wachstu
 // Sichtweiten (Kontrast eines Gelände-Pixels fällt unter `kontrast`): ein klarer Sommertag trägt Gelände-
 // Silhouetten 20 km weit (Mitteleuropa, Sommer-Dunst 15–30 km), Starkregen im Sturm 1,5 km. Die reine Luft ist
 // Rayleigh bei 550 nm auf Meereshöhe (1,16·10⁻⁵/m, V ≈ 340 km). Der Dunst sitzt in der Grenzschicht: Skalenhöhe
-// 1 km über dem Meeresspiegel. Die Keule: Anteil und Schärfe der Sonnen-Vorwärtsstreuung im Dunst (Henyey-
-// Greenstein g ≈ 0,7 ≈ cos^8 in der Keule), Glanz = ihre Helligkeit relativ zum Horizont-Himmel.
+// 1 km über dem Meeresspiegel — dieselbe Luft ist das Aerosol der EINEN Atmosphäre (D3, `_atmoMedium`): ihre Keule zur
+// Sonne trägt die Mie-Phase des Gesetzes (foundry-core ATMO_GESETZ), nicht mehr ein eigener Kegel.
 AnazhRealm.LUFT = Object.freeze({
     sichtKlarM: 20000,
     sichtSturmM: 1500,
@@ -1041,9 +1041,6 @@ AnazhRealm.LUFT = Object.freeze({
     kontrast: 0.02,
     skalenHoeheM: 1000,
     unterwasserM: 30,
-    mieKeule: 8,
-    mieAnteil: 0.45,
-    mieGlanz: 1.6,
 });
 // DER HIMMEL (V18.530): die Sichtbarkeit seiner Punkte ist Physik. `grenzgroesse` = Dämmerungs-Anker [Sonnenhöhe
 // in Grad, Grenzgröße des bloßen Auges]: im hellen Tag (≥ 10°) ist nichts zu sehen, nahe dem Horizont gerade die
@@ -1079,13 +1076,26 @@ AnazhRealm.HIMMEL = Object.freeze({
 });
 // MONDLICHT: nachts wird das Haupt-Richtlicht zur Mondquelle (gegenüber der Sonne, kühl + gedämpft →
 // gerichtete Nacht-Schattierung mit tiefen Schwärzen) statt die Nacht per Post-FX aufzuhellen.
-// `r/g/b` = HUE (Purkinje-Mond 0x9fb8dc, die EINE Mond-Farb-Quelle — `_atmosphere(e)` lerpt unter dem
+// `r/g/b` = HUE (Purkinje-Mond 0x9fb8dc, die EINE Mond-Farb-Quelle — `_atmoSonne(e)` lerpt unter dem
 // Horizont exakt hierher; b>r = kühl), `intensity` = Helligkeit; Wetter dimmt den Mond.
 AnazhRealm.MOONLIGHT = Object.freeze({ r: 0x9f / 255, g: 0xb8 / 255, b: 0xdc / 255, intensity: 0.22 });
 // V18.390 — Eins W1: DAS ATMOSPHÄRE-GESETZ (Port Vorlage phytogenesis.js Z.2111). Rayleigh
 // optische Tiefe auf Meereshöhe/Zenit (Bucholtz 1995): blau streut ~5× rot → Beer-Lambert
 // über die Luftmasse gibt Sonnenfarbe+Lichtmenge für JEDEN Winkel spektral-korrekt.
 AnazhRealm.RAYLEIGH_BETA = Object.freeze({ r: 0.044, g: 0.1, b: 0.23 });
+// DIE TAFELN DER EINEN ATMOSPHÄRE (D3, Hillaire 2020; `_atmoLutBau`): Größen (Texel) und Marsch-Schritte. Transmittance
+// 256×64 und Ψ_ms 32×32 je Medium, die Himmels-Sicht 192×108 je Stufe der Sonne, die Umgebung 128×64 (Equirekt, PMREM).
+AnazhRealm.ATMO_LUT = Object.freeze({
+    durchlass: Object.freeze([256, 64]),
+    mehrfach: Object.freeze([32, 32]),
+    himmel: Object.freeze([192, 108]),
+    umgebung: Object.freeze([128, 64]),
+    schritte: Object.freeze({ durchlass: 40, mehrfach: 20, himmel: 32 }),
+});
+// DER BODEN DER ATMOSPHÄRE (D3): die gemessene Welt-Albedo (linear) — das Mittel aus Laub und Wald-Boden der Albedo-Tafel
+// (spec/farbe/albedo-tafel.json, ist.welt; `werkbank albedo --tafel`), nie ein Grau 0,3. Er trägt die Mehrfachstreuung und
+// die untere Hälfte der Umgebung; `diag-atmo-hillaire` hält ihn an der Tafel (±3 %).
+AnazhRealm.ATMO_BODEN = Object.freeze([0.0959, 0.1371, 0.0453]);
 // Licht-Rig: KEY_BASE skaliert die Rayleigh-Lichtmenge aufs Schlüssellicht (Mittag ≈ 2.6·0.913 unter
 // ACES). Ziel key-dominant (Vorlage dir/(amb+hemi) ≈ 15:1); die Schattenseite trägt der Himmel.
 AnazhRealm.KEY_BASE = 2.6;

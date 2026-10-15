@@ -228,6 +228,21 @@ var SAISON_GESETZ = {
 
 var __terrainCore = { HIMMEL_GESETZ: HIMMEL_GESETZ, WASSER_GESETZ: WASSER_GESETZ, REGEN_GESETZ: REGEN_GESETZ, BERG_GESETZ: BERG_GESETZ, BERG_VIS: BERG_VIS, INSEL_GESETZ: INSEL_GESETZ, INSEL_VIS: INSEL_VIS, WALD_GESETZ: WALD_GESETZ, WALD_VIS: WALD_VIS, KACHEL_GESETZ: KACHEL_GESETZ, KACHEL_VIS: KACHEL_VIS, SAISON_GESETZ: SAISON_GESETZ };
 
+// D3 (15.10., rein additiv) — DAS ATMOSPHAEREN-GESETZ nach Hillaire (EGSR 2020, "A Scalable and Production Ready Sky and
+// Atmosphere Rendering Technique", CGF 39(4)): was die Welt nicht selbst traegt. Die Rayleigh-TIEFE je Kanal liest der Leser
+// aus RAYLEIGH_BETA der Welt, das Aerosol aus ihrer EINEN Luft (LUFT: beta = -ln(kontrast)/sichtKlarM - betaRayleigh,
+// Skalenhoehe skalenHoeheM), den Boden aus der gemessenen Welt-Albedo — hier stehen nur die Hoehen, die Phase, die
+// Einfach-Albedo des Aerosols, das Ozon-Zelt und die Radien (Bruneton/Hillaire-Erde).
+// prettier-ignore
+var ATMO_GESETZ = {
+    erdeM: 6360e3, randM: 6460e3,  // Radius des Bodens / des Rands der Atmosphaere
+    rayleighH: 8000,               // Skalenhoehe der Rayleigh-Dichte (m)
+    mieG: 0.8,                     // Henyey-Greenstein-Asymmetrie des Aerosols
+    mieAlbedo: 0.9,                // Einfach-Streualbedo des Aerosols (Streuung / Extinktion)
+    ozon: { mitteM: 25000, halbM: 15000, absorption: [0.65e-6, 1.881e-6, 0.085e-6] }, // Zelt-Profil, Absorption je m am Gipfel (R/G/B)
+};
+__terrainCore.ATMO_GESETZ = ATMO_GESETZ;
+
 // DER STUDIO-VERTRAG (docs/studio-vertrag.md §4 G4.3) — die EINE Versions-
 // Semantik des Manifests: erhöht NUR bei einem Bruch der MUSS-Blöcke
 // (REZEPTE/BUILD); SOLL/DARF-Blöcke wachsen unter v1 (must-ignore trägt sie).

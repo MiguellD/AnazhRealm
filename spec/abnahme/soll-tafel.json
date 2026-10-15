@@ -240,6 +240,24 @@
                         },
                         "einheit": "E(Sonne + Himmel) / E(Himmel) an der waagrechten 18-%-Karte, Mittag klar",
                         "quelle": "Diffus-Anteil des klaren Himmels 0,08–0,2 (Liu & Jordan 1960, Solar Energy 4(3):1), das Verhältnis ist sein Kehrwert [gerechnet]; Frostbite PBR (Sonne 100 klx, Himmel 10–20 klx) liegt darin"
+                    },
+                    {
+                        "groesse": "schattenAnteil",
+                        "band": [
+                            0.08,
+                            0.2
+                        ],
+                        "einheit": "E(Himmel) / E(Sonne + Himmel) an der waagrechten 18-%-Karte, Mittag klar (der Schatten gegen die besonnte Fläche)",
+                        "quelle": "Diffus-Anteil des klaren Himmels 0,08–0,2 (Liu & Jordan 1960, Solar Energy 4(3):1)"
+                    },
+                    {
+                        "groesse": "umgebungAzimut",
+                        "band": [
+                            1.2,
+                            null
+                        ],
+                        "einheit": "E(Himmel) an der senkrechten 18-%-Karte zur Sonne / von der Sonne weg, Mittag klar",
+                        "quelle": "der klare Himmel ist zur Sonne heller (Mie-Hof, Rayleigh-Phase): Hillaire 2020 (CGF 39(4)) mit dem Welt-Gesetz 1,33–1,67 (scripts/diag-atmo-hillaire.cjs, Spike D3 110c3f99); Plan D3 (koordination auftrag/durchbruch-1510.md) ≥ 1,2"
                     }
                 ]
             },
@@ -276,8 +294,11 @@
                 }
             },
             "quellen": [
+                "foundry-core.js",
+                "stamm/05b.js",
                 "stamm/07.js",
                 "stamm/10.js",
+                "stamm/11d.js",
                 "stamm/19.js",
                 "stamm/24.js",
                 "stamm/25c.js"

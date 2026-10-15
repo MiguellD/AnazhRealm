@@ -815,7 +815,7 @@ class AnazhRealm_Z06b {
             Object.freeze({ t: 0.32, sky: 0xa05a52, light: 0xe8b298, intensity: 0.78 }),
             Object.freeze({ t: 0.38, sky: 0xc88060, light: 0xffd0a8, intensity: 0.9 }),
             // Stop 0.44 = sanfter Vormittag zwischen warmem Aufgang und blauem Mittag (sonst R-Sprung).
-            // Im Tag-Fenster (0.44–0.62) ist lightColor WEISS: die Rayleigh-Physik (`_atmosphere`) wärmt schon —
+            // Im Tag-Fenster (0.44–0.62) ist lightColor WEISS: die Atmosphäre (`_atmoSonne`) wärmt schon —
             // eine warme LUT darüber wärmte doppelt. Dämmerung/Nacht (≤0.38 / ≥0.68) sind eigene Dramaturgie;
             // uSunCol färbt nur den Himmel-Shader, nie das Richtlicht.
             Object.freeze({ t: 0.44, sky: 0x8e9bb8, light: 0xffffff, intensity: 0.95 }),
