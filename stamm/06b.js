@@ -388,7 +388,7 @@ class AnazhRealm_Z06b {
         const ax = hz; // die Kipp-Achse (horizontal, ⊥ h)
         const az = -hx;
         const v = this._todV || (this._todV = new THREE.Vector3());
-        creature.updateMatrixWorld(true);
+        this._leibMatrix(creature);
         let gesamt = 0;
         const istHaut = (o) => o.isMesh && !o.isInstancedMesh && o.geometry && o.geometry.attributes.position;
         // die Haut der gezeigten Stufe (Gestalt oder Fern-Guss, das Fell nach seinem Schirm-Gesetz) — die WURZEL zählt immer:
