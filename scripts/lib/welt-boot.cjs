@@ -224,8 +224,16 @@ function pulsSeite() {
         be.createRenderPipeline = function (ro) {
             const m = ro && ro.material;
             const o = ro && ro.object;
-            stempel(`Pipeline ${(m && (m.name || m.type)) || "?"} · ${(o && (o.name || o.type)) || "?"}`);
-            return crp.apply(this, arguments);
+            const p = ro && ro.pipeline;
+            const len = (s) => (s && typeof s.code === "string" ? s.code.length : "?");
+            const lichter = ro && ro.lightsNode && typeof ro.lightsNode.getLights === "function" ? ro.lightsNode.getLights().length : "?";
+            const name = `${(m && (m.name || m.type)) || "?"} · ${(o && (o.name || o.type)) || "?"}`;
+            stempel(`Pipeline ${name} · vs ${len(p && p.vertexProgram)} fs ${len(p && p.fragmentProgram)} Zeichen · ${lichter} Lichter`);
+            const t0 = performance.now();
+            const aus = crp.apply(this, arguments);
+            const ms = performance.now() - t0;
+            if (ms >= 500) sende("stempel", `Pipeline ${name} stand nach ${(ms / 1000).toFixed(1)} s (synchron)`);
+            return aus;
         };
     };
     const phase = () => {
@@ -310,7 +318,7 @@ function puls(A, payload) {
     const i = String(payload).indexOf("\t");
     const art = String(payload).slice(0, i);
     const text = String(payload).slice(i + 1);
-    if (art !== "puls") return ring(A.stempel, `${new Date().toISOString().slice(11, 23)} ${text}`, 8);
+    if (art !== "puls") return ring(A.stempel, `${new Date().toISOString().slice(11, 23)} ${text}`, 12);
     if (A.gemeldet && A.puls && Date.now() - A.puls.an >= A.b.stallMs) console.log(`[stall-akte] Seite #${A.id}: der Puls kehrt zurück nach ${sek(Date.now() - A.puls.an)} s — ${text}`);
     A.gemeldet = false;
     A.puls = { an: Date.now(), text };
