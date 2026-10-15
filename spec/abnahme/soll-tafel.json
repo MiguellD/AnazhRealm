@@ -1184,6 +1184,136 @@
             ]
         },
         {
+            "id": "tor-bunt",
+            "titel": "Tor-Öffnung bunt (die Membran der Studio-Tore trägt Farbe, je Stufe des Tors)",
+            "wirkung": {
+                "grund": "die Studio-Tore des Genesis-Rings mit dem Spieler am Ring (die Ankunft: Membran und Nebel wachen am Spieler, nicht am Auge), aus 30 m (die Tore in Stufe 1) und jenseits der Mesh-Zone (Stufe 3, die Fernform im Welt-March) — der Bildanteil ist die Apertur im Schuss mit der größten",
+                "mangel": {
+                    "befund": "die Öffnung der Tore liest unbunt: Milch und Nebel-Kasten (V18.546) bzw. die Wellen-Bänder ohne Ziel",
+                    "quelle": "Karte D8 (Zweig koordination, auftrag D8 Tor als Fenster; Spike spike-d8a-membran bfb79739: milchweiss 0,245)"
+                }
+            },
+            "referenz": [
+                {
+                    "titel": "Portal (Valve, 2007)",
+                    "technik": "die Öffnung zeigt die Zielwelt aus einer zweiten, durch das Portal transformierten Kamera (schräge Nah-Clip-Ebene nach Lengyel 2005, Stencil auf die Apertur) — kein Weiß, sondern das Ziel"
+                },
+                {
+                    "titel": "Ratchet & Clank: Rift Apart (Insomniac, 2021)",
+                    "technik": "der Riss trägt Farbe und Tiefe der Zielwelt; der Übergang ist eine farbige, atmende Hülle, nie eine ausgebrannte Fläche"
+                }
+            ],
+            "soll": {
+                "eigenschaften": [
+                    {
+                        "groesse": "oeffnungBunt",
+                        "band": [
+                            20,
+                            null
+                        ],
+                        "einheit": "das Mittel der Buntheit C*ab (CIELAB D65 aus den linearisierten sRGB-Pixeln) über alle Apertur-Pixel der Stufen-Schüsse",
+                        "quelle": "Nordstern §4.8 Portale „Farbe in Dünnfilm-Bändern“ (Soap Film 1, Simon Raffy CC BY 4.0); C*ab 20 = eine deutlich bunte Fläche (Fairchild, Color Appearance Models, 3. Aufl. 2013, Kap. 10: Buntheit unter 10 liest als nahezu unbunt)"
+                    }
+                ]
+            },
+            "budget": {
+                "haushalt": "bau"
+            },
+            "mass": {
+                "name": "oeffnungBunt",
+                "rechnung": {
+                    "apertur": "^portal-(membran|nebel)$",
+                    "tor": "^(?:f|fimp):(?:drachentor|maurentor|verkalkt|maschine|ruine|geisttor|kathedrale):L(\\d)$",
+                    "stufen": {
+                        "datei": "porta-core.js",
+                        "symbol": "PORTAL_RENDER_CONFIG",
+                        "feld": "lod.kindStages.gate",
+                        "budget": "lod.budget.gate",
+                        "ab": 1
+                    }
+                },
+                "werkzeug": "werkbank umstellen --ort genesis (der Spieler in der Ring-Mitte: die Ankunft); je Stufe s des Kerns ab 1 ein Bild: eine Mesh-Stufe (L1, ab 9,5 m) aus 30 m auf den Tor-Platz (werkbank bild -11.6 90.24 36.48 -2 +0.8 16 --wahl 0 --ziel tor-platz), die NUR-WURF-Stufe (L3, budget.gate[3].nurWurf) als ihre Fernform: der Spieler 145 m vom Ring (jenseits des Cull-Radius 105 m + Tor-Abstand, diesseits des Membran-Schlafs 180 m), die Kamera an ihm, der Blick 3 m vor die nächste Membran; je Schuss --klasse ^(portal-membran|portal-nebel|(f|fimp):(drachentor|maurentor|verkalkt|maschine|ruine|geisttor|kathedrale):L[0-3])$ --ist tor-fern:L<s>,tor-bunt:L<s>,tor-ziel:L<s> (D8: derselbe Schuss misst milchweiss, oeffnungBunt und zielTreue; tor-bunt)"
+            },
+            "quellen": [
+                "porta-core.js",
+                "foundry-core.js",
+                "stamm/07.js",
+                "stamm/10.js",
+                "stamm/19.js",
+                "stamm/24.js",
+                "stamm/25c.js",
+                "stamm/14.js",
+                "stamm/17a.js",
+                "stamm/17c.js",
+                "stamm/20b.js"
+            ]
+        },
+        {
+            "id": "tor-ziel",
+            "titel": "Tor-Öffnung zeigt ihr Ziel (die Membran liest das Panorama des Ziel-Studios, je Stufe des Tors)",
+            "wirkung": {
+                "grund": "die Studio-Tore des Genesis-Rings mit dem Spieler am Ring (die Ankunft: Membran und Nebel wachen am Spieler, nicht am Auge), aus 30 m (die Tore in Stufe 1) und jenseits der Mesh-Zone (Stufe 3, die Fernform im Welt-March) — der Bildanteil ist die Apertur im Schuss mit der größten",
+                "mangel": {
+                    "befund": "die Öffnung zeigt kein Ziel: am Kopf ein Wellen-March ohne Ziel, im Spike ein Host-Panorama der eigenen Welt (`_torPanorama`)",
+                    "quelle": "Karte D8 (Zweig koordination, auftrag D8 Tor als Fenster): Ziel aus dem EINEN Studio-Export je SHA"
+                }
+            },
+            "referenz": [
+                {
+                    "titel": "Portal (Valve, 2007)",
+                    "technik": "die Öffnung zeigt die Zielwelt aus einer zweiten, durch das Portal transformierten Kamera (schräge Nah-Clip-Ebene nach Lengyel 2005, Stencil auf die Apertur) — kein Weiß, sondern das Ziel"
+                },
+                {
+                    "titel": "Ratchet & Clank: Rift Apart (Insomniac, 2021)",
+                    "technik": "der Riss trägt Farbe und Tiefe der Zielwelt; der Übergang ist eine farbige, atmende Hülle, nie eine ausgebrannte Fläche"
+                }
+            ],
+            "soll": {
+                "eigenschaften": [
+                    {
+                        "groesse": "zielTreue",
+                        "band": [
+                            0.5,
+                            null
+                        ],
+                        "einheit": "Rang-Korrelation (Spearman) je Apertur-Pixel zwischen dem Bild der Öffnung und dem Ziel-Panorama, das der Parallaxen-Strahl desselben Pixels trifft, gewichtet über die Stufen-Schüsse",
+                        "quelle": "Nordstern §4.8 Portale „Membran zeigt das Ziel“ (Portal, Valve 2007; Lengyel 2005); r ≥ 0,5 = starke Korrelation (Cohen 1988)"
+                    }
+                ]
+            },
+            "budget": {
+                "haushalt": "bau"
+            },
+            "mass": {
+                "name": "zielTreue",
+                "rechnung": {
+                    "apertur": "^portal-(membran|nebel)$",
+                    "tor": "^(?:f|fimp):(?:drachentor|maurentor|verkalkt|maschine|ruine|geisttor|kathedrale):L(\\d)$",
+                    "stufen": {
+                        "datei": "porta-core.js",
+                        "symbol": "PORTAL_RENDER_CONFIG",
+                        "feld": "lod.kindStages.gate",
+                        "budget": "lod.budget.gate",
+                        "ab": 1
+                    }
+                },
+                "werkzeug": "werkbank umstellen --ort genesis (der Spieler in der Ring-Mitte: die Ankunft); je Stufe s des Kerns ab 1 ein Bild: eine Mesh-Stufe (L1, ab 9,5 m) aus 30 m auf den Tor-Platz (werkbank bild -11.6 90.24 36.48 -2 +0.8 16 --wahl 0 --ziel tor-platz), die NUR-WURF-Stufe (L3, budget.gate[3].nurWurf) als ihre Fernform: der Spieler 145 m vom Ring (jenseits des Cull-Radius 105 m + Tor-Abstand, diesseits des Membran-Schlafs 180 m), die Kamera an ihm, der Blick 3 m vor die nächste Membran; je Schuss --klasse ^(portal-membran|portal-nebel|(f|fimp):(drachentor|maurentor|verkalkt|maschine|ruine|geisttor|kathedrale):L[0-3])$ --ist tor-fern:L<s>,tor-bunt:L<s>,tor-ziel:L<s> (D8: derselbe Schuss misst milchweiss, oeffnungBunt und zielTreue; tor-ziel)"
+            },
+            "quellen": [
+                "porta-core.js",
+                "foundry-core.js",
+                "stamm/07.js",
+                "stamm/10.js",
+                "stamm/19.js",
+                "stamm/24.js",
+                "stamm/25c.js",
+                "stamm/14.js",
+                "stamm/17a.js",
+                "stamm/17c.js",
+                "stamm/20b.js"
+            ]
+        },
+        {
             "id": "fels",
             "titel": "Fels (Formationen-Satz)",
             "wirkung": {
