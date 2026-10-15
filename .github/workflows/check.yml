@@ -1085,7 +1085,10 @@ jobs:
               # --selftest zuerst: Verhaeltnis ueber der Ratsche, falsche Eichung, stumme Seite, fehlende Klasse werden rot, und
               # im echten r128 (swiftshader) liest die Labor-Linse die Karte 0,180 und ein roh gelesenes Hex (der alte Defekt
               # des Labors, als Taeter eingespielt) steht ueber dem Rand. Die Messung selbst: werkbank albedo --tafel (Welt,
-              # echte GPU) und diag-albedo-tafel.cjs --labor (Labor).
+              # echte GPU) und diag-albedo-tafel.cjs --labor (Labor). Der Stand je Zeile ist der Code-Abdruck ihrer Quellen
+              # (K63-n8: Token ohne Kommentar und Leerraum): eine veraltete Zeile steht ROT "veraltet seit <Commit>" und bricht
+              # keinen Merge; auf der Karte (Job echt des Messplatzes) misst dieser Schritt sie selbst neu und urteilt die
+              # frischen Zahlen - auf swiftshader nicht (gemessen 15.10.: die Welt-Seite liest rinde x0,10, fell +15 %).
               run: npm run gate:albedo-tafel
 
             - name: Die Albedo nah gegen fern (0910-8 — EINE Boden-Farbe je Ort, die weisse Masse)
@@ -1133,6 +1136,10 @@ jobs:
               # die Slots positions-deterministisch, wasser-bewacht (_fundamentLand: das ganze Fundament auf dem Land) und
               # fail-closed in die Welt (haus_<kultur> aus der KIND_POLICY-Tabelle, kein
               # Literal; Anker durch _structureSpawnPos; Chat "dorf"). Inkl. Selbst-Test.
+              # Teil O (K10, Pflicht-OFFEN C): der Ort am Hang haelt Sockel 0, jede Tuer, Kronen 0, Plan-Hash Studio = Welt,
+              # den GT auf dem Dorfweg und DAS DORF-LICHT DER GASSE: nachts >= 4 brennende Quellen mit Leib (_leuchtQuellen)
+              # im Sichtkegel der Gasse, kein Grundriss dazwischen (gassenLicht), der Licht-Pool der Gasse traegt sie; der
+              # Schein mit dunklem Zeitplan muss 0 zaehlen (Selbst-Test 16 und O: Selbst-Schein).
               run: npm run gate:settlement
 
             - name: Das Studio-Dorf begehen (Welle L — Hülle je Haus, Treppe, Keller-Decke, Fluss, Antike)

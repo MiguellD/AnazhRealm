@@ -39,9 +39,9 @@
         },
         "v4": {
             "kern": "porta-core.js",
-            "faelle": 23,
+            "faelle": 30,
             "kippt": {},
-            "soll": "0 - erreicht: porta-core ausRaster am Ausgang (S1, Re-Mint mit Grund: Node 22 rot 16/16); K43 die Stufe 1 je Ordnung dazu (16 -> 23 Faelle, keiner kippt)"
+            "soll": "0 - erreicht: porta-core ausRaster am Ausgang (S1, Re-Mint mit Grund: Node 22 rot 16/16); K43 die Stufe 1 je Ordnung dazu (16 -> 23 Faelle, keiner kippt); K64 die Stufe 2 je Ordnung dazu (23 -> 30 Faelle, keiner kippt)"
         },
         "v5": {
             "kern": "schmiede-core.js",
@@ -80,8 +80,8 @@
         },
         "v6a": {
             "kern": "fachwerk-core.js",
-            "faelle": 22,
-            "probe": "jede Ausstattung (Feuerstelle, Marktstand, Brunnen) x Gestalt x Stufe (0/1/3) + ov",
+            "faelle": 25,
+            "probe": "jede Ausstattung (Feuerstelle, Marktstand, Brunnen, Laterne) x Gestalt x Stufe (0/1/3) + ov",
             "kippt": {},
             "soll": "0 - erreicht: ausRaster am Ausgang der Ausstattung (Architektur-Welle 05.10.)"
         },

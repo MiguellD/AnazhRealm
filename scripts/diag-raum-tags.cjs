@@ -187,39 +187,48 @@ if (process.argv.includes("--selftest")) {
     const stamm = quellWand(stammQ);
     for (const b of stamm.befunde) v.push("STAMM: " + b);
     if (stamm.baum.length < 8) v.push(`STAMM: der Aufrufbaum ist stumpf (${stamm.baum.join(", ")})`);
-    const ein = (was, alt, neu, satz) => {
-        if (!stammQ.includes(alt)) return v.push(`Probe „${was}": Anker fehlt im Stamm (${alt})`);
-        const b = quellWand(stammQ.replace(alt, neu)).befunde;
+    // Die Probe sitzt am Kopf der Methode, gefunden am NAMEN (gate:apparat Klinge 3): `vor` steht vor dem Kopf, `nach`
+    // hinter seiner Klammer — eine neue Parameter-Liste bricht keine Probe.
+    const ein = (was, name, vor, nach, satz) => {
+        const a = stammLib.kopf(stammQ, name);
+        if (a < 0) return v.push(`Probe „${was}": Anker fehlt im Stamm (${name})`);
+        const z = stammQ.indexOf("{", a) + 1;
+        const b = quellWand(stammQ.slice(0, a + 1) + vor + stammQ.slice(a + 1, z) + nach + stammQ.slice(z)).befunde;
         if (!b.some((x) => x.includes(satz))) v.push(`${was} fällt nicht rot (${JSON.stringify(b.slice(0, 3))})`);
     };
     ein(
         "ein Zustands-Leser im Aufrufbaum",
-        "    _hasResonantArray(blueprint) {",
-        "    _hasResonantArray(blueprint) {\n        if (this.state.weather === 'x') return false;",
+        "_hasResonantArray",
+        "",
+        "\n        if (this.state.weather === 'x') return false;",
         "this.state.weather"
     );
     ein(
         "ein Instanz-Feld im Aufrufbaum",
-        "    _partBoundingBox(part) {",
-        "    _partBoundingBox(part) {\n        if (this._raumNebel) return null;",
+        "_partBoundingBox",
+        "",
+        "\n        if (this._raumNebel) return null;",
         "Instanz-Feld this._raumNebel"
     );
     ein(
         "ein Schreiber einer gelesenen Tabelle",
-        "    _raumTagGleich(a, b) {",
-        "    _raumTagNeu() {\n        AnazhRealm.SPATIAL_HOLLOW_SHAPES.add('cube');\n    }\n\n    _raumTagGleich(a, b) {",
+        "_raumTagGleich",
+        "    _raumTagNeu() {\n        AnazhRealm.SPATIAL_HOLLOW_SHAPES.add('cube');\n    }\n\n",
+        "",
         "AnazhRealm.SPATIAL_HOLLOW_SHAPES"
     );
     ein(
         "ein Zuweiser einer gelesenen Tabelle",
-        "    _raumTagGleich(a, b) {",
-        "    _raumTagNeu() {\n        AnazhRealm.FORM_TAG_ACTIVATION.cube.härte = 3;\n    }\n\n    _raumTagGleich(a, b) {",
+        "_raumTagGleich",
+        "    _raumTagNeu() {\n        AnazhRealm.FORM_TAG_ACTIVATION.cube.härte = 3;\n    }\n\n",
+        "",
         "AnazhRealm.FORM_TAG_ACTIVATION"
     );
     ein(
         "ein Leser vorbei am Gedächtnis",
-        "    _raumTagGleich(a, b) {",
-        "    _raumTagNeu(bp) {\n        return this._raumTagsRechnen(bp);\n    }\n\n    _raumTagGleich(a, b) {",
+        "_raumTagGleich",
+        "    _raumTagNeu(bp) {\n        return this._raumTagsRechnen(bp);\n    }\n\n",
+        "",
         "vorbei am Gedächtnis"
     );
     for (const x of v) console.log("  ❌ " + x);

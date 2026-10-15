@@ -124,7 +124,7 @@ function deriveGestalt(srcNC) {
     // Die DEFINITION ankern (newline + Einrueckung + oeffnende Klammer) — der nackte Name
     // matcht sonst die erste CALL-SITE (`this._foundryPresetForEntry(entry)`) und fnBody
     // extrahiert einen fremden Block.
-    const resolver = fnBody(anazhNC, /\n\s+_foundryPresetForEntry\(entry\)\s*\{/);
+    const resolver = fnBody(anazhNC, /\n\s+_foundryPresetForEntry\([^)]*\)\s*\{/);
     check(
         "S2: der Resolver-Block ist GENERISCH (liest studioGestalt + LIVE-Buch, foundry-gegated, KEIN welt_-Literal)",
         resolver !== null &&

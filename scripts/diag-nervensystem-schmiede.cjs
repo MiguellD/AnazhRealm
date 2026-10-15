@@ -39,6 +39,7 @@ const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
+const kernStufen = require("./lib/kern-stufen.cjs");
 
 const PORT = Number(process.env.NERV_SCHMIEDE_PORT || 4433);
 const root = path.resolve(__dirname, "..");
@@ -114,7 +115,7 @@ function staticLaws(anazhSrc, scSrc, manifestSrc) {
     // ABSCHIEDS-WELLE (V9.56-i + die V18.440-fnBody-Lehre): die Probe ankert auf der
     // DEFINITIONS-Form (\\(book\\)\\s*\\{) — die CALL-SITE in _foundryIngestRecipes steht
     // im File VOR der Definition und schnitte sonst den falschen Body.
-    const autoReg = fnBody(anazhNC, /_foundryAutoRegisterSpecies\(book\)\s*\{/);
+    const autoReg = fnBody(anazhNC, /_foundryAutoRegisterSpecies\([^)]*\)\s*\{/);
     out.push([
         "S3: der Auto-Register-Chokepoint laeuft die Policy-Tabelle (kein kind-String-Vergleich, M8) und loest den Donor ueber KIND_SUBSTANCE + donorTool (AUSLÖSCHUNGS-WELLE)",
         autoReg !== null &&
@@ -157,9 +158,9 @@ function staticLaws(anazhSrc, scSrc, manifestSrc) {
     // Anker = die DEFINITIONS-Form (Zeilenanfang + Methoden-Einzug): ein Regex auf den
     // nackten Namen traefe die CALL-SITE zuerst (this._refreshHeldMesh() im Restore liegt
     // VOR der Definition) und lieferte den falschen Body — gemessen (W-A4b-Heilung).
-    const refreshBody = fnBody(anazhNC, /\n    _refreshHeldMesh\(\)\s*\{/);
-    const heldSrcBody = fnBody(anazhNC, /\n    _heldFoundryGroup\(bpName\)\s*\{/);
-    const disposeBody = fnBody(anazhNC, /\n    _disposeSoulGroup\(group\)\s*\{/);
+    const refreshBody = fnBody(anazhNC, /\n    _refreshHeldMesh\([^)]*\)\s*\{/);
+    const heldSrcBody = fnBody(anazhNC, /\n    _heldFoundryGroup\([^)]*\)\s*\{/);
+    const disposeBody = fnBody(anazhNC, /\n    _disposeSoulGroup\([^)]*\)\s*\{/);
     out.push([
         "S8: der Hand-Konsument ist verdrahtet — buildHand liest _heldFoundryGroup (die erste Zeichnung traegt die Erst-Zeichnung des Renderers, kein Vorwaermen), die Quelle nutzt die EINE Wrapper-Quelle (_workshopWrapFoundryGroup) + den Welt-Cache (_foundryCacheGet), der Dispose-Chokepoint traegt die sharedGeom-Wand + Ref-Rueckgabe",
         refreshBody !== null &&
@@ -266,9 +267,7 @@ function staticLaws(anazhSrc, scSrc, manifestSrc) {
         res.b.paramsWeapon =
             f && f.paramsByKind && Array.isArray(f.paramsByKind.weapon) ? f.paramsByKind.weapon.length : -1;
         res.b.ksWeapon = ks ? JSON.stringify(ks.weapon) : null;
-        res.b.ksTree = ks ? JSON.stringify(ks.tree) : null;
-        res.b.ksVehicle = ks ? JSON.stringify(ks.vehicle) : null;
-        res.b.ksGate = ks ? JSON.stringify(ks.gate) : null;
+        res.b.ks = ks ? JSON.parse(JSON.stringify(ks)) : null;
         // ===== D: der AUTO-BLUEPRINT (Donor-Klon am EINEN Chokepoint) =====
         try {
             const bp = r.state.blueprints && r.state.blueprints.klinge_langschwert;
@@ -529,6 +528,8 @@ function staticLaws(anazhSrc, scSrc, manifestSrc) {
         }
         return res;
     });
+    // Die Erwartung der Stufen: die Kerne in der Seite (dieselben Dateien wie der Worker), nie eine Abschrift (K64).
+    const kern = await page.evaluate(kernStufen.seitenStufen, kernStufen.kernRaeume());
 
     await browser.close();
     server.close();
@@ -551,9 +552,12 @@ function staticLaws(anazhSrc, scSrc, manifestSrc) {
         String(out.b.paramsWeapon)
     );
     check("B: kindStages.weapon == [0] (N7.5-Merge am Ingest)", out.b.ksWeapon === "[0]", String(out.b.ksWeapon));
-    check("B: foundry-core-kinds UNANGETASTET (tree [0,1,2])", out.b.ksTree === "[0,1,2]", String(out.b.ksTree));
-    check("B: vehicle-kindStages UNANGETASTET ([0,1] — die Stufe 1 seit K43-2)", out.b.ksVehicle === "[0,1]", String(out.b.ksVehicle));
-    check("B: gate-kindStages UNANGETASTET ([0,1,3] — die Stufe 1 seit K43, die NUR-WURF-Stufe 3, 1110-9)", out.b.ksGate === "[0,1,3]", String(out.b.ksGate));
+    const abweichung = kernStufen.stufenAbweichung(out.b.ks, kern);
+    check(
+        "B: der Ingest-Merge traegt die Stufen-Liste JEDES Kerns (kein Kern ueberschreibt einen anderen)",
+        abweichung.length === 0,
+        abweichung.join(" · ") || `${Object.keys(kern).length} Arten`
+    );
     check(
         "D: Auto-Blueprint klinge_langschwert registriert (Donor-Klon)",
         out.d.blueprint === true && out.d.parts >= 2,

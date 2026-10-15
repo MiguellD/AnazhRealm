@@ -11,7 +11,7 @@
 // die gezeichnete Gestalt, die Instanz-Matrix: Lage, Gier, Welt-Skala × Skala) gegen seine KOLLISION (die Blocker-Boxen, jede
 // in ihrem Rahmen — eine gedrehte Box in ihrer obb):
 //   (B) BLOCKER OHNE BILD: keine Box ragt seitlich mehr als SEITE_M über das Bild hinaus, oben mehr als max(SEITE_M; OBEN_ANTEIL
-//       der Bild-Höhe); das Fundament ist Blocker UND Podest aus derselben Box (`_archFundamentBox`) und zählt nicht;
+//       der Bild-Höhe) — jede Box zählt (das Podest fiel mit dem Erdbau des Orts, K10);
 //   (U) BILD OHNE BLOCKER (umgekehrt): ein FESTES Werk (Fels · Haus · Tor · Wagen · Ausstattung) trägt Boxen, ein Baum seinen
 //       Stamm (≥ 1 Box); bei Fels, Tor und Wagen (STRENG — ihre Hülle misst die gezeichnete Gestalt: fx.huellen, TOR_HUELLE,
 //       exportDrive.huelle) liegt jeder Punkt des Bilds im Körper-Band (0,1–KOERPER_BAND_M über der Basis, wo Spieler, Tier
@@ -62,6 +62,7 @@ const PFLICHT_EXEMPLARE = [
     "haus_alemannisch",
     "brunnen_dorf",
     "marktstand_dorf",
+    "laterne_dorf",
 ];
 
 // Das Urteil über einen Befund: Liste der Verstöße (leer = grün). Rein, im Selbsttest wie im Lauf.
@@ -353,7 +354,6 @@ async function probe(K) {
         const ph = globalThis.__terrainCore.PHYTO_PRESETS[pr];
         return ph ? ph.kind : null;
     };
-    const istFundament = (b) => b.ex !== undefined && b.ry !== undefined && b.x !== undefined;
     // eine Box im eigenen Rahmen: (u, w) längs ihrer Achsen, Halb-Maße
     const rahmen = (b) =>
         b.obb
@@ -409,7 +409,7 @@ async function probe(K) {
             if (W[i + 2] > z1) z1 = W[i + 2];
         }
         const bildTxt = (x1 - x0).toFixed(1) + "×" + (y1 - y0).toFixed(1) + "×" + (z1 - z0).toFixed(1);
-        const B = (e.blockerAABBs || []).filter((b) => !istFundament(b));
+        const B = e.blockerAABBs || [];
         const funde = [];
         // (G) die Gestalt des Fels-Blockers gegen die gezeichnete
         if (kind === "rock") {

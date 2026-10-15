@@ -293,6 +293,129 @@ function dateiVon(root, methode) {
     return null;
 }
 
+// Der Kopf einer Klassen-Methode am NAMEN: der Index des Zeilenumbruchs vor `    [static ][async ][get |set ]name(`, ab
+// `ab`; -1 ohne Treffer. Eine Linse findet eine Methode an ihrem Namen, nie an ihrer Parameter-Liste — ein neuer Parameter
+// bricht keine Linse, die ihn nicht prüft (gate:apparat, Klinge 3).
+function kopf(t, methode, ab = 0) {
+    const name = methode.replace(/[$]/g, "\\$");
+    const rx = new RegExp(`\\n {4}(?:static\\s+)?(?:async\\s+)?(?:get\\s+|set\\s+)?\\*?${name}\\(`, "g");
+    rx.lastIndex = ab;
+    const m = rx.exec(t);
+    return m ? m.index : -1;
+}
+
+// DIE GLIEDER AM AST (K38-N2, Prüfer Runde 3) — eine Linse, die Code einer Methode zuordnet, liest die Glieder der Klassen
+// am AST (acorn), nie an einem Kopf-Muster: ein Kopf mit Default-Parametern (`_x(a = f()) {`), ein umbrochener Kopf, ein
+// Getter oder ein `async`-Kopf machten jedes Muster blind, und der Aufruf fiel still der Methode davor zu (gate:apparat,
+// Klinge 4, nennt jedes Kopf-Muster). `glieder(t)` liefert jedes äußerste Glied einer Klasse (Methode, Getter, Feld) mit
+// Bereich und Zeilen, `gliedAn(gl, i)` das Glied um einen Index, `rufe(t)` jeden Aufruf mit seinem Glied, dem Gerufenen
+// als Text und den Argument-Knoten (ein Argument ist ein Knoten — `s.cam || s.camera` und `f(a, b)` sind je EINES).
+// `wandere(n, f)` geht jeden Knoten mit seinen Ahnen (f gibt false: nicht tiefer). Je Text EINMAL geparst.
+let astMerk = { t: null };
+function ast(t) {
+    if (astMerk.t !== t) {
+        const acorn = require("acorn");
+        const baum = acorn.parse(t, { ecmaVersion: "latest", sourceType: "script", allowHashBang: true });
+        const zeilenAb = [0];
+        for (let i = t.indexOf("\n"); i !== -1; i = t.indexOf("\n", i + 1)) zeilenAb.push(i + 1);
+        astMerk = { t, baum, zeilenAb, glieder: null, rufe: null };
+    }
+    return astMerk.baum;
+}
+// Die Zeile (1-basiert) eines Index im zuletzt geparsten Text.
+function zeileVon(t, i) {
+    ast(t);
+    const z = astMerk.zeilenAb;
+    let lo = 0,
+        hi = z.length - 1;
+    while (lo < hi) {
+        const mid = (lo + hi + 1) >> 1;
+        if (z[mid] <= i) lo = mid;
+        else hi = mid - 1;
+    }
+    return lo + 1;
+}
+function wandere(n, f, ahnen = []) {
+    if (f(n, ahnen) === false) return;
+    ahnen.push(n);
+    for (const k in n) {
+        const v = n[k];
+        if (Array.isArray(v)) {
+            for (const c of v) if (c && typeof c.type === "string") wandere(c, f, ahnen);
+        } else if (v && typeof v.type === "string" && k !== "loc") wandere(v, f, ahnen);
+    }
+    ahnen.pop();
+}
+const schluesselVon = (t, n) =>
+    !n.computed && (n.key.type === "Identifier" || n.key.type === "PrivateIdentifier")
+        ? n.key.name
+        : n.key.type === "Literal"
+          ? String(n.key.value)
+          : t.slice(n.key.start, n.key.end);
+function glieder(t) {
+    ast(t);
+    if (astMerk.glieder) return astMerk.glieder;
+    const out = [];
+    wandere(astMerk.baum, (n) => {
+        if (n.type !== "MethodDefinition" && n.type !== "PropertyDefinition") return true;
+        out.push({
+            name: schluesselVon(t, n),
+            art: n.kind || "feld",
+            statisch: !!n.static,
+            start: n.start,
+            ende: n.end,
+            zeile: zeileVon(t, n.start),
+            bisZeile: zeileVon(t, n.end - 1),
+            knoten: n,
+        });
+        return false; // das äußerste Glied: was in ihm steht (auch eine innere Klasse), gehört ihm
+    });
+    out.sort((a, b) => a.start - b.start);
+    return (astMerk.glieder = out);
+}
+function gliedAn(gl, i) {
+    let lo = 0,
+        hi = gl.length - 1,
+        g = null;
+    while (lo <= hi) {
+        const mid = (lo + hi) >> 1;
+        if (gl[mid].start <= i) {
+            g = gl[mid];
+            lo = mid + 1;
+        } else hi = mid - 1;
+    }
+    return g && i < g.ende ? g : null;
+}
+function rufe(t) {
+    const gl = glieder(t);
+    if (astMerk.rufe) return astMerk.rufe;
+    const out = [];
+    wandere(astMerk.baum, (n) => {
+        if (n.type !== "CallExpression") return true;
+        const c = n.callee;
+        const name =
+            c.type === "Identifier"
+                ? c.name
+                : c.type === "MemberExpression" && !c.computed
+                  ? c.property.name
+                  : c.type === "MemberExpression" && c.property.type === "Literal"
+                    ? String(c.property.value)
+                    : null;
+        const g = gliedAn(gl, n.start);
+        out.push({
+            ziel: t.slice(c.start, c.end),
+            name,
+            glied: g ? g.name : null,
+            args: n.arguments,
+            start: n.start,
+            ende: n.end,
+            knoten: n,
+        });
+        return true;
+    });
+    return (astMerk.rufe = out);
+}
+
 // Die Stamm-Datei, die den Text `stelle` trägt (ein Server-Patcher fragt, wohin seine Zeile gehört): genau eine → ihr
 // Pfad; keine → null; mehrere → wirft (der Patch wäre mehrdeutig).
 function dateiMit(root, stelle) {
@@ -441,6 +564,13 @@ module.exports = {
     textAusRev,
     ort,
     dateiVon,
+    kopf,
+    ast,
+    zeileVon,
+    wandere,
+    glieder,
+    gliedAn,
+    rufe,
     dateiMit,
     istStammDatei,
     istStammUrl,
@@ -476,6 +606,30 @@ if (require.main === module && process.argv.includes("--selftest")) {
         return d;
     };
     try {
+        // 0) die Glieder am AST: ein Kopf mit Default-Parameter, ein umbrochener, ein Getter und ein async-Kopf behalten
+        // ihren Aufruf; ein zusammengesetztes Argument ist EIN Argument (die Täter der Kopf- und Argument-Muster, K38-N2).
+        const G = [
+            "class A {",
+            "    _a() { x.render(s, c); }",
+            "    _b(k, o = f(1), cb = () => {}) { s.renderer.render(s.scene, s.cam || s.camera); }",
+            "    _c(",
+            "        a,",
+            "        b",
+            "    ) { r.render(q ? s : t, h(c, d)); }",
+            "    get d() { return this._z(1); }",
+            "    async _e() { await y.render(a, b); }",
+            "}",
+        ].join("\n");
+        const rs = rufe(G).filter((r) => r.name === "render" || r.ziel === "this._z");
+        pruef(
+            "rufe/glieder: jeder Aufruf bei seinem Glied, Argumente als Knoten",
+            rs.map((r) => `${r.glied}:${r.args.length}`).join(",") === "_a:2,_b:2,_c:2,d:1,_e:2" &&
+                glieder(G)
+                    .map((g) => `${g.name}@${g.zeile}-${g.bisZeile}`)
+                    .join(",") === "_a@2-2,_b@3-3,_c@4-7,d@8-8,_e@9-9" &&
+                gliedAn(glieder(G), G.indexOf("class A")) === null,
+            rs.map((r) => `${r.glied}:${r.args.length}`).join(",")
+        );
         const lay = layout(root);
         const T = text(root);
         // 1) heute: text() = die Datei, Byte für Byte

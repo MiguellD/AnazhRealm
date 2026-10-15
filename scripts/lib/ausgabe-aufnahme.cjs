@@ -321,19 +321,12 @@ function buehne() {
     // Das Wetter hält wie die Saison: Sonne über den EINEN Schreiber, dann eingefroren (`__wetterSetzen`).
     window.__wetterSetzen("sunny");
     if (typeof r._tickRain === "function") r._tickRain(performance.now());
-    if (typeof r._applyDayNightToScene === "function") r._applyDayNightToScene();
-    // Die Himmels-Umgebung (IBL) malt der Loop aus der Nebel-Farbe — gedrosselt und nur bei Drift. Bei
-    // ruhendem Loop hielt sie den Himmel des LETZTEN Laufs (gemessen 01.10.: nach einem Mitternachts-Schuss
-    // lag mittags die Nacht-Umgebung, Himmel E 0,28 statt 1,89). Die Bühne malt sie mit, dann sieht die
-    // Belichtung (sie liest die Umgebung) denselben Himmel wie die Materialien — wenn der Himmel driftet, nach
-    // der Drift-Schwelle des Loops; für die Bühne fällt nur die Raten-Drossel (SKY_ENV_REGEN_MIN_MS). Bis 07.10.
-    // erzwang jeder Aufruf eine PMREM-Regeneration (`_ensureSkyEnvironment(true)`, ~25 Render-Pässe), und das
-    // Einschwingen von `werkbank band` ruft die Bühne je Takt: der Zeitstempel-Pool lief voll (die Stempel-Wache
-    // nannte 806 von 815 verweigerten Abfragen „OrthographicCamera → PMREM.cubeUv"), jede Pass-Zeit danach war blind.
-    if (typeof r._ensureSkyEnvironment === "function") {
-        st._skyEnvLastRegenMs = -Infinity;
-        r._ensureSkyEnvironment(false);
-    }
+    // Die Bühne SPRINGT Uhr, Wetter und Saison: der Sprung des Himmels (`_himmelSprung`, das Gesetz des Uhr-Schreibers) malt
+    // die Himmels-Umgebung beim Anwenden des Tags aus den Quellen, die jetzt gelten — an der Raten-Drossel vorbei, nie an der
+    // Drift-Schwelle (gemessen 01.10.: ohne Neu-Anstrich lag nach einem Mitternachts-Schuss mittags die Nacht-Umgebung, Himmel
+    // E 0,28 statt 1,89). Bis 07.10. erzwang jeder Aufruf eine PMREM-Regeneration (~25 Render-Pässe), und das Einschwingen von
+    // `werkbank band` ruft die Bühne je Takt: der Zeitstempel-Pool lief voll — ohne Drift malt der Sprung nichts.
+    r._himmelSprung = true;
     if (typeof r._applyDayNightToScene === "function") r._applyDayNightToScene();
     return { saison: st.season, phase: st.seasonPhase, wetter: st.weather };
 }
@@ -365,10 +358,14 @@ function tiereHalten() {
 // Pause für den GPU-Prozess, bis ein Frame nichts mehr baut oder verschiebt, kein Draw auf seine Pipeline wartet und keine
 // Pipeline offen ist. Steht die Erst-Zeichnung `opt.erstFristMs` (120 s) ohne Fortschritt oder fünfmal so lange insgesamt,
 // bricht `wer` LAUT ab und nennt jede offene Pipeline beim Namen. Ohne Erst-Zeichnung (Null-Renderer) null.
+// `opt.nurGezeichnete` (K64-n3): ein Bild, das nur einen Teil der Szene zeichnet (eine Render-Objekt-Funktion lässt Bürger
+// aus), wartet nur auf das, was es zeichnet — der Frame baut nichts, verschiebt nichts, kein Draw wartet; offene Pipelines
+// ausgelassener Bürger (die Welt stieß sie vor dem Bild an) zählen nicht.
 function erstRuhe(frame, opt, wer) {
     return (async () => {
         const E = window.anazhRealm._erstZeichnung;
         if (!E) return null;
+        const offenZaehlt = !(opt && opt.nurGezeichnete);
         const tE = performance.now();
         let tFort = tE,
             stand = "";
@@ -397,7 +394,7 @@ function erstRuhe(frame, opt, wer) {
             await new Promise((res) => setTimeout(res, 0));
             // der Blick steht, wenn ein Frame nichts baut, nichts verschiebt, kein Draw auf seine Pipeline wartet
             // und kein Bundle ohne einen Bürger versiegelt ist (der wartende Draw zählt auf jedem Backend)
-            if (E.offen.size === 0 && E.bauN === b0 && E.verschoben === v0 && E.wartetN === w0) break;
+            if ((!offenZaehlt || E.offen.size === 0) && E.bauN === b0 && E.verschoben === v0 && E.wartetN === w0) break;
             const jetzt = performance.now();
             const s = `${E.bauN}|${E.verschoben}|${E.offen.size}|${E.bereitN}`;
             if (s !== stand) {
@@ -622,9 +619,14 @@ function ausgabeAufnahme(W, H, warm, opt) {
             // Der Szenen-Pass der Post-Pipeline (PassNode) rendert nur einmal je NODE-FRAME; den schaltet
             // im Vendor die Animations-Schleife weiter. Bei ruhendem Loop schaltet die Aufnahme ihn selbst —
             // sonst überspringt der gezählte Frame die Szene (gemessen: dc=1, Dreiecke=1, nur das Quad).
+            // DIE EINE UHR der Mess-Schüsse (`opt.fest`, eine Zeit in ms; K63-n1, die Klassen-Teilung der Soll-Tafel): jeder Frame
+            // rendert zu DIESER Zeit (Wind, Wasser, Glut stehen), und vor den Warm-Frames beginnen TRAA-Folge, ihre Geschichte und
+            // die Dither-Phase von vorn — zwei Schüsse derselben Szene sind dann dasselbe Bild, ein Schuss ohne eine Klasse
+            // unterscheidet sich nur, wo sie sichtbar ist (gemessen je Aufruf: `bildRauschen` zweier gleicher Schüsse).
+            const zeit = () => (opt && opt.fest != null ? opt.fest : performance.now());
             const frame = () => {
                 if (rend._nodes && rend._nodes.nodeFrame) rend._nodes.nodeFrame.update();
-                r._loopRender(performance.now());
+                r._loopRender(zeit());
             };
             // Die NAH-WIESE folgt der Kamera (Kachel-Ring, `_tickNahWiese` im scatterDeco-Takt). Bei ruhendem
             // Loop stand der Ring noch um die VORIGE Kamera — die Aufnahme schwingt ihn für diese ein (eine
@@ -645,6 +647,18 @@ function ausgabeAufnahme(W, H, warm, opt) {
             // halben Sekunde Stillstand sieht (32 Frames), nie den ersten, ungemittelten Frame nach dem Kamera-Sprung.
             // Nach dem Sprung läuft die Geschichte als MITTEL an (K68, `_zeitAufloesung` `_anlauf`): jeder der 32 Frames
             // wiegt gleich, die Dither-Blende steht als Mischton im Bild, nie als Schachbrett des ersten Frames.
+            if (opt && opt.fest != null) {
+                const tn = r.state.traaNode;
+                if (tn) {
+                    tn._jitterIndex = 0;
+                    // die Geschichte neu: ein Größen-Wechsel lässt den Vendor sie aus dem ersten Bild kopieren (TRAANode
+                    // `needsRestart`)
+                    if (tn._historyRenderTarget) tn._historyRenderTarget.setSize(1, 1);
+                }
+                if (r.state._traaR) r.state._traaR.neu = true;
+                const lu = r.state.lodUniforms;
+                if (lu && lu.uDitherT) lu.uDitherT.value = 0;
+            }
             const nWarm = Math.max(warm == null ? 1 : warm, r.state.traaNode ? 32 : 0);
             for (let k = 0; k < nWarm; k++) frame();
             const t0 = performance.now();

@@ -292,26 +292,18 @@ const SELBST = process.argv.includes("--selftest");
             })();
             // T8 — der Abgelaufene bleibt im Faden: zwei Aufträge (Frist 600 ms) an einen Worker, der lange baut. Läuft der
             // erste ab, bekommt sein Besteller null — aber die Uhr des zweiten startet nicht, solange der Worker den ersten
-            // noch baut (sein Geist hält Platz und Uhr). Die alte Frist löschte ihn: der zweite lief eine Sekunde später ab.
+            // noch baut (sein Geist hält Platz und Uhr). Die alte Frist löschte ihn: der zweite lief eine Frist später ab.
+            // Die Uhr startet am Ereignis (K38-N2, `_foundryUhren`): der erste läuft bei 600 ms ab, sein Geist hält bis
+            // 600 + GEIST_FACH × 600 ms — gemessen wird dazwischen (2 s).
             const fristEcht = Object.prototype.hasOwnProperty.call(r, "_foundryFrist") ? r._foundryFrist : null;
+            const fristGeist = r._foundryFrist;
+            // die löschende Frist auf derselben Uhr: der Abgelaufene fällt sofort aus dem Faden, statt als Geist zu halten
             const fristAlt = function (f, reqId, dauerMs, beiAblauf) {
-                const nr = (id) => Number(String(id).replace(/^\D+/, ""));
-                let start = null;
-                const pruefe = () => {
-                    if (!f.pending.has(reqId)) return;
-                    let vorMir = false;
-                    for (const k of f.pending.keys()) if (nr(k) < nr(reqId)) vorMir = true;
-                    const jetzt = performance.now();
-                    if (vorMir) start = null;
-                    else if (start === null) start = jetzt;
-                    if (start !== null && jetzt - start > dauerMs) {
-                        f.pending.delete(reqId);
-                        beiAblauf();
-                        return;
-                    }
-                    setTimeout(pruefe, 1000);
-                };
-                setTimeout(pruefe, 1000);
+                fristGeist.call(this, f, reqId, dauerMs, () => {
+                    f.pending.delete(reqId);
+                    this._foundryUhren(f);
+                    beiAblauf();
+                });
             };
             const t8 = await (async () => {
                 const f = { ready: true, worker: { postMessage: () => {} }, pending: new Map(), reqSeq: 1 };
@@ -325,7 +317,7 @@ const SELBST = process.argv.includes("--selftest");
                             .then((x) => (aus8[k] = x === null ? "abgelaufen" : "beantwortet"));
                     auftrag("lang", "erster");
                     auftrag("dahinter", "zweiter");
-                    await new Promise((res) => setTimeout(res, 3600));
+                    await new Promise((res) => setTimeout(res, 2000));
                     // der Geist des ersten (r1) hält noch seinen Platz — die Welt läuft weiter und darf derweil eigene
                     // Aufträge an das Doppel stellen (spätere Nummern, sie berühren keine der beiden Uhren)
                     aus8.geist = f.pending.has("r1");

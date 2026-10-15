@@ -176,8 +176,8 @@ function selbsttest() {
         {
             name: "H1 ein Werkstatt-Schieber von Hand im Stamm (stamm/23b.js)",
             rel: Object.keys(echt).find((r) => /^stamm\/23b\.js$/.test(r)),
-            vor: "_workshopRenderStudioParams(panel, bp) {",
-            nach: '_workshopRenderStudioParams(panel, bp) {\n        const _t = document.createElement("input");\n        _t.type = "range";',
+            vor: /(_workshopRenderStudioParams\([^)]*\) \{)/,
+            nach: '$1\n        const _t = document.createElement("input");\n        _t.type = "range";',
             soll: /^H1 stamm\/23b\.js: 1 Hand-Regler/,
         },
         {
@@ -266,12 +266,13 @@ function selbsttest() {
     }
     for (const f of faelle) {
         const t = f.rel && echt[f.rel];
-        if (!t || !t.includes(f.vor)) {
-            console.log(`❌ SELBST-TEST ${f.name} — Fundstelle fehlt (${f.rel}: ${f.vor.slice(0, 40)})`);
+        const am = f.vor instanceof RegExp; // ein Methoden-Kopf am NAMEN (gate:apparat Klinge 3)
+        if (!t || !(am ? f.vor.test(t) : t.includes(f.vor))) {
+            console.log(`❌ SELBST-TEST ${f.name} — Fundstelle fehlt (${f.rel}: ${String(f.vor).slice(0, 40)})`);
             ok = false;
             continue;
         }
-        const karte = Object.assign({}, echt, { [f.rel]: t.split(f.vor).join(f.nach) });
+        const karte = Object.assign({}, echt, { [f.rel]: am ? t.replace(f.vor, f.nach) : t.split(f.vor).join(f.nach) });
         const r = pruefe(karte);
         const treffer = r.rot.find((x) => f.soll.test(x));
         console.log(`${treffer ? "✅" : "❌"} SELBST-TEST ${f.name}${treffer ? " — " + treffer : " — nicht rot (" + (r.rot[0] || "grün") + ")"}`);

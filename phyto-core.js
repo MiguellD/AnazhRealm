@@ -2531,7 +2531,7 @@
     // Arten-Nische (Klima × Patch-Mosaik × Feuchte × Höhen-Trockenheit × Offenheit, inkl. der
     // AUTO-Arten aus dem Rezeptbuch via ctx.extras) → reverse-J-Größe → Mammut-Promotion.
     // ctx = { F, baseH, extras, fbm(px,pz), surfaceYAt(x,z), waterYAt(x,z), slopeAt(x,z),
-    // feuchteAt(x,z,surfY) }. Die rng()-Aufruf-REIHENFOLGE ist heilig (byte-deterministisch).
+    // feuchteAt(x,z,surfY), ortFrei?(x,z,T) }. Die rng()-Aufruf-REIHENFOLGE ist heilig (byte-deterministisch).
     // FOREST_TOPOLOGY.host = "cell" — cell-darts + Host shy prio-max; Feel-Entscheid .116; no fake merge with Lab disk.
     function planForestCell(cx, cz, seedInt, ctx) {
         const F = ctx.F;
@@ -2617,6 +2617,9 @@
             const rotY = rng() * 6.283185307;
             const seed =
                 (Math.imul((Math.round(x * 16) | 0) ^ (Math.round(z * 16) | 0), 2654435761) ^ (seedInt + i)) >>> 0;
+            // DER ORT VOR DEM WALD (K10): reserviert ein Ort den Grund (ctx.ortFrei, der Erdbau des Wirts), fällt die Krone,
+            // die ihn berührt — NACH allen Würfen des Darts, die folgenden Darts bleiben byte-gleich.
+            if (ctx.ortFrei && !ctx.ortFrei(x, z, T)) continue;
             out.push({ x, z, sp, s, T, prio, keep, totRoll, rotY, seed, surfaceY });
         }
         return out;

@@ -41,7 +41,7 @@
 //   D6  DIE KI NENNT DIE URSACHE — „Aktivieren" fragt einen lokalen Dienst (der Status sagt, dass er nicht läuft, nie
 //       „Aktiv"), ohne Schlüssel sagt der Chat es, der Proxy ist der Ursprung der Seite (404 dort = „der Proxy fehlt").
 //   D9  DAS DORF VOR DIR — „dorf 7 18" an der Plattform: jedes Haus vor dem Spieler und im Bildwinkel der Welt-Kamera; ein
-//       Slot, dessen Ort ein Bau sperrt, findet einen Ersatz-Ort; „baue dorf hier" baut bei einem Mitspieler (anderer Ort,
+//       Slot, dessen Ort ein Bau sperrt, fällt an seinem Ort laut (K10: der Plan ist das Dorf); „baue dorf hier" baut bei einem Mitspieler (anderer Ort,
 //       andere Gier, Quelle remote) dasselbe Dorf an derselben Stelle. Befund: 13 Häuser, 12 von 25 Slots übersprungen, die
 //       drei nächsten HINTER dem Spieler (cos −1,00 / −0,48 / −0,12); Gegenprüfung Runde 1: beim Mitspieler ~60 m daneben.
 //
@@ -317,8 +317,8 @@ function dorfVerdict(m) {
     if (!(m.haeuser > 0)) return ["kein Haus gegründet"];
     if (m.hinten > 0) out.push(`${m.hinten} Häuser hinter dem Spieler (cos ${m.cosHinten.join(" / ")})`);
     if (m.ausserBild > 0) out.push(`${m.ausserBild} Häuser außerhalb des Bildwinkels`);
-    if (!m.ersatz) out.push(`ein gesperrter Slot fällt (kein Ersatz-Ort: ${m.ersatzGrund})`);
-    else if (m.ersatzImBau) out.push("der Ersatz-Ort liegt im Bau");
+    if (m.gesperrtSteht) out.push(`ein gesperrter Slot steht (${m.gesperrtAbstand} m von der Mitte des Baus${m.gesperrtImBau ? ", im Bau" : ""})`);
+    else if (!m.gesperrtLaut) out.push(`ein gesperrter Slot fällt still (${m.gesperrtGrund})`);
     if (m.mpAbweichung == null) out.push(`der Mitspieler: kein Vergleich (Häuser ${(m.mpHaeuser || []).join(" / ")})`);
     else if (m.mpAbweichung > 1) out.push(`beim Mitspieler steht das Dorf ${m.mpAbweichung} m daneben (Häuser ${(m.mpHaeuser || []).join(" / ")})`);
     return out;
@@ -327,13 +327,13 @@ function dorfVerdict(m) {
 // ── DIE STATISCHE WAND (Node, kommentarfrei). Liefert [name, ok, detail]. ──
 function wand(src, html) {
     const nc = ohneKommentare(src);
-    const fallback = fnBody(nc, /\n {4}_chatHandleConversationalFallback\(command, appendChatOutput\) \{/) || "";
-    const hilfe = fnBody(nc, /\n {4}_hilfeZeilen\(\) \{/) || "";
+    const fallback = fnBody(nc, /\n {4}_chatHandleConversationalFallback\([^)]*\) \{/) || "";
+    const hilfe = fnBody(nc, /\n {4}_hilfeZeilen\([^)]*\) \{/) || "";
     const siedlung = fnBody(nc, /\n {4}async spawnSettlement\(opts\) \{/) || "";
     const dorfOp = (nc.match(/spawn_village: \(\[positionNode, seed[^\]]*\], ctx\) => \{[\s\S]*?\n {12}\},/) || [""])[0];
-    const autoDorf = fnBody(nc, /\n {4}_autoSettlementSpawnCell\(cx, cz, info\) \{/) || "";
-    const kamera = fnBody(nc, /\n {4}_loopCamera\(currentTime\) \{/) || "";
-    const stoff = fnBody(nc, /\n {4}_foundryTreeMaterial\(kind, mp, wiegen, baum\) \{/) || "";
+    const autoDorf = fnBody(nc, /\n {4}_autoSettlementSpawnCell\([^)]*\) \{/) || "";
+    const kamera = fnBody(nc, /\n {4}_loopCamera\([^)]*\) \{/) || "";
+    const stoff = fnBody(nc, /\n {4}_foundryTreeMaterial\([^)]*\) \{/) || "";
     const ladeIdx = html.indexOf('id="ladeschirm"');
     const ladeTag = ladeIdx >= 0 ? html.slice(html.lastIndexOf("<", ladeIdx), html.indexOf(">", ladeIdx) + 1) : "";
     // die Proben durch die Bildmitte (Gegenprüfung Runde 2): jede nimmt den EINEN Strahl
@@ -350,7 +350,7 @@ function wand(src, html) {
         const b = fnBody(nc, new RegExp("\\n {4}" + sig.replace(/[()=]/g, (c) => "\\" + c) + " \\{")) || "";
         return !/this\._fadenkreuzStrahl\(\)/.test(b) || /getWorldDirection\(/.test(b);
     });
-    const durchNode = fnBody(nc, /\n {4}_kameraDurchsichtNode\(T, art\) \{/) || "";
+    const durchNode = fnBody(nc, /\n {4}_kameraDurchsichtNode\([^)]*\) \{/) || "";
     return [
         [
             "W1 die Hilfe liest die EINEN Tafeln (`_hilfeZeilen`: chatDslPatterns · chatSystemPatterns · KEYBINDING_LABELS), der Satz für Unbekanntes trägt keine Liste von Hand",
@@ -363,12 +363,12 @@ function wand(src, html) {
             "W2 der Ladeschirm steht im HTML vor allem anderen sichtbar (kein `hidden`), das Spiel nimmt ihn nur über `_ankunftsBild`/`_ladeschirmWeg`, und `_ankunftsBild` fragt, was dem Weltbild fehlt (`_weltbildFehlt`)",
             ladeIdx >= 0 &&
                 !/\bhidden\b/.test(ladeTag) &&
-                /this\._ankunftsBild\(\)/.test(fnBody(nc, /\n {4}_loopRender\(currentTime\) \{/) || "") &&
-                /this\._weltbildFehlt\(\)/.test(fnBody(nc, /\n {4}_ankunftsBild\(\) \{/) || ""),
+                /this\._ankunftsBild\(\)/.test(fnBody(nc, /\n {4}_loopRender\([^)]*\) \{/) || "") &&
+                /this\._weltbildFehlt\(\)/.test(fnBody(nc, /\n {4}_ankunftsBild\([^)]*\) \{/) || ""),
         ],
         [
             "W3 die Hotbar trägt im Konstruktor keinen Bauplan-Namen (der Start-Gurt liest den Katalog: `_startGurt`)",
-            /hotbar: \[null, null, null, null, null, null, null, null, null\]/.test(nc) && /_katalogSichtbar/.test(fnBody(nc, /\n {4}_startGurt\(\) \{/) || ""),
+            /hotbar: \[null, null, null, null, null, null, null, null, null\]/.test(nc) && /_katalogSichtbar/.test(fnBody(nc, /\n {4}_startGurt\([^)]*\) \{/) || ""),
         ],
         [
             "W4 das Dorf misst seinen Plan (`_siedlungsAnker`), keine Schätzung `_structureSpawnPos(\"haus_basis\")` in spawnSettlement, spawn_village und dem Welt-Dorf (`_autoSettlementSpawnCell`); spawn_village trägt den Blick des Sprechers",
@@ -1343,12 +1343,11 @@ async function probe(arg) {
         k.siedlungImLog = /Siedlung „[^"]*" \([^)]*Seed 7\)/.test(logNeu);
         k.zeilen = zeilen().slice(z0);
         m.dorfZeile = (k.zeilen.find((z) => /vor dir|platziert/.test(z)) || "").slice(0, 120);
-        // die Mitte des Plans aus dem Log (Platziert / Ersatz / übersprungen)
-        const mz = /(\d+) Häuser platziert(?: \((\d+) am Ersatz-Ort\))?, (\d+) Slots übersprungen/.exec(logNeu);
+        // die Mitte des Plans aus dem Log (platziert / übersprungen)
+        const mz = /(\d+) Häuser platziert, (\d+) Slots übersprungen/.exec(logNeu);
         if (mz) {
             m.platziert = +mz[1];
-            m.ersatzOrte = mz[2] != null ? +mz[2] : null;
-            m.uebersprungen = +mz[3];
+            m.uebersprungen = +mz[2];
         }
         for (const a of st.architectures.filter((a) => !vor.has(a)).reverse()) r.removeArchitecture(a);
         // DER MITSPIELER (Gegenprüfung Runde 1: der Anker hing am EIGENEN Spieler, Blick und Fenster jedes Peers — etwa
@@ -1394,23 +1393,27 @@ async function probe(arg) {
             st.playerMesh.position.set(P.x, P.y + 2.2, P.z);
             st.yaw = best.yaw;
         }
-        // DER ERSATZ-ORT: ein Slot am Rand des Genesis-Platzes (sein Grundriss reicht 2 m in die Lichtung; die Rückseite
-        // des Hauses, lokal +z, zeigt von ihr weg) — sein Ort fällt, ein Ersatz-Ort draußen trägt ihn. Die Lichtung ist seit
-        // K52 der Platz der Scheibe UND des Rings der Tore (`_grundrissVon` der Plattform), nicht mehr die Scheibe allein.
+        // DER GESPERRTE SLOT: ein Slot am Rand des Genesis-Platzes (sein Grundriss reicht 2 m in die Lichtung; die Rückseite
+        // des Hauses, lokal +z, zeigt von ihr weg) trägt seinen Boden y wie jeder Slot des Plans v2 — die Bau-Wand
+        // (`_bauFrei`) wirft ihn an seinem Ort, kein Haus steht (K10: der Plan ist das Dorf, die Ersatz-Orte fielen). Die
+        // Lichtung ist seit K52 der Platz der Scheibe UND des Rings der Tore (`_grundrissVon` der Plattform).
         const f = r._foundry;
         const kultur = Object.keys(f.recipes).find((id) => f.recipes[id] && f.recipes[id].kind === "haus" && st.blueprints["haus_" + id]);
         const R = r._grundrissVon(pl).lichtung;
         const HALB = 3;
         const rand = R + HALB - 2;
-        const slot = { kultur, x: fx * rand, z: fz * rand, phi: best.yaw, seed: 7, obb: { cx: fx * rand, cz: fz * rand, ex: HALB, ez: HALB } };
+        const slot = { kultur, x: fx * rand, z: fz * rand, y: r.getTerrainHeightAt(P.x + fx * rand, P.z + fz * rand), phi: best.yaw, seed: 7, obb: { cx: fx * rand, cz: fz * rand, ex: HALB, ez: HALB } };
         const vor2 = new Set(st.architectures);
-        const ok = r._spawnSettlementSlot(slot, { x: P.x, z: P.z }, f, { zaehler: { ersatz: 0 } });
+        const logVor = st.logBuffer.length;
+        const ok = r._spawnSettlementSlot(slot, { x: P.x, z: P.z }, f, {});
         const haus = st.architectures.find((a) => !vor2.has(a) && /^haus_/.test(a.type || ""));
-        m.ersatz = !!ok && !!haus;
-        m.ersatzGrund = ok ? "" : "der Slot fiel";
+        m.gesperrtSteht = !!ok || !!haus;
+        // laut: der Slot fällt an der Wand, nicht am fehlenden Boden (der fail-closed-Ruf „trägt keinen Boden y")
+        m.gesperrtLaut = !ok && !st.logBuffer.slice(logVor).some((z) => /trägt keinen Boden y/.test(z));
+        m.gesperrtGrund = m.gesperrtLaut ? "" : "der Slot fiel am fehlenden Boden, nicht an der Bau-Wand";
         if (haus) {
-            m.ersatzAbstand = +Math.hypot(haus.position.x - P.x, haus.position.z - P.z).toFixed(2);
-            m.ersatzImBau = m.ersatzAbstand < R + HALB - 0.05; // der Grundriss des Hauses reicht in die Scheibe
+            m.gesperrtAbstand = +Math.hypot(haus.position.x - P.x, haus.position.z - P.z).toFixed(2);
+            m.gesperrtImBau = m.gesperrtAbstand < R + HALB - 0.05; // der Grundriss des Hauses reicht in die Scheibe
             r.removeArchitecture(haus);
         }
         // D8: ein KI-Programm und eine Absage im Chat
@@ -1698,10 +1701,11 @@ async function probe(arg) {
             [
                 "D9",
                 dorfVerdict,
-                { gestartet: true, buch: true, haeuser: 20, hinten: 0, cosHinten: [], ausserBild: 0, ersatz: true, ersatzImBau: false, mpAbweichung: 0, mpHaeuser: [20, 20] },
+                { gestartet: true, buch: true, haeuser: 20, hinten: 0, cosHinten: [], ausserBild: 0, gesperrtSteht: false, gesperrtLaut: true, mpAbweichung: 0, mpHaeuser: [20, 20] },
                 [
                     ["umringt (Befund)", { haeuser: 13, hinten: 7, cosHinten: ["-0.61", "-0.86", "-0.70"] }, "7 Häuser hinter dem Spieler"],
-                    ["Slot fällt (Befund)", { ersatz: false, ersatzGrund: "der Slot fiel" }, "ein gesperrter Slot fällt"],
+                    ["gesperrter Slot steht (Befund)", { gesperrtSteht: true, gesperrtAbstand: 21.3, gesperrtImBau: true }, "ein gesperrter Slot steht"],
+                    ["gesperrter Slot fällt still (Befund)", { gesperrtLaut: false, gesperrtGrund: "der Slot fiel am fehlenden Boden" }, "ein gesperrter Slot fällt still"],
                     ["am Bildrand vorbei", { ausserBild: 3 }, "3 Häuser außerhalb des Bildwinkels"],
                     ["Mitspieler 60 m daneben (Gegenprüfung)", { mpAbweichung: 61.4, mpHaeuser: [20, 20] }, "beim Mitspieler steht das Dorf 61.4 m daneben"],
                 ],
@@ -1723,11 +1727,11 @@ async function probe(arg) {
             .replace("const anchor = this._siedlungsAnker(plan, o.position || null, o.blick || null);", 'const anchor = this._structureSpawnPos("haus_basis", base, { state: this.state }, 3);')
             .replace("{ durchPflanzen: true }", "{}")
             .replace('const _durch = this._kameraDurchsichtNode(TSL, wiegen === true ? "boden" : isBark ? "rinde" : "laub");', "const _durch = null;")
-            .replace(/(\n {4}_raycastWorldHit\(maxDist = 30\) \{[\s\S]*?)this\._fadenkreuzStrahl\(\)/, "$1this._alterStrahl()")
+            .replace(/(\n {4}_raycastWorldHit\([^)]*\) \{[\s\S]*?)this\._fadenkreuzStrahl\(\)/, "$1this._alterStrahl()")
             .replace("AnazhRealm._durchsichtGewicht(A,", "AnazhRealm._alteDurchsicht(A,")
             .replace("(Welt verändert: ${compName} ${this.describeProgram(reply.program)}.)", "(Welt verändert: ${JSON.stringify(reply.program)})")
             .replace("for (const z of this._hilfeZeilen()) append(z);", "append(\"'Setze Wetter rainy'\");")
-            .replace(/_hilfeZeilen\(\) \{[\s\S]*?\n {4}\}\n/, "_hilfeZeilen() {\n        return [];\n    }\n");
+            .replace(/_hilfeZeilen\([^)]*\) \{[\s\S]*?\n {4}\}\n/, "_hilfeZeilen() {\n        return [];\n    }\n");
         const vorHtml = html.replace('<div id="ladeschirm" role="status" aria-live="polite">', '<div id="ladeschirm" role="status" aria-live="polite" hidden>');
         const rot = wand(vorStand, vorHtml);
         check(
@@ -1816,7 +1820,7 @@ async function probe(arg) {
     console.log("=== D8 · D6 · D9 — DIE STIMME UND DAS DORF ===");
     zeige("D8", "der Spieler-Chat trägt Worte, das Log die Zahlen", out.kanal, kanalVerdict, (m) => `${(m.zeilen || []).filter((z) => !/^> /.test(z)).length} Zeilen · Log ${m.siedlungImLog}`);
     zeige("D6", "die KI nennt die Ursache (Dienst · Schlüssel · Proxy)", out.ki, kiVerdict, (m) => `Status „${(m.status || "").slice(0, 60)}" · ohne Schlüssel „${(m.ohneSchluessel || "—").slice(0, 60)}" · Proxy ${m.proxyUrl}`);
-    zeige("D9", "das Dorf steht vor dir, ein gesperrter Slot findet einen Ersatz-Ort", out.dorf, dorfVerdict, (m) => `${m.haeuser} Häuser (Log: ${m.platziert} platziert, ${m.ersatzOrte} am Ersatz-Ort, ${m.uebersprungen} übersprungen) · hinten ${m.hinten} · außer Bild ${m.ausserBild} · Ersatz ${m.ersatz} (${m.ersatzAbstand} m) · „${m.dorfZeile}" · baue dorf hier: ${m.hierNaechstes}–${m.hierWeitestes} m, beim Mitspieler ${m.mpAbweichung} m daneben (Häuser ${(m.mpHaeuser || []).join(" / ")})`);
+    zeige("D9", "das Dorf steht vor dir, ein gesperrter Slot fällt an seinem Ort", out.dorf, dorfVerdict, (m) => `${m.haeuser} Häuser (Log: ${m.platziert} platziert, ${m.uebersprungen} übersprungen) · hinten ${m.hinten} · außer Bild ${m.ausserBild} · gesperrter Slot steht ${m.gesperrtSteht}, laut ${m.gesperrtLaut} · „${m.dorfZeile}" · baue dorf hier: ${m.hierNaechstes}–${m.hierWeitestes} m, beim Mitspieler ${m.mpAbweichung} m daneben (Häuser ${(m.mpHaeuser || []).join(" / ")})`);
     if (pageErrors.length) check("keine Seiten-Fehler", false, pageErrors[0]);
     if (errs.length) {
         console.error(`\n❌ ROT — ${errs.length} Verletzung(en).`);

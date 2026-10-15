@@ -233,6 +233,8 @@ class AnazhRealm_Z12 {
                 // Ω5 — die Gratis-Geburt überlebt den Reload (sonst wüsche der
                 // Save die Marke ab und der pfad erntete doch — GEMESSEN Z2b).
                 ...(a.freeBorn === true ? { freeBorn: true } : {}),
+                // die Marke des Wurfs überlebt den Reload (sonst sperrte ein geladener Wurf des Felds der Ort-Wahl den Grund)
+                ...(a.feldWurf === true ? { feldWurf: true } : {}),
                 // PRÄGUNG-WELT — der Guss-Stempel überlebt den Reload (sonst verlöre
                 // ein geprägtes Werk beim Restore seinen Charakter, V8.59-Klasse).
                 ...(a.studioOv && typeof a.studioOv === "object" ? { studioOv: a.studioOv } : {}),

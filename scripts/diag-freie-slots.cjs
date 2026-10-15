@@ -55,7 +55,7 @@ function quellBefunde(src) {
     const b = [];
     const code = ohneKommentare(src);
     const zeilen = code.split("\n");
-    const kopf = zeilen.findIndex((z) => /^\s*static _instanzZahl\(mesh, n\) \{/.test(z));
+    const kopf = zeilen.findIndex((z) => /^\s*static _instanzZahl\([^)]*\) \{/.test(z));
     if (kopf < 0) b.push("der Chokepoint `static _instanzZahl(mesh, n)` fehlt");
     zeilen.forEach((z, i) => {
         for (const m of z.matchAll(/([A-Za-z_$][\w$.[\]]*)\.count\s*=(?!=)/g)) {
@@ -204,13 +204,6 @@ async function welt() {
                     if (d > 1e-3 || g.slotEntry[ref.slot] !== e)
                         nenne(ref.key, `Slot ${ref.slot} trägt nicht die Instanz von ${e.type}#${e.id} (Abstand ${d.toFixed(3)})`, g.mesh, 1);
                 }
-            }
-            const P = st.archFundament;
-            if (P && P.mesh) {
-                senke("bau-fundament", P.mesh, P.byId.size);
-                let offen = 0;
-                for (const [id, s] of P.byId) if (P.idAt[s] !== id) offen++;
-                if (offen) nenne("bau-fundament", `${offen} Sockel ohne geschlossenen Rückverweis`, P.mesh, 0);
             }
             const Z = st.stlZaun;
             if (Z && Z.mesh) senke("siedlung-zaun", Z.mesh, Z.top);
@@ -449,7 +442,7 @@ async function welt() {
     for (const x of q) fails.push("Q: " + x);
     if (process.argv.includes("--selftest")) {
         const schmuggel = quellBefunde(
-            src.replace("    static _instanzZahl(mesh, n) {", "    _schmuggel(g) {\n        g.mesh.count = 7;\n    }\n    static _instanzZahl(mesh, n) {")
+            src.replace(/\n {4}static _instanzZahl\(/, "\n    _schmuggel(g) {\n        g.mesh.count = 7;\n    }\n    static _instanzZahl(")
         );
         const ok = schmuggel.some((x) => /`g\.mesh\.count =`/.test(x));
         console.log(`  ${ok ? "✅" : "❌"} SELBSTTEST Q: eine eingeschmuggelte count-Zeile wird genannt (${schmuggel.length} Befund)`);

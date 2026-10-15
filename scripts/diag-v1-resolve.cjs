@@ -32,14 +32,14 @@ const server = statikServer();
         const bp = r.state.blueprints || {};
         const resolve = (t) => (r._foundryPresetForEntry ? r._foundryPresetForEntry({ type: t }) : "nomethod");
         const res = {};
-        for (const t of ["kristall_var0", "kristall_var7", "fels_var0", "fels_var5", "fels_var7", "glut_var0", "glutbrunnen", "marktstand_dorf", "brunnen_dorf", "kristall_geode", "felsturm", "stein_block"]) {
+        for (const t of ["kristall_var0", "kristall_var7", "fels_var0", "fels_var5", "fels_var7", "glut_var0", "glutbrunnen", "marktstand_dorf", "brunnen_dorf", "laterne_dorf", "kristall_geode", "felsturm", "stein_block"]) {
             res[t] = { exists: !!bp[t], formClass: bp[t] && bp[t]._formClass, preset: resolve(t) };
         }
         res._umzug = r.constructor.BAUPLAN_UMZUG ? r.constructor.BAUPLAN_UMZUG.glut_var3 : null;
         // DAS WORT (Werkstatt · Chat · KI): die Ausstattung löst über ihren Gestalt-Träger auf; ein Tor-Wort löst nur über
         // sein Präfix — fehlt der tor_-Klon, fällt es nie auf das welt_-Portal derselben Gestalt (ein echtes Tor mit Trigger).
         const wort = (w) => (r._studioBlueprintForWord ? r._studioBlueprintForWord(w) : "nomethod");
-        res._wort = { feuerstelle: wort("feuerstelle"), marktstand: wort("marktstand"), brunnen: wort("brunnen") };
+        res._wort = { feuerstelle: wort("feuerstelle"), marktstand: wort("marktstand"), brunnen: wort("brunnen"), laterne: wort("laterne") };
         const portal = Object.keys(bp).find((n) => bp[n] && bp[n].role === "portal" && typeof bp[n].studioGestalt === "string");
         if (portal) {
             const g = bp[portal].studioGestalt;
@@ -81,6 +81,7 @@ const server = statikServer();
     check("glutbrunnen", (r) => r.preset === "feuerstelle", "erwartet feuerstelle (Gesetzbuch)");
     check("marktstand_dorf", (r) => r.preset === "marktstand", "erwartet marktstand (Gesetzbuch)");
     check("brunnen_dorf", (r) => r.preset === "brunnen", "erwartet brunnen (Gesetzbuch)");
+    check("laterne_dorf", (r) => r.preset === "laterne", "erwartet laterne (Gesetzbuch)");
     check("glut_var0", (r) => r.exists === false, "das Glut-Genom ist gefallen");
     {
         const ok = out._umzug === "glutbrunnen";
@@ -89,8 +90,8 @@ const server = statikServer();
     }
     {
         const w = out._wort || {};
-        const ok = w.feuerstelle === "glutbrunnen" && w.marktstand === "marktstand_dorf" && w.brunnen === "brunnen_dorf";
-        console.log(`  ${ok ? "✅" : "❌"} Wort feuerstelle/marktstand/brunnen -> ${w.feuerstelle}/${w.marktstand}/${w.brunnen}`);
+        const ok = w.feuerstelle === "glutbrunnen" && w.marktstand === "marktstand_dorf" && w.brunnen === "brunnen_dorf" && w.laterne === "laterne_dorf";
+        console.log(`  ${ok ? "✅" : "❌"} Wort feuerstelle/marktstand/brunnen/laterne -> ${w.feuerstelle}/${w.marktstand}/${w.brunnen}/${w.laterne}`);
         if (!ok) fails.push("wort-ausstattung");
         const t = out._torWort;
         const tok = !!t && t.ziel !== t.portal && !/^welt_/.test(String(t.ziel));
