@@ -1,0 +1,72 @@
+Lauf | fps | Frame p50/p95 | CPU-Takt p50/p95
+lauf-A1.txt | 72.1 | 16.6/17 | 4.6/16.9
+lauf-A2.txt | 71.8 | 16.6/16.9 | 4.7/15.5
+lauf-B1.txt | 66.1 | 16.6/25.1 | 5.2/26.6
+lauf-B2.txt | 67.9 | 16.6/24.9 | 4.8/19.1
+cpuTaktMs p50: A 4.6|4.7 (4.65) → B 5.2|4.8 (5.00) Δ 0.35
+cpuTaktMs p95: A 16.9|15.5 (16.20) → B 26.6|19.1 (22.85) Δ 6.65
+frameMs p95: A 17|16.9 (16.95) → B 25.1|24.9 (25.00) Δ 8.05
+
+gesamt (µs je Frame, A → B, Δ):
+     0.00 →   2205.66    2205.66  _befehlHaelt 07.js
+  1980.48 →      0.00   -1980.48  updateBeforeNode three.webgpu.min.js
+  1395.75 →      0.00   -1395.75  o.needsRefresh 10.js
+  1375.96 →   2086.45     710.50  AnazhRealm._diaetRefresh 26c.js
+  6637.57 →   7224.86     587.29  e three.webgpu.min.js
+  6587.12 →   7172.13     585.01  (anonym) pptr
+  6488.29 →   7068.70     580.40  loop 25a.js
+  5789.89 →   5267.92    -521.97  (idle)
+  3890.20 →   4294.47     404.27  updateBefore three.webgpu.min.js
+   401.52 →      0.00    -401.52  _draw three.webgpu.min.js
+ 15639.47 →  15991.39     351.92  (root)
+  4304.04 →   4646.08     342.04  _loopRender 25c.js
+   457.80 →    121.57    -336.23  draw three.webgpu.min.js
+  4183.61 →   4518.47     334.85  _renderScene three.webgpu.min.js
+  4191.19 →   4525.86     334.67  renderer._renderScene 07.js
+  4207.35 →   4541.64     334.29  render three.webgpu.min.js
+  4053.18 →   4379.44     326.26  renderer.renderObject 07.js
+  4054.49 →   4379.77     325.29  _renderObjects three.webgpu.min.js
+  4052.84 →   4377.08     324.24  renderObject three.webgpu.min.js
+  4052.51 →   4375.74     323.23  renderer._renderObjectDirect 07.js
+  3971.17 →   4292.46     321.28  updateBefore 25c.js
+  4018.55 →   4337.80     319.24  zeichne 07.js
+  3124.86 →   3396.51     271.65  (program)
+     0.00 →    264.64     264.64  AnazhRealm._diaetEigen 26c.js
+  1036.11 →   1296.28     260.17  AnazhRealm._diaetGeteiltSchreiben 26c.js
+   256.67 →      0.00    -256.67  P.draw 20c.js
+     0.00 →    200.15     200.15  _befehlWieder 07.js
+   277.44 →     87.99    -189.45  get three.webgpu.min.js
+  1105.41 →   1292.92     187.50  renderer._renderBundles 07.js
+  1098.50 →   1285.87     187.36  _renderBundles three.webgpu.min.js
+
+selbst (µs je Frame, A → B, Δ):
+  5789.89 →   5267.92    -521.97  (idle)
+  3124.86 →   3396.51     271.65  (program)
+     0.00 →    163.21     163.21  _befehlHaelt 07.js
+   153.07 →    296.86     143.78  AnazhRealm._diaetRefresh 26c.js
+   173.30 →     39.63    -133.67  get three.webgpu.min.js
+     0.00 →    130.97     130.97  AnazhRealm._diaetEigen 26c.js
+   130.35 →      0.00    -130.35  setVertexBuffer
+     0.00 →    106.79     106.79  executeBundles
+     0.00 →    100.41     100.41  _befehlStempel 07.js
+   211.24 →    121.23     -90.01  zeichne 07.js
+    71.75 →      0.00     -71.75  _draw three.webgpu.min.js
+   152.84 →    216.94      64.11  equals three.webgpu.min.js
+   153.71 →     92.35     -61.36  updateForRender three.webgpu.min.js
+    70.38 →    125.93      55.56  getForRender three.webgpu.min.js
+    48.70 →      0.00     -48.70  setBindGroup
+   135.90 →     93.03     -42.87  _update three.webgpu.min.js
+    42.76 →      0.00     -42.76  setIndexBuffer
+    56.94 →     18.47     -38.47  draw three.webgpu.min.js
+    36.20 →      0.00     -36.20  setPipeline
+    52.05 →     86.31      34.26  AnazhRealm._diaetGeteiltSchreiben 26c.js
+   221.84 →    252.88      31.04  _projectObject three.webgpu.min.js
+     0.00 →     30.22      30.22  _befehlWieder 07.js
+     0.00 →     22.84      22.84  _passNachBuendeln 07.js
+    21.07 →      0.00     -21.07  setPipeline three.webgpu.min.js
+     0.00 →     20.79      20.79  push three.webgpu.min.js
+    19.79 →      0.00     -19.79  o.needsRefresh 10.js
+   107.36 →    126.61      19.25  writeBuffer
+    13.16 →     31.23      18.07  _renderBundle three.webgpu.min.js
+    46.04 →     29.55     -16.49  updateAttribute three.webgpu.min.js
+    57.33 →     73.22      15.88  _tickScatterStreaming 15b.js
