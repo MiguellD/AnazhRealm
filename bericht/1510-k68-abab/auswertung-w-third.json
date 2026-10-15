@@ -1,0 +1,138 @@
+{
+ "zeilen": [
+  {
+   "boot": "w-third-A1",
+   "seite": "A",
+   "start": "2026-10-15T10:53:38.658Z",
+   "urteil": "ROT",
+   "fps": 89.7,
+   "frameP50": 8.4,
+   "frameP95": 16.8,
+   "cpuP95": 6.6,
+   "cpuP95frei": 6.4,
+   "band": 10.51,
+   "befehle": 85,
+   "dreiecke": 316089,
+   "vram": 96,
+   "bank0": 9.37,
+   "takt0": 1733.5,
+   "gier0": "0.00",
+   "bank1": 9.38,
+   "takt1": 1739.5,
+   "gier1": "-0.88"
+  },
+  {
+   "boot": "w-third-B1",
+   "seite": "B",
+   "start": "2026-10-15T10:58:33.497Z",
+   "urteil": "GRUEN",
+   "fps": 88.8,
+   "frameP50": 8.4,
+   "frameP95": 16.8,
+   "cpuP95": 6.5,
+   "cpuP95frei": 6.5,
+   "band": 10.9,
+   "befehle": 85,
+   "dreiecke": 316089,
+   "vram": 96,
+   "bank0": 9.23,
+   "takt0": 1733.5,
+   "gier0": "0.00",
+   "bank1": 9.43,
+   "takt1": 1727,
+   "gier1": "-0.88"
+  },
+  {
+   "boot": "w-third-A2",
+   "seite": "A",
+   "start": "2026-10-15T11:03:28.536Z",
+   "urteil": "ROT",
+   "fps": 90.8,
+   "frameP50": 8.4,
+   "frameP95": 16.8,
+   "cpuP95": 6.3,
+   "cpuP95frei": 6.4,
+   "band": 10.68,
+   "befehle": 85,
+   "dreiecke": 316089,
+   "vram": 96,
+   "bank0": 9.41,
+   "takt0": 1739.5,
+   "gier0": "0.00",
+   "bank1": 9.52,
+   "takt1": 1739.5,
+   "gier1": "-0.88"
+  },
+  {
+   "boot": "w-third-B2",
+   "seite": "B",
+   "start": "2026-10-15T11:11:14.214Z",
+   "urteil": "GRUEN",
+   "fps": 90.7,
+   "frameP50": 8.4,
+   "frameP95": 16.8,
+   "cpuP95": 6,
+   "cpuP95frei": 6.4,
+   "band": 10.59,
+   "befehle": 85,
+   "dreiecke": 316089,
+   "vram": 96.4,
+   "bank0": 9.36,
+   "takt0": 1740,
+   "gier0": "0.00",
+   "bank1": 9.92,
+   "takt1": 1727,
+   "gier1": "-0.88"
+  }
+ ],
+ "urteile": [
+  {
+   "titel": "fps (Regler voll)",
+   "u": "nicht langsamer",
+   "d": -0.5,
+   "sig": 1.0977249200050085
+  },
+  {
+   "titel": "Frame p50 ms",
+   "u": "nicht langsamer",
+   "d": 0,
+   "sig": 0
+  },
+  {
+   "titel": "Frame p95 ms",
+   "u": "nicht langsamer",
+   "d": 0,
+   "sig": 0
+  },
+  {
+   "titel": "CPU-Takt p95 voll ms",
+   "u": "nicht langsamer",
+   "d": -0.1999999999999993,
+   "sig": 0.29154759474226494
+  },
+  {
+   "titel": "CPU-Takt p95 frei ms",
+   "u": "nicht langsamer",
+   "d": 0.04999999999999982,
+   "sig": 0.04999999999999982
+  },
+  {
+   "titel": "gpu-bank ms (Gier 0.00)",
+   "u": "nicht langsamer",
+   "d": -0.09500000000000064,
+   "sig": 0.06800735254367687
+  },
+  {
+   "titel": "gpu-bank ms (Gier -0.88)",
+   "u": "nicht langsamer",
+   "d": 0.22500000000000142,
+   "sig": 0.2548038461248181
+  },
+  {
+   "titel": "Band GPU ms je Frame",
+   "u": "nicht langsamer",
+   "d": 0.15000000000000213,
+   "sig": 0.1767766952966371
+  }
+ ]
+}
