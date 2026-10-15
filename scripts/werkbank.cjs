@@ -250,8 +250,23 @@ function sollIstSchreiben(ziel, messung) {
     const ab = require("./lib/abnahme-urteil.cjs").sollIstAbweisung(JSON.parse(text), t, id, sollQuelle());
     if (ab.length)
         throw new Error(`--ist ${ziel}: die Linse liest die Messung nicht — ${ab.join(" · ")} — die Tafel bleibt, wie sie war`);
-    fs.writeFileSync(SOLL_TAFEL, JSON.stringify(t, null, 4) + "\n");
+    fs.writeFileSync(SOLL_TAFEL, tafelText(t));
     return `${id}${teil ? ":" + teil : ""} → spec/abnahme/soll-tafel.json`;
+}
+// DIE TAFEL IN ZEILEN (L2-n1; Prüfer L2: eine Neumessung wuchs die Tafel um +93 Zeilen, je Teil-Klasse die Felder fremder
+// Maße — sp, bunt, wtZiel — an der WACHSTUMS-WAND): jede Teil-Klasse einer Messung steht auf EINER Zeile; eine Neumessung
+// ersetzt ihre Zeilen, ein neues Maß-Feld wächst die Tafel nie.
+function tafelText(t) {
+    const zeilen = [];
+    const text = JSON.stringify(
+        t,
+        function (k, v) {
+            if (k !== "klassen" || !this.werkzeug || !v || Array.isArray(v)) return v;
+            return Object.fromEntries(Object.entries(v).map(([n, r]) => [n, `\u0001${zeilen.push(JSON.stringify(r)) - 1}`]));
+        },
+        4
+    );
+    return text.replace(/"\\u0001(\d+)"/g, (_, i) => zeilen[i]) + "\n";
 }
 const argv = process.argv.slice(2);
 const opt = (k, d) => {
