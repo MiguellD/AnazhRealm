@@ -59,6 +59,7 @@ async function blickProbe(opts) {
     if (!st || !st.renderer || st.renderer.backend.isWebGPUBackend !== true) return { fehler: "kein WebGPU-Renderer" };
     if (!r._portalMembranes || r._portalMembranes.size < 3)
         return { fehler: `Membranen am Ring: ${r._portalMembranes ? r._portalMembranes.size : 0} nach 300 s` };
+    if (opts.nurWarten) return { bereit: true };
     const rend = st.renderer;
     rend.setAnimationLoop(null);
     const recs = [...r._portalMembranes.values()];
@@ -128,12 +129,17 @@ async function blickProbe(opts) {
 // H (K64-n1, die Hellen Tafeln): aus der Ring-Mitte (der Spieler am Spawn, die Tore wach) liest der AUSGABE-Pfad die Pixel jeder
 // Membran. Die Shell malt in Bild-Werten (ACES endet im Anzeige-Wert); roh als lineare Strahlung gelesen hob die Ausgabe ihre
 // dunklen Bänder an, die Membran stand milchig-weiß (entsättigt). EINE Seite, EIN Blick, die Uhr steht — vier Bilder:
-//   A    die Welt, wie sie ist (warm: der Blick B hat jedes Programm gebaut)
+//   A    die Welt, wie sie die Membran zeigt: der Ausgabe-Pfad der Welt (TRAA, Tonung, Belichtung aus dem Licht), gezeichnet
+//        werden nur die gemessenen Bürger — Membran, Nebel, Himmel (K64-n3). Die Membran ist deckend, wirft und empfängt keinen
+//        Schatten (`_membranBauFor`): ihr Pixel hängt an keinem anderen Bürger. Die ganze Welt im Bild baute auf swiftshader jedes
+//        Programm im Blick, das die Bühne neu lichtet, und jedes, das während H ankam (CI Lauf 38674187005: A 10 kalt 113 s,
+//        M 6 kalt 227 s). Die Lichter bleiben (kein Programm wechselt seinen Licht-Schlüssel).
 //   M    die Maske OHNE Programm (K64-n3): dieselbe Welt mit verborgenen Membranen — Membran-Pixel sind die, in denen die Welt
-//        mit Membran sichtbar anders steht (ein Kanal ≥ MASKE_STUFE). Bis K64-n3 malte M die Membranen magenta: EIN kaltes
+//        mit Membran sichtbar anders steht (ein Kanal ≥ STUFE). Bis K64-n3 malte M die Membranen magenta: EIN kaltes
 //        Programm, in der CI 195 s von 233 s des Gates (Lauf 38670064375); A gegen A wiederholt weicht kein Pixel ab (die Uhr
 //        steht, TRAA ist bei gleicher Lage gleich), die Differenz-Maske deckt sich mit der magenta (swiftshader: 7 876 von 8 014
 //        Pixeln, 1 außerhalb). HM zählt die kalten Programme je Bild und hält die Maske bei 0.
+// H läuft VOR den Blicken B: deren Frames stoßen die Programme der ganzen Welt an, die der GPU-Prozess sonst während H übersetzt.
 //   R    der rohe Leser (der Stand vor K64-n1): Membran und Nebel zeichnen ihren Anzeige-Wert als Strahlung (HS, zwei Programme)
 //   L    das Labor-Bild derselben Pixel: DIESELBEN rohen Stoffe in ein Ziel im Format des Szenen-Passes, gezeichnet nur Membran
 //        und Nebel — die Shell zeigt ihren Anzeige-Wert als Pixel, ein Ziel, das nicht Ausgabe ist, hält ihn ungewandelt.
@@ -169,7 +175,46 @@ async function hellProbe() {
                 rec.nebel.material.needsUpdate = true;
             }
         });
-    const schuss = async () => (await window.__ausgabeAufnahme(W, H, 1, { wahl: 0 })).u8;
+    // NUR DIE GEMESSENEN BÜRGER zeichnen (K64-n3): jedes Objekt der Szene außer Membran, Nebel und Himmel fällt aus dem Zeichnen
+    // (die Render-Objekt-Funktion des Renderers; die Ausgabe-Kette und der Hintergrund hängen nicht in der Szene und zeichnen)
+    const nur = new Set();
+    for (const rec of recs) {
+        nur.add(rec.mesh);
+        if (rec.nebel) nur.add(rec.nebel);
+    }
+    const himmel = st.scene.getObjectByName("himmel");
+    if (himmel) nur.add(himmel);
+    const rofWelt = rend.getRenderObjectFunction();
+    const inSzene = (o) => {
+        while (o && o !== st.scene) o = o.parent;
+        return o === st.scene;
+    };
+    rend.setRenderObjectFunction(function (object, ...rest) {
+        if (!nur.has(object) && inSzene(object)) return;
+        if (rofWelt) rofWelt.call(this, object, ...rest);
+        else rend.renderObject(object, ...rest);
+    });
+    // je Bild die Frames der Erst-Ruhe (Wanduhr): wie lange das Bild auf Programme wartete
+    const ruhe = {};
+    let ruheK = null;
+    const ruheWelt = window.__erstRuhe;
+    window.__erstRuhe = async (frame, opt, wer) => {
+        let n = 0;
+        const t = echtNow();
+        const v = await ruheWelt(
+            () => {
+                n++;
+                frame();
+            },
+            opt,
+            wer
+        );
+        if (ruheK) ruhe[ruheK] = { n, ms: Math.round(echtNow() - t) };
+        return v;
+    };
+    const E = r._erstZeichnung;
+    const offenStart = E ? E.offen.size : null;
+    const schuss = async () => (await window.__ausgabeAufnahme(W, H, 1, { wahl: 0, nurGezeichnete: true })).u8;
     const zeit = {};
     // je Bild die Wanduhr und die KALTEN PROGRAMME (HM): Vertex- und Fragment-Programme, die der Renderer in diesem Bild neu
     // übersetzt (r184 hält sie je Quelltext in `_pipelines.programs`) — auf swiftshader kostet ein kaltes Programm bis Minuten
@@ -181,9 +226,11 @@ async function hellProbe() {
     const uhr = async (k, f) => {
         const t = echtNow();
         const vor = programme();
+        ruheK = k;
         const v = await f();
         const nach = programme();
         kalt[k] = vor && nach ? [...nach].filter((c) => !vor.has(c)).length : null;
+        if (ruhe[k] && E) ruhe[k].offen = E.offen.size; // offene Pipelines ausgelassener Bürger nach dem Bild
         zeit[k] = Math.round(echtNow() - t);
         return v;
     };
@@ -223,7 +270,7 @@ async function hellProbe() {
             }
         };
         try {
-            await window.__erstRuhe(zeichne, { erstFristMs: 120000 }, "das Labor-Bild (H)");
+            await window.__erstRuhe(zeichne, { erstFristMs: 120000, nurGezeichnete: true }, "das Labor-Bild (H)");
             zeichne();
             const roh = await rend.readRenderTargetPixelsAsync(rt, 0, 0, W, H);
             const gepackt = rt.texture.type === T.UnsignedInt101111Type;
@@ -318,6 +365,8 @@ async function hellProbe() {
             belichtung: rend.toneMappingExposure,
             zeit,
             kalt,
+            ruhe,
+            offenStart,
         };
     } finally {
         recs.forEach((rec, i) => {
@@ -328,6 +377,12 @@ async function hellProbe() {
                 rec.nebel.material.colorNode = vor[i][1];
                 rec.nebel.material.needsUpdate = true;
             }
+        });
+        rend.setRenderObjectFunction(rofWelt);
+        window.__erstRuhe = ruheWelt;
+        // ein Bündel, das unter dem Filter neu aufnahm, trug nur die gemessenen Bürger: jedes nimmt beim nächsten Zeichnen neu auf
+        st.scene.traverse((o) => {
+            if (o.isBundleGroup) o.needsUpdate = true;
         });
         performance.now = echtNow;
     }
@@ -352,13 +407,17 @@ async function blickStufe(check) {
             waitUntil: "domcontentloaded",
             timeout: 60000,
         });
-        const o = await page.evaluate(blickProbe, { alt });
-        // H und sein Selbsttest HS in DERSELBEN Seite (eine Maske, ein Labor-Bild); die Seite des alten Culling-Stands (BS)
-        // zählt nur Befehle
-        if (!o.fehler && !alt) {
+        // H und sein Selbsttest HS in DERSELBEN Seite (eine Maske, ein Labor-Bild), VOR den Blicken B (K64-n3); die Seite des
+        // alten Culling-Stands (BS) zählt nur Befehle
+        let hell = null;
+        if (!alt) {
+            const w = await page.evaluate(blickProbe, { nurWarten: true });
+            if (w.fehler) return { fehler: w.fehler, seite };
             await page.evaluate(AUSGABE_INSTALL);
-            o.hell = await page.evaluate(hellProbe);
+            hell = await page.evaluate(hellProbe);
         }
+        const o = await page.evaluate(blickProbe, { alt });
+        o.hell = hell;
         o.seite = seite;
         await page.close();
         return o;
@@ -390,8 +449,12 @@ async function blickStufe(check) {
         // je Bild Wanduhr und kalte Programme: „M 512 ms/0 kalt"
         const kaltZeile = (h) =>
             ["A", "M", "R", "L"]
-                .map((k) => `${k} ${h.zeit[k]} ms/${h.kalt[k] == null ? "?" : h.kalt[k]} kalt`)
-                .join(" · ");
+                .map(
+                    (k) =>
+                        `${k} ${h.zeit[k]} ms/${h.kalt[k] == null ? "?" : h.kalt[k]} kalt` +
+                        (h.ruhe[k] ? `/${h.ruhe[k].n} F ${h.ruhe[k].ms} ms/${h.ruhe[k].offen} offen` : "")
+                )
+                .join(" · ") + `; offen beim Start ${h.offenStart == null ? "?" : h.offenStart}`;
         // `w`: das Bild unter dem Urteil (welt = das Spiel, roh = der alte Leser), gegen DASSELBE Labor-Bild in DERSELBEN Maske
         const hellZeile = (h, w) =>
             `${h.n} Membran-Pixel (${(h.anteil * 100).toFixed(1)} %), Y ${w === h.welt ? "Welt" : "roh"} ${w.Y.toFixed(1)} gegen Labor ${h.labor.Y.toFixed(1)} (× ${(w.Y / Math.max(1, h.labor.Y)).toFixed(2)}), Sättigung ${w.saettigung.toFixed(3)} gegen Labor ${h.labor.saettigung.toFixed(3)}, ` +
