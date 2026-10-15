@@ -929,7 +929,6 @@ async function checkBandV1722NexusEyes(ctx) {
         out.lebendigColor = r.dslComposeFieldColor(lo, { magieleitung: 0, glut: 0, lebendig: 1 }) === "#7bd389";
         const neutral = r.dslComposeFieldColor(lo, { magieleitung: 0, glut: 0, lebendig: 0 });
         out.neutralPalette = typeof neutral === "string" && neutral.startsWith("#") && neutral !== "#d4a3ff";
-        out.atomicReadsField = /auraAt/.test(window.__codeOf(r.dslComposeAtomic));
         const prog = r.dslComposeAtomic(() => 0.5);
         out.composesValid = Array.isArray(prog) && typeof prog[0] === "string";
         return out;
@@ -939,10 +938,6 @@ async function checkBandV1722NexusEyes(ctx) {
     check("V17.22 Nexus-Augen: glühender Ort → warmes Feuer", res.glutColor);
     check("V17.22 Nexus-Augen: lebendiger Ort → frisches Grün", res.lebendigColor);
     check("V17.22 Nexus-Augen: neutrales Feld → freie erkundende Palette", res.neutralPalette);
-    check(
-        "V17.22 Nexus-Augen: dslComposeAtomic LIEST das Feld (auraAt) — der Kreis des Verstehens",
-        res.atomicReadsField
-    );
     check("V17.22 Nexus-Augen: komponiert weiter valide DSL (backward-compat)", res.composesValid);
 }
 
@@ -954,8 +949,6 @@ async function checkBandV1723Harmony(ctx) {
     const res = await page.evaluate(() => {
         const r = window.anazhRealm;
         const out = {};
-        const atomicSrc = window.__codeOf(r.dslComposeAtomic);
-        out.weatherYields = /emoSignal/.test(atomicSrc) && /1 - emoSignal/.test(atomicSrc);
         out.skyTintMax = r.constructor.SKY_TINT_MAX === 0.6;
         r.state.skyTint = null;
         r.state.skyTintTarget = 0;
@@ -994,10 +987,6 @@ async function checkBandV1723Harmony(ctx) {
         out.spawnRings = /onPlayer/.test(spawnSrc) && /Math\.cos\(ang\)/.test(spawnSrc) && /rad/.test(spawnSrc);
         return out;
     });
-    check(
-        "V17.23 Harmonie: Wetter weicht dem starken Willen (Feld ×(1−emoSignal), kein Überschreiben)",
-        res.weatherYields
-    );
     check("V17.23 Harmonie: SKY_TINT_MAX verdrahtet (Tag-Nacht bleibt sichtbar)", res.skyTintMax);
     check("V17.23 Harmonie: skybox_color setzt eine Tönung (state.skyTint), snappt nicht nebulaColor", res.skyTintSet);
     check("V17.23 Harmonie: die Sky-Tönung rampt smooth hoch (kein Snap)", res.skyRamped);
@@ -1021,7 +1010,6 @@ async function checkBandV1725FieldReaders(ctx) {
             /glut/.test(window.__codeOf(r._currentFaunaTarget));
         out.faunaMaxReadsAura =
             window.__consumes(r, "_currentFaunaMax", r, "auraAt") && /glut/.test(window.__codeOf(r._currentFaunaMax));
-        out.lightReadsAura = /auraAt/.test(window.__codeOf(r._dayNightComputeTint));
         out.lofiReadsAura = window.__consumes(r, "_lofiWorldField", r, "auraAt");
         const pm = r.state.playerMesh && r.state.playerMesh.position;
         if (pm) {
@@ -1060,7 +1048,6 @@ async function checkBandV1725FieldReaders(ctx) {
     });
     check("V17.25 mehr Leser: _currentFaunaTarget liest auraAt + glut (volle Achsen, §5)", res.faunaReadsAura);
     check("V17.25 mehr Leser: _currentFaunaMax liest auraAt + glut", res.faunaMaxReadsAura);
-    check("V17.25 mehr Leser: _dayNightComputeTint (Licht/Welt-Tint) liest auraAt (living)", res.lightReadsAura);
     check("V17.25 mehr Leser: _lofiWorldField liest auraAt (living)", res.lofiReadsAura);
     check(
         "V17.25 mehr Leser: lebendige Region trägt MEHR Fauna als glühende (glut dämpft, alle Achsen)",
@@ -1078,7 +1065,6 @@ async function checkBandV1726FieldDirection(ctx) {
         const out = {};
         if (r.state.lifeField) r.state.lifeField.clear(); // V17.27 — at_field_need misst hier das frozen Ring-Minimum
         out.hasResolver = !!(r.dslPositions && typeof r.dslPositions.at_field_need === "function");
-        out.composeUsesNeed = /at_field_need/.test(window.__codeOf(r.dslComposeAtomic));
         const pm = r.state.playerMesh && r.state.playerMesh.position;
         if (pm && out.hasResolver) {
             const ctx2 = { state: r.state, rng: () => 0.5, log: { push() {} }, budget: {} };
@@ -1098,7 +1084,6 @@ async function checkBandV1726FieldDirection(ctx) {
         return out;
     });
     check("V17.26 Feld-Richtung: at_field_need-Resolver existiert (dslPositions)", res.hasResolver);
-    check("V17.26 Feld-Richtung: dslComposeAtomic trägt Leben zum Bedarf (at_field_need)", res.composeUsesNeed);
     check(
         "V17.26 Feld-Richtung: at_field_need findet den ÄRMSTEN Punkt im Ring (die Welt heilt sich)",
         res.needIsMin,
@@ -1117,7 +1102,6 @@ async function checkBandV1727WritableField(ctx) {
         const out = {};
         const cfg = r.constructor.LIFE_FIELD;
         out.hasConst = !!cfg && typeof cfg.pulseCenter === "number" && typeof cfg.max === "number";
-        out.auraReadsOverlay = /_lifeOverlayAt/.test(window.__codeOf(r.auraAt));
         const spawnSrc =
             r.dslEffects && r.dslEffects.spawn_creature ? window.__codeOf(r.dslEffects.spawn_creature) : "";
         out.spawnDeposits = /_depositLife/.test(spawnSrc); // die Geburt trägt Leben ins Feld
@@ -1162,7 +1146,6 @@ async function checkBandV1727WritableField(ctx) {
         return out;
     });
     check("V17.27 Schreib-Feld: LIFE_FIELD-Konstante existiert (cell/decay/pulse/max)", res.hasConst);
-    check("V17.27 Schreib-Feld: auraAt blendet das Leben-Overlay (_lifeOverlayAt)", res.auraReadsOverlay);
     check("V17.27 Schreib-Feld: die Geburt (spawn_creature) deponiert Leben (_depositLife)", res.spawnDeposits);
     check("V17.27 Schreib-Feld: leerer Overlay → auraAt == worldFieldAt (backward-compatible)", res.emptyEqualsFrozen);
     check(
@@ -1195,11 +1178,6 @@ async function checkBandV1728SpawnClearance(ctx) {
         const fpBlock = r._blueprintFootprintRadius("stein_block");
         out.villageBig = fpVillage >= MIN;
         out.blockSmall = fpBlock < MIN;
-        // Leben-Schau 07.10.: das Dorf misst seinen Plan (`_siedlungsAnker` in spawnSettlement) — spawn_village reicht den Ort
-        // durch, die Schätzung über _structureSpawnPos("haus_basis") fiel (sie umringte den Spieler).
-        out.villageEffectUsesClear =
-            /this\.spawnSettlement\(/.test(window.__codeOf(r.dslEffects.spawn_village)) &&
-            /this\._siedlungsAnker\(plan/.test(window.__codeOf(r.spawnSettlement));
         const pm = r.state.playerMesh && r.state.playerMesh.position;
         if (pm) {
             const px = pm.x,
@@ -1241,10 +1219,6 @@ async function checkBandV1728SpawnClearance(ctx) {
     );
     check("V17.28 Spawn-Clearance: Felsblock-Footprint klein (< MIN, intentional bleibt)", res.blockSmall);
     check(
-        "V17.28 Spawn-Clearance: spawn_village gründet über spawnSettlement, der Anker misst den Plan (_siedlungsAnker)",
-        res.villageEffectUsesClear
-    );
-    check(
         "V17.28 Spawn-Clearance: ein Haus AUF dem Spieler wird klar weggeschoben (kein Fall-durch)",
         res.villagePushed
     );
@@ -1269,8 +1243,6 @@ async function checkBandV1729CreatureTrickle(ctx) {
         const out = {};
         const cfg = r.constructor.LIFE_FIELD;
         out.hasConsts = typeof cfg.trickle === "number" && typeof cfg.trickleEverySec === "number";
-        out.spawnTagsTends = /tendsLife/.test(window.__codeOf(r.dslEffects.spawn_creature));
-        out.updateTrickles = /_tickCreatureLifeTrickle/.test(window.__codeOf(r.updateCreatures));
         if (r.state.lifeField) r.state.lifeField.clear();
         // (1) eine TENDENDE Kreatur traeufelt Leben in ihre Zelle
         const X = 23456,
@@ -1300,8 +1272,6 @@ async function checkBandV1729CreatureTrickle(ctx) {
         return out;
     });
     check("V17.29 Trickle: LIFE_FIELD.trickle/trickleEverySec verdrahtet", res.hasConsts);
-    check("V17.29 Trickle: spawn_creature taggt getragene Kreaturen (tendsLife, Source-Probe)", res.spawnTagsTends);
-    check("V17.29 Trickle: updateCreatures ruft _tickCreatureLifeTrickle (Source-Probe)", res.updateTrickles);
     check("V17.29 Trickle: eine tendende Kreatur traeufelt Leben in ihre Zelle (sustainiert)", res.tendingDeposits);
     check("V17.29 Trickle: rate-limitiert (kein Deposit-Sturm pro Frame)", res.rateLimited);
     check("V17.29 Trickle: nach dem Intervall traeufelt sie wieder (lebendiger Pfad)", res.tickedAgain);
@@ -1341,18 +1311,6 @@ async function checkBandV1730EmotionFromBeing(ctx) {
         r._feelAction("bond");
         out.bondPeace = e.peace > 0;
         reset();
-        // Hooks an jeder realen Handlungs-Stelle (Source-Proben)
-        // V17.46 — die Hooks tragen jetzt z.T. ein opts-Argument (die Substanz) → Prefix-
-        // Match statt exaktem ")" (V9.56-i: die strukturelle Probe wandert mit dem Code).
-        out.hookBuild = /_feelAction\("build"/.test(window.__codeOf(r.confirmBuild));
-        out.hookDamage = /_feelAction\("damage"/.test(window.__codeOf(r.damagePlayer));
-        out.hookHarvest = /_feelAction\("harvest"/.test(window.__codeOf(r.harvestArchitecture));
-        out.hookBond = /_feelAction\("bond"/.test(window.__codeOf(r.assignCreatureTask));
-        out.hookExplore = /_feelAction\("explore"/.test(window.__codeOf(r._setLastPlayerVoxelChunk));
-        out.hookLife = /_feelAction\("create_life"/.test(window.__codeOf(r.dslEffects.spawn_creature));
-        // ZUSTAND-Kanal: niedrige HP driftet sorrow/chaos (updatePlayerEmotions, pfad)
-        const upe = window.__codeOf(r.updatePlayerEmotions);
-        out.hpChannel = /hpMax/.test(upe) && /sorrow/.test(upe) && /chaos/.test(upe);
         return out;
     });
     check("V17.30 Pfeiler 2: ACTION_TO_EMOTION-Tabelle existiert (die Regel IST die Daten)", res.hasTable);
@@ -1362,13 +1320,6 @@ async function checkBandV1730EmotionFromBeing(ctx) {
     check("V17.30 Taten: erkunden → awe", res.exploreAwe);
     check("V17.30 Taten: Leben spawnen (Spieler) → joy + peace", res.lifeJoyPeace);
     check("V17.30 Taten: sich verbuenden → peace", res.bondPeace);
-    check("V17.30 Hook: confirmBuild fuehlt (build)", res.hookBuild);
-    check("V17.30 Hook: damagePlayer fuehlt (damage)", res.hookDamage);
-    check("V17.30 Hook: harvestArchitecture fuehlt (harvest)", res.hookHarvest);
-    check("V17.30 Hook: assignCreatureTask fuehlt (bond)", res.hookBond);
-    check("V17.30 Hook: _setLastPlayerVoxelChunk fuehlt (explore)", res.hookExplore);
-    check("V17.30 Hook: spawn_creature (human) fuehlt (create_life)", res.hookLife);
-    check("V17.30 Zustand: niedrige HP driftet sorrow/chaos (die Wund-Dread)", res.hpChannel);
 }
 
 // Emotion treibt die Welt KONTINUIERLICH (Licht + Wasser), geprüft als KONSUM: der Welt-Tint liest
@@ -1380,10 +1331,6 @@ async function checkBandV1731EmotionDrivesWorld(ctx) {
         const r = window.anazhRealm;
         const out = {};
         if (r.state.emotionField) r.state.emotionField.clear(); // V17.32 — der Tint misst die GLOBALE Stimmung, kein Ort-Abdruck
-        const tintSrc = window.__codeOf(r._dayNightComputeTint);
-        out.tintReadsAuraEmotion = /aura\.emotion/.test(tintSrc); // de-passengered: liest die Feld-Achse
-        const renderSrc = window.__codeOf(r._loopRender);
-        out.waterFed = /hydroSurfaceUniforms\.emotion/.test(renderSrc) && /em\.joy/.test(renderSrc); // toter Haken gefuettert
         // behavioral: joy faerbt den Welt-Tint warm — DURCH die Feld-Achse (aura.emotion)
         const e = r.state.player.emotions;
         const saved = Object.assign({}, e);
@@ -1414,11 +1361,6 @@ async function checkBandV1731EmotionDrivesWorld(ctx) {
         return out;
     });
     check(
-        "V17.31 Emotion→Welt: der Welt-Tint liest die emotion-ACHSE des Feldes (kein Passagier mehr)",
-        res.tintReadsAuraEmotion
-    );
-    check("V17.31 Emotion→Welt: der tote V14-Wasser-Haken wird gefuettert (uEmotion aus der Stimmung)", res.waterFed);
-    check(
         "V17.31 Emotion→Welt: joy faerbt den Welt-Tint warm — durch die Feld-Achse (kontinuierlich)",
         res.joyWarmsWorld,
         `cold.r=${res.coldR} warm.r=${res.warmR}`
@@ -1439,8 +1381,6 @@ async function checkBandV1732SpatialEmotion(ctx) {
             Array.isArray(K.EMOTION_AXES) &&
             K.EMOTION_AXES.length === 6 &&
             typeof K.EMOTION_FIELD.decayPerSec === "number";
-        out.auraBlends = /_emotionOverlayAt/.test(window.__codeOf(r.auraAt));
-        out.feelDeposits = /_depositEmotion/.test(window.__codeOf(r._feelAction));
         if (r.state.emotionField) r.state.emotionField.clear();
         const e = r.state.player.emotions;
         const saved = Object.assign({}, e);
@@ -1494,11 +1434,6 @@ async function checkBandV1732SpatialEmotion(ctx) {
         return out;
     });
     check("V17.32 raeumliche Emotion: EMOTION_FIELD + EMOTION_AXES verdrahtet", res.hasConst);
-    check("V17.32 raeumliche Emotion: auraAt blendet den lokalen Abdruck (_emotionOverlayAt)", res.auraBlends);
-    check(
-        "V17.32 raeumliche Emotion: _feelAction deponiert die Tat-Emotion am Ort (_depositEmotion)",
-        res.feelDeposits
-    );
     check(
         "V17.32 raeumliche Emotion: leeres Overlay → auraAt.emotion == globale Stimmung (backward-compat)",
         res.emptyIsGlobal
@@ -2621,8 +2556,6 @@ async function checkBandV1740LlmRules(ctx) {
         const llmRow = host.querySelector(".ability-row.source-llm");
         out.consoleLabel = !!llmRow && /Grok/.test(llmRow.querySelector(".source").textContent);
 
-        // --- (6) der LLM-Reply-Pfad trennt Regel-Programme ab (nicht der Gesten-Finalizer) ---
-        out.replySeparatesRules = /reply\.program\[0\] === "rule"/.test(window.__codeOf(r.maybeAnswerWithLlm));
 
         // restore
         r.state.worldRules = savedRules;
@@ -2642,10 +2575,6 @@ async function checkBandV1740LlmRules(ctx) {
     check("V17.40 KI-Regeln: die LLM-Regel ist voll funktional (feuert rainy → sunny)", res.llmFires);
     check("V17.40 KI-Regeln: der LLM-Prompt kennt die Regel-Grammatik (rule-Op + Feld-Bedingung)", res.promptGrammar);
     check('V17.40 KI-Regeln: die Gesetze-Console labelt eine LLM-Regel als „Grok" (source-llm)', res.consoleLabel);
-    check(
-        "V17.40 KI-Regeln: der LLM-Reply-Pfad trennt Regel-Programme ab (Fitness in worldRules)",
-        res.replySeparatesRules
-    );
 }
 
 // Gesetzes-Faden, zwei Konsumenten der EINEN Spur lastFired/fires: (a) _worldRuleActivityLabel zeigt
@@ -2958,8 +2887,6 @@ async function checkBandV1743RuleFitness(ctx) {
         r._evictWorldRule(rr2);
         out.evictProtectsHuman = rr2.some((x) => x.id === 1) && !rr2.some((x) => x.id === 2);
 
-        // --- (5) Mutations-Elternschaft ist wert-gewichtet (verdrahtet) ---
-        out.parentWeighted = /0\.5 \+ 0\.5 \* \(r\.value/.test(window.__codeOf(r._composeNexusRule));
 
         // --- (6) value ist reaktiv (NICHT im Snapshot — wie die anderen Akkus) ---
         r.state.worldRules = [];
@@ -2999,10 +2926,6 @@ async function checkBandV1743RuleFitness(ctx) {
     check(
         "V17.43 Wertung: Eviction wirft den wert-NIEDRIGSTEN ephemeren Eintrag (nicht den ältesten); Mensch/pinned geschützt",
         res.evictsLowestValue && res.evictProtectsHuman
-    );
-    check(
-        "V17.43 Wertung: die Mutations-Elternschaft ist wert-gewichtet (gerichtete Evolution Richtung Heilung)",
-        res.parentWeighted
     );
     check(
         "V17.43 Wertung: rule.value ist reaktiv — NICHT im Snapshot serialisiert (wie die anderen Akkus)",
@@ -3359,9 +3282,6 @@ async function checkBandV1746EmotionSubstance(ctx) {
         reset();
         r._feelAction("create", { tags: { magieleitung: 1 }, magnitude: 1.5 });
         out.createPride = p.emotions.joy > 0 && p.emotions.hope > 0 && p.emotions.awe > 0; // Stolz (joy+hope) + Magie (awe)
-        const dbSrc = window.__codeOf(r.dslEffects.define_blueprint);
-        out.createHooked = /_feelAction\("create"/.test(dbSrc) && /source === "human"/.test(dbSrc);
-        out.buildHooked = /_feelAction\("build", \{ blueprint/.test(window.__codeOf(r.confirmBuild));
 
         // (6) KEIN Regress: ohne Substanz exakt V17.30 (build → joy 0.1, hope 0.1; explore-Fallback)
         reset();
@@ -3396,8 +3316,6 @@ async function checkBandV1746EmotionSubstance(ctx) {
         "V17.46 Substanz: der schöpferische Akt → Stolz (joy+hope) + Substanz-Färbung (Magie → awe)",
         res.createPride
     );
-    check("V17.46 Substanz: define_blueprint feuert create-Stolz NUR für den Menschen (Source-Gate)", res.createHooked);
-    check("V17.46 Substanz: confirmBuild übergibt die Substanz (blueprint) an _feelAction", res.buildHooked);
     check(
         "V17.46 Substanz: KEIN Regress — _feelAction('build') ohne Substanz = exakt V17.30 (joy 0.1, hope 0.1)",
         res.noRegressBuild
@@ -3645,7 +3563,6 @@ async function checkBandV1748Social(ctx) {
         inject("happy", 0, "wait");
         r._tickEmotionContagion(2);
         out.waitNoBond = r.state.creatures[0].userData.bond === 0;
-        out.followBumpWired = /bondFollowBump/.test(window.__codeOf(r.assignCreatureTask));
 
         // (5) BOND-LOSS — der Verlust einer GEBUNDENEN Kreatur schmerzt MEHR (∝ Bindung × Vitalität)
         const grief = (bond, leb) => 0.3 + bond * 1.2 + leb * 0.4; // die _creatureNaturalDeath-Formel
@@ -3656,8 +3573,6 @@ async function checkBandV1748Social(ctx) {
         r._feelAction("loss", { magnitude: grief(1, 0.5) });
         const sBonded = p.emotions.sorrow;
         out.bondLossHurts = sBonded > sUnbonded + 0.05;
-        const cnd = window.__codeOf(r._creatureNaturalDeath);
-        out.lossWired = /bond/.test(cnd) && /lebendig/.test(cnd) && /_feelAction\("loss"/.test(cnd);
 
         // (6) KO-REGULATION — die KI TENDET bei anhaltend trüber Stimmung (Hoffnung + Wort)
         setEmo({});
@@ -3672,7 +3587,6 @@ async function checkBandV1748Social(ctx) {
         r.state.grok.triggers.comfort.lastFired = -Infinity;
         r._aiTendPlayer();
         out.noTendWhenOk = p.emotions.hope === 0;
-        out.tendWired = /_aiTendPlayer/.test(window.__codeOf(r.grokTick));
 
         // restore
         setEmo(savedEmo);
@@ -3703,23 +3617,14 @@ async function checkBandV1748Social(ctx) {
     check("V17.48 Soziales: KONSUM — die Bindung WÄCHST, während eine folgende Kreatur nah ist", res.bondGrows);
     check("V17.48 Soziales: eine WARTENDE Kreatur baut keine Bindung auf (nur gemeinsame Zeit zählt)", res.waitNoBond);
     check(
-        'V17.48 Soziales: die „folge mir"-Geste vertieft die Bindung (assignCreatureTask wired)',
-        res.followBumpWired
-    );
-    check(
         "V17.48 Soziales: KONSUM — der Verlust einer GEBUNDENEN Kreatur schmerzt MEHR (Trauer ∝ Bindung)",
         res.bondLossHurts
-    );
-    check(
-        "V17.48 Soziales: der Verlust ist ein Ereignis ∝ Bindung × Vitalität (_creatureNaturalDeath wired)",
-        res.lossWired
     );
     check("V17.48 Soziales: KONSUM — die KI TENDET bei anhaltend trüber Stimmung (Hoffnung + Trost)", res.tendComforts);
     check(
         "V17.48 Soziales: kein Trost ohne Trübsal — bei ausgeglichener Stimmung TENDET die KI nicht",
         res.noTendWhenOk
     );
-    check("V17.48 Soziales: die KI tendet aus dem grokTick (Ko-Regulator wired, nicht nur Kommentar)", res.tendWired);
 }
 
 // Abenteuer graduiert: `explore` feuert nicht flach je Chunk-Wechsel, die Magnitude emergiert aus
@@ -3766,7 +3671,6 @@ async function checkBandV1749Adventure(ctx) {
         r._depositLife(pm.x, pm.z, 1.0); // üppig
         const magCommute = r._exploreMagnitude(333, 333);
         out.adventureGrades = magAdventure > magCommute + 0.5;
-        out.distWired = /distScale|hypot/.test(window.__codeOf(r._exploreMagnitude));
         r.state.lifeField = new Map();
 
         // (4) KÜHNHEIT — in eine karge Aura wagen staunt mehr als in eine üppige (liest auraAt;
@@ -3792,7 +3696,6 @@ async function checkBandV1749Adventure(ctx) {
         r._feelAction("explore", { magnitude: 0.3 });
         const aweTimid = p.emotions.awe;
         out.exploreScales = aweBold > aweTimid + 0.02;
-        out.hookWired = /_exploreMagnitude/.test(window.__codeOf(r._setLastPlayerVoxelChunk));
 
         // (6) visitedRegions bounded (Prune beim Überlauf)
         const big = new Set();
@@ -3816,7 +3719,6 @@ async function checkBandV1749Adventure(ctx) {
         "V17.49 Abenteuer: KONSUM — kühnes Erkunden (neu+fern+karg) ≫ vertrautes Pendeln (das Wagnis graduiert)",
         res.adventureGrades
     );
-    check("V17.49 Abenteuer: die Distanz vom Ursprung fließt ein (_exploreMagnitude wired)", res.distWired);
     check(
         "V17.49 Abenteuer: KONSUM — in eine karge Aura wagen staunt mehr (Kühnheit liest das Feld)",
         res.boldnessGrades
@@ -3825,7 +3727,6 @@ async function checkBandV1749Adventure(ctx) {
         "V17.49 Abenteuer: KONSUM — die explore-Tat skaliert mit der Magnitude (awe graduiert, nicht binär)",
         res.exploreScales
     );
-    check("V17.49 Abenteuer: _setLastPlayerVoxelChunk nutzt _exploreMagnitude (hook wired)", res.hookWired);
     check("V17.49 Abenteuer: visitedRegions bounded (Prune beim Überlauf)", res.bounded);
 }
 
@@ -3903,9 +3804,6 @@ async function checkBandV1750Klammer(ctx) {
         // Situations-Verbesserung) → KEIN Bonus (Phase 2 unverändert), egal wie hoch die Emotion ist.
         const vNearNeg = measureRule(pm.x, pm.z, vbaseNear, -0.5);
         out.noGamingWhenNoSituation = Math.abs(vNearNeg - vNearNoBonus) < 1e-9;
-        out.wired =
-            /appraisalDelta/.test(window.__codeOf(r._measureRuleReward)) &&
-            /phase4Radius/.test(window.__codeOf(r._measureRuleReward));
 
         // restore
         setEmo(savedEmo);
@@ -3939,7 +3837,6 @@ async function checkBandV1750Klammer(ctx) {
         "V17.50 Klammer: ANTI-GAMING — eine nahe Regel ohne echte Situations-Verbesserung (δ≤0) bekommt KEINEN Bonus",
         res.noGamingWhenNoSituation
     );
-    check("V17.50 Klammer: _measureRuleReward nutzt appraisalDelta + phase4Radius (wired)", res.wired);
 }
 
 // Kombat-Stats: knockback/attackSpeed/defense EMERGIEREN aus der Substanz (Tags → STAT_FROM_TAGS) wie
@@ -3989,10 +3886,6 @@ async function checkBandV1751CombatStats(ctx) {
             Number.isFinite(cs.knockback) && Number.isFinite(cs.attackSpeed) && Number.isFinite(cs.defense);
         r.removeCreature(c); // sauber aufräumen (kein Kreatur-Zahl-Leck)
 
-        // (5) die Sichtbarkeit — das Selbst-Spec-Sheet (_ichBuildSpecSheet, V18.44/.57) trägt das Kombat-Profil
-        //     (echter UI-Konsum; V18.61 Ich-F ersetzte die flache renderPlayerStatsUI-Liste durch diese Daten-Viz).
-        const uiSrc = window.__codeOf(r._ichBuildSpecSheet);
-        out.uiShowsCombat = /damage/.test(uiSrc) && /defense/.test(uiSrc) && /precision/.test(uiSrc);
 
         // (6) V18.312 (Gesetz #0) — die KANONISCHE Stat-Pipeline: beide Spezies LESEN dieselben drei
         //     Post-Tag-Quellen (Boosts falten · Tags→Stats+Floor · Größen-Skalierung), kein Parallelpfad mehr
@@ -4045,10 +3938,6 @@ async function checkBandV1751CombatStats(ctx) {
     check(
         "V18.312 (Gesetz #0): EINE kanonische Stat-Pipeline — Spieler + Kreatur lesen _applyBoostsToStatTags · _statsFromTags · _applySizeMultipliersToStats (§1.3 fraktal, kein Parallelpfad)",
         res.pipelineShared
-    );
-    check(
-        "V17.51 Kampf A: das Selbst-Spec-Sheet macht das Kampf-Profil sichtbar (Schaden/Abwehr/Präzision)",
-        res.uiShowsCombat
     );
 }
 
@@ -4406,11 +4295,6 @@ async function checkBandV1754PlayerAttack(ctx) {
         out.knockbackTotFeld = kbOk && !totFeld;
         if (r.state.creatures.indexOf(c4) !== -1) r.removeCreature(c4);
 
-        // (7) der Dispatch + die Schuld sind wired (Source-Probe)
-        const tmb = window.__codeOf(r.tryMouseBreak);
-        const dth = window.__codeOf(r._creatureCombatDeath);
-        out.dispatchWired = /_pickCreatureAtCrosshair/.test(tmb) && /_playerAttackCreature/.test(tmb);
-        out.guiltWired = /computeCreatureCompoundTags/.test(dth) && /_feelAction\("loss"/.test(dth);
 
         // cleanup
         if (r.state.creatures.indexOf(c1) !== -1) r.removeCreature(c1);
@@ -4450,10 +4334,6 @@ async function checkBandV1754PlayerAttack(ctx) {
     check(
         "V17.54 Kampf D (Gegenprobe 0710-5): das tote Feld knockback stößt nicht — ein Check damit allein wäre leer",
         res.knockbackTotFeld
-    );
-    check(
-        "V17.54 Kampf D: tryMouseBreak dispatcht zur Kreatur + die Schuld ist in _creatureCombatDeath wired",
-        res.dispatchWired && res.guiltWired
     );
 }
 
@@ -4802,8 +4682,6 @@ async function checkBandV1758CreatureNature(ctx) {
         out.hitFlees = r._creatureWariness(timid) >= NAT.fleeThreshold;
         timid.userData.fearUntil = 0;
 
-        // (10) der wander-Tick liest _creatureWariness (der Konsument ist verdrahtet)
-        out.wanderReadsWariness = /_creatureWariness/.test(window.__codeOf(r.updateCreatures));
 
         // cleanup
         for (const c of [timid, bold, far]) if (c && r.state.creatures.indexOf(c) !== -1) r.removeCreature(c);
@@ -4834,7 +4712,6 @@ async function checkBandV1758CreatureNature(ctx) {
         "V17.58 W3: KONSUM — ein getroffenes Wesen flieht selbst bei sanfter Aura (die Kampf-Furcht überschreibt)",
         res.hitFlees
     );
-    check("V17.58 W3: der wander-Tick liest _creatureWariness (der Konsument ist verdrahtet)", res.wanderReadsWariness);
 }
 
 // V17.59 S1 (kampf-plan §11.7) — die Werkstatt erkennt JEDE Lesart: der emergente Fähigkeits-Readout
@@ -5490,10 +5367,6 @@ async function checkBandV1766FertigenFlow(ctx) {
         // --- V17.91: der Detail-Editor (samt _workshopRenderActions) ist ENTFERNT → die alten parallelen
         // Mach-Knöpfe existieren definitiv nicht mehr; der EINE FERTIGEN-Akt lebt im Stats-Panel. ---
         out.oldButtonsGone = typeof r._workshopRenderActions !== "function";
-        // --- der EINE FERTIGEN-Akt lebt jetzt im Abschluss der Stats-Tabelle ---
-        out.statsPanelCallsFertigen = window
-            .__codeOf(r._workshopRenderStatsPanel)
-            .includes("_workshopAppendFertigenRow");
 
         // === ein DOMAIN-tragendes forging-Geraet vorbereiten (schoepfer = kein Stamina-Zug). EIN
         // eisen-Part (Einzel-Material → die Kosten sind eindeutig eisen) + ein schmiede-hammer-Op
@@ -5575,10 +5448,6 @@ async function checkBandV1766FertigenFlow(ctx) {
     check(
         "V17.66 S7: die alten parallelen Mach-Knoepfe (⚒/Seele) sind aus dem Detail-Editor ENTFERNT",
         res.oldButtonsGone
-    );
-    check(
-        "V17.66 S7: das FERTIGEN lebt jetzt im Abschluss der Stats-Tabelle (verfeinern → ablesen → FERTIGEN)",
-        res.statsPanelCallsFertigen
     );
     check("V17.66 S7: das forging-Geraet traegt die Domain (Voraussetzung fuers Maschine-Gate)", res.forgeHasDomain);
     check(
@@ -6326,12 +6195,6 @@ async function checkBandOmegaWerkstattSpiegel(ctx) {
             lineHas(vWeapon, /kopflastig/) &&
             vWeapon.lean === 0 &&
             !lineHas(vWeapon, /kippt/);
-        // ── Ω-W3 CONSUM: die Vorschau LIEST das Verdikt (Source-Probe, kein GPU) ──
-        o.consumRebuild = /_workshopPhysicsVerdict/.test(window.__codeOf(r._workshopRebuildPreviewMesh));
-        o.consumTick =
-            /physicsVerdict/.test(window.__codeOf(r._workshopStartRAF)) &&
-            /rotation/.test(window.__codeOf(r._workshopStartRAF));
-        o.consumRender = /floatingParts/.test(window.__codeOf(r._workshopRender));
         return o;
     });
     check("Ω-W2: physik-wahre Optimierungs-Verben (Standfestigkeit/Lastpfad/Rollfähigkeit)", res.w2Verbs === true);
@@ -6343,10 +6206,6 @@ async function checkBandOmegaWerkstattSpiegel(ctx) {
     check("Ω-W3: zu schlanke Säule knickt (Versagen sichtbar)", res.slenderKnickt === true);
     check("Ω-W3: stabiles Bauwerk RUHT (lean 0, steht, keine Warnung)", res.stableRuht === true);
     check("Ω-W3 ROLLEN-bewusst: kopflastige Waffe → traeger Schwung, nicht kippt", res.weaponTraege === true);
-    check(
-        "⟡ Ω-W3 CONSUM: die Vorschau liest das Verdikt (wankt/markiert/cacht — kein Passagier)",
-        res.consumRebuild && res.consumTick && res.consumRender
-    );
 }
 
 // Ω-PHYSIS Säule III — Bauplan-Grammatik: Ω-B1 Tempel nach DORISCHER ORDNUNG (Entasis + Kanneluren
@@ -8238,13 +8097,6 @@ async function checkBandV1790Recalibration(ctx) {
         r.state.player.equipped = {};
         out.sizeNeutralEquip = Math.abs(eq3 - eq1) <= 0.02 * Math.abs(eq1) + 0.1;
         out.equipVals = `equip 1×=${eq1.toFixed(1)} 3×=${eq3.toFixed(1)}`;
-        // der KANONISCHE Equip-Fold — Spieler + Kreatur lesen dieselbe Quelle (Raptor-Lens, __codeOf-bereinigt)
-        const psSrc = r.computePlayerStats ? window.__codeOf(r.computePlayerStats) : "";
-        const csSrc = r.computeCreatureStats ? window.__codeOf(r.computeCreatureStats) : "";
-        out.equipFoldShared =
-            psSrc.includes("_foldEquippedStatTags") &&
-            csSrc.includes("_foldEquippedStatTags") &&
-            typeof r._foldEquippedStatTags === "function";
         // attackSpeed bleibt POSITIV (kein negativer Cooldown trotz schwerem Gerät)
         blu._rcheavy = blade("eisen", 3);
         blu._rcheavy.name = "_rcheavy";
@@ -8319,10 +8171,6 @@ async function checkBandV1790Recalibration(ctx) {
         "V18.311 (Spieler runter): size-neutral auch im ECHTEN Kampf (Equip-Fold) — eq 3× ≈ 1×",
         res.sizeNeutralEquip,
         res.equipVals
-    );
-    check(
-        "V18.311 (Gesetz #0): EIN kanonischer Equip-Fold — Spieler + Kreatur lesen _foldEquippedStatTags",
-        res.equipFoldShared
     );
     check(
         "V17.90 Facette 3: attackSpeed bleibt POSITIV trotz schwerem Gerät (kein negativer Cooldown)",
@@ -8523,10 +8371,6 @@ async function checkBandWaves1to3(ctx) {
         // wandert mit (V9.56-i): er prüft die Verortung, nicht den alten Ort.
         out.worldImportInBibliothek = !!document.getElementById("library-import");
         out.worldExportInBibliothek = !!document.getElementById("action-export-state");
-        // KONSUM: der EINE Empfangen-Eingang nimmt BEIDE Datei-Arten (Snapshot → Welt-Tor, Manifest
-        // → andocken) — der Handler routet beide Pfade.
-        const himfSrc = window.__codeOf(r._handleWorldManifestFile);
-        out.importUnified = himfSrc.includes("_openWeltTorDialog") && himfSrc.includes("importWorldManifest");
         // F — updateWorldInfo treibt jetzt die Insel (kein #world-info mehr); sie zeigt den slug
         r.updateWorldInfo();
         const islandText = (document.getElementById("feed-active-ident") || {}).textContent || "";
@@ -8589,7 +8433,6 @@ async function checkBandWaves1to3(ctx) {
             "Welle 3 F: Welt-Verwaltung im Welt-Manager (Bibliothek: Empfangen + Welt-Datei-Export)",
             wave3Results.worldImportInBibliothek && wave3Results.worldExportInBibliothek
         );
-        check("Welle 3 F: Empfangen nimmt Snapshot UND Manifest (vereinter Eingang)", wave3Results.importUnified);
         check("Welle 3 F: Diese-Welt-Insel zeigt slug", wave3Results.worldInfoShowsSlug);
         check("Welle 3 F: triggerStateDownload nutzt suggestedName", wave3Results.downloadCustomName);
         check("Tagebuch: #world-journal-list im DOM", wave3Results.journalListInDom);
@@ -15403,10 +15246,6 @@ async function checkBandWelle6APolish(ctx) {
         if (!r || !r.state.playerVel) return null;
         const out = {};
 
-        // 6.A2 — Threshold-Konstante ist 0.6 (im Function-Source)
-        const fnSrc = window.__codeOf(r.isPlayerGrounded);
-        out.hasGroundDistanceVar = fnSrc.includes("groundDistance");
-        out.groundDistanceIs06 = /groundDistance\s*=\s*0\.6/.test(fnSrc);
 
         // 6.A2 Diskrimination an eindeutiger Setup-Position (frühere Tests verschieben mesh.position):
         // in der Luft → not grounded, auf gespawntem Bauwerk → grounded.
@@ -15506,14 +15345,6 @@ async function checkBandWelle6APolish(ctx) {
         check(
             "V18.279: der Physik-Doom-Loop ist weg — _loopSelfAnalysis ruft nicht mehr optimizePhysics (kein churn/spam/leck bei niedriger fps)",
             wave6aResults.noDoomLoopInSelfAnalysis && wave6aResults.nexusProcessOptGone
-        );
-        check(
-            "Welle 6.A2: isPlayerGrounded hat groundDistance-Konstante (refactored)",
-            wave6aResults.hasGroundDistanceVar
-        );
-        check(
-            "Welle 6.A2: groundDistance ist 0.6 (entspannte Schwelle für Bauwerks-Sub-Boxes)",
-            wave6aResults.groundDistanceIs06
         );
         if (wave6aResults.archEntrySpawned) {
             check(
@@ -15630,20 +15461,7 @@ async function checkBandWelle6APolish(ctx) {
         delete r.state.blueprints._t_w6a3_haus;
         r.state.playerMesh.position.set(_savedX, _savedY, _savedZ);
 
-        // 6.A3 — Quell-Check: Funktion liest tatsächlich die Normal
-        // (sonst wäre das Tracking ein No-op)
-        const fnSrc = window.__codeOf(r.isPlayerGrounded);
-        out.fnReadsNormal = fnSrc.includes("get_m_hitNormalWorld");
-        out.fnSetsSteepFlag = /onSteepSlope\s*=/.test(fnSrc);
-        out.fnSetsGroundNormal = /groundNormalY\s*=/.test(fnSrc);
 
-        // Bewegungs-Loop drosselt auf steilem Hang: statischer Check der slopePenalty-Logik in
-        // _loopPlayerMovement (einen echten Hang headless zu synthetisieren ist fragil).
-        const loopSrc = r._loopPlayerMovement ? window.__codeOf(r._loopPlayerMovement) : "";
-        out.movementUsesSlopePenalty = /slopePenalty/.test(loopSrc);
-        // Tests wandern V18.489: die Drossel liest das Steilhang-Gesetz (fx.bewegung.hang.malus).
-        out.movementHasSlopeBranch = /onSteepSlope[\s\S]{0,200}?_bewegungsBlock\("hang"/.test(loopSrc);
-        out.movementSlideOnSlope = /!\s*this\.state\.onSteepSlope/.test(loopSrc);
 
         return out;
     });
@@ -15658,12 +15476,6 @@ async function checkBandWelle6APolish(ctx) {
         check("Welle 6.A3: state.groundNormalY existiert", wave6a3Results.hasGroundNormalY);
         check("Welle 6.A3: state.onSteepSlope existiert", wave6a3Results.hasOnSteepSlope);
         check(
-            "Welle 6.A3: isPlayerGrounded liest get_m_hitNormalWorld (Slope-Tracking aktiv)",
-            wave6a3Results.fnReadsNormal
-        );
-        check("Welle 6.A3: isPlayerGrounded setzt onSteepSlope-Flag", wave6a3Results.fnSetsSteepFlag);
-        check("Welle 6.A3: isPlayerGrounded setzt groundNormalY", wave6a3Results.fnSetsGroundNormal);
-        check(
             "Welle 6.A3: Negativ-Kontrolle — Himmel hat onSteepSlope=false (nicht geerdet)",
             wave6a3Results.skyOnSteepSlope === false
         );
@@ -15671,12 +15483,6 @@ async function checkBandWelle6APolish(ctx) {
             "Welle 6.A3: Diskrimination — flache Bauwerks-Oberseite ist NICHT als steil markiert",
             wave6a3Results.flatBlueprintNotSteep,
             `archTopNy=${wave6a3Results.archTopGroundNormalY}, archTopSteep=${wave6a3Results.archTopOnSteepSlope}, entryNull=${wave6a3Results.entryA3Null}, shape=${wave6a3Results.entryA3Shape}, saved=(${Math.round(wave6a3Results.savedX)},${Math.round(wave6a3Results.savedZ)}), err=${wave6a3Results.spawnErrA3}`
-        );
-        check("Welle 6.A3: Bewegungs-Loop nutzt slopePenalty-Variable", wave6a3Results.movementUsesSlopePenalty);
-        check("Welle 6.A3: Bewegungs-Loop hat onSteepSlope ? 0.2 : 1.0 Drossel", wave6a3Results.movementHasSlopeBranch);
-        check(
-            "Welle 6.A3: Bewegungs-Loop lässt Velocity stehen wenn onSteepSlope (Slide-Verhalten)",
-            wave6a3Results.movementSlideOnSlope
         );
     }
 
@@ -15692,27 +15498,8 @@ async function checkBandWelle6APolish(ctx) {
         out.hasTintMethod = typeof r._applyPhantomTint === "function";
         out.hasPhantomOnGroundField = "phantomOnGround" in r.state.buildMode;
 
-        // Source-Checks: tickBuildMode nutzt die neuen Pfade
-        const tickSrc = window.__codeOf(r.tickBuildMode);
-        out.tickUsesResolve = /_resolvePhantomTarget/.test(tickSrc);
-        out.tickUsesTint = /_applyPhantomTint/.test(tickSrc);
-        out.tickSetsOnGround = /phantomOnGround\s*=/.test(tickSrc);
 
-        const resolveSrc = window.__codeOf(r._resolvePhantomTarget);
-        out.resolveUsesCamera = /this\._fadenkreuzStrahl\(\)/.test(resolveSrc);
-        out.resolveUsesGetWorldDirection = /getWorldDirection/.test(window.__codeOf(r._fadenkreuzStrahl));
-        // DETERMINISMUS-BOGEN P3 — _resolvePhantomTarget ruft den feld-nativen
-        // _runRaycast (kein physicsWorld.rayTest mehr; der Raycast geht durch
-        // das Dichtefeld + Struktur-Box-Ray).
-        out.resolveUsesRayTest = /_runRaycast/.test(resolveSrc);
-        out.resolveReadsNormal = /get_m_hitNormalWorld/.test(resolveSrc);
-        out.resolveHasFallback = /fallback/.test(resolveSrc);
-        out.resolveStabilityThreshold = /nrm\.y\(\)\s*>\s*0\.5/.test(resolveSrc);
 
-        const tintSrc = window.__codeOf(r._applyPhantomTint);
-        out.tintCachesOrigColor = /_origColor/.test(tintSrc);
-        out.tintHasGreenStable = /0x88ff88/.test(tintSrc);
-        out.tintHasRedUnstable = /0xff8888/.test(tintSrc);
 
         // Build-Modus auf "stein_block"-Slot 0, Kamera in den Boden schauen lassen, tickBuildMode →
         // Phantom liegt im Treffer-Bereich + isStable=true.
@@ -15796,30 +15583,6 @@ async function checkBandWelle6APolish(ctx) {
         check("Welle 6.A4: _resolvePhantomTarget-Methode existiert", wave6a45Results.hasResolveMethod);
         check("Welle 6.A5: _applyPhantomTint-Methode existiert", wave6a45Results.hasTintMethod);
         check("Welle 6.A5: buildMode.phantomOnGround-Feld existiert", wave6a45Results.hasPhantomOnGroundField);
-        check("Welle 6.A4: tickBuildMode delegiert an _resolvePhantomTarget", wave6a45Results.tickUsesResolve);
-        check("Welle 6.A5: tickBuildMode ruft _applyPhantomTint", wave6a45Results.tickUsesTint);
-        check("Welle 6.A5: tickBuildMode setzt phantomOnGround", wave6a45Results.tickSetsOnGround);
-        check(
-            "Welle 6.A4: _resolvePhantomTarget liest den Strahl des Fadenkreuzes (_fadenkreuzStrahl)",
-            wave6a45Results.resolveUsesCamera
-        );
-        check(
-            "Welle 6.A4: der Strahl des Fadenkreuzes nutzt getWorldDirection der Kamera",
-            wave6a45Results.resolveUsesGetWorldDirection
-        );
-        check(
-            "Welle 6.A4: _resolvePhantomTarget nutzt den feld-nativen _runRaycast",
-            wave6a45Results.resolveUsesRayTest
-        );
-        check("Welle 6.A5: _resolvePhantomTarget liest hit-Normal für Stabilität", wave6a45Results.resolveReadsNormal);
-        check(
-            "Welle 6.A5: Stabilitäts-Schwelle ist Normal-Y > 0.5 (~60° walkable)",
-            wave6a45Results.resolveStabilityThreshold
-        );
-        check("Welle 6.A4: _resolvePhantomTarget hat Fallback-Pfad", wave6a45Results.resolveHasFallback);
-        check("Welle 6.A5: _applyPhantomTint cached _origColor (kein Drift)", wave6a45Results.tintCachesOrigColor);
-        check("Welle 6.A5: Tint hat Grün-Code 0x88ff88 für stabil", wave6a45Results.tintHasGreenStable);
-        check("Welle 6.A5: Tint hat Rot-Code 0xff8888 für instabil", wave6a45Results.tintHasRedUnstable);
         if (wave6a45Results.phantomExists) {
             check(
                 "Welle 6.A4: Phantom landet auf Hit-Punkt (nicht alter Y-Fallback)",
@@ -16307,9 +16070,6 @@ async function checkBandWelle6DSoul(ctx) {
         r.applyPlayerSoul(savedSoul);
         r.recomputePlayerStats();
 
-        // applyPlayerSoul ruft recompute auf
-        const applySrc = window.__codeOf(r.applyPlayerSoul);
-        out.applyCallsRecompute = /recomputePlayerStats/.test(applySrc);
 
         // UI im DOM (V18.61 Ich-F — das Selbst-Spec-Sheet #ich-stage-spec ersetzt die flache #player-stats-Liste)
         out.statsContainerInDom = !!document.getElementById("ich-stage-spec");
@@ -16340,11 +16100,6 @@ async function checkBandWelle6DSoul(ctx) {
         const C = typeof AnazhRealm !== "undefined" ? AnazhRealm : r.constructor;
         const out = {};
 
-        // (1) WASD: A=+right, D=-right — state.right zeigt wegen Right-Hand-Coords (forward × up = -X)
-        // geometrisch nach player-links. Die Logik lebt in _loopPlayerMovement.
-        const loopSrc = window.__codeOf(r._loopPlayerMovement);
-        out.aPressPosRight = /keys\["a"\][^;]*addScaledVector\(this\.state\.right,\s*1\)/.test(loopSrc);
-        out.dPressNegRight = /keys\["d"\][^;]*addScaledVector\(this\.state\.right,\s*-1\)/.test(loopSrc);
 
         // (2) Chat-Pattern für damage
         const dmgPattern = r.parseChatToDsl("schade mir 42");
@@ -16551,10 +16306,6 @@ async function checkBandWelle6DSoul(ctx) {
     });
 
     if (reflexResults && !reflexResults.error) {
-        // (1) WASD (Original-Mapping: state.right ist geometrisch player-links,
-        // weil forward × up = -X im right-handed Coord-System)
-        check("Reflex 1: WASD-Bewegung — A drückt +state.right (= player-links)", reflexResults.aPressPosRight);
-        check("Reflex 1: WASD-Bewegung — D drückt −state.right (= player-rechts)", reflexResults.dPressNegRight);
         // (2) Chat
         check("Reflex 2: 'schade mir 42' chat-pattern → DSL ['damage', 42, ...]", reflexResults.damageChatParses);
         check("Reflex 2: 'trink X' chat-pattern → DSL ['apply_boost', ...]", reflexResults.trinkChatParses);
@@ -17627,7 +17378,6 @@ async function checkBandWelle6DSoul(ctx) {
             "Welle 6.D + K27: hp, hpMax, stamina, staminaMax existieren; die Wandlung füllt, die Neuberechnung heilt nicht",
             wave6dResults.statePlayerHasHpAndStamina
         );
-        check("Welle 6.D: applyPlayerSoul ruft recomputePlayerStats auf", wave6dResults.applyCallsRecompute);
         check("Welle 6.D: das Selbst-Spec-Sheet (#ich-stage-spec) im DOM", wave6dResults.statsContainerInDom);
         check("Welle 6.D: das Spec-Sheet rendert ohne Crash (V18.61 Ich-F)", wave6dResults.renderOk);
         if (wave6dResults.renderOk) {
@@ -18719,8 +18469,6 @@ async function checkBandV18275FoliageGrowth(ctx) {
         if (!r || !r.state) return { error: "no realm" };
         const st = r.state;
         const out = {};
-        // Source: der Aktuator fährt foliageRadius; Gate + Wachstum existieren.
-        out.actuatorDrives = /foliageRadius/.test(window.__codeOf(r._nexusPerfActuate));
         out.hasGate = typeof r._foliageChunkInRadius === "function";
         out.hasGrowth = typeof r._tickFoliageGrowth === "function";
         // Headless (Null-Renderer): der Aktuator setzt foliageRadius = MAX (gate-treu).
@@ -18775,22 +18523,6 @@ async function checkBandV18275FoliageGrowth(ctx) {
         r._tickFoliageGrowth();
         out.growthResumesWhenFree = !st.pendingFoliageChunks.has(tk2); // jetzt gedrainiert
 
-        // V18.277 — DIE KAPAZITÄTS-GEWACHSENE DICHTE (Schöpfer „Deko steigt bei Kapazität"):
-        // der Aktuator fährt `_foliageDensityScale`; die NAH-STREU (`_nahStreuKachel`, Waldboden 04.10.)
-        // UND der FERNE Compute-Scatter (`_scatterPass`, die MASSE der Render-Last) LESEN ihn.
-        out.actuateDrivesDensity = /_foliageDensityScale/.test(window.__codeOf(r._nexusPerfActuate));
-        // N7.2 (Dual-Regime senken, V9.56-i — die Probe wandert mit): auch der NAHE Scatter
-        // liest jetzt die EINE Dichte-Quelle `_effectiveFoliageDensity` (wie der ferne, W1);
-        // dass DIE den Regler liest, beweist `farScatterReadsDensity` direkt darunter.
-        out.scatterReadsDensity = /_effectiveFoliageDensity/.test(window.__codeOf(r._nahStreuKachel));
-        // W1 (Paritäts-Vollendung) — die Probe wandert mit dem Code (V9.56-i): der ferne Scatter
-        // liest jetzt die EINE Dichte-Quelle `_effectiveFoliageDensity` (Gesetz #0), und DIE liest
-        // den Regler. Kette statt Literal — und via __codeOf (kommentar-gestrippt, kein vakuöses Grün).
-        out.farScatterReadsDensity =
-            /_effectiveFoliageDensity/.test(window.__codeOf(r._scatterPass)) &&
-            typeof r._effectiveFoliageDensity === "function" &&
-            /_foliageDensityScale/.test(window.__codeOf(r._effectiveFoliageDensity)) &&
-            /_foundryEnabled/.test(window.__codeOf(r._effectiveFoliageDensity));
         const ppD = st.playerMesh && st.playerMesh.position ? st.playerMesh.position : { x: 0, y: 0, z: 0 };
         // CONSUM (behavioral): die Scatter-Region des Spielers (der Warmup baut sie nicht) bei voller vs
         // gedrosselter Dichte neu bauen → `instanceCount` fällt. Der Faktor lichtet Platzierungs-
@@ -18848,12 +18580,6 @@ async function checkBandV18275FoliageGrowth(ctx) {
         out.thinExists = typeof r._tickFoliageThin === "function";
         out.scatterReadsBuiltDensity = /builtDensity/.test(window.__codeOf(r._scatterRegion));
         out.streamingCallsThin = /_tickFoliageThin/.test(window.__codeOf(r._tickScatterStreaming));
-        // Thin-Loch-Wand: (a) builtDensity-Buchhaltung und Thin-Leser lesen die EINE Quelle
-        // _effectiveFoliageDensity (sonst Dispose+Rebuild-Endlosschleife im Studio-Regime);
-        // (b) direktes Foundry-Gate in `_tickFoliageThin`.
-        out.builtDensityFromOneSource = /_effectiveFoliageDensity/.test(window.__codeOf(r._scatterRegion));
-        out.thinReadsOneSource = /_effectiveFoliageDensity/.test(window.__codeOf(r._tickFoliageThin));
-        out.thinFoundryGated = /_foundryEnabled/.test(window.__codeOf(r._tickFoliageThin));
         // CONSUM (behavioral; Hook SICHERN + WIEDERHERSTELLEN, nie löschen-und-vergessen): foundry-ON
         // ist Default → die eine Quelle liefert 1 trotz gesenktem Regler, Nach-Dünnen = No-op; foundry-aus
         // („der Regler führt“) per lokalem Hook. Beide Pfade sind Frühausstiege ohne Worker → gate-sicher.
@@ -18932,7 +18658,6 @@ async function checkBandV18275FoliageGrowth(ctx) {
         check("V18.275: Foliage-Growth-Band (realm)", false, res.error);
         return;
     }
-    check("V18.275: der Perf-Aktuator fährt den foliageRadius (Source)", res.actuatorDrives);
     check("V18.275: _foliageChunkInRadius + _tickFoliageGrowth existieren", res.hasGate && res.hasGrowth);
     check("V18.275: headless (Null-Renderer) → foliageRadius = MAX (gate-treu)", res.headlessFull);
     if (!res.skip) {
@@ -18953,10 +18678,6 @@ async function checkBandV18275FoliageGrowth(ctx) {
         check("V18.282: Frame frei → das Wachstum läuft weiter (lädt in den Lücken)", res.growthResumesWhenFree);
     }
     check(
-        "V18.277: der Aktuator fährt _foliageDensityScale; naher + ferner Scatter LESEN ihn (Source, der Bulk-Hebel)",
-        res.actuateDrivesDensity && res.scatterReadsDensity && res.farScatterReadsDensity
-    );
-    check(
         "V18.277: headless (Null-Renderer) → _foliageDensityScale = 1 (volle Dichte, gate-treu)",
         res.densityHeadlessFull
     );
@@ -18971,14 +18692,6 @@ async function checkBandV18275FoliageGrowth(ctx) {
     check(
         "V18.280: _tickFoliageThin existiert · Region trägt builtDensity · der Scatter-Tick ruft das Nach-Dünnen (Source)",
         res.thinExists && res.scatterReadsBuiltDensity && res.streamingCallsThin
-    );
-    check(
-        "W1: EINE Streu-Dichte-Quelle `_effectiveFoliageDensity` — Bau, builtDensity-Buchhaltung UND Nach-Dünnen lesen sie (Gesetz #0, __codeOf)",
-        res.farScatterReadsDensity && res.builtDensityFromOneSource && res.thinReadsOneSource
-    );
-    check(
-        "W1: das Thin-Loch ist doppelt gewändet — `_tickFoliageThin` trägt das Foundry-Gate (byte-symmetrisch zur Gras-Schwester)",
-        res.thinFoundryGated
     );
     if (res.oneSourceProbeError) {
         check("W1 CONSUM: Studio-Regime-Dichte-Probe lief ohne Fehler", false, res.oneSourceProbeError);
@@ -20845,10 +20558,6 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
         // 2) Methoden existieren
         out.hasBuildMethod = typeof r._buildVoxelChunkWaterIsoSurface === "function";
         out.hasDisposeMethod = typeof r._disposeVoxelChunkWaterIso === "function";
-        // 3) Source-Probe: `_finalizeVoxelChunkBuild` ENQUEUED den Wasser-Iso (deferred-Queue), der
-        // per-Frame-Tick / Drain baut ihn.
-        out.rebuildCallsBuild = /this\._enqueueWaterIso\(/.test(window.__codeOf(r._finalizeVoxelChunkBuild));
-        out.disposeCallsDispose = /this\._disposeVoxelChunkWaterIso\(/.test(window.__codeOf(r._disposeVoxelChunk));
         // V12.0-perf.h — die ausstehenden Wasser-Iso-Builds drainen, bevor wir
         // die Iso-Map prüfen (im Spiel baut der per-Frame-Tick ≤2/Frame).
         if (typeof r._drainPendingWaterIso === "function") r._drainPendingWaterIso();
@@ -21058,14 +20767,6 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
     check("Welle C.2 V9.75: Migration-Toggle (`_setVoxelWaterIsoVisible`) ist gestrichen", res.toggleGone);
     check("Welle C.2 V9.72: Build + Dispose Methoden existieren", res.hasBuildMethod && res.hasDisposeMethod);
     check(
-        "Welle C.2 V9.72: _rebuildVoxelChunk ruft _buildVoxelChunkWaterIsoSurface (Source-Probe)",
-        res.rebuildCallsBuild
-    );
-    check(
-        "Welle C.2 V9.72: _disposeVoxelChunk ruft _disposeVoxelChunkWaterIso (Source-Probe)",
-        res.disposeCallsDispose
-    );
-    check(
         "Welle C.2 V9.72: alle gefüllten Voxel-Chunks haben einen Iso-Map-Eintrag",
         res.allChunksTracked,
         `mitIso=${res.chunksWithIso}, ohne=${res.chunksWithoutIso}, geomTotal=${res.isoMeshGeomTotal}, meshes=${res.isoMeshCount}`
@@ -21143,9 +20844,6 @@ async function checkBandWelleC3CellularReaction(ctx) {
         if (r.state.atmosphere) r.state.atmosphere.gpuScatter = false;
         // 1) Stempel-Methode existiert
         out.hasStampMethod = typeof r._stampArchitectureSolidCellsInto === "function";
-        out.cellBuildCallsStamp = /this\._stampArchitectureSolidCellsInto\(/.test(
-            window.__codeOf(r._buildVoxelChunkWaterCells)
-        );
         // Jede Cell-Index-Berechnung liest die LOD des Chunks, sonst greift dim=24/step=1.8 (LOD 0) auf
         // einem LOD-1-Chunk (dim=12/step=3.6) out-of-bounds. waterCells
         // leben immer auf LOD 0 → cfgWater.
@@ -21391,16 +21089,6 @@ async function checkBandWelleC3CellularReaction(ctx) {
                 if (typeof r._drainDirtyVoxelChunks === "function") r._drainDirtyVoxelChunks();
             }
         }
-        // T1 Source-Probes (V9.56-i): der Edit-Pfad ruft den Footprint-Sync, der forceSync nutzt.
-        out.t1AddEditCallsSync = /_syncRebuildEditFootprint/.test(window.__codeOf(r._addVoxelEdit));
-        out.t1SyncUsesForceSync =
-            typeof r._syncRebuildEditFootprint === "function" &&
-            /forceSync:\s*true/.test(window.__codeOf(r._syncRebuildEditFootprint));
-        // V18.364 — der Footprint-Rebuild ist adaptiv: bei Über-Budget (schwache HW) baut er
-        // NICHT sync, sondern lässt die Chunks async heilen (kein Grab-Stall, Kollision feld-nativ).
-        out.t1FootprintAdaptive =
-            typeof r._syncRebuildEditFootprint === "function" &&
-            /_frameOverBudget/.test(window.__codeOf(r._syncRebuildEditFootprint));
 
         // T2 Cross-LOD-Geomorph: feine Boundary-Vertices an LOD0↔LOD1-Grenzen auf die GROBE Nachbar-Fläche
         // ziehen → die T-junction schließt (render-only, `geomorph`-Uniform). Probe: Material kompiliert,
@@ -21417,8 +21105,6 @@ async function checkBandWelleC3CellularReaction(ctx) {
             if (mM && typeof mM.dispose === "function") mM.dispose();
         }
         out.t2GeomorphMethod = typeof r._applyCrossLodGeomorph === "function";
-        out.t2FinalizeCallsMorph = /_applyCrossLodGeomorph/.test(window.__codeOf(r._finalizeVoxelChunkBuild));
-        out.t2MaterialHasMorph = /positionNode\s*=/.test(window.__codeOf(r._buildPbrNodeMaterial)); // V18.236: PBR ist der EINE Builder
         let t2HasAttrs = false,
             t2ChunksWithMorph = 0;
         if (r.state.voxelChunks) {
@@ -21432,12 +21118,6 @@ async function checkBandWelleC3CellularReaction(ctx) {
         out.t2HasMorphAttrs = t2HasAttrs;
         out.t2ChunksWithMorph = t2ChunksWithMorph;
 
-        // T3 Manifold Dual Contouring: Vertex ans QEF-Minimum (scharf) statt ins Mittel; der Laplacian
-        // verschont scharfe Vertices. Naht-Determinismus deckt die Skirt-Naht-Probe; hier Source-Probes.
-        const exSrc = window.__codeOf(r._voxelExtractSurfaceVertices);
-        out.t3QefMesher = /a00 \+= gx \* gx/.test(exSrc) && /Cramer|m00 \* b0/.test(exSrc);
-        out.t3ExtractReturnsSharp = /vertCells, cellVert, sharp/.test(exSrc);
-        out.t3FeatureAwareLaplacian = /sharp && sharp\[v\]/.test(window.__codeOf(r._voxelLaplacianSmoothPositions));
         out.t3DcConstants = Number.isFinite(r.constructor.DC_LAMBDA) && Number.isFinite(r.constructor.DC_SHARP_MOVE2);
 
         // T4 Wasser-Automat: `_tickWaterCA` ist die reine Fluss-Funktion (Level pro Zelle). Behavioral:
@@ -21471,13 +21151,8 @@ async function checkBandWelleC3CellularReaction(ctx) {
         // T4a-2 — der Automat ist in die WELT verdrahtet: reaktive Level-Schicht + Welt-Tick +
         // cross-chunk-wake, der Carve weckt die Region. Voller Welt-Beweis: `diag-water-world-flow`.
         out.t4HasWorldTick = typeof r._tickWorldWaterCA === "function" && typeof r._wakeWaterCA === "function";
-        out.t4CarveWakesCA = /_wakeWaterCA/.test(window.__codeOf(r._addVoxelEdit));
         out.t4ExchangesBoundary = typeof r._exchangeWaterBoundary === "function";
 
-        // 6) Source-Probes: spawnArchitecture + removeArchitecture rufen
-        // _remeshVoxelChunksAround (Cell-Rebuild-Trigger)
-        out.spawnTriggersRemesh = /this\._remeshVoxelChunksAround\(/.test(window.__codeOf(r.spawnArchitecture));
-        out.removeTriggersRemesh = /this\._remeshVoxelChunksAround\(/.test(window.__codeOf(r.removeArchitecture));
         // V18.224 — Scatter-Flag wiederherstellen (Test-Isolation aufräumen)
         if (r.state.atmosphere) r.state.atmosphere.gpuScatter = _savedScatter;
         return out;
@@ -21487,7 +21162,6 @@ async function checkBandWelleC3CellularReaction(ctx) {
         return;
     }
     check("Welle C.3 V9.74: _stampArchitectureSolidCellsInto existiert", res.hasStampMethod);
-    check("Welle C.3 V9.74: _buildVoxelChunkWaterCells ruft _stampArchitectureSolidCellsInto", res.cellBuildCallsStamp);
     check("Welle C.3 V9.74: Damm-Spawn als Test-Setup erfolgreich", res.damSpawnSucceeded);
     check(
         "Welle C.3 V9.74: Blocker-AABB hat botY (V9.74-Erweiterung)",
@@ -21529,8 +21203,6 @@ async function checkBandWelleC3CellularReaction(ctx) {
             `state=${res.carveCellUnderWL} (0=air erwartet)`
         );
     }
-    check("Welle C.3 V9.74: spawnArchitecture ruft _remeshVoxelChunksAround (Source-Probe)", res.spawnTriggersRemesh);
-    check("Welle C.3 V9.74: removeArchitecture ruft _remeshVoxelChunksAround (Source-Probe)", res.removeTriggersRemesh);
     // T1 (Terrain-Kohärenz-Plan §4): die zeitliche Naht — der Edit-Footprint heilt synchron.
     if (res.t1FootprintSync !== "no-streamed-chunk") {
         check(
@@ -21543,15 +21215,6 @@ async function checkBandWelleC3CellularReaction(ctx) {
             res.t1SkirtStaysAsync
         );
     }
-    check("T1 (Terrain-Kohärenz): _addVoxelEdit ruft _syncRebuildEditFootprint (Source-Probe)", res.t1AddEditCallsSync);
-    check(
-        "T1 (Terrain-Kohärenz): _syncRebuildEditFootprint baut den Footprint forceSync (Source-Probe)",
-        res.t1SyncUsesForceSync
-    );
-    check(
-        "V18.364 (Grab-Stall): _syncRebuildEditFootprint ist adaptiv (Über-Budget → async, Source-Probe)",
-        res.t1FootprintAdaptive
-    );
     // T2 (Terrain-Kohärenz-Plan §4): der Cross-LOD-Geomorph — die räumliche Naht.
     check("T2 (Cross-LOD-Geomorph): kein Material-Morph-Fehler (positionNode kompiliert)", res.t2NoMorphError);
     check(
@@ -21559,28 +21222,9 @@ async function checkBandWelleC3CellularReaction(ctx) {
         res.t2HasMorphAttrs
     );
     check(
-        "T2 (Cross-LOD-Geomorph): _buildToonNodeMaterial setzt den positionNode-Morph (Source-Probe)",
-        res.t2MaterialHasMorph
-    );
-    check(
-        "T2 (Cross-LOD-Geomorph): _finalizeVoxelChunkBuild ruft _applyCrossLodGeomorph (Source-Probe)",
-        res.t2FinalizeCallsMorph
-    );
-    check(
         "T2 (Cross-LOD-Geomorph): der Geomorph feuert an Cross-LOD-Grenzen (>=1 Chunk hasMorph)",
         res.t2ChunksWithMorph >= 1,
         `chunksWithMorph=${res.t2ChunksWithMorph}`
-    );
-    // T3 (Terrain-Kohärenz-Plan §4): der kantige Mesher (Dual Contouring QEF). Die Determinismus-
-    // Sicherheit (Worker-QEF == Main-QEF) trägt der V9.42-b-Naht-Test (288 geteilte Vertices).
-    check("T3 (Dual Contouring): der Mesher setzt den Vertex ans QEF-Minimum (Source-Probe)", res.t3QefMesher);
-    check(
-        "T3 (Dual Contouring): _voxelExtractSurfaceVertices liefert die sharp-Flags (Source-Probe)",
-        res.t3ExtractReturnsSharp
-    );
-    check(
-        "T3 (Dual Contouring): der Laplacian ist feature-bewusst (verschont scharfe Vertices)",
-        res.t3FeatureAwareLaplacian
     );
     check(
         "T3 (Dual Contouring): DC_LAMBDA + DC_SHARP_MOVE2 Konstanten existieren (Worker-gespiegelt)",
@@ -21595,7 +21239,6 @@ async function checkBandWelleC3CellularReaction(ctx) {
     // T4a-2 — in die Welt verdrahtet (reaktive Schicht + Welt-Tick + cross-chunk-wake + Carve-Wake).
     check("T4a-2 (Wasser-CA): _tickWorldWaterCA + _wakeWaterCA existieren (Welt-Verdrahtung)", res.t4HasWorldTick);
     check("T4a-2 (Wasser-CA): _exchangeWaterBoundary existiert (cross-chunk-wake)", res.t4ExchangesBoundary);
-    check("T4a-2 (Wasser-CA): ein Carve WECKT den Automaten (Wasser strömt nach)", res.t4CarveWakesCA);
 }
 
 // Distance-LOD: ferne Chunks (> 80 m) bauen mit step=3.6 m statt 1.8, dim=12 statt 24, dimY=62
@@ -21666,11 +21309,6 @@ async function checkBandWellePerf3bDistanceLod(ctx) {
         out.lod1Count = lod1Count;
         out.lod0CellsLen = lod0Cells;
         out.lod1CellsLen = lod1Cells;
-        // 4) Source-Probes
-        out.streamingUsesLod = /_voxelChunkLodFor\(/.test(window.__codeOf(r._tickVoxelChunkStreaming));
-        out.buildDataAcceptsLod = /_buildVoxelChunkData\s*\(\s*cx\s*,\s*cz\s*,\s*lod/.test(
-            window.__codeOf(r._buildVoxelChunkData).slice(0, 200)
-        );
         return out;
     });
     if (res.error) {
@@ -21711,14 +21349,6 @@ async function checkBandWellePerf3bDistanceLod(ctx) {
             `LOD0=${res.lod0CellsLen}, LOD1=${res.lod1CellsLen}`
         );
     }
-    check(
-        "Welle Perf-3.b V9.88: _tickVoxelChunkStreaming nutzt _voxelChunkLodFor (Source-Probe)",
-        res.streamingUsesLod
-    );
-    check(
-        "Welle Perf-3.b V9.88: _buildVoxelChunkData akzeptiert lod-Parameter (Source-Probe)",
-        res.buildDataAcceptsLod
-    );
 }
 
 // Architektur-Instancing (HISM), reine Mathematik: die Per-Leaf-World-Matrix `entryWorldMatrix ×
@@ -22040,9 +21670,6 @@ async function checkBandWellePerfENexusGovernor(ctx) {
         out.noGravityPflaster = !/gravity\s*\*=/.test(saStr);
         // KEIN Parallel-Governor mehr: selfAwarenessAnalyze ruft _nexusAdaptiveQuality NICHT.
         out.noParallelGovernor = !/_nexusAdaptiveQuality/.test(saStr);
-        // CONSUM (source-probe): der Regler liest die GEMESSENE frameMs + die Phasen.
-        out.regulateReadsSense = /sense\.frameMs/.test(window.__codeOf(r._nexusPerfRegulate));
-        out.actuateReadsPhase = /sense\.phase/.test(window.__codeOf(r._nexusPerfActuate));
 
         const st = r.state;
         const snap = {
@@ -22117,24 +21744,7 @@ async function checkBandWellePerfENexusGovernor(ctx) {
         out.foldRenderLoad = st.perfSense.renderCalls > 0 && st.perfSense.renderTris > 0;
         out.foldRenderMax = st.perfSense.renderCallsMax >= 1000 && st.perfSense.renderTrisMax >= 500000;
         out.foldPhaseSpike = (st.perfSense.phaseMax.streaming || 0) >= 50;
-        out.loopRenderTaps =
-            /renderCalls/.test(window.__codeOf(r._loopRender)) && /info\.reset/.test(window.__codeOf(r._loopRender));
-        // `render.calls` ist im r184-WebGPU-Info ein LEBENSZEIT-Zähler (reset() löscht ihn nicht) — der Tap
-        // MUSS den Pro-Frame-Zähler `render.drawCalls` lesen, sonst drosselt der Regler gegen Phantom-Last.
-        // Probe auf __codeOf (kommentar-gestrippt), drawCalls ZUERST; `.calls` höchstens als ??-Fallback.
-        {
-            const _lrC = window.__codeOf(r._loopRender);
-            const _ltIdx = _lrC.indexOf("render.calls"); // −1 = kein Lebenszeit-Read (auch ok)
-            out.loopRenderTapsDrawCalls =
-                /render\.drawCalls/.test(_lrC) && (_ltIdx === -1 || _lrC.indexOf("render.drawCalls") < _ltIdx);
-        }
-        out.overlayShowsRenderLoad =
-            /renderCalls/.test(window.__codeOf(r._perfSenseRender)) &&
-            /phaseMax|spike/i.test(window.__codeOf(r._perfSenseRender));
 
-        // (7) Bei reiner RENDER-Last (viele Draw-Calls, CPU-Phasen niedrig) drosselt der Regler die
-        // render-senkenden Hebel (Schatten-Intervall + Cull-Radius), NICHT das Streaming.
-        out.actuateReadsRenderLoad = /renderCalls/.test(window.__codeOf(r._nexusPerfActuate));
         // (a) MODERATE Render-Last (Draw-Calls unter dem Responsiv-Schwellwert): die Architektur-Domäne
         // (Schatten/Cull = die render-verursachenden Hebel) gibt MEHR nach als das Streaming — die Welt
         // lädt weiter, während die Render-Qualität schrumpft.
@@ -22177,10 +21787,6 @@ async function checkBandWellePerfENexusGovernor(ctx) {
         out.renderArchPos = +archPosR.toFixed(2);
         out.renderStreamPos = +streamPosR.toFixed(2);
 
-        // (8) LADE-RHYTHMUS: bei Bau-Rückstau lädt die Welt mit MAX Streaming-Budget, auch unter starker
-        // Drosselung (der PID drosselt nicht den Bau, der das hohe frameMs selbst erzeugt); settled
-        // (kein Rückstau) drosselt derselbe Druck das Streaming wieder.
-        out.actuateReadsBacklog = /voxelMeshPending|streamBacklog/.test(window.__codeOf(r._nexusPerfActuate));
         const pendingSnap = st.voxelMeshPending;
         st.voxelMeshPending = new Set(["0,0,0", "1,0,0", "2,0,0", "3,0,0", "4,0,0"]); // Bau-Rückstau (lädt)
         r._nexusPerfActuate({
@@ -22225,10 +21831,6 @@ async function checkBandWellePerfENexusGovernor(ctx) {
         }
         out.ceilingThrottles = st.perfSense.loadScale < 0.5;
         out.ceilingLoadScale = +st.perfSense.loadScale.toFixed(3);
-        // CONSUM (source-probe): der Regler trägt das Totband (growMs/throttleMs), nicht EINEN Sollwert.
-        out.regulateHasDeadband =
-            /throttleMs/.test(window.__codeOf(r._nexusPerfRegulate)) &&
-            /growMs/.test(window.__codeOf(r._nexusPerfRegulate));
         // der Passagier ist gekehrt: die toten Bang-Bang-Schwellen sind weg.
         out.deadConstantsGone = A.ARCH_QUALITY_FPS_LOW === undefined && A.ARCH_QUALITY_FPS_HIGH === undefined;
 
@@ -22254,10 +21856,6 @@ async function checkBandWellePerfENexusGovernor(ctx) {
     check(
         "V18.263: KEIN Parallel-Governor — selfAwarenessAnalyze ruft _nexusAdaptiveQuality NICHT (EIN Regler)",
         res.noParallelGovernor
-    );
-    check(
-        "V18.263: CONSUM — der Regler liest die gemessene frameMs + die Subsystem-Phasen",
-        res.regulateReadsSense && res.actuateReadsPhase
     );
     check(
         "V18.263: FPS-Druck strafft ALLE Stellgrößen (Radius + Budget + Stream-Budget)",
@@ -22291,18 +21889,6 @@ async function checkBandWellePerfENexusGovernor(ctx) {
         res.foldPhaseSpike
     );
     check(
-        "V18.268: _loopRender tappt die GPU-Last (info.reset + renderCalls) + das Overlay zeigt sie",
-        res.loopRenderTaps && res.overlayShowsRenderLoad
-    );
-    check(
-        "V18.427: der Tap liest den PRO-FRAME-Zähler render.drawCalls (nie den Lebenszeit-`calls`)",
-        res.loopRenderTapsDrawCalls
-    );
-    check(
-        "V18.269: die Augen FAHREN — der Aktuator liest die Render-Last (renderCalls) in die Architektur-Domäne",
-        res.actuateReadsRenderLoad
-    );
-    check(
         `V18.269: unter MODERATER Render-Last drosselt der Regler ARCH/Schatten (archPos ${res.renderArchPos}) MEHR als Streaming (streamPos ${res.renderStreamPos}) — Durchsatz geschützt, die Welt lädt weiter`,
         res.renderLoadThrottlesArch
     );
@@ -22315,20 +21901,12 @@ async function checkBandWellePerfENexusGovernor(ctx) {
         res.renderLoadLengthensShadow
     );
     check(
-        "V18.270: DER LADE-RHYTHMUS — der Aktuator liest den Bau-Rückstau (voxelMeshPending), nicht nur fps",
-        res.actuateReadsBacklog
-    );
-    check(
         "V18.270: bei Bau-Rückstau lädt die Welt mit MAX Streaming-Budget — der PID drosselt NICHT den Bau, der das frameMs erzeugt (kein Pendeln, keine Lade-Hemmung)",
         res.loadingPinsStreamMax
     );
     check(
         "V18.270: settled (kein Rückstau) drosselt derselbe Druck das Streaming wieder (smooth exploration — der Hebel lebt, wo er sinnvoll ist)",
         res.settledThrottlesStream
-    );
-    check(
-        "V18.281: DER ATEM-TOTBAND existiert — der Regler trägt growMs + throttleMs (zwei Schwellen), nicht EINEN Sollwert",
-        res.regulateHasDeadband
     );
     check(
         `V18.281: im Totband HÄLT der Regler (loadScale ${res.deadbandLoadScale} bleibt ~0.5) — das System atmet über 60, kein 59er-Anschlag`,
@@ -22467,27 +22045,7 @@ async function checkBandWellePerfHWaterIsoQueue(ctx) {
         out.hasTick = typeof r._tickPendingWaterIso === "function";
         out.hasDrain = typeof r._drainPendingWaterIso === "function";
         if (!out.hasEnqueue || !out.hasTick || !out.hasDrain) return out;
-        const finSrc = window.__codeOf(r._finalizeVoxelChunkBuild);
-        // V12.0-perf.h.1 — Finalize hat ZWEI Pfade: enqueue (Streaming, deferred)
-        // ODER sync-build (Edit-Rebuild via syncWater, kein Flacker). Beide da.
-        out.finalizeEnqueues = /_enqueueWaterIso\(/.test(finSrc);
-        out.finalizeGatedOnSyncWater = /syncWater/.test(finSrc);
-        // Der Iso-Mesher liest 8 Nachbarn (Achsen + DIAGONALEN, OOB-`cellClass`) → die Finalize muss auch
-        // die Diagonalen re-enqueuen, sonst bleibt deren Iso stale („Wasser klebt am Gebäude-Eck“).
-        // Wird der Block in einen Helfer refaktoriert, wandert die Probe mit.
-        out.finalizeReEnqueuesDiagonals = /\[cx - 1, cz - 1\]/.test(finSrc) && /\[cx \+ 1, cz \+ 1\]/.test(finSrc);
-        // Ein wasser-verdrängender Architektur-Spawn meshet seinen Footprint SYNCHRON (async stünde das
-        // Wasser in der Struktur). Probe: spawnArchitecture sammelt `footprintKeys` + forceSynct sie.
-        const spawnSrc = window.__codeOf(r.spawnArchitecture);
-        out.spawnSyncsWaterFootprint =
-            /footprintKeys/.test(spawnSrc) && /forceSync: true/.test(spawnSrc) && /waterCells/.test(spawnSrc);
         out.queueIsSet = r.state.pendingWaterIso === null || r.state.pendingWaterIso instanceof Set;
-        // Loop ruft den per-Frame-Tick. V18.358 — der Wasser-Iso-Tick wanderte aus dem
-        // (abgelösten) festen `_loopVoxelStreaming`-Pfad in die Scheduler-Job-Registry
-        // `_buildDeferrableJobs` (waterIso-Job, prio 1); der Test folgt dem Refactor.
-        out.loopTicksQueue =
-            typeof r._buildDeferrableJobs === "function" &&
-            /_tickPendingWaterIso\(/.test(window.__codeOf(r._buildDeferrableJobs));
         // Mechanik: 3 echte Chunk-Keys enqueuen → tick(1) baut ≤1 → drain leert.
         if (!r.state.pendingWaterIso) r.state.pendingWaterIso = new Set();
         r.state.pendingWaterIso.clear();
@@ -22540,22 +22098,9 @@ async function checkBandWellePerfHWaterIsoQueue(ctx) {
         res.hasEnqueue && res.hasTick && res.hasDrain
     );
     check(
-        "V12.0-perf.h: Finalize ENQUEUED den Wasser-Iso für Streaming (sync nur bei Edit via syncWater)",
-        res.finalizeEnqueues && res.finalizeGatedOnSyncWater
-    );
-    check("V12.0-perf.h: Game-Loop ruft _tickPendingWaterIso (per-Frame-Bau)", res.loopTicksQueue);
-    check(
         "V18.530-Integration: die Wasser-Schlange baut erst die LÜCKE (ein fernerer Chunk ohne Sheet vor der Auffrischung eines näheren)",
         res.lueckeZuerst === true,
         String(res.lueckeZuerst)
-    );
-    check(
-        "V18.0: Finalize re-enqueued ALLE 8 Nachbarn inkl. DIAGONALEN (der 50-Versionen-Blob-Fix)",
-        res.finalizeReEnqueuesDiagonals
-    );
-    check(
-        "V18.0: Architektur-Spawn meshet den wasser-tragenden Footprint SYNCHRON (V17.118-Transient)",
-        res.spawnSyncsWaterFootprint
     );
     check("V12.0-perf.h: 3 Keys enqueued", res.enqueuedCount === 3, `enqueued=${res.enqueuedCount}`);
     check(
@@ -22781,10 +22326,6 @@ async function checkBandWellePerf3cPhase2Async(ctx) {
         r.state.voxelDensityCache.delete(`${ecx + 10},${ecx + 10},0`);
         r.state.worldMeta.voxelEdits = editsVor5 || [];
         r._voxelWorkerSyncState({ op: "state-set" });
-        // 6) Source-Probes
-        // V12.0-perf.a — Worker-Density-Stufe lebt in `_acquireVoxelChunkBuild`.
-        out.ensureUsesFetch = /_fetchOrRequestChunkDensity\(/.test(window.__codeOf(r._acquireVoxelChunkBuild));
-        out.addEditCallsNotify = /_voxelWorkerNotifyEdit\(/.test(window.__codeOf(r._addVoxelEdit));
         return out;
     });
     if (res.error) {
@@ -22821,11 +22362,6 @@ async function checkBandWellePerf3cPhase2Async(ctx) {
         res.editBumpedStateGen
     );
     check("K23: ein voxelEdit leert den Density-Cache nur in seiner Nachbarschaft", res.editClearedCache);
-    check(
-        "Welle Perf-3.c V9.90: _ensureVoxelChunkAt nutzt _fetchOrRequestChunkDensity (Source-Probe)",
-        res.ensureUsesFetch
-    );
-    check("Welle Perf-3.c V9.90: _addVoxelEdit ruft _voxelWorkerNotifyEdit (Source-Probe)", res.addEditCallsNotify);
 }
 
 // Voller Chunk-Mesh im Worker: er trägt die komplette Pipeline (Iso-Meshing + Cells + Colors),
@@ -22999,9 +22535,6 @@ async function checkBandWellePerf3cPhase3FullMesh(ctx) {
         }
         // Clean up
         syncFresh.mesh.geometry.dispose();
-        // Source-Probe
-        // V12.0-perf.a — Worker-Mesh-Stufe-1 lebt in `_acquireVoxelChunkBuild`.
-        out.ensureUsesFetchMesh = /_fetchOrRequestChunkMesh\(/.test(window.__codeOf(r._acquireVoxelChunkBuild));
         return out;
     });
     if (res.error) {
@@ -23055,10 +22588,6 @@ async function checkBandWellePerf3cPhase3FullMesh(ctx) {
         "Welle Perf-3.c V9.91: waterCells nahe-identisch (< 1% Stempel-Diff)",
         res.cellsNearMatch,
         `cellMismatches=${res.cellMismatches}`
-    );
-    check(
-        "Welle Perf-3.c V9.91: _ensureVoxelChunkAt nutzt _fetchOrRequestChunkMesh (Source-Probe)",
-        res.ensureUsesFetchMesh
     );
 }
 
@@ -23268,16 +22797,8 @@ async function checkBandPhasenBF(ctx) {
         );
         const joint = roles && roles.find((x) => x && x.joint);
         out.c1Joint = !!(joint && joint.anchor && typeof joint.anchor.x === "number" && joint.axis);
-        out.c2Src = /_idleMotion/.test(window.__codeOf(r.tickArchitectures));
-        out.c5Curves =
-            /handleJump\(/.test(window.__codeOf(r._loopPlayerMovement)) &&
-            /Math\.exp/.test(window.__codeOf(r._loopPlayerMovement));
         // SYNERGIE-WELLE — die Avatar-Aura ist GEFALLEN: C6 wandert auf die Abwesenheit.
         out.c6Src = typeof r.tickPlayerAura !== "function" && typeof r._ensureAuraSkinShells !== "function";
-        out.d2Src = /_herdContagionAcc/.test(window.__codeOf(r._tickEmotionContagion));
-        out.d3Age = /FAUNA_MAX_AGE_MS/.test(window.__codeOf(r.tickFaunaLifecycle));
-        out.d3Feed = /_depositLife/.test(window.__codeOf(r._creatureNaturalDeath));
-        out.d4Src = /gegenwehr/.test(window.__codeOf(r.damageCreature));
         // D4 — DAS TEMPERAMENT DER GATTUNG (Welle LF 08.10.): die Tiere sind tag-gleich (Lehre 8), das Gemüt kommt aus
         // Ernährung der Gattung und der EINEN Masse des Leibs (tetrapoda temperamentDerGattung, `_leibMasse` in kg) — Hirsch
         // scheu, Wolf wild, Bär wehrhaft, Fuchs scheu; die Größe verschiebt es (ein Koloss-Hirsch wehrt sich, ein kleiner Bär
@@ -23312,7 +22833,6 @@ async function checkBandPhasenBF(ctx) {
             AnazhRealm._verhaltenGesetz().temperament.profile.wehrhaft.strike > 0;
         // E2 — der Kosten-Walker zahlt die Substanz-Wahrheit.
         out.e2VillageCost = r._dslProgramWirkCost(["spawn_village", ["at", 0, 0, 0], 1]) === 20;
-        out.e2Gate = /nexusWirk/.test(window.__codeOf(r._loopNexusUpdate));
         // E2 — der REGELKREIS: ruhige Emotion → Faktor 1, stark gekippt (chaos dominant) → < 0.5. KONSUM:
         // Outcome-Regen, Idle-Tropf, Kosten-Tor + proaktive Stimmen lesen DENSELBEN _emotionBalanceFactor.
         out.e2Balance = (() => {
@@ -23328,20 +22848,7 @@ async function checkBandPhasenBF(ctx) {
                 Object.assign(p.emotions, save);
             }
         })();
-        out.e2Kreis =
-            /_emotionBalanceFactor/.test(window.__codeOf(r._loopNexusUpdate)) &&
-            /_emotionBalanceFactor/.test(window.__codeOf(r._loopSelfAnalysis)) &&
-            /_emotionBalanceFactor/.test(window.__codeOf(r._creatureSpeakProactive)) &&
-            /_emotionBalanceFactor/.test(window.__codeOf(r.finalizePendingOutcomes));
-        out.e3Mana = /mana/.test(window.__codeOf(r._chatTryDslParse));
-        out.e4Heal = /finalized/.test(window.__codeOf(r.dslSelectByFitness));
-        out.f1Blob = /Blob/.test(window.__codeOf(r._getVoxelWorker));
-        out.f2Proto = /PROTO_VERSION/.test(window.__codeOf(r.p2pSend));
         out.f2Turn = Array.isArray(r.state.p2p && r.state.p2p.iceServers) && r.state.p2p.iceServers.length >= 1;
-        // G8 R1 (V18.123) — der creature-pos-Cap wanderte vom _cpRate-Inline
-        // auf das geteilte _p2pPeerRateAdmit-Tor (V9.82-Verdichtung). Der Test
-        // wandert mit (V9.56-i): die INTENT bleibt „trägt den Empfangs-Cap".
-        out.f2CpCap = /_p2pPeerRateAdmit\("creature-pos"/.test(window.__codeOf(r._p2pMsgCreaturePos));
         // B8 — prüft nur das LEBENDE Struktur-Licht: die rimStrength-Uniform (PBR-Rim); die Struktur-LUT
         // (`_ensureStructureGradient`) ist mit dem Cel-System gefallen, kein Shader liest sie.
         out.b8Rim = !!(r.state.atmoUniforms && r.state.atmoUniforms.rimStrength);
@@ -23374,7 +22881,6 @@ async function checkBandPhasenBF(ctx) {
         })();
         out.e8Dom = !!document.querySelector('#hotbar .hotbar-slot[data-slot="offhand"]');
         out.e8Key = (r.state.keybindings || AnazhRealm.DEFAULT_KEYBINDINGS).swapHands === "KeyG";
-        out.e8OffhandMeshPath = /offhandMesh/.test(window.__codeOf(r._refreshHeldMesh));
         // C7 ATTACHMENT-PUNKTE: (1) sitz validiert ohne partB; (2) die getragene Rüstung sitzt am TORSO
         // (Masse-Zentrum 0.18, am echten _wornArmorMesh); (3) Fahrzeug-/Reittier-Saat ist per Substanz
         // moveable + trägt sitz-Punkte; (4) die Built-in-Körper liegen automatisch als Blueprints.
@@ -23428,10 +22934,6 @@ async function checkBandPhasenBF(ctx) {
             !r.state.blueprints.koerper_phoenix &&
             !r.state.blueprints.koerper_dragon &&
             !document.getElementById("workshop-import-soul-btn");
-        out.c7MountSitz =
-            /_sitzHeight/.test(window.__codeOf(r.mountArchitecture)) &&
-            /_sitzHeight/.test(window.__codeOf(r._rittSchritt));
-        out.c7Grip = /_attachPointFor/.test(window.__codeOf(r._refreshHeldMesh));
         // A4 — die Wasserfall-PLANE ist geschnitten (Builder weg; die Abwärts-Material-Saat ohne Leser fiel mit der
         // Welle L); der STEIL-SPLIT formt vertikales Wasser im Zell-Sheet (Lippe + Vorhang).
         out.a4PlaneCut =
@@ -23440,11 +22942,6 @@ async function checkBandPhasenBF(ctx) {
             typeof r._waterfallIsRealWall === "undefined" &&
             typeof r._ensureWaterfallMaterial === "undefined" &&
             typeof r.setWaterfallSteep === "undefined";
-        // B1 (V18.345) — die Sheet-Mathe lebt jetzt in `_computeWaterSheetData` (geteilt mit
-        // dem Worker-Mirror); der `_buildVoxelChunkWaterCellSheet`-Wrapper ist nur noch Gate+ctx.
-        out.a4Curtain =
-            /VERT_SPLIT/.test(window.__codeOf(r._computeWaterSheetData)) &&
-            /dupVert/.test(window.__codeOf(r._computeWaterSheetData));
         // A4 — aWave (Ozean-Wellen-Anteil) ist ART-gedämpft: die Fluss-Abdeckung (riverness, dieselbe
         // smoothstep-Rampe wie die Shader-Strähnen) nimmt die Wogen aus dem Fluss, ein See ist still.
         // Source-Probe; der behaviorale Wächter ist diag-mouth.cjs.
@@ -23661,7 +23158,6 @@ async function checkBandPhasenBF(ctx) {
                 dsl.lastCrystallizeAt = saved.last;
             }
         })();
-        out.e45Hook = /_crystallizeGestureRule/.test(window.__codeOf(r._loopSelfAnalysis));
         // E1: das EINE Dispatch-Tor — der Dispatch läuft über die chatSystemPatterns-Tabelle (keine
         // if-else-Handler); behavioral: „liste welten“ läuft durch die Tabelle; KONSUM: chatSuggest liest
         // BEIDE Tabellen (der Tippfehler „speichre zustand“ bekommt den System-Vorschlag).
@@ -23833,40 +23329,23 @@ async function checkBandPhasenBF(ctx) {
         return;
     }
     check("C1: Verbindung → Gelenk-Rolle mit Anker+Achse (computeMotionRoles, KONSUM)", res.c1Joint);
-    check("C2: tickArchitectures trägt das Idle-Motion-Gate (Source)", res.c2Src);
-    check("C5: Bewegung läuft über exp-Kurven + EIN handleJump (Source, Verdichtung)", res.c5Curves);
     check("C6/SYNERGIE: die Avatar-Aura (Tick + Haut-Shells) ist PHYSISCH gefallen", res.c6Src);
-    check("D2: Herden-Contagion lebt im Contagion-Kern (Source)", res.d2Src);
-    check("D3: Alter zählt im Lebenszyklus (FAUNA_MAX_AGE_MS, Source)", res.d3Age);
-    check("D3: der Tod nährt das Feld (_depositLife im NaturalDeath, Source)", res.d3Feed);
-    check("D4: die Gegenwehr lebt im Treffer-Pfad (Source, pfad-gated)", res.d4Src);
     check(
         "D4-VOLL: Temperament aus Gattung und Größe (Hirsch scheu · Wolf wild · Bär wehrhaft · Fuchs scheu · Koloss-Hirsch wehrhaft · kleiner Bär sanft)",
         res.d4Temperament
     );
     check("D4-VOLL: die Gegenwehr KONSUMIERT das Temperament-Profil (strike/fleeMul)", res.d4Konsum);
     check("E2: _dslProgramWirkCost zahlt die Substanz (spawn_village = 20)", res.e2VillageCost);
-    check("E2: der Nexus zahlt am Wirk-Tor (Source)", res.e2Gate);
     check("E2-VOLL: der Balance-Faktor liest die Emotion (ruhig=1, chaos-gekippt<0.5)", res.e2Balance);
-    check("E2-VOLL: EIN Regelkreis — Regen+Tropf+Kosten+Stimmen lesen den Balance-Faktor", res.e2Kreis);
-    check("E3: die Welt-Geste kostet Mana im pfad (Source)", res.e3Mana);
-    check("E4: die finalisierte Wertung führt die Selektion (Source, Passagier-Heal)", res.e4Heal);
-    check("F1: der Worker trägt den Blob-Fallback (Source)", res.f1Blob);
-    check("F2: p2pSend stempelt die Protokoll-Version (Source)", res.f2Proto);
     check("F2: iceServers konfigurierbar präsent", res.f2Turn);
-    check("F2: creature-pos trägt den Empfangs-Raten-Cap (Source)", res.f2CpCap);
     check("E8: swapHands tauscht Hand↔Off-Hand im Roundtrip (KONSUM via equipHeld)", res.e8Swap);
     check("E8: der Off-Hand-Slot steht neben der Hotbar (data-slot=offhand)", res.e8Dom);
     check("E8: der Hand-Tausch ist als Key G gebunden (rebindable)", res.e8Key);
-    check("E8: die Off-Hand ist am Körper sichtbar (offhandMesh im Hand-Mesh-Pfad)", res.e8OffhandMeshPath);
     check("C7: ein Attachment-Punkt (sitz) validiert ohne partB", res.c7Validate);
     check("C7: die getragene Rüstung sitzt am TORSO, nicht auf dem Kopf (GEMESSEN ±0.45)", res.c7ArmorSitz);
     check("C7: Wagen+Holzross-Saat sind moveable + tragen sitz-Punkte (GEMESSEN)", res.c7Seeds);
     check("C7: Built-in-Körper liegen automatisch als Blueprints (Button gefallen)", res.c7Bodies);
-    check("C7: der Mount liest die Sitz-Höhe des Bauplans (Source, beide Leser)", res.c7MountSitz);
-    check("C7: die Hand greift am GRIFF-Punkt (Source im Hand-Mesh-Pfad)", res.c7Grip);
     check("A4 → Welle L: die Wasserfall-Plane und die Saat ohne Leser sind gefallen", res.a4PlaneCut);
-    check("A4: der Steil-Split formt vertikales Wasser (Lippe + Vorhang im Zell-Sheet)", res.a4Curtain);
     check("A4: aWave ist ART-gedämpft (Fluss-riverness + See still — die Mündungs-Synergie)", res.a4MouthWave);
     check(
         "V18.117: Wasser-Sheet-Queue verhungert nicht (FIFO-Slot zieht ferne Keys trotz Dauer-Nachschub)",
@@ -23887,7 +23366,6 @@ async function checkBandPhasenBF(ctx) {
     );
     check("E4+E5: die bewährte Geste kristallisiert zum Gesetz, die Emotion gebiert die Bedingung", res.e45Crystal);
     check("E4+E5: eine frozen-Welt-Geste kristallisiert NIE (die EINE Effekt-Whitelist)", res.e45Guard);
-    check("E4+E5: der Kristallisierer lebt im Selbstanalyse-Takt (KONSUM)", res.e45Hook);
     check("B3/N7.4: der Horizont-Mantel ist geschnitten (kein Mantel-Material-Pfad mehr)", res.b3Mantle);
     check("B8: rimStrength-Uniform verdrahtet (Struktur-LUT mit Toon gepurged → PBR-Rim)", res.b8Rim);
     check(
@@ -23939,9 +23417,6 @@ async function checkBandPhaseAFundament(ctx) {
         out.bands = bands;
         out.bandAttrsOk = bandAttrsOk;
         out.cappedTotal = cappedTotal;
-        out.a1SrcCap = /snapCap/.test(window.__codeOf(r._applyCrossLodGeomorph));
-        out.a1SrcBand = /_rebuildLodStitchBand/.test(window.__codeOf(r._applyCrossLodGeomorph));
-        out.a1SrcDispose = /lodStitchMesh/.test(window.__codeOf(r._disposeVoxelChunk));
         // ── A2 · Edit-Lokalität: ein kleiner Carve ändert NUR die Sub-Region
         // (der Ganz-Chunk-Rebuild ist deterministisch → der „Reset" ist unsichtbar).
         {
@@ -24003,15 +23478,6 @@ async function checkBandPhaseAFundament(ctx) {
             stateGone: r.state.horizonMantle === undefined && r.state.mantleHoleUniforms === undefined,
             tickGone: !/_ensureHorizonMantle/.test(window.__codeOf(r._runFrameScheduler)),
         };
-        // ── A6 · Quellen + Begraben-Rettung behavioral (zustands-neutral).
-        // Zensus 17.07. — die Decken-Klemme wohnt im EINEN Chokepoint-Helper
-        // _sprungDeckenKlemme (handleJump + _parkourLuftsprung lesen ihn).
-        out.a6SrcJump =
-            /_sprungDeckenKlemme/.test(window.__codeOf(r.handleJump)) &&
-            /_sprungDeckenKlemme/.test(window.__codeOf(r._parkourLuftsprung)) &&
-            /_ceilingHeadroom/.test(window.__codeOf(r._sprungDeckenKlemme));
-        out.a6SrcEdit = /_rescuePlayerFromEditSolid/.test(window.__codeOf(r._addVoxelEdit));
-        out.a6SrcCam = /_ceilingHeadroom/.test(window.__codeOf(r._loopCamera));
         // Infinity überlebt die evaluate-JSON-Serialisierung NICHT (→ null) —
         // als String-Sentinel "inf" transportieren (freier Himmel = kein Treffer).
         const a6h = r._ceilingHeadroom();
@@ -24054,11 +23520,6 @@ async function checkBandPhaseAFundament(ctx) {
         `capped=${res.cappedTotal}`
     );
     check(
-        "A1: _applyCrossLodGeomorph trägt snapCap + ruft _rebuildLodStitchBand (Source)",
-        res.a1SrcCap && res.a1SrcBand
-    );
-    check("A1: _disposeVoxelChunk räumt das Stitch-Band (Source, kein Leak)", res.a1SrcDispose === true);
-    check(
         "A2: Edit-Vertex-Delta ist LOKAL — 0 geänderte Vertices außerhalb des Einflusses (kein sichtbarer Ganz-Chunk-Reset)",
         res.a2 && res.a2.changedOutside === 0 && res.a2.totalOutside > 100,
         res.a2 ? `outside=${res.a2.totalOutside} changed=${res.a2.changedOutside}` : "kein Chunk"
@@ -24079,9 +23540,6 @@ async function checkBandPhaseAFundament(ctx) {
         res.b2 && res.b2.stateGone === true
     );
     check("B2/N7.4: der Scheduler ruft keinen Mantel-Tick mehr (Source)", res.b2 && res.b2.tickGone === true);
-    check("A6b: handleJump klemmt am Decken-Headroom (Source)", res.a6SrcJump === true);
-    check("A6a: _addVoxelEdit ruft die Begraben-Rettung (Source)", res.a6SrcEdit === true);
-    check("A6b: _loopCamera klemmt das Ego-Auge unter die Decke (Source)", res.a6SrcCam === true);
     check(
         "A6b: _ceilingHeadroom liefert eine Zahl/Infinity (Ammo-Raycast trägt)",
         res.a6Headroom === "inf" || (typeof res.a6Headroom === "number" && res.a6Headroom >= 0)
@@ -24129,12 +23587,6 @@ async function checkBandWelle993WaterLodSeam(ctx) {
         out.lod1WithCells = lod1WithCells;
         out.allCellsAreLod0 = allCellsAreLod0;
         out.firstMismatchLen = firstMismatchLen;
-        // Source-Probe: die Sheet-Mathe (der EINE Wasser-Render-Pfad) nutzt LOD 0 fest
-        const isoSrc = window.__codeOf(r._computeWaterSheetData);
-        out.isoUsesLod0 = /_voxelChunkConfig\(0\)/.test(isoSrc);
-        // Source-Probe: _buildVoxelChunkData baut waterCells mit lod=0
-        const buildSrc = window.__codeOf(r._buildVoxelChunkData);
-        out.buildPassesLod0 = /_buildVoxelChunkWaterCells\([^)]*,\s*0\s*\)/.test(buildSrc);
         return out;
     });
     if (res.error) {
@@ -24151,11 +23603,6 @@ async function checkBandWelle993WaterLodSeam(ctx) {
         res.totalWithCells >= 1,
         `total=${res.totalWithCells}, lod0=${res.lod0WithCells}, lod1=${res.lod1WithCells}`
     );
-    check(
-        "Welle V9.93: die Wasser-Sheet-Mathe (_computeWaterSheetData) nutzt LOD 0 fest (Source-Probe)",
-        res.isoUsesLod0
-    );
-    check("Welle V9.93: _buildVoxelChunkData baut waterCells mit lod=0 (Source-Probe)", res.buildPassesLod0);
 }
 
 // V11.0-d.1 (Pfeiler D — Wasser ↔ Kreaturen, Foundation) — Beweis dass der
@@ -24234,11 +23681,6 @@ async function checkBandWelleV11D1WaterContext(ctx) {
         // EINE Wasser-Wahrheit am Körper (`_koerperWasser`, Welle L wasser) — Tiefe UND Ufer-Suche —, nie mehr das 3×3-gedehnte
         // `_waterLevelAt` / `_isAboveWaterAt` (die zweite Wahrheit der Ufer-Scheu).
         const helperSrc = window.__codeOf(r._creatureWaterContextAt);
-        out.usesVoxelSurfaceY =
-            /_koerperBodenUnter\(/.test(window.__codeOf(r._creatureGroundY)) &&
-            /_fieldSurfaceBelow\(/.test(window.__codeOf(r._koerperBodenUnter)) &&
-            /_voxelSurfaceY\(/.test(window.__codeOf(r._koerperBodenUnter));
-        out.usesKoerperWasser = (helperSrc.match(/_koerperWasser\(/g) || []).length >= 2;
         out.ohneZweiteWahrheit = !/_waterLevelAt\(|_isAboveWaterAt\(/.test(helperSrc);
 
         // BODEN-CACHE: die teuren `_voxelSurfaceY`-Scans sind pro Frame per Budget gedeckelt, nicht 1–2×
@@ -24316,14 +23758,6 @@ async function checkBandWelleV11D1WaterContext(ctx) {
         `200 calls in ${res.perfMs?.toFixed(1)} ms`
     );
     check(
-        "Welle V11.0-d.1: _creatureGroundY liest den Boden unter dem Körper (_koerperBodenUnter → _fieldSurfaceBelow, Säule nur ohne Fels)",
-        res.usesVoxelSurfaceY === true
-    );
-    check(
-        "Welle L: Helper liest die EINE Wasser-Wahrheit am Körper (_koerperWasser: Tiefe und Ufer-Suche)",
-        res.usesKoerperWasser === true
-    );
-    check(
         "Welle L: Helper liest keine zweite Wahrheit (_waterLevelAt / _isAboveWaterAt)",
         res.ohneZweiteWahrheit === true
     );
@@ -24350,12 +23784,6 @@ async function checkBandWelleV11D2WaterBias(ctx) {
         if (!r || !r.state) return { error: "no realm" };
         const out = {};
 
-        // Source-Probes — die strukturelle Wahrheit unabhängig von Welt-Daten.
-        const loopSrc = window.__codeOf(r.updateCreatures);
-        out.loopReadsWaterContext = /_creatureWaterContextAt\(/.test(loopSrc);
-        out.loopHasWaterSurface = /waterSurface/.test(loopSrc);
-        out.loopHasShoreBias = /shoreDir/.test(loopSrc);
-        out.loopHasDistanceLod = /distSqToPlayer\s*<\s*2500/.test(loopSrc);
 
         // Empirisch — finde eine Wasser-Spalte im Spawn-Bereich.
         let waterSpot = null;
@@ -24452,13 +23880,6 @@ async function checkBandWelleV11D2WaterBias(ctx) {
         check("Welle V11.0-d.2: Wasser-Bias-Band (realm verfügbar)", false, res.error);
         return;
     }
-    check(
-        "Welle V11.0-d.2: updateCreatures konsumiert _creatureWaterContextAt (Source-Probe)",
-        res.loopReadsWaterContext === true
-    );
-    check("Welle V11.0-d.2: updateCreatures hat waterSurface-Y-Override-Logik", res.loopHasWaterSurface === true);
-    check("Welle V11.0-d.2: updateCreatures liest shoreDir für Ufer-Bias", res.loopHasShoreBias === true);
-    check("Welle V11.0-d.2: Distance-LOD <50m vom Spieler (V9.84-Perf-1.e-Lehre)", res.loopHasDistanceLod === true);
     if (!res.waterSpotFound) {
         // Wenn die Welt-Variation keinen tiefen Wasser-Spot in ±120m hat,
         // ist die empirische Probe nicht möglich — Source-Probes haben
@@ -24515,17 +23936,6 @@ async function checkBandWelleV11D3DrinkTask(ctx) {
         out.tickExists = typeof r._tickCreatureDrink === "function";
         out.findExists = typeof r._findNearestWaterPoint === "function";
 
-        // Source-Probes — Routing + Helper-Konsum.
-        const routerSrc = window.__codeOf(r._tickCreatureTaskDirection);
-        out.routerHasDrink = /task\.name === "drink"/.test(routerSrc);
-        const drinkSrc = window.__codeOf(r._tickCreatureDrink);
-        out.drinkHasPhases = /_target/.test(drinkSrc) && /_drinkStart/.test(drinkSrc);
-        // V18.100 G4-1 (Test wandert mit, V9.56-i): das vollendete Trinken fühlt
-        // jetzt über das EINE Substrat (_feelCreatureAction → harvest: joy+hope;
-        // die "happy"-Projektion fällt aus der Valenz) statt eines Direkt-Stempels.
-        out.drinkSetsHappy = /_feelCreatureAction\(creature,\s*"harvest"/.test(drinkSrc);
-        // Welle 5 Klang (Integration): der Trink-Beginn klingt mit der Stimme des Tiers (klang:UMWELT.tier).
-        out.drinkRuft = /this\._tierRuf\(creature\)/.test(drinkSrc) && !/PING_FREQ/.test(drinkSrc);
 
         // Chat-Pattern „trinke" liefert drink-Programm.
         const parsed = r.parseChatToDsl("trinke");
@@ -24593,19 +24003,12 @@ async function checkBandWelleV11D3DrinkTask(ctx) {
     check("Welle V11.0-d.3: 'drink' in CREATURE_TASKS (6. Task)", res.tasksInclude === true);
     check("Welle V11.0-d.3: CREATURE_TASKS jetzt 6 Einträge", res.tasksLength === 6);
     check("Welle V11.0-d.3: AURA_HUE.drink = 210 (azur)", res.auraHue === 210);
-    check("Welle 5 Klang: der Trink-Beginn ist die Stimme des Tiers (_tierRuf, kein Ping-Ton)", res.drinkRuft === true);
     check("Welle V11.0-d.3: CREATURE_DRINK_HALT_DIST = 1.5m", res.haltDist === 1.5);
     check("Welle V11.0-d.3: CREATURE_DRINK_DURATION_S = 2.5s", res.duration === 2.5);
     check("Welle V11.0-d.3: CREATURE_DRINK_SEARCH_RADIUS = 40m", res.searchRadius === 40);
     check("Welle V11.0-d.3: CREATURE_DRINK_SPEED = 3.0 m/s", res.speed === 3.0);
     check("Welle V11.0-d.3: _tickCreatureDrink existiert", res.tickExists === true);
     check("Welle V11.0-d.3: _findNearestWaterPoint existiert", res.findExists === true);
-    check("Welle V11.0-d.3: _tickCreatureTaskDirection routet drink", res.routerHasDrink === true);
-    check(
-        "Welle V11.0-d.3: _tickCreatureDrink hat 3-Phasen-Logik (_target + _drinkStart)",
-        res.drinkHasPhases === true
-    );
-    check("Welle V11.0-d.3: _tickCreatureDrink setzt happy nach vollendetem Trinken", res.drinkSetsHappy === true);
     check("Welle V11.0-d.3: Chat-Pattern 'trinke' → creature_task_nearest drink", res.chatParsesTrinke === true);
     if (res.waterFound) {
         check("Welle V11.0-d.3: _findNearestWaterPoint findet Wasser (Vorbedingung)", res.findReturnsObj === true);
@@ -24635,26 +24038,6 @@ async function checkBandNahStreu(ctx) {
         if (!r || !r.state) return { error: "no realm" };
         const out = {};
         const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
-        // (1) Der Wind: die kohärente Böen-Welle lebt NUR in `_windSwayOffset`, der Gras-Leser ruft sie.
-        const grassSrc = r._grassInstanceMat ? window.__codeOf(r._grassInstanceMat) : "";
-        const swaySrc = r._windSwayOffset ? window.__codeOf(r._windSwayOffset) : "";
-        out.gustWave = swaySrc.includes("gust") && grassSrc.includes("_windSwayOffset") && !grassSrc.includes("gust");
-        // (2) Die Kette als Quelltext: die Kachel liest das Boden-Gesetz, der Takt die Foundry (kein Host-Bauer).
-        const kSrc = window.__codeOf(r._nahStreuKachel);
-        const tSrc = window.__codeOf(r._tickNahStreu);
-        const aSrc = window.__codeOf(r._nahStreuArten);
-        out.kettenQuelle =
-            /bodenGewicht/.test(kSrc) &&
-            /_bodenLichtFeld/.test(kSrc) &&
-            /_feuchteAt/.test(kSrc) &&
-            /_nahStreuBodenGewicht\(/.test(kSrc) &&
-            /_koerperWasser\(/.test(kSrc) &&
-            /uf\.fluss/.test(window.__codeOf(r._nahStreuBodenGewicht)) &&
-            /_foundryFlattenFor/.test(tSrc) &&
-            /_foundryDeclaredStage/.test(tSrc) &&
-            /_foundryVariantFor/.test(tSrc) &&
-            /placement\.boden/.test(aSrc) &&
-            /ring !== "nah"/.test(aSrc);
         // (3) Die Arten kommen aus dem Studio-Buch (warten, bis Buch + Render-Config stehen).
         let arten = null;
         for (let i = 0; i < 300 && !arten; i++) {
@@ -24817,14 +24200,6 @@ async function checkBandNahStreu(ctx) {
         check("Nah-Streu: Band (realm verfügbar)", false, res.error);
         return;
     }
-    check(
-        "V18.310: Wind-Kollaps ECHT — gust lebt NUR in _windSwayOffset, der Gras-Leser ruft sie",
-        res.gustWave === true
-    );
-    check(
-        "Nah-Streu: die Kachel liest das Boden-Gesetz + die Welt-Leser, der Takt die Foundry (kein Host-Bauer)",
-        res.kettenQuelle === true
-    );
     check(
         "Nah-Streu: die Arten sind Studio-Zeilen (placement.boden ring nah) mit Rezept im Buch (≥ 5)",
         res.artenAusDemBuch === true,
@@ -26378,9 +25753,6 @@ async function checkBandWelle6Keybindings(ctx) {
         if (!r || !r.state) return null;
         const out = {};
         out.hasFarewellPing = typeof r._playArchitectureFarewellPing === "function";
-        out.removeIntegratesPing =
-            typeof r.removeArchitecture === "function" &&
-            window.__codeOf(r.removeArchitecture).includes("_playArchitectureFarewellPing");
         // Threshold-Konstante existiert
         const thr = r.constructor.WORLD_EFFECT_THRESHOLDS;
         out.thresholdReadable = thr && typeof thr.resonance_mild === "number" && thr.resonance_mild > 0;
@@ -26441,10 +25813,6 @@ async function checkBandWelle6Keybindings(ctx) {
 
     if (wave6a6V2Results && !wave6a6V2Results.error) {
         check("Welle 6.A6 V2: _playArchitectureFarewellPing existiert", wave6a6V2Results.hasFarewellPing);
-        check(
-            "Welle 6.A6 V2: removeArchitecture ruft _playArchitectureFarewellPing",
-            wave6a6V2Results.removeIntegratesPing
-        );
         check("Welle 6.A6 V2: WORLD_EFFECT_THRESHOLDS.resonance_mild lesbar", wave6a6V2Results.thresholdReadable);
         check("Welle 6.A6 V2: Symphony initialisierbar im Headless", wave6a6V2Results.symphonyReady);
         if (wave6a6V2Results.symphonyReady) {
@@ -28061,8 +27429,6 @@ async function checkBandWaldbodenKaskade(ctx) {
         const out = {};
         const bands = r.constructor.DETAIL_CASCADE;
         out.kaskadeOhneDeko = bands.every((b) => !("deko" in b) && !("dekoDichte" in b) && Number.isFinite(b.aiDiv));
-        const jobs = window.__codeOf(r._buildDeferrableJobs);
-        out.loopTicktNahStreu = /_tickNahStreu\(/.test(jobs) && /_tickNahWiese\(/.test(jobs);
         const NS = r.constructor.NAH_STREU;
         out.schirmGebunden =
             !!NS && NS.stufe0 < NS.radius && NS.kachel > 0 && NS.radius <= 40 && NS.kachel % NS.zelle === 0;
@@ -28073,7 +27439,6 @@ async function checkBandWaldbodenKaskade(ctx) {
         return;
     }
     check("Waldboden: DETAIL_CASCADE trägt keine Deko-Bänder mehr (Ring + KI-Takt)", res.kaskadeOhneDeko === true);
-    check("Waldboden: der scatterDeco-Job tickt Nah-Wiese UND Nah-Streu", res.loopTicktNahStreu === true);
     check(
         "Waldboden: die Nah-Streu ist schirm-gebunden (Armlänge < Radius ≤ 40 m, Kachel = n · Zelle)",
         res.schirmGebunden === true
@@ -28104,8 +27469,6 @@ async function checkBandV18132FerneSeen(ctx) {
             r._voxelChunkHasAnyWater,
         ];
         out.readersResolved = readers.every((f) => /_hydroFor/.test(window.__codeOf(f)));
-        // Der EINE Build-Eingang traegt die harte Kachel-Garantie.
-        out.buildGuarded = /_ensureHydroTilesAround/.test(window.__codeOf(r._acquireVoxelChunkBuild));
         // Worker-Mirror (Quelle per fetch — gleiche Origin): Resolver + Apply.
         try {
             const src = await fetch("voxel-worker.js").then((x) => x.text());
@@ -28165,7 +27528,6 @@ async function checkBandV18132FerneSeen(ctx) {
         res.machinery
     );
     check("V18.132 Ferne Seen: ALLE 8 Hydro-Leser laufen durch die Region-Aufloesung (KONSUM)", res.readersResolved);
-    check("V18.132 Ferne Seen: der EINE Build-Eingang traegt die harte Kachel-Garantie", res.buildGuarded);
     check(
         "V18.132 Ferne Seen: der Worker-Mirror traegt hydroFor + Kachel-Apply",
         res.workerMirror === true,
@@ -28202,11 +27564,6 @@ async function checkBandV18133Forage(ctx) {
         const ernte = r.constructor.STREU_ERNTE;
         out.allYields = !!ernte && Object.values(ernte).every((m) => typeof m === "string" && !!mats[m]);
         out.forageConst = !!r.constructor.FORAGE && Number.isFinite(r.constructor.FORAGE.regrowMs);
-        // KONSUM-Proben: die Maus-Geste routet Flora, der Kachel-Bau filtert die Ernte, der Streaming-Slot tickt
-        // den Regrow.
-        out.gestureRoutes = /_pickScatterAtCrosshair/.test(window.__codeOf(r.tryMouseBreak));
-        out.buildFilters = /scatterHarvested/.test(window.__codeOf(r._tickNahStreu));
-        out.loopRegrows = /_tickScatterRegrow/.test(window.__codeOf(r._buildDeferrableJobs));
         // Die Zutaten-Oekonomie schliesst: der Lebenssaft traegt kraut (das
         // Mach-Tor V17.65 zieht damit GEPFLUECKTE Zutaten).
         out.trankKraut =
@@ -28278,10 +27635,6 @@ async function checkBandV18133Forage(ctx) {
         res.allYields && res.forageConst
     );
     check(
-        "V18.133 Foraging: KONSUM verdrahtet (Geste routet Flora · Kachel-Bau filtert Ernte · Loop tickt Regrow)",
-        res.gestureRoutes && res.buildFilters && res.loopRegrows
-    );
-    check(
         "V18.133 Foraging: der Lebenssaft zieht GEPFLUECKTES kraut (die Zutaten-Oekonomie schliesst)",
         res.trankKraut
     );
@@ -28300,10 +27653,6 @@ async function checkBandV18134Social(ctx) {
         const r = window.anazhRealm;
         const out = {};
         out.consts = !!r.constructor.SOCIAL && Object.isFrozen(r.constructor.SOCIAL);
-        // KONSUM-Proben: das Werten signiert, der Kanal routet, der Feed liest.
-        out.rateSigns = /_socialSignOwnRating/.test(window.__codeOf(r._setFeedRating));
-        out.channelRoutes = /social-rating/.test(window.__codeOf(r._p2pHandleChannelMessage));
-        out.feedReadsAgg = /_feedRatingAgg/.test(window.__codeOf(r._feedRatingBar));
         if (!r.state.vibePass || !r.state.vibePass.ready || typeof crypto === "undefined" || !crypto.subtle) {
             out.unmeasurable = true;
             return out;
@@ -28360,10 +27709,6 @@ async function checkBandV18134Social(ctx) {
         return;
     }
     check("V18.134 Sozial: SOCIAL-Konfiguration steht (frozen)", res.consts);
-    check(
-        "V18.134 Sozial: KONSUM verdrahtet (Werten signiert · Kanal routet · Feed liest die Aggregation)",
-        res.rateSigns && res.channelRoutes && res.feedReadsAgg
-    );
     if (!res.unmeasurable) {
         check(
             "V18.134 Sozial: eigenes Zeugnis signiert + fremdes verifiziert + Aggregation Ø 4.5 (2)",
@@ -28401,11 +27746,6 @@ async function checkBandV18135Bookmarks(ctx) {
         const off = r._toggleFeedBookmark(id);
         out.toggleOff = off === false && r._feedBookmarked(id) === false;
         if (was) r._toggleFeedBookmark(id); // Zustand wiederherstellen
-        // KONSUM: Karte traegt den Toggle + dataset, Chips tragen Gemerkt,
-        // der Filter liest es.
-        out.barHasMark = /_toggleFeedBookmark/.test(window.__codeOf(r._feedRatingBar));
-        out.chipsHaveGemerkt = /gemerkt/.test(window.__codeOf(r._renderFeedKindChips));
-        out.filterReads = /bookmarked/.test(window.__codeOf(r._applyLibraryFilter));
         return out;
     });
     if (!res) {
@@ -28415,10 +27755,6 @@ async function checkBandV18135Bookmarks(ctx) {
     check(
         "V18.135 Lesezeichen: Helfer + Toggle-Roundtrip + globale Persistenz",
         res.helpers && res.toggleOn && res.persisted && res.toggleOff
-    );
-    check(
-        "V18.135 Lesezeichen: KONSUM verdrahtet (Karte traegt 🔖 · Chip „Gemerkt“ · Filter liest dataset)",
-        res.barHasMark && res.chipsHaveGemerkt && res.filterReads
     );
 }
 
@@ -28459,13 +27795,6 @@ async function checkBandV18142Follow(ctx) {
         // NIE im Welt-Snapshot (das Lesezeichen/Wertungs-Muster).
         const snap = r.buildStateSnapshot();
         out.notInSnapshot = !("feedFollows" in snap);
-        // KONSUM: Items tragen den Autor, die Karte den Toggle (nicht auf
-        // eigenen), Chips tragen Gefolgt, der Filter liest data-followed.
-        out.itemsCarryAuthor = /it\.author/.test(window.__codeOf(r._feedItems));
-        const barSrc = window.__codeOf(r._feedRatingBar);
-        out.barHasFollow = /_toggleFeedFollow/.test(barSrc) && /item\.author !== myKey/.test(barSrc);
-        out.chipsHaveGefolgt = /gefolgt/.test(window.__codeOf(r._renderFeedKindChips));
-        out.filterReads = /followed/.test(window.__codeOf(r._applyLibraryFilter));
         return out;
     });
     if (!res) {
@@ -28477,10 +27806,6 @@ async function checkBandV18142Follow(ctx) {
         res.helpers && res.toggleOn && res.persisted && res.toggleOff && res.garbageRejected && res.notInSnapshot
     );
     check("V18.142 Folgen: das Folgen schreibt witness (die ruhende Journal-Saat blüht)", res.witnessWritten);
-    check(
-        "V18.142 Folgen: KONSUM verdrahtet (Items tragen Autor · Karte den Toggle [nie eigene] · Chip „Gefolgt“ · Filter liest)",
-        res.itemsCarryAuthor && res.barHasFollow && res.chipsHaveGefolgt && res.filterReads
-    );
 }
 
 // KOMMENTARE: signierte Text-Zeugnisse übers Mesh (append-only statt LWW). End-to-end mit ZWEITER
@@ -28666,15 +27991,6 @@ async function checkBandW18CoPresence(ctx) {
         } finally {
             r._portalOverlay = savedPo || null;
         }
-        // (9) der invite-Gate kennt die Ko-Präsenz (Quelle) + die Marke reist
-        // im Blueprint-Snapshot (V8.59: sonst verlöre das Portal beim Reload
-        // die Injektion) + obtainPortalForWorld trägt sie ins portalMeta.
-        out.inviteGate = /!po\.multiplayer && !po\.coPresence/.test(window.__codeOf(r._p2pBroadcastPortalInvite));
-        out.serializeTravels = /portalMeta\.coPresence/.test(window.__codeOf(r._serializeBlueprint));
-        out.aimTravels = /coPresence === true\) meta\.coPresence = true/.test(window.__codeOf(r.aimBlueprintAtWorld));
-        // (10) der Hinweis + der Banner sprechen die Tier-Wahrheit (Konsum).
-        out.hintConsumes = /_portalCoPresenceTier/.test(window.__codeOf(r._portalRefreshHint));
-        out.bannerConsumes = /_portalCoPresenceTier/.test(window.__codeOf(r._renderPortalInviteBanner));
         return out;
     });
     check("W18 Ko-Präsenz: die Tier-Wahrheit (EINE Quelle, drei ehrliche Stufen)", res.tier2 && res.tier1 && res.tier0);
@@ -28691,11 +28007,6 @@ async function checkBandW18CoPresence(ctx) {
     check("W18 Ko-Präsenz: B2-Welt-Schlüssel scoped die Zustellung", res.b2Scoped);
     check("W18 Ko-Präsenz: der Abwesenheits-Sweep räumt Verstummte als peer-leave", res.sweep);
     check("W18 Ko-Präsenz: das Deklarations-Gate (ohne coPresence bleibt die Welt still)", res.declarationGate);
-    check(
-        "W18 Ko-Präsenz: invite-Gate + Snapshot-Reise + aim-Reise (V8.59)",
-        res.inviteGate && res.serializeTravels && res.aimTravels
-    );
-    check("W18 Ko-Präsenz: Hinweis + Banner KONSUMIEREN die Tier-Wahrheit", res.hintConsumes && res.bannerConsumes);
 }
 
 // INPUT-BRÜCKE: eine Welt, die im ready-Handshake `inputActions` deklariert, bekommt die Tasten als
@@ -28765,11 +28076,6 @@ async function checkBandW18InputBridge(ctx) {
             }
             r._portalOverlay = savedPo || null;
         }
-        // (5) Verdrahtung: ready-Zweig ruft die Brücke, der Dispose räumt den
-        // Listener (lebt + stirbt mit dem Overlay), die Begegnungs-Welt
-        // deklariert sie (der Smoke beweist den vollen Kreis).
-        out.readyWired = /_portalEnableInputBridge/.test(window.__codeOf(r._buildPortalOverlay));
-        out.disposeCleans = /onInputKey/.test(window.__codeOf(r._disposePortalOverlay));
         return out;
     });
     check("W18-C Input-Brücke: eingefrorenes Vokabular + Tasten-Karte (WASD/Pfeile)", res.vocab && res.keymap);
@@ -28783,7 +28089,6 @@ async function checkBandW18InputBridge(ctx) {
         res.fwdDown && res.fwdUp && res.undeclared
     );
     check("W18-C Input-Brücke: Tipp-Feld-Wand + Auto-Repeat-Wand", res.typingWall && res.repeatWall);
-    check("W18-C Input-Brücke: ready-Verdrahtung + Dispose räumt den Listener", res.readyWired && res.disposeCleans);
 }
 
 // DARIN LEBEN: das Wohnen ist ein globaler Zeiger (anazh.portalDwelling, NIE im Welt-Snapshot);
@@ -28889,14 +28194,6 @@ async function checkBandV18147ForYou(ctx) {
     const res = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
-        // (1) der Score KONSUMIERT alle fünf F4-Quellen (Stufen 1-4).
-        const src = window.__codeOf(r._feedForYouScore);
-        out.consumesAll =
-            /_feedFollowed/.test(src) &&
-            /_feedRatingAgg/.test(src) &&
-            /_feedBookmarked/.test(src) &&
-            /_feedRating\(/.test(src) &&
-            /_feedComments/.test(src);
         // (2)-(3) BEHAVIORAL mit injizierten Signalen (restauriert).
         const savedFollows = r.state.feedFollows;
         const savedBookmarks = r.state.feedBookmarks;
@@ -28914,11 +28211,6 @@ async function checkBandV18147ForYou(ctx) {
             r.state.feedFollows = savedFollows;
             r.state.feedBookmarks = savedBookmarks;
         }
-        // (4) die Reihung ist verdrahtet: der Strom sortiert nach dem Score,
-        // die Chips tragen „Für dich" (Konsum, nicht Existenz).
-        out.sortWired =
-            /fuerdich/.test(window.__codeOf(r.renderLibraryUI)) &&
-            /_feedForYouScore/.test(window.__codeOf(r.renderLibraryUI));
         // (5) die DREI Sortier-Chips leben im DOM (Neueste · Für dich · Bewertung).
         const savedSort = r.state.feedSort;
         r._renderFeedSort();
@@ -28927,10 +28219,8 @@ async function checkBandV18147ForYou(ctx) {
         r.state.feedSort = savedSort;
         return out;
     });
-    check("V18.147 Für dich: der Score KONSUMIERT alle fünf F4-Signale", res.consumesAll);
     check("V18.147 Für dich: Folgen ist das stärkste persönliche Wort (+4)", res.followBoost);
     check("V18.147 Für dich: das Merken hebt (+2)", res.bookmarkBoost);
-    check("V18.147 Für dich: der Strom reiht nach dem Score (fuerdich-Sort verdrahtet)", res.sortWired);
     check("V18.147 Für dich: die drei Sortier-Chips stehen (Neueste · Für dich · Bewertung)", res.chips);
 }
 
@@ -29051,10 +28341,6 @@ async function checkBandPhaseEThreat(ctx) {
             r.damageCreature(wolf, 9999, { source: "player" });
             spawned[0] = null;
             out.triumphFelt = (p.emotions.joy || 0) > joy0;
-            // (6) die Bewegungs-Verdrahtung: Jagd + Biss sitzen im Wariness-Zweig.
-            out.moveWired =
-                /_creatureHuntDrive/.test(window.__codeOf(r.updateCreatures)) &&
-                /_tickCreatureHuntStrike/.test(window.__codeOf(r.updateCreatures));
         } finally {
             for (const c of spawned) {
                 if (c) r.removeCreature(c);
@@ -29085,7 +28371,6 @@ async function checkBandPhaseEThreat(ctx) {
     );
     check("Phase E Bedrohung: die Rüstung dämpft FLACH (die EINE Kreatur-Formel)", res.armorDampens);
     check("Phase E Bedrohung: FURCHT bei niedriger HP + TRIUMPH beim Fall des Jägers", res.fearFelt && res.triumphFelt);
-    check("Phase E Bedrohung: Jagd + Biss im Bewegungs-Zweig verdrahtet", res.moveWired);
 }
 
 // STATUSBAR auf ESSENZ: immer sichtbar nur Welt · Wetter · Modus · Zeit; die Werkstatt-Zahlen ruhen
@@ -29229,10 +28514,6 @@ async function checkBandV18150Ride(ctx) {
                 `${(+(entry._ridePhase || 0)).toFixed(2)}`;
             r.state.playerVel.setValue(0, 0, 0);
             r.state._fieldVy = 0;
-            // (5) die C5-Kurven konsumieren das Profil (EINE Bewegungs-Quelle).
-            const moveSrc = r._loopPlayerMovement ? window.__codeOf(r._loopPlayerMovement) : "";
-            out.movementConsumes =
-                /ride\.kAcc/.test(moveSrc) && /ride\.kBrake/.test(moveSrc) && /ride\.topSpeedMul/.test(moveSrc);
             // (6) der Idle-Animator pausiert fürs gerittene Gefährt.
             out.idleSkips = /mountedId/.test(window.__codeOf(r.tickArchitectures));
             // (7) Absteigen: die Kollision darf lazy wiederkommen (kein Dauer-Skip).
@@ -29261,7 +28542,6 @@ async function checkBandV18150Ride(ctx) {
         res.orients && res.wheelsRoll,
         res.orients && res.wheelsRoll ? "" : res.fahrZahlen
     );
-    check("V18.150 Fahr-Tiefe: die C5-Kurven konsumieren das Profil (EINE Bewegungs-Quelle)", res.movementConsumes);
     check("V18.150 Fahr-Tiefe: Idle-Animator pausiert im Sattel + Absteigen gibt frei", res.idleSkips && res.dismounts);
 }
 
@@ -29328,9 +28608,6 @@ async function checkBandV18151Idb(ctx) {
         out.readPrefersFresh = !!fromStorage && fromStorage.__band151Marker === true;
         out.preloadConsumed = r._idbPreloadedState === null;
         r.saveState(); // die Wahrheit zurück in den IDB-Spiegel
-        // (6) Verdrahtung: init awaitet den Preload; deleteWorld räumt IDB.
-        out.initAwaits = /await this\._idbPreload\(\)/.test(window.__codeOf(r.init));
-        out.deleteCleans = /_idbDeleteWorld/.test(window.__codeOf(r.deleteWorld));
         return out;
     });
     check(
@@ -29342,10 +28619,6 @@ async function checkBandV18151Idb(ctx) {
     check(
         "V18.151 IndexedDB: der ECHT frischere IDB-Stand gewinnt das Boot-Lesen (+ wird konsumiert)",
         res.preloadWins && res.readPrefersFresh && res.preloadConsumed
-    );
-    check(
-        "V18.151 IndexedDB: init awaitet den Preload + deleteWorld räumt die IDB-Heimat",
-        res.initAwaits && res.deleteCleans
     );
 }
 
@@ -29533,10 +28806,6 @@ async function checkBandM2RollenWahrheit(ctx) {
         out.klonIntent = !!kk && kk.role === "workshop-station" && kk.roleManual === true;
         delete blu.__m2_kolbenklon;
 
-        // (7) das ehrliche Mach-Tor SICHTBAR (Befund 8): die Rezept-Zeile sagt
-        // „Bauplan" vs „Werk ✓" (recipe-status aus forgedPrecision).
-        const rowSrc = window.__codeOf(r._recipeRow);
-        out.machTorSichtbar = /recipe-status/.test(rowSrc) && /Werk ✓/.test(rowSrc) && /forgedPrecision/.test(rowSrc);
 
         // (8) kein Regress an den Substanz-Zwillingen: Trank bleibt Trank (klein +
         // lebendig), die Werkstatt-Saaten tragen ihre Designation, Avatar bleibt Seele.
@@ -29566,7 +28835,6 @@ async function checkBandM2RollenWahrheit(ctx) {
         "M2 Klon-Erbe: der Klon trägt die volle Substanz (connections → der Wagen-Klon bleibt Fahrzeug) UND den Intent (der Brennkolben-Klon bleibt Werkstatt-Station)",
         res.klonSubstanz && res.klonIntent
     );
-    check("M2 Mach-Tor sichtbar: die Rezept-Zeile sagt Bauplan vs Werk (Plan→Werk lesbar)", res.machTorSichtbar);
     check(
         "M2 kein Regress: Trank bleibt Trank, die Werkstatt-Designation steht, der Avatar bleibt Seele",
         res.keinRegress
@@ -29693,10 +28961,6 @@ async function checkBandM3RittVollendet(ctx) {
             out.poseCleared = !!parts && Math.abs(parts.leftLeg.rotation.x) < 0.6; // Idle ≈ 0
             r.applyPlayerSoul(savedSoul);
 
-            // (4) der RÜSTUNGS-FIT ist generisch: die Quelle liest ext.dy/dx/dz; Höhe (1.15/dy) UND Breite
-            // (0.95/dw) deckeln (Positiv-Probe).
-            const fitSrc = window.__codeOf(r._tickWornArmorVisual);
-            out.fitReadsDy = /ext\.dy/.test(fitSrc) && /ext\.dx/.test(fitSrc) && /1\.15 \/ dy/.test(fitSrc);
             return out;
         } finally {
             if (entry) r.removeArchitecture(entry);
@@ -29725,7 +28989,6 @@ async function checkBandM3RittVollendet(ctx) {
         "M3 Ritt: die SITZ-POSE — der Avatar winkelt die Beine an, der Walk-Cycle ruht; Absteigen räumt die Pose",
         res.seatPose && res.poseCleared
     );
-    check("M3 Ritt: der Rüstungs-FIT liest die echte Werk-Hülle (ext.dy — der ext.y-Pfad war tot)", res.fitReadsDy);
 }
 
 // M1 VERBINDUNGS-WERKSTATT: der Dialog ist ZWEI Gruppen Glyph-KACHELN; der SUBSTANZ-VORSCHLAG =
@@ -30454,11 +29717,6 @@ async function checkBandWBHofKarte(ctx) {
     const res = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
-        // EIN Renderer, zwei Konsumenten (Source-KONSUM, V17.31).
-        out.einRenderer =
-            typeof r._buildEmotionRows === "function" &&
-            /_buildEmotionRows/.test(window.__codeOf(r.initStatusPanel)) &&
-            /_buildEmotionRows/.test(window.__codeOf(r._hofBuildSpecSheet));
         // Die Karte: 6 Gefühls-Reihen mit eingebrannter Füllung + Natur als <details>.
         const pm = r.state.playerMesh.position;
         // V18.347 (Cap-Gotcha, V18.296-Klasse): den maxCreatures-Cap (20) für die EINE Test-Kreatur
@@ -30498,10 +29756,6 @@ async function checkBandWBHofKarte(ctx) {
         // Invarianten prüfen das mit — hier nur der Renderer-Konsum oben).
         return out;
     });
-    check(
-        "W-B Hof-Karte fühlt: EIN Emotions-Renderer (_buildEmotionRows) — Ich (live) + Hof (statisch) konsumieren ihn",
-        res.einRenderer
-    );
     check(
         `W-B Hof-Karte: 6 Gefühls-Reihen an der Stelle der Natur, joy-Balken eingebrannt 80% (Reihen ${res.sechsReihen} · gefüllt ${res.joyGefuellt})`,
         res.sechsReihen && res.joyGefuellt
@@ -30683,8 +29937,6 @@ async function checkBandWDRittSpawn(ctx) {
             r.state.creatures = (r.state.creatures || []).filter((x) => x !== c);
         }
         r.state.maxCreatures = saveMax;
-        // (3) der Restore ist PRECISE (Source-Probe — bit-treue Welt nach Reload).
-        out.restorePrecise = /precise:\s*true/.test(window.__codeOf(r._restoreCreatureFromSnapshot));
         return out;
     });
     check(
@@ -30695,7 +29947,6 @@ async function checkBandWDRittSpawn(ctx) {
         `W-D(R-017) Spieler-Klemme: frischer Spawn IM Spieler landet auf ≥3 m (gemessen ${res.klemmeWirkt}), precise bleibt bit-treu (${res.preciseUnberuehrt})`,
         res.klemmeWirkt && res.preciseUnberuehrt
     );
-    check("W-D Restore ist precise — das Wesen wacht auf, wo es stand (Opt-out-Karte wie M6)", res.restorePrecise);
 }
 
 // W-A KONSOLE: die Zustands-CSS gewinnt über JEDEN Inline-Schreiber (Drag/Restore) — eine Drag-
@@ -30952,17 +30203,9 @@ async function checkBandLambda3Wind(ctx) {
         // K19: den Wind trägt kein Substanz-Tag — die Achse `wiegen` ist fort, Holz und Stein stehen.
         const laubProfile = r._substanceResponseProfile({ tags: { lebendig: 1, dichte: 0.3, zähigkeit: 0.7 } });
         out.wiegenFort = !("wiegen" in laubProfile);
-        // Source-Probe: der Werkstatt-Baum (die geteilte Vegetations-Antwort) reicht den Wind an den EINEN Term
-        // (`_baumWindStoff`), keine eigene Formel über die Wind-Uhr.
-        const src = window.__codeOf(r._applyVegetationResponse);
-        out.windEinTerm = /this\._baumWindStoff\(/.test(src) && !/uWindTime/.test(src);
         return out;
     });
     check("Λ.3 Wind: kein Substanz-Tag trägt den Wind (die Achse wiegen ist fort, K19)", res.wiegenFort === true);
-    check(
-        "Λ.3 Wind: _applyVegetationResponse reicht den Werkstatt-Baum an den EINEN Wind-Term (_baumWindStoff)",
-        res.windEinTerm === true
-    );
 }
 
 // 1310-18 — EIN GRAPH JE SIGNATUR (der Schlüssel geprüft): r184 schlüsselt ein Programm nach der IDENTITÄT seiner Knoten
@@ -31050,16 +30293,6 @@ async function checkBandLambda4Streu(ctx) {
     const res = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
-        // Waldboden 04.10. — die Vielfalt der Nah-Streu kommt aus dem STUDIO: die Gestalten je Art (budget.
-        // gestalten, je Same eine Gestalt über `_foundryVariantFor`) + ein neutral-naher Tint je Pflanze (der Block trägt
-        // ihn, der Streu-Satz backt ihn in die Vertex-Farbe — `_satzBlock`: Farbe × Instanz-Farbe, wie der InstanceNode sie
-        // in den Stoff multiplizierte; der Studio-Stoff setzt useInstanceTint, liest nie manuell `attribute("instanceColor")`).
-        // Die zwölf Host-Gestalten (Tulpe/Klee/Mohn …) fielen.
-        const bSrc = window.__codeOf(r._nahStreuBloecke);
-        const sSrc = window.__codeOf(r._satzBlock);
-        const fSrc = window.__codeOf(r._foundryTreeMaterial);
-        out.tintJeInstanz = /farben/.test(bSrc) && /name === "color" && ic/.test(sSrc);
-        out.stoffNativ = /useInstanceTint/.test(fSrc) && !/attribute\("instanceColor"/.test(fSrc);
         const arten = r._nahStreuArten() || [];
         const G = {};
         for (const a of arten) G[a.id] = r._foundryGestalten(a.id);
@@ -31068,14 +30301,6 @@ async function checkBandLambda4Streu(ctx) {
         out.alleGestalten = arten.length > 0 && arten.every((a) => Number.isInteger(G[a.id]) && G[a.id] >= 1);
         return out;
     });
-    check(
-        "Λ.4 Streu (Waldboden, W7): ein Tint je Pflanze — der Block trägt ihn, der Streu-Satz backt ihn in die Vertex-Farbe",
-        res.tintJeInstanz === true
-    );
-    check(
-        "Λ.4 Streu (V18.267): der Studio-Stoff trägt useInstanceTint OHNE manuelles attribute(instanceColor)",
-        res.stoffNativ === true
-    );
     check(
         "Λ.4 Streu (Waldboden): jede Art trägt ihre Studio-Gestalten, die Massen-Arten (Farn · Schilf · Blume) zwei",
         res.alleGestalten === true && res.massenZwei === true,
@@ -31134,10 +30359,6 @@ async function checkBandLambda6Detail(ctx) {
         out.laubDetail = laubProfile.detail;
         out.glasDetail = glasProfile.detail;
         out.steinDetailNull = steinProfile.detail;
-        // Source-Probe: V18.234 — der Subsurface-Backlit lebt im GETEILTEN
-        // _applyVegetationResponse (Toon + PBR).
-        const src = window.__codeOf(r._applyVegetationResponse);
-        out.detailCode = /responseProfile.*detail.*>\s*0\.4/.test(src) && /backlit|_backlit/.test(src);
         return out;
     });
     check(
@@ -31149,10 +30370,6 @@ async function checkBandLambda6Detail(ctx) {
         Number.isFinite(res.glasDetail) && res.glasDetail > 0.4
     );
     check("Λ.6 Detail: stein-Profil.detail === 0 (kein Translucency auf Stein)", res.steinDetailNull === 0);
-    check(
-        "Λ.6 Detail: _applyVegetationResponse trägt subsurface-backlit für detail > 0.4 (geteilt Toon+PBR)",
-        res.detailCode === true
-    );
 }
 
 // AAA-Atmosphäre-Wand: AERIAL ist frozen, und KEIN `static get AERIAL()` in der Klasse überdeckt
@@ -31284,14 +30501,6 @@ async function checkBandGammaGenese(ctx) {
                     blumeSchatten: wG(boden.blume, { licht: 0.2 }),
                 };
             }
-            // (5) KONSUM: die Nah-Streu misst Feuchte · Kronen-Licht · Ufer-Höhe und wertet mit dem Boden-Gesetz; die
-            // Zeilen tragen Schilf am Ufer und den Farn mit Feuchte-Licht.
-            const kSrc = window.__codeOf(r._nahStreuKachel);
-            out.gatingNah =
-                /bodenGewicht/.test(kSrc) &&
-                /_feuchteAt/.test(kSrc) &&
-                /_bodenLichtFeld/.test(kSrc) &&
-                /_nahStreuBodenGewicht\(/.test(kSrc);
             out.schilfData = !!(
                 boden &&
                 boden.schilf &&
@@ -31299,10 +30508,6 @@ async function checkBandGammaGenese(ctx) {
                 boden.schilf.ring === "nah"
             );
             out.farnDual = !!(boden && boden.farn && Array.isArray(boden.farn.licht) && boden.farn.feuchtLicht > 0);
-            out.bodenLiest = /_feuchteAt/.test(window.__codeOf(r._terrainMaterialAt));
-            out.spawnReicht =
-                /const fw = Number\.isFinite\(feuchte\) \? feuchte/.test(window.__codeOf(r._vegetationSampleSpawn)) &&
-                /_affinitaet\([^)]*fw\)/.test(window.__codeOf(r._vegetationSampleSpawn));
             // (6) Γ5 — Math.random-Zensus (Kommentare gestrippt; der CODE darf
             // im Worldgen nie würfeln — P2P-Drift-Klasse).
             const fns = [
@@ -31441,10 +30646,6 @@ async function checkBandGammaGenese(ctx) {
         JSON.stringify(res.gesetz)
     );
     check(
-        "Γ1/Γ2 KONSUM: die Nah-Streu misst Feuchte/Kronen-Licht/Ufer und wertet mit dem Boden-Gesetz; Boden + Spawn-Pass konsumieren",
-        res.gatingNah && res.bodenLiest && res.spawnReicht
-    );
-    check(
         "Γ1 Arten-Daten: Schilf trägt das Ufer-Band (ring nah), der Farn das Feuchte-Licht",
         res.schilfData && res.farnDual
     );
@@ -31517,12 +30718,6 @@ async function checkBandV18164WarumLicht(ctx) {
         // BEIDE Register — eine Wahrheit, alle Leser).
         const spec2 = r._blueprintRoleSpectrum(wagenOhneSitz);
         out.spektrumKeinTrank = spec2[0].role !== "consumable";
-        // (2) die Führung ist VERDRAHTET (Spektrum-Zeile + sichtbare Hint-Zeile + Ruf).
-        const srcSpec = window.__codeOf(r._specRenderBody);
-        out.verdrahtet =
-            /spec-gap-hint/.test(srcSpec) &&
-            /_blueprintRoleGapHint/.test(srcSpec) &&
-            /_blueprintConjunctionCall/.test(srcSpec);
 
         // (3) §7.5(b) GEMESSEN ENCODIERT: die HISM-Bäume (instanced) laufen
         // durch den microTexture-Zweig — _archLeafMaterial → _buildToonNode-
@@ -31579,7 +30774,6 @@ async function checkBandV18164WarumLicht(ctx) {
         "V18.164 §7.3(b) WARUM-Führung: der Hinweis ist arithmetisch EHRLICH (die Drehung hebt die Ziel-Rolle über den Sieger) + Konjunktions-Achsen sprechen als TAT (Sitz-Anker setzen → Fahrzeug)",
         res.hintGefunden && res.hintEhrlich && res.hintFlippt && res.tatHinweis && res.spektrumKeinTrank
     );
-    check("V18.164 §7.3(b) die Führung ist im Spektrum VERDRAHTET (spec-gap-hint + Tooltip)", res.verdrahtet);
     check(
         "V18.164 §7.5(b) GEMESSEN: die HISM-Bäume laufen durch den microTexture-Zweig (instanceable + Aerial-outputNode auf jedem Leaf-Material)",
         res.baumInstanced && res.baumMicro
@@ -31674,13 +30868,6 @@ async function checkBandM5HudPolitur(ctx) {
             document.body.removeChild(host);
         }
         p.boosts = savedBoosts;
-        // (5) Equip/Pickup rufen den Sofort-Refresh (Source-KONSUM + Helper existiert).
-        out.instantRefresh =
-            typeof r._refreshIchIfOpen === "function" &&
-            /_refreshIchIfOpen/.test(window.__codeOf(r.equipHeld)) &&
-            /_refreshIchIfOpen/.test(window.__codeOf(r.equipArmor)) &&
-            /_refreshIchIfOpen/.test(window.__codeOf(r.addToInventory)) &&
-            /_refreshIchIfOpen/.test(window.__codeOf(r.addMaterialToInventory));
         // (6) das HOF-GEMÜT als Balken: injizierte Emotion → .hof-emotion-bar gefüllt.
         const pm = r.state.playerMesh.position;
         // V18.347 Cap-Gotcha (V18.296): den Cap für die EINE Test-Kreatur heben (sonst spawn=null → Bar leer).
@@ -31713,7 +30900,6 @@ async function checkBandM5HudPolitur(ctx) {
         "M5 HUD: die Boost-Chips sagen den EFFEKT (+0.4 Magie-Leitung) und zählen LIVE (data-expires + Tick)",
         res.chipEffect && res.chipTicks
     );
-    check("M5 HUD: Equip/Pickup rufen den Sofort-Refresh (Event-getrieben, alle vier Pfade)", res.instantRefresh);
     check(
         "M5 HUD: das Hof-GEMÜT ist ein HP-artiger Balken (dominante Emotion färbt, Intensität füllt)",
         res.hofEmotionBar
@@ -31785,14 +30971,6 @@ async function checkBandM4SuchKern(ctx) {
                 ichSearch.value = "";
                 r._applyIchFilter();
             }
-            // (4) KONSUM überall (Source-Proben — kein Privat-Filter-Rest).
-            out.konsum =
-                /_matchQuery/.test(window.__codeOf(r._applyWorkshopFilter)) &&
-                /_blueprintSearchText/.test(window.__codeOf(r._applyWorkshopFilter)) &&
-                /_matchQuery/.test(window.__codeOf(r._applyIchFilter)) &&
-                /_matchQuery/.test(window.__codeOf(r._applyLibraryFilter)) &&
-                /_blueprintSearchText/.test(window.__codeOf(r._omniboxSearch)) &&
-                /_blueprintSearchText/.test(window.__codeOf(r._recipeRow));
             return out;
         } finally {
             delete blu.__m4probe;
@@ -31804,7 +30982,6 @@ async function checkBandM4SuchKern(ctx) {
         "M4 Such-Kern: DIESELBE Query trifft in Omnibox + Werkstatt + Ich-Rezeptbuch (und die UND-Logik siebt)",
         res.omniboxHits && res.workshopHits && res.ichHits && res.ichSiebt
     );
-    check("M4 Such-Kern: alle Flächen KONSUMIEREN den Kern (Source — kein Privat-Filter-Rest)", res.konsum);
 }
 
 // M6 Ernte/Spawn-Ehrlichkeit: (1) Ertrags-SOCKEL (yieldMult ≥ yieldMin — die Faust erntet den Baum),
@@ -31968,11 +31145,6 @@ async function checkBandWHWald(ctx) {
         const m0 = r._archEntryWorldMatrix({ position: { x: 0, y: 0, z: 0 }, scale: 1, rotationY: 0 });
         const m1 = r._archEntryWorldMatrix({ position: { x: 0, y: 0, z: 0 }, scale: 1, rotationY: 1.2 });
         out.rotChangesMatrix = m0.elements[0] !== m1.elements[0] || m0.elements[2] !== m1.elements[2];
-        // (7) die Yaw reist im Snapshot + Restore (V8.59-Klasse — sonst rasten
-        // geladene Bäume auf Identity zurück, der Klon-Look kehrt wieder).
-        out.rotPersists =
-            /rotationY: a\.rotationY/.test(window.__codeOf(r.buildStateSnapshot)) &&
-            /rotationY: Number\.isFinite\(a\.rotationY\)/.test(window.__codeOf(r._loadStateRestoreArchitectures));
         return out;
     });
     check(
@@ -31990,10 +31162,6 @@ async function checkBandWHWald(ctx) {
     check(
         "W-H Wald DER KLON-KILLER: die Pro-Instanz-ROTATION wirkt (_archEntryWorldMatrix liest entry.rotationY · der Spawn setzt sie seed-deterministisch · verschiedene Yaw → verschiedene Welt-Matrix — ein Wald zeigt nicht mehr nach Norden)",
         res.rotInMatrix && res.rotInSpawn && res.rotChangesMatrix
-    );
-    check(
-        "W-H Wald: die Pro-Instanz-Yaw reist im Snapshot + Restore (V8.59 — geladene Bäume behalten ihre Rotation, der Klon-Look kehrt nicht wieder)",
-        res.rotPersists
     );
 }
 
@@ -32265,10 +31433,6 @@ async function checkBandPhiArchipelV2(ctx) {
             typeof onRes.currentRegionKey === "string" && /^r-?\d+_-?\d+$/.test(onRes.currentRegionKey);
         out.isActiveNow = r.isRegionsActive() === true;
 
-        // (Q6) Bei aktivem Regions-Archipel (regionsActive + worldId) löst initP2PSync den Default-Raum
-        // worldId:currentRegionKey — Source-Probe des regionalDefault-Pfads, kein WS-Aufbau.
-        const initSrc = window.__codeOf(r.initP2PSync);
-        out.initReadsRegional = /regionalDefault/.test(initSrc) && /_regionRoomId/.test(initSrc);
 
         // (Q7) Übergangs-Detection: Spieler TIEF in eine neue Region setzen (≫ 10 m Hysterese-Margin) —
         // r2_2 hat Bounds 691.2–1036.8 je Achse, die Mitte 864 liegt 172.8 m von jeder Grenze.
@@ -32392,10 +31556,6 @@ async function checkBandPhiArchipelV2(ctx) {
         out.noPinOp = !/op\s*===\s*["']pin_world["']/.test(dslRunSrc);
         out.noRegionOp = !/op\s*===\s*["']set_regions_active["']/.test(dslRunSrc);
 
-        // (Q20) _p2pMsgWorldRequest hat den Carrier-Pfad: ein NICHT-Host ruft
-        // _p2pMaybeServeAsCarrier (Source-Probe).
-        const wrSrc = window.__codeOf(r._p2pMsgWorldRequest);
-        out.requestUsesCarrier = /_p2pMaybeServeAsCarrier/.test(wrSrc);
 
         return out;
     });
@@ -32420,10 +31580,6 @@ async function checkBandPhiArchipelV2(ctx) {
     check(
         "Φ3 (Q5): setRegionsActive(true) setzt das Flag + initialisiert currentRegionKey aus Spieler-Position; isRegionsActive() reagiert",
         res.activateOk && res.activateCurrentKey && res.isActiveNow
-    );
-    check(
-        "Φ3 (Q6): initP2PSync liest die regionale Default-Raum-ID (regionalDefault + _regionRoomId in der Source — keine Welt verliert das alte Verhalten ohne regionsActive)",
-        res.initReadsRegional
     );
     check(
         "Φ3 (Q7): Region-Übergangs-Detection feuert bei Sprung über die Grenze (mit ≥10m Margin) + identifiziert die neue Region",
@@ -32474,10 +31630,6 @@ async function checkBandPhiArchipelV2(ctx) {
     check(
         "Φ5 (Q19): R2-DISJUNKTHEIT strukturell — KEIN DSL-Op trägt pin_world/set_regions_active (kein Skript kann automatisch tragen oder Regionen schalten)",
         res.noPinOp && res.noRegionOp
-    );
-    check(
-        "Φ5 (Q20): _p2pMsgWorldRequest ruft _p2pMaybeServeAsCarrier für NICHT-Hosts (der Carrier-Pfad ist verdrahtet)",
-        res.requestUsesCarrier
     );
 }
 
@@ -32635,10 +31787,6 @@ async function checkBandPhi7PortalHalls(ctx) {
         const snapArchWithMeta = snap.architectures.filter((a) => a.portalMeta && a.portalMeta.worldAddress);
         out.snapArchHasPortalMeta = snapArchWithMeta.length === 3;
 
-        // (H13) enterPortal-Coalesce: entry-level portalMeta gewinnt vor
-        // bauplan-level (Source-Probe — der echte Trip baut Overlay).
-        const epSrc = window.__codeOf(r.enterPortal);
-        out.enterCoalesces = /entryPortalMeta\s*\|\|\s*bpPortalMeta/.test(epSrc);
 
         // (H14) R2-DISJUNKTHEIT: keine der Φ7-Akte sind DSL-Ops.
         const dslRunSrc = window.__codeOf(r.dslRun);
@@ -32696,10 +31844,6 @@ async function checkBandPhi7PortalHalls(ctx) {
     check(
         "Φ7 (H12 — must-preserve): Hallen reisen im Snapshot (Halle-Hülle + Signatur + Adressen) + entry-level portalMeta auch (sonst wären alle Slot-Portale nach Reload identisch — die Halle wäre tot)",
         res.snapHasHalls && res.snapHallShape && res.snapArchHasPortalMeta
-    );
-    check(
-        "Φ7 (H13): enterPortal coalesce'd entry-level vor bauplan-level portalMeta (die Halle-Lehre — N gleiche Blueprints, N verschiedene Welten)",
-        res.enterCoalesces
     );
     check(
         "Φ7 (H14 — R2-DISJUNKTHEIT): keine Halle-Akte sind DSL-Ops (kein Skript kann automatisch Hallen erstellen oder materialisieren)",
@@ -33190,7 +32334,6 @@ async function checkBandV18194Gamma6Befoerderung(ctx) {
         // (G1) DIE SCHNEEGRENZE ist Gesetz (K16): die Boden-Farbe ruft gelaende-core `schnee` (die Höhe über dem Meer), die
         // Prominenz über einer Basis (V17.105) ist gefallen, die alte ss(12,42,y) fehlt.
         const attachSrc = window.__codeOf(r._bodenFarbeAt);
-        out.snowOnProminence = /__gelaendeCore\.schnee\(/.test(attachSrc) && !/SNOW_PROM|_cont0/.test(attachSrc);
         // ALTE absolute Form ss(12,42,y) darf NICHT als Code (mix(snow,…))
         // erscheinen — im Kommentar erlaubt. Engere regex auf den Code-Stil.
         out.snowOldAbsoluteGone = !/mix\(snow,\s*ss\(12,\s*42,\s*y\)\)/.test(attachSrc);
@@ -33233,11 +32376,6 @@ async function checkBandV18194Gamma6Befoerderung(ctx) {
         // Im Tiefland (≤ 100 m über dem Meer) MUSS Schnee ≈ 0 sein (die Schneegrenze beginnt bei SCHNEE.start).
         out.snowLowProminOk = out.snowLowProminMean < 0.02;
 
-        // (G2) CHUNK-SEAM: Pad+Crop-Mechanismus präsent (V9.42-b der Wahrheits-
-        // Anker, gleich-LOD-Naht). Strukturelle Wand gegen Regression auf
-        // cropMargin=0 (Naht-Riss-Klasse).
-        const buildSrc = r._voxelChunkGeometry ? window.__codeOf(r._voxelChunkGeometry) : "";
-        out.seamPadCropMechanism = /cropMargin/.test(buildSrc);
 
         // (G3) FALSE-SWIM: der Körper liest EINE Wasser-Wahrheit (`_koerperWasser`, Welle L Q6) — der Zell-Leser
         // `_waterCellAt` (eine zweite Wahrheit, nur noch von dieser Probe gerufen) ist gefallen — und sie kennt die DECKE
@@ -33338,20 +32476,10 @@ async function checkBandV18194Gamma6Befoerderung(ctx) {
         return out;
     });
 
-    // (G1) SNOWBAND
-    check(
-        "Γ6 (G1a) Schneegrenze ist Gesetz (K16): _bodenFarbeAt ruft gelaende-core schnee, keine Prominenz-Kopie",
-        res.snowOnProminence === true
-    );
     check("Γ6 (G1b) ALTE absolute Schnee-Zeile ss(12,42,y) GESTRICHEN", res.snowOldAbsoluteGone === true);
     check(
         `Γ6 (G1c) Tiefland-Schnee (≤ 100 m über dem Meer) < 0.02 (gemessen ${res.snowLowProminMean.toFixed(4)} an ${res.snowLowProminN} Samples — K16)`,
         res.snowLowProminOk === true
-    );
-    // (G2) CHUNK-SEAM
-    check(
-        "Γ6 (G2) CHUNK-SEAM: Pad+Crop-Mechanismus (cropMargin in _voxelChunkGeometry, V9.42-b komplementär)",
-        res.seamPadCropMechanism === true
     );
     // (G3) FALSE-SWIM
     check(
@@ -33389,13 +32517,6 @@ async function checkBandV18195AvatarSizeHp(ctx) {
         const A = r.constructor;
         const out = {};
 
-        // (S1) STRUKTUR: die Größen-Skalierung lebt in computePlayerStats
-        // als Source-Probe (sqrt(soulSize) gegen hpMax + staminaMax).
-        const src = window.__codeOf(r.computePlayerStats) + window.__codeOf(r._applySizeMultipliersToStats); // V18.312/.347: die Größen-Mul wanderte in die EINE Pipeline-Quelle _applySizeMultipliersToStats
-        out.hasSizeMul = /sizeHpMul|soulSize|_compoundSizeFactor.*soulBp/i.test(src);
-        out.appliesToHpMax = /stats\.hpMax\s*=\s*stats\.hpMax\s*\*\s*sizeHpMul|stats\.hpMax\s*\*=/.test(src);
-        out.appliesToStamMax =
-            /stats\.staminaMax\s*=\s*stats\.staminaMax\s*\*\s*sizeHpMul|stats\.staminaMax\s*\*=/.test(src);
 
         // (S2) BUILT-IN NEUTRAL: human-Soul → mul=1.0 → die getunten Werte
         // sind unangetastet. Wir vergleichen den heutigen Spieler-Stats-Wert
@@ -33493,9 +32614,6 @@ async function checkBandV18195AvatarSizeHp(ctx) {
         return out;
     });
 
-    check("V18.195 (S1a) Source: soul-Größen-Multiplier in computePlayerStats", res.hasSizeMul === true);
-    check("V18.195 (S1b) Größen-Mul wird auf stats.hpMax angewendet", res.appliesToHpMax === true);
-    check("V18.195 (S1c) Größen-Mul wird auf stats.staminaMax angewendet", res.appliesToStamMax === true);
     check(
         `V18.195 (S2) BUILT-IN NEUTRAL: human-Soul sizeFactor=1 → mul=1.0 (Δ ${res.humanNeutralDelta && res.humanNeutralDelta.toFixed(4)}, kein Balance-Bruch)`,
         res.humanNeutralOk === true
@@ -33602,10 +32720,6 @@ async function checkBandV18196ManaSymmetry(ctx) {
             if (savedSoul) r.applyPlayerSoul(savedSoul);
         }
 
-        // (M8) Größen-Skalierung (V18.195-Symmetrie): manaMax skaliert mit
-        // sqrt(soulSize) genau wie hpMax/staminaMax
-        const src = window.__codeOf(r.computePlayerStats) + window.__codeOf(r._applySizeMultipliersToStats); // V18.312/.347: die Größen-Mul wanderte in die EINE Pipeline-Quelle _applySizeMultipliersToStats
-        out.manaScaledByMul = /stats\.manaMax\s*=\s*stats\.manaMax\s*\*\s*sizeHpMul/.test(src);
 
         return out;
     });
@@ -33629,7 +32743,6 @@ async function checkBandV18196ManaSymmetry(ctx) {
         `V18.196 (M7b) Regen bleibt ≤ manaMax (mana ${res.regenAfter && res.regenAfter.toFixed(1)} ≤ max ${res.regenMaxAfter && res.regenMaxAfter.toFixed(1)})`,
         res.regenStaysBelowOrAtMax === true
     );
-    check("V18.196 (M8) Mana skaliert mit sqrt(soulSize) (V18.195-Symmetrie)", res.manaScaledByMul === true);
 }
 
 // Γ-M STRATA: y-abhängige Material-Wahl im Boden — nahe der Oberfläche kann erde gewinnen, tief
@@ -33647,7 +32760,6 @@ async function checkBandV18197GammaMStrata(ctx) {
         // (S2) Source-Probe: _terrainMaterialAt nimmt y + nutzt STRATA_STEIN_DEPTH
         const src = window.__codeOf(r._terrainMaterialAt);
         out.acceptsY = /\(x,\s*z,\s*y\)/.test(src);
-        out.usesStrataDepth = /STRATA_STEIN_DEPTH/.test(src);
 
         // (S3) MIGRATION-TOLERANZ: 2-arg Aufruf gibt das alte Verhalten
         // (Achse-Argmax), wie vor V18.197 — bit-identisch zu Pre-V18.197.
@@ -33712,8 +32824,6 @@ async function checkBandV18197GammaMStrata(ctx) {
     });
 
     check("V18.197 (S1) STRATA_STEIN_DEPTH frozen Konstante existiert", res.constExists === true);
-    check("V18.197 (S2a) _terrainMaterialAt nimmt y-Argument", res.acceptsY === true);
-    check("V18.197 (S2b) _terrainMaterialAt nutzt STRATA_STEIN_DEPTH-Konstante", res.usesStrataDepth === true);
     if (res.foundErdePoint) {
         check(
             `V18.197 (S4) An Oberfläche (y=surfY): bleibt erde (alte Achse, gemessen ${res.surfaceMat})`,
@@ -33790,16 +32900,7 @@ async function checkBandV18198Gamma2Totholz(ctx) {
             out.tagNeverHigherThanTree = neverHigher;
         }
 
-        // (T5) Der Totholz-Sub-Spawn (TOTHOLZ_RATE + stamm_gefallen) lebt in `_forestPlantChunk`;
-        // `src` bleibt `_vegetationSampleSpawn` für T6 (dort lebt der rng.noise2D-Unterwuchs).
-        const src = window.__codeOf(r._vegetationSampleSpawn);
-        const forestSrc = window.__codeOf(r._forestPlantChunk);
-        out.hasSubSpawn = /TOTHOLZ_RATE/.test(forestSrc) && /stamm_gefallen/.test(forestSrc);
 
-        // (T6) RNG-DETERMINISMUS: der Sub-Spawn nutzt deterministisches noise2D, kein Math.random (Γ5-Wand);
-        // __codeOf strippt Kommentare — nur CODE zählt, Kommentare dürfen das Wort tragen.
-        const stripped = window.__codeOf(src);
-        out.usesDeterministicRng = /rng\.noise2D/.test(src) && !/Math\.random\s*\(/.test(stripped);
 
         // (T7) DIREKT-SPAWN-TEST: spawnArchitecture("stamm_gefallen", ...) klappt
         // und das Entry trägt blockerAABBs (V13.10-Solidität).
@@ -33829,8 +32930,6 @@ async function checkBandV18198Gamma2Totholz(ctx) {
         `V18.198 (T4) AFFINITÄTS-WAND: stamm_gefallen ≤ baum_eiche in jeder Achse (V17.16-Disziplin, diffs ${JSON.stringify(res.tagDiffs)})`,
         res.tagNeverHigherThanTree === true
     );
-    check("V18.198 (T5) Sub-Spawn-Pfad in _vegetationSampleSpawn verdrahtet", res.hasSubSpawn === true);
-    check("V18.198 (T6) RNG deterministisch (noise2D, kein Math.random — Γ5-Wand)", res.usesDeterministicRng === true);
     check("V18.198 (T7a) Direkt-Spawn stamm_gefallen funktioniert", res.directSpawnOk === true);
     check("V18.198 (T7b) Spawn trägt blockerAABBs (V13.10 Solidität)", res.directSpawnHasBlockers === true);
     check("V18.198 (T7c) Cleanup: state.architectures-Länge unverändert", res.archCountUnchanged === true);
@@ -33868,7 +32967,6 @@ async function checkBandV18199GammaMLichen(ctx) {
 
         // (L2) Source-Probe Main: LICHEN-Mix lebt in der EINEN Boden-Farbe (_bodenFarbeAt)
         const mainSrc = window.__codeOf(r._bodenFarbeAt);
-        out.mainHasLichen = /LICHEN/.test(mainSrc) && /lichenMix/.test(mainSrc) && /lichenCluster/.test(mainSrc);
         // Position im Mix-Stack: NACH dampEarth, VOR lava
         out.mainOrderCorrect =
             mainSrc.indexOf("dampEarth, ss") < mainSrc.indexOf("lichenMix") &&
@@ -33923,10 +33021,6 @@ async function checkBandV18199GammaMLichen(ctx) {
 
     check("V18.199 (L1a) AnazhRealm.LICHEN existiert + frozen", res.lichenExists === true && res.lichenFrozen === true);
     check("V18.199 (L1b) LICHEN-Konstanten sinnvoll (lo<hi, strength∈(0,1), tint=3er)", res.constsSensible === true);
-    check(
-        "V18.199 (L2a) Source: lichenMix + lichenCluster in der Boden-Farbe (_bodenFarbeAt)",
-        res.mainHasLichen === true
-    );
     check("V18.199 (L2b) Mix-Stack-Order: dampEarth → lichen → lava", res.mainOrderCorrect === true);
     check(
         `V18.199 (L3a) feucht+steinig → lichen sichtbar (gemessen avg ${res.lichenAvgWetStone && res.lichenAvgWetStone.toFixed(4)})`,
@@ -34057,9 +33151,6 @@ async function checkBandV18200GammaMIronBands(ctx) {
             out.midDepthStaysStein = midMat === "stein"; // Iron-Schwelle nicht erreicht (zu flach)
         }
 
-        // (I7) Source-Probe: _terrainMaterialAt enthält IRON_BANDS-Logik
-        const src = window.__codeOf(r._terrainMaterialAt);
-        out.srcHasIronCheck = /IRON_BANDS/.test(src) && /_eisenAderAt/.test(src);
 
         return out;
     });
@@ -34094,7 +33185,6 @@ async function checkBandV18200GammaMIronBands(ctx) {
     } else {
         check("V18.200 (I6) Kein Iron-Ader-Punkt in 1000 Samples gefunden (skip)", true);
     }
-    check("V18.200 (I7) Source-Probe: IRON_BANDS + _eisenAderAt in _terrainMaterialAt", res.srcHasIronCheck === true);
 }
 
 // V18.201 — MANA-KONSUMENTEN FOUNDATION (aktiv.md §4.E Folge zu V18.196).
@@ -34422,9 +33512,6 @@ async function checkBandV18203Gamma3FeldCharakter(ctx) {
             out.totalDeltaMagie = Number(totalDeltaMagie.toFixed(3));
             out.totalDeltaDichte = Number(totalDeltaDichte.toFixed(3));
 
-            // (F7) Source-Probe: FIELD_CHARACTER + gen>=3-Gate
-            const src = window.__codeOf(r.worldFieldAt);
-            out.srcHasGate = /FIELD_CHARACTER/.test(src) && /_genVersion/.test(src);
 
             // (F8) V18.204 DOMAIN-WARP — warpAmp + warpScale Konstanten existieren
             out.warpConstsExist =
@@ -34493,7 +33580,6 @@ async function checkBandV18203Gamma3FeldCharakter(ctx) {
         `V18.203 (F6) magieleitung (λ160) variabler als dichte (λ340) über 200 m (Δmagie ${res.totalDeltaMagie} > Δdichte ${res.totalDeltaDichte})`,
         res.magieMoreVariable === true
     );
-    check("V18.203 (F7) Source-Probe: FIELD_CHARACTER + _genVersion-Gate im worldFieldAt", res.srcHasGate === true);
     check("V18.204 (F8) DOMAIN-WARP Konstanten (warpAmp + warpScale)", res.warpConstsExist === true);
     check("V18.204 (F9a) Warp ändert den gelesenen Wert (Sample-Position verschoben)", res.warpChangesValue === true);
     check(
@@ -34596,15 +33682,6 @@ async function checkBandV18205Gamma7Grammatik(ctx) {
             out.heightSpread = Number((hMax - hMin).toFixed(2));
             out.heightsVary = hMax - hMin > 0.5; // mindestens 0.5 m Spreizung über 6 Varianten
 
-            // (G9) Source-Probe: SimplexNoise + eigener Stream — V18.211 hat
-            // den Stamm-Helper in drei Pfade zerteilt (Routing + Rich + Legacy),
-            // die Probe walkt mit (V9.56-i-Disziplin).
-            const src =
-                window.__codeOf(r._growTreeBlueprint) +
-                (r._growTreeBlueprintRich ? window.__codeOf(r._growTreeBlueprintRich) : "") +
-                (r._growTreeBlueprintLegacy ? window.__codeOf(r._growTreeBlueprintLegacy) : "");
-            out.usesGrammarStream = /-veg-grammatik/.test(src);
-            out.usesNoise = /SimplexNoise|noise2D/.test(src);
         }
         return out;
     });
@@ -34623,8 +33700,6 @@ async function checkBandV18205Gamma7Grammatik(ctx) {
     );
     check("V18.205 (G7) Parts wohlgeformt (shape+material+position+size vollständig)", res.wellFormed === true);
     check(`V18.205 (G8) Höhen-Spreizung über 6 Varianten > 0.5 m (${res.heightSpread})`, res.heightsVary === true);
-    check("V18.205 (G9a) Eigener Noise-Stream '-veg-grammatik' (Γ5-Disziplin)", res.usesGrammarStream === true);
-    check("V18.205 (G9b) SimplexNoise statt Math.random", res.usesNoise === true);
 }
 
 // V18.206 — AVATAR-GRÖSSE-SPEED-TRADE (§4.D Folge zu V18.195): größere
@@ -34635,18 +33710,6 @@ async function checkBandV18206SpeedTrade(ctx) {
         const r = window.anazhRealm;
         const out = {};
 
-        // (S1) Source: 1/sizeHpMul angewendet auf speed/attackSpeed/jumpPower
-        const src = window.__codeOf(r.computePlayerStats) + window.__codeOf(r._applySizeMultipliersToStats); // V18.312/.347: die Größen-Mul wanderte in die EINE Pipeline-Quelle _applySizeMultipliersToStats
-        out.hasSizeSpeedMul = /sizeSpeedMul/.test(src);
-        // REALITÄTS-EICHUNG 17.07. — gesetz-relativ statt Arcade-Literal: der Stamm-Floor
-        // ist (2/7)·Gesetz-base (floorBase aus _bewegungsKoeff), nicht mehr das Literal 2.
-        out.appliedToSpeed =
-            /stats\.speed\s*=\s*Math\.max\(\s*\(2\s*\/\s*7\)\s*\*\s*floorBase,\s*stats\.speed\s*\*\s*sizeSpeedMul/.test(
-                src
-            );
-        out.appliedToAttackSpeed =
-            /stats\.attackSpeed\s*=\s*Math\.max\(0\.25,\s*stats\.attackSpeed\s*\*\s*sizeSpeedMul/.test(src);
-        out.appliedToJumpPower = /stats\.jumpPower\s*=\s*stats\.jumpPower\s*\*\s*sizeSpeedMul/.test(src);
 
         const savedSoul = r.state.player && r.state.player.soul;
         const savedEquipped = r.state.player && JSON.parse(JSON.stringify(r.state.player.equipped || {}));
@@ -34735,11 +33798,6 @@ async function checkBandV18206SpeedTrade(ctx) {
         return out;
     });
 
-    check("V18.206 (S1a) Source: sizeSpeedMul in computePlayerStats", res.hasSizeSpeedMul === true);
-    // REALITÄTS-EICHUNG 17.07. — gesetz-relativ statt Arcade-Literal (war „Floor 2").
-    check("V18.206 (S1b) speed × sizeSpeedMul angewendet (mit Floor (2/7)·Gesetz-base)", res.appliedToSpeed === true);
-    check("V18.206 (S1c) attackSpeed × sizeSpeedMul angewendet (mit Floor 0.25)", res.appliedToAttackSpeed === true);
-    check("V18.206 (S1d) jumpPower × sizeSpeedMul angewendet", res.appliedToJumpPower === true);
     check(
         `V18.206 (S2/S5a) Large (sizeFactor ${res.largeSizeFactor && res.largeSizeFactor.toFixed(2)}) langsamer als Small (sizeFactor ${res.smallSizeFactor && res.smallSizeFactor.toFixed(2)}): ${res.largeSpeed && res.largeSpeed.toFixed(2)} < ${res.smallSpeed && res.smallSpeed.toFixed(2)}`,
         res.largeSlower === true
@@ -34776,12 +33834,6 @@ async function checkBandV18207R5StructureTexture(ctx) {
                 A.R5_STRUCTURE_TEXTURE.microBoost < 5;
         }
 
-        // (R2) Die KETTE zählt, kein Literal: die Konstante seedet in _ensureAtmoUniforms das LIVE-Uniform
-        // `r5StructureBoost`; _applySubstanceResponse LIEST es und multipliziert es aufs micro-Gewicht.
-        const src = window.__codeOf(r._applySubstanceResponse);
-        const seedSrc = window.__codeOf(r._ensureAtmoUniforms);
-        out.srcHasR5 = /R5_STRUCTURE_TEXTURE/.test(seedSrc) && /r5StructureBoost/.test(seedSrc);
-        out.srcMultipliesMicro = /r5StructureBoost\.mul/.test(src) && /micro/.test(src);
 
         // (R3) Default microBoost 1.3 (sichtbar); der Slider ist live, der Spieler dreht selbst.
         out.defaultIs13 = A.R5_STRUCTURE_TEXTURE.microBoost === 1.3;
@@ -34793,14 +33845,6 @@ async function checkBandV18207R5StructureTexture(ctx) {
     check(
         `V18.207 (R1b) microBoost sinnvoll (>0, <5; gemessen ${res.microBoostValue})`,
         res.microBoostSensible === true
-    );
-    check(
-        "V18.207 (R2a) Source: R5_STRUCTURE_TEXTURE seedet das r5StructureBoost-Uniform (_ensureAtmoUniforms, V18.210-Kette)",
-        res.srcHasR5 === true
-    );
-    check(
-        "V18.207 (R2b) Source: _applySubstanceResponse multipliziert r5StructureBoost aufs micro-Gewicht (live-Uniform)",
-        res.srcMultipliesMicro === true
     );
     check("V18.207 (R3) V18.210-Default microBoost = 1.3 (sichtbar — Slider live)", res.defaultIs13 === true);
 }
@@ -34814,16 +33858,6 @@ async function checkBandV18208CreatureSizeSymmetry(ctx) {
         const A = r.constructor;
         const out = {};
 
-        // (C1) Source: Größen-Multiplier in computeCreatureStats
-        const src = window.__codeOf(r.computeCreatureStats) + window.__codeOf(r._applySizeMultipliersToStats); // V18.312/.347: Größen-Mul in der EINEN Pipeline-Quelle
-        out.hasSizeMul = /creatureSize/.test(src) && /Math\.sqrt/.test(src);
-        out.appliesToHp = /stats\.hpMax\s*=\s*stats\.hpMax\s*\*\s*sizeHpMul/.test(src);
-        // REALITÄTS-EICHUNG 17.07. — gesetz-relativ statt Arcade-Literal: der Stamm-Floor
-        // ist (2/7)·Gesetz-base (floorBase aus _bewegungsKoeff), nicht mehr das Literal 2.
-        out.appliesToSpeed =
-            /stats\.speed\s*=\s*Math\.max\(\s*\(2\s*\/\s*7\)\s*\*\s*floorBase,\s*stats\.speed\s*\*\s*sizeSpeedMul/.test(
-                src
-            );
 
         // (C2) Vergleich: kleine Kreatur (sizeFactor < 1) vs große (>1)
         if (!A.CREATURE_SOULS) {
@@ -34892,10 +33926,6 @@ async function checkBandV18208CreatureSizeSymmetry(ctx) {
         return out;
     });
 
-    check("V18.208 (C1a) Source: creatureSize + Math.sqrt in computeCreatureStats", res.hasSizeMul === true);
-    check("V18.208 (C1b) hpMax × sizeHpMul angewendet", res.appliesToHp === true);
-    // REALITÄTS-EICHUNG 17.07. — gesetz-relativ statt Arcade-Literal (war „Floor 2").
-    check("V18.208 (C1c) speed × sizeSpeedMul (mit Floor (2/7)·Gesetz-base) angewendet", res.appliesToSpeed === true);
     check(
         `V18.208 (C2) AnazhRealm.CREATURE_SOULS existiert (${res.soulCount} Seelen)`,
         res.creatureSoulsExists === true
@@ -35101,25 +34131,11 @@ async function checkBandV18210Verdrahtung(ctx) {
                 if (r.setGameMode) r.setGameMode(sm0);
             }
         }
-        // (Welt-Wechsel-Reset des Scent-Cache, V18.210-Audit-Folge)
-        out.a3SizeCacheResetsOnWorldSwitch = /_scentSizeBySoul[\s\S]{0,80}\.clear\(\)/.test(
-            window.__codeOf(r._loadStateRestoreWorldMeta)
-        );
-        // (A1h) SOURCE-PROBE: _vegetationSampleSpawn ruft den Helper an gen≥4
-        const src = window.__codeOf(r._vegetationSampleSpawn);
-        // V18.258 — die gen≥4-Schranke ist GESCHNITTEN (ALLE gen wachsen durch die
-        // Grammatik); der Worldgen ruft den Helper jetzt unbedingt für Bäume. Die Probe
-        // prüft darum nur noch, DASS der Helper im Spawn-Pfad lebt.
-        out.a1SourceWired = /_growTreeBlueprintForSpawn/.test(src);
 
         // ============== A1 Audit-Heilungen ==============
         // (Heilung #1) Snapshot persistiert grownBlueprints
         const snap = r.buildStateSnapshot ? r.buildStateSnapshot() : null;
         out.a1SnapshotHasGrown = !!(snap && snap.grownBlueprints && typeof snap.grownBlueprints === "object");
-        // (Heilung #1b) Restore-Helper existiert UND ist vor _loadStateRestoreArchitectures verdrahtet
-        out.a1RestoreHelperExists =
-            typeof r._loadStateRestoreGrownBlueprints === "function" &&
-            /_loadStateRestoreGrownBlueprints/.test(window.__codeOf(r.loadState));
         // (Heilung #2) Eviction respektiert aktive Architekturen
         out.a1EvictionRespectsActive = false;
         if (typeof r._isGrownBlueprintReferenced === "function") {
@@ -35193,16 +34209,6 @@ async function checkBandV18210Verdrahtung(ctx) {
             }
         }
         out.a1SpeciesDistinct = sigs.size >= 4; // wenigstens 4 unterschiedlich (Eiche/Kiefer/Tanne/Birke sind klar trennbar)
-        // (Heilung #3b) TAG-WAND: Birke gegen baum_birke (nicht baum_eiche).
-        // V18.258 — die statischen Spezies-Baupläne sind geschnitten; die Wand liest
-        // die per-Spezies-Referenz jetzt aus der frozen SPECIES_TAG_REFERENCE[species].
-        out.a1TagWandSpecies = /SPECIES_TAG_REFERENCE\[species\]/.test(window.__codeOf(r._growTreeBlueprintForSpawn));
-        // (Heilung #6 Selbst-Audit) WELT-WECHSEL: _growTreeNoise wird im
-        // _loadStateRestoreWorldMeta resetted, sonst trägt die neue Welt den
-        // alten Welt-Stempel (P2P-Drift-Klasse, V18.193-Erbgut-Lehre).
-        out.a1WorldSwitchResetsNoise =
-            /this\._growTreeNoise\s*=\s*null/.test(window.__codeOf(r._loadStateRestoreWorldMeta)) &&
-            /this\._growTreeRing\s*=\s*\[\]/.test(window.__codeOf(r._loadStateRestoreWorldMeta));
 
         // ============== A2: R5 LIVE-UNIFORM + SLIDER ==============
         // (A2a) Default wanderte 1.0 → 1.3
@@ -35224,9 +34230,6 @@ async function checkBandV18210Verdrahtung(ctx) {
             out.a2SetterCapsLo = au.r5StructureBoost.value === 0.5;
             r.setStructureBoost(before); // restore
         }
-        // (A2d) SOURCE-PROBE: _applySubstanceResponse liest das Uniform statt Konstante
-        const srcSubst = window.__codeOf(r._applySubstanceResponse);
-        out.a2SubstReadsUniform = /r5StructureBoost/.test(srcSubst) && /_au\.r5StructureBoost/.test(srcSubst);
         // (A2e) DOM-Slider existiert
         out.a2DomSliderExists = !!document.getElementById("slider-structureboost");
 
@@ -35245,11 +34248,6 @@ async function checkBandV18210Verdrahtung(ctx) {
             typeof out.a3ScentProbeM === "number" &&
             out.a3ScentProbeM > 0 &&
             A._verhaltenGesetz().jagd.scentProbeM === undefined;
-        // (A3c) SOURCE-PROBE: der Helper ruft _scentAt
-        out.a3HelperUsesScent = /_scentAt/.test(window.__codeOf(r._creatureScentHuntDir));
-        // (A3d) SOURCE-PROBE: der wander-Pfad in updateCreatures ruft den Helper
-        const srcUpd = window.__codeOf(r.updateCreatures);
-        out.a3WanderWired = /_creatureScentHuntDir/.test(srcUpd);
         // (A3e) BEHAVIORAL: ein wild-Wesen mit Beute in 50m kriegt einen Dir
         // zurück (nicht null). Wir setzen ein Test-Setup synthetisch.
         const savedMode = r.getGameMode ? r.getGameMode() : "frieden";
@@ -35327,13 +34325,6 @@ async function checkBandV18210Verdrahtung(ctx) {
         // ============== A4: MANA-KONSUMENT γ ==============
         // (A4a) Konstante existiert
         out.a4ManaCostConst = typeof A.TOOL_OP_MANA_COST === "number" && A.TOOL_OP_MANA_COST > 0;
-        // (A4b) SOURCE-PROBE: applyOpToPart liest tool.opClass + zweigt zu _drainMana
-        const srcOp = window.__codeOf(r.applyOpToPart);
-        out.a4OpToPartReadsMana =
-            /phaseChange/.test(srcOp) && /_drainMana/.test(srcOp) && /not_enough_mana/.test(srcOp);
-        // (A4c) SOURCE-PROBE: Werkstatt-Pfad liest proc.opClass
-        const srcWs = window.__codeOf(r.applyWorkshopProcessToPart);
-        out.a4WorkshopReadsMana = /phaseChange/.test(srcWs) && /_drainMana/.test(srcWs);
         // (A4d) BEHAVIORAL: phaseChange-Op (ritueller-stab) zieht Mana statt Stamina
         const sm = r.getGameMode ? r.getGameMode() : "frieden";
         // V18.210 (Audit-Heilung #5) — saubere Test-Hygiene: state vorher
@@ -35423,10 +34414,6 @@ async function checkBandV18210Verdrahtung(ctx) {
         "V18.210-A1g Memory-Cap: Ring ≤ 256 nach 300 seeds (V18.210-Audit #2 CAP-Erweiterung)",
         res.a1RingCap === true
     );
-    check(
-        "V18.210-A1h SOURCE: _vegetationSampleSpawn ruft _growTreeBlueprintForSpawn (alle gen wachsen)",
-        res.a1SourceWired === true
-    );
 
     // A2 — R5 Live-Slider
     check("V18.210-A2a R5_STRUCTURE_TEXTURE.microBoost Default = 1.3 (war 1.0)", res.a2DefaultIs13 === true);
@@ -35436,10 +34423,6 @@ async function checkBandV18210Verdrahtung(ctx) {
     check("V18.210-A2c3 Setter persistiert (atmosphere.r5StructureBoost)", res.a2SetterPersists === true);
     check("V18.210-A2c4 Setter cap-clamp (5.0 → 2.5)", res.a2SetterCapsHi === true);
     check("V18.210-A2c5 Setter floor-clamp (0.1 → 0.5)", res.a2SetterCapsLo === true);
-    check(
-        "V18.210-A2d SOURCE: _applySubstanceResponse liest LIVE-Uniform statt Konstante",
-        res.a2SubstReadsUniform === true
-    );
     check("V18.210-A2e DOM-Slider slider-structureboost existiert", res.a2DomSliderExists === true);
 
     // A3 — Scent KI
@@ -35449,8 +34432,6 @@ async function checkBandV18210Verdrahtung(ctx) {
         `V18.210-A3b VERHALTEN.jagd.scentRangeM/hetzM Gesetz, kein Gradienten-Schritt (range=${res.a3ScentRangeM}, hetzM=${res.a3ScentProbeM})`,
         res.a3ConstsOk === true
     );
-    check("V18.210-A3c SOURCE: Helper ruft _scentAt", res.a3HelperUsesScent === true);
-    check("V18.210-A3d SOURCE: updateCreatures verdrahtet den Helper im wander-Pfad", res.a3WanderWired === true);
     check("V18.210-A3e BEHAVIORAL: wild + Beute → direction != null", res.a3PredatorHasDir === true);
     check("V18.210-A3e2 BEHAVIORAL: wild ohne Beute → null", res.a3NoPreyNoDir === true);
     check(
@@ -35465,10 +34446,6 @@ async function checkBandV18210Verdrahtung(ctx) {
         res.a1SnapshotHasGrown === true
     );
     check(
-        "V18.210-A1-Heil1b Restore-Helper _loadStateRestoreGrownBlueprints existiert + verdrahtet",
-        res.a1RestoreHelperExists === true
-    );
-    check(
         "V18.210-A1-Heil2 Eviction-Wand: aktiver grown-Bauplan wird NIE evictet (Audit #2)",
         res.a1EvictionRespectsActive === true
     );
@@ -35477,34 +34454,12 @@ async function checkBandV18210Verdrahtung(ctx) {
         res.a1SpeciesDistinct === true
     );
     check(
-        "V18.210-A1-Heil3b SPEZIES-Tag-Wand: Birke gegen baum_birke (nicht baum_eiche)",
-        res.a1TagWandSpecies === true
-    );
-    check(
-        "V18.210-A1-Heil6 WELT-WECHSEL: _growTreeNoise + _growTreeRing reset in _loadStateRestoreWorldMeta (P2P-Drift-Klasse, V18.193-Erbgut-Lehre)",
-        res.a1WorldSwitchResetsNoise === true
-    );
-    // A3-Perf Watch-Item (Schöpfer-Audit 14.06.) — Memoization für sizeFactor pro Soul
-    check(
-        "V18.210-A3-Watch1 _creatureScentHuntDir nutzt _scentSizeBySoul-Cache (kein per-Tick-Recompute, V18.107-Pattern auf scent)",
-        res.a3SizeCacheSrc === true
-    );
-    check(
         "V18.210-A3-Watch1b sizeFactor-Cache: zweimaliger Aufruf → Cache-Size bleibt 1 (nur 1 Compute pro Soul)",
         res.a3SizeCacheReuse === true
-    );
-    check(
-        "V18.210-A3-Watch1c Welt-Wechsel räumt _scentSizeBySoul (defensive — Custom-Souls können wechseln)",
-        res.a3SizeCacheResetsOnWorldSwitch === true
     );
 
     // A4 — Mana-Konsument
     check("V18.210-A4a TOOL_OP_MANA_COST Konstante existiert", res.a4ManaCostConst === true);
-    check(
-        "V18.210-A4b SOURCE: applyOpToPart phaseChange → _drainMana + not_enough_mana",
-        res.a4OpToPartReadsMana === true
-    );
-    check("V18.210-A4c SOURCE: applyWorkshopProcessToPart phaseChange → _drainMana", res.a4WorkshopReadsMana === true);
     check("V18.210-A4d BEHAVIORAL: ritueller-stab (phaseChange) zieht Mana", res.a4ManaWasDrained === true);
     check("V18.210-A4d2 BEHAVIORAL: ritueller-stab lässt Stamina unberührt", res.a4StaminaUntouched === true);
     check(
@@ -35563,11 +34518,6 @@ async function checkBandV18211SkeletonGrammar(ctx) {
             out.richFoliageAtTips = laub.length >= 10 && atTipsCount >= Math.floor(laub.length * 0.8);
         }
 
-        // (S4) ROUTING gen<5 → Legacy, gen≥5 → Rich: gen lässt sich nicht in-place wechseln, ohne die
-        // Welt-Init zu brechen → Source-Probe, dass die Routing-Funktion das Gate (genVersion >= 5) zieht.
-        const routingSrc = window.__codeOf(r._growTreeBlueprint);
-        out.routingHasGate = /genVersion\(\)\s*>=\s*5/.test(routingSrc) || /_genVersion\(\)\s*>=\s*5/.test(routingSrc);
-        out.routingDelegates = /_growTreeBlueprintRich/.test(routingSrc) && /_growTreeBlueprintLegacy/.test(routingSrc);
 
         // (S5) SNAPSHOT-HEILUNG: grownBlueprints im Snapshot trägt KEINE
         // parts-Arrays mehr (Plan-§2.5-konform: f(seed) ist das Erbgut).
@@ -35619,8 +34569,6 @@ async function checkBandV18211SkeletonGrammar(ctx) {
         "V18.211 (S3c) Foliage AT TIPS: ≥10 laub-Parts, alle vom Stamm weg (Plan-§3.3)",
         res.richFoliageAtTips === true
     );
-    check("V18.211 (S4a) Routing-Funktion liest genVersion >= 5 Gate", res.routingHasGate === true);
-    check("V18.211 (S4b) Routing delegiert an Rich + Legacy", res.routingDelegates === true);
     check(
         "V18.211 (S5a) Snapshot grownBlueprints trägt Metadata (_grownSpecies + _grownSeed)",
         res.snapshotHasMetadata === true
@@ -35682,12 +34630,6 @@ async function checkBandV18212GigantRestsubschritte(ctx) {
             out.wStrongerSway = spitze(1, 1) >= 3 * spitze(0.06, 1);
         }
 
-        // ─── Ω-H PROVENIENZ BEIM ERNTEN (§2 Plan SEELEN-Band) ─────────
-        // Source-Probe: harvestArchitecture liest _isGrown + _grownSpecies +
-        // _grownSeed und schreibt sie in den Journal-Eintrag + Return-Value.
-        const harvestSrc = window.__codeOf(r.harvestArchitecture);
-        out.hReadsGrown = /_isGrown\s*&&\s*bp\._grownSpecies/.test(harvestSrc) || /bp\._isGrown\s*&&/.test(harvestSrc);
-        out.hWritesProvenance = /grownProvenance/.test(harvestSrc) && /journalDetails\.provenance/.test(harvestSrc);
         // Behavioral: einen grown_-Bauplan ernten → result hat .provenance.
         if (typeof r._growTreeBlueprintForSpawn === "function" && r.state && r.state.architectures) {
             const grownKey = r._growTreeBlueprintForSpawn("baum_eiche", "h-test-seed");
@@ -35737,9 +34679,6 @@ async function checkBandV18212GigantRestsubschritte(ctx) {
     check("K19 (W2) Wind: das Blatt flattert schneller als sein Ast", res.wHasFlutter === true);
     check("K19 (W3) Wind: der Sturm biegt ≥ 3× die Brise (Wind-Zeile)", res.wStrongerSway === true);
 
-    // Ω-H
-    check("V18.212 (H1) harvestArchitecture liest _isGrown + _grownSpecies (Source)", res.hReadsGrown === true);
-    check("V18.212 (H2) harvestArchitecture schreibt provenance in Journal + Return", res.hWritesProvenance === true);
     if (res.hHarvestHasProvenance !== undefined) {
         check(
             "V18.212 (H3) Behavioral: grown-Baum-Ernte trägt provenance.bornFrom='world-genesis'",
@@ -35768,24 +34707,7 @@ async function checkBandV18213MeshMerge(ctx) {
         // ─── (M1) Source-Probes: die zwei neuen Helper + Routing ─────
         out.mergeHelperExists = typeof r._mergeBlueprintByMaterial === "function";
         out.mergeGeomsExists = typeof r._mergeGeometries === "function";
-        // _archFlattenBlueprint trägt den merged-Pfad (Source-grep).
-        const flattenSrc = window.__codeOf(r._archFlattenBlueprint);
-        out.flattenHasMergedPath =
-            /bp\._isMerged\s*===\s*true/.test(flattenSrc) && /archMergedGeomCache/.test(flattenSrc);
-        // _loadStateRestoreWorldMeta disposed den merged-Cache (Welt-
-        // Identitäts-Wand, V18.210-Lehre).
-        const restoreSrc = window.__codeOf(r._loadStateRestoreWorldMeta);
-        out.restoreDisposesMerged =
-            /archMergedGeomCache/.test(restoreSrc) && /\.dispose\s*\(\s*\)|\.clear\s*\(\s*\)/.test(restoreSrc);
 
-        // ─── (M2) genVersion-Default: neue Welten ≥ gen 6 ───
-        // Neue Welt-Metas tragen genVersion ≥ 6 (Mesh-Merge aktiv; der konkrete Default steht in T1).
-        // Die LAUFENDE Welt kann älter sein (localStorage) — bestehende Welten bleiben auf ihrem Stand.
-        const newMetaSrc = r._generateFreshWorldMeta ? window.__codeOf(r._generateFreshWorldMeta) : "";
-        // V18.213-Probe: gen >= 6 (Mesh-Merge aktiv). V18.214 hebt auf 7 —
-        // wir akzeptieren beide (Aufwärts-Kompat). M2 prüft NICHT den exakten
-        // Wert (das macht V18.214-T-band), sondern nur den Mesh-Merge-Floor.
-        out.newMetaUsesGen6 = /genVersion:\s*[6-9]/.test(newMetaSrc);
 
         // ─── (M3+M4) Behavioral: gen=6 grown Baum trägt _isMerged + Merge funktioniert ───
         // Test-Subjekt ist ein ECHTER _isGrown-Bauplan der warmen Welt, der NICHT moveable/magnifying ist
@@ -35917,12 +34839,6 @@ async function checkBandV18213MeshMerge(ctx) {
 
     check("V18.213 (M1a) _mergeBlueprintByMaterial existiert", res.mergeHelperExists === true);
     check("V18.213 (M1b) _mergeGeometries existiert", res.mergeGeomsExists === true);
-    check(
-        "V18.213 (M1c) _archFlattenBlueprint hat merged-Pfad (_isMerged-Gate + archMergedGeomCache)",
-        res.flattenHasMergedPath === true
-    );
-    check("V18.213 (M1d) _loadStateRestoreWorldMeta disposed archMergedGeomCache", res.restoreDisposesMerged === true);
-    check("V18.213 (M2) Neue Welt-Meta nutzt genVersion ≥ 6 (Mesh-Merge-Floor)", res.newMetaUsesGen6 === true);
     check("V18.213 (M3a) gen=6 grown Bauplan trägt _isMerged: true", res.bpHasIsMerged === true);
     check("V18.213 (M3b) bp.parts bleibt erhalten (≥50 Parts, V17.16-Wand)", res.bpStillHasParts === true);
     check("V18.213 (M4a) archFlattenBlueprint markiert merged: true (Diagnose-Marker)", res.flatHasMergedFlag === true);
@@ -35972,8 +34888,6 @@ async function checkBandV18214SkeletonMesh(ctx) {
         out.tubeBuilderExists = typeof r._buildTreeTubeGeometry === "function";
         out.cardBuilderExists = typeof r._buildTreeFoliageCardGeometry === "function";
         out.skelLeavesExists = typeof r._buildTreeSkeletonLeaves === "function";
-        const flattenSrc2 = window.__codeOf(r._archFlattenBlueprint);
-        out.flattenHasSkeletonPath = /bp\._skeleton/.test(flattenSrc2) && /_buildTreeSkeletonLeaves/.test(flattenSrc2);
         // K24-N1: der Wurzelanlauf ist das Gesetz der Art (P.flare), die Röhre trägt nur ihre Rippen-Zahl; der Ersatz fiel
         out.defaultFlareExists = Number.isInteger(A.STAMM_RIPPEN) && A.STAMM_RIPPEN > 0 && !("DEFAULT_TREE_FLARE" in A);
         out.speciesTreeParamsExists =
@@ -35992,14 +34906,7 @@ async function checkBandV18214SkeletonMesh(ctx) {
             ].every((k) => tp[k] && !("flare" in tp[k]));
         }
 
-        // ─── (T2) Wind: der Skelett-Baum trägt seine Wind-Daten in jeden Stoff (K19, `_skelettWindDaten`) ─
-        const skelSrc = window.__codeOf(r._buildTreeSkeletonLeaves);
-        out.skelettWindDaten = /_skelettWindDaten\(/.test(skelSrc) && /baumWind/.test(skelSrc);
 
-        // ─── (T3) Slope/Höhen-Gate in _vegetationSampleSpawn ────────
-        const spawnSrc = window.__codeOf(r._vegetationSampleSpawn);
-        out.spawnReadsSlopeHeight =
-            /SPECIES_TREE_PARAMS/.test(spawnSrc) && /slopeMax/.test(spawnSrc) && /heightRange/.test(spawnSrc);
 
         // ─── (T4) Behavioral: Skeleton wird beim Wachsen gesetzt ───
         // genVersion temporär 7, dann (Seed, Spezies)-Kombis probieren, bis ein NICHT-moveable Bauplan
@@ -36121,10 +35028,6 @@ async function checkBandV18214SkeletonMesh(ctx) {
     check("V18.214 (T1b) _buildTreeFoliageCardGeometry existiert", res.cardBuilderExists === true);
     check("V18.214 (T1c) _buildTreeSkeletonLeaves existiert", res.skelLeavesExists === true);
     check(
-        "V18.214 (T1e) _archFlattenBlueprint hat Skeleton-Pfad (_skeleton-Gate + _buildTreeSkeletonLeaves)",
-        res.flattenHasSkeletonPath === true
-    );
-    check(
         "V18.214 (T1f) der Wurzelanlauf ist das Gesetz (STAMM_RIPPEN, DEFAULT_TREE_FLARE fort)",
         res.defaultFlareExists === true
     );
@@ -36134,14 +35037,6 @@ async function checkBandV18214SkeletonMesh(ctx) {
         res.tannenSlopeHigher === true
     );
     check("V18.214 (T1i) keine der 6 Arten trägt eine Hand-Anlauf-Zeile (K24-N1)", res.allSpeciesHaveFlare === true);
-    check(
-        "K19 (T2) der Skelett-Baum trägt Höhe und Schlankheit in seine Stoffe (_skelettWindDaten)",
-        res.skelettWindDaten === true
-    );
-    check(
-        "V18.214 (T3) _vegetationSampleSpawn liest SPECIES_TREE_PARAMS + slopeMax + heightRange",
-        res.spawnReadsSlopeHeight === true
-    );
     check("V18.214 (T4a) gen=7 grown Bauplan trägt _skeleton-Feld", res.bpHasSkeleton === true);
     check("V18.214 (T4b) bp.parts bleibt erhalten (V17.16-Wand)", res.bpStillHasParts === true);
     check(
@@ -36226,15 +35121,7 @@ async function checkBandV18215AtemberaubenderWald(ctx) {
             !(A.SPECIES_TREE_PARAMS && A.SPECIES_TREE_PARAMS.baum_totholz) &&
             (totholzPreset == null || totholzPreset === "totholz");
 
-        // ─── (W3) V17.16-VARIATIONS-Wand in _growTreeBlueprintForSpawn ─
-        const growSrc = window.__codeOf(r._growTreeBlueprintForSpawn);
-        out.wandGeschaerft = /SPECIES_TAG_VARIATION/.test(growSrc) && /\(a in variation\)\s*continue/.test(growSrc);
 
-        // ─── (W4) computeCompoundTags wendet Variation für _grownSpecies ───
-        // Die Bedingung prüft `_grownSpecies` (die Spezies-Identität), nicht `_isGrown` (Laufzeit-Flag);
-        // __codeOf, weil ein roher toString-Grep über zitierende Kommentare falsch-grün wird.
-        const tagsSrc = window.__codeOf(r.computeCompoundTags);
-        out.tagsAppliesVariation = /SPECIES_TAG_VARIATION/.test(tagsSrc) && /_grownSpecies/.test(tagsSrc);
 
         // ─── (W5) Behavioral: Spezies-Distinktion in computeCompoundTags ─
         // Bauplan-Stichprobe: rohen parts vs _isGrown+species → Tag-Delta.
@@ -36293,14 +35180,6 @@ async function checkBandV18215AtemberaubenderWald(ctx) {
     check(
         "Integration 05.10. (W2) baum_totholz ist aus SPECIES_TREE_PARAMS und dem Eichen-Alias gefallen (Studio-Totholz)",
         res.totholzFort === true
-    );
-    check(
-        "V18.215 (W3) V17.16-VARIATIONS-Wand GESCHÄRFT (Source: deklarierte Achsen freipass)",
-        res.wandGeschaerft === true
-    );
-    check(
-        "V18.215 (W4) computeCompoundTags wendet SPECIES_TAG_VARIATION für _grownSpecies an (Source, V18.259-Wahrheit)",
-        res.tagsAppliesVariation === true
     );
     check(
         "V18.215 (W5a) Tanne _isGrown: brennbar +0.1 angewandt (computeCompoundTags-Δ)",
@@ -36443,16 +35322,7 @@ async function checkBandV18216KarstUndUnderstory(ctx) {
             out.spawnError = String(_e && _e.message);
         }
 
-        // ─── (E) Source: candidates + TREE_NAMES + Bush-Sub-Spawn ─────
-        const spawnSrc = window.__codeOf(r._vegetationSampleSpawn);
         out.candidatesHasKarst = (A.FELD_WURF || []).includes("baum_karst"); // die Liste der Würfe des Felds (K10-6)
-        out.treeNamesHasKarst = /TREE_NAMES[\s\S]{0,400}["']baum_karst["']/.test(spawnSrc);
-        // Bush-Sub-Spawn Block: das BUSH_RATE-Konstrukt + "farn_busch"/"busch_hazel"/"blume_gross"
-        out.bushSubSpawn =
-            /BUSH_RATE/.test(spawnSrc) &&
-            /["']farn_busch["']/.test(spawnSrc) &&
-            /["']busch_hazel["']/.test(spawnSrc) &&
-            /["']blume_gross["']/.test(spawnSrc);
 
         // ─── (F) Version + walk-with-code ───
         // Spätere Wellen bumpen die Version → FLOOR-Prüfung (semver-Form 18.MMM.PPP), keine scharfe Zahl.
@@ -36505,11 +35375,6 @@ async function checkBandV18216KarstUndUnderstory(ctx) {
 
     // (E) Source-Integration
     check("V18.216 (E1) baum_karst in _vegetationSampleSpawn-candidates", res.candidatesHasKarst === true);
-    check("V18.216 (E2) baum_karst in TREE_NAMES (Wald-Mask-Boost)", res.treeNamesHasKarst === true);
-    check(
-        "V18.216 (E3) Bush-Sub-Spawn-Pfad in _vegetationSampleSpawn (BUSH_RATE + 3 Bush-Namen)",
-        res.bushSubSpawn === true
-    );
 
     // (F) Version
     check(`V18.216 (F1) VERSION floor ≥ 18.216.0 (gemessen ${res.versionString})`, res.versionFloor18216 === true);
@@ -36532,14 +35397,6 @@ async function checkBandV18217VariantenPool(ctx) {
         out.constantExists = Number.isFinite(A.VARIANTS_PER_SPECIES) && A.VARIANTS_PER_SPECIES >= 2;
         out.constantValue = A.VARIANTS_PER_SPECIES;
         out.ensureHelperExists = typeof r._variantSeedsFor === "function";
-        // Grow-Pipeline liest Pool + variantIndex (Source-Probe)
-        const growSrc = window.__codeOf(r._growTreeBlueprintForSpawn);
-        out.growUsesPool = /_variantSeedsFor/.test(growSrc);
-        out.growUsesVariantIndex = /variantIndex/.test(growSrc);
-        // Cache-Key-Form `grown_<species>_v<idx>` statt der alten Hash-Form
-        out.cacheKeyVariantForm = /grown_\$\{species\}_v\$\{variantIndex\}/.test(growSrc);
-        // bp._variantIndex am Bauplan
-        out.bpHasVariantIndex = /_variantIndex:\s*variantIndex/.test(growSrc);
 
         // ─── (B) Behavioral: Fresh-Welt hat Pool ──────────────────────
         const newMeta = r._generateFreshWorldMeta ? r._generateFreshWorldMeta("test-v18217") : null;
@@ -36693,10 +35550,6 @@ async function checkBandV18217VariantenPool(ctx) {
         res.constantExists === true
     );
     check("K24 (A2) _variantSeedsFor: die Zeile je Art", res.ensureHelperExists === true);
-    check("K24 (A4) _growTreeBlueprintForSpawn nutzt _variantSeedsFor", res.growUsesPool === true);
-    check("V18.217 (A5) _growTreeBlueprintForSpawn berechnet variantIndex", res.growUsesVariantIndex === true);
-    check("V18.217 (A6) Cache-Key-Form `grown_<species>_v<idx>` (Source-Probe)", res.cacheKeyVariantForm === true);
-    check("V18.217 (A7) Bauplan trägt _variantIndex (Source-Probe)", res.bpHasVariantIndex === true);
 
     // (B) Fresh-Welt
     check("V18.217 (B1) Fresh-Welt-Meta trägt variantSeed-Pool", res.freshHasPool === true);
@@ -36756,10 +35609,6 @@ async function checkBandV18218LODStufen(ctx) {
             Number.isFinite(A.LOD_DISTANCES.hysteresis);
         out.buildVariantLODsExists = typeof r._buildVariantLODs === "function";
         out.chooseLODExists = typeof r._chooseLODForDistance === "function";
-        // _growTreeBlueprintRich nimmt opts.lod (Source-Probe)
-        const richSrc = window.__codeOf(r._growTreeBlueprintRich);
-        out.richHasLodOpt = /opts\s*&&\s*Number\.isFinite\(opts\.lod\)/.test(richSrc) || /opts.*lod/.test(richSrc);
-        out.richHasLodLevel = /lodLevel/.test(richSrc);
 
         // ─── (B) Distanz-Chooser ───
         // Die Probe liest die Schwellen aus LOD_DISTANCES (thresh01/thresh12/hysteresis), keine festen Meter.
@@ -36918,8 +35767,6 @@ async function checkBandV18218LODStufen(ctx) {
     check("V18.218 (A1) AnazhRealm.LOD_DISTANCES (thresh01/thresh12/hysteresis)", res.lodDistancesExists === true);
     check("V18.218 (A2) _buildVariantLODs Helper existiert", res.buildVariantLODsExists === true);
     check("V18.218 (A3) _chooseLODForDistance Helper existiert", res.chooseLODExists === true);
-    check("V18.218 (A4) _growTreeBlueprintRich akzeptiert opts.lod (Source)", res.richHasLodOpt === true);
-    check("V18.218 (A5) _growTreeBlueprintRich nutzt lodLevel intern (Source)", res.richHasLodLevel === true);
 
     // (B) Distanz-Chooser
     check(`V18.218 (B1) chooseLOD(0.6·t01)=0 (Hero-Nähe)`, res.choose50 === true);
@@ -37006,8 +35853,6 @@ async function checkBandV18219bisVollendung(ctx) {
         const loopBody = loopSources.join("\n");
         out.lodTickInLoop = /_tickArchitectureLOD/.test(loopBody);
         out.lodFlagDefault = r.state.atmosphere && r.state.atmosphere.treeLOD === true;
-        const tickSrc = window.__codeOf(r._tickArchitectureLOD);
-        out.lodTickReadsFlag = /atmosphere/.test(tickSrc) && /treeLOD/.test(tickSrc);
         // N7.3 — UNIT-RICHTER: der Prüf-Gegenstand ist der GRAMMATIK-Typ-Wechsel
         // (`entry.type` wandert zwischen grown_*-Keys); foundry-ON serviert der
         // Studio-Pfad die Stufe OHNE Typ-Wechsel (by design) → lokaler Hook.
@@ -37071,8 +35916,6 @@ async function checkBandV18219bisVollendung(ctx) {
             const after = r.state.bakedRegionFields.get("0,0");
             out.invalidationSetDirty = after && after.dirty === true;
         }
-        const editSrc = r._addVoxelEdit ? window.__codeOf(r._addVoxelEdit) : "";
-        out.editTriggersInvalidate = /_invalidateBakedRegionsAround/.test(editSrc);
 
         // ─── V18.220 SCATTER-BITMASK + CAP + LOOKUP ──────────────────
         out.scatterMarkPromotedExists = typeof r._scatterMarkCellPromoted === "function";
@@ -37097,27 +35940,12 @@ async function checkBandV18219bisVollendung(ctx) {
             out.counterIncrements = r.state.scatterCounters.tree === (initial | 0) + 1;
             out.counterNotAtCap = r._scatterCounterAtCap("tree") === false;
         }
-        const sampleSrc = r._vegetationSampleSpawn ? window.__codeOf(r._vegetationSampleSpawn) : "";
-        // S12/S13: `_vegetationSampleSpawn` LIEST weiter die Promotion-Bitmask + den Cap
-        // (für den Unterwuchs-/Landmark-Pfad — bleibt unberührt).
-        out.spawnReadsBitmask = /_scatterIsCellPromoted/.test(sampleSrc);
-        out.spawnCheckCap = /_scatterCounterAtCap/.test(sampleSrc);
-        // S14: V18.389 (DAS NEUE KLEID P1) — die SCHREIB-Seite (Scatter-Cell im Ω-H-Lookup
-        // registrieren: species + variantIndex → der V18.221-Resolver mappt die Cell auf die
-        // reale gewachsene Form) wanderte MIT dem Baum-Spawn in `_forestPlantChunk` (V9.56-i).
-        const forestSpawnSrc = r._forestPlantChunk ? window.__codeOf(r._forestPlantChunk) : "";
-        out.spawnRegistersCell = /_scatterRegisterCell/.test(forestSpawnSrc);
 
-        // ─── V18.221 Ω-H PROMOTION ───────────────────────────────────
-        const spawnSrc2 = r.spawnArchitecture ? window.__codeOf(r.spawnArchitecture) : "";
-        out.spawnAutoPromotes = /_scatterMarkCellPromoted/.test(spawnSrc2) && /_scatterRegisterCell/.test(spawnSrc2);
         const snap = r.buildStateSnapshot();
         out.snapshotCarriesPromoted = !!(snap && snap.worldMeta && Array.isArray(snap.worldMeta.scatterPromoted));
         if (out.snapshotCarriesPromoted) {
             out.snapshotPromotedCount = snap.worldMeta.scatterPromoted.length;
         }
-        const restoreSrc = r._loadStateRestoreWorldMeta ? window.__codeOf(r._loadStateRestoreWorldMeta) : "";
-        out.restoreRebuildsPromotedSet = /scatterPromoted/.test(restoreSrc) && /new Set/.test(restoreSrc);
 
         // ─── V18.222 CANOPY CHUNK-STREAMING ──────────────────────────
         out.canopyConfigExists = typeof r._canopyChunkConfig === "function";
@@ -37126,8 +35954,6 @@ async function checkBandV18219bisVollendung(ctx) {
         out.canopyTickExists = typeof r._tickCanopyStreaming === "function";
         out.canopyTickInLoop = /_tickCanopyStreaming/.test(loopBody);
         out.canopyFlagDefault = r.state.atmosphere && r.state.atmosphere.canopyStreaming === false;
-        const canopyTickSrc = window.__codeOf(r._tickCanopyStreaming);
-        out.canopyTickReadsFlag = /canopyStreaming/.test(canopyTickSrc);
         if (out.canopyEnsureExists) {
             const savedFlag = r.state.atmosphere && r.state.atmosphere.canopyStreaming;
             try {
@@ -37146,7 +35972,6 @@ async function checkBandV18219bisVollendung(ctx) {
                 if (r.state.atmosphere) r.state.atmosphere.canopyStreaming = savedFlag;
             }
         }
-        out.worldWechselDisposesCanopy = /_canopyDisposeAllChunks/.test(restoreSrc);
 
         // ─── VERSION ─────────────────────────────────────────────────
         out.versionStr = A.VERSION;
@@ -37163,7 +35988,6 @@ async function checkBandV18219bisVollendung(ctx) {
     check("V18.218.1 (L2) _switchArchitectureLOD Helper", res.lodSwitchExists === true);
     check("V18.218.1 (L3) _gameLoopTick ruft _tickArchitectureLOD (Verdrahtung)", res.lodTickInLoop === true);
     check("V18.218.1 (L4) atmosphere.treeLOD=true Default", res.lodFlagDefault === true);
-    check("V18.218.1 (L5) _tickArchitectureLOD respektiert das Flag", res.lodTickReadsFlag === true);
     check(
         "V18.218.1 (L6) spawnArchitecture markiert grown-tree-Entry mit _lod-Feldern",
         res.spawnedEntryHasLodFields === true
@@ -37191,7 +36015,6 @@ async function checkBandV18219bisVollendung(ctx) {
         res.bakeHeightAccurate === true
     );
     check("V18.219 (B11) Invalidation setzt dirty=true", res.invalidationSetDirty === true);
-    check("V18.219 (B12) _addVoxelEdit ruft _invalidateBakedRegionsAround", res.editTriggersInvalidate === true);
 
     // V18.220 Scatter-Bitmask + Cap + Lookup
     check("V18.220 (S1) _scatterMarkCellPromoted Helper", res.scatterMarkPromotedExists === true);
@@ -37205,18 +36028,12 @@ async function checkBandV18219bisVollendung(ctx) {
     check("V18.220 (S9) Lookup variantIndex=7", res.lookupVariantIndex === true);
     check("V18.220 (S10) Counter inkrementiert", res.counterIncrements === true);
     check("V18.220 (S11) Counter nicht am Cap nach 1 Inc", res.counterNotAtCap === true);
-    check("V18.220 (S12) _vegetationSampleSpawn liest Bitmask (Source)", res.spawnReadsBitmask === true);
-    check("V18.220 (S13) _vegetationSampleSpawn prüft Cap (Source)", res.spawnCheckCap === true);
-    check("V18.220 (S14) _vegetationSampleSpawn registriert Cell (Source)", res.spawnRegistersCell === true);
 
-    // V18.221 Ω-H Promotion
-    check("V18.221 (P1) spawnArchitecture auto-promoted grown-tree-Cell", res.spawnAutoPromotes === true);
     check("V18.221 (P2) Snapshot trägt worldMeta.scatterPromoted (Array)", res.snapshotCarriesPromoted === true);
     check(
         `V18.221 (P3) Snapshot enthält Promotionen (Anzahl ${res.snapshotPromotedCount})`,
         res.snapshotPromotedCount >= 0
     );
-    check("V18.221 (P4) _loadStateRestoreWorldMeta rebuildet das Set", res.restoreRebuildsPromotedSet === true);
 
     // V18.222 Canopy chunk-streaming
     check("V18.222 (C1) _canopyChunkConfig Helper", res.canopyConfigExists === true);
@@ -37225,7 +36042,6 @@ async function checkBandV18219bisVollendung(ctx) {
     check("V18.222 (C4) _tickCanopyStreaming Helper", res.canopyTickExists === true);
     check("V18.222 (C5) _gameLoopTick ruft _tickCanopyStreaming (Verdrahtung)", res.canopyTickInLoop === true);
     check("V18.222 (C6) atmosphere.canopyStreaming Default false (OPT-IN)", res.canopyFlagDefault === true);
-    check("V18.222 (C7) _tickCanopyStreaming respektiert Flag", res.canopyTickReadsFlag === true);
     check("V18.222 (C8) _canopyEnsureChunk baut Mesh+Geometry+Material", res.canopyMeshBuilt === true);
     check("V18.222 (C9) Canopy-Mesh hat color-Attribute (vertexColors)", res.canopyMeshHasColor === true);
     check("V18.222 (C10) Canopy-Mesh userData.kind=canopyChunk", res.canopyMeshHasUserdata === true);
@@ -37234,7 +36050,6 @@ async function checkBandV18219bisVollendung(ctx) {
         "V18.222 (C12) Disposal entfernt das Mesh aus der Map",
         res.canopyDisposed === true && res.canopyMeshGoneFromMap === true
     );
-    check("V18.222 (C13) Welt-Wechsel disposed alle Canopy-Chunks", res.worldWechselDisposesCanopy === true);
 
     // Version
     check(`V18.222 (V1) VERSION floor ≥ 18.222.0 (gemessen ${res.versionStr})`, res.versionFloor18222 === true);
@@ -37250,11 +36065,6 @@ async function checkBandV18223PbrKohaerenz(ctx) {
         const out = {};
         out.pbrBuilderExists = typeof r._buildPbrNodeMaterial === "function";
         out.modeFlagDefault = r.state.atmosphere && r.state.atmosphere.materialMode === "pbr"; // V18.234 — PBR ist Default
-        // Dispatch-Source-Probe
-        // V18.236 (§2 — toon raus): _buildToonNodeMaterial delegiert jetzt IMMER an PBR
-        // (kein materialMode-Toggle mehr) — der Source-Beweis ist die PBR-Delegation.
-        const toonSrc = window.__codeOf(r._buildToonNodeMaterial);
-        out.toonDispatchesOnMode = /_buildPbrNodeMaterial/.test(toonSrc);
 
         // Build a PBR material directly
         if (out.pbrBuilderExists) {
@@ -37336,7 +36146,6 @@ async function checkBandV18223PbrKohaerenz(ctx) {
         "V18.223/234 (Q2) atmosphere.materialMode Default `pbr` (physik-Licht, keine halben Sachen)",
         res.modeFlagDefault === true
     );
-    check("V18.223 (Q3) _buildToonNodeMaterial dispatched bei mode=`pbr` (Source)", res.toonDispatchesOnMode === true);
 
     check("V18.223 (P1) Default-PBR-Material wird gebaut", res.defaultMatBuilt === true);
     check("V18.223 (P2) Default-PBR-Material ist MeshStandardNodeMaterial", res.defaultIsMeshStandard === true);
@@ -37549,11 +36358,6 @@ async function checkBandV18224ScatterPromotion(ctx) {
         // ─── (F) Streaming-Tick + Welt-Wechsel-Cleanup ────────────────
         out.disposeRegionExists = typeof r._disposeScatterRegion === "function";
         out.disposeAllExists = typeof r._disposeAllScatterRegions === "function";
-        const restoreSrc = r._loadStateRestoreWorldMeta ? window.__codeOf(r._loadStateRestoreWorldMeta) : "";
-        out.worldWechselDisposes = /_disposeAllScatterRegions/.test(restoreSrc);
-        // Tick respektiert das Flag
-        const tickSrc = window.__codeOf(r._tickScatterStreaming);
-        out.tickReadsFlag = /gpuScatter/.test(tickSrc);
 
         // ─── (G) Version ──────────────────────────────────────────────
         out.versionStr = A.VERSION;
@@ -37659,8 +36463,6 @@ async function checkBandV18224ScatterPromotion(ctx) {
     // (F) Streaming + Cleanup
     check("V18.224 (F1) _disposeScatterRegion Helper", res.disposeRegionExists === true);
     check("V18.224 (F2) _disposeAllScatterRegions Helper", res.disposeAllExists === true);
-    check("V18.224 (F3) Welt-Wechsel disposed alle Scatter-Regionen", res.worldWechselDisposes === true);
-    check("V18.224 (F4) _tickScatterStreaming respektiert gpuScatter-Flag", res.tickReadsFlag === true);
 
     // (G) Version
     check(`V18.224 (V1) VERSION floor ≥ 18.224.0 (gemessen ${res.versionStr})`, res.versionFloor18224 === true);
@@ -37698,9 +36500,6 @@ async function checkBandWahrerAnblickSaeule1(ctx) {
             G.mossTint.length === 3;
         out.mossMaxBounded = !!G && G.mossMax > 0 && G.mossMax <= 1;
 
-        // (B) CONSUM — BEIDE Builder rufen den Helfer (eine Quelle, zwei Lichtmodelle)
-        out.toonCallsGeology = /_terrainGeologyAlbedo/.test(window.__codeOf(r._buildPbrNodeMaterial)); // V18.236: PBR der EINE Builder
-        out.pbrCallsGeology = /_terrainGeologyAlbedo/.test(window.__codeOf(r._buildPbrNodeMaterial));
 
         // (C) Uniforms TREIBEN (V18.65) — nach ensure existieren geoRock/geoMoss
         r._ensureAtmoUniforms();
@@ -37833,8 +36632,6 @@ async function checkBandWahrerAnblickSaeule1(ctx) {
     );
     check("Ω-OPSIS S1 (A7) mossMax ∈ (0,1] (kein voller Teppich)", res.mossMaxBounded === true);
 
-    check("Ω-OPSIS S1 (B1) CONSUM: Toon-Builder ruft _terrainGeologyAlbedo", res.toonCallsGeology === true);
-    check("Ω-OPSIS S1 (B2) CONSUM: PBR-Builder ruft _terrainGeologyAlbedo (geteilt)", res.pbrCallsGeology === true);
 
     check("Ω-OPSIS S1 (C1) geoRock-Uniform existiert + endlich", res.geoRockUniform === true);
     check("Ω-OPSIS S1 (C2) geoMoss-Uniform existiert + endlich", res.geoMossUniform === true);
@@ -37924,11 +36721,6 @@ async function checkBandWahrerAnblickFels(ctx) {
             layers && layers.some((l) => l.name === "rock" && l.kind === "rock" && l.promotable === false)
         );
 
-        // (E) Die V18.226-Geologie-Korrektur (CONSUM: gegated auf !pflanzenStoff)
-        // V18.236 (§2): der EINE Builder ist PBR; die Gate-Probe liest ihn.
-        const pbrSrc = window.__codeOf(r._buildPbrNodeMaterial);
-        out.geologyGated = /!opts\.pflanzenStoff.*_terrainGeologyAlbedo/s.test(pbrSrc);
-        out.pbrGeologyGated = /!opts\.pflanzenStoff/.test(pbrSrc);
 
         // (F) Version
         out.versionStr = A.VERSION;
@@ -37956,11 +36748,6 @@ async function checkBandWahrerAnblickFels(ctx) {
     check("Ω-OPSIS S5 (D2) CONSUM: _scatterSpeciesForLayer(rock) gibt Fels-Spezies", res.rockSpecies === true);
     check("Ω-OPSIS S5 (D3) CONSUM: SCATTER.layers trägt die Fels-Schicht (Deko)", res.rockLayer === true);
 
-    check(
-        "Ω-OPSIS S1-FIX (E1) Geologie gegated auf !pflanzenStoff (Toon, kein Fels auf Rinde)",
-        res.geologyGated === true
-    );
-    check("Ω-OPSIS S1-FIX (E2) Geologie gegated auf !pflanzenStoff (PBR)", res.pbrGeologyGated === true);
 
     check(`Ω-OPSIS S6 (V1) VERSION floor ≥ 18.227.0 (gemessen ${res.versionStr})`, res.versionFloor === true);
 }
@@ -37981,13 +36768,6 @@ async function checkBandWahrerAnblickGras(ctx) {
         // found". __codeOf strippt Kommentare, die den entfernten Read zitieren.
         const matCode = window.__codeOf(matSrc);
         out.matNoManualInstanceColor = !/attribute\(["']instanceColor["']/.test(matCode);
-        // Die Wiese ist BODEN-FUNKTION: der Halm-Ton liest das Grün des gebackenen Boden-Albedos
-        // (_green → _halmW), und dieses Grün trägt lebendig + feuchte (_attachVoxelFieldColors) — Konsum
-        // an beiden Nähten.
-        const albedoSrc = window.__codeOf(r._terrainGeologyAlbedo);
-        const bakeSrc = window.__codeOf(r._bodenFarbeAt);
-        out.buildSetsColor = /const _halmW = _green/.test(albedoSrc) && /_halmHoch/.test(albedoSrc);
-        out.buildComputesTint = /lebendig/.test(bakeSrc) && /_feuchteAt/.test(bakeSrc);
 
         // (B) Material baut (der instanceColor-colorNode kompiliert ohne Wurf)
         const m = r._grassInstanceMat();
@@ -38019,14 +36799,6 @@ async function checkBandWahrerAnblickGras(ctx) {
     check(
         "Ω-OPSIS S2-Gras (A1, V18.267): Gras-Material OHNE manuelles attribute(instanceColor) — Boden-Tint via nativem Auto-Multiply (kein Konsolen-Fehler)",
         res.matNoManualInstanceColor === true
-    );
-    check(
-        "Ω-OPSIS S2-Gras (A2, V18.492) CONSUM: die Parallax-Wiese liest das Boden-Grün (_green → _halmW)",
-        res.buildSetsColor === true
-    );
-    check(
-        "Ω-OPSIS S2-Gras (A3, V18.492) CONSUM: das Boden-Grün trägt lebendig+feuchte (_attachVoxelFieldColors)",
-        res.buildComputesTint === true
     );
     check("Ω-OPSIS S2-Gras (B1) Gras-Material baut (instanceColor-colorNode kompiliert)", res.matBuilt === true);
     check(
@@ -38178,18 +36950,6 @@ async function checkBandWahrerAnblickLaub(ctx) {
         const A = r.constructor;
         const out = {};
 
-        // (A) CONSUM Source-Probes
-        // Die Maserung lebt im Kern (phyto-core buildBarkTubeArrays); die Welt-Tube ruft ihn (K19: der Inline-Zwilling fiel).
-        const tubeSrc = window.__codeOf(r._buildTreeTubeGeometry);
-        const kernTube = globalThis.__phytoCore && globalThis.__phytoCore.buildBarkTubeArrays;
-        const kernSrc = typeof kernTube === "function" ? window.__codeOf(kernTube) : "";
-        out.barkGrain =
-            /_core\.buildBarkTubeArrays\(/.test(tubeSrc) &&
-            /grainFreq/.test(kernSrc) &&
-            /Math\.sin\(i \* grainFreq\)/.test(kernSrc);
-        const cardSrc = window.__codeOf(r._buildTreeFoliageCardGeometry);
-        out.cardTaper = /const tw = hw \* 0\.42/.test(cardSrc);
-        out.cardCurl = /const curl = hh \* 0\.32/.test(cardSrc) && /cu \* bdx/.test(cardSrc);
 
         // (B) Behavioral — ein gewachsener Baum baut Tube + blatt-geformte Card. Foundry-ON gäbe der
         // Chokepoint null (die Probe wäre vakuös grün) → der lokale Hook hält den Beweis am Leben.
@@ -38233,9 +36993,6 @@ async function checkBandWahrerAnblickLaub(ctx) {
         return out;
     });
 
-    check("Ω-OPSIS S3-Laub (A1) CONSUM: Rinde trägt die Maserung (grainFreq, axiale Bänder)", res.barkGrain === true);
-    check("Ω-OPSIS S6-Laub (A2) CONSUM: Card ist verjüngt (tw = obere Halbbreite)", res.cardTaper === true);
-    check("Ω-OPSIS S6-Laub (A3) CONSUM: Card-Spitze krümmt zur Krone (curl)", res.cardCurl === true);
     check("Ω-OPSIS S3-Laub (B1) gewachsener Baum baut die Rinden-Tube", res.tubeOk === true);
     check("Ω-OPSIS S6-Laub (B2) gewachsener Baum baut die Foliage-Card", res.cardOk === true);
     check(
@@ -38298,7 +37055,6 @@ async function checkBandWahrerAnblickPfade(ctx) {
     check("Ω-OPSIS S2-Pfad (A1) _pathFieldAt Helfer existiert", res.helperExists === true);
     check("Ω-OPSIS S2-Pfad (A2) Pfad-Feld ist 0 fern jeden Flusses", res.farIsZero === true);
     check("Ω-OPSIS S2-Pfad (A3) Pfad-Feld ∈ [0,1] (gebunden)", res.pathBounded === true);
-    check("Ω-OPSIS S2-Pfad (B1) CONSUM: der Boden-Bau packt die Pfad-Erde (packedDirt)", res.attachReadsPath === true);
     check(
         "Ω-OPSIS S2-Pfad (B2, V18.492) CONSUM: die Wiese weicht dem Pfad (Pfad-Erde senkt das Grün, das die Halme wiegt)",
         res.grassReadsPath === true
@@ -38342,8 +37098,6 @@ async function checkBandWahrerAnblickAtmoBusch(ctx) {
         // (V) die Luft koppelt ans Wetter (V18.530): EINE Extinktion aus dem Wetter-Feld (fog- + rain-Kanal),
         // gemessen am Konsum — Regen trübt die Sicht, Sturm mehr; die Luft-Uniforms tragen sie.
         const WF = r.constructor.WEATHER_FIELD;
-        const fogSrc = window.__codeOf(r._dayNightApplyHemiUndLuft);
-        out.hazeWeather = /_luftBeta\(\)/.test(fogSrc) && /\.fog\b/.test(window.__codeOf(r._luftBeta));
         out.hazeNearWeather =
             r._luftBeta(WF.sunny) < r._luftBeta(WF.rainy) && r._luftBeta(WF.rainy) < r._luftBeta(WF.stormy);
         out.hazeNearUniform = !!(r.state.luft && r.state.luft.U.beta && r.state.luft.U.hoehe);
@@ -38365,10 +37119,6 @@ async function checkBandWahrerAnblickAtmoBusch(ctx) {
     check(
         `Ω-OPSIS S4 (IV4) ein gewachsener Busch ist reich (≥8 Teile, gemessen ${res.buschParts})`,
         res.buschIsRich === true
-    );
-    check(
-        "Ω-OPSIS S5 (V1) → V18.530: die Luft koppelt ans Wetter (Extinktion aus dem fog-Kanal)",
-        res.hazeWeather === true
     );
     check(
         "Ω-OPSIS S5 (V2) CONSUM: Regen trübt die Sicht, Sturm mehr (β sonnig < Regen < Sturm)",
@@ -38473,11 +37223,6 @@ async function checkBandV18265ShadowDistance(ctx) {
         out.lod1NoCast = r._archGroupCastsShadow("grown_baum_eiche_v3_lod1") === true;
         out.lod2NoCast = r._archGroupCastsShadow("grown_baum_eiche_v3_lod2") === false;
         out.structureCasts = r._archGroupCastsShadow("tempel") === true;
-        // CONSUM (source-probe): die Gruppen-Erzeugung liest die Methode, der
-        // Capacity-Grow trägt das Flag mit (sonst kippt ein wachsender Fern-Baum
-        // zurück auf castShadow=true).
-        out.groupForReads = /_archGroupCastsShadow/.test(window.__codeOf(r._archInstanceGroupFor));
-        out.growCarries = /castShadow\s*=\s*g\.castShadow/.test(window.__codeOf(r._archInstanceGroupGrow));
         // BEHAVIORAL: echte Gruppen bauen + das gerenderte Flag prüfen.
         if (typeof THREE !== "undefined") {
             const leaf = { geom: new THREE.BoxGeometry(1, 1, 1), mat: new THREE.MeshBasicMaterial() };
@@ -38501,10 +37246,6 @@ async function checkBandV18265ShadowDistance(ctx) {
     });
     check("V18.265: _archGroupCastsShadow — LOD0 + Bauten werfen Schatten", res.lod0Casts && res.structureCasts);
     check("V18.464: L1 wirft (Schatten bis zur Fernstufe), NUR L2 wirft keinen", res.lod1NoCast && res.lod2NoCast);
-    check(
-        "V18.265: Gruppen-Bau liest die Methode + Capacity-Grow trägt das Flag (CONSUM)",
-        res.groupForReads && res.growCarries
-    );
     check(
         "V18.265: echte Fern-Gruppe castShadow=false, Nah-Gruppe castShadow=true (auch nach Grow)",
         res.farMeshNoShadow && res.nearMeshShadow && res.farGrowNoShadow
@@ -38815,10 +37556,6 @@ async function checkBandV18331ReplayDeterminism(ctx) {
         out.bitEqual = eqBit(a1, a2) && eqBit(a1, a3); // (A) + (D) repeatable
         out.moved = dist(start, a1); // (B) non-trivial
         out.inputSensitive = !eqBit(a1, b) && dist(a1, b) > 0.5; // (C)
-        // CONSUM: der Replay treibt durch DENSELBEN Schritt-Pfad (kein Parallel-Sim).
-        out.usesStep =
-            /_stepCharacter\(/.test(window.__codeOf(r.replayRun)) &&
-            /_loopPlayerMovement\(/.test(window.__codeOf(r.replayRun));
         return out;
     });
     check(
@@ -38832,10 +37569,6 @@ async function checkBandV18331ReplayDeterminism(ctx) {
     check(
         "P4: ein anderer Input liefert ein anderes Ergebnis (input-sensitiv, kein Fixpunkt)",
         res.inputSensitive === true
-    );
-    check(
-        "P4: der Replay läuft durch DENSELBEN Schritt-Pfad (_stepCharacter + _loopPlayerMovement, CONSUM)",
-        res.usesStep === true
     );
 }
 
@@ -39165,8 +37898,6 @@ async function checkBandW3UiPuls(ctx) {
         out.organExists = typeof r._uiDirty === "function" && typeof r._uiRoomRegistry === "function";
         const reg = r._uiRoomRegistry();
         out.registryRooms = !!reg && !!reg.ich && !!reg.hof;
-        // (2) `_refreshIchIfOpen` ist ein ALIAS auf den Puls (die 8 Aufrufer heil).
-        out.ichAlias = /_uiDirty\("ich"\)/.test(window.__codeOf(r._refreshIchIfOpen));
         // (3) DEDUP: zwei dirty-Rufe in einem Frame → EIN Puls (Set dedupt).
         r._uiPulseQueued = false;
         r._uiDirtyRooms = new Set();
@@ -39201,7 +37932,6 @@ async function checkBandW3UiPuls(ctx) {
         "W3 UI-Puls: das EINE Organ (_uiDirty + _uiRoomRegistry mit ich/hof) existiert",
         res.organExists && res.registryRooms
     );
-    check("W3 UI-Puls: _refreshIchIfOpen ist ein Alias auf den Puls (die Aufrufer heil)", res.ichAlias);
     check(
         "W3 UI-Puls: DEDUP — drei dirty-Rufe in einem Frame → EIN Puls, EIN Raum (Set dedupt; die Boost-Doppel-Krankheit strukturell tot)",
         res.dedup
@@ -39249,22 +37979,6 @@ async function checkBandWFFluss(ctx) {
                 }
         }
         out.dryPassthrough = !!dryW && r._atlasWaterLevelAt(dryW.x, dryW.z, -Infinity) === -Infinity;
-        // (2) die Konsumenten lesen den Spiegel (Source-Probe): die Sheet-Mathe in `_computeWaterSheetData` (Main +
-        // Worker geteilt) und der Körper über die EINE Wasser-Wahrheit am Körper (`_stepCharacter` → `_koerperWasser`).
-        out.sheetReadsRun = /_atlasWaterLevelAt/.test(window.__codeOf(r._computeWaterSheetData));
-        // Der Körper: `_koerperWasser` liest seinen Spiegel über `_koerperWasserSpiegel` (das gezeichnete Wasser, ohne Chunk
-        // das Gesetz `_atlasWaterLevelAt`).
-        out.diveReadsRun =
-            /_koerperWasser\(/.test(window.__codeOf(r._stepCharacter)) &&
-            /_koerperWasserSpiegel\(/.test(window.__codeOf(r._koerperWasser)) &&
-            /_atlasWaterLevelAt\(/.test(window.__codeOf(r._koerperWasserSpiegel));
-        // (3) DER SPIEGEL IST DAS SEGMENT: `_hydroRiverAt` liest den Spiegel seiner Enden (sA/sB), nie die Makro-Höhe des
-        // Orts (bis V18.531: Makro − 0,25·D + Buckel — der Fluss stieg bergauf und wölbte sich).
-        const rvSrc = window.__codeOf(r._hydroRiverAt);
-        out.centernessField = /centerness/.test(rvSrc);
-        out.centernessBlend = /seg\.sA/.test(rvSrc) && /seg\.sB/.test(rvSrc) && !/_terrainMacroSurfaceY/.test(rvSrc);
-        // (4) die Flow-Kräuselung im Shader (fragment-seitig, narben-sicher).
-        out.flowRipple = /flowRipple/.test(window.__codeOf(r._ensureHydroSurfaceMaterial));
         // (5) das BOOT-SCHWIMMEN ist Substanz-emergent: holz schwimmt, stein/
         // eisen sinken (volumen-gewichtete Mittel-Dichte < 0.55). Behavioral.
         const mkBoat = (mat) => ({
@@ -39303,18 +38017,6 @@ async function checkBandWFFluss(ctx) {
     check(
         "W-F Fluss: der EINE Spiegel-Leser _atlasWaterLevelAt lebt (die geglättete Lauf-Fläche fiel) + erfindet kein Wasser",
         res.runExists && res.dryPassthrough
-    );
-    check(
-        "W-F Fluss: die Konsumenten lesen den Spiegel des Gesetzes (Zell-Sheet + Körper über _koerperWasser; Source-Probe)",
-        res.sheetReadsRun && res.diveReadsRun
-    );
-    check(
-        "W-F Fluss SPIEGEL: _hydroRiverAt liest den Segment-Spiegel (sA/sB — stromab nie steigend, quer waagrecht), nie die Makro-Höhe des Orts",
-        res.centernessField && res.centernessBlend
-    );
-    check(
-        "W-F Fluss: die Flow-Kräuselung im Shader (fragment-seitig — das Sonnen-Glitzern wandert stromab, narben-sicher)",
-        res.flowRipple
     );
     check(
         "W-F Fluss BOOT: Schwimmen ist Substanz-emergent (holz schwimmt, stein/eisen sinken), der Studio-Wagen liest die Hülle des Kerns (GT sinkt) + im Ritt-Tick über _koerperWasser mit der Gestalt",
@@ -39359,11 +38061,6 @@ async function checkBandWEFrequenzband(ctx) {
         out.tagsImBuilder =
             /matOpts\.tags = partMatDef\.tags/.test(window.__codeOf(r._buildFromBlueprint)) &&
             /matOpts\.tags = partMatDef\.tags/.test(window.__codeOf(r._archLeafMaterial));
-        // (3) FÜLL-LICHT statt Clamp: der fuell-Block addiert
-        // albedo·floor·(1−lit) (die oneMinus-Dämpfung steht), der alte
-        // max(_rgb, …)-Clamp ist gefallen (§8.1#11 strukturell tot).
-        const src = window.__codeOf(r._applySubstanceResponse);
-        out.fuellLicht = /oneMinus\(\)\.clamp/.test(src) && !/_T\.max\(_rgb/.test(src);
         // (4) das Band trifft ALLE Ebenen: das Werk-Profil bestellt fuell+mond,
         // das Gras ist angedockt (Source + outputNode-KONSUM).
         const SR = r.constructor.SUBSTANCE_RESPONSE;
@@ -39371,9 +38068,6 @@ async function checkBandWEFrequenzband(ctx) {
         out.grasDocked = /_applySubstanceResponse/.test(window.__codeOf(r._grassInstanceMat));
         const gm = r._grassInstanceMat();
         out.grasOutput = !!gm && gm.outputNode != null;
-        // (5) E3 BAND-REGLER: das Terrain-Mikro liest den microStrength-Uniform
-        // (vorher 0.13-Hardcode im colorNode — ein Regler, eine Welt-Antwort).
-        out.terrainMicroAmBand = /microStrength/.test(window.__codeOf(r._applySubstanceResponse)); // V18.236: das Mikro lebt im geteilten Empfänger
         // (6) R-013 Schöpfer-Wort: Standard 0.06/0.06 als EINE Quelle + der
         // Restore migriert den alten auto-gebackenen 0.12-Default.
         out.defaults = Math.abs(SR.nightFloor - 0.06) < 1e-9 && Math.abs(SR.moonRim - 0.06) < 1e-9;
@@ -39390,14 +38084,9 @@ async function checkBandWEFrequenzband(ctx) {
         "W-E Frequenzband: die Substanz-Tags REISEN in beide Part-Builder (Spiegel) + wirken behavioral (Glut-Leaf glimmt stärker als Stein)",
         res.tagsReisen && res.tagsImBuilder
     );
-    check("W-E Frequenzband: FÜLL-LICHT statt max()-Clamp (additiv, struktur-erhaltend)", res.fuellLicht);
     check(
         "W-E Frequenzband: das Band trifft ALLE Ebenen — Werk-Familie am fuell/mond-Band + Gras angedockt (outputNode-KONSUM)",
         res.werkAmBand && res.grasDocked && res.grasOutput
-    );
-    check(
-        "W-E E3 Band-Regler: das Terrain-Mikro liest den microStrength-Uniform (ein Regler, eine Welt-Antwort)",
-        res.terrainMicroAmBand
     );
     check(
         "W-E R-013: nightFloor/moonRim-Standard 0.06 (Schöpfer-Wort, EINE Quelle) + Restore migriert den gebackenen 0.12-Default",
@@ -39424,15 +38113,6 @@ async function checkBandM7LichtFeinschliff(ctx) {
             Math.abs(au.microStrength.value - 0.27) < 1e-9 && Math.abs(au.terrainNightFloor.value - 0.21) < 1e-9;
         r.setMicroStrength(m0);
         r.setTerrainNightFloor(n0);
-        // (3) der Shader-Tree KONSUMIERT beide im EINEN Band-Empfänger: _au.microStrength im micro-Block,
-        // das fuell-Licht auf der Albedo; der vertexColors-Bau reicht die per-Vertex-Albedo-Quelle.
-        const aerialSrc = window.__codeOf(r._applySubstanceResponse);
-        const toonSrc = window.__codeOf(r._buildPbrNodeMaterial); // V18.236 (§2): PBR der EINE Builder
-        out.treeConsumes =
-            /_au\.microStrength/.test(aerialSrc) &&
-            /terrainNightFloor/.test(aerialSrc) &&
-            /attribute\("color"/.test(toonSrc) &&
-            /SUBSTANCE_RESPONSE/.test(toonSrc);
         // (4) die Regler leben in den Einstellungen + treiben die Setter.
         const mtS = document.getElementById("slider-microtex");
         const nfS = document.getElementById("slider-nightfloor");
@@ -39453,10 +38133,6 @@ async function checkBandM7LichtFeinschliff(ctx) {
     check(
         "M7 Licht: die Setter treiben die Uniforms (setMicroStrength/setTerrainNightFloor — KONSUM)",
         res.settersDrive
-    );
-    check(
-        "M7 Licht: der Shader-Tree konsumiert beide (micro-Uniform · Nacht-Boden auf der Albedo · der Bau reicht die Albedo-Quelle ans Band)",
-        res.treeConsumes
     );
     check(
         "M7 Licht: die Einstellungs-Regler leben und treiben die Setter (kein toter Knopf)",
@@ -39571,11 +38247,6 @@ async function checkBandV18136Audit(ctx) {
         if (Number.isFinite(savedRange)) r.setShadowRange(savedRange);
         // (2) die Kachel-Erosion ist gefallen (K16): der Kachel-Eingang baut nur noch die Hydrosphäre.
         out.tileLean = !/eTile|_computeErosion|erosionTiles/.test(window.__codeOf(r._ensureHydroTilesAround));
-        // (3) die Rail liest die Gemeinschafts-Aggregation.
-        out.trendsAgg = /_feedRatingAgg/.test(window.__codeOf(r._renderFeedTrends));
-        // (4) Γ5: der Wurf-Strom der Nah-Streu hängt nur an Zelle, Art und Welt-Seed (nie Math.random).
-        const kSrc = window.__codeOf(r._nahStreuKachel);
-        out.oneRng = /gi \* 73856093/.test(kSrc) && /seedInt/.test(kSrc) && !/Math\.random/.test(kSrc);
         return out;
     });
     if (!res) {
@@ -39590,8 +38261,6 @@ async function checkBandV18136Audit(ctx) {
         "V18.136 Audit: der Kachel-Eingang baut keine Kachel-Erosion mehr (K16: die Täler kommen aus dem Flussnetz)",
         res.tileLean
     );
-    check("V18.136 Audit: die Bestbewertet-Rail liest die Gemeinschafts-Aggregation", res.trendsAgg);
-    check("V18.136 Audit: die Nah-Streu würfelt je Zelle aus dem Welt-Seed (Γ5, kein Math.random)", res.oneRng);
 }
 
 // Ω2 must-preserve als Gesetz: Unbekanntes überlebt jeden Serialize/Restore bit-gleich (EINE Quelle
@@ -39656,13 +38325,6 @@ async function checkBandTailleOmega2(ctx) {
         out.manifestCarries = !!man && man.xZukunft && man.xZukunft.d === 4;
         out.manifestWallHolds =
             !!man && !/evil\.example/.test(String(man.world)) && man.trust === "sandboxed" && man.vendored === true;
-        // (4) Material/Tool-Zwilling: EINE Serialize-Quelle (Source-Proben) +
-        // Substanz-Treue (label + fremde Tag-Achse + Unbekanntes + isMachine).
-        out.oneSource =
-            /_serializeMaterial/.test(window.__codeOf(r.buildStateSnapshot)) &&
-            /_serializeMaterial/.test(window.__codeOf(r._buildEmptyWorldSnapshot)) &&
-            /_serializeTool/.test(window.__codeOf(r.buildStateSnapshot)) &&
-            /_serializeTool/.test(window.__codeOf(r._buildEmptyWorldSnapshot));
         const serMat = r._serializeMaterial({
             name: "_omega2_mat",
             label: "Ω2-Stoff",
@@ -39729,7 +38391,6 @@ async function checkBandTailleOmega2(ctx) {
         "Ω2: das Manifest bewahrt Unbekanntes — UND die Sicherheits-Wand hält (world/trust/vendored)",
         res.manifestCarries && res.manifestWallHolds
     );
-    check("Ω2: EINE Material/Tool-Serialize-Quelle (beide Snapshot-Pfade, V9.82)", res.oneSource);
     check(
         "Ω2: Material/Tool-Serialize tragen Substanz + Unbekanntes (x:-Tag · isMachine)",
         res.matCarries && res.toolCarries
@@ -39939,12 +38600,6 @@ async function checkBandTailleOmega5(ctx) {
         const e3 = r.spawnArchitecture("_o5_werk", { x: 12, y: 2, z: 12 }, {});
         const loot3 = e3 ? r.harvestArchitecture(e3, "player", 1) : null;
         out.paidStillYields = !!loot3 && (loot3.materials["stein"] || 0) > 0;
-        // (4) die Verdrahtung: confirmBuild trägt gate.free → freeBorn; der
-        // Restore reicht die Marke durch (Source-Proben).
-        out.wired =
-            /freeBorn: gate\.free === true/.test(window.__codeOf(r.confirmBuild)) &&
-            /freeBorn: a\.freeBorn === true/.test(window.__codeOf(r._loadStateRestoreArchitectures)) &&
-            /entry\.freeBorn === true/.test(window.__codeOf(r.harvestArchitecture));
         r.setGameMode(savedMode);
         delete r.state.blueprints["_o5_werk"];
         return out;
@@ -39959,7 +38614,6 @@ async function checkBandTailleOmega5(ctx) {
     );
     check("Ω5: die Gratis-Geburt überlebt den Snapshot (kein Wäsche-Reload)", res.persisted);
     check("Ω5: ein bezahltes/Welt-Werk erntet weiter (Herkunft entscheidet, keine Über-Heilung)", res.paidStillYields);
-    check("Ω5: die Kette ist verdrahtet (confirmBuild → spawn → snapshot → restore → harvest)", res.wired);
 }
 
 // Ω6 Namensraum + Wachstumsregel: fremdes Vokabular (x:-präfixiert ODER künftige nackte Achsen)
@@ -40159,11 +38813,6 @@ async function checkBandWelle6XAudit(ctx) {
         const r = window.anazhRealm;
         const out = {};
 
-        // --- A1: DETERMINISMUS-BOGEN P3 — der Sprung ist feld-nativ: handleJump
-        // schreibt den Impuls in `state.playerVel.y` (kein Ammo-Body/Sleep-Wakeup
-        // mehr). Quelltext-Inspektion + behavioral: ein Sprung am Boden hebt _fieldVy.
-        const jumpSrc = window.__codeOf(r.handleJump);
-        out.handleJumpWritesVel = /playerVel/.test(jumpSrc) && /setValue/.test(jumpSrc) && !/playerBody/.test(jumpSrc);
 
         // --- A2: confirmBuild blockt bei phantomOnGround=false im pfad
         r.setGameMode("pfad");
@@ -40274,10 +38923,6 @@ async function checkBandWelle6XAudit(ctx) {
     });
 
     if (wave6x1Results && !wave6x1Results.error) {
-        check(
-            "Welle 6.X.1 A1: handleJump schreibt den Sprung-Impuls feld-nativ in playerVel (kein Ammo-Body)",
-            wave6x1Results.handleJumpWritesVel
-        );
         check("Welle 6.X.1 A2: pfad + Phantom-instabil → confirmBuild blockt", wave6x1Results.pfadBlocksUnstable);
         check("Welle 6.X.1 A2: pfad-Block → keine Architektur entsteht", wave6x1Results.pfadBlocksNoArch);
         check("Welle 6.X.1 A2: pfad-Block → kein Material-Verlust", wave6x1Results.pfadBlocksNoMaterialLoss);
@@ -40350,12 +38995,6 @@ async function checkBandWelle6XAudit(ctx) {
         // Aber Chat-Pfade existieren weiter (smoke: spawn_village ist noch da)
         out.spawnVillageStillCallable = typeof r.dslRun === "function";
 
-        // B4 — Scrollrad-Hotbar
-        // Code-Strukturtest: Wheel-Listener im init() (Methode liest
-        // Wheel-Event auf dem Canvas und ruft selectHotbarSlot).
-        const initSrc = typeof r.init === "function" ? window.__codeOf(r.init) : "";
-        out.wheelListenerInstalled =
-            /addEventListener\s*\(\s*["']wheel["']/.test(initSrc) && /selectHotbarSlot/.test(initSrc);
 
         // Logik-Test: simuliere Wheel-Deltas, hotbar-Slot ändert sich
         if (r.state.buildMode) r.state.buildMode.slotIndex = 0;
@@ -40392,7 +39031,6 @@ async function checkBandWelle6XAudit(ctx) {
             wave6x2Results.architectureActionsRemoved
         );
         check("Welle 6.X.2 B2: dslRun bleibt verfügbar (Chat-Pfad lebt)", wave6x2Results.spawnVillageStillCallable);
-        check("Welle 6.X.2 B4: Wheel-Listener mit selectHotbarSlot installiert", wave6x2Results.wheelListenerInstalled);
         check("Welle 6.X.2 B4: Hotbar zykelt vorwärts", wave6x2Results.hotbarCyclesForward);
         check("Welle 6.X.2 B4: Hotbar zykelt rückwärts", wave6x2Results.hotbarCyclesBackward);
         check("Welle 6.X.2 B4: Hotbar wrappt bei 0 → 8", wave6x2Results.hotbarWrapsAtZero);
@@ -40618,11 +39256,6 @@ async function checkBandWelle6XAudit(ctx) {
         r.state.grok.companionName = "Grok";
         r.state.player.name = "Schöpfer";
 
-        // --- D1: isPlayerGrounded-Cache
-        // Source-Check: Cache-Felder + Time-Check existieren
-        const isgSrc = window.__codeOf(r.isPlayerGrounded);
-        out.cacheFieldsInSource = /_groundedCache/.test(isgSrc) && /_groundedCachedAt/.test(isgSrc);
-        out.cacheTimeoutInSource = /< 33/.test(isgSrc) || /<= 33/.test(isgSrc);
 
         // Funktional: nach einem Aufruf ist _groundedCachedAt gesetzt
         delete r.state._groundedCache;
@@ -40668,11 +39301,6 @@ async function checkBandWelle6XAudit(ctx) {
         check("Welle 6.X.4 F1: Player-Name persistiert in localStorage", wave6x45Results.playerNamePersisted);
         check("Welle 6.X.4 F1: System-Prompt enthält Companion-Name", wave6x45Results.promptContainsCompanionName);
         check("Welle 6.X.4 F1: System-Prompt enthält Player-Name", wave6x45Results.promptContainsPlayerName);
-        check(
-            "Welle 6.X.5 D1: Cache-Felder + Time-Check im isPlayerGrounded-Source",
-            wave6x45Results.cacheFieldsInSource
-        );
-        check("Welle 6.X.5 D1: Cache-Timeout 33 ms (≈2 Frames @ 60fps)", wave6x45Results.cacheTimeoutInSource);
         check("Welle 6.X.5 D1: _groundedCachedAt nach erstem Call gesetzt", wave6x45Results.cacheSetAfterCall);
         check("Welle 6.X.5 D1: zwei direkte Aufrufe liefern dasselbe", wave6x45Results.cacheConsistentBetweenCalls);
         check("Welle 6.X.5 D1: gecachtes true wird respektiert", wave6x45Results.cachedTrueRespected);
@@ -41352,10 +39980,6 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         const stops = AnazhRealm.DAY_NIGHT_STOPS;
         const t032 = stops.find((s) => s.t === 0.32);
         out.intermediateStopExists = !!t032;
-        // V8.48 — _interpolateDayNight nutzt jetzt Catmull-Rom
-        // (global C1-stetig) statt per-Intervall-smoothstep.
-        const interpSrc = window.__codeOf(r._interpolateDayNight);
-        out.interpUsesCatmull = /_catmullDayNight/.test(interpSrc);
 
         // Kein Pulsen: Catmull-Rom statt per-Intervall-smoothstep (der hatte Geschwindigkeit 0 an JEDEM
         // Stop). An t=0.32 STEIGT die Intensität (0.65→0.78→0.9) → die Steigung dort muss klar positiv sein.
@@ -41417,10 +40041,6 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         check(
             "V8.26 Bug 2: Zwischen-Stop bei t=0.32 existiert (Sonnenaufgang-Phase)",
             v826Results.intermediateStopExists
-        );
-        check(
-            "V8.48: _interpolateDayNight nutzt Catmull-Rom (_catmullDayNight) statt smoothstep",
-            v826Results.interpUsesCatmull
         );
         check("V8.48: Tag-Nacht pulst nicht mehr (Steigung an Stop t=0.32 klar positiv)", v826Results.dayNightNoPulse);
         check("V8.48: Tag-Nacht-Kurve ist C1-stetig (Steigung vor ≈ nach Stop, kein Knick)", v826Results.dayNightC1);
@@ -41719,17 +40339,6 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             r.state.camera.position.copy(camOrig);
             r._followCelestialBodies();
         }
-        const skySrc = r.createGalaxySkybox ? window.__codeOf(r.createGalaxySkybox) : "";
-        // Das Wolken-Feld ist das Studio-Gesetz (HIMMEL_GESETZ aus foundry-core: Parallaxe, zwei fbm-Felder,
-        // Deckungs-smoothstep, lit-Beleuchtung); die alten Welt-Terme (cloudShade) müssen fehlen.
-        out.skyboxCloudFbm =
-            skySrc.includes("HIMMEL_GESETZ") &&
-            skySrc.includes("fbm2") &&
-            skySrc.includes("litW") &&
-            !skySrc.includes("cloudShade");
-        // V17.10 — die Wolken-Wurzel: der Himmel nutzt jetzt mx_noise (dieselbe
-        // Noise-Sprache wie Terrain/Vegetation) statt des hash3-Präzisions-Chaos.
-        out.skyboxMxNoise = skySrc.includes("mxNoise") && skySrc.includes("mx_noise_float");
         // Der Terrain-colorNode (triplanar + Wiese + Aerial) baut OHNE Stoff-Bruch — der Zeuge zählt jede Meldung
         // „STOFF: …" über den Bau (K22; der Marker `__toonColorNodeError` hatte keinen Schreiber mehr).
         const _zTerr = window.__stoffZeuge(r);
@@ -41775,10 +40384,6 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         const _structMat =
             typeof r._buildToonNodeMaterial === "function" ? r._buildToonNodeMaterial({ color: 0x808080 }) : null;
         out.structHasAerialOutput = !!(_structMat && _structMat.outputNode);
-        // (3) der Builder ruft die EINE Quelle (Source-Probe: kein Parallel-Pfad).
-        // V18.236 (§2): PBR ist der EINE Builder; _buildToonNodeMaterial delegiert an ihn.
-        const _btSrc = r._buildPbrNodeMaterial ? window.__codeOf(r._buildPbrNodeMaterial) : "";
-        out.aerialFromOneSource = _btSrc.includes("_applySubstanceResponse") && !_btSrc.includes("__structAerialError");
         // (4) die dynamische Farbe (Marking/Emotion) bleibt setzbar — der
         // outputNode liest `output` (post-lighting), überschreibt material.color
         // NICHT (CLAUDE.md-Gotcha).
@@ -41802,18 +40407,6 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         const _aerBrueche = _zAer.zu().concat(_zTerr.brueche);
         out.aerialNoError = _aerBrueche.length === 0; // der Zeuge zählte jeden Stoff-Bruch von Terrain, Struktur, Phantom
         out.aerialOutputError = _aerBrueche[0] || null;
-        // (7) Die Luft ist AUGEN-relativ (V18.530: der Luft-Knoten integriert vom Auge `cameraPosition` zum Punkt,
-        // die Höhen-Abnahme über die Skalenhöhe) — nie absolute Welt-Höhe, sonst bleicht Klettern den Boden.
-        const _aerSrc = window.__codeOf(r._luftEnsure);
-        out.aerialEyeRelative = _aerSrc.includes("cameraPosition") && _aerSrc.includes("hoehe");
-        // V17.3 — Entgrauen im Post-FX-Grading (headless nicht baubar — Source-
-        // Probe wie V17.2, schuetzt gegen versehentliches Loeschen des Hebels).
-        const ppSrc = r._ensurePostProcessing ? window.__codeOf(r._ensurePostProcessing) : "";
-        out.degrayPresent = ppSrc.includes("degrayStrength") && ppSrc.includes("greyness") && ppSrc.includes("warm");
-        // V17.13 — lokaler Kontrast-Hebel (Unsharp-Mask) im Post-FX (Source-Probe,
-        // Post-FX headless nicht baubar — schuetzt gegen versehentliches Loeschen).
-        out.localContrastPresent =
-            ppSrc.includes("localContrast") && ppSrc.includes("localAvg") && ppSrc.includes("detail");
         // Welt-Wasser — V9.75: das Wasser sind per-Chunk-Iso-Surface-Meshes
         // (`voxelChunkWaterIso`-Map) aus dem Cell-Feld. Der alte Quad-Mesh-
         // Pfad ist gestrichen.
@@ -41904,8 +40497,6 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             "V17.J3: die Sonne orbitet NICHT mehr den Welt-Ursprung (fern bei fernem Spieler)",
             v828Results.sunNotAtOrigin
         );
-        check("W9: Wolken-Feld folgt dem STUDIO-GESETZ (HIMMEL_GESETZ + fbm2 + litW)", v828Results.skyboxCloudFbm);
-        check("V17.10: Himmel nutzt mx_noise (eine Noise-Sprache, kein hash3-Flackern)", v828Results.skyboxMxNoise);
         check(
             `V17.12: Terrain-colorNode (triplanar-Textur) baut OHNE geschluckte Exception${v828Results.terrainColorNodeError ? " — " + v828Results.terrainColorNodeError : ""}`,
             v828Results.terrainColorNodeBuilds === true
@@ -41924,16 +40515,8 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             v828Results.structHasAerialOutput
         );
         check(
-            "V17.J: der Builder ruft EINE Quelle (kein Parallel-Pfad, kein __structAerialError)",
-            v828Results.aerialFromOneSource
-        );
-        check(
             "V17.J: die dynamische material.color bleibt setzbar (kein colorNode-Override)",
             v828Results.structDynamicColorPreserved
-        );
-        check(
-            "V17.106 → V18.530: die Luft ist EYE-RELATIV (vom Auge integriert, Höhen-Abnahme über die Skalenhöhe)",
-            v828Results.aerialEyeRelative
         );
         check(
             "V18.113 B3: die 2.5D-Lichtung flacht die SHADING-Normale (normalNode, eingefrorene Konstante)",
@@ -41950,11 +40533,6 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         check(
             `V17.J: kein still gefangener Aerial-Node-Fehler${v828Results.aerialOutputError ? " — " + v828Results.aerialOutputError : ""}`,
             v828Results.aerialNoError === true
-        );
-        check("V17.3: Post-FX-Grading hat den Entgrauen-Hebel (degrayStrength + greyness)", v828Results.degrayPresent);
-        check(
-            "V17.13: Post-FX hat den lokalen Kontrast-Hebel (Unsharp-Mask: localContrast + localAvg)",
-            v828Results.localContrastPresent
         );
         check("V9.75: das Iso-Chunk-Wasser-System ist verdrahtet (voxelChunkWaterIso-Map)", v828Results.waterSystemOk);
         check("V8.28: state.atmosphere persistiert im Snapshot", v828Results.atmospherePersisted);
@@ -42187,49 +40765,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             r.state.starField.material.depthTest === true
         );
 
-        // Wasser-Material ist ein MeshBasicNodeMaterial (TSL, keine Shader-Strings): die Probe scannt die
-        // `_ensureHydroSurfaceMaterial`-Source nach TSL-Mustern, Uniforms aus state.hydroSurfaceUniforms.
-        let waterDiagonal = false;
-        let waterSpecular = false;
-        const wMat = r._ensureHydroSurfaceMaterial && r._ensureHydroSurfaceMaterial();
-        let waterDepthShoreline = false;
-        let waterMinDepthCull = false;
-        if (wMat) {
-            const builderSrc = window.__codeOf(r._ensureHydroSurfaceMaterial);
-            // Wellen-Verschiebung = organische Dünung (`oceanSwell`, ≥3 dekorrelierte `vnoise`-Oktaven), KEIN
-            // Gerstner — parallele Sinus-Kämme ergäben das Chevron-Raster.
-            waterDiagonal =
-                /oceanSwell\s*=\s*Fn/.test(builderSrc) &&
-                (builderSrc.match(/vnoise\(/g) || []).length >= 3 &&
-                !/gerstnerWave/.test(builderSrc);
-            // Blinn-Phong-Spec via TSL-pow + uSunDir-Uniform-Lookup. W-F (V18.175,
-            // V9.56-i): die Spec liest jetzt `nFlow` (die flow-gekräuselte Normale,
-            // abgeleitet aus n → das Glitzern wandert stromab) statt `n`.
-            // K16: der Glitzer lebt im EINEN Blick des Wassers (`_wasserBlick`, Wasser-Stoff UND Fern-Ring) — der
-            // Builder reicht ihm die gekräuselte Normale und die Sonne.
-            const blickSrc = window.__codeOf(r._wasserBlick);
-            waterSpecular =
-                // W10 — das Band WANDERT (Lehre 6): der Glitzer ist jetzt das
-                // STUDIO-Gesetz (reflect-basiert, WASSER_GESETZ.spec, Rayleigh-uSunCol).
-                /pow\(max\(dot\(reflect\(normalize\(o\.sunDir\)/.test(blickSrc) &&
-                /WG\.spec\[0\]/.test(blickSrc) &&
-                /nFlow\s*=\s*normalize\(n\.add/.test(builderSrc) &&
-                /this\._wasserBlick\(TSL, WG, \{[\s\S]{0,80}?n: nFlow[\s\S]{0,200}?sunDir: uSunDir/.test(builderSrc);
-            // V13.5 (Schicht 3): Tiefenpuffer-Uferlinie via Szenen-Tiefe — die Szenen-Tiefe ist der EINE Knoten
-            // _szeneTiefe (W7: Wasser und Feld-Pass lesen dieselbe Kopie, vorher zwei). Seit dem Durchlass-Gesetz
-            // (05.10.) in METERN optischen Wegs (wegM, × cameraFar − cameraNear), nie in Viewport-Einheiten.
-            waterDepthShoreline =
-                /linearDepth\(this\._szeneTiefe\(\)\)/.test(builderSrc) &&
-                /const wegM = /.test(builderSrc) &&
-                /cameraFar\.sub\(cameraNear\)/.test(builderSrc);
-            // V13.9 (Schicht 3): dünnes Wand-Bluten pro Pixel cullen — der Builder
-            // nutzt uMinDepth + alphaCulled + discardet via alphaTest.
-            waterMinDepthCull =
-                /uMinDepth/.test(builderSrc) && /alphaCulled/.test(builderSrc) && /alphaTest/.test(builderSrc);
-        }
-        out.waterDiagonalWaves = waterDiagonal;
-        out.waterSunGlitter = waterSpecular;
-        out.waterDepthShoreline = waterDepthShoreline;
+        if (r._ensureHydroSurfaceMaterial) r._ensureHydroSurfaceMaterial();
         // Wasser-Shader hat sunDir-Uniform (Tag-Nacht-Sync) — jetzt im TSL-Slot.
         out.waterHasSunUniform = !!(r.state.hydroSurfaceUniforms && r.state.hydroSurfaceUniforms.sunDir);
         // V13.5: Emotions-Kopplungs-Haken (V14) als Uniform vorhanden.
@@ -42246,7 +40782,6 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         // V13.9.2: der Wert ist live über setWaterCull(minDepth) justierbar +
         // persistiert in state.atmosphere.waterCull.
         out.waterCullSetter = typeof r.setWaterCull === "function";
-        out.waterMinDepthCull = waterMinDepthCull;
 
         // Wasser-Physik: state.playerUnderwater existiert als Flag
         out.underwaterFlagExists = typeof r.state.playerUnderwater === "boolean";
@@ -42279,27 +40814,14 @@ async function checkBandWelle6G4Atmosphere(ctx) {
 
     if (v830Results && !v830Results.error) {
         check("V8.30: Sterne testen gegen Tiefenpuffer (kein Overlay)", v830Results.starsDepthTest);
-        check("V8.30: Wasser-Shader hat diagonale Multi-Wellen (kein Schachbrett)", v830Results.waterDiagonalWaves);
-        check(
-            "W10: Wasser-Glitzer folgt dem STUDIO-GESETZ (reflect + WASSER_GESETZ.spec)",
-            v830Results.waterSunGlitter
-        );
         check("V8.30: Wasser-Shader hat uSunDir-Uniform (Tag-Nacht-Sync)", v830Results.waterHasSunUniform);
         check("V8.30: state.playerUnderwater-Flag existiert", v830Results.underwaterFlagExists);
         check("V8.30: Render-Loop hat Wasser-Auftrieb", v830Results.waterBuoyancy);
         check("V8.30: Bewegung wird unter Wasser gebremst", v830Results.waterSpeedCut);
-        check(
-            "V13.5: Wasser-Shader hat Tiefenpuffer-Uferlinie (die EINE Szenen-Tiefe)",
-            v830Results.waterDepthShoreline
-        );
         check("V13.5: Wasser-Shader hat Emotions-Kopplungs-Haken (uniform)", v830Results.waterEmotionHook);
         check("V13.9: Wasser-Shader hat Min-Depth-Cull-Uniform (justierbar)", v830Results.waterMinDepthUniform);
         check("V13.9.2: Min-Depth-Cull-Uniform trägt endlichen, ≥0-Wert", v830Results.waterMinDepthValueOk);
         check("V13.9.2: setWaterCull-Setter (Slider + Persistenz) vorhanden", v830Results.waterCullSetter);
-        check(
-            "V13.9: Wasser-Shader cullt dünnes Bluten (optischer Weg < uMinDepth via alphaTest)",
-            v830Results.waterMinDepthCull
-        );
     } else {
         check("V8.30: Schnittstellen-Politur Tests laufen", false, v830Results ? v830Results.error : "no result");
     }
@@ -42335,10 +40857,6 @@ async function checkBandWelle6G4Atmosphere(ctx) {
                 r.state.scene.fogNode
             );
             const builderSrc = window.__codeOf(r._ensureHydroSurfaceMaterial);
-            // Heterogenität aus der Mehr-Skalen-Dünung (`oceanSwell`: value-noise-Oktaven 0.05/0.12/0.23 mit
-            // eigener Drift) statt Gerstner-Warp → kein periodisches Raster, keine parallelen Kämme.
-            out.waterHeteroSwell =
-                /oceanSwell\s*=\s*Fn/.test(builderSrc) && /0\.05/.test(builderSrc) && /0\.23/.test(builderSrc);
             // Kein Wasser-eigener Nebel-Mix mehr im Builder (die Luft ist EINE).
             out.waterFogInShader = !/uFogNear|uFogFar|uFogColor/.test(builderSrc);
         }
@@ -42352,7 +40870,6 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             v831Results.waterFogUniforms
         );
         check("V8.31 → V18.530: kein Wasser-eigener Nebel-Mix im Builder", v831Results.waterFogInShader);
-        check("V8.31: Wasser-Wellen heterogen (Mehr-Skalen organische Dünung, V18.368)", v831Results.waterHeteroSwell);
     } else {
         check("V8.31: Fog-Custom-Shader Tests laufen", false, v831Results ? v831Results.error : "no result");
     }
@@ -42386,34 +40903,8 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             }
             out.eyesFlagComputed = found;
         }
-        // Die Unterwasser-Luft folgt dem Medium der KAMERA (Welle L Q6, W-L-d): `_koerperWasser` an der Kamera, nie
-        // die Augen des Körpers. V9.56-i: die Hemi+Luft-Phase lebt im _dayNightApplyHemiUndLuft-Helfer.
-        {
-            const src = window.__codeOf(r._dayNightApplyHemiUndLuft);
-            out.tintUsesEyesFlag =
-                /kameraUnterWasser/.test(src) &&
-                /_koerperWasser\(cam\.position\.x/.test(src) &&
-                /unterwasserM/.test(src) &&
-                !/playerEyesUnderwater/.test(src);
-        }
 
-        // V10.0-f-4 Doku-Sync: Fresnel-Opazität jetzt im TSL-Tree. Source-Probe.
-        const wFresMat = r._ensureHydroSurfaceMaterial && r._ensureHydroSurfaceMaterial();
-        if (wFresMat) {
-            const builderSrc = window.__codeOf(r._ensureHydroSurfaceMaterial);
-            // W10 — das Band WANDERT: der EINE Fresnel ist Schlick (WASSER_GESETZ.fresnel), treibt Spiegel UND
-            // Deckung — seit dem Durchlass-Gesetz (05.10.) spiegelt er DEN Himmel (die Himmels-Umgebung, nie die
-            // Zenit-Tönung × Sonnen-Stärke) und deckt mit α = 1 − T·(1 − F)·(1 − Schaum).
-            // K16: Spiegel und Fresnel leben im EINEN Blick des Wassers (`_wasserBlick`), die Deckung im Builder.
-            const blickSrc = window.__codeOf(r._wasserBlick);
-            out.waterFresnel =
-                /WG\.fresnel\[0\]/.test(blickSrc) &&
-                /himmel\.mul\(fres\)/.test(blickSrc) &&
-                /texture\(this\._himmelUmgebungTex\(\), equirectUV\(/.test(blickSrc) &&
-                /const \{ eigen, fres \} = this\._wasserBlick\(/.test(builderSrc) &&
-                /T\.mul\(float\(1\.0\)\.sub\(fres\)\)/.test(builderSrc) &&
-                !/uSkyCol/.test(builderSrc + blickSrc);
-        }
+        if (r._ensureHydroSurfaceMaterial) r._ensureHydroSurfaceMaterial();
 
         // V18.530: der Fog-Regler ist mit dem Nebel gefallen (die Luft ist Physik) — weder Slider noch Setter.
         out.fogSliderTo300 = !document.getElementById("slider-fog");
@@ -42425,14 +40916,6 @@ async function checkBandWelle6G4Atmosphere(ctx) {
     if (v832Results && !v832Results.error) {
         check("V8.32: state.playerEyesUnderwater-Flag existiert", v832Results.eyesFlagExists);
         check("V8.32: playerEyesUnderwater wird aus scaledY+1.6 berechnet (Augen-Höhe)", v832Results.eyesFlagComputed);
-        check(
-            "V8.32 → Welle L: die Unterwasser-Luft folgt dem Kamera-Medium (nie den Augen des Körpers)",
-            v832Results.tintUsesEyesFlag
-        );
-        check(
-            "W10: EIN Schlick-Fresnel (WASSER_GESETZ) spiegelt die Himmels-Umgebung und treibt die Deckung",
-            v832Results.waterFresnel
-        );
         check("V8.32 → V18.530: kein Fog-Slider mehr (die Luft ist Physik)", v832Results.fogSliderTo300);
         check("V8.32 → V18.530: kein setFogDistance mehr", v832Results.fogDistanceTo3);
     } else {
@@ -42483,13 +40966,6 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             out.shiftNotSprintUnderwater = shiftNotSprint;
         }
 
-        // --- Schwimm-Animation (isoliert, soul-unabhängig) ---
-        {
-            const src = window.__codeOf(r.animatePlayerSoul);
-            // ABSCHIEDS-WELLE (Konvergenz C): def.animate traegt jetzt auch die Emotions-
-            // Bruecke (6. Arg) — die Probe prueft weiter, dass underwater durchreist.
-            out.animPassesUnderwater = /playerUnderwater/.test(src) && /def\.animate\([^)]*underwater/.test(src);
-        }
         {
             const gh = r._buildHumanGroup();
             out.humanYXZ = gh.rotation.order === "YXZ";
@@ -42523,27 +40999,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             r.applyPlayerSoul(savedSoulSwim);
         }
 
-        // --- Gerstner-Wellen im Wasser-Material (V10.0-f-4 Doku-Sync: TSL).
-        const wGerstMat = r._ensureHydroSurfaceMaterial && r._ensureHydroSurfaceMaterial();
-        if (wGerstMat) {
-            const builderSrc = window.__codeOf(r._ensureHydroSurfaceMaterial);
-            // V18.368 — die Wellen-Verschiebung ist organische Dünung (`oceanSwell`), NICHT mehr
-            // Gerstner (die parallelen Sinus-Kämme = das Chevron-V, Schöpfer-Browser-Befund).
-            out.swellFn = /oceanSwell\s*=\s*Fn/.test(builderSrc) && !/gerstnerWave/.test(builderSrc);
-            // Die Dünung sitzt im `ocean`-Term des surfDisp (vec3-Verschiebung).
-            out.swellVec3 = /const\s+ocean\s*=\s*oceanSwell\(/.test(builderSrc);
-            // RUND statt spitz: die Dünung verschiebt NUR vertikal (vec3(0, h, 0)) — keine
-            // horizontale Stauchung mehr (die spitze Gerstner-Kämme/Chevron machte).
-            out.swellRounded =
-                /return\s+vec3\(float\(0\.0\),\s*h,\s*float\(0\.0\)\)/.test(builderSrc) &&
-                !/d\.x\)\.mul\(cos\(phase\)\)/.test(builderSrc);
-            // Normale aus Kreuzprodukt der Tangenten (unverändert).
-            out.gerstnerCrossNormal = /cross\(pzPos\.sub\(pd\),\s*pxPos\.sub\(pd\)\)/.test(builderSrc);
-            // Heterogenität aus dekorrelierten Oktaven-Drift-Richtungen statt Domain-Warp:
-            // jede Oktave driftet anders (gemischte Vorzeichen in den vec2-Offsets).
-            out.swellDecorrelated =
-                /vnoise\(xz\.mul\(0\.05\)/.test(builderSrc) && /vnoise\(xz\.mul\(0\.23\)/.test(builderSrc);
-        }
+        if (r._ensureHydroSurfaceMaterial) r._ensureHydroSurfaceMaterial();
 
         return out;
     });
@@ -42558,17 +41014,11 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         check("V8.33: An der Oberfläche kein Auftriebs-Drift (depth 0)", v833Results.surfaceNoDrift);
         check("V8.33: Physik-Loop nutzt _swimVerticalVelocity mit Shift/Space", v833Results.physicsUsesSwimFn);
         check("V8.33: Shift ist unter Wasser Tauchen, nicht Sprint", v833Results.shiftNotSprintUnderwater);
-        check("V8.33: animatePlayerSoul reicht den underwater-Flag durch", v833Results.animPassesUnderwater);
         check("V8.33: Soul-Group nutzt YXZ-Rotation (lokaler Vorwärts-Lehnen)", v833Results.humanYXZ);
         check("V8.33: Mensch neigt sich unter Wasser (Schwimm-Pose)", v833Results.humanSwimLean);
         check("V8.33: Schwimm-Pose wird an Land zurückgesetzt (rotation.x=0)", v833Results.humanSwimReset);
         check("V8.33 (NULL): Wolf-Körper neigt sich unter Wasser (Schwimm-Pose)", v833Results.phoenixSwimLean);
         check("V8.33 (NULL): Bär-Körper neigt sich unter Wasser (Schwimm-Pose)", v833Results.dragonSwimLean);
-        check("V8.33: Wasser-Shader hat oceanSwell-Funktion, kein Gerstner (V18.368)", v833Results.swellFn);
-        check("V8.33: Wellen-Verschiebung ist oceanSwell (vec3, im ocean-Term)", v833Results.swellVec3);
-        check("V8.33: Dünung verschiebt nur vertikal — rund statt spitz (V18.368)", v833Results.swellRounded);
-        check("V8.33: Wasser-Normale aus Kreuzprodukt der Tangenten", v833Results.gerstnerCrossNormal);
-        check("V8.33: Dünung aus dekorrelierten Oktaven (0.05/0.23, V18.368)", v833Results.swellDecorrelated);
     } else {
         check("V8.33: Wasser-Vollendung Tests laufen", false, v833Results ? v833Results.error : "no result");
     }
@@ -43098,18 +41548,11 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
 
         // D — Werkzeug-Drag überlebt Palette-Neu-Rendern (Delegation).
         {
-            const src = window.__codeOf(r._workshopInstallShapeDragDrop);
-            // Delegation: EIN Listener am bleibenden Container, NICHT
-            // pro Karte (Karten verschwinden beim Re-Render).
-            out.dragDelegated = /container\.addEventListener\("dragstart"/.test(src) && !/cards\.forEach/.test(src);
-            out.dragSetData = /\.dataTransfer\.setData/.test(src);
             // Re-Render der Tool-Palette: frische Karten bleiben draggable.
             r._workshopRenderToolPalette();
             const palette = document.getElementById("workshop-tool-palette");
             const card = palette ? palette.querySelector(".workshop-tool-card") : null;
             out.toolCardDraggable = !!card && card.getAttribute("draggable") === "true";
-            // Domänen-Farbpunkt bekommt einen erklärenden Tooltip.
-            out.dotHasTitle = /dot\.title\s*=/.test(window.__codeOf(r._workshopRenderToolPalette));
         }
 
         // E — FPS als gleitender 1-s-Durchschnitt (nicht 1/delta).
@@ -43137,10 +41580,7 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
         check("V8.37: Raster + Achsen sind raycast-stumm (stören Part-Auswahl nicht)", v837Results.helperRaycastNoop);
         check("V8.37: Einstellungen-Sektionen haben faltbare Header (≥11)", v837Results.collapsibleHeaders);
         check("V8.37: Klick auf einen Sektion-Header faltet/entfaltet", v837Results.collapseToggles);
-        check("V8.37: Werkzeug-Drag läuft über Container-Delegation", v837Results.dragDelegated);
-        check("V8.37: Werkzeug-Drag überträgt weiterhin Daten (setData)", v837Results.dragSetData);
         check("V8.37: neu-gerenderte Werkzeug-Karte bleibt draggable", v837Results.toolCardDraggable);
-        check("V8.37: Domänen-Farbpunkt trägt einen erklärenden Tooltip", v837Results.dotHasTitle);
         check("V8.37: FPS ist ein gleitender Durchschnitt (90 Frames @60 → fps=60)", v837Results.fpsRollingAvg);
         check("V8.37: FPS-Rechnung nutzt nicht mehr Einzel-Frame 1/delta", v837Results.fpsNotSingleFrame);
         check("V8.37: abnormaler Delta (Tab-Pause) verwirft das FPS-Fenster", v837Results.fpsResetsOnStall);
@@ -43241,7 +41681,6 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
             out.previewAspect = [...document.querySelectorAll("style")].some((s) =>
                 /#workshop-preview-canvas[^}]*aspect-ratio:\s*5\s*\/\s*3/.test(s.textContent)
             );
-            out.cameraAspectSync = /camera\.aspect = w \/ h/.test(window.__codeOf(r._workshopSyncCanvasSize));
         }
 
         return out;
@@ -43260,7 +41699,6 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
             v838Results.connNotCountedAsPart
         );
         check("V8.38: Preview-Canvas hat aspect-ratio 5/3 (Stats-Panel ohne Scrollen)", v838Results.previewAspect);
-        check("V8.38: Canvas-Sync setzt camera.aspect (kein gestauchtes Bild)", v838Results.cameraAspectSync);
     } else {
         check("V8.38: Werkstatt-UX Tests laufen", false, v838Results ? v838Results.error : "no result");
     }
@@ -43326,13 +41764,6 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
             delete r.state.blueprints["_t839s"];
         }
 
-        // Qualität skaliert Creature-Stats + Konsumable (Source-Check): die Equip-Qualität lebt in der
-        // geteilten Quelle `_foldEquippedStatTags` (liest computeBlueprintQuality); computeCreatureStats
-        // erbt sie, weil es den Fold liest.
-        out.creatureStatsQuality =
-            /_foldEquippedStatTags/.test(window.__codeOf(r.computeCreatureStats)) &&
-            /computeBlueprintQuality/.test(window.__codeOf(r._foldEquippedStatTags));
-        out.consumableQuality = /computeBlueprintQuality/.test(window.__codeOf(r.activateConsumable));
 
         // Farb-Sprache im DOM: Rollen-Chip-Glow + Bauplan-Zeilen-Glow + Qualität-Zeile.
         {
@@ -43382,8 +41813,6 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
         check("V8.39: unbearbeiteter Bauplan hat Qualität 1.0 (geboren)", v839Results.qualityUnworked);
         check("V8.39: bearbeiteter Bauplan trägt seine Werkzeug-Präzision als Qualität", v839Results.qualityWorked);
         check("V8.39: Werkzeug-Op-Stamina skaliert mit cap (stumpf teurer als fein)", v839Results.staminaScales);
-        check("V8.39: computeCreatureStats skaliert Equip mit Qualität", v839Results.creatureStatsQuality);
-        check("V8.39: activateConsumable skaliert Trank-Stärke mit Qualität", v839Results.consumableQuality);
         check("V8.39: Rollen-Chip leuchtet in der Rollen-Farbe", v839Results.roleChipGlow);
         check("V8.39: Werkstatt-Stats-Panel zeigt eine Qualität-Zeile", v839Results.qualityRow);
         check("V8.39: Bauplan-Liste-Zeile leuchtet in der Rollen-Farbe", v839Results.listRowGlow);
@@ -43683,8 +42112,6 @@ async function checkBandW12WorldPortal(ctx) {
         const badEnter = r.enterPortal({ type: "stein_block", affordances: {} });
         out.rejectsNonPortal = !badEnter.ok && badEnter.reason === "not_a_portal";
 
-        // Loop-Guard ist verdrahtet.
-        out.loopGuard = /_portalOverlay/.test(window.__codeOf(r.startEternalLoop));
 
         // _tickPortalAffordance zeigt den Prompt, wenn ein Portal nah ist. Spieler AUF die Portal-Position
         // setzen: Zwischen-Ticks lassen ihn sonst zu Boden aus PORTAL_REACH (4,5 m, 3D inkl. y) driften.
@@ -43729,7 +42156,6 @@ async function checkBandW12WorldPortal(ctx) {
         );
         check("W12 P1 C3: exitPortal ohne offenes Portal wird abgelehnt", w12c3Results.rejectsExitWhenIdle);
         check("W12 P1 C3: enterPortal lehnt eine Nicht-Portal-Architektur ab", w12c3Results.rejectsNonPortal);
-        check("W12 P1 C3: Game-Loop hat den Portal-Guard verdrahtet", w12c3Results.loopGuard);
         check("W12 P1 C3: _tickPortalAffordance zeigt den Prompt am Portal", w12c3Results.promptShownNearPortal);
         check("W12 P1 C3: _tryEnterPortalAtPlayer betritt ein nahes Portal", w12c3Results.tryEnterWorks);
         check("W12 P1 C3: Prompt verschwindet ohne Portal in Reichweite", w12c3Results.promptHiddenWhenNone);
@@ -45209,7 +43635,6 @@ async function checkBandW13W14VibePassLibrary(ctx) {
             ownP.tools.some((t) => t.name === "_w14tool") && !ownP.tools.some((t) => t.name === "schmiede-hammer");
         for (let i = 0; i < 20; i++) delete r.state.materials["_w14m" + i];
         delete r.state.tools._w14tool;
-        out.sendUsesPayload = /_portalEnterPayload/.test(window.__codeOf(r._portalSendEnter));
         return out;
     });
 
@@ -45222,7 +43647,6 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         check("W13 V2: nur EIGENE Materialien reisen mit (Built-ins bleiben)", w13v2Results.payloadOwnMaterials);
         check("W13 V2: die Materialien-Liste ist auf 16 gedeckelt", w13v2Results.payloadMaterialCap);
         check("W13 V2: nur EIGENE Werkzeuge reisen mit (Built-ins bleiben)", w13v2Results.payloadOwnTools);
-        check("W13 V2: _portalSendEnter sendet den _portalEnterPayload", w13v2Results.sendUsesPayload);
     } else {
         check("W13 V2: enter-Payload-Tests laufen", false, w13v2Results ? w13v2Results.error : "no result");
     }
@@ -46466,15 +44890,6 @@ async function checkBandG8R1DampedChannel(ctx) {
         out.peerCaps = pa === K.SUBWORLD_NET_PEER_RATE_MAX;
         out.peerIndependent = r._p2pPeerRateAdmit("g8r1-test", "peerB", K.SUBWORLD_NET_PEER_RATE_MAX) === true;
         if (r._p2pRate) delete r._p2pRate["g8r1-test"];
-        // (5) Verdichtung + Verdrahtung (Source-Proben): der Kanal-Bucket sitzt
-        // im onMessage-Eingang, beide Mesh-Empfänger nutzen das EINE Raten-Tor.
-        out.wiredInOnMessage = /_portalChannelAdmit\(po, performance\.now\(\)\)/.test(
-            window.__codeOf(r._buildPortalOverlay)
-        );
-        out.subworldUsesGate = /_p2pPeerRateAdmit\("subworld-net"/.test(window.__codeOf(r._p2pMsgSubworldNet));
-        out.creaturePosUsesGate =
-            /_p2pPeerRateAdmit\("creature-pos"/.test(window.__codeOf(r._p2pMsgCreaturePos)) &&
-            !/_cpRate/.test(window.__codeOf(r._p2pMsgCreaturePos));
         return out;
     });
     if (!res) {
@@ -46489,10 +44904,6 @@ async function checkBandG8R1DampedChannel(ctx) {
     );
     check("G8 R1: der Bucket SETTLED nach dem Fenster (EPS-Fixpunkt, settled-Garantie)", res.channelSettles);
     check("G8 R1: der per-Peer-Cap deckelt je Peer + Peers sind unabhängig", res.peerCaps && res.peerIndependent);
-    check(
-        "G8 R1: das EINE Raten-Tor ist verdrahtet (onMessage-Eingang · subworld-net · creature-pos verdichtet)",
-        res.wiredInOnMessage && res.subworldUsesGate && res.creaturePosUsesGate
-    );
 }
 
 // G8 R2 — die Irreversibilitäts-Wand (M3): SOVEREIGN_ACTIONS (frozen) disjunkt
@@ -46547,12 +44958,6 @@ async function checkBandG8R2SovereignWall(ctx) {
         // (4) die Host-Geste: skipConfirm → true; ein NICHT-souveräner Akt → verweigert.
         out.gestureSkipConfirm = r._sovereignGesture("wallet_transfer", { what: "x" }, { skipConfirm: true }) === true;
         out.gestureRefusesUnknown = r._sovereignGesture("plant_a_tree", {}, { skipConfirm: true }) === false;
-        // (5) die drei realen souveränen Akte laufen durch die Geste (Source) +
-        // dslEval trägt die Wand.
-        out.signBpRouted = /_sovereignGesture\(\s*"sign_manifest"/.test(window.__codeOf(r.signBlueprint));
-        out.signWorldRouted = /_sovereignGesture\(\s*"sign_manifest"/.test(window.__codeOf(r.signWorld));
-        out.identityRouted = /_sovereignGesture\(\s*"change_identity"/.test(window.__codeOf(r.importVibePass));
-        out.evalGuard = /SOVEREIGN_ACTIONS\.includes\(op\)/.test(window.__codeOf(r.dslEval));
         // (6) eine Welt-REGEL kann keinen souveränen Effekt ausführen.
         const ctxr = r.dslCtx({ source: "rule-test" });
         r.dslEval(["grant_capability", "world", "domain"], ctxr);
@@ -46573,10 +44978,6 @@ async function checkBandG8R2SovereignWall(ctx) {
     check(
         "G8 R2: die Host-Geste (skipConfirm→ok · Nicht-souverän→verweigert)",
         res.gestureSkipConfirm && res.gestureRefusesUnknown
-    );
-    check(
-        "G8 R2: Signieren/Identität laufen durch die Geste + dslEval trägt die Wand",
-        res.signBpRouted && res.signWorldRouted && res.identityRouted && res.evalGuard
     );
     check(
         "G8 R2: eine Welt-REGEL kann keinen souveränen Effekt ausführen (blockiert beim Feuern)",
@@ -46608,12 +45009,6 @@ async function checkBandG8R3Locality(ctx) {
         out.auditOk = audit.ok === true;
         out.vendoredForced = audit.facts.vendoredForcedSandboxed === true;
         out.innerRingAbsent = audit.facts.innerRingAbsent === true;
-        // (4) _buildPortalOverlay nutzt die EINE Quelle (kein inline-Ternär mehr).
-        out.usesOneSource = /_portalSandboxAttr\(meta\)/.test(window.__codeOf(r._buildPortalOverlay));
-        // (5) der Server-Kontext-iframe ist IMMER null-origin (allow-scripts allein).
-        out.serverNullOrigin =
-            typeof r._portalSpawnServerContext === "function" &&
-            /setAttribute\("sandbox", "allow-scripts"\)/.test(window.__codeOf(r._portalSpawnServerContext));
         return out;
     });
     if (!res) {
@@ -46630,8 +45025,6 @@ async function checkBandG8R3Locality(ctx) {
         "G8 R3: vendored erzwingt sandboxed unforgeable + der innere Ring ist abwesend",
         res.vendoredForced && res.innerRingAbsent && res.auditOk
     );
-    check("G8 R3: _buildPortalOverlay nutzt die EINE Sandbox-Attribut-Quelle", res.usesOneSource);
-    check("G8 R3: der Server-Kontext-iframe ist IMMER null-origin (allow-scripts allein)", res.serverNullOrigin);
 }
 
 // G8 R4 — Netz-Immunität: Herkunfts-KETTE (4a) · RÜCKRUF (4b: ein revozierter Schlüssel stößt jedes
@@ -46708,14 +45101,6 @@ async function checkBandG8R4Immunity(ctx) {
         // (die R2-Wand hält für den welt-exponierten Pfad — das Dual-LLM-Pattern).
         const llmRun = r.dslRun(["sign_manifest"], { source: "llm:grok" });
         out.llmCannotSovereign = Array.isArray(llmRun.log) && llmRun.log.some((e) => e.event === "sovereign_blocked");
-        // (6) Verdrahtung (Source): sign/export/import tragen die Kette, die Lader sieben.
-        out.signSetsChain =
-            /_appendProvenance/.test(window.__codeOf(r.signWorld)) &&
-            /_appendProvenance/.test(window.__codeOf(r.signBlueprint));
-        out.importPreservesChain = /_sanitizeProvenance\(m\.provenance\)/.test(
-            window.__codeOf(r._sanitizeImportedManifest)
-        );
-        out.loaderSieves = /_artifactProvenanceTainted/.test(window.__codeOf(r._loadCustomWorlds));
         // restore
         delete r.state.signedWorlds["_g8r4_evil"];
         delete r.state.signedWorlds["_g8r4_good"];
@@ -46750,10 +45135,6 @@ async function checkBandG8R4Immunity(ctx) {
     check(
         "G8 R4 (4c): der welt-exponierte LLM kann keinen souveränen Akt formulieren (R2-Wand)",
         res.llmCannotSovereign
-    );
-    check(
-        "G8 R4: die Kette ist verdrahtet (sign trägt · import bewahrt · Lader sieben)",
-        res.signSetsChain && res.importPreservesChain && res.loaderSieves
     );
 }
 
@@ -46811,19 +45192,6 @@ async function checkBandV18129HochBecken(ctx) {
             !!C &&
             Object.isFrozen(C) &&
             [C.REACH, C.MAX_CELLS, C.FEED, C.WIN_MAX, C.CLUSTER_GAP, C.MIN_EXTENT].every(Number.isFinite);
-        // KONSUM-Source-Proben (V17.31: kein Passagier): der Kappen-Bau liest die
-        // Stau-Felder, der Pin trägt den Tropf, alle drei Werk-Pfade invalidieren.
-        out.capReadsStau = /_stauFieldsNear/.test(window.__codeOf(r._ensureWaterCALevel));
-        out.pinHasDrip = /src\[c\] === 2/.test(window.__codeOf(r._tickWorldWaterCA));
-        out.editInvalidates = /_invalidateWaterCapsAround/.test(window.__codeOf(r._addVoxelEdit));
-        // der Bau weckt am Zell-Stempel (Schau-2, Gegenprüfungen Runden 2 und 3): wo sein Stempel in die Zellen kommt — der
-        // Neubau des Fußabdrucks beim Bau, der Reload, das Wieder-Strömen —, wenn er eine Wasser-Zelle überschreibt
-        out.spawnInvalidates =
-            /_rebuildVoxelChunk\(/.test(window.__codeOf(r.spawnArchitecture)) &&
-            /=== STATE\.WATER[\s\S]*_invalidateWaterCapsAround/.test(
-                window.__codeOf(r._stampArchitectureSolidCellsInto)
-            );
-        out.removeInvalidates = /_invalidateWaterCapsAround/.test(window.__codeOf(r.removeArchitecture));
         // PURE Spill-Scan (Priority-Flood): das BECKEN hält, der PFEILER nicht —
         // der strukturelle Damm/Pfeiler-Diskriminator (die Physik filtert).
         const w = 11;
@@ -46881,14 +45249,6 @@ async function checkBandV18129HochBecken(ctx) {
         return;
     }
     check("V18.129 Hoch-Becken: CA_STAU-Konfiguration steht (frozen, vollständig)", res.config);
-    check(
-        "V18.129 Hoch-Becken: KONSUM verdrahtet (Kappen-Bau liest Stau-Felder · Pin trägt den Tropf)",
-        res.capReadsStau && res.pinHasDrip
-    );
-    check(
-        "V18.129 Hoch-Becken: alle drei Werk-Pfade invalidieren (Edit · Bau am Zell-Stempel · Abbau)",
-        res.editInvalidates && res.spawnInvalidates && res.removeInvalidates
-    );
     check("V18.129 Hoch-Becken: der Spill-Scan hält das GESCHLOSSENE Becken (Krone-Pegel)", res.basinHolds);
     check("V18.129 Hoch-Becken: außerhalb der Wand gilt der Außenwelt-Pegel (keine Badewanne)", res.outsideOpen);
     check("V18.129 Hoch-Becken: EIN Loch im Ring → kein Stau (der Damm/Pfeiler-Diskriminator)", res.gapDrains);
@@ -46950,10 +45310,6 @@ async function checkBandV18130CsmShadow(ctx) {
             out.maxFarIstReichweite = Math.abs(csm.maxFar - applied * F) < 1e-6;
             out.maxFar = +csm.maxFar.toFixed(1);
         }
-        // KONSUM-Proben: der Bias-Hebel propagiert auf die Kaskaden-Lichter,
-        // der Resize ruft updateFrustums (Addon-Vertrag).
-        out.biasPropagates = /csm\.lights/.test(window.__codeOf(r.setShadowBias));
-        out.resizeUpdates = /updateFrustums/.test(window.__codeOf(r.init));
         return out;
     });
     if (!res) {
@@ -46974,10 +45330,6 @@ async function checkBandV18130CsmShadow(ctx) {
         "V18.510 CSM: jede Kaskade trägt ≥ 10 % der Tiefe über die ganze Reichweite (kein Streifen-Durchgang)",
         res.active && res.minAnteil >= 0.1,
         `min=${res.minAnteil} breaks=${res.breaks}`
-    );
-    check(
-        "V18.130 CSM: setShadowBias propagiert auf die Kaskaden + Resize ruft updateFrustums",
-        res.biasPropagates && res.resizeUpdates
     );
 }
 
@@ -47061,12 +45413,6 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
         out.blendMid = Math.abs(r._weatherBlendedValue(0, 1) - 0.5) < 0.001;
         r.state.weatherTransition = origTrans;
         r.state.weather = origWeather;
-        // weatherEffect + cloudCover faden über `_weatherBlendedValue` in `_dayNightApplySkybox` (Ziel
-        // u.cloudCover.value); die Probe toleriert den [0,1]-Clamp `Math.min(1, …)` des Konsumenten.
-        const skyboxSrc = window.__codeOf(r._dayNightApplySkybox);
-        out.cloudFades = /u\.cloudCover\.value\s*=\s*(?:Math\.min\(\s*1\s*,\s*)?this\._weatherBlendedValue/.test(
-            skyboxSrc
-        );
         // V8.47 — Shadow-Bias gegen Shadow-Acne auf flachen Flächen.
         const sh = r.state.directionalLight && r.state.directionalLight.shadow;
         out.shadowAntiAcne = !!sh && sh.normalBias > 0 && sh.bias < 0 && sh.mapSize.width >= 2048;
@@ -47078,7 +45424,6 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
         check("V8.46: Helper ohne Transition liefert Wetter-Wert (sunny)", v846Results.blendSunny);
         check("V8.46: Helper ohne Transition liefert Wetter-Wert (rainy)", v846Results.blendRainy);
         check("V8.46: Helper cross-fadet in der Transition (progress 0.5 → halb)", v846Results.blendMid);
-        check("V8.46: cloudCover cross-fadet über den Helper", v846Results.cloudFades);
         check("V8.47: Shadow-Bias gesetzt (gegen Acne-Linien auf flachen Flächen)", v846Results.shadowAntiAcne);
     } else {
         check("V8.46: Wetter-Übergangs-Tests laufen", false, v846Results ? v846Results.error : "no result");
@@ -47181,8 +45526,6 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
             /herdeZug\(/.test(src) &&
             /flockGrid\.get\(/.test(src) &&
             /d > paar && d < paar \* H\.fensterRaum/.test(herde);
-        out.leibStattStrahl = /this\._kreaturHuellenKontakt\(/.test(src) && !/_runRaycast\(|_fieldRaycast\(/.test(src);
-        out.scratchPooled = /_creatureScratchDir/.test(src);
         // Funktional: viele Kreaturen, mehrere Ticks → kein Crash, Bewegung erhalten, Positionen endlich.
         // maxCreatures temporär heben + Guard-Zähler: am Cap fügt spawnCreatureAt nichts hinzu und der
         // `while (length < 60)`-Loop dreht ewig; danach sauber abräumen (kein Leck in Folge-Bänder).
@@ -47225,8 +45568,6 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
             "Welle L: die Kohäsion ist herdeZug über das Gitter (Quadrat vor der Wurzel, O(N²) entschärft)",
             v849Results.herdeImGitter
         );
-        check("Welle L: kein Hindernis-Strahl je Tier — der Leib löst gegen die Hüllen", v849Results.leibStattStrahl);
-        check("V8.49: Scratch-Vektoren gepoolt (keine Pro-Kreatur-Allokation)", v849Results.scratchPooled);
         check("V8.49: updateCreatures läuft mit 60 Kreaturen ohne Crash", v849Results.noCrash, v849Results.err);
         check("V8.49: Kreaturen bewegen sich weiterhin (Verhalten erhalten)", v849Results.creaturesMoved);
         check("V8.49: alle Kreatur-Positionen endlich (keine NaN)", v849Results.allFinite);
@@ -47317,9 +45658,6 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
             rs.dispatchEvent(new Event("input"));
         }
 
-        // --- D2 (Welle 5 Klang): der Umgebungs-Regler IST der Bus der Klang-Welt — der Bau liest ihn
-        const ubSrc = window.__codeOf(r._umweltKlangBauen);
-        out.pingsSourceUsesVolume = /creaturePingVolume/.test(ubSrc);
 
         return out;
     });
@@ -47447,10 +45785,6 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
         );
         check("Welle 6.X.4 D2: Ring-Slider ändert state.chunkRingRadius", wave6x4bResults.ringSliderUpdates);
         check("Welle 6.X.4 D2: Ring-Wert-Display zeigt '7×7' bei value=3", wave6x4bResults.ringValueDisplaysCorrectly);
-        check(
-            "Welle 6.X.4 D2: der Bus der Klang-Welt liest creaturePingVolume (Umgebungs-Regler)",
-            wave6x4bResults.pingsSourceUsesVolume
-        );
     } else {
         check(
             "Welle 6.X.4 B3+D2: Stats-HUD + Slider-Tests laufen",
@@ -50552,12 +48886,6 @@ async function checkBandCadWorkshop(ctx) {
 
             // --- Pan-Geste: Listener-Source enthält Shift+Links + Mittelmaus-Pfad ---
             if (pre) {
-                // Wir prüfen via Source-Inspection (statt dispatchEvent,
-                // weil Puppeteer-MouseEvent-Constructor manchmal
-                // Modifier-Keys nicht zuverlässig propagiert).
-                const src = window.__codeOf(r._workshopInstallPreviewListeners);
-                out.shiftLeftStartsPan = src.includes("shiftKey") && src.includes("event.button === 1");
-                out.middleMouseStartsPan = src.includes("event.button === 1");
                 // Listener wurden tatsächlich installed (listenersInstalled-Flag)
                 out.previewListenersInstalled = pre.listenersInstalled === true;
 
@@ -50657,10 +48985,6 @@ async function checkBandCadWorkshop(ctx) {
             v803Results.matCardsMatchState
         );
         check("V8.03: Color-Palette hat 12 Swatches", v803Results.twelveColorSwatches);
-        check(
-            "V8.03 Camera: Listener enthält Shift+Links + Mittelmaus → Pan-Modus",
-            v803Results.shiftLeftStartsPan && v803Results.middleMouseStartsPan
-        );
         check(
             "V8.03 Camera: Preview-Listener wurden installiert (listenersInstalled-Flag)",
             v803Results.previewListenersInstalled
@@ -53990,17 +52314,12 @@ async function checkBandEarlyRingsAndUi(ctx) {
         // (b) wieder einblenden
         document.body.classList.remove("hud-hidden");
         out.hudReturns = getComputedStyle(topbar).pointerEvents !== "none";
-        // (c) die H-Taste ist im Keydown-Pfad verdrahtet (Source-Probe)
-        const r = window.anazhRealm;
-        const src = typeof r.init === "function" ? window.__codeOf(r.init) : "";
-        out.keyWired = /KeyH/.test(src) && /hud-hidden/.test(src);
         return out;
     });
 
     if (freeScreenResults && !freeScreenResults.error) {
         check("UI-Putz freier Bildschirm: body.hud-hidden blendet das HUD aus", freeScreenResults.hudHides);
         check("UI-Putz freier Bildschirm: erneutes Umschalten zeigt das HUD wieder", freeScreenResults.hudReturns);
-        check("UI-Putz freier Bildschirm: die H-Taste ist im Keydown-Pfad verdrahtet", freeScreenResults.keyWired);
     }
 
     // ### UI V2 — Quick-Buttons + Hilfe-Sektion in Einstellungen (Tab-System) ###
