@@ -2186,7 +2186,16 @@ class AnazhRealm_Z14 {
         const Z = this._torZiele();
         let z = Z.welten.get(meta.world);
         if (!z) {
-            z = { world: meta.world, meta, zeile: null, quelle: null, stempel: null, fehler: null, ohne: null, kommt: null };
+            z = {
+                world: meta.world,
+                meta,
+                zeile: null,
+                quelle: null,
+                stempel: null,
+                fehler: null,
+                ohne: null,
+                kommt: null,
+            };
             z.kommt = new Promise((ja) => (z.ja = ja));
             Z.welten.set(meta.world, z);
             if (!Z.buendel) {
@@ -2222,7 +2231,9 @@ class AnazhRealm_Z14 {
             await this._weltbildKommt();
             const K = await this._torZielKarte();
             if (!K || K.format !== G.format || K.w !== G.w || K.h !== G.h)
-                throw new Error(`${G.karte} trägt Format ${K && K.format} ${K && K.w}×${K && K.h} statt ${G.format} ${G.w}×${G.h}`);
+                throw new Error(
+                    `${G.karte} trägt Format ${K && K.format} ${K && K.w}×${K && K.h} statt ${G.format} ${G.w}×${G.h}`
+                );
             await Promise.all(
                 b.map(async (z) => {
                     try {
