@@ -844,13 +844,13 @@ class AnazhRealm_Z24 {
         return t * t * (3 - 2 * t);
     }
 
-    // Skybox-Uniforms: nebulaColor aus skyR/G/B + Wolken-Deckung aus dem Wetter (Cross-Fade über die
+    // Skybox-Uniforms: himmelTint aus skyR/G/B + Wolken-Deckung aus dem Wetter (Cross-Fade über die
     // Transition); die Uniforms leben in `state.skyboxUniforms` (uniform-Knoten).
     _dayNightApplySkybox(tint) {
         const u = this.state.skyboxUniforms;
         if (!u) return;
-        if (u.nebulaColor && u.nebulaColor.value && u.nebulaColor.value.setRGB) {
-            u.nebulaColor.value.setRGB(tint.skyR, tint.skyG, tint.skyB);
+        if (u.himmelTint && u.himmelTint.value && u.himmelTint.value.setRGB) {
+            u.himmelTint.value.setRGB(tint.skyR, tint.skyG, tint.skyB);
             // === Sky-Harmonie: die DSL/Mood-Tönung überschreibt die Tag-Nacht-Farbe nicht — sie blendet + fadet.
             // Läuft ~10 Hz (Tag-Nacht-Throttle); die Schritte sind raten-approximativ.
             const st = this.state;
@@ -864,7 +864,7 @@ class AnazhRealm_Z24 {
                 // Knopf mitgedämpft (der Nexus tönte den Himmel bei awe nach lila =
                 // magenta-Wäsche). Der Mensch kann auraTintStrength heben, will er es satt.
                 const _aK = tint && Number.isFinite(tint.auraK) ? tint.auraK : 1;
-                if (st.skyTintStrength * _aK > 0.002) u.nebulaColor.value.lerp(st.skyTint, st.skyTintStrength * _aK);
+                if (st.skyTintStrength * _aK > 0.002) u.himmelTint.value.lerp(st.skyTint, st.skyTintStrength * _aK);
             }
             // DIE TÖNUNG DES PHYSIKALISCHEN HIMMELS (D3): der Himmel selbst ist die Himmels-Sicht der EINEN Atmosphäre — was
             // der Tint daneben trägt (Wetter, Welt-Feld, Gefühl, DSL-Tönung), wirkt als Verhältnis zum blanken Tag-Nacht-Stop.
@@ -872,7 +872,7 @@ class AnazhRealm_Z24 {
             const A = st.atmoLut;
             const b = tint && tint.basis;
             if (A && b) {
-                const nc = u.nebulaColor.value;
+                const nc = u.himmelTint.value;
                 const q = (x, y) => Math.max(0, Math.min(4, y > 1e-4 ? x / y : 1));
                 A.U.toenung.value.set(q(nc.r, b.r), q(nc.g, b.g), q(nc.b, b.b));
             }

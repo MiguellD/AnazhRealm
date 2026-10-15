@@ -994,7 +994,7 @@ async function checkBandV1723Harmony(ctx) {
         res.weatherYields
     );
     check("V17.23 Harmonie: SKY_TINT_MAX verdrahtet (Tag-Nacht bleibt sichtbar)", res.skyTintMax);
-    check("V17.23 Harmonie: skybox_color setzt eine Tönung (state.skyTint), snappt nicht nebulaColor", res.skyTintSet);
+    check("V17.23 Harmonie: skybox_color setzt eine Tönung (state.skyTint), snappt nicht himmelTint", res.skyTintSet);
     check("V17.23 Harmonie: die Sky-Tönung rampt smooth hoch (kein Snap)", res.skyRamped);
     check("V17.23 Harmonie: die Sky-Tönung fadet (Ziel decayt → verblasst, nicht abrupt)", res.skyDecays);
     check("V17.24 Harmonie: die Sky-FARBE cross-fadet (Farbwechsel springt nicht, er fadet)", res.colorCrossFades);
@@ -40996,7 +40996,7 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         r._applyDayNightToScene();
         // V10.0-f-1 Doku-Sync: skyboxMaterial ist jetzt MeshBasicNodeMaterial,
         // Uniforms leben in state.skyboxUniforms (uniform-Knoten mit .value).
-        const skyU = r.state.skyboxUniforms.nebulaColor;
+        const skyU = r.state.skyboxUniforms.himmelTint;
         const skyAtAweZero = { r: skyU.value.r, g: skyU.value.g, b: skyU.value.b };
         r.state.player.emotions.awe = 1.0;
         r._applyDayNightToScene();
@@ -41007,7 +41007,7 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         out.aweRaisesRedToo = skyAtAweHigh.r > skyAtAweZero.r + 0.01;
 
         // --- Vision 5: sorrow entsättigt den Welt-Tint — gemessen am ROHEN Tint via
-        // `_dayNightComputeTint(mkStop)` (gesättigter Stop: sorrow grayt ~40 %), nicht am live `nebulaColor`
+        // `_dayNightComputeTint(mkStop)` (gesättigter Stop: sorrow grayt ~40 %), nicht am live `himmelTint`
         // (der skyTint-Blend verdünnt auf ~3 % → flaky). Gleicher Ort, emotionField leer → nur sorrow zählt.
         const THREE_g3 = window.THREE;
         if (THREE_g3 && THREE_g3.Color && typeof r._dayNightComputeTint === "function") {

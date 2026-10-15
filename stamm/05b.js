@@ -1984,7 +1984,7 @@ class AnazhRealm_Z05b {
         // Skybox als MeshBasicNodeMaterial (TSL): die Himmels-Sicht der EINEN Atmosphäre + horizont-genordete Wolken.
         // vDir = normalize(positionLocal) hält den Sample-Punkt in Welt-Richtung, egal wo der Spieler steht.
         // Live-Uniforms in `state.skyboxUniforms` (`.value`-Setter): _dayNightApplySkybox (cloudCover; die Tönung über
-        // nebulaColor, den Träger des Tints), _loopSkyboxZeit (time pro Frame).
+        // himmelTint, den Träger des Tints), _loopSkyboxZeit (time pro Frame).
         const TSL = THREE.TSL;
         // Idempotent am Chokepoint: ein zweiter Bau ERSETZT den ersten statt eine zweite Kuppel zu
         // stapeln (kein Doppel-Heap).
@@ -2108,7 +2108,7 @@ class AnazhRealm_Z05b {
             time: uTime,
             // der TRÄGER der Tönung (kein Knoten der Kuppel): der Tint des Tag-Nacht-Stops mit Wetter, Feld, Gefühl und
             // DSL-Tönung — die Kuppel liest sein Verhältnis zum blanken Stop (`atmoLut.U.toenung`, D3)
-            nebulaColor: { value: new THREE.Color(0x4b0082) },
+            himmelTint: { value: new THREE.Color(1, 1, 1) },
             cloudCover: uCloudCover,
             sunDir: uSunDir,
             sunCol: uSunCol,

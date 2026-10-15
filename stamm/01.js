@@ -124,7 +124,7 @@ class AnazhRealm {
             // V9.40-d — Retry-Counter für Rebuild-Versuche pro Chunk (max 3).
             voxelRebuildAttempts: null,
             skybox: null,
-            // Live-Uniforms der TSL-Skybox (time, nebulaColor, cloudCover), init in createGalaxySkybox();
+            // Live-Uniforms der TSL-Skybox (time, himmelTint, cloudCover), init in createGalaxySkybox();
             // geschrieben von DSL skybox_color, _dayNightApplySkybox und _loopSkyboxZeit.
             skyboxUniforms: null,
             // V10.0-f-2 — Live-Uniforms des TSL-Stern-Felds (uniform-Knoten):

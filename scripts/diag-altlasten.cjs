@@ -442,6 +442,7 @@ const FORBIDDEN = [
     { token: "mieKeule", fiel: "D3 — die Keule zur Sonne trägt die Mie-Phase des Gesetzes (ATMO_GESETZ.mieG)" },
     { token: "mieAnteil", fiel: "D3 — die Keule zur Sonne trägt die Mie-Phase des Gesetzes" },
     { token: "mieGlanz", fiel: "D3 — die Keule zur Sonne trägt die Mie-Phase des Gesetzes" },
+    { token: "nebulaColor", fiel: "D3 — der Träger der Tönung heißt himmelTint (die Nebel-Kuppel fiel)" },
     { token: "_skyEnvTex", fiel: "D3 — die Umgebung ist der Wandel-Pass der Himmels-Sicht (rtEq → PMREM), keine CPU-Malerei" },
     // ... und im Labor in DERSELBEN Welle: die Luftmassen-Sonne von phytogenesis und ihre Zwillings-Zahlen in phyto-core
     // (die Rayleigh-Tiefe, die Luftmassen-Glättung, der Mond-Hue) — Welt und Labor rufen foundry-core ATMO_RECHNUNG.
