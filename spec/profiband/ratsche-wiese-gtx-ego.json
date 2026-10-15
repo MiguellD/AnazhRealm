@@ -2,8 +2,8 @@
     "version": 1,
     "zweck": "DIE RATSCHE wiese × gtx × ego (K26): ungemessen bis zur Re-Mint-Serie dieses Orts × Geräts × Sicht (werkbank ratsche --neu); Gesetz (Toleranz, freie Klassen) und Form wie ratsche-wiese-radeon-ego.json. Das Band-Urteil nennt sie rot („ungemessen\"), gate:profiband H2b ebenso.",
     "gemessen": {
-        "datum": "2026-10-14T12:52:32.826Z",
-        "version": "18.546.0",
+        "datum": "2026-10-15T15:48:25.916Z",
+        "version": "18.546.2",
         "ort": "wiese",
         "geraet": "gtx",
         "geraetText": "nvidia pascal",
@@ -34,23 +34,23 @@
         "tier": "Weltzustand, nicht Kosten: die Tiere wandern — in der Serie 04./05.10. 11 bis 101 Befehle im Hauptbild (0 bis 3 Arten im Bild, je Art 11 bis 42 Befehle mit Schatten). Die Kosten je Tier hält gate:kreatur-kosten (ein Draw je Material, Körper-Kugel-Cull); im Band zählt die Klasse voll."
     },
     "gesamt": {
-        "befehle": 75,
-        "dreiecke": 286558,
-        "vramMB": 94.4
+        "befehle": 76,
+        "dreiecke": 285907,
+        "vramMB": 93.3
     },
     "klassen": {
         "boden": {
             "haupt": {
                 "befehle": 7,
-                "dreiecke": 55698
+                "dreiecke": 52643
             },
             "k0": {
                 "befehle": 1,
-                "dreiecke": 15309
+                "dreiecke": 12397
             },
             "k1": {
                 "befehle": 1,
-                "dreiecke": 7479
+                "dreiecke": 6386
             }
         },
         "karten": {
@@ -98,7 +98,7 @@
         "nahWiese": {
             "haupt": {
                 "befehle": 4,
-                "dreiecke": 65732
+                "dreiecke": 76308
             },
             "k0": {
                 "befehle": 0,
@@ -111,12 +111,12 @@
         },
         "streu": {
             "haupt": {
-                "befehle": 4,
-                "dreiecke": 35962
+                "befehle": 6,
+                "dreiecke": 33114
             },
             "k0": {
                 "befehle": 2,
-                "dreiecke": 3692
+                "dreiecke": 2690
             },
             "k1": {
                 "befehle": 0,
@@ -143,7 +143,7 @@
                 "dreiecke": 9365
             },
             "k0": {
-                "befehle": 3,
+                "befehle": 2,
                 "dreiecke": 3492
             },
             "k1": {
@@ -158,7 +158,7 @@
             },
             "k0": {
                 "befehle": 1,
-                "dreiecke": 6400
+                "dreiecke": 6080
             },
             "k1": {
                 "befehle": 1,
@@ -172,7 +172,7 @@
             },
             "k0": {
                 "befehle": 5,
-                "dreiecke": 13514
+                "dreiecke": 13517
             },
             "k1": {
                 "befehle": 0,
@@ -209,16 +209,16 @@
         }
     },
     "vramMB": {
-        "buf:szene": 16,
         "tex:TRAANode.history": 15.8,
         "tex:TRAANode.resolve": 15.8,
+        "buf:szene": 13.9,
         "tex:kaskade0": 8,
         "tex:kaskade1": 8,
-        "tex:karte-albedo": 5,
+        "tex:karte-albedo": 5.7,
         "tex:output": 4.4,
         "tex:depth": 4.4,
         "tex:wege-karte": 4,
-        "tex:karte-normal": 2.5,
+        "tex:karte-normal": 2.8,
         "tex:szene": 2.2,
         "tex:fluss-karte": 2,
         "tex:feld-pass-panorama": 1.9,
@@ -230,14 +230,13 @@
         "tex:welt-march-kapseln": 0.3,
         "tex:himmel-umgebung": 0,
         "buf:bindingBuffer": 0,
-        "buf:bindingBufferundefined_UniformBuffer_": 0,
         "buf:buffer_timestamp_resolve_render": 0,
         "buf:buffer_timestamp_result_render": 0,
         "tex:fern-krone-nah": 0,
+        "buf:bindingBufferundefined_UniformBuffer_": 0,
         "tex:fern-ring-maske": 0,
         "tex:DFG_LUT": 0,
         "buf:bild": 0,
-        "buf:?": 0,
-        "tex:portal-membran": 0
+        "buf:?": 0
     }
 }
