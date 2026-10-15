@@ -1,0 +1,33 @@
+11:55:29 START Kopf=e8a370ad (integ-probe a19ca615 = e8a370ad + Doku)
+11:55:29 wiese-ego start [P8, 139 MHz, 60]
+11:57:31 wiese-ego selbsttest exit=0
+11:58:25 wiese-ego zerlegen exit=0
+11:58:30 wiese-ego ende
+11:59:30 wiese-third start [P8, 139 MHz, 67]
+12:01:32 wiese-third selbsttest exit=0
+12:02:26 wiese-third zerlegen exit=0
+12:02:32 wiese-third ende
+12:03:32 genesis-ego start [P8, 139 MHz, 67]
+12:05:44 genesis-ego selbsttest exit=0
+12:06:50 genesis-ego zerlegen exit=0
+12:06:55 genesis-ego ende
+12:07:55 genesis-ego-A start [P8, 139 MHz, 68]
+12:10:04 genesis-ego-A selbsttest exit=0
+12:11:10 genesis-ego-A zerlegen exit=0
+12:11:15 genesis-ego-A ende
+12:12:15 genesis-third start [P8, 139 MHz, 69]
+12:14:38 genesis-third selbsttest exit=0
+12:15:51 genesis-third zerlegen exit=0
+12:16:36 genesis-third profil exit=0
+12:16:42 genesis-third ende
+12:17:42 ZERLEGEN FERTIG
+12:17:43 loop-probe B start
+12:19:50 loop-probe B ende
+12:20:20 loop-probe A start
+12:22:21 loop-probe A ende
+12:22:52 LOOP-PROBE FERTIG
+12:28:59 loop-probe2 B start
+12:31:06 loop-probe2 B ende
+12:31:36 loop-probe2 A start
+12:33:38 loop-probe2 A ende
+12:34:08 LOOP-PROBE2 FERTIG

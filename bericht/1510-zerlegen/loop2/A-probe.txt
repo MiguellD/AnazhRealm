@@ -1,0 +1,31 @@
+{
+ "ergebnis": {
+  "submits": 4450,
+  "puffer": 4450,
+  "encoder": 4450,
+  "compute": 0,
+  "renders": [
+   [
+    "leinwand | Render Pipeline | OrthographicCamera",
+    861
+   ],
+   [
+    "TRAANode.resolve | TRAA | OrthographicCamera",
+    861
+   ],
+   [
+    "output | Scene | PerspectiveCamera",
+    861
+   ],
+   [
+    "kaskade0:farbe | Shadow Map [ ID: 799 ] | OrthographicCamera",
+    431
+   ],
+   [
+    "kaskade1:farbe | Shadow Map [ ID: 803 ] | OrthographicCamera",
+    144
+   ]
+  ]
+ },
+ "ms": 2
+}

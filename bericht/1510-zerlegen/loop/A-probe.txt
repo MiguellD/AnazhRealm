@@ -1,0 +1,12 @@
+{
+ "ergebnis": {
+  "sek": 10,
+  "raf": 1201,
+  "submits": 0,
+  "puffer": 0,
+  "encoder": 0,
+  "compute": 0,
+  "renders": []
+ },
+ "ms": 10007
+}
