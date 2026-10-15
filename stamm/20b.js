@@ -1919,7 +1919,10 @@ class AnazhRealm_Z20b {
     // der Wurzel in Metern aus dem Satz-Attribut `aWiege` (`_satzBlock`), also für jede Studio-Skala derselbe Stoff.
     // `mp.satzRegler` (true): der EINE Satz-Stoff des Bau-Satzes (`_satzStoff`, K43-2) — Rauheit, Metall und Deckkraft liest er
     // je Ecke aus `aRegler`, das Emissiv × Glut-Stärke aus `aGlut` (`_satzBlock`); `mp` trägt diese Regler dann nicht.
-    _foundryTreeMaterial(kind, mp, wiegen, baum) {
+    // `krone` (true, optional; K68-N1): das Klingen-Laub gehört zu einer Krone (Baum, Strauch: foundry-core `emitTreeRezept`
+    // legt die Normale der Krone darüber), auch ohne `baum` — der wiegende Stoff der Nah-Streu erbt sie vom Stoff der Art
+    // (`userData.krone`); die Karte (foliageTex) ist immer Krone.
+    _foundryTreeMaterial(kind, mp, wiegen, baum, krone) {
         const satz = !!(mp && mp.satzRegler === true);
         if (!this._foundryMats) this._foundryMats = {};
         const T = THREE;
@@ -1948,12 +1951,15 @@ class AnazhRealm_Z20b {
         // Glut · Fell-/Haut-Ton — dieselbe, mit der das Budget-Gesetz am Studio-Ausgang Stoffe zählt und faltet (die
         // Seite fehlte: ein beidseitiger Stoff teilte das Material eines einseitigen gleicher Regler, first-wins).
         // Dazu die Wirts-Zustände, die kein Studio-Stoff sind: die Dither-Blende und das Wiegen der Nah-Streu.
+        // DIE KRONE (K68-N1): Karte immer, Klinge am Baum und Strauch — sie lichtet flip-frei (`_laubStoffNormale`)
+        const _krone = kind === "foliageTex" || (kind === "foliage" && (!!baum || krone === true));
         const key =
             globalThis.__phytoCore.budgetStoff(kind, mp) +
             (xfade ? "|xf" : "") +
             (wiegen === true ? "|wiegt" : "") +
             (baum ? "|wind:" + baum.ht.toFixed(2) + "/" + baum.delta.toFixed(4) + "/" + baum.an : "") +
-            (satz === true ? "|satz" : "");
+            (satz === true ? "|satz" : "") +
+            (_krone ? "|krone" : "");
         if (this._foundryMats[key]) return this._foundryMats[key];
         let mat;
         // HAUT-VOLLENDUNG (19.07.): die Lab-Haut trägt CLEARCOAT (matSkin
@@ -2016,6 +2022,7 @@ class AnazhRealm_Z20b {
         // Flag lässt `_scatterInstanceAdd` denselben Tint auf die 3D-Krone legen; Rinde bleibt untintet. Nur
         // das Flag, NIE attribute("instanceColor") — der native InstanceNode-Auto-Multiply trägt ihn.
         if (kind === "foliage" || kind === "foliageTex") mat.userData.useInstanceTint = true;
+        if (_krone) mat.userData.krone = true;
         // DIE WERTE JE STOFF (1310-18): was nur diesen Stoff unterscheidet (das Leucht-Maß, der Ton-Anker der Strähnen-Achse),
         // liest der Graph als Stoff-Wert (`_stoffWert`), nie als eingefaltete Konstante — sonst trüge jeder Stoff seinen
         // eigenen Graphen und r184 baute je Stoff ein Programm.
@@ -2039,19 +2046,16 @@ class AnazhRealm_Z20b {
         const _suF =
             kind === "foliage" || kind === "foliageTex" || kind === "grass" ? this._ensureSeasonUniforms() : null;
         const laubFarbe0 = _suF && _suF.uSeasonMul ? vcol.mul(_suF.uSeasonMul) : vcol;
-        // DIE BLATT-UNTERSEITE (phyto-core BLATT_UNTERSEITE, 05.10.): ist die gesehene Seite nach unten gewandt
-        // (normalWorld ist doppelseitig gespiegelt), trägt das Laub die hellere, mattere Unterseite — dieselben Zahlen
-        // wie der Laub-Shader des Labors. Laub und Blüte, nie Gras.
-        const _BU = kind === "foliage" || kind === "foliageTex" ? globalThis.__phytoCore.BLATT_UNTERSEITE : null;
-        const laubFarbe = _BU
-            ? TSL.mix(
-                  laubFarbe0,
-                  TSL.mix(laubFarbe0, TSL.vec3(laubFarbe0.dot(TSL.vec3(0.2126, 0.7152, 0.0722))), _BU.grau).mul(
-                      _BU.hell
-                  ),
-                  TSL.float(0.5).sub(TSL.normalWorld.y.mul(_BU.steil)).clamp(0.0, 1.0)
-              )
-            : laubFarbe0;
+        // DIE BLATT-UNTERSEITE (phyto-core BLATT_UNTERSEITE, 05.10.): die gesehene Fläche nach unten gewandt → die hellere,
+        // mattere Unterseite (`_laubUnterseite`, K68-N1: die Fläche, nie die Licht-Normale). Laub und Blüte, nie Gras.
+        const laubFarbe =
+            kind === "foliage" || kind === "foliageTex" ? this._laubUnterseite(TSL, laubFarbe0) : laubFarbe0;
+        // DIE NORMALE DER KRONE (K68-N1): die Studio-Krone (foundry-core `emitTreeRezept`: jede Karte, jede Klinge und Nadel
+        // eines Baums und Strauchs) trägt die Normale der Krone und lichtet flip-frei (`_laubStoffNormale`). Die Karte
+        // (foliageTex) ist immer Krone; das Klingen-Laub (foliage) ist es am Baum und Strauch (`_krone`: die Wind-Daten der
+        // Art oder der Stoff, von dem die Nah-Streu erbt) — Farn, Blüte, Schilf und Gestrüpp tragen ihre eigene Fläche, deren
+        // Wicklung frei ist: sie lesen die Seite (r184 faceDirection), sonst läge jeder zweite Wedel im Dunkel.
+        if (_krone) this._laubStoffNormale(TSL, mat);
         if (isBark) {
             // KEIN Normal-Override auf Vegetations-Stämmen: r184-NodeMaterial-Tangenten (UV-Derivate) kippen auf
             // gestreckten Tube-UVs die Normale → der Stamm liest schwarz. Die Rinde lebt über Albedo (Studio-
@@ -2064,13 +2068,19 @@ class AnazhRealm_Z20b {
             // (phyto-core `bakeLeafAtlasBild`): Zelle 0 Baum-Zweig (`BLATT_ATLAS_BREIT`), 1 Weiden-Zweig (Trauer-Strähne,
             // `BLATT_ATLAS_WEIDE`), 2 Großblatt-Zweig (Strauch, `BLATT_ATLAS_GROSS`), 3 Nadel-Zweiglein (`BLATT_ATLAS_NADEL`) — dieselbe Textur wie
             // der Grammatik-Pfad (`_ensureFoliageClusterAtlas`), keine zweite.
-            const atl = this._blattAtlasProbe(TSL);
+            const atl = this._blattAtlasProbe(
+                TSL,
+                mp && typeof mp.alphaTest === "number" && mp.alphaTest > 0 ? mp.alphaTest : 0.5
+            );
             if (atl) {
                 // Die Blattform schneidet die ALPHA von colorNode aus, nie `opacityNode`: der r184-Schattenpass
                 // liest colorNode.a · map.a · maskShadowNode (`Renderer._getShadowNodes`), opacityNode nie — die
-                // Nadel-Karten warfen volle Rechtecke. Die Atlas-Farbe: der EINE Leser (`_blattAtlasProbe`).
+                // Nadel-Karten warfen volle Rechtecke. Die Atlas-Farbe: der EINE Leser (`_blattAtlasProbe`). Die Alpha
+                // ist die Kante von EINEM Pixel um die Schwelle des Stoffs (K68, `_laubKante`): der Bild-Pass schneidet
+                // sie am Rauschen der zeitlichen Auflösung (`alphaTestNode`), der Schatten an der Zahl 0,5.
                 mat.colorNode = TSL.vec4(atl.rgb.mul(laubFarbe), atl.a);
-                mat.alphaTest = mp && typeof mp.alphaTest === "number" && mp.alphaTest > 0 ? mp.alphaTest : 0.5;
+                mat.alphaTest = 0.5;
+                mat.alphaTestNode = atl.schwelle;
                 mat.transparent = false;
             } else {
                 // Nur headless (kein document): kein Stoff zeichnet — mit document liefert der Atlas oder bricht.

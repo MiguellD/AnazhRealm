@@ -189,6 +189,7 @@ let barkNormalTex = null,
     barkMat,
     barkMatBirch,
     foliageMat,
+    foliageMatKrone, // K68-N1: das Klingen-Laub der Krone (flip-frei, foundry-core injectWind `krone`)
     foliageMatTex,
     grassMat,
     stemMat,
@@ -279,7 +280,19 @@ function bakeImpostorAtlas() {
             _impMat.uniforms.nmap.value = _impNrm;
         }
     }
-    if (!_impNrmOv) _impNrmOv = new THREE.MeshNormalMaterial({ side: THREE.DoubleSide }); // Override fuer den Normal-Pass (r128: packNormalToRGB(view-space n) -- an der three-Quelle verifiziert)
+    if (!_impNrmOv) {
+        _impNrmOv = new THREE.MeshNormalMaterial({ side: THREE.DoubleSide }); // Override fuer den Normal-Pass (r128: packNormalToRGB(view-space n) -- an der three-Quelle verifiziert)
+        // DIE NORMALE DER KRONE FLIP-FREI (K68-N1): die Karte backt, was der Stoff der Welt lichtet — die Normale der Krone ohne
+        // Seite (foundry-core injectWind `krone`, Welt `_laubStoffNormale`); die doppelseitige Rueckseite kehrte sie nach innen.
+        // Die Rinde ist geschlossen (ihre Rueckseite liegt hinter der Tiefe).
+        _impNrmOv.onBeforeCompile = (sh) => {
+            sh.fragmentShader = sh.fragmentShader.replace(
+                "#include <normal_fragment_begin>",
+                "#include <normal_fragment_begin>\n#ifndef FLAT_SHADED\n normal = normalize( vNormal );\n#endif"
+            );
+        };
+        _impNrmOv.customProgramCacheKey = () => "impNrm_kroneFlipfrei";
+    }
     const bs = new THREE.Scene();
     const hl = new THREE.HemisphereLight(0xffffff, 0x8a8a8a, 1.05);
     bs.add(hl); // FLACH backen (neutral, richtungslos): der Atlas ist Albedo -- die LICHTRICHTUNG kommt zur Laufzeit aus _wSunPos, sonst waere die Bake-Richtung fuer immer eingefroren
@@ -722,7 +735,7 @@ const foundryKanal = (() => {
         if (!mat) return "unknown";
         if (mat === barkMat || mat === barkMatBirch) return "bark";
         if (mat === foliageMatTex) return "foliageTex";
-        if (mat === foliageMat) return "foliage";
+        if (mat === foliageMat || mat === foliageMatKrone) return "foliage";
         if (mat === grassMat) return "grass";
         if (typeof stemMat !== "undefined" && mat === stemMat) return "stem";
         if (typeof schattenMat !== "undefined" && mat === schattenMat) return "schatten";
