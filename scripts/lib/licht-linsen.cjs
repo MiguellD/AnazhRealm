@@ -1419,8 +1419,15 @@ function laubGegenlicht(opts) {
                 sc.environmentIntensity = 0;
                 dl.castShadow = false; // der Stoff allein: kein Schatten, kein Himmel
             }
+            const bild = await lies("das Laub im Gegenlicht");
+            sc.environmentIntensity = envAlt;
+            dl.castShadow = schattenAlt;
+            return bild;
+        };
+        // Ein Bild der sichtbaren Züge aus `cam` in das Halb-Float-Ziel: je Pixel die lineare Luma (−1 ungeschrieben) und das Bild.
+        const lies = async (wer) => {
             let px = null;
-            await window.__linseRuhe(rend, rt, sc, cam, "das Laub im Gegenlicht");
+            await window.__linseRuhe(rend, rt, sc, cam, wer);
             for (let k = 0; k < 3; k++) {
                 if (rend._nodes && rend._nodes.nodeFrame) rend._nodes.nodeFrame.update();
                 rend.setRenderTarget(rt);
@@ -1430,8 +1437,6 @@ function laubGegenlicht(opts) {
                 rend.setRenderTarget(null);
                 px = await rend.readRenderTargetPixelsAsync(rt, 0, 0, W, H);
             }
-            sc.environmentIntensity = envAlt;
-            dl.castShadow = schattenAlt;
             const zeile = W * 4;
             const schritt = px.length > zeile * H ? Math.ceil((zeile * 2) / 256) * 128 : zeile;
             const cv = document.createElement("canvas");
@@ -1467,6 +1472,97 @@ function laubGegenlicht(opts) {
             for (const m of alle) m.visible = laub.includes(m);
             bundles();
             if (luftU) luftU.beta.value = 0;
+            if (opts.oben) {
+                // DIE KRONE VON OBEN (K68-N3, Nordstern §4.5 „Bestandes-Albedo … von oben im Ausgabe-Pfad“): das Auge lotrecht
+                // über dem Exemplar, die Licht-Kette der Bühne unberührt (Mittag, Sommer, Sonne mit Schatten, Himmel). Drei Bilder
+                // aus demselben Auge: die Krone im Licht (L), dieselbe Krone unter weißem Umgebungslicht π und 0 (A = hell − dunkel,
+                // die Blatt-Albedo derselben Pixel) und allein eine waagrechte 18-%-Karte über der Spitze (Lk, unbeschattet).
+                // Die Reflexion der Krone R = 0,18 · L / Lk (= π·L/E); das Soll rechnet `kronenObenUrteil` aus A.
+                const kopf = ziel.box.max.y;
+                const breit = Math.max(ziel.box.max.x - ziel.box.min.x, ziel.box.max.z - ziel.box.min.z, 2);
+                const fov = (cam.fov * Math.PI) / 180;
+                cam.position.set(mitte.x, kopf + (0.75 * breit) / Math.tan(fov / 2), mitte.z);
+                cam.quaternion.setFromEuler(new T.Euler(-Math.PI / 2, 0, 0));
+                cam.updateMatrixWorld(true);
+                const krone = await lies("die Krone von oben");
+                const lichter = [];
+                sc.traverse((o) => {
+                    if (o.isLight) lichter.push([o, o.intensity]);
+                });
+                // die Albedo wie `__albedoSicht`: das Umgebungslicht der Szene weiß (ein neues Licht wechselt die Licht-Signatur
+                // jedes Programms — gemessen 15.10.: A 0,002–0,06 statt der Tafel 0,16), die übrigen Lichter und der Himmel still
+                const envA = sc.environment;
+                let amb = st.ambientLight || lichter.map((e) => e[0]).find((l) => l.isAmbientLight);
+                const ambEigen = amb ? null : new T.AmbientLight(0xffffff, 0);
+                if (ambEigen) sc.add((amb = ambEigen));
+                const ambFarbe = amb.color.clone();
+                let hell, dunkel;
+                try {
+                    for (const [l] of lichter) l.intensity = 0;
+                    sc.environment = null;
+                    amb.color.setRGB(1, 1, 1);
+                    amb.intensity = Math.PI;
+                    await lies("die Albedo der Krone");
+                    hell = await lies("die Albedo der Krone");
+                    amb.intensity = 0;
+                    dunkel = await lies("die Albedo der Krone");
+                } finally {
+                    if (ambEigen) sc.remove(ambEigen);
+                    amb.color.copy(ambFarbe);
+                    for (const [l, i] of lichter) l.intensity = i;
+                    sc.environment = envA;
+                }
+                const karte = new T.Mesh(
+                    new T.PlaneGeometry(breit * 2, breit * 2),
+                    new T.MeshStandardNodeMaterial({ color: new T.Color(0.18, 0.18, 0.18), roughness: 1, metalness: 0 })
+                );
+                karte.rotation.x = -Math.PI / 2;
+                karte.position.set(mitte.x, kopf + 0.05, mitte.z);
+                karte.updateMatrixWorld(true);
+                let kb;
+                try {
+                    sc.add(karte);
+                    for (const m of laub) m.visible = false;
+                    bundles();
+                    kb = await lies("die 18-%-Karte über der Krone");
+                } finally {
+                    sc.remove(karte);
+                    karte.geometry.dispose();
+                    karte.material.dispose();
+                    for (const m of laub) m.visible = true;
+                    bundles();
+                }
+                let sl = 0,
+                    sa = 0,
+                    n = 0,
+                    sk = 0,
+                    nk = 0;
+                for (let i = 0; i < W * H; i++) {
+                    if (kb.Yp[i] >= 0) {
+                        sk += kb.Yp[i];
+                        nk++;
+                    }
+                    if (krone.Yp[i] >= 0 && hell.Yp[i] >= 0 && dunkel.Yp[i] >= 0) {
+                        sl += krone.Yp[i];
+                        sa += hell.Yp[i] - dunkel.Yp[i];
+                        n++;
+                    }
+                }
+                const LL = window.__phytoCore && window.__phytoCore.LAUB_LICHT;
+                const sd = dl.position.clone().sub(dl.target.position).normalize();
+                out.oben = {
+                    pixel: n,
+                    L: n ? +(sl / n).toFixed(5) : null,
+                    Lk: nk ? +(sk / nk).toFixed(5) : null,
+                    A: n ? +(sa / n).toFixed(4) : null,
+                    R: n && nk && sk > 0 ? +((0.18 * (sl / n)) / (sk / nk)).toFixed(4) : null,
+                    tau: LL ? [LL.tauNadel, LL.tauLaub] : null,
+                    sonneGrad: +((Math.asin(Math.max(-1, Math.min(1, sd.y))) * 180) / Math.PI).toFixed(1),
+                    png: krone.png,
+                };
+                out.stoffe = laub.map((m) => m.material.userData.laubLicht || "ohne").join(",");
+                return out;
+            }
             // Gezählt wird jedes Pixel, das BEIDE Lagen zeichnen (die Stufen-Blende der Nachbarn wechselt ihr Dither je Bild).
             const paar = (g, a) => {
                 let sg = 0,
@@ -1537,8 +1633,45 @@ function laubLichtUrteil(messung, band) {
     return { urteil: befunde.length ? "ROT" : "GRUEN", befunde, zeilen };
 }
 
+// DIE KRONE VON OBEN (K68-N3): die Reflexion einer dichten Krone folgt aus dem Blatt, nie aus der Karte. Ein Blatt mit der
+// Albedo A und dem Durchlass tau (phyto-core LAUB_LICHT: T = tau · R) streut ω = A · (1 + tau); eine dichte, isotrop streuende
+// Blattschicht wirft davon R∞ = (1 − √(1−ω)) / (1 + √(1−ω)) zurück (Zwei-Strom / Kubelka–Munk: Meador & Weaver 1980, J. Atmos.
+// Sci. 37:630; Sellers 1985, Int. J. Remote Sens. 6:1335 — die Natur: Nadelwald sichtbar 0,03–0,05, Laubwald 0,04–0,06, wo
+// das Blatt R(550) ≈ 0,13 trägt). Das Band reicht vom Nadel- bis zum Laub-Durchlass (`tau` [Nadel, Laub]) über der GEMESSENEN
+// Albedo derselben Pixel — eine Krone als EINE besonnte Schale läge bei A · cos θ, um das Zwei- bis Dreifache darüber.
+function kronenReflexionSoll(A, tau) {
+    const km = (w) => {
+        const s = Math.sqrt(Math.max(0, 1 - Math.min(1, w)));
+        return (1 - s) / (1 + s);
+    };
+    return [+km(A * (1 + tau[0])).toFixed(4), +km(A * (1 + tau[1])).toFixed(4)];
+}
+function kronenObenUrteil(messung) {
+    const befunde = [];
+    const zeilen = [];
+    for (const [art, w] of Object.entries((messung && messung.welt) || {})) {
+        const o = w && w.oben;
+        if (!o || !(o.R > 0) || !(o.A > 0) || !Array.isArray(o.tau)) {
+            befunde.push(
+                `KRONE-OBEN ${art}: keine Messung (${(w && w.fehler) || "kein Kronen-Pixel, keine Karte oder kein tau"})`
+            );
+            continue;
+        }
+        const band = kronenReflexionSoll(o.A, o.tau);
+        zeilen.push({ art, R: o.R, A: o.A, band, pixel: o.pixel, sonneGrad: o.sonneGrad });
+        if (o.R > band[1] || o.R < band[0])
+            befunde.push(
+                `KRONE-OBEN ${art}: Reflexion ${o.R} außerhalb [${band.join(", ")}] (Blatt-Albedo ${o.A}, ${o.pixel} px, Stoffe ${w.stoffe}) — ${o.R > band[1] ? "die Krone lichtet als besonnte Schale" : "die Krone schluckt mehr als ihr Blatt"}`
+            );
+    }
+    if (!zeilen.length && !befunde.length) befunde.push("KRONE-OBEN: keine Art gemessen");
+    return { urteil: befunde.length ? "ROT" : "GRUEN", befunde, zeilen };
+}
+
 module.exports = {
     laubLichtUrteil,
+    kronenObenUrteil,
+    kronenReflexionSoll,
     LINSEN_INSTALL:
         `window.__linseRuhe = ${linseRuhe.toString()};` +
         `window.__laubGegenlicht = ${laubGegenlicht.toString()};` +
