@@ -13,73 +13,73 @@
     },
     "gemessen": {
         "labor": {
-            "datum": "2026-10-15T03:13:25.234Z",
+            "datum": "2026-10-15T03:29:57.339Z",
             "geraet": "ANGLE (AMD, AMD Radeon(TM) 890M Graphics (0x0000150E) Direct3D11 vs_5_0 ps_5_0, D3D11)",
             "echt": true,
             "version": "18.546.2",
             "quellen": {
-                "phyto-core.js": "95f967fc8a37fd95",
+                "phyto-core.js": "e249254c481eaf69",
                 "foundry-core.js": "b957a6823f5b6a9e",
                 "vehicle-core.js": "e92679d1328df7f1",
                 "porta-core.js": "1f5c96131f9bb2be",
                 "schmiede-core.js": "d883c336f95e4811",
-                "fachwerk-core.js": "9630f4e8c6382fe4",
+                "fachwerk-core.js": "f0e1c14768b59e8c",
                 "klang-core.js": "6cd802653529b5ea",
                 "koerper-core.js": "94a8359fccad2ea4",
                 "tetrapoda-core.js": "5bcaa2822e2844f2",
-                "gelaende-core.js": "f1d87533ace49a59",
-                "stamm/01.js": "f9e48600facd5f5b",
+                "gelaende-core.js": "4aa4f2792bab096e",
+                "stamm/01.js": "7533cec1bf187102",
                 "stamm/02a.js": "f7bcdf64c1e36842",
                 "stamm/02b.js": "88ba28f4cbe4afbf",
                 "stamm/03a.js": "ab335f0021b8fd74",
-                "stamm/03b.js": "906ac60537545f91",
+                "stamm/03b.js": "8dc8eacacb338d96",
                 "stamm/04.js": "a81b11b04a3f3110",
                 "stamm/05a.js": "539370765677f7ec",
-                "stamm/05b.js": "4c23b4440c82e219",
+                "stamm/05b.js": "a2388adf42608210",
                 "stamm/06a.js": "7a1e2fe0ee9ba9f9",
                 "stamm/06b.js": "1a4eacb138d3d2e2",
                 "stamm/06c.js": "088e61ca626f3bdc",
-                "stamm/07.js": "6a3ea63b9ee05a21",
-                "stamm/08.js": "d1965c87808662a7",
+                "stamm/07.js": "2c0ea1566bde5db0",
+                "stamm/08.js": "0b53e7190a8a5d1a",
                 "stamm/09.js": "0f3d091e173a4ada",
-                "stamm/10.js": "32d29d540373569b",
+                "stamm/10.js": "3610b2fda697b950",
                 "stamm/11a.js": "549d9c99924b3ecf",
-                "stamm/11b.js": "3c6f010d0961e8ec",
+                "stamm/11b.js": "958e160caa28a442",
                 "stamm/11c.js": "d2269993c239da8e",
                 "stamm/11d.js": "fd895fc97babb8fb",
-                "stamm/12.js": "35ba9677f5f22ebf",
+                "stamm/12.js": "c7b853453ed83fa3",
                 "stamm/13a.js": "7ecaeb9da1f4fadd",
-                "stamm/13b.js": "74dac822388d3033",
+                "stamm/13b.js": "d28c7480caa48f4c",
                 "stamm/13c.js": "0dfc72d752024dfb",
                 "stamm/14.js": "c8ee5a0ca50e8a1b",
                 "stamm/15a.js": "f0610a76b23bfe9e",
                 "stamm/15b.js": "081ea9fe990409d5",
                 "stamm/15c.js": "079dee3b5f4fdc27",
-                "stamm/16.js": "5cc527c167378f17",
+                "stamm/16.js": "b16e84a6cceb19dd",
                 "stamm/17a.js": "3171fb2dc0f872b0",
                 "stamm/17b.js": "e9a220a4e1af8dbf",
-                "stamm/17c.js": "d848b70d6294c19a",
+                "stamm/17c.js": "702a08345f3246be",
                 "stamm/18.js": "f80bf3706d0e0e6c",
                 "stamm/19.js": "2bb652c80a58c2a9",
-                "stamm/20a.js": "32632c152bc477e2",
-                "stamm/20b.js": "1998e327e7e3c5f2",
+                "stamm/20a.js": "1d5a51bec0726efe",
+                "stamm/20b.js": "53573e26535aa7a3",
                 "stamm/20c.js": "739572d20e186d24",
-                "stamm/20d.js": "7fc3616ed9846a7b",
+                "stamm/20d.js": "e592b8af34c2ac9c",
                 "stamm/21.js": "9331638bf60daaa9",
                 "stamm/22.js": "75414b2476ec337f",
                 "stamm/23a.js": "6f7beb260c70c123",
                 "stamm/23b.js": "d311e43d74ce825d",
-                "stamm/24.js": "e600eb9cc991ce4c",
+                "stamm/24.js": "f91a630f9f2e5b4b",
                 "stamm/25a.js": "0bd3409907df2983",
-                "stamm/25b.js": "7f2302d3be1d5750",
+                "stamm/25b.js": "a21a3054484ddc2c",
                 "stamm/25c.js": "8b1cb72fb388564f",
                 "stamm/26a.js": "b08c3819d8cdd7f6",
-                "stamm/26b.js": "3d92ab3600500c1c",
-                "stamm/26c.js": "498ce5808c916fec"
+                "stamm/26b.js": "1d4e538256cbe21e",
+                "stamm/26c.js": "8d43f7954cb8c918"
             }
         },
         "welt": {
-            "datum": "2026-10-15T03:17:10.297Z",
+            "datum": "2026-10-15T03:26:22.224Z",
             "geraet": "amd rdna-3",
             "ort": "genesis",
             "spieler": [
@@ -89,64 +89,64 @@
             "echt": true,
             "version": "18.546.2",
             "quellen": {
-                "phyto-core.js": "95f967fc8a37fd95",
+                "phyto-core.js": "e249254c481eaf69",
                 "foundry-core.js": "b957a6823f5b6a9e",
                 "vehicle-core.js": "e92679d1328df7f1",
                 "porta-core.js": "1f5c96131f9bb2be",
                 "schmiede-core.js": "d883c336f95e4811",
-                "fachwerk-core.js": "9630f4e8c6382fe4",
+                "fachwerk-core.js": "f0e1c14768b59e8c",
                 "klang-core.js": "6cd802653529b5ea",
                 "koerper-core.js": "94a8359fccad2ea4",
                 "tetrapoda-core.js": "5bcaa2822e2844f2",
-                "gelaende-core.js": "f1d87533ace49a59",
-                "stamm/01.js": "f9e48600facd5f5b",
+                "gelaende-core.js": "4aa4f2792bab096e",
+                "stamm/01.js": "7533cec1bf187102",
                 "stamm/02a.js": "f7bcdf64c1e36842",
                 "stamm/02b.js": "88ba28f4cbe4afbf",
                 "stamm/03a.js": "ab335f0021b8fd74",
-                "stamm/03b.js": "906ac60537545f91",
+                "stamm/03b.js": "8dc8eacacb338d96",
                 "stamm/04.js": "a81b11b04a3f3110",
                 "stamm/05a.js": "539370765677f7ec",
-                "stamm/05b.js": "4c23b4440c82e219",
+                "stamm/05b.js": "a2388adf42608210",
                 "stamm/06a.js": "7a1e2fe0ee9ba9f9",
                 "stamm/06b.js": "1a4eacb138d3d2e2",
                 "stamm/06c.js": "088e61ca626f3bdc",
-                "stamm/07.js": "6a3ea63b9ee05a21",
-                "stamm/08.js": "d1965c87808662a7",
+                "stamm/07.js": "2c0ea1566bde5db0",
+                "stamm/08.js": "0b53e7190a8a5d1a",
                 "stamm/09.js": "0f3d091e173a4ada",
-                "stamm/10.js": "32d29d540373569b",
+                "stamm/10.js": "3610b2fda697b950",
                 "stamm/11a.js": "549d9c99924b3ecf",
-                "stamm/11b.js": "3c6f010d0961e8ec",
+                "stamm/11b.js": "958e160caa28a442",
                 "stamm/11c.js": "d2269993c239da8e",
                 "stamm/11d.js": "fd895fc97babb8fb",
-                "stamm/12.js": "35ba9677f5f22ebf",
+                "stamm/12.js": "c7b853453ed83fa3",
                 "stamm/13a.js": "7ecaeb9da1f4fadd",
-                "stamm/13b.js": "74dac822388d3033",
+                "stamm/13b.js": "d28c7480caa48f4c",
                 "stamm/13c.js": "0dfc72d752024dfb",
                 "stamm/14.js": "c8ee5a0ca50e8a1b",
                 "stamm/15a.js": "f0610a76b23bfe9e",
                 "stamm/15b.js": "081ea9fe990409d5",
                 "stamm/15c.js": "079dee3b5f4fdc27",
-                "stamm/16.js": "5cc527c167378f17",
+                "stamm/16.js": "b16e84a6cceb19dd",
                 "stamm/17a.js": "3171fb2dc0f872b0",
                 "stamm/17b.js": "e9a220a4e1af8dbf",
-                "stamm/17c.js": "d848b70d6294c19a",
+                "stamm/17c.js": "702a08345f3246be",
                 "stamm/18.js": "f80bf3706d0e0e6c",
                 "stamm/19.js": "2bb652c80a58c2a9",
-                "stamm/20a.js": "32632c152bc477e2",
-                "stamm/20b.js": "1998e327e7e3c5f2",
+                "stamm/20a.js": "1d5a51bec0726efe",
+                "stamm/20b.js": "53573e26535aa7a3",
                 "stamm/20c.js": "739572d20e186d24",
-                "stamm/20d.js": "7fc3616ed9846a7b",
+                "stamm/20d.js": "e592b8af34c2ac9c",
                 "stamm/21.js": "9331638bf60daaa9",
                 "stamm/22.js": "75414b2476ec337f",
                 "stamm/23a.js": "6f7beb260c70c123",
                 "stamm/23b.js": "d311e43d74ce825d",
-                "stamm/24.js": "e600eb9cc991ce4c",
+                "stamm/24.js": "f91a630f9f2e5b4b",
                 "stamm/25a.js": "0bd3409907df2983",
-                "stamm/25b.js": "7f2302d3be1d5750",
+                "stamm/25b.js": "a21a3054484ddc2c",
                 "stamm/25c.js": "8b1cb72fb388564f",
                 "stamm/26a.js": "b08c3819d8cdd7f6",
-                "stamm/26b.js": "3d92ab3600500c1c",
-                "stamm/26c.js": "498ce5808c916fec"
+                "stamm/26b.js": "1d4e538256cbe21e",
+                "stamm/26c.js": "8d43f7954cb8c918"
             }
         }
     },
@@ -192,20 +192,20 @@
             ],
             "ist": {
                 "labor": {
-                    "Y": 0.0948,
-                    "rgb": "0.1127/0.0924/0.0662",
-                    "pixel": 15755
+                    "Y": 0.0947,
+                    "rgb": "0.1125/0.0922/0.0661",
+                    "pixel": 15765
                 },
                 "welt": {
-                    "Y": 0.0933,
-                    "rgb": "0.111/0.0908/0.0651",
-                    "pixel": 6121,
+                    "Y": 0.0929,
+                    "rgb": "0.1106/0.0905/0.0648",
+                    "pixel": 6103,
                     "stufen": [
                         0,
                         1
                     ]
                 },
-                "verhaeltnis": 1.0161
+                "verhaeltnis": 1.0194
             },
             "ratsche": 0.016
         },
@@ -251,20 +251,20 @@
             ],
             "ist": {
                 "labor": {
-                    "Y": 0.1796,
-                    "rgb": "0.1276/0.2087/0.0447",
-                    "pixel": 143142
+                    "Y": 0.1797,
+                    "rgb": "0.1277/0.2087/0.0447",
+                    "pixel": 143113
                 },
                 "welt": {
                     "Y": 0.1639,
-                    "rgb": "0.0867/0.199/0.0428",
-                    "pixel": 57274,
+                    "rgb": "0.0867/0.1991/0.0428",
+                    "pixel": 57292,
                     "stufen": [
                         0,
                         1
                     ]
                 },
-                "verhaeltnis": 1.0958
+                "verhaeltnis": 1.0964
             },
             "ratsche": 0.0915
         },
@@ -423,7 +423,7 @@
                 "welt": {
                     "Y": 0.159,
                     "rgb": "0.2776/0.131/0.0869",
-                    "pixel": 167927,
+                    "pixel": 167919,
                     "stufen": [
                         1
                     ]
@@ -577,19 +577,19 @@
             ],
             "ist": {
                 "labor": {
-                    "Y": 0.0608,
-                    "rgb": "0.1218/0.0463/0.025",
-                    "pixel": 74503
+                    "Y": 0.0609,
+                    "rgb": "0.122/0.0464/0.0251",
+                    "pixel": 74293
                 },
                 "welt": {
-                    "Y": 0.155,
-                    "rgb": "0.218/0.1405/0.1136",
-                    "pixel": 36114,
+                    "Y": 0.1547,
+                    "rgb": "0.2177/0.1401/0.1133",
+                    "pixel": 36070,
                     "stufen": []
                 },
-                "verhaeltnis": 0.3923
+                "verhaeltnis": 0.3937
             },
-            "ratsche": 0.9357
+            "ratsche": 0.9322
         },
         {
             "id": "fell",
@@ -626,19 +626,19 @@
             ],
             "ist": {
                 "labor": {
-                    "Y": 0.169,
-                    "rgb": "0.2061/0.1637/0.1124",
-                    "pixel": 152717
+                    "Y": 0.1688,
+                    "rgb": "0.2058/0.1635/0.1123",
+                    "pixel": 152889
                 },
                 "welt": {
-                    "Y": 0.1856,
-                    "rgb": "0.2278/0.1796/0.1218",
-                    "pixel": 49722,
+                    "Y": 0.1607,
+                    "rgb": "0.1937/0.156/0.1102",
+                    "pixel": 42204,
                     "stufen": []
                 },
-                "verhaeltnis": 0.9106
+                "verhaeltnis": 1.0504
             },
-            "ratsche": 0.0665
+            "ratsche": 0.0492
         },
         {
             "id": "klinge",
@@ -694,9 +694,9 @@
             "ist": {
                 "kL": 0.7482,
                 "ausgabe": [
-                    184,
-                    191,
-                    182
+                    186,
+                    193,
+                    184
                 ]
             },
             "ratsche": 0.866
@@ -714,29 +714,29 @@
         },
         "portale": {
             "ist": {
-                "kL": 0.8026,
+                "kL": 0.8012,
                 "ausgabe": [
-                    197,
+                    196,
                     207,
                     202
                 ]
             },
-            "ratsche": 0.9359
+            "ratsche": 0.9345
         },
         "schmiede": {
             "ist": {
                 "kL": 0.6427,
                 "ausgabe": [
-                    173,
-                    161,
-                    149
+                    177,
+                    165,
+                    153
                 ]
             },
             "ratsche": 0.7141
         },
         "fachwerk": {
             "ist": {
-                "kL": 0.4813,
+                "kL": 0.4814,
                 "ausgabe": [
                     197,
                     194,
@@ -749,9 +749,9 @@
             "ist": {
                 "kL": 0.699,
                 "ausgabe": [
-                    169,
-                    180,
-                    177
+                    171,
+                    182,
+                    179
                 ]
             },
             "ratsche": 0.798
@@ -760,9 +760,9 @@
             "ist": {
                 "kL": 0.8802,
                 "ausgabe": [
-                    253,
-                    253,
-                    253
+                    255,
+                    255,
+                    255
                 ]
             },
             "ratsche": 1.0285
