@@ -1954,18 +1954,17 @@ class AnazhRealm_Z14 {
         return A.n++;
     }
 
-    // DER EINE MEMBRAN-GRAPH JE GESETZ (1310-18): die Formeln der Shell über den Stoff-Werten des zeichnenden Tors
-    // (`userData.tor`, `_membranMaterialFor`). Die vier Innenwelt-Modi zweigen an ihrem Fenster-Gewicht (Uniform-Zweig: alle
-    // Fragmente eines Tors nehmen denselben Weg, ein Tor rechnet nur seine Modi); was die Zweige und der Rest des Schritts
-    // teilen, steht vor den Zweigen als Variable (`toVar` legt die Zuweisung an ihrer Stelle im Stapel ab — im Zweig
-    // zugewiesen, läse der Rest sie ungesetzt).
+    // DER EINE MEMBRAN-GRAPH JE GESETZ — SPIKE D8a (die Membran ohne Milch): die Öffnung ist EIN Parallaxen-Zugriff auf ein
+    // Panorama (`_torPanorama`, Equirekt rgba16float; die Ziel-Welt kommt im Bau aus dem EINEN Studio-Export je SHA) über einer
+    // Stellvertreter-Kugel um die Tor-Mitte (Lagarde & Zanuttini 2012: der Strahl trifft die Kugel, die Richtung von der Mitte
+    // zum Treffer liest das Panorama), darüber der Seifenfilm (Dünnschicht-Interferenz: die Filmdicke aus dem Bogen-Radius und
+    // der Welle, die Bänder aus `membranPalette`, Gewicht Fresnel + Rand). Der 12-Schritt-March und der Nebel-Kasten fallen.
+    // Die Welle bleibt (positionNode); ihre Normale rechnet der Vertex (wie die Shell), das Fragment liest sie interpoliert.
     _membranGraph(MG) {
         if (!this._membranGraphen) this._membranGraphen = new WeakMap();
         const da = this._membranGraphen.get(MG);
         if (da) return da;
         const TSL = THREE.TSL;
-        const MM = MG.march;
-        const ML = MG.look;
         const W = (p, typ) => this._stoffWert(TSL, "userData.tor." + p, typ);
         const time = W("u.time.value");
         const camL = W("u.camL.value", "vec3");
@@ -1975,8 +1974,6 @@ class AnazhRealm_Z14 {
         const ga = W("a", "vec4"); // centerY · rimAx · rimAy · swirl
         const gb = W("b", "vec4"); // wave · left · spanW · baseY
         const gc = W("c", "vec4"); // height · step · fractal · twist
-        const gd = W("d", "vec4"); // frq · spF · open · reflect
-        const win = W("w", "vec4");
         const zeile = W("zeile");
         const vPA = W("pa", "vec3");
         const vPB = W("pb", "vec3");
@@ -1984,7 +1981,6 @@ class AnazhRealm_Z14 {
         const vPD = W("pd", "vec3");
         const F = (x) => TSL.float(x);
         const pal = (t) => vPA.add(vPB.mul(TSL.cos(vPC.mul(t).add(vPD).mul(F(6.28318)))));
-        // hash/vn/fbm — die Shell-Formeln als Fn (das W9-Himmel-Muster).
         const hash2 = TSL.Fn(([q]) => {
             const p = TSL.fract(q.mul(TSL.vec2(123.34, 345.45)));
             const p2 = p.add(TSL.dot(p, p.add(F(34.345))));
@@ -2044,161 +2040,175 @@ class AnazhRealm_Z14 {
         const xy = TSL.positionGeometry.xy;
         const d0 = Hfull(xy);
         const positionNode = TSL.vec3(xy.x, xy.y, d0);
-        // ── Fragment: Beschnitt (Alpha-Fold) aus der Zeile des Bogen-Atlas + Raymarch (12 Schritte entfaltet) ──
+        // Normale und Auslenkung im VERTEX (die Shell-Differenzen je Ecke), interpoliert gelesen
+        const e = MG.eps;
+        const dxx = Hfull(xy.add(TSL.vec2(e, 0.0)));
+        const dyy = Hfull(xy.add(TSL.vec2(0.0, e)));
+        const nrmV = TSL.varying(
+            TSL.normalize(TSL.cross(TSL.vec3(e, 0.0, dxx.sub(d0)), TSL.vec3(0.0, e, dyy.sub(d0)))),
+            "vTorNormale"
+        );
+        const d0V = TSL.varying(d0, "vTorWelle");
+        // ── Fragment: Beschnitt (Alpha-Fold) aus der Zeile des Bogen-Atlas ──
         const uu = TSL.clamp(xy.x.sub(gb.y).div(gb.z), F(0.0), F(1.0));
         const A = this._torProfile;
         const profil = TSL.texture(A.tex, TSL.vec2(uu, zeile.add(0.5).div(A.uHoch)));
         A.knoten.push(profil);
         const topY = gb.w.add(profil.r.mul(gc.x));
         const keep = TSL.step(xy.y, topY.add(F(0.002)));
-        // Normale aus der Wellen-Ableitung (Fragment-Rekonstruktion — exakt die
-        // Shell-Differenzen, nur pro Fragment statt pro Vertex interpoliert).
-        const e = MG.eps;
-        const dxx = Hfull(xy.add(TSL.vec2(e, 0.0)));
-        const dyy = Hfull(xy.add(TSL.vec2(0.0, e)));
-        const nrm = TSL.normalize(TSL.cross(TSL.vec3(e, 0.0, dxx.sub(d0)), TSL.vec3(0.0, e, dyy.sub(d0))));
-        const vLocal = TSL.vec3(xy.x, xy.y, d0);
+        const vLocal = TSL.vec3(xy.x, xy.y, d0V);
         const Vd = TSL.normalize(camL.sub(vLocal));
         const rd = Vd.negate();
-        const frq = gd.x;
+        const N0 = TSL.normalize(nrmV);
+        const N = N0.mul(TSL.step(F(0.0), TSL.dot(N0, Vd)).mul(2.0).sub(1.0)); // dem Auge zugewandt (beidseitig)
+        // ── DIE PARALLAXE: der Strahl trifft die Stellvertreter-Kugel (Radius = Tor-Höhe × 4) um die Tor-Mitte ──
         const center3 = TSL.vec3(0.0, ga.x, 0.0);
-        const marsch = TSL.Fn(() => {
-            const inter = TSL.vec3(0.0, 0.0, 0.0).toVar();
-            for (let i = 0; i < MM.steps; i++) {
-                const q = vLocal.add(rd.mul(gc.y.mul(i).add(F(MM.t0))));
-                const rel = q.sub(center3);
-                const r = TSL.max(TSL.length(rel.xy), F(0.003)).toVar();
-                const ang = TSL.atan(rel.y, rel.x).toVar();
-                const dep = r
-                    .mul(F(MM.depK[1]))
-                    .add(gc.y.mul(i * MM.depK[0]))
-                    .toVar();
-                const sp = time.mul(gd.y).toVar();
-                const lp = TSL.log(r).mul(F(MM.lpK)).sub(sp).toVar();
-                const swirl = ang.add(ga.w.div(r)).toVar();
-                const v = F(0.0).toVar();
-                const tc = F(0.0).toVar();
-                TSL.If(win.x.greaterThan(0.001), () => {
-                    const K = MM.wurm;
-                    const s0 = TSL.sin(
-                        lp
-                            .mul(frq.mul(K[0]))
-                            .add(swirl.mul(F(K[1])))
-                            .add(dep.mul(gc.w.mul(K[2])))
-                    )
-                        .mul(0.5)
-                        .add(0.5);
-                    v.addAssign(s0.mul(s0).mul(win.x));
-                    tc.addAssign(TSL.fract(lp.mul(F(K[3])).add(swirl.mul(F(K[4] / 6.28318)))).mul(win.x));
-                });
-                TSL.If(win.y.greaterThan(0.001), () => {
-                    const K = MM.facet;
-                    const KK = F(K[0]).add(gc.z.mul(K[1]));
-                    const fa = TSL.abs(TSL.mod(swirl, F(6.28318).div(KK)).sub(F(3.14159).div(KK)));
-                    const cc = TSL.cos(fa.mul(KK)).mul(0.5).add(0.5);
-                    const s1 = TSL.sin(lp.mul(frq.mul(K[2])))
-                        .mul(0.5)
-                        .add(0.5);
-                    v.addAssign(cc.mul(cc).mul(cc).mul(s1).mul(win.y));
-                    tc.addAssign(TSL.fract(fa.mul(F(K[3])).add(lp.mul(F(K[4])))).mul(win.y));
-                });
-                TSL.If(win.z.greaterThan(0.001), () => {
-                    const K = MM.plasma;
-                    const warp = fbmN(TSL.vec2(lp.mul(frq.mul(K[0])), dep.mul(F(K[1])).add(sp.mul(F(K[2])))), 4);
-                    const pf0 = fbmN(
-                        TSL.vec2(ang.mul(F(K[3])).add(warp.mul(F(K[4]))), dep.mul(frq.mul(K[5])).sub(sp.mul(F(K[6])))),
-                        4
-                    );
-                    const pf = F(1.0).sub(TSL.abs(pf0.mul(2.0).sub(1.0)));
-                    const plasma = TSL.pow(TSL.clamp(pf, F(0.0), F(1.0)), F(K[7]));
-                    v.addAssign(plasma.mul(win.z.mul(K[8])));
-                    tc.addAssign(
-                        TSL.fract(
-                            pf
-                                .mul(F(K[9]))
-                                .add(lp.mul(F(K[10])))
-                                .add(dep.mul(F(K[11])))
-                        ).mul(win.z)
-                    );
-                });
-                TSL.If(win.w.greaterThan(0.001), () => {
-                    const K = MM.nebel;
-                    const n1 = fbmN(
-                        TSL.vec2(
-                            ang.mul(frq.mul(K[0])).add(TSL.sin(lp).mul(F(K[1]))),
-                            dep.mul(F(K[2])).add(sp.mul(F(K[3])))
-                        ),
-                        4
-                    );
-                    const n2 = fbmN(
-                        TSL.vec2(ang.mul(frq.mul(K[4])).sub(n1.mul(F(K[5]))), dep.mul(F(K[6])).add(sp.mul(F(K[7])))),
-                        4
-                    );
-                    const neb = TSL.pow(TSL.clamp(n1.mul(n2).mul(F(K[8])), F(0.0), F(1.0)), F(K[9]));
-                    v.addAssign(neb.mul(win.w.mul(K[10])));
-                    tc.addAssign(TSL.fract(n1.mul(F(K[11])).add(dep.mul(F(K[12])))).mul(win.w));
-                });
-                const vc = TSL.max(F(0.0), v.sub(F(MM.vCut[0]))).mul(F(MM.vCut[1]));
-                const g = vc.div(
-                    F(1.0)
-                        .add(r.mul(r).mul(F(MM.gDen[0])))
-                        .add(dep.mul(F(MM.gDen[1])))
-                );
-                inter.addAssign(
-                    pal(tc)
-                        .mul(g)
-                        .mul(F(Math.pow(MM.att, i)))
-                );
-            }
-            return inter;
-        });
-        const inter = marsch();
-        const N = nrm;
-        const Rf = TSL.reflect(Vd.negate(), N);
-        const st = TSL.step(
-            F(ML.star[0]),
-            hash2(TSL.floor(Rf.xy.mul(F(ML.star[1])).add(TSL.vec2(Rf.z.mul(F(ML.star[2])), Rf.z.mul(F(ML.star[2]))))))
-        );
-        const sky = pal(Rf.y.mul(F(ML.skyK[0])).add(F(ML.skyK[1])))
-            .mul(F(ML.skyK[2]))
-            .add(TSL.vec3(st, st, st).mul(F(ML.star[3])));
-        const fres = TSL.pow(F(1.0).sub(TSL.max(TSL.dot(N, Vd), F(0.0))), F(ML.fresPow));
-        const spec = TSL.pow(
-            TSL.max(TSL.dot(Rf, TSL.normalize(TSL.vec3(ML.specDir[0], ML.specDir[1], ML.specDir[2]))), F(0.0)),
-            F(ML.specPow)
-        );
-        const dc = TSL.length(vLocal.sub(center3).xy);
-        const core = TSL.exp(dc.mul(dc).negate().mul(F(ML.core[0])))
-            .mul(F(ML.core[1]).add(gd.z.mul(ML.core[2])))
-            .mul(
-                TSL.sin(time.mul(F(ML.core[5])))
-                    .mul(F(ML.core[4]))
-                    .add(F(ML.core[3]))
-            );
-        let col = inter
-            .mul(F(ML.mixK[0]))
-            .add(sky.mul(fres).mul(gd.w.mul(ML.mixK[1])))
-            .add(TSL.vec3(ML.specCol[0], ML.specCol[1], ML.specCol[2]).mul(spec).mul(gd.w.mul(ML.specK)))
-            .add(pal(F(ML.corePal)).mul(core).mul(F(ML.mixK[3])));
-        col = col.mul(
-            act
-                .mul(F(ML.finalK[2]))
-                .add(F(ML.finalK[1]))
-                .mul(F(ML.finalK[0]))
-                .mul(pulse.mul(F(ML.finalK[4])).add(F(ML.finalK[3])))
-        );
-        // ACES (Shell-verbatim) — die Welt-Ausgabe-Transform bleibt Leser-Sache.
-        const aces = (x) =>
-            TSL.clamp(x.mul(x.mul(2.51).add(0.03)).div(x.mul(x.mul(2.43).add(0.59)).add(0.14)), F(0.0), F(1.0));
-        // DIE SHELL MALT IN BILD-WERTEN (K64-n1): ihr ACES endet im Anzeige-Wert, im Labor ist er das Pixel (r128-ShaderMaterial
-        // ohne Ausgabe-Schritt). Die Welt liest jeden Stoff linear und wandelt EINMAL aus (Belichtung · ACES · sRGB); roh gelesen
-        // hob die sRGB-Kurve die dunklen Bänder an (Anzeige 0,1 → 0,39), die Membran stand milchig-weiß. Das FARB-GESETZ
-        // (Lehre 21: Bild-Wert = sRGB, Stoff linear) liest den Anzeige-Wert ins Lineare zurück — `anzeige` bleibt für die Linse
-        // lesbar (gate:portal-membran H: ihr Selbsttest zeichnet ihn roh).
-        const anzeige = aces(col);
-        const G = { positionNode, colorNode: TSL.vec4(TSL.sRGBTransferEOTF(anzeige), 1.0), opacityNode: keep, anzeige };
+        const R = gc.x.mul(4.0);
+        const oc = vLocal.sub(center3);
+        const bq = TSL.dot(oc, rd);
+        const cq = TSL.dot(oc, oc).sub(R.mul(R));
+        const tq = bq.negate().add(TSL.sqrt(TSL.max(bq.mul(bq).sub(cq), F(0.0))));
+        // die Welle bricht den Blick ein wenig (die Film-Normale verschiebt die Richtung)
+        const dir = TSL.normalize(oc.add(rd.mul(tq)).div(R).sub(TSL.vec3(N.x, N.y, F(0.0)).mul(0.12)));
+        const pano = this._torPanorama();
+        const ziel = TSL.texture(pano, TSL.equirectUV(dir)).rgb;
+        // ── DER SEIFENFILM: Dicke aus Bogen-Radius (die Ellipse rimAx × rimAy) und Welle, Gangunterschied je Blickwinkel ──
+        const rr = TSL.length(xy.sub(centerXY).div(TSL.vec2(ga.y, ga.z)));
+        const cosI = TSL.max(TSL.dot(N, Vd), F(0.0));
+        const cosT = TSL.sqrt(F(1.0).sub(F(1.0).sub(cosI.mul(cosI)).div(F(1.7689)))); // n = 1,33
+        const dicke = F(0.3)
+            .add(rr.mul(0.85))
+            .add(d0V.div(TSL.max(waveDepth, F(1e-3))).mul(0.22))
+            .add(TSL.sin(time.mul(0.37).add(xy.y.mul(0.9))).mul(0.06));
+        const film = TSL.max(pal(dicke.mul(cosT).mul(2.0)), F(0.0));
+        const fres = F(0.04).add(F(0.96).mul(TSL.pow(F(1.0).sub(cosI), F(5.0))));
+        const rand = TSL.smoothstep(F(0.6), F(1.0), rr);
+        const filmW = TSL.clamp(fres.add(rand.mul(0.5)).add(F(0.12)), F(0.0), F(1.0)).mul(act.mul(0.35).add(0.65));
+        // der Film spiegelt die Welt (dasselbe Panorama in der Spiegel-Richtung) in seinen Interferenz-Farben
+        const Rf = TSL.reflect(rd, N);
+        const spiegel = TSL.texture(pano, TSL.equirectUV(Rf)).rgb;
+        const glanz = film.mul(spiegel).mul(F(1.6)).mul(pulse.mul(0.15).add(0.9));
+        const col = TSL.mix(ziel, glanz, filmW);
+        const G = { positionNode, colorNode: TSL.vec4(col, 1.0), opacityNode: keep, anzeige: col };
         this._membranGraphen.set(MG, G);
         return G;
+    }
+
+    // DAS PANORAMA DER ÖFFNUNG — SPIKE D8a: ein beliebiges Equirekt (512×256 rgba16float), hier einmal aus der eigenen Welt
+    // gerendert (Würfel-Kamera 80 m westlich der Genesis-Mitte, 12 m über dem Boden, Membranen und Spieler verborgen), dann
+    // ins Equirekt gefaltet. Im Bau liest die Membran hier den EINEN Studio-Export des Ziels.
+    _torPanorama() {
+        if (this._torPano) return this._torPano.texture;
+        const T = THREE;
+        const rt = new T.RenderTarget(512, 256, { type: T.HalfFloatType, depthBuffer: false });
+        rt.texture.name = "tor-panorama";
+        rt.texture.minFilter = T.LinearFilter;
+        rt.texture.magFilter = T.LinearFilter;
+        rt.texture.generateMipmaps = false;
+        this._torPano = rt;
+        this._torPanoMal();
+        return rt.texture;
+    }
+
+    // Das Panorama malen: sechs 90°-Blicke (je ein 2D-Ziel, dieselbe Matrix für Wurf und Lesen — keine Würfel-Konvention),
+    // dann ins Equirekt gefaltet. Die Pipelines eines neuen Ziels entstehen asynchron — der Spike malt mehrmals, bis es ruht.
+    _torPanoMal() {
+        const T = THREE;
+        const TSL = T.TSL;
+        const st = this.state;
+        const rend = st.renderer;
+        const rt = this._torPano;
+        if (!rt || !rend || rend._isHeadlessNull) return;
+        // QuadMesh trägt der THREE-Gürtel nicht (three-bootstrap): der Spike holt es aus dem Modul (window.__WG)
+        const WG = (typeof window !== "undefined" && window.__WG) || T;
+        if (!this._torPanoKamera) {
+            const m = this._genesisMitte();
+            const x = m.x - 80;
+            const z = m.z;
+            const p = new T.Vector3(x, this._voxelSurfaceY(x, z) + 12, z);
+            const achsen = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]];
+            const oben = [[0, 1, 0], [0, 1, 0], [0, 0, -1], [0, 0, 1], [0, 1, 0], [0, 1, 0]];
+            const dir = (() => {
+                const u = TSL.uv();
+                const az = u.x.sub(0.5).mul(Math.PI * 2);
+                const el = u.y.sub(0.5).mul(Math.PI);
+                return TSL.vec3(TSL.cos(el).mul(TSL.cos(az)), TSL.sin(el), TSL.cos(el).mul(TSL.sin(az)));
+            })();
+            const ad = TSL.abs(dir);
+            let col = TSL.vec3(0.0, 0.0, 0.0);
+            const flaechen = [];
+            for (let i = 0; i < 6; i++) {
+                const cam = new T.PerspectiveCamera(90, 1, 0.5, 9000);
+                cam.position.copy(p);
+                cam.up.set(oben[i][0], oben[i][1], oben[i][2]);
+                cam.lookAt(p.x + achsen[i][0], p.y + achsen[i][1], p.z + achsen[i][2]);
+                cam.updateMatrixWorld(true);
+                const ziel = new T.RenderTarget(256, 256, { type: T.HalfFloatType });
+                ziel.texture.minFilter = T.LinearFilter;
+                ziel.texture.magFilter = T.LinearFilter;
+                ziel.texture.generateMipmaps = false;
+                // die Blick-Projektion ohne Versatz: Richtung → Bild-Koordinate dieser Fläche
+                const rot = cam.matrixWorldInverse.clone().setPosition(0, 0, 0);
+                const M = TSL.uniform(new T.Matrix4().multiplyMatrices(cam.projectionMatrix, rot));
+                const clip = M.mul(TSL.vec4(dir, 1.0));
+                // ein Render-Ziel liegt in WebGPU kopfüber zur Bild-Koordinate (Zeile 0 oben): die Zeile spiegeln
+                const ndc = clip.xy.div(clip.w);
+                const uv = TSL.vec2(ndc.x.mul(0.5).add(0.5), ndc.y.mul(-0.5).add(0.5));
+                const k = achsen[i].findIndex((v) => v !== 0);
+                const komp = [dir.x, dir.y, dir.z][k];
+                const akomp = [ad.x, ad.y, ad.z][k];
+                const andere = [ad.x, ad.y, ad.z].filter((_v, j) => j !== k);
+                const maske = TSL.step(andere[0], akomp)
+                    .mul(TSL.step(andere[1], akomp))
+                    .mul(achsen[i][k] > 0 ? TSL.step(0.0, komp) : TSL.step(komp, 0.0));
+                col = col.add(TSL.texture(ziel.texture, uv).rgb.mul(maske));
+                flaechen.push({ cam, ziel });
+            }
+            const mat = new T.MeshBasicNodeMaterial();
+            mat.colorNode = col;
+            this._torPanoKamera = { flaechen, quad: new WG.QuadMesh(mat) };
+        }
+        const K = this._torPanoKamera;
+        const versteckt = [];
+        st.scene.traverse((o) => {
+            const inv = o.userData && o.userData.inventar;
+            if ((inv === "portal-membran" || inv === "portal-nebel") && o.visible) {
+                o.visible = false;
+                versteckt.push(o);
+            }
+        });
+        if (st.playerMesh && st.playerMesh.visible) {
+            st.playerMesh.visible = false;
+            versteckt.push(st.playerMesh);
+        }
+        // die Würfe gehen durch die EINE Kamera der Welt (die Diät der Welt führt Buch über sie; eine fremde Kamera zeichnete
+        // jede Fläche mit den Matrizen der ersten): Pose, Öffnung und Seitenverhältnis je Fläche, danach zurück
+        const alt = rend.getRenderTarget();
+        const kam = st.camera;
+        const sp = kam.position.clone();
+        const sq = kam.quaternion.clone();
+        const sf = kam.fov;
+        const sa = kam.aspect;
+        for (const F of K.flaechen) {
+            kam.position.copy(F.cam.position);
+            kam.quaternion.copy(F.cam.quaternion);
+            kam.fov = 90;
+            kam.aspect = 1;
+            kam.updateProjectionMatrix();
+            kam.updateMatrixWorld(true);
+            rend.setRenderTarget(F.ziel);
+            rend.render(st.scene, kam);
+        }
+        kam.position.copy(sp);
+        kam.quaternion.copy(sq);
+        kam.fov = sf;
+        kam.aspect = sa;
+        kam.updateProjectionMatrix();
+        kam.updateMatrixWorld(true);
+        for (const o of versteckt) o.visible = true;
+        rend.setRenderTarget(rt);
+        K.quad.render(rend);
+        rend.setRenderTarget(alt);
     }
 
     // ═══ PORTA-NEBEL: mu.fog erreicht die Welt ═══
@@ -2632,26 +2642,8 @@ class AnazhRealm_Z14 {
         // das Culling bleibt an: die Hülle der geteilten Geometrie trägt die Welle (`_membranGeometryFor`)
         mesh.userData.inventar = "portal-membran"; // Identitäts-Stempel (gate:asset-inventory-Familie)
         st.scene.add(mesh);
-        // Bodennebel-Kasten am Tor-Fuß, wo das Gesetz des Tors Nebel trägt (mu.fog > 0): sein Bau bricht laut beim Namen
-        // wie die Membran (K22). Reiner Render, nie Blocker (Hit-Tests sehen ihn nicht).
-        let nebel = null;
-        if (tor.mu && Number.isFinite(tor.mu.fog) && tor.mu.fog > 0) {
-            try {
-                const neb = this._nebelMaterialFor(tor, u);
-                nebel = new THREE.Mesh(this._nebelGeometryFor(tor), neb.mat);
-                nebel.position.copy(mesh.position);
-                nebel.rotation.y = mesh.rotation.y;
-                nebel.scale.copy(mesh.scale);
-                nebel.castShadow = false;
-                nebel.receiveShadow = false;
-                // der Kasten verformt nichts: seine Hülle ist exakt, das Culling bleibt an
-                nebel.visible = false; // der Tick weckt ihn nähe-aktiviert (act > 0.001)
-                nebel.userData.inventar = "portal-nebel"; // Identitäts-Stempel
-                st.scene.add(nebel);
-            } catch (err) {
-                throw this._stoffBruch(`der Portal-Nebel (${tor.gestalt})`, err);
-            }
-        }
+        // SPIKE D8a: der Nebel-Kasten fällt (die Öffnung ist Panorama + Film)
+        const nebel = null;
         this._portalMembranes.set(entry.id, { entry, tor, mesh, nebel, u, armed: true, lastLz: null });
     }
 
