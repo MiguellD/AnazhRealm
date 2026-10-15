@@ -270,6 +270,11 @@ function ortVerdikt(m) {
         fehl.push(
             `Laterne ${m.laterneWand} m vor einer Hauswand (Soll ≥ ${m.laterneWandSoll} m: die Wand trägt höchstens das Doppelte der Gasse)`
         );
+    // K66, Prüfung 2: keine Laterne steht mit ihrem Fuß im gemalten Weg (der Mast ist ein fester Blocker, `tritt` des Rezepts)
+    if (!(m.laterneWeg >= m.laterneWegSoll - 0.01))
+        fehl.push(
+            `Laterne ${m.laterneWeg} m neben dem Wegrand (Soll ≥ ${m.laterneWegSoll} m: der Fuß steht neben der Fahrbahn, nie in ihr)`
+        );
     if (!(m.vorplatzN > 0 && m.vorplatzOk === m.vorplatzN))
         fehl.push(
             `Stufe und Vorplatz bis zur Gasse auf dem Weg ${m.vorplatzOk}/${m.vorplatzN}${m.vorplatzFehl && m.vorplatzFehl.length ? ` (Haus ${m.vorplatzFehl.slice(0, 3).join(" · ")})` : ""}`
@@ -895,6 +900,8 @@ const FIXTURES = [
             laternenPlan: 6,
             laterneWand: 3.1,
             laterneWandSoll: 2.548,
+            laterneWeg: 1.55,
+            laterneWegSoll: 0.45,
             vorplatzOk: 16,
             vorplatzN: 16,
             terrasseWand: 120,
@@ -920,6 +927,7 @@ const FIXTURES = [
             haeuser: 12,
             wasserSlots: 4,
             laterneWand: 1.45,
+            laterneWeg: -1.2,
             vorplatzOk: 0,
             terrasseWiese: 87,
             terrasseHalm: 64,
@@ -935,6 +943,7 @@ const FIXTURES = [
                 /GT auf dem Dorfweg 5.2 m/.test(vs) &&
                 /Häuser 12\/16 des Exports \(4 Slots im Wasser/.test(vs) &&
                 /Laterne 1.45 m vor einer Hauswand/.test(vs) &&
+                /Laterne -1.2 m neben dem Wegrand/.test(vs) &&
                 /Stufe und Vorplatz bis zur Gasse auf dem Weg 0\/16/.test(vs) &&
                 /Wand der Terrasse mit Wiesen-Stoff 87\/120/.test(vs) &&
                 /Wand der Terrasse mit Halm-Grund 64\/120/.test(vs) &&
@@ -1161,6 +1170,11 @@ const FIXTURES = [
         // Seit K66 steht jede Laterne VOR der Wand (fachwerk `LATERNE_WAND` aus LICHT_GESETZ.laterne: die Wand trägt höchstens das
         // Doppelte der Gasse) — die Zahl hält dennoch: in einer beidseits bebauten Gasse fielen Laternen (5/14 7 < 9, 9/20 9 < 10);
         // gemessen wird darum Zahl UND Wand-Abstand jeder Laterne zum nächsten Grundriss (der OBB des Slots).
+        // K66, Prüfung 2 (die Laterne in der Fahrbahn): der Stand quer zur Gasse rückte bis rd.w/4 an die Achse — 123/292 Laternen
+        // der Pläne standen im Weg, der Mast ein fester Blocker der Welt. Gemessen je Laterne der Abstand zum Rand jedes Wegs
+        // (Straße und Feldweg, die Kapsel um die Achse mit der halben Breite, die der Wirt malt): Soll ≥ der Tritt des Rezepts
+        // (fachwerk AUSSTATTUNG laterne `tritt`) — der Fuß steht neben der Fahrbahn, nie in ihr; auch in der Stadt.
+        const trittR = FC.PRESETS.laterne.fx.tritt.r;
         const LGd = FC.LICHT_GESETZ.laterne;
         const wandSoll = Math.sqrt(Math.max(0, (LGd.hoeheM ** 2 + LGd.kernM ** 2) / 2 - LGd.kernM ** 2));
         const dorfLicht = (pl) => {
@@ -1180,12 +1194,29 @@ const FIXTURES = [
                     wand = Math.min(wand, uu > 0 ? (vv > 0 ? Math.hypot(uu, vv) : uu) : vv > 0 ? vv : Math.max(uu, vv));
                 }
             const wandOk = !(wand < wandSoll - 0.01);
+            let weg = Infinity;
+            for (const l of pl.laternen || [])
+                for (const rd of [...(pl.roads || []), ...(pl.feldwege || [])]) {
+                    const P = rd.pts || [];
+                    const halb = Math.max(1.2, rd.w || 2.5) / 2;
+                    for (let i = 0; i + 1 < P.length; i++) {
+                        const dx = P[i + 1].x - P[i].x;
+                        const dz = P[i + 1].z - P[i].z;
+                        const L2 = dx * dx + dz * dz;
+                        const t =
+                            L2 > 1e-9 ? Math.max(0, Math.min(1, ((l.x - P[i].x) * dx + (l.z - P[i].z) * dz) / L2)) : 0;
+                        weg = Math.min(weg, Math.hypot(l.x - P[i].x - dx * t, l.z - P[i].z - dz * t) - halb);
+                    }
+                }
+            const wegOk = !(weg < trittR - 0.01);
             return {
                 n,
                 soll,
                 wand: Math.round(wand * 100) / 100,
+                weg: Math.round(weg * 100) / 100,
+                wegOk,
                 wegM: Math.round(wegM),
-                ok: (!(wegM > 0) || n >= soll) && wandOk,
+                ok: (!(wegM > 0) || n >= soll) && wandOk && wegOk,
             };
         };
         const lichtFehl = [];
@@ -1199,6 +1230,8 @@ const FIXTURES = [
             [11, 40],
             [5, 14],
             [9, 20],
+            [7, 16],
+            [2, 10],
         ])
             for (const epoche of [undefined, "antike"]) {
                 const pl = FC.exportSettlement({ seed, nH, epoche });
@@ -1206,19 +1239,37 @@ const FIXTURES = [
                 lichtN++;
                 if (!d.ok)
                     lichtFehl.push(
-                        `${seed}/${nH}/${epoche || "-"}: ${d.n} Laternen (Soll ≥ ${d.soll}, ${d.wegM} m Weg), die nächste ${d.wand} m vor einer Wand (Soll ≥ ${wandSoll.toFixed(2)} m)`
+                        `${seed}/${nH}/${epoche || "-"}: ${d.n} Laternen (Soll ≥ ${d.soll}, ${d.wegM} m Weg), die nächste ${d.wand} m vor einer Wand (Soll ≥ ${wandSoll.toFixed(2)} m), die nächste ${d.weg} m neben dem Wegrand (Soll ≥ ${trittR} m)`
                     );
             }
+        // die Stadt der Moderne (der Zweig der Gas- und Elektro-Laternen, laterneQuer wie im Dorf): kein Fuß im Weg
+        for (const [seed, nH, epoche] of [[3, 30, "moderne"]]) {
+            const d = dorfLicht(FC.exportSettlement({ seed, nH, epoche }));
+            lichtN++;
+            if (!d.wegOk)
+                lichtFehl.push(
+                    `${seed}/${nH}/${epoche}: die nächste Laterne ${d.weg} m neben dem Wegrand (Soll ≥ ${trittR} m)`
+                );
+        }
         check(
-            `DAS DORF-LICHT: jeder Plan mit Wegen trägt je Platz und je 25 m Weg eine Laterne, jede vor der Wand (${lichtN} Pläne)`,
+            `DAS DORF-LICHT: jeder Plan mit Wegen trägt je Platz und je 25 m Weg eine Laterne, jede vor der Wand und mit dem Fuß neben dem Weg (${lichtN} Pläne)`,
             lichtFehl.length === 0,
             lichtFehl.slice(0, 3).join(" · ")
         );
         {
             const pl = FC.exportSettlement({ seed: 7, nH: 12 });
             const o0 = pl.slots[0].obb;
+            const p0 = pl.roads[0].pts[2];
+            const w0 = pl.roads[0].w;
+            const inDerFahrbahn = dorfLicht(
+                Object.assign({}, pl, {
+                    laternen: pl.laternen.concat([
+                        { x: p0.x - Math.sin(p0.th) * (w0 / 4), z: p0.z + Math.cos(p0.th) * (w0 / 4), th: 0 },
+                    ]),
+                })
+            );
             check(
-                "Selbst-Test 15: derselbe Plan ohne Laternen fällt im Dorf-Licht, eine Laterne an der Wand (0,45 m wie bis K66) ebenso",
+                "Selbst-Test 15: derselbe Plan ohne Laternen fällt im Dorf-Licht, eine Laterne an der Wand (0,45 m wie bis K66) ebenso, eine in der Fahrbahn (rd.w/4 von der Achse wie bis K66-n4) am Weg",
                 dorfLicht(pl).ok &&
                     !dorfLicht(Object.assign({}, pl, { laternen: [] })).ok &&
                     !dorfLicht(
@@ -1231,7 +1282,10 @@ const FIXTURES = [
                                 },
                             ]),
                         })
-                    ).ok
+                    ).ok &&
+                    !inDerFahrbahn.ok &&
+                    !inDerFahrbahn.wegOk,
+                JSON.stringify({ weg: inDerFahrbahn.weg, wegOk: inDerFahrbahn.wegOk })
             );
         }
     }
@@ -1923,6 +1977,39 @@ const FIXTURES = [
                             }
                         }
                     res.laterneWand = Number.isFinite(lwMin) ? Math.round(lwMin * 100) / 100 : null;
+                    // DIE LATERNE NEBEN DER FAHRBAHN (K66, Prüfung 2: 9/9 Laternen des Auto-Dorfs standen 0,45–1,2 m im gemalten Weg):
+                    // je Laterne der Welt der Abstand zum Rand jedes Wegs der EINEN Wege-Karte (die Segmente der Straßen und Feldwege,
+                    // `_wegeFormAbstand`; der Tritt einer Ausstattung ist ein Segment ohne Länge und zählt nicht) — Soll: der Tritt des Rezepts
+                    const AR = r.constructor;
+                    const GZ = AR.GRUNDRISS_ZELLE;
+                    res.laterneWegSoll = globalThis.__fachwerkCore.PRESETS.laterne.fx.tritt.r;
+                    let lwegMin = Infinity;
+                    if (anker)
+                        for (const e of r.state.architectures) {
+                            if (r._lichtDatumDerGestalt(e) !== globalThis.__fachwerkCore.PRESETS.laterne?.fx?.licht)
+                                continue;
+                            if (Math.hypot(e.position.x - anker.x, e.position.z - anker.z) >= 250) continue;
+                            const x = e.position.x;
+                            const z = e.position.z;
+                            for (let a = -1; a <= 1; a++)
+                                for (let b = -1; b <= 1; b++) {
+                                    const l = r
+                                        ._grundrissStand()
+                                        .wege.get(
+                                            AR._grundrissSchluessel(Math.floor(x / GZ) + a, Math.floor(z / GZ) + b)
+                                        );
+                                    if (l)
+                                        for (const bb of l)
+                                            for (const f of bb.formen)
+                                                if (
+                                                    f.typ === "segment" &&
+                                                    f.kanal >= 0 &&
+                                                    Math.hypot(f.bx - f.ax, f.bz - f.az) > 0.01
+                                                )
+                                                    lwegMin = Math.min(lwegMin, AR._wegeFormAbstand(f, x, z));
+                                }
+                        }
+                    res.laterneWeg = Number.isFinite(lwegMin) ? Math.round(lwegMin * 100) / 100 : null;
                     // DIE STUFE VOR DER TÜR IST WEG (K66, Augen-Runde 15.10.: Gras wuchs über die Türtreppe): je Haus der Punkt 0,8 m
                     // vor der Mitte seiner Haustür liegt auf einer Fläche des Dorfs (`_aufWeg`: die Formen der EINEN Wege-Karte, die
                     // die Wiese über `_pfadFeldAt` und die Natur-Wand lesen) — Grundriss gegen Natur gilt auch für Treppe und Vorplatz
@@ -1937,8 +2024,6 @@ const FIXTURES = [
                     // Wiese liest das GEMALTE Feld (`_pfadFeldAt` → `_wegeFeldAt`: die Bytes der Wege-Karte, weich um ±randM) — zwei Formen, die sich
                     // nur berühren, tragen an der Naht je 0,5: auf der Achse der Tür bis in die Gasse (die erste Weg-Form, die kein
                     // Kasten ist) hält das Feld ≥ 0,9 (die Wiese ≤ 17 % ihrer Dichte). Die Karte zieht dafür an den Ort und zurück.
-                    const AR = r.constructor;
-                    const GZ = AR.GRUNDRISS_ZELLE;
                     const inGasse = (x, z) => {
                         const l = r
                             ._grundrissStand()
@@ -2338,6 +2423,8 @@ const FIXTURES = [
             laternenPlan: outO.laternenPlan,
             laterneWand: outO.laterneWand,
             laterneWandSoll: outO.laterneWandSoll,
+            laterneWeg: outO.laterneWeg,
+            laterneWegSoll: outO.laterneWegSoll,
             vorplatzOk: outO.vorplatzOk,
             vorplatzN: outO.vorplatzN,
             vorplatzFehl: outO.vorplatzFehl,
