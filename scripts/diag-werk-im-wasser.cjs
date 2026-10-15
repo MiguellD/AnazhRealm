@@ -726,7 +726,7 @@ async function probe(A) {
     // der Stufe 0), jedes andere misst seine Blocker. Gemessen wird jede Box, die den Boden trägt (Unterkante ≤ 0,6 m über
     // der Haus-Basis: das Podest, die Wände des Erdgeschosses, Treppe und Tritt — nie ein Balkon), auf einem Raster ≤ 1 m.
     // DAS WERK AN DER WAND (K66-2 N1): was hängt — das Rezept seiner Studio-Gestalt nennt den Ort „wand" (fachwerk PRESETS
-    // place.siteTag, die Wandlaterne) —, trägt keinen Boden: sein Fundament ist die Wand eines stehenden Hauses. Gemessen wird,
+    // fx.place.siteTag, die Wandlaterne) —, trägt keinen Boden: sein Fundament ist die Wand eines stehenden Hauses. Gemessen wird,
     // dass die Hülle eines Hauses (seine Boxen am Boden, wie das Fundament) höchstens `wandM` von der Achse des Werks liegt; das
     // Haus misst sein Fundament selbst. Ohne Haus hängt es an keiner Wand (ein Haus, das ins Wasser fiel, eine fremde Nummer).
     // Bis N1 suchte der Zensus an ihm die Box am Boden: „wandlaterne_dorf stand ohne Hülle".
@@ -735,7 +735,7 @@ async function probe(A) {
         const bp = st.blueprints && st.blueprints[e.type];
         const p =
             bp && typeof bp.studioGestalt === "string" && FCw && FCw.PRESETS ? FCw.PRESETS[bp.studioGestalt] : null;
-        return !!(p && p.place && p.place.siteTag === "wand");
+        return !!(p && p.fx && p.fx.place && p.fx.place.siteTag === "wand");
     };
     const traegerHaus = (e) => {
         for (const h of st.architectures) {
