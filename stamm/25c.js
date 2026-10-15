@@ -2495,7 +2495,7 @@ class AnazhRealm_Z25c {
         const warten = this._streuWartet(p);
         if (warten) luecke("streu", `${warten} Wald-Stücke warten auf ihre Gestalt`);
         const karten =
-            (this._impostorBakeQueue ? this._impostorBakeQueue.length : 0) + (this._impostorBakePending ? 1 : 0);
+            (this._impostorBakeQueue ? this._impostorBakeQueue.length : 0) + (this._impostorBakeFlug ? this._impostorBakeFlug.size : 0);
         if (karten) luecke("karten", `${karten} ferne Bäume werden gemalt`);
         return out;
     }

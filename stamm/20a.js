@@ -589,21 +589,48 @@ class AnazhRealm_Z20a {
     // (derselbe Boot-Blob, dieselbe Schale, dieselbe Platte) in einem zweiten Faden, geboren beim ersten Bake-Auftrag
     // (headless bäckt nie einer). Die EINE Schlange (`_foundryAuftrag`) bleibt — sie speist zwei Bahnen
     // (`_foundryPumpe`), und eine Karte nimmt der Geometrie keinen Platz mehr.
+    // DIE KARTEN BACKEN IN BAHNEN (K60-2): Radeon kalt bis zum ersten Bild buk EIN Bäcker 17 Karten nacheinander, je eine im
+    // Flug — er bootete erst beim ersten Karten-Auftrag (1,65 s, 8 s nach der Navigation), jede Karte wartete danach auf den
+    // Rundlauf durch den vollen Haupt-Faden, und die Bäume der Mesh-Zone, deren Stufe die Karte ist, warteten mit (die Werk-
+    // Fäden ruhten von 10 bis 16 s, der Bäcker lief bis 19 s). Jetzt backen so viele Bäcker-Fäden wie Werk-Fäden
+    // (`_foundryFaedenZahl`, dasselbe Gesetz der Kerne), je eine Karte im Flug (`_tickImpostorBake`); geboren werden sie mit
+    // dem Studio, sobald ein echter Renderer zeichnet (`_foundryHelfer`) — headless bäckt nie einer, dort gebiert sie wie
+    // bisher erst ein Karten-Auftrag. Der erste Bäcker heißt weiter `f.baecker` (Bahn "baecker"), jeder weitere trägt seinen
+    // Faden in der Nummer (`imp` + `b<k>_`, Bahn "baecker<k>", `_foundryBahn`).
     _foundryBaecker(f) {
         if (f.baecker || !f.bootUrl) return f.baecker;
-        const w = new Worker(f.bootUrl);
-        f.baecker = w;
-        // ein Boot-/Laufzeit-Fehler des Bäckers bricht LAUT (K22): ohne ihn wartet jede Karte für immer in der Schlange
-        w.onerror = (ev) =>
-            this._stoffBruch("der Bäcker-Faden fällt — " + ((ev && ev.message) || "Boot-/Laufzeit-Fehler"));
-        w.onmessage = (ev) => {
-            const m = ev.data;
-            if (!m || typeof m !== "object") return;
-            if (m.type === "ready" && m.world === "terrain") f.baeckerBereit = true;
-            else this._foundryAntwort(f, m);
-            this._foundryPumpe(f);
+        const geburt = (k) => {
+            const w = new Worker(f.bootUrl);
+            const h = { k, w, bereit: false };
+            // ein Boot-/Laufzeit-Fehler eines Bäckers bricht LAUT (K22): ohne ihn wartet jede Karte seiner Bahn
+            w.onerror = (ev) =>
+                this._stoffBruch(
+                    `der Bäcker-Faden${k ? " " + k : ""} fällt — ` + ((ev && ev.message) || "Boot-/Laufzeit-Fehler")
+                );
+            w.onmessage = (ev) => {
+                const m = ev.data;
+                if (!m || typeof m !== "object") return;
+                if (m.type === "ready" && m.world === "terrain") {
+                    h.bereit = true;
+                    if (k === 0) f.baeckerBereit = true;
+                } else this._foundryAntwort(f, m);
+                this._foundryPumpe(f);
+            };
+            return h;
         };
-        return w;
+        f.baecker = geburt(0).w;
+        f.baeckerHelfer = [];
+        for (let k = 1; k < this._foundryFaedenZahl(); k++) f.baeckerHelfer.push(geburt(k));
+        return f.baecker;
+    }
+    // Wie viele Studio-Fäden je Arbeit (Werk wie Bäcker): einer je vier Kerne, höchstens FOUNDRY_WERK_FAEDEN — die Kerne
+    // allein entscheiden, nie der Renderer.
+    _foundryFaedenZahl() {
+        const kerne =
+            typeof navigator !== "undefined" && Number.isFinite(navigator.hardwareConcurrency)
+                ? navigator.hardwareConcurrency
+                : 4;
+        return Math.max(1, Math.min(AnazhRealm.FOUNDRY_WERK_FAEDEN, Math.floor(kerne / 4)));
     }
     // DIE WERK-FÄDEN (K60): das Werk baut jeden Körper in EINEM Faden — Radeon kalt bis zum ersten Bild hielt er 19 s Arbeit
     // (Bäume, Bauten, das Dorf), während 20 der 24 Kerne der Maschine ruhten. Jetzt bauen neben ihm Helfer aus DEMSELBEN
@@ -614,11 +641,10 @@ class AnazhRealm_Z20a {
     _foundryHelfer(f) {
         if (f.helfer || !f.bootUrl) return;
         f.helfer = [];
-        const kerne =
-            typeof navigator !== "undefined" && Number.isFinite(navigator.hardwareConcurrency)
-                ? navigator.hardwareConcurrency
-                : 4;
-        const n = Math.max(1, Math.min(AnazhRealm.FOUNDRY_WERK_FAEDEN, Math.floor(kerne / 4)));
+        // die Bäcker kommen mit dem Studio, wo ein echter Renderer zeichnet (`_foundryBaecker`, K60-2)
+        const r = this.state.renderer;
+        if (r && !r._isHeadlessNull) this._foundryBaecker(f);
+        const n = this._foundryFaedenZahl();
         for (let k = 1; k < n; k++) {
             const w = new Worker(f.bootUrl);
             const h = { k, w, bereit: false };

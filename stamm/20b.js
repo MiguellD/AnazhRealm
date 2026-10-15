@@ -266,7 +266,10 @@ class AnazhRealm_Z20b {
     // seinen Faden in der Nummer (`w<k>_<n>`): seine Bahn ist "werk<k>".
     _foundryBahn(reqIdOderMsg) {
         if (typeof reqIdOderMsg === "string") {
-            if (reqIdOderMsg.startsWith("imp")) return "baecker";
+            if (reqIdOderMsg.startsWith("imp")) {
+                const b = /b(\d+)_\d+$/.exec(reqIdOderMsg);
+                return b ? "baecker" + b[1] : "baecker";
+            }
             const h = /w(\d+)_\d+$/.exec(reqIdOderMsg);
             return h ? "werk" + h[1] : "werk";
         }
@@ -282,25 +285,35 @@ class AnazhRealm_Z20b {
         if (!q || !f.worker) return;
         let werkFrei = 0,
             baeckerFrei = 0,
-            werkZiel = null;
+            werkZiel = null,
+            baeckerZiel = null;
         const werke = [{ bahn: "werk", ziel: f.worker, k: 0 }];
         for (const h of f.helfer || []) if (h.bereit) werke.push({ bahn: "werk" + h.k, ziel: h.w, k: h.k });
+        // die Bäcker-Bahnen (K60-2): der erste Bäcker und jeder bereite weitere (`_foundryBaecker`)
+        const baecker = [];
+        if (f.baecker && f.baeckerBereit) baecker.push({ bahn: "baecker", ziel: f.baecker, k: 0 });
+        for (const h of f.baeckerHelfer || []) if (h.bereit) baecker.push({ bahn: "baecker" + h.k, ziel: h.w, k: h.k });
+        // die Bahn mit den meisten freien Plätzen (unter Gleichen die erste)
+        const freiste = (bahnen, im) => {
+            let frei = 0,
+                ziel = null;
+            for (const w of bahnen) {
+                const fr = AnazhRealm.FOUNDRY_IM_FLUG - (im.get(w.bahn) || 0);
+                if (fr > frei) {
+                    frei = fr;
+                    ziel = w;
+                }
+            }
+            return [frei, ziel];
+        };
         const plaetze = () => {
             const im = new Map();
             for (const k of f.pending.keys()) {
                 const b = this._foundryBahn(k);
                 im.set(b, (im.get(b) || 0) + 1);
             }
-            werkFrei = 0;
-            werkZiel = null;
-            for (const w of werke) {
-                const fr = AnazhRealm.FOUNDRY_IM_FLUG - (im.get(w.bahn) || 0);
-                if (fr > werkFrei) {
-                    werkFrei = fr;
-                    werkZiel = w;
-                }
-            }
-            baeckerFrei = f.baecker && f.baeckerBereit ? AnazhRealm.FOUNDRY_IM_FLUG - (im.get("baecker") || 0) : 0;
+            [werkFrei, werkZiel] = freiste(werke, im);
+            [baeckerFrei, baeckerZiel] = freiste(baecker, im);
         };
         const frei = (a) => (this._foundryBahn(a.msg) === "baecker" ? baeckerFrei : werkFrei) > 0;
         for (plaetze(); q.length; plaetze()) {
@@ -327,8 +340,9 @@ class AnazhRealm_Z20b {
             }
             const a = q.splice(i, 1)[0];
             const imBaecker = this._foundryBahn(a.msg) === "baecker";
-            const reqId = a.praefix + (!imBaecker && werkZiel.k ? "w" + werkZiel.k + "_" : "") + f.reqSeq++;
-            const ziel = imBaecker ? f.baecker : werkZiel.ziel;
+            const bahnZiel = imBaecker ? baeckerZiel : werkZiel;
+            const reqId = a.praefix + (bahnZiel.k ? (imBaecker ? "b" : "w") + bahnZiel.k + "_" : "") + f.reqSeq++;
+            const ziel = bahnZiel.ziel;
             f.pending.set(reqId, a.resolve);
             try {
                 ziel.postMessage(Object.assign({ reqId }, a.msg));
