@@ -1838,7 +1838,9 @@ class AnazhRealm_Z17c {
         // die Hälfte — dort wuchs die Wiese mit 54 % ihrer Dichte zwischen Gasse und Stufe (K66, Prüfung 1: Bild tuer2, das Feld
         // fiel auf 0,5; an der Schwelle, wo die Fläche an der Hauswand endet, auf 0,8). Der Boden des Vorplatzes greift darum um den
         // Rand des Malers unter die Schwelle und um sein ganzes Band (2 · randM) über den Saum hinaus in die Gasse (mit einem randM
-        // blieben am Akt zwei Häuser bei 0,89 am Rand der Gasse).
+        // blieben am Akt zwei Häuser bei 0,89 am Rand der Gasse). Ebenso quer: um ein randM über jede Flanke der Platte — sonst trug die
+        // Flanke der Stufe das Feld 0,5 und die Wiese stand dort mit der Hälfte ihrer Dichte auf der Platte (K66, Prüfung 3: Bild tuer2,
+        // Halme über der Stufe; gate:settlement Teil O misst die ganze Breite).
         const RW = AnazhRealm.WEGE_KARTE.randM;
         for (const p of this._erdbauRoh())
             if (p.vorplatz != null && Math.hypot(p.cx - origin.x, p.cz - origin.z) <= reich) {
@@ -1849,7 +1851,7 @@ class AnazhRealm_Z17c {
                     cx: b.cx - (sn * RW) / 2,
                     cz: b.cz - (cs * RW) / 2,
                     phi: b.phi,
-                    ex: b.ex,
+                    ex: b.ex + RW,
                     ez: b.ez + 1.5 * RW,
                 });
             }
@@ -1861,8 +1863,8 @@ class AnazhRealm_Z17c {
                     cx: origin.x + st.cx,
                     cz: origin.z + st.cz,
                     phi: st.phi,
-                    ex: st.ex,
-                    ez: st.ez + AnazhRealm.WEGE_KARTE.randM,
+                    ex: st.ex + RW,
+                    ez: st.ez + RW,
                 });
         }
         // Die ÄCKER (felder-Schicht): je OBB ein gedrehtes Acker-Rechteck (Kanal G) — die Layout-Wahrheit des

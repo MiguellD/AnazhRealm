@@ -1983,20 +1983,30 @@ const FIXTURES = [
                                     tief = t;
                                     break;
                                 }
+                            // und (K66, Prüfung 3: Bild tuer2 trug Halme über den Flanken der Stufe, die Achse hielt 1,0) in der
+                            // ganzen Breite der Stufe (fachwerk `vorplatzFlaeche`: Türbreite samt Saum) — der Maler fällt an der
+                            // Kante einer Form auf 0,5, die Wiese stand dort mit der Hälfte ihrer Dichte auf der Platte
+                            const exS = window.__fachwerkCore.vorplatzFlaeche(sl).ex;
+                            const quer = (lx, lz) => [
+                                P.ort.x + sl.x + (tu.x + lx) * c + lz * sn,
+                                P.ort.z + sl.z - (tu.x + lx) * sn + lz * c,
+                            ];
                             let duenn = null;
-                            for (let t = 0.3; t <= tief + 0.01; t += 0.1) {
-                                const [qx, qz] = welt(ez - t);
-                                const v = r._wegeFeldAt(qx, qz);
-                                if (v < feldMin) feldMin = v;
-                                if (v < 0.9 && duenn === null) duenn = [+t.toFixed(2), +v.toFixed(2)];
-                            }
+                            for (let t = 0.3; t <= tief + 0.01; t += 0.1)
+                                for (const lx of [0, -exS, exS]) {
+                                    const [qx, qz] = quer(lx, ez - t);
+                                    const v = r._wegeFeldAt(qx, qz);
+                                    if (v < feldMin) feldMin = v;
+                                    if (v < 0.9 && duenn === null)
+                                        duenn = [+t.toFixed(2), +v.toFixed(2), +lx.toFixed(2)];
+                                }
                             if (r._aufWeg(wx, wz, 0) && !luecke && !duenn) vpOk++;
                             else
                                 vpFehl.push(
                                     luecke
                                         ? `${si}: Wiese ${luecke[0]}–${luecke[1]} m vor dem Eingang`
                                         : duenn
-                                          ? `${si}: Feld ${duenn[1]} ${duenn[0]} m vor dem Eingang (Gasse ab ${tief.toFixed(2)} m)`
+                                          ? `${si}: Feld ${duenn[1]} ${duenn[0]} m vor dem Eingang${duenn[2] ? `, ${duenn[2]} m quer (Flanke der Stufe)` : ""} (Gasse ab ${tief.toFixed(2)} m)`
                                           : `${si}: Stufe`
                                 );
                         });
