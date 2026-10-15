@@ -1267,7 +1267,11 @@ async function probe(arg) {
                         ["third", 4],
                     ]) {
                         const z = (ds[modus] = { anlaeufe: 0, faellt: 0, abstand: [], wMin: 1, punkte: 0 });
-                        for (const baum of baeume.slice(0, n)) {
+                        // die Probe stellt ihren Fall her: Bäume, bis n Anläufe Rinde jenseits des Ziels tragen (höchstens 12) —
+                        // bis zur Prüfung K60-3-1 nahm sie die ersten n, und je nach Halt des Körpers trug in 3rd keiner (1 von 2
+                        // Läufen am Kopf: „kein Anlauf (Vorbedingung)")
+                        for (const baum of baeume.slice(0, 12)) {
+                            if (z.anlaeufe >= n) break;
                             await anlauf(baum, modus);
                             const u = urteil(baum);
                             if (!u.punkte) continue;
