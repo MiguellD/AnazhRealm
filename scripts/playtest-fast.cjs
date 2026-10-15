@@ -109,6 +109,21 @@ function check(name, ok) {
             r.state.voxelWorker = _warmupSavedWorker;
         });
 
+        // DAS BUCH IST DA, bevor ein Check seine Rezepte liest (K69-2: die Kern-Checks lasen r._foundry.recipes vor
+        // `_foundryIngestBook` und fielen auf swiftshader 5/5 rot) — gewartet wird auf das Ereignis, nicht auf die Uhr;
+        // kommt es nicht, ist der Lauf ROT beim Namen.
+        await page
+            .waitForFunction(
+                () => {
+                    const r = window.anazhRealm;
+                    return !!(r && r._foundry && r._foundry.recipes && r._foundry.recipes[r.constructor.KOERPER_HOST_RECIPE]);
+                },
+                { polling: 100, timeout: 180000 }
+            )
+            .catch(() => {
+                throw new Error("das Foundry-Buch kam nicht an (_foundryIngestBook lief nicht in 180 s) — die Kern-Checks lesen seine Rezepte");
+            });
+
         // ── KERN-CHECKS (selbst-enthalten, defensiv) ──
         const R = await page.evaluate(() => {
             const out = {};

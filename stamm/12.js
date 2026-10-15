@@ -252,7 +252,12 @@ class AnazhRealm_Z12 {
                 // Tür-Lücke + der Flügel-Tick leiten alles live daraus ab).
                 ...(a.tuer && Number.isFinite(a.tuer.w) ? { tuer: a.tuer } : {}),
                 // KAMIN-RAUCH (.105) — Spitze überlebt den Reload (Rauch ⟺ chimney).
-                ...(a.chimney && Number.isFinite(a.chimney.x) ? { chimney: a.chimney } : {}),
+                // das Nein (null: kein Kamin) reist mit — sonst baut das Laden das Haus nach, um es zu finden (K69)
+                ...(a.chimney && Number.isFinite(a.chimney.x)
+                    ? { chimney: a.chimney }
+                    : a.chimney === null
+                      ? { chimney: null }
+                      : {}),
                 // Entry-level portalMeta (Halle-Slots): jedes Tor einer Halle trägt eine eigene worldAddress; ohne
                 // Persistenz zögen nach dem Reload alle Slots die Bauplan-Default-portalMeta (die Halle wäre tot).
                 ...(a.portalMeta && typeof a.portalMeta === "object" ? { portalMeta: a.portalMeta } : {}),

@@ -1261,6 +1261,17 @@ async function starte() {
                     const G2 = await schuss([]);
                     const Os = [];
                     for (const n of namen) Os.push(await schuss(teile.get(n)));
+                    // DAS BILD OHNE FILM (D8, K5 milchweiss): misst die Tafel die Membran, zeichnet derselbe Schuss sie noch einmal
+                    // mit ihrem Ziel allein (`__membranOhneFilm`) — Milch ist, was der Film dem Ziel hinzufügt, nie ein blasses Ziel
+                    let ohneFilm = null;
+                    if (teile.has("portal-membran")) {
+                        window.__membranOhneFilm(true);
+                        try {
+                            ohneFilm = await schuss([]);
+                        } finally {
+                            window.__membranOhneFilm(false);
+                        }
+                    }
                     const schwelle = 18;
                     const rauschen = window.__bildRauschen(G, G2, W, H, schwelle);
                     const { teil, misch } = window.__klassenTeilung(G, Os, W, H, schwelle);
@@ -1268,10 +1279,113 @@ async function starte() {
                     // das Außen der Silhouette (K68-n2, `klassenMasse` kante): kein gemessener Teil — Himmel, Boden, Holz
                     const aussen = new Uint8Array(W * H);
                     for (let p = 0; p < W * H; p++) aussen[p] = teil[p] === 0 ? 1 : 0;
+                    // DIE TREUE ZUM ZIEL (D8, abnahme-urteil `zielTreue`): je Pixel der Membran-Klasse der Strahl der Kamera durch das
+                    // Pixel, im Rahmen jeder wachen Membran (ihre Welt-Matrix) auf die Ebene z = 0 in ihrer Apertur (die Bogen-Zeile
+                    // `mu.profil`), der nächste Treffer; von dort die Stellvertreter-Kugel um die Tor-Mitte (Radius Tor-Höhe × Kugel-Faktor
+                    // des Gesetzes, `MEMBRAN_GESETZ.film.kugel`) und ihre Richtung → das Ziel-Panorama der Membran (`r._torZielDaten(rec)`:
+                    // { w, h, daten } linear rgba, Zeile 0 unten wie equirectUV). r = Spearman zwischen der Luma des Bilds und der des Ziels
+                    // — rang-treu über Belichtung, ACES und sRGB. Die Welle (≤ Amplitude) und die Brechung des Films sind nicht gerechnet.
+                    const zielTreue = (m) => {
+                        const T = window.THREE;
+                        if (typeof r._torZielDaten !== "function")
+                            return { r: null, pixel: 0, grund: "die Welt hält kein Ziel-Panorama (kein Studio-Export)" };
+                        const cam = r.state.camera;
+                        cam.updateMatrixWorld(true);
+                        const recs = [];
+                        for (const rec of r._portalMembranes ? r._portalMembranes.values() : []) {
+                            if (!rec.mesh || !rec.mesh.visible || !rec.mesh.parent) continue;
+                            const Z = r._torZielDaten(rec);
+                            if (!Z)
+                                return { r: null, pixel: 0, grund: `die Membran ${rec.entry.type} hält kein Ziel-Panorama` };
+                            const film = rec.tor.gesetz.film;
+                            if (!film || !(film.kugel > 0)) return { r: null, pixel: 0, grund: "MEMBRAN_GESETZ ohne film.kugel" };
+                            rec.mesh.updateMatrixWorld(true);
+                            recs.push({ Z, inv: rec.mesh.matrixWorld.clone().invert(), mu: rec.tor.mu, R: rec.tor.mu.height * film.kugel });
+                        }
+                        const o = new T.Vector3(),
+                            q = new T.Vector3(),
+                            ol = new T.Vector3(),
+                            dl = new T.Vector3();
+                        const bild = [],
+                            ziel = [];
+                        for (let y = 0; y < H; y++)
+                            for (let x = 0; x < W; x++) {
+                                const p = y * W + x;
+                                if (m[p] !== 1) continue;
+                                o.setFromMatrixPosition(cam.matrixWorld);
+                                q.set(((x + 0.5) / W) * 2 - 1, 1 - ((y + 0.5) / H) * 2, 0.5).unproject(cam).sub(o).normalize().add(o);
+                                let best = null;
+                                for (const R of recs) {
+                                    ol.copy(o).applyMatrix4(R.inv);
+                                    dl.copy(q).applyMatrix4(R.inv).sub(ol);
+                                    if (Math.abs(dl.z) < 1e-9) continue;
+                                    const t = -ol.z / dl.z;
+                                    if (t <= 0 || (best && t >= best.t)) continue;
+                                    const hx = ol.x + dl.x * t,
+                                        hy = ol.y + dl.y * t;
+                                    const mu = R.mu;
+                                    const u = (hx - mu.left) / mu.spanW;
+                                    if (!(u >= 0 && u <= 1) || hy < mu.baseY) continue;
+                                    const fi = u * (mu.profil.length - 1),
+                                        i0 = Math.floor(fi),
+                                        i1 = Math.min(mu.profil.length - 1, i0 + 1);
+                                    const top = mu.baseY + (mu.profil[i0] + (mu.profil[i1] - mu.profil[i0]) * (fi - i0)) * mu.height;
+                                    if (hy > top) continue;
+                                    best = { t, R, hx, hy, d: dl.clone().normalize() };
+                                }
+                                if (!best) continue;
+                                const { R, d } = best;
+                                const ox = best.hx,
+                                    oy = best.hy - R.mu.centerY;
+                                const bq = ox * d.x + oy * d.y,
+                                    cq = ox * ox + oy * oy - R.R * R.R;
+                                const tq = -bq + Math.sqrt(Math.max(bq * bq - cq, 0));
+                                const vx = ox + d.x * tq,
+                                    vy = oy + d.y * tq,
+                                    vz = d.z * tq;
+                                const vl = Math.hypot(vx, vy, vz) || 1;
+                                const uu = Math.atan2(vz / vl, vx / vl) / (2 * Math.PI) + 0.5;
+                                const vv = Math.asin(Math.max(-1, Math.min(1, vy / vl))) / Math.PI + 0.5;
+                                const Z = R.Z;
+                                const zx = Math.min(Z.w - 1, Math.max(0, Math.floor(uu * Z.w))),
+                                    zy = Math.min(Z.h - 1, Math.max(0, Math.floor(vv * Z.h)));
+                                const zi = (zy * Z.w + zx) * 4;
+                                ziel.push(0.2126 * Z.daten[zi] + 0.7152 * Z.daten[zi + 1] + 0.0722 * Z.daten[zi + 2]);
+                                bild.push(0.2126 * u8[p * 4] + 0.7152 * u8[p * 4 + 1] + 0.0722 * u8[p * 4 + 2]);
+                            }
+                        const P = bild.length;
+                        if (P < 50) return { r: null, pixel: P, grund: "kein Pixel der Klasse trifft eine Apertur" };
+                        const raenge = (a) => {
+                            const idx = a.map((_v, i) => i).sort((i, j) => a[i] - a[j]);
+                            const rg = new Float64Array(a.length);
+                            for (let k = 0; k < idx.length; ) {
+                                let e = k;
+                                while (e + 1 < idx.length && a[idx[e + 1]] === a[idx[k]]) e++;
+                                for (let z = k; z <= e; z++) rg[idx[z]] = (k + e) / 2;
+                                k = e + 1;
+                            }
+                            return rg;
+                        };
+                        const ra = raenge(bild),
+                            rb = raenge(ziel);
+                        const mittel = (P - 1) / 2;
+                        let sab = 0,
+                            saa = 0,
+                            sbb = 0;
+                        for (let i = 0; i < P; i++) {
+                            sab += (ra[i] - mittel) * (rb[i] - mittel);
+                            saa += (ra[i] - mittel) ** 2;
+                            sbb += (rb[i] - mittel) ** 2;
+                        }
+                        if (!(saa > 0 && sbb > 0)) return { r: null, pixel: P, grund: "Bild oder Ziel ohne Struktur in der Öffnung" };
+                        return { r: +(sab / Math.sqrt(saa * sbb)).toFixed(3), pixel: P, grund: null };
+                    };
                     namen.forEach((n, j) => {
                         const m = new Uint8Array(W * H);
                         for (let p = 0; p < W * H; p++) m[p] = teil[p] === j + 1 ? 1 : 0;
-                        const ms = window.__klassenMasse(u8, m, W, H, aussen);
+                        const mb = /^portal-membran$/.test(n);
+                        const ms = window.__klassenMasse(u8, m, W, H, aussen, mb ? ohneFilm : null);
+                        if (mb && ms.pixel) ms.ziel = zielTreue(m);
                         if (ms.pixel) klassen[n] = Object.assign({ objekte: teile.get(n).length }, ms);
                     });
                     // DIE PROBEN DES GESICHTS (K63-n2, `--gesicht`): je Vertex des Kopfs sein Zug — die Iris an ihrem Gelenk
@@ -1794,8 +1908,11 @@ async function starte() {
                         // DER ORT DES BILDS (K63-n8, abnahme-urteil `bildPfadFehler`): das Bild der Tafel liegt beim Namen des
                         // Ziels unter artifacts/soll-tafel/ (gitignored, lokal) — nie im Scratch, auf den die Tafel nicht zeigen
                         // darf; kopiert erst, wenn die Tafel die Messung genommen hat (eine abgewiesene ersetzt kein Bild)
-                        const ablage = sollAblage(b.ist, ".png");
-                        o.ist = sollIstSchreiben(b.ist, {
+                        // MEHRERE ZIELE (D8, `--ist tor-fern:L1,tor-bunt:L1,tor-ziel:L1`): derselbe Schuss misst je Ziel sein
+                        // Maß — jede Klasse trägt ihre Messung, die Linse liest jede für sich
+                        const ziele = String(b.ist).split(",").filter(Boolean);
+                        const ablage = sollAblage(ziele[0], ".png");
+                        const messung = () => ({
                             werkzeug: "bild",
                             datum: new Date().toISOString(),
                             stand: { version: o.abnahme.stand.version, sha: o.abnahme.stand.sha },
@@ -1811,15 +1928,16 @@ async function starte() {
                             gesicht: kl.gesicht || null,
                             bild: path.relative(root, ablage).split(path.sep).join("/"),
                         });
+                        o.ist = ziele.map((z) => sollIstSchreiben(z, messung())).join(" · ");
                         if (ablage !== datei) {
                             fs.copyFileSync(datei, ablage);
-                            fs.copyFileSync(kl.maske, sollAblage(b.ist, ".maske.png"));
+                            fs.copyFileSync(kl.maske, sollAblage(ziele[0], ".maske.png"));
                         }
                     }
                     const begleit = datei.replace(/\.png$/i, "") + ".abnahme.json";
                     fs.writeFileSync(begleit, JSON.stringify(o.abnahme, null, 1));
-                    if (b.ist && sollAblage(b.ist, ".png") !== datei)
-                        fs.copyFileSync(begleit, sollAblage(b.ist, ".abnahme.json"));
+                    if (b.ist && sollAblage(String(b.ist).split(",")[0], ".png") !== datei)
+                        fs.copyFileSync(begleit, sollAblage(String(b.ist).split(",")[0], ".abnahme.json"));
                     const zeile = o.abnahme.zeile;
                     delete o.abnahme;
                     return send(Object.assign(o, { abnahme: zeile, datei, gesamtMs: Date.now() - t0 }));

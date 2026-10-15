@@ -954,6 +954,35 @@ const FORBIDDEN = [
         fiel: "Welle G — feldMarch (EIN Satz je Stellvertreter) und feldPanorama (früher Tiefentest)",
     },
     { token: "_weltSeitenOrdnen", fiel: "Welle G — die Stellvertreter brauchen keine räumliche Ordnung" },
+    // D8 (15.10., das Tor als Fenster): der Bodennebel-Kasten am Tor-Fuß (ein Volumen-March je Tor, aus 30 m eine weiße Tafel),
+    // sein Gesetz und sein Regler fallen laut beim Namen — die Öffnung zeigt das Ziel-Panorama unter dem Seifenfilm
+    { token: "_nebelMaterialFor", fiel: "D8 — der Portal-Nebel-Kasten (die Öffnung ist Ziel + Film)" },
+    { token: "_nebelGraph", fiel: "D8 — der Volumen-March des Portal-Nebels" },
+    { token: "rec.nebel", fiel: "D8 — die Membran trägt keinen Nebel-Kasten mehr" },
+    { token: "portal-nebel", fiel: "D8 — die Klasse des Nebel-Kastens", auch: ["spec/profiband/haushalt.json"] },
+    {
+        token: "NEBEL_GESETZ",
+        fiel: "D8 — das Nebel-Gesetz (fogDefault · actBase · actOpen)",
+        auch: ["porta-core.js", "worlds/portale/porta.js"],
+    },
+    { token: "nebelAct", fiel: "D8 — der Atem des Nebels", auch: ["porta-core.js", "worlds/portale/porta.js"] },
+    { token: "NEBEL_VIS", fiel: "D8 — das duale Nebel-Gefühl (glsl-box/tsl-box)", auch: ["porta-core.js"] },
+    { token: "buildFog", fiel: "D8 — der Nebel des Labors", auch: ["worlds/portale/porta.js"] },
+    { token: "['fog',", fiel: "D8 — der Regler fog (Bodennebel) der Tore", auch: ["porta-core.js", "worlds/portale/porta.js"] },
+    { token: "MG.march", fiel: "D8 — der 12-Schritt-March der Membran (MEMBRAN_GESETZ.film)", auch: ["worlds/portale/porta.js"] },
+    // D8: das Spike-Instrument — die Heimat malte ein Panorama ihrer EIGENEN Welt (Würfel-Kamera 80 m westlich der Genesis-Mitte);
+    // die Öffnung liest das Ziel aus dem EINEN Export der Ziel-Welt (`_torZielZeile`, die Hülle `AnazhHuelle.panorama`)
+    { token: "_torPanorama", fiel: "D8 — das Host-Panorama der eigenen Welt (Spike); das Ziel kommt aus der Ziel-Welt" },
+    { token: "_torPanoMal", fiel: "D8 — die Würfel-Würfe der Heimat (Spike); die Ziel-Welt rendert sich selbst" },
+    { token: "_torPanoKamera", fiel: "D8 — die sechs Kameras des Host-Panoramas (Spike)" },
+    // D8-n1: der verborgene Ziel-Rahmen bootete jede Ziel-Welt im Haupt-Faden des Spiels (Prüfer: 3 882 ms lange Aufgabe je
+    // fachwerk, 10 135 ms für sieben Ziele nach dem ersten Weltbild, in der CPU-Gruppe der CI ein WebGL-Bruch je Studio) — das
+    // Studio backt sein Panorama in seiner Welt (gate:studio-huelle H5), die Heimat liest die Datei (`_torZielBuendel`)
+    { token: "_torZielRahmen", fiel: "D8-n1 — der verborgene Rahmen der Ziel-Welt im Spiel; das Studio backt, die Heimat liest" },
+    { token: "_torZielStempel", fiel: "D8-n1 — der Stempel je Boot (jede Quelle geholt und gehasht); H5 hält ihn an den Quellen" },
+    { token: "_torZielPlatte", fiel: "D8-n1 — die IndexedDB der Ziele; die gebackene Datei ist die Platte" },
+    { token: "_torZielReihe", fiel: "D8-n1 — die Reihe der Welt-Aufträge im Spiel" },
+    { token: "anazhTorZiel", fiel: "D8-n1 — die IndexedDB der Ziele" },
     { token: "_weltSeitenPflegen", fiel: "Welle G — die Hülle trägt jeder Eintrag selbst (Texel 0/1)" },
     { token: "_weltSeitenFolge", fiel: "Welle G — der Tiefentest der Hardware wählt den nächsten Treffer" },
     { token: "_weltSeiteDirty", fiel: "Welle G — die Seiten-Ebene fiel (auch der Aufruf der Fernwald-Linse)" },

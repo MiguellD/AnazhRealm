@@ -62,35 +62,21 @@ const FROZEN = {
     swirlK: 0.5,
     openK: [0.4, 0.6],
     centerK: 0.55,
-    march: {
-        steps: 12,
-        t0: 0.04,
-        depK: [1.6, 0.1],
-        spK: [0.3, 0.6],
-        lpK: 2.0,
-        frqK: [1.0, 2.2],
-        win: 0.4,
-        winC: [0.0, 0.34, 0.67, 1.0],
-        vCut: [0.1, 1.4],
-        gDen: [2.2, 0.35],
-        att: 0.9,
-        wurm: [3.0, 2.0, 4.0, 0.15, 0.5],
-        facet: [8.0, 9.0, 4.0, 1.5, 0.1],
-        plasma: [0.7, 0.6, 0.2, 2.4, 3.5, 1.4, 0.5, 3.0, 1.25, 1.3, 0.08, 0.15],
-        nebel: [1.0, 0.6, 0.7, 0.12, 2.2, 1.5, 1.3, 0.2, 2.0, 2.0, 1.0, 1.2, 0.18],
-    },
-    look: {
-        star: [0.955, 95.0, 5.0, 0.42],
-        skyK: [0.5, 0.5, 0.3],
-        fresPow: 3.0,
-        specDir: [0.4, 0.7, 0.6],
-        specPow: 60.0,
-        specCol: [1.0, 0.95, 0.85],
-        specK: 1.5,
-        core: [12.0, 0.5, 0.5, 0.7, 0.3, 1.4],
-        corePal: 0.1,
-        mixK: [1.35, 0.55, 1.5, 1.0],
-        finalK: [1.4, 0.55, 0.55, 0.9, 0.13],
+    // D8 (15.10., ein erklärter Vertrags-Akt): der 12-Schritt-March, die vier Innenwelt-Modi und der Look-Block fallen —
+    // die Öffnung zeigt das Ziel-Panorama über die Stellvertreter-Kugel, darüber der Seifenfilm (Rand gezähmt)
+    film: {
+        kugel: 4.0,
+        n: 1.33,
+        brechung: 0.12,
+        dicke: [0.3, 0.45, 0.22, 0.06, 0.37, 0.9],
+        fresnel: [0.04, 5.0],
+        rand: [0.6, 1.0, 0.3],
+        basis: 0.24,
+        gewichtMax: 0.55,
+        act: [0.65, 0.35],
+        glanz: [0.8, 0.9, 0.15],
+        welle: [1.0, 1.22, 1.44],
+        farbe: 2.6,
     },
     puls: 1.25,
     aktivDepth: [0.1, 0.85],
@@ -107,6 +93,8 @@ let drift = [];
     }
 })(FROZEN, MG, "");
 check("Zwillings-Wand: alle Gesetz-Zahlen == Alt-Literale", drift.length === 0, drift.slice(0, 4).join(" · "));
+const fremd = Object.keys(MG || {}).filter((k) => !(k in FROZEN));
+check("Zwillings-Wand: das Gesetz trägt kein Feld außerhalb der Tabelle (march/look fielen mit D8)", fremd.length === 0, fremd.join(", "));
 
 // ── Wand 2: membranUniforms == die alten Inline-Formeln der Shell ──
 function altUniforms(p) {
@@ -184,23 +172,16 @@ check("Shell: Puls 1.25 nur noch als Gesetz", !/Math\.sin\(t\s*\*\s*1\.25\)/.tes
 const stamm = stammLib.text(root);
 check("Stamm konsumiert membranUniforms (Welt-Leser)", stamm.includes("membranUniforms"));
 check("Stamm konsumiert MEMBRAN_GESETZ (Welt-Leser)", stamm.includes("MEMBRAN_GESETZ"));
-// PORTA-NEBEL (18.07.) — der KONSUM des vormals TOTEN Kanals: mu.fog speist
-// eine LEBENDE Uniform im Membran-Tick (kein String-Zufall — die Speise-
-// Anweisung selbst) und der Nebel-Port existiert als Material-Bauer. Seit
-// 23.09. (3242b360) läuft die Speisung über das Gesetz `pcN.nebelAct(mu.fog,
-// act)`; die Probe las bis 09.10. nur die alte Zeile `nebelAct.value = mu.fog`
-// und stand rot — sie liest jetzt die Zuweisung bis zu ihrem Semikolon, und darin den Ruf des GESETZES mit mu.fog
-// (Gegenprüfung 09.10.: ein mu.fog allein im Rückfall-Zweig hätte die Probe grün gelassen).
-const nebelSpeise = /nebelAct\.value\s*=[^;]*\bpcN\.nebelAct\(\s*mu\.fog\s*,/;
-check(
-    "Stamm konsumiert mu.fog (nebelAct-Uniform-Speisung im Tick über das Gesetz pcN.nebelAct — der Kanal ist nicht mehr tot)",
-    nebelSpeise.test(stamm) && stamm.includes("_nebelMaterialFor")
-);
-// Gegenprobe: steht mu.fog nur noch im Rückfall-Zweig, fällt die Probe rot
-check(
-    "SELBST-TEST: mu.fog nur im Rückfall-Zweig wird erkannt",
-    !nebelSpeise.test(stamm.replace(/pcN\.nebelAct\(\s*mu\.fog\s*,/g, "pcN.nebelAct(undefined,"))
-);
+// DER FILM (D8): Shell und Welt lesen die Film-Zahlen (`MEMBRAN_GESETZ.film`) — dieselbe Technik, dieselben Zahlen
+check("Shell liest die Film-Zahlen (MG.film)", /\bMG\.film\b/.test(shell));
+check("Stamm liest die Film-Zahlen (MG.film)", /\bMG\.film\b/.test(stamm));
+// DER NEBEL FIEL (D8): der Bodennebel-Kasten, sein Gesetz und sein Regler — kein Leser, kein Rest (laut beim Namen; die Wand
+// der Altlasten hält jeden Rückkehrer)
+const kern = fs.readFileSync(path.join(root, "porta-core.js"), "utf8");
+check("porta-core: NEBEL_GESETZ · nebelAct · NEBEL_VIS und der Regler fog sind fort", !/NEBEL_GESETZ|nebelAct|NEBEL_VIS|\['fog',/.test(kern));
+check("porta-core: membranUniforms trägt kein fog", !("fog" in PC.membranUniforms(PC.gateParams(PC.PRESETS.kathedrale))));
+check("Stamm: der Nebel-Kasten ist fort (_nebelMaterialFor · rec.nebel)", !/_nebelMaterialFor|rec\.nebel\b/.test(stamm));
+check("Shell: buildFog ist fort", !/buildFog|fogMat/.test(shell));
 const idx = fs.readFileSync(path.join(root, "index.html"), "utf8");
 check("porta-core lädt main-seitig (mit ?v=-Buster)", /porta-core\.js\?v=/.test(idx));
 
@@ -222,4 +203,4 @@ if (errs.length) {
     console.log(`\n❌ ROT — ${errs.length} Verletzung(en): ${errs.join(" · ")}`);
     process.exit(1);
 }
-console.log("\n✅ GRÜN — die Membran hat EINE Zahlen-Quelle: das Gesetzbuch trägt die eingefrorenen Shell-Zahlen, die Ableitung ist formel-identisch, Shell UND Welt konsumieren dieselben Flächen.");
+console.log("\n✅ GRÜN — die Membran hat EINE Zahlen-Quelle: das Gesetzbuch trägt die eingefrorenen Zahlen (Welle + Film), die Ableitung ist formel-identisch, Shell UND Welt konsumieren dieselben Flächen, der Nebel ist fort.");

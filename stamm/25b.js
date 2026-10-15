@@ -1589,6 +1589,15 @@ class AnazhRealm_Z25b {
                 },
             },
             {
+                name: "waldPlan",
+                prio: 1, // Welt-Substanz: die Gestalt jedes Baums in frischem Wald wartet auf ihre Zellen (K69)
+                run: (ms) => {
+                    const _wp = performance.now();
+                    this._tickWaldPlan(ms);
+                    this._perfSenseLap("waldPlan", _wp);
+                },
+            },
+            {
                 name: "scatterDeco",
                 prio: 2, // reine Optik — wartet, wenn das Terrain diesen Frame baute oder das Budget leer ist
                 run: (ms) => {
@@ -1674,6 +1683,7 @@ class AnazhRealm_Z25b {
             i++;
         };
         setze(this._weltRegung | 0);
+        setze(this._waldPlanRegung | 0); // die Schlange des Walds (K69): ihre Zellen tragen die Gestalt jedes wartenden Baums
         setze(st._foliageDensityScale); // der EINE Regler: Wahrnehmungs-Faktor der Stufen-Wahl und Verdeckungs-Schwelle
         setze(st.lodRef);
         setze(st.chunkRingRadius);
@@ -1808,6 +1818,7 @@ class AnazhRealm_Z25b {
         B.totalMs = this._deferrableBudgetMs();
         B.startFrame();
         st._frameChunksBuilt = false;
+        st._bodenEinbau = null; // der Einbau des Frames (`_finalizeVoxelChunkBuild` → `_tickDirtyVoxelChunks`, K69-2)
         this._dispatchFrameJobs(this._buildDeferrableJobs(playerPos), B);
         // die fixen, NICHT budget-gegateten Ticks (UNGATED Welt-Substanz + billige Ticks)
         this._tickPendingVegSpawns(4);
