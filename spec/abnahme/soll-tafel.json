@@ -925,7 +925,7 @@
             "mass": {
                 "name": "milchweiss",
                 "rechnung": {
-                    "apertur": "^portal-(membran|nebel)$",
+                    "apertur": "^portal-membran$",
                     "tor": "^(?:f|fimp):(?:drachentor|maurentor|verkalkt|maschine|ruine|geisttor|kathedrale):L(\\d)$",
                     "stufen": {
                         "datei": "porta-core.js",
@@ -935,7 +935,7 @@
                         "ab": 1
                     }
                 },
-                "werkzeug": "werkbank umstellen --ort genesis (der Spieler in der Ring-Mitte: die Ankunft); je Stufe s des Kerns ab 1 ein Bild: eine Mesh-Stufe (L1, ab 9,5 m) aus 30 m auf den Tor-Platz (werkbank bild -11.6 90.24 36.48 -2 +0.8 16 --wahl 0 --ziel tor-platz), die NUR-WURF-Stufe (L3, budget.gate[3].nurWurf) als ihre Fernform: der Spieler 145 m vom Ring (jenseits des Cull-Radius 105 m + Tor-Abstand, diesseits des Membran-Schlafs 180 m), die Kamera an ihm, der Blick 3 m vor die nächste Membran; je Schuss --klasse ^(portal-membran|portal-nebel|(f|fimp):(drachentor|maurentor|verkalkt|maschine|ruine|geisttor|kathedrale):L[0-3])$ --ist tor-fern:L<s>",
+                "werkzeug": "werkbank umstellen --ort genesis (der Spieler in der Ring-Mitte: die Ankunft); je Stufe s des Kerns ab 1 ein Bild: eine Mesh-Stufe (L1, ab 9,5 m) aus 30 m auf den Tor-Platz (werkbank bild -11.6 90.24 36.48 -2 +0.8 16 --wahl 0 --ziel tor-platz), die NUR-WURF-Stufe (L3, budget.gate[3].nurWurf) als ihre Fernform: der Spieler 145 m vom Ring (jenseits des Cull-Radius 105 m + Tor-Abstand, diesseits des Membran-Schlafs 180 m), die Kamera an ihm, der Blick 3 m vor die nächste Membran; je Schuss --klasse ^(portal-membran|(f|fimp):(drachentor|maurentor|verkalkt|maschine|ruine|geisttor|kathedrale):L[0-3])$ --ist tor-fern:L<s>",
                 "messung": {
                     "L1": {
                         "werkzeug": "bild",
@@ -957,7 +957,7 @@
                             90.24,
                             36.48
                         ],
-                        "ausdruck": "^(portal-membran|portal-nebel|(f|fimp):(drachentor|maurentor|verkalkt|maschine|ruine|geisttor|kathedrale):L[0-3])$",
+                        "ausdruck": "^(portal-membran|(f|fimp):(drachentor|maurentor|verkalkt|maschine|ruine|geisttor|kathedrale):L[0-3])$",
                         "schwelle": 18,
                         "rauschen": {
                             "anteil": 0,
@@ -1123,7 +1123,7 @@
                             133.4,
                             -140.1
                         ],
-                        "ausdruck": "^(portal-membran|portal-nebel|(f|fimp):(drachentor|maurentor|verkalkt|maschine|ruine|geisttor|kathedrale):L[0-3])$",
+                        "ausdruck": "^(portal-membran|(f|fimp):(drachentor|maurentor|verkalkt|maschine|ruine|geisttor|kathedrale):L[0-3])$",
                         "schwelle": 18,
                         "rauschen": {
                             "anteil": 0,
@@ -1222,7 +1222,7 @@
             "mass": {
                 "name": "oeffnungBunt",
                 "rechnung": {
-                    "apertur": "^portal-(membran|nebel)$",
+                    "apertur": "^portal-membran$",
                     "tor": "^(?:f|fimp):(?:drachentor|maurentor|verkalkt|maschine|ruine|geisttor|kathedrale):L(\\d)$",
                     "stufen": {
                         "datei": "porta-core.js",
@@ -1232,7 +1232,7 @@
                         "ab": 1
                     }
                 },
-                "werkzeug": "werkbank umstellen --ort genesis (der Spieler in der Ring-Mitte: die Ankunft); je Stufe s des Kerns ab 1 ein Bild: eine Mesh-Stufe (L1, ab 9,5 m) aus 30 m auf den Tor-Platz (werkbank bild -11.6 90.24 36.48 -2 +0.8 16 --wahl 0 --ziel tor-platz), die NUR-WURF-Stufe (L3, budget.gate[3].nurWurf) als ihre Fernform: der Spieler 145 m vom Ring (jenseits des Cull-Radius 105 m + Tor-Abstand, diesseits des Membran-Schlafs 180 m), die Kamera an ihm, der Blick 3 m vor die nächste Membran; je Schuss --klasse ^(portal-membran|portal-nebel|(f|fimp):(drachentor|maurentor|verkalkt|maschine|ruine|geisttor|kathedrale):L[0-3])$ --ist tor-fern:L<s>,tor-bunt:L<s>,tor-ziel:L<s> (D8: derselbe Schuss misst milchweiss, oeffnungBunt und zielTreue; tor-bunt)"
+                "werkzeug": "werkbank umstellen --ort genesis (der Spieler in der Ring-Mitte: die Ankunft); je Stufe s des Kerns ab 1 ein Bild: eine Mesh-Stufe (L1, ab 9,5 m) aus 30 m auf den Tor-Platz (werkbank bild -11.6 90.24 36.48 -2 +0.8 16 --wahl 0 --ziel tor-platz), die NUR-WURF-Stufe (L3, budget.gate[3].nurWurf) als ihre Fernform: der Spieler 145 m vom Ring (jenseits des Cull-Radius 105 m + Tor-Abstand, diesseits des Membran-Schlafs 180 m), die Kamera an ihm, der Blick 3 m vor die nächste Membran; je Schuss --klasse ^(portal-membran|(f|fimp):(drachentor|maurentor|verkalkt|maschine|ruine|geisttor|kathedrale):L[0-3])$ --ist tor-fern:L<s>,tor-bunt:L<s>,tor-ziel:L<s> (D8: derselbe Schuss misst milchweiss, oeffnungBunt und zielTreue; tor-bunt)"
             },
             "quellen": [
                 "porta-core.js",
@@ -1287,7 +1287,7 @@
             "mass": {
                 "name": "zielTreue",
                 "rechnung": {
-                    "apertur": "^portal-(membran|nebel)$",
+                    "apertur": "^portal-membran$",
                     "tor": "^(?:f|fimp):(?:drachentor|maurentor|verkalkt|maschine|ruine|geisttor|kathedrale):L(\\d)$",
                     "stufen": {
                         "datei": "porta-core.js",
@@ -1297,7 +1297,7 @@
                         "ab": 1
                     }
                 },
-                "werkzeug": "werkbank umstellen --ort genesis (der Spieler in der Ring-Mitte: die Ankunft); je Stufe s des Kerns ab 1 ein Bild: eine Mesh-Stufe (L1, ab 9,5 m) aus 30 m auf den Tor-Platz (werkbank bild -11.6 90.24 36.48 -2 +0.8 16 --wahl 0 --ziel tor-platz), die NUR-WURF-Stufe (L3, budget.gate[3].nurWurf) als ihre Fernform: der Spieler 145 m vom Ring (jenseits des Cull-Radius 105 m + Tor-Abstand, diesseits des Membran-Schlafs 180 m), die Kamera an ihm, der Blick 3 m vor die nächste Membran; je Schuss --klasse ^(portal-membran|portal-nebel|(f|fimp):(drachentor|maurentor|verkalkt|maschine|ruine|geisttor|kathedrale):L[0-3])$ --ist tor-fern:L<s>,tor-bunt:L<s>,tor-ziel:L<s> (D8: derselbe Schuss misst milchweiss, oeffnungBunt und zielTreue; tor-ziel)"
+                "werkzeug": "werkbank umstellen --ort genesis (der Spieler in der Ring-Mitte: die Ankunft); je Stufe s des Kerns ab 1 ein Bild: eine Mesh-Stufe (L1, ab 9,5 m) aus 30 m auf den Tor-Platz (werkbank bild -11.6 90.24 36.48 -2 +0.8 16 --wahl 0 --ziel tor-platz), die NUR-WURF-Stufe (L3, budget.gate[3].nurWurf) als ihre Fernform: der Spieler 145 m vom Ring (jenseits des Cull-Radius 105 m + Tor-Abstand, diesseits des Membran-Schlafs 180 m), die Kamera an ihm, der Blick 3 m vor die nächste Membran; je Schuss --klasse ^(portal-membran|(f|fimp):(drachentor|maurentor|verkalkt|maschine|ruine|geisttor|kathedrale):L[0-3])$ --ist tor-fern:L<s>,tor-bunt:L<s>,tor-ziel:L<s> (D8: derselbe Schuss misst milchweiss, oeffnungBunt und zielTreue; tor-ziel)"
             },
             "quellen": [
                 "porta-core.js",

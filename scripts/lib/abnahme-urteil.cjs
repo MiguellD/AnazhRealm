@@ -2023,12 +2023,12 @@ function sollTafelSelbsttest(tafel, q) {
         );
     const apMe = (stufe, ton) =>
         Object.assign(stufeMe([]), {
-            klassen: { [`f:tor:L${stufe}`]: { pixel: 400, luma: 100 }, "portal-nebel": fleck(ton) },
+            klassen: { [`f:tor:L${stufe}`]: { pixel: 400, luma: 100 }, "portal-membran": fleck(ton) },
         });
     // die Stufe 3 ist (wie im Kern der Tore) eine NUR-WURF-Stufe: ihr Schuss zeigt die Fernform — die Apertur ohne Tor-Mesh
-    const fernMe = (ton) => Object.assign(stufeMe([]), { klassen: { "portal-nebel": fleck(ton) } });
+    const fernMe = (ton) => Object.assign(stufeMe([]), { klassen: { "portal-membran": fleck(ton) } });
     const rcW = {
-        apertur: "^portal-(membran|nebel)$",
+        apertur: "^portal-membran$",
         tor: "^(?:f|fimp):tor:L(\\d)$",
         stufen: { datei: "x.js", symbol: "CFG", feld: "lod.stufen", budget: "lod.budget", ab: 1 },
     };
@@ -2038,7 +2038,7 @@ function sollTafelSelbsttest(tafel, q) {
     };
     const mw = (messung) => MASS_RECHNER.milchweiss({ messung, rechnung: rcW }, qW);
     const mwVoll = mw({ L1: apMe(1, [235, 235, 236]), L3: fernMe([200, 200, 200]) });
-    if (!(mwVoll.ist === 1 && !mwVoll.offen && /portal-nebel/.test(mwVoll.taeter || "")))
+    if (!(mwVoll.ist === 1 && !mwVoll.offen && /portal-membran/.test(mwVoll.taeter || "")))
         v.push(`Maß milchweiss: zwei weiße Stufen lesen ${mwVoll.ist}${mwVoll.fehler ? " — " + mwVoll.fehler : ""}`);
     if (mw({ L1: apMe(1, [120, 60, 150]), L3: fernMe([60, 140, 200]) }).ist !== 0)
         v.push("Maß milchweiss: bunte Membranen lesen nicht 0");
@@ -2060,12 +2060,12 @@ function sollTafelSelbsttest(tafel, q) {
     const ob = (messung) => MASS_RECHNER.oeffnungBunt({ name: "oeffnungBunt", messung, rechnung: rcW }, qW);
     const obMilch = ob({ L1: apMe(1, [235, 235, 236]), L3: fernMe([200, 200, 200]) });
     const obBunt = ob({ L1: apMe(1, [120, 60, 150]), L3: fernMe([60, 140, 200]) });
-    if (!(obMilch.ist < 5 && obBunt.ist > 20 && /portal-nebel/.test(obMilch.taeter || "")))
+    if (!(obMilch.ist < 5 && obBunt.ist > 20 && /portal-membran/.test(obMilch.taeter || "")))
         v.push(`Maß oeffnungBunt: Milch ${obMilch.ist}${obMilch.fehler ? " — " + obMilch.fehler : ""}, bunt ${obBunt.ist}`);
     // ZIEL-TREUE (D8): r je Klasse gewichtet mit ihren Pixeln; ohne Ziel-Panorama r 0 und der Grund beim Namen; ohne `ziel` vor D8
     const zt = (messung) => MASS_RECHNER.zielTreue({ name: "zielTreue", messung, rechnung: rcW }, qW);
     const mitZiel = (me, ziel) => {
-        me.klassen["portal-nebel"] = Object.assign({}, me.klassen["portal-nebel"], { ziel });
+        me.klassen["portal-membran"] = Object.assign({}, me.klassen["portal-membran"], { ziel });
         return me;
     };
     const ztTreu = zt({

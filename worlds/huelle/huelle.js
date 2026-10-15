@@ -17,6 +17,8 @@
  *   bruecke(opt)               die Portal-Brücke + der DSL-Adapter (skeleton-Norm): ready EINMAL (kein Echo), nur der
  *                              Eltern-Rahmen spricht, `["chain", …]` rekursiv, das Einzelwort der Heimat (["w", …args])
  *                              ganz — nie op[0] je Element (aus "gt" wurde "g"). Esc bringt heim, außer die Welt behält ihn.
+ *   panorama(T, renderer, scene, ort, opt)  DAS ZIEL-BILD (D8): die Welt des Studios als Equirekt 512 × 256, linear, aus
+ *                              ihrem eigenen Renderer — das Labor liest es selbst (rt), die Brücke exportiert es (daten)
  *   toast(text, ms) · zufall(seed) · knopfMitText(wurzel, wort)
  *
  * Die Hülle ändert keine Bau-Bytes: sie reicht Werte durch, die Gesetzbücher bauen (gate:asset-contract unverändert).
@@ -607,10 +609,105 @@
         return K;
     }
 
+    // ── DAS PANORAMA DES STUDIOS (D8, Karte „Das Tor als Fenster") — die EINE Quelle des Ziel-Bilds der Tor-Membran ──
+    // Das Studio rendert seine EIGENE Welt (seine Szene, sein Renderer, Labor = Welt) einmal von einem Ort aus: sechs
+    // 90°-Würfe in einen Würfel (CubeCamera), gefaltet ins Equirekt 512 × 256 (die Richtung je Texel wie three
+    // `equirectUV`: u = atan2(z, x)/2π + ½, v = asin(y)/π + ½, Zeile 0 unten), LINEAR ohne Tonabbildung (der Leser belichtet
+    // selbst). opt: verbergen (Objekte, die nicht ins Bild gehören — die eigene Membran), nah/fern, lesen (true: die Texel als
+    // Halbfloat-Puffer zurück, der Welt-Export). Rückgabe { w, h, rt, daten } — rt.texture liest das Labor selbst.
+    var PANO_W = 512,
+        PANO_H = 256;
+    function halb(x) {
+        // float32 → float16 (IEEE 754 binary16, gerundet zur nächsten, Überlauf → ∞, unter dem Normalbereich subnormal)
+        var f = halb.f || (halb.f = new Float32Array(1)),
+            u = halb.u || (halb.u = new Uint32Array(f.buffer));
+        f[0] = x;
+        var b = u[0],
+            s = (b >>> 16) & 0x8000,
+            e = ((b >>> 23) & 0xff) - 112,
+            m = b & 0x7fffff;
+        if (e >= 31) return s | (((b >>> 23) & 0xff) === 0xff && m ? 0x7e00 : 0x7c00);
+        if (e <= 0) {
+            if (e < -10) return s;
+            m = (m | 0x800000) >> (1 - e);
+            return s | ((m + 0x1000) >> 13);
+        }
+        return s | ((e << 10) + ((m + 0x1000) >> 13));
+    }
+    function panorama(T, renderer, scene, ort, opt) {
+        opt = opt || {};
+        var wuerfel = new T.WebGLCubeRenderTarget(256, {
+            type: T.HalfFloatType,
+            generateMipmaps: false,
+            minFilter: T.LinearFilter,
+            magFilter: T.LinearFilter,
+        });
+        var cam = new T.CubeCamera(opt.nah || 0.1, opt.fern || 4000, wuerfel);
+        cam.position.set(ort[0], ort[1], ort[2]);
+        scene.add(cam);
+        var verborgen = opt.verbergen || [];
+        var sicht = verborgen.map(function (o) {
+            return o.visible;
+        });
+        verborgen.forEach(function (o) {
+            o.visible = false;
+        });
+        var tm = renderer.toneMapping,
+            alt = renderer.getRenderTarget();
+        renderer.toneMapping = T.NoToneMapping;
+        try {
+            cam.update(renderer, scene);
+        } finally {
+            verborgen.forEach(function (o, i) {
+                o.visible = sicht[i];
+            });
+            scene.remove(cam);
+        }
+        var rt = new T.WebGLRenderTarget(PANO_W, PANO_H, {
+            type: T.FloatType,
+            minFilter: T.LinearFilter,
+            magFilter: T.LinearFilter,
+            depthBuffer: false,
+        });
+        var mat = new T.ShaderMaterial({
+            uniforms: { uWuerfel: { value: wuerfel.texture } },
+            vertexShader: "varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,0.0,1.0);}",
+            fragmentShader:
+                "uniform samplerCube uWuerfel;varying vec2 vUv;void main(){float az=(vUv.x-0.5)*6.28318530718;" +
+                "float el=(vUv.y-0.5)*3.14159265359;vec3 d=vec3(cos(el)*cos(az),sin(el),cos(el)*sin(az));" +
+                "gl_FragColor=vec4(textureCube(uWuerfel,d).rgb,1.0);}",
+            depthTest: false,
+            depthWrite: false,
+            toneMapped: false,
+        });
+        var quad = new T.Mesh(new T.PlaneGeometry(2, 2), mat);
+        quad.frustumCulled = false;
+        var buehne = new T.Scene();
+        buehne.add(quad);
+        renderer.setRenderTarget(rt);
+        renderer.render(buehne, new T.Camera());
+        var daten = null;
+        if (opt.lesen) {
+            var f = new Float32Array(PANO_W * PANO_H * 4);
+            renderer.readRenderTargetPixels(rt, 0, 0, PANO_W, PANO_H, f);
+            daten = new Uint16Array(f.length);
+            for (var i = 0; i < f.length; i++) daten[i] = halb(f[i]);
+        }
+        renderer.setRenderTarget(alt);
+        renderer.toneMapping = tm;
+        quad.geometry.dispose();
+        mat.dispose();
+        wuerfel.dispose();
+        return { w: PANO_W, h: PANO_H, rt: rt, daten: daten };
+    }
+
     // ── DIE PORTAL-BRÜCKE + DER DSL-ADAPTER (skeleton-Norm, EINE Kopie) ──
     // opt: welt · label · dsl (Wörter) | manifest (true = ./manifest.json lesen und melden) · wort(w, args) → die Tat ·
     //      enter(avatar, msg) · esc(ev) → false behält Esc in der Welt · sonst(msg) jede andere Nachricht der Heimat (das
-    //      terrain-Labor reicht so die Asset-Kanäle an die Foundry-Brücke, foundryKanal)
+    //      terrain-Labor reicht so die Asset-Kanäle an die Foundry-Brücke, foundryKanal) · panorama() → { THREE, renderer,
+    //      scene, ort, verbergen } — DER EXPORT DES ZIEL-BILDS (D8): fragt die Heimat `{ type: "panorama-bitte" }`, rendert die
+    //      Hülle das Panorama der Welt (`panorama`, gelesen) und schickt `{ type: "panorama", world, w, h, daten }` (Halbfloat-
+    //      Texel, übertragen); eine Welt ohne panorama() antwortet laut mit `fehler`
     function bruecke(opt) {
         opt = opt || {};
         var eltern = wurzel.parent && wurzel.parent !== wurzel ? wurzel.parent : null;
@@ -645,7 +742,28 @@
             if (m.type === "enter") {
                 if (opt.enter) opt.enter(m.avatar && typeof m.avatar === "object" ? m.avatar : {}, m);
             } else if (m.type === "dsl") wirke(m.program);
-            else if (opt.sonst) opt.sonst(m);
+            else if (m.type === "panorama-bitte") {
+                var antwort = { type: "panorama", world: opt.welt, reqId: m.reqId };
+                try {
+                    var q = opt.panorama ? opt.panorama() : null;
+                    if (!q || !q.renderer || !q.scene) throw new Error("die Welt nennt kein Panorama (bruecke ohne panorama())");
+                    var P = panorama(q.THREE || wurzel.THREE, q.renderer, q.scene, q.ort || [0, 1.7, 0], {
+                        verbergen: q.verbergen,
+                        lesen: true,
+                    });
+                    P.rt.dispose();
+                    antwort.w = P.w;
+                    antwort.h = P.h;
+                    antwort.daten = P.daten;
+                } catch (e) {
+                    antwort.fehler = String((e && e.message) || e);
+                }
+                try {
+                    eltern.postMessage(antwort, "*", antwort.daten ? [antwort.daten.buffer] : []);
+                } catch (_e) {
+                    /* die Heimat ist fort */
+                }
+            } else if (opt.sonst) opt.sonst(m);
         });
         wurzel.addEventListener("keydown", function (ev) {
             if (ev.key !== "Escape") return;
@@ -689,6 +807,7 @@
         kosten: kosten,
         zaehle: zaehle,
         bruecke: bruecke,
+        panorama: panorama,
         toast: toast,
         zufall: zufall,
         knopfMitText: knopfMitText,
