@@ -331,23 +331,64 @@ const stapelText = (e) =>
         .map((f) => `${f.functionName || "(anonym)"} ${String(f.url).split("/").pop().split("?")[0]}:${f.location.lineNumber + 1}`)
         .join(" < ");
 
-// CPU je Prozess: zwei Proben im Abstand `ms` am Browser (SystemInfo antwortet ohne den Haupt-Thread der Seite).
-async function cpuDelta(b, ms) {
-    if (!b.cdp) return { text: "keine Browser-Sitzung", renderer: 0, gpu: 0 };
-    const probe = async () => new Map((await b.cdp.send("SystemInfo.getProcessInfo")).processInfo.map((p) => [`${p.type} ${p.id}`, p.cpuTime]));
+// DIE FÄDEN DES GPU-PROZESSES (Linux, /proc/<pid>/task): wer dort rechnet, gruppiert nach Faden-Namen — die Raster-Arbeiter
+// von swiftshader (`Thread<NN>`), seine Schlange (`Queue<…>`), der Befehls-Faden (`CrGpuMain`), die Link-Arbeiter von ANGLE
+// (`ThreadPoolForeg…`), der Compositor (`VizCompositorTh…`). Ticks = utime + stime (Felder 14 und 15, 100 je Sekunde).
+function faedenProbe(pid) {
+    if (process.platform !== "linux" || !pid) return null;
+    const m = new Map();
     try {
-        const a = await probe();
+        for (const t of fs.readdirSync(`/proc/${pid}/task`)) {
+            try {
+                const st = fs.readFileSync(`/proc/${pid}/task/${t}/stat`, "utf8");
+                const rest = st.slice(st.lastIndexOf(")") + 2).split(" ");
+                m.set(t, { name: st.slice(st.indexOf("(") + 1, st.lastIndexOf(")")), ticks: Number(rest[11]) + Number(rest[12]) });
+            } catch (_e) {
+                // der Faden endete zwischen Liste und Lesen
+            }
+        }
+    } catch (_e) {
+        return null;
+    }
+    return m;
+}
+function faedenText(a, z, ms) {
+    if (!a || !z) return null;
+    const g = new Map();
+    for (const [t, v] of z) {
+        const k = v.name.replace(/<[^>]*>$/, "<>").replace(/\d+$/, "");
+        const e = g.get(k) || { n: 0, ticks: 0 };
+        e.n++;
+        e.ticks += v.ticks - ((a.get(t) && a.get(t).ticks) || 0);
+        g.set(k, e);
+    }
+    const z2 = [...g].filter(([, e]) => e.ticks > 0).sort((x, y) => y[1].ticks - x[1].ticks);
+    return z2.length ? z2.slice(0, 6).map(([k, e]) => `${k}${e.n > 1 ? ` ×${e.n}` : ""} ${((e.ticks / (ms / 10)) * 100).toFixed(0)} %`).join(" · ") : null;
+}
+
+// CPU je Prozess: zwei Proben im Abstand `ms` am Browser (SystemInfo antwortet ohne den Haupt-Thread der Seite), unter Linux
+// dazu die Fäden des GPU-Prozesses.
+async function cpuDelta(b, ms) {
+    if (!b.cdp) return { text: "keine Browser-Sitzung", renderer: 0, gpu: 0, faeden: null };
+    const probe = async () => (await b.cdp.send("SystemInfo.getProcessInfo")).processInfo;
+    try {
+        const pa = await probe();
+        const gpuPid = (pa.find((p) => p.type === "GPU") || {}).id;
+        const fa = faedenProbe(gpuPid);
         await new Promise((r) => setTimeout(r, ms));
-        const z = await probe();
+        const fz = faedenProbe(gpuPid);
+        const a = new Map(pa.map((p) => [`${p.type} ${p.id}`, p.cpuTime]));
+        const z = new Map((await probe()).map((p) => [`${p.type} ${p.id}`, p.cpuTime]));
         const d = [...z].map(([k, v]) => [k, v - (a.get(k) || 0)]).sort((x, y) => y[1] - x[1]);
         const anteil = (typ) => Math.max(0, ...d.filter(([k]) => k.startsWith(typ)).map(([, v]) => v)) / (ms / 1000);
         return {
             text: d.filter(([k, v]) => v >= 0.02 || k.startsWith("GPU")).map(([k, v]) => `${k} ${(v / (ms / 1000) * 100).toFixed(0)} %`).join(" · ") || "alles ruht",
             renderer: anteil("renderer"),
             gpu: anteil("GPU"),
+            faeden: faedenText(fa, fz, ms),
         };
     } catch (e) {
-        return { text: `SystemInfo: ${(e && e.message) || e}`, renderer: 0, gpu: 0 };
+        return { text: `SystemInfo: ${(e && e.message) || e}`, renderer: 0, gpu: 0, faeden: null };
     }
 }
 
@@ -373,13 +414,15 @@ async function akte(page, grund) {
     else if (luecke < 3000) urteil = `AWAIT — der Haupt-Thread lebt (Puls vor ${sek(luecke)} s), ein Versprechen der Seite kehrt nie zurück; zuletzt ${letzt}`;
     else if (stapel) urteil = `JS-SCHLEIFE — der Haupt-Thread rechnet in ${stapelText(stapel).split(" < ")[0]}`;
     else if (cpu.renderer >= 0.5) urteil = `NATIV — der Haupt-Thread rechnet in einem nativen Aufruf (${(cpu.renderer * 100).toFixed(0)} %, kein JS-Stapel); zuletzt ${letzt}`;
-    else if (cpu.gpu >= 0.5) urteil = `GPU-PROZESS — der Haupt-Thread wartet nativ, der GPU-Prozess rechnet (${(cpu.gpu * 100).toFixed(0)} %); zuletzt ${letzt}`;
+    else if (cpu.gpu >= 0.5)
+        urteil = `GPU-PROZESS — der Haupt-Thread wartet nativ, der GPU-Prozess rechnet (${(cpu.gpu * 100).toFixed(0)} %${cpu.faeden ? `: ${cpu.faeden.split(" · ").slice(0, 2).join(" · ")}` : ""}); zuletzt ${letzt}`;
     else urteil = `VERKLEMMUNG — der Haupt-Thread wartet nativ, kein Prozess rechnet; zuletzt ${letzt}`;
     const z = [`═══ ${path.basename(process.argv[1] || "?")} · Seite #${A.id} ${kurz(page.url())} · ${grund}`];
     for (const o of A.offen.values()) z.push(`offen ${o.was} seit ${sek(Date.now() - o.an)} s`);
     z.push(A.puls ? `Puls ${A.pulsN}×, zuletzt vor ${sek(luecke)} s — ${A.puls.text}` : "Puls nie");
     for (const s of A.stempel) z.push(`Stempel ${s}`);
     z.push(`CPU (2 s) ${cpu.text}`);
+    if (cpu.faeden) z.push(`Fäden des GPU-Prozesses (2 s) ${cpu.faeden}`);
     if (A.b.last.length) z.push(`Last je 2 s (GPU-Prozess/Renderer %, älteste zuerst) ${A.b.last.join(" · ")}`);
     z.push(`Stapel ${stapel ? stapelText(stapel) : fragen ? "keine Pause in 6 s — der Haupt-Thread steht NATIV" : A.dbg ? "(nicht gefragt: der Puls lebt oder die Akte fragte schon)" : "(kein Debugger: Zeit-Linse)"}`);
     for (const k of A.konsole) z.push(`Konsole ${k}`);
@@ -421,15 +464,21 @@ async function starteBrowser(opts = {}) {
     b.last = [];
     if (b.cdp) {
         let vor = null;
+        let fVor = null;
         const uhr = setInterval(async () => {
             if (!b.offen) return clearInterval(uhr);
             try {
-                const jetzt = new Map((await b.cdp.send("SystemInfo.getProcessInfo")).processInfo.map((p) => [`${p.type} ${p.id}`, p.cpuTime]));
+                const info = (await b.cdp.send("SystemInfo.getProcessInfo")).processInfo;
+                const jetzt = new Map(info.map((p) => [`${p.type} ${p.id}`, p.cpuTime]));
+                const fJetzt = faedenProbe((info.find((p) => p.type === "GPU") || {}).id);
                 if (vor) {
                     const d = (typ) => Math.max(0, ...[...jetzt].filter(([k]) => k.startsWith(typ)).map(([k, v]) => v - (vor.get(k) || 0)));
-                    ring(b.last, `${new Date().toISOString().slice(14, 19)} gpu ${((d("GPU") / 2) * 100).toFixed(0)}/r ${((d("renderer") / 2) * 100).toFixed(0)}`, 30);
+                    // unter Linux der stärkste Faden des GPU-Prozesses dazu (wer die Last trägt)
+                    const f = faedenText(fVor, fJetzt, 2000);
+                    ring(b.last, `${new Date().toISOString().slice(14, 19)} gpu ${((d("GPU") / 2) * 100).toFixed(0)}${f ? ` [${f.split(" · ")[0]}]` : ""}/r ${((d("renderer") / 2) * 100).toFixed(0)}`, 30);
                 }
                 vor = jetzt;
+                fVor = fJetzt;
             } catch (_e) {
                 // die Browser-Sitzung geht mit dem Browser
             }

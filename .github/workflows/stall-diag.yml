@@ -2,6 +2,8 @@ name: Stall-Diagnose
 
 # K67 — WEGWERF-LAUF: gate:webgl-probe N-mal je Läufer auf ubuntu-latest (swiftshader-GL), die Stall-Akte der Boot-Lib
 # nennt den Täter. Lebt nur auf dem Zweig webgl-stall und fällt vor dem letzten Push.
+# Diagnose 6: je Lauf die CPU-Bilanz der Fäden von GPU- und Renderer-Prozess (/proc), drei Arme im Wechsel:
+#   A die Probe wie sie ist · B ohne das Glimmen des Ladeschirms (CSS) · C Compositor auf der CPU (--disable-gpu-compositing)
 on:
     push:
         branches: [webgl-stall]
@@ -14,7 +16,7 @@ jobs:
             matrix:
                 laeufer: [1, 2, 3, 4, 5, 6, 7, 8]
         runs-on: ubuntu-latest
-        timeout-minutes: 40
+        timeout-minutes: 50
         env:
             CI_KLASSE: gpu
         steps:
@@ -37,46 +39,70 @@ jobs:
                   restore-keys: puppeteer-${{ runner.os }}-
             - name: System-Libs
               run: |
-                  SO="libnss3.so libatk-1.0.so.0 libatk-bridge-2.0.so.0 libcups.so.2 libdrm.so.2 libxkbcommon.so.0 libXcomposite.so.1 libXdamage.so.1 libXfixes.so.3 libXrandr.so.2 libgbm.so.1 libpango-1.0.so.0 libcairo.so.2 libasound.so.2"
-                  DA=1; for so in $SO; do ldconfig -p | grep -qF "$so (" || DA=0; done
-                  echo "System-Libs da=$DA"; nproc; free -m; lscpu | grep -i "model name"
+                  nproc; free -m; lscpu | grep -i "model name"
             - run: npm ci --no-audit --no-fund
             - name: Selbsttest der Stall-Akte
               run: node scripts/lib/welt-boot.cjs --selbsttest
-            - name: WebGL-Familie (jedes Gate mit einer art-webgl-Linse) - je Läufer ein Viertel
-              if: matrix.laeufer <= 4
+            - name: Arme und Faden-Bilanz
               shell: bash
               run: |
-                  set +e
-                  GATES=$(node - <<'JS'
-                  const p = require("./package.json").scripts, fs = require("fs");
-                  const raus = new Set(["gate:perf-parity", "gate:webgl-probe"]);
-                  console.log(Object.entries(p).filter(([k, v]) => k.startsWith("gate:") && !raus.has(k) && [...v.matchAll(/scripts\/([\w.-]+\.cjs)/g)].some((m) => { try { return /art: "webgl"/.test(fs.readFileSync("scripts/" + m[1], "utf8")); } catch (e) { return false; } })).map(([k]) => k).join(" "));
+                  node - <<'JS'
+                  const fs = require("fs");
+                  const q = fs.readFileSync("scripts/diag-webgl-probe.cjs", "utf8");
+                  const hook = "window.__anazhForceWebGL = true; // der EINE Hook — echter Renderer, erzwungener WebGL2-Backend";
+                  const tick = "r._gameLoopTick(performance.now());\n                    o.tickOk++;";
+                  if (!q.includes(hook) || !q.includes(tick)) throw new Error("Probe-Text verschoben");
+                  fs.writeFileSync("scripts/x-probe-B.cjs", q.replace(hook, hook + '\n        document.addEventListener("DOMContentLoaded", () => { const s = document.createElement("style"); s.textContent = ".ladeschirm-glut{animation:none!important}"; document.head.appendChild(s); });'));
+                  const sb = 'starteBrowser({ art: "webgl", frist: 300000 })';
+                  if (!q.includes(sb)) throw new Error("Start-Text verschoben");
+                  fs.writeFileSync("scripts/x-probe-C.cjs", q.replace(sb, 'starteBrowser({ art: "webgl", frist: 300000, zusatz: ["--disable-gpu-compositing"] })'));
                   JS
-                  )
-                  i=0; ROT=0
-                  for g in $GATES; do
-                    i=$((i+1)); [ $(( i % 4 + 1 )) -eq ${{ matrix.laeufer }} ] || continue
-                    T0=$(date +%s); npm run -s $g > /tmp/g.log 2>&1; E=$?
-                    echo "GATE $g EXIT=$E DAUER=$(( $(date +%s) - T0 )) s"
-                    if [ $E -ne 0 ]; then ROT=$((ROT+1)); tail -30 /tmp/g.log; fi
-                    grep -hE "stall-akte\] (═══|URTEIL)" /tmp/g.log | head -6
-                  done
-                  echo "GATES ROT=$ROT"
-            - name: webgl-probe in Folge
+                  cat > /tmp/faeden.cjs <<'JS'
+                  // je Sekunde die Fäden aller GPU- und Renderer-Prozesse; bei SIGTERM die Bilanz je Faden-Klasse (CPU-Sekunden)
+                  const fs = require("fs");
+                  const letzt = new Map();
+                  const probe = () => {
+                    for (const pid of fs.readdirSync("/proc").filter((p) => /^\d+$/.test(p))) {
+                      let typ;
+                      try { const c = fs.readFileSync(`/proc/${pid}/cmdline`, "utf8"); if (!/chrome/.test(c)) continue; typ = (c.match(/--type=([\w-]+)/) || [, "browser"])[1]; } catch (e) { continue; }
+                      if (typ !== "gpu-process" && typ !== "renderer") continue;
+                      let tasks; try { tasks = fs.readdirSync(`/proc/${pid}/task`); } catch (e) { continue; }
+                      for (const t of tasks) {
+                        try {
+                          const st = fs.readFileSync(`/proc/${pid}/task/${t}/stat`, "utf8");
+                          const rest = st.slice(st.lastIndexOf(")") + 2).split(" ");
+                          const name = st.slice(st.indexOf("(") + 1, st.lastIndexOf(")")).replace(/<[^>]*>$/, "<>").replace(/\d+$/, "");
+                          letzt.set(`${pid}/${t}`, { k: `${typ === "gpu-process" ? "gpu" : "ren"}:${name}`, ticks: Number(rest[11]) + Number(rest[12]) });
+                        } catch (e) {}
+                      }
+                    }
+                  };
+                  const uhr = setInterval(probe, 1000);
+                  process.on("SIGTERM", () => {
+                    clearInterval(uhr); probe();
+                    const g = new Map();
+                    for (const v of letzt.values()) g.set(v.k, (g.get(v.k) || 0) + v.ticks / 100);
+                    const z = [...g].sort((a, b) => b[1] - a[1]);
+                    const sum = (p) => z.filter(([k]) => k.startsWith(p)).reduce((s, [, v]) => s + v, 0);
+                    console.log(`BILANZ gpu ${sum("gpu:").toFixed(0)} s · ren ${sum("ren:").toFixed(0)} s | ` + z.slice(0, 8).map(([k, v]) => `${k} ${v.toFixed(0)}`).join(" · "));
+                    process.exit(0);
+                  });
+                  JS
+            - name: webgl-probe in Folge (Arme A/B/C im Wechsel)
               shell: bash
               run: |
                   set +e; ROT=0; N=12
-                  # Läufer 7 und 8 fahren die Reihe der Gruppe 18 vor jeder Probe (der Kontext der Risse)
                   for i in $(seq 1 $N); do
-                    if [ ${{ matrix.laeufer }} -ge 7 ] && [ $i -le 6 ]; then
-                      for g in sippen-wirt pack-contract weltakt-wache himmel-tag nervensystem-schmiede; do npm run -s gate:$g > /dev/null 2>&1 || echo "VORLAUF $g ROT"; done
-                    fi
-                    echo "::group::Lauf $i (Läufer ${{ matrix.laeufer }})"
+                    ARM=$(echo "A B C" | cut -d' ' -f$(( (i + ${{ matrix.laeufer }}) % 3 + 1 )))
+                    case $ARM in A) P=scripts/diag-webgl-probe.cjs;; B) P=scripts/x-probe-B.cjs;; C) P=scripts/x-probe-C.cjs;; esac
+                    echo "::group::Lauf $i Arm $ARM (Läufer ${{ matrix.laeufer }})"
+                    node /tmp/faeden.cjs > /tmp/bilanz.txt & FP=$!
                     T0=$(date +%s)
-                    node scripts/diag-webgl-probe.cjs; E=$?
-                    echo "LAUF ${{ matrix.laeufer }}.$i EXIT=$E DAUER=$(( $(date +%s) - T0 )) s"
+                    node $P; E=$?
+                    D=$(( $(date +%s) - T0 ))
+                    kill -TERM $FP; wait $FP
                     echo "::endgroup::"
+                    echo "LAUF ${{ matrix.laeufer }}.$i ARM=$ARM EXIT=$E DAUER=$D s $(cat /tmp/bilanz.txt)"
                     [ $E -ne 0 ] && ROT=$((ROT+1))
                   done
                   echo "ROT=$ROT von $N"
