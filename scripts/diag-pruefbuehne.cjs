@@ -25,12 +25,14 @@
 //       Stoffe der Szene), EIN Punktlicht-Gesetz, kein Punktlicht der Szene. Der Selbsttest nimmt der Feuerstelle ihr
 //       Datum, dem Plan den Leser und schmuggelt einen Stoff und einen Bauer ohne Pool ein — die Probe nennt jeden.
 //   (7) DAS BILD DER S0-PROBE (`--licht`, K11 + K11b): echter Renderer, Ausgabe-Pfad — der Feuerkreis aus 2 m (Luma) und
-//       der Farbton des Lichts des Feuers auf dem Boden 1–3 m (28–45° netto, die Farbtemperatur des Gesetzes); `--bild`
-//       legt die Bilder aus 2 m, aus 6 m und der Figur ab. Selbsttest: der Pool leer, das Feuer bis K11b (Glut-Palette,
-//       nacht 12). DIE NACHT (D3-2, `S0_NACHT`): derselbe Boden ohne das Feuer um Mitternacht und in der Dämmerung ist
-//       lesbar (Luma, abgesoffen). Selbsttest: der Himmel ohne Sternen-Licht. Dazu DER HIMMEL FOLGT DEM SPRUNG (K10,
-//       `himmelProbe`): nach Mittag und Mitternacht über den Pfad des Spielers trägt die Umgebung die Bestrahlung des
-//       geltenden Himmels. Selbsttest: der Maler taub.
+//       der Farbton des Lichts des Feuers auf dem Boden 1–3 m (28–45° netto, die Farbtemperatur des Gesetzes) bei der
+//       Sättigung, die das Auge der Nacht sieht (≤ 0,75 brutto, K66); `--bild` legt die Bilder aus 2 m, aus 6 m und der
+//       Figur ab. Selbsttest: der Pool leer, das Feuer bis K11b (Glut-Palette, nacht 12), das Auge des Tages. DIE NACHT
+//       (D3-2, `S0_NACHT`): derselbe Boden ohne das Feuer um Mitternacht und in der Dämmerung ist lesbar (Luma,
+//       abgesoffen). Selbsttest: der Himmel ohne Sternen-Licht. Dazu DER HIMMEL FOLGT DEM SPRUNG (K10, `himmelProbe`): nach
+//       Mittag und Mitternacht über den Pfad des Spielers trägt die Umgebung die Bestrahlung des geltenden Himmels.
+//       Selbsttest: der Maler taub. DER ABEND (D3-N2, `abendProbe`): das Licht an der Sonne der Welt-Uhr ist der Durchlass,
+//       die Karte steht über dem Deckel. Selbsttest: die Tafel, der Deckel; Gegenprobe: die Uhr läuft im Lauf.
 //
 //   node scripts/diag-pruefbuehne.cjs [--json datei] [--evolutionen 60] [--wurzel dir]
 //                                                  (`--wurzel` = der Baum eines anderen Stands: vorher ↔ nachher)
@@ -1345,13 +1347,25 @@ async function lichtLauf() {
                     const s = r.state;
                     const T = window.THREE;
                     const rend = s.renderer;
-                    // der Pfad des Spielers: der Himmel folgt dem Sprung, frisch gemalt (die Umgebung der Nacht trägt ihr Licht)
+                    // der Pfad des Spielers: der Himmel folgt dem Sprung, frisch gemalt (die Umgebung der Nacht trägt ihr Licht) —
+                    // derselbe Weg wie der Abend (`abendProbe`), ohne Schutz: fehlt ein Glied, wirft der Schuss beim Namen
                     const uhr = async (t) => {
-                        r.setTimeOfDay(t, "human");
+                        if (r.setTimeOfDay(t, "human") !== true) throw new Error("S0 Schuss: die Uhr nimmt den Spieler nicht (" + t + ")");
                         await s._skyEnvLesung;
-                        if (typeof r._himmelFrisch === "function") await r._himmelFrisch();
-                        if (typeof r._applyDayNightToScene === "function") r._applyDayNightToScene();
+                        await r._himmelFrisch();
+                        r._applyDayNightToScene();
                     };
+                    // die Uhr des Schusses: Mitternacht oder die Dämmerung (die Sonne `daemmerGrad` unter dem Horizont) — findet
+                    // die Suche keine, ist der Schuss blind (wie der Abend), nie still Mitternacht
+                    let zeit = 0;
+                    if (schein === "daemmerung") {
+                        const ziel = Math.sin((daemmerGrad * Math.PI) / 180);
+                        let u = null;
+                        for (let t = 0.5; t < 1 && u == null; t += 0.0002)
+                            if (r._dayNightSunDirection(r._sonnenWinkel(t)).y <= ziel) u = t;
+                        if (u == null) return { fehler: `keine Uhr mit der Sonne ${daemmerGrad}° — der Schuss der Dämmerung ist blind` };
+                        zeit = u;
+                    }
                     const feuer = window.__s0Feuer;
                     const f = feuer.position;
                     const g = f.y - 0.5; // der Boden des Feuers: wo es steht (auf dem Grund oder auf der Genesis-Scheibe, K52)
@@ -1369,16 +1383,6 @@ async function lichtLauf() {
                     if (schein === "sterne") {
                         r._atmoSternenLicht = () => [0, 0, 0];
                         await uhr(0.5);
-                    }
-                    // die Uhr des Schusses: Mitternacht oder die Dämmerung (die Sonne `daemmerGrad` unter dem Horizont)
-                    let zeit = 0;
-                    if (schein === "daemmerung") {
-                        const ziel = Math.sin((daemmerGrad * Math.PI) / 180);
-                        for (let t = 0.5; t < 1; t += 0.0002)
-                            if (r._dayNightSunDirection(r._sonnenWinkel(t)).y <= ziel) {
-                                zeit = t;
-                                break;
-                            }
                     }
                     // der Farb-Schein: der Platz des Feuers leuchtet wie bis K11b — in der Glut-Palette (sRGB → linear) und mit
                     // der Nacht-Stärke von damals (nacht 12 statt des Datums) — die Farbe des Stoffs statt der Farbtemperatur
@@ -1447,10 +1451,10 @@ async function lichtLauf() {
                         // das Licht des Himmels im Schuss (der Täter der Nacht beim Namen): die Bestrahlung der Umgebung von oben
                         // und das Sternen-Licht der EINEN Atmosphäre (Zenit-Leuchtdichte, Welt-Einheiten) bei der Sonne des Schusses
                         const L3 = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
-                        const env = typeof r._himmelsIrradianz === "function" ? r._himmelsIrradianz() : null;
+                        const env = r._himmelsIrradianz();
                         const sonneY = r._dayNightSunDirection(r._sonnenWinkel(s.timeOfDay)).y;
                         himmelL = env ? +(Math.PI * L3(env.oben)).toFixed(4) : null;
-                        sternL = typeof r._atmoSternenLicht === "function" ? +L3(r._atmoSternenLicht(sonneY)).toFixed(4) : null;
+                        sternL = +L3(r._atmoSternenLicht(sonneY)).toFixed(4);
                     } finally {
                         r._leuchtTakt = alt;
                         if (schein === "tag") {
