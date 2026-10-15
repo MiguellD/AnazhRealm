@@ -83,13 +83,14 @@ const server = statikServer();
         out.placedMark = mk(null, false); // platzierte Struktur (global seit Welle B) → nur Layer 0
         out.globalMark = mk(null, false); // global (grosse Struktur) → nur Layer 0
 
-        // (2b) ECHTE Gruppen über den REALEN Erzeugungs-Pfad (`_archInstanceGroupFor`/-Batch + Gras),
+        // (2b) ECHTE Gruppen über den REALEN Erzeugungs-Pfad (`_archInstanceGroupFor`),
         // deterministisch statt warmup-abhängig: eine region-gestreute Vegetations-Gruppe trägt
-        // FOLIAGE_LAYER + Layer 0; eine platzierte (global) trägt nur Layer 0; Gras trägt beide.
+        // FOLIAGE_LAYER + Layer 0; eine platzierte (global) trägt nur Layer 0. Das Gras-Mesh fiel V18.492 (die Halme sind
+        // eine WGSL-Schicht des Bodens) — sein toter Ruf (`_acquireGrassMesh` hinter typeof) und der Ersatz-Beweis an einem
+        // eigenen Layer-Objekt (eine Tautologie) fielen mit der Ruf-Wand (gate:altlasten, K62-n4).
         const layersOf = (m) => ({ l0: (m.layers.mask & 1) !== 0, l1: (m.layers.mask & (1 << LAYER)) !== 0 });
         let grpFoliage = null,
-            grpPlaced = null,
-            grpGrass = null;
+            grpPlaced = null;
         try {
             // triviales geom+mat reicht für den InstancedMesh-Pfad (der einzige seit V18.510) —
             // wir prüfen die LAYER-Markierung des realen Erzeugungs-Pfads, nicht die Gras-Geometrie.
@@ -98,23 +99,11 @@ const server = statikServer();
             grpFoliage = gF && gF.mesh ? layersOf(gF.mesh) : null;
             const gP = r._archInstanceGroupFor("p_probe", 0, leaf, null);
             grpPlaced = gP && gP.mesh ? layersOf(gP.mesh) : null;
-            if (typeof r._acquireGrassMesh === "function" && st._grassConeGeometry) {
-                const gm = r._acquireGrassMesh();
-                grpGrass = gm ? layersOf(gm) : null;
-            }
-            // Fallback: wenn die Gras-Geometrie noch nicht bereit ist, den Gras-Layer-Vertrag
-            // direkt am Layer-Objekt beweisen (dieselbe `enable(FOLIAGE_LAYER)`-Zeile wie im Code).
-            if (!grpGrass) {
-                const gl = new THREE.Object3D();
-                gl.layers.enable(LAYER);
-                grpGrass = layersOf(gl);
-            }
         } catch (_e) {
             out.groupErr = _e && _e.message;
         }
         out.grpFoliage = grpFoliage;
         out.grpPlaced = grpPlaced;
-        out.grpGrass = grpGrass;
 
         // (3) DER REGLER TRÄGT DIE AUFLÖSUNG NICHT — den headless-Kurzschluss kontrolliert umgehen, schwere und leichte Last
         const wasNull = st.renderer && st.renderer._isHeadlessNull;
@@ -159,7 +148,7 @@ const server = statikServer();
     );
     const fmt = (g) => (g ? `{L0 ${g.l0}, L${o.LAYER} ${g.l1}}` : "n/a");
     console.log(
-        `  (2b) echte Gruppen: foliage-InstGroup ${fmt(o.grpFoliage)} · placed ${fmt(o.grpPlaced)} · Gras ${fmt(o.grpGrass)}${o.groupErr ? " ERR:" + o.groupErr : ""}`
+        `  (2b) echte Gruppen: foliage-InstGroup ${fmt(o.grpFoliage)} · placed ${fmt(o.grpPlaced)}${o.groupErr ? " ERR:" + o.groupErr : ""}`
     );
     console.log(
         `  (3) Regler unter Last und in Ruhe: Skala 0,8 → ${o.skalaNachLast} → ${o.skalaNachRuhe} · Laub-Faktor lebt: ${o.laubFaktorLebt}`
@@ -185,9 +174,6 @@ const server = statikServer();
         o.grpPlaced &&
         o.grpPlaced.l0 === true &&
         o.grpPlaced.l1 === false && // platzierte Struktur: nur Layer 0
-        o.grpGrass &&
-        o.grpGrass.l0 === true &&
-        o.grpGrass.l1 === true && // Gras: FOLIAGE_LAYER + Layer 0
         o.skalaNachLast === 0.8 &&
         o.skalaNachRuhe === 0.8 &&
         o.laubFaktorLebt === false &&

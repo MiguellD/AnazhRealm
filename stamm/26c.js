@@ -1531,10 +1531,10 @@ AnazhRealm._tuerFernAnteil = function () {
     if (Number.isFinite(f) && f >= 0 && f <= 1) return f;
     return AnazhRealm._kernPflichtBruch("porta:TUER_GESETZ.fern");
 };
-// DIE EINE DIÄT-PRÜFUNG (needsRefresh) für jeden Beobachter eines Diät-Objekts — Hauptpass (der Material-
-// Beobachter aus _materialObserverDiaet) UND Schattenpass (der Beobachter des r184-Schatten-Materials, s.
-// _configureRenderer; dort zählt die Diät des ORIGINAL-Materials am Objekt). `obs` = der Beobachter, `altNR`
-// seine Vendor-Bahn. Sie läuft im direkten Draw UND im Bundle-Replay (r184 ruft needsRefresh je verfolgtem Bürger).
+// DIE EINE DIÄT-PRÜFUNG (needsRefresh) für jeden Beobachter eines Render-Objekts der Welt-Szene — Hauptpass UND jede
+// Kaskade (der Eingriff an r184s NodeMaterial.setupObserver, `_configureRenderer`; jedes andere Zeichnen fährt die
+// Vendor-Bahn). `obs` = der Beobachter, `altNR` seine Vendor-Bahn. Sie läuft im direkten Draw UND im Bundle-Replay
+// (r184 ruft needsRefresh je verfolgtem Bürger).
 //  (1) Instanz-Wächter: equals() walkt nur geometry.attributes — instanceMatrix/instanceColor leben am MESH →
 //      Mutation → genau EIN Refresh.
 //  (2) gefallen in (6): die Erklärung der Atlanten an die Diät (Integration V18.542) — wer eine Textur liest, muss sich
@@ -1546,8 +1546,8 @@ AnazhRealm._tuerFernAnteil = function () {
 //      ließ je Render nur das Stempel-Objekt refreshen, 98 von 99 Programmen zeigten die Kamera ihrer letzten
 //      Aufnahme. Die Diät schreibt je Programm und Render die geteilten Gruppen (_diaetGeteiltSchreiben: updateBefore,
 //      die render-/frame-Knoten, der Upload genau dieser Gruppen) und fragt dann equals() (Welt-Matrix · Material ·
-//      Geometrie · Lichter): voll nur, was sich änderte. Diät-Stoffe tragen nur geteilte renderGroup-Uniforms
-//      (Pflicht-Paar _uniformHeimatTeilen), ihre Objekt-Gruppe ändert sich nur mit dem Objekt. Kopf wie der Vendor:
+//      Geometrie · Lichter): voll nur, was sich änderte. Bis K62 trugen Diät-Stoffe nur geteilte renderGroup-Uniforms
+//      (Pflicht-Paar _uniformHeimatTeilen); die eigenen Werte jedes Stoffs sieht seit K62 der Wächter (7). Kopf wie der Vendor:
 //      Erst-Init, Animation, Velocity und Programme mit updateAfter fahren die Vendor-Bahn. gate:vendor-anker pinnt
 //      jede benutzte r184-Stelle und fährt die Treue am Schein-Programm, gate:kamera-treue am echten Bild.
 //  (4) EIN GANG JE KNOTEN UND GRUPPE UND RENDER (Welle K, 07.10.): seit der EINE Knoten je Quelle die Render-Gruppen

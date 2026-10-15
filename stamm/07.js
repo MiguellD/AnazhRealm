@@ -858,22 +858,29 @@ class AnazhRealm_Z07 {
         // Die Diät galt bis K62 nur Stoffen, die sich erklärten (`_materialObserverDiaet`, sechs Stellen, der Schatten nur über
         // sein Original): gemessen an Genesis Third (Radeon 890M) refreshten je Frame 45,8 von 114,5 Prüfungen, darunter
         // 23 Stoffe ohne Erklärung (Tor-Membranen und -Nebel, Himmel, Sonne, Plattform, Rauch), netto 58 µs je Refresh.
-        // Jetzt prüft JEDER Beobachter eines Render-Objekts einer Szene — Hauptbild und jede Kaskade — mit der EINEN Diät
-        // (`_diaetRefresh`): ihr Wächter (7) sieht auch jeden Wert, den equals() nicht sieht (die eigenen Uniform-Puffer je
-        // Render-Objekt), darum braucht kein Stoff mehr eine Erklärung. Ein Zeichnen ohne Szene (r184 QuadMesh: Post-Kette,
-        // TRAA) fährt die Vendor-Bahn. Die Basisklasse exportiert window.THREE nicht — sie ist der Prototyp von MeshBasicNodeMaterial.
+        // Jetzt prüft JEDER Beobachter eines Render-Objekts der WELT-SZENE — Hauptbild (der Szenen-Pass der Post-Kette) und
+        // jede Kaskade — mit der EINEN Diät (`_diaetRefresh`): ihr Wächter (7) sieht auch jeden Wert, den equals() nicht sieht
+        // (die eigenen Uniform-Puffer je Render-Objekt), darum braucht kein Stoff mehr eine Erklärung. Welt-eigen heißt hier,
+        // was es am Render-Objekt-Pfad heißt (`_renderObjectDirect`: `scene === welt.state.scene`) — EIN Urteil für Diät und
+        // Befehl. Jedes andere Zeichnen fährt die Vendor-Bahn: r184 setzt für ein Zeichnen ohne Szene seine EIGENE interne
+        // Szene ein (`_renderScene`: `e.isScene ? e : zS` — QuadMesh der Post-Kette, TRAA, PMREM `fromEquirectangular`, dessen
+        // Unschärfe-Pässe zwischen cubeUv und Ping-Pong-Ziel tauschen), jede Back-Szene (Karte, Fern-Ring, Werkstatt) ist eine
+        // eigene. Bis K62-n4 stand hier `ro.scene.isScene` — wahr auch für r184s interne Szene: der PMREM zeichnete mit
+        // der Diät aus cubeUv in cubeUv (GPU-Validierung, CI voll 3/11 und 6/11 an ffec7788, gate:post-kette).
+        // Die Basisklasse exportiert window.THREE nicht — sie ist der Prototyp von MeshBasicNodeMaterial.
         const NM =
             THREE.MeshBasicNodeMaterial && Object.getPrototypeOf(THREE.MeshBasicNodeMaterial.prototype).constructor;
         if (!NM || !NM.prototype || typeof NM.prototype.setupObserver !== "function")
             this.log("DIÄT: r184-NodeMaterial.setupObserver nicht gefunden (Vendor-Drift)", "ERROR");
         else if (!NM.__anazhWeltDiaet) {
             const beobRoh = NM.prototype.setupObserver;
+            const welt = this;
             NM.prototype.setupObserver = function (builder) {
                 const o = beobRoh.call(this, builder);
                 if (!o || typeof o.needsRefresh !== "function") return o;
                 const altNR = o.needsRefresh;
                 o.needsRefresh = function (ro, frame) {
-                    if (ro.scene.isScene !== true) return altNR.call(this, ro, frame);
+                    if (ro.scene !== welt.state.scene) return altNR.call(this, ro, frame);
                     return AnazhRealm._diaetRefresh(this, ro, frame, altNR);
                 };
                 return o;

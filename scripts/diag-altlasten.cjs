@@ -3420,6 +3420,59 @@ function gateDateien(root) {
     return aus;
 }
 
+// DIE RUF-WAND (K62-n4, 15.10.): kein Skript in scripts/ oder scripts/lib RUFT einen gefallenen Namen. Die Gates tragen die
+// Namen als Absenz-Probe (`typeof r.x === "undefined"`, Suchtext) und bleiben darum außerhalb der Namens-Wand — ein Ruf
+// (`.x(`, `?.x(`, `.x?.(`) ist nie eine Probe, sondern ein toter Aufruf, hinter einem typeof-Rückfall still grün. Am Kopf
+// von K62 (ffec7788) ROT mit 4 Rufen in 4 Linsen: kamera-treue und ego-schatten erklärten Stoffe über das gefallene
+// `_materialObserverDiaet`, foliage-res bewies den Gras-Layer über `_acquireGrassMesh` (V18.492), klang-zensus rief
+// `playCreaturePing` (Welle 5). Gezählt am AST (acorn: ein Aufruf, dessen Callee ein Glied mit diesem Namen ist —
+// Kommentare, Texte und Muster sind keine Knoten; der Text-Schnitt `ohneTexte` kennt keine Regex-Literale und verlor
+// ego-schatten ab Zeile 250). Ein Skript, das acorn nicht liest, ist ROT. Rot mit Datei:Zeile und dem Abschied.
+function scanRufWand(dateien, liste = FORBIDDEN) {
+    const acorn = require("acorn");
+    const namen = new Map();
+    for (const z of liste) if (/^[A-Za-z_$][\w$]*$/.test(z.token)) namen.set(z.token, z.fiel);
+    const vorRuf = /\.\s*([A-Za-z_$][\w$]*)\s*(?:\?\.)?\s*\(/g;
+    const errs = [];
+    for (const [name, src] of dateien) {
+        let kandidat = false;
+        for (const m of src.matchAll(vorRuf))
+            if (namen.has(m[1])) {
+                kandidat = true;
+                break;
+            }
+        if (!kandidat) continue;
+        let ast;
+        try {
+            ast = acorn.parse(src.replace(/^#!.*/, ""), {
+                ecmaVersion: "latest",
+                sourceType: "script",
+                allowReturnOutsideFunction: true,
+                locations: true,
+            });
+        } catch (e) {
+            errs.push(`Ruf-Wand: ${name} ist für acorn kein Skript (${e.message}) — die Wand liest es nicht`);
+            continue;
+        }
+        const geh = (n) => {
+            if (!n || typeof n.type !== "string") return;
+            if (n.type === "CallExpression" && n.callee.type === "MemberExpression" && !n.callee.computed) {
+                const p = n.callee.property;
+                const fiel = p.type === "Identifier" ? namen.get(p.name) : undefined;
+                if (fiel !== undefined)
+                    errs.push(`Ruf-Wand: ${name}:${p.loc.start.line} ruft den gefallenen Namen ${p.name} (fiel: ${fiel}) — ein toter Aufruf`);
+            }
+            for (const k in n) {
+                const v = n[k];
+                if (Array.isArray(v)) v.forEach(geh);
+                else if (v && typeof v.type === "string") geh(v);
+            }
+        };
+        geh(ast);
+    }
+    return errs;
+}
+
 // DIE LINSEN TRAGEN DIE WAND MIT (Welle G, 06.10.): eine Linse in scripts/lib ruft die Stamm-Methoden in der Seite — ein
 // gefallener Name dort ist ein toter Aufruf, den erst ein Lauf findet (`werkbank fernwald` rief `_weltSeiteDirty` nach dem
 // Abschied der Seiten-Ebene; vier weitere Reste älterer Abschiede lagen dort). Die Gates in scripts/ bleiben draußen: ihre
@@ -4125,6 +4178,35 @@ function main() {
                 : "❌ SELBST-TEST: die Zwillings-Wand feuert nicht"
         );
         if (!zwillingFeuert) process.exit(1);
+        // Die Ruf-Wand muss feuern: ein Ruf hinter typeof-Rückfall und ein optionaler Ruf — je mit Zeile; die Absenz-Probe,
+        // der Kommentar, der Suchtext und ein lebender Ruf bleiben still; der Kopf ist sauber.
+        const rufRot = scanRufWand([
+            [
+                "scripts/x-ruf.cjs",
+                "const d = (m) => (typeof r._materialObserverDiaet === \"function\" ? r._materialObserverDiaet(m) : m);\n" +
+                    "r?.playCreaturePing?.(1);\n",
+            ],
+        ]);
+        const rufStill = scanRufWand([
+            [
+                "scripts/x-still.cjs",
+                "// r._materialObserverDiaet(m)\nconst a = typeof r._materialObserverDiaet === \"undefined\";\n" +
+                    "const s = \"r._acquireGrassMesh()\";\nr._tierRuf(c, \"freude\");\n",
+            ],
+        ]);
+        const rufAmOrt = (z, n) => rufRot.some((e) => e.startsWith(`Ruf-Wand: scripts/x-ruf.cjs:${z} ruft den gefallenen Namen ${n} `));
+        const rufFeuert =
+            scanRufWand(gateDateien(root)).length === 0 &&
+            rufRot.length === 2 &&
+            rufAmOrt(1, "_materialObserverDiaet") &&
+            rufAmOrt(2, "playCreaturePing") &&
+            rufStill.length === 0;
+        console.log(
+            rufFeuert
+                ? "✅ SELBST-TEST: die Ruf-Wand feuert (ein Ruf hinter typeof, ein optionaler Ruf — je mit Zeile; Absenz-Probe, Kommentar, Suchtext und ein lebender Ruf still)"
+                : `❌ SELBST-TEST: die Ruf-Wand feuert nicht — ${JSON.stringify(rufRot.concat(rufStill, scanRufWand(gateDateien(root)))).slice(0, 400)}`
+        );
+        if (!rufFeuert) process.exit(1);
         // Die Stamm-Leser-Wand muss feuern: ein kanonischer Leser am Namen vorbei, ein Server-Patcher am Pfad und ein
         // Stapel-Leser ohne die Zonen-Dateien in einer Kopie — je beim Namen samt Zeile; Kommentar und Meldung bleiben still.
         const leserDatei = "scripts/diag-stamm-leser-probe.cjs";
@@ -4166,6 +4248,7 @@ function main() {
         .concat(scanBootWand(gateDateien(root)))
         .concat(scanOrtsWand(gateDateien(root)))
         .concat(scanHuellenFormWand(wirtsDateien(root, files)))
+        .concat(scanRufWand(gateDateien(root)))
         .concat(scanStammLeser(root))
         .concat(checkAliasArten());
     if (errs.length) {
@@ -4174,7 +4257,7 @@ function main() {
         process.exit(1);
     }
     console.log(
-        `✅ DIE RÜCKKEHR-WAND steht — ${FORBIDDEN.length} gefallene Namen grep=0 in ${files.length} Dateien (Stamm + Linsen in scripts/lib), CREATURE_SOULS = exakt [${SOUL_KEYS_EXPECTED.join(" · ")}], ${ZWILLINGE.length} Zwillings-Fingerabdrücke wohnen nur im Gesetzbuch, jede InstancedMesh entsteht im EINEN Chokepoint, ${KARTEN_METHODEN.length} Karten-Methoden malen nichts im Haupt-Thread, kein normalNode dreht mit der transponierten Matrix oder liest r184s normalWorld, kein Stoff fängt still (Stoff-Wand: kein schluckender catch im Render-Bau (am Versuch gemessen, die Hülle ohne Tiefe samt Studio-Faden, jeder Pfad bricht, jeder Studio-Faden trägt einen lauten Hörer), keine Fehler-Variable und kein toter Fehler-Marker, kein Wenn um ein TSL-Glied, kein Null-Knoten; ${STOFF_ZWEIGE.length} benannte Zweige mit ihrem Bild (ohne Seite · der Sandbox-Weg des Voxel-Fadens), der EINE Melder meldet jede Meldung ERROR und dieselbe wieder mit Zähler, keine Kette steigt still aus, kein Bau wartet in einer Schleife auf die Uhr), die Bau-Stufe hat EINE Bedeutung (stufenRezept), jedes Gate liest seinen Port aus EINER eigenen Variable, keine Probe setzt Spieler, Kamera oder Tier an ein Zahlen-Literal ohne BÜHNE, kein Wirt gibt eine Hülle in der alten Zeile (boxen statt teile), jede Gruppe mit Welt-Vorlagen entsorgt über die EINE Regel (_disposeSoulGroup), der Name der Stamm-Datei steht als Lese-Ziel nur in scripts/lib/stamm.cjs (${stammLeserDateien(root).length} Dateien gesehen).`
+        `✅ DIE RÜCKKEHR-WAND steht — ${FORBIDDEN.length} gefallene Namen grep=0 in ${files.length} Dateien (Stamm + Linsen in scripts/lib), CREATURE_SOULS = exakt [${SOUL_KEYS_EXPECTED.join(" · ")}], ${ZWILLINGE.length} Zwillings-Fingerabdrücke wohnen nur im Gesetzbuch, jede InstancedMesh entsteht im EINEN Chokepoint, ${KARTEN_METHODEN.length} Karten-Methoden malen nichts im Haupt-Thread, kein normalNode dreht mit der transponierten Matrix oder liest r184s normalWorld, kein Stoff fängt still (Stoff-Wand: kein schluckender catch im Render-Bau (am Versuch gemessen, die Hülle ohne Tiefe samt Studio-Faden, jeder Pfad bricht, jeder Studio-Faden trägt einen lauten Hörer), keine Fehler-Variable und kein toter Fehler-Marker, kein Wenn um ein TSL-Glied, kein Null-Knoten; ${STOFF_ZWEIGE.length} benannte Zweige mit ihrem Bild (ohne Seite · der Sandbox-Weg des Voxel-Fadens), der EINE Melder meldet jede Meldung ERROR und dieselbe wieder mit Zähler, keine Kette steigt still aus, kein Bau wartet in einer Schleife auf die Uhr), die Bau-Stufe hat EINE Bedeutung (stufenRezept), jedes Gate liest seinen Port aus EINER eigenen Variable, keine Probe setzt Spieler, Kamera oder Tier an ein Zahlen-Literal ohne BÜHNE, kein Wirt gibt eine Hülle in der alten Zeile (boxen statt teile), kein Skript ruft einen gefallenen Namen (Ruf-Wand, ${gateDateien(root).length} Skripte), jede Gruppe mit Welt-Vorlagen entsorgt über die EINE Regel (_disposeSoulGroup), der Name der Stamm-Datei steht als Lese-Ziel nur in scripts/lib/stamm.cjs (${stammLeserDateien(root).length} Dateien gesehen).`
     );
 }
 

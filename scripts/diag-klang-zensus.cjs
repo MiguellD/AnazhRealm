@@ -430,8 +430,7 @@ function werkzeug() {
                 // ein Wesen 3 m neben dem Ohr (leerer Körper → die Bezugslänge des Gesetzes)
                 const c = new window.THREE.Object3D();
                 c.position.set(st.playerMesh.position.x + 3, st.playerMesh.position.y, st.playerMesh.position.z);
-                if (typeof r._tierRuf === "function") r._tierRuf(c, "freude");
-                else r.playCreaturePing("happy");
+                r._tierRuf(c, "freude");
             },
             4000
         );

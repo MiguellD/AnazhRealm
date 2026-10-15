@@ -39,6 +39,10 @@
 //       07.10.: der Gang von 181d3c9e zeichnete hier 0,11.
 //   Die Wiederholung zählt je RENDER-ABSCHNITT (Render-Id und `info.calls`): nach einem verschachtelten Render stellt
 //   der äußere seine Knoten zu Recht ein zweites Mal.
+//   DIE BÜHNE IST DIE WELT (K62-n4): die Diät urteilt nur über Render-Objekte der Welt-Szene (`_configureRenderer`, dasselbe
+//   Urteil wie der Render-Objekt-Pfad `_renderObjectDirect`) — jeder Schuss stellt seine Bühne für seinen Render als die
+//   Welt-Szene; die Pipelines neuer Stoffe baut vorher ein Schuss auf dem Vendor-Weg (`schuss(sc, false)`). Eine Bühne, die
+//   nicht die Welt ist, fährt die Vendor-Bahn: die Wand fällt dann rot (TEILEN blind · STAND voll · ÄNDERUNG blind).
 //   Die Bühne nimmt keinen Spiel-Loop an (die Welt bootet weiter und renderte sonst mitten hinein), und die Wand zählt
 //   nach: LAUF — kein Bild der Spiel-Szene, kein Puffer des GPU-Kehraus während der Bühne. Ein Spiel-Frame nimmt der
 //   Bühne (nicht im Spiel-Graph) ihre Geometrie-Puffer, ein Replay danach zeichnete das Bild davor (0,3064 = X gegen Y,
@@ -273,6 +277,8 @@ function buehne() {
         const schattenAlt = rend.shadowMap.enabled;
         rend.shadowMap.enabled = true;
         const szene = new T.Scene();
+        // die Welt-Szene des Spiels: jeder Schuss stellt seine Bühne für seinen Render an ihre Stelle (DIE BÜHNE IST DIE WELT)
+        const weltSzene = st.scene;
         const licht = new T.DirectionalLight(0xffffff, 3);
         licht.position.set(6, 12, 4);
         licht.castShadow = true;
@@ -283,14 +289,11 @@ function buehne() {
         const gruppe = new T.BundleGroup();
         gruppe.name = "kamera-treue:BUEHNE";
         szene.add(gruppe);
-        const diaet = (m) => (typeof r._materialObserverDiaet === "function" ? r._materialObserverDiaet(m) : m);
         const boden = new T.Mesh(
             new T.PlaneGeometry(30, 30),
-            diaet(
-                new T.MeshStandardNodeMaterial({
-                    colorNode: TSL.mix(TSL.color(0x2a6a2a), TSL.color(0xc8b080), TSL.positionWorld.x.div(30).add(0.5).clamp()),
-                })
-            )
+            new T.MeshStandardNodeMaterial({
+                colorNode: TSL.mix(TSL.color(0x2a6a2a), TSL.color(0xc8b080), TSL.positionWorld.x.div(30).add(0.5).clamp()),
+            })
         );
         boden.rotation.x = -Math.PI / 2;
         boden.receiveShadow = true;
@@ -302,7 +305,7 @@ function buehne() {
             // Jede Karte ihr eigenes Programm (eigene Konstante): der Zeiger-Verlust trifft sie einzeln.
             const m = new T.MeshStandardNodeMaterial({ side: T.DoubleSide, alphaTest: 0.5 });
             m.colorNode = TSL.vec4(TSL.color(farben[i]), TSL.step(0.5, TSL.fract(TSL.uv().x.mul(3 + i))));
-            const k = new T.Mesh(new T.PlaneGeometry(2.4, 3), diaet(m));
+            const k = new T.Mesh(new T.PlaneGeometry(2.4, 3), m);
             k.position.set(-8 + i * 2.1, 1.6, -3 + (i % 3) * 2.5);
             k.rotation.y = 0.4 * i;
             k.castShadow = true;
@@ -317,7 +320,7 @@ function buehne() {
         // Weiches Alpha (eine Rampe wie ein Blatt-Rand): alphaTest 0,5 schneidet die Hälfte, 0 fast nichts.
         laubStoff.colorNode = TSL.vec4(TSL.color(0x3a8a2a), TSL.fract(TSL.uv().y.mul(5)));
         // Ein Blätterdach: flach liegende Karten über dem Boden werfen große ausgeschnittene Schatten.
-        const laub = new T.InstancedMesh(new T.PlaneGeometry(6, 6), diaet(laubStoff), 6);
+        const laub = new T.InstancedMesh(new T.PlaneGeometry(6, 6), laubStoff, 6);
         {
             const m4 = new T.Matrix4();
             for (let i = 0; i < 6; i++) {
@@ -332,7 +335,7 @@ function buehne() {
         gruppe.add(laub);
         const kisten = [];
         for (let i = 0; i < 3; i++) {
-            const kiste = new T.Mesh(new T.BoxGeometry(1.5, 1.5 + i, 1.5), diaet(new T.MeshStandardNodeMaterial({ color: 0x8a6a4a + i * 0x101010 })));
+            const kiste = new T.Mesh(new T.BoxGeometry(1.5, 1.5 + i, 1.5), new T.MeshStandardNodeMaterial({ color: 0x8a6a4a + i * 0x101010 }));
             kisten.push(kiste);
             kiste.position.set(4 + i * 2.5, 0.75 + i / 2, 5 - i * 3);
             kiste.castShadow = true;
@@ -342,7 +345,7 @@ function buehne() {
         }
         // DER STOFF OHNE ERKLÄRUNG (K62): ein freier Wert in der Objekt-Gruppe (r184 `uniform` ohne Takt, von außen gesetzt).
         // Bis K62 refreshte er in jedem Pass jedes Frames (r184 hasNode, keine Diät ohne Erklärung); jetzt prüft er mit der
-        // Diät wie jeder Stoff einer Szene, ihr Wächter (7) lädt den Wert, sobald er sich ändert (ÄNDERUNG unten).
+        // Diät wie jeder Stoff der Welt-Szene, ihr Wächter (7) lädt den Wert, sobald er sich ändert (ÄNDERUNG unten).
         const uFrei = TSL.uniform(new T.Color(0x6a4a8a));
         const frei = new T.Mesh(new T.BoxGeometry(1.5, 2, 1.5), new T.MeshStandardNodeMaterial({ colorNode: uFrei }));
         frei.position.set(-3, 1, 5);
@@ -403,7 +406,7 @@ function buehne() {
         const kehrausVor = st._gpuKehrausN || 0;
         const zaehlUm = (bahn) =>
             function (sc, c, f) {
-                if (sc && sc === st.scene && sc !== szene && !sc.overrideMaterial) spielBilder++;
+                if (sc && sc === weltSzene && !sc.overrideMaterial) spielBilder++;
                 if (sc && sc.overrideMaterial) {
                     if (sc.overrideMaterial.isShadowPassMaterial) stoffe.add(sc.overrideMaterial);
                     if (aufnahmeKontext) z.schattenRenders++;
@@ -414,11 +417,18 @@ function buehne() {
         const W = 160,
             H = 120;
         const rt = new T.RenderTarget(W, H, { depthBuffer: true, samples: 0 });
-        const schuss = async (sc = szene) => {
+        // `alsWelt` false: der Vorwärm-Schuss — die Bühne zeichnet auf dem Vendor-Weg und baut die Pipelines neuer Stoffe
+        // synchron (die Erst-Zeichnung der Welt baute sie asynchron, ein Schuss danach fände sie noch nicht)
+        const schuss = async (sc = szene, alsWelt = true) => {
             nf.update();
-            rend.setRenderTarget(rt);
-            rend.render(sc, kam);
-            rend.setRenderTarget(null);
+            st.scene = alsWelt ? sc : weltSzene;
+            try {
+                rend.setRenderTarget(rt);
+                rend.render(sc, kam);
+                rend.setRenderTarget(null);
+            } finally {
+                st.scene = weltSzene;
+            }
             const px = await rend.readRenderTargetPixelsAsync(rt, 0, 0, W, H);
             const roh = px instanceof Uint8Array ? px : new Uint8Array(px.buffer || px);
             const zeile = W * 4,
@@ -456,6 +466,7 @@ function buehne() {
             // Wahrheit: der direkte Pfad (die Gruppe als Gruppe) bei Y und bei X.
             gruppe.isBundleGroup = false;
             blick(-1);
+            await schuss(szene, false);
             await schuss();
             const wahrY = await schuss();
             blick(1);
@@ -649,7 +660,7 @@ function buehne() {
                 const gruppe2 = new T.BundleGroup();
                 gruppe2.name = "kamera-treue:VERSCHACHTELT";
                 szene2.add(gruppe2);
-                const stein = new T.Mesh(new T.BoxGeometry(2, 2, 2), diaet(new T.MeshStandardNodeMaterial({ color: 0x8080c0 })));
+                const stein = new T.Mesh(new T.BoxGeometry(2, 2, 2), new T.MeshStandardNodeMaterial({ color: 0x8080c0 }));
                 stein.position.set(-6, 1, 3);
                 stein.renderOrder = -1;
                 stein.castShadow = false;
@@ -658,18 +669,16 @@ function buehne() {
                 gruppe2.add(stein);
                 const boden2 = new T.Mesh(
                     new T.PlaneGeometry(30, 30),
-                    diaet(
-                        new T.MeshStandardNodeMaterial({
-                            colorNode: TSL.mix(TSL.color(0x2a6a2a), TSL.color(0xc8b080), TSL.positionWorld.x.div(30).add(0.5).clamp()),
-                        })
-                    )
+                    new T.MeshStandardNodeMaterial({
+                        colorNode: TSL.mix(TSL.color(0x2a6a2a), TSL.color(0xc8b080), TSL.positionWorld.x.div(30).add(0.5).clamp()),
+                    })
                 );
                 boden2.rotation.x = -Math.PI / 2;
                 boden2.receiveShadow = true;
                 boden2.castShadow = false;
                 boden2.frustumCulled = false;
                 gruppe2.add(boden2);
-                // der Werfer auf der Vendor-Bahn: seit K62 prüft jeder Stoff einer Szene mit der Diät — die Vendor-Bahn fährt in
+                // der Werfer auf der Vendor-Bahn: seit K62 prüft jeder Stoff der Welt-Szene mit der Diät — die Vendor-Bahn fährt in
                 // der Welt jeder Leib mit Skelett (r184 hasAnimation): ein Kasten an EINEM Knochen
                 const werferGeo = new T.BoxGeometry(2, 4, 2);
                 const ecken = werferGeo.attributes.position.count;
@@ -704,6 +713,7 @@ function buehne() {
                     }
                 };
                 const verschachtelt = {};
+                await schuss(szene2, false);
                 for (const bundle of [false, true]) {
                     gruppe2.isBundleGroup = bundle;
                     gruppe2.needsUpdate = true;
@@ -735,7 +745,7 @@ function buehne() {
             const senke = {};
             {
                 gruppe.isBundleGroup = false;
-                const sStoff = diaet(new T.MeshStandardNodeMaterial({ color: 0x9a5a3a }));
+                const sStoff = new T.MeshStandardNodeMaterial({ color: 0x9a5a3a });
                 const sGeo = new T.BoxGeometry(1, 2, 1);
                 const lage = (m, dx) => {
                     const m4 = new T.Matrix4();
@@ -763,7 +773,7 @@ function buehne() {
                 };
                 blick(1);
                 gruppe.add(sA, sB);
-                await schuss();
+                await schuss(szene, false);
                 const bildSenke = await schuss();
                 // wer zeichnet: der Zeichner der Senke (ein Stand ohne Zeichner zeichnet die Senke selbst)
                 const zeichnet = (o) => o.__zeichner || o;
@@ -772,11 +782,11 @@ function buehne() {
                 await schuss();
                 const bildOhne = await schuss();
                 gruppe.add(refA);
-                await schuss();
+                await schuss(szene, false);
                 const bildRef = await schuss();
                 gruppe.remove(sB);
                 gruppe.add(refB);
-                await schuss();
+                await schuss(szene, false);
                 senke.kontrolle = !!zustand(refA) && zustand(refA) !== zustand(refB);
                 senke.bild = gleich(bildSenke, bildRef);
                 senke.blind = gleich(bildOhne, bildRef);
@@ -788,9 +798,8 @@ function buehne() {
             // Textur-Tausch · Puffer: Geometrie-Tausch · Bereich: drawRange · Anzahl: Instanzen · Pipeline: Seite) zeichnet
             // das Bündel wie der rohe Weg (der Stempel bricht immer); Lauf-Kontrolle: ein Stempel, der nie bricht, weicht ab.
             const befehl = {};
-            // die Bühne ist für diese Station die Welt-Szene: der haltende Befehl gilt den Draws der Welt (`_befehlHaelt`)
-            const weltSzene = st.scene;
-            try {
+            // der haltende Befehl gilt den Draws der Welt (`_befehlHaelt`) — die Bühne ist es in jedem Schuss
+            {
                 gruppe.isBundleGroup = false;
                 gruppe.needsUpdate = true;
                 const zahl = () => Object.assign({ auf: 0, wieder: 0, roh: 0 }, r._befehl || {});
@@ -802,13 +811,12 @@ function buehne() {
                 const texA = pix([230, 40, 40, 255, 40, 230, 40, 255, 40, 40, 230, 255, 230, 230, 40, 255]);
                 const texB = pix([20, 20, 20, 255, 250, 250, 250, 255, 250, 250, 250, 255, 20, 20, 20, 255]);
                 const texKnoten = TSL.texture(texA);
-                const tafel = new T.Mesh(new T.BoxGeometry(3, 3, 3), diaet(new T.MeshStandardNodeMaterial({ colorNode: texKnoten })));
+                const tafel = new T.Mesh(new T.BoxGeometry(3, 3, 3), new T.MeshStandardNodeMaterial({ colorNode: texKnoten }));
                 tafel.position.set(-3, 1.5, 4);
                 tafel.receiveShadow = true;
                 tafel.frustumCulled = false;
                 gruppe.add(tafel);
-                await schuss(); // der neue Stoff baut seine Pipeline auf dem Vendor-Weg, erst dann gilt die Bühne als Welt
-                st.scene = szene;
+                await schuss(szene, false); // der neue Stoff baut seine Pipeline auf dem Vendor-Weg
                 const geoAlt = kisten[2].geometry;
                 const geoNeu = new T.BoxGeometry(3, 0.6, 3);
                 const aendereBefehl = (k) => {
@@ -872,8 +880,6 @@ function buehne() {
                 befehl.bild = { befehl: gleich(befehlBild, wahr), taeter: gleich(taeterBild, wahr2), aenderung: gleich(wahr, wahr2) };
                 aendereBefehl(0);
                 gruppe.remove(tafel);
-            } finally {
-                st.scene = weltSzene;
             }
             return {
                 befehl,
