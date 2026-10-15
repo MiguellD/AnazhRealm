@@ -272,6 +272,7 @@ function ortVerdikt(m) {
         );
     if (!(m.vorplatzN > 0 && m.vorplatzOk === m.vorplatzN))
         fehl.push(`Stufe vor der Tür auf dem Weg ${m.vorplatzOk}/${m.vorplatzN}`);
+    if (!(m.terrasseWiese === 0)) fehl.push(`Wand der Terrasse mit Wiesen-Stoff ${m.terrasseWiese}/${m.terrasseWand}`);
     if (!(m.fremdBauten === 0)) fehl.push(`fremde Bauten im Erdbau ${m.fremdBauten}`);
     // endet die Kette vor 8 s (der Wagen fuhr den Dorfweg zu Ende), zählt das Tempo bis zum Ende über 8 s: der Weg ist kürzer
     // als das Soll, nie der Wagen langsamer
@@ -887,6 +888,8 @@ const FIXTURES = [
             laterneWandSoll: 2.548,
             vorplatzOk: 16,
             vorplatzN: 16,
+            terrasseWand: 120,
+            terrasseWiese: 0,
         };
         Object.assign(gut, {
             planHashGleich: true,
@@ -907,6 +910,7 @@ const FIXTURES = [
             wasserSlots: 4,
             laterneWand: 1.45,
             vorplatzOk: 0,
+            terrasseWiese: 87,
         });
         const vs = ortVerdikt(schlecht).join(" · ");
         check(
@@ -1879,6 +1883,33 @@ const FIXTURES = [
                             if (r._aufWeg(wx, wz, 0)) vpOk++;
                             else vpFehl.push(si);
                         });
+                    // DIE WAND DER TERRASSE (K66, Augen-Runde 15.10.: die Erdbau-Stufen trugen den Wiesen-Stoff als Flecken auf
+                    // senkrechten Flächen): jede Fläche, die der Erdbau des Orts um > 0,25 m hebt oder senkt und steiler als der
+                    // Schutt-Kandidat (23°) formt (Raster 1 m um den Ort), trägt den Stoff des Erdbaus — das Boden-Gesetz
+                    // (`hoehe(…, aus).schutt`, der Leser ist der Fels-Stoff des Chunks im Worker); gezählt: die Punkte mit Wiese
+                    if (P.ort) {
+                        const GC = globalThis.__gelaendeCore;
+                        const Lg = r._gelaende();
+                        const Lo = Object.assign({}, Lg, { erdbau: null });
+                        const ausT = {};
+                        let wand = 0;
+                        let wiese = 0;
+                        for (let i = -60; i <= 60; i++)
+                            for (let j = -60; j <= 60; j++) {
+                                const x = P.ort.x + i;
+                                const z = P.ort.z + j;
+                                const hT = GC.hoehe(Lg, x, z, true, ausT);
+                                const st = ausT.schutt;
+                                if (Math.abs(hT - GC.hoehe(Lo, x, z, true)) <= 0.25) continue;
+                                const gx = GC.hoehe(Lg, x + 0.5, z, true) - GC.hoehe(Lg, x - 0.5, z, true);
+                                const gz = GC.hoehe(Lg, x, z + 0.5, true) - GC.hoehe(Lg, x, z - 0.5, true);
+                                if (Math.hypot(gx, gz) < 0.42) continue;
+                                wand++;
+                                if (!(st >= 0.5)) wiese++;
+                            }
+                        res.terrasseWand = wand;
+                        res.terrasseWiese = wiese;
+                    }
                     res.vorplatzOk = vpOk;
                     res.vorplatzN = vpN;
                     res.vorplatzFehl = vpFehl;
@@ -2126,6 +2157,8 @@ const FIXTURES = [
             laterneWandSoll: outO.laterneWandSoll,
             vorplatzOk: outO.vorplatzOk,
             vorplatzN: outO.vorplatzN,
+            terrasseWand: outO.terrasseWand,
+            terrasseWiese: outO.terrasseWiese,
             planHashGleich,
             fremdBauten: outO.fremdBauten,
             gtWeg: gtO.gtWeg,
