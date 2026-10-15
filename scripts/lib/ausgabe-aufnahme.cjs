@@ -394,6 +394,16 @@ function erstRuhe(frame, opt, wer) {
                 v0 = E.verschoben,
                 w0 = E.wartetN;
             frame();
+            // DER GEGENDRUCK DER GPU (K60-N3): der nächste Frame kommt erst, wenn das Gerät diesen abgegeben hat. Eine Pause
+            // von 0 ms schob Frames schneller in den GPU-Prozess, als swiftshader sie rastert — die Rückmeldung jedes
+            // asynchronen Pipeline-Baus wartete hinter dem Rückstau (Erst-Zeichnungs-Wand: Rückstau bis 63 s, ein unbeleuchteter
+            // Würfel 46 s; mit Gegendruck Rückstau ≤ 3,8 s, die Probe 68 → 4 s)
+            const dev =
+                window.anazhRealm.state.renderer &&
+                window.anazhRealm.state.renderer.backend &&
+                window.anazhRealm.state.renderer.backend.device;
+            if (dev && dev.queue && typeof dev.queue.onSubmittedWorkDone === "function")
+                await dev.queue.onSubmittedWorkDone();
             await new Promise((res) => setTimeout(res, 0));
             // der Blick steht, wenn ein Frame nichts baut, nichts verschiebt, kein Draw auf seine Pipeline wartet
             // und kein Bundle ohne einen Bürger versiegelt ist (der wartende Draw zählt auf jedem Backend)
