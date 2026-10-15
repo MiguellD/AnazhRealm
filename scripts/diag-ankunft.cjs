@@ -106,6 +106,7 @@ function ladeschirmVerdict(m) {
         ["buchZu", "ohne das Buch der Studios", /Buch der Studios/],
         ["leibFehlt", "ohne den Leib des Spielers", /Leib/],
         ["pflanzung", "mit einem gepflanzten Baum der Mesh-Zone, der noch nicht steht", /gepflanzt/],
+        ["saat", "mit einem Chunk im Laub-Radius, dessen Wald noch nicht gesät ist", /bepflanzt/],
         ["horizont", "ohne den Horizont (der Fern-Ring steht nicht ganz)", /Horizont/],
     ]) {
         const z = f[k];
@@ -544,6 +545,21 @@ async function probe(arg) {
                 () => (st.pendingVegSpawns = (st.pendingVegSpawns || []).concat([pflanze])),
                 () => (st.pendingVegSpawns = (st.pendingVegSpawns || []).filter((t) => t !== pflanze))
             );
+            // (4d') der Chunk des Spielers liegt im Laub-Radius und wartet auf seine Saat (`pendingFoliageChunks`, K60-3: der
+            // Radius wuchs, sein Wald war noch nicht in der Schlange)
+            const sp = r._voxelChunkConfig().span;
+            const saatKey = `${Math.floor(pm.x / sp)},${Math.floor(pm.z / sp)}`;
+            const hatteSaat = !!(st.pendingFoliageChunks && st.pendingFoliageChunks.has(saatKey));
+            if (st.voxelChunks && st.voxelChunks.has(saatKey) && !hatteSaat)
+                fall(
+                    "saat",
+                    () => (st.pendingFoliageChunks = st.pendingFoliageChunks || new Set()).add(saatKey),
+                    () => st.pendingFoliageChunks.delete(saatKey)
+                );
+            else
+                m.ohneFall.saat = hatteSaat
+                    ? `der Chunk des Spielers (${saatKey}) wartet nach dem Boot noch auf seine Saat`
+                    : `der Chunk des Spielers (${saatKey}) steht nach dem Boot nicht`;
             // (4e) der Horizont steht nicht ganz (K60): der Ring gehört zur Welt (der Linsen-Hook, headless ruht er sonst) und
             // ist noch nicht voll gezeichnet (`fr.ready`)
             const merkHook = window.__anazhFernRing;
@@ -1537,6 +1553,7 @@ async function probe(arg) {
             buchZu: { weg: false, stand: "das Buch der Studios öffnet sich", warn: 0, terme: ["buch"] },
             leibFehlt: { weg: false, stand: "der Spieler erhält seinen Leib", warn: 0, terme: ["leib"] },
             pflanzung: { weg: false, stand: "1 Bäume werden gepflanzt", warn: 0, terme: ["pflanzung"] },
+            saat: { weg: false, stand: "1 Wald-Böden werden bepflanzt", warn: 0, terme: ["pflanzung"] },
             horizont: { weg: false, stand: "der Horizont wächst (0 %)", warn: 0, terme: ["horizont"] },
             allesSteht: { weg: true, stand: "", warn: 0 },
             lueckeRuht: { weg: true, stand: "", warn: 1 },

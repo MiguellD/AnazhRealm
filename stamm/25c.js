@@ -2520,7 +2520,26 @@ class AnazhRealm_Z25c {
             const q = t && t.position;
             if (q && (q.x - p.x) ** 2 + (q.z - p.z) ** 2 <= R * R) gesetzt++;
         }
-        if (gesetzt) luecke("pflanzung", `${gesetzt} Bäume werden gepflanzt`);
+        // Die Saat (K60-3): ein gebauter Chunk im Laub-Radius, dessen Pflanzung aussteht (`pendingFoliageChunks` — er wartete auf
+        // den Radius, `_tickFoliageGrowth` sät zwei je Takt), hat noch keinen Baum in der Schlange: ohne ihn stand das Bild im
+        // Takt, in dem der Radius wuchs, bevor sein Wald gesät war.
+        let saat = 0;
+        for (const key of st.pendingFoliageChunks || []) {
+            const ci = key.indexOf(",");
+            if (
+                st.voxelChunks &&
+                st.voxelChunks.has(key) &&
+                this._foliageChunkInRadius(Number(key.slice(0, ci)), Number(key.slice(ci + 1)))
+            )
+                saat++;
+        }
+        if (gesetzt || saat)
+            luecke(
+                "pflanzung",
+                [gesetzt ? `${gesetzt} Bäume werden gepflanzt` : "", saat ? `${saat} Wald-Böden werden bepflanzt` : ""]
+                    .filter(Boolean)
+                    .join(", ")
+            );
         const warten = this._streuWartet(p);
         if (warten) luecke("streu", `${warten} Wald-Stücke warten auf ihre Gestalt`);
         const karten =
