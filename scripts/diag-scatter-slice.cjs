@@ -10,7 +10,12 @@
 //   (2) HISM-SLOT-BILANZ: die Gruppen tragen nach dem Scheiben-Bau dieselben
 //       count/free-Stände wie nach dem One-Shot — ein Doppel-Add über die
 //       Scheiben-Grenze wäre im cells-Vergleich UNSICHTBAR (die Instanz landet
-//       trotzdem in der Gruppe), die Bilanz fängt ihn.
+//       trotzdem in der Gruppe), die Bilanz fängt ihn. Die Bilanz liest die GANZE Welt —
+//       darum steht die Welt zwischen One-Shot und letzter Scheibe still (keine
+//       Ereignis-Runde): ein Rewarm aus der Foundry-Lieferung
+//       (`_foundryPrefetchLibrary › _foundryRewarmColdTrees › _archGroupAlloc`) setzte
+//       sonst einen fremden Baum in die Bilanz (K69-2: CI 2 von 2 rot, lokal mit
+//       80 statt 150 Takten Vorlauf nachgestellt: f:kristalle 13 → 14).
 //   (3) KALT-BAKE-SCHEIBEN: der Region-Feld-Bake läuft in j-Zeilen-Scheiben und
 //       das Ergebnis ist Float32-BYTE-GLEICH zum One-Shot-Bake; ein HALBER Bake
 //       steht NIE in der Map (die _sampleBakedField-Wand).
@@ -39,7 +44,18 @@ const server = statikServer();
             const r = window.anazhRealm;
             const old = r.state.voxelWorker;
             r.state.voxelWorker = null;
-            for (let i = 0; i < 150; i++) {
+            // der Vorlauf endet am Bau-Ereignis, nie an einer Takt-Zahl allein: mindestens 150 Takte, dann bis die Welt
+            // die Region unter dem Spieler selbst ganz gebaut hat (Zellen ohne Fortsetzung) — Decke 900 gegen das Hängen
+            const SC = (window.AnazhRealm || r.constructor).SCATTER;
+            const steht = () => {
+                const p = r.state.playerMesh && r.state.playerMesh.position;
+                if (!p || !r.state.scatterRegions) return false;
+                const reg = r.state.scatterRegions.get(
+                    `${Math.floor(p.x / SC.regionM)},${Math.floor(p.z / SC.regionM)}`
+                );
+                return !!(reg && !reg._cont && reg.cells && reg.cells.length);
+            };
+            for (let i = 0; i < 900 && (i < 150 || !steht()); i++) {
                 r._gameLoopTick();
                 await new Promise((res) => setTimeout(res, 0));
             }
@@ -107,7 +123,7 @@ const server = statikServer();
                     const e = st.bakedRegionFields && st.bakedRegionFields.get(bKey);
                     if (e && e.dirty !== false && reg._cont.phase === "bake") halfBakeSeen = true;
                 } else break;
-                await new Promise((res) => setTimeout(res, 0));
+                // KEINE Ereignis-Runde zwischen den Scheiben: beide Bauten lesen dieselbe Welt (Kopf-Kommentar (2))
             }
             o.slices = slices;
             o.contPhases = Array.from(contSeenPhases);

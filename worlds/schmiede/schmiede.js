@@ -1607,6 +1607,10 @@ P._kBase=P.kruemmung;basisP=Object.assign({},P);buildSliders();rebuild();appendA
     }
     AnazhHuelle.bruecke({
         welt: "schmiede",
+        // DAS ZIEL-BILD (D8): die Hülle rendert diese Welt als Panorama aus dem Blick ihrer Kamera — die Tor-Membran der Heimat zeigt es
+        panorama: function () {
+            return { THREE: THREE, renderer: R, scene: scene, kamera: cam };
+        },
         label: "Anatomie · Klinge",
         dsl: [
             "langschwert", "saebel", "degen", "grossschwert", "dolch", "messer",

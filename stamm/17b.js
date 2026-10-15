@@ -904,6 +904,13 @@ class AnazhRealm_Z17b {
         this._chunkSatzZellen(b, li, vStart, geom.zellen || null, geom.hoehle || null);
         this._chunkSatzHuelle(s, b);
         if (b.hoehle) this._hoehlenVerknuepfe(s, b);
+        // EIN FLÜCHTIGER BLOCK (K69, `_satzBlock`): seine Arrays sind Views der Werkbank — der Bereich hält keine davon (die
+        // nächste Rechnung überschreibt sie), nur die Views in den Satz; wer die Werte braucht, rechnet sie aus `quelle` nach.
+        if (geom.fluechtig) {
+            for (const { name, form } of s.attr) if (form) geom.attributes[name].array = null;
+            geom.index = null;
+            geom.zellen = null;
+        }
         s.iSumme += b.iAnzahl;
         s.schmutzig = true;
         return b;
@@ -1062,10 +1069,12 @@ class AnazhRealm_Z17b {
         const s = this.state.chunkSaetze ? this.state.chunkSaetze.get(art) : null;
         const b = s ? s.bloecke.get(key) : null;
         if (!b) return false;
-        for (const { name, form } of s.attr) {
-            const a = b.geom.attributes[name];
-            if (a && !form) a.array = a.array.slice(); // ein gepacktes trägt der Chunk ohnehin selbst
-        }
+        // ein flüchtiger Block (`_satzBlock`) hat keinen Eigner, der seine Daten behielte — keine Kopie
+        if (!b.geom.fluechtig)
+            for (const { name, form } of s.attr) {
+                const a = b.geom.attributes[name];
+                if (a && !form) a.array = a.array.slice(); // ein gepacktes trägt der Chunk ohnehin selbst
+            }
         if (b.hoehle) this._hoehlenLoese(s, b);
         this._chunkSatzVFrei(s, b.vStart, b.vAnzahl);
         s.bloecke.delete(key);
@@ -1080,6 +1089,10 @@ class AnazhRealm_Z17b {
         const s = this.state.chunkSaetze ? this.state.chunkSaetze.get(art) : null;
         const b = s ? s.bloecke.get(key) : null;
         if (!b) throw new Error(`_chunkSatzMarke(${art}, ${key}): kein Bereich im Satz`);
+        if (b.geom.fluechtig)
+            throw new Error(
+                `_chunkSatzMarke(${art}, ${key}): ein flüchtiger Block trägt keinen CPU-Schreiber (_satzBlock)`
+            );
         // je geschriebenem Namen das Satz-Attribut, das ihn trägt — selbst oder in seiner vierten Komponente (`w`)
         for (const fa of s.attr) {
             if (!namen.includes(fa.name) && !(fa.w && namen.includes(fa.w))) continue;

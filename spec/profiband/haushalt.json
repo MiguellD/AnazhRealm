@@ -498,7 +498,7 @@
             "dreiecke": 15000,
             "regeln": [
                 {
-                    "muster": "^(himmel|himmel-[a-z]+|spieler|p2p-spieler|p2p-namensschild|feld-pass|dsl-insel|dsl-ufo|kreatur-aura|kreatur-traglast|dorf-rauch|pfeil|portal-membran|portal-nebel|wetter-regen|bau-phantom|bau-platzhalter|occl-proxy)$"
+                    "muster": "^(himmel|himmel-[a-z]+|spieler|p2p-spieler|p2p-namensschild|feld-pass|dsl-insel|dsl-ufo|kreatur-aura|kreatur-traglast|dorf-rauch|pfeil|portal-membran|wetter-regen|bau-phantom|bau-platzhalter|occl-proxy)$"
                 }
             ]
         },

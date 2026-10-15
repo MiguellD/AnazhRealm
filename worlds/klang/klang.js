@@ -4603,6 +4603,17 @@ applyHashSession();                                              // #s=…&p=…
    Buch, das Lab-UI spricht "Modern"/"Barock"). Kein Begeh-Modus — Esc meldet immer die Heimkehr. */
 AnazhHuelle.bruecke({
     welt: "klang",
+    // DAS ZIEL-BILD (D8): der Visualizer malt sich selbst als Panorama — sein Bild, um die Öffnung gelegt; die Tor-Membran der
+    // Heimat zeigt es
+    panorama: function () {
+        return {
+            bild: function (zc, w, h) {
+                zc.fillStyle = "#000";
+                zc.fillRect(0, 0, w, h);
+                if (canvas.width > 0 && canvas.height > 0) zc.drawImage(canvas, 0, 0, w, h);
+            },
+        };
+    },
     label: "Genesis — Generatives Musiksystem",
     dsl: Object.keys(KC.GENRES || {}).map(function (n) {
         return n.toLowerCase();

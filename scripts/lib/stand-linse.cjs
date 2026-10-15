@@ -284,6 +284,8 @@ function standLauf(k) {
 //   STROM   — ein Sprung an einen fremden Ort baut den Spieler-Chunk (Streaming heilig), auch nach der Ruhe;
 //   CODE    — jeder Fege-Takt fragt `_standRuht` und meldet `_standMeldet`;
 //   PAGE    — kein Page-Error.
+// Die Schwelle eines synchronen Chunk-Baus im Takt (ORT, K69-2): ein halber Frame des Profi-Bands (16,7 ms).
+const SYNC_CHUNK_MS = 8;
 function standUrteil(b) {
     const v = [];
     const namen = b.namen || Object.keys(TAKTE);
@@ -449,17 +451,163 @@ function standUrteil(b) {
                     `STUFE: ${U.wechsel} Stufen-Wechsel ohne Form-Änderung rufen ${m} ${U.rufe[m]}× (Wald-Setzung, Sichthöhen)`
                 );
     }
+    // (O) ORT (K69): ein Erdbau abseits wirft nur, was er ändern kann — der Stand des Walds (an ihm hängt die Gestalt jedes
+    // Orts), die fernen Wald-Zellen, die fernen Chunk-Gedächtnisse und der Stand eines fernen Chunks bleiben. Bis K69 warf jeder
+    // Erdbau die Gedächtnisse der ganzen Welt: der Gang ins Dorf (der Dorf-Zug legt das nächste) plante danach 2 579 Wald-Zellen
+    // synchron neu — an der Radeon EIN Frame von 3,1 s (`_forestCellDarts › planForestCell`).
+    const O = b.ort;
+    if (!O) v.push("LEER: keine Ort-Phase");
+    else if (!O.gelegt) v.push("LEER: die Ort-Phase legte keinen Erdbau — die Probe ist stumpf");
+    else if (!(O.darts && O.darts.fern > 0))
+        v.push(`LEER: die Ort-Phase sah keine fernen Wald-Zellen (über ${O.fern} m) — die Probe ist stumpf`);
+    else {
+        const wo = `der Erdbau bei (${O.ort})`;
+        const riss =
+            `die ${O.takte} Takte danach planten ${O.plan} Wald-Zellen neu (\`_forestCellDarts › planForestCell\`), ` +
+            `der längste ${O.maxTaktMs} ms`;
+        if (O.standNach !== O.standVor)
+            v.push(
+                `ORT: ${wo} warf das Dart-Gedächtnis der Welt (Stand des Walds ${O.standVor} → ${O.standNach}: die Gestalt ` +
+                    `jedes Orts fällt mit, \`_erdbauSetzen\`) — ${riss}`
+            );
+        if (O.darts.gehalten < O.darts.fern)
+            v.push(
+                `ORT: ${wo} warf ${O.darts.fern - O.darts.gehalten} von ${O.darts.fern} fernen Wald-Zellen (über ${O.fern} m, ` +
+                    `\`_erdbauSetzen\`) — ${riss}`
+            );
+        for (const [n, c] of Object.entries(O.chunks || {}))
+            if (c.gehalten < c.fern)
+                v.push(
+                    `ORT: ${wo} warf ${c.fern - c.gehalten} von ${c.fern} fernen Chunk-Gedächtnissen (${n}, über ${O.fern} m)`
+                );
+        // die Räumung seines Grunds: jeder Abbau speicherte bis K69 die ganze Welt synchron (`removeArchitecture › saveState`)
+        const Q = O.raeumung;
+        if (!Q || !(Q.abbau > 0)) v.push("LEER: die Ort-Phase räumte keine Natur — der Abbau ist ungeprüft");
+        else if (Q.saves > 0)
+            v.push(
+                `ORT: der Abbau von ${Q.abbau} Natur-Stücken speicherte die Welt ${Q.saves}× synchron (\`removeArchitecture › ` +
+                    `saveState\`, Σ ${Q.saveMs} ms) — räumt ein Dorf beim Nähern seinen Grund, liegt je Stück ein voller Save im Takt`
+            );
+        // das Haus ohne Kamin: sein Export sagt „kein Kamin" (null) — bis K69 fiel das Nein in der Slot-Quelle auf undefined,
+        // und der Wirt baute das ganze Haus im Kern, um die Spitze zu finden (an der Radeon 167 ms, `spawnArchitecture › MK`)
+        const H = O.kamin;
+        if (!H || !H.gesetzt) v.push("LEER: die Ort-Phase setzte kein Haus ohne Kamin — die Slot-Quelle ist ungeprüft");
+        else if (H.bau > 0)
+            v.push(
+                `ORT: das Haus ohne Kamin (${H.kultur}) baute seinen Kern ${H.bau}× nach (\`chimneyTipFromParams\` → ` +
+                    `\`massBau\`, ${H.ms} ms) — das Nein des Exports (\`chimney: null\`) fiel in der Slot-Quelle ` +
+                    `(\`_spawnSettlementSlot\`), jedes Dorf-Haus ohne Kamin baut sich beim Nähern im Takt zweimal`
+            );
+        // der Baum in frischem Wald (ein Hof-Baum des Dorfs, `_naturSetzen`): bis K69 plante seine Gestalt jede fehlende Zelle
+        // bis ±6 SYNCHRON im Aufrufer (`_ortGestaltSame › _forestStehtFrei › planForestCell`) — die Ausstattung eines Dorfs
+        // plante beim Gang hinein 366 Zellen in EINER Aufgabe (551 ms); jetzt plant sie die Schlange des Walds im Takt
+        const Wd = O.wald;
+        if (!Wd || !Wd.gesetzt)
+            v.push("LEER: die Ort-Phase setzte keinen Baum in frischem Wald — der Wald-Plan ist ungeprüft");
+        else {
+            if (Wd.synchron > 0)
+                v.push(
+                    `ORT: der Baum in frischem Wald bei (${Wd.ort}) plante ${Wd.synchron} Wald-Zellen synchron ` +
+                        `(\`_ortGestaltSame › _forestStehtFrei › planForestCell\`, ${Wd.ms} ms) — die Gestalt plant am Stück ` +
+                        `im Aufrufer, die Ausstattung eines Dorfs wird eine Lawine neben dem Takt`
+                );
+            if (!Number.isInteger(Wd.gestalt))
+                v.push(
+                    `ORT: die Gestalt des Baums in frischem Wald steht nach ${Wd.takte} Takten nicht — die Schlange des ` +
+                        `Walds (\`_tickWaldPlan\`) plant seine Zellen nicht`
+                );
+            if (Wd.maxTaktMs > 40)
+                v.push(
+                    `ORT: die Schlange des Walds plante in EINEM Takt ${Wd.maxTaktMs} ms (${Wd.maxTaktZellen} Zellen) — ` +
+                        `ihr Budget (\`WALD_PLAN.ms\`) hält nicht`
+                );
+        }
+        // das Haus im Satz: sein Wieder-Eintritt (jeder Stufen-Wechsel) legt keine Ecke frisch an — bis K69 schrieb der Block
+        // jede Ecke in neue Arrays (`_satzBlock`), ein Haus der Stufe 0 ~10 MB je Wechsel, die volle Sammlung fiel in den Takt
+        const SH = O.satzHaus;
+        if (!SH || !SH.gesetzt || !(SH.bloecke > 0) || !(SH.ecken >= 1000))
+            v.push(
+                `LEER: die Ort-Phase brachte kein Haus in den Bau-Satz (` +
+                    (SH && SH.gesetzt
+                        ? `${SH.kultur}, ${SH.gruppen || 0} Gruppen, ${SH.ecken || 0} Ecken nach ${SH.takte} Takten`
+                        : "keins gesetzt") +
+                    `) — der Satz-Block ist ungeprüft`
+            );
+        else if (SH.frischKB > 64)
+            v.push(
+                `ORT: das Haus im Satz (${SH.kultur}, ${SH.ecken} Ecken in ${SH.gruppen} Gruppen) legte beim Wieder-Eintritt ` +
+                    `${(SH.frischKB / 1024).toFixed(1)} MB frisch an (\`_tickBauSatz › _bauSatzBlock › _satzBlock\`, ` +
+                    `${SH.bloecke} Blöcke) — jeder Stufen-Wechsel eines Hauses schreibt seine Ecken neu in den Heap, die volle ` +
+                    `Sammlung fällt in den Takt`
+            );
+        if (!O.stand || !O.stand.key)
+            v.push("LEER: die Ort-Phase fand keinen fernen Chunk für den Stand der Worker-Antworten");
+        else if (!O.stand.gleich)
+            v.push(
+                `ORT: ${wo} verwarf die Worker-Antworten des fernen Chunks ${O.stand.key} (Stand ${O.stand.vor} → ` +
+                    `${O.stand.nach}) — der Worker baut fern neu, was der Erdbau nie berührt`
+            );
+        // DER ERDBAU UNTER DEM SPIELER (K69-2): der Chunk-Stoff entsteht im Worker, nie im Haupt-Faden (Lehre 14) — ein Takt,
+        // der einen Chunk synchron baut (`_buildVoxelChunkData`) über SYNC_CHUNK_MS, ist der Riss beim Namen seiner Rufer. Bis
+        // K69-2 baute der Neubau den Spieler-Chunk (und jeden Chunk mit einem Schnitt im 3×3) synchron: am Dorf 154–261 ms.
+        const AS = O.amSpieler;
+        if (!AS || !AS.gelegt)
+            v.push("LEER: die Ort-Phase legte keinen Erdbau unter dem Spieler — die Probe ist stumpf");
+        else if (!(AS.dirty > 0))
+            v.push("LEER: der Erdbau unter dem Spieler markierte keinen Chunk zum Neubau — die Probe ist stumpf");
+        else {
+            const riss = (AS.sync || []).filter((s) => s.ms > SYNC_CHUNK_MS);
+            if (riss.length) {
+                const max = riss.reduce((a, s) => (s.ms > a.ms ? s : a), riss[0]);
+                v.push(
+                    `ORT: der Erdbau unter dem Spieler bei (${AS.ort}) baute ${riss.length} Chunk${riss.length > 1 ? "s" : ""} ` +
+                        `synchron im Haupt-Faden (\`${max.kette} › _buildVoxelChunkData\`, der längste ${max.ms} ms) — ` +
+                        `der Chunk-Stoff entsteht im Worker`
+                );
+            }
+            if (!AS.heil)
+                v.push(
+                    `ORT: der Erdbau unter dem Spieler bei (${AS.ort}) heilt nicht — nach ${AS.takte} Takten warten noch ` +
+                        `Chunks auf ihren Neubau`
+                );
+        }
+    }
     const T = b.strom;
     if (!T) v.push("LEER: keine Strom-Phase");
     else if (!T.spielerChunk)
         v.push(
             `STROM: nach dem Sprung an (${T.x}, ${T.z}) steht der Spieler-Chunk nach ${T.takte} Takten nicht — das Streaming verhungert`
         );
+    // der Wald am fremden Ort: jede frische Zelle plant die Schlange des Walds (`_tickWaldPlan`, K69) — ein anderer Aufrufer
+    // plant sie am Stück im Takt (bis K69 der Pflanz-Gang des Chunk-Baus: gehend ins Dorf 41 Zellen in EINEM Takt)
+    if (T) {
+        const Wd = T.wald;
+        if (!Wd) v.push("LEER: die Strom-Phase zählte den Wald-Plan nicht");
+        else if (Wd.aussen > 0)
+            v.push(
+                `STROM: ${Wd.aussen} frische Wald-Zellen plante nicht die Schlange des Walds, sondern \`${Wd.taeter}\` ` +
+                    `(${Wd.ms} ms, bis ${Wd.maxTakt} in EINEM Takt) — der Plan liegt am Stück im Aufrufer`
+            );
+        else if (!(Wd.imJob > 0))
+            v.push("LEER: die Strom-Phase sah keinen frischen Wald — der Wald-Plan am fremden Ort ist ungeprüft");
+    }
     const c = b.code || {};
     for (const n of Object.keys(TAKTE)) {
         if (!c[n] || !c[n].fragt) v.push(`CODE: ${TAKTE[n]} fragt die Stand-Wache nicht (\`_standRuht\`)`);
         if (!c[n] || !c[n].meldet) v.push(`CODE: ${TAKTE[n]} meldet seinen Gang nicht (\`_standMeldet\`)`);
     }
+    const N = b.nachschub;
+    if (!N) v.push("LEER: keine Nachschub-Probe (die Streu nach der Schlange des Walds)");
+    else if (N.warten.length && (N.schlange > 0 || N.foundry > 0))
+        v.push(
+            `NACHSCHUB: nach ${N.takte} Takten plant die Schlange des Walds noch ${N.schlange} Zellen, die Foundry hat ` +
+                `${N.foundry} Aufträge offen — ${N.warten.length} Streu-Regionen warten (${N.warten.join(", ")})`
+        );
+    else if (N.warten.length)
+        v.push(
+            `NACHSCHUB: ${N.warten.length} Streu-Regionen warten, obwohl die Schlange des Walds leer ist und kein Asset ` +
+                `aussteht (${N.warten.join(", ")}) — nichts baut sie neu (_scatterRefillPending, _tickWaldPlan)`
+        );
     for (const e of b.pageErrors || []) v.push(`PAGE-ERROR: ${e}`);
     return v;
 }

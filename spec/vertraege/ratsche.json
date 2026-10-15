@@ -26,7 +26,6 @@
             "klang:klang:swing": "kein Guss (wie bpm)",
             "klang:klang:tension": "kein Guss (wie bpm)",
             "porta:gate:energy": "Membran-/Innenwelt-Regler: bewegt den Bau an keinem der 7 Tore (der Leser ist der Labor-Shader)",
-            "porta:gate:fog": "wie energy",
             "porta:gate:fractal": "wie energy",
             "porta:gate:reflect": "wie energy",
             "porta:gate:swirl": "wie energy",

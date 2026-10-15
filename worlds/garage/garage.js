@@ -428,6 +428,10 @@ addEventListener('resize',()=>{cam.aspect=innerWidth/innerHeight;cam.updateProje
    gehört Esc dem Werkstatt-Exit (der Tasten-Hörer oben hält ihn an). */
 AnazhHuelle.bruecke({
     welt: "garage",
+    // DAS ZIEL-BILD (D8): die Hülle rendert diese Welt als Panorama aus dem Blick ihrer Kamera — die Tor-Membran der Heimat zeigt es
+    panorama: function () {
+        return { THREE: THREE, renderer: R, scene: scene, kamera: cam };
+    },
     label: "Anatomie · Fahrzeug",
     dsl: ["cavallo", "toro", "stern", "vorsprung", "monolith", "gt", "supersport", "limousine", "kompakt-fwd", "suv", "probefahrt", "werkstatt"],
     wort: function (w) {

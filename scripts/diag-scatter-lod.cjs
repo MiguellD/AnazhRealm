@@ -114,10 +114,17 @@ function check(name, ok, detail) {
         // Antwort `_streuWartet`): die Fern-Baum-Karte bestellt ihr Leser (K30) — eine Region wartet auf sie und baut nach
         // der Lieferung neu; erst dann trägt sie ihre Fern-Zellen.
         const pm = r.state.playerMesh.position;
+        // DER TAKT DER STREU ist beides, was sie liest: die Schlange des Walds (`_tickWaldPlan`, K69 — die Gestalt jedes
+        // Foundry-Baums wartet auf den Plan seines Orts, wie im Spiel der Job `waldPlan` vor `scatterDeco`) und der Streamer.
+        // Ohne die Schlange stand keine Nah-Zelle einer zwei-stufigen Art (D ROT, K69-2 N2: kandidat 35,8 m, lodVor undefined).
+        const streuTakt = () => {
+            r._tickWaldPlan(Infinity);
+            r._tickScatterStreaming(pm);
+        };
         const dl2 = performance.now() + 45000;
         let cells = 0;
         while (performance.now() < dl2) {
-            r._tickScatterStreaming(pm);
+            streuTakt();
             const map = r.state.scatterRegions;
             cells = 0;
             if (map) for (const reg of map.values()) cells += reg.cells ? reg.cells.length : 0;
@@ -166,7 +173,7 @@ function check(name, ok, detail) {
         while (!probe && performance.now() < dlP) {
             probe = sucheProbe(true);
             if (probe) break;
-            r._tickScatterStreaming(pm);
+            streuTakt();
             await new Promise((r2) => setTimeout(r2, 60));
         }
         if (!probe) probe = sucheProbe(false);
@@ -250,7 +257,7 @@ function check(name, ok, detail) {
                     if (dz2) break;
                 }
                 if (!dz2) {
-                    r._tickScatterStreaming(pm);
+                    streuTakt();
                     r._tickScatterLod(pm, 8, 800);
                     await new Promise((r2) => setTimeout(r2, 60));
                 }
@@ -281,7 +288,7 @@ function check(name, ok, detail) {
                     pm.z = kand.z;
                     const dlN = performance.now() + 45000;
                     while (!(kand.lod < 2 && b2Privat(kand)) && performance.now() < dlN) {
-                        r._tickScatterStreaming(pm);
+                        streuTakt();
                         for (let i = 0; i < 20; i++) r._tickScatterLod(pm, 8, 800);
                         await new Promise((r2) => setTimeout(r2, 100));
                     }
