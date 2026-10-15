@@ -1251,7 +1251,7 @@ class AnazhRealm_Z11d {
     // (der Tick baut die neue Welt lazy nach).
     _fernRingDispose() {
         this._feldPassDispose(); // der Pass ist Ring-Besitz — er fällt mit
-        this._fernFarbeMemo = null; // die Fern-Farben gehören der Welt, die den Ring trug
+        this._fernMemoGen = (this._fernMemoGen | 0) + 1; // die Fern-Farben gehören der Welt, die den Ring trug (das Gedächtnis des Fern-Fadens)
         const fr = this.state.fernRing;
         if (!fr) return;
         this._horizontKarteLeeren(); // die Zeichen-Meshes der Horizont-Karte lesen die Geometrien des Rings — sie fallen zuerst

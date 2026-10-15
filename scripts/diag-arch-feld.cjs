@@ -97,7 +97,9 @@ function schlangenGesetz(src) {
             "if (this._archZiegelFern(entry)) regung++;\n                if (false) {\n                    // Steht"
         );
         if (kaputt === stamm) {
-            console.log("❌ SELBST-TEST S: der Bruch greift nicht (der Ziegel-Ruf der Mesh-Zone hat eine andere Gestalt)");
+            console.log(
+                "❌ SELBST-TEST S: der Bruch greift nicht (der Ziegel-Ruf der Mesh-Zone hat eine andere Gestalt)"
+            );
             process.exit(1);
         }
         const heil = schlangenGesetz(stamm);
@@ -315,7 +317,13 @@ function schlangenGesetz(src) {
                           const p = r._archFoundryPreset(e);
                           if (!p) return "grammatik";
                           const fl = r._foundryFlattenFor(e, p, e._lodLevel | 0);
-                          return fl === null ? "laedt" : fl === false ? "kann-nicht" : fl.instanceable ? "bereit:L" + fl.lod : "nicht-instanzierbar";
+                          return fl === null
+                              ? "laedt"
+                              : fl === false
+                                ? "kann-nicht"
+                                : fl.instanceable
+                                  ? "bereit:L" + fl.lod
+                                  : "nicht-instanzierbar";
                       })(),
                       // Foundry-Bau: steht die L1-Flat (Quelle des Fits) schon? Ist er ein Karten-Ding?
                       flat: r._archFoundryPreset(e)

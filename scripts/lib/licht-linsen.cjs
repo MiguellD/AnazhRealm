@@ -189,7 +189,8 @@ function albedoSicht(opts) {
                         gesetzt = true;
                         // ein verweigerter Platz (K63-n5: der Genesis-Platz ist Grundriss gegen Natur, die Eiche bei 8/8 fiel) ist
                         // ein Befund der Zeile beim Namen — nie der Spieler als stilles Ersatz-Exemplar
-                        if (!e) verweigert = `das Exemplar ${ex.name} ließ sich bei ${x.toFixed(1)}/${zz.toFixed(1)} nicht setzen`;
+                        if (!e)
+                            verweigert = `das Exemplar ${ex.name} ließ sich bei ${x.toFixed(1)}/${zz.toFixed(1)} nicht setzen`;
                     }
                     if (e) {
                         await ticke(600, () => r._archIsRendered(e));
@@ -248,7 +249,11 @@ function albedoSicht(opts) {
                             for (let gx = Math.floor((x - W0.r) / C); gx <= Math.floor((x + W0.r) / C); gx++)
                                 for (const d of zelle(gx, gz)) {
                                     const dd = Math.hypot(d.x - x, d.z - z);
-                                    if (dd < W0.r && r._forestDartSteht(d, gx, gz, zelle) && r._wildnisTraegt(d.x, d.z)) {
+                                    if (
+                                        dd < W0.r &&
+                                        r._forestDartSteht(d, gx, gz, zelle) &&
+                                        r._wildnisTraegt(d.x, d.z)
+                                    ) {
                                         b++;
                                         nah = Math.min(nah, dd);
                                     }
@@ -275,7 +280,8 @@ function albedoSicht(opts) {
             // ihres Exemplars von einem Auge 4,2 m vor ihm (`_lodAuge`, das EINE Auge der Stufen), bis seine Stufe 0 steht. Die
             // Schüsse danach ticken nicht — die Wahl bleibt bis zur Inventur; EIN solches Exemplar je Messung.
             const nahe = exemplare.filter((x) => x.eintrag && (x.zeile.welt.exemplar || {}).stufeNah);
-            if (nahe.length > 1) throw new Error(`stufeNah: ${nahe.length} Exemplare — das Auge der Stufen steht an EINEM`);
+            if (nahe.length > 1)
+                throw new Error(`stufeNah: ${nahe.length} Exemplare — das Auge der Stufen steht an EINEM`);
             for (const x of nahe) {
                 const e = x.eintrag;
                 const l0 = () => {
@@ -500,7 +506,8 @@ function albedoSicht(opts) {
                 if (!a.array) throw new Error(`satzAusschnitt(${s.art}): das Attribut ${name} trägt kein eigenes Feld`);
                 const w = a.itemSize;
                 const out = new a.array.constructor(alt.length * w);
-                for (let j = 0; j < alt.length; j++) for (let c = 0; c < w; c++) out[j * w + c] = a.array[alt[j] * w + c];
+                for (let j = 0; j < alt.length; j++)
+                    for (let c = 0; c < w; c++) out[j * w + c] = a.array[alt[j] * w + c];
                 if (basis && name === "aRegler") for (let j = 0; j < alt.length; j++) out[j * w + 1] = 0;
                 g2.setAttribute(name, new T.BufferAttribute(out, w, a.normalized));
             }

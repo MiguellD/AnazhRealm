@@ -362,11 +362,9 @@ class AnazhRealm_Z07 {
     // dieselben Nachrichten wie der Voxel-Faden (Worldgen, Hydro-Kachel, Erdbau, Edits) — Nachrichten laufen in Reihe, der
     // Auftrag rechnet am Zustand, der vor ihm reiste. Leser: die Schlange des Walds (`_waldFadenSchicken`).
     _voxelWorkerWaldDarts(zellen, seedInt, extras) {
-        return this._nebenAuftrag(
-            "wald",
-            { type: "wald-darts", zellen, seedInt, extras, F: AnazhRealm.FOREST },
-            [zellen.buffer]
-        ).then((msg) => ({
+        return this._nebenAuftrag("wald", { type: "wald-darts", zellen, seedInt, extras, F: AnazhRealm.FOREST }, [
+            zellen.buffer,
+        ]).then((msg) => ({
             anzahl: new Int32Array(msg.anzahl),
             werte: new Float64Array(msg.werte),
             arten: msg.arten,
@@ -420,7 +418,10 @@ class AnazhRealm_Z07 {
         const wl = Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : 0;
         return this._nebenAuftrag(
             "fern",
-            Object.assign({ type: "fern", art, wl, laub: this._fernLaubLinear(), wasser: this._fernWasserKoerper() }, msg),
+            Object.assign(
+                { type: "fern", art, wl, laub: this._fernLaubLinear(), wasser: this._fernWasserKoerper() },
+                msg
+            ),
             transfer
         );
     }

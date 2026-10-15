@@ -1558,7 +1558,10 @@ const server = statikServer();
         "1: ZWEI Stoffe — frei (ohne Maske und Weiche) für die Schalen und Schale 0 frei, Maske + Weiche nur auf dem Naht-Mesh",
         out.zweiStoffe === true
     );
-    check("1: sichtbar erst nach vollem Refresh + frustumCulled aus, wirft nicht, empfängt (die Horizont-Karte, D3)", out.ready && out.visible && out.flags);
+    check(
+        "1: sichtbar erst nach vollem Refresh + frustumCulled aus, wirft nicht, empfängt (die Horizont-Karte, D3)",
+        out.ready && out.visible && out.flags
+    );
     check("1: LOCH-DECKEL — Schale 1 beginnt am Spieler (0.5·span), deckZoneRad = Ziel-Zone", out.innerRandOk === true);
     check(
         "Bau IN SCHEIBEN aus dem Fern-Faden über Takte (je Takt <= scheibe × scheibenImFlug, mehrere Takte, Cursor voll)",
@@ -1622,7 +1625,10 @@ const server = statikServer();
         `boden=${out.sichtBoden} hoch=${out.sichtHoch} zurueck=${out.sichtZurueck} knoten=${out.luftKnoten}${out.loopFehler ? " loopFehler=" + out.loopFehler : ""}`
     );
     check("6: DISPOSE-RÜCKNAHME — camera.far kehrt zum alten Wert zurück, Ring entsorgt", out.disposeRestored === true);
-    check("7: nach dem Dispose entsteht der Ring aus dem Fern-Faden wieder ganz (Cursor voll, sichtbar)", out.fzCpuFertig === true);
+    check(
+        "7: nach dem Dispose entsteht der Ring aus dem Fern-Faden wieder ganz (Cursor voll, sichtbar)",
+        out.fzCpuFertig === true
+    );
     check(
         "8: DER FELD-PASS existiert, das Feld malte, das PANORAMA ist gebacken (Persistenz)",
         out.fpDa === true &&

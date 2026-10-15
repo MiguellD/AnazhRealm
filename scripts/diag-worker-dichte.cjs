@@ -483,10 +483,17 @@ async function probe(page, welt, mitAbdruck) {
                         const aus = { hang: 0, schutt: 0, wand: 0 };
                         for (let k = 0; k < N * N; k++) {
                             w[k] = r._terrainMacroSurfaceY(pts[k * 2], pts[k * 2 + 1], detail, aus);
-                            sch[k] = Math.max(aus.schutt > 0 ? aus.schutt : 0, aus.wand > 0 ? 1 / r.constructor.TERRAIN_GEOLOGY.schutt : 0);
+                            sch[k] = Math.max(
+                                aus.schutt > 0 ? aus.schutt : 0,
+                                aus.wand > 0 ? 1 / r.constructor.TERRAIN_GEOLOGY.schutt : 0
+                            );
                         }
                     } else {
-                        const a = await r._fernAuftrag("teile", { punkte: Float64Array.from(pts), detail, nurHoehe: true });
+                        const a = await r._fernAuftrag("teile", {
+                            punkte: Float64Array.from(pts),
+                            detail,
+                            nurHoehe: true,
+                        });
                         w.set(a.law);
                         sch.set(a.schutt);
                     }

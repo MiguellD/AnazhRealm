@@ -2253,7 +2253,17 @@ class AnazhRealm_Z11c {
             const gen = fr.gen | 0;
             this._fernAuftrag(
                 "ring",
-                { punkte, ht, hr, rad, zone, ax: fr.anchorX, az: fr.anchorZ, deckZoneRad: fr.deckZoneRad },
+                {
+                    punkte,
+                    ht,
+                    hr,
+                    rad,
+                    zone,
+                    ax: fr.anchorX,
+                    az: fr.anchorZ,
+                    deckZoneRad: fr.deckZoneRad,
+                    memo: this._fernMemoGen | 0,
+                },
                 [punkte.buffer, ht.buffer, hr.buffer, rad.buffer, zone.buffer]
             )
                 .then((antwort) => {
@@ -3086,5 +3096,4 @@ class AnazhRealm_Z11c {
             Math.abs(jetzt.b - fp.saison.b) > d
         );
     }
-
 }

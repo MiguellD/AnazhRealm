@@ -3575,10 +3575,12 @@ function fernFarbeMasche(x, y, z, out, fuss, schutt) {
 }
 
 // DAS GEDÄCHTNIS DER RING-FARBEN (zwei Generationen à `memo` Punkte): Schnapp-Punkte sind ganzzahlig, der Schlüssel trägt die
-// Maschen-Breite in Viertel-Oktaven — ein Re-Anker rechnet nur, was neu ist; die Saat wechselt es.
-let fernMemo = { neu: new Map(), alt: new Map(), seed: null };
-function fernRingTeile(x, z, law, fuss, schutt) {
-    if (fernMemo.seed !== state.seed) fernMemo = { neu: new Map(), alt: new Map(), seed: state.seed };
+// Maschen-Breite in Viertel-Oktaven — ein Re-Anker rechnet nur, was neu ist; die Saat oder die Generation des Mains (`memo`:
+// jeder Abschied des Rings, wie bis B2 das Gedächtnis im Haupt-Faden) leert es.
+let fernMemo = { neu: new Map(), alt: new Map(), seed: null, gen: -1 };
+function fernRingTeile(x, z, law, fuss, schutt, gen) {
+    if (fernMemo.seed !== state.seed || fernMemo.gen !== gen)
+        fernMemo = { neu: new Map(), alt: new Map(), seed: state.seed, gen };
     const key = x * 4194304 + z + Math.round(4 * Math.log2(Math.max(1, fuss.ht))) * 17592186044416;
     let f = fernMemo.neu.get(key);
     if (f) return f;
@@ -3642,7 +3644,7 @@ function fernAuftrag(msg) {
             flussC[k] = fernFlussDeckung(x, z, Math.max(fuss.ht, fuss.hr), fl);
             flussSp[k] = fl.spiegel;
             if (wet && !zone) continue;
-            teile.set(fernRingTeile(x, z, L, fuss, s), k * 8);
+            teile.set(fernRingTeile(x, z, L, fuss, s, msg.memo | 0), k * 8);
         }
         const antwort = { law, voll, schutt, nassY, spiegel, flussC, flussSp, teile };
         return { antwort, transfer: Object.values(antwort).map((a) => a.buffer) };
