@@ -271,6 +271,11 @@ function urteil(b) {
             v.push(
                 `R LEER: das Dorf des Nexus setzte ${RD.haeuser} Häuser, keins am Seerand (${RD.randHaus}; geräumte Reste früherer Proben: ${(RD.reste || []).join(", ") || "keine"}; Nexus-Deckel ${RD.deckel ? `${RD.deckel.max}, autonome Bauten ${RD.deckel.autosVor} → ${RD.deckel.autosNach}` : "ungemessen"})`
             );
+        // ohne Wasser in der Reichweite seines Erdbaus prüft R nichts: kein Stempel des Dorfs kann dort Wasser verdrängen
+        else if (!(RD.nassImErdbau > 0))
+            v.push(
+                `R LEER: der Erdbau des Dorfs (${RD.erdbau} Orte) reicht an keine nasse Spalte — das Rand-Haus ${RD.randHaus} steht ${RD.randM} m vom Seeufer, die Ort-Wahl rückte das Dorf ${RD.ortWahlM} m`
+            );
         // ein Wecken ist ein Befund, wenn keine Wasser-Zelle eines geladenen Chunks sich änderte (`zellenWechsel`)
         if (RD.invalidierungen > 0 && !(RD.zellenWechsel > 0))
             v.push(
@@ -449,7 +454,9 @@ function leserUrteil(srcRoh) {
     // jeder Kandidat nahe am Spieler auf dem Kreis der Klemme, das Haus am Gleithang stand 13,5 m vom Wasser
     const wos = fnBody(src, /\n {4}_werkOrtSuchen\([^)]*\) \{/);
     if (!wos || !/p0\.x \+ Math\.cos\(a\) \* r/.test(wos) || !/Math\.hypot\(q\.x - p0\.x, q\.z - p0\.z\)/.test(wos))
-        v.push("die Ort-Suche (`_werkOrtSuchen`) misst ihre Kandidaten nicht am geklemmten Ort `p0` (Ringe und Abstand)");
+        v.push(
+            "die Ort-Suche (`_werkOrtSuchen`) misst ihre Kandidaten nicht am geklemmten Ort `p0` (Ringe und Abstand)"
+        );
     const slot = fnBody(src, /\n {4}_spawnSettlementSlot\([^)]*\) \{/);
     if (!slot || !/_fundamentLand\(/.test(slot))
         v.push("die Siedlung (`_spawnSettlementSlot`) fragt nicht das Land des Fundaments (`_fundamentLand`)");
@@ -1505,9 +1512,9 @@ async function probe(A) {
                 out.setzen = { fehler: String((e && e.stack) || e).split("\n")[0] };
             }
         // ── R: das Dorf des Nexus am Seerand — ein Bau, dessen Stempel kein Wasser der Zellen verdrängt, weckt den Automaten
-        //    nicht, das Wasser bleibt, wie es war. Der Spieler steht am Rand des Plans (der Anker bleibt der verlangte Ort, das
-        //    Haus am Seerand entsteht), die Häuser bekommen ihre Hülle, die Chunks am Rand entstehen neu (wie beim
-        //    Wieder-Strömen), dann laufen die Takte. ──
+        //    nicht, das Wasser bleibt, wie es war. Der Wunsch-Anker stellt das Rand-Haus ans Ufer, der Spieler steht am Rand
+        //    des Plans, die Ort-Wahl stellt das Dorf, wohin das Gesetz es trägt (K10-6), die Häuser bekommen ihre Hülle, die
+        //    Chunks am Rand entstehen neu (wie beim Wieder-Strömen), dann laufen die Takte. ──
         if (soll("rand"))
             try {
                 if (!A.rand.ufer || !A.rand.see) throw new Error("kein See mit Ufer in der Welt (Orte aus der Welt)");
@@ -1647,6 +1654,7 @@ async function probe(A) {
                 const deckel = Klasse.MAX_NEXUS_STRUCTURES;
                 const autos = () => st.architectures.filter((e) => e && e.autonomous).length;
                 const autosVor = autos();
+                const erdbauVor = new Set(Object.keys((st.worldMeta && st.worldMeta.erdbau) || {}));
                 Klasse.MAX_NEXUS_STRUCTURES = Infinity;
                 try {
                     zensus.quelle = "Nexus-Dorf";
@@ -1684,11 +1692,43 @@ async function probe(A) {
                 const zellenNach = wasserZellen();
                 let zellenWechsel = 0;
                 for (const [k, n] of zellenVor) if (zellenNach.has(k) && zellenNach.get(k) !== n) zellenWechsel++;
-                const randHaus = st.architectures.find(
-                    (e) => e && /^haus_/.test(e.type) && Math.hypot(e.position.x - hx, e.position.z - hz) < 6
+                // DAS RAND-HAUS IST, WO DAS GESETZ ES STELLT (K10-6): die Ort-Wahl (`_ortWahl`) hält jedes Haus samt Saum aus dem
+                // Becken des Sees (die Gestalt des Gewässers verschöbe seinen Boden, `_ortTraegt`) und rückt das Dorf vom Wunsch
+                // am Ufer Ring um Ring landein (am Seerand 1807,8/−6152 vier Ringe, 64 m) — das Haus am Wunsch fand R nie mehr
+                // (R LEER: 19 Häuser, keins am Seerand). Das Rand-Haus ist das Haus des Dorfs, das dem Ufer am nächsten steht;
+                // R prüft, was den Automaten weckt: den Erdbau des Dorfs, und der muss an Wasser reichen — je Zelle seiner
+                // Reichweite (gelaende-core `zellen`, das Raster von `_erdbauAmWasser`) die nassen Spalten (`_nassAt`)
+                let randHaus = null;
+                let randM = Infinity;
+                for (const e of st.architectures)
+                    if (e && !v0.has(e) && /^haus_/.test(e.type) && e.position) {
+                        const d = Math.hypot(e.position.x - ex0, e.position.z - ez0);
+                        if (d < randM) ((randM = d), (randHaus = e));
+                    }
+                const GK = window.__gelaendeCore;
+                const ZM = GK.ERDBAU.zelleM;
+                let nassImErdbau = 0;
+                const erdbauNeu = Object.keys((st.worldMeta && st.worldMeta.erdbau) || {}).filter(
+                    (k) => !erdbauVor.has(k)
                 );
+                for (const key of erdbauNeu) {
+                    const E = GK.erdbauNormal(st.worldMeta.erdbau[key]);
+                    if (!E) continue;
+                    for (const c of E.zellen.keys()) {
+                        const a = Math.floor(c / 65536) - 32768;
+                        const b = (c % 65536) - 32768;
+                        for (let i = 1; i < ZM; i += 2)
+                            for (let j = 1; j < ZM; j += 2) if (r._nassAt(a * ZM + i, b * ZM + j)) nassImErdbau++;
+                    }
+                }
                 out.rand = {
                     reste,
+                    // so weit rückte die Ort-Wahl das Dorf vom Wunsch (`_ortWahlMass.abstandM`), so weit steht das Rand-Haus
+                    // vom Ufer-Punkt, so viele nasse Spalten trägt die Reichweite des neuen Erdbaus
+                    ortWahlM: r._ortWahlMass ? r._ortWahlMass.abstandM : null,
+                    randM: Number.isFinite(randM) ? +randM.toFixed(1) : null,
+                    erdbau: erdbauNeu.length,
+                    nassImErdbau,
                     haeuser: res ? res.placed : 0,
                     spieler: [+PX.toFixed(1), +PZ.toFixed(1)],
                     randHaus: randHaus
@@ -1985,6 +2025,10 @@ function selbsttest() {
         rand: {
             haeuser: 9,
             randHaus: "haus_provenzalisch #600 (-1129.0/-1099.0)",
+            ortWahlM: 64,
+            randM: 52.4,
+            erdbau: 1,
+            nassImErdbau: 120,
             deckel: { max: 48, autosVor: 27, autosNach: 57, ueber: 9 },
             invalidierungen: 0,
             ca: 0,
@@ -2134,6 +2178,12 @@ function selbsttest() {
         ],
         // K16: der Gesamtlauf warf das Haus am Seerand über den Nexus-Deckel — R LEER nennt den Deckel mit seinen Zahlen
         ["R leer", (b) => (b.rand.randHaus = null), /R LEER: .*Nexus-Deckel 48, autonome Bauten 27 → 57/],
+        // K10-6: die Ort-Wahl rückt das Dorf aus dem Becken — reicht sein Erdbau an kein Wasser, prüft R nichts
+        [
+            "R ohne Wasser am Erdbau",
+            (b) => (b.rand.nassImErdbau = 0),
+            /R LEER: der Erdbau des Dorfs \(1 Orte\) reicht an keine nasse Spalte — .* 52\.4 m vom Seeufer, die Ort-Wahl rückte das Dorf 64 m/,
+        ],
         [
             "E Wunsch-Zahl der Kreaturen (Befund am Kopf f5b331ae)",
             (b) => (b.setzen.faelle[0].chat = "> spawne kreaturen 1010 Kreaturen gespawnt (am Spieler)"),
@@ -2633,7 +2683,10 @@ async function lauf() {
                 if (!S6) throw new Error("D: keine Station s6-klamm in spec/pruefbuehne/stationen.json");
                 const weltId = await p2.evaluate(async (json) => {
                     const t0 = performance.now();
-                    while (!(window.anazhRealm && window.anazhRealm.importWorldBeside) && performance.now() - t0 < 120000)
+                    while (
+                        !(window.anazhRealm && window.anazhRealm.importWorldBeside) &&
+                        performance.now() - t0 < 120000
+                    )
                         await new Promise((res) => setTimeout(res, 200));
                     const r = window.anazhRealm;
                     if (!r || !r.importWorldBeside) return null;
