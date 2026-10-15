@@ -614,7 +614,8 @@
     // Das Studio rendert seine EIGENE Welt (seine Szene, sein Renderer, Labor = Welt) einmal von einem Ort aus: sechs
     // 90°-Würfe in einen Würfel (CubeCamera), gefaltet ins Equirekt 512 × 256 (die Richtung je Texel wie three
     // `equirectUV`: u = atan2(z, x)/2π + ½, v = asin(y)/π + ½, Zeile 0 unten). DER BLICK DES STUDIOS: `opt.kamera` stellt den
-    // Ort (ihre Lage) und dreht das Bild, bis die Mitte der Öffnung (−z des Lesers, u = ¼) zeigt, was die Kamera vor sich hat.
+    // Ort (ihre Lage), die Tiefe (nah/fern) und dreht das Bild, bis die Mitte der Öffnung (−z des Lesers, u = ¼) zeigt, was die
+    // Kamera vor sich hat.
     // DIE WERTE sind die Bild-Werte des Studios, ins Lineare gelesen: der Würfel schreibt wie der Schirm (sRGB-Kodierung des Ziels
     // — Hintergrund und Nebel stehen in r128 in Bild-Werten, die Stoffe kodiert der Shader), die Faltung dekodiert; ohne
     // Tonabbildung (der Leser belichtet und tont selbst). opt: verbergen (Objekte, die nicht ins Bild gehören — die eigene
@@ -644,6 +645,10 @@
         var kam = opt.kamera || null,
             drehung = 0;
         if (kam) {
+            // die Tiefe des Blicks ist die der Kamera: was jenseits ihres fern liegt (die Kuppel, der Horizont-Ring), zeigt das
+            // Studio nie — der Würfel auch nicht
+            if (opt.nah == null) opt.nah = kam.near;
+            if (opt.fern == null) opt.fern = kam.far;
             kam.updateMatrixWorld();
             ort = [kam.position.x, kam.position.y, kam.position.z];
             var vor = new T.Vector3();
