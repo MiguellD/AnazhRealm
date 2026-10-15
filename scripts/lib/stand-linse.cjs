@@ -486,6 +486,16 @@ function standUrteil(b) {
                 `ORT: der Abbau von ${Q.abbau} Natur-Stücken speicherte die Welt ${Q.saves}× synchron (\`removeArchitecture › ` +
                     `saveState\`, Σ ${Q.saveMs} ms) — räumt ein Dorf beim Nähern seinen Grund, liegt je Stück ein voller Save im Takt`
             );
+        // das Haus ohne Kamin: sein Export sagt „kein Kamin" (null) — bis K69 fiel das Nein in der Slot-Quelle auf undefined,
+        // und der Wirt baute das ganze Haus im Kern, um die Spitze zu finden (an der Radeon 167 ms, `spawnArchitecture › MK`)
+        const H = O.kamin;
+        if (!H || !H.gesetzt) v.push("LEER: die Ort-Phase setzte kein Haus ohne Kamin — die Slot-Quelle ist ungeprüft");
+        else if (H.bau > 0)
+            v.push(
+                `ORT: das Haus ohne Kamin (${H.kultur}) baute seinen Kern ${H.bau}× nach (\`chimneyTipFromParams\` → ` +
+                    `\`massBau\`, ${H.ms} ms) — das Nein des Exports (\`chimney: null\`) fiel in der Slot-Quelle ` +
+                    `(\`_spawnSettlementSlot\`), jedes Dorf-Haus ohne Kamin baut sich beim Nähern im Takt zweimal`
+            );
         if (!O.stand || !O.stand.key)
             v.push("LEER: die Ort-Phase fand keinen fernen Chunk für den Stand der Worker-Antworten");
         else if (!O.stand.gleich)

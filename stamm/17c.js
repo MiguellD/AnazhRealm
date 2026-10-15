@@ -2628,11 +2628,16 @@ class AnazhRealm_Z17c {
             entry.chimney = tip; // Snapshot/Restore (tuer-Muster)
             entry.userData = entry.userData || {};
             entry.userData.rauchQuelle = tip;
-        }
+        } else if (opts.chimney === null) entry.chimney = null;
         // KAMIN-RAUCH (.108): Solo-Haus (nicht Settlement-Slot) — Spitze aus
         // __fachwerkCore.chimneyTipFromParams(studioOv). Fail-closed bei null
         // (modern/round/kuppel). Nicht-haus_* erfindet keinen Rauch.
-        if (!entry.chimney) {
+        // DAS NEIN DES EXPORTS GILT (K69): ein Haus, dessen Plan (der Slot des Exports, der Save) „kein Kamin" sagt
+        // (`chimney: null`), baut seinen Kern nicht nach — `chimneyTipFromParams` rechnet den GANZEN Bau (`massBau`), um die
+        // Spitze zu finden. Bis K69 fiel das Nein des Slots auf undefined (`slot.chimney || undefined`): jedes Haus ohne Kamin
+        // (Kuppel, Rundbau) baute beim Gang ins Dorf sein Haus im Takt nach, 52 ms je Slot (Null-Renderer), an der Radeon
+        // 167 ms (`spawnArchitecture › MK`, die Hänger-Linse) — und beim Laden noch einmal.
+        if (entry.chimney === undefined) {
             const hausPol = AnazhRealm.KIND_POLICY && AnazhRealm.KIND_POLICY.haus;
             const isHaus =
                 (hausPol && typeof hausPol.prefix === "string" && String(type).startsWith(hausPol.prefix)) ||
@@ -2653,7 +2658,7 @@ class AnazhRealm_Z17c {
                         entry.chimney = { x: +tip.x, y: +tip.y, z: +tip.z };
                         entry.userData = entry.userData || {};
                         entry.userData.rauchQuelle = entry.chimney;
-                    }
+                    } else entry.chimney = null; // das gerechnete Nein reist durch den Save (`saveState`)
                 }
             }
         }

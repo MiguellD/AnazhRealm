@@ -115,6 +115,7 @@ function selbsttest() {
             plan: 140,
             maxTaktMs: 21,
             raeumung: { abbau: 5, saves: 0, saveMs: 0 },
+            kamin: { kultur: "alemannisch", gesetzt: true, bau: 0, ms: 0 },
         },
         code: Object.fromEntries(namen.map((n) => [n, { fragt: true, meldet: true }])),
         pageErrors: [],
@@ -309,6 +310,16 @@ function selbsttest() {
             /LEER: die Ort-Phase sah keine fernen/,
         ],
         ["die Ort-Phase legt keinen Erdbau", (b) => (b.ort.gelegt = false), /LEER: die Ort-Phase legte keinen Erdbau/],
+        [
+            "das Haus ohne Kamin baut seinen Kern nach (bis K69)",
+            (b) => Object.assign(b.ort.kamin, { bau: 1, ms: 52.4 }),
+            /ORT: das Haus ohne Kamin \(alemannisch\) baute seinen Kern 1× nach .*chimneyTipFromParams.*52\.4 ms/,
+        ],
+        [
+            "die Ort-Phase setzt kein Haus ohne Kamin",
+            (b) => (b.ort.kamin.gesetzt = false),
+            /LEER: die Ort-Phase setzte kein Haus ohne Kamin/,
+        ],
         ["keine Ort-Phase", (b) => delete b.ort, /LEER: keine Ort-Phase/],
         ["keine Ruhe", (b) => delete b.ruhe, /LEER: keine Ruhe-Phase/],
         ["keine Bruch-Phase", (b) => delete b.bruch, /LEER: keine Bruch-Phase/],
@@ -1071,6 +1082,44 @@ const server = statikServer();
                     } finally {
                         core.planForestCell = pfcRoh;
                     }
+                    // DAS HAUS OHNE KAMIN (K69): ein Slot des Dorfs, dessen Export „kein Kamin" sagt (`chimney: null`), steht über
+                    // die EINE Slot-Quelle (`_spawnSettlementSlot`) — gezählt, wie oft der Wirt das ganze Haus im Kern baut, um
+                    // die Spitze zu finden (`chimneyTipFromParams` → `massBau`), und wie lange
+                    {
+                        const fc = globalThis.__fachwerkCore;
+                        const recs = (r._foundry && r._foundry.recipes) || {};
+                        const kultur = Object.keys(recs).find((k) => {
+                            const pol = r.constructor.KIND_POLICY[recs[k] && recs[k].kind];
+                            return pol && pol.prefix === "haus_" && st.blueprints["haus_" + k];
+                        });
+                        const kx = ox - 40;
+                        const kz = oz + 40;
+                        const ky = r._voxelSurfaceY(kx, kz);
+                        const tipRoh = fc.chimneyTipFromParams;
+                        let n = 0;
+                        let ms = 0;
+                        fc.chimneyTipFromParams = function () {
+                            const t3 = performance.now();
+                            n++;
+                            try {
+                                return tipRoh.apply(this, arguments);
+                            } finally {
+                                ms += performance.now() - t3;
+                            }
+                        };
+                        let gesetzt = false;
+                        try {
+                            if (kultur && Number.isFinite(ky)) {
+                                const slot = { kultur, x: 0, z: 0, y: ky, phi: 0, seed: 4711, chimney: null };
+                                const e = r._spawnSettlementSlot(slot, { x: kx, z: kz }, r._foundry);
+                                gesetzt = !!e;
+                                if (e) r.removeArchitecture(e);
+                            }
+                        } finally {
+                            fc.chimneyTipFromParams = tipRoh;
+                        }
+                        O.kamin = { kultur: kultur || null, gesetzt, bau: n, ms: +ms.toFixed(1) };
+                    }
                     aus.ort = O;
                 }
                 // (T) STROM: erst Ruhe, dann der Sprung an einen fremden Ort — der Spieler-Chunk muss kommen
@@ -1179,7 +1228,11 @@ const server = statikServer();
                 `die ${O.takte} Takte danach planten ${O.plan} Wald-Zellen, der längste ${O.maxTaktMs} ms — die Räumung: ` +
                 (O.raeumung
                     ? `${O.raeumung.abbau} Abbauten, ${O.raeumung.saves} synchrone Saves (Σ ${O.raeumung.saveMs} ms)`
-                    : "?")
+                    : "?") +
+                (O.kamin
+                    ? ` — das Haus ohne Kamin (${O.kamin.kultur}) ${O.kamin.gesetzt ? "gesetzt" : "NICHT gesetzt"}, ` +
+                      `${O.kamin.bau} Kern-Nachbauten (${O.kamin.ms} ms)`
+                    : "")
         );
     if (befund.strom)
         console.log(

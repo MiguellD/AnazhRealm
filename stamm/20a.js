@@ -1435,8 +1435,9 @@ class AnazhRealm_Z20a {
                 // DORF-ERLEBNIS — die Tür-Zeile des Exports (Blocker-Tür-Lücke +
                 // Flügel-Reichweite; alte Exporte ohne Feld → undefined, byte-alt).
                 tuer: slot.tuer || undefined,
-                // KAMIN-RAUCH (.105): Spitze haus-lokal (exportSettlement) — rauchQuelle.
-                chimney: slot.chimney || undefined,
+                // KAMIN-RAUCH (.105): Spitze haus-lokal (exportSettlement) — rauchQuelle; null ist das Nein des Exports
+                // (kein Kamin: der Host baut das Haus nicht nach), ein Alt-Export ohne Feld bleibt undefined
+                chimney: slot.chimney,
                 // Das Slot-Rezept (exportSettlement ov) reist als Guss-Stempel: die Optik baut aus DERSELBEN Wahrheit
                 // wie Blocker/ext (ov überstimmt den Kultur-Default). Alt-Exporte ohne ov: must-ignore.
                 studioOv: slot.ov && typeof slot.ov === "object" ? slot.ov : undefined,
