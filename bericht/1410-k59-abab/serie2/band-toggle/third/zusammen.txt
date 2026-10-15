@@ -1,0 +1,6 @@
+A1-band.txt GPU ms/Frame 14.26 Befehle 140
+A2-band.txt GPU ms/Frame 12.28 Befehle 140
+A3-band.txt GPU ms/Frame 12.47 Befehle 140
+B1-band.txt GPU ms/Frame 12.43 Befehle 140
+B2-band.txt GPU ms/Frame 12.46 Befehle 140
+B3-band.txt GPU ms/Frame 14.03 Befehle 140

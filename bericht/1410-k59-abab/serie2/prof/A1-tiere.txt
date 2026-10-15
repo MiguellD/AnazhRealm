@@ -1,0 +1,7 @@
+{
+ "ergebnis": {
+  "tiere": 10,
+  "ruhend": 0
+ },
+ "ms": 2
+}

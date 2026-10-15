@@ -1,0 +1,96 @@
+{
+ "zeilen": [
+  {
+   "boot": "g-ego-A1",
+   "seite": "A",
+   "start": "2026-10-14T21:38:11.636Z",
+   "urteil": "ROT",
+   "fps": 76.1,
+   "frameP50": 16.6,
+   "frameP95": 16.8,
+   "cpuP95": 7.6,
+   "cpuP95frei": null,
+   "band": 12.49,
+   "befehle": 106,
+   "dreiecke": 353826,
+   "vram": 104.8
+  },
+  {
+   "boot": "g-ego-B1",
+   "seite": "B",
+   "start": "2026-10-14T21:40:49.845Z",
+   "urteil": "GRUEN",
+   "fps": 76.5,
+   "frameP50": 16.6,
+   "frameP95": 16.8,
+   "cpuP95": 6.7,
+   "cpuP95frei": null,
+   "band": 14.01,
+   "befehle": 106,
+   "dreiecke": 353753,
+   "vram": 104.8
+  },
+  {
+   "boot": "g-ego-A2",
+   "seite": "A",
+   "start": "2026-10-14T21:43:28.267Z",
+   "urteil": "ROT",
+   "fps": 75.8,
+   "frameP50": 16.6,
+   "frameP95": 16.8,
+   "cpuP95": 6.6,
+   "cpuP95frei": null,
+   "band": 12.74,
+   "befehle": 106,
+   "dreiecke": 353850,
+   "vram": 104.8
+  },
+  {
+   "boot": "g-ego-B2",
+   "seite": "B",
+   "start": "2026-10-14T21:46:06.984Z",
+   "urteil": "ROT",
+   "fps": 77.1,
+   "frameP50": 16.6,
+   "frameP95": 16.8,
+   "cpuP95": 6.1,
+   "cpuP95frei": null,
+   "band": 13.98,
+   "befehle": 106,
+   "dreiecke": 350197,
+   "vram": 104.4
+  }
+ ],
+ "urteile": [
+  {
+   "titel": "fps (Regler voll)",
+   "u": "nicht langsamer",
+   "d": 0.8500000000000085,
+   "sig": 0.3354101966249653
+  },
+  {
+   "titel": "Frame p50 ms",
+   "u": "nicht langsamer",
+   "d": 0,
+   "sig": 0
+  },
+  {
+   "titel": "Frame p95 ms",
+   "u": "nicht langsamer",
+   "d": 0,
+   "sig": 0
+  },
+  {
+   "titel": "CPU-Takt p95 voll ms",
+   "u": "nicht langsamer",
+   "d": -0.6999999999999993,
+   "sig": 0.5830951894845302
+  },
+  {
+   "titel": "Band GPU ms je Frame",
+   "u": "LANGSAMER",
+   "d": 1.3800000000000008,
+   "sig": 0.12589678312014166
+  }
+ ]
+}

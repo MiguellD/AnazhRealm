@@ -1,0 +1,12 @@
+A1-bank-0.88.txt "gpuJeFrameMs": 8.64
+A1-bank0.txt "gpuJeFrameMs": 8.52
+A2-bank-0.88.txt "gpuJeFrameMs": 8.61
+A2-bank0.txt "gpuJeFrameMs": 8.46
+A3-bank-0.88.txt "gpuJeFrameMs": 8.53
+A3-bank0.txt "gpuJeFrameMs": 8.63
+B1-bank-0.88.txt "gpuJeFrameMs": 8.57
+B1-bank0.txt "gpuJeFrameMs": 8.56
+B2-bank-0.88.txt "gpuJeFrameMs": 8.58
+B2-bank0.txt "gpuJeFrameMs": 8.51
+B3-bank-0.88.txt "gpuJeFrameMs": 8.61
+B3-bank0.txt "gpuJeFrameMs": 8.56
