@@ -42,6 +42,12 @@ jobs:
         timeout-minutes: 10
         steps:
             - uses: actions/checkout@v4
+              # Die Wachstums-Wand (gate:betriebsgesetz in der Statik) misst je Zweig ab der Merge-Basis mit dem Mutter-Zweig:
+              # die ganze Geschichte ohne Blobs (Commits + Bäume ~7 MB), die Blobs der geänderten Dateien holt `git diff` in
+              # einem Zug nach. Ohne Geschichte ist die Wand ROT (Grund nicht auflösbar), nie still grün.
+              with:
+                  fetch-depth: 0
+                  filter: blob:none
 
             # V7 — Node 22 (Node 20 ist EOL seit 30.04.2026; der breite `node --check`-Loop
             # brach unter 20 an den eingecheckten ESM-Vendor-Dateien = „lokal grün, CI rot").
@@ -118,7 +124,10 @@ jobs:
               # und die CI-Deckung: jeder Gate-Schritt trägt genau EINE Gruppe, und in der Gegenrichtung läuft jedes
               # `gate:*` und jeder Teil dieser Statik in einem Workflow — oder steht mit Klasse und Grund in der
               # Ausnahme-Liste von scripts/diag-ci-deckung.cjs. gate:taille startet den save-server selbst (TAILLE_PORT,
-              # sonst 4312 — auf dem Läufer frei) und liest ihn mit einem Chromium.
+              # sonst 4312 — auf dem Läufer frei) und liest ihn mit einem Chromium. WACHSTUM_VORHER: der Kopf vor dem Push —
+              # auf integ-probe misst die Wachstums-Wand jeden Merge des Pushes einzeln.
+              env:
+                  WACHSTUM_VORHER: ${{ github.event.before }}
               run: npm run check:statik
 
             - name: Streu-Wahrheit (die Studio-Arten der Nah-Streu tragen das Farb-Gesetz, ihr Stoff liest den EINEN Himmel)

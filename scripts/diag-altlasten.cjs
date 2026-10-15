@@ -1990,6 +1990,44 @@ function scanKartenWand(srcRoh) {
     return errs;
 }
 
+// DIE ABSENZ-ERBSCHAFT (V1 Prüf-Diät N1, 15.10.): die Diät strich im Playtest 297 Präsenz-Textproben (Lehre 6); 20 davon
+// trugen neben dem Präsenz-Muster ein Absenz-Glied über den Rumpf EINER Methode — das Absenz-Urteil bleibt, hier je Methode.
+const METHODEN_OHNE = [
+    ["_tickCreatureDrink", ["PING_FREQ"]], // die Stimme des Tiers, kein Sinus-Ping
+    ["_grassInstanceMat", ["gust"]], // die Böe lebt im EINEN Wind-Versatz
+    ["_applyVegetationResponse", ["uWindTime"]], // EIN Wind-Term
+    ["_foundryTreeMaterial", ['attribute("instanceColor"']], // der Stoff liest die Instanz-Tönung nativ
+    ["_bodenFarbeAt", ["SNOW_PROM", "_cont0"]], // der Schnee liest die Prominenz des Gelände-Kerns
+    ["_vegetationSampleSpawn", ["Math.random"]], // Γ5: Substanz aus Seed-Streams
+    ["_nahStreuKachel", ["Math.random"]],
+    ["_hydroRiverAt", ["_terrainMacroSurfaceY"]], // der Fluss liest das Gesetz, nie die Makro-Fläche
+    ["_applySubstanceResponse", ["_T.max(_rgb"]], // das Füll-Licht ohne Helligkeits-Klemme
+    ["handleJump", ["playerBody"]], // der Sprung schreibt die Geschwindigkeit, kein Physik-Körper
+    ["createGalaxySkybox", ["cloudShade"]], // EIN Himmel
+    ["_buildPbrNodeMaterial", ["__structAerialError"]], // die Luft aus EINER Quelle
+    ["_ensureHydroSurfaceMaterial", ["gerstnerWave", "uSkyCol", "d.x).mul(cos(phase))"]], // die Dünung, der EINE Himmel
+    ["_wasserBlick", ["uSkyCol"]],
+    ["_dayNightApplyHemiUndLuft", ["playerEyesUnderwater"]],
+    ["_workshopInstallShapeDragDrop", ["cards.forEach"]], // EIN delegierter Zieh-Hörer
+    ["_p2pMsgCreaturePos", ["_cpRate"]], // die Kappe lebt im Takt, nie im Empfänger
+    ["updateCreatures", ["_runRaycast(", "_fieldRaycast("]], // das Tier stößt mit dem Leib, nie mit dem Strahl
+];
+function scanAbsenzErbe(srcRoh, liste = METHODEN_OHNE) {
+    const code = stripComments(srcRoh);
+    const errs = [];
+    for (const [name, verboten] of liste) {
+        const a = stammLib.kopf(code, name);
+        const b = a < 0 ? -1 : code.indexOf("\n    }\n", a);
+        if (a < 0 || b < 0) {
+            errs.push(`Absenz-Erbe: \`${name}\` fehlt — ihr Absenz-Urteil (${verboten.join(" · ")}) zieht mit um`);
+            continue;
+        }
+        const rumpf = code.slice(a, b);
+        for (const t of verboten) if (rumpf.includes(t)) errs.push(`Absenz-Erbe: \`${name}\` trägt wieder "${t}"`);
+    }
+    return errs;
+}
+
 // DIE NORMAL-WAND (06.10.): ein normalNode ist VIEW-space (r184 NodeMaterial.setupNormal → normalView). Welt/Lokal →
 // Sicht ist MATRIX.transformDirection(n) (= M·n, three's transformNormalToView); n.transformDirection(MATRIX) rechnet
 // Mᵀ·n (three's normalWorld: Sicht → Welt). So standen Boden, Karte und Laub bis 06.10.: von Süden gesehen lag der Boden
@@ -3718,6 +3756,15 @@ function main() {
             console.log("❌ SELBST-TEST: die Karten-Wand feuert nicht (oder steht heute rot)");
             process.exit(1);
         }
+        // Das Absenz-Erbe muss feuern: der Sprung greift wieder zum Physik-Körper.
+        const erbeFeuert =
+            scanAbsenzErbe(stamm).length === 0 &&
+            scanAbsenzErbe(stamm.replace(/(\n {4}handleJump\([^)]*\) \{)/, "$1\n        const k = this.playerBody;"))
+                .length === 1;
+        if (!erbeFeuert) {
+            console.log("❌ SELBST-TEST: das Absenz-Erbe feuert nicht (oder steht heute rot)");
+            process.exit(1);
+        }
         // Die Normal-Wand muss feuern: eine Welt-Normale, mit der transponierten Kamera-Matrix gedreht.
         // Dazu die Quelle: der Boden-Graph liest wieder r184s `normalWorld` (der Fall vor V18.532), transitiv über `_nWG` (die
         // Geometrie-Normale des Graphen, beim Boden die des Stufen-Morphs, K51-2).
@@ -4263,6 +4310,7 @@ function main() {
         .concat(scanInstanzWand(stammLib.text(root)))
         .concat(scanEntsorgungsWand(stammLib.text(root)))
         .concat(scanKartenWand(stammLib.text(root)))
+        .concat(scanAbsenzErbe(stammLib.text(root)))
         .concat(scanNormalWand(stammLib.text(root)))
         .concat(scanStoffWand(stammLib.text(root)))
         .concat(toteMarker(markerDateien(root)))

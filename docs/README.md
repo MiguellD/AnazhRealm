@@ -13,7 +13,7 @@
 | `docs/roadmap.md`                               | **DER TISCH** — was offen ist (§0) · Narben (§2) · Teilsysteme (§3) · Samen/gemerkte Fäden (§4). Vor jedem neuen Vorhaben ZUERST.              |
 | `docs/studio-vertrag.md`                        | **NORMATIV** — die Naht Studio↔Welt (Vertrag v1.2: `PARAMS_BY_KIND` · must-ignore · fail-closed). Gate-gelesen (`gate:studio-vertrag`).        |
 | `docs/taille-spec.md`                           | **NORMATIV** — die gefrorene Taille (Serialisierungs-Norm; Goldens in `spec/golden/v1/`).                                                      |
-| `docs/neues-kleid-verfassung.md`                | **NORMATIV** — die Pipeline-Verfassung (die Gesetze der EINEN Pipe; die Maschine dazu ist `gate:pipeline-constitution`).                       |
+| `docs/neues-kleid-verfassung.md`                | **NORMATIV** — die Pipeline-Verfassung (die Gesetze der EINEN Pipe; die Maschine dazu ist `gate:constitution`).                                |
 | `docs/das-lebendige-feld.md`                    | **DER WAHRE NORDEN** — die Welt als EIN Feld, das alle lesen · schreiben · WERTEN. Vor Arbeit an Feld/Emotion/Nexus/DSL/Kreaturen ZUERST.      |
 | `docs/das-feld-zeichnet.md`                     | **NORMATIV** — der Render-Bogen des Feldes (der vierte Vers): drei Stufen · kein dritter Spiegel (die Ferne liest den Gelände-Kern) · Warm-Start. Vor Render-/Perf-Bögen ZUERST. |
 | `docs/state-of-realm.md`                        | **DIE VISION** — die Pfeiler · die heilige Lektion · die Ziellinie v1.0 (was steht, was fehlt) · das Ultiversum.                                 |
