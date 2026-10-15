@@ -26,7 +26,9 @@
 //       Datum, dem Plan den Leser und schmuggelt einen Stoff und einen Bauer ohne Pool ein — die Probe nennt jeden.
 //   (7) DAS BILD DER S0-PROBE (`--licht`, K11 + K11b): echter Renderer, Ausgabe-Pfad — der Feuerkreis aus 2 m (Luma) und
 //       der Farbton des Bodens 1–3 m um das Feuer (28–45°, die Farbtemperatur des Gesetzes); `--bild` legt die Bilder aus
-//       2 m, aus 6 m und der Figur ab. Selbsttest: der Pool leer, das Feuer bis K11b (Glut-Palette, nacht 12).
+//       2 m, aus 6 m und der Figur ab. Selbsttest: der Pool leer, das Feuer bis K11b (Glut-Palette, nacht 12). Dazu DER
+//       HIMMEL FOLGT DEM SPRUNG (K10, `himmelProbe`): nach Mittag und Mitternacht über den Pfad des Spielers trägt die
+//       Umgebung die Bestrahlung des geltenden Himmels. Selbsttest: der Maler taub.
 //
 //   node scripts/diag-pruefbuehne.cjs [--json datei] [--evolutionen 60] [--wurzel dir]
 //                                                  (`--wurzel` = der Baum eines anderen Stands: vorher ↔ nachher)
@@ -203,24 +205,17 @@ async function s4Probe(page, station, schein) {
 // (`userData.lichtPool`); EIN Punktlicht-Gesetz (nur `_lichtPoolTerm` ruft `_punktLichtBrdf`, kein Szenen-Licht im Stamm); die
 // Laterne eines Plans (`laternen[]`, gehoben als Studio-Gestalt `laterne_dorf` im Hebe-Chokepoint `_spawnSettlementErlebnis`,
 // ihr Licht das Datum ihres Rezepts) leuchtet nachts und mittags nicht. Konsum-Leser: der Licht-Takt (`_leuchtTakt`) und jeder beleuchtete Stoff (`_leuchtStoff`).
-// DER HIMMEL FOLGT DEM SPRUNG (K10, die Nacht der Gasse): die Uhr springt über den Pfad des Spielers (`setTimeOfDay`, sein Satz
-// „nacht") — EIN Anwenden des Tags (`_applyDayNightToScene`) später trägt die Himmels-Umgebung die Bestrahlung des Himmels, der
-// jetzt gilt (Konsum-Leser: die Belichtung und das Wasser, `_waagrechtIrradianz`), gegen dieselbe Umgebung frisch aus den
-// geltenden Quellen gemalt. Bis K10 malte `_dayNightApplySkybox` die Umgebung VOR der Luft-Farbe (`_dayNightApplyHemiUndLuft`), und
-// die Raten-Drossel hielt den Sprung 6 s: die Nacht der Gasse trug die Bestrahlung 2,07 des Tag-Himmels (Radeon, Bild 0,179 gegen
-// 0,204 am Tag), und jede Sonde malte den Himmel selbst nach.
+// DER HIMMEL FOLGT DEM SPRUNG (K10) misst im Bild-Lauf (`--licht`, `himmelProbe`): der Himmel lebt auf der GPU (D3).
 // `schein` (der Selbsttest): die Feuerstelle und die Laterne tragen kein Emitter-Datum (`_lichtDatum`), ein
-// Bauer `_scheinStoff` baut einen Stoff ohne Pool, ein Stoff ohne Pool steht als `pruef-schein` in der Szene, und der Maler der
-// Umgebung hört die Uhr nicht (`_ensureSkyEnvironment` taub) — die Probe MUSS jeden beim Namen nennen.
+// Bauer `_scheinStoff` baut einen Stoff ohne Pool, und ein Stoff ohne Pool steht als `pruef-schein` in der Szene — die Probe
+// MUSS jeden beim Namen nennen.
 const S0_LICHT_M = 10; // der Umkreis der gezählten Lichter um das Feuer
-// die Bestrahlung nach dem Sprung darf von der frisch gemalten höchstens so weit abweichen (relativ, plus 0,005 absolut)
-const S0_HIMMEL_TOL = 0.02;
 // das Feuer trägt in 2 m mindestens dieses Vielfache der waagrechten Bestrahlung der Nacht — der Nordstern Fachwerk: nachts hebt
 // warmes Licht den Platz auf 2–5 lx, der Rest bleibt im Mondlicht bei 0,1–0,3 lx (2 lx gegen 0,2 lx)
 const S0_E2_NACHT = 10;
 async function s0Probe(page, station, schein) {
     return page.evaluate(
-        async (st, umkreis, e2min, schein, tol) => {
+        async (st, umkreis, e2min, schein) => {
             const r = window.anazhRealm;
             const s = r.state;
             const T = window.THREE;
@@ -289,32 +284,6 @@ async function s0Probe(page, station, schein) {
             const uhr = (t) => {
                 if (r.setTimeOfDay(t, "human") !== true) throw new Error("S0: die Uhr nimmt den Spieler nicht (" + t + ")");
             };
-            // DER HIMMEL FOLGT DEM SPRUNG: Mittag, dann sofort Mitternacht (die zweite Malung liegt in der Raten-Drossel). Die
-            // Umgebung der EINEN Atmosphäre kommt EINE Lesung nach der Malung auf die CPU (D3, `state._skyEnvLesung`): nach dem
-            // Sprung wartet die Probe auf die Lesung, die der Sprung angestoßen hat — malt der Maler nicht, bleibt die Lesung der
-            // vorigen Stunde stehen. Ohne Himmel auf der CPU (kein echter Renderer) ist die Probe blind.
-            const lum = (e) => 0.2126 * e[0] + 0.7152 * e[1] + 0.0722 * e[2];
-            out.himmel = [];
-            if (!(await r._himmelFrisch())) out.befunde.push("S0 Himmel: keine Lesung der Umgebung (die Probe ist blind)");
-            for (const t of [0.5, 0]) {
-                if (schein) r._ensureSkyEnvironment = () => true; // der taube Maler
-                const nr0 = s._skyEnvLeseNr || 0;
-                uhr(t);
-                const gemalt = (s._skyEnvLeseNr || 0) !== nr0; // der Sprung malt die Umgebung der neuen Stunde
-                await s._skyEnvLesung;
-                const sprung = lum(r._waagrechtIrradianz([0, 0, 0]));
-                delete r._ensureSkyEnvironment;
-                await r._himmelFrisch(); // die Umgebung frisch aus den Quellen, die jetzt gelten
-                const frisch = lum(r._waagrechtIrradianz([0, 0, 0]));
-                out.himmel.push({ uhr: t, sprung: +sprung.toFixed(4), frisch: +frisch.toFixed(4) });
-                if (!gemalt || !(Math.abs(sprung - frisch) <= tol * frisch + 0.005))
-                    out.befunde.push(
-                        `S0 Himmel: nach dem Sprung auf ${t === 0 ? "Mitternacht" : "Mittag"} trägt die Umgebung die Bestrahlung ` +
-                            `${sprung.toFixed(3)}, der geltende Himmel ${frisch.toFixed(3)} — die Himmels-Umgebung ` +
-                            "(`_ensureSkyEnvironment`) folgt dem Sprung der Uhr nicht: gemalt vor der Luft-Farbe " +
-                            "(`_dayNightApplyHemiUndLuft`) oder vom Sprung in der Raten-Drossel (SKY_ENV_REGEN_MIN_MS) gehalten"
-                    );
-            }
             // der Mensch steht im Atrium am Rand des Genesis-Platzes (K52: die Scheibe liegt auf dem Grund der Station, der Ring
             // der Tore um sie): 2 m jenseits der Lichtung, zwischen zwei Toren (18°), der Blick des Schusses weg vom Ring
             const A0 = r.constructor.GENESIS_PLATZ;
@@ -471,13 +440,12 @@ async function s0Probe(page, station, schein) {
         station,
         S0_LICHT_M,
         S0_E2_NACHT,
-        !!schein,
-        S0_HIMMEL_TOL
+        !!schein
     );
 }
 
 function zeigeS0(rep, schein) {
-    console.log(`\n  ── S0-PROBE ${rep.station}${schein ? " · SCHEIN (Feuer ohne Datum, Laterne ungelesen, Stoff und Bauer ohne Pool, der Maler taub)" : ""}`);
+    console.log(`\n  ── S0-PROBE ${rep.station}${schein ? " · SCHEIN (Feuer ohne Datum, Laterne ungelesen, Stoff und Bauer ohne Pool)" : ""}`);
     if (rep.feuer)
         console.log(
             `    Feuerstelle ${rep.feuer.typ} bei ${rep.feuer.x}|${rep.feuer.z}, Glut-Fläche ${rep.feuer.flaeche} m², Verzeichnis ${rep.verzeichnis ? "ja" : "NEIN"}`
@@ -488,8 +456,6 @@ function zeigeS0(rep, schein) {
             `    Nacht ${k === "klang" ? "Klang an " : "Klang aus"}: ${z.n} Lichter ≤ ${S0_LICHT_M} m, Bestrahlung in 2 m ${z.e2} (die Nacht ${z.nacht}) ${JSON.stringify(z.lichter)}`
         );
     }
-    for (const h of rep.himmel || [])
-        console.log(`    Himmel nach dem Sprung auf ${h.uhr === 0 ? "Mitternacht" : "Mittag"}: Bestrahlung ${h.sprung} · frisch gemalt ${h.frisch}`);
     if (rep.laterne) console.log(`    Laterne des Plans: nachts ${rep.laterne.nachts} · mittags ${rep.laterne.mittags} Plätze`);
     if (rep.fenster) console.log(`    Fenster-Glut: nachts ${rep.fenster.nachts} · mittags ${rep.fenster.mittags}`);
     if (rep.stoffe)
@@ -915,6 +881,59 @@ const S0_STOFF = (() => {
         },
     };
 })();
+// DER HIMMEL FOLGT DEM SPRUNG (K10, die Nacht der Gasse): die Uhr springt über den Pfad des Spielers (`setTimeOfDay`, sein Satz
+// „nacht") — EIN Anwenden des Tags (`_applyDayNightToScene`) später trägt die Himmels-Umgebung die Bestrahlung des Himmels, der
+// jetzt gilt (Konsum-Leser: die Belichtung und das Wasser, `_waagrechtIrradianz`), gegen dieselbe Umgebung frisch aus den
+// geltenden Quellen gemalt (`_himmelFrisch`). Bis K10 malte `_dayNightApplySkybox` die Umgebung VOR der Luft-Farbe
+// (`_dayNightApplyHemiUndLuft`), und die Raten-Drossel hielt den Sprung 6 s: die Nacht der Gasse trug die Bestrahlung 2,07 des
+// Tag-Himmels (Radeon, Bild 0,179 gegen 0,204 am Tag). Seit D3 lebt der Himmel auf der GPU und kommt EINE Lesung nach der Malung
+// auf die CPU (`state._skyEnvLesung`) — die Probe misst darum im Bild-Lauf (der Null-Renderer malt keinen Himmel, Lehre 16): sie
+// wartet auf die Lesung, die der Sprung angestoßen hat; malt der Maler nicht, bleibt die Lesung der vorigen Stunde stehen.
+// Morgen als Ausgang (frisch gemalt), dann Mittag, dann sofort Mitternacht (die zweite Malung liegt in der Raten-Drossel).
+// `taub` (der Selbsttest): der Maler der Umgebung hört die Uhr nicht (`_ensureSkyEnvironment` taub) — die Probe MUSS ihn nennen.
+const S0_HIMMEL_TOL = 0.02; // relativ, plus 0,005 absolut: die Bestrahlung nach dem Sprung gegen die frisch gemalte
+async function himmelProbe(page, taub) {
+    return page.evaluate(
+        async (taub, tol) => {
+            const r = window.anazhRealm;
+            const s = r.state;
+            const out = { himmel: [], befunde: [] };
+            const uhr = (t) => {
+                if (r.setTimeOfDay(t, "human") !== true) throw new Error("S0: die Uhr nimmt den Spieler nicht (" + t + ")");
+            };
+            const lum = (e) => 0.2126 * e[0] + 0.7152 * e[1] + 0.0722 * e[2];
+            r._setWeather("sunny", "human");
+            s.weatherTransition = null;
+            uhr(0.3);
+            if (!(await r._himmelFrisch())) {
+                out.befunde.push("S0 Himmel: keine Lesung der Umgebung (`_himmelFrisch`) — die Probe ist blind");
+                return out;
+            }
+            for (const t of [0.5, 0]) {
+                if (taub) r._ensureSkyEnvironment = () => true; // der taube Maler
+                const nr0 = s._skyEnvLeseNr || 0;
+                uhr(t);
+                const gemalt = (s._skyEnvLeseNr || 0) !== nr0; // der Sprung malt die Umgebung der neuen Stunde
+                await s._skyEnvLesung;
+                const sprung = lum(r._waagrechtIrradianz([0, 0, 0]));
+                delete r._ensureSkyEnvironment;
+                await r._himmelFrisch(); // die Umgebung frisch aus den Quellen, die jetzt gelten
+                const frisch = lum(r._waagrechtIrradianz([0, 0, 0]));
+                out.himmel.push({ uhr: t, gemalt, sprung: +sprung.toFixed(4), frisch: +frisch.toFixed(4) });
+                if (!gemalt || !(Math.abs(sprung - frisch) <= tol * frisch + 0.005))
+                    out.befunde.push(
+                        `S0 Himmel: nach dem Sprung auf ${t === 0 ? "Mitternacht" : "Mittag"} trägt die Umgebung die Bestrahlung ` +
+                            `${sprung.toFixed(3)}${gemalt ? "" : " (ungemalt)"}, der geltende Himmel ${frisch.toFixed(3)} — die ` +
+                            "Himmels-Umgebung (`_ensureSkyEnvironment`) folgt dem Sprung der Uhr nicht: gemalt vor der Luft-Farbe " +
+                            "(`_dayNightApplyHemiUndLuft`) oder vom Sprung in der Raten-Drossel (SKY_ENV_REGEN_MIN_MS) gehalten"
+                    );
+            }
+            return out;
+        },
+        !!taub,
+        S0_HIMMEL_TOL
+    );
+}
 const S0_FRIST_S = Math.max(30, Number(opt("--frist", 170)) || 170);
 async function lichtLauf() {
     const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
@@ -1000,6 +1019,7 @@ async function lichtLauf() {
     const url = `http://127.0.0.1:${PORT}/index.html?holz=${HOLZ}`;
     const json = JSON.parse(fs.readFileSync(BUEHNE_DATEI, "utf8"));
     const ergebnis = {};
+    const himmel = {}; // der Himmel folgt dem Sprung (oben `himmelProbe`): sauber und — im Selbsttest — der taube Maler
     let wache = null; // der Schein der Wache (Selbsttest): das Urteil über ein Werk, das ein benannter Rufer räumte
     try {
         await phase("Laden", async (rest) => {
@@ -1031,6 +1051,10 @@ async function lichtLauf() {
             await page.evaluate(S0_NAH_INSTALL);
             await page.evaluate(S0_GESTALT_INSTALL);
         });
+        for (const taub of SELBSTTEST ? [false, true] : [false]) {
+            himmel[taub ? "taub" : "sauber"] = await phase(taub ? "Himmel taub" : "Himmel", () => himmelProbe(page, taub));
+            zeit(taub ? "der Himmel des tauben Malers gemessen" : "der Himmel nach dem Sprung gemessen");
+        }
         // der Satz des Menschen, bis die Welt ihn trägt (direkt nach dem Boot lädt das Gesetzbuch noch) — und die Gestalt
         // der Feuerstelle (der Bau der Foundry), ehe der Schuss misst
         for (const [name, gestalt] of [
@@ -1397,6 +1421,14 @@ async function lichtLauf() {
             `  S0 BILD ${wer}: Feuerkreis aus 2 m Luma ${e.kreis} (${e.punkte} Punkte, Soll ≥ ${S0_LUMA_2M}) · Boden 1–3 m Farbton ${e.ton && e.ton.hue}° Sättigung ${e.ton && e.ton.sat} sRGB ${JSON.stringify(e.ton && e.ton.rgb)} (Soll ${S0_TON.hue[0]}–${S0_TON.hue[1]}°, ≤ ${S0_TON.satMax}) · Lichtfarbe linear ${JSON.stringify(e.lichtFarbe)} · kelvin ${e.kelvin} · Belichtung ${e.belichtung} · Feuer ${JSON.stringify(e.feuer)} · Pool ${JSON.stringify(e.pool)} · Befehle ${e.dc} · Nah-Bühne ${JSON.stringify(e.nah)} · Programme/Pipelines ${JSON.stringify(e.zaehl)}`
         );
     }
+    for (const [k, e] of Object.entries(himmel))
+        for (const h of e.himmel)
+            console.log(
+                `  S0 HIMMEL${k === "taub" ? " SCHEIN (der Maler taub)" : ""}: nach dem Sprung auf ${h.uhr === 0 ? "Mitternacht" : "Mittag"} ` +
+                    `Bestrahlung ${h.sprung} · frisch gemalt ${h.frisch} · ${h.gemalt ? "gemalt" : "UNGEMALT"}`
+            );
+    if (himmel.sauber) befunde.push(...himmel.sauber.befunde);
+    else befunde.push("S0 Himmel: die Probe lief nicht");
     if (sauber && !sauber.fehler && !(sauber.kreis >= S0_LUMA_2M))
         befunde.push(
             `S0 Bild: der Feuerkreis aus 2 m trägt Luma ${sauber.kreis} (Soll ≥ ${S0_LUMA_2M}) — das Licht der Feuerstelle ` +
@@ -1481,7 +1513,13 @@ async function lichtLauf() {
         console.log(
             `  SELBSTTEST S0 WACHE (ein Werk fällt durch einen benannten Rufer): ${wacheGetroffen ? `getroffen — das Urteil nennt ${wa.fiel}` : "BLIND " + JSON.stringify(wa)}`
         );
-        pass = pass && getroffen && farbGetroffen && grossGetroffen && nahGetroffen && liesGetroffen && wacheGetroffen;
+        const hb = (himmel.taub && himmel.taub.befunde) || [];
+        const taubGetroffen = hb.some((b) => /^S0 Himmel: nach dem Sprung auf Mitternacht .*`_ensureSkyEnvironment`/.test(b));
+        console.log(
+            `  SELBSTTEST S0 HIMMEL (der Maler taub): ${taubGetroffen ? `getroffen — ${hb.find((b) => /Mitternacht/.test(b)).split(" — ")[0]}` : "BLIND " + JSON.stringify(hb)}`
+        );
+        pass =
+            pass && getroffen && farbGetroffen && grossGetroffen && nahGetroffen && liesGetroffen && wacheGetroffen && taubGetroffen;
     }
     console.log(
         `\n${pass ? "✅" : "⛔"} S0 BILD ${pass ? "GRÜN: die Feuerstelle trägt den Feuerkreis aus 2 m in der Ausgabe" : "ROT"} (${Math.round((Date.now() - t0) / 1000)} s, ${ECHT ? "echte GPU" : adapter.fehlt || adapter.vendor + "/" + adapter.architecture} · Holz ${HOLZ})\n`
@@ -1671,7 +1709,6 @@ function zeige(rep) {
             laterne: s0B.some((b) => /^S0 Laterne: .*`laterne_dorf`/.test(b)),
             stoff: s0B.some((b) => /^S0 Stoff ohne Pool: .*pruef-schein/.test(b)),
             bauer: s0B.some((b) => /^S0 Bauer ohne Pool: .*`_scheinStoff`/.test(b) && /`_scheinRueckfall`/.test(b)),
-            himmel: s0B.some((b) => /^S0 Himmel: nach dem Sprung auf Mitternacht .*`_ensureSkyEnvironment`/.test(b)),
         };
         selbst = {
             benannt: namen,
@@ -1682,8 +1719,7 @@ function zeige(rep) {
                 s0Namen.every((b) => /das Verzeichnis nennt die Feuerstelle nicht/.test(b)) &&
                 s0Rest.laterne &&
                 s0Rest.stoff &&
-                s0Rest.bauer &&
-                s0Rest.himmel,
+                s0Rest.bauer,
             s0Rest,
         };
         console.log(
@@ -1695,7 +1731,7 @@ function zeige(rep) {
             }`
         );
         console.log(
-            `  SELBSTTEST S0 (Feuer ohne Datum · Laterne ungelesen · Stoff und Bauer ohne Pool · der Maler taub): ${selbst.s0Treffer ? "getroffen — " + s0Namen[0] : "BLIND " + JSON.stringify(selbst.s0Rest)}`
+            `  SELBSTTEST S0 (Feuer ohne Datum · Laterne ungelesen · Stoff und Bauer ohne Pool): ${selbst.s0Treffer ? "getroffen — " + s0Namen[0] : "BLIND " + JSON.stringify(selbst.s0Rest)}`
         );
     }
     if (JSON_AUS) fs.writeFileSync(JSON_AUS, JSON.stringify({ berichte, selbst }, null, 1));
