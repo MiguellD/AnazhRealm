@@ -80,22 +80,6 @@ function check(name, ok, detail) {
 function ohneKommentare(src) {
     return src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:"'`\\])\/\/[^\n]*/g, "$1");
 }
-function fnBody(src, sigRe) {
-    const m = sigRe.exec(src);
-    if (!m) return null;
-    let i = src.indexOf("{", m.index + m[0].length - 1);
-    if (i < 0) return null;
-    let depth = 0;
-    const start = i;
-    for (; i < src.length; i++) {
-        if (src[i] === "{") depth++;
-        else if (src[i] === "}") {
-            depth--;
-            if (depth === 0) return src.slice(start, i + 1);
-        }
-    }
-    return null;
-}
 
 // ── DIE VERDIKTE (pure Funktionen; Browser-Probe UND Selbst-Test). Rückgabe: die Täter beim Namen. ──
 const SOLL = { vorschauAnteil: 0.99, rahmenMin: 0.5, rahmenMax: 0.9, zugMs: 20000, karteMin: 0.5, karteMax: 1.5 };
@@ -365,165 +349,531 @@ function sucheVerdict(m) {
     return out;
 }
 
-// ── DIE STATISCHE WAND (Node, kommentarfrei). Liefert [name, ok, detail]. ──
+// ── DIE STATISCHE WAND (Node, am AST). Liefert [name, ok, detail]. ──
+const FN_ART = /^(?:FunctionExpression|ArrowFunctionExpression|FunctionDeclaration)$/;
+const SCHLEIFE_ART = /^(?:WhileStatement|DoWhileStatement|ForStatement|ForInStatement|ForOfStatement)$/;
+const ZEITGEBER = /^(?:setTimeout|setInterval|requestAnimationFrame|requestIdleCallback)$/;
+const RENDER = /^render(?:Async)?$/;
+// der Name eines Zugriffs: `a.b`, `a["b"]`, a[`b`]
+const eigenName = (m) =>
+    !m.computed
+        ? m.property.name
+        : m.property.type === "Literal"
+          ? String(m.property.value)
+          : m.property.type === "TemplateLiteral" && !m.property.expressions.length
+            ? m.property.quasis[0].value.cooked
+            : null;
+const gerufenName = (c) => (c.type === "Identifier" ? c.name : c.type === "MemberExpression" ? eigenName(c) : null);
+const umfasst = (a, i) => a.start <= i && i < a.end;
+// ein Bezug, der einen Namen nur DEKLARIERT oder als Schlüssel trägt (kein Lesen des Werts)
+const nurName = (n, p) =>
+    p &&
+    ((p.type === "MemberExpression" && p.property === n && !p.computed) ||
+        (p.type === "Property" && p.key === n && !p.computed) ||
+        ((p.type === "MethodDefinition" || p.type === "PropertyDefinition") && p.key === n) ||
+        (p.type === "VariableDeclarator" && p.id === n) ||
+        (p.type === "AssignmentExpression" && p.left === n) ||
+        (FN_ART.test(p.type) && (p.id === n || p.params.includes(n))) ||
+        (p.type === "AssignmentPattern" && p.left === n));
+
+// W2 — DER RENDER-FLUSS: wo die Render-Funktion eines Renderers GERUFEN wird. Gefolgt wird dem WERT `x.render` /
+// `x.renderAsync` (auch `x["render"]`, ein Destrukturieren `{ render }`) durch `||`, `?:`, Klammern und `?.`, durch `.bind`
+// (gebundene Argumente zählen mit), in einen Bezeichner, ein Feld (`this.z = …`, `{ z: … }`), einen Parameter eines Glieds
+// (`this.g(x.render)`), die Rückgabe eines Glieds oder einer Closure — bis zum Ruf: direkt mit ≥ 2 Argumenten (Szene,
+// Kamera), `.call` mit ≥ 3, `.apply`, `Reflect.apply`, ein Zeitgeber mit Szene und Kamera hinter der Frist. Ein Feld der
+// Info (`info.render.calls`) und ein Wert im Test (`ri && ri.render`) sind kein Ruf. Bis Runde 4 las W2 die Ruf-FORMEN
+// `render(…)` · `.call` · `.apply` — `const z = r.render.bind(r); z(s, c)` blieb still grün (Prüfer K38-N2 Runde 4, mut-bind).
+function renderFluss(src) {
+    const baum = stammLib.ast(src);
+    const gl = stammLib.glieder(src);
+    const gliedVon = (i) => {
+        const g = stammLib.gliedAn(gl, i);
+        return g ? g.name : null;
+    };
+    const treffer = new Map(); // Start des Rufs → { glied, wie, i, text }
+    const lokal = new Map(); // "glied|bezeichner" → [gebundene Argumente, Weg]
+    const feld = new Map(); // feldname → [gebundene Argumente, Weg]
+    const rueck = new Map(); // "glied" oder "glied|closure" → [gebundene Argumente, Weg] (die Rückgabe trägt die Funktion)
+    let neu = false;
+    const merke = (karte, k, gebunden, weg) => {
+        if (!karte.has(k)) karte.set(k, [gebunden, weg]), (neu = true);
+    };
+    const trifft = (ruf, wie) => {
+        if (!treffer.has(ruf.start))
+            treffer.set(ruf.start, { glied: gliedVon(ruf.start), wie, i: ruf.start, text: src.slice(ruf.start, Math.min(ruf.end, ruf.start + 90)).replace(/\s+/g, " ") });
+    };
+    const fliesse = (kette, n, gebunden, weg) => {
+        const triff = (ruf, wie) => trifft(ruf, `${weg}${wie}`);
+        let cur = n;
+        for (let k = kette.length - 1; k >= 0; k--) {
+            const p = kette[k];
+            const t = p.type;
+            if (
+                t === "ChainExpression" ||
+                t === "ParenthesizedExpression" ||
+                t === "LogicalExpression" ||
+                (t === "ConditionalExpression" && p.test !== cur) ||
+                (t === "SequenceExpression" && p.expressions[p.expressions.length - 1] === cur)
+            ) {
+                cur = p;
+                continue;
+            }
+            if (t === "MemberExpression" && p.object === cur) {
+                const was = eigenName(p);
+                const pp = kette[k - 1];
+                if (!pp || pp.type !== "CallExpression" || pp.callee !== p) return; // ein Feld des Werts (info.render.calls)
+                if (was === "bind") {
+                    gebunden += Math.max(0, pp.arguments.length - 1);
+                    weg += ".bind → ";
+                    cur = pp;
+                    k--;
+                    continue;
+                }
+                if (was === "call" && gebunden + pp.arguments.length - 1 >= 2) triff(pp, ".call");
+                if (was === "apply") triff(pp, ".apply");
+                return;
+            }
+            if (t === "CallExpression" && p.callee === cur) {
+                if (gebunden + p.arguments.length >= 2) triff(p, "Ruf");
+                return;
+            }
+            if (t === "CallExpression") {
+                const idx = p.arguments.indexOf(cur);
+                const nm = gerufenName(p.callee);
+                if (idx === 0 && nm === "apply" && p.callee.type === "MemberExpression" && gerufenName(p.callee.object) === "Reflect") triff(p, "Reflect.apply");
+                else if (idx === 0 && ZEITGEBER.test(nm || "") && gebunden + p.arguments.length - 2 >= 2) triff(p, nm);
+                else if (idx >= 0 && p.callee.type === "MemberExpression") {
+                    // ein Parameter eines Glieds trägt die Funktion weiter
+                    const g = gl.find((x) => x.name === nm);
+                    const fn = g && (g.knoten.value || null);
+                    const par = fn && FN_ART.test(fn.type) ? fn.params[idx] : null;
+                    const id = par && (par.type === "AssignmentPattern" ? par.left : par);
+                    if (id && id.type === "Identifier") merke(lokal, `${nm}|${id.name}`, gebunden, `${weg}Parameter ${nm}(${id.name}) → `);
+                }
+                return;
+            }
+            if (t === "VariableDeclarator" && p.init === cur) {
+                if (p.id.type === "Identifier") merke(lokal, `${gliedVon(p.start)}|${p.id.name}`, gebunden, `${weg}${p.id.name} → `);
+                return;
+            }
+            if (t === "AssignmentExpression" && p.right === cur) {
+                if (p.left.type === "Identifier") merke(lokal, `${gliedVon(p.start)}|${p.left.name}`, gebunden, `${weg}${p.left.name} → `);
+                else if (p.left.type === "MemberExpression" && eigenName(p.left)) merke(feld, eigenName(p.left), gebunden, `${weg}Feld .${eigenName(p.left)} → `);
+                return;
+            }
+            if (t === "Property" && p.value === cur) {
+                const nm = !p.computed && p.key.type === "Identifier" ? p.key.name : p.key.type === "Literal" ? String(p.key.value) : null;
+                if (nm) merke(feld, nm, gebunden, `${weg}Feld .${nm} → `);
+                return;
+            }
+            if (t === "ReturnStatement" || (t === "ArrowFunctionExpression" && p.body === cur)) {
+                // die Funktion, die zurückgibt: das Glied selbst oder eine benannte Closure
+                let j = t === "ReturnStatement" ? k - 1 : k;
+                while (j >= 0 && !FN_ART.test(kette[j].type)) j--;
+                const f = kette[j];
+                const fp = kette[j - 1];
+                const glied = gliedVon(p.start);
+                if (f && fp && (fp.type === "MethodDefinition" || fp.type === "PropertyDefinition")) merke(rueck, glied, gebunden, `${weg}Rückgabe ${glied}() → `);
+                else if (f && fp && fp.type === "VariableDeclarator" && fp.id.type === "Identifier") merke(rueck, `${glied}|${fp.id.name}`, gebunden, `${weg}Rückgabe ${fp.id.name}() → `);
+                else if (f && f.id) merke(rueck, `${glied}|${f.id.name}`, gebunden, `${weg}Rückgabe ${f.id.name}() → `);
+                return;
+            }
+            return;
+        }
+    };
+    for (let runde = 0; runde === 0 || neu; runde++) {
+        neu = false;
+        stammLib.wandere(baum, (n, ahnen) => {
+            const p = ahnen[ahnen.length - 1];
+            if (n.type === "MemberExpression") {
+                const nm = eigenName(n);
+                if (!nm || (p && p.type === "AssignmentExpression" && p.left === n)) return true;
+                if (RENDER.test(nm)) fliesse(ahnen, n, 0, "");
+                else if (feld.has(nm)) fliesse(ahnen, n, ...feld.get(nm));
+            } else if (n.type === "Property" && p && p.type === "ObjectPattern") {
+                const nm = !n.computed && n.key.type === "Identifier" ? n.key.name : n.key.type === "Literal" ? String(n.key.value) : null;
+                const v = n.value.type === "AssignmentPattern" ? n.value.left : n.value;
+                if (nm && RENDER.test(nm) && v.type === "Identifier") merke(lokal, `${gliedVon(n.start)}|${v.name}`, 0, `{ ${nm} } → ${v.name} → `);
+            } else if (n.type === "Identifier" && lokal.size && !nurName(n, p)) {
+                const k = `${gliedVon(n.start)}|${n.name}`;
+                if (lokal.has(k)) fliesse(ahnen, n, ...lokal.get(k));
+            } else if (n.type === "CallExpression" && rueck.size) {
+                const c = n.callee;
+                const k = c.type === "Identifier" ? `${gliedVon(n.start)}|${c.name}` : c.type === "MemberExpression" ? eigenName(c) : null;
+                if (k && rueck.has(k)) fliesse(ahnen, n, ...rueck.get(k));
+            }
+            return true;
+        });
+        if (runde > 12) throw new Error("renderFluss: kein Fixpunkt nach 12 Runden");
+    }
+    return [...treffer.values()];
+}
+
+// W7 — DER ZEIT-GRAPH: Knoten sind die Glieder der Klasse und jede benannte Closure darin (const/let/Zuweisung = Funktion,
+// function-Deklaration, benannter Funktions-Ausdruck); eine Kante führt zu jedem Knoten, den ein Knoten beim Namen nennt
+// (`this.g`, ein Alias von this, ein Glied der Familie über jedes Objekt; die Closure beim Bezeichner). Eine Kante ist ZEIT,
+// wenn die Nennung erst nach Zeit läuft: im Rückruf eines Zeitgebers (setTimeout · setInterval · requestAnimationFrame ·
+// requestIdleCallback, auch `window.` und `["…"]`) oder eines Zeitgeber-Glieds (es ruft einen Parameter im Zeitgeber), im
+// Rückruf von then/catch/finally auf einem zeitigen Versprechen, in einer Funktion, die auf Zeit wartet (`await` auf einen
+// Zeitgeber oder auf einen Schlaf — ein Knoten, dessen Rückgabe ein Zeitgeber einlöst). Ein POLL ist ein Kreis mit einer
+// Zeit-Kante (über beliebig viele Glieder und Closures), eine Schleife, die in ihrem Rumpf auf Zeit wartet, ein setInterval —
+// oder ein Wartender der Familie, der auf ein pollendes Glied wartet (await · then · return · ein Rückruf als Argument).
+// Gelesen werden die Glieder, die die Familie erreicht. Bis Runde 4 las W7 je Glied einen eigenen Graphen ohne Schleifen:
+// `while (!f.buchDa) await new Promise((r) => setTimeout(r, 50))` (mut-schlaf) und `_foundryHorch` ⇄ `_foundryHorchNochmal`
+// (mut-kreuz) blieben still grün (Prüfer K38-N2 Runde 4).
+// Die EINE Kette mit Zeit-Kanten, die kein Poll ist — die Frist am Ereignis je Auftrag: `_foundryUhren` stellt je Auftrag,
+// der vorn in seinem Faden steht, EINE Uhr auf `_foundryAblauf`; dessen Geist-Fall stellt EINMAL die Uhr, die den Geist
+// fallen lässt und Pumpe und Uhr des nächsten Auftrags anstößt. Jede Uhr feuert je Auftrag höchstens einmal. Frei sind
+// genau diese Zeit-Kanten; steht eine nicht mehr, ist die Ausnahme veraltet und W7 rot.
+const FRIST_KETTE = [
+    ["_foundryUhren", "_foundryAblauf"],
+    ["_foundryAblauf", "_foundryPumpe"],
+    ["_foundryAblauf", "_foundryUhren"],
+];
+const FOUNDRY_FAMILIE = /^(?:_foundry\w*|_heldFoundryGroup|_workshop\w*Preview\w*|_impostor\w*|_karte\w*|_tickImpostorBake)$/;
+function zeitGraph(src) {
+    const gl = stammLib.glieder(src);
+    const gliedNamen = new Set(gl.map((g) => g.name));
+    const wurzel = (g) => g.knoten.value || g.knoten;
+    const istSelbst = (a, o) => o.type === "ThisExpression" || (o.type === "Identifier" && a.selbst.has(o.name));
+    // ein Bezug auf ein Glied: this.g und ein Alias von this für jedes Glied, jedes Objekt für ein Glied der Familie
+    const gliedZiel = (a, n) => {
+        const nm = eigenName(n);
+        return nm && gliedNamen.has(nm) && (istSelbst(a, n.object) || FOUNDRY_FAMILIE.test(nm)) ? nm : null;
+    };
+    // 1) je Glied die Glied-Bezüge → die Glieder, die die Familie erreicht
+    const akte = new Map();
+    for (const g of gl) {
+        const a = { g, selbst: new Set(), zugriffe: [] };
+        stammLib.wandere(wurzel(g), (n) => {
+            if (n.type === "VariableDeclarator" && n.id.type === "Identifier" && n.init && n.init.type === "ThisExpression") a.selbst.add(n.id.name);
+            else if (n.type === "AssignmentExpression" && n.left.type === "Identifier" && n.right.type === "ThisExpression") a.selbst.add(n.left.name);
+            else if (n.type === "MemberExpression") a.zugriffe.push(n);
+            return true;
+        });
+        a.glieder = new Set(a.zugriffe.map((n) => gliedZiel(a, n)).filter(Boolean));
+        a.zugriffe = null;
+        if (!akte.has(g.name)) akte.set(g.name, []);
+        akte.get(g.name).push(a);
+    }
+    const erreicht = new Set(gl.filter((g) => FOUNDRY_FAMILIE.test(g.name)).map((g) => g.name));
+    const familie = new Set(erreicht);
+    for (const offen = [...erreicht]; offen.length; )
+        for (const a of akte.get(offen.pop()) || []) for (const y of a.glieder) if (!erreicht.has(y)) erreicht.add(y), offen.push(y);
+    // 2) die erreichten Glieder voll: Funktionen, Closures, Rufe, awaits, Schleifen, Bezüge
+    const akten = [];
+    for (const name of erreicht)
+        for (const a of akte.get(name) || []) {
+            Object.assign(a, { fns: [], closures: [], rufe: [], awaits: [], schleifen: [], bezuege: [] });
+            stammLib.wandere(wurzel(a.g), (n, ahnen) => {
+                const p = ahnen[ahnen.length - 1];
+                if (FN_ART.test(n.type)) {
+                    a.fns.push(n);
+                    if (n.id && n.type !== "ArrowFunctionExpression") a.closures.push({ name: n.id.name, fn: n, id: n.id });
+                }
+                if (n.type === "VariableDeclarator" && n.id.type === "Identifier" && n.init && FN_ART.test(n.init.type)) a.closures.push({ name: n.id.name, fn: n.init, id: n.id });
+                if (n.type === "AssignmentExpression" && n.left.type === "Identifier" && FN_ART.test(n.right.type)) a.closures.push({ name: n.left.name, fn: n.right, id: n.left });
+                if (n.type === "CallExpression") a.rufe.push({ n, p, nm: gerufenName(n.callee) });
+                if (n.type === "AwaitExpression") a.awaits.push(n);
+                if (SCHLEIFE_ART.test(n.type)) a.schleifen.push(n);
+                if (n.type === "MemberExpression" || n.type === "Identifier") a.bezuege.push({ n, p });
+                return true;
+            });
+            a.closureNamen = new Set(a.closures.map((c) => c.name));
+            akten.push(a);
+        }
+    const ziel = (a, n, p) => {
+        if (n.type === "MemberExpression") return gliedZiel(a, n);
+        if (n.type !== "Identifier" || !a.closureNamen.has(n.name) || nurName(n, p)) return null;
+        return `${a.g.name}/${n.name}`;
+    };
+    const knotenAn = (a, i) => {
+        let k = null;
+        for (const c of a.closures) if (umfasst(c.fn, i) && (!k || c.fn.start >= k.fn.start)) k = c;
+        return k ? `${a.g.name}/${k.name}` : a.g.name;
+    };
+    const fnAn = (a, i) => {
+        let f = null;
+        for (const x of a.fns) if (umfasst(x, i) && (!f || x.start >= f.start)) f = x;
+        return f;
+    };
+    // Schlaf (die Rückgabe löst ein Zeitgeber ein) und Zeitgeber-Glied (ein Parameter wird im Zeitgeber gerufen): Fixpunkt
+    const schlaf = new Set();
+    const geber = new Set();
+    const rufZiel = (a, c) => ziel(a, c.callee, c);
+    const zeitig = (a, e) => {
+        let z = false;
+        stammLib.wandere(e, (n) => {
+            if (z) return false;
+            if (n.type === "CallExpression" && (ZEITGEBER.test(gerufenName(n.callee) || "") || schlaf.has(rufZiel(a, n) || ""))) z = true;
+            return true;
+        });
+        return z;
+    };
+    const istZeitRuf = (a, r) => ZEITGEBER.test(r.nm || "") || geber.has(rufZiel(a, r.n) || "");
+    const rueckrufe = (r) =>
+        ZEITGEBER.test(r.nm || "")
+            ? r.n.arguments.slice(0, 1)
+            : r.n.arguments.filter((x) => FN_ART.test(x.type) || x.type === "ObjectExpression" || x.type === "Identifier" || x.type === "MemberExpression");
+    for (let neu = true; neu; ) {
+        neu = false;
+        for (const a of akten)
+            for (const k of [{ name: a.g.name, fn: wurzel(a.g) }, ...a.closures.map((c) => ({ name: `${a.g.name}/${c.name}`, fn: c.fn }))]) {
+                if (!FN_ART.test(k.fn.type)) continue;
+                if (!schlaf.has(k.name)) {
+                    let z = k.fn.type === "ArrowFunctionExpression" && k.fn.expression && zeitig(a, k.fn.body);
+                    if (!z)
+                        stammLib.wandere(k.fn.body, (n) => {
+                            if (z || (n !== k.fn.body && FN_ART.test(n.type))) return false;
+                            if (n.type === "ReturnStatement" && n.argument && zeitig(a, n.argument)) z = true;
+                            return true;
+                        });
+                    if (z) schlaf.add(k.name), (neu = true);
+                }
+                if (!geber.has(k.name)) {
+                    const params = new Set(
+                        k.fn.params
+                            .map((x) => (x.type === "AssignmentPattern" ? x.left : x))
+                            .filter((x) => x.type === "Identifier")
+                            .map((x) => x.name)
+                    );
+                    const istParam = (x) => x && x.type === "Identifier" && params.has(x.name);
+                    let z = false;
+                    for (const r of a.rufe) {
+                        if (z || !params.size || !umfasst(k.fn, r.n.start) || !istZeitRuf(a, r)) continue;
+                        for (const arg of rueckrufe(r))
+                            if (istParam(arg)) z = true;
+                            else
+                                stammLib.wandere(arg, (n) => {
+                                    if (n.type === "CallExpression" && (istParam(n.callee) || (n.callee.type === "MemberExpression" && istParam(n.callee.object)))) z = true;
+                                    return !z;
+                                });
+                    }
+                    if (z) geber.add(k.name), (neu = true);
+                }
+            }
+    }
+    // die Kanten
+    const kanten = new Map(); // von → Map(zu → { zeit, i })
+    const schleifen = [];
+    const intervalle = [];
+    for (const a of akten) {
+        const bereiche = [];
+        for (const r of a.rufe) {
+            if (r.nm === "setInterval") intervalle.push({ knoten: knotenAn(a, r.n.start), i: r.n.start });
+            if (istZeitRuf(a, r)) bereiche.push(...rueckrufe(r));
+            else if (/^(?:then|catch|finally)$/.test(r.nm || "") && r.n.callee.type === "MemberExpression" && zeitig(a, r.n.callee.object)) bereiche.push(...r.n.arguments);
+        }
+        const zeitAwaits = a.awaits.filter((w) => zeitig(a, w.argument));
+        const wartet = new Set(zeitAwaits.map((w) => fnAn(a, w.start)));
+        for (const { n, p } of a.bezuege) {
+            const zu = ziel(a, n, p);
+            if (!zu) continue;
+            const von = knotenAn(a, n.start);
+            const zeit = bereiche.some((x) => umfasst(x, n.start)) || wartet.has(fnAn(a, n.start));
+            if (!kanten.has(von)) kanten.set(von, new Map());
+            const alt = kanten.get(von).get(zu);
+            if (!alt || (zeit && !alt.zeit)) kanten.get(von).set(zu, { zeit, i: n.start });
+        }
+        // die innerste Schleife um ein zeitiges await derselben Funktion
+        for (const w of zeitAwaits) {
+            const f = fnAn(a, w.start);
+            let s = null;
+            for (const x of a.schleifen) if (umfasst(x, w.start) && fnAn(a, x.start) === f && (!s || x.start >= s.start)) s = x;
+            if (s && !schleifen.some((y) => y.i === s.start)) schleifen.push({ knoten: knotenAn(a, s.start), i: s.start });
+        }
+    }
+    // die starken Komponenten (Tarjan, iterativ)
+    const komp = new Map();
+    {
+        const index = new Map();
+        const low = new Map();
+        const auf = new Set();
+        const stapel = [];
+        let zaehler = 0;
+        let nr = 0;
+        const nach = (v) => [...(kanten.get(v) || new Map()).keys()][Symbol.iterator]();
+        const knoten = new Set();
+        for (const [v, m] of kanten) {
+            knoten.add(v);
+            for (const w of m.keys()) knoten.add(w);
+        }
+        const betrete = (v) => {
+            index.set(v, zaehler), low.set(v, zaehler++), stapel.push(v), auf.add(v);
+        };
+        for (const v0 of knoten) {
+            if (index.has(v0)) continue;
+            betrete(v0);
+            const rahmen = [[v0, nach(v0)]];
+            while (rahmen.length) {
+                const [v, it] = rahmen[rahmen.length - 1];
+                const nx = it.next();
+                if (!nx.done) {
+                    const w = nx.value;
+                    if (!index.has(w)) betrete(w), rahmen.push([w, nach(w)]);
+                    else if (auf.has(w)) low.set(v, Math.min(low.get(v), index.get(w)));
+                    continue;
+                }
+                rahmen.pop();
+                if (rahmen.length) {
+                    const u = rahmen[rahmen.length - 1][0];
+                    low.set(u, Math.min(low.get(u), low.get(v)));
+                }
+                if (low.get(v) === index.get(v)) {
+                    let w;
+                    do {
+                        w = stapel.pop();
+                        auf.delete(w);
+                        komp.set(w, nr);
+                    } while (w !== v);
+                    nr++;
+                }
+            }
+        }
+    }
+    const gliedVonKnoten = (k) => k.split("/")[0];
+    const frei = (von, zu) => FRIST_KETTE.some(([x, y]) => gliedVonKnoten(von) === x && gliedVonKnoten(zu) === y);
+    const mitglieder = new Map();
+    for (const [k, c] of komp) {
+        if (!mitglieder.has(c)) mitglieder.set(c, []);
+        mitglieder.get(c).push(k);
+    }
+    const kreise = []; // { von, zu, i, familie }
+    const genutzt = new Set();
+    for (const [von, m] of kanten)
+        for (const [zu, e] of m) {
+            if (!e.zeit || komp.get(von) !== komp.get(zu)) continue;
+            if (frei(von, zu)) {
+                genutzt.add(`${gliedVonKnoten(von)}→${gliedVonKnoten(zu)}`);
+                continue;
+            }
+            kreise.push({ von, zu, i: e.i, familie: mitglieder.get(komp.get(von)).some((k) => familie.has(gliedVonKnoten(k))) });
+        }
+    // ein pollendes Glied: in einem Zeit-Kreis, mit einer wartenden Schleife oder einem setInterval
+    const pollend = new Set([...kreise.flatMap((k) => mitglieder.get(komp.get(k.von))), ...schleifen.map((s) => s.knoten), ...intervalle.map((s) => s.knoten)].map(gliedVonKnoten));
+    const ueber = [];
+    for (const a of akten) {
+        if (!familie.has(a.g.name)) continue;
+        for (const r of a.rufe) {
+            const P = r.n.callee.type === "MemberExpression" ? gliedZiel(a, r.n.callee) : null;
+            if (!P || familie.has(P) || !pollend.has(P)) continue;
+            const p = r.p;
+            const wartet =
+                (p && (p.type === "AwaitExpression" || p.type === "ReturnStatement" || (p.type === "ArrowFunctionExpression" && p.body === r.n))) ||
+                (p && p.type === "MemberExpression" && p.object === r.n && /^(?:then|catch|finally)$/.test(eigenName(p) || "")) ||
+                r.n.arguments.some((x) => FN_ART.test(x.type) || (x.type === "Identifier" && a.closureNamen.has(x.name)));
+            if (wartet) ueber.push({ knoten: knotenAn(a, r.n.start), P, i: r.n.start });
+        }
+    }
+    const ort = (i) => stammLib.ort(root, stammLib.zeileVon(src, i));
+    const polls = [
+        ...kreise.filter((k) => k.familie).map((k) => `${k.von} → ${k.zu} Zeit-Kreis ${ort(k.i)}`),
+        ...schleifen.filter((s) => familie.has(gliedVonKnoten(s.knoten))).map((s) => `${s.knoten} wartet in einer Schleife auf Zeit ${ort(s.i)}`),
+        ...intervalle.filter((s) => familie.has(gliedVonKnoten(s.knoten))).map((s) => `${s.knoten} setInterval ${ort(s.i)}`),
+        ...ueber.map((u) => `${u.knoten} wartet über das pollende ${u.P} ${ort(u.i)}`),
+    ];
+    const veraltet = FRIST_KETTE.filter(([x, y]) => !genutzt.has(`${x}→${y}`)).map(([x, y]) => `${x} → ${y}`);
+    return { familie, polls, veraltet };
+}
+
 function wand(src) {
     const nc = ohneKommentare(src);
-    const buehne = fnBody(nc, /\n {4}_buehneRender\([^)]*\) \{/) || "";
-    // Jeder Neben-Renderer (Werkstatt-Vorschau `p`, Feed/Hof/Ich-Bühne `s`) zeichnet nur über die Bühne, und jeder nennt
-    // sich (`wer`, K22): ein Render-Fehler der Bühne bricht laut beim Namen des Renderers.
-    // Gezählt wird am AST (stammLib.rufe) JEDER Render-Ruf mit ≥ 2 Argumenten bei seinem Glied — `render`/`renderAsync`,
-    // auch über `.call`/`.apply`, ein Argument ist ein Knoten (`s.cam || s.camera`, `a ? b : c`, `f(x, y)` je EINES): zeichnen
-    // darf nur die Bühne und der Loop (`_loopRender`, die Welt selbst). Bis K38-N2 zählte W2 die Bühnen-Rufe gegen die feste
-    // Zahl 4; Runde 2 las die Rufe an einem Muster reiner Bezeichner-Argumente und ordnete sie über ein Kopf-Muster ihrer
-    // Methode zu — `s.renderer.render(s.scene, s.cam || s.camera)` blieb still grün (Prüfer K38-N2 Runde 3, mut-w2b).
-    const rufe = stammLib.rufe(src);
-    const RENDER = /^render(?:Async)?$/;
-    const istRender = (r) => {
-        if (RENDER.test(r.name || "")) return r.args.length >= 2;
-        const c = r.knoten.callee;
-        if ((r.name !== "call" && r.name !== "apply") || c.type !== "MemberExpression" || c.object.type !== "MemberExpression") return false;
-        const o = c.object;
-        const innen = o.computed ? (o.property.type === "Literal" ? String(o.property.value) : "") : o.property.name;
-        return RENDER.test(innen) && (r.name === "apply" || r.args.length >= 3);
+    // Die Rümpfe am AST beim Namen (kommentarfrei); ein fehlendes Glied macht seine Prüfung ROT, nie still leer.
+    const gl = stammLib.glieder(src);
+    const fehlt = [];
+    const rumpf = (name) => {
+        const gs = gl.filter((g) => g.name === name);
+        if (!gs.length) {
+            fehlt.push(name);
+            return null;
+        }
+        return gs.map((g) => ohneKommentare(src.slice(g.start, g.ende))).join("\n");
     };
-    const renderRufe = rufe.filter(istRender);
+    const da = (...rs) => rs.every((r) => r !== null);
+    const ohne = (...namen) => (namen.some((n) => fehlt.includes(n)) ? ` · Glied fehlt: ${namen.filter((n) => fehlt.includes(n)).join(", ")}` : "");
+    const buehne = rumpf("_buehneRender");
+    // Jeder Neben-Renderer (Werkstatt-Vorschau `p`, Feed/Hof/Ich-Bühne `s`) zeichnet nur über die Bühne, und jeder nennt
+    // sich (`wer`, K22): ein Render-Fehler der Bühne bricht laut beim Namen des Renderers. Zeichnen darf nur die Bühne und der
+    // Loop (`_loopRender`, die Welt selbst); jeder Ruf der Render-Funktion steht im Render-Fluss (oben).
+    const renderRufe = renderFluss(src);
     const renderOrte = renderRufe.map((r) => r.glied || "(außerhalb jeder Methode)");
     const direktRufe = renderRufe.filter((r) => r.glied !== "_buehneRender" && r.glied !== "_loopRender");
-    const direktOrte = direktRufe.map((r) => `${r.glied || "(außerhalb)"}: ${r.ziel}(${r.args.map((a) => src.slice(a.start, a.end)).join(", ")}) ${stammLib.ort(root, stammLib.zeileVon(src, r.start))}`);
+    const direktOrte = direktRufe.map((r) => `${r.glied || "(außerhalb)"}: ${r.text} [${r.wie}] ${stammLib.ort(root, stammLib.zeileVon(src, r.i))}`);
     const direkt = direktOrte.length;
-    const buehnen = rufe
+    const buehnen = stammLib
+        .rufe(src)
         .filter((r) => r.ziel === "this._buehneRender")
         .map((r) => {
             const wer = r.args[r.args.length - 1];
             return wer && wer.type === "Literal" ? String(wer.value) : wer ? src.slice(wer.start, wer.end) : "?";
         });
-    const evalPos = fnBody(nc, /\n {4}dslEvalPos\(node, ctx\) \{/) || "";
-    const effekte = fnBody(nc, /\n {4}get dslEffects\(\) \{/) || "";
-    const wachen = (effekte.match(/if \(!pos\)/g) || []).length;
+    const evalPos = rumpf("dslEvalPos");
+    const effekte = rumpf("dslEffects");
+    const wachen = ((effekte || "").match(/if \(!pos\)/g) || []).length;
     // Die Genesis-Plattform sucht nur `_genesisPlattform` (Spawn-Idempotenz, Rückkehr-Anker, Genesis-Ort lesen sie).
     const plattSuchen = (nc.match(/\.type === "start_plattform"/g) || []).length;
-    const plattQuelle = /\.type === "start_plattform"/.test(fnBody(nc, /\n {4}_genesisPlattform\([^)]*\) \{/) || "");
+    const plattform = rumpf("_genesisPlattform");
+    const plattQuelle = /\.type === "start_plattform"/.test(plattform || "");
     // Die Auflöser kennen keinen Ersatz-Ort: kein Spieler-/Ursprungs-Ersatz, keine Zahl ohne den EINEN Leser `_dslOrtZahl`
     // (dslClamp gab für jedes Ungültige die Untergrenze, Number(null) ist 0); die Feld-Akte und die Voxel-Ops lesen ihren
     // Ort an der Engstelle.
-    const positionen = fnBody(nc, /\n {4}get dslPositions\(\) \{/) || "";
-    const regelPos = fnBody(nc, /\n {4}_dslRulePos\([^)]*\) \{/) || "";
+    const positionen = rumpf("dslPositions");
+    const regelPos = rumpf("_dslRulePos");
     const ersatz = [
-        (positionen.match(/_defaultSpawnPos\(\)/g) || []).length,
-        (positionen.match(/dslClamp\(/g) || []).length,
-        (positionen.match(/\bNumber\(/g) || []).length,
-        (effekte.match(/const c[xyz] = Number\(/g) || []).length,
-        (effekte.match(/playerMesh\.position : \{ x: 0/g) || []).length,
+        ((positionen || "").match(/_defaultSpawnPos\(\)/g) || []).length,
+        ((positionen || "").match(/dslClamp\(/g) || []).length,
+        ((positionen || "").match(/\bNumber\(/g) || []).length,
+        ((effekte || "").match(/const c[xyz] = Number\(/g) || []).length,
+        ((effekte || "").match(/playerMesh\.position : \{ x: 0/g) || []).length,
     ];
     // Der Foundry-Pfad pollt nicht (K38-N2): jeder Wartende auf eine Foundry-Antwort hängt am Wecker (Zug, Buch, Karte),
-    // jede Frist startet am Ereignis (`_foundryUhren`). Ein Poll ist eine Closure der Methode, die setTimeout bekommt (sie
-    // stellt sich selbst neu: poll · cachePoll · pruefe bis K38), oder ein setInterval.
-    // Die Zählung belegt ihre Nicht-Leere am NAMEN der Wartenden (der Zug, der Wecker, die Werkstatt-Vorschau, die Hand),
-    // nie an einer Mindestzahl von Methoden: ein Schnitt, der Methoden zusammenlegt, macht sie nie rot.
-    // Gelesen am AST (Runde 3): die Glieder der Familie am Namen (stammLib.glieder — ein Kopf mit Default-Parametern, ein
-    // umbrochener oder ein async-Kopf fiel aus dem Kopf-Muster und seine Polls blieben ungesehen). Je Glied ein Graph: das
-    // Glied und jede Closure darin (const/let = Funktion, function-Deklaration) sind Knoten, eine Kante führt zu jedem Knoten
-    // desselben Glieds, den ein Knoten beim Namen nennt (die Closure beim Bezeichner, das Glied über `this.<name>`), eine
-    // ZEIT-Kante, wenn die Nennung im Rückruf eines Zeitgebers steht (setTimeout · setInterval · requestAnimationFrame, auch
-    // `window.`). Ein Poll ist ein Kreis mit einer Zeit-Kante (die Closure, die sich neu stellt, auch über eine zweite Closure
-    // oder einen Block-Rumpf; das Glied, das sich per Zeitgeber neu ruft) oder ein setInterval. Eine Kette über ZWEI Glieder
-    // (`_foundryUhren` stellt `_foundryAblauf`, dessen Geist-Fall die Uhr des nächsten Auftrags stellt) ist die Frist am
-    // Ereignis je Auftrag, kein Poll.
-    const polls = [];
-    const foundryNamen = new Set();
-    const FAMILIE = /^(?:_foundry\w*|_heldFoundryGroup|_workshop\w*Preview\w*|_impostor\w*|_karte\w*|_tickImpostorBake)$/;
-    const ZEITGEBER = /^(?:setTimeout|setInterval|requestAnimationFrame)$/;
-    for (const g of stammLib.glieder(src)) {
-        if (!FAMILIE.test(g.name)) continue;
-        foundryNamen.add(g.name);
-        const closures = [];
-        const zeit = [];
-        stammLib.wandere(g.knoten.value || g.knoten, (n) => {
-            if (n.type === "VariableDeclarator" && n.id.type === "Identifier" && n.init && /FunctionExpression$/.test(n.init.type))
-                closures.push({ name: n.id.name, start: n.init.start, ende: n.init.end, id: n.id });
-            else if (n.type === "FunctionDeclaration" && n.id) closures.push({ name: n.id.name, start: n.start, ende: n.end, id: n.id });
-            else if (n.type === "CallExpression") {
-                const c = n.callee;
-                const nm = c.type === "Identifier" ? c.name : c.type === "MemberExpression" && !c.computed ? c.property.name : "";
-                if (nm === "setInterval") polls.push(`${g.name} setInterval`);
-                if (ZEITGEBER.test(nm) && n.arguments[0]) zeit.push(n.arguments[0]);
-            }
-            return true;
-        });
-        const namen = new Set(closures.map((c) => c.name));
-        const knotenAn = (i) => {
-            let k = null;
-            for (const c of closures) if (c.start <= i && i < c.ende && (!k || c.start >= k.start)) k = c;
-            return k ? k.name : g.name;
-        };
-        const kanten = new Map(); // von → Map(zu → Zeit-Kante?)
-        const kante = (von, zu, i) => {
-            const z = zeit.some((a) => a.start <= i && i < a.end);
-            if (!kanten.has(von)) kanten.set(von, new Map());
-            kanten.get(von).set(zu, kanten.get(von).get(zu) || z);
-        };
-        stammLib.wandere(g.knoten.value || g.knoten, (n, ahnen) => {
-            const p = ahnen[ahnen.length - 1];
-            if (n.type === "MemberExpression" && n.object.type === "ThisExpression" && !n.computed && n.property.name === g.name)
-                kante(knotenAn(n.start), g.name, n.start);
-            else if (
-                n.type === "Identifier" &&
-                namen.has(n.name) &&
-                !closures.some((c) => c.id === n) &&
-                !(p && p.type === "MemberExpression" && p.property === n && !p.computed) &&
-                !(p && p.type === "Property" && p.key === n && !p.computed && !p.shorthand)
-            )
-                kante(knotenAn(n.start), n.name, n.start);
-            return true;
-        });
-        // ein Kreis mit einer Zeit-Kante: die Kante von → zu, und zu erreicht von
-        const erreicht = (a, b) => {
-            const offen = [a];
-            const gesehen = new Set([a]);
-            while (offen.length) {
-                const x = offen.pop();
-                if (x === b) return true;
-                for (const y of (kanten.get(x) || new Map()).keys()) if (!gesehen.has(y)) gesehen.add(y), offen.push(y);
-            }
-            return false;
-        };
-        for (const [von, m] of kanten) for (const [zu, z] of m) if (z && erreicht(zu, von)) polls.push(`${g.name} ${zu === g.name ? "stellt sich neu" : zu}`);
-    }
+    // jede Frist startet am Ereignis (`_foundryUhren`) — gelesen im Zeit-Graphen (oben). Die Zählung belegt ihre
+    // Nicht-Leere am NAMEN der Wartenden (der Zug, der Wecker, die Werkstatt-Vorschau, die Hand), nie an einer Mindestzahl.
+    const zg = zeitGraph(src);
+    const polls = zg.polls;
+    const foundryNamen = zg.familie;
     return [
         [
             "W1 die Bühne zeichnet ungemaskt (`_buehneRender`: uLodMaskOn 0 um den Render, im finally zurück)",
-            /lu\.uLodMaskOn\.value = 0;/.test(buehne) && /finally\s*\{[^}]*lu\.uLodMaskOn\.value = an;/.test(buehne),
+            da(buehne) && /lu\.uLodMaskOn\.value = 0;/.test(buehne) && /finally\s*\{[^}]*lu\.uLodMaskOn\.value = an;/.test(buehne),
+            ohne("_buehneRender").slice(3),
         ],
         [
-            "W2 jeder Neben-Renderer zeichnet über die Bühne (jeder `x.render(szene, kamera)` lebt in `_buehneRender` oder `_loopRender`, die Werkstatt-Vorschau ruft die Bühne beim Namen)",
+            "W2 jeder Neben-Renderer zeichnet über die Bühne (jeder Ruf der Render-Funktion — direkt, .call/.apply, .bind, Alias, Feld, Parameter, Rückgabe — lebt in `_buehneRender` oder `_loopRender`, die Werkstatt-Vorschau ruft die Bühne beim Namen)",
             direkt === 0 && renderOrte.includes("_buehneRender") && buehnen.includes("Werkstatt-Vorschau"),
             `${direkt} direkt${direkt ? " (" + direktOrte.join(", ") + ")" : ""} · über die Bühne: ${buehnen.join(", ") || "keiner"}`,
         ],
         [
             "W3 der Orts-Vertrag sitzt an der Engstelle (`dslEvalPos` wirft `_dslKeinOrt`, liefert nie null; den Default-Spawn nur ohne Knoten, `node == null`)",
-            /throw fehler;/.test(evalPos) &&
+            da(evalPos) &&
+                /throw fehler;/.test(evalPos) &&
                 /this\._dslKeinOrt\(/.test(evalPos) &&
                 !/return null/.test(evalPos) &&
                 (evalPos.match(/_defaultSpawnPos\(\)/g) || []).length === 1 &&
                 // der Default-Spawn nur für `node == null` — seit 10.10. läuft auch er durch die Feld-Wand der Engstelle
                 // (das Feld hat keinen Ort, wo die Wildnis nicht trägt), darum wird er gesetzt statt sofort zurückgegeben
                 /if \(node == null\) pos = this\._defaultSpawnPos\(\);\n\s+else if \(!Array\.isArray\(node\)\)/.test(evalPos),
+            ohne("dslEvalPos").slice(3),
         ],
-        ["W4 keine Op bewacht ihren Ort selbst (0 `if (!pos)` in den DSL-Effekten — sie lesen die Engstelle)", wachen === 0, `${wachen} Wache(n)`],
+        [
+            "W4 keine Op bewacht ihren Ort selbst (0 `if (!pos)` in den DSL-Effekten — sie lesen die Engstelle)",
+            da(effekte) && wachen === 0,
+            `${wachen} Wache(n)${ohne("dslEffects")}`,
+        ],
         [
             "W5 die Genesis-Plattform hat EINE Quelle (`_genesisPlattform` sucht sie; Spawn-Idempotenz und Rückkehr-Anker lesen sie)",
-            plattQuelle && plattSuchen === 1,
-            `${plattSuchen} Suche(n) nach start_plattform`,
+            da(plattform) && plattQuelle && plattSuchen === 1,
+            `${plattSuchen} Suche(n) nach start_plattform${ohne("_genesisPlattform")}`,
         ],
         [
             "W6 die Auflöser kennen keinen Ersatz-Ort (dslPositions: 0 `_defaultSpawnPos()`, 0 `dslClamp`, 0 `Number(`; Voxel-Ops ohne eigene Koordinaten-Leser, kein Ursprung statt Spieler; `_dslRulePos` setzt at_player nur für `== null`)",
-            ersatz.every((n) => n === 0) && /posNode == null/.test(regelPos) && !/Array\.isArray/.test(regelPos),
-            `Ersatz-Stellen ${ersatz.join("/")}`,
+            da(positionen, effekte, regelPos) && ersatz.every((n) => n === 0) && /posNode == null/.test(regelPos) && !/Array\.isArray/.test(regelPos),
+            `Ersatz-Stellen ${ersatz.join("/")}${ohne("dslPositions", "dslEffects", "_dslRulePos")}`,
         ],
         [
-            "W7 der Foundry-Pfad pollt nicht (am AST: kein setInterval, kein Zeit-Kreis in einem Glied — keine Closure und kein Glied, das sich per Zeitgeber neu stellt; jeder Wartende am Wecker, jede Frist am Ereignis)",
-            WARTENDE.every((n) => foundryNamen.has(n)) && polls.length === 0,
-            `${foundryNamen.size} Methoden${WARTENDE.filter((n) => !foundryNamen.has(n)).map((n) => " · ungezählt " + n).join("")} · Polls: ${polls.length ? polls.join(", ") : "0"}`,
+            "W7 der Foundry-Pfad pollt nicht (am AST, über alle Glieder, die die Familie erreicht: kein Zeit-Kreis, keine Schleife, die auf Zeit wartet, kein setInterval, kein Warten auf ein pollendes Glied; frei nur die Frist-Kette `_foundryUhren` · `_foundryAblauf` · `_foundryPumpe`)",
+            WARTENDE.every((n) => foundryNamen.has(n)) && polls.length === 0 && zg.veraltet.length === 0,
+            `${foundryNamen.size} Methoden${WARTENDE.filter((n) => !foundryNamen.has(n)).map((n) => " · ungezählt " + n).join("")} · Polls: ${polls.length ? polls.join(", ") : "0"}${zg.veraltet.length ? " · Ausnahme ohne Zeit-Kante: " + zg.veraltet.join(", ") : ""}`,
         ],
     ];
 }
@@ -1534,11 +1884,14 @@ async function probe(arg) {
             quelle.includes('"Hof-Bühne");') && weniger.every((w) => w[1]),
             weniger.filter((w) => !w[1]).map((w) => `${w[0].slice(0, 2)} ${w[2] || ""}`).join(" | ")
         );
-        // DER TÄTER DER RUNDE 3 (Prüfer K38-N2-3, mut-w2b) und seine Klasse in EINEM Text: zusammengesetzte Argumente (||, ?:,
-        // ein Aufruf im Argument), renderAsync, `.call`, ein Kopf mit Default-Parameter direkt hinter der Bühne (das Kopf-Muster
-        // gab seinen Ruf `_buehneRender`); dazu die Polls der Familie, die das Kopf- und das setTimeout-Muster übersahen
-        // (Default-Parameter, async-Kopf, Block-Rumpf, zwei Closures im Kreis) — jeder fällt beim Namen, die einmalige Frist
-        // (`_foundryEinmal`) bleibt still.
+        // DIE TÄTER DER RUNDEN 3 UND 4 (Prüfer K38-N2: mut-w2b, mut-bind, mut-schlaf, mut-kreuz) und ihre Klassen in EINEM
+        // Text. W2: jeder Weg der Render-Funktion zu ihrem Ruf — zusammengesetzte Argumente (||, ?:, ein Aufruf im Argument),
+        // renderAsync, .call, .apply über Reflect, .bind (auch mit vorgebundener Szene), Alias, Destrukturieren, Feld,
+        // Parameter, Rückgabe, Zeitgeber; ein Feld der Info und ein UI-Raum schweigen. W7: jede Form des Polls — die Closure,
+        // die sich neu stellt (Block-Rumpf, zwei Closures), das Glied per Zeitgeber, die Schleife mit Schlaf (inline und über
+        // eine Schlaf-Closure), der Kreis über zwei Glieder, die async-Rekursion nach dem Schlaf, then auf einem Schlaf, das
+        // Zeitgeber-Glied, ein Alias von this, setInterval über `window["…"]`, das Warten auf ein pollendes Glied; die
+        // einmalige Frist und ein Render-Takt, den die Familie nur startet, schweigen.
         const bue = stammLib.glieder(quelle).find((g) => g.name === "_buehneRender");
         const ichRuf = 'this._buehneRender(s.renderer, s.scene, s.camera, "Ich-Bühne");';
         const klasse = (quelle.slice(0, bue.ende) +
@@ -1551,6 +1904,45 @@ async function probe(arg) {
                 "        s.renderer.render(this._szeneVon(s, 1), s.camera);",
                 "        s.renderer.renderAsync(s.scene, s.camera);",
                 "        s.renderer.render.call(s.renderer, s.scene, s.camera);",
+                "    }",
+                "    _bindBuehne(s) {",
+                "        const zeichne = s.renderer.render.bind(s.renderer);",
+                "        zeichne(s.scene, s.camera);",
+                "    }",
+                "    _vorgebunden(s) {",
+                "        s.renderer.render.bind(s.renderer, s.scene)(s.camera);",
+                "    }",
+                "    _zerlegt(s) {",
+                "        const { render: male } = s.renderer;",
+                "        male.call(s.renderer, s.scene, s.camera);",
+                "    }",
+                "    _reflektiert(s) {",
+                '        Reflect.apply(s.renderer["render"], s.renderer, [s.scene, s.camera]);',
+                "    }",
+                "    _merkeZeichner(s) {",
+                "        this._zeichner = s.renderer.renderAsync.bind(s.renderer);",
+                "    }",
+                "    _nutzeZeichner(s) {",
+                "        this._zeichner(s.scene, s.camera);",
+                "    }",
+                "    _reiche(s) {",
+                "        this._zeichneMit(s.renderer.render.bind(s.renderer), s);",
+                "    }",
+                "    _zeichneMit(f, s) {",
+                "        f(s.scene, s.camera);",
+                "    }",
+                "    _gibZeichner(s) {",
+                "        return s.renderer.render.bind(s.renderer);",
+                "    }",
+                "    _holeZeichner(s) {",
+                "        this._gibZeichner(s)(s.scene, s.camera);",
+                "    }",
+                "    _spaeter(s) {",
+                "        setTimeout(s.renderer.render.bind(s.renderer), 0, s.scene, s.camera);",
+                "    }",
+                "    _zaehle(s, room) {",
+                "        room.render();",
+                "        return s.renderer.info.render.calls + (s.perf.render || 0);",
                 "    }",
                 "    _foundryLauscher(k, o = f(1)) {",
                 "        const warte = () => {",
@@ -1572,27 +1964,140 @@ async function probe(arg) {
                 "        }",
                 "        ping();",
                 "    }",
+                "    async _foundryWarteBuch() {",
+                "        while (!this._foundry.buchDa) await new Promise((r) => setTimeout(r, 50));",
+                "    }",
+                "    async _foundryDoeset() {",
+                "        const schlafe = (ms) => new Promise((r) => setTimeout(r, ms));",
+                "        for (;;) {",
+                "            if (this._foundry) break;",
+                "            await schlafe(30);",
+                "        }",
+                "    }",
+                "    _foundryHorch() {",
+                "        if (!this._foundry) setTimeout(() => this._foundryHorchNochmal(), 150);",
+                "    }",
+                "    _foundryHorchNochmal() {",
+                "        this._foundryHorch();",
+                "    }",
+                "    async _foundryErneut(k) {",
+                "        await new Promise((r) => setTimeout(r, 100));",
+                "        if (!this._foundry) return this._foundryErneut(k);",
+                "    }",
+                "    _foundryKette() {",
+                "        this._schlummer(80).then(() => this._foundryKette());",
+                "    }",
+                "    _schlummer(ms) {",
+                "        return new Promise((r) => setTimeout(r, ms));",
+                "    }",
+                "    _naechsterTakt(cb) {",
+                "        requestAnimationFrame(() => cb());",
+                "    }",
+                "    _foundryTakt() {",
+                "        if (!this._foundry) this._naechsterTakt(() => this._foundryTakt());",
+                "    }",
+                "    _warteBis(pruef) {",
+                "        return new Promise((ok) => {",
+                "            const sieh = () => (pruef() ? ok() : setTimeout(sieh, 40));",
+                "            sieh();",
+                "        });",
+                "    }",
+                "    async _foundryWarteBis() {",
+                "        await this._warteBis(() => this._foundry);",
+                "    }",
+                "    _foundryIntervall() {",
+                '        window["setInterval"](() => this._foundryEinmal(1), 500);',
+                "    }",
+                "    _foundryAlias() {",
+                "        const selbst = this;",
+                "        setTimeout(() => selbst._foundryAlias(), 99);",
+                "    }",
                 "    _foundryEinmal(k) {",
                 "        const ab = () => this._foundryAblauf(k);",
                 "        setTimeout(ab, 5000);",
+                "    }",
+                "    _vorschauTakt() {",
+                "        const tick = () => requestAnimationFrame(tick);",
+                "        tick();",
+                "    }",
+                "    _foundryStarteTakt() {",
+                "        this._vorschauTakt();",
                 "    }",
             ].join("\n") +
             quelle.slice(bue.ende)).replace(ichRuf, "s.renderer.render(s.scene, s.cam || s.camera);");
         const wk = wand(klasse);
         const w2 = wk.find((w) => w[0].startsWith("W2"));
         const w7 = wk.find((w) => w[0].startsWith("W7"));
-        const w2Soll = ["_ichStartRAF", "_fremdeBuehne", "_bauBuehne: s.renderer.render(this", "renderAsync", "render.call"];
-        const w7Soll = ["_foundryLauscher warte", "_foundryNachfrage stellt sich neu", "_foundryPingPong"];
+        // je Stelle EIN Eintrag — die Zahl der genannten Orte ist die Zahl der Einträge, keine feste Zahl
+        const w2Soll = [
+            "_ichStartRAF: s.renderer.render(s.scene, s.cam || s.camera)",
+            "_fremdeBuehne:",
+            "_bauBuehne: s.renderer.render(this",
+            "_bauBuehne: s.renderer.renderAsync(",
+            "[.call]",
+            "_bindBuehne: zeichne(s.scene, s.camera) [.bind → zeichne → Ruf]",
+            "_vorgebunden: s.renderer.render.bind(s.renderer, s.scene)(s.camera) [.bind → Ruf]",
+            "_zerlegt: male.call(s.renderer, s.scene, s.camera) [{ render } → male → .call]",
+            "_reflektiert: Reflect.apply(",
+            "_nutzeZeichner: this._zeichner(s.scene, s.camera) [.bind → Feld ._zeichner → Ruf]",
+            "_zeichneMit: f(s.scene, s.camera) [.bind → Parameter _zeichneMit(f) → Ruf]",
+            "_holeZeichner: this._gibZeichner(s)(s.scene, s.camera) [.bind → Rückgabe _gibZeichner() → Ruf]",
+            "_spaeter: setTimeout(",
+        ];
+        const w2Still = ["_zaehle", "_merkeZeichner", "_reiche:", "_gibZeichner:"];
+        const w7Soll = [
+            "_foundryLauscher/warte → _foundryLauscher/warte",
+            "_foundryNachfrage → _foundryNachfrage",
+            "_foundryPingPong/pong → _foundryPingPong/ping",
+            "_foundryWarteBuch wartet in einer Schleife",
+            "_foundryDoeset wartet in einer Schleife",
+            "_foundryHorch → _foundryHorchNochmal",
+            "_foundryErneut → _foundryErneut",
+            "_foundryKette → _foundryKette",
+            "_foundryTakt → _foundryTakt",
+            "_foundryWarteBis wartet über das pollende _warteBis",
+            "_foundryIntervall setInterval",
+            "_foundryAlias → _foundryAlias",
+        ];
+        const w7Still = ["_foundryEinmal", "_foundryStarteTakt", "_vorschauTakt", "_foundryUhren", "_foundryAblauf", "_foundryPumpe"];
         check(
-            "Selbst-Test W: der Täter der Runde 3 (s.cam || s.camera) und seine Klasse (?:, Aufruf im Argument, renderAsync, .call, Default-Parameter im Kopf) → W2 nennt jeden",
-            quelle.includes(ichRuf) && !w2[1] && w2Soll.every((n) => w2[2].includes(n)) && (w2[2].match(/stamm\/\d\d[a-z]?\.js:\d+/g) || []).length === 5,
-            w2[2]
+            "Selbst-Test W: die Täter der Runden 3 und 4 (s.cam || s.camera, .bind) und ihre Klasse (?:, Aufruf im Argument, renderAsync, .call, Reflect.apply, vorgebunden, Alias, Destrukturieren, Feld, Parameter, Rückgabe, Zeitgeber) → W2 nennt jeden, Info und UI-Raum schweigen",
+            quelle.includes(ichRuf) &&
+                !w2[1] &&
+                w2Soll.every((n) => w2[2].includes(n)) &&
+                !w2Still.some((n) => w2[2].includes(n)) &&
+                (w2[2].match(/stamm\/\d\d[a-z]?\.js:\d+/g) || []).length === w2Soll.length,
+            `${w2[2]}${w2Soll.filter((n) => !w2[2].includes(n)).map((n) => " · UNGENANNT " + n).join("")}${w2Still.filter((n) => w2[2].includes(n)).map((n) => " · FALSCH " + n).join("")}`
         );
         check(
-            "Selbst-Test W: die Polls hinter Default-Parameter, async-Kopf, Block-Rumpf und zwei Closures im Kreis → W7 nennt jeden, die einmalige Frist schweigt",
-            !w7[1] && w7Soll.every((n) => w7[2].includes(n)) && !w7[2].includes("_foundryEinmal"),
-            w7[2]
+            "Selbst-Test W: die Täter der Runde 4 (Schleife mit Schlaf, Kreis über zwei Glieder) und jede Form des Polls → W7 nennt jeden, die einmalige Frist, der gestartete Render-Takt und die Frist-Kette schweigen",
+            !w7[1] &&
+                w7Soll.every((n) => w7[2].includes(n)) &&
+                !w7Still.some((n) => w7[2].includes(n)) &&
+                (w7[2].match(/stamm\/\d\d[a-z]?\.js:\d+/g) || []).length === w7Soll.length,
+            `${w7[2]}${w7Soll.filter((n) => !w7[2].includes(n)).map((n) => " · UNGENANNT " + n).join("")}${w7Still.filter((n) => w7[2].includes(n)).map((n) => " · FALSCH " + n).join("")}`
         );
+        // DIE AUSNAHME DER FRIST-KETTE trägt nur sich selbst: ein Poll IN der Kette (die Uhr stellt sich neu) fällt beim
+        // Namen, und eine Kante der Ausnahme, die nicht mehr steht, macht sie veraltet.
+        const uhrRuf = "if (!vorMir) fr.uhr = setTimeout(() => this._foundryAblauf(f, reqId), fr.dauerMs);";
+        const w7Von = (t) => wand(t).find((w) => w[0].startsWith("W7"));
+        const inDerKette = w7Von(quelle.replace(uhrRuf, `${uhrRuf}\n            else setTimeout(() => this._foundryUhren(f), 50);`));
+        check(
+            "Selbst-Test W: ein Poll in der Frist-Kette (die Uhr stellt sich neu) → W7 nennt _foundryUhren → _foundryUhren",
+            quelle.includes(uhrRuf) && !inDerKette[1] && inDerKette[2].includes("_foundryUhren → _foundryUhren"),
+            inDerKette[2]
+        );
+        const ohneUhr = w7Von(quelle.replace(uhrRuf, "if (!vorMir) this._foundryAblauf(f, reqId);"));
+        check(
+            "Selbst-Test W: die Uhr ohne Zeitgeber → die Ausnahme der Frist-Kette ist veraltet (W7 nennt _foundryUhren → _foundryAblauf)",
+            !ohneUhr[1] && ohneUhr[2].includes("Ausnahme ohne Zeit-Kante: _foundryUhren → _foundryAblauf"),
+            ohneUhr[2]
+        );
+        // EIN GLIED, DAS FEHLT, macht seine Prüfung rot (bis Runde 4 las W4 dann 0 Wachen und blieb still grün)
+        const effekteGlied = stammLib.glieder(quelle).find((g) => g.name === "dslEffects");
+        const umbenannt = quelle.slice(0, effekteGlied.start) + quelle.slice(effekteGlied.start).replace("dslEffects", "dslWirkungen");
+        const w4 = wand(umbenannt).find((w) => w[0].startsWith("W4"));
+        check("Selbst-Test W: dslEffects umbenannt → W4 nennt das fehlende Glied", !w4[1] && w4[2].includes("Glied fehlt: dslEffects"), w4[2]);
         const rot = wand(vorStand);
         check(
             "Selbst-Test W: der Vor-Stand (Vorschau direkt, Bühne maskiert, null-Ort, Op-Wache, Plattform-Zwilling, Ersatz-Ort, Warte-Poll der Hand) → W1–W7 feuern",
