@@ -221,9 +221,6 @@ class AnazhRealm_Z11b {
         // Die Hülle einer PFLANZE (Natur, die nicht Fels ist — der Fels hat seinen Zweig oben): der Körper stößt an sie, der
         // Strahl der 3rd-Kamera geht durch sie (`_fieldRaycast` `durchPflanzen`), die Pflanze wird durchsichtig.
         const pflanze = this._istNatur(entry);
-        // die Teile der gefühlten Pflanze merkt der Eintrag: ihr Laub ist die Krone im Spiegel des Wassers (`_spiegelKronen`)
-        entry._pflanzenTeile = pflanze ? teile : null;
-        entry._pflanzenSkala = kWelt;
         for (const part of teile) {
             if (!this._isPartSolid(part)) continue;
             const aabb = this._blockerComputePartAABB(entry, part, kWelt);
@@ -887,24 +884,14 @@ class AnazhRealm_Z11b {
         }
         entry._huelleG = g;
         const ov = this._foundryGestaltOv(preset, g, entry.studioOv);
-        // der Welt-Name, unter dem die Art ihre Rezept-Zeile trägt (wie `_foundryPresetForEntry` sie fand)
-        return this._gestaltTeile(preset, g, ov, [
-            entry._lodSpecies,
-            entry.type,
-            (entry.type.match(/^grown_(baum_[a-z]+)/) || [])[1],
-        ]);
-    }
-
-    // DIE TEILE EINER GESTALT (K20 · D10): das Skelett, wie der Worker es baut (`_growTreeBlueprintRich` mit `gestalt`, L0),
-    // gemerkt je Art, Gestalt und Prägung — der gefühlte Baum des Eintrags (`_baumGestaltTeile`) und die Krone der Streu-Zelle
-    // im Spiegel des Wassers (`_spiegelKronen`) lesen dieselbe Ableitung. `arten` die Welt-Namen, unter denen die Art ihre
-    // Rezept-Zeile tragen kann.
-    _gestaltTeile(preset, g, ov, arten) {
         const k = preset + "|" + g + "|" + (ov ? JSON.stringify(ov) : "");
         if (!this._baumGestaltMerk) this._baumGestaltMerk = new Map();
         let teile = this._baumGestaltMerk.get(k);
         if (teile === undefined) {
-            const art = arten.find((s) => typeof s === "string" && this._foundryPresetFor(s) === preset);
+            // der Welt-Name, unter dem die Art ihre Rezept-Zeile trägt (wie `_foundryPresetForEntry` sie fand)
+            const art = [entry._lodSpecies, entry.type, (entry.type.match(/^grown_(baum_[a-z]+)/) || [])[1]].find(
+                (s) => typeof s === "string" && this._foundryPresetFor(s) === preset
+            );
             teile = art ? this._growTreeBlueprintRich(art, null, { lod: 0, gestalt: { g, ov } }) : null;
             this._lastTreeSkeleton = null;
             if (!Array.isArray(teile) || !teile.length)
@@ -2279,9 +2266,8 @@ class AnazhRealm_Z11b {
             baumZahl: -1,
             nachlese: 0,
             gestalten: new Map(),
-            // die Gestalten, die der Worker noch nicht kennt, und die Frist dieses Bilds für neue (`_spiegelFeldTakt`)
+            // die Kronen-Gestalten, die der Worker noch nicht kennt (`_spiegelKronen`)
             gestaltenNeu: [],
-            kronenRest: 0,
             // der Stand des Felds: jede Änderung einer seiner Texturen (der Pass liest ihn in seiner Signatur)
             stand: 0,
         };
@@ -2289,7 +2275,7 @@ class AnazhRealm_Z11b {
     }
 
     // DER TAKT DES SPIEGEL-FELDS (je Frame, vor dem Bild): driftet das Auge weiter als SPIEGEL.drift, wandert das Fenster;
-    // stehen neue Bäume darin, backt die Nachlese es neu. Ein Auftrag fliegt zur Zeit und nur, wenn der Worker keinen Chunk
+    // stehen neue Kronen darin, backt die Nachlese es neu. Ein Auftrag fliegt zur Zeit und nur, wenn der Worker keinen Chunk
     // baut (das Streamen hat Vorrang, Lehre 13) und das erste Weltbild steht (die Ankunft trägt keinen Spiegel).
     _spiegelFeldTakt() {
         const st = this.state;
@@ -2299,32 +2285,22 @@ class AnazhRealm_Z11b {
         const S = this._spiegelFeld();
         const auge = st.camera.getWorldPosition(this._spiegelAuge || (this._spiegelAuge = new THREE.Vector3()));
         const jetzt = performance.now();
-        // DIE FRIST DER KRONEN (Lehre 14): neue Streu-Zellen (ihre Gestalt, das Skelett `_gestaltTeile`) fragt dieses Bild
-        // nur, solange ihre Ableitung zusammen unter `kronenMs` blieb — danach wartet die Frage auf das nächste Bild (jedes
-        // Bild leitet mindestens eine ab). Bis D10-n1 leitete das erste Fenster jede Gestalt seines Walds in EINEM Bild ab
-        // (Haupt-Faden-Spitzen bis 30,8 ms an der Mess-Wiese).
-        S.kronenRest = K.kronenMs;
         if (!S.mitte || Math.hypot(auge.x - S.mitte[0], auge.z - S.mitte[1]) > K.drift) this._spiegelFeldFenster(auge);
         else if (!S.auftraege.length && !S.imFlug && jetzt - S.nachlese > K.nachleseMs) {
             const z = this._spiegelKronen(S.I0 * S.texel, S.J0 * S.texel, S.n * S.texel, S.n * S.texel, S, true);
-            // die Nachlese zählt ganz oder fährt im nächsten Bild fort
-            if (z !== null) {
-                S.nachlese = jetzt;
-                if (z !== S.baumZahl) {
-                    S.baumZahl = z;
-                    this._spiegelFeldAuftraege(S, S.I0, S.J0, S.n, S.n, false);
-                }
+            S.nachlese = jetzt;
+            if (z !== S.baumZahl) {
+                S.baumZahl = z;
+                this._spiegelFeldAuftraege(S, S.I0, S.J0, S.n, S.n, false);
             }
         }
         if (S.imFlug || !S.auftraege.length || st.voxelWorkerPending.size > 0) return;
         const a = S.auftraege[0];
         const t = S.texel;
         const kr = this._spiegelKronen(a.i0 * t, a.j0 * t, a.w * t, a.h * t, S, false);
-        // eine Krone seines Rechtecks wartet auf ihre Gestalt: der Auftrag bleibt vorn, das nächste Bild fragt weiter
-        if (!kr) return;
         S.auftraege.shift();
         S.imFlug = true;
-        // jede Gestalt reist einmal: die, die der Worker noch nicht kennt (auch aus Fragen, die auf ihre Frist warteten)
+        // jede Gestalt reist einmal: die, die der Worker noch nicht kennt
         const gestalten = S.gestaltenNeu.splice(0);
         this._voxelWorkerSpiegel({
             i0: a.i0,
@@ -2467,58 +2443,51 @@ class AnazhRealm_Z11b {
         return m;
     }
 
-    // DIE KRONEN IM SPIEGEL: die stehenden Pflanzen im Rechteck (x0, z0, w, h; 20 m Rand für die Krone) — wie das Bild sie
-    // zeichnet: nah der Eintrag mit den Teilen seiner GEFÜHLTEN Gestalt (`_pflanzenTeile`, gemerkt an der Hülle), 64–384 m die
-    // Baum- und Strauch-Zelle der Streu (`_spiegelStreuGestalt`: ihr Same, ihre Gestalt, ihr Ort) — beide über DIESELBE
-    // Ableitung (`_gestaltTeile` ← `skelettDerGestalt`). Je Gestalt reisen einmal ihre Laub-Teile (Anker, Halbachse
-    // waagrecht und senkrecht) und ihre Laub-Farbe (linear, das Mittel der Teile nach ihrer Fläche von oben); die Streu
-    // reist ohne Höhe (NaN: ihr Fuß ist der gebaute Boden des Workers, wie ihre Instanz auf dem Boden steht). `nurZahl`
-    // zählt die Pflanzen des Rechtecks (die Nachlese). Bis D10-n1 las der Spiegel nur die Einträge: der Wald jenseits von
-    // 64 m (die Streu, am See die Kiefern 65–72 m) fehlte im Feld.
+    // DIE KRONEN IM SPIEGEL: die stehenden Pflanzen im Rechteck (x0, z0, w, h; 20 m Rand für die Krone), wie das Bild sie
+    // zeichnet — nah die Einträge um das Rechteck (die Plätze des Blocker-Netzes, Lehre 25: nie der Bestand der Welt), 64–384 m
+    // die Baum- und Strauch-Zellen der Streu (`_spiegelStreuGestalt`). Jede Krone liest das Kronen-Buch (`_foundryBaumKrone`:
+    // die Krone, die der Foundry-Worker mit dem Körper gebaut hat, Beipack `__krone`) — eine Pflanze ohne Krone im Buch
+    // zeichnet auch das Bild noch nicht (ihre Höhen-Stufe lädt) und fehlt, bis die Nachlese sie zählt. Je Gestalt reisen
+    // einmal ihre Laub-Teile und ihre Farbe; die Streu reist ohne Höhe (NaN: ihr Fuß ist der gebaute Boden des Workers, wie
+    // ihre Instanz auf dem Boden steht). `nurZahl` zählt die Kronen des Rechtecks (die Nachlese). Bis D10-n2 leitete der
+    // Spiegel jede Kronen-Gestalt im Haupt-Faden ab (`skelettDerGestalt`, 4–39 ms je Gestalt) und lief über den Bestand.
     _spiegelKronen(x0, z0, w, h, S, nurZahl) {
         const baeume = nurZahl ? null : [];
         let zahl = 0;
+        if (!this._foundryEnabled()) return nurZahl ? 0 : { baeume: new Float32Array(0) };
         const drin = (x, z) => x >= x0 - 20 && x <= x0 + w + 20 && z >= z0 - 20 && z <= z0 + h + 20;
-        const setze = (teile, x, y, z, s, th) => {
+        const setze = (krone, x, y, z, s, th) => {
             zahl++;
             if (nurZahl) return;
-            let gi = S.gestalten.get(teile);
+            let gi = S.gestalten.get(krone);
             if (gi === undefined) {
-                const laub = [];
-                const f = [0, 0, 0];
-                let fw = 0;
-                for (const t of teile) {
-                    if (!t || t.material !== "laub" || !t.position || !t.size) continue;
-                    const rx = (t.size.x || 1) / 2,
-                        ry = (t.size.y || 1) / 2;
-                    laub.push(t.position.x || 0, t.position.y || 0, t.position.z || 0, rx, ry);
-                    if (t.color == null) continue;
-                    const c = new THREE.Color(t.color);
-                    const a = rx * rx;
-                    f[0] += c.r * a;
-                    f[1] += c.g * a;
-                    f[2] += c.b * a;
-                    fw += a;
-                }
-                gi = laub.length ? S.gestalten.size : -1;
-                S.gestalten.set(teile, gi);
-                const farbe = fw > 0 ? [f[0] / fw, f[1] / fw, f[2] / fw] : [0.035, 0.07, 0.022];
-                if (gi >= 0) S.gestaltenNeu.push({ i: gi, teile: new Float32Array(laub), farbe });
+                gi = krone.teile.length ? S.gestalten.size : -1;
+                S.gestalten.set(krone, gi);
+                if (gi >= 0) S.gestaltenNeu.push({ i: gi, teile: krone.teile, farbe: krone.farbe });
                 // die Farbe der Krone in ihrer Zeile (`laubTex`): der Pass liest sie an der Gestalt der Schicht
                 if (gi >= 0 && gi < S.laub.length / 4) {
-                    S.laub.set([farbe[0], farbe[1], farbe[2], 1], gi * 4);
+                    S.laub.set([krone.farbe[0], krone.farbe[1], krone.farbe[2], 1], gi * 4);
                     S.laubTex.needsUpdate = true;
                     S.stand++;
                 }
             }
             if (gi >= 0) baeume.push(x, y, z, s, Math.cos(th), Math.sin(th), gi);
         };
-        for (const e of this.state.architectures || []) {
-            const teile = e && e._pflanzenTeile;
-            const p = teile ? e.position : null;
+        const tab = this._foundry && this._foundry.recipes;
+        const gewachsen = (preset) => {
+            const rec = preset && tab ? tab[preset] : null;
+            return !!rec && (rec.kind === "tree" || rec.kind === "shrub");
+        };
+        const nah = this._blockerUmPlatz(x0 + w / 2, z0 + h / 2, Math.max(w, h) / 2 + 20, []);
+        for (const e of nah) {
+            const p = e.position;
             if (!p || !drin(p.x, p.z)) continue;
-            const s = (Number.isFinite(e.scale) && e.scale > 0 ? e.scale : 1) * (e._pflanzenSkala || 1);
-            setze(teile, p.x, p.y - 0.5, p.z, s, Number.isFinite(e.rotationY) ? e.rotationY : 0);
+            const preset = this._foundryPresetForEntry(e);
+            if (!gewachsen(preset)) continue;
+            const krone = this._foundryBaumKrone(preset, e);
+            if (!krone) continue;
+            const s = (Number.isFinite(e.scale) && e.scale > 0 ? e.scale : 1) * this._studioWeltSkala(e);
+            setze(krone, p.x, p.y - 0.5, p.z, s, Number.isFinite(e.rotationY) ? e.rotationY : 0);
         }
         const regionen = this.state.scatterRegions;
         if (regionen instanceof Map)
@@ -2526,42 +2495,25 @@ class AnazhRealm_Z11b {
                 for (const zelle of region.cells || []) {
                     if (!zelle || !drin(zelle.x, zelle.z) || zelle.form === "boden" || zelle.wartet) continue;
                     const sg = this._spiegelStreuGestalt(zelle, S);
-                    // die Frist dieses Bilds ist verbraucht: die Antwort wäre unvollständig (null — der Rufer fragt im nächsten)
-                    if (sg === undefined) return null;
-                    if (sg) setze(sg.teile, sg.x, NaN, sg.z, sg.s, sg.yaw);
+                    if (!sg || !gewachsen(sg.preset)) continue;
+                    const krone = this._foundryBaumKrone(sg.preset, sg.koerper);
+                    if (krone) setze(krone, sg.x, NaN, sg.z, sg.s, sg.yaw);
                 }
         return nurZahl ? zahl : { baeume: new Float32Array(baeume) };
     }
 
-    // DIE GESTALT EINER STREU-ZELLE im Spiegel (gemerkt je Zellen-Datensatz): ihr Ort und ihre Drehung (`_scatterCellTransform`
-    // mit den Maßen ihrer Schicht), der EINE Streu-Same (`_scatterFoundrySeed`) und seine Gestalt (`_foundryVariantFor`, die
-    // Prägung `_foundryGestaltOv`) — dieselbe, die ihre Stufen zeichnen; die Skala × die Welt-Skala des Presets. Null für
-    // Arten ohne Studio-Baum oder -Strauch und solange der Same wartet.
+    // DER ORT EINER STREU-ZELLE im Spiegel (gemerkt je Zellen-Datensatz): ihr Ort und ihre Drehung (`_scatterCellTransform`
+    // mit den Maßen ihrer Schicht), ihr Preset und der EINE Streu-Same (`_scatterFoundrySeed`) als Körper `{ seed }` — derselbe,
+    // mit dem ihre Stufen ihre Höhe lesen (`_scatterSichtHoehe`); die Skala × die Welt-Skala des Presets. Null für Zellen ohne
+    // Foundry-Preset; undefined (nicht gemerkt), solange ihr Same auf seinen Ort wartet.
     _spiegelStreuGestalt(zelle, S) {
         if (!S.zellen) S.zellen = new WeakMap();
         let sg = S.zellen.get(zelle);
         if (sg !== undefined) return sg;
-        // eine neue Zelle fragt nur, solange die Frist des Bilds reicht (`kronenRest`): undefined = noch nicht gefragt
-        if (!(S.kronenRest > 0)) return undefined;
-        const t0 = performance.now();
-        try {
-            sg = this._spiegelStreuGestaltNeu(zelle);
-        } finally {
-            S.kronenRest -= performance.now() - t0;
-        }
-        if (sg !== undefined) S.zellen.set(zelle, sg);
-        return sg === undefined ? null : sg;
-    }
-
-    // Die Gestalt einer neuen Streu-Zelle (die Ableitung hinter `_spiegelStreuGestalt`); undefined, solange ihr Same wartet
-    // (nicht gemerkt: die nächste Frage fragt neu).
-    _spiegelStreuGestaltNeu(zelle) {
-        let sg = null;
-        const preset = this._foundryEnabled() ? this._foundryPresetFor(zelle.species) : null;
-        const tc = typeof globalThis !== "undefined" ? globalThis.__terrainCore : null;
-        const rec = preset && tc && tc.PHYTO_PRESETS ? tc.PHYTO_PRESETS[preset] : null;
+        sg = null;
+        const preset = this._foundryPresetFor(zelle.species);
         const schicht = AnazhRealm.SCATTER.layers.find((l) => l.name === zelle.layer);
-        if (rec && (rec.kind === "tree" || rec.kind === "shrub") && schicht) {
+        if (preset && schicht) {
             const tf = this._scatterCellTransform(
                 zelle.cellX,
                 zelle.cellZ,
@@ -2569,14 +2521,19 @@ class AnazhRealm_Z11b {
                 schicht.scaleBase,
                 schicht.scaleVar
             );
-            const same = this._scatterFoundrySeed(zelle.cellX, zelle.cellZ, zelle.variantIndex, zelle.species, tf);
-            const g = same === null ? null : this._foundryVariantFor(same, preset);
-            if (g == null) return undefined;
-            const teile = this._gestaltTeile(preset, g, this._foundryGestaltOv(preset, g, null), [zelle.species]);
+            const seed = this._scatterFoundrySeed(zelle.cellX, zelle.cellZ, zelle.variantIndex, zelle.species, tf);
+            if (seed === null) return undefined;
             const k = this._foundryWorldScaleMatrix(preset).elements[0];
-            if (Array.isArray(teile))
-                sg = { teile, x: tf.x, z: tf.z, s: tf.scale * (Number.isFinite(k) && k > 0 ? k : 1), yaw: tf.yaw };
+            sg = {
+                preset,
+                koerper: { seed },
+                x: tf.x,
+                z: tf.z,
+                s: tf.scale * (Number.isFinite(k) && k > 0 ? k : 1),
+                yaw: tf.yaw,
+            };
         }
+        S.zellen.set(zelle, sg);
         return sg;
     }
 

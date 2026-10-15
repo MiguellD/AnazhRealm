@@ -871,6 +871,71 @@ const foundryKanal = (() => {
         }
         return out;
     }
+    // DIE KRONE EINER GESTALT (D10): das Laub, wie die Stufe es zeichnet (jedes foliage-/foliageTex-Mesh im Vorlagen-Raum),
+    // in ein Raster von KRONE_RASTER.waag² × KRONE_RASTER.senk Zellen über seinem Rahmen; je besetzte Zelle EIN Laub-Teil
+    // [cx, cy, cz, rXZ, rY] — die Mitte des Rahmens ihrer Ecken, waagrecht seine halbe Diagonale (die Kreise benachbarter
+    // voller Zellen decken die Fläche lückenlos), senkrecht seine halbe Höhe. Die Farbe ist das Mittel der Vertex-Farben
+    // (linear; die Albedo des Blatts ist Vertex-Farbe × Atlas-Wert um 1, das FARB-GESETZ). Ohne Laub (Totholz) keine Teile.
+    const KRONE_RASTER = { waag: 6, senk: 8 };
+    function __kroneDerMeshes(meshes) {
+        const laub = meshes.filter((m) => m && (m.kind === "foliage" || m.kind === "foliageTex") && m.position);
+        const lo = [Infinity, Infinity, Infinity],
+            hi = [-Infinity, -Infinity, -Infinity];
+        for (const m of laub) {
+            const p = m.position.array;
+            for (let i = 0; i < p.length; i++) {
+                const k = i % 3;
+                if (p[i] < lo[k]) lo[k] = p[i];
+                if (p[i] > hi[k]) hi[k] = p[i];
+            }
+        }
+        if (!(hi[1] >= lo[1])) return { teile: new Float32Array(0), farbe: null };
+        const NW = KRONE_RASTER.waag,
+            NS = KRONE_RASTER.senk;
+        const kante = [0, 1, 2].map((k) => Math.max(hi[k] - lo[k], 1e-4) / (k === 1 ? NS : NW));
+        const zelle = new Map(); // Index → [min x y z, max x y z]
+        const farbe = [0, 0, 0];
+        let fn = 0;
+        for (const m of laub) {
+            const p = m.position.array;
+            const c = m.color && m.color.array,
+                cs = (m.color && m.color.itemSize) || 3;
+            for (let v = 0; v * 3 + 2 < p.length; v++) {
+                const x = p[v * 3],
+                    y = p[v * 3 + 1],
+                    z = p[v * 3 + 2];
+                const ix = Math.min(NW - 1, Math.floor((x - lo[0]) / kante[0])),
+                    iy = Math.min(NS - 1, Math.floor((y - lo[1]) / kante[1])),
+                    iz = Math.min(NW - 1, Math.floor((z - lo[2]) / kante[2]));
+                const q = (iy * NW + iz) * NW + ix;
+                let r = zelle.get(q);
+                if (!r) zelle.set(q, (r = [x, y, z, x, y, z]));
+                if (x < r[0]) r[0] = x;
+                if (y < r[1]) r[1] = y;
+                if (z < r[2]) r[2] = z;
+                if (x > r[3]) r[3] = x;
+                if (y > r[4]) r[4] = y;
+                if (z > r[5]) r[5] = z;
+                if (c) {
+                    farbe[0] += c[v * cs];
+                    farbe[1] += c[v * cs + 1];
+                    farbe[2] += c[v * cs + 2];
+                    fn++;
+                }
+            }
+        }
+        const teile = new Float32Array(zelle.size * 5);
+        let t = 0;
+        for (const q of [...zelle.keys()].sort((a, b) => a - b)) {
+            const r = zelle.get(q);
+            teile[t++] = (r[0] + r[3]) / 2;
+            teile[t++] = (r[1] + r[4]) / 2;
+            teile[t++] = (r[2] + r[5]) / 2;
+            teile[t++] = Math.max(Math.hypot(r[3] - r[0], r[5] - r[2]) / 2, 0.05 * kante[0]);
+            teile[t++] = Math.max((r[4] - r[1]) / 2, 0.05 * kante[1]);
+        }
+        return { teile, farbe: fn ? [farbe[0] / fn, farbe[1] / fn, farbe[2] / fn] : null };
+    }
     function __replyBuildAsset(msg) {
         const reqId = msg.reqId;
         let meshes = [];
@@ -1013,6 +1078,10 @@ const foundryKanal = (() => {
             for (const __bp of ["__huelle", "__fern", "__mass"])
                 if (g && g.userData && g.userData[__bp] && typeof g.userData[__bp] === "object")
                     meshes.push({ kind: __bp, huelle: g.userData[__bp] });
+            // DIE KRONE REIST MIT (D10, Beipack `__krone`, must-ignore): jeder Baum und Strauch trägt die Krone, die er
+            // zeichnet — der Spiegel des Wassers liest sie (das Kronen-Buch des Wirts), nie eine Ableitung im Haupt-Faden.
+            if (!isZweitKern && PRESETS[msg.presetId] && /^(tree|shrub)$/.test(PRESETS[msg.presetId].kind))
+                meshes.push({ kind: "__krone", huelle: __kroneDerMeshes(meshes) });
         } catch (e) {
             meshes = [];
             try {

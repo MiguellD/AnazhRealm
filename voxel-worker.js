@@ -673,8 +673,8 @@ function clamp01(v) {
 // DAS SPIEGEL-FELD (D10, der See spiegelt die Welt): je Zelle (Kante `texel` m) des Rechtecks [i0, i0 + w) × [j0, j0 + h)
 // die Flächen, die ein gespiegelter Strahl trifft — der GEBAUTE Boden (die Nullstelle der Spalten-Dichte samt
 // Fluss-Kanal, See-Becken und Edits, `terrainDensityAtCol`: die 2D-Höhe trägt den Seegrund nicht), darüber das Wasser des
-// Orts (`waterLevelAt`) und die Kronen der stehenden Bäume (je Laub-Teil ihrer gefühlten Gestalt das Ellipsoid seines Ankers,
-// `_gestaltTeile` im Main — dieselben Teile wie die Hülle des Baums). Rückgabe: `hoehen` RGBA-Halbfloat über `bezug` (die
+// Orts (`waterLevelAt`) und die Kronen der stehenden Bäume (je Laub-Teil ihrer GEZEICHNETEN Krone das Ellipsoid seiner Zelle,
+// der Beipack `__krone` des Foundry-Workers über das Kronen-Buch des Wirts). Rückgabe: `hoehen` RGBA-Halbfloat über `bezug` (die
 // untere Fläche, Basis und Dach der Kronen-Schicht, ihre Gestalt + 1), `stoff` RGBA8 (die Albedo der unteren Fläche linear als
 // Wurzel — die EINE Boden-Farbe `attachFieldColors` = `_bodenFarbeAt`, das Laub der Gestalt, der Wasser-Körper R∞ —, A die Art:
 // 0 Boden, 1 Wasser, 2 Laub) und je Block die Höchste.

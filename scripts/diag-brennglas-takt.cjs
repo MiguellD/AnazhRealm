@@ -31,7 +31,10 @@
 //       ferne Menge derselben Namen (300–3 000 je Name) lässt ihre Zeit je Ruf stehen (WELTGRÖSSE rot ab 2× + 3 µs), die Gegenprobe
 //       (das Orakel mit der Menge) muss wachsen (sonst BLIND);
 //   (Q) QUELLE: keiner der Takte läuft über `state.architectures`; jeder Schreiber von Affordanzen und Kaminen steht im Spawn
-//       oder stempelt, die Hitze schreibt nur der Brennglas-Takt (oder ein Stempel);
+//       oder stempelt, die Hitze schreibt nur der Brennglas-Takt (oder ein Stempel); die Familie des Spiegel-Takts (D10,
+//       `_spiegel…`) gehört der Klasse;
+//   (W) DER WUCHS: kein Takt der Klasse leitet ein Skelett im Haupt-Faden ab (D10-n1: die Kronen des Spiegels leiteten je
+//       Gestalt 4–39 ms ab, `_spiegelStreuGestaltNeu` → `_gestaltTeile`) — die Krone reist als Beipack aus dem Worker;
 //   (P) kein Page-Error.
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): die Quell-Wand ist am Stamm grün und fällt bei einer eingeschleusten
 // Schleife, einem Schreiber ohne Stempel und einem fremden Hitze-Schreiber rot.
@@ -66,7 +69,16 @@ const TAKTE = [
     "tickPlayerBoosts",
     "_lofiNearResonantArchitecture",
     "_tickHausTueren",
+    "_spiegelFeldTakt",
+    "_spiegelKronen",
 ];
+// DIE FAMILIE DES SPIEGEL-TAKTS (D10): jede Methode `_spiegel…` läuft im Takt des Spiegel-Felds oder seines Passes — sie
+// gehört der Klasse wie die Takte oben (der Bestand nur über die Plätze, `_blockerUmPlatz`).
+const istTakt = (name) => TAKTE.includes(name) || /^_spiegel[A-Z]/.test(name);
+// (W) DER WUCHS IM TAKT (D10-n1, Lehre 14): kein Takt der Klasse leitet ein Skelett im Haupt-Faden ab — die Ableitung einer
+// Gestalt kostete 4–39 ms je Gestalt (Tanne, Radeon), am See bis 68 ms in einem Bild. Die Krone eines gezeichneten Baums
+// reist als Beipack aus dem Foundry-Worker (`__krone` → das Kronen-Buch `_foundryBaumKrone`).
+const WUCHS = new Set(["_growTreeBlueprintRich", "_gestaltTeile", "_baumGestaltTeile", "skelettDerGestalt"]);
 const ZIELE = new Set(["affordances", "chimney", "rauchQuelle"]);
 const ITER = new Set([
     "filter",
@@ -239,9 +251,15 @@ function quellWand(quelle) {
                     stempelt = true;
             });
         const meld = (n, art) => befunde.push(`${name} Zeile ${n.loc.start.line}: ${art} — ${text(n).slice(0, 70)}`);
-        if (TAKTE.includes(name)) {
+        if (istTakt(name)) {
             gesehen.add(name);
             lauf(body, (n) => {
+                if (
+                    n.type === "CallExpression" &&
+                    n.callee.type === "MemberExpression" &&
+                    WUCHS.has(feld(n.callee))
+                )
+                    meld(n, `leitet ein Skelett im Haupt-Faden ab (.${feld(n.callee)})`);
                 if ((n.type === "ForOfStatement" || n.type === "ForInStatement") && istBestand(n.right))
                     meld(n, "läuft über den Bestand (for-of)");
                 if (n.type === "ForStatement" && n.test) {
@@ -358,6 +376,7 @@ if (process.argv.includes("--selftest")) {
     const klasse = (rumpf) => `class X { ${TAKTE.map((x) => `${x}() {}`).join(" ")} ${AUSNAHME} ${rumpf} }`;
     const BESTAND = "läuft über den Bestand";
     const STEMPEL = "ohne Stempel";
+    const WUCHS_SATZ = "leitet ein Skelett im Haupt-Faden ab";
     const proben = [
         ["Filter", takt("_tickFocusingAffordances", "this.state.architectures.filter((e) => e.affordances);"), BESTAND],
         ["for-of", takt("_updateDorfRauch", "for (const e of this.state.architectures) e.x = 1;"), BESTAND],
@@ -419,6 +438,11 @@ if (process.argv.includes("--selftest")) {
         ["fremde Hitze +=", klasse("feuer(e) { e.heatBuildup += 0.1; }"), "außerhalb des Brennglas-Takts"],
         ["fremde Hitze ++", klasse("feuer(e) { e.heatBuildup++; }"), "außerhalb des Brennglas-Takts"],
         ["tote Ausnahme", `class X { ${TAKTE.map((x) => `${x}() {}`).join(" ")} }`, "TOTE AUSNAHME"],
+        ["Spiegel-Kronen über den Bestand", takt("_spiegelKronen", "for (const e of this.state.architectures) e;"), BESTAND],
+        ["Spiegel-Familie über den Bestand", klasse("_spiegelHilfe() { (this.state.architectures || []).some((e) => e); }"), BESTAND],
+        ["Wuchs im Takt", takt("_spiegelKronen", "this._gestaltTeile(p, g, null, []);"), WUCHS_SATZ],
+        ["Wuchs in der Spiegel-Familie", klasse("_spiegelGestalt(z) { return this._growTreeBlueprintRich(z.art, null, {}); }"), WUCHS_SATZ],
+        ["Skelett im Takt", takt("_spiegelFeldTakt", "globalThis.__terrainCore.skelettDerGestalt('eiche', 1, 0);"), WUCHS_SATZ],
     ];
     for (const [was, src, satz] of proben) {
         const b = quellWand(src);
@@ -437,6 +461,13 @@ if (process.argv.includes("--selftest")) {
                 "const archs = Array.isArray(this.state.architectures) ? this._blockerMit('rauch') : null; for (let i = 0; i < archs.length; i++) archs[i];"
             ),
         ],
+        [
+            "Kronen aus dem Buch um die Plätze",
+            takt(
+                "_spiegelKronen",
+                "const nah = this._blockerUmPlatz(x, z, w, []); for (const e of nah) this._foundryBaumKrone(p, e);"
+            ),
+        ],
     ];
     for (const [was, src] of gruen) {
         const b = quellWand(src);
@@ -450,7 +481,7 @@ if (process.argv.includes("--selftest")) {
     console.log(
         `✅ SELBSTTEST GRÜN — kein Takt der Klasse läuft über den Bestand, jeder Schreiber stempelt; ${proben.length} eingeschleuste ` +
             `Brüche fallen rot (Alias, forEach, Index, Destrukturierung, Spread, Kopie, Netz-Liste, verschachtelte und userData-Schreiber, ` +
-            `fremde Hitze, tote Ausnahme), ${gruen.length} harmlose Formen bleiben grün.`
+            `fremde Hitze, tote Ausnahme, Spiegel-Familie, Wuchs im Takt), ${gruen.length} harmlose Formen bleiben grün.`
     );
     process.exit(0);
 }
