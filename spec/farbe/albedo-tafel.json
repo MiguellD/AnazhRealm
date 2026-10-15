@@ -13,19 +13,141 @@
     },
     "gemessen": {
         "labor": {
-            "datum": "2026-10-07T01:39:26.250Z",
+            "datum": "2026-10-15T01:18:05.798Z",
             "geraet": "ANGLE (AMD, AMD Radeon(TM) 890M Graphics (0x0000150E) Direct3D11 vs_5_0 ps_5_0, D3D11)",
-            "echt": true
+            "echt": true,
+            "version": "18.546.2",
+            "quellen": {
+                "phyto-core.js": "95f967fc8a37fd95",
+                "foundry-core.js": "b957a6823f5b6a9e",
+                "vehicle-core.js": "e92679d1328df7f1",
+                "porta-core.js": "1f5c96131f9bb2be",
+                "schmiede-core.js": "d883c336f95e4811",
+                "fachwerk-core.js": "9630f4e8c6382fe4",
+                "klang-core.js": "6cd802653529b5ea",
+                "koerper-core.js": "94a8359fccad2ea4",
+                "tetrapoda-core.js": "5bcaa2822e2844f2",
+                "gelaende-core.js": "f1d87533ace49a59",
+                "stamm/01.js": "f9e48600facd5f5b",
+                "stamm/02a.js": "fb27034c0b544373",
+                "stamm/02b.js": "88ba28f4cbe4afbf",
+                "stamm/03a.js": "ab335f0021b8fd74",
+                "stamm/03b.js": "906ac60537545f91",
+                "stamm/04.js": "a81b11b04a3f3110",
+                "stamm/05a.js": "539370765677f7ec",
+                "stamm/05b.js": "4c23b4440c82e219",
+                "stamm/06a.js": "7a1e2fe0ee9ba9f9",
+                "stamm/06b.js": "6d1b51f3f819ca55",
+                "stamm/06c.js": "18acb23fbd321c8e",
+                "stamm/07.js": "6a3ea63b9ee05a21",
+                "stamm/08.js": "d1965c87808662a7",
+                "stamm/09.js": "0f3d091e173a4ada",
+                "stamm/10.js": "32d29d540373569b",
+                "stamm/11a.js": "86af9a9f0519b1d6",
+                "stamm/11b.js": "3c6f010d0961e8ec",
+                "stamm/11c.js": "d2269993c239da8e",
+                "stamm/11d.js": "fd895fc97babb8fb",
+                "stamm/12.js": "35ba9677f5f22ebf",
+                "stamm/13a.js": "7ecaeb9da1f4fadd",
+                "stamm/13b.js": "74dac822388d3033",
+                "stamm/13c.js": "0dfc72d752024dfb",
+                "stamm/14.js": "c8ee5a0ca50e8a1b",
+                "stamm/15a.js": "f0610a76b23bfe9e",
+                "stamm/15b.js": "081ea9fe990409d5",
+                "stamm/15c.js": "079dee3b5f4fdc27",
+                "stamm/16.js": "5cc527c167378f17",
+                "stamm/17a.js": "3171fb2dc0f872b0",
+                "stamm/17b.js": "e9a220a4e1af8dbf",
+                "stamm/17c.js": "d848b70d6294c19a",
+                "stamm/18.js": "f80bf3706d0e0e6c",
+                "stamm/19.js": "2bb652c80a58c2a9",
+                "stamm/20a.js": "32632c152bc477e2",
+                "stamm/20b.js": "6a89dd8438ca8da9",
+                "stamm/20c.js": "739572d20e186d24",
+                "stamm/20d.js": "7fc3616ed9846a7b",
+                "stamm/21.js": "b37c86a40352ea19",
+                "stamm/22.js": "75414b2476ec337f",
+                "stamm/23a.js": "6f7beb260c70c123",
+                "stamm/23b.js": "d311e43d74ce825d",
+                "stamm/24.js": "e600eb9cc991ce4c",
+                "stamm/25a.js": "0bd3409907df2983",
+                "stamm/25b.js": "7f2302d3be1d5750",
+                "stamm/25c.js": "c37660b5c7102438",
+                "stamm/26a.js": "b08c3819d8cdd7f6",
+                "stamm/26b.js": "3d92ab3600500c1c",
+                "stamm/26c.js": "1485728c3ea0d64f"
+            }
         },
         "welt": {
-            "datum": "2026-10-07T01:37:39.928Z",
+            "datum": "2026-10-15T01:29:09.026Z",
             "geraet": "amd rdna-3",
             "ort": "genesis",
             "spieler": [
                 0,
                 0
             ],
-            "echt": true
+            "echt": true,
+            "version": "18.546.2",
+            "quellen": {
+                "phyto-core.js": "95f967fc8a37fd95",
+                "foundry-core.js": "b957a6823f5b6a9e",
+                "vehicle-core.js": "e92679d1328df7f1",
+                "porta-core.js": "1f5c96131f9bb2be",
+                "schmiede-core.js": "d883c336f95e4811",
+                "fachwerk-core.js": "9630f4e8c6382fe4",
+                "klang-core.js": "6cd802653529b5ea",
+                "koerper-core.js": "94a8359fccad2ea4",
+                "tetrapoda-core.js": "5bcaa2822e2844f2",
+                "gelaende-core.js": "f1d87533ace49a59",
+                "stamm/01.js": "f9e48600facd5f5b",
+                "stamm/02a.js": "fb27034c0b544373",
+                "stamm/02b.js": "88ba28f4cbe4afbf",
+                "stamm/03a.js": "ab335f0021b8fd74",
+                "stamm/03b.js": "906ac60537545f91",
+                "stamm/04.js": "a81b11b04a3f3110",
+                "stamm/05a.js": "539370765677f7ec",
+                "stamm/05b.js": "4c23b4440c82e219",
+                "stamm/06a.js": "7a1e2fe0ee9ba9f9",
+                "stamm/06b.js": "6d1b51f3f819ca55",
+                "stamm/06c.js": "18acb23fbd321c8e",
+                "stamm/07.js": "6a3ea63b9ee05a21",
+                "stamm/08.js": "d1965c87808662a7",
+                "stamm/09.js": "0f3d091e173a4ada",
+                "stamm/10.js": "32d29d540373569b",
+                "stamm/11a.js": "86af9a9f0519b1d6",
+                "stamm/11b.js": "3c6f010d0961e8ec",
+                "stamm/11c.js": "d2269993c239da8e",
+                "stamm/11d.js": "fd895fc97babb8fb",
+                "stamm/12.js": "35ba9677f5f22ebf",
+                "stamm/13a.js": "7ecaeb9da1f4fadd",
+                "stamm/13b.js": "74dac822388d3033",
+                "stamm/13c.js": "0dfc72d752024dfb",
+                "stamm/14.js": "c8ee5a0ca50e8a1b",
+                "stamm/15a.js": "f0610a76b23bfe9e",
+                "stamm/15b.js": "081ea9fe990409d5",
+                "stamm/15c.js": "079dee3b5f4fdc27",
+                "stamm/16.js": "5cc527c167378f17",
+                "stamm/17a.js": "3171fb2dc0f872b0",
+                "stamm/17b.js": "e9a220a4e1af8dbf",
+                "stamm/17c.js": "d848b70d6294c19a",
+                "stamm/18.js": "f80bf3706d0e0e6c",
+                "stamm/19.js": "2bb652c80a58c2a9",
+                "stamm/20a.js": "32632c152bc477e2",
+                "stamm/20b.js": "6a89dd8438ca8da9",
+                "stamm/20c.js": "739572d20e186d24",
+                "stamm/20d.js": "7fc3616ed9846a7b",
+                "stamm/21.js": "b37c86a40352ea19",
+                "stamm/22.js": "75414b2476ec337f",
+                "stamm/23a.js": "6f7beb260c70c123",
+                "stamm/23b.js": "d311e43d74ce825d",
+                "stamm/24.js": "e600eb9cc991ce4c",
+                "stamm/25a.js": "0bd3409907df2983",
+                "stamm/25b.js": "7f2302d3be1d5750",
+                "stamm/25c.js": "c37660b5c7102438",
+                "stamm/26a.js": "b08c3819d8cdd7f6",
+                "stamm/26b.js": "3d92ab3600500c1c",
+                "stamm/26c.js": "1485728c3ea0d64f"
+            }
         }
     },
     "zeilen": [
@@ -47,7 +169,11 @@
                     "typ": "architektur",
                     "name": "baum_eiche",
                     "radius": 5,
-                    "nah": 12
+                    "nah": 20,
+                    "versatz": [
+                        12,
+                        12
+                    ]
                 },
                 "klasse": "^f:eiche:L[0-3]$",
                 "stoff": {
@@ -62,18 +188,18 @@
             ],
             "ist": {
                 "labor": {
-                    "Y": 0.0906,
-                    "rgb": "0.1084/0.0881/0.0629",
-                    "pixel": 76240
+                    "Y": 0.0947,
+                    "rgb": "0.1125/0.0922/0.0661",
+                    "pixel": 15780
                 },
                 "welt": {
-                    "Y": 0.0941,
-                    "rgb": "0.1123/0.0915/0.0657",
-                    "pixel": 23629
+                    "Y": 0.0932,
+                    "rgb": "0.111/0.0908/0.065",
+                    "pixel": 6128
                 },
-                "verhaeltnis": 0.9628
+                "verhaeltnis": 1.0161
             },
-            "ratsche": 0.0379
+            "ratsche": 0.016
         },
         {
             "id": "laub",
@@ -93,7 +219,11 @@
                     "typ": "architektur",
                     "name": "baum_eiche",
                     "radius": 5,
-                    "nah": 12
+                    "nah": 20,
+                    "versatz": [
+                        12,
+                        12
+                    ]
                 },
                 "klasse": "^f:eiche:L[0-3]$",
                 "stoff": {
@@ -109,18 +239,18 @@
             ],
             "ist": {
                 "labor": {
-                    "Y": 0.1813,
-                    "rgb": "0.1284/0.2108/0.0451",
-                    "pixel": 161543
+                    "Y": 0.1797,
+                    "rgb": "0.1276/0.2087/0.0447",
+                    "pixel": 143174
                 },
                 "welt": {
-                    "Y": 0.2242,
-                    "rgb": "0.1241/0.2711/0.0535",
-                    "pixel": 58741
+                    "Y": 0.1639,
+                    "rgb": "0.0867/0.1991/0.0428",
+                    "pixel": 57290
                 },
-                "verhaeltnis": 0.8087
+                "verhaeltnis": 1.0964
             },
-            "ratsche": 0.2123
+            "ratsche": 0.092
         },
         {
             "id": "fels",
@@ -161,16 +291,16 @@
             ],
             "ist": {
                 "labor": {
-                    "Y": 0.2432,
-                    "rgb": "0.2692/0.2419/0.1801",
+                    "Y": 0.2444,
+                    "rgb": "0.2705/0.243/0.1811",
                     "pixel": 307925
                 },
                 "welt": {
-                    "Y": 0.2366,
-                    "rgb": "0.2617/0.2354/0.1746",
-                    "pixel": 19618
+                    "Y": 0.2325,
+                    "rgb": "0.2572/0.2313/0.1717",
+                    "pixel": 19488
                 },
-                "verhaeltnis": 1.0279
+                "verhaeltnis": 1.0512
             },
             "ratsche": 0.0275
         },
@@ -204,16 +334,16 @@
             ],
             "ist": {
                 "labor": {
-                    "Y": 0.3231,
-                    "rgb": "0.3875/0.3152/0.2113",
+                    "Y": 0.3229,
+                    "rgb": "0.3873/0.315/0.2111",
                     "pixel": 256000
                 },
                 "welt": {
-                    "Y": 0.0995,
-                    "rgb": "0.1167/0.0962/0.0813",
+                    "Y": 0.063,
+                    "rgb": "0.0887/0.0579/0.0384",
                     "pixel": 256000
                 },
-                "verhaeltnis": 3.2472
+                "verhaeltnis": 5.1254
             },
             "ratsche": 1.1778
         },
@@ -261,11 +391,11 @@
                     "pixel": 407007
                 },
                 "welt": {
-                    "Y": 0.1665,
-                    "rgb": "0.285/0.1385/0.0947",
-                    "pixel": 174392
+                    "Y": 0.193,
+                    "rgb": "0.2707/0.1748/0.1442",
+                    "pixel": 218694
                 },
-                "verhaeltnis": 0.5051
+                "verhaeltnis": 0.4358
             },
             "ratsche": 0.683
         },
@@ -308,19 +438,7 @@
                 "stamm/10.js",
                 "stamm/20b.js"
             ],
-            "ist": {
-                "labor": {
-                    "Y": 0.0066,
-                    "rgb": "0.0056/0.0065/0.0097",
-                    "pixel": 245421
-                },
-                "welt": {
-                    "Y": 0.006,
-                    "rgb": "0.0051/0.006/0.0089",
-                    "pixel": 82646
-                },
-                "verhaeltnis": 1.1
-            },
+            "ist": null,
             "ratsche": 0.0953
         },
         {
@@ -351,19 +469,7 @@
                 "stamm/14.js",
                 "stamm/20b.js"
             ],
-            "ist": {
-                "labor": {
-                    "Y": 0.6496,
-                    "rgb": "0.8196/0.6364/0.2799",
-                    "pixel": 7583
-                },
-                "welt": {
-                    "Y": 0.6496,
-                    "rgb": "0.8196/0.6364/0.2799",
-                    "pixel": 2561
-                },
-                "verhaeltnis": 1
-            },
+            "ist": null,
             "ratsche": 0
         },
         {
@@ -399,18 +505,18 @@
             ],
             "ist": {
                 "labor": {
-                    "Y": 0.2411,
-                    "rgb": "0.3626/0.2146/0.145",
-                    "pixel": 76529
+                    "Y": 0.0608,
+                    "rgb": "0.1219/0.0463/0.025",
+                    "pixel": 74569
                 },
                 "welt": {
-                    "Y": 0.0546,
-                    "rgb": "0.1149/0.0402/0.0205",
-                    "pixel": 59569
+                    "Y": 0.1611,
+                    "rgb": "0.2235/0.1468/0.1198",
+                    "pixel": 33718
                 },
-                "verhaeltnis": 4.4158
+                "verhaeltnis": 0.3774
             },
-            "ratsche": 1.4852
+            "ratsche": 0.9744
         },
         {
             "id": "fell",
@@ -447,18 +553,18 @@
             ],
             "ist": {
                 "labor": {
-                    "Y": 0.2272,
-                    "rgb": "0.2472/0.2247/0.1941",
-                    "pixel": 142609
+                    "Y": 0.1688,
+                    "rgb": "0.2059/0.1635/0.1123",
+                    "pixel": 152878
                 },
                 "welt": {
-                    "Y": 0.1932,
-                    "rgb": "0.2384/0.1867/0.125",
-                    "pixel": 48389
+                    "Y": 0.1804,
+                    "rgb": "0.2212/0.1745/0.1186",
+                    "pixel": 47427
                 },
-                "verhaeltnis": 1.176
+                "verhaeltnis": 0.9357
             },
-            "ratsche": 0.1621
+            "ratsche": 0.0665
         },
         {
             "id": "klinge",
@@ -496,7 +602,7 @@
                 "welt": {
                     "Y": 0.3493,
                     "rgb": "0.388/0.3419/0.3081",
-                    "pixel": 6473
+                    "pixel": 6474
                 },
                 "verhaeltnis": 0.951
             },
@@ -530,9 +636,9 @@
             "ist": {
                 "kL": 0.8023,
                 "ausgabe": [
-                    197,
-                    207,
-                    202
+                    195,
+                    205,
+                    200
                 ]
             },
             "ratsche": 0.9359
@@ -541,31 +647,31 @@
             "ist": {
                 "kL": 0.6427,
                 "ausgabe": [
-                    170,
-                    158,
-                    146
+                    173,
+                    161,
+                    149
                 ]
             },
             "ratsche": 0.7141
         },
         "fachwerk": {
             "ist": {
-                "kL": 0.4922,
+                "kL": 0.4803,
                 "ausgabe": [
-                    198,
-                    196,
-                    193
+                    197,
+                    194,
+                    192
                 ]
             },
-            "ratsche": 0.4472
+            "ratsche": 0.4228
         },
         "koerperstudio": {
             "ist": {
                 "kL": 0.699,
                 "ausgabe": [
-                    170,
-                    181,
-                    178
+                    171,
+                    182,
+                    179
                 ]
             },
             "ratsche": 0.798
@@ -574,9 +680,9 @@
             "ist": {
                 "kL": 0.8802,
                 "ausgabe": [
-                    255,
-                    255,
-                    255
+                    252,
+                    252,
+                    252
                 ]
             },
             "ratsche": 1.0285

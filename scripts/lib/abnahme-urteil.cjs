@@ -1067,10 +1067,22 @@ const MASS_RECHNER = {
         const ap = new RegExp(rc.apertur),
             tor = new RegExp(rc.tor);
         const sv = rc.stufen;
-        let S = q && q.kern ? q.kern(sv.datei, sv.symbol) : undefined;
-        for (const f of String(sv.feld || "").split(".").filter(Boolean)) S = S == null ? S : S[f];
+        const K0 = q && q.kern ? q.kern(sv.datei, sv.symbol) : undefined;
+        const pfad = (p) => {
+            let v = K0;
+            for (const f of String(p || "").split(".").filter(Boolean)) v = v == null ? v : v[f];
+            return v;
+        };
+        const S = pfad(sv.feld);
         if (!Array.isArray(S) || !S.length)
             return { fehler: `die Stufen ${sv.datei} ${sv.symbol}.${sv.feld} sind dort nicht definiert` };
+        // DIE NUR-WURF-STUFE (Studio-Vertrag B2c `lod.budget[kind][s].nurWurf`, der Wirt `_foundryDeclaredStage`): sie wird nie als
+        // Mesh gezeigt — ihr Bild ist die Fernform jenseits der Mesh-Zone (der Spieler jenseits des Cull-Radius, die Membran wach).
+        // Ihr Schuss zeigt darum KEIN Tor in einer Mesh-Stufe, aber die Apertur; das Budget liest die Linse im selben Kern.
+        const B = sv.budget ? pfad(sv.budget) : null;
+        if (sv.budget && (!B || typeof B !== "object"))
+            return { fehler: `das Budget ${sv.datei} ${sv.symbol}.${sv.budget} ist dort nicht definiert` };
+        const nurWurf = (s) => !!(B && B[s] && B[s].nurWurf === true);
         const soll = S.filter((s) => s >= (sv.ab || 0));
         const schuesse = Object.keys(me).filter((k) => /^L\d$/.test(k));
         if (!schuesse.length) return { fehler: "milchweiss ohne Schuss je Stufe (messung.L<n>)" };
@@ -1090,8 +1102,12 @@ const MASS_RECHNER = {
                 if (t && k.pixel >= 50) je[t[t.length - 1]] = (je[t[t.length - 1]] || 0) + k.pixel;
             }
             const st = Object.entries(je).sort((a, b) => b[1] - a[1])[0];
-            if (!st) return { fehler: `${s}: der Schuss zeigt kein Tor mit Stufe im Namen (${rc.tor})` };
-            if (`L${st[0]}` !== s) return { fehler: `${s}: der Schuss zeigt die Tore in Stufe L${st[0]}` };
+            if (nurWurf(+s.slice(1))) {
+                if (st) return { fehler: `${s}: der Schuss zeigt die Tore in Stufe L${st[0]} — die Stufe ${s} (nurWurf) zeigt nur die Fernform` };
+            } else {
+                if (!st) return { fehler: `${s}: der Schuss zeigt kein Tor mit Stufe im Namen (${rc.tor})` };
+                if (`L${st[0]}` !== s) return { fehler: `${s}: der Schuss zeigt die Tore in Stufe L${st[0]}` };
+            }
             let pa = 0;
             for (const [n, k] of Object.entries(m.klassen)) {
                 if (!ap.test(n)) continue;
@@ -1102,6 +1118,7 @@ const MASS_RECHNER = {
                 teile.push(`${s} ${n} ${(k.wt / Math.max(1, k.pixel)).toFixed(2)} (${k.pixel} px)`);
                 if (!arg || k.wt > arg[2]) arg = [s, n, k.wt, k.pixel];
             }
+            if (pa < 50) return { fehler: `${s}: der Schuss zeigt keine Apertur (${pa} Pixel — die Membran schläft jenseits ihrer Sicht?)` };
             anteil = Math.max(anteil, pa / flaeche(m));
             bloecke.push(m);
         }
@@ -1664,18 +1681,29 @@ function sollTafelSelbsttest(tafel, q) {
         Object.assign(stufeMe([]), {
             klassen: { [`f:tor:L${stufe}`]: { pixel: 400, luma: 100 }, "portal-nebel": fleck(ton) },
         });
+    // die Stufe 3 ist (wie im Kern der Tore) eine NUR-WURF-Stufe: ihr Schuss zeigt die Fernform — die Apertur ohne Tor-Mesh
+    const fernMe = (ton) => Object.assign(stufeMe([]), { klassen: { "portal-nebel": fleck(ton) } });
     const rcW = {
         apertur: "^portal-(membran|nebel)$",
         tor: "^(?:f|fimp):tor:L(\\d)$",
-        stufen: { datei: "x.js", symbol: "CFG", feld: "lod.stufen", ab: 1 },
+        stufen: { datei: "x.js", symbol: "CFG", feld: "lod.stufen", budget: "lod.budget", ab: 1 },
     };
-    const qW = { kern: (d, s) => (d === "x.js" && s === "CFG" ? { lod: { stufen: [0, 1, 3] } } : undefined) };
+    const qW = {
+        kern: (d, s) =>
+            d === "x.js" && s === "CFG" ? { lod: { stufen: [0, 1, 3], budget: { 1: {}, 3: { nurWurf: true } } } } : undefined,
+    };
     const mw = (messung) => MASS_RECHNER.milchweiss({ messung, rechnung: rcW }, qW);
-    const mwVoll = mw({ L1: apMe(1, [235, 235, 236]), L3: apMe(3, [200, 200, 200]) });
+    const mwVoll = mw({ L1: apMe(1, [235, 235, 236]), L3: fernMe([200, 200, 200]) });
     if (!(mwVoll.ist === 1 && !mwVoll.offen && /portal-nebel/.test(mwVoll.taeter || "")))
         v.push(`Maß milchweiss: zwei weiße Stufen lesen ${mwVoll.ist}${mwVoll.fehler ? " — " + mwVoll.fehler : ""}`);
-    if (mw({ L1: apMe(1, [120, 60, 150]), L3: apMe(3, [60, 140, 200]) }).ist !== 0)
+    if (mw({ L1: apMe(1, [120, 60, 150]), L3: fernMe([60, 140, 200]) }).ist !== 0)
         v.push("Maß milchweiss: bunte Membranen lesen nicht 0");
+    const mwMesh3 = mw({ L1: apMe(1, [235, 235, 236]), L3: apMe(3, [200, 200, 200]) });
+    if (!(mwMesh3.fehler && /nurWurf/.test(mwMesh3.fehler)))
+        v.push("Maß milchweiss: ein Tor-Mesh in der NUR-WURF-Stufe L3 nicht beim Namen");
+    const mwBlind = mw({ L1: apMe(1, [235, 235, 236]), L3: stufeMe([["himmel", 180]]) });
+    if (!(mwBlind.fehler && /L3: der Schuss zeigt keine Apertur/.test(mwBlind.fehler)))
+        v.push("Maß milchweiss: ein Fern-Schuss ohne Apertur nicht beim Namen");
     const mwHalb = mw({ L1: apMe(1, [235, 235, 236]) });
     if (!(mwHalb.offen && /L3 ohne Schuss/.test(mwHalb.offen)))
         v.push(`Maß milchweiss: die Stufe L3 ohne Schuss nicht beim Namen (${mwHalb.offen || mwHalb.fehler})`);
@@ -1816,9 +1844,10 @@ function sollTafelSelbsttest(tafel, q) {
     const t5 = klon();
     const k5 = finde(t5, (k) => k.mass && k.mass.name === "milchweiss" && k.mass.messung);
     if (k5) {
+        // die letzte Stufe fällt, solange eine bleibt (trägt die Tafel nur eine, fehlt die nächste des Kerns schon)
         const st5 = Object.keys(k5.mass.messung).filter((s) => /^L\d$/.test(s));
-        delete k5.mass.messung[st5[st5.length - 1]];
-        for (const s of st5.slice(0, -1)) {
+        if (st5.length > 1) delete k5.mass.messung[st5.pop()];
+        for (const s of st5) {
             frisch(k5, k5.mass.messung[s]);
             for (const z of Object.values(k5.mass.messung[s].klassen)) if (z.wt != null) z.wt = 0;
         }

@@ -255,14 +255,22 @@ function tafelUrteil(t, messung) {
 
 // DER NACHZUG (nur aus einer Messung beider Seiten mit grüner Eichung und ohne stumme Zeile): Ist setzen, die Ratsche
 // SENKEN (nie heben — eine Zeile über der Ratsche ist ROT, heben ist ein begründeter Akt von Hand im Commit).
+// EINE STUMME ZEILE (K63-n5) hält den Nachzug nicht mehr auf: der Stand reist je Messung in die Tafel (`gemessen`, die Wand
+// prüft ihn je Zeile), und ein altes Ist unter dem neuen Stand wäre still veraltet — darum FÄLLT ihr Ist (die Wand: „ohne Ist",
+// ROT beim Namen), die Ratsche bleibt. Nur eine falsche Eichung zieht nichts.
 function tafelNachziehen(t, messung, gemessen) {
     const u = tafelUrteil(t, messung);
-    if (u.rot.some((r) => r.art === "eichung" || r.art === "stumm"))
-        return { tafel: null, aenderungen: [], u, grund: "Eichung oder stumme Zeile — kein Nachzug" };
+    if (u.rot.some((r) => r.art === "eichung")) return { tafel: null, aenderungen: [], u, grund: "Eichung — kein Nachzug" };
     const neu = JSON.parse(JSON.stringify(t));
     const aenderungen = [];
     for (const z of neu.zeilen) {
         const e = u.zeilen.find((x) => x.id === z.id);
+        if (!(e && zahl(e.verhaeltnis))) {
+            const r = u.rot.find((x) => x.art === "stumm" && x.text.startsWith(`${z.id}:`));
+            z.ist = null;
+            aenderungen.push(`${z.id}: das Ist fällt (${r ? r.text : "stumm"})`);
+            continue;
+        }
         const knapp = (m) => ({ Y: m.Y, rgb: m.rgb, pixel: m.pixel });
         z.ist = { labor: knapp(e.labor), welt: knapp(e.welt), verhaeltnis: e.verhaeltnis };
         if (z.ratsche == null || e.abweichung < z.ratsche) {

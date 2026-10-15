@@ -299,11 +299,17 @@ async function selbsttest() {
     // S7 — der Nachzug senkt, hebt nie, und zieht ohne Eichung nicht.
     const n7 = AT.tafelNachziehen(T0, messungZumTest(T0, { [T0.zeilen[2].id]: 1.01 }), { labor: {}, welt: {} });
     const n7b = AT.tafelNachziehen(T0, messungZumTest(T0, { [T0.zeilen[2].id]: 1.2 }), { labor: {}, welt: {} });
+    // eine stumme Zeile: ihr Ist fällt (kein altes Ist unter dem neuen Stand), die Ratsche bleibt, die Wand nennt sie „ohne Ist"
+    const n7c = AT.tafelNachziehen(T0, m4, { labor: {}, welt: {} });
     t(
-        "Nachzug: 0,05 → 0 (Labor = Welt) und 0,05 → 0,01; über der Ratsche bleibt 0,05; eine falsche Eichung zieht nicht",
+        "Nachzug: 0,05 → 0 (Labor = Welt) und 0,05 → 0,01; über der Ratsche bleibt 0,05; eine stumme Zeile verliert ihr Ist; eine falsche Eichung zieht nicht",
         n7.tafel.zeilen[0].ratsche === 0 &&
             Math.abs(n7.tafel.zeilen[2].ratsche - 0.01) < 1e-3 &&
             n7b.tafel.zeilen[2].ratsche === 0.05 &&
+            !!n7c.tafel &&
+            n7c.tafel.zeilen[1].ist === null &&
+            n7c.tafel.zeilen[1].ratsche === T0.zeilen[1].ratsche &&
+            n7c.tafel.zeilen[0].ist !== null &&
             AT.tafelNachziehen(T0, m3, {}).tafel === null
     );
     // S8 — DER TÄTER IM ECHTEN LABOR (r128, Chrome, die Linse der Bibliothek): eine Szene mit drei Stoffen — die 18-%-Karte,

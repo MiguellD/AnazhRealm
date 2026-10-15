@@ -161,7 +161,8 @@ function albedoSicht(opts) {
             for (const z of opts.zeilen) {
                 const ex = (z.welt && z.welt.exemplar) || {};
                 let pos = null,
-                    gesetzt = false;
+                    gesetzt = false,
+                    verweigert = null;
                 if (ex.typ === "architektur") {
                     let best = null;
                     for (const e of st.architectures || [])
@@ -183,6 +184,9 @@ function albedoSicht(opts) {
                             { seed: ex.seed || 7 }
                         );
                         gesetzt = true;
+                        // ein verweigerter Platz (K63-n5: der Genesis-Platz ist Grundriss gegen Natur, die Eiche bei 8/8 fiel) ist
+                        // ein Befund der Zeile beim Namen — nie der Spieler als stilles Ersatz-Exemplar
+                        if (!e) verweigert = `das Exemplar ${ex.name} ließ sich bei ${x.toFixed(1)}/${zz.toFixed(1)} nicht setzen`;
                     }
                     if (e) {
                         await ticke(600, () => r._archIsRendered(e));
@@ -218,7 +222,7 @@ function albedoSicht(opts) {
                         pos = new T.Vector3(c.position.x, c.position.y, c.position.z);
                     }
                 } else if (ex.typ === "spieler") pos = pp.clone();
-                exemplare.push({ zeile: z, pos, gesetzt });
+                exemplare.push({ zeile: z, pos, gesetzt, verweigert });
             }
         }
         const karte = new T.Mesh(
@@ -391,6 +395,10 @@ function albedoSicht(opts) {
                         exemplar: w.exemplar || null,
                         gesetzt: ex.gesetzt,
                     };
+                    if (ex.verweigert) {
+                        ergebnisse.push(Object.assign(e, { pixel: 0, fehler: ex.verweigert }));
+                        continue;
+                    }
                     const um = ex.pos || pp;
                     // DAS EXEMPLAR, nicht die Klasse: eine Instanz-Gruppe zählt, wenn ihre nächste Instanz im Umkreis des
                     // Exemplars steht (L0 und L1 einer Art tragen sonst je ein anderes Exemplar ins Bild), ein Satz mit
