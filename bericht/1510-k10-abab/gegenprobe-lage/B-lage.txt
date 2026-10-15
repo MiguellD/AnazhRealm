@@ -1,0 +1,112 @@
+{
+ "ergebnis": {
+  "spieler": [
+   -841,
+   -861
+  ],
+  "bauten": 1114,
+  "haeuser": 18,
+  "typen": [
+   "glutbrunnen",
+   "baum_erle",
+   "baum_birke",
+   "baum_tanne",
+   "baum_kiefer",
+   "baum_eiche",
+   "grown_busch_hazel_v2",
+   "felsbogen",
+   "laterne_dorf",
+   "marktstand_dorf",
+   "haus_roemisch",
+   "haus_griechisch",
+   "felsturm",
+   "grown_busch_hazel_v1",
+   "grown_busch_hazel_v0",
+   "kristall_var0"
+  ],
+  "mitte": [
+   -803.9,
+   -820.2
+  ],
+  "achse": [
+   0.672,
+   0.74
+  ],
+  "abstand": 55.1,
+  "je": [
+   [
+    24,
+    47
+   ],
+   [
+    33,
+    48
+   ],
+   [
+    12,
+    29
+   ],
+   [
+    41,
+    33
+   ],
+   [
+    44,
+    50
+   ],
+   [
+    8,
+    50
+   ],
+   [
+    56,
+    32
+   ],
+   [
+    57,
+    48
+   ],
+   [
+    58,
+    57
+   ],
+   [
+    72,
+    48
+   ],
+   [
+    72,
+    56
+   ],
+   [
+    70,
+    31
+   ],
+   [
+    -7,
+    34
+   ],
+   [
+    -10,
+    48
+   ],
+   [
+    -18,
+    30
+   ],
+   [
+    -15,
+    18
+   ],
+   [
+    83,
+    29
+   ],
+   [
+    85,
+    46
+   ]
+  ]
+ },
+ "ms": 3
+}
