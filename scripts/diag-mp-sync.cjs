@@ -34,7 +34,7 @@
 //
 //   node scripts/diag-mp-sync.cjs [--selftest] [--roh <datei>]
 "use strict";
-const { starteBrowser } = require("./lib/welt-boot.cjs");
+const { starteBrowser, halteBis } = require("./lib/welt-boot.cjs");
 const { spawn } = require("child_process");
 const fs = require("fs");
 const path = require("path");
@@ -53,6 +53,9 @@ const ROH = (() => {
 const REJOIN_DECKEL_S = 31;
 const ABSTAND_M = 0.3;
 const LATENZ_MS = 150;
+// Der Lauf von A: W hält, bis A LAUF_M vom Start steht (das Urteil verlangt > 1 m), höchstens LAUF_FRIST_MS — nie eine feste Uhr.
+const LAUF_M = 1.5;
+const LAUF_FRIST_MS = 30000;
 // (d) der lange Takt bei B, in Schritten: B tickt erst, wenn ZUFLUSS_FAKTOR × aufholJeSchritt Schritte von A angekommen sind —
 // das Szenario steht in Schritten je Takt, nie in Millisekunden des Läufers (CI 38670118945: mit 300-ms-Takten hielt die alte
 // Kappe bei langsamem Sender fast Schritt, der Selbsttest war blind).
@@ -447,7 +450,7 @@ function bericht(p) {
         );
         await sleep(800);
 
-        // ── A läuft über die Tastatur, B sieht zu ── (ein Lauf: A geht 1,6 s, steht wieder, B zeigt ihn an dessen Ort)
+        // ── A läuft über die Tastatur, B sieht zu ── (ein Lauf: A geht LAUF_M, steht wieder, B zeigt ihn an dessen Ort)
         const laufUndSicht = async () => {
             const vorLauf = await pageA.evaluate(() => {
                 const p = window.anazhRealm.state.playerMesh.position;
@@ -466,9 +469,17 @@ function bericht(p) {
                 window.__mp.eigenBewegtAm = null;
                 window.__mpP = undefined;
             });
-            await pageA.keyboard.down("w");
-            await sleep(1600);
-            await pageA.keyboard.up("w");
+            // W bis zu seinem EREIGNIS (A steht LAUF_M vom Start), nie nach der Uhr: unter Last lief A in 1,6 s 0,77 m (CI 38683406115)
+            const halt = await halteBis(pageA, {
+                taste: "w",
+                ziel: (soll) => {
+                    const p = window.anazhRealm.state.playerMesh.position;
+                    const s = window.__mp.eigenStart;
+                    return Math.hypot(p.x - s.x, p.z - s.z) >= soll;
+                },
+                args: [LAUF_M],
+                frist: LAUF_FRIST_MS,
+            });
             await waitFor(
                 pageA,
                 () => {
@@ -506,14 +517,14 @@ function bericht(p) {
             const lauf = Math.hypot(wahrA.x - vorLauf.x, wahrA.z - vorLauf.z);
             const abstand = Math.hypot(sichtB.x - wahrA.x, sichtB.z - wahrA.z);
             const latenz = wahrA.bewegtAm && sichtB.gesehenAm ? sichtB.gesehenAm - wahrA.bewegtAm : null;
-            return { lauf, abstand, latenz, wahrA, sichtB };
+            return { lauf, abstand, latenz, wahrA, sichtB, haltMs: halt.ms, haltErreicht: halt.erreicht };
         };
         const sichtSatz = (l) =>
             `Abstand ${l.abstand.toFixed(3)} m, Leib ${l.sichtB.art}, sichtbar=${l.sichtB.sichtbar}, ` +
             `Rückstau ${l.sichtB.rueckstau} Schritte, Latenz ${l.latenz === null ? "n/a" : l.latenz + " ms"}`;
         const l0 = await laufUndSicht();
         roh.lauf = Object.assign({ ladeschirmMs: ladeMs }, l0);
-        check("A lief über die Tastatur (> 1 m)", l0.lauf > 1, `${l0.lauf.toFixed(2)} m`);
+        check("A lief über die Tastatur (> 1 m)", l0.lauf > 1, `${l0.lauf.toFixed(2)} m nach ${l0.haltMs} ms W`);
         check(
             `B sieht A an dessen Ort (±${ABSTAND_M} m waagrecht)`,
             l0.sichtB.sichtbar && l0.abstand <= ABSTAND_M,
@@ -603,7 +614,11 @@ function bericht(p) {
         const dMaengel = (l, f) => {
             const m = [];
             const g = gesetzTakte(f);
-            if (!(l.lauf > 1)) m.push(`LEER: A lief ${l.lauf.toFixed(2)} m (≤ 1 m)`);
+            if (!(l.lauf > 1))
+                m.push(
+                    `LEER: A lief ${l.lauf.toFixed(2)} m (≤ 1 m) nach ${l.haltMs} ms W` +
+                        (l.haltErreicht ? "" : ` (${LAUF_M} m nicht in ${LAUF_FRIST_MS} ms)`)
+                );
             if (g.length < 3) m.push(`LEER: ${g.length} lange Takte mit dem Ghost von A im Anschluss (< 3)`);
             if (!l.sichtB.sichtbar) m.push("A bei B unsichtbar");
             if (l.abstand > ABSTAND_M) m.push(`Abstand ${l.abstand.toFixed(3)} m > ${ABSTAND_M} m`);

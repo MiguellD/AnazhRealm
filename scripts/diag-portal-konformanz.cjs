@@ -44,7 +44,7 @@
 //   node scripts/diag-portal-konformanz.cjs              alle Welten gegen K1–K6 und die Ratschen
 // Port über PORTAL_KONFORMANZ_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4563.
 "use strict";
-const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, halteBis } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
@@ -85,18 +85,22 @@ async function probefahrt(page, fr) {
     const hud = await fr.evaluate(() => {
         const h = document.getElementById("hud");
         // sichtbar = berechnet nicht „none" (die Garage darf den HUD als block oder flex zeigen); dann gibt W Gas
-        const sichtbar = !!h && getComputedStyle(h).display !== "none";
-        window.dispatchEvent(new KeyboardEvent("keydown", { code: "KeyW" }));
-        return sichtbar;
+        return !!h && getComputedStyle(h).display !== "none";
     });
-    await warte(1600);
-    const spd = await fr.evaluate(() => {
-        window.dispatchEvent(new KeyboardEvent("keyup", { code: "KeyW" }));
-        const el = document.querySelector("#hud #spd");
-        return el ? parseInt(el.textContent, 10) : -1;
+    // W hält, bis der Tacho steigt — nie nach der Uhr (gate:apparat Klinge 3: auf dem CPU-Raster kommen in 1,6 s wenige Frames)
+    const halt = await halteBis(fr, {
+        druck: () => fr.evaluate(() => window.dispatchEvent(new KeyboardEvent("keydown", { code: "KeyW" }))),
+        los: () => fr.evaluate(() => window.dispatchEvent(new KeyboardEvent("keyup", { code: "KeyW" }))),
+        ziel: () => {
+            const el = document.querySelector("#hud #spd");
+            const v = el ? parseInt(el.textContent, 10) : 0;
+            return v > 0 ? v : false;
+        },
+        frist: 30000,
     });
+    const spd = halt.erreicht ? halt.wert : 0;
     await route("werkstatt");
-    return { ok: hud && spd > 0, notiz: `Probefahrt: HUD ${hud ? "sichtbar" : "fehlt"}, Tacho ${spd}` };
+    return { ok: hud && spd > 0, notiz: `Probefahrt: HUD ${hud ? "sichtbar" : "fehlt"}, Tacho ${spd} nach ${halt.ms} ms W` };
 }
 
 // Die Strom-Welt zeichnet (statt der Regex-Probe „densityTexture/addSplat/uBackdrop stehen im Quelltext"): ihre Engine

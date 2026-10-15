@@ -13,10 +13,14 @@
 // wahr, wenn jedes katalogisierte Symbol im lebenden Stamm-CODE existiert —
 // zieht ein Symbol um, wird HIER die eine Katalog-Zeile rot, nie N Proben.
 //
-// Selbst-Test: --selftest beweist beide Klingen (kein vakuöses Grün):
+// Dritte Aufgabe (K60-N5): keine Probe in scripts/ hält eine Taste über einen
+// Zeitgeber statt bis zu ihrem Ereignis (halteBis, scripts/lib/welt-boot.cjs).
+//
+// Selbst-Test: --selftest beweist alle drei Klingen (kein vakuöses Grün):
 // (1) eine injizierte .toString()-Probe hebt den Zähler über den Ratchet,
 //     ein bloßer Kommentar hebt ihn NICHT; (2) ein erfundenes Katalog-Symbol
-// feuert die Katalog-Prüfung.
+// feuert die Katalog-Prüfung; (3) der alte Lauf von gate:mp-sync (W 1,6 s nach
+// der Uhr) feuert, das Halten bis zum Ereignis und ein bloßer Druck nicht.
 // ============================================================================
 "use strict";
 const fs = require("fs");
@@ -31,7 +35,8 @@ const FROZEN_TOSTRING = 1;
 
 // Kommentare strippen, Strings BEWAHREN (die diag-source-probes-Methode:
 // zeichenweise, string-bewusst — ein naiver Regex frisst echten Code).
-function stripComments(src) {
+// `maske`: Kommentare werden Leerzeichen (Zeilenumbrüche bleiben) — Index und Zeile stimmen mit der Quelle überein.
+function stripComments(src, maske = false) {
     let out = "";
     let i = 0;
     const n = src.length;
@@ -42,11 +47,13 @@ function stripComments(src) {
         if (mode === "code") {
             if (c === "/" && c2 === "/") {
                 mode = "line";
+                if (maske) out += "  ";
                 i += 2;
                 continue;
             }
             if (c === "/" && c2 === "*") {
                 mode = "block";
+                if (maske) out += "  ";
                 i += 2;
                 continue;
             }
@@ -61,16 +68,18 @@ function stripComments(src) {
             if (c === "\n") {
                 mode = "code";
                 out += c;
-            }
+            } else if (maske) out += " ";
             i++;
             continue;
         }
         if (mode === "block") {
             if (c === "*" && c2 === "/") {
                 mode = "code";
+                if (maske) out += "  ";
                 i += 2;
                 continue;
             }
+            if (maske) out += c === "\n" ? c : " ";
             i++;
             continue;
         }
@@ -123,6 +132,59 @@ function scanRatchet(playtestSrc) {
                 `(sinkt er, FROZEN_TYPEOF mitsenken: der Ratchet klemmt nach unten nach).`
         );
     return { n, nT, errs };
+}
+
+// K60-N5 — DIE TASTE NACH DER WANDUHR (Klinge 3): eine Probe hält eine Taste über einen Zeitgeber statt bis zu ihrem
+// Ereignis. Auf dem CPU-Raster der CI läuft der Spieler in derselben Zeit einen Bruchteil des Wegs (gate:mp-sync (d) LEER:
+// „A lief 0.77 m“ nach 1,6 s W, CI 38683406115; die Garage fuhr in 1,8 s 1,1 m/s). Zwischen dem Druck (`keyboard.down`,
+// `KeyboardEvent("keydown")`) und dem Loslassen steht kein Zeitgeber — das Halten geht über `halteBis`
+// (scripts/lib/welt-boot.cjs), das am Ereignis loslässt. Gelesen wird jede Probe in scripts/ und scripts/lib/.
+const TASTE_DRUCK = /\.keyboard\.down\(|KeyboardEvent\(\s*["'`]keydown["'`]/g;
+const TASTE_LOS = /\.keyboard\.up\(|KeyboardEvent\(\s*["'`]keyup["'`]/g;
+const ZEITGEBER = /\bawait\s+(?:sleep|warte|warten|pause)\s*\(|\.waitForTimeout\s*\(|\bsetTimeout\s*\(/;
+
+// Die Taste eines Drucks bzw. Loslassens: die Zeichenketten des Aufrufs bis zu seiner Klammer („KeyW“ heißt „w“) —
+// gehalten ist eine Taste nur, wenn dieselbe später losgelassen wird; ein Druck ohne Loslassen (Enter, Strg+K) hält nichts.
+function tastenVon(code, m) {
+    const ende = code.indexOf(")", m.index + m[0].length);
+    const seg = code.slice(m.index + m[0].length, ende < 0 ? m.index + 200 : ende);
+    const tasten = new Set(
+        [...seg.matchAll(/["'`]([^"'`\n]{1,24})["'`]/g)].map((t) =>
+            (/^Key[A-Z]$/.test(t[1]) ? t[1].slice(3) : t[1]).toLowerCase()
+        )
+    );
+    if (!tasten.size && seg.trim()) tasten.add(seg.trim()); // die Taste als Name (`keyboard.down(taste)`)
+    return tasten;
+}
+
+function tasteNachWanduhr(src) {
+    const code = stripComments(src, true);
+    const los = [...code.matchAll(TASTE_LOS)].map((m) => ({ i: m.index, tasten: tastenVon(code, m) }));
+    const funde = [];
+    for (const m of code.matchAll(TASTE_DRUCK)) {
+        const tasten = tastenVon(code, m);
+        const ende = los.find((l) => l.i > m.index && [...l.tasten].some((t) => tasten.has(t)));
+        if (!ende) continue; // ein Druck, kein Halten
+        const fenster = code.slice(m.index, ende.i);
+        const z = fenster.match(ZEITGEBER);
+        if (z) funde.push({ zeile: code.slice(0, m.index).split("\n").length, zeitgeber: z[0].replace(/\s+/g, " ") });
+    }
+    return funde;
+}
+
+function scanTasten(root) {
+    const errs = [];
+    const dateien = [];
+    for (const dir of ["scripts", path.join("scripts", "lib")])
+        for (const f of fs.readdirSync(path.join(root, dir)))
+            if (/\.(c|m)?js$/.test(f) && f !== "diag-apparat.cjs") dateien.push(path.join(dir, f));
+    for (const rel of dateien)
+        for (const f of tasteNachWanduhr(fs.readFileSync(path.join(root, rel), "utf8")))
+            errs.push(
+                `Taste nach Wanduhr: ${rel.replace(/\\/g, "/")}:${f.zeile} hält die Taste über „${f.zeitgeber}“ statt bis zu ` +
+                    `ihrem Ereignis — Täter der Lauf dieser Probe; halteBis (scripts/lib/welt-boot.cjs) lässt am Ereignis los.`
+            );
+    return { dateien: dateien.length, errs };
 }
 
 // Den ANKER-KATALOG aus playtest.cjs lesen (die EINE frozen Tabelle).
@@ -179,11 +241,38 @@ function selftest() {
     const r = scanAnker(fakePlaytest, "class A { echteMethode() {} }");
     if (r.errs.length !== 1 || !/phantom/.test(r.errs[0]))
         fails.push("Katalog-Prüfung feuert nicht bei Phantom-Symbol");
+    // Klinge 3: der alte Lauf von gate:mp-sync (W 1,6 s nach der Uhr) und der Druck im Rahmen samt `warte` feuern; das
+    // Halten bis zum Ereignis, ein Kommentar und ein Zeitgeber NACH dem Loslassen nicht.
+    const sw = (s) => tasteNachWanduhr(s).length;
+    if (sw('await pageA.keyboard.down("w");\nawait sleep(1600);\nawait pageA.keyboard.up("w");\n') !== 1)
+        fails.push("Klinge 3 feuert nicht am alten Lauf (keyboard.down + sleep)");
+    const rahmen =
+        'await fr.evaluate(() => window.dispatchEvent(new KeyboardEvent("keydown", { code: "KeyW" })));\nawait warte(1600);\n' +
+        'await fr.evaluate(() => window.dispatchEvent(new KeyboardEvent("keyup", { code: "KeyW" })));\n';
+    if (sw(rahmen) !== 1) fails.push("Klinge 3 feuert nicht am Druck im Rahmen (keydown + warte)");
+    if (
+        sw(
+            'await page.keyboard.down("w");\nawait page.waitForFunction(() => weit(), { polling: 100 });\nawait page.keyboard.up("w");\nawait sleep(800);\n'
+        ) !== 0
+    )
+        fails.push("Klinge 3 feuert am Halten bis zum Ereignis");
+    if (sw('// keyboard.down("w"); await sleep(1600); keyboard.up("w")\nconst a = 1;\n') !== 0)
+        fails.push("Klinge 3 zählt Kommentare mit");
+    if (
+        sw(
+            'el.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter" }));\nawait sleep(300);\nawait page.keyboard.up("w");\n'
+        ) !== 0
+    )
+        fails.push("Klinge 3 liest einen Druck ohne Loslassen als Halten");
+    if (sw("await seite.keyboard.down(taste);\nawait sleep(900);\nawait seite.keyboard.up(taste);\n") !== 1)
+        fails.push("Klinge 3 feuert nicht an einer Taste mit Namen");
     if (fails.length) {
         console.log("❌ SELBST-TEST: " + fails.join(" · "));
         process.exit(1);
     }
-    console.log("✅ SELBST-TEST: beide Klingen feuern (Ratchet + Katalog), Kommentare zählen nicht");
+    console.log(
+        "✅ SELBST-TEST: alle drei Klingen feuern (Ratchet + Katalog + Taste nach Wanduhr), Kommentare zählen nicht"
+    );
     process.exit(0);
 }
 
@@ -194,7 +283,8 @@ function main() {
     const stammSrc = stammLib.text(root);
     const ratchet = scanRatchet(playtestSrc);
     const anker = scanAnker(playtestSrc, stammSrc);
-    const errs = ratchet.errs.concat(anker.errs);
+    const tasten = scanTasten(root);
+    const errs = ratchet.errs.concat(anker.errs, tasten.errs);
     if (errs.length) {
         console.log("⛔ DIE APPARAT-LINSE:");
         for (const e of errs) console.log("   ❌ " + e);
@@ -211,7 +301,8 @@ function main() {
     console.log(
         `✅ DIE APPARAT-LINSE steht — ${ratchet.n}/${FROZEN_TOSTRING} rohe .toString()-Zitate + ` +
             `${ratchet.nT}/${FROZEN_TYPEOF} typeof-Existenz-Proben (beide Ratchets nur-sinkend), ` +
-            `${anker.entries.length} Anker zeigen auf lebenden Stamm-Code, __consumes + __anker installiert.`
+            `${anker.entries.length} Anker zeigen auf lebenden Stamm-Code, __consumes + __anker installiert, ` +
+            `${tasten.dateien} Proben halten keine Taste nach der Wanduhr.`
     );
 }
 
