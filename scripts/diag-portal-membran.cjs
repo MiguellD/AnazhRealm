@@ -28,6 +28,8 @@
 //       B2 70 m vor dem Ring, Blick vom Ring weg: KEINE Membran zeichnet — Täter beim Namen (Gestalt, Abstand)
 //       B3 die Hülle trägt die Welle: die Kugel jeder Membran-Geometrie reicht in z bis zur Amplitude des Gesetzes
 //       BS Selbsttest am echten Frame: mit `frustumCulled = false` (dem alten Stand) MUSS B2 jede Membran beim Namen nennen
+//       BB Selbsttest (D8-n2): die Bereitschaft zählt Fenster, nie Einträge — mit den Fenstern beiseite (der Stand vor dem Scan)
+//          MUSS sie warten und jedes Tor mit Ziel-Zeile beim Namen nennen; kein Urteil fällt auf der leeren Menge
 //       H  (K64-n1, D8) aus der Ring-Mitte, AUSGABE-Pfad: die Öffnung brennt nicht aus (Y > 240 ≤ 5 %) und liest nicht als Milch
 //          (unbunt und hell — K5 milchweiss `klassenMasse`: C*ab < 5 bei L* ≥ 50 — ≤ 5 %, gegen das Bild ohne Film: Milch ist,
 //          was der Film dem Ziel hinzufügt, nie ein blasses Ziel): sie zeigt das Ziel durch den Film
@@ -56,7 +58,27 @@ async function blickProbe(opts) {
     const warte = (ms) => new Promise((q) => setTimeout(q, ms));
     const t0 = performance.now();
     let r = null,
-        st = null;
+        st = null,
+        stand = null;
+    // DIE BEREITSCHAFT ZÄHLT FENSTER, NIE EINTRÄGE (D8-n2): seit D8-n1 lebt das Tor ohne sein Ziel — die Registry trägt den Eintrag,
+    // bevor sein Fenster steht (`_tickPortalMembranes`). Die Bereitschaft zählte die Einträge (`size >= 3`): 8 ohne Mesh, die Probe
+    // startete mit 0 Fenstern (CI 38771709172, swiftshader: binnen 1,5 s kein neuer Scan), und B2, B3, HS, BS waren auf der leeren
+    // Menge grün. Bereit ist der Ring, wenn jedes Tor, dessen Ziel eine Zeile hat, sein Fenster trägt (der 1-Hz-Scan baut es) und
+    // mindestens drei Fenster stehen; ein Tor ohne Ziel (Web-Portal, Welt ohne Panorama) lebt ohne Fenster und wartet nicht.
+    const fensterStand = () => {
+        const Z = r._torZielAtlas;
+        const tore = [...r._portalMembranes.values()];
+        const wartend = [];
+        for (const rec of tore) {
+            if (rec.mesh) continue;
+            const meta = r._torZielWelt(rec.entry);
+            if (!meta) continue;
+            const z = Z.welten.get(meta.world);
+            if (!z) wartend.push(`${rec.tor.gestalt} (Ziel ${meta.world} nicht angefragt)`);
+            else if (z.zeile != null) wartend.push(`${rec.tor.gestalt} (Ziel ${meta.world} Zeile ${z.zeile}, kein Fenster)`);
+        }
+        return { tore: tore.length, fenster: tore.filter((rec) => rec.mesh).length, wartend };
+    };
     while (performance.now() - t0 < 300000) {
         r = window.anazhRealm;
         st = r && r.state;
@@ -65,15 +87,29 @@ async function blickProbe(opts) {
             // lief, stehen alle Membranen des Rings — vorher hing B1 an der Reihenfolge der Ankünfte (15.10.: drei Membranen ohne
             // das Drachentor im Blick nach −x, 0 von 3; dieselbe Welt mit allen vier: 1 von 4)
             await Promise.all([...r._torZielAtlas.welten.values()].map((z) => z.kommt));
-            await warte(1500);
-            if (r._portalMembranes.size >= 3) break;
+            stand = fensterStand();
+            if (stand.fenster >= 3 && stand.wartend.length === 0) break;
         }
         await warte(250);
     }
     if (!st || !st.renderer || st.renderer.backend.isWebGPUBackend !== true) return { fehler: "kein WebGPU-Renderer" };
-    if (!r._portalMembranes || r._portalMembranes.size < 3)
-        return { fehler: `Membranen am Ring: ${r._portalMembranes ? r._portalMembranes.size : 0} nach 300 s` };
+    if (!stand || stand.fenster < 3 || stand.wartend.length)
+        return {
+            fehler:
+                `Fenster am Ring: ${stand ? stand.fenster : 0} von ${stand ? stand.tore : 0} Toren nach 300 s` +
+                (stand && stand.wartend.length ? ` — ohne Fenster: ${stand.wartend.join(" · ")}` : ""),
+        };
     if (opts.nurWarten) return { bereit: true };
+    // BB Selbsttest (D8-n2): der Stand vor dem Scan — dieselben Tore, ihre Fenster beiseite (synchron, kein Takt dazwischen). Die
+    // Zählung der Einträge (die Bereitschaft vor D8-n2) nennt ihn bereit; die Zählung der Fenster MUSS warten und die Tore nennen.
+    const beiseite = [...r._portalMembranes.values()].map((rec) => [rec, rec.mesh]);
+    let vorScan;
+    try {
+        for (const [rec] of beiseite) rec.mesh = null;
+        vorScan = Object.assign({ eintraege: r._portalMembranes.size }, fensterStand());
+    } finally {
+        for (const [rec, m] of beiseite) rec.mesh = m;
+    }
     const rend = st.renderer;
     rend.setAnimationLoop(null);
     const recs = [...r._portalMembranes.values()].filter((rec) => rec.mesh);
@@ -112,7 +148,7 @@ async function blickProbe(opts) {
             taeter: gesehen.map(name),
         };
     };
-    const aus = { membranen: recs.length, mitte: [Math.round(g.x), Math.round(g.z)] };
+    const aus = { membranen: recs.length, mitte: [Math.round(g.x), Math.round(g.z)], vorScan };
     try {
         aus.im = await blick(g.x, g.z, g.x - 10, g.z);
         aus.weg = await blick(g.x + 70, g.z, g.x + 104, g.z);
@@ -352,20 +388,28 @@ async function blickStufe(check) {
         console.log(
             `=== B — der Blick am Genesis-Ring ${JSON.stringify(b.mitte)} (WebGPU auf swiftshader, ${b.membranen} Membranen) ===`
         );
+        const vs = b.vorScan;
+        check(
+            "BB Selbsttest: vor dem Scan (Fenster beiseite) wartet die Bereitschaft und nennt die Tore, wo die Zählung der Einträge bereit meldete",
+            vs.eintraege >= 3 && vs.fenster === 0 && vs.wartend.length >= 3,
+            `${vs.eintraege} Einträge, ${vs.fenster} Fenster, wartend ${vs.wartend.length}: ${vs.wartend.slice(0, 3).join(" · ")}${vs.wartend.length > 3 ? " …" : ""}`
+        );
         check(
             "B1 aus der Ring-Mitte nach −x zeichnen Membranen, die im Rücken nicht alle",
             b.im.membran > 0 && b.im.membran < b.membranen,
             `${b.im.membran} von ${b.membranen} Membranen`
         );
+        // KEIN URTEIL AUF DER LEEREN MENGE (D8-n2): B2, B3, HS und BS waren mit 0 Fenstern grün (CI 38771709172) — jedes Urteil
+        // hier verlangt die Fenster, die es richtet
         check(
             "B2 70 m vor dem Ring, Blick vom Ring weg: keine Membran zeichnet",
-            b.weg.membran === 0,
+            b.membranen >= 3 && b.weg.membran === 0,
             b.weg.taeter.length ? b.weg.taeter.join(" · ") : "0 Befehle"
         );
         const loch = b.huelle.filter((h) => !h.zReicht || !h.kugelUmfasst);
         check(
             "B3 die Hülle jeder Membran-Geometrie trägt die Amplitude der Welle",
-            loch.length === 0,
+            b.huelle.length >= 3 && loch.length === 0,
             loch.length
                 ? loch.map((h) => `${h.gestalt} (Amplitude ${h.amplitude})`).join(" · ")
                 : b.huelle.map((h) => `${h.gestalt} ±${h.amplitude.toFixed(2)} m`).join(" · ")
@@ -393,7 +437,7 @@ async function blickStufe(check) {
         );
         check(
             "HS Selbsttest: der Milch-Leser (helles Weiß, das Bild vor D8) wird in H rot beim Namen",
-            hellRot(b.hell, b.hell.milch),
+            b.hell.n > 200 && hellRot(b.hell, b.hell.milch),
             hellZeile(b.hell, b.hell.milch)
         );
         // HM (K64-n3, die CI-Frist): die Maske übersetzt kein Programm — ein kaltes Programm kostete auf swiftshader in der CI
@@ -414,7 +458,7 @@ async function blickStufe(check) {
         if (s.fehler) throw new Error("Selbsttest: " + s.fehler);
         check(
             "BS Selbsttest: mit frustumCulled = false nennt B2 die Membranen im Rücken beim Namen",
-            s.weg.membran === s.membranen,
+            s.membranen >= 3 && s.weg.membran === s.membranen,
             `${s.weg.membran} von ${s.membranen}: ${s.weg.taeter.slice(0, 4).join(" · ")}${s.weg.taeter.length > 4 ? " …" : ""}`
         );
     } catch (e) {
