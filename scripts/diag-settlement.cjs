@@ -1166,28 +1166,48 @@ const FIXTURES = [
                 stadt.graph === undefined,
             `trees=${Array.isArray(stadt.trees) ? stadt.trees.length : "fehlt"} fences=${Array.isArray(stadt.fences) ? stadt.fences.length : "fehlt"} laternen=${Array.isArray(stadt.laternen) ? stadt.laternen.length : "fehlt"}`
         );
-        // DAS DORF-LICHT (K10, Auge 13.10.): das Start-Dorf trug 0 Laternen, „Dorf-Lichter nachts = Laternenzahl" hielt
-        // mit 0 = 0 vakuös. Jeder Plan mit Wegen trägt je Platz eine und je 25 m Weg eine Laterne (das Dorf-Licht des
-        // Gesetzbuchs, dorfLayout) — über Dörfer, Weiler und Märkte, jede Epoche. Selbsttest: derselbe Plan ohne Laternen.
-        // Seit K66 steht jede Laterne VOR der Wand (fachwerk `LATERNE_WAND` aus LICHT_GESETZ.laterne: die Wand trägt höchstens das
-        // Doppelte der Gasse) — die Zahl hält dennoch: in einer beidseits bebauten Gasse fielen Laternen (5/14 7 < 9, 9/20 9 < 10);
-        // gemessen wird darum Zahl UND Wand-Abstand jeder Laterne zum nächsten Grundriss (der OBB des Slots).
-        // K66, Prüfung 2 (die Laterne in der Fahrbahn): der Stand quer zur Gasse rückte bis rd.w/4 an die Achse — 123/292 Laternen
-        // der Pläne standen im Weg, der Mast ein fester Blocker der Welt. Gemessen je Laterne der Abstand zum Rand jedes Wegs
-        // (Straße und Feldweg, die Kapsel um die Achse mit der halben Breite, die der Wirt malt): Soll ≥ der Tritt des Rezepts
-        // (fachwerk AUSSTATTUNG laterne `tritt`) — der Fuß steht neben der Fahrbahn, nie in ihr; auch in der Stadt. Die Zahl hält
-        // die dichte Gasse ohne Stand vor der Wand und neben dem Weg, weil ihre Marke den nächsten Stand des Dorfs nimmt
-        // (`laterneNah`); die Pläne 7/16 und 2/10 (antike) fielen dort zuerst um eine Laterne und stehen darum in der Liste.
+        // DAS DORF-LICHT (K10 × K66-2): gemessen wird das Licht je MARKE, nie die Zahl der Laternen. Bis K66-2 hielt „je Platz und
+        // je 25 m Weg eine Laterne" die Zahl, während die dichte Gasse des Auto-Dorfs (Pose nacht-wand) auf 61 m keine trug:
+        // `laterneNah` setzte die Laterne ihrer Marke an einen fremden Stand des Dorfs, nachts 83 % schwarz. Die Marke ist der
+        // Punkt der Weg-Achse je 25 m (12,5 m, 37,5 m, … wie DORF_LICHT_WEG), ihr Maß der Abstand zur nächsten Quelle des Plans,
+        // die nachts brennt (Mast und Wandlaterne, Zeitplan `nacht` > 0) — Soll jede ≤ 15 m, p90 über alle Pläne ≤ 10 m. Je
+        // Laterne bleibt ihr Stand: der Mast vor der Wand (LATERNE_WAND aus LICHT_GESETZ.laterne, die Wand trägt höchstens das
+        // Doppelte der Gasse; K66) und mit dem Fuß neben jedem Weg (der Tritt des Rezepts; K66, Prüfung 2: 123/292 standen in
+        // der Fahrbahn), die Wandlaterne mit dem Kopf `armM` vor der Wand eines Kerns (W × D der Tür-Zeile, nie vor der Traufe).
         const trittR = FC.PRESETS.laterne.fx.tritt.r;
         const LGd = FC.LICHT_GESETZ.laterne;
+        const LWd = FC.LICHT_GESETZ.wandlaterne;
         const wandSoll = Math.sqrt(Math.max(0, (LGd.hoeheM ** 2 + LGd.kernM ** 2) / 2 - LGd.kernM ** 2));
+        const MARKE_SOLL = 15;
+        const MARKE_P90 = 10;
+        const brennt = (l) => ((l.wand ? LWd : LGd) || { zeit: {} }).zeit.nacht > 0;
+        const wegPunkt = (rd, u) => {
+            const P = rd.pts || [];
+            let acc = 0;
+            for (let i = 0; i + 1 < P.length; i++) {
+                const s = Math.hypot(P[i + 1].x - P[i].x, P[i + 1].z - P[i].z);
+                if (acc + s >= u) {
+                    const t = s > 0 ? (u - acc) / s : 0;
+                    return { x: P[i].x + (P[i + 1].x - P[i].x) * t, z: P[i].z + (P[i + 1].z - P[i].z) * t };
+                }
+                acc += s;
+            }
+            return P[P.length - 1];
+        };
         const dorfLicht = (pl) => {
-            let wegM = 0;
-            for (const rd of pl.roads || []) wegM += rd.len || 0;
-            const soll = (pl.platz ? 1 : 0) + Math.floor(wegM / 25);
-            const n = Array.isArray(pl.laternen) ? pl.laternen.length : 0;
+            const L = Array.isArray(pl.laternen) ? pl.laternen : [];
+            const maste = L.filter((l) => !l.wand);
+            const waende = L.filter((l) => l.wand);
+            const ds = [];
+            for (const rd of pl.roads || [])
+                for (let u = 12.5; u < (rd.len || 0); u += 25) {
+                    const m = wegPunkt(rd, u);
+                    let d = Infinity;
+                    for (const l of L) if (brennt(l)) d = Math.min(d, Math.hypot(l.x - m.x, l.z - m.z));
+                    ds.push(d);
+                }
             let wand = Infinity;
-            for (const l of pl.laternen || [])
+            for (const l of maste)
                 for (const sl of pl.slots || []) {
                     const o = sl.obb;
                     if (!o) continue;
@@ -1199,7 +1219,7 @@ const FIXTURES = [
                 }
             const wandOk = !(wand < wandSoll - 0.01);
             let weg = Infinity;
-            for (const l of pl.laternen || [])
+            for (const l of maste)
                 for (const rd of [...(pl.roads || []), ...(pl.feldwege || [])]) {
                     const P = rd.pts || [];
                     const halb = Math.max(1.2, rd.w || 2.5) / 2;
@@ -1213,18 +1233,41 @@ const FIXTURES = [
                     }
                 }
             const wegOk = !(weg < trittR - 0.01);
+            // die Wandlaterne hängt: ihr Kopf liegt armM (± 5 cm) vor der Wand eines Kerns (die Tür-Zeile W × D um den Slot)
+            let haengt = 0;
+            for (const l of waende) {
+                let best = Infinity;
+                for (const sl of pl.slots || []) {
+                    const tu = sl.tuer;
+                    if (!tu || !(tu.W > 0) || !(tu.D > 0)) continue;
+                    const c = Math.cos(sl.phi || 0);
+                    const sn = Math.sin(sl.phi || 0);
+                    const uu = Math.abs((l.x - sl.x) * c - (l.z - sl.z) * sn) - tu.W / 2;
+                    const vv = Math.abs((l.x - sl.x) * sn + (l.z - sl.z) * c) - tu.D / 2;
+                    const dd = uu > 0 ? (vv > 0 ? Math.hypot(uu, vv) : uu) : vv > 0 ? vv : Math.max(uu, vv);
+                    best = Math.min(best, Math.abs(dd - LWd.armM));
+                }
+                if (best <= 0.05) haengt++;
+            }
+            const ueber = ds.filter((d) => !(d <= MARKE_SOLL)).length;
             return {
-                n,
-                soll,
+                n: L.length,
+                nWand: waende.length,
+                ds,
+                ueber,
+                maxD: Math.round(Math.max(0, ...ds) * 10) / 10,
                 wand: Math.round(wand * 100) / 100,
                 weg: Math.round(weg * 100) / 100,
                 wegOk,
-                wegM: Math.round(wegM),
-                ok: (!(wegM > 0) || n >= soll) && wandOk && wegOk,
+                haengt,
+                haengtOk: haengt === waende.length,
+                ok: ueber === 0 && wandOk && wegOk && haengt === waende.length,
             };
         };
         const lichtFehl = [];
+        const alleDs = [];
         let lichtN = 0;
+        let wandAlle = 0;
         for (const [seed, nH] of [
             [7, 12],
             [12345, 6],
@@ -1236,14 +1279,17 @@ const FIXTURES = [
             [9, 20],
             [7, 16],
             [2, 10],
+            [1, 8],
         ])
             for (const epoche of [undefined, "antike"]) {
                 const pl = FC.exportSettlement({ seed, nH, epoche });
                 const d = dorfLicht(pl);
                 lichtN++;
+                alleDs.push(...d.ds);
+                wandAlle += d.nWand;
                 if (!d.ok)
                     lichtFehl.push(
-                        `${seed}/${nH}/${epoche || "-"}: ${d.n} Laternen (Soll ≥ ${d.soll}, ${d.wegM} m Weg), die nächste ${d.wand} m vor einer Wand (Soll ≥ ${wandSoll.toFixed(2)} m), die nächste ${d.weg} m neben dem Wegrand (Soll ≥ ${trittR} m)`
+                        `${seed}/${nH}/${epoche || "-"}: ${d.ueber}/${d.ds.length} Marken weiter als ${MARKE_SOLL} m von einer brennenden Quelle (die weiteste ${d.maxD} m), der nächste Mast ${d.wand} m vor einer Wand (Soll ≥ ${wandSoll.toFixed(2)} m) und ${d.weg} m neben dem Wegrand (Soll ≥ ${trittR} m), Wandlaternen an der Wand ${d.haengt}/${d.nWand}`
                     );
             }
         // die Stadt der Moderne (der Zweig der Gas- und Elektro-Laternen, laterneQuer wie im Dorf): kein Fuß im Weg
@@ -1255,10 +1301,32 @@ const FIXTURES = [
                     `${seed}/${nH}/${epoche}: die nächste Laterne ${d.weg} m neben dem Wegrand (Soll ≥ ${trittR} m)`
                 );
         }
+        alleDs.sort((a, b) => a - b);
+        const mq = (q) =>
+            alleDs.length ? alleDs[Math.min(alleDs.length - 1, Math.floor(alleDs.length * q))] : Infinity;
+        const ueberAlle = alleDs.filter((d) => !(d <= MARKE_SOLL)).length;
+        if (!(mq(0.9) <= MARKE_P90)) lichtFehl.push(`p90 der Marken ${mq(0.9).toFixed(1)} m (Soll ≤ ${MARKE_P90} m)`);
+        console.log(
+            `  DORF-LICHT je Marke: ${ueberAlle}/${alleDs.length} weiter als ${MARKE_SOLL} m · Median ${mq(0.5).toFixed(1)} m · p90 ${mq(0.9).toFixed(1)} m · max ${(alleDs[alleDs.length - 1] || 0).toFixed(1)} m · Wandlaternen ${wandAlle}`
+        );
         check(
-            `DAS DORF-LICHT: jeder Plan mit Wegen trägt je Platz und je 25 m Weg eine Laterne, jede vor der Wand und mit dem Fuß neben dem Weg (${lichtN} Pläne)`,
+            `DAS DORF-LICHT je Marke: jede Marke (je 25 m Weg) ≤ ${MARKE_SOLL} m von einer Quelle, die nachts brennt, p90 ≤ ${MARKE_P90} m; der Mast vor der Wand und mit dem Fuß neben dem Weg, die Wandlaterne an der Wand (${lichtN} Pläne, ${alleDs.length} Marken)`,
             lichtFehl.length === 0,
             lichtFehl.slice(0, 3).join(" · ")
+        );
+        // DAS LICHT DER WANDLATERNE (K66-2): die Wand in armM trägt höchstens das Doppelte der Gasse unter ihr (das Wand-Gesetz
+        // der Laterne, K66), ihr Licht brennt nachts in der Farbe der Laterne und reist als Datum ihres Rezepts
+        const wandGesetz = LWd
+            ? ((LWd.hoeheM ** 2 + LWd.kernM ** 2) / (LWd.armM ** 2 + LWd.kernM ** 2)) ** (LWd.abfall / 2)
+            : Infinity;
+        const wandRezept = FC.PRESETS.wandlaterne && FC.PRESETS.wandlaterne.fx ? FC.PRESETS.wandlaterne.fx.licht : null;
+        check(
+            `Das Licht der Wandlaterne hält das Wand-Gesetz: die Wand in ${LWd ? LWd.armM : "?"} m trägt ${wandGesetz.toFixed(2)} × die Gasse unter ihr (Soll ≤ 2), ${LWd ? LWd.kelvin : "?"} K wie die Laterne, das Datum ihres Rezepts`,
+            wandGesetz <= 2.001 &&
+                !!LWd &&
+                LWd.zeit.nacht > 0 &&
+                LWd.kelvin === LGd.kelvin &&
+                JSON.stringify(wandRezept) === JSON.stringify(LWd)
         );
         {
             const pl = FC.exportSettlement({ seed: 7, nH: 12 });
@@ -1272,8 +1340,21 @@ const FIXTURES = [
                     ]),
                 })
             );
+            // DIE DICHTE GASSE (K66-2): derselbe Plan ohne seine Wandlaternen — die Marken der dichten Gasse sind dunkel; eine
+            // Wandlaterne 0,9 m von ihrem Stand weg hängt an keiner Wand
+            const plG = FC.exportSettlement({ seed: 7, nH: 16 });
+            const ohneWand = dorfLicht(Object.assign({}, plG, { laternen: plG.laternen.filter((l) => !l.wand) }));
+            const schwebt = dorfLicht(
+                Object.assign({}, plG, {
+                    laternen: plG.laternen.map((l) =>
+                        l.wand
+                            ? Object.assign({}, l, { x: l.x - Math.cos(l.th) * 0.9, z: l.z - Math.sin(l.th) * 0.9 })
+                            : l
+                    ),
+                })
+            );
             check(
-                "Selbst-Test 15: derselbe Plan ohne Laternen fällt im Dorf-Licht, eine Laterne an der Wand (0,45 m wie bis K66) ebenso, eine in der Fahrbahn (rd.w/4 von der Achse wie bis K66-n4) am Weg",
+                "Selbst-Test 15: derselbe Plan ohne Laternen fällt im Dorf-Licht, ein Mast an der Wand (0,45 m wie bis K66) ebenso, einer in der Fahrbahn (rd.w/4 von der Achse wie bis K66-n4) am Weg; die dichte Gasse ohne ihre Wandlaternen an der Marke, eine Wandlaterne 0,9 m vor ihrem Stand an der Wand",
                 dorfLicht(pl).ok &&
                     !dorfLicht(Object.assign({}, pl, { laternen: [] })).ok &&
                     !dorfLicht(
@@ -1288,8 +1369,17 @@ const FIXTURES = [
                         })
                     ).ok &&
                     !inDerFahrbahn.ok &&
-                    !inDerFahrbahn.wegOk,
-                JSON.stringify({ weg: inDerFahrbahn.weg, wegOk: inDerFahrbahn.wegOk })
+                    !inDerFahrbahn.wegOk &&
+                    dorfLicht(plG).ok &&
+                    plG.laternen.some((l) => l.wand) &&
+                    ohneWand.ueber > 0 &&
+                    !schwebt.haengtOk,
+                JSON.stringify({
+                    weg: inDerFahrbahn.weg,
+                    wegOk: inDerFahrbahn.wegOk,
+                    ohneWand: `${ohneWand.ueber}/${ohneWand.ds.length} Marken > ${MARKE_SOLL} m, die weiteste ${ohneWand.maxD} m`,
+                    schwebt: `${schwebt.haengt}/${schwebt.nWand}`,
+                })
             );
         }
     }
@@ -1594,6 +1684,7 @@ const FIXTURES = [
                             e.type === "brunnen_dorf" ||
                             e.type === "marktstand_dorf" ||
                             e.type === "laterne_dorf" ||
+                            e.type === "wandlaterne_dorf" ||
                             e.type.indexOf("baum_") === 0)
                 );
             // C4 — IDEMPOTENZ: dieselbe Zelle nochmal -> 0 neue (Reservierung traegt).
@@ -1946,7 +2037,9 @@ const FIXTURES = [
                     if (anker)
                         for (const e of r.state.architectures)
                             if (
-                                r._lichtDatumDerGestalt(e) === globalThis.__fachwerkCore.PRESETS.laterne?.fx?.licht &&
+                                (r._lichtDatumDerGestalt(e) === globalThis.__fachwerkCore.PRESETS.laterne?.fx?.licht ||
+                                    r._lichtDatumDerGestalt(e) ===
+                                        globalThis.__fachwerkCore.PRESETS.wandlaterne?.fx?.licht) &&
                                 Math.hypot(e.position.x - anker.x, e.position.z - anker.z) < 250
                             )
                                 lw++;

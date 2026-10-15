@@ -871,18 +871,19 @@ function bogenLinse() {
     //     Stufen echt verschieden UND deckungsgleich (L1 ersetzt L0 ohne Sprung: Hülle ± 8 cm), Boden-Anschluss (jedes
     //     Stück taucht unter y = 0), die Glut leuchtet und wirft nie, jede Zahl auf dem Raster 2^-12 (plattformgleich:
     //     V8 rundet sin/cos auf Linux und Windows verschieden — das Raster macht die Bytes gleich), Determinismus, Goldens.
-    console.log("\n=== DIE AUSSTATTUNG — Feuerstelle · Marktstand · Brunnen · Laterne (dasselbe Gesetzbuch) ===");
+    console.log("\n=== DIE AUSSTATTUNG — Feuerstelle · Marktstand · Brunnen · Laterne · Wandlaterne (dasselbe Gesetzbuch) ===");
     check(
-        `vier Ausstattungs-Rezepte (kind ausstattung) mit Stufen [0,1,3] (3 = NUR-WURF) und Gestalten (${AUS.join(", ")})`,
-        AUS.length === 4 && JSON.stringify(AUS_LODS) === "[0,1,3]" && AUS_CASES.length >= 21
+        `fünf Ausstattungs-Rezepte (kind ausstattung) mit Stufen [0,1,3] (3 = NUR-WURF) und Gestalten (${AUS.join(", ")})`,
+        AUS.length === 5 && JSON.stringify(AUS_LODS) === "[0,1,3]" && AUS_CASES.length >= 25
     );
     // DIE LATERNE (K10 × K11): der Leib und das Licht EINER Quelle — das Rezept trägt das Datum LICHT_GESETZ.laterne, und der
     // Glas-Kopf (Seh-Klasse glas, die Rolle des Fensters: er zündet nachts) umschließt die Licht-Höhe `hoeheM` je Stufe 0/1.
-    {
-        const L = FC.PRESETS.laterne && FC.PRESETS.laterne.fx && FC.PRESETS.laterne.fx.licht;
+    // Die Wandlaterne (K66-2) trägt dasselbe: fx.licht = LICHT_GESETZ.wandlaterne, der Kopf um ihre Licht-Höhe.
+    for (const rz of ["laterne", "wandlaterne"]) {
+        const L = FC.PRESETS[rz] && FC.PRESETS[rz].fx && FC.PRESETS[rz].fx.licht;
         let kopf = 0;
         for (const lod of [0, 1]) {
-            const g = FC.buildInstance("laterne", 1, lod);
+            const g = FC.buildInstance(rz, 1, lod);
             g.traverse((o) => {
                 if (!o.isMesh || (o.material.userData && o.material.userData.__seh) !== "glas") return;
                 const bb = new THREE.Box3().setFromObject(o);
@@ -891,8 +892,8 @@ function bogenLinse() {
             disposeGroup(g);
         }
         check(
-            "Die Laterne trägt ihr Licht: fx.licht = LICHT_GESETZ.laterne, der Glas-Kopf umschließt die Licht-Höhe (L0 und L1)",
-            !!L && JSON.stringify(L) === JSON.stringify(FC.LICHT_GESETZ.laterne) && kopf === 2,
+            `Die ${rz === "laterne" ? "Laterne" : "Wandlaterne"} trägt ihr Licht: fx.licht = LICHT_GESETZ.${rz}, der Glas-Kopf umschließt die Licht-Höhe (L0 und L1)`,
+            !!L && JSON.stringify(L) === JSON.stringify(FC.LICHT_GESETZ[rz]) && kopf === 2,
             `Kopf um hoeheM in ${kopf}/2 Stufen`
         );
     }
@@ -912,7 +913,13 @@ function bogenLinse() {
         const bb = new THREE.Box3().setFromObject(g);
         huelle[caseKey(c)] = bb;
         const nurWurf = !!(FC.PORTAL_RENDER_CONFIG.lod.budget.ausstattung[c.lod] || {}).nurWurf;
-        if (!nurWurf && !(bb.min.y < -0.02)) bodenOk = false;
+        // die Wandlaterne (K66-2, siteTag wand) hängt: ihr Anschluss ist die Platte in der Wand-Ebene x = armM, nie der Boden
+        const anDerWand = FC.PRESETS[c.rezeptId].fx.place.siteTag === "wand";
+        if (
+            !nurWurf &&
+            (anDerWand ? !(Math.abs(bb.max.x - FC.LICHT_GESETZ.wandlaterne.armM) < 0.01) : !(bb.min.y < -0.02))
+        )
+            bodenOk = false;
         g.traverse((o) => {
             if (!o.isMesh) return;
             const em = o.material && o.material.emissive;
@@ -976,7 +983,10 @@ function bogenLinse() {
         }
     check("Stufen-Wahrheit: L0 != L1 je Rezept × Gestalt (nah fein · mittel grob)", stufenAus);
     check("Deckungsgleich: die L1-Hülle liegt auf der L0-Hülle (± 8 cm — kein Sprung beim Stufen-Wechsel)", deckung, deckBeispiel);
-    check("Boden-Anschluss: jedes Stück taucht unter y = 0 (Steine, Pfosten, Kranz im Boden — kein Schweben am Hang)", bodenOk);
+    check(
+        "Boden-Anschluss: jedes Stück taucht unter y = 0 (Steine, Pfosten, Kranz im Boden — kein Schweben am Hang), die Wandlaterne trägt ihre Platte in der Wand (x = armM)",
+        bodenOk
+    );
     check("Die Glut leuchtet und wirft nie (emissive ⇒ Seh-Klasse glut, castShadow false; die Feuerstelle trägt sie)", glutOk && glutDa);
     check(
         `Albedo im Band (kartenlos, je Stoff: Stoff 0,08–0,45 · Glut ≤ 0,30) — ${Object.entries(albedo)

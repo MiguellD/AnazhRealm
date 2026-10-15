@@ -2725,9 +2725,7 @@
       box(lx,0.8,za, 0.07,1.6,0.07, mLay('holz')); box(lx,0.8,zb, 0.07,1.6,0.07, mLay('holz'));
       box(lx,1.52,(za+zb)/2, 0.025,0.025, zb-za, M.dunkel); } }
   if(rolle==='gasthaus'){ for(let k2=0;k2<3;k2++) box(e.x0+0.5+((k2%2)*0.6), 0.28+((k2/2)|0)*0.56, e.z0-0.55, 0.55,0.55,0.55, mLay('holz')); }   // ROLLE → KISTEN am Eingang
-  if(rolle==='gasthaus'||rolle==='schmiede'){ const wx3=sp.x+1.1;                             // SCHICHT-2: WANDLATERNE neben der Tür — der Kopf ist GLAS und zündet nachts mit den Fenstern
-    box(wx3, 2.3, e.z0+0.06, 0.07,0.07,0.34, M.dunkel);
-    const kopf3=new THREE.Mesh(new THREE.BoxGeometry(0.2,0.28,0.2), M.glas); kopf3.position.set(wx3,2.16,e.z0-0.26); grp.add(kopf3); }
+  /*SCHICHT-2: die WANDLATERNE neben der Tuer von Gasthaus und Schmiede reist seit K66-2 mit dem Dorf-Licht (wandLaternen: die Gestalt wandlaterne mit ihrem Licht an der Wand des Kerns) — bis K66-2 ein Glas-Kopf ohne Lichtquelle vor der Traufe*/
   if((B.p.baujahr||1900)<1800 && rnd()<0.35){ const ex3=(rnd()<0.5)?e.x0-0.03:e.x1+0.03;      // SCHICHT-2: EFEU — das Alter begrünt die Wetterecke
     for(let k3=0;k3<3;k3++) box(ex3, 0.7+k3*1.05+rnd()*0.3, e.z1-0.5-k3*0.4-rnd()*0.5, 0.1, 0.9+rnd()*0.5, 0.5+rnd()*0.4, M.laub); }
   if(rolle==='schmiede'){ box(e.x1+0.7, 0.24, e.z0+0.6, 1.35,0.42,0.5, mLay('stein')); }            // ROLLE → TRÄNKTROG
@@ -3254,7 +3252,7 @@
     if(ok&&mauer&&Math.abs(Math.hypot(tx,tz)-Rw)<2.6)ok=false;
     if(ok&&trees.some(q2=>Math.hypot(tx-q2.x,tz-q2.z)<3.0))ok=false;
     if(ok) trees.push({x:tx,z:tz,h:2.6+rnd()*1.8}); }
-  const laternen=[];                                                                          // LATERNEN-GESETZ: die moderne Stadt leuchtet
+  const laternen=[], marken=[];                                                               // LATERNEN-GESETZ: die moderne Stadt leuchtet; die Marken des Dorf-Lichts (je 25 m Weg) liest die Wandlaterne (wandLaternen)
   const LG9=LICHT_GESETZ.laterne, LATERNE_WAND=Math.sqrt(Math.max(0,(LG9.hoeheM*LG9.hoeheM+LG9.kernM*LG9.kernM)/2-LG9.kernM*LG9.kernM));   /*DIE LATERNE VOR DER WAND (K66): ihr Licht trifft keine Wand mit mehr als dem Doppelten der Gasse unter ihr — (h²+k²)/(d²+k²) ≤ 2, d ≥ 2,55 m; bis K66 stand sie 0,45 m vor dem Grundriss, die Giebelwand trug nachts das Sechsfache*/
   const LATERNE_FUSS=AUSSTATTUNG.laterne.tritt.r, laterneWege=roads.map(rd=>({pts:rd.pts.filter((_,k2)=>k2*DS<=(rd.len||0)+DS), h:rd.w/2})).concat(feldwege.map(fw=>({pts:fw.pts, h:fw.w/2})));   /*DER FUSS DER LATERNE (K66, Pruefung 2): ihr Tritt aus dem Rezept (AUSSTATTUNG laterne, der Blocker der Welt) und die Wege, wie der Export sie traegt — Strasse und Feldweg*/
   const laterneImWeg=(x,z)=>laterneWege.some(wl=>{ const P=wl.pts, h=wl.h+LATERNE_FUSS; for(let k=0;k+1<P.length;k++){ const A=P[k], B=P[k+1], dx=B.x-A.x, dz=B.z-A.z, L2=dx*dx+dz*dz; let t=L2>1e-9?((x-A.x)*dx+(z-A.z)*dz)/L2:0; t=t<0?0:t>1?1:t; if(Math.hypot(x-A.x-dx*t, z-A.z-dz*t)<h) return true; } return false; });
@@ -3278,17 +3276,13 @@
     if(platz) [[0.25,0],[-0.25,0],[0,0.7],[0,-0.7]].some(([fx,fz])=>setz(platz.cx+fx*platz.ex, platz.cz+fz*platz.ez, 0));
     const grad=new Array(G.nodes.length).fill(0); for(const rd of roads){ grad[rd.a]++; grad[rd.b]++; }
     for(const rd of roads){ const L=rd.len||0; for(const [ende,k] of [[0,rd.a],[1,rd.b]]){ if(grad[k]<3) continue; for(let du=2; du<=Math.max(2,Math.min(8,L/2)); du+=1){ const u0=ende?Math.max(0,L-du):Math.min(L,du); if(amWeg(rd,u0,1)||amWeg(rd,u0,-1)) break; } } }   /*der Knoten sucht seinen Stand bis 8 m in den Weg hinein (K66: vor der Wand fand er ihn 2 m vom Knoten selten)*/
-    const laterneNah=(m,fl,wege,probe)=>{ const stand=[]; for(const r2 of wege){ const L2=r2.len||0; for(let u2=0; u2<=L2; u2+=1){ const q=at(r2,u2); stand.push([Math.hypot(q.x-m.x,q.z-m.z),r2,u2]); } }
-      stand.sort((a,b)=>a[0]-b[0]); for(const [,r2,u2] of stand){ if(probe(r2,u2,fl)||probe(r2,u2,-fl)) return true; } return false; };   /*DIE DICHTE GASSE (K66, Pruefung 2): traegt das Fenster der Marke keine Laterne (die dichte Gasse: beidseits Wand naeher als LATERNE_WAND, nur der Bordstein frei; oder jeder Stand naeher als 9 m an einer Nachbarin), steht ihre Laterne am naechsten Stand des Dorfs, den Weg, Wand und Abstand tragen — die Zahl haelt, keine Laterne steht in der Fahrbahn*/
-    const dunkel=[];
-    for(const rd of roads){ const L=rd.len||0; for(let u=DORF_LICHT_WEG/2, fl=1; u<L; u+=DORF_LICHT_WEG, fl=-fl){ let ok=false;
-      for(let du=0; du<=DORF_LICHT_WEG/2-1; du+=1){ if((u+du<L&&(amWeg(rd,u+du,fl)||amWeg(rd,u+du,-fl)))||(du&&u-du>0&&(amWeg(rd,u-du,fl)||amWeg(rd,u-du,-fl)))){ ok=true; break; } } if(!ok) dunkel.push([at(rd,u),fl]); } }
-    for(const [m,fl] of dunkel) laterneNah(m,fl,roads,amWeg); }
+    for(const rd of roads){ const L=rd.len||0; for(let u=DORF_LICHT_WEG/2, fl=1; u<L; u+=DORF_LICHT_WEG, fl=-fl){ const mq=at(rd,u); marken.push({x:mq.x,z:mq.z});   /*DIE MARKE (K66-2): traegt ihr Fenster keinen Mast (die dichte Gasse: beidseits Wand naeher als LATERNE_WAND, nur der Bordstein frei), haengt ihre Laterne an der Hauswand — wandLaternen nach dem Snap; bis K66-2 setzte laterneNah sie an irgendeinen freien Stand des Dorfs, die Gasse blieb schwarz*/
+      for(let du=0; du<=DORF_LICHT_WEG/2-1; du+=1){ if((u+du<L&&(amWeg(rd,u+du,fl)||amWeg(rd,u+du,-fl)))||(du&&u-du>0&&(amWeg(rd,u-du,fl)||amWeg(rd,u-du,-fl)))) break; } } } }
   const sp=at(roads[0],Math.min(roads[0].len||8,8));
   const nzyk=roads.length-(G.nodes.length-1);                                                // Zyklen = E − V + 1 (zusammenhängend)
   return {pl, roads:roads.map(rd=>({pts:rd.pts.filter((_,k2)=>k2*DS<=(rd.len||0)+DS), w:rd.w, gen:rd.gen, len:rd.len||0, quer:rd.quer||false})),   /*Whitelist +quer — das Flag starb an dieser Kopie (#1-Sonde: 0 Gassen im lay)*/
           feldwege, platz, brunnen, fences, felder, staende, spawn:{x:sp.x,z:sp.z}, trees, jitAmp, DS, mauer,
-          laternen,
+          laternen, marken,
           graph:{nV:G.nodes.length, nE:roads.length, zyklen:Math.max(0,nzyk)},
           welt:{x0:X0-9,x1:X1+9,z0:Z0-9,z1:Z1+9}};
 }
@@ -3738,6 +3732,30 @@
         fenster: { kelvin: 2800, zeit: { mittag: 0, morgen: 0, abend: 0.42, nacht: 0.85 } },
         laterne: { kelvin: 1900, staerke: 19, reichweiteM: 12, abfall: 2, kernM: 0.1, hoeheM: 3.6, zeit: { mittag: 0, morgen: 0, abend: 1, nacht: 1 } },
     };
+    // DIE WANDLATERNE (K66-2): die Leuchte der dichten Gasse hängt an der Hauswand, wo kein Mast vor der Wand und neben dem Weg
+    // steht — ihr Licht ist das der Laterne (Farbtemperatur, Zeitplan, Reichweite, Abfall), abgeleitet aus zwei Maßen ihres Leibs:
+    // der Kopf `hoeheM` über der Gasse, `armM` vor der Wand. Der Kern folgt aus dem Wand-Gesetz der Laterne (K66: die Wand trägt
+    // höchstens das Doppelte der Gasse unter ihr, ((h² + k²)/(a² + k²))^(abfall/2) ≤ 2 — mit dem Kern des Masts trug die Wand in
+    // 0,4 m das Fünfzigfache, die Sättigung von K66), die Stärke aus der Gasse: unter ihr trägt der Boden, was er unter dem Mast
+    // trägt. Leser: das Rezept der Wandlaterne (fx.licht), der Licht-Takt der Welt, gate:settlement DORF-LICHT.
+    LICHT_GESETZ.wandlaterne = (function (L, h, a) {
+        var q = Math.pow(2, 2 / L.abfall),
+            k2 = Math.max(L.kernM * L.kernM, (h * h - q * a * a) / (q - 1)),
+            boden = L.staerke * Math.pow((1 + L.kernM * L.kernM) / (L.hoeheM * L.hoeheM + L.kernM * L.kernM), L.abfall / 2),
+            r3 = function (v) {
+                return Math.round(v * 1000) / 1000;
+            };
+        return {
+            kelvin: L.kelvin,
+            staerke: r3(boden * Math.pow((h * h + k2) / (1 + k2), L.abfall / 2)),
+            reichweiteM: L.reichweiteM,
+            abfall: L.abfall,
+            kernM: r3(Math.sqrt(k2)),
+            hoeheM: h,
+            armM: a,
+            zeit: JSON.parse(JSON.stringify(L.zeit)),
+        };
+    })(LICHT_GESETZ.laterne, 2.8, 0.4);
     // DIE LICHTFARBE einer Farbtemperatur (K11b): der Planck-Ort (Kim, Kang et al. 2002, kubische Näherung 1 667–25 000 K)
     // als Farbort x, y → XYZ (Y = 1) → lineares sRGB (IEC 61966-2-1, Weiß D65), negativ außerhalb des Gamuts geklemmt, auf den
     // hellsten Kanal 1 normiert. Linear — das FARB-GESETZ (das Hex ist eine sRGB-Absicht) gilt so ohne Hex: 1 900 K ist
@@ -3779,6 +3797,9 @@
         brunnen: { lab: "Ziehbrunnen · Steinkranz, Haspel, Schindeldach", gestalten: 2, siteTag: "platz", salz: 0x3c77, tritt: { typ: "kreis", r: 1.75 } },
         // DIE LATERNE (K10 × K11, rein additiv): die Leuchte der Gasse als Gestalt — ihr Licht ist das Datum ihres Rezepts
         laterne: { lab: "Laterne · Eisenmast, Glas-Kopf, Haube", gestalten: 1, siteTag: "weg", salz: 0x4d93, tritt: { typ: "kreis", r: 0.45 }, licht: "laterne" },
+        // DIE WANDLATERNE (K66-2): derselbe Kopf am Arm vor der Hauswand — die Leuchte der dichten Gasse und der Tür von Gasthaus
+        // und Schmiede; ihr Licht LICHT_GESETZ.wandlaterne. Der Tritt ist der Kopf (sie hängt, kein Fuß steht im Weg).
+        wandlaterne: { lab: "Wandlaterne · Arm, Glas-Kopf, Haube", gestalten: 1, siteTag: "wand", salz: 0x5ea7, tritt: { typ: "kreis", r: 0.15 }, licht: "wandlaterne" },
     };
     // B4 — die Regler der Ausstattung (die Werkstatt baut ihre Slider daraus, der ov-Kanal liest dieselben ids).
     var AUS_PARAMS = [
@@ -4758,7 +4779,11 @@
             ? [[m.fr, -0.2], [m.fr, 0.1], [m.fr * 0.82, 0.16], [m.fr * 0.62, m.fh], [m.mr * 1.5, m.fh + 0.1], [m.mr, m.fh + 0.22], [m.mr, m.yK0 - 0.14], [m.mr * 1.7, m.yK0 - 0.04], [m.mr * 1.7, m.yK0], [0, m.yK0]]
             : [[m.fr, -0.2], [m.fr * 0.62, m.fh], [m.mr, m.fh + 0.22], [m.mr, m.yK0], [0, m.yK0]];
         eisen(ausDreh(profil, fein ? 8 : 4, false, false));
-        // der Boden des Kopfs, das Glas, nah die vier Eck-Stäbe des Rahmens
+        ausLaterneKopf(g, m, eisen, fein);
+    }
+    // DER KOPF DER LATERNE (Mast und Wand tragen denselben, K66-2): der Boden, das Glas um die Licht-Höhe `yL`, nah die vier
+    // Eck-Stäbe des Rahmens, die Haube.
+    function ausLaterneKopf(g, m, eisen, fein) {
         eisen(ausSetze(ausKiste(m.kb + 0.04, 0.03, m.kb + 0.04, fein ? 0.008 : 0), 0, m.yK0 + 0.015, 0));
         var glas = ausSetze(ausKiste(m.kb, m.kh - 0.03, m.kb, 0), 0, m.yL + 0.015, 0);
         ausFaerbe(glas, "laternenglas", 0, null);
@@ -4776,8 +4801,27 @@
             spitze = [0, m.yT, 0];
         eisen(ausVielecke([[[-h, y0, -h], [h, y0, -h], spitze], [[h, y0, -h], [h, y0, h], spitze], [[h, y0, h], [-h, y0, h], spitze], [[-h, y0, h], [-h, y0, -h], spitze], [[-h, y0, -h], [-h, y0, h], [h, y0, h], [h, y0, -h]]], [0, (y0 + m.yT) / 2, 0]));
     }
+    // DIE WANDLATERNE (K66-2): der Ursprung liegt im Boden unter dem Licht, +x zeigt zur Wand (sie steht in x = armM). Die
+    // Wandplatte, der Arm über dem Knauf der Haube, der Haken, an dem der Kopf hängt, nah die Strebe von der Platte zum Arm.
+    function ausWandlaterne(g, p, seed, stufe) {
+        var m = AUS_MASS.wandlaterne(p.groesse),
+            W = p.verwitterung,
+            fein = stufe === 0,
+            ton = ausTon(ausZufall(seed, 0x91), 0.06, 0.02);
+        var eisen = function (geo) {
+            ausFaerbe(geo, "metall", W, function () {
+                return { ton: ton };
+            });
+            ausTeil(g, geo, "metall");
+        };
+        eisen(ausSetze(ausKiste(0.03, m.pl, 0.14, fein ? 0.006 : 0), m.a - 0.015, m.yA - m.pl / 2 + 0.06, 0));
+        eisen(ausSetze(ausKiste(m.a, 0.035, 0.035, fein ? 0.006 : 0), m.a / 2, m.yA, 0));
+        eisen(ausSetze(ausKiste(0.02, m.yA - m.yT, 0.02, 0), 0, (m.yA + m.yT) / 2, 0));
+        if (fein) eisen(ausStrecke(ausSetze(ausKiste(0.022, m.st, 0.022, 0), 0, m.st / 2, 0), m.sA, m.sB));
+        ausLaterneKopf(g, m, eisen, fein);
+    }
 
-    var AUS_BAU = { feuerstelle: ausFeuerstelle, marktstand: ausMarktstand, brunnen: ausBrunnen, laterne: ausLaterne };
+    var AUS_BAU = { feuerstelle: ausFeuerstelle, marktstand: ausMarktstand, brunnen: ausBrunnen, laterne: ausLaterne, wandlaterne: ausWandlaterne };
     // DIE STUFE 3 DER AUSSTATTUNG (nurWurf, S3): die Grundform als EIN Gitter in EINEM Stoff (Rolle stein) — sie wirft für
     // die L1 (die L0 wirft selbst: nah, höchstens drei im Bild); ihre Hülle (`ausHuelle`) reist als Beipack `__fern`.
     // Dieselben Maße wie die Stufen 0/1 (Ring R + Steinbreite, Tisch und Plane, Kranz, Pfosten, First): Feuerstelle der
@@ -4811,6 +4855,20 @@
             var kh = 0.4 * G,
                 yL = LICHT_GESETZ.laterne.hoeheM * G;
             return { fr: 0.15 * G, fh: 0.55 * G, mr: 0.045 * G, kb: 0.26 * G, kh: kh, yL: yL, yK0: yL - kh / 2, yK1: yL + kh / 2, hb: 0.2 * G, yT: yL + kh / 2 + 0.2 * G };
+        },
+        wandlaterne: function (G) {
+            // der Kopf der Laterne in 0,85 ihrer Maße um die Licht-Höhe LICHT_GESETZ.wandlaterne `hoeheM`; die Wand in `armM`
+            // (das Gesetz des Plans, nie skaliert), der Arm 6 cm über dem Knauf, die Platte 0,34 m hoch, die Strebe unter dem Arm
+            var L = LICHT_GESETZ.wandlaterne,
+                kh = 0.34 * G,
+                yL = L.hoeheM * G,
+                yT = yL + kh / 2 + 0.17 * G,
+                yA = yT + 0.06,
+                a = L.armM,
+                pl = 0.34,
+                sA = [a - 0.03, yA - pl + 0.1, 0],
+                sB = [a * 0.35, yA, 0];
+            return { kb: 0.22 * G, kh: kh, yL: yL, yK0: yL - kh / 2, yK1: yL + kh / 2, hb: 0.17 * G, yT: yT, yA: yA, a: a, pl: pl, sA: sA, sB: sB, st: Math.hypot(sB[0] - sA[0], sB[1] - sA[1]) };
         },
     };
     // Die Wahl einer Gestalt, die nur der Bau kennt (der Strom zieht sie zwischen den Waren): der Marktstand nennt sein Fass
@@ -4874,7 +4932,7 @@
                 for (k = 0; k < 6; k++) deckel.push([fx + Math.cos((k * Math.PI) / 3) * fr, fh, fz + Math.sin((k * Math.PI) / 3) * fr]);
                 flaeche(stern.concat([deckel]));
             }
-        } else if (rezeptId === "laterne") {
+        } else if (rezeptId === "laterne" || rezeptId === "wandlaterne") {
             // Was die L0 wirft, wirft die Stufe 3: das Glas wirft nicht (Glut), also der Kopf als sein Eisen — der Boden
             // als Platte, die vier Eck-Stäbe, darüber die Pyramide der Haube; Fuß und Mast als Vierkant nach dem Profil der
             // L1. Die Vierkante achsparallel wie der Kopf (je Halbweite b der Radius b·√2, um 45° gedreht), 46 Dreiecke.
@@ -4886,7 +4944,13 @@
                     geo.rotateY(Math.PI / 4);
                     teil(geo);
                 };
-            vier([[0.84 * m.fr * q, -0.05], [0.84 * 0.62 * m.fr * q, m.fh], [0.84 * m.mr * q, m.fh + 0.22], [0.84 * m.mr * q, m.yK0]]);
+            if (rezeptId === "laterne") vier([[0.84 * m.fr * q, -0.05], [0.84 * 0.62 * m.fr * q, m.fh], [0.84 * m.mr * q, m.fh + 0.22], [0.84 * m.mr * q, m.yK0]]);
+            else {
+                // die Wandlaterne (K66-2): Platte, Arm und Haken als Kisten — die Strebe ist dünner als ein Texel der Kaskade
+                teil(ausSetze(ausKiste(0.03, m.pl, 0.14, 0), m.a - 0.015, m.yA - m.pl / 2 + 0.06, 0));
+                teil(ausSetze(ausKiste(m.a, 0.035, 0.035, 0), m.a / 2, m.yA, 0));
+                teil(ausSetze(ausKiste(0.02, m.yA - m.yT, 0.02, 0), 0, (m.yA + m.yT) / 2, 0));
+            }
             platte(-kb, kb, m.yK0, -kb, kb);
             for (var ex = -1; ex <= 1; ex += 2) for (var ez = -1; ez <= 1; ez += 2) pfosten((ex * m.kb) / 2, (ez * m.kb) / 2, m.yK0, m.yK1, 0.011);
             vier([[m.hb * q, m.yK1], [0, m.yT]]);
@@ -4926,10 +4990,15 @@
             for (var sx = -1; sx <= 1; sx += 2)
                 for (var sz = -1; sz <= 1; sz += 2) dazu(huelleTeil("box", sx * m.px - 0.045, sx * m.px + 0.045, 0, sz < 0 ? m.pV : m.pH, sz * m.pz - 0.045, sz * m.pz + 0.045, F("holz")));
             if (wahl && wahl.fass) dazu(huelleTeil("box", wahl.fass[0] - 0.21, wahl.fass[0] + 0.21, 0, 0.6, wahl.fass[1] - 0.21, wahl.fass[1] + 0.21, F("holz")));
-        } else if (rezeptId === "laterne") {
-            var fr = m.fr * 0.8;
-            dazu(huelleTeil("box", -fr, fr, -0.2, m.fh, -fr, fr, F("metall")));
-            dazu(huelleTeil("box", -m.mr, m.mr, m.fh, m.yK0, -m.mr, m.mr, F("metall")));
+        } else if (rezeptId === "laterne" || rezeptId === "wandlaterne") {
+            if (rezeptId === "laterne") {
+                var fr = m.fr * 0.8;
+                dazu(huelleTeil("box", -fr, fr, -0.2, m.fh, -fr, fr, F("metall")));
+                dazu(huelleTeil("box", -m.mr, m.mr, m.fh, m.yK0, -m.mr, m.mr, F("metall")));
+            } else {
+                dazu(huelleTeil("box", m.a - 0.03, m.a, m.yA - m.pl + 0.06, m.yA + 0.06, -0.07, 0.07, F("metall")));
+                dazu(huelleTeil("box", 0, m.a, m.yA - 0.0175, m.yA + 0.0175, -0.0175, 0.0175, F("metall")));
+            }
             dazu(huelleTeil("box", -m.kb / 2, m.kb / 2, m.yK0, m.yK1, -m.kb / 2, m.kb / 2, F("glas")));
             dazu(huelleTeil("keil", -m.hb, m.hb, m.yK1, m.yT, -m.hb, 0, F("metall"), { first: "+z", walm: 1 }));
             dazu(huelleTeil("keil", -m.hb, m.hb, m.yK1, m.yT, 0, m.hb, F("metall"), { first: "-z", walm: 1 }));
@@ -4966,7 +5035,7 @@
         };
         if (rezeptId === "feuerstelle") return { stein: pick([0x9a958a, 0x928d83, 0xa19a8f]), holz: pick([0x8a745c, 0x84705a]), lehm: 0xb4afa6 };
         if (rezeptId === "marktstand") return { holz: pick([0x8e7860, 0x977f66, 0x84705c]), tuch: pick(AUS_PLANE), lattung: 0x9a8358, stroh: 0xb39b68 };
-        if (rezeptId === "laterne") return { metall: pick([0x6b706a, 0x6e6b66]) }; // gestrichenes Guss-Eisen, das Glas des Fensters
+        if (rezeptId === "laterne" || rezeptId === "wandlaterne") return { metall: pick([0x6b706a, 0x6e6b66]) }; // gestrichenes Guss-Eisen, das Glas des Fensters
         return { stein: pick([0xa29b8e, 0x9a9488, 0xaaa397]), holz: pick([0x7c6650, 0x86705a]), lattung: 0x8f7a56, stamm: pick([0x847866, 0x7a6e5e]) };
     }
     // Das Raster der Bytes (plattformgleich): 2^-12, Normalen 2^-14, −0 → 0.
@@ -5047,6 +5116,91 @@
           snaps++; } }
       }
       return snaps;
+    }
+    // DIE WANDLATERNE IM DORF (K66-2) — KONSUM BEIDSEITIG wie reihenSnap: buildDorf (Lab) und exportSettlement rufen sie NACH
+    // dem Snap (die Wand steht, wo das Haus steht). Zwei Stände der Gestalt wandlaterne (Kopf `armM` vor der Wand des Kerns
+    // W × D, nie vor der Traufe der Hülle): (1) die Tür von Gasthaus und Schmiede trägt sie 1,1 m neben der Tür (bis K66-2 ein
+    // Glas-Kopf des Hofs ohne Licht); (2) jede Marke des Dorf-Lichts (je 25 m Weg, `lay.marken`), deren nächste Laterne weiter
+    // als LICHT_MARKE_M liegt — die dichte Gasse, in der kein Mast vor der Wand und neben dem Weg steht —, trägt sie an der
+    // Hauswand, die ihr am nächsten liegt (der Stand ≥ 0,6 m von der Ecke, der Kopf in keiner fremden Hülle). Bis K66-2 setzte
+    // `laterneNah` die Laterne einer dunklen Marke an irgendeinen freien Stand des Dorfs: die dichte Gasse blieb schwarz.
+    // dorfB: [{p, dims}] · pl: lay.pl · lay: das Layout (laternen wird ERGÄNZT). Rückgabe: die Zahl der Wandlaternen.
+    var LICHT_MARKE_M = 10;
+    function wandLaternen(dorfB, pl, lay) {
+        var a = LICHT_GESETZ.wandlaterne.armM,
+            ecke = 0.6,
+            n = 0,
+            H = [];
+        for (var i = 0; i < dorfB.length; i++) {
+            var B = dorfB[i],
+                q = pl[i];
+            if (!B || !q || !B.dims || !(B.dims.W > 2 * ecke) || !(B.dims.D > 2 * ecke)) continue;
+            H.push({ B: B, q: q, c: Math.cos(q.phi || 0), s: Math.sin(q.phi || 0), hw: B.dims.W / 2, hd: B.dims.D / 2 });
+        }
+        var welt = function (h, lx, lz) {
+            return { x: h.q.x + lx * h.c + lz * h.s, z: h.q.z - lx * h.s + lz * h.c };
+        };
+        var fremd = function (x, z, h) {
+            for (var j = 0; j < pl.length; j++) {
+                var o = pl[j] && pl[j].obb;
+                if (!o || pl[j] === h.q) continue;
+                var c = Math.cos(o.phi || 0),
+                    s = Math.sin(o.phi || 0);
+                if (Math.abs((x - o.cx) * c - (z - o.cz) * s) < o.ex && Math.abs((x - o.cx) * s + (z - o.cz) * c) < o.ez) return true;
+            }
+            return false;
+        };
+        // der Stand an der Wand (lx, lz) mit der Normale (nx, nz) nach außen, lokal: der Kopf armM davor, +x der Gestalt zur Wand
+        var stand = function (h, lx, lz, nx, nz) {
+            var k = welt(h, lx + nx * a, lz + nz * a),
+                w = welt(h, lx, lz);
+            return fremd(k.x, k.z, h) ? null : { x: k.x, z: k.z, th: Math.atan2(w.z - k.z, w.x - k.x), gas: true, wand: true };
+        };
+        var setze = function (l) {
+            if (!l) return false;
+            lay.laternen.push(l);
+            n++;
+            return true;
+        };
+        var k, t;
+        for (k = 0; k < H.length; k++) {
+            var r = H[k].B.p && H[k].B.p.rolle;
+            t = H[k].B.dims.tuer;
+            if ((r === "gasthaus" || r === "schmiede") && t) {
+                var sz = t.z > 0 ? 1 : -1;
+                setze(stand(H[k], Math.max(-H[k].hw + ecke, Math.min(H[k].hw - ecke, t.x + 1.1)), sz * H[k].hd, 0, sz));
+            }
+        }
+        var M = lay.marken || [];
+        for (var mi = 0; mi < M.length; mi++) {
+            var m = M[mi],
+                d0 = Infinity;
+            for (t = 0; t < lay.laternen.length; t++) d0 = Math.min(d0, Math.hypot(lay.laternen[t].x - m.x, lay.laternen[t].z - m.z));
+            if (!(d0 > LICHT_MARKE_M)) continue;
+            var kand = [];
+            for (k = 0; k < H.length; k++) {
+                var h = H[k],
+                    dx = m.x - h.q.x,
+                    dz = m.z - h.q.z,
+                    px = dx * h.c - dz * h.s,
+                    pz = dx * h.s + dz * h.c;
+                // die Wände, vor denen die Marke liegt: der Stand ihr gegenüber, auf der Wand gehalten
+                if (Math.abs(px) > h.hw) kand.push([h, (px > 0 ? 1 : -1) * h.hw, Math.max(-h.hd + ecke, Math.min(h.hd - ecke, pz)), px > 0 ? 1 : -1, 0]);
+                if (Math.abs(pz) > h.hd) kand.push([h, Math.max(-h.hw + ecke, Math.min(h.hw - ecke, px)), (pz > 0 ? 1 : -1) * h.hd, 0, pz > 0 ? 1 : -1]);
+            }
+            var best = null,
+                bestD = d0;
+            for (k = 0; k < kand.length; k++) {
+                var l = stand(kand[k][0], kand[k][1], kand[k][2], kand[k][3], kand[k][4]);
+                var d = l ? Math.hypot(l.x - m.x, l.z - m.z) : Infinity;
+                if (d < bestD) {
+                    bestD = d;
+                    best = l;
+                }
+            }
+            setze(best);
+        }
+        return n;
     }
     // BRANDWAND-GESETZ: verdichtetes Bauen wie in der Stadtgeschichte — parallele
     // Nachbarn mit anliegender Fuge machen die anliegende Seite zur fensterlosen
@@ -5167,6 +5321,7 @@
             }),
             plan.norm.gap
         );
+        wandLaternen(Bs, lay.pl, lay); // DIE WANDLATERNE (K66-2): nach dem Snap, an der Wand des Kerns — dieselbe Funktion wie buildDorf
         var slots = [];
         for (i = 0; i < plan.houses.length; i++) {
             var q = lay.pl[i];
@@ -5827,6 +5982,7 @@
         EXPL_VIS: EXPL_VIS,
         // U6c — die drei gewanderten Lab-Gesetze (buildDorf + exportSettlement rufen sie)
         reihenSnap: reihenSnap,
+        wandLaternen: wandLaternen,
         brandwand: brandwand,
         metaParams: metaParams,
         DORF: DORF,

@@ -1422,19 +1422,26 @@ class AnazhRealm_Z20a {
         // DIE LATERNEN (K10 × K11): jede Laterne des Plans steht als Studio-Gestalt (Bauplan `laterne_dorf`, fachwerk
         // AUSSTATTUNG `laterne`) — der Leib und das Licht EINER Quelle: das Verzeichnis „licht" stempelt den Eintrag aus dem
         // Datum seines Rezepts (`_lichtDatumDerGestalt`), der Licht-Takt liest ihn wie jede Feuerstelle. Keine Kappe: das
-        // Gesetz des Plans setzt die Zahl (je Platz eine, je 25 m Weg eine); Wasser- und Bau-Wand wie der Brunnen.
+        // Gesetz des Plans setzt die Zahl (je Platz eine, je 25 m Weg eine); Wasser- und Bau-Wand wie der Brunnen. Die Laterne
+        // des Plans mit `wand` (K66-2) ist die Wandlaterne (Bauplan `wandlaterne_dorf`, ihr Licht LICHT_GESETZ.wandlaterne): sie
+        // hängt vor der Wand ihres Hauses, die Bau-Wand prüft nur ihren Kopf (der Rund-Fußabdruck reichte in die eigene Wand).
         if (Array.isArray(plan.laternen) && this.state.blueprints && this.state.blueprints.laterne_dorf) {
             let k = 0;
             for (const l of plan.laternen) {
                 if (!l || !Number.isFinite(l.x) || !Number.isFinite(l.z)) continue;
+                const typ = l.wand ? "wandlaterne_dorf" : "laterne_dorf";
+                if (!this.state.blueprints[typ]) continue;
                 const wx = origin.x + l.x;
                 const wz = origin.z + l.z;
                 if (!this._landAt(wx, wz, 0.2)) continue;
                 const wy = this.getTerrainHeightAt(wx, wz);
                 if (!Number.isFinite(wy)) continue;
-                if (!this._bauFreiRund("laterne_dorf", wx, wz, wy)) continue; // die Bau-Wand: nie in einem Bau
+                const frei = l.wand
+                    ? this._bauFrei(wx, wz, 0, { ex: 0.1, ez: 0.1, ox: 0, oz: 0 }, null, wy)
+                    : this._bauFreiRund(typ, wx, wz, wy);
+                if (!frei) continue; // die Bau-Wand: nie in einem Bau
                 this.spawnArchitecture(
-                    "laterne_dorf",
+                    typ,
                     { x: wx, y: wy + 0.5, z: wz },
                     {
                         seed: ((plan.seed >>> 0 || 1) + 97 + k++ * 7919) >>> 0,
