@@ -1,0 +1,19 @@
+{
+ "ergebnis": {
+  "haken": false,
+  "dorfWaechst": null,
+  "dorfExport": null,
+  "zellen": [],
+  "vorschauen": [
+   "portal-preview-fachwerk",
+   "portal-preview-garage",
+   "portal-preview-schmiede",
+   "portal-preview-portale"
+  ],
+  "nVorschauen": 4,
+  "foundryWarte": 0,
+  "foundryImFlug": 0,
+  "architekturen": 1202
+ },
+ "ms": 2
+}
