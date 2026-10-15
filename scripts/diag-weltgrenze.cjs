@@ -224,6 +224,9 @@ function seitenPruefer() {
             r._autoSettlementStartHopeless = true;
             r._autoSettlementQueue = { plan: { slots: [], name: T }, origin: { x: 0, z: 0 }, idx: 0, cellKey: T };
             r._stlWegeKeys = new Set([T]);
+            // der Plan v2 je Ort (K10, `_ortWahl`): Saat und Anker sind sein Schlüssel, seine Höhen und sein Erdbau sind A —
+            // eine Welt B mit demselben Samen am selben Anker läse sonst A's Gelände
+            r._ortPlaene = new Map([[T, { herkunft: T }]]);
             const pm = r.state.playerMesh;
             const x = pm ? pm.position.x + 6 : 6;
             const z = pm ? pm.position.z + 6 : 6;
@@ -272,6 +275,7 @@ function seitenPruefer() {
                 _autoSettlementStartHopeless: r._autoSettlementStartHopeless === true,
                 _autoSettlementQueue: !!(r._autoSettlementQueue && r._autoSettlementQueue.cellKey === T),
                 _stlWegeKeys: !!(r._stlWegeKeys && r._stlWegeKeys.has(T)),
+                _ortPlaene: !!(r._ortPlaene && r._ortPlaene.has(T)),
                 _portalLeuchte: !!(r._portalLeuchte && r._portalLeuchte.herkunft === T),
                 _leuchtPool: !!(r._leuchtPool && r._leuchtPool.halter.some((h) => h && h.herkunft === T)),
             };
