@@ -3252,7 +3252,7 @@
     if(ok&&mauer&&Math.abs(Math.hypot(tx,tz)-Rw)<2.6)ok=false;
     if(ok&&trees.some(q2=>Math.hypot(tx-q2.x,tz-q2.z)<3.0))ok=false;
     if(ok) trees.push({x:tx,z:tz,h:2.6+rnd()*1.8}); }
-  const laternen=[], marken=[];                                                               // LATERNEN-GESETZ: die moderne Stadt leuchtet; die Marken des Dorf-Lichts (je 25 m Weg) liest die Wandlaterne (wandLaternen)
+  const laternen=[], marken=[];                                                               // LATERNEN-GESETZ: die moderne Stadt leuchtet; die Marken des Dorf-Lichts (jeder Meter Weg) liest die Wandlaterne (wandLaternen)
   const LG9=LICHT_GESETZ.laterne, LATERNE_WAND=Math.sqrt(Math.max(0,(LG9.hoeheM*LG9.hoeheM+LG9.kernM*LG9.kernM)/2-LG9.kernM*LG9.kernM));   /*DIE LATERNE VOR DER WAND (K66): ihr Licht trifft keine Wand mit mehr als dem Doppelten der Gasse unter ihr — (h²+k²)/(d²+k²) ≤ 2, d ≥ 2,55 m; bis K66 stand sie 0,45 m vor dem Grundriss, die Giebelwand trug nachts das Sechsfache*/
   const LATERNE_FUSS=AUSSTATTUNG.laterne.tritt.r, laterneWege=roads.map(rd=>({pts:rd.pts.filter((_,k2)=>k2*DS<=(rd.len||0)+DS), h:rd.w/2})).concat(feldwege.map(fw=>({pts:fw.pts, h:fw.w/2})));   /*DER FUSS DER LATERNE (K66, Pruefung 2): ihr Tritt aus dem Rezept (AUSSTATTUNG laterne, der Blocker der Welt) und die Wege, wie der Export sie traegt — Strasse und Feldweg*/
   const laterneImWeg=(x,z)=>laterneWege.some(wl=>{ const P=wl.pts, h=wl.h+LATERNE_FUSS; for(let k=0;k+1<P.length;k++){ const A=P[k], B=P[k+1], dx=B.x-A.x, dz=B.z-A.z, L2=dx*dx+dz*dz; let t=L2>1e-9?((x-A.x)*dx+(z-A.z)*dz)/L2:0; t=t<0?0:t>1?1:t; if(Math.hypot(x-A.x-dx*t, z-A.z-dz*t)<h) return true; } return false; });
@@ -3276,7 +3276,8 @@
     if(platz) [[0.25,0],[-0.25,0],[0,0.7],[0,-0.7]].some(([fx,fz])=>setz(platz.cx+fx*platz.ex, platz.cz+fz*platz.ez, 0));
     const grad=new Array(G.nodes.length).fill(0); for(const rd of roads){ grad[rd.a]++; grad[rd.b]++; }
     for(const rd of roads){ const L=rd.len||0; for(const [ende,k] of [[0,rd.a],[1,rd.b]]){ if(grad[k]<3) continue; for(let du=2; du<=Math.max(2,Math.min(8,L/2)); du+=1){ const u0=ende?Math.max(0,L-du):Math.min(L,du); if(amWeg(rd,u0,1)||amWeg(rd,u0,-1)) break; } } }   /*der Knoten sucht seinen Stand bis 8 m in den Weg hinein (K66: vor der Wand fand er ihn 2 m vom Knoten selten)*/
-    for(const rd of roads){ const L=rd.len||0; for(let u=DORF_LICHT_WEG/2, fl=1; u<L; u+=DORF_LICHT_WEG, fl=-fl){ const mq=at(rd,u); marken.push({x:mq.x,z:mq.z});   /*DIE MARKE (K66-2): traegt ihr Fenster keinen Mast (die dichte Gasse: beidseits Wand naeher als LATERNE_WAND, nur der Bordstein frei), haengt ihre Laterne an der Hauswand — wandLaternen nach dem Snap; bis K66-2 setzte laterneNah sie an irgendeinen freien Stand des Dorfs, die Gasse blieb schwarz*/
+    for(const rd of roads){ const L=rd.len||0; for(let um=0; um<=L; um+=1){ const mq=at(rd,um); marken.push({x:mq.x,z:mq.z}); }   /*DIE MARKE (K66-2 N1): JEDER Meter des Wegs — wandLaternen haengt nach dem Snap eine Laterne an die naechste Hauswand, wo kein Licht in LICHT_MARKE_M brennt (die dichte Gasse: beidseits Wand naeher als LATERNE_WAND, nur der Bordstein frei, und die Luecke zwischen zwei Masten); bis N1 je 25 m eine Marke, zwischen ihnen blieb die Wand der Gasse schwarz (nacht-wand 69 %)*/
+      for(let u=DORF_LICHT_WEG/2, fl=1; u<L; u+=DORF_LICHT_WEG, fl=-fl){
       for(let du=0; du<=DORF_LICHT_WEG/2-1; du+=1){ if((u+du<L&&(amWeg(rd,u+du,fl)||amWeg(rd,u+du,-fl)))||(du&&u-du>0&&(amWeg(rd,u-du,fl)||amWeg(rd,u-du,-fl)))) break; } } } }
   const sp=at(roads[0],Math.min(roads[0].len||8,8));
   const nzyk=roads.length-(G.nodes.length-1);                                                // Zyklen = E − V + 1 (zusammenhängend)
@@ -5144,10 +5145,12 @@
     // DIE WANDLATERNE IM DORF (K66-2) — KONSUM BEIDSEITIG wie reihenSnap: buildDorf (Lab) und exportSettlement rufen sie NACH
     // dem Snap (die Wand steht, wo das Haus steht). Zwei Stände der Gestalt wandlaterne (Kopf `armM` vor der Wand des Kerns
     // W × D, nie vor der Traufe der Hülle): (1) die Tür von Gasthaus und Schmiede trägt sie 1,1 m neben der Tür (bis K66-2 ein
-    // Glas-Kopf des Hofs ohne Licht); (2) jede Marke des Dorf-Lichts (je 25 m Weg, `lay.marken`), deren nächste Laterne weiter
-    // als LICHT_MARKE_M liegt — die dichte Gasse, in der kein Mast vor der Wand und neben dem Weg steht —, trägt sie an der
-    // Hauswand, die ihr am nächsten liegt (der Stand ≥ 0,6 m von der Ecke, der Kopf in keiner fremden Hülle). Bis K66-2 setzte
-    // `laterneNah` die Laterne einer dunklen Marke an irgendeinen freien Stand des Dorfs: die dichte Gasse blieb schwarz.
+    // Glas-Kopf des Hofs ohne Licht); (2) jede Marke des Dorf-Lichts (jeder Meter Weg, `lay.marken`), deren nächste Laterne weiter
+    // als LICHT_MARKE_M liegt — die dichte Gasse, in der kein Mast vor der Wand und neben dem Weg steht, und die Lücke zwischen
+    // zwei Masten —, trägt sie an der Hauswand, die ihr am nächsten liegt (der Stand ≥ 0,6 m von der Ecke, der Kopf in keiner
+    // fremden Hülle); die Marken laufen den Weg entlang, jede neue Laterne deckt die folgenden. Bis K66-2 setzte `laterneNah`
+    // die Laterne einer dunklen Marke an irgendeinen freien Stand des Dorfs; bis N1 lag je 25 m eine Marke, zwischen ihnen blieb
+    // die Wand der Gasse schwarz (nacht-wand 69 %). Leser von LICHT_MARKE_M: gate:settlement DORF-LICHT (das Soll je Meter).
     // dorfB: [{p, dims}] · pl: lay.pl · lay: das Layout (laternen wird ERGÄNZT). Rückgabe: die Zahl der Wandlaternen.
     var LICHT_MARKE_M = 10;
     function wandLaternen(dorfB, pl, lay) {
@@ -5749,9 +5752,19 @@
         };
         var ps = [];
         var wasserSlots = 0;
+        // DIE NUMMER JEDES SLOTS IM ORTPLAN (K66-2 N1): was eine Nummer in plan.slots trägt (die Wandlaterne ihr Haus, `slot`),
+        // folgt ihr hier — ein nasser Slot fällt, seine Nachfolger rücken auf (-1: das Wasser nahm ihn). Bis N1 reiste die
+        // Nummer des v1-Plans ungerührt: die Welt hob die Wandlaterne mit einem fremden Haus 8–14 m weiter, die eines nassen
+        // Hauses hing vor einer Wand, die es nicht gab.
+        var neuSi = [];
         for (var si0 = 0; si0 < plan.slots.length; si0++)
-            if (imWasser(plan.slots[si0])) wasserSlots++;
-            else ps.push(plan.slots[si0]);
+            if (imWasser(plan.slots[si0])) {
+                wasserSlots++;
+                neuSi.push(-1);
+            } else {
+                neuSi.push(ps.length);
+                ps.push(plan.slots[si0]);
+            }
         var NS = ps.length;
         var hy = [];
         var gasseAb = []; // so weit vor dem Eingang beginnt die Fläche, die der Gang betritt (null: keine Gasse vor der Tür)
@@ -5855,11 +5868,17 @@
             }
             slots.push(Object.assign({}, sl, { y: y, hang: hang }));
         }
-        // 4) DIE LATERNEN stehen auf ihrem Weg (sonst auf dem Grund)
-        var laternen = (Array.isArray(plan.laternen) ? plan.laternen : []).map(function (l) {
-            var yl = aufY(l.x, l.z);
-            return Object.assign({}, l, { y: yl === null ? r6(H(l.x, l.z)) : yl });
-        });
+        // 4) DIE LATERNEN stehen auf ihrem Weg (sonst auf dem Grund); die Wandlaterne hängt an ihrem Haus: sie trägt seine Nummer
+        // im Ortplan (`neuSi`) und fällt mit ihm ins Wasser
+        var laternen = (Array.isArray(plan.laternen) ? plan.laternen : [])
+            .filter(function (l) {
+                return !l.wand || neuSi[l.slot] >= 0;
+            })
+            .map(function (l) {
+                var yl = aufY(l.x, l.z);
+                var y1 = { y: yl === null ? r6(H(l.x, l.z)) : yl };
+                return Object.assign({}, l, l.wand ? { slot: neuSi[l.slot], y: y1.y } : y1);
+            });
         var v2 = Object.assign({}, plan, {
             version: 2,
             ort: { x: ox, z: oz },
@@ -6017,6 +6036,7 @@
         // U6c — die drei gewanderten Lab-Gesetze (buildDorf + exportSettlement rufen sie)
         reihenSnap: reihenSnap,
         wandLaternen: wandLaternen,
+        LICHT_MARKE_M: LICHT_MARKE_M, // das Soll des Dorf-Lichts je Meter Weg (K66-2 N1; Leser gate:settlement DORF-LICHT)
         brandwand: brandwand,
         metaParams: metaParams,
         DORF: DORF,
