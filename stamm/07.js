@@ -258,6 +258,19 @@ class AnazhRealm_Z07 {
         return edits.map((ed) => ({ ...ed }));
     }
 
+    // DER EINE SENDER DES VOXEL-ZUSTANDS (K60-3): jede Zustands-Nachricht (init · state-set · state-update) reist in
+    // derselben Reihe an JEDEN Faden, der am Zustand rechnet — den Voxel-Faden und, ist er geboren, den Wald-Faden
+    // (`_waldFadenZ`, ohne Rückfrage-Nummer: seine Nummern sind seine Aufträge). Der Wald-Faden bekommt bei der Geburt
+    // EINEN vollen Stand, danach dieselben Deltas wie der Voxel-Faden. Bis zur Prüfung K60-3-1 schickte er sich je
+    // Stand-Wechsel (Generation + Edit-ZAHL) den vollen Zustand samt Hydro-Kacheln ein zweites Mal — ein ersetzter Edit bei
+    // gleicher Zahl reiste nie, und jeder Wechsel klonte die Welt im Haupt-Faden.
+    _voxelZustandPost(msg) {
+        const w = this.state.voxelWorker;
+        if (w) w.postMessage(msg);
+        const f = this._waldFadenZ;
+        if (f) f.worker.postMessage(msg.requestId == null ? msg : Object.assign({}, msg, { requestId: null }));
+    }
+
     // State-Snapshot zum Worker: `op="init"` befüllt erstmalig (ack setzt voxelWorkerReady=true),
     // `op="state-set"` = voller Re-Sync nach Welt-Wechsel/Worldgen. Promise<true> beim ack.
     _voxelWorkerSyncState(opts = {}) {
@@ -271,7 +284,7 @@ class AnazhRealm_Z07 {
         const promise = new Promise((resolve, reject) => {
             this.state.voxelWorkerPending.set(requestId, { resolve, reject });
         });
-        worker.postMessage({ type: op, snapshot: this._voxelWorkerSnapshotState(), requestId });
+        this._voxelZustandPost({ type: op, snapshot: this._voxelWorkerSnapshotState(), requestId });
         return promise.then(() => {
             this.state.voxelWorkerReady = true;
             return true;
@@ -332,15 +345,15 @@ class AnazhRealm_Z07 {
     // EINEN Wald-Plan (phyto-core `planForestCell`) mit den Lesern des Fadens. Er rechnet im WALD-FADEN: einem eigenen Faden
     // desselben Gesetzes (`voxel-worker.js`, dieselbe Quelle wie der Voxel-Faden) — im Voxel-Faden stand der Auftrag hinter
     // jedem Chunk und jeder Höhe der Ferne (Radeon kalt: die Darts kamen 3,5 s nach der Bestellung, das Bild 2 s später als
-    // ohne, K603/s2-6C). Vor jedem Auftrag reist der volle Zustand, wenn sich der Stand des Voxel-Fadens
-    // (`voxelWorkerStateGen`: Worldgen, Hydro-Kachel, Erdbau) oder die Edits seither änderten — Nachrichten laufen in Reihe,
-    // der Auftrag rechnet am Zustand, der vor ihm reiste. Leser: `_waldDartsBestellen`.
+    // ohne, K603/s2-6C). Den Zustand bringt der EINE Sender (`_voxelZustandPost`): bei der Geburt ein voller Stand, danach
+    // dieselben Nachrichten wie der Voxel-Faden (Worldgen, Hydro-Kachel, Erdbau, Edits) — Nachrichten laufen in Reihe, der
+    // Auftrag rechnet am Zustand, der vor ihm reiste. Leser: `_waldDartsBestellen`.
     _voxelWorkerWaldDarts(zellen, seedInt, extras) {
         if (!this.state.voxelWorker || !this._voxelFadenQuelle) return Promise.reject(new Error("kein Voxel-Faden"));
         let f = this._waldFadenZ;
         if (!f) {
             const worker = new Worker(this._voxelFadenQuelle);
-            f = this._waldFadenZ = { worker, pending: new Map(), next: 1, stand: null };
+            f = this._waldFadenZ = { worker, pending: new Map(), next: 1 };
             worker.onmessage = (e) => {
                 const msg = e.data;
                 if (!msg) return;
@@ -357,12 +370,8 @@ class AnazhRealm_Z07 {
                 else p.reject(new Error(msg.message));
             };
             worker.onerror = (err) => this._bruchMelden("WALD: der Wald-Faden brach — " + (err && err.message));
-        }
-        const edits = this.state.worldMeta && this.state.worldMeta.voxelEdits;
-        const stand = this.state.voxelWorkerStateGen + "|" + (Array.isArray(edits) ? edits.length : 0);
-        if (f.stand !== stand) {
-            f.stand = stand;
-            f.worker.postMessage({ type: "state-set", snapshot: this._voxelWorkerSnapshotState() });
+            // der EINE volle Stand bei der Geburt; jede spätere Änderung bringt der Sender des Zustands (`_voxelZustandPost`)
+            worker.postMessage({ type: "state-set", snapshot: this._voxelWorkerSnapshotState() });
         }
         const requestId = f.next++;
         const promise = new Promise((resolve, reject) => f.pending.set(requestId, { resolve, reject }));
@@ -891,7 +900,7 @@ class AnazhRealm_Z07 {
                     for (let lod = 0; lod <= 3; lod++) cache.delete(`${cx},${cz},${lod}`);
         }
         try {
-            this.state.voxelWorker.postMessage({
+            this._voxelZustandPost({
                 type: "state-update",
                 delta: {
                     voxelEditAppend: { x: ed.x, y: ed.y, z: ed.z, r: ed.r, strength: ed.strength, mode: ed.mode },

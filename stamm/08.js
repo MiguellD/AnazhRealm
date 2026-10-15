@@ -410,7 +410,7 @@ class AnazhRealm_Z08 {
         this._forestDartMemo = null;
         if (this.state.voxelWorker) {
             this.state.voxelWorkerStateGen++;
-            this.state.voxelWorker.postMessage({ type: "state-update", delta: { erdbau: this._erdbauRoh() } });
+            this._voxelZustandPost({ type: "state-update", delta: { erdbau: this._erdbauRoh() } });
         }
         let x0 = Infinity;
         let x1 = -Infinity;

@@ -186,8 +186,8 @@ class AnazhRealm_Z20a {
     // trägt Darts (mulberry32 aus Zelle × Seed), ein Dart steht gegen die ±2-Nachbarzellen per reiner Wahl
     // (prio-Maximum im Konflikt-Radius, Positions-Tiebreak) → reihenfolge-unabhängig (Chunk A→B == B→A).
 
-    // Die geteilte Wald-Noise (this._x, wie `_clumpNoise` — seed-gebunden, main-only,
-    // kein Worker-Mirror, kein Snapshot). EIN Instanz, an verschiedenen Frequenzen/Offsets
+    // Die geteilte Wald-Noise (this._x, wie `_clumpNoise` — seed-gebunden, kein Snapshot; der Wald-Faden zieht dieselbe
+    // Noise aus demselben Seed, `waldCtx` in voxel-worker.js, gate:worker-dichte Teil W). EIN Instanz, an verschiedenen Frequenzen/Offsets
     // gelesen (die Vorlage sampelt ihre `fbm2` genauso mehrkanalig). 2-Oktav-fbm → [0,1].
     _forestFbm(px, pz) {
         if (!this._forestNoise) {
@@ -431,8 +431,11 @@ class AnazhRealm_Z20a {
     }
     // Die Darts des Fadens ins Gedächtnis ihres Stands: ein gewechselter Stand verwirft sie (der Wartende bestellt neu), eine
     // inzwischen gerechnete Zelle behält ihre Darts (die Urteile der Nachbarn merken die Objekte).
+    // Die Schranke des Gedächtnisses greift VOR der Lieferung, nie mitten in ihr: bis zur Prüfung K60-3-1 leerte ein volles
+    // Gedächtnis die gerade gelieferten Zellen, und die Region bestellte sie neu.
     _waldDartsAn(memo, zellen, r) {
         const im = this._waldBestelltVon === memo ? this._waldBestellt : null;
+        if (this._forestDartMemo === memo && memo.size + zellen.length / 2 > 8192) memo.clear(); // bounded wie `_forestCellDarts`
         let j = 0;
         for (let i = 0; i < zellen.length / 2; i++) {
             const k = zellen[i * 2] + "," + zellen[i * 2 + 1];
@@ -455,7 +458,6 @@ class AnazhRealm_Z20a {
                 });
             }
             if (this._forestDartMemo !== memo || memo.has(k)) continue;
-            if (memo.size > 8192) memo.clear(); // bounded wie `_forestCellDarts`
             memo.set(k, out);
         }
     }
