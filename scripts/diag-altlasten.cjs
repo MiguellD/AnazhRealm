@@ -433,6 +433,31 @@ const FORBIDDEN = [
     // DIE LUFT (V18.530) — der Nebel war eine lineare Wand an der Wald-Kante und verdeckte die gebaute Fernform;
     // die EINE Luftperspektive (`_luftEnsure` → scene.fogNode) ist Physik. Die Nebel-Kulisse ist ganz fort.
     { token: "new THREE.Fog(", fiel: "V18.530 — die Luft ist scene.fogNode, kein linearer Nebel" },
+    // DIE EINE ATMOSPHÄRE (D3, Hillaire) — vier getunte Näherungen fielen in EINER Welle: die Luftmassen-Sonne, die
+    // Nebel-Kuppel aus Rausch-Wolken, der Koschmieder-Mie-Kegel der Horizont-Farbe, die CPU-gemalte Umgebung 128×64.
+    { token: "_atmosphere(", fiel: "D3 — die Sonne ist der Durchlass der EINEN Atmosphäre (_atmoSonne)" },
+    { token: "_fATM", fiel: "D3 — die Sonne ist der Durchlass der EINEN Atmosphäre (_atmoSonne)" },
+    { token: "_nebN", fiel: "D3 — die Kuppel liest die Himmels-Sicht der Tafeln (_atmoLutBau), keine Nebel-Kuppel" },
+    { token: "_hazeCol", fiel: "D3 — die Kuppel liest die Himmels-Sicht der Tafeln, kein Grau-Schleier" },
+    { token: "mieKeule", fiel: "D3 — die Keule zur Sonne trägt die Mie-Phase des Gesetzes (ATMO_GESETZ.mieG)" },
+    { token: "mieAnteil", fiel: "D3 — die Keule zur Sonne trägt die Mie-Phase des Gesetzes" },
+    { token: "mieGlanz", fiel: "D3 — die Keule zur Sonne trägt die Mie-Phase des Gesetzes" },
+    { token: "_skyEnvTex", fiel: "D3 — die Umgebung ist der Wandel-Pass der Himmels-Sicht (rtEq → PMREM), keine CPU-Malerei" },
+    // ... und im Labor in DERSELBEN Welle: die Luftmassen-Sonne von phytogenesis und ihre Zwillings-Zahlen in phyto-core
+    // (die Rayleigh-Tiefe, die Luftmassen-Glättung, der Mond-Hue) — Welt und Labor rufen foundry-core ATMO_RECHNUNG.
+    { token: "RAYLEIGH_BETA", fiel: "D3 — die Rayleigh-Tiefe wohnt im Gesetz (ATMO_GESETZ.rayleighTiefe)" },
+    {
+        token: "ATMOS_GESETZ",
+        fiel: "D3 — das Labor liest ATMO_GESETZ (foundry-core)",
+        auch: ["phyto-core.js", "worlds/terrain/phytogenesis.js"],
+    },
+    {
+        token: "LUFT_GESETZ",
+        fiel: "D3 — die Luftmassen-Sonne fiel, die Nacht trägt ATMO_GESETZ.nacht",
+        auch: ["phyto-core.js", "worlds/terrain/phytogenesis.js"],
+    },
+    { token: "_AIR_SOFT", fiel: "D3 — keine Luftmassen-Glättung, der Durchlass ist Hillaire", auch: ["worlds/terrain/phytogenesis.js"] },
+    { token: "_moonCol", fiel: "D3 — der Mond-Hue ist ATMO_GESETZ.nacht.mond", auch: ["worlds/terrain/phytogenesis.js"] },
     { token: "_dayNightApplyHemiAndFog", fiel: "V18.530 — _dayNightApplyHemiUndLuft" },
     { token: "_smoothFogEdge", fiel: "V18.530 — kein Lade-Nebel, der Fern-Ring deckt Ungebautes" },
     { token: "_fogEdgeSmooth", fiel: "V18.530" },
@@ -3944,8 +3969,8 @@ function main() {
             const schmuggel = [
                 [
                     "in",
-                    "const mxNoise = TSL.mx_noise_float;",
-                    'const _hatMx = "mx_noise_float" in TSL; const mxNoise = TSL.mx_noise_float;',
+                    "const bn = TSL.mx_noise_float(positionWorld.mul(float(0.8)));",
+                    'const _hatMx = "mx_noise_float" in TSL; const bn = TSL.mx_noise_float(positionWorld.mul(float(0.8)));',
                     /^Ausstattungs-Wenn$/,
                 ],
                 [

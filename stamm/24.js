@@ -325,87 +325,36 @@ class AnazhRealm_Z24 {
     }
 
     // ═══ DIE EINE ATMOSPHÄRE (D3, Hillaire EGSR 2020, CGF 39(4)) ═══
-    // Sonne, Himmel, Umgebung und Luft lesen EIN Medium: Rayleigh = `RAYLEIGH_BETA` (Zenit-Tiefe je Kanal) über die
-    // Skalenhöhe aus foundry-core `ATMO_GESETZ`, das Aerosol = die EINE Luft (`_luftBeta` des Wetters abzüglich ihres
-    // Rayleigh-Anteils, Skalenhöhe `LUFT.skalenHoeheM`), Mie-Phase g · Einfach-Albedo · Ozon-Zelt · Radien aus dem Gesetz, der
-    // Boden die gemessene Welt-Albedo (`ATMO_BODEN`). Einheiten des Mediums: km und 1/km (Hillaire), Höhen über dem Bezug der
-    // Luft (`waterLevel`). Bis D3 standen vier getunte Näherungen nebeneinander (die Luftmassen-Sonne `_atmosphere`, die
+    // Sonne, Himmel, Umgebung und Luft lesen EIN Medium aus EINEM Gesetz (foundry-core `ATMO_GESETZ`, seine Rechnung
+    // `ATMO_RECHNUNG` — dieselbe ruft das Labor phytogenesis): Rayleigh-Tiefe je Kanal, die EINE Luft (`LUFT` liest ihre Anker
+    // dort; das Aerosol = `_luftBeta` des Wetters abzüglich ihres Rayleigh-Anteils), Mie-Phase g · Einfach-Albedo · Ozon-Zelt ·
+    // Radien, der Boden die gemessene Welt-Albedo (`ATMO_BODEN`). Einheiten des Mediums: km und 1/km (Hillaire), Höhen über
+    // dem Bezug der Luft (`waterLevel`). Bis D3 standen vier getunte Näherungen nebeneinander (die Luftmassen-Sonne, die
     // Nebel-Kuppel, die Horizont-Farbe der Luft, die CPU-gemalte Umgebung 128×64) — das Verhältnis Sonne : Himmel war gesetzt
     // (4,2), nicht gerechnet (gerechnet 5,1; `diag-atmo-hillaire`).
+    _atmoGesetz() {
+        return AnazhRealm.Gesetz("terrain:ATMO_GESETZ", null) || AnazhRealm._kernPflichtBruch("terrain:ATMO_GESETZ");
+    }
+
+    _atmoRechnung() {
+        return (
+            AnazhRealm.Gesetz("terrain:ATMO_RECHNUNG", null) || AnazhRealm._kernPflichtBruch("terrain:ATMO_RECHNUNG")
+        );
+    }
+
     _atmoMedium(wf) {
-        const G = AnazhRealm.Gesetz("terrain:ATMO_GESETZ", null) || AnazhRealm._kernPflichtBruch("terrain:ATMO_GESETZ");
-        const B = AnazhRealm.RAYLEIGH_BETA;
-        const L = AnazhRealm.LUFT;
-        const HR = G.rayleighH / 1000;
-        const mie = Math.max(0, this._luftBeta(wf) - L.betaRayleigh) * 1000;
-        return {
-            RG: G.erdeM / 1000,
-            RT: G.randM / 1000,
-            HR,
-            betaR: [B.r / HR, B.g / HR, B.b / HR],
-            HM: L.skalenHoeheM / 1000,
-            mieExt: mie,
-            mieSca: mie * G.mieAlbedo,
-            g: G.mieG,
-            ozon: G.ozon.absorption.map((x) => x * 1000),
-            ozonMitte: G.ozon.mitteM / 1000,
-            ozonHalb: G.ozon.halbM / 1000,
-            albedo: AnazhRealm.ATMO_BODEN,
-        };
+        return this._atmoRechnung().medium(this._atmoGesetz(), this._luftBeta(wf), AnazhRealm.ATMO_BODEN);
     }
 
-    // DER DURCHLASS des Mediums (rgb) von der Höhe h (km über dem Bezug) längs cos Zenit mu bis zum Rand; trifft der Strahl
-    // den Boden, ist es der Erdschatten (0). Dieselbe Rechnung, die die Transmittance-Tafel je Texel trägt (`_atmoLutBau`).
-    _atmoDurchlass(M, h, mu, out) {
-        const r = M.RG + Math.max(0, h);
-        const dB = r * r * (mu * mu - 1) + M.RG * M.RG;
-        if (mu < 0 && dB >= 0) {
-            out[0] = out[1] = out[2] = 0;
-            return out;
-        }
-        const d = -r * mu + Math.sqrt(Math.max(0, r * r * (mu * mu - 1) + M.RT * M.RT));
-        const N = AnazhRealm.ATMO_LUT.schritte.durchlass;
-        const dt = d / N;
-        let t0 = 0,
-            t1 = 0,
-            t2 = 0;
-        for (let s = 0; s < N; s++) {
-            const t = (s + 0.5) * dt;
-            const hi = Math.max(0, Math.sqrt(t * t + 2 * r * mu * t + r * r) - M.RG);
-            const dR = Math.exp(-hi / M.HR);
-            const dM = Math.exp(-hi / M.HM) * M.mieExt;
-            const dO = Math.max(0, 1 - Math.abs(hi - M.ozonMitte) / M.ozonHalb);
-            t0 += (M.betaR[0] * dR + dM + M.ozon[0] * dO) * dt;
-            t1 += (M.betaR[1] * dR + dM + M.ozon[1] * dO) * dt;
-            t2 += (M.betaR[2] * dR + dM + M.ozon[2] * dO) * dt;
-        }
-        out[0] = Math.exp(-t0);
-        out[1] = Math.exp(-t1);
-        out[2] = Math.exp(-t2);
-        return out;
-    }
-
-    // DIE SONNE aus dem Medium: e = sin(Höhe) der Sonne, der Durchlass vom Auge (Kamera über dem Bezug) zur Sonne. `col` = sein
-    // Farbton (unter dem Horizont zum Mond-Hue, Purkinje), `lum` = sein hellster Kanal — `col`·`lum` IST der Durchlass; das
-    // Richtlicht trägt E0 · Durchlass (E0 = die Sonne über der Atmosphäre, `_atmoE0`), dieselbe E0, mit der die Tafeln den
-    // Himmel rechnen: das Verhältnis Sonne : Himmel ist Physik.
+    // DIE SONNE aus dem Medium: e = sin(Höhe) der Sonne, der Durchlass vom Auge (Kamera über dem Bezug) zur Sonne
+    // (`ATMO_RECHNUNG.sonne`, dieselbe Rechnung, die die Transmittance-Tafel je Texel trägt). `col` = sein Farbton (unter dem
+    // Horizont zum Mond-Hue, Purkinje), `lum` = sein hellster Kanal — `col`·`lum` IST der Durchlass; das Richtlicht trägt
+    // E0 · Durchlass (E0 = die Sonne über der Atmosphäre, `_atmoE0`), dieselbe E0, mit der die Tafeln den Himmel rechnen:
+    // das Verhältnis Sonne : Himmel ist Physik.
     _atmoSonne(e) {
-        const M = this._atmoMediumJetzt();
-        const T = this._atmoDurchlass(M, this._atmoAugeKm(), e, this._atmoT || (this._atmoT = [0, 0, 0]));
-        const mx = Math.max(T[0], T[1], T[2], 1e-4);
-        let cr = T[0] / mx;
-        let cg = T[1] / mx;
-        let cb = T[2] / mx;
-        const night = Math.max(0, Math.min(1, -e / 0.16));
-        const Mo = AnazhRealm.MOONLIGHT;
-        cr += (Mo.r - cr) * night;
-        cg += (Mo.g - cg) * night;
-        cb += (Mo.b - cb) * night;
-        return {
-            col: { r: cr, g: cg, b: cb },
-            lum: mx * (1.0 - night) + 0.06 * night,
-            day: Math.max(0, Math.min(1, e)),
-        };
+        const T = this._atmoT || (this._atmoT = [0, 0, 0]);
+        const N = AnazhRealm.ATMO_LUT.schritte.durchlass;
+        return this._atmoRechnung().sonne(this._atmoGesetz(), this._atmoMediumJetzt(), this._atmoAugeKm(), e, N, T);
     }
 
     // Das Medium des Wetters jetzt (gemerkt je Extinktion der Luft — ein Wetter-Übergang rechnet neu).
@@ -466,7 +415,7 @@ class AnazhRealm_Z24 {
             mondE: T.uniform(new THREE.Vector3(0, 0, 0)),
             toenung: T.uniform(new THREE.Vector3(1, 1, 1)),
         });
-        const ziel = (w, h, wrapS) => {
+        const ziel = (w, h, wrapS, name) => {
             const rt = new THREE.RenderTarget(w, h, {
                 type: THREE.HalfFloatType,
                 depthBuffer: false,
@@ -474,18 +423,16 @@ class AnazhRealm_Z24 {
                 minFilter: THREE.LinearFilter,
                 magFilter: THREE.LinearFilter,
             });
+            rt.name = name;
+            rt.texture.name = name;
             rt.texture.wrapS = wrapS || THREE.ClampToEdgeWrapping;
             rt.texture.wrapT = THREE.ClampToEdgeWrapping;
             return rt;
         };
-        const rtT = ziel(Z.durchlass[0], Z.durchlass[1]);
-        const rtMS = ziel(Z.mehrfach[0], Z.mehrfach[1]);
-        const rtSV = ziel(Z.himmel[0], Z.himmel[1], THREE.RepeatWrapping);
-        const rtEq = ziel(Z.umgebung[0], Z.umgebung[1], THREE.RepeatWrapping);
-        rtT.texture.name = "atmo-durchlass";
-        rtMS.texture.name = "atmo-mehrfach";
-        rtSV.texture.name = "atmo-himmel";
-        rtEq.texture.name = "himmel-umgebung";
+        const rtT = ziel(Z.durchlass[0], Z.durchlass[1], null, "atmo-durchlass");
+        const rtMS = ziel(Z.mehrfach[0], Z.mehrfach[1], null, "atmo-mehrfach");
+        const rtSV = ziel(Z.himmel[0], Z.himmel[1], THREE.RepeatWrapping, "atmo-himmel");
+        const rtEq = ziel(Z.umgebung[0], Z.umgebung[1], THREE.RepeatWrapping, "himmel-umgebung");
         rtEq.texture.mapping = THREE.EquirectangularReflectionMapping;
         // ── das Medium als Knoten (h in km über dem Bezug) ──
         const dichteO = (h) =>

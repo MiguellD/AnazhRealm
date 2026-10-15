@@ -7,8 +7,8 @@
 // E_Sonne = E0·T·μs. Die Größe der Tafel: lichtVerhaeltnis = (E_Sonne + E_Himmel) / E_Himmel (Luma Rec.709, wie
 // `__lichtBilanz`), Soll [5; 12,5], gemessen heute 4,226 (soll-tafel himmel-licht).
 //
-// DAS GESETZ DER WELT, gelesen (nie abgeschrieben): Rayleigh = `AnazhRealm.RAYLEIGH_BETA` (Zenit-Tiefe je Kanal,
-// 26c.js) über die Skalenhöhe 8 km; das Aerosol = die EINE Koschmieder-Luft `AnazhRealm.LUFT` (klare Sicht 20 km bei
+// DAS GESETZ DER WELT, gelesen (nie abgeschrieben): Rayleigh = `ATMO_GESETZ.rayleighTiefe` (Zenit-Tiefe je Kanal,
+// foundry-core) über die Skalenhöhe 8 km; das Aerosol = die EINE Koschmieder-Luft `ATMO_GESETZ.luft` (klare Sicht 20 km bei
 // 2 % Kontrast, Skalenhöhe 1 km, abzüglich ihres Rayleigh-Anteils) im Wetter `sunny`. Was das Welt-Gesetz nicht
 // trägt, kommt aus Hillaire: Mie g 0,8 (HG), Einfach-Albedo 0,9, Ozon-Zelt (25 km ± 15 km), Erdradius 6360/6460 km.
 //
@@ -39,15 +39,9 @@ function weltGesetz() {
         if (!m) throw new Error(`Welt-Gesetz: ${name} nicht gefunden`);
         return m.slice(1).map(Number);
     };
-    const [rr, rg, rb] = zahl(
-        /AnazhRealm\.RAYLEIGH_BETA\s*=\s*Object\.freeze\(\{\s*r:\s*([\d.e-]+),\s*g:\s*([\d.e-]+),\s*b:\s*([\d.e-]+)/,
-        t26c,
-        "RAYLEIGH_BETA"
-    );
-    const luftBlock = t26c.match(/AnazhRealm\.LUFT\s*=\s*Object\.freeze\(\{([\s\S]*?)\}\);/);
-    if (!luftBlock) throw new Error("Welt-Gesetz: LUFT nicht gefunden");
-    const L = {};
-    for (const m of luftBlock[1].matchAll(/(\w+):\s*([\d.e-]+)/g)) L[m[1]] = Number(m[2]);
+    // Rayleigh-Tiefe und die EINE Luft wohnen im Gesetz (foundry-core `ATMO_GESETZ`, D3) — die Welt liest sie dort (26c `LUFT`)
+    const [rr, rg, rb] = GESETZ.rayleighTiefe;
+    const L = GESETZ.luft;
     const [sonnigNebel, sonnigRegen] = zahl(
         /sunny:\s*Object\.freeze\(\{\s*fog:\s*([\d.]+),[^}]*rain:\s*([\d.]+)/,
         t06b,
@@ -408,10 +402,12 @@ function main() {
     const mu = Number(opt("--mu", "0.962")); // sonnenRichtung.y der Messung (soll-tafel himmel-licht, 15.10.)
     const aus = opt("--aus", null);
     const W = weltGesetz();
-    // die Höhe der Karte über dem Bezug der Luft (bezugY = waterLevel, 24.js): die Mess-Wiese −278/−1038 (K55) am Gesetz
+    // die Höhe der Karte über dem Bezug der Luft (bezugY = waterLevel, 24.js): die Mess-Wiese (haushalt.json, K55) am Gesetz
     // (welt-orte `wirtAmGesetz`), die Karte 45 m über dem Boden (`__lichtBilanz`)
-    const wirt = require("./lib/welt-orte.cjs").wirtAmGesetz(path.join(__dirname, ".."));
-    const bodenY = wirt._terrainMacroSurfaceY(-278, -1038);
+    const orte = require("./lib/welt-orte.cjs");
+    const wirt = orte.wirtAmGesetz(path.join(__dirname, ".."));
+    const wiese = orte.messort("wiese");
+    const bodenY = wirt._terrainMacroSurfaceY(wiese.x, wiese.z);
     const h0 = Number(opt("--h0", String(bodenY + 45 - wirt.state.waterLevel)));
     const welt = {
         rayleighZenitTiefe: W.rayleighZenitTiefe,
@@ -428,7 +424,7 @@ function main() {
     };
     const faelle = [
         [
-            "welt (RAYLEIGH_BETA + LUFT 20 km/1 km + Boden der Albedo-Tafel; Hillaire g 0,8 · Ozon; Karte an der Mess-Wiese)",
+            "welt (rayleighTiefe + luft 20 km/1 km + Boden der Albedo-Tafel; Hillaire g 0,8 · Ozon; Karte an der Mess-Wiese)",
             welt,
         ],
         ["welt, Boden grau 0,3 (Hillaire-Vorgabe)", Object.assign({}, welt, { albedo: 0.3 })],

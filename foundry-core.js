@@ -229,19 +229,100 @@ var SAISON_GESETZ = {
 var __terrainCore = { HIMMEL_GESETZ: HIMMEL_GESETZ, WASSER_GESETZ: WASSER_GESETZ, REGEN_GESETZ: REGEN_GESETZ, BERG_GESETZ: BERG_GESETZ, BERG_VIS: BERG_VIS, INSEL_GESETZ: INSEL_GESETZ, INSEL_VIS: INSEL_VIS, WALD_GESETZ: WALD_GESETZ, WALD_VIS: WALD_VIS, KACHEL_GESETZ: KACHEL_GESETZ, KACHEL_VIS: KACHEL_VIS, SAISON_GESETZ: SAISON_GESETZ };
 
 // D3 (15.10., rein additiv) — DAS ATMOSPHAEREN-GESETZ nach Hillaire (EGSR 2020, "A Scalable and Production Ready Sky and
-// Atmosphere Rendering Technique", CGF 39(4)): was die Welt nicht selbst traegt. Die Rayleigh-TIEFE je Kanal liest der Leser
-// aus RAYLEIGH_BETA der Welt, das Aerosol aus ihrer EINEN Luft (LUFT: beta = -ln(kontrast)/sichtKlarM - betaRayleigh,
-// Skalenhoehe skalenHoeheM), den Boden aus der gemessenen Welt-Albedo — hier stehen nur die Hoehen, die Phase, die
-// Einfach-Albedo des Aerosols, das Ozon-Zelt und die Radien (Bruneton/Hillaire-Erde).
+// Atmosphere Rendering Technique", CGF 39(4)), die EINE Quelle fuer Welt UND Labor (phytogenesis): die Rayleigh-TIEFE je
+// Kanal (Zenit, Meereshoehe), die EINE Luft (Koschmieder-Anker, ihr Aerosol: beta = -ln(kontrast)/sichtKlarM - betaRayleigh,
+// Skalenhoehe skalenHoeheM), die Hoehen, die Phase, die Einfach-Albedo des Aerosols, das Ozon-Zelt, die Radien
+// (Bruneton/Hillaire-Erde) und der Mond unter dem Horizont. Den Boden (die gemessene Welt-Albedo) traegt der Leser.
 // prettier-ignore
 var ATMO_GESETZ = {
     erdeM: 6360e3, randM: 6460e3,  // Radius des Bodens / des Rands der Atmosphaere
     rayleighH: 8000,               // Skalenhoehe der Rayleigh-Dichte (m)
+    rayleighTiefe: [0.044, 0.1, 0.23], // optische Tiefe Meereshoehe/Zenit je Kanal (Bucholtz 1995): blau streut ~5x rot
     mieG: 0.8,                     // Henyey-Greenstein-Asymmetrie des Aerosols
     mieAlbedo: 0.9,                // Einfach-Streualbedo des Aerosols (Streuung / Extinktion)
     ozon: { mitteM: 25000, halbM: 15000, absorption: [0.65e-6, 1.881e-6, 0.085e-6] }, // Zelt-Profil, Absorption je m am Gipfel (R/G/B)
+    // DIE LUFT (V18.530): beobachtbare Sichtweiten — ein klarer Sommertag traegt Gelaende-Silhouetten 20 km weit, Starkregen
+    // 1,5 km; reine Luft = Rayleigh bei 550 nm auf Meereshoehe (1,16e-5/m); der Dunst sitzt in der Grenzschicht (1 km)
+    luft: { sichtKlarM: 20000, sichtSturmM: 1500, betaRayleigh: 1.16e-5, kontrast: 0.02, skalenHoeheM: 1000 },
+    // unter dem Horizont: der Farbton wandert ueber nacht.skala (sin Hoehe) zum Mond-Hue (Purkinje 0x9fb8dc), die Menge zu nacht.lum
+    nacht: { skala: 0.16, lum: 0.06, mond: [0x9f / 255, 0xb8 / 255, 0xdc / 255] },
+    durchlassSchritte: 40,         // Marsch-Schritte des Durchlasses (Sonne auf der CPU UND die Transmittance-Tafel)
 };
 __terrainCore.ATMO_GESETZ = ATMO_GESETZ;
+// DIE RECHNUNG des Gesetzes (rein, THREE-frei; Einheiten km und 1/km wie Hillaire) — die Welt (`_atmoSonne`, die Tafeln) und
+// das Labor (phytogenesis `atmosphere`) rufen DIESELBEN Funktionen. medium: das Medium bei der Extinktion der Luft
+// betaLuft (1/m; das Aerosol ist ihr Anteil ueber dem Rayleigh) und dem Boden albedo. durchlass: rgb von der Hoehe h (km
+// ueber dem Bezug) laengs cos Zenit mu bis zum Rand, N Schritte; trifft der Strahl den Boden, ist es der Erdschatten (0).
+// sonne: e = sin(Hoehe); col = Farbton (unter dem Horizont zum Mond), lum = hellster Kanal — col*lum IST der Durchlass.
+var ATMO_RECHNUNG = {
+    betaKlar: function (G) {
+        return -Math.log(G.luft.kontrast) / G.luft.sichtKlarM;
+    },
+    medium: function (G, betaLuft, albedo) {
+        var HR = G.rayleighH / 1000;
+        var mie = Math.max(0, betaLuft - G.luft.betaRayleigh) * 1000;
+        var t = G.rayleighTiefe;
+        return {
+            RG: G.erdeM / 1000,
+            RT: G.randM / 1000,
+            HR: HR,
+            betaR: [t[0] / HR, t[1] / HR, t[2] / HR],
+            HM: G.luft.skalenHoeheM / 1000,
+            mieExt: mie,
+            mieSca: mie * G.mieAlbedo,
+            g: G.mieG,
+            ozon: G.ozon.absorption.map(function (x) {
+                return x * 1000;
+            }),
+            ozonMitte: G.ozon.mitteM / 1000,
+            ozonHalb: G.ozon.halbM / 1000,
+            albedo: albedo || null,
+        };
+    },
+    durchlass: function (M, h, mu, N, out) {
+        var r = M.RG + Math.max(0, h);
+        var dB = r * r * (mu * mu - 1) + M.RG * M.RG;
+        if (mu < 0 && dB >= 0) {
+            out[0] = out[1] = out[2] = 0;
+            return out;
+        }
+        var d = -r * mu + Math.sqrt(Math.max(0, r * r * (mu * mu - 1) + M.RT * M.RT));
+        var dt = d / N;
+        var t0 = 0,
+            t1 = 0,
+            t2 = 0;
+        for (var s = 0; s < N; s++) {
+            var t = (s + 0.5) * dt;
+            var hi = Math.max(0, Math.sqrt(t * t + 2 * r * mu * t + r * r) - M.RG);
+            var dR = Math.exp(-hi / M.HR);
+            var dM = Math.exp(-hi / M.HM) * M.mieExt;
+            var dO = Math.max(0, 1 - Math.abs(hi - M.ozonMitte) / M.ozonHalb);
+            t0 += (M.betaR[0] * dR + dM + M.ozon[0] * dO) * dt;
+            t1 += (M.betaR[1] * dR + dM + M.ozon[1] * dO) * dt;
+            t2 += (M.betaR[2] * dR + dM + M.ozon[2] * dO) * dt;
+        }
+        out[0] = Math.exp(-t0);
+        out[1] = Math.exp(-t1);
+        out[2] = Math.exp(-t2);
+        return out;
+    },
+    sonne: function (G, M, h, e, N, T) {
+        ATMO_RECHNUNG.durchlass(M, h, e, N, T);
+        var mx = Math.max(T[0], T[1], T[2], 1e-4);
+        var n = G.nacht;
+        var night = Math.max(0, Math.min(1, -e / n.skala));
+        return {
+            col: {
+                r: T[0] / mx + (n.mond[0] - T[0] / mx) * night,
+                g: T[1] / mx + (n.mond[1] - T[1] / mx) * night,
+                b: T[2] / mx + (n.mond[2] - T[2] / mx) * night,
+            },
+            lum: mx * (1.0 - night) + n.lum * night,
+            day: Math.max(0, Math.min(1, e)),
+        };
+    },
+};
+__terrainCore.ATMO_RECHNUNG = ATMO_RECHNUNG;
 
 // DER STUDIO-VERTRAG (docs/studio-vertrag.md §4 G4.3) — die EINE Versions-
 // Semantik des Manifests: erhöht NUR bei einem Bruch der MUSS-Blöcke

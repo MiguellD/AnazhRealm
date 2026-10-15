@@ -3192,18 +3192,8 @@
     var PHYLO_GESETZ = { golden: Math.PI * (3 - Math.sqrt(5)) };
     var PHYLO_VIS = { lab: "golden-137.5", host: "none" };
 
-    // V18.491.254 Lab Rayleigh zenith OD; Host none (ATMOS_VIS).
-    // ≠ PHYLO — do not Fake-merge.
-    var ATMOS_GESETZ = { betaR: 0.044, betaG: 0.1, betaB: 0.23 };
-    var ATMOS_VIS = { lab: "rayleigh-3", host: "none" };
-
-    // V18.491.258 Lab air-mass softener + night scale/floor; Host none (LUFT_VIS).
-    // ≠ ATMOS_GESETZ betas — do not Fake-merge.
-    var LUFT_GESETZ = { airSoft: 0.06, nightScale: 0.16, nightLum: 0.06 };
-    var LUFT_VIS = { lab: "air-3", host: "none" };
-
     // V18.491.264 Lab weather preset table; Host none (WX_VIS).
-    // ≠ ATMOS/LUFT — do not Fake-merge. klar.wind 0.06 is WX, not LUFT.airSoft.
+    // klar.wind 0.06 is WX (die Atmosphaere ist foundry-core ATMO_GESETZ, D3).
     var WX_GESETZ = {
         klar: { fog: 0.15, sun: 1.0, grey: 0.0, wind: 0.06, rain: 0.0 },
         bewoelkt: { fog: 0.4, sun: 0.32, grey: 0.74, wind: 0.3, rain: 0.12 },
@@ -4933,10 +4923,6 @@
         growSkeleton: growSkeleton,
         PHYLO_GESETZ: PHYLO_GESETZ,
         PHYLO_VIS: PHYLO_VIS,
-        ATMOS_GESETZ: ATMOS_GESETZ,
-        ATMOS_VIS: ATMOS_VIS,
-        LUFT_GESETZ: LUFT_GESETZ,
-        LUFT_VIS: LUFT_VIS,
         WX_GESETZ: WX_GESETZ,
         WX_VIS: WX_VIS,
         treePhenotype: treePhenotype,
