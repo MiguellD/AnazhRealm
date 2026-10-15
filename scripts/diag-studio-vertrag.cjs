@@ -23,6 +23,7 @@ const vm = require("vm");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
+const { umschlagImVm, ersteAbweichung, DATEN_KANAELE } = require("./lib/asset-worker-harness.cjs");
 
 const root = path.resolve(__dirname, "..");
 
@@ -929,6 +930,51 @@ function validateManifest(m) {
         ohneGestalten.length === 0,
         ohneGestalten.join(", ")
     );
+
+    // U (K64-n2) — DER EINGEFRORENE UMSCHLAG IM PULS: was ein Kern deklariert (Rezepte · Welt-Palette · Stufen und Budget
+    // jeder Art), reist im EINEN Umschlag (get-book) zum Wirt; seine drei Daten-Kanäle sind eingefroren
+    // (spec/asset-contract/v1/golden, Re-Mint = Vertrags-Akt). Befund K64-n1: porta-core trug gate[2].tris 12 500, eingefroren
+    // 15 000 — rot erst in der vollen Batterie (gate:asset-contract, Gruppe 5 Schritt 37, „divergiert" ohne Namen), jeder
+    // spätere Schritt der Gruppe übersprungen. Hier antwortet DERSELBE Kanal der Brücke im Node-vm (umschlagImVm, dieselben
+    // Dateien wie der Worker) und jede Abweichung steht beim Schlüssel; gate:asset-contract bleibt der Beweis im Browser.
+    const umschlagBefunde = (quellen) => {
+        const u = umschlagImVm(quellen);
+        const out = [];
+        for (const [feld, key] of DATEN_KANAELE) {
+            const gold = fs.readFileSync(
+                path.join(root, "spec", "asset-contract", "v1", "golden", key + ".json"),
+                "utf8"
+            );
+            if (JSON.stringify(u[feld]) === gold.trim()) continue;
+            const a = ersteAbweichung(u[feld], JSON.parse(gold));
+            out.push(`${key} ${a ? `${a.pfad}: Kern ${a.ist} ≠ eingefroren ${a.soll}` : "weicht ab"}`);
+        }
+        return out;
+    };
+    const umschlag = umschlagBefunde();
+    check(
+        "U: der Umschlag der Kerne (recipes · world-params · render-config) trifft die eingefrorenen JSONs byte-genau",
+        umschlag.length === 0,
+        umschlag.length
+            ? umschlag.join(" · ") + " — Vertrags-Akt: MINT_NUR_DATEN=1 node scripts/mint-asset-goldens.cjs"
+            : `${DATEN_KANAELE.length}/${DATEN_KANAELE.length} byte-gleich`
+    );
+    // Selbsttest: eine Budget-Zeile eines Zweit-Kerns und ein Rezept-Regler des Haupt-Kerns, nach dem Laden verschoben —
+    // die Wand nennt beide Schlüssel.
+    {
+        const lese = (f) => fs.readFileSync(path.join(root, f), "utf8");
+        const st = umschlagBefunde({
+            "porta-core.js":
+                lese("porta-core.js") + "\n;__portaCore.PORTAL_RENDER_CONFIG.lod.budget.gate[2].tris += 1;",
+            "foundry-core.js": lese("foundry-core.js") + "\n;PRESETS.eiche.s[Object.keys(PRESETS.eiche.s)[0]] += 0.5;",
+        });
+        check(
+            "SELBST-TEST U: ein verschobenes Tor-Budget und ein verschobener Eichen-Regler fallen beim Schlüssel",
+            st.some((z) => z.startsWith("render-config lod.zusatzBudget.porta.gate.2.tris:")) &&
+                st.some((z) => /^recipes eiche\.s\.\w+:/.test(z)),
+            st.join(" · ")
+        );
+    }
 
     // B2c — DIE KARTEN-LINSE: die Karten-Stufe des Studios (budget[kind][letzte].karte) und die Fernstufe des
     // Hosts (KIND_POLICY[kind].impostor → `_foundryBuildImpostorFlat`) sagen dasselbe — je Art, die ein Budget

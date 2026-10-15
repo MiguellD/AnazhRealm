@@ -23,7 +23,8 @@
 //       H  (K64-n1) aus der Ring-Mitte, AUSGABE-Pfad gegen das Labor-Bild derselben Pixel: die Welt hebt die Membran nicht über
 //          ihren Anzeige-Wert (Y ≤ 1,15 ×) und brennt nicht aus (Y > 240 ≤ 5 %) — die Shell malt in Bild-Werten, die Welt liest
 //          sie durch das FARB-GESETZ ins Lineare (Lehre 21)
-//       HS Selbsttest: der rohe Leser (Anzeige-Wert als Strahlung, der Stand vor K64-n1) MUSS in H rot werden
+//       HS Selbsttest: der rohe Leser (Anzeige-Wert als Strahlung, der Stand vor K64-n1) MUSS in H rot werden — in DERSELBEN
+//          Seite, gegen dieselbe Maske und dasselbe Labor-Bild (K64-n2: seine Stoffe SIND die des Labors)
 //
 //   node scripts/diag-portal-membran.cjs [--ohne-blick]
 "use strict";
@@ -123,10 +124,17 @@ async function blickProbe(opts) {
 }
 
 // H (K64-n1, die Hellen Tafeln): aus der Ring-Mitte (der Spieler am Spawn, die Tore wach) liest der AUSGABE-Pfad die Pixel jeder
-// Membran — die Maske ist ein zweiter Schuss mit Magenta-Membranen und schwarzem Nebel bei angehaltener Uhr. Die Shell malt in
-// Bild-Werten (ACES endet im Anzeige-Wert); roh als lineare Strahlung gelesen hob die Ausgabe ihre dunklen Bänder an, die Membran
-// stand milchig-weiß (entsättigt). `opt.roh`: die Membranen und Nebel zeichnen ihren Anzeige-Wert roh (der alte Leser, Selbsttest).
-async function hellProbe(opt) {
+// Membran. Die Shell malt in Bild-Werten (ACES endet im Anzeige-Wert); roh als lineare Strahlung gelesen hob die Ausgabe ihre
+// dunklen Bänder an, die Membran stand milchig-weiß (entsättigt). EINE Seite, EIN Blick, die Uhr steht — vier Bilder:
+//   A    die Welt, wie sie ist (warm: der Blick B hat jedes Programm gebaut)
+//   M    die Maske: die Membranen in Magenta, der Nebel verborgen (EIN kaltes Programm)
+//   R    der rohe Leser (der Stand vor K64-n1): Membran und Nebel zeichnen ihren Anzeige-Wert als Strahlung (HS, zwei Programme)
+//   L    das Labor-Bild derselben Pixel: DIESELBEN rohen Stoffe in ein Ziel im Format des Szenen-Passes, gezeichnet nur Membran
+//        und Nebel — die Shell zeigt ihren Anzeige-Wert als Pixel, ein Ziel, das nicht Ausgabe ist, hält ihn ungewandelt.
+//        Format, Tiefe und Proben gleich dem Szenen-Pass: R und L teilen ihre Programme.
+// K64-n2 (die CI-Frist der Linse): bis dahin zeichnete das Labor die GANZE Szene in ein RGBA8-Ziel (jedes Programm im Blick neu
+// auf swiftshader), je Seite mit eigener Maske, und der Selbsttest fuhr H in einer zweiten Seite — gate:portal-membran 578 s.
+async function hellProbe() {
     const r = window.anazhRealm;
     const st = r.state;
     const T = window.THREE;
@@ -142,100 +150,139 @@ async function hellProbe(opt) {
     cam.updateMatrixWorld(true);
     window.__buehne();
     const echtNow = performance.now.bind(performance);
-    performance.now = () => 4.2e6; // die Uhr steht: Atem, Puls und Welle gleich in beiden Schüssen
+    performance.now = () => 4.2e6; // die Uhr steht: Atem, Puls und Welle gleich in jedem Bild
     const recs = [...r._portalMembranes.values()];
     const vor = recs.map((rec) => [rec.mesh.material.colorNode, rec.nebel ? rec.nebel.material.colorNode : null]);
+    const nebelSicht = recs.map((rec) => (rec.nebel ? rec.nebel.visible : false));
     const setze = (fm, fn) =>
         recs.forEach((rec) => {
             rec.mesh.material.colorNode = fm(rec);
             rec.mesh.material.needsUpdate = true;
-            if (rec.nebel) {
+            if (rec.nebel && fn) {
                 rec.nebel.material.colorNode = fn(rec);
                 rec.nebel.material.needsUpdate = true;
             }
         });
-    const schuss = async () => {
-        r._schattenAlleNeu();
-        await window.__ausgabeAufnahme(W, H, 1, { wahl: 0 });
-        return (await window.__ausgabeAufnahme(W, H, 1, { wahl: 0 })).u8.slice();
+    const schuss = async () => (await window.__ausgabeAufnahme(W, H, 1, { wahl: 0 })).u8;
+    const zeit = {};
+    const uhr = async (k, f) => {
+        const t = echtNow();
+        const v = await f();
+        zeit[k] = Math.round(echtNow() - t);
+        return v;
     };
-    try {
-        if (opt.roh)
-            setze(
-                (rec) => TSL.vec4(r._membranGraph(rec.tor.gesetz).anzeige, 1.0),
-                (rec) => TSL.vec4(r._nebelGraph(rec.tor.gesetz).anzeige, 1.0)
-            );
-        const A = await schuss();
-        setze(
-            () => TSL.vec4(1, 0, 1, 1),
-            () => TSL.vec4(0, 0, 0, 1)
-        );
-        const M = await schuss();
-        // DAS LABOR-BILD derselben Pixel: die Shell zeigt ihren Anzeige-Wert als Pixel (kein Ausgabe-Schritt). Ein eigenes
-        // Render-Ziel liefert in r184 die rohen Werte des Stoffs (linear, ungetont — scripts/lib/ausgabe-aufnahme.cjs): die
-        // Membranen und Nebel zeichnen dort ihren Anzeige-Wert, ein zweiter Schuss in Magenta ist die Maske desselben Ziels.
-        const roh = async () => {
-            const rt = new T.RenderTarget(W, H, { depthBuffer: true, samples: 0 });
+    // DAS LABOR-ZIEL: eine Kopie des Szenen-Ziels (Format, Tiefen-Textur, Proben) in der Größe der Aufnahme; gelesen wird der
+    // Anzeige-Wert je Pixel auf 0..255 — rg11b10ufloat (gepackt), rgba16float oder 8 Bit, je nachdem, was das Gerät trägt.
+    const labor = async () => {
+        // neu gebaut, nie geklont: eine geklonte Tiefen-Textur teilt ihre Quelle (Größe) mit dem Szenen-Ziel
+        const sp = st.scenePass && st.scenePass.renderTarget;
+        const rt = new T.RenderTarget(W, H, {
+            type: sp ? sp.texture.type : T.UnsignedByteType,
+            format: sp ? sp.texture.format : T.RGBAFormat,
+            depthBuffer: true,
+            samples: sp ? sp.samples : 0,
+        });
+        if (sp && sp.depthTexture) {
+            rt.depthTexture = new T.DepthTexture(W, H);
+            rt.depthTexture.type = sp.depthTexture.type;
+        }
+        // nur Membran und Nebel (die Render-Objekt-Funktion des Renderers): der Graph der Membran liest keinen Grund (kein
+        // Schirm-, kein Tiefen-Knoten), ihr Anzeige-Wert hängt an keinem anderen Objekt — und kein anderes Programm entsteht
+        const nur = new Set();
+        for (const rec of recs) {
+            nur.add(rec.mesh);
+            if (rec.nebel) nur.add(rec.nebel);
+        }
+        const rof = rend.getRenderObjectFunction();
+        const zeichne = () => {
+            rend.setRenderTarget(rt);
+            rend.setRenderObjectFunction(function (object, ...rest) {
+                if (nur.has(object)) rend.renderObject(object, ...rest);
+            });
             try {
-                // DIE ERST-ZEICHNUNG (`_configureRenderer`): die Pipeline je Stoff UND Ziel-Format entsteht asynchron, ein
-                // Objekt mit offener Pipeline fällt aus dem Bild — das Labor-Bild wartet ihre Ruhe ab wie die Aufnahme
-                // (`__erstRuhe`); vorher zeichnete das eigene Ziel keine Membran (0 Labor-Pixel, H rot am Werkzeug)
-                const zeichne = () => {
-                    rend.setRenderTarget(rt);
-                    rend.render(st.scene, cam);
-                };
-                await window.__erstRuhe(zeichne, { erstFristMs: 240000 }, "das Labor-Bild (H)");
-                zeichne();
-                const px = await rend.readRenderTargetPixelsAsync(rt, 0, 0, W, H);
-                const u = px instanceof Uint8Array ? px : new Uint8Array(px.buffer || px);
-                // WebGPU richtet jede Zeile auf 256 Byte aus (480 px → 2 048 Byte): das Polster fällt (wie in der Aufnahme)
-                const zeile = W * 4,
-                    schritt = u.length > zeile * H ? Math.ceil(zeile / 256) * 256 : zeile;
-                if (schritt === zeile) return u;
-                const voll = new Uint8Array(zeile * H);
-                for (let y = 0; y < H; y++) voll.set(u.subarray(y * schritt, y * schritt + zeile), y * zeile);
-                return voll;
+                rend.render(st.scene, cam);
             } finally {
+                rend.setRenderObjectFunction(rof);
                 rend.setRenderTarget(null);
-                rt.dispose();
             }
         };
+        try {
+            await window.__erstRuhe(zeichne, { erstFristMs: 120000 }, "das Labor-Bild (H)");
+            zeichne();
+            const roh = await rend.readRenderTargetPixelsAsync(rt, 0, 0, W, H);
+            const gepackt = rt.texture.type === T.UnsignedInt101111Type;
+            // r184 reicht rg11b10ufloat als Bytes: je Texel EIN 32-Bit-Wort
+            const px = gepackt ? new Uint32Array(roh.buffer, roh.byteOffset, roh.byteLength >> 2) : roh;
+            const kanaele = gepackt ? 1 : 4;
+            // WebGPU richtet jede Zeile auf 256 Byte aus (die letzte ohne Polster): die Zeile in Elementen
+            const zeile = (Math.ceil((W * kanaele * px.BYTES_PER_ELEMENT) / 256) * 256) / px.BYTES_PER_ELEMENT;
+            // 11/10-Bit-Gleitkomma ohne Vorzeichen: 5 Bit Exponent (Bias 15), 6 bzw. 5 Bit Mantisse
+            const klein = (v, mant) => {
+                const e = v >> mant,
+                    m = v & ((1 << mant) - 1);
+                if (e === 0) return (m / (1 << mant)) * Math.pow(2, -14);
+                if (e === 31) return 1;
+                return (1 + m / (1 << mant)) * Math.pow(2, e - 15);
+            };
+            const wert = (i) => {
+                if (gepackt) {
+                    const p = px[i];
+                    return [klein(p & 0x7ff, 6), klein((p >>> 11) & 0x7ff, 6), klein((p >>> 22) & 0x3ff, 5)];
+                }
+                if (px instanceof Uint8Array) return [px[i] / 255, px[i + 1] / 255, px[i + 2] / 255];
+                if (px instanceof Uint16Array) return [0, 1, 2].map((k) => T.DataUtils.fromHalfFloat(px[i + k]));
+                return [px[i], px[i + 1], px[i + 2]];
+            };
+            const u = new Uint8Array(W * H * 4);
+            for (let y = 0; y < H; y++)
+                for (let x = 0; x < W; x++) {
+                    const c = wert(y * zeile + x * kanaele);
+                    const o = (y * W + x) * 4;
+                    for (let k = 0; k < 3; k++) u[o + k] = Math.round(Math.min(1, Math.max(0, c[k])) * 255);
+                    u[o + 3] = 255;
+                }
+            return { u, format: gepackt ? "rg11b10ufloat" : px.constructor.name };
+        } finally {
+            rt.dispose();
+        }
+    };
+    try {
+        const A = await uhr("A", schuss);
+        setze(() => TSL.vec4(1, 0, 1, 1), null);
+        recs.forEach((rec) => {
+            if (rec.nebel) rec.nebel.visible = false;
+        });
+        const M = await uhr("M", schuss);
+        recs.forEach((rec, i) => {
+            if (rec.nebel) rec.nebel.visible = nebelSicht[i];
+        });
         setze(
             (rec) => TSL.vec4(r._membranGraph(rec.tor.gesetz).anzeige, 1.0),
             (rec) => TSL.vec4(r._nebelGraph(rec.tor.gesetz).anzeige, 1.0)
         );
-        const L = await roh();
-        setze(
-            () => TSL.vec4(1, 0, 1, 1),
-            () => TSL.vec4(0, 0, 0, 1)
-        );
-        const LM = await roh();
+        const R = await uhr("R", schuss);
+        const L = await uhr("L", labor);
         const Y = (u, i) => 0.2126 * u[i] + 0.7152 * u[i + 1] + 0.0722 * u[i + 2];
         const S = (u, i) => {
             const mx = Math.max(u[i], u[i + 1], u[i + 2]);
             return mx > 0 ? (mx - Math.min(u[i], u[i + 1], u[i + 2])) / mx : 0;
         };
-        let nL = 0,
-            sL = 0,
-            satL = 0;
-        for (let i = 0; i < W * H * 4; i += 4)
-            if (LM[i] > LM[i + 1] + 70 && LM[i + 2] > LM[i + 1] + 70) {
-                nL++;
-                sL += Y(L, i);
-                satL += S(L, i);
+        // EINE Maske für alle drei Bilder: die Pixel, in denen die Welt eine Membran zeigt
+        const maske = [];
+        for (let i = 0; i < W * H * 4; i += 4) if (M[i] > M[i + 1] + 70 && M[i + 2] > M[i + 1] + 70) maske.push(i);
+        const mass = (u) => {
+            let sY = 0,
+                sat = 0,
+                weiss = 0;
+            for (const i of maske) {
+                const y = Y(u, i);
+                sY += y;
+                if (y > 240) weiss++;
+                sat += S(u, i);
             }
-        let n = 0,
-            weiss = 0,
-            sY = 0,
-            sat = 0;
-        for (let i = 0; i < W * H * 4; i += 4) {
-            if (!(M[i] > M[i + 1] + 70 && M[i + 2] > M[i + 1] + 70)) continue;
-            n++;
-            const y = Y(A, i);
-            sY += y;
-            if (y > 240) weiss++;
-            sat += S(A, i);
-        }
+            const n = maske.length;
+            return { Y: n ? sY / n : 0, saettigung: n ? sat / n : 0, weiss: n ? weiss / n : 0 };
+        };
         const P = new T.Vector3();
         const imBild = recs
             .filter((rec) => {
@@ -244,16 +291,15 @@ async function hellProbe(opt) {
             })
             .map((rec) => rec.tor.gestalt);
         return {
-            n,
-            anteil: n / (W * H),
-            weiss: n ? weiss / n : 0,
-            Y: n ? sY / n : 0,
-            saettigung: n ? sat / n : 0,
-            Ylabor: nL ? sL / nL : 0,
-            satLabor: nL ? satL / nL : 0,
-            nLabor: nL,
+            n: maske.length,
+            anteil: maske.length / (W * H),
+            welt: mass(A),
+            roh: mass(R),
+            labor: mass(L.u),
+            laborFormat: L.format,
             imBild,
             belichtung: rend.toneMappingExposure,
+            zeit,
         };
     } finally {
         recs.forEach((rec, i) => {
@@ -262,6 +308,7 @@ async function hellProbe(opt) {
             if (rec.nebel) {
                 rec.nebel.material.colorNode = vor[i][1];
                 rec.nebel.material.needsUpdate = true;
+                rec.nebel.visible = nebelSicht[i];
             }
         });
         performance.now = echtNow;
@@ -285,9 +332,11 @@ async function blickStufe(check) {
             timeout: 60000,
         });
         const o = await page.evaluate(blickProbe, { alt });
-        if (!o.fehler) {
+        // H und sein Selbsttest HS in DERSELBEN Seite (eine Maske, ein Labor-Bild); die Seite des alten Culling-Stands (BS)
+        // zählt nur Befehle
+        if (!o.fehler && !alt) {
             await page.evaluate(AUSGABE_INSTALL);
-            o.hell = await page.evaluate(hellProbe, { roh: alt });
+            o.hell = await page.evaluate(hellProbe);
         }
         o.seite = seite;
         await page.close();
@@ -317,21 +366,27 @@ async function blickStufe(check) {
                 ? loch.map((h) => `${h.gestalt} (Amplitude ${h.amplitude})`).join(" · ")
                 : b.huelle.map((h) => `${h.gestalt} ±${h.amplitude.toFixed(2)} m`).join(" · ")
         );
-        const hellZeile = (h) =>
-            `${h.n} Membran-Pixel (${(h.anteil * 100).toFixed(1)} %), Y Welt ${h.Y.toFixed(1)} gegen Labor ${h.Ylabor.toFixed(1)} (× ${(h.Y / Math.max(1, h.Ylabor)).toFixed(2)}), Sättigung ${h.saettigung.toFixed(3)} gegen Labor ${h.satLabor.toFixed(3)}, ` +
-            `Y > 240 ${(h.weiss * 100).toFixed(1)} %, Belichtung ${h.belichtung.toFixed(3)} — ${h.imBild.join(" · ")}`;
-        const hellRot = (h) =>
+        // `w`: das Bild unter dem Urteil (welt = das Spiel, roh = der alte Leser), gegen DASSELBE Labor-Bild in DERSELBEN Maske
+        const hellZeile = (h, w) =>
+            `${h.n} Membran-Pixel (${(h.anteil * 100).toFixed(1)} %), Y ${w === h.welt ? "Welt" : "roh"} ${w.Y.toFixed(1)} gegen Labor ${h.labor.Y.toFixed(1)} (× ${(w.Y / Math.max(1, h.labor.Y)).toFixed(2)}), Sättigung ${w.saettigung.toFixed(3)} gegen Labor ${h.labor.saettigung.toFixed(3)}, ` +
+            `Y > 240 ${(w.weiss * 100).toFixed(1)} %, Belichtung ${h.belichtung.toFixed(3)}, Labor ${h.laborFormat} — ${h.imBild.join(" · ")} [ms A ${h.zeit.A} · M ${h.zeit.M} · R ${h.zeit.R} · L ${h.zeit.L}]`;
+        const hellRot = (h, w) =>
             !(
                 h.n > 200 &&
-                h.nLabor > 200 &&
-                h.Y <= HELL.hub * h.Ylabor &&
-                h.saettigung >= HELL.bleich * h.satLabor &&
-                h.weiss <= HELL.weiss
+                h.labor.Y > 0 &&
+                w.Y <= HELL.hub * h.labor.Y &&
+                w.saettigung >= HELL.bleich * h.labor.saettigung &&
+                w.weiss <= HELL.weiss
             );
         check(
             `H aus der Ring-Mitte: die Welt hebt die Membran nicht über ihr Labor-Bild (Y ≤ ${HELL.hub} × Labor), bleicht sie nicht (Sättigung ≥ ${HELL.bleich} × Labor) und brennt nicht aus (Y > 240 ≤ ${HELL.weiss * 100} %)`,
-            !hellRot(b.hell),
-            hellZeile(b.hell)
+            !hellRot(b.hell, b.hell.welt),
+            hellZeile(b.hell, b.hell.welt)
+        );
+        check(
+            "HS Selbsttest: der rohe Leser (Anzeige-Wert als Strahlung) wird in H rot beim Namen",
+            hellRot(b.hell, b.hell.roh),
+            hellZeile(b.hell, b.hell.roh)
         );
         check("B keine Page-Errors", b.seite.length === 0, b.seite.slice(0, 2).join(" | "));
         // BS: der alte Stand (frustumCulled = false) in einer frischen Seite — B2 MUSS jede Membran beim Namen nennen
@@ -341,11 +396,6 @@ async function blickStufe(check) {
             "BS Selbsttest: mit frustumCulled = false nennt B2 die Membranen im Rücken beim Namen",
             s.weg.membran === s.membranen,
             `${s.weg.membran} von ${s.membranen}: ${s.weg.taeter.slice(0, 4).join(" · ")}${s.weg.taeter.length > 4 ? " …" : ""}`
-        );
-        check(
-            "HS Selbsttest: der rohe Leser (Anzeige-Wert als Strahlung) wird in H rot beim Namen",
-            hellRot(s.hell),
-            hellZeile(s.hell)
         );
     } catch (e) {
         check("B Lauf", false, (e && e.message) || String(e));
