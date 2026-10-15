@@ -931,9 +931,10 @@
     for(let i=0;i<N;i++){ const sch=(i===(N-1)/2), tt=sch?t*1.12:t, a=Q[i], b=Q[i+1];
       prisma(g,[[vO(a.p),vO(b.p),vO(ext(b.n,tt)),vO(ext(a.n,tt))]],eb(sch?dp+0.04:dp),role,{keil:{bogen:B,i}}); }
     const zw=[];   // die Kämpfer-Stücke und die Mauer über dem Bogen (Zwickel)
-    if(kurve==='hufeisen') for(const sg of [-1,1]){ const pl=[[sg*(rhoH+t),yS],[sg*R,yS]];   // der Kämpferstein unter der Mitte: sein Lager auf yS, oben die Fuge durch die Mitte
+    const fernStufe=!!(P.nur&&P.nur.kaempfer===false);   // die Stufe 2 (DESTNUR) trägt den Bogen als Keile ohne Kämpfer und Widerlager (K66: marokkanisch L2 7224 → 7280 > 7250)
+    if(kurve==='hufeisen'&&!fernStufe) for(const sg of [-1,1]){ const pl=[[sg*(rhoH+t),yS],[sg*R,yS]];   // der Kämpferstein unter der Mitte: sein Lager auf yS, oben die Fuge durch die Mitte
       for(let k=1;k<=6;k++){ const a=-BG.hufeisenAlpha+BG.hufeisenAlpha*k/6; pl.push([sg*rhoH*Math.cos(a), yS+h0+rhoH*Math.sin(a)]); } pl.push([sg*(rhoH+t),yS+h0]); zw.push(sg<0?pl:pl.reverse()); }
-    if(kurve==='stich'){ const q0=Q[0].r, qN=Q[N].r; zw.push([[q0[0],yS],[Q[0].p[0],yS],vO(q0)]); zw.push([[Q[N].p[0],yS],[qN[0],yS],vO(qN)]); }   // das Widerlager unter dem schrägen Lager
+    if(kurve==='stich'&&!fernStufe){ const q0=Q[0].r, qN=Q[N].r; zw.push([[q0[0],yS],[Q[0].p[0],yS],vO(q0)]); zw.push([[Q[N].p[0],yS],[qN[0],yS],vO(qN)]); }   // das Widerlager unter dem schrägen Lager
     if(o.zwickel){ const uL=o.zwickel[0], uR=o.zwickel[1], top=o.zwickel[2];
       if(Q[0].r[0]-uL>0.005) zw.push([[uL,yS],[Q[0].r[0],yS],[Q[0].r[0],top],[uL,top]]);
       if(uR-Q[N].r[0]>0.005) zw.push([[Q[N].r[0],yS],[uR,yS],[uR,top],[Q[N].r[0],top]]);
@@ -1883,7 +1884,7 @@
     // prettier-ignore
     const KULLVOL=0.012;
     // prettier-ignore
-    const DESTNUR={dachdeckung:false,dachwerk:false,fenster:false,gefache:false,boeden:false,innenwaende:false,treppe:false,moebel:false,geruest:false,zimmermann:false,tueren:false,anbau:false,balkon:false,portikus:false,veranda:false,terrasse:false,arkade:false,giebel:false,dachAlt:false}; // GIEBEL-KOPLANAR-FIX: DESTNUR-Giebelwände lagen EXAKT auf den dachPrisma-Gabeln (GEMESSEN: barock 21.7k / antike 13.5k Z-Fight-Paare auf Traufhöhe) — fern IST der Körper der Giebel   // Stufe 2: 6.7x — Kull-Opfer entstehen gar nicht erst. dachwerk AUS: nackte Sparren über dem dims-Körper lasen sich als Ruine — der Körper trägt das Dach
+    const DESTNUR={kaempfer:false,dachdeckung:false,dachwerk:false,fenster:false,gefache:false,boeden:false,innenwaende:false,treppe:false,moebel:false,geruest:false,zimmermann:false,tueren:false,anbau:false,balkon:false,portikus:false,veranda:false,terrasse:false,arkade:false,giebel:false,dachAlt:false}; // GIEBEL-KOPLANAR-FIX: DESTNUR-Giebelwände lagen EXAKT auf den dachPrisma-Gabeln (GEMESSEN: barock 21.7k / antike 13.5k Z-Fight-Paare auf Traufhöhe) — fern IST der Körper der Giebel   // Stufe 2: 6.7x — Kull-Opfer entstehen gar nicht erst. dachwerk AUS: nackte Sparren über dem dims-Körper lasen sich als Ruine — der Körper trägt das Dach
     // prettier-ignore
     const TURMNUR={gefache:false,riegel:false,streben:false,zimmermann:false,fenster:false,geruest:false,boeden:false,innenwaende:false,treppe:false,moebel:false}; // Turm-Fassade: Paneele x 11 Geschosse waren die Masse
     // prettier-ignore

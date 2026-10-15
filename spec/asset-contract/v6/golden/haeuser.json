@@ -894,8 +894,8 @@
     },
     "marokkanisch-s7-L2": {
       "objects": 7,
-      "vertices": 16310,
-      "sha256": "a4fa69d82b6fe0470940a9bc354c4d341a865c192922c50bcba719f2011cc15d"
+      "vertices": 13622,
+      "sha256": "882a6626fd1fde30a3b1a8a02de7e539c4c0c67911c7630348bfde0561c8054b"
     },
     "marokkanisch-s7-L3": {
       "objects": 1,
@@ -914,8 +914,8 @@
     },
     "marokkanisch-s12345-L2": {
       "objects": 7,
-      "vertices": 15542,
-      "sha256": "3b82424f4c799d97073eea064e60bad637fdc97b6b6df14c39e7c5e07d824fc9"
+      "vertices": 12854,
+      "sha256": "e7c6dd8cfe113ba3a0cfac5a20f084ea04135a04744bab6b3d46e6d6d00fa5f1"
     },
     "marokkanisch-s12345-L3": {
       "objects": 1,
