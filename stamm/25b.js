@@ -1870,8 +1870,9 @@ class AnazhRealm_Z25b {
     // 3rd sieht das Auge den Leib, 1st nicht — die Kamera sitzt im Leib). Aufrufer: Avatar-Guss (applyPlayerSoul),
     // Modus-Schalter (setCameraMode) und _loopCamera (idempotenter Halter, je Frame vor dem Render) — lebte die Regel nur
     // im per-Frame-Tick, zeigte jeder Render davor den Kopf von innen.
-    // DER EINE EBENEN-SCHALTER (0910-5): im 1st verlässt der Leib die Ebene 0 der Haupt-Kamera und liegt auf
-    // SHADOW_TWIN_LAYER — die Kaskaden sehen ihn GANZ (wie den Kronen-Zwilling), das Auge nie. Bis 0910-5 schaltete die
+    // DER EINE EBENEN-SCHALTER (0910-5): im 1st verlässt der Leib die Ebene 0 der Haupt-Kamera; was wirft, liegt weiter
+    // auf SHADOW_TWIN_LAYER (der Wurf-Ebene, K72) — die Kaskaden sehen ihn GANZ (wie den Kronen-Zwilling), das Auge nie.
+    // Bis 0910-5 schaltete die
     // Regel `visible` und nahm mit der Haut den Wurf: in der Ego-Sicht, dem Standard-Blick, warf der Spieler keinen Schatten
     // (Lehre 26: unsichtbar für die Haupt-Kamera heißt Ebene, nie Transparenz). `visible` bleibt unberührt — die Stufen-Regel
     // (`_gelenkStufe`) behält ihr Wort. Ebenen erbt kein Kind: die Regel geht jeden Knoten, verschiebt nur, was auf
