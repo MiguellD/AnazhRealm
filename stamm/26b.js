@@ -797,25 +797,26 @@ AnazhRealm.DETAIL_CASCADE = Object.freeze([
     Object.freeze({ maxRing: Infinity, aiDiv: 6 }), // Band 3 — ≤ 518 m
 ]);
 
-// DIE BODEN-STUFEN (K51) — die Stufen-Kette des Chunk-Netzes (`_voxelChunkConfig(lod)`: Schritt 1,8 · 3,6 · 7,2 · 14,4 m)
-// je Chebyshev-Ring um den Spieler-Chunk. Die Nah-Zone (Ring ≤ 1: ≥ 43,2 m um das Auge) trägt L0 — dort lesen Stand,
-// Nah-Wiese (14 m) und Nah-Streu (24 m) den Boden (`_bodenSichtAt`, Lehre 22). Jenseits verdoppelt sich der Schritt mit dem
-// Abstand: eine Zelle steht an jeder Stufen-Grenze gleich gross im Bild (3,6 m ab 43,2 m, 7,2 m ab 86,4 m — ~59 px bei 1080
-// Zeilen und 75°, kleiner als eine L0-Zelle auf 30 m); Stufe 3 erst ab Ring 10, wo die Maschen des Fern-Rings breiter sind
-// als 7,2 m. Befund 14.10. (integ-probe 45f1eeae, Ring 4, drei Pässe): L0 bis Ring 2 (25 Chunks à ~5 300 Dreiecke) hielt
-// den Boden-Satz an der Wiese auf 130k, im Dorf auf 146k — der Haushalt trägt 120k für die ganze Klasse samt Fern-Ring.
-// Die Naht zwischen zwei Stufen schliesst der Morph (`_applyCrossLodGeomorph`), das Naht-Band brückt nur, wo er nicht greift.
-AnazhRealm.BODEN_STUFEN = Object.freeze([
-    Object.freeze({ maxRing: 1, lod: 0 }), // die Nah-Zone (3×3)
-    Object.freeze({ maxRing: 2, lod: 1 }),
-    Object.freeze({ maxRing: 9, lod: 2 }),
-    Object.freeze({ maxRing: Infinity, lod: 3 }),
-]);
-
-// Die Hysterese der Boden-Stufen: ein bestehender Chunk wechselt die Stufe erst, wenn r die Grenze seiner Stufe um diese
-// Ring-Zahl KLAR überschreitet (Deadband gegen Flip-Flop-Pop). Asymmetrisch (`_voxelChunkLodFor`): verfeinern sofort,
-// vergröbern nur im klaren Überschritt.
-AnazhRealm.LOD_HYSTERESIS_RINGS = 1;
+// DIE BODEN-STUFEN (K51, K51-2 CDLOD) — die Stufen-Kette des Chunk-Netzes (`_voxelChunkConfig(lod)`: Schritt 1,8 · 3,6 · 7,2 ·
+// 14,4 m) nach dem KASTEN-Abstand des Spielers zum Chunk-Quadrat (Chebyshev, `_voxelChunkLodFor`): `bis` die Grenze der Stufe,
+// `band` ihr Übergangs-Band davor — darin wandert jeder Vertex stetig auf das Netz der nächst gröberen Stufe (`stufeZiel`,
+// `_stufeGewicht`), an `bis` liegt er ganz auf ihr. Verfeinert wird unter `bis + vorlauf` (der Bau hat den Vorlauf Zeit, das
+// feine Netz erscheint ganz gemorpht), vergröbert erst ab `bis + vorlauf + halt` (Hysterese). Die CDLOD-Bedingung: ein Chunk
+// der Stufe L reicht bis `bis(L) + vorlauf + halt + Spanne + Saum-Zelle` — dort darf das Band von L+1 noch nicht beginnen
+// (36 + 7 + 43,2 + 1,8 = 88 ≤ 100 − 12; 100 + 7 + 43,2 + 3,6 = 153,8 ≤ 388,8 − 40). Die Ring-Kette (K51: L0 bis Ring 1, L1
+// Ring 2) konnte sie nie halten — ein Ring trägt zwei Spannen Abstand, der Wechsel sprang sichtbar bei 43–65 m (Gang über die
+// Kante an der Mess-Wiese, Radeon: p99,9 der Luma-Änderung 17 gegen 5 im Rauschen). Stufe 0 trägt das Auge bis 24 m ganz
+// (Nah-Wiese 14 m, Nah-Streu 24 m, `_bodenSichtAt`), Stufe 3 erst jenseits 388,8 m (Ring 10).
+AnazhRealm.BODEN_STUFEN = Object.freeze({
+    vorlauf: 3,
+    halt: 4,
+    stufen: Object.freeze([
+        Object.freeze({ lod: 0, bis: 36, band: 12 }),
+        Object.freeze({ lod: 1, bis: 100, band: 12 }),
+        Object.freeze({ lod: 2, bis: 388.8, band: 40 }),
+        Object.freeze({ lod: 3, bis: Infinity, band: 0 }),
+    ]),
+});
 
 // GESTURE_CRYSTAL — GESTE → GESETZ: eine wiederholt bewährte Geste (finalized, fitness ≥ minFitness,
 // ≥ minRuns Läufe desselben Op-Kopfes) kristallisiert zu einer stehenden Regel; die

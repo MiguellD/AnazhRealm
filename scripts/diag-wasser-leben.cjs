@@ -53,6 +53,7 @@
 "use strict";
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
+const { quellTeileVereinen, QUELL_KACHELN } = require("./lib/wasser-linse.cjs");
 
 const SCHWELLE = {
     steigend: 0, // Anteil der 2-m-Schritte, deren Lauf-Fläche > 5 cm steigt
@@ -153,7 +154,17 @@ function urteil(b) {
     }
     if (b.quelle) {
         const q = b.quelle;
+        // F5 KACHELN (K61): die Probe misst genau ihre Kacheln (`QUELL_KACHELN`) — eine fehlende ist ein Schrumpfen, nie grün
+        const gemessen = Array.isArray(q.kacheln) ? q.kacheln : [];
+        const fehlen = QUELL_KACHELN.filter((k) => gemessen.indexOf(k) < 0);
+        const fremd = gemessen.filter((k) => QUELL_KACHELN.indexOf(k) < 0);
         if (q.fehler) v.push(`F5: ${q.fehler}`);
+        else if (fehlen.length || fremd.length || gemessen.length !== QUELL_KACHELN.length)
+            v.push(
+                `F5 KACHELN: gemessen ${gemessen.length} Kacheln statt der ${QUELL_KACHELN.length} der Probe` +
+                    (fehlen.length ? ` — fehlen ${fehlen.join(" ")}` : "") +
+                    (fremd.length ? ` — fremd ${fremd.join(" ")}` : "")
+            );
         else if (!(q.quellen >= 30)) v.push(`F5 LEER: nur ${q.quellen} Quellen gemessen`);
         else {
             if (q.spruenge > 0)
@@ -538,6 +549,7 @@ function selbsttest() {
             breiteMax: 2.75,
             tiefeP50: 0.31,
             tiefeMax: 0.33,
+            kacheln: QUELL_KACHELN.slice(),
         },
         bach: {
             querschnitte: 104,
@@ -659,6 +671,11 @@ function selbsttest() {
         ["F5 UNSICHTBAR", (b) => Object.assign(b.quelle, { unsichtbar: 487, unsichtbarBreite: 1200.5 })],
         ["F5 PHANTOM", (b) => Object.assign(b.quelle, { phantom: 2, phantomBreite: 0.5 })],
         ["F5 LEER", (b) => (b.quelle.quellen = 16)],
+        // K61, zweite Prüfung: die Teil-Welten trugen 9 der 12 Kacheln (38646124674) — 66 Quellen still ungeprüft, grün
+        [
+            "F5 KACHELN",
+            (b) => (b.quelle.kacheln = ["0,0", "-1,-1", "-1,0", "0,-1", "1,-3", "1,4", "1,5", "2,4", "2,5"]),
+        ],
         ["F8 UNSICHTBAR", (b) => Object.assign(b.bach, { gezeichnet: 54, unsichtbarBreite: 177.5, mitUnsichtbar: 39 })],
         // d9f39b4f: 257 Punkte in 41 Querschnitten — das alte Urteil je Querschnitt (mit Nachbar-Toleranz) meldete 0
         ["F8 PHANTOM", (b) => Object.assign(b.bach, { phantomBreite: 64.25, mitPhantom: 41, breiteBild: 576.25 })],
@@ -731,12 +748,45 @@ function selbsttest() {
         ["B LEER", (b) => (b.bild.uhr60.schnelle.pixel = 0)],
         ["SEITE", (b) => (b.seitenFehler = ["TypeError: x"])],
         ["B6 HASH", (b) => (b.hashSin = hashSin(HASH_ALT))],
+        // DIE TEILE (K61): die Quell-Probe in Seiten nebeneinander — ein Teil mit anderen Kacheln bricht beim Namen, ein
+        // trockener Ursprung in nur EINEM Teil bleibt rot im Ganzen
+        [
+            "F5: die Teile der Quell-Probe sehen verschiedene Kacheln",
+            (b) =>
+                (b.quelle = quellTeileVereinen([
+                    Object.assign({}, b.quelle, { teil: { k: 0, n: 2 } }),
+                    Object.assign({}, b.quelle, { teil: { k: 1, n: 2 }, kacheln: b.quelle.kacheln.slice(0, 9) }),
+                ])),
+        ],
+        [
+            "F5 TROCKEN",
+            (b) =>
+                (b.quelle = quellTeileVereinen([
+                    Object.assign({}, b.quelle, { teil: { k: 0, n: 2 }, breiten0: [2, 2.75], tiefen0: [0.31, 0.33] }),
+                    {
+                        teil: { k: 1, n: 2 },
+                        kacheln: b.quelle.kacheln,
+                        quellen: 1,
+                        trocken: 1,
+                        querschnitte: 20,
+                        breiten0: [2.1],
+                        tiefen0: [0.32],
+                    },
+                ])),
+        ],
+        // ein Teil von dreien fehlt (seine Quellen fielen still aus der Summe, die übrigen Zahlen blieben grün)
+        [
+            "F5: die Teile der Quell-Probe decken nicht alle Quellen",
+            (b) =>
+                (b.quelle = quellTeileVereinen([
+                    Object.assign({}, b.quelle, { teil: { k: 0, n: 3 } }),
+                    Object.assign({}, b.quelle, { teil: { k: 2, n: 3 } }),
+                ])),
+        ],
     ];
     let rot = 0;
     // B6 an der lebenden Quelle (die Wand der CI, ohne Browser): der Wasser-Stoff rechnet sein Rauschen ohne sin.
-    const quelleSin = hashSin(
-        stammLib.text(require("path").join(__dirname, ".."))
-    );
+    const quelleSin = hashSin(stammLib.text(require("path").join(__dirname, "..")));
     console.log(
         `  ${quelleSin ? "❌" : "✅"} B6 HASH an der Quelle: ${quelleSin || "das Wasser-Rauschen rechnet ohne sin"}`
     );
@@ -746,6 +796,38 @@ function selbsttest() {
         console.log("  ❌ der grüne Befund fällt rot:", g);
         rot++;
     } else console.log("  ✅ der grüne Befund bleibt grün");
+    // die Teile zusammen urteilen wie das Ganze (K61): der grüne Befund in zwei Teilen bleibt grün, jede Zahl wie vorher
+    {
+        const q = gut.quelle;
+        const halb = (k) => (k === "huelle0" || k === "regionen" || k === "kacheln" ? q[k] : null);
+        const a = {},
+            z = {};
+        for (const k of Object.keys(q)) {
+            if (typeof q[k] === "number") {
+                a[k] = Math.ceil(q[k] / 2);
+                z[k] = q[k] - a[k];
+            } else a[k] = z[k] = halb(k);
+        }
+        Object.assign(a, { teil: { k: 0, n: 2 }, breiten0: [2, 2.75], tiefen0: [0.31, 0.33], buckelMax: 0 });
+        Object.assign(z, { teil: { k: 1, n: 2 }, breiten0: [1.9], tiefen0: [0.3], buckelMax: 0 });
+        const m = quellTeileVereinen([a, z]);
+        const fehlt = [
+            "quellen",
+            "gespeist",
+            "imKanal",
+            "spruenge",
+            "trocken",
+            "querschnitte",
+            "unsichtbar",
+            "phantom",
+        ].filter((k) => m[k] !== q[k]);
+        const v = urteil(Object.assign(kopie(), { quelle: m }));
+        const ok = !fehlt.length && !v.length && m.breiteP50 === 2 && m.breiteMax === 2.75 && m.tiefeMax === 0.33;
+        console.log(
+            `  ${ok ? "✅" : "❌"} die Teile zusammen urteilen wie das Ganze (${m.quellen} Quellen aus 2 Teilen, Breite p50 ${m.breiteP50} m, max ${m.breiteMax} m)${fehlt.length ? " — weichen ab: " + fehlt.join(", ") : ""}${v.length ? " — rot: " + v[0] : ""}`
+        );
+        if (!ok) rot++;
+    }
     for (const [name, mach] of taeter) {
         const b = kopie();
         mach(b);
@@ -763,6 +845,75 @@ function selbsttest() {
 if (process.argv.includes("--selftest")) selbsttest();
 else lauf();
 
+// Die Welt an das Ostufer des Sees streamen (Sync-Bau, Worker ausgehängt — wie der Playtest): die Wasser-Zellen der Chunks
+// sind ein Leser der Körper-Wahrheit von gestern. EINE Funktion für die Seite der Wand und jeden Teil der Quell-Probe.
+async function STROM_ANS_UFER(ufer) {
+    const r = window.anazhRealm;
+    const st = r.state;
+    if (st.renderer) {
+        st.renderer.render = function () {};
+        if (typeof st.renderer.renderAsync === "function") st.renderer.renderAsync = () => Promise.resolve();
+    }
+    st.postProcessingFailed = true;
+    st.playerMesh.position.set(ufer[0], r._voxelSurfaceY(ufer[0], ufer[1]) + 0.6, ufer[1]);
+    const worker = st.voxelWorker;
+    st.voxelWorker = null;
+    const start = performance.now();
+    let last = -1,
+        still = performance.now();
+    for (;;) {
+        try {
+            r._gameLoopTick(performance.now());
+        } catch (_e) {}
+        const n = st.voxelChunks ? st.voxelChunks.size : 0;
+        if (n !== last) {
+            last = n;
+            still = performance.now();
+        }
+        if ((n >= 9 && performance.now() - still > 1500) || performance.now() - start > 90000) break;
+        await new Promise((res) => setTimeout(res, 0));
+    }
+    st.voxelWorker = worker;
+}
+
+// DIE TEILE DER QUELL-PROBE (K61): so viele Seiten nebeneinander (WASSER_QUELL_TEILE, Vorgabe 3 — am Läufer vier Kerne, die
+// Seite der Wand rechnet daneben ihre übrigen Proben); 1 = alles in einer Seite. Jeder Teil k ≥ 1 in einem EIGENEN Kontext:
+// die Welt laden, der Strom ans Ufer der Orte der Wand (EINE Quelle der Orte für jede Seite), dann die Quellen seines Teils in
+// den Kacheln der Probe (`QUELL_KACHELN`, jede Seite stellt sie selbst her).
+const QUELL_TEILE = Math.max(1, Number(process.env.WASSER_QUELL_TEILE) || 3);
+async function quellTeil(browser, port, k, seitenFehler, orte) {
+    const { WASSER_INSTALL } = require("./lib/wasser-linse.cjs");
+    const kontext = await browser.createBrowserContext();
+    try {
+        const pg = await kontext.newPage();
+        pg.on("pageerror", (e) =>
+            seitenFehler.push(`Teil ${k}: ` + (e.stack || e.message || String(e)).split("\n")[0])
+        );
+        await pg.evaluateOnNewDocument(() => {
+            window.__anazhHeadlessNullRenderer = true;
+        });
+        await pg.goto(`http://127.0.0.1:${port}/index.html`, { waitUntil: "domcontentloaded", timeout: 120000 });
+        await pg.waitForFunction(
+            () =>
+                window.anazhRealm &&
+                typeof window.anazhRealm._gameLoopTick === "function" &&
+                window.anazhRealm.state.hydrosphere &&
+                window.anazhRealm.state.hydrosphere.ready,
+            { timeout: 600000, polling: 250 }
+        );
+        await pg.evaluate(WASSER_INSTALL);
+        await pg.evaluate(STROM_ANS_UFER, orte.see.ufer);
+        return await pg.evaluate(
+            (o, t, kacheln) => window.__wasserQuelle({ alle: true, bach: o.bach, teil: t, kacheln }),
+            orte,
+            { k, n: QUELL_TEILE },
+            QUELL_KACHELN
+        );
+    } finally {
+        await kontext.close();
+    }
+}
+
 async function lauf() {
     const fs = require("fs");
     const path = require("path");
@@ -773,7 +924,11 @@ async function lauf() {
     const root = path.resolve(__dirname, "..");
     const server = statikServer();
     await new Promise((r) => server.listen(PORT, r));
-    const browser = await starteBrowser({ art: BILD ? (ECHT ? "echt" : "linse") : "null", headless: !ECHT, frist: 900000 });
+    const browser = await starteBrowser({
+        art: BILD ? (ECHT ? "echt" : "linse") : "null",
+        headless: !ECHT,
+        frist: 900000,
+    });
     const page = await browser.newPage();
     if (BILD) await page.setViewport({ width: 640, height: 360 });
     const seitenFehler = [];
@@ -829,39 +984,24 @@ async function lauf() {
                 throw new Error("die Welt trägt keinen See, Fluss, Bach oder keine Küste nächst der Mess-Wiese");
             // Die Welt an das Ostufer des Sees streamen (Sync-Bau, Worker ausgehängt — wie der Playtest):
             // die Wasser-Zellen der Chunks sind ein Leser der Körper-Wahrheit von gestern.
-            await page.evaluate(async (ufer) => {
-                const r = window.anazhRealm;
-                const st = r.state;
-                if (st.renderer) {
-                    st.renderer.render = function () {};
-                    if (typeof st.renderer.renderAsync === "function")
-                        st.renderer.renderAsync = () => Promise.resolve();
-                }
-                st.postProcessingFailed = true;
-                st.playerMesh.position.set(ufer[0], r._voxelSurfaceY(ufer[0], ufer[1]) + 0.6, ufer[1]);
-                const worker = st.voxelWorker;
-                st.voxelWorker = null;
-                const start = performance.now();
-                let last = -1,
-                    still = performance.now();
-                for (;;) {
-                    try {
-                        r._gameLoopTick(performance.now());
-                    } catch (_e) {}
-                    const n = st.voxelChunks ? st.voxelChunks.size : 0;
-                    if (n !== last) {
-                        last = n;
-                        still = performance.now();
-                    }
-                    if ((n >= 9 && performance.now() - still > 1500) || performance.now() - start > 90000) break;
-                    await new Promise((res) => setTimeout(res, 0));
-                }
-                st.voxelWorker = worker;
-            }, ORTE.see.ufer);
+            await page.evaluate(STROM_ANS_UFER, ORTE.see.ufer);
+            // DIE QUELL-PROBE IN TEILEN (K61 CI-Diät): sie trägt 87 % der Wand (328 Quellen in den 12 Kacheln der Probe, je
+            // Quelle der Ring ihrer Chunks synchron gebaut, CI-Median 299 s der ganzen Wand) auf EINEM Faden. Die Teile 1..n-1
+            // fahren in eigenen Kontexten nebeneinander (je eine Welt, dieselben Orte, derselbe Strom ans Ufer), Teil 0 in
+            // dieser Seite an seinem Platz; jede Seite misst genau `QUELL_KACHELN`, das Ganze urteilt über dieselben Quellen
+            // wie EIN Lauf, jeder Teil genau einmal.
             // `--nur a,b`: nur diese Proben (Werkbank-Fragen; das Gate fährt alle)
             const nurI = process.argv.indexOf("--nur");
             const NUR = nurI >= 0 ? new Set(process.argv[nurI + 1].split(",")) : null;
             const soll = (n) => !NUR || NUR.has(n);
+            const teilen = soll("quelle") && QUELL_TEILE > 1;
+            const helfer = teilen
+                ? Array.from({ length: QUELL_TEILE - 1 }, (_, i) =>
+                      quellTeil(browser, PORT, i + 1, seitenFehler, ORTE).catch((e) => ({
+                          fehler: `Teil ${i + 1}/${QUELL_TEILE} der Quell-Probe: ${String((e && e.message) || e).split("\n")[0]}`,
+                      }))
+                  )
+                : [];
             if (soll("fluss")) befund.fluss = await page.evaluate(() => window.__wasserFluss());
             if (soll("kanal")) befund.kanal = await page.evaluate(() => window.__wasserKanalParitaet({}));
             if (soll("koerper"))
@@ -879,14 +1019,22 @@ async function lauf() {
             if (soll("ufer"))
                 befund.ufer = await page.evaluate((o) => window.__wasserUfer({ ort: [o.fluss.x, o.fluss.z] }), ORTE);
             if (soll("uferFarbe")) befund.uferFarbe = await page.evaluate(() => window.__wasserUferFarbe({}));
-            // nach der Ufer-Probe steht die Welt am Fluss der Mess-Wiese: die Bank
-            if (soll("bank")) befund.bank = await page.evaluate(() => window.__wasserBank({}));
+            // die Bank am Fluss der Mess-Wiese (die Stichprobe ist das Gesetz dort, nie der Streaming-Stand)
+            if (soll("bank"))
+                befund.bank = await page.evaluate((o) => window.__wasserBank({ ort: [o.fluss.x, o.fluss.z] }), ORTE);
             // (sie stellt die Welt an den See und an die Küste): die Leser der EINEN Wahrheit
             if (soll("leser"))
                 befund.leser = await page.evaluate((o) => window.__wasserLeser({ orte: [o.see.ufer, o.kueste] }), ORTE);
             // zuletzt (sie bauen die Chunks an jeder Quelle und am Bach selbst): das gezeichnete Wasser gegen den Körper
-            if (soll("quelle"))
-                befund.quelle = await page.evaluate((o) => window.__wasserQuelle({ alle: true, bach: o.bach }), ORTE);
+            if (soll("quelle")) {
+                const teil0 = await page.evaluate(
+                    (o, t, kacheln) => window.__wasserQuelle({ alle: true, bach: o.bach, teil: t, kacheln }),
+                    ORTE,
+                    teilen ? { k: 0, n: QUELL_TEILE } : null,
+                    QUELL_KACHELN
+                );
+                befund.quelle = teilen ? quellTeileVereinen([teil0, ...(await Promise.all(helfer))]) : teil0;
+            }
             if (soll("bach"))
                 befund.bach = await page.evaluate((o) => window.__wasserBach({ x: o.bach.x, z: o.bach.z }), ORTE);
             if (soll("see"))

@@ -72,7 +72,7 @@ nächste Welle erfinden · Schöpfer-Abhängigkeit erfinden — ist ROT. Die Wan
    Scope und Ship, nie jeden Pixel.
 5. **SCOPE ZU nur bei Rest = 0** — danach kein Feature-Commit mehr (nur Format/Fix auf Zuruf).
 
-## Stand (V18.546.1 + das Bündel vom 14.10., main dc3e5ac7 — offen ist NUR, was `docs/PFLICHT-OFFEN.md` trägt; die Chronik ist `git log`)
+## Stand (V18.546.2 + das Bündel vom 14.10. + weiche Boden-Stufen — offen ist NUR, was `docs/PFLICHT-OFFEN.md` trägt; die Chronik ist `git log`)
 
 **ZIELLINIE (docs/roadmap.md §0.v1):** v1.0 = EIN gespielter Pfad — ankommen · laufen+sehen · in der Werkstatt bauen · mit der KI erschaffen
 (Satz → DSL-Op `spawn_studio` → EIN Stempel `_studioStampFor`; offen: der LLM-Lauf mit Schlüssel, Drehbuch-Schritt 18) · benutzen/teilen — bei
@@ -88,7 +88,7 @@ das Radeon-ABAB am Kopf steht aus. Quelle: das letzte ABAB vom 14.10. (Zweig `ko
 
 **WAS STEHT — je Domäne die EINE Quelle:**
 - TERRAIN = Funktion: Höhe, Landform und Flussnetz = EIN Gelände-Kern `gelaende-core.js` (Stamm · Worker · Studio · Playtest), Chunks = Iso-CACHE
-  mit EIGENER Stufen-Kette (`BODEN_STUFEN`; der Wechsel blendet noch nicht, 43–65 m), Wildnis = EIN Term · WELT-MARCH EIN Pass · WASSER EINE Wahrheit
+  mit EIGENER Stufen-Kette (`BODEN_STUFEN`; der Wechsel morpht deckungsgleich nach CDLOD, K51), Wildnis = EIN Term · WELT-MARCH EIN Pass · WASSER EINE Wahrheit
   (`_werkBoden`), die Ruhe ist der Fixpunkt des Automaten (`_ensureWaterCALevel`), sein Blick EIN Baustein (`_wasserBlick`) · Edits = EINE Karte je
   Chunk (`_voxelEditKarte`) · ORT: der Genesis-Platz (`GENESIS_PLATZ`), jedes Bauwerk und jeder Dorfweg sind Grundriss gegen Natur
 - GESTALT < 64 m Studio-Mesh + LOD-Kette, EIN Auge der Stufen (`_lodAuge`), jede Karte eine Schicht des EINEN Atlas, fern Glieder-Kapseln · jede Senke
@@ -107,7 +107,7 @@ das Radeon-ABAB am Kopf steht aus. Quelle: das letzte ABAB vom 14.10. (Zweig `ko
 - PRÜFEN 6 Golden-Sätze + Ofen · Messorte (`spec/profiband/haushalt.json`): Wiese −900/−850 (seit K16 ein Nadelwald-Hang; K55 `mess-wiese` setzt sie
   nach −278/−1038, ungemergt — das letzte ABAB maß dort per Patch), Genesis-Ring (`_genesisMitte`), Dorf, Prüfbühne `spec/pruefbuehne` · 12 Ratschen
   Ort × Gerät × Sicht · Linsen-Start `lib/software-gpu.cjs` (`linsenWebGpuArgs`: lokal die echte GPU, CI swiftshader) · das Beweisbild urteilt selbst
-  (`lib/abnahme-urteil.cjs`) · CI: Puls je Push, volle Batterie (Playtest = Gruppe 11) auf integ-probe, main und nachts
+  (`lib/abnahme-urteil.cjs`) · CI: Puls je Push, volle Batterie in 18 Gruppen (1–8 CPU, 9–18 GPU; Playtest = Gruppe 1, Wand-Zeit ≤ 8 min) auf integ-probe, main und nachts
 
 ## Architektur (die Karte)
 

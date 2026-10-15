@@ -96,6 +96,7 @@ function selbsttest() {
         },
         // BÜHNE: Befund des Selbsttests, kein gesetzter Ort
         strom: { spielerChunk: true, x: -300, z: -850, takte: 40 },
+        stufe: { wechsel: 2, takte: { nahStreu: 1, nahWiese: 1 }, rufe: {} },
         code: Object.fromEntries(namen.map((n) => [n, { fragt: true, meldet: true }])),
         pageErrors: [],
     };
@@ -161,7 +162,14 @@ function selbsttest() {
             (b) => Object.assign(b.gehen.takte.deckWache, { summe: 3840, mitArbeit: 30 }),
             /GEHEN: der Saum geht ohne neuen Anker \(3840 Einheiten\)/,
         ],
+        ["der Gang verlässt seine Zelle", (b) => (b.gehen.zelleGleich = false), /LEER: der Gang verließ seine Zelle/],
         ["Gehen ohne Weg", (b) => (b.gehen.weg = 0.2), /BEWEGUNG: beim Gehen kam der Spieler 0.2 m voran/],
+        [
+            "ein Stufen-Wechsel weckt die Stufen-Wahl",
+            (b) => Object.assign(b.stufe, { takte: { archLod: 1638 }, rufe: { _lodTreeVisHeight: 1638 } }),
+            /STUFE: 2 Stufen-Wechsel ohne Form-Änderung wecken archLod \(1638 Einheiten\)/,
+        ],
+        ["die Stufen-Probe ist stumpf", (b) => (b.stufe.wechsel = 0), /STUFE: kein Stufen-Wechsel geschah/],
         [
             "das Streaming verhungert nach der Ruhe",
             (b) => (b.strom.spielerChunk = false),
@@ -748,11 +756,38 @@ const server = statikServer();
                     await bisRuhe(600);
                     aus.wecken = W;
                 }
-                // (G) GEHEN: W gehalten
+                // (G) GEHEN: W gehalten, zur Mitte der Spieler-Zelle — der Gang bleibt in seiner Zelle (K55-2: an der Mess-Wiese
+                // −278/−1038 lag die Grenze 1,2 m voraus, der Gang trat hinüber, die Chunks wechselten ihre Stufe, und der Saum ging
+                // zu Recht — die Linse prüfte nicht, was sie meint; verlässt er sie doch, ist die Phase LEER)
                 {
-                    const p0 = st.playerMesh.position.clone();
+                    // die Zelle, in der sich keine Stufe ändern kann (`_stufenZelle`, K51-3) — derselbe Stempel wie die Strom-Wache.
+                    // Ihre Fächer sind je Achse 0,8–7,4 m breit (die Grenzen aus BODEN_STUFEN wie `_stufenZelle`), der Gang läuft
+                    // ~6 m: er beginnt in der Ecke des breitesten Fachs seines Chunks und geht diagonal hindurch (~9 m frei). Der
+                    // Gang zur Fach-Mitte trat an der Mess-Wiese −278/−1038 aus einem 2-m-Fach (CI 38584912499 voll 9).
+                    const zelle = (p) => r._stufenZelle(p.x, p.z);
                     const span = r._voxelChunkConfig(0).span;
-                    const zelle = (p) => Math.floor(p.x / span) + "," + Math.floor(p.z / span);
+                    const B = r.constructor.BODEN_STUFEN;
+                    const grenzen = [0, span];
+                    for (const s of B.stufen) {
+                        if (!(s.bis < Infinity)) continue;
+                        for (const t of [s.bis + B.vorlauf, s.bis + B.vorlauf + B.halt]) {
+                            grenzen.push(t % span, span - (t % span));
+                        }
+                    }
+                    grenzen.sort((u, v) => u - v);
+                    let fach = [0, 0];
+                    for (let i = 1; i < grenzen.length; i++)
+                        if (grenzen[i] - grenzen[i - 1] > fach[1] - fach[0]) fach = [grenzen[i - 1], grenzen[i]];
+                    const q = st.playerMesh.position;
+                    const cx = Math.floor(q.x / span) * span,
+                        cz = Math.floor(q.z / span) * span;
+                    const sx = cx + fach[0] + 0.4,
+                        sz = cz + fach[0] + 0.4;
+                    st.playerMesh.position.set(sx, r._voxelSurfaceY(sx, sz) + 1.8, sz);
+                    if (st.playerVel) st.playerVel.setValue(0, 0, 0);
+                    await bisRuhe(600);
+                    const p0 = st.playerMesh.position.clone();
+                    st.yaw = Math.atan2(cx + fach[1] - 0.4 - p0.x, cz + fach[1] - 0.4 - p0.z);
                     const z0 = zelle(p0);
                     const g0 = st.fernRing ? st.fernRing.gen | 0 : -1;
                     st.keys = { w: true };
@@ -765,6 +800,101 @@ const server = statikServer();
                     aus.gehen.weg = +Math.hypot(p1.x - p0.x, p1.z - p0.z).toFixed(2);
                     aus.gehen.zelleGleich = zelle(p1) === z0;
                     aus.gehen.ankerGleich = (st.fernRing ? st.fernRing.gen | 0 : -1) === g0;
+                }
+                // (U) STUFE (K51-5): aus der Ruhe tauscht ein ferner Chunk seine Stufe hin und zurück, wie der Streaming-Takt
+                // (`_rebuildVoxelChunk(cx, cz, lod)`, hier synchron) — gezählt je Takt die Einheiten und die Rufe des Walds
+                {
+                    // DIE RUHE VOR DEM WECHSEL: offener Wuchs ist keine Ruhe. Nach dem Gehen liegen Chunks neu im `foliageRadius`,
+                    // deren Vegetation wartet (`pendingFoliageChunks`, der Wuchs-Takt je Wanduhr gedrosselt); füllt sie der Wuchs
+                    // oder der Neubau des Ziels (`_populateVoxelChunkVegetation` → `_weltRegt()`) mitten in der Phase, regt sich
+                    // die Menge — nicht die Stufe (CI 38609556864: archLod · archCull · streuLod wach, die Boden-Takte nicht).
+                    // Der offene Wuchs im Radius fällt darum VOR der Ruhe, synchron; das Ziel trägt keine wartende Form.
+                    let wuchs = 0;
+                    if (st.pendingFoliageChunks)
+                        for (const k of [...st.pendingFoliageChunks]) {
+                            const [cx, cz] = k.split(",").map(Number);
+                            if (!r._foliageChunkInRadius(cx, cz)) continue;
+                            st.pendingFoliageChunks.delete(k);
+                            r._populateVoxelChunkVegetation(cx, cz, { immediate: true });
+                            wuchs++;
+                        }
+                    // ebenso das Studio: eine Ankunft (`_foundry.ankunft`, Buch, Antwort) liest der Stempel aller Takte — die Phase
+                    // beginnt erst, wenn keine Bestellung mehr wartet oder fliegt (`warte`, `pending`)
+                    const F = r._foundry;
+                    const studioRuht = () =>
+                        !F || ((!F.warte || F.warte.length === 0) && (!F.pending || F.pending.size === 0));
+                    let studio = 0;
+                    for (; studio < 900 && !studioRuht(); studio++) {
+                        takt();
+                        if (studio % 5 === 0) await pause(10);
+                    }
+                    await bisRuhe(900);
+                    const ankunft0 = F ? F.ankunft | 0 : 0;
+                    const pm = st.playerMesh.position;
+                    let ziel = null;
+                    const formWartet = (k) =>
+                        (st.grassDirtyChunks && st.grassDirtyChunks.has(k)) ||
+                        (st.dirtyVoxelChunks && st.dirtyVoxelChunks.has(k));
+                    for (const [k, e] of st.voxelChunks) {
+                        if (!e || e.empty || !e.mesh || e.lod !== 2 || formWartet(k)) continue;
+                        const [cx, cz] = k.split(",").map(Number);
+                        if (!ziel || Math.abs(cx * 43.2 - pm.x) + Math.abs(cz * 43.2 - pm.z) < ziel.d)
+                            ziel = { cx, cz, d: Math.abs(cx * 43.2 - pm.x) + Math.abs(cz * 43.2 - pm.z) };
+                    }
+                    const U = {
+                        wechsel: 0,
+                        takte: {},
+                        rufe: { _lodTreeVisHeight: 0, _forestStehtFrei: 0, _forestCellDarts: 0 },
+                        ziel: ziel && {
+                            cx: ziel.cx,
+                            cz: ziel.cz,
+                            d: Math.round(ziel.d),
+                            populiert: !!(
+                                st.voxelPopulatedChunks && st.voxelPopulatedChunks.has(ziel.cx + "," + ziel.cz)
+                            ),
+                        },
+                        wuchs,
+                        studio, // Takte bis die Bestellungen des Studios ruhten
+                        ankunft: 0, // Ankünfte des Studios während der Phase
+                        regung: [], // wer die Menge regt (nicht die Stufe): die ersten Rufer beim Namen
+                    };
+                    const regtAlt = P._weltRegt;
+                    P._weltRegt = function (boden, stufe) {
+                        if (stufe !== true && U.regung.length < 3) {
+                            const z = String(new Error().stack || "")
+                                .split("\n")
+                                .slice(2, 6)
+                                .map((l) => (l.match(/at (?:AnazhRealm\.)?([\w$.]+)/) || [])[1])
+                                .filter(Boolean)
+                                .join(" < ");
+                            if (!U.regung.includes(z)) U.regung.push(z);
+                        }
+                        return regtAlt.call(this, boden, stufe);
+                    };
+                    const alt = {};
+                    for (const m of Object.keys(U.rufe)) {
+                        alt[m] = P[m];
+                        P[m] = function (...a) {
+                            U.rufe[m]++;
+                            return alt[m].apply(this, a);
+                        };
+                    }
+                    try {
+                        if (ziel)
+                            for (const lod of [1, 2]) {
+                                r._rebuildVoxelChunk(ziel.cx, ziel.cz, lod, { forceSync: true });
+                                const e = st.voxelChunks.get(ziel.cx + "," + ziel.cz);
+                                if (e && e.lod === lod) U.wechsel++;
+                                const ph = await phase(20);
+                                for (const n of Object.keys(TAKTE))
+                                    U.takte[n] = (U.takte[n] | 0) + (ph.takte[n] ? ph.takte[n].summe : 0);
+                            }
+                    } finally {
+                        Object.assign(P, alt);
+                        P._weltRegt = regtAlt;
+                        U.ankunft = (F ? F.ankunft | 0 : 0) - ankunft0;
+                    }
+                    aus.stufe = U;
                 }
                 // (T) STROM: erst Ruhe, dann der Sprung an einen fremden Ort — der Spieler-Chunk muss kommen
                 {
@@ -855,6 +985,10 @@ const server = statikServer();
         if (W.regler) console.log(zeile("regler", W.regler));
         if (W.wahrnehmung) console.log(zeile("wahrn.", W.wahrnehmung));
     }
+    if (befund.stufe)
+        console.log(
+            `  Stufe: ${befund.stufe.wechsel} Wechsel ohne Form-Änderung an ${JSON.stringify(befund.stufe.ziel)} (offener Wuchs vor der Ruhe: ${befund.stufe.wuchs} Chunks, Studio ruhte nach ${befund.stufe.studio} Takten, Ankünfte in der Phase ${befund.stufe.ankunft}) — Regung ${JSON.stringify(befund.stufe.regung)} — Einheiten ${JSON.stringify(befund.stufe.takte)} · Rufe ${JSON.stringify(befund.stufe.rufe)}`
+        );
     if (befund.strom)
         console.log(
             `  Strom: Sprung an (${befund.strom.x}, ${befund.strom.z}) — Spieler-Chunk ${befund.strom.spielerChunk ? "steht" : "FEHLT"} nach ${befund.strom.takte} Takten`

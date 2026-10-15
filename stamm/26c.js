@@ -1280,6 +1280,20 @@ AnazhRealm.ANALOG_NAH_M = 64;
 // Kapseln im Welt-March (dort sind sie klein im Bild und sparen die Mesh-Kosten). Bis 04.10. stand `ein` bei 55 m:
 // ein nahendes Tier lief zwischen 55 und 64 m als Kapsel-Satz.
 AnazhRealm.KREATUR_NAH_MESH = Object.freeze({ ein: AnazhRealm.ANALOG_NAH_M, aus: AnazhRealm.ANALOG_NAH_M + 10 });
+// DER RUHENDE LEIB (K59, Gebot 7: Kosten an Schirm + Änderung): ein lebendes Tier außer Bild, dem das Feld die Gestalt
+// trägt (`_kzBesitztFeld`: jenseits der Nah-Gestalt `KREATUR_NAH_MESH.aus` und gebacken — sein Mesh zeichnet und wirft
+// nicht, das Feld wirft keinen Schatten), ohne laufenden Zustand ruht (`_kreaturRuht`): es geht nur jeden `takt`-ten Frame,
+// mit der aufgelaufenen Zeit (`_kreaturTaktDt` — die Zeit geht nie verloren), sein Satz ist aus (er zeichnet nirgends), und
+// es verlässt den Matrix-Gang der Szene. Der grobe Schritt bleibt kürzer als `wegMax` m (der Hüllen-Kontakt schiebt hinaus,
+// er fegt nicht — ein schnellerer Leib geht voll). Der Blick-Test des Takts hinkt einen Frame (die Kamera dreht nach dem
+// Kreatur-Takt): der Rand wächst um `randGrad`° plus die doppelte Drehung des Vor-Frames, dazu `saumM` m — und der Blick
+// des Bilds (`_ruheImBild` in `_loopRender`) weckt, was die Kamera dieses Bilds dennoch sieht (Teleport, Portal, Aufnahme).
+// In der Witterung eines Jägers (`witterungM` m) ruht kein Tier (der Biss liest seine Glieder).
+AnazhRealm.KREATUR_RUHE = Object.freeze({ takt: 4, wegMax: 0.25, randGrad: 10, saumM: 2, witterungM: 60 });
+// Die Wurzel eines ruhenden Leibs trägt diese `updateMatrixWorld` als eigene Eigenschaft: der Szenen-Gang (three r184
+// steigt sonst in jedes Kind, auch unter `matrixWorldAutoUpdate = false`) übergeht sein Skelett. Leser ziehen über
+// `_leibMatrix` nach, das Erwachen (`_kreaturErwacht`) nimmt sie wieder ab.
+AnazhRealm._ruhendeWurzel = function ruhendeWurzel() {};
 // Das Fell-Bildschirm-Gesetz: mittlere Strähnen-Breite in Vorlagen-Einheiten (der Bäcker legt 2·t·1.8 an der
 // Wurzel, 2·t·0.65 an der Spitze, t ≈ 0.006–0.008; die Welt skaliert mit dem Guss-Faktor f ≈ 0,1) · Mindest-Breite
 // in Pixeln · Hysterese-Band. pxMin GEMESSEN (Fell-Linse diag-fell-blick, git-Archiv, 720p, fov 75°): die Strähnen ändern
@@ -1302,6 +1316,10 @@ AnazhRealm.KARTEN_HORIZONT_TOTBAND_M = 16;
 // mit 0,75 m Austritts-Rand. Der Cull urteilt erst ab der Mesh-Zone (Cull-Radius 100–150 m) und am Karten-Horizont
 // (Totband 16 m): ihm genügt ein Meter (`STAND_RAND_FERN_M`) — beim Gehen geht er viermal seltener.
 AnazhRealm.STAND_RAND_M = 0.25;
+// DAS GEDÄCHTNIS DER GESTALT DES ORTS (K51-5, `_ortGestaltSame`): Eimer in Metern und die Reichweite eines Grundrisses — ein
+// Baum fragt die Natur-Wand für Nachbarn bis ±4 Wald-Zellen (5 × 12 m bis zur fernsten Ecke) samt deren Krone (≤ 36 m)
+AnazhRealm.ORT_SAME_EIMER = 48;
+AnazhRealm.ORT_SAME_REICH = 96;
 AnazhRealm.STAND_RAND_FERN_M = 1;
 // Der Horizont-Saum (m): über so viele Meter vor `SCATTER.outerM` liegen die Ränder der Karten-Dinge, je Eintrag aus
 // seinem Samen (Salz: der Hash-Kanal des Saums, `_pcg2d`) — der Wald dünnt aus, jeder Baum steht ganz oder gar nicht.
@@ -2416,6 +2434,9 @@ AnazhRealm.FIELD_RESOLVE_ITERS = 4;
 // position.y − 0.5 = die Grounded-Annahme); STEP_UP = wie hoch der Spieler ohne Sprung aufsteigt.
 AnazhRealm.PLAYER_FOOT_OFFSET = 0.5;
 AnazhRealm.PLAYER_STEP_UP = 0.6;
+// Die Spanne, um die der gezeichnete Boden über dem Gesetz liegen kann (Lehre 22: Surface-Nets auf 1,8 m trägt die Feinform
+// ±0,2 m): der Schritt eines Leibs (`_koerperSchritt`) verlangt über dem Grund des Gesetzes Luft bis Leib-Höhe + Spanne.
+AnazhRealm.KOERPER_SICHT_SPANNE = 0.2;
 // DER DECKEL DES GANGS (rad, ~34°): so weit nickt und wankt ein gehender Leib höchstens — steiler ist Kletterwand, kein Gang.
 // Leser: `_slopePitch` (Mensch und Tier), der Wank der Tier-Proben, die Kletterwand des Tier-Schritts (`_kreaturKletterwand`).
 AnazhRealm.GANG_DECKEL_RAD = 0.6;

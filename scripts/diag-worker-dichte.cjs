@@ -31,6 +31,7 @@ const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
+const { messort } = require("./lib/welt-orte.cjs");
 const crypto = require("crypto");
 
 const argv = process.argv.slice(2);
@@ -88,7 +89,7 @@ async function boote(page) {
 // Die Probe in der Seite: Orte × LOD 0–3, Main gegen Worker, Bitmuster je Wort.
 async function probe(page, welt, mitAbdruck) {
     return page.evaluate(
-        async (welt, mitAbdruck, punkte) => {
+        async (welt, mitAbdruck, punkte, messorte) => {
             const r = window.anazhRealm;
             const s = r.state;
             r._gameLoopTick = () => {}; // die Welt steht still: kein Stream, kein Takt zwischen Main und Worker
@@ -120,7 +121,7 @@ async function probe(page, welt, mitAbdruck) {
             // Die Orte: Standard = die Messorte des Haushalts + ein Fluss-Chunk; Bühne = ihre Stationen.
             const orte = [];
             if (welt === "standard") {
-                orte.push({ id: "wiese", x: -900, z: -850 }, { id: "genesis", x: 36, z: 0 });
+                orte.push(...messorte);
                 const h = s.hydrosphere;
                 const fl =
                     h && Array.isArray(h.rivers) ? h.rivers.find((f) => f && f.points && f.points.length > 4) : null;
@@ -411,7 +412,8 @@ async function probe(page, welt, mitAbdruck) {
         },
         welt,
         mitAbdruck,
-        mitAbdruck ? abdruckPunkte() : []
+        mitAbdruck ? abdruckPunkte() : [],
+        ["wiese", "genesis"].map((id) => ((o) => ({ id, x: o.x, z: o.z }))(messort(id)))
     );
 }
 

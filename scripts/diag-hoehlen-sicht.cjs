@@ -15,7 +15,9 @@
 //   (b') HINAUS — das Auge in Höhlen-Luft, 16 m unter der Wiese (−1041/−738, der Ring um den Spieler dort), der Blick durch
 //       die Mündung hinaus: die Strahlen beginnen in der Höhle, laufen an den Sperren vorbei und erreichen Mündungen
 //       dahinter (`_hoehlenHinaus`). Die alte Probe — die Sperre ohne den Weg hinaus — ließ dort 3 Zellen weg (2,8 % des
-//       Bilds); der Blick ist scharf nur, solange sie dort rot fällt;
+//       Bilds); der Blick ist scharf nur, solange sie dort rot fällt. Mund, Gang und Auge liegen auf dem Gitter der Stufe 0
+//       (K55-5 — ein Spalt flacher als ein Schritt trug das Auge in den Fels des Netzes); eine versiegelte Zelle zeichnet nie,
+//       ein Strahl läuft durch sie weiter (der Geomorph der Stufe hebt sie durch gezeichnete Flächen, `versiegelt` zählt es);
 //   (c) SCHATTEN — je Blick: jeder Empfänger des Bilds, dessen Weg zur Sonne im Licht-Frustum Boden trifft, trifft einen,
 //       den die Kaskade zeichnet (sonst fiele Licht durch Fels: ein Licht-Leck);
 //   (d) NICHT LEER — Mündung und Höhle zeigen Höhlen-Flächen, und die Linse ist scharf: ohne die Höhlen-Zellen im Abschnitt
@@ -91,7 +93,7 @@ function urteil(b) {
     if (!mu || !(mu.km2 > 0)) v.push("LEER: (l) Mündungen: keine Suche über das Gesetz (die Wand prüfte nichts)");
     else if (!(mu.jeKm2 >= MUENDUNGEN_JE_KM2))
         v.push(
-            `KEINE MÜNDUNG: ${mu.anzahl} natürliche Mündungen in ${mu.km2} km² um die Mess-Wiese (${mu.jeKm2} je km², ` +
+            `KEINE MÜNDUNG: ${mu.anzahl} natürliche Mündungen in ${mu.km2} km² um die Mitte der Welt (${mu.jeKm2} je km², ` +
                 `mindestens ${MUENDUNGEN_JE_KM2}) — die Höhlen-Decke bricht an keiner Fels-Flanke durch (gelaende-core ` +
                 "`hoehlenMund`, Spalten-Kontext `ceilOffset`)"
         );
@@ -309,7 +311,9 @@ function urteil(b) {
     if (c.feinRuft !== undefined && !(c.feinRechenwerk && c.feinRechenwerk.maxDiff <= 1e-6))
         v.push(
             "RECHENWERK: das TSL-Rechenwerk (`_felsRechenwerkTSL`) rechnet nicht das Gesetz — " +
-                (c.feinRechenwerk ? `max. Abstand ${c.feinRechenwerk.maxDiff} an ${c.feinRechenwerk.n} Punkten` : "fehlt")
+                (c.feinRechenwerk
+                    ? `max. Abstand ${c.feinRechenwerk.maxDiff} an ${c.feinRechenwerk.n} Punkten`
+                    : "fehlt")
         );
     if (!c.passLiest)
         v.push("CODE: `_chunkSatzPass` ruft `_hoehlenSicht` nicht (der Chokepoint wählt die Höhle nicht)");
@@ -626,7 +630,11 @@ function selbsttest() {
         ["Ohne Bankung", (b) => delete b.bankung, /LEER: \(m\) Bankung/],
         ["Shader-Zwilling", (b) => (b.code.feinRuft = false), /CODE: der Detail-Term .*\(ruft gelaende-core felsFein/],
         ["Eigene Ziehung", (b) => (b.code.feinEigenHash = true), /CODE: der Detail-Term .*\(eigene Ziehung/],
-        ["Rechenwerk falsch", (b) => (b.code.feinRechenwerk = { maxDiff: 0.31, n: 400 }), /RECHENWERK: .* 0\.31 an 400/],
+        [
+            "Rechenwerk falsch",
+            (b) => (b.code.feinRechenwerk = { maxDiff: 0.31, n: 400 }),
+            /RECHENWERK: .* 0\.31 an 400/,
+        ],
     ];
     for (const [name, tat, muss] of faelle) {
         const b = klon();
@@ -654,10 +662,12 @@ const path = require("path");
 const { installHoehlenStrahl } = require("./lib/hoehlen-strahl.cjs");
 
 const PORT = Number(process.env.HOEHLEN_SICHT_PORT) || 4504;
-// Die Mess-Wiese und das Quadrat der Mündungs-Suche (halbe Seite, m). Mündung, Höhlen-Raum und der Blick hinaus stehen
-// nicht als Zahl hier: die Suche liest sie aus dem Gesetz der Welt (K16 — die Orte der alten Welt waren Literale).
-const { messort } = require("./lib/welt-orte.cjs");
-const ORTE = { mess: messort("wiese"), mundHalb: 1000 };
+// Die Mess-Wiese (die Blicke wiese und hang), die Mitte der Welt und das Quadrat der Mündungs-Suche um sie (halbe Seite, m).
+// Mündung, Höhlen-Raum und der Blick hinaus stehen nicht als Zahl hier: die Suche liest sie aus dem Gesetz der Welt (K16 — die
+// Orte der alten Welt waren Literale; K55-2 — bis dahin lag das Quadrat um die Mess-Wiese, in der flachen Aue −278/−1038 trug
+// es 5 Mündungen ohne ein Paar, der Blick hinaus prüfte nichts, CI 38546830515).
+const { messort, WELT_MITTE } = require("./lib/welt-orte.cjs");
+const ORTE = { mess: messort("wiese"), welt: WELT_MITTE, mundHalb: 1000 };
 const server = statikServer();
 
 (async () => {
@@ -827,19 +837,29 @@ const server = statikServer();
             }
             globalThis.__gelaendeCore = GK0;
 
-            // ── Standorte aus dem Gesetz (K16): DIE MÜNDUNGS-SUCHE — im Quadrat um die Mess-Wiese jede Spalte mit einer Flanke
+            // ── Standorte aus dem Gesetz (K16): DIE MÜNDUNGS-SUCHE — im Quadrat um die Mitte der Welt jede Spalte mit einer Flanke
             // ab 30° (der Hang der Welt-Höhe, unabhängig vom Mündungs-Term des Kerns), dann das Kriterium an ihr und ihren
             // Nachbarn: Höhlen-Luft unter Fels, daneben Luft unter freiem Himmel, der Gang dahinter mindestens 12 m tief.
             // Gegraben wird nichts — die Linse findet, was die Welt trägt; Mündungen näher als 25 m sind eine.
             const fest = (x, y, z) => r._fieldDensityAt(x, y, z) > 0;
+            // DAS GITTER DER STUFE 0: Mund, Gang und Auge liegen auf den Punkten, aus denen das Netz entsteht (Surface-Nets auf
+            // 1,8 m) — dort ist das Feld das Gitter des Chunks. Ein Spalt flacher als ein Schritt fällt zwischen zwei feste
+            // Punkte und fehlt im Bild (K55-5: der Spalt 104,7–106,0 m bei 699/−39 trug den Blick hinaus, das Auge stand im Fels
+            // des Netzes, und jeder Strahl lief ohne Fläche durch ihn hindurch — 12 Zellen „fehlten“ hinter dem Fels).
+            const G0 = r._voxelChunkConfig(0);
+            const gy0 = (st.terrainBaseHeight || 0) - G0.floorDrop;
+            const gitter = (v) => Math.round(v / G0.step) * G0.step;
             const himmel = (x, y, z) => {
-                for (let h = y + 1.2; h < y + 60; h += 1.2) if (fest(x, h, z)) return false;
+                for (let h = y + G0.step; h < y + 60; h += G0.step) if (fest(x, h, z)) return false;
                 return true;
             };
-            const mundAn = (X, Z) => {
+            const mundAn = (X0, Z0) => {
+                const X = gitter(X0),
+                    Z = gitter(Z0);
                 const S = r._voxelSurfaceY(X, Z);
                 if (S == null) return null;
-                for (let y = S - 4; y > S - 40; y -= 2) {
+                for (let j = Math.floor((S - 4 - gy0) / G0.step); gy0 + j * G0.step > S - 40; j--) {
+                    const y = gy0 + j * G0.step;
                     if (fest(X, y, Z)) continue;
                     for (const [dx, dz] of [
                         [1, 0],
@@ -847,9 +867,11 @@ const server = statikServer();
                         [0, 1],
                         [0, -1],
                     ]) {
-                        if (fest(X + dx * 3.6, y, Z + dz * 3.6) || !himmel(X + dx * 3.6, y, Z + dz * 3.6)) continue;
+                        const ax = X + dx * 2 * G0.step,
+                            az = Z + dz * 2 * G0.step;
+                        if (fest(ax, y, az) || !himmel(ax, y, az)) continue;
                         let L = 0;
-                        while (L < 30 && !fest(X - dx * L, y, Z - dz * L)) L += 1;
+                        while (L < 30 && !fest(X - dx * L, y, Z - dz * L)) L += G0.step;
                         if (L >= 12) return { x: X, y, z: Z, dx, dz, tief: L };
                         break;
                     }
@@ -860,8 +882,9 @@ const server = statikServer();
             const wl = typeof st.waterLevel === "number" ? st.waterLevel : 0;
             const mundListe = [];
             const HALB = ORTE.mundHalb;
-            for (let z = MESS.z - HALB; z < MESS.z + HALB; z += 3.6)
-                for (let x = MESS.x - HALB; x < MESS.x + HALB; x += 3.6) {
+            const [WX, WZ] = ORTE.welt;
+            for (let z = WZ - HALB; z < WZ + HALB; z += 3.6)
+                for (let x = WX - HALB; x < WX + HALB; x += 3.6) {
                     const h0 = hoch(x, z);
                     if (h0 < wl + 1) continue;
                     const hang = Math.hypot(hoch(x + 1.8, z) - h0, hoch(x, z + 1.8) - h0) / 1.8;
@@ -888,8 +911,8 @@ const server = statikServer();
                 jeKm2: +(mundListe.length / km2).toFixed(2),
                 hangGrad: mundListe.map((m) => m.hangGrad).sort((a, b) => a - b),
             };
-            mundListe.sort((a, b) => Math.hypot(a.x - MESS.x, a.z - MESS.z) - Math.hypot(b.x - MESS.x, b.z - MESS.z));
-            // die Mündung der Blicke: die nächste zur Mess-Wiese, vor deren Mund (im Blick hinaus, 30–200 m) eine zweite liegt,
+            mundListe.sort((a, b) => Math.hypot(a.x - WX, a.z - WZ) - Math.hypot(b.x - WX, b.z - WZ));
+            // die Mündung der Blicke: die nächste zur Mitte der Welt, vor deren Mund (im Blick hinaus, 30–200 m) eine zweite liegt,
             // die ihr den Mund zuwendet — dort führt der Weg hinaus an der Sperre vorbei in die andere Höhle (fehlt das Paar:
             // eine zweite vor dem Mund, sonst die nächste)
             const gegenueber = (m, zugewandt) =>
@@ -936,7 +959,8 @@ const server = statikServer();
                 }
             paare.sort((a, b) => a.wert - b.wert);
             const hinausVon = (m, q) => {
-                const e = Math.min(m.tief - 2, 24);
+                // das Auge auf einem Punkt des Gangs (Gitter, Luft bis `tief`)
+                const e = G0.step * Math.floor(Math.min(m.tief - 2, 24) / G0.step);
                 return {
                     mund: m,
                     spieler: [m.x - m.dx * e, m.y - 1.5, m.z - m.dz * e],
@@ -1017,6 +1041,7 @@ const server = statikServer();
                     strahlen: h.strahlen,
                     hoehle: h.hoehle,
                     fehlend: h.fehlend,
+                    versiegelt: h.versiegelt,
                     blind,
                     hoehleImAbschnitt: z.ab,
                     hoehleImFrustum: z.imFr,
@@ -1028,7 +1053,9 @@ const server = statikServer();
             for (const bl of blicke) aus.blicke.push(miss(bl));
 
             // ── an die Mündung: der Spieler vor dem Mund (der Ring steht um ihn), der Höhlen-Raum aus dem Gesetz in seinem
-            // Umkreis (± 2 Chunks), dann die Blicke in den Mund und in den Raum
+            // Umkreis (± 2 Chunks) in einem Chunk der Stufe 0 — nur dort trägt der Boden-Satz die Höhlen-Zellen des Graphs (K51: die
+            // Nah-Zone ist 3 × 3, der Raum in einem Chunk der Stufe 1 sah 14 400 Strahlen ohne eine Höhlen-Fläche) —, dann die
+            // Blicke in den Mund und in den Raum
             if (muendung) {
                 const m = muendung;
                 const vx = m.x + m.dx * 9,
@@ -1037,9 +1064,17 @@ const server = statikServer();
                 await schwinge();
                 r._tickChunkSatz();
                 const mpc = st.lastPlayerVoxelChunk;
+                const stufe0 = (cx, cz) => {
+                    const c = st.voxelChunks.get(cx + "," + cz);
+                    return !!c && (c.lod || 0) === 0;
+                };
                 for (let dcx = -2; dcx <= 2 && !raum; dcx++)
                     for (let dcz = -2; dcz <= 2 && !raum; dcz++)
-                        for (let x = (mpc.cx + dcx) * span + 1.8; x < (mpc.cx + dcx + 1) * span && !raum; x += 3.6)
+                        for (
+                            let x = (mpc.cx + dcx) * span + 1.8;
+                            x < (mpc.cx + dcx + 1) * span && !raum && stufe0(mpc.cx + dcx, mpc.cz + dcz);
+                            x += 3.6
+                        )
                             for (
                                 let z = (mpc.cz + dcz) * span + 1.8;
                                 z < (mpc.cz + dcz + 1) * span && !raum;
@@ -1152,7 +1187,9 @@ const server = statikServer();
                 const bs = [...r.state.chunkSaetze.values()].find((q) => q.spec && q.spec.name === "bodenSatz");
                 const geo = bs && bs.geom;
                 const PA = geo && geo.attributes.position;
-                const HA = geo && geo.attributes.aHimmel;
+                // die Himmels-Sicht reist im Satz in der vierten Komponente des Normal-Ziels (snorm8, K51-2 `_chunkSatzArt` boden)
+                const NZ = geo && geo.attributes.aNormalZiel;
+                const HA = NZ && NZ.itemSize === 4 ? { getX: (i) => NZ.getW(i) } : null;
                 const himmelV = new Set(),
                     hoehleV = new Set();
                 for (const b of bs ? bs.bloecke.values() : [])
@@ -1424,13 +1461,19 @@ const server = statikServer();
             // der Boden-Stoff trägt die Himmels-Sicht (`himmelsSicht`), der EINE Stoff-Bau liest sie als Verdeckung und als
             // Grenze der 2.5D-Lichtung (die wahre Normale in der Höhle)
             const pbr = code(r._buildPbrNodeMaterial);
+            // die Himmels-Sicht reist im Boden-Satz in der vierten Komponente des Normal-Ziels (K51-2, `_bodenStufenKnoten`)
+            const knoten = code(r._bodenStufenKnoten);
+            const himmelQuelle = /himmel:\s*nZ4\.w/.test(knoten) && /attribute\("aNormalZiel",\s*"vec4"\)/.test(knoten);
             aus.code.himmelLiest =
                 /himmelsSicht:\s*true/.test(code(r._getVoxelChunkMaterial)) &&
-                /\.aoNode\s*=\s*THREE\.TSL\.attribute\("aHimmel"/.test(pbr);
-            aus.code.normaleHoehle = /_flat\.mul\(_hS\)/.test(pbr) && /attribute\("aHimmel"/.test(pbr);
+                /\.aoNode\s*=\s*this\._bodenStufenKnoten\(\)\.himmel/.test(pbr) &&
+                himmelQuelle;
+            aus.code.normaleHoehle =
+                /_flat\.mul\(_hS\)/.test(pbr) &&
+                /_hS\s*=\s*opts\.himmelsSicht\s*\?\s*this\._bodenStufenKnoten\(\)\.himmel/.test(pbr);
             const pool = code(r._lichtPoolTerm);
             aus.code.augenTerm =
-                /this\._leuchtStoff\(\s*mat,\s*null,\s*opts\.himmelsSicht\s*\?\s*THREE\.TSL\.attribute\("aHimmel"/.test(
+                /this\._leuchtStoff\(\s*mat,\s*null,\s*opts\.himmelsSicht\s*\?\s*this\._bodenStufenKnoten\(\)\.himmel/.test(
                     pbr
                 ) && /lichtErsatz/.test(pool);
             // das EINE Punktlicht-Gesetz: der Pool rechnet den Abfall des Gesetzes (fachwerk `lichtAbfall`: der Saum
@@ -1467,7 +1510,11 @@ const server = statikServer();
             aus.code.feinEigenHash = /43758|fract\([^;]*\bsin\(/.test(fein);
             aus.code.feinRechenwerk = (() => {
                 const GKc = globalThis.__gelaendeCore;
-                if (!GKc || typeof GKc.felsFein !== "function" || typeof r.constructor._felsRechenwerkTSL !== "function")
+                if (
+                    !GKc ||
+                    typeof GKc.felsFein !== "function" ||
+                    typeof r.constructor._felsRechenwerkTSL !== "function"
+                )
                     return null;
                 const V = (x) => (typeof x === "number" ? x : x.v);
                 // die Knoten-Methoden lesen den Wert beim Aufruf (`this.v`): eine Variable (`toVar`, K17-3 `fest`/`falte`)
@@ -1511,7 +1558,10 @@ const server = statikServer();
                     c,
                     toVar() {
                         const H = { c: c.map(V) };
-                        const glied = (q) => Object.defineProperty(Object.assign(Object.create(P), { t: "f" }), "v", { get: () => H.c[q] });
+                        const glied = (q) =>
+                            Object.defineProperty(Object.assign(Object.create(P), { t: "f" }), "v", {
+                                get: () => H.c[q],
+                            });
                         return {
                             x: glied(0),
                             y: glied(1),
@@ -1601,7 +1651,12 @@ const server = statikServer();
                         b = GKc.felsFein(GKc.felsZahl, B, x, y, z);
                     const ka = GKc.schuttKorn(O, x, z),
                         kb = GKc.schuttKorn(GKc.felsZahl, x, z);
-                    maxDiff = Math.max(maxDiff, Math.abs(V(a.bank) - b.bank), Math.abs(V(a.kante) - b.kante), Math.abs(V(ka) - kb));
+                    maxDiff = Math.max(
+                        maxDiff,
+                        Math.abs(V(a.bank) - b.bank),
+                        Math.abs(V(a.kante) - b.kante),
+                        Math.abs(V(ka) - kb)
+                    );
                     n++;
                 }
                 return { maxDiff, n };
@@ -1646,6 +1701,7 @@ const server = statikServer();
     for (const x of befund.blicke)
         console.log(
             `  Blick ${x.name} ${JSON.stringify(x.auge)}: ${x.strahlen} Strahlen, ${x.hoehle} auf Höhle, fehlend ${x.fehlend.length}, ` +
+                `durch versiegelte Flächen ${x.versiegelt}, ` +
                 `blind-Probe ${x.blind} · Abschnitt ${x.abschnittTri} Dreiecke (Höhle ${x.hoehleImAbschnitt} von ${x.hoehleImFrustum} im ` +
                 `Frustum) · Kaskade ${x.kaskadeTri} · Schatten ${x.schatten.empfaenger} Empfänger, ${x.schatten.beschattet} beschattet, ` +
                 `${x.schatten.lecks.length} Lecks` +

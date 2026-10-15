@@ -592,7 +592,13 @@ class AnazhRealm_Z21 {
         if (!entry) return false;
         const idx = this.state.architectures.indexOf(entry);
         if (idx < 0) return false;
-        if (this._grundrissVon(entry)) this._grundrissGitter = null; // der Grundriss eines Baus fällt mit ihm
+        // der Grundriss eines Baus fällt mit ihm — am Ort (`_grundrissFaellt`)
+        const fp = this._grundrissVon(entry);
+        if (fp) {
+            const p = entry.position;
+            const r = fp.lichtung || Math.hypot(fp.ex, fp.ez) + Math.hypot(fp.ox, fp.oz) + 2;
+            this._grundrissFaellt(p.x - r, p.z - r, p.x + r, p.z + r);
+        }
         this._archZiegelTod(entry); // die Ziegel-Fernstufe stirbt mit dem Eintrag
         // Blocker-Index beim Remove pflegen (früher Out ohne solide Parts via entry.blockerAABBs); vorher
         // merken, ob es ein Blocker war — danach dirty markieren (das Wasser bekommt den Pfad zurück).
@@ -964,7 +970,7 @@ class AnazhRealm_Z21 {
         const c =
             ziel && ziel.isObject3D ? ziel : ziel && ziel.creature && ziel.creature.isObject3D ? ziel.creature : null;
         if (!c) return null;
-        c.updateMatrixWorld(true);
+        this._leibMatrix(c);
         const pt =
             ziel.point && Number.isFinite(ziel.point.x)
                 ? new THREE.Vector3(ziel.point.x, ziel.point.y, ziel.point.z)
@@ -985,7 +991,7 @@ class AnazhRealm_Z21 {
         const zielPunkt = () => {
             const z = sw.ziel;
             if (z && z.c) {
-                z.c.updateMatrixWorld(true);
+                this._leibMatrix(z.c);
                 return z.c.localToWorld(P.copy(z.lokal));
             }
             const F = this._fadenkreuzStrahl();
@@ -1188,7 +1194,7 @@ class AnazhRealm_Z21 {
         const K = AnazhRealm._arenaGesetz().schwung;
         const z = sw.ziel;
         if (!z || z.c !== c) return this._kreaturGliedTreffer(c, B.x, B.y, B.z, T.x, T.y, T.z, K.bladeRadiusM);
-        c.updateMatrixWorld(true);
+        this._leibMatrix(c);
         const P = c.localToWorld((this._kontaktP || (this._kontaktP = new THREE.Vector3())).copy(z.lokal));
         const ex = T.x - B.x,
             ey = T.y - B.y,
@@ -1216,7 +1222,7 @@ class AnazhRealm_Z21 {
         out.lo = out.hi = kontakt;
         const gl = this._kreaturTrefferGlieder(cr);
         if (!gl) return out;
-        cr.updateMatrixWorld(true);
+        this._leibMatrix(cr);
         const v = this._trefferVek || (this._trefferVek = [new THREE.Vector3(), new THREE.Vector3()]);
         const pts = this._trefferWegPts || (this._trefferWegPts = []);
         const n = AnazhRealm.TREFFER_WEG_PROBEN;
@@ -2567,7 +2573,7 @@ class AnazhRealm_Z21 {
             if (auftrag && auftrag.name !== "wander") continue;
             const gl = this._kreaturTrefferGlieder(c);
             if (!gl) continue;
-            c.updateMatrixWorld(true);
+            this._leibMatrix(c);
             for (const g of gl) {
                 for (let k = 0; k <= 2; k++) {
                     P.copy(g.a)

@@ -354,12 +354,15 @@ function standUrteil(b) {
         for (const n of ["archLod", "archCull", "streuLod", "nahStreu"])
             if (!G.takte[n] || !(G.takte[n].summe > 0))
                 v.push(`STARR: beim Gehen arbeitet ${n} nicht — eine gehaltene Wahl wäre ein Loch`);
-        // Gehen kostet nur die Änderung: der Ring liest die Spieler-Zelle, der Saum die Anker-Generation des Fern-Rings
+        // Gehen kostet nur die Änderung: der Ring liest die Spieler-Zelle, der Saum die Chunk-Menge und die Anker-Generation des
+        // Fern-Rings — beide prüft nur ein Gang, der in seiner Zelle bleibt (tritt er über die Grenze, wechseln Chunks ihre Stufe,
+        // und Ring und Saum gehen zu Recht: K55-2, die Mess-Wiese −278/−1038 lag 1,2 m vor der Grenze ihrer Zelle)
+        if (G.zelleGleich === false) v.push("LEER: der Gang verließ seine Zelle — Ring und Saum ungeprüft");
         if (G.zelleGleich && G.takte.strom && G.takte.strom.summe > 0)
             v.push(
                 `GEHEN: der Ring geht ohne Zellen-Wechsel (${G.takte.strom.summe} Einheiten) — Gehen kostet mehr als die Änderung`
             );
-        if (G.ankerGleich && G.takte.deckWache && G.takte.deckWache.summe > 0)
+        if (G.zelleGleich && G.ankerGleich && G.takte.deckWache && G.takte.deckWache.summe > 0)
             v.push(
                 `GEHEN: der Saum geht ohne neuen Anker (${G.takte.deckWache.summe} Einheiten) — Gehen kostet mehr als die Änderung`
             );
@@ -429,6 +432,23 @@ function standUrteil(b) {
         runde(X.phase, "mit den Tätern");
     }
     for (const x of schreiberUrteil(b.schreiber)) v.push(x);
+    // (U) STUFE (K51-5): ein reiner Stufen-Wechsel (dieselbe Fläche im Gesetz, der Morph trägt sie) regt nur die Boden-Karte —
+    // nie Stufen-Wahl, Cull, Streu, Ring oder Saum, nie Wald-Setzung oder Sichthöhen (vorher je Wechsel ein voller Gang)
+    const U = b.stufe;
+    if (!U) v.push("LEER: keine Stufen-Phase");
+    else if (!(U.wechsel > 0)) v.push("STUFE: kein Stufen-Wechsel geschah — die Probe ist stumpf");
+    else {
+        const fremd = Object.entries(U.takte || {}).filter(([n, x]) => x > 0 && n !== "nahWiese" && n !== "nahStreu");
+        if (fremd.length)
+            v.push(
+                `STUFE: ${U.wechsel} Stufen-Wechsel ohne Form-Änderung wecken ${fremd.map(([n, x]) => `${n} (${x} Einheiten)`).join(", ")}`
+            );
+        for (const m of ["_lodTreeVisHeight", "_forestStehtFrei", "_forestCellDarts"])
+            if ((U.rufe || {})[m] > 0)
+                v.push(
+                    `STUFE: ${U.wechsel} Stufen-Wechsel ohne Form-Änderung rufen ${m} ${U.rufe[m]}× (Wald-Setzung, Sichthöhen)`
+                );
+    }
     const T = b.strom;
     if (!T) v.push("LEER: keine Strom-Phase");
     else if (!T.spielerChunk)

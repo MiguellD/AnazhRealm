@@ -88,6 +88,11 @@ const REZEPTE = {
     linse: (o) => linsenWebGpuArgs(process.env, process.platform, o),
     echt: () => echteWebGpuArgs(),
 };
+// DIE KLASSE DER CI (K61): diese Rezepte zeichnen mit einem Echt-Renderer (swiftshader am Läufer, die echte GPU am Messplatz)
+// — null und standard nicht (der Null-Renderer bzw. Chromes eigene Wahl ohne Adapter-Schalter). Eine Gruppe der vollen
+// Batterie trägt CI_KLASSE (check.yml, matrix.klasse): in einer CPU-Gruppe ist ein Echt-Rezept ROT beim Namen — die
+// CPU-Gruppen laufen damit nachweislich ohne Echt-Renderer, die GPU-Gruppen sind die Arbeit eines GPU-Läufers.
+const GPU_REZEPTE = ["linse", "webgl", "echt"];
 
 // Die Start-Optionen aus dem Rezept: `frist` = protocolTimeout (ms), `zusatz` = weitere Schalter hinter dem Rezept,
 // `viewport` = defaultViewport, `profil` = userDataDir; `headless` steht, wenn nichts gesagt ist (echt: mit Fenster nur,
@@ -149,6 +154,11 @@ async function starteBrowser(opts = {}) {
     const puppeteer = require("puppeteer");
     if (opts.erwartet) sammlung.erwartet = opts.erwartet;
     wacheAnProzessEnde();
+    if (process.env.CI_KLASSE === "cpu" && GPU_REZEPTE.includes(opts.art))
+        melde(
+            "klasse",
+            `${path.basename(process.argv[1] || "?")} startet das Echt-Rezept „${opts.art}" in einer CPU-Gruppe der CI — der Schritt gehört in eine GPU-Gruppe (check.yml matrix.klasse)`
+        );
     const browser = await puppeteer.launch(browserOptionen(opts));
     let abbau = false;
     const zu = browser.close.bind(browser);
@@ -212,6 +222,7 @@ module.exports = {
     ROOT,
     MIME,
     REZEPTE,
+    GPU_REZEPTE,
     HARMLOS,
     statikServer,
     browserOptionen,

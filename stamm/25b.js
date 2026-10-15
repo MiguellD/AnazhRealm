@@ -1647,7 +1647,14 @@ class AnazhRealm_Z25b {
     // (Nachwuchs, Jahreszeit, Regen, Wasser-Automat, Karten-Bäcker, Dirty-Chunks) stehen nicht unter der Wache.
     // Die Wand: gate:stand-takt (Ruhe 0, Treue, Wecken, Gehen, Strom; der Bruch fällt rot).
     // `boden`: die Chunk-Menge regt sich — das weckt auch die Boden-Takte.
-    _weltRegt(boden) {
+    // `stufe` (K51-5): ein Chunk tauschte nur seine Stufe (`_rebuildVoxelChunk`) — die Menge steht, es regt sich nur die
+    // Boden-Karte, die die Karten-Takte (Nah-Wiese, Nah-Streu: `_bodenSichtAt`) lesen; Stufen-Wahl, Cull, Streu, Ring und
+    // Saum lesen sie nicht (gehend an der Mess-Wiese weckte jeder Wechsel alle Fege-Takte samt Sichthöhen).
+    _weltRegt(boden, stufe) {
+        if (stufe === true) {
+            this._karteRegung = (this._karteRegung | 0) + 1;
+            return;
+        }
         this._weltRegung = (this._weltRegung | 0) + 1;
         if (boden) this._bodenRegung = (this._bodenRegung | 0) + 1;
     }
@@ -1731,6 +1738,8 @@ class AnazhRealm_Z25b {
                 anker: null,
                 bau: art === "bau",
                 bauRegung: -1,
+                karte: art === "karte",
+                karteRegung: -1,
                 leer: 0,
                 ruht: 0,
                 arbeit: 0,
@@ -1742,6 +1751,11 @@ class AnazhRealm_Z25b {
         // nie die Streu, die Kacheln oder den Boden, die ihre Urteile nicht lesen.
         if (t.bau && t.bauRegung !== (this._bauRegung | 0)) {
             t.bauRegung = this._bauRegung | 0;
+            neu = true;
+        }
+        // DIE KARTEN-TAKTE (`karte`) lesen die Boden-Karte: ein Stufen-Wechsel (`_weltRegt(true, true)`) weckt nur sie
+        if (t.karte && t.karteRegung !== (this._karteRegung | 0)) {
+            t.karteRegung = this._karteRegung | 0;
             neu = true;
         }
         if (ort !== null && typeof ort === "object") {

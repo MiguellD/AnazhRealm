@@ -888,7 +888,8 @@ class AnazhRealm_Z24 {
             }
         if (!drin) return (c.wert = 1);
         const P = s.geom.attributes.position.array;
-        const H = s.geom.attributes.aHimmel.array;
+        // die Himmels-Sicht reist im Satz in der vierten Komponente des Normal-Ziels (snorm8, K51-2 `_chunkSatzArt` boden)
+        const H = s.geom.attributes.aNormalZiel.array;
         const R2 = A.umkreisM * A.umkreisM;
         let summe = 0,
             gewicht = 0;
@@ -904,7 +905,7 @@ class AnazhRealm_Z24 {
                     const d2 = ddx * ddx + ddy * ddy + ddz * ddz;
                     if (d2 > R2) continue;
                     const w = 1 / (d2 + 0.25);
-                    summe += w * H[I[i]];
+                    summe += (w * H[I[i] * 4 + 3]) / 127;
                     gewicht += w;
                 }
             }

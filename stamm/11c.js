@@ -109,7 +109,8 @@ class AnazhRealm_Z11c {
             st.nahWiese = { kacheln: new Map(), senken: new Map(), vorlagen: new Map(), neu: true, offen: 0 };
         const nw = st.nahWiese;
         // DIE STAND-WACHE: stehen Auge, Chunks und Studio-Vorlagen, steht jede Kachel — kein Gang.
-        if (this._standRuht("nahWiese", 1, { pos: st.camera.position, rand: AnazhRealm.STAND_RAND_M })) return 0;
+        if (this._standRuht("nahWiese", 1, { pos: st.camera.position, rand: AnazhRealm.STAND_RAND_M }, "karte"))
+            return 0;
         let gefallen = 0;
         const cam = st.camera.position;
         const tcx = Math.floor(cam.x / NW.kachel);
@@ -701,7 +702,8 @@ class AnazhRealm_Z11c {
         if (!st.nahStreu) st.nahStreu = { kacheln: new Map(), senken: new Map(), offen: 0 };
         const ns = st.nahStreu;
         // DIE STAND-WACHE: stehen Auge, Chunks, Ernte und Buch, steht jede Kachel in ihrem Zustand — kein Gang.
-        if (this._standRuht("nahStreu", 1, { pos: st.camera.position, rand: AnazhRealm.STAND_RAND_M })) return 0;
+        if (this._standRuht("nahStreu", 1, { pos: st.camera.position, rand: AnazhRealm.STAND_RAND_M }, "karte"))
+            return 0;
         let gefallen = 0;
         const cam = st.camera.position;
         const tcx = Math.floor(cam.x / NS.kachel);
@@ -1893,14 +1895,34 @@ class AnazhRealm_Z11c {
                 neu[(j * M.n + i) * 2] = 255;
                 neu[(j * M.n + i) * 2 + 1] = Math.round(this._voxelChunkConfig(e.lod || 0).step * 10);
             }
-        let anders = M.uZelle0.value.x !== i0 || M.uZelle0.value.y !== j0;
+        const voll = M.uZelle0.value.x !== i0 || M.uZelle0.value.y !== j0;
+        let anders = voll;
+        // DAS FENSTER DER REGUNG (K51-4): die Texel, die sich änderten (a0, b0, a1, b1) — die Teilung urteilt nur die Dreiecke
+        // neu, deren Zellen darin liegen (`_fernRingKlassen`); wandert der Ursprung, ist es die ganze Maske
+        let fa0 = M.n,
+            fb0 = M.n,
+            fa1 = -1,
+            fb1 = -1;
         for (let q = 0; q < M.n * M.n; q++)
             if (M.daten[q * 4] !== neu[q * 2] || M.daten[q * 4 + 1] !== neu[q * 2 + 1]) {
                 M.daten[q * 4] = neu[q * 2];
                 M.daten[q * 4 + 1] = neu[q * 2 + 1];
                 anders = true;
+                const a = q % M.n,
+                    b = (q - a) / M.n;
+                if (a < fa0) fa0 = a;
+                if (a > fa1) fa1 = a;
+                if (b < fb0) fb0 = b;
+                if (b > fb1) fb1 = b;
             }
         if (!anders) return;
+        const F = M.fenster;
+        M.fenster =
+            voll || F === "voll"
+                ? "voll"
+                : F
+                  ? [Math.min(F[0], fa0), Math.min(F[1], fb0), Math.max(F[2], fa1), Math.max(F[3], fb1)]
+                  : [fa0, fb0, fa1, fb1];
         M.uZelle0.value.set(i0, j0);
         M.tex.needsUpdate = true;
         M.ver = (M.ver | 0) + 1; // die Teilung der Schale 0 folgt (`_fernRingTeilung`)
@@ -1917,10 +1939,23 @@ class AnazhRealm_Z11c {
         const schluessel = `${M.ver | 0}|${fr.xzGen | 0}`;
         if (T.schluessel === schluessel) return;
         T.schluessel = schluessel;
+        // DER TAKT KOSTET, WAS IHN BETRIFFT (K51-4, Lehre 25): regte sich nur die Maske (die Lage der Schale steht), urteilt die
+        // Teilung nur die Dreiecke am Fenster der Regung (`M.fenster`) neu — jeder Stufen-Wechsel eines Chunks urteilte vorher
+        // alle Dreiecke der Schale 0 (OMEN 1410-boden gehend: `_fernRingKlassen` +0,11 ms je Frame, Radeon bis 13 ms je Lauf)
+        const fenster = T.xzGen === (fr.xzGen | 0) && Array.isArray(M.fenster) ? M.fenster : null;
+        M.fenster = null;
+        T.xzGen = fr.xzGen | 0;
         const geo = fr.geos[0];
         const I = geo.index.array;
         const neu = T.neu || (T.neu = new Uint8Array(T.klasse.length));
-        AnazhRealm._fernRingKlassen(M, this._voxelChunkConfig().span, geo.attributes.position.array, I, neu);
+        T.sMax = AnazhRealm._fernRingKlassen(
+            M,
+            this._voxelChunkConfig().span,
+            geo.attributes.position.array,
+            I,
+            neu,
+            fenster && { fenster, klasse: T.klasse, sMax: T.sMax }
+        );
         let anders = false;
         for (let t = 0; t < neu.length && !anders; t++) anders = neu[t] !== T.klasse[t];
         if (!anders) return;
@@ -1956,7 +1991,7 @@ class AnazhRealm_Z11c {
     // Kasten ein Band der Zelle berührt (unten bis 1½ w, oben ab span − ½ w, w = die größte Stufe der 3 × 3 wie im Knoten),
     // trägt der Nachbar jenseits (gezeichnet, dieselbe Stufe), in der Ecke auch der schräge (`_fernRingRegel` 2 überall).
     // Sonst NAHT (1): dort urteilt der Knoten je Fragment.
-    static _fernRingKlassen(M, span, P, I, klasse) {
+    static _fernRingKlassen(M, span, P, I, klasse, alt) {
         const n = M.n;
         const D = M.daten;
         const i0 = M.uZelle0.value.x;
@@ -1979,6 +2014,9 @@ class AnazhRealm_Z11c {
                     b1 = Math.max(b1, b);
                 }
         const rand = 1.5 * sMax + eps;
+        // DAS FENSTER (`alt`, K51-4): das Urteil eines Dreiecks liest die Zellen im Kasten ± rand und deren Nachbarn — liegt keine
+        // geänderte Zelle darin, gilt sein altes Urteil; wechselt die größte Stufe (`sMax`, die Breite jedes Saums), alle neu
+        const F = alt && alt.sMax === sMax ? alt.fenster : null;
         for (let t = 0; t < klasse.length; t++) {
             const p = I[t * 3] * 3;
             const q = I[t * 3 + 1] * 3;
@@ -1987,6 +2025,16 @@ class AnazhRealm_Z11c {
             const x1 = Math.max(P[p], P[q], P[r]);
             const z0 = Math.min(P[p + 2], P[q + 2], P[r + 2]);
             const z1 = Math.max(P[p + 2], P[q + 2], P[r + 2]);
+            if (
+                F &&
+                (Math.floor((x1 + rand) / span) - i0 + 1 < F[0] ||
+                    Math.floor((x0 - rand) / span) - i0 - 1 > F[2] ||
+                    Math.floor((z1 + rand) / span) - j0 + 1 < F[1] ||
+                    Math.floor((z0 - rand) / span) - j0 - 1 > F[3])
+            ) {
+                klasse[t] = alt.klasse[t];
+                continue;
+            }
             // frei: kein gezeichneter Chunk im Kasten ± rand
             let gebaut = false;
             const ra0 = Math.max(a0, Math.floor((x0 - rand) / span) - i0);
@@ -2033,6 +2081,7 @@ class AnazhRealm_Z11c {
                 }
             klasse[t] = getragen ? 2 : 1;
         }
+        return sMax;
     }
 
     // DER EINE SETZ-HELFER (CPU und GPU schreiben durch DIESELBE Naht): Höhe →

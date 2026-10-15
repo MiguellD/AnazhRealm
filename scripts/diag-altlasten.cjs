@@ -297,7 +297,10 @@ const FORBIDDEN = [
     { token: "taaLite", fiel: "04.10. — das nie gesetzte TAA-Flag; uDitherT rotiert, wo state.traaNode steht" },
     // DIE EINE SZENEN-SKALA (K50) — der Regler rechnete einen Laub-Auflösungs-Faktor, den kein Pass las; die adaptive
     // Render-Skala stand seit V18.390 auf 1; die Vortiefe der zeitlichen Auflösung lebt im Kanal a ihrer Geschichte.
-    { token: "_foliageResScale", fiel: "K50 — die Szenen-Skala ist EINE Größe (_szeneSkalaWirk), kein Stellglied des Reglers" },
+    {
+        token: "_foliageResScale",
+        fiel: "K50 — die Szenen-Skala ist EINE Größe (_szeneSkalaWirk), kein Stellglied des Reglers",
+    },
     { token: "foliageResCeiling", fiel: "K50 — state.szeneSkala (der Regler „Szene-Auflösung“)" },
     { token: "_camMotion01", fiel: "K50 — die Wahrnehmung las nur der gefallene Laub-Faktor" },
     { token: "PERF_SCENE_RES_", fiel: "K50" },
@@ -924,8 +927,16 @@ const FORBIDDEN = [
     { token: "_weltSeitenFolge", fiel: "Welle G — der Tiefentest der Hardware wählt den nächsten Treffer" },
     { token: "_weltSeiteDirty", fiel: "Welle G — die Seiten-Ebene fiel (auch der Aufruf der Fernwald-Linse)" },
     // die Ratsche des Profi-Bands führt keinen VRAM-Erzeuger, den es nicht mehr gibt
-    { token: "welt-march-seiten", fiel: "Welle G — die Seiten-Textur fiel", auch: ["spec/profiband/ratsche-wiese-radeon-ego.json"] },
-    { token: "welt-march-folge", fiel: "Welle G — die Folge-Textur fiel", auch: ["spec/profiband/ratsche-wiese-radeon-ego.json"] },
+    {
+        token: "welt-march-seiten",
+        fiel: "Welle G — die Seiten-Textur fiel",
+        auch: ["spec/profiband/ratsche-wiese-radeon-ego.json"],
+    },
+    {
+        token: "welt-march-folge",
+        fiel: "Welle G — die Folge-Textur fiel",
+        auch: ["spec/profiband/ratsche-wiese-radeon-ego.json"],
+    },
     // DIE BRÜCKE HAT EINEN RICHTER (Studio-Welle S1): smoke-labs trieb die Studio-DSL mit der Form [[w]], die die Heimat
     // nie sendet, und meldete grün, während das Einzelwort der Heimat in 7 Studios stumm blieb. Die Konformitäts-Probe
     // der Brücke betritt jede Welt über die echte Heimat (gate:portal-konformanz, samt Probefahrt der Garage).
@@ -937,7 +948,10 @@ const FORBIDDEN = [
     // DIE STUDIO-HÜLLE (K41, Studio-Welle 1): EIN UI-Modul (worlds/huelle/huelle.js) trägt Regler, Sitzung, Kosten-Leiste und
     // die Portal-Brücke der Studios, der Nebenwelten und der Werkstatt; die Kopien fielen ganz (gate:studio-huelle nennt
     // jede neue Kopie beim Namen, hier stehen die Namen der gefallenen Spiegel).
-    { token: "_wsOvDebounce", fiel: "Studio-Hülle K41 — die Werkstatt entprellt im EINEN Generator (AnazhHuelle.regler, ruheMs)" },
+    {
+        token: "_wsOvDebounce",
+        fiel: "Studio-Hülle K41 — die Werkstatt entprellt im EINEN Generator (AnazhHuelle.regler, ruheMs)",
+    },
     {
         token: "function announceReady",
         fiel: "Studio-Hülle K41 — die ready meldet die EINE Brücke (AnazhHuelle.bruecke mit manifest)",
@@ -953,7 +967,11 @@ const FORBIDDEN = [
         fiel: "Studio-Hülle K41 — params schreibt der Generator, kein Id-Spiegel",
         auch: ["worlds/koerperstudio/koerperstudio.js"],
     },
-    { token: "seedInput", fiel: "Studio-Hülle K41 — der Same lebt in der Sitzung (sitz.seedSetzen)", auch: ["worlds/klang/klang.js"] },
+    {
+        token: "seedInput",
+        fiel: "Studio-Hülle K41 — der Same lebt in der Sitzung (sitz.seedSetzen)",
+        auch: ["worlds/klang/klang.js"],
+    },
     // DIE LAGE STEHT (Welle C): die Nah-Wiese trug eine eigene Kamera-Signatur, jeder andere Leser rechnete je Pass neu. EIN
     // Gesetz der Lage (`_passLageGen`, `L.gen`) gilt allen Lesern der Sicht-Kette.
     { token: "_sichtSteht", fiel: "Welle C — EIN Gesetz der Lage je Pass (_passLageGen, L.gen)" },
@@ -1185,7 +1203,10 @@ const FORBIDDEN = [
         ["rockTint", "der Fels-Tint des Shaders (der Vertex trägt den Fels-Stoff, die Ferne `FELS_STOFF.mittel`)"],
         ["rockLumMix", "die Säulen-Luminanz auf dem Fels"],
         ["_shadeRock", "die Hex-Abschattung des Werkstatt-Steins (die Töne leitet `felsBasis` ab)"],
-        ["_himmelsSicht", "die Himmels-Sicht im Stamm (K17-2: gelaende-core `himmelsSicht`, der Worker baut sie beim Chunk-Bau)"],
+        [
+            "_himmelsSicht",
+            "die Himmels-Sicht im Stamm (K17-2: gelaende-core `himmelsSicht`, der Worker baut sie beim Chunk-Bau)",
+        ],
         ["AnazhRealm.HIMMELS_SICHT", "die Länge der Himmels-Sicht im Stamm (gelaende-core `HIMMELS_SICHT`)"],
     ].map(([token, kern]) => ({ token, fiel: `K17 — ${kern}` })),
     // DAS LICHT DES AUGES OHNE SZENEN-LICHT (K15, OMEN 1110-3): das Punkt-Licht am Auge stand ab Boot in der Szene und im
@@ -1580,12 +1601,7 @@ function gelaendeLeser() {
     // der Stamm aus der EINEN Liste (nach dem Schnitt liegt er unter stamm/, kein readdir der Wurzel sähe ihn)
     const wurzel = fs
         .readdirSync(root)
-        .filter(
-            (f) =>
-                /\.(?:c|m)?js$/.test(f) &&
-                f !== "gelaende-core.js" &&
-                !stammLib.istStammDatei(f)
-        )
+        .filter((f) => /\.(?:c|m)?js$/.test(f) && f !== "gelaende-core.js" && !stammLib.istStammDatei(f))
         .concat(STAMM);
     const skripte = (d) =>
         fs
@@ -3303,7 +3319,7 @@ function scanHuellenFormWand(dateien) {
 // Gelesen wird der Code ohne Kommentare; rot mit Datei:Zeile.
 // DIE KLASSE, nicht der Aufruf (Prüfung K16 Runde 2): der Ort reist selten als Literal IM Aufruf — er steht als Orts-
 // Tabelle (`{ id: "ufer", x: -872, z: -1127 }`, kamera-laub), als Versatz-Liste (`[[-50, 60], [30, 0]]` um den Start,
-// kampf-gefuehl), als Messort-Konstante (`const MESS = { x: -900, z: -850 }`, `o.mess || [-900, -850]`) und wird erst Zeilen
+// kampf-gefuehl), als Messort-Konstante (`const MESS = { x: -640, z: -410 }`, `o.mess || [-640, -410]`) und wird erst Zeilen
 // später gesetzt. In einer Setz-Probe (die Datei setzt Spieler, Kamera oder Tier: `.position.set(`, `.position.x =`,
 // `spawnCreatureAt(`) ist darum JEDES Orts-Paar aus Zahlen-Literalen rot — ein Objekt mit x und z, ein Paar als Wert,
 // Vorgabe oder Glied einer Liste —, sobald es weiter als `ORT_NAH_M` vom Ursprung seines Bezugs zeigt (darunter liegt die
@@ -3363,14 +3379,37 @@ function ortsName(code, i) {
     const m = /([A-Za-z_$][\w$]*)\s*[:=]\s*(?:\w+\s*\?\s*)?$/.exec(code.slice(Math.max(0, j - 80), j));
     return m ? m[1] : "";
 }
+// DIE ABSCHRIFT DES MESSORTS (K55): der Platz eines Band-Orts ohne Anker und ohne eigene Welt (die Mess-Wiese, das Dorf) steht
+// NUR im Haushalt (spec/profiband/haushalt.json, gelesen über scripts/lib/welt-orte.cjs `messort`) — und ein gefallener Platz
+// nirgends mehr. Zwei Zahlen-Literale, die ihn nennen (x, dann z binnen 60 Zeichen, Code ohne Kommentare), sind eine Abschrift,
+// gleich in welcher Form und ob die Datei setzt: `stelle(x, z)`, `umstellen(x, z)`, `const X = x, Z = z`, die Blick-Tabelle einer
+// Linse. Bis K55 trugen 14 Proben die Mess-Wiese −900/−850 als Zahlen; K16 hob den Boden dort in einen Nadelwald-Hang.
+const MESSORT_GEFALLEN = [[-900, -850]]; // die Mess-Wiese bis K55
+function messortPaare() {
+    const h = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "spec", "profiband", "haushalt.json"), "utf8"));
+    return h.messorte
+        .filter((o) => !o.anker && !o.bank && Array.isArray(o.spieler))
+        .map((o) => o.spieler)
+        .concat(MESSORT_GEFALLEN);
+}
+const zahlRe = (v) => String.raw`(?<![\w.])` + String(v).replace(/[.]/g, String.raw`\.`) + String.raw`(?![\d.])`;
 function scanOrtsWand(dateien) {
     const errs = [];
+    const abschrift = messortPaare().map((p) => ({ p, re: new RegExp(zahlRe(p[0]) + String.raw`[\s\S]{0,60}?` + zahlRe(p[1]), "g") }));
     for (const [name, src] of dateien) {
         if (name === "scripts/diag-altlasten.cjs") continue; // die Wand selbst trägt ihre Selbsttest-Sätze als Text
         const code = stripComments(src);
         const roh = src.split("\n");
         const zeilen = code.split("\n");
         const buehne = (zeile) => /\/\/\s*BÜHNE:\s*\S/.test(roh.slice(Math.max(0, zeile - 3), zeile).join("\n"));
+        for (const { p, re } of abschrift)
+            for (const m of code.matchAll(re)) {
+                const zeile = code.slice(0, m.index).split("\n").length;
+                if (buehne(zeile)) continue;
+                errs.push(
+                    `Orts-Wand: ${name}:${zeile} Abschrift des Messorts ${p.join("/")} (${m[0].replace(/\s+/g, " ").slice(0, 60)}) — der Ort kommt aus spec/profiband/haushalt.json (scripts/lib/welt-orte.cjs messort), oder die Zeile trägt // BÜHNE: <Grund>`
+                );
+            }
         for (const re of ORTS_MUSTER)
             for (const m of code.matchAll(re)) {
                 const zeile = code.slice(0, m.index).split("\n").length;
@@ -3439,8 +3478,7 @@ const STAMM_NAME_RX = new RegExp(
 const STAMM_WERKZEUG = ["scripts/lib/stamm.cjs", "scripts/stamm-umzug.cjs"];
 function stammLeserDateien(root) {
     const aus = [];
-    for (const f of fs.readdirSync(root))
-        if (/\.(?:c|m)?js$/.test(f) && !stammLib.istStammDatei(f)) aus.push(f);
+    for (const f of fs.readdirSync(root)) if (/\.(?:c|m)?js$/.test(f) && !stammLib.istStammDatei(f)) aus.push(f);
     const geh = (d) => {
         for (const e of fs.readdirSync(path.join(root, d), { withFileTypes: true })) {
             const rel = d + "/" + e.name;
@@ -3454,7 +3492,9 @@ function stammLeserDateien(root) {
 function scanStammLeser(root, ersatz = {}) {
     const acorn = require("acorn");
     const errs = [];
-    const dateien = stammLeserDateien(root).concat(Object.keys(ersatz).filter((f) => !fs.existsSync(path.join(root, f))));
+    const dateien = stammLeserDateien(root).concat(
+        Object.keys(ersatz).filter((f) => !fs.existsSync(path.join(root, f)))
+    );
     for (const rel of dateien) {
         const src = rel in ersatz ? ersatz[rel] : fs.readFileSync(path.join(root, rel), "utf8");
         // Vorfilter: der Name als Text oder als Regex-Quelle (anazhRealm\.js)
@@ -3508,13 +3548,7 @@ function main() {
     // AUGEN-GLUT-SCHNITT (18.07.): foundry-core (der Ofen/Bäcker) steht mit in
     // der Wand — Phantom-Leser-Namen dürfen auch dort nicht nachwachsen. Der Welt-March im WGSL (feld-wgsl.js) fiel
     // mit K16 samt dem trilinearen Brick-March (feldTriAbtast/feldTriGrad, V18.528; die Rückkehr-Wand ist die EINE).
-    const files = [
-        ...STAMM,
-        "voxel-worker.js",
-        "index.html",
-        "signaling-server.js",
-        "foundry-core.js",
-    ]
+    const files = [...STAMM, "voxel-worker.js", "index.html", "signaling-server.js", "foundry-core.js"]
         .map((f) => path.join(root, f))
         .concat(linsenDateien(root));
 
@@ -3635,10 +3669,11 @@ function main() {
             process.exit(1);
         }
         // Die Normal-Wand muss feuern: eine Welt-Normale, mit der transponierten Kamera-Matrix gedreht.
-        // Dazu die Quelle: der Boden-Graph liest wieder r184s `normalWorld` (der Fall vor V18.532), transitiv über `_nGeo`.
+        // Dazu die Quelle: der Boden-Graph liest wieder r184s `normalWorld` (der Fall vor V18.532), transitiv über `_nWG` (die
+        // Geometrie-Normale des Graphen, beim Boden die des Stufen-Morphs, K51-2).
         const quelleAlt = stamm.replace(
-            "const _nGeo = _Tn.normalWorldGeometry.mul(_Tn.faceDirection);",
-            "const _nGeo = _Tn.normalWorld;"
+            "const _nWG = opts.geomorph ? this._bodenStufenKnoten().normalWelt : _Tn.normalWorldGeometry;",
+            "const _nWG = _Tn.normalWorld;"
         );
         const normalFeuert =
             scanNormalWand(stamm).length === 0 &&
@@ -3746,16 +3781,36 @@ function main() {
             ["scripts/p.cjs", 'r.spawnCreatureAt(80, r.getTerrainHeightAt(80, 80) + 1, -80, "calm");\n'],
             ["scripts/t.cjs", 'const ORTE = [\n    { id: "ufer", x: -872, z: -1127 },\n];\n' + SETZT],
             ["scripts/v.cjs", "const ortR = [\n    [-14, 14],\n    [70, 0],\n].find(eben);\n" + SETZT],
-            ["scripts/m.cjs", "const MESS = { x: -900, z: -850 };\n" + SETZT],
-            ["scripts/d.cjs", "const [MX, MZ] = o.mess || [-900, -850];\n" + SETZT],
+            ["scripts/m.cjs", "const MESS = { x: -640, z: -410 };\n" + SETZT],
+            ["scripts/d.cjs", "const [MX, MZ] = o.mess || [-640, -410];\n" + SETZT],
         ]);
         const ortsStill = scanOrtsWand([
             ["scripts/q.cjs", "// BÜHNE: eigene Szene\npm.position.set(512, 40, -300);\n"],
             ["scripts/u.cjs", "const O = r.__ebeneStelle();\npm.position.set(O.x, O.y, O.z);\n"],
             ["scripts/k.cjs", "const BAND = { ufer: [60, 900], SEEDS: [7, 12345] };\n" + SETZT],
             ["scripts/b.cjs", 'r.spawnArchitecture("haus", { x: 400, y: 0, z: 400 });\n' + SETZT],
-            ["scripts/w.cjs", "const MESS = { x: -900, z: -850 };\n"],
+            ["scripts/w.cjs", "const MESS = { x: -640, z: -410 };\n"],
         ]);
+        // DIE ABSCHRIFT DES MESSORTS (K55): der Platz der Mess-Wiese aus dem Haushalt und der gefallene Platz, je als Aufruf und
+        // als Konstanten-Paar über zwei Zeilen — rot, auch ohne Setzen; derselbe Platz um 1 m versetzt und hinter BÜHNE still.
+        const MW = messortPaare()[0];
+        const MG = MESSORT_GEFALLEN[0];
+        const abschriftRot = scanOrtsWand([
+            ["scripts/a.cjs", `umstellen(${MW[0]}, ${MW[1]});\n`],
+            ["scripts/g.cjs", `const X = ${MG[0]},\n    Z = ${MG[1]};\n`],
+        ]);
+        const abschriftStill = scanOrtsWand([
+            ["scripts/e.cjs", `umstellen(${MW[0] + 1}, ${MW[1]});\n`],
+            ["scripts/f.cjs", `// BÜHNE: der gefallene Ort als Probe\nstelle(${MG[0]}, ${MG[1]});\n`],
+        ]);
+        if (
+            abschriftRot.length !== 2 ||
+            !abschriftRot.every((x) => /Abschrift des Messorts/.test(x)) ||
+            abschriftStill.length !== 0
+        ) {
+            console.log("❌ SELBST-TEST: die Abschrift des Messorts feuert nicht", abschriftRot, abschriftStill);
+            process.exit(1);
+        }
         const ortsHeute = scanOrtsWand(gateDateien(root));
         const ortsFeuert =
             ortsRot.length === 6 &&
@@ -3956,8 +4011,8 @@ function main() {
                 ],
                 [
                     "Frist meldet INFO",
-                    "            this.log(`${text} (wieder: ${e.still}× seit der letzten Meldung, ${e.n}× insgesamt)`, \"ERROR\");",
-                    "            this.log(`${text} (wieder: ${e.still}× seit der letzten Meldung, ${e.n}× insgesamt)`, \"INFO\");",
+                    '            this.log(`${text} (wieder: ${e.still}× seit der letzten Meldung, ${e.n}× insgesamt)`, "ERROR");',
+                    '            this.log(`${text} (wieder: ${e.still}× seit der letzten Meldung, ${e.n}× insgesamt)`, "INFO");',
                     /^Fang$/,
                 ],
                 [
@@ -4136,7 +4191,12 @@ function main() {
         });
         const amOrt = (z) => leserRot.some((e) => e.startsWith(`Stamm-Leser-Wand: ${leserDatei}:${z} `));
         const leserFeuert =
-            scanStammLeser(root).length === 0 && leserRot.length === 3 && amOrt(3) && amOrt(4) && amOrt(5) && leserStill.length === 0;
+            scanStammLeser(root).length === 0 &&
+            leserRot.length === 3 &&
+            amOrt(3) &&
+            amOrt(4) &&
+            amOrt(5) &&
+            leserStill.length === 0;
         console.log(
             leserFeuert
                 ? `✅ SELBST-TEST: die Stamm-Leser-Wand feuert (Leser am Namen · Patcher am Pfad · Stapel-Leser ohne stamm/ — je mit Zeile; Kommentar, Meldung und das volle Stapel-Muster still; ${stammLeserDateien(root).length} Dateien gesehen)`

@@ -1722,6 +1722,9 @@ class AnazhRealm_Z20b {
     _kreaturTrefferGlieder(cr) {
         const u = cr && cr.userData;
         if (!u) return null;
+        // wer die Glieder eines RUHENDEN Leibs bekommt (K59), bekommt sie frisch: seine Wurzel hält den Szenen-Gang aus dem
+        // Skelett, die Anker-Matrizen stünden sonst, wo die Ruhe begann (jeder Leser — Biss, Maul, Treffer, Tod)
+        if (u._ruht === true) this._leibMatrix(cr);
         if (u._trefferGlieder !== undefined) return u._trefferGlieder;
         // KERN-PFLICHT (Welle L): ohne tetrapoda trefferZone gibt es kein Treffer-Volumen — ein lauter BRUCH wie im
         // Treffer-Urteil (_kampfUrteil), nie ein still je Tier gespeichertes null (jedes Wesen wäre unverwundbar).
@@ -1799,7 +1802,7 @@ class AnazhRealm_Z20b {
     _kreaturGliedTreffer(cr, ax, ay, az, bx, by, bz, radius, flaeche = false) {
         const gl = this._kreaturTrefferGlieder(cr);
         if (!gl) return null;
-        cr.updateMatrixWorld(true);
+        this._leibMatrix(cr);
         const v = this._trefferVek || (this._trefferVek = [new THREE.Vector3(), new THREE.Vector3()]);
         let best = null;
         let bestTiefe = Infinity;
