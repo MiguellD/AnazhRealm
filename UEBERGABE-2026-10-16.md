@@ -169,3 +169,10 @@ der Macher muss frei sein).
 - Laufend: D2M fix1 (wf_8f858320-e9d), A3 fix1 (wf_82343bad-891), A7 Karten-Krone (wf_fdd821d3-e30), A8 Buehne haelt jede Uhr (wf_15553161-99c; Tafel streut am selben Code 0,17–0,69), Richter-Zensus (wf_8efe48bc-ad3: 140 playtest- + 108 Skript-Stellen, je Stelle absenz/praesenz → fehlt/konsum/verhalten/faellt, mit Gegenpruefung; Worktree AnazhRealm-zensus).
 - OMEN: Wald-Kette — Taeter Streu ohne Ort in der Foundry-Schlange (stamm 15b 1373/1382/1464/1715 → Vorrats-Rang), misst Schnitt S1 4+4, legt ihn als Zweig streu-rang ab.
 - D3b (playtest nach Domaene, Modus --richter von stamm-umzug) startet nach D2M; Auftrag im Scratch d3b-auftrag.txt. Skripte ohne Leser: 0 von 230 — die Decke zahlt durch Einfalten.
+
+## 17.10. 01:01 (date) — Lage
+- integ-probe = c0f5f4fd V18.546.9 (D2M Stamm nach Domaene + streu-rang); davor 6df9c3d4 V18.546.8 (W3 A1 G1). main 3caca1cd. main-FF blockiert: OMEN Genesis Third B GPU +0,70 ms (2σ 0,58), Frame p50 8,8 -> 13,6 — Verdacht G1 drawIndexedIndirect auf Pascal, OMEN prueft A G G A mit `AnazhRealm.__arenaOhne`. Genesis Ego haelt (CPU 5,6).
+- Richter-Zensus (wf_8efe48bc-ad3, 13,4 M Tokens): 1 541 Quelltext-Lesungen, 1 052 Praesenz (330 faellt, 229 Konsum, 493 Verhalten), 309 Absenz, 180 Struktur; Pakete im Scratch d3c/*.json, Regel d3c/regel.txt (Richter-Macher: Verhalten nur fuer ein Spieler-Gesetz ohne anderen Waechter).
+- Laufend: D3 (wf_3dbe8e2f-259: D3b Richter nach Domaene R2, D3c-studio/-ort/-konsum R1), A3 laub (Nachfolger), A7 Karten-Krone (Nachfolger), A8 Buehne-Uhr (Nachbesserung, ehrlicher A-Stand 5/12 ROT: wasser 0,404, laub 0,0002, boden-nah-farbe 9,27, haus+fels veraltet), E1 CPU-Takt Genesis Third (wf_ccc25a35-d30; schon main 6,5 ms > 5,8).
+- Danach: D3c-bild/-leben/-wasser/-crossfade + D3c-playtest (nach D3b), D3d Absenz-Helfer + Wand; A9 EINE Bild-Uhr im Stamm + „die Welt steht" vor jedem Schuss (nach A8); B3 grosser Schnitt aus OMEN bericht/1610-ankunft-menge.md.
+- Woche 62 % um 00:41.
