@@ -259,15 +259,25 @@ function sollIstSchreiben(ziele, messung) {
     fs.writeFileSync(SOLL_TAFEL, tafelText(t) + "\n");
     return `${liste.join(", ")} → spec/abnahme/soll-tafel.json`;
 }
-// DIE TAFEL IN IHRER FORM (F1, Wachstums-Wand): eine Zahlen-Reihe steht auf EINER Zeile — eine Messung (`sp` je Klasse)
-// wuchs sonst um eine Zeile je Zahl, und jedes `--ist` zählte als Prüf-Apparat (+312 Zeilen für eine Messrunde)
+// DIE TAFEL IN IHRER FORM (F1 + L2, Wachstums-Wand): eine Zahlen-Reihe steht auf EINER Zeile, und jede Teil-Klasse einer Messung
+// (`klassen` unter einem `werkzeug`) steht auf EINER Zeile — eine Neumessung ersetzt ihre Zeilen, ein neues Maß-Feld wächst die
+// Tafel nie (vorher +312 Zeilen je Messrunde, +93 je Neumessung)
 function tafelText(v, ein = "") {
     if (Array.isArray(v) && v.every((x) => x === null || typeof x !== "object")) return JSON.stringify(v).replace(/,/g, ", ");
     if (!v || typeof v !== "object") return JSON.stringify(v);
     const innen = ein + "    ";
+    const jeZeile = (k) => k === "klassen" && v.werkzeug && v[k] && typeof v[k] === "object" && !Array.isArray(v[k]);
+    const wert = (k) =>
+        jeZeile(k) && Object.keys(v[k]).length
+            ? "{\n" +
+              Object.keys(v[k]).map((n) => `${innen}    ${JSON.stringify(n)}: ${JSON.stringify(v[k][n])}`).join(",\n") +
+              "\n" +
+              innen +
+              "}"
+            : tafelText(v[k], innen);
     const teile = Array.isArray(v)
         ? v.map((x) => innen + tafelText(x, innen))
-        : Object.keys(v).map((k) => `${innen}${JSON.stringify(k)}: ${tafelText(v[k], innen)}`);
+        : Object.keys(v).map((k) => `${innen}${JSON.stringify(k)}: ${wert(k)}`);
     if (!teile.length) return Array.isArray(v) ? "[]" : "{}";
     return (Array.isArray(v) ? "[\n" : "{\n") + teile.join(",\n") + "\n" + ein + (Array.isArray(v) ? "]" : "}");
 }

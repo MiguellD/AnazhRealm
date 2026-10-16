@@ -363,10 +363,11 @@ function validateManifest(m) {
                         !(w.nadel > 0 && isFinite(w.nadel)) ||
                         !(w.rand >= 0 && isFinite(w.rand)) ||
                         !(w.winkel > 0 && w.winkel < 45) ||
+                        !(w.spalte > 0 && isFinite(w.spalte)) ||
                         !(w.holz >= 0 && w.holz < 1)
                     )
                         v.push(
-                            `B2c: lod.budget.${k}[${st}].wedel muss ab in [0, 1), teile (ganz >= 1), breite (> 0), nadel (> 0), rand (>= 0), winkel in (0, 45) und holz in [0, 1) tragen`
+                            `B2c: lod.budget.${k}[${st}].wedel muss ab in [0, 1), teile (ganz >= 1), breite (> 0), nadel (> 0), rand (>= 0), winkel in (0, 45), spalte (> 0) und holz in [0, 1) tragen`
                         );
                 }
                 // W5: der Anteil der gewachsenen Blattstellen je Kronen-Art, die eine Karte/Strähne tragen — (0, 1].

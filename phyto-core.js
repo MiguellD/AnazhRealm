@@ -409,9 +409,10 @@
     // Integration 05.10.: die zweite Baum-Zelle war ein Zwilling der ersten (derselbe Zweig, derselbe Strom — Prüfer W5:
     // „die zwei Baum-Zellen sind fast gleich"); sie trägt seither den Weiden-Zweig, die Bäume lesen Zelle 0.
     const BLATT_ATLAS_BREIT = { zellen: 1, kern: 0.72, fuellung: 0.1796 };
-    // Die Wedel-Zelle (S3, 09.10.): der Wedel reicht bis 0,936 der halben Zelle (kern 1), Füllung 0,3603 gemessen (gate:asset-contract
-    // malt den Atlas und hält die Zahl gegen den Maler; vorher die Nadel-Zweiglein 0,2537, die Lanzette bis K58 0,2811).
-    const BLATT_ATLAS_WEDEL = { zelle: 3, kern: 1, fuellung: 0.3603 };
+    // Die Wedel-Zelle (S3, 09.10.): der Wedel reicht bis zum Rand der halben Zelle (kern 1), Füllung 0,2742 gemessen (gate:asset-contract
+    // malt den Atlas und hält die Zahl gegen den Maler; vorher die Nadel-Zweiglein 0,2537, die Lanzette bis K58 0,2811, die Hand
+    // aus Nadel-Büscheln bis L2 0,3603, die Büschel-Spitze bis L2-n1 0,2713).
+    const BLATT_ATLAS_WEDEL = { zelle: 3, kern: 1, fuellung: 0.31 };
     // DIE GROSSBLATT-ZELLE (05.10.): das Blatt-Mass ist eine Eigenschaft der Art — die Baum-Karten (Zelle 0) tragen
     // das Natur-Blatt der Baeume (14 px in der 512er-Zelle), die kleine Karte des Strauchs und die gestreckte Straehne
     // der Weide trugen damit 0,026 bzw. 0,039 m (Hasel und Weide: 0,06–0,15 m). Zelle 2 traegt ihr den Zweig mit
@@ -524,20 +525,33 @@
     // zur Spitze und bricht stumpf (`(1 − t^stumpf)^0,5`), je Zweiglein um `streu` [Basis, Zufall] zerfranst, und statt 36 dichter
     // Zweiglein tragen 16 je `unter` Unter-Zweiglein (`unterLaenge` der Zweig-Länge): jedes Zweiglein ein eigener Sprüh-Büschel,
     // die Lücken zwischen ihnen überleben die tiefen Mips — die Karte liest als Hand aus Nadel-Büscheln, nie als Klinge.
+    // DIE BÜSCHEL-SPITZE (L2, 15.10.): die Unter-Zweiglein füllten ab 0,35 jedes Zweigleins die äußere Hälfte — ab Mip 1
+    // ein glattes Oval (Soll-Tafel laub-kante 0,33 an der Mess-Wiese). Jetzt 10 Zweiglein, offener (`winkel`), jedes mit
+    // eigener Biegung (`biegung` [Gegen-Schwung, Zufall] rad) und ab `unterAb` in `unter` Unter-Zweiglein gefächert (Winkel
+    // `unterWinkel` [Basis, Zufall], Länge `unterLaenge` × 0,6–1,4): ein Fichten-Zweig aus Büscheln mit Himmel dazwischen
+    // bis Mip 3, die Kante zerfällt in Richtungen statt in parallele Striche.
+    // DIE FISCHGRÄTE (L2-n1, 16.10.; Prüfer L2: ab Mip 1 lasen die Büschel als Korallen mit runden Löchern, Tanne L0 0,28):
+    // 9 Unter-Zweiglein je Zweiglein mit kurzen Nadeln (9 px, Strich 2,5 px alle 2,5 px) — die Zweiglein tragen Gräten
+    // statt dicker Bürsten, die Kante bleibt bis Mip 2 gezackt. Echte GPU, Tafel-Pose, dieselbe Welt (Atlas getauscht):
+    // laub-kante 0,226 → 0,209 (Tanne L0 0,284 → 0,190); dickere Nadeln (3 px) 0,27, dünnere und lichtere 0,26. Der Strom
+    // 0xb0a7 ist der Zweig, der auch die Mip-Deckung der Fichten-Karte hält (0xbeef 0,211, ihre Stufe 5 fiel um 4,2 %).
     const WEDEL_ZWEIG = {
-        seiten: 16,
-        laenge: 0.8,
+        seiten: 10,
+        laenge: 0.95,
         stumpf: 3,
-        streu: [0.75, 0.5],
-        unterLaenge: 0.42,
-        winkel: [0.82, 0.18],
-        unter: 7,
-        abstand: 1.6,
-        nadel: 12,
-        breite: 1.6,
+        streu: [0.5, 0.8],
+        unterLaenge: 0.45,
+        unterAb: 0.3,
+        unterWinkel: [0.4, 0.7],
+        biegung: [0.18, 0.9],
+        winkel: [0.55, 0.8],
+        unter: 9,
+        abstand: 2.5,
+        nadel: 9,
+        breite: 2.5,
         nadelWinkel: 1.05,
         rand: 0.92,
-        strom: 0xbeef,
+        strom: 0xb0a7,
     };
 
     // DER BLATT-ATLAS — EINE Quelle für jeden Leser (Studio, Foundry-Worker, Host): er trägt NUR den WERT
@@ -799,16 +813,17 @@
                         Math.pow(1 - Math.pow(t, WZ.stumpf), 0.5) *
                         (WZ.streu[0] + rg() * WZ.streu[1]);
                 if (L < WZ.nadel) continue;
-                const pz = achse(q, w, L, -sg * 0.18, 1.3, 1);
-                // Unter-Zweiglein am äußeren Teil der langen Zweiglein (der Wedel wird nach außen dichter).
+                const kz = -sg * WZ.biegung[0] + (rg() - 0.5) * WZ.biegung[1];
+                const pz = achse(q, w, L, kz, 1.3, 1);
+                // Unter-Zweiglein am äußeren Teil der langen Zweiglein: die Spitze des Zweigleins fächert zum Büschel.
                 for (let u = 0; u < WZ.unter && L > 6 * WZ.nadel; u++) {
-                    const tu = 0.35 + (0.5 * u) / Math.max(1, WZ.unter - 1),
+                    const tu = WZ.unterAb + ((0.9 - WZ.unterAb) * u) / Math.max(1, WZ.unter - 1),
                         su = (u + i) % 2 ? 1 : -1;
                     achse(
                         pz(tu),
-                        w - sg * 0.18 * tu + su * (0.62 + rg() * 0.2),
-                        L * WZ.unterLaenge * (1 - 0.4 * tu),
-                        0,
+                        w + kz * tu + su * (WZ.unterWinkel[0] + rg() * WZ.unterWinkel[1]),
+                        L * WZ.unterLaenge * (0.6 + rg() * 0.8) * (1 - 0.4 * tu),
+                        (rg() - 0.5) * WZ.biegung[1],
                         0.9,
                         0.9
                     );

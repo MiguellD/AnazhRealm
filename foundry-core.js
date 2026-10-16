@@ -402,7 +402,7 @@ const PORTAL_RENDER_CONFIG = {
         // je Stufe streng, draws steigt nie). Die Kosten-Regler der Kronen wohnen in ihrer Zeile: blattKarte (Kante der
         // Laub-Karte in Blatt-Groessen), lagen · quote · geruest · wedel (S3, docs/studio-vertrag.md B2c „Die Kronen-Kosten";
         // wedel.holz und straehne.holz: der Holz-Anteil an der Farbe von Wedel und Straehne, geeicht an der Kronenfarbe der
-        // Karten von V18.536), straehne (Trauer L0 und L1: Kartenbreite in Blattlaengen, Stuecke je Peitsche —
+        // Karten von V18.536; wedel.spalte: die groesste Breite einer Wedel-Karte in Stueck-Laengen, L2 15.10.), straehne (Trauer L0 und L1: Kartenbreite in Blattlaengen, Stuecke je Peitsche —
         // 05.10.: die schlanke Trauer-Klinge der L1 ist gefallen, sie las als Papier-Streifen), rinde (L0: ast/reisig in
         // trunkR — darunter jeder 2./3. Ring, ohne Traeger faellt der Strang), boden (tree[0], die Trauer-L1 liest
         // dieselbe Zahl: tiefstes Laub in Baumhoehen), deckung (tree[1]: das Band, in dem die gebaute L1-Krone die
@@ -430,7 +430,7 @@ const PORTAL_RENDER_CONFIG = {
                     lagen: 16,
                     blattKarte: 4.0,
                     geruest: 0.1,
-                    wedel: { ab: 0.35, teile: 1, breite: 1.65, nadel: 0.025, rand: 0.5, winkel: 10, holz: 0.15 },
+                    wedel: { ab: 0.35, teile: 1, breite: 1.65, nadel: 0.016, rand: 0.5, winkel: 40, spalte: 1.25, holz: 0.15 },
                     straehne: { teile: 2, breite: 0.72, holz: 0 },
                     rinde: { ast: 0.4, reisig: 0.1 },
                     boden: 0.02,
@@ -443,7 +443,7 @@ const PORTAL_RENDER_CONFIG = {
                     quote: 0.35,
                     blattKarte: 2.2,
                     geruest: 0.25,
-                    wedel: { ab: 0, teile: 2, breite: 2.03, nadel: 0.05, rand: 0.3, winkel: 5, holz: 0.15 },
+                    wedel: { ab: 0, teile: 2, breite: 2.03, nadel: 0.045, rand: 0.3, winkel: 40, spalte: 1.5, holz: 0.15 },
                     straehne: { teile: 1, breite: 0.95, holz: 0.06 },
                     deckung: [0.8, 1.15],
                     ringToleranz: 0.001,
@@ -1345,43 +1345,51 @@ function pushStraehne(arr, pts, lang, halb, blaetter, farben, bodenY, teile, zel
                 sn = Math.sin(phi);
             karten = [vnorm(vadd(vscl(q2, c), vscl(q1, sn))), vnorm(vsub(vscl(q2, c), vscl(q1, sn)))];
         } else karten = [q1, q2];
-        for (const q of karten) {
-            const nrm = vnorm(vcross(q, e1)).map((c) => (Math.abs(c) < 1e-9 ? 0 : c));
-            const pos = [],
-                nor = [],
-                col = [],
-                uvs = [],
-                aw = [],
-                ac = [],
-                at = [];
-            for (let i = 0; i < 4; i++) {
-                const cx = corner[i][0] * hq,
-                    cy = corner[i][1] * al * 0.5;
-                pos.push(
-                    mitte[0] + q[0] * cx + e1[0] * cy,
-                    mitte[1] + q[1] * cx + e1[1] * cy,
-                    mitte[2] + q[2] * cx + e1[2] * cy
-                );
-                nor.push(nrm[0], nrm[1], nrm[2]);
-                col.push(fc.r, fc.g, fc.b);
-                // v laeuft entlang der Kette (oben = der Zweig-Ansatz v0, unten = die Spitze v0 + kern), u quer — der
-                // Kern-Ausschnitt der Zelle wie die Laub-Karte
-                uvs.push(i === 0 || i === 3 ? u0(zelle) : u0(zelle) + 0.25 * kern, i < 2 ? v0 : v0 + kern);
-                aw.push(bl.sway, bl.phase, bl.omega);
-                ac.push(mitte[0], mitte[1], mitte[2]);
-                at.push(1);
+        // DIE SPALTEN DES WEDELS (L2, 15.10.): ein Stück, dessen Nadel-Wolke breiter reicht als `spalte` × seine Länge, trägt
+        // die Zelle in M Spalten nebeneinander — jede Karte höchstens so breit wie `spalte` × lang, die Zelle nie quer
+        // gestreckt. Befund: die Koniferen-L0 trug Karten 2,3–6,5 × so breit wie lang (L1 bis 3,5–5,5 ×), die Zweiglein der
+        // Zelle lasen quer gezogen als lange gerade Striche — die Laub-Kante der Mess-Wiese 0,33. Der Schatten-Teil trägt die Hülle.
+        const M = wedel && !nurQuer ? Math.max(1, Math.ceil((2 * hq) / (halb.spalte * al) - 1e-9)) : 1;
+        const hs = hq / M;
+        for (const q of karten)
+            for (let j = 0; j < M; j++) {
+                const nrm = vnorm(vcross(q, e1)).map((c) => (Math.abs(c) < 1e-9 ? 0 : c));
+                const mj = M > 1 ? vadd(mitte, vscl(q, (2 * j + 1 - M) * hs)) : mitte;
+                const pos = [],
+                    nor = [],
+                    col = [],
+                    uvs = [],
+                    aw = [],
+                    ac = [],
+                    at = [];
+                for (let i = 0; i < 4; i++) {
+                    const cx = corner[i][0] * hs,
+                        cy = corner[i][1] * al * 0.5;
+                    pos.push(
+                        mj[0] + q[0] * cx + e1[0] * cy,
+                        mj[1] + q[1] * cx + e1[1] * cy,
+                        mj[2] + q[2] * cx + e1[2] * cy
+                    );
+                    nor.push(nrm[0], nrm[1], nrm[2]);
+                    col.push(fc.r, fc.g, fc.b);
+                    // v laeuft entlang der Kette (oben = der Zweig-Ansatz v0, unten = die Spitze v0 + kern), u quer — der
+                    // Kern-Ausschnitt der Zelle wie die Laub-Karte
+                    uvs.push(i === 0 || i === 3 ? u0(zelle) : u0(zelle) + 0.25 * kern, i < 2 ? v0 : v0 + kern);
+                    aw.push(bl.sway, bl.phase, bl.omega);
+                    ac.push(mitte[0], mitte[1], mitte[2]);
+                    at.push(1);
+                }
+                const g = new THREE.BufferGeometry();
+                g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+                g.setAttribute("normal", new THREE.Float32BufferAttribute(nor, 3));
+                g.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+                g.setAttribute("color", new THREE.Float32BufferAttribute(col, 3));
+                g.setAttribute("aWind", new THREE.Float32BufferAttribute(aw, 3));
+                g.setAttribute("aCenter", new THREE.Float32BufferAttribute(ac, 3));
+                g.setAttribute("aType", new THREE.Float32BufferAttribute(at, 1));
+                g.setIndex([0, 1, 2, 0, 2, 3]);
+                arr.push(g);
             }
-            const g = new THREE.BufferGeometry();
-            g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
-            g.setAttribute("normal", new THREE.Float32BufferAttribute(nor, 3));
-            g.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
-            g.setAttribute("color", new THREE.Float32BufferAttribute(col, 3));
-            g.setAttribute("aWind", new THREE.Float32BufferAttribute(aw, 3));
-            g.setAttribute("aCenter", new THREE.Float32BufferAttribute(ac, 3));
-            g.setAttribute("aType", new THREE.Float32BufferAttribute(at, 1));
-            g.setIndex([0, 1, 2, 0, 2, 3]);
-            arr.push(g);
-        }
     }
 }
 
@@ -1948,11 +1956,12 @@ function emitTreeRezept(P, stufe) {
             _wedel.rand >= 0 &&
             _wedel.winkel > 0 &&
             _wedel.winkel < 45 &&
+            _wedel.spalte > 0 &&
             _wedel.holz >= 0 &&
             _wedel.holz < 1
         )
     )
-        throw new Error("[phyto] lod.budget.tree[" + __lod + "].wedel fehlt ({ab, teile, breite, nadel, rand, 0 < winkel < 45, 0 <= holz < 1})");
+        throw new Error("[phyto] lod.budget.tree[" + __lod + "].wedel fehlt ({ab, teile, breite, nadel, rand, 0 < winkel < 45, spalte > 0, 0 <= holz < 1})");
     const _skWedel = __weltSkalaArt(CURRENT); // die Welt-Skala der Art (wie der Wald pflanzt) — das Nadel-Mass des Wedels
     const _aeste = new Map(), // Kopf-Lauf des Nadel-Asts → { kette: [Läufe der Haupt-Bahn], blaetter: [], pfad: [Punkte] }
         _astVon = new Map(); // jeder Lauf eines Nadel-Asts → sein Kopf
@@ -2517,9 +2526,10 @@ function emitTreeRezept(P, stufe) {
     // Strähne aus der Wedel-Zelle entlang seiner ganzen gewachsenen Bahn, je Stück so breit, wie die Nadel-Wolke dort reicht
     // (`__wedelBreiten` × `wedel.breite`, die Kette vom Röhren-Ende bis zur Spitze), nie unter `boden`·Baumhoehe; Farbe und
     // Wind tragen seine Nadeln. Die Röhre der L0 (bis `wedel.ab`) läuft im Wedel spitz aus. Die zwei Karten je Stück
-    // kreuzen um die Bahn, ±`wedel.winkel` aus der Lotrechten (die Nadel-Wolke ist rund um den Ast: von der Seite deckt sie
-    // wie V18.536 — waagrecht und lotrecht gekreuzt deckten die Koniferen von unten 12–35 % mehr, von der Seite 9–34 %
-    // weniger); der Schatten-Teil (L1) trägt je Stück die waagrechte.
+    // kreuzen um die Bahn, ±`wedel.winkel` aus der Lotrechten (die Nadel-Wolke ist rund um den Ast); der Schatten-Teil (L1)
+    // trägt je Stück die waagrechte. L2 (15.10.): das Kreuz öffnet auf ±40° — bei ±10°/±5° stand jede Karte von unten auf der
+    // Kante und las als Strich (der Spieler sieht die Krone von unten); ein Stück breiter als `wedel.spalte` × lang trägt die
+    // Zelle in Spalten (pushStraehne), nie quer gestreckt.
     if (_wedel) {
         const _bodenY = nodes.height * _b0.boden;
         const nadelFarbe = vegFarbe(0x2e5526).lerp(lc, 0.2);
@@ -2543,7 +2553,7 @@ function emitTreeRezept(P, stufe) {
             }
             if (!h.some((x) => x > 0)) continue;
             const farben = A.blaetter.map(() => fWedel);
-            const form = { breiten: h, winkel: (_wedel.winkel * Math.PI) / 180 };
+            const form = { breiten: h, winkel: (_wedel.winkel * Math.PI) / 180, spalte: _wedel.spalte };
             for (const [ziel, nurQuer] of _wurf1 ? [[folGeosTex, false], [wurfKarten, true]] : [[folGeosTex, false]])
                 pushStraehne(
                     ziel,
