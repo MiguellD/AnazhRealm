@@ -604,8 +604,7 @@ const WIRT_LESER = {
 // das Glied der Klasse, in dem sie steht (am AST, stammLib.glieder — ein Kopf-Muster gab umbrochene Köpfe der Methode davor).
 // Der Stamm der Überlagerung, wenn sie einen trägt (eine Form; beide wirft scripts/lib/stamm.cjs), sonst der des Baums.
 const STAMM_WURZEL =
-    UEBER &&
-    (fs.existsSync(path.join(UEBER, stammLib.ALT)) || fs.existsSync(path.join(UEBER, stammLib.DIR, "01.js")))
+    UEBER && (fs.existsSync(path.join(UEBER, stammLib.ALT)) || fs.existsSync(path.join(UEBER, stammLib.DIR)))
         ? UEBER
         : root;
 function stammQuellen(src) {
