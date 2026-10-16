@@ -240,7 +240,7 @@ class AnazhRealm_Z06b {
         const soul = soulName && AnazhRealm.CREATURE_SOULS[soulName];
         const materials = {};
         if (soul && Array.isArray(soul.bodyParts)) {
-            const k = AnazhRealm.HARVEST_VOLUME_TO_UNITS || 4;
+            const k = AnazhRealm.HARVEST_VOLUME_TO_UNITS;
             for (const part of soul.bodyParts) {
                 if (!part || typeof part.material !== "string") continue;
                 const sx = Math.abs((part.size && part.size.x) || 1);
@@ -848,13 +848,19 @@ class AnazhRealm_Z06b {
     // Wetter als 5-Kanal-Feld {fog,sun,grey,wind,rain} je Wort; der EINE LOOK-Leser `_weatherFieldFor(w)`
     // interpoliert transition-aware (wie `_weatherBlendedValue`). grey entsättigt NUR das Licht, nie den
     // Himmel; wind = Böen-Amplitude; fog multipliziert fogMult; rain/sun Reserve.
-    // `_weatherBlendedValue` bleibt für die Nicht-LOOK-Skalare.
+    // `_weatherBlendedValue` bleibt für die Nicht-LOOK-Skalare. Die Zahlen SIND das Wetter-Gesetz des Kerns (phyto-core
+    // WX_GESETZ: sunny = klar · rainy = regen · stormy = sturm, das Labor liest dieselbe Tafel) — fail-closed, kein
+    // Zahlen-Zwilling (K2: der Sturm hatte hier Sonne 0,42 gegen 0,15 im Gesetz).
     static get WEATHER_FIELD() {
-        return Object.freeze({
-            sunny: Object.freeze({ fog: 0.15, sun: 1.0, grey: 0.0, wind: 0.06, rain: 0.0 }),
-            rainy: Object.freeze({ fog: 0.4, sun: 0.55, grey: 0.6, wind: 0.35, rain: 0.6 }),
-            stormy: Object.freeze({ fog: 0.7, sun: 0.42, grey: 0.85, wind: 1.0, rain: 1.0 }),
-        });
+        if (AnazhRealm._wetterFeld) return AnazhRealm._wetterFeld;
+        const WX = globalThis.__phytoCore.WX_GESETZ;
+        const zeile = (w) => {
+            const r = WX[w];
+            if (!r || ![r.fog, r.sun, r.grey, r.wind, r.rain].every(Number.isFinite))
+                throw new Error("phyto-core fehlt: WX_GESETZ." + w + " (das Wetter-Feld der Welt)");
+            return Object.freeze({ fog: r.fog, sun: r.sun, grey: r.grey, wind: r.wind, rain: r.rain });
+        };
+        return (AnazhRealm._wetterFeld = Object.freeze({ sunny: zeile("klar"), rainy: zeile("regen"), stormy: zeile("sturm") }));
     }
     // V6 — grey→Licht-Entsättigung: der grey-Kanal zieht das RICHTLICHT so weit
     // Richtung neutral-grau (Luminanz-erhaltend). ~0.7 → stormy dämpft die

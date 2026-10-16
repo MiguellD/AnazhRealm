@@ -548,7 +548,7 @@ class AnazhRealm_Z25b {
             // im koerperstudio-Gesetzbuch). Wand weg → nächster Frame fällt.
             vy = s._parkourKletter;
         } else {
-            vy += (s.gravity || -9.81) * dt;
+            vy += s.gravity * dt;
             if (vy < -25) vy = -25;
         }
         // IM SATTEL führt das Gefährt die Vertikale (Welle L, Q1 F-D10): der Reiter sitzt — kein Fall, kein Boden-Snap

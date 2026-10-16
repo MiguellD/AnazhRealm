@@ -2297,8 +2297,8 @@ class AnazhRealm_Z08 {
         };
         // Feuchte-Sichtbarkeitskurve aus AnazhRealm.FEUCHTE (im Main justierbar); der Worker-Spiegel
         // hardkodiert sie — eine Runtime-Tunable bräche den bit-Vertrag.
-        const F_VIS_LO = (AnazhRealm.FEUCHTE && AnazhRealm.FEUCHTE.sichtbarLo) || 0.3;
-        const F_VIS_HI = (AnazhRealm.FEUCHTE && AnazhRealm.FEUCHTE.sichtbarHi) || 0.85;
+        const F_VIS_LO = AnazhRealm.FEUCHTE.sichtbarLo;
+        const F_VIS_HI = AnazhRealm.FEUCHTE.sichtbarHi;
         const f = this.worldFieldAt(x, z);
         const c = [stone[0], stone[1], stone[2]];
         const mix = (target, t) => {

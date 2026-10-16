@@ -1718,7 +1718,7 @@ class AnazhRealm_Z06c {
             const dxp = player.x - creature.position.x;
             const dzp = player.z - creature.position.z;
             const distp = Math.hypot(dxp, dzp);
-            const handover = AnazhRealm.CREATURE_HANDOVER_DIST || 2.0;
+            const handover = AnazhRealm.CREATURE_HANDOVER_DIST;
             if (distp <= handover) {
                 // Übergabe: jedes Material aus carrying ins Spieler-Inventar.
                 const summary = [];
@@ -1845,7 +1845,7 @@ class AnazhRealm_Z06c {
             const dxp = player.x - creature.position.x;
             const dzp = player.z - creature.position.z;
             const distp = Math.hypot(dxp, dzp);
-            const handover = AnazhRealm.CREATURE_HANDOVER_DIST || 2.0;
+            const handover = AnazhRealm.CREATURE_HANDOVER_DIST;
             if (distp <= handover) {
                 // Material entnehmen — selber modus-gated Pfad wie Spieler-
                 // confirmBuild (pfad+frieden konsumieren, nur schöpfer kostenlos — S2/§11.2).
@@ -2287,12 +2287,7 @@ class AnazhRealm_Z06c {
         const tb = group && group.userData && group.userData._tierBaum;
         if (!tb || !tb.teile) return;
         const core = typeof window !== "undefined" && window.__tetrapodaCore;
-        const SP = (core && core.STAND_POSE) || [
-            [0, 0, 0, 0],
-            [0, 0, 0, 0],
-            [0, 0, 0, 0],
-            [0, 0, 0, 0],
-        ];
+        const SP = core.STAND_POSE;
         const T = tb.teile;
         if (T.wolf) {
             T.wolf.rotation.z = 0;
@@ -3287,7 +3282,7 @@ class AnazhRealm_Z06c {
             let hopOffset = 0;
             const udH = creature.userData;
             if (udH._hopV > 0 || udH._hopH > 0) {
-                const g = AnazhRealm._hopSchwere();
+                const g = this._hopSchwere();
                 const h = (udH._hopH || 0) + (udH._hopV || 0) * dt - 0.5 * g * dt * dt;
                 udH._hopV = (udH._hopV || 0) - g * dt;
                 if (!(h > 0)) {

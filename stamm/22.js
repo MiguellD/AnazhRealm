@@ -323,7 +323,7 @@ class AnazhRealm_Z22 {
         // einheitlich Ich ≡ Werkstatt (kein drittes System — dieselbe BLUEPRINT_ROLE_COLORS-Quelle).
         {
             const rRole = (typeof this._displayRole === "function" && this._displayRole(bp)) || bp.role;
-            const rColor = (AnazhRealm.BLUEPRINT_ROLE_COLORS || {})[rRole];
+            const rColor = AnazhRealm.BLUEPRINT_ROLE_COLORS[rRole];
             if (rColor) row.style.borderLeft = `3px solid ${rColor}`;
             // W-C(h)/R-036 — der WARUM-CHIP an der Rezept-Zeile (Tooltip): die
             // lesbare Emergenz reist an jede Rollen-Anzeige.
@@ -941,8 +941,8 @@ class AnazhRealm_Z22 {
         // WACHSTUM & GESCHICHTE (volle Breite) — das Wesen LERNT + ERINNERT (Schöpfer-Befund „wie füllen sich die
         // Felder, overflow wenn Charaktere Geschichten speichern?"): die Top-3 Skills als Fortschritt + „+N weitere"
         // (Overflow gekappt) + die jüngste Tat aus ud.memory + die Gesamtzahl der Erinnerungen (graceful, kein Overflow).
-        const threshold = AnazhRealm.CREATURE_SPECIALIZATION_LEVEL_THRESHOLD || 1;
-        const maxLevel = AnazhRealm.CREATURE_SPECIALIZATION_MAX_LEVEL || 5;
+        const threshold = AnazhRealm.CREATURE_SPECIALIZATION_LEVEL_THRESHOLD;
+        const maxLevel = AnazhRealm.CREATURE_SPECIALIZATION_MAX_LEVEL;
         const growChildren = [this._el("div", { class: "spec-col-head", text: "Wachstum & Geschichte" })];
         const grow = (prof.specs || []).slice(0, 3).map((s) => {
             const atMax = s.level >= maxLevel;

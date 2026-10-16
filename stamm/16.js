@@ -837,7 +837,7 @@ class AnazhRealm_Z16 {
         // über den GENERISCHEN embody-Pfad (liest nur role + parts, kein koerper_-Sonderleser). Die frozen
         // bodyParts sind die Substanz-Wahrheit; die Gattungs-Dials formen die Welt-Instanz.
         try {
-            const CS = AnazhRealm.CREATURE_SOULS || {};
+            const CS = AnazhRealm.CREATURE_SOULS;
             for (const key of Object.keys(CS)) {
                 const cs = CS[key];
                 if (!cs || !AnazhRealm.TETRAPODA_SOUL_MAP[key] || !Array.isArray(cs.bodyParts) || !cs.bodyParts.length)
@@ -1719,7 +1719,7 @@ class AnazhRealm_Z16 {
         }
         if (count === 0) return 0.4;
         if (count === 1 || max <= min) return min;
-        const decay = AnazhRealm.PRECISION_DECAY || 0.7;
+        const decay = AnazhRealm.PRECISION_DECAY;
         const n = count - 1;
         return min + (max - min) * Math.pow(decay, n);
     }
@@ -1818,7 +1818,7 @@ class AnazhRealm_Z16 {
         const refT = refFor(targetRole);
         const refW = refFor(winner);
         const deficit = winScore - this._blueprintResonance(v, sigT) / refT;
-        const actions = AnazhRealm.AXIS_ACTION_HINTS || {};
+        const actions = AnazhRealm.AXIS_ACTION_HINTS;
         let best = null;
         for (const axis in sigT) {
             const wT = sigT[axis];
@@ -1891,7 +1891,7 @@ class AnazhRealm_Z16 {
         const assigned = typeof this._displayRole === "function" ? this._displayRole(bp) : bp.role;
         if (!top || top.role === assigned || top.score <= 0.05) return null;
         const sigTop = AnazhRealm.ROLE_SIGNATURES[top.role];
-        const actions = AnazhRealm.AXIS_ACTION_HINTS || {};
+        const actions = AnazhRealm.AXIS_ACTION_HINTS;
         if (!sigTop) return null;
         const v = this._blueprintProductVector(bp);
         for (const axis in sigTop) {
@@ -2015,7 +2015,7 @@ class AnazhRealm_Z16 {
         if (mode === "pfad") {
             // Aufwand skaliert mit der Werkzeug-Präzision (cap 0.4 → ×1.1, cap 0.97 → ×0.53); Floor 2, damit eine
             // Op nie gratis wird. Magie zahlt aus Mana (Floor 5), Mühe aus Stamina — gleiche Skalierung.
-            const baseCost = _isMagicOp ? AnazhRealm.TOOL_OP_MANA_COST || 15 : AnazhRealm.TOOL_OP_STAMINA_COST || 10;
+            const baseCost = _isMagicOp ? AnazhRealm.TOOL_OP_MANA_COST : AnazhRealm.TOOL_OP_STAMINA_COST;
             const floor = _isMagicOp ? 5 : 2;
             const cost = Math.max(floor, Math.round(baseCost * (1.5 - (tool.precisionCap || 0.5))));
             if (_isMagicOp) {
@@ -2102,7 +2102,7 @@ class AnazhRealm_Z16 {
         const cap = this._workshopStationPrecision(station);
         const _isMagicOp = proc.opClass === "phaseChange";
         if (mode === "pfad") {
-            const baseCost = _isMagicOp ? AnazhRealm.TOOL_OP_MANA_COST || 15 : AnazhRealm.TOOL_OP_STAMINA_COST || 10;
+            const baseCost = _isMagicOp ? AnazhRealm.TOOL_OP_MANA_COST : AnazhRealm.TOOL_OP_STAMINA_COST;
             const floor = _isMagicOp ? 5 : 2;
             const cost = Math.max(floor, Math.round(baseCost * (1.5 - cap)));
             if (_isMagicOp) {
@@ -2150,7 +2150,7 @@ class AnazhRealm_Z16 {
     _isWorkshopStationPlacedNear(stationName) {
         const pm = this.state.playerMesh && this.state.playerMesh.position;
         if (!pm) return false;
-        const radius = AnazhRealm.WORKSHOP_PROXIMITY_M || 10;
+        const radius = AnazhRealm.WORKSHOP_PROXIMITY_M;
         const r2 = radius * radius;
         for (const entry of this.state.architectures || []) {
             if (!entry || entry.type !== stationName || !entry.position) continue;
@@ -3026,7 +3026,7 @@ class AnazhRealm_Z16 {
         // Form-Achsen in [0..1] → dichte überstimmte die Form, das Spektrum sättigte. So bestimmen die
         // Signatur-GEWICHTE die Rolle, nicht die Magnitude. Nur hier (Resonanz-Leser) — computeCompoundTags
         // bleibt roh (Spawn-Affinität/Emotion/STAT_FROM_TAGS lesen die Magnitude).
-        const norm = AnazhRealm.PRODUCT_VECTOR_TAG_NORM || 3;
+        const norm = AnazhRealm.PRODUCT_VECTOR_TAG_NORM;
         for (const k of AnazhRealm.MATERIAL_TAG_KEYS) {
             v[k] = Math.max(0, Math.min(1, (v[k] || 0) / norm));
         }
@@ -3294,7 +3294,7 @@ class AnazhRealm_Z16 {
         }
         if (!aabbs.length) return null;
         const totalH = Math.max(0.001, maxTop - minBottom);
-        const band = Math.max(0.1, totalH * (AnazhRealm.PHYSIS.groundBandFrac || 0.15));
+        const band = Math.max(0.1, totalH * AnazhRealm.PHYSIS.groundBandFrac);
         const pts = [];
         for (const a of aabbs) {
             if (a.min.y > minBottom + band) continue;
@@ -3377,14 +3377,14 @@ class AnazhRealm_Z16 {
             if (h < w * 1.2) continue; // kein vertikales Glied (Platte/Klotz) → kein Knicken
             // Ein WAND-/Platten-Glied (eine horizontale Dimension ≫ die andere, > wallBraceRatio) ist KEINE freie
             // Euler-Säule — verstrebt durch Breite + Eck-Verbindungen, knickt nicht.
-            if (wmax > w * (AnazhRealm.PHYSIS.wallBraceRatio || 4)) continue;
+            if (wmax > w * AnazhRealm.PHYSIS.wallBraceRatio) continue;
             const slender = h / w;
             const härte = (mats[p.material] && mats[p.material].tags && mats[p.material].tags.härte) || 0.5;
             const crit = Math.max(
-                AnazhRealm.PHYSIS.bucklingSlendernessMin || 8,
+                AnazhRealm.PHYSIS.bucklingSlendernessMin,
                 Math.min(
-                    AnazhRealm.PHYSIS.bucklingSlendernessMax || 28,
-                    (AnazhRealm.PHYSIS.bucklingSlendernessBase || 16) * Math.sqrt(Math.max(0.05, härte) / 0.5)
+                    AnazhRealm.PHYSIS.bucklingSlendernessMax,
+                    AnazhRealm.PHYSIS.bucklingSlendernessBase * Math.sqrt(Math.max(0.05, härte) / 0.5)
                 )
             );
             if (slender > worst) {
@@ -3582,11 +3582,11 @@ class AnazhRealm_Z16 {
             vol += Math.abs((s.x || 0.3) * (s.y || 0.3) * (s.z || 0.3));
         }
         vol = Math.max(0.0001, vol);
-        const ref = AnazhRealm.SIZE_STAT_REF_SUBSTANCE || 0.06;
-        const exp = AnazhRealm.SIZE_STAT_EXPONENT || 0.2;
+        const ref = AnazhRealm.SIZE_STAT_REF_SUBSTANCE;
+        const exp = AnazhRealm.SIZE_STAT_EXPONENT;
         const f = Math.pow(vol / ref, exp);
-        const lo = AnazhRealm.SIZE_STAT_MIN || 0.7;
-        const hi = AnazhRealm.SIZE_STAT_MAX || 1.7;
+        const lo = AnazhRealm.SIZE_STAT_MIN;
+        const hi = AnazhRealm.SIZE_STAT_MAX;
         return Math.max(lo, Math.min(hi, f));
     }
 

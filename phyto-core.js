@@ -3291,6 +3291,8 @@
         bewoelkt: { fog: 0.4, sun: 0.32, grey: 0.74, wind: 0.3, rain: 0.12 },
         nebel: { fog: 1.0, sun: 0.48, grey: 0.46, wind: 0.1, rain: 0.0 },
         sturm: { fog: 0.7, sun: 0.15, grey: 0.88, wind: 1.0, rain: 1.0 },
+        // K2 (rein additiv): der Regen der Welt — die Welt liest klar · regen · sturm aus DIESER Tafel (WEATHER_FIELD)
+        regen: { fog: 0.4, sun: 0.55, grey: 0.6, wind: 0.35, rain: 0.6 },
     };
     var WX_VIS = { lab: "wx-4", host: "none" };
 

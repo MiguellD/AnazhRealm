@@ -744,7 +744,7 @@ class AnazhRealm_Z20a {
             // Geometrie-Helfer — keine Labor-Szene) → Kerne in Manifest-Folge (phyto- VOR foundry-core) → die Brücke
             // ZULETZT (K42: keine Labor-Shell im Worker). Async: f.ready bleibt false bis zum ready-Handshake; jeder
             // Fetch-/Parse-Fehler lässt es so.
-            const v = "?v=" + (AnazhRealm.VERSION || "");
+            const v = "?v=" + AnazhRealm.VERSION;
             fetch("cores.manifest.json" + v)
                 .then((res) => res.text())
                 .then((manifestText) => {
@@ -1189,8 +1189,8 @@ class AnazhRealm_Z20a {
             if (Number.isFinite(L.hyst)) D.hysteresis = L.hyst;
             if (Number.isFinite(L.ref)) {
                 D.lodRef = L.ref;
-                // leafVisCap NIE an ref koppeln: die Blatt-Kappe ist die eigene Studio-Konstante 24 m, nicht in
-                // PORTAL_RENDER_CONFIG.lod. state.lodRef ist die LIVE-Spiegel-Quelle (CPU-Membership + Shader-
+                // leafVisCap NIE an ref koppeln: die Blatt-Kappe ist die eigene Zeile lod.blattKappe (24 m), LOD_DISTANCES
+                // liest sie beim Laden. state.lodRef ist die LIVE-Spiegel-Quelle (CPU-Membership + Shader-
                 // uLodRef, in _loopRender gespiegelt).
                 if (this.state) this.state.lodRef = L.ref;
             }
@@ -2405,18 +2405,13 @@ class AnazhRealm_Z20a {
         // Nur fachwerk/haus_*: die Vorschau trägt ihre Prägung (studioOv: Stil, Verband, Geschosse, Maße, Dach) — der
         // Bau des Gesetzbuchs liest sie, fremde Schlüssel ignoriert er. Der Stempel gewinnt: ein Eintrag ohne studioOv
         // bleibt; ov nur bei Neu-Spawn.
+        // Die Maße (Breite · Tiefe · Dachneigung · Geschosse) sind das fränkische Preset des Gesetzbuchs (fachwerk PRESETS
+        // fraenkisch.s), kein Zahlen-Zwilling (K2); Stil, Verband, Gaube und Flügel wählt die Vorschau.
         if (worldKey === "fachwerk" && type.startsWith("haus_")) {
-            opts.studioOv = Object.freeze({
-                stil: "alt",
-                brace: "andreas",
-                storeys: 2,
-                W: 9,
-                D: 7,
-                pitchDeg: 50,
-                gaube: true,
-                fluegel: true,
-                fluegelSide: 1,
-            });
+            const PRE = AnazhRealm.Gesetz("fachwerk:PRESETS.fraenkisch.s") || AnazhRealm._kernPflichtBruch("fachwerk:PRESETS");
+            opts.studioOv = Object.freeze(
+                Object.assign({}, PRE, { stil: "alt", brace: "andreas", gaube: true, fluegel: true, fluegelSide: 1 })
+            );
         }
         // DER PLATZ DES VORSCHAU-WAGENS IM TAKT: die Suche des Platz-Gesetzes (`_fahrPlatzWege`) läuft vor dem Bau, je Takt
         // höchstens FAHR_PLATZ_JE_TAKT Orte (die Ring-Suche kostete am Garage-Tor bis 0,66 s in EINEM Takt); der Wagen entsteht

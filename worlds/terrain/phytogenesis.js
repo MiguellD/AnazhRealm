@@ -1111,7 +1111,7 @@ function slopeAt(x, z) {
 
 /* arttypischer Kronenradius (m) bei Größenfaktor 1 — Waldwuchs (schmal, Konkurrenz) */
 /* FOREST_TOPOLOGY.lab = "disk" — plantForest sequential Poisson + ok(); Feel-Entscheid .116; no fake merge with Host cell */
-/* FOREST_PACK in phyto-core = shared pack/dartsPerM2/crown (Lab density); pack/dartsPerM2 fail-soft = PORTAL_RENDER_CONFIG */
+/* FOREST_PACK in phyto-core = shared pack/dartsPerM2/crown/cell (Lab- und Welt-Wald), fail-closed (K2) */
 /* FOREST_LAB = Lab-only path/saum/garantie + Verjüngung/Schatten numbers; Host planForestCell must-ignore */
 /* FOREST_SPECIES = Lab Kurzname ↔ Host baum_* table (.112); Lab keeps short names internally */
 const _FP =
@@ -1127,8 +1127,7 @@ const _FS =
         ? window.__phytoCore.FOREST_SPECIES
         : null;
 const CROWN = _FP.crown; // die EINE Kronen-Tafel (phyto-core): die gewachsene Krone je Art, fail-closed (T2)
-const PACK =
-    _FP && typeof _FP.pack === "number" ? _FP.pack : PORTAL_RENDER_CONFIG.density.pack; // Zentren >= PACK*(Ti+Tj)
+const PACK = _FP.pack; // Zentren >= PACK*(Ti+Tj) — das Pflanz-Gesetz des Kerns, fail-closed (K2)
 
 /* ---------- BÄUME: variabel-radius Poisson-Disc + Ökologie + Selbstausdünnung */
 function plantForest(R, seedInt) {
@@ -1203,10 +1202,7 @@ function plantForest(R, seedInt) {
             }
         return true;
     }
-    const _dartsPerM2 =
-        _FP && typeof _FP.dartsPerM2 === "number"
-            ? _FP.dartsPerM2
-            : PORTAL_RENDER_CONFIG.density.dartsPerM2;
+    const _dartsPerM2 = _FP.dartsPerM2;
     const darts = Math.floor(R * R * _dartsPerM2);
     for (let i = 0; i < darts; i++) {
         const a = rng() * 6.2831,
@@ -2248,7 +2244,7 @@ function buildForest() {
             const sc = SCALE[sp] * tr.s * TREE_SCALE_MUL,
                 bh = H0arr[vi] * sc,
                 bw = bh * ((_isp && _impWR[_isp.sp + _isp.seed]) || 0.5); // FIX v28: Quad-Seitenverhaeltnis = Zell-Rahmen der Art (Weide breiter) -> Silhouette unverzerrt und ungeclippt
-            const bhL = Math.min(H0arr[vi], 24 / (SCALE[sp] * TREE_SCALE_MUL)) * sc; // FIX v30: Blatt-Sichthoehe = aH0L * Instanzskala — EXAKT die Zahl, die der Shader bildet (CPU==GPU, kein Drift)
+            const bhL = Math.min(H0arr[vi], PORTAL_RENDER_CONFIG.lod.blattKappe / (SCALE[sp] * TREE_SCALE_MUL)) * sc; // FIX v30: Blatt-Sichthoehe = aH0L * Instanzskala — EXAKT die Zahl, die der Shader bildet (CPU==GPU, kein Drift)
             const bm = new THREE.Matrix4().compose(
                 new THREE.Vector3(tr.x, tr.y, tr.z),
                 new THREE.Quaternion().setFromAxisAngle(_impYAxis, tr.rotY),
@@ -2263,7 +2259,7 @@ function buildForest() {
             for (let L = 0; L < 2; L++) {
                 const tmpl = poolL[L][sp][v],
                     dy = tmpl.position.y,
-                    capU = 24 / (SCALE[sp] * TREE_SCALE_MUL); // L0,L1 = echtes 3D-Mesh; capU: 18m Blatt-Referenz in Template-Einheiten
+                    capU = PORTAL_RENDER_CONFIG.lod.blattKappe / (SCALE[sp] * TREE_SCALE_MUL); // L0,L1 = echtes 3D-Mesh; capU: 18m Blatt-Referenz in Template-Einheiten
                 tmpl.traverse((o) => {
                     if (o.isMesh) {
                         const geo = o.geometry.clone();
@@ -3252,21 +3248,12 @@ function _atmoLumZenit() {
     const hKm = Math.max(0.001, (camera ? camera.position.y : 0) / 1000);
     return ATMO_RECHNUNG.sonne(ATMO_GESETZ, _ATMO_M, hKm, 1, ATMO_GESETZ.durchlassSchritte, _atmZ).lum;
 }
-/* V18.491.264 — Lab weather presets ← WX_GESETZ fail-soft; Host none (WX_VIS). ≠ ATMOS/LUFT; FIB untouched. */
-const WX_GESETZ_FALLBACK = {
-    klar: { fog: 0.15, sun: 1.0, grey: 0.0, wind: 0.06, rain: 0.0 },
-    bewoelkt: { fog: 0.4, sun: 0.32, grey: 0.74, wind: 0.3, rain: 0.12 },
-    nebel: { fog: 1.0, sun: 0.48, grey: 0.46, wind: 0.1, rain: 0.0 },
-    sturm: { fog: 0.7, sun: 0.15, grey: 0.88, wind: 1.0, rain: 1.0 }
-};
+/* Lab weather presets ← WX_GESETZ (phyto-core), fail-closed (K2) — die Welt liest dieselbe Tafel (WEATHER_FIELD). ≠ ATMOS/LUFT. */
 function _wxPick(w) {
-    const src = (typeof window !== "undefined" && window.__phytoCore && window.__phytoCore.WX_GESETZ) || null;
-    const row = (src && src[w]) || null;
-    const fb = WX_GESETZ_FALLBACK[w] || WX_GESETZ_FALLBACK.klar;
-    if (row && isFinite(row.fog) && isFinite(row.sun) && isFinite(row.grey) && isFinite(row.wind) && isFinite(row.rain)) {
-        return { fog: row.fog, sun: row.sun, grey: row.grey, wind: row.wind, rain: row.rain };
-    }
-    return { fog: fb.fog, sun: fb.sun, grey: fb.grey, wind: fb.wind, rain: fb.rain };
+    const row = window.__phytoCore.WX_GESETZ[w];
+    if (!row || ![row.fog, row.sun, row.grey, row.wind, row.rain].every(isFinite))
+        throw new Error("phyto-core fehlt: WX_GESETZ." + w);
+    return { fog: row.fog, sun: row.sun, grey: row.grey, wind: row.wind, rain: row.rain };
 }
 let _wxBase = _wxPick("klar");
 function weatherTargets(w) {

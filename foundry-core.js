@@ -150,6 +150,10 @@ var WASSER_GESETZ = {
     alpha: [0.55, 0.95, 0.32, 0.06],    // mix(a0,a1,depth)+fres*a2; Auslauf smoothstep(0,a3,depth)
     schaum: { ufer: 0.26, kammA: 1.8, kammB: 2.7, sinF: 4.0, sinT: 2.8, kamm: 0.6, max: 0.85, farbe: [0.93, 0.96, 0.98], deck: 0.95 },
     koerperStreu: 0.1,                  // Rueckstreuung b_b (1/m) des Wasser-Koerpers (Binnensee 0,01-0,2): R = 0,33*b_b/(wK+b_b) (Welt-Leser; das Studio-GLSL liest sie nicht)
+    // K2 (rein additiv) — DIE WELLE DER WELT (Welt-Leser; das Studio-GLSL liest sie nicht): der Hub des Hydro-Stoffs. Duenung der
+    // offenen See (drei Rausch-Oktaven je +-0,5, Gewichte duenung) und Kraeuseln ((Rausch + oktave*Rausch - mitte) * kraeusel *
+    // Kraeusel-Staerke <= kraeuselDecke); phase (s) = die Fluss-Phase einer advektierten Lage des Wasser-Bilds.
+    welle: { duenung: [1.4, 0.7, 0.34], oktave: 0.4, mitte: 0.7, kraeusel: 2.2, kraeuselDecke: 1, phase: 4 },
 };
 
 // DAS REGEN-GESETZ (Welle L, rein additiv): EIN Regen fuer Labor und Welt — fallende Schlieren in einem Kasten um das
@@ -364,6 +368,9 @@ const PORTAL_RENDER_CONFIG = {
         fade0: 4,
         ref: 12.0,
         hyst: 3.4,
+        // K2 (rein additiv) — DIE BLATT-KAPPE: die Laub-Sichthöhe (m Welt) der Stufen-Wahl ist höchstens blattKappe (das Labor
+        // rechnet sie in Template-Einheiten blattKappe / (SCALE · TREE_SCALE_MUL), die Welt liest sie als LOD_DISTANCES.leafVisCap).
+        blattKappe: 24,
         // Der Waldboden (04.10.): Farn · Schilf · Gestrüpp · Totholz sind ZWEISTUFIG — L0 die Armlänge (die Nah-Streu
         // dient sie im Armlängen-Kreis), L1 der Rest des Nah-Rings; eine Karte tragen sie nicht (jenseits trägt die
         // Boden-Farbe). Die Blume wird zweistufig [0, 2]: ihre L2 (Blütenkopf als Kugel, ~270 Dreiecke) war seit
