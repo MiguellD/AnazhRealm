@@ -356,33 +356,33 @@ async function kleberProbe(page, fmtWunsch) {
             out.box = { x0, x1, yOben, yUnten };
             out.lebtPx = nachher.links;
             out.totPx = nachher.rechts;
-            // (3) C5 DAS WACHSEN (16.10., `_texturAbschied`): je Name EINE GPU-Textur in der neuen Schicht-Zahl, die alte Form zerstört,
-            // dasselbe Bild, die VORLAGE des Programms bindet die lebende Textur (r184 klont sie je neuem Render-Objekt, `Bindings._init`
-            // lädt ihre Textur hoch: bis 16.10. stieg so die des Programm-Baus wieder auf — Mess-Wiese, Radeon, 16 neben 20 Schichten)
+            // (3) C5 DAS WACHSEN (`_texturAbschied`): je Name EINE GPU-Textur in neuer Form, die alte fällt (WebGPU und WebGL2), dasselbe
+            // Bild, die VORLAGE des Programms bindet die lebende (`Bindings._init` lädt ihre Textur je neuem Render-Objekt, 16.10.: +4 MB)
             const vorlagen = () =>
                 (mesh.__renderObjekte || [])
                     .flatMap((ro) => ro.getNodeBuilderState().bindings.flatMap((g) => g.bindings))
                     .filter((b) => b.isSampledTexture && b.textureNode && /^karte-/.test(b.texture.name || ""))
                     .map((b) => (b.texture === b.textureNode.value ? "" : `Vorlage ${b.texture.name}#${b.texture.id}`));
             const weg = new WeakSet(),
-                zerstoere = GPUTexture.prototype.destroy;
-            GPUTexture.prototype.destroy = function () {
-                weg.add(this);
-                return zerstoere.call(this);
+                P = (self.GPUTexture || class {}).prototype,
+                zerstoere = P.destroy;
+            P.destroy = function () {
+                return (weg.add(this), zerstoere.call(this));
             };
+            const gpu = (t) => ren.backend.get(t).texture || ren.backend.get(t).textureGPU;
             try {
-                const alt = [at.map, at.nmap].map((t) => ren.backend.get(t).texture);
+                const alt = [at.map, at.nmap].map(gpu);
                 r._impostorAtlasTexturen(at, at.cap + 1);
                 const q = await zaehle();
                 await new Promise((ok) => setTimeout(ok, 0)); // die alte Form fällt nach dem Submit
                 const leben = [...ren.info.memoryMap.keys()].filter((t) => t.isTexture && /^karte-/.test(t.name || ""));
-                const form = (t) => `${t.name}:${t.image.depth}/${ren.backend.get(t).texture.depthOrArrayLayers}`;
+                const form = (t) => `${t.name}:${t.image.depth}/${gpu(t).depthOrArrayLayers || t.image.depth}`;
                 const v = vorlagen();
                 out.wachsen = [
                     leben.length === 2 && leben.every((t) => form(t).endsWith(`:${at.cap}/${at.cap}`))
                         ? ""
                         : `bei der GPU ${leben.map(form).join(", ")} statt Albedo und Normale in ${at.cap} Schichten`,
-                    alt.every((g) => weg.has(g)) ? "" : "die alte GPU-Form lebt weiter",
+                    alt.every((g) => weg.has(g) || ren.backend.gl?.isTexture(g) === false) ? "" : "alte GPU-Form lebt",
                     ["lo", "ro", "lu", "ru"].every((k) => q[k] === nachher[k]) ? "" : "Bild anders nach dem Wachsen",
                     v.length >= 2 ? "" : "keine Vorlage gelesen — die Wand ist blind",
                     ...v,
@@ -394,8 +394,9 @@ async function kleberProbe(page, fmtWunsch) {
                 for (const t of vor) t.dispose();
                 await zaehle();
                 out.wachsenSelbst = vorlagen().filter(Boolean);
+                if (out.wachsenSelbst.length < 2) out.wachsen.push("SELBSTTEST: das alte Wachsen fällt nicht auf");
             } finally {
-                GPUTexture.prototype.destroy = zerstoere;
+                P.destroy = zerstoere;
             }
             ren.dispose();
         } catch (e) {
@@ -947,11 +948,8 @@ function strichWand(src) {
         if (!(C.totPx <= 8))
             errs.push(`${F}: der befreite Slot zeichnet noch ${C.totPx} px (> 8) — die Gruppe ist NICHT dicht`);
         // C5 DAS WACHSEN (der EINE Abschied, `_texturAbschied`)
-        const W5 = C.wachsen || ["keine Messung"];
-        console.log(`  C5 WACHSEN: ${W5.join(" · ") || "GRÜN"} · Selbsttest (Tausch + Entsorgen): ${C.wachsenSelbst}`);
-        for (const f of W5) errs.push(`${F} C5: ${f}`);
-        if (!(C.wachsenSelbst && C.wachsenSelbst.length >= 2))
-            errs.push(`${F} C5-SELBSTTEST: das alte Wachsen (Tausch + Entsorgen) fällt der Vorlagen-Wand nicht auf`);
+        console.log(`  C5 WACHSEN: ${(C.wachsen || []).join(" · ") || "GRÜN"} · Selbsttest: ${C.wachsenSelbst}`);
+        for (const f of C.wachsen || ["keine Messung"]) errs.push(`${F} C5: ${f}`);
     }
     {
         console.log(
