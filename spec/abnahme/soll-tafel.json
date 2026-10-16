@@ -847,15 +847,15 @@
                 "geheilt": {
                     "befund": "Augen, Mund, Haar-Fleck",
                     "quelle": "UEBERGABE-2026-10-14.md (Zweig koordination) „DER PLAN ZU AAAA“ Nr. 1",
-                    "warum": "gesicht 0,5 → 1 (Radeon 890M --echt, Mess-Wiese, Gesicht auf 0,7 m): augeFrei 0,483 → 1 (die Lid-Ränder stehen im Augen-Raum an ±0,085 statt 0,048/−0,055 — die Lidspalte trägt die Iris samt einer Pixel-Kante), lippeA 1,1 → 4,64 und lippeL −3,58 → −5,39 (die Nasen-Basis saß auf der Oberlippe: gesicht.mundTiefer legt sn–sto an 0,31 von sn–gn, Farkas; die Lippe −11/+13; der licht-unabhängige SSS-Saum 0,15 → 0,05), hoehleA −1,93 → 0,19 (die Höhle ist Ton der Haut, ihre Kugel lag unter ihr); Haut-Kontrast im Bild 0,60 → 0,67, Kopf-Dreiecke L0 11 880 → 11 354",
+                    "warum": "gesicht 0,5 → 1 (Radeon 890M --echt, Mess-Wiese, Gesicht auf 0,7 m): augeFrei 0,483 → 1 (die Lid-Ränder stehen im Augen-Raum an ±0,085 statt 0,048/−0,055 — die Lidspalte trägt die Iris samt einer Pixel-Kante), lippeA 1,1 → 4,68 und lippeL −3,58 → −5,59 (die Nasen-Basis saß auf der Oberlippe: gesicht.mundTiefer legt sn–sto an 0,31 von sn–gn, Farkas; die Lippe −11/+13; der licht-unabhängige SSS-Saum 0,15 → 0,05), hoehleA −1,93 → 0,34 (die Höhle ist Ton der Haut, ihre Kugel lag unter ihr); Haut-Kontrast im Bild 0,60 → 0,67, Kopf-Dreiecke L0 11 880 → 11 354",
                     "bildPaar": ["artifacts/soll-tafel/mensch-kopf-vorher.png", "artifacts/soll-tafel/mensch-kopf.png"]
                 },
                 "messung": {
                     "werkzeug": "bild",
-                    "datum": "2026-10-16T15:21:30.151Z",
+                    "datum": "2026-10-16T15:54:43.483Z",
                     "stand": {
-                        "version": "18.546.2",
-                        "sha": "e03950799774511a93799704683d384948cc6b98"
+                        "version": "18.546.4",
+                        "sha": "574f00337f0a68c2eb6382c3de26d4b4e191facd"
                     },
                     "geraet": {
                         "backend": "WebGPU",
@@ -872,14 +872,14 @@
                     },
                     "misch": 0,
                     "klassen": {
-                        "spieler": {"objekte":14,"spiegelTreue":-0.2716,"sp":[75,0,0,53057.6,53057.6,-14410.41],"zweiton":0,"zt":0,"weiss":0.0106,"wt":84,"wtZiel":null,"bunt":10.7,"pixel":7903,"deckung":0.0038,"deckungUnten":0,"luma":26.25,"kontrast":1.0326,"detail":0.1189,"nyquist":0.098,"ek":6349.7,"eg":58421.6,"silhouette":8.9203,"kante":0.6494,"kr":793}
+                        "spieler": {"objekte":14,"spiegelTreue":-0.3342,"sp":[77,0,0,52800.33,52800.33,-17646.68],"zweiton":0,"zt":0,"weiss":0.0089,"wt":70,"wtZiel":null,"bunt":10.53,"pixel":7840,"deckung":0.0038,"deckungUnten":0,"luma":25.93,"kontrast":1.0274,"detail":0.1134,"nyquist":0.1182,"ek":6080.1,"eg":45375.6,"silhouette":8.8318,"kante":0.6415,"kr":782}
                     },
                     "abstand": null,
                     "gesicht": null,
                     "bild": "artifacts/soll-tafel/mensch-kopf-wirkung.png",
                     "quellen": {
                         "koerper-core.js": "c:0af385b108a5727a",
-                        "foundry-core.js": "c:565587920667ee90",
+                        "foundry-core.js": "c:f1c57dc7a9b3cd59",
                         "stamm/07.js": "c:9b994e6d432e4d22",
                         "stamm/10.js": "c:bb6631653fcc0994",
                         "stamm/19.js": "c:5f36c5687cb8f126",
@@ -919,50 +919,50 @@
                 "werkzeug": "werkbank umstellen --ort wiese --sicht third; werkbank bild 0 0 0 0 0 0 --gesicht 0.7 --wahl 0 --spieler --klasse '^spieler:kopf/' --ist mensch-kopf; der Bildanteil: werkbank bild (Third-Blick) --spieler --klasse '^spieler$' --ist mensch-kopf:wirkung",
                 "messung": {
                     "werkzeug": "bild",
-                    "datum": "2026-10-16T15:21:22.506Z",
+                    "datum": "2026-10-16T15:54:34.244Z",
                     "stand": {
-                        "version": "18.546.2",
-                        "sha": "e03950799774511a93799704683d384948cc6b98"
+                        "version": "18.546.4",
+                        "sha": "574f00337f0a68c2eb6382c3de26d4b4e191facd"
                     },
                     "geraet": {
                         "backend": "WebGPU",
                         "adapter": "amd rdna-3"
                     },
                     "leinwand": [1920, 1080],
-                    "kamera": [-281.03, 29.24, -1045.86],
+                    "kamera": [-281.01, 29.24, -1045.92],
                     "ausdruck": "^spieler:kopf/",
                     "schwelle": 18,
                     "rauschen": {
                         "anteil": 0.000006,
-                        "pixel": 13,
-                        "max": 83
+                        "pixel": 12,
+                        "max": 36
                     },
-                    "misch": 728,
+                    "misch": 743,
                     "klassen": {
-                        "spieler:kopf/auge": {"objekte":2,"spiegelTreue":null,"sp":[2,0,0,0.42,0.42,-0.42],"zweiton":0,"zt":0,"weiss":0.0264,"wt":17,"wtZiel":null,"bunt":13.64,"pixel":645,"deckung":0.0003,"deckungUnten":0,"luma":77.54,"kontrast":0.5016,"detail":0.1817,"nyquist":0.0702,"ek":1656.8,"eg":21943.2,"silhouette":4.725,"kante":0.2029,"kr":4},
-                        "spieler:kopf/hair": {"objekte":2,"spiegelTreue":null,"sp":[0,0,0,0,0,0],"zweiton":0,"zt":0,"weiss":0,"wt":0,"wtZiel":null,"bunt":19.4,"pixel":454,"deckung":0.0002,"deckungUnten":0,"luma":60.39,"kontrast":0.3241,"detail":0.2064,"nyquist":0.1125,"ek":301,"eg":2374.3,"silhouette":19.0076,"kante":0.2633,"kr":152},
-                        "spieler:kopf/haut": {"objekte":2,"spiegelTreue":-0.3355,"sp":[363,0,0,876428.5,876428.5,-294064.9],"zweiton":0,"zt":0,"weiss":0.0842,"wt":2496,"wtZiel":null,"bunt":15.89,"pixel":29640,"deckung":0.0143,"deckungUnten":0,"luma":52.92,"kontrast":0.6463,"detail":0.0418,"nyquist":0.1113,"ek":9624.4,"eg":76864.8,"silhouette":8.1667,"kante":0.653,"kr":858},
-                        "spieler:kopf/skin": {"objekte":1,"spiegelTreue":null,"sp":[0,0,0,0,0,0],"zweiton":0,"zt":0,"weiss":0,"wt":0,"wtZiel":null,"bunt":20.23,"pixel":263,"deckung":0.0001,"deckungUnten":0,"luma":38.03,"kontrast":0.2326,"detail":0.2233,"nyquist":0.1233,"ek":118.7,"eg":844.3,"silhouette":13.8124,"kante":0.4305,"kr":139}
+                        "spieler:kopf/auge": {"objekte":2,"spiegelTreue":null,"sp":[2,0,0,4.44,4.44,-4.44],"zweiton":0,"zt":0,"weiss":0.0394,"wt":25,"wtZiel":null,"bunt":13.53,"pixel":634,"deckung":0.0003,"deckungUnten":0,"luma":76.71,"kontrast":0.5047,"detail":0.1839,"nyquist":0.1095,"ek":2543.4,"eg":20687.4,"silhouette":4.7261,"kante":0.3172,"kr":1},
+                        "spieler:kopf/hair": {"objekte":2,"spiegelTreue":null,"sp":[0,0,0,0,0,0],"zweiton":0,"zt":0,"weiss":0,"wt":0,"wtZiel":null,"bunt":20.83,"pixel":461,"deckung":0.0002,"deckungUnten":0,"luma":63.83,"kontrast":0.3613,"detail":0.2955,"nyquist":0.1029,"ek":820,"eg":7146.7,"silhouette":19.1888,"kante":0.2874,"kr":159},
+                        "spieler:kopf/haut": {"objekte":2,"spiegelTreue":0.092,"sp":[367,0,0,159543.77,159543.77,14676.33],"zweiton":0,"zt":0,"weiss":0.0844,"wt":2497,"wtZiel":null,"bunt":15.89,"pixel":29574,"deckung":0.0143,"deckungUnten":0,"luma":52.23,"kontrast":0.646,"detail":0.0402,"nyquist":0.1063,"ek":7765.8,"eg":65271.7,"silhouette":7.7397,"kante":0.6754,"kr":763},
+                        "spieler:kopf/skin": {"objekte":1,"spiegelTreue":null,"sp":[0,0,0,0,0,0],"zweiton":0,"zt":0,"weiss":0,"wt":0,"wtZiel":null,"bunt":19.79,"pixel":246,"deckung":0.0001,"deckungUnten":0,"luma":37.13,"kontrast":0.1921,"detail":0.1417,"nyquist":0.0566,"ek":34.1,"eg":568.7,"silhouette":13.2616,"kante":0.4496,"kr":136}
                     },
                     "abstand": null,
                     "gesicht": {
                         "augeFrei": 1,
-                        "lippeL": -5.39,
-                        "lippeA": 4.64,
-                        "hoehleL": -0.96,
-                        "hoehleA": 0.19,
+                        "lippeL": -5.59,
+                        "lippeA": 4.68,
+                        "hoehleL": -0.97,
+                        "hoehleA": 0.34,
                         "haarDeckung": 1,
                         "proben": {
                             "iris": 180,
                             "irisSicht": 180,
                             "lippe": 186,
-                            "wange": 705,
-                            "kalotte": 137,
-                            "haarPixel": 454
+                            "wange": 696,
+                            "kalotte": 132,
+                            "haarPixel": 461
                         },
                         "zeilen": {
-                            "auge": 540.7,
-                            "mund": 627.3
+                            "auge": 539.8,
+                            "mund": 626
                         },
                         "toene": {
                             "haut": "6a4230",
@@ -974,7 +974,7 @@
                     "bild": "artifacts/soll-tafel/mensch-kopf.png",
                     "quellen": {
                         "koerper-core.js": "c:0af385b108a5727a",
-                        "foundry-core.js": "c:565587920667ee90",
+                        "foundry-core.js": "c:f1c57dc7a9b3cd59",
                         "stamm/07.js": "c:9b994e6d432e4d22",
                         "stamm/10.js": "c:bb6631653fcc0994",
                         "stamm/19.js": "c:5f36c5687cb8f126",
