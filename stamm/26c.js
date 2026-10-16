@@ -1286,7 +1286,7 @@ AnazhRealm.SPIEGEL = Object.freeze({
     bildRuheMs: 500,
     bildRuheBilder: 24,
     bildUfer: 0.12,
-    teil: 2,
+    teil: 4,
     bildWeit: 3000,
     bildDicke: [0.04, 0.5],
     bildHalb: 5,
@@ -1747,11 +1747,16 @@ AnazhRealm._diaetGang = function (ro, nbs) {
         for (const b of g.bindings)
             if (b.isSampledTexture === true && b.textureNode && texturen.indexOf(b.textureNode) < 0)
                 texturen.push(b.textureNode);
-    // (9) die FREIEN Uniforms der eigenen Gruppen (nicht geteilt): kein Objekt-Knoten stellt sie (die Bau-Uniforms wie
-    // `modelWorldMatrix` stellt der Vendor je Objekt, die Material-Verweise prüft equals()) — ein Schreiber setzt `.value`
+    // (9) die FREIEN Uniforms der eigenen Gruppen (nicht geteilt): kein Knoten des Programms stellt sie (die Bau-Uniforms
+    // wie `modelWorldMatrix` hält ein Objekt-Knoten in `uniformNode`, die Material-Verweise in `node` — der Vendor stellt sie,
+    // equals() prüft ihr Objekt) — ein Schreiber setzt `.value`
     const gespeist = new Set();
-    for (const n of nbs.updateNodes)
-        if (n.getUpdateType() === "object" && n.node && n.node.isUniformNode === true) gespeist.add(n.node);
+    for (const liste of [nbs.updateNodes, nbs.updateBeforeNodes, nbs.updateAfterNodes])
+        for (const n of liste || [])
+            for (const k in n) {
+                const v = n[k];
+                if (v && v.isUniformNode === true) gespeist.add(v);
+            }
     const frei = [];
     for (const g of ro.getBindings()) {
         const b0 = g.bindings && g.bindings[0];
@@ -1760,7 +1765,7 @@ AnazhRealm._diaetGang = function (ro, nbs) {
             if (b.isUniformBuffer !== true || !b.uniforms) continue;
             for (const u of b.uniforms) {
                 const n = u.nodeUniform && u.nodeUniform.node;
-                if (n && n.isUniformNode === true && n.getUpdateType() !== "object" && !gespeist.has(n)) frei.push(u);
+                if (n && n.isUniformNode === true && n.getUpdateType() === "none" && !gespeist.has(n)) frei.push(u);
             }
         }
     }

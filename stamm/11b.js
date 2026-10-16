@@ -2157,7 +2157,7 @@ class AnazhRealm_Z11b {
     // dem Auge `viewDir` zurückwirft, über dem Grund mit dem Durchlass `T` — der Körper im Licht des Orts (R∞ × E/π), soweit
     // er den Grund deckt (1 − T) und nicht gespiegelt wird (1 − F); der Himmel × F; der Glanz. Liefert { eigen, fres }.
     _wasserBlick(TSL, WG, o) {
-        const { float, vec2, vec3, vec4, normalize, reflect, max, dot, pow, clamp, texture, step, Fn, If } = TSL;
+        const { float, vec2, vec3, vec4, normalize, reflect, max, dot, pow, clamp, texture, step } = TSL;
         const HG =
             AnazhRealm.Gesetz("terrain:HIMMEL_GESETZ", null) || AnazhRealm._kernPflichtBruch("terrain:HIMMEL_GESETZ");
         // Schlick-Fresnel (WASSER_GESETZ): fres = f0 + f1·(1−n·v)^f2 — EIN Fresnel für Spiegel UND Durchlass.
@@ -2183,21 +2183,17 @@ class AnazhRealm_Z11b {
             .mul(step(0.0, clip.w));
         const deckt = drin.mul(S.an);
         const w = clamp(sp.a, 0.0, 1.0).mul(deckt);
-        // DER HIMMEL, WO DER PASS NICHT DECKT (jenseits des Felds, das ferne Wasser, vor seinem ersten Lauf, am Ufer-Saum): die
-        // Himmels-Sicht der Kuppel (`_himmelSicht`, EINE Quelle mit Kuppel und Pass) in Richtung des gespiegelten Strahls,
-        // nie unter den Horizont, an dem die Wolken enden (`hor[0]`, Kräusel-Normalen). Nur diese Pixel rechnen sie (A1-n1:
-        // vorher jedes Wasser-Pixel in jedem Bild). Bis A1 die Umgebung von 128 × 64 (`_himmelUmgebungTex`, die Quelle der
-        // IBL): ein Verlauf ohne Wolke (die Ecke des Sees, A0). Bis V18.530 spiegelte das Wasser die Zenit-Tönung × die
-        // SONNEN-Stärke (uLight 7,4): der Spiegel lag 3–5× über dem Himmel, den er spiegelt — weiß wie Eis (Blick-Tour 07).
-        const himmel = Fn(() => {
-            const h = sp.rgb.mul(deckt).toVar();
-            If(w.lessThan(0.999), () => {
-                const _R = reflect(o.viewDir.negate(), o.n);
-                const _Rh = normalize(vec3(_R.x, max(_R.y, float(HG.hor[0])), _R.z));
-                h.addAssign(this._himmelSicht(_Rh).mul(float(1).sub(w)));
-            });
-            return h;
-        })();
+        // DER HIMMEL, WO DER PASS NICHT DECKT (jenseits des Felds, das ferne Wasser, der Fern-Ring, vor dem ersten Lauf, am
+        // Ufer-Saum): die Atmosphäre der Himmels-Sicht (`himmelFarbe`, die Tafel der Kuppel) in Richtung des gespiegelten Strahls,
+        // nie unter den Horizont, an dem die Wolken enden (`hor[0]`, Kräusel-Normalen). Jenseits des Felds (368 m) liegt der
+        // Strahl aus Augenhöhe unter `hor[0]`: dort IST die Himmels-Sicht die Atmosphäre allein, die Wolke ist null
+        // (`_himmelSicht`). Die Wolke rechnet der Pass in 1/teil, nie das Wasser je Pixel (A1-n1: zwei fbm im Wasser-Stoff
+        // kosteten auch ungenommen, Wasser 1,86 → 2,95 ms gehend, Radeon). Bis A1 die Umgebung von 128 × 64
+        // (`_himmelUmgebungTex`, die Quelle der IBL): ein Verlauf ohne Wolke über dem ganzen See (A0). Bis V18.530 spiegelte das
+        // Wasser die Zenit-Tönung × die SONNEN-Stärke (uLight 7,4): 3–5× über dem Himmel, weiß wie Eis (Blick-Tour 07).
+        const _R = reflect(o.viewDir.negate(), o.n);
+        const _Rh = normalize(vec3(_R.x, max(_R.y, float(HG.hor[0])), _R.z));
+        const himmel = sp.rgb.mul(deckt).add(this._atmoLutBau().himmelFarbe(_Rh).mul(float(1).sub(w)));
         // W10 — der Sonnen-Glitzer der Vorlage: reflect-basiert, Exponent/Gewinn aus dem Gesetz, die Sonne selbst
         // (Rayleigh-Farbe sunCol × ihre Stärke light).
         const spec = pow(max(dot(reflect(normalize(o.sunDir).negate(), o.n), o.viewDir), 0.0), float(WG.spec[0]));
@@ -2676,6 +2672,8 @@ class AnazhRealm_Z11b {
             mitte: uniform(new THREE.Vector2()),
             bezug: uniform(S.bezug),
             hMax: uniform(0),
+            // ein Texel des Pass-Ziels in uv (1/Breite, 1/Höhe)
+            texel: uniform(new THREE.Vector2(1, 1)),
         };
         const kante = S.n * S.texel;
         const feld = (xz) => texture(S.tex, xz.div(kante)).level(float(0));
@@ -2796,7 +2794,12 @@ class AnazhRealm_Z11b {
                                 If(hinter, () => sb.assign(sm)).Else(() => sa.assign(sm));
                             }
                             const uvT = mix(uvP, uvE, sb);
-                            bild.assign(texture(farbe, uvT).level(float(0)).rgb);
+                            // die Farbe über die Fläche EINES Pass-Texels (1/teil des Schirms, ~3 × 3 Texel des Szenen-Bilds): vier
+                            // bilineare Abgriffe um den Treffer — ein einzelner Abgriff tastete das Bild unter (A1-n1: Salz-Rauschen und
+                            // Mosaik im Spiegel von Laub und Schilf)
+                            const fu = U.texel.mul(0.25);
+                            const tap = (dx, dy) => texture(farbe, uvT.add(fu.mul(vec2(dx, dy)))).level(float(0)).rgb;
+                            bild.assign(tap(-1, -1).add(tap(1, -1)).add(tap(-1, 1)).add(tap(1, 1)).mul(0.25));
                             // am Schirm-Rand blendet der Treffer in den Rest des Strahls (das Feld, der Himmel): keine Naht
                             bildW.assign(
                                 smoothstep(
@@ -3098,6 +3101,7 @@ class AnazhRealm_Z11b {
         P.U.p14.value = cam.projectionMatrix.elements[14];
         P.U.mitte.value.set(S.mitte[0], S.mitte[1]);
         P.U.hMax.value = S.hMax + 2;
+        P.U.texel.value.set(1 / m.w, 1 / m.h);
         const vor = rend.getRenderTarget();
         rend.setRenderTarget(L.rt);
         P.quad.render(rend);
