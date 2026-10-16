@@ -671,73 +671,38 @@ class AnazhRealm_Z17a {
     // Pixeln, die Silhouette bleibt scharf und die Deckung je Stufe treu (die Alpha-Stufe ist unberührt). Befund Radeon,
     // Ausgabe-Pfad, Eiche 25 m nur L1: Δ-Luma beim ½-Pixel-Versatz 3,41, davon 2,49 im Kronen-Inneren — das Detail der Atlas-
     // Farbe unter zwei Pixeln (flache Farbe 2,04); Oktave 1 → 2,94, Oktave 2 → 2,62 (K20n10/g2). Linse: gate:pflanzen-nah (Z2).
-    // DIE KANTE (K68, A3): `a` ist die Deckung als Kante von EINEM Pixel um die Schwelle `c` (`_laubKante`), `schwelle` der
-    // Knoten, mit dem der Bild-Pass sie schneidet (`alphaTestNode`, `_laubSchwelle`); der Stoff setzt alphaTest 0,5.
-    _blattAtlasProbe(T, c) {
+    // DIE DECKUNG (A3): `a` liest die Stufe des Schirms am Versatz des Laubs (`_laubVersatz`), der Stoff schneidet sie an
+    // seiner Zahl alphaTest — Bild und Schatten an derselben Schwelle.
+    _blattAtlasProbe(T) {
         const tex = this._ensureFoliageClusterAtlas();
         if (!tex) return null;
         const uv = T.attribute("uv", "vec2");
         const s = T.texture(tex, uv).bias(T.float(AnazhRealm.BLATT_FARBE_OKTAVE));
-        const deckung = T.texture(tex, uv);
+        const deckung = T.texture(tex, this._laubVersatz(T, uv, T.dFdx(uv), T.dFdy(uv)));
         const w = tex.userData.wert;
         return {
             tex,
             rgb: s.rgb.div(s.a.max(T.float(1e-3))).mul(T.vec3(1 / w[0], 1 / w[1], 1 / w[2])),
-            a: this._laubKante(T, deckung.a, c),
-            schwelle: this._laubSchwelle(T),
+            a: deckung.a,
         };
     }
 
-    // DIE KANTE DES LAUBS (K68): der alphaTest schnitt jede Blatt-Karte binär an der Schwelle — die Nadel-Wedel standen im
-    // Pixel-Takt als Raster aus Nadel und Himmel (Soll-Tafel laub, Maß zweiton: Täter f:tanne:L0, Radeon, Mess-Wiese).
-    // Die Deckung um die Schwelle `c`, geteilt durch ihre Änderung je Pixel (fwidth), ist der Anteil des Pixels, der
-    // deckt: die Kante ist auf jeder Stufe EIN Pixel breit (vergrößert keine Texel-Treppe, verkleinert kein Bit-Muster) —
-    // den Rest des Pixel-Filters trägt der Versatz der zeitlichen Auflösung (A3: zwei Pixel und eine um log2(2 · Skala)
-    // gröbere Stufe der Deckung schlossen die Lücken der Kronen, die Silhouette lief gerader: laub-kante 0,209 → 0,221).
-    // Jede Karte der Klasse liest sie: Blatt-Atlas (Studio- und Grammatik-Laub, `_blattAtlasProbe`) und Karten-Atlas (die
-    // Karte L2). Der Bild-Pass vergleicht sie mit der Schwelle der zeitlichen Auflösung (`_laubSchwelle`), ihr Mittel ist
-    // die geglättete Kante (Hashed Alpha unter TAA: Horizon Zero Dawn, GDC 2018). Der Schatten-Pass liest die ZAHL
-    // alphaTest 0,5 (r184 `renderObject` setzt sie je Objekt, nie den Knoten): a' > 0,5 ⇔ a > c — der Wurf bleibt binär.
-    _laubKante(T, a, c) {
-        const s = T.float(c == null ? 0.5 : c);
-        return a
-            .sub(s)
-            .div(T.fwidth(a).max(T.float(1e-4)))
-            .add(T.float(0.5))
-            .clamp(0.0, 1.0);
-    }
-
-    // DIE SCHWELLE DER KANTE (K68, A3; Hashed Alpha, Wyman & McGuire 2017): EIN Wert je ZELLE der Karte — der Hash (PCG,
-    // TSL `hash`) ihrer Lage in der UV und ihrer Stufe, je Frame um 1/g (die Plastik-Zahl, `uLaubKante.x`) gedreht. Die
-    // Zelle ist `ZELLE` × die größte Änderung der UV je Eingangs-Pixel, auf die Zweier-Potenz abgerundet (1,5–3 Pixel): sie
-    // haftet an der Karte, nie am Schirm — unter dem Versatz der Hochskalierung sieht jedes Ausgabe-Pixel Frame um Frame
-    // DIESELBE Zelle, eine gleichverteilte Folge, deren Mittel die Deckung a' ist; die Nachbarn tragen andere Werte, die
-    // Varianz-Klemme der zeitlichen Auflösung sieht beide Töne und hält die Geschichte. Die zwei Vorgänger standen als
-    // Raster (Radeon, Karten-Szene laub, je Schuss Phase 0 · 3700): das Rauschen je EINGANGS-Pixel (Interleaved Gradient,
-    // bis K68) speiste jedes Ausgabe-Pixel mit einer Zufallsfolge — Körner aus zwei Tönen; EINE Schwelle je Frame für alle
-    // Pixel ließ die Nachbarschaft gleichförmig kippen, die Klemme setzte die Geschichte zurück — Klötze von 3–4 Pixeln
-    // (zweiton 60 px). Zellen von 0,75–1,5 Pixeln zerlegten den Nadelstrich der nahen Tanne quer (zweiton 146/100 px), 3 hält 0/0.
-    // Ohne zeitliche Auflösung (`uLaubKante.y` 0, Holz kienspan) ist die Schwelle 0,5: der binäre Schnitt. EIN Knoten je Welt.
-    // DIE ZAHL DES STOFFS TRÄGT DIE SCHWELLE (K68-N1, Prüfer K68: das Phantom klont den Knoten, `_ghostMaterialFor` senkt nur
-    // die Zahl — bei Deckkraft 0,4 fiel unter kienspan jedes Laub-Fragment, das Baum-Phantom war wieder unsichtbar): die
-    // Schwelle ist alphaTest × (1 | 2·Hash), gelesen je Objekt aus SEINEM Stoff (r184 `materialAlphaTest`, derselbe Leser
-    // wie der Test ohne Knoten). Der Stoff mit 0,5 schneidet wie oben; jeder Klon, der die Zahl ändert, ändert den Schnitt mit.
-    _laubSchwelle(T) {
-        if (this._laubSchwelleKnoten) return this._laubSchwelleKnoten;
+    // DER VERSATZ DES LAUBS (A3): jede Laub- und Nadel-Karte jeder Stufe — der Blatt-Atlas (Studio- und Grammatik-Laub,
+    // `_blattAtlasProbe`) und der Karten-Atlas (die Karte L2, `_probeA`) — liest ihre Deckung je Frame um einen Versatz in
+    // Eingangs-Pixeln verschoben (`uLaubVersatz`: die R2-Folge im Quadrat ±LAUB_VERSATZ, aus `_loopRender`) und schneidet sie
+    // an der Zahl alphaTest. Über die Geschichte der zeitlichen Auflösung ist der Schnitt die Deckung eines Fußabdrucks von
+    // drei Pixeln (±1 Versatz ⊗ ±½ Zitter): die Teil-Deckung der Nadel-Büschel steht als Mischton, eine Lücke ab drei Pixeln
+    // bleibt offen. DER TÄTER (Radeon --echt, Tafel-Pose, je drei bis vier Posen in EINER Welt): die deckungstreue Mip-Kette
+    // (phyto-core `impostorMips` glatt, Castaño) bündelt die Teil-Deckung in ganze Texel der Stufe des Schirms — ein Bit-Muster,
+    // das die Kante von einem Pixel (K68 `_laubKante`) und die Schwelle je Zelle (A3 `_laubSchwelle`) nur nachschnitten
+    // (zweiton 49–224 px; die Varianz-Klemme der Auflösung dämpfte es — ohne sie 251–724 px); die um ½ gröbere Stufe schloss
+    // es, schloss aber jede Lücke unter zwei Pixeln (laub-kante 0,212 → 0,222). Ohne zeitliche Auflösung (Holz kienspan) und in
+    // der Kaskade (orthographisch, m[3][3] = 1) ist der Versatz 0: der Schatten schneidet still an derselben Schwelle.
+    _laubVersatz(T, uv, dx, dy) {
         const lu = this._ensureLodUniforms();
-        if (!lu || !lu.uLaubKante) throw this._blendeBruch("der LOD-Uniform-Satz trägt keine uLaubKante");
-        const ZELLE = 3;
-        const uv = T.uv();
-        const d = T.max(T.dFdx(uv).abs(), T.dFdy(uv).abs());
-        const stufe = T.floor(T.log2(T.max(d.x, d.y).mul(ZELLE).max(T.float(1e-6))));
-        const z = T.floor(uv.div(T.exp2(stufe)));
-        const h = T.hash(
-            z.x.toInt().mul(73856093).bitXor(z.y.toInt().mul(19349663)).bitXor(stufe.toInt().mul(83492791))
-        );
-        this._laubSchwelleKnoten = T.materialAlphaTest.mul(
-            T.mix(T.float(1), T.fract(h.add(lu.uLaubKante.x)).mul(2), lu.uLaubKante.y)
-        );
-        return this._laubSchwelleKnoten;
+        if (!lu || !lu.uLaubVersatz) throw this._blendeBruch("der LOD-Uniform-Satz trägt keinen uLaubVersatz");
+        const v = T.cameraProjectionMatrix.element(3).w.lessThan(0.5).select(lu.uLaubVersatz, T.vec2(0, 0));
+        return uv.add(dx.mul(v.x)).add(dy.mul(v.y));
     }
 
     // Stempelt die pro-Baum-konstanten Wahrnehmungs-Höhen (aH0/aH0L) auf eine Laub-Geometrie — EINE Quelle

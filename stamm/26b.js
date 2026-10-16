@@ -1823,6 +1823,9 @@ AnazhRealm.ZIEGEL_VORBACK_D2 = 1e12;
 // DIE OKTAVE DER LAUB-FARBE (K20): der EINE Leser des Blatt-Atlas (`_blattAtlasProbe`) liest die Farbe so viele Mip-Stufen
 // über der Stufe der Deckung — 2 = kein Farb-Detail unter vier Pixeln (Eiche 25 m, nur L1: Δ-Luma 3,41 → 2,62).
 AnazhRealm.BLATT_FARBE_OKTAVE = 2;
+// DER VERSATZ DES LAUBS (A3, `_laubVersatz`): die Deckung jeder Laub- und Nadel-Karte wandert je Frame im Quadrat ± so
+// viele Eingangs-Pixel — über die zeitliche Auflösung die Deckung eines Fußabdrucks von drei Pixeln.
+AnazhRealm.LAUB_VERSATZ = 1;
 
 // Die Stufen-Grenzen, Bänder, Hysterese, Referenz-Höhe und Blatt-Kappe SIND das Gesetz des Kerns (foundry-core
 // PORTAL_RENDER_CONFIG.lod: d0 · d1 · fade · fade0 · hyst · ref · blattKappe, die Blatt-Kappe ist die Welt-Sichthöhe des

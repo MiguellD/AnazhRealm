@@ -537,7 +537,11 @@ class AnazhRealm_Z10 {
                                     const _uvStetig = _Ta.vec2(_uv.x, _uv.y.div(_V));
                                     const _gX = _uvStetig.dFdx();
                                     const _gY = _uvStetig.dFdy();
-                                    const _probeA = (tex, uv) => tex.sample(uv).depth(_schicht).grad(_gX, _gY);
+                                    const _probeA = (tex, uv) =>
+                                        tex
+                                            .sample(this._laubVersatz(_Ta, uv, _gX, _gY))
+                                            .depth(_schicht)
+                                            .grad(_gX, _gY);
                                     // DIE VERGRÖSSERTE KARTE (K20, 12.10.): steht ein Texel der Stufe 0 auf mehr als einem Pixel, liest
                                     // die Karte ihre Zelle KUBISCH (B-Spline, vier bilineare Abgriffe in der eigenen Ansicht) statt
                                     // bilinear. Die Stufe 0 ist binär (Karten-Gesetz, BC1): bilinear gelesen schnitt der alphaTest
@@ -604,13 +608,9 @@ class AnazhRealm_Z10 {
                                         _liesA(_at.mapNode, _uvB, _v1),
                                         _fb
                                     );
-                                    // die Kante des Laubs (A3, `_laubKante`): ein Pixel um die Codec-Schwelle, geschnitten an der
-                                    // Schwelle je Zelle (`_laubSchwelle`) wie jede Karte der Klasse — der binäre Test stand als Raster
-                                    _alpha = this._laubKante(
-                                        _Ta,
-                                        _samp.a,
-                                        globalThis.__phytoCore.KARTEN_GESETZ.schwelle
-                                    );
+                                    // die Deckung an der Codec-Schwelle (alphaTest unten); ihre Probe trägt den Versatz des Laubs
+                                    // (`_probeA` über `_laubVersatz`, A3) wie jede Karte der Klasse
+                                    _alpha = _samp.a;
                                     // fin-Einblendung des Billboards aus der EINEN Quelle `__phytoCore.lodCrossfadeMask` lod=2 (via
                                     // `_lodCrossfadeMaskNode`); Distanz = Fragment-Anker-Peilung (√_hl2), Sichthöhe = der Stempel
                                     // |aKarte.w| (die Höhe der Höhen-Stufe × Instanz-Skala — dieselbe Zahl wie der aH0-Stempel der L1
@@ -655,8 +655,7 @@ class AnazhRealm_Z10 {
                                         )
                                     );
                                     albedoNode = _albK.mul(_auN.tagLicht.mul(_Ta.float(0.88)).add(_Ta.float(0.12)));
-                                    mat.alphaTest = 0.5; // a' > 0,5 ⇔ a > die Codec-Schwelle (der Schatten-Pass liest die Zahl)
-                                    mat.alphaTestNode = this._laubSchwelle(_Ta);
+                                    mat.alphaTest = globalThis.__phytoCore.KARTEN_GESETZ.schwelle; // die Codec-Schwelle
                                     // ── Normal-Atlas (rg, z = √(1−x²−y²)) → Billboard-Rahmen → per-Fragment-Licht ──
                                     const _nxy = _Ta
                                         .mix(_probeA(_at.nmapNode, _uvA).xy, _probeA(_at.nmapNode, _uvB).xy, _fb)
@@ -761,12 +760,10 @@ class AnazhRealm_Z10 {
                             // `_ensureFoliageClusterAtlas` laut (KERN-PFLICHT) — die stille Ellipsen-Maske hinter einem
                             // catch ist gefallen (05.10.: kein Stoff ohne seinen Atlas, wie der Laub-Stoff der Welt);
                             // headless (kein document) zeichnet kein Stoff.
-                            const _atl = this._blattAtlasProbe(_Ta, 0.5);
+                            const _atl = this._blattAtlasProbe(_Ta);
                             if (_atl) {
                                 _alpha = _atl.a;
                                 albedoNode = albedoNode.mul(_atl.rgb);
-                                // die Kante von EINEM Pixel (K68, `_laubKante`): Bild-Pass am Rauschen, Schatten an 0,5
-                                mat.alphaTestNode = _atl.schwelle;
                             }
                             mat.alphaTest = 0.5;
                         }
@@ -1636,9 +1633,9 @@ class AnazhRealm_Z10 {
             uLodRef: _T.uniform(_ref),
             uLodMaskOn: _T.uniform(st.lodMaskOn === false ? 0 : 1),
             uDitherT: _T.uniform(0),
-            // DIE KANTE DES LAUBS (K68, A3, `_laubSchwelle`): x die Drehung der Schwelle je Frame (1/g), y 1 unter der
-            // zeitlichen Auflösung (sonst 0: die Schwelle 0,5) — beide aus `_loopRender`
-            uLaubKante: _T.uniform(new THREE.Vector2(0, 0)),
+            // DER VERSATZ DES LAUBS (A3, `_laubVersatz`): der Versatz der Deckungs-Probe dieses Frames in Eingangs-Pixeln, die
+            // R2-Folge im Quadrat ±LAUB_VERSATZ unter der zeitlichen Auflösung, ohne sie 0 — aus `_loopRender`
+            uLaubVersatz: _T.uniform(new THREE.Vector2(0, 0)),
             uLodD0: _T.uniform(_D.thresh01),
             uLodD1: _T.uniform(_D.thresh12),
             uLodFade: _T.uniform(_D.fade),

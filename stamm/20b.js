@@ -2068,19 +2068,14 @@ class AnazhRealm_Z20b {
             // (phyto-core `bakeLeafAtlasBild`): Zelle 0 Baum-Zweig (`BLATT_ATLAS_BREIT`), 1 Weiden-Zweig (Trauer-Strähne,
             // `BLATT_ATLAS_WEIDE`), 2 Großblatt-Zweig (Strauch, `BLATT_ATLAS_GROSS`), 3 Nadel-Zweiglein (`BLATT_ATLAS_NADEL`) — dieselbe Textur wie
             // der Grammatik-Pfad (`_ensureFoliageClusterAtlas`), keine zweite.
-            const atl = this._blattAtlasProbe(
-                TSL,
-                mp && typeof mp.alphaTest === "number" && mp.alphaTest > 0 ? mp.alphaTest : 0.5
-            );
+            const atl = this._blattAtlasProbe(TSL);
             if (atl) {
                 // Die Blattform schneidet die ALPHA von colorNode aus, nie `opacityNode`: der r184-Schattenpass
                 // liest colorNode.a · map.a · maskShadowNode (`Renderer._getShadowNodes`), opacityNode nie — die
-                // Nadel-Karten warfen volle Rechtecke. Die Atlas-Farbe: der EINE Leser (`_blattAtlasProbe`). Die Alpha
-                // ist die Kante von EINEM Pixel um die Schwelle des Stoffs (K68, `_laubKante`): der Bild-Pass schneidet
-                // sie am Rauschen der zeitlichen Auflösung (`alphaTestNode`), der Schatten an der Zahl 0,5.
+                // Nadel-Karten warfen volle Rechtecke. Die Atlas-Farbe: der EINE Leser (`_blattAtlasProbe`); die Deckung
+                // trägt den Versatz des Laubs (A3, `_laubVersatz`), Bild und Schatten schneiden an der Zahl des Stoffs.
                 mat.colorNode = TSL.vec4(atl.rgb.mul(laubFarbe), atl.a);
-                mat.alphaTest = 0.5;
-                mat.alphaTestNode = atl.schwelle;
+                mat.alphaTest = mp && typeof mp.alphaTest === "number" && mp.alphaTest > 0 ? mp.alphaTest : 0.5;
                 mat.transparent = false;
             } else {
                 // Nur headless (kein document): kein Stoff zeichnet — mit document liefert der Atlas oder bricht.

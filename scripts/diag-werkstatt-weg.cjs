@@ -352,15 +352,13 @@ function wand(src) {
         })(),
         (() => {
             const geist = fnBody(nc, /\n {4}_ghostMaterialFor\([^)]*\) \{/) || "";
-            // die Zahl regiert den Schnitt auch dort, wo ein Stoff einen Schwellen-Knoten trägt (K68-N1, Prüfer K68: der Klon
-            // erbte `alphaTestNode` 0,5, die gesenkte Zahl wirkte nicht — unter kienspan verwarf das Baum-Phantom jedes Blatt)
+            // die Zahl regiert den Schnitt: kein Stoff trägt einen Schwellen-Knoten (K68-N1, Prüfer K68: der Klon erbte
+            // `alphaTestNode`, die gesenkte Zahl wirkte nicht; A3: das Laub schneidet an seiner Zahl, `_laubVersatz`)
             const knoten = (nc.match(/\.alphaTestNode = /g) || []).length;
-            const schwelle = fnBody(nc, /\n {4}_laubSchwelle\([^)]*\) \{/) || "";
-            const zahl = knoten === 0 || /materialAlphaTest/.test(schwelle);
             return [
-                "W6 das Phantom übersteht den Alpha-Test (`_ghostMaterialFor`: alphaTest × Deckkraft; der Schwellen-Knoten des Laubs liest die Zahl seines Stoffs, `_laubSchwelle`)",
-                geist.includes("g.alphaTest = (Number.isFinite(mat.alphaTest) ? mat.alphaTest : 0) * g.opacity;") && zahl,
-                zahl ? "" : `${knoten} Schwellen-Knoten ohne die Zahl des Stoffs (_laubSchwelle liest materialAlphaTest nicht)`,
+                "W6 das Phantom übersteht den Alpha-Test (`_ghostMaterialFor`: alphaTest × Deckkraft; kein Stoff trägt einen Schwellen-Knoten)",
+                geist.includes("g.alphaTest = (Number.isFinite(mat.alphaTest) ? mat.alphaTest : 0) * g.opacity;") && !knoten,
+                knoten ? `${knoten} Schwellen-Knoten (alphaTestNode): die Zahl des Stoffs regiert den Schnitt nicht` : "",
             ];
         })(),
         (() => {

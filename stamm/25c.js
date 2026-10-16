@@ -2310,12 +2310,13 @@ class AnazhRealm_Z25c {
         if (this.state.lodUniforms) {
             const _lu = this.state.lodUniforms;
             if (_lu.uDitherT && this.state.traaNode) _lu.uDitherT.value = (_lu.uDitherT.value + 0.61803398875) % 1;
-            // die Kante des Laubs (K68, A3, `_laubSchwelle`): unter der zeitlichen Auflösung dreht der Hash jeder Zelle um 1/g
-            // (die Plastik-Zahl, gleichverteilt neben der Goldenen Drehung der Blende), ohne sie steht die Schwelle bei 0,5
-            if (_lu.uLaubKante) {
-                const _k = _lu.uLaubKante.value;
-                _k.y = this.state.traaNode ? 1 : 0;
-                if (_k.y) _k.x = (_k.x + 0.75487766625) % 1;
+            // der Versatz des Laubs (A3, `_laubVersatz`): unter der zeitlichen Auflösung je Frame der nächste Punkt der R2-Folge
+            // (die Plastik-Zahl g: 1/g, 1/g²) im Quadrat ±LAUB_VERSATZ Eingangs-Pixel, ohne sie 0 (der stille Schnitt)
+            if (_lu.uLaubVersatz) {
+                const _v = _lu.uLaubVersatz;
+                const _n = (_v.n = this.state.traaNode ? (_v.n || 0) + 1 : 0);
+                const _d = 2 * AnazhRealm.LAUB_VERSATZ * (_n > 0 ? 1 : 0);
+                _v.value.set((((0.5 + _n * 0.7548776662) % 1) - 0.5) * _d, (((0.5 + _n * 0.569840291) % 1) - 0.5) * _d);
             }
             if (_lu.uLodRef)
                 _lu.uLodRef.value =
