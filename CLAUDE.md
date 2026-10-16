@@ -78,7 +78,7 @@ nächste Welle erfinden · Schöpfer-Abhängigkeit erfinden — ist ROT. Die Wan
 (Satz → DSL-Op `spawn_studio` → EIN Stempel `_studioStampFor`; offen: der LLM-Lauf mit Schlüssel, Drehbuch-Schritt 18) · benutzen/teilen — bei
 p95 ≤ 33 ms auf JEDEM Standardgerät (Richter: das Profi-Band, „richter ist nicht mein rechner"). Feature-Stopp bis dahin.
 
-**PFLICHT-OFFEN (Spiegel — Wahrheit: docs/PFLICHT-OFFEN.md):** A AAAA je Klasse (Soll-Tafel K5: 7 von 8 Klassen ROT, gesetzt 15.10. vom Schöpfer) · B Ankunft ≤ 5 s kalt (am Kopf Weltbild kalt 27,9–29,8 s) · E Profi-Band
+**PFLICHT-OFFEN (Spiegel — Wahrheit: docs/PFLICHT-OFFEN.md):** A AAAA je Klasse (Soll-Tafel K5: 7 von 8 Klassen ROT, gesetzt 15.10. vom Schöpfer) · B Ankunft ≤ 5 s kalt (am Kopf Weltbild kalt 27,9–29,8 s) · D Klarheit (Doku wahr, Stamm nach Domäne, Prüf-Apparat unter einer Decke, die nur sinkt; gesetzt 16.10., Audit 4/10) · E Profi-Band
 (Radeon 890M + GTX 1060, Wiese + Genesis, Ego + Third):
 an der GTX hält das Bündel Frame p95 16,7–16,8 ms · ≤ 191 Befehle · ≤ 587k Dreiecke · ≤ 104 MB VRAM und reißt den CPU-Takt p95 (6,0–7,8 > 5,8 ms);
 das Radeon-ABAB am Kopf steht aus. Quelle: das letzte ABAB vom 14.10. (Zweig `koordination` 1ae7ef17) und `bericht/1410-1-instanz.md`.
@@ -197,7 +197,7 @@ das Radeon-ABAB am Kopf steht aus. Quelle: das letzte ABAB vom 14.10. (Zweig `ko
 
 ## Workflows und Karte
 
-`playtest:fast` (~12 s, 16.10.) · Merge-Gate `npm run playtest` („Alle Invarianten OK" zählt, nie der Zähler) · `npm run check` (source-probes ·
+`playtest:fast` (12–17 s Lauf, 16.10.) · Merge-Gate `npm run playtest` („Alle Invarianten OK" zählt, nie der Zähler) · `npm run check` (source-probes ·
 constitution · studio-vertrag · altlasten · apparat · betriebsgesetz) · `lint` / `format:check` · `npm run atlas` (+ `--find`). Lokal der Puls der
 berührten Methoden + playtest:fast; der Integrator fährt den VOLLEN Playtest je Merge, die volle Batterie einmal je Version; gemergt bei grüner
 Zweig-CI. GPU-Zeit nur `gpu-bank` (OMEN = GTX 1060; die Radeon 890M lokal per `werkbank --echt`), A/B bei gleicher Szene oder ≥ 4 Boots je Seite;

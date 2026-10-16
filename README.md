@@ -59,7 +59,7 @@ Browser öffnen: `http://localhost:4312/`. Einzeln: `npm start` (save-server) + 
 npm run check           # die Statik (Kerne, Atlas, Verfassung, Studio-Vertrag, Altlasten, Apparat, Betriebsgesetz …) + gate:haus-fern
 npm run atlas           # die Karte der Stamm-Zonen (--find <regex>)
 npm run lint            # ESLint
-npm run format:check    # Prettier in Teilen über Stamm und Kerne
+npm run format:check    # Prettier in Teilen über Stamm, phyto-core, Worker und Server (die übrigen Kerne nie, Lehre 11)
 npm run playtest:fast   # die Kern-Gesundheit headless — der Dev-Loop
 npm run playtest        # die Headless-Invarianten — das Merge-Gate
 npm run gate:<name>     # die Domänen-Linsen (Liste: package.json)

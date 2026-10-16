@@ -618,7 +618,7 @@ class AnazhRealm {
                 // Laufzeit-State, nicht im Welt-Save.
                 pendingInvite: null,
             },
-            // Welt-Identität (Ring 8+, siehe docs/state-of-realm.md §11): die EINE Vorlage (`_weltMetaVorlage`), die auch
+            // Welt-Identität (Ring 8+): die EINE Vorlage (`_weltMetaVorlage`), die auch
             // jede geladene Welt unterlegt (`_weltMetaWechsel`).
             worldMeta: AnazhRealm._weltMetaVorlage(),
             // Welt-Journal: geordnete Erinnerungen (Genesis, erstes Wetter, erste Kreatur, starke Programme,
@@ -960,7 +960,7 @@ class AnazhRealm {
         });
     }
 
-    // ### Ring 1 – Grok-Stimme ### (siehe docs/state-of-realm.md §5)
+    // ### Ring 1 – Grok-Stimme ###
     grokInitDOM() {
         const grok = this.state.grok;
         grok.dialogueBox = document.getElementById("dialogue-box");

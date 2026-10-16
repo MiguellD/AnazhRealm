@@ -18,7 +18,7 @@ Die drei Verben des Feldes stehen im Code:
 Darauf stehen der Emotion-Kern (dimensional · Substanz-Brücke · Mood · Contagion), die
 DSL-Weltregeln (Mensch · Nexus · KI am selben Regel-Satz), der Kampf-/Interaktions-Bogen, die
 Resonanz („ein Produkt-Vektor, viele Leser") und der Wasser-CA (Wasser fließt nach und ruht).
-Das Offene steht in `docs/roadmap.md` §0; die Chronik aller Bögen in `git log`.
+Das Offene steht allein in `docs/PFLICHT-OFFEN.md`; die Chronik aller Bögen in `git log`.
 
 ---
 
@@ -102,7 +102,8 @@ Fünf Flecken, an denen die Vision einst flach war, erklären die heutige Form:
 ## 4. Die wahre Tiefe — wie die Systeme WIRKLICH funktionieren (gemessen)
 
 Dies ist die Architektur, die ein neuer Agent SEHEN muss, bevor er anfasst. Jeder
-Name ist real — die Zitat-Wand (`gate:betriebsgesetz`) nennt jeden toten beim Namen.
+Name ist real — die Zitat-Wand (`gate:betriebsgesetz`) nennt jeden toten beim Namen; die Rollen (wer
+schreibt, wer liest, welche Zahl) sind am Stamm vom 16.10. nachgelesen, nicht nur die Namen.
 
 ### 4.1 Das Feld — frozen Kern + reaktives Overlay
 
@@ -110,9 +111,11 @@ Name ist real — die Zitat-Wand (`gate:betriebsgesetz`) nennt jeden toten beim 
   magieleitung), aus 4 seed-deterministischen SimplexNoise-Instanzen, worldgen-cachebar.
 - **`auraAt(x,z,t)`** — die EINE Lese-API. Gibt den frozen Kern zurück, geblendet mit den
   Overlays: `lebendig = min(1, frozen + _lifeOverlayAt)`, `emotion = global ⊕ _emotionOverlayAt`,
-  die drei geologischen Achsen direkt frozen. **16 Konsumenten** teilen sie: Terrain-Farbe,
-  Spawn-Affinität, Fauna-Ziel/-Max, Gras-Dichte, Nexus-Komposition, Welt-Tint, Appraisal,
-  HUD. Wer eine neue „lebendige Welt"-Wirkung baut, liest HIER — kein neues `_tickX`.
+  die drei geologischen Achsen direkt frozen. **17 Lese-Stellen** teilen sie: die Fauna
+  (Seele · Ziel · Max · Lebenslauf), die Nexus-Komposition (`dslComposeAtomic`, `dslComposeRule`), die DSL
+  (`_dslFieldAxisAt`, Positionen), die Wertung (`_measureRuleReward`, `_observeFieldWohl`), die Appraisal
+  (`updatePlayerEmotions`, `_umweltLage`), der Welt-Tint (`_dayNightComputeTint`, `_dayNightApplyHemiUndLuft`),
+  der Klang (`_lofiWorldField`), die Erkundung (`_exploreMagnitude`) und die Selbst-Analyse des Loops. Wer eine neue „lebendige Welt"-Wirkung baut, liest HIER — kein neues `_tickX`.
 - **Trennung frozen ↔ Overlay** (V12.0-perf.b): der teure frozen Teil ist cachebar; das
   billige mutable Overlay liegt sparse darüber (eine `Map` von 16-m-Zellen, lazy-decay
   beim Lesen, kein per-Frame-Sweep). Leerer Overlay → exakt frozen (backward-compatible).
@@ -120,11 +123,12 @@ Name ist real — die Zitat-Wand (`gate:betriebsgesetz`) nennt jeden toten beim 
 ### 4.2 Die Schreib-Seite — nur intentionale Akte, lazy-Decay, Sättigung
 
 - **`_depositLife(x,z,amount)`** — hebt `lebendig` (3×3-Kernel), gekappt auf
-  `LIFE_FIELD.max` (0.7), zerfällt exponentiell (`a·e^(−λΔt)`). Schreiber: der natürliche
-  Tod (`_creatureNaturalDeath`), das erwachte Gesetz (`_journalRuleAwoke`), der Neubeginn des Spielers
-  (`_playerDeathRespawn`), die DSL-Op `deposit_life`, und der **Kreatur-Trickle** (`tendsLife`:
-  eine getragene Kreatur träufelt fortlaufend Leben in ihre Zelle → die geheilte Region
-  BLEIBT lebendig statt nach dem Puls zu verblassen — eine atmende Ökologie).
+  `LIFE_FIELD.max` (0.7), zerfällt exponentiell (`a·e^(−λΔt)`). Schreiber: die Geburt
+  (DSL-Op `spawn_creature` — sie deponiert an der Wiege und setzt `tendsLife`), der natürliche Tod
+  (`_creatureNaturalDeath`), der Tod des Spielers am Todesort (`_playerDeathRespawn`), die DSL-Op
+  `deposit_life`, und der **Kreatur-Trickle** (`_tickCreatureLifeTrickle`: eine getragene Kreatur träufelt
+  fortlaufend Leben in ihre Zelle → die geheilte Region BLEIBT lebendig statt nach dem Puls zu verblassen —
+  eine atmende Ökologie).
 - **`_depositEmotion(x,z,emotionMap)`** — prägt die Tat-Emotion am Ort ein (6 Achsen,
   gekappt auf `EMOTION_FIELD.max` 0.8, schnellerer Decay als Leben). Schreiber:
   `_feelAction`, die DSL-Op `deposit_emotion`, die Pflege der KI (`_aiTendPlayer`).
@@ -139,8 +143,8 @@ Die Konstante ist **`AnazhRealm.WERTUNG`**. Die Gleichung: `baseline += α·(x �
 `δ = x − baseline`. Zwei Ebenen lesen denselben δ:
 
 - **Spieler-Appraisal** (`p.wohlBaseline`, EMA mit `playerTau` 30 s): die Situation ist
-  60 % lebendig (Feld unter dem Spieler) + 40 % HP — **NICHT die Emotion selbst** (sonst
-  Runaway). `δ = Situation − Baseline` → joy/hope bei δ>0, sorrow/chaos bei δ<0 (über eine
+  60 % lebendig (Feld unter dem Spieler) + 40 % HP im Pfad-Modus, sonst lebendig allein
+  (`_playerSituationWohl`) — **NICHT die Emotion selbst** (sonst Runaway). `δ = Situation − Baseline` → joy/hope bei δ>0, sorrow/chaos bei δ<0 (über eine
   kurze EMA `appraisalEmaTau` 8 s). Weil die Baseline langsam nachzieht, fällt die
   **Gewöhnung umsonst heraus**: das 100. Haus ist weniger freudig als das erste, ohne
   jeden Hardcode.
@@ -170,7 +174,8 @@ Die Konstante ist **`AnazhRealm.WERTUNG`**. Die Gleichung: `baseline += α·(x �
 - **Mood** (langsame EMA, `EMOTION_MOOD_TAU` 120 s) tönt die Appraisal kongruent (ein
   gutes Ereignis fühlt sich in trüber Stimmung kleiner an). **Contagion + Bonding**
   (`_tickEmotionContagion`): nahe Kreaturen stecken den Spieler an, gewichtet nach Nähe ×
-  Bindung; `bond` wächst während `follow_player`; bounded (kein Feedback-Runaway).
+  Bindung; `bond` springt bei der „folge mir"-Geste (`bondFollowBump`) und wächst, solange die Kreatur nah
+  folgt; bounded (kein Feedback-Runaway).
   Pro-Achsen-Decay (chaos verfliegt schnell, sorrow/peace bleiben).
 
 ### 4.5 Der Nexus + die Weltregeln — Mensch · Nexus · KI am selben Satz
@@ -183,8 +188,9 @@ Die Konstante ist **`AnazhRealm.WERTUNG`**. Die Gleichung: `baseline += α·(x �
   Gate), Determinismus (deterministische Regel-RNG, multi-user-seed-sicher), Runaway-Schutz
   (Cap 64 + Dedup + Eviction des ältesten Nicht-Mensch-Eintrags).
 - **Quellen:** Mensch (permanent, geschützt) · Nexus (ephemer, fitness-erneuert) · LLM
-  (ephemer). Eine **Whitelist** lässt Regeln nur die reaktive Schicht schreiben (Overlays/
-  Wetter/Emotion/Kreaturen), NIE den frozen Worldgen (`terrain_*`/`voxel_*`) → eine
+  (ephemer). Eine **Sperrliste** (`RULE_FORBIDDEN_EFFECT_OPS`) lässt Regeln nur die reaktive Schicht
+  schreiben (Overlays/Wetter/Emotion/Kreaturen), NIE den frozen Worldgen (`terrain_*`/`voxel_*`) noch
+  schwere Struktur-Spawns → eine
   fremde Welt kann meine nicht umpflügen. Persistiert + merge-bar (die Bibliotheks-Vision).
 
 ### 4.6 Die Resonanz — der Hylomorphismus eine Ebene höher
@@ -219,9 +225,8 @@ erbt:
 
 ## 6. Der Vektor vorwärts — wohin jede Achse noch zeigt
 
-Die Vision ist verkörpert; was bleibt, ist VERTIEFUNG — pro Achse die nächste Tiefe. Die
-geordnete Reihenfolge (Fundament vor Seele) steht in `docs/roadmap.md` „⭐ DER PLAN
-VORWÄRTS"; hier der Vektor, gruppiert nach Dimension:
+Die Vision ist verkörpert; was bleibt, ist VERTIEFUNG — pro Achse die nächste Tiefe, Fundament vor
+Seele. Der Scope ist allein `docs/PFLICHT-OFFEN.md`; hier der Vektor, gruppiert nach Dimension:
 
 **Der Körper:** der Wasser-CA fließt (`_tickWaterCA`, Quellen-Pin, Flow-Regel; das Zell-Sheet
 ist der EINE Render). Offen: Seen/Flüsse jenseits ±1024 m · die Vereinigung der zwei
@@ -236,7 +241,7 @@ Wasser-Naturen · Licht+Terrain-Einheit.
   hand-codiert. Die Weltregeln-DSL (§4.5) macht sie ausdrückbar — der Vektor: sie als
   emergente, evolvierbare Regeln neu fassen, nicht als feste Trigger.
 - **Die anderen Feld-Achsen schreibbar — und der Spieler als Pfleger.** Heute schreiben
-  Geburt/Nexus/Kreatur ins lebendig-Overlay; der Vektor: **DU trägst Leben** (Spieler-Pflege
+  Geburt, Tod, Nexus-Regel und Kreatur-Trickle ins lebendig-Overlay (§4.2); der Vektor: **DU trägst Leben** (Spieler-Pflege
   als zweiter Schreib-Pfad = echte Co-Schöpfung). glut/dichte/magieleitung bleiben frozen,
   bis die Vision sie verlangt (dann via `_depositLife`-Muster, kein Parallelpfad).
 - **Die KI als vollwertige Co-Schöpferin.** Das LLM schreibt schon Regeln (`source:"llm"`),
@@ -249,7 +254,7 @@ Wasser-Naturen · Licht+Terrain-Einheit.
 ## 7. Die Grenzen heute (Vertiefung, kein Fundament — der Scope ist allein `docs/PFLICHT-OFFEN.md`)
 
 - Emotion-Kopplungen (`sorrow→rainy` u. ä.) sind noch feste Trigger statt aus Weltregeln emergent.
-- Der Spieler hat keinen eigenen Leben-Schreib-Pfad (Pflege = Co-Schöpfung).
+- Der Spieler schreibt Leben nur mit seinem Tod (`_playerDeathRespawn`), nicht als Pflege (Pflege = Co-Schöpfung).
 - Die KI ist opt-in; der Co-Schöpfer spricht seit V18.493 die Studio-Rezepte (`spawn_studio`),
   der echte Lauf mit Schlüssel steht aus (Drehbuch Schritt 18).
 - Wasser trägt noch zwei Naturen (statisches `L`-Substrat + CA) — die Vereinigung ist offen.

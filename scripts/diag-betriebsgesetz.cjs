@@ -7,10 +7,9 @@
 //      HEAD-Commit mit fertig/RUND/vollendet/vollzogen/Schluss/SCOPE ZU rot.
 //   2) FROZEN-LISTEN-WAND: max 5 Einträge (A–E), wohlgeformt — Scope wächst nie still;
 //      dazu die LOGBUCH-WAND (kein „Stand-Stempel:", max 40 Zeilen).
-//   3) STAND-WAND: der CLAUDE.md-Stand bleibt ≤ 40 Zeilen (Chronik = git log, Lehre 15;
-//      die 1300-Zeilen-Wellen-Romane wachsen nie nach).
-//   4) ABSENZ-WAND: BETRIEBSGESETZ in CLAUDE.md + Pflicht-Output in champion.md —
-//      ein stilles Streichen der Gesetze macht dieses Gate rot, nicht unsichtbar.
+//   3) STAND-WAND: der CLAUDE.md-Stand bleibt ≤ 40 Zeilen (Chronik = git log, Lehre 15).
+//   4) ABSENZ-WAND: BETRIEBSGESETZ in CLAUDE.md + Pflicht-Output in champion.md — ein stilles Streichen ist rot.
+//   6) WACHSTUMS-WAND + DECKE: scripts/ sinkt nur (PFLICHT-OFFEN D); 7) ZITAT-WAND: jede .md steht in der Karte, nennt nur Lebendes.
 // Selbsttest feuert (Lehre 1: die Linse beweist sich selbst, nie Wachsamkeit).
 const fs = require("fs");
 const path = require("path");
@@ -18,8 +17,7 @@ const { execSync, execFileSync } = require("child_process");
 
 const root = path.join(__dirname, "..");
 
-// RUND bewusst case-sensitiv (das Siegel-Wort der Berichte) — „rund 60 Assets" in
-// einer Message bleibt legal; die übrigen Siegel sind als ganze Wörter verboten.
+// RUND bewusst case-sensitiv („rund 60 Assets" bleibt legal); die übrigen Siegel sind als ganze Wörter verboten.
 const SIEGEL_CI = /\b(fertig|vollendet|vollzogen|schluss)\b|scope\s+zu/i;
 const SIEGEL_CS = /\bRUND\b/;
 
@@ -27,10 +25,7 @@ function eintraege(text) {
     return text.split("\n").filter((z) => /^[A-E]\)\s+\S/.test(z));
 }
 
-// 2b) LOGBUCH-WAND (V18.492): die Frozen-Liste ist eine LISTE, kein Logbuch. Die
-//     September-Welle stempelte 446 „Stand-Stempel:"-Zeilen vor die fünf Einträge (je
-//     gehobener Lab-Konstante eine Zeile + eine Patch-Version) — die Liste wuchs 13 → 462
-//     Zeilen, A–E bewegten sich nicht. Chronik = git log (Lehre 15).
+// 2b) LOGBUCH-WAND (V18.492): die Frozen-Liste ist eine LISTE, kein Logbuch (Chronik = git log, Lehre 15).
 const LISTE_MAX_ZEILEN = 40;
 function logbuchBefund(text) {
     const zeilen = text.split("\n");
@@ -72,16 +67,12 @@ function archivBefund(dateien) {
     ];
 }
 
-// 6) WACHSTUMS-WAND (V1 Prüf-Diät, 15.10.): ein Zweig lässt den Prüf-Apparat (scripts/ + spec/) nie um mehr wachsen als
-//    um die Hälfte SEINES Spiel-Code-Wachstums. Seit main 062ec357 (14.10.) wuchsen scripts/ + spec/ um +16 349 Zeilen, der
-//    Spiel-Code um +3 334 — jede echte Änderung brach 2–6 Text-Linsen. Gemessen JE ZWEIG (`wachstumsStaende`), nie gegen
-//    einen festen Grund (der summierte fremde Zweige und war je Zweig anhebbar; der Probe-Merge von V1 auf integ-probe
-//    9003e357 war daran rot, ohne dass ein Zweig der Täter war). Gezählt als Netto-Differenz `git diff --numstat
-//    --no-renames` (hinzu − weg, Binärdateien ohne Zeilen):
-//    die Zeilen-Zählung des Baums (`git grep -c ''`) hing an der git-Version (2.54 ließ die leere Schlusszeile einer Datei
-//    aus, 2.55 nicht — dieselbe Linse lokal grün, in der CI rot). `--grund <rev>` / `--kopf <rev>` messen zwischen zwei
-//    Ständen; ohne `--kopf` zählt der Arbeitsbaum. Kein Grund auflösbar (flacher Klon) = ROT, nie still grün.
-const PRUEF_PFADE = ["scripts", "spec"];
+// 6) WACHSTUMS-WAND (V1 15.10.) + DIE DECKE (PFLICHT-OFFEN D, Schöpfer 16.10.): scripts/ wächst nie — Zeilen und Dateien
+//    sinken oder stehen, eine neue Linse zahlt mit gestrichenen; scripts/ + spec/ zusammen höchstens um die Hälfte des
+//    Spiel-Wachstums. Gemessen JE ZWEIG (`wachstumsStaende`), nie gegen einen festen Grund (der summierte fremde Zweige),
+//    als Netto-Differenz `git diff --numstat --no-renames` (hinzu − weg; `git grep -c ''` hing an der git-Version).
+//    `--grund <rev>` / `--kopf <rev>` messen zwischen zwei Ständen, ohne `--kopf` der Arbeitsbaum; kein Grund = ROT.
+const PRUEF_PFADE = ["scripts", "spec", ":(exclude)spec/profiband/ratsche-*"]; // Ratschen = Messdaten des Werkzeugs (16.10.)
 const SPIEL_PFADE = ["stamm", ":(glob)*.js", "index.html", "worlds", ":(exclude)worlds/**/lib/**"];
 function git(args) {
     return execFileSync("git", args, { cwd: root, encoding: "utf8", maxBuffer: 1 << 26 });
@@ -98,6 +89,12 @@ function nettoZeilen(numstat) {
 function wachstumZwischen(grund, kopf, pfade) {
     return nettoZeilen(git(["diff", "--numstat", "--no-renames", grund, ...(kopf ? [kopf] : []), "--", ...pfade]));
 }
+function dateienZwischen(grund, kopf, pfade) {
+    const z = git(["diff", "--name-status", "--no-renames", grund, ...(kopf ? [kopf] : []), "--", ...pfade]).split(
+        "\n"
+    );
+    return z.filter((l) => l.startsWith("A\t")).length - z.filter((l) => l.startsWith("D\t")).length;
+}
 // Die Stände, an denen die Wand misst — je Stand [grund, kopf (null = Arbeitsbaum), Name]. Ein Karten-Zweig misst sich
 // ganz ab der Merge-Basis mit origin/integ-probe. integ-probe misst seinen PUSH (WACHSTUM_VORHER = der Kopf vor dem Push,
 // sonst der letzte Commit): der Integrator merget eine Karte oder spult integ-probe auf ihren Kopf vor — dann geht der
@@ -113,14 +110,20 @@ function wachstumsStaende(zweig, kopfRev) {
     }
     return [[git(["merge-base", "HEAD", "origin/integ-probe"]).trim(), kopfRev, "Merge-Basis mit origin/integ-probe"]];
 }
-function wachstumBefund(dP, dS, name = "Zweig") {
+function wachstumBefund(dP, dS, name = "Zweig", dSkript = 0, dDatei = 0) {
     const erlaubt = Math.floor(Math.max(0, dS) / 2);
-    if (dP > erlaubt)
-        return [
-            `WACHSTUMS-WAND (${name}): der Prüf-Apparat (scripts/ + spec/) wuchs um ${dP} Zeilen, der Spiel-Code um ${dS} — ` +
-                `erlaubt ist die Hälfte des Spiel-Wachstums (${erlaubt}); eine neue Linse zahlt mit einer gestrichenen`,
-        ];
-    return [];
+    return [
+        ...(dSkript > 0 || dDatei > 0
+            ? [
+                  `DECKE (${name}): scripts/ wuchs um ${dSkript} Zeilen / ${dDatei} Dateien — sie sinkt nur (PFLICHT-OFFEN D)`,
+              ]
+            : []),
+        ...(dP > erlaubt
+            ? [
+                  `WACHSTUMS-WAND (${name}): scripts/ + spec/ +${dP} Zeilen bei Spiel ${dS} — erlaubt die Hälfte (${erlaubt})`,
+              ]
+            : []),
+    ];
 }
 
 // 7) ZITAT-WAND (V1 Prüf-Diät N1, 15.10.; K1 Doku-Wahrheit 16.10.): ein Dokument nennt nur, was der Baum trägt, und die
@@ -138,7 +141,9 @@ const ZITAT_PFAD = /(?<![\w.:/@-])((?:\.github|\.claude|[a-z][\w-]*)\/[\w./-]*)/
 const ZITAT_DATEI = /(?<![\w.:/@-])([A-Za-z][\w.-]*\.(?:js|cjs|mjs|md|html))(?![\w/-])/g;
 const ZITAT_NAME = /(?<![\w$])(_{1,2}[A-Za-z][\w$]{2,})/g;
 const ZITAT_DIAG = /(?<![\w./-])(diag-[a-z0-9][a-z0-9-]*[a-z0-9])(?![\w.-])/g;
-const ZITAT_PLATZHALTER = /^[[<*{…$]/;
+const ZITAT_PLATZHALTER = /^(?!\*\*)[[<*{…$]/; // `**_name**` ist Fettdruck, kein Platzhalter
+const ZITAT_DATEI_ENDUNG = /\.(?:js|cjs|mjs|md|html|json)$/;
+const ZITAT_ZWEIG = /Zweig `[\w-]+`/;
 const ZITAT_FREMD = new Set(["Three.js", "Node.js"]);
 const ZITAT_BLOCK = /^\s*(?:$|#|\||[-*+] |\d+\. |```)/;
 const ZITAT_SATZ = /[.;!?](?=\s)|\s·\s/g;
@@ -172,10 +177,11 @@ function zitatBefund(dokumente, welt) {
             out.push(`ZITAT-WAND: ${pfad} fehlt in der EINEN Karte docs/README.md`);
         for (const b of zitatBloecke(text)) {
             const ort = (i) => `${pfad}:${b.erste + b.anfang.filter((a) => a <= i).length}`;
-            const chronik = (i) => {
+            const satz = (i) => {
                 const k = b.grenzen.findIndex((g) => g > i);
-                return ZITAT_CHRONIK.test(b.text.slice(b.grenzen[k - 1], b.grenzen[k]));
+                return b.text.slice(b.grenzen[k - 1], b.grenzen[k]);
             };
+            const chronik = (i) => ZITAT_CHRONIK.test(satz(i));
             const danach = (m) => b.text.slice(m.index + m[0].length);
             for (const m of b.text.matchAll(ZITAT_GATE))
                 if (!welt.gates.has(`gate:${m[1]}`) && !chronik(m.index))
@@ -185,7 +191,11 @@ function zitatBefund(dokumente, welt) {
                 const kopf = p.split("/")[0];
                 const wurzel = welt.pfade.has(kopf);
                 const nah = welt.pfade.has(path.posix.join(ordner, kopf));
-                if ((!wurzel && !nah) || ZITAT_PLATZHALTER.test(danach(m))) continue; // Einheit km/h, Platzhalter
+                // Einheit km/h und Platzhalter schweigen; eine DATEI unter fremder Wurzel (archiv/x.md) nicht — es sei denn,
+                // ihr Satz nennt den Zweig, der sie trägt (Aufträge und Berichte leben im Zweig `koordination`)
+                const lose = !ZITAT_DATEI_ENDUNG.test(p) || welt.namen.has(path.posix.basename(p));
+                if ((!wurzel && !nah && (lose || ZITAT_ZWEIG.test(satz(m.index)))) || ZITAT_PLATZHALTER.test(danach(m)))
+                    continue;
                 if ((wurzel && da(p)) || (nah && da(path.posix.join(ordner, p))) || welt.ignoriert(p)) continue;
                 if (!chronik(m.index))
                     out.push(`ZITAT-WAND: ${ort(m.index)} nennt den Pfad ${p} — der Baum trägt ihn nicht`);
@@ -255,8 +265,12 @@ function main() {
         for (const [grund, kopf, name] of staende) {
             const dP = wachstumZwischen(grund, kopf, PRUEF_PFADE);
             const dS = wachstumZwischen(grund, kopf, SPIEL_PFADE);
-            gemessen.push(`${name}: Prüf ${dP >= 0 ? "+" : ""}${dP} / Spiel ${dS >= 0 ? "+" : ""}${dS} Zeilen`);
-            errs.push(...wachstumBefund(dP, dS, name));
+            const dK = wachstumZwischen(grund, kopf, ["scripts"]);
+            const dD = dateienZwischen(grund, kopf, ["scripts"]);
+            gemessen.push(
+                `${name}: Prüf ${dP >= 0 ? "+" : ""}${dP} / Spiel ${dS >= 0 ? "+" : ""}${dS} · scripts ${dK} Z. ${dD} Dat.`
+            );
+            errs.push(...wachstumBefund(dP, dS, name, dK, dD));
         }
         if (!staende.length)
             gemessen.push(`${zweig}: misst nichts zweimal (jeder Merge stand auf integ-probe an der Wand)`);
@@ -273,9 +287,10 @@ function main() {
         const gates = new Set(
             Object.keys(JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8")).scripts)
         );
-        const dateien = git(["ls-files", "--cached", "--others", "--exclude-standard"])
-            .split("\n")
-            .filter((p) => p && fs.existsSync(path.join(root, p)));
+        // die Welt ist der Index (wie in der CI), nie der lokale Rest unverfolgter Dateien
+        const dateien = [...new Set(git(["ls-files", "--cached"]).split("\n"))].filter(
+            (p) => p && fs.existsSync(path.join(root, p))
+        );
         const lies = (p) => fs.readFileSync(path.join(root, p), "utf8");
         const gemerkt = new Map();
         const ignoriert = (p) => {
@@ -289,11 +304,16 @@ function main() {
             return gemerkt.get(p);
         };
         const welt = zitatWelt(dateien, lies, gates, ignoriert, require("./lib/stamm.cjs").ALT);
-        welt.code = welt.code.filter((d) => !d.pfad.startsWith("vendor/")); // fremd und gepinnt: nie editiert
+        // fremd ist in vendor/, was seine Karte nicht „eigen" nennt (vendor/README.md); das Eigene spricht wie jeder Code
+        const eigen = new Set(
+            [...lies("vendor/README.md").matchAll(/^\| `([^`]+)` +\| eigen /gm)].map((m) => "vendor/" + m[1])
+        );
+        welt.code = welt.code.filter((d) => !d.pfad.startsWith("vendor/") || eigen.has(d.pfad));
         const dokumente = dateien.filter((p) => p.endsWith(".md")).map((p) => ({ pfad: p, text: lies(p) }));
         const befund = zitatBefund(dokumente, welt);
         errs.push(...befund);
-        dokuZeile = `${dokumente.length} .md in der Karte, ${befund.length} tote Aussagen`;
+        const genannt = dokumente.filter((d) => welt.karte.includes("`" + d.pfad + "`")).length;
+        dokuZeile = `Karte ${genannt}/${dokumente.length} .md, ${befund.length} tote Aussagen`;
     } catch (e) {
         errs.push(`ZITAT-WAND: Dokumente oder package.json nicht lesbar (${String(e.message).split("\n")[0]})`);
     }
@@ -380,8 +400,13 @@ function main() {
     // die Zählung ist die Netto-Differenz je Datei; eine Binärdatei trägt keine Zeilen (eine leere Schlusszeile zählt
     // wie jede Zeile — kein Zählen, das an der git-Version hängt)
     const w5 = nettoZeilen("512\t0\tscripts/lib/kronen-linse.cjs\n-\t-\tspec/bild.png\n3\t10\tspec/a.json\n");
-    if (!w1 || w2 || !w3 || w4 || w5 !== 505)
-        errs.push(`Selbsttest der Wachstums-Wand versagt (w1=${w1} w2=${w2} w3=${w3} w4=${w4} w5=${w5})`);
+    const w6 = [
+        wachstumBefund(-9, 99, "x", 1, 0),
+        wachstumBefund(-9, 99, "x", -5, 1),
+        wachstumBefund(-9, 99, "x", -5, 0),
+    ];
+    if (!w1 || w2 || !w3 || w4 || w5 !== 505 || w6.map((w) => w.length).join() !== "1,1,0")
+        errs.push(`Selbsttest der Wachstums-Wand versagt (w1=${w1} w2=${w2} w3=${w3} w4=${w4} w5=${w5} w6=${w6})`);
     // die Zitat-Wand: je Regel genau ein Täter beim Namen; die Chronik-Zeile, der Platzhalter und die Einheit schweigen
     const zTexte = {
         "docs/README.md": "| `docs/README.md` | `docs/a.md` |",
@@ -403,6 +428,8 @@ function main() {
         "- der Stamm (`anazhRealm.js`, eine Klasse)",
         "- ruft `_tot()` und diag-genom",
         "- `stamm/NN[x].js` bei 30 km/h",
+        "- **_fett** liegt in `archiv/x.md`",
+        "- der Bericht (Zweig `koordination` `bericht/x.md`)",
     ].join("\n");
     const zIst = zitatBefund(
         [
@@ -417,6 +444,8 @@ function main() {
         "docs/a.md:5 nennt die Datei anazhRealm.js",
         "docs/a.md:6 nennt `_tot`",
         "docs/a.md:6 nennt diag-genom",
+        "docs/a.md:8 nennt `_fett`",
+        "docs/a.md:8 nennt den Pfad archiv/x.md",
         "docs/b.md fehlt in der EINEN Karte",
         "stamm/01.js:1 verweist auf docs/weg.md",
         "scripts/x.cjs:1 nennt anazhRealm.js",
