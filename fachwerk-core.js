@@ -50,12 +50,12 @@
 //   (c) P.terrain = 0 im Vertrags-Bau (der DORF-Weg `p.terrain=0`): die WELT trägt den
 //       Boden/Garten, nicht das Asset (das Lab-Editor-Default `Gelände & Garten: an`
 //       bleibt Shell-UI).
-//   (d) DIE KARTEN-GRUND-REGEL (geomsZuGruppe): die Rollen backstein/ziegel/ziegel2 tragen
-//       ihren Ton im Lab über CANVAS-KARTEN (texZiegelwand/texDach) und backen darum
-//       textur-weiß (_MAPPED, DOPPEL-TÖNUNGS-FIX). Durchs Portal reist keine Karte — ohne
-//       Kultur-Farbe trägt der Vertrags-Mesh den GRUND-Farbton der Karte (DEFCOL: exakt
-//       die Zahl, aus der texDach/texZiegelwand wachsen) als mat.color; mit Kultur-Farbe
-//       bleibt weiß (die Vertex-Farben tragen sie schon).
+//   (d) DAS KARTEN-GESETZ (A6, `_karte`): eine Canvas-Karte des Labors (texZiegelwand/
+//       texDach/texPutz/texStein) liegt linear und trägt nur ihr Relief — der Stoff teilt
+//       durch ihr lineares Mittel (`_karteEins`, das Gesetz des Blatt-Atlas der Foundry).
+//       Die Farbe steht EINMAL: im Vertex (Kultur oder DEFCOL, `_colFor` — im Labor wie
+//       im Worker, die Welt liest nur ihn) bzw. in der Toenung des Stoffs (tintM). Durchs
+//       Portal reist keine Karte; der Vertrags-Mesh trägt je Rolle den EINEN Stoff.
 //
 // THREE ist zur Laufzeit global (Browser: CDN r128 VOR diesem Skript; Worker:
 // worlds/terrain/lib/three-r128.min.js via importScripts; Node-Gate: global.THREE vor
@@ -1652,7 +1652,7 @@
     // ═══════════════════════════════════════════════════════════════════════
     //  DIE TEXTUR-BÄCKER — byte-treu (Läuferverband · Biberschwanz · Kellenwurf ·
     //  Quaderverband). document-gegated (try/catch → null): Worker/Node backen
-    //  kartenlos, die Vertex-Farben + die KARTEN-GRUND-REGEL tragen den Ton.
+    //  kartenlos, die Vertex-Farben tragen den Ton (die Karte nur ihr Relief, Kopf (d)).
     // ═══════════════════════════════════════════════════════════════════════
     // prettier-ignore
     function texZiegelwand(grund,seed2){ try{                                                     // TEXTUR-SAME MAUERWERK: Läuferverband aus NF-Regeln (24×7.1cm, Fuge 1.1cm, Halbstein-Versatz, Brandton je Stein) — wächst aus demselben Wissen wie die Stein-für-Stein-Geometrie
@@ -1665,7 +1665,7 @@
     for(let x=-sw;x<256+sw;x+=sw+fu){ const t=0.84+r2()*0.3;
       cx.fillStyle='rgb('+Math.min(255,gr*t|0)+','+Math.min(255,gg*t|0)+','+Math.min(255,gb*t|0)+')';
       cx.fillRect(x+off,y,sw,sh); } }
-  const tx=new THREE.CanvasTexture(cv); tx.wrapS=tx.wrapT=THREE.RepeatWrapping; tx.encoding=THREE.sRGBEncoding; return tx; }catch(e){ return null; } }
+  return _karte(cv); }catch(e){ return null; } }
     // prettier-ignore
     function texDach(grund,seed2){ try{                                                           // TEXTUR-SAME DECKUNG: Biberschwanz (Deckmaß 0.32m, Breite 0.18, Halbversatz, Schattenfuge = Reihenüberdeckung)
   const cv=document.createElement('canvas'); cv.width=256; cv.height=256; const cx=cv.getContext&&cv.getContext('2d'); if(!cx) return null;
@@ -1677,7 +1677,7 @@
       cx.fillStyle='rgb('+Math.min(255,gr*t|0)+','+Math.min(255,gg*t|0)+','+Math.min(255,gb*t|0)+')';
       cx.fillRect(x+off,y-rw,zb-2,rw-1);
       cx.fillStyle='rgba(0,0,0,0.27)'; cx.fillRect(x+off,y-3,zb-2,3); } }
-  const tx=new THREE.CanvasTexture(cv); tx.wrapS=tx.wrapT=THREE.RepeatWrapping; tx.encoding=THREE.sRGBEncoding; return tx; }catch(e){ return null; } }
+  return _karte(cv); }catch(e){ return null; } }
     // prettier-ignore
     function texPutz(seed2){ try{                                                                /*TEXTUR-SAME PUTZ: Kellenwurf — koernige Sprenkel + horizontale Kellenzuege, deterministisch*/
   const cv=document.createElement('canvas'); cv.width=256; cv.height=256; const cx=cv.getContext&&cv.getContext('2d'); if(!cx) return null;
@@ -1686,7 +1686,7 @@
   for(let k=0;k<5200;k++){ const t=0.86+r2()*0.20; cx.fillStyle='rgba('+(255*t|0)+','+(255*t|0)+','+(252*t|0)+',0.5)';
     cx.fillRect((r2()*256)|0,(r2()*256)|0, 1+((r2()*2)|0), 1+((r2()*2)|0)); }
   for(let y=0;y<256;y+=9+((r2()*7)|0)){ cx.fillStyle='rgba(120,116,108,0.10)'; cx.fillRect(0,y,256,1); }
-  const tx=new THREE.CanvasTexture(cv); tx.wrapS=tx.wrapT=THREE.RepeatWrapping; tx.encoding=THREE.sRGBEncoding; return tx; }catch(e){ return null; } }
+  return _karte(cv); }catch(e){ return null; } }
     // prettier-ignore
     function texStein(seed2){ try{                                                                /*TEXTUR-SAME NATURSTEIN: Quaderverband 46×28cm, Fuge 1.6, Halbversatz, Bruchton je Stein*/
   const cv=document.createElement('canvas'); cv.width=256; cv.height=256; const cx=cv.getContext&&cv.getContext('2d'); if(!cx) return null;
@@ -1697,7 +1697,22 @@
     for(let x=-sw;x<256+sw;x+=sw+fu){ const t=0.88+r2()*0.24;
       cx.fillStyle='rgb('+(255*t*0.92|0)+','+(255*t*0.90|0)+','+(255*t*0.86|0)+')';
       cx.fillRect(x+off,y,sw,sh); } }
-  const tx=new THREE.CanvasTexture(cv); tx.wrapS=tx.wrapT=THREE.RepeatWrapping; tx.encoding=THREE.sRGBEncoding; return tx; }catch(e){ return null; } }
+  return _karte(cv); }catch(e){ return null; } }
+    // DAS KARTEN-GESETZ (A6, Kopf (d)): eine Karte trägt nur ihr Relief, nie die Farbe. Der Maler malt sRGB; die Karte liegt
+    // LINEAR (die EINE Kurve `_lin`, je Kanal auf ihr Maximum gelegt), so mitteln ihre Mips linear — r128 dekodiert sRGB erst
+    // im Shader und mittelte die Stufen im Gamma-Raum: Mörtel und Fugen fielen fern um 15 % (G) bis 17 % (B). Ihr Kehrwert
+    // `__eins` (Maximum / lineares Mittel) legt `_karteEins` auf die Stoff-Farbe — Karte × Stoff hat in jeder Stufe das Mittel
+    // der Farbe, die EINMAL im Vertex bzw. in der Toenung steht (das Gesetz des Blatt-Atlas der Foundry). Bis A6 trugen
+    // ziegel/ziegel2/backstein ihren Grundton in der Karte UND im Vertex (Kultur) bzw. Stoff (tintM): das Dach maß im Labor
+    // R 0,099 gegen 0,333 des Gesetzes, die Welt 0,318.
+    // prettier-ignore
+    function _karte(cv){ const W=cv.width, H=cv.height, d=cv.getContext('2d').getImageData(0,0,W,H).data, L=new Float64Array(256); for(let i=0;i<256;i++) L[i]=_lin(i/255);
+  const sm=[0,0,0], mx=[1e-6,1e-6,1e-6]; for(let i=0;i<d.length;i+=4) for(let k=0;k<3;k++){ const v=L[d[i+k]]; sm[k]+=v; if(v>mx[k]) mx[k]=v; }
+  const lin=new Uint8Array(W*H*4); for(let y=0;y<H;y++) for(let x=0;x<W;x++){ const i=(y*W+x)*4, o=((H-1-y)*W+x)*4; for(let k=0;k<3;k++) lin[o+k]=Math.round(L[d[i+k]]/mx[k]*255); lin[o+3]=255; }   // Zeile 0 = v 0 (die Lage der Leinwand-Karte mit flipY)
+  const tx=new THREE.DataTexture(lin,W,H,THREE.RGBAFormat); tx.wrapS=tx.wrapT=THREE.RepeatWrapping; tx.magFilter=THREE.LinearFilter; tx.minFilter=THREE.LinearMipmapLinearFilter; tx.generateMipmaps=true; tx.needsUpdate=true;
+  const n=W*H; tx.__eins=new THREE.Color(mx[0]*n/sm[0], mx[1]*n/sm[1], mx[2]*n/sm[2]); return tx; }
+    // prettier-ignore
+    function _karteEins(m){ if(m.map&&m.map.__eins) m.color.multiply(m.map.__eins); return m; }
 
     // ═══════════════════════════════════════════════════════════════════════
     //  MATERIALIEN (Rollen → Three-Material) — LAZY (vehicle-/schmiede-Muster):
@@ -1759,7 +1774,7 @@
   blockholz: new THREE.MeshStandardMaterial({color:0x8a6a3e,roughness:.9,metalness:0,vertexColors:true,side:THREE.DoubleSide}),   // Blockholz-Wand: warmes Braun, vertexColors + material-basiertes tintWood = Patina wie holz, Kontrast zum Rahmen
   gefach: new THREE.MeshStandardMaterial({vertexColors:true,color:0xd9d0c1,roughness:.97,metalness:0,side:THREE.DoubleSide}),
   stein:  new THREE.MeshStandardMaterial({vertexColors:true,color:0x8d857a,map:_texSt||null,roughness:.96,metalness:0,side:THREE.DoubleSide}),   /*Quaderverband-Karte*/
-  ziegel: new THREE.MeshStandardMaterial({color:_texZi?0xffffff:0x9c4a35,map:_texZi||null,roughness:.82,metalness:0,side:THREE.DoubleSide}),
+  ziegel: new THREE.MeshStandardMaterial({color:0x9c4a35,map:_texZi||null,roughness:.82,metalness:0,side:THREE.DoubleSide}),
   boden:  new THREE.MeshStandardMaterial({color:0x7d5c39,roughness:.8,metalness:0,vertexColors:true}),
   glas:   new THREE.MeshStandardMaterial({color:0x33576a,roughness:.15,metalness:0,transparent:true,opacity:.42}),
   dunkel: new THREE.MeshStandardMaterial({color:0x14161a,roughness:1,metalness:0}),
@@ -1768,8 +1783,8 @@
   metall: new THREE.MeshStandardMaterial({color:0x6b6b73,roughness:.5,metalness:.55}),
   nagel:  new THREE.MeshStandardMaterial({color:0x402c1c,roughness:.9,metalness:0,vertexColors:true}),
   lattung:new THREE.MeshStandardMaterial({color:0x967852,roughness:.9,metalness:0,vertexColors:true,side:THREE.DoubleSide}),
-  ziegel2:new THREE.MeshStandardMaterial({color:_texZi2?0xffffff:0x803a28,map:_texZi2||null,roughness:.85,metalness:0,side:THREE.DoubleSide}),
-  backstein:new THREE.MeshStandardMaterial({vertexColors:true,color:_texBk?0xffffff:0x964e3e,map:_texBk||null,roughness:.92,metalness:0,side:THREE.DoubleSide}),
+  ziegel2:new THREE.MeshStandardMaterial({color:0x803a28,map:_texZi2||null,roughness:.85,metalness:0,side:THREE.DoubleSide}),
+  backstein:new THREE.MeshStandardMaterial({vertexColors:true,color:0x964e3e,map:_texBk||null,roughness:.92,metalness:0,side:THREE.DoubleSide}),
   lehm:   new THREE.MeshStandardMaterial({vertexColors:true,color:0xbfb09a,roughness:.98,metalness:0,side:THREE.DoubleSide}),
   putz:   new THREE.MeshStandardMaterial({vertexColors:true,color:0xe7e3da,map:_texPu||null,roughness:.94,metalness:0,side:THREE.DoubleSide}),   /*Kellenwurf-Karte × wandTon-Vertex — Putz atmet*/
   dachmod:new THREE.MeshStandardMaterial({color:0x3b3e44,roughness:.62,metalness:.08,side:THREE.DoubleSide}), // STIL modern: anthrazit Dach
@@ -1785,7 +1800,7 @@
       };
       for(const _k in M) _roleByMat.set(M[_k],_k);
       for(const _k in M) if(SEH_DER_ROLLE[_k]) M[_k].userData.__seh=SEH_DER_ROLLE[_k];
-      for(const _k in M){ _HEX[_k]=M[_k].color.getHex(); M[_k].color.convertSRGBToLinear(); }   // FARB-GESETZ (Architektur-Welle 05.10.): das Hex ist eine sRGB-ABSICHT — der Stoff zeigt seinen linearen Wert (r128 läse es roh), _HEX hält die Absicht für den Bake (_colFor)
+      for(const _k in M){ _HEX[_k]=M[_k].color.getHex(); M[_k].color.convertSRGBToLinear(); _karteEins(M[_k]); }   // FARB-GESETZ (Architektur-Welle 05.10.): das Hex ist eine sRGB-ABSICHT — der Stoff zeigt seinen linearen Wert (r128 läse es roh), _HEX hält die Absicht für den Bake (_colFor)
       M.laternenglas.userData.__licht='laterne';                                               // der Kopf der Laterne glüht nach SEINEM Datum (LICHT_GESETZ.laterne: 1900 K, Zeitplan abends 1) — dasselbe Datum wie ihr Licht-Pool, nie die Fenster-Glut
       M.glas.userData.__licht='fenster';                           // DAS LEUCHTQUELLEN-GESETZ (K11): die wachen Fenster glühen nach dem Zeitplan LICHT_GESETZ.fenster (reist als mat.licht; das Schlaf-Glas bleibt dunkel)
       M.feuer.userData.__leucht=LEUCHT_FEUER;                                                  // DAS LEUCHT-GESETZ (05.10.): die Glut leuchtet in ihrer Vertex-Farbe — heiße Mitte, kühler Rand, gelbe Flammen-Wurzel, rote Spitze (reist als mat.leucht, die Welt webt emissiveNode = Farbe × LEUCHT_FEUER)
@@ -1849,7 +1864,7 @@
     // tintM — byte-treu Lab Z.1629; EINE dokumentierte Naht: materials() vorweg (M ist im Kern lazy). Zweite Naht
     // (FARB-GESETZ 05.10.): _setzeHex hält die sRGB-Absicht in _HEX und zeigt den linearen Wert.
     // prettier-ignore
-    function _setzeHex(k,hx){ _HEX[k]=hx; M[k].color.setHex(hx).convertSRGBToLinear(); }
+    function _setzeHex(k,hx){ _HEX[k]=hx; M[k].color.setHex(hx).convertSRGBToLinear(); _karteEins(M[k]); }   // die Karte trägt nur ihr Relief (`_karte`): die Toenung steht EINMAL
     // prettier-ignore
     function tintM(col){ materials(); for(const k in DEFCOL){ if(M[k]) _setzeHex(k,(col&&col[k]!=null)?col[k]:DEFCOL[k]); } if(M.blockholz){ const _lh=(c,f)=>{const r=Math.min(255,((c>>16&255)*f)|0),g=Math.min(255,((c>>8&255)*f)|0),b=Math.min(255,((c&255)*f)|0);return (r<<16)|(g<<8)|b;}; const _hz=(col&&col.holz!=null)?col.holz:DEFCOL.holz; _setzeHex('blockholz',(col&&col.blockholz!=null)?col.blockholz:_lh(_hz,1.4)); } }
     // prettier-ignore
@@ -1892,7 +1907,7 @@
     // prettier-ignore
     const _MM={};
     // prettier-ignore
-    function _mmFor(role){ if(!_MM[role]){ const m=M[role].clone(); m.vertexColors=true; m.color=new THREE.Color(0xffffff); if(m.userData.__leucht) _leuchtLab(m); _MM[role]=m; } return _MM[role]; }
+    function _mmFor(role){ if(!_MM[role]){ const m=M[role].clone(); m.vertexColors=true; m.color=new THREE.Color(0xffffff); _karteEins(m); if(m.userData.__leucht) _leuchtLab(m); _MM[role]=m; } return _MM[role]; }
     // prettier-ignore
     const _ML={};
     // prettier-ignore
@@ -1902,9 +1917,7 @@
     // prettier-ignore
     function _noise01(x,y,z){ const h=Math.sin(x*12.9898+y*78.233+z*37.719)*43758.5453; return h-Math.floor(h); }
     // prettier-ignore
-    const _MAPPED={backstein:1,ziegel:2,ziegel2:3}; // Rollen, deren FARBE die Textur-Karte trägt
-    // prettier-ignore
-    function _colFor(role,kol){ if(_MAPPED[role]&&!(kol&&kol[role]!=null)&&M[role]&&M[role].map) return [0.985,0.985,0.985];   // KARTEN-GESETZ (V18.500): weiß NUR, wo eine Karte die Farbe trägt — kartenlos (Worker → Welt: colorNode = Vertex-Farbe) trägt der Vertex den Grundton, sonst steht die Welt in weißen Ziegeln   // DOPPEL-TÖNUNGS-FIX: Karte×Vertex — der Bake bleibt weiß, sonst multipliziert der Browser DEFCOL-Rot AUF die Ziegel-Karte
+    function _colFor(role,kol){   // DAS KARTEN-GESETZ (A6, Kopf (d)): der Vertex trägt die Farbe IMMER — im Labor wie im Worker (die Welt liest nur ihn), die Karte nur ihr Relief (`_karte`)
   const hx=(kol&&kol[role]!=null)?kol[role]:((DEFCOL[role]!=null)?DEFCOL[role]:(_HEX[role]!=null?_HEX[role]:0xffffff));
   let r=((hx>>16)&255)/255, g=((hx>>8)&255)/255, b=(hx&255)/255;
   if(role==='holz'||role==='stamm'||role==='blockholz'){ const lum=(r+g+b)/3;                 // BALKEN-LICHT-GESETZ: dunkle Holz-Paletten saufen unter Beleuchtung×ACES ins Schwarz ab (Michis „schwarze Balken auf weißer Fassade"); Luminanz-Boden 0.14 hebt sanft, Farbton bleibt, Kultur-Hierarchie bleibt (dunkel-Rolle unberührt)
@@ -3549,7 +3562,7 @@
                             lp[vi + 2] -= hzL;
                         }
                 }
-                var wg = geomsZuGruppe(lg, p.col || null);
+                var wg = geomsZuGruppe(lg);
                 if (!wg.children.length) continue;
                 wg.position.set(hxL, 0, hzL); // HINGE-Achse (Extraktor liest anc.position)
                 wg.userData = { side: Lf.userData.side, offen: Lf.userData.offen || 0 };
@@ -3600,19 +3613,9 @@
 
     // ── Rollen-Fragmente → EINE THREE.Group — der sofort-Zweig von
     //    finalizeGeoms (Lab) OHNE Szene (dorfGroup/Blende bleiben Shell-Glue).
-    //    KARTEN-GRUND-REGEL (Kopf, Schnitt-Grenze (d)): _MAPPED-Rollen ohne
-    //    Kultur-Farbe tragen den DEFCOL-Grundton als mat.color. ──
-    var _mmGrund = {};
-    function _mmGrundFor(role) {
-        if (!_mmGrund[role]) {
-            var m = _mmFor(role).clone();
-            m.map = null;
-            m.color = new THREE.Color(DEFCOL[role] != null ? DEFCOL[role] : 0xffffff).convertSRGBToLinear(); // FARB-GESETZ
-            _mmGrund[role] = m;
-        }
-        return _mmGrund[role];
-    }
-    function geomsZuGruppe(geoms, kol) {
+    //    DAS KARTEN-GESETZ (Kopf (d)): der Vertex trägt die Farbe, jede Rolle
+    //    ihren EINEN Stoff `_mmFor` (die Karte nur ihr Relief). ──
+    function geomsZuGruppe(geoms) {
         materials();
         var g = new THREE.Group();
         for (var role in geoms) {
@@ -3625,8 +3628,7 @@
             if (G.uv && G.uv.length === (G.pos.length / 3) * 2)
                 bg.setAttribute("uv", new THREE.Float32BufferAttribute(G.uv, 2));
             bg.setIndex(G.idx);
-            var karteOhneKultur = _MAPPED[role] && !(kol && kol[role] != null) && !!(M[role] && M[role].map);
-            var mm = new THREE.Mesh(bg, karteOhneKultur ? _mmGrundFor(role) : _mmFor(role));
+            var mm = new THREE.Mesh(bg, _mmFor(role));
             mm.castShadow = true;
             mm.receiveShadow = true;
             g.add(mm);
@@ -3656,7 +3658,7 @@
         var stufe = HOST_STUFEN[0];
         for (var i = 0; i < HOST_STUFEN.length; i++) if (HOST_STUFEN[i] <= L) stufe = HOST_STUFEN[i];
         var gm = buildStufe(p, stufe);
-        var g = geomsZuGruppe(gm, p.col || null);
+        var g = geomsZuGruppe(gm);
         // DORF-ERLEBNIS — die separierten Tür-Flügel (nur Stufe 0) reisen als
         // eigene Kinder mit Scharnier-userData mit (der porta-Flügel-Pfad).
         if (gm.__tuerFluegel) for (var tf = 0; tf < gm.__tuerFluegel.length; tf++) g.add(gm.__tuerFluegel[tf]);
@@ -5096,7 +5098,7 @@
         roh.updateMatrixWorld(true);
         var geoms = {};
         bakeLOD(roh, kol, geoms, 0, true);
-        var g = geomsZuGruppe(geoms, kol);
+        var g = geomsZuGruppe(geoms);
         g.traverse(function (o) {
             if (o.isMesh && o.material && o.material.emissive && o.material.emissive.getHex() !== 0) o.castShadow = false;
         });

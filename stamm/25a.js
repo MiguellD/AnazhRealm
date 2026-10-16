@@ -305,7 +305,7 @@ class AnazhRealm_Z25a {
             const m0 =
                 this.state.atmosphere && Number.isFinite(this.state.atmosphere.microStrength)
                     ? this.state.atmosphere.microStrength
-                    : (AnazhRealm.AERIAL && AnazhRealm.AERIAL.microStrength) || 0.1;
+                    : AnazhRealm.AERIAL.microStrength;
             mtS.value = String(Math.round(m0 * 100));
             if (mtVal) mtVal.textContent = m0.toFixed(2);
             mtS.addEventListener("input", () => {
@@ -323,7 +323,7 @@ class AnazhRealm_Z25a {
             const s0 =
                 this.state.atmosphere && Number.isFinite(this.state.atmosphere.r5StructureBoost)
                     ? this.state.atmosphere.r5StructureBoost
-                    : (AnazhRealm.R5_STRUCTURE_TEXTURE && AnazhRealm.R5_STRUCTURE_TEXTURE.microBoost) || 1.3;
+                    : AnazhRealm.R5_STRUCTURE_TEXTURE.microBoost;
             stbS.value = String(Math.round(s0 * 100));
             if (stbVal) stbVal.textContent = s0.toFixed(2);
             stbS.addEventListener("input", () => {
@@ -821,7 +821,7 @@ class AnazhRealm_Z25a {
         // (2) die vier Gattungen des tetrapoda-Buchs, mit ihren Studio-Namen. Verkörpert
         // (bp_koerper_<tier> als customSoul) → freier Wechsel; sonst der embody-Wert
         // (koerper_<tier>) mit Kosten-Marker — derselbe change-Handler wie immer.
-        const SM = AnazhRealm.TETRAPODA_SOUL_MAP || {};
+        const SM = AnazhRealm.TETRAPODA_SOUL_MAP;
         for (const soulKey of Object.keys(SM)) {
             const studioName = SM[soulKey]; // deer · wolf · fox · bear
             const bpName = `koerper_${soulKey}`;
@@ -1796,7 +1796,7 @@ class AnazhRealm_Z25a {
     _sprungDeckenKlemme(jumpV) {
         const headroom = this._ceilingHeadroom();
         if (headroom >= 3.4) return jumpV;
-        const g = Math.abs(this.state.gravity || -9.81);
+        const g = Math.abs(this.state.gravity);
         const v = Math.min(jumpV, Math.sqrt(2 * g * Math.max(0, headroom - 0.35)));
         return v < 1.2 ? null : v;
     }

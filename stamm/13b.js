@@ -2146,7 +2146,7 @@ class AnazhRealm_Z13b {
         // Materialien ZUERST anwenden: _deserializeBlueprint migriert unbekannte Material-Namen auf „stein" —
         // die fremden Definitionen müssen vorher im state stehen (sonst Substanz-Verlust). Fehlende Tag-Felder
         // mit Defaults auffüllen; Magnituden bleiben EXAKT (die Klemme sitzt am Leser, computePartTags).
-        const tagDefaults = AnazhRealm.MATERIAL_TAG_DEFAULTS || {};
+        const tagDefaults = AnazhRealm.MATERIAL_TAG_DEFAULTS;
         for (const m of sourceMats) {
             if (!m || typeof m.name !== "string" || m.builtIn) continue;
             const newName = resolveName(m.name, existingMatNames);
@@ -2805,7 +2805,7 @@ class AnazhRealm_Z13b {
     _playerDeathRespawn(source) {
         const now = performance.now() / 1000;
         if ((this.state.player.respawnGraceUntil || -Infinity) > now) return;
-        this.state.player.respawnGraceUntil = now + (AnazhRealm.RESPAWN_GRACE_SEC || 8);
+        this.state.player.respawnGraceUntil = now + AnazhRealm.RESPAWN_GRACE_SEC;
         // Welt-Trauer: zwei Achsen schwingen mit — Tod ist Verlust + Rückkehr.
         if (this.state.player.emotions) {
             this.state.player.emotions.sorrow = Math.min(1, (this.state.player.emotions.sorrow || 0) + 0.3);
@@ -2877,7 +2877,7 @@ class AnazhRealm_Z13b {
         // SCHWIMM-HEIMAT — unter Wasser ruht der Regen (die Züge zehren, das
         // Wasser gibt nichts zurück); an Land byte-alt. EIN Regen-Chokepoint.
         if (sta < staMax && !this.state.playerUnderwater) {
-            const rate = AnazhRealm.STAMINA_REGEN_PER_SEC || 5;
+            const rate = AnazhRealm.STAMINA_REGEN_PER_SEC;
             this.state.player.stamina = Math.min(staMax, sta + rate * dt);
         }
         // Mana-Regen symmetrisch zu Stamina: Base 3/s (Stamina 5/s — Mana ist mächtiger); Magieleitung im
@@ -2890,7 +2890,7 @@ class AnazhRealm_Z13b {
                     this.state.player.stats.tags &&
                     this.state.player.stats.tags.magieleitung) ||
                 0;
-            const manaRate = (AnazhRealm.MANA_REGEN_PER_SEC || 3) * (1 + magBoost);
+            const manaRate = AnazhRealm.MANA_REGEN_PER_SEC * (1 + magBoost);
             this.state.player.mana = Math.min(manaMax, mana + manaRate * dt);
         }
     }

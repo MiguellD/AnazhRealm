@@ -61,16 +61,29 @@ function schneide(quelle, marker) {
     return null;
 }
 
-// KIND_POLICY aus der Quelle EXTRAHIEREN + AUSFÜHREN (verhaltensecht, kein Grep):
-// dieselbe Tabelle, die der Stamm liest — ein Schöpfer-Edit fließt automatisch hierher.
-function ladeKindPolicy(quelle) {
-    const block = schneide(quelle, "AnazhRealm.KIND_POLICY = Object.freeze(");
+// Die Render-Karte des Kerns (foundry-core PORTAL_RENDER_CONFIG, reine Daten) — die EINE Quelle der Stufen-Distanzen (K2).
+const KERN_RENDER = new Function(
+    schneide(require("fs").readFileSync(path.join(ROOT, "foundry-core.js"), "utf8"), "const PORTAL_RENDER_CONFIG = ") +
+        "; return PORTAL_RENDER_CONFIG;"
+)();
+
+// Eine Stamm-Konstante aus der Quelle AUSGEFÜHRT (verhaltensecht, kein Grep): KIND_POLICY (die Tafel, die der Stamm liest)
+// und LOD_DISTANCES (die EINE Distanz-Tabelle von `_foundryLodForEntry`; K2: sie liest das Kern-Gesetz
+// `terrain:PORTAL_RENDER_CONFIG.lod` — der Stub löst den Pfad über `render` auf, fail-closed wirft). `schluss` schließt,
+// was `schneide` am äußeren `}` offen lässt (die Freeze-Klammer bzw. der Ruf der Funktion).
+function ladeKonstante(quelle, name, marker, schluss, render) {
+    const block = schneide(quelle, "AnazhRealm." + name + " = " + marker);
     if (!block) return null;
+    const kern = (p) => (p.startsWith("terrain:") ? { PORTAL_RENDER_CONFIG: render } : null);
+    const AnazhRealm = {
+        Gesetz: (p) => p.split(":")[1].split(".").reduce((o, k) => (o == null ? o : o[k]), kern(p)),
+        _kernPflichtBruch: (p) => {
+            throw new Error("KERN-PFLICHT " + p);
+        },
+    };
     try {
-        const AnazhRealm = {};
-        // schneide endet am äußeren `}` — die Freeze-Klammer schließt hier.
-        new Function("AnazhRealm", block + ");")(AnazhRealm);
-        return AnazhRealm.KIND_POLICY || null;
+        new Function("AnazhRealm", block + schluss)(AnazhRealm);
+        return AnazhRealm[name] || null;
     } catch (_e) {
         return null;
     }
@@ -84,19 +97,6 @@ function ladeMethode(quelle, name, argNamen) {
     const body = block.slice(block.indexOf("{"));
     try {
         return new Function("AnazhRealm", "return function(" + argNamen + ") " + body + ";");
-    } catch (_e) {
-        return null;
-    }
-}
-
-// LOD_DISTANCES aus der Quelle (die EINE Distanz-Tabelle, `_foundryLodForEntry` liest sie).
-function ladeLodDistances(quelle) {
-    const block = schneide(quelle, "AnazhRealm.LOD_DISTANCES = ");
-    if (!block) return null;
-    try {
-        const AnazhRealm = {};
-        new Function("AnazhRealm", block + ";")(AnazhRealm);
-        return AnazhRealm.LOD_DISTANCES || null;
     } catch (_e) {
         return null;
     }
@@ -116,10 +116,10 @@ function ladeKindWaechter(quelle) {
 
 // ── (P) + (M): die reine Prüf-Funktion über einer QUELLE → Liste roter Befunde ──────────
 // (auch der Selbst-Test ruft sie — mit mutierter Quelle MUSS sie feuern.)
-function pruefeQuelle(quelle) {
+function pruefeQuelle(quelle, render = KERN_RENDER) {
     const rot = [];
     // (P1) Die Policy-Zeile — verhaltensecht ausgeführt.
-    const KP = ladeKindPolicy(quelle);
+    const KP = ladeKonstante(quelle, "KIND_POLICY", "Object.freeze(", ");");
     if (!KP) rot.push("KIND_POLICY nicht extrahierbar/ausführbar (Tabellen-Chirurgie gerissen)");
     else if (!(KP.vehicle && KP.vehicle.impostor === true))
         rot.push(
@@ -180,7 +180,7 @@ function pruefeQuelle(quelle) {
         rot.push("_foundryBakeImpostorRequest: die ov reist nicht zum Studio-Bäcker (die Karte bäckt ungeprägt)");
     // (M) DIE GERITTEN-WAND — verhaltensecht: Distanz-Autorität + Fahr-Pin.
     const lodFuer = ladeMethode(quelle, "_foundryLodForEntry", "entry");
-    const D = ladeLodDistances(quelle);
+    const D = ladeKonstante(quelle, "LOD_DISTANCES", "", ")();", render);
     const wahl = ladeMethode(quelle, "_chooseLODForDistance", "distance, currentLOD, visHeight");
     if (!lodFuer || !D || !wahl) rot.push("_foundryLodForEntry/_chooseLODForDistance/LOD_DISTANCES nicht instanzierbar");
     else {
@@ -296,12 +296,12 @@ function selbstTest() {
         ohneOvHash !== STAMM && pruefeQuelle(ohneOvHash).length > 0,
     ]);
     // 5. Die Geritten-Wand: LOD_DISTANCES pervertiert (alles ab 0 m = Stufe 2) -> MUSS feuern.
-    // Die Default-Literale sind die Studio-Distanzen 12/26 (der Host-Umweg LOD_TRI_BUDGET_MUL fiel, S7: das Studio trägt sie).
-    const ohneWand = STAMM.replace("thresh01: 12,", "thresh01: -1,").replace("thresh12: 26,", "thresh12: -1,");
-    faelle.push([
-        "Distanz-Autorität pervertiert (geritten = Stufe 2) -> feuert",
-        ohneWand !== STAMM && pruefeQuelle(ohneWand).length > 0,
-    ]);
+    // Die Autorität ist das Kern-Gesetz (K2: der Stamm liest PORTAL_RENDER_CONFIG.lod, keine Zahl im Stamm) — pervertiert dort.
+    const pervers = { ...KERN_RENDER, lod: { ...KERN_RENDER.lod, d0: -1, d1: -1 } };
+    faelle.push(["Distanz-Autorität pervertiert (geritten = Stufe 2) -> feuert", pruefeQuelle(STAMM, pervers).length > 0]);
+    // Ein unlesbares Gesetz (Blatt fehlt) bricht fail-closed laut — die Linse nennt die Tabelle nicht instanzierbar.
+    const ohneBlatt = { ...KERN_RENDER, lod: { ...KERN_RENDER.lod, hyst: undefined } };
+    faelle.push(["Kern-Gesetz ohne hyst -> feuert (fail-closed)", pruefeQuelle(STAMM, ohneBlatt).length > 0]);
     // 6. Bäcker-Prüfung: leere Karte / null payload -> MUSS feuern.
     faelle.push(["Bäcker: payload null -> feuert", pruefeBaecker({ got: true, payloadNull: true }).length > 0]);
     faelle.push([

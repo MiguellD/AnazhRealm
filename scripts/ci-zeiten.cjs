@@ -6,12 +6,12 @@
 // Läufe — seit der Echt-Gruppe (K65) kaum einer — und rechnete mit Medianen vom 14.10. (Fenster-Wand 77 s statt 441 s). Ein
 // Schritt misst nur, wo er DENSELBEN Befehl fuhr (sein run-Text an check.yml des Laufs, K61); ohne Lauf `geschaetzt` mit Quelle.
 //
-//   node scripts/ci-zeiten.cjs [--zuerst <lauf-id,…>] [--verteilen]
-//     --zuerst    diese Läufe zuerst (die eigenen Messläufe nach einem Umbau), dann die neuesten auf integ-probe
-//     --verteilen schlägt die Voll-Gruppen vor, JE KLASSE (K61: cpu · gpu, scripts/lib/ci-klasse.cjs), so viele, wie neben dem
-//                 Puls Läufer-Plätze frei sind: der volle Playtest zuerst in Gruppe 1, der Rest größte zuerst in die
-//                 leichteste, die Aufteilung cpu:gpu mit der kleinsten schwersten Gruppe, die mehr als einen Schritt trägt
-// Der Schlüssel: GITHUB_TOKEN oder die git-Anmeldung (git credential fill).
+// DERSELBE Befehl verteilt (CW2, 16.10.; Befund: nach 8 Merges sperrte die Waage jeden Merge, das Neu-Verteilen war Handarbeit):
+// die Voll-Gruppen JE KLASSE (K61: cpu · gpu, scripts/lib/ci-klasse.cjs), so viele, wie neben dem Puls Läufer-Plätze frei
+// sind — der volle Playtest in Gruppe 1, der Rest größte zuerst in die leichteste, die Teile eines Skripts nie beisammen, die
+// Aufteilung cpu:gpu mit der kleinsten schwersten Gruppe, die mehr als einen Schritt trägt — in check.yml (`if: matrix.gruppe`,
+// matrix.include); gate:ci-deckung wiegt dieselben Mediane.   node scripts/ci-zeiten.cjs [--zuerst <lauf-id,…>]
+// (--zuerst: diese Läufe zuerst, die eigenen Messläufe nach einem Umbau). Der Schlüssel: GITHUB_TOKEN oder git credential fill.
 "use strict";
 const fs = require("fs");
 const path = require("path");
@@ -147,59 +147,66 @@ function schritteAus(doc) {
         schritte,
     };
     if (alt.vorher) out.vorher = alt.vorher;
-    // eine Liste ohne Klammern in sich (Läufe, ein Schritt des `vorher`) steht in einer Zeile
-    const text = JSON.stringify(out, null, 2).replace(/\[\n\s+([^[\]{}]*?)\n\s+\]/g, (m, x) => `[${x.replace(/\n\s+/g, " ")}]`);
+    // eine Liste oder ein Eintrag ohne Klammern in sich (Läufe, eine Gruppe, ein Schritt des `vorher`) steht in einer Zeile
+    const text = JSON.stringify(out, null, 2).replace(/([[{])\n\s+([^[\]{}]*?)\n\s+([\]}])/g, (m, a, x, b) => a + x.replace(/\n\s+/g, " ") + b);
     fs.writeFileSync(path.join(root, AUS), text + "\n");
     console.log(`${AUS}: ${Object.keys(schritte).length} Schritte, Vorbereitung ${out.vorbereitung_s} s, ${gelesen} Messungen, Kopf ${kopf}`);
     if (ohne.length) console.log(`  ohne Messung (Eintrag mit „geschaetzt" nötig): ${ohne.join(" · ")}`);
-    if (args.includes("--verteilen")) {
-        const skripte = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8")).scripts || {};
-        const alle = jetzt.jobs.voll.steps.filter((s) => s.name && s.run && schritte[s.name] && !VORBEREITUNG.test(s.name));
-        const z = (s) => schritte[s.name].s;
-        // in k Gruppen: der volle Playtest zuerst in Gruppe 1, der Rest größte zuerst in die leichteste
-        const pt = (s) => /\bnpm run playtest\b(?!:)/.test(s.run);
-        const packe = (gs, k) => {
-            const last = Array.from({ length: k }, () => ({ s: out.vorbereitung_s, n: [] }));
-            const lege = (g, s, vz = 1) => ((g.s += vz * z(s)), vz > 0 ? g.n.push(s) : g.n.splice(g.n.indexOf(s), 1));
-            // die Teile EINES Skripts (`--teil=N`) nie in einer Gruppe (CW-Lauf 38914686744: Erst-Zeichnung 1+2 zusammen 396 s statt 198)
-            const darf = (g, s, ohne) => !g.n.some((x) => x !== ohne && x.run.replace(/--teil=\d+/, "") === s.run.replace(/--teil=\d+/, ""));
-            for (const s of [...gs].sort((x, y) => pt(y) - pt(x) || z(y) - z(x)))
-                lege(pt(s) ? last[0] : last.filter((x) => darf(x, s)).reduce((m, x) => (x.s < m.s ? x : m), last.find((x) => darf(x, s)) || last[0]), s);
-            // nachbessern: ein Zug (ein Schritt der schwersten Gruppe in eine andere, oder ein Tausch) senkt sie, solange einer da ist
-            for (let zug = true; zug; ) {
-                const h = last.filter((x) => x.n.length > 1).sort((x, y) => y.s - x.s)[0];
-                zug = null;
-                for (const l of h ? last : [])
-                    for (const a of h.n)
-                        for (const b of [null, ...l.n]) {
-                            const [d, frei] = [z(a) - (b ? z(b) : 0), darf(l, a, b) && (!b || darf(h, b, a)) && !pt(a) && !(b && pt(b))];
-                            const neu = Math.max(h.s - d, l.s + d);
-                            if (l !== h && d > 0 && frei && neu < (zug ? zug.neu : h.s)) zug = { l, a, b, neu };
-                        }
-                const zuege = zug ? [[h, zug.a, -1], [zug.l, zug.a, 1]].concat(zug.b ? [[zug.l, zug.b, -1], [h, zug.b, 1]] : []) : [];
-                for (const [g, s, vz] of zuege) lege(g, s, vz);
-            }
-            return last;
-        };
-        // ein bedingter Schritt läuft als CPU (die Weiche urteilt zur Laufzeit); der Kopf-Richter endet vor der Batterie
-        const gpu = (s) => klasseDesLaufs(s.run, skripte).klasse === "gpu";
-        const frei = LAEUFER_PLAETZE - (((jetzt.jobs.puls.strategy || {}).matrix || {}).gruppe || [1]).length;
-        let best = null;
-        for (let kc = 1; kc < frei; kc++) {
-            const a = packe(alle.filter((s) => !gpu(s)), kc).map((g) => ({ ...g, klasse: "cpu" }));
-            const g = a.concat(packe(alle.filter(gpu), frei - kc).map((x) => ({ ...x, klasse: "gpu" })));
-            const max = Math.max(...g.map((x) => (x.n.length > 1 ? x.s : 0)));
-            if (!best || max < best.max) best = { max, g };
+    const skripte = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8")).scripts || {};
+    const alle = jetzt.jobs.voll.steps.filter((s) => s.name && s.run && schritte[s.name] && !VORBEREITUNG.test(s.name));
+    const z = (s) => schritte[s.name].s;
+    // in k Gruppen: der volle Playtest zuerst in Gruppe 1, der Rest größte zuerst in die leichteste
+    const pt = (s) => /\bnpm run playtest\b(?!:)/.test(s.run);
+    const packe = (gs, k) => {
+        const last = Array.from({ length: k }, () => ({ s: out.vorbereitung_s, n: [] }));
+        const lege = (g, s, vz = 1) => ((g.s += vz * z(s)), vz > 0 ? g.n.push(s) : g.n.splice(g.n.indexOf(s), 1));
+        // die Teile EINES Skripts (`--teil=N`) nie in einer Gruppe (CW-Lauf 38914686744: Erst-Zeichnung 1+2 zusammen 396 s statt 198)
+        const darf = (g, s, ohne) => !g.n.some((x) => x !== ohne && x.run.replace(/--teil=\d+/, "") === s.run.replace(/--teil=\d+/, ""));
+        for (const s of [...gs].sort((x, y) => pt(y) - pt(x) || z(y) - z(x)))
+            lege(pt(s) ? last[0] : last.filter((x) => darf(x, s)).reduce((m, x) => (x.s < m.s ? x : m), last.find((x) => darf(x, s)) || last[0]), s);
+        // nachbessern: ein Zug (ein Schritt der schwersten Gruppe in eine andere, oder ein Tausch) senkt sie, solange einer da ist
+        for (let zug = true; zug; ) {
+            const h = last.filter((x) => x.n.length > 1).sort((x, y) => y.s - x.s)[0];
+            zug = null;
+            for (const l of h ? last : [])
+                for (const a of h.n)
+                    for (const b of [null, ...l.n]) {
+                        const [d, frei] = [z(a) - (b ? z(b) : 0), darf(l, a, b) && (!b || darf(h, b, a)) && !pt(a) && !(b && pt(b))];
+                        const neu = Math.max(h.s - d, l.s + d);
+                        if (l !== h && d > 0 && frei && neu < (zug ? zug.neu : h.s)) zug = { l, a, b, neu };
+                    }
+            const zuege = zug ? [[h, zug.a, -1], [zug.l, zug.a, 1]].concat(zug.b ? [[zug.l, zug.b, -1], [h, zug.b, 1]] : []) : [];
+            for (const [g, s, vz] of zuege) lege(g, s, vz);
         }
-        for (const [i, g, gross = g.n.find((s) => z(s) > GROSS_S)] of best.g.map((g, i) => [i, g]))
-            console.log(`  voll ${i + 1}/${best.g.length} ${g.klasse}: ${(g.s / 60).toFixed(1)} min — ${g.n.length} Schritte` + (gross ? ` · über ${GROSS_S / 60} min (eigene Karte): „${gross.name}"` : ""));
-        console.log(
-            JSON.stringify({
-                klassen: best.g.map((g) => g.klasse),
-                schritte: Object.fromEntries(best.g.flatMap((g, i) => g.n.map((s) => [s.name, i + 1]))),
-            })
-        );
+        return last;
+    };
+    // ein bedingter Schritt läuft als CPU (die Weiche urteilt zur Laufzeit); der Kopf-Richter endet vor der Batterie
+    const gpu = (s) => klasseDesLaufs(s.run, skripte).klasse === "gpu";
+    const frei = LAEUFER_PLAETZE - (((jetzt.jobs.puls.strategy || {}).matrix || {}).gruppe || [1]).length;
+    let best = null;
+    for (let kc = 1; kc < frei; kc++) {
+        const a = packe(alle.filter((s) => !gpu(s)), kc).map((g) => ({ ...g, klasse: "cpu" }));
+        const g = a.concat(packe(alle.filter(gpu), frei - kc).map((x) => ({ ...x, klasse: "gpu" })));
+        const max = Math.max(...g.map((x) => (x.n.length > 1 ? x.s : 0)));
+        if (!best || max < best.max) best = { max, g };
     }
+    for (const [i, g, gross = g.n.find((s) => z(s) > GROSS_S)] of best.g.map((g, i) => [i, g]))
+        console.log(`  voll ${i + 1}/${best.g.length} ${g.klasse}: ${(g.s / 60).toFixed(1)} min — ${g.n.length} Schritte` + (gross ? ` · über ${GROSS_S / 60} min (eigene Karte): „${gross.name}"` : ""));
+    // die Lage in check.yml, nur im Job voll: je Schritt seine Gruppe in Schritt-Reihenfolge, die Matrix und ihre Klassen
+    const nr = new Map(best.g.flatMap((g, i) => g.n.map((s) => [s, i + 1])));
+    const neu = jetzt.jobs.voll.steps.filter((s) => /^\s*matrix\.gruppe\s*==\s*\d+\s*$/.test(String(s.if))).map((s) => nr.get(s));
+    const yml = fs.readFileSync(path.join(root, WORKFLOW), "utf8");
+    const von = yml.indexOf("\n    voll:\n");
+    const bis = von + 1 + yml.slice(von + 1).search(/\n {4}[\w-]+:\n|$/);
+    let zeile = 0;
+    const voll = yml.slice(von, bis)
+        .replace(/(name: voll \$\{\{ matrix\.gruppe \}\}\/)\d+/, (m, x) => x + best.g.length)
+        .replace(/^( +gruppe: )\[[\d, ]*\]/m, (m, x) => `${x}[${best.g.map((g, k) => k + 1).join(", ")}]`)
+        .replace(/^( +)- gruppe: \d+\n(?: +klasse: \w+\n| +- gruppe: \d+\n)*/m, (m, x) => best.g.map((g, k) => `${x}- gruppe: ${k + 1}\n${x}  klasse: ${g.klasse}\n`).join(""))
+        .replace(/^( +if: matrix\.gruppe == )(\d+)$/gm, (m, x, alt) => x + (neu[zeile++] || alt));
+    if (von < 0 || zeile !== neu.length) throw new Error(`${WORKFLOW}: ${zeile} Gruppen-Zeilen im Job voll, ${neu.length} Schritte mit Gruppe`);
+    fs.writeFileSync(path.join(root, WORKFLOW), yml.slice(0, von) + voll + yml.slice(bis));
+    console.log(`${WORKFLOW}: ${nr.size} Schritte in ${best.g.length} Voll-Gruppen, die schwerste mit Mitfahrern ${(best.max / 60).toFixed(1)} min — es wiegt npm run gate:ci-deckung`);
 })().catch((e) => {
     console.error(e);
     process.exit(1);

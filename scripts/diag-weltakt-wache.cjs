@@ -13,14 +13,17 @@
 //       (`dslTick`): die Welt bleibt, wie sie war (Bauten, Dorf-Rufe, Tiere, ihre Größe und ihr Tempo, Tageszeit, Himmel,
 //       Lauf- und Sprung-Kraft, Gier), jeder Zug steht im Buch des Welt-Akt-Spions als verweigert beim Namen seiner Quelle;
 //   (S) SCHARF: ein Welt-Akt an `dslEval` vorbei (der Effekt direkt) fällt ROT und steht mit seiner Quelle im Urteil;
-//   (F) FREI: ohne Halt (Uhr ≥ 0) wirken dieselben Wege wie im Spiel — der Nexus setzt sein Dorf, der Mensch seine Tiere;
+//   (F) FREI: ohne Halt (Uhr ≥ 0) wirken dieselben Wege wie im Spiel — der Nexus setzt sein Dorf, jeder Op wirkt (K);
 //   (Q) QUELLE: jeder Op der DSL hat ein Urteil (Welt-Akt oder benannt frei, die Liste nennt nur Ops, die es gibt); jedes
 //       Programm, das der Nexus komponiert, trägt nur Welt-Akte der Liste, das Wetter und die freien Ops (dass `dslEval`
 //       Liste und Halt liest, beweisen H und F am Verhalten); (K) KI: der Prompt der Welt-KI (`llmBuildSystemPrompt`) nennt
-//       jeden Op, Ort und jede Bedingung der DSL mit Form, die Welt-Akte als eigene Gruppe (bis 16.10.: 40 von 70 Ops);
+//       jeden Op, Ort und jede Bedingung der DSL mit Form, die Welt-Akte als eigene Gruppe (bis 16.10.: 40 von 70 Ops); jeder Op
+//       wirkt als KI an seiner Form (`_dslForm`, Werte aus der Welt), jede DSL-Liste (`*_OPS`, `DSL_*`) nennt nur lebende Ops
+//       (bis 16.10.: remove_architecture und sechs Kreatur-Verben tot an der Id der Welt, modify_terrain in einer Liste);
 //   (P) kein Page-Error.
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): `weltaktUrteil` fällt bei jedem durchgelaufenen Akt, beim blinden
-// und fehlenden Spion rot, bei Verweigerung grün; `kiUrteil` nennt das fehlende und das falsch gruppierte Verb.
+// und fehlenden Spion rot, bei Verweigerung grün; `kiUrteil` nennt das fehlende und das falsch gruppierte Verb, `formUrteil`
+// den brechenden Op, den stehenden Bau, den ungeprüften Op und den toten Listen-Namen.
 //   node scripts/diag-weltakt-wache.cjs [--selftest]   (npm run gate:weltakt-wache; Port WELTAKT_WACHE_PORT)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
@@ -28,6 +31,7 @@ const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL, weltaktUrteil, weltaktSelbsttest } = require("./lib/ausgabe-aufnahme.cjs");
 
 const PORT = Number(process.env.WELTAKT_WACHE_PORT || 4603);
+const FORM_BRUCH = /error|exception|budget|unknown|invalid|failed|oob|not_found|ignored|skipped|gehalten/;
 
 if (process.argv.includes("--selftest")) {
     console.log("=== WELT-WACHE — Selbsttest des Urteils (ohne Browser) ===");
@@ -38,12 +42,16 @@ if (process.argv.includes("--selftest")) {
     const um = ki(weg.replace("when(c)", "when(c), spawn_studio(w)"));
     if (ki(gut) || !/Welt-Akte — fehlt 1: spawn_studio/.test(ki(weg)) || !/Ops — .*fremd: spawn_studio/.test(um))
         v.push(`(K) kiUrteil blind: voll „${ki(gut)}" · fehlend „${ki(weg)}" · umgruppiert „${um}"`);
+    const form = (z, l) => formUrteil(z.map(([op, ev, blieb]) => ({ op, prog: op, ev: [ev], blieb })), l, ["say", "fall"]).join(" · ");
+    const [heil, fu, halb] = [form([["say", "ok"], ["fall", "ok"]], { X_OPS: ["say"] }), form([["say", "x_oob"], ["fall", "ok", 1]], { X_OPS: ["modify_terrain"] }), form([["say", "ok"]], {})];
+    if (heil || !/say .*x_oob · .*fall .*Bau steht.*X_OPS nennt tote Ops: modify_terrain/.test(fu) || !/ungeprüft: fall/.test(halb))
+        v.push(`(K) formUrteil blind: heil „${heil}" · gebrochen „${fu}" · halb „${halb}"`);
     for (const x of v) console.log("  ❌ " + x);
     if (v.length) {
         console.log("\n❌ SELBSTTEST ROT — das Urteil der Welt-Wache ist blind.");
         process.exit(1);
     }
-    console.log("✅ SELBSTTEST GRÜN — Akt durch, Spion blind/fehlend, KI-Verb fehlend/umgruppiert: jedes fällt rot.");
+    console.log("✅ SELBSTTEST GRÜN — Akt durch, Spion blind/fehlend, KI-Verb fehlend/umgruppiert/formbrüchig, toter Listen-Name: jedes fällt rot.");
     process.exit(0);
 }
 
@@ -110,6 +118,17 @@ function kiUrteil(prompt, soll) {
     });
 }
 
+// (K) JEDES VERB WIRKT AN SEINER FORM: ein Bruch im Log (auch ein Setz-Ergebnis unter dem Gewollten), ein stehender Bau nach dem
+// Abbau, ein Op ohne Probe, ein Listen-Name außerhalb von dslEffects — jeder fällt beim Namen. (Fehler-Muster: FORM_BRUCH)
+function formUrteil(zeilen, listen, ops) {
+    const ohne = ops.filter((o) => !zeilen.some((z) => z.op === o));
+    return [
+        ...zeilen.filter((z) => z.blieb || z.ev.some((e) => FORM_BRUCH.test(e))).map((z) => `(K) FORM: ${z.prog} scheitert an seiner Form — ${z.ev.join(", ")}${z.blieb ? "; der Bau steht noch" : ""}`),
+        ...(ohne.length ? [`(K) FORM ungeprüft: ${ohne.join(", ")}`] : []),
+        ...Object.entries(listen).flatMap(([n, l]) => (l.some((x) => !ops.includes(x)) ? [`(K) LISTE: ${n} nennt tote Ops: ${l.filter((x) => !ops.includes(x)).join(", ")}`] : [])),
+    ];
+}
+
 const server = statikServer();
 
 // Die Probe im Seiten-Kontext: jeder Weg des Spiels unter der Bühne, der Schmuggel an der Engstelle vorbei, die freie Welt,
@@ -125,6 +144,8 @@ async function probe(GESCHICKT) {
         doerfer.push(p);
         return p;
     };
+    // die Form jedes Verbs (`_dslForm`), gelesen, ehe der Spion die Welt-Akte hüllt
+    const formen = Object.fromEntries(Object.entries(r.dslEffects).map(([op, fn]) => [op, r._dslForm(fn)]));
     window.__weltaktSpion(GESCHICKT);
     const welt = () => {
         let groesse = 0,
@@ -215,7 +236,43 @@ async function probe(GESCHICKT) {
     st.weatherEffectTime = 0;
     st.maxCreatures = Math.max(st.maxCreatures, st.creatures.length + 10);
     aus.frei.nexus = await fenster(wege.nexus);
-    aus.frei.mensch = await fenster(wege.mensch);
+    // (K) jeder Op als KI an seiner Form: je Name der Form ein Wert aus der Welt; ein Id-Name probt jede Form, die die Welt
+    // vergibt (der Bau: Zahl + String, die Kreatur: Platz + Id); der Ort liegt außerhalb der Genesis-Lichtung (keine Krone)
+    const K = r.constructor;
+    for (const bis = performance.now() + 60000; !st.blueprints.haus_griechisch && performance.now() < bis; )
+        await new Promise((x) => setTimeout(x, 200)); // das Studio-Buch (spawn_temple liest es)
+    const rolle = (x) => Object.keys(st.blueprints).find((k) => st.blueprints[k].role === x);
+    const [sag, ich, teil, opClass] = [["say", "Probe"], st.playerMesh.position, { size: [1, 1, 1], material: "stein" }, [...K.TOOL_OP_CLASSES][0]];
+    // die Zahl-Id trägt jeder Bau aus Programm, Feld und Worldgen, die String-Id das Werk des Spielers (`_newArchId`)
+    const bau = (art, id = r._newArchId()) => art === "number" ? st.architectures.filter((a) => a && typeof a.id === art).pop().id
+        : (r.dslRun(["spawn_blueprint", "stein_block", ["far_player", 30, 40], 8, id], { source: "human" }), id);
+    const JE = { weather: "rainy", set_season: "herbst", gravity: -9.8, terrain_steepness: 1, player_soul: "wesen", spawn_blueprint: "stein_block" };
+    const W = (op, n) => ({
+        name: JE[op] || (/^define_/.test(op) ? "wache_" + op.slice(7) : rolle(/^equip_/.test(op) ? op.slice(6) : "consumable")),
+        value: JE[op] ?? (op === "terrain_base_height" ? st.terrainBaseHeight : 8), blueprintName: /boost/.test(op) ? rolle("consumable") : "wache_blueprint",
+        archId: op === "remove_architecture" ? ["number", "string"].map((a) => bau(a)) : undefined, indexOrId: [0, st.creatures[0].userData.netId],
+        positionNode: ["far_player", 40, 60], x: ich.x, y: ich.y - 1, z: ich.z + 3, count: 1, seed: 4711, radius: 1.5, t: 0.4, gier: 0,
+        color: "#88aaff", emotion: "happy", kind: "kiefer", what: "baum", height: 30, size: 8, durationSeconds: 30, scale: 1.2, label: "Probe",
+        worldId: Object.keys(K.WORLD_REGISTRY)[0], slot: "tool", mode: "pfad", taskName: "wait", amount: 1, armorName: rolle("armor"), toolName: Object.keys(st.tools)[0],
+        tagBonus: { lebendig: 0.2 }, tags: ["lebendig"], opClass, opName: K.OP_NAME_BY_CLASS[opClass], type: op === "apply_connection" ? "nail" : "tree",
+        parts: [{ shape: "box", ...teil }, { shape: "box", ...teil, material: "holz" }], bodyParts: [{ shape: "sphere", ...teil }],
+        partA: 0, partB: 1, partIndex: 0, depth: 2, ratio: 0.6, rootSeedArg: 1, factor: 1.1, source: "probe", target: "creatures", visible: true,
+        text: "Probe", message: "Probe", axis: "joy", seconds: 0.1, times: 2, condition: ["weather_is", "sunny"], condNode: ["weather_is", "sunny"],
+        program: sag, sub: sag, thenBranch: sag, elseBranch: sag, effectNode: sag, opts: { everySec: 3 },
+        "…": [op === "random_weighted" ? { weight: 1, effect: sag } : sag, sag],
+    })[n];
+    aus.form = [];
+    for (const [op, namen] of Object.entries(formen).map(([op, f]) => [op, f.split(", ").filter(Boolean)])) {
+        const roh = namen.map((n) => W(op, n)), i = roh.findIndex((v, j) => /Id$/.test(namen[j]) && Array.isArray(v));
+        for (const wahl of i < 0 ? [0] : roh[i]) {
+            const args = namen[0] === "…" ? roh[0] : roh.map((v, j) => (j === i ? wahl : v));
+            while (args.length && args[args.length - 1] === undefined) args.pop();
+            const ev = r.dslRun([op, ...args], { source: "llm:grok" }).log.map((e) => (e.event !== "ergebnis" ? e.event + (e.reason ? ":" + e.reason : "") : e.gesetzt < e.gewollt && !e.folgt ? `ergebnis_failed ${JSON.stringify(e.gruende)}` : "ergebnis"));
+            const blieb = op === "remove_architecture" && st.architectures.some((a) => a && a.id === wahl);
+            aus.form.push({ op, prog: JSON.stringify([op, ...args]).slice(0, 120), ev, blieb });
+        }
+    }
+    aus.listen = Object.fromEntries(Object.getOwnPropertyNames(K).filter((x) => /_OPS$|^DSL_/.test(x)).map((n) => [n, [...K[n]]]));
     window.__buehne();
     aus.ende = { uhr: st.weatherEffectTime };
     // (Q) das Urteil über jeden Op; die Programme des Nexus — (K) der Prompt der Welt-KI und die Orte und Bedingungen der DSL
@@ -284,8 +341,6 @@ function urteil(S, pageErrors) {
         rot.push(
             `(F) FREI: der Nexus stellt die Uhr (${fn.vorher.zeit} → ${fn.nachher.zeit}) — sie gehört dem Spieler`
         );
-    if (!(S.frei.mensch.nachher.tiere > S.frei.mensch.vorher.tiere))
-        rot.push(`(F) FREI: der Mensch setzt ohne Halt keine Tiere (${JSON.stringify(S.frei.mensch)})`);
     if (!(S.ende.uhr < 0)) rot.push(`(F) die Bühne stellt den Halt nicht wieder her (Uhr ${S.ende.uhr})`);
     if (!S.liste) rot.push("(Q) QUELLE: das Spiel nennt keine Welt-Akte (AnazhRealm.DSL_WELTAKTE fehlt)");
     else {
@@ -294,15 +349,13 @@ function urteil(S, pageErrors) {
             rot.push(
                 `(Q) URTEIL: ${ohne.join(", ")} — weder Welt-Akt noch benannt frei (DSL_WELTAKTE oder FREI dieser Wand)`
             );
-        const tot = S.liste.filter((o) => !S.ops.includes(o));
-        if (tot.length) rot.push(`(Q) URTEIL: DSL_WELTAKTE nennt Ops, die es nicht gibt: ${tot.join(", ")}`);
         const doppelt = S.liste.filter((o) => FREI.includes(o));
         if (doppelt.length) rot.push(`(Q) URTEIL: ${doppelt.join(", ")} steht als Welt-Akt UND frei`);
         const nexusFrei = Object.keys(S.nexusOps).filter((o) => !S.liste.includes(o) && !FREI.includes(o));
         if (nexusFrei.length) rot.push(`(Q) NEXUS: der Nexus komponiert Ops ohne Urteil: ${nexusFrei.join(", ")}`);
         const welt = S.ops.filter((o) => S.liste.includes(o));
         const gruppen = { "Welt-Akte": welt, "Weitere Ops": S.ops.filter((o) => !welt.includes(o)), ...S.ki.gruppen };
-        rot.push(...kiUrteil(S.ki.prompt, gruppen));
+        rot.push(...kiUrteil(S.ki.prompt, gruppen), ...formUrteil(S.form, S.listen, S.ops));
     }
     for (const e of pageErrors) rot.push(`(P) PAGE-ERROR: ${e}`);
     return rot;
@@ -351,10 +404,10 @@ function urteil(S, pageErrors) {
     const sm = weltaktUrteil(S.schmuggel.buch);
     console.log(`  Scharf · vorbei   ${sm.urteil}  ${sm.taeter.join(" · ")}`);
     console.log(`  Frei · Nexus      ${fz(S.frei.nexus)}`);
-    console.log(`  Frei · Mensch     ${fz(S.frei.mensch)}`);
     console.log(
         `  KI: Prompt ${S.ki.prompt.length} Zeichen · Quelle: ${S.ops.length} Ops, ${S.ki.gruppen.Orte.length} Orte, ${S.ki.gruppen.Bedingungen.length} Bedingungen, ${S.liste ? S.liste.length : "keine"} Welt-Akte, ${FREI.length} frei; der Nexus komponiert ${Object.keys(S.nexusOps).length} Ops (${Object.keys(S.nexusOps).sort().join(" · ")})`
     );
+    console.log(`  KI-Form: ${S.form.length} Läufe über ${S.ops.length} Ops, ${formUrteil(S.form, {}, []).length} Läufe scheitern an ihrer Form; Listen ${Object.entries(S.listen).map(([n, l]) => `${n} ${l.filter((x) => !S.ops.includes(x)).length}/${l.length} tot`).join(" · ")}`);
     const rot = urteil(S, pageErrors);
     if (rot.length) {
         console.error("\nROT:");

@@ -186,7 +186,6 @@ class AnazhRealm_Z02a {
             // frozen Worldgen / Terrain (würde die feste Welt umpflügen)
             "terrain_steepness",
             "terrain_base_height",
-            "modify_terrain",
             "voxel_carve",
             "voxel_fill",
             // schwere Struktur-Spawns (zu teuer für eine wiederholt feuernde Regel)
@@ -821,6 +820,21 @@ class AnazhRealm_Z02a {
         this.journalAppendOnce(`ruleAwoke:${rule._sig || rule.id}`, "rule", `Dein Gesetz erwachte — ${desc}.`);
     }
 
+    // DIE KREATUR EINES VERBS (Karte KI2, 16.10.): `indexOrId` ist, was die Form verspricht — der Platz in `state.creatures`
+    // ODER die Identität, die die Welt der Kreatur gibt (`userData.netId`, „c7"). Bis 16.10. lasen die sechs Kreatur-Verben nur
+    // den Platz: die echte Id fiel als *_index_oob. Ohne Kreatur steht `event` im Log und der Platz ist −1.
+    _dslKreatur(indexOrId, ctx, event) {
+        const alle = this.state.creatures;
+        const id =
+            typeof indexOrId === "string"
+                ? alle.findIndex((k) => k && k.userData && k.userData.netId === indexOrId)
+                : -1;
+        const idx = id >= 0 ? id : indexOrId == null ? NaN : Number(indexOrId);
+        if (Number.isInteger(idx) && idx >= 0 && idx < alle.length) return idx;
+        if (ctx && ctx.log) ctx.log.push({ event, index: idx, id: indexOrId });
+        return -1;
+    }
+
     // ### Op-Tabellen ###
     get dslEffects() {
         if (this._dslEffectsCache) return this._dslEffectsCache;
@@ -1242,11 +1256,13 @@ class AnazhRealm_Z02a {
                 ctx.log.push({ event: "spawned_blueprint", name, id: entry ? entry.id : null, pos: ort, seed: s });
                 ergebnis(entry ? 1 : 0);
             },
-            // Architektur mit geteilter id entfernen: der Sender hat sie lokal schon abgebaut
-            // (harvestArchitecture), Mitspieler holen es hier nach. Nur string-ids (spieler-gebaut) — eine
-            // numerische Worldgen-id zählt jeder Peer anders und darf nie treffen.
+            // Einen Bau abbauen — per Id in der Form, die die Welt vergibt (Karte KI2, 16.10.): eine Zahl (`architectureNextId`, jede
+            // Welt zählt selbst) oder ein String (die geteilte Id spieler-gebauter Werke, `_newArchId`; der Sender hat sie lokal
+            // schon abgebaut, Mitspieler holen es hier nach). Bis 16.10. nahm das Verb nur Strings — jeder Bau aus Programm, Feld und
+            // Worldgen fiel als invalid_id. Eine Zahl zählt jeder Peer anders: von einem Mitspieler (`remote:`) trifft sie nie.
             remove_architecture: ([archId], ctx) => {
-                if (typeof archId !== "string" || !archId) {
+                const zahl = Number.isInteger(archId) && !String(ctx.source || "").startsWith("remote:");
+                if (!zahl && !(typeof archId === "string" && archId)) {
                     ctx.log.push({ event: "remove_architecture_invalid_id" });
                     return;
                 }
@@ -1395,11 +1411,8 @@ class AnazhRealm_Z02a {
             // Kreatur-Aufträge (CREATURE_TASKS), z. B. wander (Default), follow_player (optionaler
             // distance-Halt), wait. NON_BROADCASTABLE — "die nächste Kreatur" ist je Sender eine andere.
             creature_task: ([indexOrId, taskName, paramArg], ctx) => {
-                const idx = Number(indexOrId);
-                if (!Number.isInteger(idx) || idx < 0 || idx >= this.state.creatures.length) {
-                    if (ctx && ctx.log) ctx.log.push({ event: "creature_task_index_oob", index: idx });
-                    return;
-                }
+                const idx = this._dslKreatur(indexOrId, ctx, "creature_task_index_oob");
+                if (idx < 0) return;
                 const args = this._buildCreatureTaskArgs(String(taskName), paramArg);
                 const ok = this.assignCreatureTask(this.state.creatures[idx], String(taskName), args);
                 if (ctx && ctx.log) {
@@ -1414,11 +1427,8 @@ class AnazhRealm_Z02a {
             // Der Konsument von damageCreature (symmetrisch zum Spieler-`damage`-Op). Loot
             // fällt dem Spieler zu, wenn der Befehl vom Menschen kam; ein Welt-/LLM-Tod gibt keins.
             damage_creature: ([indexOrId, amount], ctx) => {
-                const idx = Number(indexOrId);
-                if (!Number.isInteger(idx) || idx < 0 || idx >= this.state.creatures.length) {
-                    if (ctx && ctx.log) ctx.log.push({ event: "damage_creature_index_oob", index: idx });
-                    return;
-                }
+                const idx = this._dslKreatur(indexOrId, ctx, "damage_creature_index_oob");
+                if (idx < 0) return;
                 const src = ctx && ctx.source === "human" ? "player" : "world";
                 const res = this.damageCreature(this.state.creatures[idx], Number(amount) || 0, { source: src });
                 if (ctx && ctx.log) {
@@ -1451,11 +1461,8 @@ class AnazhRealm_Z02a {
             // equip-tool, equip-armor, unequip. Index-basiert (creatureIdx),
             // null/leerer Name auf equip-* nimmt ab. Alle in NON_BROADCASTABLE.
             creature_equip_tool: ([indexOrId, toolName], ctx) => {
-                const idx = Number(indexOrId);
-                if (!Number.isInteger(idx) || idx < 0 || idx >= this.state.creatures.length) {
-                    if (ctx && ctx.log) ctx.log.push({ event: "creature_equip_index_oob", index: idx });
-                    return;
-                }
+                const idx = this._dslKreatur(indexOrId, ctx, "creature_equip_index_oob");
+                if (idx < 0) return;
                 const result = this.equipCreatureTool(this.state.creatures[idx], toolName ? String(toolName) : null);
                 if (ctx && ctx.log) {
                     ctx.log.push({
@@ -1467,11 +1474,8 @@ class AnazhRealm_Z02a {
                 }
             },
             creature_equip_armor: ([indexOrId, armorName], ctx) => {
-                const idx = Number(indexOrId);
-                if (!Number.isInteger(idx) || idx < 0 || idx >= this.state.creatures.length) {
-                    if (ctx && ctx.log) ctx.log.push({ event: "creature_equip_index_oob", index: idx });
-                    return;
-                }
+                const idx = this._dslKreatur(indexOrId, ctx, "creature_equip_index_oob");
+                if (idx < 0) return;
                 const result = this.equipCreatureArmor(this.state.creatures[idx], armorName ? String(armorName) : null);
                 if (ctx && ctx.log) {
                     ctx.log.push({
@@ -1483,11 +1487,8 @@ class AnazhRealm_Z02a {
                 }
             },
             creature_unequip: ([indexOrId, slot], ctx) => {
-                const idx = Number(indexOrId);
-                if (!Number.isInteger(idx) || idx < 0 || idx >= this.state.creatures.length) {
-                    if (ctx && ctx.log) ctx.log.push({ event: "creature_equip_index_oob", index: idx });
-                    return;
-                }
+                const idx = this._dslKreatur(indexOrId, ctx, "creature_equip_index_oob");
+                if (idx < 0) return;
                 const result = this.unequipCreatureSlot(this.state.creatures[idx], String(slot));
                 if (ctx && ctx.log) {
                     ctx.log.push({
@@ -1501,11 +1502,8 @@ class AnazhRealm_Z02a {
             // Konsumable direkt auf eine Kreatur anwenden: der Bauplan muss role:"consumable" tragen,
             // tagBonus = computeCompoundTags(bp) × scale. KEIN Inventar-Konsum hier (das macht der RMB-Pfad).
             creature_apply_boost: ([indexOrId, blueprintName], ctx) => {
-                const idx = Number(indexOrId);
-                if (!Number.isInteger(idx) || idx < 0 || idx >= this.state.creatures.length) {
-                    if (ctx && ctx.log) ctx.log.push({ event: "creature_boost_index_oob", index: idx });
-                    return;
-                }
+                const idx = this._dslKreatur(indexOrId, ctx, "creature_boost_index_oob");
+                if (idx < 0) return;
                 const result = this.activateCreatureConsumable(this.state.creatures[idx], String(blueprintName || ""));
                 if (ctx && ctx.log) {
                     ctx.log.push({

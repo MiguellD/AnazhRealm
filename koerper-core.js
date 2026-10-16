@@ -1322,6 +1322,17 @@
     //    mit (m_Arm + m_Gerät) / m_Arm (Wirt: _mausAusdauer; die leere Hand trägt aktionAusdauer). ──
     var LEIB = Object.freeze({ dichteKgM3: 985, armAnteil: 0.05 });
 
+    // ── K2 (rein additiv) — DIE WEBUNG je Stoff-Art (Kleid-Zeile `webe`): [Frequenz, Tiefe] der Mikro-Struktur, die die
+    //    Stoff-Farbe moduliert (Strick grob, Denim/Baumwolle fein, Leder/Gummi glatt) — EINE Tafel für Labor und Welt. ──
+    var WEBE = Object.freeze({
+        knit: Object.freeze([90, 0.1]),
+        wool: Object.freeze([70, 0.08]),
+        denim: Object.freeze([160, 0.06]),
+        cotton: Object.freeze([140, 0.06]),
+        leather: Object.freeze([24, 0.05]),
+        rubber: Object.freeze([24, 0.03]),
+    });
+
     // ── Der Namensraum (Vertrag v1.1 §7 + §8 MESHFREI) ──
     root.__koerperCore = {
         VERSION: VERSION,
@@ -1356,6 +1367,7 @@
         PRESETS: PRESETS,
         PARAMS_BY_KIND: { koerper: PARAMS },
         LEIB: LEIB,
+        WEBE: WEBE,
         // Die Lab-Quellen (die Shell liest DIESE eine Quelle — Aliasse):
         START_PARAMS: START_PARAMS,
         MOTION: MOTION,
