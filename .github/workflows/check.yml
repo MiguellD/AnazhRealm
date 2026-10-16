@@ -1646,18 +1646,27 @@ jobs:
         # auf der Radeon). Nur bei push auf integ-probe und main, hinter dem Kopf-Richter: nie pull_request (das Repo ist
         # öffentlich, der Läufer trägt die Anmeldung des Messplatzes — seine Hooks lassen nur push von MiguellD auf dieses Repo
         # durch und warten auf das GPU-Schloss, damit kein Job eine ABAB fälscht; timeout-minutes trägt das Warten), nie auf
-        # Karten-Zweigen (ein serieller Läufer würde jede Batterie verlangsamen und die Messungen blockieren). EIN Schritt fährt
-        # die Gruppen seriell: scripts/ci-echt.cjs liest sie aus `voll` (jeder Schritt steht GENAU einmal in dieser Datei), die
-        # Weiche `LINSE_GPU=karte` gibt jeder Linse ohne Zeit-Urteil die Karte und jeder Zeit-Linse swiftshader (W5).
+        # Karten-Zweigen (ein serieller Läufer würde jede Batterie verlangsamen und die Messungen blockieren). ZWEI STUFEN: je
+        # push die benannte Auswahl nach Wert ≤ 15 min (spec/ci/echt-auswahl.json — Präzision fern · Schatten · Stufen-Wechsel ·
+        # Bild-Urteil), nachts mit dem Nacht-Trigger dieses Workflows alle Schritte der GPU-Klasse auf main, wenn der Kopf noch
+        # keinen grünen Nachtlauf trägt. EIN Schritt fährt sie seriell: scripts/ci-echt.cjs liest sie aus `voll` (jeder Schritt
+        # steht GENAU einmal in dieser Datei), die Weiche `LINSE_GPU=karte` gibt jeder Linse ohne Zeit-Urteil die Karte und
+        # jeder Zeit-Linse swiftshader (W5).
         # gate:ci-deckung (E) hält die Form.
         name: echt (GPU-Gruppen auf der Karte)
         needs: kopf
-        if: github.event_name == 'push' && (github.ref == 'refs/heads/integ-probe' || github.ref == 'refs/heads/main') && needs.kopf.outputs.voll == 'ja'
+        if: (github.event_name == 'schedule' || (github.event_name == 'push' && (github.ref == 'refs/heads/integ-probe' || github.ref == 'refs/heads/main'))) && needs.kopf.outputs.voll == 'ja'
         runs-on: [self-hosted, omen-gpu]
-        timeout-minutes: 150
+        timeout-minutes: 240
+        # 240 = höchstens 120 min Warten am Schloss (Hook) + die Nacht mit allen Schritten (~90 min auf der GTX) + Vorbereitung
+        permissions:
+            actions: read
+            contents: read
         env:
             CI_KLASSE: gpu
             LINSE_GPU: karte
+            # die Nacht fragt die API, ob dieser Kopf schon ganz gerichtet ist (scripts/ci-echt.cjs nachtUrteil)
+            GH_TOKEN: ${{ github.token }}
         steps:
             - uses: actions/checkout@v4
 

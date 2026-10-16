@@ -74,7 +74,8 @@
 // Programm), und swiftshader verbirgt, was eine echte GPU anders zeichnet (Lehre 17); eine Wand, die die Karte braucht, stand
 // als Ausnahme „echte GPU nötig" draußen. Der eigene Läufer am Messplatz (GTX 1060, Label omen-gpu) fährt die GPU-Klasse
 // ZUSÄTZLICH — ein dritter Job neben Puls und Batterie, außerhalb der Waage (kein Platz des Kontos):
-//   (E) ECHT      der Job `echt`: runs-on genau self-hosted + omen-gpu, nur bei push auf integ-probe und main hinter dem
+//   (E) ECHT      der Job `echt`: runs-on genau self-hosted + omen-gpu, je push auf integ-probe und main (die Auswahl nach Wert
+//                spec/ci/echt-auswahl.json: jeder Name in der GPU-Klasse, die Summe ≤ 15 min) und nachts (alles) hinter dem
 //                Kopf-Richter (ECHT_WENN — nie pull_request: das Repo ist öffentlich), ohne Matrix, nie stumm, env CI_KLASSE gpu
 //                und LINSE_GPU karte, der Deckel trägt das Warten am GPU-Schloss; nach checkout · setup-node · npm ci GENAU EIN
 //                Schritt scripts/ci-echt.cjs (er liest die GPU-Klasse aus `voll`: nicht leer, jeder Schritt fahrbar), daneben
@@ -90,7 +91,7 @@ const yaml = require("js-yaml");
 const { klasseDesLaufs, LAEUFER_PLAETZE } = require("./lib/ci-klasse.cjs");
 const { schluessel } = require("./ci-schluessel.cjs");
 const { kopfUrteil } = require("./ci-kopf.cjs");
-const { echtSchritte } = require("./ci-echt.cjs");
+const { echtSchritte, auswahlUrteil, AUSWAHL } = require("./ci-echt.cjs");
 
 const root = path.resolve(__dirname, "..");
 const DATEI = ".github/workflows/check.yml";
@@ -112,17 +113,18 @@ const KOPF_JOB = "kopf";
 const KOPF_LAUF = /^node scripts\/ci-kopf\.cjs$/;
 const VOLL_NACH_KOPF = "needs.kopf.outputs.voll == 'ja'";
 const needsVon = (J) => [].concat((J && J.needs) || []);
-// DIE ECHT-GRUPPE (K65): der eigene Läufer mit der Karte fährt die GPU-Klasse der vollen Batterie ZUSÄTZLICH — nur bei push
-// auf integ-probe und main (nie pull_request: das Repo ist öffentlich), hinter dem Kopf-Richter, EIN Schritt
+// DIE ECHT-GRUPPE (K65): der eigene Läufer mit der Karte fährt die GPU-Klasse der vollen Batterie ZUSÄTZLICH — je push auf
+// integ-probe und main die Auswahl nach Wert, nachts (schedule, nur main) alles (nie pull_request: das Repo ist öffentlich), hinter dem Kopf-Richter, EIN Schritt
 // scripts/ci-echt.cjs (er liest die Schritte aus `voll`), dazu nur Wände, die ohne Karte nicht laufen. Er steht außerhalb der
 // Waage (kein Platz des Kontos); sein timeout trägt das Warten des Läufers am GPU-Schloss (Hook, höchstens 120 min).
 const ECHT_JOB = "echt";
 const ECHT_WENN =
-    "github.event_name == 'push' && (github.ref == 'refs/heads/integ-probe' || github.ref == 'refs/heads/main') && " +
+    "(github.event_name == 'schedule' || (github.event_name == 'push' && (github.ref == 'refs/heads/integ-probe' || " +
+    "github.ref == 'refs/heads/main'))) && " +
     VOLL_NACH_KOPF;
 const ECHT_LAEUFER = ["self-hosted", "omen-gpu"];
 const ECHT_LAUF = /^node scripts\/ci-echt\.cjs$/;
-const ECHT_DECKEL_MIN = 150;
+const ECHT_DECKEL_MIN = 240; // 120 min Warten am Schloss + die Nacht (~90 min) + Vorbereitung
 const ECHT_ENV = { CI_KLASSE: "gpu", LINSE_GPU: "karte" };
 // die volle Stufe: der Kopf-Richter unter VOLL_WENN und die Batterie hinter ihm (ihr Rot hält den Merge, (S))
 function vollArt(doc, job) {
@@ -686,6 +688,11 @@ function echtForm(doc) {
     }
     if (!gpu.length) v.push(`(E) ECHT: die volle Batterie trägt keinen Schritt der Klasse gpu — die Echt-Gruppe führe leer`);
     for (const s of gpu.filter((x) => x.fehler)) v.push(`(E) ECHT: „${s.name}" (Gruppe ${s.gruppe}) ist auf dem Läufer nicht zu fahren: ${s.fehler}`);
+    // DIE AUSWAHL NACH WERT (die push-Stufe): jeder Name in der GPU-Klasse, jede Wert-Klasse bekannt, jede GTX-Zeit gemessen,
+    // die Summe samt Vorbereitung im Budget
+    const ap = path.join(root, AUSWAHL);
+    if (!fs.existsSync(ap)) v.push(`(E) AUSWAHL: ${AUSWAHL} fehlt — die push-Stufe hätte keine Auswahl`);
+    else if (gpu.length) for (const b of auswahlUrteil(JSON.parse(fs.readFileSync(ap, "utf8")), gpu).befunde) v.push(`(E) AUSWAHL: ${b}`);
     return v;
 }
 

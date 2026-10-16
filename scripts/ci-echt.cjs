@@ -15,7 +15,17 @@
 // Je Schritt: Sekunden, Exit, der gelieferte Adapter (die `[linse-gpu]`-Zeilen seines Logs) — die Tafel am Ende und
 // `<protokoll>/echt.json`; Exit 1, wenn ein Schritt rot ist (alle Schritte laufen, jeder meldet).
 //
-//   node scripts/ci-echt.cjs [--liste] [--gruppe N] [--nur <regex>] [--protokoll <dir>] [--selbsttest]
+// ZWEI STUFEN (K65, Entscheid des Koordinators 15.10.): alle 89 Schritte brauchen seriell auf der GTX ~80–90 min — ein
+// serieller Läufer trüge das je Push nicht. Das Ereignis wählt (GITHUB_EVENT_NAME):
+//   push      DIE AUSWAHL NACH WERT (spec/ci/echt-auswahl.json): die Schritte, die auf der echten Karte anders urteilen
+//             können — Präzision fern · Schatten · Stufen-Wechsel · Bild-Urteil aus dem Ausgabe-Pfad —, je Schritt seine
+//             Wert-Klasse und seine GTX-Zeit, die Summe samt Vorbereitung ≤ budget_s (15 min); ein Name der Auswahl, der
+//             nicht in der GPU-Klasse steht, ist ROT (stale).
+//   schedule  DIE NACHT: alle Schritte der GPU-Klasse auf main — aber nur, wenn dieser Kopf noch keinen grünen Nachtlauf
+//             der Echt-Gruppe trägt (die API, GH_TOKEN; `nachtUrteil`): ein Kopf wird einmal ganz gerichtet.
+//   sonst     (lokal) alle Schritte, `--auswahl` die Auswahl.
+//
+//   node scripts/ci-echt.cjs [--auswahl] [--liste] [--gruppe N] [--nur <regex>] [--ab N] [--protokoll <dir>] [--selbsttest]
 "use strict";
 const fs = require("fs");
 const path = require("path");
@@ -24,7 +34,43 @@ const yaml = require("js-yaml");
 
 const ROOT = path.resolve(__dirname, "..");
 const DATEI = ".github/workflows/check.yml";
+const AUSWAHL = "spec/ci/echt-auswahl.json";
 const GRUPPE_RE = /^\s*matrix\.gruppe\s*==\s*(\d+)\s*$/;
+const ECHT_JOB = /^echt\b/;
+
+// die Auswahl nach Wert gegen die GPU-Klasse: { namen: Set, befunde: [..], summe_s } (gate:ci-deckung (E) liest dieselbe)
+function auswahlUrteil(auswahl, schritte) {
+    const befunde = [];
+    const A = auswahl || {};
+    const S = A.schritte || {};
+    const klassen = new Set(A.klassen || []);
+    const gpu = new Set(schritte.map((s) => s.name));
+    let summe = Number(A.vorbereitung_s) || 0;
+    if (!(Number(A.budget_s) > 0)) befunde.push(`${AUSWAHL}: kein budget_s`);
+    if (!(Number(A.vorbereitung_s) >= 0)) befunde.push(`${AUSWAHL}: keine vorbereitung_s`);
+    for (const [n, e] of Object.entries(S)) {
+        if (!gpu.has(n)) befunde.push(`STALE: „${n}" steht in der Auswahl, aber in keiner GPU-Gruppe von voll`);
+        if (!klassen.has(e && e.klasse)) befunde.push(`„${n}": Wert-Klasse „${e && e.klasse}" nicht in ${[...klassen].join(" · ")}`);
+        if (!(Number(e && e.s) > 0)) befunde.push(`„${n}": keine GTX-Zeit (s)`);
+        else summe += Number(e.s);
+    }
+    if (!Object.keys(S).length) befunde.push(`${AUSWAHL}: die Auswahl ist leer`);
+    if (Number(A.budget_s) > 0 && summe > Number(A.budget_s))
+        befunde.push(`BUDGET: die Auswahl trägt ${Math.round(summe)} s samt Vorbereitung (Deckel ${A.budget_s} s)`);
+    return { namen: new Set(Object.keys(S)), befunde, summe_s: Math.round(summe) };
+}
+
+// DIE NACHT: trägt dieser Kopf schon einen grünen Nachtlauf der Echt-Gruppe? laeufe: die Läufe des Workflows auf dem Kopf
+// (API) · jobsJe: Lauf-Id → seine Jobs → { ganz: true|false, grund }
+function nachtUrteil({ eigenerLauf, laeufe, jobsJe }) {
+    for (const r of laeufe || []) {
+        if (String(r.id) === String(eigenerLauf) || r.event !== "schedule") continue;
+        const e = (jobsJe[r.id] || []).find((j) => ECHT_JOB.test(j.name));
+        if (e && e.conclusion === "success")
+            return { ganz: false, grund: `der Kopf trägt die Echt-Gruppe ganz grün: Nachtlauf ${r.id} (${r.created_at || "?"})` };
+    }
+    return { ganz: true, grund: "kein Nachtlauf hat diesen Kopf ganz gerichtet" };
+}
 
 // die GPU-Schritte des Jobs `voll`: [{ gruppe, name, run, env, fehler }]
 function echtSchritte(doc) {
@@ -91,10 +137,52 @@ function fahre(schritt, { bash, env, log }) {
     });
 }
 
+// die Läufe dieses Workflows auf dem Kopf samt ihren Jobs (die API wie scripts/ci-kopf.cjs) — nur für die Nacht
+async function nachtLaeufe(env) {
+    const API = `${env.GITHUB_API_URL || "https://api.github.com"}/repos/${env.GITHUB_REPOSITORY}`;
+    const api = async (p) => {
+        const r = await fetch(API + p, {
+            headers: { Authorization: `Bearer ${env.GH_TOKEN}`, Accept: "application/vnd.github+json" },
+        });
+        if (!r.ok) throw new Error(`${p}: ${r.status} ${await r.text()}`);
+        return r.json();
+    };
+    const wf = String(env.GITHUB_WORKFLOW_REF || "")
+        .replace(/^[^/]+\/[^/]+\/\.github\/workflows\//, "")
+        .replace(/@.*$/, "");
+    const laeufe = (await api(`/actions/workflows/${wf || "check.yml"}/runs?head_sha=${env.GITHUB_SHA}&event=schedule&per_page=100`))
+        .workflow_runs;
+    const jobsJe = {};
+    for (const r of laeufe)
+        if (String(r.id) !== String(env.GITHUB_RUN_ID))
+            jobsJe[r.id] = (await api(`/actions/runs/${r.id}/jobs?filter=latest&per_page=100`)).jobs;
+    return { laeufe, jobsJe };
+}
+
 async function lauf(opt) {
     const doc = yaml.load(fs.readFileSync(path.join(ROOT, DATEI), "utf8"));
     let liste = echtSchritte(doc);
+    const ereignis = process.env.GITHUB_EVENT_NAME || "";
+    const stufe = opt.auswahl || ereignis === "push" ? "auswahl" : ereignis === "schedule" ? "nacht" : "alle";
+    if (stufe === "auswahl") {
+        const a = auswahlUrteil(JSON.parse(fs.readFileSync(path.join(ROOT, AUSWAHL), "utf8")), liste);
+        if (a.befunde.length) {
+            console.log(`❌ ROT — die Auswahl nach Wert trägt nicht: ${a.befunde.join(" · ")}`);
+            return 1;
+        }
+        console.log(`STUFE push: die Auswahl nach Wert (${a.namen.size} von ${liste.length} Schritten, ${a.summe_s} s geplant samt Vorbereitung) — der Rest fährt nachts`);
+        liste = liste.filter((s) => a.namen.has(s.name));
+    } else if (stufe === "nacht") {
+        const { laeufe, jobsJe } = await nachtLaeufe(process.env);
+        const u = nachtUrteil({ eigenerLauf: process.env.GITHUB_RUN_ID, laeufe, jobsJe });
+        console.log(`STUFE schedule: ${u.ganz ? "alle " + liste.length + " Schritte" : "nichts zu tun"} — ${u.grund}`);
+        if (!u.ganz) {
+            console.log(`::notice title=Echt-Gruppe::${u.grund}`);
+            return 0;
+        }
+    }
     if (opt.gruppe) liste = liste.filter((s) => s.gruppe === opt.gruppe);
+    if (opt.ab > 1) liste = liste.slice(opt.ab - 1); // ein angehaltener Lauf setzt fort (1-basiert in der Liste)
     if (opt.nur) liste = liste.filter((s) => new RegExp(opt.nur).test(s.name + " " + s.run));
     if (opt.liste) {
         for (const s of liste) console.log(`G${s.gruppe}  ${s.fehler ? "ROT " + s.fehler + " — " : ""}${s.name}`);
@@ -209,10 +297,39 @@ jobs:
     if (gruen.exit !== 0) fehl.push("grüner Schritt rot");
     if (pipe.exit === 0) fehl.push("pipefail fehlt (false | cat war grün)");
     fs.rmSync(tmp, { recursive: true, force: true });
+    // DIE AUSWAHL: gut steht; ein Name außerhalb der GPU-Klasse ist STALE, eine fremde Wert-Klasse, ein Schritt ohne Zeit und
+    // eine Summe über dem Budget fallen beim Namen
+    const gs = [{ name: "gpu-a" }, { name: "gpu-b" }];
+    const gut = { budget_s: 100, vorbereitung_s: 20, klassen: ["Schatten"], schritte: { "gpu-a": { klasse: "Schatten", s: 30 } } };
+    const mit = (o) => JSON.parse(JSON.stringify(Object.assign({}, gut, o)));
+    if (auswahlUrteil(gut, gs).befunde.length) fehl.push(`Auswahl gut ist rot: ${auswahlUrteil(gut, gs).befunde.join(" · ")}`);
+    const auswahlFaelle = [
+        ["stale", mit({ schritte: { "gpu-x": { klasse: "Schatten", s: 1 } } }), /STALE: „gpu-x"/],
+        ["Klasse", mit({ schritte: { "gpu-a": { klasse: "Wetter", s: 1 } } }), /Wert-Klasse „Wetter"/],
+        ["ohne Zeit", mit({ schritte: { "gpu-a": { klasse: "Schatten" } } }), /keine GTX-Zeit/],
+        ["Budget", mit({ schritte: { "gpu-a": { klasse: "Schatten", s: 90 } } }), /BUDGET: die Auswahl trägt 110 s/],
+        ["leer", mit({ schritte: {} }), /die Auswahl ist leer/],
+    ];
+    for (const [n, a, re] of auswahlFaelle)
+        if (!auswahlUrteil(a, gs).befunde.some((x) => re.test(x))) fehl.push(`Auswahl „${n}" nicht rot`);
+    // DIE NACHT: ein grüner Nachtlauf der Echt-Gruppe auf dem Kopf richtet ihn; ein push-Lauf, ein roter Nachtlauf und der
+    // eigene Lauf richten nicht
+    const job = (c) => [{ name: "echt (GPU-Gruppen auf der Karte)", conclusion: c }];
+    const n1 = nachtUrteil({ eigenerLauf: 9, laeufe: [{ id: 1, event: "schedule" }], jobsJe: { 1: job("success") } });
+    const n2 = nachtUrteil({
+        eigenerLauf: 9,
+        laeufe: [{ id: 2, event: "push" }, { id: 3, event: "schedule" }, { id: 9, event: "schedule" }],
+        jobsJe: { 2: job("success"), 3: job("failure"), 9: job("success") },
+    });
+    if (n1.ganz !== false) fehl.push("Nacht: ein grüner Nachtlauf auf dem Kopf richtet ihn nicht");
+    if (n2.ganz !== true) fehl.push(`Nacht: ${n2.grund} (push, rot oder der eigene Lauf zählten)`);
     // die echte Datei: jeder GPU-Schritt fahrbar
     const echt = echtSchritte(yaml.load(fs.readFileSync(path.join(ROOT, DATEI), "utf8")));
     const unfahrbar = echt.filter((s) => s.fehler);
     if (!echt.length) fehl.push("check.yml trägt keinen GPU-Schritt");
+    const ap = path.join(ROOT, AUSWAHL);
+    if (!fs.existsSync(ap)) fehl.push(`${AUSWAHL} fehlt`);
+    else for (const b of auswahlUrteil(JSON.parse(fs.readFileSync(ap, "utf8")), echt).befunde) fehl.push(`${AUSWAHL}: ${b}`);
     if (unfahrbar.length)
         fehl.push(`check.yml: ${unfahrbar.map((s) => `G${s.gruppe} ${s.name}: ${s.fehler}`).join(" · ")}`);
     console.log(
@@ -229,6 +346,8 @@ if (require.main === module) {
     const p = a.includes("--selbsttest")
         ? selbsttest()
         : lauf({
+              auswahl: a.includes("--auswahl"),
+              ab: wert("--ab") ? +wert("--ab") : 1,
               liste: a.includes("--liste"),
               gruppe: wert("--gruppe") ? +wert("--gruppe") : null,
               nur: wert("--nur"),
@@ -243,4 +362,4 @@ if (require.main === module) {
     );
 }
 
-module.exports = { echtSchritte, bashPfad };
+module.exports = { echtSchritte, bashPfad, auswahlUrteil, nachtUrteil, AUSWAHL };
