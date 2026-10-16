@@ -2414,8 +2414,14 @@ function emitTreeRezept(P, stufe) {
             .lerp(lc2, (s - Math.floor(s)) * 0.5)
             .lerp(vegFarbe(P.leafCol), P.kind === "shrub" ? 0.72 : 0.45);
     };
+    // DIE PARTIEN DER KRONE (T2): die Laubkrone (Baum, keine Konifere, kein Trauer-Vorhang) lichtet je Ast-Partie — jede
+    // Laub-Geometrie traegt die Partie ihres Blatts (phyto-core kronenPartien) in die Normale der Krone (unten).
+    const _partieVon = P.kind === "tree" && !P.conifer && !_trauer ? _atl.kronenPartien(nodes.runMeta) : null;
+    const _partie = new Map();
     // Die Trauer-L0 und -L1 tragen keine Klinge: ihre Blaetter reisen in den Straehnen (unten).
     for (const l of (_L0 || _trauerL1) && _trauer ? [] : nodes.leaves) {
+        const _g0 = folGeos.length,
+            _t0 = folGeosTex.length;
         if (l.needle) {
             // Die Nadel der L2 (die Baum-L0/-L1 tragen Wedel): FIX v38 — Deckung ~ n*len^2, die gehaltenen Nadeln der L2
             // sind laenger, die Krone bleibt dicht.
@@ -2457,6 +2463,11 @@ function emitTreeRezept(P, stufe) {
                 const lp = P.leafShape;
                 pushLeaf(folGeos, l.pos, l.dir, l.up, l.scale, lp, tint, 1, l.sway, l.phase, l.omega, 0.5);
             }
+        }
+        if (_partieVon) {
+            const p = _partieVon(l.run);
+            for (let k = _g0; k < folGeos.length; k++) _partie.set(folGeos[k], p);
+            for (let k = _t0; k < folGeosTex.length; k++) _partie.set(folGeosTex[k], p);
         }
     }
     // DIE TRAUER-STRAEHNE der L0 (S7) und der L1 (05.10.): jede gehaltene Peitsche wird EINE Karten-Kette entlang ihrer
@@ -2585,12 +2596,12 @@ function emitTreeRezept(P, stufe) {
     emitRoots(P); // Wurzeln zurueck (hochgeladene Version: emitRoots, Farbe barkA*0.72/barkB*0.58, aus dem Flarefuss)
     // DIE NORMALE DER KRONE (K68): Klingen, Nadeln, Karten und Wedel der Krone lichten mit dem Kronen-Ellipsoid (phyto-core
     // kronenNormalen) — EINE Krone ueber alle Laub-Teile, damit L0 (Klinge), L1 (Karte) und die gebackene Karte (L2, aus der
-    // L1) dieselbe Licht- und Schattenseite tragen.
+    // L1) dieselbe Licht- und Schattenseite tragen; die Laubkrone je Ast-Partie (T2, `_partie`), jede Partie ihr Ellipsoid.
     {
         const _kn = [...folGeos, ...folGeosTex].filter((g) => g.attributes && g.attributes.normal && g.attributes.position);
         if (_kn.length)
             self.__phytoCore.kronenNormalen(
-                _kn.map((g) => ({ pos: g.attributes.position.array, nor: g.attributes.normal.array }))
+                _kn.map((g) => ({ pos: g.attributes.position.array, nor: g.attributes.normal.array, partie: _partie.get(g) }))
             );
     }
     addMerged(folGeos, foliageMatKrone);

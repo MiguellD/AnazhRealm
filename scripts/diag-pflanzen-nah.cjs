@@ -36,6 +36,8 @@
 //      die Normale; sonst kehrt r184 sie auf jeder Rückseite (front ? n : −n). Dazu das EINE Gesetz: der Grammatik-Baum der
 //      Werkstatt legt dieselbe Normale (`_kronenNormalenAuf` → kronenNormalen), keine zweite Kronen-Normale im Stamm.
 //      Vorher (bbaaff31): die Hälfte der nahen Dreiecke nach innen, der Wirt mit seiner Kuppel vom Kronen-Boden.
+//      Seit T2 (16.10.) lichtet die Laubkrone je Ast-Partie (phyto-core kronenPartien): die Linse wächst dasselbe Skelett
+//      und misst je Partie gegen deren Mitte (partienDerKrone). Vorher (die eine Krone, 210fe8a7) an den Partien ROT.
 //  (W) WEIDE — jede Karte der Trauer-Krone (L0 und L1) liest die Weiden-Zelle (BLATT_ATLAS_WEIDE: lanzettliche Blätter an
 //      der hängenden Rute). Vorher die Großblatt-Zelle: runde Hasel-Blätter an der Weide (Prüfer W5, Bild weide-8m).
 //  (Z) KORN — das Kanten-Flimmern der Laub-Karte in der Mittelsicht (K20): die Zelle als Karte auf dem Schirm, trilinear,
@@ -100,6 +102,7 @@ function teile(meshes) {
             col: m.attrs.color ? f32(m.attrs.color.b64) : null,
             uv: m.attrs.uv ? f32(m.attrs.uv.b64) : null,
             nor: m.attrs.normal ? f32(m.attrs.normal.b64) : null,
+            cen: m.attrs.aCenter ? f32(m.attrs.aCenter.b64) : null,
             idx: m.index ? u32(m.index) : null,
         }));
 }
@@ -426,14 +429,99 @@ function teppichUrteil(fall, T, lod, step, skala) {
 }
 // (V) DIE NORMALE DER KRONE — gelichtet, wie die Leser lesen (flipFrei), aus 8 Peilungen (Höhe 0,25) über der nahen Hälfte.
 const KRONE_WEG_MAX = 0.05;
-function kroneUrteil(fall, T, flipFrei) {
+// Die Laubkrone lichtet je Ast-Partie (T2, phyto-core kronenPartien): `partien` (aus partienDerKrone) ordnet jeder Ecke der
+// Laub-Teile ihre Partie zu — die Mitte jeder Peilung ist dann die Mitte IHRER Partie (die Kasten-Mitte über alle Laub-Teile,
+// wie kronenNormalen sie rechnet), sonst die eine Kronenmitte des Teils. Vorher (die eine Krone, 210fe8a7) lichteten an den
+// Partien der Eiche 30 % der nahen Dreiecke nach innen.
+function partienMitten(T, partien) {
+    const box = new Map();
+    T.forEach((t, ti) => {
+        const pa = partien.get(ti);
+        if (!pa) return;
+        for (let i = 0; i < pa.length; i++) {
+            if (pa[i] < 0) continue;
+            let b = box.get(pa[i]);
+            if (!b) box.set(pa[i], (b = [Infinity, Infinity, Infinity, -Infinity, -Infinity, -Infinity]));
+            for (let a = 0; a < 3; a++) {
+                b[a] = Math.min(b[a], t.pos[i * 3 + a]);
+                b[a + 3] = Math.max(b[a + 3], t.pos[i * 3 + a]);
+            }
+        }
+    });
+    const mitte = new Map();
+    for (const [k, b] of box) mitte.set(k, [(b[0] + b[3]) / 2, (b[1] + b[4]) / 2, (b[2] + b[5]) / 2]);
+    return mitte;
+}
+// Die Partien eines Falls: die Laubkrone (Baum, keine Konifere, kein Trauer-Vorhang — foundry-core `_trauer`, je Individuum)
+// lichtet je Ast-Partie. Die Linse wächst dasselbe Skelett im Kern (treeParams + growSkeleton aus demselben Samen wie
+// skelettDerGestalt, das Blatt-Budget der Baum-Rezepte 0/1) und ordnet jede Ecke über ihren Anker (aCenter, die Blattstelle)
+// dem Blatt und dessen Partie zu (−1: kein Blatt im Umkreis 1e-3). null: die Krone lichtet als EINE.
+const BLATT_BUDGET_BAUM = 20000;
+function partienDerKrone(f, pre, sk) {
+    if (!pre || pre.kind !== "tree") return null;
+    const P = PC.treeParams(pre.s, f.seed, f.lod, pre, sk);
+    if (f.ov) Object.assign(P, f.ov);
+    if (P.conifer || (P.trop || 0) >= 0.55) return null;
+    const n = PC.growSkeleton(Object.assign({}, P, { leafBudget: BLATT_BUDGET_BAUM }), PC.mulberry32(Math.floor(f.seed) >>> 0));
+    const partie = PC.kronenPartien(n.runMeta);
+    const h = 0.05,
+        netz = new Map(),
+        zk = (x, y, z) => `${Math.floor(x / h)},${Math.floor(y / h)},${Math.floor(z / h)}`;
+    for (const l of n.leaves) {
+        const k = zk(l.pos[0], l.pos[1], l.pos[2]);
+        if (!netz.has(k)) netz.set(k, []);
+        netz.get(k).push(l);
+    }
+    const suche = (x, y, z) => {
+        let best = -1,
+            d2 = 1e-6;
+        const ix = Math.floor(x / h),
+            iy = Math.floor(y / h),
+            iz = Math.floor(z / h);
+        for (let a = -1; a <= 1; a++)
+            for (let b = -1; b <= 1; b++)
+                for (let c = -1; c <= 1; c++)
+                    for (const l of netz.get(`${ix + a},${iy + b},${iz + c}`) || []) {
+                        const q = (l.pos[0] - x) ** 2 + (l.pos[1] - y) ** 2 + (l.pos[2] - z) ** 2;
+                        if (q < d2) (d2 = q), (best = partie(l.run));
+                    }
+        return best;
+    };
+    const out = new Map();
+    f.T.forEach((t, ti) => {
+        if ((t.kind !== "foliage" && t.kind !== "foliageTex") || !t.cen) return;
+        const pa = new Int32Array(t.cen.length / 3);
+        let lx = NaN,
+            ly = NaN,
+            lz = NaN,
+            lp = -1;
+        for (let i = 0; i < pa.length; i++) {
+            const x = t.cen[i * 3],
+                y = t.cen[i * 3 + 1],
+                z = t.cen[i * 3 + 2];
+            if (x !== lx || y !== ly || z !== lz) (lx = x), (ly = y), (lz = z), (lp = suche(x, y, z));
+            pa[i] = lp;
+        }
+        out.set(ti, pa);
+    });
+    return out;
+}
+function kroneUrteil(fall, T, flipFrei, partien) {
     const v = [],
         m = {};
-    for (const t of T) {
+    const mitten = partien ? partienMitten(T, partien) : null;
+    for (const [ti, t] of T.entries()) {
         if ((t.kind !== "foliage" && t.kind !== "foliageTex") || !t.nor || !t.idx) continue;
         const P = t.pos,
             N = t.nor,
             I = t.idx;
+        const pa = partien ? partien.get(ti) : null;
+        if (partien && !pa) {
+            v.push(`${fall} ${t.kind}: die Laub-Teile tragen keinen Anker (aCenter) — keine Partie`);
+            continue;
+        }
+        const ohne = pa ? pa.filter((x) => x < 0).length : 0;
+        if (ohne) v.push(`${fall} ${t.kind}: ${ohne} Ecken ohne Partie (Anker ohne Blatt des Skeletts)`);
         const mn = [Infinity, Infinity, Infinity],
             mx = [-Infinity, -Infinity, -Infinity];
         for (let i = 0; i < P.length; i += 3)
@@ -441,7 +529,7 @@ function kroneUrteil(fall, T, flipFrei) {
                 mn[a] = Math.min(mn[a], P[i + a]);
                 mx[a] = Math.max(mx[a], P[i + a]);
             }
-        const c = [0, 1, 2].map((a) => (mn[a] + mx[a]) / 2);
+        const c0 = [0, 1, 2].map((a) => (mn[a] + mx[a]) / 2);
         let nah = 0,
             weg = 0;
         for (let k = 0; k < 8; k++) {
@@ -451,6 +539,8 @@ function kroneUrteil(fall, T, flipFrei) {
                 const a = I[q] * 3,
                     b = I[q + 1] * 3,
                     d = I[q + 2] * 3;
+                const c = pa ? mitten.get(pa[I[q]]) : c0;
+                if (!c) continue;
                 const pc = [0, 1, 2].map((j) => (P[a + j] + P[b + j] + P[d + j]) / 3 - c[j]);
                 if (pc[0] * e[0] + pc[1] * e[1] + pc[2] * e[2] <= 0) continue;
                 nah++;
@@ -469,8 +559,12 @@ function kroneUrteil(fall, T, flipFrei) {
         m["weg:" + t.kind] = anteil;
         if (anteil > KRONE_WEG_MAX)
             v.push(
-                `${fall} ${t.kind}: ${(100 * anteil).toFixed(1)} % der nahen Dreiecke lichten nach innen (> ${100 * KRONE_WEG_MAX} %) — ` +
-                    (flipFrei ? "die Krone trägt keine Normale der Krone" : "der Leser kehrt die Normale der Krone auf der Rückseite")
+                `${fall} ${t.kind}: ${(100 * anteil).toFixed(1)} % der nahen Dreiecke lichten nach innen${pa ? " (je Partie)" : ""} (> ${100 * KRONE_WEG_MAX} %) — ` +
+                    (!flipFrei
+                        ? "der Leser kehrt die Normale der Krone auf der Rückseite"
+                        : pa
+                          ? "die Krone lichtet nicht je Ast-Partie (kronenPartien)"
+                          : "die Krone trägt keine Normale der Krone")
             );
     }
     return { v, m };
@@ -1187,7 +1281,7 @@ function windDatenUrteil(quellen) {
             const k = `${presetId}-s${seed}-L${lod}${ov ? "-frei" : ""}`;
             const msg = { presetId, lod, seed, season: "summer" };
             if (ov) msg.ov = ov;
-            roh[k] = { presetId, lod, seed, T: teile((await build(msg)).meshes) };
+            roh[k] = { presetId, lod, seed, ov, T: teile((await build(msg)).meshes) };
         };
         for (const p of baeume) await fall(p, 0, 1);
         for (const p of Object.keys(HOEHE_SPANNE)) await fall(p, 0, 1, { freistand: 1 });
@@ -1243,7 +1337,7 @@ function windDatenUrteil(quellen) {
         } else if (kind === "flower") u = bluetenUrteil(k, f.T);
         else if (kind === "grass") u = teppichUrteil(k, f.T, f.lod, rc.understory.grassStep, skala(f.presetId));
         if (kind === "tree" || kind === "shrub") {
-            const kv = kroneUrteil(k, f.T, kl.flipFrei);
+            const kv = kroneUrteil(k, f.T, kl.flipFrei, partienDerKrone(f, buch[f.presetId], skala(f.presetId)));
             u.v.push(...kv.v);
             Object.assign(u.m, kv.m);
         }
@@ -1403,6 +1497,15 @@ function windDatenUrteil(quellen) {
         st.push(["Krone nach innen", kroneUrteil("innen", innen, true).v.length > 0]);
         st.push(["Leser kehrt die Krone", kroneUrteil("kehrt", tanne.T, false).v.length > 0]);
     } else st.push(["Tanne gebaut", false]);
+    // (V) die Laubkrone als EINE gelichtet (K68, vor T2): dieselben Karten der Eiche, ihre Normalen neu aus dem einen Ellipsoid
+    if (eiche) {
+        const eine = eiche.T.map((t) =>
+            (t.kind === "foliage" || t.kind === "foliageTex") && t.nor ? Object.assign({}, t, { nor: Float32Array.from(t.nor) }) : t
+        );
+        PC.kronenNormalen(eine.filter((t) => t.kind === "foliage" || t.kind === "foliageTex").map((t) => ({ pos: Float32Array.from(t.pos), nor: t.nor })));
+        const pa = partienDerKrone(eiche, buch.eiche, skala("eiche"));
+        st.push(["Laubkrone als EINE gelichtet", !!pa && kroneUrteil("eine", eine, true, pa).v.length > 0]);
+    } else st.push(["Eiche gebaut", false]);
     const mitSeite = quellen.Stamm.replace("mat.normalNode = T.normalViewGeometry;", "mat.normalNode = T.normalView;");
     st.push(["Welt-Stoff liest die Krone mit Seite", kronenLeser(Object.assign({}, qBr, quellen, { Stamm: mitSeite })).flipFrei === false]);
     st.push([
