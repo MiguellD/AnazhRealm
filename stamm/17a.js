@@ -1438,6 +1438,7 @@ class AnazhRealm_Z17a {
             n: 0, // vergebene Schichten
             map: null,
             nmap: null,
+            lmap: null, // die Sonnen-Sicht der Krone (A7): r8, 1/lichtTeiler
             mapNode: null, // die Basis-Texturknoten: ein Wachsen tauscht nur ihren Wert
             nmapNode: null,
             zellen: new Map(), // "fimp:<art>|<gestalt>[|ov:…]" → Zelle
@@ -1530,7 +1531,18 @@ class AnazhRealm_Z17a {
                 for (const t of [at.map, at.nmap]) t.generateMipmaps = true;
             }
         }
-        for (const t of [at.map, at.nmap]) {
+        // DIE SONNEN-SICHT (A7, Karten-Codec `karteLicht`): in jedem Format r8 auf 1/lichtTeiler, die GPU zieht die Mips
+        const dL = new Uint8Array(M.lBytes * cap);
+        if (da) {
+            dL.set(at.lmap.image.data);
+            at.lmap.image = { data: dL, width: M.lw, height: M.lh, depth: cap };
+        } else {
+            at.lmap = new T.DataArrayTexture(dL, M.lw, M.lh, cap);
+            at.lmap.name = "karte-licht:atlas";
+            at.lmap.format = T.RedFormat;
+            at.lmap.generateMipmaps = true;
+        }
+        for (const t of [at.map, at.nmap, at.lmap]) {
             t.minFilter = T.LinearMipmapLinearFilter;
             t.magFilter = T.LinearFilter;
             t.wrapS = T.ClampToEdgeWrapping;
@@ -1563,8 +1575,11 @@ class AnazhRealm_Z17a {
             at.map.addLayerUpdate(idx);
             at.nmap.addLayerUpdate(idx);
         }
+        at.lmap.image.data.set(payload.licht, idx * M.lBytes);
+        at.lmap.addLayerUpdate(idx);
         at.map.needsUpdate = true;
         at.nmap.needsUpdate = true;
+        at.lmap.needsUpdate = true;
     }
 
     // Eine neue Zelle (Schicht) im Atlas; mit echtem Renderer reiht sie ihren Bake sofort ein (nah zuerst über
@@ -1717,7 +1732,7 @@ class AnazhRealm_Z17a {
             vonPlatte,
             fmt: at.fmt,
             schichten: at.cap,
-            mb: M ? +(((M.aBytes + M.nBytes) * at.cap) / 1048576).toFixed(2) : 0,
+            mb: M ? +(((M.aBytes + M.nBytes + M.lBytes) * at.cap) / 1048576).toFixed(2) : 0,
             haengendeBakes: at.haengend,
             verworfeneBakes: at.verworfen,
             gescheitertArten,
@@ -1888,7 +1903,9 @@ class AnazhRealm_Z17a {
             !payload.albedo ||
             payload.albedo.length !== M.aBytes ||
             !payload.normal ||
-            payload.normal.length !== M.nBytes
+            payload.normal.length !== M.nBytes ||
+            !payload.licht ||
+            payload.licht.length !== M.lBytes
         )
             return false;
         if (!(payload.opak >= globalThis.__phytoCore.KARTEN_GESETZ.minOpak)) return false;

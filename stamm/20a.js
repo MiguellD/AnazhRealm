@@ -1338,7 +1338,7 @@ class AnazhRealm_Z20a {
                 dbTot = true;
             }
         };
-        // Eine Karte ist brauchbar, wenn beide Atlanten als eigene Puffer reisen UND sie die NICHT-LEERE-WAND des
+        // Eine Karte ist brauchbar, wenn ihre drei Felder (Albedo, Normale, Sonnen-Sicht — A7) als eigene Puffer reisen UND sie die NICHT-LEERE-WAND des
         // Karten-Gesetzes hält (ein Bäcker-Fehler liefert maßtreue Clear-Pixel): eine leere Karte reist nie auf die
         // Platte und nie von ihr — sie kommt als payload null (die Retry-Disziplin des Hosts).
         const karteOk = (p) => {
@@ -1348,7 +1348,9 @@ class AnazhRealm_Z20a {
                 p &&
                 ArrayBuffer.isView(p.albedo) &&
                 ArrayBuffer.isView(p.normal) &&
+                ArrayBuffer.isView(p.licht) &&
                 p.albedo.buffer !== p.normal.buffer &&
+                p.licht.buffer !== p.normal.buffer &&
                 p.opak >= G.minOpak
             );
         };
@@ -1430,7 +1432,7 @@ class AnazhRealm_Z20a {
                 const k = p && auftragK.fmt && core ? core.karteKodiere(p, auftragK.fmt) : null;
                 if (!karteOk(k)) return roh(Object.assign({}, msg, { payload: null }));
                 if (auftragK.key) schreib(auftragK.key, { payload: k });
-                return roh(Object.assign({}, msg, { payload: k }), [k.albedo.buffer, k.normal.buffer]);
+                return roh(Object.assign({}, msg, { payload: k }), [k.albedo.buffer, k.normal.buffer, k.licht.buffer]);
             }
             if (msg && msg.type === "render-native" && p && p.pixels) return roh(msg, [p.pixels.buffer]);
             // Das Buch trägt das Bild des EINEN Blatt-Atlas: die Schale macht es im Worker zur FRACHT
@@ -1487,7 +1489,7 @@ class AnazhRealm_Z20a {
                                 payload: p,
                                 platte: true,
                             },
-                            [p.albedo.buffer, p.normal.buffer]
+                            [p.albedo.buffer, p.normal.buffer, p.licht.buffer]
                         );
                     if (m.nurPlatte)
                         return roh({ type: "impostor", world: "terrain", reqId: m.reqId, payload: null, platte: true });

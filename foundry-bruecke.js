@@ -229,7 +229,27 @@ let _impAtlas = null,
     _impSpecs = [],
     _impCellOf = {},
     _impWR = {},
-    _impFrame = {}; // W6: der Bake-Rahmen je (Art, Same) — das Payload der Welt-Karte trägt ihn (kein dritter L1-Bau)
+    _impFrame = {}, // W6: der Bake-Rahmen je (Art, Same) — das Payload der Welt-Karte trägt ihn (kein dritter L1-Bau)
+    _impLichtRT = null; // A7: [mit, ohne] Eigenschatten — die Sonnen-Sicht der Krone je Texel (`licht` im Spec)
+// DIE SONNEN-SICHT DER KRONE (A7): die volle Krone wirft in der Welt ihren Schatten auf sich selbst (Kaskade, der Werfer ihrer
+// Gestalt) — ihr Sonnen-Licht fällt gemessen auf 0,71–0,87 (Werkbank, Radeon, Genesis 16.10.: Tanne und Fichte, Seite und
+// unten). Die Karte wirft nie. Ihr Bäcker misst darum je Texel, welcher Teil des direkten Lichts die Krone selbst durchlässt:
+// dieselbe Krone, dieselben Stoffe unter Richtlichtern aus dem oberen Halbraum (im Baum-Raum, sie drehen mit jeder Ansicht),
+// einmal mit, einmal ohne Schatten — das Verhältnis der Leuchtdichten ist die N·L-gewichtete Sicht der Sonne. Die Welt legt
+// sie auf den empfangenen Schatten der Karte (`receivedShadowNode`), nie auf ihre Albedo: der Himmel bleibt unverdeckt wie an
+// der Gestalt. Richtungen als (Höhe, Azimut) in Grad, je Licht dieselbe Stärke.
+const KARTE_SONNEN_SICHT = Object.freeze({
+    richtungen: Object.freeze([
+        [90, 0],
+        [45, 0],
+        [45, 90],
+        [45, 180],
+        [45, 270],
+    ]),
+    karte: 512, // Kante der Schatten-Karte je Licht
+    bias: -0.0005,
+    normalBias: 0.04,
+});
 const _impV = (PORTAL_RENDER_CONFIG.impostor && PORTAL_RENDER_CONFIG.impostor.views) || 8, // Bäcker-Spec aus der EINEN Quelle (foundry-core, Studio-Vertrag B2)
     _impYAxis = new THREE.Vector3(0, 1, 0); // 8 Blickwinkel je Baum im Atlas (Zeilen); _impNrm = Normal-Atlas; Atlas ist SAISONINVARIANT (einmal je Seed-Signatur); _impWR = Zell-Seitenverhaeltnis je Art (FIX v28)
 // EINE Quelle fuers LOD-Band (aus PORTAL_RENDER_CONFIG.lod): <D0 fein, D0..D1 mittel, >D1 Billboard;
@@ -294,8 +314,27 @@ function bakeImpostorAtlas() {
         _impNrmOv.customProgramCacheKey = () => "impNrm_kroneFlipfrei";
     }
     const bs = new THREE.Scene();
-    const hl = new THREE.HemisphereLight(0xffffff, 0x8a8a8a, 1.05);
-    bs.add(hl); // FLACH backen (neutral, richtungslos): der Atlas ist Albedo -- die LICHTRICHTUNG kommt zur Laufzeit aus _wSunPos, sonst waere die Bake-Richtung fuer immer eingefroren
+    // FLACH backen (neutral, richtungslos): der Atlas ist ALBEDO — die Lichtrichtung kommt zur Laufzeit. Das Umgebungslicht
+    // Weiß × 1 gibt im r128-Stoff (Lambert ohne PHYSICALLY_CORRECT_LIGHTS: E·π · A/π) genau die Albedo zurück. Bis A7 backte
+    // ein Halbraum-Licht (Himmel weiß, Boden 0x8a8a8a, × 1,05): oben ×1,05, unten ×0,57 — ein zweites Licht in der Albedo,
+    // die Welt lichtete darüber noch einmal (Karte gegen Gestalt in der Albedo-Sicht 0,83–0,99, Werkbank 16.10.).
+    const hl = new THREE.AmbientLight(0xffffff, 1);
+    bs.add(hl);
+    const lichtJe = _impSpecs.some((s) => s && s.licht === true);
+    if (lichtJe && (!_impLichtRT || _impLichtRT[0].width !== cw * K || _impLichtRT[0].height !== ch * V)) {
+        if (_impLichtRT) for (const rt of _impLichtRT) rt.dispose();
+        _impLichtRT = [0, 1].map(
+            () =>
+                new THREE.WebGLRenderTarget(cw * K, ch * V, {
+                    format: THREE.RGBAFormat,
+                    type: THREE.FloatType,
+                    minFilter: THREE.NearestFilter,
+                    magFilter: THREE.NearestFilter,
+                    generateMipmaps: false,
+                })
+        );
+    }
+    const pSchatten = { an: renderer.shadowMap.enabled, typ: renderer.shadowMap.type };
     const cam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 500);
     const pRT = renderer.getRenderTarget(),
         pA = renderer.getClearAlpha(),
@@ -360,9 +399,78 @@ function bakeImpostorAtlas() {
         cam.position.set(0, halfH, Math.max(halfW * 2.5, box.max.y) + 40);
         cam.lookAt(0, halfH, 0);
         cam.updateProjectionMatrix();
+        // die Richtlichter der Sonnen-Sicht (A7) hängen am Baum: sie drehen mit jeder Ansicht, die Sicht ist eine Eigenschaft
+        // des Blatts, nie der Peilung; ihre Schatten-Kamera umschließt die Krone
+        const lichter = [];
+        if (s.licht === true && _impLichtRT) {
+            // Die Krone wirft durch ihre Blatt-Karten wie in der Welt (r184 liest map.a im Schattenpass): r128s Tiefen-Stoff
+            // liest nur alphaMap — ohne eigenen Tiefen-Stoff warf jede Blatt-Karte ihr volles Rechteck, die Krone stand als
+            // Klotz (gemessen: Sicht 0,18–0,26 statt ~0,8).
+            const tiefe = new Map();
+            tree.traverse((o) => {
+                const m = o.isMesh && o.material;
+                if (!m || !m.map || !(m.alphaTest > 0)) return;
+                if (!tiefe.has(m))
+                    tiefe.set(
+                        m,
+                        new THREE.MeshDepthMaterial({
+                            depthPacking: THREE.RGBADepthPacking,
+                            map: m.map,
+                            alphaTest: m.alphaTest,
+                            side: m.side,
+                        })
+                    );
+                o.customDepthMaterial = tiefe.get(m);
+            });
+            const R = Math.max(halfW, halfH) * 1.15;
+            const mitte = new THREE.Vector3(0, halfH, 0);
+            for (const [h, a] of KARTE_SONNEN_SICHT.richtungen) {
+                const eh = (h * Math.PI) / 180,
+                    ea = (a * Math.PI) / 180;
+                const d = new THREE.Vector3(Math.cos(eh) * Math.cos(ea), Math.sin(eh), Math.cos(eh) * Math.sin(ea));
+                const L = new THREE.DirectionalLight(0xffffff, 1);
+                L.position.copy(mitte).addScaledVector(d, R * 3);
+                L.target.position.copy(mitte);
+                L.shadow.mapSize.set(KARTE_SONNEN_SICHT.karte, KARTE_SONNEN_SICHT.karte);
+                Object.assign(L.shadow.camera, { left: -R, right: R, top: R, bottom: -R, near: 0.1, far: R * 6 });
+                L.shadow.camera.updateProjectionMatrix();
+                L.shadow.bias = KARTE_SONNEN_SICHT.bias;
+                L.shadow.normalBias = KARTE_SONNEN_SICHT.normalBias;
+                L.visible = false;
+                tree.add(L);
+                tree.add(L.target);
+                lichter.push(L);
+            }
+        }
         for (let v = 0; v < V; v++) {
             tree.rotation.y = -v * ((Math.PI * 2) / V);
             tree.updateMatrixWorld(true); // Ansicht v = Baum aus Peilung v*45 Grad gesehen (Kamera fix, Baum gegenrotiert)
+            if (lichter.length) {
+                // DIE SONNEN-SICHT (A7): nur die Richtlichter, einmal mit, einmal ohne Schatten, linear in Gleitkomma
+                hl.visible = false;
+                renderer.shadowMap.enabled = true;
+                renderer.shadowMap.type = THREE.PCFShadowMap;
+                for (let j = 0; j < 2; j++) {
+                    for (const L of lichter) {
+                        L.visible = true;
+                        L.castShadow = j === 0;
+                    }
+                    const rt = _impLichtRT[j];
+                    rt.viewport.set(i * cw, v * ch, cw, ch);
+                    rt.scissor.set(i * cw, v * ch, cw, ch);
+                    rt.scissorTest = true;
+                    renderer.setRenderTarget(rt);
+                    renderer.setClearColor(0x000000, 0);
+                    renderer.render(bs, cam);
+                }
+                for (const L of lichter) {
+                    L.visible = false;
+                    L.castShadow = false;
+                }
+                hl.visible = true;
+                renderer.shadowMap.enabled = pSchatten.an;
+                renderer.shadowMap.type = pSchatten.typ;
+            }
             _impRT.viewport.set(i * cw, v * ch, cw, ch);
             _impRT.scissor.set(i * cw, v * ch, cw, ch);
             _impRT.scissorTest = true; // Zelle als RT-Property: Bind wendet sie an, autoClear loescht NUR diese Zelle (nicht den Atlas), keine pixelRatio-Skalierung
@@ -379,10 +487,18 @@ function bakeImpostorAtlas() {
             bs.overrideMaterial = null;
         }
         bs.remove(tree);
+        for (const L of lichter) L.dispose();
         tree.traverse((o) => {
             if (o.isMesh && o.geometry.dispose) o.geometry.dispose();
+            if (o.customDepthMaterial) o.customDepthMaterial.dispose();
         });
     }
+    if (_impLichtRT)
+        for (const rt of _impLichtRT) {
+            rt.viewport.set(0, 0, cw * K, ch * V);
+            rt.scissor.set(0, 0, cw * K, ch * V);
+            rt.scissorTest = false;
+        }
     _impRT.viewport.set(0, 0, cw * K, ch * V);
     _impRT.scissor.set(0, 0, cw * K, ch * V);
     _impRT.scissorTest = false; // RT-Props zurueck auf voll: naechster Bind (Re-Bake-Clear, Debug-Reads) sieht den ganzen Atlas
@@ -1263,7 +1379,7 @@ const foundryKanal = (() => {
             // Das M2-Gesetz gilt dem Zweit-Kern-Zweig identisch (ov verbatim in `bau`).
             const bakeOv = msg.ov || null;
             // EINE Bake-Zelle -> K=1; die leere Signatur erzwingt den Neu-Bake in die lebenden Targets.
-            _impSpecs = [{ sp: presetId, seed: seed, ov: bakeOv, bau: __bau }];
+            _impSpecs = [{ sp: presetId, seed: seed, ov: bakeOv, bau: __bau, licht: true }];
             _impCellOf = {};
             _impCellOf[presetId + "|0"] = 0;
             _impBakedSig = "";
@@ -1279,6 +1395,19 @@ const foundryKanal = (() => {
             gl.readRenderTargetPixels(_impRT, 0, 0, cw, ch * V, albedo);
             const normal = new Uint8Array(cw * ch * V * 4);
             gl.readRenderTargetPixels(_impNrmRT, 0, 0, cw, ch * V, normal);
+            // DIE SONNEN-SICHT (A7) reist im Alpha der Normale (die Normale trägt nur x, y): Leuchtdichte mit Eigenschatten
+            // durch Leuchtdichte ohne, je Texel; wo die Richtlichter nichts treffen (kein Blatt, Fläche abgewandt), 1.
+            if (!_impLichtRT) throw new Error("keine Sonnen-Sicht gebacken");
+            const mit = new Float32Array(cw * ch * V * 4),
+                ohne = new Float32Array(cw * ch * V * 4);
+            gl.readRenderTargetPixels(_impLichtRT[0], 0, 0, cw, ch * V, mit);
+            gl.readRenderTargetPixels(_impLichtRT[1], 0, 0, cw, ch * V, ohne);
+            for (let t = 0; t < cw * ch * V; t++) {
+                const o = t * 4;
+                const lm = 0.2126 * mit[o] + 0.7152 * mit[o + 1] + 0.0722 * mit[o + 2],
+                    lo = 0.2126 * ohne[o] + 0.7152 * ohne[o + 1] + 0.0722 * ohne[o + 2];
+                normal[o + 3] = lo > 1e-4 ? Math.round(255 * Math.max(0, Math.min(1, lm / lo))) : 255;
+            }
             payload = {
                 cw: cw,
                 ch: ch,

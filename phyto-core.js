@@ -3317,7 +3317,17 @@
     // LINEAR. Die Schicht trägt sRGB (bc1-rgba-unorm-srgb / rgba8unorm-srgb, die GPU dekodiert): der Codec mittelt
     // jede Mip-Stufe LINEAR und kodiert erst beim Schreiben. Befund Blick-Tour 04.10.: der Host las die linearen
     // Bytes als sRGB — Eichen-Laub 0,12 → 0,013 linear, die Fernkrone stand SCHWARZ und im Dunst grau.
-    var KARTEN_GESETZ = { schwelle: 0.34, normalTeiler: 2, minSeite: 4, minOpak: 64, glaette: 4, glaetteBis: 2 };
+    //   lichtTeiler   die Sonnen-Sicht der Krone (A7, das Alpha der Studio-Normale) liegt auf 1/lichtTeiler der Albedo-
+    //                 Auflösung als r8, Stufe 0 (die GPU zieht die Mips) — ein weiches Licht-Feld der Krone
+    var KARTEN_GESETZ = {
+        schwelle: 0.34,
+        normalTeiler: 2,
+        minSeite: 4,
+        minOpak: 64,
+        glaette: 4,
+        glaetteBis: 2,
+        lichtTeiler: 4,
+    };
     // linear (0..1) → sRGB-Byte, und die Tabelle der 256 linearen Eingangs-Bytes
     function linZuSrgb8(x) {
         const v = x <= 0.0031308 ? 12.92 * x : 1.055 * Math.pow(x, 1 / 2.4) - 0.055;
@@ -3372,6 +3382,10 @@
             n: n.stufen,
             aBytes: a.bytes,
             nBytes: n.bytes,
+            // die Sonnen-Sicht (A7): r8, eine Stufe, in jedem Format
+            lw: Math.max(1, (cw / KARTEN_GESETZ.lichtTeiler) | 0),
+            lh: Math.max(1, ((ch * V) / KARTEN_GESETZ.lichtTeiler) | 0),
+            lBytes: Math.max(1, (cw / KARTEN_GESETZ.lichtTeiler) | 0) * Math.max(1, ((ch * V) / KARTEN_GESETZ.lichtTeiler) | 0),
         };
     }
 
@@ -4107,6 +4121,40 @@
     // albedo (rgba cw×ch·V), normal (rgba cw×ch·V) } → die Atlas-Schicht im Format fmt, die Normale ab 1/normalTeiler
     // (die Vektor-Mittel der vollen Studio-Normale). Rückgabe { cw, ch, V, nt, fmt, frame, albedo, normal, opak,
     // deckung } mit den Stufen hintereinander (karteMasse); null bei Maß-Bruch (nie eine halbe Schicht).
+    // DIE SONNEN-SICHT DER SCHICHT (A7): das Alpha der Studio-Normale (die Sicht der Sonne durch die eigene Krone, der Bäcker
+    // misst sie) auf lw × lh gemittelt — gewichtet nur über die opaken Albedo-Texel des Fußabdrucks; ein Fußabdruck ohne
+    // Blatt trägt das Mittel der Schicht (der Filter mischt an der Kante keinen fremden Wert hinein).
+    function karteLicht(p, M) {
+        const t = KARTEN_GESETZ.lichtTeiler,
+            thr = Math.round(KARTEN_GESETZ.schwelle * 255);
+        const out = new Uint8Array(M.lBytes),
+            hat = new Uint8Array(M.lBytes);
+        let summe = 0,
+            zahl = 0;
+        for (let y = 0; y < M.lh; y++)
+            for (let x = 0; x < M.lw; x++) {
+                let s = 0,
+                    n = 0;
+                for (let dy = 0; dy < t; dy++)
+                    for (let dx = 0; dx < t; dx++) {
+                        const i = ((y * t + dy) * M.w + x * t + dx) * 4;
+                        if (p.albedo[i + 3] >= thr) {
+                            s += p.normal[i + 3];
+                            n++;
+                        }
+                    }
+                if (n) {
+                    out[y * M.lw + x] = Math.round(s / n);
+                    hat[y * M.lw + x] = 1;
+                    summe += s / n;
+                    zahl++;
+                }
+            }
+        const mittel = zahl ? Math.round(summe / zahl) : 255;
+        for (let i = 0; i < out.length; i++) if (!hat[i]) out[i] = mittel;
+        return out;
+    }
+
     function karteKodiere(p, fmt) {
         if (!p || !p.albedo || !p.normal || !p.frame) return null;
         const V = p.V | 0,
@@ -4140,6 +4188,7 @@
             frame: { halfH: +p.frame.halfH, halfW: +p.frame.halfW },
             albedo: albedo,
             normal: normal,
+            licht: karteLicht(p, M),
             opak: alb.opak,
             deckung: alb.deckung,
         };

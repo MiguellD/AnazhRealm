@@ -480,6 +480,7 @@ class AnazhRealm_Z10 {
                                     if (!_at.mapNode) {
                                         _at.mapNode = _Ta.texture(_at.map);
                                         _at.nmapNode = _Ta.texture(_at.nmap);
+                                        _at.lmapNode = _Ta.texture(_at.lmap);
                                     }
                                     const _V = _Ta.float(_at.V);
                                     const _uv = _Ta.attribute("uv", "vec2");
@@ -670,6 +671,17 @@ class AnazhRealm_Z10 {
                                     // die Welt-Normale über die Kamera-Matrix transformieren — Welt → Sicht ist
                                     // MATRIX.transformDirection(n) (V·n), nie n.transformDirection(MATRIX) (Vᵀ·n).
                                     mat.normalNode = _Ta.cameraViewMatrix.transformDirection(_nW);
+                                    // ── DIE SONNEN-SICHT DER KRONE (A7): die volle Krone beschattet sich in der Kaskade selbst,
+                                    //    die Karte wirft nie — ihr Bäcker misst je Texel, welchen Teil des Richtlichts die eigene
+                                    //    Krone durchlässt (`karteLicht`), und er liegt auf dem EMPFANGENEN Schatten der Karte: das
+                                    //    Sonnen-Licht der EINEN Licht-Kette fällt wie an der Gestalt, der Himmel bleibt frei. Bis A7
+                                    //    stand die Karte 1,06–1,67 × so hell wie ihre Gestalt (Werkbank, Radeon, 16.10.). ──
+                                    const _sicht = _Ta.mix(
+                                        _at.lmapNode.sample(_uvA).depth(_schicht).r,
+                                        _at.lmapNode.sample(_uvB).depth(_schicht).r,
+                                        _fb
+                                    );
+                                    mat.receivedShadowNode = (schatten) => schatten.mul(_sicht);
                                     // ── CAMERA-FACING (Vertex) im VORLAGEN-Raum: der positionNode läuft VOR der Instanz-Matrix
                                     //    (r184, WGSL gelesen), die Matrix dreht, skaliert und schiebt das Quad danach. Also blickt die
                                     //    Karte in der Vorlage auf das Auge, wie die Instanz es sieht: Auge im Objekt-Raum minus Anker
