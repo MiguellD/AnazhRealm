@@ -385,11 +385,8 @@ const SCHWERE = (k) => {
         core.gangBecken = beckenEcht;
         r._gangZeile = zeileEcht;
     }
-    // die Zwillinge als Literal (kommentar-gestrippt, das __codeOf-Muster)
-    const codeOf = (fn) =>
-        String(fn)
-            .replace(/\/\/.*$/gm, "")
-            .replace(/\/\*[\s\S]*?\*\//g, "");
+    // die Zwillinge als Literal (kommentar-gestrippt: der EINE __codeOf des Welt-Boots)
+    const codeOf = window.__codeOf;
     o.zwillinge = [];
     if (/\b9\.81\b/.test(codeOf(r._animateHumanoidRig)) || /\b9\.81\b/.test(codeOf(r._gaitGesetz)))
         o.zwillinge.push("_animateHumanoidRig/_gaitGesetz: die Schwere als Zahl 9,81");

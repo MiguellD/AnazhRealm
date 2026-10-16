@@ -112,9 +112,7 @@ function haltVerdict(m) {
 
 // ── DIE STATISCHE WAND (Node, kommentarfrei): der Ritt sitzt im Sim-Schritt, der Frame-Tick schreibt nie den Reiter,
 // das Lenk-Frame-Flag ist tot. Liefert [name, ok, detail]. ──
-function ohneKommentare(src) {
-    return src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:"'`\\])\/\/[^\n]*/g, "$1");
-}
+const ohneKommentare = stammLib.ohneKommentare;
 function fnBody(src, sigRe) {
     const m = sigRe.exec(src);
     if (!m) return null;

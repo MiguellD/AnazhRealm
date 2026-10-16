@@ -14,11 +14,11 @@
 //   --selftest  je Gate-Probe jeder alte Defekt als Täter eingespielt (TAETER): jede Probe muss ROT lesen, und zwar aus
 //               dem Grund, der den Täter beim Namen nennt
 "use strict";
-const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, CODE_OF_SEITE } = require("./lib/welt-boot.cjs");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
-const { KREATUR_PROBEN_SRC, PROBEN, TAETER, CODE_OF_SRC, urteil } = require("./lib/kreatur-proben.cjs");
+const { KREATUR_PROBEN_SRC, PROBEN, TAETER, urteil } = require("./lib/kreatur-proben.cjs");
 
 const root = path.resolve(__dirname, "..");
 const PORT = Number(process.env.KREATUR_TAKT_PORT || 4478);
@@ -82,10 +82,9 @@ async function headless(laeufe) {
     page.setDefaultTimeout(880000);
     const fehler = [];
     page.on("pageerror", (e) => fehler.push((e.stack || e.message).split("\n")[0]));
-    await page.evaluateOnNewDocument((codeOf) => {
+    await page.evaluateOnNewDocument(() => {
         window.__anazhHeadlessNullRenderer = true;
-        window.__codeOf = (0, eval)("(" + codeOf + ")");
-    }, CODE_OF_SRC);
+    });
     const aus = [];
     // Einschwingen (plateau-basiert, die V18.273-Lehre): der Ring steht, die Boden-Funktion trägt.
     const einschwingen = () =>
@@ -177,7 +176,7 @@ async function imFenster(laeufe) {
     const aus = [];
     for (const l of laeufe) {
         const o = await rufeWerkbank(
-            `window.__codeOf = window.__codeOf || (${CODE_OF_SRC}); return await (${KREATUR_PROBEN_SRC})(r, T, ${JSON.stringify(l)});`
+            `if (!window.__codeOf) { ${CODE_OF_SEITE} } return await (${KREATUR_PROBEN_SRC})(r, T, ${JSON.stringify(l)});`
         );
         if (o.fehler) throw new Error(o.fehler);
         aus.push(o.ergebnis);

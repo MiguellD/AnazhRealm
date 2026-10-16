@@ -47,10 +47,7 @@ function resizeKoerper(src) {
     const i = src.indexOf('window.addEventListener("resize"');
     if (i < 0) return null;
     const ende = src.indexOf("});", i);
-    return src
-        .slice(i, ende)
-        .replace(/\/\*[\s\S]*?\*\//g, "")
-        .replace(/\/\/.*$/gm, "");
+    return stammLib.ohneKommentare(src.slice(i, ende));
 }
 
 // vor jedem Seiten-Skript — die Device-Meldungen je Schritt (`__fensterEcht.schritt` setzt die Wand)

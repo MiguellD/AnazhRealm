@@ -46,7 +46,7 @@ function methode(src, name) {
     const a = stammLib.kopf(src, name); // am Namen, nie an der Parameter-Liste (gate:apparat Klinge 3)
     if (a < 0) return null;
     const b = src.indexOf("\n    }\n", a);
-    return src.slice(a, b).replace(/\/\/.*$/gm, "");
+    return stammLib.ohneKommentare(src.slice(a, b));
 }
 // Der Rumpf einer Methode MIT ihren Gehilfen (jede eigene `this._x(`-Methode, die sie ruft, eine Ebene tief): eine
 // Linse am Rumpf-TEXT fiel mit jedem Schnitt, der Arbeit in einen Gehilfen trug (K60-2 zog das Senden der Karte aus
