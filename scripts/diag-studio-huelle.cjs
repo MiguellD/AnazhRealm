@@ -5,7 +5,7 @@
 // EIN UI-Modul (worlds/huelle/huelle.js) trägt die Regler, die Sitzung (Undo/Redo · Same · Sperre), die Kosten-Leiste
 // und die Portal-Brücke aller umgestiegenen Studios UND der Welt-Werkstatt. Die Wand nennt jede Kopie beim Namen:
 //   H1 Hand-Regler    ein <input type="range"> von Hand in worlds/<welt>/index.html, ein `type = "range"` in einer Shell
-//                     oder in der Werkstatt-Zone des Stamms (stamm/23*.js) — der EINE Generator ist AnazhHuelle.regler
+//                     oder in den Werkstatt-Dateien des Stamms (am Regler-Glied) — der EINE Generator ist AnazhHuelle.regler
 //   H2 Brücken-Kopie  eine eigene ready-Meldung (`type: "ready"`) oder ein Element-Adapter (`op[0]` je Element des
 //                     Programms) außerhalb der Hülle — die EINE Brücke ist AnazhHuelle.bruecke
 //   H3 Umstieg        jede umgestiegene Welt lädt ../huelle/huelle.js und ruft die Brücke; jedes Studio dazu Regler,
@@ -111,6 +111,9 @@ const liesAus = (karte) => (rel) => {
     return fs.existsSync(f) ? fs.readFileSync(f, "utf8") : null;
 };
 
+// Die Werkstatt-Dateien des Stamms: die Dateien, die die Regler-Glieder der Werkstatt tragen (am Glied, nie am Datei-Namen).
+const REGLER_GLIED = "_workshopRenderStudioParams";
+const WERKSTATT = new Set(["_workshopRenderRecipePanel", REGLER_GLIED].map((m) => stammLib.dateiVon(ROOT, m)));
 // Der Baum als Text-Karte (rel → Inhalt): die Wand und ihr Selbsttest lesen DIESELBE Karte.
 function baum() {
     const karte = {};
@@ -123,10 +126,7 @@ function baum() {
             karte[`worlds/${id}/${f}`] = fs.readFileSync(path.join(d, f), "utf8");
         }
     }
-    for (const f of stammLib.dateien(ROOT)) {
-        const rel = path.relative(ROOT, f).split(path.sep).join("/");
-        if (/^stamm\/23[a-z]?\.js$/.test(rel)) karte[rel] = fs.readFileSync(f, "utf8");
-    }
+    for (const rel of WERKSTATT) karte[rel] = fs.readFileSync(path.join(ROOT, rel), "utf8");
     karte["index.html"] = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
     if (fs.existsSync(path.join(ROOT, TOR_ZIELE))) karte[TOR_ZIELE] = fs.readFileSync(path.join(ROOT, TOR_ZIELE), "utf8");
     return karte;
@@ -203,11 +203,11 @@ function pruefe(karte) {
     const iG = heim.indexOf('src="worlds/gelaende/studio.js?v=');
     if (iG >= 0 && !(iH >= 0 && iH < iG)) rot.push("H3 gelaende: die Heimat lädt worlds/huelle/huelle.js nicht vor worlds/gelaende/studio.js");
     const werkstatt = Object.entries(karte)
-        .filter(([r]) => /^stamm\/23/.test(r))
+        .filter(([r]) => WERKSTATT.has(r))
         .map(([, t]) => t)
         .join("\n");
     const generatorRufe = zaehl(werkstatt, /AnazhHuelle\.regler\(/g);
-    if (generatorRufe < 2) rot.push(`H3 Werkstatt (stamm/23*): ruft den Generator ${generatorRufe}× (Soll: Rezept-Regler UND Studio-Regler über AnazhHuelle.regler)`);
+    if (generatorRufe < 2) rot.push(`H3 Werkstatt (${[...WERKSTATT].join(", ")}): ruft den Generator ${generatorRufe}× (Soll: Rezept-Regler UND Studio-Regler über AnazhHuelle.regler)`);
     if (!/<script src="worlds\/huelle\/huelle\.js\?v=[0-9.]+" defer><\/script>/.test(karte["index.html"] || ""))
         rot.push("H3 index.html: die Heimat lädt worlds/huelle/huelle.js nicht vor dem Stamm");
     // H5 — das Ziel-Bild je Welt, gebacken an den Quellen von heute
@@ -273,10 +273,10 @@ function selbsttest() {
         },
         {
             name: "H1 ein Werkstatt-Schieber von Hand im Stamm (das Werkstatt-Modul)",
-            rel: Object.keys(echt).find((r) => /^stamm\/23b\.js$/.test(r)),
+            rel: stammLib.dateiVon(ROOT, REGLER_GLIED),
             vor: /(_workshopRenderStudioParams\([^)]*\) \{)/,
             nach: '$1\n        const _t = document.createElement("input");\n        _t.type = "range";',
-            soll: /^H1 stamm\/23b\.js: 1 Hand-Regler/,
+            soll: new RegExp(`^H1 ${stammLib.dateiVon(ROOT, REGLER_GLIED)}: 1 Hand-Regler`),
         },
         {
             name: "H2 eine eigene ready in der schmiede",
