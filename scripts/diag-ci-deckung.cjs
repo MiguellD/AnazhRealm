@@ -1,9 +1,7 @@
-// diag-ci-deckung.cjs — DIE DECKUNGS-WAND DER CI (Welle K, CI-Teilung 07.10.).
+// diag-ci-deckung.cjs — DIE DECKUNGS-WAND DER CI (Welle K, CI-Teilung 07.10.; jeder Befund steht in der Commit-Chronik).
 //
-// Der playtest-Job lag am 45-min-Deckel (integ-probe 7df27bef 42 min; ein 1,5-fach langsamerer Läufer riss ihn
-// zweimal in Schritt 74). Die Wurzel ist die Länge EINES Jobs, nicht sein Deckel: der Job läuft als Matrix in Gruppen
-// (`strategy.matrix.gruppe`), jede fährt die Vorbereitung und ihre Gate-Schritte (`if: matrix.gruppe == N`).
-// Die Teilung hat zwei neue Arten, einen Schritt zu verlieren oder zu vervielfachen — diese Wand nennt jede beim Namen:
+// Die Batterie läuft als Matrix in Gruppen (`strategy.matrix.gruppe`), jede fährt die Vorbereitung und ihre Gate-Schritte
+// (`if: matrix.gruppe == N`). Die Wand nennt jede Art, einen Schritt zu verlieren oder zu vervielfachen, beim Namen:
 //   (G) GRUPPE   jeder Gate-Schritt des Gruppen-Jobs trägt GENAU eine Gruppe aus der Matrix — ohne `if` liefe er in
 //                jeder Gruppe (N-FACH), mit einer Gruppe außerhalb der Matrix nie (VERLOREN); jede Gruppe trägt Schritte
 //   (V) VORBEREITUNG  die ersten Schritte sind checkout · setup-node · System-Libs · npm ci, ohne Gruppe (jede Gruppe
@@ -12,10 +10,7 @@
 //   (Z) VERGLEICH  `--gegen <git-ref>`: die Gate-Schritte (run-Befehle) der Datei an <ref> gegen die jetzige — kein
 //                Schritt verloren, keiner doppelt (die Probe der Teilung: vorher ein Job, nachher die Gruppen)
 //
-// DIE GEGENRICHTUNG (09.10., Familie „Wände in die CI"). Befund: (G)/(V)/(D) prüften nur, dass jeder CI-Schritt seine
-// Gruppe hat — nie, dass jede Wand einen Schritt hat. `npm run check` (constitution · studio-vertrag · altlasten ·
-// apparat · vendor-anker · betriebsgesetz · taille · start-rezept …) stand in keinem Workflow, 50 von 152 `gate:*` liefen
-// nirgends automatisch: die Norm-Wände waren Wachsamkeit (Gebot 10). Die Wand liest jetzt beide Richtungen:
+// DIE GEGENRICHTUNG (09.10.; Befund: 50 von 152 `gate:*` liefen nirgends automatisch) — die Wand liest beide Richtungen:
 //   (W) WAND     jedes `gate:*` aus package.json und jeder Teil von `npm run check` läuft in einem Workflow
 //                (.github/workflows/*.yml; `npm run` wird bis auf die Befehle aufgelöst, eine Wand läuft, wenn ein
 //                Schritt sie ruft ODER jeder ihrer Befehle in einem Schritt steht) — oder sie steht in AUSNAHMEN
@@ -23,10 +18,8 @@
 //                Wand es nicht mehr gibt oder die schon in der CI läuft, ist ROT (keine stale Allow-Liste)
 //   (R) REDUNDANT  kein Schritt eines Workflows fährt nur Befehle, die ein anderer Schritt derselben Datei schon fährt
 //
-// DER ABGESCHALTETE SCHRITT (10.10., Gegenprüfung waende-ci Runde 1). Befund: ein Schritt zählte als Deckung, sobald sein
-// Text die Wand nannte — ein eingeschmuggeltes `gate:loch` mit `|| true`, mit continue-on-error am Schritt und im nächtlichen
-// Job blieb GRÜN, und die seit 07.10. jede Nacht rote gate:perf-parity galt als gedeckt. Gedeckt ist eine Wand nur, wenn
-// ihr Rot den MERGE hält:
+// DER ABGESCHALTETE SCHRITT (10.10.; Befund: `|| true`, continue-on-error und der nächtliche Job zählten als Deckung) —
+// gedeckt ist eine Wand nur, wenn ihr Rot den MERGE hält:
 //   (S) STUMM    jeder Befehl trägt den Grund, warum sein Rot verpufft — ein Workflow ohne push/pull_request (ein nächtlicher
 //                Lauf blockt nichts), continue-on-error an Job oder Schritt, eine Bedingung, die im Merge nicht feuert (nur
 //                die Gruppen-Bedingung der eigenen Matrix und success()/always() zählen), `|| …` (außer `|| exit 1` /
@@ -35,11 +28,9 @@
 //                die Linse nicht liest; npm fährt seine Skripte als `sh -c` ohne errexit (ein `;` in einem Skript macht
 //                den Teil davor stumm — STUMM IN SICH). Wer nur stumm läuft, steht beim Namen mit Schritt und Schalter.
 //
-// DIE ZWEI STUFEN UND DIE WAAGE (K14, 11.10.; der Schöpfer: „der war früher unter 2 min, das wäre wieder genial"). Befund:
-// jeder Push fuhr die ganze Batterie — drei Gruppen mit 17,7 / 26,0 / 19,0 min Median und zwei Jobs daneben (check 4,7 min,
-// darin Prettier 2,1 min auf dem ganzen Stamm; erst-zeichnung 5,8 min), die Wanduhr ~25 min. check.yml trägt jetzt GENAU
-// zwei Gruppen-Jobs: `puls` (je Push) und `voll` (die übrige Batterie, unter der EINEN Bedingung VOLL_WENN); jeder Schritt
-// steht an GENAU einer Stelle (G)/(D), ein dritter Job ist ROT (er stünde außerhalb der Waage):
+// DIE ZWEI STUFEN UND DIE WAAGE (K14, 11.10.; Befund: jeder Push fuhr die ganze Batterie, ~25 min Wanduhr). check.yml trägt
+// GENAU zwei Gruppen-Jobs: `puls` (je Push) und `voll` (die übrige Batterie, unter der EINEN Bedingung VOLL_WENN); jeder Schritt
+// steht an GENAU einer Stelle (G)/(D), ein weiterer Job ist ROT (außer der Echt-Gruppe (E), er stünde außerhalb der Waage):
 //   (T) WAAGE    je Gruppe die Vorbereitung plus die Median-Zeiten ihrer Schritte aus spec/ci/ci-zeiten.json (gemessen von
 //                scripts/ci-zeiten.cjs über die GitHub-API; die CI fragt die API nie): ein Job je Push ≤ 2 min, eine
 //                Voll-Gruppe ≤ 7 min — wer drüber liegt, steht mit Minuten und seinem größten Schritt beim Namen; ein Schritt
@@ -47,12 +38,8 @@
 // Die Voll-Bedingung zählt für (S) als Merge-haltend: sie feuert auf integ-probe und main (der Weg nach main führt nur über
 // integ-probe, Merge-Regel entscheidung.md §2.8) und auf jedem PR nach main; jede andere Job-Bedingung bleibt STUMM.
 //
-// DIE WANDUHR DER VOLLEN BATTERIE (K61 CI-Diät, 14.10.). Befund (Prüfung K61-1): 20 Voll- und 2 Puls-Gruppen, jede unter
-// ihrem Deckel, und doch 12,3 min Wanduhr (38632403330) — das Konto fährt 20 Jobs zugleich (gemessen: 20 um 20:01:04Z,
-// die übrigen warteten), 22 Jobs ließen zwei auf einen freien Platz warten, und derselbe Kopf fuhr die Batterie mehrfach
-// (d2e06032 auf integ-probe und 14 min später auf main) und belegte die Plätze mit einem Urteil, das schon stand. Dazu
-// hingen beide Caches der Vorbereitung am Hash des Lockfiles, das die Projektversion trägt: jede Versions-Stufe lud den
-// Chrome in jedem Job neu (am 14.10. riss der Download mit ECONNRESET eine Gruppe, 38588243782).
+// DIE WANDUHR DER VOLLEN BATTERIE (K61, 14.10.; Befund: 22 Jobs auf 20 Plätzen, derselbe Kopf mehrfach gerichtet, die Caches
+// am Lockfile-Hash luden den Chrome je Versions-Stufe neu):
 //   (T) PLÄTZE    die Jobs, die ein voller Lauf zugleich fährt (der Puls und die Voll-Gruppen; ein Job, auf den ein anderer
 //                wartet, endet vor ihm), ≤ LAEUFER_PLAETZE — sonst wartet der Überschuss und trägt die Wanduhr doppelt
 //   (V) KOPF      vor der Batterie richtet der Job `kopf` (unter VOLL_WENN, ohne Matrix, EIN Schritt scripts/ci-kopf.cjs, nie
@@ -62,9 +49,7 @@
 //                trägt keinen eigenen Cache (dessen Schlüssel IST der Lockfile-Hash); die Schlüssel kommen aus
 //                scripts/ci-schluessel.cjs (Inhalt allein), der Schritt steht vor den Caches, die Caches vor npm ci
 //
-// DER VOLLE PLAYTEST IN DER VOLLEN BATTERIE (K18, 11.10. nachts). Befund: K15 kam mit grüner Zweig-CI an und fiel erst am
-// Merge im vollen playtest (RAUSCH-GESETZ (B), ein verborgener Fn-Rumpf) — `npm run playtest` lief in keiner Gruppe, nur
-// nächtlich in playtest-full.yml (blockt keinen Merge, auf main 86–112 s je Lauf). (W) sah ihn nie: er ist kein gate:*.
+// DER VOLLE PLAYTEST IN DER VOLLEN BATTERIE (K18, 11.10.; Befund: K15 fiel erst am Merge im vollen Playtest, (W) sah ihn nie):
 //   (P) PLAYTEST  der volle Playtest (`npm run playtest`) läuft in GENAU einem Schritt aller Workflows, in einer EIGENEN
 //                Gruppe der vollen Batterie, sein Rot hält den Merge, und das Verdikt ist die Bedingung: der letzte Befehl
 //                des Schritts greift „Alle Invarianten OK" aus dem Log, das `tee` aus dem Playtest schrieb (ein grüner
@@ -100,6 +85,29 @@ const KOPF_JOB = "kopf";
 const KOPF_LAUF = /^node scripts\/ci-kopf\.cjs$/;
 const VOLL_NACH_KOPF = "needs.kopf.outputs.voll == 'ja'";
 const needsVon = (J) => [].concat((J && J.needs) || []);
+// (E) DIE ECHT-GRUPPE (K65): der eigene Läufer mit der Karte fährt benannte GPU-Schritte von `voll` noch einmal (derselbe
+// run-Befehl) und die Wände der Karte (`gate:…:echt`), außerhalb der Waage, nie pull_request; so hält sein Rot wie `voll` (S).
+const ECHT_JOB = "echt";
+const ECHT_WENN =
+    "(github.event_name == 'schedule' || (github.event_name == 'push' && (github.ref == 'refs/heads/integ-probe' || " +
+    `github.ref == 'refs/heads/main'))) && ${VOLL_NACH_KOPF}`;
+function echtForm(doc) {
+    const E = doc && doc.jobs && doc.jobs[ECHT_JOB];
+    if (!E) return [];
+    const V = doc.jobs[VOLL_JOB] || {};
+    const gpu = new Set(((V.strategy && V.strategy.matrix.include) || []).filter((e) => e.klasse === "gpu").map((e) => e.gruppe));
+    const soll = new Set(gateSchritte(doc).filter((s) => s.job === VOLL_JOB && gpu.has(s.gruppe)).map((s) => s.run));
+    const v = [];
+    const env = E.env || {};
+    if ([].concat(E["runs-on"] || []).sort().join(" + ") !== "omen-gpu + self-hosted" || env.CI_KLASSE !== "gpu" || env.LINSE_GPU !== "karte")
+        v.push(`(E) ECHT: „${ECHT_JOB}" läuft nicht auf self-hosted + omen-gpu mit env CI_KLASSE gpu und LINSE_GPU karte`);
+    if (normWenn(E.if) !== normWenn(ECHT_WENN) || !needsVon(E).includes(KOPF_JOB))
+        v.push(`(E) ECHT: „${ECHT_JOB}" läuft unter „${E.if}" statt hinter dem Kopf-Richter unter ${ECHT_WENN}`);
+    for (const s of gateSchritte(doc).filter((x) => x.job === ECHT_JOB))
+        if (!soll.has(s.run) && !/^npm run gate:[a-z0-9:-]+:echt$/.test(s.run))
+            v.push(`(E) ECHT: „${s.name}" ist kein Schritt der GPU-Klasse von „${VOLL_JOB}" und keine Wand der Karte (gate:…:echt)`);
+    return v;
+}
 // die volle Stufe: der Kopf-Richter unter VOLL_WENN und die Batterie hinter ihm (ihr Rot hält den Merge, (S))
 function vollArt(doc, job) {
     const J = doc && doc.jobs && doc.jobs[job];
@@ -122,9 +130,8 @@ const VORBEREITUNG = [
     ["System-Libs", (s) => /apt-get install/.test(String(s.run || ""))],
     ["npm ci", (s) => /\bnpm ci\b/.test(String(s.run || ""))],
 ];
-// die Caches (K61): der npm-Cache und der puppeteer-Chrome aus dem Actions-Cache, vor npm ci (dessen postinstall lädt den
-// Chrome sonst je Job neu — am 14.10. riss der Download mit ECONNRESET eine ganze Gruppe), ihre Schlüssel aus dem
-// Schlüssel-Schritt (scripts/ci-schluessel.cjs); sie stehen im Vorbereitungs-Block, ohne Gruppe
+// die Caches (K61): der npm-Cache und der puppeteer-Chrome aus dem Actions-Cache vor npm ci (sonst lädt dessen postinstall
+// den Chrome je Job neu), ihre Schlüssel aus scripts/ci-schluessel.cjs; sie stehen im Vorbereitungs-Block, ohne Gruppe
 const CACHE = (s) => typeof s.uses === "string" && /^actions\/cache(\/restore)?@/.test(s.uses);
 const SCHLUESSEL = (s) => /^node scripts\/ci-schluessel\.cjs$/.test(String(s.run || "").trim());
 const IST_VORBEREITUNG = (s) => CACHE(s) || SCHLUESSEL(s) || VORBEREITUNG.some(([, f]) => f(s));
@@ -136,22 +143,15 @@ const name = (s) => String(s.name || s.uses || lauf(s).split("\n")[0]).replace(/
 // ── DIE GEGENRICHTUNG (W)/(A)/(R) ──
 const WORKFLOWS = ".github/workflows";
 // Die Klassen, aus denen eine Wand der CI fernbleiben darf. Jede nennt eine Eigenschaft der Wand, keinen Zeitplan. (Die
-// Klasse „echter Renderer nötig" fiel am 10.10.: der Läufer rastert swiftshader-WebGPU und -GL — gate:webgl-probe läuft
-// in Gruppe 2; was dort nicht steht, steht wegen einer anderen Eigenschaft.)
+// Klasse „echter Renderer nötig" fiel am 10.10. (swiftshader rastert WebGPU und GL), „echte GPU nötig" am 16.10.: die Karte
+// fährt der Job `echt` (E).)
 const KLASSEN = {
-    GPU: "echte GPU nötig", // der Läufer hat keinen Hardware-Adapter (Werkbank `--echt`)
     MESS: "Messwerkzeug, kein Urteil", // gibt Zahlen aus, kennt kein Rot
     FRIST: "Zeitfrist/Einschwingen > CI-Budget", // ein Lauf trägt den Deckel einer Gruppe nicht
     ROT: "rot an der Basis", // rot auf main, Täter benannt — die Heilung ist größer als diese Wand
 };
 // Die EINE Ausnahme-Liste: Wand → { klasse, grund }. Wer hier steht, hält in keinem Workflow den Merge — mit Grund.
 const AUSNAHMEN = {
-    "gate:weltbild-frost:echt": {
-        klasse: KLASSEN.GPU,
-        grund:
-            "fährt die Frost-Wand mit dem Hardware-Adapter der Werkbank (--echt, echteWebGpuArgs); der Läufer hat keine " +
-            "GPU — die swiftshader-Fassung gate:weltbild-frost läuft in der vollen Batterie (Frost-Wand)",
-    },
     "gate:arch-feld": {
         klasse: KLASSEN.FRIST,
         grund:
@@ -316,7 +316,7 @@ function schrittStumm(datei, doc, job, j, s) {
     if (an(j["continue-on-error"])) return `continue-on-error am Job „${job}"`;
     // die volle Stufe hält den Merge: der Kopf-Richter feuert unter VOLL_WENN, die Batterie hinter ihm läuft, solange
     // der Kopf kein grünes Urteil der vollen Batterie trägt — wo sie nicht läuft, steht das Urteil des Kopfs schon
-    const vollStufe = datei === path.basename(DATEI) && imVollenLauf(doc, job);
+    const vollStufe = datei === path.basename(DATEI) && (imVollenLauf(doc, job) || (job === ECHT_JOB && !echtForm(doc).length));
     if (j.if !== undefined && !IMMER.test(String(j.if)) && !vollStufe) return `der Job „${job}" läuft nur unter „${j.if}"`;
     if (an(s["continue-on-error"])) return "continue-on-error am Schritt";
     if (s.if !== undefined && !IMMER.test(String(s.if))) {
@@ -403,8 +403,8 @@ function deckung(skripte, docs, ausnahmen) {
     // (R) je Workflow-Datei: ein Schritt, dessen Befehle alle schon ein ANDERER Schritt fährt (einen Befehl, dessen Rot
     // dieser Schritt hält, nur ein anderer, der es AUCH hält)
     for (const s of schritte) {
-        if (!s.teile.length) continue;
-        const andere = schritte.filter((o) => o !== s && o.datei === s.datei);
+        if (!s.teile.length || s.job === ECHT_JOB) continue; // die Echt-Gruppe wiederholt GPU-Schritte mit Absicht (E)
+        const andere = schritte.filter((o) => o !== s && o.datei === s.datei && o.job !== ECHT_JOB);
         const bei = (t) => andere.find((o) => o.teile.some((x) => x.t === t.t && (t.stumm || !x.stumm)));
         if (s.teile.every((t) => bei(t))) {
             const wer = [...new Set(s.teile.map((t) => bei(t).name))];
@@ -492,9 +492,9 @@ function gateSchritte(doc) {
 function urteil(doc) {
     const v = [];
     for (const job of Object.keys((doc && doc.jobs) || {}))
-        if (!GRUPPEN_JOBS.includes(job) && job !== KOPF_JOB)
+        if (!GRUPPEN_JOBS.includes(job) && job !== KOPF_JOB && job !== ECHT_JOB)
             v.push(
-                `(V) JOB: „${job}" steht außerhalb von ${GRUPPEN_JOBS.join(" und ")} (und dem Kopf-Richter „${KOPF_JOB}") — die Waage sähe ihn nicht`
+                `(V) JOB: „${job}" steht außerhalb von ${GRUPPEN_JOBS.join(" und ")} (und dem Kopf-Richter „${KOPF_JOB}", der Echt-Gruppe „${ECHT_JOB}") — die Waage sähe ihn nicht`
             );
     for (const job of GRUPPEN_JOBS) {
         const J = doc && doc.jobs && doc.jobs[job];
@@ -516,9 +516,9 @@ function urteil(doc) {
             );
         v.push(...gruppenUrteil(job, J));
     }
-    v.push(...kopfForm(doc));
-    // (D) über ALLE Jobs: ein Befehl, ein Name
-    const alle = gateSchritte(doc);
+    v.push(...kopfForm(doc), ...echtForm(doc));
+    // (D) über ALLE Jobs: ein Befehl, ein Name (die Echt-Gruppe wiederholt Schritte der GPU-Klasse mit Absicht, (E))
+    const alle = gateSchritte(doc).filter((s) => s.job !== ECHT_JOB);
     const zaehle = (key) => {
         const m = new Map();
         for (const s of alle) m.set(key(s), (m.get(key(s)) || []).concat(s));
@@ -1320,7 +1320,7 @@ function selbsttestGegenrichtung() {
         },
     });
     const aus = () => ({
-        "gate:d": { klasse: KLASSEN.GPU, grund: "fährt den Hardware-Adapter der Werkbank (--echt)" },
+        "gate:d": { klasse: KLASSEN.MESS, grund: "gibt Zahlen aus, kennt kein Rot" },
     });
     const C = (d) => d["check.yml"].jobs.playtest.steps[0];
     const f = [];
