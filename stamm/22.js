@@ -632,7 +632,7 @@ class AnazhRealm_Z22 {
         return prof;
     }
 
-    // Hof-D (hof-plan.md §D.1/§G.5) — der Fokus-Toggle: ein Klick auf die Zeile FOKUSSIERT das Wesen
+    // Hof-D (hof-plan §D.1/§G.5) — der Fokus-Toggle: ein Klick auf die Zeile FOKUSSIERT das Wesen
     // (wie der Bauplan-Fokus in der Werkstatt) → es tritt auf die BÜHNE + seine Spec-Card liest darunter.
     // Die Selektion hängt an der STABILEN Identität (`prof.id` = netId/name, §G.6), NIE am Array-Index.
     _toggleHofFocus(id) {
@@ -1094,7 +1094,7 @@ class AnazhRealm_Z22 {
         return `${what}${ago}`;
     }
 
-    // === V18.57 Ich-Bogen — das Selbst-Porträt (das Werkstatt-/Hof-Muster auf den Spieler, ich-plan.md) ===
+    // === V18.57 Ich-Bogen — das Selbst-Porträt (das Werkstatt-/Hof-Muster auf den Spieler, ich-plan) ===
 
     // Ich-A0 (ich-plan §G.1) — EIN Spieler-Lese-Vektor, viele Leser (das `_creatureProfile`-Muster auf das
     // Selbst). Bündelt die GEMESSENEN reichsten Vektoren des Spiels: Seele · Werte (equip-gefaltet) · Natur ·
@@ -1550,7 +1550,7 @@ class AnazhRealm_Z22 {
         }
         for (const c of creatures) {
             const ud = c.userData || {};
-            // Hof-D0 (hof-plan.md §G.1) — EIN Profil, viele Leser. Statt N Inline-Lookups (Stats/Soul/
+            // Hof-D0 (hof-plan §G.1) — EIN Profil, viele Leser. Statt N Inline-Lookups (Stats/Soul/
             // Specs/Task) liest die Zeile den EINEN `_creatureProfile`-Vektor (Verdichtung V9.82 + KONSUM
             // V17.31 — die Spec-Card, die Sektionen + die Sortierung teilen denselben Vektor in Hof-D/F).
             const prof = this._creatureProfile(c);
@@ -1642,7 +1642,7 @@ class AnazhRealm_Z22 {
                 drink: "trinkt am Ufer",
             };
             const taskEl = this._el("span", { class: `creature-task ${taskName}`, text: TASK_LABELS[taskName] || "—" });
-            // Hof-D (hof-plan.md §D.1/§G.2) — die STIMMUNG als Glyph, immer sichtbar (kompakt). Ehrlich geerdet:
+            // Hof-D (hof-plan §D.1/§G.2) — die STIMMUNG als Glyph, immer sichtbar (kompakt). Ehrlich geerdet:
             // froh/trübe (BINÄR `creatureEmotions`) × Temperament (neugierig/wachsam/scheu/vertraut aus
             // `_creatureWariness`+`bond`). Die Resonanz des Wesens auf das Feld + die Bindung (der wahre Norden).
             const moodSad = prof.emotion === "sad";

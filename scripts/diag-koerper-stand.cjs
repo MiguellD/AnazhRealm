@@ -34,7 +34,7 @@
 //       Stufe im Umkreis 120 m) stehen Büschel und Pflanzen im Rand-Streifen so dicht wie in der Chunk-Mitte daneben (L0 0,9–2,7 m):
 //       Wiese ±10 %, Streu ±10 % oder drei Unschärfen. Vorher lasen beide nur die Karte des Eigners: Dichte 0,11 gegen
 //       1,31 Büschel je m², ein Gitter kahler Linien in der Wiese (Konsum-Leser: `_nahWieseKachelBueschel`, `_nahStreuKachel`)
-//   --selftest: je Defekt serviert der Server die Basis-Zeile von anazhRealm.js (cf9a07ba) — GENAU die Probe dieses
+//   --selftest: je Defekt serviert der Server die Basis-Zeile des Stamms (cf9a07ba) — GENAU die Probe dieses
 //   Defekts muss rot werden; fehlt die geheilte Zeile, ist der Selbsttest rot.
 //   node scripts/diag-koerper-stand.cjs [--selftest]
 "use strict";
@@ -48,7 +48,7 @@ const PORT = Number(process.env.KOERPER_STAND_PORT || 4479);
 const ROOT = path.resolve(__dirname, "..");
 const SELBST = process.argv.includes("--selftest");
 
-// DIE BASIS-ZEILEN je Defekt: [geheilte Form in anazhRealm.js, Basis-Form]. Der Selbsttest serviert die Basis-Form.
+// DIE BASIS-ZEILEN je Defekt: [geheilte Form im Stamm, Basis-Form]. Der Selbsttest serviert die Basis-Form.
 const BASIS = {
     traeger: [
         [
