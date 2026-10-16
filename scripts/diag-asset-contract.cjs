@@ -33,12 +33,13 @@ const DIR = path.resolve(__dirname, "..", "spec", "asset-contract", "v1", "golde
 // 30°, 60° von unten; Raster-Kante `px` = L0-Höhe / 300 für beide Stufen) und seine Karte (die Studio-Karte aus der L1:
 // Deckung der Mip 0, mittlere lineare Kronenfarbe der opaken Texel) — gebaut aus dem Ist ihres Stands (`node
 // scripts/diag-asset-contract.cjs --tafel`; zuerst V18.536 auf 76c9624d, neu gemünzt im Vertrags-Akt K20: die Bäume
-// tragen ihr Welt-Maß — Schaft und Schlankheit in Metern, die Karte rahmt den höheren Baum). Jede spätere Stufe deckt je Hebung 0,92–1,08 davon, jede Karte
+// tragen ihr Welt-Maß — Schaft und Schlankheit in Metern, die Karte rahmt den höheren Baum; im Vertrags-Akt T2 die Zeilen
+// der Laubkronen: der Bestand trägt seine Krone hoch und schmal). Jede spätere Stufe deckt je Hebung 0,92–1,08 davon, jede Karte
 // 0,92–1,08 bei ΔE76 ≤ 2. Befund: das Mittel der 24 Ansichten (D0, nur L0) sah die Seitenansicht mit einem Drittel — die
 // Koniferen-L1 verlor 22–34 % ihrer Seitenansicht, die Karte 16–27 %, ihre Farbe sprang um ΔE 2,6–5,8, ohne dass eine
 // Wand anschlug.
 const TAFEL_BILD = path.resolve(__dirname, "..", "spec", "asset-contract", "v1", "bild-tafel.json");
-const TAFEL_STAND = "K20"; // der Stand, aus dem die Tafel gemünzt ist (zuerst V18.536)
+const TAFEL_STAND = "T2"; // der Stand, aus dem die Tafel gemünzt ist (zuerst V18.536, K20, T2: die Laubkrone im Bestand)
 const BILD_BAND = [0.92, 1.08];
 const GESTALT_BAND = [0.85, 1.15];
 const KARTE_DE = 2;

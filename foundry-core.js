@@ -1735,21 +1735,43 @@ function __ringBahn(R, tol, festUnter) {
 }
 // DIE LAGEN-WAHL (S3, 09.10.): die Blattstellen einer Baum-Krone, deren Karten (Kante `kante` Blatt-Groessen) die Zeile
 // `lagen` halten — phyto-core `kronenLagen` schaetzt die Lagen der vollen Krone (gerastert, 8 Ansichten, 64 px), die
-// Stufe traegt den Anteil LAGEN_RESERVE·lagen / Schaetzung im Index-Stride (gleichmaessig ueber die Krone, kein rnd():
-// FIX v35). Die Reserve deckt den Abstand der Schaetzung zur Messung der Wand (kronen-linse, 24 Ansichten: die Krone
-// eines Anteils f traegt 1,0–1,15 × f × die volle; Schaetzung/Messung 0,87–0,94 — gemessen an 16 Laub-Gestalten).
+// Stufe traegt den Anteil f im Index-Stride (gleichmaessig ueber die Krone, kein rnd(): FIX v35). Die Wahl ist
+// GESCHLOSSEN (T2, 16.10.): sie beginnt bei f = LAGEN_RESERVE·lagen / Schaetzung, schaetzt die gewaehlte Krone mit
+// demselben Raster nach und korrigiert f (× LAGEN_ZIEL·lagen / Schaetzung), bis die Schaetzung die Zeile haelt — sie
+// liefert die groesste haltende Wahl. Befund: die schmale Bestandskrone (Hub der Krone, BESTAND) traegt mit dem Anteil f
+// 1,1–1,3 × f × die volle (die offene Wahl mit Reserve riss die Wand: Eiche/Buche L0 16,1–17,0 > 16, L1 13,0–14,7 > 13);
+// die Schaetzung liegt 2–13 % ueber der Wand (kronen-linse, 24 Ansichten, H/120 — 16 Laub-Goldens), die Wahl haelt also
+// auch dort. Die Peitschen der Trauer-Krone waehlen offen (LAGEN_RESERVE, unten).
 const LAGEN_RESERVE = 0.82;
+const LAGEN_ZIEL = 0.97;
+const LAGEN_SCHRITTE = 6;
 function __lagenWahl(blaetter, kante, lagen) {
     if (blaetter.length <= 3) return blaetter;
-    const PC = self.__phytoCore;
-    const voll = PC.kronenLagen(blaetter, kante, PC.BLATT_ATLAS_BREIT.kern, 64);
-    const f = voll > 0 ? Math.min(1, (LAGEN_RESERVE * lagen) / voll) : 1;
-    if (f >= 1) return blaetter;
-    const keep = Math.max(3, Math.round(blaetter.length * f)),
-        st = blaetter.length / keep,
-        K = [];
-    for (let t = 0; t < keep; t++) K.push(blaetter[Math.floor(t * st)]);
-    return K;
+    const PC = self.__phytoCore,
+        kern = PC.BLATT_ATLAS_BREIT.kern;
+    const voll = PC.kronenLagen(blaetter, kante, kern, 64);
+    if (!(voll > lagen)) return blaetter;
+    const wahl = (f) => {
+        const keep = Math.max(3, Math.round(blaetter.length * f)),
+            st = blaetter.length / keep,
+            K = [];
+        for (let t = 0; t < keep; t++) K.push(blaetter[Math.floor(t * st)]);
+        return K;
+    };
+    let f = (LAGEN_RESERVE * lagen) / voll,
+        best = null,
+        bestL = 0;
+    for (let i = 0; !best || (i < LAGEN_SCHRITTE && bestL < LAGEN_ZIEL * lagen); i++) {
+        const K = wahl(f),
+            l = PC.kronenLagen(K, kante, kern, 64);
+        if (l <= lagen && (!best || K.length > best.length)) {
+            best = K;
+            bestL = l;
+        }
+        if (K.length <= 3) return best || K;
+        f = Math.min(1, (f * LAGEN_ZIEL * lagen) / l);
+    }
+    return best;
 }
 // Die Bahn eines Strangs bis zum Anteil `ab` ihrer Bogenlaenge (der Nadel-Ast der L0: Roehre bis `wedel.ab`) — die Ringe
 // davor und ein Ring genau an der Grenze (Mitte und Schwung linear); dort läuft die Röhre spitz aus (`BAHN_SPITZE` ihres
@@ -2037,7 +2059,7 @@ function emitTreeRezept(P, stufe) {
     // jede neue Art erbt die Baum-Krone nicht still):
     //  - DIE LAGEN-WAHL (S3): Laub-Karten aus dem EINEN Blatt-Atlas (Breitblatt-Zellen) auf so vielen Blattstellen, dass die
     //    Krone die Zeile `lagen` haelt (`__lagenWahl`: phyto-core `kronenLagen` schaetzt die Lagen der vollen Krone, die
-    //    Stufe traegt den Anteil LAGEN_RESERVE·lagen / Schaetzung im Index-Stride — gleichmaessig ueber die Krone).
+    //    Stufe traegt den groessten Anteil im Index-Stride, dessen Krone die Zeile haelt — geschlossen nachgeschaetzt).
     //    Befund (Kern V18.536, kronen-linse 24 Ansichten): die Laub-L0 trug 35–72 Quad-Lagen je Kronen-Pixel (jede Lage
     //    alpha-getestet und schattiert, 65 % ihrer Fragmente verworfen), die L1 24–47 — der Blatt-Stride `dichte.laub`
     //    war nur gegen die saettigende binaere Deckung geeicht. Die ZWEIG-WAHL (der Anteil der Laeufe traegt alle seine

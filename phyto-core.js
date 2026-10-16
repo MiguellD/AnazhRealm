@@ -2851,6 +2851,8 @@
     // die tief ansetzende Krone das Stamm-Band), die Krone über 0,7 H Rinden-Albedo 0,35 (der weiße Leittrieb). Jetzt `strich`
     // 0,56 → 0,45 (Stamm 5,6–5,9 %, Solitär 17,8 %) und `zweigR` [0,05; 0,14] → [0,1; 0,3] trunkR (Bestand: Zweige unter
     // ~1,4 cm dunkel, Äste über ~4 cm weiß — Betulin trägt der Stamm und der Starkast): Krone 0,14–0,15, Solitär 0,085.
+    // Der Hub der Krone streckt den Leittrieb im Kronenraum: seine Zeilen auf 0,40–0,45 trunkR hoben die L0 auf 11,1–12,2k
+    // Dreiecke (tree[0] 12 000); `zeilenAb` 0,4 → 0,45: L0 10,2–11,5k (Gestalten 1–5, 7, 12345), der Stamm-Band bleibt ganz.
     const BIRKEN_RINDE = {
         zeile: 0.09,
         hoehe: [0.003, 0.018],
@@ -2864,7 +2866,7 @@
         fussRaster: 0.03,
         zweigR: [0.1, 0.3],
         zweig: [0.1, 0.07, 0.058],
-        zeilenAb: 0.4,
+        zeilenAb: 0.45,
     };
 
     // DIE BILD-HÖHE EINES BAUMS an der Nahkante seiner Stufe in Pixeln (S3, 09.10.; 1080 Zeilen bei 75° Sichtfeld): die
