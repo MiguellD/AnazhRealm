@@ -680,10 +680,15 @@ class AnazhRealm_Z17a {
         const s = T.texture(tex, uv).bias(T.float(AnazhRealm.BLATT_FARBE_OKTAVE));
         const deckung = T.texture(tex, uv);
         const w = tex.userData.wert;
+        // die Fußspur des Pixels in Texeln der Stufe 0 (die Stufe, die der Filter liest: log2 der längeren Achse)
+        const gr = T.vec2(tex.image.width, tex.image.height);
+        const dx = T.dFdx(uv).mul(gr),
+            dy = T.dFdy(uv).mul(gr);
+        const stufe = T.max(dx.dot(dx), dy.dot(dy)).max(T.float(1e-12)).log2().mul(0.5);
         return {
             tex,
             rgb: s.rgb.div(s.a.max(T.float(1e-3))).mul(T.vec3(1 / w[0], 1 / w[1], 1 / w[2])),
-            a: this._laubKante(T, deckung.a, c),
+            a: this._laubKante(T, deckung.a, c, stufe),
             schwelle: this._laubSchwelle(T),
         };
     }
@@ -691,15 +696,21 @@ class AnazhRealm_Z17a {
     // DIE KANTE DES LAUBS (K68): der alphaTest schnitt jede Blatt-Karte binär an der Schwelle — die Nadel-Wedel standen im
     // Pixel-Takt als Raster aus Nadel und Himmel (Soll-Tafel laub, Maß zweiton: Täter f:tanne:L0, Radeon, Mess-Wiese).
     // Die Deckung um die Schwelle `c`, geteilt durch ihre Änderung je Pixel (fwidth), ist der Anteil des Pixels, der
-    // deckt: die Kante ist auf jeder Stufe EIN Pixel breit (vergrößert keine Texel-Treppe, verkleinert kein Bit-Muster).
+    // deckt: vergrößert ist die Kante EIN Pixel breit (keine Texel-Treppe).
+    // VERKLEINERT IST DIE ALPHA SCHON DIE DECKUNG (A3): die Mip-Kette hält die Deckung an der Schwelle (phyto-core
+    // `impostorMips` glatt, Castaño) — sie ballt den Anteil der Nadeln zu Büscheln und Lücken von einem Texel, und die Stufe,
+    // die der Filter liest, trägt einen Texel je Pixel. Die Kante von einem Pixel schnitt diese Lücken zu Löchern im
+    // Pixel-Takt (Soll-Tafel laub am Kopf: zweiton 0,0003, Täter f:tanne:L0, Radeon, Mess-Wiese). Ab der Stufe 1 (`stufe`,
+    // log2 der Fußspur in Texeln der Stufe 0) ist die Breite der Kante die ganze Alpha — der Bild-Pass vergleicht die Deckung
+    // selbst mit dem Rauschen, die zeitliche Auflösung mittelt sie zum Mischton; dazwischen wächst sie stetig.
     // Der Bild-Pass vergleicht ihn mit dem Rauschen der zeitlichen Auflösung (`_laubSchwelle`), ihr Mittel ist die
     // geglättete Kante (Hashed Alpha unter TAA: Horizon Zero Dawn, GDC 2018). Der Schatten-Pass liest die ZAHL alphaTest
     // 0,5 (r184 `renderObject` setzt sie je Objekt, nie den Knoten): a' > 0,5 ⇔ a > c — der Wurf bleibt binär wie vorher.
-    _laubKante(T, a, c) {
+    _laubKante(T, a, c, stufe) {
         const s = T.float(c == null ? 0.5 : c);
         return a
             .sub(s)
-            .div(T.fwidth(a).max(T.float(1e-4)))
+            .div(T.fwidth(a).max(stufe.clamp(0.0, 1.0)).max(T.float(1e-4)))
             .add(T.float(0.5))
             .clamp(0.0, 1.0);
     }
