@@ -49,3 +49,9 @@ Alle Workflows und Agenten per TaskStop angehalten, notbremse.sh gefahren (kein 
 | index-breite (IX) | aa74c324 | nicht begonnen (Bauer gestoppt) | neu starten mit dem Auftrag aus dieser Datei / Arbeitsweise 2.0 |
 | tafel-kopf (A0) | aa74c324 | nicht begonnen (wartete auf das GPU-Schloss) | neu starten: alle Klassen am Kopf mit `--ist` |
 | Spike G1 | Scratch `%TEMP%/claude/G1/` | ABAB-Rohdaten Genesis Third (A, B-aus, B-ein) liegen | Rohdaten auswerten, Urteil schreiben → erste G1-Karte |
+
+- **BERICHTIGUNG OMEN 16.10. ~12:15 zu IX `index-breite`:** kein Täter. Die Meldung „Index 7704 × Uint32 in 15408 B“ war der
+  absichtliche Selbsttest T2 der Frost-Wand (alle T2 grün; I/G/W an jedem Schritt grün). Auf der Karte rot ist nur B „das Bild
+  folgt der Kamera“ an Ankunft (2,65 %) und dritter Person (2,46 %, Soll 5 %), dazu zählt `welt-boot` im `--echt`-Weg die
+  T2-Meldung als Welt-Fehler. Die Ausnahme-Begründung in `diag-ci-deckung` (integ 826717ed) nennt den falschen Index-Grund.
+  Bericht: `bericht/1610-frost-echt.md`.
