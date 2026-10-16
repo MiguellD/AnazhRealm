@@ -2157,21 +2157,20 @@ class AnazhRealm_Z11b {
     // dem Auge `viewDir` zurückwirft, über dem Grund mit dem Durchlass `T` — der Körper im Licht des Orts (R∞ × E/π), soweit
     // er den Grund deckt (1 − T) und nicht gespiegelt wird (1 − F); der Himmel × F; der Glanz. Liefert { eigen, fres }.
     _wasserBlick(TSL, WG, o) {
-        const { float, vec2, vec3, vec4, normalize, reflect, max, dot, pow, clamp, texture, equirectUV, step, mix } =
-            TSL;
+        const { float, vec2, vec3, vec4, normalize, reflect, max, dot, pow, clamp, texture, step, mix } = TSL;
         // Schlick-Fresnel (WASSER_GESETZ): fres = f0 + f1·(1−n·v)^f2 — EIN Fresnel für Spiegel UND Durchlass.
         const ndvW = clamp(dot(o.n, o.viewDir), 0.0, 1.0);
         const fres = float(WG.fresnel[0]).add(
             float(WG.fresnel[1]).mul(pow(float(1.0).sub(ndvW), float(WG.fresnel[2])))
         );
-        // DER SPIEGEL IST DER HIMMEL: die EINE Himmels-Umgebung (`_himmelUmgebungTex`, dieselbe Textur, aus der PMREM
-        // die IBL jedes PBR-Stoffs filtert) in Richtung des gespiegelten Strahls — Strahlung in Himmels-Einheiten,
-        // nie unter den Horizont (Kräusel-Normalen), Mip 0 (glatt; an der Azimut-Naht griffe die Ableitung die
-        // gröbste Stufe). Bis V18.530 spiegelte das Wasser die Zenit-Tönung × die SONNEN-Stärke (uLight 7,4): der
+        // DER SPIEGEL IST DER HIMMEL: die Himmels-Sicht der Kuppel (`_himmelSicht`: die EINE Atmosphäre und ihre Wolken)
+        // in Richtung des gespiegelten Strahls — Strahlung in Himmels-Einheiten, nie unter den Horizont (Kräusel-Normalen).
+        // Bis A1 die Umgebung von 128 × 64 (`_himmelUmgebungTex`, die Quelle der IBL): ein Verlauf ohne Wolke, wo das Bild
+        // den Himmel nicht trug (die Ecke des Sees, A0). Bis V18.530 spiegelte das Wasser die Zenit-Tönung × die SONNEN-Stärke (uLight 7,4): der
         // Spiegel lag 3–5× über dem Himmel, den er spiegelt — weiß wie Eis (Blick-Tour 07, Helligkeit 188).
         const _R = reflect(o.viewDir.negate(), o.n);
         const _Rh = normalize(vec3(_R.x, max(_R.y, float(0.02)), _R.z));
-        const himmel0 = texture(this._himmelUmgebungTex(), equirectUV(_Rh)).level(float(0)).rgb;
+        const himmel0 = this._himmelSicht(_Rh);
         // DER SPIEGEL DER WELT (D10, A1): wo der gespiegelte Strahl Ufer, Hang, Krone, Haus oder Wolke trifft (`_spiegelPass`,
         // 1/teil Auflösung: zuerst das gezeichnete Bild, jenseits des Schirms das Spiegel-Feld des Gesetzes), steht ihre Strahlung
         // statt der Umgebung — der Welt-Punkt `o.ort` reprojiziert in die Ansicht, aus der der Pass rechnete, die Kräusel-Normale

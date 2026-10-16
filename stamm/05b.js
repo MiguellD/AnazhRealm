@@ -2021,54 +2021,38 @@ class AnazhRealm_Z05b {
         return mat;
     }
 
-    // ### Skybox ###
-    createGalaxySkybox() {
-        // Skybox als MeshBasicNodeMaterial (TSL): die Himmels-Sicht der EINEN Atmosphäre + horizont-genordete Wolken.
-        // vDir = normalize(positionLocal) hält den Sample-Punkt in Welt-Richtung, egal wo der Spieler steht.
-        // Live-Uniforms in `state.skyboxUniforms` (`.value`-Setter): _dayNightApplySkybox (cloudCover; die Tönung über
-        // himmelTint, den Träger des Tints), _loopSkyboxZeit (time pro Frame).
+    // DIE LIVE-UNIFORMS DES HIMMELS (einmal je Welt): die Zeit (Drift der Wolken), die Deckung des Wetters, die Sonne und ihr
+    // Farbton — DSL, Tag-Nacht und Loop schreiben hier hinein (`.value`), die Kuppel und der Spiegel des Wassers lesen dieselben
+    // (`_himmelSicht`). `himmelTint` ist der TRÄGER der Tönung (kein Knoten der Kuppel): der Tint des Tag-Nacht-Stops mit Wetter,
+    // Feld, Gefühl und DSL-Tönung — die Kuppel liest sein Verhältnis zum blanken Stop (`atmoLut.U.toenung`, D3).
+    _himmelUniformen() {
+        const st = this.state;
+        if (st.skyboxUniforms) return st.skyboxUniforms;
+        const { uniform } = THREE.TSL;
+        st.skyboxUniforms = {
+            time: uniform(0.0),
+            himmelTint: { value: new THREE.Color(1, 1, 1) },
+            cloudCover: uniform(0.3),
+            // V17.2 — die Sonnen-Richtung für den Wolken-Glanz: derselbe sunDir, der DirectionalLight und das Gras-Gegenlicht
+            // speist (`_dayNightApplyDirectionalLight`); W9 — ihr Farbton, der Durchlass der EINEN Atmosphäre (`_atmoSonne`)
+            sunDir: uniform(new THREE.Vector3(0.4, 0.8, 0.3).normalize()),
+            sunCol: uniform(new THREE.Color(1, 0.95, 0.85)),
+        };
+        return st.skyboxUniforms;
+    }
+
+    // DIE HIMMELS-SICHT in Richtung `vDir` (normiert, ein TSL-Knoten): die EINE Atmosphäre und die Wolken des HIMMEL_GESETZ —
+    // die Kuppel zeichnet sie (vDir = normalize(positionLocal), V8.26), das Wasser spiegelt sie (`_wasserBlick`, A1: bis dahin
+    // las der Spiegel die Umgebung von 128 × 64 ohne Wolken — wo das Bild den Himmel nicht trug, ein Verlauf).
+    _himmelSicht(vDir) {
         const TSL = THREE.TSL;
-        // Idempotent am Chokepoint: ein zweiter Bau ERSETZT den ersten statt eine zweite Kuppel zu
-        // stapeln (kein Doppel-Heap).
-        if (this.state.skybox) {
-            if (this.state.scene) this.state.scene.remove(this.state.skybox);
-            if (this.state.skybox.geometry) this.state.skybox.geometry.dispose();
-            if (this.state.skybox.material) this.state.skybox.material.dispose();
-            this.state.skybox = null;
-        }
-        const {
-            uniform,
-            vec2,
-            vec3,
-            float,
-            positionLocal,
-            normalize,
-            dot,
-            floor,
-            fract,
-            mix,
-            smoothstep,
-            clamp,
-            max,
-            Fn,
-        } = TSL;
+        const { vec2, vec3, float, normalize, dot, floor, fract, mix, smoothstep, clamp, max, Fn } = TSL;
         // DER HIMMEL IST DIE ATMOSPHÄRE (D3): die Kuppel liest die Himmels-Sicht der EINEN Atmosphäre (`_atmoLutBau`,
         // Hillaire) — Rayleigh-Blau, Mie-Hof um die Sonne, Dämmerung und Mondnacht aus dem Medium; bis D3 eine Nebel-Kuppel
         // (Indigo-Noise × Tint-Farbe, Horizont-Dunst, drei Halo-Schichten), getunt statt gerechnet. Die Scheibe der Sonne
         // trägt ihr Körper (`sunMesh`), den Hof die Mie-Phase der Tafel.
         const A = this._atmoLutBau();
-        // Zwei Live-Uniforms (uniform-Knoten, .value-mutable): die Zeit (Drift der Wolken) und die Deckung des Wetters.
-        const uTime = uniform(0.0);
-        const uCloudCover = uniform(0.3);
-        // V17.2 — Sonnen-Richtung für den Wolken-Glanz zur Sonne hin. EINE Quelle: derselbe sunDir, der DirectionalLight +
-        // das Gras-Gegenlicht speist (`_dayNightApplyDirectionalLight`-Sync).
-        const uSunDir = uniform(new THREE.Vector3(0.4, 0.8, 0.3).normalize());
-        // W9 — der Farbton der Sonne fürs Wolken-Gesetz (der Durchlass der EINEN Atmosphäre, `_atmoSonne`; Schreiber:
-        // _dayNightApplyDirectionalLight).
-        const uSunCol = uniform(new THREE.Color(1, 0.95, 0.85));
-        // vDir = normalize(positionLocal) — stabile Welt-Achse, V8.26-Bug-Schutz.
-        const vDir = normalize(positionLocal);
-
+        const { time: uTime, cloudCover: uCloudCover, sunDir: uSunDir, sunCol: uSunCol } = this._himmelUniformen();
         // Das Wolken-Feld folgt HIMMEL_GESETZ (foundry-core — dieselben Zahlen injiziert das Studio in sein
         // GLSL): Himmelsebenen-Projektion sp=dir.xz/(dir.y+projY), zwei fbm-Abtastungen (h21/vn verbatim),
         // Deckungs-smoothstep aus uCloudCover, Horizont-Ausklang, Farbton uSunCol (_atmoSonne).
@@ -2133,7 +2117,26 @@ class AnazhRealm_Z05b {
             .mul(U.licht.div(Math.PI))
             .add(A.himmelFarbe(vec3(0, 1, 0)));
         const wolkeHell = dot(lichtWolke, vec3(0.2126, 0.7152, 0.0722));
-        const finalColor = mix(A.himmelFarbe(vDir), cloudColor.mul(wolkeHell), cloudAmt);
+        return mix(A.himmelFarbe(vDir), cloudColor.mul(wolkeHell), cloudAmt);
+    }
+
+    // ### Skybox ###
+    createGalaxySkybox() {
+        // Skybox als MeshBasicNodeMaterial (TSL): die Himmels-Sicht der EINEN Atmosphäre + horizont-genordete Wolken.
+        // vDir = normalize(positionLocal) hält den Sample-Punkt in Welt-Richtung, egal wo der Spieler steht.
+        // Live-Uniforms in `state.skyboxUniforms` (`.value`-Setter): _dayNightApplySkybox (cloudCover; die Tönung über
+        // himmelTint, den Träger des Tints), _loopSkyboxZeit (time pro Frame).
+        const TSL = THREE.TSL;
+        // Idempotent am Chokepoint: ein zweiter Bau ERSETZT den ersten statt eine zweite Kuppel zu
+        // stapeln (kein Doppel-Heap).
+        if (this.state.skybox) {
+            if (this.state.scene) this.state.scene.remove(this.state.skybox);
+            if (this.state.skybox.geometry) this.state.skybox.geometry.dispose();
+            if (this.state.skybox.material) this.state.skybox.material.dispose();
+            this.state.skybox = null;
+        }
+        const { normalize, positionLocal } = TSL;
+        const finalColor = this._himmelSicht(normalize(positionLocal));
 
         const skyboxGeometry = new THREE.SphereGeometry(500, 32, 32);
         const skyboxMaterial = new THREE.MeshBasicNodeMaterial();
@@ -2142,18 +2145,7 @@ class AnazhRealm_Z05b {
         skyboxMaterial.depthWrite = false;
         AnazhRealm._himmelImUnendlichen(skyboxMaterial);
 
-        // Live-Uniforms speichern — DSL/dayNight/loop schreiben hier hinein
-        // statt in das alte `material.uniforms.X.value` (das gibt's bei
-        // NodeMaterial nicht mehr; uniform-Knoten haben .value direkt).
-        this.state.skyboxUniforms = {
-            time: uTime,
-            // der TRÄGER der Tönung (kein Knoten der Kuppel): der Tint des Tag-Nacht-Stops mit Wetter, Feld, Gefühl und
-            // DSL-Tönung — die Kuppel liest sein Verhältnis zum blanken Stop (`atmoLut.U.toenung`, D3)
-            himmelTint: { value: new THREE.Color(1, 1, 1) },
-            cloudCover: uCloudCover,
-            sunDir: uSunDir,
-            sunCol: uSunCol,
-        };
+        this._himmelUniformen();
 
         const skybox = new THREE.Mesh(skyboxGeometry, skyboxMaterial);
         skybox.name = "himmel";
