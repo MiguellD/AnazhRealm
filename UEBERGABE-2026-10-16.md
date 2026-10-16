@@ -59,3 +59,6 @@ Alle Workflows und Agenten per TaskStop angehalten, notbremse.sh gefahren (kein 
   der Läufer löst `shell: bash` auf den WSL-Starter (`…\WindowsApps\bash.EXE`) auf, Hook und GPU-Schloss stimmen. Fix lokal
   belegt (Git-Bash vorn im PATH + `npm_config_script_shell`; zwei Karten-Wände Exit 0). Weg R (Läufer-`.path`/`.env`, Repo
   unverändert) empfohlen, Entscheid offen: `bericht/1610-echt-erstlauf.md`.
+- **OMEN 16.10. ~12:45, Frost-Wand auf der GTX:** der Täter von B ist die Boot-Wartung der Linse (`diag-weltbild-frost.cjs` wartet
+  auf 25 Chunks, nicht auf `_weltbildDa`) — beide Schüsse an Ankunft (+15 s) und dritter Person (+19 s) zeigen den Ladeschirm.
+  Schnitt-Vorschlag netto 0 im Bericht `bericht/1610-frost-echt.md` (Nachtrag); dazu die T2-Lücke von `welt-boot`.
