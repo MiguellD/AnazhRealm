@@ -72,7 +72,7 @@ function archivBefund(dateien) {
 //    Spiel-Wachstums. Gemessen JE ZWEIG (`wachstumsStaende`), nie gegen einen festen Grund (der summierte fremde Zweige),
 //    als Netto-Differenz `git diff --numstat --no-renames` (hinzu − weg; `git grep -c ''` hing an der git-Version).
 //    `--grund <rev>` / `--kopf <rev>` messen zwischen zwei Ständen, ohne `--kopf` der Arbeitsbaum; kein Grund = ROT.
-const PRUEF_PFADE = ["scripts", "spec"];
+const PRUEF_PFADE = ["scripts", "spec", ":(exclude)spec/profiband/ratsche-*"]; // Ratschen = Messdaten des Werkzeugs (16.10.)
 const SPIEL_PFADE = ["stamm", ":(glob)*.js", "index.html", "worlds", ":(exclude)worlds/**/lib/**"];
 function git(args) {
     return execFileSync("git", args, { cwd: root, encoding: "utf8", maxBuffer: 1 << 26 });
