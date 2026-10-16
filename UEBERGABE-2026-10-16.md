@@ -55,3 +55,7 @@ Alle Workflows und Agenten per TaskStop angehalten, notbremse.sh gefahren (kein 
   folgt der Kamera“ an Ankunft (2,65 %) und dritter Person (2,46 %, Soll 5 %), dazu zählt `welt-boot` im `--echt`-Weg die
   T2-Meldung als Welt-Fehler. Die Ausnahme-Begründung in `diag-ci-deckung` (integ 826717ed) nennt den falschen Index-Grund.
   Bericht: `bericht/1610-frost-echt.md`.
+- **OMEN 16.10. ~12:30, erster Echt-Lauf (CI 38881847786 an integ 826717ed):** 21/22 grün, `echt` ROT an `npm ci` nach 0 s —
+  der Läufer löst `shell: bash` auf den WSL-Starter (`…\WindowsApps\bash.EXE`) auf, Hook und GPU-Schloss stimmen. Fix lokal
+  belegt (Git-Bash vorn im PATH + `npm_config_script_shell`; zwei Karten-Wände Exit 0). Weg R (Läufer-`.path`/`.env`, Repo
+  unverändert) empfohlen, Entscheid offen: `bericht/1610-echt-erstlauf.md`.
