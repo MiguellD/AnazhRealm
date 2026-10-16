@@ -650,19 +650,13 @@ module.exports = {
     MIME,
     REZEPTE,
     GPU_REZEPTE,
-    HARMLOS,
     statikServer,
-    browserOptionen,
     starteBrowser,
-    fehlerSammler,
-    warteAufWelt,
     oeffneWelt,
     halteBis,
     buehne,
     uferStellen,
     selbsttest: (name) => (sammlung.selbsttest = name),
-    gesammelteFehler: () => sammlung.fehler.slice(),
-    gesammelteAkten: () => akten.slice(),
 };
 
 // DER SELBSTTEST DER STALL-AKTE (gate:welt-boot, Null-Rezept, ~20 s): eine Seite in einer JS-Schleife MUSS als JS-SCHLEIFE
