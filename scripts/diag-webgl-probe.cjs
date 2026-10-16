@@ -37,7 +37,7 @@ const server = statikServer();
     const consoleLines = [];
     page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     page.on("console", (m) => consoleLines.push(m.text()));
-    await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
+    await page.goto(`http://127.0.0.1:${PORT}/index.html?holz=voll`, { waitUntil: "domcontentloaded", timeout: 60000 });
     await page.evaluate(async () => {
         const dl = performance.now() + 120000;
         while (
@@ -86,7 +86,7 @@ const server = statikServer();
                 Number.isFinite(pm.position.y) &&
                 Number.isFinite(pm.position.z)
             );
-            // Der Substanz-Schuss (die diag-blick-Rezeptur, GAME-Renderer = WebGL-Backend):
+            // Der Substanz-Schuss (diag-blick-Rezeptur, WebGL-Backend) nach den Programmen: die Karte kompiliert parallel, ein Schuss davor war schwarz (GTX)
             const T = THREE;
             const cam = st.camera;
             if (pm && cam) {
@@ -100,10 +100,43 @@ const server = statikServer();
             const rt = new T.RenderTarget(w, h);
             const prev = rend.getRenderTarget();
             rend.setRenderTarget(rt);
-            await rend.renderAsync(st.scene, cam);
+            await rend.compileAsync(st.scene, cam).then(() => rend.renderAsync(st.scene, cam));
             let px = null;
             if (typeof rend.readRenderTargetPixelsAsync === "function")
                 px = await rend.readRenderTargetPixelsAsync(rt, 0, 0, w, h);
+            // W6 DIE SAMPLER-GRENZE (Karte W2, 16.10.): jeder gezeichnete Stoff bindet je Stufe ≤ min(16, Gerät) Texturen —
+            // WebGL2 linkt darüber nie (GTX: der Boden-Stoff mit 17 fehlte), WebGPU ohne Adapter-Grenze sagt ab. Gezählt an
+            // den Sampler-Uniformen der GLSL-Programme jedes Render-Objekts (`__renderObjekte`), die Namen aus seinen Bindungen;
+            // der Selbsttest zeichnet einen Stoff mit 17 Karten.
+            const gl = be.gl;
+            o.grenze = [0, gl.MAX_VERTEX_TEXTURE_IMAGE_UNITS, gl.MAX_TEXTURE_IMAGE_UNITS].map((p) => Math.min(16, p ? gl.getParameter(p) : 0)); // prettier-ignore
+            const zensus = (wurzel, m = new Map()) => {
+                wurzel.traverse((ob) => {
+                    for (const ro of ob.__renderObjekte || []) {
+                        const nb = ro.getNodeBuilderState();
+                        const namen = ro.getBindings().flatMap((g) => g.bindings.filter((x) => x.isSampledTexture).map((x) => (x.texture && x.texture.name) || x.name)); // prettier-ignore
+                        for (const [s, q] of [[1, nb.vertexShader], [2, nb.fragmentShader]]) {
+                            const n = (String(q).match(/^\s*uniform\s+(?:\w+\s+)?[iu]?sampler\w*\s+\w+/gm) || []).length;
+                            const k = `${ro.material.name || ro.material.type + "#" + ro.material.id} ${s === 1 ? "vertex" : "fragment"}`; // prettier-ignore
+                            if (!(m.has(k) && m.get(k)[1] >= n)) m.set(k, [k, n, s, `${ob.name || ob.userData.inventar || ob.type}: ${namen.join(", ")}`]); // prettier-ignore
+                        }
+                    }
+                });
+                return [...m.values()].sort((a, c) => c[1] - a[1]);
+            };
+            // jeder Stoff der Szene, auch der noch verborgene (der Fern-Ring zeigt sich erst nach seinem ersten Höhen-Refresh)
+            const verborgen = [];
+            st.scene.traverse((ob) => ob.visible || verborgen.push(ob));
+            for (const ob of verborgen) ob.visible = true;
+            await rend.compileAsync(st.scene, cam);
+            for (const ob of verborgen) ob.visible = false;
+            o.zensus = zensus(st.scene);
+            const selbst = new T.Scene();
+            const sm = new T.MeshBasicNodeMaterial({ name: "selbsttest:17-karten" });
+            sm.colorNode = Array.from({ length: 17 }, () => T.TSL.texture(new T.DataTexture(new Uint8Array(4), 1, 1)).rgb).reduce((a, c) => a.add(c)); // prettier-ignore
+            selbst.add(Object.assign(new T.Mesh(new T.PlaneGeometry(), sm), { frustumCulled: false }));
+            await rend.renderAsync(selbst, cam);
+            o.selbst = zensus(selbst).find((z) => z[0] === "selbsttest:17-karten fragment");
             rend.setRenderTarget(prev);
             if (rt.dispose) rt.dispose();
             if (px && px.length) {
@@ -139,6 +172,9 @@ const server = statikServer();
     console.log(
         `  W5 Welt lebt: tickOk=${out.tickOk}/12 frames=${out.frames} spielerEndlich=${out.spielerEndlich} · Substanz farben=${out.farben} nonzero=${out.nonzero}${out.tickErr ? " tickErr=" + out.tickErr : ""}`
     );
+    const z = out.zensus || [];
+    console.log(`  W6 Sampler je Stoff (Grenze vertex ${out.grenze && out.grenze[1]} · fragment ${out.grenze && out.grenze[2]}), ${z.length} Stoff-Stufen:`); // prettier-ignore
+    for (const [k, n, , wo] of z.slice(0, 6)) console.log(`     ${String(n).padStart(2)} ${k} — ${wo}`);
     if (out.err) console.log(`  Probe-Fehler: ${out.err}`);
     if (pageErrors.length) console.log("  Seiten-Fehler:", pageErrors.slice(0, 5));
 
@@ -159,6 +195,8 @@ const server = statikServer();
     if (!out.spielerEndlich) errs.push("W5: die Spieler-Position ist nicht endlich");
     if (!(out.farben >= 4 && out.nonzero > 200))
         errs.push(`W5: der Render hat keine SUBSTANZ (farben=${out.farben}, nonzero=${out.nonzero}) — schwarze Welt?`);
+    for (const [k, n, s, wo] of z) if (n > out.grenze[s]) errs.push(`W6: ${k} bindet ${n} Texturen > ${out.grenze[s]} — ${wo}`); // prettier-ignore
+    if (!(z.length > 4 && out.selbst && out.selbst[1] === 17)) errs.push(`W6-Selbsttest: der Stoff mit 17 Karten zählt ${out.selbst && out.selbst[1]} (${z.length} Stoffe) — die Linse ist blind`); // prettier-ignore
     if (pageErrors.length) errs.push(`${pageErrors.length} Seiten-Fehler auf dem WebGL-Pfad`);
 
     if (errs.length) {
