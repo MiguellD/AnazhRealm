@@ -542,7 +542,8 @@ const PORTAL_RENDER_CONFIG = {
             },
             brush: {
                 0: { tris: 3700, draws: 2, schatten: false },
-                1: { tris: 300, draws: 1, schatten: false },
+                // L1 je Zweig ein Blatt (A2): bis 12 Ruten × (12 Rinde + 7 Zweige × 3) = 396
+                1: { tris: 400, draws: 1, schatten: false },
                 fernform: "boden",
             },
             deadwood: {
@@ -2891,19 +2892,53 @@ const TEPPICH_REICH = 0.7;
 const WIESEN_FARBE = Object.freeze({
     halm: Object.freeze({ hell: [0.72, 1.28], ton: 1.0, trockenAnteil: 0.3, trocken: [0.4, 0.9], spitze: 0.8, stroh: 0.62 }),
 });
-// Der Tint eines Büschels am Welt-Ort (x, z) bei Licht `lit` (1 = offene Wiese) und Feuchte `wet` (0..1): der Labor-Tint
-// FIX v27 (phytogenesis addTiled) wörtlich — hell + trocken wärmeres Oliv, Schatten und Nässe tiefes kühles Grün, ein
-// Helligkeits-Jitter je Büschel —, das Licht um die offene Wiese zentriert (dort neutral, die Eichung der Halm-Albedo
-// bleibt). Schreibt je Kanal den Faktor in [0, 2] auf die Halm-Farbe nach aus[o..o+2] und gibt `aus` zurück.
+// DIE GRASNARBE ALS GESELLSCHAFT (A2, 16.10.): die Farbe eines Büschels ist die seiner ART und seines ALTERS an seinem Ort,
+// nie ein Rauschen. Die Narbe der Frischwiese (Arrhenatherion) mischt ihre Gräser nach dem Standort — je Art eine Glocke um
+// ihre Zeigerwerte (Ellenberg et al. 2001: L Licht 1–9, F Feuchte 1–12), der Ort liest L = 1 + 8·Licht und F = 5 + 4·Feuchte.
+// `f` ist der Faktor der Art je Kanal auf die Halm-Farbe (linear; die Mischung der offenen Wiese bleibt im Mittel neutral, die
+// Eichung der Halm-Albedo hält): Glatthafer gelbgrün, Knaulgras blaugrün bereift, Honiggras graugrün behaart, Rotschwingel
+// dunkel mit rötlichem Grund, Gemeines Rispengras hellgrün im feuchten Halbschatten. Das ALTER: trockene, sonnige Orte tragen
+// mehr vergilbte Halme (`alter`: der Faktor des voll vergilbten Büschels, `anteil` sein höchster Anteil).
+const WIESEN_ARTEN = Object.freeze({
+    arten: Object.freeze([
+        Object.freeze({ art: "glatthafer", L: 8, F: 5, f: [1.3, 1.02, 0.74] }),
+        Object.freeze({ art: "knaulgras", L: 7, F: 5, f: [0.76, 0.98, 1.32] }),
+        Object.freeze({ art: "honiggras", L: 7, F: 6, f: [1.1, 1.02, 1.1] }),
+        Object.freeze({ art: "rotschwingel", L: 8, F: 4, f: [1.06, 0.88, 0.8] }),
+        Object.freeze({ art: "rispengras", L: 6, F: 7, f: [0.92, 1.08, 0.92] }),
+    ]),
+    breite: Object.freeze({ L: 2, F: 1.5 }),
+    alter: Object.freeze({ f: [1.38, 1.06, 0.52], anteil: 0.45 }),
+});
+const WIESEN_GEWICHT = new Float64Array(WIESEN_ARTEN.arten.length); // die Mischung des Orts (je Ruf neu, ohne Allokation)
+// Der Tint eines Büschels am Welt-Ort (x, z) bei Licht `lit` (1 = offene Wiese) und Feuchte `wet` (0..1): seine Art aus der
+// Mischung des Orts und sein Alter, beide aus dem Γ5-Strom SEINES Orts (dasselbe Büschel trägt bei jedem Besuch dieselbe Art);
+// darüber der Standort des Labor-Tints FIX v27 — Schatten dunkler, hell + trocken wärmeres Oliv, Nässe kühles Grün —, das
+// Licht um die offene Wiese zentriert. Schreibt je Kanal den Faktor in [0, 2] auf die Halm-Farbe nach aus[o..o+2], gibt `aus`.
 function wiesenTint(x, z, lit, wet, aus, o) {
     const cl = (v, a, b) => Math.max(a, Math.min(b, v));
-    const n = Math.sin(x * 12.9898 + z * 78.233) * 43758.5453,
-        jt = n - Math.floor(n) - 0.5;
-    const val = (lit - 1) * 0.45 + jt * 0.18,
+    const WA = WIESEN_ARTEN,
+        A = WA.arten,
+        w = mulberry32(((Math.floor(x * 256) * 73856093) ^ (Math.floor(z * 256) * 19349663) ^ 0x3c6e5a17) >>> 0);
+    const Lz = 1 + 8 * cl(lit, 0, 1),
+        Fz = 5 + 4 * cl(wet, 0, 1);
+    const g = WIESEN_GEWICHT;
+    let summe = 0;
+    for (let i = 0; i < A.length; i++)
+        summe += g[i] = Math.exp(-0.5 * (((Lz - A[i].L) / WA.breite.L) ** 2 + ((Fz - A[i].F) / WA.breite.F) ** 2));
+    let u = w() * summe,
+        k = 0;
+    while (k < A.length - 1 && u >= g[k]) u -= g[k++];
+    const tr = cl(lit, 0, 1) * (1 - cl(wet, 0, 1)),
+        alt = w(),
+        s = tr * alt * alt * WA.alter.anteil;
+    const val = (lit - 1) * 0.45,
         warm = (cl(lit * 0.5 + (1 - wet) * 0.5, 0, 1) - 0.5) * 0.24;
-    aus[o] = cl(1 + val + warm, 0, 2);
-    aus[o + 1] = cl(1 + val + warm * 0.35, 0, 2);
-    aus[o + 2] = cl(1 + val - warm * 0.8 + (wet - 0.5) * 0.12, 0, 2);
+    const f = A[k].f,
+        af = WA.alter.f;
+    aus[o] = cl((1 + val + warm) * f[0] * (1 + (af[0] - 1) * s), 0, 2);
+    aus[o + 1] = cl((1 + val + warm * 0.35) * f[1] * (1 + (af[1] - 1) * s), 0, 2);
+    aus[o + 2] = cl((1 + val - warm * 0.8 + (wet - 0.5) * 0.12) * f[2] * (1 + (af[2] - 1) * s), 0, 2);
     return aus;
 }
 /* GROUND-COVER-GESETZ: aus Licht x Feuchte x Substrat x Störung wächst die Bodenschicht (W1: aus dem Labor in den Kern — das
@@ -3542,7 +3577,6 @@ function emitGestruepp(P) {
         );
         for (let zi = 0; zi < r.z.length; zi++) {
             const z = r.z[zi];
-            if (!L0 && zi % 2) continue; // L1: je zwei Seitenzweige EIN Büschel
             const e = __polyBei(pts, z.t),
                 zo = [Math.cos(z.az), 0.55, Math.sin(z.az)],
                 zd = vnorm(vadd(vscl(e.d, 0.55), vscl(vnorm(zo), 0.7))),
@@ -3565,23 +3599,28 @@ function emitGestruepp(P) {
                     blatt(pos, dd, P.blatt * j[0], j);
                 }
             } else {
-                // L1: das Büschel als Raute im Laub-Stoff — Grund schmal, Bauch breit, Spitze; die Fläche der acht L0-Blätter zweier Zweige (Kante 2·Zweig)
-                const cc = lA.clone().lerp(lB, z.bl[0][2] * 0.6),
-                    wv = vnorm(vcross(zd, [0, 1, 0])),
-                    lz = z.len * 2.0,
-                    b0 = vlerp(e.p, zEnd, 0.15),
-                    m = vadd(e.p, vscl(zd, lz * 0.55)),
-                    tip = vadd(e.p, vscl(zd, lz * 1.05)),
-                    hw = lz * 0.32,
-                    sw = P.windGain * 0.7;
+                // L1 (A2, 16.10.): je Zweig EIN Blatt — Grund schmal, Bauch breit, Spitze (3 Dreiecke) — in Richtung, Farbe und
+                // Hängen seines mittleren L0-Blatts (dieselben Würfe z.bl), so groß wie die drei L0-Blätter des Zweigs zusammen
+                // (Fläche 0,34·l² = 1,25·Blatt², l = 1,92·Blatt). Bis A2 trug L1 je ZWEI Zweige EINE Raute (Kante 2·Zweig, im Mittel
+                // 2,4-mal die L0-Fläche, waagrecht gespannt): jenseits der Armlänge 3,5 m stand sie als große flache Blatt-Raute
+                // vorn im Bild (Augen-Befund boden-nah, Soll-Tafel 16.10.).
+                const j = z.bl[1],
+                    dir = vnorm(vadd(vadd(zd, [Math.cos(z.az + j[1] * 3) * 0.8, 0.2, Math.sin(z.az + j[1] * 3) * 0.8]), [0, j[1] * 0.3, 0])),
+                    len = P.blatt * j[0] * 1.92,
+                    pos = vlerp(e.p, zEnd, 0.5),
+                    nrm = vnorm(vcross(vnorm(vcross(dir, [0, 1, 0])), dir)),
+                    wv = vnorm(vcross(nrm, dir)),
+                    cc = lA.clone().lerp(lB, j[2] * 0.6),
+                    sw = P.windGain * 0.8;
+                if (j[2] > 0.9) cc.lerp(rot, 0.6);
                 __band(
                     SL,
-                    [
-                        { pts: [vsub(b0, vscl(wv, hw * 0.12)), vadd(b0, vscl(wv, hw * 0.12))], col: cc.clone().multiplyScalar(0.8), v: 0, sway: sw },
-                        { pts: [vsub(m, vscl(wv, hw)), vadd(m, vscl(wv, hw))], col: cc, v: 0.5, sway: sw },
-                        { pts: [tip], col: cc.clone().multiplyScalar(1.1), v: 1, sway: sw },
-                    ],
-                    e.p,
+                    [0, 0.45, 1].map((s, q) => {
+                        const c = vadd(vadd(pos, vscl(dir, len * s)), vscl(nrm, -len * 0.15 * s * s)),
+                            hw = len * 0.3 * [0.3, 1, 0][q];
+                        return { pts: q === 2 ? [c] : [vsub(c, vscl(wv, hw)), vadd(c, vscl(wv, hw))], col: cc.clone().multiplyScalar(0.85 + 0.25 * s), v: s, sway: sw };
+                    }),
+                    pos,
                     1
                 );
             }

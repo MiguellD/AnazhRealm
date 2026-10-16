@@ -4,7 +4,7 @@
   "files": {
     "recipes.json": "ce16e8670ea3ac9e77fe03b2deaccfa25d02633326d8385a1d33598ce6bbeac3",
     "world-params.json": "e9be384b8af8d9629c958c2713f36b7243a3249a12b65eca3b6c425e6bee1c0b",
-    "render-config.json": "2af521073d4aa29c6e46f97d6a56c8226126c27ff182c75ddd354ca28d73de7b",
+    "render-config.json": "81478329169b4333a7f8334cd90d72ca250a61d72ed4054d207bf42c97814044",
     "eiche-s7-L0-summer.json": "4fb5c3065d1d0481cc2c02515e3526e7cd2d1507c50e54054f283bff3b580ee8",
     "eiche-s7-L1-summer.json": "ea54a359e94cf8ca99f214a04d0268c415f7cde05a414a454372558b7c59bd6c",
     "eiche-s7-L2-summer.json": "8e058700db77e85744f4773ab11376d3e7a1688a32c53dbecfb69639dfbc7818",
@@ -123,7 +123,7 @@
     "schilf-s7-L0-summer.json": "75ffea4ae6161a48846a544d2ed8ebaa72802bcc6ce7550c7821ec8a6cf84d81",
     "schilf-s7-L1-summer.json": "72fedeb947dd92738351b5ba9d0df1c4d22966eb3bf5a468e4c4c70838a3b84e",
     "gestruepp-s7-L0-summer.json": "a9f9662bd2bfb82ea4d23bdc2a8d09fbf304c6fa2f869c17d51df14383355e9b",
-    "gestruepp-s7-L1-summer.json": "57fa82e2b323ff0630db699952b27fa5497440f35c683ff128080c36081d9587",
+    "gestruepp-s7-L1-summer.json": "e6aa8973bcb22ac75d5e3aee046cf719b1a5c7d91287980e29a6e73d8040d3eb",
     "totstamm-s7-L0-summer.json": "7ee2ab2ae4bb99f12c80a1693e8d6b00de4b616423fa987ec4d835fc1a7691fd",
     "totstamm-s7-L1-summer.json": "f922e032e1c3ee1071caae7f083c00895a9fd40f45415ef040b4de5e97d713a6",
     "stumpf-s7-L0-summer.json": "072dd46a1fd1cbf31d2ce44fcc13cb4f1fd120ad6f69258be0c87e720681b4c2",
