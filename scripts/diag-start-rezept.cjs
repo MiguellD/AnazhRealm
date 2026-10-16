@@ -29,8 +29,8 @@ const {
 } = require("./lib/software-gpu.cjs");
 
 // Die Zeit-Linsen an der Weiche: ihr Urteil ist auf swiftshaders Zeit geeicht (hitch Band 1 zählt LongTasks des
-// swiftshader-Boots; perf-parity misst FPS und ms). Eine Zähl-, Bild- oder Struktur-Linse steht hier nie.
-const ZEIT_LINSEN = ["scripts/diag-hitch-telemetrie.cjs", "scripts/diag-perf-parity.cjs"];
+// swiftshader-Boots). Eine Zähl-, Bild- oder Struktur-Linse steht hier nie.
+const ZEIT_LINSEN = ["scripts/diag-hitch-telemetrie.cjs"];
 
 // W5 je Zeit-Linse: jeder Start an der Weiche trägt `zeit: true`.
 function zeitFunde(name, src) {

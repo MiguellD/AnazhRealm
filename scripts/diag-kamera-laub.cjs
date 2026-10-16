@@ -18,7 +18,7 @@
 //
 //   node scripts/diag-kamera-laub.cjs [--selftest] [--teile laub,leib,ninja]   Port: KAMERA_LAUB_PORT (Standard 4611)
 //   KAMERA_LAUB_STUDIO=<datei>                             ein anderes Körper-Studio (koerperstudio.js) — das Vorher von NP-03
-//   KAMERA_LAUB_STAMM=<datei>                              ein anderer Stamm (anazhRealm.js) — das Vorher eines A/B
+//   KAMERA_LAUB_STAMM=<datei>                              ein anderer Stamm (Zonen-Text) — das Vorher eines A/B
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");

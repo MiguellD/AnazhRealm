@@ -121,7 +121,7 @@ for (const g of [
     law(`\`${g}\` verdrahtet`, true, pkg.includes('"' + g + '"'));
 
 // GESETZ 6 („Drähte statt Kopien", 08.07.) — KEINE LOGIK-KOPIE IM MONOLITHEN: was auch im
-// Studio-/Vorlagen-Kern steht, darf in anazhRealm.js nur als DRAHT existieren. Der Wald-Plan
+// Studio-/Vorlagen-Kern steht, darf im Stamm nur als DRAHT existieren. Der Wald-Plan
 // (Poisson/Nische/Größe) + der Impostor-Rahmen (Studio v36) leben EINMAL in phyto-core; der
 // Monolith delegiert. Jeder Refactor, der die Formel zurückkopiert, wird hier rot.
 console.log("\nGesetz 6 — Drähte statt Kopien (Wald-Plan + Rahmen leben in der Quelle):");

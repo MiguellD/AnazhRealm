@@ -11,7 +11,7 @@
 //   §3 B3 PLACEMENT (SOLL, wenn vorhanden): scale-Werte > 0 · rarity ∈ (0,1]
 //   §3 B4 PARAMS (SOLL, wenn vorhanden): id/lab/min/max/step · min < max
 //   §3 B5 LEHREN (SOLL, wenn vorhanden): id + pass-Band [lo,hi]
-//   §4 G4.1 must-ignore: der EINE Auto-Register-Chokepoint in anazhRealm.js
+//   §4 G4.1 must-ignore: der EINE Auto-Register-Chokepoint im Stamm
 //       überspringt unbekannte kinds (continue-Filter), wirft nie
 //   §4 G4.3 Version: der Kern deklariert STUDIO_VERTRAG = 1
 //   + SELBST-TEST: eine injizierte Verletzung (Rezept ohne kind) wird erkannt

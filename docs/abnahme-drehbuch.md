@@ -23,7 +23,7 @@
 | 10 | Sprint + Parkour: Wandsprung, C-Rutsch bei Tempo, Klettern | Gesetze fühlbar: Sprint deutlich schneller (×4.5), Rutsch feuert, Klettern zehrt Ausdauer | |
 | 11 | Dolch → Grossschwert → Keule wechseln, zuschlagen | Schwung flink→träge, Reichweite kurz→lang, Schaden matt→wuchtig; Hit-Stop energie-skaliert | |
 | 12 | Eine Kreatur NACHTS ansehen | Augen glimmen DEZENT (0.3); das Feld leuchtet NICHT aus sich selbst — es gehorcht derselben Tag/Nacht-Farbe wie die Welt | |
-| 13 | Zum Genesis-Ring, durch die Membran | Bodennebel atmet in Membran-Farben, EIN warmes Licht pulst; Hindurchgehen IST Betreten | |
+| 13 | Zum Genesis-Ring, durch die Membran | die Membran zeigt das Gesetz ihres Tors (`membranUniforms` aus porta-core, dieselbe Fläche wie im Studio); Hindurchgehen IST Betreten | |
 | 14 | Symphonie an; Genre wechseln (LoFi → Trap → Bossa → Cinematic) | Drums UND Harmonie/Lead/Bass klingen distinkt; LoFi kippt harmony-lastig | |
 | 16 | Werkstatt öffnen, einen Bauplan wählen, in der Welt platzieren | v1.0-Schritt 3: ≤ 3 Klicks vom Öffnen bis zum stehenden Werk; der Werkstatt-Regler prägt, was platziert wird | |
 | 17 | Chat OHNE KI: `pflanz mir einen eichenhain am wasser` | v1.0-Schritt 4 (Grundstufe): 6 Studio-Eichen wachsen am nächsten Ufer (≤ 80 m), geerdet, keine im Wasser; ohne Wasser in Reichweite sagt der Chat es laut und nichts wächst (gate:v1-pfad V-k5) | |

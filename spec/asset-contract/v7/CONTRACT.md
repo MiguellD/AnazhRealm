@@ -22,7 +22,7 @@ der Host bleibt der OFEN, die Labs liefern Parameter):
   motion-Profil · korruptes Golden) werden erkannt — die Linse ist nicht vakuös.
 
 Konsumenten: `fx.klang` → `_klangStudioPreset`/`_lofiChordDurationMs`
-(anazhRealm.js, EIN Audio-System); `fx.motion` → benannter Andock-Punkt
+(Stamm, EIN Audio-System); `fx.motion` → benannter Andock-Punkt
 `_animateCompoundMotion`/Rig (Konsum = Folge-Schritt, s. Vertrag §8.2).
 
 **Vertrags-Akt 07.10.2026 (Welle L kreatur — das SPRUNG-GESETZ):** `tetrapoda-core.js` neu gemintet

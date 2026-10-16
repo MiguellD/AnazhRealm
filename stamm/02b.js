@@ -433,7 +433,7 @@ class AnazhRealm_Z02b {
     dslComposeFieldColor(rng, aura) {
         // V18.464 — die Achsen-Farben lesen die EINE Tabelle (ACHSEN_FARBE):
         // dieselben Hexe streuten frei zwischen Nexus-Farbwahl und Emotions-
-        // Triggern (roadmap §0.4 Rest-Schuld, Parallelpfad-Klasse).
+        // Triggern (Parallelpfad-Klasse).
         const AF = AnazhRealm.ACHSEN_FARBE;
         if (aura) {
             if (aura.magieleitung > 0.6 && rng() < aura.magieleitung) return AF.magieleitung;

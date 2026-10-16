@@ -2,8 +2,8 @@
 /* global process, console, __dirname, Buffer, TextEncoder, TextDecoder, URL */
 // scripts/lib/stamm.cjs — DIE EINE Lese-Schnittstelle des Stamms (Stamm-Zerlegung, plan 13.10. §3).
 //
-// Jedes Werkzeug, das den Stamm als TEXT liest, liest ihn hier: `text(root)` ist der virtuelle Stamm — heute die eine
-// Datei anazhRealm.js, nach dem Schnitt die Umkehrung der Zonen-Dateien stamm/NN[x].js, sha-gleich zum Vorgänger. Die
+// Jedes Werkzeug, das den Stamm als TEXT liest, liest ihn hier: `text(root)` ist der virtuelle Stamm — vor dem Schnitt
+// (14.10.) die eine Datei `ALT`, seither die Umkehrung der Zonen-Dateien stamm/NN[x].js, sha-gleich zum Vorgänger. Die
 // Layout-Weiche ist laut: liegen beide Formen oder keine im Baum, wirft sie; ein Text unter 5 MB wirft („Probe blind").
 // Der Name der alten Datei steht als Lese-Ziel NUR hier (Absenz-Linse in diag-altlasten).
 //

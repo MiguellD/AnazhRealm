@@ -1,4 +1,4 @@
-// playtest-fast.cjs — DER SCHNELLE ITERATIONS-TIER (~60-90 s) gegen den ~10-min-Voll-Gate.
+// playtest-fast.cjs — DER SCHNELLE ITERATIONS-TIER gegen das volle Merge-Gate.
 // De-Entropie 17.06.2026: der volle scripts/playtest.cjs (476 Bänder / ~3500 Invarianten) bleibt
 // das MERGE-Gate; dieser Tier fängt im DEV-Loop die ~80 % der Regressionen (Crash · Welt baut nicht ·
 // Körper/Bauplan baut nicht · Resonanz/Physik unsinnig) in einem Bruchteil der Zeit. Er bootet die

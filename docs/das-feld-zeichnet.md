@@ -30,7 +30,7 @@ Dither-Wal — Foliage-Batches, deren Shader fern Pixel verwirft, aber
 Vertex-Arbeit weiter bezahlt; er fiel mit dem EINEN Karten-Atlas (die Fernstufe
 ist eine Karte), und mit ihm der GPU-Cull per Compute + indirekte Draws
 (V18.488 → 05.10.: ohne Ziel griff er nur an freien Slots, im Hauptbild allein).
-DONE: Tri-Zensus steady ≤ 8M in der Standard-Szene (roadmap §0.0 T2-Maß).
+DONE: Tri-Zensus steady ≤ 8M in der Standard-Szene (das T2-Maß).
 
 **STUFE 2 — DIE FERNE IST FELD, keine Geometrie.** Jenseits des Voxel-Rings
 zeichnet das Höhen-GESETZ selbst den Horizont (Fern-Ring-Schalen / später ein
@@ -81,4 +81,4 @@ Zeit-Differenz kalt/warm.
 
 - **V18.484 — DER GRUNDSTEIN:** Doktrin (dies) · dritter Spiegel + Linse ·
   Hitch-Telemetrie · Stufe-1-Erstkonsument (Dither-Wal) · Fern-Ring v1 ·
-  Warm-Start v1. Chronik = git log; Offenes = roadmap §0.
+  Warm-Start v1. Chronik = git log; Offenes = `docs/PFLICHT-OFFEN.md`.

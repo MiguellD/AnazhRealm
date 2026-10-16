@@ -50,7 +50,7 @@ const ROOT = path.resolve(__dirname, '..');
 const GATE_FILES = ['scripts/playtest.cjs', 'scripts/playtest-fast.cjs'];
 
 // Der Code, in dem ein geprobtes Symbol real existieren MUSS.
-// Proben sind `r.<x>` (die Realm-Instanz) → anazhRealm.js. Die Worker-/Bake-Mirrors
+// Proben sind `r.<x>` (die Realm-Instanz) → der Stamm. Die Worker-/Bake-Mirrors
 // sind als Fallback dabei (geteilte Symbol-Namen), damit ein Mirror-Symbol nie
 // fälschlich „fehlt".
 const CODE_FILES = [...stammLib.dateien(path.join(__dirname, '..')), 'voxel-worker.js'];
@@ -139,7 +139,7 @@ function extractProbes(codeNoComments) {
 
 /**
  * Ein Symbol „existiert", wenn sein Name als Wort im (de-kommentierten) Code-Korpus
- * vorkommt. anazhRealm.js ist EINE Datei → jedes reale Methoden-/Feld-/Prop-Symbol
+ * vorkommt. Der Stamm ist EIN Text (stammLib.text) → jedes reale Methoden-/Feld-/Prop-Symbol
  * erscheint mindestens an seiner Definition. 0 Vorkommen = definitiv nicht im Code
  * = stale Probe. (Konservativ: niedrige False-Positive-Rate; ein nur-computed-key-
  * Symbol, das per Literal geprobt wird, wäre selbst ein Code-Smell.)

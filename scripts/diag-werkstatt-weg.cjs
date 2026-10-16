@@ -21,7 +21,7 @@
 //     ohne Material sagt der erste Schritt die Absage im Spieler-Kanal (Chat) oder der Knopf steht gesperrt mit dem
 //     Fehlenden. Dazu: Haus und GT aus der Werkstatt, die Suche „haus" findet die Häuser, und die Lichtung der Genesis-
 //     Plattform färbt das Phantom rot und sagt beim Setzen laut, warum dort nichts wächst. Befund (Leben-Schau 07.10.):
-//     „0 von 3 Wegen", frieden verweigert nur im Log (anazhRealm.js:76375), das Rezeptbuch legte die Eiche ins Inventar
+//     „0 von 3 Wegen", frieden verweigert nur im Log (im Stamm), das Rezeptbuch legte die Eiche ins Inventar
 //     und zog das Material doppelt.
 //
 //   BRENNGLAS — DAS LICHT BRENNT, WO ES SICH BÜNDELT, UND DIE ZERSTÖRUNG NENNT SICH: die Eiche 2,4 m vor der Mitte der
@@ -487,7 +487,7 @@ async function probe(argW) {
 
     const orig = Math.random;
     let n = 0;
-    // Gezählt wird ein Zug der WELT (der Aufrufer steht in anazhRealm.js); die UUID eines neuen three-Objekts
+    // Gezählt wird ein Zug der WELT (der Aufrufer steht im Stamm); die UUID eines neuen three-Objekts
     // (MathUtils.generateUUID beim Bau einer Geometrie) und die Identität eines Werks (`_newArchId`: ein Name, keine
     // Substanz — er reist mit der Nachricht) sind keine Welt-Substanz.
     const zaehle = (fn) => {
