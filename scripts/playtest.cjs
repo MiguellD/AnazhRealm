@@ -17356,7 +17356,7 @@ async function checkBandWelle6GHylomorphism(ctx) {
             r._weltbildLuecken().filter((l) => /^(pflanzung|bauten)$/.test(l.term)).map((l) => l.satz).join(" · ");
         out.waldErsterBlick = r.state.architectures.filter(istBaum).length;
         out.waldLueckeErst = wald();
-        for (out.waldTakte = 0; wald() && out.waldTakte < 3000; out.waldTakte++) {
+        for (out.waldTakte = 0; wald() && out.waldTakte < 1500; out.waldTakte++) {
             r._gameLoopTick(performance.now());
             await new Promise((ok) => setTimeout(ok, 0));
         }
