@@ -1274,8 +1274,20 @@ AnazhRealm.ZEIT_SPRUNG_M = 6;
 // dem Dach `laubGrund`), die Krone im Feld um `kronenSaum` m gesäumt (die Zelle zählt, die ihr Laub berührt). Die Nachlese
 // backt das Feld neu, wenn neue Kronen darin stehen (höchstens je nachleseMs; die Krone liest das Kronen-Buch, Beipack
 // `__krone` des Foundry-Workers). Der Pass zahlt nur bei Änderung: das Auge weiter als `ruheM` m, der Blick weiter als `ruheRad`,
-// Licht oder Luft um mehr als `ruheLicht` (`_spiegelPassWach`).
+// Licht oder Luft um mehr als `ruheLicht` (`_spiegelPassWach`). ZUERST spiegelt das BILD (A1): der Strahl als Strecke im Schirm
+// (bis `bildWeit` m) in `bildSchritte` gleichen Schritten gegen die Tiefe des Szenen-Passes, Treffer hinter der Fläche um
+// weniger als ihre Dicke (`bildDicke`: Anteil des Abstands + m) und weiter als `bildStart` m vom Wasser, `bildHalb` Halbierungen,
+// am Schirm-Rand (`bildRand`) blendet er in das Feld — das trägt nur den Strahl jenseits des Schirms; die Schritte liegen nach
+// q^`bildDichte` (dicht am Wasser-Punkt: das Ufer an der Linie ist wenige Pixel hoch), im Stand rechnet er je `bildRuheMs` neu.
 AnazhRealm.SPIEGEL = Object.freeze({
+    bildSchritte: 48,
+    bildDichte: 2,
+    bildRuheMs: 500,
+    bildStart: 0.3,
+    bildWeit: 3000,
+    bildDicke: [0.04, 0.5],
+    bildHalb: 5,
+    bildRand: 0.03,
     n: 384,
     texel: 2,
     drift: 60,
