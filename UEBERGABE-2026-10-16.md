@@ -107,3 +107,10 @@ Gedächtnis gpu-mess-lehren), danach G4a-Takt 2+2. Neu: CW ci-waage (volles Urte
 die Analyse ki-native-anatomie (Wohin gehen Zeit und Kontext der Arbeiter, Entwurf der Tag-Struktur, Gegenprüfung) auf Frage des Schöpfers.
 Auge-Runde 14:40 (integ b7aa7359): Bilder artifacts/profiband/auge/1610/ — Ankunft zeigt vorn den Stein-Zylinder start_plattform (16.js:131)
 und den Bau-Satz als glatte Röhre; keine Tafel-Klasse deckt den Genesis-Platz (Wort des Schöpfers nötig).
+
+**16:19 (date): main = 00b99c59 (V18.546.3)** — T3 Zeichen-Reihe + K1 + Frost-Wand + Echt-Gruppe + LF; OMEN bericht/1610-abab-buendel1.md:
+nirgends langsamer (Band-GPU Genesis Ego 13,88 → 12,92, Third −1,70 ms; eine Welt Wiese −9,6 %, Dorf −9,8 %; Frame p50 Wiese 16,6 → 8,5 ms;
+gehend CPU-Takt p95 −0,85/−1,05). Gruppe 14 kippte an der reinen Versions-Stufe (Settlement Teil O, Wackler bestätigt, Karte SO). integ =
+cee33f91 + champion-Werkzeuge 1d92c02b + V18.546.3 (lokal, Push gebündelt). Anatomie (bericht/1610-anatomie.md): Abnahme 58,7 % der
+Kartenzeit → karte.js CI zuerst; champion 9 Werkzeuge; KI1 (Prompt nennt 40 von ~70 Ops). A2 Wiesen-Farbe GRÜN gebaut (11,06 ≥ 10,7),
+A5 Albedo = Mess-Stelle, A6 haus doppelte Tönung im Fachwerk-Labor (Karte läuft).
