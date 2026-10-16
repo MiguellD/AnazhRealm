@@ -36,3 +36,16 @@ die Chronik der Woche in `UEBERGABE-2026-10-14.md` (unten die Zeilen 14.–16.10
 Spike vor Karte · Profil vor Schätzung · R2 mit einem Prüfer · Datei-Besitz je Welle · Integrator löst Konflikte selbst (semantisch) ·
 eine Linse ersetzt eine Linse (DECKE) · Flacker-Linse = selbst ROT · OMEN misst jeden integ-Kopf vor dem FF · Uhrzeit aus `date` ·
 nach Sitzungs-Neustart dem OMEN die neue Adresse · Vollgas bis 98 %, dann Notbremse (EINE Regel, Gedächtnis `notbremse.md`).
+
+## Notbremse gezogen — 16.10. 11:47 (Woche 98 %)
+
+Alle Workflows und Agenten per TaskStop angehalten, notbremse.sh gefahren (kein Worktree mit ungesicherten Änderungen), aufraeumen.ps1
+(0 Reste), Ports 8790–9029 frei, das GPU-Schloss (zuletzt spike-g1-gpuwelt) freigegeben. Port 4312 des Schöpfers unberührt.
+
+| Zweig | Kopf | Stand beim Halt | nächster Schritt |
+|---|---|---|---|
+| doku-wahrheit (K1) | 13c2ce7d | gebaut + Nachbesserung n1 (integ aa74c324 eingemergt; Zitat-Wand liest Pfade, Namen, Karte, Kommentare — vorher ROT 91) | Prüfer-Urteil fehlt: Zweig-CI lesen, prüfen, mergen |
+| gruppen-geburt (G4a) | 514c7190 | WIP: Linse geburt rot → grün | Bild Herde/Rudel + Takt Genesis Ego, voller Playtest, Zweig-CI |
+| index-breite (IX) | aa74c324 | nicht begonnen (Bauer gestoppt) | neu starten mit dem Auftrag aus dieser Datei / Arbeitsweise 2.0 |
+| tafel-kopf (A0) | aa74c324 | nicht begonnen (wartete auf das GPU-Schloss) | neu starten: alle Klassen am Kopf  |
+| Spike G1 | Scratch  | ABAB-Rohdaten Genesis Third (A, B-aus, B-ein) liegen | Rohdaten auswerten, Urteil schreiben → erste G1-Karte |
