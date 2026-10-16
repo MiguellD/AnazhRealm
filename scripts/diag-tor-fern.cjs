@@ -21,7 +21,6 @@
 // "sicht" in K; eine Liste ohne ihre wurf-Teile in W (drachentor, maurentor); aufgeblähte Kapseln (+0,15 m) in I (geisttor).
 //   node scripts/diag-tor-fern.cjs [--selftest] [--nur <regex>]
 "use strict";
-const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
 
@@ -384,18 +383,6 @@ function fernStufe(K, verfaelsche) {
         );
     return { bruch: [...new Set(bruch)], ist, maxT, summe };
 }
-// Der Kern mit einer anderen Stufe 2 (Selbsttest: die Stufe 2 trägt das Gesetz der Stufe 1 — die Linse muss die Kosten nennen)
-function kernMit(ersatz) {
-    const src = fs.readFileSync(path.join(root, "porta-core.js"), "utf8"),
-        neu = src.replace(/var TOR_DETAIL_2 = \{[^}]*\};/, ersatz);
-    if (neu === src) return null;
-    const alt = globalThis.__portaCore;
-    Function("module", "exports", neu)({}, {});
-    const K = globalThis.__portaCore;
-    globalThis.__portaCore = alt;
-    return K;
-}
-
 const fails = [];
 const check = (name, ok, info) => {
     console.log(`  ${ok ? "✅" : "❌"} ${name}${info ? " — " + info : ""}`);
@@ -438,16 +425,13 @@ check(
 );
 if (SELBST) {
     // S5: die Stufe 2 mit dem Gesetz der Stufe 1 — die Linse nennt die Tore beim Namen
-    const K5 = kernMit(
-        "var TOR_DETAIL_2 = { sehneM: 0.025, laengsM: 2, umfangMin: 3, ringMin: 6, proben: 256, zylinder: 6, tuerFest: true };"
-    );
-    const f5 = K5 && fernStufe(K5);
+    const K5 = Object.assign({}, PC, { buildInstance: (id, sd, lod, ov) => PC.buildInstance(id, sd, lod === 2 ? 1 : lod, ov) });
+    const f5 = fernStufe(K5);
     check(
         "SELBSTTEST F: die Stufe 2 mit dem Gesetz der Stufe 1 wird rot beim Namen",
-        !!f5 &&
-            f5.bruch.some((b) => /drachentor bei 13 m Stufe 2: \d+ Dreiecke/.test(b)) &&
+        f5.bruch.some((b) => /drachentor bei 13 m Stufe 2: \d+ Dreiecke/.test(b)) &&
             f5.bruch.some((b) => /^Genesis Third fern .* Stufe 2: \d+ Dreiecke > Rest/.test(b)),
-        f5 ? f5.bruch[0] : "TOR_DETAIL_2 fehlt in der Quelle"
+        f5.bruch[0] || ""
     );
     // S6: ein Stoff der fernen Stufe heller als sein L0-Stoff
     const f6 = fernStufe(PC, (g) =>
@@ -465,17 +449,12 @@ if (SELBST) {
         f6.bruch.find((b) => /nicht in der L0/.test(b)) || ""
     );
     // S1: ein Leser, dessen Rollen-Filter "wurf" durchlässt (die Fernform läse jedes Teil)
-    const leck = RUMPF.replace(
-        'if (t.rolle !== rolle && t.rolle !== "beide") continue;',
-        'if (t.rolle !== rolle && t.rolle !== "beide" && t.rolle !== "wurf") continue;'
-    );
-    const s1 =
-        leck !== RUMPF &&
-        kosten(leser(leck), null, true).bruch.some((b) => /wurf-Teile im Fernbild|Teile > 24/.test(b));
+    const leck = (h, rolle, q) => huelleVon(h, rolle, q).concat(h.teile.filter((t) => t.rolle === "wurf"));
+    const s1 = kosten(leck, null, true).bruch.some((b) => /wurf-Teile im Fernbild|Teile > 24/.test(b));
     check(
         "SELBSTTEST K: ein Leser, der wurf ins Fernbild lässt, wird rot",
         s1,
-        leck === RUMPF ? "der Rollen-Filter des Lesers fehlt in der Quelle" : ""
+        ""
     );
     // S2: 25 Teile "sicht"
     const s2 = kosten(
