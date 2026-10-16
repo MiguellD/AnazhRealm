@@ -608,7 +608,13 @@ class AnazhRealm_Z10 {
                                         _liesA(_at.mapNode, _uvB, _v1),
                                         _fb
                                     );
-                                    _alpha = _samp.a;
+                                    // die Kante des Laubs (A3, `_laubKante`): zwei Pixel um die Codec-Schwelle, geschnitten an der
+                                    // Schwelle des Frames (`_laubSchwelle`) wie jede Karte der Klasse — der binäre Test stand als Raster
+                                    _alpha = this._laubKante(
+                                        _Ta,
+                                        _samp.a,
+                                        globalThis.__phytoCore.KARTEN_GESETZ.schwelle
+                                    );
                                     // fin-Einblendung des Billboards aus der EINEN Quelle `__phytoCore.lodCrossfadeMask` lod=2 (via
                                     // `_lodCrossfadeMaskNode`); Distanz = Fragment-Anker-Peilung (√_hl2), Sichthöhe = der Stempel
                                     // |aKarte.w| (die Höhe der Höhen-Stufe × Instanz-Skala — dieselbe Zahl wie der aH0-Stempel der L1
@@ -653,7 +659,8 @@ class AnazhRealm_Z10 {
                                         )
                                     );
                                     albedoNode = _albK.mul(_auN.tagLicht.mul(_Ta.float(0.88)).add(_Ta.float(0.12)));
-                                    mat.alphaTest = globalThis.__phytoCore.KARTEN_GESETZ.schwelle; // die Codec-Schwelle
+                                    mat.alphaTest = 0.5; // a' > 0,5 ⇔ a > die Codec-Schwelle (der Schatten-Pass liest die Zahl)
+                                    mat.alphaTestNode = this._laubSchwelle(_Ta);
                                     // ── Normal-Atlas (rg, z = √(1−x²−y²)) → Billboard-Rahmen → per-Fragment-Licht ──
                                     const _nxy = _Ta
                                         .mix(_probeA(_at.nmapNode, _uvA).xy, _probeA(_at.nmapNode, _uvB).xy, _fb)
@@ -1633,9 +1640,10 @@ class AnazhRealm_Z10 {
             uLodRef: _T.uniform(_ref),
             uLodMaskOn: _T.uniform(st.lodMaskOn === false ? 0 : 1),
             uDitherT: _T.uniform(0),
-            // DIE KANTE DES LAUBS (K68, `_laubSchwelle`): x die Drehung der Schwelle je Frame (1/g), y 1 unter der
-            // zeitlichen Auflösung (sonst 0: die Schwelle 0,5) — beide aus `_loopRender`
-            uLaubKante: _T.uniform(new THREE.Vector2(0, 0)),
+            // DIE KANTE DES LAUBS (K68, A3, `_laubSchwelle` · `_blattAtlasProbe`): x die Schwelle des Frames (je Frame um 1/g
+            // gedreht), y 1 unter der zeitlichen Auflösung (sonst 0: die Schwelle 0,5), z die Oktave der Deckung über dem
+            // Schirm (log2(2 · Skala), ohne zeitliche Auflösung 0) — alle aus `_loopRender`
+            uLaubKante: _T.uniform(new THREE.Vector3(0, 0, 0)),
             uLodD0: _T.uniform(Number.isFinite(_D.thresh01) ? _D.thresh01 : 20),
             uLodD1: _T.uniform(Number.isFinite(_D.thresh12) ? _D.thresh12 : 40),
             uLodFade: _T.uniform(Number.isFinite(_D.fade) ? _D.fade : 8),

@@ -1190,8 +1190,8 @@ async function starte() {
             const wahl = k.wahl != null ? Number(k.wahl) : 42;
             let auf = null;
             let gewaehlt = null;
-            // DIE EINE UHR der Klassen-Messung (K63-n1): das Bild und jeder Schuss der Teilung rendern zu derselben Zeit
-            const fest = k.klasse ? performance.now() : null;
+            // DIE EINE UHR der Klassen-Messung (K63-n1; A3: eine Zahl, nie die Wanduhr — Wind und Laub je Schuss gleich)
+            const fest = k.klasse ? 6e5 : null;
             for (let i = 0; i < 2; i++) {
                 try {
                     if (r.state.fernRing && typeof r._tickFeldPass === "function") r._tickFeldPass(r.state.fernRing);

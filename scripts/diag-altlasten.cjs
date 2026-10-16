@@ -4066,8 +4066,8 @@ function main() {
                 ],
                 [
                     "Fehler-Variable",
-                    "mat.alphaTest = globalThis.__phytoCore.KARTEN_GESETZ.schwelle;",
-                    "window.__karteError = null; mat.alphaTest = globalThis.__phytoCore.KARTEN_GESETZ.schwelle;",
+                    "mat.alphaTestNode = this._laubSchwelle(_Ta);",
+                    "window.__karteError = null; mat.alphaTestNode = this._laubSchwelle(_Ta);",
                     /^Fehler-Variable$/,
                 ],
                 // Nachbesserung 3: der Fang des Loops ohne Melder (sein Kommentar bleibt stehen), der Melder meldet INFO, der
