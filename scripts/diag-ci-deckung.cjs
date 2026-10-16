@@ -83,8 +83,8 @@ const needsVon = (J) => [].concat((J && J.needs) || []);
 // run-Befehl) und die Wände der Karte (`gate:…:echt`), außerhalb der Waage, nie pull_request; so hält sein Rot wie `voll` (S).
 const ECHT_JOB = "echt";
 const ECHT_WENN =
-    "(github.event_name == 'schedule' || (github.event_name == 'push' && (github.ref == 'refs/heads/integ-probe' || " +
-    `github.ref == 'refs/heads/main'))) && ${VOLL_NACH_KOPF}`;
+    "(github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/integ-probe')) && " +
+    "needs.kopf.result == 'success'";
 function echtForm(doc) {
     const E = doc && doc.jobs && doc.jobs[ECHT_JOB];
     if (!E) return [];
