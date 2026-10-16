@@ -863,7 +863,8 @@ function pruefRaum(echt) {
     // das ins Fenster, zählte S5 die Welt mit (Sätze 47,0 → 27,2 MB, Welt-Frames ohne Zug +10,4 bis +12,0 MB; OMEN 16.10.,
     // koordination 1610-s5-taeter). Die Ruhe davor ist keine Basis: eine Verdichtung legt die nächste Frist an (Radeon: Ruhe
     // erst nach 1 682 Takten, die Lücke so lang wie das Fenster riss nach 297). Darum ruht die Verdichtung der Welt für das
-    // Fenster — wie die Probe `_queueDispose` zählt —, und danach nennt die Linse jeden Satz, der doch verdichtete.
+    // Fenster — wie die Probe `_queueDispose` zählt —, danach nennt die Linse jeden Satz, der doch verdichtete (Lauf F36 nur
+    // mit Welt-Frames, Radeon: +11,0 → +0,3 MB; der Mutant `--s5=halde` +58,8 MB ROT).
     const fenster = (auf) =>
         page.evaluate((auf) => {
             const r = window.anazhRealm, S = [...(r.state.chunkSaetze || new Map()).values()];
