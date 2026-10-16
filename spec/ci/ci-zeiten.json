@@ -189,13 +189,6 @@
       "lauf": "npm run gate:schirm-monotonie",
       "laeufe": ["38956671714", "38942514701", "38931002167", "38923748417", "38906180448", "38898074559", "38892745904"]
     },
-    "Stellvertreter-Wand (der Feld-Pass marcht nur in den Hüllen seiner Sätze, das Panorama nur am Himmel)": {
-      "s": 5,
-      "n": 7,
-      "gruppe": "voll 5",
-      "lauf": "npm run gate:feld-stellvertreter",
-      "laeufe": ["38956671714", "38942514701", "38931002167", "38923748417", "38906180448", "38898074559", "38892745904"]
-    },
     "Werfer-Wand (jede Kaskade misst ihre Scheibe, jeder Schatten-Pass waehlt seine Werfer)": {
       "s": 15,
       "n": 7,
@@ -299,20 +292,6 @@
       "n": 7,
       "gruppe": "voll 9",
       "lauf": "npm run gate:boot-stage",
-      "laeufe": ["38956671714", "38942514701", "38931002167", "38923748417", "38906180448", "38898074559", "38892745904"]
-    },
-    "Bewegungs-Garantie unter Last (P1 — die 3-FPS-Realität als Linse)": {
-      "s": 14,
-      "n": 7,
-      "gruppe": "voll 4",
-      "lauf": "npm run gate:move-under-load",
-      "laeufe": ["38956671714", "38942514701", "38931002167", "38923748417", "38906180448", "38898074559", "38892745904"]
-    },
-    "Scatter-Wasser-Gate A/B-Byte-Wand (W3.3a — die Benchmark bewegt sich nie)": {
-      "s": 11,
-      "n": 7,
-      "gruppe": "voll 3",
-      "lauf": "npm run gate:scatter-ab",
       "laeufe": ["38956671714", "38942514701", "38931002167", "38923748417", "38906180448", "38898074559", "38892745904"]
     },
     "Streu-Fernform aus dem Studio-Budget (jenseits der EINEN Nah-Grenze 64 m kein stilles L0)": {
@@ -588,13 +567,6 @@
       "lauf": "npm run gate:kampf-gefuehl",
       "laeufe": ["38956671714", "38942514701", "38931002167", "38923748417", "38906180448", "38898074559", "38892745904"]
     },
-    "Tod-Zensus (der Leichnam traegt nichts vom lebenden Tier, seine Sicht waehlt der EINE Weg jedes Leibs)": {
-      "s": 16,
-      "n": 7,
-      "gruppe": "voll 2",
-      "lauf": "npm run gate:tod-zensus",
-      "laeufe": ["38956671714", "38942514701", "38931002167", "38923748417", "38906180448", "38898074559", "38892745904"]
-    },
     "Die Stoff-Linse der Gegenstaende (W5 — Fahrzeuge und Klingen im Band ihrer Natur)": {
       "s": 1,
       "n": 7,
@@ -700,20 +672,6 @@
       "lauf": "npm run gate:kreatur-takt",
       "laeufe": ["38956671714", "38942514701", "38931002167", "38923748417", "38906180448", "38898074559", "38892745904"]
     },
-    "Die Kreatur-Kosten (S3 — der Werfer je Gestalt aus der Kern-Zeile)": {
-      "s": 14,
-      "n": 7,
-      "gruppe": "voll 3",
-      "lauf": "npm run gate:kreatur-kosten",
-      "laeufe": ["38956671714", "38942514701", "38931002167", "38923748417", "38906180448", "38898074559", "38892745904"]
-    },
-    "Die gelenkige Grobstufe (S3 — gate tier-fern am EINEN Stufen-Schalter)": {
-      "s": 12,
-      "n": 7,
-      "gruppe": "voll 7",
-      "lauf": "npm run gate:tier-fern",
-      "laeufe": ["38956671714", "38942514701", "38931002167", "38923748417", "38906180448", "38898074559", "38892745904"]
-    },
     "Ofen-Vertrag (S1 Waende — Tier- und Mensch-Bake je Stoff-Klasse x Gelenk byte-eingefroren)": {
       "s": 166,
       "n": 7,
@@ -754,20 +712,6 @@
       "n": 7,
       "gruppe": "voll 12",
       "lauf": "npm run gate:foundry-crossfade",
-      "laeufe": ["38956671714", "38942514701", "38931002167", "38923748417", "38906180448", "38898074559", "38892745904"]
-    },
-    "Tier-Separation (die Tiere entstapeln sich und differenzieren sich über die Größen-Achse)": {
-      "s": 12,
-      "n": 7,
-      "gruppe": "voll 2",
-      "lauf": "npm run gate:tier-separation",
-      "laeufe": ["38956671714", "38942514701", "38931002167", "38923748417", "38906180448", "38898074559", "38892745904"]
-    },
-    "Körper-Bewegung (der Körper geht den Weg, nicht die Uhr)": {
-      "s": 12,
-      "n": 7,
-      "gruppe": "voll 5",
-      "lauf": "npm run gate:koerper-bewegung",
       "laeufe": ["38956671714", "38942514701", "38931002167", "38923748417", "38906180448", "38898074559", "38892745904"]
     },
     "Reload-Treue (die Kreatur kehrt nach dem Reload wie gegossen wieder)": {
@@ -866,13 +810,6 @@
       "n": 7,
       "gruppe": "voll 11",
       "lauf": "npm run gate:warm-start",
-      "laeufe": ["38956671714", "38942514701", "38931002167", "38923748417", "38906180448", "38898074559", "38892745904"]
-    },
-    "Wasser-Wahrheit (kein Wasser an der Wand, kein Spiegel über Land, keine bleibenden Blobs, Stau nur geschlossen)": {
-      "s": 5,
-      "n": 7,
-      "gruppe": "voll 3",
-      "lauf": "npm run gate:wasser-wahrheit",
       "laeufe": ["38956671714", "38942514701", "38931002167", "38923748417", "38906180448", "38898074559", "38892745904"]
     },
     "Kopplung (die Welt fasst den Körper an — Strömung, Gleiten, Wind-Richtung, Gras-Biegung)": {

@@ -930,6 +930,15 @@ if (require.main === module) (async () => {
             await timed(BAND.checkBandSchrittKlang, ctx);
             await timed(BAND.checkBandScatterScheibe, ctx);
             await timed(BAND.checkBandKeinZweiterBaumbaecker, ctx);
+            await timed(BAND.checkBandTierFern, ctx);
+            await timed(BAND.checkBandKoerperBewegung, ctx);
+            await timed(BAND.checkBandTodZensus, ctx);
+            await timed(BAND.checkBandWasserWahrheit, ctx);
+            await timed(BAND.checkBandTierSeparation, ctx);
+            await timed(BAND.checkBandKreaturKosten, ctx);
+            await timed(BAND.checkBandFeldStellvertreter, ctx);
+            await timed(BAND.checkBandScatterWasserAB, ctx);
+            await timed(BAND.checkBandBewegungUnterLast, ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.

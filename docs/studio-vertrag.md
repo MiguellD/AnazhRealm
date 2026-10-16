@@ -102,7 +102,7 @@ was eine GELIEFERTE Stufe kosten darf, als Daten neben `kindStages`.
   Bei einer GELENK-GESTALT (Tier, Mensch — §8.4) darf `schatten` auf die gelenkige Grobstufe zeigen: sie bindet an das
   Skelett der feinen (EIN Skelett je Gestalt) und wirft für beide Stufen mit ihren eigenen Stoffen (S3, Lehre 19). Ihr
   Umriss trägt den der feinen: die Grobstufe liegt auf dem Gesetz (`__aufsNiveau` — die Glättung zieht sie nicht nach
-  innen), `gate:kreatur-kosten` (W) DECKUNG misst den Wurf-Umriss je Pose × Sonne gegen die feine Stufe (IoU ≥ 0,94).
+  innen), der Band `checkBandKreaturKosten` (W) DECKUNG misst den Wurf-Umriss je Pose × Sonne gegen die feine Stufe (IoU ≥ 0,94).
 - **`nurWurf: true`** (nur so, nur an einer Stufe 3, B2): die Stufe wird nie gezeigt und wirft selbst (`schatten` = sie
   selbst), nie `karte`. Der Satz-Bau des Wirts legt ihren Zwilling in den Wurf-Satz `bauWurf` seines Schatten-Stoffs
   (`_bauSatzArt`: EIN Befehl je Kaskade für jeden Werfer, im Hauptbild keiner — `gate:chunk-satz` (l)). Haus: Stufe 3 ≤ 96
@@ -200,7 +200,7 @@ was eine GELIEFERTE Stufe kosten darf, als Daten neben `kindStages`.
   rot werden, ohne `zusatzBudget` fehlt das Budget für alle sechs Zweit-Kerne, je Zweit-Art liegt ≥ 1 Fall
   ungefaltet über `draws` (die Faltung ist der Konsument). Im Wirt: `gate:sippen-wirt` (im Spiel: Gesetz-Draws und
   -Dreiecke == die Leaves des Wirts für jede Art mit Budget auf jeder Geometrie-Stufe, Flatten und Ofen),
-  `gate:portal-gestalt` (das Tor kommt auf `gate[0].draws` an, ≤ 8 Flügel-Slots) und `gate:kreatur-kosten` (Ofen-Guss). Die Deckung misst er an
+  `gate:portal-gestalt` (das Tor kommt auf `gate[0].draws` an, ≤ 8 Flügel-Slots) und der Band `checkBandKreaturKosten` (Ofen-Guss). Die Deckung misst er an
   gebauten L0/L1-Paaren als Verhältnis der BILD-Deckung (`scripts/lib/kronen-linse.cjs`, S7: die Silhouette gerastert in 24 Ansichten — acht Azimute ×
   Blick-Hebung 0°/30°/60° von unten —, Karten mit der Alpha des EINEN Atlas, ein Pixel zählt einmal; die
   Flächen-Summe von gestern sah keine Überlappung und meldete 0,99, wo das Bild 0,76 zeigte); eine 1,5-fache
@@ -874,8 +874,8 @@ kindStages` auf seinem Namensraum tragen. Die Zeile deklariert die
   jede Zweit-Kern-Zeile (`cfg.lod.zusatzKindStages`, W7b/N2), der Host mergt
   am EINEN Ingest-Chokepoint. Sie ist die VERTRAGS-Wahrheit der bereits
   gebauten Ofen-Leiter — der Wächter ist `gate:konsum-matrix` (Stufen müssen
-  EHRLICH verschieden backen, sonst TEIL) + die Fern-Linsen (`gate:tier-fern`
-  · `gate:kreatur-kosten`). Ohne die Zeile gilt fail-closed `[0]` (N7.5,
+  EHRLICH verschieden backen, sonst TEIL) + die Fern-Linsen (der Band `checkBandTierFern` des vollen Playtests
+  · der Band `checkBandKreaturKosten`). Ohne die Zeile gilt fail-closed `[0]` (N7.5,
   unverändert). Spender heute: `tetrapoda-core.js` (`kreatur:[0,1]` — bauTier
   Gelenk-Baum/gelenkige Grobstufe) · `koerper-core.js` (`koerper:[0,1]` —
   bakeMenschInstance fein/gelenkige Grobstufe).

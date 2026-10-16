@@ -1,6 +1,6 @@
 "use strict";
 // scripts/playtest/koerper.cjs — der Richter von Koerper (spec/stamm/modul-karte.json): Rig · Gang und IK · Ofen-Guss · Tier-Animation · Spieler-Seele · Stats · Boosts · Ausrüstung · Inventar · Spieler-Bewegung · Sprung · Charakter-Physik · Fahr-Hülle · Ego-Sicht und Kamera · Mensch-Avatar · Sitz · Fahrzeug · Ritt.
-// 9 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
+// 11 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
 const { safeEvaluate } = require("../playtest.cjs");
@@ -1433,8 +1433,599 @@ async function checkBandKonvergenzTierBaum(ctx) {
     );
 }
 
+// Die gelenkige Grobstufe trägt — eingefaltet aus gate:tier-fern (D3b, Matrix-Zelle tier.lods): am ECHTEN Chokepoint (der EINE
+// Stufen-Schalter `_gelenkStufe` in updateCreatures, Grenze `ab` × Größe ± `hyst` aus der Kern-Zeile tetrapoda lod.budget.kreatur):
+// (N) der nahe Wolf zeigt die feine Stufe, der ferne die gelenkige Grobstufe (< 20 Meshes, < ¼ der Dreiecke, an DIESELBEN Knochen);
+// (H) Pendeln im ±hyst-Band schaltet und gießt nie, weites Pendeln schaltet jeden Tick; (D) mit und ohne Schalter byte-gleiche
+// Sim-Spur (die Darstellung sickert nie in die Sim); (S) mit gestubbtem Schalter (immer nah) erkennt die Linse den alten Zustand.
+async function checkBandTierFern(ctx) {
+    const { page, check } = ctx;
+    const out = await safeEvaluate(page, async () => {
+        const r = window.anazhRealm,
+            s = r.state,
+            A = r.constructor;
+        const o = { checks: {} };
+        const pm = s.playerMesh && s.playerMesh.position;
+        if (!pm) return { error: "kein Spieler" };
+        // DIE KERN-ZEILE: die Grenze und die Hysterese der Grobstufe (tetrapoda lod.budget.kreatur)
+        const BK = window.__tetrapodaCore && window.__tetrapodaCore.PORTAL_RENDER_CONFIG.lod.budget.kreatur;
+        const abKern = BK && BK[1] ? BK[1].ab : null;
+        const hyst = BK ? BK.hyst : null;
+        if (!(abKern > 0) || !(hyst > 0)) return { error: "Kern-Zeile kreatur trägt kein ab/hyst" };
+        if (typeof r._gelenkStufe !== "function") return { error: "_gelenkStufe fehlt" };
+    
+        // ── Harness-Disziplin: leere Bühne (keine Ambient-Separation), Frustum an ──
+        for (const c of s.creatures.slice()) r.removeCreature(c);
+        const saveMax = s.maxCreatures;
+        s.maxCreatures = 8;
+        const saveFrustum = r.isInFrustum;
+        r.isInFrustum = function () {
+            return true; // Bild-Gesetz und ferner Gang laufen nur inFrustum — für die Messung immer „im Bild"
+        };
+    
+        // Was die HAUPT-Kamera zeichnet (sichtbare Kette, Layer 0) + Dreiecke und die größte Bone-Zahl einer
+        // sichtbaren geskinnten Haut (V18.497: der Leib ist EINE Haut über den Gelenk-Baum).
+        let zTris = 0,
+            zBones = 0;
+        const sichtbar = (node) => {
+            let m = 0;
+            zTris = 0;
+            zBones = 0;
+            const walk = (n) => {
+                if (n.visible === false) return;
+                if (n.isMesh && n.geometry && n.layers.isEnabled(0)) {
+                    m++;
+                    const g = n.geometry;
+                    zTris += g.index ? g.index.count / 3 : g.attributes.position.count / 3;
+                    if (n.isSkinnedMesh && n.skeleton) zBones = Math.max(zBones, n.skeleton.bones.length);
+                }
+                for (const k of n.children || []) walk(k);
+            };
+            walk(node);
+            return m;
+        };
+        const spawnWolf = (dist) => {
+            const x = pm.x + (Number.isFinite(dist) ? dist : 30),
+                z = pm.z;
+            const h = r.getTerrainHeightAt(x, z);
+            return r.spawnCreatureAt(x, (Number.isFinite(h) ? h : 0) + 1, z, "happy", "wolf", {
+                precise: true,
+                bodySize: 1,
+            });
+        };
+        const c = spawnWolf();
+        if (!c) return { error: "Wolf-Spawn fehlgeschlagen (Ofen kalt?)" };
+        const gl = c.userData && c.userData._gelenk;
+        if (!gl || !gl.nah || !gl.fern) return { error: "_gelenk fehlt am Wolf" };
+        o.checks.fernGebaut = gl.meshes.length > 0 && gl.meshes.every((m) => m.isSkinnedMesh);
+        o.checks.zeileGelesen = gl.abM === abKern && gl.hyst === hyst; // die Grenze des Wirts IST die Kern-Zeile
+        o.abKern = abKern;
+        o.hyst = hyst;
+        const fL = c.scale.x || 1;
+        const fern = abKern * fL;
+        o.fernDist = fern;
+        const nahZustand = () =>
+            gl.istFern === false && gl.nah.visible === true && gl.meshes.every((m) => !m.layers.isEnabled(0));
+        const fernZustand = () =>
+            gl.istFern === true && gl.nah.visible === false && gl.meshes.every((m) => m.layers.isEnabled(0));
+        // Pin: exakte Distanz auf der +x-Achse (XZ — dieselbe Ebene wie distSq im Loop).
+        const pin = (dist) => {
+            c.position.x = pm.x + dist;
+            c.position.z = pm.z;
+        };
+        const tick = (dist) => {
+            pin(dist);
+            r.updateCreatures(0.02);
+            pin(dist);
+        };
+    
+        // ── (N) NAH voll · FERN grob — was die Haupt-Kamera zeichnet ──
+        tick(0.4 * fern);
+        o.nahMeshes = sichtbar(c);
+        o.nahTris = zTris;
+        o.nahBones = zBones;
+        o.checks.nToggleNah = nahZustand();
+        tick(1.4 * fern); // jenseits der (1+h)-Kante — die Grobstufe muss tragen
+        o.fernMeshes = sichtbar(c);
+        o.fernTris = zTris;
+        o.fernBones = zBones;
+        o.checks.nToggleFern = fernZustand();
+        o.checks.nFernGrob = o.fernMeshes < 20 && o.fernMeshes < o.nahMeshes;
+        o.checks.nFernKleiner = o.fernTris < o.nahTris / 4; // und << nah (Dreiecke — die Kosten)
+        o.checks.nNahVoll = o.nahBones >= 20; // nah bleibt der volle Gelenk-Baum (die Haut trägt ≥ 20 Bones)
+        o.checks.nFernGelenkig = o.fernBones >= 20; // fern ist die Grobstufe gelenkig (dieselben Knochen)
+    
+        // ── (S) SELBST-TEST: der Schalter gestubbt (immer nah — der volle Baum auf jede Distanz) wird ERKANNT ──
+        const saveStufe = r._gelenkStufe;
+        r._gelenkStufe = function (gruppe) {
+            return saveStufe.call(this, gruppe, 0); // die nahe Stufe auf jede Distanz
+        };
+        tick(1.4 * fern);
+        o.sAltMeshes = sichtbar(c);
+        o.sAltTris = zTris;
+        o.checks.sLensFires = !(o.sAltMeshes < 20 && o.sAltMeshes < o.nahMeshes && o.sAltTris < o.nahTris / 4);
+        r._gelenkStufe = saveStufe; // restaurieren (Gate-Hook-Lehre)
+    
+        // ── (H) HYSTERESE: Pendeln an der Kante schaltet nicht, gießt nicht ──
+        const memo = A._tierOfenMemo;
+        const memoVor = memo ? memo.size : -1;
+        const saveOfen = r._ofenKreaturTemplate;
+        let gussCalls = 0;
+        r._ofenKreaturTemplate = function () {
+            gussCalls++;
+            return saveOfen.apply(this, arguments);
+        };
+        // Pendelbreite aus der WAHRHEIT abgeleitet: ±h/5 liegt für jedes legitime hyst tief im Band.
+        const bandTief = hyst / 5;
+        tick(0.5 * fern); // definierter Start: nah
+        const startNah = nahZustand();
+        let flipsEng = 0;
+        let prev = gl.istFern;
+        for (let k = 0; k < 40; k++) {
+            tick((k % 2 ? 1 + bandTief : 1 - bandTief) * fern);
+            if (gl.istFern !== prev) flipsEng++;
+            prev = gl.istFern;
+        }
+        o.flipsEng = flipsEng;
+        o.checks.hKeinFlackern = startNah && flipsEng === 0;
+        // (H2): dieselbe Eng-Pendelprobe aus dem FERN-Start — echte Hysterese hält den letzten Zustand auch von fern.
+        tick(1.4 * fern);
+        const startFern = fernZustand();
+        let flipsEngFern = 0;
+        prev = gl.istFern;
+        for (let k = 0; k < 40; k++) {
+            tick((k % 2 ? 1 + bandTief : 1 - bandTief) * fern);
+            if (gl.istFern !== prev) flipsEngFern++;
+            prev = gl.istFern;
+        }
+        o.flipsEngFern = flipsEngFern;
+        o.checks.hKeinFlackernFern = startFern && flipsEngFern === 0 && fernZustand();
+        // Gegenprobe (nicht vakuös): WEIT über beide Kanten pendeln MUSS schalten.
+        let flipsWeit = 0;
+        prev = gl.istFern;
+        for (let k = 0; k < 10; k++) {
+            tick((k % 2 ? 0.6 : 1.6) * fern);
+            if (gl.istFern !== prev) flipsWeit++;
+            prev = gl.istFern;
+        }
+        o.flipsWeit = flipsWeit;
+        o.checks.hToggleLebt = flipsWeit >= 8;
+        r._ofenKreaturTemplate = saveOfen; // restaurieren
+        o.gussCalls = gussCalls;
+        o.memoDelta = memo ? memo.size - memoVor : -1;
+        o.checks.hKeinGuss = gussCalls === 0 && o.memoDelta === 0;
+        r.removeCreature(c);
+    
+        // ── (D) DETERMINISMUS: Sim-Werte identisch mit/ohne Stufen-Schalter ──
+        const mulberry32 = (a) => () => {
+            a |= 0;
+            a = (a + 0x6d2b79f5) | 0;
+            let t = Math.imul(a ^ (a >>> 15), 1 | a);
+            t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        };
+        const saveRandom = Math.random;
+        // der Ort des Laufs: Land in 1,4·Schwelle (ein Wolf im Wasser triebe mit der Strömung — ein Leib, der sich
+        // bewegt, behält seinen Gelenk-Baum, Welle LF)
+        let landWinkel = 0;
+        for (let q = 0; q < 24; q++) {
+            const a = (q / 24) * Math.PI * 2;
+            const lx = pm.x + Math.cos(a) * 1.4 * fern,
+                lz = pm.z + Math.sin(a) * 1.4 * fern;
+            if (r._landAt(lx, lz)) {
+                landWinkel = a;
+                break;
+            }
+        }
+        const lauf = (ohneFern) => {
+            Math.random = mulberry32(424242); // DIESELBE Folge je Lauf
+            r._creatureAiFrame = 1000;
+            s.creatureAnimationTime = 100;
+            // IDENTITÄTS-PIN: beide Läufe spawnen DENSELBEN Wolf (c7001); Echtzeit-Stempel uhr-frei.
+            s._creatureNetSeq = 7000;
+            // der Lauf spawnt im FERN-Regime (1.4·Schwelle) — sonst wäre die Stufe in beiden Läufen inert
+            const cw = spawnWolf(1.4 * fern);
+            if (!cw) return null;
+            cw.position.x = pm.x + Math.cos(landWinkel) * 1.4 * fern;
+            cw.position.z = pm.z + Math.sin(landWinkel) * 1.4 * fern;
+            // Die Ruhe trägt nur ein Tier, das STEHT (Welle LF, der ferne Gang: wer läuft, behält seinen Schritt) —
+            // der Wolf wartet, sonst wanderte er aus dem Fern-Regime in die feine Stufe.
+            r.assignCreatureTask(cw, "wait", {}, { silent: true });
+            if (cw.userData.task) cw.userData.task.since = 0;
+            cw.userData.bornAt = 0;
+            const spur = [];
+            let fernAktivTicks = 0;
+            if (ohneFern)
+                r._gelenkStufe = function (gruppe) {
+                    return saveStufe.call(this, gruppe, 0); // der alte Zustand: immer die nahe Stufe
+                };
+            for (let k = 0; k < 60; k++) {
+                r.updateCreatures(0.02);
+                const glw = cw.userData._gelenk;
+                if (glw && glw.istFern === true) fernAktivTicks++;
+                spur.push(
+                    cw.position.x,
+                    cw.position.y,
+                    cw.position.z,
+                    cw.rotation.y,
+                    s.creatureEmotions[s.creatures.indexOf(cw)] === "happy" ? 1 : 0
+                );
+            }
+            r._gelenkStufe = saveStufe; // restaurieren
+            r.removeCreature(cw);
+            return { spur, fernAktivTicks };
+        };
+        const laufMit = lauf(false);
+        const laufOhne = lauf(true);
+        const spurMit = laufMit && laufMit.spur;
+        const spurOhne = laufOhne && laufOhne.spur;
+        o.dFernAktivTicks = laufMit ? laufMit.fernAktivTicks : -1;
+        o.checks.dFernAktiv = !!laufMit && laufMit.fernAktivTicks > 30;
+        Math.random = saveRandom; // restaurieren (Gate-Hook-Lehre)
+        if (!spurMit || !spurOhne) {
+            o.checks.dLaufe = false;
+        } else {
+            o.checks.dLaufe = true;
+            let diffAt = -1;
+            for (let k = 0; k < spurMit.length; k++) {
+                if (spurMit[k] !== spurOhne[k]) {
+                    diffAt = k;
+                    break;
+                }
+            }
+            o.dDiffAt = diffAt;
+            o.dLen = spurMit.length;
+            o.checks.dIdentisch = diffAt === -1 && spurMit.length === spurOhne.length;
+        }
+    
+        r.isInFrustum = saveFrustum; // restaurieren (Gate-Hook-Lehre)
+        s.maxCreatures = saveMax;
+        return o;
+    });
+    if (!out || out.error) return check("Tier-Fern: die Bühne steht (Wolf gespawnt, Schalter erreichbar)", false, out ? out.error : "keine Antwort der Seite");
+    const c = out.checks || {};
+    const rot = (...k) => k.filter((x) => c[x] !== true).join(" · ");
+    const n = rot("fernGebaut", "zeileGelesen", "nToggleNah", "nToggleFern", "nFernGelenkig", "nNahVoll", "nFernGrob", "nFernKleiner");
+    check(
+        `Tier-Fern (N): nah die feine Stufe (Haut ${out.nahBones} Bones), fern die gelenkige Grobstufe aus der Kern-Zeile (ab ${out.abKern} m, hyst ${out.hyst}): ${out.nahMeshes} → ${out.fernMeshes} Meshes, ${Math.round(out.nahTris)} → ${Math.round(out.fernTris)} Dreiecke`,
+        !n,
+        n && "ROT: " + n
+    );
+    check(`Tier-Fern SELBSTTEST (S): mit gestubbtem Schalter erkennt die Linse den alten Zustand (fern ${out.sAltMeshes} Meshes = nah)`, c.sLensFires === true);
+    const h = rot("hKeinFlackern", "hKeinFlackernFern", "hToggleLebt", "hKeinGuss");
+    check(`Tier-Fern (H): Eng-Pendeln schaltet nie (${out.flipsEng}/${out.flipsEngFern} Flips), weites Pendeln schaltet (${out.flipsWeit}), kein Guss im Takt (${out.gussCalls})`, !h, h && "ROT: " + h);
+    const d = rot("dLaufe", "dFernAktiv", "dIdentisch");
+    check(`Tier-Fern (D): die Sim-Spur ist BYTE-GLEICH mit/ohne Stufen-Schalter (${out.dLen || 0} Werte, FERN aktiv ${out.dFernAktivTicks}/60 Ticks)`, !d, d && `ROT: ${d}${out.dDiffAt >= 0 ? ` (erste Differenz @${out.dDiffAt})` : ""}`);
+}
+
+// Der Körper geht den Weg, nicht die Uhr — eingefaltet aus gate:koerper-bewegung (D3b, Orakel Bogen 2): die Gang-Gesetze am ECHTEN
+// Chokepoint (animatePlayerSoul / _animateHumanoidRig / updateCreatures): (A) Phasen-Rate und Schritt-DISTANZ folgen dem Gang-Gesetz
+// (K07, ±10 %, der Sprint skatet nie) · (B) die Zwei-Knochen-IK pur (< 1 cm, gestreckt, nie NaN) · (C) der Posen-Blend stetig
+// (Δw ≤ 0,2 je Tick) · (D) der Tier-Root-Pitch folgt dem 30°-Hang, geerdet · (E) das Fuß-IK über den echten Pfad (Becken senkt
+// sich, Abgrund ohne NaN, Luft-Sperre); Selbsttests S1 (hartes Blend) und S2 (_slopePitch ≡ 0).
+async function checkBandKoerperBewegung(ctx) {
+    const { page, check } = ctx;
+    const out = await safeEvaluate(page, async () => {
+        const r = window.anazhRealm,
+            s = r.state,
+            A = r.constructor;
+        const o = { checks: {} };
+        for (const fn of [
+            "_gaitGesetz",
+            "_gaitBeinMass",
+            "_gaitBlendStep",
+            "_twoBoneIK",
+            "_slopePitch",
+            "_gaitTick",
+            "_gaitIKPrep",
+            "_gaitApplyFussIK",
+            "_creatureSlopeProben",
+            "_creatureSlopeProbe",
+            "animatePlayerSoul",
+            "updateCreatures",
+        ]) {
+            if (typeof r[fn] !== "function") return { error: fn + " fehlt" };
+        }
+        // Struktur-KONSUM (Lehre 6): die Chokepoints lesen die Gang-Gesetze.
+        // (kommentar-gestrippt — der EINE __codeOf des Welt-Boots)
+        const codeOf = window.__codeOf;
+        o.checks.konsumSpieler = /_gaitTick\(/.test(codeOf(r.animatePlayerSoul));
+        o.checks.konsumPeer = /_gaitTick\(/.test(codeOf(r._p2pUpdatePeer));
+        o.checks.konsumTier = /_creatureSlopeProben\(/.test(codeOf(r.updateCreatures));
+        o.checks.konsumRigIK = /_gaitApplyFussIK\(/.test(codeOf(r._animateHumanoidRig));
+    
+        // ── (B) ZWEI-KNOCHEN-IK pur — Fußfehler über ein Ziel-Raster ──
+        {
+            const l1 = 0.45,
+                l2 = 0.4;
+            let maxErr = 0,
+                alleFinite = true;
+            for (let a = -1.2; a <= 1.2; a += 0.15) {
+                for (let dFrac = 0.15; dFrac <= 0.97; dFrac += 0.1) {
+                    const d = (l1 + l2) * dFrac;
+                    const vor = Math.sin(a) * d;
+                    const unten = Math.cos(a) * d;
+                    if (unten <= 0.01) continue;
+                    const res = r._twoBoneIK(l1, l2, vor, unten);
+                    if (!Number.isFinite(res.hip) || !Number.isFinite(res.knee)) alleFinite = false;
+                    if (d > Math.abs(l1 - l2) + 0.01 && res.reached) {
+                        const a1 = -res.hip;
+                        const a2 = a1 - res.knee;
+                        const F = l1 * Math.sin(a1) + l2 * Math.sin(a2);
+                        const U = l1 * Math.cos(a1) + l2 * Math.cos(a2);
+                        maxErr = Math.max(maxErr, Math.hypot(F - vor, U - unten));
+                    }
+                }
+            }
+            o.ikMaxErr = maxErr;
+            o.checks.ikErreichbar = alleFinite && maxErr < 0.01; // Fußfehler < 1 cm
+            const weit = r._twoBoneIK(l1, l2, 2, 2); // außer Reichweite
+            const punkt = r._twoBoneIK(l1, l2, 0, 0); // Ziel = Hüftpunkt
+            const nan = r._twoBoneIK(l1, l2, NaN, NaN);
+            o.checks.ikGestreckt =
+                weit.reached === false &&
+                weit.knee === 0 &&
+                Number.isFinite(weit.hip) &&
+                Math.abs(-weit.hip - Math.atan2(2, 2)) < 1e-9; // gestreckt RICHTUNG Ziel
+            o.checks.ikNaNWand =
+                punkt.hip === 0 && punkt.knee === 0 && Number.isFinite(nan.hip) && Number.isFinite(nan.knee);
+        }
+        // ── Hang-Formel pur: 30°-Hang ⇒ 30° ± 5°, Vorzeichen korrekt ──
+        {
+            const p30 = r._slopePitch(Math.tan(Math.PI / 6) * 2, 0, 2);
+            o.pitchPurDeg = (p30 * 180) / Math.PI;
+            o.checks.pitchPur = p30 < 0 && Math.abs(Math.abs(o.pitchPurDeg) - 30) <= 5;
+            o.checks.pitchNaNWand = r._slopePitch(NaN, 0, 2) === 0 && r._slopePitch(1, 0, 0) === 0;
+        }
+        // ── Das Gang-Gesetz pur (K07): ω = 2π·v/Λ, Stand und NaN ⇒ 0 ──
+        {
+            const rg = s.playerMesh && s.playerMesh.userData && s.playerMesh.userData.rig;
+            const g3 = rg ? r._gaitGesetz(rg, 3) : null;
+            o.checks.ratePur =
+                !!g3 &&
+                Math.abs(g3.omega - (2 * Math.PI * 3) / g3.schritt) < 1e-9 &&
+                r._gaitGesetz(rg, 0).omega === 0 &&
+                r._gaitGesetz(rg, NaN).omega === 0;
+        }
+    
+        // ── Spieler-Konsumenten-Bühne: human-Rig + gestubbte Velocity ──
+        const p = s.player;
+        const mesh = s.playerMesh;
+        if (!mesh || !mesh.userData) return { error: "kein Spieler-Mesh" };
+        const savedSoul = p.soul;
+        if (!mesh.userData.rig && typeof r.applyPlayerSoul === "function") r.applyPlayerSoul("human");
+        const pmesh = s.playerMesh;
+        if (!pmesh.userData.rig) return { error: "Spieler ohne Rig (koerper-Kern kalt?)" };
+        const savedVel = s.playerVel;
+        const savedUw = s.playerUnderwater;
+        const savedMounted = p.mountedArch;
+        const savedPhase = p.walkPhase;
+        const savedW = p._gaitW;
+        const savedTick = p.animationLastTick;
+        s.playerUnderwater = false;
+        p.mountedArch = null;
+        let vStub = 0;
+        s.playerVel = { x: () => vStub, z: () => vStub * 0, y: () => 0 };
+        const fahre = (v, sek, t0) => {
+            vStub = v;
+            p.animationLastTick = -Infinity;
+            r.animatePlayerSoul(t0);
+            const ph0 = p.walkPhase;
+            const n = Math.round(sek * 60);
+            for (let k = 1; k <= n; k++) r.animatePlayerSoul(t0 + k / 60);
+            return p.walkPhase - ph0;
+        };
+    
+        // ── (A) WEG-PHASE am ECHTEN Konsumenten ──
+        const d1 = fahre(3, 1.0, 100);
+        const d2 = fahre(6, 1.0, 200);
+        o.phaseRate1 = d1;
+        o.phaseRate2 = d2;
+        o.rateRatio = d1 > 0 ? d2 / d1 : 0;
+        // K07: die Phasen-Rate folgt ω = 2π·v/Λ(v) des Gang-Gesetzes (nicht mehr ∝ v bei festem Schritt)
+        {
+            const rgR = s.playerMesh.userData.rig;
+            o.rateSoll = r._gaitGesetz(rgR, 6).omega / r._gaitGesetz(rgR, 3).omega;
+        }
+        o.checks.aRateVerdoppelt = o.rateRatio > 1 && Math.abs(o.rateRatio / o.rateSoll - 1) <= 0.1;
+        const sd1 = d1 > 0 ? 3 / (d1 / Math.PI) : 0; // Weg je Schritt bei v=3
+        const sd2 = d2 > 0 ? 6 / (d2 / Math.PI) : 0; // Weg je Schritt bei v=6
+        o.schritt1 = sd1;
+        o.schritt2 = sd2;
+        // K07: der Schritt folgt dem Gang-Gesetz (Λ/2 wächst mit dem Tempo) — gemessen am Konsumenten ± 10 %
+        const rgA = s.playerMesh.userData.rig;
+        const soll1 = r._gaitGesetz(rgA, 3).schritt / 2,
+            soll2 = r._gaitGesetz(rgA, 6).schritt / 2;
+        o.checks.aSchrittKonstant =
+            sd1 > 0 && Math.abs(sd1 / soll1 - 1) <= 0.1 && Math.abs(sd2 / soll2 - 1) <= 0.1 && sd2 > sd1;
+    
+        // ── (C) POSEN-BLEND stetig am Konsumenten (Schwellen-Sprung) ──
+        const blendLauf = () => {
+            let maxJump = 0;
+            p._gaitW = 0;
+            vStub = 0;
+            p.animationLastTick = -Infinity;
+            r.animatePlayerSoul(300);
+            vStub = 6; // der Schwellen-SPRUNG
+            let wPrev = p._gaitW;
+            for (let k = 1; k <= 90; k++) {
+                r.animatePlayerSoul(300 + k / 60);
+                maxJump = Math.max(maxJump, Math.abs(p._gaitW - wPrev));
+                wPrev = p._gaitW;
+            }
+            const wOben = p._gaitW;
+            vStub = 0; // zurück unter die Schwelle
+            for (let k = 91; k <= 180; k++) {
+                r.animatePlayerSoul(300 + k / 60);
+                maxJump = Math.max(maxJump, Math.abs(p._gaitW - wPrev));
+                wPrev = p._gaitW;
+            }
+            return { maxJump, wOben, wUnten: p._gaitW };
+        };
+        const bl = blendLauf();
+        o.blend = bl;
+        o.checks.cBlendStetig = bl.maxJump <= 0.2 + 1e-9;
+        o.checks.cBlendKonvergiert = bl.wOben > 0.8 && bl.wUnten < 0.2;
+        o.checks.cBlendNaNWand = Number.isFinite(r._gaitBlendStep(NaN, NaN, NaN));
+    
+        // ── (S1) SELBST-TEST: hartes Blend gestubbt → die Messung sieht den Sprung ──
+        const savedBlend = r._gaitBlendStep;
+        r._gaitBlendStep = function (_w, speed) {
+            return Number.isFinite(speed) && speed > 0.4 ? 1 : 0;
+        };
+        const blStub = blendLauf();
+        r._gaitBlendStep = savedBlend; // restaurieren (Gate-Hook-Lehre)
+        o.s1MaxJump = blStub.maxJump;
+        o.checks.s1LensFires = blStub.maxJump > 0.2;
+    
+        // ── (E) FUSS-IK-KONSUM: Becken senkt sich auf gesenktem Boden, Abgrund ohne NaN ──
+        {
+            const rig = pmesh.userData.rig;
+            const soleY = pmesh.position.y - A.PLAYER_FOOT_OFFSET;
+            const savedTraeger = s._kapselTraegerY;
+            const savedStruktur = s._kapselStruktur;
+            // der Träger, wie ihn der Kapsel-Schritt stempelt (ein Bauwerk: eben per Definition)
+            const traeger = (y) => {
+                s._kapselTraegerY = y;
+                s._kapselStruktur = true;
+            };
+            const probenFrisch = () => {
+                const ik = pmesh.userData._gaitIK;
+                if (ik) {
+                    ik.probeL.g = NaN;
+                    ik.probeR.g = NaN;
+                }
+            };
+            const tickeIdle = (t0) => {
+                vStub = 0;
+                p._gaitW = 0;
+                p.animationLastTick = -Infinity;
+                r.animatePlayerSoul(t0);
+                for (let k = 1; k <= 8; k++) r.animatePlayerSoul(t0 + k / 60);
+            };
+            const savedAir = s.isInAir;
+            s.isInAir = false; // der stehende Körper (die Luft-Sperre prüft E2)
+            traeger(soleY); // der Träger auf der Sohlen-Ebene
+            probenFrisch();
+            tickeIdle(500);
+            const h0 = rig.hips.position.y;
+            traeger(soleY - 0.25); // der Träger 25 cm gesenkt
+            probenFrisch();
+            tickeIdle(510);
+            const h1 = rig.hips.position.y;
+            traeger(soleY - 50); // Abgrund
+            probenFrisch();
+            tickeIdle(520);
+            let alleFinite = true;
+            for (const leg of [rig.legL, rig.legR])
+                for (const kk of ["hip", "knee", "ankle"])
+                    if (leg[kk] && !Number.isFinite(leg[kk].rotation.x)) alleFinite = false;
+            if (!Number.isFinite(rig.hips.position.y)) alleFinite = false;
+            // (E2) LUFT-SPERRE (Leben-Prüfung N-D1): in der Luft erdet die Fuß-IK nie — derselbe gesenkte Boden senkt
+            // das Becken NICHT (vorher sank es im Sprung 0,25 m, während die Kapsel 0,24–0,31 m stieg)
+            traeger(soleY - 0.25);
+            s.isInAir = true;
+            probenFrisch();
+            tickeIdle(530);
+            const hLuft = rig.hips.position.y;
+            s.isInAir = savedAir;
+            s._kapselTraegerY = savedTraeger; // restaurieren
+            s._kapselStruktur = savedStruktur;
+            probenFrisch();
+            o.beckenLuft = hLuft;
+            o.checks.eLuftSperre = Number.isFinite(hLuft) && Number.isFinite(h0) && Math.abs(hLuft - h0) < 0.02;
+            o.beckenFlach = h0;
+            o.beckenGesenkt = h1;
+            o.checks.eBeckenSenkt = Number.isFinite(h0) && Number.isFinite(h1) && h1 < h0 - 0.1;
+            o.checks.eAbgrundOhneNaN = alleFinite;
+        }
+    
+        // Spieler-Bühne restaurieren
+        s.playerVel = savedVel;
+        s.playerUnderwater = savedUw;
+        p.mountedArch = savedMounted;
+        p.walkPhase = savedPhase;
+        p._gaitW = savedW;
+        p.animationLastTick = savedTick;
+        if (savedSoul !== p.soul && typeof r.applyPlayerSoul === "function") r.applyPlayerSoul(savedSoul);
+    
+        // ── (D) TIER-BODENKONTAKT auf dem 30°-Hang (gestubbter Boden) ──
+        {
+            const pm = s.playerMesh.position;
+            const saveMax = s.maxCreatures;
+            s.maxCreatures = Math.max(saveMax || 0, s.creatures.length + 2);
+            const steig = Math.tan(Math.PI / 6); // 30°
+            // 200 m über jeder Boden-Karte: der Stand-Leser der Sicht (_standSicht) trägt dort das Gesetz der Ebene
+            const ebene = (x, z) => 210 + (z - pm.z) * steig;
+            const dist = window.__tetrapodaCore.PORTAL_RENDER_CONFIG.lod.budget.kreatur[1].ab * 0.3; // sicher in der Voll-Zone
+            const cx = pm.x + dist,
+                cz = pm.z;
+            const c = r.spawnCreatureAt(cx, 30, cz, "happy", "wesen", { precise: true, bodySize: 1 });
+            if (!c) return { error: "Tier-Spawn fehlgeschlagen" };
+            const savedSurf = r._koerperBodenUnter;
+            r._koerperBodenUnter = (x, _y, z) => ebene(x, z);
+            // der Ruf liest seinen ersten Grund selbst (Leben-Schau 2) — der gestubbte Boden gilt ab jetzt
+            delete c.userData.cachedGroundY;
+            // gepinnt: Ort UND Gier (bergauf, +z) — der Nick misst den Hang längs des Leibs; die Gier des Wanderns
+            // drehte ihn quer (main 7dd944e6: +34,4°, talwärts; 832b4cf4: −16,2° bei ~60° Gier — kein Hang-Fehler)
+            const tiere = (n) => {
+                for (let k = 0; k < n; k++) {
+                    c.rotation.y = 0;
+                    c.userData._steuer = { gier: 0, v: 0 };
+                    r.updateCreatures(0.02);
+                    c.position.x = cx;
+                    c.position.z = cz; // pinnen (Wander driftet sonst)
+                }
+            };
+            tiere(60);
+            o.tierPitchDeg = (c.rotation.x * 180) / Math.PI;
+            o.tierY = c.position.y;
+            o.tierSollY = ebene(cx, cz);
+            o.checks.dPitch30 = c.rotation.x < 0 && Math.abs(Math.abs(o.tierPitchDeg) - 30) <= 5;
+            o.checks.dGeerdet = Math.abs(o.tierY - o.tierSollY) < 0.6; // Sohlen an der Proben-Mitte, kein +0.5-Anker
+            // ── (S2) SELBST-TEST: _slopePitch ≡ 0 → der Hang-Pitch fällt zurück ──
+            const savedPitch = r._slopePitch;
+            r._slopePitch = function () {
+                return 0;
+            };
+            tiere(60);
+            r._slopePitch = savedPitch; // restaurieren (Gate-Hook-Lehre)
+            o.s2PitchDeg = (c.rotation.x * 180) / Math.PI;
+            o.checks.s2LensFires = Math.abs(o.s2PitchDeg) < 3; // ohne Formel kein Hang-Folgen
+            r._koerperBodenUnter = savedSurf; // restaurieren
+            // Boden-Caches der Welt-Kreaturen entstubben (kein stale Hang-Boden)
+            for (const cr of s.creatures) {
+                const ud = cr.userData || {};
+                delete ud.cachedGroundY;
+                // die vier Gesetz-Proben je Tier (_slopeProben) tragen sonst den 210-m-Hang des Stubs weiter
+                if (Array.isArray(ud._slopeProben)) for (const pr of ud._slopeProben) pr.g = NaN;
+            }
+            r.removeCreature(c);
+            s.maxCreatures = saveMax;
+        }
+    
+        return o;
+    });
+    if (!out || out.error) return check("Körper-Bewegung: die Bühne steht", false, out ? out.error : "keine Antwort der Seite");
+    const c = out.checks || {};
+    const rot = (...k) => k.filter((x) => c[x] !== true).join(" · ");
+    const f = (v, n = 2) => (typeof v === "number" ? v.toFixed(n) : String(v));
+    const k = rot("konsumSpieler", "konsumPeer", "konsumTier", "konsumRigIK");
+    check("Körper-Bewegung KONSUM: Spieler und Peers lesen den EINEN Gang-Tick, Tiere die Hang-Proben, das Rig das Fuß-IK", !k, k && "ROT: " + k);
+    const a = rot("ratePur", "aRateVerdoppelt", "aSchrittKonstant");
+    check(`Körper-Bewegung (A): doppeltes Tempo ⇒ die Phasen-Rate des Gang-Gesetzes (${f(out.rateRatio)}× ≈ ${f(out.rateSoll)}×), die Schritt-Distanz des Gesetzes (${f(out.schritt1)} / ${f(out.schritt2)} m)`, !a, a && "ROT: " + a);
+    const b = rot("ikErreichbar", "ikGestreckt", "ikNaNWand");
+    check(`Körper-Bewegung (B) IK: in Reichweite < 1 cm (max ${f(out.ikMaxErr * 100, 3)} cm), außer Reichweite gestreckt, nie NaN`, !b, b && "ROT: " + b);
+    const cc = rot("cBlendStetig", "cBlendKonvergiert", "cBlendNaNWand", "s1LensFires");
+    check(`Körper-Bewegung (C) Blend stetig (max Δw ${f(out.blend && out.blend.maxJump, 3)}), konvergiert, NaN-Wand; SELBSTTEST S1 hartes Blend sichtbar (Δw ${f(out.s1MaxJump)})`, !cc, cc && "ROT: " + cc);
+    const d = rot("dPitch30", "dGeerdet", "s2LensFires", "pitchPur", "pitchNaNWand");
+    check(`Körper-Bewegung (D) der Tier-Root folgt dem 30°-Hang (${f(out.tierPitchDeg, 1)}°), geerdet; SELBSTTEST S2 _slopePitch ≡ 0 (${f(out.s2PitchDeg, 1)}°), die Hang-Formel pur`, !d, d && "ROT: " + d);
+    const e = rot("eBeckenSenkt", "eAbgrundOhneNaN", "eLuftSperre");
+    check(`Körper-Bewegung (E) Fuß-IK über den echten Pfad: das Becken senkt sich aufs tiefere Bein, Abgrund ohne NaN, in der Luft keine Senkung (${f(out.beckenFlach, 3)} → ${f(out.beckenLuft, 3)})`, !e, e && "ROT: " + e);
+}
+
 module.exports = {
     checkBandV1764ForgeAvatar, checkBandRing5Soul, checkBandM3RittVollendet, checkBandWFFluss,
     checkBandV18195AvatarSizeHp, checkBandV18196ManaSymmetry, checkBandV18201ManaKonsum, checkBandV18206SpeedTrade,
-    checkBandKonvergenzTierBaum,
+    checkBandKonvergenzTierBaum, checkBandTierFern, checkBandKoerperBewegung,
 };
