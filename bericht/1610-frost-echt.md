@@ -45,4 +45,28 @@
 ## Status ZWISCHENSTAND + Übergabe
 
 - **Kein Code-Commit.**
-- **Die OMEN wartet,** bis der erste Echt-Job von integ-probe 826717ed auf dem Läufer omen-gpu endet. Dann misst sie B nach.
+- **Erster Echt-Job:** `bericht/1610-echt-erstlauf.md`. B ist nachgemessen (Nachtrag unten).
+
+## Nachtrag 16.10. ~12:45 — DER TÄTER BEIM NAMEN: die Boot-Wartung der Linse, nicht das Spiel
+
+- **Repro an integ-probe 826717ed-Stand (Baum echt-karte, aa74c324-Basis), GTX, `--echt --bilder`:**
+
+  | Schritt | Zeit nach dem Boot | bewegte Blöcke | Urteil |
+  |---|---|---|---|
+  | Ankunft | +15 s | 3,13 % | ROT |
+  | Dritte Person | +19 s | 3,79 % | ROT |
+  | Werkstatt, Ich-Bühne, Hof-Bühne | – | 86 %, 86 %, 87 % | grün |
+
+- **Die Bilder** (`bericht/1610-frost-echt/ankunft-a.png`/`-b.png`, `dritte-person-a.png`/`-b.png`) zeigen in beiden
+  Schüssen den **Ladeschirm** („Die Welt erwacht …“ mit der Laufzeile „330 Bäume und Bauten wachsen · das Dorf wird
+  geplant …“).
+  - Die Kamera dreht dahinter. Was sich bewegt, ist nur die Laufzeile, ≈ 3 % der Blöcke.
+- **Täter:** `scripts/diag-weltbild-frost.cjs`, die Boot-Wartung vor dem ersten Schritt.
+  - Sie wartet auf `rendererReady && playerMesh && voxelChunks.size >= minChunks` (25 Chunks), nicht auf das erste
+    Weltbild (`state._weltbildDa`, das Ende des Ladeschirms).
+  - Auf der Radeon fällt das Weltbild vor den Schritt, auf der GTX (kaltes Weltbild ≈ 20–21 s) danach.
+- **Schnitt-Vorschlag (nicht von mir geschnitten, Decke D3):** Im `--echt`-Weg wartet die Boot-Schleife auch auf
+  `st._weltbildDa`, in derselben Zeile, netto 0.
+- **Die zweite Lücke bleibt:** `welt-boot` zählt die absichtliche T2-Meldung als Welt-Fehler (siehe oben).
+- **Erwartung nach beiden Schnitten:** Die Frost-Wand ist auf der GTX grün und kann in den Job `echt`.
+- **Rohdaten:** `bericht/1610-frost-echt/repro-lauf.txt`, die fünf Bilder.
