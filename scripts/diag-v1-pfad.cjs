@@ -933,15 +933,13 @@ async function probe(arg) {
             }
             if (stabil >= 15 && n > 0 && performance.now() - t0 > 8000) break;
         }
-        const F = r.constructor.FOREST;
         let kronen = 0,
             naechster = Infinity,
             art = null;
         const bs = baeume();
         for (const a of bs) {
             const d = Math.hypot(a.position.x - P.x, a.position.z - P.z);
-            const k = r._foundryWorldScaleMatrix(r._foundryPresetFor(a.type)).elements[0] || 1;
-            const krone = (F.crown[a.type] || 4) * (a.scale || 1) * k;
+            const krone = r._naturKrone(a.type, a);
             if (d < platR + krone) kronen++;
             if (d < naechster) {
                 naechster = d;

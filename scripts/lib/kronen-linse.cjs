@@ -260,16 +260,6 @@ function bildAus(meshes) {
     return out;
 }
 
-// Jede zweite Karte fällt (Quads in Bau-Reihenfolge: 4 Ecken, 6 Indizes) — der Selbsttest der L0-Deckungs-Wand.
-function kartenAusgeduennt(krone) {
-    return krone.map((m) => {
-        if (m.kind !== "foliageTex") return m;
-        const idx = [];
-        for (let t = 0; t + 6 <= m.idx.length; t += 12) for (let k = 0; k < 6; k++) idx.push(m.idx[t + k]);
-        return Object.assign({}, m, { idx: Uint32Array.from(idx) });
-    });
-}
-
 // Jede Karte n-fach (dieselbe Lage n-mal) — der Selbsttest der Lagen-Wand.
 function kartenVervielfacht(krone, n) {
     return krone.map((m) => {
@@ -501,12 +491,8 @@ module.exports = {
     bildAus,
     kroneAus,
     kartenSkaliert,
-    kartenAusgeduennt,
     kartenVervielfacht,
     schwebe,
     unterBoden,
-    ANSICHTEN,
-    AZIMUTE,
-    HEBUNGEN,
 };
 

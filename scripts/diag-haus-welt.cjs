@@ -577,7 +577,7 @@ async function proben(phasen) {
         return { zellen, imHaus: n, je };
     };
     // W8 DIE LICHTUNG (Integration Welle L, Entscheid D3): die Genesis-Plattform ist ein Grundriss der EINEN Natur-Wand
-    // (`_naturSetzen`) — über ihrer Stein-Scheibe steht keine Krone (das Wald-Gesetz: `(FOREST.crown[art] || 4) × Größe`,
+    // (`_naturSetzen`) — über ihrer Stein-Scheibe steht keine Krone (`_naturKrone`: die Krone des Wald-Gesetzes × Größe,
     // × die Welt-Skala der Art, mit der der Baum gezeichnet wird) und auf ihr keine Streu. Der Spieler steht auf der
     // Plattform, bis Chunk, Wald-Schlange und Nah-Streu ruhen (die Kachel-Pflanzen), dann 120 m daneben, bis die Regionen
     // über ihr neu gebaut sind (die Streu-Zellen, die Baum-Schichten mit ihrer Krone — innerhalb 64 m baut keine Streu), dann
@@ -661,11 +661,8 @@ async function proben(phasen) {
         else {
             const L = { x: plat.position.x, z: plat.position.z, r: platR };
             w8.plattform = [Math.round(L.x * 10) / 10, Math.round(L.z * 10) / 10, platR];
-            const F = A.FOREST;
-            const kWelt = (art) => r._foundryWorldScaleMatrix(r._foundryPresetFor(art)).elements[0] || 1;
-            // die Reichweite eines Wurfs über die Scheibe: ein Baum mit seiner Krone, alles andere mit seinem Ort
-            const krone = (art, groesse) =>
-                /^baum_/.test(art || "") ? (F.crown[art] || 4) * (groesse > 0 ? groesse : 1) * kWelt(art) : 0;
+            // die Reichweite eines Wurfs über die Scheibe: ein Baum mit seiner Krone (der EINE Leser), alles andere mit seinem Ort
+            const krone = (art, groesse) => r._naturKrone(art, { scale: groesse });
             const abstand = (x, z) => Math.hypot(x - L.x, z - L.z);
             stell(L.x, plat.position.y + 2.2, L.z);
             const span = r._voxelChunkConfig(0).span;

@@ -2498,16 +2498,29 @@
     };
     // FOREST_PACK — geteilte Kronen-Schüchternheit / Poisson-Grid-Hash / Lab-Dichte-Zahlen.
     // Lab plantForest.ok + Host crown-shy Distance teilen forestTooClose.
-    // pack/dartsPerM2/crown = Lab PORTAL_RENDER_CONFIG.density (foundry); Host behält F.crown/
+    // pack/dartsPerM2 = Lab PORTAL_RENDER_CONFIG.density (foundry); Host behält
     // F.cell/dartsPerCell (andere Topologie + andere Species-ids) — must-ignore Host F.*.
     // Topology named FOREST_TOPOLOGY (.116 Feel); Host prio-max named forestPrioWins (.113); Species-ids → FOREST_SPECIES (.112).
     // path/garantie/saum (.110) + Verjüngung/Schatten-Zahlen (.111) → FOREST_LAB;
     // Host planForestCell liest KEIN pathDist / keine Verjüngung / keine Schattenverdängung.
+    // `crown` ist DIE EINE Kronen-Tafel des Pflanz-Gesetzes (T2, 16.10.): der Radius (m, Größe 1) der GEWACHSENEN Krone —
+    // je Laub-Art der sichtbare Radius ihrer L0 im Bestand (Atlas-Alpha ≥ 0,5, halbe Breite über 8 Azimute, Gestalten 1–4
+    // × Welt-Skala; gate:pflanzen-nah H hält jede Zeile an ihrer Gestalt 1). Labor-Wald und Welt-Wald (stamm FOREST.crown
+    // unter den Wirts-Namen) lesen sie. Vorher Eiche 5,2 gegen gewachsen 9,3 (der Ballen-Wald), mit dem Bestand 4,0.
     const FOREST_PACK = {
         pack: 1.16,
         dartsPerM2: 1.2,
         cell: 12, // Lab Poisson-Zellgröße; Host F.cell bleibt lokal (gleicher Wert, andere Nutzung)
-        crown: { eiche: 5.2, birke: 3.2, weide: 4.5, tanne: 2.95, fichte: 2.75, mammut: 9.2 },
+        crown: {
+            eiche: 4.0,
+            birke: 3.45,
+            buche: 4.05,
+            karst: 4.2,
+            weide: 5.65,
+            tanne: 2.95,
+            fichte: 2.75,
+            mammut: 9.2,
+        },
     };
     // FOREST_LAB — Lab-only plantForest thresholds (path/saum/garantie + Verjüngung + Schattenverdängung).
     // Host hat keine Lab-Pfade → planForestCell must-ignore; kein pathDist / keine Verj-/Schatten-Pässe.

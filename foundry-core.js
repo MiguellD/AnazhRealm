@@ -576,13 +576,12 @@ const PORTAL_RENDER_CONFIG = {
         },
     },
     // Wald-Dichte (plantForest): variabel-radius Poisson, Zell-Raster `cell` m, Packung `pack` (Zentren
-    // >= pack*(Ti+Tj) = Kronen-Schuechternheit), Kandidaten `dartsPerM2` (darts = R^2 * dartsPerM2), die
-    // Kronen-Radien je Art. AnazhRealm adoptiert diese in seine FOREST-Oekologie.
+    // >= pack*(Ti+Tj) = Kronen-Schuechternheit), Kandidaten `dartsPerM2` (darts = R^2 * dartsPerM2). Die
+    // Kronen-Radien je Art traegt EINE Tafel: phyto-core FOREST_PACK.crown, die gewachsene Krone (T2).
     density: {
         cell: 12,
         pack: 1.16,
         dartsPerM2: 1.2,
-        crown: { eiche: 5.2, birke: 3.2, weide: 4.5, tanne: 2.95, fichte: 2.75, mammut: 9.2 },
     },
     // Understory — der Raster-Abstand (m) je Schicht ueber den aktiven Radius: Gras dicht, Blumen mittel,
     // Buesche weit. AnazhRealm pflanzt dieselbe Wiese/Blumen/Buesche im selben Radius.
