@@ -1472,17 +1472,23 @@ class AnazhRealm_Z20c {
     // gezählter Frame; Rohdaten G1-gpu-welt/b3/s0): je Pass zog jede Senke ihr eigenes Render-Objekt — Genesis Third haupt
     // 41 · k0 14 · k1 3, Mess-Wiese Ego 33 · 15 · 5, Dorf 29 · 13 · 2 — mit ~3 Instanzen je Senke, und die CPU zahlt je
     // Render-Objekt (Projektion · Diät · Knoten · Bindungen · Zug). Die Senken eines Stoffs unterscheiden sich nur in Gestalt,
-    // Stufe und Art: die Arena hält je Szene × Stoff-Schlüssel (`_arenaSchluessel`: Attribut-Form, Schichten, Wurf, jeder
-    // Regler, Knoten und Stoff-Wert — die Art-Größen des Winds trägt die Instanz, `aWindArt`) die Gestalten aller Glieder in
-    // EINEM Vertex- und Index-Puffer (Basis-Vertex, erster Index), ihre Instanz-Größen in Blöcken (erste Instanz) und die
-    // Matrizen in EINEM Speicher-Puffer, den der EINE Instanz-Knoten (`_senkenKnoten`) liest. Je Pass schreibt sie aus der
-    // EINEN Wahl der CPU (`count` der Senke, Sicht und Frustum wie r184) die Zeichen-Aufträge (5 uint: Indizes · Instanzen ·
-    // erster Index · Basis-Vertex · erste Instanz) in den Auftrags-Puffer DIESER Kamera (der Schatten-Render läuft verschachtelt
-    // mitten im Hauptbild), und r184 gibt sie aus EINEM Render-Objekt als N drawIndexedIndirect aus (backend `_draw`:
-    // `getIndirectOffset` als Liste — vendor three.webgpu.min.js gelesen). Die erste Instanz eines indirekten Zugs braucht
-    // `indirect-first-instance`; ohne das Merkmal (WebGL2) zeichnet jede Senke über ihren Zeichner, und die Arena meldet
-    // sich einmal laut ab (`__arenaOhne`). Ein Wurf in ihrem Takt ist ein BRUCH (`_bruchMelden`): sie gibt jedes Glied
-    // seinem Zeichner zurück und nimmt keines mehr (`__arenaBruch`) — r184 bliebe nach einem Wurf mitten im Render stehen.
+    // Stufe und Art: die Arena hält je Wirt (Bündel oder Szene) × Stoff-Schlüssel (`_arenaSchluessel`: Attribut-Form,
+    // Schichten, Wurf, jeder Regler, Knoten und Stoff-Wert — die Art-Größen des Winds trägt die Instanz) die Instanz-Größen
+    // ihrer Glieder in Blöcken (erste Instanz) und die Matrizen in EINEM Speicher-Puffer, den der EINE Instanz-Knoten
+    // (`_senkenKnoten`) liest. Die Gestalten liegen im LAGER ihrer Vertex-Form (je Szene EIN Vertex- und Index-Puffer, Basis-
+    // Vertex und erster Index je Gestalt), das jede Arena dieser Form teilt: eine Gestalt liegt EINMAL auf der GPU, gleich wie
+    // viele Bündel sie zeichnen, und ihre Quelle verlässt die GPU (der Kehraus, `_gpuKehraus`: eine Senke in der Arena
+    // zeichnet nicht). Befund 16.10. (Prüfung, Genesis Third): je Bündel eine eigene Kopie, die Quelle blieb — VRAM 69,8 →
+    // 73,2 MB. Je Pass schreibt die Arena aus der EINEN Wahl der CPU (`count` der Senke, Sicht und Frustum wie r184) die
+    // Zeichen-Aufträge (5 uint: Indizes · Instanzen · erster Index · Basis-Vertex · erste Instanz) in den Abschnitt DIESER
+    // Kamera ihres EINEN Auftrags-Puffers (der Schatten-Render läuft verschachtelt mitten im Hauptbild), und r184 gibt sie aus
+    // EINEM Render-Objekt als N drawIndexedIndirect aus (backend `_draw`: `getIndirectOffset` als Liste — vendor
+    // three.webgpu.min.js gelesen). Die Wahl bleibt die EINE der CPU (`_passTrifft`): ein Cull-Compute wäre ihr Zwilling und
+    // trüge nach dem Profil höchstens ihre 0,147 / 0,142 ms (Genesis Third / Wiese Ego). Die erste Instanz eines indirekten
+    // Zugs braucht `indirect-first-instance`; ohne das Merkmal (WebGL2) zeichnet jede Senke über ihren Zeichner, und die Arena
+    // meldet sich einmal laut ab (`__arenaOhne`, gate:webgl-probe W3). Ein Wurf in ihrem Takt ist ein BRUCH (`_bruchMelden`):
+    // sie gibt jedes Glied seinem Zeichner zurück und nimmt keines mehr (`__arenaBruch`) — r184 bliebe nach einem Wurf
+    // mitten im Render stehen.
     static _arenaNimmt(m, renderer) {
         if (m.__arena || !m.__zeichner || !AnazhRealm._arenaKann(renderer)) return;
         let w = m;
@@ -1497,43 +1503,52 @@ class AnazhRealm_Z20c {
                 if (o.isBundleGroup) o.needsUpdate = true;
             });
         }
-        // DIE ARENA IM BÜNDEL: eine Senke im Bündel zeichnet aus der Arena ihres Bündels — EIN Platz je Glied, aufgenommen
-        // einmal; Zahl, Wahl und Matrizen schreibt danach der Takt (`_arenaTakt`) in ihre Puffer, das Bündel nimmt dafür nie
-        // neu auf (bis G1 hieß jeder Wechsel der Wahl: das ganze Bündel neu aufnehmen, r184 backt die Instanz-Zahl in den Zug)
+        // DIE ARENA IM BÜNDEL: eine Senke im Bündel zeichnet aus der Arena ihres Bündels — ihre Plätze nimmt das Bündel auf;
+        // Zahl, Wahl und Matrizen schreibt danach der Takt (`_arenaTakt`) in ihre Puffer, das Bündel nimmt nur neu auf, wenn
+        // die Plätze nicht reichen (bis G1 hieß jeder Wechsel der Wahl: das ganze Bündel neu aufnehmen, r184 backt die
+        // Instanz-Zahl in den Zug)
         const wirt = m.parent && m.parent.isBundleGroup === true ? m.parent : w;
         const reg = AnazhRealm.__arenen || (AnazhRealm.__arenen = new Map());
         const k = wirt.uuid + "|" + schl;
         let a = reg.get(k);
         if (!a) {
-            a = new (AnazhRealm._arenaKlasse())(k, schl, m, Math.max(64, m.instanceMatrix.count * 2));
+            const K = AnazhRealm._arenaKlasse();
+            a = new K(k, schl, m, K.lager(w, m.geometry), Math.max(64, m.instanceMatrix.count * 2));
             a._imBuendel(wirt.isBundleGroup === true ? wirt : null);
+            a._rend = renderer;
             reg.set(k, a);
         }
         if (a.parent !== wirt) wirt.add(a);
         a.nehmen(m);
     }
-    // DER TAKT DER ARENEN IM BÜNDEL — je Frame nach der Wahl des Hauptbilds (`_instanzWahlPass`), vor jedem Zug: jede Arena
-    // eines Bündels gleicht ihre Glieder ab und schreibt Blöcke und Aufträge der aufgenommenen Plätze (ein Wurf ist ein Bruch).
+    // DER TAKT DER ARENEN — je Frame nach der Wahl des Hauptbilds (`_instanzWahlPass`), vor jedem Zug: die Bündel, deren
+    // Aufnahme ein Wechsel mitten in ihr traf, nehmen neu auf; jede Arena gleicht ihre Glieder ab (wer ihren Wirt verließ,
+    // geht), die eines Bündels schreibt Blöcke und Aufträge ihrer aufgenommenen Plätze (ein Wurf ist ein Bruch).
     _arenaTakt() {
+        const auf = AnazhRealm.__arenaAuf;
+        if (auf && auf.size) {
+            for (const b of auf) b.needsUpdate = true;
+            auf.clear();
+        }
         const reg = AnazhRealm.__arenen;
         if (!reg || reg.size === 0 || AnazhRealm.__arenaBruch) return;
         try {
-            for (const a of [...reg.values()]) if (a.__buendel) a._takt(); // ohne Arena (`__arenaOhne`) gibt sie alles zurück
+            for (const a of [...reg.values()]) a._takt(); // ohne Arena (`__arenaOhne`) gibt sie alles zurück
         } catch (e) {
             this._arenaBruch(e);
         }
     }
-    // DER ZUG EINER ARENA (ihr `onBeforeRender`): Glieder abgleichen, den Auftrags-Puffer des Passes wählen, die Aufträge
+    // DER ZUG EINER ARENA (ihr `onBeforeRender`): Glieder abgleichen, den Abschnitt des Passes wählen, die Aufträge
     // schreiben — ein Wurf hier ließe r184 mitten im Render stehen: er wird zum lauten Bruch, der Pass zeichnet nichts.
     _arenaZug(a, renderer, camera) {
         a._rend = renderer;
-        a._stapel.push({ ind: null, offs: [], zuege: [], tri: 0 });
+        a._stapel.push(null);
         try {
             if (!a._ordnen(renderer)) return;
-            // nimmt ein Bündel die Arena auf, zieht sie EINEN Platz je Glied (der Takt schreibt ihre Aufträge)
-            const fest = a._fest && !!renderer._currentRenderBundle;
-            const zug = a._zugFuer(camera, fest);
-            a._auftraege(zug, fest ? null : camera, renderer);
+            // nimmt ein Bündel die Arena auf, legt sie ihre Plätze fest (der Takt schreibt danach ihre Aufträge)
+            const auf = a._fest && !!renderer._currentRenderBundle;
+            const zug = a._zugFuer(camera, auf);
+            a._auftraege(zug, auf ? null : camera, renderer, auf);
             a._stapel[a._stapel.length - 1] = zug;
         } catch (e) {
             this._arenaBruch(e);
@@ -1548,21 +1563,33 @@ class AnazhRealm_Z20c {
         console.warn("DIE GEOMETRIE-ARENA: " + AnazhRealm.__arenaOhne + " — jede Senke zeichnet über ihren Zeichner");
         return false;
     }
-    // Der Stoff-Schlüssel einer Senke — null, wo die Arena sie nicht tragen kann (verschränkte Puffer, Morph, Stoff-Reihe).
+    // Der Stoff-Schlüssel einer Senke — null, wo die Arena sie nicht tragen kann (verschränkte Puffer, Morph, Stoff-Reihe);
+    // das Nein gilt, bis Geometrie oder Stoff wechseln: kein Zug baut seine Zeichenketten neu.
     static _arenaSchluessel(m) {
         const geo = m.geometry,
-            s = m.material;
-        if (!geo || !s || s.isNodeMaterial !== true || (geo.morphAttributes && Object.keys(geo.morphAttributes).length))
+            s = m.material,
+            nein = m.__arenaNein;
+        if (nein && nein.geo === geo && nein.s === s && nein.v === (s && s.version)) return null;
+        let form = s && s.isNodeMaterial === true ? AnazhRealm._arenaForm(geo, true) : null;
+        if (form === null) {
+            m.__arenaNein = { geo, s, v: s && s.version };
             return null;
+        }
+        if (m.instanceColor) form += "farbe:" + m.instanceColor.itemSize;
+        return [form, m.layers.mask, m.castShadow, m.receiveShadow, m.renderOrder, AnazhRealm._arenaStoff(s)].join("|");
+    }
+    // Die Attribut-Form einer Geometrie, mit oder ohne Instanz-Größen — null: keine Geometrie, Morph oder verschränkt.
+    static _arenaForm(geo, mitInstanz) {
+        if (!geo || (geo.morphAttributes && Object.keys(geo.morphAttributes).length)) return null;
         let form = "";
         for (const k of Object.keys(geo.attributes).sort()) {
             const a = geo.attributes[k];
             if (a.isInterleavedBufferAttribute || !a.array) return null;
+            if (a.isInstancedBufferAttribute && !mitInstanz) continue;
             const t = a.array.constructor.name;
             form += k + ":" + a.itemSize + t + (a.normalized ? "n" : "") + (a.isInstancedBufferAttribute ? "I," : ",");
         }
-        if (m.instanceColor) form += "farbe:" + m.instanceColor.itemSize;
-        return [form, m.layers.mask, m.castShadow, m.receiveShadow, m.renderOrder, AnazhRealm._arenaStoff(s)].join("|");
+        return form;
     }
     // Der Stoff als Wert: jede Eigenschaft (Knoten als id, Texturen als uuid, Funktionen über den Programm-Schlüssel des
     // Stoffs), die Stoff-Werte bis auf die Art-Größen des Winds — gemerkt je Stoff-Version.
@@ -1650,8 +1677,145 @@ class AnazhRealm_Z20c {
             }
         };
         const vier = (n) => Math.ceil(n / 4) * 4; // jede Puffer-Länge ein Vielfaches von 4 Bytes (writeBuffer)
+        // in die Warteschlange vor dem Submit dieses Passes; ohne GPU-Puffer lädt r184 beim ersten Zug das ganze Array
+        const schreib = (rend, a, start, n) => {
+            const be = rend && rend.backend;
+            if (!be || !be.device || !a || n <= 0 || !rend._attributes.has(a)) return;
+            const d = be.get(a);
+            if (!d.buffer) return;
+            const bpe = a.array.BYTES_PER_ELEMENT;
+            const s = Math.floor((start * bpe) / 4) * 4,
+                e = Math.min(vier((start + n) * bpe), a.array.byteLength);
+            be.device.queue.writeBuffer(d.buffer, s, a.array.buffer, a.array.byteOffset + s, e - s);
+        };
+        // ein Puffer fällt erst nach dem Submit des Frames: ein offener Pass (das Hauptbild um den verschachtelten
+        // Schatten-Render) trägt ihn noch in seinem Kommando-Paket („used in submit while destroyed")
+        const weg = (rend, a) => {
+            const A = rend && rend._attributes;
+            if (!a || !A || !A.has(a)) return;
+            const w = AnazhRealm.__arenaWeg || (AnazhRealm.__arenaWeg = []);
+            if (w.push({ A, a }) === 1)
+                setTimeout(() => {
+                    AnazhRealm.__arenaWeg = null;
+                    for (const x of w) if (x.A.has(x.a)) x.A.delete(x.a);
+                }, 0);
+        };
+        // der Stand einer Gestalt — ohne die Sprünge ihres GPU-Abschieds (`_gpuAbschied` hebt die Version, der Inhalt bleibt)
+        const stand = (g) => {
+            const v = (a) => (a ? a.version - (a.__abschiede | 0) : 0);
+            return v(g.attributes.position) * 65536 + v(g.index);
+        };
+        // DAS LAGER einer Vertex-Form in einer Szene: die Gestalten aller Arenen dieser Form in EINEM Vertex- und Index-Puffer
+        // — angehängt, bis der Platz nicht reicht oder die Hälfte brach liegt; dann baut es neu (×1,5), und jede Arena zeigt
+        // ihre Geometrie im selben Zug darauf (`_geoNeu`, ihr Bündel nimmt neu auf), bevor die alten Puffer fallen.
+        class Lager {
+            constructor(key) {
+                this.key = key;
+                this.gestalten = new Map(); // Positions-Id:Index-Id → { geo, bv, fi, nv, ni, nutzer, stand }
+                this.attr = null;
+                this.index = null;
+                this.v = this.i = this.tot = 0;
+                this.vCap = this.iCap = 0;
+                this.neu = true;
+                this.arenen = new Set();
+                this.rend = null;
+            }
+            nehmen(g) {
+                const p = g.attributes.position;
+                const key = p.id + ":" + (g.index ? g.index.id : -1);
+                let b = this.gestalten.get(key);
+                if (b) {
+                    b.nutzer++;
+                    return key;
+                }
+                const nv = p.count,
+                    ni = g.index ? g.index.count : nv;
+                b = { geo: g, bv: 0, fi: 0, nv, ni, nutzer: 1, stand: stand(g) };
+                this.gestalten.set(key, b);
+                if (this.neu || this.v + nv > this.vCap || this.i + ni > this.iCap) this.neu = true;
+                else {
+                    b.bv = this.v;
+                    b.fi = this.i;
+                    this.kopie(b);
+                    this.v += nv;
+                    this.i += ni;
+                }
+                return key;
+            }
+            lassen(key) {
+                const b = this.gestalten.get(key);
+                if (!b || --b.nutzer > 0) return;
+                this.gestalten.delete(key);
+                this.tot += b.nv;
+                if (this.tot > this.v / 2) this.neu = true; // verdichten
+            }
+            ordnen(rend) {
+                this.rend = rend;
+                if (this.neu && this.gestalten.size > 0) this.bauen();
+            }
+            kopie(b) {
+                const q = b.geo;
+                for (const k in this.attr) {
+                    const a = this.attr[k];
+                    a.array.set(q.attributes[k].array.subarray(0, b.nv * a.itemSize), b.bv * a.itemSize);
+                    schreib(this.rend, a, b.bv * a.itemSize, b.nv * a.itemSize);
+                }
+                const ix = this.index.array;
+                if (q.index) ix.set(q.index.array.subarray(0, b.ni), b.fi);
+                else for (let i = 0; i < b.ni; i++) ix[b.fi + i] = i;
+                schreib(this.rend, this.index, b.fi, b.ni);
+            }
+            bauen() {
+                const altA = this.attr || {},
+                    altI = this.index;
+                let nv = 0,
+                    ni = 0,
+                    v0 = null;
+                for (const b of this.gestalten.values()) {
+                    nv += b.nv;
+                    ni += b.ni;
+                    v0 = v0 || b.geo;
+                }
+                this.vCap = vier(Math.max(nv * 1.5, 1024));
+                this.iCap = vier(Math.max(ni * 1.5, 3072));
+                this.attr = {};
+                for (const k in v0.attributes) {
+                    const a = v0.attributes[k];
+                    if (a.isInstancedBufferAttribute) continue;
+                    const arr = new a.array.constructor(this.vCap * a.itemSize);
+                    this.attr[k] = new T.BufferAttribute(arr, a.itemSize, a.normalized);
+                }
+                this.index = new T.BufferAttribute(new Uint32Array(this.iCap), 1);
+                this.v = this.i = this.tot = 0;
+                for (const b of this.gestalten.values()) {
+                    b.bv = this.v;
+                    b.fi = this.i;
+                    this.kopie(b);
+                    this.v += b.nv;
+                    this.i += b.ni;
+                }
+                this.neu = false;
+                for (const a of this.arenen) a._geoNeu();
+                for (const k in altA) weg(this.rend, altA[k]);
+                weg(this.rend, altI);
+            }
+            fallen() {
+                const L = AnazhRealm.__lager;
+                if (L && L.get(this.key) === this) L.delete(this.key);
+                for (const k in this.attr || {}) weg(this.rend, this.attr[k]);
+                weg(this.rend, this.index);
+            }
+        }
         class GeometrieArena extends T.Mesh {
-            constructor(key, schl, m, nCap) {
+            // das Lager der Vertex-Form einer Geometrie in ihrer Szene (`_arenaForm` ohne Instanz-Größen)
+            static lager(szene, geo) {
+                const L = AnazhRealm.__lager || (AnazhRealm.__lager = new Map());
+                const key = szene.uuid + "|" + AnazhRealm._arenaForm(geo, false);
+                let l = L.get(key);
+                if (!l) L.set(key, (l = new Lager(key)));
+                return l;
+            }
+            constructor(key, schl, m, lager, nCap) {
                 super(new T.InstancedBufferGeometry(), m.material);
                 this.name = "geometrie-arena";
                 this.isInstanzZeichner = true;
@@ -1669,25 +1833,29 @@ class AnazhRealm_Z20c {
                 this.matrixWorldAutoUpdate = false;
                 this._wind = !!(m.material.userData && m.material.userData.windArt);
                 this._marke = m.__zeichner.__fassade.attributes.aInstanzSenke;
+                this._lager = lager;
+                lager.arenen.add(this);
                 this.glieder = [];
-                this._gestalten = new Map(); // Positions-Id:Index-Id → { geo, bv, fi, nv, ni, nutzer }
-                this._v = this._i = this._tot = 0;
-                this._vCap = this._iCap = 0;
                 this._nCap = vier(nCap); // die Instanz-Seite: Blöcke angehängt, nie verschoben
-                this._nEnde = this._nTot = this._bedarf = 0;
+                this._nEnde = this._nTot = 0;
+                // die Senken ohne Platz auf der Instanz-Seite: ihnen folgt eine größere Arena (`_folgen`), einmal gezählt
+                this._wartend = new Set();
                 // die Glieder mit Instanzen: ohne eines betritt die Arena keinen Pass (die Instanz-Zahl zaehlt mit)
                 this._lebend = 0;
-                this._zuege = new Map(); // Kamera → { ind, arr, offs, zuege, tri } — der Auftrags-Puffer je Pass
-                this._zuegeB = new Map(); // Kamera → der Auftrags-Puffer, den ein Bündel aufnahm (EIN Platz je Glied)
+                // DER EINE AUFTRAGS-PUFFER (`_ind`): je Pass-Kamera (lose) und je aufnehmender Kamera (Bündel) ein Abschnitt
+                this._ind = null;
+                this._segCap = this._segZahl = this._segN = 0;
+                this._segFrei = [];
+                this._zuege = new Map(); // Kamera → Zug { seg, arr, offs, zuege, tri, plaetze } — je Pass neu geschrieben
+                this._zuegeB = new Map(); // Kamera → der Zug, den ein Bündel aufnahm (seine Plätze schreibt der Takt)
                 this.__buendel = null;
                 this._fest = false;
                 this._stapel = [];
                 this._rend = null;
-                this._neu = true;
                 this._folgt = false;
                 this._fassade(this.geometry);
             }
-            // r184 liest Auftrags-Puffer, Versätze und Zahl am Zug: die des Passes, der gerade zeichnet
+            // r184 liest Auftrags-Puffer, Versätze und Zahl am Zug: den EINEN Puffer, die Versätze des Passes, der gerade zeichnet
             _fassade(g) {
                 const a = this;
                 const jetzt = () => a._stapel[a._stapel.length - 1] || null;
@@ -1695,7 +1863,7 @@ class AnazhRealm_Z20c {
                 delete g.indirectOffset;
                 delete g.instanceCount;
                 Object.defineProperties(g, {
-                    indirect: { get: () => (jetzt() ? jetzt().ind : null), set: () => {}, configurable: true },
+                    indirect: { get: () => a._ind, set: () => {}, configurable: true },
                     indirectOffset: { get: () => (jetzt() ? jetzt().offs : 0), set: () => {}, configurable: true },
                     instanceCount: {
                         get: () => (jetzt() && jetzt().offs.length ? 1 : 0),
@@ -1712,10 +1880,11 @@ class AnazhRealm_Z20c {
                     // vor dem ersten Zug wächst die Instanz-Seite noch frei; danach folgt eine Arena mit Platz für den Bedarf
                     if (!this.__instanzQuelle.instanceMatrix) this._nCap = vier((this._nEnde + cap) * 2);
                     else {
-                        this._bedarf += cap;
+                        this._wartend.add(m);
                         return void this._folgen();
                     }
                 }
+                this._wartend.delete(m);
                 // die Glieder zeichnen nach ihrer Stufe (die nahe zuerst schreibt die Tiefe, `_buendelKinderReihe`)
                 const stufe = (o) =>
                     o.userData && Number.isFinite(o.userData.buendelStufe) ? o.userData.buendelStufe : 0;
@@ -1736,6 +1905,7 @@ class AnazhRealm_Z20c {
                 this._gestaltNehmen(m);
                 this._blockNehmen(m);
                 if (m.__zeichner.parent === m) m.remove(m.__zeichner); // die Senke zeichnet nicht mehr selbst
+                // das Bündel nimmt neu auf: es trug den Zeichner (auch wenn es gerade aufnimmt — `_neuAuf`)
                 AnazhRealm._arenaBuendel(m);
                 this._neuAuf();
             }
@@ -1743,22 +1913,30 @@ class AnazhRealm_Z20c {
                 const i = this.glieder.indexOf(m);
                 if (i < 0) return;
                 this.glieder.splice(i, 1);
-                this._gestaltLassen(m);
+                this._lager.lassen(m.__arenaZ.gestalt);
                 this._nTot += m.__arenaZ.cap;
                 if ((m.count | 0) > 0) this._lebend--;
                 this._sicht();
+                // seine Plätze ziehen ab jetzt nichts (der nächste Takt verdichtet sie) — kein Frame zeigt ein gegangenes Glied
+                for (const z of [...this._zuege.values(), ...this._zuegeB.values()]) {
+                    const j = z.zuege.indexOf(m);
+                    if (j < 0) continue;
+                    z.zuege[j] = this;
+                    z.arr[j * 5 + 1] = 0;
+                    schreib(this._rend, this._ind, z.seg * this._segCap * 5 + j * 5 + 1, 1);
+                }
                 m.__arena = null;
                 m.__arenaZ = null;
                 if (zurueck && m.__zeichner && m.__zeichner.parent !== m) {
                     m.add(m.__zeichner);
                     AnazhRealm._arenaBuendel(m);
+                    this._neuAuf();
                 }
-                this._neuAuf(); // die Plätze rücken: das Bündel nimmt neu auf
                 if (this.glieder.length === 0) this._fallen();
             }
             // Im Bündel (`__buendel`) nimmt es die Arena auf; zeichnet sie im Hauptbild (Ebene 0), bleibt sie sichtbar, solange
-            // sie Glieder trägt — ein leerer Platz zieht null Instanzen, ein Wechsel der Sicht nähme das Bündel neu auf. Sonst
-            // betritt sie nur einen Pass, in dem ein Glied Instanzen zählt (die Instanz-Zahl zählt mit, `_instanzZahl`).
+            // sie Glieder trägt — ein Wechsel der Sicht nähme das Bündel neu auf. Sonst betritt sie nur einen Pass, in dem ein
+            // Glied Instanzen zählt (die Instanz-Zahl zählt mit, `_instanzZahl`).
             _imBuendel(b) {
                 this.__buendel = b;
                 this._fest = !!b && (this.layers.mask & 1) !== 0;
@@ -1772,142 +1950,64 @@ class AnazhRealm_Z20c {
             _sicht() {
                 this.visible = this._fest ? this.glieder.length > 0 : this._lebend > 0;
             }
-            // Das Bündel nimmt neu auf — sofort und im nächsten Takt: r184 merkt sich am Ende einer Aufnahme die Version des
-            // Bündels, ein Wechsel MITTEN in ihr (ein Glied geht in ihrem eigenen Zug) ginge sonst unter.
+            // Das Bündel nimmt neu auf — sofort und im nächsten Takt (`_arenaTakt`, auch wenn die Arena dabei fällt): r184 merkt
+            // sich am Ende einer Aufnahme die Version des Bündels, ein Wechsel MITTEN in ihr ginge sonst unter.
             _neuAuf() {
-                if (!this.__buendel) return;
-                this.__buendel.needsUpdate = true;
-                this._auf = true;
+                const b = this.__buendel;
+                if (!b) return;
+                b.needsUpdate = true;
+                (AnazhRealm.__arenaAuf || (AnazhRealm.__arenaAuf = new Set())).add(b);
             }
-            // der Takt (`_arenaTakt`): die aufgenommenen Plätze lesen Zahl, Wahl und Matrizen von JETZT
+            // der Takt (`_arenaTakt`): Glieder abgleichen; die aufgenommenen Plätze lesen Zahl, Wahl und Matrizen von JETZT
             _takt() {
-                if (this._auf) {
-                    this._auf = false;
-                    this.__buendel.needsUpdate = true;
-                }
                 if (!this._rend || !this._ordnen(this._rend)) return;
-                for (const z of this._zuegeB.values()) this._auftraege(z, null, this._rend);
+                for (const z of this._zuegeB.values()) this._auftraege(z, null, this._rend, false);
             }
+            // DER ABSCHIED: durch das Bündel (`_archBundleSceneRemove`) — wird es leer, verlässt es mit seinem Verdeckungs-
+            // Proxy Szene und Register. Befund 16.10. (Prüfung, Reise Wiese → Dorf): die Arena nahm sich still aus ihrem
+            // Bündel, das leere Bündel blieb samt Proxy in Szene und `_regionBundles` (1 → 5 leer, ohne Arena 0).
             _fallen() {
                 const reg = AnazhRealm.__arenen;
                 if (reg && reg.get(this.__key) === this) reg.delete(this.__key);
-                if (this.parent) this.parent.remove(this);
-                this._abschied(this.geometry);
-                this._gpuWeg(this.__instanzQuelle.instanceMatrix);
-                for (const z of this._zuege.values()) this._gpuWeg(z.ind);
-                for (const z of this._zuegeB.values()) this._gpuWeg(z.ind);
+                const p = this.parent,
+                    welt = globalThis.anazhRealm,
+                    B = welt && welt.state._regionBundles;
+                if (p && p.isBundleGroup && B && B.get(p.userData.regionKey) === p) welt._archBundleSceneRemove(this);
+                else if (p) p.remove(this);
+                this._neuAuf();
+                this._lager.arenen.delete(this);
+                if (this._lager.arenen.size === 0) this._lager.fallen();
+                // die Instanz-Seite und der Auftrags-Puffer gehören ihr, die Vertex-Puffer dem Lager
+                const G = this.geometry.attributes;
+                for (const k in G) if (G[k].isInstancedBufferAttribute) weg(this._rend, G[k]);
+                weg(this._rend, this.__instanzQuelle.instanceMatrix);
+                weg(this._rend, this._ind);
                 this._zuege.clear();
                 this._zuegeB.clear();
                 // ihre Bindegruppen (Uniform-Puffer) fallen nach dem Submit des Frames, wie jeder Puffer der Arena
                 setTimeout(() => AnazhRealm._renderObjekteLoesen(this), 0);
             }
-            // ein Puffer fällt erst nach dem Submit des Frames: ein offener Pass (das Hauptbild um den verschachtelten
-            // Schatten-Render) trägt ihn noch in seinem Kommando-Paket („used in submit while destroyed")
-            _gpuWeg(a) {
-                const A = this._rend && this._rend._attributes;
-                if (!a || a === this._marke || !A || !A.has(a)) return;
-                const weg = AnazhRealm.__arenaWeg || (AnazhRealm.__arenaWeg = []);
-                if (weg.push({ A, a }) === 1)
-                    setTimeout(() => {
-                        AnazhRealm.__arenaWeg = null;
-                        for (const w of weg) if (w.A.has(w.a)) w.A.delete(w.a);
-                    }, 0);
-            }
-            _abschied(g) {
-                for (const k in g.attributes) this._gpuWeg(g.attributes[k]);
-                if (g.index) this._gpuWeg(g.index);
-            }
             _gestaltNehmen(m) {
                 const g = m.geometry,
-                    p = g.attributes.position,
                     z = m.__arenaZ;
                 z.geo = g;
-                z.pos = p;
+                z.pos = g.attributes.position;
                 z.idx = g.index;
-                z.ver = p.version + (g.index ? g.index.version : 0);
-                const key = p.id + ":" + (g.index ? g.index.id : -1);
-                let b = this._gestalten.get(key);
-                z.gestalt = key;
-                if (b) return void b.nutzer++;
-                const nv = p.count,
-                    ni = g.index ? g.index.count : nv;
-                b = { geo: g, bv: 0, fi: 0, nv, ni, nutzer: 1 };
-                this._gestalten.set(key, b);
-                if (this._neu || this._v + nv > this._vCap || this._i + ni > this._iCap) return void (this._neu = true);
-                b.bv = this._v;
-                b.fi = this._i;
-                this._kopie(b);
-                this._v += nv;
-                this._i += ni;
+                z.gestalt = this._lager.nehmen(g);
             }
-            _gestaltLassen(m) {
-                const b = this._gestalten.get(m.__arenaZ.gestalt);
-                if (!b || --b.nutzer > 0) return;
-                this._gestalten.delete(m.__arenaZ.gestalt);
-                this._tot += b.nv;
-                if (this._tot > this._v / 2) this._neu = true; // verdichten
-            }
-            _kopie(b) {
-                const g = this.geometry,
-                    q = b.geo;
-                for (const k in g.attributes) {
-                    const a = g.attributes[k];
-                    if (a.isInstancedBufferAttribute || a === this._marke) continue;
-                    a.array.set(q.attributes[k].array.subarray(0, b.nv * a.itemSize), b.bv * a.itemSize);
-                    this._schreib(a, b.bv * a.itemSize, b.nv * a.itemSize);
-                }
-                const ix = g.index.array;
-                if (q.index) ix.set(q.index.array.subarray(0, b.ni), b.fi);
-                else for (let i = 0; i < b.ni; i++) ix[b.fi + i] = i;
-                this._schreib(g.index, b.fi, b.ni);
-            }
-            // in die Warteschlange vor dem Submit dieses Passes; ohne GPU-Puffer lädt r184 beim ersten Zug das ganze Array
-            _schreib(a, start, n) {
-                const be = this._rend && this._rend.backend;
-                if (!be || !be.device || n <= 0 || !this._rend._attributes.has(a)) return;
-                const d = be.get(a);
-                if (!d.buffer) return;
-                const bpe = a.array.BYTES_PER_ELEMENT;
-                const s = Math.floor((start * bpe) / 4) * 4,
-                    e = Math.min(vier((start + n) * bpe), a.array.byteLength);
-                be.device.queue.writeBuffer(d.buffer, s, a.array.buffer, a.array.byteOffset + s, e - s);
-            }
-            _bauen() {
-                const alt = this.geometry;
-                const v0 = this.glieder[0].geometry;
-                let nv = 0,
-                    ni = 0;
-                for (const b of this._gestalten.values()) {
-                    nv += b.nv;
-                    ni += b.ni;
-                }
-                this._vCap = vier(Math.max(nv * 1.5, 1024));
-                this._iCap = vier(Math.max(ni * 1.5, 3072));
-                const g = new T.InstancedBufferGeometry();
-                for (const k in v0.attributes) {
-                    const a = v0.attributes[k];
-                    if (a.isInstancedBufferAttribute) continue;
-                    const arr = new a.array.constructor(this._vCap * a.itemSize);
-                    g.setAttribute(k, new T.BufferAttribute(arr, a.itemSize, a.normalized));
-                }
+            // die Geometrie der Arena: die Puffer ihres Lagers, die Marke des Zeichners und ihre Instanz-Seite
+            _geoNeu() {
+                const L = this._lager;
+                if (!this.glieder.length || !L.attr) return;
+                const alt = this.geometry,
+                    g = new T.InstancedBufferGeometry();
+                for (const k in L.attr) g.setAttribute(k, L.attr[k]);
                 g.setAttribute("aInstanzSenke", this._marke);
                 this._instanzSeite(g, alt);
-                g.setIndex(new T.BufferAttribute(new Uint32Array(this._iCap), 1));
+                g.setIndex(L.index);
                 this._fassade(g);
                 this.geometry = g;
-                this._v = this._i = this._tot = 0;
-                for (const b of this._gestalten.values()) {
-                    b.bv = this._v;
-                    b.fi = this._i;
-                    this._kopie(b);
-                    this._v += b.nv;
-                    this._i += b.ni;
-                }
-                this._neu = false;
                 this._neuAuf(); // neue Vertex-/Index-Puffer
-                for (const k in alt.attributes)
-                    if (!alt.attributes[k].isInstancedBufferAttribute) this._gpuWeg(alt.attributes[k]);
-                if (alt.index) this._gpuWeg(alt.index);
             }
             // DIE INSTANZ-SEITE: je Glied ein Block ab seiner ersten Instanz, angehängt und nie verschoben — ein offener Pass (das
             // Hauptbild um den verschachtelten Schatten-Render) zeichnet aus derselben Lage, und den Speicher-Puffer der Matrizen
@@ -1958,24 +2058,39 @@ class AnazhRealm_Z20c {
                 setTimeout(() => {
                     const reg = AnazhRealm.__arenen;
                     if (!reg || reg.get(this.__key) !== this || !this.parent || !this.glieder.length) return;
-                    let n = this._bedarf;
+                    // der Bedarf: jedes Glied und jede wartende Senke mit ihrer Kapazität von JETZT — jede einmal gezählt
+                    let n = 0;
                     for (const m of this.glieder) n += m.instanceMatrix.count;
+                    for (const m of this._wartend) if (!m.__arena && m.parent) n += m.instanceMatrix.count;
+                    this._wartend.clear();
                     AnazhRealm.__arenaFolgen = (AnazhRealm.__arenaFolgen | 0) + 1;
-                    const K = AnazhRealm._arenaKlasse();
-                    const a = new K(this.__key, this.__schl, this.glieder[0], Math.max(n * 2, 64));
+                    const a = new GeometrieArena(
+                        this.__key,
+                        this.__schl,
+                        this.glieder[0],
+                        this._lager,
+                        Math.max(n * 2, 64)
+                    );
                     a._imBuendel(this.__buendel);
                     a._rend = this._rend;
                     reg.set(this.__key, a);
                     this.parent.add(a);
+                    // die Gestalten bleiben im Lager: die Folgerin nimmt sie, bevor die Arena sie lässt
                     for (const m of this.glieder.splice(0)) {
+                        const g = m.__arenaZ.gestalt;
                         m.__arena = null;
                         a.nehmen(m);
+                        this._lager.lassen(g);
                     }
                     this._fallen();
                 }, 0);
             }
-            // Gehört das Glied noch hierher? 0 ja · 2 sein Stoff-Schlüssel wechselte (es geht in eine andere Arena)
+            // Gehört das Glied noch hierher? 0 ja · 2 sein Stoff-Schlüssel wechselte (es geht in eine andere Arena) · 3 kein
+            // Platz für seine Instanzen · 4 es verließ den Wirt der Arena (ein Bündel räumte es, es zog um)
             _pruefen(m) {
+                let p = m.parent;
+                while (p && p !== this.parent) p = p.parent;
+                if (!p) return 4;
                 const z = m.__arenaZ,
                     g = m.geometry,
                     s = m.material;
@@ -1996,15 +2111,19 @@ class AnazhRealm_Z20c {
                     z.stempel = []; // die Art-Größen des neuen Stoffs
                 }
                 if (g !== z.geo || g.attributes.position !== z.pos || g.index !== z.idx) {
-                    this._gestaltLassen(m);
+                    const alt = z.gestalt;
                     this._gestaltNehmen(m);
-                } else if (z.ver !== z.pos.version + (g.index ? g.index.version : 0)) this._neu = true;
+                    this._lager.lassen(alt);
+                } else {
+                    const b = this._lager.gestalten.get(z.gestalt);
+                    if (b.stand !== stand(g)) {
+                        b.stand = stand(g);
+                        this._lager.neu = true; // die Gestalt änderte ihren Inhalt: das Lager kopiert neu
+                    }
+                }
                 if (m.instanceMatrix !== z.im || m.instanceMatrix.count !== z.cap) {
                     this._nTot += z.cap;
-                    if (!this._blockNehmen(m)) {
-                        this._bedarf += z.cap;
-                        return 3; // kein Platz: zurück zum Zeichner, bis die größere Arena steht
-                    }
+                    if (!this._blockNehmen(m)) return 3; // zurück zum Zeichner, bis die größere Arena steht
                 }
                 return 0;
             }
@@ -2030,7 +2149,7 @@ class AnazhRealm_Z20c {
                         wa.array[i + 1] = art ? art.y : 0;
                         wa.array[i + 2] = art ? art.z : 0;
                     }
-                    this._schreib(wa, z.erst * 4, z.cap * 4);
+                    schreib(this._rend, wa, z.erst * 4, z.cap * 4);
                 }
                 const im = m.instanceMatrix,
                     q = m.geometry.attributes,
@@ -2062,36 +2181,57 @@ class AnazhRealm_Z20c {
                     M = this.__instanzQuelle.instanceMatrix;
                 if (istEins(mw)) M.array.set(im.array.subarray(0, n * 16), e * 16);
                 else for (let i = 0; i < n; i++) mal(M.array, (e + i) * 16, mw, im.array, i * 16);
-                this._schreib(M, e * 16, n * 16);
+                schreib(this._rend, M, e * 16, n * 16);
                 for (const nm in q) {
                     const a = q[nm];
                     if (!a.isInstancedBufferAttribute) continue;
                     const d = G.attributes[nm];
                     d.array.set(a.array.subarray(0, n * a.itemSize), e * a.itemSize);
-                    this._schreib(d, e * a.itemSize, n * a.itemSize);
+                    schreib(this._rend, d, e * a.itemSize, n * a.itemSize);
                 }
                 if (c) {
                     const d = G.attributes.instanzFarbe;
                     d.array.set(c.array.subarray(0, n * c.itemSize), e * c.itemSize);
-                    this._schreib(d, e * c.itemSize, n * c.itemSize);
+                    schreib(this._rend, d, e * c.itemSize, n * c.itemSize);
                 }
             }
-            // der Auftrags-Puffer je Kamera: lose je Pass (nur Glieder mit Instanzen im Blick), im Bündel EIN Platz je Glied
+            // der Zug je Kamera — lose je Pass, im Bündel die aufgenommenen Plätze —, jeder ein Abschnitt des EINEN
+            // Auftrags-Puffers, so lang wie die Glieder
             _zugFuer(camera, fest) {
                 const reg = fest ? this._zuegeB : this._zuege;
                 let z = reg.get(camera);
-                if (!z || z.arr.length < this.glieder.length * 5) {
-                    if (z) this._gpuWeg(z.ind);
-                    else if (reg.size >= 16) {
+                if (!z) {
+                    if (reg.size >= 16) {
                         const [k0, z0] = reg.entries().next().value;
-                        this._gpuWeg(z0.ind);
+                        this._segFrei.push(z0.seg);
                         reg.delete(k0);
                     }
-                    const arr = new Uint32Array(Math.max(Math.ceil(this.glieder.length * 1.5), 8) * 5);
-                    z = { ind: new IND(arr, 1), arr, offs: [], zuege: [], tri: 0 };
+                    const seg = this._segFrei.length ? this._segFrei.pop() : this._segN++;
+                    z = { seg, arr: null, offs: [], zuege: [], tri: 0, plaetze: 0 };
                     reg.set(camera, z);
                 }
+                if (this.glieder.length > this._segCap || this._segN > this._segZahl) this._indNeu();
+                else if (!z.arr) z.arr = this._ansicht(z.seg);
                 return z;
+            }
+            _ansicht(seg) {
+                const L = this._segCap * 5;
+                return this._ind.array.subarray(seg * L, (seg + 1) * L);
+            }
+            // der Auftrags-Puffer wächst (mehr Glieder oder Kameras): die Abschnitte ziehen um, das Bündel nimmt neu auf
+            _indNeu() {
+                const alt = this._ind,
+                    altCap = this._segCap;
+                this._segCap = Math.max(this._segCap, Math.ceil(this.glieder.length * 1.5), 8);
+                this._segZahl = Math.max(this._segZahl, this._segN) + 1;
+                this._ind = new IND(new Uint32Array(this._segZahl * this._segCap * 5), 1);
+                for (const z of [...this._zuege.values(), ...this._zuegeB.values()]) {
+                    const neu = this._ansicht(z.seg);
+                    if (z.arr) neu.set(z.arr.subarray(0, Math.min(altCap, this._segCap) * 5));
+                    z.arr = neu;
+                }
+                weg(this._rend, alt);
+                this._neuAuf();
             }
             onBeforeRender(renderer, scene, camera) {
                 globalThis.anazhRealm._arenaZug(this, renderer, camera);
@@ -2103,7 +2243,7 @@ class AnazhRealm_Z20c {
                     renderer.info.render.triangles += zug.tri - 1;
                 }
             }
-            // Glieder abgleichen, die Arena bauen — false: nichts zu zeichnen
+            // Glieder abgleichen, Lager und Geometrie ordnen — false: nichts zu zeichnen
             _ordnen(renderer) {
                 if (!AnazhRealm._arenaKann(renderer)) {
                     for (const m of this.glieder.slice()) this.lassen(m, true);
@@ -2116,25 +2256,37 @@ class AnazhRealm_Z20c {
                 }
                 if (fremd)
                     for (let i = 0; i < fremd.length; i += 2) {
-                        this.lassen(fremd[i], true);
-                        if (fremd[i + 1] === 2) AnazhRealm._arenaNimmt(fremd[i], renderer);
-                        else this._folgen();
+                        const m = fremd[i],
+                            p = fremd[i + 1];
+                        this.lassen(m, true);
+                        if (p === 2) AnazhRealm._arenaNimmt(m, renderer);
+                        else if (p === 3) {
+                            this._wartend.add(m);
+                            this._folgen();
+                        }
                     }
                 if (this._nTot > 256 && this._nTot > this._nEnde / 2) this._folgen(); // verdichten
                 if (this.glieder.length === 0) return false;
-                if (this._neu) this._bauen();
+                this._lager.ordnen(renderer);
+                if (this.geometry.index !== this._lager.index) this._geoNeu();
                 return true;
             }
-            // Die Aufträge eines Zugs aus der EINEN Wahl der CPU (`count` der Senke; lose dazu Sicht und Frustum wie r184).
-            // `camera` null: die Plätze eines Bündels — jedes Glied auf seinem Platz, ohne Instanzen im Blick null Instanzen.
-            _auftraege(zug, camera, renderer) {
+            // Die Aufträge eines Zugs aus der EINEN Wahl der CPU (`count` der Senke; lose dazu Sicht und Frustum wie r184),
+            // VERDICHTET: nur Glieder mit Instanzen im Blick ziehen. `camera` null: die Plätze eines Bündels — die Aufnahme
+            // (`auf`) legt so viele, wie Glieder ziehen, und ein Viertel Reserve (`plaetze`, Plätze ohne Instanzen); der Takt
+            // füllt sie, und reichen sie nicht oder liegt mehr als die Hälfte brach, nimmt das Bündel neu auf — sonst nie, die
+            // Wahl wechselt ohne Aufnahme. Befund 16.10. (Prüfung, Dorf): bis hier zog jedes Glied seinen Platz, auch leer —
+            // die Züge des Hauptbilds 58 → 66.
+            _auftraege(zug, camera, renderer, auf) {
                 const fest = camera === null;
-                if (zug.arr.length < this.glieder.length * 5) return; // die Plätze wuchsen: das Bündel nimmt neu auf
+                const args = zug.arr,
+                    basis = zug.seg * this._segCap * 5,
+                    platz = fest && !auf ? zug.plaetze : this._segCap;
                 zug.offs.length = 0;
                 zug.zuege.length = 0;
                 zug.tri = 0;
-                const args = zug.arr;
                 let k = 0,
+                    ziehen = 0,
                     frust = false,
                     lebend = 0;
                 for (const m of this.glieder) {
@@ -2150,33 +2302,42 @@ class AnazhRealm_Z20c {
                         if (m.boundingSphere === null) m.computeBoundingSphere();
                         if (!fr.intersectsSphere(kugel.copy(m.boundingSphere).applyMatrix4(m.matrixWorld))) n = 0;
                     }
+                    if (n <= 0) continue;
                     const z = m.__arenaZ,
-                        b = this._gestalten.get(z.gestalt),
+                        b = this._lager.gestalten.get(z.gestalt),
                         dr = m.geometry.drawRange;
                     const s0 = Math.max(0, dr.start | 0);
                     const ni = Math.min(b.ni - s0, Number.isFinite(dr.count) ? dr.count : b.ni);
-                    if (ni <= 0) n = 0;
-                    if (n <= 0 && !fest) continue;
+                    if (ni <= 0) continue;
+                    ziehen++;
+                    if (k >= platz) continue; // die Plätze des Bündels reichen nicht: es nimmt neu auf (unten)
                     n = Math.min(n, z.cap);
-                    if (n > 0) this._block(m, z, n);
+                    this._block(m, z, n);
                     const o = k * 5;
-                    args[o] = n > 0 ? ni : 0;
+                    args[o] = ni;
                     args[o + 1] = n;
-                    args[o + 2] = n > 0 ? b.fi + s0 : b.fi;
+                    args[o + 2] = b.fi + s0;
                     args[o + 3] = b.bv;
                     args[o + 4] = z.erst;
-                    zug.offs.push(o * 4);
+                    zug.offs.push((basis + o) * 4);
                     zug.zuege.push(m);
-                    zug.tri += (args[o] / 3) * n;
+                    zug.tri += (ni / 3) * n;
                     k++;
                 }
                 // gezählt am Stand dieses Passes (heilt jeden Schreiber an der Instanz-Zahl vorbei)
                 this._lebend = lebend;
                 this._sicht();
-                if (k === 0) return;
-                // der Auftrags-Puffer dieser Kamera: beim ersten Zug legt r184 ihn mit dem Stand der CPU an, danach schreibt die Arena
-                if (!renderer._attributes.has(zug.ind)) renderer._attributes.update(zug.ind, 4);
-                else this._schreib(zug.ind, 0, k * 5);
+                if (fest) {
+                    if (auf) zug.plaetze = Math.min(this.glieder.length, k + (k > 0 ? (k >> 2) + 1 : 0));
+                    else if (ziehen > zug.plaetze || zug.plaetze > 2 * ziehen + 2) this.__buendel.needsUpdate = true;
+                    for (; k < zug.plaetze; k++) {
+                        const o = k * 5;
+                        args[o] = args[o + 1] = args[o + 2] = args[o + 3] = args[o + 4] = 0;
+                        zug.offs.push((basis + o) * 4);
+                        zug.zuege.push(this);
+                    }
+                }
+                if (k > 0) schreib(renderer, this._ind, basis, k * 5);
             }
             raycast() {}
         }
@@ -2203,8 +2364,10 @@ class AnazhRealm_Z20c {
         if (!rend.info.memoryMap.has(attr)) return false;
         rend._attributes.delete(attr);
         // Die Version steigt: zeichnet ein altes Render-Objekt das Attribut wieder, sieht der Beobachter (r184 equals,
-        // die Observer-Diät) die Änderung und lädt es hoch — ohne sie fände sein Draw keinen Puffer.
+        // die Observer-Diät) die Änderung und lädt es hoch — ohne sie fände sein Draw keinen Puffer. Der Sprung zählt mit
+        // (`__abschiede`): wer den INHALT an der Version misst (das Lager der Arena), zieht ihn ab.
         attr.needsUpdate = true;
+        attr.__abschiede = (attr.__abschiede | 0) + 1;
         return true;
     }
     // DER ABSCHIED EINER INSTANZ-SENKE — das Gegenstück zu `_instanzMesh`: ihre EIGENEN Instanz-Puffer (die Matrizen als

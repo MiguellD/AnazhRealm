@@ -145,7 +145,7 @@ function drawZensus(opts) {
                 e.tris += tris;
                 // Die Nähe der Klasse im Hauptbild, ihre EXEMPLARE: die Bau-Einträge hinter ihren Instanzen (ein Tor zeichnet je
                 // Stoff einen Zug, `inst` zählt jede Instanz jedes Zugs, der Eintrag das Tor einmal), ohne Eintrag die Orte (0,5 m).
-                if (pass === "haupt") {
+                if (pass === "haupt" && senke !== object) {
                     const w =
                         nah[kl] ||
                         (nah[kl] = { inst: 0, dMin: Infinity, dMax: 0, orte: new Set(), eintraege: new Set() });
@@ -354,10 +354,8 @@ function pufferZensus() {
         if (!o.geometry && !o.isInstancedMesh) return;
         const name = "szene:" + r._taeterKlasse(o);
         geo(o.geometry, name);
-        if (o.isInstancedMesh) {
-            merke(o.instanceMatrix, name);
-            merke(o.instanceColor, name);
-        }
+        const q = o.__instanzQuelle || o; // die Arena (G1) hält ihre Matrizen an ihrer Quelle, nie in der Geometrie
+        if (q.isInstancedMesh) for (const a of [q.instanceMatrix, q.instanceColor]) merke(a, name);
         // Was seine Render-Objekte zeichnen (das Register des Stamms, `_renderObjektRegister`): auch die Knoten-Attribute
         // (r184s InstanceNode zeichnet die Instanz-Farbe aus einem eigenen Attribut).
         for (const ro of o.__renderObjekte || []) if (ro.attributes) for (const a of ro.attributes) merke(a, name);

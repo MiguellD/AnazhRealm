@@ -22,6 +22,8 @@ class AnazhRealm_Z25c {
         st._gpuKehrausT = jetzt;
         const lebt = new Set();
         st.scene.traverse((o) => {
+            // eine Senke in der Arena (G1) zeichnet nicht: ihre Gestalt trägt das Lager, ihre Instanzen die Arena
+            if (o.__arena) return;
             const g = o.geometry;
             if (g && g.attributes) {
                 for (const k in g.attributes) lebt.add(g.attributes[k]);
