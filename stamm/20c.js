@@ -2594,7 +2594,9 @@ class AnazhRealm_Z20c {
                 this._lebend = lebend;
                 this._sicht();
                 if (fest) {
-                    if (auf) zug.plaetze = Math.min(this.glieder.length, k + (k > 0 ? (k >> 2) + 1 : 0));
+                    // die Reserve: ein Viertel über den Zügen der Aufnahme, abgerundet — ein leerer Platz ist ein Befehl im Band
+                    // (Befund 16.10., G1-n3/linse: mit „ein Viertel und eins" 9 leere Züge im Hauptbild der Mess-Wiese, baum 26 → 35)
+                    if (auf) zug.plaetze = Math.min(this.glieder.length, k + (k >> 2));
                     else if (ziehen > zug.plaetze || zug.plaetze > 2 * ziehen + 2) this.__buendel.needsUpdate = true;
                     for (; k < zug.plaetze; k++) {
                         const o = k * 5;
