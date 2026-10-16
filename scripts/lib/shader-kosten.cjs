@@ -78,11 +78,7 @@ const STOFFE = Object.freeze({
 const zaehle = (s, re) => (s.match(re) || []).length;
 
 // Kommentare raus (die Zählung liest nur Code).
-function ohneKommentare(s) {
-    return String(s)
-        .replace(/\/\*[\s\S]*?\*\//g, " ")
-        .replace(/\/\/[^\n]*/g, " ");
-}
+const { ohneKommentare } = require("./stamm.cjs");
 
 // Die Funktionen eines WGSL-Moduls: Name → Rumpf (ohne die äußeren Klammern) und der Name des Fragment-Einstiegs.
 function funktionen(code) {

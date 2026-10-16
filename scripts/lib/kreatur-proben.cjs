@@ -7,7 +7,8 @@
 //
 // Die Proben (Klasse der Synthese in Klammern):
 //   geister   (Q12) clearCreatures lässt kein Tier als Geist in der Szene
-//   geburt    (Q12) die natürliche Geburt liegt fern (≥ CREATURE_SPAWN_FAR_MIN) und außerhalb des Blicks
+//   geburt    (Q12) die natürliche Geburt liegt fern (≥ CREATURE_SPAWN_FAR_MIN) und außerhalb des Blicks; (G4a) sie wirft
+//             GRUPPEN (Rudel und Herde, je Tier ein Nachbar im Fenster der Herde)
 //   sattel    (Q12) der Tod im Sattel steigt ab (mountedArch = null)
 //   huepfer   (Q1/Q2) Luft-Anteil < 3 %, jeder Sprung aus einer Aktion über das EINE Sprung-Gesetz (creatureJump), der
 //             Scheitel ist das Freude-Gesetz (froh hopHochM, sonst hopBasisM), Flugzeit gleich bei 30 und 144 Hz
@@ -349,37 +350,55 @@ async function kreaturProben(r, T, opts) {
         }
     });
 
-    // ── geburt (Q12): fern und außerhalb des Blicks ──
+    // ── geburt (Q12 + G4a): jedes Tier fern und außerhalb des Blicks; der Wurf ist die GRUPPE (tetrapoda herde.wurf) ──
     await buehne("geburt", async (restore) => {
-        if (taeter === "geburt")
+        // die alten Defekte: die Geburt 15 m vor dem Spieler (Q12) · EIN Tier je Wurf, nie ein Raubtier (bis G4a)
+        const alt = {
+            geburt: () => ({ x: pm.x + 15, z: pm.z }),
+            "geburt-einzeln": (w) => w._kreaturGeburtsOrt(w._faunaRng()),
+        };
+        if (alt[taeter])
             decke(
                 restore,
                 "_creatureNaturalBirth",
                 () =>
                     function () {
-                        const c = this.spawnCreatureAt(pm.x + 15, pm.y, pm.z, "happy", "wesen");
-                        return !!c;
+                        const o = alt[taeter](this);
+                        return !!o && !!this.spawnCreatureAt(o.x, pm.y, o.z, "happy", "wesen");
                     }
             );
         kamera(1, 0);
         const d = [];
-        let blick = 0;
-        for (let k = 0; k < 12; k++) {
+        const z = { gruppen: [], rudel: 0, herden: 0, fensterMax: 0, imBlick: 0, journal: 0 };
+        for (let k = 0; k < 16; k++) {
             const vor = s.creatures.length;
             r._creatureNaturalBirth();
-            if (s.creatures.length !== vor + 1) continue;
-            const c = s.creatures[s.creatures.length - 1];
-            d.push(Math.hypot(c.position.x - pm.x, c.position.z - pm.z));
-            if (imBlick(c.position.x, c.position.y + 0.5, c.position.z)) blick++;
-            r.removeCreature(c);
+            const neu = s.creatures.slice(vor);
+            if (!neu.length) continue;
+            z.gruppen.push(neu[0].userData.gattung + " " + neu.length);
+            if (neu.length > 1) z[neu[0].userData.gattung === "wolf" ? "rudel" : "herden"]++;
+            const j = s.worldJournal.entries[s.worldJournal.entries.length - 1]; // der Eintrag nennt die Gruppe
+            if (j && j.type === "growth" && j.ctx && j.ctx.gruppe === neu.length) z.journal++;
+            // der Paar-Raum der Gattung (zwei Tiere der Größe 1) — der nächste der Gruppe steht im Fenster der Herde
+            const paar = (2 * r._kreaturRaum(neu[0])) / neu[0].userData.bodySize;
+            for (const c of neu) {
+                d.push(Math.hypot(c.position.x - pm.x, c.position.z - pm.z));
+                if (imBlick(c.position.x, c.position.y + 0.5, c.position.z)) z.imBlick++;
+                let nn = Infinity;
+                for (const o of neu) if (o !== c) nn = Math.min(nn, c.position.distanceTo(o.position) / paar);
+                if (nn < Infinity) z.fensterMax = +Math.max(z.fensterMax, nn).toFixed(2);
+            }
+            for (const c of neu) r.removeCreature(c);
         }
-        return {
-            geburten: d.length,
+        const H = A._verhaltenGesetz().herde;
+        return Object.assign(z, {
+            geburten: z.gruppen.length,
+            gruppen: z.gruppen.join(" · "),
+            fensterRaum: H.fensterRaum,
             minM: d.length ? +Math.min(...d).toFixed(1) : null,
             maxM: d.length ? +Math.max(...d).toFixed(1) : null,
-            imBlick: blick,
             fernMin: A.CREATURE_SPAWN_FAR_MIN,
-        };
+        });
     });
 
     // ── sattel (Q12): der Tod im Sattel steigt ab ──
@@ -2767,6 +2786,9 @@ function urteil(name, z) {
         soll(z.geburten >= 10, `nur ${z.geburten} Geburten`);
         soll(z.minM >= 0.99 * z.fernMin, `Geburt ${z.minM} m vor dem Spieler (Soll ≥ ${z.fernMin} m)`);
         soll(z.imBlick === 0, `${z.imBlick} Geburten im Blick`);
+        soll(z.rudel > 0 && z.herden > 0, `keine Gruppe: ${z.rudel} Rudel, ${z.herden} Herden (${z.gruppen})`);
+        soll(z.fensterMax <= z.fensterRaum, `ein Tier ${z.fensterMax} Paar-Räume vom Nächsten seiner Gruppe`);
+        soll(z.journal === z.geburten, `${z.geburten - z.journal} Würfe ohne growth-Eintrag ihrer Gruppe`);
     }
     if (name === "sattel") {
         soll(z.aufgestiegen === true, "nicht aufgestiegen (Probe vakuös)");
@@ -3064,7 +3086,10 @@ function urteil(name, z) {
 // nennt — rot aus dem falschen Grund ist blind für den richtigen.
 const TAETER = {
     geister: [["geister", /Geister/]],
-    geburt: [["geburt", /Geburt/]],
+    geburt: [
+        ["geburt", /vor dem Spieler/],
+        ["geburt-einzeln", /keine Gruppe/],
+    ],
     sattel: [["sattel", /mountedArch/]],
     reload: [["reload", /geheilt|Gier/]],
     huepfer: [
@@ -3128,12 +3153,4 @@ const TAETER = {
     gestalt: [["gestalt", /hängt am ersten Tier/]],
 };
 
-// Der Kommentar-Stripper der Absenz-Proben — dieselbe Quelle wie window.__codeOf im Playtest-Harness (Kommentare
-// zitieren gefallenen Code; eine Absenz-Probe liest nie ein Zitat).
-const CODE_OF_SRC = String((fnOrSrc) =>
-    String(fnOrSrc)
-        .replace(/\/\/.*$/gm, "")
-        .replace(/\/\*[\s\S]*?\*\//g, "")
-);
-
-module.exports = { KREATUR_PROBEN_SRC: kreaturProben.toString(), PROBEN, TAETER, CODE_OF_SRC, urteil };
+module.exports = { KREATUR_PROBEN_SRC: kreaturProben.toString(), PROBEN, TAETER, urteil };

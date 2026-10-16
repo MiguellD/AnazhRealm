@@ -67,7 +67,7 @@ function schlangenGesetz(src) {
     // der Zweig endet, wo der ferne beginnt (seit Welle K trägt der Ziegel-Ruf einen Block: sein `} else {` ist inner)
     const ze = body.indexOf("entry._ziegelNah = false;", za);
     if (za < 0 || ze < 0) return { ok: false, grund: "Mesh-Zonen-Zweig nicht gefunden" };
-    const zweig = body.slice(za, ze).replace(/\/\/.*$/gm, "");
+    const zweig = stammLib.ohneKommentare(body.slice(za, ze));
     const rufe = (zweig.match(/this\._archZiegelFern\(entry\)/g) || []).length;
     // bewacht: der Ruf steht nur unter der Wache des Slots (die Stand-Wache zählt, ob er wirkte)
     const bewacht = (

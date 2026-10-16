@@ -88,7 +88,6 @@ const OBERKANTE_BENANNT = {
         "Platzierung: die Geburt fern am Wunsch-Ort setzt das Tier auf die Oberfläche",
     ],
     _playerDeathRespawn: [["getTerrainHeightAt"], "Platzierung: der Spieler ersteht auf der Oberfläche"],
-    _creatureNaturalBirth: [["getTerrainHeightAt"], "Platzierung: die Geburt fern im Freien"],
     _rescuePlayerFromVoid: [["getTerrainHeightAt"], "Platzierung: die Rettung aus der Leere auf die Oberfläche"],
     _stepCharacter: [
         ["findSurfaceAbove"],
@@ -1088,10 +1087,6 @@ async function probe(K) {
     page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await page.evaluateOnNewDocument(() => {
         window.__anazhHeadlessNullRenderer = true;
-        window.__codeOf = (fnOrSrc) =>
-            String(fnOrSrc)
-                .replace(/\/\/.*$/gm, "")
-                .replace(/\/\*[\s\S]*?\*\//g, "");
     });
     await page.evaluateOnNewDocument(WELT_ORTE_INSTALL); // die Orte aus der Welt (`__weltOrte`, scripts/lib/welt-orte.cjs)
     let befund = null;

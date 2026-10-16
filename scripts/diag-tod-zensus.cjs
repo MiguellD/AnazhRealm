@@ -390,9 +390,7 @@ function todZensus(r, T, taeter) {
                     return false;
                 }
                 if (typeof f !== "function") return false;
-                const code = String(f)
-                    .replace(/\/\*[\s\S]*?\*\//g, "")
-                    .replace(/\/\/[^\n]*/g, "");
+                const code = window.__codeOf(f);
                 return /_queueDispose\(/.test(code) && /taskAura|carryingSprite/.test(code);
             })
             .sort();

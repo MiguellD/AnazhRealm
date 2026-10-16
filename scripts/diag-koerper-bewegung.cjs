@@ -100,11 +100,8 @@ const server = statikServer();
                 if (typeof r[fn] !== "function") return { error: fn + " fehlt" };
             }
             // Struktur-KONSUM (Lehre 6): die Chokepoints lesen die Gang-Gesetze.
-            // (kommentar-gestrippt — das __codeOf-Muster des Playtest-Harness, lokal)
-            const codeOf = (fn) =>
-                String(fn)
-                    .replace(/\/\/.*$/gm, "")
-                    .replace(/\/\*[\s\S]*?\*\//g, "");
+            // (kommentar-gestrippt — der EINE __codeOf des Welt-Boots)
+            const codeOf = window.__codeOf;
             o.checks.konsumSpieler = /_gaitTick\(/.test(codeOf(r.animatePlayerSoul));
             o.checks.konsumPeer = /_gaitTick\(/.test(codeOf(r._p2pUpdatePeer));
             o.checks.konsumTier = /_creatureSlopeProben\(/.test(codeOf(r.updateCreatures));
