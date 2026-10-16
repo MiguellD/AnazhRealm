@@ -304,7 +304,7 @@ function staticLaws(vcSrc, garageSrc, anazhSrc, phytoSrc) {
             standVerdict({ proben: 0, spaltM: 0 }).length === 1
         );
         // V4 (B2): ein Stamm OHNE die Chokepoint-Bindung → die A6-Wand feuert.
-        const brokenAnazh = anazhSrc.replace("this._archInstanceUpdate(entry);", "");
+        const brokenAnazh = stammLib.ersetze(anazhSrc, "_tickMountedMovement", "this._archInstanceUpdate(entry);", "");
         const a6 = staticLaws(vcSrc, garageSrc, brokenAnazh, phytoSrc).filter((l) => l[0].startsWith("A6"));
         check(
             "Selbst-Test 7 (B2): _tickMountedMovement ohne _archInstanceUpdate → die A6-Wand feuert",

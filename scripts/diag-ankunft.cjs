@@ -345,7 +345,7 @@ function wand(src, html) {
     const fallback = fnBody(nc, /\n {4}_chatHandleConversationalFallback\([^)]*\) \{/) || "";
     const hilfe = fnBody(nc, /\n {4}_hilfeZeilen\([^)]*\) \{/) || "";
     const siedlung = fnBody(nc, /\n {4}async spawnSettlement\(opts\) \{/) || "";
-    const dorfOp = (nc.match(/spawn_village: \(\[positionNode, seed[^\]]*\], ctx\) => \{[\s\S]*?\n {12}\},/) || [""])[0];
+    const dorfOp = (stammLib.treffer(nc, "dslEffects", /spawn_village: \(\[positionNode, seed[^\]]*\], ctx\) => \{[\s\S]*?\n {12}\},/) || [""])[0];
     const autoDorf = fnBody(nc, /\n {4}_autoSettlementSpawnCell\([^)]*\) \{/) || "";
     const kamera = fnBody(nc, /\n {4}_loopCamera\([^)]*\) \{/) || "";
     const stoff = fnBody(nc, /\n {4}_foundryTreeMaterial\([^)]*\) \{/) || "";
@@ -1904,18 +1904,18 @@ async function probe(arg) {
         }
         const gruen = wand(quelle, html);
         check("Selbst-Test W: der Arbeitsbaum ist grün", gruen.every((w) => w[1]), gruen.filter((w) => !w[1]).map((w) => w[0]).join(" | "));
-        const vorStand = quelle
-            .replace("if (!this.state._weltbildDa) this._ankunftsBild();", "")
-            .replace("const luecken = this._weltbildLuecken();", 'const luecken = this._builtRingRadius() >= 0 ? [] : [{ satz: "Boden" }];')
-            .replace("hotbar: [null, null, null, null, null, null, null, null, null],", 'hotbar: ["stein_block", "waterfall", "damm", null, null, null, null, null, null],')
-            .replace("const anchor = this._siedlungsAnker(plan, o.position || null, o.blick || null);", 'const anchor = this._structureSpawnPos("haus_basis", base, { state: this.state }, 3);')
-            .replace("{ durchPflanzen: true }", "{}")
-            .replace('const _durch = this._kameraDurchsichtNode(TSL, wiegen === true ? "boden" : isBark ? "rinde" : "laub");', "const _durch = null;")
-            .replace(/(\n {4}_raycastWorldHit\([^)]*\) \{[\s\S]*?)this\._fadenkreuzStrahl\(\)/, "$1this._alterStrahl()")
-            .replace("AnazhRealm._durchsichtGewicht(A,", "AnazhRealm._alteDurchsicht(A,")
-            .replace("(Welt verändert: ${compName} ${this.describeProgram(reply.program)}.)", "(Welt verändert: ${JSON.stringify(reply.program)})")
-            .replace("for (const z of this._hilfeZeilen()) append(z);", "append(\"'Setze Wetter rainy'\");")
-            .replace(/_hilfeZeilen\([^)]*\) \{[\s\S]*?\n {4}\}\n/, "_hilfeZeilen() {\n        return [];\n    }\n");
+        const vorStand = stammLib.ersetze(quelle, [
+            ["_loopRender", "if (!this.state._weltbildDa) this._ankunftsBild();", ""],
+            ["_ankunftsBild", "const luecken = this._weltbildLuecken();", 'const luecken = this._builtRingRadius() >= 0 ? [] : [{ satz: "Boden" }];'],
+            ["constructor", "hotbar: [null, null, null, null, null, null, null, null, null],", 'hotbar: ["stein_block", "waterfall", "damm", null, null, null, null, null, null],'],
+            ["spawnSettlement", "const anchor = this._siedlungsAnker(plan, o.position || null, o.blick || null);", 'const anchor = this._structureSpawnPos("haus_basis", base, { state: this.state }, 3);'],
+            ["_foundryTreeMaterial", 'const _durch = this._kameraDurchsichtNode(TSL, wiegen === true ? "boden" : isBark ? "rinde" : "laub");', "const _durch = null;"],
+            [null, /(\n {4}_raycastWorldHit\([^)]*\) \{[\s\S]*?)this\._fadenkreuzStrahl\(\)/, "$1this._alterStrahl()"],
+            ["_kameraDurchsichtNode", "AnazhRealm._durchsichtGewicht(A,", "AnazhRealm._alteDurchsicht(A,"],
+            ["maybeAnswerWithLlm", "(Welt verändert: ${compName} ${this.describeProgram(reply.program)}.)", "(Welt verändert: ${JSON.stringify(reply.program)})"],
+            ["chatSystemPatterns", "for (const z of this._hilfeZeilen()) append(z);", "append(\"'Setze Wetter rainy'\");"],
+            [null, /_hilfeZeilen\([^)]*\) \{[\s\S]*?\n {4}\}\n/, "_hilfeZeilen() {\n        return [];\n    }\n"],
+        ]);
         const vorHtml = html.replace('<div id="ladeschirm" role="status" aria-live="polite">', '<div id="ladeschirm" role="status" aria-live="polite" hidden>');
         const rot = wand(vorStand, vorHtml);
         check(

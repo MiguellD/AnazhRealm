@@ -124,7 +124,7 @@ function ksRow(src, name) {
         const s1 = staticLaws(anazhSrc, fcSrc, brokenManifest).find((l) => l[0].startsWith("S1"));
         check("Selbst-Test 1: fachwerk-Zeile aus dem Manifest entfernt -> S1 feuert", s1 && s1[1] === false);
         // V2: die haus-Policy-Zeile verstuemmelt -> S2 muss rot werden.
-        const brokenPolicy = anazhSrc.replace('donor: "haus_basis"', 'donor: "haus_kaputt"');
+        const brokenPolicy = stammLib.ersetze(anazhSrc, null, 'donor: "haus_basis"', 'donor: "haus_kaputt"');
         const s2 = staticLaws(brokenPolicy, fcSrc, manifestSrc).find((l) => l[0].startsWith("S2"));
         check("Selbst-Test 2: haus-Policy-Zeile verstuemmelt -> S2 feuert", s2 && s2[1] === false);
         // V3: die Stufen-Deklaration kollabiert -> S4 muss rot werden (die Mehr-Stufen-Wand).

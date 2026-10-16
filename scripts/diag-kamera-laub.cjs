@@ -1157,10 +1157,10 @@ async function probe(arg) {
         const gruen = wand(quelle, studioQuelle);
         check("Selbst-Test W: der Arbeitsbaum ist grün", gruen.every((w) => w[1]), gruen.filter((w) => !w[1]).map((w) => w[0]).join(" | "));
         // der Vor-Stand: die Picks ohne Durchsicht, der Wurf ohne Radius mit dem 0,85-Rückzug, das Studio mit camG
-        const vorStand = quelle
+        const vorStand = stammLib
+            .ersetze(quelle, "_loopCamera", "const t = wurf.t;", "const t = 0.85 * wurf.t;")
             .replace(/this\._durchsichtSteht\([^)]*\)/g, "true")
-            .replace(/radius: kr/g, "durchPflanzen: true")
-            .replace("const t = wurf.t;", "const t = 0.85 * wurf.t;");
+            .replace(/radius: kr/g, "durchPflanzen: true");
         const vorStudio = studioQuelle.replace(/_kamSeg\(LX,LY,LZ/g, "camG(LX,LY,LZ");
         const rot = wand(vorStand, vorStudio);
         check("Selbst-Test W: der Vor-Stand (Picks ohne Durchsicht · Wurf ohne Kugel · Studio mit camG) → W1 W2 W3 feuern", rot.every((w) => !w[1]), rot.map((w) => `${w[1] ? "✓" : "✗"} ${w[0].slice(0, 2)}`).join(" "));

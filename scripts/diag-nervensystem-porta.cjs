@@ -123,7 +123,7 @@ function ksRow(src, name) {
         const s1 = staticLaws(anazhSrc, pcSrc, brokenManifest).find((l) => l[0].startsWith("S1"));
         check("Selbst-Test 1: porta-Zeile aus dem Manifest entfernt -> S1 feuert", s1 && s1[1] === false);
         // V2: die gate-Policy-Zeile verstuemmelt -> S2 muss rot werden.
-        const brokenPolicy = anazhSrc.replace('donor: "tor_basis"', 'donor: "tor_kaputt"');
+        const brokenPolicy = stammLib.ersetze(anazhSrc, null, 'donor: "tor_basis"', 'donor: "tor_kaputt"');
         const s2 = staticLaws(brokenPolicy, pcSrc, manifestSrc).find((l) => l[0].startsWith("S2"));
         check("Selbst-Test 2: gate-Policy-Zeile verstuemmelt -> S2 feuert", s2 && s2[1] === false);
         // V3: die NUR-WURF-Stufe aus der Kette gestrichen -> S4 muss rot werden.

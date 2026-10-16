@@ -158,7 +158,7 @@ function staticLaws(anazhSrc, phytoSrc, vcSrc, manifestSrc, pcSrc) {
     if (process.argv.includes("--selftest")) {
         console.log("=== SELBST-TEST: die Linse feuert auf injizierte Verletzungen ===");
         // V1: das Fail-Closed-[0] entfernt -> A4 muss rot werden.
-        const broken1 = anazhSrc.replace(
+        const broken1 = stammLib.ersetze(anazhSrc, "_foundryServierStufe",
             "if (f && f.recipes && f.recipes[preset]) lod = 0;",
             "if (f && f.recipes && f.recipes[preset]) lod = lod;"
         );
@@ -170,7 +170,7 @@ function staticLaws(anazhSrc, phytoSrc, vcSrc, manifestSrc, pcSrc) {
             broken1 !== anazhSrc && a4Echt && a4Echt[1] === true && a4 && a4[1] === false
         );
         // V2: ein ZWEITER Ingest-Pfad (zusatzKindStages-Leser ausserhalb des Chokepoints) -> A3 rot.
-        const broken2 = anazhSrc.replace(
+        const broken2 = stammLib.ersetze(anazhSrc, "_foundryRequestSettlement",
             /(_foundryRequestSettlement\([^)]*\) \{)/,
             "$1\n        const _leak = this.state && this.state.zusatzKindStages;\n        void _leak;"
         );

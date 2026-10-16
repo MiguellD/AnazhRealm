@@ -1257,18 +1257,18 @@ async function probe(argW) {
         for (const [name, bruch, soll] of [
             [
                 "die Insel würfelt wieder",
-                quelle.replace('this._bauSame("insel")', "Math.floor(Math.random() * 0xffffffff)"),
+                stammLib.ersetze(quelle, "chatDslPatterns", 'this._bauSame("insel")', "Math.floor(Math.random() * 0xffffffff)"),
                 "W1",
             ],
-            ["der Programm-Strom fällt auf Math.random", quelle.replace('this._bauSame("dsl")', "Math.random()"), "W2"],
+            ["der Programm-Strom fällt auf Math.random", stammLib.ersetze(quelle, "dslCtx", 'this._bauSame("dsl")', "Math.random()"), "W2"],
             [
                 "die Streuung zieht aus dem Programm-Strom",
-                quelle.replace("x = pos.x + (wurf() - 0.5)", "x = pos.x + (ctx.rng() - 0.5)"),
+                stammLib.ersetze(quelle, "_dslSpawnStudioItems", "x = pos.x + (wurf() - 0.5)", "x = pos.x + (ctx.rng() - 0.5)"),
                 "W2",
             ],
             [
                 "die Hand-Liste kehrt zurück",
-                quelle.replace(
+                stammLib.ersetze(quelle, null,
                     "AnazhRealm._wortFalten = function",
                     'AnazhRealm.STUDIO_WORT = Object.freeze({ haus: "haus_" });\nAnazhRealm._wortFalten = function'
                 ),
@@ -1276,7 +1276,7 @@ async function probe(argW) {
             ],
             [
                 "ein Wort-Literal im Katalog",
-                quelle.replace(
+                stammLib.ersetze(quelle, "_studioWortKatalog",
                     "const stufen = [new Map(), new Map(), new Map(), new Map()];",
                     'const stufen = [new Map([["fels", "felsbrocken"]]), new Map(), new Map(), new Map()];'
                 ),
@@ -1632,7 +1632,7 @@ async function probe(argW) {
         for (const [name, bruch, soll] of [
             [
                 "das Rezeptbuch legt wieder ins Inventar",
-                quelle.replace(
+                stammLib.ersetze(quelle, "craftFromRecipe",
                     'if (kind === "place") return this.fertigeBlueprint(name);',
                     'if (kind === "place") { this.addToInventory(name, 1); return { ok: true }; }'
                 ),
@@ -1640,32 +1640,32 @@ async function probe(argW) {
             ],
             [
                 "das Setzen fragt die Natur-Wand nicht",
-                quelle.replace("? this._naturSetzen(name, spawnPos, {}, setzen, (wo) => (wand = wo))", "? setzen()"),
+                stammLib.ersetze(quelle, "confirmBuild", "? this._naturSetzen(name, spawnPos, {}, setzen, (wo) => (wand = wo))", "? setzen()"),
                 "W4",
             ],
             [
                 "das Brennglas erhitzt wieder den ganzen 4-m-Kreis",
-                quelle.replace("if (this._traegtPunkt(target, targetBp, p)) {", "if (true) {"),
+                stammLib.ersetze(quelle, "_tickFocusingAffordances", "if (this._traegtPunkt(target, targetBp, p)) {", "if (true) {"),
                 "W5",
             ],
             [
                 "der Schwellen-Knoten des Laubs ohne die Zahl des Stoffs (das Phantom erbt 0,5)",
-                quelle.replace("T.materialAlphaTest.mul(", "T.float(0.5).mul("),
+                stammLib.ersetze(quelle, "_laubSchwelle", "T.materialAlphaTest.mul(", "T.float(0.5).mul("),
                 "W6",
             ],
             [
                 "das Phantom verwirft wieder jedes Fragment",
-                quelle.replace("g.alphaTest = (Number.isFinite(mat.alphaTest) ? mat.alphaTest : 0) * g.opacity;", ""),
+                stammLib.ersetze(quelle, "_ghostMaterialFor", "g.alphaTest = (Number.isFinite(mat.alphaTest) ? mat.alphaTest : 0) * g.opacity;", ""),
                 "W6",
             ],
             [
                 "der Sonnen-Winkel ein zweites Mal ausgeschrieben",
-                quelle.replace("const sa = this._sonnenWinkel(t);", "const sa = t * Math.PI * 2 - Math.PI / 2;"),
+                stammLib.ersetze(quelle, "_dayNightApplyStarField", "const sa = this._sonnenWinkel(t);", "const sa = t * Math.PI * 2 - Math.PI / 2;"),
                 "W5",
             ],
             [
                 "die Wurzel würfelt wieder (Befund)",
-                quelle.replace(
+                stammLib.ersetze(quelle, "spawnArchitecture",
                     'const seed = Number.isFinite(opts.seed) ? opts.seed : this._bauSame("bau:" + type);',
                     "const seed = Number.isFinite(opts.seed) ? opts.seed : Math.floor(Math.random() * 0xffffffff);"
                 ),
@@ -1673,7 +1673,7 @@ async function probe(argW) {
             ],
             [
                 "der Zähler wird wieder Sitzungs-Feld",
-                quelle.replace(
+                stammLib.ersetze(quelle, "_bauSame",
                     'const z = wm.bauSame && typeof wm.bauSame === "object" ? wm.bauSame : (wm.bauSame = {});',
                     "const z = this._bauSameZaehler || (this._bauSameZaehler = {});"
                 ),
@@ -1681,7 +1681,7 @@ async function probe(argW) {
             ],
             [
                 "der Broadcast schickt wieder den Samen 0 (Befund)",
-                quelle.replace(
+                stammLib.ersetze(quelle, "confirmBuild",
                     '["spawn_blueprint", bm.blueprintName, posNode, steht.seed, archId,',
                     '["spawn_blueprint", bm.blueprintName, posNode, 0, archId,'
                 ),
@@ -1689,7 +1689,7 @@ async function probe(argW) {
             ],
             [
                 "die Vorschau hasht ihren Samen selbst",
-                quelle.replace(
+                stammLib.ersetze(quelle, "_workshopFoundryPreviewGroup",
                     "        const seedNum = this._werkSame(bp, bpName);",
                     "        let seedNum = 0;\n        for (const c of String(bpName)) seedNum = (Math.imul(seedNum, 131) + c.charCodeAt(0)) >>> 0;"
                 ),
@@ -1697,17 +1697,17 @@ async function probe(argW) {
             ],
             [
                 "das Setzen vergisst die Drehung des Phantoms (Befund)",
-                quelle.replace("                rotationY: dreh,\n", ""),
+                stammLib.ersetze(quelle, "confirmBuild", "                rotationY: dreh,\n", ""),
                 "W8",
             ],
             [
                 "die Tönung schreibt wieder nur material.color (Gegenprüfung 08.10.)",
-                quelle.replace("g.colorNode = ", "g.colorNodeAlt = "),
+                stammLib.ersetze(quelle, "_ghostMaterialFor", "g.colorNode = ", "g.colorNodeAlt = "),
                 "W10",
             ],
             [
                 "ein zweites LCG im Strom-Gesetz",
-                quelle.replace(
+                stammLib.ersetze(quelle, "_streamRng",
                     "        return this._samenStrom(h >>> 0);",
                     "        let st = h >>> 0 || 1;\n        return () => (st = (st * 1664525 + 1013904223) >>> 0) / 4294967296;"
                 ),

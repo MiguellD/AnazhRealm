@@ -110,7 +110,7 @@ function stammGepatcht() {
         let txt = stammLib.text(ROOT);
         for (const [geheilt, basis] of patch) {
             if (!txt.includes(geheilt)) patchFehler.push(`geheilte Zeile fehlt („${geheilt.slice(0, 70)}…")`);
-            else txt = txt.replace(geheilt, basis);
+            else txt = stammLib.ersetze(txt, null, geheilt, basis);
         }
         gepatcht = { patch, text: txt };
     }

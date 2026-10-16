@@ -92,7 +92,7 @@ function schlangenGesetz(src) {
 {
     const stamm = stammLib.text(root);
     if (process.argv.includes("--selftest")) {
-        const kaputt = stamm.replace(
+        const kaputt = stammLib.ersetze(stamm, "tickArchitectureCulling",
             "if (entry._ziegelSlot || entry._ziegelGebacken || ohneFeld) {\n                    if (this._archZiegelFern(entry)) regung++;\n                } else {\n                    // Steht",
             "if (this._archZiegelFern(entry)) regung++;\n                if (false) {\n                    // Steht"
         );
@@ -103,7 +103,7 @@ function schlangenGesetz(src) {
         const heil = schlangenGesetz(stamm);
         const bruch = schlangenGesetz(kaputt);
         // der zweite Bruch: Wartende verbrauchen wieder Versuche (der Sprung fällt)
-        const kaputt2 = stamm.replace("if (w && w.a === fA && jetztN - w.t < 1000) continue;", "");
+        const kaputt2 = stammLib.ersetze(stamm, "tickArchitectureCulling", "if (w && w.a === fA && jetztN - w.t < 1000) continue;", "");
         const bruch2 = schlangenGesetz(kaputt2);
         // Das Karten-Gesetz feuert: eine fernere Zelle (40 m, ohne Bedarf) vor der Eichen-Zelle (Rang 15 m) ist überholt,
         // nähere (9 m, 15 m) sind es nicht.

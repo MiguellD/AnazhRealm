@@ -51,7 +51,7 @@ function methodeAus(src, name) {
     return { args, rumpf: stammLib.rumpf(src, name).slice(1, -1) }; // der EINE Rumpf-Schneider (scripts/lib/stamm.cjs)
 }
 const KEIL_TYP = (() => {
-    const m = STAMM.match(/AnazhRealm\.HUELLE_KEIL_TYP = Object\.freeze\((\{[^}]*\})\)/);
+    const m = stammLib.treffer(STAMM, null, /AnazhRealm\.HUELLE_KEIL_TYP = Object\.freeze\((\{[^}]*\})\)/);
     return m ? Function("return " + m[1])() : {};
 })();
 function leser(rumpf) {

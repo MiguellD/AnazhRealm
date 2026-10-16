@@ -676,7 +676,7 @@ async function selbsttest() {
         wHeil = await wurfMessen(h, { nurArt: "gate", nurRezept: "kathedrale" });
     });
     const quelle = stammLib.text(ROOT);
-    const taeterQ = quelle.replace('return zwilling < eigen ? "zwilling" : "selbst";', 'return "zwilling";');
+    const taeterQ = stammLib.ersetze(quelle, "_wurfVonBilligerer", 'return zwilling < eigen ? "zwilling" : "selbst";', 'return "zwilling";');
     const wTaeter = taeterQ !== quelle ? wurfRichten(wHeil.zeilen, stammRegel(taeterQ)) : [];
     const rotHeil = wurfUrteil(wHeil.zeilen);
     const rotTaeter = wurfUrteil(wTaeter);

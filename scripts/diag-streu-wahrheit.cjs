@@ -229,7 +229,7 @@ function main() {
             ],
             [
                 "Senken-Stoff am Studio vorbei",
-                QUELLE.replace(
+                stammLib.ersetze(QUELLE, "_streuNahSenke",
                     /mat: wiegt \? this\._foundryTreeMaterial\(u\.foundryKind, u\.foundryMp, true[^)]*\) : lf\.mat,/,
                     "mat: new THREE.MeshStandardNodeMaterial(),"
                 ),
@@ -237,16 +237,16 @@ function main() {
             ],
             [
                 "Nah-Streu ohne Wind",
-                QUELLE.replace(
+                stammLib.ersetze(QUELLE, "_foundryTreeMaterial",
                     'const _sway = this._windSwayOffset(TSL, { ampX: 1.2, hoehe: TSL.attribute("aWiege", "float") });',
                     "const _sway = null;"
                 ),
                 /wiegt nicht im EINEN Wind/,
             ],
-            ["Studio-Stoff Lambert", QUELLE.replace(": T.MeshStandardNodeMaterial;", ": T.MeshLambertNodeMaterial;"), /Lambert-Stoff/],
+            ["Studio-Stoff Lambert", stammLib.ersetze(QUELLE, "_foundryTreeMaterial", ": T.MeshStandardNodeMaterial;", ": T.MeshLambertNodeMaterial;"), /Lambert-Stoff/],
             [
                 "Lambert-Wege",
-                QUELLE.replace(
+                stammLib.ersetze(QUELLE, "_stlZaunEnsurePool",
                     "new THREE.MeshStandardNodeMaterial({ color: 0xffffff, roughness: 1, metalness: 0 })",
                     "new THREE.MeshLambertMaterial({ color: 0xffffff })"
                 ),
@@ -267,7 +267,7 @@ function main() {
                 PHYTO.split("data[o * 4] = linZuSrgb8(tr[o] / ta[o]);").join("data[o * 4] = Math.round((tr[o] / ta[o]) * 255);"),
             ],
             ["Karten-Tafel falsch", QUELLE, /Karten-Kodierung weicht/, PHYTO.replace("1.055 * Math.pow(x, 1 / 2.4) - 0.055", "Math.pow(x, 1 / 2.2)")],
-            ["Atlas linear markiert", QUELLE.replace("map.colorSpace = T.SRGBColorSpace;", ""), /nicht in jeder Format-Stufe sRGB/],
+            ["Atlas linear markiert", stammLib.ersetze(QUELLE, "_impostorAtlasTexturen", /(T\.RGBA_S3TC_DXT1_Format\);\s*at\.map\.name = "karte-albedo:atlas";\s*at\.)map\.colorSpace = T\.SRGBColorSpace;/, "$1"), /nicht in jeder Format-Stufe sRGB/],
         ];
         let ok = Array.isArray(echt.fehler) && echt.fehler.length === 0;
         console.log(`${ok ? "✅" : "❌"} SELBST-TEST: die echte Quelle ist grün${ok ? "" : " — " + echt.fehler.join(" · ")}`);

@@ -173,13 +173,13 @@ function selbsttest() {
     if (q0.length) fehler.push("Quell-Wand der Rundung am Stamm rot: " + q0.join(" · "));
     console.log(`  ${q0.length ? "❌" : "✅"} Quell-Wand der Rundung am Stamm → ${q0.join(" · ") || "grün"}`);
     const quellFaelle = [
-        { name: "Ausgleich entfernt", src: stamm.replace(".rgb.mul(u.ausgabeAusgleich)", ".rgb"), muss: /trägt den Ausgleich nicht/ },
+        { name: "Ausgleich entfernt", src: stammLib.ersetze(stamm, "_ensurePostProcessing", ".rgb.mul(u.ausgabeAusgleich)", ".rgb"), muss: /trägt den Ausgleich nicht/ },
         {
             name: "zweite Abtastung am Ausgleich vorbei",
-            src: stamm.replace("const roh = bild(screenUV);", "const roh = bild(screenUV);\nconst roh2 = sceneColor.sample(screenUV);"),
+            src: stammLib.ersetze(stamm, "_ensurePostProcessing", "const roh = bild(screenUV);", "const roh = bild(screenUV);\nconst roh2 = sceneColor.sample(screenUV);"),
             muss: /2× abgetastet/,
         },
-        { name: "Sonde nicht gerufen", src: stamm.replace("this._ausgabeSonde(dev);", ""), muss: /ruft die Sonde nicht/ },
+        { name: "Sonde nicht gerufen", src: stammLib.ersetze(stamm, "_ausgabeFormat", "this._ausgabeSonde(dev);", ""), muss: /ruft die Sonde nicht/ },
     ];
     for (const q of quellFaelle) {
         if (q.src === stamm) {

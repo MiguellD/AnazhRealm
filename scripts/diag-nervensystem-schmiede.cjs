@@ -174,11 +174,11 @@ function staticLaws(anazhSrc, scSrc, manifestSrc) {
         const s1 = staticLaws(anazhSrc, scSrc, brokenManifest).find((l) => l[0].startsWith("S1"));
         check("Selbst-Test 1: schmiede-Zeile aus dem Manifest entfernt -> S1 feuert", s1 && s1[1] === false);
         // V2: die weapon-Policy-Zeile verstuemmelt -> S2 muss rot werden.
-        const brokenPolicy = anazhSrc.replace('donor: "geraet_schwert"', 'donor: "geraet_kaputt"');
+        const brokenPolicy = stammLib.ersetze(anazhSrc, null, 'donor: "geraet_schwert"', 'donor: "geraet_kaputt"');
         const s2 = staticLaws(brokenPolicy, scSrc, manifestSrc).find((l) => l[0].startsWith("S2"));
         check("Selbst-Test 2: weapon-Policy-Zeile verstuemmelt -> S2 feuert", s2 && s2[1] === false);
         // V3 (W-A4b): die Handachsen-Daten-Zeile gekippt -> S7 muss rot werden.
-        const brokenAxis = anazhSrc.replace('handAxis: "x"', 'handAxis: "y"');
+        const brokenAxis = stammLib.ersetze(anazhSrc, null, 'handAxis: "x"', 'handAxis: "y"');
         const s7 = staticLaws(brokenAxis, scSrc, manifestSrc).find((l) => l[0].startsWith("S7"));
         check("Selbst-Test 3: handAxis-Daten-Zeile gekippt -> S7 feuert", s7 && s7[1] === false);
         // V4 (H-F, W5): das Faust-Verdikt feuert auf jeden der drei gemessenen Täter des Vor-Stands.

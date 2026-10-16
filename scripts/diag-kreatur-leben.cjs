@@ -33,7 +33,7 @@ const V = (core && core.VERHALTEN) || null;
 
 // ── A) DECKUNG: Zustand-Tabelle → MOTION-Presets ──
 const stamm = stammLib.text(root);
-const ztMatch = stamm.match(/AnazhRealm\.MOTION_ZUSTAND_PROFILES = Object\.freeze\(\{([\s\S]*?)\}\);/);
+const ztMatch = stammLib.treffer(stamm, null, /AnazhRealm\.MOTION_ZUSTAND_PROFILES = Object\.freeze\(\{([\s\S]*?)\}\);/);
 check("MOTION_ZUSTAND_PROFILES existiert im Stamm", !!ztMatch);
 const kreaturTargets = [];
 if (ztMatch) {

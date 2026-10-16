@@ -823,7 +823,7 @@ const FIXTURES = [
         const anazhSrcST = stammLib.text(root);
         const okAll = autoStaticLaws(anazhSrcST).every((l) => l[1] === true);
         check("Selbst-Test 3: die Auto-Dorf-Gesetze sind am HEAD gruen (Vorbedingung)", okAll);
-        const broken1 = anazhSrcST.replace("settlementCells[key] = { seed:", "settlementCells[key] = kaputt({ seed:");
+        const broken1 = stammLib.ersetze(anazhSrcST, "_autoSettlementSpawnCell", "settlementCells[key] = { seed:", "settlementCells[key] = kaputt({ seed:");
         const cs1 = autoStaticLaws(broken1).find((l) => l[0].startsWith("C-S1"));
         check("Selbst-Test 4: Reservierung entfernt -> C-S1 feuert", cs1 && cs1[1] === false);
         const broken2 = anazhSrcST.replace(

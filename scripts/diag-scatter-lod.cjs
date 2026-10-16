@@ -45,7 +45,7 @@ function check(name, ok, detail) {
 (async () => {
     // ── P: die Quell-Probe (der Promotions-Block walkt den Region-Fächer) ──
     const src = stammLib.text(root);
-    const promoIdx = src.indexOf("baum-D2-Heilung");
+    const promoIdx = (stammLib.treffer(src, "_tickScatterStreaming", "baum-D2-Heilung") || { index: -1 }).index;
     const promoBlock = promoIdx >= 0 ? src.slice(promoIdx, promoIdx + 1800) : "";
     check(
         "P: der Promotions-Block walkt ALLE geschnittenen Regionen (rx0..rx1 × rz0..rz1)",

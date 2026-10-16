@@ -73,7 +73,7 @@ function kindSubstanceRowSpan(src, name) {
     return { rowStart: k + 1, objStart, objEnd: objStart + obj.length };
 }
 function kindSubstanceRows(src) {
-    if (src.indexOf("AnazhRealm.KIND_SUBSTANCE = Object.freeze({") < 0) return null;
+    if (!src.includes("AnazhRealm.KIND_SUBSTANCE = Object.freeze({")) return null;
     const vm = require("vm");
     const rows = {};
     for (const name of Object.keys(KIND_SUBSTANCE_MINT)) {
@@ -141,13 +141,13 @@ function triasStaticLaws(anazhSrc) {
             "Selbst-Test 0: die Gesetze sind am HEAD gruen (Vorbedingung)",
             triasStaticLaws(anazhSrc).every((l) => l[1] === true)
         );
-        const b1 = anazhSrc.replace(/treeLike && entry\.instFoundry !== true\) continue;/, "treeLike) continue;");
+        const b1 = stammLib.ersetze(anazhSrc, "_tickArchitectureLOD", /treeLike && entry\.instFoundry !== true\) continue;/, "treeLike) continue;");
         const l1 = triasStaticLaws(b1).find((l) => l[0].startsWith("T-S1"));
         check("Selbst-Test 1: Eligibility zurueckgebaut -> T-S1 feuert", l1 && l1[1] === false);
-        const b2 = anazhSrc.replace(/fFlat\.lod === entry\._servedLod/, "false");
+        const b2 = stammLib.ersetze(anazhSrc, "_switchArchitectureLOD", /fFlat\.lod === entry\._servedLod/, "false");
         const l2 = triasStaticLaws(b2).find((l) => l[0].startsWith("T-S2"));
         check("Selbst-Test 2: Clamp-Kurzschluss entfernt -> T-S2 feuert", l2 && l2[1] === false);
-        const b4 = anazhSrc.replace(/studioGestalt = source\.studioGestalt/, "nixGestalt = source.nixGestalt");
+        const b4 = stammLib.ersetze(anazhSrc, "cloneBlueprint", /studioGestalt = source\.studioGestalt/, "nixGestalt = source.nixGestalt");
         const l4 = triasStaticLaws(b4).find((l) => l[0].startsWith("T-S4"));
         check("Selbst-Test 3: Klon-Erbe entfernt -> T-S4 feuert", l4 && l4[1] === false);
         const b6 = anazhSrc.replace(/f\.cacheBytes > BYTES/g, "false");

@@ -1709,7 +1709,7 @@ function scanLabBuster() {
     // log über die Version. DIESELBE Wand deckt jetzt die Runtime-Konstante: EIN Gesetz,
     // alle Versions-Träger == package.json.
     const stammSrc = stammLib.text(root);
-    const vm = stammSrc.match(/AnazhRealm\.VERSION = "([0-9.]+)"/);
+    const vm = stammLib.treffer(stammSrc, null, /AnazhRealm\.VERSION = "([0-9.]+)"/);
     if (!vm) errs.push("AnazhRealm.VERSION nicht gefunden (die Versions-Wand braucht den Anker)");
     else if (vm[1] !== version)
         errs.push(
@@ -2044,7 +2044,7 @@ function scanNormalWand(srcRoh) {
     // Rohtext, die Zuweisung trifft es über ihre Zeile.
     const gl = stammLib.glieder(srcRoh);
     const codeAb = [0];
-    for (let i = code.indexOf("\n"); i !== -1; i = code.indexOf("\n", i + 1)) codeAb.push(i + 1);
+    for (let i = -1; (i = code.indexOf("\n", i + 1)) !== -1; ) codeAb.push(i + 1);
     while ((m = zuweisung.exec(code))) {
         let lo = 0,
             hi = codeAb.length - 1;
@@ -3657,7 +3657,7 @@ function main() {
                   "            });\n            stage.pivot = null;" +
                   stamm.slice(jIch + ichNeu.length);
         const taeter = (name, rumpf) =>
-            stamm.replace(
+            stammLib.ersetze(stamm, null,
                 "class AnazhRealm {\n",
                 `class AnazhRealm {\n    // früher: o.geometry.dispose() in jeder Bühne\n    ${name}(o) {\n${rumpf}\n    }\n`
             );
@@ -3696,7 +3696,7 @@ function main() {
             [
                 "G",
                 stamm.includes(regelAnker)
-                    ? stamm.replace(
+                    ? stammLib.ersetze(stamm, "_disposeSoulGroup",
                           regelAnker,
                           regelAnker + "\n            if (node.material) this._queueDispose(node.material);"
                       )
@@ -3736,7 +3736,7 @@ function main() {
         const kartenFeuert =
             scanKartenWand(stamm).length === 0 &&
             scanKartenWand(
-                stamm.replace(
+                stammLib.ersetze(stamm, null,
                     /(\n {4}_impostorAtlasSchreibe\([^)]*\) \{)/,
                     '$1\n        const cv = document.createElement("canvas");'
                 )
@@ -3748,7 +3748,7 @@ function main() {
         // Das Absenz-Erbe muss feuern: der Sprung greift wieder zum Physik-Körper.
         const erbeFeuert =
             scanAbsenzErbe(stamm).length === 0 &&
-            scanAbsenzErbe(stamm.replace(/(\n {4}handleJump\([^)]*\) \{)/, "$1\n        const k = this.playerBody;"))
+            scanAbsenzErbe(stammLib.ersetze(stamm, null, /(\n {4}handleJump\([^)]*\) \{)/, "$1\n        const k = this.playerBody;"))
                 .length === 1;
         if (!erbeFeuert) {
             console.log("❌ SELBST-TEST: das Absenz-Erbe feuert nicht (oder steht heute rot)");
@@ -3757,7 +3757,7 @@ function main() {
         // Die Normal-Wand muss feuern: eine Welt-Normale, mit der transponierten Kamera-Matrix gedreht.
         // Dazu die Quelle: der Boden-Graph liest wieder r184s `normalWorld` (der Fall vor V18.532), transitiv über `_nWG` (die
         // Geometrie-Normale des Graphen, beim Boden die des Stufen-Morphs, K51-2).
-        const quelleAlt = stamm.replace(
+        const quelleAlt = stammLib.ersetze(stamm, "_buildPbrNodeMaterial",
             "const _nWG = opts.geomorph ? this._bodenStufenKnoten().normalWelt : _Tn.normalWorldGeometry;",
             "const _nWG = _Tn.normalWorld;"
         );
@@ -4110,11 +4110,12 @@ function main() {
             ];
             const fehltAnker = [];
             for (const [name, alt, neu, muster] of schmuggel) {
-                const i = stumm.indexOf(alt);
-                if (i < 0) {
+                const t = stammLib.treffer(stumm, null, alt);
+                if (!t) {
                     fehltAnker.push(name);
                     continue;
                 }
+                const i = t.index;
                 erwartet.push({ name, zeile: stumm.slice(0, i).split("\n").length, muster });
                 stumm = stumm.slice(0, i) + neu + stumm.slice(i + alt.length);
             }
@@ -4162,7 +4163,7 @@ function main() {
                 "    _sgHelfer(e) { if (this.state.strikt) throw e; return null; }\n" +
                 '    _sgAblage(g) { try { this._uiRooms = { x: { render: () => this._sgTief1(g) } }; window.addEventListener("x", () => this._sgTief3(g)); } catch (e) {} }\n' +
                 '    _sgKlang(g) { const w = new Worker("k"); w.onerror = () => {}; w.onmessage = (ev) => { this._sgZahl = ev.data; }; }\n';
-            const tiefAnker = stamm.indexOf("    // Studio-Dither-Blende als TSL-Knoten");
+            const tiefAnker = (stammLib.treffer(stamm, null, "    // Studio-Dither-Blende als TSL-Knoten") || { index: -1 }).index;
             const tiefQuelle =
                 stamm.slice(0, tiefAnker) +
                 helfer +

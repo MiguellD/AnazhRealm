@@ -1515,7 +1515,7 @@ function schattenWahrheit(srcNC, fcSrc = foundrySrc) {
     if (!/g2\.setDrawRange\(srcGeom\.drawRange\.start, srcGeom\.drawRange\.count\);/.test(fassade))
         v.push("die Instanz-Fassade verliert den drawRange ihrer Quelle (der Zwilling würfe ganz)");
     // der Texel der KASKADE (SCHATTEN_KASKADE.texelM[0]) — nie das erste texelM des Stamms (die Laub-Streu trägt eines)
-    const tex = /SCHATTEN_KASKADE = Object\.freeze\(\{\s*texelM: Object\.freeze\(\[([\d.]+),/.exec(srcNC);
+    const tex = stammLib.treffer(srcNC, null, /SCHATTEN_KASKADE = Object\.freeze\(\{\s*texelM: Object\.freeze\(\[([\d.]+),/);
     const dm = /wurf: \{ durchmesserM: ([\d.]+),/.exec(fcSrc);
     if (!tex || !dm || Number(tex[1]) !== Number(dm[1]))
         v.push(
@@ -1675,40 +1675,40 @@ async function main() {
         // V3–V5: die drei Schatten-Klassen, je eine zurück in die Quelle → das Schatten-Gesetz MUSS sie nennen.
         const nc = stripComments(anazhSrc);
         const brueche = [
-            ["Pass-Kamera", nc.replace("const _auge = _lu.uLodAuge;", "const _auge = T.cameraPosition;")],
+            ["Pass-Kamera", stammLib.ersetze(nc, "_lodCrossfadeMaskNode", "const _auge = _lu.uLodAuge;", "const _auge = T.cameraPosition;")],
             [
                 // Der EINE Blatt-Atlas (Laub- und Nadel-Karten, Welle C) färbt mit der Saison-Laubfarbe (Welle A); W5 teilt
                 // die Atlas-Farbe durch ihren `wert` — gesucht wird die Alpha-Stelle der Karten-colorNode, zeilenumbruch-fest.
                 // Seit der Integration 05.10. liest der Stoff den EINEN Atlas-Leser (`_blattAtlasProbe`: atl.rgb / atl.a).
                 "Blatt-Alpha in opacityNode",
                 // Ersetzer als Funktion: "$11.0$2" lebte von der Rückfall-Regel ($11 fehlt → $1 + "1"), zerbrechlich.
-                nc.replace(/(\.mul\(laubFarbe\),\s*)atl\.a(\s*\);)/, (_m, a, b) => a + "1.0" + b + " mat.opacityNode = atl.a;"),
+                stammLib.ersetze(nc, "_foundryTreeMaterial", /(\.mul\(laubFarbe\),\s*)atl\.a(\s*\);)/, (_m, a, b) => a + "1.0" + b + " mat.opacityNode = atl.a;"),
             ],
-            ["Zwilling mit L1-Stempel", nc.replace("geom: this._foundrySchattenGeom(lf),", "")],
-            ["Zwillings-Gestalt als L1 gestempelt", nc.replace("aLodLevel.count).fill(3), 1)", "aLodLevel.count).fill(2), 1)")],
-            ["zwei Werfer je Gestalt", nc.replace("const castsShadow = (wurf === lod && !zwillingsQuelle) ||", "const castsShadow = wurf === lod ||")],
-            ["Kosten-Regel wirft doppelt", nc.replace('if (von !== "zwilling") schatten = null;', "")],
-            ["L0 baut eigenen Zwilling", nc.replace("for (const lf of schatten.leaves) if (lf.shadowTwin) leaves.push(lf);", "for (const lf of schatten.leaves) leaves.push(lf);")],
-            ["Band wirft doppelt", nc.replace("this._archInstanceAdd(entry, this._bandOhneZwilling(flat, primFlat), { band: true", "this._archInstanceAdd(entry, flat, { band: true")],
-            ["Streu-Band wirft doppelt", nc.replace("const pf = pf0 && pf0.instanceable ? this._bandOhneZwilling(pf0, foundryFlat) : pf0;", "const pf = pf0;")],
-            ["Schatten-Teil im Hauptbild, jedes Teil wirft", nc.replace("if (lf.teil !== wurfTeil) continue;", "")],
-            ["Wurf-Zeile ohne Teil-Namen trifft still jedes Leaf", nc.replace('if (wurf && !(typeof wurfTeil === "string" && wurfTeil))', "if (false)")],
-            ["Schatten-Teil fehlt still", nc.replace("if (!hat)", "if (false)")],
+            ["Zwilling mit L1-Stempel", stammLib.ersetze(nc, "_foundryFlattenFor", "geom: this._foundrySchattenGeom(lf),", "")],
+            ["Zwillings-Gestalt als L1 gestempelt", stammLib.ersetze(nc, "_foundrySchattenGeom", "aLodLevel.count).fill(3), 1)", "aLodLevel.count).fill(2), 1)")],
+            ["zwei Werfer je Gestalt", stammLib.ersetze(nc, "_foundryFlattenFor", "const castsShadow = (wurf === lod && !zwillingsQuelle) ||", "const castsShadow = wurf === lod ||")],
+            ["Kosten-Regel wirft doppelt", stammLib.ersetze(nc, "_foundryFlattenFor", 'if (von !== "zwilling") schatten = null;', "")],
+            ["L0 baut eigenen Zwilling", stammLib.ersetze(nc, "_foundryFlattenFor", "for (const lf of schatten.leaves) if (lf.shadowTwin) leaves.push(lf);", "for (const lf of schatten.leaves) leaves.push(lf);")],
+            ["Band wirft doppelt", stammLib.ersetze(nc, "_updateFoundryLodBand", "this._archInstanceAdd(entry, this._bandOhneZwilling(flat, primFlat), { band: true", "this._archInstanceAdd(entry, flat, { band: true")],
+            ["Streu-Band wirft doppelt", stammLib.ersetze(nc, "_scatterMaterializeCell", "const pf = pf0 && pf0.instanceable ? this._bandOhneZwilling(pf0, foundryFlat) : pf0;", "const pf = pf0;")],
+            ["Schatten-Teil im Hauptbild, jedes Teil wirft", stammLib.ersetze(nc, "_foundryFlattenFor", "if (lf.teil !== wurfTeil) continue;", "")],
+            ["Wurf-Zeile ohne Teil-Namen trifft still jedes Leaf", stammLib.ersetze(nc, "_foundryFlattenFor", 'if (wurf && !(typeof wurfTeil === "string" && wurfTeil))', "if (false)")],
+            ["Schatten-Teil fehlt still", stammLib.ersetze(nc, "_foundryFlattenFor", "if (!hat)", "if (false)")],
             [
                 // die Fell-Schale (Haar · Wolle, Leib und Kopf) schnitt bis K28 über opacityNode aus — der Ausschnitt zurück dorthin
                 "Fell-Schale über opacityNode",
-                nc.replace(
+                stammLib.ersetze(nc, "_foundryTreeMaterial",
                     /(TSL\.mix\(TSL\.float\(FS\.wurzel\), TSL\.float\(FS\.spitze\), t\)\),\s*)TSL\.max\(haar, wolle\)(\s*\);)/,
                     (_m, a, b) => a + "1.0" + b + " mat.opacityNode = TSL.max(haar, wolle);"
                 ),
             ],
-            ["Schatten-Stoff über opacityNode", nc.replace("mat.colorNode = TSL.vec4(TSL.vec3(0.0), atl ? TSL.max(deckt, atl.a) : deckt);", "mat.colorNode = TSL.vec4(TSL.vec3(0.0), 1.0); mat.opacityNode = TSL.max(deckt, atl.a);")],
-            ["Index-Vorsatz kehrt zurück", nc.replace("z.drawRange.count = g.drawRange.count;", "z.drawRange.count = lf.wurf * 3;")],
-            ["Fassade verliert den Wurf", nc.replace("g2.setDrawRange(srcGeom.drawRange.start, srcGeom.drawRange.count);", "")],
-            ["Zwillings-Gestalt leckt", nc.replace("lf._schattenGeom.dispose();", "")],
-            ["Zwilling besitzt L1-Geometrie", nc.replace("_eigen: false,", "")],
-            ["L0-Kehraus räumt die Wurf-Gestalt der L1", nc.replace("if (lf._srcGroup !== g) continue;", "")],
-            ["Zwilling liest das Stufen-Flag", nc.replace("castShadow: lf.teilWirft,", "castShadow: lf.castShadow !== false,")],
+            ["Schatten-Stoff über opacityNode", stammLib.ersetze(nc, "_foundryTreeMaterial", "mat.colorNode = TSL.vec4(TSL.vec3(0.0), atl ? TSL.max(deckt, atl.a) : deckt);", "mat.colorNode = TSL.vec4(TSL.vec3(0.0), 1.0); mat.opacityNode = TSL.max(deckt, atl.a);")],
+            ["Index-Vorsatz kehrt zurück", stammLib.ersetze(nc, "_foundrySchattenGeom", "z.drawRange.count = g.drawRange.count;", "z.drawRange.count = lf.wurf * 3;")],
+            ["Fassade verliert den Wurf", stammLib.ersetze(nc, "_lodInstanceFacade", "g2.setDrawRange(srcGeom.drawRange.start, srcGeom.drawRange.count);", "")],
+            ["Zwillings-Gestalt leckt", stammLib.ersetze(nc, "_disposeFoundryGroupGeom", "lf._schattenGeom.dispose();", "")],
+            ["Zwilling besitzt L1-Geometrie", stammLib.ersetze(nc, "_foundryFlattenFor", "_eigen: false,", "")],
+            ["L0-Kehraus räumt die Wurf-Gestalt der L1", stammLib.ersetze(nc, "_disposeFoundryGroupGeom", "if (lf._srcGroup !== g) continue;", "")],
+            ["Zwilling liest das Stufen-Flag", stammLib.ersetze(nc, "_foundryFlattenFor", /(leafKey: lf\.leafKey \+ "#S",\s*)castShadow: lf\.teilWirft,/, "$1castShadow: lf.castShadow !== false,")],
         ];
         check("Selbst-Test 3: die echte Quelle hält das Schatten-Gesetz", schattenWahrheit(nc).length === 0, schattenWahrheit(nc).join(" · "));
         for (const [name, src] of brueche) {
@@ -1731,32 +1731,32 @@ async function main() {
         }
         check("Selbst-Test Perf: die echte Quelle hält die Perf-Wahrheit", perfWahrheit(nc).length === 0, perfWahrheit(nc).join(" · "));
         for (const [name, src] of [
-            ["CPU ohne Perf-Helfer", nc.replace("return rawDist * heightFactor * this._lodPerfMul();", "return rawDist * heightFactor;")],
-            ["kein Frame-Spiegel", nc.replace("_lu.uLodPerf.value = this._lodPerfMul();", "")],
-            ["Maske ohne Perf", nc.replace(/const _cd = T\.length\(([\s\S]*?)\)\.mul\(\s*_lu\.uLodPerf\s*\);/, "const _cd = T.length($1);")],
-            ["Billboard ohne Perf", nc.replace("let _vCD = _dist.mul(_lu.uLodPerf);", "let _vCD = _dist;")],
-            ["Billboard-Höhe ersetzt den Streck", nc.replace("_vCD = _vCD.mul(_k);", "_vCD = _dist.mul(_k);")],
-            ["Billboard mit Rahmen-Höhe", nc.replace("visHeightNode: _karte.w.abs(),", "visHeightNode: _rahmen.y.mul(_sInst),")],
+            ["CPU ohne Perf-Helfer", stammLib.ersetze(nc, "_lodPerceptionDistance", "return rawDist * heightFactor * this._lodPerfMul();", "return rawDist * heightFactor;")],
+            ["kein Frame-Spiegel", stammLib.ersetze(nc, "_loopRender", "_lu.uLodPerf.value = this._lodPerfMul();", "")],
+            ["Maske ohne Perf", stammLib.ersetze(nc, "_lodCrossfadeMaskNode", /const _cd = T\.length\(([\s\S]*?)\)\.mul\(\s*_lu\.uLodPerf\s*\);/, "const _cd = T.length($1);")],
+            ["Billboard ohne Perf", stammLib.ersetze(nc, "_lodCrossfadeMaskNode", "let _vCD = _dist.mul(_lu.uLodPerf);", "let _vCD = _dist;")],
+            ["Billboard-Höhe ersetzt den Streck", stammLib.ersetze(nc, "_lodCrossfadeMaskNode", "_vCD = _vCD.mul(_k);", "_vCD = _dist.mul(_k);")],
+            ["Billboard mit Rahmen-Höhe", stammLib.ersetze(nc, "_buildPbrNodeMaterial", "visHeightNode: _karte.w.abs(),", "visHeightNode: _rahmen.y.mul(_sInst),")],
             [
                 "Karte ohne Höhen-Buch",
-                nc.replace(
+                stammLib.ersetze(nc, "_foundryBuildImpostorFlat",
                     "this._impostorLeaf(z, this._foundryWorldScaleMatrix(preset), hz)",
                     "this._impostorLeaf(z, this._foundryWorldScaleMatrix(preset), z.frame.halfH * 2)"
                 ),
             ],
-            ["Karten-Stempel ohne Instanz-Skala", nc.replace("h = leaf.sicht * s;", "h = leaf.sicht;")],
-            ["Strauch-L1 ungemaskt", nc.replace(/(_hat\(0\) \? 2 : )3/, (_m, a) => a + "0")],
+            ["Karten-Stempel ohne Instanz-Skala", stammLib.ersetze(nc, "_lodSlotStamp", "h = leaf.sicht * s;", "h = leaf.sicht;")],
+            ["Strauch-L1 ungemaskt", stammLib.ersetze(nc, "_foundryBuildGroup", /(_hat\(0\) \? 2 : )3/, (_m, a) => a + "0")],
             // 06.10. (F-D3/V-D3): die L0 einer Art ohne L1 zurück auf den alten Stempel 1 — die Linse muss Wagen und Tor nennen.
-            ["Wagen-L0 dithert zu einer L1, die es nicht gibt", nc.replace(/(_lodS === 0 \? \(_hat\(1\) \? 1 : )3/, (_m, a) => a + "1")],
-            ["Maske ohne einzige Nah-Stufe", nc.replace("_fadeIn.max(T.step(T.float(2.5), _aLod)).mul(T.step(_f1o, _dh))", "_fadeIn.mul(T.step(_f1o, _dh))")],
-            ["Sichthöhe still 0", nc.replace("if (h0 == null) return null;", "if (h0 == null) return 0;")],
-            ["Höhe nur im LRU", nc.replace("if (v && v._hoehe > 0) (f.hoehen || (f.hoehen = new Map())).set(key, v._hoehe);", "")],
-            ["LOD-Takt urteilt ohne Höhe", nc.replace(/if \(visH === null\) \{\s*offen\+\+;\s*continue;\s*\}/, "")],
-            ["CPU-Blatt-Kappe auf der skalierten Höhe", nc.replace("Math.min(visH / sS, capL) * sS", "Math.min(visH, capL)")],
-            ["Streu-Partner ohne Skala", nc.replace("this._lodBandPartnerFor(dist, visH, _curLod, tf.scale)", "this._lodBandPartnerFor(dist, visH, _curLod)")],
+            ["Wagen-L0 dithert zu einer L1, die es nicht gibt", stammLib.ersetze(nc, "_foundryBuildGroup", /(_lodS === 0 \? \(_hat\(1\) \? 1 : )3/, (_m, a) => a + "1")],
+            ["Maske ohne einzige Nah-Stufe", stammLib.ersetze(nc, "_lodCrossfadeMaskNode", "_fadeIn.max(T.step(T.float(2.5), _aLod)).mul(T.step(_f1o, _dh))", "_fadeIn.mul(T.step(_f1o, _dh))")],
+            ["Sichthöhe still 0", stammLib.ersetze(nc, "_foundrySichtHoehe", "if (h0 == null) return null;", "if (h0 == null) return 0;")],
+            ["Höhe nur im LRU", stammLib.ersetze(nc, "_foundryCacheSet", "if (v && v._hoehe > 0) (f.hoehen || (f.hoehen = new Map())).set(key, v._hoehe);", "")],
+            ["LOD-Takt urteilt ohne Höhe", stammLib.ersetze(nc, "_tickArchitectureLOD", /if \(visH === null\) \{\s*offen\+\+;\s*continue;\s*\}/, "")],
+            ["CPU-Blatt-Kappe auf der skalierten Höhe", stammLib.ersetze(nc, "_lodBandPartnerFor", "Math.min(visH / sS, capL) * sS", "Math.min(visH, capL)")],
+            ["Streu-Partner ohne Skala", stammLib.ersetze(nc, "_scatterMaterializeCell", "this._lodBandPartnerFor(dist, visH, _curLod, tf.scale)", "this._lodBandPartnerFor(dist, visH, _curLod)")],
             [
                 "Sichthöhe aus dem Grammatik-Bauplan",
-                nc.replace("return this._foundrySichtHoehe(preset, entry, s);", "return 0;"),
+                stammLib.ersetze(nc, "_lodTreeVisHeight", "return this._foundrySichtHoehe(preset, entry, s);", "return 0;"),
             ],
         ]) {
             const v = perfWahrheit(src);
@@ -1779,7 +1779,7 @@ async function main() {
         // die Matrix nicht ab — die Linse MUSS die Stufe ohne Bild bzw. das Maß nennen.
         {
             const nc = stripComments(anazhSrc);
-            const alt = nc.replace(
+            const alt = stammLib.ersetze(nc, "_instanzFenster",
                 /const dMin = Math\.max\(0, d - halt\) \* L\.perf,\s*dMax = \(d \+ halt\) \* L\.perf;/,
                 "const w = this._instanzWeite(geo).r; const dMin = Math.max(0, d - w - halt) * L.perf, dMax = (d + w + halt) * L.perf;"
             );
@@ -1792,17 +1792,17 @@ async function main() {
             for (const [name, src] of [
                 [
                     "Maske zum Fragment",
-                    nc.replace(
+                    stammLib.ersetze(nc, "_lodCrossfadeMaskNode",
                         "const _cd = T.length(T.vec2(_auge.x.sub(_mitte.x), _auge.z.sub(_mitte.y)))",
                         "const _cd = T.length(T.vec2(_auge.x.sub(T.positionWorld.x), _auge.z.sub(T.positionWorld.z)))"
                     ),
                 ],
-                ["Karte zum Quad", nc.replace("distNode: _dA,", "distNode: _Ta.sqrt(_hl2),")],
-                ["Haken ohne Matrix", nc.replace("if (assignBuffer && builder) builder.__anazhInstanzMatrix = n;", "")],
+                ["Karte zum Quad", stammLib.ersetze(nc, "_buildPbrNodeMaterial", "distNode: _dA,", "distNode: _Ta.sqrt(_hl2),")],
+                ["Haken ohne Matrix", stammLib.ersetze(nc, "_configureRenderer", "if (assignBuffer && builder) builder.__anazhInstanzMatrix = n;", "")],
                 // die Naht ohne Instanz-Matrix: der Ursprung jeder Instanz wäre der Ursprung ihres Objekts (K20-N1)
                 [
                     "Naht ohne Instanz",
-                    nc.replace("const Mw = T.modelWorldMatrix.mul(this._instanzMatrixNode(T));", "const Mw = T.modelWorldMatrix;"),
+                    stammLib.ersetze(nc, "_weltNaht", "const Mw = T.modelWorldMatrix.mul(this._instanzMatrixNode(T));", "const Mw = T.modelWorldMatrix;"),
                 ],
             ]) {
                 const v = massDerBlende(src);
@@ -1814,14 +1814,14 @@ async function main() {
             const nc = stripComments(anazhSrc);
             check("Selbst-Test Geister-Baum: die echte Quelle hält Auge und Halt", geisterQuelle(nc).length === 0, geisterQuelle(nc).join(" · "));
             for (const [name, src] of [
-                ["Wahl vom Spieler", nc.replace("this._tickArchitectureLOD(5, auge);", "this._tickArchitectureLOD(5, this.state.playerMesh.position);")],
-                ["Streu vom Spieler", nc.replace("this._tickScatterLod(auge, ", "this._tickScatterLod(playerPos, ")],
-                ["Maske ohne Halt", nc.replace(".max(_halt)", "")],
-                ["Stempel ohne Halt", nc.replace("_h0LTpl * s * (voll ? -1 : 1)", "_h0LTpl * s")],
-                ["Band ohne Halt", nc.replace('this._lodHaltSetzen(entry, flat === null ? "wartet" : true);', "")],
-                ["Auge ohne Sprung", nc.replace("if (pm) out.add(pm).sub(r.pl);", "")],
-                ["Rig setzt nicht", nc.replace("this._lodAugeGesetzt();", "")],
-                ["Geburt vom Spieler", nc.replace("this._chooseLODForDistance(distAuge, undefined, visH)", "this._chooseLODForDistance(dist, undefined, visH)")],
+                ["Wahl vom Spieler", stammLib.ersetze(nc, "_runFrameScheduler", "this._tickArchitectureLOD(5, auge);", "this._tickArchitectureLOD(5, this.state.playerMesh.position);")],
+                ["Streu vom Spieler", stammLib.ersetze(nc, "_runFrameScheduler", "this._tickScatterLod(auge, ", "this._tickScatterLod(playerPos, ")],
+                ["Maske ohne Halt", stammLib.ersetze(nc, "_lodCrossfadeMaskNode", ".max(_halt)", "")],
+                ["Stempel ohne Halt", stammLib.ersetze(nc, "_lodSlotStamp", "_h0LTpl * s * (voll ? -1 : 1)", "_h0LTpl * s")],
+                ["Band ohne Halt", stammLib.ersetze(nc, "_updateFoundryLodBand", 'this._lodHaltSetzen(entry, flat === null ? "wartet" : true);', "")],
+                ["Auge ohne Sprung", stammLib.ersetze(nc, "_lodAuge", "if (pm) out.add(pm).sub(r.pl);", "")],
+                ["Rig setzt nicht", stammLib.ersetze(nc, "_loopCamera", "this._lodAugeGesetzt();", "")],
+                ["Geburt vom Spieler", stammLib.ersetze(nc, "_scatterPass", "this._chooseLODForDistance(distAuge, undefined, visH)", "this._chooseLODForDistance(dist, undefined, visH)")],
             ]) {
                 const v = geisterQuelle(src);
                 check(`Selbst-Test Geister-Baum: „${name}" → die Linse nennt ihn`, src !== nc && v.length > 0, v.join(" · "));
@@ -1831,14 +1831,14 @@ async function main() {
         {
             const nc = stripComments(anazhSrc);
             for (const [name, src] of [
-                ["Maske gibt null", nc.replace('if (!_dist) throw this._blendeBruch("die Karte reicht keine Distanz (opts.distNode)");', "if (!_dist) return null;")],
-                ["catch schluckt", nc.replace(/throw _e && _e\.blende === true\s*\?\s*_e\s*:\s*this\._blendeBruch\("der Bau der Maske scheiterte: "/, 'return null; ("')],
-                ["Baum-Stoff unter Wenn", nc.replace(/(const _keepX = this\._lodCrossfadeMaskNode\(TSL, \{[^}]*\}\);\s*)\{/, "$1if (_keepX) {")],
-                ["Karte unter Wenn", nc.replace(/(const _keepFin = this\._lodCrossfadeMaskNode\(_Ta, \{[\s\S]*?\}\);\s*)\{/, "$1if (_keepFin) {")],
-                ["Karte schluckt den Bruch", nc.replace('throw this._stoffBruch("die Karten-Verdrahtung", _e);', "")],
-                ["Blatt-Karte springt still", nc.replace('throw this._blendeBruch("die Blatt-Karte: es fehlt "', '(0, "die Blatt-Karte: es fehlt "')],
-                ["Stoff-Bruch ohne Melder", nc.replace("this._bruchMelden(text);", "")],
-                ["Melder meldet INFO", nc.replace(/(\n {4}_bruchMelden\([^)]*\) \{[\s\S]*?)this\.log\(text, "ERROR"\);/, '$1this.log(text, "INFO");')],
+                ["Maske gibt null", stammLib.ersetze(nc, "_lodCrossfadeMaskNode", 'if (!_dist) throw this._blendeBruch("die Karte reicht keine Distanz (opts.distNode)");', "if (!_dist) return null;")],
+                ["catch schluckt", stammLib.ersetze(nc, "_lodCrossfadeMaskNode", /throw _e && _e\.blende === true\s*\?\s*_e\s*:\s*this\._blendeBruch\("der Bau der Maske scheiterte: "/, 'return null; ("')],
+                ["Baum-Stoff unter Wenn", stammLib.ersetze(nc, "_foundryTreeMaterial", /(const _keepX = this\._lodCrossfadeMaskNode\(TSL, \{[^}]*\}\);\s*)\{/, "$1if (_keepX) {")],
+                ["Karte unter Wenn", stammLib.ersetze(nc, "_buildPbrNodeMaterial", /(const _keepFin = this\._lodCrossfadeMaskNode\(_Ta, \{[\s\S]*?\}\);\s*)\{/, "$1if (_keepFin) {")],
+                ["Karte schluckt den Bruch", stammLib.ersetze(nc, "_buildPbrNodeMaterial", 'throw this._stoffBruch("die Karten-Verdrahtung", _e);', "")],
+                ["Blatt-Karte springt still", stammLib.ersetze(nc, "_applyVegetationResponse", 'throw this._blendeBruch("die Blatt-Karte: es fehlt "', '(0, "die Blatt-Karte: es fehlt "')],
+                ["Stoff-Bruch ohne Melder", stammLib.ersetze(nc, "_stoffBruch", "this._bruchMelden(text);", "")],
+                ["Melder meldet INFO", stammLib.ersetze(nc, null, /(\n {4}_bruchMelden\([^)]*\) \{[\s\S]*?)this\.log\(text, "ERROR"\);/, '$1this.log(text, "INFO");')],
             ]) {
                 const v = stilleBlende(src);
                 check(`Selbst-Test laute Blende: „${name}" → die Linse nennt ihn`, src !== nc && v.length > 0, v.join(" · "));
@@ -1869,10 +1869,11 @@ async function main() {
     // Die Config-Heimat-Parität: LOD_DISTANCES-Defaults == Studio-lod-Zahlen (W5, Lehre 19: die Welt liest
     // die Studio-Distanzen, kein Host-Umweg rechnet d0/d1 um — die Defaults gleichen dem Post-Ingest-Wert,
     // headless == live; gate:altlasten haelt den gefallenen Umweg fern).
-    const mLD =
-        /AnazhRealm\.LOD_DISTANCES = \{[\s\S]*?thresh01:\s*([\d.]+),[\s\S]*?thresh12:\s*([\d.]+),[\s\S]*?fade:\s*([\d.]+),[\s\S]*?fade0:\s*([\d.]+),/.exec(
-            anazhSrc
-        );
+    const mLD = stammLib.treffer(
+        anazhSrc,
+        null,
+        /AnazhRealm\.LOD_DISTANCES = \{[\s\S]*?thresh01:\s*([\d.]+),[\s\S]*?thresh12:\s*([\d.]+),[\s\S]*?fade:\s*([\d.]+),[\s\S]*?fade0:\s*([\d.]+),/
+    );
     check(
         "LOD_DISTANCES-Defaults == Studio-lod-Zahlen (thresh01 = d0 · thresh12 = d1 · fade/fade0)",
         !!mLD &&

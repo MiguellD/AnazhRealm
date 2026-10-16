@@ -16,7 +16,8 @@
 // Dritte Aufgabe (Klinge 3, K38-N2): jede Linse findet eine Methode am NAMEN, nie an ihrer Parameter-Liste.
 // Vierte Aufgabe (Klinge 4, K38-N2 Runde 3): jede Linse ordnet Code seiner Methode am AST zu, nie an einem Kopf-Muster.
 // Fünfte Aufgabe (Klinge 5, K60-N5): keine Linse hält eine Taste über einen Zeitgeber statt bis zu ihrem Ereignis.
-// Sechste Aufgabe (Klinge 6, D2-N1): jede Linse schneidet einen Block über den EINEN Schneider (stammLib.rumpf).
+// Sechste Aufgabe (Klinge 6, D2-N1/N2): jede Linse schneidet einen Block über den EINEN Schneider (stammLib.rumpf) und
+// trifft eine Stelle des Stamms über die EINE Engstelle (stammLib.ersetze/treffer), nie am ersten Text-Treffer.
 //
 // Selbst-Test: --selftest beweist alle sechs Klingen (kein vakuöses Grün):
 // (1) eine injizierte .toString()-Probe hebt den Zähler über den Ratchet,
@@ -25,7 +26,8 @@
 // werden mit Datei:Zeile genannt, der Name allein, ein Aufruf und eine fremde Methode schweigen;
 // (4) jede Form des Kopf-Musters fällt mit Datei:Zeile, Kopf am Namen, Schlüssel und Zugriff schweigen;
 // (5) der alte Lauf von gate:mp-sync (W 1,6 s nach der Uhr) fällt mit Datei:Zeile, das Halten bis zum Ereignis schweigt;
-// (6) ein eigener Klammer-Zähler fällt mit Datei:Zeile, der EINE Schneider, JSON-Text und Kommentar schweigen.
+// (6) ein eigener Klammer-Zähler und ein roher erster Treffer auf dem ganzen Stamm fallen mit Datei:Zeile, die Engstelle
+//     und ihre Nachbarn (includes, Startpunkt, /g, fremder Text, überschatteter Name, Kommentar) schweigen.
 // ============================================================================
 "use strict";
 const fs = require("fs");
@@ -291,9 +293,128 @@ function eigenerSchneider(name, src) {
         .filter((t, i) => t.type.label === "string" && t.value === klammer && (vergleich(toks[i - 1]) || vergleich(toks[i + 1])))
         .map((t) => `${name}:${t.loc.start.line} zählt Klammern selbst — der Block an seiner Definition: stammLib.rumpf(text, kopf) (Klinge 6)`);
 }
+// Klinge 6, zweite Schneide (D2-N2): kein ERSTER TEXT-TREFFER auf dem ganzen Stamm. `quelle.replace('this._bauSame("insel")',
+// …)` mutierte vor dem Umzug chatDslPatterns, danach spawnIslandAt — gate:werkstatt-weg wurde vakuös (Zweig-CI 38908372005,
+// voll 14/18). Die Herkunft wird am Gültigkeitsbereich verfolgt: stammLib.text/textAusRev, durch ohneKommentare, replace,
+// ersetze, Zuweisung und Parameter einer gerufenen Funktion; ROT sind dort replace · indexOf · lastIndexOf (ohne Startpunkt) ·
+// search · match · exec mit festem Ziel (Literal, Konstante, Parameter, Schleifen-Variable; ein /g-Muster trifft alle).
+function ersterTreffer(name, src) {
+    if (SCHNEIDER_FREI.has(name) || !/lib\/stamm\.cjs/.test(src)) return [];
+    let baum;
+    try {
+        const opt = { ecmaVersion: "latest", locations: true, allowHashBang: true, allowReturnOutsideFunction: true };
+        baum = require("acorn").parse(src, opt);
+    } catch {
+        return [];
+    }
+    const bereichVon = new Map();
+    const [decl, zuw, rufe] = [[], [], []];
+    const neu = (eltern, fn) => ({ namen: new Map(), eltern, fn });
+    const binde = (b, id, info) => {
+        if (id.type === "Identifier") b.namen.set(id.name, info);
+        else if (id.type === "ObjectPattern")
+            for (const p of id.properties)
+                binde(b, p.type === "RestElement" ? p.argument : p.value, { teil: p.key && p.key.name, quelle: info.init });
+        else if (id.type === "ArrayPattern") for (const e of id.elements) e && binde(b, e, { schleife: info.schleife });
+        else if (id.type === "AssignmentPattern" || id.type === "RestElement") binde(b, id.left || id.argument, info);
+    };
+    const lauf = (n, b, vater) => {
+        if (/Function/.test(n.type)) {
+            if (n.type === "FunctionDeclaration" && n.id) binde(b, n.id, { fn: n });
+            b = neu(b, true);
+            n.params.forEach((p, i) => binde(b, p, { param: i }));
+        } else if (/^(BlockStatement|For(?:Of|In)?Statement|CatchClause|StaticBlock)$/.test(n.type)) {
+            b = neu(b, false);
+            if (n.type === "CatchClause" && n.param) binde(b, n.param, {});
+        }
+        bereichVon.set(n, b);
+        if (n.type === "VariableDeclaration") {
+            let z = b;
+            if (n.kind === "var") while (!z.fn && z.eltern) z = z.eltern;
+            for (const d of n.declarations) binde(z, d.id, { kind: n.kind, init: d.init, schleife: /For(Of|In)/.test(vater.type) });
+            decl.push(...n.declarations);
+        }
+        if (n.type === "AssignmentExpression" && n.left.type === "Identifier") zuw.push(n);
+        if (n.type === "CallExpression") rufe.push(n);
+        for (const k in n) {
+            const v = n[k];
+            if (Array.isArray(v)) for (const x of v) x && typeof x.type === "string" && lauf(x, b, n);
+            else if (v && typeof v.type === "string" && k !== "loc") lauf(v, b, n);
+        }
+    };
+    lauf(baum, neu(null, true), {});
+    const finde = (id) => {
+        for (let b = bereichVon.get(id); b; b = b.eltern) if (b.namen.has(id.name)) return b.namen.get(id.name);
+        return null;
+    };
+    const istLib = (e) =>
+        !!e &&
+        ((e.type === "CallExpression" && e.callee.name === "require" && /lib\/stamm\.cjs$/.test((e.arguments[0] || {}).value)) ||
+            (e.type === "Identifier" && istLib((finde(e) || {}).init)));
+    const libTeil = (e) => {
+        if (e.type === "MemberExpression" && !e.computed && istLib(e.object)) return e.property.name;
+        const b = e.type === "Identifier" && finde(e);
+        return !b ? null : b.teil && istLib(b.quelle) ? b.teil : b.init && b.kind === "const" ? libTeil(b.init) : null;
+    };
+    const stamm = new Set();
+    const istT = (e) => {
+        if (!e) return false;
+        if (e.type === "Identifier") return stamm.has(finde(e));
+        if (e.type === "CallExpression") {
+            const c = e.callee;
+            const teil = libTeil(c);
+            if (teil === "text" || teil === "textAusRev") return true;
+            if (teil === "ohneKommentare" || teil === "ersetze") return istT(e.arguments[0]);
+            if (c.type === "MemberExpression" && !c.computed && /^replace(All)?$/.test(c.property.name)) return istT(c.object);
+            return c.type === "Identifier" && /strip|ohneKommentare/i.test(c.name) && istT(e.arguments[0]);
+        }
+        if (e.type === "ConditionalExpression") return istT(e.consequent) || istT(e.alternate);
+        if (e.type === "LogicalExpression") return istT(e.left) || istT(e.right);
+        if (e.type === "AwaitExpression") return istT(e.argument);
+        if (e.type === "AssignmentExpression") return istT(e.right);
+        return e.type === "SequenceExpression" && istT(e.expressions[e.expressions.length - 1]);
+    };
+    for (let vor = -1; vor !== stamm.size; ) {
+        vor = stamm.size;
+        for (const d of decl) if (d.id.type === "Identifier" && istT(d.init)) stamm.add(finde(d.id));
+        for (const z of zuw) if (istT(z.right)) stamm.add(finde(z.left));
+        for (const r of rufe) {
+            const b = r.callee.type === "Identifier" && finde(r.callee);
+            const fn = b && (b.fn || (b.init && /Function/.test(b.init.type) ? b.init : null));
+            if (fn) r.arguments.forEach((a, i) => fn.params[i] && fn.params[i].type === "Identifier" && istT(a) && stamm.add(finde(fn.params[i])));
+        }
+    }
+    stamm.delete(null);
+    // fest: ein Literal, ein Text ohne Einsatz, eine Konstante darauf, ein Parameter, eine Schleifen-Variable (sie tragen das
+    // Literal ihres Rufers bzw. ihrer Tafel); null: berechnet (ein Kopf am Namen) oder ein /g-Muster
+    const fest = (a) => {
+        if (!a) return false;
+        if (a.type === "Literal") return a.regex ? !/[gy]/.test(a.regex.flags) : typeof a.value === "string";
+        if (a.type === "TemplateLiteral") return !a.expressions.length;
+        const b = a.type === "Identifier" && finde(a);
+        return !!b && (b.param != null || !!b.schleife || (b.kind === "const" && fest(b.init)));
+    };
+    const out = [];
+    for (const r of rufe) {
+        const c = r.callee;
+        const p = c.type === "MemberExpression" && !c.computed && c.property.name;
+        const roh =
+            p === "exec"
+                ? fest(c.object) && istT(r.arguments[0])
+                : /^(replace|indexOf|lastIndexOf|search|match)$/.test(p) &&
+                  istT(c.object) &&
+                  fest(r.arguments[0]) &&
+                  (!/indexOf$/i.test(p) || r.arguments.length === 1);
+        if (roh)
+            out.push(
+                `${name}:${r.loc.start.line} ${p} zielt auf den ersten Treffer im ganzen Stamm — die EINE Stelle im benannten Glied: stammLib.ersetze(t, glied, x, neu) · stammLib.treffer(t, glied, x) (Klinge 6)`
+            );
+    }
+    return out;
+}
 function scanTasten(dateien) {
     const errs = [];
-    for (const d of dateien) errs.push(...tasteNachWanduhr(d.name, d.src), ...eigenerSchneider(d.name, d.src));
+    for (const d of dateien) errs.push(...tasteNachWanduhr(d.name, d.src), ...eigenerSchneider(d.name, d.src), ...ersterTreffer(d.name, d.src));
     return { n: dateien.length, errs };
 }
 
@@ -406,12 +527,35 @@ function selftest() {
         ["scripts/lib/stamm.cjs", schneiderRot[0][1]],
     ])
         if (eigenerSchneider(datei, q).length) fails.push(`Klinge 6 feuert ohne eigenen Schneider: ${datei} ${q}`);
+    // Klinge 6, zweite Schneide: der Täter von gate:werkstatt-weg, ein indexOf am kommentarfreien Stamm, ein Bruch-Helfer, ein
+    // exec und eine Patch-Tafel fallen mit Datei:Zeile; die Engstelle, includes, ein Startpunkt, ein /g-Muster, ein Kopf am
+    // Namen, ein fremder Text, ein überschatteter Name, ein Kommentar und die freie Engstelle selbst schweigen.
+    const L = 'const stammLib = require("./lib/stamm.cjs");\n';
+    const ersterRot = [
+        [3, L + "const quelle = stammLib.text(root);\nconst b = quelle.replace('this._bauSame(\"insel\")', \"x\");\n"],
+        [3, 'const S = require("../lib/stamm.cjs");\nconst nc = S.ohneKommentare(S.text(r));\nconst i = nc.indexOf("x");\n'],
+        [2, L + "const bruch = (q, alt, neu) => q.replace(alt, neu);\nbruch(stammLib.text(r), 'a', 'b');\n"],
+        [2, L + "const m = /V = (\\d+);/.exec(stammLib.text(r));\n"],
+        [3, 'const { text } = require("./lib/stamm.cjs");\nlet t = text(r);\nfor (const [a, b] of tafel) t = t.replace(a, b);\n'],
+    ];
+    for (const [zeile, q] of ersterRot) {
+        const e = ersterTreffer("probe.cjs", q);
+        if (e.length !== 1 || !e[0].startsWith(`probe.cjs:${zeile} `)) fails.push(`Klinge 6 nennt den ersten Treffer nicht: ${q}`);
+    }
+    const ersterStill =
+        L +
+        "const quelle = stammLib.text(root);\nstammLib.ersetze(quelle, \"chatDslPatterns\", 'x', 'y');\nstammLib.treffer(quelle, null, /V/);\n" +
+        'quelle.includes("x");\nquelle.indexOf("x", 9);\nquelle.replace(/x/g, "");\nquelle.indexOf(`\\n    ${name}(`);\n' +
+        'fs.readFileSync(p, "utf8").replace("x", "y");\nfunction f(src) {\n    return src.replace("x", "y");\n}\n' +
+        '{\n    const quelle = fs.readFileSync(p, "utf8");\n    quelle.replace("x", "y");\n}\n// quelle.replace("x", "y");\n';
+    for (const [datei, q] of [["probe.cjs", ersterStill], ["scripts/lib/stamm.cjs", ersterRot[0][1]]])
+        if (ersterTreffer(datei, q).length) fails.push(`Klinge 6 nennt einen ersten Treffer ohne Täter: ${datei} ${ersterTreffer(datei, q)}`);
     if (fails.length) {
         console.log("❌ SELBST-TEST: " + fails.join(" · "));
         process.exit(1);
     }
     console.log(
-        "✅ SELBST-TEST: alle sechs Klingen feuern (Ratchet + Katalog + Parameter-Anker beim Namen + Kopf-Muster am AST + Taste nach der Wanduhr + eigener Schneider), Kommentare zählen nicht"
+        "✅ SELBST-TEST: alle sechs Klingen feuern (Ratchet + Katalog + Parameter-Anker beim Namen + Kopf-Muster am AST + Taste nach der Wanduhr + eigener Schneider + erster Treffer im ganzen Stamm), Kommentare zählen nicht"
     );
     process.exit(0);
 }
@@ -445,7 +589,7 @@ function main() {
             `${ratchet.nT}/${FROZEN_TYPEOF} typeof-Existenz-Proben (beide Ratchets nur-sinkend), ` +
             `${anker.entries.length} Anker zeigen auf lebenden Stamm-Code, __consumes + __anker installiert, ` +
             `${param.n} Linsen finden jede Methode am Namen (0 Parameter-Anker) und ordnen Code am AST zu (0 Kopf-Muster), ` +
-            `keine hält eine Taste nach der Wanduhr und keine zählt Klammern selbst (0 von ${tasten.n}).`
+            `keine hält eine Taste nach der Wanduhr und keine zählt Klammern selbst oder zielt auf den ersten Treffer im ganzen Stamm (0 von ${tasten.n}).`
     );
 }
 

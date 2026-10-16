@@ -87,7 +87,7 @@ function ladeLodDistances(quelle) {
 // Der Bäcker-Kind-Wächter: die Positivliste der geurteilten Bake-Kinds als ECHTES Regex
 // aus der Quelle (der EINE Chokepoint in `_tickImpostorBake`).
 function ladeKindWaechter(quelle) {
-    const m = quelle.match(/if \(bKind && !\/(\^\([^)]*\)\$)\/\.test\(bKind\)\)/);
+    const m = stammLib.treffer(quelle, "_impostorBakeSende", /if \(bKind && !\/(\^\([^)]*\)\$)\/\.test\(bKind\)\)/);
     if (!m) return null;
     try {
         return new RegExp(m[1]);
@@ -246,13 +246,13 @@ function selbstTest() {
     // 1. Die ECHTE Quelle muss (heute) grün sein — sonst ist die Welle nicht gebaut.
     faelle.push(["echte Quelle -> KEIN Befund", pruefeQuelle(STAMM).length === 0]);
     // 2. DER ALTE FEHLER: die Policy-Zeile fehlt (impostor:true gestrippt) -> MUSS feuern.
-    const ohnePolicy = STAMM.replace(/(vehicle: Object\.freeze\(\{[^}]*?)\n\s*impostor: true,/, "$1");
+    const ohnePolicy = stammLib.ersetze(STAMM, null, /(vehicle: Object\.freeze\(\{[^}]*?)\n\s*impostor: true,/, "$1");
     faelle.push([
         "ohne KIND_POLICY.vehicle impostor:true -> feuert (der alte gt-328-Meshes-Fehler)",
         ohnePolicy !== STAMM && pruefeQuelle(ohnePolicy).length > 0,
     ]);
     // 3. Der Kind-Wächter ohne vehicle -> MUSS feuern (Bake fiele terminal).
-    const ohneWaechter = STAMM.replace("|gate|vehicle)$", "|gate)$");
+    const ohneWaechter = stammLib.ersetze(STAMM, "_impostorBakeSende", "|gate|vehicle)$", "|gate)$");
     faelle.push([
         "ohne vehicle im Bäcker-Kind-Wächter -> feuert",
         ohneWaechter !== STAMM && pruefeQuelle(ohneWaechter).length > 0,
@@ -260,7 +260,7 @@ function selbstTest() {
     // 4. Die Serve-Route gerissen (Impostor-Zweig entfernt) -> MUSS feuern.
     // V18.478 (Bäcker-ov): die Stempel-Wand ist gefallen — die Mutation wandert mit
     // (regex-basiert; der !== STAMM-Guard macht ein No-op-Replace LAUT rot).
-    const ohneRoute = STAMM.replace(
+    const ohneRoute = stammLib.ersetze(STAMM, "_foundryFlattenFor",
         /if \(lod >= 2 && this\._foundryPresetIsTree\(preset\)\) return this\._foundryBuildImpostorFlat\(entry, preset\);/,
         "if (false) return null;"
     );
@@ -269,7 +269,7 @@ function selbstTest() {
         ohneRoute !== STAMM && pruefeQuelle(ohneRoute).length > 0,
     ]);
     // 4b. Der ov-Hash aus dem fimp-Key gestrippt -> MUSS feuern (geprägte Karte kollabiert).
-    const ohneOvHash = STAMM.replace(
+    const ohneOvHash = stammLib.ersetze(STAMM, "_foundryKartenKey",
         'return preset + "|" + gestalt + (ov ? "|ov:" + this._studioOvHash(ov) : "");',
         'return preset + "|" + gestalt;'
     );
@@ -279,7 +279,10 @@ function selbstTest() {
     ]);
     // 5. Die Geritten-Wand: LOD_DISTANCES pervertiert (alles ab 0 m = Stufe 2) -> MUSS feuern.
     // Die Default-Literale sind die Studio-Distanzen 12/26 (der Host-Umweg LOD_TRI_BUDGET_MUL fiel, S7: das Studio trägt sie).
-    const ohneWand = STAMM.replace("thresh01: 12,", "thresh01: -1,").replace("thresh12: 26,", "thresh12: -1,");
+    const ohneWand = stammLib.ersetze(STAMM, [
+        [null, "thresh01: 12,", "thresh01: -1,"],
+        [null, "thresh12: 26,", "thresh12: -1,"],
+    ]);
     faelle.push([
         "Distanz-Autorität pervertiert (geritten = Stufe 2) -> feuert",
         ohneWand !== STAMM && pruefeQuelle(ohneWand).length > 0,

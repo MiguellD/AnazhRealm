@@ -633,6 +633,53 @@ function rufe(t) {
     return (astMerk.rufe = out);
 }
 
+// DIE STELLE IM STAMM (D2-N2) — die EINE Engstelle jeder Probe und jeder Mutation am Stamm-Text: `x` (Text oder Regex)
+// steht höchstens EINMAL im benannten Glied (`glied` = Name einer Methode, eines Getters oder Felds, am AST) oder — `null`
+// — im ganzen Stamm; mehrere wirft, keiner gibt der Probe null und wirft der Mutation (sie wäre vakuös). Der erste TEXT-
+// Treffer im ganzen Stamm hing an der Datei-Reihenfolge: gate:werkstatt-weg mutierte nach dem Umzug `this._bauSame("insel")`
+// in spawnIslandAt statt in chatDslPatterns, der Selbsttest wurde vakuös (Zweig-CI 38908372005, voll 14/18); gate:apparat
+// Klinge 6 nennt jeden rohen ersten Treffer.
+// `treffer` gibt den Treffer wie `exec` (Index im ganzen Text), `ersetze` den ganzen Text mit der EINEN Stelle ersetzt
+// (`neu` wie bei `replace`); die Glieder-Tafel des Ergebnisses wandert verschoben mit (eine Kette parst den Stamm einmal).
+const tafeln = new Map();
+function merkeTafel(t, tafel) {
+    tafeln.set(t, tafel);
+    while (tafeln.size > 8) tafeln.delete(tafeln.keys().next().value);
+    return tafel;
+}
+const gliedTafel = (t) => tafeln.get(t) || merkeTafel(t, glieder(t).map(({ name, start, ende }) => ({ name, start, ende })));
+function stelleIm(t, glied, x, muss) {
+    const g = glied == null ? [{ start: 0, ende: t.length }] : gliedTafel(t).filter((e) => e.name === glied);
+    if (g.length > 1 || (muss && !g.length)) throw new Error(`stammLib.treffer: Glied „${glied}" steht ${g.length}× im Stamm`);
+    if (!g.length) return null;
+    const b = t.slice(g[0].start, g[0].ende);
+    const rx = typeof x === "string" ? null : new RegExp(x.source, x.flags.replace(/[gy]/g, "") + "g");
+    const alle = [];
+    if (rx) for (const m of b.matchAll(rx)) alle.push(m);
+    else for (let i = b.indexOf(x); i >= 0 && alle.length < 2; i = b.indexOf(x, i + 1)) alle.push(Object.assign([x], { index: i }));
+    if (alle.length > 1 || (muss && !alle.length))
+        throw new Error(
+            `stammLib.treffer: „${String(x).slice(0, 70)}" steht ${alle.length}× in ${glied == null ? "dem ganzen Stamm" : glied} — ` +
+                (alle.length ? "der erste Treffer hinge an der Reihenfolge" : "die Mutation wäre vakuös")
+        );
+    return alle.length ? { a: g[0].start, b, rx, m: alle[0] } : null;
+}
+function treffer(t, glied, x) {
+    const s = stelleIm(t, glied, x, false);
+    return s && Object.assign(s.m, { index: s.m.index + s.a });
+}
+function ersetze(t, glied, x, neu) {
+    if (Array.isArray(glied)) return glied.reduce((r, [g, x2, n2]) => ersetze(r, g, x2, n2), t); // die Kette: [[glied, x, neu], …]
+    const { a, b, rx, m } = stelleIm(t, glied, x, true);
+    const r = t.slice(0, a) + b.replace(rx ? new RegExp(rx.source, rx.flags.replace("g", "")) : x, neu) + t.slice(a + b.length);
+    if (tafeln.has(t)) {
+        const i = a + m.index;
+        const d = r.length - t.length;
+        merkeTafel(r, tafeln.get(t).map((e) => ({ name: e.name, start: e.start > i ? e.start + d : e.start, ende: e.ende > i ? e.ende + d : e.ende })));
+    }
+    return r;
+}
+
 // Die Stamm-Datei, die den Text `stelle` trägt (ein Server-Patcher fragt, wohin seine Zeile gehört): genau eine → ihr
 // Pfad; keine → null; mehrere → wirft (der Patch wäre mehrdeutig).
 function dateiMit(root, stelle) {
@@ -968,6 +1015,8 @@ module.exports = {
     dateiVon,
     kopf,
     rumpf,
+    treffer,
+    ersetze,
     ast,
     zeileVon,
     wandere,
@@ -1016,6 +1065,12 @@ if (require.main === module && process.argv.includes("--selftest")) {
         pruef("rumpf: die Definition, nie der Aufruf davor", rumpf(R, /_p\(/, { zitate: true }) === soll, JSON.stringify(rumpf(R, /_p\(/, { zitate: true })));
         pruef("rumpf: am Namen die Definition, quote-sicher", rumpf(R, "_p", { zitate: true }) === soll);
         pruef("rumpf: nur Aufrufe → null, nie der Block danach", rumpf(R, /_p\(e\)\s*/) === null && rumpf(R, /_q\(/) === null);
+        // R2) die Stelle im Stamm (D2-N2): im benannten Glied, nie am ersten Text-Treffer; zwei Treffer werfen, keiner gibt
+        // der Probe null und wirft der Mutation; die Kette trägt die Glieder-Tafel weiter
+        const R2 = ersetze(R, [["_p", 'x: "}"', 'x: "{"'], ["_a", /return (this)/, "return $1"]]);
+        pruef("ersetze: im Glied, als Kette", R2 === R.replace('x: "}"', 'x: "{"') && treffer(R2, "_p", "x:").index === R2.indexOf("x:"));
+        pruef("treffer: zwei Treffer werfen, keiner ist null", wirft(() => treffer(R, "_a", "this._p(e)"), /2×/) && treffer(R, "_p", "fehlt") === null);
+        pruef("ersetze: vakuös und mehrdeutig werfen", wirft(() => ersetze(R, "_p", "fehlt", ""), /vakuös/) && wirft(() => ersetze(R, null, "_p(e", ""), /Reihenfolge/));
         // 0) die Glieder am AST: ein Kopf mit Default-Parameter, ein umbrochener, ein Getter und ein async-Kopf behalten
         // ihren Aufruf; ein zusammengesetztes Argument ist EIN Argument (die Täter der Kopf- und Argument-Muster, K38-N2).
         const G = [
