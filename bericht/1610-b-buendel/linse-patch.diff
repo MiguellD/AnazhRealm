@@ -1,0 +1,45 @@
+167a168
+>                     window.__bild1 = auf.u8.slice(0, W * H * 4); // OMEN: das zweite Bild vergleicht dagegen
+177a179,220
+>         }
+>         // OMEN (Stations-Linse, nicht im Repo): DAS BILD DANACH (`--bild2 datei.png`, `--nach s`, Vorgabe 10): der Spiel-Loop
+>         // läuft weiter (`_gameLoopTick`), nach der Frist dasselbe Bild der Bühne; der Sprung = Anteil der Pixel mit |Δ| > 24
+>         // in einem Kanal und das mittlere |Δ| gegen das Bild der Ankunft.
+>         const bild2Datei = OPT("--bild2", null);
+>         if (bildDatei && bild2Datei && bildInfo && !bildInfo.fehlt) {
+>             const nach = Number(OPT("--nach", 10));
+>             await page.evaluate(() => window.anazhRealm.state.renderer.setAnimationLoop(window.anazhRealm._gameLoopTick));
+>             await new Promise((q) => setTimeout(q, nach * 1000));
+>             const b2 = await page.evaluate(
+>                 async (W, H) => {
+>                     const r = window.anazhRealm;
+>                     r.state.renderer.setAnimationLoop(null);
+>                     window.__buehne();
+>                     let auf = null;
+>                     for (let i = 0; i < 2; i++) {
+>                         r._schattenAlleNeu();
+>                         auf = await window.__ausgabeAufnahme(W, H, 1);
+>                     }
+>                     const a = window.__bild1, b = auf.u8;
+>                     let n = 0, summe = 0;
+>                     for (let i = 0; i < W * H * 4; i += 4) {
+>                         const d = Math.max(Math.abs(a[i] - b[i]), Math.abs(a[i + 1] - b[i + 1]), Math.abs(a[i + 2] - b[i + 2]));
+>                         summe += d;
+>                         if (d > 24) n++;
+>                     }
+>                     const cv = document.createElement("canvas");
+>                     cv.width = W;
+>                     cv.height = H;
+>                     const ctx = cv.getContext("2d");
+>                     const img = ctx.createImageData(W, H);
+>                     img.data.set(b.subarray(0, W * H * 4));
+>                     ctx.putImageData(img, 0, 0);
+>                     return { dc: auf.info.drawCalls, dreiecke: auf.info.triangles, sprungPct: +((100 * n) / (W * H)).toFixed(2), mittelDelta: +(summe / (W * H)).toFixed(2), png: cv.toDataURL("image/png") };
+>                 },
+>                 ECHT ? 960 : 640,
+>                 ECHT ? 540 : 360
+>             );
+>             fs.writeFileSync(path.resolve(bild2Datei), Buffer.from(b2.png.split(",")[1], "base64"));
+>             delete b2.png;
+>             bildInfo.danach = Object.assign({ datei: path.resolve(bild2Datei), nachS: nach }, b2);
+>             console.log(`  das Bild ${nach} s danach: ${b2.dc} Befehle · ${b2.dreiecke} Dreiecke · Sprung ${b2.sprungPct} % der Pixel (|Δ| > 24) · mittel |Δ| ${b2.mittelDelta}`);

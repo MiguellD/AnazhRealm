@@ -1,0 +1,18 @@
+22:53:06 BB START A=3caca1cd B=985a923b Linse=2568dd96/2568dd96
+23:06:39 A1 start gpu[63, 139 MHz, P8, 0x0000000000000001]
+23:07:15 A1 exit=1 gpu[74, 1835 MHz, P0, 0x0000000000000000]  t(Weltbild) = t(Kontrolle) 21.41 s ab Navigation  das Bild 10 s danach: 53 Befehle · 337599 Dreiecke · Sprung 12.76 % der Pixel (|Δ| > 24) · mittel |Δ| 11.68  das Bild der Ankunft: C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\k1610bb\A1.png (48 Befehle · 290188 Dreiecke) 
+23:08:01 B1 start gpu[68, 139 MHz, P8, 0x0000000000000001]
+23:08:36 B1 exit=1 gpu[75, 1784 MHz, P0, 0x0000000000000001]  t(Weltbild) = t(Kontrolle) 19.71 s ab Navigation  das Bild 10 s danach: 55 Befehle · 278197 Dreiecke · Sprung 21.28 % der Pixel (|Δ| > 24) · mittel |Δ| 18.53  das Bild der Ankunft: C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\k1610bb\B1.png (30 Befehle · 185692 Dreiecke) 
+23:09:21 A2 start gpu[68, 139 MHz, P8, 0x0000000000000001]
+23:09:58 A2 exit=1 gpu[76, 1721 MHz, P0, 0x0000000000000001]  t(Weltbild) = t(Kontrolle) 21.84 s ab Navigation  das Bild 10 s danach: 53 Befehle · 326913 Dreiecke · Sprung 12.89 % der Pixel (|Δ| > 24) · mittel |Δ| 11.88  das Bild der Ankunft: C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\k1610bb\A2.png (48 Befehle · 286492 Dreiecke) 
+23:10:43 B2 start gpu[68, 139 MHz, P8, 0x0000000000000001]
+23:11:18 B2 exit=1 gpu[77, 1708 MHz, P0, 0x0000000000000001]  t(Weltbild) = t(Kontrolle) 19.50 s ab Navigation  das Bild 10 s danach: 54 Befehle · 241299 Dreiecke · Sprung 22.19 % der Pixel (|Δ| > 24) · mittel |Δ| 21.36  das Bild der Ankunft: C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\k1610bb\B2.png (30 Befehle · 169910 Dreiecke) 
+23:12:03 A3 start gpu[67, 139 MHz, P8, 0x0000000000000001]
+23:12:39 A3 exit=1 gpu[76, 1835 MHz, P0, 0x0000000000000000]  t(Weltbild) = t(Kontrolle) 21.04 s ab Navigation  das Bild 10 s danach: 53 Befehle · 326531 Dreiecke · Sprung 12.87 % der Pixel (|Δ| > 24) · mittel |Δ| 11.78  das Bild der Ankunft: C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\k1610bb\A3.png (48 Befehle · 288616 Dreiecke) 
+23:13:25 B3 start gpu[70, 139 MHz, P8, 0x0000000000000001]
+23:13:58 B3 exit=1 gpu[77, 1822 MHz, P0, 0x0000000000000001]  t(Weltbild) = t(Kontrolle) 18.52 s ab Navigation  das Bild 10 s danach: 54 Befehle · 234183 Dreiecke · Sprung 22.8 % der Pixel (|Δ| > 24) · mittel |Δ| 21.85  das Bild der Ankunft: C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\k1610bb\B3.png (30 Befehle · 175348 Dreiecke) 
+23:14:44 A4 start gpu[69, 139 MHz, P8, 0x0000000000000001]
+23:15:20 A4 exit=1 gpu[77, 1822 MHz, P0, 0x0000000000000000]  t(Weltbild) = t(Kontrolle) 21.57 s ab Navigation  das Bild 10 s danach: 53 Befehle · 329345 Dreiecke · Sprung 12.81 % der Pixel (|Δ| > 24) · mittel |Δ| 11.73  das Bild der Ankunft: C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\k1610bb\A4.png (48 Befehle · 288652 Dreiecke) 
+23:16:06 B4 start gpu[70, 139 MHz, P8, 0x0000000000000001]
+23:16:40 B4 exit=1 gpu[78, 1721 MHz, P0, 0x0000000000000001]  t(Weltbild) = t(Kontrolle) 18.82 s ab Navigation  das Bild 10 s danach: 55 Befehle · 246657 Dreiecke · Sprung 22.97 % der Pixel (|Δ| > 24) · mittel |Δ| 22.19  das Bild der Ankunft: C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\k1610bb\B4.png (30 Befehle · 187454 Dreiecke) 
+23:17:25 BB FERTIG
