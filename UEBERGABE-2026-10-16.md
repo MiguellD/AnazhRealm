@@ -127,3 +127,22 @@ langsamer; knapp Wiese Ego gpu-bank +0,22 bei 2σ 0,23 = A2 Nah-Wiese, beobachte
 integ lokal (ungepusht, wartet auf CW2 — ALT sperrt check nach 9 Merges): KI2 · K2 · A6 (haus 0,529 → 0,937 GRÜN). Soll-Tafel-Stand der
 Karten: boden-nah-farbe GRÜN (A2), haus GRÜN (A6), mensch-kopf GRÜN gebaut (A4, Prüfer), wasser (A1 Nachbesserung), laub (A3 Bau 3).
 Neu: WL Wackel-Linsen (Playtest Worldgen-Bäume n=0, fell-Ratsche), CW2 (Waage aus der Physik), W3 (GL-Einheiten).
+
+### 20:08 (date) — VOLLE LAGE für die Verdichtung (Koordinator-Kontext 84 %, Woche 39 %)
+
+- **main = d9d1db4e (V18.546.4).** **integ-probe = c03ea075 (V18.546.5)** = main + FZ · W2 · KI2 · K2 · A6 · CW2; CI 21/21 grün, Echt rot NUR
+  an S5 (Linse, Karte S5 baut). OMEN misst Bündel 4 (A d9d1db4e, B c03ea075, Wiese+Genesis Ego 2+2) → bericht/1610-buendel4.md → dann main FF.
+- **Integrator-Pflege:** `node scripts/ci-zeiten.cjs` (GH_TOKEN aus git credential) misst UND verteilt die CI-Gruppen in einem Befehl
+  (CW2), wenn gate:ci-deckung (T) ALT feuert; je Bündel `npm run bump -- 18.546.N`; integ nur gebündelt pushen.
+- **Laufende Workflows** (Vorlage artifacts/profiband/werkzeug/karte.js, CI zuerst; Journale unter C:/Users/micha/.claude/projects/C--Users-micha-AnazhRealm-profiband/a8ac36ca-5aac-4e92-aeb3-ddb04484de2b/subagents/workflows/<wf>/journal.jsonl):
+  G1 gpu-welt wf_63272e26-df7 (Arena, Bild rot: Kronen gedithert) · G2 ankunft-ofen wf_711de811-21a (fix1: Kappen-Klasse; GTX −0,75 s) ·
+  D2 stamm-domaene + SO settlement-zelle wf_325915e5-3de · A1 a-wasser / A3 a-laub-zweiton (bau4) / A4 a-kopf (fix) wf_82343bad-891 ·
+  S5 frost-s5-ruhe wf_bf3c51fc-1c3 · W3 gl-einheiten wf_b86c8e22-1de · WL wackel-linsen wf_78055128-7fe · B2 ankunft-stufe wf_e9f444b9-f62.
+- **A-Stand (Soll-Tafel):** GRÜN gebaut/gemergt: boden-nah, boden-nah-farbe (A2), haus (A6), himmel-licht, laub-kante, tor-*, fels; mensch-kopf
+  GRÜN gebaut (A4, Ofen-Golden-Re-Mint offen); ROT in Arbeit: wasser (A1), laub zweiton (A3). A fällt erst mit EINEM Tafel-Durchlauf am
+  Bündel-Kopf nach D2.
+- **B:** GTX kalt ~20,4 s (G2); Engpass Wald-Kette + Haupt-Faden (Knoten-Bau) → B2. **E:** CPU-Takt GTX hält mit G4a (5,35/4,85);
+  G1 greift Render-Objekte an. **D:** D(1) K1 gemergt (Rest: 13 tote Plan-Verweise in Kommentaren, state-of-realm E-Kopie);
+  D(2) D2 in 2. Nachbesserung; D(3) EIN Stripper gemergt, offen playtest.cjs nach Modulen + __consumes.
+- **Offen benannt (keine Karte):** Labor backt Kronenlicht in den Boden (phytogenesis.js:1806); Sturm-Belichtung frisst die Abdunklung;
+  W7 hält alte Satz-Generation je ruhendem RO (17b.js:627); Genesis-Platz ohne Tafel-Klasse (Start-Plattform = Stein-Zylinder 16.js:131).
