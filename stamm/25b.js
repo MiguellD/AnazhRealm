@@ -548,7 +548,7 @@ class AnazhRealm_Z25b {
             // im koerperstudio-Gesetzbuch). Wand weg → nächster Frame fällt.
             vy = s._parkourKletter;
         } else {
-            vy += (s.gravity || -9.81) * dt;
+            vy += s.gravity * dt;
             if (vy < -25) vy = -25;
         }
         // IM SATTEL führt das Gefährt die Vertikale (Welle L, Q1 F-D10): der Reiter sitzt — kein Fall, kein Boden-Snap
@@ -769,7 +769,7 @@ class AnazhRealm_Z25b {
                             // Keine Brems-Kurve auf Steilhang → der Rutsch beschleunigt physikalisch.
                             const hangMaxSlopeY = AnazhRealm._bewegungsBlock("hang", ["maxSlopeY", "malus"]).maxSlopeY;
                             if (gN.mag > 1e-6 && gN.y > 1e-4 && gN.y < hangMaxSlopeY) {
-                                const gMag = -(s.gravity || -9.81);
+                                const gMag = -s.gravity;
                                 vx += gN.x * gN.y * gMag * dt;
                                 vz += gN.z * gN.y * gMag * dt;
                             }

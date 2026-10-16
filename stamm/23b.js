@@ -5,7 +5,7 @@ class AnazhRealm_Z23b {
     _specRenderHeader(panel, bp) {
         const role = this._displayRole(bp);
         const roleLabel = AnazhRealm.ROLE_LABELS[role] || AnazhRealm.BLUEPRINT_ROLE_LABELS[role] || role;
-        const roleColor = (AnazhRealm.BLUEPRINT_ROLE_COLORS || {})[role];
+        const roleColor = AnazhRealm.BLUEPRINT_ROLE_COLORS[role];
         const roleChip = this._el("span", { class: "role-chip spec-role-chip", text: roleLabel });
         if (roleColor) {
             roleChip.style.borderColor = roleColor;
@@ -62,10 +62,10 @@ class AnazhRealm_Z23b {
     // 0..3 mit Stufen-Farbe) | ROLLEN-RESONANZ (das _blueprintRoleSpectrum als Balken, 0..1) + die
     // FÄHIGKEITS-WERTE (aus _blueprintAbilityStats, Chip-Streifen).
     _specRenderBody(panel, bp) {
-        const T = AnazhRealm.WORLD_EFFECT_THRESHOLDS || {};
-        const mild = T.resonance_mild || 0.7;
-        const strong = T.resonance_strong || 1.5;
-        const sig = T.resonance_signature || 2.5;
+        const T = AnazhRealm.WORLD_EFFECT_THRESHOLDS;
+        const mild = T.resonance_mild;
+        const strong = T.resonance_strong;
+        const sig = T.resonance_signature;
         const lvlFor = (v) => (v >= sig ? "lvl-3" : v >= strong ? "lvl-2" : v >= mild ? "lvl-1" : "lvl-0");
         const tags = this.computeCompoundTags(bp) || {};
         const tagEntries = AnazhRealm.MATERIAL_TAG_KEYS.map((k) => ({ k, v: tags[k] || 0 }))
@@ -651,7 +651,7 @@ class AnazhRealm_Z23b {
         // Werkstatt-PROZESSE als ziehbare Karten: auf einen Part gezogen fixt der Prozess die Rolle.
         // data-tool="station:<name>" → applyWorkshopProcessToPart. schöpfer: alle besessenen Werkstätten,
         // sonst die platzierten + nahen.
-        const verbs = AnazhRealm.OP_VERB_LABELS || {};
+        const verbs = AnazhRealm.OP_VERB_LABELS;
         for (const proc of this._workshopProcessesForMenu()) {
             const card = document.createElement("div");
             card.className = "workshop-tool-card workshop-station-card";

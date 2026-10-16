@@ -1240,14 +1240,11 @@ function bandTabelle(u) {
 
 module.exports = {
     ratscheDatei,
-    istBandOrt,
     geraetSchluessel,
     sichtSchluessel,
     ratschenAlle,
-    ratscheWeit,
     ratscheNeu,
     ratscheFrische,
-    versionAbstand,
     einschwingOffen,
     EINSCHWING_INSTALL: `window.__einschwingOffen = ${einschwingOffen.toString()};`,
     ladeSpec,

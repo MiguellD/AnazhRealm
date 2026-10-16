@@ -62,9 +62,9 @@ __fachwerkCore.buildInstance(rezeptId, seed, lod, ov?) → THREE.Group | null
   `ov.seed` überstimmt bewusst das seed-Argument.
 - Schnitt-Grenzen (im Kern-Kopf dokumentiert): `terrain:0` (die Welt trägt
   Boden/Garten) · KEIN `hofFuer` (die Parzelle ist Siedlungs-Kontext, W-A5b) ·
-  KARTEN-GRUND-REGEL (backstein/ziegel/ziegel2 ohne Kultur-Farbe tragen den
-  DEFCOL-Grundton der Canvas-Karte als mat.color — durchs Portal reist keine
-  Karte).
+  DAS KARTEN-GESETZ (eine Canvas-Karte des Labors trägt nur ihr Relief, der
+  Stoff teilt durch ihr lineares Mittel; die Farbe trägt EINMAL der Vertex —
+  durchs Portal reist keine Karte).
 - Ausgang: EINE Group (je Material-ROLLE genau EIN gebakter Mesh; die
   Vertex-Farben tragen Kultur × Kontakt-AO × Material-Illusion, WELT-UV),
   `updateMatrixWorld(true)` gelaufen, `userData {kind:"haus", rezeptId, seed,

@@ -1345,7 +1345,7 @@ class AnazhRealm_Z13c {
             .slice(0, 3)
             .map(([k]) => k);
         const role = typeof this._displayRole === "function" ? this._displayRole(bp) : bp.role || "";
-        const colors = AnazhRealm.BLUEPRINT_ROLE_COLORS || {};
+        const colors = AnazhRealm.BLUEPRINT_ROLE_COLORS;
         return {
             bp,
             name: bp.name,
@@ -1450,7 +1450,7 @@ class AnazhRealm_Z13c {
         };
         let base, glyph, label;
         if (item.kind === "recipe") {
-            const colors = AnazhRealm.BLUEPRINT_ROLE_COLORS || {};
+            const colors = AnazhRealm.BLUEPRINT_ROLE_COLORS;
             base = colors[item.prof.role] || `hsl(${this._feedHueFrom(item.id)}, 45%, 42%)`;
             glyph = glyphMap[item.prof.role] || "⬢";
             label = "Rezept";

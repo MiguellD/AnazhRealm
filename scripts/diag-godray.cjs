@@ -68,7 +68,7 @@ const server = statikServer();
         // die reine `_godrayFrameGate`: Sonne hoch + klar → hoch; unter Horizont → 0; Sturm → ~0.
         out.gateHigh = r._godrayFrameGate(0.9, 1.0); // Mittag, klar
         out.gateBelow = r._godrayFrameGate(-0.2, 1.0); // Sonne unter Horizont
-        out.gateStorm = r._godrayFrameGate(0.9, 0.42); // Sturm (WEATHER_FIELD.stormy.sun)
+        out.gateStorm = r._godrayFrameGate(0.9, r.constructor.WEATHER_FIELD.stormy.sun); // Sturm (die Sonne des Gesetzes)
 
         // (B) PERF-LEVER als ZAHL — headless-Kurzschluss kontrolliert umgehen (wie Schatten-Regler).
         const wasNull = st.renderer && st.renderer._isHeadlessNull;

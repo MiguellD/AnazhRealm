@@ -52,8 +52,8 @@ function check(name, ok, detail) {
         /rx0/.test(promoBlock) && /rz1/.test(promoBlock) && /_promoteScatterCell/.test(promoBlock)
     );
     // ── F (Quelle): EIN Keying-Chokepoint, kein zweiter Ableitungs-Ort ──
-    // Die Konstante hat GENAU fünf Code-Vorkommen: Definition + der eine ABLEITUNGS-
-    // Leser in _archFernRegionKey + drei RADIUS-Leser in _archRegionBundleFor (T3 —
+    // Die Konstante hat GENAU drei Code-Vorkommen: Definition + der eine ABLEITUNGS-
+    // Leser in _archFernRegionKey + der EINE RADIUS-Leser in _archRegionBundleFor (T3, K2 ohne Ersatz-Literal —
     // die analytische Bundle-Cull-Kugel einer Super-Region skaliert mit S; sie LIEST
     // die Konstante, LEITET aber keinen Key ab). Die Ableitungs-Einzigkeit prüft die
     // eigene Probe darunter: der `s:`-Super-Key wird an GENAU EINER Stelle gebaut.
@@ -68,8 +68,8 @@ function check(name, ok, detail) {
     // Keying und Batch-Zweig — das Fenster muss BEIDE Anker tragen.
     const gfHead = gfIdx >= 0 ? src.slice(gfIdx, gfIdx + 8000) : "";
     check(
-        "F(Quelle): SCATTER_FERN_SUPERREGION hat genau 5 Code-Vorkommen (Definition + _archFernRegionKey + 3 T3-Kugel-Radius-Leser)",
-        fernConstUses === 5 && stammLib.kopf(src, "_archFernRegionKey") >= 0,
+        "F(Quelle): SCATTER_FERN_SUPERREGION hat genau 3 Code-Vorkommen (Definition + _archFernRegionKey + der T3-Kugel-Radius-Leser)",
+        fernConstUses === 3 && stammLib.kopf(src, "_archFernRegionKey") >= 0,
         `vorkommen=${fernConstUses}`
     );
     check(

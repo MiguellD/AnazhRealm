@@ -1699,10 +1699,15 @@ class AnazhRealm_Z07 {
     // trägt sie ON TOP der geerdeten Lage (die Erdung bleibt die Wahrheit). Eine Aktion mit `hop` (bound, pounce) zündet
     // ihn (_tickKreaturVerhalten) — kein Abflug in m/s daneben (der alte `def.hop` war ein Zwilling: der frohe Sprung stieg
     // 0,52 statt 1,2 m). Ein Wesen in der Luft springt nicht neu. `ansprung`: der Sprung eines Bisses (_kreaturSprungHoehe).
+    // DIE SCHWERE DES HÜPFERS ist die Schwere der Welt (`state.gravity`, die DSL setzt sie) — wie der Gang (`_gangZeile`): ein
+    // Wesen springt in einer Welt mit anderer Schwere anders, nie mit der Erd-Schwere seines Studios (K2).
+    _hopSchwere() {
+        return -this.state.gravity;
+    }
     creatureJump(creature, ansprung = false) {
         const ud = creature && creature.userData;
         if (!ud || ud._hopV > 0 || ud._hopH > 0) return false;
-        ud._hopV = Math.sqrt(2 * AnazhRealm._hopSchwere() * this._kreaturSprungHoehe(creature, ansprung));
+        ud._hopV = Math.sqrt(2 * this._hopSchwere() * this._kreaturSprungHoehe(creature, ansprung));
         return true;
     }
     // DIE HÖHE DES SPRUNGS (m) — das Freude-Gesetz, die EINE Quelle (creatureJump, die Flugzeit des Ansprungs
@@ -1721,10 +1726,8 @@ class AnazhRealm_Z07 {
     _kreaturSprungZeit(creature) {
         const BG = AnazhRealm._bissGesetz();
         if (BG.geste.hop !== true) return BG.dauer;
-        return Math.max(
-            BG.dauer,
-            2 * Math.sqrt((2 * this._kreaturSprungHoehe(creature, true)) / AnazhRealm._hopSchwere())
-        );
+        const g = this._hopSchwere();
+        return g > 0 ? Math.max(BG.dauer, 2 * Math.sqrt((2 * this._kreaturSprungHoehe(creature, true)) / g)) : BG.dauer;
     }
 
     isInFrustum(object, providedFrustum = null) {
@@ -2202,7 +2205,7 @@ class AnazhRealm_Z07 {
     // Live-Metrologie-Zeile (Analog E) für Beweis-Schüsse, fail-closed: fehlende Quellen als "?"/ROT,
     // nie erfundene Zahlen. Chat: metrologie | analog e | zahlen.
     _analogEMetrologieZeile() {
-        const v = AnazhRealm.VERSION || "?";
+        const v = AnazhRealm.VERSION;
         const wm = this.state && this.state.weltMarch;
         const s = this.state && this.state.perfSense;
         const ri =
@@ -2239,7 +2242,7 @@ class AnazhRealm_Z07 {
             const entry = {
                 t: Date.now(),
                 zeile: String(zeile || ""),
-                ver: AnazhRealm.VERSION || "?",
+                ver: AnazhRealm.VERSION,
             };
             if (!Array.isArray(this._eMetrologieStamps)) this._eMetrologieStamps = [];
             this._eMetrologieStamps.push(entry);
@@ -2990,7 +2993,7 @@ class AnazhRealm_Z07 {
                     if (kx) {
                         this.state.klangPreset = wahl;
                         const skala = kx.scaleName
-                            ? AnazhRealm.Gesetz("klang:SCALE_LABELS." + kx.scaleName, kx.scaleName)
+                            ? AnazhRealm.Gesetz("klang:SCALE_LABELS." + kx.scaleName) || kx.scaleName
                             : "?";
                         append(
                             `Klang: das Lofi-Pad führt jetzt „${(rec && rec.lab) || wahl}" — ${kx.bpm} BPM · ${skala} · ${kx.harmony || "?"}/${kx.rhythm || "?"}.`

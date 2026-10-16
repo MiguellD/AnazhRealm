@@ -16,7 +16,7 @@ class AnazhRealm_Z21 {
         const bp = this.state.blueprints && this.state.blueprints[blueprintName];
         if (!bp || !Array.isArray(bp.parts)) return {};
         const cost = {};
-        const k = AnazhRealm.HARVEST_VOLUME_TO_UNITS || 4;
+        const k = AnazhRealm.HARVEST_VOLUME_TO_UNITS;
         for (const part of bp.parts) {
             if (!part || typeof part.material !== "string") continue;
             const sx = Math.abs((part.size && part.size.x) || 1);
@@ -113,7 +113,7 @@ class AnazhRealm_Z21 {
         const needed = this.computeBlueprintDomain(bp);
         if (!needed) return { ok: true }; // generic Bauplan — kein Check
         // Welt-Werkstatt im Radius suchen
-        const radius = AnazhRealm.WORKSHOP_PROXIMITY_M || 10;
+        const radius = AnazhRealm.WORKSHOP_PROXIMITY_M;
         const r2 = radius * radius;
         for (const entry of this.state.architectures || []) {
             const wbp = this.state.blueprints && this.state.blueprints[entry.type];
@@ -138,7 +138,7 @@ class AnazhRealm_Z21 {
         const cfg = AnazhRealm.WORKSHOP_PRECISION;
         // (1) MASSE: Compound-dichte (form×material) dämpft die Vibration → feiner; form-verstärkt ist hier
         // ehrlich (ein großer Block IST massereicher). Sättigt für ernste Werkstätten bei ~1.
-        const solid = Math.min(1, (t.dichte || 0) / (cfg.dichteRef || 1));
+        const solid = Math.min(1, (t.dichte || 0) / cfg.dichteRef);
         // (2) AMBOSS-HÄRTE: ROHE Material-Härte des härtesten Bauteils, NICHT form-verstärkt —
         // ein Kegel-Horn (härte ×3) ist kein härteres Werkzeug als sein Stahl.
         const mats = this.state.materials || {};
@@ -155,7 +155,7 @@ class AnazhRealm_Z21 {
     // WORKSHOP_PROXIMITY_M bietet (Substanz, S7-B-emergent); 0 wenn keine passende Station nah ist.
     _nearbyWorkshopStationPrecision(domain, atPos) {
         if (!domain || !atPos) return 0;
-        const radius = AnazhRealm.WORKSHOP_PROXIMITY_M || 10;
+        const radius = AnazhRealm.WORKSHOP_PROXIMITY_M;
         const r2 = radius * radius;
         let best = 0;
         for (const entry of this.state.architectures || []) {
@@ -516,7 +516,7 @@ class AnazhRealm_Z21 {
         // Verbot als lebende Regel (die GEMESSENE Modus-Wäsche schließt).
         const freeBorn = entry.freeBorn === true;
         if (bp && Array.isArray(bp.parts) && !freeBorn) {
-            const k = AnazhRealm.HARVEST_VOLUME_TO_UNITS || 4;
+            const k = AnazhRealm.HARVEST_VOLUME_TO_UNITS;
             const volByMat = {};
             for (const part of bp.parts) {
                 if (!part || typeof part.material !== "string") continue;
@@ -1706,7 +1706,7 @@ class AnazhRealm_Z21 {
         let dx = ziel.x - mx,
             dy = ziel.y - my,
             dz = ziel.z - mz;
-        const gB = Math.abs(Number.isFinite(this.state.gravity) ? this.state.gravity : -9.81);
+        const gB = Math.abs(this.state.gravity);
         const xh = Math.hypot(dx, dz);
         if (xh > 1e-6 && v0 > 1e-6) {
             const v2 = v0 * v0;
@@ -1757,7 +1757,7 @@ class AnazhRealm_Z21 {
         if (!list || !list.length) return;
         const B = AnazhRealm._arenaGesetz().bogen;
         // V18.491.149 GRAVITY_VIS.host=state-signed — Lab ARENA.g studio +9.81; Host state.gravity world −9.81 dual, not Fake-merge.
-        const g = Number.isFinite(this.state.gravity) ? this.state.gravity : -9.81;
+        const g = this.state.gravity;
         const creatures = this.state.creatures || [];
         for (let i = list.length - 1; i >= 0; i--) {
             const pf = list[i];
@@ -2254,7 +2254,7 @@ class AnazhRealm_Z21 {
         // Floor → SOCKEL: wer den Bruch erarbeitet, erntet mindestens yieldMin — sonst bricht die Faust den
         // Baum nach vielen Hieben und bekommt nichts. Untauglichkeit bestraft weiter über Tempo + Stamina.
         const yieldMult = Math.max(
-            H.yieldMin || 0,
+            H.yieldMin,
             Math.min(1, Math.max(0, (fit - H.yieldFloorRatio) / (1 - H.yieldFloorRatio)))
         );
         return {
@@ -2335,7 +2335,7 @@ class AnazhRealm_Z21 {
         }
         const now = performance.now() / 1000;
         const last = Number.isFinite(p.lastHarvestStrikeAt) ? p.lastHarvestStrikeAt : -Infinity;
-        if (now - last < (AnazhRealm.HARVEST.strikeIntervalSec || 0.2)) return;
+        if (now - last < AnazhRealm.HARVEST.strikeIntervalSec) return;
         p.lastHarvestStrikeAt = now;
         this.tryMouseBreak(p._mausVerb || undefined);
     }
