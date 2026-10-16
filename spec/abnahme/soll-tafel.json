@@ -993,7 +993,7 @@
                 "geheilt": {
                     "befund": "die Wiese nah zu einförmig im Farbton: die Halme streuen (Oliv, Stroh, gelbgrün), die Fläche nicht — die einfarbigste 2-m-Kachel 6,5°",
                     "quelle": "Spike W1 789af722 (16.10., Mess-Wiese 2–5 m, Radeon: 6,34° → 9,01°) und W1 (dieselbe Geometrie wie das Soll-Bild: 9,20° gegen 10,73°)",
-                    "warum": "A2 (16.10., Radeon 890M --echt, Mess-Wiese, die Geometrie des Soll-Bilds): jedes Büschel trägt die Farbe seiner ART und seines ALTERS am Ort (foundry-core `wiesenTint`, `WIESEN_ARTEN`: fünf Gräser der Frischwiese nach ihren Zeigerwerten L/F, gezogen aus dem Γ5-Strom des Orts) statt eines Helligkeits-Rauschens — farbtonStreuung 9,70 → 11,02, die einfarbigste Kachel 7,37 → 9,52° (Halm allein 9,48 → 10,98; Boden-Satz 6,53 → 7,66)",
+                    "warum": "A2 (16.10., Radeon 890M --echt, Mess-Wiese, die Geometrie des Soll-Bilds): jedes Büschel trägt die Farbe seiner ART und seines ALTERS am Ort (foundry-core `wiesenTint`, `WIESEN_ARTEN`: fünf Gräser der Frischwiese nach ihren Zeigerwerten L/F, gezogen aus dem Γ5-Strom des Orts) statt eines Helligkeits-Rauschens — farbtonStreuung 9,70 → 11,06, die einfarbigste Kachel 7,37 → 9,45° (Halm allein 9,48 → 10,97)",
                     "bildPaar": ["artifacts/soll-tafel/boden-nah-farbe-vorher.png", "artifacts/soll-tafel/boden-nah-farbe.png"]
                 }
             },
@@ -1028,10 +1028,10 @@
                 "werkzeug": "werkbank bild -278 +1.7 -1038 -278 +0 -1044.82 --fov 46.7 --wahl 0 --klasse '^(nahWiese:.*|streuSatz|bodenSatz)$' --abstand --ist boden-nah-farbe (Mess-Wiese K55, die Geometrie des Soll-Bilds: Auge 1,7 m, 13,9° abwärts, hfov 75°; Leinwand 1920 × 1080 — headless nach `werkbank fenster 1920 1080`)",
                 "messung": {
                     "werkzeug": "bild",
-                    "datum": "2026-10-16T13:19:26.992Z",
+                    "datum": "2026-10-16T13:53:34.607Z",
                     "stand": {
                         "version": "18.546.2",
-                        "sha": "4993c407a6d8ed8805897848497fe3e290aa4ac5"
+                        "sha": "5fdb1da9febfcdb07130f262604be278d355ba8f"
                     },
                     "geraet": {
                         "backend": "WebGPU",
@@ -1046,37 +1046,37 @@
                         "pixel": 0,
                         "max": 0
                     },
-                    "misch": 70975,
+                    "misch": 69572,
                     "klassen": {
-                        "bodenSatz": {"objekte":1,"spiegelTreue":-0.136,"sp":[1480,0,0,1575936.9,1575936.9,-214279.9],"zweiton":0.0001,"zt":34,"weiss":0.0003,"wt":78,"wtZiel":null,"bunt":35.72,"pixel":245872,"deckung":0.1186,"deckungUnten":0.1077,"luma":115.76,"kontrast":0.3819,"detail":0.0551,"nyquist":0.0579,"ek":149222.3,"eg":2429999.9,"silhouette":120.3437,"kante":0.4754,"kr":8899},
-                        "nahWiese:L1": {"objekte":2,"spiegelTreue":-0.0253,"sp":[5935,0,0,6406876.91,6406876.91,-162173.19],"zweiton":0,"zt":0,"weiss":0,"wt":0,"wtZiel":null,"bunt":40.9,"pixel":863446,"deckung":0.4164,"deckungUnten":0.8538,"luma":79.17,"kontrast":0.2597,"detail":0.0644,"nyquist":0.0852,"ek":721082.5,"eg":7747119,"silhouette":115.6596,"kante":0.3452,"kr":42709},
-                        "nahWiese:L2": {"objekte":2,"spiegelTreue":0.1288,"sp":[2662,0,0,2912834.82,2912834.82,375258.13],"zweiton":0.0003,"zt":94,"weiss":0,"wt":0,"wtZiel":null,"bunt":41.39,"pixel":341103,"deckung":0.1645,"deckungUnten":0.0013,"luma":84.38,"kontrast":0.3,"detail":0.099,"nyquist":0.1205,"ek":741276.8,"eg":5408448.5,"silhouette":101.9981,"kante":0.3565,"kr":11403},
-                        "streuSatz": {"objekte":3,"spiegelTreue":-0.0839,"sp":[45,0,0,19100.31,19100.31,-1601.8],"zweiton":0,"zt":0,"weiss":0,"wt":1,"wtZiel":null,"bunt":26.9,"pixel":22120,"deckung":0.0107,"deckungUnten":0.001,"luma":99.09,"kontrast":0.3777,"detail":0.0825,"nyquist":0.1437,"ek":38587.4,"eg":229923.7,"silhouette":58.2675,"kante":0.2526,"kr":399}
+                        "bodenSatz": {"objekte":1,"spiegelTreue":-0.1711,"sp":[1603,0,0,1844014.25,1844014.25,-315433.78],"zweiton":0,"zt":0,"weiss":0.0003,"wt":82,"wtZiel":null,"bunt":35.45,"pixel":249149,"deckung":0.1202,"deckungUnten":0.1062,"luma":116.31,"kontrast":0.38,"detail":0.0547,"nyquist":0.0562,"ek":146248.2,"eg":2457521,"silhouette":116.9572,"kante":0.4667,"kr":8281},
+                        "nahWiese:L1": {"objekte":2,"spiegelTreue":-0.0584,"sp":[5920,0,0,6512899.36,6512899.36,-380479.36],"zweiton":0,"zt":0,"weiss":0,"wt":0,"wtZiel":null,"bunt":40.71,"pixel":864334,"deckung":0.4168,"deckungUnten":0.8547,"luma":78.75,"kontrast":0.2498,"detail":0.0622,"nyquist":0.0825,"ek":623933.1,"eg":6940670.3,"silhouette":117.3717,"kante":0.3394,"kr":44325},
+                        "nahWiese:L2": {"objekte":2,"spiegelTreue":0.1138,"sp":[2618,0,0,2895551.28,2895551.28,329486.43],"zweiton":0.0004,"zt":128,"weiss":0,"wt":1,"wtZiel":null,"bunt":41.35,"pixel":340251,"deckung":0.1641,"deckungUnten":0.0012,"luma":84.67,"kontrast":0.3018,"detail":0.0985,"nyquist":0.1201,"ek":735486,"eg":5389058,"silhouette":102.7755,"kante":0.3485,"kr":11575},
+                        "streuSatz": {"objekte":3,"spiegelTreue":-0.0517,"sp":[44,0,0,20688.71,20688.71,-1069.07],"zweiton":0,"zt":0,"weiss":0,"wt":1,"wtZiel":null,"bunt":26.1,"pixel":20673,"deckung":0.01,"deckungUnten":0.001,"luma":97.27,"kontrast":0.3725,"detail":0.0852,"nyquist":0.1444,"ek":36612.1,"eg":216940.6,"silhouette":53.9431,"kante":0.2357,"kr":390}
                     },
                     "abstand": {
                         "baender": [0, 2, 5, 10, 14, 30, 80, 200],
                         "ring": 14,
                         "augeUeberBoden": 1.71,
-                        "cos": [null, 0.4489, 0.2487, 0.155, 0.1056, 0.0594, 0.0328],
+                        "cos": [null, 0.4489, 0.2487, 0.1549, 0.1056, 0.0595, 0.0324],
                         "klassen": {
-                            "bodenSatz": [0, 76515, 6939, 220, 68193, 84309, 9368],
-                            "streuSatz": [0, 685, 6581, 5860, 7670, 1324, 0],
-                            "nahWiese:L2": [0, 233, 158753, 102988, 79000, 129, 0],
-                            "nahWiese:L1": [0, 656606, 205005, 1835, 0, 0, 0]
+                            "bodenSatz": [0, 75689, 6995, 251, 68642, 85437, 11112],
+                            "streuSatz": [0, 655, 6577, 5860, 7456, 125, 0],
+                            "nahWiese:L2": [0, 190, 158276, 102934, 78720, 131, 0],
+                            "nahWiese:L1": [0, 656916, 205615, 1803, 0, 0, 0]
                         },
                         "farbton": {
                             "kachel": 2,
                             "band": [2, 5],
-                            "belichtung": 0.9903,
+                            "belichtung": 0.9931,
                             "kacheln": [
-                                ["-140, -522", 11007, -4489.353, 9880.465, 11007],
-                                ["-139, -522", 10862, -3714.581, 10000.656, 10862],
-                                ["-141, -522", 2330, -948.586, 2091.644, 2330],
-                                ["-138, -522", 2209, -724.674, 1924.777, 2209],
-                                ["-141, -521", 15267, -6244.52, 13701.823, 15267],
-                                ["-140, -521", 66080, -30620.716, 57363.039, 66080],
-                                ["-139, -521", 64397, -26505.724, 57103.186, 64397],
-                                ["-138, -521", 14802, -7781.397, 12298.046, 14802]
+                                ["-140,  -522", 11011, -4535.486, 9863.897, 11011],
+                                ["-139,  -522", 10873, -3787.868, 9994.591, 10873],
+                                ["-141,  -522", 2330, -958.493, 2089.144, 2330],
+                                ["-138,  -522", 2226, -728.789, 1934.33, 2226],
+                                ["-141,  -521", 15260, -6198.645, 13712.956, 15260],
+                                ["-140,  -521", 66102, -30790.984, 57287.066, 66102],
+                                ["-139,  -521", 64274, -26561.49, 56939.267, 64274],
+                                ["-138,  -521", 14928, -7783.769, 12425.975, 14928]
                             ]
                         }
                     },
@@ -1085,17 +1085,17 @@
                     "quellen": {
                         "gelaende-core.js": "c:671ad7ea812567a8",
                         "phyto-core.js": "c:1a281005f65ef585",
-                        "foundry-core.js": "c:77e1c1a8c78e0b05",
-                        "stamm/07.js": "c:7a66986764b31bdd",
+                        "foundry-core.js": "c:99f3a002dd5b33b7",
+                        "stamm/07.js": "c:9b994e6d432e4d22",
                         "stamm/10.js": "c:bb6631653fcc0994",
                         "stamm/19.js": "c:5f36c5687cb8f126",
-                        "stamm/24.js": "c:16ec71722c0bac2a",
+                        "stamm/24.js": "c:dde90a4ac3fcf2da",
                         "stamm/25c.js": "c:fb8c3e2986247bac",
-                        "stamm/11c.js": "c:04e7d724ad12fd5b",
-                        "stamm/17b.js": "c:7a76ea527559ad60",
+                        "stamm/11c.js": "c:bd394670c7281bbd",
+                        "stamm/17b.js": "c:36363c8024705bb6",
                         "stamm/17c.js": "c:78d572870c3e2c9e",
                         "stamm/20a.js": "c:edf068cfa4a10fa4",
-                        "stamm/26b.js": "c:f656be6616baa04b"
+                        "stamm/26b.js": "c:00ef1ee82ce03f2e"
                     }
                 }
             },
