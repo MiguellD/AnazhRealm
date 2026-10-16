@@ -1936,16 +1936,17 @@ class AnazhRealm_Z25a {
             // setAnimationLoop-Callback → die Welt erstarrt. Frame-Fehler werden abgefangen und gedrosselt mit
             // Stack geloggt, die Welt läuft weiter (der Headless-Pump fängt selbst ab — sieht den Freeze nie).
             try {
-                // DIE PHASE DES TAKTS (B3, Lehre 13): unter dem Ladeschirm (`_ladeTakt`) trägt der Takt NUR, was das erste
-                // Weltbild füttert — Foundry und Einhängen, den Leib, Strom und Takt-Planer (Generierung, Pflanz-Schlange,
-                // Stufen-Wahl, Horizont), den Genesis-Ort, Körper und Kamera (das Auge der Stufen-Wahl), den Bau-Gang — und
-                // das Lade-Bild (die Erst-Zeichnung, `_ladeBildFaellig`), das Licht, Bündel-Sicht und Haltung des Leibs vor
-                // seinem Zeichnen holt. Was nur das Spiel oder ein gezeichnetes Bild braucht (`!ankunft`), ruht bis zum
-                // ersten Weltbild: Nexus, Stimme, DSL, Gesetze, Lebenswerte, HUD, Klang, Netz, Kampf, Kreaturen, Animation
-                // der Bauten, Rauch, Speichern (Radeon kalt, je ein Boot am Kopf 210fe8a7: 224 Takte unter dem Ladeschirm, jeder
-                // rief jedes Spiel-Glied, 1 007 ms im Loop außerhalb der Fütterer; mit der Phase 0 Rufe und 276 ms, das Licht
-                // nur in den 24 Lade-Bildern).
-                const ankunft = this._ladeTakt();
+                // DIE PHASE DES TAKTS (B3, Lehre 13) — EINE Frage am Anfang: zeichnet dieser Takt (`bild`, die GPU-Leine und
+                // unter dem Ladeschirm das fällige Lade-Bild, `_ladeBildFaellig`)? Ein Takt, der zeichnet, trägt das ganze
+                // Spiel — auch das Lade-Bild: was das Bild zeigt (Licht, Bündel-Sicht, Haltung, Rauch, Membranen) und was
+                // zum ersten Mal Stoffe baut oder speichert, läuft vor ihm, unter dem Ladeschirm, nie im ersten gespielten
+                // Takt (Prüfung B3-1: Rauch im ersten Bild 0 statt 24 Teilchen, eine Aufgabe von 189–210 ms nach dem Bild).
+                // Ein Lade-Takt OHNE Bild (`ruht`) trägt nur, was das erste Weltbild füttert — Foundry und Einhängen, den
+                // Leib, Strom und Takt-Planer, den Genesis-Ort, Körper und Kamera, den Bau-Gang — und das Netz, das dem
+                // Mitspieler gehört (K60). Radeon kalt am Kopf 210fe8a7 rief jeder der 224 Takte unter dem Ladeschirm jedes
+                // Spiel-Glied (1 007 ms im Loop außerhalb der Fütterer).
+                const bild = this._gpuLeineFrei();
+                const ruht = !bild && this._ladeTakt();
                 // DER SCHIRM einmal je Takt (die EINE Quelle jeder Schirm-Größe, `_schirm`).
                 this._schirmMessen();
                 // Foundry so FRÜH wie möglich anwerfen: das Studio-iframe lädt ~1–2 s, und `_ensureAssetFoundry`
@@ -1954,7 +1955,7 @@ class AnazhRealm_Z25a {
                 // prüft `_ensureAssetFoundry` selbst.
                 if (!this._foundry) this._ensureAssetFoundry(); // ihr Boot-Fehler bricht in ihr selbst laut (K22)
 
-                if (!ankunft) {
+                if (!ruht) {
                     // ### Nexus-Update ### (V9.44-f → _loopNexusUpdate)
                     this._loopNexusUpdate();
 
@@ -1968,17 +1969,6 @@ class AnazhRealm_Z25a {
                     // Stehende Bedingung→Effekt-Regeln prüfen + feuern (gebudgetet); nach dslTick, damit eine soeben
                     // geplante Geste vor den Regeln läuft.
                     this._tickWorldRules(currentTime);
-
-                    // ### Region-Übergangs-Detection ###
-                    // 1×/s reicht (niemand überquert eine 345.6 m-Region in einem Frame). Default OFF
-                    // (regionsActive=false → no-op); ein Übergang ruft _p2pRegionHandoff(oldKey,newKey).
-                    if (!this._regionTickLast || currentTime - this._regionTickLast >= 1000) {
-                        this._regionTickLast = currentTime;
-                        const crossing = this._regionTickDetectCrossing();
-                        if (crossing && typeof this._p2pRegionHandoff === "function") {
-                            this._p2pRegionHandoff(crossing.oldKey, crossing.newKey);
-                        }
-                    }
 
                     // ### Player-Emotionen (Ring 3) ###
                     this.updatePlayerEmotions(currentTime);
@@ -2026,16 +2016,26 @@ class AnazhRealm_Z25a {
                     // ### Status-Panel (UI V1) ###
                     this.updateStatusPanel(currentTime);
 
-                    // ### Ring 11 V1 — Multi-User Position-Sync ###
-                    // Broadcast (30 Hz Drosselung intern) + Peer-Mesh-Update + Idle-
-                    // Purge. No-op wenn p2p.enabled === false oder nicht verbunden.
-                    this.p2pTick(performance.now());
-
                     // ### Bodenprüfung / Frustum-Culling / UFOs ### (V9.44-f)
                     this._loopGroundCheck(currentTime);
                     this._loopFrustumCulling();
                     this._loopAnimateUfos(currentTime);
                 }
+
+                // ### DAS NETZ ### — in JEDEM Takt, auch unter dem Ladeschirm: es gehört dem Mitspieler (K60, gate:mp-sync (d) —
+                // Ort, Eingabe-Strom und Ghost-Verbrauch nach der Wanduhr, die 10-s-Räumung stiller Peers).
+                // Region-Übergang: 1×/s reicht (niemand überquert eine 345.6 m-Region in einem Frame). Default OFF
+                // (regionsActive=false → no-op); ein Übergang ruft _p2pRegionHandoff(oldKey,newKey).
+                if (!this._regionTickLast || currentTime - this._regionTickLast >= 1000) {
+                    this._regionTickLast = currentTime;
+                    const crossing = this._regionTickDetectCrossing();
+                    if (crossing && typeof this._p2pRegionHandoff === "function") {
+                        this._p2pRegionHandoff(crossing.oldKey, crossing.newKey);
+                    }
+                }
+                // Ring 11 V1 — Multi-User Position-Sync: Broadcast (30 Hz Drosselung intern) + Peer-Mesh-Update + Idle-
+                // Purge. No-op wenn p2p.enabled === false oder nicht verbunden.
+                this.p2pTick(performance.now());
 
                 // ### Physik-Simulation ###
                 // Der AKKUMULATOR dirigiert die Sim (Physik + Bewegung pro FIXED_DT-Häppchen, framerate-unabhängig)
@@ -2052,7 +2052,7 @@ class AnazhRealm_Z25a {
                 // Feld-Controller (`_stepCharacter`) erdet den Spieler direkt aus dem Dichtefeld,
                 // das überall definiert ist (auch unter ungebauten Chunks) → kein Durchfallen.
 
-                if (!ankunft) {
+                if (!ruht) {
                     // V17.55 W1 — Halten-zum-Abbauen: der Auto-Hieb-Tick (gegated durch breakHeld +
                     // Pointer-Lock; das kontinuierliche Mahlen in der strikeInterval-Kadenz).
                     this._tickHarvest();
@@ -2097,7 +2097,7 @@ class AnazhRealm_Z25a {
                 // ### Skybox-Zeit ### (V9.44-f → _loopSkyboxZeit)
                 this._loopSkyboxZeit(currentTime);
 
-                if (!ankunft) {
+                if (!ruht) {
                     // ### Portal-Membranen ### (V18.464 — die Passage atmet + Hindurchgehen)
                     this._tickPortalMembranes(currentTime);
 
@@ -2108,7 +2108,7 @@ class AnazhRealm_Z25a {
                 // ### Der Genesis-Ort ### (Ring der Kern-Portale + Portal-Vorschauen, vor jedem Budget)
                 this._tickGenesisOrt(currentTime);
 
-                if (!ankunft) {
+                if (!ruht) {
                     // ### Kamin-Rauch ### (.105 — Quellen + minimale Lab-Partikel)
                     this._updateDorfRauch(delta);
 
@@ -2127,7 +2127,7 @@ class AnazhRealm_Z25a {
                 this._applyFixedInterpolation();
                 this._loopCamera(currentTime);
 
-                if (!ankunft) {
+                if (!ruht) {
                     // Ring 5 V2: Soul-Animation. Glieder/Flügel/Schweif werden
                     // jeden Frame über sin/cos relativ zum aktuellen walkPhase
                     // rotiert. Idle-Loop (atmen, hover) läuft auch im Stand.
@@ -2139,7 +2139,7 @@ class AnazhRealm_Z25a {
                 _pt = performance.now();
                 this.tickArchitectureCulling();
                 this._perfSenseLap("archCulling", _pt);
-                if (!ankunft) {
+                if (!ruht) {
                     // Ring 6 V2: Bau-Modus — Phantom-Position nachziehen wenn aktiv.
                     this.tickBuildMode();
                     // Ring 6: Bau-Werke mit Animations-Hook (nur Wasserfälle aktuell).
@@ -2158,16 +2158,9 @@ class AnazhRealm_Z25a {
                 // verteilt und kompiliert asynchron (die Erst-Zeichnung, `_configureRenderer`) — kein Vorwärmen.
                 this._kernPflichtWand();
                 // DIE GPU-LEINE: sind schon GPU_FRAMES_IM_FLUG Frames unterwegs, schickt dieser Takt nichts an die GPU
-                // (Simulation, Eingabe und Streaming laufen weiter) — sonst lief die CPU der GPU davon (_gpuLeineFrei).
-                if (this._gpuLeineFrei()) {
-                    // DAS LADE-BILD holt, was nur ein gezeichnetes Bild braucht und im Lade-Takt ohne Bild ruht: das Licht
-                    // der Tageszeit, die Sicht der Bündel und die Haltung des Leibs (Fuß auf dem Hang) — im Spiel stehen
-                    // sie an ihrem Ort im Takt
-                    if (ankunft) {
-                        this.tickDayNight(currentTime);
-                        this._loopFrustumCulling();
-                        this.animatePlayerSoul(currentTime);
-                    }
+                // (Simulation, Eingabe und Streaming laufen weiter) — sonst lief die CPU der GPU davon (`bild`, die Phase
+                // des Takts oben).
+                if (bild) {
                     _pt = performance.now();
                     this._loopShadowUpdate();
                     this._loopRender(currentTime);
@@ -2225,7 +2218,7 @@ class AnazhRealm_Z25a {
     // Regler voll) war ein Frame erst 600 ms nach dem CPU-Ende auf der GPU fertig (≈ 10 Frames in der Schlange) —
     // jede Eingabe sah der Spieler 0,6 s später. Die Leine hält höchstens GPU_FRAMES_IM_FLUG Frames unterwegs: ist
     // sie gespannt, rechnet der Takt (Simulation, Eingabe, Streaming), schickt aber nichts an die GPU. Der EINE
-    // Zähler lebt an diesem Chokepoint (Frei-Prüfung vor dem Render, Anmelden nach den Submits des Frames).
+    // Zähler lebt an diesem Chokepoint (Frei-Prüfung am Anfang des Takts — seine Phase, B3 —, Anmelden nach den Submits).
     // Headless (kein Device): immer frei, byte-alt.
     _gpuLeineQueue() {
         const r = this.state.renderer;
@@ -2248,7 +2241,8 @@ class AnazhRealm_Z25a {
     // Weltbilds schließt erst im Bild (`_weltbildLuecken`: Boden, Horizont, Buch, Bauten, Pflanzung, Streu und Karten stehen im
     // Takt und in den Fäden, das Panorama rechnet seine eigene GPU-Arbeit). Ein Lade-Takt schickt sein Bild darum nur, wenn es
     // fällig ist: alle LADE_BILD_MS — die Erst-Zeichnung baut die Knoten der neuen Stoffe und stößt ihre Pipelines an, lange
-    // bevor das Bild steht — und sobald keine Lücke mehr fehlt: das Bild, nach dem `_ankunftsBild` urteilt. Radeon kalt
+    // bevor das Bild steht — und sobald am Anfang des Takts keine Lücke mehr fehlt: der Takt trägt dann das ganze Spiel vor
+    // dem Bild, nach dem `_ankunftsBild` urteilt (eine Lücke, die erst im Takt schließt, zeichnet der nächste). Radeon kalt
     // zeichnete jeder Lade-Takt (3,3 s Render bis zum Bild, K602/p2.cpuprofile), die Erst-Zeichnung trug davon ~1,6 s.
     _ladeBildFaellig(L) {
         if (!this._ladeTakt()) return true;
