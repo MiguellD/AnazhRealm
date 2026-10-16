@@ -3295,6 +3295,9 @@
         regen: { fog: 0.4, sun: 0.55, grey: 0.6, wind: 0.35, rain: 0.6 },
     };
     var WX_VIS = { lab: "wx-4", host: "none" };
+    // K2 (rein additiv): das LICHT des Wetters — die Sonne der Zeile dimmt das Richtlicht auf sockel + sonne·sun (Labor:
+    // keyLight und Spiegel-Farbe, Welt: WEATHER_TINTS.lightMul); den Himmel der Welt dimmt die Sonne der Zeile selbst (skyMul).
+    var WX_LICHT = { sockel: 0.35, sonne: 0.65 };
 
     // ===================== DIE KARTE (W6): der Codec des EINEN Karten-Atlas — rein, THREE-frei =====================
     // Die Fernstufe einer Art ist EINE Schicht im Array-Atlas des Hosts, im Studio-Layout (bakeImpostorAtlas,
@@ -5020,6 +5023,7 @@
         PHYLO_VIS: PHYLO_VIS,
         WX_GESETZ: WX_GESETZ,
         WX_VIS: WX_VIS,
+        WX_LICHT: WX_LICHT,
         treePhenotype: treePhenotype,
         artPhaenotyp: artPhaenotyp, // K24 — der Phänotyp einer Art: Gesetz ⊕ Phänotyp-Zeile (Wirt, Linsen, treeParams)
         treeParams: treeParams, // K24 — DIE EINE Ableitung Dials → P (Studio, Foundry-Worker)

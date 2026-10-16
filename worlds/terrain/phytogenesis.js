@@ -3255,6 +3255,10 @@ function _wxPick(w) {
         throw new Error("phyto-core fehlt: WX_GESETZ." + w);
     return { fog: row.fog, sun: row.sun, grey: row.grey, wind: row.wind, rain: row.rain };
 }
+/* Das Licht des Wetters ← WX_LICHT (phyto-core), fail-closed (K2) — die Welt dimmt ihr Richtlicht mit DERSELBEN Rechnung. */
+const _WX_LICHT = window.__phytoCore.WX_LICHT;
+if (!_WX_LICHT || ![_WX_LICHT.sockel, _WX_LICHT.sonne].every(isFinite)) throw new Error("phyto-core fehlt: WX_LICHT");
+const _wxLicht = (s) => _WX_LICHT.sockel + _WX_LICHT.sonne * s;
 let _wxBase = _wxPick("klar");
 function weatherTargets(w) {
     if (w === "klar" || w === "bewoelkt" || w === "nebel" || w === "sturm") {
@@ -3386,7 +3390,7 @@ function updateWorld(dt) {
         }
         _wSun.copy(atm.col);
         keyLight.color.copy(_wSun);
-        keyLight.intensity = (forestMode ? 3.13 : 2.65) * atm.lum * (0.35 + 0.65 * wxSun); // GESETZ: BASE x Luminanz(Transmission). Mittag(lum~0.91)->2.85; Sonnenuntergang/Nacht fallen physikalisch
+        keyLight.intensity = (forestMode ? 3.13 : 2.65) * atm.lum * _wxLicht(wxSun); // GESETZ: BASE x Luminanz(Transmission). Mittag(lum~0.91)->2.85; Sonnenuntergang/Nacht fallen physikalisch
     }
     if (hemiL) {
         hemiL.intensity = 0.78 * (0.1 + 0.9 * atm.lum) * (1 + wxGrey * 0.35) * (forestMode ? 0.25 : 1.0);
@@ -3409,7 +3413,7 @@ function updateWorld(dt) {
     _reflU.uSkyCol.value.copy(_w1); // Wasser spiegelt DEN Himmel (Tag/Nacht/Daemmerung)
     _reflU.uSunDirW.value.copy(_wSunPos); // Glitzerpfad zeigt zur ECHTEN Sonne (nachts: Mondstrasse)
     // FIX v28: hier stand ein ZWEITER _impMat-Uniform-Schreiber (uSunCol/uHemiCol/uFog/uTime) — der Block unten ueberschrieb ihn JEDEN Frame, seine Werte (0.28+0.78*lum etc.) waren wirkungsloses Schein-Tuning. Gesetz "EIN Schreiber je Zustand" gilt jetzt auch hier; Fog schreibt Zeile ~2085 aus scene.fog.
-    _reflU.uSunColW.value.copy(_wSun).multiplyScalar((0.4 + 0.9 * atm.lum) * (0.35 + 0.65 * wxSun)); // Spec-Farbe = Rayleigh-Sonnenfarbe x Transmission -> Sonnenuntergang: oranger Pfad; bedeckt: gedimmt
+    _reflU.uSunColW.value.copy(_wSun).multiplyScalar((0.4 + 0.9 * atm.lum) * _wxLicht(wxSun)); // Spec-Farbe = Rayleigh-Sonnenfarbe x Transmission -> Sonnenuntergang: oranger Pfad; bedeckt: gedimmt
     _reflU.uWind.value = wxWind; // Wind treibt die Wellen-Steilheit: Sturm -> kabbeliger See
     if (_impMat) {
         const iu = _impMat.uniforms;

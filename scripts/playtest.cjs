@@ -39161,11 +39161,11 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         // --- b) Sanfte Wetter-Übergänge
         out.weatherTransitionDuration = AnazhRealm.WEATHER_TRANSITION_DURATION_MS === 45000;
         out.weatherTintsExists = !!AnazhRealm.WEATHER_TINTS;
-        out.weatherTintsSunnyRainy =
-            AnazhRealm.WEATHER_TINTS.sunny &&
-            AnazhRealm.WEATHER_TINTS.rainy &&
-            AnazhRealm.WEATHER_TINTS.sunny.skyMul === 1.0 &&
-            AnazhRealm.WEATHER_TINTS.rainy.skyMul < 1.0;
+        const wxL = globalThis.__phytoCore.WX_LICHT; // K2: der Tint IST die Sonne der Wetter-Zeile, kein zweiter Wert
+        out.weatherTintsSunnyRainy = ["sunny", "rainy", "stormy"].every((w) => {
+            const [s, t] = [AnazhRealm.WEATHER_FIELD[w].sun, AnazhRealm.WEATHER_TINTS[w]];
+            return t.skyMul === s && t.lightMul === wxL.sockel + wxL.sonne * s;
+        });
 
         // Setze sunny als Ausgangspunkt
         r.state.weather = "sunny";
@@ -39311,7 +39311,7 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         check("Welle 6.G3.b: WEATHER_TRANSITION_DURATION_MS === 45000", wave6g3Results.weatherTransitionDuration);
         check("Welle 6.G3.b: WEATHER_TINTS frozen mit sunny/rainy", wave6g3Results.weatherTintsExists);
         check(
-            "Welle 6.G3.b: WEATHER_TINTS — sunny skyMul 1.0, rainy < 1.0 (dämpft Sky)",
+            "Welle 6.G3.b: WEATHER_TINTS = die Sonne der Wetter-Zeile (skyMul = sun, lightMul = WX_LICHT)",
             wave6g3Results.weatherTintsSunnyRainy
         );
         check(

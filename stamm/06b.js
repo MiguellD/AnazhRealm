@@ -830,14 +830,17 @@ class AnazhRealm_Z06b {
             Object.freeze({ t: 1.0, sky: 0x161830 }),
         ]);
     }
-    // Welle 6.G3 — Wetter-Tint, zusammen mit Tag-Nacht-Tint kombiniert
-    // (Multiply-Blend). Sunny lässt den Tagestint durch, rainy dämpft ihn.
+    // Welle 6.G3 — Wetter-Tint, zusammen mit Tag-Nacht-Tint kombiniert (Multiply-Blend). Er ist die SONNE der Wetter-Zeile
+    // (WEATHER_FIELD ← phyto-core WX_GESETZ): der Himmel trägt sie selbst (skyMul = sun), das Richtlicht dieselbe Rechnung wie
+    // das Labor (lightMul = WX_LICHT.sockel + WX_LICHT.sonne · sun). K2: hier stand die alte Sonnen-Spalte als zweite Tafel
+    // (skyMul 1,0/0,55/0,42) — der Sturm des Gesetzes (0,15) erreichte den Himmel nie.
     static get WEATHER_TINTS() {
-        return Object.freeze({
-            sunny: Object.freeze({ skyMul: 1.0, lightMul: 1.0 }),
-            rainy: Object.freeze({ skyMul: 0.55, lightMul: 0.7 }),
-            stormy: Object.freeze({ skyMul: 0.42, lightMul: 0.55 }),
-        });
+        const F = AnazhRealm.WEATHER_FIELD;
+        const L = globalThis.__phytoCore.WX_LICHT;
+        if (!L || ![L.sockel, L.sonne].every(Number.isFinite))
+            throw new Error("phyto-core fehlt: WX_LICHT (das Wetter-Licht der Welt)");
+        const zeile = (f) => Object.freeze({ skyMul: f.sun, lightMul: L.sockel + L.sonne * f.sun });
+        return Object.freeze({ sunny: zeile(F.sunny), rainy: zeile(F.rainy), stormy: zeile(F.stormy) });
     }
     // Wetter = INTENSITÄTS-ACHSE, kein Binär-Paar: jeder wetter-abhängige Skalar lerpt über sie
     // (`_weatherBlendedValue`); ein neues Wort = EIN Tabellen-Eintrag, alle Leser erben es. stormy
