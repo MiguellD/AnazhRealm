@@ -126,9 +126,14 @@ function tafelnMitziehen(root, alt, neu) {
 function beweise(root, T, teile) {
     const alt = stamm.ladeKlasse(root, { monolith: T });
     const neu = stamm.ladeKlasse(root, { teile });
-    const fa = stamm.fingerabdruck(alt.AnazhRealm).zeilen.map((z) => z.split("|"));
-    const fb = stamm.fingerabdruck(neu.AnazhRealm).zeilen.map((z) => z.split("|"));
-    const schl = (x) => x[0] + "|" + x[1];
+    // eine Zeile des Fingerabdrucks: Seite|Name|Art (zwei Felder: Wert-Art|Flaggen)|toString-sha|name/length|Datenwert-sha
+    const zerlege = (z) => {
+        const f = z.split("|");
+        return { s: f[0], k: f[1], art: f.slice(2, 4).join("|"), quelle: f[4], namelen: f[5], daten: f[6] };
+    };
+    const fa = stamm.fingerabdruck(alt.AnazhRealm).zeilen.map(zerlege);
+    const fb = stamm.fingerabdruck(neu.AnazhRealm).zeilen.map(zerlege);
+    const schl = (x) => x.s + "|" + x.k;
     const mb = new Map(fb.map((x) => [schl(x), x]));
     const ma = new Map(fa.map((x) => [schl(x), x]));
     const ab = { art: 0, quelle: 0, namelen: 0, daten: 0, nurAlt: 0, nurNeu: 0 };
@@ -136,18 +141,11 @@ function beweise(root, T, teile) {
     const liste = [];
     for (const x of fa) {
         const y = mb.get(schl(x));
-        liste.push([x[0], x[1], x[2], (x[3] || "") + (x[5] || ""), y ? (y[3] || "") + (y[5] || "") : "-"].join("|"));
-        if (!y) (ab.nurAlt++, namen.push(`nur alt: ${x[1]}`));
-        else
-            for (const [k, i] of [
-                ["art", 2],
-                ["quelle", 3],
-                ["namelen", 4],
-                ["daten", 5],
-            ])
-                if (x[i] !== y[i]) (ab[k]++, namen.push(`${k}: ${x[1]}`));
+        liste.push([x.s, x.k, x.art, x.quelle || x.daten || "", y ? y.quelle || y.daten || "" : "-"].join("|"));
+        if (!y) (ab.nurAlt++, namen.push(`nur alt: ${x.k}`));
+        else for (const k of ["art", "quelle", "namelen", "daten"]) if (x[k] !== y[k]) (ab[k]++, namen.push(`${k}: ${x.k}`));
     }
-    for (const y of fb) if (!ma.has(schl(y))) (ab.nurNeu++, namen.push(`nur neu: ${y[1]}`));
+    for (const y of fb) if (!ma.has(schl(y))) (ab.nurNeu++, namen.push(`nur neu: ${y.k}`));
     const ordnung = fa.filter((x, i) => !fb[i] || schl(x) !== schl(fb[i])).length;
     const summe = Object.values(ab).reduce((s, v) => s + v, 0);
     return { n: fa.length, ab, summe, namen, liste, ordnung, msAlt: alt.ms, msNeu: neu.ms, dateien: teile.length };
@@ -242,6 +240,9 @@ function selbsttest() {
         wurf = e.message;
     }
     pruef("injizierter Zwilling → ROT an der Naht", /Stamm-Zwilling: _bodenSichtAt/.test(wurf), wurf);
+    const mut = S.map((x, i) => (i === q ? { pfad: x.pfad, text: x.text.replace(m[1], m[1].replace("{\n", "{\n        void 0;\n")) } : x));
+    const bm = beweise(ROOT, T, mut);
+    pruef("--beweis: ein geänderter Rumpf ist ROT beim Namen", bm.summe === 1 && bm.namen[0] === "quelle: _bodenSichtAt", bm.namen.join(" · "));
     // 4) die Karte heilt benannt: ein Name ohne Karte folgt seinem Vorgänger, ein toter Name fällt
     const fx = [
         "class AnazhRealm {",
