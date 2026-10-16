@@ -84,6 +84,7 @@ function drawZensus(opts) {
         // des Playtests buchen unter denselben Namen.
         const klasse = (obj) => r._taeterKlasse(obj);
         const zaehl = {};
+        const ro = {}; // die Render-Objekte je Pass (CPU) — die Befehle (GPU) zählt `zaehl`
         const nah = {};
         const unbenannt = new Map();
         const cam = st.camera.position;
@@ -108,16 +109,16 @@ function drawZensus(opts) {
         const instanzKlasse = (key) => r.constructor._instanzKlasse(key);
         const roh = rend._renderObjectDirect;
         rend._renderObjectDirect = function (object, material, scene, camera, ...rest) {
-            const kl = klasse(object);
+            const kl0 = klasse(object);
             const pass = passOf(scene, camera);
-            const k = kl + "|" + pass;
+            const k0 = kl0 + "|" + pass;
             const g = object.geometry;
             const satz = satzOf.get(object);
             if (satz && g) {
                 const n0 = g.index ? g.index.count : g.attributes.position ? g.attributes.position.count : 0;
                 const dr0 = g.drawRange && Number.isFinite(g.drawRange.count) ? Math.min(g.drawRange.count, n0) : n0;
                 const je = window.__satzInhalt(satz, pass, dr0 / 3, instanzKlasse, slotEintrag);
-                const ziel = inhalt[k] || (inhalt[k] = new Map());
+                const ziel = inhalt[k0] || (inhalt[k0] = new Map());
                 for (const [ikl, v] of je) {
                     const e = ziel.get(ikl) || { zellen: 0, tris: 0, eintraege: new Set() };
                     e.zellen += v.zellen;
@@ -126,71 +127,77 @@ function drawZensus(opts) {
                     ziel.set(ikl, e);
                 }
             }
-            // je Draw EIN Befehl: seit V18.510 ist jedes Leaf eine InstancedMesh (der Batch-Zweig fiel mit dem Batch)
-            const cmd = 1;
-            // eine Senke zeichnet über ihren Zeichner (1410-1): Instanzen, Matrizen und Einträge trägt die Senke
-            const senke = object.isInstanzZeichner === true ? object.__instanzQuelle : object;
-            let tris = 0;
-            if (g) {
-                const n = g.index ? g.index.count : g.attributes.position ? g.attributes.position.count : 0;
-                const dr = g.drawRange && Number.isFinite(g.drawRange.count) ? Math.min(g.drawRange.count, n) : n;
-                tris = dr / 3;
-                if (senke.isInstancedMesh) tris *= senke.count;
-            }
-            const e = zaehl[k] || (zaehl[k] = { cmd: 0, obj: 0, tris: 0 });
-            e.obj++;
-            e.cmd += cmd;
-            e.tris += tris;
-            // Die Nähe der Klasse im Hauptbild: jede Instanz bzw. das Objekt.
-            if (pass === "haupt") {
-                // Die EXEMPLARE einer Klasse: die Bau-Einträge hinter ihren Instanzen (ein Tor zeichnet je Stoff einen Zug,
-                // `inst` zählt jede Instanz jedes Zugs, die Türflügel tragen eigene Orte — der Eintrag zählt das Tor einmal),
-                // ohne Eintrag die verschiedenen Orte (auf 0,5 m).
-                const w =
-                    nah[kl] || (nah[kl] = { inst: 0, dMin: Infinity, dMax: 0, orte: new Set(), eintraege: new Set() });
-                const mw = senke.matrixWorld.elements;
-                const miss = (x, y, z) => {
-                    const wx = mw[0] * x + mw[4] * y + mw[8] * z + mw[12];
-                    const wy = mw[1] * x + mw[5] * y + mw[9] * z + mw[13];
-                    const wz = mw[2] * x + mw[6] * y + mw[10] * z + mw[14];
-                    const d = Math.hypot(wx - cam.x, wy - cam.y, wz - cam.z);
-                    w.inst++;
-                    w.orte.add(Math.round(wx * 2) + "," + Math.round(wy * 2) + "," + Math.round(wz * 2));
-                    if (d < w.dMin) w.dMin = d;
-                    if (d > w.dMax) w.dMax = d;
-                };
-                if (senke.isInstancedMesh && senke.instanceMatrix) {
-                    const a = senke.instanceMatrix.array;
-                    const ein = slotEintrag.get(senke.userData && senke.userData.archInstanceKey);
-                    for (let i = 0; i < senke.count; i++) {
-                        const b = i * 16;
-                        miss(a[b + 12], a[b + 13], a[b + 14]);
-                        const id = ein ? ein.get(i) : undefined;
-                        if (id != null) w.eintraege.add(id);
-                    }
-                } else if (g && g.boundingSphere) {
-                    const c = g.boundingSphere.center;
-                    miss(c.x, c.y, c.z);
-                } else miss(0, 0, 0);
-            }
-            // Die Spur je unbenanntem Erzeuger (Material × Geometrie × Pass), höchstens 24.
-            const spur = kl.startsWith("UNBENANNT:")
-                ? k + "|" + ((material && (material.name || material.type)) || "") + "|" + (g ? g.name || g.type : "")
-                : null;
-            if (spur && !unbenannt.has(spur) && unbenannt.size < 24) {
-                const kette = [];
-                for (let p = object; p && p !== st.scene && kette.length < 6; p = p.parent)
-                    kette.push(p.type + (p.name ? "(" + p.name + ")" : ""));
-                unbenannt.set(spur, {
-                    klasse: kl,
-                    pass,
-                    kette: kette.join(" < "),
-                    material: (material && (material.name || material.type)) || null,
-                    geometrie: g ? g.name || g.type : null,
-                    vertices: g && g.attributes && g.attributes.position ? g.attributes.position.count : 0,
-                    instanzen: senke.isInstancedMesh ? senke.count : null,
-                    userData: Object.keys(object.userData || {}).slice(0, 8),
-                });
+            // je Draw EIN Befehl; eine Senke zeichnet über ihren Zeichner (1410-1) — Instanzen, Matrizen, Einträge trägt sie. DIE
+            // ARENA (G1): EIN Render-Objekt, je Glied ein indirekter Zug (`_stapel`: Aufträge des Passes, 5 uint je Zug).
+            ro[pass] = (ro[pass] || 0) + 1;
+            const arena = object.isGeometrieArena === true ? object._stapel[object._stapel.length - 1] : null;
+            for (let j = 0; j < (arena ? arena.zuege.length : 1); j++) {
+                const senke = arena ? arena.zuege[j] : object.__instanzQuelle || object;
+                const kl = arena ? klasse(senke) : kl0;
+                const k = kl + "|" + pass;
+                let tris = arena ? (arena.arr[j * 5] / 3) * arena.arr[j * 5 + 1] : 0;
+                if (g && !arena) {
+                    const n = g.index ? g.index.count : g.attributes.position ? g.attributes.position.count : 0;
+                    const dr = g.drawRange && Number.isFinite(g.drawRange.count) ? Math.min(g.drawRange.count, n) : n;
+                    tris = dr / 3;
+                    if (senke.isInstancedMesh) tris *= senke.count;
+                }
+                const e = zaehl[k] || (zaehl[k] = { cmd: 0, obj: 0, tris: 0 });
+                e.obj += arena ? 0 : 1;
+                e.cmd++;
+                e.tris += tris;
+                // Die Nähe der Klasse im Hauptbild: jede Instanz bzw. das Objekt.
+                if (pass === "haupt") {
+                    // Die EXEMPLARE einer Klasse: die Bau-Einträge hinter ihren Instanzen (ein Tor zeichnet je Stoff einen Zug,
+                    // `inst` zählt jede Instanz jedes Zugs, die Türflügel tragen eigene Orte — der Eintrag zählt das Tor einmal),
+                    // ohne Eintrag die verschiedenen Orte (auf 0,5 m).
+                    const w =
+                        nah[kl] ||
+                        (nah[kl] = { inst: 0, dMin: Infinity, dMax: 0, orte: new Set(), eintraege: new Set() });
+                    const mw = senke.matrixWorld.elements;
+                    const miss = (x, y, z) => {
+                        const wx = mw[0] * x + mw[4] * y + mw[8] * z + mw[12];
+                        const wy = mw[1] * x + mw[5] * y + mw[9] * z + mw[13];
+                        const wz = mw[2] * x + mw[6] * y + mw[10] * z + mw[14];
+                        const d = Math.hypot(wx - cam.x, wy - cam.y, wz - cam.z);
+                        w.inst++;
+                        w.orte.add(Math.round(wx * 2) + "," + Math.round(wy * 2) + "," + Math.round(wz * 2));
+                        if (d < w.dMin) w.dMin = d;
+                        if (d > w.dMax) w.dMax = d;
+                    };
+                    if (senke.isInstancedMesh && senke.instanceMatrix) {
+                        const a = senke.instanceMatrix.array;
+                        const ein = slotEintrag.get(senke.userData && senke.userData.archInstanceKey);
+                        for (let i = 0; i < senke.count; i++) {
+                            const b = i * 16;
+                            miss(a[b + 12], a[b + 13], a[b + 14]);
+                            const id = ein ? ein.get(i) : undefined;
+                            if (id != null) w.eintraege.add(id);
+                        }
+                    } else if (g && g.boundingSphere) {
+                        const c = g.boundingSphere.center;
+                        miss(c.x, c.y, c.z);
+                    } else miss(0, 0, 0);
+                }
+                // Die Spur je unbenanntem Erzeuger (Material × Geometrie × Pass), höchstens 24.
+                const stoff =
+                    ((material && (material.name || material.type)) || "") + "|" + (g ? g.name || g.type : "");
+                const spur = kl.startsWith("UNBENANNT:") ? k + "|" + stoff : null;
+                if (spur && !unbenannt.has(spur) && unbenannt.size < 24) {
+                    const kette = [];
+                    for (let p = object; p && p !== st.scene && kette.length < 6; p = p.parent)
+                        kette.push(p.type + (p.name ? "(" + p.name + ")" : ""));
+                    unbenannt.set(spur, {
+                        klasse: kl,
+                        pass,
+                        kette: kette.join(" < "),
+                        material: (material && (material.name || material.type)) || null,
+                        geometrie: g ? g.name || g.type : null,
+                        vertices: g && g.attributes && g.attributes.position ? g.attributes.position.count : 0,
+                        instanzen: senke.isInstancedMesh ? senke.count : null,
+                        userData: Object.keys(object.userData || {}).slice(0, 8),
+                    });
+                }
             }
             return roh.call(this, object, material, scene, camera, ...rest);
         };
@@ -253,6 +260,7 @@ function drawZensus(opts) {
                     .sort((x, y) => y.tris - x.tris);
             }
         }
+        for (const p in passe) passe[p].ro = ro[p] || 0;
         const gesamt = Object.values(passe).reduce((a, e) => ({ cmd: a.cmd + e.cmd, tris: a.tris + e.tris }), {
             cmd: 0,
             tris: 0,

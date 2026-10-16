@@ -1852,7 +1852,8 @@ class AnazhRealm_Z25c {
         const liste = art === "haupt" ? S.wahlHaupt : S.wahlSchatten;
         if (liste.length) this._instanzWahlZurueck(liste); // ein Pass ohne Nachher-Haken (Abbruch) hinterlässt nichts
         S.wahlNeu = 0;
-        if (set.size === 0) return;
+        // die Arenen der Bündel lesen die Wahl des Hauptbilds (G1, `_arenaTakt`): ihre Plätze ziehen, was sie eben legte
+        if (set.size === 0) return void (art === "haupt" && AnazhRealm._arenaTakt());
         const L = S.lage;
         for (const g of set) {
             if (g.wahl !== art) continue;
@@ -1886,10 +1887,11 @@ class AnazhRealm_Z25c {
             }
             AnazhRealm._instanzZahl(m, kk);
             liste.push(g);
-            if (art === "haupt" && !m.__arena && (tausch > 0 || g._wahlZahl !== kk)) this._archMeshBundleTouch(m); // die Arena liest die Wahl je Pass (G1)
+            if (art === "haupt" && !m.__arena && (tausch > 0 || g._wahlZahl !== kk)) this._archMeshBundleTouch(m); // die Arena liest die Wahl im Takt (G1)
             if (art === "haupt") g._wahlZahl = kk;
             this._instanzWahlMerke(g, L, kk);
         }
+        if (art === "haupt") AnazhRealm._arenaTakt();
     }
 
     // STEHT die Wahl einer Gruppe (Welle C)? Dieser Pass (`L.key`: haupt · k<i>) wählte sie zuletzt in derselben Lage

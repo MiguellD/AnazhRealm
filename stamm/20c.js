@@ -1483,12 +1483,31 @@ class AnazhRealm_Z20c {
                 if (o.isBundleGroup) o.needsUpdate = true;
             });
         }
+        // DIE ARENA IM BÜNDEL: eine Senke im Bündel zeichnet aus der Arena ihres Bündels — EIN Platz je Glied, aufgenommen
+        // einmal; Zahl, Wahl und Matrizen schreibt danach der Takt (`_arenaTakt`) in ihre Puffer, das Bündel nimmt dafür nie
+        // neu auf (bis G1 hieß jeder Wechsel der Wahl: das ganze Bündel neu aufnehmen, r184 backt die Instanz-Zahl in den Zug)
+        const wirt = m.parent && m.parent.isBundleGroup === true ? m.parent : w;
         const reg = AnazhRealm.__arenen || (AnazhRealm.__arenen = new Map());
-        const k = w.uuid + "|" + schl;
+        const k = wirt.uuid + "|" + schl;
         let a = reg.get(k);
-        if (!a) reg.set(k, (a = new (AnazhRealm._arenaKlasse())(k, schl, m, Math.max(64, m.instanceMatrix.count * 2))));
-        if (a.parent !== w) w.add(a);
+        if (!a) {
+            a = new (AnazhRealm._arenaKlasse())(k, schl, m, Math.max(64, m.instanceMatrix.count * 2));
+            a._imBuendel(wirt.isBundleGroup === true ? wirt : null);
+            reg.set(k, a);
+        }
+        if (a.parent !== wirt) wirt.add(a);
         a.nehmen(m);
+    }
+    // DER TAKT DER ARENEN IM BÜNDEL — je Frame nach der Wahl des Hauptbilds (`_instanzWahlPass`), vor jedem Zug: jede Arena
+    // eines Bündels gleicht ihre Glieder ab und schreibt Blöcke und Aufträge der aufgenommenen Plätze (ein Wurf ist ein Bruch).
+    static _arenaTakt() {
+        const reg = AnazhRealm.__arenen;
+        if (!reg || reg.size === 0 || AnazhRealm.__arenaBruch) return;
+        try {
+            for (const a of [...reg.values()]) if (a.__buendel) a._takt(); // ohne Arena (`__arenaOhne`) gibt sie alles zurück
+        } catch (e) {
+            AnazhRealm._arenaBruch(e);
+        }
     }
     static _arenaKann(renderer) {
         if (AnazhRealm.__arenaOhne || AnazhRealm.__arenaBruch) return false;
@@ -1630,6 +1649,9 @@ class AnazhRealm_Z20c {
                 // die Glieder mit Instanzen: ohne eines betritt die Arena keinen Pass (die Instanz-Zahl zaehlt mit)
                 this._lebend = 0;
                 this._zuege = new Map(); // Kamera → { ind, arr, offs, zuege, tri } — der Auftrags-Puffer je Pass
+                this._zuegeB = new Map(); // Kamera → der Auftrags-Puffer, den ein Bündel aufnahm (EIN Platz je Glied)
+                this.__buendel = null;
+                this._fest = false;
                 this._stapel = [];
                 this._rend = null;
                 this._neu = true;
@@ -1665,7 +1687,13 @@ class AnazhRealm_Z20c {
                         return void this._folgen();
                     }
                 }
-                this.glieder.push(m);
+                // die Glieder zeichnen nach ihrer Stufe (die nahe zuerst schreibt die Tiefe, `_buendelKinderReihe`)
+                const stufe = (o) =>
+                    o.userData && Number.isFinite(o.userData.buendelStufe) ? o.userData.buendelStufe : 0;
+                let i = this.glieder.length;
+                while (i > 0 && stufe(this.glieder[i - 1]) > stufe(m)) i--;
+                this.glieder.splice(i, 0, m);
+                this.userData.buendelStufe = stufe(this.glieder[0]);
                 m.__arena = this;
                 m.__arenaZ = {
                     mat: m.material,
@@ -1675,11 +1703,12 @@ class AnazhRealm_Z20c {
                 };
                 m.__arenaZ.mw[0] = NaN;
                 if ((m.count | 0) > 0) this._lebend++;
-                this.visible = this._lebend > 0;
+                this._sicht();
                 this._gestaltNehmen(m);
                 this._blockNehmen(m);
                 if (m.__zeichner.parent === m) m.remove(m.__zeichner); // die Senke zeichnet nicht mehr selbst
                 AnazhRealm._arenaBuendel(m);
+                this._neuAuf();
             }
             lassen(m, zurueck) {
                 const i = this.glieder.indexOf(m);
@@ -1688,14 +1717,47 @@ class AnazhRealm_Z20c {
                 this._gestaltLassen(m);
                 this._nTot += m.__arenaZ.cap;
                 if ((m.count | 0) > 0) this._lebend--;
-                this.visible = this._lebend > 0;
+                this._sicht();
                 m.__arena = null;
                 m.__arenaZ = null;
                 if (zurueck && m.__zeichner && m.__zeichner.parent !== m) {
                     m.add(m.__zeichner);
                     AnazhRealm._arenaBuendel(m);
                 }
+                this._neuAuf(); // die Plätze rücken: das Bündel nimmt neu auf
                 if (this.glieder.length === 0) this._fallen();
+            }
+            // Im Bündel (`__buendel`) nimmt es die Arena auf; zeichnet sie im Hauptbild (Ebene 0), bleibt sie sichtbar, solange
+            // sie Glieder trägt — ein leerer Platz zieht null Instanzen, ein Wechsel der Sicht nähme das Bündel neu auf. Sonst
+            // betritt sie nur einen Pass, in dem ein Glied Instanzen zählt (die Instanz-Zahl zählt mit, `_instanzZahl`).
+            _imBuendel(b) {
+                this.__buendel = b;
+                this._fest = !!b && (this.layers.mask & 1) !== 0;
+                // die Werfer-Wahl je Kaskade urteilt über die Glieder (ihre Sicht liest `_sichtbar`), nie über die Arena
+                if (b)
+                    this.userData._werferKind = new T.Box3(
+                        new T.Vector3(-1e7, -1e7, -1e7),
+                        new T.Vector3(1e7, 1e7, 1e7)
+                    );
+            }
+            _sicht() {
+                this.visible = this._fest ? this.glieder.length > 0 : this._lebend > 0;
+            }
+            // Das Bündel nimmt neu auf — sofort und im nächsten Takt: r184 merkt sich am Ende einer Aufnahme die Version des
+            // Bündels, ein Wechsel MITTEN in ihr (ein Glied geht in ihrem eigenen Zug) ginge sonst unter.
+            _neuAuf() {
+                if (!this.__buendel) return;
+                this.__buendel.needsUpdate = true;
+                this._auf = true;
+            }
+            // der Takt (`_arenaTakt`): die aufgenommenen Plätze lesen Zahl, Wahl und Matrizen von JETZT
+            _takt() {
+                if (this._auf) {
+                    this._auf = false;
+                    this.__buendel.needsUpdate = true;
+                }
+                if (!this._rend || !this._ordnen(this._rend)) return;
+                for (const z of this._zuegeB.values()) this._auftraege(z, null, this._rend);
             }
             _fallen() {
                 const reg = AnazhRealm.__arenen;
@@ -1704,7 +1766,9 @@ class AnazhRealm_Z20c {
                 this._abschied(this.geometry);
                 this._gpuWeg(this.__instanzQuelle.instanceMatrix);
                 for (const z of this._zuege.values()) this._gpuWeg(z.ind);
+                for (const z of this._zuegeB.values()) this._gpuWeg(z.ind);
                 this._zuege.clear();
+                this._zuegeB.clear();
                 // ihre Bindegruppen (Uniform-Puffer) fallen nach dem Submit des Frames, wie jeder Puffer der Arena
                 setTimeout(() => AnazhRealm._renderObjekteLoesen(this), 0);
             }
@@ -1811,6 +1875,7 @@ class AnazhRealm_Z20c {
                     this._i += b.ni;
                 }
                 this._neu = false;
+                this._neuAuf(); // neue Vertex-/Index-Puffer
                 for (const k in alt.attributes)
                     if (!alt.attributes[k].isInstancedBufferAttribute) this._gpuWeg(alt.attributes[k]);
                 if (alt.index) this._gpuWeg(alt.index);
@@ -1864,6 +1929,7 @@ class AnazhRealm_Z20c {
                     AnazhRealm.__arenaFolgen = (AnazhRealm.__arenaFolgen | 0) + 1;
                     const K = AnazhRealm._arenaKlasse();
                     const a = new K(this.__key, this.__schl, this.glieder[0], Math.max(n * 2, 64));
+                    a._imBuendel(this.__buendel);
                     a._rend = this._rend;
                     reg.set(this.__key, a);
                     this.parent.add(a);
@@ -1976,18 +2042,20 @@ class AnazhRealm_Z20c {
                     this._schreib(d, e * c.itemSize, n * c.itemSize);
                 }
             }
-            _zugFuer(camera) {
-                let z = this._zuege.get(camera);
+            // der Auftrags-Puffer je Kamera: lose je Pass (nur Glieder mit Instanzen im Blick), im Bündel EIN Platz je Glied
+            _zugFuer(camera, fest) {
+                const reg = fest ? this._zuegeB : this._zuege;
+                let z = reg.get(camera);
                 if (!z || z.arr.length < this.glieder.length * 5) {
                     if (z) this._gpuWeg(z.ind);
-                    else if (this._zuege.size >= 16) {
-                        const [k0, z0] = this._zuege.entries().next().value;
+                    else if (reg.size >= 16) {
+                        const [k0, z0] = reg.entries().next().value;
                         this._gpuWeg(z0.ind);
-                        this._zuege.delete(k0);
+                        reg.delete(k0);
                     }
                     const arr = new Uint32Array(Math.max(Math.ceil(this.glieder.length * 1.5), 8) * 5);
                     z = { ind: new IND(arr, 1), arr, offs: [], zuege: [], tri: 0 };
-                    this._zuege.set(camera, z);
+                    reg.set(camera, z);
                 }
                 return z;
             }
@@ -1997,11 +2065,11 @@ class AnazhRealm_Z20c {
                 const leer = { ind: null, offs: [], zuege: [], tri: 0 };
                 this._stapel.push(leer);
                 try {
-                    const zug = this._zugFuer(camera);
-                    zug.offs.length = 0;
-                    zug.zuege.length = 0;
-                    zug.tri = 0;
-                    this._ziehen(renderer, camera, zug);
+                    if (!this._ordnen(renderer)) return;
+                    // nimmt ein Bündel die Arena auf, zieht sie EINEN Platz je Glied (der Takt schreibt ihre Aufträge)
+                    const fest = this._fest && !!renderer._currentRenderBundle;
+                    const zug = this._zugFuer(camera, fest);
+                    this._auftraege(zug, fest ? null : camera, renderer);
                     this._stapel[this._stapel.length - 1] = zug;
                 } catch (e) {
                     AnazhRealm._arenaBruch(e);
@@ -2014,10 +2082,11 @@ class AnazhRealm_Z20c {
                     renderer.info.render.triangles += zug.tri - 1;
                 }
             }
-            _ziehen(renderer, camera, zug) {
+            // Glieder abgleichen, die Arena bauen — false: nichts zu zeichnen
+            _ordnen(renderer) {
                 if (!AnazhRealm._arenaKann(renderer)) {
                     for (const m of this.glieder.slice()) this.lassen(m, true);
-                    return;
+                    return false;
                 }
                 let fremd = null;
                 for (const m of this.glieder) {
@@ -2031,45 +2100,58 @@ class AnazhRealm_Z20c {
                         else this._folgen();
                     }
                 if (this._nTot > 256 && this._nTot > this._nEnde / 2) this._folgen(); // verdichten
-                if (this.glieder.length === 0) return;
+                if (this.glieder.length === 0) return false;
                 if (this._neu) this._bauen();
+                return true;
+            }
+            // Die Aufträge eines Zugs aus der EINEN Wahl der CPU (`count` der Senke; lose dazu Sicht und Frustum wie r184).
+            // `camera` null: die Plätze eines Bündels — jedes Glied auf seinem Platz, ohne Instanzen im Blick null Instanzen.
+            _auftraege(zug, camera, renderer) {
+                const fest = camera === null;
+                if (zug.arr.length < this.glieder.length * 5) return; // die Plätze wuchsen: das Bündel nimmt neu auf
+                zug.offs.length = 0;
+                zug.zuege.length = 0;
+                zug.tri = 0;
                 const args = zug.arr;
                 let k = 0,
                     frust = false,
                     lebend = 0;
                 for (const m of this.glieder) {
-                    const n = m.count | 0;
+                    let n = m.count | 0;
                     if (n > 0) lebend++;
-                    if (n <= 0 || !this._sichtbar(m, renderer)) continue;
-                    if (m.frustumCulled !== false) {
+                    if (n > 0 && !this._sichtbar(m, renderer)) n = 0;
+                    if (n > 0 && !fest && m.frustumCulled !== false) {
                         if (!frust) {
                             pm.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
                             fr.setFromProjectionMatrix(pm, camera.coordinateSystem, camera.reversedDepth);
                             frust = true;
                         }
                         if (m.boundingSphere === null) m.computeBoundingSphere();
-                        if (!fr.intersectsSphere(kugel.copy(m.boundingSphere).applyMatrix4(m.matrixWorld))) continue;
+                        if (!fr.intersectsSphere(kugel.copy(m.boundingSphere).applyMatrix4(m.matrixWorld))) n = 0;
                     }
                     const z = m.__arenaZ,
                         b = this._gestalten.get(z.gestalt),
                         dr = m.geometry.drawRange;
                     const s0 = Math.max(0, dr.start | 0);
                     const ni = Math.min(b.ni - s0, Number.isFinite(dr.count) ? dr.count : b.ni);
-                    if (ni <= 0) continue;
-                    this._block(m, z, Math.min(n, z.cap));
+                    if (ni <= 0) n = 0;
+                    if (n <= 0 && !fest) continue;
+                    n = Math.min(n, z.cap);
+                    if (n > 0) this._block(m, z, n);
                     const o = k * 5;
-                    args[o] = ni;
-                    args[o + 1] = Math.min(n, z.cap);
-                    args[o + 2] = b.fi + s0;
+                    args[o] = n > 0 ? ni : 0;
+                    args[o + 1] = n;
+                    args[o + 2] = n > 0 ? b.fi + s0 : b.fi;
                     args[o + 3] = b.bv;
                     args[o + 4] = z.erst;
                     zug.offs.push(o * 4);
                     zug.zuege.push(m);
-                    zug.tri += (ni / 3) * args[o + 1];
+                    zug.tri += (args[o] / 3) * n;
                     k++;
                 }
                 // gezählt am Stand dieses Passes (heilt jeden Schreiber an der Instanz-Zahl vorbei)
-                this.visible = (this._lebend = lebend) > 0;
+                this._lebend = lebend;
+                this._sicht();
                 if (k === 0) return;
                 // der Auftrags-Puffer dieser Kamera: beim ersten Zug legt r184 ihn mit dem Stand der CPU an, danach schreibt die Arena
                 if (!renderer._attributes.has(zug.ind)) renderer._attributes.update(zug.ind, 4);
@@ -2478,7 +2560,10 @@ class AnazhRealm_Z20c {
         mesh.visible = n > 0;
         // die Arena zählt ihre Glieder mit Instanzen: ohne eines betritt sie keinen Pass (kein leeres Render-Objekt)
         const a = mesh.__arena;
-        if (a && vor > 0 !== n > 0) a.visible = (a._lebend += n > 0 ? 1 : -1) > 0;
+        if (a && vor > 0 !== n > 0) {
+            a._lebend += n > 0 ? 1 : -1;
+            a._sicht();
+        }
         // der Zeichner zählt mit (1410-1): seine Fassade zeichnet so viele Instanzen, wie die Senke JETZT zählt — r184 liest die
         // Zahl zur Zeichen-Zeit, und der verschachtelte Schatten-Render stellt sie mitten im Hauptbild um und zurück, ohne neu
         // zu projizieren (die Zahl der Projektion war dann die der Kaskade: Instanzen fehlten oder standen doppelt im Bild)

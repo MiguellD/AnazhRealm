@@ -682,7 +682,7 @@ class AnazhRealm_Z17c {
         // SUBMIT-WAL — Facade-Attribut-Mutation (auch via _lodSlotOcclusionRefresh,
         // AUSSERHALB des Alloc-Pfads): das Region-Bundle re-recorden, sonst friert
         // der Wert im gecachten Replay ein.
-        this._archMeshBundleTouch(g.mesh);
+        if (!g.mesh.__arena) this._archMeshBundleTouch(g.mesh); // eine Arena liest Zahl und Puffer im Takt (G1)
     }
     // Occlusion-Wechsel OHNE LOD-Switch (fern-verdeckt ↔ fern-frei): die Verdeckung (Vorzeichen von aKarte.w)
     // der lebenden Slots nachziehen (das Studio schreibt vOcc pro Tick — der Host
@@ -918,7 +918,7 @@ class AnazhRealm_Z17c {
         AnazhRealm._instanzZahl(g.mesh, g.liveCount);
         // SUBMIT-WAL — der Aufrufer schreibt gleich Matrix/Farbe in diesen Slot
         // (synchron, vor dem nächsten Render): das Region-Bundle re-recorden.
-        this._archMeshBundleTouch(g.mesh);
+        if (!g.mesh.__arena) this._archMeshBundleTouch(g.mesh); // eine Arena liest Zahl und Puffer im Takt (G1)
         g._leerSeit = 0; // GNADENFRIST — ein Bewohner kehrt zurück: die Hülle lebt, kein Re-Mint
         return ref;
     }
@@ -944,7 +944,7 @@ class AnazhRealm_Z17c {
         g.liveCount = letzt;
         g.slotStand = (g.slotStand | 0) + 1; // der Slot-Stand (`_instanzSlotStand`)
         AnazhRealm._instanzZahl(g.mesh, letzt);
-        this._archMeshBundleTouch(g.mesh); // SUBMIT-WAL — count-/Matrix-Mutation → Region-Bundle re-recorden
+        if (!g.mesh.__arena) this._archMeshBundleTouch(g.mesh); // SUBMIT-WAL — count-/Matrix-Mutation → Bündel neu (eine Arena liest sie im Takt, G1)
         // V12.0-perf.e-fix — boundingSphere invalidieren: InstancedMesh.raycast
         // (Crosshair-Pick) sphere-cullt gegen die gecachte Bounding; ohne Reset
         // verfehlt der Raycast Instanzen, die nach dem letzten Cache dazukamen.
@@ -2257,7 +2257,7 @@ class AnazhRealm_Z17c {
             g.mesh.instanceMatrix.needsUpdate = true;
             // SUBMIT-WAL — Matrix-Mutation einer ggf. gebündelten Gruppe (Fahrzeug-
             // Mount-Follow): das Region-Bundle re-recorden (nur während gefahren wird).
-            this._archMeshBundleTouch(g.mesh);
+            if (!g.mesh.__arena) this._archMeshBundleTouch(g.mesh); // eine Arena liest Zahl und Puffer im Takt (G1)
             // boundingSphere invalidieren (Frustum-/Raycast-Cull, s. _archGroupFree; die V18.358-Lehre:
             // THREE cacht sie sonst stale).
             g.mesh.boundingSphere = null;
