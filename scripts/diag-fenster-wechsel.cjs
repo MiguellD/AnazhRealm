@@ -20,9 +20,9 @@
 //   K   kein Zwilling: der resize-Handler baut keinen Leser der Szenen-Tiefe neu (Quelle, kommentarfrei)
 //   ES  Selbsttest am echten Frame, der letzte Schritt: ohne den Wächter (`_diaetVorTextur` → false) MUSS ein Pixel-Ratio-
 //       Schritt „Destroyed texture …" an einem Größen-Ziel beim Namen zeigen (`GROESSEN_ZIELE`: Szenen-Tiefe oder seit D10 der
-//       Spiegel-Strahl). Er urteilt in Bau-Ereignissen: jeder Submit unter einem eigenen Fehler-Bereich, nach 2 Frames das Urteil,
-//       sobald der GPU-Prozess sie geprüft hat. Bis hier fing ein Bereich von r184 die Meldung (er hält einen je async Pipeline-Bau
-//       offen, auf swiftshader-Linux 42–292 s) und die Kappe 90 s riss mit 2 Frames ohne Meldung (CI 38825754441). K hält den Rest.
+//       Spiegel-Strahl). JEDER Schritt urteilt in Bau-Ereignissen: jeder Submit unter einem eigenen Fehler-Bereich, nach n Frames
+//       das Urteil, sobald der GPU-Prozess sie geprüft hat — ein Bereich von r184 (je async Pipeline-Bau offen, swiftshader-Linux
+//       42–292 s) fängt keine Meldung, die Schritte warten auf keinen Bau der ganzen Welt (CI 38825754441). K hält den Rest.
 //
 //   node scripts/diag-fenster-wechsel.cjs
 const { statikServer, starteBrowser, uferStellen } = require("./lib/welt-boot.cjs");
@@ -59,11 +59,11 @@ function fensterSammler() {
         const p = S.gpu[S.schritt] || (S.gpu[S.schritt] = {});
         p[k] = (p[k] || 0) + 1;
     };
-    // ES prüft jeden Submit unter einem EIGENEN Fehler-Bereich zuoberst: sein Pop antwortet, sobald der GPU-Prozess den
-    // Submit geprüft hat — kein offener Bereich des async Pipeline-Baus von r184 hält die Meldung zurück (s. Kopf)
+    // JEDER SCHRITT prüft jeden Submit unter einem EIGENEN Fehler-Bereich zuoberst: sein Pop antwortet, sobald der GPU-Prozess
+    // den Submit geprüft hat — kein offener Bereich des async Pipeline-Baus von r184 hält die Meldung zurück (s. Kopf)
     const submit = GPUQueue.prototype.submit;
     GPUQueue.prototype.submit = function (b) {
-        if (S.schritt !== "ES") return submit.call(this, b);
+        if (S.schritt === "boot") return submit.call(this, b);
         const id = ++S.n;
         S.offen.add(id);
         this.__geraet.pushErrorScope("validation");
@@ -97,12 +97,11 @@ async function fensterSchritt(o) {
     const S = window.__fensterEcht;
     const W0 = (r._gpuWache || { n: 0 }).n;
     const gemeldet = () => Object.keys(S.gpu[S.schritt] || {}).length > 0 || (r._gpuWache || { n: 0 }).n > W0;
-    if (o.bisMeldung) {
-        // 2 Frames (die Leine trägt 2 im Flug), dann bis zur ersten Meldung oder bis der GPU-Prozess ihre Submits geprüft hat
-        while (L() - f0 < o.n && !gemeldet()) await warte();
-        const offen = [...S.offen];
-        while (!gemeldet() && offen.some((e) => S.offen.has(e))) await warte();
-    } else while (L() - f0 < o.n && performance.now() - t0 < 120000) await warte();
+    // n Frames (die Leine trägt 2 im Flug), dann bis der GPU-Prozess die Submits des Schritts geprüft hat (der Selbsttest
+    // endet mit der ersten Meldung)
+    const halt = () => o.bisMeldung && gemeldet();
+    while (L() - f0 < o.n && !halt() && (o.bisMeldung || performance.now() - t0 < 120000)) await warte();
+    for (const offen = [...S.offen]; !halt() && offen.some((e) => S.offen.has(e)); ) await warte();
     const t = r._szeneTiefeKnoten && r._szeneTiefeKnoten.value;
     const W = r._gpuWache || { n: 0, meldungen: [] };
     return {

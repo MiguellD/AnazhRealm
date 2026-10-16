@@ -635,9 +635,10 @@ async function uferStellen(opts) {
     };
     const t1 = performance.now();
     const fern = () => !!(st.farWater && st.farWater.mesh && st.farWater.mesh.parent);
-    // und das Weltbild am Ufer steht (`_weltbildLuecken`: Boden, Horizont …) — die Szenen-Tiefe trägt die Welt, nie nur Himmel
+    // und die Szenen-Tiefe trägt Boden und Horizont (`_weltbildLuecken`), nie nur Himmel — Bäume und Streu liest kein Leser
+    const welt = (l) => l.term === "boden" || l.term === "horizont";
     const steht = () => sichtbaresWasser() > 0 && abbild() > 1 && fern() && E.gezeichnet.has(st.farWater.mesh);
-    while (performance.now() - t1 < 240000 && !(steht() && r._weltbildLuecken().length === 0)) {
+    while (performance.now() - t1 < 240000 && !(steht() && !r._weltbildLuecken().some(welt))) {
         if (!fern()) r._ensureFarWaterSheet();
         await warte(100);
     }
