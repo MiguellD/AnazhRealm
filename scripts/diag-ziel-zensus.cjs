@@ -7,7 +7,8 @@
 // gelesen von keinem Pass. Jede andere Textur der Post-Kette (Szene, Auflösung, Geschichte, drei Tiefen) hat ihren Leser
 // und lebt mit ihren Formgleichen zugleich. Die Wand hält das (scripts/lib/ziel-zensus.cjs):
 //   (a) ZENSUS — der echte Frame des Spiels (WebGPU auf swiftshader, Holz `kienspan`), n Frames der Bank-Runde: keine
-//       Täter-Klasse fällt (ohne Leser · teilbar · volle Auflösung · Tiefe · Format), jede Textur trägt einen Erzeuger.
+//       Täter-Klasse fällt (ohne Leser · teilbar · volle Auflösung · Tiefe · Format), jede Textur trägt einen Erzeuger. Am Bach
+//       der Mess-Wiese (`uferStellen`): ein Leser der Szenen-Tiefe zeichnet im Blick, sie MUSS im Fenster gelesen sein.
 //   (b) KARTE OHNE FARBE — eine Schatten-Bühne in der Welt (Richtungslicht, ein r184-Schatten-Knoten durch die Hülle
 //       `_kaskadenZiele`, wie jede Kaskade): der Schatten-Pass zeichnet ohne Farb-Anhang (die Farbe der Karte hat keine
 //       GPU-Textur), der Schatten fällt (unter der Kiste dunkler als daneben), keine GPU-Validierung meldet sich.
@@ -27,7 +28,8 @@
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 
-const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, uferStellen } = require("./lib/welt-boot.cjs");
+const { ladeSpec } = require("./lib/band-urteil.cjs");
 const ZZ = require("./lib/ziel-zensus.cjs");
 const stammLib = require("./lib/stamm.cjs");
 
@@ -68,6 +70,7 @@ function urteil(z) {
     const v = [];
     if (z.abbruch) v.push(`ABBRUCH: ${z.abbruch}`);
     for (const x of z.zensusRot || []) v.push("ZENSUS: " + x);
+    if (!z.tiefeGelesen) v.push("ZENSUS: die Szenen-Tiefe trug im Fenster keinen Leser im Blick — die Wand ist blind für sie");
     const k = z.karte || {};
     if (!k.gelaufen) v.push("KARTE: die Schatten-Bühne lief nicht (die Wand ist blind für die Karte ohne Farbe)");
     else {
@@ -112,6 +115,7 @@ function selbsttest() {
     const fehler = ZZ.selbsttest().map((s) => "Zensus-Urteil: " + s);
     const gruen = {
         zensusRot: [],
+        tiefeGelesen: true,
         karte: { gelaufen: true, huelle: true, farbeGpu: false, farbAnhaenge: 0, schattenPaesse: 3, dunkler: 60 },
         gpuFehler: [],
         seitenFehler: [],
@@ -136,6 +140,7 @@ function selbsttest() {
     };
     const faelle = [
         { name: "Täter im Zensus", z: mit((z) => (z.zensusRot = ["OHNE LESER: kaskade0:farbe"])), muss: /ZENSUS: OHNE LESER/ },
+        { name: "kein Leser der Tiefe im Blick", z: mit((z) => (z.tiefeGelesen = false)), muss: /keinen Leser im Blick/ },
         { name: "Farbe auf der GPU", z: mit((z) => (z.karte.farbeGpu = true)), muss: /trägt eine GPU-Textur/ },
         { name: "Farb-Anhang im Schatten-Pass", z: mit((z) => (z.karte.farbAnhaenge = 1)), muss: /mit 1 Farb-Anhängen/ },
         { name: "Schatten fällt nicht", z: mit((z) => (z.karte.dunkler = 1)), muss: /der Schatten fällt nicht/ },
@@ -367,6 +372,10 @@ function rundungProbe() {
         if (!bereit.ok) throw new Error("Renderer und Post-Kette standen nach 300 s nicht");
         if (!bereit.webgpu) throw new Error("kein WebGPU-Backend — der Zensus liest GPU-Befehle, die Wand wäre blind");
         log(`Renderer und Post-Kette bereit nach ${Math.round(bereit.ms / 1000)} s`);
+        // DER LESER IM BLICK: das Wasser am Bach der Mess-Wiese zeichnet — die Szenen-Tiefe steht mit ihrem Leser im Zensus
+        const ufer = await page.evaluate(uferStellen, { messort: ladeSpec("wiese").ort.spieler });
+        if (ufer.fehler) throw new Error(ufer.fehler);
+        log(`am Ufer ${JSON.stringify(ufer)}`);
         await page.evaluate(ZAEHLER_INSTALL);
         await page.evaluate(ZERLEGE_INSTALL);
         await page.evaluate(AUSGABE_INSTALL); // die Ruhe der Erst-Zeichnung (`__erstRuhe`), vor jedem Zensus
@@ -421,6 +430,8 @@ function rundungProbe() {
         // (a) der Zensus des echten Frames
         const { z, u } = await zensus();
         out.zensusRot = u.rot;
+        const tiefe = (z.ziele || []).find((x) => x.name === "szene:tiefenabbild");
+        out.tiefeGelesen = !!tiefe && tiefe.ereignisse.some((e) => e.art === "R");
         out.rest = u.zeilen.filter((x) => /zensus-selbsttest/.test(x.name)).map((x) => x.name);
         log(
             `Zensus: ${u.zeilen.length} Texturen, ${z.frames} Frames, ${u.rot.length} rot, ${u.hinweis.length} Hinweise; ` +

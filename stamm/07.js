@@ -1411,6 +1411,12 @@ class AnazhRealm_Z07 {
                 const N = rend._nodes,
                     P = rend._pipelines;
                 E.bau = null; // das Versprechen gehört dem Bau DIESES Aufrufs (`_erstAbsageWache`)
+                // wer auf seine Pipeline wartet, läuft durch keinen Knoten (`_renderObjectDirect`: wer nicht zeichnet …)
+                const imBau = P.get(ro).pipeline;
+                if (imBau !== undefined && !P.isReady(ro) && !E.abgesagt.has(imBau)) {
+                    welt._erstWartet(rend.backend, imBau, aufnahme !== null ? aufnahme.bundleGroup : null);
+                    return false;
+                }
                 const refresh = N.needsRefresh(ro);
                 if (refresh) {
                     N.updateBefore(ro);
@@ -1450,6 +1456,10 @@ class AnazhRealm_Z07 {
                 );
                 ro.drawRange = object.geometry.drawRange;
                 ro.group = group;
+                // WER NICHT ZEICHNET, ARBEITET NICHT (Gebot 7): ein Objekt ohne Instanz baut, frischt und zieht nichts, eines,
+                // dessen Pipeline noch im Bau steht, läuft durch keinen Knoten (`zeichne`) — kein Zug der Szenen-Tiefe, kein
+                // Schatten, keine Kopie ohne Draw (der leere Welt-March zog das Tiefen-Abbild je Frame: ziel-zensus OHNE LESER)
+                if (ro.getDrawParameters() === null) return;
                 const aufnahme = this._currentRenderBundle;
                 if (aufnahme !== null) ro.bundle = aufnahme.bundleGroup;
                 if (scene !== welt.state.scene) {

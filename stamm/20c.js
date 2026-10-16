@@ -1533,6 +1533,38 @@ class AnazhRealm_Z20c {
                 }
         }
     }
+    // DER ABSCHIED EINER GEBUNDENEN TEXTUR (die Klasse „Destroyed texture … used in a submit": szene:tiefenabbild, spiegel:strahl,
+    // horizont-karte): r184 legt ein Ziel, das eine Bindegruppe schon hält, beim ersten Bild oder einem Größen-Wechsel neu an
+    // (`updateRenderTarget` → `updateTexture` → `destroyTexture`) — mitten im Frame, während ein offener Befehls-Puffer oder ein
+    // aufgenommenes Bündel die alte Textur bindet; der ganze Befehls-Puffer fiel aus. Die EINE Regel für jede solche Textur, an
+    // der KLASSE der Textur-Verwaltung (jeder Renderer der Seite): die alte GPU-Textur fällt erst nach den Submits dieser Aufgabe,
+    // und jedes Bündel der Welt nimmt neu auf (seine Aufnahme hält die alte Bindegruppe); die losen Leser frischt der Wächter der
+    // Diät auf (`_diaetVorTextur`). Die Wand: gate:fenster-wechsel (jeder Größen-Schritt, jede Meldung beim Namen).
+    _texturAbschied(renderer) {
+        const inst = renderer && renderer._textures;
+        const P = inst && Object.getPrototypeOf(inst);
+        if (!P || P.__anazhAbschied || typeof P.updateTexture !== "function") return;
+        P.__anazhAbschied = true;
+        const welt = this;
+        const roh = P.updateTexture;
+        P.updateTexture = function (t, o) {
+            const d = this.get(t);
+            const ziel = t.isRenderTargetTexture || t.isDepthTexture || t.isFramebufferTexture;
+            const neu =
+                ziel && d.initialized === true && d.version !== t.version && d.bindGroups && d.bindGroups.size > 0;
+            const g = neu ? this.backend.get(t) : null;
+            const alt = g ? [g.texture, g.msaaTexture].filter(Boolean) : [];
+            for (const x of alt) {
+                const weg = Object.getPrototypeOf(x).destroy;
+                x.destroy = () => Promise.resolve().then(() => weg.call(x));
+            }
+            const aus = roh.call(this, t, o);
+            const B = welt.state._regionBundles;
+            if (alt.length && B && this.backend.get(t).texture !== alt[0])
+                for (const bg of B.values()) bg.needsUpdate = true;
+            return aus;
+        };
+    }
     // DAS RENDER-OBJEKT-REGISTER: r184 baut je (Objekt × Stoff × Pass-Kontext) ein Render-Objekt mit eigenen Uniform-Puffern
     // (`bindingBuffer…_object` · `_render`) und hängt es an das `dispose`-Ereignis seines STOFFS und seiner GEOMETRIE — ein
     // geteilter Stoff hielt so jedes Render-Objekt jeder je gezeichneten Senke für immer, der Collector nahm keins (Mess-Wiese
