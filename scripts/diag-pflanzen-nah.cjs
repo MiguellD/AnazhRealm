@@ -36,8 +36,6 @@
 //      die Normale; sonst kehrt r184 sie auf jeder Rückseite (front ? n : −n). Dazu das EINE Gesetz: der Grammatik-Baum der
 //      Werkstatt legt dieselbe Normale (`_kronenNormalenAuf` → kronenNormalen), keine zweite Kronen-Normale im Stamm.
 //      Vorher (bbaaff31): die Hälfte der nahen Dreiecke nach innen, der Wirt mit seiner Kuppel vom Kronen-Boden.
-//      Seit T2 (16.10.) lichtet die Laubkrone je Ast-Partie (phyto-core kronenPartien): die Linse wächst dasselbe Skelett
-//      und misst je Partie gegen deren Mitte (partienDerKrone). Vorher (die eine Krone, 210fe8a7) an den Partien ROT.
 //  (W) WEIDE — jede Karte der Trauer-Krone (L0 und L1) liest die Weiden-Zelle (BLATT_ATLAS_WEIDE: lanzettliche Blätter an
 //      der hängenden Rute). Vorher die Großblatt-Zelle: runde Hasel-Blätter an der Weide (Prüfer W5, Bild weide-8m).
 //  (Z) KORN — das Kanten-Flimmern der Laub-Karte in der Mittelsicht (K20): die Zelle als Karte auf dem Schirm, trilinear,
@@ -429,99 +427,49 @@ function teppichUrteil(fall, T, lod, step, skala) {
 }
 // (V) DIE NORMALE DER KRONE — gelichtet, wie die Leser lesen (flipFrei), aus 8 Peilungen (Höhe 0,25) über der nahen Hälfte.
 const KRONE_WEG_MAX = 0.05;
-// Die Laubkrone lichtet je Ast-Partie (T2, phyto-core kronenPartien): `partien` (aus partienDerKrone) ordnet jeder Ecke der
-// Laub-Teile ihre Partie zu — die Mitte jeder Peilung ist dann die Mitte IHRER Partie (die Kasten-Mitte über alle Laub-Teile,
-// wie kronenNormalen sie rechnet), sonst die eine Kronenmitte des Teils. Vorher (die eine Krone, 210fe8a7) lichteten an den
-// Partien der Eiche 30 % der nahen Dreiecke nach innen.
-function partienMitten(T, partien) {
-    const box = new Map();
-    T.forEach((t, ti) => {
-        const pa = partien.get(ti);
-        if (!pa) return;
-        for (let i = 0; i < pa.length; i++) {
-            if (pa[i] < 0) continue;
-            let b = box.get(pa[i]);
-            if (!b) box.set(pa[i], (b = [Infinity, Infinity, Infinity, -Infinity, -Infinity, -Infinity]));
-            for (let a = 0; a < 3; a++) {
-                b[a] = Math.min(b[a], t.pos[i * 3 + a]);
-                b[a + 3] = Math.max(b[a + 3], t.pos[i * 3 + a]);
-            }
-        }
-    });
-    const mitte = new Map();
-    for (const [k, b] of box) mitte.set(k, [(b[0] + b[3]) / 2, (b[1] + b[4]) / 2, (b[2] + b[5]) / 2]);
-    return mitte;
-}
-// Die Partien eines Falls: die Laubkrone (Baum, keine Konifere, kein Trauer-Vorhang — foundry-core `_trauer`, je Individuum)
-// lichtet je Ast-Partie. Die Linse wächst dasselbe Skelett im Kern (treeParams + growSkeleton aus demselben Samen wie
-// skelettDerGestalt, das Blatt-Budget der Baum-Rezepte 0/1) und ordnet jede Ecke über ihren Anker (aCenter, die Blattstelle)
-// dem Blatt und dessen Partie zu (−1: kein Blatt im Umkreis 1e-3). null: die Krone lichtet als EINE.
-const BLATT_BUDGET_BAUM = 20000;
+// Seit T2 lichtet die Laubkrone je Ast-Partie (phyto-core kronenPartien): die Linse wächst dasselbe Skelett, ordnet jede Ecke über
+// ihren Anker (aCenter, ±1e-3) Blatt und Partie zu und peilt gegen die Kasten-Mitte IHRER Partie (vorher, 210fe8a7: ROT).
 function partienDerKrone(f, pre, sk) {
-    if (!pre || pre.kind !== "tree") return null;
-    const P = PC.treeParams(pre.s, f.seed, f.lod, pre, sk);
-    if (f.ov) Object.assign(P, f.ov);
-    if (P.conifer || (P.trop || 0) >= 0.55) return null;
-    const n = PC.growSkeleton(Object.assign({}, P, { leafBudget: BLATT_BUDGET_BAUM }), PC.mulberry32(Math.floor(f.seed) >>> 0));
-    const partie = PC.kronenPartien(n.runMeta);
-    const h = 0.05,
-        netz = new Map(),
-        zk = (x, y, z) => `${Math.floor(x / h)},${Math.floor(y / h)},${Math.floor(z / h)}`;
-    for (const l of n.leaves) {
-        const k = zk(l.pos[0], l.pos[1], l.pos[2]);
-        if (!netz.has(k)) netz.set(k, []);
-        netz.get(k).push(l);
-    }
-    const suche = (x, y, z) => {
-        let best = -1,
-            d2 = 1e-6;
-        const ix = Math.floor(x / h),
-            iy = Math.floor(y / h),
-            iz = Math.floor(z / h);
-        for (let a = -1; a <= 1; a++)
-            for (let b = -1; b <= 1; b++)
-                for (let c = -1; c <= 1; c++)
-                    for (const l of netz.get(`${ix + a},${iy + b},${iz + c}`) || []) {
-                        const q = (l.pos[0] - x) ** 2 + (l.pos[1] - y) ** 2 + (l.pos[2] - z) ** 2;
-                        if (q < d2) (d2 = q), (best = partie(l.run));
-                    }
+    const P = pre && pre.kind === "tree" ? Object.assign(PC.treeParams(pre.s, f.seed, f.lod, pre, sk), f.ov) : null;
+    if (!P || P.conifer || (P.trop || 0) >= 0.55) return null;
+    const n = PC.growSkeleton(Object.assign({}, P, { leafBudget: 20000 }), PC.mulberry32(Math.floor(f.seed) >>> 0));
+    const partie = PC.kronenPartien(n.runMeta), L = n.leaves.slice().sort((a, b) => a.pos[0] - b.pos[0]); // prettier-ignore
+    const suche = (c, i) => {
+        let lo = 0, hi = L.length, best = -1, d2 = 1e-6; // prettier-ignore
+        while (lo < hi) L[(lo + hi) >> 1].pos[0] < c[i] - 1e-3 ? (lo = ((lo + hi) >> 1) + 1) : (hi = (lo + hi) >> 1);
+        for (let j = lo; j < L.length && L[j].pos[0] <= c[i] + 1e-3; j++) {
+            const q = (L[j].pos[0] - c[i]) ** 2 + (L[j].pos[1] - c[i + 1]) ** 2 + (L[j].pos[2] - c[i + 2]) ** 2;
+            if (q < d2) (d2 = q), (best = partie(L[j].run));
+        }
         return best;
     };
-    const out = new Map();
+    const out = new Map(), box = new Map(); // prettier-ignore
     f.T.forEach((t, ti) => {
         if ((t.kind !== "foliage" && t.kind !== "foliageTex") || !t.cen) return;
-        const pa = new Int32Array(t.cen.length / 3);
-        let lx = NaN,
-            ly = NaN,
-            lz = NaN,
-            lp = -1;
+        const pa = new Int32Array(t.cen.length / 3), C = t.cen; // prettier-ignore
         for (let i = 0; i < pa.length; i++) {
-            const x = t.cen[i * 3],
-                y = t.cen[i * 3 + 1],
-                z = t.cen[i * 3 + 2];
-            if (x !== lx || y !== ly || z !== lz) (lx = x), (ly = y), (lz = z), (lp = suche(x, y, z));
-            pa[i] = lp;
+            const k = 3 * i;
+            pa[i] = i && C[k] === C[k - 3] && C[k + 1] === C[k - 2] && C[k + 2] === C[k - 1] ? pa[i - 1] : suche(C, k);
+            const b = box.get(pa[i]) || box.set(pa[i], [Infinity, Infinity, Infinity, -Infinity, -Infinity, -Infinity]).get(pa[i]);
+            for (let a = 0; a < 3; a++) (b[a] = Math.min(b[a], t.pos[k + a])), (b[a + 3] = Math.max(b[a + 3], t.pos[k + a]));
         }
         out.set(ti, pa);
     });
+    out.mitten = new Map([...box].map(([p, b]) => [p, [0, 1, 2].map((a) => (b[a] + b[a + 3]) / 2)]));
     return out;
 }
 function kroneUrteil(fall, T, flipFrei, partien) {
     const v = [],
         m = {};
-    const mitten = partien ? partienMitten(T, partien) : null;
     for (const [ti, t] of T.entries()) {
         if ((t.kind !== "foliage" && t.kind !== "foliageTex") || !t.nor || !t.idx) continue;
         const P = t.pos,
             N = t.nor,
             I = t.idx;
-        const pa = partien ? partien.get(ti) : null;
-        if (partien && !pa) {
-            v.push(`${fall} ${t.kind}: die Laub-Teile tragen keinen Anker (aCenter) — keine Partie`);
-            continue;
-        }
-        const ohne = pa ? pa.filter((x) => x < 0).length : 0;
-        if (ohne) v.push(`${fall} ${t.kind}: ${ohne} Ecken ohne Partie (Anker ohne Blatt des Skeletts)`);
+        const pa = partien ? partien.get(ti) : null,
+            mitten = pa && partien.mitten;
+        const ohne = !partien ? 0 : pa ? pa.filter((x) => x < 0).length : P.length / 3;
+        if (ohne) v.push(`${fall} ${t.kind}: ${ohne} Ecken ohne Partie (ohne Anker aCenter oder Blatt des Skeletts)`);
         const mn = [Infinity, Infinity, Infinity],
             mx = [-Infinity, -Infinity, -Infinity];
         for (let i = 0; i < P.length; i += 3)
@@ -559,12 +507,8 @@ function kroneUrteil(fall, T, flipFrei, partien) {
         m["weg:" + t.kind] = anteil;
         if (anteil > KRONE_WEG_MAX)
             v.push(
-                `${fall} ${t.kind}: ${(100 * anteil).toFixed(1)} % der nahen Dreiecke lichten nach innen${pa ? " (je Partie)" : ""} (> ${100 * KRONE_WEG_MAX} %) — ` +
-                    (!flipFrei
-                        ? "der Leser kehrt die Normale der Krone auf der Rückseite"
-                        : pa
-                          ? "die Krone lichtet nicht je Ast-Partie (kronenPartien)"
-                          : "die Krone trägt keine Normale der Krone")
+                `${fall} ${t.kind}: ${(100 * anteil).toFixed(1)} % der nahen Dreiecke lichten nach innen (> ${100 * KRONE_WEG_MAX} %) — ` +
+                    (!flipFrei ? "der Leser kehrt die Normale der Krone auf der Rückseite" : pa ? "die Krone lichtet nicht je Ast-Partie" : "die Krone trägt keine Normale der Krone") // prettier-ignore
             );
     }
     return { v, m };
@@ -1499,9 +1443,7 @@ function windDatenUrteil(quellen) {
     } else st.push(["Tanne gebaut", false]);
     // (V) die Laubkrone als EINE gelichtet (K68, vor T2): dieselben Karten der Eiche, ihre Normalen neu aus dem einen Ellipsoid
     if (eiche) {
-        const eine = eiche.T.map((t) =>
-            (t.kind === "foliage" || t.kind === "foliageTex") && t.nor ? Object.assign({}, t, { nor: Float32Array.from(t.nor) }) : t
-        );
+        const eine = eiche.T.map((t) => ((t.kind === "foliage" || t.kind === "foliageTex") && t.nor ? Object.assign({}, t, { nor: Float32Array.from(t.nor) }) : t)); // prettier-ignore
         PC.kronenNormalen(eine.filter((t) => t.kind === "foliage" || t.kind === "foliageTex").map((t) => ({ pos: Float32Array.from(t.pos), nor: t.nor })));
         const pa = partienDerKrone(eiche, buch.eiche, skala("eiche"));
         st.push(["Laubkrone als EINE gelichtet", !!pa && kroneUrteil("eine", eine, true, pa).v.length > 0]);
