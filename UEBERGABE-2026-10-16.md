@@ -114,3 +114,10 @@ gehend CPU-Takt p95 −0,85/−1,05). Gruppe 14 kippte an der reinen Versions-St
 cee33f91 + champion-Werkzeuge 1d92c02b + V18.546.3 (lokal, Push gebündelt). Anatomie (bericht/1610-anatomie.md): Abnahme 58,7 % der
 Kartenzeit → karte.js CI zuerst; champion 9 Werkzeuge; KI1 (Prompt nennt 40 von ~70 Ops). A2 Wiesen-Farbe GRÜN gebaut (11,06 ≥ 10,7),
 A5 Albedo = Mess-Stelle, A6 haus doppelte Tönung im Fachwerk-Labor (Karte läuft).
+
+**18:19 (date):** integ-probe = aba1da28 (d9d1db4e V18.546.4 + FZ Wand-Zeit + W2 Boden-Sampler). main-Kandidat d9d1db4e wartet auf OMEN
+Bündel 3 (Wiese 2+2 läuft auf 4+4, gpu-bank +0,24 bei 2σ 0,22). W2: Texturen je Stoff 17 → 14, aber am echten GL (Radeon/GTX) linkt
+der Rückfall weiter nicht (> 16 Sampler-Einheiten im Programm) → W3 gl-einheiten. S5 = Linse (W7-Verdichtung) → Karte S5. Neu benannt:
+Playtest-Wackler „Welle 6.G P1.5 Worldgen-Bäume n=0“ (zählt vor dem Wachsen, unter Last; Lauf 2 n=53) → D3b/Linsen-Karte; A5-Gelb: Labor
+backt Kronenlicht in den Boden (phytogenesis.js:1806, Lehre 21), Albedo-Zeile fell wackelt; FZ: Weltbild auf swiftshader seit 14f7eafe
+75–185 s statt 47–78 s (B-Verdacht, OMEN misst). Karten laufen: G1 G2 K2 D2 SO A1 A3 A4(gebaut, kopf 1 GRÜN) A6 KI2 S5 W3.
