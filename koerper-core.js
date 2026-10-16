@@ -780,8 +780,9 @@
     //     und Höhlen im Ofen (12×8: ein Auge von 24 mm trägt keine 520 Dreiecke).
     //   A4 (KOPF_SOLL augeFrei im BILD): auge.lid = [oben, unten], die Lid-Ränder an den Limbus (Augen-Raum, Augapfel 0,12) —
     //     das Oberlid (Mitte 0,07, Halbachse 0,049) schnitt die Iris (0,07) bei 0,048, das Unterlid bei −0,055: drei von
-    //     neun Iris-Ringen oben, zwei unten lagen hinter den Lid-Wülsten (das Bild 0,48 frei); +0,03 / −0,02 legt die
-    //     Ränder auf 0,071 / −0,07, die Iris liegt frei in der Lidspalte, das Lid deckt den Augapfel darüber und darunter.
+    //     neun Iris-Ringen oben, zwei unten lagen hinter den Lid-Wülsten (das Bild 0,48 frei); +0,035 / −0,025 legt die
+    //     Ränder auf 0,075 / −0,075 (die Iris samt ihrem Blick-Zittern ±0,002 frei in der Lidspalte, Bild 0,98), das Lid
+    //     deckt den Augapfel darüber und darunter.
     // prettier-ignore
     var MENSCH_GESTALT = Object.freeze({
         hand: Object.freeze({ mass: 0.67, breite: 0.8 }),
@@ -789,7 +790,7 @@
         handgelenk: Object.freeze({ breite: 0.72, tiefe: 0.52 }),
         fuss: Object.freeze({ laenge: 0.9 }),
         kopf: Object.freeze({ mass: 0.75, breite: 0.86 }),
-        auge: Object.freeze({ mass: 0.5, abstand: 0.8, pupille: 0.55, hoehle: 1.15, zurueck: 0.04, lid: Object.freeze([0.03, 0.02]) }),
+        auge: Object.freeze({ mass: 0.5, abstand: 0.8, pupille: 0.55, hoehle: 1.15, zurueck: 0.04, lid: Object.freeze([0.035, 0.025]) }),
         schaedel: Object.freeze({ hoch: 0.08 }),
         ohr: Object.freeze({ mass: 0.755, tiefer: 0.082 }),
         augeRaster: Object.freeze({ w: 12, h: 8 }),
@@ -839,8 +840,9 @@
 
     // DIE TÖNE DES GESICHTS (K57, KOPF_SOLL lippe/hoehle): Lippe und Augenhöhle sind die HAUT, in CIELAB verschoben
     // (ΔL*, Δa*, Δb*) — vorher zwei feste Klassen-Farben (0xaa5544 der rote Mund, 0x5a3320 der braune Ring um das Auge),
-    // gleich für jeden Hautton. Der Ofen liest kopfToene(Haut-Hex) → { lips, socket } (Hex, sRGB).
-    var KOPF_TON = Object.freeze({ lippe: Object.freeze([-9, 9, 2]), hoehle: Object.freeze([-6, 2, 1]) });
+    // gleich für jeden Hautton. Der Ofen liest kopfToene(Haut-Hex) → { lips, socket } (Hex, sRGB). A4: die Lippe −11/+10 (vorher
+    // −9/+9 — im Bild der dunkelsten Haut im Schatten kam ΔL* −4,4 an, am Rand des Bands; −11 trägt −4,8).
+    var KOPF_TON = Object.freeze({ lippe: Object.freeze([-11, 10, 2]), hoehle: Object.freeze([-6, 2, 1]) });
     function _hexLab(hx) {
         var c = [(hx >> 16) & 255, (hx >> 8) & 255, hx & 255].map(function (v) {
             v /= 255;
