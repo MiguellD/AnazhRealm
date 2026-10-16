@@ -2168,8 +2168,8 @@ class AnazhRealm_Z07 {
 
     restoreAbility(name) {
         // Migration für alte Saves (vor Phase 4): die drei historischen
-        // Nexus-Namen mappen auf ihre DSL-Äquivalente — siehe
-        // docs/nexus-dsl.md §14. Unbekannte Namen werden geloggt.
+        // Nexus-Namen mappen auf ihre DSL-Äquivalente (die Tafel
+        // hier). Unbekannte Namen werden geloggt.
         const legacyToDsl = {
             gravityShift: ["gravity", -9.81],
             creatureDance: ["repeat", 10, ["spawn_creature", ["near_player", 5], 1, "happy"]],
