@@ -2310,14 +2310,12 @@ class AnazhRealm_Z25c {
         if (this.state.lodUniforms) {
             const _lu = this.state.lodUniforms;
             if (_lu.uDitherT && this.state.traaNode) _lu.uDitherT.value = (_lu.uDitherT.value + 0.61803398875) % 1;
-            // die Kante des Laubs (K68, A3, `_laubSchwelle` · `_blattAtlasProbe`): unter der zeitlichen Auflösung dreht ihre
-            // EINE Schwelle um 1/g (die Plastik-Zahl, gleichverteilt neben der Goldenen Drehung der Blende) und die Deckung liest
-            // die Oktave des Ausgabe-Rasters (log2(2 · Skala): ein Texel trägt zwei Ausgabe-Pixel); ohne sie Schwelle 0,5, Oktave 0
+            // die Kante des Laubs (K68, A3, `_laubSchwelle`): unter der zeitlichen Auflösung dreht der Hash jeder Zelle um 1/g
+            // (die Plastik-Zahl, gleichverteilt neben der Goldenen Drehung der Blende), ohne sie steht die Schwelle bei 0,5
             if (_lu.uLaubKante) {
                 const _k = _lu.uLaubKante.value;
                 _k.y = this.state.traaNode ? 1 : 0;
                 if (_k.y) _k.x = (_k.x + 0.75487766625) % 1;
-                _k.z = _k.y ? Math.log2(2 * this._szeneSkalaWirk()) : 0;
             }
             if (_lu.uLodRef)
                 _lu.uLodRef.value =

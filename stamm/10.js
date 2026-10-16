@@ -527,13 +527,7 @@ class AnazhRealm_Z10 {
                                     // Oberkante der Ansicht v. Die Klemme hält den Filter in SEINER Ansicht: einen halben Texel der
                                     // gröberen gemischten Stufe Abstand (≈ 1 fwidth der Ansichts-Höhe), vergrößert mindestens einen
                                     // halben Texel der Stufe 0 (ein fwidth ist dort kleiner als der bilineare Fußabdruck).
-                                    // DIE OKTAVE DES RASTERS (A3, `_laubOktave` wie `_blattAtlasProbe`): die Karte liest ihre Stufe
-                                    // log2(2 · Skala) gröber — ein Texel trägt zwei Ausgabe-Pixel; Klemme, Mip-Wahl und das Gewicht
-                                    // der kubischen Lesung wachsen mit (ohne zeitliche Auflösung Faktor 1)
-                                    const _okt = _Ta.exp2(this._laubOktave());
-                                    const _halb = _Ta
-                                        .max(_Ta.fwidth(_uv.y).mul(_okt), _Ta.float(0.5 / _at.ch))
-                                        .clamp(0.0, 0.25);
+                                    const _halb = _Ta.max(_Ta.fwidth(_uv.y), _Ta.float(0.5 / _at.ch)).clamp(0.0, 0.25);
                                     const _vIn = _uv.y.clamp(_halb, _Ta.float(1.0).sub(_halb));
                                     const _uvA = _Ta.vec2(_uv.x, _vIn.add(_v0).div(_V));
                                     const _uvB = _Ta.vec2(_uv.x, _vIn.add(_v1).div(_V));
@@ -545,8 +539,8 @@ class AnazhRealm_Z10 {
                                     // jede Peilung auf einer Ansicht). Die Gradienten kommen aus der STETIGEN Koordinate (die
                                     // Ansichts-Höhe ohne Sprung) — alle vier Stichproben, Albedo und Normale (gate:foundry-impostor D).
                                     const _uvStetig = _Ta.vec2(_uv.x, _uv.y.div(_V));
-                                    const _gX = _uvStetig.dFdx().mul(_okt);
-                                    const _gY = _uvStetig.dFdy().mul(_okt);
+                                    const _gX = _uvStetig.dFdx();
+                                    const _gY = _uvStetig.dFdy();
                                     const _probeA = (tex, uv) => tex.sample(uv).depth(_schicht).grad(_gX, _gY);
                                     // DIE VERGRÖSSERTE KARTE (K20, 12.10.): steht ein Texel der Stufe 0 auf mehr als einem Pixel, liest
                                     // die Karte ihre Zelle KUBISCH (B-Spline, vier bilineare Abgriffe in der eigenen Ansicht) statt
@@ -614,8 +608,8 @@ class AnazhRealm_Z10 {
                                         _liesA(_at.mapNode, _uvB, _v1),
                                         _fb
                                     );
-                                    // die Kante des Laubs (A3, `_laubKante`): zwei Pixel um die Codec-Schwelle, geschnitten an der
-                                    // Schwelle des Frames (`_laubSchwelle`) wie jede Karte der Klasse — der binäre Test stand als Raster
+                                    // die Kante des Laubs (A3, `_laubKante`): ein Pixel um die Codec-Schwelle, geschnitten an der
+                                    // Schwelle je Zelle (`_laubSchwelle`) wie jede Karte der Klasse — der binäre Test stand als Raster
                                     _alpha = this._laubKante(
                                         _Ta,
                                         _samp.a,
@@ -1646,10 +1640,9 @@ class AnazhRealm_Z10 {
             uLodRef: _T.uniform(_ref),
             uLodMaskOn: _T.uniform(st.lodMaskOn === false ? 0 : 1),
             uDitherT: _T.uniform(0),
-            // DIE KANTE DES LAUBS (K68, A3, `_laubSchwelle` · `_blattAtlasProbe`): x die Schwelle des Frames (je Frame um 1/g
-            // gedreht), y 1 unter der zeitlichen Auflösung (sonst 0: die Schwelle 0,5), z die Oktave der Deckung über dem
-            // Schirm (log2(2 · Skala), ohne zeitliche Auflösung 0) — alle aus `_loopRender`
-            uLaubKante: _T.uniform(new THREE.Vector3(0, 0, 0)),
+            // DIE KANTE DES LAUBS (K68, A3, `_laubSchwelle`): x die Drehung der Schwelle je Frame (1/g), y 1 unter der
+            // zeitlichen Auflösung (sonst 0: die Schwelle 0,5) — beide aus `_loopRender`
+            uLaubKante: _T.uniform(new THREE.Vector2(0, 0)),
             uLodD0: _T.uniform(Number.isFinite(_D.thresh01) ? _D.thresh01 : 20),
             uLodD1: _T.uniform(Number.isFinite(_D.thresh12) ? _D.thresh12 : 40),
             uLodFade: _T.uniform(Number.isFinite(_D.fade) ? _D.fade : 8),

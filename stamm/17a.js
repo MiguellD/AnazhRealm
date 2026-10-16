@@ -671,75 +671,72 @@ class AnazhRealm_Z17a {
     // Pixeln, die Silhouette bleibt scharf und die Deckung je Stufe treu (die Alpha-Stufe ist unberührt). Befund Radeon,
     // Ausgabe-Pfad, Eiche 25 m nur L1: Δ-Luma beim ½-Pixel-Versatz 3,41, davon 2,49 im Kronen-Inneren — das Detail der Atlas-
     // Farbe unter zwei Pixeln (flache Farbe 2,04); Oktave 1 → 2,94, Oktave 2 → 2,62 (K20n10/g2). Linse: gate:pflanzen-nah (Z2).
-    // DIE KANTE (K68, A3): `a` ist die Deckung als Kante von ZWEI Pixeln um die Schwelle `c` (`_laubKante`), gelesen auf der
-    // Stufe des Ausgabe-Rasters (`uLaubKante.z`, gesetzt in `_loopRender`); `schwelle` der Knoten, mit dem der Bild-Pass sie
-    // schneidet (`alphaTestNode`, `_laubSchwelle`); der Stoff setzt alphaTest 0,5.
-    // DIE DECKUNG LIEST DAS RASTER DER AUSGABE (A3): die deckungstreuen Mips (Castaño) tragen ihre Deckung als binäres Muster
-    // im Takt ihrer Texel; die Stufe des Schirms legt einen Texel auf EIN Eingangs-Pixel, und unter der Hochskalierung
-    // (Skala 0,75) stand das Muster als Löcher von 1–3 Ausgabe-Pixeln in den Kronen (Augen-Befund A0 laub.png). Die Deckung
-    // liest log2(2 · Skala) Oktaven gröber — ein Texel trägt zwei Ausgabe-Pixel, das Nyquist-Maß des Rasters; ohne zeitliche
-    // Auflösung (kienspan) die Stufe des Schirms wie vorher.
+    // DIE KANTE (K68, A3): `a` ist die Deckung als Kante von EINEM Pixel um die Schwelle `c` (`_laubKante`), `schwelle` der
+    // Knoten, mit dem der Bild-Pass sie schneidet (`alphaTestNode`, `_laubSchwelle`); der Stoff setzt alphaTest 0,5.
     _blattAtlasProbe(T, c) {
         const tex = this._ensureFoliageClusterAtlas();
         if (!tex) return null;
         const uv = T.attribute("uv", "vec2");
         const s = T.texture(tex, uv).bias(T.float(AnazhRealm.BLATT_FARBE_OKTAVE));
-        const schwelle = this._laubSchwelle(T);
-        const deckung = T.texture(tex, uv).bias(this._laubOktave());
+        const deckung = T.texture(tex, uv);
         const w = tex.userData.wert;
         return {
             tex,
             rgb: s.rgb.div(s.a.max(T.float(1e-3))).mul(T.vec3(1 / w[0], 1 / w[1], 1 / w[2])),
             a: this._laubKante(T, deckung.a, c),
-            schwelle,
+            schwelle: this._laubSchwelle(T),
         };
     }
 
-    // DIE OKTAVE DER DECKUNG (A3): log2(2 · Skala) unter der zeitlichen Auflösung, ohne sie 0 (`uLaubKante.z`, gesetzt in
-    // `_loopRender`) — EINE Zahl für jede Karte der Klasse: der Blatt-Atlas liest sie als bias, die Karte L2 als Faktor 2^z
-    // ihrer Gradienten (Mip-Wahl, Klemme der Ansicht, Gewicht der kubischen Lesung).
-    _laubOktave() {
-        const lu = this._ensureLodUniforms();
-        if (!lu || !lu.uLaubKante) throw this._blendeBruch("der LOD-Uniform-Satz trägt keine uLaubKante");
-        return lu.uLaubKante.z;
-    }
-
-    // DIE KANTE DES LAUBS (K68, A3): der alphaTest schnitt jede Blatt-Karte binär an der Schwelle — die Nadel-Wedel standen im
+    // DIE KANTE DES LAUBS (K68): der alphaTest schnitt jede Blatt-Karte binär an der Schwelle — die Nadel-Wedel standen im
     // Pixel-Takt als Raster aus Nadel und Himmel (Soll-Tafel laub, Maß zweiton: Täter f:tanne:L0, Radeon, Mess-Wiese).
-    // Die Deckung um die Schwelle `c`, geteilt durch ihre doppelte Änderung je Pixel (2 · fwidth), ist der Anteil, den der
-    // Zelt-Filter des Pixel-Gitters (Radius ein Pixel) deckt: die Kante ist auf jeder Stufe ZWEI Pixel breit — die Kante
-    // von EINEM Pixel war der Kasten-Filter, ein Nadelstrich von 2–3 Pixeln stand ohne Zwischenton. Jede Karte der Klasse
-    // liest sie: Blatt-Atlas (Studio- und Grammatik-Laub, `_blattAtlasProbe`) und Karten-Atlas (die Karte L2).
-    // Der Bild-Pass vergleicht sie mit der Schwelle der zeitlichen Auflösung (`_laubSchwelle`), ihr Mittel ist die
-    // geglättete Kante. Der Schatten-Pass liest die ZAHL alphaTest 0,5 (r184 `renderObject` setzt sie je Objekt, nie den
-    // Knoten): a' > 0,5 ⇔ a > c — der Wurf bleibt binär wie vorher.
+    // Die Deckung um die Schwelle `c`, geteilt durch ihre Änderung je Pixel (fwidth), ist der Anteil des Pixels, der
+    // deckt: die Kante ist auf jeder Stufe EIN Pixel breit (vergrößert keine Texel-Treppe, verkleinert kein Bit-Muster) —
+    // den Rest des Pixel-Filters trägt der Versatz der zeitlichen Auflösung (A3: zwei Pixel und eine um log2(2 · Skala)
+    // gröbere Stufe der Deckung schlossen die Lücken der Kronen, die Silhouette lief gerader: laub-kante 0,209 → 0,221).
+    // Jede Karte der Klasse liest sie: Blatt-Atlas (Studio- und Grammatik-Laub, `_blattAtlasProbe`) und Karten-Atlas (die
+    // Karte L2). Der Bild-Pass vergleicht sie mit der Schwelle der zeitlichen Auflösung (`_laubSchwelle`), ihr Mittel ist
+    // die geglättete Kante (Hashed Alpha unter TAA: Horizon Zero Dawn, GDC 2018). Der Schatten-Pass liest die ZAHL
+    // alphaTest 0,5 (r184 `renderObject` setzt sie je Objekt, nie den Knoten): a' > 0,5 ⇔ a > c — der Wurf bleibt binär.
     _laubKante(T, a, c) {
         const s = T.float(c == null ? 0.5 : c);
         return a
             .sub(s)
-            .div(T.fwidth(a).mul(2).max(T.float(1e-4)))
+            .div(T.fwidth(a).max(T.float(1e-4)))
             .add(T.float(0.5))
             .clamp(0.0, 1.0);
     }
 
-    // DIE SCHWELLE DER KANTE (K68, A3): EINE Schwelle je Frame für jedes Pixel — `uLaubKante.x`, je Frame um 1/g (die
-    // Plastik-Zahl) gedreht. Jedes Ausgabe-Pixel sieht so dieselbe gleichverteilte Folge, und das Mittel der zeitlichen
-    // Auflösung ist die Deckung a'. Bis A3 lag ein Rauschen je EINGANGS-Pixel darunter (Interleaved Gradient über (y, x)):
-    // unter dem Versatz der Hochskalierung speiste jedes Ausgabe-Pixel Frame um Frame ein anderes Eingangs-Pixel — eine
-    // Zufallsfolge, die die Geschichte (das Jetzt wiegt in Ruhe ≥ 5 %) nie zum Mittel glättete: Körner aus zwei Tönen
-    // (Radeon, Karten-Szene laub, je Schuss 1–5 Raster-Fenster). Neben der Goldenen Drehung der Blende (`uDitherT`) ist
-    // das Paar über die Frames gleichverteilt, Blende und Kante multiplizieren ihre Deckung. Ohne zeitliche Auflösung
-    // (`uLaubKante.y` 0, Holz kienspan) ist die Schwelle 0,5: der binäre Schnitt von vorher. EIN Knoten je Welt.
+    // DIE SCHWELLE DER KANTE (K68, A3; Hashed Alpha, Wyman & McGuire 2017): EIN Wert je ZELLE der Karte — der Hash (PCG,
+    // TSL `hash`) ihrer Lage in der UV und ihrer Stufe, je Frame um 1/g (die Plastik-Zahl, `uLaubKante.x`) gedreht. Die
+    // Zelle ist `ZELLE` × die größte Änderung der UV je Eingangs-Pixel, auf die Zweier-Potenz abgerundet (1,5–3 Pixel): sie
+    // haftet an der Karte, nie am Schirm — unter dem Versatz der Hochskalierung sieht jedes Ausgabe-Pixel Frame um Frame
+    // DIESELBE Zelle, eine gleichverteilte Folge, deren Mittel die Deckung a' ist; die Nachbarn tragen andere Werte, die
+    // Varianz-Klemme der zeitlichen Auflösung sieht beide Töne und hält die Geschichte. Die zwei Vorgänger standen als
+    // Raster (Radeon, Karten-Szene laub, je Schuss Phase 0 · 3700): das Rauschen je EINGANGS-Pixel (Interleaved Gradient,
+    // bis K68) speiste jedes Ausgabe-Pixel mit einer Zufallsfolge — Körner aus zwei Tönen; EINE Schwelle je Frame für alle
+    // Pixel ließ die Nachbarschaft gleichförmig kippen, die Klemme setzte die Geschichte zurück — Klötze von 3–4 Pixeln
+    // (zweiton 60 px). Zellen von 0,75–1,5 Pixeln zerlegten den Nadelstrich der nahen Tanne quer (zweiton 146/100 px), 3 hält 0/0.
+    // Ohne zeitliche Auflösung (`uLaubKante.y` 0, Holz kienspan) ist die Schwelle 0,5: der binäre Schnitt. EIN Knoten je Welt.
     // DIE ZAHL DES STOFFS TRÄGT DIE SCHWELLE (K68-N1, Prüfer K68: das Phantom klont den Knoten, `_ghostMaterialFor` senkt nur
     // die Zahl — bei Deckkraft 0,4 fiel unter kienspan jedes Laub-Fragment, das Baum-Phantom war wieder unsichtbar): die
-    // Schwelle ist alphaTest × (1 | 2·Schwelle des Frames), gelesen je Objekt aus SEINEM Stoff (r184 `materialAlphaTest`,
-    // derselbe Leser wie der Test ohne Knoten). Der Stoff mit 0,5 schneidet wie oben; jeder Klon, der die Zahl ändert,
-    // ändert den Schnitt mit.
+    // Schwelle ist alphaTest × (1 | 2·Hash), gelesen je Objekt aus SEINEM Stoff (r184 `materialAlphaTest`, derselbe Leser
+    // wie der Test ohne Knoten). Der Stoff mit 0,5 schneidet wie oben; jeder Klon, der die Zahl ändert, ändert den Schnitt mit.
     _laubSchwelle(T) {
         if (this._laubSchwelleKnoten) return this._laubSchwelleKnoten;
         const lu = this._ensureLodUniforms();
         if (!lu || !lu.uLaubKante) throw this._blendeBruch("der LOD-Uniform-Satz trägt keine uLaubKante");
-        this._laubSchwelleKnoten = T.materialAlphaTest.mul(T.mix(T.float(1), lu.uLaubKante.x.mul(2), lu.uLaubKante.y));
+        const ZELLE = 3;
+        const uv = T.uv();
+        const d = T.max(T.dFdx(uv).abs(), T.dFdy(uv).abs());
+        const stufe = T.floor(T.log2(T.max(d.x, d.y).mul(ZELLE).max(T.float(1e-6))));
+        const z = T.floor(uv.div(T.exp2(stufe)));
+        const h = T.hash(
+            z.x.toInt().mul(73856093).bitXor(z.y.toInt().mul(19349663)).bitXor(stufe.toInt().mul(83492791))
+        );
+        this._laubSchwelleKnoten = T.materialAlphaTest.mul(
+            T.mix(T.float(1), T.fract(h.add(lu.uLaubKante.x)).mul(2), lu.uLaubKante.y)
+        );
         return this._laubSchwelleKnoten;
     }
 
