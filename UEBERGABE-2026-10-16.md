@@ -151,3 +151,8 @@ Neu: WL Wackel-Linsen (Playtest Worldgen-Bäume n=0, fell-Ratsche), CW2 (Waage a
 gepoolt +0,14 bei 2σ 0,22), Originalpaar d9d1db4e/c03ea075 wird direkt nachgemessen → dann main. **BERICHTIGUNG zum W2-Merge aba1da28:**
 der WebGL2-Rückfall linkt nach W2 auf der Radeon (61/61 Programme, max 14 Sampler) — das „> 16“ kam vom 17-Karten-Selbsttest der Linse
 (W3, gl-einheiten 0243e350); W3 wird gerade mit S5 vereint (Konflikt W6 linkt/linkt nicht, Nachbesserung wf_e5c3ef38-912).
+
+**22:17 (date):** integ remote 3caca1cd (22/22 grün inkl. echt); lokal darüber B2 ankunft-stufe (erstes Weltbild aus der groben ganzen Stufe)
++ CI-Zeiten neu verteilt (6c011637), Push nach dem OMEN-Profil. **main bleibt d9d1db4e:** Originalpaar zeigt +0,15–0,2 ms CPU-Takt
+Genesis Ego (5,58 → 5,73, E hält), kein Bisekt-Schritt trägt es allein → OMEN CPU-Profil-Diff d9d1db4e/c03ea075, dann B2-Kaltserie.
+A3 laub GRÜN gebaut (Hash je Karten-Zelle), Prüfer läuft; A4 Kopf GRÜN gemergt; A1 wasser Nachbesserung 2; W3 Merge-Nachbesserung mit S5.
