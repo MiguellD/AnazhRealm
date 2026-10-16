@@ -228,7 +228,7 @@ function deriveGestalt(srcNC) {
         const bp = r.state.blueprints.welt_terrain;
         res.d.metaBefore = JSON.stringify(bp.portalMeta);
         const pm = r.state.playerMesh.position;
-        const sx = pm.x + 12;
+        const sx = pm.x + 6; // im Nah-Band des Tors (porta lod.budget.gate: Stufe 0 bis 9,5 m) — nur sie trägt die Flügel
         const sz = pm.z;
         const sy = r.getTerrainHeightAt(sx, sz) + 0.5;
         const entry = r.spawnArchitecture("welt_terrain", { x: sx, y: sy, z: sz }, { silent: true, seed: 12345 });
