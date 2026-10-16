@@ -121,3 +121,9 @@ der Rückfall weiter nicht (> 16 Sampler-Einheiten im Programm) → W3 gl-einhei
 Playtest-Wackler „Welle 6.G P1.5 Worldgen-Bäume n=0“ (zählt vor dem Wachsen, unter Last; Lauf 2 n=53) → D3b/Linsen-Karte; A5-Gelb: Labor
 backt Kronenlicht in den Boden (phytogenesis.js:1806, Lehre 21), Albedo-Zeile fell wackelt; FZ: Weltbild auf swiftshader seit 14f7eafe
 75–185 s statt 47–78 s (B-Verdacht, OMEN misst). Karten laufen: G1 G2 K2 D2 SO A1 A3 A4(gebaut, kopf 1 GRÜN) A6 KI2 S5 W3.
+
+**18:58 (date): main = d9d1db4e (V18.546.4)** — + A0 · echt-vier · D3a · G4a · KI1 · A5 · CW · A2 (OMEN bericht/1610-buendel3.md: nirgends
+langsamer; knapp Wiese Ego gpu-bank +0,22 bei 2σ 0,23 = A2 Nah-Wiese, beobachten). Echt-Lauf an aba1da28 GANZ grün nur mit .gitattributes.
+integ lokal (ungepusht, wartet auf CW2 — ALT sperrt check nach 9 Merges): KI2 · K2 · A6 (haus 0,529 → 0,937 GRÜN). Soll-Tafel-Stand der
+Karten: boden-nah-farbe GRÜN (A2), haus GRÜN (A6), mensch-kopf GRÜN gebaut (A4, Prüfer), wasser (A1 Nachbesserung), laub (A3 Bau 3).
+Neu: WL Wackel-Linsen (Playtest Worldgen-Bäume n=0, fell-Ratsche), CW2 (Waage aus der Physik), W3 (GL-Einheiten).
