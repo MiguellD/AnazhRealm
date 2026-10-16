@@ -1936,6 +1936,14 @@ class AnazhRealm_Z25a {
             // setAnimationLoop-Callback → die Welt erstarrt. Frame-Fehler werden abgefangen und gedrosselt mit
             // Stack geloggt, die Welt läuft weiter (der Headless-Pump fängt selbst ab — sieht den Freeze nie).
             try {
+                // DIE PHASE DES TAKTS (B3, Lehre 13): unter dem Ladeschirm (`_ladeTakt`) trägt der Takt NUR, was das erste
+                // Weltbild füttert — Foundry und Einhängen, den Leib, Strom und Takt-Planer (Generierung, Pflanz-Schlange,
+                // Stufen-Wahl, Horizont), den Genesis-Ort, Körper und Kamera (das Auge der Stufen-Wahl), den Bau-Gang — und
+                // das Lade-Bild (die Erst-Zeichnung, `_ladeBildFaellig`), das Licht, Bündel-Sicht und Haltung des Leibs vor
+                // seinem Zeichnen holt. Was nur das Spiel oder ein gezeichnetes Bild braucht (`!ankunft`), ruht bis zum
+                // ersten Weltbild: Nexus, Stimme, DSL, Gesetze, Lebenswerte, HUD, Klang, Netz, Kampf, Kreaturen, Animation
+                // der Bauten, Rauch, Speichern (Radeon kalt am Kopf 210fe8a7: 437 Takte, im Spiel-Teil ~1,0 s).
+                const ankunft = this._ladeTakt();
                 // DER SCHIRM einmal je Takt (die EINE Quelle jeder Schirm-Größe, `_schirm`).
                 this._schirmMessen();
                 // Foundry so FRÜH wie möglich anwerfen: das Studio-iframe lädt ~1–2 s, und `_ensureAssetFoundry`
@@ -1944,86 +1952,88 @@ class AnazhRealm_Z25a {
                 // prüft `_ensureAssetFoundry` selbst.
                 if (!this._foundry) this._ensureAssetFoundry(); // ihr Boot-Fehler bricht in ihr selbst laut (K22)
 
-                // ### Nexus-Update ### (V9.44-f → _loopNexusUpdate)
-                this._loopNexusUpdate();
+                if (!ankunft) {
+                    // ### Nexus-Update ### (V9.44-f → _loopNexusUpdate)
+                    this._loopNexusUpdate();
 
-                // ### Grok-Stimme (Ring 1) ###
-                this.grokTick(currentTime);
+                    // ### Grok-Stimme (Ring 1) ###
+                    this.grokTick(currentTime);
 
-                // ### Nexus-DSL Scheduler (Ring 2) ###
-                this.dslTick(currentTime);
+                    // ### Nexus-DSL Scheduler (Ring 2) ###
+                    this.dslTick(currentTime);
 
-                // ### Welt-Regeln ###
-                // Stehende Bedingung→Effekt-Regeln prüfen + feuern (gebudgetet); nach dslTick, damit eine soeben
-                // geplante Geste vor den Regeln läuft.
-                this._tickWorldRules(currentTime);
+                    // ### Welt-Regeln ###
+                    // Stehende Bedingung→Effekt-Regeln prüfen + feuern (gebudgetet); nach dslTick, damit eine soeben
+                    // geplante Geste vor den Regeln läuft.
+                    this._tickWorldRules(currentTime);
 
-                // ### Region-Übergangs-Detection ###
-                // 1×/s reicht (niemand überquert eine 345.6 m-Region in einem Frame). Default OFF
-                // (regionsActive=false → no-op); ein Übergang ruft _p2pRegionHandoff(oldKey,newKey).
-                if (!this._regionTickLast || currentTime - this._regionTickLast >= 1000) {
-                    this._regionTickLast = currentTime;
-                    const crossing = this._regionTickDetectCrossing();
-                    if (crossing && typeof this._p2pRegionHandoff === "function") {
-                        this._p2pRegionHandoff(crossing.oldKey, crossing.newKey);
+                    // ### Region-Übergangs-Detection ###
+                    // 1×/s reicht (niemand überquert eine 345.6 m-Region in einem Frame). Default OFF
+                    // (regionsActive=false → no-op); ein Übergang ruft _p2pRegionHandoff(oldKey,newKey).
+                    if (!this._regionTickLast || currentTime - this._regionTickLast >= 1000) {
+                        this._regionTickLast = currentTime;
+                        const crossing = this._regionTickDetectCrossing();
+                        if (crossing && typeof this._p2pRegionHandoff === "function") {
+                            this._p2pRegionHandoff(crossing.oldKey, crossing.newKey);
+                        }
                     }
+
+                    // ### Player-Emotionen (Ring 3) ###
+                    this.updatePlayerEmotions(currentTime);
+
+                    // ### Player-Boosts (Welle 6.D Etappe 2) ###
+                    // 1×/s self-throttled — Emotion-Trigger, Resonance-Trigger, Ablauf.
+                    this.tickPlayerBoosts(currentTime);
+
+                    // ### Kreatur-Boosts (Welle 6.H Phase 2F.3) ###
+                    // 1×/s per-creature self-throttled — säubert abgelaufene Konsumable-Boosts.
+                    this.tickCreatureBoosts(currentTime);
+
+                    // ### Vitals-Tick (Wunde·Stamina·Mana — ALTLASTEN-NULL) ###
+                    // HP-Regen während aktiver Wandlung + Ablauf-Detection.
+                    this.tickPlayerVitals(currentTime);
+
+                    // ### Stats-HUD (Welle 6.X.4 B3) ###
+                    // HP/Stamina-Bars über der Hotbar, throttled auf 10 Hz.
+                    this.tickStatsHud(currentTime);
+
+                    // ### Tag-Nacht-Zyklus ###
+                    // timeOfDay läuft jeden Frame; Lights + Skybox folgen.
+                    this.tickDayNight(currentTime);
+
+                    // ### Wetter-Übergang (Welle 6.G3.b) ###
+                    // Cross-Fade über 45 s. No-op wenn kein Übergang aktiv.
+                    this.tickWeatherTransition(currentTime);
+
+                    // ### Fauna-Lifecycle (Welle 6.G3.c) ###
+                    // Alle 10 s: Geburt bei < TARGET, Tod bei > MAX mit Trauer.
+                    this.tickFaunaLifecycle(currentTime);
+
+                    // ### Boot-Phase 3 (V18.308) — die deferierte Boot-Arbeit progressiv ###
+                    // Spawnt die Initial-Kreaturen NACH der Kontrolle, einen Atem pro Wesen,
+                    // nur wenn der Frame Luft hat. No-op, sobald P3 vollendet ist.
+                    this._tickBootPhase3(performance.now());
+
+                    // ### Fern-Deko (P0.3 Bühnen-Ordnung) — das Sternfeld NACH der Bühne ###
+                    // No-op, wenn nichts deferiert ist (headless baut sofort in createGalaxySkybox).
+                    this._tickBootFernDeko();
+
+                    // ### Symphonie (Ring 4): Lofi + Klang-Welt ###
+                    this.symphonyTick();
+
+                    // ### Status-Panel (UI V1) ###
+                    this.updateStatusPanel(currentTime);
+
+                    // ### Ring 11 V1 — Multi-User Position-Sync ###
+                    // Broadcast (30 Hz Drosselung intern) + Peer-Mesh-Update + Idle-
+                    // Purge. No-op wenn p2p.enabled === false oder nicht verbunden.
+                    this.p2pTick(performance.now());
+
+                    // ### Bodenprüfung / Frustum-Culling / UFOs ### (V9.44-f)
+                    this._loopGroundCheck(currentTime);
+                    this._loopFrustumCulling();
+                    this._loopAnimateUfos(currentTime);
                 }
-
-                // ### Player-Emotionen (Ring 3) ###
-                this.updatePlayerEmotions(currentTime);
-
-                // ### Player-Boosts (Welle 6.D Etappe 2) ###
-                // 1×/s self-throttled — Emotion-Trigger, Resonance-Trigger, Ablauf.
-                this.tickPlayerBoosts(currentTime);
-
-                // ### Kreatur-Boosts (Welle 6.H Phase 2F.3) ###
-                // 1×/s per-creature self-throttled — säubert abgelaufene Konsumable-Boosts.
-                this.tickCreatureBoosts(currentTime);
-
-                // ### Vitals-Tick (Wunde·Stamina·Mana — ALTLASTEN-NULL) ###
-                // HP-Regen während aktiver Wandlung + Ablauf-Detection.
-                this.tickPlayerVitals(currentTime);
-
-                // ### Stats-HUD (Welle 6.X.4 B3) ###
-                // HP/Stamina-Bars über der Hotbar, throttled auf 10 Hz.
-                this.tickStatsHud(currentTime);
-
-                // ### Tag-Nacht-Zyklus ###
-                // timeOfDay läuft jeden Frame; Lights + Skybox folgen.
-                this.tickDayNight(currentTime);
-
-                // ### Wetter-Übergang (Welle 6.G3.b) ###
-                // Cross-Fade über 45 s. No-op wenn kein Übergang aktiv.
-                this.tickWeatherTransition(currentTime);
-
-                // ### Fauna-Lifecycle (Welle 6.G3.c) ###
-                // Alle 10 s: Geburt bei < TARGET, Tod bei > MAX mit Trauer.
-                this.tickFaunaLifecycle(currentTime);
-
-                // ### Boot-Phase 3 (V18.308) — die deferierte Boot-Arbeit progressiv ###
-                // Spawnt die Initial-Kreaturen NACH der Kontrolle, einen Atem pro Wesen,
-                // nur wenn der Frame Luft hat. No-op, sobald P3 vollendet ist.
-                this._tickBootPhase3(performance.now());
-
-                // ### Fern-Deko (P0.3 Bühnen-Ordnung) — das Sternfeld NACH der Bühne ###
-                // No-op, wenn nichts deferiert ist (headless baut sofort in createGalaxySkybox).
-                this._tickBootFernDeko();
-
-                // ### Symphonie (Ring 4): Lofi + Klang-Welt ###
-                this.symphonyTick();
-
-                // ### Status-Panel (UI V1) ###
-                this.updateStatusPanel(currentTime);
-
-                // ### Ring 11 V1 — Multi-User Position-Sync ###
-                // Broadcast (30 Hz Drosselung intern) + Peer-Mesh-Update + Idle-
-                // Purge. No-op wenn p2p.enabled === false oder nicht verbunden.
-                this.p2pTick(performance.now());
-
-                // ### Bodenprüfung / Frustum-Culling / UFOs ### (V9.44-f)
-                this._loopGroundCheck(currentTime);
-                this._loopFrustumCulling();
-                this._loopAnimateUfos(currentTime);
 
                 // ### Physik-Simulation ###
                 // Der AKKUMULATOR dirigiert die Sim (Physik + Bewegung pro FIXED_DT-Häppchen, framerate-unabhängig)
@@ -2040,40 +2050,42 @@ class AnazhRealm_Z25a {
                 // Feld-Controller (`_stepCharacter`) erdet den Spieler direkt aus dem Dichtefeld,
                 // das überall definiert ist (auch unter ungebauten Chunks) → kein Durchfallen.
 
-                // V17.55 W1 — Halten-zum-Abbauen: der Auto-Hieb-Tick (gegated durch breakHeld +
-                // Pointer-Lock; das kontinuierliche Mahlen in der strikeInterval-Kadenz).
-                this._tickHarvest();
+                if (!ankunft) {
+                    // V17.55 W1 — Halten-zum-Abbauen: der Auto-Hieb-Tick (gegated durch breakHeld +
+                    // Pointer-Lock; das kontinuierliche Mahlen in der strikeInterval-Kadenz).
+                    this._tickHarvest();
 
-                // 3-Phasen-Schwung-Tick: treibt Windup/Strike/Recover auf der ANZEIGE-Uhr (der Hit-Stop pausiert
-                // sie, die fixe Sim läuft weiter) und fegt in der Strike-Phase die Klingen-Kapsel durch die
-                // Kreaturen (_kampfSweepTick).
-                this._tickKampfSchwung(currentTime);
+                    // 3-Phasen-Schwung-Tick: treibt Windup/Strike/Recover auf der ANZEIGE-Uhr (der Hit-Stop pausiert
+                    // sie, die fixe Sim läuft weiter) und fegt in der Strike-Phase die Klingen-Kapsel durch die
+                    // Kreaturen (_kampfSweepTick).
+                    this._tickKampfSchwung(currentTime);
 
-                // BOGEN (B3-Inventar N4) — der Pfeil-Tick: dieselbe Anzeige-Uhr wie der
-                // Schwung (die fixe Sim bleibt unberührt); No-op ohne lebende Pfeile.
-                this._tickPfeile(currentTime);
+                    // BOGEN (B3-Inventar N4) — der Pfeil-Tick: dieselbe Anzeige-Uhr wie der
+                    // Schwung (die fixe Sim bleibt unberührt); No-op ohne lebende Pfeile.
+                    this._tickPfeile(currentTime);
 
-                // ARENA-GEFÜHL — der Bogen-Auszug (FOV-Zug + Abbruch-Wache);
-                // No-op ohne gespannten Bogen (byte-alt).
-                this._tickBogenZug(currentTime);
+                    // ARENA-GEFÜHL — der Bogen-Auszug (FOV-Zug + Abbruch-Wache);
+                    // No-op ohne gespannten Bogen (byte-alt).
+                    this._tickBogenZug(currentTime);
 
-                // ### Spielerbewegung + Sprung ### — V18.355/.358 PHASE C: die Bewegung läuft IM
-                // Akkumulator (`_stepFixedSim` pro FIXED_DT-Schritt, inkl. der Replay-Capture-Ernte)
-                // → hier nichts mehr (der variable Ein-Schritt-Pfad ist abgelöst).
+                    // ### Spielerbewegung + Sprung ### — V18.355/.358 PHASE C: die Bewegung läuft IM
+                    // Akkumulator (`_stepFixedSim` pro FIXED_DT-Schritt, inkl. der Replay-Capture-Ernte)
+                    // → hier nichts mehr (der variable Ein-Schritt-Pfad ist abgelöst).
 
-                // ### Selbstanalyse + Nexus-Evolution-Trigger ### (V9.44-f)
-                this._loopSelfAnalysis(currentTime);
+                    // ### Selbstanalyse + Nexus-Evolution-Trigger ### (V9.44-f)
+                    this._loopSelfAnalysis(currentTime);
 
-                // ### Schicht 1 — IQ-Ticks ###
-                // Pfad-Bucket-Sample (alle 2 s), Activity-Sample (jeden Frame), Keyword-Window-Cleanup (60 s),
-                // pending Outcomes finalisieren (5 s nach Programm-Lauf: Emotion/Activity-Delta).
-                this.samplePathBuckets(currentTime);
-                this.samplePlayerActivity(currentTime);
-                this.pruneRecentKeywords(currentTime);
-                this.finalizePendingOutcomes(currentTime);
+                    // ### Schicht 1 — IQ-Ticks ###
+                    // Pfad-Bucket-Sample (alle 2 s), Activity-Sample (jeden Frame), Keyword-Window-Cleanup (60 s),
+                    // pending Outcomes finalisieren (5 s nach Programm-Lauf: Emotion/Activity-Delta).
+                    this.samplePathBuckets(currentTime);
+                    this.samplePlayerActivity(currentTime);
+                    this.pruneRecentKeywords(currentTime);
+                    this.finalizePendingOutcomes(currentTime);
 
-                // ### Kreaturen, Wetter, Wachstum ### (V9.44-f → _loopWeatherAndGrowth)
-                this._loopWeatherAndGrowth(delta);
+                    // ### Kreaturen, Wetter, Wachstum ### (V9.44-f → _loopWeatherAndGrowth)
+                    this._loopWeatherAndGrowth(delta);
+                }
 
                 // ### Unendliches Terrain — Voxel-Streaming ### (V9.44-f)
                 _pt = performance.now();
@@ -2083,25 +2095,29 @@ class AnazhRealm_Z25a {
                 // ### Skybox-Zeit ### (V9.44-f → _loopSkyboxZeit)
                 this._loopSkyboxZeit(currentTime);
 
-                // ### Portal-Membranen ### (V18.464 — die Passage atmet + Hindurchgehen)
-                this._tickPortalMembranes(currentTime);
+                if (!ankunft) {
+                    // ### Portal-Membranen ### (V18.464 — die Passage atmet + Hindurchgehen)
+                    this._tickPortalMembranes(currentTime);
 
-                // ### Haus-Türen ### (DORF-ERLEBNIS — die Tür öffnet sich dem Reisenden)
-                this._tickHausTueren(currentTime);
+                    // ### Haus-Türen ### (DORF-ERLEBNIS — die Tür öffnet sich dem Reisenden)
+                    this._tickHausTueren(currentTime);
+                }
 
                 // ### Der Genesis-Ort ### (Ring der Kern-Portale + Portal-Vorschauen, vor jedem Budget)
                 this._tickGenesisOrt(currentTime);
 
-                // ### Kamin-Rauch ### (.105 — Quellen + minimale Lab-Partikel)
-                this._updateDorfRauch(delta);
+                if (!ankunft) {
+                    // ### Kamin-Rauch ### (.105 — Quellen + minimale Lab-Partikel)
+                    this._updateDorfRauch(delta);
 
-                // ### Fähigkeiten ###
-                Object.keys(this.state.abilities).forEach((ability) => {
-                    if (this.state.keys[ability]) this.state.abilities[ability](this, this.state);
-                });
+                    // ### Fähigkeiten ###
+                    Object.keys(this.state.abilities).forEach((ability) => {
+                        if (this.state.keys[ability]) this.state.abilities[ability](this, this.state);
+                    });
 
-                // ### Speichern ### (V9.44-f → _loopAutoSave)
-                this._loopAutoSave(currentTime);
+                    // ### Speichern ### (V9.44-f → _loopAutoSave)
+                    this._loopAutoSave(currentTime);
+                }
 
                 // ### Kamera ### (V9.44-f → _loopCamera)
                 // V18.355 — PHASE C: VOR der Kamera die Render-Interpolation anwenden (das Auge
@@ -2109,23 +2125,27 @@ class AnazhRealm_Z25a {
                 this._applyFixedInterpolation();
                 this._loopCamera(currentTime);
 
-                // Ring 5 V2: Soul-Animation. Glieder/Flügel/Schweif werden
-                // jeden Frame über sin/cos relativ zum aktuellen walkPhase
-                // rotiert. Idle-Loop (atmen, hover) läuft auch im Stand.
-                this.animatePlayerSoul(currentTime);
+                if (!ankunft) {
+                    // Ring 5 V2: Soul-Animation. Glieder/Flügel/Schweif werden
+                    // jeden Frame über sin/cos relativ zum aktuellen walkPhase
+                    // rotiert. Idle-Loop (atmen, hover) läuft auch im Stand.
+                    this.animatePlayerSoul(currentTime);
+                }
 
                 // Ring 6 V2: Culling-Tick (1 Hz) — baut/disposed Meshes je nach
                 // Spieler-Distanz. Daten-Einträge bleiben immer.
                 _pt = performance.now();
                 this.tickArchitectureCulling();
                 this._perfSenseLap("archCulling", _pt);
-                // Ring 6 V2: Bau-Modus — Phantom-Position nachziehen wenn aktiv.
-                this.tickBuildMode();
-                // Ring 6: Bau-Werke mit Animations-Hook (nur Wasserfälle aktuell).
-                this.tickArchitectures(currentTime);
-                // Welle 10b.3 — Affordance-Welt-Reaktionen: mounted-Movement +
-                // focusing-Hitze-Tick. Magnifying läuft asynchron via Tastendruck.
-                this.tickAffordances(delta);
+                if (!ankunft) {
+                    // Ring 6 V2: Bau-Modus — Phantom-Position nachziehen wenn aktiv.
+                    this.tickBuildMode();
+                    // Ring 6: Bau-Werke mit Animations-Hook (nur Wasserfälle aktuell).
+                    this.tickArchitectures(currentTime);
+                    // Welle 10b.3 — Affordance-Welt-Reaktionen: mounted-Movement +
+                    // focusing-Hitze-Tick. Magnifying läuft asynchron via Tastendruck.
+                    this.tickAffordances(delta);
+                }
 
                 // V9.75 (Welle C.4+5) — kein reaktiver Hydro-Tick mehr. Die
                 // Welle-A-Maschinerie ist weg; Cell-Feld ist DERIVED (V9.74),
@@ -2138,6 +2158,14 @@ class AnazhRealm_Z25a {
                 // DIE GPU-LEINE: sind schon GPU_FRAMES_IM_FLUG Frames unterwegs, schickt dieser Takt nichts an die GPU
                 // (Simulation, Eingabe und Streaming laufen weiter) — sonst lief die CPU der GPU davon (_gpuLeineFrei).
                 if (this._gpuLeineFrei()) {
+                    // DAS LADE-BILD holt, was nur ein gezeichnetes Bild braucht und im Lade-Takt ohne Bild ruht: das Licht
+                    // der Tageszeit, die Sicht der Bündel und die Haltung des Leibs (Fuß auf dem Hang) — im Spiel stehen
+                    // sie an ihrem Ort im Takt
+                    if (ankunft) {
+                        this.tickDayNight(currentTime);
+                        this._loopFrustumCulling();
+                        this.animatePlayerSoul(currentTime);
+                    }
                     _pt = performance.now();
                     this._loopShadowUpdate();
                     this._loopRender(currentTime);
