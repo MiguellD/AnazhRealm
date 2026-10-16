@@ -79,10 +79,6 @@ class AnazhRealm_Z10 {
         if (this.state.atmoUniforms) return this.state.atmoUniforms;
         const TSL = THREE.TSL;
         this.state.atmoUniforms = {
-            // Tag-Licht-Achse (0 = tiefe Nacht, 1 = voller Tag); Schreiber: das EINE Himmels-Update
-            // (_celestialHorizonFade). Konsument: die Impostor-Karte — ihr eingebackenes Tageslicht MUSS mit der
-            // Sonne fallen (sonst glüht sie nachts).
-            tagLicht: TSL.uniform(1.0),
             // B8 — das warme Struktur-RIM (Fresnel-Saum, die Ghibli-Silhouetten-
             // Kante im Gegenlicht). 0 = aus. Live-tunbar (Schöpfer-Sign-off).
             rimStrength: TSL.uniform(
@@ -634,11 +630,10 @@ class AnazhRealm_Z10 {
                                         }
                                     }
                                     // Die Schicht ist VORMULTIPLIZIERT (transparent = 0, Karten-Gesetz): rgb / alpha — kein dunkler
-                                    // Saum auf keiner Mip-Stufe. Der Atlas trägt die volle Baumfarbe, vertex-color = weiß.
-                                    // Das eingebackene Tageslicht fällt mit der Sonne (tagLicht-Uniform) — sonst leuchtet die Karte
-                                    // nachts heller als echte Geometrie; Boden 0.12 = Mond-Silhouette.
+                                    // Saum auf keiner Mip-Stufe. Der Atlas trägt die volle Baumfarbe, vertex-color = weiß. Seit A7
+                                    // ist er reine Albedo (linear, ohne Tonkurve): das Licht kommt allein aus der EINEN Licht-Kette —
+                                    // die Tag-Licht-Achse, die ein eingebackenes Tageslicht mit der Sonne fallen ließ, fiel mit ihm.
                                     const _rgbK = _samp.rgb.div(_samp.a.max(_Ta.float(1e-3)));
-                                    const _auN = this._ensureAtmoUniforms();
                                     // Die Karte ist Golden-Sommer gebacken; das Jahr färbt sie wie der Studio-Impostor:
                                     // alb × mix(1, uSeasonMul, SAISON_GESETZ.kartenGewicht) (V18.527, kein Neubau).
                                     const _suK = this._ensureSeasonUniforms();
@@ -649,7 +644,7 @@ class AnazhRealm_Z10 {
                                             _Ta.float(AnazhRealm._saisonGesetz().kartenGewicht)
                                         )
                                     );
-                                    albedoNode = _albK.mul(_auN.tagLicht.mul(_Ta.float(0.88)).add(_Ta.float(0.12)));
+                                    albedoNode = _albK;
                                     mat.alphaTest = globalThis.__phytoCore.KARTEN_GESETZ.schwelle; // die Codec-Schwelle
                                     // ── Normal-Atlas (rg, z = √(1−x²−y²)) → Billboard-Rahmen → per-Fragment-Licht ──
                                     const _nxy = _Ta
@@ -659,13 +654,20 @@ class AnazhRealm_Z10 {
                                     const _nz = _Ta.sqrt(_Ta.float(1.0).sub(_nxy.dot(_nxy)).max(_Ta.float(0.0)));
                                     const _sinA = _Ta.sin(_ang);
                                     const _cosA = _Ta.cos(_ang);
-                                    const _look3 = _Ta.vec3(_sinA, _Ta.float(0.0), _cosA);
+                                    // DER RAHMEN BLICKT AUFS AUGE (A7): der Bäcker sah die Krone waagrecht, das Auge sieht sie
+                                    // unter der Höhe φ (von unten: die Unterseiten, von oben: die Wipfel). Der Rahmen der
+                                    // Normale kippt darum um die Rechte, bis „zur Kamera" auf das Auge zeigt — wie die Gestalt
+                                    // die Flächen zeigt, die zum Auge stehen. Waagrecht gebacken stand die nahe Fichte im
+                                    // Himmels-Licht 1,44 × so hell wie ihre Gestalt (Werkbank, Radeon, Genesis, Auge 1,7 m).
+                                    const _hy = _Ta.positionWorld.y.sub(_Ta.cameraPosition.y);
+                                    const _lE = _Ta.sqrt(_dA.mul(_dA).add(_hy.mul(_hy))).max(_Ta.float(1e-4));
+                                    const _cosE = _dA.div(_lE);
+                                    const _sinE = _hy.negate().div(_lE);
+                                    const _look3 = _Ta.vec3(_sinA.mul(_cosE), _sinE, _cosA.mul(_cosE));
+                                    const _up3 = _Ta.vec3(_sinA.mul(_sinE).negate(), _cosE, _cosA.mul(_sinE).negate());
                                     const _right3 = _Ta.vec3(_cosA, _Ta.float(0.0), _sinA.negate());
                                     const _nW = _Ta.normalize(
-                                        _right3
-                                            .mul(_nxy.x)
-                                            .add(_Ta.vec3(0.0, 1.0, 0.0).mul(_nxy.y))
-                                            .add(_look3.mul(_nz))
+                                        _right3.mul(_nxy.x).add(_up3.mul(_nxy.y)).add(_look3.mul(_nz))
                                     );
                                     // normalNode ist VIEW-space (NodeMaterial.setupNormal → normalView):
                                     // die Welt-Normale über die Kamera-Matrix transformieren — Welt → Sicht ist

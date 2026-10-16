@@ -1053,10 +1053,6 @@ class AnazhRealm_Z24 {
                 a.lum *
                 tint.lightIntensity *
                 this._celestialHorizonFade(sunDir.y);
-            // DIE EINE TAG-LICHT-ACHSE: der Impostor-Atlas trägt eingebackenes Tageslicht — derselbe Fade, der
-            // das Key-Licht dimmt, schreibt die Uniform, sonst leuchten ferne Karten nachts.
-            if (this.state.atmoUniforms && this.state.atmoUniforms.tagLicht)
-                this.state.atmoUniforms.tagLicht.value = this._celestialHorizonFade(sunDir.y) * Math.max(0, a.lum);
         } else {
             const M = AnazhRealm.MOONLIGHT;
             // Mond-Pfad: Richtung aus der EINEN Quelle, Intensität MOONLIGHT·Wetter·Horizont-Fade; `atm.col`
@@ -1065,9 +1061,6 @@ class AnazhRealm_Z24 {
             // V18.378 — der Fade liest die ECHTE Mond-Höhe (md.y), nicht −sunDir.y (die
             // z-Bogen-Formel gibt dem Mond eine eigene Normierung → eigene Höhe).
             dl.intensity = M.intensity * tint.lightMul * this._celestialHorizonFade(md.y);
-            // V18.473 — Nacht: die Tag-Licht-Achse fällt auf 0 (Mond zählt nicht als
-            // Tageslicht — die Karten tragen ihr eingebackenes SONNEN-Licht).
-            if (this.state.atmoUniforms && this.state.atmoUniforms.tagLicht) this.state.atmoUniforms.tagLicht.value = 0;
         }
         // `nightFactor` 0 = Tag → 1 = Nacht: das Auge der Nacht der Post-Kette (K66, mesopisch) liest ihn — am Tag fällt es.
         if (this.state.postProcessingUniforms && this.state.postProcessingUniforms.nightFactor) {

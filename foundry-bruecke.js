@@ -335,6 +335,12 @@ function bakeImpostorAtlas() {
         );
     }
     const pSchatten = { an: renderer.shadowMap.enabled, typ: renderer.shadowMap.type };
+    // DIE ALBEDO OHNE TONKURVE (A7): r128 legt die Tonkurve des Renderers auch auf ein Render-Ziel (`toneMapping` je Stoff,
+    // nie je Ziel) — der Bäcker der Welt fährt ACES Filmic, die Karte trug Grün +16 %, Schatten −37 % (Luma 1,18 × der
+    // Gestalt in der Albedo-Sicht; die Tag-Licht-Achse 0,85 deckte es mittags zu). Gebacken wird linear, die Tonkurve
+    // kommt EINMAL am Ausgang der Welt.
+    const pTon = renderer.toneMapping;
+    renderer.toneMapping = THREE.NoToneMapping;
     const cam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 500);
     const pRT = renderer.getRenderTarget(),
         pA = renderer.getClearAlpha(),
@@ -547,6 +553,7 @@ function bakeImpostorAtlas() {
         typeof innerHeight !== "undefined" ? innerHeight : 256
     );
     renderer.setClearColor(0x000000, pA);
+    renderer.toneMapping = pTon;
     WIND.uTime.value = pT;
     SEASON.uLeafPresence.value = pPres;
     _impBakedSig = sig;
