@@ -17,8 +17,7 @@ const { execSync, execFileSync } = require("child_process");
 
 const root = path.join(__dirname, "..");
 
-// RUND bewusst case-sensitiv (das Siegel-Wort der Berichte) — „rund 60 Assets" in
-// einer Message bleibt legal; die übrigen Siegel sind als ganze Wörter verboten.
+// RUND bewusst case-sensitiv („rund 60 Assets" bleibt legal); die übrigen Siegel sind als ganze Wörter verboten.
 const SIEGEL_CI = /\b(fertig|vollendet|vollzogen|schluss)\b|scope\s+zu/i;
 const SIEGEL_CS = /\bRUND\b/;
 
