@@ -72,7 +72,7 @@ nächste Welle erfinden · Schöpfer-Abhängigkeit erfinden — ist ROT. Die Wan
    Scope und Ship, nie jeden Pixel.
 5. **SCOPE ZU nur bei Rest = 0** — danach kein Feature-Commit mehr (nur Format/Fix auf Zuruf).
 
-## Stand (V18.546.3 + das Bündel vom 14.10. + weiche Boden-Stufen — offen ist NUR, was `docs/PFLICHT-OFFEN.md` trägt; die Chronik ist `git log`)
+## Stand (V18.546.4 + das Bündel vom 14.10. + weiche Boden-Stufen — offen ist NUR, was `docs/PFLICHT-OFFEN.md` trägt; die Chronik ist `git log`)
 
 **ZIELLINIE (docs/roadmap.md §0.v1):** v1.0 = EIN gespielter Pfad — ankommen · laufen+sehen · in der Werkstatt bauen · mit der KI erschaffen
 (Satz → DSL-Op `spawn_studio` → EIN Stempel `_studioStampFor`; offen: der LLM-Lauf mit Schlüssel, Drehbuch-Schritt 18) · benutzen/teilen — bei
