@@ -1,6 +1,6 @@
 "use strict";
 // scripts/playtest/studio.cjs — der Richter von Studio (spec/stamm/modul-karte.json): Foundry-Brücke · Bücher · Aufträge · Uhren · Vorrat · Foundry-Gestalt · Gruppen · Bibliothek · Bereitschaft.
-// 4 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
+// 5 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
 const { safeEvaluate } = require("../playtest.cjs");
@@ -362,6 +362,55 @@ async function checkBandFoundrySpeicherFlach(ctx) {
     check("V4(B) Foundry-Geometrie-Speicher flach über 4 LRU-Churn-Zyklen (Deckel 32): dispose feuert, kein Use-after-free, live sub-linear", fails.length === 0, fails.join(" · "));
 }
 
+// V1 das Kristall-Kleid — eingefaltet aus gate:v1-resolve (D3b): `_foundryPresetForEntry` löst die Formations-VARIANTEN
+// (kristall_var${N}/fels_var${N}) auf ein Studio-Rezept auf (vorher NULL = Part-Pfad, die „alten Kristalle"); die Ausstattung
+// (glutbrunnen · marktstand_dorf · brunnen_dorf · laterne_dorf) löst über ihre studioGestalt-Zeile auf das Gesetzbuch der
+// Architektur; das Glut-Genom ist gefallen, sein Umzug trägt alte Welten auf glutbrunnen; ein Tor-Wort ohne tor_-Klon fällt
+// nie auf das welt_-Portal derselben Gestalt; V2 der Werkstatt-Rezept-Regler erkennt die Repräsentanten.
+async function checkBandKristallKleid(ctx) {
+    const { page, check } = ctx;
+    const out = await safeEvaluate(page, async () => {
+        const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+        const r = window.anazhRealm;
+        // die Ausstattung löst über das LIVE-Buch auf (studioGestalt): warten, bis das Gesetzbuch der Architektur da ist
+        const f = r._ensureAssetFoundry ? r._ensureAssetFoundry() : null;
+        const b0 = performance.now();
+        while (performance.now() - b0 < 60000 && !(f && f.ready && f.recipes && f.recipes.feuerstelle)) await sleep(100);
+        const bp = r.state.blueprints || {};
+        const res = {};
+        for (const t of ["kristall_var0", "kristall_var7", "fels_var0", "fels_var5", "fels_var7", "glut_var0", "glutbrunnen", "marktstand_dorf", "brunnen_dorf", "laterne_dorf", "kristall_geode", "felsturm", "stein_block"])
+            res[t] = { exists: !!bp[t], preset: r._foundryPresetForEntry({ type: t }) };
+        res._umzug = r.constructor.BAUPLAN_UMZUG ? r.constructor.BAUPLAN_UMZUG.glut_var3 : null;
+        const wort = (w) => r._studioBlueprintForWord(w);
+        res._wort = [wort("feuerstelle"), wort("marktstand"), wort("brunnen"), wort("laterne")].join("/");
+        const portal = Object.keys(bp).find((n) => bp[n] && bp[n].role === "portal" && typeof bp[n].studioGestalt === "string");
+        if (portal) {
+            const g = bp[portal].studioGestalt;
+            const klon = bp["tor_" + g];
+            delete bp["tor_" + g];
+            try {
+                res._torWort = { gestalt: g, portal, ziel: wort(g) };
+            } finally {
+                if (klon) bp["tor_" + g] = klon;
+            }
+        }
+        res._kind = [r._workshopRecipeKind(bp["fels_var0"]), r._workshopRecipeKind(bp["kristall_var0"])].join("/");
+        return res;
+    });
+    const o = out || {};
+    const p = (t) => (o[t] || {}).preset;
+    const soll = { kristall_var0: "kristalle", kristall_var7: "kristalle", glutbrunnen: "feuerstelle", marktstand_dorf: "marktstand", brunnen_dorf: "brunnen", laterne_dorf: "laterne", kristall_geode: "kristalle", felsturm: "zacken", stein_block: "basalt" };
+    const fails = Object.entries(soll).filter(([t, w]) => p(t) !== w).map(([t, w]) => `${t} → ${p(t)} (erwartet ${w})`);
+    for (const t of ["fels_var0", "fels_var5", "fels_var7"]) if (!p(t) || p(t) === "null") fails.push(`${t} → ${p(t)} (erwartet ein Fels-Rezept)`);
+    if ((o.glut_var0 || {}).exists !== false) fails.push("glut_var0 lebt (das Glut-Genom ist gefallen)");
+    if (o._umzug !== "glutbrunnen") fails.push(`Umzug glut_var3 → ${o._umzug}`);
+    check("V1 Kristall-Kleid: jede Fels/Kristall-Variante trägt ihr Studio-Rezept, die Ausstattung ihr Gesetzbuch, das Glut-Genom zieht auf glutbrunnen", fails.length === 0, fails.join(" · "));
+    const t = o._torWort;
+    check("V1 Wort: feuerstelle/marktstand/brunnen/laterne lösen auf die Ausstattung, ein Tor-Wort ohne tor_-Klon nie auf das welt_-Portal", o._wort === "glutbrunnen/marktstand_dorf/brunnen_dorf/laterne_dorf" && !!t && t.ziel !== t.portal && !/^welt_/.test(String(t.ziel)), `${o._wort} · ${t ? `${t.gestalt} → ${t.ziel}` : "kein Portal mit Gestalt"}`);
+    check("V2 Werkstatt: der Rezept-Regler erkennt die Repräsentanten (fels_var0 rock, kristall_var0 crystal)", o._kind === "rock/crystal", o._kind);
+}
+
 module.exports = {
     checkBandLambda4Streu, checkBandStoffSignatur, checkBandV18493CoSchoepferStudio, checkBandFoundrySpeicherFlach,
+    checkBandKristallKleid,
 };

@@ -1,10 +1,12 @@
 "use strict";
 // scripts/playtest/dirigent.cjs — der Richter von Dirigent (spec/stamm/modul-karte.json): Konstruktor · state-Baum · Spiel-Modi · Kamera-Modus · Leucht-Takt · Perf-Sinn · der EINE Regler · Holz-Profile · Geräte-Profil · Flug-Schreiber · die Spielschleife · Frame-Planer · Fixed-Step · Replay · init · das erste Weltbild · Ladeschirm · der Boot.
-// 14 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
+// 18 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
+const path = require("path");
 const SK = require("../lib/shader-kosten.cjs");
 const { safeEvaluate } = require("../playtest.cjs");
+const SKRIPTE = path.join(__dirname, "..");
 
 // V9.52 Sub-Welle a — die Basis-Invarianten direkt nach dem `finalState`-Greifen.
 // Welt-/Terrain-/Spieler-Grundprüfungen — verhaltens-identisch zur alten Inline-Form.
@@ -1383,9 +1385,278 @@ async function checkBandV18331ReplayDeterminism(ctx) {
     );
 }
 
+// Perf-Panel + Perf-Export — eingefaltet aus gate:perf-panel (D3b): Schöpfer V18.472 „optimiere das perf-panel … damit ich
+// spielen kann, einen screenshot erstellen kann … einen button für den export der daten". (P) das Panel füllt seine Felder
+// aus den EINEN Quellen (perfSense · Flugschreiber · Impostor-Zensus), der Kopf trägt die VERSION; (E) der Export liefert
+// denselben Flugschreiber-Trace als Datei; SELBST-TEST: ein leerer Flugschreiber liest als „kein Export".
+async function checkBandPerfPanel(ctx) {
+    const { page, check } = ctx;
+    const out = await safeEvaluate(page, async () => {
+        const r = window.anazhRealm;
+        const res = {};
+        // ~4 s Sim pumpen, damit Flugschreiber + Sekunden-Ring Substanz tragen (der Ring rollt an echter Wanduhr)
+        let t = performance.now();
+        for (let i = 0; i < 40; i++) {
+            for (let k = 0; k < 12; k++) {
+                t += 16.7;
+                try {
+                    r._gameLoopTick(t);
+                } catch (_e) {}
+            }
+            await new Promise((res2) => setTimeout(res2, 110));
+        }
+        const panelVorher = r.state.perfPanel;
+        r.state.perfPanel = true;
+        r._perfPanelLast = 0;
+        r._perfPanelRender();
+        const fr = r.state.flightRecorder;
+        res.ringN = fr && fr.secRingN ? fr.secRingN : 0;
+        res.head = (document.getElementById("pp-head") || {}).textContent || "";
+        res.grid = (document.getElementById("pp-grid") || {}).textContent || "";
+        res.buckets = (document.getElementById("pp-buckets") || {}).textContent || "";
+        const cv = document.getElementById("pp-ring");
+        // Canvas wirklich GEMALT: Pixel über dem Hintergrund
+        if (cv && cv.getContext && cv.getContext("2d")) {
+            const d = cv.getContext("2d").getImageData(0, 0, cv.width, cv.height).data;
+            let hit = 0;
+            for (let i = 0; i < d.length; i += 4) if (d[i] > 30 || d[i + 1] > 30 || d[i + 2] > 60) hit++;
+            res.canvasPixel = hit;
+        }
+        // Export (a.click lädt headless nichts herunter — Rückgabe + JSON sind der Beweis)
+        const exp = r._exportPerfTrace();
+        res.export = exp ? { name: exp.name, bytes: exp.bytes } : null;
+        const trace = exp ? r._flightRecorderBuildTrace() : null;
+        res.trace = !!(trace && trace.session && trace.session.frames > 0 && "impostorZensus" in trace && trace.version);
+        const saved = r.state.flightRecorder;
+        r.state.flightRecorder = null;
+        res.selbstTestKeinTrace = r._exportPerfTrace() === null;
+        r.state.flightRecorder = saved;
+        r.state.perfPanel = panelVorher;
+        return res;
+    });
+    const o = out || {};
+    const version = require(path.join(SKRIPTE, "..", "package.json")).version;
+    check("Perf-Panel (P) Kopf trägt fps + VERSION (Screenshot-Pflichtfeld)", /fps/.test(o.head) && String(o.head).includes("V" + version), String(o.head).slice(0, 60));
+    check(
+        "Perf-Panel (P) Grid trägt frame · draw-calls · tris · GPU (echt|proxy) · Impostor, die ms-Verteilung ihre 6 Eimer",
+        /frame ø/.test(o.grid) && /draw-calls/.test(o.grid) && /tris/.test(o.grid) && /GPU \((echt|proxy)\)/.test(o.grid) && /Impostor/.test(o.grid) && /ms-Verteilung/.test(o.buckets) && /<17/.test(o.buckets)
+    );
+    check(`Perf-Panel (P) Sekunden-Ring rollt (${o.ringN}s) + Canvas ist GEMALT (${o.canvasPixel || 0} px)`, o.ringN >= 2 && (o.canvasPixel || 0) > 200);
+    check(
+        "Perf-Panel (E) der Export liefert die Datei, ihr Trace trägt session/impostorZensus/version",
+        !!(o.export && /^anazhRealmPerf-V[\d.]+-.*\.json$/.test(o.export.name) && o.export.bytes > 500 && o.trace),
+        o.export ? `${o.export.name} · ${o.export.bytes} B` : "null"
+    );
+    check("Perf-Panel SELBST-TEST: ohne Flugschreiber kein Export (die Linse feuert)", o.selbstTestKeinTrace === true);
+}
+
+// Existenz-Boden des Dispatchers — eingefaltet aus gate:existenz-boden (D3b): Schöpfer-Trace 14.07. — die render-gebundene
+// Maschine hielt das deferrable-Budget ≤ 0, `break` ließ die Substanz-Queues monoton wachsen (Heap +1,6 MB/s, Wasser mit
+// Schwimm-Physik ohne Oberfläche). Lehre 13: Existenz vor Framerate — Substanz (prio 1: waterIso) läuft bei leerem Budget
+// JEDEN Frame, Deko (prio ≥ 2) jeden 4.; K40 der Dauer-Strom: baut jeder Takt Terrain, läuft das Deko-Innere trotzdem jeden 4.
+async function checkBandExistenzBoden(ctx) {
+    const { page, check } = ctx;
+    const out = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const s = r.state;
+        const pos = s.playerMesh.position;
+        const res = {};
+        const leer = { remainingMs: () => 0 }; // die render-gebundene Maschine des Schöpfers
+        const frameNo = r._schedFrameNo;
+        // (a) Substanz läuft JEDEN Frame, Deko nur jeden 4.
+        const gesehen = { waterIso: 0, deko: 0, laeufe: 0 };
+        for (let i = 0; i < 8; i++) {
+            const ran = r._dispatchFrameJobs(r._buildDeferrableJobs(pos), leer);
+            gesehen.laeufe++;
+            if (ran.includes("waterIso")) gesehen.waterIso++;
+            if (ran.includes("scatterDeco") || ran.includes("grass")) gesehen.deko++;
+        }
+        res.gesehen = gesehen;
+        // (b) eine GEFÜLLTE Wasser-Queue schrumpft unter leerem Budget
+        if (!s.pendingWaterIso) s.pendingWaterIso = new Set();
+        for (const key of s.voxelChunks.keys()) {
+            s.pendingWaterIso.add(key);
+            if (s.pendingWaterIso.size >= 6) break;
+        }
+        res.queueVor = s.pendingWaterIso.size;
+        for (let i = 0; i < 30 && s.pendingWaterIso.size > 0; i++) r._dispatchFrameJobs(r._buildDeferrableJobs(pos), leer);
+        res.queueNach = s.pendingWaterIso.size;
+        // (c) SELBST-TEST: ein Sonde-Job prio 2 läuft auf einem Nicht-4er-Frame NICHT
+        r._schedFrameNo = 1;
+        let sondeLief = false;
+        r._dispatchFrameJobs([{ name: "sonde", prio: 2, run: () => (sondeLief = true) }], leer);
+        res.bodenIstBoden = sondeLief === false;
+        // (d) DER DAUER-STROM (K40): gezählt wird das Innere der Deko (der Scatter-Takt), nicht der Job
+        const eigen = (k) => Object.prototype.hasOwnProperty.call(r, k);
+        const alt = { strom: eigen("_tickVoxelChunkStreaming"), deko: eigen("_tickScatterStreaming") };
+        const altStrom = r._tickVoxelChunkStreaming;
+        const altDeko = r._tickScatterStreaming;
+        let innen = 0;
+        r._tickVoxelChunkStreaming = () => 1;
+        r._tickScatterStreaming = () => {
+            innen++;
+        };
+        const voll = { remainingMs: () => 16 };
+        try {
+            r._schedFrameNo = 0;
+            for (let i = 0; i < 8; i++) r._dispatchFrameJobs(r._buildDeferrableJobs(pos), voll);
+            res.dauerStromDeko = innen;
+            // (e) SELBST-TEST: im Nicht-4er-Takt mit Terrain-Bau wartet das Innere (Terrain zuerst)
+            innen = 0;
+            r._schedFrameNo = 1;
+            r._dispatchFrameJobs(r._buildDeferrableJobs(pos), voll);
+            res.terrainZuerst = innen === 0;
+        } finally {
+            if (alt.strom) r._tickVoxelChunkStreaming = altStrom;
+            else delete r._tickVoxelChunkStreaming;
+            if (alt.deko) r._tickScatterStreaming = altDeko;
+            else delete r._tickScatterStreaming;
+            r._schedFrameNo = frameNo;
+        }
+        return res;
+    });
+    const o = out || { gesehen: {} };
+    const g = o.gesehen;
+    check("Existenz-Boden (a) SUBSTANZ (waterIso) läuft JEDEN Frame trotz Budget 0, DEKO gedrosselt (jeden 4.)", g.laeufe > 0 && g.waterIso === g.laeufe && g.deko > 0 && g.deko <= Math.ceil(g.laeufe / 4) * 2, JSON.stringify(g));
+    check(`Existenz-Boden (b) die Wasser-Queue SCHRUMPFT unter leerem Budget (${o.queueVor} → ${o.queueNach})`, o.queueNach < o.queueVor);
+    check("Existenz-Boden SELBST-TEST: prio-2 läuft NICHT auf Nicht-4er-Frames (der Boden ist ein Boden)", o.bodenIstBoden === true);
+    check("Existenz-Boden (d) DAUER-STROM: baut jeder Takt Terrain, läuft das Deko-Innere trotzdem jeden 4. Takt", o.dauerStromDeko >= 2, `${o.dauerStromDeko} von 8 Takten`);
+    check("Existenz-Boden (e) SELBST-TEST: im Nicht-4er-Takt mit Terrain-Bau wartet die Deko (Terrain zuerst)", o.terrainZuerst === true);
+}
+
+// Godrays (V8 Kür) — eingefaltet aus gate:godray (D3b): der volumetrische Screen-Space-Light-Shaft im EINEN Post-FX-Pass.
+// (A) die EINE Quelle steht + fließt (March gDelta/godrayDensity, `godrayUniforms`, additiv in die Bloom-Summe; `_loopRender`
+// projiziert die Sonne und liest `_godrayFrameGate`; `_nexusPerfActuate` fährt `_godrayScale` aus PERF_GODRAY_MAX), die reine
+// `_godrayFrameGate` remappt Höhe×Wetter; (B) der Perf-Hebel als ZAHL: Last → 0, Kopfraum → MAX, headless → MAX.
+async function checkBandGodray(ctx) {
+    const { page, check } = ctx;
+    const o = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const st = r.state;
+        const out = { MAX: r.constructor.PERF_GODRAY_MAX };
+        // (A) SOURCE-PROBE — die `.toString()`-Linse auf die LIVE-Methoden
+        const epp = r._ensurePostProcessing.toString();
+        const lr = r._loopRender.toString();
+        const npa = r._nexusPerfActuate.toString();
+        out.quelle = {
+            frameGate: typeof r._godrayFrameGate === "function",
+            ppMarch: /gDelta/.test(epp) && /godrayDensity/.test(epp) && /sceneColor\.sample/.test(epp),
+            ppUniforms: /godrayUniforms/.test(epp) && /godraySun/.test(epp) && /godrayStrength/.test(epp),
+            ppAdded: /\.add\(godray\)/.test(epp), // additiv in DIESELBE Bloom-Summe
+            lrProject: /godrayUniforms/.test(lr) && /\.project\(/.test(lr) && /sunScreenPos/.test(lr),
+            lrGate: /_godrayFrameGate/.test(lr),
+            npaLever: /PERF_GODRAY_MAX/.test(npa) && /_godrayScale/.test(npa),
+        };
+        // die reine `_godrayFrameGate`: Sonne hoch + klar → hoch; unter Horizont → 0; Sturm → ~0
+        out.gateHigh = r._godrayFrameGate(0.9, 1.0);
+        out.gateBelow = r._godrayFrameGate(-0.2, 1.0);
+        out.gateStorm = r._godrayFrameGate(0.9, r.constructor.WEATHER_FIELD.stormy.sun);
+        // (B) PERF-HEBEL als ZAHL — headless-Kurzschluss kontrolliert umgehen (wie der Schatten-Regler)
+        const wasNull = st.renderer && st.renderer._isHeadlessNull;
+        const sense = (ls, calls, frameMs) => ({ loadScale: ls, phase: { archCulling: 1, render: 1, streaming: 0, waterIso: 0 }, renderCalls: calls, frameMs });
+        try {
+            if (st.renderer) st.renderer._isHeadlessNull = true;
+            r._nexusPerfActuate(sense(0.0, 2000, 60));
+            out.headlessScale = st._godrayScale;
+            if (st.renderer) st.renderer._isHeadlessNull = false;
+            r._nexusPerfActuate(sense(0.0, 2000, 60)); // heavy → effArch ~0 → Faktor ~0
+            out.heavyScale = st._godrayScale;
+            r._nexusPerfActuate(sense(1.0, 0, 8)); // light → effArch ~1 → Faktor ~MAX
+            out.lightScale = st._godrayScale;
+        } finally {
+            if (st.renderer) st.renderer._isHeadlessNull = wasNull;
+        }
+        return out;
+    });
+    const q = (o && o.quelle) || {};
+    const fehlt = Object.keys(q).filter((k) => q[k] !== true);
+    check("Godray (A) die EINE Quelle im Post-FX-Pass, die Sonne projiziert, der Hebel im EINEN Aktuator", !!o && fehlt.length === 0, fehlt.join(" · "));
+    const g = o || {};
+    check("Godray (A) `_godrayFrameGate`: Mittag/klar > 0,6 · unter Horizont 0 · Sturm < 0,05", g.gateHigh > 0.6 && g.gateBelow === 0 && g.gateStorm != null && g.gateStorm < 0.05, `${g.gateHigh} · ${g.gateBelow} · ${g.gateStorm}`);
+    check(
+        "Godray (B) der Perf-Hebel: headless → MAX, Last → aus, Kopfraum → MAX, klar getrennt",
+        g.headlessScale != null && Math.abs(g.headlessScale - g.MAX) < 1e-6 && g.heavyScale < 0.1 && g.lightScale > g.MAX - 0.05 && g.heavyScale < g.lightScale - 0.4,
+        `headless ${g.headlessScale} · heavy ${g.heavyScale} · light ${g.lightScale} (MAX ${g.MAX})`
+    );
+}
+
+// Die EINE Szenen-Skala (K50) + die Laub-Layer-Trennung — eingefaltet aus gate:foliage-res (D3b): bis K50 rechnete der Regler
+// einen Laub-Faktor (`_foliageResScale`), den kein Pass las — er fiel. (1) `_szeneSkalaWirk`: mit zeitlicher Auflösung der Wert
+// des Spielers, geklemmt auf [SZENE_SKALA_MIN, 1], ohne Wert SZENE_SKALA, ohne TRAA 1; (2) `_markFoliageLayer` und die echten
+// Gruppen: Laub trägt FOLIAGE_LAYER + Layer 0, Platziertes nur Layer 0; (3) der Regler trägt die Auflösung nicht; (4) der
+// Flugschreiber-Snapshot nennt `szeneSkala`.
+async function checkBandSzeneSkala(ctx) {
+    const { page, check } = ctx;
+    const o = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const st = r.state;
+        const THREE = window.THREE;
+        const K = r.constructor;
+        const LAYER = K.FOLIAGE_LAYER;
+        const out = { MIN: K.SZENE_SKALA_MIN, SKALA: K.SZENE_SKALA };
+        // (1) die EINE Szenen-Skala
+        const traaWar = st._traa;
+        const skWar = st.szeneSkala;
+        st._traa = true;
+        out.skala = [null, 0.3, 1.4, 0.85].map((w) => ((st.szeneSkala = w), r._szeneSkalaWirk()));
+        st._traa = false;
+        out.skala.push(r._szeneSkalaWirk());
+        st._traa = traaWar;
+        st.szeneSkala = skWar;
+        // (2) _markFoliageLayer + die ECHTEN Gruppen über den realen Erzeugungs-Pfad (`_archInstanceGroupFor`)
+        const layersOf = (m) => ((m.layers.mask & 1) !== 0 ? "L0" : "") + ((m.layers.mask & (1 << LAYER)) !== 0 ? "+LAUB" : "");
+        const mk = (regionKey, regional) => {
+            const m = new THREE.Object3D();
+            r._markFoliageLayer(m, regionKey, regional);
+            return layersOf(m);
+        };
+        out.marke = [mk("3,4", true), mk(null, false)];
+        try {
+            const leaf = { geom: new THREE.BoxGeometry(1, 1, 1), mat: new THREE.MeshBasicMaterial() };
+            const gF = r._archInstanceGroupFor("grown_probe_leaf", 0, leaf, "9,9");
+            const gP = r._archInstanceGroupFor("p_probe", 0, leaf, null);
+            out.gruppe = [gF && gF.mesh ? layersOf(gF.mesh) : null, gP && gP.mesh ? layersOf(gP.mesh) : null];
+            for (const g of [gF, gP]) if (g && g.mesh) g.mesh.visible = false;
+        } catch (e) {
+            out.gruppe = ["ERR " + (e && e.message)];
+        }
+        // (3) DER REGLER TRÄGT DIE AUFLÖSUNG NICHT — den headless-Kurzschluss kontrolliert umgehen, schwere und leichte Last
+        const wasNull = st.renderer && st.renderer._isHeadlessNull;
+        const applyWar = r._applyRenderScale;
+        const sense = (ls, calls, frameMs) => ({ loadScale: ls, phase: { archCulling: 1, render: 1, streaming: 0, waterIso: 0 }, renderCalls: calls, frameMs });
+        try {
+            if (st.renderer) st.renderer._isHeadlessNull = false;
+            r._applyRenderScale = () => {};
+            st.szeneSkala = 0.8;
+            for (let i = 0; i < 60; i++) r._nexusPerfActuate(sense(0.0, 2000, 60));
+            out.nachLast = st.szeneSkala;
+            for (let i = 0; i < 80; i++) r._nexusPerfActuate(sense(1.0, 0, 8));
+            out.nachRuhe = st.szeneSkala;
+            out.laubFaktorLebt = "_foliageResScale" in st;
+        } finally {
+            r._applyRenderScale = applyWar;
+            st.szeneSkala = skWar;
+            if (st.renderer) st.renderer._isHeadlessNull = wasNull;
+        }
+        // (4) der Flugschreiber-Snapshot trägt die Szenen-Skala
+        const snap = r._flightRecorderSnapshot(16.0, {});
+        out.snapshotSkala = snap && snap.ctx ? snap.ctx.szeneSkala : undefined;
+        return out;
+    });
+    const g = o || {};
+    check(
+        "Szenen-Skala (1) EINE Größe: ohne Wert SZENE_SKALA, 0,3 → MIN, 1,4 → 1, 0,85 bleibt, ohne TRAA 1",
+        !!g.skala && g.skala.join("/") === [g.SKALA, g.MIN, 1, 0.85, 1].join("/"),
+        g.skala ? g.skala.join("/") : ""
+    );
+    check("Szenen-Skala (2) Laub trägt FOLIAGE_LAYER + Layer 0, Platziertes nur Layer 0 (Marke und echte Gruppe)", !!g.gruppe && [...g.marke, ...g.gruppe].join("/") === "L0+LAUB/L0/L0+LAUB/L0", [...(g.marke || []), ...(g.gruppe || [])].join("/"));
+    check("Szenen-Skala (3) der Regler trägt die Auflösung nicht (Last und Ruhe lassen 0,8 stehen, kein Laub-Faktor), (4) der Snapshot nennt sie", g.nachLast === 0.8 && g.nachRuhe === 0.8 && g.laubFaktorLebt === false && typeof g.snapshotSkala === "number", `${g.nachLast} → ${g.nachRuhe} · Laub-Faktor ${g.laubFaktorLebt} · Snapshot ${g.snapshotSkala}`);
+}
+
 module.exports = {
     checkInitialState, checkRing1Grok, checkBandV1778LadderCut, checkBandV18278LoopErrorBoundary,
     checkBandWellePerfENexusGovernor, checkBandWaldbodenKaskade, checkBandTailleOmega5, checkBandV18149Statusbar,
     checkBandV18163DetailTiefe, checkBandV18165KonsoleHeil, checkBandV18177AAA, checkBandV18210Verdrahtung,
-    checkBandRauschGesetz, checkBandV18331ReplayDeterminism,
+    checkBandRauschGesetz, checkBandV18331ReplayDeterminism, checkBandPerfPanel, checkBandExistenzBoden,
+    checkBandGodray, checkBandSzeneSkala,
 };

@@ -1,6 +1,6 @@
 "use strict";
 // scripts/playtest/gelaende-chunks.cjs — der Richter von Gelaende/chunks (spec/stamm/modul-karte.json): Voxel-Worker · Chunk-Bau · Streaming · Edits · Dirty-Remesh.
-// 7 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
+// 8 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
 const path = require("path");
@@ -2469,8 +2469,57 @@ async function checkBandPhaseAFundament(ctx) {
     );
 }
 
+// Carve über den Worker — eingefaltet aus gate:carve (D3b): `Gegraben: 5× erde` → `FPS: 4` am Schöpfer-Holz; der Neubau
+// des Spieler-Chunks (und jedes Chunks mit einem Schnitt im 3×3) geht über den Worker, auch bei gesundem Frame (K69-2: am
+// Erdbau eines Dorfs um den Spieler baute er sonst 154–409 ms in EINEM Takt). Synchron baut nur ein ausdrückliches forceSync.
+async function checkBandCarveWorker(ctx) {
+    const { page, check } = ctx;
+    const out = await safeEvaluate(page, async () => {
+        const r = window.anazhRealm;
+        const st = r.state;
+        // Takte, bis der Chunk unter dem Spieler GEBAUT steht — das Bau-Ereignis; die Decke 600 ist ROT
+        const steht = () => {
+            const pc = st.lastPlayerVoxelChunk;
+            return !!(pc && st.voxelChunks && st.voxelChunks.has(pc.cx + "," + pc.cz));
+        };
+        for (let takte = 0; takte < 600 && !steht(); takte++) {
+            r._gameLoopTick();
+            await new Promise((res) => setTimeout(res, 0));
+        }
+        const pc = st.lastPlayerVoxelChunk;
+        if (!pc || !steht()) return { err: "der Spieler-Chunk entstand nie" };
+        // den Build-Aufruf bespitzeln → die forceSync-ENTSCHEIDUNG ablesen
+        const o = {};
+        let lastForceSync = null;
+        const eigen = Object.prototype.hasOwnProperty.call(r, "_acquireVoxelChunkBuild");
+        const vorher = r._acquireVoxelChunkBuild;
+        const orig = vorher.bind(r);
+        r._acquireVoxelChunkBuild = function (a, b, c, opts) {
+            lastForceSync = !!(opts && opts.forceSync);
+            return orig(a, b, c, opts);
+        };
+        try {
+            for (const [k, ueber, opts] of [["gesund", false, undefined], ["ueber", true, undefined], ["force", true, { forceSync: true }]]) {
+                st._frameOverBudget = ueber;
+                lastForceSync = null;
+                r._rebuildVoxelChunk(pc.cx, pc.cz, null, opts);
+                o[k] = lastForceSync;
+            }
+        } finally {
+            if (eigen) r._acquireVoxelChunkBuild = vorher;
+            else delete r._acquireVoxelChunkBuild;
+            st._frameOverBudget = false;
+        }
+        return o;
+    });
+    const ok = !!out && !out.err;
+    check("Carve: gesunder Frame → der Neubau des Spieler-Chunks geht über den Worker (kein Sync-Trip im Takt)", ok && out.gesund === false, ok ? `forceSync=${out.gesund}` : out && out.err);
+    check("Carve: Frame über Budget → der Neubau geht über den Worker (kein ~200-ms-Stall)", ok && out.ueber === false, ok ? `forceSync=${out.ueber}` : "");
+    check("Carve: ein ausdrückliches forceSync gewinnt IMMER (Test/Naht-Intent absolut)", ok && out.force === true, ok ? `forceSync=${out.force}` : "");
+}
+
 module.exports = {
     checkBandVoxelP3AndInventory, checkBandWelleC3CellularReaction, checkBandWellePerf3cWorkerFoundation,
     checkBandWellePerf3cPhase2Async, checkBandWellePerf3cPhase3FullMesh, checkBandV17118WorkerEngaged,
-    checkBandPhaseAFundament,
+    checkBandPhaseAFundament, checkBandCarveWorker,
 };

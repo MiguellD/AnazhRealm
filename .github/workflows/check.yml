@@ -478,13 +478,6 @@ jobs:
               # vorigen; der Selbsttest setzt das direkte fs.writeFile ein und sieht ROT. Lokal 16 → 30 s.
               run: npm run gate:persistence
 
-            - name: Carve-Neubau ueber den Worker (der Grab-Stall an der Wurzel)
-              if: matrix.gruppe == 1
-              # Beweist headless: der Neubau eines Edit-/Spieler-Chunks geht bei gesundem UND bei ueberzogenem Frame
-              # ueber den Worker (K69-2: kein synchroner Chunk-Bau im Takt, die Flut-Saat reist mit dem Auftrag), nur
-              # ein explizites forceSync baut synchron. Schliesst den Schöpfer-`Gegraben → FPS 4`-Befund an der Wurzel.
-              run: npm run gate:carve
-
             - name: Dichte-Spiegel (Main und voxel-worker bauen jedes Chunk-Gitter byte-gleich, mit Edits ueber dem Band)
               if: matrix.gruppe == 4
               # Faehrt die echte Welt (Null-Renderer) und vergleicht je Ort und LOD 0-3 das Gitter des Mains
@@ -636,23 +629,6 @@ jobs:
               # injizierte Geröll-L0-Instanz bei 200 m wird rot (mit Namen), die ECHTE Erschöpfung lässt Zellen
               # warten (0 L0) und setzt die Wand im Allokator, ein fehlendes fernform bricht fail-closed.
               run: npm run gate:streu-fern
-
-            - name: Konforme Same-LOD-Rand-Normale (Goldstandard-Mesh G1)
-              if: matrix.gruppe == 11
-              # Beweist headless, dass zwei same-LOD-Face-Nachbarn an ihrer GETEILTEN Boundary-Zeile
-              # IDENTISCHE Normalen tragen (≤1°, vor V18.372 bis 69° = eine Lichtungs-Naht, der „Naht
-              # direkt unter dem Wasser"-Befund). Die Heilung: in der Rand-Schale rechnet der Gradient
-              # via sample() (reine Funktion der Welt-Position) → beide Nachbarn rechnen dieselbe Normale.
-              # Schnell (3 Chunks); der volle ring-4 `gate:seam` läuft in Gruppe 3 (Chunk-Naht).
-              run: npm run gate:seam-normal
-
-            - name: Godrays (V8 Kür — die Licht-Schäfte im EINEN Post-FX-Pass + unter dem EINEN Regler)
-              if: matrix.gruppe == 5
-              # V8: der additive Screen-Space-Light-Shaft-March haengt als NODE im einen RenderPipeline-Pass
-              # (kein 2. Pass, keine MRT-Depth → das swiftshader-Blank-Risiko bleibt klein). Beweist headless
-              # die EINE Quelle (godrayUniforms) + den March in _ensurePostProcessing + die Frame-Projektion
-              # + dass der Perf-Lever `_godrayScale` dem EINEN Regler folgt (Last→aus, Kopfraum→voll, headless→MAX).
-              run: npm run gate:godray
 
             - name: Asset-Vertrag v1 (Studio-Generator trifft die eingefrorenen Goldens byte-genau)
               if: matrix.gruppe == 12
@@ -888,15 +864,6 @@ jobs:
               # statt über ein GL-Bake-iframe. Beweist headless die MECHANIK (foundry-Record, kein asset-foundry-
               # iframe im DOM, die drei iframe-Methoden geschnitten); der Atlas-LOOK ist das Schöpfer-Auge (GPU).
               run: npm run gate:foundry-impostor
-
-            - name: V1 Kristall-Kleid + V2 Werkstatt — Varianten tragen das Studio-Rezept
-              if: matrix.gruppe == 15
-              # V1: die Formations-Varianten (kristall_var${N}/fels_var${N}) lösen jetzt auf ein Studio-
-              # Preset auf (vorher NULL = Part-Pfad = die „alten Kristalle"). V2: der Werkstatt-Rezept-Regler
-              # erkennt die Repräsentanten (fels_var0->rock, kristall_var0->crystal). Null-Renderer, GPU-frei:
-              # prüft die reine _foundryPresetForEntry-Auflösung + _workshopRecipeKind (Kristall->kristalle,
-              # Fels->Rezept nach Form-Klasse, glut bleibt bewusst Part-Look). Eine Regression rot.
-              run: npm run gate:v1-resolve
 
             - name: V3 Kein zweiter Baum-Bäcker — bei lebender Foundry rendert kein Baum Grammatik
               if: matrix.gruppe == 13
@@ -1368,14 +1335,6 @@ jobs:
               if: matrix.gruppe == 5
               run: npm run gate:erstarren
 
-            - name: Existenz-Boden (bei leerem Budget läuft die Welt-Substanz jeden Frame, Deko jeden vierten)
-              if: matrix.gruppe == 1
-              run: npm run gate:existenz-boden
-
-            - name: Perf-Panel (das Screenshot-Panel füllt sich aus den EINEN Quellen, der Export liefert den Trace)
-              if: matrix.gruppe == 2
-              run: npm run gate:perf-panel
-
             - name: GPU-Zeit-Linse (headless der Proxy, die echte Leitung über ein API-treues Fake-Backend)
               if: matrix.gruppe == 4
               run: npm run gate:gpu-zeit
@@ -1383,10 +1342,6 @@ jobs:
             - name: Render-Diät (ein geteiltes Material je Tag-Signatur, die Part-Farbe reist als Instanz-Farbe)
               if: matrix.gruppe == 15
               run: npm run gate:render-diaet
-
-            - name: Szenen-Skala (die EINE Größe der Auflösung, der Regler trägt sie nicht, das Laub trägt seine Layer)
-              if: matrix.gruppe == 2
-              run: npm run gate:foliage-res
 
             - name: Fern-Ring (jenseits des Streaming-Rings zeichnet das EINE Höhen-Gesetz, der Feld-Zeichner auf swiftshader)
               if: matrix.gruppe == 15
@@ -1628,15 +1583,6 @@ jobs:
               # kein Zebra bei Wasser-Uhr 3600 s gegen 60 s, kein Schaum ohne Gesetz-Grund, der Sturm bewegt das Wasser
               # (Wind-Zeile des Gesetzes); der Sturm-Regen allein auf Schwarz zeigt Schlieren, quer zum Wind geneigt.
               run: npm run gate:wasser-leben:bild
-
-            - name: Look-Physik-Linse (der Look gegen die gemessene Realität)
-              if: matrix.gruppe == 3
-              # Die LINSE gegen den asymmetrischen-Verifikations-Riss: das Gate misst Mechanik, nicht
-              # den Perzept — ABER für die Teile des Looks, die REALITÄT SIND (Albedo · Wetter-Dimmung ·
-              # Atmosphäre-Trägheit · HDR-Tone-Mapping · lineare Farbe), gibt es eine publizierte
-              # physikalische Wahrheit. Diese Linse assertiert die CPU-lesbaren Look-Konstanten gegen
-              # reale Bereiche — GPU-frei, kein Schöpfer-Auge, eine ZAHL gegen die Realität.
-              run: npm run look-lens
 
             - name: Look-Golden-Linse (Selbst-Test der perzeptuellen MSSIM-Metrik)
               if: matrix.gruppe == 2

@@ -231,13 +231,6 @@
       "lauf": "npm run gate:persistence",
       "laeufe": ["38956671714", "38942514701", "38931002167", "38923748417", "38906180448", "38898074559", "38892745904"]
     },
-    "Carve-Neubau ueber den Worker (der Grab-Stall an der Wurzel)": {
-      "s": 5,
-      "n": 7,
-      "gruppe": "voll 4",
-      "lauf": "npm run gate:carve",
-      "laeufe": ["38956671714", "38942514701", "38931002167", "38923748417", "38906180448", "38898074559", "38892745904"]
-    },
     "Dichte-Spiegel (Main und voxel-worker bauen jedes Chunk-Gitter byte-gleich, mit Edits ueber dem Band)": {
       "s": 17,
       "n": 7,
@@ -348,20 +341,6 @@
       "n": 7,
       "gruppe": "voll 15",
       "lauf": "npm run gate:streu-fern",
-      "laeufe": ["38956671714", "38942514701", "38931002167", "38923748417", "38906180448", "38898074559", "38892745904"]
-    },
-    "Konforme Same-LOD-Rand-Normale (Goldstandard-Mesh G1)": {
-      "s": 8,
-      "n": 7,
-      "gruppe": "voll 9",
-      "lauf": "npm run gate:seam-normal",
-      "laeufe": ["38956671714", "38942514701", "38931002167", "38923748417", "38906180448", "38898074559", "38892745904"]
-    },
-    "Godrays (V8 Kür — die Licht-Schäfte im EINEN Post-FX-Pass + unter dem EINEN Regler)": {
-      "s": 5,
-      "n": 7,
-      "gruppe": "voll 4",
-      "lauf": "npm run gate:godray",
       "laeufe": ["38956671714", "38942514701", "38931002167", "38923748417", "38906180448", "38898074559", "38892745904"]
     },
     "Asset-Vertrag v1 (Studio-Generator trifft die eingefrorenen Goldens byte-genau)": {
@@ -544,13 +523,6 @@
       "n": 7,
       "gruppe": "voll 10",
       "lauf": "npm run gate:foundry-impostor",
-      "laeufe": ["38956671714", "38942514701", "38931002167", "38923748417", "38906180448", "38898074559", "38892745904"]
-    },
-    "V1 Kristall-Kleid + V2 Werkstatt — Varianten tragen das Studio-Rezept": {
-      "s": 8,
-      "n": 7,
-      "gruppe": "voll 12",
-      "lauf": "npm run gate:v1-resolve",
       "laeufe": ["38956671714", "38942514701", "38931002167", "38923748417", "38906180448", "38898074559", "38892745904"]
     },
     "V3 Kein zweiter Baum-Bäcker — bei lebender Foundry rendert kein Baum Grammatik": {
@@ -896,20 +868,6 @@
       "lauf": "npm run gate:erstarren",
       "laeufe": ["38956671714", "38942514701", "38931002167", "38923748417", "38906180448", "38898074559", "38892745904"]
     },
-    "Existenz-Boden (bei leerem Budget läuft die Welt-Substanz jeden Frame, Deko jeden vierten)": {
-      "s": 13,
-      "n": 7,
-      "gruppe": "voll 5",
-      "lauf": "npm run gate:existenz-boden",
-      "laeufe": ["38956671714", "38942514701", "38931002167", "38923748417", "38906180448", "38898074559", "38892745904"]
-    },
-    "Perf-Panel (das Screenshot-Panel füllt sich aus den EINEN Quellen, der Export liefert den Trace)": {
-      "s": 16,
-      "n": 7,
-      "gruppe": "voll 7",
-      "lauf": "npm run gate:perf-panel",
-      "laeufe": ["38956671714", "38942514701", "38931002167", "38923748417", "38906180448", "38898074559", "38892745904"]
-    },
     "GPU-Zeit-Linse (headless der Proxy, die echte Leitung über ein API-treues Fake-Backend)": {
       "s": 6,
       "n": 7,
@@ -922,13 +880,6 @@
       "n": 7,
       "gruppe": "voll 9",
       "lauf": "npm run gate:render-diaet",
-      "laeufe": ["38956671714", "38942514701", "38931002167", "38923748417", "38906180448", "38898074559", "38892745904"]
-    },
-    "Szenen-Skala (die EINE Größe der Auflösung, der Regler trägt sie nicht, das Laub trägt seine Layer)": {
-      "s": 6,
-      "n": 7,
-      "gruppe": "voll 2",
-      "lauf": "npm run gate:foliage-res",
       "laeufe": ["38956671714", "38942514701", "38931002167", "38923748417", "38906180448", "38898074559", "38892745904"]
     },
     "Fern-Ring (jenseits des Streaming-Rings zeichnet das EINE Höhen-Gesetz, der Feld-Zeichner auf swiftshader)": {
@@ -1153,13 +1104,6 @@
       "n": 7,
       "gruppe": "voll 10",
       "lauf": "npm run gate:wasser-leben:bild",
-      "laeufe": ["38956671714", "38942514701", "38931002167", "38923748417", "38906180448", "38898074559", "38892745904"]
-    },
-    "Look-Physik-Linse (der Look gegen die gemessene Realität)": {
-      "s": 5,
-      "n": 7,
-      "gruppe": "voll 6",
-      "lauf": "npm run look-lens",
       "laeufe": ["38956671714", "38942514701", "38931002167", "38923748417", "38906180448", "38898074559", "38892745904"]
     },
     "Look-Golden-Linse (Selbst-Test der perzeptuellen MSSIM-Metrik)": {

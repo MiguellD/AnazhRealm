@@ -1,6 +1,6 @@
 "use strict";
 // scripts/playtest/bild.cjs — der Richter von Bild (spec/stamm/modul-karte.json): Renderer · TAAU und die EINE Skala · Ausgabe · Post · Schatten-Kaskaden · Pass-Wahl · Schirm · GPU-Kehraus · Bündel- und Zeichen-Reihe · Szene-Tiefe · Spiegel · Feld-Pass · Panorama · Höhlen-Sicht · Tag-Nacht · Atmosphäre · Himmelskörper · Sterne · Saison · Regen.
-// 9 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
+// 10 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
 const path = require("path");
@@ -2457,8 +2457,60 @@ async function checkBandWetterVektor(ctx) {
     check("V6 Wetter-5-Kanal-Feld: _weatherFieldFor liefert fog·sun·grey·wind·rain finit, grey entsättigt, wind dramatisiert, rain stetig, fog monoton über die Transition", fails.length === 0, fails.join(" · "));
 }
 
+// Look-Physik — eingefaltet aus look-lens (D3b): Schöpfer 25.06. „die Realität kann man messen — wieso also hängt der Look
+// von MIR ab?" Die CPU-lesbaren Look-KONSTANTEN gegen reale physikalische Bereiche: Gras-Albedo (Vegetation ~0,15–0,30,
+// grün-dominant, MEADOW_GREEN linear), Wetter dimmt Licht monoton, Koschmieder-Luft (V18.530), die Tonkurve der EINEN
+// Eichung (Lehre 21, F1) und lineares Farb-Management.
+async function checkBandLookPhysik(ctx) {
+    const { page, check } = ctx;
+    const { kartenEichung } = require(path.join(SKRIPTE, "lib", "licht-linsen.cjs"));
+    const boot = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const K = r.constructor;
+        const T = window.THREE || {};
+        const rend = r.state && r.state.renderer;
+        return {
+            meadow: K.MEADOW_GREEN,
+            tints: K.WEATHER_TINTS,
+            intensity: K.WEATHER_INTENSITY,
+            luft: K.LUFT,
+            luftBeta: r._luftBeta ? ["sunny", "rainy", "stormy"].map((w) => r._luftBeta(K.WEATHER_FIELD[w])) : null,
+            toneMapping: rend ? rend.toneMapping : null,
+            belichtung: K.BELICHTUNG ? { kurve: K.BELICHTUNG.kurve, zielKarte: K.BELICHTUNG.zielKarte } : null,
+            kurveConst: K.BELICHTUNG && T[K.BELICHTUNG.kurve] != null ? T[K.BELICHTUNG.kurve] : null,
+            colorMgmt: T.ColorManagement ? !!T.ColorManagement.enabled : null,
+        };
+    });
+    const b = boot || {};
+    // 1) Gras-Albedo: MEADOW_GREEN ist LINEAR (ein zweites Dekodieren drückte die Wiese auf 0,012)
+    const m = Array.isArray(b.meadow) && b.meadow.length === 3 ? b.meadow : null;
+    const lum = m ? 0.2126 * m[0] + 0.7152 * m[1] + 0.0722 * m[2] : NaN;
+    check("Look-Physik: Gras-Albedo grün-dominant + im Real-Bereich (Vegetation ~0,15–0,30)", !!m && m[1] > m[0] && m[1] > m[2] && lum > 0.08 && lum < 0.55, m ? `MEADOW_GREEN=[${m}] · lum(linear)=${lum.toFixed(3)}` : "MEADOW_GREEN fehlt");
+    // 2) Wolken dämpfen das Licht, 3) die Wetter-Intensität ist EINE Achse
+    const t = b.tints || {};
+    const wi = b.intensity || {};
+    const tintOk = !!(t.sunny && t.rainy && t.stormy) && t.sunny.lightMul > t.rainy.lightMul && t.rainy.lightMul > t.stormy.lightMul && t.sunny.skyMul > t.rainy.skyMul && t.rainy.skyMul > t.stormy.skyMul;
+    check("Look-Physik: Wetter dimmt Licht monoton (sunny > rainy > stormy), die Intensität monoton", tintOk && wi.sunny < wi.rainy && wi.rainy < wi.stormy, `intensity ${wi.sunny}/${wi.rainy}/${wi.stormy}`);
+    // 4) Luftperspektive (Koschmieder): Sicht = −ln(Kontrast)/β, Rayleigh 1,16·10⁻⁵/m, Sommertag ≥ 5 km, Grenzschicht 0,5–3 km
+    const L = b.luft;
+    const lb = b.luftBeta;
+    check(
+        "Look-Physik: Luftperspektive physikalisch (Koschmieder 2 %, Rayleigh-Basis, Sicht ≥ 5 km, Grenzschicht, Wetter monoton)",
+        !!(L && lb) && Math.abs(L.kontrast - 0.02) < 1e-9 && Math.abs(L.betaRayleigh / 1.16e-5 - 1) < 0.1 && -Math.log(L.kontrast) / lb[0] >= 5000 && L.skalenHoeheM >= 500 && L.skalenHoeheM <= 3000 && lb[0] < lb[1] && lb[1] < lb[2],
+        L && lb ? `Sicht ${lb.map((x) => Math.round(-Math.log(L.kontrast) / x)).join("/")} m · H ${L.skalenHoeheM} m` : "LUFT/_luftBeta fehlt"
+    );
+    // 5) die Tonkurve = die Kurve der Eichung, die 18-%-Karte auf Mittelgrau + 1 EV; 6) lineares Farb-Management
+    const B = b.belichtung || {};
+    const sollKarte = kartenEichung(B.kurve);
+    check(
+        "Look-Physik: Tonkurve = die Kurve der Eichung, die 18-%-Karte auf Mittelgrau + 1 EV, Farb-Management linear",
+        Number.isFinite(b.kurveConst) && b.toneMapping === b.kurveConst && sollKarte != null && Math.abs(B.zielKarte - sollKarte) <= 0.0005 && b.colorMgmt === true,
+        `toneMapping=${b.toneMapping} · kurve=${B.kurve} (${b.kurveConst}) · zielKarte ${B.zielKarte} (Soll ${sollKarte}) · ColorManagement ${b.colorMgmt}`
+    );
+}
+
 module.exports = {
     checkBandV1731EmotionDrivesWorld, checkBandOmegaOpsisSkyEnv, checkBandWelle6G3Lebendigkeit,
     checkBandWelle6G4Atmosphere, checkBandV8LatePolishAnd6XContinued, checkBandV18164WarumLicht,
-    checkBandWahrerAnblickAtmoBusch, checkBandV18264ShadowCache, checkBandWetterVektor,
+    checkBandWahrerAnblickAtmoBusch, checkBandV18264ShadowCache, checkBandWetterVektor, checkBandLookPhysik,
 };

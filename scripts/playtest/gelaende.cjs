@@ -1,6 +1,6 @@
 "use strict";
 // scripts/playtest/gelaende.cjs — der Richter von Gelaende (spec/stamm/modul-karte.json): Welt-Genese · Genesis-Platz · Boden-Sicht · Hang und Fels · Stufen-Kette · Höhe · Voxel-Worker · Chunk-Bau · Streaming · Edits · Dirty-Remesh · Fern-Ring · Fern-Wasser · Ring-Pflege · Blocker-Netz · Bau-Hüllen · Teil-AABB.
-// 11 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
+// 12 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
 const { safeEvaluate } = require("../playtest.cjs");
@@ -2104,9 +2104,61 @@ async function checkBandWahrerAnblickPfade(ctx) {
     check(`Ω-OPSIS S2-Pfad (V1) VERSION floor ≥ 18.230.0 (gemessen ${res.versionStr})`, res.versionFloor === true);
 }
 
+// G1 Seam-Normal — eingefaltet aus gate:seam-normal (D3b, die Welt des Läufers statt eines eigenen Boots): zwei same-LOD-
+// Face-Nachbarn teilen ihre Boundary-Verts float-exakt (pad+crop); in der Rand-Schale rechnet der Gradient via sample()
+// (reine Funktion der Welt-Position), beide Nachbarn rechnen die IDENTISCHE Normale — vor V18.372 bis 69° an ~18 % der
+// Rand-Verts, die Lichtungs-Naht „direkt unter dem Wasser".
+async function checkBandSeamNormal(ctx) {
+    const { page, check } = ctx;
+    const out = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const { dim, step, span, dimY, floorDrop } = r._voxelChunkConfig(0);
+        const oy = (r.state.terrainBaseHeight || 0) - floorDrop;
+        const fullSample = (x, y, z) => r._terrainDensityAt(x, y, z);
+        const build = (cx, cz) => r._voxelChunkGeometry(cx * span - step, oy, cz * span - step, dim + 3, dimY, dim + 3, step, fullSample, 1, null, 1);
+        const q = (v) => Math.round(v * 1e5) / 1e5;
+        const EPS = 1e-4;
+        // je Face-Paar die Normal-Konformanz an den geteilten Boundary-Verts (axis 0 = x-Face, 2 = z-Face)
+        const measurePair = (gA, gB, axis, plane) => {
+            const collect = (geom) => {
+                const m = new Map();
+                const p = geom.attributes.position.array;
+                const nrm = geom.attributes.normal.array;
+                for (let i = 0; i < p.length; i += 3) {
+                    const a = axis === 0 ? p[i] : p[i + 2];
+                    if (a >= plane - EPS && a <= plane + step + EPS) m.set(q(p[i]) + "," + q(p[i + 1]) + "," + q(p[i + 2]), [nrm[i], nrm[i + 1], nrm[i + 2]]);
+                }
+                return m;
+            };
+            const mb = collect(gB);
+            const angs = [];
+            for (const [k, na] of collect(gA)) {
+                const nb = mb.get(k);
+                if (!nb) continue;
+                angs.push((Math.acos(Math.max(-1, Math.min(1, na[0] * nb[0] + na[1] * nb[1] + na[2] * nb[2]))) * 180) / Math.PI);
+            }
+            angs.sort((x, y) => x - y);
+            return { matched: angs.length, max: angs.length ? +angs[angs.length - 1].toFixed(3) : null };
+        };
+        const gA = build(5, 5);
+        const gBx = build(6, 5);
+        const gBz = build(5, 6);
+        const res = { xFace: measurePair(gA, gBx, 0, 6 * span), zFace: measurePair(gA, gBz, 2, 6 * span) };
+        for (const g of [gA, gBx, gBz]) if (g && g.dispose) g.dispose();
+        return res;
+    });
+    const TOL = 1.0; // konform = Rand-Normalen praktisch identisch (vor G1: bis 69°)
+    const fails = [];
+    for (const [lbl, f] of [["x-Face", out && out.xFace], ["z-Face", out && out.zFace]]) {
+        if (!f || f.matched < 20) fails.push(`${lbl}: nur ${f && f.matched} geteilte Verts (vakuös)`);
+        else if (f.max > TOL) fails.push(`${lbl}: Rand-Normalen bis ${f.max}° > ${TOL}° (Lichtungs-Naht)`);
+    }
+    check("G1 Seam-Normal: same-LOD-Rand-Normalen konform ≤ 1° (keine Lichtungs-Naht)", fails.length === 0, fails.join(" · ") || `x ${out.xFace.max}° · z ${out.zFace.max}° an ${out.xFace.matched}+${out.zFace.matched} Verts`);
+}
+
 module.exports = {
     checkBandV1749Adventure, checkBandVoxelTerrainCore, checkBandWellePerf3bDistanceLod,
     checkBandJedesHolzExistenzBoden, checkBandWelle993WaterLodSeam, checkBandV18130CsmShadow,
     checkBandV18132FerneSeen, checkBandV18150Ride, checkBandGammaGenese, checkBandV18199GammaMLichen,
-    checkBandWahrerAnblickPfade,
+    checkBandWahrerAnblickPfade, checkBandSeamNormal,
 };
