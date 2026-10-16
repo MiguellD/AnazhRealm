@@ -16,6 +16,7 @@
 //     (Die LODs fließen konstruktiv: buildInstance(id, seed, 0/1/2) ist die Studio-eigene Stufung.)
 //   node scripts/diag-nervensystem.cjs
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
+const { ohneKommentare } = require("./lib/stamm.cjs");
 const fs = require("fs");
 const path = require("path");
 
@@ -37,17 +38,14 @@ function check(name, ok, detail) {
     check("placement.scale trägt die Arten (eiche 4.16 · strauch 0.332 · gras 0.24)", /eiche:\s*4\.16/.test(core) && /strauch:\s*0\.332/.test(core) && /gras:\s*0\.24/.test(core));
     check("placement.rarity trägt die Kristall-Seltenheit", /rarity:\s*\{\s*kristalle:/.test(core));
     // Der Studio-Wald liest die Quelle SELBST (kein lokales SCALE-Literal mehr; Kommentare gestrippt).
-    const phytoCode = phyto.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "");
+    const phytoCode = ohneKommentare(phyto);
     check(
         "phytogenesis liest PORTAL_RENDER_CONFIG.placement (kein lokales SCALE-Literal)",
         /PORTAL_RENDER_CONFIG\.placement/.test(phytoCode) && !/const SCALE = \{\s*gras: 0\.24/.test(phytoCode)
     );
     check("phytogenesis nutzt TREE_SCALE_MUL statt des 0.82-Literals im Wald", /SCALE\[sp\] \* tr\.s \* TREE_SCALE_MUL/.test(phytoCode));
     // Die Brücke ist seit K42 ihre eigene Datei (foundry-bruecke.js) — der Export lebt dort, nicht im Labor.
-    const brueckeCode = fs
-        .readFileSync(path.join(root, "foundry-bruecke.js"), "utf8")
-        .replace(/\/\*[\s\S]*?\*\//g, "")
-        .replace(/\/\/[^\n]*/g, "");
+    const brueckeCode = ohneKommentare(fs.readFileSync(path.join(root, "foundry-bruecke.js"), "utf8"));
     check("die Brücke exportiert placement (get-render-config)", /placement:\s*c\.placement/.test(brueckeCode));
 
     console.log("\n=== TEIL B-D: der lebende Draht (Browser, foundry-ON) ===");

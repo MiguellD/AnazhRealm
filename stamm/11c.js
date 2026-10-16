@@ -1452,7 +1452,7 @@ class AnazhRealm_Z11c {
         const zeichne = (geo, stoffZ) => {
             const mesh = new THREE.Mesh(geo, stoffZ);
             mesh.frustumCulled = false; // der Ring umgibt die Kamera ringsum
-            mesh.renderOrder = -1; // hinter der Welt (Depth-Test ordnet den Rest)
+            mesh.userData.zeichenSchicht = "fern"; // hinter dem Boden, vor dem Himmel (die Zeichen-Reihe `_zeichenRang`, T3)
             mesh.castShadow = false;
             // er empfängt (D3): jenseits der Kaskaden trägt sein Boden-Stoff die Horizont-Karte (`_horizontSicht`)
             mesh.receiveShadow = true;

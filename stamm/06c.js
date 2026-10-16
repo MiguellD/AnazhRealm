@@ -2107,33 +2107,31 @@ class AnazhRealm_Z06c {
         if (safeCount !== count) {
             this.log(`Kreaturen-Anzahl auf ${safeCount} begrenzt (max=${this.state.maxCreatures})`, "WARNING");
         }
-        const spawnRadius = 50;
-        for (let i = 0; i < safeCount; i++) {
-            this._spawnOneInitialCreature(soulName, spawnRadius);
-        }
-        this.log(`Kreaturen gespawnt: ${safeCount} Kreaturen`);
+        // je Wurf eine Gruppe (`_kreaturWurf`), bis die Zahl steht; höchstens doppelt so viele Würfe wie Tiere (ein Wurf ohne
+        // Ort fehlt, eine Gruppe, die der Rest nicht hält, fällt — der nächste Wurf würfelt die Seele neu)
+        let n = 0;
+        for (let i = 0; i < 2 * safeCount && n < safeCount; i++)
+            n += this._spawnOneInitialCreature(soulName, 50, safeCount - n);
+        this.log(`Kreaturen gespawnt: ${n} Kreaturen`);
         if (typeof this._renderTaskStatusUI === "function") this._renderTaskStatusUI();
         this._uiDirty("hof"); // W3 (V18.176) — der UI-Puls (war _renderCreatureListUI direkt)
     }
 
-    // Eine Initial-Kreatur an zufälliger offener Position — die EINE Quelle für den Boot-Spawn
-    // (`spawnCreatures`) UND die deferierte Progression (`_tickBootPhase3`). getTerrainHeightAt ist
-    // voxel-aware. Symphonie kurz stumm (sonst N Pings).
-    _spawnOneInitialCreature(soulName = null, spawnRadius = 50) {
+    // Ein Initial-Wurf an zufälliger offener Position — die EINE Quelle für den Boot-Spawn (`spawnCreatures`) UND die
+    // deferierte Progression (`_tickBootPhase3`): derselbe Wurf wie die natürliche Geburt (`_kreaturWurf`, G4a — das Rudel,
+    // die Herde), die Seele aus der Affinität des Felds am Ort (`_pickFaunaSoulAtPlayer`, wie jede Geburt) oder gewünscht.
+    // `platz` deckelt die Kopfzahl. Liefert die Zahl der Geborenen.
+    _spawnOneInitialCreature(soulName = null, spawnRadius = 50, platz = 1) {
         // V18.315 — FERN spawnen: das Wesen taucht aus der Distanz auf, statt dir vor die Füße zu ploppen; sein Satz
         // blendet beim ersten Erscheinen ein (`einblenden`). Der Ort ist das EINE Geburts-Gesetz (_kreaturGeburtsOrt:
         // fern um den Spieler, außerhalb des Blicks), jeder Wurf aus dem Fauna-Strom (Γ5).
         const rng = this._faunaRng();
         const ort = this._kreaturGeburtsOrt(rng, Math.max(80, spawnRadius * 1.6));
-        if (!ort) return; // die Wildnis trägt den Ort nicht: kein Boot-Tier
-        const { x, z } = ort;
-        const terrainHeight = this.getTerrainHeightAt(x, z);
+        if (!ort) return 0; // die Wildnis trägt den Ort nicht: kein Boot-Tier
         const nass = this._weatherIsWet();
         const emotion = rng() < 0.7 ? (nass ? "sad" : "happy") : nass ? "happy" : "sad";
-        const symBefore = this.state.symphony && this.state.symphony.enabled;
-        if (this.state.symphony) this.state.symphony.enabled = false;
-        this.spawnCreatureAt(x, terrainHeight + 1.0, z, emotion, soulName);
-        if (this.state.symphony) this.state.symphony.enabled = symBefore;
+        const soul = soulName || this._pickFaunaSoulAtPlayer(ort.x, ort.z, rng);
+        return this._kreaturWurf(ort, soul, emotion, rng, platz).length;
     }
 
     // ===== DAS BOOT-PHASEN-GERÜST (P0–P3) =====
@@ -2164,7 +2162,7 @@ class AnazhRealm_Z06c {
         return !!this.state._weltbildDa && (!this._foundryEnabled() || !!this._ofenVorratSteht);
     }
 
-    // P3-Progression: je „Atem“ eine Kreatur, NACHDEM die Kontrolle steht und nur mit Frame-Luft
+    // P3-Progression: je „Atem“ ein Wurf (eine Gruppe, G4a), NACHDEM die Kontrolle steht und nur mit Frame-Luft
     // (`_frameOverBudget` falsy) — Bewegung/Laden gehen vor. No-op ohne offene P3-Arbeit.
     // DIE KONTROLLE IST DAS ERSTE WELTBILD (K60): bis K60 prüfte der Tick sie nie — er spawnte ab dem ersten Takt unter dem
     // Ladeschirm, und jede Kreatur goss ihre Gattung synchron auf dem Haupt-Faden (Radeon kalt 0,7–1,1 s vor dem Bild),
@@ -2177,10 +2175,8 @@ class AnazhRealm_Z06c {
         if (this.state._frameOverBudget) return; // Kontrolle + Streaming zuerst
         if (now - (p3.lastAt || 0) < AnazhRealm.BOOT_PHASE3_SPAWN_MS) return;
         p3.lastAt = now;
-        if (p3.creaturesLeft > 0) {
-            this._spawnOneInitialCreature(null, 50);
-            p3.creaturesLeft--;
-        }
+        if (p3.creaturesLeft > 0)
+            p3.creaturesLeft -= Math.max(1, this._spawnOneInitialCreature(null, 50, p3.creaturesLeft));
         if (p3.creaturesLeft <= 0) {
             if (typeof this._renderTaskStatusUI === "function") this._renderTaskStatusUI();
             this._uiDirty("hof");

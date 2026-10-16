@@ -46,11 +46,7 @@ const root = path.resolve(__dirname, "..");
 //      Nicht-Instanz-Zahl ist (Inventar-Slots, drawRange). Erlaubt ist genau die eine im Chokepoint `_instanzZahl`.
 const ERLAUBT = /^(slot|targetSlot|inv\[existingIdx\]|z\.drawRange)$/;
 // Block-Kommentare behalten ihre Zeilenumbrüche (die Zeilennummern der Befunde bleiben die der Datei).
-function ohneKommentare(src) {
-    return src
-        .replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ""))
-        .replace(/(^|[^:"'`\\])\/\/.*$/gm, "$1");
-}
+const ohneKommentare = stammLib.ohneKommentare;
 function quellBefunde(src) {
     const b = [];
     const code = ohneKommentare(src);

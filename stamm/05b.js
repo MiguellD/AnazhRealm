@@ -2157,6 +2157,7 @@ class AnazhRealm_Z05b {
 
         const skybox = new THREE.Mesh(skyboxGeometry, skyboxMaterial);
         skybox.name = "himmel";
+        skybox.userData.zeichenSchicht = "himmel"; // nach allem Opaken: nur Himmel-Pixel zahlen (`_zeichenRang`, T3)
         // V10.0-j — Skybox wirft keine Schatten (BackSide-Hülle um die Welt).
         skybox.castShadow = false;
         skybox.receiveShadow = false;

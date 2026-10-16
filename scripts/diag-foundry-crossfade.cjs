@@ -80,9 +80,7 @@ function check(name, ok, detail) {
     if (!ok) errs.push(name);
 }
 // Kommentare strippen (die V18.267-Falle: erklärende Kommentare zitieren die Formeln wörtlich).
-function stripComments(src) {
-    return src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "");
-}
+const stripComments = stammLib.ohneKommentare;
 function fnBody(src, sigRe) {
     const m = sigRe.exec(src);
     if (!m) return null;
