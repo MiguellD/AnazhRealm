@@ -823,7 +823,7 @@ const FIXTURES = [
         const anazhSrcST = stammLib.text(root);
         const okAll = autoStaticLaws(anazhSrcST).every((l) => l[1] === true);
         check("Selbst-Test 3: die Auto-Dorf-Gesetze sind am HEAD gruen (Vorbedingung)", okAll);
-        const broken1 = anazhSrcST.replace("settlementCells[key] = { seed:", "settlementCells[key] = kaputt({ seed:");
+        const broken1 = stammLib.ersetze(anazhSrcST, "_autoSettlementSpawnCell", "settlementCells[key] = { seed:", "settlementCells[key] = kaputt({ seed:");
         const cs1 = autoStaticLaws(broken1).find((l) => l[0].startsWith("C-S1"));
         check("Selbst-Test 4: Reservierung entfernt -> C-S1 feuert", cs1 && cs1[1] === false);
         const broken2 = anazhSrcST.replace(
@@ -1934,22 +1934,38 @@ const FIXTURES = [
                         const pm = r.state.playerMesh;
                         pm.position.set(messort[0], H(messort[0], messort[1]) + 1, messort[1]);
                         const SG = r.constructor._siedlungGesetz();
-                        const zelle = Math.floor(messort[0] / SG.cellM) + "," + Math.floor(messort[1] / SG.cellM);
-                        res.zelle = zelle;
+                        const [cx, cz] = [Math.floor(messort[0] / SG.cellM), Math.floor(messort[1] / SG.cellM)];
+                        const zelle = (res.zelle = cx + "," + cz);
+                        const cells = () => (r.state.worldMeta && r.state.worldMeta.settlementCells) || {};
+                        // DER SELBST-TEST (Karte SO; CI Gruppe 14, 16.10.: Häuser 37/16, Laternen 40/17, Plan-Hash ≠, Türen 0/16 — ein
+                        // Dorf, das der Zug früher bestellt hatte, kam im Fenster VOR der Zelle an): ein zweites Dorf im Fenster, die
+                        // erste Dorf-Zelle des Gesetzes drei Zellen weit (ihr Bau berührt die Zelle nie), kommt zuerst an und wächst zuerst
+                        for (let i = 0; i < 49 && !res.zweit; i++) {
+                            const [dx, dz] = [(i % 7) - 3, Math.floor(i / 7) - 3];
+                            const zi = Math.max(Math.abs(dx), Math.abs(dz)) === 3 && r._autoSettlementCellInfo(cx + dx, cz + dz);
+                            if (!zi || cells()[zi.key]) continue;
+                            r._autoSettlementSpawnCell(cx + dx, cz + dz, zi);
+                            res.zweit = r._autoSettlementPendingKey === zi.key ? zi.key : "abgewiesen";
+                        }
+                        // das Fenster endet am Ereignis DER Zelle (reserviert, ihre Schlange gewachsen), nie an der Ruhe aller Dörfer; baut
+                        // der Zug sie nie, ruht er ohne sie (nichts unterwegs über drosselTakte Takte) — die Uhr wacht nur gegen ein Hängen
+                        const leer = () => !r._autoSettlementQueue && !r._autoSettlementPendingKey && !r._stlWegePending;
                         const hook0 = window.__anazhAutoSettlement;
                         window.__anazhAutoSettlement = true;
                         try {
                             const t0 = performance.now();
-                            const cells = () => (r.state.worldMeta && r.state.worldMeta.settlementCells) || {};
-                            while (performance.now() - t0 < 90000) {
+                            for (let still = 0; still <= r.constructor.AUTO_SETTLEMENT.drosselTakte; ) {
+                                const vor = leer();
                                 r._tickAutoSettlement(pm.position);
-                                if (cells()[zelle] && !r._autoSettlementQueue && !r._autoSettlementPendingKey) break;
+                                const q = r._autoSettlementQueue;
+                                if ((cells()[zelle] && !(q && q.cellKey === zelle)) || performance.now() - t0 > 300000) break;
+                                still = vor && leer() ? still + 1 : 0;
                                 await new Promise((ok) => setTimeout(ok, 20));
                             }
                         } finally {
                             window.__anazhAutoSettlement = hook0;
                         }
-                        const c = ((r.state.worldMeta && r.state.worldMeta.settlementCells) || {})[zelle];
+                        const c = cells()[zelle];
                         if (!c || !Number.isFinite(c.seed)) {
                             res.err = `der Dorf-Zug baut an ${messort.join("/")} kein Dorf der Zelle ${zelle}`;
                             return res;
@@ -1968,16 +1984,36 @@ const FIXTURES = [
                             Object.assign({}, dp, { position: { x: ort.x, y: H(ort.x, ort.z), z: ort.z } })
                         );
                     }
+                    // DIE ZELLE, DIE DER LAUF BESTELLT HAT (Karte SO): ihr Gedächtnis (`settlementCells`: die Zelle am Mess-Ort, im
+                    // Akt der neue Eintrag mit seinem Samen) trägt den Anker, ihr Plan v2 ist der mit ihrem Samen an ihrem Ort, ihre
+                    // Häuser und Laternen stehen am Anker + Slot bzw. Laterne des Plans — nie die erste neue Zelle, der letzte Plan
+                    // oder alle Bauten seit vorher (die Ankunfts-Reihenfolge mischte ein zweites Dorf im Fenster ein)
                     const sc = (r.state.worldMeta && r.state.worldMeta.settlementCells) || {};
-                    const neuKey = Object.keys(sc).find((k) => !zellenVor.has(k));
-                    const anker = neuKey ? { x: sc[neuKey].x, z: sc[neuKey].z } : null;
-                    const v2 = r._ortPlaene ? [...r._ortPlaene.values()].pop() : null;
+                    const neuKeys = Object.keys(sc).filter((k) => !zellenVor.has(k));
+                    const zc = sc[res.zelle || neuKeys.find((k) => sc[k]?.seed === dp.seed)];
+                    const anker = zc ? { x: zc.x, z: zc.z } : null;
+                    const amOrt = (e, l) =>
+                        !!anker && Math.abs(e.position.x - anker.x - l.x) + Math.abs(e.position.z - anker.z - l.z) < 0.01;
+                    const v2 = [...((anker && r._ortPlaene) || new Map()).values()].find(
+                        (p) => p.seed >>> 0 === zc.seed >>> 0 && p.ort.x === anker.x && p.ort.z === anker.z
+                    );
                     const P = v2 || plan;
                     res.anker = anker;
                     res.planV2 = !!v2;
-                    const neu = r.state.architectures.slice(vorher);
-                    const haeuser = neu.filter((e) => typeof e.type === "string" && e.type.indexOf("haus_") === 0);
+                    const istHaus = (e) => typeof e.type === "string" && e.type.indexOf("haus_") === 0;
+                    const haeuser = r.state.architectures.filter(
+                        (e) => istHaus(e) && P.slots.some((sl) => sl.seed >>> 0 === e.seed && amOrt(e, sl))
+                    );
                     res.haeuser = haeuser.length;
+                    // die Ankunfts-Lesart (bis Karte SO) für den Selbst-Test: die erste neue Zelle, alle Häuser seit vorher
+                    res.ankunft = { zelle: neuKeys[0], haeuser: r.state.architectures.slice(vorher).filter(istHaus).length };
+                    const PR = globalThis.__fachwerkCore.PRESETS;
+                    const laternen = r.state.architectures.filter(
+                        (e) =>
+                            [PR.laterne?.fx?.licht, PR.wandlaterne?.fx?.licht].includes(r._lichtDatumDerGestalt(e)) &&
+                            (P.laternen || []).some((l) => amOrt(e, l))
+                    );
+                    const masten = laternen.filter((e) => r._lichtDatumDerGestalt(e) === PR.laterne?.fx?.licht);
                     // gezählt am EXPORT (die Slots des Studios): der Plan v2 wirft nasse Slots, bevor er steht (fachwerk `ortPlan`,
                     // `wasserSlots`) — an ihm gezählt sähe die Linse die Häuser nie, die ein Ort ohne trockenen Grund verliert
                     res.slots = plan.slots.length;
@@ -2078,10 +2114,7 @@ const FIXTURES = [
                     // die Kronen des Wald-Plans über den Grundrissen (Dach-Fläche + Krone T)
                     const F = r.constructor.FOREST;
                     const seedInt = r._forestSeedInt();
-                    let x0 = Infinity;
-                    let x1 = -Infinity;
-                    let z0 = Infinity;
-                    let z1 = -Infinity;
+                    let [x0, x1, z0, z1] = [Infinity, -Infinity, Infinity, -Infinity];
                     const dachW = [];
                     for (const sl of slots) {
                         if (!sl.obb) continue;
@@ -2111,24 +2144,14 @@ const FIXTURES = [
                                 }
                             }
                     res.kronen = kronen;
-                    // die Laternen der Welt um den Ort gegen die des Plans: je Laterne die Studio-Gestalt (fachwerk AUSSTATTUNG
-                    // laterne) als Eintrag, dessen Licht ihr Rezept trägt (`_lichtDatumDerGestalt`) — ein Licht ohne Leib zählt nicht
-                    let lw = 0;
-                    if (anker)
-                        for (const e of r.state.architectures)
-                            if (
-                                (r._lichtDatumDerGestalt(e) === globalThis.__fachwerkCore.PRESETS.laterne?.fx?.licht ||
-                                    r._lichtDatumDerGestalt(e) ===
-                                        globalThis.__fachwerkCore.PRESETS.wandlaterne?.fx?.licht) &&
-                                Math.hypot(e.position.x - anker.x, e.position.z - anker.z) < 250
-                            )
-                                lw++;
-                    res.laternenWelt = lw;
+                    // die Laternen der Zelle gegen die des Plans: je Laterne die Studio-Gestalt (fachwerk AUSSTATTUNG laterne) als
+                    // Eintrag, dessen Licht ihr Rezept trägt (`_lichtDatumDerGestalt`) — ein Licht ohne Leib zählt nicht
+                    res.laternenWelt = laternen.length;
                     res.laternenPlan = Array.isArray(P.laternen) ? P.laternen.length : 0;
                     // der Zwilling: ein Licht ohne Leib (der Laternen-Leser bis K10-2 und sein Zellen-Gedächtnis)
                     res.laternenZwilling = ["_laternenLesen", "_laternen"].filter((k) => k in r);
                     // DIE LATERNE VOR DER WAND (K66, Augen-Runde 15.10.: nachts glühte eine Giebelwand gesättigt orange): je Laterne der
-                    // Welt der Abstand zur nächsten Hauswand des Plans (die Tür-Zeile W × D um den Slot); das Soll aus dem EINEN
+                    // Zelle der Abstand zur nächsten Hauswand des Plans (die Tür-Zeile W × D um den Slot); das Soll aus dem EINEN
                     // Licht-Gesetz (fachwerk LICHT_GESETZ.laterne, Abfall 1/(d² + k²)): die Wand trägt höchstens das Doppelte der Gasse
                     const LGl = globalThis.__fachwerkCore.LICHT_GESETZ.laterne;
                     res.laterneWandSoll =
@@ -2136,56 +2159,35 @@ const FIXTURES = [
                             1000 * Math.sqrt(Math.max(0, (LGl.hoeheM ** 2 + LGl.kernM ** 2) / 2 - LGl.kernM ** 2))
                         ) / 1000;
                     let lwMin = Infinity;
-                    if (anker && P.ort)
-                        for (const e of r.state.architectures) {
-                            if (r._lichtDatumDerGestalt(e) !== globalThis.__fachwerkCore.PRESETS.laterne?.fx?.licht)
-                                continue;
-                            if (Math.hypot(e.position.x - anker.x, e.position.z - anker.z) >= 250) continue;
-                            for (const sl of P.slots) {
-                                const tu = sl.tuer;
-                                if (!tu || !Number.isFinite(tu.W) || !Number.isFinite(tu.D)) continue;
-                                const c = Math.cos(sl.phi || 0);
-                                const sn = Math.sin(sl.phi || 0);
-                                const dx = e.position.x - (P.ort.x + sl.x);
-                                const dz = e.position.z - (P.ort.z + sl.z);
-                                const uu = Math.abs(dx * c - dz * sn) - tu.W / 2;
-                                const vv = Math.abs(dx * sn + dz * c) - tu.D / 2;
-                                lwMin = Math.min(lwMin, uu > 0 ? (vv > 0 ? Math.hypot(uu, vv) : uu) : vv > 0 ? vv : 0);
-                            }
+                    for (const e of P.ort ? masten : [])
+                        for (const sl of P.slots) {
+                            const tu = sl.tuer;
+                            if (!tu || !Number.isFinite(tu.W) || !Number.isFinite(tu.D)) continue;
+                            const c = Math.cos(sl.phi || 0);
+                            const sn = Math.sin(sl.phi || 0);
+                            const dx = e.position.x - (P.ort.x + sl.x);
+                            const dz = e.position.z - (P.ort.z + sl.z);
+                            const uu = Math.abs(dx * c - dz * sn) - tu.W / 2;
+                            const vv = Math.abs(dx * sn + dz * c) - tu.D / 2;
+                            lwMin = Math.min(lwMin, uu > 0 ? (vv > 0 ? Math.hypot(uu, vv) : uu) : vv > 0 ? vv : 0);
                         }
                     res.laterneWand = Number.isFinite(lwMin) ? Math.round(lwMin * 100) / 100 : null;
                     // DIE LATERNE NEBEN DER FAHRBAHN (K66, Prüfung 2: 9/9 Laternen des Auto-Dorfs standen 0,45–1,2 m im gemalten Weg):
-                    // je Laterne der Welt der Abstand zum Rand jedes Wegs der EINEN Wege-Karte (die Segmente der Straßen und Feldwege,
+                    // je Laterne der Zelle der Abstand zum Rand jedes Wegs der EINEN Wege-Karte (die Segmente der Straßen und Feldwege,
                     // `_wegeFormAbstand`; der Tritt einer Ausstattung ist ein Segment ohne Länge und zählt nicht) — Soll: der Tritt des Rezepts
                     const AR = r.constructor;
                     const GZ = AR.GRUNDRISS_ZELLE;
                     res.laterneWegSoll = globalThis.__fachwerkCore.PRESETS.laterne.fx.tritt.r;
                     let lwegMin = Infinity;
-                    if (anker)
-                        for (const e of r.state.architectures) {
-                            if (r._lichtDatumDerGestalt(e) !== globalThis.__fachwerkCore.PRESETS.laterne?.fx?.licht)
-                                continue;
-                            if (Math.hypot(e.position.x - anker.x, e.position.z - anker.z) >= 250) continue;
-                            const x = e.position.x;
-                            const z = e.position.z;
-                            for (let a = -1; a <= 1; a++)
-                                for (let b = -1; b <= 1; b++) {
-                                    const l = r
-                                        ._grundrissStand()
-                                        .wege.get(
-                                            AR._grundrissSchluessel(Math.floor(x / GZ) + a, Math.floor(z / GZ) + b)
-                                        );
-                                    if (l)
-                                        for (const bb of l)
-                                            for (const f of bb.formen)
-                                                if (
-                                                    f.typ === "segment" &&
-                                                    f.kanal >= 0 &&
-                                                    Math.hypot(f.bx - f.ax, f.bz - f.az) > 0.01
-                                                )
-                                                    lwegMin = Math.min(lwegMin, AR._wegeFormAbstand(f, x, z));
-                                }
-                        }
+                    for (const { position: q } of masten)
+                        for (let a = -1; a <= 1; a++)
+                            for (let b = -1; b <= 1; b++) {
+                                const zk = AR._grundrissSchluessel(Math.floor(q.x / GZ) + a, Math.floor(q.z / GZ) + b);
+                                for (const bb of r._grundrissStand().wege.get(zk) || [])
+                                    for (const f of bb.formen)
+                                        if (f.typ === "segment" && f.kanal >= 0 && Math.hypot(f.bx - f.ax, f.bz - f.az) > 0.01)
+                                            lwegMin = Math.min(lwegMin, AR._wegeFormAbstand(f, q.x, q.z));
+                            }
                     res.laterneWeg = Number.isFinite(lwegMin) ? Math.round(lwegMin * 100) / 100 : null;
                     // DIE STUFE VOR DER TÜR IST WEG (K66, Augen-Runde 15.10.: Gras wuchs über die Türtreppe): je Haus der Punkt 0,8 m
                     // vor der Mitte seiner Haustür liegt auf einer Fläche des Dorfs (`_aufWeg`: die Formen der EINEN Wege-Karte, die
@@ -2291,7 +2293,6 @@ const FIXTURES = [
                         let halm = 0;
                         let ferne = 0;
                         const fernFehl = [];
-                        let chunks = 0;
                         const fehl = [];
                         for (let a = Math.floor((P.ort.x - 60) / span); a <= Math.floor((P.ort.x + 60) / span); a++)
                             for (
@@ -2301,7 +2302,6 @@ const FIXTURES = [
                             ) {
                                 const w = await r._voxelWorkerComputeChunkMesh(a, b, 0);
                                 if (!w || w.empty) continue;
-                                chunks++;
                                 const pos = w.positions;
                                 const nor = w.normals;
                                 for (let i = 0; i < pos.length / 3; i++) {
@@ -2347,7 +2347,6 @@ const FIXTURES = [
                                     }
                                 }
                             }
-                        res.terrasseChunks = chunks;
                         res.terrasseWand = wand;
                         res.terrasseWiese = wiese;
                         res.terrasseHalm = halm;
@@ -2422,13 +2421,6 @@ const FIXTURES = [
                         res.planHashGleich = JSON.stringify(studio) === res.v2Json;
                     }
                     res.planJson = JSON.stringify({ roads: P.roads || [] });
-                    res.lage = {
-                        seed: L.seed,
-                        baseHeight: L.baseHeight,
-                        waterLevel: L.waterLevel,
-                        erbgut: L.erbgut,
-                        regionSize: L.regionSize,
-                    };
                 } catch (e) {
                     res.err = (e && e.stack) || String(e);
                 }
@@ -2634,6 +2626,7 @@ const FIXTURES = [
                             planV2: outO.planV2,
                             zellen: u.zellen,
                             fremdArten: outO.fremdArten || {},
+                            zweit: outO.zweit,
                         },
                         m
                     )
@@ -2651,6 +2644,12 @@ const FIXTURES = [
             outO.haeuser > 0 && outO.haeuser === outO.slots,
             `${outO.haeuser}/${outO.slots}`
         );
+        if (outO.zelle)
+            check(
+                `O ${modusName}: Selbst-Test — ein zweites Dorf im Fenster, vor der Zelle angekommen, lässt das Urteil der Zelle gleich; die Ankunfts-Reihenfolge (erste neue Zelle, alle Häuser seit vorher) mischt es ein`,
+                !!outO.ankunft && outO.ankunft.zelle === outO.zweit && outO.ankunft.haeuser > outO.haeuser,
+                `zweites Dorf ${outO.zweit} · Ankunft: Zelle ${(outO.ankunft || {}).zelle}, Häuser ${(outO.ankunft || {}).haeuser}/${outO.slots} · Zelle ${outO.zelle}: ${outO.haeuser}/${outO.slots}`
+            );
         check(
             `O ${modusName}: der Ort hält jede Zahl (Sockel 0, Türen, Kronen 0, Laternen, Plan-Hash, Altwelten 0, der GT ≥ 60 m in 8 s auf dem Dorfweg, ≥ 4 Quellen in der Gasse nachts)`,
             fehlO.length === 0,

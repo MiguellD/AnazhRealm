@@ -69,21 +69,9 @@ function check(name, ok, detail) {
 // Kommentare strippen (die V18.267-Falle: erklaerende Kommentare zitieren die Muster woertlich).
 const stripComments = stammLib.ohneKommentare;
 // Der Methoden-Body per Klammer-Zaehlung (das diag-pipeline-constitution-Muster).
-function fnBody(src, sigRe) {
-    const m = sigRe.exec(src);
-    if (!m) return null;
-    let i = src.indexOf("{", m.index);
-    if (i < 0) return null;
-    let depth = 0;
-    const start = i;
-    for (; i < src.length; i++) {
-        if (src[i] === "{") depth++;
-        else if (src[i] === "}") {
-            depth--;
-            if (depth === 0) return src.slice(start, i + 1);
-        }
-    }
-    return null;
+// der EINE Rumpf-Schneider (scripts/lib/stamm.cjs): der Block an der Definition, nie am ersten Text-Treffer
+function fnBody(src, kopf) {
+    return stammLib.rumpf(src, kopf);
 }
 
 // ===== TEIL S: die statischen Gesetze =====
@@ -186,11 +174,11 @@ function staticLaws(anazhSrc, scSrc, manifestSrc) {
         const s1 = staticLaws(anazhSrc, scSrc, brokenManifest).find((l) => l[0].startsWith("S1"));
         check("Selbst-Test 1: schmiede-Zeile aus dem Manifest entfernt -> S1 feuert", s1 && s1[1] === false);
         // V2: die weapon-Policy-Zeile verstuemmelt -> S2 muss rot werden.
-        const brokenPolicy = anazhSrc.replace('donor: "geraet_schwert"', 'donor: "geraet_kaputt"');
+        const brokenPolicy = stammLib.ersetze(anazhSrc, null, 'donor: "geraet_schwert"', 'donor: "geraet_kaputt"');
         const s2 = staticLaws(brokenPolicy, scSrc, manifestSrc).find((l) => l[0].startsWith("S2"));
         check("Selbst-Test 2: weapon-Policy-Zeile verstuemmelt -> S2 feuert", s2 && s2[1] === false);
         // V3 (W-A4b): die Handachsen-Daten-Zeile gekippt -> S7 muss rot werden.
-        const brokenAxis = anazhSrc.replace('handAxis: "x"', 'handAxis: "y"');
+        const brokenAxis = stammLib.ersetze(anazhSrc, null, 'handAxis: "x"', 'handAxis: "y"');
         const s7 = staticLaws(brokenAxis, scSrc, manifestSrc).find((l) => l[0].startsWith("S7"));
         check("Selbst-Test 3: handAxis-Daten-Zeile gekippt -> S7 feuert", s7 && s7[1] === false);
         // V4 (H-F, W5): das Faust-Verdikt feuert auf jeden der drei gemessenen Täter des Vor-Stands.
@@ -708,30 +696,9 @@ function staticLaws(anazhSrc, scSrc, manifestSrc) {
     process.exit(2);
 });
 
-// ERFINDER-WELLE — die klammer-bewusste KIND_SUBSTANCE-Row-Extraktion (quote-sicher;
-// dieselbe Heilung wie gate:trias kindSubstanceRowSpan).
+// ERFINDER-WELLE — die Zeile der KIND_SUBSTANCE: der EINE Rumpf-Schneider (scripts/lib/stamm.cjs), quote-sicher.
 function ksRow(src, name) {
-    const start = src.indexOf("AnazhRealm.KIND_SUBSTANCE = Object.freeze({");
-    if (start < 0) return "";
-    const end = src.indexOf("\n});", start);
-    const k = src.indexOf("\n    " + name + ": ", start);
-    if (k < 0 || k > end) return "";
-    const i = src.indexOf("{", k);
-    let depth = 0;
-    let inStr = null;
-    for (let j = i; j <= end; j++) {
-        const c = src[j];
-        if (inStr) {
-            if (c === "\\") j++;
-            else if (c === inStr) inStr = null;
-            continue;
-        }
-        if (c === '"' || c === "'") inStr = c;
-        else if (c === "{") depth++;
-        else if (c === "}") {
-            depth--;
-            if (!depth) return src.slice(i, j + 1);
-        }
-    }
-    return "";
+    const tafel = stammLib.rumpf(src, /AnazhRealm\.KIND_SUBSTANCE = Object\.freeze\(\{/, { zitate: true });
+    const zeile = new RegExp(`\\n {4}${name}: [^{\\n]*\\{`);
+    return (tafel && stammLib.rumpf(tafel, zeile, { zitate: true })) || "";
 }

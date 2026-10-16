@@ -11,7 +11,7 @@
 // ausdithert (der Schwund, 500 ms), ist kein Befund — ein Schwund über zwei Schwund-Zeiten hängt und IST einer.
 // Dazu die BRÜCKEN: ein kalter Baum < 64 m, der seine Karte voll trägt, weil seine Wunsch-Stufe lädt — eingeschwungen
 // steht keine (sonst wäre ein Nah-Wald aus Karten grün).
-//   S  statisch: die drei Wurzeln der Klumpen-Rampe stehen als Struktur (Bäcker frei · Karten-Rang · Nah-Gang ganz)
+//   S  statisch: zwei Wurzeln der Klumpen-Rampe stehen als Struktur (Bäcker frei · Karten-Rang); den Nah-Gang fährt T9
 //   E  Einschwingen: binnen GRENZE_E Takten steht die Welt (Bauten in der Mesh-Zone, Chunks gleich, Foundry-Schlange und
 //      Karten-Bäcker leer) und 30 Takte am Stück ohne Satz — Spitze, Dauer und die Längsten beim Namen
 //   R  Ruhe: RUHE Takte eingeschwungen, in keinem ein Satz < 64 m und am Ende keine Brücke < 64 m
@@ -36,12 +36,11 @@ const RUHE = 100; // Takte, in denen eingeschwungen kein Satz auftauchen darf
 const GRENZE_T = 120; // Takte nach der Rückkehr bis 0
 const server = statikServer();
 
-// S — DIE KLASSE KEHRT NICHT ZURÜCK (statisch, vor dem Boot): die drei Wurzeln der Klumpen-Rampe stehen als Struktur.
+// S — DIE KLASSE KEHRT NICHT ZURÜCK (statisch, vor dem Boot): die Wurzeln der Klumpen-Rampe stehen als Struktur.
 //   S1 der Karten-Bäcker wartet nicht auf die Bühne (der Kreis Bühne → Streu → Karte → Bühne) und läuft im festen Takt
 //      (`_runFrameScheduler`), nie im Deko-Job (`_tickScatterStreaming`, unter Last jeder 4. Frame)
 //   S2 die Karte reist im Rang ihres nächsten Wartenden durch die Worker-Schlange, nie mit Vorrats-Rang (null)
-//   S3 der Nah-Gang der Mesh-Zone bricht nie ab (kein `break`): ein erschöpftes Bau-Budget beendet nur das Bauen,
-//      gedockte Studio-Stufen dahinter werden platziert
+//   (S3 — der Nah-Gang bricht nie ab — stand bis G2-n2 am Rumpf-TEXT und fiel mit `_kappeOffen`: gate:takt T9 am Lauf)
 function methode(src, name) {
     const a = stammLib.kopf(src, name); // am Namen, nie an der Parameter-Liste (gate:apparat Klinge 3)
     if (a < 0) return null;
@@ -69,18 +68,13 @@ function klassenWand(src) {
     const sched = methode(src, "_runFrameScheduler") || "";
     const streu = methode(src, "_tickScatterStreaming") || "";
     const req = methode(src, "_foundryBakeImpostorRequest") || "";
-    const cull = methode(src, "tickArchitectureCulling") || "";
-    const nahA = cull.indexOf("for (const entry of nahOffen) {");
-    const nahB = cull.indexOf("nahOffen.length = 0;", nahA);
-    const nah = nahA >= 0 && nahB > nahA ? cull.slice(nahA, nahB) : "";
     const S1 =
         bake.length > 0 &&
         !/_buehneSteht\(/.test(bake) &&
         /this\._tickImpostorBake\(\);/.test(sched) &&
         !/_tickImpostorBake\(/.test(streu);
     const S2 = /this\._foundryAuftrag\(\s*f,\s*"imp",\s*msg,\s*Number\.isFinite\(bedarfD2\)/.test(req);
-    const S3 = nah.length > 0 && !/\bbreak;/.test(nah);
-    return { ok: S1 && S2 && S3, S1, S2, S3 };
+    return { ok: S1 && S2, S1, S2 };
 }
 {
     const stamm = stammLib.text(root);
@@ -89,7 +83,7 @@ function klassenWand(src) {
         const brueche = [
             [
                 "S1 Bühnen-Wache im Bäcker",
-                stamm.replace(
+                stammLib.ersetze(stamm, "_tickImpostorBake",
                     "        if (!this._impostorBakeQueue || this._impostorBakeQueue.length === 0) return 0;\n",
                     "        if (!this._impostorBakeQueue || this._impostorBakeQueue.length === 0) return 0;\n        if (!this._buehneSteht()) return 0;\n"
                 ),
@@ -97,21 +91,14 @@ function klassenWand(src) {
             [
                 // derselbe Bruch im Gehilfen des Ticks: die Linse am Rumpf allein war hier blind (K60-3)
                 "S1 Bühnen-Wache im Gehilfen des Bäckers",
-                stamm.replace(
+                stammLib.ersetze(stamm, null,
                     "    _impostorBakeSende(at, flug) {\n        const st = this.state;\n",
                     "    _impostorBakeSende(at, flug) {\n        const st = this.state;\n        if (!this._buehneSteht()) return -1;\n"
                 ),
             ],
             [
                 "S2 Vorrats-Rang der Karte",
-                stamm.replace(/msg,\n(\s*)Number\.isFinite\(bedarfD2\) \? bedarfD2 : null,/, "msg,\n$1null,"),
-            ],
-            [
-                "S3 Abbruch des Nah-Gangs",
-                stamm.replace(
-                    "                if (versuche++ >= AnazhRealm.ARCH_NAH_VERSUCHE) {\n                    bauZu = true;\n                    continue;\n                }",
-                    "                if (versuche++ >= AnazhRealm.ARCH_NAH_VERSUCHE) break;"
-                ),
+                stammLib.ersetze(stamm, "_foundryBakeImpostorRequest", /msg,\n(\s*)Number\.isFinite\(bedarfD2\) \? bedarfD2 : null,/, "msg,\n$1null,"),
             ],
         ];
         const roh = brueche.map(([n, s]) => [n, s !== stamm && !klassenWand(s).ok]);
@@ -124,7 +111,7 @@ function klassenWand(src) {
     } else {
         console.log(
             `${heil.ok ? "✅" : "❌"} S  die Klumpen-Klasse steht als Struktur (S1 Bäcker frei im festen Takt ${heil.S1} · ` +
-                `S2 Karte im Rang des Wartenden ${heil.S2} · S3 Nah-Gang ohne Abbruch ${heil.S3})`
+                `S2 Karte im Rang des Wartenden ${heil.S2})`
         );
         if (!heil.ok) process.exit(1);
     }

@@ -76,23 +76,17 @@ function schlangenGesetz(src) {
         ) || []
     ).length;
     const schlange = /ziegelOffen\.push\(entry\)/.test(zweig);
-    // WER LÄDT, VERBRAUCHT KEINEN VERSUCH: im Nah-Zweig steht der Warte-Sprung VOR der Versuchs-Kappe, und ein
-    // Bau ohne Mesh merkt sich die Ankunfts-Generation (gemessen 03.10.: 24 Wartende fraßen die Kappe, das Haus
-    // dahinter blieb 800 Takte ohne Mesh).
-    const nah = body.slice(body.indexOf("for (const entry of nahOffen) {"));
-    const sprung = nah.indexOf("if (w && w.a === fA && jetztN - w.t < 1000) continue;");
-    // Die Kappe beendet nur das BAUEN (`bauZu`), der Gang läuft weiter: gedockte Studio-Stufen dahinter platzieren.
-    const kappe = nah.indexOf("if (versuche++ >= AnazhRealm.ARCH_NAH_VERSUCHE) {");
-    const warten = sprung >= 0 && kappe > sprung && /else entry\._nahWartet = \{ a: fA, t: jetztN \};/.test(nah);
+    // WER LÄDT, VERBRAUCHT KEINEN VERSUCH (03.10.: 24 Wartende fraßen die Kappe, das Haus dahinter 800 Takte ohne Mesh) —
+    // bis G2-n2 hier am Rumpf-TEXT, er fiel mit `_kappeOffen`; gate:takt T9 fährt den Nah-Gang am Lauf.
     return {
-        ok: rufe === bewacht && schlange && warten,
-        grund: `Rufe ${rufe} · bewacht ${bewacht} · Schlange ${schlange} · Warten ohne Versuch ${warten}`,
+        ok: rufe === bewacht && schlange,
+        grund: `Rufe ${rufe} · bewacht ${bewacht} · Schlange ${schlange}`,
     };
 }
 {
     const stamm = stammLib.text(root);
     if (process.argv.includes("--selftest")) {
-        const kaputt = stamm.replace(
+        const kaputt = stammLib.ersetze(stamm, "tickArchitectureCulling",
             "if (entry._ziegelSlot || entry._ziegelGebacken || ohneFeld) {\n                    if (this._archZiegelFern(entry)) regung++;\n                } else {\n                    // Steht",
             "if (this._archZiegelFern(entry)) regung++;\n                if (false) {\n                    // Steht"
         );
@@ -102,9 +96,6 @@ function schlangenGesetz(src) {
         }
         const heil = schlangenGesetz(stamm);
         const bruch = schlangenGesetz(kaputt);
-        // der zweite Bruch: Wartende verbrauchen wieder Versuche (der Sprung fällt)
-        const kaputt2 = stamm.replace("if (w && w.a === fA && jetztN - w.t < 1000) continue;", "");
-        const bruch2 = schlangenGesetz(kaputt2);
         // Das Karten-Gesetz feuert: eine fernere Zelle (40 m, ohne Bedarf) vor der Eichen-Zelle (Rang 15 m) ist überholt,
         // nähere (9 m, 15 m) sind es nicht.
         const F = "fimp:eiche|2";
@@ -129,11 +120,8 @@ function schlangenGesetz(src) {
             `${gesetzOk ? "✅" : "❌"} SELBST-TEST A': nähere Zellen vor der Eiche überholt ${gut.ueberholt.length} · ` +
                 `fernere (40 m, ohne Bedarf) überholt ${schlecht.ueberholt.length}`
         );
-        const ok = heil.ok && kaputt !== stamm && !bruch.ok && kaputt2 !== stamm && !bruch2.ok && gesetzOk;
-        console.log(
-            `${ok ? "✅" : "❌"} SELBST-TEST S: heil ${heil.grund} · Listen-Ruf injiziert ${bruch.grund} · ` +
-                `Warte-Sprung entfernt ${bruch2.grund}`
-        );
+        const ok = heil.ok && kaputt !== stamm && !bruch.ok && gesetzOk;
+        console.log(`${ok ? "✅" : "❌"} SELBST-TEST S: heil ${heil.grund} · Listen-Ruf injiziert ${bruch.grund}`);
         process.exit(ok ? 0 : 1);
     }
     const S = schlangenGesetz(stamm);

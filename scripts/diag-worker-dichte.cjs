@@ -1652,17 +1652,17 @@ async function gebaut(page, fehler) {
     const berichte = [];
     let rot = false;
     // DIE ABSENZ (plan §10 R1): der Name der Bühne steht nur in spec/ und in der Werkbank — der Stamm, der Worker und der
-    // Seh-Spiegel lesen Zahlen (Terme, Wildnis-Gewicht), nie einen Namen (kein Flag unter anderem Namen).
-    const NAME = /pruefbuehne|prüfbühne/i;
+    // Seh-Spiegel lesen Zahlen (Terme, Wildnis-Gewicht), nie einen Namen; gezählt wird der CODE (der EINE Stripper).
+    const nennt = (src) => (stammLib.ohneKommentare(src).match(/pruefbuehne|prüfbühne/gi) || []).length;
     for (const datei of [...stammLib.dateien(root), "voxel-worker.js"]) {
-        const n = (fs.readFileSync(path.join(root, datei), "utf8").match(new RegExp(NAME.source, "gi")) || []).length;
+        const n = nennt(fs.readFileSync(path.join(root, datei), "utf8"));
         if (n) {
             console.log(`  ⛔ ABSENZ: ${datei} nennt die Bühne ${n}× (ein Flag statt der Terme)`);
             rot = true;
         }
     }
-    if (SELBSTTEST && !NAME.test('if (welt.slug === "pruefbuehne") return 0;')) {
-        console.log("  ⛔ ABSENZ-SELBSTTEST: der Grep sieht den Namen nicht");
+    if (SELBSTTEST && nennt('if (w.slug === "pruefbuehne") return 0; // die Prüfbühne\n/* pruefbuehne */') !== 1) {
+        console.log("  ⛔ ABSENZ-SELBSTTEST: der Grep sieht den Namen im Code nicht oder zählt ihn im Kommentar");
         rot = true;
     }
     let selbst = null;

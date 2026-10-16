@@ -43,36 +43,25 @@ const SOLL_ALPHA_PX = 64; // NICHT-LEERE-WAND: echte Pixel, keine Clear-Karte al
 const FERN_MESHES = 1;
 const FERN_TRIS = 2;
 
-// ── Quell-Chirurgie: einen Block ab Marker mit Klammer-Balance ausschneiden ─────────────
-function schneide(quelle, marker) {
-    const i = quelle.indexOf(marker);
-    if (i < 0) return null;
-    const start = quelle.indexOf("{", i);
-    if (start < 0) return null;
-    let tiefe = 0;
-    for (let j = start; j < quelle.length; j++) {
-        const c = quelle[j];
-        if (c === "{") tiefe++;
-        else if (c === "}") {
-            tiefe--;
-            if (tiefe === 0) return quelle.slice(i, j + 1);
-        }
-    }
-    return null;
-}
+// ── Quell-Chirurgie: der EINE Rumpf-Schneider (scripts/lib/stamm.cjs) — der Block an seinem Kopf ─────────────
 
 // Die Render-Karte des Kerns (foundry-core PORTAL_RENDER_CONFIG, reine Daten) — die EINE Quelle der Stufen-Distanzen (K2).
 const KERN_RENDER = new Function(
-    schneide(require("fs").readFileSync(path.join(ROOT, "foundry-core.js"), "utf8"), "const PORTAL_RENDER_CONFIG = ") +
+    "const PORTAL_RENDER_CONFIG = " +
+        stammLib.rumpf(require("fs").readFileSync(path.join(ROOT, "foundry-core.js"), "utf8"), /const PORTAL_RENDER_CONFIG = \{/) +
         "; return PORTAL_RENDER_CONFIG;"
 )();
 
 // Eine Stamm-Konstante aus der Quelle AUSGEFÜHRT (verhaltensecht, kein Grep): KIND_POLICY (die Tafel, die der Stamm liest)
 // und LOD_DISTANCES (die EINE Distanz-Tabelle von `_foundryLodForEntry`; K2: sie liest das Kern-Gesetz
-// `terrain:PORTAL_RENDER_CONFIG.lod` — der Stub löst den Pfad über `render` auf, fail-closed wirft). `schluss` schließt,
-// was `schneide` am äußeren `}` offen lässt (die Freeze-Klammer bzw. der Ruf der Funktion).
+// `terrain:PORTAL_RENDER_CONFIG.lod` — der Stub löst den Pfad über `render` auf, fail-closed wirft). Der Kopf der Zuweisung
+// steht genau einmal im Stamm (stammLib.treffer), der Block an ihm kommt vom EINEN Schneider (stammLib.rumpf); `schluss`
+// schließt, was der Block offen lässt (die Freeze-Klammer bzw. der Ruf der Funktion).
 function ladeKonstante(quelle, name, marker, schluss, render) {
-    const block = schneide(quelle, "AnazhRealm." + name + " = " + marker);
+    const kopf = new RegExp(("AnazhRealm." + name + " = " + marker).replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "[^{;]*\\{");
+    const m = stammLib.treffer(quelle, null, kopf);
+    const rumpf = m && stammLib.rumpf(quelle, kopf);
+    const block = rumpf && m[0].slice(0, -1) + rumpf;
     if (!block) return null;
     const kern = (p) => (p.startsWith("terrain:") ? { PORTAL_RENDER_CONFIG: render } : null);
     const AnazhRealm = {
@@ -92,9 +81,8 @@ function ladeKonstante(quelle, name, marker, schluss, render) {
 // Eine Klassen-Methode als ECHTE Funktion instanzieren (Body unverändert — die
 // Linse führt EXAKT den Stamm-Code aus, mit gestubbtem this/AnazhRealm).
 function ladeMethode(quelle, name, argNamen) {
-    const block = schneide(quelle, name + "(" + argNamen + ") {");
-    if (!block) return null;
-    const body = block.slice(block.indexOf("{"));
+    const body = stammLib.rumpf(quelle, name);
+    if (!body) return null;
     try {
         return new Function("AnazhRealm", "return function(" + argNamen + ") " + body + ";");
     } catch (_e) {
@@ -105,7 +93,7 @@ function ladeMethode(quelle, name, argNamen) {
 // Der Bäcker-Kind-Wächter: die Positivliste der geurteilten Bake-Kinds als ECHTES Regex
 // aus der Quelle (der EINE Chokepoint in `_tickImpostorBake`).
 function ladeKindWaechter(quelle) {
-    const m = quelle.match(/if \(bKind && !\/(\^\([^)]*\)\$)\/\.test\(bKind\)\)/);
+    const m = stammLib.treffer(quelle, "_impostorBakeSende", /if \(bKind && !\/(\^\([^)]*\)\$)\/\.test\(bKind\)\)/);
     if (!m) return null;
     try {
         return new RegExp(m[1]);
@@ -194,6 +182,7 @@ function pruefeQuelle(quelle, render = KERN_RENDER) {
             _lodAuge: () => pm,
             _chooseLODForDistance: wahl({ LOD_DISTANCES: D }),
             _lodTreeVisHeight: () => 0,
+            _ankunftsFerne: () => 1, _archStufenGrenzen: () => null, // die Ankunft ist vorbei (B2), keine Grenzen (K43)
         };
         // Fahr-Invariante: das gerittene Entry SITZT auf der Spieler-Position → Stufe 0.
         const geritten = fn.call(stub, { position: { x: pm.x, y: pm.y, z: pm.z } });
@@ -264,13 +253,13 @@ function selbstTest() {
     // 1. Die ECHTE Quelle muss (heute) grün sein — sonst ist die Welle nicht gebaut.
     faelle.push(["echte Quelle -> KEIN Befund", pruefeQuelle(STAMM).length === 0]);
     // 2. DER ALTE FEHLER: die Policy-Zeile fehlt (impostor:true gestrippt) -> MUSS feuern.
-    const ohnePolicy = STAMM.replace(/(vehicle: Object\.freeze\(\{[^}]*?)\n\s*impostor: true,/, "$1");
+    const ohnePolicy = stammLib.ersetze(STAMM, null, /(vehicle: Object\.freeze\(\{[^}]*?)\n\s*impostor: true,/, "$1");
     faelle.push([
         "ohne KIND_POLICY.vehicle impostor:true -> feuert (der alte gt-328-Meshes-Fehler)",
         ohnePolicy !== STAMM && pruefeQuelle(ohnePolicy).length > 0,
     ]);
     // 3. Der Kind-Wächter ohne vehicle -> MUSS feuern (Bake fiele terminal).
-    const ohneWaechter = STAMM.replace("|gate|vehicle)$", "|gate)$");
+    const ohneWaechter = stammLib.ersetze(STAMM, "_impostorBakeSende", "|gate|vehicle)$", "|gate)$");
     faelle.push([
         "ohne vehicle im Bäcker-Kind-Wächter -> feuert",
         ohneWaechter !== STAMM && pruefeQuelle(ohneWaechter).length > 0,
@@ -278,7 +267,7 @@ function selbstTest() {
     // 4. Die Serve-Route gerissen (Impostor-Zweig entfernt) -> MUSS feuern.
     // V18.478 (Bäcker-ov): die Stempel-Wand ist gefallen — die Mutation wandert mit
     // (regex-basiert; der !== STAMM-Guard macht ein No-op-Replace LAUT rot).
-    const ohneRoute = STAMM.replace(
+    const ohneRoute = stammLib.ersetze(STAMM, "_foundryFlattenFor",
         /if \(lod >= 2 && this\._foundryPresetIsTree\(preset\)\) return this\._foundryBuildImpostorFlat\(entry, preset\);/,
         "if (false) return null;"
     );
@@ -287,7 +276,7 @@ function selbstTest() {
         ohneRoute !== STAMM && pruefeQuelle(ohneRoute).length > 0,
     ]);
     // 4b. Der ov-Hash aus dem fimp-Key gestrippt -> MUSS feuern (geprägte Karte kollabiert).
-    const ohneOvHash = STAMM.replace(
+    const ohneOvHash = stammLib.ersetze(STAMM, "_foundryKartenKey",
         'return preset + "|" + gestalt + (ov ? "|ov:" + this._studioOvHash(ov) : "");',
         'return preset + "|" + gestalt;'
     );

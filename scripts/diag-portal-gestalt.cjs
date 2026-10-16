@@ -44,21 +44,9 @@ function check(name, ok, detail) {
     if (!ok) errs.push(name);
 }
 const stripComments = stammLib.ohneKommentare;
-function fnBody(src, sigRe) {
-    const m = sigRe.exec(src);
-    if (!m) return null;
-    let i = src.indexOf("{", m.index);
-    if (i < 0) return null;
-    let depth = 0;
-    const start = i;
-    for (; i < src.length; i++) {
-        if (src[i] === "{") depth++;
-        else if (src[i] === "}") {
-            depth--;
-            if (depth === 0) return src.slice(start, i + 1);
-        }
-    }
-    return null;
+// der EINE Rumpf-Schneider (scripts/lib/stamm.cjs): der Block an der Definition, nie am ersten Text-Treffer
+function fnBody(src, kopf) {
+    return stammLib.rumpf(src, kopf);
 }
 
 // W-A4c/V9.56-i — DIE DYNAMISCHE WAHRHEIT: die Gestalt-Zuordnung kommt aus der QUELLE
@@ -228,7 +216,7 @@ function deriveGestalt(srcNC) {
         const bp = r.state.blueprints.welt_terrain;
         res.d.metaBefore = JSON.stringify(bp.portalMeta);
         const pm = r.state.playerMesh.position;
-        const sx = pm.x + 12;
+        const sx = pm.x + 6; // im Nah-Band des Tors (porta lod.budget.gate: Stufe 0 bis 9,5 m) — nur sie trägt die Flügel
         const sz = pm.z;
         const sy = r.getTerrainHeightAt(sx, sz) + 0.5;
         const entry = r.spawnArchitecture("welt_terrain", { x: sx, y: sy, z: sz }, { silent: true, seed: 12345 });

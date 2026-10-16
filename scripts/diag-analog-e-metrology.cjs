@@ -50,21 +50,9 @@ function extrahiereDcTris(trace) {
     worstN: worst.length
   };
 }
+// der Block am Namen: der EINE Rumpf-Schneider (scripts/lib/stamm.cjs), nie an der Parameter-Liste (gate:apparat Klinge 3)
 function schneide(quelle, name) {
-  const i = stammLib.kopf(quelle, name); // am Namen, nie an der Parameter-Liste (gate:apparat Klinge 3)
-  if (i < 0) return null;
-  const start = quelle.indexOf("{", i);
-  if (start < 0) return null;
-  let tiefe = 0;
-  for (let j = start; j < quelle.length; j++) {
-    const c = quelle[j];
-    if (c === "{") tiefe++;
-    else if (c === "}") {
-      tiefe--;
-      if (tiefe === 0) return quelle.slice(i, j + 1);
-    }
-  }
-  return null;
+  return stammLib.rumpf(quelle, name);
 }
 function codeVertrag(src) {
   function hit(re) { return re.test(src); }

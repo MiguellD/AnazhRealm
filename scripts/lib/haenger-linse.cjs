@@ -370,7 +370,7 @@ function profilLesen(p) {
                   .split("/")
                   .pop()
                   .split("?")[0];
-        // eine Stamm-Datei (die eine Datei oder stamm/NN.js) heißt mit ihrem Pfad unter der Seite (scripts/lib/stamm.cjs)
+        // eine Stamm-Datei (die eine Datei oder eine unter stamm/) heißt mit ihrem Pfad unter der Seite (scripts/lib/stamm.cjs)
         const pfad = String(c.url || "")
             .replace(/^[a-z]+:\/\/[^/]*\//, "")
             .split("?")[0];
@@ -834,21 +834,21 @@ function selbsttest() {
     knoten(1, "(root)", "", [2, 6, 7, 9, 10, 12]);
     knoten(2, "", "werkbank", [3]);
     // V8 legt dieselbe Funktion je Code-Stufe als Geschwister an (13/14 neben 4/5) — die Engstelle muss sie vereinen
-    knoten(3, "_gameLoopTick", "http://x/stamm/20c.js", [4, 11, 13, 15, 16, 17]);
-    knoten(4, "_loopRender", "http://x/stamm/20c.js", [5]);
-    knoten(5, "_lastImTakt", "http://x/stamm/20c.js");
+    knoten(3, "_gameLoopTick", "http://x/stamm/dirigent-takt.js", [4, 11, 13, 15, 16, 17]);
+    knoten(4, "_loopRender", "http://x/stamm/dirigent-takt.js", [5]);
+    knoten(5, "_lastImTakt", "http://x/stamm/dirigent-takt.js");
     knoten(6, "(idle)", "");
-    knoten(7, "onmessage", "http://x/stamm/20c.js", [8]);
-    knoten(8, "_nebenLast", "http://x/stamm/20c.js");
+    knoten(7, "onmessage", "http://x/stamm/dirigent-takt.js", [8]);
+    knoten(8, "_nebenLast", "http://x/stamm/dirigent-takt.js");
     knoten(9, "(garbage collector)", "");
     knoten(10, "haengerEichmarke", "");
-    knoten(11, "_kleinImTakt", "http://x/stamm/20c.js");
+    knoten(11, "_kleinImTakt", "http://x/stamm/dirigent-takt.js");
     knoten(12, "(program)", "");
-    knoten(13, "_loopRender", "http://x/stamm/20c.js", [14]);
-    knoten(14, "_lastImTakt", "http://x/stamm/20c.js");
-    knoten(15, "_teilA", "http://x/stamm/20c.js");
-    knoten(16, "_teilB", "http://x/stamm/20c.js");
-    knoten(17, "_teilC", "http://x/stamm/20c.js");
+    knoten(13, "_loopRender", "http://x/stamm/dirigent-takt.js", [14]);
+    knoten(14, "_lastImTakt", "http://x/stamm/dirigent-takt.js");
+    knoten(15, "_teilA", "http://x/stamm/dirigent-takt.js");
+    knoten(16, "_teilB", "http://x/stamm/dirigent-takt.js");
+    knoten(17, "_teilC", "http://x/stamm/dirigent-takt.js");
     // Seiten-Uhr: Takt alle 16,7 ms ab t=1000; Profiler-Uhr = Seite + 5 000 000 µs
     const V = 5e9 / 1000; // 5 000 000 µs
     const samples = [],
