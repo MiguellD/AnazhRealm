@@ -3284,15 +3284,20 @@
     var PHYLO_GESETZ = { golden: Math.PI * (3 - Math.sqrt(5)) };
     var PHYLO_VIS = { lab: "golden-137.5", host: "none" };
 
-    // V18.491.264 Lab weather preset table; Host none (WX_VIS).
+    // V18.491.264 Lab weather preset table; der Host liest klar · regen · sturm als WEATHER_FIELD (K2, WX_VIS).
     // klar.wind 0.06 is WX (die Atmosphaere ist foundry-core ATMO_GESETZ, D3).
     var WX_GESETZ = {
         klar: { fog: 0.15, sun: 1.0, grey: 0.0, wind: 0.06, rain: 0.0 },
         bewoelkt: { fog: 0.4, sun: 0.32, grey: 0.74, wind: 0.3, rain: 0.12 },
         nebel: { fog: 1.0, sun: 0.48, grey: 0.46, wind: 0.1, rain: 0.0 },
         sturm: { fog: 0.7, sun: 0.15, grey: 0.88, wind: 1.0, rain: 1.0 },
+        // K2 (rein additiv): der Regen der Welt — die Welt liest klar · regen · sturm aus DIESER Tafel (WEATHER_FIELD)
+        regen: { fog: 0.4, sun: 0.55, grey: 0.6, wind: 0.35, rain: 0.6 },
     };
-    var WX_VIS = { lab: "wx-4", host: "none" };
+    var WX_VIS = { lab: "wx-4", host: "WEATHER_FIELD" };
+    // K2 (rein additiv): das LICHT des Wetters — die Sonne der Zeile dimmt das Richtlicht auf sockel + sonne·sun (Labor:
+    // keyLight und Spiegel-Farbe, Welt: WEATHER_TINTS.lightMul); den Himmel der Welt dimmt die Sonne der Zeile selbst (skyMul).
+    var WX_LICHT = { sockel: 0.35, sonne: 0.65 };
 
     // ===================== DIE KARTE (W6): der Codec des EINEN Karten-Atlas — rein, THREE-frei =====================
     // Die Fernstufe einer Art ist EINE Schicht im Array-Atlas des Hosts, im Studio-Layout (bakeImpostorAtlas,
@@ -5018,6 +5023,7 @@
         PHYLO_VIS: PHYLO_VIS,
         WX_GESETZ: WX_GESETZ,
         WX_VIS: WX_VIS,
+        WX_LICHT: WX_LICHT,
         treePhenotype: treePhenotype,
         artPhaenotyp: artPhaenotyp, // K24 — der Phänotyp einer Art: Gesetz ⊕ Phänotyp-Zeile (Wirt, Linsen, treeParams)
         treeParams: treeParams, // K24 — DIE EINE Ableitung Dials → P (Studio, Foundry-Worker)
