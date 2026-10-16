@@ -19,7 +19,7 @@
 //       Haus, Plan-Hash Labor = Kern über gelaende-core lageGrund + ortCtx), die Häuser stehen nicht eben (Spanne ≥ 1 m), und
 //       der Fuß steht auf dem Bild (Strahlen von oben auf den Dorf-Boden: Treffer = dorfBodenY ± 0,05 m). Der Deko-Fluss
 //       (B5 FLUSS bis K10) fiel mit seiner Klasse; das Wasser ist das der Welt.
-//   B6  EPOCHEN: Antike × {18, 40, 120} baut ohne Ausnahme (die Welt steht, das Dorf hat Häuser)
+//   B6  EPOCHEN: Antike × {18, 40, 120} baut ohne Ausnahme (die Welt steht, das Dorf hat Häuser) — nur im echten Lauf
 //   --selftest: je Defekt wird die Basis-Zeile zurückgesetzt — als QUELL-Patch der servierten Datei (der Server reicht dem
 //   Labor die Basis-Form der geheilten Zeile) bzw. als Basis-Platte in der Seite — und GENAU die Probe dieses Defekts MUSS
 //   rot werden. Fehlt die geheilte Zeile in der Quelle, ist der Selbsttest rot (die Linse kann ihren Defekt nicht setzen).
@@ -347,7 +347,7 @@ function proben(inj) {
     out.b3 = treppen;
     out.b4 = b4;
     out.b5 = b5;
-    out.b6 = b6Lauf();
+    out.b6 = inj ? { faelle: [] } : b6Lauf(); // kein Defekt zielt auf B6 (die Antike kostet je Seite 22–45 s)
     return out;
 }
 

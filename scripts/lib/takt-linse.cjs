@@ -123,6 +123,5 @@ function taktZerlegung(opts) {
 }
 
 module.exports = {
-    LOOP_METHODEN,
     TAKT_INSTALL: `window.__taktZerlegung = (o) => (${taktZerlegung.toString()})(Object.assign({ liste: ${JSON.stringify(LOOP_METHODEN)} }, o || {}));`,
 };
