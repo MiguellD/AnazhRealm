@@ -769,7 +769,8 @@
     //   rumpf: brustkorb/nacken = Höhen-Faktoren der Brustkorb-Ellipse und des oberen Rückens (beide reichten bis ans
     //     Kinn — jede Hülle über ihnen verschluckte den Hals).
     //   kopfHaut: Raster und Verrundung im Kopf-Raum (1 Einheit ≈ 0,21 m: 5,5 mm, 12 mm — das Budget koerper L0 hält),
-    //     mundSpalt = halbe Breite der Mund-Linie als Anteil des Abstands der Lippen-Mitten · handHaut: Raster und
+    //     mundSpalt = halbe Breite der Mund-Linie als Anteil des Abstands der Lippen-Mitten · hoehleSaum = wie weit (in
+    //     Halbachsen über ihrem Rand) die Haut um das Auge den Ton der Höhle trägt (A4: sie liegt unter der Haut) · handHaut: Raster und
     //     Verrundung im Körper-Raum (1 Einheit ≈ 0,29 m: 3,5 mm, 6 mm; die Welt bewegt die Finger nicht).
     //   K57 (KOPF_SOLL): kopf.mass 0,72 → 0,75 (8,05 → 7,6 Köpfe) · auge.abstand 0,7 → 0,8 (die Lücke eine Augenbreite) ·
     //     auge.zurueck = der Augapfel tiefer in der Höhle (er stand 0,056 kH vor der Haut) · schaedel.hoch = die Kalotte
@@ -777,6 +778,10 @@
     //     Kopf sinkt, das Kinn bleibt am Hals) — die Augen auf halber Kopfhöhe · ohr: mass/tiefer = das Ohr zwischen
     //     Augen- und Nasenlinie (es reichte 0,15 kH über die Augen) · augeRaster = das Raster der Augäpfel, Iris, Pupillen
     //     und Höhlen im Ofen (12×8: ein Auge von 24 mm trägt keine 520 Dreiecke).
+    //   A4 (KOPF_SOLL augeFrei im BILD): auge.lid = [oben, unten], die Lid-Ränder an den Limbus (Augen-Raum, Augapfel 0,12) —
+    //     das Oberlid (Mitte 0,07, Halbachse 0,049) schnitt die Iris (0,07) bei 0,048, das Unterlid bei −0,055: drei von
+    //     neun Iris-Ringen oben, zwei unten lagen hinter den Lid-Wülsten (das Bild 0,48 frei); +0,03 / −0,02 legt die
+    //     Ränder auf 0,071 / −0,07, die Iris liegt frei in der Lidspalte, das Lid deckt den Augapfel darüber und darunter.
     // prettier-ignore
     var MENSCH_GESTALT = Object.freeze({
         hand: Object.freeze({ mass: 0.67, breite: 0.8 }),
@@ -784,14 +789,14 @@
         handgelenk: Object.freeze({ breite: 0.72, tiefe: 0.52 }),
         fuss: Object.freeze({ laenge: 0.9 }),
         kopf: Object.freeze({ mass: 0.75, breite: 0.86 }),
-        auge: Object.freeze({ mass: 0.5, abstand: 0.8, pupille: 0.55, hoehle: 1.15, zurueck: 0.04 }),
+        auge: Object.freeze({ mass: 0.5, abstand: 0.8, pupille: 0.55, hoehle: 1.15, zurueck: 0.04, lid: Object.freeze([0.03, 0.02]) }),
         schaedel: Object.freeze({ hoch: 0.08 }),
         ohr: Object.freeze({ mass: 0.755, tiefer: 0.082 }),
         augeRaster: Object.freeze({ w: 12, h: 8 }),
         gesicht: Object.freeze({ lippe: 0.55, lippeZurueck: 0.03, oberkiefer: 0.78, wange: 0.82, naseTiefer: 0.05,
             brauHoch: 0.028, kiefer: 0.72, kieferBreite: 0.78, kieferTiefe: 0.85, kinnZurueck: 0.04, unten: 0.84 }),
         rumpf: Object.freeze({ brustkorb: 0.52, nacken: 0.7 }),
-        kopfHaut: Object.freeze({ vox: 0.026, blend: 0.055, mundSpalt: 0.35 }),
+        kopfHaut: Object.freeze({ vox: 0.026, blend: 0.055, mundSpalt: 0.35, hoehleSaum: 0.8 }),
         handHaut: Object.freeze({ vox: 0.012, blend: 0.02 }),
     });
     // DAS SOLL in Zahlen (gate:mensch-anatomie, normiert auf die Körperhöhe Hk; Bänder um den erwachsenen Mann):
@@ -1236,7 +1241,7 @@
         const glabella=s(0.05,matSkin,[0.8,0.6,1.0]);glabella.position.set(0,bY+0.06,0.38);headGroup.add(glabella);
         const browRidge=s(0.15,matSkin,[2.0,0.42,0.72]);browRidge.position.set(0,bY,0.36);headGroup.add(browRidge);
         const AU=MENSCH_GESTALT.auge,aD=eyeDist*AU.abstand,aS=AU.mass*AU.hoehle;[-1,1].forEach(sd=>{const sock=s(0.145*aS,matSocket,[1.0/HEAD_B,0.88,0.50]);sock.position.set(sd*aD/2,eyeY,0.3+0.145*0.5*(1-aS)-AU.zurueck);headGroup.add(sock);});
-        [-1,1].forEach(sd=>{const e=F.gruppe();e.add(s(0.12,matEye,[1,1.1,1]));const iris=s(0.07,matIris,[0.8,1,0.8]);iris.position.z=0.08;e.add(iris);const pupil=s(0.04*AU.pupille,matPupil);pupil.position.z=0.14-0.04*AU.pupille;e.add(pupil);e.add(s(0.13,matCornea,[1,1.1,1]));const lidT=s(0.14,matSkin,[1.15,0.35,0.9]);lidT.position.y=0.07;e.add(lidT);const lidB=s(0.14,matSkin,[1.15,0.45,0.95]);lidB.position.y=-0.09;e.add(lidB);e.scale.set(AU.mass/HEAD_B,AU.mass,AU.mass);e.position.set(sd*aD/2,eyeY,0.32+0.12*(1-AU.mass)*0.85-AU.zurueck);headGroup.add(e);if(sd<0){eyeL=reg('eyeL',e);irisL=reg('irisL',iris);lidTL=reg('lidTL',lidT);lidBL=reg('lidBL',lidB);}else{eyeR=reg('eyeR',e);irisR=reg('irisR',iris);lidTR=reg('lidTR',lidT);lidBR=reg('lidBR',lidB);}});
+        [-1,1].forEach(sd=>{const e=F.gruppe();e.add(s(0.12,matEye,[1,1.1,1]));const iris=s(0.07,matIris,[0.8,1,0.8]);iris.position.z=0.08;e.add(iris);const pupil=s(0.04*AU.pupille,matPupil);pupil.position.z=0.14-0.04*AU.pupille;e.add(pupil);e.add(s(0.13,matCornea,[1,1.1,1]));const lidT=s(0.14,matSkin,[1.15,0.35,0.9]);lidT.position.y=0.07+AU.lid[0];e.add(lidT);const lidB=s(0.14,matSkin,[1.15,0.45,0.95]);lidB.position.y=-0.09-AU.lid[1];e.add(lidB);e.scale.set(AU.mass/HEAD_B,AU.mass,AU.mass);e.position.set(sd*aD/2,eyeY,0.32+0.12*(1-AU.mass)*0.85-AU.zurueck);headGroup.add(e);if(sd<0){eyeL=reg('eyeL',e);irisL=reg('irisL',iris);lidTL=reg('lidTL',lidT);lidBL=reg('lidBL',lidB);}else{eyeR=reg('eyeR',e);irisR=reg('irisR',iris);lidTR=reg('lidTR',lidT);lidBR=reg('lidBR',lidB);}});
         [-1,1].forEach(sd=>{const g=F.gruppe();const bone=reg('cheekbone'+(sd===1?'1':'-1'),s(0.13,matSkin,[1.15,0.52,0.72]));bone.position.set(sd*0.22,eyeY-0.04,0.27);bone.rotation.y=sd*0.12;bone.rotation.z=sd*-0.05;g.add(bone);headGroup.add(g);});
         [-1,1].forEach(sd=>{const b=reg('buccal'+(sd===1?'1':'-1'),s(0.14,matSkin,[0.75*MENSCH_GESTALT.gesicht.wange,0.65*MENSCH_GESTALT.gesicht.wange,0.5*MENSCH_GESTALT.gesicht.wange]));b.position.set(sd*0.18,(cheekY+jawY)/2,0.22);headGroup.add(b);});
         const GS=MENSCH_GESTALT.gesicht;const maxilla=s(0.15,matSkin,[0.75,0.88,0.85*GS.oberkiefer]);maxilla.position.set(0,(lipY+nY)/2,0.325-0.15*0.85*(1-GS.oberkiefer));headGroup.add(maxilla);
