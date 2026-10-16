@@ -1238,6 +1238,7 @@ class AnazhRealm_Z25a {
                     /* fail-soft — die Wand selbst urteilt je Konsument */
                 }
                 this._renderObjektRegister(renderer);
+                this._texturAbschied(renderer);
                 // Hitch-Telemetrie (d) Upload-Bytes: JEDER Upload läuft durch device.queue.writeBuffer — ein
                 // Laufzeit-Wrap hier zählt alles, die vendor-Datei bleibt byte-alt. Idempotent über __anazhTap;
                 // Konsum je Frame in _perfSenseFoldFrame.

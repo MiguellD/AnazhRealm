@@ -10,6 +10,7 @@
 //   oeffneWelt()     Seite laden und auf die Welt warten (anazhRealm mit _gameLoopTick), wahlweise Null-Renderer
 //   halteBis()       eine Taste halten, bis ihr Ereignis eintritt (nie nach der Wanduhr, gate:apparat Klinge 5)
 //   buehne()         die Bühne (Mittag · Sonne · Sommer, scripts/lib/ausgabe-aufnahme.cjs)
+//   uferStellen      (Seite) ein Leser der Szenen-Tiefe im Blick, der zeichnet: das Wasser am Bach der Mess-Wiese
 //   DIE STALL-AKTE   (K67) jede Seite trägt einen Puls (1 s) und Stempel (Programm-/Pipeline-Bau, synchrone GL-Rückfragen);
 //                    steht der Puls ≥ 20 s oder läuft ein Seiten-Aufruf in seine Frist, schreibt die Lib die Akte ins Log:
 //                    offene Aufrufe, letzter Puls mit Phase, Stempel, CPU je Prozess (unter Linux die Fäden des GPU-
@@ -564,6 +565,76 @@ async function halteBis(seite, { taste, druck, los, ziel, args = [], frist = 300
     return { erreicht, ms: Date.now() - t0, wert };
 }
 
+// DER LESER IM BLICK (Seite): der Spieler am Ufer des Bachs der Mess-Wiese, Blick übers Wasser (ein Leser der Szenen-Tiefe);
+// zurück, sobald das Wasser ZEICHNET (die Erst-Zeichnung trug es ein — sichtbar allein ist Existenz, seine Pipeline kann
+// noch im Bau stehen) und das Tiefen-Abbild gezogen ist (der Loop läuft). `kappe`: die Pixel-Kappe des Holzes, wenn gesetzt.
+async function uferStellen(opts) {
+    const warte = (ms) => new Promise((q) => setTimeout(q, ms));
+    const t0 = performance.now();
+    let r, st;
+    while (performance.now() - t0 < 300000) {
+        r = window.anazhRealm;
+        st = r && r.state;
+        if (st && st.rendererReady && st.renderer && st.renderer.backend && st.camera && st.playerMesh) break;
+        await warte(100);
+    }
+    if (!st || !st.renderer || !st.renderer.backend) return { fehler: "der Renderer stand nach 300 s nicht" };
+    if (st.renderer.backend.isWebGPUBackend !== true) return { fehler: "kein WebGPU-Backend — die Wand wäre blind" };
+    if (opts.kappe != null) st._holzPixelCap = opts.kappe;
+    const [mx, mz] = opts.messort;
+    let h = null;
+    for (let i = 0; i < 600; i++) {
+        r._ensureHydroTilesAround(mx, mz, 200);
+        h = r._hydroFor(mx, mz);
+        if (h && h.ready) break;
+        await warte(200);
+    }
+    let P = null;
+    for (const f of (h && h.rivers) || [])
+        f.points.forEach((q, i) => {
+            const d = Math.hypot(q.x - mx, q.z - mz);
+            if (!P || d < P.d) P = { x: q.x, z: q.z, d, f, i };
+        });
+    if (!P || P.d > 300) return { fehler: "kein Bach an der Mess-Wiese" };
+    const a = P.f.points[Math.max(0, P.i - 1)],
+        b = P.f.points[Math.min(P.f.points.length - 1, P.i + 1)];
+    const L = Math.hypot(b.x - a.x, b.z - a.z) || 1;
+    const s = (b.x - a.x) * (mz - P.z) - (b.z - a.z) * (mx - P.x) < 0 ? -1 : 1; // die Normale zeigt zur Mess-Wiese
+    const nx = (-(b.z - a.z) / L) * s,
+        nz = ((b.x - a.x) / L) * s;
+    const ux = P.x + nx * 12,
+        uz = P.z + nz * 12;
+    st.playerMesh.position.set(ux, r.getTerrainHeightAt(ux, uz) + 1.2, uz);
+    if (st.playerVel) st.playerVel.setValue(0, 0, 0);
+    st.yaw = Math.atan2(-nx, -nz); // der Blick zum Wasser (`_blickVorn`: vorn = (sin yaw, cos yaw))
+    st.pitch = -0.25;
+    // DAS RUHENDE WASSER (`_ensureFarWaterSheet`): der ruhende Leser des Holzes voll — das Software-Holz schaltet es ab, sein
+    // nahes Wasser frischt je Pass ohnehin auf; ohne das Fern-Wasser stünde kein Leser im Bild, an dem die Klasse hängt.
+    st.atmosphere.farWater = null;
+    r._ensureFarWaterSheet();
+    const E = r._erstZeichnungStand();
+    const sichtbaresWasser = () => {
+        let n = 0;
+        st.scene.traverse((o) => {
+            if (o.isMesh && o.visible && o.material === st.hydroSurfaceMaterial && E.gezeichnet.has(o)) n++;
+        });
+        return n;
+    };
+    const abbild = () => {
+        const t = r._szeneTiefeKnoten && r._szeneTiefeKnoten.value;
+        return t && t.image ? t.image.width : 0;
+    };
+    const t1 = performance.now();
+    const fern = () => !!(st.farWater && st.farWater.mesh && st.farWater.mesh.parent);
+    // und das Weltbild am Ufer steht (`_weltbildLuecken`: Boden, Horizont …) — die Szenen-Tiefe trägt die Welt, nie nur Himmel
+    const steht = () => sichtbaresWasser() > 0 && abbild() > 1 && fern() && E.gezeichnet.has(st.farWater.mesh);
+    while (performance.now() - t1 < 240000 && !(steht() && r._weltbildLuecken().length === 0)) {
+        if (!fern()) r._ensureFarWaterSheet();
+        await warte(100);
+    }
+    return { bach: [Math.round(P.x), Math.round(P.z)], wasser: sichtbaresWasser(), fernWasser: fern() ? st.farWater.quads : 0, abbildBreite: abbild() };
+}
+
 // Die Bühne: Mittag · Sonne · Sommer fest (window.__buehne aus AUSGABE_INSTALL).
 async function buehne(page) {
     const { AUSGABE_INSTALL } = require("./ausgabe-aufnahme.cjs");
@@ -586,6 +657,7 @@ module.exports = {
     oeffneWelt,
     halteBis,
     buehne,
+    uferStellen,
     gesammelteFehler: () => sammlung.fehler.slice(),
     gesammelteAkten: () => akten.slice(),
 };

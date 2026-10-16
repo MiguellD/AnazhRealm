@@ -2235,8 +2235,9 @@ class AnazhRealm_Z11b {
         stoffTex.minFilter = stoffTex.magFilter = THREE.NearestFilter;
         stoffTex.generateMipmaps = false;
         stoffTex.needsUpdate = true;
-        const laub = new Float32Array(K.laubFarben * 4);
-        const laubTex = new THREE.DataTexture(laub, K.laubFarben, 1, THREE.RGBAFormat, THREE.FloatType);
+        // die Kronen-Farben als Halbfloat: eine Farbe trägt keine 32 bit (gate:ziel-zensus FORMAT, am Bach der Mess-Wiese)
+        const laub = new Uint16Array(K.laubFarben * 4);
+        const laubTex = new THREE.DataTexture(laub, K.laubFarben, 1, THREE.RGBAFormat, THREE.HalfFloatType);
         laubTex.name = "spiegel:laub";
         laubTex.minFilter = laubTex.magFilter = THREE.NearestFilter;
         laubTex.generateMipmaps = false;
@@ -2468,7 +2469,8 @@ class AnazhRealm_Z11b {
                 if (gi >= 0) S.gestaltenNeu.push({ i: gi, teile: krone.teile, farbe: krone.farbe });
                 // die Farbe der Krone in ihrer Zeile (`laubTex`): der Pass liest sie an der Gestalt der Schicht
                 if (gi >= 0 && gi < S.laub.length / 4) {
-                    S.laub.set([krone.farbe[0], krone.farbe[1], krone.farbe[2], 1], gi * 4);
+                    const h = THREE.DataUtils.toHalfFloat;
+                    S.laub.set([h(krone.farbe[0]), h(krone.farbe[1]), h(krone.farbe[2]), h(1)], gi * 4);
                     S.laubTex.needsUpdate = true;
                     S.stand++;
                 }
