@@ -85,7 +85,7 @@ Datei-Besitz, Profil vor Schätzung: `artifacts/profiband/werkzeug/karte.js` (lo
 Merge-Reihe: K1 → G4a → K2/T3/G1/G2 (je nach Reife) → D2 zuletzt (Umzug am Merge-Tag neu gefahren) → D3b playtest.cjs nach Modulen
 → K5 Text-Linsen → `__consumes`. Nach A0: die A-Karten je ROT-Klasse (laub · boden-nah · himmel-licht · wasser · tor-fern · haus · kopf).
 
-**13:20 (date):** integ-probe = d3dc06e8 (K1 + .gitattributes eol=lf + frost-echt; voller Playtest je Merge grün). Echt-Job: CRLF-Wurzel
+**13:15 (date):** integ-probe = d3dc06e8 (K1 + .gitattributes eol=lf + frost-echt; voller Playtest je Merge grün). Echt-Job: CRLF-Wurzel
 fiel (Schritte 6–11 grün), neu ROT Schritt 12 Ziel-Zensus auf der GTX „Destroyed texture spiegel:strahl … ziel-zensus:lesen“ → OMEN §3.
 G1 umgelenkt nach Profil: Streu-Platzierung nur 0,7–1,1 % des CPU-Takts — der Hebel ist EIN Render-Objekt je Stoff (Geometrie-Arena,
 N drawIndexedIndirect), Besitz neu 17c + 25c-Wahl-Block + 20c; größte Render-Klasse Kreaturen/Avatare (2,56 + 1,01 ms Genesis).
