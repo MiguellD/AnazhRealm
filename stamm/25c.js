@@ -2310,13 +2310,20 @@ class AnazhRealm_Z25c {
         if (this.state.lodUniforms) {
             const _lu = this.state.lodUniforms;
             if (_lu.uDitherT && this.state.traaNode) _lu.uDitherT.value = (_lu.uDitherT.value + 0.61803398875) % 1;
-            // der Versatz des Laubs (A3, `_laubVersatz`): unter der zeitlichen Auflösung je Frame der nächste Punkt der R2-Folge
-            // (die Plastik-Zahl g: 1/g, 1/g²) im Quadrat ±LAUB_VERSATZ Eingangs-Pixel, ohne sie 0 (der stille Schnitt)
+            // der Versatz des Laubs (A3, `_laubVersatz`): die dritte und vierte Achse der Halton-Folge der zeitlichen Auflösung
+            // (Basis 5 und 7 am Index ihres Zitterns, `_jitterIndex`) im Quadrat ±LAUB_VERSATZ Eingangs-Pixel — Zittern und
+            // Versatz sind EINE Folge in vier Achsen, ihre Summe deckt den Fußabdruck gleichmäßig (eine R2-Folge daneben ballte
+            // sich mit dem Zittern: laub-kante 0,224–0,227 statt 0,219–0,222); ohne die Auflösung 0
             if (_lu.uLaubVersatz) {
-                const _v = _lu.uLaubVersatz;
-                const _n = (_v.n = this.state.traaNode ? (_v.n || 0) + 1 : 0);
-                const _d = 2 * AnazhRealm.LAUB_VERSATZ * (_n > 0 ? 1 : 0);
-                _v.value.set((((0.5 + _n * 0.7548776662) % 1) - 0.5) * _d, (((0.5 + _n * 0.569840291) % 1) - 0.5) * _d);
+                const _tn = this.state.traaNode;
+                const _o = [0, 0];
+                for (let a = 0; _tn && a < 2; a++) {
+                    const b = a ? 7 : 5;
+                    for (let i = (_tn._jitterIndex | 0) + 1, f = 1; i > 0; i = Math.floor(i / b))
+                        _o[a] += (f /= b) * (i % b);
+                    _o[a] = (_o[a] - 0.5) * 2 * AnazhRealm.LAUB_VERSATZ;
+                }
+                _lu.uLaubVersatz.value.set(_o[0], _o[1]);
             }
             if (_lu.uLodRef)
                 _lu.uLodRef.value =

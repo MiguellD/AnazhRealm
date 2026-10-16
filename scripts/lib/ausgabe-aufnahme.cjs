@@ -714,7 +714,6 @@ function ausgabeAufnahme(W, H, warm, opt) {
                 if (r.state._traaR) r.state._traaR.neu = true;
                 const lu = r.state.lodUniforms;
                 if (lu && lu.uDitherT) lu.uDitherT.value = 0;
-                if (lu && lu.uLaubVersatz) lu.uLaubVersatz.n = 0; // der Versatz des Laubs (A3, `_laubVersatz`)
             }
             const nWarm = Math.max(warm == null ? 1 : warm, r.state.traaNode ? 32 : 0);
             for (let k = 0; k < nWarm; k++) frame();

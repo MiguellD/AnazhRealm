@@ -689,7 +689,7 @@ class AnazhRealm_Z17a {
 
     // DER VERSATZ DES LAUBS (A3): jede Laub- und Nadel-Karte jeder Stufe — der Blatt-Atlas (Studio- und Grammatik-Laub,
     // `_blattAtlasProbe`) und der Karten-Atlas (die Karte L2, `_probeA`) — liest ihre Deckung je Frame um einen Versatz in
-    // Eingangs-Pixeln verschoben (`uLaubVersatz`: die R2-Folge im Quadrat ±LAUB_VERSATZ, aus `_loopRender`) und schneidet sie
+    // Eingangs-Pixeln verschoben (`uLaubVersatz`: Halton 5 und 7 am Index des Zitterns, aus `_loopRender`) und schneidet sie
     // an der Zahl alphaTest. Über die Geschichte der zeitlichen Auflösung ist der Schnitt die Deckung eines Fußabdrucks von
     // drei Pixeln (±1 Versatz ⊗ ±½ Zitter): die Teil-Deckung der Nadel-Büschel steht als Mischton, eine Lücke ab drei Pixeln
     // bleibt offen. DER TÄTER (Radeon --echt, Tafel-Pose, je drei bis vier Posen in EINER Welt): die deckungstreue Mip-Kette

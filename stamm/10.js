@@ -1633,8 +1633,8 @@ class AnazhRealm_Z10 {
             uLodRef: _T.uniform(_ref),
             uLodMaskOn: _T.uniform(st.lodMaskOn === false ? 0 : 1),
             uDitherT: _T.uniform(0),
-            // DER VERSATZ DES LAUBS (A3, `_laubVersatz`): der Versatz der Deckungs-Probe dieses Frames in Eingangs-Pixeln, die
-            // R2-Folge im Quadrat ±LAUB_VERSATZ unter der zeitlichen Auflösung, ohne sie 0 — aus `_loopRender`
+            // DER VERSATZ DES LAUBS (A3, `_laubVersatz`): der Versatz der Deckungs-Probe dieses Frames in Eingangs-Pixeln — die
+            // Halton-Achsen 5 und 7 am Index des Zitterns, ±LAUB_VERSATZ, ohne zeitliche Auflösung 0 (aus `_loopRender`)
             uLaubVersatz: _T.uniform(new THREE.Vector2(0, 0)),
             uLodD0: _T.uniform(_D.thresh01),
             uLodD1: _T.uniform(_D.thresh12),
