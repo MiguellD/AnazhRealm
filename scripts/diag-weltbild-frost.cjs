@@ -27,7 +27,7 @@
 //      Neubauten deckt S2 — der Peer teilt seine Schlüssel mit stehenden Figuren, ein Neubau-Check hätte hier keinen Biss
 //      (an b19ac994 +0, während S2 Welt +45 / Ich +18 / Hof +13 zeigt)
 //   S5 der Werkstatt-Ofen, Regler-Zug 20 Werte: kein Einzelstück im Ofen-Memo, Grafikspeicher und Geometrie-Zahl der
-//      Werkstatt, die dispose-Hörer der geteilten Stoffe und der JS-Speicher (Basis nach der Satz-Ruhe) bleiben beschränkt
+//      Werkstatt, die dispose-Hörer der geteilten Stoffe und der JS-Speicher bleiben beschränkt (kein Welt-Satz verdichtet darin)
 //   S6 10 Mitspieler-Erscheinungen und ihr Abschied: das Ofen-Memo hält danach höchstens OFEN_MEMO_RUHEND Vorlagen ohne
 //      Leib, der JS-Speicher fällt zurück
 // Danach DIE TÄTER (jeder Lauf — die Wand beweist sich selbst):
@@ -858,28 +858,26 @@ function pruefRaum(echt) {
         // der JS-Heap UND die Puffer dahinter (Vertex- und Index-Arrays liegen als ArrayBuffer außerhalb des Heaps)
         return +(((h.usedSize || 0) + (h.backingStorageSize || 0) + (h.embedderHeapUsedSize || 0)) / 1048576).toFixed(1);
     };
-    // DIE BASIS NACH DER SATZ-RUHE: ein Welt-Satz schrumpft nach `ruheTakte` Render-Takten (`_chunkSatzVerdichten`), die alte
-    // Generation seiner Arrays hält jedes Render-Objekt, das ihn nicht neu zeichnet — im Fenster der Probe Sätze 47,0 → 27,2 MB,
-    // Welt-Frames ohne Zug +10,4 bis +12,0 MB (OMEN 16.10., koordination 1610-s5-taeter). Die Linse zeichnet das Bild des Spiels
-    // (`_gameLoopTick`: Schatten-Takt, dann `_loopRender`), bis kein Satz auf seine Verdichtung wartet, Deckel die Frist in
-    // Takten; ein Bild, das keinen Satz taktet (headless die Probe-Bühne), ist Ruhe. Ohne Schatten-Takt fielen die Abschnitte
-    // der Kaskaden, jede Verdichtung zog eine nächste (Radeon: Ruhe nach 1 682 Takten).
-    const heapRuhe = async () => {
-        const satz = await page.evaluate(async () => {
-            const r = window.anazhRealm, S = r.state.chunkSaetze, F = window.__frostWand, t0 = performance.now();
-            const wartend = () => [...(S ? S.values() : [])].filter((s) => s.ueberSeit >= 0);
-            const takt = () => wartend().reduce((t, s) => t + s.takt, 0);
-            let n = 0, t = -1;
-            for (; n <= AnazhRealm.CHUNK_SATZ_ABSCHNITT.ruheTakte && wartend().length && t !== takt(); n++) {
-                t = takt();
-                if (F.echt) r._loopShadowUpdate();
-                await F.zeichne(1);
-            }
-            const offen = t === takt() ? [] : wartend().map((s) => s.mesh.name); // taktet keiner, verdichtet keiner
-            return { takte: n, ms: Math.round(performance.now() - t0), wartend: offen };
-        });
+    // DAS FENSTER OHNE VERDICHTUNG (S5, S6): ein Welt-Satz schrumpft `ruheTakte` Render-Takte nach dem Beginn seiner Frist
+    // (`_chunkSatzVerdichten`), die alte Generation seiner Arrays hält jedes Render-Objekt, das ihn nicht neu zeichnet — fiel
+    // das ins Fenster, zählte S5 die Welt mit (Sätze 47,0 → 27,2 MB, Welt-Frames ohne Zug +10,4 bis +12,0 MB; OMEN 16.10.,
+    // koordination 1610-s5-taeter). Vor der Basis zeichnet die Linse, bis kein Satz in den `fenster` Welt-Takten der Probe
+    // fällig ist (Deckel fenster + 1 Takte; eine Frist, die danach beginnt, endet erst nach ruheTakte > fenster), `fensterStill`
+    // nennt danach jeden Satz, der im Fenster doch verdichtete. Die volle Ruhe zöge Ketten (Radeon: erst nach 1 682 Takten).
+    const heapBasis = async (fenster) => {
+        const satz = await page.evaluate(async (fenster) => {
+            const S = [...(window.anazhRealm.state.chunkSaetze || new Map()).values()], R = AnazhRealm.CHUNK_SATZ_ABSCHNITT.ruheTakte;
+            const faellig = () => S.filter((s) => s.ueberSeit >= 0 && R + 1 - (s.takt - s.ueberSeit) <= fenster);
+            const t0 = performance.now();
+            let n = 0;
+            for (; n <= fenster && faellig().length; n++) await window.__frostWand.zeichne(1);
+            window.__frostFenster = new Map(S.map((s) => [s, s.verdichtet || 0]));
+            return { takte: n, ms: Math.round(performance.now() - t0), imFenster: faellig().map((s) => s.mesh.name) };
+        }, fenster);
         return { MB: await heapMB(), satz };
     };
+    const fensterStill = async (satz) =>
+        satz.imFenster.push(...(await page.evaluate(() => [...window.__frostFenster].filter(([s, v]) => (s.verdichtet || 0) !== v).map(([s]) => s.mesh.name))));
 
     // S5 — der Werkstatt-Ofen, der Regler-Zug: 20 Werte eines Reglers am Wolf. Jeder Wert ist ein Einzelstück (es gehört dem
     // Ofen, nie dem Memo); der Ofen entsorgt das vorige beim Wechsel, mit den Render-Objekten des Werkstatt-Renderers (ihre
@@ -929,13 +927,14 @@ function pruefRaum(echt) {
     }, S5_PROBE);
     let ofen = ofenStart;
     if (!ofen.fehlt) {
-        const { MB: heapVor, satz: ruhe } = await heapRuhe();
+        const { MB: heapVor, satz: ruhe } = await heapBasis(ECHT ? 19 * 8 : 0); // 18 Züge und der Kehraus, je E.leeren 8 Welt-Bilder
         const nach = await page.evaluate(async () => {
             const O = window.__frostOfen;
             for (let i = 3; i <= 20; i++) await O.zug(i);
             await window.__frostEntsorgung.leeren();
             return O.mess();
         });
+        await fensterStill(ruhe);
         const heapNach = await heapMB();
         const bericht = await page.evaluate(() => {
             window.anazhRealm.closeAllDrawers();
@@ -953,8 +952,8 @@ function pruefRaum(echt) {
             `Geometrien ${vor.geometrien} → ${nach.geometrien}, Geometrie-Speicher ${vor.MB} → ${nach.MB} MB über 18 Werte`);
         check("S5 die geteilten Stoffe sammeln keine Hörer (die Render-Objekte des Einzelstücks lösen sich)", nach.hoerer <= vor.hoerer,
             `${nach.stoffe} Stoffe, dispose-Hörer ${vor.hoerer} → ${nach.hoerer} über 18 Werte`);
-        check("S5 der JS-Speicher bleibt beschränkt (die Basis nach der Satz-Ruhe)", ofen.heapNach - ofen.heapVor <= 10 && !ruhe.wartend.length,
-            `${ofen.heapVor} → ${ofen.heapNach} MB über 18 Werte (Soll ≤ +10 MB), Satz-Ruhe nach ${ruhe.takte} Takten (${ruhe.ms} ms)${ruhe.wartend.length ? ", es wartet " + ruhe.wartend.join(" · ") : ""}`);
+        check("S5 der JS-Speicher bleibt beschränkt (kein Welt-Satz verdichtet im Fenster)", ofen.heapNach - ofen.heapVor <= 10 && !ruhe.imFenster.length,
+            `${ofen.heapVor} → ${ofen.heapNach} MB über 18 Werte (Soll ≤ +10 MB), Basis nach ${ruhe.takte} Takten (${ruhe.ms} ms)${ruhe.imFenster.length ? ", im Fenster verdichtet " + ruhe.imFenster.join(" · ") : ""}`);
     }
 
     // S6 — die Mitspieler-Erscheinungen: 10 Peers „human" mit je eigener Übergabe (height), jeder ein eigener Ofen-Guss (zwei
@@ -964,7 +963,7 @@ function pruefRaum(echt) {
         memo: AnazhRealm._tierOfenMemo ? AnazhRealm._tierOfenMemo.size : 0,
         ruhend: AnazhRealm.OFEN_MEMO_RUHEND || 0,
     }));
-    const heapPeersVor = (await heapRuhe()).MB;
+    const { MB: heapPeersVor, satz: ruhePeers } = await heapBasis(ECHT ? 10 * 2 + 8 : 0); // 10 Erscheinungen je 2 Bilder, der Kehraus
     const peers = await page.evaluate(async (echt) => {
         const r = window.anazhRealm;
         const F = window.__frostWand;
@@ -989,6 +988,7 @@ function pruefRaum(echt) {
         await E.leeren();
         return { ...E.bericht("peers"), leiber: leiber.length, spitze, memo: AnazhRealm._tierOfenMemo.size };
     }, ECHT);
+    await fensterStill(ruhePeers);
     const heapPeersNach = await heapMB();
     console.log(
         `\n[mitspieler-erscheinungen] ${zeit()} · ${JSON.stringify({ ...peers, memoVor: peersVor.memo, heapPeersVor, heapPeersNach }).slice(0, 400)}`
@@ -998,8 +998,8 @@ function pruefRaum(echt) {
         `${peers.leiber} Leiber, Memo-Spitze ${peers.spitze} (vor ${peersVor.memo})`);
     check("S6 das Ofen-Memo ist begrenzt: nach dem Abschied bleiben höchstens OFEN_MEMO_RUHEND Vorlagen ohne Leib", peers.memo <= peersVor.memo + peersVor.ruhend,
         `Memo ${peersVor.memo} → Spitze ${peers.spitze} → ${peers.memo} (Grenze +${peersVor.ruhend})`);
-    check("S6 der JS-Speicher fällt mit dem Abschied zurück", heapPeersNach - heapPeersVor <= 20,
-        `${heapPeersVor} → ${heapPeersNach} MB nach 10 Erscheinungen und Abschied (Soll ≤ +20 MB)`);
+    check("S6 der JS-Speicher fällt mit dem Abschied zurück", heapPeersNach - heapPeersVor <= 20 && !ruhePeers.imFenster.length,
+        `${heapPeersVor} → ${heapPeersNach} MB nach 10 Erscheinungen und Abschied (Soll ≤ +20 MB), Basis nach ${ruhePeers.takte} Takten${ruhePeers.imFenster.length ? ", im Fenster verdichtet " + ruhePeers.imFenster.join(" · ") : ""}`);
 
     await page.evaluate(() => {
         const r = window.anazhRealm;
