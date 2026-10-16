@@ -1833,9 +1833,7 @@ class AnazhRealm_Z25b {
         // die fixen, NICHT budget-gegateten Ticks (UNGATED Welt-Substanz + billige Ticks)
         this._tickPendingVegSpawns(4);
         const auge = this._lodAuge(); // das EINE Auge der Stufen (Maske und Wahl messen vom selben Ort)
-        // in der Ankunft aus der Ferne (B2: vor dem Bild und im Gleiten) wechseln die Stufen mit der Maske Schritt (`uLodPerf`)
-        const gleitet = this._ankunftsFerne() > 1;
-        this._tickArchitectureLOD(gleitet ? 32 : 5, auge);
+        this._tickArchitectureLOD(5, auge);
         // DER KARTEN-BÄCKER (einer in Flug, Kanal "bake-impostor" zum Studio-Bäcker, die Platte liefert gebackene
         // Karten sofort; lazy beim ersten L2-Bedarf enqueued; headless No-op) läuft hier, ungegatet wie sein eigenes
         // Gesetz („EAGER, netto last-senkend"). Bis 04.10. hing er im Deko-Job (prio 2: nur ohne Chunk-Bau im Frame,
@@ -1843,7 +1841,7 @@ class AnazhRealm_Z25b {
         // Schlange, und jeder Baum, der seine Karte brauchte, blieb als Kapsel-Klumpen stehen (141 Sätze < 64 m).
         this._tickImpostorBake();
         this._tickTrefferGliederVorbacken(); // die Treffer-Glieder einer kalten Gattung, im Takt der EINEN Bake-Uhr
-        this._tickScatterLod(auge, gleitet ? 16 : 4, gleitet ? 640 : 160); // V18.464 — der Fernwald folgt der LIVE-Distanz (baum-D1), vom Auge (K36)
+        this._tickScatterLod(auge, 4, 160); // V18.464 — der Fernwald folgt der LIVE-Distanz (baum-D1), vom Auge (K36)
         this._tickFernRing(playerPos); // STUFE 2 (das-feld-zeichnet §2) — der Horizont-Tick (headless-default No-op)
         this._tickWegeKarte(playerPos); // Wege-, Kronen- und Fluss-Karte folgen dem Spieler
         this._wegeRaeumen(); // die neuen Flächen eines Dorfs räumen die Natur, die schon auf ihnen stand (K52)

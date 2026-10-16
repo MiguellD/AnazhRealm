@@ -140,6 +140,8 @@ class AnazhRealm_Z15b {
         if (atmo && atmo.treeLOD === false) return 0;
         const pm = auge;
         if (!pm) return 0;
+        // in der Ankunft aus der Ferne (B2: vor dem Bild und im Gleiten) wechselt die Wahl mit der Maske Schritt (`uLodPerf`)
+        if (this._ankunftsFerne() > 1) maxSwitchesPerFrame = Math.max(maxSwitchesPerFrame, AnazhRealm.ANKUNFT_TAKT.bau);
         this._buendelAnkerPruefen(pm); // DIE REIHE NACH ABSTAND (1310-9): neu nur beim Anker-Wechsel
         const archs = this.state.architectures;
         if (!Array.isArray(archs) || archs.length === 0) return 0;
@@ -1534,6 +1536,11 @@ class AnazhRealm_Z15b {
     _tickScatterLod(playerPos, maxRealloc = 4, maxScan = 160) {
         const map = this.state.scatterRegions;
         if (!map || map.size === 0 || !playerPos) return 0;
+        // in der Ankunft aus der Ferne (B2) folgt der Fernwald der gleitenden Maske im selben Schritt wie die Bauten
+        if (this._ankunftsFerne() > 1) {
+            maxRealloc = Math.max(maxRealloc, AnazhRealm.ANKUNFT_TAKT.streu);
+            maxScan = Math.max(maxScan, AnazhRealm.ANKUNFT_TAKT.streuScan);
+        }
         const SC = AnazhRealm.SCATTER;
         if (!this._scatterLayerByName) {
             this._scatterLayerByName = new Map();
