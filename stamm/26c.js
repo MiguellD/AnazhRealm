@@ -1726,8 +1726,8 @@ AnazhRealm._diaetGang = function (ro, nbs) {
         if (b0 && b0.groupNode && b0.groupNode.shared === true) gruppen.push(g);
     }
     // (6) JEDE Textur des Programms: die Vorher-Knoten, die eine Textur ziehen (ihr `value` kann neu angelegt werden), und
-    // jeder Textur-Knoten seiner Bindegruppen (ein Daten-Bild oder Atlas, dessen Version ein Schreiber hebt oder dessen Wert
-    // ein Wachsen tauscht) — die Knoten sind die des Programms, jedes seiner Render-Objekte bindet dieselben.
+    // jeder Textur-Knoten seiner Bindegruppen (ein Daten-Bild oder Atlas, dessen Version ein Schreiber oder ein Wachsen hebt,
+    // `_texturAbschied`) — die Knoten sind die des Programms, jedes seiner Render-Objekte bindet dieselben.
     const texturen = nbs.updateBeforeNodes.filter((n) => n.isTextureNode === true);
     for (const g of ro.getBindings())
         for (const b of g.bindings)

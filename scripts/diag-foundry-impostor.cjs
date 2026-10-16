@@ -1,15 +1,15 @@
 // diag-foundry-impostor.cjs — P5/BÄCKER-VEREINIGUNG + W6 DER EINE KARTEN-ATLAS: die Welt-Fernstufe konsumiert den
 // STUDIO-Bäcker (Foundry-Worker-Kanal "bake-impostor") über EINEN Karten-Atlas (W6: eine Array-Textur, eine Schicht
 // je Karte, EIN Material, EINE Gruppe); der Welt-RTT-Nachbau, das GL-Bake-iframe und der Canvas-Atlas je Karte sind
-// GESCHNITTEN. Drei Teile:
+// GESCHNITTEN. Zwei Teile (der opt-in RTT-Bake B fiel am 16.10.: nie in der CI gefahren, ein ausbleibender Bake nur Notiz):
 //   A (Null-Renderer, HART): die MECHANIK — `_foundryEnsureImpostorRecord` legt eine Atlas-Zelle mit Rahmen an (aus
 //     der L1-Geometrie; headless bäckt nie jemand); Eiche + Fichte teilen Quad, Material und EINE Karten-Gruppe, die
 //     Schicht und der Rahmen reisen je Instanz (aKarte) über beide Slot-Chokepoints; der Bake-Tick spricht
 //     den Kanal "bake-impostor"; KEIN asset-foundry-iframe im DOM; die gefallenen Methoden sind weg.
 //   C (swiftshader-WebGPU, HART): das LAYOUT — eine synthetische Karte durch den echten Codec + Schicht-Schreiber
 //     steht links oben (nicht gedreht, nicht gespiegelt) — und die Kamera-Kleber-Wand (ein befreiter Slot zeichnet nie:
-//     die Gruppe verdichtet, der Lebende zieht mit Matrix und Karte in die Lücke).
-//   B (echter swiftshader-Renderer, OPT-IN): der Studio-Bake läuft (`__impostorRttBaked` steigt) ohne page-error.
+//     die Gruppe verdichtet, der Lebende zieht mit Matrix und Karte in die Lücke). C5: der Atlas wächst in SEINEN Texturen
+//     über den EINEN Abschied (`_texturAbschied`), die Vorlage des Programms bindet die lebende (Selbsttest: das alte Wachsen).
 //   node scripts/diag-foundry-impostor.cjs
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const path = require("path");
@@ -160,20 +160,6 @@ async function driveImpostor(page) {
                 ensureBakeIframe: typeof r._foundryEnsureBakeIframe,
                 buildImpostorRecord: typeof r._foundryBuildImpostorRecord,
             };
-            out.rttBaked = (typeof window !== "undefined" && window.__impostorRttBaked) || 0;
-            // Den Bake-Tick pumpen (echter Renderer bäckt async über mehrere Frames).
-            for (let i = 0; i < 40; i++) {
-                try {
-                    r._gameLoopTick(performance.now());
-                } catch (_e) {}
-                await new Promise((res) => setTimeout(res, 30));
-                if ((window.__impostorRttBaked || 0) > out.rttBaked) break;
-            }
-            out.rttBakedAfter = (typeof window !== "undefined" && window.__impostorRttBaked) || 0;
-            // der Bruch der Karte steht beim Namen im Log (`_stoffBruch`, K22); hier zählt der Zensus die gescheiterten
-            const cz = r._impostorCensus && r._impostorCensus();
-            out.rttErrorAfter =
-                cz && cz.gescheitert ? `gescheitert ${cz.gescheitert} (${cz.gescheitertArten.join(", ")})` : null;
         } catch (e) {
             out.err = (e && e.message) || String(e);
         }
@@ -202,6 +188,9 @@ async function kleberProbe(page, fmtWunsch) {
             const T = THREE;
             const ren = new T.WebGPURenderer({ antialias: false });
             await ren.init();
+            // die Regeln der Welt an der Klasse (die Seite fährt den Null-Renderer, der sie nie anlegt): Abschied und Register
+            r._texturAbschied(ren);
+            r._renderObjektRegister(ren);
             const W = 192,
                 H = 128;
             ren.setSize(W, H, false);
@@ -367,6 +356,48 @@ async function kleberProbe(page, fmtWunsch) {
             out.box = { x0, x1, yOben, yUnten };
             out.lebtPx = nachher.links;
             out.totPx = nachher.rechts;
+            // (3) C5 DAS WACHSEN (`_texturAbschied`): je Name EINE GPU-Textur in neuer Form, die alte fällt (WebGPU und WebGL2), dasselbe
+            // Bild, die VORLAGE des Programms bindet die lebende (`Bindings._init` lädt ihre Textur je neuem Render-Objekt, 16.10.: +4 MB)
+            const vorlagen = () =>
+                (mesh.__renderObjekte || [])
+                    .flatMap((ro) => ro.getNodeBuilderState().bindings.flatMap((g) => g.bindings))
+                    .filter((b) => b.isSampledTexture && b.textureNode && /^karte-/.test(b.texture.name || ""))
+                    .map((b) => (b.texture === b.textureNode.value ? "" : `Vorlage ${b.texture.name}#${b.texture.id}`));
+            const weg = new WeakSet(),
+                P = (self.GPUTexture || class {}).prototype,
+                zerstoere = P.destroy;
+            P.destroy = function () {
+                return (weg.add(this), zerstoere.call(this));
+            };
+            const gpu = (t) => ren.backend.get(t).texture || ren.backend.get(t).textureGPU;
+            try {
+                const alt = [at.map, at.nmap].map(gpu);
+                r._impostorAtlasTexturen(at, at.cap + 1);
+                const q = await zaehle();
+                await new Promise((ok) => setTimeout(ok, 0)); // die alte Form fällt nach dem Submit
+                const leben = [...ren.info.memoryMap.keys()].filter((t) => t.isTexture && /^karte-/.test(t.name || ""));
+                const form = (t) => `${t.name}:${t.image.depth}/${gpu(t).depthOrArrayLayers || t.image.depth}`;
+                const v = vorlagen();
+                out.wachsen = [
+                    leben.length === 2 && leben.every((t) => form(t).endsWith(`:${at.cap}/${at.cap}`))
+                        ? ""
+                        : `bei der GPU ${leben.map(form).join(", ")} statt Albedo und Normale in ${at.cap} Schichten`,
+                    alt.every((g) => weg.has(g) || ren.backend.gl?.isTexture(g) === false) ? "" : "alte GPU-Form lebt",
+                    ["lo", "ro", "lu", "ru"].every((k) => q[k] === nachher[k]) ? "" : "Bild anders nach dem Wachsen",
+                    v.length >= 2 ? "" : "keine Vorlage gelesen — die Wand ist blind",
+                    ...v,
+                ].filter(Boolean);
+                // SELBSTTEST: das Wachsen bis 16.10. (neue Texturen, der Knoten-Wert getauscht, die alten entsorgt)
+                const vor = [at.map, at.nmap];
+                [at.map, at.nmap] = vor.map((t) => Object.assign(t.clone(), { needsUpdate: true }));
+                [at.mapNode.value, at.nmapNode.value] = [at.map, at.nmap];
+                for (const t of vor) t.dispose();
+                await zaehle();
+                out.wachsenSelbst = vorlagen().filter(Boolean);
+                if (out.wachsenSelbst.length < 2) out.wachsen.push("SELBSTTEST: das alte Wachsen fällt nicht auf");
+            } finally {
+                P.destroy = zerstoere;
+            }
             ren.dispose();
         } catch (e) {
             out.err = (e && e.message) || String(e);
@@ -916,6 +947,9 @@ function strichWand(src) {
             errs.push(`${F}: der LEBENDE Slot zeichnet zu wenig (${C.lebtPx} px ≤ 40) — die Probe ist blind`);
         if (!(C.totPx <= 8))
             errs.push(`${F}: der befreite Slot zeichnet noch ${C.totPx} px (> 8) — die Gruppe ist NICHT dicht`);
+        // C5 DAS WACHSEN (der EINE Abschied, `_texturAbschied`)
+        console.log(`  C5 WACHSEN: ${(C.wachsen || []).join(" · ") || "GRÜN"} · Selbsttest: ${C.wachsenSelbst}`);
+        for (const f of C.wachsen || ["keine Messung"]) errs.push(`${F} C5: ${f}`);
     }
     {
         console.log(
@@ -1028,38 +1062,6 @@ function strichWand(src) {
             if (!feuert)
                 errs.push(`D-SELBSTTEST: „${name}“ → die Wand feuert nicht${src === quelle ? " (ANKER FEHLT)" : ""}`);
         }
-    }
-
-    // ===== TEIL B — DER RTT-BAKE LÄUFT (echter swiftshader-Renderer, OPT-IN) =====
-    // NUR mit P5_REAL_RENDERER=1: zwei swiftshader-Seiten verhungern den Container-Event-Loop
-    // (dokumentiert) → per Default aus, damit der Gate deterministisch bleibt. Den RTT-LOOK
-    // misst die Blick-Sonde auf echter GPU; Mechanik (A) und Layout (C) sind der hardware-unabhängige Beweis.
-    if (process.env.P5_REAL_RENDERER) {
-        console.log("\n=== P5 — TEIL B: RTT-BAKE auf echtem Renderer (opt-in) ===");
-        try {
-            const browserB = await starteBrowser({ art: "webgl", frist: 180000 });
-            const { page: pageB, pageErrors: errB } = await bootPage(browserB, false);
-            const B = await driveImpostor(pageB);
-            await browserB.close();
-            console.log(`  Worker ready: ${B.ready} · Record foundry: ${B.rec && B.rec.foundry}`);
-            console.log(`  RTT gebacken (nach Pump): ${B.rttBakedAfter} · RTT-Fehler: ${B.rttErrorAfter || "keiner"}`);
-            if (errB.length) {
-                console.log("  Seiten-Fehler B:", errB.slice(0, 3));
-                errs.push(`B: ${errB.length} Seiten-Fehler beim RTT-Pfad`);
-            }
-            if (B.err) console.log(`  (B-Notiz: ${B.err})`);
-            if (B.rttBakedAfter > 0) console.log("  ok — der RTT-Bake lief auf echter GPU-Bahn (Atlas gebacken).");
-            else
-                console.log(
-                    "  (RTT nicht abgeschlossen — swiftshader-fragil; den LOOK misst die Blick-Sonde auf echter GPU.)"
-                );
-        } catch (e) {
-            console.log(`  (Teil B uebersprungen — Renderer-Start fehlgeschlagen: ${(e && e.message) || e})`);
-        }
-    } else {
-        console.log(
-            "\n(Teil B [echter RTT-Bake] per Default aus — mit P5_REAL_RENDERER=1 aktivieren; den LOOK misst die Blick-Sonde auf echter GPU.)"
-        );
     }
 
     server.close();

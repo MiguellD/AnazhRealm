@@ -1540,6 +1540,12 @@ class AnazhRealm_Z20c {
     // der KLASSE der Textur-Verwaltung (jeder Renderer der Seite): die alte GPU-Textur fällt erst nach den Submits dieser Aufgabe,
     // und jedes Bündel der Welt nimmt neu auf (seine Aufnahme hält die alte Bindegruppe); die losen Leser frischt der Wächter der
     // Diät auf (`_diaetVorTextur`). Die Wand: gate:fenster-wechsel (jeder Größen-Schritt, jede Meldung beim Namen).
+    // DIE GEWACHSENE TEXTUR (Karten-Atlas, Bogen- und Ziel-Atlas der Tore): ein Atlas wächst IN SEINER Textur (neues Bild,
+    // needsUpdate) und geht denselben Weg — r184 lädt eine gewöhnliche Textur in ihre alte GPU-Form, die neue Form legt diese
+    // Regel an (die Schichten-Updates fallen: die neue Form lädt ganz). Bis 16.10. baute jedes Wachsen eine NEUE Textur, tauschte
+    // den Knoten-Wert und entsorgte die alte — doch die Vorlage des Programms bindet die Textur seines Baus, und `Bindings._init`
+    // lädt sie für jedes neue Render-Objekt hoch, bevor `update()` den Knoten liest: die entsorgte stieg wieder auf und blieb
+    // (Mess-Wiese, Radeon: Karten-Atlas 16 neben 20 Schichten, +4,0 MB VRAM). Die Wand: gate:foundry-impostor C5.
     _texturAbschied(renderer) {
         const inst = renderer && renderer._textures;
         const P = inst && Object.getPrototypeOf(inst);
@@ -1550,15 +1556,37 @@ class AnazhRealm_Z20c {
         P.updateTexture = function (t, o) {
             const d = this.get(t);
             const ziel = t.isRenderTargetTexture || t.isDepthTexture || t.isFramebufferTexture;
-            const neu =
-                ziel && d.initialized === true && d.version !== t.version && d.bindGroups && d.bindGroups.size > 0;
+            const anders = d.initialized === true && d.version !== t.version;
+            // die Form der GPU-Textur einer gewöhnlichen Textur (nie die geteilte Vorgabe-Textur: die fällt nie)
+            const formTraeger = !ziel && t.isStorageTexture !== true && t.isExternalTexture !== true;
+            const s = formTraeger && (anders || d.initialized !== true) ? this.getSize(t) : null;
+            const form = s ? s.width + "x" + s.height + "x" + s.depth : null;
+            const gewachsen =
+                anders && form !== null && d.isDefaultTexture === false && d.__form !== undefined && d.__form !== form;
+            const neu = (ziel && anders && d.bindGroups && d.bindGroups.size > 0) || gewachsen;
             const g = neu ? this.backend.get(t) : null;
             const alt = g ? [g.texture, g.msaaTexture].filter(Boolean) : [];
             for (const x of alt) {
                 const weg = Object.getPrototypeOf(x).destroy;
                 x.destroy = () => Promise.resolve().then(() => weg.call(x));
             }
+            // Der Sampler lebt in den Backend-Daten der Textur (`updateSampler`) und die Sampler-Bindung steht VOR der Textur-
+            // Bindung: er folgt der neuen Form, sonst fehlt er der nächsten Bindegruppe (die Post-Kette fiel am 16.10. so beim
+            // Wachsen des Karten-Atlas, „Required member is undefined").
+            const sampler = gewachsen ? { sampler: g.sampler, samplerKey: g.samplerKey } : null;
+            if (gewachsen) {
+                this.backend.destroyTexture(t);
+                d.isDefaultTexture = undefined;
+                if (t.layerUpdates && t.layerUpdates.size > 0) t.clearLayerUpdates();
+            }
             const aus = roh.call(this, t, o);
+            if (form !== null && d.isDefaultTexture === false) d.__form = form;
+            if (gewachsen) {
+                const n = this.backend.get(t);
+                if (n.sampler === undefined && sampler.sampler !== undefined) Object.assign(n, sampler);
+                this.info.destroyTexture(t);
+                this.info.createTexture(t);
+            }
             const B = welt.state._regionBundles;
             if (alt.length && B && this.backend.get(t).texture !== alt[0])
                 for (const bg of B.values()) bg.needsUpdate = true;
