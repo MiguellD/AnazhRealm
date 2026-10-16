@@ -1,0 +1,18 @@
+19:27:45 G2 START A=cee33f91 B=2d54d8b0 Linse=533d4daa/533d4daa
+19:27:46 A1 start gpu[63, 139 MHz, P8, 0x0000000000000001]
+19:28:11 A1 exit=1 gpu[68, 1733 MHz, P0, 0x0000000000000001]  t(Weltbild) = t(Kontrolle) 21.30 s ab Navigation  das Bild der Ankunft: C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\k1610g2\A1.png (48 Befehle · 286156 Dreiecke) 
+19:28:57 B1 start gpu[67, 911 MHz, P2, 0x0000000000000001]
+19:29:21 B1 exit=1 gpu[70, 1721 MHz, P0, 0x0000000000000001]  t(Weltbild) = t(Kontrolle) 19.89 s ab Navigation  das Bild der Ankunft: C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\k1610g2\B1.png (53 Befehle · 285274 Dreiecke) 
+19:30:07 A2 start gpu[68, 810 MHz, P3, 0x0000000000000001]
+19:30:32 A2 exit=1 gpu[71, 1721 MHz, P0, 0x0000000000000000]  t(Weltbild) = t(Kontrolle) 20.92 s ab Navigation  das Bild der Ankunft: C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\k1610g2\A2.png (53 Befehle · 307384 Dreiecke) 
+19:31:18 B2 start gpu[69, 911 MHz, P2, 0x0000000000000001]
+19:31:42 B2 exit=1 gpu[72, 1835 MHz, P0, 0x0000000000000000]  t(Weltbild) = t(Kontrolle) 20.81 s ab Navigation  das Bild der Ankunft: C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\k1610g2\B2.png (48 Befehle · 277806 Dreiecke) 
+19:32:28 A3 start gpu[69, 810 MHz, P3, 0x0000000000000001]
+19:32:53 A3 exit=1 gpu[72, 1822 MHz, P0, 0x0000000000000000]  t(Weltbild) = t(Kontrolle) 21.33 s ab Navigation  das Bild der Ankunft: C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\k1610g2\A3.png (48 Befehle · 287122 Dreiecke) 
+19:33:39 B3 start gpu[69, 265 MHz, P8, 0x0000000000000001]
+19:34:03 B3 exit=1 gpu[73, 1708 MHz, P0, 0x0000000000000001]  t(Weltbild) = t(Kontrolle) 20.71 s ab Navigation  das Bild der Ankunft: C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\k1610g2\B3.png (50 Befehle · 289394 Dreiecke) 
+19:34:49 A4 start gpu[67, 139 MHz, P8, 0x0000000000000001]
+19:35:14 A4 exit=1 gpu[73, 1835 MHz, P0, 0x0000000000000000]  t(Weltbild) = t(Kontrolle) 21.12 s ab Navigation  das Bild der Ankunft: C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\k1610g2\A4.png (48 Befehle · 293720 Dreiecke) 
+19:35:59 B4 start gpu[66, 139 MHz, P8, 0x0000000000000001]
+19:36:24 B4 exit=1 gpu[72, 1835 MHz, P0, 0x0000000000000000]  t(Weltbild) = t(Kontrolle) 20.25 s ab Navigation  das Bild der Ankunft: C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\k1610g2\B4.png (55 Befehle · 278696 Dreiecke) 
+19:37:09 G2 FERTIG

@@ -1,0 +1,1570 @@
+{
+ "proben": [
+  {
+   "t": 484
+  },
+  {
+   "t": 1390,
+   "fehlt": [
+    "die Welt entsteht"
+   ],
+   "da": 0
+  },
+  {
+   "t": 2230,
+   "fehlt": [
+    "der Boden wächst (Ring 0 von 3)",
+    "der Horizont wächst (0 %)",
+    "der Spieler erhält seinen Leib",
+    "das Buch der Studios öffnet sich"
+   ],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    0,
+    0,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 2254,
+   "fehlt": [
+    "der Boden wächst (Ring 0 von 3)",
+    "der Horizont wächst (0 %)",
+    "der Spieler erhält seinen Leib",
+    "das Buch der Studios öffnet sich"
+   ],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    0,
+    0,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 4178,
+   "fehlt": [
+    "der Boden wächst (Ring 1 von 3)",
+    "der Horizont wächst (0 %)",
+    "der Spieler erhält seinen Leib",
+    "das Buch der Studios öffnet sich"
+   ],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    19,
+    939,
+    12
+   ],
+   "da": 0
+  },
+  {
+   "t": 4255,
+   "fehlt": [
+    "der Boden wächst (Ring 1 von 3)",
+    "der Horizont wächst (0 %)",
+    "der Spieler erhält seinen Leib",
+    "das Buch der Studios öffnet sich"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    19,
+    939,
+    5
+   ],
+   "da": 0
+  },
+  {
+   "t": 4463,
+   "fehlt": [
+    "der Boden wächst (Ring 1 von 3)",
+    "der Horizont wächst (3 %)",
+    "der Spieler erhält seinen Leib",
+    "das Buch der Studios öffnet sich"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    19,
+    939,
+    4
+   ],
+   "da": 0
+  },
+  {
+   "t": 4777,
+   "fehlt": [
+    "der Boden wächst (Ring 1 von 3)",
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "das Buch der Studios öffnet sich"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    19,
+    939,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 4899,
+   "fehlt": [
+    "der Boden wächst (Ring 1 von 3)",
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "das Buch der Studios öffnet sich"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    19,
+    939,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 5088,
+   "fehlt": [
+    "der Boden wächst (Ring 1 von 3)",
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "das Buch der Studios öffnet sich"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    19,
+    939,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 5276,
+   "fehlt": [
+    "der Boden wächst (Ring 1 von 3)",
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "das Buch der Studios öffnet sich"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    19,
+    939,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 5462,
+   "fehlt": [
+    "der Boden wächst (Ring 1 von 3)",
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "das Buch der Studios öffnet sich"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    19,
+    939,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 5953,
+   "fehlt": [
+    "der Boden wächst (Ring 2 von 3)",
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "das Buch der Studios öffnet sich"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    19,
+    939,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 6056,
+   "fehlt": [
+    "der Boden wächst (Ring 2 von 3)",
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "das Buch der Studios öffnet sich"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    19,
+    939,
+    1
+   ],
+   "da": 0
+  },
+  {
+   "t": 6644,
+   "fehlt": [
+    "der Boden wächst (Ring 2 von 3)",
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "das Buch der Studios öffnet sich"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    19,
+    939,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 7307,
+   "fehlt": [
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "281 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "12 Wald-Böden werden bepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "1 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "20 wartend · 36 im Werk · 1 im Bäcker",
+   "erst": [
+    21,
+    1026,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 7570,
+   "fehlt": [
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "286 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "12 Wald-Böden werden bepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "1 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "25 wartend · 36 im Werk · 1 im Bäcker",
+   "erst": [
+    21,
+    1026,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 7813,
+   "fehlt": [
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "288 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "12 Wald-Böden werden bepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "2 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "24 wartend · 36 im Werk · 2 im Bäcker",
+   "erst": [
+    21,
+    1026,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 8208,
+   "fehlt": [
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "288 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "12 Wald-Böden werden bepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "2 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "25 wartend · 36 im Werk · 2 im Bäcker",
+   "erst": [
+    21,
+    1026,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 8679,
+   "fehlt": [
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "330 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "102 Bäume werden gepflanzt, 4 Wald-Böden werden bepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "11 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "36 wartend · 36 im Werk · 3 im Bäcker",
+   "erst": [
+    21,
+    1026,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 8925,
+   "fehlt": [
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "372 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "98 Bäume werden gepflanzt, 1 Wald-Böden werden bepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "13 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "36 wartend · 36 im Werk · 3 im Bäcker",
+   "erst": [
+    21,
+    1026,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 9174,
+   "fehlt": [
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "406 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "79 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "13 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "39 wartend · 36 im Werk · 3 im Bäcker",
+   "erst": [
+    21,
+    1026,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 9625,
+   "fehlt": [
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "480 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "5 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "15 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "42 wartend · 36 im Werk · 3 im Bäcker",
+   "erst": [
+    21,
+    1026,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 9734,
+   "fehlt": [
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "485 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "14 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "42 wartend · 36 im Werk · 3 im Bäcker",
+   "erst": [
+    21,
+    1026,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 9871,
+   "fehlt": [
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "485 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "14 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "42 wartend · 36 im Werk · 3 im Bäcker",
+   "erst": [
+    21,
+    1026,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 10073,
+   "fehlt": [
+    "der Horizont wächst (11 %)",
+    "485 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "14 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "42 wartend · 36 im Werk · 3 im Bäcker",
+   "erst": [
+    21,
+    1026,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 10748,
+   "fehlt": [
+    "der Horizont wächst (31 %)",
+    "470 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "15 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "35 wartend · 36 im Werk · 3 im Bäcker",
+   "erst": [
+    26,
+    1079,
+    5
+   ],
+   "da": 0
+  },
+  {
+   "t": 11250,
+   "fehlt": [
+    "der Horizont wächst (43 %)",
+    "410 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "15 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "23 wartend · 36 im Werk · 3 im Bäcker",
+   "erst": [
+    27,
+    1180,
+    1
+   ],
+   "da": 0
+  },
+  {
+   "t": 11852,
+   "fehlt": [
+    "der Horizont wächst (54 %)",
+    "352 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "14 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "7 wartend · 36 im Werk · 3 im Bäcker",
+   "erst": [
+    38,
+    1441,
+    6
+   ],
+   "da": 0
+  },
+  {
+   "t": 12152,
+   "fehlt": [
+    "der Horizont wächst (54 %)",
+    "348 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "14 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "3 wartend · 36 im Werk · 3 im Bäcker",
+   "erst": [
+    39,
+    1558,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 12285,
+   "fehlt": [
+    "der Horizont wächst (58 %)",
+    "344 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "14 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "1 wartend · 36 im Werk · 3 im Bäcker",
+   "erst": [
+    39,
+    1558,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 12779,
+   "fehlt": [
+    "der Horizont wächst (78 %)",
+    "314 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "14 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 32 im Werk · 3 im Bäcker",
+   "erst": [
+    43,
+    1696,
+    3
+   ],
+   "da": 0
+  },
+  {
+   "t": 12891,
+   "fehlt": [
+    "der Horizont wächst (82 %)",
+    "311 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "14 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 30 im Werk · 3 im Bäcker",
+   "erst": [
+    43,
+    1696,
+    3
+   ],
+   "da": 0
+  },
+  {
+   "t": 13193,
+   "fehlt": [
+    "der Horizont wächst (86 %)",
+    "309 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "14 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 29 im Werk · 3 im Bäcker",
+   "erst": [
+    45,
+    1839,
+    4
+   ],
+   "da": 0
+  },
+  {
+   "t": 13309,
+   "fehlt": [
+    "der Horizont wächst (90 %)",
+    "309 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "14 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 28 im Werk · 3 im Bäcker",
+   "erst": [
+    45,
+    1839,
+    3
+   ],
+   "da": 0
+  },
+  {
+   "t": 13484,
+   "fehlt": [
+    "der Horizont wächst (90 %)",
+    "309 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "15 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 27 im Werk · 3 im Bäcker",
+   "erst": [
+    45,
+    1839,
+    1
+   ],
+   "da": 0
+  },
+  {
+   "t": 13810,
+   "fehlt": [
+    "der Horizont wächst (94 %)",
+    "303 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "14 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 21 im Werk · 2 im Bäcker",
+   "erst": [
+    48,
+    1943,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 14082,
+   "fehlt": [
+    "289 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "13 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 16 im Werk · 2 im Bäcker",
+   "erst": [
+    48,
+    1943,
+    1
+   ],
+   "da": 0
+  },
+  {
+   "t": 14454,
+   "fehlt": [
+    "267 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "12 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 2 im Werk · 2 im Bäcker",
+   "erst": [
+    49,
+    2052,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 14903,
+   "fehlt": [
+    "243 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "10 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 1 im Werk · 2 im Bäcker",
+   "erst": [
+    52,
+    2204,
+    3
+   ],
+   "da": 0
+  },
+  {
+   "t": 15073,
+   "fehlt": [
+    "198 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "10 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 1 im Werk · 2 im Bäcker",
+   "erst": [
+    52,
+    2204,
+    3
+   ],
+   "da": 0
+  },
+  {
+   "t": 15560,
+   "fehlt": [
+    "99 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "9 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 3 im Bäcker",
+   "erst": [
+    55,
+    2338,
+    5
+   ],
+   "da": 0
+  },
+  {
+   "t": 15688,
+   "fehlt": [
+    "99 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "9 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 3 im Bäcker",
+   "erst": [
+    55,
+    2338,
+    3
+   ],
+   "da": 0
+  },
+  {
+   "t": 15900,
+   "fehlt": [
+    "62 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "8 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 3 im Bäcker",
+   "erst": [
+    57,
+    2481,
+    4
+   ],
+   "da": 0
+  },
+  {
+   "t": 16067,
+   "fehlt": [
+    "46 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "7 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 3 im Bäcker",
+   "erst": [
+    57,
+    2481,
+    4
+   ],
+   "da": 0
+  },
+  {
+   "t": 16437,
+   "fehlt": [
+    "23 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "5 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 3 im Bäcker",
+   "erst": [
+    60,
+    2665,
+    4
+   ],
+   "da": 0
+  },
+  {
+   "t": 16456,
+   "fehlt": [
+    "23 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "5 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 3 im Bäcker",
+   "erst": [
+    60,
+    2665,
+    4
+   ],
+   "da": 0
+  },
+  {
+   "t": 16939,
+   "fehlt": [
+    "30 Bäume und Bauten wachsen",
+    "13 Häuser des Dorfs wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "4 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 6 im Werk · 3 im Bäcker",
+   "erst": [
+    61,
+    2807,
+    4
+   ],
+   "da": 0
+  },
+  {
+   "t": 17084,
+   "fehlt": [
+    "23 Bäume und Bauten wachsen",
+    "8 Häuser des Dorfs wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "3 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 16 im Werk · 2 im Bäcker",
+   "erst": [
+    61,
+    2807,
+    3
+   ],
+   "da": 0
+  },
+  {
+   "t": 17314,
+   "fehlt": [
+    "33 Bäume und Bauten wachsen",
+    "2 Häuser des Dorfs wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "1 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 30 im Werk · 1 im Bäcker",
+   "erst": [
+    61,
+    2807,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 17689,
+   "fehlt": [
+    "28 Bäume und Bauten wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "1 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 30 im Werk · 1 im Bäcker",
+   "erst": [
+    63,
+    2917,
+    4
+   ],
+   "da": 0
+  },
+  {
+   "t": 17894,
+   "fehlt": [
+    "23 Bäume und Bauten wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "1 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 28 im Werk · 1 im Bäcker",
+   "erst": [
+    63,
+    2917,
+    4
+   ],
+   "da": 0
+  },
+  {
+   "t": 18270,
+   "fehlt": [
+    "12 Bäume und Bauten wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 26 im Werk · 0 im Bäcker",
+   "erst": [
+    66,
+    3067,
+    7
+   ],
+   "da": 0
+  },
+  {
+   "t": 18979,
+   "fehlt": [
+    "10 Bäume und Bauten wachsen"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 23 im Werk · 0 im Bäcker",
+   "erst": [
+    68,
+    3239,
+    4
+   ],
+   "da": 0
+  },
+  {
+   "t": 19163,
+   "fehlt": [
+    "10 Bäume und Bauten wachsen"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 22 im Werk · 0 im Bäcker",
+   "erst": [
+    69,
+    3310,
+    3
+   ],
+   "da": 0
+  },
+  {
+   "t": 19267,
+   "fehlt": [
+    "10 Bäume und Bauten wachsen"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 21 im Werk · 0 im Bäcker",
+   "erst": [
+    69,
+    3310,
+    3
+   ],
+   "da": 0
+  },
+  {
+   "t": 19513,
+   "fehlt": [
+    "10 Bäume und Bauten wachsen"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 21 im Werk · 0 im Bäcker",
+   "erst": [
+    69,
+    3310,
+    3
+   ],
+   "da": 0
+  },
+  {
+   "t": 19678,
+   "fehlt": [
+    "10 Bäume und Bauten wachsen"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 19 im Werk · 0 im Bäcker",
+   "erst": [
+    69,
+    3310,
+    1
+   ],
+   "da": 0
+  },
+  {
+   "t": 19870,
+   "fehlt": [
+    "10 Bäume und Bauten wachsen"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 18 im Werk · 0 im Bäcker",
+   "erst": [
+    69,
+    3310,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 20057,
+   "fehlt": [
+    "10 Bäume und Bauten wachsen"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 17 im Werk · 0 im Bäcker",
+   "erst": [
+    69,
+    3310,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 20256,
+   "fehlt": [
+    "8 Bäume und Bauten wachsen"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 13 im Werk · 0 im Bäcker",
+   "erst": [
+    69,
+    3310,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 20455,
+   "fehlt": [
+    "8 Bäume und Bauten wachsen"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 12 im Werk · 0 im Bäcker",
+   "erst": [
+    69,
+    3310,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 20656,
+   "fehlt": [
+    "8 Bäume und Bauten wachsen"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 11 im Werk · 0 im Bäcker",
+   "erst": [
+    69,
+    3310,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 20862,
+   "fehlt": [
+    "5 Bäume und Bauten wachsen"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 7 im Werk · 0 im Bäcker",
+   "erst": [
+    69,
+    3310,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 21064,
+   "fehlt": [
+    "4 Bäume und Bauten wachsen"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 4 im Werk · 0 im Bäcker",
+   "erst": [
+    69,
+    3310,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 21255,
+   "fehlt": [
+    "2 Bäume und Bauten wachsen"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 2 im Werk · 0 im Bäcker",
+   "erst": [
+    69,
+    3310,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 21517,
+   "fehlt": [],
+   "vorrat": "bestellt",
+   "schlange": "20 wartend · 36 im Werk · 0 im Bäcker",
+   "erst": [
+    69,
+    3310,
+    0
+   ],
+   "da": 21334
+  },
+  {
+   "t": 21693,
+   "fehlt": [],
+   "vorrat": "bestellt",
+   "schlange": "20 wartend · 36 im Werk · 0 im Bäcker",
+   "erst": [
+    69,
+    3310,
+    0
+   ],
+   "da": 21334
+  },
+  {
+   "t": 21855,
+   "fehlt": [],
+   "vorrat": "bestellt",
+   "schlange": "19 wartend · 36 im Werk · 0 im Bäcker",
+   "erst": [
+    69,
+    3310,
+    0
+   ],
+   "da": 21334
+  },
+  {
+   "t": 22154,
+   "fehlt": [],
+   "vorrat": "bestellt",
+   "schlange": "19 wartend · 36 im Werk · 0 im Bäcker",
+   "erst": [
+    69,
+    3310,
+    0
+   ],
+   "da": 21334
+  },
+  {
+   "t": 22255,
+   "fehlt": [],
+   "vorrat": "bestellt",
+   "schlange": "19 wartend · 36 im Werk · 0 im Bäcker",
+   "erst": [
+    69,
+    3310,
+    0
+   ],
+   "da": 21334
+  },
+  {
+   "t": 22533,
+   "fehlt": [],
+   "vorrat": "bestellt",
+   "schlange": "18 wartend · 36 im Werk · 0 im Bäcker",
+   "erst": [
+    69,
+    3310,
+    0
+   ],
+   "da": 21334
+  }
+ ],
+ "lang": [
+  [
+   229,
+   235
+  ],
+  [
+   564,
+   784
+  ],
+  [
+   2391,
+   1079
+  ],
+  [
+   3486,
+   691
+  ],
+  [
+   4469,
+   303
+  ],
+  [
+   4777,
+   112
+  ],
+  [
+   4952,
+   115
+  ],
+  [
+   5191,
+   84
+  ],
+  [
+   5276,
+   180
+  ],
+  [
+   5462,
+   304
+  ],
+  [
+   5769,
+   184
+  ],
+  [
+   6091,
+   70
+  ],
+  [
+   6162,
+   236
+  ],
+  [
+   6404,
+   239
+  ],
+  [
+   6647,
+   343
+  ],
+  [
+   6992,
+   314
+  ],
+  [
+   7313,
+   251
+  ],
+  [
+   7571,
+   84
+  ],
+  [
+   7658,
+   154
+  ],
+  [
+   7826,
+   377
+  ],
+  [
+   8209,
+   203
+  ],
+  [
+   8415,
+   263
+  ],
+  [
+   8682,
+   238
+  ],
+  [
+   8936,
+   230
+  ],
+  [
+   9174,
+   234
+  ],
+  [
+   9412,
+   212
+  ],
+  [
+   9659,
+   74
+  ],
+  [
+   9817,
+   52
+  ],
+  [
+   10199,
+   214
+  ],
+  [
+   10423,
+   320
+  ],
+  [
+   10754,
+   285
+  ],
+  [
+   11051,
+   194
+  ],
+  [
+   11256,
+   432
+  ],
+  [
+   11726,
+   122
+  ],
+  [
+   11856,
+   283
+  ],
+  [
+   12155,
+   90
+  ],
+  [
+   12291,
+   53
+  ],
+  [
+   12366,
+   325
+  ],
+  [
+   12697,
+   78
+  ],
+  [
+   12782,
+   71
+  ],
+  [
+   12892,
+   235
+  ],
+  [
+   13194,
+   57
+  ],
+  [
+   13337,
+   141
+  ],
+  [
+   13484,
+   296
+  ],
+  [
+   13810,
+   265
+  ],
+  [
+   14082,
+   362
+  ],
+  [
+   14454,
+   112
+  ],
+  [
+   14571,
+   71
+  ],
+  [
+   14646,
+   252
+  ],
+  [
+   14904,
+   130
+  ],
+  [
+   15074,
+   114
+  ],
+  [
+   15193,
+   299
+  ],
+  [
+   15498,
+   57
+  ],
+  [
+   15703,
+   177
+  ],
+  [
+   16206,
+   217
+  ],
+  [
+   16609,
+   101
+  ],
+  [
+   16710,
+   228
+  ],
+  [
+   17161,
+   152
+  ],
+  [
+   17314,
+   275
+  ],
+  [
+   17594,
+   94
+  ],
+  [
+   17692,
+   95
+  ],
+  [
+   17789,
+   104
+  ],
+  [
+   17894,
+   267
+  ],
+  [
+   18164,
+   106
+  ],
+  [
+   18271,
+   65
+  ],
+  [
+   18337,
+   78
+  ],
+  [
+   18415,
+   397
+  ],
+  [
+   18815,
+   164
+  ],
+  [
+   19006,
+   135
+  ],
+  [
+   19513,
+   51
+  ],
+  [
+   20516,
+   65
+  ],
+  [
+   21348,
+   56
+  ],
+  [
+   21568,
+   123
+  ],
+  [
+   22046,
+   107
+  ]
+ ],
+ "ev": [
+  [
+   7096,
+   "_foundryRequestSettlement ab",
+   ""
+  ],
+  [
+   10007,
+   "_foundryRequestSettlement an",
+   ""
+  ]
+ ],
+ "kosten": {
+  "Bauten": {
+   "2": 5.99999999627471,
+   "3": 15.799999997019768,
+   "4": 3.7000000178813934,
+   "5": 11.300000008195639,
+   "6": 18.50000000372529,
+   "7": 7.200000002980232,
+   "8": 58.00000000745058,
+   "9": 27.900000050663948,
+   "10": 52.599999994039536,
+   "11": 46.900000020861626,
+   "12": 24.399999998509884,
+   "13": 4.799999997019768,
+   "14": 17.899999987334013,
+   "15": 16.800000000745058,
+   "16": 21.299999982118607,
+   "17": 14.49999999254942,
+   "18": 16.80000000447035,
+   "19": 10.900000009685755,
+   "20": 26.799999997019768,
+   "21": 8.300000004470348
+  },
+  "Boden": {
+   "2": 306.1000000014901,
+   "3": 275.0999999977648,
+   "4": 14.399999998509884,
+   "5": 21.399999998509884,
+   "6": 15.100000001490116,
+   "7": 2.600000001490116,
+   "17": 22.300000000745058,
+   "18": 7.199999999254942,
+   "19": 19.300000000745058
+  },
+  "Buch": {
+   "6": 46.100000001490116
+  },
+  "Streu": {
+   "7": 490.69999999925494,
+   "8": 173.09999999776483,
+   "9": 182.30000000074506,
+   "13": 328.0000000037253,
+   "14": 179.5,
+   "15": 185.39999999850988,
+   "17": 147.20000000298023,
+   "18": 219.90000000223517
+  },
+  "Gruppen-Bau": {
+   "7": 13.300000000745058,
+   "8": 20.600000001490116,
+   "10": 30.699999999254942,
+   "11": 22.599999994039536,
+   "12": 35,
+   "13": 91.69999999552965,
+   "14": 37,
+   "15": 4.200000002980232,
+   "16": 3.899999998509884,
+   "17": 2.400000002235174,
+   "18": 1.2000000029802322,
+   "19": 2.4999999962747097,
+   "20": 2.6000000052154064,
+   "21": 1.3999999985098839
+  },
+  "Ort-Wahl": {
+   "10": 58.400000002235174,
+   "11": 7.700000002980232,
+   "12": 24.599999997764826,
+   "13": 31.30000000447035,
+   "14": 18.5,
+   "15": 45.19999999925494,
+   "16": 65.39999999850988
+  },
+  "Dorf": {
+   "16": 25.100000001490116,
+   "17": 74.20000000298023
+  }
+ },
+ "buchDa": 6695,
+ "weltbildDa": 21334,
+ "holz": "voll",
+ "version": "18.546.2",
+ "adapter": "nvidia pascal",
+ "ohne": [],
+ "bild": {
+  "datei": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\k1610g2\\A3.png",
+  "dc": 48,
+  "dreiecke": 287122
+ },
+ "zweit": false
+}
