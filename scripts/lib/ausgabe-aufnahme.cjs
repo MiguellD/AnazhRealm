@@ -748,6 +748,9 @@ function ausgabeAufnahme(W, H, warm, opt) {
                 const lu = r.state.lodUniforms;
                 if (lu && lu.uDitherT) lu.uDitherT.value = 0;
                 if (lu && lu.uLaubKante) lu.uLaubKante.value.x = 0; // die Kante des Laubs (K68, `_laubSchwelle`)
+                // und die Schatten-Karten: der Takt rendert eine Kaskade nur, wenn sie fällig ist — die Karte des ersten
+                // Frames sah die Szene vor der Erst-Zeichnung (A8-n1, Mess-Wiese: boden-nah hell 71,7 ↔ 98 ohne Schatten)
+                if (typeof r._schattenAlleNeu === "function") r._schattenAlleNeu();
             }
             const nWarm = Math.max(warm == null ? 1 : warm, r.state.traaNode ? 32 : 0);
             for (let k = 0; k < nWarm; k++) frame();
