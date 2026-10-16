@@ -276,6 +276,15 @@ function stripperBefund(dateien) {
     return out;
 }
 
+// 6b) DIE DECKE JE DATEI (PFLICHT-OFFEN D(3), D3b 17.10.): keine Datei in scripts/ trägt über 4 000 Zeilen — der Richter
+//     lebt nach Domäne (scripts/playtest/<domaene>.cjs, `stamm-umzug --richter`), eine Linse teilt am selben Tag; ROT beim Namen.
+const DATEI_DECKE = 4000;
+const dateiDeckeBefund = (dateien) =>
+    dateien
+        .map(({ pfad, text }) => [pfad, (text.match(/\n/g) || []).length])
+        .filter(([, n]) => n > DATEI_DECKE)
+        .map(([pfad, n]) => `DECKE (Datei): ${pfad} trägt ${n} Zeilen — höchstens ${DATEI_DECKE} (PFLICHT-OFFEN D)`);
+
 function main() {
     const errs = [];
     const argRev = (n) => (process.argv.indexOf(n) > 0 ? process.argv[process.argv.indexOf(n) + 1] : null);
@@ -350,6 +359,7 @@ function main() {
             .map((p) => ({ pfad: p, text: fs.readFileSync(path.join(root, p), "utf8") }));
         stripperDateien = dateien.length;
         errs.push(...stripperBefund(dateien));
+        errs.push(...dateiDeckeBefund(git(["ls-files", "scripts"]).split("\n").filter(Boolean).map((p) => ({ pfad: p, text: fs.readFileSync(path.join(root, p), "utf8") }))));
         errs.push(...require("./lib/stamm.cjs").stripperTafel(root).map((b) => `STRIPPER-WAND (Tafel): ${b}`));
     } catch (e) {
         errs.push(`STRIPPER-WAND: scripts/ oder die Tafel nicht lesbar (${String(e.message).split("\n")[0]})`);
@@ -501,6 +511,11 @@ function main() {
     const s6 = sF("scripts/x.cjs", "u.replace(/^https?:" + S + "/" + S + '//, ""); const { ohneKommentare } = L;'); // frei
     if (s1 !== 1 || s2 !== 1 || s3 !== 1 || s4 !== 1 || s5 || s6)
         errs.push(`Selbsttest der Stripper-Wand versagt (s1=${s1} s2=${s2} s3=${s3} s4=${s4} s5=${s5} s6=${s6})`);
+    // die Decke je Datei: eine gepflanzte 4 001-Zeilen-Datei ist ROT beim Namen, 4 000 Zeilen halten
+    const d1 = dateiDeckeBefund([{ pfad: "scripts/x.cjs", text: "x\n".repeat(4001) }]);
+    const d2 = dateiDeckeBefund([{ pfad: "scripts/y.cjs", text: "y\n".repeat(4000) }]).length;
+    if (d1.length !== 1 || !d1[0].includes("scripts/x.cjs trägt 4001") || d2)
+        errs.push(`Selbsttest der Datei-Decke versagt (d1=${d1.length} d2=${d2})`);
 
     if (errs.length) {
         console.error("gate:betriebsgesetz ROT");

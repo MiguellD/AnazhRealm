@@ -204,6 +204,156 @@ function werkzeugLauf(root, art, basis) {
     return r.status === 0 ? 0 : 1;
 }
 
+// ── --richter: der Richter nach Domäne (D3b) ──────────────────────────────────────────────────────────────────────────
+// Der Läufer scripts/playtest.cjs behält Boot, Seite, Reihenfolge und Summe; jeder Band `check*` lebt in
+// scripts/playtest/<domaene>[-<teil>].cjs. Heimat = das Modul der Karte, dessen Glieder er am meisten ruft (r.<name>,
+// r[window.__anker.X], r.constructor.X, AnazhRealm.X); Gleichstand → das Modul, das sein Titel nennt, dann die Ordnung;
+// kein Ruf → Dirigent/kern. Eine Domäne über der Decke teilt nach Modul/teil; ein Modul über der Decke gibt den Band mit
+// dem stärksten Zweit-Modul dorthin ab. Fixpunkt: liest Läufer + Domänen-Dateien, an jedem Kopf neu fahrbar.
+const RICHTER = "scripts/playtest.cjs";
+const RICHTER_DIR = "scripts/playtest";
+const DECKE = 4000;
+const KOPF = {
+    fs: 'const fs = require("fs");',
+    path: 'const path = require("path");',
+    spawn: 'const { spawn } = require("child_process");',
+    SK: 'const SK = require("../lib/shader-kosten.cjs");',
+    stammLib: 'const stammLib = require("../lib/stamm.cjs");',
+    safeEvaluate: 'const { safeEvaluate } = require("../playtest.cjs");',
+    SKRIPTE: 'const SKRIPTE = path.join(__dirname, "..");',
+};
+function richterLesen(root) {
+    const acorn = require("acorn");
+    const dir = path.join(root, RICHTER_DIR);
+    const neben = fs.existsSync(dir) ? fs.readdirSync(dir).filter((f) => f.endsWith(".cjs")).sort() : [];
+    const baender = new Map();
+    let laeufer = null;
+    for (const q of [RICHTER, ...neben.map((f) => `${RICHTER_DIR}/${f}`)]) {
+        const src = fs.readFileSync(path.join(root, q), "utf8").replace(/\r\n/g, "\n");
+        const Z = src.split("\n");
+        const weg = [];
+        let vor = 0;
+        for (const n of acorn.parse(src, { ecmaVersion: "latest", sourceType: "script", locations: true }).body) {
+            const t = src.slice(n.start, n.end);
+            if (n.type === "FunctionDeclaration" && /^check/.test(n.id.name)) {
+                if (baender.has(n.id.name)) throw new Error(`richter: Band doppelt ${n.id.name} (${q})`);
+                const roh = Z.slice(vor, n.loc.end.line).join("\n").replace(/^\n+/, "").replace(/^\/\/ scripts\/playtest\/[\s\S]*?\n\n/, "");
+                const text = roh.replace(/\b__dirname\b/g, "SKRIPTE");
+                baender.set(n.id.name, { name: n.id.name, text, rumpf: t.replace(/\b__dirname\b/g, "SKRIPTE"), titel: roh.slice(0, roh.indexOf(t)) + n.id.name });
+                weg.push([vor, n.loc.end.line]);
+            } else if (q !== RICHTER && !/^("use strict"|module\.exports = |const (\w+|\{ [\w, ]+ \}) = (require|path\.join)\()/.test(t))
+                throw new Error(`richter: ${q} trägt Fremdes neben den Bändern: ${t.slice(0, 80)}`);
+            vor = n.loc.end.line;
+        }
+        if (q === RICHTER) laeufer = Z.filter((_, i) => !weg.some(([a, b]) => i >= a && i < b)).join("\n");
+    }
+    return { baender, laeufer, neben };
+}
+function richterOrdne(root) {
+    const K = stamm.karteVon(root);
+    const { baender, laeufer, neben } = richterLesen(root);
+    const ord = K.ordnung.map((o) => o[0]);
+    const anker = Object.fromEntries([...(/__anker = Object\.freeze\(\{([\s\S]*?)\}\)/.exec(laeufer) || ["", ""])[1].matchAll(/(\w+): "(\w+)"/g)].map((m) => [m[1], m[2]]));
+    const wort = (s) => s.toLowerCase().replace(/ä/g, "ae").replace(/ö/g, "oe").replace(/ü/g, "ue");
+    for (const b of baender.values()) {
+        const n = {};
+        const zaehle = (g) => K.mod[g] && (n[K.mod[g]] = (n[K.mod[g]] || 0) + 1);
+        for (const m of b.rumpf.matchAll(/\br\.([A-Za-z_$][\w$]*)/g)) if (m[1] !== "constructor") zaehle(m[1]);
+        for (const m of b.rumpf.matchAll(/\b(?:r\.constructor|AnazhRealm)\.([A-Za-z_$][\w$]*)/g)) zaehle(`AnazhRealm.${m[1]}`);
+        for (const m of b.rumpf.matchAll(/\br\[window\.__anker\.(\w+)\]/g)) zaehle(anker[m[1]]);
+        const titel = (m) => m.split("/").filter((w) => wort(b.titel).includes(wort(w))).length;
+        b.rang = Object.keys(n).sort((x, y) => n[y] - n[x] || titel(y) - titel(x) || ord.indexOf(x) - ord.indexOf(y));
+        b.n = b.rang.map((m) => n[m]);
+        if (!b.rang.length) [b.rang, b.n] = [["Dirigent/kern"], [0]];
+        b.wahl = 0;
+    }
+    const reihe = [...laeufer.matchAll(/\btimed\((?:BAND\.)?(check\w+)/g)].map((m) => m[1]);
+    const fremd = [...reihe.filter((x) => !baender.has(x)), ...[...baender.keys()].filter((x) => !reihe.includes(x))];
+    if (fremd.length) throw new Error(`richter: Band ohne Lauf bzw. Lauf ohne Band: ${fremd.join(", ")}`);
+    const zeilen = (bs) => bs.reduce((s, b) => s + b.text.split("\n").length + 1, 12);
+    for (let runde = 0; ; runde++) {
+        const dom = new Map();
+        for (const x of reihe) {
+            const m = baender.get(x).rang[baender.get(x).wahl];
+            const d = m.split("/")[0];
+            if (!dom.has(d)) dom.set(d, []);
+            dom.get(d).push(baender.get(x));
+        }
+        // eine Domäne über der Decke gibt ihr größtes Modul als eigene Datei ab, bis der Rest hält
+        const datei = new Map();
+        for (const [d, bs] of dom) {
+            const m = (b) => b.rang[b.wahl];
+            const von = (x) => bs.filter((b) => m(b) === x);
+            const ab = new Set();
+            for (let rest = bs; zeilen(rest) > DECKE; rest = bs.filter((b) => !ab.has(m(b)))) {
+                const teile = [...new Set(rest.map(m))].filter((x) => x !== d);
+                if (teile.length < 2) break;
+                ab.add(teile.sort((x, y) => zeilen(von(y)) - zeilen(von(x)) || ord.indexOf(x) - ord.indexOf(y))[0]);
+            }
+            for (const b of bs) {
+                const k = ab.has(m(b)) ? m(b) : d;
+                if (!datei.has(k)) datei.set(k, []);
+                datei.get(k).push(b);
+            }
+        }
+        const voll = [...datei].filter(([, bs]) => zeilen(bs) > DECKE).sort((x, y) => ord.indexOf(x[0]) - ord.indexOf(y[0]))[0];
+        if (!voll) return { datei, laeufer, neben, baender };
+        const ab = voll[1].filter((b) => b.wahl + 1 < b.rang.length).sort((x, y) => y.n[y.wahl + 1] / y.n[y.wahl] - x.n[x.wahl + 1] / x.n[x.wahl] || (x.name < y.name ? -1 : 1))[0];
+        if (!ab || runde > 999) throw new Error(`richter: ${voll[0]} hält die Decke nicht (${zeilen(voll[1])} Zeilen)`);
+        ab.wahl++;
+    }
+}
+function richter(root, trocken) {
+    const { datei, laeufer, neben, baender } = richterOrdne(root);
+    const name = (k) => `${k.toLowerCase().replace("/", "-")}.cjs`;
+    const wo = new Map();
+    for (const [k, bs] of datei) for (const b of bs) wo.set(b.name, name(k));
+    const thema = Object.fromEntries(stamm.karteVon(root).ordnung);
+    const texte = new Map();
+    for (const [k, bs] of datei) {
+        const alle = bs.map((b) => b.rumpf).join("\n");
+        const frei = (n) => new RegExp(`(?<![.\\w$])${n}\\b(?!\\s*:)`).test(alle);
+        const kopf = Object.keys(KOPF).filter((n) => frei(n) || (n === "path" && frei("SKRIPTE"))).map((n) => KOPF[n]);
+        const nachbar = new Map();
+        for (const [x, f] of wo) if (f !== name(k) && new RegExp(`\\b${x}\\b`).test(alle)) nachbar.set(f, [...(nachbar.get(f) || []), x]);
+        for (const [f, xs] of nachbar) kopf.push(`const { ${xs.join(", ")} } = require("./${f}");`);
+        const exp = [];
+        for (const b of bs) exp.length && (exp[exp.length - 1] + b.name).length < 112 ? (exp[exp.length - 1] += `, ${b.name}`) : exp.push(b.name);
+        const t = thema[k] || Object.entries(thema).filter(([m]) => m.startsWith(k + "/")).map(([, v]) => v).join(" · ");
+        texte.set(name(k), [
+            '"use strict";',
+            `// ${RICHTER_DIR}/${name(k)} — der Richter von ${k} (spec/stamm/modul-karte.json): ${t}.`,
+            `// ${bs.length} Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von`,
+            "// `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.",
+            "",
+            ...kopf,
+            ...(kopf.length ? [""] : []),
+            bs.map((b) => b.text).join("\n\n"),
+            "",
+            `module.exports = {\n    ${exp.join(",\n    ")},\n};`,
+            "",
+        ].join("\n"));
+    }
+    let L = laeufer.replace(/\btimed\((check\w+)/g, "timed(BAND.$1").replace(/\n\(async \(\) => \{\n/, "\nif (require.main === module) (async () => {\n");
+    if (!/\nconst BAND = /.test(L))
+        L = L.replace(/\n+(if \(require\.main === module\) \(async)/, [
+            "\n\n// DIE BÄNDER nach Domäne (scripts/playtest/<domaene>[-<teil>].cjs, gestellt von `stamm-umzug --richter`); die Seite",
+            "// (safeEvaluate) reicht der Läufer, die Reihenfolge des Laufs steht unten.",
+            "module.exports = { safeEvaluate };",
+            'const BAND = Object.assign({}, ...fs.readdirSync(path.join(__dirname, "playtest")).filter((f) => f.endsWith(".cjs")).map((f) => require(`./playtest/${f}`)));',
+            "",
+            "$1",
+        ].join("\n"));
+    console.log(`richter: ${baender.size} Bänder → ${texte.size} Dateien (Decke ${DECKE})`);
+    for (const [f, t] of texte) console.log(`  ${String(t.split("\n").length - 1).padStart(5)}  ${RICHTER_DIR}/${f}`);
+    if (trocken) return 0;
+    for (const f of neben) if (!texte.has(f)) fs.unlinkSync(path.join(root, RICHTER_DIR, f));
+    fs.mkdirSync(path.join(root, RICHTER_DIR), { recursive: true });
+    for (const [f, t] of texte) fs.writeFileSync(path.join(root, RICHTER_DIR, f), t);
+    fs.writeFileSync(path.join(root, RICHTER), L);
+    return 0;
+}
+
 // ── Selbsttest ────────────────────────────────────────────────────────────────────────────────────────────────────────
 function selbsttest() {
     const os = require("os");
@@ -320,6 +470,7 @@ function selbsttest() {
 function main() {
     if (argv.includes("--selftest")) return selbsttest() ? 1 : 0;
     if (argv.includes("--nach-karte")) return nachKarte(ROOT, argv.includes("--trocken"));
+    if (argv.includes("--richter")) return richter(ROOT, argv.includes("--trocken"));
     if (argv.includes("--beweis")) {
         const r = beweise(ROOT, stamm.textAusRev(ROOT, opt("--rev", "HEAD~1")), teileVon(ROOT));
         console.log(beweisZeile(r));

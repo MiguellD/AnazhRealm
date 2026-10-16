@@ -563,7 +563,8 @@ function selftest() {
 function main() {
     if (process.argv.includes("--selftest")) selftest();
     const root = path.join(__dirname, "..");
-    const playtestSrc = fs.readFileSync(path.join(root, "scripts", "playtest.cjs"), "utf8");
+    const richter = ["playtest.cjs", ...fs.readdirSync(path.join(root, "scripts", "playtest")).map((f) => "playtest/" + f)];
+    const playtestSrc = richter.map((f) => fs.readFileSync(path.join(root, "scripts", f), "utf8")).join("\n");
     const stammSrc = stammLib.text(root);
     const ratchet = scanRatchet(playtestSrc);
     const anker = scanAnker(playtestSrc, stammSrc);

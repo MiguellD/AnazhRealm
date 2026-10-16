@@ -1385,7 +1385,8 @@ function scan(files) {
         }
     };
     for (const f of files) pruefe(f, FORBIDDEN);
-    for (const z of FORBIDDEN) for (const a of z.auch || []) pruefe(path.join(root, a), [z]);
+    const richter = (a) => (a !== "scripts/playtest.cjs" ? [a] : [a, ...fs.readdirSync(path.join(root, "scripts/playtest")).map((f) => "scripts/playtest/" + f)]);
+    for (const z of FORBIDDEN) for (const a of (z.auch || []).flatMap(richter)) pruefe(path.join(root, a), [z]);
     return errs;
 }
 
