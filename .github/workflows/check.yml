@@ -1418,9 +1418,9 @@ jobs:
             - name: WebGL2-Rückfall (ohne WebGPU-Adapter bootet die Welt laut benannt auf GL und lebt)
               if: matrix.gruppe == 13
               # swiftshader-GL (__anazhForceWebGL, der EINE Hook): W1 der Backend ist WebGL, W2 der Rückfall wird einmal laut
-              # benannt, W3 Feld-Pass und Region-Bundles ruhen, W4 der Fern-Ring verfeinert auf CPU, W5 Takte laufen und der
-              # Canvas nach dem echten Frame trägt Substanz, W6 (holz=voll) jedes gelinkte Programm eines Stoffs trägt je Stufe
-              # ≤ 16 aktive Sampler-Einheiten (getActiveUniform) und linkt — sonst ROT beim Namen mit Info-Log.
+              # benannt, W3 Feld-Pass und Region-Bundles ruhen, W4 der Fern-Ring verfeinert auf CPU, W5 Takte laufen, der Canvas
+              # nach dem echten Frame trägt Substanz und jedes Programm, das das Spiel baut, linkt (sonst ROT beim Stoff-Namen),
+              # W6 (holz=voll) jeder Stoff trägt je Stufe ≤ 16 aktive Sampler-Einheiten, gezählt im GLSL ohne Link.
               run: npm run gate:webgl-probe
 
             - name: Stall-Akte (die Boot-Lib nennt eine stehende Seite beim Namen - JS-Schleife mit Stapel, Versprechen am Fristriss)
