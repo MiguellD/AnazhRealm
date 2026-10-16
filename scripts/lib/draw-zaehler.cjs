@@ -126,11 +126,11 @@ function drawZensus(opts) {
                     ziel.set(ikl, e);
                 }
             }
-            // je Draw EIN Befehl; eine Senke zeichnet über ihren Zeichner (1410-1), die ARENA (G1) je Glied einen Zug (`_stapel`).
+            // je Draw EIN Befehl; die ARENA (G1) je Glied einen Zug (`_stapel`), ein leerer Platz in der Klasse ihres ersten Glieds.
             const arena = object.isGeometrieArena === true ? object._stapel[object._stapel.length - 1] : null;
             for (let j = 0; j < (arena ? arena.zuege.length : 1); j++) {
                 const senke = arena ? arena.zuege[j] : object.__instanzQuelle || object;
-                const kl = arena ? klasse(senke) : kl0;
+                const kl = arena ? klasse(senke === object ? object.glieder[0] || object : senke) : kl0;
                 const k = kl + "|" + pass;
                 let tris = arena ? (arena.arr[j * 5] / 3) * arena.arr[j * 5 + 1] : 0;
                 if (g && !arena) {
