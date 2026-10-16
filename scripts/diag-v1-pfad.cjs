@@ -1853,14 +1853,19 @@ async function probe(arg) {
         const vorStand = stammLib.ersetze(quelle, [
             ["_workshopRender", 'this._buehneRender(p.renderer, p.scene, p.camera, "Werkstatt-Vorschau");', "p.renderer.render(p.scene, p.camera);"],
             ["_buehneRender", "if (an !== null) lu.uLodMaskOn.value = 0;", ""],
+            // der Orts-Vertrag beim Vorher (6b988a07): dslEvalPos gibt null weiter, spawn_studio bewacht sich selbst
             ["dslEvalPos", "            throw fehler;\n", "            return null;\n"],
+            // der Rest der Klasse beim Vorher (c52089c7): jeder Nicht-Array-Knoten ist „nicht verlangt", der Feld-Akt nimmt
+            // für jeden Nicht-Array-Knoten den Spieler
             ["dslEvalPos", "if (node == null) pos = this._defaultSpawnPos();", "if (!Array.isArray(node) || node.length === 0) pos = this._defaultSpawnPos();"],
             ["_dslRulePos", 'return this.dslEvalPos(posNode == null ? ["at_player"] : posNode, ctx);',
                 'return Array.isArray(posNode) && posNode.length > 0 ? this.dslEvalPos(posNode, ctx) : this.dslEvalPos(["at_player"], ctx);'],
             ["dslEffects", "const pos = this.dslEvalPos(positionNode, ctx); // kein Ort",
                 "const pos = this.dslEvalPos(positionNode, ctx);\n                if (!pos) return; // kein Ort"],
+            // die Zwillings-Suche beim Vorher: der Rückkehr-Anker sucht die Plattform selbst
             ["_playerDeathRespawn", "const anchor = this._genesisPlattform();",
                 'const anchor = (this.state.architectures || []).find((a) => a && a.type === "start_plattform");'],
+            // der Warte-Poll der Hand beim Vorher (K38-N1): sie fragte alle 150 ms, ob das Buch steht
             ["_heldFoundryGroup", 'this._foundryWecker(f.buchDa, "hand", () => {',
                 "const poll = () => {\n if (f.ready && f.recipes) this._refreshHeldMesh();\n else setTimeout(poll, 150);\n };\n setTimeout(poll, 150);\n (() => {"],
         ]);
