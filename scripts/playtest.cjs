@@ -8491,11 +8491,8 @@ async function checkBandWave4(ctx) {
         const v2 = r.validateBlueprintParts([{ shape: "box", material: "phlogiston", color: 0x111111 }]);
         out.validationDropsUnknownMaterial = v2.ok && !v2.parts[0].material;
         // DSL-Op define_material
-        const runRes = r.dslRun(["define_material", "schimmer", 0xeeeeee, { magieleitung: 0.7 }], {
-            source: "test",
-        });
+        r.dslRun(["define_material", "schimmer", 0xeeeeee, { magieleitung: 0.7 }], { source: "test" });
         out.dslDefineMaterial = !!mats.schimmer && !mats.schimmer.builtIn;
-        out.dslLogsDefinedEvent = runRes.log.some((e) => e.event === "defined_material");
         // Built-in-Bauplan-Parts haben material gesetzt (stein_block — lebendes builtIn)
         const villageParts = r.state.blueprints.stein_block.parts;
         out.builtInPartsHaveMaterial = villageParts.every((p) => typeof p.material === "string" && mats[p.material]);
@@ -8570,7 +8567,6 @@ async function checkBandWave4(ctx) {
             wave4p1Results.validationDropsUnknownMaterial
         );
         check("Welle 4 P1: DSL-Op define_material wirkt", wave4p1Results.dslDefineMaterial);
-        check("Welle 4 P1: DSL-Op loggt defined_material-Event", wave4p1Results.dslLogsDefinedEvent);
         check("Welle 4 P1: Built-in-Bauplan-Parts tragen material-Feld", wave4p1Results.builtInPartsHaveMaterial);
         check("Welle 4 P1: Save persistiert eigene Materialien", wave4p1Results.snapshotHasMaterial);
         check("Welle 4 P1: Migration alter Parts auf stein", wave4p1Results.legacyPartGotDefaultMaterial);
@@ -8792,10 +8788,6 @@ async function checkBandWave4(ctx) {
         const ap4 = r.applyOpToPart("stein_block", 0, "schmiede-hammer");
         out.builtInBlueprintProtected = !ap4.ok && ap4.reason === "cannot_modify_builtin";
 
-        // DSL-Op apply_op
-        const dslRes = r.dslRun(["apply_op", "test-precision", 0, "hände"], { source: "test" });
-        out.dslApplyOpWorks = dslRes.log.some((e) => e.event === "applied_op");
-
         // Diskrimination: hand-roh (precision 0.4) vs. poliert (cap 0.97) — die Welt-Effekt-Schwelle
         // precision_high=0.8 liegt dazwischen: der polierte triggert, der rohe nicht.
         r.state.blueprints["raw-orb"] = {
@@ -8935,7 +8927,6 @@ async function checkBandWave4(ctx) {
         check("Welle 4 P3: Stein lehnt Hammer (plastic) ab", wave4p3Results.materialOpIncompat);
         check("Welle 4 P3: Werkzeug-Besitz wird durchgesetzt", wave4p3Results.toolOwnershipEnforced);
         check("Welle 4 P3: Built-in-Bauplan vor Op-Mutation geschützt", wave4p3Results.builtInBlueprintProtected);
-        check("Welle 4 P3: DSL-Op apply_op wirkt", wave4p3Results.dslApplyOpWorks);
         check(
             "Welle 4 P3: Präzisions-Diskriminations-Schwelle liegt zwischen roh/poliert",
             wave4p3Results.precisionDiscriminates
@@ -9621,8 +9612,7 @@ async function checkBandWave5(ctx) {
         out.removeOk = rmR && r.state.blueprints["w5a-test"].connections.length === 0;
 
         // DSL-Op apply_connection
-        const dslRes = r.dslRun(["apply_connection", "w5a-test", "magic_bind", 0, 1], { source: "test" });
-        out.dslApplyConnection = dslRes.log.some((e) => e.event === "applied_connection");
+        r.dslRun(["apply_connection", "w5a-test", "magic_bind", 0, 1], { source: "test" });
         out.dslConnectionPersisted = r.state.blueprints["w5a-test"].connections.length === 1;
 
         // Save-Roundtrip
@@ -9712,7 +9702,6 @@ async function checkBandWave5(ctx) {
         check("Welle 5 A: addConnectionToBlueprint haengt an", wave5aResults.addConnectionOk);
         check("Welle 5 A: Built-in-Bauplan vor Connection-Mutation geschuetzt", wave5aResults.builtinBlocked);
         check("Welle 5 A: removeConnectionFromBlueprint entfernt", wave5aResults.removeOk);
-        check("Welle 5 A: DSL apply_connection wirkt", wave5aResults.dslApplyConnection);
         check("Welle 5 A: DSL-Connection persistiert in state", wave5aResults.dslConnectionPersisted);
         check("Welle 5 A: Save traegt connections im Snapshot", wave5aResults.saveCarriesConnections);
         check("Welle 5 A (V17.91): Connect-Modus existiert in der Top-Leiste", wave5aResults.uiConnectMode);
@@ -9851,12 +9840,10 @@ async function checkBandWave5(ctx) {
             parts: [{ shape: "box", material: "eisen", opChain: polishedChain }],
             connections: [],
         };
-        const dslMeta = r.dslRun(["set_tool_meta", "w5c-dsl-test", "dsl-tool", "additive"], {
+        r.dslRun(["set_tool_meta", "w5c-dsl-test", "dsl-tool", "additive"], {
             source: "test",
         });
-        out.dslSetMeta = dslMeta.log.some((e) => e.event === "set_tool_meta");
-        const dslReg = r.dslRun(["register_tool", "w5c-dsl-test"], { source: "test" });
-        out.dslRegister = dslReg.log.some((e) => e.event === "registered_tool");
+        r.dslRun(["register_tool", "w5c-dsl-test"], { source: "test" });
         out.dslToolInState = !!r.state.tools["w5c-dsl-test"];
 
         // Save-Roundtrip
@@ -9917,8 +9904,6 @@ async function checkBandWave5(ctx) {
             "Welle 5 C: Schlechtes Tool deckelt Ziel-Praezision (§4.3 Kaskade)",
             wave5cResults.recursivePrecisionCascade
         );
-        check("Welle 5 C: DSL set_tool_meta wirkt", wave5cResults.dslSetMeta);
-        check("Welle 5 C: DSL register_tool wirkt", wave5cResults.dslRegister);
         check("Welle 5 C: DSL-Werkzeug landet in state.tools", wave5cResults.dslToolInState);
         check("Welle 5 C: Save traegt role + toolMeta im Bauplan", wave5cResults.snapshotHasToolBp);
         check("Welle 5 C: Save traegt eigenes Werkzeug", wave5cResults.snapshotHasTool);
@@ -11217,24 +11202,13 @@ async function checkBandRing11AndW7Mesh(ctx) {
     void errors;
     void finalState;
     // ### Voxel V9.36 — modify_terrain stirbt, voxel_carve/_fill leben ###
-    // Absenz: der modify_terrain-DSL-Op, seine Heightfield-Helfer, `chunkDeltas` und CHUNK_DELTA_OPS_CAP;
+    // Die Absenz der modify_terrain-Schicht trägt gate:altlasten (KI2, 16.10.: der letzte Name fiel aus einer DSL-Liste);
     // die Welt-Mod läuft über die broadcastbaren voxel_carve/voxel_fill (Chat `grabe loch`/`hebe hügel`
     // mit Spieler-Position; CREATURE_PROPOSED_OPS führt sie statt modify_terrain).
     const voxelV936Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
         const out = {};
-
-        // (1) Die alte modify_terrain-Schicht ist GELÖSCHT.
-        out.noModifyTerrainDslOp = typeof r.dslEffects.modify_terrain !== "function";
-        out.noChunksTouchedByDisc = typeof r._chunksTouchedByDisc !== "function";
-        out.noAppendChunkDeltaOp = typeof r._appendChunkDeltaOp !== "function";
-        out.noSanitizeChunkDeltas = typeof r._sanitizeChunkDeltas !== "function";
-        out.noApplyModifyOpToChunk = typeof r._applyModifyOpToChunk !== "function";
-        out.noRebuildChunkPhysics = typeof r._rebuildChunkPhysics !== "function";
-        out.noApplyChunkDelta = typeof r.applyChunkDelta !== "function";
-        out.noChunkDeltaOpsCap = typeof r.constructor.CHUNK_DELTA_OPS_CAP === "undefined";
-        out.noChunkDeltasField = !("chunkDeltas" in (r.state.worldMeta || {}));
 
         // (2) Die neuen voxel_carve/voxel_fill-DSL-Ops leben.
 
@@ -11287,28 +11261,11 @@ async function checkBandRing11AndW7Mesh(ctx) {
         // voxel_fill statt modify_terrain.
         const proposed = r.constructor.CREATURE_PROPOSED_OPS;
         out.creatureProposedHasVoxelOps = proposed && proposed.has("voxel_carve") && proposed.has("voxel_fill");
-        out.creatureProposedNoModifyTerrain = proposed && !proposed.has("modify_terrain");
-
-        // (7) tryMouseBreak hat keinen modify_terrain-Fallback mehr.
-        const breakSrc = (typeof r.tryMouseBreak === "function" && window.__codeOf(r.tryMouseBreak)) || "";
-        out.tryMouseBreakNoModifyTerrain = !/modify_terrain/.test(breakSrc);
 
         return out;
     });
 
     if (voxelV936Results && !voxelV936Results.error) {
-        check("Voxel V9.36: dslEffects.modify_terrain ist gelöscht", voxelV936Results.noModifyTerrainDslOp);
-        check("Voxel V9.36: _chunksTouchedByDisc ist gelöscht", voxelV936Results.noChunksTouchedByDisc);
-        check("Voxel V9.36: _appendChunkDeltaOp ist gelöscht", voxelV936Results.noAppendChunkDeltaOp);
-        check("Voxel V9.36: _sanitizeChunkDeltas ist gelöscht", voxelV936Results.noSanitizeChunkDeltas);
-        check("Voxel V9.36: _applyModifyOpToChunk ist gelöscht", voxelV936Results.noApplyModifyOpToChunk);
-        check("Voxel V9.36: _rebuildChunkPhysics ist gelöscht", voxelV936Results.noRebuildChunkPhysics);
-        check("Voxel V9.36: applyChunkDelta ist gelöscht", voxelV936Results.noApplyChunkDelta);
-        check("Voxel V9.36: CHUNK_DELTA_OPS_CAP-Konstante ist gelöscht", voxelV936Results.noChunkDeltaOpsCap);
-        check(
-            "Voxel V9.36: worldMeta.chunkDeltas-Feld ist entfernt (frische Welten)",
-            voxelV936Results.noChunkDeltasField
-        );
         check(
             "Voxel V9.36: Chat 'grabe loch' → voxel_carve (Heightfield-Pfad umgeroutet)",
             voxelV936Results.chatDigRoutesToVoxelCarve
@@ -11332,14 +11289,6 @@ async function checkBandRing11AndW7Mesh(ctx) {
         check(
             "Voxel V9.36: CREATURE_PROPOSED_OPS trägt voxel_carve + voxel_fill (statt modify_terrain)",
             voxelV936Results.creatureProposedHasVoxelOps
-        );
-        check(
-            "Voxel V9.36: CREATURE_PROPOSED_OPS trägt modify_terrain NICHT mehr",
-            voxelV936Results.creatureProposedNoModifyTerrain
-        );
-        check(
-            "Voxel V9.36: tryMouseBreak hat keinen modify_terrain-Fallback mehr",
-            voxelV936Results.tryMouseBreakNoModifyTerrain
         );
     }
 
@@ -14067,20 +14016,17 @@ async function checkBandLateMultiUser(ctx) {
 
         // spawn_blueprint-Op mit archId.
         r.dslRun(["spawn_blueprint", "stein_block", ["at", 20, 4, 20], 0, "a-unit-2"], { source: "test" });
-        out.spawnBlueprintArchId = r.state.architectures.some((a) => a && a.id === "a-unit-2");
         // Idempotenz: zweiter Lauf mit derselben id → kein zweiter Spawn.
         const before = r.state.architectures.filter((a) => a && a.id === "a-unit-2").length;
         r.dslRun(["spawn_blueprint", "stein_block", ["at", 21, 4, 21], 0, "a-unit-2"], { source: "test" });
         const after = r.state.architectures.filter((a) => a && a.id === "a-unit-2").length;
         out.spawnBlueprintIdempotent = before === 1 && after === 1;
 
-        // remove_architecture entfernt per string-id.
-        r.dslRun(["remove_architecture", "a-unit-2"], { source: "test" });
-        out.removeArchitectureWorks = !r.state.architectures.some((a) => a && a.id === "a-unit-2");
-        // Unbekannte / nicht-string id → kein Crash, keine Entfernung.
+        // Unbekannte id / eine Zahl-Id vom Mitspieler (jeder Peer zählt selbst) → kein Crash, keine Entfernung; der Abbau per
+        // Zahl- und String-Id: gate:weltakt-wache (K).
         const cnt = r.state.architectures.length;
         r.dslRun(["remove_architecture", "a-does-not-exist"], { source: "test" });
-        r.dslRun(["remove_architecture", 12345], { source: "test" });
+        r.dslRun(["remove_architecture", eLocal.id], { source: "remote:peer-unit" });
         out.removeArchitectureSafe = r.state.architectures.length === cnt;
 
         // describeProgram kennt remove_architecture.
@@ -14175,14 +14121,12 @@ async function checkBandLateMultiUser(ctx) {
             "Bau-Sync: spawnArchitecture ohne id bleibt numerisch (Worldgen)",
             buildSyncResults.spawnDefaultNumericId
         );
-        check("Bau-Sync: spawn_blueprint spawnt unter der archId", buildSyncResults.spawnBlueprintArchId);
         check(
             "Bau-Sync: spawn_blueprint ist idempotent (kein Doppel-Spawn)",
             buildSyncResults.spawnBlueprintIdempotent
         );
-        check("Bau-Sync: remove_architecture entfernt per string-id", buildSyncResults.removeArchitectureWorks);
         check(
-            "Bau-Sync: remove_architecture ist defensiv (unbekannt/nicht-string)",
+            "Bau-Sync: remove_architecture ist defensiv (unbekannt; Zahl-Id vom Mitspieler)",
             buildSyncResults.removeArchitectureSafe
         );
         check("Bau-Sync: describeProgram kennt remove_architecture", buildSyncResults.describeRemove);
@@ -26004,12 +25948,8 @@ async function checkBandWelle6HCreatures(ctx) {
         r.assignTaskToAllCreatures("wander");
 
         // DSL-Ops
-        r.dslRun(["creature_task", 0, "follow_player"], { source: "test" });
-        out.dslSingleWorks = r._getCreatureTask(r.state.creatures[0]).name === "follow_player";
         r.dslRun(["creature_task_all", "wander"], { source: "test" });
         out.dslAllWorks = r.state.creatures.every((c) => r._getCreatureTask(c).name === "wander");
-        r.dslRun(["creature_task", 9999, "follow_player"], { source: "test" });
-        out.dslOobSafe = true; // wenn wir hier sind, kein crash
 
         // NON_BROADCASTABLE_OPS Mitgliedschaft
         const nbs = r.constructor.NON_BROADCASTABLE_OPS;
@@ -26105,9 +26045,7 @@ async function checkBandWelle6HCreatures(ctx) {
         check("Welle 6.H Phase 1: findNearestCreature wählt die nahste", wave6hResults.nearestIsCorrect);
         check("Welle 6.H Phase 1: assignTaskToNearestCreature wirkt auf nahste", wave6hResults.assignNearestWorks);
         check("Welle 6.H Phase 1: assignTaskToAllCreatures wirkt auf alle", wave6hResults.assignAllWorks);
-        check("Welle 6.H Phase 1: DSL creature_task setzt Task", wave6hResults.dslSingleWorks);
         check("Welle 6.H Phase 1: DSL creature_task_all setzt alle", wave6hResults.dslAllWorks);
-        check("Welle 6.H Phase 1: DSL mit OOB-Index crasht nicht", wave6hResults.dslOobSafe);
         check(
             "Welle 6.H Phase 1: creature_task* in NON_BROADCASTABLE_OPS (Multi-User-Safety)",
             wave6hResults.nbCreatureTask && wave6hResults.nbCreatureTaskNearest && wave6hResults.nbCreatureTaskAll
