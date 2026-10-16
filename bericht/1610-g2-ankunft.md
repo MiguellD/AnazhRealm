@@ -36,7 +36,7 @@ EINEN Lade-Frist“ auf der GTX an B (Ziel ≤ 5 s, heute ~20 s)?
 - Die Dorf-Kette selbst kostet auf der GTX also nur ~0,4 s. Auf der Radeon (7,4 → 0,6 s) streckte sie die 3-ms-Scheibe.
 
 **Bild der Ankunft:**
-- In 8/8 Boots kein halbes Weltbild. Die Linse meldet kein „steht ohne“, das Bild ist ganz: Boden, Wald, Dorf am Horizont, Himmel.
+- In 8/8 Boots kein halbes Weltbild. Die Linse meldet kein „steht ohne“, das Bild ist ganz: Boden, Bögen, Wald, Himmel.
 - Die Portal-Membranen in den Bögen stehen bei A in 1 von 4, bei B in 3 von 4 Ankunftsbildern (53–55 statt 48 Befehle). Das ist
   Zeit-Zufall am Rand, kein Term des Weltbilds.
 - Beispiele: `A1.png` (ohne Membranen), `B1.png` (mit).
