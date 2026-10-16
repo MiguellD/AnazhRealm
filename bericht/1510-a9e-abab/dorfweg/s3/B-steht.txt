@@ -1,0 +1,364 @@
+{
+ "regler": "voll",
+ "sekunden": 25,
+ "frames": 1789,
+ "fps": 71.5,
+ "frameMs": {
+  "p50": 16.6,
+  "p95": 16.8,
+  "p99": 17,
+  "max": 25.1
+ },
+ "cpuTaktMs": {
+  "p50": 3.6,
+  "p95": 5.1,
+  "p99": 6.6,
+  "max": 29.2
+ },
+ "taktMs": {
+  "p50": 8.3,
+  "p95": 8.5,
+  "p99": 8.7,
+  "max": 25.1
+ },
+ "leine": {
+  "ausgesetztPct": 40.1,
+  "imFlug": 0
+ },
+ "gpuMs": {
+  "p50": 1.7,
+  "p95": 2.29,
+  "p99": 2.48,
+  "max": 4.07,
+  "n": 893,
+  "quelle": "echt"
+ },
+ "gpuDurchsatzMs": {
+  "p50": 13.9,
+  "p95": 16.4,
+  "p99": 18.2,
+  "max": 46.2
+ },
+ "gpuVerzugMs": {
+  "p50": 19.9,
+  "p95": 24.2,
+  "p99": 25.7,
+  "max": 47.1
+ },
+ "gpuJePassMs": {
+  "post": {
+   "p50": 0.69,
+   "p95": 0.88,
+   "frames": 1789
+  },
+  "TRAA": {
+   "p50": 0.69,
+   "p95": 0.87,
+   "frames": 1789
+  },
+  "haupt": {
+   "p50": 0.11,
+   "p95": 0.17,
+   "frames": 1789
+  },
+  "k0": {
+   "p50": 0.19,
+   "p95": 0.71,
+   "frames": 895
+  },
+  "k1": {
+   "p50": 0.04,
+   "p95": 0.41,
+   "frames": 299
+  },
+  "atmo-himmel": {
+   "p50": 0.07,
+   "p95": 0.08,
+   "frames": 100
+  },
+  "spiegel:strahl": {
+   "p50": 0.03,
+   "p95": 0.03,
+   "frames": 55
+  },
+  "atmo-umgebung": {
+   "p50": 0.01,
+   "p95": 0.01,
+   "frames": 5
+  },
+  "OrthographicCamera": {
+   "p50": 2.42,
+   "p95": 2.44,
+   "frames": 5
+  },
+  "horizont-karte": {
+   "p50": 0.02,
+   "p95": 0.56,
+   "frames": 10
+  }
+ },
+ "stempel": {
+  "imLauf": 0,
+  "seitBoot": 0,
+  "spitze": 52,
+  "pool": {
+   "stand": 6,
+   "max": 2048
+  },
+  "gueltig": true,
+  "warnung": 0
+ },
+ "befehle": {
+  "frames": 1789,
+  "mittel": 78,
+  "p95": 89,
+  "max": 105,
+  "jePass": {
+   "k0": {
+    "anteil": 0.5,
+    "p50": 26,
+    "max": 26
+   },
+   "haupt": {
+    "anteil": 1,
+    "p50": 61,
+    "max": 61
+   },
+   "TRAA": {
+    "anteil": 1,
+    "p50": 1,
+    "max": 1
+   },
+   "post": {
+    "anteil": 1,
+    "p50": 1,
+    "max": 1
+   },
+   "k1": {
+    "anteil": 0.17,
+    "p50": 13,
+    "max": 13
+   },
+   "atmo-himmel": {
+    "anteil": 0.04,
+    "p50": 1,
+    "max": 1
+   },
+   "spiegel:strahl": {
+    "anteil": 0.03,
+    "p50": 1,
+    "max": 1
+   },
+   "horizont-karte": {
+    "anteil": 0,
+    "p50": 6,
+    "max": 6
+   },
+   "atmo-umgebung": {
+    "anteil": 0,
+    "p50": 1,
+    "max": 1
+   },
+   "OrthographicCamera": {
+    "anteil": 0,
+    "p50": 15,
+    "max": 15
+   }
+  }
+ },
+ "dreiecke": {
+  "frames": 1789,
+  "mittel": 362103,
+  "p95": 390459,
+  "max": 440264,
+  "jePass": {
+   "k0": {
+    "anteil": 0.5,
+    "p50": 65260,
+    "max": 66905
+   },
+   "haupt": {
+    "anteil": 1,
+    "p50": 323554,
+    "max": 323566
+   },
+   "TRAA": {
+    "anteil": 1,
+    "p50": 1,
+    "max": 1
+   },
+   "post": {
+    "anteil": 1,
+    "p50": 1,
+    "max": 1
+   },
+   "k1": {
+    "anteil": 0.17,
+    "p50": 32900,
+    "max": 33020
+   },
+   "atmo-himmel": {
+    "anteil": 0.04,
+    "p50": 1,
+    "max": 1
+   },
+   "spiegel:strahl": {
+    "anteil": 0.03,
+    "p50": 1,
+    "max": 1
+   },
+   "horizont-karte": {
+    "anteil": 0,
+    "p50": 49920,
+    "max": 49920
+   },
+   "atmo-umgebung": {
+    "anteil": 0,
+    "p50": 1,
+    "max": 1
+   },
+   "OrthographicCamera": {
+    "anteil": 0,
+    "p50": 180,
+    "max": 180
+   }
+  }
+ },
+ "ueber17": 0.9,
+ "ueber33": 0,
+ "vramMB": {
+  "jetzt": 101.3,
+  "puffer": 19.8,
+  "texturen": 81.5,
+  "spitze": 121.2,
+  "nPuffer": 816,
+  "nTexturen": 40,
+  "wuchsImFenster": -13.5,
+  "gross": [
+   {
+    "k": "buf:?",
+    "mb": 19.685,
+    "n": 620
+   },
+   {
+    "k": "tex:TRAANode.history rgba16float 1920x1080x1",
+    "mb": 15.82,
+    "n": 1
+   },
+   {
+    "k": "tex:TRAANode.resolve rgba16float 1920x1080x1",
+    "mb": 15.82,
+    "n": 1
+   },
+   {
+    "k": "tex:kaskade0:tiefe depth16unorm 2048x2048x1",
+    "mb": 8,
+    "n": 1
+   },
+   {
+    "k": "tex:kaskade1:tiefe depth16unorm 2048x2048x1",
+    "mb": 8,
+    "n": 1
+   },
+   {
+    "k": "tex:output rg11b10ufloat 1440x810x1",
+    "mb": 4.449,
+    "n": 1
+   },
+   {
+    "k": "tex:depth depth24plus 1440x810x1",
+    "mb": 4.449,
+    "n": 1
+   },
+   {
+    "k": "tex:karte-albedo:atlas bc1-rgba-unorm-srgb 128x2048x18",
+    "mb": 2.999,
+    "n": 1
+   },
+   {
+    "k": "tex:szene:tiefenabbild r32float 720x810x1",
+    "mb": 2.225,
+    "n": 1
+   },
+   {
+    "k": "tex:wege-karte:fern rg8unorm 1024x1024x1",
+    "mb": 2,
+    "n": 1
+   },
+   {
+    "k": "tex:wege-karte:nah rg8unorm 1024x1024x1",
+    "mb": 2,
+    "n": 1
+   },
+   {
+    "k": "tex:feld-pass-panorama rgba32float 768x160x1",
+    "mb": 1.875,
+    "n": 1
+   },
+   {
+    "k": "tex:karte-albedo:atlas bc1-rgba-unorm-srgb 128x2048x10",
+    "mb": 1.666,
+    "n": 1
+   },
+   {
+    "k": "tex:karte-normal:atlas bc5-rg-unorm 64x1024x18",
+    "mb": 1.499,
+    "n": 1
+   }
+  ]
+ },
+ "stellgroessen": {
+  "loadScale": 1,
+  "szeneSkala": 0.75,
+  "pixelRatio": 1,
+  "foliageRadius": 216,
+  "foliageDichte": 1,
+  "archRadius": 150,
+  "ring": 4,
+  "schattenIntervall": 1,
+  "holz": "voll"
+ },
+ "phasenEwmaMs": {
+  "streaming": 0.26,
+  "waterIso": 0,
+  "archCulling": 0,
+  "creatures": 0.32,
+  "physics": 0.17,
+  "render": 2.43,
+  "gpuMs": 1.93
+ },
+ "kamera": {
+  "pos": [
+   -841,
+   86.9,
+   -861
+  ],
+  "blick": [
+   0.69,
+   0,
+   0.72
+  ]
+ },
+ "chunks": 81,
+ "ruhe": null,
+ "wetter": "sunny",
+ "wetterHalt": {
+  "vorher": "sunny",
+  "nachher": "sunny",
+  "uhrVorher": -999999996.1,
+  "uhrNachher": -999999961.9,
+  "buch": [],
+  "urteil": "GRUEN",
+  "taeter": [],
+  "verweigert": {}
+ },
+ "saison": "summer",
+ "fehler": [
+  "[konsole] [AnazhRealm V18.546.2] [INFO] WebGPU-Renderer init() abgeschlossen — die Welt rendert jetzt auf der GPU.",
+  "[konsole] [AnazhRealm V18.546.2] [ERROR] GPU-VALIDIERUNG (pipeline, #1): PIPELINE-ABSAGE renderPipeline_MeshStandardNodeMaterial_33: [Invalid PipelineLayout (unlabeled)] is invalid due to a previous error. |     at ValidateObject (..\\..\\third_party\\dawn\\src\\dawn\\native\\Device.cpp:939) | ",
+  "[konsole] THREE.The number of sampled textures (17) in the Fragment stage exceeds the maximum per-stage limit (16). This adapter supports a higher maxSampledTexturesPerShaderStage of 48, which can be specified in requiredLimits when calling requestDevice(). Limits differ by hardware, so always check the adapter limits prior to requesting a higher limit. |  - While validating binding counts |  - Wh",
+  "[konsole] [AnazhRealm V18.546.2] [ERROR] GPU-VALIDIERUNG (world-canvas, #3): [Invalid BindGroupLayout (unlabeled)] is invalid due to a previous error. |  - While validating [BindGroupDescriptor \"\"bindGroup_object\"\"] against [Invalid BindGroupLayout (unlabeled)] |  - While calling [Device].CreateBindGroup([BindGroupDescriptor \"\"bindGroup_object\"\"]).",
+  "[konsole] [Invalid BindGroupLayout (unlabeled)] is invalid due to a previous error. |  - While validating [BindGroupDescriptor \"\"bindGroup_object\"\"] against [Invalid BindGroupLayout (unlabeled)] |  - While calling [Device].CreateBindGroup([BindGroupDescriptor \"\"bindGroup_object\"\"])."
+ ],
+ "ms": 35131
+}

@@ -1,0 +1,156 @@
+{
+ "zeilen": [
+  {
+   "boot": "g-third-A1",
+   "seite": "A",
+   "start": "2026-10-16T00:04:20.079Z",
+   "urteil": "ROT",
+   "fps": 79.8,
+   "frameP50": 8.6,
+   "frameP95": 16.8,
+   "cpuP95": 6.5,
+   "cpuP95frei": null,
+   "band": 13.07,
+   "befehle": 135,
+   "dreiecke": 393237,
+   "vram": 110
+  },
+  {
+   "boot": "g-third-B1",
+   "seite": "B",
+   "start": "2026-10-16T00:06:53.614Z",
+   "urteil": "GRUEN",
+   "fps": 80.7,
+   "frameP50": 8.5,
+   "frameP95": 16.8,
+   "cpuP95": 6.6,
+   "cpuP95frei": null,
+   "band": 12.43,
+   "befehle": 135,
+   "dreiecke": 392016,
+   "vram": 111.5
+  },
+  {
+   "boot": "g-third-A2",
+   "seite": "A",
+   "start": "2026-10-16T00:09:25.895Z",
+   "urteil": "ROT",
+   "fps": 79.9,
+   "frameP50": 8.8,
+   "frameP95": 16.8,
+   "cpuP95": 6.4,
+   "cpuP95frei": null,
+   "band": 13.07,
+   "befehle": 135,
+   "dreiecke": 393133,
+   "vram": 111.8
+  },
+  {
+   "boot": "g-third-B2",
+   "seite": "B",
+   "start": "2026-10-16T00:11:58.824Z",
+   "urteil": "GRUEN",
+   "fps": 80.1,
+   "frameP50": 8.6,
+   "frameP95": 16.8,
+   "cpuP95": 6.5,
+   "cpuP95frei": null,
+   "band": 12.33,
+   "befehle": 135,
+   "dreiecke": 393336,
+   "vram": 112.7
+  },
+  {
+   "boot": "g-third-A3",
+   "seite": "A",
+   "start": "2026-10-16T00:14:30.992Z",
+   "urteil": "ROT",
+   "fps": 79.7,
+   "frameP50": 14.6,
+   "frameP95": 16.7,
+   "cpuP95": 7.2,
+   "cpuP95frei": null,
+   "band": 12.52,
+   "befehle": 135,
+   "dreiecke": 393237,
+   "vram": 110.2
+  },
+  {
+   "boot": "g-third-B3",
+   "seite": "B",
+   "start": "2026-10-16T00:17:03.591Z",
+   "urteil": "ROT",
+   "fps": 79.9,
+   "frameP50": 9.9,
+   "frameP95": 16.8,
+   "cpuP95": 6.3,
+   "cpuP95frei": null,
+   "band": 12.33,
+   "befehle": 135,
+   "dreiecke": 393259,
+   "vram": 113
+  },
+  {
+   "boot": "g-third-A4",
+   "seite": "A",
+   "start": "2026-10-16T00:19:36.152Z",
+   "urteil": "ROT",
+   "fps": 80.5,
+   "frameP50": 8.5,
+   "frameP95": 16.8,
+   "cpuP95": 6.4,
+   "cpuP95frei": null,
+   "band": 12.43,
+   "befehle": 135,
+   "dreiecke": 393271,
+   "vram": 110.8
+  },
+  {
+   "boot": "g-third-B4",
+   "seite": "B",
+   "start": "2026-10-16T00:22:08.483Z",
+   "urteil": "GRUEN",
+   "fps": 79.8,
+   "frameP50": 10.5,
+   "frameP95": 16.8,
+   "cpuP95": 6.6,
+   "cpuP95frei": null,
+   "band": 13.03,
+   "befehle": 135,
+   "dreiecke": 393259,
+   "vram": 111.5
+  }
+ ],
+ "urteile": [
+  {
+   "titel": "fps (Regler voll)",
+   "u": "nicht langsamer",
+   "d": 0.15000000000000568,
+   "sig": 0.381881307912987
+  },
+  {
+   "titel": "Frame p50 ms",
+   "u": "nicht langsamer",
+   "d": -0.75,
+   "sig": 2.223173407541571
+  },
+  {
+   "titel": "Frame p95 ms",
+   "u": "nicht langsamer",
+   "d": 0.02500000000000213,
+   "sig": 0.03535533905932788
+  },
+  {
+   "titel": "CPU-Takt p95 voll ms",
+   "u": "nicht langsamer",
+   "d": -0.125,
+   "sig": 0.29083213944358577
+  },
+  {
+   "titel": "Band GPU ms je Frame",
+   "u": "nicht langsamer",
+   "d": -0.24249999999999972,
+   "sig": 0.3410950502914596
+  }
+ ]
+}

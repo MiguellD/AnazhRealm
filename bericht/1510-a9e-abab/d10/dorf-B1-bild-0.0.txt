@@ -1,0 +1,10 @@
+{
+ "fehler": "ERST-ZEICHNUNG OFFEN — die Aufnahme bricht ab: offen 0 nach 120 s (davon 120 s ohne Fortschritt), Bauten 0 und verschoben 0 im letzten Frame; offene Pipelines: -; ein Draw wartet auf renderPipeline_MeshStandardNodeMaterial_34 (ABGESAGT) — [Invalid BindGroupLayout (unlabeled)] is invalid due to a previous error. | The number of sampled textures (17) in the Fragment stage exceeds the maximum per-stage limit (16). This adapter supports a higher maxSampledTexturesPerShaderStage of 48, which can be specified in req",
+ "stapel": [
+  "pptr:evaluate;lade%20(C%3A%5CUsers%5Cmicha%5CDesktop%5CAnazhRealm-OMEN%5Cabab-pd5d%5Cscripts%5Cwerkbank.cjs%3A910%3A20):1341:23",
+  "async pptr:evaluate;lade%20(C%3A%5CUsers%5Cmicha%5CDesktop%5CAnazhRealm-OMEN%5Cabab-pd5d%5Cscripts%5Cwerkbank.cjs%3A910%3A20):1416:26",
+  "at evaluate (evaluate at lade (C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\abab-pd5d\\scripts\\werkbank.cjs:910:20), <anonymous>:1340:22)",
+  "at #evaluate (C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\welle-m-nexus\\node_modules\\puppeteer-core\\lib\\cjs\\puppeteer\\cdp\\ExecutionContext.js:391:56)"
+ ],
+ "ms": 123430
+}
