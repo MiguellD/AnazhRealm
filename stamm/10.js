@@ -103,7 +103,7 @@ class AnazhRealm_Z10 {
             microStrength: TSL.uniform(
                 this.state.atmosphere && Number.isFinite(this.state.atmosphere.microStrength)
                     ? this.state.atmosphere.microStrength
-                    : (AnazhRealm.AERIAL && AnazhRealm.AERIAL.microStrength) || 0.1
+                    : AnazhRealm.AERIAL.microStrength
             ),
             // Nacht-Boden = Füll-Licht für ALLE opaken Ebenen (profil-gewichtet, s. _applySubstanceResponse);
             // Default 0.06, EINE Quelle: SUBSTANCE_RESPONSE.
@@ -187,7 +187,7 @@ class AnazhRealm_Z10 {
             r5StructureBoost: TSL.uniform(
                 this.state.atmosphere && Number.isFinite(this.state.atmosphere.r5StructureBoost)
                     ? this.state.atmosphere.r5StructureBoost
-                    : (AnazhRealm.R5_STRUCTURE_TEXTURE && AnazhRealm.R5_STRUCTURE_TEXTURE.microBoost) || 1.3
+                    : AnazhRealm.R5_STRUCTURE_TEXTURE.microBoost
             ),
         };
         // UNIFORM-HEIMAT: der geteilte Welt-Satz reist als EIN renderGroup-Buffer.
@@ -262,11 +262,7 @@ class AnazhRealm_Z10 {
         try {
             const _T = THREE.TSL;
             const _au = this._ensureAtmoUniforms();
-            const cfg = AnazhRealm.AERIAL || {
-                microStrength: 0.1,
-                aoStrength: 0.35,
-                aoCap: 0.16,
-            };
+            const cfg = AnazhRealm.AERIAL;
             // Antennen-Gewicht [0..1]: 0 = der Block fällt (kein toter Shader-Ast).
             const _p = (k) => Math.max(0, Math.min(1, Number(profile[k]) || 0));
             const _o = _T.output; // die FERTIGE lit-Farbe (post-lighting)
@@ -1632,7 +1628,7 @@ class AnazhRealm_Z10 {
         // Crossfade-Band-Zahlen als LIVE-Uniforms, geseedet aus der EINEN Quelle `AnazhRealm.LOD_DISTANCES`
         // und pro Frame in `_loopRender` gespiegelt → ein Studio-Live-Ingest (`_foundryIngestRenderConfig`)
         // greift sofort in der Shader-Maske (kein eingefrorener Zweit-Satz).
-        const _D = AnazhRealm.LOD_DISTANCES || {};
+        const _D = AnazhRealm.LOD_DISTANCES;
         const u = {
             uLodRef: _T.uniform(_ref),
             uLodMaskOn: _T.uniform(st.lodMaskOn === false ? 0 : 1),
@@ -1640,10 +1636,10 @@ class AnazhRealm_Z10 {
             // DIE KANTE DES LAUBS (K68, `_laubSchwelle`): x die Drehung der Schwelle je Frame (1/g), y 1 unter der
             // zeitlichen Auflösung (sonst 0: die Schwelle 0,5) — beide aus `_loopRender`
             uLaubKante: _T.uniform(new THREE.Vector2(0, 0)),
-            uLodD0: _T.uniform(Number.isFinite(_D.thresh01) ? _D.thresh01 : 20),
-            uLodD1: _T.uniform(Number.isFinite(_D.thresh12) ? _D.thresh12 : 40),
-            uLodFade: _T.uniform(Number.isFinite(_D.fade) ? _D.fade : 8),
-            uLodFade0: _T.uniform(Number.isFinite(_D.fade0) ? _D.fade0 : 4),
+            uLodD0: _T.uniform(_D.thresh01),
+            uLodD1: _T.uniform(_D.thresh12),
+            uLodFade: _T.uniform(_D.fade),
+            uLodFade0: _T.uniform(_D.fade0),
             // DAS AUGE: die Welt-Position der Haupt-Kamera, je Frame gespiegelt. Jede LOD-Maske misst von
             // HIER, nie von `cameraPosition` — die ist im Schattenpass die Kaskaden-Kamera (r184:
             // `renderer.render(scene, shadow.camera)`; bis V18.529 stand sie 200 m über der Box, heute über
@@ -2145,8 +2141,8 @@ class AnazhRealm_Z10 {
                     const _cfg = AnazhRealm.LOD_DISTANCES;
                     const _D0 = _cfg.thresh01,
                         _D1 = _cfg.thresh12,
-                        _FADE = _cfg.fade || 20,
-                        _FADE0 = _cfg.fade0 || 10;
+                        _FADE = _cfg.fade,
+                        _FADE0 = _cfg.fade0;
                     // Übergangs-Rampen: _f0 = L0→L1-Band (Blatt-Distanz), _f1 = L1→L2/Impostor-Band
                     // (Skelett-Distanz). Laub = ÜBERLAPPENDE Rampen (phytogenesis FIX v37): die Karte
                     // weicht erst in der oberen Bandhälfte (2f−1) → Deckung bleibt ≥ Maximum, kein Loch.

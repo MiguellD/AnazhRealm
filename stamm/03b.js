@@ -1235,7 +1235,7 @@ class AnazhRealm_Z03b {
     // (WARNING) — nie eine Ersatz-Rechnung im Spiel-Takt.
     _klangWerkstattBooten(um) {
         const base = typeof window !== "undefined" && window.location ? window.location.href : "";
-        const kernUrl = new URL("klang-core.js?v=" + (AnazhRealm.VERSION || ""), base).href;
+        const kernUrl = new URL("klang-core.js?v=" + AnazhRealm.VERSION, base).href;
         const boot =
             "importScripts(" +
             JSON.stringify(kernUrl) +
