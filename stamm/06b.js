@@ -240,7 +240,7 @@ class AnazhRealm_Z06b {
         const soul = soulName && AnazhRealm.CREATURE_SOULS[soulName];
         const materials = {};
         if (soul && Array.isArray(soul.bodyParts)) {
-            const k = AnazhRealm.HARVEST_VOLUME_TO_UNITS || 4;
+            const k = AnazhRealm.HARVEST_VOLUME_TO_UNITS;
             for (const part of soul.bodyParts) {
                 if (!part || typeof part.material !== "string") continue;
                 const sx = Math.abs((part.size && part.size.x) || 1);
@@ -830,14 +830,17 @@ class AnazhRealm_Z06b {
             Object.freeze({ t: 1.0, sky: 0x161830 }),
         ]);
     }
-    // Welle 6.G3 — Wetter-Tint, zusammen mit Tag-Nacht-Tint kombiniert
-    // (Multiply-Blend). Sunny lässt den Tagestint durch, rainy dämpft ihn.
+    // Welle 6.G3 — Wetter-Tint, zusammen mit Tag-Nacht-Tint kombiniert (Multiply-Blend). Er ist die SONNE der Wetter-Zeile
+    // (WEATHER_FIELD ← phyto-core WX_GESETZ): der Himmel trägt sie selbst (skyMul = sun), das Richtlicht dieselbe Rechnung wie
+    // das Labor (lightMul = WX_LICHT.sockel + WX_LICHT.sonne · sun). K2: hier stand die alte Sonnen-Spalte als zweite Tafel
+    // (skyMul 1,0/0,55/0,42) — der Sturm des Gesetzes (0,15) erreichte den Himmel nie.
     static get WEATHER_TINTS() {
-        return Object.freeze({
-            sunny: Object.freeze({ skyMul: 1.0, lightMul: 1.0 }),
-            rainy: Object.freeze({ skyMul: 0.55, lightMul: 0.7 }),
-            stormy: Object.freeze({ skyMul: 0.42, lightMul: 0.55 }),
-        });
+        const F = AnazhRealm.WEATHER_FIELD;
+        const L = globalThis.__phytoCore.WX_LICHT;
+        if (!L || ![L.sockel, L.sonne].every(Number.isFinite))
+            throw new Error("phyto-core fehlt: WX_LICHT (das Wetter-Licht der Welt)");
+        const zeile = (f) => Object.freeze({ skyMul: f.sun, lightMul: L.sockel + L.sonne * f.sun });
+        return Object.freeze({ sunny: zeile(F.sunny), rainy: zeile(F.rainy), stormy: zeile(F.stormy) });
     }
     // Wetter = INTENSITÄTS-ACHSE, kein Binär-Paar: jeder wetter-abhängige Skalar lerpt über sie
     // (`_weatherBlendedValue`); ein neues Wort = EIN Tabellen-Eintrag, alle Leser erben es. stormy
@@ -848,13 +851,23 @@ class AnazhRealm_Z06b {
     // Wetter als 5-Kanal-Feld {fog,sun,grey,wind,rain} je Wort; der EINE LOOK-Leser `_weatherFieldFor(w)`
     // interpoliert transition-aware (wie `_weatherBlendedValue`). grey entsättigt NUR das Licht, nie den
     // Himmel; wind = Böen-Amplitude; fog multipliziert fogMult; rain/sun Reserve.
-    // `_weatherBlendedValue` bleibt für die Nicht-LOOK-Skalare.
+    // `_weatherBlendedValue` bleibt für die Nicht-LOOK-Skalare. Die Zahlen SIND das Wetter-Gesetz des Kerns (phyto-core
+    // WX_GESETZ: sunny = klar · rainy = regen · stormy = sturm, das Labor liest dieselbe Tafel) — fail-closed, kein
+    // Zahlen-Zwilling (K2: der Sturm hatte hier Sonne 0,42 gegen 0,15 im Gesetz).
     static get WEATHER_FIELD() {
-        return Object.freeze({
-            sunny: Object.freeze({ fog: 0.15, sun: 1.0, grey: 0.0, wind: 0.06, rain: 0.0 }),
-            rainy: Object.freeze({ fog: 0.4, sun: 0.55, grey: 0.6, wind: 0.35, rain: 0.6 }),
-            stormy: Object.freeze({ fog: 0.7, sun: 0.42, grey: 0.85, wind: 1.0, rain: 1.0 }),
-        });
+        if (AnazhRealm._wetterFeld) return AnazhRealm._wetterFeld;
+        const WX = globalThis.__phytoCore.WX_GESETZ;
+        const zeile = (w) => {
+            const r = WX[w];
+            if (!r || ![r.fog, r.sun, r.grey, r.wind, r.rain].every(Number.isFinite))
+                throw new Error("phyto-core fehlt: WX_GESETZ." + w + " (das Wetter-Feld der Welt)");
+            return Object.freeze({ fog: r.fog, sun: r.sun, grey: r.grey, wind: r.wind, rain: r.rain });
+        };
+        return (AnazhRealm._wetterFeld = Object.freeze({
+            sunny: zeile("klar"),
+            rainy: zeile("regen"),
+            stormy: zeile("sturm"),
+        }));
     }
     // V6 — grey→Licht-Entsättigung: der grey-Kanal zieht das RICHTLICHT so weit
     // Richtung neutral-grau (Luminanz-erhaltend). ~0.7 → stormy dämpft die
