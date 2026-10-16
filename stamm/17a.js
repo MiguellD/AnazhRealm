@@ -1458,8 +1458,10 @@ class AnazhRealm_Z17a {
     }
 
     // Die Texturen des Atlas für mindestens `bedarf` Schichten (in Schritten `KARTEN_ATLAS_SCHRITT`: das Verdoppeln hielt an
-    // der Mess-Wiese 32 Schichten für 18 Karten — +4 MB VRAM, als die Solitäre ihre Karte bekamen). Das Wachsen baut neue Texturen, kopiert
-    // die Schichten und tauscht den Wert der Basis-Knoten — das EINE Material bleibt, die Bundles zeichnen neu.
+    // der Mess-Wiese 32 Schichten für 18 Karten — +4 MB VRAM, als die Solitäre ihre Karte bekamen). Das Wachsen geschieht IN den
+    // beiden Texturen: ein neues Bild mit den kopierten Schichten, needsUpdate — die neue GPU-Form legt der EINE Abschied an
+    // (`_texturAbschied`: die alte fällt nach dem Submit, jedes Bündel nimmt neu auf). Knoten, Programm-Vorlage und jedes
+    // Render-Objekt binden so immer DIESELBE Textur (ein Tausch ließ die Textur des Programm-Baus wieder aufsteigen).
     _impostorAtlasTexturen(at, bedarf) {
         if (!at) return null;
         // Der Karten-Codec ist KERN-PFLICHT: fehlt er (ein altes phyto-core im Cache), bricht es laut — nie eine Welt,
@@ -1486,8 +1488,7 @@ class AnazhRealm_Z17a {
         while (cap < soll) cap += S;
         const M = at.masse;
         const T = THREE;
-        // Die Namen tragen den Erzeuger (die Band-Linse zählt je Name): Albedo und Normale getrennt.
-        let map, nmap;
+        const da = !!at.map;
         if (at.fmt === "bc") {
             const mips = (stufen, alt) =>
                 stufen.map((s, k) => {
@@ -1495,63 +1496,49 @@ class AnazhRealm_Z17a {
                     if (alt) data.set(alt[k].data);
                     return { data, width: s.w, height: s.h };
                 });
-            map = new T.CompressedArrayTexture(
-                mips(M.a, at.map && at.map.mipmaps),
-                M.w,
-                M.h,
-                cap,
-                T.RGBA_S3TC_DXT1_Format
-            );
-            map.name = "karte-albedo:atlas";
-            map.colorSpace = T.SRGBColorSpace;
-            nmap = new T.CompressedArrayTexture(
-                mips(M.n, at.nmap && at.nmap.mipmaps),
-                M.nw,
-                M.nh,
-                cap,
-                T.RED_GREEN_RGTC2_Format
-            );
-            nmap.name = "karte-normal:atlas";
-            for (const t of [map, nmap]) {
-                t.generateMipmaps = false;
-                t.minFilter = T.LinearMipmapLinearFilter;
+            const a = mips(M.a, da && at.map.mipmaps),
+                n = mips(M.n, da && at.nmap.mipmaps);
+            if (da) {
+                at.map.mipmaps = a;
+                at.map.image = { width: M.w, height: M.h, depth: cap };
+                at.nmap.mipmaps = n;
+                at.nmap.image = { width: M.nw, height: M.nh, depth: cap };
+            } else {
+                // Die Namen tragen den Erzeuger (die Band-Linse zählt je Name): Albedo und Normale getrennt.
+                at.map = new T.CompressedArrayTexture(a, M.w, M.h, cap, T.RGBA_S3TC_DXT1_Format);
+                at.map.name = "karte-albedo:atlas";
+                at.map.colorSpace = T.SRGBColorSpace;
+                at.nmap = new T.CompressedArrayTexture(n, M.nw, M.nh, cap, T.RED_GREEN_RGTC2_Format);
+                at.nmap.name = "karte-normal:atlas";
+                for (const t of [at.map, at.nmap]) t.generateMipmaps = false;
             }
         } else {
             const dA = new Uint8Array(M.w * M.h * 4 * cap),
                 dN = new Uint8Array(M.nw * M.nh * 2 * cap);
-            if (at.map) {
+            if (da) {
                 dA.set(at.map.image.data);
                 dN.set(at.nmap.image.data);
-            }
-            map = new T.DataArrayTexture(dA, M.w, M.h, cap);
-            map.name = "karte-albedo:atlas";
-            map.colorSpace = T.SRGBColorSpace;
-            nmap = new T.DataArrayTexture(dN, M.nw, M.nh, cap);
-            nmap.name = "karte-normal:atlas";
-            nmap.format = T.RGFormat;
-            for (const t of [map, nmap]) {
-                t.generateMipmaps = true;
-                t.minFilter = T.LinearMipmapLinearFilter;
+                at.map.image = { data: dA, width: M.w, height: M.h, depth: cap };
+                at.nmap.image = { data: dN, width: M.nw, height: M.nh, depth: cap };
+            } else {
+                at.map = new T.DataArrayTexture(dA, M.w, M.h, cap);
+                at.map.name = "karte-albedo:atlas";
+                at.map.colorSpace = T.SRGBColorSpace;
+                at.nmap = new T.DataArrayTexture(dN, M.nw, M.nh, cap);
+                at.nmap.name = "karte-normal:atlas";
+                at.nmap.format = T.RGFormat;
+                for (const t of [at.map, at.nmap]) t.generateMipmaps = true;
             }
         }
-        for (const t of [map, nmap]) {
+        for (const t of [at.map, at.nmap]) {
+            t.minFilter = T.LinearMipmapLinearFilter;
             t.magFilter = T.LinearFilter;
             t.wrapS = T.ClampToEdgeWrapping;
             t.wrapT = T.ClampToEdgeWrapping;
             t.anisotropy = 4;
-            if (at.map) t.needsUpdate = true; // gewachsen: die kopierten Schichten hochladen
+            if (da) t.needsUpdate = true; // gewachsen: die neue Form mit den kopierten Schichten hochladen
         }
-        const alt = [at.map, at.nmap];
-        at.map = map;
-        at.nmap = nmap;
         at.cap = cap;
-        if (at.mapNode) {
-            at.mapNode.value = map;
-            at.nmapNode.value = nmap;
-            // Ein Bundle trägt seine Bind-Gruppen: der Texturtausch zeichnet jedes Bundle neu.
-            if (this.state._regionBundles) for (const bg of this.state._regionBundles.values()) bg.needsUpdate = true;
-        }
-        for (const t of alt) if (t) t.dispose();
         return at;
     }
 

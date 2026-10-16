@@ -1897,7 +1897,7 @@ class AnazhRealm_Z14 {
     // Shell) ist EINE Zeile EINER Textur — jede Membran liest ihre Zeile (Stoff-Wert `zeile`) mit demselben Knoten, statt eine
     // eigene Textur in ihr Programm zu binden. Gleiche Tabelle, gleiche Zeile. Gelesen wird exakt auf der Texel-Mitte der Zeile:
     // die lineare Filterung mischt nur waagrecht, wie zuvor die Textur je Tor. Ist der Atlas voll, wächst er auf das Doppelte
-    // (die geteilten Knoten lesen die neue Textur, die Höhe ist eine geteilte Uniform).
+    // IN seiner Textur (die neue GPU-Form legt `_texturAbschied` an), die Höhe ist eine geteilte Uniform.
     _torProfilZeile(W, profil) {
         const TSL = THREE.TSL;
         const A =
@@ -1908,7 +1908,6 @@ class AnazhRealm_Z14 {
                 hoch: 0,
                 breit: W,
                 tex: null,
-                knoten: [],
                 uHoch: TSL.uniform(1),
             });
         if (W !== A.breit)
@@ -1920,18 +1919,17 @@ class AnazhRealm_Z14 {
         if (A.n >= A.hoch) {
             const hoch = Math.max(16, A.hoch * 2);
             const data = new Uint8Array(W * hoch * 4);
-            if (A.tex) data.set(A.tex.image.data);
-            const tex = new THREE.DataTexture(data, W, hoch, THREE.RGBAFormat);
-            tex.name = "portal-membran";
-            tex.minFilter = THREE.LinearFilter;
-            tex.magFilter = THREE.LinearFilter;
-            tex.needsUpdate = true;
-            const alt = A.tex;
-            A.tex = tex;
+            if (A.tex) {
+                data.set(A.tex.image.data);
+                A.tex.image = { data, width: W, height: hoch };
+            } else {
+                A.tex = new THREE.DataTexture(data, W, hoch, THREE.RGBAFormat);
+                A.tex.name = "portal-membran";
+                A.tex.minFilter = THREE.LinearFilter;
+                A.tex.magFilter = THREE.LinearFilter;
+            }
             A.hoch = hoch;
             A.uHoch.value = hoch;
-            for (const kn of A.knoten) kn.value = tex;
-            if (alt) alt.dispose();
         }
         const d = A.tex.image.data;
         for (let i = 0; i < W; i++) {
@@ -2049,7 +2047,6 @@ class AnazhRealm_Z14 {
         const uu = TSL.clamp(xy.x.sub(gb.y).div(gb.z), F(0.0), F(1.0));
         const A = this._torProfile;
         const profil = TSL.texture(A.tex, TSL.vec2(uu, zeile.add(0.5).div(A.uHoch)));
-        A.knoten.push(profil);
         const topY = gb.w.add(profil.r.mul(gc.x));
         const keep = TSL.step(xy.y, topY.add(F(0.002)));
         const vLocal = TSL.vec3(xy.x, xy.y, d0V);
@@ -2083,7 +2080,6 @@ class AnazhRealm_Z14 {
             Z.tex,
             TSL.vec2(eq.x, zielZeile.add(TSL.clamp(eq.y, F(zv), F(1 - zv))).div(Z.uZeilen))
         );
-        Z.knoten.push(zielTex);
         const ziel = zielTex.rgb.mul(Z.uBelicht);
         // ── DER SEIFENFILM: Dicke aus Bogen-Radius (die Ellipse rimAx × rimAy) und Welle, Gangunterschied je Blickwinkel ──
         const rr = TSL.length(xy.sub(centerXY).div(TSL.vec2(ga.y, ga.z)));
@@ -2169,7 +2165,6 @@ class AnazhRealm_Z14 {
                 welten: new Map(),
                 n: 0,
                 tex: null,
-                knoten: [],
                 uZeilen: TSL.uniform(1),
                 uBelicht: TSL.uniform(1),
                 buendel: null,
@@ -2266,11 +2261,10 @@ class AnazhRealm_Z14 {
         this._bruchMelden(`das Ziel des Tors ${z.world}: ${z.fehler}`);
     }
 
-    // Die Ziele in den Atlas: ihre Zeilen in DENSELBEN Puffer, EIN needsUpdate je Bündel. Eine neue Textur entsteht nur, wenn
-    // der Platz nicht reicht — dann mit einer Zeile je ANGEFRAGTER Welt (die geteilten Knoten lesen sie, die Zeilenzahl ist eine
-    // geteilte Uniform): r184 lädt beim ersten Binden die Textur hoch, die der Stoff bei seinem BAU las (`Bindings._init` →
-    // `binding.texture`, erst danach liest `update()` den Knoten) — eine entsorgte Atlas-Textur stieg so wieder auf und blieb
-    // (Puffer-Zensus: tex:tor-ziel 512×256, 1 MB).
+    // Die Ziele in den Atlas: ihre Zeilen in DENSELBEN Puffer, EIN needsUpdate je Bündel. Der Atlas wächst nur, wenn der Platz
+    // nicht reicht — dann mit einer Zeile je ANGEFRAGTER Welt, IN seiner Textur (die neue GPU-Form legt `_texturAbschied` an,
+    // die Zeilenzahl ist eine geteilte Uniform): eine neue Textur je Wachsen stieg nach dem Entsorgen wieder auf, weil r184 beim
+    // ersten Binden die Textur des Stoff-BAUS hochlädt (`Bindings._init`) — Puffer-Zensus: tex:tor-ziel 512×256, 1 MB.
     _torZielEinsetzen(da) {
         const G = AnazhRealm.TOR_ZIEL;
         const Z = this._torZiele();
@@ -2282,18 +2276,18 @@ class AnazhRealm_Z14 {
             for (const x of Z.welten.values()) if (!x.ohne && !x.fehler) offen++;
             const hoch = Math.max(n, offen);
             const neu = new Uint16Array(zeile * hoch);
-            if (Z.tex) neu.set(Z.tex.image.data.subarray(0, Z.n * zeile));
-            const tex = new THREE.DataTexture(neu, G.w, G.h * hoch, THREE.RGBAFormat, THREE.HalfFloatType);
-            tex.name = "tor-ziel";
-            tex.wrapS = THREE.RepeatWrapping;
-            tex.minFilter = THREE.LinearFilter;
-            tex.magFilter = THREE.LinearFilter;
-            tex.generateMipmaps = false;
-            const alt = Z.tex;
-            Z.tex = tex;
+            if (Z.tex) {
+                neu.set(Z.tex.image.data.subarray(0, Z.n * zeile));
+                Z.tex.image = { data: neu, width: G.w, height: G.h * hoch };
+            } else {
+                Z.tex = new THREE.DataTexture(neu, G.w, G.h * hoch, THREE.RGBAFormat, THREE.HalfFloatType);
+                Z.tex.name = "tor-ziel";
+                Z.tex.wrapS = THREE.RepeatWrapping;
+                Z.tex.minFilter = THREE.LinearFilter;
+                Z.tex.magFilter = THREE.LinearFilter;
+                Z.tex.generateMipmaps = false;
+            }
             Z.uZeilen.value = hoch;
-            for (const kn of Z.knoten) kn.value = tex;
-            if (alt) alt.dispose();
         }
         for (const [z, daten] of da) {
             Z.tex.image.data.set(daten, Z.n * zeile);
