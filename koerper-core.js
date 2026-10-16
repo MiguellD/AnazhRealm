@@ -733,7 +733,7 @@
         sssFarbe: Object.freeze([1.0, 0.4, 0.25]),
         // A4 (die Haut mit Tiefe): der Saum ist ein Additiv NACH dem Licht — er leuchtet im Schatten wie in der Sonne. Mit
         // 0,15 trug er auf der dunklen Haut im Schatten so viel Rot wie das Licht selbst: die Wange glühte, die Lippe ging
-        // unter (Bild Δa* +1,2 ohne ihn), die Haut war flach. 0,05: Kontrast der Kopf-Haut im Bild 0,60 → 0,67.
+        // unter (Bild Δa* +1,2 ohne ihn), die Haut war flach. 0,05: Kontrast der Kopf-Haut im Bild 0,61 → 0,65 (Tafel mensch-kopf --echt).
         sssAmt: 0.05,
         // Vollendung (19.07.): der Clearcoat der Lab-Haut (matSkin: 0.12/0.6)
         // und das Atem-Noise-Displacement (snoise(pos·3 + t·0.1)·0.0035) —
