@@ -47,5 +47,5 @@ Alle Workflows und Agenten per TaskStop angehalten, notbremse.sh gefahren (kein 
 | doku-wahrheit (K1) | 13c2ce7d | gebaut + Nachbesserung n1 (integ aa74c324 eingemergt; Zitat-Wand liest Pfade, Namen, Karte, Kommentare — vorher ROT 91) | Prüfer-Urteil fehlt: Zweig-CI lesen, prüfen, mergen |
 | gruppen-geburt (G4a) | 514c7190 | WIP: Linse geburt rot → grün | Bild Herde/Rudel + Takt Genesis Ego, voller Playtest, Zweig-CI |
 | index-breite (IX) | aa74c324 | nicht begonnen (Bauer gestoppt) | neu starten mit dem Auftrag aus dieser Datei / Arbeitsweise 2.0 |
-| tafel-kopf (A0) | aa74c324 | nicht begonnen (wartete auf das GPU-Schloss) | neu starten: alle Klassen am Kopf  |
-| Spike G1 | Scratch  | ABAB-Rohdaten Genesis Third (A, B-aus, B-ein) liegen | Rohdaten auswerten, Urteil schreiben → erste G1-Karte |
+| tafel-kopf (A0) | aa74c324 | nicht begonnen (wartete auf das GPU-Schloss) | neu starten: alle Klassen am Kopf mit `--ist` |
+| Spike G1 | Scratch `%TEMP%/claude/G1/` | ABAB-Rohdaten Genesis Third (A, B-aus, B-ein) liegen | Rohdaten auswerten, Urteil schreiben → erste G1-Karte |
