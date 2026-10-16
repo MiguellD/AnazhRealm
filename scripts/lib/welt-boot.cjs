@@ -575,8 +575,8 @@ async function halteBis(seite, { taste, druck, los, ziel, args = [], frist = 300
 }
 
 // DER LESER IM BLICK (Seite): der Spieler am Ufer des Bachs der Mess-Wiese, Blick übers Wasser (ein Leser der Szenen-Tiefe);
-// zurück, sobald das Wasser ZEICHNET (die Erst-Zeichnung trug es ein — sichtbar allein ist Existenz, seine Pipeline kann
-// noch im Bau stehen) und das Tiefen-Abbild gezogen ist (der Loop läuft). `kappe`: die Pixel-Kappe des Holzes, wenn gesetzt.
+// zurück, sobald das Wasser ZEICHNET (die Erst-Zeichnung trug es ein, sichtbar allein ist Existenz), das Tiefen-Abbild gezogen
+// ist und das Weltbild steht (`welt`: nur diese Terme). `kappe`: die Pixel-Kappe des Holzes, wenn gesetzt.
 async function uferStellen(opts) {
     const warte = (ms) => new Promise((q) => setTimeout(q, ms));
     const t0 = performance.now();
@@ -635,9 +635,9 @@ async function uferStellen(opts) {
     };
     const t1 = performance.now();
     const fern = () => !!(st.farWater && st.farWater.mesh && st.farWater.mesh.parent);
-    // und das Weltbild am Ufer steht (`_weltbildLuecken`: Boden, Horizont …) — die Szenen-Tiefe trägt die Welt, nie nur Himmel
+    const welt = (l) => !opts.welt || opts.welt.includes(l.term); // und die Szenen-Tiefe trägt die Welt, nie nur Himmel
     const steht = () => sichtbaresWasser() > 0 && abbild() > 1 && fern() && E.gezeichnet.has(st.farWater.mesh);
-    while (performance.now() - t1 < 240000 && !(steht() && r._weltbildLuecken().length === 0)) {
+    while (performance.now() - t1 < 240000 && !(steht() && !r._weltbildLuecken().some(welt))) {
         if (!fern()) r._ensureFarWaterSheet();
         await warte(100);
     }

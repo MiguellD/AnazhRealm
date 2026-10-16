@@ -889,7 +889,6 @@ module.exports = {
     kostenUrteil,
     kostenTabelle,
     probeUrteil,
-    stoffGraph,
     selbsttest,
     SHADER_INSTALL:
         `window.__shaderKosten = ${shaderKostenSeite.toString()};` +
