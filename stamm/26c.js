@@ -1,6 +1,6 @@
 // ===== ATLAS §26c · AUSSEN-KONSTANTEN — ab AnazhRealm.FOREST =====
 // Wald-Generator (unten, Vorlage `plantForest`): variabel-radius Poisson-Disc mit
-// Kronen-Schüchternheit + Arten-Nische. `crown` = Beästungsradius (m) bei Größe 1; `pack` = Zentren
+// Kronen-Schüchternheit + Arten-Nische. `crown` = Radius der gewachsenen Krone (m) bei Größe 1; `pack` = Zentren
 // ≥ pack·(Ti+Tj); `dartsPerCell` = Kandidaten je Zelle; `slope*` = Boden-Grundierung für Klippen.
 // Gelesen NUR von `_forestCellDarts`/`_forestPlantChunk`.
 AnazhRealm.FOREST = Object.freeze({
@@ -14,14 +14,17 @@ AnazhRealm.FOREST = Object.freeze({
     slopeLo: 0.35, // ≤ so flach (|∇h|) = voller Grund; die AnazhRealm-Boden-Tauglichkeit
     slopeHi: 1.25, // ab so steil = kahle Felswand (kein Baum)
     dryScale: 40, // Höhen-Trockenheit relH/dryScale (Vorlage e/18 → AnazhRealm-Höhen-Skala)
-    crown: Object.freeze({
-        baum_kiefer: 2.75, // Fichte-Nische — schmale Lichtkrone (trockene Höhen)
-        baum_tanne: 2.95, // Tanne (höher/feuchter)
-        baum_eiche: 5.2, // Eiche — breiter Beästungsradius (tiefe, feuchte Lagen)
-        baum_birke: 3.2, // Birke — Pionier
-        baum_erle: 4.5, // Weide-Nische — nasser Saum
-        baum_mammut: 9.2, // Mammut-Nische — selten, riesig (dichte trockene Kerne)
-    }),
+    // DIE EINE Kronen-Tafel des Pflanz-Gesetzes (T2): phyto-core FOREST_PACK.crown (die gewachsene Krone je Art) unter den
+    // Wirts-Namen (FOREST_SPECIES.labToHost, eine Auto-Art des Buchs unter dem Präfix ihrer Art) — kein zweiter Wert hier.
+    crown: (() => {
+        const core = globalThis.__phytoCore;
+        if (!core || !core.FOREST_PACK)
+            throw new Error("phyto-core fehlt: FOREST_PACK.crown (die Kronen-Tafel des Walds)");
+        const out = {};
+        for (const [id, r] of Object.entries(core.FOREST_PACK.crown))
+            out[core.FOREST_SPECIES.labToHost[id] || AnazhRealm.KIND_POLICY.tree.prefix + id] = r;
+        return Object.freeze(out);
+    })(),
 });
 
 AnazhRealm.SPATIAL_HOLLOW_BONUS = 0.3; // +30 % auf resoniert für beide Parts

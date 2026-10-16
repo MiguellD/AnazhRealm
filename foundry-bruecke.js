@@ -550,7 +550,6 @@ const foundryKanal = (() => {
                 cell: c.density.cell,
                 pack: c.density.pack,
                 dartsPerM2: c.density.dartsPerM2,
-                crown: Object.assign({}, c.density.crown),
             },
             understory: {
                 grassStep: c.understory.grassStep,

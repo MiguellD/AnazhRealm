@@ -1111,7 +1111,7 @@ function slopeAt(x, z) {
 
 /* arttypischer Kronenradius (m) bei Größenfaktor 1 — Waldwuchs (schmal, Konkurrenz) */
 /* FOREST_TOPOLOGY.lab = "disk" — plantForest sequential Poisson + ok(); Feel-Entscheid .116; no fake merge with Host cell */
-/* FOREST_PACK in phyto-core = shared pack/dartsPerM2/crown (Lab density); fail-soft = PORTAL_RENDER_CONFIG */
+/* FOREST_PACK in phyto-core = shared pack/dartsPerM2/crown (Lab density); pack/dartsPerM2 fail-soft = PORTAL_RENDER_CONFIG */
 /* FOREST_LAB = Lab-only path/saum/garantie + Verjüngung/Schatten numbers; Host planForestCell must-ignore */
 /* FOREST_SPECIES = Lab Kurzname ↔ Host baum_* table (.112); Lab keeps short names internally */
 const _FP =
@@ -1126,7 +1126,7 @@ const _FS =
     typeof window !== "undefined" && window.__phytoCore && window.__phytoCore.FOREST_SPECIES
         ? window.__phytoCore.FOREST_SPECIES
         : null;
-const CROWN = (_FP && _FP.crown) || PORTAL_RENDER_CONFIG.density.crown; // echter Beaestungsradius (Lichtkrone)
+const CROWN = _FP.crown; // die EINE Kronen-Tafel (phyto-core): die gewachsene Krone je Art, fail-closed (T2)
 const PACK =
     _FP && typeof _FP.pack === "number" ? _FP.pack : PORTAL_RENDER_CONFIG.density.pack; // Zentren >= PACK*(Ti+Tj)
 

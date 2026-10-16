@@ -1365,11 +1365,13 @@ async function probe(arg) {
                     // (c) der Stamm zwischen Kamera und Brust: wo der Sicht-Strahl Auge → Ziel durch die Stamm-Hülle geht
                     const zw = (ds.zwischen = { stellungen: 0, wirkt: 0, wMax: 0 });
                     r.setCameraMode("third");
+                    ruhig(); // das Ziel steht um die Schulter `seite` neben der Achse: die Stellung legt den Sicht-Strahl durch die Stamm-Mitte (T2: 0 von 96 freien Stämmen trafen die Achse)
+                    const z1 = ziel(), p1 = st.playerMesh.position, seite = (z1.x - p1.x) * Math.cos(st.yaw) - (z1.z - p1.z) * Math.sin(st.yaw); // prettier-ignore
                     for (const b of baeume.slice(0, 12))
                         for (let k = 0; k < 8; k++) {
                             const g = (k / 8) * Math.PI * 2;
-                            const x = b.position.x + Math.sin(g) * 2.5;
-                            const zz = b.position.z + Math.cos(g) * 2.5;
+                            const x = b.position.x + Math.sin(g) * 2.5 - seite * Math.cos(g);
+                            const zz = b.position.z + Math.cos(g) * 2.5 + seite * Math.sin(g);
                             if (!Number.isFinite(hh(x, zz))) continue;
                             st.playerMesh.position.set(x, hh(x, zz) + 1.0, zz);
                             st.yaw = g;

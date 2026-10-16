@@ -100,6 +100,7 @@ function teile(meshes) {
             col: m.attrs.color ? f32(m.attrs.color.b64) : null,
             uv: m.attrs.uv ? f32(m.attrs.uv.b64) : null,
             nor: m.attrs.normal ? f32(m.attrs.normal.b64) : null,
+            cen: m.attrs.aCenter ? f32(m.attrs.aCenter.b64) : null,
             idx: m.index ? u32(m.index) : null,
         }));
 }
@@ -426,14 +427,49 @@ function teppichUrteil(fall, T, lod, step, skala) {
 }
 // (V) DIE NORMALE DER KRONE — gelichtet, wie die Leser lesen (flipFrei), aus 8 Peilungen (Höhe 0,25) über der nahen Hälfte.
 const KRONE_WEG_MAX = 0.05;
-function kroneUrteil(fall, T, flipFrei) {
+// Seit T2 lichtet die Laubkrone je Ast-Partie (phyto-core kronenPartien): die Linse wächst dasselbe Skelett, ordnet jede Ecke über
+// ihren Anker (aCenter, ±1e-3) Blatt und Partie zu und peilt gegen die Kasten-Mitte IHRER Partie (vorher, 210fe8a7: ROT).
+function partienDerKrone(f, pre, sk) {
+    const P = pre && pre.kind === "tree" ? Object.assign(PC.treeParams(pre.s, f.seed, f.lod, pre, sk), f.ov) : null;
+    if (!P || P.conifer || (P.trop || 0) >= 0.55) return null;
+    const n = PC.growSkeleton(Object.assign({}, P, { leafBudget: 20000 }), PC.mulberry32(Math.floor(f.seed) >>> 0));
+    const partie = PC.kronenPartien(n.runMeta), L = n.leaves.slice().sort((a, b) => a.pos[0] - b.pos[0]); // prettier-ignore
+    const suche = (c, i) => {
+        let lo = 0, hi = L.length, best = -1, d2 = 1e-6; // prettier-ignore
+        while (lo < hi) L[(lo + hi) >> 1].pos[0] < c[i] - 1e-3 ? (lo = ((lo + hi) >> 1) + 1) : (hi = (lo + hi) >> 1);
+        for (let j = lo; j < L.length && L[j].pos[0] <= c[i] + 1e-3; j++) {
+            const q = (L[j].pos[0] - c[i]) ** 2 + (L[j].pos[1] - c[i + 1]) ** 2 + (L[j].pos[2] - c[i + 2]) ** 2;
+            if (q < d2) (d2 = q), (best = partie(L[j].run));
+        }
+        return best;
+    };
+    const out = new Map(), box = new Map(); // prettier-ignore
+    f.T.forEach((t, ti) => {
+        if ((t.kind !== "foliage" && t.kind !== "foliageTex") || !t.cen) return;
+        const pa = new Int32Array(t.cen.length / 3), C = t.cen; // prettier-ignore
+        for (let i = 0; i < pa.length; i++) {
+            const k = 3 * i;
+            pa[i] = i && C[k] === C[k - 3] && C[k + 1] === C[k - 2] && C[k + 2] === C[k - 1] ? pa[i - 1] : suche(C, k);
+            const b = box.get(pa[i]) || box.set(pa[i], [Infinity, Infinity, Infinity, -Infinity, -Infinity, -Infinity]).get(pa[i]);
+            for (let a = 0; a < 3; a++) (b[a] = Math.min(b[a], t.pos[k + a])), (b[a + 3] = Math.max(b[a + 3], t.pos[k + a]));
+        }
+        out.set(ti, pa);
+    });
+    out.mitten = new Map([...box].map(([p, b]) => [p, [0, 1, 2].map((a) => (b[a] + b[a + 3]) / 2)]));
+    return out;
+}
+function kroneUrteil(fall, T, flipFrei, partien) {
     const v = [],
         m = {};
-    for (const t of T) {
+    for (const [ti, t] of T.entries()) {
         if ((t.kind !== "foliage" && t.kind !== "foliageTex") || !t.nor || !t.idx) continue;
         const P = t.pos,
             N = t.nor,
             I = t.idx;
+        const pa = partien ? partien.get(ti) : null,
+            mitten = pa && partien.mitten;
+        const ohne = !partien ? 0 : pa ? pa.filter((x) => x < 0).length : P.length / 3;
+        if (ohne) v.push(`${fall} ${t.kind}: ${ohne} Ecken ohne Partie (ohne Anker aCenter oder Blatt des Skeletts)`);
         const mn = [Infinity, Infinity, Infinity],
             mx = [-Infinity, -Infinity, -Infinity];
         for (let i = 0; i < P.length; i += 3)
@@ -441,7 +477,7 @@ function kroneUrteil(fall, T, flipFrei) {
                 mn[a] = Math.min(mn[a], P[i + a]);
                 mx[a] = Math.max(mx[a], P[i + a]);
             }
-        const c = [0, 1, 2].map((a) => (mn[a] + mx[a]) / 2);
+        const c0 = [0, 1, 2].map((a) => (mn[a] + mx[a]) / 2);
         let nah = 0,
             weg = 0;
         for (let k = 0; k < 8; k++) {
@@ -451,6 +487,8 @@ function kroneUrteil(fall, T, flipFrei) {
                 const a = I[q] * 3,
                     b = I[q + 1] * 3,
                     d = I[q + 2] * 3;
+                const c = pa ? mitten.get(pa[I[q]]) : c0;
+                if (!c) continue;
                 const pc = [0, 1, 2].map((j) => (P[a + j] + P[b + j] + P[d + j]) / 3 - c[j]);
                 if (pc[0] * e[0] + pc[1] * e[1] + pc[2] * e[2] <= 0) continue;
                 nah++;
@@ -470,7 +508,7 @@ function kroneUrteil(fall, T, flipFrei) {
         if (anteil > KRONE_WEG_MAX)
             v.push(
                 `${fall} ${t.kind}: ${(100 * anteil).toFixed(1)} % der nahen Dreiecke lichten nach innen (> ${100 * KRONE_WEG_MAX} %) — ` +
-                    (flipFrei ? "die Krone trägt keine Normale der Krone" : "der Leser kehrt die Normale der Krone auf der Rückseite")
+                    (!flipFrei ? "der Leser kehrt die Normale der Krone auf der Rückseite" : pa ? "die Krone lichtet nicht je Ast-Partie" : "die Krone trägt keine Normale der Krone") // prettier-ignore
             );
     }
     return { v, m };
@@ -941,6 +979,29 @@ function hoehenUrteil(roh, skala) {
     m.groesse = `${s0.toFixed(2)}–${s1.toFixed(2)}`;
     return { v, m };
 }
+// (H) DIE KRONE DES PFLANZ-GESETZES (T2): der Abstand des Walds liest die gewachsene Krone (phyto-core FOREST_PACK.crown) — je
+// Laub-Art der Tafel der sichtbare L0-Radius (Gestalt 1: Karten-Stichproben mit Atlas-Alpha ≥ 0,5, halbe Breite über 8 Azimute
+// × Welt-Skala) binnen ±12 %; die Kegel-Krone der Koniferen ist ein eigenes Gesetz. Vorher Eiche 4,0 gegen 5,2 · Weide 5,3 gegen 4,5.
+const KRONE_W = [0, 1, 2, 3, 4, 5, 6].flatMap((s) => [...Array(7 - s).keys()].map((r) => [1 - (s + r) / 6, s / 6, r / 6]));
+function pflanzKroneUrteil(roh, skala, a, nadel) {
+    const v = [], m = {}, px = (u, n) => Math.min(n - 1, Math.max(0, Math.floor(u * n))); // prettier-ignore
+    for (const [art, soll] of Object.entries(PC.FOREST_PACK.crown)) {
+        const f = roh[`${art}-s1-L0`], lo = Array(8).fill(Infinity), hi = Array(8).fill(-Infinity); // prettier-ignore
+        if (nadel(art) || !f) continue;
+        for (const t of f.T.filter((t) => t.kind === "foliageTex"))
+            for (let i = 0; i < t.idx.length; i += 3)
+                for (const w of KRONE_W) {
+                    const at = (A, n, j) => w[0] * A[t.idx[i] * n + j] + w[1] * A[t.idx[i + 1] * n + j] + w[2] * A[t.idx[i + 2] * n + j]; // prettier-ignore
+                    if (a.data[(px(at(t.uv, 2, 1), a.height) * a.width + px(at(t.uv, 2, 0), a.width)) * 4 + 3] < 128) continue;
+                    for (let k = 0, u; k < 8; k++)
+                        (u = at(t.pos, 3, 0) * Math.cos((k * Math.PI) / 8) + at(t.pos, 3, 2) * Math.sin((k * Math.PI) / 8)), (lo[k] = Math.min(lo[k], u)), (hi[k] = Math.max(hi[k], u)); // prettier-ignore
+                }
+        const ist = (hi.reduce((q, h, k) => q + h - lo[k], 0) / 16) * skala(art);
+        m[art] = `${ist.toFixed(2)} m (Tafel ${soll})`;
+        if (!(Math.abs(ist / soll - 1) <= 0.12)) v.push(`Krone ${art}: gewachsen ${ist.toFixed(2)} m, Tafel ${soll} m`);
+    }
+    return { v, m };
+}
 
 // Die Deckung der Stufe 0 je Zelle (das Labor-Bild, alphaTest 0,5) — der Maßstab „nah = fern".
 function deckungStufe0(bild) {
@@ -1187,7 +1248,7 @@ function windDatenUrteil(quellen) {
             const k = `${presetId}-s${seed}-L${lod}${ov ? "-frei" : ""}`;
             const msg = { presetId, lod, seed, season: "summer" };
             if (ov) msg.ov = ov;
-            roh[k] = { presetId, lod, seed, T: teile((await build(msg)).meshes) };
+            roh[k] = { presetId, lod, seed, ov, T: teile((await build(msg)).meshes) };
         };
         for (const p of baeume) await fall(p, 0, 1);
         for (const p of Object.keys(HOEHE_SPANNE)) await fall(p, 0, 1, { freistand: 1 });
@@ -1243,7 +1304,7 @@ function windDatenUrteil(quellen) {
         } else if (kind === "flower") u = bluetenUrteil(k, f.T);
         else if (kind === "grass") u = teppichUrteil(k, f.T, f.lod, rc.understory.grassStep, skala(f.presetId));
         if (kind === "tree" || kind === "shrub") {
-            const kv = kroneUrteil(k, f.T, kl.flipFrei);
+            const kv = kroneUrteil(k, f.T, kl.flipFrei, partienDerKrone(f, buch[f.presetId], skala(f.presetId)));
             u.v.push(...kv.v);
             Object.assign(u.m, kv.m);
         }
@@ -1319,6 +1380,9 @@ function windDatenUrteil(quellen) {
     // (H) der Höhen-Zensus je Art gegen die Spanne der Natur, und H/D.
     const hz = hoehenUrteil(roh, skala);
     fails.push(...hz.v);
+    const nadel = (p) => !buch[p] || PC.artPhaenotyp(buch[p].s, buch[p]).conifer, pk = pflanzKroneUrteil(roh, skala, bild.mips[0], nadel); // prettier-ignore
+    fails.push(...pk.v);
+    console.log(`Krone des Pflanz-Gesetzes (Laub, L0 Gestalt 1): ${Object.entries(pk.m).map((e) => e.join(" ")).join(" · ")}`);
     const so = solitaerUrteil(roh, skala);
     fails.push(...so.v);
     console.log(
@@ -1403,6 +1467,13 @@ function windDatenUrteil(quellen) {
         st.push(["Krone nach innen", kroneUrteil("innen", innen, true).v.length > 0]);
         st.push(["Leser kehrt die Krone", kroneUrteil("kehrt", tanne.T, false).v.length > 0]);
     } else st.push(["Tanne gebaut", false]);
+    // (V) die Laubkrone als EINE gelichtet (K68, vor T2): dieselben Karten der Eiche, ihre Normalen neu aus dem einen Ellipsoid
+    if (eiche) {
+        const eine = eiche.T.map((t) => ((t.kind === "foliage" || t.kind === "foliageTex") && t.nor ? Object.assign({}, t, { nor: Float32Array.from(t.nor) }) : t)); // prettier-ignore
+        PC.kronenNormalen(eine.filter((t) => t.kind === "foliage" || t.kind === "foliageTex").map((t) => ({ pos: Float32Array.from(t.pos), nor: t.nor })));
+        const pa = partienDerKrone(eiche, buch.eiche, skala("eiche"));
+        st.push(["Laubkrone als EINE gelichtet", !!pa && kroneUrteil("eine", eine, true, pa).v.length > 0]);
+    } else st.push(["Eiche gebaut", false]);
     const mitSeite = quellen.Stamm.replace("mat.normalNode = T.normalViewGeometry;", "mat.normalNode = T.normalView;");
     st.push(["Welt-Stoff liest die Krone mit Seite", kronenLeser(Object.assign({}, qBr, quellen, { Stamm: mitSeite })).flipFrei === false]);
     st.push([
@@ -1483,6 +1554,8 @@ function windDatenUrteil(quellen) {
         };
         st.push(["Höhe gestaucht (Buche × 0,6)", krank(0.6, 1).some((x) => /^Höhe buche:/.test(x))]);
         st.push(["Stamm × 4 (Buche H/D)", krank(1, 4).some((x) => /^H\/D buche:/.test(x))]);
+        const rk = Object.assign({}, roh, { "eiche-s1-L0": { T: verzerrt(roh["eiche-s1-L0"].T, 1, 1.4) } });
+        st.push(["Krone × 1,4 (Eiche)", pflanzKroneUrteil(rk, skala, bild.mips[0], nadel).v.some((x) => /^Krone eiche:/.test(x))]);
         // der kranke Solitär: die Bestandsgestalt an seiner Stelle (FREISTAND ungelesen) muss beim Namen feuern
         const r3 = Object.assign({}, roh);
         if (roh["eiche-s1-L0"]) r3["eiche-s1-L0-frei"] = roh["eiche-s1-L0"];

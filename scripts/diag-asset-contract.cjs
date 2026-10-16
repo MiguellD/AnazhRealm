@@ -38,7 +38,7 @@ const DIR = path.resolve(__dirname, "..", "spec", "asset-contract", "v1", "golde
 // Koniferen-L1 verlor 22–34 % ihrer Seitenansicht, die Karte 16–27 %, ihre Farbe sprang um ΔE 2,6–5,8, ohne dass eine
 // Wand anschlug.
 const TAFEL_BILD = path.resolve(__dirname, "..", "spec", "asset-contract", "v1", "bild-tafel.json");
-const TAFEL_STAND = "K20"; // der Stand, aus dem die Tafel gemünzt ist (zuerst V18.536)
+const TAFEL_STAND = "T2"; // der Stand der Tafel (zuerst V18.536, K20; T2: die Zeilen der Laubkronen, der Bestand trägt seine Krone hoch und schmal)
 const BILD_BAND = [0.92, 1.08];
 const GESTALT_BAND = [0.85, 1.15];
 const KARTE_DE = 2;

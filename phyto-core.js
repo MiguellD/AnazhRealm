@@ -92,6 +92,9 @@
         // gedrungene Schlankheit hd · FREISTAND.hd (Solitäreiche Marbach: kurzer, dicker Stamm unter breiter Krone).
         const weltMass = P.weltSkala > 0 && P.hoeheM > 0 && P.hd > 0;
         const frei = weltMass && P.freistand === 1;
+        // DER BESTAND (T2, BESTAND unten): ein Laubbaum im Bestand wächst kurze Seitenäste und trägt seine Krone hoch und schmal.
+        const bestand = weltMass && !frei && !P.conifer && P.hd >= BESTAND.hd;
+        const seitenast = bestand ? BESTAND.seitenast : 1;
         const trunkR = !weltMass
             ? trunkForm
             : frei
@@ -288,7 +291,7 @@
                     children.push({
                         area: ((1 - f) * parentArea) / nW,
                         bend: P.conifer ? lerp(1.0, 0.5, depth / P.maxDepth) : lerp(0.6, 1.15, distal),
-                        len: length * (P.conifer ? lerp(0.4, 0.52, P.apical) : lerp(0.55, 0.72, P.apical)),
+                        len: length * (P.conifer ? lerp(0.4, 0.52, P.apical) : lerp(0.55, 0.72, P.apical) * seitenast),
                         lead: false,
                     });
             } else if (lift) {
@@ -308,7 +311,7 @@
                     children.push({
                         area: (parentArea * 0.7) / nLat,
                         bend: spread * rrange(0.85, 1.12),
-                        len: length * lerp(0.82, 0.96, P.apical),
+                        len: length * lerp(0.82, 0.96, P.apical) * seitenast,
                         lead: false,
                     });
             }
@@ -352,11 +355,12 @@
         // (Vorlagen-Einheiten) höher — das Maß ihres Details (die Sichthöhe der SSE-Stufenwahl) ist die Höhe ohne ihn.
         // Der Solitär trägt seinen kurzen Stamm (FREISTAND.ansatz): der Schaft hebt die Krone, bis ihr tiefster Blatt-Anker
         // bei ansatz × Höhe steht (der Stamm misst die Höhe seines Wuchses, H/D bleibt unter dem Bestand).
+        // Der Bestand (T2) hebt Stamm UND Krone: die Krone reicht über BESTAND.krone der Höhe (kein Ballen auf dem Stiel).
         const schaft = !weltMass
             ? 0
             : frei
               ? schaftHub(segs, leaves, runMeta, 0, FREISTAND.ansatz)
-              : schaftHub(segs, leaves, runMeta, P.hoeheM / P.weltSkala);
+              : schaftHub(segs, leaves, runMeta, P.hoeheM / P.weltSkala, 0, bestand ? BESTAND.krone : 0);
         // Wind-Schwung normieren (foundry-core trägt sway0/sway1 ins Vorlagen-Attribut aWind).
         const gain = Number.isFinite(P.windGain) ? P.windGain : 1;
         for (const s of segs) {
@@ -1064,10 +1068,45 @@
     // Kugel-Normalen der Laub-Karten). Bis K68 trug jede Karte ihre flache Normale (buildFoliageQuads): je Karte EIN Ton, die
     // Nachbar-Karte im Gegenlicht schwarz neben einer im Licht. `teile`: [{ pos, nor }] (Float32Arrays je Geometrie, xyz je
     // Ecke), gemeinsam EINE Krone; die Normalen werden an Ort und Stelle überschrieben. Rein, kein THREE.
-    const KRONEN_NORMALE = { karte: 0.3, rMin: 0.25 };
+    // DIE PARTIEN DER KRONE (T2, 16.10.): trägt ein Teil seine Partie (`partie`, die Lauf-Id aus kronenPartien), lichtet jede
+    // Partie als ihr EIGENES Ellipsoid — die Laubkrone liest als Ast-Partien mit je einer Licht- und Schattenseite, nie als
+    // EIN Ballen (Spike T1: wie viel der Kronen-Helligkeit ein glattes Feld erklärt, Licht-R² 1-m-Blöcke, je Partie der Tiefe 2
+    // 0,31–0,48 statt 0,83–0,93; das Soll-Bild 01 trägt 0,16–0,21). Teile ohne Partie bilden zusammen EINE Krone (Nadel,
+    // Strauch, Trauer-Vorhang — bitgleich zu K68).
+    const KRONEN_NORMALE = { karte: 0.3, rMin: 0.25, tiefe: 2 };
     function kronenNormalen(teile, opts) {
         const karte = opts && opts.karte != null ? opts.karte : KRONEN_NORMALE.karte;
         const rMin = opts && opts.rMin != null ? opts.rMin : KRONEN_NORMALE.rMin;
+        const gruppen = new Map();
+        for (const t of teile || []) {
+            const k = t.partie == null ? -1 : t.partie;
+            if (!gruppen.has(k)) gruppen.set(k, []);
+            gruppen.get(k).push(t);
+        }
+        let n = 0;
+        for (const g of gruppen.values()) n += kronenEllipsoid(g, karte, rMin);
+        return n;
+    }
+    // Die Partie jedes Laufs eines gewachsenen Skeletts (`runMeta`, growSkeleton): sein Vorfahr der Tiefe `tiefe`
+    // (KRONEN_NORMALE.tiefe; der Stamm-Lauf 0 hat Tiefe 0, jede Gabel eine mehr) — ein flacher sitzender Lauf ist seine
+    // eigene. Die Eiche trägt so 12–16 Partien. Rückgabe: (run) → Partie. Leser: foundry-core (die Laub-Teile vor der Normale
+    // der Krone) und gate:pflanzen-nah (V, je Partie).
+    function kronenPartien(runMeta, tiefe) {
+        const T = tiefe == null ? KRONEN_NORMALE.tiefe : tiefe;
+        const M = runMeta || {};
+        const memo = new Map();
+        return (r) => {
+            let p = memo.get(r);
+            if (p !== undefined) return p;
+            let d = 0;
+            for (let x = r; x > 0 && M[x]; x = M[x].parentRun) d++;
+            p = r;
+            for (; d > T; d--) p = M[p].parentRun;
+            memo.set(r, p);
+            return p;
+        };
+    }
+    function kronenEllipsoid(teile, karte, rMin) {
         const mn = [Infinity, Infinity, Infinity],
             mx = [-Infinity, -Infinity, -Infinity];
         for (const t of teile || [])
@@ -1788,7 +1827,13 @@
     // (Vorlagen-Einheiten; 0, wo der Schaft nicht wächst).
     // Mit `ansatz` (der Solitär, FREISTAND.ansatz) zielt der Hub statt auf eine Höhe auf den Kronenansatz: der tiefste
     // Punkt der Krone (Ast-Ansatz oder hängendes Blatt, yk) steht danach bei ansatz × Höhe, (yk + dh) / (h0 + dh) = ansatz.
-    function schaftHub(segs, leaves, runMeta, ziel, ansatz) {
+    // Mit `krone` (der Bestand, BESTAND.krone) hebt der Hub Stamm UND Krone: der Ast-Ansatz yb steht danach bei (1 − krone) ×
+    // ziel, der Stamm streckt sich bis dorthin, und die Krone [yb, h0] streckt sich lotrecht über [(1 − krone) · ziel, ziel] —
+    // ein Bestandsbaum trägt seine Krone über den oberen Teil seiner Höhe, nie als Ballen auf dem Stiel (Spike T1). Dann
+    // ist der Hub DES SCHAFTS nur, was der Stamm unter der Krone wuchs (kb − yb): die gestreckte Krone ist Krone, und die
+    // Sichthöhe (Höhe ohne Hub, der Wirt `_foundryGruppenHoehe`) misst sie mit — sonst las die Stufenwahl die Bestands-
+    // Buche mit 8–9 statt 16–18 m und die Eiche unter der Referenz-Höhe (T2-Nachbesserung, gate:foundry-crossfade).
+    function schaftHub(segs, leaves, runMeta, ziel, ansatz, krone) {
         let h0 = 0,
             yb = Infinity;
         const erst = new Set();
@@ -1805,13 +1850,18 @@
         const dh = ansatz > 0 && ansatz < 1 ? (ansatz * h0 - yk) / (1 - ansatz) : ziel - h0;
         if (!(dh > 0)) return 0;
         const streck = (yb + dh) / yb;
+        const kb = krone > 0 && !(ansatz > 0) ? (1 - krone) * (h0 + dh) : 0;
+        const kStreck = kb > 0 ? (h0 + dh - kb) / (h0 - yb) : 0;
         const laenge = (q) => Math.hypot(q.p1[0] - q.p0[0], q.p1[1] - q.p0[1], q.p1[2] - q.p0[2]);
         const vorher = segs.map((q) => (q.runId === 0 ? laenge(q) : 0));
         const gesehen = new Set();
         const hebe = (q, stamm) => {
             if (gesehen.has(q)) return;
             gesehen.add(q);
-            if (!stamm || q[1] >= yb) q[1] += dh;
+            if (kb > 0) {
+                if (!stamm || q[1] >= yb) q[1] = kb + (q[1] - yb) * kStreck;
+                else if (q[1] > 0) q[1] *= kb / yb;
+            } else if (!stamm || q[1] >= yb) q[1] += dh;
             else if (q[1] > 0) q[1] *= streck;
         };
         for (const q of segs) {
@@ -1846,7 +1896,7 @@
                 a = b;
             }
         });
-        return dh;
+        return kb > 0 ? Math.max(0, kb - yb) : dh;
     }
 
     function treePhenotype(api, slim, trop, delta, leaf) {
@@ -2116,6 +2166,14 @@
     // (budget.gestalten, die Massen-Arten des Walds) trägt DAZU ihren Solitär als Gestalt V+1: der Bestand behält alle
     // V Individuen (kein Klon), der Solitär ist ein eigenes. Die Arten mit einer Gestalt (Weide, Mammut) tragen keinen.
     const FREISTAND = Object.freeze({ hd: 0.45, abstand: 2, ansatz: 0.3, ab: 2 });
+    // DER BESTAND (T2, 16.10., nordstern §4.5 „hohe, schlanke Stämme im Bestand, breite Solitäre im Offenen"): ein Laubbaum,
+    // der im Bestand steht (Welt-Maß, nicht frei, keine Konifere, die Schlankheit seines Standorts hd ≥ BESTAND.hd — das
+    // Bestands-Band H/D 40–100; Weide und Karst sind Solitäre ihrer Art), wächst seine Seitenäste × BESTAND.seitenast (der
+    // Nachbar nimmt die Seite, das Licht kommt von oben), und der Hub des Schafts hebt Stamm UND Krone: die Krone reicht über
+    // BESTAND.krone der Höhe (schaftHub `krone`). Spike T1 (Mess-Wiese, Eiche · Birke · Buche): Kronenbreite/BHD 48–84 → 23–36
+    // (Natur frei 17–26, Hemery 2005), Breite/Höhe 0,74–1,06 → 0,35–0,45, Kronen-Anteil 0,60–0,63, Karten −44 bis −60 %;
+    // die Seitenäste ohne den Hub der Krone trugen 0,42–0,46 Kronen-Anteil (der Ballen auf dem Stiel).
+    const BESTAND = Object.freeze({ hd: 40, seitenast: 0.6, krone: 0.6 });
     // Die Gestalt des Solitärs einer Art mit V Bestand-Gestalten (V+1), 0 = die Art trägt keinen. Leser: der Wirt
     // (`_foundryGestalten`, `_foundryGestaltOv`), gate:asset-contract (jede Gestalt der Welt unter ihrer Zeile).
     function solitaerGestalt(kind, V) {
@@ -2458,16 +2516,29 @@
     };
     // FOREST_PACK — geteilte Kronen-Schüchternheit / Poisson-Grid-Hash / Lab-Dichte-Zahlen.
     // Lab plantForest.ok + Host crown-shy Distance teilen forestTooClose.
-    // pack/dartsPerM2/crown = Lab PORTAL_RENDER_CONFIG.density (foundry); Host behält F.crown/
+    // pack/dartsPerM2 = Lab PORTAL_RENDER_CONFIG.density (foundry); Host behält
     // F.cell/dartsPerCell (andere Topologie + andere Species-ids) — must-ignore Host F.*.
     // Topology named FOREST_TOPOLOGY (.116 Feel); Host prio-max named forestPrioWins (.113); Species-ids → FOREST_SPECIES (.112).
     // path/garantie/saum (.110) + Verjüngung/Schatten-Zahlen (.111) → FOREST_LAB;
     // Host planForestCell liest KEIN pathDist / keine Verjüngung / keine Schattenverdängung.
+    // `crown` ist DIE EINE Kronen-Tafel des Pflanz-Gesetzes (T2, 16.10.): der Radius (m, Größe 1) der GEWACHSENEN Krone —
+    // je Laub-Art der sichtbare Radius ihrer L0 im Bestand (Atlas-Alpha ≥ 0,5, halbe Breite über 8 Azimute, Gestalten 1–4
+    // × Welt-Skala; gate:pflanzen-nah H hält jede Zeile an ihrer Gestalt 1). Labor-Wald und Welt-Wald (stamm FOREST.crown
+    // unter den Wirts-Namen) lesen sie. Vorher Eiche 5,2 gegen gewachsen 9,3 (der Ballen-Wald), mit dem Bestand 4,0.
     const FOREST_PACK = {
         pack: 1.16,
         dartsPerM2: 1.2,
         cell: 12, // Lab Poisson-Zellgröße; Host F.cell bleibt lokal (gleicher Wert, andere Nutzung)
-        crown: { eiche: 5.2, birke: 3.2, weide: 4.5, tanne: 2.95, fichte: 2.75, mammut: 9.2 },
+        crown: {
+            eiche: 4.0,
+            birke: 3.45,
+            buche: 4.05,
+            karst: 4.2,
+            weide: 5.65,
+            tanne: 2.95,
+            fichte: 2.75,
+            mammut: 9.2,
+        },
     };
     // FOREST_LAB — Lab-only plantForest thresholds (path/saum/garantie + Verjüngung + Schattenverdängung).
     // Host hat keine Lab-Pfade → planForestCell must-ignore; kein pathDist / keine Verj-/Schatten-Pässe.
@@ -2807,20 +2878,26 @@
     //                Starkäste: Zeilen auch auf den Ästen von 0,2·trunkR kosteten die Birken-L1 11,0–11,6k > tree[1] 10k).
     // Die Totäste (barkThick) tragen kein Gitter und die dunkle Zweig-Rinde; die Fuß-Borke lesen sie nach der Höhe wie
     // jeder Strang. Nur L0/L1 verdichten (die L2 ist die Karte).
+    // Der Bestand (T2, 16.10.) legt den Stamm frei (Kronen-Anteil 0,6): der reine Stamm trug 1,9 % Lentizellen (vorher deckte
+    // die tief ansetzende Krone das Stamm-Band), die Krone über 0,7 H Rinden-Albedo 0,35 (der weiße Leittrieb). Jetzt `strich`
+    // 0,56 → 0,45 (Stamm 5,6–5,9 %, Solitär 17,8 %) und `zweigR` [0,05; 0,14] → [0,1; 0,3] trunkR (Bestand: Zweige unter
+    // ~1,4 cm dunkel, Äste über ~4 cm weiß — Betulin trägt der Stamm und der Starkast): Krone 0,14–0,15, Solitär 0,085.
+    // Der Hub der Krone streckt den Leittrieb im Kronenraum: seine Zeilen auf 0,40–0,45 trunkR hoben die L0 auf 11,1–12,2k
+    // Dreiecke (tree[0] 12 000); `zeilenAb` 0,4 → 0,45: L0 10,2–11,5k (Gestalten 1–5, 7, 12345), der Stamm-Band bleibt ganz.
     const BIRKEN_RINDE = {
         zeile: 0.09,
         hoehe: [0.003, 0.018],
         naht: 0.0015,
-        strich: 0.56,
+        strich: 0.45,
         dunkel: [0.052, 0.047, 0.045],
         borke: 0.085,
         borkeZacke: 0.35,
         borkeRisse: 11,
         borkeFarbe: [0.072, 0.066, 0.06],
         fussRaster: 0.03,
-        zweigR: [0.05, 0.14],
+        zweigR: [0.1, 0.3],
         zweig: [0.1, 0.07, 0.058],
-        zeilenAb: 0.4,
+        zeilenAb: 0.45,
     };
 
     // DIE BILD-HÖHE EINES BAUMS an der Nahkante seiner Stufe in Pixeln (S3, 09.10.; 1080 Zeilen bei 75° Sichtfeld): die
@@ -4911,6 +4988,7 @@
         forestCellRng: forestCellRng,
         FOREST_STAND: FOREST_STAND,
         FREISTAND: FREISTAND,
+        BESTAND: BESTAND, // T2: der Laubbaum im Bestand (Seitenast-Länge und Kronen-Hub)
         solitaerGestalt: solitaerGestalt,
         forestStandDensity: forestStandDensity,
         forestGeburt: forestGeburt,
@@ -4951,7 +5029,9 @@
         BLATT_ATLAS_ZELLE: BLATT_ATLAS_ZELLE, // die Zelle des Atlas in Pixeln (512, 05.10.)
         buildFoliageQuads: buildFoliageQuads,
         kronenNormalen: kronenNormalen, // K68: die Normale der Krone (Ellipsoid × Karte) — foundry-core vor dem Laub-Merge
+        kronenPartien: kronenPartien, // T2: die Ast-Partie je Lauf — die Laubkrone lichtet je Partie
         KRONEN_NORMALE: KRONEN_NORMALE,
+        mulberry32: mulberry32, // der Vorlagen-RNG (der Strom des Wuchses; gate:pflanzen-nah wächst dasselbe Skelett)
         kronenLagen: kronenLagen, // S3: die Lagen einer Krone — der Bau-Regler der Karten-Wahl (foundry-core __lagenWahl)
         quadLagen: quadLagen, // S3: die Lagen beliebiger Karten (Strähnen der Trauer-Krone)
         BLATT_ATLAS_BREIT: BLATT_ATLAS_BREIT, // der Atlas-Steckbrief (Zellen + Kern + Füllung) der Breitblatt-Zellen
