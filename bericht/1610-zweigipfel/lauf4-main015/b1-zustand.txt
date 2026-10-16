@@ -1,0 +1,151 @@
+{
+ "ergebnis": {
+  "auge": [
+   0,
+   0
+  ],
+  "buendelAuge": {
+   "x": 0,
+   "z": 0
+  },
+  "wahl": [
+   "f:tanne|2|0:2",
+   "f:tanne|3|0:0",
+   "f:tanne|3|0:2",
+   "f:fichte|1|0:0",
+   "f:fichte|1|0:2",
+   "f:tanne|2|0:0",
+   "f:tanne|1|0:0",
+   "f:tanne|1|0:2",
+   "f:fichte|2|0:0",
+   "f:fichte|2|0:2",
+   "fscatter:fichte:1:0#0",
+   "fscatter:fichte:1:0#1",
+   "f:gt|6|1:2",
+   "f:gt|6|1:3",
+   "f:gt|6|1:4",
+   "f:gt|6|1:5",
+   "f:gt|6|1:6",
+   "f:tanne|3|1:0",
+   "f:tanne|3|1:2",
+   "f:tanne|3|1:3#S",
+   "f:tanne|2|1:0",
+   "f:tanne|2|1:2",
+   "f:tanne|2|1:3#S",
+   "f:tanne|1|1:0",
+   "f:tanne|1|1:2",
+   "f:tanne|1|1:3#S",
+   "f:fichte|3|1:0",
+   "f:fichte|3|1:2",
+   "f:fichte|3|1:3#S",
+   "f:eiche|2|1:0",
+   "f:eiche|2|1:2",
+   "f:eiche|2|1:3#S",
+   "f:birke|3|1:0",
+   "f:birke|3|1:2",
+   "f:birke|3|1:3#S",
+   "f:fichte|1|1:0",
+   "f:fichte|1|1:2",
+   "f:fichte|1|1:3#S",
+   "f:fichte|2|1:0",
+   "f:fichte|2|1:2",
+   "f:fichte|2|1:3#S",
+   "fscatter:buche:2:1#0",
+   "fscatter:buche:2:1#1",
+   "fscatter:buche:2:1#2",
+   "fscatter:birke:2:1#0",
+   "fscatter:birke:2:1#1",
+   "fscatter:birke:2:1#2",
+   "fscatter:fichte:1:1#0",
+   "fscatter:fichte:1:1#1",
+   "fscatter:fichte:1:1#2",
+   "fscatter:tanne:1:1#0",
+   "fscatter:tanne:1:1#1",
+   "fscatter:tanne:1:1#2",
+   "f:mammut|1|1:0",
+   "f:mammut|1|1:2",
+   "f:mammut|1|1:3#S",
+   "fscatter:eiche:2:1#0",
+   "fscatter:eiche:2:1#1",
+   "fscatter:eiche:2:1#2",
+   "impostor#fimp:atlas"
+  ],
+  "regler": {
+   "loadScale": 1,
+   "perfTargetMs": 17,
+   "schattenReichweite": 170,
+   "maxFar": 306,
+   "breaks": [
+    0.353,
+    1
+   ],
+   "intervall": 1,
+   "godray": 0.8
+  },
+  "buendel": [
+   [
+    28,
+    "@global",
+    5,
+    18
+   ],
+   [
+    29,
+    "@wahl",
+    60,
+    19
+   ]
+  ],
+  "tore": [
+   [
+    2,
+    11,
+    1,
+    1
+   ],
+   [
+    3,
+    11,
+    1,
+    1
+   ],
+   [
+    4,
+    11,
+    1,
+    1
+   ],
+   [
+    5,
+    11,
+    1,
+    1
+   ],
+   [
+    6,
+    11,
+    1,
+    1
+   ],
+   [
+    7,
+    11,
+    1,
+    1
+   ],
+   [
+    8,
+    11,
+    1,
+    1
+   ],
+   [
+    "portal-preview-portale",
+    19,
+    2,
+    2
+   ]
+  ]
+ },
+ "ms": 11
+}

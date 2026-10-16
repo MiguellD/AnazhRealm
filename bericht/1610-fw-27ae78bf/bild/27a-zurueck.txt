@@ -1,0 +1,372 @@
+{
+ "regler": "voll",
+ "sekunden": 10,
+ "frames": 854,
+ "fps": 85.5,
+ "frameMs": {
+  "p50": 8.4,
+  "p95": 16.8,
+  "p99": 17,
+  "max": 250
+ },
+ "cpuTaktMs": {
+  "p50": 3.7,
+  "p95": 5.2,
+  "p99": 6.3,
+  "max": 59.8
+ },
+ "taktMs": {
+  "p50": 8.3,
+  "p95": 8.5,
+  "p99": 8.8,
+  "max": 241.2
+ },
+ "leine": {
+  "ausgesetztPct": 26.1,
+  "imFlug": 0
+ },
+ "gpuMs": {
+  "p50": 1.59,
+  "p95": 2.11,
+  "p99": 2.42,
+  "max": 2.54,
+  "n": 432,
+  "quelle": "echt"
+ },
+ "gpuDurchsatzMs": {
+  "p50": 11.1,
+  "p95": 15.2,
+  "p99": 19.4,
+  "max": 254.3
+ },
+ "gpuVerzugMs": {
+  "p50": 15,
+  "p95": 19,
+  "p99": 21.2,
+  "max": 264.6
+ },
+ "gpuJePassMs": {
+  "post": {
+   "p50": 0.44,
+   "p95": 0.58,
+   "frames": 854
+  },
+  "TRAA": {
+   "p50": 0.68,
+   "p95": 0.7,
+   "frames": 854
+  },
+  "haupt": {
+   "p50": 0.4,
+   "p95": 0.43,
+   "frames": 854
+  },
+  "k0": {
+   "p50": 0.18,
+   "p95": 0.58,
+   "frames": 427
+  },
+  "k1": {
+   "p50": 0.03,
+   "p95": 0.03,
+   "frames": 143
+  },
+  "spiegel:strahl": {
+   "p50": 0.03,
+   "p95": 0.03,
+   "frames": 13
+  },
+  "atmo-himmel": {
+   "p50": 0.07,
+   "p95": 0.08,
+   "frames": 38
+  },
+  "horizont-karte": {
+   "p50": 0.02,
+   "p95": 0.47,
+   "frames": 4
+  },
+  "atmo-umgebung": {
+   "p50": 0.01,
+   "p95": 0.01,
+   "frames": 1
+  },
+  "OrthographicCamera": {
+   "p50": 2.43,
+   "p95": 2.43,
+   "frames": 1
+  }
+ },
+ "stempel": {
+  "imLauf": 0,
+  "seitBoot": 0,
+  "spitze": 56,
+  "pool": {
+   "stand": 2,
+   "max": 2048
+  },
+  "gueltig": true,
+  "warnung": 0
+ },
+ "befehle": {
+  "frames": 854,
+  "mittel": 59,
+  "p95": 70,
+  "max": 76,
+  "jePass": {
+   "haupt": {
+    "anteil": 1,
+    "p50": 44,
+    "max": 44
+   },
+   "TRAA": {
+    "anteil": 1,
+    "p50": 1,
+    "max": 1
+   },
+   "post": {
+    "anteil": 1,
+    "p50": 1,
+    "max": 1
+   },
+   "k0": {
+    "anteil": 0.5,
+    "p50": 23,
+    "max": 24
+   },
+   "k1": {
+    "anteil": 0.17,
+    "p50": 6,
+    "max": 6
+   },
+   "atmo-himmel": {
+    "anteil": 0.04,
+    "p50": 1,
+    "max": 1
+   },
+   "spiegel:strahl": {
+    "anteil": 0.02,
+    "p50": 1,
+    "max": 1
+   },
+   "horizont-karte": {
+    "anteil": 0,
+    "p50": 6,
+    "max": 6
+   }
+  }
+ },
+ "dreiecke": {
+  "frames": 854,
+  "mittel": 353441,
+  "p95": 380457,
+  "max": 387746,
+  "jePass": {
+   "haupt": {
+    "anteil": 1,
+    "p50": 324739,
+    "max": 324739
+   },
+   "TRAA": {
+    "anteil": 1,
+    "p50": 1,
+    "max": 1
+   },
+   "post": {
+    "anteil": 1,
+    "p50": 1,
+    "max": 1
+   },
+   "k0": {
+    "anteil": 0.5,
+    "p50": 52694,
+    "max": 55716
+   },
+   "k1": {
+    "anteil": 0.17,
+    "p50": 10654,
+    "max": 10656
+   },
+   "atmo-himmel": {
+    "anteil": 0.04,
+    "p50": 1,
+    "max": 1
+   },
+   "spiegel:strahl": {
+    "anteil": 0.02,
+    "p50": 1,
+    "max": 1
+   },
+   "horizont-karte": {
+    "anteil": 0,
+    "p50": 49920,
+    "max": 49920
+   }
+  }
+ },
+ "ueber17": 0.7,
+ "ueber33": 0.5,
+ "vramMB": {
+  "jetzt": 104.9,
+  "puffer": 14.4,
+  "texturen": 90.5,
+  "spitze": 124.4,
+  "nPuffer": 771,
+  "nTexturen": 42,
+  "wuchsImFenster": -0.4,
+  "gross": [
+   {
+    "k": "tex:TRAANode.history rgba16float 1920x1080x1",
+    "mb": 15.82,
+    "n": 1
+   },
+   {
+    "k": "tex:TRAANode.resolve rgba16float 1920x1080x1",
+    "mb": 15.82,
+    "n": 1
+   },
+   {
+    "k": "buf:?",
+    "mb": 14.348,
+    "n": 569
+   },
+   {
+    "k": "tex:kaskade0:tiefe depth16unorm 2048x2048x1",
+    "mb": 8,
+    "n": 1
+   },
+   {
+    "k": "tex:kaskade1:tiefe depth16unorm 2048x2048x1",
+    "mb": 8,
+    "n": 1
+   },
+   {
+    "k": "tex:tor-ziel rgba16float 512x1792x1",
+    "mb": 7,
+    "n": 1
+   },
+   {
+    "k": "tex:output rg11b10ufloat 1440x810x1",
+    "mb": 4.449,
+    "n": 1
+   },
+   {
+    "k": "tex:depth depth24plus 1440x810x1",
+    "mb": 4.449,
+    "n": 1
+   },
+   {
+    "k": "tex:karte-albedo:atlas bc1-rgba-unorm-srgb 128x2048x20",
+    "mb": 3.333,
+    "n": 1
+   },
+   {
+    "k": "tex:karte-albedo:atlas bc1-rgba-unorm-srgb 128x2048x16",
+    "mb": 2.666,
+    "n": 1
+   },
+   {
+    "k": "tex:szene:tiefenabbild r32float 720x810x1",
+    "mb": 2.225,
+    "n": 1
+   },
+   {
+    "k": "tex:wege-karte:fern rg8unorm 1024x1024x1",
+    "mb": 2,
+    "n": 1
+   },
+   {
+    "k": "tex:wege-karte:nah rg8unorm 1024x1024x1",
+    "mb": 2,
+    "n": 1
+   },
+   {
+    "k": "tex:feld-pass-panorama rgba32float 768x160x1",
+    "mb": 1.875,
+    "n": 1
+   }
+  ]
+ },
+ "stellgroessen": {
+  "loadScale": 1,
+  "szeneSkala": 0.75,
+  "pixelRatio": 1,
+  "foliageRadius": 216,
+  "foliageDichte": 1,
+  "archRadius": 150,
+  "ring": 4,
+  "schattenIntervall": 1,
+  "holz": "voll"
+ },
+ "phasenEwmaMs": {
+  "streaming": 0.22,
+  "waterIso": 0,
+  "archCulling": 0,
+  "creatures": 0.26,
+  "physics": 0.08,
+  "render": 2.22,
+  "gpuMs": 1.78
+ },
+ "kamera": {
+  "pos": [
+   -278,
+   29.7,
+   -1038
+  ],
+  "blick": [
+   0,
+   0,
+   -1
+  ]
+ },
+ "chunks": 81,
+ "ruhe": {
+  "ruhig": true,
+  "sek": 3,
+  "chunks": 81,
+  "foundry": 0,
+  "karten": 0,
+  "meshOffen": 0
+ },
+ "wetter": "sunny",
+ "wetterHalt": {
+  "vorher": "sunny",
+  "nachher": "sunny",
+  "uhrVorher": -999999923.2,
+  "uhrNachher": -999999900.2,
+  "buch": [
+   {
+    "art": "verweigert",
+    "von": "sunny",
+    "zu": "rainy",
+    "quelle": "nexus",
+    "stapel": "weather ← … ← dslRun ← _loopNexusUpdate ← (anonym)",
+    "seq": 7,
+    "t": 98566,
+    "uhr": -999999923
+   },
+   {
+    "art": "verweigert",
+    "von": "sunny",
+    "zu": "rainy",
+    "quelle": "emotion:sorrow",
+    "stapel": "weather ← … ← dslRun ← trigger ← updatePlayerEmotions ← (anonym)",
+    "seq": 8,
+    "t": 102525,
+    "uhr": -999999919
+   }
+  ],
+  "urteil": "GRUEN",
+  "taeter": [],
+  "verweigert": {
+   "nexus → rainy": 1,
+   "emotion:sorrow → rainy": 1
+  }
+ },
+ "saison": "summer",
+ "fehler": [
+  "[konsole] [AnazhRealm V18.546.2] [INFO] WebGPU-Renderer instantiiert — init() läuft asynchron …",
+  "[konsole] [AnazhRealm V18.546.2] [INFO] WebGPU-Renderer init() abgeschlossen — die Welt rendert jetzt auf der GPU."
+ ],
+ "ms": 23121
+}

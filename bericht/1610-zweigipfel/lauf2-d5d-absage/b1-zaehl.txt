@@ -1,0 +1,45 @@
+{
+ "ergebnis": {
+  "submits": 7211,
+  "compute": 0,
+  "renders": [
+   [
+    "leinwand | Render Pipeline | OrthographicCamera",
+    1314
+   ],
+   [
+    "TRAANode.resolve | TRAA | OrthographicCamera",
+    1314
+   ],
+   [
+    "output | Scene | PerspectiveCamera",
+    1314
+   ],
+   [
+    "kaskade0:farbe | Shadow Map [ ID: 55 ] | OrthographicCamera",
+    658
+   ],
+   [
+    "kaskade1:farbe | Shadow Map [ ID: 59 ] | OrthographicCamera",
+    219
+   ],
+   [
+    "atmo-himmel | atmo-himmel | OrthographicCamera",
+    50
+   ],
+   [
+    "PMREM.cubeUv | Mesh | OrthographicCamera",
+    30
+   ],
+   [
+    "horizont-karte | horizont-karte | OrthographicCamera",
+    5
+   ],
+   [
+    "himmel-umgebung | atmo-umgebung | OrthographicCamera",
+    2
+   ]
+  ]
+ },
+ "ms": 2
+}

@@ -1,0 +1,6 @@
+{
+ "ergebnis": {
+  "anker": "neu"
+ },
+ "ms": 2
+}

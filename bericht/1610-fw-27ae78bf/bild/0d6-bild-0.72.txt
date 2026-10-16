@@ -1,0 +1,16 @@
+{
+ "kamera": [
+  -278,
+  29.68,
+  -1038
+ ],
+ "hell": 93.8,
+ "kontrast": 8.61,
+ "dc": 43,
+ "dreiecke": 298437,
+ "ms": 265,
+ "klasse": null,
+ "abnahme": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 80 m · Luma 84.8 σ 41.1 schwarz 0.0 % weiß 0.0 % · Stand 18.546.2 · Bühne summer sunny 0.72 · Gerät WebGPU nvidia pascal · Blick-Wahl 1 Posen",
+ "datei": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\k1610fw\\bild\\0d6-bild-0.72.png",
+ "gesamtMs": 3286
+}

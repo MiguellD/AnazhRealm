@@ -1,0 +1,16 @@
+05:45:23 ZWEIGIPFEL START (Fassung 3b, main 210fe8a7) Kopf=210fe8a7
+05:47:04 b1 Zustand mitte ("fps": 81.3)
+05:49:24 b2 Zustand schnell ("fps": 85.1)
+05:51:15 b2 zerlegt (schnell)
+05:51:54 b2 t4: fps 84.7 durchsatz 11.5 cpu p95 4.8 k1 {"p50":0.02,"p95":0.03,"frames":425}
+05:52:37 b2 t3: fps 84.6 durchsatz 11.5 cpu p95 4.9 k1 {"p50":0.02,"p95":0.03,"frames":425}
+05:52:38 b2 geschaltet (schnell)
+05:54:53 b3 Zustand schnell ("fps": 119.6)
+05:57:09 b4 Zustand schnell ("fps": 119.7)
+05:59:24 b5 Zustand langsam ("fps": 78.4)
+06:01:21 b5 zerlegt (langsam)
+06:01:57 b5 t1: fps 78.8 durchsatz 12.7 cpu p95 4.9 k1 {"p50":0.02,"p95":0.39,"frames":395}
+06:02:36 b5 t6: fps 78.4 durchsatz 12.7 cpu p95 5 k1 {"p50":0.02,"p95":0.39,"frames":394}
+06:03:19 b5 t3: fps 78.2 durchsatz 12.8 cpu p95 5.2 k1 {"p50":0.02,"p95":0.38,"frames":392}
+06:03:24 b5 geschaltet (langsam)
+06:03:59 ZWEIGIPFEL FERTIG langsam=1 schnell=1
