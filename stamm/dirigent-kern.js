@@ -331,10 +331,6 @@ class AnazhRealm {
                 // Canopy-Streaming-Schalter (Default false); true → _tickCanopyStreaming baut 3×3-Region-Chunks
                 // um den Spieler.
                 canopyStreaming: false,
-                // Scatter + Promotion (Default an, im Browser für A/B abschaltbar): _tickScatterStreaming streut
-                // den fernen Wald (InstancedMesh, deterministisch pcg2d) und kristallisiert nahe Bäume zu echten
-                // Bauplänen (Touch→Real).
-                gpuScatter: true,
                 // Material-Modus — ohne Leser: _buildToonNodeMaterial baut IMMER PBR (roughness/metalness aus den
                 // Material-Tags); der Toon-Pfad ist gestrichen, "toon" wirkt nicht mehr.
                 materialMode: "pbr",
@@ -1005,6 +1001,8 @@ class AnazhRealm {
                 neu: new Float64Array(32),
                 alt: new Float64Array(32),
                 da: false,
+                zeit: 0,
+                bilder: 0,
                 k: 0,
                 proj: [0, 5, 8, 9, 10, 14],
                 licht: [HU && HU.irr, HU && HU.sunDir, lu && lu.farbe, lu && lu.sonneFarbe, lu && lu.beta].filter(
@@ -1044,10 +1042,18 @@ class AnazhRealm {
             const d = Math.abs(v[i] - a[i]);
             wach = i < 3 ? d > K.ruheM : i < 6 ? d > K.ruheRad : i < licht ? d !== 0 : d > K.ruheLicht;
         }
+        // DAS BILD LEBT (A1): der Spiegel liest das gezeichnete Bild — Wind im Laub, ziehende Wolken, ein Tier am Ufer —, im
+        // Stand neu je `bildRuheMs` UND frühestens nach `bildRuheBilder` Bildern (A1-n1: die Uhr allein trug bei 30 fps jedes
+        // 15. Bild, über dem 5-%-Rand des p95; gezählt in Bildern trägt der Lauf im Stand nie das p95, bei jeder Bildrate)
+        const jetzt = performance.now();
+        sig.bilder++;
+        if (!wach && jetzt - sig.zeit > K.bildRuheMs && sig.bilder >= K.bildRuheBilder) wach = true;
         if (wach) {
             a.set(v);
             sig.k = k;
             sig.da = true;
+            sig.zeit = jetzt;
+            sig.bilder = 0;
         }
         return wach;
     }
@@ -1067,10 +1073,16 @@ class AnazhRealm {
         }
         // die Matrizen DIESES Bilds (der Render rechnete sie, die Zeit-Auflösung nahm ihren Versatz zurück)
         P.vp.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
+        P.U.vp.value.copy(P.vp);
         P.U.invVP.value.copy(P.vp).invert();
         P.U.auge.value.setFromMatrixPosition(cam.matrixWorld);
+        cam.getWorldDirection(P.U.vorn.value);
+        P.U.nah.value = cam.near;
+        P.U.p10.value = cam.projectionMatrix.elements[10];
+        P.U.p14.value = cam.projectionMatrix.elements[14];
         P.U.mitte.value.set(S.mitte[0], S.mitte[1]);
         P.U.hMax.value = S.hMax + 2;
+        P.U.texel.value.set(1 / m.w, 1 / m.h);
         const vor = rend.getRenderTarget();
         rend.setRenderTarget(L.rt);
         P.quad.render(rend);
@@ -1766,7 +1778,7 @@ function _stammZonen(Ziel, zonen) {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.546.7";
+AnazhRealm.VERSION = "18.546.8";
 // Die Terme des ersten Weltbilds (`_weltbildLuecken`, K60): je Leser des ersten Frames ein Name — gate:ankunft L2a stellt je
 // Term einen Fall her, ein Term ohne Fall ist ROT.
 AnazhRealm.WELTBILD_TERME = Object.freeze([

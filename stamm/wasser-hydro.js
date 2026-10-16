@@ -1536,24 +1536,18 @@ class AnazhRealm_wasser_hydro {
     // dem Auge `viewDir` zurückwirft, über dem Grund mit dem Durchlass `T` — der Körper im Licht des Orts (R∞ × E/π), soweit
     // er den Grund deckt (1 − T) und nicht gespiegelt wird (1 − F); der Himmel × F; der Glanz. Liefert { eigen, fres }.
     _wasserBlick(TSL, WG, o) {
-        const { float, vec2, vec3, vec4, normalize, reflect, max, dot, pow, clamp, texture, equirectUV, step, mix } =
-            TSL;
+        const { float, vec2, vec3, vec4, normalize, reflect, max, dot, pow, clamp, texture, step } = TSL;
+        const HG =
+            AnazhRealm.Gesetz("terrain:HIMMEL_GESETZ", null) || AnazhRealm._kernPflichtBruch("terrain:HIMMEL_GESETZ");
         // Schlick-Fresnel (WASSER_GESETZ): fres = f0 + f1·(1−n·v)^f2 — EIN Fresnel für Spiegel UND Durchlass.
         const ndvW = clamp(dot(o.n, o.viewDir), 0.0, 1.0);
         const fres = float(WG.fresnel[0]).add(
             float(WG.fresnel[1]).mul(pow(float(1.0).sub(ndvW), float(WG.fresnel[2])))
         );
-        // DER SPIEGEL IST DER HIMMEL: die EINE Himmels-Umgebung (`_himmelUmgebungTex`, dieselbe Textur, aus der PMREM
-        // die IBL jedes PBR-Stoffs filtert) in Richtung des gespiegelten Strahls — Strahlung in Himmels-Einheiten,
-        // nie unter den Horizont (Kräusel-Normalen), Mip 0 (glatt; an der Azimut-Naht griffe die Ableitung die
-        // gröbste Stufe). Bis V18.530 spiegelte das Wasser die Zenit-Tönung × die SONNEN-Stärke (uLight 7,4): der
-        // Spiegel lag 3–5× über dem Himmel, den er spiegelt — weiß wie Eis (Blick-Tour 07, Helligkeit 188).
-        const _R = reflect(o.viewDir.negate(), o.n);
-        const _Rh = normalize(vec3(_R.x, max(_R.y, float(0.02)), _R.z));
-        const himmel0 = texture(this._himmelUmgebungTex(), equirectUV(_Rh)).level(float(0)).rgb;
-        // DER SPIEGEL DER WELT (D10): wo der gespiegelte Strahl Ufer, Hang oder Krone trifft (`_spiegelPass`, 1/4 Auflösung
-        // gegen das Spiegel-Feld des Gesetzes), steht ihre Strahlung statt des Himmels — der Welt-Punkt `o.ort` reprojiziert in
-        // die Ansicht, aus der der Pass rechnete, die Kräusel-Normale versetzt den Abgriff; ohne Pass (`an` 0) der Himmel allein.
+        // DER SPIEGEL DER WELT (D10, A1): was der gespiegelte Strahl trifft — Ufer, Hang, Krone, Haus, Wolke, sonst der Himmel
+        // (`_spiegelPass`, 1/teil Auflösung: zuerst das gezeichnete Bild, jenseits des Schirms das Spiegel-Feld des Gesetzes,
+        // dahinter die Himmels-Sicht der Kuppel) — der Welt-Punkt `o.ort` reprojiziert in die Ansicht, aus der der Pass rechnete,
+        // die Kräusel-Normale versetzt den Abgriff. Der Pass deckt jedes Wasser-Pixel ganz (vorab multipliziert, Deckung `w`).
         const S = this._spiegelLeser();
         const clip = S.vp.mul(vec4(o.ort, 1.0));
         const sw = max(clip.w, float(1e-4));
@@ -1566,7 +1560,20 @@ class AnazhRealm_wasser_hydro {
             .mul(step(0.0, suv.y))
             .mul(step(suv.y, 1.0))
             .mul(step(0.0, clip.w));
-        const himmel = mix(himmel0, sp.rgb, clamp(sp.a, 0.0, 1.0).mul(drin).mul(S.an));
+        const deckt = drin.mul(S.an);
+        const w = clamp(sp.a, 0.0, 1.0).mul(deckt);
+        // DER HIMMEL, WO DER PASS NICHT DECKT (jenseits des Felds, das ferne Wasser, der Fern-Ring, vor dem ersten Lauf, am
+        // Ufer-Saum): die Atmosphäre der Himmels-Sicht (`himmelFarbe`, die Tafel der Kuppel) in Richtung des gespiegelten Strahls,
+        // nie unter den Horizont, an dem die Wolken enden (`hor[0]`, Kräusel-Normalen). Jenseits des Felds (368 m) liegt der
+        // Strahl aus Augenhöhe unter `hor[0]`: dort IST die Himmels-Sicht die Atmosphäre allein, die Wolke ist null
+        // (`_himmelSicht`). Die Wolke rechnet der Pass in 1/teil, nie das Wasser je Pixel (A1-n1, `werkbank zerlegen` gehend,
+        // Radeon: Wasser mit Pass 2,95 ms mit zwei fbm im Wasser-Stoff, auch ungenommen, gegen 1,48–2,32 ohne, die Basis vor
+        // A1 2,67–2,91). Bis A1 die Umgebung von 128 × 64
+        // (`_himmelUmgebungTex`, die Quelle der IBL): ein Verlauf ohne Wolke über dem ganzen See (A0). Bis V18.530 spiegelte das
+        // Wasser die Zenit-Tönung × die SONNEN-Stärke (uLight 7,4): 3–5× über dem Himmel, weiß wie Eis (Blick-Tour 07).
+        const _R = reflect(o.viewDir.negate(), o.n);
+        const _Rh = normalize(vec3(_R.x, max(_R.y, float(HG.hor[0])), _R.z));
+        const himmel = sp.rgb.mul(deckt).add(this._atmoLutBau().himmelFarbe(_Rh).mul(float(1).sub(w)));
         // W10 — der Sonnen-Glitzer der Vorlage: reflect-basiert, Exponent/Gewinn aus dem Gesetz, die Sonne selbst
         // (Rayleigh-Farbe sunCol × ihre Stärke light).
         const spec = pow(max(dot(reflect(normalize(o.sunDir).negate(), o.n), o.viewDir), 0.0), float(WG.spec[0]));

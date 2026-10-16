@@ -606,8 +606,11 @@ class AnazhRealm_bild_sicht {
         return st.spiegelLeser;
     }
 
-    // DER PASS DES SPIEGELS (D10): je Pixel in 1/teil der Ausgabe, dessen Tiefe (der Szenen-Pass, das GEZEICHNETE Wasser)
-    // auf einer Wasser-Zelle des Felds liegt, der gespiegelte Strahl gegen die Höhe des Felds — `schritte` Schritte: über der
+    // DER PASS DES SPIEGELS (D10, A1): je Pixel in 1/teil der Ausgabe, dessen Tiefe (der Szenen-Pass, das GEZEICHNETE Wasser)
+    // an einer Wasser-Zelle des Felds liegt, der gespiegelte Strahl ZUERST im Bild (die Tiefe und Farbe des Szenen-Passes:
+    // jede gezeichnete Gestalt lagetreu, A1 — bis dahin spiegelte nur, was das Feld kannte: Boden und die Kronen im Kronen-Buch
+    // auf 2-m-Zellen, A0 an der Tafel ein Baum, blockig, spiegelTreue 0,318), dann jenseits des Schirms gegen die Höhe des
+    // Felds — `schritte` Schritte: über der
     // Höchsten des Blocks der Sprung an seinen Rand, darunter Lipschitz-Schritte gegen die Rest-Höhe (höchstens `fein` Zellen),
     // `halbierungen` und die Sekante; am Treffer die Albedo im
     // Licht des Wassers (uIrr, die Sonne über die Neigung der Fläche relativ zur Ebene) unter der EINEN Luft längs des
@@ -620,6 +623,8 @@ class AnazhRealm_bild_sicht {
             T;
         const { normalize, dot, clamp, ivec2, select, floor, mod, step, min, exp, Continue } = T;
         const K = AnazhRealm.SPIEGEL;
+        const HG =
+            AnazhRealm.Gesetz("terrain:HIMMEL_GESETZ", null) || AnazhRealm._kernPflichtBruch("terrain:HIMMEL_GESETZ");
         const S = this._spiegelFeld();
         const L = this._spiegelLeser();
         this._ensureHydroSurfaceMaterial();
@@ -628,13 +633,23 @@ class AnazhRealm_bild_sicht {
         this._luftEnsure();
         const luft = st.luft;
         const tiefe = T.texture(st.scenePass.getTextureNode("depth").value);
+        // das Bild des Szenen-Passes (linear, vor Zeit-Auflösung und Tönung): der Spiegel liest die Strahlung, die es zeichnet
+        const farbe = st.scenePass.getTextureNode().value;
         const webgpuRaum = st.renderer.coordinateSystem === THREE.WebGPUCoordinateSystem;
         const U = {
             invVP: uniform(new THREE.Matrix4()),
+            vp: uniform(new THREE.Matrix4()),
             auge: uniform(new THREE.Vector3()),
+            // die Blick-Achse (w eines Punkts = sein Abstand längs ihr), die Nah-Ebene und die Tiefen-Zeilen der Projektion
+            vorn: uniform(new THREE.Vector3()),
+            nah: uniform(0.1),
+            p10: uniform(-1),
+            p14: uniform(-0.1),
             mitte: uniform(new THREE.Vector2()),
             bezug: uniform(S.bezug),
             hMax: uniform(0),
+            // ein Texel des Pass-Ziels in uv (1/Breite, 1/Höhe)
+            texel: uniform(new THREE.Vector2(1, 1)),
         };
         const kante = S.n * S.texel;
         const feld = (xz) => texture(S.tex, xz.div(kante)).level(float(0));
@@ -643,7 +658,6 @@ class AnazhRealm_bild_sicht {
         const laubZeile = texture(S.laubTex);
         const hoechste = texture(S.hTex);
         const blockM = K.block * S.texel;
-        const zelleVon = (xz) => ivec2(mod(floor(xz.div(S.texel)), float(S.n)));
         // DER ABSTAND ZUR WELT längs der Senkrechten an p (Höhe y über dem Bezug, die gefilterten Höhen s): negativ im Boden
         // (unter der unteren Fläche) oder in der Krone (zwischen Basis und Dach), sonst der Abstand zur nächsten Fläche
         const abstand = (y, s) => min(y.sub(s.r), max(s.g.sub(y), y.sub(s.b)));
@@ -665,127 +679,274 @@ class AnazhRealm_bild_sicht {
                 const w4 = U.invVP.mul(ndc);
                 const P = w4.xyz.div(w4.w).toVar();
                 const r0 = P.xz.sub(U.mitte).div(kante);
-                // der Wasser-Punkt: die Zelle ist Wasser (Art 1) und der gezeichnete Spiegel liegt an ihrem (0,6 m tiefer
-                // gebackenen) Spiegel — der Strahl steigt von ihm auf, das Wasser des Orts trifft er nie
-                const w0 = stoffZelle.load(zelleVon(P.xz)).a.mul(255);
-                const wasser = abs(w0.sub(1.0))
-                    .lessThan(0.5)
-                    .and(abs(P.y.sub(U.bezug).sub(feld(P.xz).r.add(0.6))).lessThan(1.5))
+                // der Wasser-Punkt: eine der vier Zellen um ihn ist Wasser (Art 1) und der gezeichnete Spiegel liegt an ihrem
+                // (0,6 m tiefer gebackenen) Spiegel — der Strahl steigt von ihm auf, das Wasser des Orts trifft er nie. Bis A1
+                // fragte nur die Zelle unter dem Punkt: am Ufer liegt das gezeichnete Wasser bis in die Land-Zellen, dort las der
+                // See den Himmel (Treppen der 2-m-Zellen an der fernen Uferlinie)
+                const zw = floor(P.xz.div(S.texel).sub(0.5));
+                const istWasser = (di, dj) => {
+                    const pl = ivec2(mod(zw.add(vec2(di, dj)), float(S.n)));
+                    return abs(stoffZelle.load(pl).a.mul(255).sub(1.0))
+                        .lessThan(0.5)
+                        .and(abs(P.y.sub(U.bezug).sub(feldZelle.load(pl).r.add(0.6))).lessThan(1.5));
+                };
+                const wasser = istWasser(0, 0)
+                    .or(istWasser(1, 0))
+                    .or(istWasser(0, 1))
+                    .or(istWasser(1, 1))
                     .and(max(abs(r0.x), abs(r0.y)).lessThan(0.48));
                 If(wasser, () => {
                     const v = normalize(P.sub(U.auge));
                     const R = vec3(v.x, abs(v.y), v.z);
-                    const t = float(1.25).toVar();
-                    const tVor = float(0).toVar();
-                    const gVor = float(0).toVar();
-                    Loop(K.schritte, () => {
-                        const p = P.add(R.mul(t));
-                        const rel = p.xz.sub(U.mitte).div(kante);
-                        If(max(abs(rel.x), abs(rel.y)).greaterThan(0.5), () => Break());
-                        const y = p.y.sub(U.bezug);
-                        If(y.greaterThan(U.hMax), () => Break());
-                        // DER SPRUNG: über der Höchsten seines Blocks trifft der steigende Strahl darin nichts — er springt an den
-                        // Rand des Blocks, der Rand ist der neue Punkt über dem Boden (die Höchste deckt den Filter bis dort)
-                        const zb = floor(p.xz.div(blockM));
-                        const hb = hoechste.load(ivec2(mod(zb, float(S.nb)))).r;
-                        If(y.greaterThan(hb), () => {
-                            const randX = zb.x.add(step(0.0, R.x)).mul(blockM);
-                            const randZ = zb.y.add(step(0.0, R.z)).mul(blockM);
-                            const sprung = min(
-                                abs(randX.sub(p.x)).div(max(abs(R.x), 1e-5)),
-                                abs(randZ.sub(p.z)).div(max(abs(R.z), 1e-5))
-                            );
-                            tVor.assign(t.add(sprung));
-                            gVor.assign(y.add(R.y.mul(sprung)).sub(hb));
-                            t.assign(tVor.add(0.05));
-                            Continue();
-                        });
-                        const g = abstand(y, feld(p.xz));
-                        If(g.lessThan(0.0), () => {
-                            const ta = tVor.toVar(),
-                                tb = t.toVar(),
-                                gA = gVor.toVar(),
-                                gB = g.toVar();
-                            for (let k = 0; k < K.halbierungen; k++) {
-                                const m = ta.add(tb).mul(0.5);
-                                const pm = P.add(R.mul(m));
-                                const gm = abstand(pm.y.sub(U.bezug), feld(pm.xz));
-                                If(gm.lessThan(0.0), () => {
-                                    tb.assign(m);
-                                    gB.assign(gm);
-                                }).Else(() => {
-                                    ta.assign(m);
-                                    gA.assign(gm);
-                                });
-                            }
-                            const q = P.add(R.mul(ta.add(tb.sub(ta).mul(gA.div(max(gA.sub(gB), 1e-4))))));
-                            const yq = q.y.sub(U.bezug);
-                            const sq = feld(q.xz);
-                            // WAS DEN STRAHL HIELT: die Krone (ihre Schicht ist näher als die untere Fläche) oder die untere Fläche
-                            const kroneTraf = max(sq.g.sub(yq), yq.sub(sq.b)).lessThan(yq.sub(sq.r));
-                            // ihr Stoff aus der Zelle, die ihn hielt: die höchste der vier Zellen um q (das Dach bzw. die untere
-                            // Fläche), nie das Filter-Mittel (zwischen Krone und Wasser mischte es die Marken)
-                            const zq = floor(q.xz.div(S.texel).sub(0.5));
-                            const platz = (di, dj) => ivec2(mod(zq.add(vec2(di, dj)), float(S.n)));
-                            const hoch = (a, b, kanal) =>
-                                select(feldZelle.load(b)[kanal].greaterThan(feldZelle.load(a)[kanal]), b, a);
-                            const wahl = (kanal) =>
-                                hoch(
-                                    hoch(platz(0, 0), platz(1, 0), kanal),
-                                    hoch(platz(0, 1), platz(1, 1), kanal),
-                                    kanal
-                                );
-                            const zDach = wahl("b"),
-                                zUnten = wahl("r");
-                            const kroneFarbe = laubZeile.load(ivec2(max(feldZelle.load(zDach).a.sub(1.0), 0.0), 0)).rgb;
-                            const st0 = stoffZelle.load(zUnten);
-                            const art = st0.a.mul(255);
-                            const albedo = st0.rgb.mul(st0.rgb);
-                            const e = S.texel;
-                            const hx = feld(q.xz.add(vec2(e, 0))).r.sub(feld(q.xz.sub(vec2(e, 0))).r);
-                            const hz = feld(q.xz.add(vec2(0, e))).r.sub(feld(q.xz.sub(vec2(0, e))).r);
-                            const nrm = normalize(vec3(hx.negate(), 2 * e, hz.negate()));
-                            const sonne = normalize(HU.sunDir);
-                            const neig = clamp(
-                                float(0.3).add(max(dot(nrm, sonne), 0.0).mul(0.7).div(max(sonne.y, 0.2))),
-                                0.0,
-                                2.0
-                            );
-                            // DAS LICHT DES TREFFERS: Laub streut Sonne und Himmel in jede Richtung — an Flanke und Dach das Licht
-                            // des Orts, tiefer in der Krone (die Unterseite des Schirms) durch das Laub darüber (Beer-Lambert,
-                            // e-Länge laubTiefe, über dem Himmelslicht laubGrund); die untere Fläche unter einer Krone im Licht
-                            // durch deren Dicke, der Boden mit seiner Neigung (D10-n2: die Krone als Säule bis zum Boden zeichnete
-                            // den Ufer-Busch unter dem Schirm schwarz)
-                            const durch = (dicke) =>
-                                mix(float(K.laubGrund), float(1.0), exp(max(dicke, 0.0).div(-K.laubTiefe)));
-                            const untenLicht = durch(sq.b.sub(sq.g)).mul(
-                                select(art.greaterThan(1.5), float(1.0), neig)
-                            );
-                            const strahl = select(
-                                kroneTraf,
-                                kroneFarbe.mul(durch(sq.b.sub(yq))),
-                                albedo.mul(untenLicht)
-                            ).mul(HU.irr);
-                            const rq = q.xz.sub(U.mitte).div(kante);
-                            // trifft der Strahl eine höhere Wasser-Fläche (der Fluss oberhalb der Mündung steigt in Stufen), sieht er
-                            // ihren Spiegel — streifend den Himmel: kein Treffer, das Wasser liest den Himmel (D10-n1: der Körper
-                            // des Flusses zeichnete das Ufer schwarz)
-                            const wasserTraf = kroneTraf.not().and(abs(art.sub(1.0)).lessThan(0.5));
-                            aus.assign(
+                    // DER SPIEGEL DES BILDS (A1): der gespiegelte Strahl als Strecke im Schirm gegen die Tiefe des Szenen-Passes —
+                    // was das Bild zeichnet (Baum jeder Art, Haus, Fels, Ufer, Leib, Wolke), steht im See, wo es steht, in der
+                    // Auflösung des Bilds. Die Strecke endet bei `bildWeit` m oder vor der Nah-Ebene (steiler Blick: der Strahl
+                    // läuft auf die Kamera zu), Schritte gleich im Schirm, die Tiefe je Schritt perspektivisch richtig (1/w
+                    // linear); ein Schritt hinter der gezeichneten Fläche um weniger als ihre Dicke ist ein Treffer, die
+                    // Halbierungen legen ihn auf den Rand. Verlässt die Strecke den Schirm, trägt das Feld den Rest des Strahls.
+                    const cP = U.vp.mul(vec4(P, 1.0));
+                    const rv = dot(R, U.vorn);
+                    const tMax = select(
+                        rv.lessThan(-1e-4),
+                        min(cP.w.sub(U.nah.mul(2.0)).div(rv.negate()), float(K.bildWeit)),
+                        float(K.bildWeit)
+                    );
+                    const cE = U.vp.mul(vec4(P.add(R.mul(tMax)), 1.0));
+                    const iwP = float(1).div(cP.w),
+                        iwE = float(1).div(max(cE.w, 1e-4));
+                    const uvP = vec2(cP.x.mul(iwP).mul(0.5).add(0.5), float(0.5).sub(cP.y.mul(iwP).mul(0.5)));
+                    const uvE = vec2(cE.x.mul(iwE).mul(0.5).add(0.5), float(0.5).sub(cE.y.mul(iwE).mul(0.5)));
+                    const du = uvE.sub(uvP);
+                    const austritt = (u, dd) =>
+                        select(
+                            dd.greaterThan(1e-6),
+                            float(1).sub(u).div(dd),
+                            select(dd.lessThan(-1e-6), u.negate().div(dd), float(1e6))
+                        );
+                    const sMax = min(min(austritt(uvP.x, du.x), austritt(uvP.y, du.y)), float(1.0));
+                    const raus = sMax.lessThan(0.999);
+                    const tiefeGr = vec2(tiefe.size());
+                    const linear = (dd) => U.p14.div((webgpuRaum ? dd : dd.mul(2).sub(1)).add(U.p10));
+                    const bild = vec3(0).toVar();
+                    const bildW = float(0).toVar();
+                    const sVor = float(0).toVar();
+                    const wVor = cP.w.toVar();
+                    // wo der Strahl HINTER einer gezeichneten Fläche verschwand (tiefer als ihre Dicke: der Busch am Ufer
+                    // verdeckt, was er trifft) — von dort trägt ihn das Feld; −1: er blieb sichtbar
+                    const sDeck = float(-1).toVar();
+                    Loop(K.bildSchritte, ({ i }) => {
+                        // dicht am Wasser-Punkt fein (das Ufer an der Linie ist wenige Pixel hoch), zum Ende der Strecke weit
+                        const q0 = float(i).add(1).div(K.bildSchritte);
+                        const s = T.pow(q0, float(K.bildDichte)).mul(sMax);
+                        const ws = float(1).div(mix(iwP, iwE, s));
+                        const uv = mix(uvP, uvE, s);
+                        const tx = floor(uv.mul(tiefeGr));
+                        const dz = tiefe.load(ivec2(tx)).r;
+                        // die Mitte des Texels, dessen Tiefe gilt: streifend trägt ein halber Texel 0,07 m Höhe auf 100 m
+                        const uc = tx.add(0.5).div(tiefeGr);
+                        const wz = linear(dz);
+                        const dicke = max(abs(ws.sub(wVor)).mul(2.0), ws.mul(K.bildDicke[0]).add(K.bildDicke[1]));
+                        // was der Strahl trifft, steht ÜBER dem Wasser (`bildUfer` m): die Fläche des Sees selbst ist nie sein
+                        // Bild — streifend liegt ihre Tiefe je Schirm-Zeile Meter weit auseinander (bis A1 die Streifen am Ufer).
+                        // Die Höhe des Texels rechnet nur ein Kandidat (hinter der Fläche, innerhalb ihrer Dicke), nie jeder Schritt
+                        const kandidat = float(0).toVar();
+                        If(dz.lessThan(0.99999).and(ws.greaterThan(wz)).and(ws.sub(wz).lessThan(dicke)), () => {
+                            const h4 = U.invVP.mul(
                                 vec4(
-                                    mix(strahl, luft.farbe(P, q), luft.faktor(P, q)),
-                                    float(1)
-                                        .sub(smoothstep(0.42, 0.5, max(abs(rq.x), abs(rq.y))))
-                                        .mul(select(wasserTraf, float(0.0), float(1.0)))
+                                    uc.x.mul(2).sub(1),
+                                    float(1).sub(uc.y).mul(2).sub(1),
+                                    webgpuRaum ? dz : dz.mul(2).sub(1),
+                                    1
+                                )
+                            );
+                            kandidat.assign(
+                                select(h4.y.div(h4.w).greaterThan(P.y.add(K.bildUfer)), float(1), float(0))
+                            );
+                        });
+                        If(sDeck.lessThan(0.0).and(dz.lessThan(0.99999)).and(ws.sub(wz).greaterThanEqual(dicke)), () =>
+                            sDeck.assign(sVor)
+                        );
+                        If(kandidat.greaterThan(0.5), () => {
+                            const sa = sVor.toVar(),
+                                sb = s.toVar();
+                            for (let k = 0; k < K.bildHalb; k++) {
+                                const sm = sa.add(sb).mul(0.5);
+                                const um = mix(uvP, uvE, sm);
+                                const hinter = float(1)
+                                    .div(mix(iwP, iwE, sm))
+                                    .greaterThan(linear(tiefe.load(ivec2(um.mul(tiefeGr))).r));
+                                If(hinter, () => sb.assign(sm)).Else(() => sa.assign(sm));
+                            }
+                            const uvT = mix(uvP, uvE, sb);
+                            // die Farbe über die Fläche EINES Pass-Texels (1/teil des Schirms, ~3 × 3 Texel des Szenen-Bilds): vier
+                            // bilineare Abgriffe um den Treffer — ein einzelner Abgriff tastete das Bild unter (A1-n1: Salz-Rauschen und
+                            // Mosaik im Spiegel von Laub und Schilf)
+                            const fu = U.texel.mul(0.25);
+                            const tap = (dx, dy) => texture(farbe, uvT.add(fu.mul(vec2(dx, dy)))).level(float(0)).rgb;
+                            bild.assign(tap(-1, -1).add(tap(1, -1)).add(tap(-1, 1)).add(tap(1, 1)).mul(0.25));
+                            // am Schirm-Rand blendet der Treffer in den Rest des Strahls (das Feld, der Himmel): keine Naht
+                            bildW.assign(
+                                smoothstep(
+                                    0.0,
+                                    K.bildRand,
+                                    min(min(uvT.x, float(1).sub(uvT.x)), min(uvT.y, float(1).sub(uvT.y)))
                                 )
                             );
                             Break();
                         });
-                        tVor.assign(t);
-                        gVor.assign(g);
-                        // unter der Höchsten: Schritte von höchstens `fein` Zellen — kein Busch fällt mehr hindurch
-                        t.addAssign(min(max(g.mul(0.9), t.mul(K.wachs).add(S.texel * 0.25)), float(S.texel * K.fein)));
+                        sVor.assign(s);
+                        wVor.assign(ws);
                     });
+                    // DAS FELD trägt nur, was der Schirm nicht zeigt: der Strahl ab dem Punkt, an dem er verdeckt verschwand,
+                    // sonst jenseits seines Austritts (die Weite längs des Strahls aus dem Schirm-Anteil, perspektivisch:
+                    // s·(1/wE) / mix(1/wP, 1/wE, s)); trifft das Bild, ruht es. Bis A1-n2 trug das Feld nur den Austritt: der
+                    // hinter dem Ufer-Busch verschwundene Strahl las den Dunst am Horizont — ein Band ohne Spiegel unter jedem Ufer
+                    const tVon = (s) => tMax.mul(s.mul(iwE)).div(mix(iwP, iwE, s));
+                    const verdeckt = sDeck.greaterThanEqual(0.0);
+                    const t = max(float(1.25), select(verdeckt, tVon(sDeck), tVon(sMax))).toVar();
+                    const tVor = t.toVar();
+                    const gVor = float(0.01).toVar();
+                    If(raus.or(verdeckt).and(bildW.lessThan(1.0)), () => {
+                        Loop(K.schritte, () => {
+                            const p = P.add(R.mul(t));
+                            const rel = p.xz.sub(U.mitte).div(kante);
+                            If(max(abs(rel.x), abs(rel.y)).greaterThan(0.5), () => Break());
+                            const y = p.y.sub(U.bezug);
+                            If(y.greaterThan(U.hMax), () => Break());
+                            // DER SPRUNG: über der Höchsten seines Blocks trifft der steigende Strahl darin nichts — er springt an den
+                            // Rand des Blocks, der Rand ist der neue Punkt über dem Boden (die Höchste deckt den Filter bis dort)
+                            const zb = floor(p.xz.div(blockM));
+                            const hb = hoechste.load(ivec2(mod(zb, float(S.nb)))).r;
+                            If(y.greaterThan(hb), () => {
+                                const randX = zb.x.add(step(0.0, R.x)).mul(blockM);
+                                const randZ = zb.y.add(step(0.0, R.z)).mul(blockM);
+                                const sprung = min(
+                                    abs(randX.sub(p.x)).div(max(abs(R.x), 1e-5)),
+                                    abs(randZ.sub(p.z)).div(max(abs(R.z), 1e-5))
+                                );
+                                tVor.assign(t.add(sprung));
+                                gVor.assign(y.add(R.y.mul(sprung)).sub(hb));
+                                t.assign(tVor.add(0.05));
+                                Continue();
+                            });
+                            const g = abstand(y, feld(p.xz));
+                            If(g.lessThan(0.0), () => {
+                                const ta = tVor.toVar(),
+                                    tb = t.toVar(),
+                                    gA = gVor.toVar(),
+                                    gB = g.toVar();
+                                for (let k = 0; k < K.halbierungen; k++) {
+                                    const m = ta.add(tb).mul(0.5);
+                                    const pm = P.add(R.mul(m));
+                                    const gm = abstand(pm.y.sub(U.bezug), feld(pm.xz));
+                                    If(gm.lessThan(0.0), () => {
+                                        tb.assign(m);
+                                        gB.assign(gm);
+                                    }).Else(() => {
+                                        ta.assign(m);
+                                        gA.assign(gm);
+                                    });
+                                }
+                                const q = P.add(R.mul(ta.add(tb.sub(ta).mul(gA.div(max(gA.sub(gB), 1e-4))))));
+                                const yq = q.y.sub(U.bezug);
+                                const sq = feld(q.xz);
+                                // WAS DEN STRAHL HIELT: die Krone (ihre Schicht ist näher als die untere Fläche) oder die untere Fläche
+                                const kroneTraf = max(sq.g.sub(yq), yq.sub(sq.b)).lessThan(yq.sub(sq.r));
+                                // ihr Stoff aus der Zelle, die ihn hielt: die höchste der vier Zellen um q (das Dach bzw. die untere
+                                // Fläche), nie das Filter-Mittel (zwischen Krone und Wasser mischte es die Marken)
+                                const zq = floor(q.xz.div(S.texel).sub(0.5));
+                                const platz = (di, dj) => ivec2(mod(zq.add(vec2(di, dj)), float(S.n)));
+                                const hoch = (a, b, kanal) =>
+                                    select(feldZelle.load(b)[kanal].greaterThan(feldZelle.load(a)[kanal]), b, a);
+                                const wahl = (kanal) =>
+                                    hoch(
+                                        hoch(platz(0, 0), platz(1, 0), kanal),
+                                        hoch(platz(0, 1), platz(1, 1), kanal),
+                                        kanal
+                                    );
+                                const zDach = wahl("b"),
+                                    zUnten = wahl("r");
+                                const kroneFarbe = laubZeile.load(
+                                    ivec2(max(feldZelle.load(zDach).a.sub(1.0), 0.0), 0)
+                                ).rgb;
+                                const st0 = stoffZelle.load(zUnten);
+                                const art = st0.a.mul(255);
+                                const albedo = st0.rgb.mul(st0.rgb);
+                                const e = S.texel;
+                                const hx = feld(q.xz.add(vec2(e, 0))).r.sub(feld(q.xz.sub(vec2(e, 0))).r);
+                                const hz = feld(q.xz.add(vec2(0, e))).r.sub(feld(q.xz.sub(vec2(0, e))).r);
+                                const nrm = normalize(vec3(hx.negate(), 2 * e, hz.negate()));
+                                const sonne = normalize(HU.sunDir);
+                                const neig = clamp(
+                                    float(0.3).add(max(dot(nrm, sonne), 0.0).mul(0.7).div(max(sonne.y, 0.2))),
+                                    0.0,
+                                    2.0
+                                );
+                                // DAS LICHT DES TREFFERS: Laub streut Sonne und Himmel in jede Richtung — an Flanke und Dach das Licht
+                                // des Orts, tiefer in der Krone (die Unterseite des Schirms) durch das Laub darüber (Beer-Lambert,
+                                // e-Länge laubTiefe, über dem Himmelslicht laubGrund); die untere Fläche unter einer Krone im Licht
+                                // durch deren Dicke, der Boden mit seiner Neigung (D10-n2: die Krone als Säule bis zum Boden zeichnete
+                                // den Ufer-Busch unter dem Schirm schwarz)
+                                const durch = (dicke) =>
+                                    mix(float(K.laubGrund), float(1.0), exp(max(dicke, 0.0).div(-K.laubTiefe)));
+                                const untenLicht = durch(sq.b.sub(sq.g)).mul(
+                                    select(art.greaterThan(1.5), float(1.0), neig)
+                                );
+                                const strahl = select(
+                                    kroneTraf,
+                                    kroneFarbe.mul(durch(sq.b.sub(yq))),
+                                    albedo.mul(untenLicht)
+                                ).mul(HU.irr);
+                                const rq = q.xz.sub(U.mitte).div(kante);
+                                // trifft der Strahl eine höhere Wasser-Fläche (der Fluss oberhalb der Mündung steigt in Stufen), sieht er
+                                // ihren Spiegel — streifend den Himmel: kein Treffer, das Wasser liest den Himmel (D10-n1: der Körper
+                                // des Flusses zeichnete das Ufer schwarz)
+                                const wasserTraf = kroneTraf.not().and(abs(art.sub(1.0)).lessThan(0.5));
+                                aus.assign(
+                                    vec4(
+                                        mix(strahl, luft.farbe(P, q), luft.faktor(P, q)),
+                                        float(1)
+                                            .sub(smoothstep(0.42, 0.5, max(abs(rq.x), abs(rq.y))))
+                                            .mul(select(wasserTraf, float(0.0), float(1.0)))
+                                    )
+                                );
+                                Break();
+                            });
+                            tVor.assign(t);
+                            gVor.assign(g);
+                            // unter der Höchsten: Schritte von höchstens `fein` Zellen — kein Busch fällt mehr hindurch
+                            t.addAssign(
+                                min(max(g.mul(0.9), t.mul(K.wachs).add(S.texel * 0.25)), float(S.texel * K.fein))
+                            );
+                        });
+                    });
+                    // DER HIMMEL DES BILDS: bleibt die Strecke im Schirm ohne Treffer, steht in Richtung R der gezeichnete Himmel
+                    // (Kuppel mit Wolken, Sonne, Mond — Tiefe 1,0) an der Stelle, an der R im Unendlichen liegt: er IST der
+                    // Spiegel. Deckt dort ein Ding den Himmel, das der Strahl nicht traf, rechnet der Pass die Himmels-Sicht (unten);
+                    // was das Feld vom verdeckten Strahl hielt, liegt davor
+                    If(raus.not().and(bildW.lessThan(1.0)).and(aus.a.lessThan(1.0)), () => {
+                        const cI = U.vp.mul(vec4(R, 0.0));
+                        const iwI = float(1).div(max(cI.w, 1e-6));
+                        const uvI = vec2(cI.x.mul(iwI).mul(0.5).add(0.5), float(0.5).sub(cI.y.mul(iwI).mul(0.5)));
+                        const imBild = cI.w
+                            .greaterThan(0.0)
+                            .and(min(uvI.x, uvI.y).greaterThan(0.0))
+                            .and(max(uvI.x, uvI.y).lessThan(1.0));
+                        If(imBild.and(tiefe.load(ivec2(uvI.mul(tiefeGr))).r.greaterThan(0.99999)), () => {
+                            aus.assign(vec4(mix(texture(farbe, uvI).level(float(0)).rgb, aus.rgb, aus.a), 1.0));
+                        });
+                    });
+                    // DER HIMMEL DES RESTS (A1-n1): wo weder Bild noch Feld den Strahl ganz deckt, die Himmels-Sicht der Kuppel in
+                    // Richtung R (`_himmelSicht`, die EINE Atmosphäre mit ihren Wolken) — im Pass, in 1/teil, nur bei Änderung;
+                    // bis A1-n1 rechnete das Wasser sie je eigenem Pixel in jedem Bild (Wasser 5,36 → 6,47 ms, Radeon). Der Pass
+                    // deckt jedes Wasser-Pixel ganz (Bild über Feld über Himmel, Deckung 1), sonst schreibt er Null: die
+                    // Ausgabe ist vorab multipliziert, die bilineare Abtastung des Wassers mischt am Ufer richtig.
+                    const rest = aus.rgb.toVar();
+                    If(aus.a.lessThan(1.0).and(bildW.lessThan(1.0)), () => {
+                        const Rh = normalize(vec3(R.x, max(R.y, float(HG.hor[0])), R.z));
+                        rest.assign(mix(this._himmelSicht(Rh), aus.rgb, aus.a));
+                    });
+                    aus.assign(vec4(mix(rest, bild, bildW), 1.0));
                 });
             });
             return aus;
@@ -832,10 +993,8 @@ class AnazhRealm_bild_sicht {
             fract,
             floor,
             max,
-            pow,
             normalize,
             cross,
-            reflect,
             select: cond,
             Fn,
             uint,
@@ -847,8 +1006,6 @@ class AnazhRealm_bild_sicht {
             cameraNear,
             cameraFar,
             exp,
-            texture,
-            equirectUV,
         } = TSL;
         void mat3; // potenzielle Alternative zu modelNormalMatrix
 
@@ -3261,14 +3418,28 @@ AnazhRealm.FELD_PANO = Object.freeze({
 // dem Dach `laubGrund`), die Krone im Feld um `kronenSaum` m gesäumt (die Zelle zählt, die ihr Laub berührt). Die Nachlese
 // backt das Feld neu, wenn neue Kronen darin stehen (höchstens je nachleseMs; die Krone liest das Kronen-Buch, Beipack
 // `__krone` des Foundry-Workers). Der Pass zahlt nur bei Änderung: das Auge weiter als `ruheM` m, der Blick weiter als `ruheRad`,
-// Licht oder Luft um mehr als `ruheLicht` (`_spiegelPassWach`).
+// Licht oder Luft um mehr als `ruheLicht` (`_spiegelPassWach`). ZUERST spiegelt das BILD (A1): der Strahl als Strecke im Schirm
+// (bis `bildWeit` m) in `bildSchritte` Schritten gegen die Tiefe des Szenen-Passes, Treffer hinter der Fläche um
+// weniger als ihre Dicke (`bildDicke`: Anteil des Abstands + m) über dem Wasser (höher als `bildUfer` m), `bildHalb` Halbierungen,
+// am Schirm-Rand (`bildRand`) blendet er in das Feld — das trägt nur den Strahl jenseits des Schirms; die Schritte liegen nach
+// q^`bildDichte` (dicht am Wasser-Punkt: das Ufer an der Linie ist wenige Pixel hoch), im Stand rechnet er je `bildRuheMs` neu,
+// frühestens nach `bildRuheBilder` Bildern (seltener als jedes 20. Bild: der Lauf im Stand trägt nie das p95).
 AnazhRealm.SPIEGEL = Object.freeze({
+    bildSchritte: 48,
+    bildDichte: 2,
+    bildRuheMs: 500,
+    bildRuheBilder: 24,
+    bildUfer: 0.12,
+    teil: 4,
+    bildWeit: 3000,
+    bildDicke: [0.04, 0.5],
+    bildHalb: 5,
+    bildRand: 0.03,
     n: 384,
     texel: 2,
     drift: 60,
     zeilen: 16,
     block: 8,
-    teil: 4,
     schritte: 96,
     wachs: 0.04,
     fein: 0.75,

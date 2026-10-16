@@ -844,6 +844,8 @@ class AnazhRealm_bild_kosten {
         st._gpuKehrausT = jetzt;
         const lebt = new Set();
         st.scene.traverse((o) => {
+            // eine Senke in der Arena (G1) zeichnet nicht: ihre Gestalt trägt das Lager, ihre Instanzen die Arena
+            if (o.__arena) return;
             const g = o.geometry;
             if (g && g.attributes) {
                 for (const k in g.attributes) lebt.add(g.attributes[k]);
@@ -2674,7 +2676,8 @@ class AnazhRealm_bild_kosten {
         const liste = art === "haupt" ? S.wahlHaupt : S.wahlSchatten;
         if (liste.length) this._instanzWahlZurueck(liste); // ein Pass ohne Nachher-Haken (Abbruch) hinterlässt nichts
         S.wahlNeu = 0;
-        if (set.size === 0) return;
+        // die Arenen der Bündel lesen die Wahl des Hauptbilds (G1, `_arenaTakt`): ihre Plätze ziehen, was sie eben legte
+        if (set.size === 0) return void (art === "haupt" && this._arenaTakt());
         const L = S.lage;
         for (const g of set) {
             if (g.wahl !== art) continue;
@@ -2708,10 +2711,11 @@ class AnazhRealm_bild_kosten {
             }
             AnazhRealm._instanzZahl(m, kk);
             liste.push(g);
-            if (art === "haupt" && (tausch > 0 || g._wahlZahl !== kk)) this._archMeshBundleTouch(m);
+            if (art === "haupt" && !m.__arena && (tausch > 0 || g._wahlZahl !== kk)) this._archMeshBundleTouch(m); // die Arena liest die Wahl im Takt (G1)
             if (art === "haupt") g._wahlZahl = kk;
             this._instanzWahlMerke(g, L, kk);
         }
+        if (art === "haupt") this._arenaTakt();
     }
 
     // STEHT die Wahl einer Gruppe (Welle C)? Dieser Pass (`L.key`: haupt · k<i>) wählte sie zuletzt in derselben Lage
@@ -2749,7 +2753,7 @@ class AnazhRealm_bild_kosten {
             tausch++;
         }
         w.ordnung = g._ordnung | 0;
-        if (tausch > 0 && g.wahl === "haupt") this._archMeshBundleTouch(m);
+        if (tausch > 0 && g.wahl === "haupt" && !m.__arena) this._archMeshBundleTouch(m);
         return true;
     }
 
@@ -3359,7 +3363,67 @@ AnazhRealm._diaetGang = function (ro, nbs) {
         for (const b of g.bindings)
             if (b.isSampledTexture === true && b.textureNode && texturen.indexOf(b.textureNode) < 0)
                 texturen.push(b.textureNode);
-    return { vor, knoten, eigenVor, eigenKnoten, gruppen, texturen };
+    // (9) die FREIEN Uniforms der eigenen Gruppen (nicht geteilt): kein Knoten des Programms stellt sie (die Bau-Uniforms
+    // wie `modelWorldMatrix` hält ein Objekt-Knoten in `uniformNode`, die Material-Verweise in `node` — der Vendor stellt sie,
+    // equals() prüft ihr Objekt) — ein Schreiber setzt `.value`
+    const gespeist = new Set();
+    for (const liste of [nbs.updateNodes, nbs.updateBeforeNodes, nbs.updateAfterNodes])
+        for (const n of liste || [])
+            for (const k in n) {
+                const v = n[k];
+                if (v && v.isUniformNode === true) gespeist.add(v);
+            }
+    const frei = [];
+    for (const g of ro.getBindings()) {
+        const b0 = g.bindings && g.bindings[0];
+        if (b0 && b0.groupNode && b0.groupNode.shared === true) continue;
+        for (const b of g.bindings) {
+            if (b.isUniformBuffer !== true || !b.uniforms) continue;
+            for (const u of b.uniforms) {
+                const n = u.nodeUniform && u.nodeUniform.node;
+                if (n && n.isUniformNode === true && n.getUpdateType() === "none" && !gespeist.has(n)) frei.push(u);
+            }
+        }
+    }
+    return { vor, knoten, eigenVor, eigenKnoten, gruppen, texturen, frei };
+};
+// (9) DER UNIFORM-WÄCHTER (A1-n1): wechselte eine freie Uniform einer eigenen Gruppe seit dem letzten Blick dieses
+// Render-Objekts? Die Diät lädt nur geteilte Gruppen hoch — eine Objekt-Uniform, die ein Schreiber stellt, fror unter ihr
+// ein (D10-n1 die Ansicht des Spiegels, A1-n1 die Wolken-Uhr seines Himmels: Puffer 74,8 gegen Knoten 228,0). Jetzt folgt
+// jedem Wechsel EIN Refresh, und der EINE Melder nennt den Stoff und die Uniform ohne Heimat beim Namen (das Pflicht-Paar
+// `_uniformHeimatTeilen` spart den Refresh). Der erste Blick merkt die Werte (die Erst-Anlage der Vendor-Bahn lud sie eben
+// hoch); liefert die gewechselte Uniform, sonst null.
+AnazhRealm._diaetFreiAnders = function (obs, ro, k) {
+    if (k.frei.length === 0) return null;
+    const d = obs.getRenderObjectData(ro);
+    const erst = !d._anazhFreiW;
+    const w = d._anazhFreiW || (d._anazhFreiW = []);
+    let anders = null,
+        i = 0;
+    // je Zahl vergleichen und merken — keine Kopie des Werts (die Prüfung läuft je Render-Objekt und Render)
+    const zahl = (x, u) => {
+        if (w[i] !== x) {
+            w[i] = x;
+            if (!erst && anders === null) anders = u;
+        }
+        i++;
+    };
+    for (const u of k.frei) {
+        const v = u.getValue();
+        if (typeof v === "number" || typeof v === "boolean") zahl(+v, u);
+        else if (v && (v.isMatrix4 === true || v.isMatrix3 === true)) for (const e of v.elements) zahl(e, u);
+        else if (v && v.isColor === true) {
+            zahl(v.r, u);
+            zahl(v.g, u);
+            zahl(v.b, u);
+        } else if (v && typeof v.x === "number") {
+            zahl(v.x, u);
+            zahl(v.y, u);
+            zahl(v.z === undefined ? 0 : v.z, u);
+            zahl(v.w === undefined ? 0 : v.w, u);
+        }
+    }
+    return anders;
 };
 // (6) Wechselte eine Textur des Programms (Id oder Version) seit dem letzten Blick dieses Render-Objekts?
 AnazhRealm._diaetVorTextur = function (obs, ro) {
@@ -3522,5 +3586,23 @@ AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
     }
     // (6) NACH dem Gang: der Zug des ersten Render-Objekts kann die Textur eben neu angelegt haben
     if (AnazhRealm._diaetVorTextur(obs, ro)) return true;
+    // (9) eine freie Uniform der eigenen Gruppen wechselte (ein Schreiber setzte `.value`)
+    const nbs = ro.getNodeBuilderState();
+    const frei = AnazhRealm._diaetFreiAnders(
+        obs,
+        ro,
+        nbs._anazhGang || (nbs._anazhGang = AnazhRealm._diaetGang(ro, nbs))
+    );
+    if (frei) {
+        if (obs._anazhWelt) {
+            const n = frei.nodeUniform.node;
+            obs._anazhWelt._bruchMelden(
+                `DIÄT: ${(obj && obj.name) || (ro.material && ro.material.type)} — die Objekt-Uniform ${
+                    n.name || frei.name
+                } wechselte ohne geteilte Heimat (Pflicht-Paar _uniformHeimatTeilen): der Uniform-Wächter frischt je Wechsel voll auf`
+            );
+        }
+        return true;
+    }
     return obs.equals(ro, obs.getLights(ro.lightsNode, rid), rid) !== true;
 };

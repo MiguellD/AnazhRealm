@@ -389,7 +389,7 @@ class AnazhRealm_siedlung_ort {
         const filmW = TSL.min(fres.add(rand.mul(FI.rand[2])).add(F(FI.basis)), F(FI.gewichtMax)).mul(
             act.mul(FI.act[1]).add(FI.act[0])
         );
-        // der Film spiegelt die Heimat: den EINEN Himmel (`_himmelUmgebungTex`, wie das Wasser) in der Spiegel-Richtung, aus dem
+        // der Film spiegelt die Heimat: die EINE Umgebung (`_himmelUmgebungTex`, wie die IBL jedes PBR-Stoffs) in der Spiegel-Richtung, aus dem
         // Rahmen des Tors in die Welt gedreht (Stoff-Wert `dreh` = rotationY), in seinen Interferenz-Farben
         const Rf = TSL.reflect(rd, N);
         const cr = TSL.cos(dreh);

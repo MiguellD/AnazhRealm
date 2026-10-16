@@ -513,10 +513,10 @@
                 "werkzeug": "werkbank bild 1855 2.6 -6168 1700 4.5 -6168 --w 1920 --h 1080 --klasse '^(wasserSatz|farWater|chunk-water-[a-z]+)$' --ist wasser (der See 1816/−6168, Ego; Third dieselbe Linie aus 4 m Höhe hinter dem Spieler)",
                 "messung": {
                     "werkzeug": "bild",
-                    "datum": "2026-10-16T11:05:09.185Z",
+                    "datum": "2026-10-16T20:17:43.608Z",
                     "stand": {
-                        "version": "18.546.2",
-                        "sha": "826717edb292b5462a836075e6eba9581cb93659"
+                        "version": "18.546.5",
+                        "sha": "fafc8341e678a3d9f5ced4a7f8bba58057048f15+geaendert"
                     },
                     "geraet": {
                         "backend": "WebGPU",
@@ -527,14 +527,14 @@
                     "ausdruck": "^(wasserSatz|farWater|chunk-water-[a-z]+)$",
                     "schwelle": 18,
                     "rauschen": {
-                        "anteil": 0.000709,
-                        "pixel": 1471,
-                        "max": 119
+                        "anteil": 0,
+                        "pixel": 0,
+                        "max": 0
                     },
-                    "misch": 1471,
+                    "misch": 28,
                     "klassen": {
-                        "farWater": {"objekte":1,"spiegelTreue":null,"sp":[0,0,0,0,0,0],"zweiton":0,"zt":0,"weiss":0,"wt":0,"wtZiel":null,"bunt":7.61,"pixel":873,"deckung":0.0004,"deckungUnten":0,"luma":130.26,"kontrast":0.0496,"detail":0.0318,"nyquist":0.0068,"ek":9.2,"eg":1330.3,"silhouette":15.0948,"kante":null,"kr":0},
-                        "wasserSatz": {"objekte":1,"spiegelTreue":0.3176,"sp":[14451,0,0,32646868.01,32646868.01,10370123.18],"zweiton":0,"zt":0,"weiss":0.0001,"wt":76,"wtZiel":null,"bunt":14.74,"pixel":941711,"deckung":0.4541,"deckungUnten":1,"luma":72.81,"kontrast":0.44,"detail":0.0074,"nyquist":0.0231,"ek":5967.3,"eg":252915.1,"silhouette":7.7812,"kante":0.7623,"kr":4269}
+                        "farWater": {"objekte":1,"spiegelTreue":null,"sp":[0,0,0,0,0,0],"zweiton":0,"zt":0,"weiss":0,"wt":0,"wtZiel":null,"bunt":14.55,"pixel":12,"deckung":0,"deckungUnten":0,"luma":138.39,"kontrast":0.0533,"detail":null,"nyquist":null,"ek":0,"eg":0,"silhouette":3.4641,"kante":0.065,"kr":12},
+                        "wasserSatz": {"objekte":1,"spiegelTreue":0.5237,"sp":[14598,0,0,38769786.88,38769786.88,20302620.65],"zweiton":0,"zt":0,"weiss":0.0356,"wt":33716,"wtZiel":null,"bunt":13.69,"pixel":947204,"deckung":0.4568,"deckungUnten":1,"luma":72.28,"kontrast":0.4324,"detail":0.0231,"nyquist":0.0163,"ek":15119.3,"eg":912483.7,"silhouette":6.8852,"kante":0.7303,"kr":3862}
                     },
                     "abstand": null,
                     "gesicht": null,

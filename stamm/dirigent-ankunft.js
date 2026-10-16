@@ -262,6 +262,7 @@ class AnazhRealm_dirigent_ankunft {
                                 "die CPU-Gesetze tragen die Welt GANZ; der Fern-Ring verfeinert auf CPU (+ eigenem WebGPU-Device, falls vorhanden).",
                             "WARN"
                         );
+                        AnazhRealm._arenaKann(renderer); // die Geometrie-Arena (G1) fällt mit, laut (`__arenaOhne`, W3)
                     }
                 } catch (_e) {
                     /* fail-soft — die Wand selbst urteilt je Konsument */
