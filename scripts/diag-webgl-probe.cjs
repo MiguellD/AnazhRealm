@@ -86,7 +86,7 @@ const server = statikServer();
                 Number.isFinite(pm.position.y) &&
                 Number.isFinite(pm.position.z)
             );
-            // Der Substanz-Schuss (diag-blick-Rezeptur, WebGL-Backend) nach den Programmen: die Karte kompiliert parallel, ein Schuss davor war schwarz (GTX)
+            // Der Substanz-Schuss (die diag-blick-Rezeptur, GAME-Renderer = WebGL-Backend):
             const T = THREE;
             const cam = st.camera;
             if (pm && cam) {
@@ -100,7 +100,7 @@ const server = statikServer();
             const rt = new T.RenderTarget(w, h);
             const prev = rend.getRenderTarget();
             rend.setRenderTarget(rt);
-            await rend.compileAsync(st.scene, cam).then(() => rend.renderAsync(st.scene, cam));
+            await rend.renderAsync(st.scene, cam);
             let px = null;
             if (typeof rend.readRenderTargetPixelsAsync === "function")
                 px = await rend.readRenderTargetPixelsAsync(rt, 0, 0, w, h);
