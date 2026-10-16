@@ -29,8 +29,8 @@ const {
 } = require("./lib/software-gpu.cjs");
 
 // Die Zeit-Linsen an der Weiche: ihr Urteil ist auf swiftshaders Zeit geeicht (hitch Band 1 zählt LongTasks des
-// swiftshader-Boots; arch-perf misst FPS und ms). Eine Zähl-, Bild- oder Struktur-Linse steht hier nie.
-const ZEIT_LINSEN = ["scripts/diag-hitch-telemetrie.cjs", "scripts/diag-arch-perf.cjs"];
+// swiftshader-Boots). Eine Zähl-, Bild- oder Struktur-Linse steht hier nie.
+const ZEIT_LINSEN = ["scripts/diag-hitch-telemetrie.cjs"];
 
 // W5 je Zeit-Linse: jeder Start an der Weiche trägt `zeit: true`.
 function zeitFunde(name, src) {
@@ -57,9 +57,7 @@ function dateien(dir) {
 }
 
 // Zeilen-Kommentare und Block-Kommentare fallen, bevor gesucht wird (ein Kommentar erzählt, ein Literal startet).
-function ohneKommentare(src) {
-    return src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:"'`])\/\/.*$/gm, "$1");
-}
+const { ohneKommentare } = require("./lib/stamm.cjs");
 
 function funde(name, src) {
     const f = [];

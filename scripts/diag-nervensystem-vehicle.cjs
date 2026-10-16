@@ -39,9 +39,7 @@ function check(name, ok, detail) {
     if (!ok) errs.push(name);
 }
 // Kommentare strippen (die V18.267-Falle: erklaerende Kommentare zitieren die Muster woertlich).
-function stripComments(src) {
-    return src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "");
-}
+const stripComments = stammLib.ohneKommentare;
 // Der Methoden-Body per Klammer-Zaehlung (das diag-pipeline-constitution-Muster).
 function fnBody(src, sigRe) {
     const m = sigRe.exec(src);
