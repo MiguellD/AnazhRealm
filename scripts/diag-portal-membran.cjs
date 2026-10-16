@@ -596,18 +596,18 @@ async function blickStufe(check) {
         }
 
         // ── F: Tür-Flügel öffnen sich dem Reisenden (V18.465) ──
-        // Erst MATERIALISIEREN (das Asset ist async — der Rewarm-Weg von Hand,
-        // das Gestalt-Gate-C-Muster), dann Nähe + Ticks.
-        const dlF = performance.now() + 90000;
-        while (!entry.instanced && performance.now() < dlF) {
-            r._rebuildArchitectureMesh(entry);
-            if (entry.instanced) break;
-            await new Promise((r2) => setTimeout(r2, 300));
-        }
-        res.fInstanced = entry.instanced === true;
+        // Erst die NÄHE (die Stufe misst vom Auge, K43: Stufe 0 bis 9,5 m — nur sie trägt die Flügel), dann MATERIALISIEREN
+        // (das Asset ist async — der Rewarm-Weg von Hand, ein gesetzter Bau wechselt im Takt wie im Spiel), dann Ticks.
         p.x = ex;
         p.z = ez + 2.0;
         p.y = ey + 1.0;
+        const dlF = performance.now() + 90000;
+        while (!(entry.instanced && entry._lodLevel === 0) && performance.now() < dlF) {
+            if (entry.instanced) r._tickArchitectureLOD(99, r._lodAuge());
+            else r._rebuildArchitectureMesh(entry);
+            await new Promise((r2) => setTimeout(r2, 300));
+        }
+        res.fInstanced = entry.instanced === true;
         for (let i = 0; i < 40; i++) r._tickPortalMembranes(3.8 + i * 0.016);
         const recF = r._portalMembranes.get(entry.id);
         res.f = {

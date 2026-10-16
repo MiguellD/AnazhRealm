@@ -2651,7 +2651,9 @@ class AnazhRealm_Z20a {
         if (q && q.plan) {
             const f = this._foundry;
             let n = 0;
-            while (q.idx < q.plan.slots.length && n < (ueber ? 1 : A.perTick)) {
+            // unter dem Ladeschirm hebt der Zug Slots bis zur Frist des Lade-Frames (`_kappeOffen`, K60-2): die Häuser der
+            // Ankunft gehören ins erste Weltbild (Term „dorf")
+            while (q.idx < q.plan.slots.length && this._kappeOffen(n, ueber ? 1 : A.perTick)) {
                 const si = q.idx++;
                 this._spawnSettlementSlot(q.plan.slots[si], q.origin, f, { plan: q.plan, si }); // mit seinen Wandlaternen (K66-2)
                 n++;

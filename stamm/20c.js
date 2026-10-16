@@ -2036,8 +2036,23 @@ class AnazhRealm_Z20c {
         // DIE EINE STUFEN-WAHL: der Kalt-Schätzer fragt dieselbe Wahl wie der LOD-Tick — Wahrnehmungs-Distanz aus der
         // Sichthöhe (`_lodTreeVisHeight`, 0 = roh für Nicht-Bäume), ohne Hysterese-Zustand. Vorher las er nur die rohe
         // Distanz: die Rampe setzte einen großen Baum in 40 m auf die Karte (dithernd, grau), und der LOD-Tick holte
-        // ihn erst Takte später auf L1 (5 Wechsel je Takt, 04.10. an der Mess-Wiese 191 Plätze im ersten Takt).
-        return this._chooseLODForDistance(d, undefined, this._lodTreeVisHeight(entry));
+        // ihn erst Takte später auf L1 (5 Wechsel je Takt, 04.10. an der Mess-Wiese 191 Plätze im ersten Takt). Nennt die Art
+        // ihre Grenzen (K43: Haus, Tor), fragt er sie wie der Takt — bis B2 las er dort die Baum-Distanzen 12/26 m: das
+        // Ring-Tor in 11 m bestellte kalt seine L0 (Grenze 9,5 m), der Takt wechselte danach auf die L1 (Radeon kalt an
+        // Genesis: 7 Tor-L0 und 9 Tor-L1 vor dem ersten Bild). In der Ankunft aus der Ferne (B2) wählt er die Grobstufe.
+        const treeLike = !!entry._lodSpecies && Number.isFinite(entry._lodVariantIndex);
+        const G = treeLike ? null : this._archStufenGrenzen(entry);
+        if (G)
+            return AnazhRealm._stufeNachGrenzen(
+                d * this._ankunftsFerne(),
+                undefined,
+                G,
+                Number.isFinite(entry.scale) && entry.scale > 0 ? entry.scale : 1
+            );
+        const visH = this._lodTreeVisHeight(entry);
+        // ein Baum ohne bekannte Höhe hat in der Ankunft kein Urteil der Nähe: er steht als Karte (sie bestellt die Höhe)
+        if (visH === null && this._ankunftsFerne() > 1) return 2;
+        return this._chooseLODForDistance(d, undefined, visH);
     }
     // ==================== JAHRESZEIT (Vorlagen-Phaenologie) ====================
     _seasonName(phase) {

@@ -385,7 +385,7 @@ jobs:
                   grep -qx "✅ Alle Invarianten OK" playtest-voll.log
 
             - name: Tier-Anatomie (Welle 5 — die gebackene Gestalt je Art gegen ihre Natur-Bänder)
-              if: matrix.gruppe == 5
+              if: matrix.gruppe == 1
               # GPU-frei, reines Node (three r128 im vm wie im Foundry-Worker): der Kreatur-Bäcker backt Wolf · Fuchs ·
               # Bär · Hirsch, die Linse misst an der Haut der Ruhe-Pose (normiert auf den Widerrist) Widerrist in Metern,
               # Brusttiefe, Bauch-Aufzug, Rumpf-Länge, Unterarm, Kopf-Höhe, Ohr, Rute und das Fell-Muster am Vertex
@@ -404,15 +404,15 @@ jobs:
             # (237–491), die längste GPU-Zeit der Batterie — jetzt zwei Teile in zwei Welten und zwei Gruppen, jedes Band in
             # GENAU einem Teil (scripts/diag-hitch-telemetrie.cjs --teil); `npm run gate:hitch-telemetrie` fährt beide.
             - name: Erst-Zeichnungs-Wand Teil 1 (echter Renderer — Boot-Konsum, drei neue Stoffe ohne synchrone Pipeline, Neubau, Bundle-Neubau)
-              if: matrix.gruppe == 17
+              if: matrix.gruppe == 18
               run: node scripts/diag-hitch-telemetrie.cjs --teil=1
 
             - name: Erst-Zeichnungs-Wand Teil 2 (echter Renderer — Bundle ohne Anmeldung, hängender Fehler-Scope, Beweis-Aufnahme, Absage)
-              if: matrix.gruppe == 13
+              if: matrix.gruppe == 17
               run: node scripts/diag-hitch-telemetrie.cjs --teil=2
 
             - name: Page-Error-Wächter (Runtime-Wurzel — die V17.20-Klasse fail-fast)
-              if: matrix.gruppe == 1
+              if: matrix.gruppe == 2
               # Bootet die Seite GPU-frei + sammelt jeden Runtime-Throw / echten Console-Error und
               # exitet non-zero an der WURZEL (mit Stack) — BEVOR der Playtest in Folge-Fehlern
               # ertrinkt. Fängt einen `is not a function`-Boot-Tod (ein verrutschter Methoden-Schnitt),
@@ -420,7 +420,7 @@ jobs:
               run: npm run gate:page-error
 
             - name: Fenster-Wand (ein Fenster-Wechsel macht die Welt nie wieder schwarz)
-              if: matrix.gruppe == 8
+              if: matrix.gruppe == 9
               # Faehrt den ECHTEN Frame (swiftshader, kienspan mit der Pixel-Kappe des Holzes nah, das Fern-Wasser als ruhender
               # Leser des Tiefen-Abbilds) mit LAUFENDEM Loop am Bach der Mess-Wiese: vergroessern, DPR 2 (die Kappe stellt die
               # Pixel-Ratio Frames nach dem Ereignis), zurueck, die Pixel-Ratio allein — je Schritt keine WebGPU-Validierung,
@@ -429,7 +429,7 @@ jobs:
               run: npm run gate:fenster-wechsel
 
             - name: Schirm-Wand (ein kleinerer Schirm traegt hoechstens gleich viel Welt, jede Schirm-Groesse aus der EINEN Quelle)
-              if: matrix.gruppe == 11
+              if: matrix.gruppe == 13
               # Faehrt die echte Welt (Null-Renderer, Foundry an, der Zeichenpuffer ist der Canvas) durch den ECHTEN
               # resize-Handler in drei Fenstergroessen, gespiegelt: je Pass und Taeter-Klasse zaehlt das kleinere Fenster
               # hoechstens so viel wie das groessere (Spannen, beide Klammern); das Fell-Gesetz liest den EINEN Schirm-
@@ -437,21 +437,21 @@ jobs:
               run: npm run gate:schirm-monotonie
 
             - name: Stellvertreter-Wand (der Feld-Pass marcht nur in den Hüllen seiner Sätze, das Panorama nur am Himmel)
-              if: matrix.gruppe == 5
+              if: matrix.gruppe == 3
               # Fährt die ECHTEN Organ-Methoden (GPU-frei): die Obergrenze folgt dem höchsten belegten Slot, der Takt setzt
               # die Instanzen und zieht Raster und Strahl aus EINER Matrix, der March-Draw trägt Rückseiten-Stellvertreter mit
               # Fragment-Tiefe, das Panorama hat weder Schleife noch Fragment-Tiefe (früher Tiefentest); die Selbsttests feuern.
               run: npm run gate:feld-stellvertreter
 
             - name: Schatten-Wand (je CSM-Kaskade am echten Leser — nah im Regler-Takt, fern seltener)
-              if: matrix.gruppe == 1
+              if: matrix.gruppe == 7
               # Fährt den ECHTEN _loopShadowUpdate gegen Schein-Kaskaden (GPU-frei): autoUpdate aus, nah jeden Frame
               # (Intervall 1) bzw. höchstens jeden nahMax-ten, fern im fernFaktor-Takt, ein Sonnen-Sprung erzwingt
               # beide; der Selbsttest zeigt, dass der alte Schreiber (renderer.shadowMap.needsUpdate) keine erreicht.
               run: npm run gate:schatten-takt
 
             - name: Werfer-Wand (jede Kaskade misst ihre Scheibe, jeder Schatten-Pass waehlt seine Werfer)
-              if: matrix.gruppe == 4
+              if: matrix.gruppe == 5
               # Faehrt die ECHTEN Methoden an einer echten CSM-Instanz (GPU-frei): die Box deckt jeden Boden-Punkt im
               # Blick, den der Addon-Shader liest (Mittag/Abend), ist eng, rastet und schnappt aufs Texel-Raster; die
               # Karte traegt die laengste Box-Kante bei texelM, ihre Ziele sind r8 + 16 bit ab dem Bau; je Pass nur
@@ -469,7 +469,7 @@ jobs:
               run: npm run gate:schatten-bias
 
             - name: Schatten am Terminator (1110-5 - die Hang-Akne, die Zuwendung der wahren Normale)
-              if: matrix.gruppe == 1
+              if: matrix.gruppe == 6
               # Die Werkbank im Software-Holz mit Schatten (holz voll) an der 30-Grad-Rampe der Pruefbuehne, die Sonne am Terminator
               # (22 Grad aus Azimut 45, N.L -0,002): von oben je ein Schuss mit und ohne Schatten, gemessen nur auf der Rampe - ROT
               # beim Namen, wenn der Schatten die Rampe fleckig macht (main 2c8deda9: 11,7 % gegen 0,2 %). Lokal 78-119 s, CI 181 s
@@ -477,7 +477,7 @@ jobs:
               run: npm run gate:schatten-terminator
 
             - name: Persistenz-Härtung (rotierender Backup + korruptions-sicherer Load)
-              if: matrix.gruppe == 7
+              if: matrix.gruppe == 3
               # Beweist headless, dass ein korrupter/partieller localStorage-Write die Welt NICHT mehr
               # vernichtet: saveState rotiert einen .bak-Backup, der Load fällt bei korruptem Haupt-
               # Stand darauf zurück (beide korrupt → ehrliches null). Schliesst den Datenverlust-Riss.
@@ -487,14 +487,14 @@ jobs:
               run: npm run gate:persistence
 
             - name: Carve-Neubau ueber den Worker (der Grab-Stall an der Wurzel)
-              if: matrix.gruppe == 4
+              if: matrix.gruppe == 1
               # Beweist headless: der Neubau eines Edit-/Spieler-Chunks geht bei gesundem UND bei ueberzogenem Frame
               # ueber den Worker (K69-2: kein synchroner Chunk-Bau im Takt, die Flut-Saat reist mit dem Auftrag), nur
               # ein explizites forceSync baut synchron. Schliesst den Schöpfer-`Gegraben → FPS 4`-Befund an der Wurzel.
               run: npm run gate:carve
 
             - name: Dichte-Spiegel (Main und voxel-worker bauen jedes Chunk-Gitter byte-gleich, mit Edits ueber dem Band)
-              if: matrix.gruppe == 1
+              if: matrix.gruppe == 4
               # Faehrt die echte Welt (Null-Renderer) und vergleicht je Ort und LOD 0-3 das Gitter des Mains
               # (`_voxelEditedDensityGrid`) mit dem des Workers (`computeDensityGrid`) Wort fuer Wort - die Standard-Welt
               # (Mess-Wiese, Genesis, ein Fluss) und die Pruefbuehne (spec/pruefbuehne/welt.json, ihre Stationen), dazu
@@ -502,7 +502,7 @@ jobs:
               run: npm run gate:worker-dichte
 
             - name: Gelaende-Linse (die Natur-Zahlen am Gesetzbuch - Senken, Flint, Hammond, Dorfplaetze, Schicht-Gesetz)
-              if: matrix.gruppe == 2
+              if: matrix.gruppe == 5
               # Node ohne Browser: gelaende-core in einer vm, drei Welt-Saaten, 4 x 4 km innen + 2 km Rand im 30-m-Raster
               # (Nordstern 4.1, Karte K16). Taeter je Ziel beim Namen; der Selbsttest legt eine Eier-Karton-Stoerung auf und
               # muss die Senken rot faerben. Dazu der GEBAUTE Boden (Null-Renderer, drei Saaten, 2 x 2 km im 30-m-Raster): Senken
@@ -510,7 +510,7 @@ jobs:
               run: npm run gate:gelaende-realismus
 
             - name: Gelaende-Studio (A ist die gebaute Welt, jeder Regler wirkt, jedes Preset im Korridor, EIN Plan reist byte-gleich in die Welt)
-              if: matrix.gruppe == 1
+              if: matrix.gruppe == 4
               # Faehrt index.html?studio=gelaende (Null-Renderer) ueber einer Welt, die kein Plan beschreibt (Basis 7 m,
               # Rampe): der Start zeigt A und nennt Rampe und Basis als Abweichung; A zeigt dieselbe Welt (Makro-Abdruck + Statistik); jeder Regler aus LANDFORM_REGLER einmal ueber
               # sein Schieber-Element (tot = das Raster bleibt byte-gleich); jeder Landschafts-Knopf (bedienung.json) ohne
@@ -521,7 +521,7 @@ jobs:
               run: npm run gate:gelaende-studio
 
             - name: Pruefbuehne (wo die Wildnis nicht traegt, wirft das Feld nichts - auch nicht der Nexus; S4 steht an ihrer Spec; S0 leuchtet nachts aus dem Licht-Pool)
-              if: matrix.gruppe == 14
+              if: matrix.gruppe == 15
               # Faehrt die echte Welt (Null-Renderer): jede Ort-Op der Welt-Akte mit der Quelle des Feldes (nexus,
               # rule:nexus), den getriebenen Nexus-Takt und den Absenz-Zensus in 300 m - auf der Pruefbuehne
               # (spec/pruefbuehne/welt.json) Zuwachs 0 je Wurf, in der Wildnis als Feld-Kontrolle > 0, der Akt des Menschen
@@ -534,7 +534,7 @@ jobs:
               run: npm run gate:pruefbuehne
 
             - name: Pruefbuehne S0 im Bild (echter Renderer - der Feuerkreis aus 2 m traegt Luma >= 0,15 in der Ausgabe)
-              if: matrix.gruppe == 13
+              if: matrix.gruppe == 15
               # Faehrt die Pruefbuehne am ECHTEN Renderer (swiftshader, kienspan): die Feuerstelle ueber den Satz des Menschen,
               # Mitternacht still, das Auge 2 m vor dem Feuer, aufgenommen ueber den Ausgabe-Pfad (Tonkurve, sRGB, Post) - der Schuss
               # zeichnet die Naehe des Feuers (Saetze, Feuer, Leib; Huellen >= 1 km und ferne Bauten fallen, 8 Programme); der Boden
@@ -545,7 +545,7 @@ jobs:
               run: npm run gate:pruefbuehne-licht
 
             - name: Weltgrenze (kein Feld einer Welt reist in die naechste, keine geht verloren - Laden, Ersetzen, world-pull, Portal, Einladung, Geburt, Reload)
-              if: matrix.gruppe == 7
+              if: matrix.gruppe == 1
               # Faehrt die echte Welt (Null-Renderer) je Weg in einem frischen Browser-Kontext: Welt A traegt ein Zeichen in
               # jedem welt-eigenen Feld (Erbgut der Pruefbuehne, Anker, Edits, Dorf-Zellen, Stempel, Rolle, Gedaechtnisse der
               # Seite, ein Tier), Welt B ist eine Wildnis-Welt ohne all das. Nach jedem Weg nennt die Linse jedes Feld von A,
@@ -554,7 +554,7 @@ jobs:
               run: npm run gate:weltgrenze
 
             - name: Boot-Rettung (der Boot verliert die Welt des Aktiv-Zeigers nie - Platz, .bak, IndexedDB, dann erst frisch und laut)
-              if: matrix.gruppe == 6
+              if: matrix.gruppe == 5
               # Faehrt die neun Speicher-Formen der Boot-Sonde (Platz ohne worldId, ohne worldMeta, Legacy ohne worldId, ohne
               # worldMeta, mehrere Welten + Wechsel, korrupter Platz + gueltiges .bak, nur IndexedDB, IndexedDB frischer, und ein
               # Zeiger auf eine Welt, die nirgends liegt) je in einem frischen Browser-Kontext: Boot 1 erwacht in der Welt der Form
@@ -563,7 +563,7 @@ jobs:
               run: npm run gate:boot-rettung
 
             - name: Gras-Nach-Dünnen (die dominante Last folgt dem EINEN Regler im Stand)
-              if: matrix.gruppe == 6
+              if: matrix.gruppe == 3
               # Beweist headless, dass das Gras (die dominante kapazitäts-geregelte Last, V18.307) dem
               # `_foliageDensityScale`-Regler NICHT nur beim Erst-Bau folgt, sondern auch im Stand/Drehen:
               # gesunkene Dichte → die GELADENE Gras-Last sinkt (−60% bei 0.4); Default-Dichte (scale=1) →
@@ -572,7 +572,7 @@ jobs:
               run: npm run gate:grass-thin
 
             - name: Render-Tap-Wahrheits-Wand (W1 — die vergiftete Zahl kann nicht zurück)
-              if: matrix.gruppe == 5
+              if: matrix.gruppe == 6
               # Fake-Info mit exakter r184-Semantik (calls=Lebenszeit, drawCalls=pro Frame) am EINEN Tap:
               # der Tap liest den PRO-FRAME-Zähler, sense.renderCalls bleibt beschränkt + session-invariant
               # (die V18.427-Klasse als Invariante), der Regler-Eingang renderLoadMs ist ehrlich; statisch:
@@ -580,7 +580,7 @@ jobs:
               run: npm run gate:render-tap
 
             - name: Regler-Simulation mit ehrlichen Zahlen (W1 — fold→regulate→actuate)
-              if: matrix.gruppe == 3
+              if: matrix.gruppe == 1
               # Die ECHTE Regler-Kette über tausende synthetische Frames: schwache GPU → Konvergenz ohne
               # Pendeln + 0 Thin-Rebuilds im Studio-Regime; Streaming-Rückstau → Budget MAX (heilig);
               # starke GPU → Erholung; Session-Zeit-Invarianz (identischer Input früh/spät ⇒ identische
@@ -588,7 +588,7 @@ jobs:
               run: npm run gate:regler-sim
 
             - name: Takt-Atem (echter Renderer — der atmende Regler weckt keinen Fege-Takt und keine Pass-Lage)
-              if: matrix.gruppe == 17
+              if: matrix.gruppe == 13
               # Faehrt die echte Welt (swiftshader, kienspan) ohne Loop und ohne Wanduhr: der Aktuator steht auf festen Stufen
               # (loadScale 1 -> 0,1 -> 1, je 80 Takte) und atmet darueber; gezaehlt je Takt (zweite Haelfte jeder Stufe): die
               # Wechsel der Laub-Dichte, die Weckrufe des Stand-Stempels durch sie, die neuen Lagen des Hauptbilds, dazu
@@ -598,7 +598,7 @@ jobs:
               run: npm run gate:takt-atem
 
             - name: Volle-Bühne-Prädikat (W2 — Kriterium 2 wird messbar)
-              if: matrix.gruppe == 9
+              if: matrix.gruppe == 10
               # „Volle Bühne" als Prädikat aus kanonischen Quellen (Ring am Ziel · Gras/Wasser leer ·
               # die Streu steht: `_streuWartet` 0, keine Region in Reichweite fehlt, wartet oder trägt
               # eine offene Scheibe · Bibliothek warm · Impostoren idle · Nebel offen) + Zeitleiste
@@ -609,7 +609,7 @@ jobs:
               run: npm run gate:boot-stage
 
             - name: Bewegungs-Garantie unter Last (P1 — die 3-FPS-Realität als Linse)
-              if: matrix.gruppe == 4
+              if: matrix.gruppe == 1
               # Simuliert schwere Frames (330-ms-Zeitsprünge = 3 FPS) mit gehaltenem W: (a) der
               # Spieler MUSS sich horizontal bewegen (der Fixed-Step ist unconditional, Streaming/
               # Bewegung heilig V18.282/.355); (b) auch OHNE gebauten Spieler-Chunk (gestallter
@@ -619,7 +619,7 @@ jobs:
               run: npm run gate:move-under-load
 
             - name: Scatter-Wasser-Gate A/B-Byte-Wand (W3.3a — die Benchmark bewegt sich nie)
-              if: matrix.gruppe == 3
+              if: matrix.gruppe == 7
               # Korpus mit erzwungenen Ufer-/Steil-/Fluss-Klassen; jede Region einmal in Legacy-Ordnung
               # (state.__scatterExactWater, das Referenz-Ufer) und einmal im Produktions-Pfad gebaut →
               # region.cells byte-identisch. Plus Mess-Bound |field.height−exakt| + Null-Zensus der
@@ -627,7 +627,7 @@ jobs:
               run: npm run gate:scatter-ab
 
             - name: Scatter-Zeit-Scheiben byte-treu (W3.3b/3c — der 54-ms-Block fällt)
-              if: matrix.gruppe == 6
+              if: matrix.gruppe == 2
               # Dieselbe Region One-Shot vs in N Deadline-Scheiben (Bake-Phase j-Zeilen + Zellen-Phase
               # cz/cx/emitted-Fortsetzung): region.cells byte-exakt + HISM-Slot-Bilanz identisch (das
               # Doppel-Add wäre im cells-Vergleich unsichtbar) + kein halber Bake je in der Map +
@@ -635,7 +635,7 @@ jobs:
               run: npm run gate:scatter-slice
 
             - name: Streu-Fernform aus dem Studio-Budget (jenseits der EINEN Nah-Grenze 64 m kein stilles L0)
-              if: matrix.gruppe == 15
+              if: matrix.gruppe == 16
               # B2c lod.budget[kind].fernform (karte · gesetz · boden) ist KONSUM jenseits ANALOG_NAH_M: der Flip
               # rock.fernform="boden" baut eine Region neu und ihre Fels-Zellen tragen form boden; keine Gesetz-/
               # Boden-Art steht als Instanz jenseits Grenze + Totband, diesseits trägt keine Zelle eine Fernform;
@@ -646,7 +646,7 @@ jobs:
               run: npm run gate:streu-fern
 
             - name: Konforme Same-LOD-Rand-Normale (Goldstandard-Mesh G1)
-              if: matrix.gruppe == 9
+              if: matrix.gruppe == 11
               # Beweist headless, dass zwei same-LOD-Face-Nachbarn an ihrer GETEILTEN Boundary-Zeile
               # IDENTISCHE Normalen tragen (≤1°, vor V18.372 bis 69° = eine Lichtungs-Naht, der „Naht
               # direkt unter dem Wasser"-Befund). Die Heilung: in der Rand-Schale rechnet der Gradient
@@ -655,7 +655,7 @@ jobs:
               run: npm run gate:seam-normal
 
             - name: Godrays (V8 Kür — die Licht-Schäfte im EINEN Post-FX-Pass + unter dem EINEN Regler)
-              if: matrix.gruppe == 4
+              if: matrix.gruppe == 5
               # V8: der additive Screen-Space-Light-Shaft-March haengt als NODE im einen RenderPipeline-Pass
               # (kein 2. Pass, keine MRT-Depth → das swiftshader-Blank-Risiko bleibt klein). Beweist headless
               # die EINE Quelle (godrayUniforms) + den March in _ensurePostProcessing + die Frame-Projektion
@@ -673,7 +673,7 @@ jobs:
               run: npm run gate:asset-contract
 
             - name: Pflanzen-Nahbild (Rinde · Gitter · Strauch · Blüte · Blatt-Maß · Unterseite · Weide · Fracht)
-              if: matrix.gruppe == 16
+              if: matrix.gruppe == 10
               # 05.10.: die gelieferten Puffer je Art der Klasse über die echte Foundry-Naht — Birke weiß mit Lentizellen,
               # schwarzer Fuß-Borke und dunklen Zweigen, jede Rinde im Albedo-Band, kein Ringel über dem Ring-Gitter,
               # der Strauch aus Karten mit Reisig, Saftmal-Verlauf der Blüte, Blatt-Maß der Laub-Karten, die zwei Leser
@@ -684,7 +684,7 @@ jobs:
               run: npm run gate:pflanzen-nah
 
             - name: Sippen-Wirt (das Budget-Gesetz zaehlt, was der Wirt zeichnet)
-              if: matrix.gruppe == 15
+              if: matrix.gruppe == 16
               # Integration W8 (Pruefer W8 (c)): im echten Spiel (foundry-ON, Null-Renderer) baut die Linse jede Art mit
               # Budget-Zeile auf jeder deklarierten Geometrie-Stufe - Flatten (Haus, Fahrzeug, Waffe, Tor, Baum, Strauch,
               # Fels, Boden-Streu) und Ofen (jede Gattung, der Mensch) - und verlangt phyto-core budgetSippen == die
@@ -718,14 +718,14 @@ jobs:
               run: npm run gate:fluss
 
             - name: Takt-Wand (V18.512 — ein Takt-Subsystem rechnet nur, was es betrifft, nie die ganze Welt)
-              if: matrix.gruppe == 16
+              if: matrix.gruppe == 8
               # Zählung statt Zeit: 300 brennbare Bauten + EIN fernes Brennglas → der Brennglas-Takt ruft
               # computeCompoundTags 0-mal; 3 Bauten in Reichweite → höchstens 3 je Takt. Befund: Ø 20 ms je
               # Spiel-Takt für die Tags aller Bauten. --selftest: die alte Reihenfolge macht die Wand rot.
               run: npm run gate:takt
 
             - name: Satz-Wand (Welle B — die Draw-Einheit ist Material mal Geometrie über den Ring, nie Chunk mal Material)
-              if: matrix.gruppe == 2
+              if: matrix.gruppe == 3
               # Zählt die Render-Bürger je Klasse im Szenen-Baum (GPU-frei): höchstens EIN Boden-Satz (Stitch eingeschlossen),
               # EIN Wasser-Satz, je Nah-Streu-Senke EINE InstancedMesh (keine Waise), keine Deck-Streu, kein @p:-Bau, kein
               # p:-Bundle; Treue (Views byte-gleich, Index verschoben, Blöcke nah → fern) und Konsum (ein Chunk-Abbau
@@ -733,7 +733,7 @@ jobs:
               run: npm run gate:chunk-satz
 
             - name: Höhlen-Sicht (Welle 7 — die Höhlen-Schicht zeichnet nur, was ein Strahl durch Luft erreicht)
-              if: matrix.gruppe == 5
+              if: matrix.gruppe == 2
               # An der Mess-Wiese, Null-Renderer: Main und Worker liefern den Höhlen-Graph byte-gleich; je Blick (Wiese, Hang,
               # Mündung, IN der Höhle) trifft jeder Strahl gegen den ganzen Boden-Satz zuerst eine Zelle des Abschnitts (kein
               # Loch), und jeder Empfänger, dessen Weg zum Licht Boden trifft, trifft einen der Kaskade (kein Licht-Leck); die
@@ -741,7 +741,7 @@ jobs:
               run: npm run gate:hoehlen-sicht
 
             - name: Sicht-Arbeit (Welle C — die Sicht-Kette kostet, was sich ändert, nie die Weltgröße)
-              if: matrix.gruppe == 1
+              if: matrix.gruppe == 4
               # An der Mess-Wiese, Null-Renderer: das Hauptbild über den EINEN Haken, zwei Stellvertreter-Kaskaden über den
               # Satz-Chokepoint samt Instanz-Wahl; die Sicht-Linse zählt je Frame Prüfungen, Ecken, Index-Bytes und Treffer.
               # In Ruhe 0 Arbeit und 0 Bytes ab dem ersten Frame, beim Drehen und Gehen rechnet jede neue Lage, die gehaltene
@@ -753,7 +753,7 @@ jobs:
               run: npm run gate:sicht-arbeit
 
             - name: Wetter-Wache (Welle K und Leben-Schau 2 — Halt heisst Halt, Uhr und Wetter gehoeren dem Spieler)
-              if: matrix.gruppe == 17
+              if: matrix.gruppe == 12
               # Null-Renderer, eine echte Welt: unter der Buehne versucht jeder Schreiber-Weg des Spiels das Wetter zu drehen
               # (Emotion sorrow, Nexus, Gesetz, Mensch, Mitspieler, Auto-Zug) - das Wetter bleibt sunny, jeder Zug steht als
               # verweigert beim Namen seiner Quelle; ein roher Schreiber am _setWeather vorbei faellt rot. Dazu eine frische
@@ -765,7 +765,7 @@ jobs:
               run: npm run gate:wetter-wache
 
             - name: Welt-Wache (0710-7 — die Buehne haelt die Welt, jeder Welt-Akt beim Namen)
-              if: matrix.gruppe == 10
+              if: matrix.gruppe == 9
               # Null-Renderer, eine echte Welt: unter der Buehne versucht jeder Weg des Spiels die Welt zu aendern (Nexus:
               # Dorf, Tiere at_player, Groessen- und Tempo-Wuerfel, Tageszeit; Emotion, Gesetz, Mensch, Mitspieler, ein
               # verzoegertes Programm) - die Welt bleibt, jeder Zug steht als verweigert beim Namen seiner Quelle; ein Akt an
@@ -774,7 +774,7 @@ jobs:
               run: npm run gate:weltakt-wache
 
             - name: Blocker-Netz (0710-7 — der Strahl fragt seine Nachbarschaft, byte-gleiche Treffer)
-              if: matrix.gruppe == 18
+              if: matrix.gruppe == 17
               # Null-Renderer, eine echte Welt (zwei Doerfer, Baeume, ein Tempel): jeder Strahl trifft byte-gleich wie die
               # Schleife ueber den ganzen Bestand (kurz, lang ueber den 80-m-Cull, senkrecht, achsparallel, aus einer Box) in
               # fuenf Runden mit Abriss, Kappe, neu gestempelter Huelle, neuem Array und neuen Baeumen; ein Strahl prueft nur
@@ -782,7 +782,7 @@ jobs:
               run: npm run gate:blocker-netz
 
             - name: Kollision = Bild (Leben-Schau 2 — jede Box hat ihr Bild, der Fels misst seine Gestalt)
-              if: matrix.gruppe == 1
+              if: matrix.gruppe == 6
               # Null-Renderer, Foundry an, die Mess-Wiese (150 m) und je Klasse ein Exemplar (sieben Fels-Arten, GT, sieben
               # Tore, Haus, Brunnen, Marktstand): je Studio-Werk das Bild (die Studio-Gestalt LOD 0 in ihrer Instanz-Matrix)
               # gegen die Blocker-Boxen in ihrem Rahmen — keine Box ragt ueber das Bild, Fels, Tor (ausser der Passage) und Wagen
@@ -803,7 +803,7 @@ jobs:
               run: npm run gate:fall-waechter
 
             - name: Brennglas-Takt (0710-10 — der Takt kostet, was ihn betrifft, byte-gleiche Brand-Urteile)
-              if: matrix.gruppe == 16
+              if: matrix.gruppe == 18
               # Null-Renderer, eine echte Welt (drei Doerfer, vier Brennglaeser, Brennbares in ihren Brennpunkten): ueber
               # einen Tag (Morgen, Mittag, Regen und Sturm, Nachmittag, Abend, Nacht) urteilt der Brennglas-Takt je Schritt
               # byte-gleich wie der alte Takt ueber den ganzen Bestand (Hitze, Saetze, Feuer), mit Abriss, neuem Array und
@@ -812,7 +812,7 @@ jobs:
               run: npm run gate:brennglas-takt
 
             - name: Raum-Tags (0710-11 — das Gedaechtnis der Raum-Tags sieht jeden Schreiber)
-              if: matrix.gruppe == 14
+              if: matrix.gruppe == 16
               # Null-Renderer, eine echte Welt: der Schluessel liest jeden Eingang der Rechnung (Proxy-Linse ueber jeden Bauplan);
               # ueber eine Werkstatt-Sitzung (verschieben, Stoff, Form, Farbe, hinzufuegen, loeschen, Undo/Redo, direkte Aenderungen
               # ohne API, defineMaterial, ein geladener Spielstand, neues Teile-Array, neues Bauplan-Objekt) urteilt das Gedaechtnis
@@ -820,7 +820,7 @@ jobs:
               run: npm run gate:raum-tags
 
             - name: Stand-Takt (Welle K — im Stand kostet die Welt nichts, Gehen kostet die Änderung)
-              if: matrix.gruppe == 4
+              if: matrix.gruppe == 1
               # An der Mess-Wiese, Null-Renderer, Fern-Ring über seinen Haken, Foundry an, der Regler hält: die Stand-Linse
               # zählt je Frame die Blatt-Rufe der Fege-Takte (Ring, Stufen-Wahl, Cull, Streu, Nah-Streu, Nah-Wiese, Saum).
               # In Ruhe 0 Einheiten; mit gebrochener Wache arbeitet jeder Takt und keiner ändert die Welt (nichts verschlafen);
@@ -828,14 +828,14 @@ jobs:
               run: npm run gate:stand-takt
 
             - name: Foundry-Worker liest headless (P3a — der Gate sieht den ECHTEN Produktions-Pfad)
-              if: matrix.gruppe == 11
+              if: matrix.gruppe == 14
               # P3a: die Foundry ist ein Worker (nicht mehr ein iframe) → sie produziert echte Assets AUCH
               # im Null-Renderer-Gate. Beweist, dass die Pipeline im Gate-Kontext LIEST (heilt W1: vorher
               # sah der headless-Gate nur den Grammatik-Alt-Pfad) — _foundryRequest liefert echte Meshes.
               run: npm run gate:foundry-warm
 
             - name: Terrain-Portal bootet im Display-Modus (P2 — die Shell liest foundry-core-Globals)
-              if: matrix.gruppe == 14
+              if: matrix.gruppe == 12
               # P2 Kern-Split: der Studio-Generator lebt jetzt in foundry-core.js (verschoben aus
               # phytogenesis.js), die Shell liest seine Top-Level-Globals. Beweist, dass das Portal im vollen
               # Display-Modus (Renderer+Welt+UI, nicht ?asset-foundry) ohne page-error bootet — ein
@@ -843,14 +843,14 @@ jobs:
               run: npm run gate:portal-boot
 
             - name: Foundry-Deadlock geheilt (P4 — die Nähe konvergiert unter Last)
-              if: matrix.gruppe == 17
+              if: matrix.gruppe == 9
               # P4: der overBudget?0-bakeBudget liess die nahen LOD0/1-Bäume unter Last nie backen (=die kahle
               # Nähe). Seit P3a bäckt der Worker off-thread → der Throttle ist hinfällig. Beweist headless, dass
               # unter erzwungenem Dauer-Über-Budget kalte Nah-Bäume zu Foundry konvergieren (vorher: 0).
               run: npm run gate:foundry-deadlock
 
             - name: Fernwald (der gesetzte Wald ist jenseits der Mesh-Zone seine Karte, kein Satz, kein Pop)
-              if: matrix.gruppe == 14
+              if: matrix.gruppe == 13
               # Studio-Vertrag B2c fernform "karte": bis 05.10. trug jeder gesetzte Baum jenseits des Cull-Radius
               # einen Kegel-und-Lappen-Satz im Welt-March (glatte, gestreifte, einfarbig hellgruene Ellipsoide,
               # 895 an der Mess-Wiese). Beweist headless: jedes Karten-Ding der Karten-Zone traegt seine Karte
@@ -859,7 +859,7 @@ jobs:
               run: npm run gate:fernwald
 
             - name: Luft-Sicht (die Luftperspektive ist Physik, keine Nebel-Wand)
-              if: matrix.gruppe == 17
+              if: matrix.gruppe == 16
               # V18.530: der Nebel war eine lineare Wand an der Wald-Kante (unter Last 60 m) und verdeckte die
               # gebaute Fernform. Beweist headless an DENSELBEN Uniforms, die der Luft-Knoten liest: klarer
               # Sommertag >= 5 km (Koschmieder 2 %), Regen/Sturm dichter, Hoehe weiter, Ring-Kante klar, die
@@ -867,7 +867,7 @@ jobs:
               run: npm run gate:luft-sicht
 
             - name: Himmel-Tag (am Mittag steht kein Punkt am Himmel)
-              if: matrix.gruppe == 18
+              if: matrix.gruppe == 17
               # V18.530: drei Math.random-Planeten-Kugeln (3-8 Grad, Zufallsfarbe, unbeleuchtet) standen am
               # Mittagshimmel. Die Wandelsterne sind Punkte des Sternfelds, die Daemmerung setzt die Grenzgroesse:
               # Mittag 0 Punkte, Abendstern in der Daemmerung, nachts alle; der Mond am Tag blass. Der Selbsttest
@@ -875,7 +875,7 @@ jobs:
               run: npm run gate:himmel-tag
 
             - name: Weg-Boden (der Siedlungs-Weg ist Boden, kein schwebendes Quad)
-              if: matrix.gruppe == 15
+              if: matrix.gruppe == 16
               # V18.530: Strassen, Feldwege, Platz und Aecker lagen als 0,14-m-Box-Streifen auf der Gesetz-Hoehe -
               # harte Kanten, schwarze Naht-Linien, Gras durch den Weg. Jetzt malt _stlWegeBuild sie in die
               # Wege-Karte (Boden-Shader + Wiese lesen dieselben Bytes): kein flacher Streifen im Pool, weicher Rand,
@@ -883,7 +883,7 @@ jobs:
               run: npm run gate:weg-boden
 
             - name: Boot-Foliage-Ring (die Vegetation waechst mit dem Boden, nicht voraus)
-              if: matrix.gruppe == 18
+              if: matrix.gruppe == 8
               # V18.414: foliageRadius raste per perf-headroom auf MAX (240 m), waehrend der gebaute Ring erst
               # 1 Chunk (43 m) war -> die Vegetation lag vor dem Boden = der ferne Billboard-Ring beim Spawn.
               # Beweist headless (forcierter Nicht-headless-Ramp-Pfad), dass foliageRadius an der gebauten
@@ -891,14 +891,14 @@ jobs:
               run: npm run gate:boot-foliage-ring
 
             - name: Foundry-Impostor auf dem EINEN Haupt-Renderer (P5 — kein Bake-iframe mehr)
-              if: matrix.gruppe == 10
+              if: matrix.gruppe == 15
               # P5: der Impostor-Atlas backt über den Haupt-Renderer-RTT (foundry-Record + LOD1-Bake-Leaves)
               # statt über ein GL-Bake-iframe. Beweist headless die MECHANIK (foundry-Record, kein asset-foundry-
               # iframe im DOM, die drei iframe-Methoden geschnitten); der Atlas-LOOK ist das Schöpfer-Auge (GPU).
               run: npm run gate:foundry-impostor
 
             - name: V1 Kristall-Kleid + V2 Werkstatt — Varianten tragen das Studio-Rezept
-              if: matrix.gruppe == 12
+              if: matrix.gruppe == 15
               # V1: die Formations-Varianten (kristall_var${N}/fels_var${N}) lösen jetzt auf ein Studio-
               # Preset auf (vorher NULL = Part-Pfad = die „alten Kristalle"). V2: der Werkstatt-Rezept-Regler
               # erkennt die Repräsentanten (fels_var0->rock, kristall_var0->crystal). Null-Renderer, GPU-frei:
@@ -907,7 +907,7 @@ jobs:
               run: npm run gate:v1-resolve
 
             - name: V3 Kein zweiter Baum-Bäcker — bei lebender Foundry rendert kein Baum Grammatik
-              if: matrix.gruppe == 12
+              if: matrix.gruppe == 13
               # V3: die P4-Invariante als Linse. Null-Renderer + Foundry-ON (der Worker bäckt GPU-frei):
               # tickt die Welt, enumeriert die Instanz-Gruppen, klassifiziert nach Foundry-Leaf (f:/fimp:)
               # vs Grammatik. 0 Grammatik-Baum-Gruppen = kein Nachbau. Der Scatter trägt Bäume UND Fels/
@@ -915,7 +915,7 @@ jobs:
               run: npm run gate:no-second-treebuilder
 
             - name: Asset-Inventur (H3, Nervensystem Phase γ — Zensus + requested ⊆ visible|cached)
-              if: matrix.gruppe == 13
+              if: matrix.gruppe == 18
               # DIE EINE INVENTUR-LINSE (aus dem Silhouetten-Zensus gewachsen, Gesetz #0), zwei Hälften:
               # (1) ZENSUS — jeder sichtbare Emitter der Szene wird über IDENTITÄT klassifiziert
               # (Studio [inkl. der Nah-Streu-Senken über ihren Leaf-Key] · Substanz [inkl. der gestempelten Bau-Quellen
@@ -927,7 +927,7 @@ jobs:
               run: npm run gate:asset-inventory
 
             - name: Die Slot-Linse — ein freier Slot und eine leere Hülle zeichnen nie, in keinem Pass
-              if: matrix.gruppe == 10
+              if: matrix.gruppe == 17
               # Jede Instanz-Senke ist DICHT: _archGroupFree zieht die letzte Instanz in die Lücke (_instanzUmzug), count
               # schreibt nur _instanzZahl, eine leere Senke ist unsichtbar. Null-Renderer + Foundry an, Wander-Sequenz
               # (fort und zurück, sieben Umzüge): nach jedem Umzug je Gruppe count gegen die Lebenden, Marke i trägt Slot i,
@@ -936,7 +936,7 @@ jobs:
               run: npm run gate:freie-slots
 
             - name: V6 Wetter-5-Kanal-Feld — _weatherFieldFor liefert {fog,sun,grey,wind,rain}, grey entsättigt das Licht
-              if: matrix.gruppe == 17
+              if: matrix.gruppe == 12
               # V6 (Look-Finale, Track 1): der EINE LOOK-Wetter-Leser liefert die fünf Kanäle transition-aware;
               # grey stormy>=0.8 & sunny==0 (entsättigt das LICHT, nie den Himmel), wind stormy >=5x sunny,
               # rain kontinuierlich (0/~0.6/1.0), fog über die Transition monoton. Null-Renderer, GPU-frei.
@@ -951,7 +951,7 @@ jobs:
               run: npm run gate:season-meadow
 
             - name: V4(B) Foundry-Geometrie-Speicher flach — Ref-Zähler-Dispose gegen das LRU-Leck
-              if: matrix.gruppe == 15
+              if: matrix.gruppe == 11
               # V4(B): die geteilte Foundry-Geometrie wird freigegeben (LRU-Räumung → dispose, sobald kein
               # InstancedMesh sie mehr hält, Ref-Zähler). Null-Renderer + Foundry-ON, JS-Bilanz-Zähler über
               # 4 Churn-Zyklen (Deckel 32, 96 Gestalten): dispose feuert, der Speicher bleibt flach (kein lineares Leck),
@@ -969,7 +969,7 @@ jobs:
               run: npm run gate:s4-impostor-workshop
 
             - name: Das Nervensystem (die Pipeline-Abnahme — ein neues Vorlage-Asset fließt automatisch)
-              if: matrix.gruppe == 13
+              if: matrix.gruppe == 9
               # DER PIPELINE-BEWEIS: (A) die EINE Platzierungs-Quelle (PORTAL_RENDER_CONFIG.placement in
               # foundry-core), die der Studio-Wald SELBST liest (kein lokales SCALE-Literal); (B) sie
               # kommt live durch die Brücke an; (C) eine Daten-Mutation ändert die Welt-Skala SOFORT
@@ -978,7 +978,7 @@ jobs:
               run: npm run gate:nervensystem
 
             - name: Der Zweit-Kern (Studio-Vertrag Phase 1 — vehicle-core dockt an, W7b)
-              if: matrix.gruppe == 10
+              if: matrix.gruppe == 18
               # DER ZWEIT-KERN-BEWEIS: der Foundry-Worker importiert vehicle-core (v1.1 N7.2), das
               # LIVE-Buch trägt die kind:vehicle-Presets, der N7.5-Merge lebt am EINEN Ingest-
               # Chokepoint (first-wins, disjunkt, fail-closed [0]), der Auto-Blueprint fahrzeug_<id>
@@ -986,7 +986,7 @@ jobs:
               run: npm run gate:nervensystem-vehicle
 
             - name: Die Place-Policy-Weiche (N5/H8 — wie eine Buch-Art in die Welt kommt)
-              if: matrix.gruppe == 14
+              if: matrix.gruppe == 11
               # DER PLACE-BEWEIS (Phase δ, headless foundry-ON): die EINE Auflösung (_placePolicyFor —
               # Rezept-fx.place führt, sonst die placeExtra-Ableitung) + der EINE Dispatch-Chokepoint
               # (_placeDispatch). (a) tree ohne place → forest, Nischen-Liste BYTE-GLEICH zur alten
@@ -997,7 +997,7 @@ jobs:
               run: npm run gate:place-policy
 
             - name: Das Lab-Fahrprofil (N6/H7 — drive aus der EINEN Lab-Formel)
-              if: matrix.gruppe == 16
+              if: matrix.gruppe == 14
               # DER DRIVE-BEWEIS (Phase δ, headless foundry-ON): exportDrive (vehicle-core) leitet
               # die Host-Fahr-Skalare aus DENSELBEN Primitiven ab, die die Garage-Probefahrt fährt
               # (carPhys + FAHR + Federrate — die Konstanten leben seit N6.1 im Kern, die Shell
@@ -1010,7 +1010,7 @@ jobs:
               run: npm run gate:vehicle-drive
 
             - name: Die Fahr-Linse des Lebens (Welle L — der Ritt im echten Spiel-Takt)
-              if: matrix.gruppe == 16
+              if: matrix.gruppe == 15
               # DER RITT DURCH DEN ECHTEN FRAME (_gameLoopTick: Akkumulator · Sim-Schritte · Interpolation · Frame-Tick,
               # wechselnde Frame-Zeiten 8–33 ms, headless foundry-ON): GT geradeaus, GT am Hang ohne Taste, Pferd —
               # Teleport-Zähler 0, Sim-Weg = Fahr-Weg, der Reiter sitzt (nie „in der Luft"), keine Gier ohne Lenkung.
@@ -1019,7 +1019,7 @@ jobs:
               run: npm run gate:fahr-leben
 
             - name: Die Labor-Linse der Garage (Welle L — Maus, HUD, Tacho, Preset, Kultur)
-              if: matrix.gruppe == 14
+              if: matrix.gruppe == 12
               # DIE PROBEFAHRT-WERKSTATT WIE DER SCHOEPFER SIE BEDIENT (worlds/garage, r128 WebGL, kopflos): Orbit-Zug und
               # Umsehen ohne Seitenfehler (vorher ReferenceError dragging je Mausbewegung), der Fahr-HUD als Flex-Band,
               # der Tacho in km/h aus FAHR.kmh (vorher x12), Preset-Wechsel und erstes Laden ohne Leck (P = DEFAULT_P +
@@ -1027,7 +1027,7 @@ jobs:
               run: npm run gate:garage-labor
 
             - name: Der ε-Beweis (Nervensystem TEIL VIII Punkt 4 — porta-core dockt nur über Daten an)
-              if: matrix.gruppe == 15
+              if: matrix.gruppe == 8
               # DER ε-BEWEIS: die Tor-Domäne dockt AUSSCHLIESSLICH über die Checkliste §ε an —
               # Manifest-Zeile (porta-core, __portaCore) + KIND_POLICY-gate-Zeile + tor_basis-
               # Donor-DATENBLOCK + fx.place-Rezept-Daten; der Stamm bekam KEINEN neuen kind-Zweig
@@ -1039,7 +1039,7 @@ jobs:
               run: npm run gate:nervensystem-porta
 
             - name: Der ε-Beweis Schmiede (W-A4a — schmiede-core dockt nur über Daten an)
-              if: matrix.gruppe == 12
+              if: matrix.gruppe == 13
               # DER ε-BEWEIS DER WAFFEN-DOMÄNE (Katalysator-Bogen): die Klingen-Domäne dockt
               # AUSSCHLIESSLICH über die Checkliste §ε an — Manifest-Zeile (schmiede-core,
               # __schmiedeCore) + KIND_POLICY-weapon-Zeile + geraet_schwert-Donor-DATENBLOCK +
@@ -1069,7 +1069,7 @@ jobs:
               run: npm run gate:kampf-gefuehl
 
             - name: Tod-Zensus (der Leichnam traegt nichts vom lebenden Tier, seine Sicht waehlt der EINE Weg jedes Leibs)
-              if: matrix.gruppe == 2
+              if: matrix.gruppe == 7
               # Headless (Null-Renderer, Produktions-Boot): ein Hirsch stirbt am Alter, ein Wolf im Kampf im Scheitel seines
               # Sprungs, beide mit Auftrag (Aura) und Traglast; je Kreatur-Takt ueber die ganze Frist (91 s), der Spieler
               # wechselt nach 10 s und 50 s die Seite (2 m <-> 40 m), dazu je eine Leichnam-Kopie beim Mitspieler: die Stufe
@@ -1081,7 +1081,7 @@ jobs:
               run: npm run gate:tod-zensus
 
             - name: Die Stoff-Linse der Gegenstaende (W5 — Fahrzeuge und Klingen im Band ihrer Natur)
-              if: matrix.gruppe == 7
+              if: matrix.gruppe == 1
               # DAS FARB-GESETZ der Gegenstaende (Hex = sRGB-Absicht, Albedo bzw. F0 linear): je Fahrzeug-Rezept x 8 Lacke
               # und je Klinge/Werkzeug urteilt die Linse jeden Stoff gegen sein Band (Gummi, Kunststoff, Lack, Glas, Metall,
               # Holz, Leder, Schnur) - Taeter beim Namen: ohne-stoff, labor-stoff, band, klarlack, lack-art, durchsicht,
@@ -1089,7 +1089,7 @@ jobs:
               run: npm run gate:gegenstand-stoff
 
             - name: Die Albedo-Tafel Labor gegen Welt (S1 W1e - je Klasse Labor-Albedo, Welt-Albedo und ihr Verhaeltnis als Ratsche)
-              if: matrix.gruppe == 10
+              if: matrix.gruppe == 14
               # Die acht Klassen des Studio-Befunds (Rinde, Laub, Fels, Boden, Haus, Metall/Lack, Haut/Fell, Klinge) tragen je
               # Zeile Labor-Y, Welt-Y und das Verhaeltnis (spec/farbe/albedo-tafel.json, gemessen mit EINER Rechnung, geeicht an
               # der 18-%-Karte); |ln Verhaeltnis| ist die Ratsche, die nur fallen darf, solange W5 das FARB-GESETZ in jedem Kern
@@ -1104,7 +1104,7 @@ jobs:
               run: npm run gate:albedo-tafel
 
             - name: Die Albedo nah gegen fern (0910-8 — EINE Boden-Farbe je Ort, die weisse Masse)
-              if: matrix.gruppe == 3
+              if: matrix.gruppe == 4
               # Die Werkbank im Software-Holz (swiftshader, kienspan) an der Mess-Wiese: je Ort im Chunk-Quadrat der Boden-Satz
               # und der Fern-Ring orthogonal aus 420 m ueber 132 m, beide Leser gegen das Gesetz an der Stelle (_fernRingTeile) -
               # ROT beim Namen, wenn einer ausserhalb seines Bands liegt (main 2c8deda9: der Boden-Satz +133 bis +143 %), zu wenige
@@ -1115,7 +1115,7 @@ jobs:
               run: npm run gate:nah-fern
 
             - name: Der ε-Beweis Fachwerk (W-A5a — fachwerk-core dockt nur über Daten an)
-              if: matrix.gruppe == 13
+              if: matrix.gruppe == 10
               # DER ε-BEWEIS DER HAUS-DOMÄNE (Katalysator-Bogen): die Haus-Domäne dockt
               # AUSSCHLIESSLICH über die Checkliste §ε an — Manifest-Zeile (fachwerk-core,
               # __fachwerkCore) + KIND_POLICY-haus-Zeile + begehbarer haus_basis-Donor-
@@ -1141,7 +1141,7 @@ jobs:
               run: npm run gate:fachwerk-contract
 
             - name: Der Settlement-Kanal N5.7 (W-A5b — exportSettlement + spawnSettlement)
-              if: matrix.gruppe == 14
+              if: matrix.gruppe == 13
               # DIE WALD-SCHWESTER ALS DELIBERATER AKT: exportSettlement (fachwerk-core, das
               # exportDrive-Muster) ist deterministisch + sha256-eingefroren (siedlung.json);
               # der Export reist durch den EINEN Worker (Bruecke generisch, M8), der Host hebt
@@ -1155,7 +1155,7 @@ jobs:
               run: npm run gate:settlement
 
             - name: Das Studio-Dorf begehen (Welle L — Hülle je Haus, Treppe, Keller-Decke, Fluss, Antike)
-              if: matrix.gruppe == 9
+              if: matrix.gruppe == 8
               # Das Fachwerk-Labor im Browser (WebGL, swiftshader): die Probe ruft die echten Lab-Pfade (buildDorf · promoteB ·
               # demoteB · walkUpdate → moveAxis/gravity/overlap · Raycaster). B1 die Ganz-Haus-Hülle fällt mit der Promotion und
               # kehrt mit der Demotion zurück · B2 die offene Haustür ist begehbar · B3 kein Treppen-Schritt endet im Solid, jeder
@@ -1195,7 +1195,7 @@ jobs:
               run: npm run gate:haus-fern
 
             - name: Die Trias-Linse (V18.444 — der Szenen-Dreiecke-Deckel + Klon-Erbe)
-              if: matrix.gruppe == 3
+              if: matrix.gruppe == 5
               # DIE TRIAS BLEIBT GEDECKELT: platzierte Studio-Architektur (haus_ u. a.) lebt
               # in der EINEN LOD-Geschichte (_tickArchitectureLOD via instFoundry) — nah
               # gebaute Haeuser (L1 = 75k Tris!) kleben nicht mehr fuer immer auf ihrer
@@ -1206,7 +1206,7 @@ jobs:
               run: npm run gate:trias
 
             - name: Die drei MESHFREI-Domaenen (W-A6/W-A7 — klang · koerper · kreatur)
-              if: matrix.gruppe == 13
+              if: matrix.gruppe == 18
               # STUDIO-VERTRAG §8: Manifest-Zeilen + MESHFREI-Kerne (kein buildInstance — der
               # Host bleibt der Ofen), das LIVE-Buch traegt fx.klang/fx.motion, paramsByKind
               # traegt die Dials (W-A1-Strasse), KEIN Auto-Blueprint entsteht (must-ignore an
@@ -1228,7 +1228,7 @@ jobs:
               run: npm run gate:tier-gang
 
             - name: Die Kreatur-Linse (Welle L — der Kreatur-Takt am echten Chokepoint)
-              if: matrix.gruppe == 4
+              if: matrix.gruppe == 3
               # Headless (Null-Renderer, Produktions-Boot): jede Probe ruft den echten Chokepoint selbst (updateCreatures,
               # clearCreatures, _creatureNaturalBirth, _playerDeathRespawn, Snapshot, Peer-Tick), nichts gestubbt
               # (scripts/lib/kreatur-proben.cjs; dieselben Proben laufen mit --werkbank im sichtbaren Fenster der
@@ -1247,7 +1247,7 @@ jobs:
               run: npm run gate:kreatur-takt
 
             - name: Die Kreatur-Kosten (S3 — der Werfer je Gestalt aus der Kern-Zeile)
-              if: matrix.gruppe == 3
+              if: matrix.gruppe == 7
               # Headless (Null-Renderer, Produktions-Boot), Port KREATUR_KOSTEN_PORT: die Anim-Raten-Leiter, die Stand-Pose,
               # die Grobstufe des Menschen am echten Peer-Tick, Starr-Bindung + Körper-Kugel (Pose-Probe auch der Grobstufe:
               # ihre Knochen SIND die der feinen), schmale Puffer — und (W) der Werfer je Gestalt: je Art und Mensch nah und
@@ -1256,7 +1256,7 @@ jobs:
               run: npm run gate:kreatur-kosten
 
             - name: Die gelenkige Grobstufe (S3 — gate tier-fern am EINEN Stufen-Schalter)
-              if: matrix.gruppe == 7
+              if: matrix.gruppe == 4
               # Headless (Null-Renderer, Produktions-Boot), Port TIER_FERN_PORT: der Wolf zeigt nah die feine Stufe, fern
               # die gelenkige Grobstufe (dieselben Knochen), die Grenze des Schalters IST die Kern-Zeile (ab, hyst); Hysterese
               # ohne Flackern und ohne Guss im Takt, die Sim-Spur byte-gleich mit und ohne Schalter; Selbst-Test (gestubbter
@@ -1273,7 +1273,7 @@ jobs:
               run: npm run gate:ofen-contract
 
             - name: Die Klang-Linse (Welle 5 Klang — jede klingende Quelle traegt ein Gesetz)
-              if: matrix.gruppe == 1
+              if: matrix.gruppe == 7
               # An den vier Mess-Orten (Mess-Wiese · Seeufer · Waldinneres · Dorf, aus dem Gesetz gefunden):
               # jede laufende Quelle ist im klang-Gesetzbuch gebaut oder ein benannter Wirt-Leser (sonst
               # beim Namen rot) · dauernde Quellen nur fuer hoerbare Stimmen · SOLL-Klang je Ort · der
@@ -1288,7 +1288,7 @@ jobs:
               run: npm run gate:klang-zensus
 
             - name: Der Rezept-Katalog + B4-Regler (W-A1 — Katalysator-Bogen)
-              if: matrix.gruppe == 16
+              if: matrix.gruppe == 12
               # DER KATALOG-BEWEIS (auslagerungs-plan §5): die B4-Tabellen reisen als Daten
               # (paramsByKind gate+vehicle), der ov-Kanal baut cache-frei eine ANDERE Geometrie
               # (kein Welt-Cache-Gift), die Werkstatt zeigt die Studio-Rezepte (gras) + Slider
@@ -1297,7 +1297,7 @@ jobs:
               run: npm run gate:rezept-katalog
 
             - name: Der Portal-Gestalt-Wechsel (W-A3 — Katalysator-Bogen)
-              if: matrix.gruppe == 18
+              if: matrix.gruppe == 13
               # DAS BAUM-MUSTER AUF PORTALE: 5 studioGestalt-Daten-Zeilen + der EINE generische
               # Entry-Resolver; das Studio-Tor materialisiert end-to-end ohne Doppel-Bild, die
               # Substanz-Wahrheit (portalMeta · Tags · blockerAABBs · E-Trigger) lebt byte-alt
@@ -1322,7 +1322,7 @@ jobs:
               run: npm run gate:portal-konformanz
 
             - name: Regler wirkt (W1 d — jede PARAMS-Zeile bewegt den Bau am Kanal der Werkstatt, tote Regler beim Namen)
-              if: matrix.gruppe == 18
+              if: matrix.gruppe == 17
               # Je Art an dem Kanal, den die Werkstatt-Vorschau nimmt: die MESHFREI-Arten (koerper · kreatur · klang) gießt
               # der Host-Ofen der echten Heimat (Null-Renderer, der Wert aus ws.studioOv), die übrigen baut die echte
               # Foundry-Brücke (asset-worker-harness, ov {id: min|max}). Tot = bewegt an keinem Rezept seiner Art den Hash;
@@ -1335,7 +1335,7 @@ jobs:
               run: npm run gate:regler-wirkt
 
             - name: Die Studio-Dither-Blende (W5.3+W5.4 — Masken-Quelle + CPU-Doppel-Mitgliedschaft)
-              if: matrix.gruppe == 12
+              if: matrix.gruppe == 14
               # DER CROSSFADE-BEWEIS, dreiteilig: (Selbst-Test) verfälschte phyto-core-Kopien machen
               # die Linse rot (nicht vakuös); (a) Node-pur: __phytoCore.lodCrossfadeMask == die per
               # Regex geparste foundry-core-GLSL (FIX v37 — Rinde XOR-Partition, Laub überlappende
@@ -1352,19 +1352,19 @@ jobs:
             # Deckel des Läufers nicht (Lauf 38005574907) und steht mit Klasse FRIST in AUSNAHMEN (scripts/diag-ci-deckung.cjs);
             # wer nur abgeschaltet läuft (nächtlich, || true, continue-on-error), ist (S) rot.
             - name: Tier-Separation (die Tiere entstapeln sich und differenzieren sich über die Größen-Achse)
-              if: matrix.gruppe == 2
+              if: matrix.gruppe == 5
               run: npm run gate:tier-separation
 
             - name: Körper-Bewegung (der Körper geht den Weg, nicht die Uhr)
-              if: matrix.gruppe == 5
+              if: matrix.gruppe == 6
               run: npm run gate:koerper-bewegung
 
             - name: Schritt-Klang (der Fuß spielt den Boden, nicht die Uhr)
-              if: matrix.gruppe == 6
+              if: matrix.gruppe == 3
               run: npm run gate:schritt-klang
 
             - name: Reload-Treue (die Kreatur kehrt nach dem Reload wie gegossen wieder)
-              if: matrix.gruppe == 11
+              if: matrix.gruppe == 16
               run: npm run gate:reload-treue
 
             - name: Studio-Übergabe (die Live-Bearbeitung eines Studios reist in die Welt)
@@ -1372,39 +1372,39 @@ jobs:
               run: npm run gate:studio-uebergabe
 
             - name: P2P-Gestalt (die Studio-Übergabe reist zu den Mitspielern)
-              if: matrix.gruppe == 12
+              if: matrix.gruppe == 17
               run: npm run gate:p2p-gestalt
 
             - name: Prägung-Welt (die Prägung reist mit dem Artefakt in die Welt-Pfade)
-              if: matrix.gruppe == 14
+              if: matrix.gruppe == 12
               run: npm run gate:praegung-welt
 
             - name: Scatter-LOD (die Streu-Stufen folgen der Live-Distanz, ohne Flacker-Churn, über Region-Grenzen)
-              if: matrix.gruppe == 18
+              if: matrix.gruppe == 16
               run: npm run gate:scatter-lod
 
             - name: Leistungs-Vertrag (Stand-Churn null, Ingest-Takt, Gruppen-Stabilität, Linsen-Konsum)
-              if: matrix.gruppe == 3
+              if: matrix.gruppe == 2
               run: npm run gate:leistungs-vertrag
 
             - name: Erstarren-Linse (kalter Boot, Wander-Lauf ohne Todes-Spirale, ein Tor-Material genau einmal gebaut)
-              if: matrix.gruppe == 2
+              if: matrix.gruppe == 5
               run: npm run gate:erstarren
 
             - name: Existenz-Boden (bei leerem Budget läuft die Welt-Substanz jeden Frame, Deko jeden vierten)
-              if: matrix.gruppe == 5
+              if: matrix.gruppe == 1
               run: npm run gate:existenz-boden
 
             - name: Perf-Panel (das Screenshot-Panel füllt sich aus den EINEN Quellen, der Export liefert den Trace)
-              if: matrix.gruppe == 7
+              if: matrix.gruppe == 2
               run: npm run gate:perf-panel
 
             - name: GPU-Zeit-Linse (headless der Proxy, die echte Leitung über ein API-treues Fake-Backend)
-              if: matrix.gruppe == 7
+              if: matrix.gruppe == 4
               run: npm run gate:gpu-zeit
 
             - name: Render-Diät (ein geteiltes Material je Tag-Signatur, die Part-Farbe reist als Instanz-Farbe)
-              if: matrix.gruppe == 9
+              if: matrix.gruppe == 15
               run: npm run gate:render-diaet
 
             - name: Szenen-Skala (die EINE Größe der Auflösung, der Regler trägt sie nicht, das Laub trägt seine Layer)
@@ -1412,49 +1412,49 @@ jobs:
               run: npm run gate:foliage-res
 
             - name: Fern-Ring (jenseits des Streaming-Rings zeichnet das EINE Höhen-Gesetz, der Feld-Zeichner auf swiftshader)
-              if: matrix.gruppe == 13
+              if: matrix.gruppe == 15
               run: npm run gate:fern-ring
 
             - name: WebGL2-Rückfall (ohne WebGPU-Adapter bootet die Welt laut benannt auf GL und lebt)
-              if: matrix.gruppe == 13
+              if: matrix.gruppe == 14
               # swiftshader-GL (__anazhForceWebGL, der EINE Hook): W1 der Backend ist WebGL, W2 der Rückfall wird einmal laut
               # benannt, W3 Feld-Pass und Region-Bundles ruhen, W4 der Fern-Ring verfeinert auf CPU, W5 Takte laufen und ein
               # Render trägt Substanz, W6 (holz=voll) jeder Stoff zählt je Stufe ≤ 16 Sampler (darüber linkt WebGL2 nie).
               run: npm run gate:webgl-probe
 
             - name: Stall-Akte (die Boot-Lib nennt eine stehende Seite beim Namen - JS-Schleife mit Stapel, Versprechen am Fristriss)
-              if: matrix.gruppe == 5
+              if: matrix.gruppe == 1
               # K67: jede Seite der Boot-Lib trägt Puls und Stempel; steht der Puls ≥ 20 s oder reißt eine Frist, schreibt
               # scripts/lib/welt-boot.cjs die Akte ins Log (Phase, Stempel, CPU je Prozess, Stapel, GPU-Spur, Stderr, Urteil).
               run: npm run gate:welt-boot
 
             - name: Fern-Wasser (die Atlas-Kulisse jenseits des Chunk-Rings baut mit vollem Material-Vertrag)
-              if: matrix.gruppe == 4
+              if: matrix.gruppe == 6
               run: npm run gate:fern-wasser
 
             - name: Warm-Start (der zweite Boot liest den Ring byte-gleich aus der Platte, ein Edit geht am Cache vorbei)
-              if: matrix.gruppe == 11
+              if: matrix.gruppe == 9
               run: npm run gate:warm-start
 
             - name: Wasser-Wahrheit (kein Wasser an der Wand, kein Spiegel über Land, keine bleibenden Blobs, Stau nur geschlossen)
-              if: matrix.gruppe == 3
+              if: matrix.gruppe == 6
               run: npm run gate:wasser-wahrheit
 
             - name: Kopplung (die Welt fasst den Körper an — Strömung, Gleiten, Wind-Richtung, Gras-Biegung)
-              if: matrix.gruppe == 5
+              if: matrix.gruppe == 4
               run: npm run gate:kopplung
 
             - name: Tor-Wurf und Tor-Fernform (1110-9 — die NUR-WURF-Stufe 3 der Tore, die Fernform ≤ 24 sicht-Teile)
               # Gruppe 9 (die leichteste, 8,9 min Median): in Gruppe 4 trug sie nach main bb554abf 11,6 min (Waage 11).
-              if: matrix.gruppe == 6
+              if: matrix.gruppe == 3
               run: npm run gate:tor-fern
 
             - name: Worker-Wasser-Sheet (der Spiegel im Worker ist byte-identisch, Lehre 7)
-              if: matrix.gruppe == 11
+              if: matrix.gruppe == 14
               run: npm run gate:worker-watersheet
 
             - name: Portal-Membran (die Passage ist integriert und zeichnet nur im Blick)
-              if: matrix.gruppe == 16
+              if: matrix.gruppe == 14
               # Null-Renderer: Kollision der Gesetz-Huelle, Membran baut und atmet, Hindurchgehen ist Betreten. Dann der
               # ECHTE Frame am Genesis-Ring (swiftshader, kienspan): aus der Mitte zeichnen Membranen, die im Ruecken nicht
               # alle; 70 m vor dem Ring mit dem Blick vom Ring weg keine Membran und kein Nebel (Taeter beim Namen); die
@@ -1464,23 +1464,23 @@ jobs:
               run: npm run gate:portal-membran
 
             - name: Fahrzeug-Fernstufe (ein geparktes Fahrzeug serviert fern das Billboard der EINEN Bäckerei)
-              if: matrix.gruppe == 18
+              if: matrix.gruppe == 13
               run: npm run gate:fahrzeug-fern
 
             - name: Bäcker-Kanal (der Studio-Bäcker antwortet im Foundry-Worker)
-              if: matrix.gruppe == 11
+              if: matrix.gruppe == 10
               run: npm run gate:baecker-kanal
 
             - name: Konsum-Matrix (je Gattung und Facette, was das Studio liefert und wer es liest — die Ratsche hält jede volle Zelle)
-              if: matrix.gruppe == 9
+              if: matrix.gruppe == 8
               run: npm run gate:konsum-matrix
 
             - name: Chunk-Naht (same-LOD-Ränder koinzident, Cross-LOD-Paare gestreamt, kein ungedeckter Spalt)
-              if: matrix.gruppe == 15
+              if: matrix.gruppe == 11
               run: npm run gate:seam
 
             - name: Mehrspieler-Wand (zwei Seiten, echter signaling-server - Tuer, Knopf, Boot, kein Mitspieler im Ursprung)
-              if: matrix.gruppe == 17
+              if: matrix.gruppe == 14
               # K04: der nackte Aufruf heilt nach Server-Ausfall (Rejoin), der Knopf liest die EINE Absicht, der Mitspieler
               # erscheint erst an seinem Ort; der Selbsttest setzt die alte Tuer ein und sieht (b) ROT. K23 (c): das Chat-Graben
               # kommt bei B GENAU einmal an (jeder Edit von A, und B traegt keinen mehr); im Hauptlauf wendet B danach jede
@@ -1498,21 +1498,21 @@ jobs:
               run: npm run gate:v1-pfad
 
             - name: Die Werkstatt-Weg-Linse (Welle L Folge - v1-Schritte 3 und 4, Werkstatt bauen und KI erschaffen)
-              if: matrix.gruppe == 14
+              if: matrix.gruppe == 16
               # Die Defekte der sichtbaren Leben-Schau 07.10. auf dem Weg Satz/Werkstatt -> stehendes Werk, je beim Namen:
               # jede Probe ruft den Chokepoint selbst im echten Boot (headless, foundry-ON); der Selbsttest bricht Verdikte
               # und Wand je einzeln.
               run: npm run gate:werkstatt-weg
 
             - name: Die Kamera-Laub-Linse (K06 - Laub, Strauch und Fels vor der Linse, die Nah-Kugel der Durchsicht)
-              if: matrix.gruppe == 16
+              if: matrix.gruppe == 14
               # An vier Orten der Leben-Schau 2 je Pflanze acht Stellungen zu Fuß, im Ritt und im Ich-Auge: die Nah-Deckung
               # des Schirms je Täter-Klasse (scripts/lib/kamera-nah.cjs); der eingeschmuggelte Laub-Stoff und Fels müssen beim
               # Namen fallen, der Selbsttest nennt jeden Bruch und die statische Wand feuert am Vor-Stand.
               run: npm run gate:kamera-laub
 
             - name: Die Kamera-Leib-Linse (K06 - WE-05, FZ-07, NP-03 - nie im Fels, nie unter dem sichtbaren Boden, nie in einer Box)
-              if: matrix.gruppe == 16
+              if: matrix.gruppe == 18
               # 50 feste Posen (40 Mess-Wiese, 10 Prüfbühne s2-hang30) zu Fuß und im Verfolger-Ritt gegen die exakte Gestalt,
               # die Feld-Proben je 3rd-Bild, die Sprünge im Rundgang; NP-03 48 Posen im Körper-Studio, NP-02 der Tunnel.
               # Gruppe 2 (Integration V18.542): Gruppe 8 trägt seit der weissen Masse 10,6 min (CI 38181627348), mit diesem
@@ -1571,7 +1571,7 @@ jobs:
               run: npm run gpu-lens
 
             - name: Nah-Linse (echter Renderer — kein Analog-Satz diesseits der Nah-Grenze 64 m)
-              if: matrix.gruppe == 15
+              if: matrix.gruppe == 10
               # Nah und mittel ist das Studio-Mesh die Gestalt, das Analog-Feld trägt erst jenseits ANALOG_NAH_M. Fährt
               # den ECHTEN Renderer (swiftshader) an der Mess-Wiese und liest `_analogZensus` (jeder zeichnende Satz
               # < 64 m beim Namen: Klasse · Träger · Abstand · seit wann · warum kein Mesh; ein hängender Schwund zählt):
@@ -1591,7 +1591,7 @@ jobs:
               run: npm run gate:weltbild-frost
 
             - name: Post-Kette (echter Renderer — der Direktpfad zeichnet mit Tiefe, jede Nachbild-Stufe kostet nur, wenn sie zeigt)
-              if: matrix.gruppe == 18
+              if: matrix.gruppe == 11
               # Gruppe 2 seit der Vereinigung mit waende-ci: Gruppe 1 lief in V18.538 (Lauf 38033163539) 24,4 min, mit den
               # sieben Kreatur- und Übergabe-Wänden geschätzt 25,4 — Gruppe 2 lief 12,5 (die Post-Kette dort 202 s).
               # Faehrt den ECHTEN Frame (swiftshader, kienspan) durch die Weiche: Post-Kette, Direktpfad (wie die
@@ -1602,7 +1602,7 @@ jobs:
               run: npm run gate:post-kette
 
             - name: Kamera-Treue und Stand-Wand (echter Renderer — der Replay zeichnet wie der direkte Pfad, im Stand arbeitet die Diät nichts doppelt)
-              if: matrix.gruppe == 10
+              if: matrix.gruppe == 18
               # Faehrt den ECHTEN Renderer (swiftshader, kienspan, Schatten an) an einer eigenen Buehne: die Aufnahme verfolgt
               # jeden Draw trotz Schatten-Render, kein Bundle unter dem Override-Stoff, der Replay zeichnet Blick Y wie der
               # direkte Pfad. Dazu die STAND-WAND (Welle K): Programme mit denselben Quellen teilen EINE geteilte Gruppe, im
@@ -1613,7 +1613,7 @@ jobs:
               run: npm run gate:kamera-treue
 
             - name: Ego-Schatten (echter Renderer — in der Ego-Sicht wirft der Leib seinen Schatten, das Auge sieht ihn nicht)
-              if: matrix.gruppe == 12
+              if: matrix.gruppe == 15
               # voll 10 (die leichteste Gruppe, 7,4 -> 7,7 min; 17 s aus Lauf 38038945137/1 in spec/ci/ci-zeiten.json).
               # Faehrt den ECHTEN Renderer (swiftshader, kienspan, Schatten an) an einer eigenen Buehne mit dem echten Leib des
               # Spielers, der echten Ego-Regel (_applyEgoSicht) und der echten Haupt-Kamera am Auge: in der Ego-Sicht wirft der
@@ -1633,7 +1633,7 @@ jobs:
               run: npm run gate:ziel-zensus
 
             - name: Verdeckungs-Abfrage (echter Renderer — der Aussteige-Ablauf am Bach, jede WebGPU-Validierung beim Namen)
-              if: matrix.gruppe == 15
+              if: matrix.gruppe == 16
               # Faehrt am Bach der Mess-Wiese (swiftshader, kienspan, EIN Boot) den echten Spiel-Takt: ein Region-Buendel jenseits
               # des Bachs (der Berg-Cull baut seinen Occlusion-Stellvertreter, Probe jeden queryTakt-ten Frame), der GT am Ufer,
               # Aufsitzen, Fahrt, AUSSTEIGEN (die Sicht zurueck auf first), zwei Probe-Fenster Blick uebers Wasser. Dazu die
@@ -1652,7 +1652,7 @@ jobs:
               run: npm run gate:wasser-leben:bild
 
             - name: Look-Physik-Linse (der Look gegen die gemessene Realität)
-              if: matrix.gruppe == 6
+              if: matrix.gruppe == 3
               # Die LINSE gegen den asymmetrischen-Verifikations-Riss: das Gate misst Mechanik, nicht
               # den Perzept — ABER für die Teile des Looks, die REALITÄT SIND (Albedo · Wetter-Dimmung ·
               # Atmosphäre-Trägheit · HDR-Tone-Mapping · lineare Farbe), gibt es eine publizierte

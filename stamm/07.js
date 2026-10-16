@@ -910,9 +910,10 @@ class AnazhRealm_Z07 {
                 this._populateVoxelChunkVegetation(naechster.cx, naechster.cz);
             return;
         }
-        let budget = 2;
+        // zwei Chunks je Takt — eine Kappe (`_kappeOffen`): unter dem Ladeschirm wächst das Laub bis zur Frist des Lade-Frames
+        let n = 0;
         for (const key of pending) {
-            if (budget <= 0) break;
+            if (!this._kappeOffen(n, 2)) break;
             const ci = key.indexOf(",");
             const cx = parseInt(key.slice(0, ci), 10),
                 cz = parseInt(key.slice(ci + 1), 10);
@@ -920,7 +921,7 @@ class AnazhRealm_Z07 {
             pending.delete(key);
             if (this.state.voxelChunks && this.state.voxelChunks.has(key)) {
                 this._populateVoxelChunkVegetation(cx, cz);
-                budget--;
+                n++;
             }
         }
     }

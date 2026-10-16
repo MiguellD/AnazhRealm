@@ -7468,8 +7468,9 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         }
         // DAS VOLUMEN DER GESCHLOSSENEN HAUT (1310-15): die Masse des Menschen liest das Volumen seiner Haut
         // (`_leibVolumen`, Divergenz-Satz Σ a · (b × c) / 6 je Dreieck, in der Ruhe-Pose) — die Haut ist nach dem Stoff-Schnitt
-        // offen, also misst der Ofen sie vorher und gibt die Zahl im Beipack mit (`leibV`, Geometrie-Einheiten³).
-        if (hautHuelle) {
+        // offen, also misst der Ofen sie vorher und gibt die Zahl im Beipack mit (`leibV`, Geometrie-Einheiten³). Nur was der
+        // Schnitt öffnet: Kopf und Hände bleiben geschlossen, die misst der Wirt selbst neben der Zahl (A4, `_leibVolumen`).
+        if (hautHuelle && hautImStoff) {
             const g = hautHuelle.geometry;
             const p = g.attributes.position.array;
             const ix = g.index.array;
@@ -7547,6 +7548,12 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         });
         kopf.updateMatrixWorld(true);
         const prims = __tierPrims(kopf, kopf, (n) => !unterAuge(n), KH.vox, KH.blend, () => null, ["skin", "lips", "haarKappe"], true);
+        // DIE HÖHLE IST HAUT (A4, KOPF_SOLL hoehleL/hoehleA im BILD): ihr Ton (koerper kopfToene) stand auf einer eigenen Kugel
+        // HINTER der Kopf-Haut — das Bild zeigte um das Auge den Wangen-Ton. Die Höhlen-Kugeln (Klasse socket, die Ohrmuschel
+        // eingeschlossen) formen nichts mehr und werden nicht gegossen: sie sind die Ton-Zone der Haut (hoehleSaum, unten).
+        const hoehlen = __tierPrims(kopf, kopf, (n) => !unterAuge(n), KH.vox, KH.blend, () => null, ["socket"], true);
+        if (hoehlen.length < 2) throw new Error("MENSCH-HAUT: die Höhlen-Kugeln (Klasse socket) fehlen (fail-closed)");
+        for (const h of hoehlen) h.node.userData.__nichtGiessen = true;
         for (const m of kappen) kopf.remove(m);
         // die gemalten Falten (Nasolabial-Stäbe, Philtrum: Klasse shadow) stünden als Stäbe auf der glatten Haut — sie fallen
         kopf.traverse((n) => {
@@ -7558,7 +7565,7 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         if (!geo) throw new Error("MENSCH-HAUT: die Kopf-Haut lieferte keine Fläche");
         // je Vertex die Farbe des nächsten Primitivs (normierter Abstand |Mi·p|/r − 1), linear wie das Material
         const farbeVon = new Map();
-        for (const p of prims) {
+        for (const p of prims.concat(hoehlen)) {
             const c = p.node.material.color;
             farbeVon.set(p, [c.r, c.g, c.b]);
         }
@@ -7567,6 +7574,10 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
             uL = B.augen.lowerLipRef;
         const mundY = (oL.position.y + uL.position.y) / 2,
             mundH = Math.abs(oL.position.y - uL.position.y);
+        // DER SAUM DER HÖHLE (A4, koerper MENSCH_GESTALT.kopfHaut.hoehleSaum): die Höhlen-Kugel liegt unter Braue und Wange — die
+        // Haut trägt ihren Ton, so weit sie innerhalb hoehleSaum Halbachsen über ihrem Rand liegt (der Ring um das Auge, die
+        // Muschel des Ohrs); die Lippe bleibt Lippe. Ohne Saum keine Höhle (fail-closed).
+        if (!(KH.hoehleSaum >= 0)) throw new Error("MENSCH-HAUT: kopfHaut.hoehleSaum fehlt (fail-closed)");
         const pa = geo.attributes.position;
         const col = new Float32Array(pa.count * 3);
         for (let i = 0; i < pa.count; i++) {
@@ -7574,7 +7585,9 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
                 y = pa.getY(i),
                 z = pa.getZ(i);
             let best = prims[0],
-                bd = Infinity;
+                bd = Infinity,
+                hoehle = null,
+                hd = Infinity;
             for (const p of prims) {
                 const m = p.Mi;
                 const qx = m[0] * x + m[4] * y + m[8] * z + m[12],
@@ -7586,6 +7599,18 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
                     best = p;
                 }
             }
+            for (const p of hoehlen) {
+                const m = p.Mi;
+                const qx = m[0] * x + m[4] * y + m[8] * z + m[12],
+                    qy = m[1] * x + m[5] * y + m[9] * z + m[13],
+                    qz = m[2] * x + m[6] * y + m[10] * z + m[14];
+                const d = Math.sqrt(qx * qx + qy * qy + qz * qz) / p.r - 1;
+                if (d < hd) {
+                    hd = d;
+                    hoehle = p;
+                }
+            }
+            if (hd < KH.hoehleSaum && best.node.material.userData.__klasse !== "lips") best = hoehle;
             // die Mund-Linie: auf der Lippe, in der Höhe zwischen den Lippen-Mitten (dunkel, ein Viertel der Lippe)
             const fb = farbeVon.get(best);
             const spalt = best.node.material.userData.__klasse === "lips" && Math.abs(y - mundY) < KH.mundSpalt * mundH;

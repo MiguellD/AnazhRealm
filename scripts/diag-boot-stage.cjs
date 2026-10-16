@@ -1,36 +1,20 @@
 #!/usr/bin/env node
 // ─────────────────────────────────────────────────────────────────────────
-// diag-boot-stage.cjs — „VOLLE BÜHNE" ALS PRÜFBARES PRÄDIKAT + ZEITLEISTE (W2)
+// diag-boot-stage.cjs — „VOLLE BÜHNE" ALS PRÄDIKAT + ZEITLEISTE (W2) und DIE KALT-ZEILE (K30, Pflicht-OFFEN B)
 //
-// DONE-Kriterium 2 der Studio-Paritäts-Mission („Boot ≤3 s bis volle Bühne")
-// war bis W2 PROSAISCH — niemand hatte definiert, was „volle Bühne" IST, kein
-// Skript maß sie. Hier ist sie ein PRÄDIKAT aus kanonischen Quellen (nichts
-// hartkodiert — die Impostor-Erwartung leitet sich aus der Bibliothek ab, die
-// V18.419-Auto-Blueprint-Klasse macht jede feste Zahl stale):
-//   RING    _activeRingRadius ≥ Ziel (der Weitblick hängt daran)
-//   GRAS    pendingGrass leer            WASSER  pendingWaterIso leer
-//   STREU   `_streuWartet` 0: keine Region in Reichweite fehlt, wartet auf ihr Asset oder trägt eine offene Scheibe
-//           (der stille Saug ist durch; eine fehlende Regionen-Karte heißt „der Streamer lief noch nie", nie „steht")
-//   BIBLIO  Foundry ready + Prefetch fertig
-//   IMPOST  Bake-Queue leer + kein Bake pending (non-headless; der Null-
-//           Renderer no-opt den RTT-Bake gate-treu → Term dort übersprungen)
-//   LUFT    die EINE Luftperspektive steht (scene.fogNode, Sichtweite ≥ 5 km) — die Fernform trägt die
-//           Ferne, kein Lade-Nebel kappt sie (V18.530)
-// Zeitleiste: t(Weltbild) / t(Bibliothek) / t(Ring) / t(Impostoren) / t(Bühne)
-// in TICKS (Mechanik-Reihenfolge, hardware-unabhängig) + Wall-Clock (Container-
-// Anhalt; die Schöpfer-GPU-Zahl liefert W8). t(Weltbild) liest `state._weltbildDa` (ab Navigation: der Ladeschirm hält
-// jede Taste, also ist das die Kontrolle — bis K30 maß die Linse die Existenz von `_gameLoopTick`). --selftest beweist
-// die Linse feuert (die wartende Spieler-Region und die fehlende Regionen-Karte machen das Prädikat rot).
-//   node scripts/diag-boot-stage.cjs [--selftest]
+// Die volle Bühne ist ein PRÄDIKAT aus kanonischen Quellen (nichts hartkodiert, die Impostor-Erwartung aus der Bibliothek):
+//   RING ≥ Ziel · GRAS/WASSER ohne Wartende · STREU `_streuWartet` 0 (keine Region fehlt, wartet auf ihr Asset oder trägt
+//   eine offene Scheibe; eine fehlende Regionen-Karte heißt „der Streamer lief noch nie") · BIBLIO Foundry ready + Prefetch
+//   fertig · IMPOST Bake-Queue leer (nur mit Renderer) · LUFT die EINE Luftperspektive (scene.fogNode, Sichtweite ≥ 5 km).
+// Zeitleiste t(Weltbild/Bibliothek/Ring/Impostoren/Bühne) in TICKS + Wall-Clock; t(Weltbild) = `state._weltbildDa` ab
+// Navigation (der Ladeschirm hält jede Taste: das ist die Kontrolle). --selftest: die wartende Spieler-Region und die
+// fehlende Regionen-Karte machen das Prädikat rot.   node scripts/diag-boot-stage.cjs [--selftest]
 //
-// DIE KALT-ZEILE (K30, Pflicht-OFFEN B): `--kalt` bootet mit echtem Renderer und LEEREM Profil (IDB leer, wie nach jedem
-// Versions-Update) und nennt je Sekunde der Ankunft, worauf das erste Weltbild wartet (`_weltbildFehlt`), wie lange der
-// Haupt-Thread blockiert war (Langaufgaben; benannt: Boden, Streu, Bauten, Gruppen-Bau, Buch und der Erst-Bau der Zeichnung
-// aus `_erstZeichnung` — Knoten- und Pipeline-Bau des ersten Draws), wie viele Pipelines offen sind, in welcher Phase der
-// Vorrat steht (sein Merker `f._vorrat` wörtlich: „wartet auf das erste Bild" · „bestellt" — nie „läuft" aus einem
-// Merker, der nur „an" sagt) und was die Foundry-Schlange trägt; der Adapter kommt vom Gerät (`device.adapterInfo`). Urteil: t(Weltbild)
-// ≤ 5 s und kein halbes Weltbild (kein „steht ohne" im Log). Ohne `--echt` swiftshader (das Spiel wählt kienspan), mit
-// `--echt` die Hardware-GPU im Fenster (1920×1080) — die Zeit richtet der OMEN an beiden Messplätzen.
+// DIE KALT-ZEILE: `--kalt` bootet mit echtem Renderer und LEEREM Profil (IDB leer, wie nach jedem Versions-Update) und nennt
+// je Sekunde, worauf das erste Weltbild wartet (`_weltbildFehlt`), die blockierten ms des Haupt-Threads (benannt: Boden,
+// Streu, Bauten, Gruppen-Bau, Buch, Ort-Wahl, Dorf und der Erst-Bau der Zeichnung aus `_erstZeichnung`), offene Pipelines,
+// die Phase des Vorrats (`f._vorrat` wörtlich) und die Foundry-Schlange; der Adapter vom Gerät (`device.adapterInfo`).
+// Urteil: t(Weltbild) ≤ 5 s ohne halbes Weltbild. Ohne `--echt` swiftshader, mit `--echt` die Hardware-GPU (1920×1080).
 //   node scripts/diag-boot-stage.cjs --kalt [--echt] [--sek 120] [--json datei] [--bild ankunft.png]
 // ─────────────────────────────────────────────────────────────────────────
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
@@ -68,41 +52,30 @@ function KALT_PROBE() {
         _rebuildArchitectureMesh: "Bauten",
         _foundryBuildGroup: "Gruppen-Bau",
         _foundryIngestBook: "Buch",
+        _ortWahlScheibe: "Ort-Wahl",
+        _spawnSettlementSlot: "Dorf",
     };
-    const wickleKosten = (P) => {
-        for (const name of Object.keys(KOSTEN)) {
+    // dazu die Bestellungen des Vorrats beim Namen (Wagen, Siedlungs-Probe); WANN er wartet und bestellt, sagt sein Merker
+    // (`f._vorrat`) — der Aufruf von `_foundryPrefetchLibrary` beim Worker-Start ist nie sein Bestell-Beginn (K30-N1)
+    const wickle = (P) => {
+        for (const name of [...Object.keys(KOSTEN), "_foundryVorrat", "_foundryRequestSettlement"]) {
             const alt = P[name];
             if (typeof alt !== "function") continue;
+            const k = KOSTEN[name];
             P[name] = function (...a) {
                 const t0 = performance.now();
+                const id = name === "_foundryVorrat" ? `${a[0]}|${a[1]}` : "";
+                if (!k) A.ev.push([Math.round(t0), name + " ab", id]);
                 try {
-                    return alt.apply(this, a);
+                    const x = alt.apply(this, a);
+                    if (!k && x && typeof x.then === "function") x.then(() => A.ev.push([Math.round(performance.now()), name + " an", id]));
+                    return x;
                 } finally {
                     const t1 = performance.now();
-                    const k = KOSTEN[name];
-                    const s = Math.floor(t0 / 1000);
-                    const z = A.kosten[k] || (A.kosten[k] = {});
-                    z[s] = (z[s] || 0) + (t1 - t0);
+                    const z = k ? A.kosten[k] || (A.kosten[k] = {}) : null;
+                    if (z) z[Math.floor(t0 / 1000)] = (z[Math.floor(t0 / 1000)] || 0) + (t1 - t0);
                     if (name === "_foundryIngestBook" && !A.buchDa) A.buchDa = Math.round(t1);
                 }
-            };
-        }
-    };
-    const wickle = (r) => {
-        const P = Object.getPrototypeOf(r);
-        wickleKosten(P);
-        // die Bestellungen des Vorrats beim Namen (Wagen, Siedlungs-Probe); WANN er wartet und bestellt, sagt sein Merker
-        // (`f._vorrat`) — der Aufruf von `_foundryPrefetchLibrary` beim Worker-Start ist nie sein Bestell-Beginn (K30-N1)
-        for (const name of ["_foundryVorrat", "_foundryRequestSettlement"]) {
-            const alt = P[name];
-            if (typeof alt !== "function") continue;
-            P[name] = function (...a) {
-                const id = name === "_foundryVorrat" ? `${a[0]}|${a[1]}` : "";
-                A.ev.push([Math.round(performance.now()), name + " ab", id]);
-                const x = alt.apply(this, a);
-                if (x && typeof x.then === "function")
-                    x.then(() => A.ev.push([Math.round(performance.now()), name + " an", id]));
-                return x;
             };
         }
     };
@@ -112,7 +85,7 @@ function KALT_PROBE() {
         if (r && r.state) {
             if (!gewickelt) {
                 gewickelt = true;
-                wickle(r);
+                wickle(Object.getPrototypeOf(r));
             }
             try {
                 o.fehlt = r._weltbildFehlt();

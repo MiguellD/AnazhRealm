@@ -124,7 +124,7 @@ function masseVerdict(M) {
             v.push(`masse-${name}: keine Masse im Wirt`);
             continue;
         }
-        if (!(l.gestaltKg > 0)) continue; // ohne Kern-Dichte nennt masse-kern den Täter
+        if (l.gestaltKg == null) continue; // ohne Kern-Dichte nennt masse-kern den Täter; 0 kg (offene Haut) ist ROT
         if (!(Math.abs(l.wirtKg - l.gestaltKg) <= MASSE.toleranz * l.gestaltKg))
             v.push(
                 `masse-${name}: der Wirt rechnet ${l.wirtKg.toFixed(1)} kg, die Gestalt wiegt ${l.gestaltKg.toFixed(1)} kg`
@@ -903,13 +903,16 @@ async function WELLE_L() {
             if (A.STOSS && A.STOSS.dichteWagen !== undefined)
                 zwillinge.push("STOSS.dichteWagen " + A.STOSS.dichteWagen);
             if (typeof r._kreaturMasse === "function") zwillinge.push("_kreaturMasse (die Kapsel aus der Hüft-Höhe)");
-            // das Volumen der geschlossenen Haut (Klasse fell/haut, jede Kante gerade oft) im Rahmen von `rahmen`
+            // das Volumen der geschlossenen Haut (Klasse fell/haut, jede Kante gerade oft) im Rahmen von `rahmen` — dazu, was der
+            // Stoff-Schnitt des Ofens öffnet (`__leibV` am Gelenk der Hülle, vor dem Schnitt gemessen); Kopf und Hände misst die Linse
             const hautVolumen = (teil, rahmen, klassen) => {
                 rahmen.updateMatrixWorld(true);
                 const inv = new THREE.Matrix4().copy(rahmen.matrixWorld).invert();
                 const mm = new THREE.Matrix4();
                 let vol = 0;
                 teil.traverse((o) => {
+                    if (o.userData && o.userData.__leibV > 0)
+                        vol += o.userData.__leibV * Math.abs(mm.multiplyMatrices(inv, o.matrixWorld).determinant());
                     if (!o.isMesh || !o.geometry || !o.geometry.attributes.position) return;
                     const kl = o.material && o.material.userData ? o.material.userData.foundryKind : null;
                     if (!klassen.includes(kl)) return;
@@ -971,11 +974,7 @@ async function WELLE_L() {
                         nah = o.userData._gelenk.nah;
                 });
                 const vol = hautVolumen(nah || pm, pm, ["haut"]);
-                leiber.mensch = {
-                    wirtKg: typeof r._leibMasse === "function" ? r._leibMasse(pm) : 0,
-                    gestaltKg: dichteMensch > 0 ? vol * dichteMensch : null,
-                    vM3: vol,
-                };
+                leiber.mensch = { wirtKg: wirtLeib(pm), gestaltKg: dichteMensch > 0 ? vol * dichteMensch : null, vM3: vol };
             }
             {
                 const e = r.spawnArchitecture(
@@ -4365,7 +4364,7 @@ async function WELLE_L() {
                 wolf: { wirtKg: 140.5, gestaltKg: 64 },
                 hirsch: { wirtKg: 435.6, gestaltKg: 94.2 },
                 baer: { wirtKg: 254.8, gestaltKg: 335.4 },
-                mensch: { wirtKg: 98.8, gestaltKg: 98.8 },
+                mensch: { wirtKg: 111.5, gestaltKg: 0 },
                 gt: { wirtKg: 1341.4, gestaltKg: 1341.4 },
             },
         });
@@ -4383,10 +4382,10 @@ async function WELLE_L() {
         });
         check(
             mvGut.length === 0 &&
-                ["masse-kern", "masse-zwilling", "masse-hirsch", "masse-baer", "masse-reihe"].every((t) =>
+                ["masse-kern", "masse-zwilling", "masse-hirsch", "masse-baer", "masse-mensch", "masse-reihe"].every((t) =>
                     mvAlt.some((x) => x.startsWith(t))
                 ),
-            "Selbst-Test T14: der Befund (Kapsel aus der Hüft-Höhe, Dichten im Wirt) nennt Kern, Zwilling, Hirsch, Bär und Reihe; eine Tafel aus EINER Quelle bleibt grün"
+            "Selbst-Test T14: der Befund (Kapsel aus der Hüft-Höhe, Dichten im Wirt, der Mensch ohne geschlossene Haut 0 kg) nennt Kern, Zwilling, Hirsch, Bär, Mensch und Reihe; eine Tafel aus EINER Quelle bleibt grün"
         );
         const bz2 = z.biss || {};
         const bw = (t) =>
