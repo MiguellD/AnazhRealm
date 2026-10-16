@@ -58,3 +58,25 @@ Das Repo ist unverändert.
   - `[10:26:15Z INFO ScriptHandler] Location: 'C:\Program Files\Git\bin\bash.EXE'`
 - Vorher (Versuch 1, `Worker_20261016-093845-utc.log`) stand dort `…\WindowsApps\bash.EXE`.
 - `hooks/hook.log`: 12:26:02 Schloss genommen als `ci-runner 38881847786/2 echt`. Das Ergebnis des Jobs liest der Koordinator per API.
+
+## Nachtrag 16.10. ~12:40 — Re-Run: `npm ci` grün, ROT jetzt an Schritt 11 Schatten-Bias (1,3 s) — Täter: der Checkout ist CRLF
+
+- **Lauf 38881847786 Versuch 2:** Schritte 1–10 grün, darunter `npm ci` (60 s), Fern-Ring, Fernwald, Streu-Fernform, Luft-Sicht und
+  Chunk-Naht. Schritt 11 `gate:schatten-bias` ist ROT nach 1,3 s (Worker-Log Zeile 5376), der Rest wurde übersprungen.
+- **Täter beim Namen: der Arbeitsordner des Läufers trägt CRLF.**
+  - In `C:\actions-runner\_work\AnazhRealm\AnazhRealm` haben 570 von 590 Dateien CRLF (`git ls-files --eol`).
+  - Grund: die System-gitconfig von Git für Windows (`C:/Program Files/Git/etc/gitconfig`) setzt `core.autocrlf=true`.
+  - `scripts/lib/stamm.cjs` bricht daran: „S⁻¹: stamm/01.js endet nicht mit `}` und der Naht“.
+  - Dieselbe Klasse wie die OMEN-Lehre „diese Maschine checkt CRLF aus“. Meine lokalen Läufe fuhren in LF-Bäumen und sahen
+    das nicht.
+- **Gegenprobe am selben Kopf 826717ed:** `node scripts/diag-schatten-bias.cjs --selftest` endet im CRLF-Arbeitsordner
+  des Läufers mit EXIT=1, in einem LF-Klon mit EXIT=0 („SELBSTTEST GRÜN“). Roh: `p3/k1610r/schatten-bias-laeufer.txt` auf dem
+  OMEN.
+- **Schnitt (derselbe Weg R, Läufer-Umgebung, Repo unverändert):**
+  - `.env` trägt jetzt zusätzlich `GIT_CONFIG_PARAMETERS='core.autocrlf=false'`. Git 2.30.1 kennt `GIT_CONFIG_COUNT` noch
+    nicht; `GIT_CONFIG_PARAMETERS` ist der Weg von `git -c` und wirkt auf jeden git-Aufruf des Jobs, auch auf den von
+    `actions/checkout`. Probe: ein Klon mit diesem Schalter hat 0 von 590 Dateien CRLF.
+  - Der Arbeitsordner `_work\AnazhRealm\AnazhRealm` ist geleert, damit der nächste Checkout frisch mit LF schreibt. Ein
+    wiederverwendeter Baum hätte die Dateien mit unverändertem Stand als CRLF behalten.
+  - Der Listener ist neu gestartet (12:36:24 lokal); seine Umgebung ist belegt (`p3/k1610r/listener-env-2.txt`).
+- **Bitte noch einen Re-Run** von `echt` an 826717ed.
