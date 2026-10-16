@@ -5,13 +5,9 @@
 // den strukturellen „kein kind-if im AutoRegister"-Wall traegt zusaetzlich das
 // Verfassungs-Gesetz N1 in gate:constitution). Gestraffte Schwester zu
 // diag-nervensystem-vehicle.cjs:
-//   S (statisch, Node): Manifest traegt porta (ns __portaCore) · KIND_POLICY
-//     traegt die gate-Zeile (prefix tor_, donor tor_basis) · der Auto-Register-
-//     Chokepoint laeuft die Tabelle OHNE kind-String-Vergleich · porta-core
-//     deklariert kindStages.gate als Kette 0 … 3 (3 = NUR-WURF) · die Rezepte tragen fx.place
-//     {mode:"site", siteTag:"tor"} als DATEN · die Donor-SUBSTANZ tor_basis
-//     lebt als EINGEFRORENE Zeile in KIND_SUBSTANCE (der Alt-Blueprint ist
-//     PHYSISCH gefallen — AUSLÖSCHUNGS-WELLE). --selftest injiziert 2 Verletzungen.
+//   S (statisch, Node, Absenzen): der Auto-Register-Chokepoint vergleicht keinen kind-String (M8) · die
+//     Donor-Zeile tor_basis traegt kein portalMeta (der Alt-Blueprint ist PHYSISCH gefallen). Die Kette
+//     kindStages.gate beweist gate:porta-contract an der lod-Klemme. --selftest: die kern-stufen-Linse.
 //   B (Browser, foundry-ON, Null-Renderer): das LIVE-Buch traegt die 7 Tor-
 //     Rezepte · der Ingest-Merge traegt die Stufen-Liste JEDES Kerns (scripts/lib/kern-stufen.cjs) ·
 //     Auto-Blueprint tor_drachentor entsteht am EINEN Chokepoint (Donor-Klon,
@@ -22,7 +18,6 @@
 //     Distanz-Wahl lod=2 klemmt auf die groesste deklarierte Stufe ≤ 2.
 //   node scripts/diag-nervensystem-porta.cjs [--selftest]
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
-const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
 const kernStufen = require("./lib/kern-stufen.cjs");
@@ -45,61 +40,20 @@ function fnBody(src, kopf) {
 }
 
 // ===== TEIL S: die statischen Gesetze =====
-function staticLaws(anazhSrc, pcSrc, manifestSrc) {
+function staticLaws(anazhSrc) {
     const anazhNC = stripComments(anazhSrc);
-    const pcNC = stripComments(pcSrc);
     const out = [];
-    let manifest = null;
-    try {
-        manifest = JSON.parse(manifestSrc);
-    } catch (_e) {}
-    const porta = Array.isArray(manifest) ? manifest.find((c) => c && c.id === "porta") : null;
-    out.push([
-        "S1: das Manifest traegt den porta-Kern (scripts porta-core.js, ns __portaCore)",
-        !!porta &&
-            Array.isArray(porta.scripts) &&
-            porta.scripts.includes("porta-core.js") &&
-            porta.vertrag === "porta-core.js" &&
-            porta.ns === "__portaCore",
-    ]);
-    out.push([
-        "S2: KIND_POLICY traegt die gate-Zeile (prefix tor_, donor tor_basis — die EINE Daten-Zeile)",
-        /gate:\s*Object\.freeze\(\{\s*prefix:\s*"tor_",\s*donor:\s*"tor_basis"/.test(anazhNC),
-    ]);
-    // ABSCHIEDS-WELLE (V9.56-i + die V18.440-fnBody-Lehre): die Probe ankert auf der
-    // DEFINITIONS-Form (\\(book\\)\\s*\\{) — die CALL-SITE in _foundryIngestRecipes steht
-    // im File VOR der Definition und schnitte sonst den falschen Body.
+    // S3 (Absenz, M8): im Auto-Register-Chokepoint steht kein kind-String-Vergleich — die Wirkung der Policy beweist Teil D.
     const autoReg = fnBody(anazhNC, /_foundryAutoRegisterSpecies\([^)]*\)\s*\{/);
     out.push([
-        "S3: der Auto-Register-Chokepoint laeuft die Policy-Tabelle (kein kind-String-Vergleich, M8 — s. a. gate:constitution N1)",
-        autoReg !== null && /KIND_POLICY/.test(autoReg) && !/kind\s*[!=]==?\s*"/.test(autoReg),
+        "S3: der Auto-Register-Chokepoint vergleicht keinen kind-String (M8 — s. a. gate:constitution N1)",
+        autoReg !== null && !/kind\s*[!=]==?\s*"/.test(autoReg),
     ]);
-    // Die Kette als Gestalt, nie als Abschrift (K64: die Stufe 2 der Tore): 0 zuerst, streng steigend, 1 dabei, 3 = NUR-WURF zuletzt.
-    const kette = (pcSrc.match(/kindStages:\s*\{\s*gate:\s*\[([\d,\s]*)\]\s*\}/) || [])[1];
-    const S = kette ? kette.split(",").map((x) => Number(x.trim())) : [];
-    out.push([
-        "S4: porta-core deklariert kindStages.gate als Kette 0 … 3 (B2-Vertrags-Daten; 1 = die Stufe 1 seit K43, 3 = die NUR-WURF-Stufe, 1110-9)",
-        S.length >= 3 && S[0] === 0 && S.includes(1) && S[S.length - 1] === 3 && S.every((s, i) => i === 0 || s > S[i - 1]),
-        kette === undefined ? "keine Deklaration" : `[${kette}]`,
-    ]);
-    out.push([
-        "S5: die Tor-Rezepte tragen das Platzierungs-Gesetz als DATEN (fx.place mode site + siteTag tor)",
-        /place:\s*\{\s*mode:\s*"site",\s*siteTag:\s*"tor"\s*\}/.test(pcNC),
-    ]);
-    // ERFINDER-WELLE (Linsen-Heilung, die Trias-Parser-Klasse): die Substanz-Zeile ist
-    // seit einem Prettier-Lauf MEHRZEILIG (unquoted keys) — die Einzeilen-JSON-Regex
-    // griff ins Leere (vorbestehend rot, tail-maskiert). Klammer-bewusste, quote-
-    // sichere Row-Extraktion; geprueft wird die SEMANTIK (label · parts · keine
-    // Blueprint-Felder), nicht das Format.
+    // S6 (Absenz): die Donor-Zeile tor_basis trägt keinen Blueprint-Namen und kein portalMeta; Teile und Klon prüft Teil D.
     const torRow = ksRow(anazhNC, "tor_basis");
     out.push([
-        "S6: die Donor-SUBSTANZ tor_basis lebt in KIND_SUBSTANCE (label Torbogen, parts, kein portalMeta) — der Alt-Blueprint-Block ist GEFALLEN (AUSLÖSCHUNGS-WELLE)",
-        /KIND_SUBSTANCE = Object\.freeze\(\{/.test(anazhNC) &&
-            /label:\s*"Torbogen"/.test(torRow) &&
-            /parts:\s*\[/.test(torRow) &&
-            /shape/.test(torRow) &&
-            !/name:\s*"tor_basis"/.test(torRow) &&
-            !/portalMeta/.test(torRow),
+        "S6: die Donor-SUBSTANZ tor_basis trägt kein portalMeta — der Alt-Blueprint-Block ist GEFALLEN (AUSLÖSCHUNGS-WELLE)",
+        !!torRow && !/name:\s*"tor_basis"/.test(torRow) && !/portalMeta/.test(torRow),
     ]);
     return out;
 }
@@ -113,38 +67,21 @@ function ksRow(src, name) {
 
 (async () => {
     const anazhSrc = stammLib.text(root);
-    const pcSrc = fs.readFileSync(path.join(root, "porta-core.js"), "utf8");
-    const manifestSrc = fs.readFileSync(path.join(root, "cores.manifest.json"), "utf8");
 
     if (process.argv.includes("--selftest")) {
         console.log("=== SELBST-TEST: die Linse feuert auf injizierte Verletzungen ===");
-        // V1: die porta-Manifest-Zeile entfernt -> S1 muss rot werden.
-        const brokenManifest = JSON.stringify(JSON.parse(manifestSrc).filter((c) => c && c.id !== "porta"));
-        const s1 = staticLaws(anazhSrc, pcSrc, brokenManifest).find((l) => l[0].startsWith("S1"));
-        check("Selbst-Test 1: porta-Zeile aus dem Manifest entfernt -> S1 feuert", s1 && s1[1] === false);
-        // V2: die gate-Policy-Zeile verstuemmelt -> S2 muss rot werden.
-        const brokenPolicy = stammLib.ersetze(anazhSrc, null, 'donor: "tor_basis"', 'donor: "tor_kaputt"');
-        const s2 = staticLaws(brokenPolicy, pcSrc, manifestSrc).find((l) => l[0].startsWith("S2"));
-        check("Selbst-Test 2: gate-Policy-Zeile verstuemmelt -> S2 feuert", s2 && s2[1] === false);
-        // V3: die NUR-WURF-Stufe aus der Kette gestrichen -> S4 muss rot werden.
-        const brokenStages = pcSrc.replace(/(kindStages:\s*\{\s*gate:\s*\[[\d,\s]*?),\s*3\]/, "$1]");
-        const s4 = staticLaws(anazhSrc, brokenStages, manifestSrc).find((l) => l[0].startsWith("S4"));
-        check(
-            "Selbst-Test 3: die Stufe 3 aus kindStages.gate gestrichen -> S4 feuert",
-            brokenStages !== pcSrc && s4 && s4[1] === false
-        );
         // V4: ein Buch mit abgeschriebener Stufen-Liste -> der Merge-Vergleich nennt die Art.
         check("Selbst-Test 4: eine abgeschriebene Stufen-Liste faellt beim Namen (kern-stufen)", kernStufen.selbsttest());
         if (errs.length) {
             console.error("\n❌ SELBST-TEST ROT — die Linse ist vakuoes.");
             process.exit(1);
         }
-        console.log("\n✅ SELBST-TEST GRUEN — die Linse feuert auf beide Verletzungs-Klassen.");
+        console.log("\n✅ SELBST-TEST GRUEN — die Linse feuert auf die abgeschriebene Stufen-Liste.");
         process.exit(0);
     }
 
-    console.log("=== ε-BEWEIS PORTA — TEIL S: die statischen Gesetze (Node) ===");
-    for (const [name, ok, detail] of staticLaws(anazhSrc, pcSrc, manifestSrc)) check(name, ok, detail);
+    console.log("=== ε-BEWEIS PORTA — TEIL S: die statischen Absenzen (Node) ===");
+    for (const [name, ok, detail] of staticLaws(anazhSrc)) check(name, ok, detail);
 
     console.log("\n=== TEIL B: der lebende Draht (Browser, foundry-ON) ===");
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));

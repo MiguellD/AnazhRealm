@@ -2,11 +2,8 @@
 // Bogen W-A6/W-A7; Studio-Vertrag §8): klang · koerper · kreatur docken NUR über
 // Daten an (Manifest-Zeilen + MESHFREI-Kerne; KEINE KIND_POLICY-Zeile — keine
 // Katalog-Blueprints, die Rezepte erscheinen als Studio-Rezepte der Werkstatt).
-//   S (statisch, Node): Manifest trägt klang/koerper/tetrapoda (ns-Kerne) · die
-//     drei Kerne deklarieren MESHFREI=1 · KIND_POLICY trägt BEWUSST keine
-//     klang/koerper/kreatur-Zeile · die KLANG_HOST_RECIPE-Daten-Zeile existiert ·
-//     der build-asset-Dispatch der Brücke guardet typeof buildInstance (MESHFREI-
-//     Kerne können den Mesh-Kanal strukturell nicht betreten).
+//   S (statisch, Node): Manifest trägt klang/koerper/tetrapoda (ns-Kerne); die Kern-Form (MESHFREI=1,
+//     kein buildInstance) prüft gate:daten-contract am Namensraum.
 //   B (Browser, foundry-ON, Null-Renderer): das LIVE-Buch trägt lofi/wolf/mensch
 //     mit fx.klang/fx.motion · paramsByKind trägt klang/koerper/kreatur (W-A1-
 //     Regler-Straße) · KEINE Auto-Blueprints dieser kinds (must-ignore am
@@ -19,7 +16,6 @@
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
-const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.NERV_LABS_PORT || 4437);
 const root = path.resolve(__dirname, "..");
@@ -30,11 +26,9 @@ function check(name, ok, detail) {
     console.log(`  ${ok ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
     if (!ok) errs.push(name);
 }
-const stripComments = stammLib.ohneKommentare;
 
-// ===== TEIL S: die statischen Gesetze =====
-function staticLaws(anazhSrc, brueckeSrc, manifestSrc, cores) {
-    const anazhNC = stripComments(anazhSrc);
+// ===== TEIL S: das Manifest trägt die drei MESHFREI-Kerne (die Kern-Form prüft gate:daten-contract am Namensraum) =====
+function staticLaws(manifestSrc) {
     const out = [];
     let manifest = null;
     try {
@@ -47,105 +41,17 @@ function staticLaws(anazhSrc, brueckeSrc, manifestSrc, cores) {
             !!c && Array.isArray(c.scripts) && typeof c.ns === "string" && c.ns.length > 0,
         ]);
     }
-    for (const [file, src] of cores) {
-        out.push([`S2: ${file} deklariert MESHFREI = 1 (§8.1 — components-only)`, /MESHFREI\s*=\s*1/.test(src)]);
-        out.push([
-            `S2b: ${file} traegt KEIN buildInstance (der Host bleibt der Ofen)`,
-            !/function buildInstance\(/.test(stripComments(src)),
-        ]);
-    }
-    // Nachlese-Welle (V9.56-i — die Probe ankert auf der DEFINITIONS-Form): das
-    // Gesetz gilt dem KIND_POLICY-BLOCK selbst; ein `klang: Object.freeze(...)`
-    // anderswo (WORLD_REGISTRY.klang, das Klang-Portal) ist legitim und darf die
-    // Linse nicht auslösen.
-    const kpStart = (stammLib.treffer(anazhNC, null, "AnazhRealm.KIND_POLICY = Object.freeze({") || { index: -1 }).index;
-    const kpEnd = kpStart >= 0 ? anazhNC.indexOf("AnazhRealm.PLACE_MODES", kpStart) : -1;
-    const kpBlock = kpStart >= 0 && kpEnd > kpStart ? anazhNC.slice(kpStart, kpEnd) : "";
-    out.push([
-        "S3: KIND_POLICY traegt BEWUSST keine klang/koerper/kreatur-Zeile (keine Katalog-Blueprints)",
-        kpBlock.length > 0 &&
-            !/\bklang:\s*Object\.freeze/.test(kpBlock) &&
-            !/\bkoerper:\s*Object\.freeze/.test(kpBlock) &&
-            !/\bkreatur:\s*Object\.freeze/.test(kpBlock),
-    ]);
-    out.push([
-        'S4: die KLANG_HOST_RECIPE-Daten-Zeile existiert ("lofi")',
-        /KLANG_HOST_RECIPE\s*=\s*"lofi"/.test(anazhNC),
-    ]);
-    out.push([
-        "S5: der build-asset-Dispatch der Bruecke guardet typeof buildInstance (MESHFREI kann den Mesh-Kanal nicht betreten)",
-        /typeof zk\.kern\.buildInstance === "function"/.test(stripComments(brueckeSrc)),
-    ]);
-    // Nachlese-Welle (W-A6-Erstkonsument): die Motion-Daten-Zeilen existieren
-    // (MOTION_HOST_RECIPE + die Zustands→Profil-Tabelle — kein if, M8).
-    out.push([
-        'S6: die MOTION_HOST_RECIPE-Daten-Zeile existiert ("wolf") + MOTION_PROFILE_MAP (Tabelle, kein if)',
-        /MOTION_HOST_RECIPE\s*=\s*"wolf"/.test(anazhNC) && /MOTION_PROFILE_MAP\s*=\s*Object\.freeze/.test(anazhNC),
-    ]);
-    // ABSCHIEDS-WELLE (Koerper-Dock + Motion-Vollendung): die Daten-Zeilen der
-    // Dial- und Emotions-Bruecken existieren (Tabellen, kein if — M8) und die
-    // Konsumenten rufen die EINEN Leser (Definitions-Form).
-    out.push([
-        'S7 (HERZ): KOERPER_HOST_RECIPE ("mensch") + SOUL_MAP im Stamm; die DIAL_MAPs wohnen in den GESETZBÜCHERN (Kern-Delegaten)',
-        /KOERPER_HOST_RECIPE\s*=\s*"mensch"/.test(anazhNC) &&
-            /TETRAPODA_SOUL_MAP\s*=\s*Object\.freeze/.test(anazhNC) &&
-            /"KOERPER_DIAL_MAP",\s*\{/.test(anazhNC) &&
-            /"TETRAPODA_DIAL_MAP",\s*\{/.test(anazhNC) &&
-            /DIAL_MAP\s*=\s*Object\.freeze/.test(fs.readFileSync(path.join(root, "koerper-core.js"), "utf8")) &&
-            /DIAL_MAP\s*=\s*Object\.freeze/.test(fs.readFileSync(path.join(root, "tetrapoda-core.js"), "utf8")),
-    ]);
-    out.push([
-        // BAND GEWANDERT (19.07., c1c1271-Klasse): V18.483 gab dem Resolver den
-        // vierten Parameter (zustand — der Körper-Zustand führt die Motion-Brücke);
-        // die alte Drei-Argument-Signatur mit schließender Klammer maß eine
-        // Vergangenheit. Die Probe prüft den KONSUM (beide Leser fließen durch
-        // den Resolver), nicht die Aritäts-Momentaufnahme.
-        "S8: die EINE Emotions-Bruecke (MOTION_EMOTION_PROFILES) existiert und BEIDE Leser fliessen durch _motionProfileName",
-        /MOTION_EMOTION_PROFILES\s*=\s*Object\.freeze/.test(anazhNC) &&
-            (anazhNC.match(/_motionProfileName\(moving, emotions, "kreatur"/g) || []).length >= 1 &&
-            (anazhNC.match(/_motionProfileName\(moving, emotions, "koerper"/g) || []).length >= 1,
-    ]);
-    out.push([
-        "S9: der Rig ist LESER (_animateHumanoidRig ruft _koerperMotionProfile) + der Avatar-Bau liest die Dials (_buildHumanGroup ruft _koerperStudioDials)",
-        /_koerperMotionProfile\(false, emotions\)/.test(anazhNC) && /_koerperStudioDials\(\)/.test(anazhNC),
-    ]);
     return out;
 }
 
 (async () => {
-    const anazhSrc = stammLib.text(root);
-    const brueckeSrc = fs.readFileSync(path.join(root, "foundry-bruecke.js"), "utf8"); // die Brücke (K42)
     const manifestSrc = fs.readFileSync(path.join(root, "cores.manifest.json"), "utf8");
-    const cores = ["klang-core.js", "koerper-core.js", "tetrapoda-core.js"].map((f) => [
-        f,
-        fs.readFileSync(path.join(root, f), "utf8"),
-    ]);
 
     if (process.argv.includes("--selftest")) {
         console.log("=== SELBST-TEST: die Labs-Linse feuert ===");
         const brokenManifest = JSON.stringify(JSON.parse(manifestSrc).filter((c) => c && c.id !== "klang"));
-        const s1 = staticLaws(anazhSrc, brueckeSrc, brokenManifest, cores).find((l) => l[0].includes("klang-Kern"));
+        const s1 = staticLaws(brokenManifest).find((l) => l[0].includes("klang-Kern"));
         check("Selbst-Test 1: klang-Zeile aus dem Manifest entfernt -> S1 feuert", s1 && s1[1] === false);
-        const brokenCore = cores.map(([f, s]) => [
-            f,
-            f === "klang-core.js" ? s.replace(/MESHFREI = 1/g, "MESHFREI = 0") : s,
-        ]);
-        const s2 = staticLaws(anazhSrc, brueckeSrc, manifestSrc, brokenCore).find((l) =>
-            l[0].includes("klang-core.js deklariert")
-        );
-        check("Selbst-Test 2: MESHFREI=0 injiziert -> S2 feuert", s2 && s2[1] === false);
-        const brokenAnazh = stammLib.ersetze(anazhSrc, null, 'KLANG_HOST_RECIPE = "lofi"', 'KLANG_HOST_RECIPE = "techno"');
-        const s4 = staticLaws(brokenAnazh, brueckeSrc, manifestSrc, cores).find((l) => l[0].startsWith("S4"));
-        check("Selbst-Test 3: KLANG_HOST_RECIPE verstellt -> S4 feuert", s4 && s4[1] === false);
-        const brokenMotion = stammLib.ersetze(anazhSrc, null, 'MOTION_HOST_RECIPE = "wolf"', 'MOTION_HOST_RECIPE = "bear"');
-        const s6 = staticLaws(brokenMotion, brueckeSrc, manifestSrc, cores).find((l) => l[0].startsWith("S6"));
-        check("Selbst-Test 4: MOTION_HOST_RECIPE verstellt -> S6 feuert", s6 && s6[1] === false);
-        const brokenKoerper = stammLib.ersetze(anazhSrc, null, 'KOERPER_HOST_RECIPE = "mensch"', 'KOERPER_HOST_RECIPE = "roboter"');
-        const s7 = staticLaws(brokenKoerper, brueckeSrc, manifestSrc, cores).find((l) => l[0].startsWith("S7"));
-        check("Selbst-Test 5: KOERPER_HOST_RECIPE verstellt -> S7 feuert", s7 && s7[1] === false);
-        const brokenBridge = anazhSrc.replace(/_motionProfileName\(moving, emotions, "koerper"/g, "_getrennteBruecke(");
-        const s8 = staticLaws(brokenBridge, brueckeSrc, manifestSrc, cores).find((l) => l[0].startsWith("S8"));
-        check("Selbst-Test 6: koerper-Leser von der Bruecke getrennt -> S8 feuert", s8 && s8[1] === false);
         if (errs.length) {
             console.error("\n❌ SELBST-TEST ROT — die Linse ist vakuoes.");
             process.exit(1);
@@ -154,8 +60,8 @@ function staticLaws(anazhSrc, brueckeSrc, manifestSrc, cores) {
         process.exit(0);
     }
 
-    console.log("=== ε-BEWEIS LABS (klang · koerper · kreatur) — TEIL S: die statischen Gesetze ===");
-    for (const [name, ok, detail] of staticLaws(anazhSrc, brueckeSrc, manifestSrc, cores)) check(name, ok, detail);
+    console.log("=== ε-BEWEIS LABS (klang · koerper · kreatur) — TEIL S: das Manifest ===");
+    for (const [name, ok, detail] of staticLaws(manifestSrc)) check(name, ok, detail);
 
     console.log("\n=== TEIL B: der lebende Draht (Browser, foundry-ON) ===");
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
@@ -232,6 +138,9 @@ function staticLaws(anazhSrc, brueckeSrc, manifestSrc, cores) {
             if (k === "klang" || k === "koerper" || k === "kreatur") res.b.autoBpOffenders.push(n);
         }
         res.b.noAutoBps = res.b.autoBpOffenders.length === 0;
+        // EINE Quelle: die Dial-Karten wohnen in den Gesetzbüchern, der Stamm reicht dieselben Objekte durch (kein Zwilling).
+        const A = r.constructor;
+        res.b.dialEins = A.KOERPER_DIAL_MAP === window.__koerperCore.DIAL_MAP && A.TETRAPODA_DIAL_MAP === window.__tetrapodaCore.DIAL_MAP;
         // ===== K: DER EINE AUDIO-KONSUMENT (Lofi liest das Studio-Tempo) =====
         try {
             const emo = r.state.player.emotions;
@@ -299,11 +208,12 @@ function staticLaws(anazhSrc, brueckeSrc, manifestSrc, cores) {
             const g3 = mkGroup();
             r._animateCompoundMotion(g3, roles, 1, 0, false);
             res.m.tailRestored = g3.children[0].rotation.y;
-            // Source-Probe am lebenden Symbol: der Animator RUFT den Studio-Leser.
-            const src = window.__codeOf
-                ? window.__codeOf(r._animateCompoundMotion)
-                : r._animateCompoundMotion.toString();
-            res.m.consumes = /_motionStudioProfile/.test(src);
+            // KONSUM am lebenden Symbol: der Animator RUFT den Studio-Leser (Spion, die Zahl allein beweist ihn nicht).
+            const msp = r._motionStudioProfile;
+            res.m.consumes = 0;
+            r._motionStudioProfile = (...a) => (res.m.consumes++, msp.apply(r, a));
+            r._animateCompoundMotion(mkGroup(), roles, 1, 0, false);
+            delete r._motionStudioProfile;
         } catch (e) {
             res.m = res.m || {};
             res.m.err = (e && e.message) || String(e);
@@ -428,8 +338,7 @@ function staticLaws(anazhSrc, brueckeSrc, manifestSrc, cores) {
                     if (!core || typeof core.bauMensch !== "function" || typeof core.morphAuf !== "function")
                         return "err:kern fehlt";
                     const tisch = typeof BAKERS_BY_KIND !== "undefined" && typeof BAKERS_BY_KIND.koerper === "function";
-                    const src = window.__codeOf(r._buildHumanoidRig);
-                    return tisch && /_ofenMenschTemplate/.test(src) && !/humanSkeleton/.test(src);
+                    return tisch && !/humanSkeleton/.test(window.__codeOf(r._buildHumanoidRig));
                 } catch (_e2) {
                     return "err:" + _e2.message;
                 }
@@ -506,9 +415,41 @@ function staticLaws(anazhSrc, brueckeSrc, manifestSrc, cores) {
             const rigS = mkRig();
             r._animateHumanoidRig(rigS, 0.7, 0, false, false, { sorrow: 1 });
             res.e.headSad = rigS.head.rotation.x; // +0.18 (sad-Delta)
-            // walkPhase<->Profil: animatePlayerSoul liest die Bruecke (Source-Probe).
-            const apsSrc = window.__codeOf ? window.__codeOf(r.animatePlayerSoul) : r.animatePlayerSoul.toString();
-            res.e.stepBridge = /_koerperMotionProfile/.test(apsSrc);
+            // KONSUM: BEIDE Profil-Leser fließen durch den EINEN Resolver; ein Zwilling am Resolver vorbei fällt (Selbsttest).
+            const mpn = r._motionProfileName;
+            const durch = (k, args) => {
+                let n = 0;
+                r._motionProfileName = (...a) => (n++, mpn.apply(r, a));
+                try {
+                    r[k](...args);
+                } finally {
+                    delete r._motionProfileName;
+                }
+                return n > 0;
+            };
+            res.e.resolver = [durch("_motionStudioProfile", [true, { chaos: 1 }]), durch("_koerperMotionProfile", [false, { sorrow: 1 }])];
+            r._koerperMotionProfile = () => null;
+            res.e.resolver.push(durch("_koerperMotionProfile", [false, { sorrow: 1 }]) === false);
+            delete r._koerperMotionProfile;
+            // VERHALTEN: der Schritt-Takt des Avatars trägt die Emotion als Kadenz (sorrow = das Studio-freq-Verhältnis, neutral 1).
+            const gt = r._gaitTick, pl = r.state.player, em0 = pl.emotions;
+            const emoF = (emo) => {
+                let fk = null;
+                r._gaitTick = function (...a) {
+                    fk = a[4] && a[4].emoFaktor;
+                    return gt.apply(this, a);
+                };
+                pl.emotions = emo;
+                try {
+                    r.animatePlayerSoul(performance.now() / 1000);
+                } finally {
+                    delete r._gaitTick;
+                    pl.emotions = em0;
+                }
+                return fk;
+            };
+            const soll = r._koerperMotionProfile(true, { sorrow: 1 }).freq / r._koerperMotionProfile(true, null).freq;
+            res.e.stepBridge = { soll, traurig: emoF({ joy: 0, awe: 0, sorrow: 1, hope: 0, peace: 0, chaos: 0 }), neutral: emoF(null) };
         } catch (e) {
             res.e = res.e || {};
             res.e.err = (e && e.message) || String(e);
@@ -585,6 +526,7 @@ function staticLaws(anazhSrc, brueckeSrc, manifestSrc, cores) {
         out.b.noAutoBps === true,
         (out.b.autoBpOffenders || []).join(",")
     );
+    check("B: die Dial-Karten sind die Objekte der Gesetzbücher (koerper + tetrapoda, kein Stamm-Zwilling)", out.b.dialEins === true);
     check(
         "K: _klangStudioPreset liest das Genesis-lofi-Genre (bpm 78)",
         out.k.studio === 78,
@@ -644,8 +586,9 @@ function staticLaws(anazhSrc, brueckeSrc, manifestSrc, cores) {
         out.m ? `studio=${out.m.tailStudio} fallback=${out.m.tailFallback}` : ""
     );
     check(
-        "M: der EINE Animator ruft den Studio-Leser (Source-Probe _animateCompoundMotion → _motionStudioProfile)",
-        !!out.m && out.m.consumes === true
+        "M: der EINE Animator ruft den Studio-Leser (Konsum _animateCompoundMotion → _motionStudioProfile)",
+        !!out.m && out.m.consumes > 0,
+        String(out.m && out.m.consumes)
     );
     check(
         "D (Koerper-Dock A1): _koerperStudioDials liest die 8 Morph-Dials + der Boot-Avatar traegt den Studio-Stempel (build 0.35 statt Host-0.52)",
@@ -698,8 +641,15 @@ function staticLaws(anazhSrc, brueckeSrc, manifestSrc, cores) {
         out.e ? `sad=${out.e.headSad} neutral=${out.e.headNeutral}` : ""
     );
     check(
-        "E: die walkPhase<->Profil-Bruecke lebt (animatePlayerSoul ruft _koerperMotionProfile)",
-        !!out.e && out.e.stepBridge === true
+        "E: der Schritt-Takt des Avatars trägt die Emotion (sorrow = Studio-Kadenz, neutral 1)",
+        !!out.e && !!out.e.stepBridge && Math.abs(out.e.stepBridge.soll - 1) > 1e-3 &&
+            Math.abs(out.e.stepBridge.traurig - out.e.stepBridge.soll) < 1e-9 && out.e.stepBridge.neutral === 1,
+        JSON.stringify(out.e && out.e.stepBridge)
+    );
+    check(
+        "E: beide Profil-Leser fließen durch den EINEN Resolver _motionProfileName (Konsum; ein Zwilling daran vorbei fällt)",
+        !!out.e && JSON.stringify(out.e.resolver) === "[true,true,true]",
+        JSON.stringify(out.e && out.e.resolver)
     );
     check(
         "X (NULL): der WOLF liest die tetrapoda-wolf-Dials (gleiche Part-Zahl, Dials wirken, TAG-BYTE-GLEICH)",

@@ -5,17 +5,9 @@
 // (N5.5, mode "hand") — der Stamm bekam KEINEN Logik-Zweig (M8; den strukturellen
 // „kein kind-if im AutoRegister"-Wall traegt zusaetzlich das Verfassungs-Gesetz N1 in
 // gate:constitution). Gestraffte Schwester zu diag-nervensystem-porta.cjs:
-//   S (statisch, Node): Manifest traegt schmiede (ns __schmiedeCore) · KIND_POLICY
-//     traegt die weapon-Zeile (prefix klinge_, donor geraet_schwert, donorTool
-//     geraet_spitzhacke — AUSLÖSCHUNGS-WELLE) · der Auto-Register-Chokepoint
-//     laeuft die Tabelle OHNE kind-String-Vergleich und loest den Donor ueber
-//     bps[dKey] || KIND_SUBSTANCE[dKey] (donorTool fuer fx.tool-Rezepte) ·
-//     schmiede-core deklariert kindStages.weapon == [0] · die Rezepte tragen
-//     fx.place {mode:"hand"} als DATEN · die Donor-SUBSTANZ (geraet_schwert +
-//     geraet_spitzhacke) lebt als EINGEFRORENE Zeile in KIND_SUBSTANCE (kein
-//     portalMeta/roleManual — die Rolle EMERGIERT aus den Parts, Omega-PHYSIS
-//     ist der Wield-Richter); der Alt-Blueprint ist PHYSISCH gefallen.
-//     --selftest injiziert 3 Verletzungen.
+//   S (statisch, Node, Absenzen): der Auto-Register-Chokepoint vergleicht keinen kind-String (M8) ·
+//     die Donor-Zeile geraet_schwert traegt kein portalMeta/roleManual (der Alt-Blueprint ist PHYSISCH
+//     gefallen) · die Hand waermt keine Pipeline vor. --selftest: das Faust-Verdikt (H-F).
 //   B (Browser, foundry-ON, Null-Renderer): das LIVE-Buch traegt die 21 Klingen-
 //     Rezepte (Waffen UND Werkzeuge) · kindStages.weapon == [0] gemerged (tree/
 //     vehicle/gate unberuehrt) · Auto-Blueprint klinge_langschwert entsteht am
@@ -36,7 +28,6 @@
 //     sichern/wiederherstellen) -> der Part-Pfad byte-alt.
 //   node scripts/diag-nervensystem-schmiede.cjs [--selftest]
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
-const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
 const kernStufen = require("./lib/kern-stufen.cjs");
@@ -75,112 +66,32 @@ function fnBody(src, kopf) {
 }
 
 // ===== TEIL S: die statischen Gesetze =====
-function staticLaws(anazhSrc, scSrc, manifestSrc) {
+function staticLaws(anazhSrc) {
     const anazhNC = stripComments(anazhSrc);
-    const scNC = stripComments(scSrc);
     const out = [];
-    let manifest = null;
-    try {
-        manifest = JSON.parse(manifestSrc);
-    } catch (_e) {}
-    const schmiede = Array.isArray(manifest) ? manifest.find((c) => c && c.id === "schmiede") : null;
-    out.push([
-        "S1: das Manifest traegt den schmiede-Kern (scripts schmiede-core.js, ns __schmiedeCore)",
-        !!schmiede &&
-            Array.isArray(schmiede.scripts) &&
-            schmiede.scripts.includes("schmiede-core.js") &&
-            schmiede.vertrag === "schmiede-core.js" &&
-            schmiede.ns === "__schmiedeCore",
-    ]);
-    out.push([
-        "S2: KIND_POLICY traegt die weapon-Zeile (prefix klinge_, donor geraet_schwert, donorTool geraet_spitzhacke — die EINE Daten-Zeile)",
-        /weapon:\s*Object\.freeze\(\{\s*prefix:\s*"klinge_",\s*donor:\s*"geraet_schwert",\s*donorTool:\s*"geraet_spitzhacke"/.test(
-            anazhNC
-        ),
-    ]);
-    // ABSCHIEDS-WELLE (V9.56-i + die V18.440-fnBody-Lehre): die Probe ankert auf der
-    // DEFINITIONS-Form (\\(book\\)\\s*\\{) — die CALL-SITE in _foundryIngestRecipes steht
-    // im File VOR der Definition und schnitte sonst den falschen Body.
+    // S3 (Absenz, M8): im Auto-Register-Chokepoint steht kein kind-String-Vergleich — Policy, Substanz und donorTool beweist Teil D.
     const autoReg = fnBody(anazhNC, /_foundryAutoRegisterSpecies\([^)]*\)\s*\{/);
     out.push([
-        "S3: der Auto-Register-Chokepoint laeuft die Policy-Tabelle (kein kind-String-Vergleich, M8) und loest den Donor ueber KIND_SUBSTANCE + donorTool (AUSLÖSCHUNGS-WELLE)",
-        autoReg !== null &&
-            /KIND_POLICY/.test(autoReg) &&
-            !/kind\s*[!=]==?\s*"/.test(autoReg) &&
-            /KIND_SUBSTANCE/.test(autoReg) &&
-            /donorTool/.test(autoReg),
+        "S3: der Auto-Register-Chokepoint vergleicht keinen kind-String (M8)",
+        autoReg !== null && !/kind\s*[!=]==?\s*"/.test(autoReg),
     ]);
-    out.push([
-        "S4: schmiede-core deklariert kindStages.weapon == [0] (B2-Vertrags-Daten)",
-        /kindStages:\s*\{\s*weapon:\s*\[0\]\s*\}/.test(scSrc),
-    ]);
-    out.push([
-        'S5: die Klingen-Rezepte tragen das Platzierungs-Gesetz als DATEN (fx.place mode "hand")',
-        /place:\s*\{\s*mode:\s*"hand"\s*\}/.test(scNC),
-    ]);
-    // ERFINDER-WELLE (Linsen-Heilung, die Trias-Parser-Klasse): die Substanz-Zeilen sind
-    // seit einem Prettier-Lauf MEHRZEILIG (unquoted keys) — die Einzeilen-JSON-Regex
-    // griff ins Leere (vorbestehend rot, tail-maskiert). Klammer-bewusste Row-Extraktion
-    // (ksRow) + SEMANTIK-Pruefung statt Format-Pin.
+    // S6 (Absenz): die Donor-Zeile geraet_schwert trägt keinen Blueprint-Namen, kein portalMeta/roleManual; Teile und Klon prüft Teil D.
     const swRow = ksRow(anazhNC, "geraet_schwert");
-    const spRow = ksRow(anazhNC, "geraet_spitzhacke");
     out.push([
-        "S6: die Donor-SUBSTANZ lebt in KIND_SUBSTANCE (geraet_schwert + geraet_spitzhacke mit parts, kein portalMeta/roleManual) — der Alt-Blueprint-Block ist GEFALLEN",
-        /KIND_SUBSTANCE = Object\.freeze\(\{/.test(anazhNC) &&
-            /label:\s*"Schwert"/.test(swRow) &&
-            /parts:\s*\[/.test(swRow) &&
-            /shape/.test(swRow) &&
-            /label:\s*"Spitzhacke"/.test(spRow) &&
-            /parts:\s*\[/.test(spRow) &&
-            !/name:\s*"geraet_schwert"/.test(swRow) &&
-            !/portalMeta/.test(swRow) &&
-            !/roleManual/.test(swRow),
+        "S6: die Donor-SUBSTANZ geraet_schwert trägt kein portalMeta/roleManual — der Alt-Blueprint-Block ist GEFALLEN",
+        !!swRow && !/name:\s*"geraet_schwert"/.test(swRow) && !/portalMeta/.test(swRow) && !/roleManual/.test(swRow),
     ]);
-    // W-A4b — die Hand-Gesetze (statisch):
-    out.push([
-        'S7: KIND_POLICY.weapon deklariert die Template-Handachse als DATEN (handAxis "x" — M8, kein kind-if im Konsument)',
-        /weapon:\s*Object\.freeze\(\{[^}]*handAxis:\s*"x"/.test(anazhNC),
-    ]);
-    // Anker = die DEFINITIONS-Form (Zeilenanfang + Methoden-Einzug): ein Regex auf den
-    // nackten Namen traefe die CALL-SITE zuerst (this._refreshHeldMesh() im Restore liegt
-    // VOR der Definition) und lieferte den falschen Body — gemessen (W-A4b-Heilung).
+    // S8 (Absenz): die Hand wärmt keine Pipeline vor — die Erst-Zeichnung trägt; die Hand-Quelle beweist Teil H am Verhalten.
     const refreshBody = fnBody(anazhNC, /\n    _refreshHeldMesh\([^)]*\)\s*\{/);
-    const heldSrcBody = fnBody(anazhNC, /\n    _heldFoundryGroup\([^)]*\)\s*\{/);
-    const disposeBody = fnBody(anazhNC, /\n    _disposeSoulGroup\([^)]*\)\s*\{/);
-    out.push([
-        "S8: der Hand-Konsument ist verdrahtet — buildHand liest _heldFoundryGroup (die erste Zeichnung traegt die Erst-Zeichnung des Renderers, kein Vorwaermen), die Quelle nutzt die EINE Wrapper-Quelle (_workshopWrapFoundryGroup) + den Welt-Cache (_foundryCacheGet), der Dispose-Chokepoint traegt die sharedGeom-Wand + Ref-Rueckgabe",
-        refreshBody !== null &&
-            /_heldFoundryGroup\(/.test(refreshBody) &&
-            !/compileAsync|_warmCompilePipeline/.test(refreshBody) &&
-            heldSrcBody !== null &&
-            /_workshopWrapFoundryGroup\(/.test(heldSrcBody) &&
-            /_foundryCacheGet\(/.test(heldSrcBody) &&
-            disposeBody !== null &&
-            /sharedGeom/.test(disposeBody) &&
-            /foundrySrcGroup/.test(disposeBody),
-    ]);
+    out.push(["S8: die Hand wärmt keine Pipeline vor", refreshBody !== null && !/compileAsync|_warmCompilePipeline/.test(refreshBody)]);
     return out;
 }
 
 (async () => {
     const anazhSrc = stammLib.text(root);
-    const scSrc = fs.readFileSync(path.join(root, "schmiede-core.js"), "utf8");
-    const manifestSrc = fs.readFileSync(path.join(root, "cores.manifest.json"), "utf8");
 
     if (process.argv.includes("--selftest")) {
         console.log("=== SELBST-TEST: die Linse feuert auf injizierte Verletzungen ===");
-        // V1: die schmiede-Manifest-Zeile entfernt -> S1 muss rot werden.
-        const brokenManifest = JSON.stringify(JSON.parse(manifestSrc).filter((c) => c && c.id !== "schmiede"));
-        const s1 = staticLaws(anazhSrc, scSrc, brokenManifest).find((l) => l[0].startsWith("S1"));
-        check("Selbst-Test 1: schmiede-Zeile aus dem Manifest entfernt -> S1 feuert", s1 && s1[1] === false);
-        // V2: die weapon-Policy-Zeile verstuemmelt -> S2 muss rot werden.
-        const brokenPolicy = stammLib.ersetze(anazhSrc, null, 'donor: "geraet_schwert"', 'donor: "geraet_kaputt"');
-        const s2 = staticLaws(brokenPolicy, scSrc, manifestSrc).find((l) => l[0].startsWith("S2"));
-        check("Selbst-Test 2: weapon-Policy-Zeile verstuemmelt -> S2 feuert", s2 && s2[1] === false);
-        // V3 (W-A4b): die Handachsen-Daten-Zeile gekippt -> S7 muss rot werden.
-        const brokenAxis = stammLib.ersetze(anazhSrc, null, 'handAxis: "x"', 'handAxis: "y"');
-        const s7 = staticLaws(brokenAxis, scSrc, manifestSrc).find((l) => l[0].startsWith("S7"));
-        check("Selbst-Test 3: handAxis-Daten-Zeile gekippt -> S7 feuert", s7 && s7[1] === false);
         // V4 (H-F, W5): das Faust-Verdikt feuert auf jeden der drei gemessenen Täter des Vor-Stands.
         const gesund = { laenge: 1.0, versatzM: 0.012, winkel: 88 };
         check("Selbst-Test 4 (H-F): gesunde Faust == 0 Verstoesse", faustVerdict(gesund).length === 0);
@@ -197,12 +108,12 @@ function staticLaws(anazhSrc, scSrc, manifestSrc) {
             console.error("\n❌ SELBST-TEST ROT — die Linse ist vakuoes.");
             process.exit(1);
         }
-        console.log("\n✅ SELBST-TEST GRUEN — die Linse feuert auf alle Verletzungs-Klassen (Manifest, Policy, Handachse, Faust).");
+        console.log("\n✅ SELBST-TEST GRUEN — die Linse feuert auf alle Verletzungs-Klassen (Faust).");
         process.exit(0);
     }
 
-    console.log("=== ε-BEWEIS SCHMIEDE — TEIL S: die statischen Gesetze (Node) ===");
-    for (const [name, ok, detail] of staticLaws(anazhSrc, scSrc, manifestSrc)) check(name, ok, detail);
+    console.log("=== ε-BEWEIS SCHMIEDE — TEIL S: die statischen Absenzen (Node) ===");
+    for (const [name, ok, detail] of staticLaws(anazhSrc)) check(name, ok, detail);
 
     console.log("\n=== TEIL B: der lebende Draht (Browser, foundry-ON) ===");
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
@@ -480,6 +391,12 @@ function staticLaws(anazhSrc, scSrc, manifestSrc) {
                     // (4) die Cache-Gruppe baut DANACH noch eine Werkstatt-Vorschau (ein Zug, viele Leser).
                     const wsWrap = src ? r._workshopWrapFoundryGroup(src) : null;
                     res.h.workshopAfter = !!(wsWrap && wsWrap.children.length > 0);
+                    // (4b) KONSUM statt Quelltext: die Hand-Quelle zieht den Welt-Cache und die EINE Wrapper-Quelle (Spion je Glied).
+                    const spion = (k) => ((f, z) => ((r[k] = (...a) => (z.n++, f.apply(r, a))), () => (delete r[k], z.n)))(r[k], { n: 0 });
+                    const [zuW, zuC] = [spion("_workshopWrapFoundryGroup"), spion("_foundryCacheGet")];
+                    const wK = r._heldFoundryGroup("klinge_langschwert");
+                    res.h.konsum = { wrap: zuW(), cache: zuC() };
+                    if (wK && wK !== "pending") r._disposeSoulGroup(wK);
                 }
                 // (5) SPITZHACKE-Probe (Werkzeug-Klasse, s.schaft-Griff) — direkte Quelle + Zahlen.
                 let probe = r._heldFoundryGroup("klinge_spitzhacke");
@@ -677,6 +594,8 @@ function staticLaws(anazhSrc, scSrc, manifestSrc) {
         "H: die Cache-Gruppe baut nach dem Unequip noch eine Werkstatt-Vorschau (ein Zug, viele Leser)",
         out.h.workshopAfter === true
     );
+    const kH = out.h.konsum || {};
+    check("H: die Hand-Quelle zieht den Welt-Cache und die EINE Wrapper-Quelle (Konsum)", kH.wrap > 0 && kH.cache > 0, JSON.stringify(kH));
     check(
         "H: foundry-off (lokaler Hook, gesichert/wiederhergestellt) -> der Part-Pfad byte-alt",
         out.h.offIsPart === true
