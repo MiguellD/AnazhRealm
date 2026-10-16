@@ -2,21 +2,24 @@
 // Der Stamm läuft im Browser und nutzt CDN-Globale; save-server.js ist Node.
 import js from "@eslint/js";
 import { createRequire } from "module";
+import { readFileSync } from "fs";
 import { dirname } from "path";
 import { fileURLToPath } from "url";
 
-// die Stamm-Dateien aus der EINEN Liste (scripts/lib/stamm.cjs: die eine Datei, nach dem Schnitt stamm/NN.js)
+// die Stamm-Dateien aus der EINEN Liste (scripts/lib/stamm.cjs: die Stamm-Tags in index.html)
 const stammLib = createRequire(import.meta.url)("./scripts/lib/stamm.cjs");
-const STAMM = stammLib.dateien(dirname(fileURLToPath(import.meta.url)));
-// Kern (stamm/01.js: Kopf, `class AnazhRealm`, die Naht-Funktion) und Zonen (stamm/NN[x].js): klassische defer-Skripte in
-// EINEM globalen lexikalischen Raum. Die Zonen lesen die Klasse des Kerns, die Naht (erste Außen-Datei) dazu _stammZonen
-// und die Zonen-Klassen — ihre Namen kommen aus derselben Liste (S benennt sie `AnazhRealm_Z<NN[x]>`).
+const WURZEL = dirname(fileURLToPath(import.meta.url));
+const STAMM = stammLib.dateien(WURZEL);
+// Kern (die erste Datei: Kopf, `class AnazhRealm`, die Naht-Funktion) und Zonen: klassische defer-Skripte in EINEM globalen
+// lexikalischen Raum. Die Zonen lesen die Klasse des Kerns und _stammZonen; eine Zonen-Klasse liest ihr Naht-Ruf (in ihrer
+// Datei, vor der Domäne D2 in der ersten Außen-Datei) — ihre Namen trägt der Stamm selbst (`class AnazhRealm_… {`).
 const ZONEN = STAMM.slice(1);
 const ZONEN_GLOBALE = Object.fromEntries(
-    ["AnazhRealm", "_stammZonen", ...ZONEN.map((p) => `AnazhRealm_Z${p.replace(/^.*\/|\.js$/g, "")}`)].map((n) => [
-        n,
-        "readonly",
-    ])
+    [
+        "AnazhRealm",
+        "_stammZonen",
+        ...ZONEN.flatMap((p) => [...readFileSync(`${WURZEL}/${p}`, "utf8").matchAll(/^class (AnazhRealm_\w+) \{$/gm)].map((m) => m[1])),
+    ].map((n) => [n, "readonly"])
 );
 
 export default [

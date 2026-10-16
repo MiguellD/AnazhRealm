@@ -28,16 +28,8 @@ const opt = (n, d) => (argv.includes(n) ? argv[argv.indexOf(n) + 1] : d);
 const TAFELN = ["spec/abnahme/soll-tafel.json", "spec/farbe/albedo-tafel.json"];
 const VERALTET = "c:0000000000000000"; // ein Abdruck, den kein Code trägt: die Messung bleibt „veraltet seit …"
 
-// ── die Karte heilen und den Baum schreiben ───────────────────────────────────────────────────────────────────────────
-function heile(T, K) {
-    const r = stamm.ordne(T, K);
-    const mod = Object.assign({}, K.mod);
-    for (const n of r.neu) mod[n.name] = n.soll;
-    for (const n of r.tot) delete mod[n];
-    const sortiert = {};
-    for (const n of Object.keys(mod).sort()) sortiert[n] = mod[n];
-    return { karte: Object.assign({}, K, { mod: sortiert }), neu: r.neu, tot: r.tot };
-}
+// ── den Baum schreiben ────────────────────────────────────────────────────────────────────────────────────────────────
+const heile = stamm.heileKarte;
 function schreibeZonen(ziel, T) {
     const S = stamm.schneide(T);
     const soll = new Set(S.map((x) => x.pfad));
@@ -185,7 +177,7 @@ function nachKarte(root, trocken) {
     console.log(beweisZeile(b));
     for (const n of b.namen.slice(0, 20)) console.log("  ✗ " + n);
     if (b.summe || trocken) return b.summe ? 1 : 0;
-    fs.writeFileSync(path.join(root, stamm.KARTE), JSON.stringify(h.karte, null, 1) + "\n");
+    fs.writeFileSync(path.join(root, stamm.KARTE), stamm.karteText(h.karte));
     schreibeZonen(root, T1);
     for (const z of tafelnMitziehen(root, alt, S)) console.log("Tafel " + z);
     return 0;

@@ -8,7 +8,9 @@
 // virtuelle Basis wie merge-ort: paarweise rekursiv, „Temporary merge branch 1/2"), Kopf = Stamm-Text des Ziels, Zweig =
 // Stamm-Text der Spitze; darauf `git merge-file --diff-algorithm=histogram` (der Algorithmus von merge-ort), danach S in
 // die Form des Ziels. Weil der Merge auf demselben Text wie git läuft, sind die Konflikte per Konstruktion die von git;
-// benannt werden sie nach dem Glied, das den Hunk trägt. Alles außerhalb des Stamms merged git selbst.
+// benannt werden sie nach dem Glied, das den Hunk trägt. Alles außerhalb des Stamms merged git selbst. Steht das Ziel nach
+// DOMÄNE (D2), stellt `ordne` Basis und Zweig vor dem Merge in die Ordnung der Karte des Ziels (ein Umzug ist dann kein
+// Konflikt, nur eine Ordnung); ein neues Glied des Zweigs nimmt die Karte beim Vorgänger auf (`heileKarte`, benannt).
 //
 //   node scripts/stamm-rehome.cjs [--auf origin/main] [--trocken] [--immer]
 //        im Arbeitsbaum des Zweigs (HEAD = der Zweig, Baum sauber). Ergebnis: EIN Merge-Commit (Eltern Zweig + Ziel), in
@@ -141,8 +143,14 @@ function formAn(root, rev) {
 function plane(root, auf, zweig, namen) {
     const basis = basisText(root, auf, zweig);
     const Tk = stamm.textAusRev(root, auf);
-    const Tz = stamm.textAusRev(root, zweig);
-    const M = mergeText(Tk, basis.text, Tz, [namen[0], "basis", namen[1]]);
+    let Tz = stamm.textAusRev(root, zweig);
+    let Tb = basis.text;
+    if (stamm.marker(Tk).some((m) => m.schluessel)) {
+        const K = JSON.parse(git(root, ["show", `${auf}:${stamm.KARTE}`]));
+        Tb = stamm.ordne(Tb, K).text;
+        Tz = stamm.ordne(Tz, K).text;
+    }
+    const M = mergeText(Tk, Tb, Tz, [namen[0], "basis", namen[1]]);
     const konflikte = benenne(M.text);
     if (konflikte.length !== M.n && M.n < 127)
         throw new Error(`Re-Home: git merge-file meldet ${M.n} Konflikte, die Benennung findet ${konflikte.length}`);
@@ -175,6 +183,7 @@ function setzeStamm(root, T, form) {
             gitOk(root, ["rm", "-q", "-f", "--ignore-unmatch", "--", `${stamm.DIR}/${f}`]);
             fs.rmSync(path.join(dir, f), { force: true });
         }
+    fs.mkdirSync(dir, { recursive: true }); // git rm nahm mit der letzten alten Datei das Verzeichnis
     for (const x of S) fs.writeFileSync(path.join(root, x.pfad), x.text);
     const html = path.join(root, "index.html");
     const h = fs.readFileSync(html, "utf8");
@@ -195,6 +204,14 @@ function vollziehe(root, aufSha, aufName, zweigName, T, form, meldung) {
     const r = gitOk(root, ["merge", "--no-ff", "--no-commit", aufSha]);
     if (!r.ok && !fs.existsSync(path.join(gitDir(root), "MERGE_HEAD")))
         throw new Error(`Re-Home: git merge ${aufName} brach ab: ${r.err || r.out}`);
+    // die Domäne: die Karte des Ziels nimmt die neuen Glieder des Zweigs auf, der Text steht in ihrer Ordnung
+    if (form === "zonen" && stamm.marker(T).some((m) => m.schluessel)) {
+        const h = stamm.heileKarte(T, JSON.parse(fs.readFileSync(path.join(root, stamm.KARTE), "utf8")));
+        fs.writeFileSync(path.join(root, stamm.KARTE), stamm.karteText(h.karte));
+        git(root, ["add", "--", stamm.KARTE]);
+        T = stamm.ordne(T, h.karte).text;
+        for (const n of h.neu) console.log(`  Karte: ${n.name} → ${n.soll} (beim Vorgänger)`);
+    }
     const dateien = setzeStamm(root, T, form);
     const offen = git(root, ["diff", "--name-only", "--diff-filter=U"]).split("\n").filter(Boolean);
     if (offen.length) return { commit: null, offen, dateien };
@@ -255,16 +272,17 @@ function weiter(root) {
     return r;
 }
 
-// ── Selbsttest ────────────────────────────────────────────────────────────────────────────────────────────────────
-// (B) die lebenden Zweige gegen integ-probe: Konfliktzahl = git (merge-tree), Text byte-gleich (auch im Konflikt).
-// (C) drei echte Integrationen: S(Re-Home) = S(echter Merge) Datei für Datei, Konfliktzahl = git.
-// (D) Ende zu Ende in einem geteilten Klon: integ-probe geschnitten, ein lebender Zweig per CLI-Kern darüber getragen.
-function gitKonflikte(root, a, b) {
+// ── Selbsttest (D2: der Umzug nach Domäne als Ziel) ─────────────────────────────────────────────────────────────────
+// Ein geteilter Klon an integ-probe trägt den Probe-Umzug (die Karte dieses Baums, `ordne` + S) als Commit; darüber
+// (B) jeder lebende Zweig mit Stamm-Änderung trocken: Konfliktzahl = gits Zahl im alten Layout, ohne Konflikt der Text =
+//     ordne(gits Merge-Text) — der Umzug ist kein Konflikt, nur eine Ordnung;
+// (D) einer Ende zu Ende: Merge-Commit (Eltern Zweig + Umzug), außerhalb des Stamms = gits Merge, text() = ordne(git);
+// (E) ein Konflikt: keine Merge, die Konflikt-Datei beim Glied benannt, --weiter trägt den gelösten Text.
+function gitMerge(root, a, b) {
     const r = gitOk(root, ["merge-tree", "--write-tree", "--no-messages", a, b]);
     const baum = r.out.split("\n")[0].trim();
-    const blob = gitOk(root, ["cat-file", "-p", `${baum}:${stamm.ALT}`]);
-    const t = blob.ok ? blob.out : "";
-    return { baum, text: t, n: (t.match(/^<<<<<<< /gm) || []).length, sauber: r.ok };
+    const text = stamm.textAusRev(root, baum);
+    return { baum, text, n: (text.match(/^<<<<<<< /gm) || []).length, sauber: r.ok };
 }
 
 function lebendeZweige(root, ziel, tage) {
@@ -275,11 +293,11 @@ function lebendeZweige(root, ziel, tage) {
         .filter(Boolean);
     for (const z of refs) {
         const [ref, t] = z.split(" ");
-        if (/\/(HEAD|main|integ-probe|stamm-zerlegung|koordination)$/.test(ref) || Number(t) * 1000 < seit) continue;
+        if (/\/(HEAD|main|integ-probe|stamm-domaene|koordination)$/.test(ref) || Number(t) * 1000 < seit) continue;
         if (git(root, ["rev-list", "--count", `${ziel}..${ref}`]).trim() === "0") continue;
         const mb = gitOk(root, ["merge-base", ziel, ref]);
-        if (!mb.ok) continue;
-        if (gitOk(root, ["diff", "--quiet", mb.out.trim(), ref, "--", stamm.ALT]).ok) continue;
+        if (!mb.ok || formAn(root, mb.out.trim()) === "datei") continue;
+        if (gitOk(root, ["diff", "--quiet", mb.out.trim(), ref, "--", `${stamm.DIR}/`]).ok) continue;
         out.push(ref);
     }
     return out;
@@ -292,149 +310,98 @@ function selbsttest() {
         if (!ok) rot++;
     };
     const ziel = "origin/integ-probe";
-    // (B)
-    const zweige = lebendeZweige(ROOT, ziel, 10);
-    let gleichN = 0;
-    let gleichT = 0;
-    const zeilen = [];
-    for (const ref of zweige) {
-        const t0 = Date.now();
-        const p = plane(ROOT, ziel, ref, [ziel, ref]);
-        const g = gitKonflikte(ROOT, ziel, ref);
-        if (p.n === g.n) gleichN++;
-        if (p.M === g.text) gleichT++;
-        zeilen.push(
-            `${ref.replace("origin/", "")} ${p.n}=${g.n}${p.basen.length > 1 ? ` (${p.basen.length} Basen)` : ""}` +
-                `${p.n ? " [" + p.konflikte.map((k) => k.glied).join(", ") + "]" : ""} ${Date.now() - t0} ms`
-        );
-    }
-    pruef(
-        `(B) ${zweige.length} lebende Zweige gegen ${ziel}: Konfliktzahl = git, Text byte-gleich`,
-        zweige.length >= 3 && gleichN === zweige.length && gleichT === zweige.length,
-        `${gleichN}/${zweige.length} Zahl, ${gleichT}/${zweige.length} Byte`
-    );
-    for (const z of zeilen) console.log("       " + z);
-    // (C)
-    // die echten Integrationen (beide Seiten änderten den Stamm) der letzten 16 Merges: die jüngste mit git-Konflikt und
-    // die zwei jüngsten ohne
-    const merges = git(ROOT, ["log", "--merges", "--first-parent", "--format=%H %P", "-16", ziel, "--", stamm.ALT])
-        .split("\n")
-        .filter(Boolean)
-        .map((z) => z.split(" "))
-        .filter(([, k, z]) => {
-            const mb = git(ROOT, ["merge-base", k, z]).trim();
-            return (
-                !gitOk(ROOT, ["diff", "--quiet", mb, z, "--", stamm.ALT]).ok &&
-                !gitOk(ROOT, ["diff", "--quiet", mb, k, "--", stamm.ALT]).ok
-            );
-        })
-        .map(([w, k, z]) => ({ w, k, z, g: gitKonflikte(ROOT, k, z) }));
-    const wahl = [...merges.filter((x) => x.g.n > 0).slice(0, 1), ...merges.filter((x) => x.g.n === 0).slice(0, 2)];
-    let echte = 0;
-    let cOk = 0;
-    for (const { w, k, z, g } of wahl) {
-        echte++;
-        const p = plane(ROOT, k, z, ["kopf", "zweig"]);
-        // S(Re-Home) gegen S(echter Merge): ohne Konflikt jede Datei gleich; mit Konflikt sind nur die Dateien anders, die
-        // einen Hunk tragen (dort steht die Hand des Integrators)
-        const Sm = stamm.schneide(p.M);
-        const Sw = stamm.schneide(stamm.textAusRev(ROOT, w));
-        let gleich = 0;
-        const anders = [];
-        for (const x of Sm) {
-            const y = Sw.find((q) => q.pfad === x.pfad);
-            if (y && x.text === y.text) gleich++;
-            else anders.push(x.pfad);
-        }
-        const mitHunk = new Set(Sm.filter((x) => /^<<<<<<< /m.test(x.text)).map((x) => x.pfad));
-        const ok = p.n === g.n && Sm.length === Sw.length && anders.every((f) => mitHunk.has(f));
-        if (ok) cOk++;
-        console.log(
-            `       ${w.slice(0, 8)}: ${p.n}=${g.n} Konflikte, ${gleich}/${Sw.length} Dateien byte-gleich zum echten Merge` +
-                (anders.length ? ` (von Hand: ${anders.join(", ")})` : "")
-        );
-    }
-    pruef(
-        "(C) drei echte Integrationen: Konfliktzahl = git, S(Re-Home) = S(Merge)",
-        echte === 3 && cOk === 3,
-        `${cOk}/${echte}`
-    );
-    // (D)
+    const K = stamm.karteVon(ROOT);
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "stamm-rehome-klon-"));
     try {
-        const kandidat = zweige.find((ref) => gitKonflikte(ROOT, ziel, ref).sauber);
-        if (!kandidat) throw new Error("(D) kein lebender Zweig ohne git-Konflikt");
+        // (A) der Probe-Umzug im geteilten Klon (die Zeilen-Enden wie das Repo: core.autocrlf=false)
         const klon = path.join(tmp, "k");
-        // die Zeilen-Enden wie das Repo (core.autocrlf=false; der System-Default true machte CRLF aus dem Stamm)
         git(tmp, ["clone", "-q", "--shared", "--no-checkout", "-c", "core.autocrlf=false", ROOT, klon]);
-        const ipSha = git(ROOT, ["rev-parse", ziel]).trim();
-        const zSha = git(ROOT, ["rev-parse", kandidat]).trim();
-        git(klon, ["checkout", "-q", "-b", "probe-schnitt", ipSha]);
-        const S = setzeStamm(klon, stamm.text(klon), "zonen");
-        git(klon, ["commit", "-q", "--no-verify", "-m", "Probe-Schnitt"]);
-        const schnitt = git(klon, ["rev-parse", "HEAD"]).trim();
+        git(klon, ["fetch", "-q", ROOT, "+refs/remotes/origin/*:refs/remotes/origin/*"]);
+        const ipSha = git(klon, ["rev-parse", ziel]).trim();
+        git(klon, ["checkout", "-q", "-b", "probe-umzug", ipSha]);
+        fs.writeFileSync(path.join(klon, stamm.KARTE), stamm.karteText(K));
+        const S = setzeStamm(klon, stamm.ordne(stamm.text(klon), K).text, "zonen");
+        git(klon, ["add", "--", stamm.KARTE]);
+        git(klon, ["commit", "-q", "--no-verify", "-m", "Probe-Umzug nach Domäne"]);
+        const umzug = git(klon, ["rev-parse", "HEAD"]).trim();
+        // (B)
+        const zweige = lebendeZweige(klon, ziel, 10);
+        let gut = 0;
+        const sauber = [];
+        for (const ref of zweige) {
+            const t0 = Date.now();
+            const p = plane(klon, "probe-umzug", ref, ["probe-umzug", ref]);
+            const g = gitMerge(klon, ziel, ref);
+            const text = p.n ? null : stamm.ordne(g.text, K).text === p.M;
+            if (p.n === g.n && text !== false) gut++;
+            if (!p.n && g.sauber) sauber.push(ref);
+            console.log(
+                `       ${ref.replace("origin/", "")} ${p.n}=${g.n}${text === null ? "" : text ? ", Text = ordne(git)" : ", Text ≠ ordne(git)"}` +
+                    `${p.n ? " [" + p.konflikte.map((k) => k.glied).join(", ") + "]" : ""} ${Date.now() - t0} ms`
+            );
+        }
+        pruef(
+            `(B) ${zweige.length} lebende Zweige über den Probe-Umzug: Konfliktzahl = git, ohne Konflikt der Text = ordne(git)`,
+            zweige.length >= 2 && gut === zweige.length,
+            `${gut}/${zweige.length}`
+        );
+        // (D) Ende zu Ende
+        const kandidat = sauber[0];
+        if (!kandidat) throw new Error("(D) kein lebender Zweig ohne Konflikt");
+        const zSha = git(klon, ["rev-parse", kandidat]).trim();
         git(klon, ["checkout", "-q", "-b", "zweig", zSha]);
         const t0 = Date.now();
-        const r = rehome(klon, "probe-schnitt");
+        const r = rehome(klon, "probe-umzug");
         const ms = Date.now() - t0;
         const eltern = git(klon, ["rev-list", "--parents", "-n", "1", "HEAD"]).trim().split(" ").slice(1);
-        const g = gitKonflikte(ROOT, ziel, kandidat);
-        const Tklon = stamm.text(klon);
-        // jede Datei außerhalb des Stamms = gits Merge (vor dem Schnitt); index.html = gits Merge mit den Tags von S
-        const baumR = git(klon, ["ls-tree", "-r", "HEAD"]).split("\n").filter(Boolean);
+        const g = gitMerge(klon, ziel, kandidat);
+        const soll = stamm.ordne(g.text, stamm.heileKarte(g.text, K).karte).text;
         const baumG = new Map(
-            git(ROOT, ["ls-tree", "-r", g.baum])
+            git(klon, ["ls-tree", "-r", g.baum])
                 .split("\n")
                 .filter(Boolean)
                 .map((z) => [z.split("\t")[1], z.split(/\s+/)[2]])
         );
-        let aussenGleich = 0;
-        const aussenAnders = [];
-        for (const z of baumR) {
-            const [meta, p] = z.split("\t");
-            if (p.startsWith(stamm.DIR + "/") || p === "index.html") continue;
-            if (baumG.get(p) === meta.split(/\s+/)[2]) aussenGleich++;
-            else aussenAnders.push(p);
-        }
-        // gits Merge-Baum trägt außerhalb genau dieselben Pfade (ohne anazhRealm.js und index.html)
-        if (baumG.size - 2 !== aussenGleich + aussenAnders.length) aussenAnders.push(`Pfadzahl ${baumG.size - 2}`);
-        const htmlSoll = stamm.tagsSetzen(git(ROOT, ["show", `${g.baum}:index.html`]), S);
-        const htmlIst = git(klon, ["show", "HEAD:index.html"]);
+        const anders = git(klon, ["ls-tree", "-r", "HEAD"])
+            .split("\n")
+            .filter(Boolean)
+            .map((z) => z.split("\t"))
+            .filter(([, p]) => !p.startsWith(stamm.DIR + "/") && p !== "index.html" && p !== stamm.KARTE)
+            .filter(([meta, p]) => baumG.get(p) !== meta.split(/\s+/)[2])
+            .map(([, p]) => p);
+        const htmlSoll = stamm.tagsSetzen(git(klon, ["show", `${g.baum}:index.html`]), S);
         pruef(
-            `(D) Ende zu Ende: ${kandidat.replace("origin/", "")} über den Probe-Schnitt`,
+            `(D) Ende zu Ende: ${kandidat.replace("origin/", "")} über den Probe-Umzug`,
             r.commit &&
                 eltern[0] === zSha &&
-                eltern[1] === schnitt &&
-                !fs.existsSync(path.join(klon, stamm.ALT)) &&
-                Tklon === g.text &&
-                aussenAnders.length === 0 &&
-                htmlIst === htmlSoll,
-            `Merge-Commit ${String(r.commit).slice(0, 8)} (Eltern Zweig + Schnitt), ${r.dateien.length} Stamm-Dateien, ` +
-                `text() = gits Merge-Text ${Tklon === g.text}, außerhalb ${aussenGleich}/${aussenGleich + aussenAnders.length} gleich, ` +
-                `index.html ${htmlIst === htmlSoll ? "gleich" : "anders"}, ${ms} ms`
+                eltern[1] === umzug &&
+                stamm.text(klon) === soll &&
+                anders.length === 0 &&
+                git(klon, ["show", "HEAD:index.html"]) === htmlSoll,
+            `Merge-Commit ${String(r.commit).slice(0, 8)}, ${r.dateien.length} Stamm-Dateien, text() = ordne(git) ` +
+                `${stamm.text(klon) === soll}, außerhalb anders: ${anders.join(", ") || "-"}, ${ms} ms`
         );
-        // (E) ein Konflikt: eine Zeile, die Kopf und Zweig verschieden ändern → Konflikt-Datei, kein Merge, benannt
-        git(klon, ["checkout", "-q", "-B", "zweig2", zSha]);
-        const T2 = stamm.text(klon).replace(/(\n {4}_bodenSichtAt\([^\n]*\n)/, "$1        // Zweig\n");
-        fs.writeFileSync(path.join(klon, stamm.ALT), T2);
-        git(klon, ["commit", "-q", "--no-verify", "-am", "Zweig-Zeile"]);
-        git(klon, ["checkout", "-q", "probe-schnitt"]);
+        // (E) ein Konflikt: eine Zeile, die Umzug-Seite und Zweig verschieden ändern
+        git(klon, ["checkout", "-q", "-B", "zweig2", ipSha]);
         const zon = stamm.dateiVon(klon, "_bodenSichtAt");
         const zt = fs.readFileSync(path.join(klon, zon), "utf8");
-        fs.writeFileSync(path.join(klon, zon), zt.replace(/(\n {4}_bodenSichtAt\([^\n]*\n)/, "$1        // Kopf\n"));
+        fs.writeFileSync(path.join(klon, zon), zt.replace(/(\n {4}_bodenSichtAt\([^\n]*\n)/, "$1        // Zweig\n"));
+        git(klon, ["commit", "-q", "--no-verify", "-am", "Zweig-Zeile"]);
+        git(klon, ["checkout", "-q", "probe-umzug"]);
+        const zk = stamm.dateiVon(klon, "_bodenSichtAt");
+        const kt = fs.readFileSync(path.join(klon, zk), "utf8");
+        fs.writeFileSync(path.join(klon, zk), kt.replace(/(\n {4}_bodenSichtAt\([^\n]*\n)/, "$1        // Kopf\n"));
         git(klon, ["commit", "-q", "--no-verify", "-am", "Kopf-Zeile"]);
         git(klon, ["checkout", "-q", "zweig2"]);
-        const r2 = rehome(klon, "probe-schnitt");
-        const kopfVorher = git(klon, ["rev-parse", "HEAD"]).trim();
+        const r2 = rehome(klon, "probe-umzug");
         pruef(
             "(E) ein Konflikt: kein Merge, die Konflikt-Datei, beim Glied benannt",
             r2.n === 1 &&
                 r2.konflikte[0].glied === "_bodenSichtAt" &&
                 fs.existsSync(path.join(klon, KONFLIKT)) &&
-                kopfVorher === r2.zweigSha,
+                git(klon, ["rev-parse", "HEAD"]).trim() === r2.zweigSha,
             r2.konflikte.map((k) => `${k.glied}@${k.zeile}`).join(", ")
         );
-        // --weiter: von Hand gelöst (beide Zeilen), dann der Merge
         const gel = fs
             .readFileSync(path.join(klon, KONFLIKT), "utf8")
             .replace(/<<<<<<< [^\n]*\n([\s\S]*?)=======\n([\s\S]*?)>>>>>>> [^\n]*\n/, "$1$2");
@@ -446,7 +413,7 @@ function selbsttest() {
             String(r3.commit).slice(0, 8)
         );
     } catch (e) {
-        pruef("(D/E) Ende zu Ende lief durch", false, e.stack);
+        pruef("(A–E) lief durch", false, e.stack);
     } finally {
         fs.rmSync(tmp, { recursive: true, force: true });
     }

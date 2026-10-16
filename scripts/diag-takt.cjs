@@ -497,7 +497,7 @@ const SELBST = process.argv.includes("--selftest");
         t8.helferZweiter === "offen" &&
         t8.helferGeist === true;
     const t9 = aus.t9;
-    const LADE = 100; // AnazhRealm.LADE_TAKT_MS (stamm/26c.js)
+    const LADE = 100; // AnazhRealm.LADE_TAKT_MS (Außen-Konstante des Stamms)
     const T9 = t9.ofen[0] === 1 && t9.ofen[1] === 1 && t9.nummern.some((k) => /^impb1_\d+$/.test(k));
     const t10 = aus.t10;
     const T10 = t10.geboren && t10.vorBereit.includes("get-book") && t10.helfer === t10.helferSoll;

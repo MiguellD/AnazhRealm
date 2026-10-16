@@ -2066,7 +2066,7 @@ async function probe(arg) {
                 !w2[1] &&
                 w2Soll.every((n) => w2[2].includes(n)) &&
                 !w2Still.some((n) => w2[2].includes(n)) &&
-                (w2[2].match(/stamm\/\d\d[a-z]?\.js:\d+/g) || []).length === w2Soll.length,
+                (w2[2].match(/stamm\/[a-z0-9-]+\.js:\d+/g) || []).length === w2Soll.length,
             `${w2[2]}${w2Soll.filter((n) => !w2[2].includes(n)).map((n) => " · UNGENANNT " + n).join("")}${w2Still.filter((n) => w2[2].includes(n)).map((n) => " · FALSCH " + n).join("")}`
         );
         check(
@@ -2074,7 +2074,7 @@ async function probe(arg) {
             !w7[1] &&
                 w7Soll.every((n) => w7[2].includes(n)) &&
                 !w7Still.some((n) => w7[2].includes(n)) &&
-                (w7[2].match(/stamm\/\d\d[a-z]?\.js:\d+/g) || []).length === w7Soll.length,
+                (w7[2].match(/stamm\/[a-z0-9-]+\.js:\d+/g) || []).length === w7Soll.length,
             `${w7[2]}${w7Soll.filter((n) => !w7[2].includes(n)).map((n) => " · UNGENANNT " + n).join("")}${w7Still.filter((n) => w7[2].includes(n)).map((n) => " · FALSCH " + n).join("")}`
         );
         // DIE AUSNAHME DER FRIST-KETTE trägt nur sich selbst: ein Poll IN der Kette (die Uhr stellt sich neu) fällt beim

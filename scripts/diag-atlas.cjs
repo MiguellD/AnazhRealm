@@ -1,26 +1,29 @@
-// diag-atlas.cjs — DER STAMM-ATLAS und seine RATSCHE (W6, R-032; Stamm-Zerlegung 13.10., plan §7). Pures fs + acorn,
-// kein Browser. Der Stamm ist `stamm/NN[x].js` — EINE Klasse (`AnazhRealm`, der Kern stamm/01.js), ihre Glieder in den
-// Zonen-Klassen `AnazhRealm_Z<NN[x]>`, die Naht trägt sie beim Laden auf den EINEN Prototyp; die Liste ist die der
-// Stamm-Tags in index.html (scripts/lib/stamm.cjs).
+// diag-atlas.cjs — DER STAMM-ATLAS und seine RATSCHE (W6, R-032; Stamm-Zerlegung 13.10.; Domäne D2 16.10.). Pures fs + acorn,
+// kein Browser. Der Stamm ist `stamm/<modul>[-<teil>].js` nach der Modul-Karte (spec/stamm/modul-karte.json) — EINE Klasse
+// (`AnazhRealm`, im Kern die erste Datei), ihre Glieder in den Zonen-Klassen `AnazhRealm_<modul>[_<teil>]`, deren Naht-Ruf sie
+// beim Laden auf den EINEN Prototyp trägt; die Liste ist die der Stamm-Tags in index.html (scripts/lib/stamm.cjs).
 //
-//   node scripts/diag-atlas.cjs              → die LIVE-Karte (Datei · Zone · Zeilen · Methoden · Themen)
-//   node scripts/diag-atlas.cjs --find <rx>  → verortet Methoden-Definitionen (Datei:Zeile, Zone)
+//   node scripts/diag-atlas.cjs              → die LIVE-Karte (Datei · Zone · Zeilen · Glieder · Themen)
+//   node scripts/diag-atlas.cjs --find <rx>  → verortet Glieder, Außen-Ziele, zugewiesene Methoden (`this.x = …` in einem
+//                                              Glied) und die Funktionen der Kerne (cores.manifest.json)
 //   node scripts/diag-atlas.cjs --check      → die RATSCHE (exit 1 = rot; in npm run check:statik)
 //   node scripts/diag-atlas.cjs --selftest   → je Regel ein Fixture, das ROT wird
 //
 // DIE RATSCHE (spec/stamm/ratsche.json):
-//   R1 KERN    stamm/01.js trägt genau `kern_glieder` Glieder — mehr ist rot, weniger zieht die Zahl nach (sie fällt nur).
-//   R2 DECKE   keine Datei über `decke_zeilen` Zeilen; rot mit dem Befehl `stamm-umzug --teile §NN <methode>`.
-//   R3 LISTE   Tags in index.html = Dateien unter stamm/ = je Datei genau EIN Marker mit ihrer Nummer = die Naht-Liste;
-//              die Nummern steigen streng; die Klasse jeder Zonen-Datei heißt nach ihr; S∘S⁻¹ = id.
+//   R2 DECKE   keine Datei über `decke_zeilen` Zeilen; der Weg: die Karte teilt das Modul (Modul/teil), dann der Umzug.
+//   R3 LISTE   Tags in index.html = Dateien unter stamm/ = S(Stamm) Byte für Byte (S∘S⁻¹ = id: Marker, Klassen, Naht-Rufe).
 //   R4 ZWILLING AST über alle Dateien: jeder Glied-Schlüssel (Prototyp/statisch) und jedes `AnazhRealm.X =`-Ziel ist
-//              eindeutig, kein statisches Glied ist zugleich Ziel einer Außen-Zuweisung (§26 ist sloppy: die Zuweisung auf
-//              einen Getter schluckte still), keine Außen-Anweisung liest beim Laden eine Konstante, die erst später
-//              gesetzt wird, kein Konstruktor außerhalb des Kerns (die Naht trägt ihn nicht).
+//              eindeutig, kein statisches Glied ist zugleich Ziel einer Außen-Zuweisung (die Zuweisung auf einen Getter
+//              schluckte still), keine Außen-Anweisung liest beim Laden eine Konstante oder ein statisches Glied, das erst
+//              eine spätere Datei setzt, kein Konstruktor außerhalb des Kerns (die Naht trägt ihn nicht).
 //   R5 NAME    die alte Stamm-Datei existiert nicht (Lese-Ziel nur in scripts/lib/stamm.cjs: diag-altlasten).
 //   R6 CACHE   jeder Stamm-Tag trägt `?v=` = package.json version.
+//   R7 DOMÄNE  der Stamm ist der Fixpunkt der Karte (scripts/lib/stamm.cjs `ordne`): jedes Glied und jede Außen-Anweisung
+//              steht in der Datei ihres Moduls — ein Fremder ist ROT beim Namen (Datei ist → soll), ebenso ein Name ohne
+//              Karte und ein Karten-Name ohne Glied; der Weg: `node scripts/stamm-umzug.cjs --nach-karte`.
 //   Dazu SYNTAX je Datei (V8, wie `node --check`).
 "use strict";
+/* global process, console, __dirname */
 const fs = require("fs");
 const path = require("path");
 const vm = require("vm");
@@ -29,37 +32,23 @@ const stammLib = require("./lib/stamm.cjs");
 
 const ROOT = path.resolve(__dirname, "..");
 const RATSCHE = "spec/stamm/ratsche.json";
+const UMZUG = "node scripts/stamm-umzug.cjs --nach-karte";
 
-const MARKER_RX = /^\s*\/\/ ===== ATLAS §(\d\d)([a-z]?) · ([^—]+) — (.+?) =====\s*$/;
-// Die Glieder einer Datei am AST (stammLib.glieder, K38-N2): ein Kopf-Muster übersah umbrochene Köpfe und Getter ohne
-// static — die Karte zählte sie nicht, `--find` fand sie nicht, R2 schlug sie nicht vor.
-const gliederVon = (t) => t.glieder || (t.glieder = stammLib.glieder(t.text).map((g) => ({ name: g.name, zeile: g.zeile })));
-// die Datei-Nummer: stamm/02b.js → "02b"; die Zone selbst heißt §NN, ihre Datei NNa, wenn sie Unter-Schnitte trägt
-const idVon = (p) => p.replace(/^.*\/|\.js$/g, "");
-const ordnung = (id) => Number(id.slice(0, 2)) * 32 + Math.max(0, (id.charCodeAt(2) || 97) - 96);
-
-// ── die Teile eines Baums ────────────────────────────────────────────────────────────────────────────────────────
+// ── die Teile eines Baums: je Datei Text, Zeilen und Marker (beide Formen, mit Zeile) ───────────────────────────────
+const zeileAn = (text, at) => text.slice(0, at).split("\n").length;
 function lies(root) {
-    const liste = stammLib.dateien(root);
-    return liste.map((p) => {
+    return stammLib.dateien(root).map((p) => {
         const text = fs.readFileSync(path.join(root, p), "utf8");
-        const lines = text.split("\n");
-        const marker = [];
-        lines.forEach((l, i) => {
-            const m = l.match(MARKER_RX);
-            if (m)
-                marker.push({
-                    id: m[1] + m[2],
-                    nn: m[1],
-                    x: m[2],
-                    name: m[3].trim(),
-                    themen: m[4].trim(),
-                    line: i + 1,
-                });
-        });
-        return { pfad: p, text, lines, marker, zeilen: text.endsWith("\n") ? lines.length - 1 : lines.length };
+        const marker = stammLib.marker(text).map((m) => ({
+            id: m.schluessel || m.nn + m.x,
+            name: m.schluessel || m.name,
+            themen: m.themen,
+            line: zeileAn(text, m.at),
+        }));
+        return { pfad: p, text, marker, zeilen: text.split("\n").length - (text.endsWith("\n") ? 1 : 0) };
     });
 }
+const gliederVon = (t) => t.glieder || (t.glieder = stammLib.glieder(t.text).map((g) => ({ name: g.name, zeile: g.zeile })));
 
 // ── die Karte ────────────────────────────────────────────────────────────────────────────────────────────────────
 function zonenVon(teile) {
@@ -150,32 +139,36 @@ function pruefe(root, opt = {}) {
             fehler.push(`SYNTAX ${t.pfad}: ${e.message}`);
         }
     }
-    // R3 je Datei genau EIN Marker mit ihrer Nummer, streng steigend; S∘S⁻¹ = id (die Naht-Liste = die Zonen-Klassen)
-    const teilt = new Set(teile.filter((t) => /[b-z]$/.test(idVon(t.pfad))).map((t) => idVon(t.pfad).slice(0, 2)));
-    for (let i = 0; i < teile.length; i++) {
-        const t = teile[i];
-        const id = idVon(t.pfad);
-        const soll = /a$/.test(id) ? id.slice(0, 2) : id;
-        if (t.marker.length !== 1) fehler.push(`R3 LISTE: ${t.pfad} trägt ${t.marker.length} Marker statt genau einem`);
-        else if (t.marker[0].id !== soll)
-            fehler.push(`R3 LISTE: ${t.pfad} trägt den Marker §${t.marker[0].id} statt §${soll}`);
-        if (/^\d\d$/.test(id) && teilt.has(id)) fehler.push(`R3 LISTE: ${t.pfad} neben Unter-Schnitten heißt ${id}a`);
-        if (i > 0 && ordnung(id) <= ordnung(idVon(teile[i - 1].pfad)))
-            fehler.push(`R3 LISTE: die Ordnung bricht — ${teile[i - 1].pfad} → ${t.pfad}`);
-    }
+    // R3 S∘S⁻¹ = id: die Dateien sind das Bild von S (Namen, Marker, Klassen, Naht-Rufe folgen dem Stamm)
+    let T = null;
     try {
-        const T = stammLib.fuege(teile);
+        T = stammLib.fuege(teile);
         const S = stammLib.schneide(T);
         const ab =
             S.length !== teile.length
                 ? `${S.length} statt ${teile.length} Dateien`
                 : (S.find((x, i) => x.pfad !== teile[i].pfad || x.text !== teile[i].text) || {}).pfad;
-        if (ab)
-            fehler.push(
-                `R3 LISTE: S∘S⁻¹ ≠ id (${ab}) — die Naht-Liste, die Klassen-Namen und die Marker folgen den Dateien`
-            );
+        if (ab) fehler.push(`R3 LISTE: S∘S⁻¹ ≠ id (${ab}) — Namen, Marker, Klassen und Naht-Rufe folgen dem Stamm`);
     } catch (e) {
         fehler.push(`R3 LISTE: ${e.message}`);
+    }
+    // R7 die Domäne: der Stamm ist der Fixpunkt der Karte
+    if (T) {
+        try {
+            const K = opt.karte || stammLib.karteVon(root);
+            const r = stammLib.ordne(T, K);
+            const datei = (s) => (/^§/.test(s || "") ? `§${s.slice(1)}` : stammLib.pfadVon(s || "?"));
+            for (const f of r.fremd)
+                fehler.push(`R7 DOMÄNE: ${f.name} steht in ${datei(f.ist)}, gehört nach ${datei(f.soll)} (Karte: ${f.soll}) — ${UMZUG}`);
+            for (const n of r.neu)
+                fehler.push(`R7 DOMÄNE: ${n.name} fehlt in der Karte (${stammLib.KARTE}; beim Vorgänger: ${n.soll}) — ${UMZUG}`);
+            for (const n of r.tot) fehler.push(`R7 DOMÄNE: die Karte nennt ${n}, das kein Glied ist — ${UMZUG}`);
+            if (!r.fremd.length && !r.neu.length && !r.tot.length && r.text !== T)
+                fehler.push(`R7 DOMÄNE: der Stamm ist nicht der Fixpunkt der Karte (Marker, Themen oder Ordnung) — ${UMZUG}`);
+            info.karte = r.namen.size;
+        } catch (e) {
+            fehler.push(`R7 DOMÄNE: ${e.message}`);
+        }
     }
     // R6 Cache: jeder Stamm-Tag trägt ?v= = package.version
     const version = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8")).version;
@@ -184,35 +177,29 @@ function pruefe(root, opt = {}) {
             fehler.push(`R6 CACHE: ${tag.pfad}${tag.v || " (ohne ?v=)"} statt ?v=${version}`);
     // R2 die Decke
     for (const t of teile)
-        if (t.zeilen > R.decke_zeilen) {
-            const mitte = Math.round(t.zeilen / 2);
-            const g = gliederVon(t).find((x) => x.zeile > mitte);
-            const methode = g ? g.name : "<methode>";
+        if (t.zeilen > R.decke_zeilen)
             fehler.push(
-                `R2 DECKE: ${t.pfad} trägt ${t.zeilen} Zeilen > ${R.decke_zeilen} — node scripts/stamm-umzug.cjs --teile §${idVon(t.pfad).slice(0, 2)} ${methode}`
+                `R2 DECKE: ${t.pfad} trägt ${t.zeilen} Zeilen > ${R.decke_zeilen} — die Karte teilt ihr Modul (Modul/teil, ein Name der Domäne), dann ${UMZUG}`
             );
-        }
-    // R1 + R4 über den AST
+    // R4 über den AST
     const glieder = new Map(); // "P|name" → [ort]
-    const statisch = new Map(); // name → ort (statische Glieder: Methoden, Getter, Felder)
+    const statisch = new Map(); // name → { ort, d } (statische Glieder: Methoden, Getter, Felder; d = Datei-Index)
     const ziele = new Map(); // name → [{ ort, idx }]
-    const aussen = []; // { t, s, idx }
-    let kern = 0;
+    const aussen = []; // { s, ort, idx, d }
     let idx = 0;
-    for (const t of teile) {
+    teile.forEach((t, d) => {
         let ast;
         try {
             ast = acorn.parse(t.text, { ecmaVersion: "latest", sourceType: "script", locations: true });
         } catch (e) {
             fehler.push(`R4 ZWILLING: ${t.pfad} parst nicht (${e.message})`);
-            continue;
+            return;
         }
         for (const s of ast.body) {
-            if (s.type === "ClassDeclaration" && /^AnazhRealm(_Z\d\d[a-z]?)?$/.test(s.id.name)) {
+            if (s.type === "ClassDeclaration" && /^AnazhRealm(_\w+)?$/.test(s.id.name)) {
                 const istKern = s.id.name === "AnazhRealm";
                 for (const g of s.body.body) {
                     const ort = `${t.pfad}:${g.loc.start.line}`;
-                    if (istKern) kern++;
                     if (g.type === "StaticBlock") {
                         fehler.push(`R4 ZWILLING: ${ort} ein static-Block (die Naht trägt nur Glieder)`);
                         continue;
@@ -236,43 +223,37 @@ function pruefe(root, opt = {}) {
                             `R4 ZWILLING: ${g.static ? "static " : ""}${n} in ${schon.map((x) => x.ort).join(", ")} und ${ort}`
                         );
                     glieder.set(k, schon.concat({ ort, art }));
-                    if (g.static) statisch.set(n, ort);
+                    if (g.static) statisch.set(n, { ort, d });
                 }
                 continue;
             }
             if (s.type === "ClassDeclaration") continue;
-            // außerhalb: die Außen-Konstanten (§26) und der Boot
+            // außerhalb: die Außen-Konstanten, die Naht-Rufe und der Boot
             const e = s.type === "ExpressionStatement" ? s.expression : null;
             const ziel = e && e.type === "AssignmentExpression" && istAnazh(e.left) ? eigenschaft(e.left) : null;
             const ort = `${t.pfad}:${s.loc.start.line}`;
             if (ziel) ziele.set(ziel, (ziele.get(ziel) || []).concat({ ort, idx }));
-            aussen.push({ s, ort, idx, aus: ziel ? e.left : null });
+            aussen.push({ s, ort, idx, d, aus: ziel ? e.left : null });
             idx++;
         }
-    }
-    info.kern = kern;
+    });
     info.glieder = glieder.size;
     info.ziele = ziele.size;
-    if (kern > R.kern_glieder)
-        fehler.push(
-            `R1 KERN: stamm/01.js trägt ${kern} Glieder > ${R.kern_glieder} — der Kern wächst nie, das Glied gehört in seine Zone`
-        );
-    else if (kern < R.kern_glieder)
-        fehler.push(
-            `R1 KERN: stamm/01.js trägt ${kern} Glieder < ${R.kern_glieder} — die Ratsche fällt mit: ${RATSCHE} kern_glieder ${kern}`
-        );
     for (const [n, os] of ziele) {
         if (os.length > 1)
             fehler.push(`R4 ZWILLING: AnazhRealm.${n} = steht ${os.length}× (${os.map((o) => o.ort).join(", ")})`);
         if (statisch.has(n))
             fehler.push(
-                `R4 ZWILLING: AnazhRealm.${n} = (${os[0].ort}) trifft das statische Glied ${statisch.get(n)} — die Zuweisung schluckte still`
+                `R4 ZWILLING: AnazhRealm.${n} = (${os[0].ort}) trifft das statische Glied ${statisch.get(n).ort} — die Zuweisung schluckte still`
             );
     }
     info.lese = 0; // die Lade-Leser von Außen-Zielen (die Regel sieht sie — eine Zahl 0 hieße blind)
     for (const a of aussen)
         for (const l of ladeLeser(a.s, a.aus)) {
-            if (statisch.has(l.name)) continue;
+            const st = statisch.get(l.name);
+            if (st && st.d > a.d)
+                fehler.push(`R4 ZWILLING: ${a.ort} liest beim Laden AnazhRealm.${l.name}, getragen erst in ${st.ort}`);
+            if (st) continue;
             const z = ziele.get(l.name);
             if (z) info.lese++;
             if (z && z.every((o) => o.idx > a.idx))
@@ -281,35 +262,99 @@ function pruefe(root, opt = {}) {
     return { fehler, info };
 }
 
+// ── --find: Glieder, Außen-Ziele, zugewiesene Methoden und die Funktionen der Kerne ─────────────────────────────────
+function finde(root, rx) {
+    const treffer = [];
+    const teile = lies(root);
+    const zonen = zonenVon(teile);
+    const zoneAn = (p, z) => (zonen.filter((x) => x.pfad === p && x.line <= z).pop() || {}).id || "?";
+    for (const t of teile) {
+        const ast = acorn.parse(t.text, { ecmaVersion: "latest", sourceType: "script", locations: true });
+        const nimm = (name, n, wie) => {
+            if (name && rx.test(name)) treffer.push(`  ${(t.pfad + ":" + n.loc.start.line).padEnd(32)} ${name}  →  ${wie}`);
+        };
+        for (const s of ast.body) {
+            if (s.type === "ClassDeclaration")
+                for (const g of s.body.body) {
+                    nimm(schluessel(g.key), g, zoneAn(t.pfad, g.loc.start.line));
+                    // die zugewiesene Methode: `this.x = (…) => …` oder `this.x = f` mit `const f = (…) => …` im selben Glied
+                    const fn = new Set();
+                    const zu = [];
+                    stammLib.wandere(g, (n) => {
+                        if (n.type === "VariableDeclarator" && n.id.type === "Identifier" && /Function/.test((n.init || {}).type || ""))
+                            fn.add(n.id.name);
+                        const l = n.type === "AssignmentExpression" ? n.left : null;
+                        if (l && l.type === "MemberExpression" && l.object.type === "ThisExpression" && !l.computed) zu.push(n);
+                    });
+                    for (const n of zu)
+                        if (/Function/.test(n.right.type) || (n.right.type === "Identifier" && fn.has(n.right.name)))
+                            nimm(n.left.property.name, n, `zugewiesen in ${schluessel(g.key)} (${zoneAn(t.pfad, g.loc.start.line)})`);
+                }
+            else nimm(stammLib.aussenName(s), s, `außen (${zoneAn(t.pfad, s.loc.start.line)})`);
+        }
+    }
+    // die Kerne: benannte Funktionen, Methoden und Funktions-Felder — in ein sofort gerufenes Gehäuse hinein, in keinen Rumpf
+    const kerne = JSON.parse(fs.readFileSync(path.join(root, "cores.manifest.json"), "utf8")).flatMap((c) => c.scripts);
+    for (const k of [...new Set(kerne)]) {
+        const text = fs.readFileSync(path.join(root, k), "utf8");
+        const ast = acorn.parse(text, { ecmaVersion: "latest", sourceType: "script", locations: true, allowHashBang: true });
+        stammLib.wandere(ast, (n, ahnen) => {
+            const fnWert = (v) => v && /Function/.test(v.type);
+            const name =
+                n.type === "FunctionDeclaration"
+                    ? n.id && n.id.name
+                    : (n.type === "Property" || n.type === "MethodDefinition") && fnWert(n.value)
+                      ? schluessel(n.key)
+                      : n.type === "VariableDeclarator" && fnWert(n.init)
+                        ? n.id.name
+                        : null;
+            if (name && rx.test(name)) treffer.push(`  ${(k + ":" + n.loc.start.line).padEnd(32)} ${name}  →  Kern ${k}`);
+            const iife = /Function/.test(n.type) && ahnen.length && ahnen[ahnen.length - 1].type === "CallExpression";
+            return !(/Function/.test(n.type) && !iife) && !(n.type === "VariableDeclarator" && fnWert(n.init));
+        });
+    }
+    return treffer;
+}
+
 // ── Selbsttest: je Regel ein Fixture, das ROT wird ──────────────────────────────────────────────────────────────
 function selbsttest() {
     const os = require("os");
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "atlas-ratsche-"));
-    const R = { kern_glieder: 2, decke_zeilen: 40 };
+    const R = { decke_zeilen: 40 };
+    const karte = {
+        ordnung: [
+            ["Kern", "a"],
+            ["Zwei", "b"],
+            ["Zwei/teil", "c"],
+            ["Drei", "d"],
+        ],
+        mod: { constructor: "Kern", init: "Kern", zwei: "Zwei", FROZEN: "Zwei", zweiB: "Zwei/teil", drei: "Drei" },
+    };
+    Object.assign(karte.mod, { "AnazhRealm.VERSION": "Kern", "AnazhRealm.X": "Zwei", "AnazhRealm.Y": "Zwei" });
     const fx = [
         "// Kopf",
         "class AnazhRealm {",
-        "    // ===== ATLAS §01 · KERN — a =====",
+        "    // ===== ATLAS · Kern — a =====",
         "    constructor() {}",
         "    init() {}",
         "",
-        "    // ===== ATLAS §02 · ZWEI — b =====",
+        "    // ===== ATLAS · Zwei — b =====",
         "    zwei() {}",
         "    static get FROZEN() {",
         "        return 1;",
         "    }",
         "",
-        "    // ===== ATLAS §02b · ZWEI — Block X =====",
+        "    // ===== ATLAS · Zwei/teil — c =====",
         "    zweiB() {}",
         "",
-        "    // ===== ATLAS §03 · DREI — c =====",
+        "    // ===== ATLAS · Drei — d =====",
         "    drei() {}",
         "}",
         "",
-        "// ===== ATLAS §26 · AUSSEN — d =====",
+        "// ===== ATLAS · Kern — Außen-Konstanten =====",
         'AnazhRealm.VERSION = "1.2.3";',
         "",
-        "// ===== ATLAS §26b · AUSSEN — Block Y =====",
+        "// ===== ATLAS · Zwei — Außen-Konstanten =====",
         "AnazhRealm.X = 1;",
         "AnazhRealm.Y = AnazhRealm.X + 1;",
         "",
@@ -331,78 +376,62 @@ function selbsttest() {
         return d;
     };
     let rot = 0;
-    const fall = (name, rx, mut, r = R) => {
-        const { fehler } = pruefe(baum(mut), { ratsche: r });
+    const fall = (name, rx, mut, k = karte) => {
+        const { fehler } = pruefe(baum(mut), { ratsche: R, karte: k });
         const ok = rx ? fehler.some((f) => rx.test(f)) : fehler.length === 0;
         console.log(`${ok ? "  ok " : "  ROT"} ${name}${ok ? "" : " — " + (fehler.join(" | ") || "kein Fehler")}`);
         if (!ok) rot++;
     };
+    const mit = (extra) => ({ ordnung: karte.ordnung, mod: Object.assign({}, karte.mod, extra) });
     try {
         fall("das Fixture ist grün", null, {});
-        fall("SYNTAX: ein Bruch in einer Zone nennt die Datei", /^SYNTAX stamm\/02b\.js/, {
+        fall("SYNTAX: ein Bruch in einer Zone nennt die Datei", /^SYNTAX stamm\/zwei-teil\.js/, {
             teile: (S) => (S[2].text = S[2].text.replace("zweiB() {}", "zweiB() { return ) }")),
         });
-        fall("R1 KERN: ein Glied mehr im Kern", /^R1 KERN: .* 3 Glieder > 2/, {
-            fx: (t) => t.replace("    init() {}", "    init() {}\n    neu() {}"),
-        });
-        fall("R1 KERN: ein Glied weniger zieht die Ratsche nach", /^R1 KERN: .* 1 Glieder < 2/, {
-            fx: (t) => t.replace("    init() {}\n", ""),
-        });
-        fall("R2 DECKE: eine Datei über der Decke nennt --teile", /^R2 DECKE: stamm\/03\.js .*--teile §03 /, {
+        fall("R2 DECKE: eine Datei über der Decke nennt den Weg", /^R2 DECKE: stamm\/drei\.js .*Modul\/teil.*--nach-karte/, {
             fx: (t) =>
                 t.replace(
                     "    drei() {}",
                     Array.from({ length: 30 }, (_, i) => `    drei${i}() {\n        return ${i};\n    }`).join("\n")
                 ),
+        }, mit(Object.fromEntries(Array.from({ length: 30 }, (_, i) => [`drei${i}`, "Drei"]))));
+        fall("R3 LISTE: ein Tag fehlt", /^R3 LISTE: .*ohne Tag: stamm\/drei\.js/, {
+            pfade: (p) => p.filter((x) => x !== "stamm/drei.js"),
         });
-        fall("R3 LISTE: ein Tag fehlt", /^R3 LISTE: .*ohne Tag: stamm\/03\.js/, {
-            pfade: (p) => p.filter((x) => x !== "stamm/03.js"),
+        fall("R3 LISTE: ein Naht-Ruf fehlt", /^R3 LISTE: .*Naht-Ruf/, {
+            teile: (S) => (S[3].text = S[3].text.replace(/_stammZonen\(AnazhRealm, \[AnazhRealm_drei\]\);\n/, "")),
         });
-        fall("R3 LISTE: die Naht-Liste trägt eine Zone nicht", /^R3 LISTE: .*Naht-Ruf/, {
-            teile: (S) => (S[4].text = S[4].text.replace("    AnazhRealm_Z03,\n", "")),
+        fall("R4 ZWILLING: dieselbe Methode in zwei Zonen", /^R4 ZWILLING: zwei in stamm\/zwei\.js:\d+ und stamm\/drei\.js/, {
+            teile: (S) => (S[3].text = S[3].text.replace("    drei() {}", "    drei() {}\n    zwei() {}")),
         });
-        fall("R3 LISTE: ein zweiter Marker in einer Datei", /^R3 LISTE: stamm\/03\.js trägt 2 Marker/, {
+        fall("R4 ZWILLING: AnazhRealm.X = zweimal", /^R4 ZWILLING: AnazhRealm\.X = steht 2×/, {
+            teile: (S) => (S[1].text = S[1].text.replace("AnazhRealm.X = 1;", "AnazhRealm.X = 1;\nAnazhRealm.X = 0;")),
+        });
+        fall("R4 ZWILLING: static get FROZEN und AnazhRealm.FROZEN =", /^R4 ZWILLING: AnazhRealm\.FROZEN = .*statische Glied/, {
+            teile: (S) => (S[1].text = S[1].text.replace("AnazhRealm.X = 1;", "AnazhRealm.X = 1;\nAnazhRealm.FROZEN = 2;")),
+        });
+        fall("R4 ZWILLING: Lesen vor dem Setzen (über die Datei-Grenze)", /^R4 ZWILLING: stamm\/kern\.js:\d+ liest beim Laden AnazhRealm\.X/, {
             teile: (S) =>
-                (S[3].text = S[3].text.replace(
-                    "    drei() {}",
-                    "    drei() {}\n\n    // ===== ATLAS §03 · DREI — c ====="
+                (S[0].text = S[0].text.replace(
+                    'AnazhRealm.VERSION = "1.2.3";',
+                    'AnazhRealm.VERSION = "1.2.3";\nAnazhRealm.W = [AnazhRealm.X].map((x) => x);'
                 )),
         });
-        fall(
-            "R4 ZWILLING: dieselbe Methode in zwei Zonen",
-            /^R4 ZWILLING: zwei in stamm\/02a\.js:\d+ und stamm\/03\.js/,
-            {
-                fx: (t) => t.replace("    drei() {}", "    drei() {}\n    zwei() {}"),
-            }
-        );
-        fall("R4 ZWILLING: AnazhRealm.X = zweimal", /^R4 ZWILLING: AnazhRealm\.X = steht 2×/, {
-            fx: (t) => t.replace('AnazhRealm.VERSION = "1.2.3";', 'AnazhRealm.VERSION = "1.2.3";\nAnazhRealm.X = 0;'),
+        fall("R4 ZWILLING: ein statisches Glied einer späteren Datei beim Laden", /^R4 ZWILLING: stamm\/kern\.js:\d+ liest beim Laden AnazhRealm\.FROZEN, getragen erst/, {
+            teile: (S) => (S[0].text = S[0].text.replace('AnazhRealm.VERSION = "1.2.3";', 'AnazhRealm.VERSION = "1.2.3";\nAnazhRealm.V = AnazhRealm.FROZEN;')),
         });
-        fall(
-            "R4 ZWILLING: static get FROZEN und AnazhRealm.FROZEN =",
-            /^R4 ZWILLING: AnazhRealm\.FROZEN = .*statische Glied/,
-            {
-                fx: (t) => t.replace("AnazhRealm.X = 1;", "AnazhRealm.X = 1;\nAnazhRealm.FROZEN = 2;"),
-            }
-        );
-        fall(
-            "R4 ZWILLING: Lesen vor dem Setzen (über die Datei-Grenze)",
-            /^R4 ZWILLING: stamm\/26a\.js:\d+ liest beim Laden AnazhRealm\.X/,
-            {
-                fx: (t) =>
-                    t.replace(
-                        'AnazhRealm.VERSION = "1.2.3";',
-                        'AnazhRealm.VERSION = "1.2.3";\nAnazhRealm.W = [AnazhRealm.X].map((x) => x);'
-                    ),
-            }
-        );
-        fall("R4 ZWILLING: ein Konstruktor in einer Zone", /^R4 ZWILLING: stamm\/03\.js:\d+ ein Konstruktor/, {
-            fx: (t) => t.replace("    drei() {}", "    constructor() {}\n    drei() {}"),
+        fall("R4 ZWILLING: ein Konstruktor in einer Zone", /^R4 ZWILLING: stamm\/drei\.js:\d+ ein Konstruktor/, {
+            teile: (S) => (S[3].text = S[3].text.replace("    drei() {}", "    constructor() {}\n    drei() {}")),
         });
         fall("R5 NAME: die alte Datei lebt", /^R5 NAME: \S+ lebt — der Stamm ist stamm\//, { alt: true });
-        fall("R6 CACHE: ein Tag ohne die Version", /^R6 CACHE: stamm\/01\.js\?v=1\.2\.2 statt \?v=1\.2\.3/, {
-            v: "1.2.2",
+        fall("R6 CACHE: ein Tag ohne die Version", /^R6 CACHE: stamm\/kern\.js\?v=1\.2\.2 statt \?v=1\.2\.3/, { v: "1.2.2" });
+        fall("R7 DOMÄNE: ein Glied in der Datei eines fremden Moduls", /^R7 DOMÄNE: drei steht in stamm\/zwei\.js, gehört nach stamm\/drei\.js/, {
+            fx: (t) => t.replace("    drei() {}\n", "    neu() {}\n").replace("    zwei() {}\n", "    zwei() {}\n    drei() {}\n"),
+        }, mit({ neu: "Drei" }));
+        fall("R7 DOMÄNE: ein Glied ohne Karte", /^R7 DOMÄNE: neu fehlt in der Karte .*beim Vorgänger: Drei/, {
+            fx: (t) => t.replace("    drei() {}\n", "    drei() {}\n    neu() {}\n"),
         });
+        fall("R7 DOMÄNE: ein Karten-Name ohne Glied", /^R7 DOMÄNE: die Karte nennt weg, das kein Glied ist/, {}, mit({ weg: "Drei" }));
         // die Lade-Leser: Funktions-Körper laufen später, sofort gerufene und Feld-Rückrufe beim Laden
         const ast = acorn.parse(
             "AnazhRealm.A = function () { return AnazhRealm.B; };\n" +
@@ -416,10 +445,13 @@ function selbsttest() {
                 .join(",")
         );
         const ok = ls.join(";") === ";D;F";
-        console.log(
-            `${ok ? "  ok " : "  ROT"} Lade-Leser: Funktion später, IIFE und Feld-Rückruf sofort — ${ls.join(";")}`
-        );
+        console.log(`${ok ? "  ok " : "  ROT"} Lade-Leser: Funktion später, IIFE und Feld-Rückruf sofort — ${ls.join(";")}`);
         if (!ok) rot++;
+        // --find: die zugewiesene Methode und der Kern sind sichtbar
+        const f = finde(ROOT, /^(_gameLoopTick|treeParams)$/).join("\n");
+        const fok = /_gameLoopTick {2}→ {2}zugewiesen in startEternalLoop/.test(f) && /phyto-core\.js:\d+ +treeParams {2}→ {2}Kern/.test(f);
+        console.log(`${fok ? "  ok " : "  ROT"} --find: _gameLoopTick (zugewiesen) und treeParams (Kern) — ${f.replace(/\s+/g, " ")}`);
+        if (!fok) rot++;
     } finally {
         fs.rmSync(tmp, { recursive: true, force: true });
     }
@@ -439,39 +471,32 @@ if (argv.includes("--check")) {
     const { fehler, info } = pruefe(ROOT);
     if (fehler.length) {
         console.error("ATLAS-RATSCHE ROT:");
-        for (const f of fehler) console.error("  ✗ " + f);
+        for (const f of fehler.slice(0, 60)) console.error("  ✗ " + f);
+        if (fehler.length > 60) console.error(`  … und ${fehler.length - 60} weitere`);
         process.exit(1);
     }
     const R = JSON.parse(fs.readFileSync(path.join(ROOT, RATSCHE), "utf8"));
     const teile = lies(ROOT);
     console.log(
         `Atlas-Ratsche OK — ${teile.length} Dateien (größte ${Math.max(...teile.map((t) => t.zeilen))} ≤ ${R.decke_zeilen} Z.), ` +
-            `Kern ${info.kern} Glieder, ${info.glieder} Glied-Schlüssel und ${info.ziele} Außen-Ziele ohne Zwilling, ` +
-            `${info.lese} Lade-Leser nach ihrem Ziel, ` +
-            `Liste = Tags = Platte = Marker = Naht, ?v= je Tag (${Date.now() - t0} ms)`
+            `${info.karte} Namen je in der Datei ihres Moduls (Fixpunkt der Karte), ${info.glieder} Glied-Schlüssel und ` +
+            `${info.ziele} Außen-Ziele ohne Zwilling, ${info.lese} Lade-Leser nach ihrem Ziel, Liste = Tags = Platte = S, ` +
+            `?v= je Tag (${Date.now() - t0} ms)`
     );
+    process.exit(0);
+}
+const findIdx = argv.indexOf("--find");
+if (findIdx >= 0) {
+    const t = finde(ROOT, new RegExp(argv[findIdx + 1] || "$^"));
+    console.log(t.length ? t.join("\n") : "  (kein Treffer)");
     process.exit(0);
 }
 const teile = lies(ROOT);
 const zonen = zonenVon(teile);
-const findIdx = argv.indexOf("--find");
-if (findIdx >= 0) {
-    const rx = new RegExp(argv[findIdx + 1] || "$^");
-    let hits = 0;
-    for (const t of teile)
-        for (const { name, zeile } of gliederVon(t))
-            if (rx.test(name)) {
-                const z = zonen.filter((z) => z.pfad === t.pfad && z.line <= zeile).pop();
-                console.log(`  ${(t.pfad + ":" + zeile).padEnd(20)} ${name}  →  §${z ? z.id + " " + z.name : "?"}`);
-                hits++;
-            }
-    if (!hits) console.log("  (kein Treffer)");
-    process.exit(0);
-}
 const gesamt = teile.reduce((s, t) => s + t.zeilen, 0);
 console.log(`STAMM-ATLAS — ${teile.length} Dateien unter ${stammLib.DIR}/ (${gesamt} Zeilen, ${zonen.length} Zonen)\n`);
 for (const z of zonen)
     console.log(
-        `  ${z.pfad.padEnd(14)} §${z.id.padEnd(3)} ${z.name.padEnd(28)} ${String(z.zeilen).padStart(5)} Z. ` +
-            `${String(z.methoden).padStart(4)} M.  ${z.themen}`
+        `  ${z.pfad.padEnd(28)} ${z.id.padEnd(20)} ${String(z.zeilen).padStart(5)} Z. ` +
+            `${String(z.methoden).padStart(4)} G.  ${z.themen}`
     );

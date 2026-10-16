@@ -1469,6 +1469,8 @@ function checkSoulKeys() {
 
 // Die Stamm-Dateien, wie index.html sie lädt (scripts/lib/stamm.cjs — die EINE Liste; vor dem Schnitt die eine Datei).
 const STAMM = stammLib.dateien(path.join(__dirname, ".."));
+// das Gesetzbuch der Himmels-Sicht: die Stamm-Datei, die den Wandel-Pass `_atmoLutBau` trägt (am Glied, nie am Datei-Namen)
+const HIMMEL_BUCH = stammLib.dateiVon(path.join(__dirname, ".."), "_atmoLutBau");
 
 // ULTRAGUSS U2 — DIE ZWILLINGS-WAND: getötete Formel-Zwillinge dürfen nicht
 // nachwachsen. Je Zeile: der Formel-Fingerabdruck darf NUR im Gesetzbuch leben.
@@ -1668,7 +1670,7 @@ const ZWILLINGE = [
     })),
     // D3 — DIE EINE ATMOSPHÄRE als MUSTER (Lehre 7: ein Zwillings-Abdruck ist ein Muster, nie ein Variablen-Name): die Luftmasse
     // als Kehrwert der Sonnenhöhe (die Luftmassen-Sonne, `1 / (max(e, 0) + 0,06)`) in keiner Datei, und eine Equirekt-Umgebung
-    // nur im Wandel-Pass der Himmels-Sicht (`_atmoLutBau`, stamm/24.js) — jede andere ist eine gemalte Umgebung neben der EINEN.
+    // nur im Wandel-Pass der Himmels-Sicht (`_atmoLutBau`, HIMMEL_BUCH) — jede andere ist eine gemalte Umgebung neben der EINEN.
     {
         muster: /1(?:\.0)?\s*\/\s*\(\s*Math\.max\(\s*[\w.]+\s*,\s*0(?:\.0)?\s*\)\s*\+\s*0\.\d+\s*\)/,
         gefallen: true,
@@ -1677,8 +1679,8 @@ const ZWILLINGE = [
     },
     {
         muster: /\bEquirectangularReflectionMapping\b/,
-        gesetzbuch: "stamm/24.js",
-        verboten: gelaendeLeser().filter((d) => !/(?:^|[\\/])stamm[\\/]24\.js$/.test(d)),
+        gesetzbuch: HIMMEL_BUCH,
+        verboten: gelaendeLeser().filter((d) => d.replace(/\\/g, "/") !== HIMMEL_BUCH),
         fiel: "D3 — die Umgebung ist der Wandel-Pass der Himmels-Sicht (_atmoLutBau), keine gemalte Equirekt-Umgebung",
     },
 ];
@@ -3617,8 +3619,8 @@ function linsenDateien(root) {
 const STAMM_NAME_RX = new RegExp(
     "^(?:\\.{0,2}/|https?://[^/]*/)?" + stammLib.ALT.replace(/\./g, "\\.") + "(?:\\?[^\"'`]*)?$"
 );
-// Ausgenommen: die Schnittstelle selbst und der Codemod (er trägt die alte Leser-Form als Muster).
-const STAMM_WERKZEUG = ["scripts/lib/stamm.cjs", "scripts/stamm-umzug.cjs"];
+// Ausgenommen: die Schnittstelle selbst.
+const STAMM_WERKZEUG = ["scripts/lib/stamm.cjs"];
 function stammLeserDateien(root) {
     const aus = [];
     for (const f of fs.readdirSync(root)) if (/\.(?:c|m)?js$/.test(f) && !stammLib.istStammDatei(f)) aus.push(f);
@@ -3679,7 +3681,7 @@ function scanStammLeser(root, ersatz = {}) {
             )
                 errs.push(
                     `Stamm-Leser-Wand: ${rel}:${t.loc.start.line} liest Rahmen nur an /${t.value.pattern}/ — nach dem Schnitt ` +
-                        `stehen sie in stamm/NN.js (das Muster trägt \`\\/stamm\\/\\d\\d[a-z]?\\.js\` mit)`
+                        `stehen sie in den Dateien unter stamm/ (das Muster trägt \`\\/stamm\\/[a-z0-9-]+\\.js\` mit)`
                 );
         }
     }

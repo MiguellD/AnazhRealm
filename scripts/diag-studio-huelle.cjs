@@ -272,7 +272,7 @@ function selbsttest() {
             soll: /^H1 worlds\/garage\/index\.html: 1 Hand-Regler/,
         },
         {
-            name: "H1 ein Werkstatt-Schieber von Hand im Stamm (stamm/23b.js)",
+            name: "H1 ein Werkstatt-Schieber von Hand im Stamm (das Werkstatt-Modul)",
             rel: Object.keys(echt).find((r) => /^stamm\/23b\.js$/.test(r)),
             vor: /(_workshopRenderStudioParams\([^)]*\) \{)/,
             nach: '$1\n        const _t = document.createElement("input");\n        _t.type = "range";',

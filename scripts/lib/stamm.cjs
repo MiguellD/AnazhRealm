@@ -321,6 +321,18 @@ function ordne(T, karte) {
     r.tot = Object.keys(karte.mod).filter((n) => !r.namen.has(n));
     return r;
 }
+// Die Karte heilt benannt (stamm-umzug --nach-karte, stamm-rehome): ein Name ohne Karte nimmt die Zone seines Vorgängers,
+// ein toter Name fällt; die Namen stehen sortiert — gleiche Eingabe, gleiche Datei (`karteText`).
+function heileKarte(T, K) {
+    const r = ordne(T, K);
+    const mod = Object.assign({}, K.mod);
+    for (const n of r.neu) mod[n.name] = n.soll;
+    for (const n of r.tot) delete mod[n];
+    const sortiert = {};
+    for (const n of Object.keys(mod).sort()) sortiert[n] = mod[n];
+    return { karte: Object.assign({}, K, { mod: sortiert }), neu: r.neu, tot: r.tot };
+}
+const karteText = (K) => JSON.stringify(K, null, 1) + "\n";
 
 // ── der Baum ──────────────────────────────────────────────────────────────────────────────────────────────────────
 function layout(root) {
@@ -698,6 +710,8 @@ module.exports = {
     karteVon,
     aussenName,
     ordne,
+    heileKarte,
+    karteText,
     schneide,
     fuege,
     layout,
