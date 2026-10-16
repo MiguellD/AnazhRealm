@@ -2756,6 +2756,9 @@ class AnazhRealm_Z11b {
                     const bildW = float(0).toVar();
                     const sVor = float(0).toVar();
                     const wVor = cP.w.toVar();
+                    // wo der Strahl HINTER einer gezeichneten Fläche verschwand (tiefer als ihre Dicke: der Busch am Ufer
+                    // verdeckt, was er trifft) — von dort trägt ihn das Feld; −1: er blieb sichtbar
+                    const sDeck = float(-1).toVar();
                     Loop(K.bildSchritte, ({ i }) => {
                         // dicht am Wasser-Punkt fein (das Ufer an der Linie ist wenige Pixel hoch), zum Ende der Strecke weit
                         const q0 = float(i).add(1).div(K.bildSchritte);
@@ -2781,8 +2784,13 @@ class AnazhRealm_Z11b {
                                     1
                                 )
                             );
-                            kandidat.assign(select(h4.y.div(h4.w).greaterThan(P.y.add(K.bildUfer)), float(1), float(0)));
+                            kandidat.assign(
+                                select(h4.y.div(h4.w).greaterThan(P.y.add(K.bildUfer)), float(1), float(0))
+                            );
                         });
+                        If(sDeck.lessThan(0.0).and(dz.lessThan(0.99999)).and(ws.sub(wz).greaterThanEqual(dicke)), () =>
+                            sDeck.assign(sVor)
+                        );
                         If(kandidat.greaterThan(0.5), () => {
                             const sa = sVor.toVar(),
                                 sb = s.toVar();
@@ -2814,13 +2822,16 @@ class AnazhRealm_Z11b {
                         sVor.assign(s);
                         wVor.assign(ws);
                     });
-                    // DAS FELD trägt nur, was der Schirm nicht zeigt: der Strahl jenseits seines Austritts (die Weite längs des
-                    // Strahls aus dem Schirm-Anteil, perspektivisch: s·(1/wE) / mix(1/wP, 1/wE, s)); trifft das Bild, ruht es
-                    const tAus = tMax.mul(sMax.mul(iwE)).div(mix(iwP, iwE, sMax));
-                    const t = max(float(1.25), tAus).toVar();
+                    // DAS FELD trägt nur, was der Schirm nicht zeigt: der Strahl ab dem Punkt, an dem er verdeckt verschwand,
+                    // sonst jenseits seines Austritts (die Weite längs des Strahls aus dem Schirm-Anteil, perspektivisch:
+                    // s·(1/wE) / mix(1/wP, 1/wE, s)); trifft das Bild, ruht es. Bis A1-n2 trug das Feld nur den Austritt: der
+                    // hinter dem Ufer-Busch verschwundene Strahl las den Dunst am Horizont — ein Band ohne Spiegel unter jedem Ufer
+                    const tVon = (s) => tMax.mul(s.mul(iwE)).div(mix(iwP, iwE, s));
+                    const verdeckt = sDeck.greaterThanEqual(0.0);
+                    const t = max(float(1.25), select(verdeckt, tVon(sDeck), tVon(sMax))).toVar();
                     const tVor = t.toVar();
                     const gVor = float(0.01).toVar();
-                    If(raus.and(bildW.lessThan(1.0)), () => {
+                    If(raus.or(verdeckt).and(bildW.lessThan(1.0)), () => {
                         Loop(K.schritte, () => {
                             const p = P.add(R.mul(t));
                             const rel = p.xz.sub(U.mitte).div(kante);
@@ -2936,8 +2947,9 @@ class AnazhRealm_Z11b {
                     });
                     // DER HIMMEL DES BILDS: bleibt die Strecke im Schirm ohne Treffer, steht in Richtung R der gezeichnete Himmel
                     // (Kuppel mit Wolken, Sonne, Mond — Tiefe 1,0) an der Stelle, an der R im Unendlichen liegt: er IST der
-                    // Spiegel. Deckt dort ein Ding den Himmel, das der Strahl nicht traf, rechnet der Pass die Himmels-Sicht (unten).
-                    If(raus.not().and(bildW.lessThan(1.0)), () => {
+                    // Spiegel. Deckt dort ein Ding den Himmel, das der Strahl nicht traf, rechnet der Pass die Himmels-Sicht (unten);
+                    // was das Feld vom verdeckten Strahl hielt, liegt davor
+                    If(raus.not().and(bildW.lessThan(1.0)).and(aus.a.lessThan(1.0)), () => {
                         const cI = U.vp.mul(vec4(R, 0.0));
                         const iwI = float(1).div(max(cI.w, 1e-6));
                         const uvI = vec2(cI.x.mul(iwI).mul(0.5).add(0.5), float(0.5).sub(cI.y.mul(iwI).mul(0.5)));
@@ -2946,7 +2958,7 @@ class AnazhRealm_Z11b {
                             .and(min(uvI.x, uvI.y).greaterThan(0.0))
                             .and(max(uvI.x, uvI.y).lessThan(1.0));
                         If(imBild.and(tiefe.load(ivec2(uvI.mul(tiefeGr))).r.greaterThan(0.99999)), () => {
-                            aus.assign(vec4(texture(farbe, uvI).level(float(0)).rgb, 1.0));
+                            aus.assign(vec4(mix(texture(farbe, uvI).level(float(0)).rgb, aus.rgb, aus.a), 1.0));
                         });
                     });
                     // DER HIMMEL DES RESTS (A1-n1): wo weder Bild noch Feld den Strahl ganz deckt, die Himmels-Sicht der Kuppel in
@@ -3139,10 +3151,8 @@ class AnazhRealm_Z11b {
             fract,
             floor,
             max,
-            pow,
             normalize,
             cross,
-            reflect,
             select: cond,
             Fn,
             uint,
@@ -3154,8 +3164,6 @@ class AnazhRealm_Z11b {
             cameraNear,
             cameraFar,
             exp,
-            texture,
-            equirectUV,
         } = TSL;
         void mat3; // potenzielle Alternative zu modelNormalMatrix
 

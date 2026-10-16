@@ -1984,7 +1984,11 @@ AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
     if (AnazhRealm._diaetVorTextur(obs, ro)) return true;
     // (9) eine freie Uniform der eigenen Gruppen wechselte (ein Schreiber setzte `.value`)
     const nbs = ro.getNodeBuilderState();
-    const frei = AnazhRealm._diaetFreiAnders(obs, ro, nbs._anazhGang || (nbs._anazhGang = AnazhRealm._diaetGang(ro, nbs)));
+    const frei = AnazhRealm._diaetFreiAnders(
+        obs,
+        ro,
+        nbs._anazhGang || (nbs._anazhGang = AnazhRealm._diaetGang(ro, nbs))
+    );
     if (frei) {
         if (obs._anazhWelt) {
             const n = frei.nodeUniform.node;
