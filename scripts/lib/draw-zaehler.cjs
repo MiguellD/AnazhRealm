@@ -144,11 +144,9 @@ function drawZensus(opts) {
                 e.obj += j === 0 ? 1 : 0; // die Render-Objekte (CPU) — eine Arena bucht das ihre beim ersten Glied
                 e.cmd++;
                 e.tris += tris;
-                // Die Nähe der Klasse im Hauptbild: jede Instanz bzw. das Objekt.
+                // Die Nähe der Klasse im Hauptbild, ihre EXEMPLARE: die Bau-Einträge hinter ihren Instanzen (ein Tor zeichnet je
+                // Stoff einen Zug, `inst` zählt jede Instanz jedes Zugs, der Eintrag das Tor einmal), ohne Eintrag die Orte (0,5 m).
                 if (pass === "haupt") {
-                    // Die EXEMPLARE einer Klasse: die Bau-Einträge hinter ihren Instanzen (ein Tor zeichnet je Stoff einen Zug,
-                    // `inst` zählt jede Instanz jedes Zugs, die Türflügel tragen eigene Orte — der Eintrag zählt das Tor einmal),
-                    // ohne Eintrag die verschiedenen Orte (auf 0,5 m).
                     const w =
                         nah[kl] ||
                         (nah[kl] = { inst: 0, dMin: Infinity, dMax: 0, orte: new Set(), eintraege: new Set() });

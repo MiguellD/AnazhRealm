@@ -1420,24 +1420,37 @@ class AnazhRealm_Z20c {
                 "DIE SENKE: r184 StorageBufferNode · Node · transformNormal · varyingProperty fehlen (Vendor-Drift)";
             throw new Error(text);
         }
-        const quelle = (o) => (o && o.__instanzQuelle ? o.__instanzQuelle.instanceMatrix : null);
-        class SenkenMatrizen extends SB {
-            constructor() {
-                super(new THREE.StorageInstancedBufferAttribute(new Float32Array(16), 16), "mat4", 0);
+        // je Objekt der Speicher-Puffer `feld` seiner Quelle: die Matrizen jeder Senke, die Art-Größen des Winds der Arena
+        class SenkenPuffer extends SB {
+            constructor(feld, typ, n, name) {
+                super(new THREE.StorageInstancedBufferAttribute(new Float32Array(n), n), typ, 0);
+                this.feld = feld;
                 this.updateType = "object";
-                this.setName("instanzMatrix");
+                this.setName(name);
+            }
+            quelle(o) {
+                return o && o.__instanzQuelle ? o.__instanzQuelle[this.feld] : null;
             }
             setup(builder) {
-                const im = quelle(builder.object);
-                if (im) this.value = im;
+                const p = this.quelle(builder.object);
+                if (p) this.value = p;
                 return super.setup(builder);
             }
             update(frame) {
-                const im = quelle(frame.object);
-                if (im) this.value = im;
+                const p = this.quelle(frame.object);
+                if (p) this.value = p;
             }
         }
-        const matrix = new SenkenMatrizen().toReadOnly().element(T.instanceIndex);
+        const matrix = new SenkenPuffer("instanceMatrix", "mat4", 16, "instanzMatrix")
+            .toReadOnly()
+            .element(T.instanceIndex);
+        // DIE ART-GRÖSSEN DES WINDS IN DER ARENA (G1): je Instanz ein vec4 im Speicher-Puffer, nie ein Vertex-Puffer — die
+        // Arena belegt genau die Vertex-Puffer ihres Zeichners (r184 bindet je gelesenes Attribut einen; WebGPU trägt höchstens
+        // `maxVertexBuffers` 8). Befund 16.10. (Radeon, Genesis Third, GPU-Wache): `aWindArt` als neunter Vertex-Puffer, „Vertex
+        // buffer count (9) exceeds the maximum" — die Pipeline des Laubs abgesagt, jede nahe Krone fehlte im Bild.
+        const windArt = new SenkenPuffer("windArt", "vec4", 4, "arenaWindArt")
+            .toReadOnly()
+            .element(T.instanceIndex).xyz;
         class SenkenInstanz extends N {
             constructor() {
                 super("void");
@@ -1452,7 +1465,7 @@ class AnazhRealm_Z20c {
                 return null;
             }
         }
-        AnazhRealm.__senkenKnoten = { matrix, instanz: new SenkenInstanz() };
+        AnazhRealm.__senkenKnoten = { matrix, windArt, instanz: new SenkenInstanz() };
         return AnazhRealm.__senkenKnoten;
     }
     // DIE GEOMETRIE-ARENA (G1, die GPU-Welt): EIN Render-Objekt je Stoff. Befund 16.10. (Radeon, EINE Welt, je Ort ein
@@ -1578,8 +1591,9 @@ class AnazhRealm_Z20c {
         for (const a of [...(AnazhRealm.__arenen || new Map()).values()])
             for (const m of a.glieder.slice()) a.lassen(m, true);
     }
-    // Der Knoten der Art-Größen des Winds: trägt die Geometrie `aWindArt` (die Arena), liest er die Instanz, sonst den
-    // Stoff-Wert — EIN Wert (der Stoff trägt ihn), zwei Wege dorthin, je Programm beim Bau entschieden.
+    // Der Knoten der Art-Größen des Winds: trägt die Geometrie `aWindArt` (die Arena — dort die Marke ihres Speicher-Puffers,
+    // nie ein gelesenes Attribut), liest er den Puffer je Instanz (`_senkenKnoten().windArt`), sonst den Stoff-Wert — EIN Wert
+    // (der Stoff trägt ihn), zwei Wege dorthin, je Programm beim Bau entschieden.
     static _windArtKnoten(stoff) {
         if (!AnazhRealm.__windArtK) {
             const N = Object.getPrototypeOf(THREE.InstanceNode);
@@ -1590,7 +1604,7 @@ class AnazhRealm_Z20c {
                 }
                 setup(builder) {
                     return builder.hasGeometryAttribute("aWindArt")
-                        ? THREE.TSL.attribute("aWindArt", "vec3")
+                        ? AnazhRealm._senkenKnoten().windArt
                         : this.stoffWert;
                 }
             };
@@ -1905,8 +1919,13 @@ class AnazhRealm_Z20c {
                 for (const k in m0.geometry.attributes)
                     if (m0.geometry.attributes[k].isInstancedBufferAttribute) neu(k, m0.geometry.attributes[k]);
                 if (m0.instanceColor) neu("instanzFarbe", m0.instanceColor);
-                if (this._wind) neu("aWindArt", { array: new Float32Array(0), itemSize: 3 });
                 q.instanceMatrix = new T.StorageInstancedBufferAttribute(new Float32Array(this._nCap * 16), 16);
+                // die Art-Größen des Winds: ein Speicher-Puffer wie die Matrizen (`_senkenKnoten().windArt`), in der Geometrie
+                // nur die Marke, die das Programm der Arena vom Programm des Zeichners trennt (kein Shader liest sie als Attribut)
+                if (this._wind) {
+                    q.windArt = new T.StorageInstancedBufferAttribute(new Float32Array(this._nCap * 4), 4);
+                    g.setAttribute("aWindArt", q.windArt);
+                }
             }
             _blockNehmen(m) {
                 const z = m.__arenaZ;
@@ -1991,13 +2010,13 @@ class AnazhRealm_Z20c {
                 // ein frischer Block trägt zuerst die Art-Größen des Winds aus dem Stoff seines Glieds (je Instanz gleich)
                 if (this._wind && z.stempel.length === 0) {
                     const art = m.material.userData.windArt,
-                        wa = this.geometry.attributes.aWindArt;
-                    for (let i = z.erst * 3; i < (z.erst + z.cap) * 3; i += 3) {
+                        wa = this.__instanzQuelle.windArt;
+                    for (let i = z.erst * 4; i < (z.erst + z.cap) * 4; i += 4) {
                         wa.array[i] = art ? art.x : 1;
                         wa.array[i + 1] = art ? art.y : 0;
                         wa.array[i + 2] = art ? art.z : 0;
                     }
-                    this._schreib(wa, z.erst * 3, z.cap * 3);
+                    this._schreib(wa, z.erst * 4, z.cap * 4);
                 }
                 const im = m.instanceMatrix,
                     q = m.geometry.attributes,

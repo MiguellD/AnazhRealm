@@ -20745,8 +20745,7 @@ async function checkBandWelleC3CellularReaction(ctx) {
         const STATE = r.constructor.CELL_STATE;
         // Test-Isolation: das Band misst den Damm-STEMPEL-Revert (spawn → SOLID → remove → exakter
         // Revert). Der Scatter streut Bäume in den Spieler-Ring; landet einer im Damm-Footprint, stempelt
-        // sein Holz die Wasser-Cells → Schein-Diff. Der Scatter ist unbeteiligt → sein Takt ruht (die Streu trägt keinen
-        // Schalter, G1: der Takt der Instanz steht still, der des Prototyps bleibt).
+        // sein Holz die Wasser-Cells → Schein-Diff. Der Scatter ist unbeteiligt → sein Takt ruht (G1: ohne Schalter).
         r._tickScatterStreaming = () => 0;
         // 1) Stempel-Methode existiert
         // Jede Cell-Index-Berechnung liest die LOD des Chunks, sonst greift dim=24/step=1.8 (LOD 0) auf
