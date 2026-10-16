@@ -16,7 +16,6 @@
 // (trennt alte vergiftete Traces). GPU-frei, hardware-unabhängig.
 // ─────────────────────────────────────────────────────────────────────────
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
-const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
 
