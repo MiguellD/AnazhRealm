@@ -208,9 +208,11 @@
             "titel": "Laub (Laub- und Nadelbaum, Kronen-Karten L0/L1 und Karte L2)",
             "wirkung": {
                 "grund": "Augen-Befund 14.10.: Laub-Karten mit Dither-Muster (der Teil „Nadel-Karten groß und kantig“ trägt laub-kante)",
-                "mangel": {
+                "geheilt": {
                     "befund": "Laub-Karten mit Dither-Muster",
-                    "quelle": "UEBERGABE-2026-10-14.md (Zweig koordination) „DER PLAN ZU AAAA“ Nr. 2"
+                    "quelle": "UEBERGABE-2026-10-14.md (Zweig koordination) „DER PLAN ZU AAAA“ Nr. 2",
+                    "warum": "zweiton 0,0003 → 0 (Radeon 890M --echt, Tafel-Pose, Kopf c89507f0 = V18.546.5 + A3; vorher Täter f:tanne:L0 mit 0,2 % ihrer Pixel im Raster, nachher kein Raster-Fenster in der Klasse; laub-kante 0,204 → 0,208): die Schwelle der Laub-Kante ist ein Hash je Zelle der Karte (1,5–3 Eingangs-Pixel in der UV, je Frame um 1/g gedreht) statt Interleaved Gradient je Eingangs-Pixel — unter dem Versatz der Hochskalierung sieht jedes Ausgabe-Pixel dieselbe Zelle, die Varianz-Klemme hält die Geschichte; in derselben Welt über vier Phasen 0/78/0/52 Raster-Pixel (je ein bis zwei Fenster aus Nadel-Struktur gegen den Himmel, kein Dither), die Schwelle je Frame 60/0 px mit Klötzen von 3–4 Pixeln; die Kante wieder ein Pixel, die Deckung auf der Stufe des Schirms",
+                    "bildPaar": ["artifacts/soll-tafel/laub-vorher.png", "artifacts/soll-tafel/laub.png"]
                 }
             },
             "referenz": [
@@ -244,10 +246,10 @@
                 "werkzeug": "werkbank bild -284 +1.7 -1042 -269 34 -1036 --ziel tanne --klasse '^(f:(tanne|fichte|eiche|birke|buche|kiefer|weide|strauch|mammut)[a-z_]*:L[0-2]|fimp:[a-z_]+:L[0-2]|kronendach)$' --ist laub",
                 "messung": {
                     "werkzeug": "bild",
-                    "datum": "2026-10-16T10:43:10.935Z",
+                    "datum": "2026-10-16T18:59:29.452Z",
                     "stand": {
-                        "version": "18.546.2",
-                        "sha": "826717edb292b5462a836075e6eba9581cb93659"
+                        "version": "18.546.5",
+                        "sha": "c89507f0dc5623b4bf9210dcf0465f76b9594232+geaendert"
                     },
                     "geraet": {
                         "backend": "WebGPU",
@@ -260,29 +262,29 @@
                     "rauschen": {
                         "anteil": 0,
                         "pixel": 0,
-                        "max": 0
+                        "max": 2
                     },
-                    "misch": 172295,
+                    "misch": 162442,
                     "klassen": {
-                        "f:fichte:L1": {"objekte":9,"spiegelTreue":0.2409,"sp":[337,0,0,491697.2,491697.2,118464.06],"zweiton":0,"zt":0,"weiss":0.0115,"wt":2872,"wtZiel":null,"bunt":24.65,"pixel":248770,"deckung":0.12,"deckungUnten":0.0041,"luma":72.86,"kontrast":0.5707,"detail":0.1186,"nyquist":0.1505,"ek":939890.7,"eg":5307261.8,"silhouette":139.7322,"kante":0.1855,"kr":27400},
-                        "f:tanne:L0": {"objekte":6,"spiegelTreue":null,"sp":[0,0,0,0,0,0],"zweiton":0.0024,"zt":152,"weiss":0.1144,"wt":7365,"wtZiel":null,"bunt":14.26,"pixel":64395,"deckung":0.0311,"deckungUnten":0,"luma":92.47,"kontrast":0.6428,"detail":0.1498,"nyquist":0.1885,"ek":786125.4,"eg":3383842,"silhouette":71.9139,"kante":0.1342,"kr":11932},
-                        "f:tanne:L1": {"objekte":9,"spiegelTreue":0.3357,"sp":[531,0,0,857449.07,857449.07,287805.08],"zweiton":0.0003,"zt":94,"weiss":0.0181,"wt":5118,"wtZiel":null,"bunt":24.8,"pixel":283217,"deckung":0.1366,"deckungUnten":0.0046,"luma":72.63,"kontrast":0.5801,"detail":0.1273,"nyquist":0.1565,"ek":1418438.1,"eg":7645172.2,"silhouette":101.6721,"kante":0.1512,"kr":29265},
-                        "fimp:atlas:L2": {"objekte":1,"spiegelTreue":-0.0002,"sp":[3406,0,0,4815079.51,4815079.51,-1098.87],"zweiton":0.0001,"zt":47,"weiss":0.0024,"wt":1193,"wtZiel":null,"bunt":29.78,"pixel":503504,"deckung":0.2428,"deckungUnten":0.11,"luma":65.44,"kontrast":0.5326,"detail":0.0847,"nyquist":0.1086,"ek":691881.5,"eg":5676891.4,"silhouette":81.52,"kante":0.365,"kr":17925}
+                        "f:fichte:L1": {"objekte":9,"spiegelTreue":0.4668,"sp":[413,0,0,759193.89,759193.89,354361.02],"zweiton":0,"zt":0,"weiss":0.0101,"wt":2557,"wtZiel":null,"bunt":24.93,"pixel":254201,"deckung":0.1226,"deckungUnten":0.0042,"luma":71.45,"kontrast":0.5728,"detail":0.1064,"nyquist":0.1398,"ek":759592.6,"eg":4672516.9,"silhouette":129.2803,"kante":0.1864,"kr":26151},
+                        "f:tanne:L0": {"objekte":6,"spiegelTreue":null,"sp":[0,0,0,0,0,0],"zweiton":0,"zt":0,"weiss":0.096,"wt":6105,"wtZiel":null,"bunt":14.78,"pixel":63619,"deckung":0.0307,"deckungUnten":0,"luma":89.04,"kontrast":0.6412,"detail":0.1379,"nyquist":0.1681,"ek":567186.2,"eg":2806958.6,"silhouette":66.5509,"kante":0.1385,"kr":10379},
+                        "f:tanne:L1": {"objekte":9,"spiegelTreue":0.4086,"sp":[566,0,0,922216.21,922216.21,376861.93],"zweiton":0,"zt":0,"weiss":0.0203,"wt":5720,"wtZiel":null,"bunt":24.92,"pixel":281761,"deckung":0.1359,"deckungUnten":0.0046,"luma":72.53,"kontrast":0.5911,"detail":0.1135,"nyquist":0.1457,"ek":1083951.8,"eg":6357017.3,"silhouette":95.1279,"kante":0.157,"kr":29163},
+                        "fimp:atlas:L2": {"objekte":1,"spiegelTreue":-0.0629,"sp":[3531,0,0,7243955.61,7243955.61,-455939.41],"zweiton":0,"zt":0,"weiss":0.0052,"wt":2546,"wtZiel":null,"bunt":29.52,"pixel":492717,"deckung":0.2376,"deckungUnten":0.1115,"luma":65.65,"kontrast":0.5442,"detail":0.0843,"nyquist":0.1057,"ek":684532.5,"eg":5793189.4,"silhouette":75.0992,"kante":0.365,"kr":17506}
                     },
                     "abstand": null,
                     "gesicht": null,
                     "bild": "artifacts/soll-tafel/laub.png",
                     "quellen": {
-                        "phyto-core.js": "c:1a281005f65ef585",
-                        "foundry-core.js": "c:5ed08308e6e4d144",
-                        "stamm/07.js": "c:7a66986764b31bdd",
-                        "stamm/10.js": "c:bb6631653fcc0994",
+                        "phyto-core.js": "c:6cf8df94e3dac37e",
+                        "foundry-core.js": "c:4629625d1e1ecd09",
+                        "stamm/07.js": "c:14b92cd1f4b487a0",
+                        "stamm/10.js": "c:6dc4c3f65afca0ce",
                         "stamm/19.js": "c:5f36c5687cb8f126",
-                        "stamm/24.js": "c:16ec71722c0bac2a",
+                        "stamm/24.js": "c:dde90a4ac3fcf2da",
                         "stamm/25c.js": "c:fb8c3e2986247bac",
-                        "stamm/17a.js": "c:c42f5abd01ba35b5",
-                        "stamm/20b.js": "c:603616360ff6a40f",
-                        "stamm/20c.js": "c:79749644a9e9ba9b",
+                        "stamm/17a.js": "c:7d2915426b5d04f3",
+                        "stamm/20b.js": "c:0f0a58688cb66569",
+                        "stamm/20c.js": "c:a43317536bb7a878",
                         "stamm/20d.js": "c:adcf0bd756b173cc"
                     }
                 }

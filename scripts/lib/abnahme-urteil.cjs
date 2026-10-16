@@ -2153,9 +2153,9 @@ function sollTafelSelbsttest(tafel, q) {
         me.stand = Object.assign({ sha: "0123456789abcdef0123456789abcdef01234567" }, me.stand, { version: q.version });
         me.quellen = Object.fromEntries((k.quellen || []).map((d) => [d, q.pruefsumme ? q.pruefsumme(d) : null]));
     };
-    const mitMangel = (t) =>
-        finde(t, (k) => k.wirkung && k.wirkung.mangel && k.mass && k.mass.name === "zweiton" && k.mass.messung);
-    // den benannten Mangel als geheilt erklären (mit oder ohne Bild-Paar) — das Maß bleibt, wie es misst
+    const mitMangel = (t, k = finde(t, (x) => x.wirkung && (x.wirkung.mangel || x.wirkung.geheilt) && x.mass && x.mass.name === "zweiton" && x.mass.messung)) =>
+        k && k.wirkung.geheilt ? Object.assign(k, { wirkung: { ...k.wirkung, mangel: { befund: k.wirkung.geheilt.befund, quelle: k.wirkung.geheilt.quelle }, geheilt: undefined } }) : k;
+    // die Zeile des Mangels (Zweiton mit Messung; ein geheilter öffnet für den Fall wieder, A3) als geheilt erklären — das Maß bleibt
     const heile = (t, bildPaar) => {
         const k = mitMangel(t);
         k.wirkung.geheilt = { befund: k.wirkung.mangel.befund, quelle: k.wirkung.mangel.quelle, warum: "x", bildPaar };
@@ -2385,7 +2385,7 @@ function sollTafelSelbsttest(tafel, q) {
             "geheilt neben einem roten Maß",
             (t) => {
                 const k = mitMangel(t);
-                for (const z of Object.values(k.mass.messung.klassen)) z.zt = Math.max(z.zt || 0, 0.5);
+                for (const z of Object.values(k.mass.messung.klassen)) z.zt = z.pixel; // jedes Pixel im Raster: ROT, was die Tafel auch misst
                 frisch(k, k.mass.messung);
                 heile(t, ["artifacts/soll-tafel/a.png", "artifacts/soll-tafel/b.png"]);
             },
