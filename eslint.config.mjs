@@ -88,7 +88,7 @@ export default [
                 {
                     argsIgnorePattern: "^_",
                     caughtErrorsIgnorePattern: "^_",
-                    varsIgnorePattern: "^AnazhRealm(_Z\\w+)?$",
+                    varsIgnorePattern: "^AnazhRealm(_\\w+)?$",
                 },
             ],
             "no-empty": ["warn", { allowEmptyCatch: true }],
