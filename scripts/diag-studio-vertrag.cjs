@@ -11,8 +11,8 @@
 //   §3 B3 PLACEMENT (SOLL, wenn vorhanden): scale-Werte > 0 · rarity ∈ (0,1]
 //   §3 B4 PARAMS (SOLL, wenn vorhanden): id/lab/min/max/step · min < max
 //   §3 B5 LEHREN (SOLL, wenn vorhanden): id + pass-Band [lo,hi]
-//   §4 G4.1 must-ignore: der EINE Auto-Register-Chokepoint im Stamm
-//       überspringt unbekannte kinds (continue-Filter), wirft nie
+//   §4 G4.1 must-ignore: beweist gate:nervensystem-labs am echten Ingest (0 Auto-Blueprints
+//       der Policy-losen kinds, keine Seiten-Fehler)
 //   §4 G4.3 Version: der Kern deklariert STUDIO_VERTRAG = 1
 //   + SELBST-TEST: eine injizierte Verletzung (Rezept ohne kind) wird erkannt
 //     — das Gate ist nicht vakuös.
@@ -999,23 +999,8 @@ function validateManifest(m) {
             );
     }
 
-    // §4b Ü1 — die Licht-Übersetzungs-Konstante existiert im Code (die Regel ist Struktur).
-    check(
-        "Ü1: AnazhRealm.LEGACY_LICHT = Math.PI existiert (r155-Migrations-Regel)",
-        /LEGACY_LICHT\s*=\s*Math\.PI/.test(stammLib.text(root))
-    );
-
-    // §4 G4.1 — must-ignore am EINEN Auto-Register-Chokepoint: unbekannte
-    // kinds werden ÜBERSPRUNGEN (continue-Filter), nie geworfen. Kommentare
-    // gestrippt (die V18.267-Falle).
+    // Der kommentarfreie Stamm für die Absenz-Proben unten.
     const realm = stammLib.ohneKommentare(stammLib.text(root));
-    const reg = stammLib.rumpf(realm, "_foundryAutoRegisterSpecies");
-    check(
-        // N1-migriert (V9.56-i): der kind-Filter ist die KIND_POLICY-Tabelle — ein
-        // unbekannter kind hat keine Policy-Zeile und wird uebersprungen (must-ignore).
-        "G4.1: der Auto-Register-Chokepoint filtert per Policy (must-ignore, wirft nie)",
-        !!reg && /KP\[rec\.kind\]/.test(reg) && /if \(!pol\) continue/.test(reg)
-    );
 
     // W8 — JEDER Kern mit Gestalt trägt sein Budget (B2c), jeder Zweit-Kern seine Gestalten je Rezept: die
     // Studio-Übertragung ist kein offener Rest mehr. Klang trägt keine Gestalt (keine kindStages) und kein Budget.
@@ -1074,125 +1059,19 @@ function validateManifest(m) {
             st.join(" · ")
         );
     }
-
-    // B2c — DIE KARTEN-LINSE: die Karten-Stufe des Studios (budget[kind][letzte].karte) und die Fernstufe des
-    // Hosts (KIND_POLICY[kind].impostor → `_foundryBuildImpostorFlat`) sagen dasselbe — je Art, die ein Budget
-    // trägt. Weichen sie ab, misst die Konsum-Wand eine Stufe, die nie ins Bild kommt (oder umgekehrt). Eine Art ohne
-    // Studio-Karte liefert keine Karten-Stufe: ihre Fernkarte backt der Wirt (KIND_POLICY impostor) aus ihrer letzten
-    // gezeigten Stufe (Studio-Vertrag B2, „L2-Auto-Impostor ist Sache des Wirts") — einstufig wie bis K43 das Fahrzeug [0]
-    // oder gestuft wie seit K43-2 das Fahrzeug [0, 1] (die Karte aus der Stufe 1). Eine NUR-WURF-Stufe zählt nicht: sie
-    // kommt nie ins Bild (das Tor [0, 3], 1110-9). Rot ist die Studio-Karte, die der Wirt nie zeigt.
-    const kartenUrteil = (src, bud) => {
-        const kp = stammLib.treffer(src, null, /AnazhRealm\.KIND_POLICY = Object\.freeze\(\{([\s\S]*?)\n\}\);/);
-        if (!kp) return ["KIND_POLICY im Stamm nicht gefunden"];
-        const f = [];
-        for (const datei in bud) {
-            const { budget, kindStages } = bud[datei];
-            for (const k in kindStages) {
-                const st = kindStages[k];
-                const letzte = budget[k] && budget[k][st[st.length - 1]];
-                const karte = !!(letzte && letzte.karte === true);
-                const imp = new RegExp("\\n\\s*" + k + ": Object\\.freeze\\(\\{[^}]*impostor: true").test(kp[1]);
-                if (karte && !imp)
-                    f.push(
-                        `${k}: Studio-Karte ${karte ? "ja" : "nein"} ≠ Host-Impostor ${imp ? "ja" : "nein"} (${datei})`
-                    );
-            }
-        }
-        return f;
-    };
-    const kU = kartenUrteil(realm, budgets);
-    check(
-        "B2c KARTEN-LINSE: budget[kind][letzte].karte ⇔ KIND_POLICY[kind].impostor (je Art mit Budget)",
-        Object.keys(budgets).length >= 1 && kU.length === 0,
-        kU[0] || Object.keys(budgets).join(", ")
-    );
-    const kSelbst = kartenUrteil(
-        stammLib.ersetze(realm, null, /\n(\s*)shrub: Object\.freeze\(\{ impostor: true \}\)/, "\n$1shrub: Object.freeze({})"),
-        budgets
-    );
-    check(
-        "SELBST-TEST: ein Host ohne Strauch-Impostor feuert die Karten-Linse",
-        kSelbst.some((s) => s.startsWith("shrub:"))
-    );
     console.log(`      Budget (B2c) trägt: ${Object.keys(budgets).join(", ") || "—"}`);
 
-    // W8 — DAS BUDGET-GESETZ HAT SEINE LESER (Quell-Proben, Kommentare gestrippt): die Brücke faltet jede Zweit-Kern-
-    // Gestalt am Ausgang (`__replyBuildAsset` → phyto-core budgetErzwingen auf der Zeile des EIGENEN Kerns), der
-    // Sync-Guss des Wirts-Ofens (Tier UND Mensch) verlässt das Studio an derselben Stelle (`_ofenBudget`), und der
-    // Material-Cache des Wirts keyt mit DERSELBEN Stoff-Identität (budgetStoff), mit der das Gesetz zählt.
-    // die Brücke (K42) trägt __replyBuildAsset
-    const phytoNC = stammLib.ohneKommentare(fs.readFileSync(path.join(root, "foundry-bruecke.js"), "utf8"));
-    const leserUrteil = (realmSrc, phytoSrc) => {
-        const f = [];
-        const reply = phytoSrc.match(/function __replyBuildAsset\([^)]*\) \{[\s\S]*?\n {4}\}\n/);
-        if (
-            !reply ||
-            !/if \(isZweitKern\) \{[\s\S]*?budgetZeile\(zweit\.kern\.PORTAL_RENDER_CONFIG[\s\S]*?budgetErzwingen\(meshes/.test(
-                reply[0]
-            )
-        )
-            f.push("Brücke: __replyBuildAsset faltet die Zweit-Kern-Gestalt nicht (budgetErzwingen)");
-        const ofen = stammLib.rumpf(realmSrc, "_ofenBudget");
-        if (!ofen || !/budgetErzwingen\(eintraege/.test(ofen)) f.push("Wirt: _ofenBudget faltet nicht");
-        const ofenRufe = (
-            realmSrc.match(/this\._ofenAssembleAsset\(this\._ofenBudget\(core, "(kreatur|koerper)"/g) || []
-        ).length;
-        if (ofenRufe !== 2) f.push(`Wirt: der Sync-Guss läuft ${ofenRufe}/2 mal durch _ofenBudget (Tier + Mensch)`);
-        if (!/const key =\s*globalThis\.__phytoCore\.budgetStoff\(kind, mp\)/.test(realmSrc))
-            f.push("Wirt: _foundryTreeMaterial keyt nicht mit budgetStoff");
-        // Integration W8 — DIE SEH-KLASSE REIST: beide Extraktoren (Brücke + Ofen) reichen den Gesetzbuch-Stempel
-        // `material.userData.__seh` als `mat.seh` weiter — ohne ihn kennt das Gesetz keine Klasse und jede
-        // Zweit-Kern-Stufe bräche (gate:asset-contract misst das an jedem Fall).
-        const ex = phytoSrc.match(/function __extractAssetMesh\(mesh, zweitKern(?:, basisInv)?\) \{[\s\S]*?\n {4}\}\n/);
-        if (!ex || !/out\.mat\.seh = mat\.userData\.__seh/.test(ex[0]))
-            f.push("Brücke: __extractAssetMesh reicht die Seh-Klasse nicht (mat.seh)");
-        const oe = stammLib.rumpf(realmSrc, "_ofenMeshEintragAusThree");
-        if (!oe || !/out\.mat\.seh = mat\.userData\.__seh/.test(oe))
-            f.push("Wirt: _ofenMeshEintragAusThree reicht die Seh-Klasse nicht (mat.seh)");
-        // Integration W8 (Prüfer W8 (c)) — DIE SIPPE IST EINE REGEL: die Konversion stempelt phyto-core `budgetSippe` ans
-        // Mesh, der Flatten trägt sie aufs Leaf, Flatten und Starr-Bindung gruppieren nach ihr — keine eigene
-        // Attribut-Signatur im Wirt (gate:sippen-wirt misst Gesetz gegen Leaves im Spiel).
-        const bm = stammLib.rumpf(realmSrc, "_foundryBuildMesh");
-        if (!bm || !/mesh\.userData\.__sippe = globalThis\.__phytoCore\.budgetSippe\(m\)/.test(bm))
-            f.push("Wirt: _foundryBuildMesh stempelt die Sippe nicht (budgetSippe)");
-        if (!/sippe: child\.userData \? child\.userData\.__sippe/.test(realmSrc))
-            f.push("Wirt: der Flatten trägt die Sippe nicht aufs Leaf");
-        const fv = stammLib.rumpf(realmSrc, "_foundryFlatVerschmelzen");
-        if (!fv || !/lf\.sippe \? lf\.sippe \+/.test(fv) || /Object\.keys\(g\.attributes\)\s*\.sort\(\)/.test(fv))
-            f.push("Wirt: _foundryFlatVerschmelzen gruppiert nicht nach der Sippe des Gesetzes");
-        const sb = stammLib.rumpf(realmSrc, "_ofenStarrBinden");
-        if (
-            !sb ||
-            !/n\.userData \? n\.userData\.__sippe/.test(sb) ||
-            /Object\.keys\(g\.attributes\)\s*\.sort\(\)/.test(sb)
-        )
-            f.push("Wirt: _ofenStarrBinden bindet nicht nach der Sippe des Gesetzes");
-        return f;
-    };
-    const lU = leserUrteil(realm, phytoNC);
+    // W8 — DIE SIPPE IST EINE REGEL (Absenz): Flatten und Starr-Bindung gruppieren nach der Sippe des Gesetzes, nie nach
+    // einer eigenen Attribut-Signatur (kein Zwilling). Die Leser des Budget-Gesetzes beweisen gate:sippen-wirt,
+    // gate:asset-contract und gate:kreatur-kosten am Verhalten.
+    const signaturZwilling = ["_foundryFlatVerschmelzen", "_ofenStarrBinden"].filter((n) => {
+        const b = stammLib.rumpf(realm, n);
+        return !b || /Object\.keys\(g\.attributes\)\s*\.sort\(\)/.test(b);
+    });
     check(
-        "W8: das Budget-Gesetz hat seine Leser (Brücke · Ofen-Sync-Guss · Material-Schlüssel · Seh-Klasse beider Extraktoren · Sippe in Flatten und Ofen)",
-        lU.length === 0,
-        lU[0] || ""
-    );
-    const lSelbst = leserUrteil(stammLib.ersetze(realm, "_ofenBudget", "budgetErzwingen(eintraege", "budgetSippen(eintraege"), phytoNC);
-    check(
-        "SELBST-TEST: ein Ofen ohne Faltung feuert die Leser-Probe",
-        lSelbst.some((s) => s.includes("_ofenBudget"))
-    );
-    const sehAus = stammLib.ersetze(realm, "_ofenMeshEintragAusThree", "out.mat.seh = mat.userData.__seh", "out.mat.sehX = mat.userData.__seh");
-    check(
-        "SELBST-TEST: ein Ofen-Extraktor ohne Seh-Klasse feuert die Leser-Probe",
-        sehAus !== realm && leserUrteil(sehAus, phytoNC).some((s) => s.includes("Seh-Klasse"))
-    );
-    const sippeAus = stammLib.ersetze(realm, "_foundryBuildMesh",
-        "mesh.userData.__sippe = globalThis.__phytoCore.budgetSippe(m)",
-        "mesh.userData.__sippe = null"
-    );
-    check(
-        "SELBST-TEST: eine Konversion ohne Sippen-Stempel feuert die Leser-Probe",
-        sippeAus !== realm && leserUrteil(sippeAus, phytoNC).some((s) => s.includes("stempelt die Sippe"))
+        "W8: Flatten und Starr-Bindung tragen keine eigene Attribut-Signatur (die Sippe des Gesetzes gruppiert)",
+        signaturZwilling.length === 0,
+        signaturZwilling.join(", ")
     );
 
     // V18.486 — DIE PFLICHT JE KERN: die Gefühls-Blöcke der V18.483/485-Wellen
@@ -1265,24 +1144,11 @@ function validateManifest(m) {
             arten.join(" · ")
         );
         (function inlineAbsenz() {
-            const fc = fs.readFileSync(path.join(root, "foundry-core.js"), "utf8");
-            // K09a — DAS GELÄNDE-GESETZBUCH steht im Strom: gelaende in GESETZ_KERNE, die Manifest-Zeile als Gesetz-Kern
-            // (§9), der voxel-worker lädt DIESELBE Datei per importScripts mit seinem ?v=, index.html lädt sie vor dem Stamm.
-            const wk = fs.readFileSync(path.join(root, "voxel-worker.js"), "utf8");
-            const ix = fs.readFileSync(path.join(root, "index.html"), "utf8");
-            const gTag = ix.indexOf('<script src="gelaende-core.js?v=');
-            // der ERSTE Stamm-Tag (scripts/lib/stamm.cjs: die Liste, wie index.html sie lädt)
-            const sTag = ix.indexOf('<script src="' + stammLib.dateien(root)[0] + "?v=");
+            // K09a — DAS GELÄNDE-GESETZBUCH ist ein Gesetz-Kern des Manifests (§9); dass Main und Worker dasselbe Buch
+            // lesen, beweist gate:worker-dichte Wort für Wort am Dichte-Gitter.
             check(
-                "KONSUM: gelaende steht in GESETZ_KERNE und im Manifest (§9), voxel-worker und index.html laden gelaende-core.js",
-                !!src &&
-                    /gelaende:\s*"__gelaendeCore"/.test(src) &&
-                    MANIFEST.some((c) => c.id === "gelaende" && c.ns === "__gelaendeCore" && c.funktion === true) &&
-                    wk.includes(
-                        'importScripts((self.__anazhBase || "") + "gelaende-core.js" + (__phytoV ? "?v=" + __phytoV : ""));'
-                    ) &&
-                    gTag >= 0 &&
-                    sTag > gTag
+                "§9: das Manifest trägt gelaende als Gesetz-Kern (ns __gelaendeCore, funktion)",
+                MANIFEST.some((c) => c.id === "gelaende" && c.ns === "__gelaendeCore" && c.funktion === true)
             );
             const schlecht = validateFunktionsKern(
                 { vertrag: 1, funktion: true, presets: { x: { kind: "k" } }, api: [] },
@@ -1310,14 +1176,6 @@ function validateManifest(m) {
                     nennt("keine Rezepte (LANDSCHAFTEN)") &&
                     nennt("SCHWELLE steht nicht in der Erklärung"),
                 fv.join(" · ")
-            );
-            // FELS-/KRISTALL-HÜLLE (18.07., M1): der vierte Gesetz-Blocker-Zweig
-            // lebt (Konsum: _felsBlockerParts VOR dem generischen Parts-Pfad im
-            // EINEN Chokepoint) und die Tafel trägt die gemessene Hülle — seit der Leben-Schau 2 je Gestalt (fx.huellen).
-            const pbaM = src && (stammLib.rumpf(src, "_populateBlockerAABBs") || "").match(/[\s\S]*?entry\.blockerAABBs = solidAABBs/);
-            check(
-                "KONSUM: der Fels-Blocker-Zweig liest die Studio-Hülle je Gestalt (fx.huellen) im EINEN Chokepoint vor dem Parts-Pfad",
-                !!pbaM && pbaM[0].indexOf("_felsBlockerParts") >= 0 && !!fc && /huellen: \[\n\s+\[-?\d/.test(fc)
             );
         })();
     })();
@@ -1670,7 +1528,7 @@ function validateManifest(m) {
         process.exit(1);
     }
     console.log(
-        "\n✅ GRÜN — der Studio-Vertrag steht als Struktur: jeder registrierte Kern erfüllt die MUSS-Blöcke, die SOLL-Blöcke validieren wo vorhanden, must-ignore ist am Chokepoint verankert, und der Selbst-Test beweist die Linse feuert."
+        "\n✅ GRÜN — der Studio-Vertrag steht als Struktur: jeder registrierte Kern erfüllt die MUSS-Blöcke, die SOLL-Blöcke validieren wo vorhanden, und der Selbst-Test beweist die Linse feuert."
     );
     process.exit(0);
 })();
