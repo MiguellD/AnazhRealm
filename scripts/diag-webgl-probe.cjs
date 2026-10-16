@@ -8,7 +8,7 @@
 // beweist auf echtem GL (die CI swiftshader, lokal die Karte):
 //   W1 der Backend IST WebGL (der Hook wirkt; isWebGPURenderer bliebe true)
 //   W2 der Rückfall wird EINMAL LAUT benannt (WARN „WebGL2-Rückfall") — fail-soft wäre der Bruch (Schöpfer-Wort 17.07.)
-//   W3 die Wände halten: kein Feld-Pass · keine Region-RenderBundles (deren API lebt nur im WebGPU-Backend)
+//   W3 die Wände halten: kein Feld-Pass · keine Geometrie-Arena (laut: `__arenaOhne`) · keine Region-RenderBundles
 //   W4 der Fern-Ring verfeinert auf CPU (cursor wandert — das Gesetz trägt)
 //   W5 die Welt LEBT: Loop-Ticks laufen, der Spieler steht endlich, der Canvas nach einem echten Frame trägt SUBSTANZ (nicht
 //      schwarz) ohne page-error, und jedes Programm, das das Spiel baut, linkt — sonst ROT beim Stoff-Namen mit Info-Log im
@@ -85,6 +85,7 @@ const server = statikServer();
             o.feldPassRuht = !st.feldPass;
             o.bundlesRuhen = !st._regionBundles || st._regionBundles.size === 0;
             o.computeFaehig = r._gpuComputeFaehig(); // MUSS false sein (die Wand-Quelle selbst)
+            o.arenaRueckfall = r.constructor.__arenaOhne === "WebGL2" && !(r.constructor.__arenen || new Map()).size;
             // W4 — der Fern-Ring verfeinert auf CPU (den Tick deterministisch pumpen):
             const pm = st.playerMesh;
             for (let i = 0; i < 60 && pm; i++) r._tickFernRing(pm.position);
@@ -150,7 +151,7 @@ const server = statikServer();
     console.log(`  W1 Backend WebGL: ${out.backendWebGL} · rendererType: ${out.rendererType}`);
     console.log(`  W2 LAUT benannt (WARN WebGL2-Rückfall): ${lautEcht}`);
     console.log(
-        `  W3 Wände: feldPassRuht=${out.feldPassRuht} bundlesRuhen=${out.bundlesRuhen} computeFaehig=${out.computeFaehig}`
+        `  W3 Wände: feldPassRuht=${out.feldPassRuht} bundlesRuhen=${out.bundlesRuhen} computeFaehig=${out.computeFaehig} arenaRueckfall=${out.arenaRueckfall}`
     );
     console.log(`  W4 Fern-Ring: da=${out.fernRingDa} cursor=${out.fernRingCursor} (CPU-Gesetz wandert)`);
     console.log(
@@ -172,6 +173,7 @@ const server = statikServer();
     if (!out.feldPassRuht) errs.push("W3: der Feld-Pass entstand auf WebGL (die Wand hält nicht)");
     if (!out.bundlesRuhen) errs.push("W3: Region-RenderBundles entstanden auf WebGL (Crash-Klasse)");
     if (out.computeFaehig) errs.push("W3: _gpuComputeFaehig meldet true auf WebGL (die Quelle lügt)");
+    if (!out.arenaRueckfall) errs.push("W3: die Geometrie-Arena fiel nicht laut zurück (`__arenaOhne`), oder sie lebt auf WebGL");
     if (!out.fernRingDa || !(out.fernRingCursor > 0))
         errs.push(`W4: der Fern-Ring verfeinert nicht (da=${out.fernRingDa}, cursor=${out.fernRingCursor})`);
     if (out.tickOk !== 12) errs.push(`W5: Loop-Ticks warfen (${out.tickOk}/12${out.tickErr ? ": " + out.tickErr : ""})`);

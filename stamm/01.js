@@ -331,10 +331,6 @@ class AnazhRealm {
                 // Canopy-Streaming-Schalter (Default false); true → _tickCanopyStreaming baut 3×3-Region-Chunks
                 // um den Spieler.
                 canopyStreaming: false,
-                // Scatter + Promotion (Default an, im Browser für A/B abschaltbar): _tickScatterStreaming streut
-                // den fernen Wald (InstancedMesh, deterministisch pcg2d) und kristallisiert nahe Bäume zu echten
-                // Bauplänen (Touch→Real).
-                gpuScatter: true,
                 // Material-Modus — ohne Leser: _buildToonNodeMaterial baut IMMER PBR (roughness/metalness aus den
                 // Material-Tags); der Toon-Pfad ist gestrichen, "toon" wirkt nicht mehr.
                 materialMode: "pbr",
