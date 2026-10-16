@@ -482,12 +482,8 @@ class AnazhRealm_Z06a {
             this.log(`Kreatur-Seele „${requested}" unbekannt (${souls.join(", ")}) — kein Ersatz.`, "WARN");
             return null;
         }
-        // PHASE E — Raubtier-Seelen entstehen nur auf BEWUSSTEN Wunsch
-        // (requested), nie aus dem Ambient-Pick (sparsam: keine
-        // friedliche Welt voll Aggression).
-        const gentle = souls.filter((n) => !AnazhRealm.CREATURE_SOULS[n].predator);
-        const pool = gentle.length ? gentle : souls;
-        return pool[Math.min(pool.length - 1, Math.floor(rng() * pool.length))];
+        // jede Seele, auch der Wolf (G4a: der predator-Filter fiel — das Rudel gehört zur Welt; jagen wird es nur im pfad)
+        return souls[Math.min(souls.length - 1, Math.floor(rng() * souls.length))];
     }
 
     // Aura-Y-Offset folgt der Soul-Höhe (auraY-Hint pro Seele), damit die

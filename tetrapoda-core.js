@@ -268,6 +268,7 @@
             fensterRaum: 2.5, // × Paar-Raum — bis dahin zieht die Schar zusammen
             gewicht: 0.5, // × Tempo des Tiers — der Zug je Nachbar
             maxNachbarn: 6, // Kohaesions-Budget je Wesen (dann bricht der Scan ab)
+            wurf: { wolf: [3, 6], deer: [3, 7], fox: [1, 1], bear: [1, 1], abstandRaum: 1.3 }, // DIE GEBURT WIRFT GRUPPEN (G4a 16.10., additiv): Kopfzahl [min, max] je Gattung — das Rudel 3–6 (Mech & Boitani 2003; zu viert jagt es am besten, MacNulty et al. 2014), das Kahlwild-Rudel 3–7 (Clutton-Brock et al. 1982), Fuchs und Baer einzeln; der Abstand der Geworfenen in Paar-Raeumen (ausserhalb des Raums, im Fenster fensterRaum)
         },
         wasser: {
             tiefenScheuM: 1.5, // m — tiefer scheut das Wesen die Tiefe und strebt zum Ufer
