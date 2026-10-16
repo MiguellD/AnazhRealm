@@ -2172,9 +2172,10 @@ class AnazhRealm_Z11b {
         const _R = reflect(o.viewDir.negate(), o.n);
         const _Rh = normalize(vec3(_R.x, max(_R.y, float(0.02)), _R.z));
         const himmel0 = texture(this._himmelUmgebungTex(), equirectUV(_Rh)).level(float(0)).rgb;
-        // DER SPIEGEL DER WELT (D10): wo der gespiegelte Strahl Ufer, Hang oder Krone trifft (`_spiegelPass`, 1/4 Auflösung
-        // gegen das Spiegel-Feld des Gesetzes), steht ihre Strahlung statt des Himmels — der Welt-Punkt `o.ort` reprojiziert in
-        // die Ansicht, aus der der Pass rechnete, die Kräusel-Normale versetzt den Abgriff; ohne Pass (`an` 0) der Himmel allein.
+        // DER SPIEGEL DER WELT (D10, A1): wo der gespiegelte Strahl Ufer, Hang, Krone, Haus oder Wolke trifft (`_spiegelPass`,
+        // 1/teil Auflösung: zuerst das gezeichnete Bild, jenseits des Schirms das Spiegel-Feld des Gesetzes), steht ihre Strahlung
+        // statt der Umgebung — der Welt-Punkt `o.ort` reprojiziert in die Ansicht, aus der der Pass rechnete, die Kräusel-Normale
+        // versetzt den Abgriff; ohne Pass (`an` 0) der Himmel allein.
         const S = this._spiegelLeser();
         const clip = S.vp.mul(vec4(o.ort, 1.0));
         const sw = max(clip.w, float(1e-4));
@@ -2624,8 +2625,11 @@ class AnazhRealm_Z11b {
         return false;
     }
 
-    // DER PASS DES SPIEGELS (D10): je Pixel in 1/teil der Ausgabe, dessen Tiefe (der Szenen-Pass, das GEZEICHNETE Wasser)
-    // auf einer Wasser-Zelle des Felds liegt, der gespiegelte Strahl gegen die Höhe des Felds — `schritte` Schritte: über der
+    // DER PASS DES SPIEGELS (D10, A1): je Pixel in 1/teil der Ausgabe, dessen Tiefe (der Szenen-Pass, das GEZEICHNETE Wasser)
+    // an einer Wasser-Zelle des Felds liegt, der gespiegelte Strahl ZUERST im Bild (die Tiefe und Farbe des Szenen-Passes:
+    // jede gezeichnete Gestalt lagetreu, A1 — bis dahin spiegelte nur, was das Feld kannte: Boden und die Kronen im Kronen-Buch
+    // auf 2-m-Zellen, A0 an der Tafel ein Baum, blockig, spiegelTreue 0,318), dann jenseits des Schirms gegen die Höhe des
+    // Felds — `schritte` Schritte: über der
     // Höchsten des Blocks der Sprung an seinen Rand, darunter Lipschitz-Schritte gegen die Rest-Höhe (höchstens `fein` Zellen),
     // `halbierungen` und die Sekante; am Treffer die Albedo im
     // Licht des Wassers (uIrr, die Sonne über die Neigung der Fläche relativ zur Ebene) unter der EINEN Luft längs des
