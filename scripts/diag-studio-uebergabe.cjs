@@ -30,12 +30,8 @@
 //   node scripts/diag-studio-uebergabe.cjs
 "use strict";
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
-const fs = require("fs");
-const path = require("path");
-const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.STUDIO_UEBERGABE_PORT || 4453);
-const root = path.resolve(__dirname, "..");
 const server = statikServer();
 
 const errs = [];
@@ -45,38 +41,6 @@ function check(name, ok, detail) {
 }
 
 (async () => {
-    // ── Quell-Proben (Konsum-Tripwires: die Naht lebt in Stamm + Shells) ──
-    console.log("=== STUDIO-ÜBERGABE — Quell-Proben (die Naht lebt in Stamm + Shells) ===");
-    const stamm = stammLib.text(root);
-    const shellK = fs.readFileSync(path.join(root, "worlds/koerperstudio/koerperstudio.js"), "utf8");
-    const shellT = fs.readFileSync(path.join(root, "worlds/tetrapoda/tetrapoda.js"), "utf8");
-    const htmlK = fs.readFileSync(path.join(root, "worlds/koerperstudio/index.html"), "utf8");
-    const htmlT = fs.readFileSync(path.join(root, "worlds/tetrapoda/index.html"), "utf8");
-    check(
-        "Q: der W12-Empfänger nimmt uebergabe an (trust-Wand: nie aus einer sandboxed Welt)",
-        /msg\.type === "uebergabe" && po\.trust !== "sandboxed"\) this\._studioUebergabeEmpfang\(msg\);/.test(stamm)
-    );
-    check(
-        "Q: _koerperStudioDials trägt die Übergabe als Vorrang-Quelle (EIN Leser)",
-        /_koerperStudioDials\([^)]*\) \{[\s\S]{0,1400}studioUebergabe\.koerper[\s\S]{0,900}?\n    \}/.test(stamm)
-    );
-    check(
-        "Q: _tetrapodaStudioDials trägt die Übergabe als Vorrang-Quelle (EIN Leser)",
-        /_tetrapodaStudioDials\([^)]*\) \{[\s\S]{0,1600}studioUebergabe\.kreatur[\s\S]{0,900}?\n    \}/.test(stamm)
-    );
-    check(
-        "Q: Snapshot-Zwilling (buildStateSnapshot trägt studioUebergabe + Restore validiert)",
-        /studioUebergabe: \(\(\) => \{/.test(stamm) && /_studioUebergabeValidate\("koerper", su\.koerper\)/.test(stamm)
-    );
-    check(
-        "Q: koerperstudio-Shell postet die Übergabe über die W12-Brücke (kind koerper)",
-        /type: "uebergabe", world: "koerperstudio", kind: "koerper"/.test(shellK) && /btnUebergabe/.test(htmlK)
-    );
-    check(
-        "Q: tetrapoda-Shell postet die Übergabe über die W12-Brücke (kind kreatur + gattung)",
-        /kind: "kreatur"/.test(shellT) && /gattung: gattung/.test(shellT) && /btnUebergabe/.test(htmlT)
-    );
-
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
     const browser = await starteBrowser({ art: "webgl", frist: 300000 });
     const page = await browser.newPage();
@@ -218,6 +182,9 @@ function check(name, ok, detail) {
             threw++;
             res.n.okKoerper = false;
         }
+        // der EINE Leser trägt die Übergabe als Vorrang-Quelle (kein zweiter Leser am Leser vorbei): Dials und Größen-Faktor
+        const dK = r._koerperStudioDials();
+        res.n.koerperLeser = !!dK && dK.height === 1.15 && r._humanDialSizeFactor() !== 1;
         const gUe = r._buildHumanGroup();
         res.n.fpUe = gUe ? fpGroup(gUe) : null;
         const colsUe = gUe ? colorsOf(gUe) : new Set();
@@ -305,7 +272,10 @@ function check(name, ok, detail) {
         // aufräumen für (R):
         r.state.studioUebergabe.koerper = null;
 
-        // ===== (R) ROUNDTRIP: Snapshot → Restore (durch DENSELBEN Validator) =====
+        // ===== (R) ROUNDTRIP: Snapshot → Restore (durch DENSELBEN Validator — KONSUM: Spion am Validator) =====
+        const val0 = r._studioUebergabeValidate;
+        let nVal = 0;
+        r._studioUebergabeValidate = (...a) => (nVal++, val0.apply(r, a));
         try {
             r._studioUebergabeEmpfang({
                 type: "uebergabe",
@@ -313,6 +283,7 @@ function check(name, ok, detail) {
                 s: { height: 1.15, mass: 0.9 },
                 gestalt: { topColor: "red" },
             });
+            res.r.empfangValidiert = nVal > 0;
             r._studioUebergabeEmpfang({
                 type: "uebergabe",
                 kind: "kreatur",
@@ -333,9 +304,11 @@ function check(name, ok, detail) {
             );
             r.state.studioUebergabe.koerper = null;
             r.state.studioUebergabe.kreatur = {};
+            nVal = 0;
             r._loadStateRestoreSoulAndAtmosphere({
                 studioUebergabe: JSON.parse(JSON.stringify(snap.studioUebergabe)),
             });
+            res.r.restoreValidiert = nVal > 0;
             const ue2 = r.state.studioUebergabe;
             res.r.restoreKoerper = !!(
                 ue2.koerper &&
@@ -365,6 +338,8 @@ function check(name, ok, detail) {
             );
         } catch (e) {
             res.r.err = (e && e.message) || String(e);
+        } finally {
+            delete r._studioUebergabeValidate;
         }
         // End-Reinigung: die Welt verlässt die Linse im Default.
         r.state.studioUebergabe.koerper = null;
@@ -419,6 +394,7 @@ function check(name, ok, detail) {
     );
     check("der Empfänger nimmt die kreatur-Übergabe an (gattung wolf)", out.n.okKreatur === true);
     check("die EINE Kreatur-Dial-Quelle liefert die Übergabe (size 3.5)", out.n.dialsLeser === true);
+    check("die EINE Körper-Dial-Quelle liefert die Übergabe (height 1.15, Größen-Faktor ≠ 1)", out.n.koerperLeser === true);
     check(
         "der Kreatur-Guss formt anders (Baker-Dials ⇒ Proportions-Fingerabdruck ≠ Default)",
         !!out.n.fpKreaturUe && !!out.b.fpKreaturDefault && out.n.fpKreaturUe !== out.b.fpKreaturDefault,
@@ -460,6 +436,7 @@ function check(name, ok, detail) {
         out.r.err
     );
     check("der Restore bringt sie zurück (Feld-genau)", out.r.restoreKoerper === true && out.r.restoreKreatur === true);
+    check("Empfang und Restore laufen durch DENSELBEN Validator (Konsum _studioUebergabeValidate)", out.r.empfangValidiert === true && out.r.restoreValidiert === true);
     check(
         "ein VERGIFTETER Snapshot wird am Restore geclampt + gesiebt (Chokepoint-Validator)",
         out.r.giftClamp === true && out.r.giftSieb === true

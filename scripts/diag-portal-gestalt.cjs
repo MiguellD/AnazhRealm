@@ -3,16 +3,12 @@
 // welt_schmiede) behalten IDENTITAET + FUNKTION (Name · role portal · portalMeta · Tags ·
 // blockerAABBs · E-Trigger), aber ihre RENDER-GESTALT kommt vom porta-Kern (studioGestalt-
 // DATEN-Zeile, gelesen im EINEN Entry-Resolver `_foundryPresetForEntry`). W-A4c/V9.56-i: die
-// LISTE zieht die Linse DYNAMISCH aus der Quelle (jede studioGestalt-Zeile + ihr Blueprint) —
+// LISTE zieht die Linse DYNAMISCH aus dem lebenden Zustand (jeder Portal-Bauplan mit studioGestalt) —
 // ein neues Gestalt-Portal waechst von selbst hinein; die ANKER bleiben hart (Drift laut).
 // Die Linse prueft mit ehrlichen Zahlen:
-//   S (statisch, Node): die studioGestalt-Traeger aus der Quelle abgeleitet (>= 6, Anker
-//     welt_terrain -> verkalkt · welt_schmiede -> maurentor, jede Gestalt UNVERWECHSELBAR,
-//     jeder Traeger ist ein portal-Blueprint) · der Resolver-Block ist GENERISCH (liest
-//     `studioGestalt` + LIVE-Buch, KEIN welt_-Literal, foundry-gegated).
-//   A (Browser, foundry-ON warm, Null-Renderer): alle abgeleiteten Blueprints tragen
-//     studioGestalt LIVE (Set-Paritaet Quelle==Browser), jede Gestalt steht im LIVE-Buch
-//     (f.recipes).
+//   S0 (Browser): >= 6 Gestalt-Portale, jede Gestalt UNVERWECHSELBAR über den Resolver, welt_schmiede -> maurentor.
+//   A (Browser, foundry-ON warm, Null-Renderer): jede Gestalt steht im LIVE-Buch (f.recipes), jeder Träger trägt
+//     sein Ziel (portalMeta.world).
 //   B: der Resolver loest welt_terrain -> verkalkt; Blueprints OHNE studioGestalt loesen
 //     unveraendert (baum_eiche -> eiche · esse -> null · fahrzeug_wagen -> null = Regression 0).
 //   C: ein gespawntes welt_-Portal materialisiert END-TO-END als Studio-Asset
@@ -31,11 +27,8 @@
 //     blockerAABBs relativ IDENTISCH zum Studio-Spawn = die Substanz ist regime-frei).
 //   node scripts/diag-portal-gestalt.cjs
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
-const path = require("path");
-const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.PORTAL_GESTALT_PORT || 4437);
-const root = path.resolve(__dirname, "..");
 const server = statikServer();
 
 const errs = [];
@@ -43,83 +36,8 @@ function check(name, ok, detail) {
     console.log(`  ${ok ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
     if (!ok) errs.push(name);
 }
-const stripComments = stammLib.ohneKommentare;
-// der EINE Rumpf-Schneider (scripts/lib/stamm.cjs): der Block an der Definition, nie am ersten Text-Treffer
-function fnBody(src, kopf) {
-    return stammLib.rumpf(src, kopf);
-}
-
-// W-A4c/V9.56-i — DIE DYNAMISCHE WAHRHEIT: die Gestalt-Zuordnung kommt aus der QUELLE
-// selbst (jede studioGestalt-Daten-Zeile + der Name des umschliessenden Blueprints via
-// `NAME: { name: "NAME"`-Rueckwaerts-Anker), nicht aus einer hart gepflegten Liste — ein
-// neues Gestalt-Portal (welt_schmiede) waechst von selbst in die Linse. Die ANKER unten
-// (Mindest-Zahl · terrain/schmiede-Zuordnung · Einzigartigkeit) halten die Drift laut.
-// Architektur-Welle 05.10.: dieselbe Daten-Zeile trägt auch die AUSSTATTUNG (glutbrunnen · marktstand_dorf ·
-// brunnen_dorf → das Gesetzbuch der Architektur) — sie sind keine Portale. Diese Linse zählt die PORTAL-Träger (role
-// "portal" im Block); die Ausstattung prüft gate:v1-resolve (Auflösung) und gate:fachwerk-contract (die Gestalt).
-function deriveGestalt(srcNC) {
-    const map = {};
-    const re = /studioGestalt:\s*"([a-z_]+)"/g;
-    let m;
-    while ((m = re.exec(srcNC))) {
-        const before = srcNC.slice(Math.max(0, m.index - 4000), m.index);
-        const bpRe = /(\w+):\s*\{\s*name:\s*"\1"/g;
-        let last = null;
-        let b;
-        while ((b = bpRe.exec(before))) last = b[1];
-        if (!last) continue;
-        const idx = srcNC.indexOf(`${last}: {`);
-        const block = idx >= 0 ? srcNC.slice(idx, idx + 900) : "";
-        if (/role:\s*"portal"/.test(block)) map[last] = m[1];
-    }
-    return map;
-}
 
 (async () => {
-    const anazhSrc = stammLib.text(root);
-    const anazhNC = stripComments(anazhSrc);
-    const GESTALT = deriveGestalt(anazhNC);
-
-    console.log("=== W-A3 PORTAL-GESTALT — TEIL S: die statischen Gesetze (Node) ===");
-    console.log(
-        `  ℹ️ abgeleitete Gestalt-Traeger (${Object.keys(GESTALT).length}): ${Object.entries(GESTALT)
-            .map(([k, v]) => `${k}->${v}`)
-            .join(" · ")}`
-    );
-    check(
-        `S0: >= 6 Gestalt-Traeger aus der Quelle abgeleitet (${Object.keys(GESTALT).length})`,
-        Object.keys(GESTALT).length >= 6
-    );
-    check(
-        'S0: ANKER welt_terrain -> "verkalkt" (traegt B/C/D/F) + welt_schmiede -> "maurentor" (W-A4c)',
-        GESTALT.welt_terrain === "verkalkt" && GESTALT.welt_schmiede === "maurentor",
-        `terrain=${GESTALT.welt_terrain} schmiede=${GESTALT.welt_schmiede}`
-    );
-    check(
-        "S0: jede Gestalt ist UNVERWECHSELBAR (keine zwei Portale teilen ein Preset)",
-        new Set(Object.values(GESTALT)).size === Object.keys(GESTALT).length
-    );
-    for (const [bp, gestalt] of Object.entries(GESTALT)) {
-        const idx = anazhNC.indexOf(`${bp}: {`);
-        const block = idx >= 0 ? anazhNC.slice(idx, idx + 900) : "";
-        check(
-            `S1: ${bp} ("${gestalt}") ist ein portal-Blueprint (role portal + portalMeta am Traeger)`,
-            /role:\s*"portal"/.test(block) && /portalMeta/.test(block)
-        );
-    }
-    // Die DEFINITION ankern (newline + Einrueckung + oeffnende Klammer) — der nackte Name
-    // matcht sonst die erste CALL-SITE (`this._foundryPresetForEntry(entry)`) und fnBody
-    // extrahiert einen fremden Block.
-    const resolver = fnBody(anazhNC, /\n\s+_foundryPresetForEntry\([^)]*\)\s*\{/);
-    check(
-        "S2: der Resolver-Block ist GENERISCH (liest studioGestalt + LIVE-Buch, foundry-gegated, KEIN welt_-Literal)",
-        resolver !== null &&
-            /studioGestalt/.test(resolver) &&
-            /_foundryEnabled/.test(resolver) &&
-            /recipes/.test(resolver) &&
-            !/welt_/.test(resolver)
-    );
-
     console.log("\n=== TEIL A-F: der lebende Draht (Browser, foundry-ON, Null-Renderer) ===");
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
     const browser = await starteBrowser({ art: "webgl", frist: 300000 });
@@ -132,7 +50,7 @@ function deriveGestalt(srcNC) {
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
 
     // ===== EVAL 1: Boot + Buch warm + (A) Daten-Zeilen + (B) Resolver =====
-    const outAB = await page.evaluate(async (GESTALT) => {
+    const outAB = await page.evaluate(async () => {
         const res = { a: {}, b: {}, warm: false };
         const dl0 = performance.now() + 90000;
         while (
@@ -151,55 +69,60 @@ function deriveGestalt(srcNC) {
             await new Promise((res2) => setTimeout(res2, 100));
         }
         res.warm = !!(f && f.ready && f.recipes && f.recipes.geisttor);
-        // (A) alle 5 tragen studioGestalt; jede Gestalt steht im LIVE-Buch.
-        for (const [name, gestalt] of Object.entries(GESTALT)) {
-            const bp = r.state.blueprints && r.state.blueprints[name];
-            res.a[name] = {
-                has: !!bp && typeof bp.studioGestalt === "string",
-                value: bp ? bp.studioGestalt : null,
-                inBook: !!(f && f.recipes && bp && Object.prototype.hasOwnProperty.call(f.recipes, bp.studioGestalt)),
-                kind: f && f.recipes && bp && f.recipes[bp.studioGestalt] ? f.recipes[bp.studioGestalt].kind : null,
-            };
-        }
-        // (A2) Set-Paritaet: die LIVE-Blueprints mit studioGestalt == die Quelle-Ableitung.
-        // V18.464 (Linsen-Heilung, Lehre 6): seit der ERFINDER-WELLE stempelt der
-        // Auto-Register-Chokepoint studioGestalt auf JEDEN Klon (baum_/fahrzeug_/
-        // haus_/klinge_/tor_<rezept>, Marke _foundryAutoSpecies) — die Quelle-
-        // Ableitung (Literal-Zeilen im Stamm) kann nur die HANDGESCHRIEBENEN
-        // Traeger sehen. Auto-Klone gehoeren nicht in diese Paritaet (ihre
-        // Registrier-Wahrheit prueft gate:rezept-katalog).
+        // DIE DYNAMISCHE WAHRHEIT aus dem lebenden Zustand: jeder handgeschriebene Portal-Bauplan mit studioGestalt (die
+        // Auto-Klone des Register-Chokepoints tragen sie auch — ihre Wahrheit prüft gate:rezept-katalog).
         res.liveSet = Object.keys(r.state.blueprints || {})
             .filter((n) => {
                 const bp = r.state.blueprints[n] || {};
                 return typeof bp.studioGestalt === "string" && !bp._foundryAutoSpecies && bp.role === "portal";
             })
             .sort();
-        // (B) Resolver: Gestalt-Aufloesung + Regression-0-Proben.
+        res.gestalt = Object.fromEntries(res.liveSet.map((n) => [n, r.state.blueprints[n].studioGestalt]));
+        // (A) jede Gestalt steht im LIVE-Buch; jeder Träger trägt sein Ziel (portalMeta.world).
+        for (const [name, gestalt] of Object.entries(res.gestalt)) {
+            const bp = r.state.blueprints[name];
+            res.a[name] = {
+                inBook: !!(f && f.recipes && Object.prototype.hasOwnProperty.call(f.recipes, gestalt)),
+                kind: f && f.recipes && f.recipes[gestalt] ? f.recipes[gestalt].kind : null,
+                ziel: !!(bp.portalMeta && bp.portalMeta.world),
+            };
+        }
+        // (B) Resolver: Gestalt-Aufloesung + Regression-0-Proben; das LIVE-Buch führt (ohne Rezept keine Gestalt).
         res.b.terrain = r._foundryPresetForEntry({ type: "welt_terrain" });
+        res.b.schmiede = r._foundryPresetForEntry({ type: "welt_schmiede" });
+        res.b.aufgeloest = res.liveSet.map((n) => r._foundryPresetForEntry({ type: n }));
+        const altV = f.recipes.verkalkt;
+        delete f.recipes.verkalkt;
+        res.b.ohneRezept = r._foundryPresetForEntry({ type: "welt_terrain" });
+        f.recipes.verkalkt = altV;
+        res.b.ohneWeltLiteral = !/welt_/.test(window.__codeOf(r._foundryPresetForEntry)); // Absenz: der Resolver ist generisch
         res.b.eiche = r._foundryPresetForEntry({ type: "baum_eiche" });
         res.b.esse = r._foundryPresetForEntry({ type: "esse" });
         res.b.wagen = r._foundryPresetForEntry({ type: "fahrzeug_wagen" });
         return res;
-    }, GESTALT);
+    });
+    const GESTALT = outAB.gestalt || {};
+    console.log(`  ℹ️ Gestalt-Traeger (${Object.keys(GESTALT).length}): ${Object.entries(GESTALT).map(([k, v]) => `${k}->${v}`).join(" · ")}`);
 
     check("A: das LIVE-Buch ist warm (porta-Rezepte angekommen)", outAB.warm === true);
+    const g = outAB.b.aufgeloest || [];
     check(
-        "A: Set-Paritaet — die LIVE-Gestalt-Traeger sind exakt die Quelle-Ableitung (dynamische Wahrheit beidseitig)",
-        JSON.stringify(outAB.liveSet) === JSON.stringify(Object.keys(GESTALT).sort()),
-        `live=${(outAB.liveSet || []).join(",")}`
+        "S0: >= 6 Gestalt-Portale, jede Gestalt UNVERWECHSELBAR (keine zwei Portale teilen ein Preset), welt_schmiede -> maurentor",
+        g.length >= 6 && g.every(Boolean) && new Set(g).size === g.length && outAB.b.schmiede === "maurentor",
+        g.join(",")
     );
     for (const [name, gestalt] of Object.entries(GESTALT)) {
         const a = outAB.a[name] || {};
         check(
-            `A: ${name} -> "${gestalt}" steht im LIVE-Buch (kind ${a.kind})`,
-            a.has === true && a.value === gestalt && a.inBook === true && a.kind === "gate",
-            `value=${a.value} inBook=${a.inBook}`
+            `A: ${name} -> "${gestalt}" steht im LIVE-Buch (kind ${a.kind}) und trägt sein Ziel`,
+            a.inBook === true && a.kind === "gate" && a.ziel === true,
+            `inBook=${a.inBook} ziel=${a.ziel}`
         );
     }
     check(
-        'B: der Resolver loest welt_terrain -> "verkalkt" (die Daten-Zeile traegt)',
-        outAB.b.terrain === "verkalkt",
-        String(outAB.b.terrain)
+        'B: der Resolver loest welt_terrain -> "verkalkt" (die Daten-Zeile traegt), ohne das Rezept im LIVE-Buch null; kein welt_-Literal',
+        outAB.b.terrain === "verkalkt" && outAB.b.ohneRezept === null && outAB.b.ohneWeltLiteral === true,
+        `${outAB.b.terrain} / ohne Rezept ${outAB.b.ohneRezept}`
     );
     check(
         "B: Regression 0 — baum_eiche loest unveraendert auf eiche",
@@ -488,7 +411,7 @@ function deriveGestalt(srcNC) {
         process.exit(1);
     }
     console.log(
-        `\n✅ GRÜN — W-A3 STEHT: die ${Object.keys(GESTALT).length} welt_-Portale (dynamisch aus der Quelle) tragen ihre porta-Gestalt als DATEN-Zeile, der EINE Entry-Resolver serviert sie generisch (fail-soft, foundry-gegated), das Studio-Asset materialisiert end-to-end ohne Doppel-Bild, die Substanz-Wahrheit (portalMeta · Tags · blockerAABBs · E-Trigger) lebt byte-alt in BEIDEN Regimen.`
+        `\n✅ GRÜN — W-A3 STEHT: die ${Object.keys(GESTALT).length} welt_-Portale (dynamisch aus dem lebenden Zustand) tragen ihre porta-Gestalt als DATEN-Zeile, der EINE Entry-Resolver serviert sie generisch (fail-soft, foundry-gegated), das Studio-Asset materialisiert end-to-end ohne Doppel-Bild, die Substanz-Wahrheit (portalMeta · Tags · blockerAABBs · E-Trigger) lebt byte-alt in BEIDEN Regimen.`
     );
     process.exit(0);
 })().catch((e) => {
