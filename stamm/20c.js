@@ -181,8 +181,8 @@ class AnazhRealm_Z20c {
         const wu = this._ensureWindCoupling(T);
         const WG = globalThis.__phytoCore.WIND_GESETZ;
         const B = AnazhRealm.WIND_BOE;
-        // die Art-Größen: der Stoff-Wert — zeichnet der Wurf-Sammler (`_sammlerNimmt`), trägt die Instanz ihn (`aWindArt`)
-        const uB = T.nodeObject(new (AnazhRealm._windArtKlasse())(this._stoffWert(T, "userData.windArt", "vec3")));
+        // die Art-Größen: der Stoff-Wert — zeichnet die Arena (`_arenaNimmt`, viele Arten in EINEM Zug), trägt ihn die Instanz
+        const uB = AnazhRealm._windArtKnoten(this._stoffWert(T, "userData.windArt", "vec3"));
         const A = AnazhRealm._windTsl(T);
         const pG = T.positionGeometry;
         const naht = this._weltNaht(T);
@@ -1378,8 +1378,13 @@ class AnazhRealm_Z20c {
                 // die Fassade zeichnet, was ihre Quelle zeichnet (Bereich), so viele Instanzen, wie die Senke zählt
                 // (`_instanzZahl` bleibt der EINE Schreiber der Zahl — hier wird sie nur gelesen)
                 f.setDrawRange(g.drawRange.start, g.drawRange.count);
-                f.instanceCount = s.count;
+                // zeichnet die Arena ihres Stoffs die Senke (G1, `_arenaNimmt`), zeichnet der Zeichner nichts
+                f.instanceCount = s.__arena ? 0 : s.count;
                 return f;
+            }
+            // Wo der Zeichner gezeichnet würde, übernimmt die Arena seines Stoffs die Senke (G1) — er verlässt den Graphen.
+            onBeforeRender(renderer) {
+                AnazhRealm._arenaNimmt(this.__instanzQuelle, renderer);
             }
             computeBoundingSphere() {
                 this.__instanzQuelle.computeBoundingSphere();
@@ -1449,306 +1454,452 @@ class AnazhRealm_Z20c {
         AnazhRealm.__senkenKnoten = { matrix, instanz: new SenkenInstanz() };
         return AnazhRealm.__senkenKnoten;
     }
-    // DER WURF-SAMMLER (G1, die GPU-Welt): jede Kaskade zeichnet die Wurf-Senken der Wahl (`instanzWahl` "schatten", der
-    // Zwilling jeder Pflanzen-Stufe) als EIN Render-Objekt. Befund 16.10. (Radeon, EINE Welt, Genesis Third; Rohdaten
-    // G1-gpu-welt/f1/zensus-genesis.json, stoff-diff2.json): 16 Wurf-Senken tragen 13 Stoffe, deren Knoten und Regler gleich
-    // sind — sie unterscheiden sich NUR in den Art-Größen des Winds (`userData.windArt`, der Stoff-Schlüssel trägt sie je Art);
-    // jede Senke war je Kaskade ein eigenes Render-Objekt (Projektion · Diät · Knoten · Bindungen · Draw). Der Sammler hält je
-    // Szene × Attribut-Form × Wurf-Knoten EINE Arena: Vertex- und Index-Daten jeder Gestalt einmal (Basis-Vertex, erster Index),
-    // die Instanz-Größen jeder Senke als Block (erste Instanz), dazu die Art-Größen je Instanz (`aWindArt`, der Wind-Knoten
-    // liest sie, wo die Geometrie sie trägt). Je Pass schreibt er die Zeichen-Aufträge (5 uint: Indizes · Instanzen · erster
-    // Index · Basis-Vertex · erste Instanz) und r184 gibt sie aus EINEM Render-Objekt als N drawIndexedIndirect aus (backend
-    // `_draw`, `getIndirectOffset` als Liste — Vendor gelesen). Die Wahl bleibt die EINE der CPU (`_instanzWahlPass`,
-    // `_werferWahlPass`): sie ordnet die Slots, setzt Zahl und Sichtbarkeit; der Sammler liest beides zur Zeichen-Zeit wie der
-    // Zeichner zuvor, und schreibt seine Puffer direkt in die Warteschlange (jede Kaskade ist ein eigener Submit). Die erste
-    // Instanz eines indirekten Zugs braucht das Geräte-Merkmal `indirect-first-instance` (r184 fordert jedes, das der Adapter
-    // kennt); ohne es (WebGL2) zeichnet jede Senke über ihren Zeichner — dieselbe Wahl, dieselben Puffer — und der Sammler
-    // meldet sich einmal laut ab (`__sammlerOhne`).
-    static _sammlerNimmt(m) {
-        if (AnazhRealm.__sammlerOhne || !m.__zeichner || !m.geometry.index) return;
+    // DIE GEOMETRIE-ARENA (G1, die GPU-Welt): EIN Render-Objekt je Stoff. Befund 16.10. (Radeon, EINE Welt, je Ort ein
+    // gezählter Frame; Rohdaten G1-gpu-welt/b3/s0): je Pass zog jede Senke ihr eigenes Render-Objekt — Genesis Third haupt
+    // 41 · k0 14 · k1 3, Mess-Wiese Ego 33 · 15 · 5, Dorf 29 · 13 · 2 — mit ~3 Instanzen je Senke, und die CPU zahlt je
+    // Render-Objekt (Projektion · Diät · Knoten · Bindungen · Zug). Die Senken eines Stoffs unterscheiden sich nur in Gestalt,
+    // Stufe und Art: die Arena hält je Szene × Stoff-Schlüssel (`_arenaSchluessel`: Attribut-Form, Schichten, Wurf, jeder
+    // Regler, Knoten und Stoff-Wert — die Art-Größen des Winds trägt die Instanz, `aWindArt`) die Gestalten aller Glieder in
+    // EINEM Vertex- und Index-Puffer (Basis-Vertex, erster Index), ihre Instanz-Größen in Blöcken (erste Instanz) und die
+    // Matrizen in EINEM Speicher-Puffer, den der EINE Instanz-Knoten (`_senkenKnoten`) liest. Je Pass schreibt sie aus der
+    // EINEN Wahl der CPU (`count` der Senke, Sicht und Frustum wie r184) die Zeichen-Aufträge (5 uint: Indizes · Instanzen ·
+    // erster Index · Basis-Vertex · erste Instanz) in den Auftrags-Puffer DIESER Kamera (der Schatten-Render läuft verschachtelt
+    // mitten im Hauptbild), und r184 gibt sie aus EINEM Render-Objekt als N drawIndexedIndirect aus (backend `_draw`:
+    // `getIndirectOffset` als Liste — vendor three.webgpu.min.js gelesen). Die erste Instanz eines indirekten Zugs braucht
+    // `indirect-first-instance`; ohne das Merkmal (WebGL2) zeichnet jede Senke über ihren Zeichner, und die Arena meldet
+    // sich einmal laut ab (`__arenaOhne`). Ein Wurf in ihrem Takt ist ein BRUCH (`_bruchMelden`): sie gibt jedes Glied
+    // seinem Zeichner zurück und nimmt keines mehr (`__arenaBruch`) — r184 bliebe nach einem Wurf mitten im Render stehen.
+    static _arenaNimmt(m, renderer) {
+        if (m.__arena || !m.__zeichner || !AnazhRealm._arenaKann(renderer)) return;
         let w = m;
         while (w.parent) w = w.parent;
-        if (!w.isScene || !m.instanceMatrix.isStorageInstancedBufferAttribute) return;
+        if (!w.isScene) return;
+        const schl = AnazhRealm._arenaSchluessel(m);
+        if (schl === null) return;
+        // ein Bündel nimmt nur auf, wenn es sich ändert: einmal je Szene nimmt jedes neu auf — so kommt jede Senke an
+        if (w.__arenaAn !== true) {
+            w.__arenaAn = true;
+            w.traverse((o) => {
+                if (o.isBundleGroup) o.needsUpdate = true;
+            });
+        }
+        const reg = AnazhRealm.__arenen || (AnazhRealm.__arenen = new Map());
+        const k = w.uuid + "|" + schl;
+        let a = reg.get(k);
+        if (!a) reg.set(k, (a = new (AnazhRealm._arenaKlasse())(k, schl, m)));
+        if (a.parent !== w) w.add(a);
+        a.nehmen(m);
+    }
+    static _arenaKann(renderer) {
+        if (AnazhRealm.__arenaOhne || AnazhRealm.__arenaBruch) return false;
+        const be = renderer && renderer.backend;
+        if (!be) return false;
+        if (be.device && be.device.features && be.device.features.has("indirect-first-instance")) return true;
+        AnazhRealm.__arenaOhne = be.isWebGLBackend ? "WebGL2" : "ohne indirect-first-instance";
+        console.warn("DIE GEOMETRIE-ARENA: " + AnazhRealm.__arenaOhne + " — jede Senke zeichnet über ihren Zeichner");
+        return false;
+    }
+    // Der Stoff-Schlüssel einer Senke — null, wo die Arena sie nicht tragen kann (verschränkte Puffer, Morph, Stoff-Reihe).
+    static _arenaSchluessel(m) {
         const geo = m.geometry,
             s = m.material;
+        if (!geo || !s || s.isNodeMaterial !== true || (geo.morphAttributes && Object.keys(geo.morphAttributes).length))
+            return null;
         let form = "";
         for (const k of Object.keys(geo.attributes).sort()) {
             const a = geo.attributes[k];
-            if (a.isInterleavedBufferAttribute || !(a.array instanceof Float32Array)) return;
-            form += k + a.itemSize + (a.isInstancedBufferAttribute ? "I," : ",");
+            if (a.isInterleavedBufferAttribute || !a.array) return null;
+            const t = a.array.constructor.name;
+            form += k + ":" + a.itemSize + t + (a.normalized ? "n" : "") + (a.isInstancedBufferAttribute ? "I," : ",");
         }
-        const id = (n) => (n ? n.id : 0);
-        const ud = s.userData || {};
-        const key = [w.uuid, form, m.layers.mask, m.renderOrder, s.type, s.side, s.alphaTest, s.transparent,
-            id(s.positionNode), id(s.colorNode), id(s.maskShadowNode), id(s.maskNode), id(s.opacityNode),
-            s.map ? s.map.uuid : 0, s.alphaMap ? s.alphaMap.uuid : 0, JSON.stringify(ud.stoffWerte || null)].join("|");
-        const reg = AnazhRealm.__sammler || (AnazhRealm.__sammler = new Map());
-        let z = reg.get(key);
-        if (!z) reg.set(key, (z = new (AnazhRealm._sammlerKlasse())(key, m)));
-        if (z.parent !== w) w.add(z);
-        z.nehmen(m);
+        if (m.instanceColor) form += "farbe:" + m.instanceColor.itemSize;
+        return [form, m.layers.mask, m.castShadow, m.receiveShadow, m.renderOrder, AnazhRealm._arenaStoff(s)].join("|");
     }
-    // Der Knoten der Art-Größen des Winds: trägt die Geometrie `aWindArt` (die Arena des Sammlers), liest er die Instanz,
-    // sonst den Stoff-Wert — EIN Wert (der Stoff trägt ihn), zwei Wege dorthin, je Programm beim Bau entschieden.
-    static _windArtKlasse() {
-        if (AnazhRealm.__windArtK) return AnazhRealm.__windArtK;
-        const N = Object.getPrototypeOf(THREE.InstanceNode);
-        class WindArt extends N {
-            constructor(stoff) {
-                super("vec3");
-                this.stoff = stoff;
-            }
-            setup(builder) {
-                return builder.hasGeometryAttribute("aWindArt") ? THREE.TSL.attribute("aWindArt", "vec3") : this.stoff;
-            }
+    // Der Stoff als Wert: jede Eigenschaft (Knoten als id, Texturen als uuid, Funktionen über den Programm-Schlüssel des
+    // Stoffs), die Stoff-Werte bis auf die Art-Größen des Winds — gemerkt je Stoff-Version.
+    static _arenaStoff(s) {
+        if (s.__arenaStoff && s.__arenaStoffV === s.version) return s.__arenaStoff;
+        const J = AnazhRealm._arenaWert;
+        let t = s.type + ";a" + s.alphaTest + ";p" + s.customProgramCacheKey();
+        for (const k of Object.keys(s).sort()) {
+            if (k.startsWith("__") || k === "_listeners" || k.startsWith("_anazh") || k === "uuid" || k === "id")
+                continue;
+            if (k === "name" || k === "version" || k === "userData" || typeof s[k] === "function") continue;
+            t += ";" + k + "=" + J(s[k], 0);
         }
-        AnazhRealm.__windArtK = WindArt;
-        return WindArt;
+        const ud = Object.assign({}, s.userData);
+        delete ud.windArt;
+        delete ud.baumWind;
+        s.__arenaStoff = t + ";ud" + J(ud, 0);
+        s.__arenaStoffV = s.version;
+        return s.__arenaStoff;
     }
-    static _sammlerKlasse() {
-        if (AnazhRealm.__sammlerK) return AnazhRealm.__sammlerK;
+    static _arenaWert(v, tiefe) {
+        if (v === null || v === undefined) return "";
+        const t = typeof v;
+        if (t !== "object") return t === "function" ? "fn" : String(v);
+        if (v.isNode) return "#" + v.id;
+        if (v.isTexture || v.isObject3D || v.isMaterial || v.isBufferGeometry) return "@" + v.uuid;
+        if (v.isColor) return "c" + v.getHexString();
+        if (ArrayBuffer.isView(v)) return "[" + Array.prototype.slice.call(v, 0, 32).join(",") + "]";
+        if (tiefe > 5) return "…";
+        let r = Array.isArray(v) ? "[" : "{";
+        for (const k of Array.isArray(v) ? v.keys() : Object.keys(v).sort())
+            r += k + ":" + AnazhRealm._arenaWert(v[k], tiefe + 1) + ",";
+        return r + (Array.isArray(v) ? "]" : "}");
+    }
+    static _arenaBruch(e) {
+        if (AnazhRealm.__arenaBruch) return;
+        const text = "DIE GEOMETRIE-ARENA BRICHT: " + String((e && e.stack) || e).slice(0, 500);
+        AnazhRealm.__arenaBruch = text;
+        const r = globalThis.anazhRealm;
+        if (r && typeof r._bruchMelden === "function") r._bruchMelden(text);
+        else console.error(text);
+        for (const a of [...(AnazhRealm.__arenen || new Map()).values()])
+            for (const m of a.glieder.slice()) a.lassen(m, true);
+    }
+    // Der Knoten der Art-Größen des Winds: trägt die Geometrie `aWindArt` (die Arena), liest er die Instanz, sonst den
+    // Stoff-Wert — EIN Wert (der Stoff trägt ihn), zwei Wege dorthin, je Programm beim Bau entschieden.
+    static _windArtKnoten(stoff) {
+        if (!AnazhRealm.__windArtK) {
+            const N = Object.getPrototypeOf(THREE.InstanceNode);
+            AnazhRealm.__windArtK = class WindArt extends N {
+                constructor(q) {
+                    super("vec3");
+                    this.stoffWert = q;
+                }
+                setup(builder) {
+                    return builder.hasGeometryAttribute("aWindArt")
+                        ? THREE.TSL.attribute("aWindArt", "vec3")
+                        : this.stoffWert;
+                }
+            };
+        }
+        return THREE.TSL.nodeObject(new AnazhRealm.__windArtK(stoff));
+    }
+    static _arenaKlasse() {
+        if (AnazhRealm.__arenaK) return AnazhRealm.__arenaK;
         const T = THREE;
-        class WurfSammler extends T.Mesh {
-            constructor(key, m) {
+        const IND = T.StorageInstancedBufferAttribute; // r184 legt jeden Puffer als Auftrags-Puffer an (`createIndirectStorageAttribute`)
+        const fr = new T.Frustum(),
+            pm = new T.Matrix4(),
+            kugel = new T.Sphere();
+        const EINS = new T.Matrix4().elements;
+        const istEins = (e) => {
+            for (let i = 0; i < 16; i++) if (e[i] !== EINS[i]) return false;
+            return true;
+        };
+        // o[oi..] = a × b[bi..] (spaltenweise, wie three)
+        const mal = (o, oi, a, b, bi) => {
+            for (let c = 0; c < 4; c++) {
+                const b0 = b[bi + c * 4],
+                    b1 = b[bi + c * 4 + 1],
+                    b2 = b[bi + c * 4 + 2],
+                    b3 = b[bi + c * 4 + 3];
+                for (let r = 0; r < 4; r++)
+                    o[oi + c * 4 + r] = a[r] * b0 + a[4 + r] * b1 + a[8 + r] * b2 + a[12 + r] * b3;
+            }
+        };
+        const vier = (n) => Math.ceil(n / 4) * 4; // jede Puffer-Länge ein Vielfaches von 4 Bytes (writeBuffer)
+        class GeometrieArena extends T.Mesh {
+            constructor(key, schl, m) {
                 super(new T.InstancedBufferGeometry(), m.material);
-                this.name = "wurf-sammler";
+                this.name = "geometrie-arena";
                 this.isInstanzZeichner = true;
-                this.isWurfSammler = true;
+                this.isGeometrieArena = true;
                 this.__key = key;
+                this.__schl = schl;
                 this.__instanzQuelle = { isInstancedMesh: true, instanceMatrix: null, instanceColor: null, count: 0 };
                 this.__instanzQuelle.matrixWorld = this.matrixWorld;
                 this.__instanzQuelle.userData = this.userData;
-                this.userData.instanzWahl = "schatten";
                 this.layers.mask = m.layers.mask;
+                this.castShadow = m.castShadow;
+                this.receiveShadow = m.receiveShadow;
                 this.renderOrder = m.renderOrder;
                 this.frustumCulled = false;
                 this.matrixAutoUpdate = false;
                 this.matrixWorldAutoUpdate = false;
+                this._wind = !!(m.material.userData && m.material.userData.windArt);
+                this._marke = m.__zeichner.__fassade.attributes.aInstanzSenke;
                 this.glieder = [];
-                this.gezogen = []; // die Glieder des letzten Zugs (Zähler und Linsen lesen sie)
-                this._basen = new Map(); // Positions-Attribut → { bv, fi, nv, ni, nutzer }
-                this._v = this._i = 0;
+                this._gestalten = new Map(); // Positions-Id:Index-Id → { geo, bv, fi, nv, ni, nutzer }
+                this._v = this._i = this._tot = 0;
                 this._vCap = this._iCap = this._nCap = 0;
+                // die Glieder mit Instanzen: ohne eines betritt die Arena keinen Pass (die Instanz-Zahl zaehlt mit)
+                this._lebend = 0;
+                this._zuege = new Map(); // Kamera → { ind, arr, offs, zuege, tri } — der Auftrags-Puffer je Pass
+                this._stapel = [];
                 this._rend = null;
-                this._lage = true; // die Instanz-Blöcke neu legen
-                this._neu = true; // die Arena neu bauen
+                this._neu = true;
+                this._lage = true;
+                this._fassade(this.geometry);
+            }
+            // r184 liest Auftrags-Puffer, Versätze und Zahl am Zug: die des Passes, der gerade zeichnet
+            _fassade(g) {
+                const a = this;
+                const jetzt = () => a._stapel[a._stapel.length - 1] || null;
+                delete g.indirect;
+                delete g.indirectOffset;
+                delete g.instanceCount;
+                Object.defineProperties(g, {
+                    indirect: { get: () => (jetzt() ? jetzt().ind : null), set: () => {}, configurable: true },
+                    indirectOffset: { get: () => (jetzt() ? jetzt().offs : 0), set: () => {}, configurable: true },
+                    instanceCount: {
+                        get: () => (jetzt() && jetzt().offs.length ? 1 : 0),
+                        set: () => {},
+                        configurable: true,
+                    },
+                });
+                g.setDrawRange(0, 3); // r184 bucht EINEN Zug mit einem Dreieck; den Rest bucht `onAfterRender`
+                g.boundingSphere = new T.Sphere(new T.Vector3(), Infinity);
             }
             nehmen(m) {
-                if (m.__sammler === this) return;
                 this.glieder.push(m);
-                m.__sammler = this;
-                m.__sammlerStempel = null;
-                m.remove(m.__zeichner); // die Senke zeichnet nicht mehr selbst: ihr Zeichner verlässt den Graphen
-                this._basis(m);
+                m.__arena = this;
+                m.__arenaZ = {
+                    mat: m.material,
+                    mv: m.material.version,
+                    farbe: !!m.instanceColor,
+                    mw: new Float32Array(16),
+                };
+                m.__arenaZ.mw[0] = NaN;
+                if ((m.count | 0) > 0) this._lebend++;
+                this.visible = this._lebend > 0;
+                this._gestaltNehmen(m);
                 this._lage = true;
+                if (m.__zeichner.parent === m) m.remove(m.__zeichner); // die Senke zeichnet nicht mehr selbst
+                AnazhRealm._arenaBuendel(m);
             }
             lassen(m, zurueck) {
                 const i = this.glieder.indexOf(m);
                 if (i < 0) return;
                 this.glieder.splice(i, 1);
-                m.__sammler = null;
-                const b = this._basen.get(m.__sammlerPos);
-                if (b && --b.nutzer === 0) this._basen.delete(m.__sammlerPos);
-                if (zurueck && m.__zeichner && m.__zeichner.parent !== m) m.add(m.__zeichner);
+                this._gestaltLassen(m);
+                if ((m.count | 0) > 0) this._lebend--;
+                this.visible = this._lebend > 0;
+                m.__arena = null;
+                m.__arenaZ = null;
+                if (zurueck && m.__zeichner && m.__zeichner.parent !== m) {
+                    m.add(m.__zeichner);
+                    AnazhRealm._arenaBuendel(m);
+                }
                 this._lage = true;
                 if (this.glieder.length === 0) this._fallen();
             }
             _fallen() {
-                AnazhRealm.__sammler.delete(this.__key);
+                if (AnazhRealm.__arenen) AnazhRealm.__arenen.delete(this.__key);
                 if (this.parent) this.parent.remove(this);
                 this._abschied(this.geometry);
-                AnazhRealm._renderObjekteLoesen(this);
+                this._gpuWeg(this.__instanzQuelle.instanceMatrix);
+                for (const z of this._zuege.values()) this._gpuWeg(z.ind);
+                this._zuege.clear();
+                // ihre Bindegruppen (Uniform-Puffer) fallen nach dem Submit des Frames, wie jeder Puffer der Arena
+                setTimeout(() => AnazhRealm._renderObjekteLoesen(this), 0);
+            }
+            // ein Puffer fällt erst nach dem Submit des Frames: ein offener Pass (das Hauptbild um den verschachtelten
+            // Schatten-Render) trägt ihn noch in seinem Kommando-Paket („used in submit while destroyed")
+            _gpuWeg(a) {
+                const A = this._rend && this._rend._attributes;
+                if (!a || a === this._marke || !A || !A.has(a)) return;
+                const weg = AnazhRealm.__arenaWeg || (AnazhRealm.__arenaWeg = []);
+                if (weg.push({ A, a }) === 1)
+                    setTimeout(() => {
+                        AnazhRealm.__arenaWeg = null;
+                        for (const w of weg) if (w.A.has(w.a)) w.A.delete(w.a);
+                    }, 0);
             }
             _abschied(g) {
-                const A = this._rend && this._rend._attributes;
-                if (!A || !g) return;
-                for (const k in g.attributes) A.delete(g.attributes[k]);
-                if (g.index) A.delete(g.index);
-                if (g.indirect) A.delete(g.indirect);
-                if (this.__instanzQuelle.instanceMatrix) A.delete(this.__instanzQuelle.instanceMatrix);
+                for (const k in g.attributes) this._gpuWeg(g.attributes[k]);
+                if (g.index) this._gpuWeg(g.index);
             }
-            // die Gestalt eines Glieds in der Arena: angehängt, solange Platz ist (der Rest des Zugs schreibt nur den
-            // Bereich), sonst baut die Arena neu (verdichtet, doppelte Kapazität)
-            _basis(m) {
-                const p = m.geometry.attributes.position;
-                m.__sammlerPos = p;
-                let b = this._basen.get(p);
+            _gestaltNehmen(m) {
+                const g = m.geometry,
+                    p = g.attributes.position,
+                    z = m.__arenaZ;
+                z.geo = g;
+                z.pos = p;
+                z.idx = g.index;
+                z.ver = p.version + (g.index ? g.index.version : 0);
+                const key = p.id + ":" + (g.index ? g.index.id : -1);
+                let b = this._gestalten.get(key);
+                z.gestalt = key;
                 if (b) return void b.nutzer++;
                 const nv = p.count,
-                    ni = m.geometry.index.count;
-                b = { bv: this._v, fi: this._i, nv, ni, nutzer: 1, geo: m.geometry };
-                this._basen.set(p, b);
+                    ni = g.index ? g.index.count : nv;
+                b = { geo: g, bv: 0, fi: 0, nv, ni, nutzer: 1 };
+                this._gestalten.set(key, b);
                 if (this._neu || this._v + nv > this._vCap || this._i + ni > this._iCap) return void (this._neu = true);
-                this._kopieBasis(b);
+                b.bv = this._v;
+                b.fi = this._i;
+                this._kopie(b);
                 this._v += nv;
                 this._i += ni;
             }
-            _kopieBasis(b) {
+            _gestaltLassen(m) {
+                const b = this._gestalten.get(m.__arenaZ.gestalt);
+                if (!b || --b.nutzer > 0) return;
+                this._gestalten.delete(m.__arenaZ.gestalt);
+                this._tot += b.nv;
+                if (this._tot > this._v / 2) this._neu = true; // verdichten
+            }
+            _kopie(b) {
                 const g = this.geometry,
                     q = b.geo;
                 for (const k in g.attributes) {
                     const a = g.attributes[k];
-                    if (a.isInstancedBufferAttribute) continue;
-                    const s = q.attributes[k].array;
-                    a.array.set(s.subarray(0, b.nv * a.itemSize), b.bv * a.itemSize);
+                    if (a.isInstancedBufferAttribute || a === this._marke) continue;
+                    a.array.set(q.attributes[k].array.subarray(0, b.nv * a.itemSize), b.bv * a.itemSize);
                     this._schreib(a, b.bv * a.itemSize, b.nv * a.itemSize);
                 }
-                const ix = g.index;
-                ix.array.set(q.index.array.subarray(0, b.ni), b.fi);
-                this._schreib(ix, b.fi, b.ni);
+                const ix = g.index.array;
+                if (q.index) ix.set(q.index.array.subarray(0, b.ni), b.fi);
+                else for (let i = 0; i < b.ni; i++) ix[b.fi + i] = i;
+                this._schreib(g.index, b.fi, b.ni);
             }
-            // direkt in die Warteschlange (vor dem Submit dieses Passes); vor dem ersten Zug lädt r184 das ganze Array
+            // in die Warteschlange vor dem Submit dieses Passes; ohne GPU-Puffer lädt r184 beim ersten Zug das ganze Array
             _schreib(a, start, n) {
                 const be = this._rend && this._rend.backend;
-                const d = be && be.device ? be.get(a) : null;
-                if (!d || !d.buffer || n <= 0) return;
-                be.device.queue.writeBuffer(d.buffer, start * 4, a.array.buffer, a.array.byteOffset + start * 4, n * 4);
+                if (!be || !be.device || n <= 0 || !this._rend._attributes.has(a)) return;
+                const d = be.get(a);
+                if (!d.buffer) return;
+                const bpe = a.array.BYTES_PER_ELEMENT;
+                const s = Math.floor((start * bpe) / 4) * 4,
+                    e = Math.min(vier((start + n) * bpe), a.array.byteLength);
+                be.device.queue.writeBuffer(d.buffer, s, a.array.buffer, a.array.byteOffset + s, e - s);
             }
             _bauen() {
                 const alt = this.geometry;
                 const v0 = this.glieder[0].geometry;
                 let nv = 0,
                     ni = 0;
-                for (const b of this._basen.values()) {
+                for (const b of this._gestalten.values()) {
                     nv += b.nv;
                     ni += b.ni;
                 }
-                this._vCap = Math.max(nv * 2, 4096);
-                this._iCap = Math.max(ni * 2, 16384);
+                this._vCap = vier(Math.max(nv * 1.5, 1024));
+                this._iCap = vier(Math.max(ni * 1.5, 3072));
                 const g = new T.InstancedBufferGeometry();
                 for (const k in v0.attributes) {
                     const a = v0.attributes[k];
                     if (a.isInstancedBufferAttribute) continue;
-                    g.setAttribute(k, new T.BufferAttribute(new Float32Array(this._vCap * a.itemSize), a.itemSize));
+                    const arr = new a.array.constructor(this._vCap * a.itemSize);
+                    g.setAttribute(k, new T.BufferAttribute(arr, a.itemSize, a.normalized));
                 }
+                g.setAttribute("aInstanzSenke", this._marke);
                 g.setIndex(new T.BufferAttribute(new Uint32Array(this._iCap), 1));
-                g.setDrawRange(0, 3); // r184 bucht EINEN Zug mit einem Dreieck; den Rest bucht `onBeforeRender`
-                g.boundingSphere = new T.Sphere(new T.Vector3(), Infinity);
-                g.setAttribute("aInstanzSenke", this.glieder[0].__zeichner.__fassade.attributes.aInstanzSenke);
+                this._fassade(g);
                 this.geometry = g;
-                this._v = this._i = 0;
-                for (const b of this._basen.values()) {
+                this._v = this._i = this._tot = 0;
+                for (const b of this._gestalten.values()) {
                     b.bv = this._v;
                     b.fi = this._i;
-                    this._kopieBasis(b);
+                    this._kopie(b);
                     this._v += b.nv;
                     this._i += b.ni;
                 }
-                this._nCap = 0; // die Instanz-Arena wächst mit
+                this._nCap = 0; // die Instanz-Seite legt sich neu
                 this._neu = false;
                 this._lage = true;
-                if (alt) this._abschied(alt);
+                this._abschied(alt);
             }
-            // die Instanz-Blöcke: je Glied seine Kapazität ab seiner ersten Instanz, Art-Größen je Instanz aus seinem Stoff
+            // die Instanz-Blöcke: je Glied seine Kapazität ab seiner ersten Instanz, die Art-Größen je Instanz aus seinem Stoff
             _legen() {
                 const g = this.geometry,
-                    v0 = this.glieder[0].geometry;
+                    m0 = this.glieder[0];
                 let n = 0;
                 for (const m of this.glieder) n += m.instanceMatrix.count;
-                // die Instanz-Seite wächst ganz (Größen, Art, Matrizen, Aufträge): die neue Matrix-Id lässt die Diät das
-                // Objekt auffrischen — r184 sammelt dabei Attribute und Aufträge neu und bindet die Matrizen
-                if (n > this._nCap || g.indirect.array.length < this.glieder.length * 5) {
-                    this._nCap = Math.max(n * 2, 256);
-                    const A = this._rend && this._rend._attributes;
-                    const weg = (a) => a && A && A.delete(a);
-                    for (const k in v0.attributes) {
-                        const a = v0.attributes[k];
-                        if (!a.isInstancedBufferAttribute) continue;
-                        weg(g.attributes[k]);
-                        g.setAttribute(k, new T.InstancedBufferAttribute(new Float32Array(this._nCap * a.itemSize), a.itemSize));
-                    }
-                    weg(g.attributes.aWindArt);
-                    g.setAttribute("aWindArt", new T.InstancedBufferAttribute(new Float32Array(this._nCap * 3), 3));
-                    weg(this.__instanzQuelle.instanceMatrix);
-                    this.__instanzQuelle.instanceMatrix = new T.StorageInstancedBufferAttribute(new Float32Array(this._nCap * 16), 16);
-                    weg(g.indirect);
-                    g.indirect = new T.StorageInstancedBufferAttribute(new Uint32Array(Math.max(this.glieder.length * 2, 64) * 5), 1);
+                // neu gelegt wird in NEUE Puffer: ein offener Pass (das Hauptbild um den Schatten-Render) zeichnet die alte Lage
+                {
+                    this._nCap = vier(Math.max(n, 16));
+                    const neu = (k, a) => {
+                        this._gpuWeg(g.attributes[k]);
+                        const arr = new a.array.constructor(this._nCap * a.itemSize);
+                        g.setAttribute(k, new T.InstancedBufferAttribute(arr, a.itemSize, a.normalized));
+                    };
+                    for (const k in m0.geometry.attributes)
+                        if (m0.geometry.attributes[k].isInstancedBufferAttribute) neu(k, m0.geometry.attributes[k]);
+                    if (m0.instanceColor) neu("instanzFarbe", m0.instanceColor);
+                    if (this._wind) neu("aWindArt", { array: new Float32Array(0), itemSize: 3 });
+                    const q = this.__instanzQuelle;
+                    this._gpuWeg(q.instanceMatrix);
+                    q.instanceMatrix = new T.StorageInstancedBufferAttribute(new Float32Array(this._nCap * 16), 16);
                 }
-                const wa = g.attributes.aWindArt.array;
                 let erst = 0;
                 for (const m of this.glieder) {
-                    const cap = m.instanceMatrix.count;
-                    m.__sammlerErst = erst;
-                    m.__sammlerStempel = null; // der Block kopiert im nächsten Zug ganz
-                    const art = m.material.userData.windArt;
-                    for (let i = 0; i < cap; i++) {
-                        const o = (erst + i) * 3;
-                        wa[o] = art ? art.x : 1;
-                        wa[o + 1] = art ? art.y : 0;
-                        wa[o + 2] = art ? art.z : 0;
+                    const z = m.__arenaZ;
+                    z.erst = erst;
+                    z.im = m.instanceMatrix;
+                    z.cap = m.instanceMatrix.count;
+                    z.n = -1;
+                    z.stempel = [];
+                    if (this._wind) {
+                        const art = m.material.userData.windArt,
+                            wa = g.attributes.aWindArt.array;
+                        for (let i = erst * 3; i < (erst + z.cap) * 3; i += 3) {
+                            wa[i] = art ? art.x : 1;
+                            wa[i + 1] = art ? art.y : 0;
+                            wa[i + 2] = art ? art.z : 0;
+                        }
                     }
-                    erst += cap;
+                    erst += z.cap;
                 }
-                this._schreib(g.attributes.aWindArt, 0, erst * 3);
+                if (this._wind) this._schreib(g.attributes.aWindArt, 0, erst * 3);
                 this._lage = false;
             }
-            onBeforeRender(renderer) {
-                this._rend = renderer;
-                const G0 = this.geometry;
-                if (!AnazhRealm._sammlerKann(renderer)) {
-                    G0.instanceCount = 0;
-                    for (const m of this.glieder.slice()) this.lassen(m, true);
-                    return;
+            // Gehört das Glied noch hierher? 0 ja · 2 sein Stoff-Schlüssel wechselte (es geht in eine andere Arena)
+            _pruefen(m) {
+                const z = m.__arenaZ,
+                    g = m.geometry,
+                    s = m.material;
+                if (
+                    s !== z.mat ||
+                    s.version !== z.mv ||
+                    g !== z.geo ||
+                    !!m.instanceColor !== z.farbe ||
+                    m.layers.mask !== this.layers.mask ||
+                    m.castShadow !== this.castShadow ||
+                    m.receiveShadow !== this.receiveShadow ||
+                    m.renderOrder !== this.renderOrder
+                ) {
+                    if (AnazhRealm._arenaSchluessel(m) !== this.__schl) return 2;
+                    z.mat = s;
+                    z.mv = s.version;
+                    z.farbe = !!m.instanceColor;
+                    if (this._wind) this._lage = true; // die Art-Größen des neuen Stoffs
                 }
-                if (this._neu) this._bauen();
-                if (this._lage) this._legen();
-                const G = this.geometry;
-                const im = this.__instanzQuelle.instanceMatrix;
-                const args = G.indirect.array;
-                const offs = this._offs || (this._offs = []);
-                offs.length = 0;
-                this.gezogen.length = 0;
-                let tri = 0,
-                    fremd = null;
-                for (let j = 0; j < this.glieder.length; j++) {
-                    const m = this.glieder[j];
-                    // ein Glied, das Ebene oder Wurf-Knoten wechselte, gehört nicht mehr hierher: es zeichnet wieder selbst
-                    if (m.layers.mask !== this.layers.mask || m.material.positionNode !== this.material.positionNode) {
-                        (fremd || (fremd = [])).push(m);
-                        continue;
-                    }
-                    const n = m.count | 0;
-                    if (n <= 0 || !m.visible) continue;
-                    let p = m.parent,
-                        sicht = true;
-                    while (p && p !== this.parent) {
-                        if (p.visible === false) sicht = false;
-                        p = p.parent;
-                    }
-                    if (!sicht || p !== this.parent) continue;
-                    this._block(m, im, G);
-                    const b = this._basen.get(m.__sammlerPos);
-                    const dr = m.geometry.drawRange;
-                    const fi = Math.max(0, dr.start | 0);
-                    const ni = Math.min(b.ni - fi, Number.isFinite(dr.count) ? dr.count : b.ni);
-                    const o = j * 5;
-                    args[o] = ni;
-                    args[o + 1] = n;
-                    args[o + 2] = b.fi + fi;
-                    args[o + 3] = b.bv;
-                    args[o + 4] = m.__sammlerErst;
-                    offs.push(o * 4);
-                    this.gezogen.push(m);
-                    tri += (ni / 3) * n;
-                }
-                G.indirectOffset = offs;
-                G.instanceCount = offs.length > 0 ? 1 : 0;
-                this._schreib(G.indirect, 0, this.glieder.length * 5);
-                if (offs.length > 0 && renderer.info) {
-                    renderer.info.render.drawCalls += offs.length - 1;
-                    renderer.info.render.triangles += tri - 1;
-                }
-                if (fremd) for (const m of fremd) this.lassen(m, true);
+                if (g !== z.geo || g.attributes.position !== z.pos || g.index !== z.idx) {
+                    this._gestaltLassen(m);
+                    this._gestaltNehmen(m);
+                } else if (z.ver !== z.pos.version + (g.index ? g.index.version : 0)) this._neu = true;
+                if (m.instanceMatrix !== z.im || m.instanceMatrix.count !== z.cap) this._lage = true;
+                return 0;
             }
-            // der Block eines Glieds: kopiert, wenn eine seiner Instanz-Größen seit dem letzten Zug eine neue Version trägt
-            _block(m, im, G) {
-                const st = m.__sammlerStempel || (m.__sammlerStempel = []);
-                const q = m.geometry.attributes;
-                const mi = m.instanceMatrix;
-                let k = 0,
-                    neu = st[k] !== mi || st[k + 1] !== mi.version;
-                st[k++] = mi;
-                st[k++] = mi.version;
+            _sichtbar(m, renderer) {
+                if (m.visible === false) return false;
+                let p = m.parent;
+                while (p && p !== this.parent) {
+                    if (p.visible === false) return false;
+                    if (p.occlusionTest === true && renderer.isOccluded(p)) return false;
+                    p = p.parent;
+                }
+                return p === this.parent;
+            }
+            // der Block eines Glieds: kopiert, wenn eine seiner Instanz-Größen eine neue Version trägt, die Zahl wuchs oder
+            // die Welt-Matrix der Senke wechselte (die Matrizen tragen sie, die Arena steht im Ursprung)
+            _block(m, z, n) {
+                const im = m.instanceMatrix,
+                    q = m.geometry.attributes,
+                    c = m.instanceColor,
+                    st = z.stempel,
+                    mw = m.matrixWorld.elements;
+                let neu = n > z.n || st[0] !== im.version,
+                    k = 1;
+                for (let i = 0; i < 16; i++)
+                    if (z.mw[i] !== mw[i]) {
+                        z.mw.set(mw);
+                        neu = true;
+                        break;
+                    }
                 for (const nm in q) {
                     const a = q[nm];
                     if (!a.isInstancedBufferAttribute) continue;
@@ -1756,33 +1907,133 @@ class AnazhRealm_Z20c {
                     st[k++] = a;
                     st[k++] = a.version;
                 }
+                if (c && st[k] !== c.version) neu = true;
+                if (c) st[k] = c.version;
+                st[0] = im.version;
                 if (!neu) return;
-                const e = m.__sammlerErst,
-                    cap = mi.count;
-                im.array.set(mi.array.subarray(0, cap * 16), e * 16);
-                this._schreib(im, e * 16, cap * 16);
+                z.n = n;
+                const e = z.erst,
+                    G = this.geometry,
+                    M = this.__instanzQuelle.instanceMatrix;
+                if (istEins(mw)) M.array.set(im.array.subarray(0, n * 16), e * 16);
+                else for (let i = 0; i < n; i++) mal(M.array, (e + i) * 16, mw, im.array, i * 16);
+                this._schreib(M, e * 16, n * 16);
                 for (const nm in q) {
                     const a = q[nm];
                     if (!a.isInstancedBufferAttribute) continue;
-                    const z = G.attributes[nm];
-                    const c = Math.min(cap * a.itemSize, a.array.length);
-                    z.array.set(a.array.subarray(0, c), e * a.itemSize);
-                    this._schreib(z, e * a.itemSize, c);
+                    const d = G.attributes[nm];
+                    d.array.set(a.array.subarray(0, n * a.itemSize), e * a.itemSize);
+                    this._schreib(d, e * a.itemSize, n * a.itemSize);
                 }
+                if (c) {
+                    const d = G.attributes.instanzFarbe;
+                    d.array.set(c.array.subarray(0, n * c.itemSize), e * c.itemSize);
+                    this._schreib(d, e * c.itemSize, n * c.itemSize);
+                }
+            }
+            _zugFuer(camera) {
+                let z = this._zuege.get(camera);
+                if (!z || z.arr.length < this.glieder.length * 5) {
+                    if (z) this._gpuWeg(z.ind);
+                    else if (this._zuege.size >= 16) {
+                        const [k0, z0] = this._zuege.entries().next().value;
+                        this._gpuWeg(z0.ind);
+                        this._zuege.delete(k0);
+                    }
+                    const arr = new Uint32Array(Math.max(Math.ceil(this.glieder.length * 1.5), 8) * 5);
+                    z = { ind: new IND(arr, 1), arr, offs: [], zuege: [], tri: 0 };
+                    this._zuege.set(camera, z);
+                }
+                return z;
+            }
+            onBeforeRender(renderer, scene, camera) {
+                this._rend = renderer;
+                // ein Wurf hier ließe r184 mitten im Render stehen: er wird zum lauten Bruch, der Pass zeichnet nichts
+                const leer = { ind: null, offs: [], zuege: [], tri: 0 };
+                this._stapel.push(leer);
+                try {
+                    const zug = this._zugFuer(camera);
+                    zug.offs.length = 0;
+                    zug.zuege.length = 0;
+                    zug.tri = 0;
+                    this._ziehen(renderer, camera, zug);
+                    this._stapel[this._stapel.length - 1] = zug;
+                } catch (e) {
+                    AnazhRealm._arenaBruch(e);
+                }
+            }
+            onAfterRender(renderer) {
+                const zug = this._stapel.pop();
+                if (zug && zug.offs.length > 0 && renderer.info) {
+                    renderer.info.render.drawCalls += zug.offs.length - 1;
+                    renderer.info.render.triangles += zug.tri - 1;
+                }
+            }
+            _ziehen(renderer, camera, zug) {
+                if (!AnazhRealm._arenaKann(renderer)) {
+                    for (const m of this.glieder.slice()) this.lassen(m, true);
+                    return;
+                }
+                let fremd = null;
+                for (const m of this.glieder) if (this._pruefen(m) === 2) (fremd || (fremd = [])).push(m);
+                if (fremd)
+                    for (const m of fremd) {
+                        this.lassen(m, true);
+                        AnazhRealm._arenaNimmt(m, renderer);
+                    }
+                if (this.glieder.length === 0) return;
+                if (this._neu) this._bauen();
+                if (this._lage) this._legen();
+                const args = zug.arr;
+                let k = 0,
+                    frust = false,
+                    lebend = 0;
+                for (const m of this.glieder) {
+                    const n = m.count | 0;
+                    if (n > 0) lebend++;
+                    if (n <= 0 || !this._sichtbar(m, renderer)) continue;
+                    if (m.frustumCulled !== false) {
+                        if (!frust) {
+                            pm.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+                            fr.setFromProjectionMatrix(pm, camera.coordinateSystem, camera.reversedDepth);
+                            frust = true;
+                        }
+                        if (m.boundingSphere === null) m.computeBoundingSphere();
+                        if (!fr.intersectsSphere(kugel.copy(m.boundingSphere).applyMatrix4(m.matrixWorld))) continue;
+                    }
+                    const z = m.__arenaZ,
+                        b = this._gestalten.get(z.gestalt),
+                        dr = m.geometry.drawRange;
+                    const s0 = Math.max(0, dr.start | 0);
+                    const ni = Math.min(b.ni - s0, Number.isFinite(dr.count) ? dr.count : b.ni);
+                    if (ni <= 0) continue;
+                    this._block(m, z, Math.min(n, z.cap));
+                    const o = k * 5;
+                    args[o] = ni;
+                    args[o + 1] = Math.min(n, z.cap);
+                    args[o + 2] = b.fi + s0;
+                    args[o + 3] = b.bv;
+                    args[o + 4] = z.erst;
+                    zug.offs.push(o * 4);
+                    zug.zuege.push(m);
+                    zug.tri += (ni / 3) * args[o + 1];
+                    k++;
+                }
+                // gezählt am Stand dieses Passes (heilt jeden Schreiber an der Instanz-Zahl vorbei)
+                this.visible = (this._lebend = lebend) > 0;
+                if (k === 0) return;
+                // der Auftrags-Puffer dieser Kamera: beim ersten Zug legt r184 ihn mit dem Stand der CPU an, danach schreibt die Arena
+                if (!renderer._attributes.has(zug.ind)) renderer._attributes.update(zug.ind, 4);
+                else this._schreib(zug.ind, 0, k * 5);
             }
             raycast() {}
         }
-        AnazhRealm.__sammlerK = WurfSammler;
-        return WurfSammler;
+        AnazhRealm.__arenaK = GeometrieArena;
+        return GeometrieArena;
     }
-    // Kann das Gerät den Sammler zeichnen? WebGPU mit `indirect-first-instance`; sonst fällt er einmal laut ab.
-    static _sammlerKann(renderer) {
-        if (AnazhRealm.__sammlerOhne) return false;
-        const be = renderer && renderer.backend;
-        if (be && be.device && be.device.features && be.device.features.has("indirect-first-instance")) return true;
-        AnazhRealm.__sammlerOhne = be && be.isWebGLBackend ? "WebGL2" : "ohne indirect-first-instance";
-        console.warn("DER WURF-SAMMLER: " + AnazhRealm.__sammlerOhne + " — jede Wurf-Senke zeichnet über ihren Zeichner");
-        return false;
+    // Ein Bündel, das eine Senke trug, nimmt sich neu auf, wenn sie Arena oder Zeichner wechselt
+    static _arenaBuendel(m) {
+        for (let p = m.parent; p; p = p.parent) if (p.isBundleGroup) p.needsUpdate = true;
     }
     // DER GPU-ABSCHIED — der EINE Weg, auf dem eine Geometrie-Kopie die GPU verlässt. r184 trägt jedes hochgeladene
     // Attribut STARK in sein Register (`renderer.info.memoryMap`) und gibt es nur auf zwei Wegen frei: `_attributes.delete`
@@ -1822,7 +2073,7 @@ class AnazhRealm_Z20c {
         AnazhRealm._renderObjekteLoesen(mesh);
         // gezeichnet hat ihr Zeichner (1410-1): seine Render-Objekte lösen sich ebenso
         if (mesh.__zeichner) AnazhRealm._renderObjekteLoesen(mesh.__zeichner);
-        if (mesh.__sammler) mesh.__sammler.lassen(mesh);
+        if (mesh.__arena) mesh.__arena.lassen(mesh, false);
         mesh.dispose();
     }
     // DIE LÖSUNG DER RENDER-OBJEKTE eines Objekts, das den Graphen für immer verlässt (`_instanzAbschied`, `_disposeSoulGroup`)
@@ -2173,13 +2424,16 @@ class AnazhRealm_Z20c {
     // Nah-Wiese · Nah-Streu): jede Senke ist DICHT ([0, n) lebt, ein freier Slot existiert nicht), und eine leere ist
     // unsichtbar — sie betritt keinen Pass (kein Render-Objekt, kein Bundle-Platz, kein Schatten-Werfer).
     static _instanzZahl(mesh, n) {
+        const vor = mesh.count | 0;
         mesh.count = n;
         mesh.visible = n > 0;
+        // die Arena zählt ihre Glieder mit Instanzen: ohne eines betritt sie keinen Pass (kein leeres Render-Objekt)
+        const a = mesh.__arena;
+        if (a && vor > 0 !== n > 0) a.visible = (a._lebend += n > 0 ? 1 : -1) > 0;
         // der Zeichner zählt mit (1410-1): seine Fassade zeichnet so viele Instanzen, wie die Senke JETZT zählt — r184 liest die
         // Zahl zur Zeichen-Zeit, und der verschachtelte Schatten-Render stellt sie mitten im Hauptbild um und zurück, ohne neu
         // zu projizieren (die Zahl der Projektion war dann die der Kaskade: Instanzen fehlten oder standen doppelt im Bild)
         if (mesh.__zeichner) mesh.__zeichner.__fassade.instanceCount = n;
-        if (n > 0 && !mesh.__sammler && mesh.userData.instanzWahl === "schatten") AnazhRealm._sammlerNimmt(mesh);
     }
     // DAS VERSCHMELZEN: die Foundry liefert Teile je Kind — Geröll 16 Steine EINES Materials, ein Fahrzeug ~700
     // Teile auf 40 Materialien. Jedes Teil war ein eigenes Leaf = eine eigene Instanz-Gruppe = ein Draw je Pass

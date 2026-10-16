@@ -1886,7 +1886,7 @@ class AnazhRealm_Z25c {
             }
             AnazhRealm._instanzZahl(m, kk);
             liste.push(g);
-            if (art === "haupt" && (tausch > 0 || g._wahlZahl !== kk)) this._archMeshBundleTouch(m);
+            if (art === "haupt" && !m.__arena && (tausch > 0 || g._wahlZahl !== kk)) this._archMeshBundleTouch(m); // die Arena liest die Wahl je Pass (G1)
             if (art === "haupt") g._wahlZahl = kk;
             this._instanzWahlMerke(g, L, kk);
         }
@@ -1927,7 +1927,7 @@ class AnazhRealm_Z25c {
             tausch++;
         }
         w.ordnung = g._ordnung | 0;
-        if (tausch > 0 && g.wahl === "haupt") this._archMeshBundleTouch(m);
+        if (tausch > 0 && g.wahl === "haupt" && !m.__arena) this._archMeshBundleTouch(m);
         return true;
     }
 
