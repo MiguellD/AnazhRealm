@@ -13,11 +13,11 @@
     },
     "gemessen": {
         "labor": {
-            "datum": "2026-10-16T12:58:57.561Z",
+            "datum": "2026-10-16T13:59:25.475Z",
             "geraet": "ANGLE (AMD, AMD Radeon(TM) 890M Graphics (0x0000150E) Direct3D11 vs_5_0 ps_5_0, D3D11)",
             "echt": false,
             "version": "18.546.2",
-            "sha": "1185091c6b6270a6dc48dd48b4f3e39b798f2347+geaendert",
+            "sha": "ff343763914e13a191a154ade923fdaee81e8f51",
             "quellen": {
                 "phyto-core.js": "c:1a281005f65ef585",
                 "foundry-core.js": "c:5ed08308e6e4d144",
@@ -27,19 +27,19 @@
                 "fachwerk-core.js": "c:cfeff9669bfceaec",
                 "klang-core.js": "c:8e668691b9eb131c",
                 "koerper-core.js": "c:2d740b48e4f78546",
-                "tetrapoda-core.js": "c:14a2c4d068438f19",
+                "tetrapoda-core.js": "c:26b6005f5594dbd5",
                 "gelaende-core.js": "c:671ad7ea812567a8",
                 "stamm/01.js": "c:b38acaec2a7f84ef",
-                "stamm/02a.js": "c:535bb81592a53fd0",
+                "stamm/02a.js": "c:29fc983e6a290b3a",
                 "stamm/02b.js": "c:07c20016205e5e86",
                 "stamm/03a.js": "c:24260351ef810643",
                 "stamm/03b.js": "c:51b51437adaa7782",
                 "stamm/04.js": "c:f3701da31b3afa5d",
                 "stamm/05a.js": "c:87f4680772d0a67a",
                 "stamm/05b.js": "c:ad39fb3692510f82",
-                "stamm/06a.js": "c:4d361b83440065db",
+                "stamm/06a.js": "c:305ee8a2a5e483de",
                 "stamm/06b.js": "c:f86c7b410e0d700d",
-                "stamm/06c.js": "c:2ca5cdf25f593d21",
+                "stamm/06c.js": "c:2c6d38697293195c",
                 "stamm/07.js": "c:9b994e6d432e4d22",
                 "stamm/08.js": "c:cd035f29ff693b62",
                 "stamm/09.js": "c:29a1076f18f5523d",
@@ -70,17 +70,17 @@
                 "stamm/22.js": "c:219c74decf15ddd6",
                 "stamm/23a.js": "c:08e16c443890d4db",
                 "stamm/23b.js": "c:72656601cb13a947",
-                "stamm/24.js": "c:16ec71722c0bac2a",
+                "stamm/24.js": "c:dde90a4ac3fcf2da",
                 "stamm/25a.js": "c:520646ba12601586",
                 "stamm/25b.js": "c:fd9270736768dec2",
                 "stamm/25c.js": "c:fb8c3e2986247bac",
                 "stamm/26a.js": "c:e45314b7ac61774c",
-                "stamm/26b.js": "c:f656be6616baa04b",
+                "stamm/26b.js": "c:00ef1ee82ce03f2e",
                 "stamm/26c.js": "c:08f6c866bdafdc8f"
             }
         },
         "welt": {
-            "datum": "2026-10-16T12:55:18.663Z",
+            "datum": "2026-10-16T13:58:19.597Z",
             "geraet": "amd rdna-3",
             "ort": "genesis",
             "spieler": [
@@ -89,7 +89,7 @@
             ],
             "echt": false,
             "version": "18.546.2",
-            "sha": "1185091c6b6270a6dc48dd48b4f3e39b798f2347+geaendert",
+            "sha": "ff343763914e13a191a154ade923fdaee81e8f51",
             "quellen": {
                 "phyto-core.js": "c:1a281005f65ef585",
                 "foundry-core.js": "c:5ed08308e6e4d144",
@@ -99,19 +99,19 @@
                 "fachwerk-core.js": "c:cfeff9669bfceaec",
                 "klang-core.js": "c:8e668691b9eb131c",
                 "koerper-core.js": "c:2d740b48e4f78546",
-                "tetrapoda-core.js": "c:14a2c4d068438f19",
+                "tetrapoda-core.js": "c:26b6005f5594dbd5",
                 "gelaende-core.js": "c:671ad7ea812567a8",
                 "stamm/01.js": "c:b38acaec2a7f84ef",
-                "stamm/02a.js": "c:535bb81592a53fd0",
+                "stamm/02a.js": "c:29fc983e6a290b3a",
                 "stamm/02b.js": "c:07c20016205e5e86",
                 "stamm/03a.js": "c:24260351ef810643",
                 "stamm/03b.js": "c:51b51437adaa7782",
                 "stamm/04.js": "c:f3701da31b3afa5d",
                 "stamm/05a.js": "c:87f4680772d0a67a",
                 "stamm/05b.js": "c:ad39fb3692510f82",
-                "stamm/06a.js": "c:4d361b83440065db",
+                "stamm/06a.js": "c:305ee8a2a5e483de",
                 "stamm/06b.js": "c:f86c7b410e0d700d",
-                "stamm/06c.js": "c:2ca5cdf25f593d21",
+                "stamm/06c.js": "c:2c6d38697293195c",
                 "stamm/07.js": "c:9b994e6d432e4d22",
                 "stamm/08.js": "c:cd035f29ff693b62",
                 "stamm/09.js": "c:29a1076f18f5523d",
@@ -142,12 +142,12 @@
                 "stamm/22.js": "c:219c74decf15ddd6",
                 "stamm/23a.js": "c:08e16c443890d4db",
                 "stamm/23b.js": "c:72656601cb13a947",
-                "stamm/24.js": "c:16ec71722c0bac2a",
+                "stamm/24.js": "c:dde90a4ac3fcf2da",
                 "stamm/25a.js": "c:520646ba12601586",
                 "stamm/25b.js": "c:fd9270736768dec2",
                 "stamm/25c.js": "c:fb8c3e2986247bac",
                 "stamm/26a.js": "c:e45314b7ac61774c",
-                "stamm/26b.js": "c:f656be6616baa04b",
+                "stamm/26b.js": "c:00ef1ee82ce03f2e",
                 "stamm/26c.js": "c:08f6c866bdafdc8f"
             }
         }
@@ -195,19 +195,19 @@
             "ist": {
                 "labor": {
                     "Y": 0.0893,
-                    "rgb": "0.1065/0.0869/0.0618",
-                    "pixel": 17711
+                    "rgb": "0.1066/0.087/0.0618",
+                    "pixel": 17720
                 },
                 "welt": {
-                    "Y": 0.0871,
-                    "rgb": "0.1043/0.0847/0.0601",
-                    "pixel": 7454,
+                    "Y": 0.0868,
+                    "rgb": "0.104/0.0844/0.06",
+                    "pixel": 7459,
                     "stufen": [
                         0,
                         1
                     ]
                 },
-                "verhaeltnis": 1.0253
+                "verhaeltnis": 1.0288
             },
             "ratsche": 0.016
         },
@@ -255,12 +255,12 @@
                 "labor": {
                     "Y": 0.1784,
                     "rgb": "0.1268/0.2073/0.0447",
-                    "pixel": 121927
+                    "pixel": 122019
                 },
                 "welt": {
                     "Y": 0.1675,
-                    "rgb": "0.0904/0.2028/0.0446",
-                    "pixel": 54942,
+                    "rgb": "0.0904/0.2029/0.0446",
+                    "pixel": 54959,
                     "stufen": [
                         0,
                         1
@@ -429,7 +429,7 @@
                 "welt": {
                     "Y": 0.1591,
                     "rgb": "0.2775/0.1312/0.0869",
-                    "pixel": 168333,
+                    "pixel": 168334,
                     "stufen": [
                         1
                     ]
@@ -583,17 +583,17 @@
             ],
             "ist": {
                 "labor": {
-                    "Y": 0.0609,
-                    "rgb": "0.1221/0.0464/0.0251",
-                    "pixel": 74913
+                    "Y": 0.0608,
+                    "rgb": "0.1218/0.0463/0.025",
+                    "pixel": 74576
                 },
                 "welt": {
                     "Y": 0.0709,
                     "rgb": "0.1425/0.0538/0.0292",
-                    "pixel": 33177,
+                    "pixel": 33108,
                     "stufen": []
                 },
-                "verhaeltnis": 0.859
+                "verhaeltnis": 0.8575
             },
             "ratsche": 0.152
         },
@@ -632,17 +632,17 @@
             ],
             "ist": {
                 "labor": {
-                    "Y": 0.1688,
-                    "rgb": "0.2059/0.1635/0.1123",
-                    "pixel": 152667
+                    "Y": 0.1689,
+                    "rgb": "0.206/0.1636/0.1123",
+                    "pixel": 152820
                 },
                 "welt": {
-                    "Y": 0.1804,
-                    "rgb": "0.2214/0.1745/0.1184",
-                    "pixel": 46156,
+                    "Y": 0.1826,
+                    "rgb": "0.2243/0.1765/0.1194",
+                    "pixel": 51333,
                     "stufen": []
                 },
-                "verhaeltnis": 0.9357
+                "verhaeltnis": 0.925
             },
             "ratsche": 0.0479
         },
@@ -700,9 +700,9 @@
             "ist": {
                 "kL": 0.676,
                 "ausgabe": [
-                    170,
-                    175,
-                    168
+                    171,
+                    176,
+                    169
                 ]
             },
             "ratsche": 0.7612
@@ -720,11 +720,11 @@
         },
         "portale": {
             "ist": {
-                "kL": 0.7997,
+                "kL": 0.8022,
                 "ausgabe": [
-                    192,
-                    203,
-                    198
+                    197,
+                    208,
+                    203
                 ]
             },
             "ratsche": 0.9292
@@ -733,18 +733,18 @@
             "ist": {
                 "kL": 0.6427,
                 "ausgabe": [
-                    178,
-                    165,
-                    154
+                    174,
+                    162,
+                    150
                 ]
             },
             "ratsche": 0.7106
         },
         "fachwerk": {
             "ist": {
-                "kL": 0.4797,
+                "kL": 0.4823,
                 "ausgabe": [
-                    196,
+                    197,
                     194,
                     192
                 ]
@@ -766,9 +766,9 @@
             "ist": {
                 "kL": 0.8802,
                 "ausgabe": [
-                    255,
-                    255,
-                    255
+                    254,
+                    254,
+                    254
                 ]
             },
             "ratsche": 1.0251
