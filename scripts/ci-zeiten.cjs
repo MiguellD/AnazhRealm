@@ -24,8 +24,7 @@ const API = `https://api.github.com/repos/${REPO}`;
 const WORKFLOW = ".github/workflows/check.yml";
 const AUS = "spec/ci/ci-zeiten.json";
 const JE_SCHRITT = 7;
-// höchstens so viele Messungen (ein neuer Schritt, den erst wenige Läufe tragen, liest sonst die ganze Liste)
-const HOECHSTENS = 40;
+const HOECHSTENS = 40; // Messungen höchstens (ein neuer Schritt, den wenige Läufe tragen, läse sonst die ganze Liste)
 const VORBEREITUNG =
     /^(Set up job|Run actions\/checkout@|Run actions\/setup-node@|Run actions\/cache@|Cache-Schlüssel|System-Libs|Dependencies installieren|Post Run |Complete job)/;
 // die Jobs der GitHub-Läufer und ihr Gruppen-Schlüssel („voll 16/18 gpu" → „voll 16", wie die Waage ihn nennt)
@@ -162,8 +161,10 @@ function schritteAus(doc) {
         const packe = (gs, k) => {
             const last = Array.from({ length: k }, () => ({ s: out.vorbereitung_s, n: [] }));
             const lege = (g, s, vz = 1) => ((g.s += vz * z(s)), vz > 0 ? g.n.push(s) : g.n.splice(g.n.indexOf(s), 1));
+            // die Teile EINES Skripts (`--teil=N`) nie in einer Gruppe (CW-Lauf 38914686744: Erst-Zeichnung 1+2 zusammen 396 s statt 198)
+            const darf = (g, s, ohne) => !g.n.some((x) => x !== ohne && x.run.replace(/--teil=\d+/, "") === s.run.replace(/--teil=\d+/, ""));
             for (const s of [...gs].sort((x, y) => pt(y) - pt(x) || z(y) - z(x)))
-                lege(pt(s) ? last[0] : last.reduce((m, x) => (x.s < m.s ? x : m)), s);
+                lege(pt(s) ? last[0] : last.filter((x) => darf(x, s)).reduce((m, x) => (x.s < m.s ? x : m), last.find((x) => darf(x, s)) || last[0]), s);
             // nachbessern: ein Zug (ein Schritt der schwersten Gruppe in eine andere, oder ein Tausch) senkt sie, solange einer da ist
             for (let zug = true; zug; ) {
                 const h = last.filter((x) => x.n.length > 1).sort((x, y) => y.s - x.s)[0];
@@ -171,9 +172,9 @@ function schritteAus(doc) {
                 for (const l of h ? last : [])
                     for (const a of h.n)
                         for (const b of [null, ...l.n]) {
-                            const d = z(a) - (b ? z(b) : 0);
+                            const [d, frei] = [z(a) - (b ? z(b) : 0), darf(l, a, b) && (!b || darf(h, b, a)) && !pt(a) && !(b && pt(b))];
                             const neu = Math.max(h.s - d, l.s + d);
-                            if (l !== h && d > 0 && !pt(a) && !(b && pt(b)) && neu < (zug ? zug.neu : h.s)) zug = { l, a, b, neu };
+                            if (l !== h && d > 0 && frei && neu < (zug ? zug.neu : h.s)) zug = { l, a, b, neu };
                         }
                 const zuege = zug ? [[h, zug.a, -1], [zug.l, zug.a, 1]].concat(zug.b ? [[zug.l, zug.b, -1], [h, zug.b, 1]] : []) : [];
                 for (const [g, s, vz] of zuege) lege(g, s, vz);
@@ -190,11 +191,8 @@ function schritteAus(doc) {
             const max = Math.max(...g.map((x) => (x.n.length > 1 ? x.s : 0)));
             if (!best || max < best.max) best = { max, g };
         }
-        best.g.forEach((g, i) => {
-            const gross = g.n.find((s) => z(s) > GROSS_S);
-            const zeile = `  voll ${i + 1}/${best.g.length} ${g.klasse}: ${(g.s / 60).toFixed(1)} min — ${g.n.length} Schritte`;
-            console.log(zeile + (gross ? ` · über ${GROSS_S / 60} min (eigene Karte): „${gross.name}"` : ""));
-        });
+        for (const [i, g, gross = g.n.find((s) => z(s) > GROSS_S)] of best.g.map((g, i) => [i, g]))
+            console.log(`  voll ${i + 1}/${best.g.length} ${g.klasse}: ${(g.s / 60).toFixed(1)} min — ${g.n.length} Schritte` + (gross ? ` · über ${GROSS_S / 60} min (eigene Karte): „${gross.name}"` : ""));
         console.log(
             JSON.stringify({
                 klassen: best.g.map((g) => g.klasse),
