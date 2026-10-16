@@ -17,7 +17,7 @@
 // DIE KAHL-LINSE (Integration W5-Körper: die Anatomie-Welle ließ 28 % des Bär-Rumpfs, 87 % seiner Läufe und 34 % des
 // Hirsch-Halses kahl, unbenannt): je Region (rumpf · hals · beinOben · beinUnten · rute — nach dem dominanten Bone
 // der Schale) der Anteil der innersten Fell-Schale, deren Dichte unter der Wolle-Schwelle des Welt-Materials liegt
-// (aSchale.y < 0,05: dort deckt keine Unterwolle — anazhRealm.js, Klasse fellSchale). Rot über KAHL_MAX.
+// (aSchale.y < 0,05: dort deckt keine Unterwolle — Stamm, Klasse fellSchale). Rot über KAHL_MAX.
 //   node scripts/diag-tier-anatomie.cjs [--selftest] [--json]
 "use strict";
 const fs = require("fs");

@@ -12,7 +12,7 @@
 //   3. KONSUM-WAND: die Shell LIEST das Gesetz (MEMBRAN_GESETZ/membranUniforms/
 //      GN-Injektion vorhanden; die kritischen Alt-Literale [13.8-Wellenzahl
 //      etc.] stehen NICHT mehr roh im Shell-Text) UND der Stamm-Leser
-//      (anazhRealm.js) konsumiert dieselben Flächen.
+//      (Stamm) konsumiert dieselben Flächen.
 //
 //   node scripts/diag-membran-gesetz.cjs
 "use strict";

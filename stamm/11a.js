@@ -1505,7 +1505,7 @@ class AnazhRealm_Z11a {
             // V9.43-d — den Carve-Index aus dem fertigen Netz bauen (Fluss-Bucket-
             // Grid + See-Cut-Feld); `_terrainDensityAt` liest ihn beim Meshen.
             const carve = this._hydroBuildCarveIndex(ctx, rivers, lakes);
-            // V9.49-a/e — das vereinte Wasser-Feld (`docs/hydrosphere.md` §12 + §13).
+            // V9.49-a/e — das vereinte Wasser-Feld.
             const water = this._hydroBuildWaterField(ctx, lakes);
             return {
                 ready: true,
