@@ -1,0 +1,19 @@
+13:04:59 umstellen dorf/ego: {"ort":"dorf","sicht":"ego","pose":null,"welt":null,"spieler":[-841,-861],"wiese":null,"takte":40,"chunks":25,"gier":0.7641,"dorfZug":true,"ortTakt":[],"dorfSchwebt":null,"ms":9768}
+13:05:32 1 A fern=4 bündel=1 fps 79.5 Frame p95 16.8 CPU p95 5.1 GPU 12.57/12.69 MHz 1733/1727
+13:06:00 2 G fern=4 bündel=1 fps 80.2 Frame p95 16.8 CPU p95 5.3 GPU 11.22/11.35 MHz 1752.5/1708
+13:06:28 3 G fern=4 bündel=1 fps 80.2 Frame p95 16.8 CPU p95 4.9 GPU 10.99/10.92 MHz 1701.5/1708
+13:06:56 4 A fern=4 bündel=1 fps 72.4 Frame p95 16.8 CPU p95 5.3 GPU 12.53/12.48 MHz 1746/1752.5
+13:07:24 5 A fern=4 bündel=1 fps 73.8 Frame p95 16.8 CPU p95 5 GPU 12.51/11.98 MHz 1759/1733.5
+13:07:52 6 G fern=4 bündel=1 fps 79.9 Frame p95 16.8 CPU p95 5 GPU 10.91/11.36 MHz 1689/1702
+13:08:20 7 G fern=4 bündel=1 fps 80.1 Frame p95 16.8 CPU p95 5 GPU 11.42/11.33 MHz 1708/1714.5
+13:08:49 8 A fern=4 bündel=1 fps 73.5 Frame p95 16.8 CPU p95 4.9 GPU 12.28/12.24 MHz 1733/1727
+
+dorf ego — A (vor T3) gegen G (T3), Folge AGGAAGGA
+  GPU ms (gpu-bank)          A 12.41 · G 11.19 · Δ -1.22 · 2σ 0.37   [A 12.63 12.50 12.25 12.26 | G 11.29 10.96 11.13 11.38]
+  Frame p95 ms (lauf voll)   A 16.80 · G 16.80 · Δ +0.00 · 2σ 0.00   [A 16.80 16.80 16.80 16.80 | G 16.80 16.80 16.80 16.80]
+  Frame p50 ms               A 16.55 · G 8.97 · Δ -7.58 · 2σ 1.07   [A 16.40 16.60 16.60 16.60 | G 8.60 8.60 10.10 8.60]
+  CPU-Takt p95 ms            A 5.07 · G 5.05 · Δ -0.02 · 2σ 0.34   [A 5.10 5.30 5.00 4.90 | G 5.30 4.90 5.00 5.00]
+  fps                        A 74.80 · G 80.10 · Δ +5.30 · 2σ 4.52   [A 79.50 72.40 73.80 73.50 | G 80.20 80.20 79.90 80.10]
+  Befehle (lauf)             A 73.00 · G 73.00 · Δ +0.00 · 2σ 0.00   [A 73.00 73.00 73.00 73.00 | G 73.00 73.00 73.00 73.00]
+  Dreiecke (lauf)            A 362731.00 · G 362237.75 · Δ -493.25 · 2σ 1014.22   [A 362542.00 362305.00 362309.00 363768.00 | G 362227.00 362034.00 362283.00 362407.00]
+  Takt MHz (Bank)            A 1738.88 · G 1710.44 · Δ -28.44 · 2σ 25.41   [A 1730.00 1749.25 1746.25 1730.00 | G 1730.25 1704.75 1695.50 1711.25]

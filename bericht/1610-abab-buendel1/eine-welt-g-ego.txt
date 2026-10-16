@@ -1,0 +1,19 @@
+13:10:19 umstellen genesis/ego: {"ort":"genesis","sicht":"ego","pose":null,"welt":null,"spieler":[0,0],"wiese":null,"takte":40,"chunks":25,"gier":-1.5708,"dorfZug":false,"ortTakt":["_genesisPortalRing","_portalApproachPrefetch"],"do
+13:10:48 1 A fern=4 bündel=2 fps 77.1 Frame p95 16.8 CPU p95 5.3 GPU 11.46/11.52 MHz 1733/1708
+13:11:15 2 G fern=4 bündel=2 fps 84.8 Frame p95 16.8 CPU p95 5.4 GPU 9.90/9.61 MHz 1720.5/1689
+13:11:43 3 G fern=4 bündel=2 fps 84.8 Frame p95 16.8 CPU p95 5.3 GPU 9.75/9.72 MHz 1721/1689
+13:12:11 4 A fern=4 bündel=2 fps 79 Frame p95 16.8 CPU p95 5.1 GPU 11.30/11.32 MHz 1689/1701.5
+13:12:39 5 A fern=4 bündel=2 fps 80.3 Frame p95 16.8 CPU p95 5.1 GPU 11.28/11.37 MHz 1720.5/1682.5
+13:13:06 6 G fern=4 bündel=2 fps 84.9 Frame p95 16.8 CPU p95 5.1 GPU 10.12/9.95 MHz 1683/1714
+13:13:34 7 G fern=4 bündel=2 fps 83.9 Frame p95 16.8 CPU p95 5.8 GPU 10.24/10.23 MHz 1695/1746
+13:14:02 8 A fern=4 bündel=2 fps 79.8 Frame p95 16.7 CPU p95 5.8 GPU 11.53/11.54 MHz 1689/1695
+
+genesis ego — A (vor T3) gegen G (T3), Folge AGGAAGGA
+  GPU ms (gpu-bank)          A 11.41 · G 9.94 · Δ -1.47 · 2σ 0.38   [A 11.49 11.31 11.32 11.54 | G 9.75 9.73 10.04 10.23]
+  Frame p95 ms (lauf voll)   A 16.78 · G 16.80 · Δ +0.02 · 2σ 0.07   [A 16.80 16.80 16.80 16.70 | G 16.80 16.80 16.80 16.80]
+  Frame p50 ms               A 11.85 · G 8.40 · Δ -3.45 · 2σ 5.64   [A 16.60 8.60 8.50 13.70 | G 8.40 8.40 8.40 8.40]
+  CPU-Takt p95 ms            A 5.32 · G 5.40 · Δ +0.08 · 2σ 0.63   [A 5.30 5.10 5.10 5.80 | G 5.40 5.30 5.10 5.80]
+  fps                        A 79.05 · G 84.60 · Δ +5.55 · 2σ 2.10   [A 77.10 79.00 80.30 79.80 | G 84.80 84.80 84.90 83.90]
+  Befehle (lauf)             A 77.25 · G 75.75 · Δ -1.50 · 2σ 3.61   [A 81.00 76.00 76.00 76.00 | G 75.00 76.00 76.00 76.00]
+  Dreiecke (lauf)            A 359515.25 · G 364866.50 · Δ +5351.25 · 2σ 15166.54   [A 343429.00 364932.00 364862.00 364838.00 | G 364865.00 364913.00 364795.00 364893.00]
+  Takt MHz (Bank)            A 1702.31 · G 1707.19 · Δ +4.88 · 2σ 22.38   [A 1720.50 1695.25 1701.50 1692.00 | G 1704.75 1705.00 1698.50 1720.50]

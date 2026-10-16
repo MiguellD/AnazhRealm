@@ -1,0 +1,19 @@
+12:54:41 umstellen wiese/ego: {"ort":"wiese","sicht":"ego","pose":null,"welt":null,"spieler":[-280.4,-1045.6],"wiese":{"messung":{"x":-280.4,"z":-1045.6,"y":27.48,"hang":1.81,"rauh":0.14,"nass":0,"krone":0.108,"baeume":8,"kranz":0
+12:55:12 1 A fern=undefined bündel=undefined fps 73.1 Frame p95 16.8 CPU p95 17.8 GPU 11.79/11.83 MHz 1708/1701.5
+12:55:40 2 G fern=undefined bündel=undefined fps 80.5 Frame p95 16.8 CPU p95 5.8 GPU 10.68/10.70 MHz 1727/1733.5
+12:56:07 3 G fern=undefined bündel=undefined fps 80.3 Frame p95 16.8 CPU p95 5.7 GPU 10.74/10.84 MHz 1695/1714
+12:56:36 4 A fern=undefined bündel=undefined fps 75.5 Frame p95 16.8 CPU p95 5.6 GPU 11.81/11.83 MHz 1695/1695
+12:57:04 5 A fern=undefined bündel=undefined fps 76.8 Frame p95 16.8 CPU p95 5.6 GPU 11.89/11.84 MHz 1695/1695
+12:57:32 6 G fern=undefined bündel=undefined fps 80.9 Frame p95 16.8 CPU p95 5.6 GPU 10.78/10.67 MHz 1695/1714
+12:58:00 7 G fern=undefined bündel=undefined fps 81.2 Frame p95 16.8 CPU p95 5.5 GPU 10.63/10.55 MHz 1701.5/1727
+12:58:28 8 A fern=undefined bündel=undefined fps 77 Frame p95 16.8 CPU p95 5.6 GPU 11.82/11.84 MHz 1720.5/1720.5
+
+wiese ego — A (vor T3) gegen G (T3), Folge AGGAAGGA
+  GPU ms (gpu-bank)          A 11.83 · G 10.70 · Δ -1.13 · 2σ 0.12   [A 11.81 11.82 11.87 11.83 | G 10.69 10.79 10.72 10.59]
+  Frame p95 ms (lauf voll)   A 16.80 · G 16.80 · Δ +0.00 · 2σ 0.00   [A 16.80 16.80 16.80 16.80 | G 16.80 16.80 16.80 16.80]
+  Frame p50 ms               A 16.60 · G 8.50 · Δ -8.10 · 2σ 0.00   [A 16.60 16.60 16.60 16.60 | G 8.50 8.50 8.50 8.50]
+  CPU-Takt p95 ms            A 8.65 · G 5.65 · Δ -3.00 · 2σ 8.63   [A 17.80 5.60 5.60 5.60 | G 5.80 5.70 5.60 5.50]
+  fps                        A 75.60 · G 80.73 · Δ +5.13 · 2σ 2.60   [A 73.10 75.50 76.80 77.00 | G 80.50 80.30 80.90 81.20]
+  Befehle (lauf)             A 69.25 · G 70.00 · Δ +0.75 · 2σ 2.12   [A 67.00 70.00 70.00 70.00 | G 70.00 70.00 70.00 70.00]
+  Dreiecke (lauf)            A 347330.75 · G 352025.25 · Δ +4694.50 · 2σ 13360.20   [A 333161.00 352157.00 352050.00 351955.00 | G 351939.00 352095.00 352048.00 352019.00]
+  Takt MHz (Bank)            A 1703.81 · G 1713.38 · Δ +9.56 · 2σ 24.19   [A 1704.75 1695.00 1695.00 1720.50 | G 1730.25 1704.50 1704.50 1714.25]
