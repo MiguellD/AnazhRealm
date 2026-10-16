@@ -457,10 +457,10 @@
                 "werkzeug": "werkbank bild 1855 2.6 -6168 1700 4.5 -6168 --w 1920 --h 1080 --klasse '^(wasserSatz|farWater|chunk-water-[a-z]+)$' --ist wasser (der See 1816/−6168, Ego; Third dieselbe Linie aus 4 m Höhe hinter dem Spieler)",
                 "messung": {
                     "werkzeug": "bild",
-                    "datum": "2026-10-16T13:06:46.949Z",
+                    "datum": "2026-10-16T18:06:04.622Z",
                     "stand": {
-                        "version": "18.546.2",
-                        "sha": "b40794574cbfa09328d830964e9addbe22b414ec"
+                        "version": "18.546.4",
+                        "sha": "5370cf26be5cc71043b57051452f2d5aae0a1f1b+geaendert"
                     },
                     "geraet": {
                         "backend": "WebGPU",
@@ -477,8 +477,7 @@
                     },
                     "misch": 0,
                     "klassen": {
-                        "farWater": {"objekte":1,"spiegelTreue":null,"sp":[0,0,0,0,0,0],"zweiton":0,"zt":0,"weiss":0,"wt":0,"wtZiel":null,"bunt":21.28,"pixel":5,"deckung":0,"deckungUnten":0,"luma":122.03,"kontrast":0.246,"detail":null,"nyquist":null,"ek":0,"eg":0,"silhouette":2.2361,"kante":0.0657,"kr":5},
-                        "wasserSatz": {"objekte":1,"spiegelTreue":0.2707,"sp":[14571,0,0,39009644.4,39009644.4,10560781.73],"zweiton":0,"zt":0,"weiss":0.0597,"wt":56648,"wtZiel":null,"bunt":13.75,"pixel":949001,"deckung":0.4577,"deckungUnten":1,"luma":70.8,"kontrast":0.5204,"detail":0.0268,"nyquist":0.047,"ek":81958.9,"eg":1661813.8,"silhouette":7.7831,"kante":0.6375,"kr":4740}
+                        "wasserSatz": {"objekte":1,"spiegelTreue":0.4111,"sp":[14581,0,0,47202140.06,47202140.06,19405748.05],"zweiton":0,"zt":0,"weiss":0.0358,"wt":33772,"wtZiel":null,"bunt":14.36,"pixel":943327,"deckung":0.4549,"deckungUnten":1,"luma":60.66,"kontrast":0.4982,"detail":0.0244,"nyquist":0.0174,"ek":15672,"eg":882690.2,"silhouette":5.8018,"kante":0.8197,"kr":2811}
                     },
                     "abstand": null,
                     "gesicht": null,
@@ -486,13 +485,13 @@
                     "quellen": {
                         "gelaende-core.js": "c:671ad7ea812567a8",
                         "stamm/07.js": "c:9b994e6d432e4d22",
-                        "stamm/10.js": "c:bb6631653fcc0994",
+                        "stamm/10.js": "c:6246bd1aedc05618",
                         "stamm/19.js": "c:5f36c5687cb8f126",
-                        "stamm/24.js": "c:16ec71722c0bac2a",
+                        "stamm/24.js": "c:dde90a4ac3fcf2da",
                         "stamm/25c.js": "c:fb8c3e2986247bac",
                         "stamm/08.js": "c:cd035f29ff693b62",
                         "stamm/11a.js": "c:64859e2b185ed62a",
-                        "stamm/11b.js": "c:089bd1c9f805e9b3",
+                        "stamm/11b.js": "c:1e8607d85d22415f",
                         "stamm/17b.js": "c:36363c8024705bb6"
                     }
                 }

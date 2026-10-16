@@ -1775,19 +1775,20 @@ AnazhRealm._diaetGang = function (ro, nbs) {
 // Render-Objekts? Die Diät lädt nur geteilte Gruppen hoch — eine Objekt-Uniform, die ein Schreiber stellt, fror unter ihr
 // ein (D10-n1 die Ansicht des Spiegels, A1-n1 die Wolken-Uhr seines Himmels: Puffer 74,8 gegen Knoten 228,0). Jetzt folgt
 // jedem Wechsel EIN Refresh, und der EINE Melder nennt den Stoff und die Uniform ohne Heimat beim Namen (das Pflicht-Paar
-// `_uniformHeimatTeilen` spart den Refresh). Liefert die gewechselte Uniform, `true` beim ersten Blick, sonst null.
+// `_uniformHeimatTeilen` spart den Refresh). Der erste Blick merkt die Werte (die Erst-Anlage der Vendor-Bahn lud sie eben
+// hoch); liefert die gewechselte Uniform, sonst null.
 AnazhRealm._diaetFreiAnders = function (obs, ro, k) {
     if (k.frei.length === 0) return null;
     const d = obs.getRenderObjectData(ro);
     const erst = !d._anazhFreiW;
     const w = d._anazhFreiW || (d._anazhFreiW = []);
-    let anders = erst ? true : null,
+    let anders = null,
         i = 0;
     // je Zahl vergleichen und merken — keine Kopie des Werts (die Prüfung läuft je Render-Objekt und Render)
     const zahl = (x, u) => {
         if (w[i] !== x) {
             w[i] = x;
-            if (anders === null) anders = u;
+            if (!erst && anders === null) anders = u;
         }
         i++;
     };
@@ -1969,11 +1970,11 @@ AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
     }
     // (6) NACH dem Gang: der Zug des ersten Render-Objekts kann die Textur eben neu angelegt haben
     if (AnazhRealm._diaetVorTextur(obs, ro)) return true;
-    // (9) NACH dem Gang (er stellt die Render- und Frame-Knoten): eine freie Uniform der eigenen Gruppen wechselte
+    // (9) eine freie Uniform der eigenen Gruppen wechselte (ein Schreiber setzte `.value`)
     const nbs = ro.getNodeBuilderState();
     const frei = AnazhRealm._diaetFreiAnders(obs, ro, nbs._anazhGang || (nbs._anazhGang = AnazhRealm._diaetGang(ro, nbs)));
     if (frei) {
-        if (frei !== true && obs._anazhWelt) {
+        if (obs._anazhWelt) {
             const n = frei.nodeUniform.node;
             obs._anazhWelt._bruchMelden(
                 `DIÄT: ${(obj && obj.name) || (ro.material && ro.material.type)} — die Objekt-Uniform ${

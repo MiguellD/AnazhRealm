@@ -2187,8 +2187,9 @@ class AnazhRealm_Z11b {
         // Ufer-Saum): die Atmosphäre der Himmels-Sicht (`himmelFarbe`, die Tafel der Kuppel) in Richtung des gespiegelten Strahls,
         // nie unter den Horizont, an dem die Wolken enden (`hor[0]`, Kräusel-Normalen). Jenseits des Felds (368 m) liegt der
         // Strahl aus Augenhöhe unter `hor[0]`: dort IST die Himmels-Sicht die Atmosphäre allein, die Wolke ist null
-        // (`_himmelSicht`). Die Wolke rechnet der Pass in 1/teil, nie das Wasser je Pixel (A1-n1: zwei fbm im Wasser-Stoff
-        // kosteten auch ungenommen, Wasser 1,86 → 2,95 ms gehend, Radeon). Bis A1 die Umgebung von 128 × 64
+        // (`_himmelSicht`). Die Wolke rechnet der Pass in 1/teil, nie das Wasser je Pixel (A1-n1, `werkbank zerlegen` gehend,
+        // Radeon: Wasser mit Pass 2,95 ms mit zwei fbm im Wasser-Stoff, auch ungenommen, gegen 1,48–2,32 ohne, die Basis vor
+        // A1 2,67–2,91). Bis A1 die Umgebung von 128 × 64
         // (`_himmelUmgebungTex`, die Quelle der IBL): ein Verlauf ohne Wolke über dem ganzen See (A0). Bis V18.530 spiegelte das
         // Wasser die Zenit-Tönung × die SONNEN-Stärke (uLight 7,4): 3–5× über dem Himmel, weiß wie Eis (Blick-Tour 07).
         const _R = reflect(o.viewDir.negate(), o.n);
