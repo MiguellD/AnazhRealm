@@ -49,7 +49,8 @@ class AnazhRealm_Z10 {
     // wird jeden Frame refresht. Welt-Materialien, deren Graph NUR geteilte renderGroup-Uniforms +
     // Attribute + Builtins trägt, fahren die ehrliche equals()-Bahn (Änderungen laden weiter hoch; das
     // erste Objekt je Material/Render refresht). PFLICHT-PAAR mit _uniformHeimatTeilen für ALLE
-    // mutierten Uniforms, sonst frieren per-Objekt-Klone ein. Headless inert.
+    // mutierten Uniforms — fehlt es, frischt der Uniform-Wächter (9, `_diaetRefresh`) je Wechsel voll auf und der EINE
+    // Melder nennt Stoff und Uniform (bis A1-n1 fror die Objekt-Uniform still ein). Headless inert.
     _materialObserverDiaet(mat) {
         if (!mat || mat._anazhDiaet === true || typeof mat.setupObserver !== "function") return mat;
         // PFLICHT-PAAR-WÄCHTER (Review-Notiz C): ohne renderGroup-Export wäre die
@@ -57,10 +58,13 @@ class AnazhRealm_Z10 {
         // Kein renderGroup → keine Diät (byte-alt, der Vendor refresht weiter).
         mat._anazhDiaet = true;
         const alt = mat.setupObserver;
+        // der Melder der Welt am Beobachter: der Uniform-Wächter (9, `_diaetRefresh`) nennt einen Bruch des Pflicht-Paars
+        const welt = this;
         mat.setupObserver = function (builder) {
             const o = alt.call(this, builder);
             if (!o) return o;
             o.hasNode = false;
+            o._anazhWelt = welt;
             // Vendor-Loch: equals() walkt nur geometry.attributes — instanceMatrix/instanceColor leben am MESH
             // und wären unter der Diät unsichtbar. Der Versions-Wächter prüft sie VOR der Vendor-Bahn (Mutation
             // → genau EIN Refresh).

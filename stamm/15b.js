@@ -1886,7 +1886,8 @@ class AnazhRealm_Z15b {
     }
 
     // Scatter-Streaming: 3×3-Region-Ring um den Spieler generieren, ferne disposen, nahe Cells
-    // promovieren. Gated auf `state.atmosphere.gpuScatter`; bounded durch maxRegionsPerFrame.
+    // promovieren; bounded durch maxRegionsPerFrame. Die Streu trägt keinen Schalter (G1: `gpuScatter` fiel — er hieß GPU
+    // und schaltete nur die CPU-Streu ab).
     // Eine Streu-Region streamt nur, wenn ihre NÄCHSTE Kante im `foliageRadius` liegt (gekappt auf die gebaute Ring-Kante) —
     // kein Fern-Billboard vor dem Boden. Die Spieler-Region streamt immer; ferne holt der nächste Tick selbst-heilend nach.
     // Headless: foliageRadius = MAX. Die EINE Regel für den Streamer und das erste Weltbild (`_weltbildFehlt`).
@@ -1904,12 +1905,10 @@ class AnazhRealm_Z15b {
     // Scheibe. Keine Regionen-Karte heißt: der Streamer lief noch nie (der Deko-Job wartet, solange der Ring Chunks baut),
     // jede Region in Reichweite fehlt. Befund 09.10. (gate:ankunft, CI 37942425121): bei langsamem Takt stand der Ring am
     // Existenz-Boden, bevor der Streamer einen Frame bekam — die fehlende Karte galt als „nichts wartet", der Ladeschirm wich
-    // ohne ein einziges Wald-Stück. Ist die Streu aus (`gpuScatter === false`), wartet nichts; ohne Spieler-Ort steht keine.
+    // ohne ein einziges Wald-Stück. Ohne Spieler-Ort steht keine.
     // `liste` (optional) nimmt je wartende Region ihren Schlüssel und Grund auf (`_streuRegionWartet`).
     _streuWartet(p, liste) {
         const SC = AnazhRealm.SCATTER;
-        const st = this.state;
-        if (st.atmosphere && st.atmosphere.gpuScatter === false) return 0;
         if (!p) {
             if (liste) liste.push("kein Spieler-Ort");
             return 1;
@@ -1943,8 +1942,6 @@ class AnazhRealm_Z15b {
     }
 
     _tickScatterStreaming(playerPos, deadlineMs) {
-        const atmo = this.state.atmosphere;
-        if (atmo && atmo.gpuScatter === false) return 0;
         if (!playerPos) return 0;
         const SC = AnazhRealm.SCATTER;
         const map = this._ensureScatterRegionMap();

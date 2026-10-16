@@ -1343,6 +1343,7 @@ const FORBIDDEN = [
         ],
     },
     { token: "_impostorBakePending", fiel: "K60-2 — je Bäcker-Bahn eine Karte im Flug (`_impostorBakeFlug`)" },
+    { token: "gpuScatter", fiel: "G1 — der Schalter hieß GPU und schaltete die CPU-Streu ab; die Streu hat keinen Schalter" },
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt

@@ -500,7 +500,6 @@ async function probe(arg) {
                 m.ohneFall.streuWartet =
                     `die Streu-Region des Spielers (${regKey}) steht nach dem Boot nicht (Regionen-Karte: ` +
                     (st.scatterRegions ? `${st.scatterRegions.size} Regionen` : "keine, der Streamer lief nie") +
-                    (st.atmosphere && st.atmosphere.gpuScatter === false ? ", die Streu ist aus" : "") +
                     (m.fehltNachBoot && m.fehltNachBoot.length ? `; nach dem Boot fehlt ${m.fehltNachBoot.join(" · ")})` : "; das Weltbild galt ohne sie als fertig)");
             // (3b) der Streamer lief noch nie (keine Regionen-Karte) — der Fall des Befunds, in jedem Boot hergestellt
             const merkKarte = st.scatterRegions;
