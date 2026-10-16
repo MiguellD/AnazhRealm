@@ -290,7 +290,11 @@ function finde(root, rx) {
                         if (/Function/.test(n.right.type) || (n.right.type === "Identifier" && fn.has(n.right.name)))
                             nimm(n.left.property.name, n, `zugewiesen in ${schluessel(g.key)} (${zoneAn(t.pfad, g.loc.start.line)})`);
                 }
-            else nimm(stammLib.aussenName(s), s, `außen (${zoneAn(t.pfad, s.loc.start.line)})`);
+            else {
+                const an = stammLib.aussenName(s) || "";
+                if (rx.test(an.replace(/^AnazhRealm\./, "")))
+                    treffer.push(`  ${(t.pfad + ":" + s.loc.start.line).padEnd(32)} ${an}  →  außen (${zoneAn(t.pfad, s.loc.start.line)})`);
+            }
         }
     }
     // die Kerne: benannte Funktionen, Methoden und Funktions-Felder — in ein sofort gerufenes Gehäuse hinein, in keinen Rumpf
