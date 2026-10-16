@@ -126,8 +126,7 @@ function drawZensus(opts) {
                     ziel.set(ikl, e);
                 }
             }
-            // je Draw EIN Befehl; eine Senke zeichnet über ihren Zeichner (1410-1) — Instanzen, Matrizen, Einträge trägt sie. DIE
-            // ARENA (G1): EIN Render-Objekt, je Glied ein indirekter Zug (`_stapel`: Aufträge des Passes, 5 uint je Zug).
+            // je Draw EIN Befehl; eine Senke zeichnet über ihren Zeichner (1410-1), die ARENA (G1) je Glied einen Zug (`_stapel`).
             const arena = object.isGeometrieArena === true ? object._stapel[object._stapel.length - 1] : null;
             for (let j = 0; j < (arena ? arena.zuege.length : 1); j++) {
                 const senke = arena ? arena.zuege[j] : object.__instanzQuelle || object;

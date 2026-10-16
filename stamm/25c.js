@@ -1853,7 +1853,7 @@ class AnazhRealm_Z25c {
         if (liste.length) this._instanzWahlZurueck(liste); // ein Pass ohne Nachher-Haken (Abbruch) hinterlässt nichts
         S.wahlNeu = 0;
         // die Arenen der Bündel lesen die Wahl des Hauptbilds (G1, `_arenaTakt`): ihre Plätze ziehen, was sie eben legte
-        if (set.size === 0) return void (art === "haupt" && AnazhRealm._arenaTakt());
+        if (set.size === 0) return void (art === "haupt" && this._arenaTakt());
         const L = S.lage;
         for (const g of set) {
             if (g.wahl !== art) continue;
@@ -1891,7 +1891,7 @@ class AnazhRealm_Z25c {
             if (art === "haupt") g._wahlZahl = kk;
             this._instanzWahlMerke(g, L, kk);
         }
-        if (art === "haupt") AnazhRealm._arenaTakt();
+        if (art === "haupt") this._arenaTakt();
     }
 
     // STEHT die Wahl einer Gruppe (Welle C)? Dieser Pass (`L.key`: haupt · k<i>) wählte sie zuletzt in derselben Lage

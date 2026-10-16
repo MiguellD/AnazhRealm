@@ -1514,13 +1514,29 @@ class AnazhRealm_Z20c {
     }
     // DER TAKT DER ARENEN IM BÜNDEL — je Frame nach der Wahl des Hauptbilds (`_instanzWahlPass`), vor jedem Zug: jede Arena
     // eines Bündels gleicht ihre Glieder ab und schreibt Blöcke und Aufträge der aufgenommenen Plätze (ein Wurf ist ein Bruch).
-    static _arenaTakt() {
+    _arenaTakt() {
         const reg = AnazhRealm.__arenen;
         if (!reg || reg.size === 0 || AnazhRealm.__arenaBruch) return;
         try {
             for (const a of [...reg.values()]) if (a.__buendel) a._takt(); // ohne Arena (`__arenaOhne`) gibt sie alles zurück
         } catch (e) {
-            AnazhRealm._arenaBruch(e);
+            this._arenaBruch(e);
+        }
+    }
+    // DER ZUG EINER ARENA (ihr `onBeforeRender`): Glieder abgleichen, den Auftrags-Puffer des Passes wählen, die Aufträge
+    // schreiben — ein Wurf hier ließe r184 mitten im Render stehen: er wird zum lauten Bruch, der Pass zeichnet nichts.
+    _arenaZug(a, renderer, camera) {
+        a._rend = renderer;
+        a._stapel.push({ ind: null, offs: [], zuege: [], tri: 0 });
+        try {
+            if (!a._ordnen(renderer)) return;
+            // nimmt ein Bündel die Arena auf, zieht sie EINEN Platz je Glied (der Takt schreibt ihre Aufträge)
+            const fest = a._fest && !!renderer._currentRenderBundle;
+            const zug = a._zugFuer(camera, fest);
+            a._auftraege(zug, fest ? null : camera, renderer);
+            a._stapel[a._stapel.length - 1] = zug;
+        } catch (e) {
+            this._arenaBruch(e);
         }
     }
     static _arenaKann(renderer) {
@@ -1581,13 +1597,12 @@ class AnazhRealm_Z20c {
             r += k + ":" + AnazhRealm._arenaWert(v[k], tiefe + 1) + ",";
         return r + (Array.isArray(v) ? "]" : "}");
     }
-    static _arenaBruch(e) {
-        if (AnazhRealm.__arenaBruch) return;
+    // DER BRUCH DER ARENA: jeder Pfad meldet über den EINEN Melder (`_bruchMelden`), der erste gibt jedes Glied zurück
+    _arenaBruch(e) {
         const text = "DIE GEOMETRIE-ARENA BRICHT: " + String((e && e.stack) || e).slice(0, 500);
+        this._bruchMelden(text);
+        if (AnazhRealm.__arenaBruch) return;
         AnazhRealm.__arenaBruch = text;
-        const r = globalThis.anazhRealm;
-        if (r && typeof r._bruchMelden === "function") r._bruchMelden(text);
-        else console.error(text);
         for (const a of [...(AnazhRealm.__arenen || new Map()).values()])
             for (const m of a.glieder.slice()) a.lassen(m, true);
     }
@@ -1645,7 +1660,6 @@ class AnazhRealm_Z20c {
                 this.__schl = schl;
                 this.__instanzQuelle = { isInstancedMesh: true, instanceMatrix: null, instanceColor: null, count: 0 };
                 this.__instanzQuelle.matrixWorld = this.matrixWorld;
-                this.__instanzQuelle.userData = this.userData;
                 this.layers.mask = m.layers.mask;
                 this.castShadow = m.castShadow;
                 this.receiveShadow = m.receiveShadow;
@@ -2080,20 +2094,7 @@ class AnazhRealm_Z20c {
                 return z;
             }
             onBeforeRender(renderer, scene, camera) {
-                this._rend = renderer;
-                // ein Wurf hier ließe r184 mitten im Render stehen: er wird zum lauten Bruch, der Pass zeichnet nichts
-                const leer = { ind: null, offs: [], zuege: [], tri: 0 };
-                this._stapel.push(leer);
-                try {
-                    if (!this._ordnen(renderer)) return;
-                    // nimmt ein Bündel die Arena auf, zieht sie EINEN Platz je Glied (der Takt schreibt ihre Aufträge)
-                    const fest = this._fest && !!renderer._currentRenderBundle;
-                    const zug = this._zugFuer(camera, fest);
-                    this._auftraege(zug, fest ? null : camera, renderer);
-                    this._stapel[this._stapel.length - 1] = zug;
-                } catch (e) {
-                    AnazhRealm._arenaBruch(e);
-                }
+                globalThis.anazhRealm._arenaZug(this, renderer, camera);
             }
             onAfterRender(renderer) {
                 const zug = this._stapel.pop();
