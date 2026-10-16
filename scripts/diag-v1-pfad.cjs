@@ -1850,34 +1850,27 @@ async function probe(arg) {
         }
         const gruen = wand(quelle);
         check("Selbst-Test W: der Arbeitsbaum ist grün", gruen.every((w) => w[1]), gruen.filter((w) => !w[1]).map((w) => `${w[0].slice(0, 2)} ${w[2] || ""}`).join(" | "));
-        const vorStand = quelle
-            .replace('this._buehneRender(p.renderer, p.scene, p.camera, "Werkstatt-Vorschau");', "p.renderer.render(p.scene, p.camera);")
-            .replace("if (an !== null) lu.uLodMaskOn.value = 0;", "")
+        const vorStand = stammLib.ersetze(quelle, [
+            ["_workshopRender", 'this._buehneRender(p.renderer, p.scene, p.camera, "Werkstatt-Vorschau");', "p.renderer.render(p.scene, p.camera);"],
+            ["_buehneRender", "if (an !== null) lu.uLodMaskOn.value = 0;", ""],
             // der Orts-Vertrag beim Vorher (6b988a07): dslEvalPos gibt null weiter, spawn_studio bewacht sich selbst
-            .replace("            throw fehler;\n", "            return null;\n")
+            ["dslEvalPos", "            throw fehler;\n", "            return null;\n"],
             // der Rest der Klasse beim Vorher (c52089c7): jeder Nicht-Array-Knoten ist „nicht verlangt", der Feld-Akt nimmt
             // für jeden Nicht-Array-Knoten den Spieler
-            .replace("if (node == null) pos = this._defaultSpawnPos();", "if (!Array.isArray(node) || node.length === 0) pos = this._defaultSpawnPos();")
-            .replace(
-                'return this.dslEvalPos(posNode == null ? ["at_player"] : posNode, ctx);',
-                'return Array.isArray(posNode) && posNode.length > 0 ? this.dslEvalPos(posNode, ctx) : this.dslEvalPos(["at_player"], ctx);'
-            )
-            .replace(
-                "const pos = this.dslEvalPos(positionNode, ctx); // kein Ort",
-                "const pos = this.dslEvalPos(positionNode, ctx);\n                if (!pos) return; // kein Ort"
-            )
+            ["dslEvalPos", "if (node == null) pos = this._defaultSpawnPos();", "if (!Array.isArray(node) || node.length === 0) pos = this._defaultSpawnPos();"],
+            ["_dslRulePos", 'return this.dslEvalPos(posNode == null ? ["at_player"] : posNode, ctx);',
+                'return Array.isArray(posNode) && posNode.length > 0 ? this.dslEvalPos(posNode, ctx) : this.dslEvalPos(["at_player"], ctx);'],
+            ["dslEffects", "const pos = this.dslEvalPos(positionNode, ctx); // kein Ort",
+                "const pos = this.dslEvalPos(positionNode, ctx);\n                if (!pos) return; // kein Ort"],
             // die Zwillings-Suche beim Vorher: der Rückkehr-Anker sucht die Plattform selbst
-            .replace(
-                "const anchor = this._genesisPlattform();",
-                'const anchor = (this.state.architectures || []).find((a) => a && a.type === "start_plattform");'
-            )
+            ["_playerDeathRespawn", "const anchor = this._genesisPlattform();",
+                'const anchor = (this.state.architectures || []).find((a) => a && a.type === "start_plattform");'],
             // der Warte-Poll der Hand beim Vorher (K38-N1): sie fragte alle 150 ms, ob das Buch steht
-            .replace(
-                'this._foundryWecker(f.buchDa, "hand", () => {',
-                "const poll = () => {\n if (f.ready && f.recipes) this._refreshHeldMesh();\n else setTimeout(poll, 150);\n };\n setTimeout(poll, 150);\n (() => {"
-            );
+            ["_heldFoundryGroup", 'this._foundryWecker(f.buchDa, "hand", () => {',
+                "const poll = () => {\n if (f.ready && f.recipes) this._refreshHeldMesh();\n else setTimeout(poll, 150);\n };\n setTimeout(poll, 150);\n (() => {"],
+        ]);
         // die Klasse der festen Stellen-Zahl (K38-N2): ein Renderer weniger über die Bühne bleibt grün
-        const weniger = wand(quelle.replace('this._buehneRender(s.renderer, s.scene, s.camera, "Hof-Bühne");', ""));
+        const weniger = wand(stammLib.ersetze(quelle, "_hofStartRAF", 'this._buehneRender(s.renderer, s.scene, s.camera, "Hof-Bühne");', ""));
         check(
             "Selbst-Test W: ein Renderer weniger über die Bühne bleibt grün (W2 zählt am Namen, keine feste Zahl)",
             quelle.includes('"Hof-Bühne");') && weniger.every((w) => w[1]),
@@ -2065,7 +2058,7 @@ async function probe(arg) {
                 !w2[1] &&
                 w2Soll.every((n) => w2[2].includes(n)) &&
                 !w2Still.some((n) => w2[2].includes(n)) &&
-                (w2[2].match(/stamm\/\d\d[a-z]?\.js:\d+/g) || []).length === w2Soll.length,
+                (w2[2].match(/stamm\/[a-z0-9-]+\.js:\d+/g) || []).length === w2Soll.length,
             `${w2[2]}${w2Soll.filter((n) => !w2[2].includes(n)).map((n) => " · UNGENANNT " + n).join("")}${w2Still.filter((n) => w2[2].includes(n)).map((n) => " · FALSCH " + n).join("")}`
         );
         check(
@@ -2073,20 +2066,20 @@ async function probe(arg) {
             !w7[1] &&
                 w7Soll.every((n) => w7[2].includes(n)) &&
                 !w7Still.some((n) => w7[2].includes(n)) &&
-                (w7[2].match(/stamm\/\d\d[a-z]?\.js:\d+/g) || []).length === w7Soll.length,
+                (w7[2].match(/stamm\/[a-z0-9-]+\.js:\d+/g) || []).length === w7Soll.length,
             `${w7[2]}${w7Soll.filter((n) => !w7[2].includes(n)).map((n) => " · UNGENANNT " + n).join("")}${w7Still.filter((n) => w7[2].includes(n)).map((n) => " · FALSCH " + n).join("")}`
         );
         // DIE AUSNAHME DER FRIST-KETTE trägt nur sich selbst: ein Poll IN der Kette (die Uhr stellt sich neu) fällt beim
         // Namen, und eine Kante der Ausnahme, die nicht mehr steht, macht sie veraltet.
         const uhrRuf = "if (!vorMir) fr.uhr = setTimeout(() => this._foundryAblauf(f, reqId), fr.dauerMs);";
         const w7Von = (t) => wand(t).find((w) => w[0].startsWith("W7"));
-        const inDerKette = w7Von(quelle.replace(uhrRuf, `${uhrRuf}\n            else setTimeout(() => this._foundryUhren(f), 50);`));
+        const inDerKette = w7Von(stammLib.ersetze(quelle, "_foundryUhren", uhrRuf, `${uhrRuf}\n            else setTimeout(() => this._foundryUhren(f), 50);`));
         check(
             "Selbst-Test W: ein Poll in der Frist-Kette (die Uhr stellt sich neu) → W7 nennt _foundryUhren → _foundryUhren",
             quelle.includes(uhrRuf) && !inDerKette[1] && inDerKette[2].includes("_foundryUhren → _foundryUhren"),
             inDerKette[2]
         );
-        const ohneUhr = w7Von(quelle.replace(uhrRuf, "if (!vorMir) this._foundryAblauf(f, reqId);"));
+        const ohneUhr = w7Von(stammLib.ersetze(quelle, "_foundryUhren", uhrRuf, "if (!vorMir) this._foundryAblauf(f, reqId);"));
         check(
             "Selbst-Test W: die Uhr ohne Zeitgeber → die Ausnahme der Frist-Kette ist veraltet (W7 nennt _foundryUhren → _foundryAblauf)",
             !ohneUhr[1] && ohneUhr[2].includes("Ausnahme ohne Zeit-Kante: _foundryUhren → _foundryAblauf"),

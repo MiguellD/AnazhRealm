@@ -86,7 +86,7 @@ function schlangenGesetz(src) {
 {
     const stamm = stammLib.text(root);
     if (process.argv.includes("--selftest")) {
-        const kaputt = stamm.replace(
+        const kaputt = stammLib.ersetze(stamm, "tickArchitectureCulling",
             "if (entry._ziegelSlot || entry._ziegelGebacken || ohneFeld) {\n                    if (this._archZiegelFern(entry)) regung++;\n                } else {\n                    // Steht",
             "if (this._archZiegelFern(entry)) regung++;\n                if (false) {\n                    // Steht"
         );

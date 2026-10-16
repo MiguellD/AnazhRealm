@@ -58,7 +58,7 @@ function methode(src, name) {
 function statisch(src) {
     const aus = [];
     const pruef = (name, ok, detail) => aus.push([name, !!ok, detail || ""]);
-    const m = src.match(/AnazhRealm\.FOUNDRY_LESEN = (\[[^\]]*\]);/);
+    const m = stammLib.treffer(src, null, /AnazhRealm\.FOUNDRY_LESEN = (\[[^\]]*\]);/);
     let lesen = null;
     try {
         // die Liste darf über Zeilen laufen (Prettier bricht sie mit Schluss-Komma um)
@@ -229,7 +229,7 @@ function stempelProbe(lies) {
 }
 
 const KNUTH_INVERS = (() => {
-    const m = /AnazhRealm\.KNUTH_INVERS = (\d+);/.exec(stammLib.text(root));
+    const m = stammLib.treffer(stammLib.text(root), null, /AnazhRealm\.KNUTH_INVERS = (\d+);/);
     return m ? Number(m[1]) : NaN;
 })();
 const SOLITAER = (() => {
@@ -1086,12 +1086,12 @@ const VERHALTEN = [
     if (process.argv.includes("--selftest")) {
         console.log("=== FLUSS-WAND — SELBST-TEST: die Wand feuert auf injizierte Brüche ===");
         // Ein Bruch, dessen Anker im Quelltext fehlt, läuft ins Leere: er bricht den Selbsttest beim Namen.
-        const bruch = (quelle, alt, neu) => {
+        const bruch = (quelle, alt, neu, glied = null) => {
             if (!(alt instanceof RegExp ? alt.test(quelle) : quelle.includes(alt))) {
                 check(`Selbst-Test-Anker steht im Quelltext: ${String(alt).slice(0, 70)}`, false);
                 return quelle;
             }
-            return quelle.replace(alt, neu);
+            return stammLib.ersetze(quelle, glied, alt, neu);
         };
         // die Liste läuft über Zeilen (Prettier, seit S3 aDeckt) — ein Name mehr vor der schließenden Klammer
         const t1 = statisch(bruch(stamm, '    "skinWeight",\n];', '    "skinWeight",\n    "aWind",\n];')).gesetze.find(
@@ -1116,7 +1116,7 @@ const VERHALTEN = [
             )
         ).gesetze.find((g) => g[0].startsWith("S4a"));
         check("Selbst-Test 6: eine Varianten-Wahl ohne Art → S4a rot", t6 && !t6[1]);
-        const t7 = statisch(bruch(stamm, "                seed: same,\n", "")).gesetze.find((g) =>
+        const t7 = statisch(bruch(stamm, "                seed: same,\n", "", "_promoteScatterCell")).gesetze.find((g) =>
             g[0].startsWith("S4c")
         );
         check("Selbst-Test 7: Promotion ohne Zellen-Samen → S4c rot", t7 && !t7[1]);
