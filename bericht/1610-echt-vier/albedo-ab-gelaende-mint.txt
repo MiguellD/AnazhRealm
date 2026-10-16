@@ -1,0 +1,70 @@
+12:58:19 albedo-ab 826717ed  M gelaende-core.js 
+DIE ALBEDO-TAFEL: 10 von 10 Zeilen ROT (veraltet, nie GRÜN):
+   ROT rinde: das Ist der welt — veraltet seit cd945ba0: phyto-core.js geändert (c:db35ea5544d7453c → c:1a281005f65ef585)
+   ROT rinde: das Ist der labor — veraltet seit cd945ba0: phyto-core.js geändert (c:db35ea5544d7453c → c:1a281005f65ef585)
+   ROT laub: das Ist der welt — veraltet seit cd945ba0: phyto-core.js geändert (c:db35ea5544d7453c → c:1a281005f65ef585)
+   ROT laub: das Ist der labor — veraltet seit cd945ba0: phyto-core.js geändert (c:db35ea5544d7453c → c:1a281005f65ef585)
+   ROT fels: das Ist der welt — veraltet seit cd945ba0: stamm/08.js geändert (c:77f87597ce6b7d1c → c:cd035f29ff693b62)
+   ROT fels: das Ist der labor — veraltet seit cd945ba0: stamm/08.js geändert (c:77f87597ce6b7d1c → c:cd035f29ff693b62)
+   ROT boden: das Ist der welt — veraltet seit cd945ba0: stamm/10.js geändert (c:60d0e92e3969e187 → c:bb6631653fcc0994)
+   ROT boden: das Ist der labor — veraltet seit cd945ba0: stamm/10.js geändert (c:60d0e92e3969e187 → c:bb6631653fcc0994)
+   ROT haus: das Ist der welt — veraltet seit cd945ba0: fachwerk-core.js geändert (c:e5726dc98963a032 → c:cfeff9669bfceaec)
+   ROT haus: das Ist der labor — veraltet seit cd945ba0: fachwerk-core.js geändert (c:e5726dc98963a032 → c:cfeff9669bfceaec)
+   ROT lack: das Ist der welt — veraltet seit cd945ba0: foundry-core.js geändert (c:bcaa4b02d2a0a1ce → c:5ed08308e6e4d144)
+   ROT lack: das Ist der labor — veraltet seit cd945ba0: foundry-core.js geändert (c:bcaa4b02d2a0a1ce → c:5ed08308e6e4d144)
+   ROT tor: das Ist der welt — veraltet seit cd945ba0: porta-core.js geändert (c:986b5e22a9e7eaa5 → c:43576786f20c3d32)
+   ROT tor: das Ist der labor — veraltet seit cd945ba0: porta-core.js geändert (c:986b5e22a9e7eaa5 → c:43576786f20c3d32)
+   ROT haut: das Ist der welt — veraltet seit cd945ba0: foundry-core.js geändert (c:bcaa4b02d2a0a1ce → c:5ed08308e6e4d144)
+   ROT haut: das Ist der labor — veraltet seit cd945ba0: foundry-core.js geändert (c:bcaa4b02d2a0a1ce → c:5ed08308e6e4d144)
+   ROT fell: das Ist der welt — veraltet seit cd945ba0: stamm/06a.js geändert (c:e9afa5f4a503640c → c:4d361b83440065db)
+   ROT fell: das Ist der labor — veraltet seit cd945ba0: stamm/06a.js geändert (c:e9afa5f4a503640c → c:4d361b83440065db)
+   ROT klinge: das Ist der welt — veraltet seit cd945ba0: foundry-core.js geändert (c:bcaa4b02d2a0a1ce → c:5ed08308e6e4d144)
+   ROT klinge: das Ist der labor — veraltet seit cd945ba0: foundry-core.js geändert (c:bcaa4b02d2a0a1ce → c:5ed08308e6e4d144)
+   Neumessung: Welt (werkbank :4589) und Labor — C:\Users\micha\Desktop\AnazhRealm-OMEN\albedo-ab\artifacts\albedo-neu\2026-10-16T10-58-20-987Z
+[linse-gpu] nvidia/pascal
+[stall-akte] Seite #7: der Puls kehrt zurück nach 24.7 s — complete · anazhRealm — · programme 14 · gl-sync 62 · zuletzt gl.linkProgram #14
+[stall-akte] ═══ diag-albedo-tafel.cjs · Seite #7 http://127.0.0.1:4587/worlds/fachwerk/index.html · der Puls steht seit 20.5 s
+[stall-akte] Puls 10×, zuletzt vor 20.5 s — complete · anazhRealm — · programme 14 · gl-sync 62 · zuletzt gl.linkProgram #14
+[stall-akte] Stempel 11:00:12.547 gl.getProgramParameter (synchron #23)
+[stall-akte] Stempel 11:00:12.548 gl.readPixels (synchron #26)
+[stall-akte] Stempel 11:00:32.228 gl.linkProgram #9
+[stall-akte] Stempel 11:00:32.228 gl.getProgramParameter (synchron #27)
+[stall-akte] Stempel 11:00:32.228 gl.linkProgram #10
+[stall-akte] Stempel 11:00:32.228 gl.linkProgram #11
+[stall-akte] Stempel 11:00:32.228 gl.linkProgram #12
+[stall-akte] Stempel 11:00:32.228 gl.linkProgram #13
+[stall-akte] Stempel 11:00:32.228 gl.readPixels (synchron #42)
+[stall-akte] Stempel 11:00:42.799 gl.linkProgram #14
+[stall-akte] Stempel 11:00:42.799 gl.getProgramParameter (synchron #57)
+[stall-akte] Stempel 11:00:42.799 gl.readPixels (synchron #60)
+[stall-akte] CPU (2 s) browser 10512 301 % · renderer 12824 251 % · GPU 7652 85 %
+[stall-akte] Last je 2 s (GPU-Prozess/Renderer %, älteste zuerst) 59:43 gpu 111/r 2 · 59:45 gpu 112/r 3 · 59:47 gpu 109/r 5 · 59:49 gpu 115/r 4 · 59:51 gpu 221/r 58 · 59:53 gpu 67/r 26 · 59:55 gpu 115/r 13 · 59:57 gpu 119/r 65 · 59:59 gpu 79/r 21 · 00:01 gpu 93/r 46 · 00:03 gpu 67/r 23 · 00:05 gpu 101/r 18 · 00:07 gpu 67/r 18 · 00:09 gpu 98/r 51 · 00:11 gpu 113/r 102 · 00:13 gpu 104/r 103 · 00:15 gpu 112/r 61 · 00:17 gpu 124/r 54 · 00:19 gpu 38/r 126 · 00:21 gpu 2/r 104 · 00:23 gpu 2/r 101 · 00:25 gpu 2/r 104 · 00:30 gpu 8/r 234 · 00:32 gpu 144/r 183 · 00:32 gpu 0/r 0 · 00:33 gpu 17/r 57 · 00:35 gpu 2/r 103 · 00:37 gpu 2/r 104 · 00:40 gpu 3/r 148 · 00:42 gpu 82/r 169
+[stall-akte] Stapel _hautKappen :2088 < fensterFern :2060 < fragFuer :2757 < buildStufe :3593 < buildInstance :3658 < bauen :754 < naechste :598
+[stall-akte] URTEIL JS-SCHLEIFE — der Haupt-Thread rechnet in _hautKappen :2088
+   Welt: nvidia pascal · Labor: ANGLE (NVIDIA, NVIDIA GeForce GTX 1060 (0x00001C60) Direct3D11 vs_5_0 ps_5_0, D3D11)
+ALBEDO LABOR ↔ WELT ROT · im Soll (±10 %): 6/10 Zeilen, 0/7 Karten
+
+Zeile         Klasse        Labor Y   Welt Y     L/W  Ratsche  Soll  Labor rgb · Welt rgb
+rinde         Rinde          0.0893   0.0867    1.03    0.016  ja    0.1065/0.0869/0.0618 · 0.1038/0.0843/0.0598
+laub          Laub           0.1784   0.1684    1.06    0.091  ja    0.1268/0.2072/0.0447 · 0.0903/0.2042/0.0447
+fels          Fels           0.2444   0.2388    1.02    0.023  ja    0.2705/0.243/0.1811 · 0.2641/0.2377/0.1761
+boden         Boden          0.0832   0.0739    1.13    0.040  nein  0.1198/0.0771/0.0355 · 0.1082/0.0667/0.0439
+haus          Haus           0.0841   0.1591    0.53    0.637  nein  0.1433/0.0705/0.0441 · 0.2774/0.1312/0.0868
+lack          Metall/Lack    0.0066   0.0058    1.14    0.095  nein  0.0056/0.0065/0.0097 · 0.005/0.0058/0.0087
+tor           Metall/Lack    0.6496   0.6493    1.00    0.000  ja    0.8196/0.6364/0.2799 · 0.8196/0.6359/0.2799
+haut          Haut/Fell      0.0608   0.0709    0.86    0.932  nein  0.1219/0.0463/0.025 · 0.1424/0.0538/0.0292
+fell          Haut/Fell      0.1687   0.1804    0.94    0.048  ja    0.2057/0.1635/0.1123 · 0.2207/0.1746/0.1193
+klinge        Klinge         0.3322   0.3493    0.95    0.050  ja    0.3642/0.3258/0.3022 · 0.388/0.3419/0.3081
+
+Karte (18 %)         k·L /Eichung  Ratsche  Soll  Ausgabe-Pixel
+terrain           0.6760     2.14    0.866  nein  169/174/168
+garage            0.6472     2.05    0.720  nein  207/210/212
+portale           0.8036     2.54    0.934  nein  199/210/205
+schmiede          0.6427     2.04    0.714  nein  175/163/151
+fachwerk          0.4818     1.53    0.422  nein  197/194/192
+koerperstudio     0.6995     2.22    0.798  nein  169/180/177
+tetrapoda         0.8807     2.79    1.028  nein  255/255/255
+
+  [ratsche] boden: Labor/Welt 1.1258 (|ln| 0.1185) über der Ratsche 0.04 + Rand
+⛔ DIE ALBEDO-TAFEL: die Neumessung der veralteten Zeilen rinde, laub, fels, boden, haus, lack, tor, haut, fell, klinge ist ROT — der Code hat die Albedo bewegt.
+EXIT=1 DAUER=167 s

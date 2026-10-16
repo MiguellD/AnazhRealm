@@ -1,0 +1,16 @@
+13:39:19 webgl-ohne1 echt-karte ad9aa5be LINSE_GPU=karte: env OHNE_LINK=1 node /c/Users/micha/Desktop/AnazhRealm-OMEN/p3/k1610v/webgl-taeter.cjs . C:/Users/micha/Desktop/AnazhRealm-OMEN/p3/k1610v/beweis/webgl-ohne1.json
+[linse-gpu] webgl2/NVIDIA GeForce GTX 1060 (0x00001C60) Direct3D11 vs_5_0 ps_5_0
+Modus: ohne Link-Haken (paralleles Kompilieren unberührt)
+[welt-boot] FEHLER console.error: THREE.THREE.WebGLProgram: Shader Error 1280 - VALIDATE_STATUS false |  | Program Info Log: FRAGMENT shader texture image units count exceeds MAX_TEXTURE_IMAGE_UNITS(16)
+[welt-boot] FEHLER console.error: THREE.THREE.WebGLProgram: Shader Error 1282 - VALIDATE_STATUS false |  | Program Info Log: FRAGMENT shader texture image units count exceeds MAX_TEXTURE_IMAGE_UNITS(16)
+SUBSTANZ sofort {"farben":1,"nonzero":0} · nach compileAsync+20 {"farben":37,"nonzero":684} · ohne Täter (0 Objekte) {"farben":34,"nonzero":788}
+MAX_TEXTURE_IMAGE_UNITS null · Programme 0 · über der Grenze 0
+die meisten Sampler:
+Konsole (error): [
+  'THREE.THREE.WebGLProgram: Shader Error 1280 - VALIDATE_STATUS false',
+  'THREE.THREE.WebGLProgram: Shader Error 1282 - VALIDATE_STATUS false'
+]
+[welt-boot] ROT — 2 Fehler der Welt:
+  · console.error: THREE.THREE.WebGLProgram: Shader Error 1280 - VALIDATE_STATUS false |  | Program Info Log: FRAGMENT shader texture image units count exceeds MAX_TEXTURE_IMAGE_UNITS(16)
+  · console.error: THREE.THREE.WebGLProgram: Shader Error 1282 - VALIDATE_STATUS false |  | Program Info Log: FRAGMENT shader texture image units count exceeds MAX_TEXTURE_IMAGE_UNITS(16)
+EXIT=1 DAUER=57 s

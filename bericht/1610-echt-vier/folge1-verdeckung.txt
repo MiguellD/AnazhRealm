@@ -1,0 +1,49 @@
+13:06:25 folge1-verdeckung ad9aa5be 0 geändert: npm run gate:verdeckungs-abfrage
+
+> anazhrealm@18.546.2 gate:verdeckungs-abfrage
+> node scripts/diag-verdeckungs-abfrage.cjs --selftest && node scripts/diag-verdeckungs-abfrage.cjs
+
+✅ sauber
+✅ Ablauf: No occlusion queries
+✅ Ablauf: ungültiger Befehlspuffer
+✅ Ablauf: geschluckt (GPU-Wache three)
+✅ Ablauf: weak set
+✅ Boot: ein Fehler
+✅ Bruch: incomplete
+✅ Ablauf: nicht ausgestiegen
+✅ Ablauf: Sicht blieb
+✅ Ablauf: nie gezählt
+✅ Ablauf: kein Wasser
+✅ Bruch: nie offen
+✅ Gift: nie gezeichnet
+✅ Gift: alle begonnen
+✅ Phase fehlt
+✅ Letzter: der vierte Weg
+✅ Letzter: nie letzter
+✅ Letzter: kein Null-Frame
+✅ Selbsttest Letzter blind
+✅ Selbsttest Bruch blind
+✅ Selbsttest Gift ohne weak set
+✅ Selbsttest fehlt
+✅ Abbruch
+
+✅ SELBSTTEST GRÜN — 23 Fälle: jeder Täter und jede vakuöse Phase beim Namen
+=== VERDECKUNGS-ABFRAGE — der Aussteige-Ablauf am Bach (WebGPU auf swiftshader) ===
+[linse-gpu] nvidia/pascal
+  [4 s] Renderer und Welt bereit nach 2 s
+  [17 s] ABLAUF: {"begonnen":0,"bruch":9,"bruchOffen":0,"gezaehlt":1,"wasser":9,"gift":0,"letzter":0,"nullFrames":0,"renders":18} · Bach {"x":-269,"z":-1127,"ufer":4,"start":[-263,-1115]}, Probe jeden 10. Frame, Wasser-Meshes 1 (am Ort 1× gezeichnet), aufgesessen true, Halt 14 m vor dem Bach, ausgestiegen true, Sicht {"vorher":"third","nachher":"first"}, ms {"ort":5863,"wagen":3066,"takte":3262} · 0 Fehler
+  [17 s] BRUCH: {"begonnen":6,"bruch":6,"bruchOffen":1,"gezaehlt":6,"wasser":6,"gift":0,"letzter":0,"nullFrames":0,"renders":12} · vorgebaut 1 · 0 Fehler
+  [17 s] GIFT: {"begonnen":0,"bruch":6,"bruchOffen":0,"gezaehlt":6,"wasser":6,"gift":6,"letzter":0,"nullFrames":0,"renders":12} · vorgebaut 1 · 0 Fehler
+  [18 s] LETZTER: {"begonnen":3,"bruch":6,"bruchOffen":0,"gezaehlt":3,"wasser":6,"gift":0,"letzter":3,"nullFrames":3,"renders":12} · vorgebaut 1 · 0 Fehler
+  [18 s] SELBSTTEST bruch ohne Hülle: {} · Seite {} · Wache 0
+[welt-boot] FEHLER console.error: THREE.Render pass [RenderPassEncoder (unlabeled)] ended with incomplete occlusion query index 0 of [QuerySet "occlusionQuerySet_4"]. |  - While encoding [RenderPassEncoder (unlabeled)].End(). |  - While finishing [CommandEncoder "renderContext_4"].
+  [18 s] SELBSTTEST gift ohne Hülle: {} · Seite {"Invalid value used in weak set":5} · Wache 1
+  [18 s] SELBSTTEST letzter ohne Hülle: {"No occlusion queries are active.":3,"[Invalid CommandBuffer from CommandEncoder \"renderContext_4\"] is invalid due to a previous error.":3} · Seite {"Invalid value used in weak set":1} · Wache 6
+  [19 s] ROT
+
+❌ ROT — 2 Verletzung(en):
+   • SELBSTTEST VAKUÖS: der Bruch ohne Hülle nennt „ended with incomplete occlusion query“ nicht
+   • SELBSTTEST VAKUÖS: das Gift ohne Hülle nennt „No occlusion queries are active“ nicht
+[welt-boot] ROT — 1 Fehler der Welt:
+  · console.error: THREE.Render pass [RenderPassEncoder (unlabeled)] ended with incomplete occlusion query index 0 of [QuerySet "occlusionQuerySet_4"]. |  - While encoding [RenderPassEncoder (unlabeled)].End(). |  - While finishing [CommandEncoder "renderContext_4"].
+EXIT=1 DAUER=21 s

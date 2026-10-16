@@ -1,0 +1,29 @@
+13:40:16 webgl-ohne0 echt-karte ad9aa5be LINSE_GPU=karte: env OHNE_LINK=0 node /c/Users/micha/Desktop/AnazhRealm-OMEN/p3/k1610v/webgl-taeter.cjs . C:/Users/micha/Desktop/AnazhRealm-OMEN/p3/k1610v/beweis/webgl-ohne0.json
+[linse-gpu] webgl2/NVIDIA GeForce GTX 1060 (0x00001C60) Direct3D11 vs_5_0 ps_5_0
+Modus: mit Link-Haken
+[welt-boot] FEHLER console.error: THREE.THREE.WebGLProgram: Shader Error 1280 - VALIDATE_STATUS false |  | Program Info Log: FRAGMENT shader texture image units count exceeds MAX_TEXTURE_IMAGE_UNITS(16)
+[welt-boot] FEHLER console.error: THREE.THREE.WebGLProgram: Shader Error 1282 - VALIDATE_STATUS false |  | Program Info Log: FRAGMENT shader texture image units count exceeds MAX_TEXTURE_IMAGE_UNITS(16)
+SUBSTANZ sofort {"farben":32,"nonzero":598} · nach compileAsync+20 {"farben":35,"nonzero":707} · ohne Täter (1 Objekte) {"farben":35,"nonzero":707}
+MAX_TEXTURE_IMAGE_UNITS 16 · Programme 46 · über der Grenze 2
+  #34: {"tx":["nodeUniform2=fern-ring-maske","nodeUniform12=kronen-streu:fern","nodeUniform16=kronen-streu:nah","nodeUniform20=rausch-atlas","nodeUniform32=wege-karte:fern","nodeUniform34=wege-karte:nah","nodeUniform94=fern-krone-nah","nodeUniform100=fluss-karte:fern","nodeUniform102=fluss-karte:nah","nodeUniform107=himmel-umgebung","nodeUniform109=spiegel:strahl","nodeUniform160=kaskade0:tiefe","nodeUniform173=kaskade1:tiefe","nodeUniform185=horizont-karte","nodeUniform188=DFG_LUT","nodeUniform198=PMREM.cubeUv","nodeUniform209=atmo-himmel"],"objekt":"Mesh","ud":["inventar"],"geo":"BufferGeometry position,color,aKrone,aNass,normal n=7680","pos":[0,0,0],"mname":"","mud":["lichtPool","isPbrMaterial","pbrRoughness","pbrMetalness"]}
+  ÜBER: 17 Sampler · MeshStandardNodeMaterial #34 · Objekt Mesh · Scene/Mesh · link false
+        nodeUniform2, nodeUniform12, nodeUniform16, nodeUniform20, nodeUniform32, nodeUniform34, nodeUniform94, nodeUniform100, nodeUniform102, nodeUniform107, nodeUniform109, nodeUniform160, nodeUniform173, nodeUniform185, nodeUniform188, nodeUniform198, nodeUniform209
+  ÜBER: 17 Sampler · MeshStandardNodeMaterial #34 · Objekt Mesh · Scene/Mesh · link false
+        nodeUniform2, nodeUniform12, nodeUniform16, nodeUniform20, nodeUniform32, nodeUniform34, nodeUniform94, nodeUniform100, nodeUniform102, nodeUniform107, nodeUniform109, nodeUniform160, nodeUniform173, nodeUniform185, nodeUniform188, nodeUniform198, nodeUniform209
+die meisten Sampler:
+  17 · MeshStandardNodeMaterial #34 · Mesh
+  17 · MeshStandardNodeMaterial #34 · Mesh
+  16 · MeshStandardNodeMaterial #33 · Mesh
+  16 · MeshStandardNodeMaterial #33 · Mesh
+  12 · MeshStandardNodeMaterial #32 · bodenSatz
+  9 · MeshStandardNodeMaterial #71 · instanz-zeichner
+  7 · MeshStandardNodeMaterial #26 · Mesh
+  7 · MeshStandardNodeMaterial #52 · instanz-zeichner
+Konsole (error): [
+  'THREE.THREE.WebGLProgram: Shader Error 1280 - VALIDATE_STATUS false',
+  'THREE.THREE.WebGLProgram: Shader Error 1282 - VALIDATE_STATUS false'
+]
+[welt-boot] ROT — 2 Fehler der Welt:
+  · console.error: THREE.THREE.WebGLProgram: Shader Error 1280 - VALIDATE_STATUS false |  | Program Info Log: FRAGMENT shader texture image units count exceeds MAX_TEXTURE_IMAGE_UNITS(16)
+  · console.error: THREE.THREE.WebGLProgram: Shader Error 1282 - VALIDATE_STATUS false |  | Program Info Log: FRAGMENT shader texture image units count exceeds MAX_TEXTURE_IMAGE_UNITS(16)
+EXIT=1 DAUER=49 s

@@ -1,0 +1,51 @@
+13:10:23 cd945ba0  M spec/farbe/albedo-tafel.json 
+DIE ALBEDO-TAFEL: 10 von 10 Zeilen ROT (veraltet, nie GRÜN):
+   ROT rinde: das Ist der welt — veraltet seit 434dfd16: phyto-core.js geändert (c:0000000000000000 → c:db35ea5544d7453c)
+   ROT rinde: das Ist der labor — veraltet seit 434dfd16: phyto-core.js geändert (c:0000000000000000 → c:db35ea5544d7453c)
+   ROT laub: das Ist der welt — veraltet seit 434dfd16: phyto-core.js geändert (c:0000000000000000 → c:db35ea5544d7453c)
+   ROT laub: das Ist der labor — veraltet seit 434dfd16: phyto-core.js geändert (c:0000000000000000 → c:db35ea5544d7453c)
+   ROT fels: das Ist der welt — veraltet seit 434dfd16: gelaende-core.js geändert (c:0000000000000000 → c:47e37b262d36dd6e)
+   ROT fels: das Ist der labor — veraltet seit 434dfd16: gelaende-core.js geändert (c:0000000000000000 → c:47e37b262d36dd6e)
+   ROT boden: das Ist der welt — veraltet seit 434dfd16: gelaende-core.js geändert (c:0000000000000000 → c:47e37b262d36dd6e)
+   ROT boden: das Ist der labor — veraltet seit 434dfd16: gelaende-core.js geändert (c:0000000000000000 → c:47e37b262d36dd6e)
+   ROT haus: das Ist der welt — veraltet seit 434dfd16: fachwerk-core.js geändert (c:0000000000000000 → c:e5726dc98963a032)
+   ROT haus: das Ist der labor — veraltet seit 434dfd16: fachwerk-core.js geändert (c:0000000000000000 → c:e5726dc98963a032)
+   ROT lack: das Ist der welt — veraltet seit 434dfd16: vehicle-core.js geändert (c:0000000000000000 → c:97f0f918c22eb27c)
+   ROT lack: das Ist der labor — veraltet seit 434dfd16: vehicle-core.js geändert (c:0000000000000000 → c:97f0f918c22eb27c)
+   ROT tor: das Ist der welt — veraltet seit 434dfd16: porta-core.js geändert (c:0000000000000000 → c:986b5e22a9e7eaa5)
+   ROT tor: das Ist der labor — veraltet seit 434dfd16: porta-core.js geändert (c:0000000000000000 → c:986b5e22a9e7eaa5)
+   ROT haut: das Ist der welt — veraltet seit 434dfd16: koerper-core.js geändert (c:0000000000000000 → c:2d740b48e4f78546)
+   ROT haut: das Ist der labor — veraltet seit 434dfd16: koerper-core.js geändert (c:0000000000000000 → c:2d740b48e4f78546)
+   ROT fell: das Ist der welt — veraltet seit 434dfd16: tetrapoda-core.js geändert (c:0000000000000000 → c:14a2c4d068438f19)
+   ROT fell: das Ist der labor — veraltet seit 434dfd16: tetrapoda-core.js geändert (c:0000000000000000 → c:14a2c4d068438f19)
+   ROT klinge: das Ist der welt — veraltet seit 434dfd16: schmiede-core.js geändert (c:0000000000000000 → c:b94f4dfa0ae2c2fd)
+   ROT klinge: das Ist der labor — veraltet seit 434dfd16: schmiede-core.js geändert (c:0000000000000000 → c:b94f4dfa0ae2c2fd)
+   Neumessung: Welt (werkbank :4589) und Labor — C:\Users\micha\Desktop\AnazhRealm-OMEN\albedo-kontrolle\artifacts\albedo-neu\2026-10-16T11-10-25-136Z
+[linse-gpu] nvidia/pascal
+   Welt: nvidia pascal · Labor: ANGLE (NVIDIA, NVIDIA GeForce GTX 1060 (0x00001C60) Direct3D11 vs_5_0 ps_5_0, D3D11)
+ALBEDO LABOR ↔ WELT ROT · im Soll (±10 %): 7/10 Zeilen, 0/7 Karten
+
+Zeile         Klasse        Labor Y   Welt Y     L/W  Ratsche  Soll  Labor rgb · Welt rgb
+rinde         Rinde          0.0948   0.0930    1.02    0.016  ja    0.1127/0.0924/0.0662 · 0.1108/0.0906/0.0649
+laub          Laub           0.1796   0.1646    1.09    0.091  ja    0.1276/0.2087/0.0447 · 0.0866/0.2001/0.0429
+fels          Fels           0.2444   0.2388    1.02    0.023  ja    0.2705/0.243/0.1811 · 0.2641/0.2377/0.1761
+boden         Boden          0.0867   0.0835    1.04    0.040  ja    0.1238/0.0807/0.0364 · 0.1138/0.0782/0.0469
+haus          Haus           0.0841   0.1590    0.53    0.637  nein  0.1433/0.0705/0.0441 · 0.2772/0.1312/0.0868
+lack          Metall/Lack    0.0066   0.0058    1.14    0.095  nein  0.0056/0.0065/0.0097 · 0.005/0.0058/0.0087
+tor           Metall/Lack    0.6496   0.6493    1.00    0.000  ja    0.8196/0.6364/0.2799 · 0.8196/0.6359/0.2799
+haut          Haut/Fell      0.0608   0.1550    0.39    0.932  nein  0.1218/0.0463/0.025 · 0.218/0.1404/0.1136
+fell          Haut/Fell      0.1687   0.1851    0.91    0.048  ja    0.2057/0.1634/0.1123 · 0.2271/0.179/0.1214
+klinge        Klinge         0.3322   0.3493    0.95    0.050  ja    0.3642/0.3258/0.3022 · 0.388/0.3419/0.3081
+
+Karte (18 %)         k·L  /0,3147  Ratsche  Soll  Ausgabe-Pixel (Welt 173)
+terrain           0.7482     2.38    0.866  nein  187/194/185
+garage            0.6472     2.06    0.720  nein  207/210/212
+portale           0.8036     2.55    0.934  nein  197/208/203
+schmiede          0.6427     2.04    0.714  nein  176/164/152
+fachwerk          0.4811     1.53    0.423  nein  197/194/192
+koerperstudio     0.6995     2.22    0.798  nein  169/180/177
+tetrapoda         0.8807     2.80    1.028  nein  255/255/255
+
+  [ratsche] fell: Labor/Welt 0.9114 (|ln| 0.0928) über der Ratsche 0.0479 + Rand
+⛔ DIE ALBEDO-TAFEL: die Neumessung der veralteten Zeilen rinde, laub, fels, boden, haus, lack, tor, haut, fell, klinge ist ROT — der Code hat die Albedo bewegt.
+EXIT=1 DAUER=150 s

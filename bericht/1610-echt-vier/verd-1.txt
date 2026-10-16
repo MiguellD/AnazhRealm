@@ -1,0 +1,17 @@
+13:13:32 verd-1 PROBE_WELTBILD=0: scripts/diag-verdeckungs-abfrage.cjs
+=== VERDECKUNGS-ABFRAGE — der Aussteige-Ablauf am Bach (WebGPU auf swiftshader) ===
+[linse-gpu] nvidia/pascal
+  [4 s] Renderer und Welt bereit nach 2 s
+  [16 s] PROBE-LADE {"ladeTaktEnde":true,"weltbildDa":0,"jetzt":16010,"gerendert":8,"ladeAus":26,"ausgesetzt":0,"probeFrames":9}
+  [16 s] ABLAUF: {"begonnen":0,"bruch":8,"bruchOffen":0,"gezaehlt":0,"wasser":8,"gift":0,"letzter":0,"nullFrames":0,"renders":16} · Bach {"x":-269,"z":-1127,"ufer":4,"start":[-263,-1115]}, Probe jeden 10. Frame, Wasser-Meshes 1 (am Ort 1× gezeichnet), aufgesessen true, Halt 14 m vor dem Bach, ausgestiegen true, Sicht {"vorher":"third","nachher":"first"}, ms {"ort":6113,"wagen":1090,"takte":4377} · 0 Fehler
+  [17 s] BRUCH: {"begonnen":6,"bruch":6,"bruchOffen":1,"gezaehlt":6,"wasser":6,"gift":0,"letzter":0,"nullFrames":0,"renders":12} · vorgebaut 1 · 0 Fehler
+  [17 s] GIFT: {"begonnen":0,"bruch":6,"bruchOffen":0,"gezaehlt":6,"wasser":6,"gift":6,"letzter":0,"nullFrames":0,"renders":12} · vorgebaut 1 · 0 Fehler
+  [17 s] LETZTER: {"begonnen":3,"bruch":6,"bruchOffen":0,"gezaehlt":3,"wasser":6,"gift":0,"letzter":3,"nullFrames":3,"renders":12} · vorgebaut 1 · 0 Fehler
+  [17 s] SELBSTTEST bruch ohne Hülle: {"Render pass [RenderPassEncoder (unlabeled)] ended with incomplete occlusion query index 0 of [QuerySet \"occlusionQuerySet_4\"].":6,"[Invalid CommandBuffer from CommandEncoder \"renderContext_4\"] is invalid due to a previous error.":6} · Seite {} · Wache 12
+  [18 s] SELBSTTEST gift ohne Hülle: {"No occlusion queries are active.":6,"[Invalid CommandBuffer from CommandEncoder \"renderContext_4\"] is invalid due to a previous error.":6} · Seite {"Invalid value used in weak set":5} · Wache 12
+  [18 s] SELBSTTEST letzter ohne Hülle: {"No occlusion queries are active.":3,"[Invalid CommandBuffer from CommandEncoder \"renderContext_4\"] is invalid due to a previous error.":3} · Seite {"Invalid value used in weak set":1} · Wache 6
+  [18 s] ROT
+
+❌ ROT — 1 Verletzung(en):
+   • ABLAUF VAKUÖS: kein Stellvertreter gezählt (der Berg-Cull fragte nie)
+EXIT=1 DAUER=20 s

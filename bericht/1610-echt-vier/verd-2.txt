@@ -1,0 +1,16 @@
+13:15:13 verd-2 PROBE_WELTBILD=0: scripts/diag-verdeckungs-abfrage.cjs
+=== VERDECKUNGS-ABFRAGE — der Aussteige-Ablauf am Bach (WebGPU auf swiftshader) ===
+[linse-gpu] nvidia/pascal
+  [4 s] Renderer und Welt bereit nach 2 s
+  [17 s] PROBE-LADE {"ladeTaktEnde":true,"weltbildDa":0,"jetzt":16634,"gerendert":10,"ladeAus":26,"ausgesetzt":0,"probeFrames":10}
+  [17 s] ABLAUF: {"begonnen":0,"bruch":10,"bruchOffen":0,"gezaehlt":1,"wasser":10,"gift":0,"letzter":0,"nullFrames":0,"renders":20} · Bach {"x":-269,"z":-1127,"ufer":4,"start":[-263,-1115]}, Probe jeden 10. Frame, Wasser-Meshes 1 (am Ort 2× gezeichnet), aufgesessen true, Halt 14 m vor dem Bach, ausgestiegen true, Sicht {"vorher":"third","nachher":"first"}, ms {"ort":6233,"wagen":1845,"takte":3989} · 0 Fehler
+  [17 s] BRUCH: {"begonnen":6,"bruch":6,"bruchOffen":1,"gezaehlt":6,"wasser":6,"gift":0,"letzter":0,"nullFrames":0,"renders":12} · vorgebaut 1 · 0 Fehler
+  [18 s] GIFT: {"begonnen":0,"bruch":6,"bruchOffen":0,"gezaehlt":6,"wasser":6,"gift":6,"letzter":0,"nullFrames":0,"renders":12} · vorgebaut 1 · 0 Fehler
+  [18 s] LETZTER: {"begonnen":3,"bruch":6,"bruchOffen":0,"gezaehlt":3,"wasser":6,"gift":0,"letzter":3,"nullFrames":3,"renders":12} · vorgebaut 1 · 0 Fehler
+  [18 s] SELBSTTEST bruch ohne Hülle: {"Render pass [RenderPassEncoder (unlabeled)] ended with incomplete occlusion query index 0 of [QuerySet \"occlusionQuerySet_4\"].":6,"[Invalid CommandBuffer from CommandEncoder \"renderContext_4\"] is invalid due to a previous error.":6} · Seite {} · Wache 12
+  [18 s] SELBSTTEST gift ohne Hülle: {"No occlusion queries are active.":6,"[Invalid CommandBuffer from CommandEncoder \"renderContext_4\"] is invalid due to a previous error.":6} · Seite {"Invalid value used in weak set":5} · Wache 12
+  [19 s] SELBSTTEST letzter ohne Hülle: {"No occlusion queries are active.":3,"[Invalid CommandBuffer from CommandEncoder \"renderContext_4\"] is invalid due to a previous error.":3} · Seite {"Invalid value used in weak set":1} · Wache 6
+  [19 s] GRÜN
+
+✅ GRÜN — 0 WebGPU-Validierungsfehler und 0 Seitenfehler in Boot, Ablauf, Bruch, Gift und Letzter. Am Bach (-269/-1127) aufgesessen, 14 m vor dem Wasser ausgestiegen (Sicht third → first), der Stellvertreter 1× gezählt, 0 Abfragen begonnen; Bruch bei offener Abfrage 1×, Gift 6×, 3 Frames endeten mit dem Stellvertreter, 3 Null-Frames danach; ohne die Hüllen fallen „ended with incomplete occlusion query“, „No occlusion queries are active“, „weak set“ und der Letzte beim Namen.
+EXIT=0 DAUER=21 s

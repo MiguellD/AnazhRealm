@@ -1,0 +1,3 @@
+[linse-gpu] nvidia/pascal
+Baum echt-vier · zielLesen: [{"id":0,"gelesen":true,"grund":null},{"id":1,"gelesen":false,"grund":"zerstört: Destroyed texture [Texture \"spiegel:strahl (alte Fassung)\"] used in a submit.\n - While calling [Queue].Submit([[CommandB"}]
+ungefangene Validierungen: 0
