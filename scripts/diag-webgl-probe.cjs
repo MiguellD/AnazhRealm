@@ -16,7 +16,7 @@
 //      keine Region-RenderBundles (deren API lebt nur im WebGPU-Backend)
 //   W4 der Fern-Ring verfeinert auf CPU (cursor wandert — das Gesetz trägt)
 //   W5 die Welt LEBT: Loop-Ticks laufen, der Spieler steht auf endlicher
-//      Position, ein echter Render in ein RenderTarget liefert SUBSTANZ
+//      Position, der Canvas nach einem echten Frame trägt SUBSTANZ
 //      (distinkte Farben, nicht schwarz) ohne einen einzigen page-error —
 //      „Wer kein WebGPU-Backend bekommt, sieht eine Welt, keine Lüge."
 //   W6 (Karte W3, 16.10., ?holz=voll mit Schatten): jedes GELINKTE GL-Programm eines Stoffs trägt je Stufe ≤ min(16, Gerät)
@@ -89,30 +89,30 @@ const server = statikServer();
                 Number.isFinite(pm.position.y) &&
                 Number.isFinite(pm.position.z)
             );
-            // Der Substanz-Schuss (die diag-blick-Rezeptur, GAME-Renderer = WebGL-Backend):
-            const T = THREE;
-            const cam = st.camera;
-            if (pm && cam) {
-                cam.position.set(pm.position.x, pm.position.y + 1.7, pm.position.z);
-                cam.lookAt(pm.position.x + 30, pm.position.y + 4, pm.position.z + 30);
-                cam.updateMatrixWorld(true);
+            // Der Substanz-Schuss liest, was der Spieler SIEHT: den Canvas nach einem echten Frame (`_loopRender`), Frame für Frame
+            // bis Substanz steht (Ereignis-Zeit, ≤ 120 Frames). Bis W3 ein Einmal-Render in ein eigenes Ziel (neuer Render-Kontext,
+            // seine Pipelines baut die Erst-Zeichnung asynchron): auf der Radeon schwarz, standen sie nach 6 s Wanduhr nicht.
+            const cam = st.camera, rend = st.renderer; // prettier-ignore
+            const c2 = Object.assign(document.createElement("canvas"), { width: 96, height: 64 }).getContext("2d", { willReadFrequently: true }); // prettier-ignore
+            for (o.schussFrames = 1; o.schussFrames <= 120; o.schussFrames++) {
+                if (rend._nodes && rend._nodes.nodeFrame) rend._nodes.nodeFrame.update();
+                r._loopRender(performance.now());
+                c2.drawImage(rend.domElement, 0, 0, 96, 64);
+                const u8 = c2.getImageData(0, 0, 96, 64).data, set = new Set(); // prettier-ignore
+                o.nonzero = 0;
+                for (let i = 0; i < u8.length; i += 4) {
+                    set.add(((u8[i] >> 4) << 8) | ((u8[i + 1] >> 4) << 4) | (u8[i + 2] >> 4));
+                    if (u8[i] + u8[i + 1] + u8[i + 2] > 12) o.nonzero++;
+                }
+                o.farben = set.size;
+                if (o.farben >= 4 && o.nonzero > 200) break;
+                await new Promise((res) => requestAnimationFrame(res));
             }
-            const rend = st.renderer;
-            const w = 96,
-                h = 64;
-            const rt = new T.RenderTarget(w, h);
-            const prev = rend.getRenderTarget();
-            rend.setRenderTarget(rt);
-            await rend.renderAsync(st.scene, cam);
-            let px = null;
-            if (typeof rend.readRenderTargetPixelsAsync === "function")
-                px = await rend.readRenderTargetPixelsAsync(rt, 0, 0, w, h);
             // W6 (Karte W3): die Sampler-EINHEITEN des GELINKTEN GL-Programms je Stoff und Stufe — was GL zählt (aktive
             // Sampler-Uniforms × Feldgröße, je Stufe, in der sie deklariert sind), nie die Textur-Objekte des Stoffs; ein Programm,
             // das nicht linkt, steht mit seinem Info-Log beim Namen. Auch der verborgene Stoff zählt (der Fern-Ring nach Refresh).
             const gl = be.gl;
             o.grenze = [0, gl.MAX_VERTEX_TEXTURE_IMAGE_UNITS, gl.MAX_TEXTURE_IMAGE_UNITS].map((p) => Math.min(16, p ? gl.getParameter(p) : 0)); // prettier-ignore
-            const SAMPLER = [0x8b5e, 0x8b5f, 0x8b60, 0x8b62, 0x8dc1, 0x8dc4, 0x8dc5, 0x8dca, 0x8dcb, 0x8dcc, 0x8dcf, 0x8dd2, 0x8dd3, 0x8dd4, 0x8dd7]; // prettier-ignore
             window.__w6Zensus = async (wurzel, m = new Map(), verborgen = []) => {
                 wurzel.traverse((ob) => ob.visible || verborgen.push(ob));
                 verborgen.forEach((ob) => (ob.visible = true));
@@ -122,7 +122,7 @@ const server = statikServer();
                     const p = ro.pipeline && be.get(ro.pipeline).pipeline; // gesetzt, wenn r184 den Link abgeschlossen hat
                     if (!p) return;
                     const linkt = gl.getProgramParameter(p, gl.LINK_STATUS) === true;
-                    const aktiv = linkt ? Array.from({ length: gl.getProgramParameter(p, gl.ACTIVE_UNIFORMS) }, (_, i) => gl.getActiveUniform(p, i)).filter((u) => SAMPLER.includes(u.type)) : []; // prettier-ignore
+                    const aktiv = linkt ? Array.from({ length: gl.getProgramParameter(p, gl.ACTIVE_UNIFORMS) }, (_, i) => gl.getActiveUniform(p, i)) : []; // prettier-ignore
                     const karten = Object.fromEntries(ro.getBindings().flatMap((g) => g.bindings.filter((x) => x.isSampledTexture).map((x) => [x.name, (x.texture && x.texture.name) || x.name]))); // prettier-ignore
                     for (const [s, q] of [[1, ro.pipeline.vertexProgram.code], [2, ro.pipeline.fragmentProgram.code]]) {
                         const hier = [...String(q).matchAll(/^\s*uniform\s+(?:\w+\s+)?[iu]?sampler\w*\s+(\w+)/gm)].map((x) => x[1]);
@@ -135,22 +135,6 @@ const server = statikServer();
                 return [...m.values()].sort((a, c) => c[1] - a[1]);
             };
             o.zensus = await window.__w6Zensus(st.scene);
-            rend.setRenderTarget(prev);
-            if (rt.dispose) rt.dispose();
-            if (px && px.length) {
-                const u8 = px instanceof Uint8Array ? px : new Uint8Array(px.buffer || px);
-                const set = new Set();
-                let nonzero = 0;
-                for (let i = 0; i < u8.length; i += 4) {
-                    set.add(((u8[i] >> 4) << 8) | ((u8[i + 1] >> 4) << 4) | (u8[i + 2] >> 4));
-                    if (u8[i] + u8[i + 1] + u8[i + 2] > 12) nonzero++;
-                }
-                o.farben = set.size;
-                o.nonzero = nonzero;
-            } else {
-                o.farben = 0;
-                o.nonzero = 0;
-            }
         } catch (e) {
             o.err = (e && e.message) || String(e);
         }
@@ -175,7 +159,7 @@ const server = statikServer();
     );
     console.log(`  W4 Fern-Ring: da=${out.fernRingDa} cursor=${out.fernRingCursor} (CPU-Gesetz wandert)`);
     console.log(
-        `  W5 Welt lebt: tickOk=${out.tickOk}/12 frames=${out.frames} spielerEndlich=${out.spielerEndlich} · Substanz farben=${out.farben} nonzero=${out.nonzero}${out.tickErr ? " tickErr=" + out.tickErr : ""}`
+        `  W5 Welt lebt: tickOk=${out.tickOk}/12 frames=${out.frames} spielerEndlich=${out.spielerEndlich} · Substanz farben=${out.farben} nonzero=${out.nonzero} im Frame ${out.schussFrames}${out.tickErr ? " tickErr=" + out.tickErr : ""}`
     );
     const z = out.zensus || [];
     console.log(`  W6 Sampler je Stoff (Grenze vertex ${out.grenze && out.grenze[1]} · fragment ${out.grenze && out.grenze[2]}), ${z.length} Stoff-Stufen:`); // prettier-ignore
