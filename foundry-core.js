@@ -2903,6 +2903,7 @@ const WIESEN_ARTEN = Object.freeze({
     breite: Object.freeze({ L: 2, F: 1.5 }),
     alter: Object.freeze({ f: [1.38, 1.06, 0.52], anteil: 0.45 }),
 });
+const WIESEN_GEWICHT = new Float64Array(WIESEN_ARTEN.arten.length); // die Mischung des Orts (je Ruf neu, ohne Allokation)
 // Der Tint eines Büschels am Welt-Ort (x, z) bei Licht `lit` (1 = offene Wiese) und Feuchte `wet` (0..1): seine Art aus der
 // Mischung des Orts und sein Alter, beide aus dem Γ5-Strom SEINES Orts (dasselbe Büschel trägt bei jedem Besuch dieselbe Art);
 // darüber der Standort des Labor-Tints FIX v27 — Schatten dunkler, hell + trocken wärmeres Oliv, Nässe kühles Grün —, das
@@ -2914,12 +2915,10 @@ function wiesenTint(x, z, lit, wet, aus, o) {
         w = mulberry32(((Math.floor(x * 256) * 73856093) ^ (Math.floor(z * 256) * 19349663) ^ 0x3c6e5a17) >>> 0);
     const Lz = 1 + 8 * cl(lit, 0, 1),
         Fz = 5 + 4 * cl(wet, 0, 1);
+    const g = WIESEN_GEWICHT;
     let summe = 0;
-    const g = A.map((a) => {
-        const v = Math.exp(-0.5 * (((Lz - a.L) / WA.breite.L) ** 2 + ((Fz - a.F) / WA.breite.F) ** 2));
-        summe += v;
-        return v;
-    });
+    for (let i = 0; i < A.length; i++)
+        summe += g[i] = Math.exp(-0.5 * (((Lz - A[i].L) / WA.breite.L) ** 2 + ((Fz - A[i].F) / WA.breite.F) ** 2));
     let u = w() * summe,
         k = 0;
     while (k < A.length - 1 && u >= g[k]) u -= g[k++];
@@ -2928,8 +2927,11 @@ function wiesenTint(x, z, lit, wet, aus, o) {
         s = tr * alt * alt * WA.alter.anteil;
     const val = (lit - 1) * 0.45,
         warm = (cl(lit * 0.5 + (1 - wet) * 0.5, 0, 1) - 0.5) * 0.24;
-    const ort = [1 + val + warm, 1 + val + warm * 0.35, 1 + val - warm * 0.8 + (wet - 0.5) * 0.12];
-    for (let c = 0; c < 3; c++) aus[o + c] = cl(ort[c] * A[k].f[c] * (1 + (WA.alter.f[c] - 1) * s), 0, 2);
+    const f = A[k].f,
+        af = WA.alter.f;
+    aus[o] = cl((1 + val + warm) * f[0] * (1 + (af[0] - 1) * s), 0, 2);
+    aus[o + 1] = cl((1 + val + warm * 0.35) * f[1] * (1 + (af[1] - 1) * s), 0, 2);
+    aus[o + 2] = cl((1 + val - warm * 0.8 + (wet - 0.5) * 0.12) * f[2] * (1 + (af[2] - 1) * s), 0, 2);
     return aus;
 }
 /* GROUND-COVER-GESETZ: aus Licht x Feuchte x Substrat x Störung wächst die Bodenschicht (W1: aus dem Labor in den Kern — das
