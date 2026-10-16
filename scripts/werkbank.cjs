@@ -2138,7 +2138,7 @@ async function starte() {
                         const rend = st.renderer;
                         const texe = [];
                         if (st.fernKroneNah) texe.push(st.fernKroneNah.tex);
-                        if (st.wegeKarte) for (const s of st.wegeKarte.stufen) texe.push(s.tex, s.kronen.tex);
+                        if (st.wegeKarte) texe.push(st.wegeKarte.stufen[0].tex, st.wegeKarte.stufen[0].kronen.tex); // je Art EINE Array-Textur
                         const gpu = (t) => {
                             const d = rend._textures.get(t);
                             return d && Number.isFinite(d.version) ? d.version : -1;

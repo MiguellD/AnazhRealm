@@ -627,7 +627,7 @@ class AnazhRealm_Z13a {
         const wm = this.state.worldMeta || {};
         if (!wm.worldId) return null;
         const p2p = this.state.p2p || {};
-        const broker = (opts && opts.broker) || p2p.url || AnazhRealm.P2P_DEFAULT_WS_URL || "";
+        const broker = (opts && opts.broker) || p2p.url || AnazhRealm.P2P_DEFAULT_WS_URL;
         const roomId = (opts && opts.roomId) || (p2p.roomOverride || "").trim() || String(wm.worldId);
         const label = (opts && opts.label) || wm.slug || String(wm.worldId).slice(0, 16);
         return {

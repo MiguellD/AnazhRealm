@@ -352,15 +352,15 @@ class AnazhRealm_Z15b {
     _lodBandPartnerFor(dist, visH, cur, s) {
         const cfg = AnazhRealm.LOD_DISTANCES;
         if (!cfg) return null;
-        const M = Number.isFinite(cfg.hysteresis) ? cfg.hysteresis : 0;
+        const M = cfg.hysteresis;
         const D0 = cfg.thresh01,
             D1 = cfg.thresh12,
-            FADE = cfg.fade || 8,
-            FADE0 = cfg.fade0 || 4;
+            FADE = cfg.fade,
+            FADE0 = cfg.fade0;
         const dn = visH > 0 ? this._lodPerceptionDistance(dist, visH) : dist;
         cur = Math.max(0, Math.min(2, cur | 0));
         if (cur === 0) {
-            const capL = Number.isFinite(cfg.leafVisCap) && cfg.leafVisCap > 0 ? cfg.leafVisCap : 24;
+            const capL = cfg.leafVisCap;
             const sS = Number.isFinite(s) && s > 0 ? s : 1;
             const dnL = visH > 0 ? this._lodPerceptionDistance(dist, Math.min(visH / sS, capL) * sS) : dist;
             return dnL > D0 - FADE0 - M ? 1 : null;
@@ -1632,7 +1632,7 @@ class AnazhRealm_Z15b {
             // `fade` m näher wäre es noch L2 — kein Flackern am Dither-Band). Die leere private Hülle reapt
             // _scatterFreeSlots (jede leere Gruppe fällt durch den Leer-Chokepoint).
             if (hatRegional) {
-                const fadeM = Number.isFinite(AnazhRealm.LOD_DISTANCES.fade) ? AnazhRealm.LOD_DISTANCES.fade : 8;
+                const fadeM = AnazhRealm.LOD_DISTANCES.fade;
                 if (newLod !== 2 || this._chooseLODForDistance(Math.max(0, dist - fadeM), cell.lod, visH) !== 2)
                     continue;
             }
@@ -2114,14 +2114,14 @@ class AnazhRealm_Z15b {
         // V18.387 — die EINE LIVE-Quelle `state.lodRef` (Gesetz #0): dieselbe Zahl, die die Shader-
         // Blende (`state.lodUniforms.uLodRef`) liest → CPU-LOD-Mitgliedschaft UND das Dither-
         // Crossfade teilen den Referenz-Wert, live ohne Rebuild. Default seedet aus `cfg.lodRef`.
-        const cfgRef = Number.isFinite(cfg.lodRef) && cfg.lodRef > 0 ? cfg.lodRef : 14;
+        const cfgRef = cfg.lodRef;
         const lodRef =
             this.state && Number.isFinite(this.state.lodRef) && this.state.lodRef > 0 ? this.state.lodRef : cfgRef;
         const hRaw = Number.isFinite(visHeight) && visHeight > 0 ? visHeight : lodRef;
         // SSE-Stretch UNGEDECKELT wie das Studio (`min(uLodRef/(aH0·_isy),1)`, foundry-core.js): ein großer
         // Baum behält Detail proportional länger; ein Deckel demotet Riesen ~2× zu früh. visStretchMax =
         // Infinity ist bewusst gültig (kein Number.isFinite-Guard — > 0 reicht).
-        const stretchMax = cfg.visStretchMax > 0 && cfg.visStretchMax >= 1 ? cfg.visStretchMax : 1.25;
+        const stretchMax = cfg.visStretchMax;
         const h = Math.min(hRaw, lodRef * stretchMax);
         const heightFactor = Math.min(lodRef / Math.max(h, 1e-4), 1);
         return rawDist * heightFactor * this._lodPerfMul();
@@ -2135,8 +2135,8 @@ class AnazhRealm_Z15b {
     _lodPerfMul() {
         const cfg = AnazhRealm.LOD_DISTANCES;
         const fd = this.state && this.state._foliageDensityScale != null ? this.state._foliageDensityScale : 1;
-        const fdMin = AnazhRealm.PERF_FOLIAGE_DENSITY_MIN != null ? AnazhRealm.PERF_FOLIAGE_DENSITY_MIN : 0.4;
-        const mulMax = cfg && Number.isFinite(cfg.perfDistMulMax) && cfg.perfDistMulMax >= 1 ? cfg.perfDistMulMax : 1.5;
+        const fdMin = AnazhRealm.PERF_FOLIAGE_DENSITY_MIN;
+        const mulMax = cfg.perfDistMulMax;
         if (!(fd < 1 && fdMin < 1)) return 1;
         const frac = Math.max(0, Math.min(1, (1 - fd) / (1 - fdMin)));
         return 1 + (mulMax - 1) * frac;
@@ -2242,7 +2242,7 @@ class AnazhRealm_Z15b {
     // in der Rinde.
     _foundryStufenHoeheAngleichen(group, h0) {
         const D = AnazhRealm.LOD_DISTANCES;
-        const capL = D && Number.isFinite(D.leafVisCap) ? D.leafVisCap : 24;
+        const capL = D.leafVisCap;
         for (const ch of group.children) {
             const at = ch.geometry && ch.geometry.attributes;
             if (!at || !at.aH0 || !at.aH0L) continue;
@@ -2265,7 +2265,7 @@ class AnazhRealm_Z15b {
             Number.isFinite(visHeight) && visHeight > 0 ? this._lodPerceptionDistance(distance, visHeight) : distance;
         const t01 = cfg.thresh01;
         const t12 = cfg.thresh12;
-        const h = cfg.hysteresis || 0;
+        const h = cfg.hysteresis;
         // Ohne Hysterese-Zustand: einfache Stufenfunktion (Spawn/erstes Setup).
         if (!Number.isFinite(currentLOD)) {
             if (d > t12) return 2;

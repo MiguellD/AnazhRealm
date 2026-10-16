@@ -757,7 +757,7 @@ class AnazhRealm_Z04 {
         if (!pm || !pm.position || !Array.isArray(archs) || !archs.length) return false;
         if (typeof this.computeSpatialTags !== "function") return false;
         const T = AnazhRealm.WORLD_EFFECT_THRESHOLDS;
-        const strong = (T && T.resonance_strong) || 1.5;
+        const strong = T.resonance_strong;
         const RADIUS2 = 24 * 24;
         // die Plätze um den Spieler (`_blockerUmPlatz`, in der Ordnung des Bestands) — vorher jeder Eintrag je Akkord
         const nahe = this._lofiNahe || (this._lofiNahe = []);

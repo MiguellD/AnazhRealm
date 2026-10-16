@@ -315,8 +315,5 @@ module.exports = {
     probeAblauf,
     installiereDrift,
     FUNKTIONEN,
-    ratscheUrteil,
-    ratscheSelbsttest,
     probeWand,
-    RATSCHE_DATEI,
 };
