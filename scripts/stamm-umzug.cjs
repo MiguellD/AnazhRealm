@@ -344,7 +344,7 @@ function codemodDatei(datei, src) {
     // ein `fs`, das nur der Stamm-Leser brauchte, fällt mit (eslint no-unused-vars)
     const fsZeile = /^\s*const fs = require\("fs"\);\s*$/;
     const rest = neu.split("\n").filter((z) => !fsZeile.test(z));
-    if (/\bconst fs = require\("fs"\)/.test(neu) && !rest.some((z) => /\bfs\b/.test(z.replace(/\/\/.*$/, ""))))
+    if (/\bconst fs = require\("fs"\)/.test(neu) && !/\bfs\b/.test(stamm.ohneKommentare(rest.join("\n"))))
         neu = rest.join("\n");
     return { neu };
 }

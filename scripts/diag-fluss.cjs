@@ -47,7 +47,7 @@ const root = path.resolve(__dirname, "..");
 const PORT = Number(process.env.FLUSS_PORT || 4561);
 const stamm = stammLib.text(root);
 
-const strip = (src) => src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:\\"'`])\/\/.*$/gm, "$1");
+const strip = stammLib.ohneKommentare;
 function methode(src, name) {
     const a = stammLib.kopf(src, name); // am Namen, nie an der Parameter-Liste (gate:apparat Klinge 3)
     if (a < 0) return null;

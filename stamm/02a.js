@@ -39,14 +39,18 @@ class AnazhRealm_Z02a {
     // ### Nexus-DSL ###
     // Sicherer JSON-AST-Interpreter: Programme sind Arrays [op, ...args]. Effekte mutieren state,
     // Positionen liefern {x,y,z}, Conditions boolean; Budgets verhindern Runaway-Programme.
+    // DAS BUDGET ZÄHLT SCHRITTE, NIE DIE WANDUHR (G4a): `stepsLeft` = Auswertungen je Programm. Bis G4a hielt eine Wanduhr
+    // (maxRuntimeMs 100, Regel 20) den Rest eines Satzes an, sobald ein Op lange brauchte — der erste Bär goss seine Gattung
+    // kalt in 1 163 ms, und die Kette des Nexus [Dorf · 3 Tiere · Größe × 1,5 · Tempo × 1,7 · Himmel] verlor alles nach
+    // den Tieren (gate:weltakt-wache F); derselbe Satz wirkte je Gerät anders, bei jedem Mitspieler anders (der Strom ist
+    // broadcast-konsistent, die Uhr nie). Teure Ops deckelt ihr eigenes Budget (spawnsLeft), den Runaway die Schrittzahl.
 
     dslDefaultBudget() {
         return {
             spawnsLeft: 50,
             depthLeft: 8,
-            maxRuntimeMs: 100,
+            stepsLeft: 1000,
             delayedSteps: 100,
-            startedAt: performance.now(),
         };
     }
 
@@ -259,10 +263,11 @@ class AnazhRealm_Z02a {
             ctx.log.push({ event: "budget_exceeded", budget: "depth", program_id: ctx.programId });
             return;
         }
-        if (performance.now() - ctx.budget.startedAt > ctx.budget.maxRuntimeMs) {
-            ctx.log.push({ event: "budget_exceeded", budget: "runtime", program_id: ctx.programId });
+        if (ctx.budget.stepsLeft <= 0) {
+            ctx.log.push({ event: "budget_exceeded", budget: "steps", program_id: ctx.programId });
             return;
         }
+        ctx.budget.stepsLeft--;
         const op = program[0];
         const args = program.slice(1);
         // Irreversibilitäts-Wand: eine SOUVERÄNE Aktion (wallet_transfer/sign_manifest/change_identity/
@@ -715,7 +720,7 @@ class AnazhRealm_Z02a {
     }
 
     _worldRuleBudget() {
-        return { spawnsLeft: 8, depthLeft: 6, maxRuntimeMs: 20, delayedSteps: 8, startedAt: performance.now() };
+        return { spawnsLeft: 8, depthLeft: 6, stepsLeft: 200, delayedSteps: 8 };
     }
 
     // Deterministische Regel-RNG (FNV-1a über worldId + ruleId + fireIndex): Peers mit demselben

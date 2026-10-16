@@ -32,7 +32,7 @@ function check(name, ok) {
     await page.evaluateOnNewDocument(() => {
         // GPU-frei: der Mechanik-Tier braucht kein Pixel (niemand wertet headless-
         // Pixel mit Augen aus). Der Null-Renderer macht den Lauf robust gegen
-        // swiftshader-Renderer-Crashes. Der LOOK lebt in diag-settled-view.
+        // swiftshader-Renderer-Crashes. Den LOOK messen die Bild-Sonden aus dem Ausgabe-Pfad.
         window.__anazhHeadlessNullRenderer = true;
     });
     const errors = [];
