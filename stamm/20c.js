@@ -1486,7 +1486,7 @@ class AnazhRealm_Z20c {
         const reg = AnazhRealm.__arenen || (AnazhRealm.__arenen = new Map());
         const k = w.uuid + "|" + schl;
         let a = reg.get(k);
-        if (!a) reg.set(k, (a = new (AnazhRealm._arenaKlasse())(k, schl, m)));
+        if (!a) reg.set(k, (a = new (AnazhRealm._arenaKlasse())(k, schl, m, Math.max(64, m.instanceMatrix.count * 2))));
         if (a.parent !== w) w.add(a);
         a.nehmen(m);
     }
@@ -1602,7 +1602,7 @@ class AnazhRealm_Z20c {
         };
         const vier = (n) => Math.ceil(n / 4) * 4; // jede Puffer-Länge ein Vielfaches von 4 Bytes (writeBuffer)
         class GeometrieArena extends T.Mesh {
-            constructor(key, schl, m) {
+            constructor(key, schl, m, nCap) {
                 super(new T.InstancedBufferGeometry(), m.material);
                 this.name = "geometrie-arena";
                 this.isInstanzZeichner = true;
@@ -1624,14 +1624,16 @@ class AnazhRealm_Z20c {
                 this.glieder = [];
                 this._gestalten = new Map(); // Positions-Id:Index-Id → { geo, bv, fi, nv, ni, nutzer }
                 this._v = this._i = this._tot = 0;
-                this._vCap = this._iCap = this._nCap = 0;
+                this._vCap = this._iCap = 0;
+                this._nCap = vier(nCap); // die Instanz-Seite: Blöcke angehängt, nie verschoben
+                this._nEnde = this._nTot = this._bedarf = 0;
                 // die Glieder mit Instanzen: ohne eines betritt die Arena keinen Pass (die Instanz-Zahl zaehlt mit)
                 this._lebend = 0;
                 this._zuege = new Map(); // Kamera → { ind, arr, offs, zuege, tri } — der Auftrags-Puffer je Pass
                 this._stapel = [];
                 this._rend = null;
                 this._neu = true;
-                this._lage = true;
+                this._folgt = false;
                 this._fassade(this.geometry);
             }
             // r184 liest Auftrags-Puffer, Versätze und Zahl am Zug: die des Passes, der gerade zeichnet
@@ -1654,6 +1656,15 @@ class AnazhRealm_Z20c {
                 g.boundingSphere = new T.Sphere(new T.Vector3(), Infinity);
             }
             nehmen(m) {
+                const cap = m.instanceMatrix.count;
+                if (this._nEnde + cap > this._nCap) {
+                    // vor dem ersten Zug wächst die Instanz-Seite noch frei; danach folgt eine Arena mit Platz für den Bedarf
+                    if (!this.__instanzQuelle.instanceMatrix) this._nCap = vier((this._nEnde + cap) * 2);
+                    else {
+                        this._bedarf += cap;
+                        return void this._folgen();
+                    }
+                }
                 this.glieder.push(m);
                 m.__arena = this;
                 m.__arenaZ = {
@@ -1666,7 +1677,7 @@ class AnazhRealm_Z20c {
                 if ((m.count | 0) > 0) this._lebend++;
                 this.visible = this._lebend > 0;
                 this._gestaltNehmen(m);
-                this._lage = true;
+                this._blockNehmen(m);
                 if (m.__zeichner.parent === m) m.remove(m.__zeichner); // die Senke zeichnet nicht mehr selbst
                 AnazhRealm._arenaBuendel(m);
             }
@@ -1675,6 +1686,7 @@ class AnazhRealm_Z20c {
                 if (i < 0) return;
                 this.glieder.splice(i, 1);
                 this._gestaltLassen(m);
+                this._nTot += m.__arenaZ.cap;
                 if ((m.count | 0) > 0) this._lebend--;
                 this.visible = this._lebend > 0;
                 m.__arena = null;
@@ -1683,11 +1695,11 @@ class AnazhRealm_Z20c {
                     m.add(m.__zeichner);
                     AnazhRealm._arenaBuendel(m);
                 }
-                this._lage = true;
                 if (this.glieder.length === 0) this._fallen();
             }
             _fallen() {
-                if (AnazhRealm.__arenen) AnazhRealm.__arenen.delete(this.__key);
+                const reg = AnazhRealm.__arenen;
+                if (reg && reg.get(this.__key) === this) reg.delete(this.__key);
                 if (this.parent) this.parent.remove(this);
                 this._abschied(this.geometry);
                 this._gpuWeg(this.__instanzQuelle.instanceMatrix);
@@ -1786,6 +1798,7 @@ class AnazhRealm_Z20c {
                     g.setAttribute(k, new T.BufferAttribute(arr, a.itemSize, a.normalized));
                 }
                 g.setAttribute("aInstanzSenke", this._marke);
+                this._instanzSeite(g, alt);
                 g.setIndex(new T.BufferAttribute(new Uint32Array(this._iCap), 1));
                 this._fassade(g);
                 this.geometry = g;
@@ -1797,54 +1810,69 @@ class AnazhRealm_Z20c {
                     this._v += b.nv;
                     this._i += b.ni;
                 }
-                this._nCap = 0; // die Instanz-Seite legt sich neu
                 this._neu = false;
-                this._lage = true;
-                this._abschied(alt);
+                for (const k in alt.attributes)
+                    if (!alt.attributes[k].isInstancedBufferAttribute) this._gpuWeg(alt.attributes[k]);
+                if (alt.index) this._gpuWeg(alt.index);
             }
-            // die Instanz-Blöcke: je Glied seine Kapazität ab seiner ersten Instanz, die Art-Größen je Instanz aus seinem Stoff
-            _legen() {
-                const g = this.geometry,
-                    m0 = this.glieder[0];
-                let n = 0;
-                for (const m of this.glieder) n += m.instanceMatrix.count;
-                // neu gelegt wird in NEUE Puffer: ein offener Pass (das Hauptbild um den Schatten-Render) zeichnet die alte Lage
-                {
-                    this._nCap = vier(Math.max(n, 16));
-                    const neu = (k, a) => {
-                        this._gpuWeg(g.attributes[k]);
-                        const arr = new a.array.constructor(this._nCap * a.itemSize);
-                        g.setAttribute(k, new T.InstancedBufferAttribute(arr, a.itemSize, a.normalized));
-                    };
-                    for (const k in m0.geometry.attributes)
-                        if (m0.geometry.attributes[k].isInstancedBufferAttribute) neu(k, m0.geometry.attributes[k]);
-                    if (m0.instanceColor) neu("instanzFarbe", m0.instanceColor);
-                    if (this._wind) neu("aWindArt", { array: new Float32Array(0), itemSize: 3 });
-                    const q = this.__instanzQuelle;
-                    this._gpuWeg(q.instanceMatrix);
-                    q.instanceMatrix = new T.StorageInstancedBufferAttribute(new Float32Array(this._nCap * 16), 16);
+            // DIE INSTANZ-SEITE: je Glied ein Block ab seiner ersten Instanz, angehängt und nie verschoben — ein offener Pass (das
+            // Hauptbild um den verschachtelten Schatten-Render) zeichnet aus derselben Lage, und den Speicher-Puffer der Matrizen
+            // bindet r184 in die Bindegruppe jedes Render-Objekts: die Arena tauscht ihn nie. Reicht der Platz nicht oder liegt
+            // die Hälfte brach, folgt ihr nach dem Frame eine Arena desselben Stoffs (`_folgen`).
+            _instanzSeite(g, alt) {
+                const m0 = this.glieder[0],
+                    q = this.__instanzQuelle;
+                if (q.instanceMatrix) {
+                    for (const k in alt.attributes)
+                        if (alt.attributes[k].isInstancedBufferAttribute) g.setAttribute(k, alt.attributes[k]);
+                    return;
                 }
-                let erst = 0;
-                for (const m of this.glieder) {
-                    const z = m.__arenaZ;
-                    z.erst = erst;
-                    z.im = m.instanceMatrix;
-                    z.cap = m.instanceMatrix.count;
-                    z.n = -1;
-                    z.stempel = [];
-                    if (this._wind) {
-                        const art = m.material.userData.windArt,
-                            wa = g.attributes.aWindArt.array;
-                        for (let i = erst * 3; i < (erst + z.cap) * 3; i += 3) {
-                            wa[i] = art ? art.x : 1;
-                            wa[i + 1] = art ? art.y : 0;
-                            wa[i + 2] = art ? art.z : 0;
-                        }
+                const neu = (k, a) =>
+                    g.setAttribute(
+                        k,
+                        new T.InstancedBufferAttribute(
+                            new a.array.constructor(this._nCap * a.itemSize),
+                            a.itemSize,
+                            a.normalized
+                        )
+                    );
+                for (const k in m0.geometry.attributes)
+                    if (m0.geometry.attributes[k].isInstancedBufferAttribute) neu(k, m0.geometry.attributes[k]);
+                if (m0.instanceColor) neu("instanzFarbe", m0.instanceColor);
+                if (this._wind) neu("aWindArt", { array: new Float32Array(0), itemSize: 3 });
+                q.instanceMatrix = new T.StorageInstancedBufferAttribute(new Float32Array(this._nCap * 16), 16);
+            }
+            _blockNehmen(m) {
+                const z = m.__arenaZ;
+                z.cap = m.instanceMatrix.count;
+                z.im = m.instanceMatrix;
+                if (this._nEnde + z.cap > this._nCap) return false;
+                z.erst = this._nEnde;
+                this._nEnde += z.cap;
+                z.n = -1;
+                z.stempel = [];
+                return true;
+            }
+            _folgen() {
+                if (this._folgt) return;
+                this._folgt = true;
+                setTimeout(() => {
+                    const reg = AnazhRealm.__arenen;
+                    if (!reg || reg.get(this.__key) !== this || !this.parent || !this.glieder.length) return;
+                    let n = this._bedarf;
+                    for (const m of this.glieder) n += m.instanceMatrix.count;
+                    AnazhRealm.__arenaFolgen = (AnazhRealm.__arenaFolgen | 0) + 1;
+                    const K = AnazhRealm._arenaKlasse();
+                    const a = new K(this.__key, this.__schl, this.glieder[0], Math.max(n * 2, 64));
+                    a._rend = this._rend;
+                    reg.set(this.__key, a);
+                    this.parent.add(a);
+                    for (const m of this.glieder.splice(0)) {
+                        m.__arena = null;
+                        a.nehmen(m);
                     }
-                    erst += z.cap;
-                }
-                if (this._wind) this._schreib(g.attributes.aWindArt, 0, erst * 3);
-                this._lage = false;
+                    this._fallen();
+                }, 0);
             }
             // Gehört das Glied noch hierher? 0 ja · 2 sein Stoff-Schlüssel wechselte (es geht in eine andere Arena)
             _pruefen(m) {
@@ -1865,13 +1893,19 @@ class AnazhRealm_Z20c {
                     z.mat = s;
                     z.mv = s.version;
                     z.farbe = !!m.instanceColor;
-                    if (this._wind) this._lage = true; // die Art-Größen des neuen Stoffs
+                    z.stempel = []; // die Art-Größen des neuen Stoffs
                 }
                 if (g !== z.geo || g.attributes.position !== z.pos || g.index !== z.idx) {
                     this._gestaltLassen(m);
                     this._gestaltNehmen(m);
                 } else if (z.ver !== z.pos.version + (g.index ? g.index.version : 0)) this._neu = true;
-                if (m.instanceMatrix !== z.im || m.instanceMatrix.count !== z.cap) this._lage = true;
+                if (m.instanceMatrix !== z.im || m.instanceMatrix.count !== z.cap) {
+                    this._nTot += z.cap;
+                    if (!this._blockNehmen(m)) {
+                        this._bedarf += z.cap;
+                        return 3; // kein Platz: zurück zum Zeichner, bis die größere Arena steht
+                    }
+                }
                 return 0;
             }
             _sichtbar(m, renderer) {
@@ -1887,6 +1921,17 @@ class AnazhRealm_Z20c {
             // der Block eines Glieds: kopiert, wenn eine seiner Instanz-Größen eine neue Version trägt, die Zahl wuchs oder
             // die Welt-Matrix der Senke wechselte (die Matrizen tragen sie, die Arena steht im Ursprung)
             _block(m, z, n) {
+                // ein frischer Block trägt zuerst die Art-Größen des Winds aus dem Stoff seines Glieds (je Instanz gleich)
+                if (this._wind && z.stempel.length === 0) {
+                    const art = m.material.userData.windArt,
+                        wa = this.geometry.attributes.aWindArt;
+                    for (let i = z.erst * 3; i < (z.erst + z.cap) * 3; i += 3) {
+                        wa.array[i] = art ? art.x : 1;
+                        wa.array[i + 1] = art ? art.y : 0;
+                        wa.array[i + 2] = art ? art.z : 0;
+                    }
+                    this._schreib(wa, z.erst * 3, z.cap * 3);
+                }
                 const im = m.instanceMatrix,
                     q = m.geometry.attributes,
                     c = m.instanceColor,
@@ -1975,15 +2020,19 @@ class AnazhRealm_Z20c {
                     return;
                 }
                 let fremd = null;
-                for (const m of this.glieder) if (this._pruefen(m) === 2) (fremd || (fremd = [])).push(m);
+                for (const m of this.glieder) {
+                    const p = this._pruefen(m);
+                    if (p !== 0) (fremd || (fremd = [])).push(m, p);
+                }
                 if (fremd)
-                    for (const m of fremd) {
-                        this.lassen(m, true);
-                        AnazhRealm._arenaNimmt(m, renderer);
+                    for (let i = 0; i < fremd.length; i += 2) {
+                        this.lassen(fremd[i], true);
+                        if (fremd[i + 1] === 2) AnazhRealm._arenaNimmt(fremd[i], renderer);
+                        else this._folgen();
                     }
+                if (this._nTot > 256 && this._nTot > this._nEnde / 2) this._folgen(); // verdichten
                 if (this.glieder.length === 0) return;
                 if (this._neu) this._bauen();
-                if (this._lage) this._legen();
                 const args = zug.arr;
                 let k = 0,
                     frust = false,
