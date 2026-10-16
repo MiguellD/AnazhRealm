@@ -43,6 +43,7 @@
 //   node scripts/diag-weltbild-frost.cjs --echt   sichtbares Chrome auf der echten GPU: der SPIELPFAD (Ankunft · dritte
 //                                                 Person · Werkstatt · Tab · Hof) im laufenden Spiel, das Bild-Paar je Schritt
 //   … [--bilder <ordner>]                         legt je Bild-Paar beide Bilder ab
+//   … [--s5=frames | --s5=halde]                  Selbsttest S5: nur Welt-Frames statt Zügen (GRÜN) · jedes Einzelstück bleibt (ROT)
 //   Port: WELTBILD_FROST_PORT (Standard 4426). Exit 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
 const { statikServer, starteBrowser, selbsttest } = require("./lib/welt-boot.cjs");
@@ -51,6 +52,7 @@ const path = require("path");
 
 const PORT = Number(process.env.WELTBILD_FROST_PORT || 4426);
 const ECHT = process.argv.includes("--echt");
+const S5_PROBE = (process.argv.find((a) => a.startsWith("--s5=")) || "").slice(5); // Selbsttest der S5-Basis: frames | halde
 const BILDER = (() => {
     const i = process.argv.indexOf("--bilder");
     return i >= 0 ? path.resolve(process.argv[i + 1]) : null;
@@ -856,16 +858,34 @@ function pruefRaum(echt) {
         // der JS-Heap UND die Puffer dahinter (Vertex- und Index-Arrays liegen als ArrayBuffer außerhalb des Heaps)
         return +(((h.usedSize || 0) + (h.backingStorageSize || 0) + (h.embedderHeapUsedSize || 0)) / 1048576).toFixed(1);
     };
-    // die Basis erst in Ruhe (zwei Proben ≤ 0,5 MB, höchstens 20): der Nachlauf der Einrichtung füllte auf der GTX in 8 s ohne einen Zug
-    // +10,6 MB Puffer (CI 38892745904: S5 +10,9 gegen +10), die 18 Züge danach +0,9
-    const heapRuhe = async () => { let a = await heapMB(), b = await heapMB(); for (let i = 0; i < 20 && Math.abs(b - a) > 0.5; i++) [a, b] = [b, await heapMB()]; return b; };
+    // DIE BASIS NACH DER SATZ-RUHE: ein Welt-Satz schrumpft nach `ruheTakte` Render-Takten (`_chunkSatzVerdichten`), die alte
+    // Generation seiner Arrays hält jedes Render-Objekt, das ihn nicht neu zeichnet (die Kaskaden unter der Bühne) — im
+    // Fenster der Probe Sätze 47,0 → 27,2 MB, Welt-Frames ohne Zug +10,4 bis +12,0 MB (OMEN 16.10., bericht/1610-s5-taeter.md).
+    // Die Linse zeichnet, bis kein Satz auf seine Verdichtung wartet (Deckel: die Frist in Takten; ein Bild, das keinen Satz
+    // taktet — headless die Probe-Bühne —, ist Ruhe), dann die Basis in Ruhe (zwei Proben ≤ 0,5 MB, höchstens 20).
+    const heapRuhe = async () => {
+        const satz = await page.evaluate(async () => {
+            const S = window.anazhRealm.state.chunkSaetze, t0 = performance.now();
+            const wartend = () => [...(S ? S.values() : [])].filter((s) => s.ueberSeit >= 0);
+            const takt = () => wartend().reduce((t, s) => t + s.takt, 0);
+            let n = 0, t = -1;
+            for (; n <= AnazhRealm.CHUNK_SATZ_ABSCHNITT.ruheTakte && wartend().length && t !== takt(); n++) {
+                t = takt();
+                await window.__frostWand.zeichne(1);
+            }
+            const offen = t === takt() ? [] : wartend().map((s) => s.mesh.name); // taktet keiner, verdichtet keiner
+            return { takte: n, ms: Math.round(performance.now() - t0), wartend: offen };
+        });
+        let a = await heapMB(), b = await heapMB(); for (let i = 0; i < 20 && Math.abs(b - a) > 0.5; i++) [a, b] = [b, await heapMB()];
+        return { MB: b, satz };
+    };
 
     // S5 — der Werkstatt-Ofen, der Regler-Zug: 20 Werte eines Reglers am Wolf. Jeder Wert ist ein Einzelstück (es gehört dem
     // Ofen, nie dem Memo); der Ofen entsorgt das vorige beim Wechsel, mit den Render-Objekten des Werkstatt-Renderers (ihre
     // Hörer an den geteilten Foundry-Stoffen). Grafikspeicher, Geometrie-Zahl, Ofen-Memo, Stoff-Hörer und JS-Speicher bleiben
     // beschränkt — vorher +2 Memo-Einträge und +2,4 MB Grafikspeicher je Wert (dritte Nachbesserung), danach +8 Stoff-Hörer
     // und +3,2–4,7 MB JS je Wert (vierte).
-    const ofenStart = await page.evaluate(async () => {
+    const ofenStart = await page.evaluate(async (probe) => {
         const r = window.anazhRealm;
         const E = window.__frostEntsorgung;
         r.toggleDrawer("werkstatt");
@@ -887,15 +907,12 @@ function pruefRaum(echt) {
             const m = ws.preview && ws.preview.renderer ? ws.preview.renderer.info.memory : {};
             let hoerer = 0;
             for (const s of stoffe) hoerer += s._listeners && s._listeners.dispose ? s._listeners.dispose.length : 0;
-            return {
-                memo: AnazhRealm._tierOfenMemo ? AnazhRealm._tierOfenMemo.size : 0,
-                geometrien: m.geometries || 0,
-                MB: +(((m.attributesSize || 0) + (m.indexAttributesSize || 0)) / 1048576).toFixed(2),
-                stoffe: stoffe.size,
-                hoerer,
-            };
+            const MB = +(((m.attributesSize || 0) + (m.indexAttributesSize || 0)) / 1048576).toFixed(2);
+            return { memo: AnazhRealm._tierOfenMemo ? AnazhRealm._tierOfenMemo.size : 0, geometrien: m.geometries || 0, MB, stoffe: stoffe.size, hoerer };
         };
         O.zug = async (i) => {
+            if (probe === "frames") return E.leeren(); // Selbsttest Lauf F: nur Welt-Frames, kein Regler — GRÜN
+            if (probe === "halde") (O.halde || (O.halde = [])).push(ws.preview && ws.preview.currentMesh); // Mutant: jedes Einzelstück bleibt — ROT
             ws.studioOv = ws.studioOv || {};
             ws.studioOv[id] = { [dial]: +(O.basis * (1 + 0.01 * i)).toFixed(4) };
             E.im("ofen", () => r._workshopRebuildPreviewMesh());
@@ -907,11 +924,11 @@ function pruefRaum(echt) {
             await E.leeren();
         };
         for (let i = 0; i <= 2; i++) await O.zug(i);
-        return { id, dial, vor: O.mess() };
-    });
+        return { id, dial, probe, vor: O.mess() };
+    }, S5_PROBE);
     let ofen = ofenStart;
     if (!ofen.fehlt) {
-        const heapVor = await heapRuhe();
+        const { MB: heapVor, satz: ruhe } = await heapRuhe();
         const nach = await page.evaluate(async () => {
             const O = window.__frostOfen;
             for (let i = 3; i <= 20; i++) await O.zug(i);
@@ -923,32 +940,20 @@ function pruefRaum(echt) {
             window.anazhRealm.closeAllDrawers();
             return window.__frostEntsorgung.bericht("ofen");
         });
-        ofen = { ...bericht, ...ofenStart, nach, heapVor, heapNach };
+        ofen = { ...bericht, ...ofenStart, nach, heapVor, heapNach, ruhe };
     }
     console.log(`\n[werkstatt-ofen] ${zeit()} · ${JSON.stringify(ofen).slice(0, 500)}`);
     if (ofen.fehlt) check("S5 Werkstatt-Ofen: ein Kreatur-Rezept trägt den Regler-Zug", false, ofen.fehlt);
     else {
         entsorgtKeineWelt(`S5 Werkstatt-Ofen (Regler-Zug ${ofen.id}.${ofen.dial}, 20 Werte)`, ofen);
-        check(
-            "S5 das Ofen-Memo hält kein Regler-Einzelstück",
-            ofen.nach.memo === ofen.vor.memo,
-            `Memo ${ofen.vor.memo} → ${ofen.nach.memo} über 18 Werte`
-        );
-        check(
-            "S5 Grafikspeicher und Geometrie-Zahl der Werkstatt bleiben beschränkt",
-            ofen.nach.geometrien <= ofen.vor.geometrien && ofen.nach.MB <= ofen.vor.MB + 0.5,
-            `Geometrien ${ofen.vor.geometrien} → ${ofen.nach.geometrien}, Geometrie-Speicher ${ofen.vor.MB} → ${ofen.nach.MB} MB über 18 Werte`
-        );
-        check(
-            "S5 die geteilten Stoffe sammeln keine Hörer (die Render-Objekte des Einzelstücks lösen sich)",
-            ofen.nach.hoerer <= ofen.vor.hoerer,
-            `${ofen.nach.stoffe} Stoffe, dispose-Hörer ${ofen.vor.hoerer} → ${ofen.nach.hoerer} über 18 Werte`
-        );
-        check(
-            "S5 der JS-Speicher bleibt beschränkt",
-            ofen.heapNach - ofen.heapVor <= 10,
-            `${ofen.heapVor} → ${ofen.heapNach} MB über 18 Werte (Soll ≤ +10 MB)`
-        );
+        const { vor, nach, ruhe } = ofen;
+        check("S5 das Ofen-Memo hält kein Regler-Einzelstück", nach.memo === vor.memo, `Memo ${vor.memo} → ${nach.memo} über 18 Werte`);
+        check("S5 Grafikspeicher und Geometrie-Zahl der Werkstatt bleiben beschränkt", nach.geometrien <= vor.geometrien && nach.MB <= vor.MB + 0.5,
+            `Geometrien ${vor.geometrien} → ${nach.geometrien}, Geometrie-Speicher ${vor.MB} → ${nach.MB} MB über 18 Werte`);
+        check("S5 die geteilten Stoffe sammeln keine Hörer (die Render-Objekte des Einzelstücks lösen sich)", nach.hoerer <= vor.hoerer,
+            `${nach.stoffe} Stoffe, dispose-Hörer ${vor.hoerer} → ${nach.hoerer} über 18 Werte`);
+        check("S5 der JS-Speicher bleibt beschränkt (die Basis nach der Satz-Ruhe)", ofen.heapNach - ofen.heapVor <= 10 && !ruhe.wartend.length,
+            `${ofen.heapVor} → ${ofen.heapNach} MB über 18 Werte (Soll ≤ +10 MB), Satz-Ruhe nach ${ruhe.takte} Takten (${ruhe.ms} ms)${ruhe.wartend.length ? ", es wartet " + ruhe.wartend.join(" · ") : ""}`);
     }
 
     // S6 — die Mitspieler-Erscheinungen: 10 Peers „human" mit je eigener Übergabe (height), jeder ein eigener Ofen-Guss (zwei
@@ -958,7 +963,7 @@ function pruefRaum(echt) {
         memo: AnazhRealm._tierOfenMemo ? AnazhRealm._tierOfenMemo.size : 0,
         ruhend: AnazhRealm.OFEN_MEMO_RUHEND || 0,
     }));
-    const heapPeersVor = await heapRuhe();
+    const heapPeersVor = (await heapRuhe()).MB;
     const peers = await page.evaluate(async (echt) => {
         const r = window.anazhRealm;
         const F = window.__frostWand;
@@ -988,21 +993,12 @@ function pruefRaum(echt) {
         `\n[mitspieler-erscheinungen] ${zeit()} · ${JSON.stringify({ ...peers, memoVor: peersVor.memo, heapPeersVor, heapPeersNach }).slice(0, 400)}`
     );
     entsorgtKeineWelt("S6 Mitspieler-Erscheinungen (10 Peers human, Abschied)", peers);
-    check(
-        "S6 die Probe gießt zehn Erscheinungen (jede ihre Vorlagen)",
-        peers.leiber === 10 && peers.spitze >= peersVor.memo + 10,
-        `${peers.leiber} Leiber, Memo-Spitze ${peers.spitze} (vor ${peersVor.memo})`
-    );
-    check(
-        "S6 das Ofen-Memo ist begrenzt: nach dem Abschied bleiben höchstens OFEN_MEMO_RUHEND Vorlagen ohne Leib",
-        peers.memo <= peersVor.memo + peersVor.ruhend,
-        `Memo ${peersVor.memo} → Spitze ${peers.spitze} → ${peers.memo} (Grenze +${peersVor.ruhend})`
-    );
-    check(
-        "S6 der JS-Speicher fällt mit dem Abschied zurück",
-        heapPeersNach - heapPeersVor <= 20,
-        `${heapPeersVor} → ${heapPeersNach} MB nach 10 Erscheinungen und Abschied (Soll ≤ +20 MB)`
-    );
+    check("S6 die Probe gießt zehn Erscheinungen (jede ihre Vorlagen)", peers.leiber === 10 && peers.spitze >= peersVor.memo + 10,
+        `${peers.leiber} Leiber, Memo-Spitze ${peers.spitze} (vor ${peersVor.memo})`);
+    check("S6 das Ofen-Memo ist begrenzt: nach dem Abschied bleiben höchstens OFEN_MEMO_RUHEND Vorlagen ohne Leib", peers.memo <= peersVor.memo + peersVor.ruhend,
+        `Memo ${peersVor.memo} → Spitze ${peers.spitze} → ${peers.memo} (Grenze +${peersVor.ruhend})`);
+    check("S6 der JS-Speicher fällt mit dem Abschied zurück", heapPeersNach - heapPeersVor <= 20,
+        `${heapPeersVor} → ${heapPeersNach} MB nach 10 Erscheinungen und Abschied (Soll ≤ +20 MB)`);
 
     await page.evaluate(() => {
         const r = window.anazhRealm;
