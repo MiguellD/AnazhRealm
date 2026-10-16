@@ -314,7 +314,6 @@ function karteOhneFarbe() {
 function rundungProbe() {
     return (async () => {
         const st = window.anazhRealm.state;
-        window.__buehne(); // drei Schüsse derselben Szene: jede Uhr des Bilds auf T (A8-n1: zurück −2,62 Stufen im CI)
         const A = st._ausgabeAusgleich;
         const U = st.postProcessingUniforms && st.postProcessingUniforms.ausgabeAusgleich;
         const aus = {
@@ -325,12 +324,12 @@ function rundungProbe() {
             gleich: !!(A && U && U.value === A),
         };
         if (!A) return Object.assign(aus, { gelaufen: true, ruhig: true, verbrauch: 0, zurueck: 0 });
-        // DIE EINE UHR der Mess-Schüsse (`fest`, K63-n1): drei Schüsse derselben Szene sind dasselbe Bild. Baut die Welt zwischen
-        // dem ersten und dem dritten (die Szene des Frames, Befehle|Dreiecke, wechselt), misst der Rückweg die Welt statt des
-        // Ausgleichs (CI 38967779045: −1,77 Stufen nach einer Lade-Welle, sonst |≤ 0,23|) — die Probe läuft dann neu, bis 4-mal.
-        const fest = performance.now();
+        // DIE EINE UHR der Mess-Schüsse (die Bühne, A8): drei Schüsse derselben Szene sind dasselbe Bild (A8-n1: zurück −2,62 im CI
+        // ohne Bühne). Baut die Welt zwischen dem ersten und dem dritten (die Szene des Frames, Befehle|Dreiecke, wechselt), misst
+        // der Rückweg die Welt statt des Ausgleichs (CI 38967779045: −1,77 Stufen nach einer Lade-Welle) — neu, bis 4-mal.
+        window.__buehne();
         const mittel = async () => {
-            const auf = await window.__ausgabeAufnahme(64, 48, 1, { satz: "messung", fest });
+            const auf = await window.__ausgabeAufnahme(64, 48, 1, { satz: "messung" });
             let s = 0;
             for (let i = 0; i < auf.u8.length; i += 4) s += 0.2126 * auf.u8[i] + 0.7152 * auf.u8[i + 1] + 0.0722 * auf.u8[i + 2];
             return { m: s / (auf.u8.length / 4), szene: `${auf.info.drawCalls}|${auf.info.triangles}` };
