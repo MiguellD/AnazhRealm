@@ -1556,14 +1556,19 @@ class AnazhRealm_Z25b {
         return !this.state._weltbildDa && !(r && r._isHeadlessNull) && this._ladeschirmSteht();
     }
 
-    // DIE FRIST DES LADE-FRAMES (K60-2): EINE je Frame (der Zeitstempel des Loops `_loopT`), gestellt beim ersten Leser —
-    // LADE_TAKT_MS für alle Leser mit Kappe zusammen (bis G2-n1 gab jeder Ruf „jetzt + 100 ms", fünf Leser streckten den
-    // Lade-Frame auf 500 ms, und die Worker-Antworten warteten so lange). Außerhalb des Lade-Takts −∞.
+    // DIE FRIST DES LADE-FRAMES (K60-2): EINE je Aufgabe des Event-Loops — der Frame des Loops ist eine, jede Scheibe im
+    // eigenen Takt (die Ort-Wahl `_ortPlanWarten` per setTimeout) eine andere; gestellt beim ersten Leser, gelöscht am Ende
+    // der Aufgabe (Mikro-Task). LADE_TAKT_MS für alle Leser mit Kappe zusammen (bis G2-n1 gab jeder Ruf „jetzt + 100 ms",
+    // fünf Leser streckten den Lade-Frame auf 500 ms). Am Frame-Stempel des Loops las die Ort-Wahl außerhalb des Frames
+    // die verbrauchte Frist des letzten und rechnete 3 ms je Scheibe (Radeon kalt Dorf nach Export 0,1–0,5 → 1,6–8,4 s).
+    // Außerhalb des Lade-Takts −∞.
     _ladeFrist() {
         if (!this._ladeTakt()) return -Infinity;
-        const F = this._ladeFristFrame || (this._ladeFristFrame = { t: NaN, bis: 0 });
-        if (!Object.is(F.t, this._loopT)) [F.t, F.bis] = [this._loopT, performance.now() + AnazhRealm.LADE_TAKT_MS];
-        return F.bis;
+        if (this._ladeFristBis == null) {
+            this._ladeFristBis = performance.now() + AnazhRealm.LADE_TAKT_MS;
+            Promise.resolve().then(() => (this._ladeFristBis = null));
+        }
+        return this._ladeFristBis;
     }
 
     // DIE KAPPE JE TAKT (K60-2, die EINE Stelle der Klasse): ein Leser des ersten Weltbilds mit eigener Kappe je Takt (`n`
