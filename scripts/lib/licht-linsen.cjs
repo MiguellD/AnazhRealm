@@ -1344,7 +1344,9 @@ function laubGegenlicht(opts) {
             const k = o.material && o.material.userData && o.material.userData.foundryKind;
             if ((k === "foliage" || k === "foliageTex") && art.test(r._taeterKlasse(o))) laub.push(o);
         });
-        if (!laub.length) return { fehler: "keine Laub-Senke der Art " + art };
+        // der Schuss der Karte (`karte: 2`) sucht kein Exemplar: alle Kronen stehen auf der Karte, das Ziel ist das der Gestalt
+        const vorher = opts.karte === 2 ? window.__karteGestalt : null;
+        if (!laub.length && !vorher) return { fehler: "keine Laub-Senke der Art " + art };
         // Das Exemplar: die nächste Instanz zum Spieler (ab 6 m, sonst stünde das Auge im Stamm).
         const m4 = new T.Matrix4(),
             p = new T.Vector3(),
@@ -1371,6 +1373,7 @@ function laubGegenlicht(opts) {
                 }
             }
         }
+        if (vorher) ziel = vorher.ziel;
         if (!ziel) return { fehler: "kein Exemplar der Art" };
         const mitte = ziel.box.getCenter(new T.Vector3());
         const hoehe = ziel.box.max.y - ziel.fuss.y;
@@ -1464,7 +1467,8 @@ function laubGegenlicht(opts) {
             const img = cx.createImageData(W, H);
             const enc = (v) =>
                 Math.round(255 * Math.min(1, v <= 0.0031308 ? 12.92 * v : 1.055 * Math.pow(v, 1 / 2.4) - 0.055));
-            const Yp = new Float32Array(W * H).fill(-1);
+            const Yp = new Float32Array(W * H).fill(-1),
+                Cp = new Float32Array(W * H * 3);
             for (let y = 0; y < H; y++)
                 for (let x = 0; x < W; x++) {
                     const i = y * schritt + x * 4;
@@ -1473,6 +1477,7 @@ function laubGegenlicht(opts) {
                     if (a > 0) {
                         const c = [half(px[i]), half(px[i + 1]), half(px[i + 2])];
                         Yp[y * W + x] = 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+                        Cp.set(c, (y * W + x) * 3);
                         img.data[o] = enc(c[0]);
                         img.data[o + 1] = enc(c[1]);
                         img.data[o + 2] = enc(c[2]);
@@ -1484,12 +1489,44 @@ function laubGegenlicht(opts) {
                     img.data[o + 3] = 255;
                 }
             cx.putImageData(img, 0, 0);
-            return { Yp, png: cv.toDataURL("image/png") };
+            return { Yp, Cp, png: cv.toDataURL("image/png") };
         };
         try {
             for (const m of alle) m.visible = laub.includes(m);
             bundles();
             if (luftU) luftU.beta.value = 0;
+            if (opts.karte) {
+                // DIE KARTE GEGEN IHRE GESTALT (A7, Lehre 19/21: Labor = Welt, die Karte ist dieselbe Krone in einer anderen Stufe):
+                // dasselbe Auge, dieselbe Licht-Kette der Bühne (Sonne mit Schatten, Himmel) — Schuss 1 die Laub-Züge der Art in
+                // ihrer Stufe, Schuss 2 (der Aufrufer hat die Stufen auf die Karte gestellt) allein die Karten. Gezählt jedes Pixel,
+                // das beide zeichnen; das Mittel linear, dazu L* und C*ab. Vor A7 stand die Karte 1,06–1,67 × so hell (Genesis).
+                const kk = opts.karte === 1 ? laub : alle.filter((m) => /^fimp:/.test(r._taeterKlasse(m)));
+                for (const m of alle) m.visible = kk.includes(m);
+                bundles();
+                cam.position.copy(auge);
+                cam.lookAt(mitte);
+                cam.updateMatrixWorld(true);
+                const b = await lies("die Karte gegen die Gestalt");
+                if (opts.karte === 1) return (window.__karteGestalt = Object.assign(out, b, { stufe: r._taeterKlasse(ziel.o), ziel })), { stufe: out.stufe };
+                const g = window.__karteGestalt;
+                const lab = (rgb) => {
+                    const Y = 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2];
+                    const f = (t) => (t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116);
+                    const X = (0.4124 * rgb[0] + 0.3576 * rgb[1] + 0.1805 * rgb[2]) / 0.95047, Z = (0.0193 * rgb[0] + 0.1192 * rgb[1] + 0.9505 * rgb[2]) / 1.08883;
+                    const a = 500 * (f(X) - f(Y)), bb = 200 * (f(Y) - f(Z));
+                    return { Y: +Y.toFixed(5), L: +(116 * f(Y) - 16).toFixed(2), C: +Math.hypot(a, bb).toFixed(2) };
+                };
+                const sg = [0, 0, 0], sk = [0, 0, 0];
+                let n = 0;
+                for (let i = 0; g && i < W * H; i++)
+                    if (g.Yp[i] >= 0 && b.Yp[i] >= 0) {
+                        for (let c = 0; c < 3; c++) (sg[c] += g.Cp[i * 3 + c]), (sk[c] += b.Cp[i * 3 + c]);
+                        n++;
+                    }
+                if (!n) return { fehler: g ? "Karte und Gestalt teilen kein Pixel" : "kein Schuss der Gestalt (karte: 1)" };
+                const lg = lab(sg.map((v) => v / n)), lk = lab(sk.map((v) => v / n));
+                return Object.assign(out, { stufe: g.stufe, pixel: n, karte: { gestalt: lg, karte: lk, verhaeltnis: +(lk.Y / lg.Y).toFixed(3), dL: +(lk.L - lg.L).toFixed(2), dC: +(lk.C - lg.C).toFixed(2), png: [g.png, b.png] } });
+            }
             if (opts.oben) {
                 // DIE KRONE VON OBEN (K68-N3, Nordstern §4.5 „Bestandes-Albedo … von oben im Ausgabe-Pfad“): das Auge lotrecht
                 // über dem Exemplar, die Licht-Kette der Bühne unberührt (Mittag, Sommer, Sonne mit Schatten, Himmel). Drei Bilder
@@ -1627,10 +1664,18 @@ function laubGegenlicht(opts) {
 // DAS URTEIL DER LAUB-LICHT-LINSE (K19): je Art leuchtet das Laub im Gegenlicht — Luma Gegenlicht / Auflicht ≥ `glanz`
 // (1,3) —, und das Labor zeigt dasselbe Verhältnis (± `labor`, 10 %), wo es gemessen ist. Täter beim Namen.
 function laubLichtUrteil(messung, band) {
-    band = Object.assign({ glanz: 1.3, labor: 0.1 }, band || {});
+    band = Object.assign({ glanz: 1.3, labor: 0.1, karte: 0.1, ton: 3 }, band || {});
     const befunde = [];
     const zeilen = [];
     for (const [art, w] of Object.entries((messung && messung.welt) || {})) {
+        if (w && w.karte) {
+            // DIE KARTE GEGEN IHRE GESTALT (A7): Luma im Band ±`karte`, der Ton (C*ab) höchstens `ton` daneben
+            const k = w.karte;
+            zeilen.push({ art, stufe: w.stufe, karte: k.verhaeltnis, dL: k.dL, dC: k.dC });
+            if (Math.abs(Math.log(k.verhaeltnis)) > Math.log(1 + band.karte) || Math.abs(k.dC) > band.ton)
+                befunde.push(`KARTE ${art}: Karte/Gestalt (${w.stufe}) Luma ${k.verhaeltnis} (ΔL* ${k.dL}, ΔC* ${k.dC}) — außerhalb ±${band.karte * 100} % / ΔC* ${band.ton}`);
+            continue;
+        }
         if (!w || w.fehler || !(w.verhaeltnis > 0)) {
             befunde.push(`LAUB-LICHT ${art}: keine Messung (${(w && w.fehler) || "kein Laub-Pixel"})`);
             continue;

@@ -3355,6 +3355,10 @@ async function starte() {
                     /Welt 1 gegen Labor 1\.4 \(nur Sonne\)/,
                 ],
                 [LL.laubLichtUrteil({ welt: { birke: { fehler: "keine Laub-Senke" } } }).urteil, "ROT"],
+                // die Karte gegen ihre Gestalt (A7): vor dem Schnitt 1,24 × so hell (Fichte, Genesis) — ROT beim Namen
+                [LL.laubLichtUrteil({ welt: { fichte: { stufe: "f:fichte:L1", karte: { verhaeltnis: 1.24, dL: 3.7, dC: 1.4 } } } }).befunde.join(), /KARTE fichte: Karte\/Gestalt \(f:fichte:L1\) Luma 1\.24/],
+                [LL.laubLichtUrteil({ welt: { fichte: { karte: { verhaeltnis: 1.04, dL: 0.8, dC: -0.8 } } } }).urteil, "GRUEN"],
+                [LL.laubLichtUrteil({ welt: { eiche: { karte: { verhaeltnis: 1.02, dL: 0.3, dC: 4.2 } } } }).urteil, "ROT"],
                 [LL.laubLichtUrteil({}).urteil, "ROT"],
                 // die Krone von oben (K68-N3): Zwei-Strom-Band über der gemessenen Blatt-Albedo
                 [LL.kronenReflexionSoll(0.164, [0.5, 1]).join("/"), "0.0705/0.099"],
@@ -3373,7 +3377,8 @@ async function starte() {
         }
         const welt = {};
         // Das Exemplar je Art: das nächste zum Messort Wiese (spec/profiband/haushalt.json) — derselbe Baum in jedem Lauf.
-        const wiese = require("../spec/profiband/haushalt.json").messorte.find((m) => m.id === "wiese");
+        // `--ort genesis`: die Bäume der Ankunft (A7, die Karte gegen ihre Gestalt)
+        const wiese = require("../spec/profiband/haushalt.json").messorte.find((m) => m.id === (opt("--ort") || "wiese"));
         // `--oben` (K68-N3): dasselbe Exemplar lotrecht von oben, die Reflexion der Krone gegen das Zwei-Strom-Band
         // (`kronenObenUrteil`). Die Arten stehen hinter `--laub`, ohne Liste eiche,birke (ein folgender Schalter ist keine Art).
         const oben = argv.includes("--oben");
@@ -3382,20 +3387,36 @@ async function starte() {
             const c = `return await window.__laubGegenlicht(Object.assign({ art: ${JSON.stringify(art)} }, __o));`;
             // am Anker stehen: welche Bäume eine nahe Stufe (eine Laub-Senke) tragen, folgt dem Spieler
             await rufe("/umstellen", { x: wiese.spieler[0], z: wiese.spieler[1] });
-            const plan = (
-                await rufe("/eval", {
+            const ein = () => argv.includes("--karte") && rufe("/lauf", { sek: 5, ein: 8, ruhe: 120, regler: "voll" });
+            // die Stufen der Gestalten schwingen ein: nach dem Umstellen fand der Plan der Karte bis zu einem Lauf lang keine Laub-Senke
+            let plan = null;
+            for (let i = 0; i < (argv.includes("--karte") ? 6 : 1) && !(plan && !plan.fehler); i++, await ein())
+                plan = (await rufe("/eval", {
                     // `--abstand m`: der Augen-Ort so weit vom Fuß (die Stufe folgt dem Spieler: nah L0, weiter L1)
                     code: `const __o = { plan: true, anker: ${JSON.stringify(wiese.spieler)}, abstand: ${Number(opt("--abstand", 8)) || 8} }; ${c}`,
-                })
-            ).ergebnis;
+                })).ergebnis;
             if (!plan || plan.fehler) {
                 welt[art] = plan || { fehler: "kein Plan" };
                 continue;
             }
             await rufe("/umstellen", { x: plan.auge[0], z: plan.auge[1] });
-            const w = (
-                await rufe("/eval", { code: `const __o = { ziel: ${JSON.stringify(plan.ziel)}, oben: ${oben} }; ${c}` })
-            ).ergebnis;
+            await ein();
+            // `--karte` (A7): dasselbe Auge, erst die Gestalt in ihrer Stufe, dann jede Krone auf ihrer Karte (die Schwellen der
+            // Stufen kurz auf 0,3/0,6 m, der Lauf schwingt ein), danach die Schwellen zurück
+            const k = (n) => rufe("/eval", { code: `const __o = { ziel: ${JSON.stringify(plan.ziel)}, karte: ${n} }; ${c}` });
+            const stufen = async (an) => {
+                const D = "const D = r.constructor.LOD_DISTANCES;";
+                await rufe("/eval", { code: an ? `${D} window.__karteD = [D.thresh01, D.thresh12]; D.thresh01 = 0.3; D.thresh12 = 0.6; return 1;` : `${D} [D.thresh01, D.thresh12] = window.__karteD; return 1;` });
+                await ein();
+            };
+            if (argv.includes("--karte")) await k(1).then(() => stufen(true));
+            const w = argv.includes("--karte")
+                ? (await k(2)).ergebnis
+                : (await rufe("/eval", { code: `const __o = { ziel: ${JSON.stringify(plan.ziel)}, oben: ${oben} }; ${c}` })).ergebnis;
+            if (argv.includes("--karte")) await stufen(false);
+            if (w && w.karte && opt("--ordner"))
+                w.karte.png.forEach((p, i) => fs.writeFileSync(path.join(opt("--ordner"), `karte-${art}-${i ? "karte" : "gestalt"}.png`), Buffer.from(p.split(",")[1], "base64")));
+            if (w && w.karte) delete w.karte.png;
             const ordner = opt("--ordner");
             if (w && w.oben && w.oben.png) {
                 if (ordner)
