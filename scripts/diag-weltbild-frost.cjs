@@ -27,7 +27,7 @@
 //      Neubauten deckt S2 — der Peer teilt seine Schlüssel mit stehenden Figuren, ein Neubau-Check hätte hier keinen Biss
 //      (an b19ac994 +0, während S2 Welt +45 / Ich +18 / Hof +13 zeigt)
 //   S5 der Werkstatt-Ofen, Regler-Zug 20 Werte: kein Einzelstück im Ofen-Memo, Grafikspeicher und Geometrie-Zahl der
-//      Werkstatt, die dispose-Hörer der geteilten Stoffe und der JS-Speicher bleiben beschränkt
+//      Werkstatt, die dispose-Hörer der geteilten Stoffe und der JS-Speicher (Basis nach der Satz-Ruhe) bleiben beschränkt
 //   S6 10 Mitspieler-Erscheinungen und ihr Abschied: das Ofen-Memo hält danach höchstens OFEN_MEMO_RUHEND Vorlagen ohne
 //      Leib, der JS-Speicher fällt zurück
 // Danach DIE TÄTER (jeder Lauf — die Wand beweist sich selbst):
@@ -859,25 +859,26 @@ function pruefRaum(echt) {
         return +(((h.usedSize || 0) + (h.backingStorageSize || 0) + (h.embedderHeapUsedSize || 0)) / 1048576).toFixed(1);
     };
     // DIE BASIS NACH DER SATZ-RUHE: ein Welt-Satz schrumpft nach `ruheTakte` Render-Takten (`_chunkSatzVerdichten`), die alte
-    // Generation seiner Arrays hält jedes Render-Objekt, das ihn nicht neu zeichnet (die Kaskaden unter der Bühne) — im
-    // Fenster der Probe Sätze 47,0 → 27,2 MB, Welt-Frames ohne Zug +10,4 bis +12,0 MB (OMEN 16.10., bericht/1610-s5-taeter.md).
-    // Die Linse zeichnet, bis kein Satz auf seine Verdichtung wartet (Deckel: die Frist in Takten; ein Bild, das keinen Satz
-    // taktet — headless die Probe-Bühne —, ist Ruhe), dann die Basis in Ruhe (zwei Proben ≤ 0,5 MB, höchstens 20).
+    // Generation seiner Arrays hält jedes Render-Objekt, das ihn nicht neu zeichnet — im Fenster der Probe Sätze 47,0 → 27,2 MB,
+    // Welt-Frames ohne Zug +10,4 bis +12,0 MB (OMEN 16.10., koordination 1610-s5-taeter). Die Linse zeichnet das Bild des Spiels
+    // (`_gameLoopTick`: Schatten-Takt, dann `_loopRender`), bis kein Satz auf seine Verdichtung wartet, Deckel die Frist in
+    // Takten; ein Bild, das keinen Satz taktet (headless die Probe-Bühne), ist Ruhe. Ohne Schatten-Takt fielen die Abschnitte
+    // der Kaskaden, jede Verdichtung zog eine nächste (Radeon: Ruhe nach 1 682 Takten).
     const heapRuhe = async () => {
         const satz = await page.evaluate(async () => {
-            const S = window.anazhRealm.state.chunkSaetze, t0 = performance.now();
+            const r = window.anazhRealm, S = r.state.chunkSaetze, F = window.__frostWand, t0 = performance.now();
             const wartend = () => [...(S ? S.values() : [])].filter((s) => s.ueberSeit >= 0);
             const takt = () => wartend().reduce((t, s) => t + s.takt, 0);
             let n = 0, t = -1;
             for (; n <= AnazhRealm.CHUNK_SATZ_ABSCHNITT.ruheTakte && wartend().length && t !== takt(); n++) {
                 t = takt();
-                await window.__frostWand.zeichne(1);
+                if (F.echt) r._loopShadowUpdate();
+                await F.zeichne(1);
             }
             const offen = t === takt() ? [] : wartend().map((s) => s.mesh.name); // taktet keiner, verdichtet keiner
             return { takte: n, ms: Math.round(performance.now() - t0), wartend: offen };
         });
-        let a = await heapMB(), b = await heapMB(); for (let i = 0; i < 20 && Math.abs(b - a) > 0.5; i++) [a, b] = [b, await heapMB()];
-        return { MB: b, satz };
+        return { MB: await heapMB(), satz };
     };
 
     // S5 — der Werkstatt-Ofen, der Regler-Zug: 20 Werte eines Reglers am Wolf. Jeder Wert ist ein Einzelstück (es gehört dem
