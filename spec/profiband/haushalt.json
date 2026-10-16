@@ -42,14 +42,14 @@
     "messorte": [
         {
             "id": "wiese",
-            "titel": "Die Mess-Wiese (W0): Wald, Wiese, Streu und Fels fern vom Ursprung — der Ort der Band-Serie seit 04.10. Seit K55 (14.10.) ein Ort aus der Welt: K16 hob den Boden am alten Ort −900/−850 um 83 m in einen Nadelwald-Hang (Hang 16,8°); die Suche `__weltOrt(\"wiese\")` (scripts/lib/welt-orte.cjs) fand ab dem alten Ort in 650 m die nächste Stelle, die das Wiesen-Gesetz (`wiese`) mit Reserve hält — eben, offen, Gras, Waldrand, Blick nach −z ins Offene. Der Dorf-Zug ruht (`window.__anazhAutoSettlement = false`): mit ihm baute der Zug je nach Bildrate während der Messung ein Dorf (am alten Ort 12 Häuser: VRAM 163,6 → 150,3 MB, bau im Hauptbild 4 → 2 Befehle, 07.10.).",
+            "titel": "Die Mess-Wiese (W0): Wald, Wiese, Streu und Fels fern vom Ursprung — der Ort der Band-Serie seit 04.10. Seit K55 (14.10.) ein Ort aus der Welt: K16 hob den Boden am alten Ort −900/−850 um 83 m in einen Nadelwald-Hang (Hang 16,8°); die Suche `__weltOrt(\"wiese\")` (scripts/lib/welt-orte.cjs) fand ab dem alten Ort in 650 m die nächste Stelle, die das Wiesen-Gesetz (`wiese`) mit Reserve hält — eben, offen, Gras, Waldrand, Blick ins Offene (bis T2 nach −z, seither nach WSW). Der Dorf-Zug ruht (`window.__anazhAutoSettlement = false`): mit ihm baute der Zug je nach Bildrate während der Messung ein Dorf (am alten Ort 12 Häuser: VRAM 163,6 → 150,3 MB, bau im Hauptbild 4 → 2 Befehle, 07.10.).",
             "spieler": [
-                -278,
-                -1038
+                -280.4,
+                -1045.6
             ],
             "blick": [
-                -278,
-                -1048
+                -289.6,
+                -1049.5
             ],
             "wiese": {
                 "ring": 25,
@@ -69,7 +69,7 @@
                 ],
                 "horizontMax": 3,
                 "grasMin": 0.5,
-                "quelle": "K55 (14.10.): das Wiesen-Gesetz der Mess-Wiese — gemessen von `wieseMessen` (scripts/lib/welt-orte.cjs), in der Welt beim Umstellen (werkbank, mit Gras) und am Gesetz in gate:profiband H1. Ring 25 m: Ausgleichs-Ebene ≤ 5°, kein Wasser, Kronen-Deckung der stehenden Bäume ≤ 0,12 (der Wald des Gesetzes deckt gesättigt 0,16–0,19), Waldrand im Kranz 30–90 m ≥ 0,12, keine Krone binnen 15 m im Sektor ±55° des Blicks, Horizont längs des Blicks 40–1200 m ≤ 3° über dem Auge, Wiesen-Gewicht der Boden-Karte ≥ 0,5. Gemessen an b0df2d93: −278/−1038 Hang 1,75° · Krone 0,08 · Kranz 0,19 · Horizont −0,19° · Gras 0,96; der alte Ort −900/−850 Hang 16,83° · Krone 0,141 · Horizont 8,08° (an 9fb869a5 Hang 1,89° · Krone 0,213 · Horizont 3,2°)."
+                "quelle": "K55 (14.10.): das Wiesen-Gesetz der Mess-Wiese — gemessen von `wieseMessen` (scripts/lib/welt-orte.cjs), in der Welt beim Umstellen (werkbank, mit Gras) und am Gesetz in gate:profiband H1. Ring 25 m: Ausgleichs-Ebene ≤ 5°, kein Wasser, Kronen-Deckung der stehenden Bäume ≤ 0,12 (der Wald des Gesetzes deckt gesättigt 0,16–0,19), Waldrand im Kranz 30–90 m ≥ 0,12, keine Krone binnen 15 m im Sektor ±55° des Blicks, Horizont längs des Blicks 40–1200 m ≤ 3° über dem Auge, Wiesen-Gewicht der Boden-Karte ≥ 0,5. Gemessen an b0df2d93: −278/−1038 Hang 1,75° · Krone 0,08 · Kranz 0,19 · Horizont −0,19° · Gras 0,96; der alte Ort −900/−850 Hang 16,83° · Krone 0,141 · Horizont 8,08° (an 9fb869a5 Hang 1,89° · Krone 0,213 · Horizont 3,2°). T2 (16.10.): der Pflanz-Abstand liest die gewachsene Krone (Eiche 5,2 → 4,0 m), am alten Ort stand eine Tanne 15,6 m im Blick (−279/−1054); `__weltOrte(\"wiese\")` um ihn fand in 8 m −280,4/−1045,6 mit Blick nach WSW: Hang 1,81° · Krone 0,108 · Kranz 0,204 · Horizont 2,63° · Gras 1,0."
             },
             "dorfZug": false,
             "ortTakt": []

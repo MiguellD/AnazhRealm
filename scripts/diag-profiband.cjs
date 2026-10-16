@@ -936,7 +936,7 @@ function selbsttest() {
             unbekannt
     );
     // S21 — die Ratsche gehört dem Ort: dieselbe Klasse über der Genesis-Ratsche ist dort rot, gegen die (ungemessene)
-    // Ratsche der Wiese nicht; die Gier des Orts blickt zum Blickpunkt (Wiese seit K55 −z = π, Genesis −x = −π/2).
+    // Ratsche der Wiese nicht; die Gier des Orts blickt zum Blickpunkt (ein Blick nach −z = π, Genesis −x = −π/2).
     const gen = BAND.ladeSpec("genesis", { geraet: "radeon", sicht: "ego" });
     const r21 = JSON.parse(JSON.stringify(rt));
     r21.klassen.bau.haupt.befehle = 20;
@@ -949,7 +949,7 @@ function selbsttest() {
             u21.ort === "genesis" &&
             !hatRot(u21b, "ratsche") &&
             u21b.ort === "wiese" &&
-            Math.abs(Math.abs(BAND.ortGier(BAND.ortOf(haushalt, "wiese"))) - Math.PI) < 1e-12 &&
+            Math.abs(Math.abs(BAND.ortGier({ spieler: [-278, -1038], blick: [-278, -1048] })) - Math.PI) < 1e-12 &&
             Math.abs(BAND.ortGier(gen.ort) + Math.PI / 2) < 1e-12 &&
             !BAND.ratschePruefen(gen.ratsche, haushalt).length
     );
