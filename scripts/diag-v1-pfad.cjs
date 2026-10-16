@@ -1,5 +1,6 @@
 // diag-v1-pfad.cjs — DIE V1-PFAD-LINSE (Welle L, Familie auge-v1): die Defekte, die die Leben-Prüfung am 06.10. auf dem
-// gespielten v1.0-Pfad fand (artifacts/profiband/leben/befund-v1-pfad.md, synthese.md Q14/Q15), je beim NAMEN. Jede
+// gespielten v1.0-Pfad fand (artifacts/profiband/leben/befund-v1-pfad.md,
+// artifacts/profiband/leben/synthese.md Q14/Q15), je beim NAMEN. Jede
 // Probe ruft den Chokepoint selbst (die Methode, in der der Defekt saß) im echten Boot (headless, foundry-ON,
 // Null-Renderer der Welt) und misst seine Wirkung — keine Probe ersetzt die Stelle, an der der Defekt sitzt (Q0).
 //

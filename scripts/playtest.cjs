@@ -7157,7 +7157,7 @@ async function checkBandV1779RoleFitQuality(ctx) {
     );
 }
 
-// V17.80 U1 (resonanz-system.md §2.2) — der volle Produkt-Vektor: die 4 räumlichen Form-Achsen
+// V17.80 U1 (resonanz-system §2.2) — der volle Produkt-Vektor: die 4 räumlichen Form-Achsen
 // (elongation/hollowness/axialSymmetry/spread) in den Vektor gehoben. Additiv — keine bestehende Signatur
 // referenziert sie (U2 webt sie ein) → die Form ist jetzt vollständig im Vektor, kein Regress.
 async function checkBandV1780FormAxes(ctx) {
@@ -7333,7 +7333,7 @@ async function checkBandV1781RoleRegister(ctx) {
     );
 }
 
-// V17.82 U3 (resonanz-system.md §5) — der KATALYSATOR SICHTBAR: das Rollen-Spektrum (was es IST über die
+// V17.82 U3 (resonanz-system §5) — der KATALYSATOR SICHTBAR: das Rollen-Spektrum (was es IST über die
 // ganze Resonanz) + die Achse zum perfekten Katalysator. Der Spieler-Kompass: er baut frei, das Spektrum
 // liest ihn + sagt, welche Achse zu drehen ist. (Die Klassifikation Klinge→Waffe macht erst U4.)
 async function checkBandV1782CatalystReadout(ctx) {
@@ -7493,7 +7493,7 @@ async function checkBandV1783ImplementClassification(ctx) {
     );
 }
 
-// V17.84 U6 (resonanz-system.md §5) — die FORM in die WIRKUNG für den AVATAR: ein gut geformter Custom-
+// V17.84 U6 (resonanz-system §5) — die FORM in die WIRKUNG für den AVATAR: ein gut geformter Custom-
 // Avatar (körper-förmig, symmetrisch) wirkt stärker als ein Klumpen (die soul-Resonanz liest die bodyParts-
 // Form). NUR Custom-Avatare — die Built-in-Seele (human) bleibt neutral (kein Balance-Bruch).
 async function checkBandV1784AvatarFormFit(ctx) {
@@ -26388,7 +26388,7 @@ async function checkBandWelle6HCreatures(ctx) {
             firstRow.querySelector(".creature-name") &&
             firstRow.querySelector(".creature-soul") &&
             firstRow.querySelector(".creature-task");
-        // Hof-D0 (hof-plan.md §G.1) — der EINE Wesen-Lese-Vektor (_creatureProfile), den alle Hof-Leser teilen.
+        // Hof-D0 (hof-plan §G.1) — der EINE Wesen-Lese-Vektor (_creatureProfile), den alle Hof-Leser teilen.
         // KONSUM (V17.31): er bündelt GEMESSENE Vektoren (tags/stats/specs/task/emotion/wariness/bond/id) UND
         // der Renderer LIEST ihn (der rowTitle trägt jetzt die `moodLabel` aus dem Profil → echter Konsument).
         out.hasCreatureProfileFn = typeof r._creatureProfile === "function";
@@ -26410,7 +26410,7 @@ async function checkBandWelle6HCreatures(ctx) {
         const firstMain = firstRow && firstRow.querySelector(".creature-row-main");
         const firstRowTitle = (firstMain && firstMain.getAttribute("title")) || "";
         out.rendererConsumesProfile = firstRowTitle.includes("Stimmung") && /froh|trübe/.test(firstRowTitle);
-        // Hof-D (hof-plan.md §D.1/§G.5) — die Stimmung als Glyph an jeder Zeile (immer sichtbar).
+        // Hof-D (hof-plan §D.1/§G.5) — die Stimmung als Glyph an jeder Zeile (immer sichtbar).
         out.rowHasMoodGlyph = !!(firstRow && firstRow.querySelector(".creature-mood"));
         // V18.54 Hof-Bühne — die Zeilen sind der schlanke PICKER: NIE eine Detail-Card inline (sie lebt auf der Bühne).
         out.detailNotInRows = !!(firstRow && !firstRow.querySelector(".creature-detail"));
@@ -32452,7 +32452,7 @@ async function checkBandV18195AvatarSizeHp(ctx) {
     );
 }
 
-// V18.196 — MANA-SYMMETRIE (aktiv.md §4.E): die zweite Ausdauer-Achse als
+// V18.196 — MANA-SYMMETRIE (aktiv-plan §4.E): die zweite Ausdauer-Achse als
 // Foundation-Welle. STAT_FROM_TAGS.manaMax + state.player.mana/manaMax +
 // Game-Loop-Regen. Konsumenten (DSL-Ops, UI-Balken) in Folge-Welle.
 async function checkBandV18196ManaSymmetry(ctx) {
@@ -32999,7 +32999,7 @@ async function checkBandV18200GammaMIronBands(ctx) {
     }
 }
 
-// V18.201 — MANA-KONSUMENTEN FOUNDATION (aktiv.md §4.E Folge zu V18.196).
+// V18.201 — MANA-KONSUMENTEN FOUNDATION (aktiv-plan §4.E Folge zu V18.196).
 // Helper `_canPayMana(n)` + `_drainMana(n)` mit Mode-Gate. Anti-Scope §3:
 // KEIN DSL-Op (analog W5-Werkzeug-Abnutzung V18.192).
 async function checkBandV18201ManaKonsum(ctx) {
@@ -33090,7 +33090,7 @@ async function checkBandV18201ManaKonsum(ctx) {
     );
 }
 
-// V18.202 — Γ1-LESART-5 Ψ2-NASE Foundation (genese-plan §Γ1 + aktiv.md §4.A):
+// V18.202 — Γ1-LESART-5 Ψ2-NASE Foundation (genese-plan §Γ1 + aktiv-plan §4.A):
 // das Geruch-Feld der Welt als FÜNFTE Welt-Stimme. _worldWindDirAt + _scentAt
 // als reine Math-Helper, kein Welt-State-Mutation, kein Kreatur-KI-Hook noch.
 async function checkBandV18202GeruchFeld(ctx) {
@@ -33227,7 +33227,7 @@ async function checkBandV18202GeruchFeld(ctx) {
     );
 }
 
-// V18.203 — Γ3 FELD-CHARAKTER FOUNDATION (genese-plan §Γ3 + aktiv.md §4.A):
+// V18.203 — Γ3 FELD-CHARAKTER FOUNDATION (genese-plan §Γ3 + aktiv-plan §4.A):
 // Frequenz-Fächer pro Welt-Stimme bei genVersion >= 3 (Domain-Warp als Folge).
 // Legacy gen<3 = bit-identisch zu Pre-V18.203 (V18.181/V18.193-Disziplin).
 async function checkBandV18203Gamma3FeldCharakter(ctx) {
@@ -33398,7 +33398,7 @@ async function checkBandV18203Gamma3FeldCharakter(ctx) {
     check("V18.204 (F11) gen<3: kein Warp angewendet (Legacy clean, kein Drift)", res.legacyNoWarp === true);
 }
 
-// V18.205 — Γ7 BAUM-VARIANTEN-GRAMMATIK (genese-plan §Γ7 + aktiv.md §4.A):
+// V18.205 — Γ7 BAUM-VARIANTEN-GRAMMATIK (genese-plan §Γ7 + aktiv-plan §4.A):
 // `_growTreeBlueprint(speciesKey, seed)` emittiert parts[] in der bestehenden
 // Sprache. Tag-neutral via material-Konsistenz (holz+laub).
 async function checkBandV18205Gamma7Grammatik(ctx) {
@@ -33622,7 +33622,7 @@ async function checkBandV18206SpeedTrade(ctx) {
     );
 }
 
-// V18.207 — R5 STRUKTUR-TEXTUR (aktiv.md §4.C): Material-Mikro-Tiefe-Boost
+// V18.207 — R5 STRUKTUR-TEXTUR (aktiv-plan §4.C): Material-Mikro-Tiefe-Boost
 // für werk-Profile. Default 1.0 = no-op, browser-justierbar wenn Strukturen
 // platt wirken. Source-Probe + Konstante.
 async function checkBandV18207R5StructureTexture(ctx) {
@@ -54374,7 +54374,7 @@ async function checkBandRing6Workshop(ctx) {
             await timed(checkRing2Dsl, ctx);
 
             // V9.52-b: Band 1 (Ring 2 Phase 3 .. Ring 11.5) als 11 thematische Band-
-            // Funktionen, je 265-1260 Z. Plan-treu zu `docs/archiv/playtest-hygiene.md` §5
+            // Funktionen, je 265-1260 Z.
             // (Ziel: ~25-35 Band-Funktionen total, NICHT per-Sektion).
             await timed(checkBandRing2Extended, ctx);
             await timed(checkBandWaves1to3, ctx);

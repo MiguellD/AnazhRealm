@@ -184,7 +184,6 @@
         "gate:vehicle-drive": "node scripts/diag-vehicle-drive.cjs --selftest && node scripts/diag-vehicle-drive.cjs",
         "gate:fahr-leben": "node scripts/diag-fahr-leben.cjs --selftest && node scripts/diag-fahr-leben.cjs",
         "gate:garage-labor": "node scripts/diag-garage-labor.cjs --selftest && node scripts/diag-garage-labor.cjs",
-        "gate:perf-parity": "node scripts/diag-perf-parity.cjs",
         "gate:studio-vertrag": "node scripts/diag-studio-vertrag.cjs",
         "gate:studio-huelle": "node scripts/diag-studio-huelle.cjs --selftest && node scripts/diag-studio-huelle.cjs",
         "gate:portal-konformanz": "node scripts/diag-portal-konformanz.cjs --selftest && node scripts/diag-portal-konformanz.cjs",

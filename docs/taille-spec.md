@@ -5,7 +5,7 @@
 > ausführbare Form dieses Vertrags — sie werden **NIE regeneriert** (Konformanz-Band Ω4 lädt sie
 > für immer; `scripts/diag-taille.cjs` prüft sie bei jedem Lauf). Wächst die Taille über diese
 > eine Seite + vier Dateien + fünf Gesetze hinaus, ist DAS der Geruch des Fehlers
-> (Anti-Scope-Herleitung: `taille-plan.md` §4, git-Historie).
+> (Anti-Scope-Herleitung: der Taille-Plan §4 im git-Archiv).
 
 ## Die zwei Sätze (alles andere folgt aus ihnen)
 

@@ -56,7 +56,7 @@ function wetterHalten() {
     if (!(Number.isFinite(u) && u < 0)) st.weatherEffectTime = -1e9;
 }
 
-// DER STAPEL DER SPIONE: die Spiel-Rahmen des Stapels (anazhRealm.js), der jüngste zuerst — die Rahmen der Linse zählen nicht.
+// DER STAPEL DER SPIONE: die Spiel-Rahmen des Stapels (stamm/), der jüngste zuerst — die Rahmen der Linse zählen nicht.
 // Ein DSL-Programm trägt beliebig tief verschachtelte Interpreter-Rahmen (dslEval ← random ← dslEval ← repeat …): der Name ist
 // dann der Effekt und wer `dslRun` rief (der Täter: Emotion, Nexus, Gesetz …).
 function spielStapel() {

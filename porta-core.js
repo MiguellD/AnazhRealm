@@ -951,7 +951,7 @@
 
     // SPIEGEL-ZENSUS 17.07. — DAS TUER-GESETZ (rein additive DATEN-Zeile):
     // der Fluegel-Oeffnungswinkel (rad). Shell (DOOR_OPEN, porta.js) UND
-    // Wirt (TOR_FLUEGEL_OFFEN, anazhRealm.js) trugen dieselbe 1.95 als
+    // Wirt (TOR_FLUEGEL_OFFEN, Stamm) trugen dieselbe 1.95 als
     // Zahlen-Zwilling — jetzt lesen BEIDE diese eine Quelle (fail-soft
     // byte-gleich: kalter Kern -> das alte Literal).
     // DIE FERN-POSE (K43-2, rein additiv): der Anteil von `offen`, in dem die Flügel jenseits der Tür-Nähe stehen — die Stufe 1
