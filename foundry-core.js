@@ -7461,8 +7461,9 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         }
         // DAS VOLUMEN DER GESCHLOSSENEN HAUT (1310-15): die Masse des Menschen liest das Volumen seiner Haut
         // (`_leibVolumen`, Divergenz-Satz Σ a · (b × c) / 6 je Dreieck, in der Ruhe-Pose) — die Haut ist nach dem Stoff-Schnitt
-        // offen, also misst der Ofen sie vorher und gibt die Zahl im Beipack mit (`leibV`, Geometrie-Einheiten³).
-        if (hautHuelle) {
+        // offen, also misst der Ofen sie vorher und gibt die Zahl im Beipack mit (`leibV`, Geometrie-Einheiten³). Nur was der
+        // Schnitt öffnet: Kopf und Hände bleiben geschlossen, die misst der Wirt selbst neben der Zahl (A4, `_leibVolumen`).
+        if (hautHuelle && hautImStoff) {
             const g = hautHuelle.geometry;
             const p = g.attributes.position.array;
             const ix = g.index.array;
@@ -7544,6 +7545,7 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         // HINTER der Kopf-Haut — das Bild zeigte um das Auge den Wangen-Ton. Die Höhlen-Kugeln (Klasse socket, die Ohrmuschel
         // eingeschlossen) formen nichts mehr und werden nicht gegossen: sie sind die Ton-Zone der Haut (hoehleSaum, unten).
         const hoehlen = __tierPrims(kopf, kopf, (n) => !unterAuge(n), KH.vox, KH.blend, () => null, ["socket"], true);
+        if (hoehlen.length < 2) throw new Error("MENSCH-HAUT: die Höhlen-Kugeln (Klasse socket) fehlen (fail-closed)");
         for (const h of hoehlen) h.node.userData.__nichtGiessen = true;
         for (const m of kappen) kopf.remove(m);
         // die gemalten Falten (Nasolabial-Stäbe, Philtrum: Klasse shadow) stünden als Stäbe auf der glatten Haut — sie fallen
@@ -7601,7 +7603,7 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
                     hoehle = p;
                 }
             }
-            if (hoehle && hd < KH.hoehleSaum && best.node.material.userData.__klasse !== "lips") best = hoehle;
+            if (hd < KH.hoehleSaum && best.node.material.userData.__klasse !== "lips") best = hoehle;
             // die Mund-Linie: auf der Lippe, in der Höhe zwischen den Lippen-Mitten (dunkel, ein Viertel der Lippe)
             const fb = farbeVon.get(best);
             const spalt = best.node.material.userData.__klasse === "lips" && Math.abs(y - mundY) < KH.mundSpalt * mundH;
