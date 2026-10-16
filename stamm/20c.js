@@ -1530,6 +1530,15 @@ class AnazhRealm_Z20c {
             for (const b of auf) b.needsUpdate = true;
             auf.clear();
         }
+        const quelle = AnazhRealm.__quelleWeg;
+        if (quelle && quelle.size) {
+            for (const m of quelle)
+                if (m.__arena) {
+                    if (m.__zeichner) AnazhRealm._renderObjekteLoesen(m.__zeichner);
+                    this._gpuAbschied(m.instanceMatrix);
+                }
+            quelle.clear();
+        }
         const reg = AnazhRealm.__arenen;
         if (!reg || reg.size === 0 || AnazhRealm.__arenaBruch) return;
         AnazhRealm.__arenaJetzt = performance.now();
@@ -1723,16 +1732,11 @@ class AnazhRealm_Z20c {
         // der Block eines Glieds: seine Zahl und ein Viertel darüber (eine Senke wächst Instanz um Instanz)
         const platz = (n) => (n > 0 ? vier(n + (n >> 2) + 4) : 0);
         // DIE QUELLE VERLÄSST DIE GPU: die Instanzen eines Glieds zeichnet die Arena — der Speicher-Puffer seiner Matrizen
-        // (den der Kehraus nie nimmt: die Bindegruppe seines Zeichners hält ihn) fällt nach dem Submit dieses Frames, in dem
-        // sein Zeichner vielleicht noch zog, mit dessen Bindegruppen; kehrt das Glied zu ihm zurück, lädt r184 ihn neu
+        // (den der Kehraus nie nimmt: die Bindegruppe seines Zeichners hält ihn) fällt im nächsten Takt (`_arenaTakt`) mit
+        // den Bindegruppen des Zeichners: dann nimmt jedes Bündel, das ihn im Frame des Eintritts noch aufnahm, neu auf
+        // (`_arenaBuendel`), kein Replay liest den Puffer mehr. Kehrt das Glied zu ihm zurück, lädt r184 ihn neu
         // (`_gpuAbschied` hebt die Version, die Bindegruppe baut sich neu).
-        const quelleWeg = (m) =>
-            setTimeout(() => {
-                const welt = globalThis.anazhRealm;
-                if (!m.__arena || !welt) return;
-                if (m.__zeichner) AnazhRealm._renderObjekteLoesen(m.__zeichner);
-                welt._gpuAbschied(m.instanceMatrix);
-            }, 0);
+        const quelleWeg = (m) => (AnazhRealm.__quelleWeg || (AnazhRealm.__quelleWeg = new Set())).add(m);
         // in die Warteschlange vor dem Submit dieses Passes; ohne GPU-Puffer lädt r184 beim ersten Zug das ganze Array
         const schreib = (rend, a, start, n) => {
             const be = rend && rend.backend;
@@ -2393,6 +2397,11 @@ class AnazhRealm_Z20c {
                     if (z.arr) neu.set(z.arr.subarray(0, Math.min(altCap, this._segCap) * 5));
                     z.arr = neu;
                 }
+                // er liegt sofort auf der GPU: r184 lädt ihn nur beim Auffrischen des Render-Objekts, und die Observer-Diät
+                // sieht `indirect` nicht (Befund 16.10., G1-n2: der Zug fand keinen Puffer, „drawIndexedIndirect … not of
+                // type GPUBuffer", der Render brach ab). 4 = r184 AttributeType.INDIRECT (vendor `Cy=4`, `Attributes.update`)
+                const A = this._rend && this._rend._attributes;
+                if (A && typeof A.update === "function") A.update(this._ind, 4);
                 weg(this._rend, alt);
                 this._neuAuf();
             }
@@ -2436,11 +2445,26 @@ class AnazhRealm_Z20c {
                     this._folgen();
                 if (this.glieder.length === 0) return false;
                 if (takt) {
+                    // vor dem ersten Pass liegt jede Gestalt, die das Hauptbild zieht (im Bündel jedes sichtbare Glied mit
+                    // Instanzen, lose dazu im Blick der Kamera, wie `_auftraege`), und jede eines Schatten-Glieds mit Instanzen;
+                    // was nur eine Kaskade zieht, legt sich in ihrem Zug in eine freie Strecke
                     const L = this._lager,
-                        jetzt = AnazhRealm.__arenaJetzt || 0;
+                        jetzt = AnazhRealm.__arenaJetzt || 0,
+                        cam = globalThis.anazhRealm && globalThis.anazhRealm.state.camera,
+                        blick = !this._fest && (this.layers.mask & 1) !== 0 && !!cam;
+                    if (blick) {
+                        pm.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
+                        fr.setFromProjectionMatrix(pm, cam.coordinateSystem, cam.reversedDepth);
+                    }
                     L.takt(renderer, jetzt);
-                    for (const m of this.glieder)
-                        if ((m.count | 0) > 0) L.halten(L.gestalten.get(m.__arenaZ.gestalt), jetzt);
+                    for (const m of this.glieder) {
+                        if ((m.count | 0) <= 0 || !this._sichtbar(m, renderer)) continue;
+                        if (blick && m.frustumCulled !== false) {
+                            if (m.boundingSphere === null) m.computeBoundingSphere();
+                            if (!fr.intersectsSphere(kugel.copy(m.boundingSphere).applyMatrix4(m.matrixWorld))) continue;
+                        }
+                        L.halten(L.gestalten.get(m.__arenaZ.gestalt), jetzt);
+                    }
                     L.ordnen(jetzt);
                 }
                 if (this.geometry.index !== this._lager.index) this._geoNeu();
@@ -2522,9 +2546,16 @@ class AnazhRealm_Z20c {
         AnazhRealm.__arenaK = GeometrieArena;
         return GeometrieArena;
     }
-    // Ein Bündel, das eine Senke trug, nimmt sich neu auf, wenn sie Arena oder Zeichner wechselt
+    // Ein Bündel, das eine Senke trug, nimmt sich neu auf, wenn sie Arena oder Zeichner wechselt — auch eines, das gerade
+    // aufnimmt (der Eintritt geschieht im Zug ihres Zeichners): r184 merkt sich am Ende der Aufnahme die Version, der nächste
+    // Takt setzt es erneut (`__arenaAuf`). Befund 16.10. (G1-n2, Radeon, Etiketten der GPU-Wache): ein Bündel spielte den
+    // Zeichner weiter ab, nachdem seine Matrizen gefallen waren — „used in submit while destroyed".
     static _arenaBuendel(m) {
-        for (let p = m.parent; p; p = p.parent) if (p.isBundleGroup) p.needsUpdate = true;
+        for (let p = m.parent; p; p = p.parent)
+            if (p.isBundleGroup) {
+                p.needsUpdate = true;
+                (AnazhRealm.__arenaAuf || (AnazhRealm.__arenaAuf = new Set())).add(p);
+            }
     }
     // DER GPU-ABSCHIED — der EINE Weg, auf dem eine Geometrie-Kopie die GPU verlässt. r184 trägt jedes hochgeladene
     // Attribut STARK in sein Register (`renderer.info.memoryMap`) und gibt es nur auf zwei Wegen frei: `_attributes.delete`
