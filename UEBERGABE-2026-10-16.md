@@ -92,3 +92,11 @@ N drawIndexedIndirect), Besitz neu 17c + 25c-Wahl-Block + 20c; größte Render-K
 T3 Zeichen-Reihe (`_zeichenRang`, setOpaqueSort): Radeon Genesis Ego 28,25 → 23,38 ms, Dorf 27,27 → 22,05 ms (gpu-bank, eine Welt).
 G4a: zwei echte Rote (v7-Golden tetrapoda, Nexus-Kette bricht nach spawn_creature) → Nachbesserer. karte.js-Fehler (R1 ohne Prüfer
 kehrte vor dem Nachbessern zurück) behoben.
+
+**14:23 (date):** integ-probe 1185091c (+ T3 Zeichen-Reihe, Lehre 23 nachgezogen), lokal + A0 (Soll-Tafel: K5 12/12 → 6/12 ROT; echt rot
+wasser 0,318 · boden-nah-farbe 9,68° · laub zweiton 0,0003 (f:tanne:L0) · mensch-kopf 0,5; haus/fels gesperrt durch Albedo-Tafel boden
+1,126 seit f6fa9f63 T2). A-Karten A1–A4 laufen, dazu A5 a-albedo-boden und W2 boden-sampler (OMEN-Funde 1610-echt-vier). Der Tafel-Abdruck
+hängt an ganzen Quell-Dateien: jeder Merge auf 07.js/05b.js macht alle Zeilen „veraltet“ → A fällt erst mit EINEM Tafel-Durchlauf am
+Bündel-Kopf NACH D2; beim D2-Merge die Tafel-„quellen“ auf die neuen Dateinamen prüfen (Lehre 12, die Tafel ist ein Leser).
+GTX-ABAB Bündel 1 (A aa74c324, B 1185091c) läuft am OMEN seit 14:13; echt-vier d349594c (Linsen-Wackler Verdeckung, Ziel-Zensus,
+Frost-S5, W5) wartet auf Zweig-CI.
