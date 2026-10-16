@@ -135,7 +135,8 @@ async function fensterSchritt(o) {
         await page.evaluateOnNewDocument(fensterSammler);
         page.on("pageerror", (e) => seitenFehler.push((e.message || String(e)).split("\n")[0]));
         await page.goto(`http://127.0.0.1:${PORT}/index.html?holz=kienspan`, { waitUntil: "domcontentloaded", timeout: 60000 });
-        const u = await page.evaluate(uferStellen, { messort: ladeSpec("wiese").ort.spieler, kappe: 1.25 });
+        // jeder Leser der Szenen-Tiefe steht (Wasser, Feld-Pass: Boden und Horizont); Bäume und Streu lesen sie nicht
+        const u = await page.evaluate(uferStellen, { messort: ladeSpec("wiese").ort.spieler, kappe: 1.25, welt: ["boden", "horizont"] });
         if (u.fehler) throw new Error(u.fehler);
         log(`am Ufer ${JSON.stringify(u)}`);
         const vor = await page.evaluate(fensterSchritt, { n: 3 });
