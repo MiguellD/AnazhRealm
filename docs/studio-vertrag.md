@@ -873,9 +873,9 @@ kindStages` auf seinem Namensraum tragen. Die Zeile deklariert die
   B2 bleibt N/A (kein buildInstance). Die Brücke sammelt sie GENERISCH wie
   jede Zweit-Kern-Zeile (`cfg.lod.zusatzKindStages`, W7b/N2), der Host mergt
   am EINEN Ingest-Chokepoint. Sie ist die VERTRAGS-Wahrheit der bereits
-  gebauten Ofen-Leiter — der Wächter ist `gate:konsum-matrix` (Stufen müssen
-  EHRLICH verschieden backen, sonst TEIL) + die Fern-Linsen (`gate:tier-fern`
-  · `gate:kreatur-kosten`). Ohne die Zeile gilt fail-closed `[0]` (N7.5,
+  gebauten Ofen-Leiter — die Wächter sind die Fern-Linsen (`gate:tier-fern`
+  · `gate:kreatur-kosten`: die Grobstufe backt nah und fern verschieden und
+  schaltet an der Kern-Grenze). Ohne die Zeile gilt fail-closed `[0]` (N7.5,
   unverändert). Spender heute: `tetrapoda-core.js` (`kreatur:[0,1]` — bauTier
   Gelenk-Baum/gelenkige Grobstufe) · `koerper-core.js` (`koerper:[0,1]` —
   bakeMenschInstance fein/gelenkige Grobstufe).
