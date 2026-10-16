@@ -186,8 +186,8 @@ async function blickProbe(opts) {
 //        Pixeln, 1 außerhalb). HM zählt die kalten Programme je Bild und hält die Maske bei 0.
 // H läuft VOR den Blicken B: deren Frames stoßen die Programme der ganzen Welt an, die der GPU-Prozess sonst während H übersetzt.
 //   R    der Milch-Leser (HS, EIN Programm): die Öffnung als helles Weiß — das Bild des Stands vor D8, in derselben Maske.
-// K64-n2 (die CI-Frist der Linse): bis dahin zeichnete das Labor die GANZE Szene in ein RGBA8-Ziel (jedes Programm im Blick neu
-// auf swiftshader), je Seite mit eigener Maske, und der Selbsttest fuhr H in einer zweiten Seite — gate:portal-membran 578 s.
+// DIE UHR STEHT JE LAUF (M2): Film, Welle und Puls lesen die Uhr des Membran-Ticks, die Wolken die des Himmels — bis M2
+// die Wanduhr des letzten Takts (milchweiß 3,2–5,5 % in 5 Läufen); jetzt FEST aus dem Gesetz, `fest` hält TRAA und Dither.
 async function hellProbe() {
     const r = window.anazhRealm;
     const st = r.state;
@@ -204,7 +204,9 @@ async function hellProbe() {
     cam.updateMatrixWorld(true);
     window.__buehne();
     const echtNow = performance.now.bind(performance);
-    performance.now = () => 4.2e6; // die Uhr steht: Atem, Puls und Welle gleich in jedem Bild
+    const FEST = 4.2e6; // die Uhr steht: Atem, Puls, Welle und Wolken gleich in jedem Bild und jedem Lauf
+    performance.now = () => FEST;
+    for (const f of [r._loopSkyboxZeit, r._tickPortalMembranes]) f.call(r, FEST / 1000);
     const recs = [...r._portalMembranes.values()].filter((rec) => rec.mesh);
     const vor = recs.map((rec) => rec.mesh.material.colorNode);
     const sicht = recs.map((rec) => rec.mesh.visible);
@@ -249,7 +251,7 @@ async function hellProbe() {
     };
     const E = r._erstZeichnung;
     const offenStart = E ? E.offen.size : null;
-    const schuss = async () => (await window.__ausgabeAufnahme(W, H, 1, { wahl: 0, nurGezeichnete: true })).u8;
+    const schuss = async () => (await window.__ausgabeAufnahme(W, H, 1, { nurGezeichnete: true, fest: FEST })).u8;
     const zeit = {};
     // je Bild die Wanduhr und die KALTEN PROGRAMME (HM): Vertex- und Fragment-Programme, die der Renderer in diesem Bild neu
     // übersetzt (r184 hält sie je Quelltext in `_pipelines.programs`) — auf swiftshader kostet ein kaltes Programm bis Minuten
@@ -351,9 +353,7 @@ async function hellProbe() {
     }
 }
 // Das Soll (K64-n1, D8): die Öffnung zeigt das Ziel durch den Film — sie brennt nicht aus (Y > 240 ≤ 5 % der Membran-Pixel,
-// Nordstern Portale) und liest nicht als Milch (unbunt und hell ≤ 5 %, die Regel von K5 milchweiss gegen das Bild ohne Film). Bis D8 maß H die Welt gegen
-// das Labor-Bild des Anzeige-Werts der Shell (Labor = Welt, Y ≤ 1,15 ×): die Membran malt keinen Anzeige-Wert mehr, sie liest das
-// lineare Panorama der Ziel-Welt durch die Belichtung der Heimat.
+// Nordstern Portale) und liest nicht als Milch (unbunt und hell ≤ 5 %, die Regel von K5 milchweiss gegen das Bild ohne Film).
 const HELL = { weiss: 0.05, milch: 0.05 };
 
 async function blickStufe(check) {
