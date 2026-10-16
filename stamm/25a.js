@@ -2100,18 +2100,21 @@ class AnazhRealm_Z25a {
                 if (!ruht) {
                     // ### Portal-Membranen ### (V18.464 — die Passage atmet + Hindurchgehen)
                     this._tickPortalMembranes(currentTime);
-
-                    // ### Haus-Türen ### (DORF-ERLEBNIS — die Tür öffnet sich dem Reisenden)
-                    this._tickHausTueren(currentTime);
                 }
+
+                // DAS BILD, DAS JE TAKT EINSCHWINGT, füttert das erste Weltbild wie der Boden: Rauch (RAUCH_GESETZ je Frame,
+                // nicht je Zeit) und Haus-Türen (der Flügel schließt je Takt weich aus der gebackenen Offen-Pose) laufen in
+                // JEDEM Takt — nur im Lade-Bild stand der Rauch im ersten Bild mit 3 statt 24 Teilchen (B3-n1, Radeon kalt).
+                // ### Haus-Türen ### (DORF-ERLEBNIS — die Tür öffnet sich dem Reisenden)
+                this._tickHausTueren(currentTime);
 
                 // ### Der Genesis-Ort ### (Ring der Kern-Portale + Portal-Vorschauen, vor jedem Budget)
                 this._tickGenesisOrt(currentTime);
 
-                if (!ruht) {
-                    // ### Kamin-Rauch ### (.105 — Quellen + minimale Lab-Partikel)
-                    this._updateDorfRauch(delta);
+                // ### Kamin-Rauch ### (.105 — Quellen + minimale Lab-Partikel)
+                this._updateDorfRauch(delta);
 
+                if (!ruht) {
                     // ### Fähigkeiten ###
                     Object.keys(this.state.abilities).forEach((ability) => {
                         if (this.state.keys[ability]) this.state.abilities[ability](this, this.state);
