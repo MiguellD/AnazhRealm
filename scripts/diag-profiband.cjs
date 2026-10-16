@@ -27,10 +27,9 @@
 //   H6  DIE MESSORTE (S1 W1f, `messorte`): jeder Ort trägt Spieler, Blick, Dorf-Zug, Ort-Takt und seine eigene Ratsche
 //       (H2 je Ort); jede Methode, die ein Ort-Takt oder ein Anker nennt, trägt der Stamm (ein umbenannter Ring-Bauer
 //       liefe still aus jedem Werkbank-Takt, der Ort stünde leer; ein umbenannter Anker ließe den Ort ungeprüft wandern)
-//   H7  DIE REIHE DER BÜNDEL (1310-1): r184 zeichnet die Region-Bündel in Szenen-Reihenfolge vor jedem losen Objekt;
-//       `_buendelReihe` des Stamms stellt @global · die Regionen · @wahl, gleich wer beim Boot zuerst ankam, und
-//       `_archRegionBundleFor` ruft sie nach jedem neuen Bündel (am Genesis-Ring legte der Tor-Zwilling @wahl vor @global
-//       an: gpu-bank +1,6 ms, 47,5 statt 50,1 fps bei gleichen Befehlen)
+//   H7  DIE ZEICHEN-REIHE (1310-1, T3): EIN Gesetz `_zeichenRang` für alles Opake — die Bündel (`_buendelReihe`, nach jedem
+//       neuen Bündel) @global · Regionen · @wahl, die losen Opaken jedes Renders (`setOpaqueSort(_zeichenFolge)`) Bau · Boden ·
+//       Fern · Himmel, gleich wer beim Boot zuerst ankam (Objekt-id: der Bau-Satz nach dem Boden, gpu-bank +1,4–1,55 ms)
 //   P   DIE PROJEKTION (S3): Σ Zensus der Mess-Wiese (spec/profiband/zensus-wiese.json) × Golden-Dreiecke je Art × Stufe ×
 //       Pass ≤ Haushalt der Klasse baum — die Studio-Ausgänge gegen das Band, ohne GPU (Pflicht ab dem Vertrags-Akt);
 //       die Zeile nahWiese: Σ Büschel je Gestalt × Stufe × Golden-Dreiecke IHRER Gestalt ≤ Ratsche der Klasse am Ort
@@ -117,53 +116,50 @@ function taeterWand(src) {
     return { errs, n: SCHLUESSEL.length, S };
 }
 
-// H7 — DIE REIHE DER BÜNDEL (1310-1): `_buendelReihe` aus dem Stamm über eine Szene, in der @wahl vor einer Region und
+// H7 — DIE ZEICHEN-REIHE (1310-1, T3): `_buendelReihe` aus dem Stamm über eine Szene, in der @wahl vor einer Region und
 // @global ankam — danach tragen die Bündel-Plätze @global · die Regionen (in Ankunft) · @wahl, jedes andere Kind steht, wo
-// es stand; `_archRegionBundleFor` stellt die Reihe nach jedem neuen Bündel neu.
+// es stand; `_archRegionBundleFor` stellt die Reihe nach jedem neuen Bündel neu. Die losen Opaken in Boot-Ankunft (Himmel,
+// Fern, Boden vor dem Bau, gleiche Tiefe) folgen `_zeichenFolge` als Bau · Boden · Fern · Himmel, der Feld-Pass (renderOrder)
+// zuletzt; `_configureRenderer` setzt sie, die drei Erzeuger tragen ihre Marke.
 function buendelReiheWand(src) {
     const errs = [];
     const code = PK.stripComments(src);
-    const rang = rumpf(code, /\n {4}static _buendelRang\([^)]*\)\s*\{/);
-    const reihe = rumpf(code, /\n {4}_buendelReihe\([^)]*\)\s*\{/);
-    const fuer = rumpf(code, /\n {4}_archRegionBundleFor\([^)]*\)\s*\{/);
-    if (!rang || !reihe)
-        return { errs: ["_buendelRang / _buendelReihe fehlen im Stamm — die Reihe der Bündel hängt an der Ankunft beim Boot"], n: 0 };
+    const [rang, folge, reihe, fuer, konf] = ["static _zeichenRang", "static _zeichenFolge", "_buendelReihe", "_archRegionBundleFor", "_configureRenderer"].map((k) => rumpf(code, new RegExp(`\\n {4}${k}\\([^)]*\\)\\s*\\{`)));
+    if (!rang || !folge || !reihe)
+        return { errs: ["_zeichenRang / _zeichenFolge / _buendelReihe fehlen im Stamm — die Zeichen-Reihe hängt an der Ankunft beim Boot"], n: 0 };
     if (!fuer || !/scene\.add\(bg\);[\s\S]*?this\._buendelReihe\(scene\);/.test(fuer))
         errs.push("_archRegionBundleFor stellt die Reihe nach einem neuen Bündel nicht neu (this._buendelReihe(scene) fehlt)");
-    const AR = { _buendelRang: new Function("key", rang) };
+    if (!konf || !/renderer\.setOpaqueSort\(AnazhRealm\._zeichenFolge\)/.test(konf)) errs.push("_configureRenderer setzt die Zeichen-Reihe der losen Opaken nicht (setOpaqueSort) — die Objekt-id entscheidet");
+    for (const s of ["boden", "fern", "himmel"]) if (!new RegExp(`zeichenSchicht(?: =|:) "${s}"`).test(code)) errs.push(`kein Erzeuger trägt die Marke zeichenSchicht "${s}"`);
+    const AR = { _zeichenRang: new Function("o", rang) };
+    const F = new Function("AnazhRealm", "a", "b", folge).bind(null, AR);
+    const L = (n, ro, s, id) => ({ groupOrder: 0, renderOrder: ro, z: -0.1, id, object: { name: n, userData: s ? { zeichenSchicht: s } : {} } });
+    const istL = [L("himmel", 0, "himmel", 20), L("feld-pass", 9998, null, 51), L("fern-ring", 0, "fern", 47), L("bodenSatz", 0, "boden", 46), L("bauSatz", 0, null, 6361)].sort(F).map((x) => x.object.name).join(" · ");
+    if (istL !== "bauSatz · bodenSatz · fern-ring · himmel · feld-pass") errs.push(`die losen Opaken nach der Ankunft Himmel · Feld · Fern · Boden · Bau: ${istL} — Soll bauSatz · bodenSatz · fern-ring · himmel · feld-pass`);
     const fn = new Function("AnazhRealm", "scene", reihe);
     const B = (k) => ({ isBundleGroup: true, name: "regionBundle:" + k, userData: { regionKey: k } });
     const scene = { children: [{ name: "voxelChunk:0,0" }, B("@wahl"), B("3,4"), { name: "himmel" }, B("@global"), B("s:1,2")] };
     fn.call({}, AR, scene);
-    const ist = scene.children.map((c) => (c.userData ? c.userData.regionKey : c.name)).join(" · ");
-    const soll = ["voxelChunk:0,0", "@global", "3,4", "himmel", "s:1,2", "@wahl"].join(" · ");
+    const ist = scene.children.map((c) => (c.userData ? c.userData.regionKey : c.name)).join(" · "), soll = "voxelChunk:0,0 · @global · 3,4 · himmel · s:1,2 · @wahl";
     if (ist !== soll) errs.push(`die Reihe der Bündel nach der Ankunft @wahl · 3,4 · @global · s:1,2: ${ist} — Soll ${soll}`);
     // DIE REIHE IM BÜNDEL (1310-8): die Gruppen eines Bündels nach ihrer Stufe (L0 zuerst, die Atlas-Karte zuletzt), im
     // Gleichstand nach Schlüssel — gestellt nach jeder Aufnahme (`_archInstanceGroupFor`, das Wachsen der Gruppe).
-    const kinder = rumpf(code, /\n {4}static _buendelKinderReihe\(bundle(?:, auge)?\)\s*\{/);
-    const gruppe = rumpf(code, /\n {4}_archInstanceGroupFor\([^)]*\)\s*\{/);
-    const wachsen = rumpf(code, /\n {4}_archInstanceGroupGrow\([^)]*\)\s*\{/);
+    const [kinder, gruppe, wachsen] = ["static _buendelKinderReihe", "_archInstanceGroupFor", "_archInstanceGroupGrow"].map((k) => rumpf(code, new RegExp(`\\n {4}${k}\\([^)]*\\)\\s*\\{`)));
     if (!kinder) return { errs: errs.concat(["_buendelKinderReihe fehlt im Stamm — die Gruppen eines Bündels zeichnen in der Ankunft"]), n: 4 };
-    if (!gruppe || !/bundle\.add\(mesh\);\s*AnazhRealm\._buendelKinderReihe\(bundle(?:, this\._buendelAuge)?\);/.test(gruppe))
-        errs.push("_archInstanceGroupFor stellt die Reihe im Bündel nach der Aufnahme nicht neu");
-    if (!gruppe || !/mesh\.userData\.buendelStufe\s*=/.test(gruppe))
-        errs.push("_archInstanceGroupFor gibt der Gruppe keinen Rang (mesh.userData.buendelStufe)");
-    if (!wachsen || !/AnazhRealm\._buendelKinderReihe\(parent(?:, this\._buendelAuge)?\)/.test(wachsen))
-        errs.push("_archInstanceGroupGrow stellt die Reihe im Bündel nach dem Tausch nicht neu");
+    if (!gruppe || !/bundle\.add\(mesh\);\s*AnazhRealm\._buendelKinderReihe\(bundle(?:, this\._buendelAuge)?\);/.test(gruppe)) errs.push("_archInstanceGroupFor stellt die Reihe im Bündel nach der Aufnahme nicht neu");
+    if (!gruppe || !/mesh\.userData\.buendelStufe\s*=/.test(gruppe)) errs.push("_archInstanceGroupFor gibt der Gruppe keinen Rang (mesh.userData.buendelStufe)");
+    if (!wachsen || !/AnazhRealm\._buendelKinderReihe\(parent(?:, this\._buendelAuge)?\)/.test(wachsen)) errs.push("_archInstanceGroupGrow stellt die Reihe im Bündel nach dem Tausch nicht neu");
     const K = (stufe, key) => ({ userData: { buendelStufe: stufe, archInstanceKey: key } });
     const bundle = { children: [K(1, "f:a|1|1:0"), K(9, "atlas"), K(0, "f:b|1|0:0"), K(0, "f:a|1|0:2"), K(1, "f:a|1|1:0#S")] };
     new Function("bundle", "auge", kinder)(bundle);
-    const istK = bundle.children.map((c) => c.userData.archInstanceKey).join(" · ");
-    const sollK = ["f:a|1|0:2", "f:b|1|0:0", "f:a|1|1:0", "f:a|1|1:0#S", "atlas"].join(" · ");
+    const istK = bundle.children.map((c) => c.userData.archInstanceKey).join(" · "), sollK = "f:a|1|0:2 · f:b|1|0:0 · f:a|1|1:0 · f:a|1|1:0#S · atlas";
     if (istK !== sollK) errs.push(`die Reihe im Bündel nach der Ankunft L1 · Karte · L0 · L0 · Zwilling: ${istK} — Soll ${sollK}`);
     // DIE REIHE NACH ABSTAND (1310-9): mit dem Auge zeichnet in der Stufe vorn zuerst (die nächste Instanz der Gruppe); neu
     // gestellt nur beim Anker-Wechsel (das Auge ≥ BUENDEL_ANKER_M weiter), dann nimmt jedes Bündel EINMAL neu auf.
-    const anker = rumpf(code, /\n {4}_buendelAnkerPruefen\([^)]*\)\s*\{/);
     // die Signatur ohne Wortlaut der Parameter: K36 reicht dem Takt das Auge der Maske (`auge = null`)
-    const takt = rumpf(code, /\n {4}_tickArchitectureLOD\([^)]*\)\s*\{/);
+    const [anker, takt] = ["_buendelAnkerPruefen", "_tickArchitectureLOD"].map((k) => rumpf(code, new RegExp(`\\n {4}${k}\\([^)]*\\)\\s*\\{`)));
     if (!anker) return { errs: errs.concat(["_buendelAnkerPruefen fehlt im Stamm — die Reihe kennt kein Auge (vorn nicht zuerst)"]), n: 8 };
-    if (!takt || !/this\._buendelAnkerPruefen\(pm\)/.test(takt))
-        errs.push("_tickArchitectureLOD prüft den Anker der Reihe nicht (this._buendelAnkerPruefen(pm) fehlt)");
+    if (!takt || !/this\._buendelAnkerPruefen\(pm\)/.test(takt)) errs.push("_tickArchitectureLOD prüft den Anker der Reihe nicht (this._buendelAnkerPruefen(pm) fehlt)");
     const I = (stufe, key, ...orte) => {
         const a = new Float32Array(16 * Math.max(1, orte.length));
         orte.forEach((o, i) => ((a[i * 16 + 12] = o[0]), (a[i * 16 + 14] = o[1])));
@@ -171,8 +167,7 @@ function buendelReiheWand(src) {
     };
     const fernVorn = { children: [I(0, "f:a|1|0:0", [40, 0]), I(1, "f:z|1|1:0", [1, 0]), I(0, "f:b|1|0:0", [50, 0], [3, 0])] };
     new Function("bundle", "auge", kinder)(fernVorn, { x: 0, z: 0 });
-    const istA = fernVorn.children.map((c) => c.userData.archInstanceKey).join(" · ");
-    const sollA = ["f:b|1|0:0", "f:a|1|0:0", "f:z|1|1:0"].join(" · ");
+    const istA = fernVorn.children.map((c) => c.userData.archInstanceKey).join(" · "), sollA = "f:b|1|0:0 · f:a|1|0:0 · f:z|1|1:0";
     if (istA !== sollA) errs.push(`die Reihe nach Abstand (L0 bei 40 m · L1 bei 1 m · L0 bei 50 m und 3 m): ${istA} — Soll ${sollA}`);
     const ARA = { BUENDEL_ANKER_M: 16, _buendelKinderReihe: new Function("bundle", "auge", kinder) };
     const B1 = { isBundleGroup: true, userData: { regionKey: "@wahl" }, needsUpdate: false, children: [I(0, "f:a|1|0:0", [40, 0]), I(0, "f:b|1|0:0", [3, 0])] };
@@ -1215,24 +1210,28 @@ function selbsttest() {
             nwOhne.errs.some((x) => /keine Dreiecke/.test(x))
     );
 
-    // S30 — DIE REIHE DER BÜNDEL (H7): der Stamm hält sie; ohne den Aufruf nach einem neuen Bündel, mit @wahl im ersten Rang
-    // und ohne die Reihe im Stamm wird die Wand rot (jede Verfälschung trifft die Quelle).
+    // S30 — DIE ZEICHEN-REIHE (H7): der Stamm hält sie; ohne den Aufruf nach einem neuen Bündel, mit @wahl im ersten Rang, ohne
+    // die Reihe, ohne die Folge der losen Opaken im Renderer, mit dem Boden vor dem Bau und ohne Himmels-Marke wird die Wand rot.
     {
         const st = stammLib.text(root);
         const ohneRuf = st.replace("this._buendelReihe(scene);", "");
-        const wahlVorn = st.replace(
-            'return key === "@global" ? 0 : key === "@wahl" ? 2 : 1;',
-            'return key === "@wahl" ? 0 : key === "@global" ? 2 : 1;'
-        );
+        const wahlVorn = st.replace('u.regionKey === "@global" ? 0 : u.regionKey === "@wahl" ? 2 : 1', 'u.regionKey === "@wahl" ? 0 : u.regionKey === "@global" ? 2 : 1');
         const ohneReihe = st.replace(/(\n {4}_buendelReihe)\(/, "$1Alt(");
-        const getroffen = ohneRuf !== st && wahlVorn !== st && ohneReihe !== st;
+        const ohneFolge = st.replace("else renderer.setOpaqueSort(AnazhRealm._zeichenFolge);", "");
+        const bodenVorn = st.replace('return s === "boden" ? 4 :', 'return s === "boden" ? 2 :');
+        const ohneMarke = st.replace('skybox.userData.zeichenSchicht = "himmel";', "");
+        const V = [ohneRuf, wahlVorn, ohneReihe, ohneFolge, bodenVorn, ohneMarke];
+        const rot = (s, re) => buendelReiheWand(s).errs.some((x) => re.test(x));
         t(
-            "Bündel-Reihe: der Stamm stellt @global · Regionen · @wahl; ohne den Aufruf, mit @wahl vorn und ohne die Reihe rot",
-            getroffen &&
+            "Zeichen-Reihe: @global · Regionen · @wahl, lose Bau · Boden · Fern · Himmel; ohne Aufruf, @wahl vorn, ohne Reihe, ohne Folge, Boden vorn und ohne Marke rot",
+            V.every((s) => s !== st) &&
                 buendelReiheWand(st).errs.length === 0 &&
-                buendelReiheWand(ohneRuf).errs.some((x) => /stellt die Reihe/.test(x)) &&
-                buendelReiheWand(wahlVorn).errs.some((x) => /Reihe der Bündel nach der Ankunft/.test(x)) &&
-                buendelReiheWand(ohneReihe).errs.some((x) => /hängt an der Ankunft/.test(x))
+                rot(ohneRuf, /stellt die Reihe/) &&
+                rot(wahlVorn, /Reihe der Bündel nach der Ankunft/) &&
+                rot(ohneReihe, /hängt an der Ankunft/) &&
+                rot(ohneFolge, /setOpaqueSort/) &&
+                rot(bodenVorn, /losen Opaken nach der Ankunft/) &&
+                rot(ohneMarke, /Marke zeichenSchicht "himmel"/)
         );
         // DIE REIHE IM BÜNDEL (1310-8): ohne den Aufruf nach der Aufnahme, verkehrt herum und ohne die Reihe rot
         const ohneKinderRuf = st.replace(
@@ -1492,7 +1491,7 @@ function main() {
             `H2b ${ratschen.length} Ratschen frisch an V${version}${messungen.length ? ` gegen ${messungen.length} Messungen` : ""} · ` +
             `H3 ${nw.n} Textur-Erzeuger benannt · ` +
             `H4 Täter-Klasse des Stamms: ${tw.n} Schlüssel-Formen · H5 ${nl.n} Haushalt-Namen mit Erzeuger im Stamm · ` +
-            `Messorte ${ortZeile} · H1 Wiese am Gesetz ${wiese.messungen.map((m) => `${m.ort} ${m.x}/${m.z} Hang ${m.hang}° · Krone ${m.krone} · Kranz ${m.kranz} · Horizont ${m.horizont}°`).join("; ")} · H6 ${ot.n} Ort-Takt- und Anker-Methoden im Stamm · H7 die Reihe der Bündel (@global · Regionen · @wahl) und die Reihe im Bündel (Stufe).`
+            `Messorte ${ortZeile} · H1 Wiese am Gesetz ${wiese.messungen.map((m) => `${m.ort} ${m.x}/${m.z} Hang ${m.hang}° · Krone ${m.krone} · Kranz ${m.kranz} · Horizont ${m.horizont}°`).join("; ")} · H6 ${ot.n} Ort-Takt- und Anker-Methoden im Stamm · H7 die Zeichen-Reihe (Bündel @global · Regionen · @wahl, lose Bau · Boden · Fern · Himmel) und die Reihe im Bündel (Stufe).`
     );
 }
 
