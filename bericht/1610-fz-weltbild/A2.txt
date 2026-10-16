@@ -1,0 +1,33 @@
+[linse-gpu] nvidia/pascal
+
+=== DIE KALT-ZEILE (leeres Profil) — echte GPU · nvidia pascal · Holz voll · V18.546.2 ===
+    0 s  blockiert  579 ms | die Seite lädt
+    1 s  blockiert  338 ms | die Welt entsteht
+    2 s  blockiert  671 ms (Bauten 5 · Boden 342) · Foundry 0 wartend · 0 im Werk · 0 im Bäcker | der Boden wächst (Ring 0 von 3) · der Horizont wächst (0 %) · der Spieler erhält seinen Leib · das Buch der Studios öffnet sich
+    3 s  blockiert  917 ms (Bauten 17 · Erst-Bau 880) · 7 Pipelines offen · Vorrat wartet auf das erste Bild · Foundry 0 wartend · 0 im Werk · 0 im Bäcker | der Boden wächst (Ring 1 von 3) · der Horizont wächst (0 %) · der Spieler erhält seinen Leib · das Buch der Studios öffnet sich
+    4 s  blockiert  350 ms (Boden 15) · 2 Pipelines offen · Vorrat wartet auf das erste Bild · Foundry 0 wartend · 0 im Werk · 0 im Bäcker | der Boden wächst (Ring 1 von 3) · der Horizont wächst (11 %) · der Spieler erhält seinen Leib · das Buch der Studios öffnet sich
+    5 s  blockiert  859 ms (Bauten 8 · Boden 25) · 2 Pipelines offen · Vorrat wartet auf das erste Bild · Foundry 0 wartend · 0 im Werk · 0 im Bäcker | der Boden wächst (Ring 1 von 3) · der Horizont wächst (11 %) · der Spieler erhält seinen Leib · das Buch der Studios öffnet sich
+    6 s  blockiert  928 ms (Bauten 24 · Buch 48 · Streu 100 · Erst-Bau 102) · Vorrat wartet auf das erste Bild · Foundry 20 wartend · 36 im Werk · 0 im Bäcker | der Boden wächst (Ring 2 von 3) · der Horizont wächst (11 %) · der Spieler erhält seinen Leib · 163 Bäume und Bauten wachsen · das Dorf wird geplant · 1 Wald-Böden werden bepflanzt · 4 Wald-Stücke warten auf ihre Gestalt
+    7 s  blockiert  968 ms (Bauten 205 · Boden 22 · Streu 107 · Gruppen-Bau 34) · Vorrat wartet auf das erste Bild · Foundry 29 wartend · 36 im Werk · 2 im Bäcker | der Horizont wächst (11 %) · der Spieler erhält seinen Leib · 195 Bäume und Bauten wachsen · das Dorf wird geplant · 16 Wald-Böden werden bepflanzt · 4 Wald-Stücke warten auf ihre Gestalt · 2 ferne Bäume werden gemalt
+    8 s  blockiert  973 ms (Bauten 116 · Streu 160 · Gruppen-Bau 24) · Vorrat wartet auf das erste Bild · Foundry 30 wartend · 36 im Werk · 3 im Bäcker | der Horizont wächst (11 %) · der Spieler erhält seinen Leib · 238 Bäume und Bauten wachsen · das Dorf wird geplant · 128 Bäume werden gepflanzt, 4 Wald-Böden werden bepflanzt · 4 Wald-Stücke warten auf ihre Gestalt · 11 ferne Bäume werden gemalt
+    9 s  blockiert  957 ms (Bauten 32 · Streu 53 · Gruppen-Bau 20 · Erst-Bau 352) · 3 Pipelines offen · Vorrat wartet auf das erste Bild · Foundry 17 wartend · 36 im Werk · 3 im Bäcker | der Horizont wächst (11 %) · der Spieler erhält seinen Leib · 263 Bäume und Bauten wachsen · das Dorf wird geplant · 102 Bäume werden gepflanzt, 4 Wald-Böden werden bepflanzt · 4 Wald-Stücke warten auf ihre Gestalt · 13 ferne Bäume werden gemalt
+   10 s  blockiert  938 ms (Bauten 17 · Streu 304 · Gruppen-Bau 12 · Erst-Bau 323) · 3 Pipelines offen · Vorrat wartet auf das erste Bild · Foundry 15 wartend · 36 im Werk · 3 im Bäcker | der Horizont wächst (11 %) · der Spieler erhält seinen Leib · 303 Bäume und Bauten wachsen · das Dorf wird geplant · 79 Bäume werden gepflanzt · 4 Wald-Stücke warten auf ihre Gestalt · 13 ferne Bäume werden gemalt
+   11 s  blockiert  978 ms (Bauten 19 · Streu 223 · Gruppen-Bau 5 · Erst-Bau 34) · 1 Pipelines offen · Vorrat wartet auf das erste Bild · Foundry 14 wartend · 36 im Werk · 3 im Bäcker | der Horizont wächst (23 %) · 352 Bäume und Bauten wachsen · das Dorf wird geplant · 31 Bäume werden gepflanzt · 4 Wald-Stücke warten auf ihre Gestalt · 14 ferne Bäume werden gemalt
+   12 s  blockiert  706 ms (Bauten 23 · Streu 240 · Erst-Bau 126) · 4 Pipelines offen · Vorrat wartet auf das erste Bild · Foundry 15 wartend · 36 im Werk · 3 im Bäcker | der Horizont wächst (62 %) · 285 Bäume und Bauten wachsen · das Dorf wird geplant · 4 Wald-Stücke warten auf ihre Gestalt · 13 ferne Bäume werden gemalt
+   13 s  blockiert  298 ms (Bauten 43 · Gruppen-Bau 34) · Vorrat wartet auf das erste Bild · Foundry 0 wartend · 35 im Werk · 3 im Bäcker | 233 Bäume und Bauten wachsen · das Dorf wird geplant · 4 Wald-Stücke warten auf ihre Gestalt · 13 ferne Bäume werden gemalt
+   14 s  blockiert  737 ms (Bauten 35 · Gruppen-Bau 37 · Erst-Bau 265) · 3 Pipelines offen · Vorrat wartet auf das erste Bild · Foundry 0 wartend · 6 im Werk · 3 im Bäcker | 133 Bäume und Bauten wachsen · das Dorf wird geplant · 4 Wald-Stücke warten auf ihre Gestalt · 11 ferne Bäume werden gemalt
+   15 s  blockiert  634 ms (Bauten 17 · Gruppen-Bau 65 · Erst-Bau 283) · 2 Pipelines offen · Vorrat wartet auf das erste Bild · Foundry 0 wartend · 0 im Werk · 2 im Bäcker | 52 Bäume und Bauten wachsen · das Dorf wird geplant · 4 Wald-Stücke warten auf ihre Gestalt · 6 ferne Bäume werden gemalt
+   16 s  blockiert  551 ms (Bauten 13 · Erst-Bau 270) · 4 Pipelines offen · Vorrat wartet auf das erste Bild · Foundry 0 wartend · 9 im Werk · 0 im Bäcker | 14 Bäume und Bauten wachsen · 11 Häuser des Dorfs wachsen · 4 Wald-Stücke warten auf ihre Gestalt
+   17 s  blockiert  987 ms (Bauten 10 · Boden 14 · Streu 282 · Erst-Bau 170) · 6 Pipelines offen · Vorrat wartet auf das erste Bild · Foundry 0 wartend · 19 im Werk · 0 im Bäcker | 9 Bäume und Bauten wachsen · 5 Häuser des Dorfs wachsen · 3 Wald-Stücke warten auf ihre Gestalt
+   18 s  blockiert  904 ms (Bauten 13 · Boden 8 · Streu 258 · Erst-Bau 197) · 2 Pipelines offen · Vorrat wartet auf das erste Bild · Foundry 0 wartend · 24 im Werk · 1 im Bäcker | 12 Bäume und Bauten wachsen · 1 Wald-Stücke warten auf ihre Gestalt · 1 ferne Bäume werden gemalt
+   19 s  blockiert  403 ms (Bauten 17 · Boden 18 · Streu 25 · Erst-Bau 56) · Vorrat wartet auf das erste Bild · Foundry 0 wartend · 19 im Werk · 0 im Bäcker | 9 Bäume und Bauten wachsen
+   20 s  blockiert  100 ms (Bauten 17 · Erst-Bau 61) · Vorrat wartet auf das erste Bild · Foundry 0 wartend · 6 im Werk · 0 im Bäcker | 5 Bäume und Bauten wachsen
+   21 s  blockiert  131 ms (Bauten 9) · Vorrat bestellt · Foundry 20 wartend · 36 im Werk · 0 im Bäcker | — das Weltbild steht
+  6.2 s  das Buch der Studios ist da
+  3.9 s  der Vorrat wartet auf das erste Bild
+  21.5 s  der Vorrat bestellt
+  6.6 s  _foundryRequestSettlement ab 
+  13.5 s  _foundryRequestSettlement an 
+
+  t(Weltbild) = t(Kontrolle) 21.45 s ab Navigation
+  ❌ die Ankunft kalt ≤ 5 s ohne halbes Weltbild (Pflicht-OFFEN B) — 21.45 s

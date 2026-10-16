@@ -1,0 +1,3740 @@
+{
+ "proben": [
+  {
+   "t": 398
+  },
+  {
+   "t": 1311,
+   "fehlt": [
+    "die Welt entsteht"
+   ],
+   "da": 0
+  },
+  {
+   "t": 1591,
+   "fehlt": [
+    "die Welt entsteht"
+   ],
+   "da": 0
+  },
+  {
+   "t": 1914,
+   "fehlt": [
+    "der Boden wächst (Ring 0 von 3)",
+    "der Horizont wächst (0 %)",
+    "der Spieler erhält seinen Leib",
+    "das Buch der Studios öffnet sich"
+   ],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    0,
+    0,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 3405,
+   "fehlt": [
+    "der Boden wächst (Ring 1 von 3)",
+    "der Horizont wächst (0 %)",
+    "der Spieler erhält seinen Leib",
+    "das Buch der Studios öffnet sich"
+   ],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    3,
+    344,
+    3
+   ],
+   "da": 0
+  },
+  {
+   "t": 3452,
+   "fehlt": [
+    "der Boden wächst (Ring 1 von 3)",
+    "der Horizont wächst (0 %)",
+    "der Spieler erhält seinen Leib",
+    "das Buch der Studios öffnet sich"
+   ],
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    3,
+    344,
+    3
+   ],
+   "da": 0
+  },
+  {
+   "t": 3623,
+   "fehlt": [
+    "der Boden wächst (Ring 1 von 3)",
+    "der Horizont wächst (0 %)",
+    "der Spieler erhält seinen Leib",
+    "das Buch der Studios öffnet sich"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    4,
+    356,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 3823,
+   "fehlt": [
+    "der Boden wächst (Ring 1 von 3)",
+    "der Horizont wächst (0 %)",
+    "der Spieler erhält seinen Leib",
+    "das Buch der Studios öffnet sich"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    4,
+    356,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 4024,
+   "fehlt": [
+    "der Boden wächst (Ring 1 von 3)",
+    "der Horizont wächst (0 %)",
+    "der Spieler erhält seinen Leib",
+    "das Buch der Studios öffnet sich"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    4,
+    356,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 4228,
+   "fehlt": [
+    "der Boden wächst (Ring 1 von 3)",
+    "der Horizont wächst (0 %)",
+    "der Spieler erhält seinen Leib",
+    "das Buch der Studios öffnet sich"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    4,
+    356,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 4436,
+   "fehlt": [
+    "der Boden wächst (Ring 1 von 3)",
+    "der Horizont wächst (0 %)",
+    "der Spieler erhält seinen Leib",
+    "das Buch der Studios öffnet sich"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    4,
+    356,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 4637,
+   "fehlt": [
+    "der Boden wächst (Ring 1 von 3)",
+    "der Horizont wächst (0 %)",
+    "der Spieler erhält seinen Leib",
+    "das Buch der Studios öffnet sich"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    4,
+    356,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 4834,
+   "fehlt": [
+    "der Boden wächst (Ring 1 von 3)",
+    "der Horizont wächst (0 %)",
+    "der Spieler erhält seinen Leib",
+    "das Buch der Studios öffnet sich"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    4,
+    356,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 5026,
+   "fehlt": [
+    "der Boden wächst (Ring 1 von 3)",
+    "der Horizont wächst (0 %)",
+    "der Spieler erhält seinen Leib",
+    "das Buch der Studios öffnet sich"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    4,
+    356,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 5929,
+   "fehlt": [
+    "der Boden wächst (Ring 1 von 3)",
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "das Buch der Studios öffnet sich"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    4,
+    356,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 6031,
+   "fehlt": [
+    "der Boden wächst (Ring 1 von 3)",
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "das Buch der Studios öffnet sich"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    4,
+    356,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 6235,
+   "fehlt": [
+    "der Boden wächst (Ring 1 von 3)",
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "das Buch der Studios öffnet sich"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    4,
+    356,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 6447,
+   "fehlt": [
+    "der Boden wächst (Ring 1 von 3)",
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "das Buch der Studios öffnet sich"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    4,
+    356,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 7506,
+   "fehlt": [
+    "der Boden wächst (Ring 1 von 3)",
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "das Buch der Studios öffnet sich"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    4,
+    356,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 9287,
+   "fehlt": [
+    "der Boden wächst (Ring 2 von 3)",
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "119 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "44 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "2 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "15 wartend · 36 im Werk · 2 im Bäcker",
+   "erst": [
+    4,
+    356,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 9826,
+   "fehlt": [
+    "der Boden wächst (Ring 2 von 3)",
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "142 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "21 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "2 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "21 wartend · 36 im Werk · 2 im Bäcker",
+   "erst": [
+    4,
+    356,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 10023,
+   "fehlt": [
+    "der Boden wächst (Ring 2 von 3)",
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "142 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "21 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "2 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "21 wartend · 36 im Werk · 2 im Bäcker",
+   "erst": [
+    4,
+    356,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 10240,
+   "fehlt": [
+    "der Boden wächst (Ring 2 von 3)",
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "142 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "21 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "2 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "21 wartend · 36 im Werk · 2 im Bäcker",
+   "erst": [
+    4,
+    356,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 10435,
+   "fehlt": [
+    "der Boden wächst (Ring 2 von 3)",
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "142 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "21 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "2 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "21 wartend · 36 im Werk · 2 im Bäcker",
+   "erst": [
+    4,
+    356,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 10646,
+   "fehlt": [
+    "der Boden wächst (Ring 2 von 3)",
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "142 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "21 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "2 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "21 wartend · 36 im Werk · 2 im Bäcker",
+   "erst": [
+    4,
+    356,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 10831,
+   "fehlt": [
+    "der Boden wächst (Ring 2 von 3)",
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "142 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "21 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "2 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "21 wartend · 36 im Werk · 2 im Bäcker",
+   "erst": [
+    4,
+    356,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 11030,
+   "fehlt": [
+    "der Boden wächst (Ring 2 von 3)",
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "142 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "21 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "2 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "21 wartend · 36 im Werk · 2 im Bäcker",
+   "erst": [
+    4,
+    356,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 11228,
+   "fehlt": [
+    "der Boden wächst (Ring 2 von 3)",
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "142 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "21 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "2 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "20 wartend · 36 im Werk · 2 im Bäcker",
+   "erst": [
+    4,
+    356,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 11428,
+   "fehlt": [
+    "der Boden wächst (Ring 2 von 3)",
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "142 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "21 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "2 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "20 wartend · 36 im Werk · 2 im Bäcker",
+   "erst": [
+    4,
+    356,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 13525,
+   "fehlt": [
+    "der Boden wächst (Ring 2 von 3)",
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "164 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "9 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "9 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "14 wartend · 36 im Werk · 3 im Bäcker",
+   "erst": [
+    4,
+    356,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 13623,
+   "fehlt": [
+    "der Boden wächst (Ring 2 von 3)",
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "164 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "9 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "9 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "12 wartend · 36 im Werk · 3 im Bäcker",
+   "erst": [
+    4,
+    356,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 16236,
+   "fehlt": [
+    "der Boden wächst (Ring 2 von 3)",
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "155 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "63 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "10 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "14 wartend · 36 im Werk · 3 im Bäcker",
+   "erst": [
+    5,
+    502,
+    1
+   ],
+   "da": 0
+  },
+  {
+   "t": 16423,
+   "fehlt": [
+    "der Boden wächst (Ring 2 von 3)",
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "155 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "63 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "10 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "13 wartend · 36 im Werk · 3 im Bäcker",
+   "erst": [
+    5,
+    502,
+    1
+   ],
+   "da": 0
+  },
+  {
+   "t": 16699,
+   "fehlt": [
+    "der Boden wächst (Ring 2 von 3)",
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "155 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "63 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "10 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "12 wartend · 36 im Werk · 3 im Bäcker",
+   "erst": [
+    5,
+    502,
+    1
+   ],
+   "da": 0
+  },
+  {
+   "t": 18679,
+   "fehlt": [
+    "der Boden wächst (Ring 2 von 3)",
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "182 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "67 Bäume werden gepflanzt, 2 Wald-Böden werden bepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "13 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "12 wartend · 36 im Werk · 3 im Bäcker",
+   "erst": [
+    8,
+    936,
+    3
+   ],
+   "da": 0
+  },
+  {
+   "t": 18826,
+   "fehlt": [
+    "der Boden wächst (Ring 2 von 3)",
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "182 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "67 Bäume werden gepflanzt, 2 Wald-Böden werden bepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "13 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "11 wartend · 36 im Werk · 3 im Bäcker",
+   "erst": [
+    8,
+    936,
+    3
+   ],
+   "da": 0
+  },
+  {
+   "t": 19025,
+   "fehlt": [
+    "der Boden wächst (Ring 2 von 3)",
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "182 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "67 Bäume werden gepflanzt, 2 Wald-Böden werden bepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "13 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "11 wartend · 36 im Werk · 3 im Bäcker",
+   "erst": [
+    8,
+    936,
+    3
+   ],
+   "da": 0
+  },
+  {
+   "t": 20641,
+   "fehlt": [
+    "der Boden wächst (Ring 2 von 3)",
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "179 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "128 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "14 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "9 wartend · 36 im Werk · 3 im Bäcker",
+   "erst": [
+    9,
+    1087,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 20825,
+   "fehlt": [
+    "der Boden wächst (Ring 2 von 3)",
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "179 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "128 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "14 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "9 wartend · 36 im Werk · 3 im Bäcker",
+   "erst": [
+    9,
+    1087,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 21024,
+   "fehlt": [
+    "der Boden wächst (Ring 2 von 3)",
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "179 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "128 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "14 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "9 wartend · 36 im Werk · 3 im Bäcker",
+   "erst": [
+    9,
+    1087,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 22514,
+   "fehlt": [
+    "der Boden wächst (Ring 2 von 3)",
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "190 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "190 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "14 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "7 wartend · 36 im Werk · 3 im Bäcker",
+   "erst": [
+    10,
+    1415,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 22689,
+   "fehlt": [
+    "der Boden wächst (Ring 2 von 3)",
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "190 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "190 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "14 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "7 wartend · 36 im Werk · 3 im Bäcker",
+   "erst": [
+    10,
+    1415,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 22825,
+   "fehlt": [
+    "der Boden wächst (Ring 2 von 3)",
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "190 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "190 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "14 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "6 wartend · 36 im Werk · 3 im Bäcker",
+   "erst": [
+    10,
+    1415,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 23026,
+   "fehlt": [
+    "der Boden wächst (Ring 2 von 3)",
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "190 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "190 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "14 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "6 wartend · 36 im Werk · 3 im Bäcker",
+   "erst": [
+    10,
+    1415,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 23224,
+   "fehlt": [
+    "der Boden wächst (Ring 2 von 3)",
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "190 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "190 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "14 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "6 wartend · 36 im Werk · 3 im Bäcker",
+   "erst": [
+    10,
+    1415,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 23422,
+   "fehlt": [
+    "der Boden wächst (Ring 2 von 3)",
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "190 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "190 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "14 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "6 wartend · 36 im Werk · 3 im Bäcker",
+   "erst": [
+    10,
+    1415,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 23623,
+   "fehlt": [
+    "der Boden wächst (Ring 2 von 3)",
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "190 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "190 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "14 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "6 wartend · 36 im Werk · 3 im Bäcker",
+   "erst": [
+    10,
+    1415,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 23824,
+   "fehlt": [
+    "der Boden wächst (Ring 2 von 3)",
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "190 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "190 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "14 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "6 wartend · 36 im Werk · 3 im Bäcker",
+   "erst": [
+    10,
+    1415,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 24377,
+   "fehlt": [
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "201 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "173 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "14 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "8 wartend · 36 im Werk · 3 im Bäcker",
+   "erst": [
+    11,
+    1583,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 24436,
+   "fehlt": [
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "201 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "173 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "14 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "8 wartend · 36 im Werk · 3 im Bäcker",
+   "erst": [
+    11,
+    1583,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 24634,
+   "fehlt": [
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "201 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "173 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "14 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "8 wartend · 36 im Werk · 3 im Bäcker",
+   "erst": [
+    11,
+    1583,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 24849,
+   "fehlt": [
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "201 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "173 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "14 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "8 wartend · 36 im Werk · 3 im Bäcker",
+   "erst": [
+    11,
+    1583,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 25031,
+   "fehlt": [
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "201 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "173 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "14 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "8 wartend · 36 im Werk · 3 im Bäcker",
+   "erst": [
+    11,
+    1583,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 25229,
+   "fehlt": [
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "201 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "173 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "14 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "8 wartend · 36 im Werk · 3 im Bäcker",
+   "erst": [
+    11,
+    1583,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 25427,
+   "fehlt": [
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "201 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "173 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "14 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "8 wartend · 36 im Werk · 3 im Bäcker",
+   "erst": [
+    11,
+    1583,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 25625,
+   "fehlt": [
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "201 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "173 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "14 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "8 wartend · 36 im Werk · 3 im Bäcker",
+   "erst": [
+    11,
+    1583,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 25824,
+   "fehlt": [
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "201 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "173 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "14 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "8 wartend · 36 im Werk · 3 im Bäcker",
+   "erst": [
+    11,
+    1583,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 26024,
+   "fehlt": [
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "201 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "173 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "14 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "8 wartend · 36 im Werk · 3 im Bäcker",
+   "erst": [
+    11,
+    1583,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 26222,
+   "fehlt": [
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "201 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "173 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "14 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "8 wartend · 36 im Werk · 3 im Bäcker",
+   "erst": [
+    11,
+    1583,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 26437,
+   "fehlt": [
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "201 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "173 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "14 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "8 wartend · 36 im Werk · 3 im Bäcker",
+   "erst": [
+    11,
+    1583,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 26634,
+   "fehlt": [
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "201 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "173 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "14 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "8 wartend · 36 im Werk · 3 im Bäcker",
+   "erst": [
+    11,
+    1583,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 26835,
+   "fehlt": [
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "201 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "173 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "14 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "8 wartend · 36 im Werk · 3 im Bäcker",
+   "erst": [
+    11,
+    1583,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 27024,
+   "fehlt": [
+    "der Horizont wächst (11 %)",
+    "der Spieler erhält seinen Leib",
+    "201 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "173 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "14 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "8 wartend · 36 im Werk · 3 im Bäcker",
+   "erst": [
+    11,
+    1583,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 28432,
+   "fehlt": [
+    "der Horizont wächst (23 %)",
+    "206 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "167 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "14 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "2 wartend · 36 im Werk · 3 im Bäcker",
+   "erst": [
+    12,
+    1677,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 28687,
+   "fehlt": [
+    "der Horizont wächst (23 %)",
+    "206 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "167 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "14 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "1 wartend · 36 im Werk · 3 im Bäcker",
+   "erst": [
+    12,
+    1677,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 28827,
+   "fehlt": [
+    "der Horizont wächst (23 %)",
+    "206 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "167 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "14 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 35 im Werk · 3 im Bäcker",
+   "erst": [
+    12,
+    1677,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 29058,
+   "fehlt": [
+    "der Horizont wächst (23 %)",
+    "206 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "167 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "14 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 35 im Werk · 3 im Bäcker",
+   "erst": [
+    12,
+    1677,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 29242,
+   "fehlt": [
+    "der Horizont wächst (23 %)",
+    "206 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "167 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "14 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 34 im Werk · 3 im Bäcker",
+   "erst": [
+    12,
+    1677,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 29425,
+   "fehlt": [
+    "der Horizont wächst (23 %)",
+    "206 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "167 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "14 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 34 im Werk · 3 im Bäcker",
+   "erst": [
+    12,
+    1677,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 29628,
+   "fehlt": [
+    "der Horizont wächst (23 %)",
+    "206 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "167 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "14 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 25 im Werk · 3 im Bäcker",
+   "erst": [
+    12,
+    1677,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 29926,
+   "fehlt": [
+    "der Horizont wächst (23 %)",
+    "233 Bäume und Bauten wachsen",
+    "17 Häuser des Dorfs wachsen",
+    "167 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "14 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 27 im Werk · 3 im Bäcker",
+   "erst": [
+    12,
+    1677,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 30422,
+   "fehlt": [
+    "der Horizont wächst (35 %)",
+    "231 Bäume und Bauten wachsen",
+    "15 Häuser des Dorfs wachsen",
+    "157 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "14 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 21 im Werk · 3 im Bäcker",
+   "erst": [
+    12,
+    1677,
+    1
+   ],
+   "da": 0
+  },
+  {
+   "t": 30629,
+   "fehlt": [
+    "der Horizont wächst (35 %)",
+    "231 Bäume und Bauten wachsen",
+    "15 Häuser des Dorfs wachsen",
+    "157 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "14 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 18 im Werk · 3 im Bäcker",
+   "erst": [
+    12,
+    1677,
+    1
+   ],
+   "da": 0
+  },
+  {
+   "t": 30827,
+   "fehlt": [
+    "der Horizont wächst (35 %)",
+    "231 Bäume und Bauten wachsen",
+    "15 Häuser des Dorfs wachsen",
+    "157 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "14 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 18 im Werk · 3 im Bäcker",
+   "erst": [
+    12,
+    1677,
+    1
+   ],
+   "da": 0
+  },
+  {
+   "t": 31025,
+   "fehlt": [
+    "der Horizont wächst (35 %)",
+    "231 Bäume und Bauten wachsen",
+    "15 Häuser des Dorfs wachsen",
+    "157 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "14 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 17 im Werk · 3 im Bäcker",
+   "erst": [
+    12,
+    1677,
+    1
+   ],
+   "da": 0
+  },
+  {
+   "t": 31224,
+   "fehlt": [
+    "der Horizont wächst (35 %)",
+    "231 Bäume und Bauten wachsen",
+    "15 Häuser des Dorfs wachsen",
+    "157 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "14 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 17 im Werk · 3 im Bäcker",
+   "erst": [
+    12,
+    1677,
+    1
+   ],
+   "da": 0
+  },
+  {
+   "t": 31426,
+   "fehlt": [
+    "der Horizont wächst (35 %)",
+    "231 Bäume und Bauten wachsen",
+    "15 Häuser des Dorfs wachsen",
+    "157 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "14 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 17 im Werk · 3 im Bäcker",
+   "erst": [
+    12,
+    1677,
+    1
+   ],
+   "da": 0
+  },
+  {
+   "t": 31622,
+   "fehlt": [
+    "der Horizont wächst (35 %)",
+    "231 Bäume und Bauten wachsen",
+    "15 Häuser des Dorfs wachsen",
+    "157 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "14 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 12 im Werk · 3 im Bäcker",
+   "erst": [
+    12,
+    1677,
+    1
+   ],
+   "da": 0
+  },
+  {
+   "t": 31823,
+   "fehlt": [
+    "der Horizont wächst (35 %)",
+    "231 Bäume und Bauten wachsen",
+    "15 Häuser des Dorfs wachsen",
+    "157 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "14 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 12 im Werk · 3 im Bäcker",
+   "erst": [
+    12,
+    1677,
+    1
+   ],
+   "da": 0
+  },
+  {
+   "t": 32023,
+   "fehlt": [
+    "der Horizont wächst (35 %)",
+    "231 Bäume und Bauten wachsen",
+    "15 Häuser des Dorfs wachsen",
+    "157 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "14 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 11 im Werk · 3 im Bäcker",
+   "erst": [
+    12,
+    1677,
+    1
+   ],
+   "da": 0
+  },
+  {
+   "t": 32222,
+   "fehlt": [
+    "der Horizont wächst (35 %)",
+    "231 Bäume und Bauten wachsen",
+    "15 Häuser des Dorfs wachsen",
+    "157 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "14 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 11 im Werk · 3 im Bäcker",
+   "erst": [
+    12,
+    1677,
+    1
+   ],
+   "da": 0
+  },
+  {
+   "t": 32435,
+   "fehlt": [
+    "der Horizont wächst (35 %)",
+    "231 Bäume und Bauten wachsen",
+    "15 Häuser des Dorfs wachsen",
+    "157 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "14 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 10 im Werk · 3 im Bäcker",
+   "erst": [
+    12,
+    1677,
+    1
+   ],
+   "da": 0
+  },
+  {
+   "t": 32640,
+   "fehlt": [
+    "der Horizont wächst (35 %)",
+    "231 Bäume und Bauten wachsen",
+    "15 Häuser des Dorfs wachsen",
+    "157 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "14 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 10 im Werk · 3 im Bäcker",
+   "erst": [
+    12,
+    1677,
+    1
+   ],
+   "da": 0
+  },
+  {
+   "t": 32824,
+   "fehlt": [
+    "der Horizont wächst (35 %)",
+    "231 Bäume und Bauten wachsen",
+    "15 Häuser des Dorfs wachsen",
+    "157 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "14 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 3 im Werk · 3 im Bäcker",
+   "erst": [
+    12,
+    1677,
+    1
+   ],
+   "da": 0
+  },
+  {
+   "t": 33033,
+   "fehlt": [
+    "der Horizont wächst (35 %)",
+    "231 Bäume und Bauten wachsen",
+    "15 Häuser des Dorfs wachsen",
+    "157 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "14 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 3 im Werk · 3 im Bäcker",
+   "erst": [
+    12,
+    1677,
+    1
+   ],
+   "da": 0
+  },
+  {
+   "t": 34620,
+   "fehlt": [
+    "der Horizont wächst (47 %)",
+    "256 Bäume und Bauten wachsen",
+    "13 Häuser des Dorfs wachsen",
+    "108 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "15 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 5 im Werk · 3 im Bäcker",
+   "erst": [
+    13,
+    2160,
+    1
+   ],
+   "da": 0
+  },
+  {
+   "t": 34822,
+   "fehlt": [
+    "der Horizont wächst (47 %)",
+    "256 Bäume und Bauten wachsen",
+    "13 Häuser des Dorfs wachsen",
+    "108 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "15 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 5 im Werk · 3 im Bäcker",
+   "erst": [
+    13,
+    2160,
+    1
+   ],
+   "da": 0
+  },
+  {
+   "t": 35036,
+   "fehlt": [
+    "der Horizont wächst (47 %)",
+    "256 Bäume und Bauten wachsen",
+    "13 Häuser des Dorfs wachsen",
+    "108 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "15 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 5 im Werk · 3 im Bäcker",
+   "erst": [
+    13,
+    2160,
+    1
+   ],
+   "da": 0
+  },
+  {
+   "t": 35236,
+   "fehlt": [
+    "der Horizont wächst (47 %)",
+    "256 Bäume und Bauten wachsen",
+    "13 Häuser des Dorfs wachsen",
+    "108 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "15 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 5 im Werk · 3 im Bäcker",
+   "erst": [
+    13,
+    2160,
+    1
+   ],
+   "da": 0
+  },
+  {
+   "t": 35444,
+   "fehlt": [
+    "der Horizont wächst (47 %)",
+    "256 Bäume und Bauten wachsen",
+    "13 Häuser des Dorfs wachsen",
+    "108 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "15 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 5 im Werk · 3 im Bäcker",
+   "erst": [
+    13,
+    2160,
+    1
+   ],
+   "da": 0
+  },
+  {
+   "t": 35637,
+   "fehlt": [
+    "der Horizont wächst (47 %)",
+    "256 Bäume und Bauten wachsen",
+    "13 Häuser des Dorfs wachsen",
+    "108 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "15 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 5 im Werk · 3 im Bäcker",
+   "erst": [
+    13,
+    2160,
+    1
+   ],
+   "da": 0
+  },
+  {
+   "t": 35857,
+   "fehlt": [
+    "der Horizont wächst (47 %)",
+    "256 Bäume und Bauten wachsen",
+    "13 Häuser des Dorfs wachsen",
+    "108 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "15 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 5 im Werk · 3 im Bäcker",
+   "erst": [
+    13,
+    2160,
+    1
+   ],
+   "da": 0
+  },
+  {
+   "t": 36032,
+   "fehlt": [
+    "der Horizont wächst (47 %)",
+    "256 Bäume und Bauten wachsen",
+    "13 Häuser des Dorfs wachsen",
+    "108 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "15 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 4 im Werk · 3 im Bäcker",
+   "erst": [
+    13,
+    2160,
+    1
+   ],
+   "da": 0
+  },
+  {
+   "t": 36228,
+   "fehlt": [
+    "der Horizont wächst (47 %)",
+    "256 Bäume und Bauten wachsen",
+    "13 Häuser des Dorfs wachsen",
+    "108 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "15 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 3 im Werk · 3 im Bäcker",
+   "erst": [
+    13,
+    2160,
+    1
+   ],
+   "da": 0
+  },
+  {
+   "t": 38492,
+   "fehlt": [
+    "der Horizont wächst (58 %)",
+    "253 Bäume und Bauten wachsen",
+    "10 Häuser des Dorfs wachsen",
+    "97 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "15 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 5 im Werk · 3 im Bäcker",
+   "erst": [
+    14,
+    2648,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 38629,
+   "fehlt": [
+    "der Horizont wächst (58 %)",
+    "253 Bäume und Bauten wachsen",
+    "10 Häuser des Dorfs wachsen",
+    "97 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "15 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 4 im Werk · 3 im Bäcker",
+   "erst": [
+    14,
+    2648,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 38826,
+   "fehlt": [
+    "der Horizont wächst (58 %)",
+    "253 Bäume und Bauten wachsen",
+    "10 Häuser des Dorfs wachsen",
+    "97 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "15 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 4 im Werk · 3 im Bäcker",
+   "erst": [
+    14,
+    2648,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 39031,
+   "fehlt": [
+    "der Horizont wächst (58 %)",
+    "253 Bäume und Bauten wachsen",
+    "10 Häuser des Dorfs wachsen",
+    "97 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "15 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 3 im Werk · 3 im Bäcker",
+   "erst": [
+    14,
+    2648,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 39225,
+   "fehlt": [
+    "der Horizont wächst (58 %)",
+    "253 Bäume und Bauten wachsen",
+    "10 Häuser des Dorfs wachsen",
+    "97 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "15 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 3 im Werk · 3 im Bäcker",
+   "erst": [
+    14,
+    2648,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 39436,
+   "fehlt": [
+    "der Horizont wächst (58 %)",
+    "253 Bäume und Bauten wachsen",
+    "10 Häuser des Dorfs wachsen",
+    "97 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "15 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 3 im Werk · 3 im Bäcker",
+   "erst": [
+    14,
+    2648,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 39630,
+   "fehlt": [
+    "der Horizont wächst (58 %)",
+    "253 Bäume und Bauten wachsen",
+    "10 Häuser des Dorfs wachsen",
+    "97 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "15 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 3 im Werk · 3 im Bäcker",
+   "erst": [
+    14,
+    2648,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 39833,
+   "fehlt": [
+    "der Horizont wächst (58 %)",
+    "253 Bäume und Bauten wachsen",
+    "10 Häuser des Dorfs wachsen",
+    "97 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "15 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 3 im Bäcker",
+   "erst": [
+    14,
+    2648,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 41538,
+   "fehlt": [
+    "der Horizont wächst (70 %)",
+    "251 Bäume und Bauten wachsen",
+    "8 Häuser des Dorfs wachsen",
+    "85 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "16 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 5 im Werk · 3 im Bäcker",
+   "erst": [
+    15,
+    3042,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 41623,
+   "fehlt": [
+    "der Horizont wächst (70 %)",
+    "251 Bäume und Bauten wachsen",
+    "8 Häuser des Dorfs wachsen",
+    "85 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "16 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 5 im Werk · 3 im Bäcker",
+   "erst": [
+    15,
+    3042,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 41853,
+   "fehlt": [
+    "der Horizont wächst (70 %)",
+    "251 Bäume und Bauten wachsen",
+    "8 Häuser des Dorfs wachsen",
+    "85 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "16 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 5 im Werk · 3 im Bäcker",
+   "erst": [
+    15,
+    3042,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 42041,
+   "fehlt": [
+    "der Horizont wächst (70 %)",
+    "251 Bäume und Bauten wachsen",
+    "8 Häuser des Dorfs wachsen",
+    "85 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "16 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 5 im Werk · 3 im Bäcker",
+   "erst": [
+    15,
+    3042,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 42242,
+   "fehlt": [
+    "der Horizont wächst (70 %)",
+    "251 Bäume und Bauten wachsen",
+    "8 Häuser des Dorfs wachsen",
+    "85 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "16 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 5 im Werk · 3 im Bäcker",
+   "erst": [
+    15,
+    3042,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 42434,
+   "fehlt": [
+    "der Horizont wächst (70 %)",
+    "251 Bäume und Bauten wachsen",
+    "8 Häuser des Dorfs wachsen",
+    "85 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "16 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 5 im Werk · 3 im Bäcker",
+   "erst": [
+    15,
+    3042,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 42649,
+   "fehlt": [
+    "der Horizont wächst (70 %)",
+    "251 Bäume und Bauten wachsen",
+    "8 Häuser des Dorfs wachsen",
+    "85 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "16 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 5 im Werk · 3 im Bäcker",
+   "erst": [
+    15,
+    3042,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 42827,
+   "fehlt": [
+    "der Horizont wächst (70 %)",
+    "251 Bäume und Bauten wachsen",
+    "8 Häuser des Dorfs wachsen",
+    "85 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "16 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 5 im Werk · 3 im Bäcker",
+   "erst": [
+    15,
+    3042,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 43028,
+   "fehlt": [
+    "der Horizont wächst (70 %)",
+    "251 Bäume und Bauten wachsen",
+    "8 Häuser des Dorfs wachsen",
+    "85 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "16 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 4 im Werk · 3 im Bäcker",
+   "erst": [
+    15,
+    3042,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 43924,
+   "fehlt": [
+    "der Horizont wächst (82 %)",
+    "274 Bäume und Bauten wachsen",
+    "6 Häuser des Dorfs wachsen",
+    "64 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "17 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 4 im Werk · 3 im Bäcker",
+   "erst": [
+    16,
+    3214,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 44034,
+   "fehlt": [
+    "der Horizont wächst (82 %)",
+    "274 Bäume und Bauten wachsen",
+    "6 Häuser des Dorfs wachsen",
+    "64 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "17 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 2 im Werk · 3 im Bäcker",
+   "erst": [
+    16,
+    3214,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 44282,
+   "fehlt": [
+    "der Horizont wächst (82 %)",
+    "274 Bäume und Bauten wachsen",
+    "6 Häuser des Dorfs wachsen",
+    "64 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "17 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 1 im Werk · 3 im Bäcker",
+   "erst": [
+    16,
+    3214,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 44424,
+   "fehlt": [
+    "der Horizont wächst (82 %)",
+    "274 Bäume und Bauten wachsen",
+    "6 Häuser des Dorfs wachsen",
+    "64 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "17 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 3 im Bäcker",
+   "erst": [
+    16,
+    3214,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 44665,
+   "fehlt": [
+    "der Horizont wächst (82 %)",
+    "274 Bäume und Bauten wachsen",
+    "6 Häuser des Dorfs wachsen",
+    "64 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "17 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 3 im Bäcker",
+   "erst": [
+    16,
+    3214,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 44827,
+   "fehlt": [
+    "der Horizont wächst (82 %)",
+    "274 Bäume und Bauten wachsen",
+    "6 Häuser des Dorfs wachsen",
+    "64 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "17 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 3 im Bäcker",
+   "erst": [
+    16,
+    3214,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 45033,
+   "fehlt": [
+    "der Horizont wächst (82 %)",
+    "274 Bäume und Bauten wachsen",
+    "6 Häuser des Dorfs wachsen",
+    "64 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "17 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 3 im Bäcker",
+   "erst": [
+    16,
+    3214,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 45311,
+   "fehlt": [
+    "der Horizont wächst (82 %)",
+    "274 Bäume und Bauten wachsen",
+    "6 Häuser des Dorfs wachsen",
+    "64 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "17 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 3 im Bäcker",
+   "erst": [
+    16,
+    3214,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 45461,
+   "fehlt": [
+    "der Horizont wächst (82 %)",
+    "274 Bäume und Bauten wachsen",
+    "6 Häuser des Dorfs wachsen",
+    "64 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "17 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 3 im Bäcker",
+   "erst": [
+    16,
+    3214,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 45651,
+   "fehlt": [
+    "der Horizont wächst (82 %)",
+    "274 Bäume und Bauten wachsen",
+    "6 Häuser des Dorfs wachsen",
+    "64 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "17 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 3 im Bäcker",
+   "erst": [
+    16,
+    3214,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 45850,
+   "fehlt": [
+    "der Horizont wächst (82 %)",
+    "274 Bäume und Bauten wachsen",
+    "6 Häuser des Dorfs wachsen",
+    "64 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "17 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 3 im Bäcker",
+   "erst": [
+    16,
+    3214,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 46036,
+   "fehlt": [
+    "der Horizont wächst (82 %)",
+    "274 Bäume und Bauten wachsen",
+    "6 Häuser des Dorfs wachsen",
+    "64 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "17 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 3 im Bäcker",
+   "erst": [
+    16,
+    3214,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 46231,
+   "fehlt": [
+    "der Horizont wächst (82 %)",
+    "274 Bäume und Bauten wachsen",
+    "6 Häuser des Dorfs wachsen",
+    "64 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "17 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 3 im Bäcker",
+   "erst": [
+    16,
+    3214,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 46431,
+   "fehlt": [
+    "der Horizont wächst (82 %)",
+    "274 Bäume und Bauten wachsen",
+    "6 Häuser des Dorfs wachsen",
+    "64 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "17 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 3 im Bäcker",
+   "erst": [
+    16,
+    3214,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 46632,
+   "fehlt": [
+    "der Horizont wächst (82 %)",
+    "274 Bäume und Bauten wachsen",
+    "6 Häuser des Dorfs wachsen",
+    "64 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "17 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 3 im Bäcker",
+   "erst": [
+    16,
+    3214,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 46828,
+   "fehlt": [
+    "der Horizont wächst (82 %)",
+    "274 Bäume und Bauten wachsen",
+    "6 Häuser des Dorfs wachsen",
+    "64 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "17 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 3 im Bäcker",
+   "erst": [
+    16,
+    3214,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 47046,
+   "fehlt": [
+    "der Horizont wächst (82 %)",
+    "274 Bäume und Bauten wachsen",
+    "6 Häuser des Dorfs wachsen",
+    "64 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "17 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 3 im Bäcker",
+   "erst": [
+    16,
+    3214,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 47223,
+   "fehlt": [
+    "der Horizont wächst (82 %)",
+    "274 Bäume und Bauten wachsen",
+    "6 Häuser des Dorfs wachsen",
+    "64 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "17 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 3 im Bäcker",
+   "erst": [
+    16,
+    3214,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 47422,
+   "fehlt": [
+    "der Horizont wächst (82 %)",
+    "274 Bäume und Bauten wachsen",
+    "6 Häuser des Dorfs wachsen",
+    "64 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "17 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 3 im Bäcker",
+   "erst": [
+    16,
+    3214,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 47760,
+   "fehlt": [
+    "der Horizont wächst (94 %)",
+    "304 Bäume und Bauten wachsen",
+    "5 Häuser des Dorfs wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "18 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 1 im Werk · 3 im Bäcker",
+   "erst": [
+    16,
+    3214,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 47842,
+   "fehlt": [
+    "der Horizont wächst (94 %)",
+    "304 Bäume und Bauten wachsen",
+    "5 Häuser des Dorfs wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "18 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 1 im Werk · 3 im Bäcker",
+   "erst": [
+    16,
+    3214,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 48053,
+   "fehlt": [
+    "der Horizont wächst (94 %)",
+    "304 Bäume und Bauten wachsen",
+    "5 Häuser des Dorfs wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "18 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 1 im Werk · 3 im Bäcker",
+   "erst": [
+    16,
+    3214,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 48271,
+   "fehlt": [
+    "der Horizont wächst (94 %)",
+    "304 Bäume und Bauten wachsen",
+    "5 Häuser des Dorfs wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "18 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 1 im Werk · 3 im Bäcker",
+   "erst": [
+    16,
+    3214,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 48434,
+   "fehlt": [
+    "der Horizont wächst (94 %)",
+    "304 Bäume und Bauten wachsen",
+    "5 Häuser des Dorfs wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "18 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 1 im Werk · 3 im Bäcker",
+   "erst": [
+    16,
+    3214,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 48649,
+   "fehlt": [
+    "der Horizont wächst (94 %)",
+    "304 Bäume und Bauten wachsen",
+    "5 Häuser des Dorfs wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "18 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 3 im Bäcker",
+   "erst": [
+    16,
+    3214,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 48829,
+   "fehlt": [
+    "der Horizont wächst (94 %)",
+    "304 Bäume und Bauten wachsen",
+    "5 Häuser des Dorfs wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "18 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 3 im Bäcker",
+   "erst": [
+    16,
+    3214,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 49085,
+   "fehlt": [
+    "der Horizont wächst (94 %)",
+    "304 Bäume und Bauten wachsen",
+    "5 Häuser des Dorfs wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "18 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 3 im Bäcker",
+   "erst": [
+    16,
+    3214,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 49238,
+   "fehlt": [
+    "der Horizont wächst (94 %)",
+    "304 Bäume und Bauten wachsen",
+    "5 Häuser des Dorfs wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "18 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 3 im Bäcker",
+   "erst": [
+    16,
+    3214,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 49476,
+   "fehlt": [
+    "der Horizont wächst (94 %)",
+    "304 Bäume und Bauten wachsen",
+    "5 Häuser des Dorfs wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "18 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 3 im Bäcker",
+   "erst": [
+    16,
+    3214,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 49630,
+   "fehlt": [
+    "der Horizont wächst (94 %)",
+    "304 Bäume und Bauten wachsen",
+    "5 Häuser des Dorfs wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "18 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 3 im Bäcker",
+   "erst": [
+    16,
+    3214,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 49824,
+   "fehlt": [
+    "der Horizont wächst (94 %)",
+    "304 Bäume und Bauten wachsen",
+    "5 Häuser des Dorfs wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "18 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 3 im Bäcker",
+   "erst": [
+    16,
+    3214,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 50045,
+   "fehlt": [
+    "der Horizont wächst (94 %)",
+    "304 Bäume und Bauten wachsen",
+    "5 Häuser des Dorfs wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "18 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 3 im Bäcker",
+   "erst": [
+    16,
+    3214,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 50238,
+   "fehlt": [
+    "der Horizont wächst (94 %)",
+    "304 Bäume und Bauten wachsen",
+    "5 Häuser des Dorfs wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "18 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 3 im Bäcker",
+   "erst": [
+    16,
+    3214,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 50436,
+   "fehlt": [
+    "der Horizont wächst (94 %)",
+    "304 Bäume und Bauten wachsen",
+    "5 Häuser des Dorfs wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "18 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 3 im Bäcker",
+   "erst": [
+    16,
+    3214,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 50635,
+   "fehlt": [
+    "der Horizont wächst (94 %)",
+    "304 Bäume und Bauten wachsen",
+    "5 Häuser des Dorfs wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "18 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 3 im Bäcker",
+   "erst": [
+    16,
+    3214,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 50863,
+   "fehlt": [
+    "der Horizont wächst (94 %)",
+    "304 Bäume und Bauten wachsen",
+    "5 Häuser des Dorfs wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "18 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 3 im Bäcker",
+   "erst": [
+    16,
+    3214,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 51035,
+   "fehlt": [
+    "der Horizont wächst (94 %)",
+    "304 Bäume und Bauten wachsen",
+    "5 Häuser des Dorfs wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "18 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 3 im Bäcker",
+   "erst": [
+    16,
+    3214,
+    0
+   ],
+   "da": 0
+  },
+  {
+   "t": 53596,
+   "fehlt": [
+    "280 Bäume und Bauten wachsen",
+    "2 Häuser des Dorfs wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "18 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 4 im Werk · 3 im Bäcker",
+   "erst": [
+    19,
+    4010,
+    3
+   ],
+   "da": 0
+  },
+  {
+   "t": 53654,
+   "fehlt": [
+    "280 Bäume und Bauten wachsen",
+    "2 Häuser des Dorfs wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "18 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 4 im Werk · 3 im Bäcker",
+   "erst": [
+    19,
+    4010,
+    3
+   ],
+   "da": 0
+  },
+  {
+   "t": 53905,
+   "fehlt": [
+    "280 Bäume und Bauten wachsen",
+    "2 Häuser des Dorfs wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "16 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 3 im Werk · 1 im Bäcker",
+   "erst": [
+    19,
+    4010,
+    3
+   ],
+   "da": 0
+  },
+  {
+   "t": 54037,
+   "fehlt": [
+    "280 Bäume und Bauten wachsen",
+    "2 Häuser des Dorfs wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "16 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 3 im Werk · 1 im Bäcker",
+   "erst": [
+    19,
+    4010,
+    3
+   ],
+   "da": 0
+  },
+  {
+   "t": 54237,
+   "fehlt": [
+    "280 Bäume und Bauten wachsen",
+    "2 Häuser des Dorfs wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "15 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 2 im Werk · 0 im Bäcker",
+   "erst": [
+    19,
+    4010,
+    3
+   ],
+   "da": 0
+  },
+  {
+   "t": 54432,
+   "fehlt": [
+    "280 Bäume und Bauten wachsen",
+    "2 Häuser des Dorfs wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "15 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 1 im Werk · 0 im Bäcker",
+   "erst": [
+    19,
+    4010,
+    3
+   ],
+   "da": 0
+  },
+  {
+   "t": 54626,
+   "fehlt": [
+    "280 Bäume und Bauten wachsen",
+    "2 Häuser des Dorfs wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "15 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 1 im Werk · 0 im Bäcker",
+   "erst": [
+    19,
+    4010,
+    3
+   ],
+   "da": 0
+  },
+  {
+   "t": 54832,
+   "fehlt": [
+    "280 Bäume und Bauten wachsen",
+    "2 Häuser des Dorfs wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "15 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    19,
+    4010,
+    3
+   ],
+   "da": 0
+  },
+  {
+   "t": 55037,
+   "fehlt": [
+    "280 Bäume und Bauten wachsen",
+    "2 Häuser des Dorfs wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "15 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    19,
+    4010,
+    3
+   ],
+   "da": 0
+  },
+  {
+   "t": 55292,
+   "fehlt": [
+    "280 Bäume und Bauten wachsen",
+    "2 Häuser des Dorfs wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "15 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 0 im Bäcker",
+   "erst": [
+    19,
+    4010,
+    3
+   ],
+   "da": 0
+  },
+  {
+   "t": 57427,
+   "fehlt": [
+    "206 Bäume und Bauten wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "15 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 2 im Werk · 3 im Bäcker",
+   "erst": [
+    20,
+    4576,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 57658,
+   "fehlt": [
+    "206 Bäume und Bauten wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "15 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 3 im Bäcker",
+   "erst": [
+    20,
+    4576,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 57830,
+   "fehlt": [
+    "206 Bäume und Bauten wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "15 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 3 im Bäcker",
+   "erst": [
+    20,
+    4576,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 58030,
+   "fehlt": [
+    "206 Bäume und Bauten wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "15 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 3 im Bäcker",
+   "erst": [
+    20,
+    4576,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 58227,
+   "fehlt": [
+    "206 Bäume und Bauten wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "15 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 3 im Bäcker",
+   "erst": [
+    20,
+    4576,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 58493,
+   "fehlt": [
+    "206 Bäume und Bauten wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "15 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 3 im Bäcker",
+   "erst": [
+    20,
+    4576,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 58622,
+   "fehlt": [
+    "206 Bäume und Bauten wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "15 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 3 im Bäcker",
+   "erst": [
+    20,
+    4576,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 58834,
+   "fehlt": [
+    "206 Bäume und Bauten wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "15 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 3 im Bäcker",
+   "erst": [
+    20,
+    4576,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 59034,
+   "fehlt": [
+    "206 Bäume und Bauten wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "15 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 3 im Bäcker",
+   "erst": [
+    20,
+    4576,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 59909,
+   "fehlt": [
+    "203 Bäume und Bauten wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "15 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 3 im Bäcker",
+   "erst": [
+    21,
+    5108,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 60108,
+   "fehlt": [
+    "203 Bäume und Bauten wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "15 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 3 im Bäcker",
+   "erst": [
+    21,
+    5108,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 60234,
+   "fehlt": [
+    "203 Bäume und Bauten wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "15 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 3 im Bäcker",
+   "erst": [
+    21,
+    5108,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 60426,
+   "fehlt": [
+    "203 Bäume und Bauten wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "15 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 3 im Bäcker",
+   "erst": [
+    21,
+    5108,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 60626,
+   "fehlt": [
+    "203 Bäume und Bauten wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "15 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 3 im Bäcker",
+   "erst": [
+    21,
+    5108,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 60825,
+   "fehlt": [
+    "203 Bäume und Bauten wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "15 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 3 im Bäcker",
+   "erst": [
+    21,
+    5108,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 61024,
+   "fehlt": [
+    "203 Bäume und Bauten wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "15 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 3 im Bäcker",
+   "erst": [
+    21,
+    5108,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 61224,
+   "fehlt": [
+    "203 Bäume und Bauten wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "15 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 3 im Bäcker",
+   "erst": [
+    21,
+    5108,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 61566,
+   "fehlt": [
+    "203 Bäume und Bauten wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "15 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 3 im Bäcker",
+   "erst": [
+    21,
+    5108,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 61657,
+   "fehlt": [
+    "203 Bäume und Bauten wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "15 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 3 im Bäcker",
+   "erst": [
+    21,
+    5108,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 61839,
+   "fehlt": [
+    "203 Bäume und Bauten wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "15 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 3 im Bäcker",
+   "erst": [
+    21,
+    5108,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 62042,
+   "fehlt": [
+    "203 Bäume und Bauten wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "15 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 3 im Bäcker",
+   "erst": [
+    21,
+    5108,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 62245,
+   "fehlt": [
+    "203 Bäume und Bauten wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "15 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 3 im Bäcker",
+   "erst": [
+    21,
+    5108,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 62428,
+   "fehlt": [
+    "203 Bäume und Bauten wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "15 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 3 im Bäcker",
+   "erst": [
+    21,
+    5108,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 62635,
+   "fehlt": [
+    "203 Bäume und Bauten wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "15 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 3 im Bäcker",
+   "erst": [
+    21,
+    5108,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 62833,
+   "fehlt": [
+    "203 Bäume und Bauten wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "15 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 3 im Bäcker",
+   "erst": [
+    21,
+    5108,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 63032,
+   "fehlt": [
+    "203 Bäume und Bauten wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "15 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 3 im Bäcker",
+   "erst": [
+    21,
+    5108,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 63224,
+   "fehlt": [
+    "203 Bäume und Bauten wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "15 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 3 im Bäcker",
+   "erst": [
+    21,
+    5108,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 63445,
+   "fehlt": [
+    "203 Bäume und Bauten wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "15 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 3 im Bäcker",
+   "erst": [
+    21,
+    5108,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 63641,
+   "fehlt": [
+    "203 Bäume und Bauten wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "15 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk · 3 im Bäcker",
+   "erst": [
+    21,
+    5108,
+    2
+   ],
+   "da": 0
+  },
+  {
+   "t": 64337,
+   "fehlt": [
+    "191 Bäume und Bauten wachsen",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "15 ferne Bäume werden gemalt"
+   ],
+   "vorrat": "bestellt",
+   "schlange": "24 wartend · 36 im Werk · 3 im Bäcker",
+   "erst": [
+    24,
+    5246,
+    4
+   ],
+   "da": 64246
+  }
+ ],
+ "lang": [
+  [
+   135,
+   240
+  ],
+  [
+   564,
+   104
+  ],
+  [
+   708,
+   587
+  ],
+  [
+   1920,
+   807
+  ],
+  [
+   2788,
+   616
+  ],
+  [
+   3492,
+   81
+  ],
+  [
+   5026,
+   561
+  ],
+  [
+   5597,
+   331
+  ],
+  [
+   6583,
+   922
+  ],
+  [
+   7537,
+   1448
+  ],
+  [
+   8985,
+   300
+  ],
+  [
+   9289,
+   268
+  ],
+  [
+   9561,
+   264
+  ],
+  [
+   11515,
+   637
+  ],
+  [
+   12173,
+   1308
+  ],
+  [
+   13627,
+   1607
+  ],
+  [
+   15287,
+   178
+  ],
+  [
+   15465,
+   768
+  ],
+  [
+   16792,
+   503
+  ],
+  [
+   17305,
+   1374
+  ],
+  [
+   19193,
+   1446
+  ],
+  [
+   21104,
+   1405
+  ],
+  [
+   23925,
+   450
+  ],
+  [
+   27116,
+   1246
+  ],
+  [
+   28379,
+   50
+  ],
+  [
+   28635,
+   52
+  ],
+  [
+   29810,
+   115
+  ],
+  [
+   29978,
+   424
+  ],
+  [
+   33066,
+   1475
+  ],
+  [
+   36372,
+   2117
+  ],
+  [
+   39877,
+   1617
+  ],
+  [
+   42827,
+   73
+  ],
+  [
+   43203,
+   718
+  ],
+  [
+   47449,
+   309
+  ],
+  [
+   51125,
+   511
+  ],
+  [
+   51639,
+   1957
+  ],
+  [
+   53599,
+   54
+  ],
+  [
+   55346,
+   2079
+  ],
+  [
+   59048,
+   859
+  ],
+  [
+   63717,
+   612
+  ]
+ ],
+ "ev": [
+  [
+   9093,
+   "_foundryRequestSettlement ab",
+   ""
+  ],
+  [
+   28388,
+   "_foundryRequestSettlement an",
+   ""
+  ]
+ ],
+ "kosten": {
+  "Bauten": {
+   "1": 3.800000000745058,
+   "2": 17.399999994784594,
+   "3": 0.30000000074505806,
+   "5": 4.700000010430813,
+   "7": 8.100000001490116,
+   "8": 15.199999999254942,
+   "9": 11.700000006705523,
+   "11": 126.69999999925494,
+   "12": 0.4000000022351742,
+   "13": 55.30000000074506,
+   "14": 1.5,
+   "15": 4.600000012665987,
+   "16": 16.600000012665987,
+   "17": 6.50000000372529,
+   "18": 17.200000002980232,
+   "20": 10.799999997019768,
+   "21": 1.000000011175871,
+   "22": 1.7999999970197678,
+   "23": 0.8000000007450581,
+   "24": 4.500000007450581,
+   "27": 1.2000000067055225,
+   "29": 2.7000000067055225,
+   "30": 6.200000002980232,
+   "33": 7.800000015646219,
+   "34": 13.100000001490116,
+   "36": 2.8999999947845936,
+   "38": 8.799999997019768,
+   "40": 1.5999999903142452,
+   "41": 4.900000002235174,
+   "43": 3.5,
+   "47": 2.2999999932944775,
+   "51": 10.899999994784594,
+   "52": 0.6999999992549419,
+   "53": 37.599999990314245,
+   "55": 0.19999999925494194,
+   "56": 7.899999991059303,
+   "57": 7.899999994784594,
+   "59": 8.699999995529652,
+   "64": 11.700000002980232
+  },
+  "Boden": {
+   "2": 673.1999999992549,
+   "5": 37.79999999701977,
+   "6": 2.5,
+   "8": 1,
+   "13": 20.200000002980232,
+   "15": 2.099999997764826,
+   "16": 4.200000002980232,
+   "17": 2.5000000037252903,
+   "19": 5.699999999254942,
+   "21": 6.299999997019768,
+   "23": 1.1000000014901161,
+   "33": 9.5,
+   "40": 10.899999998509884,
+   "43": 4,
+   "47": 0.5,
+   "51": 7.400000002235174,
+   "55": 26.5,
+   "59": 0.8000000007450581,
+   "64": 1
+  },
+  "Buch": {
+   "7": 96.39999999850988
+  },
+  "Streu": {
+   "9": 267.8999999985099,
+   "11": 99.59999999776483,
+   "12": 795.8000000007451,
+   "16": 4.800000000745058,
+   "23": 8.800000000745058,
+   "27": 107.20000000298023,
+   "29": 125.30000000074506,
+   "33": 105.20000000298023,
+   "36": 136.5,
+   "39": 111.69999999925494,
+   "43": 115.5,
+   "47": 122.69999999925494,
+   "51": 128.10000000149012,
+   "55": 101.19999999925494,
+   "59": 53.5,
+   "63": 269.5
+  },
+  "Gruppen-Bau": {
+   "12": 21.399999998509884,
+   "13": 35.30000000074506,
+   "15": 1.800000000745058,
+   "16": 7.799999997019768,
+   "17": 6.599999997764826,
+   "18": 11.199999999254942,
+   "20": 4.199999999254942,
+   "22": 3.2000000029802322,
+   "24": 8.600000001490116,
+   "30": 9.00000000372529,
+   "34": 90.69999999925494,
+   "38": 48.19999999552965,
+   "40": 150.80000000074506,
+   "41": 7,
+   "43": 76.69999999925494,
+   "47": 18.5,
+   "51": 3.800000000745058,
+   "52": 14.899999998509884,
+   "57": 118.09999999776483,
+   "59": 1.300000000745058,
+   "64": 1.199999999254942
+  }
+ },
+ "buchDa": 7635,
+ "weltbildDa": 64246,
+ "holz": "kienspan",
+ "version": "18.546.2",
+ "adapter": "google swiftshader",
+ "ohne": [
+  "[AnazhRealm V18.546.2] [WARN] Das erste Weltbild steht ohne: 203 Bäume und Bauten wachsen · 4 Wald-Stücke warten auf ihre Gestalt · 15 ferne Bäume werden gemalt — der Deckel von 60000 ms ist erreicht."
+ ],
+ "zweit": false
+}

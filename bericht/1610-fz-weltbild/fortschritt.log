@@ -1,0 +1,42 @@
+18:56:14 FZ START A=1d831571 B=27ae78bf
+18:56:14 A1 start gpu[70, 139 MHz, P8, 0x0000000000000001]
+18:56:39 A1 exit=1 gpu[72, 1404 MHz, P0, 0x0000000000000001]  t(Weltbild) = t(Kontrolle) 21.60 s ab Navigation
+18:57:24 B1 start gpu[72, 923 MHz, P2, 0x0000000000000001]
+18:57:50 B1 exit=1 gpu[73, 1088 MHz, P0, 0x0000000000000001]  t(Weltbild) = t(Kontrolle) 23.42 s ab Navigation
+18:58:36 A2 start gpu[71, 923 MHz, P2, 0x0000000000000001]
+18:59:00 A2 exit=1 gpu[73, 1556 MHz, P0, 0x0000000000000001]  t(Weltbild) = t(Kontrolle) 21.45 s ab Navigation
+18:59:45 B2 start gpu[71, 822 MHz, P3, 0x0000000000000001]
+19:00:10 B2 exit=1 gpu[73, 1556 MHz, P0, 0x0000000000000001]  t(Weltbild) = t(Kontrolle) 21.64 s ab Navigation
+19:00:55 FZ FERTIG
+19:01:38 A3 start
+19:02:03 A3 exit=1 — echte GPU · nvidia pascal   t(Weltbild) = t(Kontrolle) 21.74 s ab Navigation
+19:02:33 B3 start
+19:02:57 B3 exit=1 — echte GPU · nvidia pascal   t(Weltbild) = t(Kontrolle) 21.58 s ab Navigation
+19:03:28 A4 start
+19:03:51 A4 exit=1 — echte GPU · nvidia pascal   t(Weltbild) = t(Kontrolle) 21.14 s ab Navigation
+19:04:22 B4 start
+19:04:45 B4 exit=1 — echte GPU · nvidia pascal   t(Weltbild) = t(Kontrolle) 21.14 s ab Navigation
+19:05:16 sA1 start
+19:06:23 sA1 exit=1 — swiftshader · google swiftshader   t(Weltbild) = t(Kontrolle) 64.25 s ab Navigation
+19:06:54 sB1 start
+19:08:10 sB1 exit=1 — swiftshader · google swiftshader   t(Weltbild) = t(Kontrolle) 72.70 s ab Navigation
+19:08:41 sA2 start
+19:09:54 sA2 exit=1 — swiftshader · google swiftshader   t(Weltbild) = t(Kontrolle) 68.54 s ab Navigation
+19:10:25 sB2 start
+19:11:35 sB2 exit=1 — swiftshader · google swiftshader   t(Weltbild) = t(Kontrolle) 64.97 s ab Navigation
+19:12:06 FZ2 FERTIG
+19:12:56 qA1 start (4 Kerne)
+19:13:34 qA1 exit=127  
+19:13:50 qA1 start (4 Kerne)
+19:14:51 qA1 exit=0  
+19:14:58 qB1 start (4 Kerne)
+19:17:45 FZ3 Fehlstart verworfen (qA1/qB1 ohne gehaltene GPU-Prozess-Affinität, Mehrfach-Instanz) — Neustart
+19:17:48 qA1 start (4 Kerne)
+19:18:59 qA1 exit=0 affin=59 — swiftshader · google swiftshader   t(Weltbild) = t(Kontrolle) 65.30 s ab Navigation
+19:19:30 qB1 start (4 Kerne)
+19:20:45 qB1 exit=0 affin=39 — swiftshader · google swiftshader   t(Weltbild) = t(Kontrolle) 69.16 s ab Navigation
+19:21:15 qA2 start (4 Kerne)
+19:22:25 qA2 exit=0 affin=22 — swiftshader · google swiftshader   t(Weltbild) = t(Kontrolle) 65.16 s ab Navigation
+19:22:55 qB2 start (4 Kerne)
+19:24:05 qB2 exit=0 affin=19 — swiftshader · google swiftshader   t(Weltbild) = t(Kontrolle) 65.44 s ab Navigation
+19:24:36 FZ3 FERTIG
