@@ -1670,8 +1670,9 @@ jobs:
         # Karte (dem Messplatz, GTX 1060, Label omen-gpu) — swiftshader verbirgt, was eine echte GPU anders zeichnet (Lehre 17).
         # Die Liste unten ist der Fahrplan: die Auswahl nach Wert (Präzision fern · Schatten · Stufen-Wechsel · Bild-Urteil) aus
         # den Schritten von `voll`, je Schritt derselbe Befehl, auf der GTX zusammen 516 s (Takt-Lauf OMEN 16.10., alle 89 GPU-
-        # Schritte), dazu die Wand der Karte gate:weltbild-frost:echt (~100 s, seit frost-echt grün). Vier GPU-Schritte sind dort
-        # ROT (Albedo-Tafel, Ego-Schatten, Verdeckungs-Abfrage, WebGL2-Rückfall) — sie kommen in die Liste, wenn sie geheilt sind.
+        # Schritte), dazu die Wand der Karte gate:weltbild-frost:echt (~100 s), Ego-Schatten und Verdeckung (echt-vier). ROT auf der
+        # Karte bleiben Albedo-Tafel und WebGL2-Rückfall (das Spiel, Bericht 1610-echt-vier) — sie kommen, wenn sie geheilt sind. Jeder
+        # Schritt fährt auch nach einem roten (`!cancelled()`): ein Lauf zeigt jedes Rot beim Namen, der Job bleibt rot.
         # Bei JEDEM push auf integ-probe und nachts, hinter dem Kopf-Richter, aber nie hinter seiner Doppel-Sperre (die gilt der
         # swiftshader-Batterie; ein Zweig fährt echt nie, sonst sperrte ein schon grüner Zweig-Kopf nach dem Fast-Forward die Karte);
         # main trägt denselben SHA vorgespult; nie pull_request (das Repo ist öffentlich; der Hook des Läufers lässt nur push von
@@ -1768,6 +1769,14 @@ jobs:
             - name: Portal-Membran auf der Karte (die Passage zeichnet nur im Blick)
               if: ${{ !cancelled() }}
               run: npm run gate:portal-membran
+
+            - name: Ego-Schatten auf der Karte (in der Ego-Sicht wirft der Leib seinen Schatten, das Auge sieht ihn nicht)
+              if: ${{ !cancelled() }}
+              run: npm run gate:ego-schatten
+
+            - name: Verdeckungs-Abfrage auf der Karte (der Aussteige-Ablauf am Bach, jede WebGPU-Validierung beim Namen)
+              if: ${{ !cancelled() }}
+              run: npm run gate:verdeckungs-abfrage
 
             - name: Frost-Wand auf der Karte (das Weltbild folgt der Kamera vom Ankommen bis zur Hof-Bühne, nie der Ladeschirm)
               if: ${{ !cancelled() }}
