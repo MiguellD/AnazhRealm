@@ -142,7 +142,7 @@ const ZITAT_PLATZHALTER = /^[[<*{…$]/;
 const ZITAT_FREMD = new Set(["Three.js", "Node.js"]);
 const ZITAT_BLOCK = /^\s*(?:$|#|\||[-*+] |\d+\. |```)/;
 const ZITAT_SATZ = /[.;!?](?=\s)|\s·\s/g;
-const ZITAT_MD_IM_CODE = /(?<![\w.-])((?:docs|spec)\/[\w./-]+\.md)/g;
+const ZITAT_MD_IM_CODE = /(?<![\w./-])((?:[\w.-]+\/)*[\w.-]+\.md)(?![\w/-])/g;
 // Die Wache des Monolithen-Namens: die EINE Lese-Schnittstelle (`ALT`), die Absenz-Wand und diese Linse.
 const MONOLITH_WACHE = ["scripts/lib/stamm.cjs", "scripts/diag-altlasten.cjs", "scripts/diag-betriebsgesetz.cjs"];
 // Ein Dokument in Blöcke (Absatz, Listen- und Tabellen-Zeile, Überschrift): je Block der Text, die Zeilen-Anfänge und die
@@ -211,8 +211,12 @@ function zitatBefund(dokumente, welt) {
             const k = zeile.trimStart().startsWith("*") ? 0 : zeile.search(/\/[/*]/);
             if (k < 0 || ZITAT_CHRONIK.test(zeile)) return;
             const kommentar = zeile.slice(k);
-            for (const m of kommentar.matchAll(ZITAT_MD_IM_CODE))
-                if (!da(m[1])) out.push(`ZITAT-WAND: ${pfad}:${i + 1} verweist auf ${m[1]} — die Doku gibt es nicht`);
+            for (const m of kommentar.matchAll(ZITAT_MD_IM_CODE)) {
+                const p = m[1];
+                const lebt = p.includes("/") ? da(p) : welt.namen.has(p);
+                if (!lebt && !welt.ignoriert(p))
+                    out.push(`ZITAT-WAND: ${pfad}:${i + 1} verweist auf ${p} — die Doku gibt es nicht`);
+            }
             if (welt.monolith && kommentar.includes(welt.monolith) && !MONOLITH_WACHE.includes(pfad))
                 out.push(`ZITAT-WAND: ${pfad}:${i + 1} nennt ${welt.monolith} — der Stamm lebt in stamm/ (Lehre 12)`);
         });
@@ -389,7 +393,7 @@ function main() {
         (p) => zTexte[p],
         new Set(["gate:tier-gang"]),
         () => false,
-        "anazhRealm.js"
+        require("./lib/stamm.cjs").ALT
     );
     const zDoku = [
         "- Linse: `gate:weltgrenze` (A–G)",

@@ -39,7 +39,7 @@
 //       Rings (der gemessene Kreis der Tore + 4 m); ein Damm am Ort der Gegenprobe räumt den Hain aus seinen Boxen, und der
 //       Hain wächst nicht in ihn. Selbsttests: die Scheibe schwebt (schwebe), der Platz ist nur die Scheibe (platz), ein
 //       Bau ohne Haus-Zeile trägt keinen Grundriss (baugrund).
-//   --selftest: je Defekt serviert der Server die Basis-Zeile von anazhRealm.js — GENAU die Probe dieses Defekts wird rot;
+//   --selftest: je Defekt serviert der Server die Basis-Zeile des Stamms — GENAU die Probe dieses Defekts wird rot;
 //   die Welt eines Selbsttests fährt nur die Phase seines Täters (haus · sohle · lichtung · bau · w4 · w4b · w6), der Hauptlauf alle.
 //   node scripts/diag-haus-welt.cjs [--selftest [--nur=promotion,nahstreu]] [--phasen=lichtung]
 "use strict";
@@ -55,7 +55,7 @@ const NUR = (process.argv.find((a) => a.startsWith("--nur=")) || "--nur=").slice
 // --phasen=lichtung,w4: der Hauptlauf fährt nur diese Phasen (eine gezielte Messung; ohne die Option alle)
 const PHASEN = (process.argv.find((a) => a.startsWith("--phasen=")) || "--phasen=").slice(9).split(",").filter(Boolean);
 
-// DIE BASIS-ZEILEN je Defekt: [geheilte Form in anazhRealm.js, Basis-Form].
+// DIE BASIS-ZEILEN je Defekt: [geheilte Form im Stamm, Basis-Form].
 const BASIS = {
     // ohne die Hülle des Gesetzbuchs: nur die Wände der Tür-Zeile (vier EG-Wände mit Tür-Lücke — die Basis-Blocker der
     // Siedlungs-Häuser vor der Welle, hier schon gedreht), keine Böden, Tritte, Innenwände

@@ -1,4 +1,4 @@
-# DIE VERFASSUNG DER PIPELINE — „Das Neue Kleid" (P0–P8, VOLLENDET)
+# DIE VERFASSUNG DER PIPELINE — „Das Neue Kleid" (P0–P8)
 
 > **Struktur ersetzt Ermahnung.** Diese Datei codifiziert die GESETZE der Studio↔AnazhRealm-Asset-
 > Pipeline und — der entscheidende Punkt — WO jedes Gesetz strukturell erzwungen wird (Chokepoint ·
@@ -15,7 +15,7 @@ Wald-/Vegetations-Assets ist — ohne Parallelcode. Acht Phasen, seriell im Haup
 | Phase | Gesetz | Strukturelle Erzwingung |
 | --- | --- | --- |
 | **P0** | Worker == iframe byte-identisch | `scripts/diag-foundry-parity.cjs` (720/720 byte-genau) |
-| **P1** | Asset-Vertrag v1 (Pflanzen) eingefroren | `spec/asset-contract/v1/` + `gate:asset-contract` (52 sha256-Goldens) |
+| **P1** | Asset-Vertrag v1 (Pflanzen) eingefroren | `spec/asset-contract/v1/` + `gate:asset-contract` (132 Golden-Dateien) |
 | **P2** | Kern-Split `foundry-core.js` (Studio-Generator als geteilte Quelle) | `gate:portal-boot` (die Shell liest die Globals) |
 | **P3a** | Foundry iframe → Worker (Geometrie off-thread) | `gate:foundry-warm` (der Worker bäckt echte Assets headless) |
 | **P4** | Die Foundry ist die EINE aktive Baum-Quelle | der Chokepoint `_buildVariantLODs` (null bei lebender Foundry) + der Scatter-Gate + `gate:foundry-deadlock` |
@@ -76,7 +76,7 @@ Blick-Sonde auf echter GPU.
 ### Gesetz 4 — die Asset-Verträge sind eingefroren + gate-bewacht
 
 Zwei Verträge frieren die Asset-Nähte byte-genau ein: **v1** (`spec/asset-contract/v1/`) = die
-Pflanzen (Studio-Generator, `gate:asset-contract`, 52 sha256-Goldens über einen Worker); der **Ofen**
+Pflanzen (Studio-Generator, `gate:asset-contract`, 132 Golden-Dateien über einen Worker); der **Ofen**
 (`spec/asset-contract/ofen/`) = die Körper aus dem Tier- und Mensch-Guss (`gate:ofen-contract`, ein Byte-Golden je
 Stoff-Klasse × Gelenk; die Metaball-Haut v2 fiel mit KONVERGENZ III, 876babf8). Die Goldens sind EINGEFROREN
 (Taille-Disziplin) — ein bewusster Re-Mint ist `MINT_FORCE=1` mit Begründung.

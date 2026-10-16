@@ -8,7 +8,7 @@
 >
 > Eingefroren bei P0-Grün (720/720 Worker==iframe byte-identisch). Der Produktions-Transport ist
 > `postMessage` (Worker: `self.postMessage` · iframe: `window.parent.postMessage`) — EIN Protokoll,
-> zwei Transporte (`__post`/`__portalOnMessage` in phytogenesis.js).
+> zwei Transporte (heute `__post` und der Kanal `foundryKanal` in `foundry-bruecke.js`).
 
 ## Die fünf Kanäle
 

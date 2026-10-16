@@ -1,7 +1,7 @@
 # Pack-Vertrag v0 / v1 (Pack-Kanon, Nervensystem N3)
 
 > **NORMATIV für v0** — der HEUTIGE IDB-Asset-Cache als eingefrorener Kanon (reine Beschreibung
-> des Ist, Stand V18.433; der Code ist die Wahrheit, dieses Dokument der Vertrag darüber).
+> des Ist; der Code ist die Wahrheit, dieses Dokument der Vertrag darüber).
 > **SCHEMA für v1** — die Pack-Hülle mit `meta`/`components`/`cv` (Doc + Mint-Artefakte; der
 > Live-Code SCHREIBT weiter v0 — der v0→v1-Umstieg ist ein bewusster Folge-Schritt, §v1.5).
 >
@@ -9,7 +9,7 @@
 > Roundtrip-Beweis mint→zurücklesen→byte-gleich). Mint-Werkzeug: `scripts/mint-asset-packs.cjs`
 > (kein CI-Gate — ein Werkzeug, mit `--verify`-Modus + Exit-Codes).
 >
-> Ort im Nervensystem (`docs/nervensystem-plan.md`): Phase γ · Verb **appear** · „Addressables"-
+> Ort im Nervensystem (der Plan lebt im git-Archiv): Phase γ · Verb **appear** · „Addressables"-
 > Anker (Gestalt laden/cachen). Verwandt: `spec/asset-contract/v1/CONTRACT.md` (der Draht-Vertrag
 > des Worker-Replies — das Pack persistiert GENAU diesen Reply).
 
@@ -23,7 +23,7 @@ Ein Eintrag je gebackenem Asset im IndexedDB-Store `anazhFoundryAssets/assets`:
 <preset>|<gestalt>|<lod>
 ```
 
-Der EINE Schlüssel-Münzer ist `_foundryKoerperKey(preset, gestalt, lod, ov)` (anazhRealm.js) — derselbe String ist
+Der EINE Schlüssel-Münzer ist `_foundryKoerperKey(preset, gestalt, lod, ov)` (Stamm) — derselbe String ist
 Platten-, Cache- und leafKey-Stamm. Ein GEPRÄGTER Körper (Ofen-Mensch, Tier mit Reglern, gestempelter Eintrag) hängt
 seinen ov-Hash an: `<preset>|<gestalt>|<lod>|ov:<hash>` (`_studioOvHash`, reihenfolgefest) — nur die Werkstatt-Vorschau
 und die Hand (`wo === 0` mit ov) sind Unikate ohne Platte.
@@ -53,7 +53,7 @@ geroell` · Kristall `kristalle` · Zweit-Kern z. B. `gt supersport …`).
   `foliage.color`/`foliageTex.color` — Position, Normale, UV, Index und Rinde sind byte-gleich.
 
 Dazu EIN Meta-Schlüssel `__stamp` (der Stempel, s. u.). Schreiber UND Leser ist seit V18.511 die
-**Transport-Schale** `_foundrySchale` (anazhRealm.js): der Host-Teil des Foundry-Kanals, der IM Worker vor dem
+**Transport-Schale** `_foundrySchale` (Stamm): der Host-Teil des Foundry-Kanals, der IM Worker vor dem
 Studio läuft — der Haupt-Thread fasst den Store nie an (`gate:fluss`).
 
 ## v0 — Wert
@@ -215,7 +215,7 @@ Pack und NIE verstreut (die zwei DOKUMENTIERTEN Migrations-Regeln, keine Tuning-
 bei GLEICHER Zahl ~π-dunkler). Die numerisch aus dem r128-Studio kopierten Intensitäten werden
 an den Licht-ANWENDUNGEN mit der EINEN Konstante multipliziert:
 
-| Anker (anazhRealm.js)                   | Anwendung                                                        |
+| Anker (Stamm)                           | Anwendung                                                        |
 | --------------------------------------- | ---------------------------------------------------------------- |
 | `AnazhRealm.LEGACY_LICHT` (§26-Statics) | die EINE Konstante (Math.PI), kein Tuning-Knopf                  |
 | `_dayNightApplyDirectionalLight`        | Sonne/KEY · FILL · RIM · BACK (je `base × LEGACY_LICHT × a.lum`) |
@@ -225,7 +225,7 @@ an den Licht-ANWENDUNGEN mit der EINEN Konstante multipliziert:
 **Ü2 — FARBE (raw-als-linear):** r128 las Hex-Farben ALS LINEAR — treue Studio-Werte reisen
 deshalb als ROHE lineare Zahlen und werden roh=linear gelesen (nie als sRGB-Hex re-interpretiert):
 
-| Anker (anazhRealm.js)       | Anwendung                                                                                                                                         |
+| Anker (Stamm)               | Anwendung                                                                                                                                         |
 | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `_foundryTreeMaterial`      | `colorNode = attribute("color")` — die r128-Vertex-Farben im Reply/Pack sind LINEAR und werden ROH gelesen (kein sRGB-Decode)                     |
 | `_foundryBuildGroup`        | `m.mat.color` (Zweit-Kern-Meshes) ist r128-LINEAR → füllt das color-Attribut roh; die kind-Default-Füllfarben sind lineare Literale               |

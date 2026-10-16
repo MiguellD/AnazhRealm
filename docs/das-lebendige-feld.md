@@ -102,7 +102,7 @@ Fünf Flecken, an denen die Vision einst flach war, erklären die heutige Form:
 ## 4. Die wahre Tiefe — wie die Systeme WIRKLICH funktionieren (gemessen)
 
 Dies ist die Architektur, die ein neuer Agent SEHEN muss, bevor er anfasst. Jeder
-Eintrag ist im Code verifiziert (Methoden-/Konstanten-Namen sind real, Stand V18.31).
+Name ist real — die Zitat-Wand (`gate:betriebsgesetz`) nennt jeden toten beim Namen.
 
 ### 4.1 Das Feld — frozen Kern + reaktives Overlay
 
@@ -120,13 +120,14 @@ Eintrag ist im Code verifiziert (Methoden-/Konstanten-Namen sind real, Stand V18
 ### 4.2 Die Schreib-Seite — nur intentionale Akte, lazy-Decay, Sättigung
 
 - **`_depositLife(x,z,amount)`** — hebt `lebendig` (3×3-Kernel), gekappt auf
-  `LIFE_FIELD.max` (0.7), zerfällt exponentiell (`a·e^(−λΔt)`). Schreiber: eine Geburt
-  (`_finishBirth`), die DSL-Op `deposit_life`, und der **Kreatur-Trickle** (`tendsLife`:
+  `LIFE_FIELD.max` (0.7), zerfällt exponentiell (`a·e^(−λΔt)`). Schreiber: der natürliche
+  Tod (`_creatureNaturalDeath`), das erwachte Gesetz (`_journalRuleAwoke`), der Neubeginn des Spielers
+  (`_playerDeathRespawn`), die DSL-Op `deposit_life`, und der **Kreatur-Trickle** (`tendsLife`:
   eine getragene Kreatur träufelt fortlaufend Leben in ihre Zelle → die geheilte Region
   BLEIBT lebendig statt nach dem Puls zu verblassen — eine atmende Ökologie).
 - **`_depositEmotion(x,z,emotionMap)`** — prägt die Tat-Emotion am Ort ein (6 Achsen,
   gekappt auf `EMOTION_FIELD.max` 0.8, schnellerer Decay als Leben). Schreiber:
-  `_feelAction`, die DSL-Op `deposit_emotion`, `_giveComfort`.
+  `_feelAction`, die DSL-Op `deposit_emotion`, die Pflege der KI (`_aiTendPlayer`).
 - **Disziplin (V17.27-Lehre):** NUR INTENTIONALE Akte schreiben (die Geburt, die Geste) —
   NIE die FOLGEN des Feldes (ambiente Fauna liest lebendig → spawnt; würde sie auch
   schreiben, gäbe es positives Feedback-Runaway). Sättigung (`max`-Cap) → das Leben
@@ -245,7 +246,7 @@ Wasser-Naturen · Licht+Terrain-Einheit.
 
 ---
 
-## 7. Die offenen Flecken (Vertiefung, kein Fundament)
+## 7. Die Grenzen heute (Vertiefung, kein Fundament — der Scope ist allein `docs/PFLICHT-OFFEN.md`)
 
 - Emotion-Kopplungen (`sorrow→rainy` u. ä.) sind noch feste Trigger statt aus Weltregeln emergent.
 - Der Spieler hat keinen eigenen Leben-Schreib-Pfad (Pflege = Co-Schöpfung).
@@ -284,8 +285,8 @@ Wasser-Naturen · Licht+Terrain-Einheit.
 7. **Kein Flag, kein Sonderfall, kein neues Modul** — schärfe die emergente Regel (V17.11).
    Das Feld ist eine Methode auf dem EINEN Stamm. Die verfeinerte Heilige Lektion (06.06.):
    die Sünde von 2025 war Kopplung ohne Kohäsion, nicht „mehr als eine Datei" — ein neuer
-   File NUR an einer echten Laufzeit-/Sicherheits-/stabilen-Naht-Grenze (der Drei-JA-Test
-   im `CLAUDE.md`-Kopf). Ein „LivingWorldManager"-Modul wäre die Sünde.
+   File NUR an einer echten Laufzeit-/Sicherheits-/stabilen-Naht-Grenze (`CLAUDE.md`,
+   Lehre 2). Ein „LivingWorldManager"-Modul wäre die Sünde.
 8. **Miss, rate nicht — und sieh selbst:** settled swiftshader-Schüsse sind farbtreu
    (`diag-blick`, `diag-beweis-e`); eine headless-Zahl beweist Mechanik, das Bild den Look.
 9. **Keine halben Schritte** (V17.30): ist der Plan klar + das Gap benannt → baue das

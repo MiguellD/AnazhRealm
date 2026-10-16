@@ -105,8 +105,8 @@ das Radeon-ABAB am Kopf steht aus. Quelle: das letzte ABAB vom 14.10. (Zweig `ko
 - STUDIOS auf der EINEN Hülle `worlds/huelle` (Regler · Sitzung · Kosten-Leiste · Portal-Brücke), Labor = Welt · LEBEN EIN Leib-Löser, Gang EIN Gesetz ·
   Kamera EINE Kugel · Tod `_kreaturFaellt` · Lebenswerte = Zustand (`recomputePlayerStats`) · Blocker-Netz · Klang-Gesetz · Uhr + Wetter = Spieler-Wort ·
   SPEICHER atomar (tmp + Rename + .bak)
-- PRÜFEN 6 Golden-Sätze + Ofen · Messorte (`spec/profiband/haushalt.json`): Wiese −900/−850 (seit K16 ein Nadelwald-Hang; K55 `mess-wiese` setzt sie
-  nach −278/−1038, ungemergt — das letzte ABAB maß dort per Patch), Genesis-Ring (`_genesisMitte`), Dorf, Prüfbühne `spec/pruefbuehne` · 12 Ratschen
+- PRÜFEN 6 Golden-Sätze + Ofen · Messorte (`spec/profiband/haushalt.json`): Wiese −280,4/−1045,6 (K55, bd38fb16; der alte Ort
+  −900/−850 ist seit K16 ein Nadelwald-Hang), Genesis-Ring (`_genesisMitte`), Dorf, Prüfbühne `spec/pruefbuehne` · 12 Ratschen
   Ort × Gerät × Sicht · Linsen-Start `lib/software-gpu.cjs` (`linsenWebGpuArgs`: lokal die echte GPU, CI swiftshader) · das Beweisbild urteilt selbst
   (`lib/abnahme-urteil.cjs`) · CI: Puls je Push, volle Batterie in 18 Gruppen (1–8 CPU, 9–18 GPU; Playtest = Gruppe 1, Wand-Zeit ≤ 8 min) auf integ-probe, main und nachts
 
@@ -197,7 +197,7 @@ das Radeon-ABAB am Kopf steht aus. Quelle: das letzte ABAB vom 14.10. (Zweig `ko
 
 ## Workflows und Karte
 
-`playtest:fast` (~20 s) · Merge-Gate `npm run playtest` („Alle Invarianten OK" zählt, nie der Zähler) · `npm run check` (source-probes ·
+`playtest:fast` (~12 s, 16.10.) · Merge-Gate `npm run playtest` („Alle Invarianten OK" zählt, nie der Zähler) · `npm run check` (source-probes ·
 constitution · studio-vertrag · altlasten · apparat · betriebsgesetz) · `lint` / `format:check` · `npm run atlas` (+ `--find`). Lokal der Puls der
 berührten Methoden + playtest:fast; der Integrator fährt den VOLLEN Playtest je Merge, die volle Batterie einmal je Version; gemergt bei grüner
 Zweig-CI. GPU-Zeit nur `gpu-bank` (OMEN = GTX 1060; die Radeon 890M lokal per `werkbank --echt`), A/B bei gleicher Szene oder ≥ 4 Boots je Seite;

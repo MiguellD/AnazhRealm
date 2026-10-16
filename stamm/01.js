@@ -466,7 +466,7 @@ class AnazhRealm {
                 emotionsSnapshot: null,
                 poolIndex: { firstSpawn: 0, idle: 0, jumpBurst: 0, rainLong: 0, nexus: 0, comfort: 0 },
             },
-            // Ring 2 – Nexus-DSL. Interpreter-State; siehe docs/nexus-dsl.md.
+            // Ring 2 – Nexus-DSL. Interpreter-State; Norm: docs/das-lebendige-feld.md.
             // Pending sind geplante (delay'd) Sub-Programme, die in dslTick()
             // gefeuert werden, sobald `runAt` (Spielzeit in Sekunden) erreicht ist.
             dsl: {
