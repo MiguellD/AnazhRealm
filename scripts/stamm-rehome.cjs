@@ -396,7 +396,7 @@ function selbsttest() {
             if (baumG.get(p) === meta.split(/\s+/)[2]) aussenGleich++;
             else aussenAnders.push(p);
         }
-        // gits Merge-Baum trägt außerhalb genau dieselben Pfade (ohne anazhRealm.js und index.html)
+        // gits Merge-Baum trägt außerhalb genau dieselben Pfade (ohne die alte Stamm-Datei `stamm.ALT` und index.html)
         if (baumG.size - 2 !== aussenGleich + aussenAnders.length) aussenAnders.push(`Pfadzahl ${baumG.size - 2}`);
         const htmlSoll = stamm.tagsSetzen(git(ROOT, ["show", `${g.baum}:index.html`]), S);
         const htmlIst = git(klon, ["show", "HEAD:index.html"]);

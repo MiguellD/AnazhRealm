@@ -1,6 +1,6 @@
 // DAS NEUE KLEID — DIE „EIN WUCHS"-PARITÄTS-LINSE (GPU-frei, reines Node, im check-Gate-Stil).
 // Macht die ZWEI Wände explizit, damit kein künftiger Agent versucht, die zwei KONSUMENTEN
-// (der Richter `_phytoGrowSkeleton`/anazhRealm.js UND die Foundry `growTreeNodes`/foundry-core.js)
+// (der Richter `_phytoGrowSkeleton`/Stamm UND die Foundry `growTreeNodes`/foundry-core.js)
 // byte-gleich zu machen — das ist per Konstruktion unmöglich + wäre eine Regression.
 //
 // DER STAND (gemessen, Gesetz #0): der Baum-WUCHS ist bereits EINE Quelle. Beide Konsumenten
@@ -101,7 +101,7 @@ const arten = [
     ["strauch", strauch],
 ];
 
-// Der RICHTER-Eingang (L0-Budgets aus anazhRealm.js ~51838) und der FOUNDRY-Eingang
+// Der RICHTER-Eingang (L0-Budgets aus dem Stamm) und der FOUNDRY-Eingang
 // (growSkeleton-Default-countCap 8800 + L0-non-shrub-leafBudget 20000 aus foundry-core.js ~754).
 const richterP = (mk) => Object.assign(mk(), { trunkMul: 1, countCap: 3600, leafBudget: 480 });
 const foundryP = (mk) => Object.assign(mk(), { countCap: 8800, leafBudget: 20000 });

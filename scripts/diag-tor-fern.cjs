@@ -6,7 +6,7 @@
 // tragen die Rolle "wurf" (nur die Stufe 3 wirft sie), die Fernform des Welt-March liest höchstens 24 Teile der Rolle "sicht"
 // (der Rahmen-Strang der innersten Ordnung und der Sockel — der March läuft je Pixel über alle Teile seines Eintrags). Die Linse
 // misst je Rezept (7) und — für die Kosten — über die Regler-Hülle (7 Rezepte × 27 Regler × Rand), direkt am Gesetzbuch (Node,
-// worlds/terrain/lib/three-r128.min.js + porta-core.js) und mit dem EINEN Leser des Stamms (`_huelleVon` aus anazhRealm.js):
+// worlds/terrain/lib/three-r128.min.js + porta-core.js) und mit dem EINEN Leser des Stamms (`_huelleVon` aus dem Stamm):
 //
 //   K  KOSTEN: die Fernform (`_huelleVon(…, "sicht")`) trägt ≤ 24 Teile und KEIN "wurf"-Teil (je Bau der Regler-Hülle), die
 //      Stufe 3 1 Draw und am Rezept ≤ ihrer Budget-Zeile (das Rezept-Maß; am Regler-Rand richtet die Kosten-Regel des Wirts
