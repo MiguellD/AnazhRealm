@@ -260,7 +260,19 @@ function fuegeDomaene(teile, nimm, out) {
 // wandern Byte für Byte, die Marker-Zeilen fallen und entstehen neu. Ein Name ohne Karte und eine Anweisung ohne Namen
 // (`_bootAnazhRealm();`) folgen ihrem Vorgänger (`neu`); `fremd` nennt jedes Glied außerhalb seiner Zone, `tot` jeden
 // Karten-Namen ohne Glied.
-const karteVon = (root) => JSON.parse(fs.readFileSync(path.join(root, KARTE), "utf8"));
+// Die Karte auf der Platte: je Datei-Schlüssel EINE Zeile mit seinen Namen (sortiert, `karteText`); im Speicher `mod`
+// Name → Schlüssel. Ein Name in zwei Modulen wirft.
+function karteAus(text) {
+    const j = JSON.parse(text);
+    const mod = {};
+    for (const [s, namen] of Object.entries(j.module))
+        for (const n of namen) {
+            if (Object.hasOwn(mod, n)) throw new Error(`Karte: ${n} steht in ${mod[n]} und ${s}`);
+            mod[n] = s;
+        }
+    return { quelle: j.quelle, ordnung: j.ordnung, mod };
+}
+const karteVon = (root) => karteAus(fs.readFileSync(path.join(root, KARTE), "utf8"));
 function aussenName(s) {
     const e = s.type === "ExpressionStatement" ? s.expression : null;
     const an = (n) => n && n.type === "MemberExpression" && n.object.type === "Identifier" && n.object.name === "AnazhRealm";
@@ -332,7 +344,17 @@ function heileKarte(T, K) {
     for (const n of Object.keys(mod).sort()) sortiert[n] = mod[n];
     return { karte: Object.assign({}, K, { mod: sortiert }), neu: r.neu, tot: r.tot };
 }
-const karteText = (K) => JSON.stringify(K, null, 1) + "\n";
+function karteText(K) {
+    const je = new Map(K.ordnung.map(([s]) => [s, []]));
+    for (const n of Object.keys(K.mod).sort()) {
+        if (!je.has(K.mod[n])) throw new Error(`Karte: ${n} → „${K.mod[n]}" steht nicht in der Ordnung`);
+        je.get(K.mod[n]).push(n);
+    }
+    const reihe = (x) => JSON.stringify(x).replace(/","/g, '", "');
+    const ordnung = K.ordnung.map((o) => `  ${reihe(o)}`).join(",\n");
+    const module = [...je].map(([s, ns]) => `  ${JSON.stringify(s)}: ${reihe(ns)}`).join(",\n");
+    return `{\n "quelle": ${JSON.stringify(K.quelle)},\n "ordnung": [\n${ordnung}\n ],\n "module": {\n${module}\n }\n}\n`;
+}
 
 // ── der Baum ──────────────────────────────────────────────────────────────────────────────────────────────────────
 function layout(root) {
@@ -708,6 +730,7 @@ module.exports = {
     pfadVon,
     klasseVon,
     karteVon,
+    karteAus,
     aussenName,
     ordne,
     heileKarte,

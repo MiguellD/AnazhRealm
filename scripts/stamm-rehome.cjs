@@ -146,7 +146,7 @@ function plane(root, auf, zweig, namen) {
     let Tz = stamm.textAusRev(root, zweig);
     let Tb = basis.text;
     if (stamm.marker(Tk).some((m) => m.schluessel)) {
-        const K = JSON.parse(git(root, ["show", `${auf}:${stamm.KARTE}`]));
+        const K = stamm.karteAus(git(root, ["show", `${auf}:${stamm.KARTE}`]));
         Tb = stamm.ordne(Tb, K).text;
         Tz = stamm.ordne(Tz, K).text;
     }
@@ -206,7 +206,7 @@ function vollziehe(root, aufSha, aufName, zweigName, T, form, meldung) {
         throw new Error(`Re-Home: git merge ${aufName} brach ab: ${r.err || r.out}`);
     // die Domäne: die Karte des Ziels nimmt die neuen Glieder des Zweigs auf, der Text steht in ihrer Ordnung
     if (form === "zonen" && stamm.marker(T).some((m) => m.schluessel)) {
-        const h = stamm.heileKarte(T, JSON.parse(fs.readFileSync(path.join(root, stamm.KARTE), "utf8")));
+        const h = stamm.heileKarte(T, stamm.karteVon(root));
         fs.writeFileSync(path.join(root, stamm.KARTE), stamm.karteText(h.karte));
         git(root, ["add", "--", stamm.KARTE]);
         T = stamm.ordne(T, h.karte).text;
