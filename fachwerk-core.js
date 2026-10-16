@@ -51,7 +51,7 @@
 //       Boden/Garten, nicht das Asset (das Lab-Editor-Default `Gelände & Garten: an`
 //       bleibt Shell-UI).
 //   (d) DAS KARTEN-GESETZ (A6, `_karte`): eine Canvas-Karte des Labors (texZiegelwand/
-//       texDach/texPutz/texStein) trägt nur ihr Relief, nie die Farbe — der Stoff teilt
+//       texDach/texPutz/texStein) liegt linear und trägt nur ihr Relief — der Stoff teilt
 //       durch ihr lineares Mittel (`_karteEins`, das Gesetz des Blatt-Atlas der Foundry).
 //       Die Farbe steht EINMAL: im Vertex (Kultur oder DEFCOL, `_colFor` — im Labor wie
 //       im Worker, die Welt liest nur ihn) bzw. in der Toenung des Stoffs (tintM). Durchs
@@ -1698,15 +1698,19 @@
       cx.fillStyle='rgb('+(255*t*0.92|0)+','+(255*t*0.90|0)+','+(255*t*0.86|0)+')';
       cx.fillRect(x+off,y,sw,sh); } }
   return _karte(cv); }catch(e){ return null; } }
-    // DAS KARTEN-GESETZ (A6, Kopf (d)): eine Karte trägt nur ihr Relief, nie die Farbe. Ihr lineares Mittel je Kanal (die
-    // EINE sRGB-Kurve `_lin`) wird zum Kehrwert an der Karte (`__eins`), `_karteEins` legt ihn auf die Stoff-Farbe — Karte ×
-    // Stoff hat das Mittel der Farbe, die EINMAL im Vertex bzw. in der Toenung steht (das Gesetz des Blatt-Atlas der Foundry).
-    // Bis A6 trugen ziegel/ziegel2/backstein ihren Grundton in der Karte UND im Vertex (Kultur) bzw. Stoff (tintM): das Dach
-    // maß im Labor R 0,099 gegen 0,333 des Gesetzes, die Welt 0,318.
+    // DAS KARTEN-GESETZ (A6, Kopf (d)): eine Karte trägt nur ihr Relief, nie die Farbe. Der Maler malt sRGB; die Karte liegt
+    // LINEAR (die EINE Kurve `_lin`, je Kanal auf ihr Maximum gelegt), so mitteln ihre Mips linear — r128 dekodiert sRGB erst
+    // im Shader und mittelte die Stufen im Gamma-Raum: Mörtel und Fugen fielen fern um 15 % (G) bis 17 % (B). Ihr Kehrwert
+    // `__eins` (Maximum / lineares Mittel) legt `_karteEins` auf die Stoff-Farbe — Karte × Stoff hat in jeder Stufe das Mittel
+    // der Farbe, die EINMAL im Vertex bzw. in der Toenung steht (das Gesetz des Blatt-Atlas der Foundry). Bis A6 trugen
+    // ziegel/ziegel2/backstein ihren Grundton in der Karte UND im Vertex (Kultur) bzw. Stoff (tintM): das Dach maß im Labor
+    // R 0,099 gegen 0,333 des Gesetzes, die Welt 0,318.
     // prettier-ignore
-    function _karte(cv){ const d=cv.getContext('2d').getImageData(0,0,cv.width,cv.height).data, L=new Float64Array(256); for(let i=0;i<256;i++) L[i]=_lin(i/255);
-  let r=0,g=0,b=0; for(let i=0;i<d.length;i+=4){ r+=L[d[i]]; g+=L[d[i+1]]; b+=L[d[i+2]]; } const n=d.length/4;
-  const tx=new THREE.CanvasTexture(cv); tx.wrapS=tx.wrapT=THREE.RepeatWrapping; tx.encoding=THREE.sRGBEncoding; tx.__eins=new THREE.Color(n/r,n/g,n/b); return tx; }
+    function _karte(cv){ const W=cv.width, H=cv.height, d=cv.getContext('2d').getImageData(0,0,W,H).data, L=new Float64Array(256); for(let i=0;i<256;i++) L[i]=_lin(i/255);
+  const sm=[0,0,0], mx=[1e-6,1e-6,1e-6]; for(let i=0;i<d.length;i+=4) for(let k=0;k<3;k++){ const v=L[d[i+k]]; sm[k]+=v; if(v>mx[k]) mx[k]=v; }
+  const lin=new Uint8Array(W*H*4); for(let y=0;y<H;y++) for(let x=0;x<W;x++){ const i=(y*W+x)*4, o=((H-1-y)*W+x)*4; for(let k=0;k<3;k++) lin[o+k]=Math.round(L[d[i+k]]/mx[k]*255); lin[o+3]=255; }   // Zeile 0 = v 0 (die Lage der Leinwand-Karte mit flipY)
+  const tx=new THREE.DataTexture(lin,W,H,THREE.RGBAFormat); tx.wrapS=tx.wrapT=THREE.RepeatWrapping; tx.magFilter=THREE.LinearFilter; tx.minFilter=THREE.LinearMipmapLinearFilter; tx.generateMipmaps=true; tx.needsUpdate=true;
+  const n=W*H; tx.__eins=new THREE.Color(mx[0]*n/sm[0], mx[1]*n/sm[1], mx[2]*n/sm[2]); return tx; }
     // prettier-ignore
     function _karteEins(m){ if(m.map&&m.map.__eins) m.color.multiply(m.map.__eins); return m; }
 

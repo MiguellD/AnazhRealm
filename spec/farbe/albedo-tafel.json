@@ -379,7 +379,7 @@
         {
             "id": "haus",
             "gruppe": "Haus",
-            "titel": "Fachwerkhaus alemannisch, die Bau-Stoffe (Putz, Holz, Dach: Seh-Klasse stoff); im Labor ohne Gelände und Garten (der Vertrags-Bau trägt sie nie, fachwerk-core Kopf (c)) — Komposition: Labor die Kultur auf Saat 3, Welt dasselbe Haus auf Saat 3 (`nah: 0`, K63-n6: nie ein fremdes — die Vorschau-Gestalt des Genesis-Platzes trug helle Gefache, das Labor Backstein; A6)",
+            "titel": "Fachwerkhaus alemannisch, die Bau-Stoffe (Putz, Holz, Dach: Seh-Klasse stoff); im Labor ohne Gelände und Garten (der Vertrags-Bau trägt sie nie, fachwerk-core Kopf (c)) — Komposition: Labor die Kultur auf Saat 3, Welt die Vorschau-Gestalt mit ihren Studio-Reglern",
             "labor": {
                 "studio": "fachwerk",
                 "aktion": [
@@ -399,9 +399,7 @@
                 "exemplar": {
                     "typ": "architektur",
                     "name": "haus_alemannisch",
-                    "radius": 9,
-                    "nah": 0,
-                    "seed": 3
+                    "radius": 9
                 },
                 "klasse": "^(bauSatz|f:alemannisch:L[01])$",
                 "stoff": {
