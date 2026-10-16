@@ -227,45 +227,32 @@ function albedoSicht(opts) {
                     }
                 } else if (ex.typ === "spieler") pos = pp.clone();
                 else if (ex.typ === "boden" && ex.wald) {
-                    // DER WALD-BODEN (K63-n7; gemessen 15.10., Radeon: unter dem Spieler am Genesis-Ring liegt seit K52 der Platz —
-                    // Gesetz-Farbe 0,0721 wie `dirt` —, das Labor zeigt den Wald-Boden der Pflanzen-Welt): die nächste Stelle um
-                    // den Spieler, an der das Wald-Gesetz steht (`_forestCellDarts` → `_forestDartSteht` → `_wildnisTraegt`, derselbe
-                    // Gang wie `_forestPlantChunk`): ≥ `baeume` stehende Bäume binnen `r` m, keiner näher als `frei` m, trockenes Land
+                    // DER WALD-BODEN AN SEINER STELLE (A5; gemessen 16.10., Radeon): der Boden ist ein Feld, die Ratsche misst ihn an
+                    // EINER festen Stelle (`stelle`, Welt-x/z). Die Suche „die nächste Wald-Stelle um den Spieler" wanderte mit der
+                    // Kronen-Tafel (T2 f6fa9f63) von −48/−19 nach 0/36 (Welt-Y 0,0837 → 0,0739, der Stoff an der alten Stelle 0,0833 →
+                    // 0,0837; die ersten acht Wald-Stellen 0,071–0,110). Dort steht das Wald-Gesetz (`_forestCellDarts` →
+                    // `_forestDartSteht` → `_wildnisTraegt`): ≥ `baeume` stehende Bäume binnen `r` m, keiner näher als `frei` m.
                     const W0 = ex.wald,
                         C = r.constructor.FOREST.cell,
                         seedInt = r._forestSeedInt(),
+                        [x, zz] = ex.stelle,
                         memo = new Map();
-                    const zelle = (gx, gz) => {
-                        const k = gx + "," + gz;
-                        let d = memo.get(k);
-                        if (!d) memo.set(k, (d = r._forestCellDarts(gx, gz, seedInt)));
-                        return d;
-                    };
-                    const wald = (x, z) => {
-                        let b = 0,
-                            nah = Infinity;
-                        for (let gz = Math.floor((z - W0.r) / C); gz <= Math.floor((z + W0.r) / C); gz++)
-                            for (let gx = Math.floor((x - W0.r) / C); gx <= Math.floor((x + W0.r) / C); gx++)
-                                for (const d of zelle(gx, gz)) {
-                                    const dd = Math.hypot(d.x - x, d.z - z);
-                                    if (dd < W0.r && r._forestDartSteht(d, gx, gz, zelle) && r._wildnisTraegt(d.x, d.z)) {
-                                        b++;
-                                        nah = Math.min(nah, dd);
-                                    }
+                    const zelle = (gx, gz, k = gx + "," + gz) =>
+                        memo.get(k) || memo.set(k, r._forestCellDarts(gx, gz, seedInt)).get(k);
+                    let b = 0,
+                        nah = Infinity;
+                    for (let gz = Math.floor((zz - W0.r) / C); gz <= Math.floor((zz + W0.r) / C); gz++)
+                        for (let gx = Math.floor((x - W0.r) / C); gx <= Math.floor((x + W0.r) / C); gx++)
+                            for (const d of zelle(gx, gz)) {
+                                const dd = Math.hypot(d.x - x, d.z - zz);
+                                if (dd < W0.r && r._forestDartSteht(d, gx, gz, zelle) && r._wildnisTraegt(d.x, d.z)) {
+                                    b++;
+                                    nah = Math.min(nah, dd);
                                 }
-                        return b >= W0.baeume && nah > W0.frei;
-                    };
-                    for (let rr = W0.ab; rr <= W0.bis && !pos; rr += 8) {
-                        const n = Math.max(1, Math.round((2 * Math.PI * rr) / 8));
-                        for (let q = 0; q < n && !pos; q++) {
-                            const a = (q / n) * Math.PI * 2,
-                                x = pp.x + Math.cos(a) * rr,
-                                zz = pp.z + Math.sin(a) * rr;
-                            if (!r._landAt(x, zz) || (r._nassAt && r._nassAt(x, zz)) || !wald(x, zz)) continue;
-                            pos = new T.Vector3(x, r._voxelSurfaceY(x, zz), zz);
-                        }
-                    }
-                    if (!pos) verweigert = `kein Wald-Boden binnen ${W0.ab}–${W0.bis} m um den Spieler`;
+                            }
+                    if (b >= W0.baeume && nah > W0.frei && r._landAt(x, zz) && !(r._nassAt && r._nassAt(x, zz)))
+                        pos = new T.Vector3(x, r._voxelSurfaceY(x, zz), zz);
+                    else verweigert = `die Stelle ${x}/${zz} trägt keinen Wald-Boden (${b} Bäume, der nächste ${nah.toFixed(1)} m)`;
                 }
                 exemplare.push({ zeile: z, pos, gesetzt, verweigert, eintrag });
             }

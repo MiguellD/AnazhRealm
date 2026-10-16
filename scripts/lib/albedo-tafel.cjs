@@ -119,6 +119,8 @@ function tafelPruefen(t) {
         if (!["architektur", "tier", "spieler", "boden"].includes(ex.typ))
             f.push(`${z.id}: welt.exemplar.typ unbekannt`);
         if ((ex.typ === "architektur" || ex.typ === "tier") && !ex.name) f.push(`${z.id}: welt.exemplar.name fehlt`);
+        if (ex.typ === "boden" && !(Array.isArray(ex.stelle) && ex.stelle.length === 2 && ex.stelle.every(zahl)))
+            f.push(`${z.id}: welt.exemplar.stelle ist kein [x, z] — der Boden misst an EINER festen Stelle`);
         if (ex.radius !== undefined && !(zahl(ex.radius) && ex.radius > 0))
             f.push(`${z.id}: welt.exemplar.radius ist keine Zahl > 0`);
         for (const sel of [L.stoff, W.stoff])
