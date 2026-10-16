@@ -113,21 +113,9 @@ function haltVerdict(m) {
 // ── DIE STATISCHE WAND (Node, kommentarfrei): der Ritt sitzt im Sim-Schritt, der Frame-Tick schreibt nie den Reiter,
 // das Lenk-Frame-Flag ist tot. Liefert [name, ok, detail]. ──
 const ohneKommentare = stammLib.ohneKommentare;
-function fnBody(src, sigRe) {
-    const m = sigRe.exec(src);
-    if (!m) return null;
-    let i = src.indexOf("{", m.index + m[0].length - 1);
-    if (i < 0) return null;
-    let depth = 0;
-    const start = i;
-    for (; i < src.length; i++) {
-        if (src[i] === "{") depth++;
-        else if (src[i] === "}") {
-            depth--;
-            if (depth === 0) return src.slice(start, i + 1);
-        }
-    }
-    return null;
+// der EINE Rumpf-Schneider (scripts/lib/stamm.cjs): der Block an der Definition, nie am ersten Text-Treffer
+function fnBody(src, kopf) {
+    return stammLib.rumpf(src, kopf);
 }
 function taktWand(src) {
     const nc = ohneKommentare(src);
@@ -4386,12 +4374,11 @@ function quellenAbgriff() {
                 .map((w) => w[0])
                 .join(" | ")
         );
-        const vorStand = quelle
-            .replace("        this._rittSchritt(dt);\n", "")
-            .replace(
-                /(\n {4}_tickMountedMovement\([^)]*\) \{)/,
-                "$1\n        const pm = this.state.playerMesh.position;\n        pm.y = 0;\n        entry._rideSteer = false;"
-            );
+        const vorStand = stammLib.ersetze(quelle, [
+            ["_stepFixedSim", "        this._rittSchritt(dt);\n", ""],
+            [null, /(\n {4}_tickMountedMovement\([^)]*\) \{)/,
+                "$1\n        const pm = this.state.playerMesh.position;\n        pm.y = 0;\n        entry._rideSteer = false;"],
+        ]);
         const rot = taktWand(vorStand);
         check(
             "Selbst-Test W: der Vor-Stand (Sitz im Frame, Flag lebt, kein Sim-Ritt) → W1 W2 W3 feuern",
@@ -4408,7 +4395,7 @@ function quellenAbgriff() {
                 .join(" | ")
         );
         const kRot = fahrWand(
-            quelle.replace(/(\n {4}_loopPlayerMovement\([^)]*\) \{)/, "$1\n        let FlatF = 0;"),
+            stammLib.ersetze(quelle, null, /(\n {4}_loopPlayerMovement\([^)]*\) \{)/, "$1\n        let FlatF = 0;"),
             garage.replace(/(\nfunction updateVehicle\(dt,t\)\{)/, "$1let FlatF=0;"),
             kern.replace("fahrSchritt: fahrSchritt", "")
         );
@@ -4433,7 +4420,7 @@ function quellenAbgriff() {
             hGruen.map((w) => w[2]).join(" | ")
         );
         const hRot = huelleWand(
-            quelle.replace(
+            stammLib.ersetze(quelle, null,
                 /(\n {4}_fahrHuelleKontakt\([^)]*\) \{)/,
                 "$1\n        for (let pl = 0; pl < AnazhRealm.SLIDE_CLIP_PLANES; pl++) break;"
             )
@@ -4441,7 +4428,7 @@ function quellenAbgriff() {
         check("Selbst-Test H5: der Vor-Stand (eine zweite Schleife in der Hülle) → H5 feuert", !hRot[0][1], hRot[0][2]);
         // der Vor-Stand von D2: der Wagen-Kontakt rechnet den Kreis VERHALTEN.separation × bodySize statt des Leibs
         const h6Rot = huelleWand(
-            quelle.replace(
+            stammLib.ersetze(quelle, null,
                 /(\n {4}_fahrHuelleKontakt\([^)]*\) \{)/,
                 "$1\n        const SEP = AnazhRealm._verhaltenGesetz().separation;\n        const rcAlt = 0.5 * SEP.raumKugel;"
             )
@@ -4453,7 +4440,7 @@ function quellenAbgriff() {
         );
         // der Vor-Stand von D5: der Löser der Hülle liest die Welt-AABB (kein box.obb)
         const h7Rot = huelleWand(
-            quelle.replace(/\n {4}_resolveHuelleVsAABB\([^)]*\) \{[\s\S]*?\n {4}\}/, (m) =>
+            stammLib.ersetze(quelle, null, /\n {4}_resolveHuelleVsAABB\([^)]*\) \{[\s\S]*?\n {4}\}/, (m) =>
                 m.replace(/\bbox\.obb\b/g, "box.aabb")
             )
         );
@@ -4464,7 +4451,7 @@ function quellenAbgriff() {
         );
         // der Vor-Stand der zweiten Rolle: die Teil-Box ohne obb (die Welt-AABB jedes gedrehten Teils)
         const h8Rot = huelleWand(
-            quelle.replace(/\n {4}_blockerComputePartAABB\([^)]*\) \{[\s\S]*?\n {4}\}/, (m) =>
+            stammLib.ersetze(quelle, null, /\n {4}_blockerComputePartAABB\([^)]*\) \{[\s\S]*?\n {4}\}/, (m) =>
                 m.replace(/\bobb:\s*\{/g, "aabbAlt: {")
             )
         );
@@ -4474,12 +4461,11 @@ function quellenAbgriff() {
             h8Rot[3][2]
         );
         const pRot = pflichtWand(
-            quelle
-                .replace(
-                    /(\n {4}_fahrSatz\([^)]*\) \{)/,
-                    '$1\n        const VC = globalThis.__vehicleCore;\n        if (!VC || typeof VC.fahrGesetz !== "function") return null;'
-                )
-                .replace(/(\n {4}_fahrHuelle\([^)]*\) \{)/, "$1\n        const radR = 0.34;")
+            stammLib.ersetze(quelle, [
+                [null, /(\n {4}_fahrSatz\([^)]*\) \{)/,
+                    '$1\n        const VC = globalThis.__vehicleCore;\n        if (!VC || typeof VC.fahrGesetz !== "function") return null;'],
+                [null, /(\n {4}_fahrHuelle\([^)]*\) \{)/, "$1\n        const radR = 0.34;"],
+            ])
         );
         check(
             "Selbst-Test P: der Vor-Stand (typeof → null im Fahr-Satz, Literal-Zwilling in der Hülle) → P2 P3 feuern",

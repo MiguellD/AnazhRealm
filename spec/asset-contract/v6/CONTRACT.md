@@ -171,7 +171,7 @@ Vertrags-Akt (Studio-Welle S3 „Kosten ins Asset", Plan §3.3; Lehre 19: die Ko
 736e1e8f, `gate:haus-fern`): jede gezeigte Stufe warf sich selbst — L0 31 660–101 716 Dreiecke je Haus und Kaskade, L1
 2 464–31 000, die L2 gar nicht (der Schatten sprang bei 26 m weg); der Fernkörper (`lod2Koerper`) las die Massen-Hülle
 `B.ext` statt des Grundrisses (Aufblähung bis +2,0 m, First quer 60 von 128), die Fernform rechnete der Wirt
-(`_archFachwerkFit`, 503 Zeilen).
+(`_archFachwerkFit`, 503 Zeilen, seither gefallen).
 
 - **DIE MASSEN DES BAUS** (`H.masse`, additiv, kein Bau liest sie zurück): je Teil des Grundrisses Rechteck, Höhen und
   Dach — Haupt (mit Walm, Überstand, Schwung), Flügel, Hof-Arm, Anbau, Turm, Portikus, Vordach, Kuppel, Terrassen,

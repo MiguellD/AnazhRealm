@@ -15181,7 +15181,7 @@ async function checkBandWelle6APolish(ctx) {
         const archX = savedX + 20;
         const archZ = savedZ + 20;
         const archY = r._terrainMacroSurfaceY(archX, archZ);
-        const beforeArchCount = r.state.architectures.length;
+        const vorArch = new Set(r.state.architectures);
         // AUSLÖSCHUNGS-WELLE — temple fiel; die begehbare haus_basis-Substanz (KIND_SUBSTANCE)
         // trägt die Erdungs-Probe als Test-Blueprint (flaches Dach, solide blockerAABBs).
         const KS6a = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
@@ -15249,8 +15249,9 @@ async function checkBandWelle6APolish(ctx) {
             out.isGroundedOnArchitecture = false;
             out.isGroundedHighInSky = false;
         }
-        // Cleanup: gespawnte Architektur + Test-Blueprint entfernen
-        r.state.architectures = r.state.architectures.slice(0, beforeArchCount);
+        // Cleanup nach Identität über den EINEN Abbau-Pfad (jedes Aufräumen der Bänder): ein Bau lässt Feld-Würfe weichen
+        // (`_weichtDemBau`) — die Kürzung auf die alte Länge ließ ihn dann als Waise ohne Bauplan in der Welt (CI 38967779045)
+        for (const e of r.state.architectures.filter((x) => !vorArch.has(x))) r.removeArchitecture(e);
         delete r.state.blueprints._t_w6a_haus;
 
         // Kein per-Frame-Pfad ruft optimizePhysics/processOptimization (leckte WASM, flutete die Konsole).
@@ -15322,7 +15323,7 @@ async function checkBandWelle6APolish(ctx) {
         // `spawnArchitecture` baut den Mesh nur im architectureCullingRadius (XZ) um den SPIELER; stünde
         // er noch bei (0,5000,0), bliebe der Spawn cold (mesh=null) und der Test mäße nichts.
         r.state.playerMesh.position.set(_savedX, _savedY, _savedZ);
-        const _beforeArchA3 = r.state.architectures.length;
+        const vorArch = new Set(r.state.architectures);
         let _entryA3 = null;
         let _spawnErrA3 = null;
         try {
@@ -15379,7 +15380,7 @@ async function checkBandWelle6APolish(ctx) {
             out.archTopOnSteepSlope = r.state.onSteepSlope;
         }
         out.flatBlueprintNotSteep = flatBlueprintNotSteep;
-        r.state.architectures = r.state.architectures.slice(0, _beforeArchA3);
+        for (const e of r.state.architectures.filter((x) => !vorArch.has(x))) r.removeArchitecture(e);
         delete r.state.blueprints._t_w6a3_haus;
         r.state.playerMesh.position.set(_savedX, _savedY, _savedZ);
 
@@ -15441,7 +15442,7 @@ async function checkBandWelle6APolish(ctx) {
         const _spawnArchX = 60;
         const _spawnArchZ = 60;
         const _spawnArchY = 200;
-        const _beforeArchA45 = r.state.architectures.length;
+        const vorArch = new Set(r.state.architectures);
         // AUSLÖSCHUNGS-WELLE — temple fiel; das flache haus_basis-Dach (KIND_SUBSTANCE)
         // liefert die garantiert-flache Raycast-Fläche als Test-Blueprint.
         const KSa45 = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
@@ -15489,7 +15490,7 @@ async function checkBandWelle6APolish(ctx) {
 
         // Cleanup
         r._clearBuildMode();
-        r.state.architectures = r.state.architectures.slice(0, _beforeArchA45);
+        for (const e of r.state.architectures.filter((x) => !vorArch.has(x))) r.removeArchitecture(e);
         delete r.state.blueprints._t_w6a45_haus;
         if (savedCamPos) r.state.camera.position.copy(savedCamPos);
         if (savedCamQuat) r.state.camera.quaternion.copy(savedCamQuat);
@@ -15729,7 +15730,7 @@ async function checkBandWelle6APolish(ctx) {
             r.state.worldJournal && r.state.worldJournal.seen
                 ? Object.keys(r.state.worldJournal.seen).filter((k) => k.startsWith("weak_connection:")).length
                 : 0;
-        const beforeArchCount = r.state.architectures.length;
+        const vorArch = new Set(r.state.architectures);
         r.spawnArchitecture(weakName, { x: 250, y: 0, z: 250 }, { seed: 1 });
         const afterSeenKeys =
             r.state.worldJournal && r.state.worldJournal.seen
@@ -15784,7 +15785,7 @@ async function checkBandWelle6APolish(ctx) {
         out.strongNoWarning = seenAfter3 === seenBefore3;
 
         // Cleanup
-        r.state.architectures = r.state.architectures.slice(0, beforeArchCount);
+        for (const e of r.state.architectures.filter((x) => !vorArch.has(x))) r.removeArchitecture(e);
         delete r.state.blueprints[testName];
         delete r.state.blueprints[weakName];
         delete r.state.blueprints[strongName];
@@ -16761,7 +16762,7 @@ async function checkBandWelle6DSoul(ctx) {
         out.magicResistIncreased = aweBoost ? r.state.player.stats.magicResist > baselineStats.magicResist : false;
 
         // Welt-Resonanz-Trigger: spawne Bauplan mit hoher Resonanz nahe Spieler
-        const beforeArchCount = r.state.architectures.length;
+        const vorArch = new Set(r.state.architectures);
         const savedPos = {
             x: r.state.playerMesh.position.x,
             y: r.state.playerMesh.position.y,
@@ -16826,7 +16827,7 @@ async function checkBandWelle6DSoul(ctx) {
         out.resonanceNotTriggeredFar = !resBoost2;
 
         // Cleanup
-        r.state.architectures = r.state.architectures.slice(0, beforeArchCount);
+        for (const e of r.state.architectures.filter((x) => !vorArch.has(x))) r.removeArchitecture(e);
         delete r.state.blueprints.wave6d2_resonator;
         r.state.playerMesh.position.set(savedPos.x, savedPos.y, savedPos.z);
         r.state.player.boosts = [];
@@ -18007,7 +18008,7 @@ async function checkBandWelle6GHylomorphism(ctx) {
         // Felsbogen + ein Felsturm spawnen (Landmark-Wurf 0.014 × Affinitäts-Floor; 12×12=144 Chunks =
         // statistisch sicher).
         if (typeof r._populateVoxelChunkVegetation === "function") {
-            const before = r.state.architectures.length;
+            const vorArch = new Set(r.state.architectures);
             // Frische Voxel-Chunk-Indices, deutlich außerhalb des
             // initialen 9×9-Voxel-Rings (cx,cz ∈ [-4..4]).
             const fresh = new Set();
@@ -18024,15 +18025,18 @@ async function checkBandWelle6GHylomorphism(ctx) {
             }
             let fbCount = 0;
             let ftCount = 0;
-            for (let i = before; i < r.state.architectures.length; i++) {
-                const t = r.state.architectures[i].type;
+            for (const e of r.state.architectures) {
+                if (vorArch.has(e)) continue;
+                const t = e.type;
                 if (t === "felsbogen") fbCount++;
                 else if (t === "felsturm") ftCount++;
             }
             out.placedFelsbogen = fbCount;
             out.placedFelsturm = ftCount;
             out.placementWorks = fbCount > 0 && ftCount > 0;
-            r.state.architectures.length = before;
+            // die Würfe ferner Daten-Chunks (nie gebaut) fallen nach Identität aus der Liste — der Abbau-Pfad schriebe je Wurf
+            // einen Journal-Eintrag und füllte dessen Deckel (200)
+            r.state.architectures = r.state.architectures.filter((x) => vorArch.has(x));
             // Test-Räume aus dem Voxel-Idempotenz-Cache löschen
             // (sonst leben die Test-Chunk-Keys dauerhaft + blockieren
             // einen späteren echten Pass).

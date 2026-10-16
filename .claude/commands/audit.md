@@ -10,7 +10,7 @@ Führe eine umfassende Prüfung des Projekts durch. Arbeite die folgenden Schrit
 - Ungestagte Änderungen vorhanden?
 
 ## 2. Syntax & Statik
-- `node scripts/diag-atlas.cjs --check` — der Stamm (`stamm/NN[x].js`, die Liste = die Tags in index.html): Syntax je Datei, Marker, Ratsche
+- `node scripts/diag-atlas.cjs --check` — der Stamm (`stamm/<modul>[-<teil>].js` nach spec/stamm/modul-karte.json, die Liste = die Tags in index.html): Syntax je Datei, Marker, jedes Glied in der Datei seines Moduls, Ratsche
 - `node --check save-server.js`
 - Zeilenzählung (`wc -l *.js stamm/*.js`) – Wachstum nennenswert seit letztem Audit?
 

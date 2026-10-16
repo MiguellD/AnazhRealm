@@ -72,7 +72,7 @@ nächste Welle erfinden · Schöpfer-Abhängigkeit erfinden — ist ROT. Die Wan
    Scope und Ship, nie jeden Pixel.
 5. **SCOPE ZU nur bei Rest = 0** — danach kein Feature-Commit mehr (nur Format/Fix auf Zuruf).
 
-## Stand (V18.546.8 + das Bündel vom 14.10. + weiche Boden-Stufen — offen ist NUR, was `docs/PFLICHT-OFFEN.md` trägt; die Chronik ist `git log`)
+## Stand (V18.546.9 + das Bündel vom 14.10. + weiche Boden-Stufen — offen ist NUR, was `docs/PFLICHT-OFFEN.md` trägt; die Chronik ist `git log`)
 
 **ZIELLINIE (docs/roadmap.md §0.v1):** v1.0 = EIN gespielter Pfad — ankommen · laufen+sehen · in der Werkstatt bauen · mit der KI erschaffen
 (Satz → DSL-Op `spawn_studio` → EIN Stempel `_studioStampFor`; offen: der LLM-Lauf mit Schlüssel, Drehbuch-Schritt 18) · benutzen/teilen — bei
@@ -112,10 +112,12 @@ das Radeon-ABAB am Kopf steht aus. Quelle: das letzte ABAB vom 14.10. (Zweig `ko
 
 ## Architektur (die Karte)
 
-- **Stamm** `stamm/` (~110k Zeilen in 48 Dateien ≤ 4 000 Z., EINE Klasse, EIN Prototyp): der Kern `stamm/01.js` (Konstruktor + §01),
-  die Zonen-Klassen `stamm/NN[x].js`, die Naht in `stamm/26a.js` trägt sie beim Laden auf `AnazhRealm` (VERSION allein dort); die Liste =
-  die Stamm-Tags in index.html; `npm run atlas` die Karte live (+ `--find`), `diag-atlas --check` die Ratsche. Boden · Speicher · Spieler ·
-  Anschluss + die Verben (appear·place·body·drive·wield·portal·rule) + KIND_POLICY.
+- **Stamm** `stamm/` (~113k Zeilen in 50 Dateien ≤ 4 000 Z., EINE Klasse, EIN Prototyp), je Datei ein Modul der Karte `spec/stamm/modul-karte.json`
+  (19 Module, Datei = `<modul>[-<teil>].js`: wasser-hydro · gelaende-boden · bild-kosten · koerper-bewegung · dirigent-ankunft …): der Kern
+  `stamm/dirigent-kern.js` (Konstruktor + Naht, VERSION), jede Zone trägt sich mit ihrem Naht-Ruf auf `AnazhRealm`, ihre Außen-Konstanten
+  dahinter; die Liste = die Stamm-Tags in index.html; `npm run atlas` die Karte live (+ `--find`: Glieder, Außen-Ziele, zugewiesene Methoden,
+  Kerne), `diag-atlas --check` die Ratsche (R7: jedes Glied in der Datei seines Moduls). Boden · Speicher · Spieler · Anschluss + die Verben
+  (appear·place·body·drive·wield·portal·rule) + KIND_POLICY.
 - **Kerne** (10 Dateien, cores.manifest.json): Daten+Mathe, Vertrag v1.2 `PARAMS_BY_KIND` + must-ignore + fail-closed (`docs/studio-vertrag.md`); der
   Host ist der OFEN (bauMensch-/bauTier-Guss + Lofi). **Studios** `worlds/`: die Gesetzbücher und Nebenwelten auf der EINEN Hülle `worlds/huelle`.
   **Worker:** Foundry lädt die EINE Brücke `foundry-bruecke.js` (`get-book` 1×Boot · `build-asset(id,seed,lod,ov)` · `export-settlement`; IDB
@@ -144,8 +146,9 @@ das Radeon-ABAB am Kopf steht aus. Quelle: das letzte ABAB vom 14.10. (Zweig `ko
 11. **Studio-Code nur unter BYTE-BEWEIS:** die Benchmark bewegt sich nie, Goldens eingefroren (Re-Mint = Vertrags-Akt); Kerne außerhalb von
     format:check, nie `prettier --write` auf Gesetzbücher (verbatim-Blöcke), neue Abschnitte additiv; `__`-Schlüssel in ov sind Steuer-Passagiere.
 12. **Stamm-Chirurgie:** Werkzeug liest den Stamm NUR über `scripts/lib/stamm.cjs` (`text()` = der virtuelle Stamm, `ort()`, `dateiVon()`;
-    die alte Datei `anazhRealm.js` ist tot, ein Leser auf ihren Namen ist ROT); über der Decke `node scripts/stamm-umzug.cjs --teile §NN
-    <methode>`, ein Zweig von vor dem Schnitt zieht per `stamm-rehome` um; `cut-method` (AST-sicher) · sofort `diag-atlas --check` +
+    die alte Datei `anazhRealm.js` ist tot, ein Leser auf ihren Namen ist ROT); ein neues Glied trägt seinen Eintrag in der Modul-Karte, über
+    der Decke teilt die Karte das Modul (`Modul/teil`), dann `node scripts/stamm-umzug.cjs --nach-karte`; ein Zweig von vor dem Umzug zieht
+    per `stamm-rehome` um; `cut-method` (AST-sicher) · sofort `diag-atlas --check` +
     `npm run stamm:lint` · seriell committen, nie Batch; Arbeiter zweigen vom Kopf von integ-probe ab, nie von einem ungemergten R3-Zweig
     (gestapelte Zweige erben jede Röte).
 13. **Der Loop:** Streaming prio 0, Bewegung nie am Render-Signal; EIN PID, Totband 59–77 fps; NaN-Wand vor jedem EWMA; Existenz vor Framerate

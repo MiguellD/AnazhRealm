@@ -1392,19 +1392,8 @@ function scan(files) {
 function checkSoulKeys() {
     // Die Schlüssel-Menge aus dem lebenden Literal ziehen (klammer-bewusst).
     const src = stammLib.text(path.join(__dirname, ".."));
-    const start = src.indexOf("AnazhRealm.CREATURE_SOULS = Object.freeze({");
-    if (start < 0) return ["CREATURE_SOULS-Literal nicht gefunden"];
-    let depth = 0;
-    let i = src.indexOf("{", start);
-    const from = i;
-    for (; i < src.length; i++) {
-        if (src[i] === "{") depth++;
-        else if (src[i] === "}") {
-            depth--;
-            if (depth === 0) break;
-        }
-    }
-    const block = src.slice(from, i + 1);
+    const block = stammLib.rumpf(src, /AnazhRealm\.CREATURE_SOULS = Object\.freeze\(\{/); // der EINE Rumpf-Schneider
+    if (!block) return ["CREATURE_SOULS-Literal nicht gefunden"];
     const keys = [];
     // Top-Level-Schlüssel: "    <name>: Object.freeze({" auf Tiefe 1
     const re = /\n    (\w+): Object\.freeze\(\{/g;
@@ -1421,6 +1410,8 @@ function checkSoulKeys() {
 
 // Die Stamm-Dateien, wie index.html sie lädt (scripts/lib/stamm.cjs — die EINE Liste; vor dem Schnitt die eine Datei).
 const STAMM = stammLib.dateien(path.join(__dirname, ".."));
+// das Gesetzbuch der Himmels-Sicht: die Stamm-Datei, die den Wandel-Pass `_atmoLutBau` trägt (am Glied, nie am Datei-Namen)
+const HIMMEL_BUCH = stammLib.dateiVon(path.join(__dirname, ".."), "_atmoLutBau");
 
 // ULTRAGUSS U2 — DIE ZWILLINGS-WAND: getötete Formel-Zwillinge dürfen nicht
 // nachwachsen. Je Zeile: der Formel-Fingerabdruck darf NUR im Gesetzbuch leben.
@@ -1620,7 +1611,7 @@ const ZWILLINGE = [
     })),
     // D3 — DIE EINE ATMOSPHÄRE als MUSTER (Lehre 7: ein Zwillings-Abdruck ist ein Muster, nie ein Variablen-Name): die Luftmasse
     // als Kehrwert der Sonnenhöhe (die Luftmassen-Sonne, `1 / (max(e, 0) + 0,06)`) in keiner Datei, und eine Equirekt-Umgebung
-    // nur im Wandel-Pass der Himmels-Sicht (`_atmoLutBau`, stamm/24.js) — jede andere ist eine gemalte Umgebung neben der EINEN.
+    // nur im Wandel-Pass der Himmels-Sicht (`_atmoLutBau`, HIMMEL_BUCH) — jede andere ist eine gemalte Umgebung neben der EINEN.
     {
         muster: /1(?:\.0)?\s*\/\s*\(\s*Math\.max\(\s*[\w.]+\s*,\s*0(?:\.0)?\s*\)\s*\+\s*0\.\d+\s*\)/,
         gefallen: true,
@@ -1629,8 +1620,8 @@ const ZWILLINGE = [
     },
     {
         muster: /\bEquirectangularReflectionMapping\b/,
-        gesetzbuch: "stamm/24.js",
-        verboten: gelaendeLeser().filter((d) => !/(?:^|[\\/])stamm[\\/]24\.js$/.test(d)),
+        gesetzbuch: HIMMEL_BUCH,
+        verboten: gelaendeLeser().filter((d) => d.replace(/\\/g, "/") !== HIMMEL_BUCH),
         fiel: "D3 — die Umgebung ist der Wandel-Pass der Himmels-Sicht (_atmoLutBau), keine gemalte Equirekt-Umgebung",
     },
 ];
@@ -1728,7 +1719,7 @@ function scanLabBuster() {
     // log über die Version. DIESELBE Wand deckt jetzt die Runtime-Konstante: EIN Gesetz,
     // alle Versions-Träger == package.json.
     const stammSrc = stammLib.text(root);
-    const vm = stammSrc.match(/AnazhRealm\.VERSION = "([0-9.]+)"/);
+    const vm = stammLib.treffer(stammSrc, null, /AnazhRealm\.VERSION = "([0-9.]+)"/);
     if (!vm) errs.push("AnazhRealm.VERSION nicht gefunden (die Versions-Wand braucht den Anker)");
     else if (vm[1] !== version)
         errs.push(
@@ -2063,7 +2054,7 @@ function scanNormalWand(srcRoh) {
     // Rohtext, die Zuweisung trifft es über ihre Zeile.
     const gl = stammLib.glieder(srcRoh);
     const codeAb = [0];
-    for (let i = code.indexOf("\n"); i !== -1; i = code.indexOf("\n", i + 1)) codeAb.push(i + 1);
+    for (let i = -1; (i = code.indexOf("\n", i + 1)) !== -1; ) codeAb.push(i + 1);
     while ((m = zuweisung.exec(code))) {
         let lo = 0,
             hi = codeAb.length - 1;
@@ -3569,8 +3560,8 @@ function linsenDateien(root) {
 const STAMM_NAME_RX = new RegExp(
     "^(?:\\.{0,2}/|https?://[^/]*/)?" + stammLib.ALT.replace(/\./g, "\\.") + "(?:\\?[^\"'`]*)?$"
 );
-// Ausgenommen: die Schnittstelle selbst und der Codemod (er trägt die alte Leser-Form als Muster).
-const STAMM_WERKZEUG = ["scripts/lib/stamm.cjs", "scripts/stamm-umzug.cjs"];
+// Ausgenommen: die Schnittstelle selbst.
+const STAMM_WERKZEUG = ["scripts/lib/stamm.cjs"];
 function stammLeserDateien(root) {
     const aus = [];
     for (const f of fs.readdirSync(root)) if (/\.(?:c|m)?js$/.test(f) && !stammLib.istStammDatei(f)) aus.push(f);
@@ -3631,7 +3622,7 @@ function scanStammLeser(root, ersatz = {}) {
             )
                 errs.push(
                     `Stamm-Leser-Wand: ${rel}:${t.loc.start.line} liest Rahmen nur an /${t.value.pattern}/ — nach dem Schnitt ` +
-                        `stehen sie in stamm/NN.js (das Muster trägt \`\\/stamm\\/\\d\\d[a-z]?\\.js\` mit)`
+                        `stehen sie in den Dateien unter stamm/ (das Muster trägt \`\\/stamm\\/[a-z0-9-]+\\.js\` mit)`
                 );
         }
     }
@@ -3676,7 +3667,7 @@ function main() {
                   "            });\n            stage.pivot = null;" +
                   stamm.slice(jIch + ichNeu.length);
         const taeter = (name, rumpf) =>
-            stamm.replace(
+            stammLib.ersetze(stamm, null,
                 "class AnazhRealm {\n",
                 `class AnazhRealm {\n    // früher: o.geometry.dispose() in jeder Bühne\n    ${name}(o) {\n${rumpf}\n    }\n`
             );
@@ -3715,7 +3706,7 @@ function main() {
             [
                 "G",
                 stamm.includes(regelAnker)
-                    ? stamm.replace(
+                    ? stammLib.ersetze(stamm, "_disposeSoulGroup",
                           regelAnker,
                           regelAnker + "\n            if (node.material) this._queueDispose(node.material);"
                       )
@@ -3755,7 +3746,7 @@ function main() {
         const kartenFeuert =
             scanKartenWand(stamm).length === 0 &&
             scanKartenWand(
-                stamm.replace(
+                stammLib.ersetze(stamm, null,
                     /(\n {4}_impostorAtlasSchreibe\([^)]*\) \{)/,
                     '$1\n        const cv = document.createElement("canvas");'
                 )
@@ -3767,7 +3758,7 @@ function main() {
         // Das Absenz-Erbe muss feuern: der Sprung greift wieder zum Physik-Körper.
         const erbeFeuert =
             scanAbsenzErbe(stamm).length === 0 &&
-            scanAbsenzErbe(stamm.replace(/(\n {4}handleJump\([^)]*\) \{)/, "$1\n        const k = this.playerBody;"))
+            scanAbsenzErbe(stammLib.ersetze(stamm, null, /(\n {4}handleJump\([^)]*\) \{)/, "$1\n        const k = this.playerBody;"))
                 .length === 1;
         if (!erbeFeuert) {
             console.log("❌ SELBST-TEST: das Absenz-Erbe feuert nicht (oder steht heute rot)");
@@ -3776,7 +3767,7 @@ function main() {
         // Die Normal-Wand muss feuern: eine Welt-Normale, mit der transponierten Kamera-Matrix gedreht.
         // Dazu die Quelle: der Boden-Graph liest wieder r184s `normalWorld` (der Fall vor V18.532), transitiv über `_nWG` (die
         // Geometrie-Normale des Graphen, beim Boden die des Stufen-Morphs, K51-2).
-        const quelleAlt = stamm.replace(
+        const quelleAlt = stammLib.ersetze(stamm, "_buildPbrNodeMaterial",
             "const _nWG = opts.geomorph ? this._bodenStufenKnoten().normalWelt : _Tn.normalWorldGeometry;",
             "const _nWG = _Tn.normalWorld;"
         );
@@ -4129,11 +4120,12 @@ function main() {
             ];
             const fehltAnker = [];
             for (const [name, alt, neu, muster] of schmuggel) {
-                const i = stumm.indexOf(alt);
-                if (i < 0) {
+                const t = stammLib.treffer(stumm, null, alt);
+                if (!t) {
                     fehltAnker.push(name);
                     continue;
                 }
+                const i = t.index;
                 erwartet.push({ name, zeile: stumm.slice(0, i).split("\n").length, muster });
                 stumm = stumm.slice(0, i) + neu + stumm.slice(i + alt.length);
             }
@@ -4181,7 +4173,7 @@ function main() {
                 "    _sgHelfer(e) { if (this.state.strikt) throw e; return null; }\n" +
                 '    _sgAblage(g) { try { this._uiRooms = { x: { render: () => this._sgTief1(g) } }; window.addEventListener("x", () => this._sgTief3(g)); } catch (e) {} }\n' +
                 '    _sgKlang(g) { const w = new Worker("k"); w.onerror = () => {}; w.onmessage = (ev) => { this._sgZahl = ev.data; }; }\n';
-            const tiefAnker = stamm.indexOf("    // Studio-Dither-Blende als TSL-Knoten");
+            const tiefAnker = (stammLib.treffer(stamm, null, "    // Studio-Dither-Blende als TSL-Knoten") || { index: -1 }).index;
             const tiefQuelle =
                 stamm.slice(0, tiefAnker) +
                 helfer +
