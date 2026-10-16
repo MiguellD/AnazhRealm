@@ -28037,7 +28037,7 @@ async function checkBandV18147ForYou(ctx) {
 }
 
 // BEDROHUNG: ein WILDES Wesen (Temperament aus glühender Substanz, kein hostile-Flag) jagt nur im
-// pfad, Furcht schlägt Jagd; der predator-Filter hält Raubtiere aus den Ambient-Pickern. Der Biss
+// pfad, Furcht schlägt Jagd; das Rudel kommt ambient (G4a, gate:kreatur-takt „geburt"). Der Biss
 // läuft durchs damagePlayer-Tor → FURCHT bei niedriger HP · TRIUMPH beim Fall eines Jägers.
 async function checkBandPhaseEThreat(ctx) {
     const { page, check } = ctx;
@@ -28046,15 +28046,7 @@ async function checkBandPhaseEThreat(ctx) {
         const out = {};
         const HUNT = r.constructor._verhaltenGesetz().jagd;
         out.consts = !!HUNT && HUNT.radius > 0 && HUNT.strikeCooldownSec > 0;
-        // Die Raubtier-Seele (ALTLASTEN-NULL: der WOLF): registriert + predator-
-        // markiert + aus BEIDEN Ambient-Pickern gefiltert (sparsam per Konstruktion).
-        const soul = r.constructor.CREATURE_SOULS.wolf;
-        out.soul = !!soul && soul.predator === true;
-        let randomPickedPredator = false;
-        for (let i = 0; i < 60; i++) {
-            if (r._pickCreatureSoulName() === "wolf") randomPickedPredator = true;
-        }
-        out.ambientExcluded = !randomPickedPredator && /predator/.test(window.__codeOf(r._pickFaunaSoulAtPlayer));
+        out.soul = !!r.constructor.CREATURE_SOULS.wolf; // die Raubtier-Seele (ALTLASTEN-NULL: der WOLF)
         const p = r.state.player;
         const pm = r.state.playerMesh.position;
         const savedMode = r.getGameMode();
@@ -28166,8 +28158,7 @@ async function checkBandPhaseEThreat(ctx) {
         }
         return out;
     });
-    check("Phase E Bedrohung: Konstanten + Raubtier-Seele (predator-markiert)", res.consts && res.soul);
-    check("Phase E Bedrohung: sparsam — Raubtiere fallen aus BEIDEN Ambient-Pickern", res.ambientExcluded);
+    check("Phase E Bedrohung: Konstanten + Raubtier-Seele", res.consts && res.soul);
     check("Phase E Bedrohung (NULL): die Gattung trägt WILD (Carnivor-diet als Daten)", res.wildTemperament);
     check(
         "Phase E Bedrohung: Jagd-Trieb pfad+nah+unverängstigt; Furcht schlägt Jagd",
@@ -39236,11 +39227,8 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
             out.oldestIsOlder = true; // skip wenn keine Kreaturen
         }
 
-        // _pickFaunaSoulAtPlayer liefert valide Soul — die AMBIENT-Menge sind die
-        // NICHT-predator-Tiere (ALTLASTEN-NULL: Hirsch/Fuchs/Bär; der Wolf ist
-        // bewusste Schöpfung, nie ambient — der Test wandert mit, V9.56-i).
-        const soul = r._pickFaunaSoulAtPlayer();
-        out.faunaSoulValid = soul === "wesen" || soul === "fuchs" || soul === "baer";
+        // _pickFaunaSoulAtPlayer liefert eine valide Soul — die AMBIENT-Menge ist jede Seele (G4a: auch der Wolf)
+        out.faunaSoulValid = r.constructor.CREATURE_SOUL_NAMES.includes(r._pickFaunaSoulAtPlayer());
 
         // _creatureNaturalDeath effektiviert (sorrow +0.2, journal-loss, removeCreature)
         if (r.state.creatures.length > 0) {
@@ -39261,17 +39249,6 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
             out.deathIncreasesSorrow = true;
             out.deathAddsLossJournal = true;
         }
-
-        // _creatureNaturalBirth fügt Kreatur + Journal-Eintrag hinzu. NICHT count(growth) vorher/nachher
-        // vergleichen (am 200-FIFO-Cap verdrängt das Anhängen evtl. einen growth-Eintrag) — gemessen wird
-        // die OBJEKT-Identität: der neue growth-Eintrag war vorher nicht da.
-        const beforeBirthCount = r.state.creatures.length;
-        const beforeBirthEntries = new Set(r.state.worldJournal.entries || []);
-        r._creatureNaturalBirth();
-        out.birthIncreasesCount = r.state.creatures.length === beforeBirthCount + 1;
-        out.birthAddsGrowthJournal = (r.state.worldJournal.entries || []).some(
-            (e) => e && e.type === "growth" && !beforeBirthEntries.has(e)
-        );
 
         return out;
     });
@@ -39366,15 +39343,10 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         check("Welle 6.G3.c: FAUNA_DEATH_COOLDOWN_MS > 0", wave6g3Results.faunaDeathCdExists);
         check("Welle 6.G3.c: state.faunaLifecycle initialisiert", wave6g3Results.faunaLifecycleField);
         check("Welle 6.G3.c: _findOldestCreature wählt kleinste bornAt", wave6g3Results.oldestIsOlder);
-        check(
-            "Welle 6.G3.c: _pickFaunaSoulAtPlayer liefert valide ambient-Soul (sprite/wesen/geist/fuchs/baer)",
-            wave6g3Results.faunaSoulValid
-        );
+        check("Welle 6.G3.c: _pickFaunaSoulAtPlayer liefert valide ambient-Soul", wave6g3Results.faunaSoulValid);
         check("Welle 6.G3.c: _creatureNaturalDeath reduziert Kreaturen-Anzahl", wave6g3Results.deathReducesCount);
         check("Welle 6.G3.c: _creatureNaturalDeath erhöht player.emotions.sorrow", wave6g3Results.deathIncreasesSorrow);
         check("Welle 6.G3.c: _creatureNaturalDeath schreibt loss-Journal", wave6g3Results.deathAddsLossJournal);
-        check("Welle 6.G3.c: _creatureNaturalBirth fügt Kreatur hinzu", wave6g3Results.birthIncreasesCount);
-        check("Welle 6.G3.c: _creatureNaturalBirth schreibt growth-Journal", wave6g3Results.birthAddsGrowthJournal);
     } else {
         check("Welle 6.G3: alle Tests laufen", false, wave6g3Results ? wave6g3Results.error : "no result");
     }

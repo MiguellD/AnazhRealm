@@ -88,7 +88,6 @@ const OBERKANTE_BENANNT = {
         "Platzierung: die Geburt fern am Wunsch-Ort setzt das Tier auf die Oberfläche",
     ],
     _playerDeathRespawn: [["getTerrainHeightAt"], "Platzierung: der Spieler ersteht auf der Oberfläche"],
-    _creatureNaturalBirth: [["getTerrainHeightAt"], "Platzierung: die Geburt fern im Freien"],
     _rescuePlayerFromVoid: [["getTerrainHeightAt"], "Platzierung: die Rettung aus der Leere auf die Oberfläche"],
     _stepCharacter: [
         ["findSurfaceAbove"],
