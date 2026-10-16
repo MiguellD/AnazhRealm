@@ -236,7 +236,12 @@ function richterLesen(root) {
         for (const n of acorn.parse(src, { ecmaVersion: "latest", sourceType: "script", locations: true }).body) {
             const t = src.slice(n.start, n.end);
             if (n.type === "FunctionDeclaration" && /^check/.test(n.id.name)) {
-                if (baender.has(n.id.name)) throw new Error(`richter: Band doppelt ${n.id.name} (${q})`);
+                // ein Zweig von vor dem Schnitt merget seinen Läufer (er trägt die Bänder noch): der Läufer gewinnt
+                if (baender.has(n.id.name) && q === RICHTER) throw new Error(`richter: Band doppelt ${n.id.name} (${q})`);
+                if (baender.has(n.id.name)) {
+                    vor = n.loc.end.line;
+                    continue;
+                }
                 const roh = Z.slice(vor, n.loc.end.line).join("\n").replace(/^\n+/, "").replace(/^\/\/ scripts\/playtest\/[\s\S]*?\n\n/, "");
                 const text = roh.replace(/\b__dirname\b/g, "SKRIPTE");
                 baender.set(n.id.name, { name: n.id.name, text, rumpf: t.replace(/\b__dirname\b/g, "SKRIPTE"), titel: roh.slice(0, roh.indexOf(t)) + n.id.name });
