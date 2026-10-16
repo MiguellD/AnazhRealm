@@ -685,7 +685,7 @@ class AnazhRealm_Z17a {
         const uv = T.attribute("uv", "vec2");
         const s = T.texture(tex, uv).bias(T.float(AnazhRealm.BLATT_FARBE_OKTAVE));
         const schwelle = this._laubSchwelle(T);
-        const deckung = T.texture(tex, uv).bias(this._ensureLodUniforms().uLaubKante.z);
+        const deckung = T.texture(tex, uv).bias(this._laubOktave());
         const w = tex.userData.wert;
         return {
             tex,
@@ -693,6 +693,15 @@ class AnazhRealm_Z17a {
             a: this._laubKante(T, deckung.a, c),
             schwelle,
         };
+    }
+
+    // DIE OKTAVE DER DECKUNG (A3): log2(2 · Skala) unter der zeitlichen Auflösung, ohne sie 0 (`uLaubKante.z`, gesetzt in
+    // `_loopRender`) — EINE Zahl für jede Karte der Klasse: der Blatt-Atlas liest sie als bias, die Karte L2 als Faktor 2^z
+    // ihrer Gradienten (Mip-Wahl, Klemme der Ansicht, Gewicht der kubischen Lesung).
+    _laubOktave() {
+        const lu = this._ensureLodUniforms();
+        if (!lu || !lu.uLaubKante) throw this._blendeBruch("der LOD-Uniform-Satz trägt keine uLaubKante");
+        return lu.uLaubKante.z;
     }
 
     // DIE KANTE DES LAUBS (K68, A3): der alphaTest schnitt jede Blatt-Karte binär an der Schwelle — die Nadel-Wedel standen im

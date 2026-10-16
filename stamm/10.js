@@ -527,7 +527,13 @@ class AnazhRealm_Z10 {
                                     // Oberkante der Ansicht v. Die Klemme hält den Filter in SEINER Ansicht: einen halben Texel der
                                     // gröberen gemischten Stufe Abstand (≈ 1 fwidth der Ansichts-Höhe), vergrößert mindestens einen
                                     // halben Texel der Stufe 0 (ein fwidth ist dort kleiner als der bilineare Fußabdruck).
-                                    const _halb = _Ta.max(_Ta.fwidth(_uv.y), _Ta.float(0.5 / _at.ch)).clamp(0.0, 0.25);
+                                    // DIE OKTAVE DES RASTERS (A3, `_laubOktave` wie `_blattAtlasProbe`): die Karte liest ihre Stufe
+                                    // log2(2 · Skala) gröber — ein Texel trägt zwei Ausgabe-Pixel; Klemme, Mip-Wahl und das Gewicht
+                                    // der kubischen Lesung wachsen mit (ohne zeitliche Auflösung Faktor 1)
+                                    const _okt = _Ta.exp2(this._laubOktave());
+                                    const _halb = _Ta
+                                        .max(_Ta.fwidth(_uv.y).mul(_okt), _Ta.float(0.5 / _at.ch))
+                                        .clamp(0.0, 0.25);
                                     const _vIn = _uv.y.clamp(_halb, _Ta.float(1.0).sub(_halb));
                                     const _uvA = _Ta.vec2(_uv.x, _vIn.add(_v0).div(_V));
                                     const _uvB = _Ta.vec2(_uv.x, _vIn.add(_v1).div(_V));
@@ -539,8 +545,8 @@ class AnazhRealm_Z10 {
                                     // jede Peilung auf einer Ansicht). Die Gradienten kommen aus der STETIGEN Koordinate (die
                                     // Ansichts-Höhe ohne Sprung) — alle vier Stichproben, Albedo und Normale (gate:foundry-impostor D).
                                     const _uvStetig = _Ta.vec2(_uv.x, _uv.y.div(_V));
-                                    const _gX = _uvStetig.dFdx();
-                                    const _gY = _uvStetig.dFdy();
+                                    const _gX = _uvStetig.dFdx().mul(_okt);
+                                    const _gY = _uvStetig.dFdy().mul(_okt);
                                     const _probeA = (tex, uv) => tex.sample(uv).depth(_schicht).grad(_gX, _gY);
                                     // DIE VERGRÖSSERTE KARTE (K20, 12.10.): steht ein Texel der Stufe 0 auf mehr als einem Pixel, liest
                                     // die Karte ihre Zelle KUBISCH (B-Spline, vier bilineare Abgriffe in der eigenen Ansicht) statt
