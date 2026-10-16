@@ -14,12 +14,13 @@
 //       Lauf- und Sprung-Kraft, Gier), jeder Zug steht im Buch des Welt-Akt-Spions als verweigert beim Namen seiner Quelle;
 //   (S) SCHARF: ein Welt-Akt an `dslEval` vorbei (der Effekt direkt) fällt ROT und steht mit seiner Quelle im Urteil;
 //   (F) FREI: ohne Halt (Uhr ≥ 0) wirken dieselben Wege wie im Spiel — der Nexus setzt sein Dorf, der Mensch seine Tiere;
-//   (Q) QUELLE: `dslEval` liest die Liste und den Halt (`_messHalt` liest die Uhr); jeder Op der DSL hat ein Urteil (Welt-Akt
-//       oder benannt frei, die Liste nennt nur Ops, die es gibt); jedes Programm, das der Nexus komponiert (Atom, Programm,
-//       Regel), trägt nur Welt-Akte der Liste, das Wetter (sein eigener Schreiber) und die freien Ops;
+//   (Q) QUELLE: jeder Op der DSL hat ein Urteil (Welt-Akt oder benannt frei, die Liste nennt nur Ops, die es gibt); jedes
+//       Programm, das der Nexus komponiert, trägt nur Welt-Akte der Liste, das Wetter und die freien Ops (dass `dslEval`
+//       Liste und Halt liest, beweisen H und F am Verhalten); (K) KI: der Prompt der Welt-KI (`llmBuildSystemPrompt`) nennt
+//       jeden Op, Ort und jede Bedingung der DSL mit Form, die Welt-Akte als eigene Gruppe (bis 16.10.: 40 von 70 Ops);
 //   (P) kein Page-Error.
-// SELBSTTEST (--selftest, ohne Browser, in `npm run check`): das Urteil der Wache (`weltaktUrteil`) fällt bei jedem
-// durchgelaufenen Akt, beim blinden und beim fehlenden Spion rot und bleibt bei Verweigerung grün.
+// SELBSTTEST (--selftest, ohne Browser, in `npm run check`): `weltaktUrteil` fällt bei jedem durchgelaufenen Akt, beim blinden
+// und fehlenden Spion rot, bei Verweigerung grün; `kiUrteil` nennt das fehlende und das falsch gruppierte Verb.
 //   node scripts/diag-weltakt-wache.cjs [--selftest]   (npm run gate:weltakt-wache; Port WELTAKT_WACHE_PORT)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
@@ -31,12 +32,18 @@ const PORT = Number(process.env.WELTAKT_WACHE_PORT || 4603);
 if (process.argv.includes("--selftest")) {
     console.log("=== WELT-WACHE — Selbsttest des Urteils (ohne Browser) ===");
     const v = weltaktSelbsttest();
+    const ki = (p) => kiUrteil(p, { "Welt-Akte": ["spawn_studio"], "Weitere Ops": ["when"], Orte: ["at"] }).join(" · ");
+    const gut = "Welt-Akte: spawn_studio(what).\nWeitere Ops: when(c).\nOrte: at(x).";
+    const weg = gut.replace("spawn_studio(what)", "");
+    const um = ki(weg.replace("when(c)", "when(c), spawn_studio(w)"));
+    if (ki(gut) || !/Welt-Akte — fehlt 1: spawn_studio/.test(ki(weg)) || !/Ops — .*fremd: spawn_studio/.test(um))
+        v.push(`(K) kiUrteil blind: voll „${ki(gut)}" · fehlend „${ki(weg)}" · umgruppiert „${um}"`);
     for (const x of v) console.log("  ❌ " + x);
     if (v.length) {
         console.log("\n❌ SELBSTTEST ROT — das Urteil der Welt-Wache ist blind.");
         process.exit(1);
     }
-    console.log("✅ SELBSTTEST GRÜN — durchgelaufene Akte, blinder und fehlender Spion fallen rot; Verweigerung grün.");
+    console.log("✅ SELBSTTEST GRÜN — Akt durch, Spion blind/fehlend, KI-Verb fehlend/umgruppiert: jedes fällt rot.");
     process.exit(0);
 }
 
@@ -66,20 +73,42 @@ const FREI = [
     "rule",
     "parallel",
 ];
-// Die Welt-Akte, die die Probe schickt — ihr Spion hüllt sie auch, wenn das Spiel keine Liste nennt (dann ist er blind und
-// das Urteil ROT, der Täter steht trotzdem beim Namen).
-const GESCHICKT = [
-    "spawn_village",
-    "spawn_creature",
-    "spawn_tree",
-    "creatures_size_mul",
-    "creatures_speed_mul",
-    "creatures_color",
-    "set_time_of_day",
-    "player_speed",
-    "player_jump_power",
-    "skybox_color",
-];
+// Je Weg die Züge, die unter der Bühne verweigert im Buch stehen müssen. Die Welt-Akte darin schickt die Probe — ihr Spion
+// hüllt sie auch, wenn das Spiel keine Liste nennt (dann ist er blind und das Urteil ROT, der Täter steht beim Namen).
+const SOLL = {
+    nexus: [
+        "nexus → spawn_village",
+        "nexus → spawn_creature",
+        "nexus → creatures_size_mul",
+        "nexus → creatures_speed_mul",
+        "nexus → set_time_of_day",
+        "nexus → player_speed",
+        "nexus → skybox_color",
+    ],
+    emotion: ["emotion:chaos → creatures_speed_mul"],
+    gesetz: ["rule:human → spawn_creature"],
+    mensch: ["human → spawn_tree", "human → spawn_creature"],
+    mitspieler: [
+        "remote:peer-wache → set_time_of_day",
+        "remote:peer-wache → player_jump_power",
+        "remote:peer-wache → creatures_color",
+    ],
+    spaeter: ["llm:grok → spawn_tree"],
+};
+const GESCHICKT = [...new Set(Object.values(SOLL).flatMap((w) => w.map((k) => k.split(" → ")[1])))];
+
+// (K) DIE KI KENNT JEDES VERB: je Gruppe (eine Zeile „Kopf: name(form), …" im Prompt) genau ihre Namen — fehlt einer oder
+// steht einer in der falschen Gruppe, fällt er beim Namen.
+function kiUrteil(prompt, soll) {
+    const zeilen = String(prompt || "").split("\n");
+    return Object.entries(soll).flatMap(([kopf, namen]) => {
+        const da = (zeilen.find((l) => l.trim().startsWith(kopf + ":")) || "").match(/[a-z_]+(?=\()/g) || [];
+        const fehlt = namen.filter((n) => !da.includes(n));
+        const fremd = da.filter((n) => !namen.includes(n));
+        const gut = !fehlt.length && !fremd.length;
+        return gut ? [] : [`(K) KI: ${kopf} — fehlt ${fehlt.length}: ${fehlt.join(", ")} · fremd: ${fremd.join(", ")}`];
+    });
+}
 
 const server = statikServer();
 
@@ -189,16 +218,11 @@ async function probe(GESCHICKT) {
     aus.frei.mensch = await fenster(wege.mensch);
     window.__buehne();
     aus.ende = { uhr: st.weatherEffectTime };
-    // (Q) die Engstelle liest die Liste und den Halt; das Urteil über jeden Op; die Programme des Nexus
-    const proto = Object.getPrototypeOf(r);
-    const ev = window.__codeOf(proto.dslEval);
-    const mh = typeof proto._messHalt === "function" ? window.__codeOf(proto._messHalt) : "";
-    aus.engstelleLiest =
-        /AnazhRealm\.DSL_WELTAKTE\.includes\(op\)/.test(ev) &&
-        /this\._messHalt\(\)/.test(ev) &&
-        /this\.state\.weatherEffectTime\s*<\s*0/.test(mh);
+    // (Q) das Urteil über jeden Op; die Programme des Nexus — (K) der Prompt der Welt-KI und die Orte und Bedingungen der DSL
     aus.liste = Array.isArray(r.constructor.DSL_WELTAKTE) ? r.constructor.DSL_WELTAKTE.slice() : null;
     aus.ops = Object.keys(r.dslEffects);
+    const gruppen = { Orte: Object.keys(r.dslPositions), Bedingungen: Object.keys(r.dslConditions) };
+    aus.ki = { prompt: r.llmBuildSystemPrompt(), gruppen };
     let s = 0x5eed;
     const rng = () => {
         s = (s + 0x6d2b79f5) | 0;
@@ -228,26 +252,6 @@ function gleich(a, b) {
 
 function urteil(S, pageErrors) {
     const rot = [];
-    const SOLL = {
-        nexus: [
-            "nexus → spawn_village",
-            "nexus → spawn_creature",
-            "nexus → creatures_size_mul",
-            "nexus → creatures_speed_mul",
-            "nexus → set_time_of_day",
-            "nexus → player_speed",
-            "nexus → skybox_color",
-        ],
-        emotion: ["emotion:chaos → creatures_speed_mul"],
-        gesetz: ["rule:human → spawn_creature"],
-        mensch: ["human → spawn_tree", "human → spawn_creature"],
-        mitspieler: [
-            "remote:peer-wache → set_time_of_day",
-            "remote:peer-wache → player_jump_power",
-            "remote:peer-wache → creatures_color",
-        ],
-        spaeter: ["llm:grok → spawn_tree"],
-    };
     for (const [n, w] of Object.entries(S.halt)) {
         const u = weltaktUrteil(w.buch);
         if (u.urteil !== "GRUEN") rot.push(`(H) HALT ${n}: ${u.taeter.join(" · ")}`);
@@ -283,10 +287,6 @@ function urteil(S, pageErrors) {
     if (!(S.frei.mensch.nachher.tiere > S.frei.mensch.vorher.tiere))
         rot.push(`(F) FREI: der Mensch setzt ohne Halt keine Tiere (${JSON.stringify(S.frei.mensch)})`);
     if (!(S.ende.uhr < 0)) rot.push(`(F) die Bühne stellt den Halt nicht wieder her (Uhr ${S.ende.uhr})`);
-    if (!S.engstelleLiest)
-        rot.push(
-            "(Q) QUELLE: `dslEval` liest die Welt-Akte und den Halt nicht (`AnazhRealm.DSL_WELTAKTE.includes(op)` · `this._messHalt()` · `_messHalt` liest `weatherEffectTime < 0`)"
-        );
     if (!S.liste) rot.push("(Q) QUELLE: das Spiel nennt keine Welt-Akte (AnazhRealm.DSL_WELTAKTE fehlt)");
     else {
         const ohne = S.ops.filter((o) => !S.liste.includes(o) && !FREI.includes(o));
@@ -300,6 +300,9 @@ function urteil(S, pageErrors) {
         if (doppelt.length) rot.push(`(Q) URTEIL: ${doppelt.join(", ")} steht als Welt-Akt UND frei`);
         const nexusFrei = Object.keys(S.nexusOps).filter((o) => !S.liste.includes(o) && !FREI.includes(o));
         if (nexusFrei.length) rot.push(`(Q) NEXUS: der Nexus komponiert Ops ohne Urteil: ${nexusFrei.join(", ")}`);
+        const welt = S.ops.filter((o) => S.liste.includes(o));
+        const gruppen = { "Welt-Akte": welt, "Weitere Ops": S.ops.filter((o) => !welt.includes(o)), ...S.ki.gruppen };
+        rot.push(...kiUrteil(S.ki.prompt, gruppen));
     }
     for (const e of pageErrors) rot.push(`(P) PAGE-ERROR: ${e}`);
     return rot;
@@ -333,25 +336,24 @@ function urteil(S, pageErrors) {
     server.close();
 
     console.log("=== DIE WELT-WACHE — die Bühne hält die Welt (Null-Renderer, eine echte Welt) ===");
-    for (const [n, w] of Object.entries(S.halt)) {
-        const u = weltaktUrteil(w.buch);
-        const d = Object.keys(w.vorher).filter((k) => !gleich(w.vorher[k], w.nachher[k]));
-        console.log(
-            `  Halt · ${n.padEnd(10)} ${u.urteil}  Welt ${d.length ? "ändert " + d.map((k) => `${k} ${w.vorher[k]} → ${w.nachher[k]}`).join(", ") : "steht"}; verweigert ${JSON.stringify(u.verweigert)}` +
-                (u.taeter.length ? `; Täter: ${u.taeter.join(" · ")}` : "")
-        );
-    }
-    const sm = weltaktUrteil(S.schmuggel.buch);
-    console.log(`  Scharf · vorbei   ${sm.urteil}  ${sm.taeter.join(" · ")}`);
     const fz = (w) =>
         Object.keys(w.vorher)
             .filter((k) => !gleich(w.vorher[k], w.nachher[k]))
             .map((k) => `${k} ${w.vorher[k]} → ${w.nachher[k]}`)
             .join(", ");
+    for (const [n, w] of Object.entries(S.halt)) {
+        const u = weltaktUrteil(w.buch);
+        console.log(
+            `  Halt · ${n.padEnd(10)} ${u.urteil}  Welt ${fz(w) ? "ändert " + fz(w) : "steht"}; verweigert ${JSON.stringify(u.verweigert)}` +
+                (u.taeter.length ? `; Täter: ${u.taeter.join(" · ")}` : "")
+        );
+    }
+    const sm = weltaktUrteil(S.schmuggel.buch);
+    console.log(`  Scharf · vorbei   ${sm.urteil}  ${sm.taeter.join(" · ")}`);
     console.log(`  Frei · Nexus      ${fz(S.frei.nexus)}`);
     console.log(`  Frei · Mensch     ${fz(S.frei.mensch)}`);
     console.log(
-        `  Quelle: dslEval liest Liste und Halt: ${S.engstelleLiest}; ${S.ops.length} Ops, ${S.liste ? S.liste.length : "keine"} Welt-Akte, ${FREI.length} frei; der Nexus komponiert ${Object.keys(S.nexusOps).length} Ops (${Object.keys(S.nexusOps).sort().join(" · ")})`
+        `  KI: Prompt ${S.ki.prompt.length} Zeichen · Quelle: ${S.ops.length} Ops, ${S.ki.gruppen.Orte.length} Orte, ${S.ki.gruppen.Bedingungen.length} Bedingungen, ${S.liste ? S.liste.length : "keine"} Welt-Akte, ${FREI.length} frei; der Nexus komponiert ${Object.keys(S.nexusOps).length} Ops (${Object.keys(S.nexusOps).sort().join(" · ")})`
     );
     const rot = urteil(S, pageErrors);
     if (rot.length) {

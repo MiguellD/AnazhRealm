@@ -92,5 +92,7 @@ function klasseDesLaufs(run, skripte, lies = liesPlatte, root = ROOT) {
 // 20:01:04Z, als 38628488866 und 38628426005 zusammen 32 Jobs trugen — die übrigen warteten bis 344 s). Die EINE Zahl für
 // die Waage (gate:ci-deckung (T) PLÄTZE) und das Verteilen (scripts/ci-zeiten.cjs --verteilen).
 const LAEUFER_PLAETZE = 20;
+// DER GROSSE SCHRITT (CW, 16.10.): über 5 min Median braucht er eine eigene Karte, nie die Waage (sie nennt ihn beim Namen)
+const GROSS_S = 300;
 
-module.exports = { GPU_REZEPTE, LAEUFER_PLAETZE, befehle, klasseDerDatei, klasseDesLaufs };
+module.exports = { GPU_REZEPTE, GROSS_S, LAEUFER_PLAETZE, befehle, klasseDerDatei, klasseDesLaufs };

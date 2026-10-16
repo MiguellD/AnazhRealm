@@ -28,9 +28,10 @@
 // DIE ZWEI STUFEN UND DIE WAAGE (K14, 11.10.; Befund: jeder Push fuhr die ganze Batterie, ~25 min Wanduhr). check.yml trägt
 // GENAU zwei Gruppen-Jobs: `puls` (je Push) und `voll` (die übrige Batterie, unter der EINEN Bedingung VOLL_WENN); jeder Schritt
 // steht an GENAU einer Stelle (G)/(D), ein weiterer Job ist ROT (außer der Echt-Gruppe (E), er stünde außerhalb der Waage):
-//   (T) WAAGE    je Gruppe die Vorbereitung plus die Median-Zeiten ihrer Schritte (spec/ci/ci-zeiten.json, gemessen von
-//                scripts/ci-zeiten.cjs, die CI fragt die API nie): Puls ≤ 2 min, Voll-Gruppe ≤ 7 min, wer drüber liegt, steht mit
-//                Minuten und größtem Schritt beim Namen; ohne Zeit UNGEMESSEN (ROT: messen oder „geschaetzt" mit Quelle).
+//   (T) WAAGE    je Gruppe die Vorbereitung plus die Median-Zeiten ihrer Schritte, und ihre gemessene Job-Dauer, wo sie am Kopf
+//                der Quelle dieselben Schritte trug (spec/ci/ci-zeiten.json, gemessen von scripts/ci-zeiten.cjs, die CI fragt die
+//                API nie): Puls ≤ 2 min, Voll-Gruppe ≤ 7 min, wer drüber liegt, steht mit Minuten und größtem Schritt beim Namen;
+//                ein Schritt allein über dem Deckel steht allein (ALLEIN); ohne Zeit UNGEMESSEN; die Quelle älter als ihre Läufe ALT.
 // Die Voll-Bedingung zählt für (S) als Merge-haltend: sie feuert auf integ-probe und main (der Weg nach main führt nur über
 // integ-probe, Merge-Regel der Entscheidung 1110 §2.8, Zweig koordination) und auf jedem PR nach main; jede andere Job-Bedingung bleibt STUMM.
 //
@@ -45,7 +46,7 @@
 //                die Schlüssel aus scripts/ci-schluessel.cjs (Inhalt allein), der Schritt vor den Caches, die Caches vor npm ci
 //
 // DER VOLLE PLAYTEST IN DER VOLLEN BATTERIE (K18, 11.10.; Befund: K15 fiel erst am Merge im vollen Playtest, (W) sah ihn nie):
-//   (P) PLAYTEST  `npm run playtest` läuft in GENAU einem Schritt aller Workflows, in einer EIGENEN Gruppe der vollen Batterie,
+//   (P) PLAYTEST  `npm run playtest` läuft in GENAU einem Schritt aller Workflows, in einer Gruppe der vollen Batterie (ihre Zeit wiegt (T)),
 //                sein Rot hält den Merge, das Verdikt ist die Bedingung: der letzte Befehl greift „Alle Invarianten OK" aus dem
 //                `tee`-Log (ein grüner Zähler reicht nicht — unter PLAYTEST_STRICT=0 endet er mit 0 trotz verletzter Invarianten).
 //
@@ -55,7 +56,7 @@ const fs = require("fs");
 const path = require("path");
 const { execSync } = require("child_process");
 const yaml = require("js-yaml");
-const { klasseDesLaufs, LAEUFER_PLAETZE } = require("./lib/ci-klasse.cjs");
+const { klasseDesLaufs, GROSS_S, LAEUFER_PLAETZE } = require("./lib/ci-klasse.cjs");
 const { schluessel } = require("./ci-schluessel.cjs");
 const { kopfUrteil } = require("./ci-kopf.cjs");
 
@@ -322,7 +323,7 @@ function ciSchritte(docs, skripte) {
                     (j.defaults && j.defaults.run && j.defaults.run.shell) ||
                     (doc.defaults && doc.defaults.run && doc.defaults.run.shell);
                 const teile = aufloesen(s.run, skripte, erreicht, 0, shellArt(shell), schrittStumm(datei, doc, job, j, s));
-                out.push({ datei, job, name: name(s), teile, erreicht, schritt: s, jobDef: j, shell: shellArt(shell) });
+                out.push({ datei, job, name: name(s), teile, erreicht, schritt: s, shell: shellArt(shell) });
             }
     return out;
 }
@@ -428,15 +429,6 @@ function playtestUrteil(docs, skripte) {
     for (const s of imVoll) {
         const g = stumm(s);
         if (g) v.push(`(P) STUMM: ${wo(s)} fährt den vollen Playtest abgeschaltet — ${g}`);
-        const meine = gruppeVon(s.schritt);
-        const neben = (s.jobDef.steps || []).filter(
-            (x) => x !== s.schritt && x.run && !IST_VORBEREITUNG(x) && meine !== null && gruppeVon(x) === meine
-        );
-        if (neben.length)
-            v.push(
-                `(P) EIGEN: der volle Playtest teilt Gruppe ${meine} mit ${neben.map((x) => `„${name(x)}"`).join(" · ")} — er ` +
-                    "trägt eine eigene Gruppe"
-            );
         const b = befehle(s.schritt.run, s.shell);
         const letzter = b[b.length - 1];
         const log =
@@ -728,55 +720,90 @@ function selbsttestKlasse() {
     return f;
 }
 
-// (T) DIE WAAGE: je Job und Gruppe die Vorbereitung plus die Median-Zeiten ihrer Schritte. Ein Job ohne Bedingung läuft je
-// Push (Deckel 2 min), die volle Stufe (der Kopf-Richter und die Batterie hinter ihm) trägt die Breite (7 min je Gruppe);
-// ein Job ohne Matrix ist EINE Gruppe. Dazu (K61) die PLÄTZE: die Jobs, die ein voller Lauf zugleich fährt (ein Job, auf den
-// ein anderer wartet, endet vor ihm), ≤ LAEUFER_PLAETZE — und die WANDUHR: der längste Weg durch den Lauf (der Puls, der
-// Kopf-Richter samt der schwersten Voll-Gruppe) ≤ 8 min.
-// → { v: Befunde, zeilen: je Gruppe „job g/N: x,y min", plaetze, wanduhr_s }
+// (T) DIE WAAGE: je Job und Gruppe die Vorbereitung plus die Median-Zeiten ihrer Schritte — und die GEMESSENE Job-Dauer, wo
+// die Gruppe am Kopf der Quelle dieselben Schritte trug (es urteilt die größere). Ein Job ohne Bedingung läuft je Push
+// (Deckel 2 min), die volle Stufe (Kopf-Richter und Batterie) trägt die Breite (7 min je Gruppe), ein Job ohne Matrix ist EINE
+// Gruppe. Ein Schritt allein über dem Deckel teilt keine Waage: er steht allein (sonst ALLEIN), die Wanduhr deckelt ihn, er
+// braucht eine eigene Karte — er und jeder Schritt über GROSS_S stehen beim Namen in `gross`. (T) ALT (CW, 16.10.; Befund: die
+// Waage rechnete mit Medianen vom 14.10., „6,9 min" bei gemessenen 9,5–12,8 min): seit dem Kopf der Quelle tragen höchstens so
+// viele Merges einen vollen Lauf, wie sie je Schritt misst. (K61) PLÄTZE ≤ LAEUFER_PLAETZE (ein Job, auf den ein anderer wartet,
+// endet vor ihm), WANDUHR: der längste Weg (Puls, Kopf-Richter samt schwerster Voll-Gruppe) ≤ 8 min.
+// → { v: Befunde, zeilen: je Gruppe „job g/N x,y (Schritte)", plaetze, wanduhr, gross }
 const minuten = (s) => (s / 60).toFixed(1).replace(".", ",");
 const WANDUHR_S = 480;
-function waage(doc, zeiten) {
+// die Waage wiegt in Zehntel-Minuten, der Einheit ihrer Anzeige (ein Job-Median streut über die Läufe ±10 s)
+const ueber = (s, deckel) => Math.round(s / 6) > Math.round(deckel / 6);
+// die Merges auf dem ersten Eltern-Weg seit dem Kopf der Quelle (der Puls holt die Geschichte ganz, fetch-depth 0)
+const seitKopf = (kopf) =>
+    /^[0-9a-f]{40}$/.test(String(kopf))
+        ? Number(execSync(`git rev-list --count --first-parent --merges ${kopf}..HEAD`, { cwd: root, stdio: "pipe" }).toString())
+        : NaN;
+function waage(doc, zeiten, alterVon = seitKopf) {
     const v = [];
     const zeilen = [];
     const Z = (zeiten && zeiten.schritte) || {};
+    const G = (zeiten && zeiten.gruppen) || {};
     const vorb = zeiten && Number(zeiten.vorbereitung_s);
     if (!(vorb >= 0)) return { v: [`(T) ZEITEN: ${ZEITEN} trägt keine vorbereitung_s`], zeilen };
+    const alter = (() => {
+        try {
+            return alterVon(zeiten.kopf);
+        } catch {
+            return NaN;
+        }
+    })();
+    if (!(alter >= 0))
+        v.push(`(T) ALT: der Kopf der Zeit-Quelle „${zeiten.kopf}" ist in der Geschichte nicht aufzulösen — keine Messung urteilt`);
+    else if (!(alter <= Number(zeiten.je_schritt)))
+        v.push(
+            `(T) ALT: seit dem Kopf der Zeit-Quelle (${String(zeiten.kopf).slice(0, 8)}) trugen ${alter} Merges je einen vollen ` +
+                `Lauf, sie misst je Schritt ${zeiten.je_schritt} — älter als ihre Läufe (node scripts/ci-zeiten.cjs)`
+        );
     const imLauf = [];
     const schwerste = new Map();
+    const gross = new Set();
     for (const [job, J] of Object.entries((doc && doc.jobs) || {})) {
         const art = J.if === undefined && !needsVon(J).length ? "push" : imVollenLauf(doc, job) ? "voll" : null;
         if (!art) continue; // eine andere Bedingung urteilt (V)/(S)
-        const M = (J.strategy && J.strategy.matrix && J.strategy.matrix.gruppe) || null;
-        const gs = Array.isArray(M) ? M : [null];
+        const M = (J.strategy && J.strategy.matrix) || {};
+        const gs = Array.isArray(M.gruppe) ? M.gruppe : [null];
         imLauf.push([job, J, gs.length]);
         const steps = (J.steps || []).filter((s) => s.run && !IST_VORBEREITUNG(s));
         for (const g of gs) {
-            const mein = steps.filter((s) => {
-                const m = typeof s.if === "string" ? GRUPPE_RE.exec(s.if) : null;
-                return g === null || !s.if || (m && Number(m[1]) === g);
-            });
+            const mein = steps.filter((s) => g === null || !s.if || Number((GRUPPE_RE.exec(String(s.if)) || [])[1]) === g);
             let summe = vorb;
             let groesster = null;
             for (const s of mein) {
                 const z = Z[name(s)];
                 if (!z || !(Number(z.s) >= 0)) {
-                    v.push(
-                        `(T) UNGEMESSEN: „${name(s)}" (${job}) trägt keine Zeit in ${ZEITEN} — messen (node scripts/ci-zeiten.cjs) ` +
-                            `oder mit „geschaetzt" und Quelle eintragen`
-                    );
+                    v.push(`(T) UNGEMESSEN: „${name(s)}" (${job}) trägt keine Zeit in ${ZEITEN} — messen (node scripts/ci-zeiten.cjs)`);
                     continue;
                 }
                 summe += z.s;
+                if (z.s > GROSS_S) gross.add(`„${name(s)}" ${minuten(z.s)}`);
                 if (!groesster || z.s > groesster[1]) groesster = [name(s), z.s];
             }
-            const kl = ((J.strategy && J.strategy.matrix && J.strategy.matrix.include) || []).find((e) => e && e.gruppe === g);
+            // gemessen: die Gruppe trug am Kopf der Quelle genau diese Schritte
+            const key = g === null ? job : `${job} ${g}`;
+            const satz = Object.values(Z).filter((z) => z.gruppe === key).length === mein.length;
+            const gem = G[key] && satz && mein.every((s) => (Z[name(s)] || {}).gruppe === key) ? +G[key].s : 0;
+            const urteil = Math.max(summe, gem);
+            const kl = (M.include || []).find((e) => e && e.gruppe === g);
             const wer = g === null ? job : `${job} ${g}/${gs.length}` + (kl && kl.klasse ? ` ${kl.klasse}` : "");
-            zeilen.push(`${wer} ${minuten(summe)}`);
-            if (!schwerste.has(job) || summe > schwerste.get(job)[1]) schwerste.set(job, [wer, summe]);
-            if (summe > WAAGE_S[art])
+            const wie = gem >= summe ? " gemessen" : "";
+            zeilen.push(`${wer} ${minuten(urteil)}${wie} (${mein.length})`);
+            if (!schwerste.has(job) || urteil > schwerste.get(job)[1]) schwerste.set(job, [wer, urteil]);
+            const deckel = `${minuten(WAAGE_S[art])} min`;
+            if (groesster && ueber(vorb + groesster[1], WAAGE_S[art])) {
+                gross.add(`„${groesster[0]}" ${minuten(groesster[1])}`);
+                if (mein.length > 1)
+                    v.push(
+                        `(T) ALLEIN: „${groesster[0]}" trägt allein ${minuten(vorb + groesster[1])} min, über dem Deckel von „${wer}" ` +
+                            `(${deckel}) — ${mein.length - 1} Schritte fahren mit; er steht allein (eine eigene Karte)`
+                    );
+            } else if (ueber(urteil, WAAGE_S[art]))
                 v.push(
-                    `(T) WAAGE: „${wer}" trägt ${minuten(summe)} min (Deckel ${minuten(WAAGE_S[art])} min ${art === "push" ? "je Push" : "je Voll-Gruppe"})` +
+                    `(T) WAAGE: „${wer}" trägt ${minuten(urteil)} min${wie} (Deckel ${deckel} ${art === "push" ? "je Push" : "je Voll-Gruppe"})` +
                         (groesster ? ` — der größte Schritt „${groesster[0]}" ${minuten(groesster[1])} min` : "")
                 );
         }
@@ -800,11 +827,11 @@ function waage(doc, zeiten) {
     };
     const wege = imLauf.map(([job]) => weg(job));
     const laengster = wege.reduce((m, x) => (x[0] > m[0] ? x : m), [0, ""]);
-    if (laengster[0] > WANDUHR_S)
+    if (ueber(laengster[0], WANDUHR_S))
         v.push(
             `(T) WANDUHR: der längste Weg „${laengster[1]}" trägt ${minuten(laengster[0])} min (Ziel ${minuten(WANDUHR_S)} min je vollem Lauf)`
         );
-    return { v, zeilen, plaetze, wanduhr: laengster };
+    return { v, zeilen, plaetze, wanduhr: laengster, gross: [...gross] };
 }
 
 // (Z) die Gate-Schritte zweier Stände: was fehlt nachher, was steht nachher öfter als vorher
@@ -831,20 +858,6 @@ function vergleich(vorher, nachher, skripte = {}) {
         doppelt,
         neu,
     };
-}
-
-function gruppenBericht(doc) {
-    return GRUPPEN_JOBS.map((job) => {
-        const je = new Map();
-        for (const s of gateSchritte(doc)) if (s.job === job) je.set(s.gruppe, (je.get(s.gruppe) || 0) + 1);
-        return (
-            `${job} ` +
-            [...je]
-                .sort((x, y) => x[0] - y[0])
-                .map(([g, n]) => `${g}: ${n}`)
-                .join(" · ")
-        );
-    }).join(" | ");
 }
 
 // Fixture-Bausteine (K61): der Kopf-Richter in seiner Form, ein Cache-Schritt
@@ -1153,8 +1166,8 @@ function selbsttest() {
     );
 }
 
-// (T) Die Waage gegen ein Fixture — und gegen das heutige check.yml (b5eb02e9, das eingefrorene `vorher` in ci-zeiten.json):
-// jeder Job lief je Push, und keiner trug den Puls.
+// (T) Die Waage gegen ein Fixture — und gegen den Befund vom 16.10. (cee33f91, das eingefrorene `vorher` in ci-zeiten.json:
+// die Lage der Gruppen, ihre Schritt-Mediane und Job-Dauern am Kopf der Quelle; die alte Waage nannte 6,9 min).
 function selbsttestWaage() {
     const prep = () => [
         { uses: "actions/checkout@v4" },
@@ -1162,108 +1175,94 @@ function selbsttestWaage() {
         { name: "System-Libs", run: "sudo apt-get install -y libnss3" },
         { name: "Dependencies", run: "npm ci --no-audit --no-fund" },
     ];
+    const schritt = (name, g) => ({ name, if: `matrix.gruppe == ${g}`, run: `npm run gate:${name}` });
     const doc = () => ({
         jobs: {
-            puls: {
-                strategy: { "fail-fast": false, matrix: { gruppe: [1] } },
-                steps: prep().concat([{ name: "Lint", if: "matrix.gruppe == 1", run: "npm run lint" }]),
-            },
+            puls: { strategy: { matrix: { gruppe: [1] } }, steps: prep().concat([schritt("Lint", 1)]) },
             voll: {
                 if: VOLL_WENN,
-                strategy: { "fail-fast": false, matrix: { gruppe: [1, 2] } },
-                steps: prep().concat([
-                    { name: "A", if: "matrix.gruppe == 1", run: "npm run gate:a" },
-                    { name: "B", if: "matrix.gruppe == 2", run: "npm run gate:b" },
-                    { name: "C", if: "matrix.gruppe == 1", run: "npm run gate:c" },
-                ]),
+                strategy: { matrix: { gruppe: [1, 2] } },
+                steps: prep().concat([schritt("A", 1), schritt("B", 2), schritt("C", 1)]),
             },
         },
     });
-    const zeiten = () => ({ vorbereitung_s: 20, schritte: { Lint: { s: 30 }, A: { s: 200 }, B: { s: 300 }, C: { s: 150 } } });
-    const mitKopf = (d, z) => {
+    const zeiten = () => ({ kopf: "f".repeat(40), je_schritt: 7, vorbereitung_s: 20, schritte: { Lint: { s: 30 }, A: { s: 200 }, B: { s: 300 }, C: { s: 150 } } });
+    const mitKopf = (d, z, s = 3) => {
+        Object.assign(d.jobs.voll, { needs: KOPF_JOB, if: VOLL_NACH_KOPF });
         d.jobs.kopf = kopfJob();
-        d.jobs.voll.needs = KOPF_JOB;
-        d.jobs.voll.if = VOLL_NACH_KOPF;
-        z.schritte.Kopf = { s: 3 };
+        z.schritte.Kopf = { s };
     };
+    const gemessen = (z, s) => {
+        z.schritte.A.gruppe = z.schritte.C.gruppe = "voll 1";
+        z.gruppen = { "voll 1": { s } };
+    };
+    const gruppen = (d, n) => (d.jobs.voll.strategy.matrix.gruppe = Array.from({ length: n }, (_, i) => i + 1));
+    // [Name, Tat an Lage und Zeiten, Soll (Regex · null: grün · Prüfung am Ergebnis), Alter der Quelle in Merges oder „wurf"]
     const faelle = [
         ["die Waage im Lot (grün)", () => {}, null],
-        [
-            "eine Voll-Gruppe über 7 min",
-            (d, z) => (z.schritte.A.s = 300),
-            /\(T\) WAAGE: „voll 1\/2" trägt 7,8 min \(Deckel 7,0 min je Voll-Gruppe\) — der größte Schritt „A" 5,0 min/,
-        ],
+        ["eine Voll-Gruppe über 7 min", (d, z) => (z.schritte.A.s = 300), /\(T\) WAAGE: „voll 1\/2" trägt 7,8 min \(Deckel 7,0 min je Voll-Gruppe\) — der größte Schritt „A" 5,0 min/],
         [
             "der Puls über 2 min",
-            (d, z) => (z.schritte.Lint.s = 130),
-            /\(T\) WAAGE: „puls 1\/1" trägt 2,5 min \(Deckel 2,0 min je Push\) — der größte Schritt „Lint" 2,2 min/,
+            (d, z) => d.jobs.puls.steps.push(schritt("Format", 1)) && Object.assign(z.schritte, { Lint: { s: 90 }, Format: { s: 20 } }),
+            /\(T\) WAAGE: „puls 1\/1" trägt 2,2 min \(Deckel 2,0 min je Push\) — der größte Schritt „Lint" 1,5 min/,
         ],
         ["ein Schritt ohne Zeit", (d, z) => delete z.schritte.B, /\(T\) UNGEMESSEN: „B" \(voll\)/],
         ["die Zeiten ohne Vorbereitung", (d, z) => delete z.vorbereitung_s, /\(T\) ZEITEN/],
         [
-            "ein Schritt aus voll in den Puls gezogen",
+            "ein Schritt aus voll in den Puls gezogen (allein über dem Deckel, mit Mitfahrer)",
             (d) => d.jobs.puls.steps.push(Object.assign(d.jobs.voll.steps.splice(5, 1)[0], { if: "matrix.gruppe == 1" })),
-            /\(T\) WAAGE: „puls 1\/1" trägt 5,8 min .*„B" 5,0 min/,
+            /\(T\) ALLEIN: „B" trägt allein 5,3 min, über dem Deckel von „puls 1\/1" \(2,0 min\) — 1 Schritte fahren mit/,
         ],
+        [
+            "allein über dem Deckel und allein in der Gruppe (grün, beim Namen)",
+            (d, z) => Object.assign(z.schritte, { A: { s: 420 }, C: { s: 50 } }) && (d.jobs.voll.steps[6].if = "matrix.gruppe == 2"),
+            (w) => !w.v.length && w.gross.includes('„A" 7,0'),
+        ],
+        // (T) GEMESSEN (CW): die Job-Dauer der Gruppe urteilt, wenn sie am Kopf der Quelle dieselben Schritte trug
+        ["gemessen über dem Deckel, geplant darunter", (d, z) => gemessen(z, 470), /\(T\) WAAGE: „voll 1\/2" trägt 7,8 min gemessen/],
+        ["ein gemessener Satz, der nicht mehr gilt (die Lage zog um)", (d, z) => gemessen(z, 470) || (z.schritte.C.gruppe = "voll 2"), null],
+        // (T) ALT (CW): die Quelle ist älter als ihre Läufe, oder ihr Kopf steht in keiner Geschichte
+        ["die Quelle älter als ihre Läufe", () => {}, /\(T\) ALT: seit dem Kopf der Zeit-Quelle \(ffffffff\) trugen 8 Merges/, 8],
+        ["der Kopf der Quelle nicht aufzulösen", () => {}, /\(T\) ALT: der Kopf der Zeit-Quelle „f+" ist in der Geschichte nicht/, "wurf"],
         // (T) PLÄTZE und WANDUHR (K61): 1 Puls- und 20 Voll-Gruppen auf 20 Plätzen; der Kopf-Richter endet vor der Batterie
-        [
-            "mehr Jobs zugleich als Läufer-Plätze (K61-Befund: 22 gegen 20)",
-            (d) => (d.jobs.voll.strategy.matrix.gruppe = Array.from({ length: 20 }, (_, i) => i + 1)),
-            /\(T\) PLÄTZE: ein voller Lauf fährt 21 Jobs zugleich \(puls 1 · voll 20\) — das Konto hat 20 Läufer-Plätze: 1 warten/,
-        ],
-        [
-            "der Kopf-Richter belegt keinen Platz neben der Batterie",
-            (d, z) => {
-                mitKopf(d, z);
-                d.jobs.voll.strategy.matrix.gruppe = Array.from({ length: 19 }, (_, i) => i + 1);
-            },
-            null,
-        ],
-        [
-            "der längste Weg über 8 min",
-            (d, z) => {
-                mitKopf(d, z);
-                z.schritte.Kopf.s = 120;
-            },
-            /\(T\) WANDUHR: der längste Weg „kopf → voll 1\/2" trägt 8,5 min \(Ziel 8,0 min je vollem Lauf\)/,
-        ],
+        ["mehr Jobs zugleich als Läufer-Plätze (K61-Befund: 22 gegen 20)", (d) => gruppen(d, 20), /\(T\) PLÄTZE: ein voller Lauf fährt 21 Jobs zugleich \(puls 1 · voll 20\) — das Konto hat 20 Läufer-Plätze: 1 warten/],
+        ["der Kopf-Richter belegt keinen Platz neben der Batterie", (d, z) => mitKopf(d, z) || gruppen(d, 19), null],
+        ["der längste Weg über 8 min", (d, z) => mitKopf(d, z, 120), /\(T\) WANDUHR: der längste Weg „kopf → voll 1\/2" trägt 8,5 min \(Ziel 8,0 min je vollem Lauf\)/],
     ];
+    // der Befund vom 16.10.: die Lage cee33f91 mit ihren gemessenen Zeiten fällt rot an jedem Täter
+    const Z = JSON.parse(fs.readFileSync(path.join(root, ZEITEN), "utf8"));
+    if (!Z.vorher || !Z.vorher.jobs) return [`${ZEITEN} trägt kein „vorher" — der Selbsttest am Befund fehlt`];
+    const befund = (d, z) => {
+        Object.assign(z, { vorbereitung_s: Z.vorher.vorbereitung_s, schritte: {}, gruppen: {} });
+        for (const [job, j] of Object.entries(Z.vorher.jobs)) {
+            d.jobs[job].strategy.matrix.gruppe = j.matrix;
+            d.jobs[job].steps = prep().concat(j.schritte.map(([n, g]) => ({ ...schritt(n, g), name: n })));
+            for (const [n, g, s] of j.schritte) z.schritte[n] = { s, gruppe: `${job} ${g}` };
+        }
+        for (const [k, s] of Object.entries(Z.vorher.gruppen)) z.gruppen[k] = { s };
+    };
+    const soll = [
+        /\(T\) ALLEIN: „Fenster-Wand [^"]*" trägt allein 7,\d min, über dem Deckel von „voll 16\/18" \(7,0 min\) — 9 Schritte/,
+        /\(T\) WAAGE: „voll 14\/18" trägt 10,\d min( gemessen)? \(Deckel 7,0 min je Voll-Gruppe\)/,
+        /\(T\) WAAGE: „voll 18\/18" trägt 9,\d min gemessen \(Deckel 7,0 min je Voll-Gruppe\)/,
+        /\(T\) ALLEIN: „Statik [^"]*" trägt allein 2,\d min, über dem Deckel von „puls 1\/2" \(2,0 min\)/,
+        /\(T\) WANDUHR: der längste Weg „voll 16\/18" trägt 1[12],\d min \(Ziel 8,0 min je vollem Lauf\)/,
+    ];
+    faelle.push([`der Befund vom 16.10. (${Z.vorher.ref.split(" ")[0]})`, befund, (w) => soll.every((r) => w.v.some((x) => r.test(x)))]);
     const f = [];
-    for (const [n, tat, soll] of faelle) {
+    for (const [n, tat, soll, alter = 0] of faelle) {
         const d = doc(),
             z = zeiten();
         tat(d, z);
-        const u = waage(d, z).v;
-        const ok = soll ? u.some((x) => soll.test(x)) : u.length === 0;
+        const w = waage(d, z, () => {
+            if (alter === "wurf") throw new Error("unbekannt");
+            return alter;
+        });
+        const u = w.v;
+        const ok = typeof soll === "function" ? soll(w) : soll ? u.some((x) => soll.test(x)) : u.length === 0;
         console.log(`  ${ok ? "✅" : "❌"} Selbsttest „${n}" → ${u.join(" · ") || "grün"}`);
         if (!ok) f.push(`„${n}" fällt nicht rot beim Namen (${u.join(" · ") || "grün"})`);
     }
-    // das heutige check.yml: der Bau aus dem eingefrorenen `vorher` (Jobs, Gruppen, Schritte mit ihren Medianen)
-    const Z = JSON.parse(fs.readFileSync(path.join(root, ZEITEN), "utf8"));
-    if (!Z.vorher || !Z.vorher.jobs) return f.concat([`${ZEITEN} trägt kein „vorher" — der Selbsttest am heutigen check.yml fehlt`]);
-    const alt = { jobs: {} };
-    const zAlt = { vorbereitung_s: Z.vorher.vorbereitung_s, schritte: {} };
-    for (const [job, j] of Object.entries(Z.vorher.jobs)) {
-        alt.jobs[job] = {
-            strategy: j.matrix ? { "fail-fast": false, matrix: { gruppe: j.matrix } } : undefined,
-            steps: prep().concat(
-                j.schritte.map(([n, g]) => ({ name: n, run: "npm run x", ...(g ? { if: `matrix.gruppe == ${g}` } : {}) }))
-            ),
-        };
-        for (const [n, , s] of j.schritte) zAlt.schritte[n] = { s };
-    }
-    const u = waage(alt, zAlt).v;
-    const soll = [
-        /\(T\) WAAGE: „check" trägt \d+,\d min \(Deckel 2,0 min je Push\) — der größte Schritt „Prettier-Format-Check" 2,1 min/,
-        /\(T\) WAAGE: „playtest [123]\/3" trägt (1\d|2\d),\d min \(Deckel 2,0 min je Push\)/,
-        /\(T\) WANDUHR: der längste Weg „playtest 2\/3" trägt 26,0 min \(Ziel 8,0 min je vollem Lauf\)/,
-    ];
-    const ok =
-        soll.every((r) => u.some((x) => r.test(x))) &&
-        u.filter((x) => /^\(T\) WAAGE/.test(x)).length ===
-            Object.values(Z.vorher.jobs).reduce((a, j) => a + (j.matrix ? j.matrix.length : 1), 0);
-    console.log(`  ${ok ? "✅" : "❌"} Selbsttest „das heutige check.yml (${Z.vorher.ref.split(" ")[0]})" → ${u.join(" · ") || "grün"}`);
-    if (!ok) f.push(`das heutige check.yml fällt nicht rot mit seinen Tätern (${u.join(" · ") || "grün"})`);
     return f;
 }
 
@@ -1510,11 +1509,6 @@ function selbsttestPlaytest() {
             /\(P\) STUMM: .*„\|\| true" schluckt sein Rot/,
         ],
         ["continue-on-error am Schritt", (d) => (T(d)["continue-on-error"] = true), /\(P\) STUMM: .*continue-on-error/],
-        [
-            "eine geteilte Gruppe",
-            (d) => (T(d).if = "matrix.gruppe == 1"),
-            /\(P\) EIGEN: der volle Playtest teilt Gruppe 1 mit „A"/,
-        ],
     ];
     const f = [];
     for (const [n, tat, soll] of faelle) {
@@ -1564,7 +1558,7 @@ const w = fs.existsSync(zeitenDatei)
 v.push(...w.v);
 const jeKlasse = g.zahl.jeKlasse;
 console.log("=== CI-DECKUNG — " + DATEI + " ===");
-console.log(`  Gate-Schritte: ${gateSchritte(doc).length} (alle Jobs) · ${gruppenBericht(doc)}`);
+console.log(`  Gate-Schritte: ${gateSchritte(doc).length} (alle Jobs)`);
 console.log(
     `  Wände: ${g.zahl.waende} (gate:* und Teile von npm run check) · in der CI ${g.zahl.inCi} · Ausnahmen ${g.zahl.ausnahmen}` +
         (Object.keys(jeKlasse).length
@@ -1574,7 +1568,8 @@ console.log(
             : "") +
         ` · ohne Workflow ${g.zahl.offen}`
 );
-console.log(`  Waage (Median samt Vorbereitung, min): ${w.zeilen.join(" · ")}`);
+console.log(`  Waage (Median samt Vorbereitung, min, Schritte): ${w.zeilen.join(" · ")}`);
+if (w.gross && w.gross.length) console.log(`  über ${GROSS_S / 60} min oder allein über dem Deckel (je eine eigene Karte, nie die Waage): ${w.gross.join(" · ")}`);
 if (w.wanduhr)
     console.log(
         `  Plätze: ${w.plaetze} Jobs zugleich (Konto ${LAEUFER_PLAETZE}) · Wanduhr (längster Weg): ${minuten(w.wanduhr[0])} min — ${w.wanduhr[1]}`
@@ -1588,5 +1583,5 @@ if (v.length) {
     process.exit(1);
 }
 console.log(
-    `✅ GRÜN — jeder Gate-Schritt läuft genau einmal, jede Gruppe trägt die Vorbereitung und ihre Schritte und liegt unter ihrem Deckel (Puls 2 min, Voll 7 min), ein voller Lauf fährt höchstens ${LAEUFER_PLAETZE} Jobs zugleich und sein längster Weg ≤ 8 min, der Kopf-Richter lässt keinen Kopf zweimal durch die Batterie, kein Cache-Schlüssel hasht die Projektversion; jede Voll-Gruppe trägt ihre Klasse cpu oder gpu; jede Wand läuft in einem Workflow oder steht mit Klasse und Grund in der Ausnahme-Liste; der volle Playtest urteilt in seiner eigenen Voll-Gruppe am Verdikt.`
+    `✅ GRÜN — jeder Gate-Schritt läuft genau einmal, jede Gruppe trägt die Vorbereitung und ihre Schritte und liegt im Plan und gemessen unter ihrem Deckel (Puls 2 min, Voll 7 min; ein Schritt darüber allein), die Zeit-Quelle ist nicht älter als ihre Läufe, ein voller Lauf fährt höchstens ${LAEUFER_PLAETZE} Jobs zugleich und sein längster Weg ≤ 8 min, der Kopf-Richter lässt keinen Kopf zweimal durch die Batterie, kein Cache-Schlüssel hasht die Projektversion; jede Voll-Gruppe trägt ihre Klasse cpu oder gpu; jede Wand läuft in einem Workflow oder steht mit Klasse und Grund in der Ausnahme-Liste; der volle Playtest urteilt in einer Voll-Gruppe am Verdikt.`
 );

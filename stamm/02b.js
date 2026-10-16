@@ -1140,13 +1140,39 @@ class AnazhRealm_Z02b {
         }
     }
 
+    // DIE FORM EINES VERBS ist seine Signatur — was es aus seinen Argumenten liest: `([a, b], ctx)` → „a, b", „…" für ein Verb
+    // über beliebig viele Unterprogramme (`(args, ctx)`), leer ohne Argument (`()`, `(_args, ctx)`). Keine zweite Tabelle.
+    _dslForm(fn) {
+        const m = /^[^(]*\(\s*(?:\[([^\]]*)\]|([A-Za-z$][\w$]*))?/.exec(Function.prototype.toString.call(fn));
+        if (!m || m[1] == null) return m && m[2] ? "…" : "";
+        const namen = m[1].split(",").map((s) => s.split("=")[0].trim());
+        return namen.filter(Boolean).join(", ");
+    }
+
+    // DIE KI KENNT JEDES IHRER VERBEN (Karte KI1, 16.10.): die DSL im Prompt der Welt-KI IST die EINE Quelle — jeder Op aus
+    // `dslEffects`, jeder Ort aus `dslPositions`, jede Bedingung aus `dslConditions`, je mit Form (`_dslForm`), die Welt-Akte
+    // (`AnazhRealm.DSL_WELTAKTE`) als eigene Gruppe. Bis 16.10. sah sie `Object.keys(dslEffects).slice(0, 40)` — 40 von 70
+    // Ops (when · repeat · delay · player_speed … fehlten), Orte und Bedingungen nur aus Beispielen. Wache: gate:weltakt-wache (K).
+    _dslVokabular() {
+        const liste = (eintraege) => eintraege.map(([n, fn]) => `${n}(${this._dslForm(fn)})`).join(", ");
+        const ops = Object.entries(this.dslEffects);
+        const welt = ops.filter(([n]) => AnazhRealm.DSL_WELTAKTE.includes(n));
+        return [
+            'Die DSL kennt GENAU diese Verben, je mit Form: name(a, b) heißt ["name", a, b]; „…" heißt beliebig viele',
+            'Unterprogramme (bei random_weighted je {"weight":w,"effect":Programm}). Ein positionNode/posNode ist ein Ort,',
+            "condition/condNode eine Bedingung, sub/program/effectNode/thenBranch/elseBranch ein Programm.",
+            "Welt-Akte verändern die Welt, ihre Wesen oder den Spieler.",
+            `  Welt-Akte: ${liste(welt)}.`,
+            `  Weitere Ops: ${liste(ops.filter((o) => !welt.includes(o)))}.`,
+            `  Orte: ${liste(Object.entries(this.dslPositions))}.`,
+            `  Bedingungen: ${liste(Object.entries(this.dslConditions))}.`,
+        ];
+    }
+
     llmBuildSystemPrompt() {
         // Grok-Persona + DSL-Vertrag + Welle-1-A Selbst-Wissen: die Welt weiß
         // wer sie ist (worldMeta), was in ihr ist (Inventar), woran sie sich
         // erinnert (Journal-Auszug) und woher der Spieler kommt (Pfad-Buckets).
-        const ops = Object.keys(this.dslEffects || {})
-            .slice(0, 40)
-            .join(", ");
         const m = this.state.worldMeta || {};
         const ageDays = m.bornAt ? Math.floor((Date.now() - m.bornAt) / 86400000) : 0;
         const arches = this.state.architectures || [];
@@ -1197,12 +1223,12 @@ class AnazhRealm_Z02b {
             "Die DSL ist ein verschachteltes Array beginnend mit dem Op-Namen.",
             'Beispiele: ["weather","rainy"], ["chain",["weather","sunny"],["creatures_emotion","happy"]],',
             '["spawn_creature",["near_player",10],3,"happy"], ["skybox_color","#d4a3ff"].',
-            `Erlaubte Effekt-Ops (Auszug): ${ops}.`,
+            ...this._dslVokabular(),
             "",
             "Du kannst die Welt auch aus den STUDIOS wachsen lassen (dieselben Baupläne wie die Werkstatt des Spielers):",
             '  ["spawn_studio", <wort>, <position>, <anzahl>] — z.B. ["spawn_studio","eiche",["near_water",60],6] (ein Eichenhain am Wasser) oder ["spawn_studio","haus",["at_player_forward",14],1].',
             `  Wörter, die die Welt JETZT kennt: ${this._studioWordsForPrompt() || "(das Studio-Buch lädt noch — kein Wort)"}.`,
-            '  Positionen: ["near_player",r] · ["at_player_forward",d] · ["near_water",r] · ["far_player",min,max]. Anzahl 1–24.',
+            "  Position: jeder der Orte oben. Anzahl 1–24.",
             "",
             "Du kannst auch ein STEHENDES GESETZ vorschlagen — eine Regel, die sich SELBST wiederholt, wann immer eine Bedingung gilt (statt einer einmaligen Geste):",
             '  ["rule", <Bedingung>, <Effekt>, {"everySec":3}]',
