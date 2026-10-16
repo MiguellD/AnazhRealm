@@ -62,3 +62,25 @@ Alle Workflows und Agenten per TaskStop angehalten, notbremse.sh gefahren (kein 
 - **OMEN 16.10. ~12:45, Frost-Wand auf der GTX:** der Täter von B ist die Boot-Wartung der Linse (`diag-weltbild-frost.cjs` wartet
   auf 25 Chunks, nicht auf `_weltbildDa`) — beide Schüsse an Ankunft (+15 s) und dritter Person (+19 s) zeigen den Ladeschirm.
   Schnitt-Vorschlag netto 0 im Bericht `bericht/1610-frost-echt.md` (Nachtrag); dazu die T2-Lücke von `welt-boot`.
+
+## Neue Woche — Koordinator neu ab 16.10. 12:17 (Woche 0 %, Reset 22.10. 18:00 UTC; Sitzung „Koordinator-Übergabe 2026-10-16 [a0ebfb]“)
+
+Entscheide: Weg R ja (OMEN a08be68e, Re-Run `echt` an 826717ed Lauf 38881847786) · IX `index-breite` gestrichen (kein Täter, Zweig
+gelöscht) · Frost-Wand-Schnitt baut der OMEN auf `frost-echt` (Auftrag `auftrag/1610-omen-echt-frost.md`) · G3 (Studio = Modus) und
+die Rest-Schnitte von G4 stehen in keinem PFLICHT-OFFEN-Eintrag — nicht gestartet (BETRIEBSGESETZ 2). Karten-Vorlage mit DECKE,
+Datei-Besitz, Profil vor Schätzung: `artifacts/profiband/werkzeug/karte.js` (lokal, gitignored).
+
+| Karte | Zweig | Risiko | zahlt | Besitz (Kurz) | Ports |
+|---|---|---|---|---|---|
+| K1 Doku-Wahrheit (Prüfer) | doku-wahrheit 13c2ce7d | R2 | D(1) | docs, README, Kommentare | 8960– |
+| G4a Gruppen-Geburt | gruppen-geburt 514c7190 | R1 | Lehre 4 (fast Gebautes) | 24, 06a/06c Geburt | 8990– |
+| A0 Soll-Tafel am Kopf | tafel-kopf | R1 | A (Grundlage) | soll-tafel.json Ist | 9030– |
+| G1 GPU-Welt Scheibe 1 | gpu-welt | R3 | E (CPU-Takt), B | 15b, 20c | 9050– |
+| K2 Ein Wert, eine Stelle | ein-wert | R2 | GOLDENE (fail-soft), D | 26b 26c 16 21 10 22 06b | 9070– |
+| T3 Zeichen-Reihe | bau-reihe | R2 | A/E (GPU −1,4 ms) | 17b, 17c | 9090– |
+| D3a EIN Stripper | ein-stripper | R2 | D(3) | scripts/lib, Stripper-Hunks | 9110– |
+| G2 Ankunft Scheibe 1 | ankunft-ofen | R3 | B | Ofen 06a, foundry-bruecke | 9130– |
+| D2 Stamm nach Domäne | stamm-domaene | R2 | D(2) | stamm/ Umzug, atlas | 9150– |
+
+Merge-Reihe: K1 → G4a → K2/T3/G1/G2 (je nach Reife) → D2 zuletzt (Umzug am Merge-Tag neu gefahren) → D3b playtest.cjs nach Modulen
+→ K5 Text-Linsen → `__consumes`. Nach A0: die A-Karten je ROT-Klasse (laub · boden-nah · himmel-licht · wasser · tor-fern · haus · kopf).
