@@ -1513,7 +1513,7 @@ class AnazhRealm_Z20c {
         let a = reg.get(k);
         if (!a) {
             const K = AnazhRealm._arenaKlasse();
-            a = new K(k, schl, m, K.lager(w, m.geometry), Math.max(64, Math.ceil(m.instanceMatrix.count * K.RESERVE)));
+            a = new K(k, schl, m, K.lager(w, m.geometry), 0);
             a._imBuendel(wirt.isBundleGroup === true ? wirt : null);
             a._rend = renderer;
             reg.set(k, a);
@@ -1532,8 +1532,11 @@ class AnazhRealm_Z20c {
         }
         const reg = AnazhRealm.__arenen;
         if (!reg || reg.size === 0 || AnazhRealm.__arenaBruch) return;
+        AnazhRealm.__arenaJetzt = performance.now();
         try {
-            for (const a of [...reg.values()]) a._takt(); // ohne Arena (`__arenaOhne`) gibt sie alles zurück
+            const alle = [...reg.values()];
+            for (const a of alle) a._takt(false); // ohne Arena (`__arenaOhne`) gibt sie alles zurück
+            for (const a of alle) a._takt(true);
         } catch (e) {
             this._arenaBruch(e);
         }
@@ -1544,7 +1547,7 @@ class AnazhRealm_Z20c {
         a._rend = renderer;
         a._stapel.push(null);
         try {
-            if (!a._ordnen(renderer)) return;
+            if (!a._ordnen(renderer, false)) return;
             // nimmt ein Bündel die Arena auf, legt sie ihre Plätze fest (der Takt schreibt danach ihre Aufträge)
             const auf = a._fest && !!renderer._currentRenderBundle;
             const zug = a._zugFuer(camera, auf);
@@ -1677,9 +1680,59 @@ class AnazhRealm_Z20c {
             }
         };
         const vier = (n) => Math.ceil(n / 4) * 4; // jede Puffer-Länge ein Vielfaches von 4 Bytes (writeBuffer)
-        // DIE RESERVE jedes Wachsens (Lager und Instanz-Seite): ein Viertel. Befund 16.10. (Radeon, EINE Welt, Mess-Wiese Ego):
-        // mit ×1,5 (Lager) und ×2 (Instanz-Seite) hielt die Arena 5,44 MB für 2,24 MB Quelle, die der Kehraus freigab.
-        const RESERVE = 1.25;
+        // DIE RESIDENZ FOLGT DEM BILD — auch in der Arena (Lehre 27, das Gesetz des Kehraus `_gpuKehraus`): sie hält eine
+        // Gestalt, solange ein Glied sie mit Instanzen trägt, und einen Instanz-Platz je Instanz, die ein Glied zieht —
+        // GPU_KEHRAUS_MS über das letzte Mal hinaus, dann wird ihr Platz frei. Befund 16.10. (Prüfung Runde 2 und Messung
+        // G1-n2/vorher, Radeon, EINE Welt): die Arena hielt das 1,64- bis 2,07-Fache der Quellen, die der Kehraus freigab —
+        // VRAM gegen A ohne Arena +1,3 bis +3,3 MB. Die Klasse: der Index immer 32 bit (Wiese 0,60 statt 0,27 MB), ein Viertel
+        // Reserve und bis zu einem Viertel Brache im Lager, die Gestalten jeder je genommenen Senke (nach der Reise Genesis
+        // 3,21 → 6,67 MB), die Instanz-Seite nach der Kapazität der Senken ×1,25 (Wiese 0,63 MB für 2 800 gezogene Instanzen)
+        // — und die Matrizen jeder Quelle blieben daneben auf der GPU (0,49–0,51 MB). Der Platz-Raum (`raumNimm`/`raumGib`)
+        // ist der EINE Verwalter beider Seiten; was frei wird, nimmt erst der nächste Takt (`spaet`): ein offener Pass (das
+        // Hauptbild um den verschachtelten Schatten-Render) liest den alten Inhalt noch.
+        const raumNimm = (frei, n) => {
+            for (let k = 0; k < frei.length; k += 2) {
+                if (frei[k + 1] < n) continue;
+                const s = frei[k];
+                if (frei[k + 1] === n) frei.splice(k, 2);
+                else {
+                    frei[k] += n;
+                    frei[k + 1] -= n;
+                }
+                return s;
+            }
+            return -1;
+        };
+        const raumGib = (frei, s, n) => {
+            let k = 0;
+            while (k < frei.length && frei[k] < s) k += 2;
+            frei.splice(k, 0, s, n);
+            if (k + 2 < frei.length && s + n === frei[k + 2]) {
+                frei[k + 1] += frei[k + 3];
+                frei.splice(k + 2, 2);
+            }
+            if (k > 0 && frei[k - 2] + frei[k - 1] === s) {
+                frei[k - 1] += frei[k + 1];
+                frei.splice(k, 2);
+            }
+        };
+        const raumSpaet = (frei, spaet) => {
+            for (let k = 0; k < spaet.length; k += 2) raumGib(frei, spaet[k], spaet[k + 1]);
+            spaet.length = 0;
+        };
+        // der Block eines Glieds: seine Zahl und ein Viertel darüber (eine Senke wächst Instanz um Instanz)
+        const platz = (n) => (n > 0 ? vier(n + (n >> 2) + 4) : 0);
+        // DIE QUELLE VERLÄSST DIE GPU: die Instanzen eines Glieds zeichnet die Arena — der Speicher-Puffer seiner Matrizen
+        // (den der Kehraus nie nimmt: die Bindegruppe seines Zeichners hält ihn) fällt nach dem Submit dieses Frames, in dem
+        // sein Zeichner vielleicht noch zog, mit dessen Bindegruppen; kehrt das Glied zu ihm zurück, lädt r184 ihn neu
+        // (`_gpuAbschied` hebt die Version, die Bindegruppe baut sich neu).
+        const quelleWeg = (m) =>
+            setTimeout(() => {
+                const welt = globalThis.anazhRealm;
+                if (!m.__arena || !welt) return;
+                if (m.__zeichner) AnazhRealm._renderObjekteLoesen(m.__zeichner);
+                welt._gpuAbschied(m.instanceMatrix);
+            }, 0);
         // in die Warteschlange vor dem Submit dieses Passes; ohne GPU-Puffer lädt r184 beim ersten Zug das ganze Array
         const schreib = (rend, a, start, n) => {
             const be = rend && rend.backend;
@@ -1708,40 +1761,46 @@ class AnazhRealm_Z20c {
             const v = (a) => (a ? a.version - (a.__abschiede | 0) : 0);
             return v(g.attributes.position) * 65536 + v(g.index);
         };
-        // DAS LAGER einer Vertex-Form in einer Szene: die Gestalten aller Arenen dieser Form in EINEM Vertex- und Index-Puffer
-        // — angehängt, bis der Platz nicht reicht oder ein Viertel brach liegt; dann baut es neu (`RESERVE`), und jede Arena zeigt
-        // ihre Geometrie im selben Zug darauf (`_geoNeu`, ihr Bündel nimmt neu auf), bevor die alten Puffer fallen.
+        // DAS LAGER einer Vertex-Form in einer Szene: die Gestalten aller Arenen dieser Form in EINEM Vertex- und Index-Puffer.
+        // Eine Gestalt liegt, solange ein Glied sie mit Instanzen trägt (`halten`, gestempelt im Takt und in jedem Zug), in der
+        // ersten freien Strecke, die passt; GPU_KEHRAUS_MS nach dem letzten Stempel räumt sie ihre Strecken. Reicht keine
+        // Strecke oder liegt mehr als ein Achtel frei, baut der Takt das Lager neu — so groß wie seine liegenden Gestalten und
+        // ein Sechzehntel —, und jede Arena zeigt ihre Geometrie im selben Takt darauf (`_geoNeu`, ihr Bündel nimmt neu auf),
+        // bevor die alten Puffer fallen; nie in einem Pass (r184 zeichnet ihn mit der Geometrie, die er projizierte). Der Index
+        // ist schmal (16 bit), solange keine Gestalt mehr als 65 536 Vertices trägt: jede zieht mit ihrem Basis-Vertex, ihre
+        // Indizes bleiben ihre eigenen (die Foundry liefert sie so, `_schmalerIndex`; r184 bindet das Format nach dem Typ).
         class Lager {
             constructor(key) {
                 this.key = key;
-                this.gestalten = new Map(); // Positions-Id:Index-Id → { geo, bv, fi, nv, ni, nutzer, stand }
+                this.gestalten = new Map(); // Positions-Id:Index-Id → { geo, bv, fi, nv, ni, nutzer, stand, zuletzt }
                 this.attr = null;
                 this.index = null;
-                this.v = this.i = this.tot = 0;
-                this.vCap = this.iCap = 0;
+                this.vCap = this.iCap = this.liegt = this.iLiegt = 0;
+                this.vFrei = [];
+                this.iFrei = [];
+                this.spaet = []; // geräumte Strecken [Vertex-Anfang, Länge, Index-Anfang, Länge, …] bis zum nächsten Takt
                 this.neu = true;
+                this.taktT = -1;
                 this.arenen = new Set();
                 this.rend = null;
             }
             nehmen(g) {
                 const p = g.attributes.position;
                 const key = p.id + ":" + (g.index ? g.index.id : -1);
-                let b = this.gestalten.get(key);
-                if (b) {
-                    b.nutzer++;
-                    return key;
-                }
-                const nv = p.count,
-                    ni = g.index ? g.index.count : nv;
-                b = { geo: g, bv: 0, fi: 0, nv, ni, nutzer: 1, stand: stand(g) };
-                this.gestalten.set(key, b);
-                if (this.neu || this.v + nv > this.vCap || this.i + ni > this.iCap) this.neu = true;
+                const b = this.gestalten.get(key);
+                if (b) b.nutzer++;
                 else {
-                    b.bv = this.v;
-                    b.fi = this.i;
-                    this.kopie(b);
-                    this.v += nv;
-                    this.i += ni;
+                    const nv = p.count;
+                    this.gestalten.set(key, {
+                        geo: g,
+                        bv: -1,
+                        fi: -1,
+                        nv,
+                        ni: g.index ? g.index.count : nv,
+                        nutzer: 1,
+                        stand: stand(g),
+                        zuletzt: -Infinity,
+                    });
                 }
                 return key;
             }
@@ -1749,12 +1808,56 @@ class AnazhRealm_Z20c {
                 const b = this.gestalten.get(key);
                 if (!b || --b.nutzer > 0) return;
                 this.gestalten.delete(key);
-                this.tot += b.nv;
-                if (this.tot > this.v / 4) this.neu = true; // verdichten
+                this.raeumen(b);
             }
-            ordnen(rend) {
+            raeumen(b) {
+                if (b.bv < 0) return;
+                this.spaet.push(b.bv, b.nv, b.fi, b.ni);
+                this.liegt -= b.nv;
+                this.iLiegt -= b.ni;
+                b.bv = b.fi = -1;
+            }
+            // ein Glied mit Instanzen zieht die Gestalt: sie liegt (oder legt sich in die erste freie Strecke, die passt);
+            // false — kein Platz, der nächste Takt baut neu
+            halten(b, jetzt) {
+                b.zuletzt = jetzt;
+                if (b.bv >= 0) return true;
+                if (this.attr && (b.nv <= 65536 || this.index.array instanceof Uint32Array)) {
+                    const bv = raumNimm(this.vFrei, b.nv);
+                    const fi = bv < 0 ? -1 : raumNimm(this.iFrei, b.ni);
+                    if (fi >= 0) {
+                        b.bv = bv;
+                        b.fi = fi;
+                        this.liegt += b.nv;
+                        this.iLiegt += b.ni;
+                        this.kopie(b);
+                        return true;
+                    }
+                    if (bv >= 0) raumGib(this.vFrei, bv, b.nv);
+                }
+                this.neu = true;
+                return false;
+            }
+            // im Takt (vor jedem Pass des Frames), einmal je Frame: räumen, was GPU_KEHRAUS_MS kein Glied zog, und die Strecken
+            // des letzten Frames freigeben
+            takt(rend, jetzt) {
                 this.rend = rend;
-                if (this.neu && this.gestalten.size > 0) this.bauen();
+                if (this.taktT === jetzt) return;
+                this.taktT = jetzt;
+                const grenze = jetzt - AnazhRealm.GPU_KEHRAUS_MS;
+                for (const b of this.gestalten.values()) if (b.bv >= 0 && b.zuletzt < grenze) this.raeumen(b);
+                for (let k = 0; k < this.spaet.length; k += 4) {
+                    raumGib(this.vFrei, this.spaet[k], this.spaet[k + 1]);
+                    raumGib(this.iFrei, this.spaet[k + 2], this.spaet[k + 3]);
+                }
+                this.spaet.length = 0;
+            }
+            // im Takt, nachdem die Glieder ihre Gestalten hielten: neu bauen, wenn der Platz nicht reichte oder mehr als ein
+            // Achtel frei liegt
+            ordnen(jetzt) {
+                const brach =
+                    this.vCap - this.liegt > (this.vCap >> 3) + 256 || this.iCap - this.iLiegt > (this.iCap >> 3) + 768;
+                if ((this.neu || brach) && this.gestalten.size > 0) this.bauen(jetzt - AnazhRealm.GPU_KEHRAUS_MS);
             }
             kopie(b) {
                 const q = b.geo;
@@ -1768,19 +1871,23 @@ class AnazhRealm_Z20c {
                 else for (let i = 0; i < b.ni; i++) ix[b.fi + i] = i;
                 schreib(this.rend, this.index, b.fi, b.ni);
             }
-            bauen() {
+            bauen(grenze) {
                 const altA = this.attr || {},
                     altI = this.index;
                 let nv = 0,
                     ni = 0,
-                    v0 = null;
+                    v0 = null,
+                    breit = false;
                 for (const b of this.gestalten.values()) {
+                    v0 = v0 || b.geo;
+                    b.bv = b.fi = -1;
+                    if (b.zuletzt < grenze) continue;
                     nv += b.nv;
                     ni += b.ni;
-                    v0 = v0 || b.geo;
+                    if (b.nv > 65536) breit = true;
                 }
-                this.vCap = vier(Math.max(nv * RESERVE, 1024));
-                this.iCap = vier(Math.max(ni * RESERVE, 3072));
+                this.vCap = vier(nv + (nv >> 4) + 64);
+                this.iCap = vier(ni + (ni >> 4) + 192);
                 this.attr = {};
                 for (const k in v0.attributes) {
                     const a = v0.attributes[k];
@@ -1788,17 +1895,16 @@ class AnazhRealm_Z20c {
                     const arr = new a.array.constructor(this.vCap * a.itemSize);
                     this.attr[k] = new T.BufferAttribute(arr, a.itemSize, a.normalized);
                 }
-                this.index = new T.BufferAttribute(new Uint32Array(this.iCap), 1);
-                this.v = this.i = this.tot = 0;
-                for (const b of this.gestalten.values()) {
-                    b.bv = this.v;
-                    b.fi = this.i;
-                    this.kopie(b);
-                    this.v += b.nv;
-                    this.i += b.ni;
-                }
+                this.index = new T.BufferAttribute(breit ? new Uint32Array(this.iCap) : new Uint16Array(this.iCap), 1);
+                this.vFrei = [0, this.vCap];
+                this.iFrei = [0, this.iCap];
+                this.spaet.length = 0;
+                this.liegt = this.iLiegt = 0;
                 this.neu = false;
-                for (const a of this.arenen) a._geoNeu();
+                for (const b of this.gestalten.values()) if (b.zuletzt >= grenze) this.halten(b, b.zuletzt);
+                AnazhRealm.__lagerBau = (AnazhRealm.__lagerBau | 0) + 1;
+                // eine Arena ohne Instanz-Seite legt sie in ihrem eigenen Ordnen an, nach den Blöcken ihrer Glieder
+                for (const a of this.arenen) if (a.__instanzQuelle.instanceMatrix) a._geoNeu();
                 for (const k in altA) weg(this.rend, altA[k]);
                 weg(this.rend, altI);
             }
@@ -1839,8 +1945,12 @@ class AnazhRealm_Z20c {
                 this._lager = lager;
                 lager.arenen.add(this);
                 this.glieder = [];
-                this._nCap = vier(nCap); // die Instanz-Seite: Blöcke angehängt, nie verschoben
-                this._nEnde = this._nTot = 0;
+                // die Instanz-Seite: je Glied ein Block nach seiner Zahl (`_blockFuer`) im Platz-Raum; vor dem ersten Zug wächst
+                // sie frei, danach folgt eine Arena (`_folgen`), wenn der Platz nicht reicht oder mehr als die Hälfte frei liegt
+                this._nCap = vier(nCap);
+                this._nFrei = this._nCap > 0 ? [0, this._nCap] : [];
+                this._nSpaet = [];
+                this._nBelegt = 0;
                 // die Senken ohne Platz auf der Instanz-Seite: ihnen folgt eine größere Arena (`_folgen`), einmal gezählt
                 this._wartend = new Set();
                 // die Glieder mit Instanzen: ohne eines betritt die Arena keinen Pass (die Instanz-Zahl zaehlt mit)
@@ -1878,14 +1988,11 @@ class AnazhRealm_Z20c {
                 g.boundingSphere = new T.Sphere(new T.Vector3(), Infinity);
             }
             nehmen(m) {
-                const cap = m.instanceMatrix.count;
-                if (this._nEnde + cap > this._nCap) {
-                    // vor dem ersten Zug wächst die Instanz-Seite noch frei; danach folgt eine Arena mit Platz für den Bedarf
-                    if (!this.__instanzQuelle.instanceMatrix) this._nCap = vier((this._nEnde + cap) * RESERVE);
-                    else {
-                        this._wartend.add(m);
-                        return void this._folgen();
-                    }
+                // nach dem ersten Zug wächst die Instanz-Seite nicht mehr: reicht ihr Platz nicht, folgt eine Arena mit Platz
+                // für den Bedarf
+                if (this.__instanzQuelle.instanceMatrix && !this._nPasst(platz(m.count | 0))) {
+                    this._wartend.add(m);
+                    return void this._folgen();
                 }
                 this._wartend.delete(m);
                 // die Glieder zeichnen nach ihrer Stufe (die nahe zuerst schreibt die Tiefe, `_buendelKinderReihe`)
@@ -1901,13 +2008,21 @@ class AnazhRealm_Z20c {
                     mv: m.material.version,
                     farbe: !!m.instanceColor,
                     mw: new Float32Array(16),
+                    im: m.instanceMatrix,
+                    erst: -1, // der Block auf der Instanz-Seite (`_blockFuer`)
+                    cap: 0,
+                    n: -1,
+                    stempel: [],
+                    spitze: 0, // die größte Zahl dieses und des letzten Fensters (GPU_KEHRAUS_MS)
+                    spitzeVor: 0,
+                    spitzeT: AnazhRealm.__arenaJetzt || 0,
                 };
                 m.__arenaZ.mw[0] = NaN;
                 if ((m.count | 0) > 0) this._lebend++;
                 this._sicht();
                 this._gestaltNehmen(m);
-                this._blockNehmen(m);
                 if (m.__zeichner.parent === m) m.remove(m.__zeichner); // die Senke zeichnet nicht mehr selbst
+                quelleWeg(m);
                 // das Bündel nimmt neu auf: es trug den Zeichner (auch wenn es gerade aufnimmt — `_neuAuf`)
                 AnazhRealm._arenaBuendel(m);
                 this._neuAuf();
@@ -1916,8 +2031,12 @@ class AnazhRealm_Z20c {
                 const i = this.glieder.indexOf(m);
                 if (i < 0) return;
                 this.glieder.splice(i, 1);
-                this._lager.lassen(m.__arenaZ.gestalt);
-                this._nTot += m.__arenaZ.cap;
+                const za = m.__arenaZ;
+                this._lager.lassen(za.gestalt);
+                if (za.erst >= 0) {
+                    this._nSpaet.push(za.erst, za.cap);
+                    this._nBelegt -= za.cap;
+                }
                 if ((m.count | 0) > 0) this._lebend--;
                 this._sicht();
                 // seine Plätze ziehen ab jetzt nichts (der nächste Takt verdichtet sie) — kein Frame zeigt ein gegangenes Glied
@@ -1962,9 +2081,13 @@ class AnazhRealm_Z20c {
                 (AnazhRealm.__arenaAuf || (AnazhRealm.__arenaAuf = new Set())).add(b);
             }
             // der Takt (`_arenaTakt`): Glieder abgleichen; die aufgenommenen Plätze lesen Zahl, Wahl und Matrizen von JETZT
-            _takt() {
-                if (!this._rend || !this._ordnen(this._rend)) return;
-                for (const z of this._zuegeB.values()) this._auftraege(z, null, this._rend, false);
+            // in zwei Gängen über alle Arenen (`_arenaTakt`): erst ordnen jede ihre Glieder und ihr Lager (ein Neubau zeigt jede
+            // Arena des Lagers neu), dann schreiben die Bündel-Arenen ihre Aufträge — auf die Lage, die dieser Frame zeichnet
+            _takt(auftraege) {
+                if (!this._rend) return;
+                if (!auftraege) return void (this._bereit = this._ordnen(this._rend, true));
+                if (this._bereit && this.glieder.length)
+                    for (const z of this._zuegeB.values()) this._auftraege(z, null, this._rend, false);
             }
             // DER ABSCHIED: durch das Bündel (`_archBundleSceneRemove`) — wird es leer, verlässt es mit seinem Verdeckungs-
             // Proxy Szene und Register. Befund 16.10. (Prüfung, Reise Wiese → Dorf): die Arena nahm sich still aus ihrem
@@ -2012,10 +2135,11 @@ class AnazhRealm_Z20c {
                 this.geometry = g;
                 this._neuAuf(); // neue Vertex-/Index-Puffer
             }
-            // DIE INSTANZ-SEITE: je Glied ein Block ab seiner ersten Instanz, angehängt und nie verschoben — ein offener Pass (das
-            // Hauptbild um den verschachtelten Schatten-Render) zeichnet aus derselben Lage, und den Speicher-Puffer der Matrizen
-            // bindet r184 in die Bindegruppe jedes Render-Objekts: die Arena tauscht ihn nie. Reicht der Platz nicht oder liegt
-            // die Hälfte brach, folgt ihr nach dem Frame eine Arena desselben Stoffs (`_folgen`).
+            // DIE INSTANZ-SEITE: je Glied ein Block nach seiner Zahl (`_blockFuer`) — den Speicher-Puffer der Matrizen bindet
+            // r184 in die Bindegruppe jedes Render-Objekts: die Arena tauscht ihn nie. Ein Block zieht um, wenn die Zahl über
+            // ihn wächst oder er das Doppelte seines Bedarfs hält; sein alter Platz wird erst im nächsten Takt frei (ein offener
+            // Pass zeichnet aus ihm). Reicht der Platz nicht oder liegt die Hälfte frei, folgt ihr nach dem Frame eine Arena
+            // desselben Stoffs (`_folgen`). Beim Anlegen trägt sie über ihre Blöcke ein Achtel.
             _instanzSeite(g, alt) {
                 const m0 = this.glieder[0],
                     q = this.__instanzQuelle;
@@ -2023,6 +2147,11 @@ class AnazhRealm_Z20c {
                     for (const k in alt.attributes)
                         if (alt.attributes[k].isInstancedBufferAttribute) g.setAttribute(k, alt.attributes[k]);
                     return;
+                }
+                const zu = vier((this._nBelegt >> 3) + 64) - (this._nCap - this._nBelegt);
+                if (zu > 0) {
+                    raumGib(this._nFrei, this._nCap, zu);
+                    this._nCap += zu;
                 }
                 const neu = (k, a) =>
                     g.setAttribute(
@@ -2044,15 +2173,42 @@ class AnazhRealm_Z20c {
                     g.setAttribute("aWindArt", q.windArt);
                 }
             }
-            _blockNehmen(m) {
-                const z = m.__arenaZ;
-                z.cap = m.instanceMatrix.count;
-                z.im = m.instanceMatrix;
-                if (this._nEnde + z.cap > this._nCap) return false;
-                z.erst = this._nEnde;
-                this._nEnde += z.cap;
+            _nPasst(n) {
+                if (n <= 0 || !this.__instanzQuelle.instanceMatrix) return true;
+                for (let k = 1; k < this._nFrei.length; k += 2) if (this._nFrei[k] >= n) return true;
+                return false;
+            }
+            // Der Block eines Glieds folgt seiner Zahl über ein Fenster (die größte Zahl dieses und des letzten Fensters von
+            // GPU_KEHRAUS_MS: die Wahl des Hauptbilds wechselt mit dem Blick, der Block nicht). false: kein Platz.
+            _blockFuer(z, n, jetzt) {
+                if (jetzt - z.spitzeT >= AnazhRealm.GPU_KEHRAUS_MS) {
+                    z.spitzeVor = z.spitze;
+                    z.spitze = 0;
+                    z.spitzeT = jetzt;
+                }
+                if (n > z.spitze) z.spitze = n;
+                const soll = platz(Math.max(z.spitze, z.spitzeVor));
+                if (z.erst >= 0 ? n <= z.cap && z.cap <= 2 * soll : soll === 0) return true;
+                if (z.erst >= 0) {
+                    this._nSpaet.push(z.erst, z.cap);
+                    this._nBelegt -= z.cap;
+                    z.erst = -1;
+                    z.cap = 0;
+                    if (soll === 0) return true;
+                }
+                let e = raumNimm(this._nFrei, soll);
+                // vor dem ersten Zug wächst die Instanz-Seite frei
+                if (e < 0 && !this.__instanzQuelle.instanceMatrix) {
+                    raumGib(this._nFrei, this._nCap, soll);
+                    this._nCap += soll;
+                    e = raumNimm(this._nFrei, soll);
+                }
+                if (e < 0) return false;
+                z.erst = e;
+                z.cap = soll;
                 z.n = -1;
                 z.stempel = [];
+                this._nBelegt += soll;
                 return true;
             }
             _folgen() {
@@ -2061,10 +2217,11 @@ class AnazhRealm_Z20c {
                 setTimeout(() => {
                     const reg = AnazhRealm.__arenen;
                     if (!reg || reg.get(this.__key) !== this || !this.parent || !this.glieder.length) return;
-                    // der Bedarf: jedes Glied und jede wartende Senke mit ihrer Kapazität von JETZT — jede einmal gezählt
+                    // der Bedarf: jedes Glied mit seinem Block, jede wartende Senke mit ihrer Zahl von JETZT — jede einmal gezählt,
+                    // und ein Achtel darüber
                     let n = 0;
-                    for (const m of this.glieder) n += m.instanceMatrix.count;
-                    for (const m of this._wartend) if (!m.__arena && m.parent) n += m.instanceMatrix.count;
+                    for (const m of this.glieder) n += Math.max(m.__arenaZ.cap, platz(m.count | 0));
+                    for (const m of this._wartend) if (!m.__arena && m.parent) n += platz(m.count | 0);
                     this._wartend.clear();
                     AnazhRealm.__arenaFolgen = (AnazhRealm.__arenaFolgen | 0) + 1;
                     const a = new GeometrieArena(
@@ -2072,7 +2229,7 @@ class AnazhRealm_Z20c {
                         this.__schl,
                         this.glieder[0],
                         this._lager,
-                        Math.max(Math.ceil(n * RESERVE), 64)
+                        n + (n >> 3) + 64
                     );
                     a._imBuendel(this.__buendel);
                     a._rend = this._rend;
@@ -2121,13 +2278,16 @@ class AnazhRealm_Z20c {
                     const b = this._lager.gestalten.get(z.gestalt);
                     if (b.stand !== stand(g)) {
                         b.stand = stand(g);
-                        this._lager.neu = true; // die Gestalt änderte ihren Inhalt: das Lager kopiert neu
+                        if (b.bv >= 0) this._lager.neu = true; // die liegende Gestalt änderte ihren Inhalt: das Lager kopiert neu
                     }
                 }
-                if (m.instanceMatrix !== z.im || m.instanceMatrix.count !== z.cap) {
-                    this._nTot += z.cap;
-                    if (!this._blockNehmen(m)) return 3; // zurück zum Zeichner, bis die größere Arena steht
+                if (m.instanceMatrix !== z.im) {
+                    z.im = m.instanceMatrix; // die Senke wuchs: ihr Block kopiert ganz neu
+                    z.n = -1;
+                    z.stempel = [];
                 }
+                // zurück zum Zeichner, bis die größere Arena steht
+                if (!this._blockFuer(z, m.count | 0, AnazhRealm.__arenaJetzt || 0)) return 3;
                 return 0;
             }
             _sichtbar(m, renderer) {
@@ -2246,12 +2406,15 @@ class AnazhRealm_Z20c {
                     renderer.info.render.triangles += zug.tri - 1;
                 }
             }
-            // Glieder abgleichen, Lager und Geometrie ordnen — false: nichts zu zeichnen
-            _ordnen(renderer) {
+            // Glieder abgleichen, Lager und Geometrie ordnen — false: nichts zu zeichnen. Im Takt (`takt`, vor jedem Pass des
+            // Frames) wird frei, was der letzte Frame räumte, jedes Glied mit Instanzen hält seine Gestalt, und das Lager baut neu,
+            // wenn es muss — in einem Pass nie (r184 zeichnet ihn mit der Geometrie, die er projizierte).
+            _ordnen(renderer, takt) {
                 if (!AnazhRealm._arenaKann(renderer)) {
                     for (const m of this.glieder.slice()) this.lassen(m, true);
                     return false;
                 }
+                if (takt) raumSpaet(this._nFrei, this._nSpaet);
                 let fremd = null;
                 for (const m of this.glieder) {
                     const p = this._pruefen(m);
@@ -2268,9 +2431,18 @@ class AnazhRealm_Z20c {
                             this._folgen();
                         }
                     }
-                if (this._nTot > 256 && this._nTot > this._nEnde / 2) this._folgen(); // verdichten
+                // verdichten: liegt die Hälfte der Instanz-Seite frei, folgt eine Arena nach dem Bedarf
+                if (this.__instanzQuelle.instanceMatrix && this._nCap > 512 && this._nBelegt < this._nCap / 2)
+                    this._folgen();
                 if (this.glieder.length === 0) return false;
-                this._lager.ordnen(renderer);
+                if (takt) {
+                    const L = this._lager,
+                        jetzt = AnazhRealm.__arenaJetzt || 0;
+                    L.takt(renderer, jetzt);
+                    for (const m of this.glieder)
+                        if ((m.count | 0) > 0) L.halten(L.gestalten.get(m.__arenaZ.gestalt), jetzt);
+                    L.ordnen(jetzt);
+                }
                 if (this.geometry.index !== this._lager.index) this._geoNeu();
                 return true;
             }
@@ -2312,6 +2484,9 @@ class AnazhRealm_Z20c {
                     const s0 = Math.max(0, dr.start | 0);
                     const ni = Math.min(b.ni - s0, Number.isFinite(dr.count) ? dr.count : b.ni);
                     if (ni <= 0) continue;
+                    // die Gestalt liegt (oder legt sich in eine freie Strecke) — ohne Platz zieht das Glied ab dem Takt, der das
+                    // Lager neu baut (im Takt hält jedes Glied mit Instanzen seine Gestalt vor jedem Pass)
+                    if (z.erst < 0 || !this._lager.halten(b, AnazhRealm.__arenaJetzt || 0)) continue;
                     ziehen++;
                     if (k >= platz) continue; // die Plätze des Bündels reichen nicht: es nimmt neu auf (unten)
                     n = Math.min(n, z.cap);
@@ -2344,7 +2519,6 @@ class AnazhRealm_Z20c {
             }
             raycast() {}
         }
-        GeometrieArena.RESERVE = RESERVE;
         AnazhRealm.__arenaK = GeometrieArena;
         return GeometrieArena;
     }

@@ -316,7 +316,7 @@ function drawZensus(opts) {
 //   szene:<Täter-Klasse>        ein Objekt des Szenen-Graphen zeichnet ihn (Attribut, Index, Instanz-Daten)
 //   bild:<Rolle>                kein Szenen-Objekt, aber der gezählte Frame zeichnete ihn (r184-Quads der Post-Kette)
 //   ruhend:<Foundry-Schlüssel>  nur der Foundry-Cache hält ihn — keine Gruppe im Graphen zeichnet ihn
-//   verwaist:<Rolle>            nur r184s Register hält ihn: sein Objekt fiel ohne GPU-Abschied — ein LECK
+//   verwaist:<Rolle>            nur r184s Register hält ihn: sein Objekt fiel (oder zieht in der Arena) — ein LECK
 // Rolle = instanzMatrix (Speicher-Puffer je Instanz) · instanz · index · vertex · speicher. `ruhend` und `verwaist` sind
 // Speicher, den kein Bild trägt — die Band-Linse urteilt sie als LECK (band-urteil). Der gezählte Frame setzt
 // `window.__zensusCalls` (r184 `info.render.calls` vor dem Frame); `attributeCall` (r184 Geometries) trägt je Attribut den
@@ -351,7 +351,7 @@ function pufferZensus() {
         if (g.indirect) merke(g.indirect, name);
     };
     st.scene.traverse((o) => {
-        if (!o.geometry && !o.isInstancedMesh) return;
+        if ((!o.geometry && !o.isInstancedMesh) || o.__arena) return; // ein Glied der Arena zeichnet nicht (Kehraus)
         const name = "szene:" + r._taeterKlasse(o);
         geo(o.geometry, name);
         const q = o.__instanzQuelle || o; // die Arena (G1) hält ihre Matrizen an ihrer Quelle, nie in der Geometrie
