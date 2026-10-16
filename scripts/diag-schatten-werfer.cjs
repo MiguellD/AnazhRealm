@@ -106,7 +106,7 @@ const ohneKommentare = stammLib.ohneKommentare;
 // Z2 — die Bildziele je Leser, gezählt im kommentar-bereinigten Stamm.
 function bildZiele(src) {
     const code = ohneKommentare(src);
-    const n = (re) => (code.match(re) || []).length;
+    const n = (re) => [...code.matchAll(re)].length;
     return {
         kompilat: n(/\.compileAsync\(/g),
         tiefe: n(/viewportDepthTexture\(/g),

@@ -71,12 +71,7 @@ function check(name, ok, detail) {
     );
     // Kein dritter setColorAt-Pfad in den zwei Slot-Schreibern (die alte
     // useInstanceTint-Direktklammer ist gefallen).
-    const fnBody = (name) => {
-        const i = src.indexOf(`    ${name}(`);
-        if (i < 0) return "";
-        const j = src.indexOf("\n    _", i + 8);
-        return src.slice(i, j < 0 ? i + 6000 : j);
-    };
+    const fnBody = (name) => stammLib.rumpf(src, name) || ""; // der EINE Rumpf-Schneider (scripts/lib/stamm.cjs)
     const addBody = fnBody("_archInstanceAdd");
     const scatBody = fnBody("_scatterInstanceAdd");
     check(

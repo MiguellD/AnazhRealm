@@ -64,18 +64,10 @@ const stammLib = require("./lib/stamm.cjs");
 
 const root = path.join(__dirname, "..");
 
-// Den Rumpf einer Stamm-Methode ab dem ersten `{` nach dem Kopf (Klammer-Zählung auf dem kommentar-freien Code).
+// Das Innere einer Stamm-Methode: der EINE Rumpf-Schneider (scripts/lib/stamm.cjs) ohne die äußeren Klammern.
 function rumpf(code, kopfRe) {
-    const m = kopfRe.exec(code);
-    if (!m) return null;
-    let i = code.indexOf("{", m.index + m[0].length - 1);
-    let tiefe = 0;
-    const start = i;
-    for (; i < code.length; i++) {
-        if (code[i] === "{") tiefe++;
-        else if (code[i] === "}" && --tiefe === 0) return code.slice(start + 1, i);
-    }
-    return null;
+    const r = stammLib.rumpf(code, kopfRe);
+    return r && r.slice(1, -1);
 }
 
 // H4 — DIE TÄTER-KLASSE DES STAMMS, aus dem Quelltext (kein Zwilling hier): `klasse(obj, state)` und `instanz(key)`.
@@ -1222,12 +1214,12 @@ function selbsttest() {
     // die Reihe, ohne die Folge der losen Opaken im Renderer, mit dem Boden vor dem Bau und ohne Himmels-Marke wird die Wand rot.
     {
         const st = stammLib.text(root);
-        const ohneRuf = st.replace("this._buendelReihe(scene);", "");
-        const wahlVorn = st.replace('u.regionKey === "@global" ? 0 : u.regionKey === "@wahl" ? 2 : 1', 'u.regionKey === "@wahl" ? 0 : u.regionKey === "@global" ? 2 : 1');
-        const ohneReihe = st.replace(/(\n {4}_buendelReihe)\(/, "$1Alt(");
-        const ohneFolge = st.replace("else renderer.setOpaqueSort(AnazhRealm._zeichenFolge);", "");
-        const bodenVorn = st.replace('return s === "boden" ? 4 :', 'return s === "boden" ? 2 :');
-        const ohneMarke = st.replace('skybox.userData.zeichenSchicht = "himmel";', "");
+        const ohneRuf = stammLib.ersetze(st, "_archRegionBundleFor", "this._buendelReihe(scene);", "");
+        const wahlVorn = stammLib.ersetze(st, "_zeichenRang", 'u.regionKey === "@global" ? 0 : u.regionKey === "@wahl" ? 2 : 1', 'u.regionKey === "@wahl" ? 0 : u.regionKey === "@global" ? 2 : 1');
+        const ohneReihe = stammLib.ersetze(st, null, /(\n {4}_buendelReihe)\(/, "$1Alt(");
+        const ohneFolge = stammLib.ersetze(st, "_configureRenderer", "else renderer.setOpaqueSort(AnazhRealm._zeichenFolge);", "");
+        const bodenVorn = stammLib.ersetze(st, "_zeichenRang", 'return s === "boden" ? 4 :', 'return s === "boden" ? 2 :');
+        const ohneMarke = stammLib.ersetze(st, "createGalaxySkybox", 'skybox.userData.zeichenSchicht = "himmel";', "");
         const V = [ohneRuf, wahlVorn, ohneReihe, ohneFolge, bodenVorn, ohneMarke];
         const rot = (s, re) => buendelReiheWand(s).errs.some((x) => re.test(x));
         t(
@@ -1242,12 +1234,12 @@ function selbsttest() {
                 rot(ohneMarke, /Marke zeichenSchicht "himmel"/)
         );
         // DIE REIHE IM BÜNDEL (1310-8): ohne den Aufruf nach der Aufnahme, verkehrt herum und ohne die Reihe rot
-        const ohneKinderRuf = st.replace(
+        const ohneKinderRuf = stammLib.ersetze(st, "_archInstanceGroupFor",
             "bundle.add(mesh);\n            AnazhRealm._buendelKinderReihe(bundle, this._buendelAuge);",
             "bundle.add(mesh);"
         );
-        const verkehrt = st.replace("rang(a) - rang(b) ||", "rang(b) - rang(a) ||");
-        const ohneKinder = st.replace(/(\n {4}static _buendelKinderReihe)\(/, "$1Alt(");
+        const verkehrt = stammLib.ersetze(st, "_buendelKinderReihe", "rang(a) - rang(b) ||", "rang(b) - rang(a) ||");
+        const ohneKinder = stammLib.ersetze(st, null, /(\n {4}static _buendelKinderReihe)\(/, "$1Alt(");
         t(
             "Reihe im Bündel: der Stamm stellt die Gruppen nach Stufe (L0 zuerst); ohne den Aufruf, verkehrt und ohne die Reihe rot",
             ohneKinderRuf !== st &&
@@ -1258,9 +1250,9 @@ function selbsttest() {
                 buendelReiheWand(ohneKinder).errs.some((x) => /in der Ankunft/.test(x))
         );
         // DIE REIHE NACH ABSTAND (1310-9): ohne den Abstand, mit einem Anker, der jeden Frame stellt, und ohne den Ruf im Takt rot
-        const ohneAbstand = st.replace("(auge ? nah.get(a) - nah.get(b) : 0) ||", "0 ||");
-        const jedenFrame = st.replace("if (a && (pos.x - a.x) * (pos.x - a.x) + (pos.z - a.z) * (pos.z - a.z) <= R * R) return false;", "");
-        const ohneTaktRuf = st.replace("this._buendelAnkerPruefen(pm);", "");
+        const ohneAbstand = stammLib.ersetze(st, "_buendelKinderReihe", "(auge ? nah.get(a) - nah.get(b) : 0) ||", "0 ||");
+        const jedenFrame = stammLib.ersetze(st, "_buendelAnkerPruefen", "if (a && (pos.x - a.x) * (pos.x - a.x) + (pos.z - a.z) * (pos.z - a.z) <= R * R) return false;", "");
+        const ohneTaktRuf = stammLib.ersetze(st, "_tickArchitectureLOD", "this._buendelAnkerPruefen(pm);", "");
         t(
             "Reihe nach Abstand: vorn zuerst in der Stufe, neu nur beim Anker-Wechsel; ohne Abstand, je Frame und ohne Ruf im Takt rot",
             ohneAbstand !== st &&

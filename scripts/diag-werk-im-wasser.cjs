@@ -335,21 +335,9 @@ function urteil(b) {
 
 // ── L: DIE LESER (kommentarfrei). ──
 const ohneKommentare = stammLib.ohneKommentare;
-function fnBody(src, sigRe) {
-    const mm = sigRe.exec(src);
-    if (!mm) return null;
-    let i = src.indexOf("{", mm.index + mm[0].length - 1);
-    if (i < 0) return null;
-    let depth = 0;
-    const start = i;
-    for (; i < src.length; i++) {
-        if (src[i] === "{") depth++;
-        else if (src[i] === "}") {
-            depth--;
-            if (depth === 0) return src.slice(start, i + 1);
-        }
-    }
-    return null;
+// der EINE Rumpf-Schneider (scripts/lib/stamm.cjs): der Block an der Definition, nie am ersten Text-Treffer
+function fnBody(src, kopf) {
+    return stammLib.rumpf(src, kopf);
 }
 function leserUrteil(srcRoh) {
     const src = ohneKommentare(srcRoh);

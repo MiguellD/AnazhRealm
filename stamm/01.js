@@ -9,14 +9,14 @@
  * Performance: FPS ~90-120, Frustum Culling optimiert, SimplexNoise gecacht.
  * Chaos und Ordnung, 1 und 0, Liebe und Stabilität – alles in Harmonie.
  */
-// ===== DER STAMM — EINE Klasse, EIN Prototyp, viele Dateien (Zerlegung 13.10.) =====
-// `AnazhRealm` ist EINE Klasse: dieser Kern (Konstruktor + §01) und die Zonen-Klassen `AnazhRealm_Z<NN[x]>` in
-// stamm/NN[x].js. Die Naht (`_stammZonen`, gerufen am Kopf der ersten Außen-Datei stamm/26a.js) trägt ihre Glieder beim
-// Laden auf den EINEN Prototyp — ein Zwilling bricht laut („Stamm-Zwilling"), eine fehlende Zone ist ein ReferenceError.
-// Die Liste ist die der Stamm-Tags in index.html (jeder mit ?v=); Werkzeug liest den Stamm NUR über scripts/lib/stamm.cjs
-// (`text()` ist der virtuelle Stamm, sha-gleich zur Umkehrung des Schnitts). Die Karte druckt `npm run atlas` live; die
-// Ratsche (`node scripts/diag-atlas.cjs --check`): der Kern wächst nie, keine Datei über der Decke (dort teilt
-// `node scripts/stamm-umzug.cjs --teile §NN <methode>`), kein Glied und keine Außen-Konstante doppelt.
+// ===== DER STAMM — EINE Klasse, EIN Prototyp, je Modul eine Datei (Zerlegung 13.10., Domäne D2) =====
+// `AnazhRealm` ist EINE Klasse: dieser Kern (Konstruktor) und die Zonen-Klassen `AnazhRealm_<modul>[_<teil>]` in
+// stamm/<modul>[-<teil>].js, je Datei ein Modul der Karte spec/stamm/modul-karte.json. Der Naht-Ruf jeder Datei
+// (`_stammZonen`, am Ende dieses Kerns) trägt ihre Glieder beim Laden auf den EINEN Prototyp — ein Zwilling bricht laut
+// („Stamm-Zwilling"), eine fehlende Zone ist ein ReferenceError. Die Liste ist die der Stamm-Tags in index.html (jeder
+// mit ?v=); Werkzeug liest den Stamm NUR über scripts/lib/stamm.cjs (`text()` ist der virtuelle Stamm). Die Karte druckt
+// `npm run atlas` live; die Ratsche (`node scripts/diag-atlas.cjs --check`): jedes Glied in der Datei seines Moduls, keine
+// Datei über der Decke, kein Glied und keine Außen-Konstante doppelt; der Umzug: `node scripts/stamm-umzug.cjs --nach-karte`.
 // F1 (gigant-plan §5 — G2 REKURSION, Schnitt 3): der localStorage-SCHATTEN.
 // Im sandboxed null-origin-iframe (AnazhRealm IN AnazhRealm) wirft schon der
 // GETTER `window.localStorage` SecurityError — 102 Zugriffe im Stamm würden
