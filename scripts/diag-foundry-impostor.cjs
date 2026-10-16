@@ -132,10 +132,7 @@ async function driveImpostor(page) {
                 };
             }
             // BÄCKER-VEREINIGUNG: der Bake-Tick spricht den Studio-Kanal, der RTT-Nachbau ist weg.
-            const strip = (x) =>
-                String(x)
-                    .replace(/\/\*[\s\S]*?\*\//g, "")
-                    .replace(/\/\/[^\n]*/g, "");
+            const strip = window.__codeOf;
             // der Tick MIT seinen Gehilfen (jede eigene Methode, die er ruft, eine Ebene tief): bis K60-3 las die Linse nur
             // den Rumpf des Ticks und fiel, als K60-2 das Senden nach `_impostorBakeSende` zog (Lehre 6)
             const mitGehilfen = (name) => {

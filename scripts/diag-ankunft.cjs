@@ -61,9 +61,7 @@ function check(name, ok, detail) {
     console.log(`  ${ok ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
     if (!ok) errs.push(name);
 }
-function ohneKommentare(src) {
-    return src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:"'`\\])\/\/[^\n]*/g, "$1");
-}
+const ohneKommentare = stammLib.ohneKommentare;
 function fnBody(src, sigRe) {
     const m = sigRe.exec(src);
     if (!m) return null;

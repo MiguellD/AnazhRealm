@@ -89,45 +89,7 @@ function kartenFarbe(phytoSrc) {
 }
 
 // Kommentare strippen, Strings bewahren (zeichenweise, string-bewusst).
-function ohneKommentare(src) {
-    let out = "";
-    let i = 0;
-    const n = src.length;
-    while (i < n) {
-        const c = src[i];
-        const d = src[i + 1];
-        if (c === "/" && d === "/") {
-            while (i < n && src[i] !== "\n") i++;
-            continue;
-        }
-        if (c === "/" && d === "*") {
-            i += 2;
-            while (i < n && !(src[i] === "*" && src[i + 1] === "/")) i++;
-            i += 2;
-            continue;
-        }
-        if (c === '"' || c === "'" || c === "`") {
-            const q = c;
-            out += c;
-            i++;
-            while (i < n && src[i] !== q) {
-                if (src[i] === "\\") {
-                    out += src[i] + (src[i + 1] || "");
-                    i += 2;
-                    continue;
-                }
-                out += src[i];
-                i++;
-            }
-            out += q;
-            i++;
-            continue;
-        }
-        out += c;
-        i++;
-    }
-    return out;
-}
+const ohneKommentare = stammLib.ohneKommentare;
 
 // Den Rumpf ab dem ersten `{` nach dem Kopf (Klammer-Zählung).
 function rumpf(src, kopfRe) {

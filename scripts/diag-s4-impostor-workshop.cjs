@@ -45,14 +45,9 @@ const server = statikServer();
 
     const out = await page.evaluate(async () => {
         const r = window.anazhRealm;
-        // `__codeOf` (Kommentar-Stripper) lebt im Playtest-Harness, nicht in der App → hier lokal
-        // spiegeln (Block- + Zeilen-Kommentare weg), damit eine ABSENZ-Probe nicht über den
-        // erklärenden Kommentar stolpert, der den entfernten Code zitiert (V18.267-Falle).
-        const strip = (s) =>
-            String(s)
-                .replace(/\/\*[\s\S]*?\*\//g, "")
-                .replace(/\/\/[^\n]*/g, "");
-        const code = (fn) => (typeof window.__codeOf === "function" ? window.__codeOf(fn) : strip(fn));
+        // der Code ohne Kommentare (der EINE __codeOf des Welt-Boots): eine ABSENZ-Probe stolpert nie über den
+        // erklärenden Kommentar, der den entfernten Code zitiert (V18.267-Falle).
+        const code = window.__codeOf;
         const res = { probes: {}, behavior: {} };
         // ===== TEIL A — der Bake ist EAGER (Frame-Budget-Gate raus) =====
         // der Bake-Pfad: der Tick und sein Sender (`_impostorBakeSende`, K60-2: je Bäcker-Bahn eine Karte)

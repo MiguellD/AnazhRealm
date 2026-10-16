@@ -36,9 +36,7 @@ function check(name, ok, detail) {
     console.log(`  ${ok ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
     if (!ok) errs.push(name);
 }
-function stripComments(src) {
-    return src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "");
-}
+const stripComments = stammLib.ohneKommentare;
 
 // Der DECKEL (aus der Messung, mit Marge): 8-9 Haeuser auf der Fernstufe = ~28k Tris
 // gemessen → Deckel 70k (×2.5 Marge). Die Fernstufe selbst: L2 ≤ 8k Tris je Haus.
