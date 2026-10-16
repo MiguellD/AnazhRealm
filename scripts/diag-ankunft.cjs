@@ -4,46 +4,28 @@
 // das Bild der Ankunft beweist die echte GPU (Bild-Paare vorher/nachher), diese Linse die Mechanik.
 //
 //   L2a DAS ERSTE WELTBILD — `#ladeschirm` steht im HTML ab dem ersten Bild der Seite (kein `hidden`, über allem) und
-//       weicht im Spiel nur über `_ankunftsBild`: solange dem Weltbild etwas fehlt — der Boden bis zum Existenz-Boden des
-//       Rings, ein Baum oder Bau der Mesh-Zone ohne Gestalt, eine Streu-Region ohne ihr Asset, die Karte eines fernen
-//       Baums —, bleibt er und nennt die Lücke in seiner Stand-Zeile; steht alles, weicht er; ruht eine Lücke, weicht er
-//       laut (WARN). Befund: das erste Bild war die schwarze Leinwand (Radeon: 1,6 s bis 14,5 s nach dem Laden);
-//       Gegenprüfung Runde 1: der Ladeschirm wich beim eigenen Chunk, das erste Weltbild zeigte keinen Baum. Befund 09.10.
-//       (CI 37942425121): bei langsamem Takt lief der Streu-Streamer vor dem Weltbild nie, die fehlende Regionen-Karte galt
-//       als „nichts wartet" — jeder Fall wird hergestellt, einer, der fehlt, ist ROT bei seinem Grund (`ohneFall`).
+//       weicht nur über `_ankunftsBild`: solange dem Weltbild ein Term fehlt (Boden, Horizont, Leib, Buch, Bäume und Bauten
+//       der Mesh-Zone, Pflanzung, Streu, ferne Karten, Dorf), bleibt er und nennt die Lücke; ruht sie, weicht er laut (WARN).
+//       Jeder Fall wird hergestellt, einer, der fehlt, ist ROT bei seinem Grund (`ohneFall`). DIE ANKUNFT AUS DER FERNE (B2):
+//       bis zum Bild wünscht jedes Ding seine billigste ganze Stufe (Baum Karte, Bau Grobstufe), danach verfeinert es.
 //   L1  DAS FADENKREUZ — `#fadenkreuz` steht in der Bildmitte (dort trifft `_blickZiel`), weicht einer offenen Schublade.
-//       Befund: 0 Fadenkreuz-Elemente.
 //   L2b DIE HILFE — „hilfe" / „help" / „?" nennt jedes Beispiel der EINEN Tafeln (`chatDslPatterns`, `chatSystemPatterns`,
 //       ihre `hilfe`-Sätze) und jede Taste (`KEYBINDING_LABELS`); der Satz für Unbekanntes trägt keine zweite Liste.
-//       Befund: „hilfe" → „Unbekannter Befehl. Meintest du: 'warte'?", „help" eine Liste von Hand ohne v1-Satz.
-//   L3  DAS GESPRÄCH — die Chat-Taste (Enter) öffnet das Feld, Enter im Feld sendet und gibt die Welt zurück (W läuft
-//       wieder), Esc gibt sie ohne Senden zurück; Enter auf einem fokussierten Knopf gehört dem Knopf. Befund: Enter, T und
-//       „/" öffneten nichts, nach dem Senden tippte W „w"; Gegenprüfung Runde 1: Enter auf einem Knopf öffnete den Chat.
-//   L7  DER START-GURT — die Hotbar eines neuen Spielers liest den Katalog (`_katalogSichtbar`): je Studio-Art EIN
-//       platzierbares Werk, kein Alt-Doppel. Befund: Felsblock · Wasserfall · Damm.
-//   LK  DIE KAMERA UND DIE PFLANZEN — die Stamm-Blocker eines Studio-Baums tragen seine Welt-Skala (der Körper stößt an den
-//       Stamm, wie er gezeichnet wird); die 3rd-Kamera (zu Fuß und die Verfolger-Kamera des Ritts) rückt nur vor Boden und
-//       Bau ein, nie vor einer Pflanze (Stamm, Krone), und fährt nach einem Hindernis gleitend hinaus, nie im Sprung; jeder
-//       Pflanzen-Stoff in der Szene trägt die DURCHSICHT (maskNode: was zwischen Auge und Spieler liegt, dithert aus), der
-//       Schatten-Pass liest sie nie (maskShadowNode). Befund 07.10.: die Kamera stand 0,53 m von der Achse einer Kiefer (im
-//       Stamm) und 2,86 m von der Achse einer Tanne, in der der Spieler bei 7,3 m stand — eine Nadelwand; Gegenprüfung
-//       Runde 1 (Kronen-Hülle 5167fd85): beim Ritt 641 von 2400 Proben unter 3 m Arm (die Kamera am Wagendach), 137 Sprünge
-//       > 2 m, zu Fuß 43 % der Proben in Baumnähe auf dem 2-m-Minimum, 5 Sprünge > 1 m auf 80 m; das Fadenkreuz stand in
-//       3rd auf dem Kopf der Figur (die Brust ≥ 0,35 m neben dem Strahl der Bildmitte). Gegenprüfung Runde 2: (1) jede Probe
-//       durch die Bildmitte (Bau-Pick, Welt-Treffer, Blick-Ziel, Bau-Phantom, Kreatur-Pick) trifft nie, was zwischen Kamera
-//       und Spieler liegt — 12 Bäume × 8 Richtungen, der Spieler 2,5 m vor dem Baum mit dem Rücken zu ihm: die Strahlen ab
-//       der Kamera trafen die durchsichtige Pflanze HINTER ihm (Bau-Pick 76, Welt-Treffer 67 von 96); (2) die Durchsicht
-//       nimmt nur, was zwischen Auge und Spieler liegt — die EINE Formel (`_durchsichtGewicht`) an der Rinde: im 1st am
-//       Stamm (die Ankunfts-Sicht) schnitt die Kugel um das Auge die Rinde bis 1,1 m (8 von 8 Anläufen), in 3rd die Kugel um
-//       die Brust den Stamm VOR dem Spieler; der Stamm zwischen Kamera und Spieler fällt weiter.
+//   L3  DAS GESPRÄCH — Enter öffnet das Feld, Enter im Feld sendet und gibt die Welt zurück (W läuft wieder), Esc ohne
+//       Senden; Enter auf einem fokussierten Knopf gehört dem Knopf.
+//   L7  DER START-GURT — die Hotbar eines neuen Spielers liest den Katalog (`_katalogSichtbar`): je Studio-Art EIN Werk.
+//   LK  DIE KAMERA UND DIE PFLANZEN — die Stamm-Blocker eines Studio-Baums tragen seine Welt-Skala; die 3rd-Kamera (zu Fuß
+//       und im Ritt) rückt nur vor Boden und Bau ein, nie vor einer Pflanze, und fährt gleitend hinaus; jeder Pflanzen-Stoff
+//       trägt die DURCHSICHT (maskNode, nie im Schatten-Pass): sie nimmt nur, was zwischen Auge und Spieler liegt (die EINE
+//       Formel `_durchsichtGewicht`), und jede Probe durch die Bildmitte (Bau-Pick, Welt-Treffer, Blick-Ziel, Bau-Phantom,
+//       Kreatur-Pick) trifft nie, was zwischen Kamera und Spieler liegt.
 //   D8  ZWEI KANÄLE — der Spieler-Chat trägt Worte, das Log die Telemetrie: die Siedlungs-Zeile ohne Same und Slots, das
 //       KI-Programm als Tat (`describeProgram`), nie als JSON, eine Programm-Absage ohne Ereignis-Namen.
 //   D6  DIE KI NENNT DIE URSACHE — „Aktivieren" fragt einen lokalen Dienst (der Status sagt, dass er nicht läuft, nie
 //       „Aktiv"), ohne Schlüssel sagt der Chat es, der Proxy ist der Ursprung der Seite (404 dort = „der Proxy fehlt").
-//   D9  DAS DORF VOR DIR — „dorf 7 18" an der Plattform: jedes Haus vor dem Spieler und im Bildwinkel der Welt-Kamera; ein
-//       Slot, dessen Ort ein Bau sperrt, fällt an seinem Ort laut (K10: der Plan ist das Dorf); „baue dorf hier" baut bei einem Mitspieler (anderer Ort,
-//       andere Gier, Quelle remote) dasselbe Dorf an derselben Stelle. Befund: 13 Häuser, 12 von 25 Slots übersprungen, die
-//       drei nächsten HINTER dem Spieler (cos −1,00 / −0,48 / −0,12); Gegenprüfung Runde 1: beim Mitspieler ~60 m daneben.
+//   D9  DAS DORF VOR DIR — „dorf 7 18" an der Plattform: jedes Haus vor dem Spieler und im Bildwinkel; ein gesperrter Slot
+//       fällt an seinem Ort laut (K10); „baue dorf hier" baut bei einem Mitspieler dasselbe Dorf an derselben Stelle.
+// Die Befunde jeder Probe trägt git (Lehre 15).
 //
 //   node scripts/diag-ankunft.cjs [--selftest]          Port: ANKUNFT_PORT (Standard 4601)
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
@@ -90,7 +72,7 @@ function ladeschirmVerdict(m) {
     }
     const f = m.faelle || {};
     if (f.fehler) return out.concat([f.fehler]);
-    // Ein Fall, den die Probe nicht herstellen konnte, ist ROT beim Grund, den sie nennt (`ohneFall`) — nie still „kein Fall"
+    // Ein Fall, den die Probe nicht herstellen konnte, ist ROT beim Grund, den sie nennt (`ohneFall`), nie still
     // (Befund 09.10.: der Streu-Fall fehlte je nach Boot-Takt, CI 37942425121).
     const ohne = (k) => `${(m.ohneFall || {})[k] || "die Probe stellte den Fall nicht her und nennt keinen Grund"} (Vorbedingung)`;
     // eine Lücke hält den Ladeschirm und die Stand-Zeile nennt sie
@@ -115,9 +97,8 @@ function ladeschirmVerdict(m) {
         else if (z.weg) out.push(`${name} weicht der Ladeschirm (das halbe Weltbild)`);
         else if (!wort.test(z.stand || "")) out.push(`${name} nennt die Stand-Zeile die Lücke nicht („${z.stand}")`);
     }
-    // DIE TERM-DECKUNG (K60): jeder Term der Liste `WELTBILD_TERME` (`_weltbildLuecken`) hat einen Fall, in dem er den
-    // Ladeschirm hält — ein Term ohne Fall ist ROT beim Namen (die Pflanz-Schlange kam ohne Fall: ihr Streichen blieb grün),
-    // ein Fall, der einen Term außerhalb der Liste nennt, ebenso.
+    // DIE TERM-DECKUNG (K60): jeder Term von `WELTBILD_TERME` hat einen Fall, der den Ladeschirm hält; ein Fall nennt nur
+    // Terme der Liste
     const terme = m.terme;
     if (!Array.isArray(terme) || !terme.length)
         out.push("die Terme des ersten Weltbilds fehlen (`WELTBILD_TERME`) — die Linse sieht nicht, was das Bild hält");
@@ -158,8 +139,7 @@ function ladeschirmVerdict(m) {
         else if (th.omnibox) out.push("hinter dem Ladeschirm öffnet Strg+K die Omnibox");
     }
     if (!m.nachBootWeg) out.push("nach dem Boot (Null-Renderer) steht der Ladeschirm über der UI");
-    // DIE ANKUNFT AUS DER FERNE (B2): das erste Weltbild verlangt je Ding seine billigste ganze Stufe, nie eine feinere
-    const A = m.ankunft;
+    const A = m.ankunft; // DIE ANKUNFT AUS DER FERNE (B2): das erste Weltbild verlangt je Ding die billigste ganze Stufe
     if (!A || !A.n) out.push("die Ankunft aus der Ferne: keine Probe oder kein Ding der Mesh-Zone (Vorbedingung)");
     else {
         if (A.fein.length) out.push(`das erste Weltbild wartet auf eine feinere Stufe als die billigste ganze: ${A.fein.slice(0, 4).join(", ")}`);
@@ -167,9 +147,8 @@ function ladeschirmVerdict(m) {
         if (A.nahDanach === 2) out.push("nach dem ersten Weltbild verfeinert die Gestalt nie (der nahe Baum bleibt Karte)");
         if (A.zwilling.length) out.push(`der Kalt-Schätzer wählt anders als der Stufen-Takt: ${A.zwilling.slice(0, 3).join(", ")}`);
     }
-    // DER VORRAT HAT KEINEN LESER IM ERSTEN BILD (K30): während der Vorrat läuft (`_foundryPrefetchLibrary`), wartet das
-    // erste Weltbild auf nichts, was er bestellt — weder das Tor (`_weltbildFehlt`) noch eine neue Streu-Region (sie wartet
-    // nur auf IHR Asset), und er bestellt keine Karte (die Karte bestellt ihr Leser, nah zuerst).
+    // DER VORRAT HAT KEINEN LESER IM ERSTEN BILD (K30): während er läuft, wartet das Bild auf nichts, was er bestellt, und
+    // er bestellt keine Karte (die Karte bestellt ihr Leser, nah zuerst)
     const v = m.vorrat;
     // ohne Phase im Stamm nennt die Linse das zuerst (am Vor-Stand sagte der Merker nur „an" — die Probe sieht ihn nicht anlaufen)
     if (v && !v.PH)
@@ -193,9 +172,7 @@ function ladeschirmVerdict(m) {
                 `vor dem ersten Weltbild bestellt der Vorrat ${v.vorBild.length} Aufträge ohne Leser des ersten Frames ` +
                     `(${v.vorBild.slice(0, 4).join(", ")}${v.vorBild.length > 4 ? ", …" : ""}) — die Leser warten in seiner Schlange`
             );
-        // DER MERKER NENNT DIE PHASE (K30-N1): solange der Vorrat auf das erste Bild wartet, sagt `f._vorrat` „wartet auf das
-        // erste Bild", jede Bestellung trägt „bestellt" — die Kalt-Zeile druckt ihn wörtlich (bis K30-N1: `_prefetching` true ab
-        // dem Worker-Start, „Vorrat läuft" an der Radeon 8–44 s, die erste Bestellung bei 45 s).
+        // DER MERKER NENNT DIE PHASE (K30-N1): wartend „wartet auf das erste Bild", je Bestellung „bestellt" (die Kalt-Zeile)
         const PH = v.PH;
         if (PH) {
             if (v.phaseStart !== PH.wartet || v.phaseVorBild !== PH.wartet)
@@ -514,10 +491,7 @@ async function probe(arg) {
                 const n = st.architectures.filter((a) => a && /^baum_/.test(a.type || "")).length;
                 m.ohneFall.baumUngebaut = m.ohneFall.lueckeRuht = m.ohneFall.lueckeFlackert = `kein gezeichneter Baum in der Welt (${n} Baum-Einträge, keiner gezeichnet)`;
             }
-            // (3) die Streu-Region des Spielers wartet auf ihr Asset. Die Region steht nach dem Boot IMMER: der Spieler-Ort ist
-            // stets in Reichweite (`_streuRegionInReichweite`), und das Weltbild gilt erst als fertig, wenn sie gebaut ist — fehlt
-            // sie, ist das der Täter beim Namen (Befund 09.10.: bei langsamem Takt lief der Streamer nie, `_weltbildFehlt` las
-            // die fehlende Regionen-Karte als „nichts wartet", der Ladeschirm wich ohne Wald und der Fall fehlte).
+            // (3) die Streu-Region des Spielers wartet auf ihr Asset — nach dem Boot steht sie immer (ihr Ort ist in Reichweite)
             const SC = r.constructor.SCATTER;
             const regKey = `${Math.floor(pm.x / SC.regionM)},${Math.floor(pm.z / SC.regionM)}`;
             const reg = st.scatterRegions ? st.scatterRegions.get(regKey) : null;
@@ -586,9 +560,7 @@ async function probe(arg) {
                     else window.__anazhFernRing = merkHook;
                 }
             );
-            // (4f) DAS DORF (K60-4): ein Dorf der Ankunft, das fällig ist, exportiert wird oder dessen Häuser in der Schlange
-            // stehen, hält das Bild — ohne den Term stand das erste Weltbild in 4 von 5 Kalt-Läufen am Kopf von K60-3 ohne das
-            // Start-Dorf (Nicht-Baum-Einträge 107 statt 134). Headless ruht der Dorf-Takt: der Hook trägt ihn für den Fall.
+            // (4f) DAS DORF (K60-4): fällig, im Export oder mit Häusern in der Schlange hält es das Bild (headless trägt der Hook)
             const merkDorfHook = window.__anazhAutoSettlement;
             const dorfAn = () => (window.__anazhAutoSettlement = true);
             const dorfAus = () => {
@@ -649,12 +621,9 @@ async function probe(arg) {
                     : `der Spieler steht ${gMD ? Math.round(Math.hypot(pm.x - gMD.x, pm.z - gMD.z)) : "?"} m vom Genesis-Ort (nearM ${nearD})`;
             // (5) alles steht
             fall("allesSteht", nichts, nichts);
-            // (5b) DIE ANKUNFT AUS DER FERNE (B2): bis das erste Weltbild steht, wünscht jedes Ding der Mesh-Zone seine billigste
-            // ganze Stufe (der Baum die Karte, der Bau seine Grobstufe), der Kalt-Schätzer wählt wie der Takt; danach verfeinert
+            // (5b) DIE ANKUNFT AUS DER FERNE (B2): vor dem Bild die billigste ganze Stufe, danach Distanz und Grenzen wie der Takt
             const A = (m.ankunft = { n: 0, fein: [], zwilling: [] });
-            const merkDa = st._weltbildDa;
-            const R = st.architectureCullingRadius || 150;
-            const auge = r._lodAuge();
+            const [merkDa, R, auge] = [st._weltbildDa, st.architectureCullingRadius || 150, r._lodAuge()];
             for (const da of [0, merkDa]) {
                 st._weltbildDa = da;
                 for (const e of st.architectures || []) {
@@ -719,10 +688,8 @@ async function probe(arg) {
                 if (omni) omni.hidden = omniVor;
                 m.tastenHinter = { w: wLief, enter: ae ? ae.id || ae.tagName : null, omnibox: omniAuf };
             }
-            // (9) DER LADESCHIRM WEICHT GANZ (0710-11, OMEN Werkbank): nach `_ladeschirmWeg` (Klasse `weg`, nach 750 ms
-            // `hidden`) fällt er aus dem Layout — `display: none`, keine laufende Animation. Befund: `#ladeschirm` setzt
-            // `display: flex`, ohne `[hidden]`-Regel lag er nach der Ankunft unsichtbar und bildschirmfüllend mit der endlosen
-            // Glut-Animation über der Leinwand (an der Mess-Wiese die render-Phase 3,00/3,10 → 2,85/2,85 ms ohne ihn).
+            // (9) DER LADESCHIRM WEICHT GANZ: nach `_ladeschirmWeg` (Klasse `weg`, nach 750 ms `hidden`) fällt er aus dem Layout —
+            // `display: none`, keine laufende Animation
             {
                 ls.hidden = false;
                 ls.classList.remove("weg");
@@ -734,11 +701,8 @@ async function probe(arg) {
                     : null;
                 m.weichtGanz = { hidden: ls.hidden, display: cs.display, animationen: laufen };
             }
-            // (10) DER VORRAT HAT KEINEN LESER IM ERSTEN BILD (K30, Grok R11: kalt 25–30 s, das Tor wartete auf
-            // `f._prefetching`): der Vorrat läuft noch einmal (die echte Methode), jede seiner Bestellungen beim Namen und mit
-            // der Phase, die sein Merker `f._vorrat` dabei nennt (die Kalt-Zeile druckt sie: bis K30-N1 las sie „Vorrat läuft",
-            // solange er auf das Bild wartete); während er läuft, fragt die Probe das Tor und baut eine neue Streu-Region mit
-            // echtem Renderer-Zweig (Scheibe 0 — nur die Weiche, kein Bau).
+            // (10) DER VORRAT HAT KEINEN LESER IM ERSTEN BILD (K30): er läuft noch einmal, jede Bestellung beim Namen und mit der
+            // Phase seines Merkers; währenddessen fragt die Probe das Tor und baut eine neue Streu-Region (Scheibe 0, nur die Weiche)
             {
                 const v = { ohneLeser: [], karten: 0, kartenBsp: [], phaseBestellung: [] };
                 m.vorrat = v;
