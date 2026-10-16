@@ -1916,7 +1916,7 @@ async function WELLE_L() {
             w.c.pfeilFadenkreuz = Number.isFinite(w.z.pfeilFadenkreuz) && w.z.pfeilFadenkreuz < 1;
         }
 
-        // ═══ WELLE LF KAMPF (09.10.) — die Posten der Leben-Schau 07.10. (befund-kampf.md) ═══
+        // ═══ WELLE LF KAMPF (09.10.) — die Posten der Leben-Schau 07.10. (artifacts/profiband/leben/befund-kampf.md) ═══
         if (fn("setCameraMode")) r.setCameraMode("first");
         // (T16) DIE TREFFER-ENERGIE FOLGT DEM SCHWUNG (Posten 1): derselbe Hieb auf denselben Hirsch — drei Abstände (1,3 ·
         // 1,6 · 1,9 m) × fünf Lagen des Leibs (Breitseite, abgewandt, zugewandt, zwei schräg), das Fadenkreuz auf der

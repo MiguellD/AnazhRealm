@@ -1,0 +1,3 @@
+# Die Zeilenenden des Repos sind LF auf jeder Plattform: der Windows-Laeufer omen-gpu (Job echt) checkte mit core.autocrlf=true
+# CRLF aus, und der Stamm-Leser (scripts/lib/stamm.cjs, die Naht von stamm/01.js) brach am ersten Echt-Schritt.
+* text=auto eol=lf

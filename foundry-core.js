@@ -388,8 +388,8 @@ const PORTAL_RENDER_CONFIG = {
         //   karte    = die Stufe IST die Studio-Karte (bakeImpostorAtlas aus L1, beim Host das Achsen-Quad mit
         //              2 Dreiecken) — die L2-Geometrie wird dort nicht geliefert (gate:studio-vertrag haelt
         //              karte ⇔ KIND_POLICY.impostor des Hosts).
-        // Herleitung aus dem Profi-Band (680k Dreiecke je Frame ueber alle Paesse, docs/analyse/perf-paritaet-
-        // baseline-v18432.md; Mess-Wiese V18.526: 5,1 M, davon Pflanzen nah/mittel 3,3 M — Baum-L1 trug 39,5k bei
+        // Herleitung aus dem Profi-Band (680k Dreiecke je Frame ueber alle Paesse, spec/profiband/haushalt.json
+        // `band`; Mess-Wiese V18.526: 5,1 M, davon Pflanzen nah/mittel 3,3 M — Baum-L1 trug 39,5k bei
         // Fichte, 47,1k beim Strauch, mehr als die Fichte): die L1-Zeilen sind OBERGRENZEN, gegen die gebaut ist
         // (tree[1] 10k: Nadel-Karten + jeder 2. Ring + Primaer-Wurzeln + schlanke Trauer-Klinge; shrub[0] 12k:
         // Reisig-Schnitt) — die gebaute Geometrie fiel auf sie, nicht sie auf die Geometrie. tree[0] (W5/S7, das

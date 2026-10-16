@@ -87,7 +87,7 @@ const PROXY_ALLOWED_HEADER_PREFIXES = [
 //   - Endung-Whitelist (nur Text — html/js/css/json/...); kein .sh/.exe
 //   - Deckel: Datei-Anzahl, je-Datei-Bytes, Gesamt-Bytes, roher Request
 //   - NIE wird etwas ausgeführt — nur `schreibeGanzSync` (reines Schreiben, je Datei tmp + rename)
-// Die Limits müssen mit anazhRealm.js (AnazhRealm.VENDOR_LIMITS) übereinstimmen.
+// Die Limits müssen mit dem Stamm (AnazhRealm.VENDOR_LIMITS) übereinstimmen.
 const VENDOR_MAX_FILES = 64;
 const VENDOR_MAX_FILE_BYTES = 4 * 1024 * 1024; // 4 MiB je Datei
 const VENDOR_MAX_TOTAL_BYTES = 12 * 1024 * 1024; // 12 MiB gesamt
@@ -835,7 +835,7 @@ function handleVendorBundleRead(req, res) {
 }
 
 function sendStaticFile(req, res) {
-    // V8.41 — Query-String abschneiden (Cache-Buster anazhRealm.js?v=8.41).
+    // V8.41 — Query-String abschneiden (Cache-Buster `?v=` jeder versionierten Datei).
     // Ein Webserver bedient statische Dateien anhand des Pfads; die Query
     // ist nur Cache-Schlüssel für Browser/CDN. Ohne dies 404 auf ?v=.
     const urlPath = (req.url || "/").split("?")[0];
@@ -1086,7 +1086,7 @@ const server = http.createServer((req, res) => {
 
     // V8.71 — W15 Phase 1: Auto-Vendor. Browser → save-server → worlds/<id>/.
     // Ein fremdes Welt-Bündel landet auf der Platte, ohne dass jemand
-    // anazhRealm.js anfasst. Strenge Pfad-/Größen-/Endung-Wand.
+    // den Stamm anfasst. Strenge Pfad-/Größen-/Endung-Wand.
     if (req.method === "POST" && req.url === "/api/vendor-world") {
         handleVendorWorld(req, res);
         return;

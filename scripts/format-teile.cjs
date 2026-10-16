@@ -1,7 +1,7 @@
 // format-teile.cjs — DER FORMAT-CHECK IN TEILEN (K14, CI in zwei Stufen, 11.10.).
 //
 // Befund: `prettier --check` trug den Puls nicht — 133 s Median auf dem CI-Läufer (Läufe 38092890885 · 38092154993 ·
-// 38091744489 · 38039127248 · 38039048896), lokal 151 s, davon der Stamm anazhRealm.js (5,7 MB) ~96 %: Prettier formatiert
+// 38091744489 · 38039127248 · 38039048896), lokal 151 s, davon der Stamm (damals EINE Datei, 5,7 MB) ~96 %: Prettier formatiert
 // eine Datei auf EINEM Kern, linear in ihrer Größe (phyto-core 0,22 MB 6 s, der Stamm 26-mal so groß 145 s). Der Läufer hat
 // vier Kerne, drei standen still.
 //

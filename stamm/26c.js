@@ -811,7 +811,7 @@ AnazhRealm.QUALITY_ROLE_FIT = Object.freeze({
         architecture: 2.5,
     }),
 });
-// U3 (resonanz-system.md §5) — die Labels für den Katalysator-Readout (das Rollen-Spektrum + die Achse zum
+// U3 (resonanz-system §5) — die Labels für den Katalysator-Readout (das Rollen-Spektrum + die Achse zum
 // perfekten Katalysator). Deutsch, browser-justierbar.
 AnazhRealm.ROLE_LABELS = Object.freeze({
     held: "Gerät",
@@ -1908,7 +1908,7 @@ AnazhRealm.SUBWORLD_NET_RATE_MAX = 120; // ~2 Nachrichten je 60-fps-Frame mit Re
 // fremde Versionen (Felder, die sie nicht kennen, ignorieren sie) — Koexistenz
 // alter + neuer Clients im selben Raum. Bump nur bei INKOMPATIBLEN Änderungen.
 AnazhRealm.PROTO_VERSION = 1;
-// G8 R0 (Robustheits-Bogen, docs/archiv/robustheit-plan.md §2) — der INNERSTE
+// G8 R0 (Robustheits-Bogen) — der INNERSTE
 // RING benannt: die „Feinstrukturkonstante" des Ultiversums. Diese state-Slots
 // (Identität + Signatur-/Autorisierungs-Autorität) sind ABWESEND aus der Welt
 // der Welten — NIE in einem Welt-Snapshot, NIE in einem Portal-Payload, NIE
