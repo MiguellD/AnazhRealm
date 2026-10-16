@@ -1,0 +1,18 @@
+{
+ "ergebnis": {
+  "gesamt": 10,
+  "sicht": 0,
+  "sichtNah": 0,
+  "schatten": {
+   "k0": 0,
+   "k1": 0
+  },
+  "arten": {
+   "bear": 3,
+   "deer": 5,
+   "fox": 2
+  },
+  "artenSicht": {}
+ },
+ "ms": 2
+}

@@ -1,0 +1,86 @@
+{
+ "takte": 300,
+ "p50": 1.3,
+ "p95": 4.9,
+ "max": 9.7,
+ "restMittel": 0.19,
+ "buehneMittel": 0.22,
+ "top": [
+  {
+   "name": "_loopVoxelStreaming",
+   "mittel": 0.83,
+   "max": 8
+  },
+  {
+   "name": "_loopWeatherAndGrowth",
+   "mittel": 0.24,
+   "max": 0.7
+  },
+  {
+   "name": "_loopFixedStep",
+   "mittel": 0.12,
+   "max": 0.7
+  },
+  {
+   "name": "_loopCamera",
+   "mittel": 0.09,
+   "max": 0.3
+  },
+  {
+   "name": "tickArchitectures",
+   "mittel": 0.08,
+   "max": 0.2
+  },
+  {
+   "name": "tickArchitectureCulling",
+   "mittel": 0.07,
+   "max": 1.9
+  },
+  {
+   "name": "tickAffordances",
+   "mittel": 0.06,
+   "max": 0.2
+  },
+  {
+   "name": "updateStatusPanel",
+   "mittel": 0.05,
+   "max": 1.4
+  },
+  {
+   "name": "tickDayNight",
+   "mittel": 0.04,
+   "max": 2
+  },
+  {
+   "name": "updatePlayerEmotions",
+   "mittel": 0.02,
+   "max": 0.1
+  },
+  {
+   "name": "_tickPortalMembranes",
+   "mittel": 0.02,
+   "max": 0.6
+  },
+  {
+   "name": "_tickWorldRules",
+   "mittel": 0.01,
+   "max": 0.4
+  },
+  {
+   "name": "tickCreatureBoosts",
+   "mittel": 0.01,
+   "max": 0.1
+  },
+  {
+   "name": "tickStatsHud",
+   "mittel": 0.01,
+   "max": 0.2
+  },
+  {
+   "name": "_loopFrustumCulling",
+   "mittel": 0.01,
+   "max": 0.1
+  }
+ ],
+ "ms": 5738
+}

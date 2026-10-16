@@ -1,0 +1,18 @@
+16:23:19 G4a v2 START A=1185091c B=cee33f91 Instrument=cee33f91
+16:23:35 g-ego-A1 start gpu[70, 923 MHz, P2, 0x0000000000000001]
+16:26:47 g-ego-A1 ende gpu[78, 822 MHz, P3, 0x0000000000000001] cpu {"p50":3.8,"p95":5,"p99":6.5,"max":25.3} tiere "gesamt":10
+16:30:54 g-ego-B1 start gpu[74, 1835 MHz, P0, 0x0000000000000000]
+16:34:07 g-ego-B1 ende gpu[78, 822 MHz, P3, 0x0000000000000001] cpu {"p50":4,"p95":5.6,"p99":6.9,"max":26.4} tiere "gesamt":9
+16:38:14 g-ego-A2 start gpu[75, 1835 MHz, P0, 0x0000000000000000]
+16:41:26 g-ego-A2 ende gpu[79, 822 MHz, P3, 0x0000000000000001] cpu {"p50":3.7,"p95":5.1,"p99":6.1,"max":24.6} tiere "gesamt":10
+16:44:32 g-ego-B2 start gpu[76, 1835 MHz, P0, 0x0000000000000000]
+16:47:45 g-ego-B2 ende gpu[78, 822 MHz, P3, 0x0000000000000001] cpu {"p50":3.9,"p95":5.1,"p99":6.2,"max":29.9} tiere "gesamt":9
+16:50:52 w-ego-A1 start gpu[76, 1835 MHz, P0, 0x0000000000000000]
+16:54:03 w-ego-A1 ende gpu[79, 923 MHz, P2, 0x0000000000000001] cpu {"p50":3.6,"p95":5.1,"p99":6.4,"max":40.8} tiere "gesamt":10
+16:57:04 w-ego-B1 start gpu[73, 1556 MHz, P0, 0x0000000000000000]
+17:00:18 w-ego-B1 ende gpu[79, 822 MHz, P3, 0x0000000000000001] cpu {"p50":3.4,"p95":4.7,"p99":5.9,"max":37.3} tiere "gesamt":9
+17:03:25 w-ego-A2 start gpu[75, 1835 MHz, P0, 0x0000000000000000]
+17:06:37 w-ego-A2 ende gpu[79, 822 MHz, P3, 0x0000000000000001] cpu {"p50":3.6,"p95":4.9,"p99":6,"max":44.6} tiere "gesamt":10
+17:07:57 w-ego-B2 start gpu[69, 936 MHz, P2, 0x0000000000000001]
+17:11:09 w-ego-B2 ende gpu[79, 822 MHz, P3, 0x0000000000000001] cpu {"p50":3.6,"p95":5,"p99":6.5,"max":39.5} tiere "gesamt":9
+17:12:14 G4a v2 FERTIG
