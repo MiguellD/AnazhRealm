@@ -1577,7 +1577,6 @@ function zerlegeTabelle(a, inv, sch) {
 module.exports = {
     // der exakt zurückstellende Haken — der Ziel-Zensus (scripts/lib/ziel-zensus.cjs) hakt mit demselben
     haken,
-    SPEZIAL,
     KETTE,
     zerlegeSchalter,
     zerlegeAuswerten,

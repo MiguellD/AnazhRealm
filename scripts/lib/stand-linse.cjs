@@ -1280,13 +1280,10 @@ function schreiberUrteil(s) {
 
 module.exports = {
     TAKTE,
-    BLAETTER,
     BEWACHT,
-    schreiberAnalyse,
     schreiberWand,
     weckProbe,
     schreiberUrteil,
-    standPhase,
     standUrteil,
     STAND_INSTALL:
         `window.__standLinseAn = () => (${standLinseAn.toString()})(${JSON.stringify(TAKTE)}, ${JSON.stringify(BLAETTER)}, ${JSON.stringify(EIGENE_UHR)});` +

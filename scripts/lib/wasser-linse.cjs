@@ -2843,7 +2843,6 @@ module.exports = {
         `window.__wasserSeeAm = ${__wasserSeeAm.toString()};` +
         `window.__wasserLicht = ${wasserLicht.toString()};` +
         `window.__wasserRegen = ${wasserRegen.toString()};`,
-    wasserQuellTeil,
     quellTeileVereinen,
     QUELL_KACHELN,
 };
