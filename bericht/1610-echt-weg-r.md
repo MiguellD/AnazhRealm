@@ -50,3 +50,11 @@ Das Repo ist unverändert.
 - Kein Code-Commit.
 - Läufer: `.env` neu, Listener seit 12:22 lokal online, GPU-Schloss frei.
 - Weiter mit §2 (Zweig `frost-echt` ab 826717ed ist angelegt).
+
+## Nachtrag 16.10. ~12:40 — Which2 aus dem Re-Run (Lauf 38881847786, Versuch 2)
+
+- `C:\actions-runner\_diag\Worker_20261016-102558-utc.log`, Zeilen 4576–4577 und 4582–4583:
+  - `[10:26:15Z INFO ScriptHandler] Which2: 'bash'`
+  - `[10:26:15Z INFO ScriptHandler] Location: 'C:\Program Files\Git\bin\bash.EXE'`
+- Vorher (Versuch 1, `Worker_20261016-093845-utc.log`) stand dort `…\WindowsApps\bash.EXE`.
+- `hooks/hook.log`: 12:26:02 Schloss genommen als `ci-runner 38881847786/2 echt`. Das Ergebnis des Jobs liest der Koordinator per API.
