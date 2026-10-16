@@ -1354,9 +1354,7 @@ async function WELLE_L() {
                 for (const k of Object.getOwnPropertyNames(A.prototype)) {
                     const d = Object.getOwnPropertyDescriptor(A.prototype, k);
                     if (k === "constructor" || !d || typeof d.value !== "function") continue; // constructor = die ganze Klasse
-                    const code = String(d.value)
-                        .replace(/\/\/.*$/gm, "")
-                        .replace(/\/\*[\s\S]*?\*\//g, "");
+                    const code = window.__codeOf(d.value);
                     if (!/damageCreature\(/.test(code) || !/source:\s*"player"/.test(code)) continue;
                     pfade.push(k);
                     if (!/_kampfRohSchaden\(/.test(code)) tat.push(k);
@@ -1418,9 +1416,7 @@ async function WELLE_L() {
             .map((k) => {
                 const d = Object.getOwnPropertyDescriptor(A.prototype, k);
                 return d && typeof d.value === "function"
-                    ? String(d.value)
-                          .replace(/\/\/.*$/gm, "")
-                          .replace(/\/\*[\s\S]*?\*\//g, "")
+                    ? window.__codeOf(d.value)
                     : "";
             })
             .join("\n");
@@ -1428,9 +1424,7 @@ async function WELLE_L() {
         w.c.keinePhantome = w.z.phantome === 0;
         const codeVon = (name) =>
             fn(name)
-                ? String(A.prototype[name])
-                      .replace(/\/\/.*$/gm, "")
-                      .replace(/\/\*[\s\S]*?\*\//g, "")
+                ? window.__codeOf(A.prototype[name])
                 : "";
         // (T10) KERN-PFLICHT des Treffer-Volumens: fehlt tetrapoda trefferZone, bricht der erste Treffer-Test LAUT
         // (_kernPflichtBruch, benannt) — nie still null, das je Tier gespeichert jedes Wesen unverwundbar machte.
@@ -2029,10 +2023,7 @@ async function WELLE_L() {
                     nah: serieR(1.3, -0.6),
                     // der Code des Dispatchers ohne Kommentare (die Kommentare zitieren die alte Zahl)
                     toreZahl: (
-                        A.prototype.tryMouseBreak
-                            .toString()
-                            .replace(/\/\/[^\n]*/g, "")
-                            .match(/reachMaxM/g) || []
+                        window.__codeOf(A.prototype.tryMouseBreak).match(/reachMaxM/g) || []
                     ).length,
                 };
             } finally {
@@ -2744,10 +2735,7 @@ async function WELLE_L() {
                 }
                 return { erst, schritte, rueckkehr, boostAn, boostAb };
             };
-            const ohneKommentar = (f) =>
-                String(f)
-                    .replace(/\/\/.*$/gm, "")
-                    .replace(/\/\*[\s\S]*?\*\//g, "");
+            const ohneKommentar = window.__codeOf;
             const vollRufer = Object.getOwnPropertyNames(A.prototype)
                 .filter((n) => n !== "constructor" && typeof A.prototype[n] === "function")
                 .filter((n) => /recomputePlayerStats\(\s*\{\s*voll\s*:\s*true/.test(ohneKommentar(A.prototype[n])))
@@ -2954,10 +2942,7 @@ async function WELLE_L() {
             tod.unterWesen = s.creatures.indexOf(hT) !== -1;
             tod.aeltester = r._findOldestCreature() === hT;
             tod.naechster = r.findNearestCreature(hT.position, 3) === hT;
-            const ohneKommentar = (f) =>
-                String(f)
-                    .replace(/\/\/.*$/gm, "")
-                    .replace(/\/\*[\s\S]*?\*\//g, "");
+            const ohneKommentar = window.__codeOf;
             const FRAGT_ERLAUBT = new Set([
                 "damageCreature",
                 "_creatureCombatDeath",
@@ -3715,10 +3700,7 @@ async function WELLE_L() {
             if (!AG || !AG.schwung || !AG.gefuehl) return { error: "ARENA-Gesetz fehlt" };
             const K = AG.schwung;
             const G = AG.gefuehl;
-            const codeOf = (fn) =>
-                String(fn)
-                    .replace(/\/\/.*$/gm, "")
-                    .replace(/\/\*[\s\S]*?\*\//g, "");
+            const codeOf = window.__codeOf;
 
             // ── KONSUM-Proben (Lehre 6): die EINE Quelle ist verdrahtet ──
             const atkSrc = codeOf(r._playerAttackCreature);

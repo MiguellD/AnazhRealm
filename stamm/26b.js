@@ -1329,6 +1329,8 @@ AnazhRealm._verhaltenGesetz = function () {
             v.herde &&
             Number.isFinite(v.herde.fensterRaum) &&
             Number.isFinite(v.herde.gewicht) &&
+            v.herde.wurf && // G4a: die Geburt wirft Gruppen (Kopfzahl je Gattung, Abstand in Paar-Räumen)
+            Number.isFinite(v.herde.wurf.abstandRaum) &&
             v.wasser &&
             Number.isFinite(v.wasser.uferBias)
         ) {
@@ -2445,11 +2447,10 @@ AnazhRealm.CREATURE_SOULS = Object.freeze({
     }),
     // Die restlichen tetrapoda-Gattungen als Seelen (Dials formen sie zur BAU-Zeit über
     // `_tetrapodaSoulParts`, TETRAPODA_SOUL_MAP). Tag-identisch zu wesen → sie teilen seine Spawn-Nische
-    // statt sie zu verdrängen. wolf trägt `predator` (diet=1, bleibt aus den AMBIENT-Pickern);
-    // fuchs/baer sind ambient.
+    // statt sie zu verdrängen; jede ist ambient (G4a: der predator-Stempel des Wolfs fiel mit dem Filter der Picker —
+    // wild macht ihn die Gattung, `_creatureTemperament`).
     wolf: Object.freeze({
         label: "Wolf",
-        predator: true,
         bodyParts: Object.freeze(
             AnazhRealm._creatureSkeleton(
                 Object.assign({ archetype: AnazhRealm.CREATURE_ARCHETYPES.wolf }, AnazhRealm.CREATURE_SKELETON_G.wolf)

@@ -1015,7 +1015,7 @@ function deckungStufe0(bild) {
 
 function leserUrteil(quelle) {
     const v = [];
-    const text = quelle.replace(/\/\/[^\n]*/g, ""); // Kommentare zitieren (Lehre 6) — gezählt wird Code
+    const text = stammLib.ohneKommentare(quelle); // Kommentare zitieren (Lehre 6) — gezählt wird Code
     const i = text.indexOf("\n    _blattAtlasProbe(");
     const rumpf = i < 0 ? "" : text.slice(i, text.indexOf("\n    }\n", i));
     if (!rumpf) v.push("Stamm:der Leser _blattAtlasProbe fehlt");
@@ -1111,7 +1111,7 @@ function windUrteil(fall, T, skala, deltaMul) {
 }
 function windLeserUrteil(quellen) {
     const v = [];
-    const code = (t) => t.replace(/\/\/[^\n]*/g, "");
+    const code = stammLib.ohneKommentare;
     const welt = code(quellen.Stamm);
     const i = welt.indexOf("\n    _baumWindStoff(");
     const rumpf = i < 0 ? "" : welt.slice(i, welt.indexOf("\n    }\n", i));
@@ -1168,7 +1168,7 @@ function windLeserUrteil(quellen) {
 // lichtet mit demselben Term; die Fresnel-Aufhellung lebt nur noch im Gras des Labors.
 function laubLichtLeserUrteil(quellen) {
     const v = [];
-    const code = (t) => t.replace(/\/\/[^\n]*/g, "");
+    const code = stammLib.ohneKommentare;
     const welt = code(quellen.Stamm);
     const rumpfVon = (name) => {
         const k = welt.indexOf("\n    " + name + "(");
@@ -1196,7 +1196,7 @@ function laubLichtLeserUrteil(quellen) {
 const KERN_GEOMETRIE_BAUER = ["buildFoliageQuads", "buildLeafBlades", "buildBarkTubeArrays"];
 function windDatenUrteil(quellen) {
     const v = [];
-    const code = (t) => t.replace(/\/\/[^\n]*/g, "");
+    const code = stammLib.ohneKommentare;
     const welt = code(quellen.Stamm);
     const labor = code(quellen["foundry-core.js"]);
     const kern = code(quellen["phyto-core.js"]);

@@ -81,7 +81,7 @@ function hashSin(quelle) {
     if (!g) return "der Wasser-Stoff _ensureHydroSurfaceMaterial fehlt in der Quelle";
     const zeilen = quelle.slice(g.start, g.ende).split("\n");
     for (const z of zeilen) {
-        const code = z.replace(/\/\/.*$/, "");
+        const code = stammLib.ohneKommentare(z);
         if (/\bsin\s*\(/.test(code)) return z.trim();
     }
     return null;

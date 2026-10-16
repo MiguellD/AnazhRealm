@@ -762,7 +762,181 @@ function fingerabdruck(A) {
     return { zeilen, sha: sha(zeilen.join("\n")).slice(0, 16) };
 }
 
+// DER EINE KOMMENTAR-STRIPPER (PFLICHT-OFFEN D3): der Code eines Quelltexts ohne Kommentare, zeichenweise wie ein
+// Tokenizer — Strings, Template-Literale (samt Code in `${…}`), Regex-Literale und URLs bleiben stehen, nur `//`- und
+// `/* */`-Kommentare fallen, jeder Zeilenumbruch bleibt (Zeilennummern eines Befunds = die der Datei). `ohneLiterale`
+// leert dazu jedes Literal bis auf ein Leerzeichen (der Proben-Leser von gate:source-probes sucht nur Code-Tokens). Bis
+// D3a trug der Apparat 171 Stripper-Stellen in 65 Dateien mit verschiedener Semantik: `//.*$` schnitt `"https://…"` samt
+// Rest der Zeile, der Block-Regex fraß ab einem `"/*"` im String bis zum nächsten Kommentar-Ende. Selbstgenügsam (kein
+// Name von außerhalb des Rumpfs): welt-boot.cjs trägt ihn als Text in jede Seite (`window.__codeOf`). Die Wand:
+// gate:betriebsgesetz STRIPPER-WAND — ein Stripper außerhalb dieser Datei ist ROT; die Tafel: `--selftest`.
+function ohneKommentare(src, ohneLiterale = false) {
+    const s = String(src);
+    const n = s.length;
+    const VOR_REGEX = "(,=:[!&|?{};+-*%<>~^";
+    const WORT_VOR_REGEX = /(?:^|[^\w$])(?:return|typeof|instanceof|case|in|of|delete|void|throw|new|else|do|yield|await)\s*$/;
+    const CODE = /[/'"`{}]/g; // wo im Code etwas beginnt oder eine `${…}`-Ebene schließt
+    const ENDE = { "'": /['\\\n\r]/g, '"': /["\\\n\r]/g, "`": /[`\\$]/g, re: /[/\\[\]\n\r]/g, zeile: /[\n\r]/g };
+    const umbrueche = (t) => t.replace(/[^\n\r]/g, "");
+    const lit = (t) => (ohneLiterale ? umbrueche(t) : t);
+    const teile = [];
+    let modus = s.startsWith("#!") ? "zeile" : "code"; // code · zeile · block · ' · " · ` · re
+    let prev = ""; // das letzte bedeutsame Code-Zeichen; '"' = ein Literal endete (ein Operand, danach teilt `/`)
+    let klasse = false; // im Regex-Literal innerhalb `[…]` (dort schließt `/` nicht)
+    const ebenen = []; // je offenem `${` eines Template-Literals die Zahl offener `{` darin
+    let i = 0;
+    while (i < n) {
+        if (modus === "block") {
+            const j = s.indexOf("*/", i);
+            teile.push(umbrueche(s.slice(i, j < 0 ? n : j)));
+            i = j < 0 ? n : j + 2;
+            modus = "code";
+            continue;
+        }
+        const rx = modus === "code" ? CODE : ENDE[modus];
+        rx.lastIndex = i;
+        const m = rx.exec(s);
+        const j = m ? m.index : n;
+        if (j > i) {
+            const lauf = s.slice(i, j);
+            if (modus === "code") {
+                teile.push(lauf);
+                const t = lauf.trimEnd();
+                if (t) prev = t[t.length - 1];
+            } else if (modus !== "zeile") teile.push(lit(lauf));
+            i = j;
+            if (!m) break;
+        }
+        const c = s[i];
+        const d = i + 1 < n ? s[i + 1] : "";
+        if (modus === "zeile") {
+            modus = "code"; // der Umbruch bleibt, der Code-Lauf trägt ihn
+            continue;
+        }
+        if (modus === "code") {
+            if (c === "/" && (d === "/" || d === "*")) {
+                modus = d === "/" ? "zeile" : "block";
+                i += 2;
+                continue;
+            }
+            const regex =
+                c === "/" &&
+                (prev === "" ||
+                    VOR_REGEX.includes(prev) ||
+                    (/[\w$]/.test(prev) && WORT_VOR_REGEX.test(s.slice(Math.max(0, i - 32), i))));
+            if (regex || c === "'" || c === '"' || c === "`") {
+                modus = regex ? "re" : c;
+                klasse = false;
+                teile.push(ohneLiterale ? " " : c);
+            } else if (ebenen.length && c === "}" && ebenen[ebenen.length - 1] === 0) {
+                ebenen.pop();
+                modus = "`";
+                teile.push(lit(c));
+            } else {
+                if (ebenen.length && (c === "{" || c === "}")) ebenen[ebenen.length - 1] += c === "{" ? 1 : -1;
+                teile.push(c);
+                prev = c;
+            }
+            i++;
+            continue;
+        }
+        // in einem Literal: String (' "), Template (`) oder Regex (re)
+        if (c === "\\") {
+            teile.push(lit(c + d));
+            i += 2;
+        } else if (modus === "`" && c === "$") {
+            if (d === "{") {
+                ebenen.push(0);
+                modus = "code";
+                prev = "{";
+                teile.push(lit("${"));
+                i += 2;
+            } else {
+                teile.push(lit(c));
+                i++;
+            }
+        } else if (c === "\n" || c === "\r") {
+            modus = "code"; // ein String oder Regex endet nie über die Zeile — war es keiner, fängt sich der Zustand hier
+        } else if (modus === "re" && (c !== "/" || klasse)) {
+            if (c === "[" || c === "]") klasse = c === "[";
+            teile.push(lit(c));
+            i++;
+        } else {
+            modus = "code"; // das schließende Zeichen
+            prev = '"';
+            teile.push(lit(c));
+            i++;
+        }
+    }
+    return teile.join("");
+}
+
+// Die Tafel des EINEN Strippers (gate:betriebsgesetz STRIPPER-WAND fährt sie in jedem `npm run check`): echte Zeilen des
+// Stamms, an denen die alten Kopien rissen, dazu die Ränder — [Herkunft, Eingabe, Soll, ohneLiterale].
+const STRIPPER_TAFEL = [
+    [
+        "stamm/02b.js Ollama-Basis (Regex mit `\\//` und `[^/]`)",
+        "if (/\\/(api|v1)\\//.test(base) || /\\/(api|v1)\\/[^/]+$/.test(base)) { // Basis",
+        "if (/\\/(api|v1)\\//.test(base) || /\\/(api|v1)\\/[^/]+$/.test(base)) { ",
+    ],
+    [
+        "stamm/03a.js Raum-Adresse (Regex endet auf `\\//i`, String mit URL)",
+        'if (/^anazh:\\/\\//i.test(normalized)) normalized = normalized.replace(/^anazh:\\/\\//i, "ws://"); // tolerant',
+        'if (/^anazh:\\/\\//i.test(normalized)) normalized = normalized.replace(/^anazh:\\/\\//i, "ws://"); ',
+    ],
+    [
+        "stamm/14.js Einladung (Template mit Regex im `${…}`)",
+        'const code = `anazh://${addr.broker.replace(/^wss?:\\/\\//i, "")}/${addr.roomId}`; /* Einladung */',
+        'const code = `anazh://${addr.broker.replace(/^wss?:\\/\\//i, "")}/${addr.roomId}`; ',
+    ],
+    [
+        "stamm/02b.js KI-Endpunkt (URL im String)",
+        'endpoint: () => "https://api.anthropic.com/v1/messages", // Anthropic',
+        'endpoint: () => "https://api.anthropic.com/v1/messages", ',
+    ],
+    [
+        "stamm/11c.js Feld-Shader (WGSL-Kommentar ist String)",
+        '"    // DER SCHWUND: dieselbe Interleaved-Gradient-Blende (__phytoCore.lodDitherIGN)\\n" +',
+        '"    // DER SCHWUND: dieselbe Interleaved-Gradient-Blende (__phytoCore.lodDitherIGN)\\n" +',
+    ],
+    ["Teilung ist kein Regex", "const h = a / b / 2; // halb", "const h = a / b / 2; "],
+    ["Block über Zeilen behält die Umbrüche", "x = 1; /* a\n b */ y = 2;", "x = 1; \n y = 2;"],
+    ['"/*" im String frisst keinen Code', 'const g = "scripts/*.cjs"; /* Muster */ f(g); // */ h();', 'const g = "scripts/*.cjs";  f(g); '],
+    ["Regex nach Schlüsselwort", "return /\\/\\//.test(s); // zwei Striche", "return /\\/\\//.test(s); "],
+    ["ohneLiterale leert jedes Literal, Code im `${…}` bleibt", 'f("a//b", /c/g, `d${e}`); // z', "f( ,  g,  e); ", true],
+];
+// → die Befunde (leer = grün); mit `root` dazu der ganze Stamm gegen acorn: dieselbe Token-Folge ohne einen Kommentar,
+// dieselbe Zeilenzahl.
+function stripperTafel(root) {
+    const rot = [];
+    for (const [wo, ein, soll, ohneLit] of STRIPPER_TAFEL) {
+        const ist = ohneKommentare(ein, !!ohneLit);
+        if (ist !== soll) rot.push(`${wo}: ${JSON.stringify(ist)} statt ${JSON.stringify(soll)}`);
+    }
+    if (!root) return rot;
+    const acorn = require("acorn");
+    const folge = (t) => {
+        const z = { tok: [], kom: 0 };
+        const opt = { ecmaVersion: "latest", allowHashBang: true, onComment: () => z.kom++ };
+        for (const k of acorn.tokenizer(t, opt)) z.tok.push(t.slice(k.start, k.end));
+        return z;
+    };
+    const T = text(root);
+    const a = folge(T);
+    const S = ohneKommentare(T);
+    const b = folge(S);
+    const k = a.tok.findIndex((x, j) => x !== b.tok[j]);
+    if (b.kom || k >= 0 || a.tok.length !== b.tok.length || T.split("\n").length !== S.split("\n").length)
+        rot.push(
+            `der Stamm gegen acorn: ${b.kom} Kommentare übrig, Token ${k} ${JSON.stringify(a.tok[k])} → ${JSON.stringify(b.tok[k])}, ` +
+                `Zeilen ${T.split("\n").length} → ${S.split("\n").length}`
+        );
+    return rot;
+}
+
 module.exports = {
+    ohneKommentare,
+    stripperTafel,
     ALT,
     DIR,
     MIN_BYTES,
@@ -866,6 +1040,8 @@ if (require.main === module && process.argv.includes("--selftest")) {
                 gliedAn(glieder(G), G.indexOf("class A")) === null,
             rs.map((r) => `${r.glied}:${r.args.length}`).join(",")
         );
+        const tafel = stripperTafel(root);
+        pruef("der EINE Kommentar-Stripper hält seine Tafel und den Stamm gegen acorn", !tafel.length, tafel.join(" · "));
         const lay = layout(root);
         const T = text(root);
         // 1) heute: text() = die Datei, Byte für Byte

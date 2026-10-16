@@ -334,9 +334,7 @@ function urteil(b) {
 }
 
 // ── L: DIE LESER (kommentarfrei). ──
-function ohneKommentare(src) {
-    return src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:"'`\\])\/\/[^\n]*/g, "$1");
-}
+const ohneKommentare = stammLib.ohneKommentare;
 // der EINE Rumpf-Schneider (scripts/lib/stamm.cjs): der Block an der Definition, nie am ersten Text-Treffer
 function fnBody(src, kopf) {
     return stammLib.rumpf(src, kopf);

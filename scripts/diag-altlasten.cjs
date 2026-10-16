@@ -1357,65 +1357,7 @@ const SOUL_KEYS_EXPECTED = ["wesen", "wolf", "fuchs", "baer"];
 
 // Kommentare strippen, Strings BEWAHREN (die diag-source-probes-Methode:
 // zeichenweise, string-bewusst — ein naiver Regex frisst echten Code).
-function stripComments(src) {
-    let out = "";
-    let i = 0;
-    const n = src.length;
-    let mode = "code"; // code | line | block | sq | dq | tpl
-    while (i < n) {
-        const c = src[i];
-        const c2 = src[i + 1];
-        if (mode === "code") {
-            if (c === "/" && c2 === "/") {
-                mode = "line";
-                i += 2;
-                continue;
-            }
-            if (c === "/" && c2 === "*") {
-                mode = "block";
-                i += 2;
-                continue;
-            }
-            if (c === "'") mode = "sq";
-            else if (c === '"') mode = "dq";
-            else if (c === "`") mode = "tpl";
-            out += c;
-            i++;
-            continue;
-        }
-        if (mode === "line") {
-            if (c === "\n") {
-                mode = "code";
-                out += c;
-            }
-            i++;
-            continue;
-        }
-        if (mode === "block") {
-            if (c === "*" && c2 === "/") {
-                mode = "code";
-                i += 2;
-                continue;
-            }
-            if (c === "\n") out += c;
-            i++;
-            continue;
-        }
-        // Strings: Escapes respektieren, Inhalt BEHALTEN
-        if (c === "\\") {
-            out += c + (c2 || "");
-            i += 2;
-            continue;
-        }
-        if ((mode === "sq" && c === "'") || (mode === "dq" && c === '"') || (mode === "tpl" && c === "`")) {
-            mode = "code";
-        }
-        out += c;
-        i++;
-        continue;
-    }
-    return out;
-}
+const stripComments = stammLib.ohneKommentare;
 
 // `auch`: ein Name, der zusätzlich in einer Studio-Datei außerhalb der Stamm-Liste fiel (dort gilt NUR er — das Labor
 // trägt eigene Namen, die im Stamm gefallen sind).

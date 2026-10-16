@@ -54,9 +54,7 @@ function check(name, ok, detail) {
     if (!ok) errs.push(name);
 }
 // Kommentare strippen (die V18.267-Falle: erklaerende Kommentare zitieren Muster woertlich).
-function stripComments(src) {
-    return src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "");
-}
+const stripComments = stammLib.ohneKommentare;
 // der EINE Rumpf-Schneider (scripts/lib/stamm.cjs): der Block an der Definition, nie am ersten Text-Treffer
 function fnBody(src, kopf) {
     return stammLib.rumpf(src, kopf);
