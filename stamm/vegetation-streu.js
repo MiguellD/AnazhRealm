@@ -808,7 +808,11 @@ class AnazhRealm_vegetation_streu {
         const preset = this._foundryEnabled() ? this._foundryPresetFor(species) : null;
         if (preset && this._foundryPresetIsTree(preset)) {
             const seed = this._scatterFoundrySeed(cellX, cellZ, variantIndex, species, tf);
-            return seed === null ? null : this._foundrySichtHoehe(preset, { seed }, tf.scale);
+            // DER RANG DER STREU (R1): jede Bestellung einer Zelle trägt ihren Ort als `wo` (der Rang der Foundry-Schlange,
+            // `_foundryAuftragD2`), nie als `position` (die Gestalt bleibt die des Samens, `_foundryGestaltFor`). Ohne ihn stand
+            // der Wald der Spieler-Region im Vorrats-Rang (d² = ∞) hinter jedem Haus und Fels der Mesh-Zone: GTX kalt am Kopf
+            // 985a923b wartete die Streu 3–5 s in der Schlange und war der letzte Term des ersten Weltbilds.
+            return seed === null ? null : this._foundrySichtHoehe(preset, { seed, wo: tf }, tf.scale);
         }
         return this._lodTreeVisHeightFor(species, variantIndex, tf.scale);
     }
@@ -902,7 +906,7 @@ class AnazhRealm_vegetation_streu {
                     yaw: tf.yaw,
                 };
             }
-            let ff = this._foundryFlattenFor({ seed: fseed }, preset, lod);
+            let ff = this._foundryFlattenFor({ seed: fseed, wo: tf }, preset, lod);
             if (
                 !(ff && ff.instanceable && Array.isArray(ff.leaves) && ff.leaves.length) &&
                 this._foundryPresetIsTree(preset)
@@ -911,7 +915,7 @@ class AnazhRealm_vegetation_streu {
                 // Billboard-Fallback für einen NAH-Wunsch (lod<2) nicht an — sonst friert die Zelle als
                 // Nah-Billboard ein, das der vLodD-Dither nah ausmaskiert (Loch statt Baum).
                 if (ctxNoDefer && lod < 2) return null;
-                const imp = this._foundryFlattenFor({ seed: fseed }, preset, 2);
+                const imp = this._foundryFlattenFor({ seed: fseed, wo: tf }, preset, 2);
                 if (imp && imp.instanceable && Array.isArray(imp.leaves) && imp.leaves.length) ff = imp;
             }
             if (ff && ff.instanceable && Array.isArray(ff.leaves) && ff.leaves.length) {
@@ -993,7 +997,7 @@ class AnazhRealm_vegetation_streu {
             const _partner = this._lodBandPartnerFor(dist, visH, _curLod, tf.scale);
             if (_partner != null && _partner !== _curLod) {
                 bandWunsch = _partner;
-                const pf0 = this._foundryFlattenFor({ seed: fseed }, foundryPreset, _partner);
+                const pf0 = this._foundryFlattenFor({ seed: fseed, wo: tf }, foundryPreset, _partner);
                 const pf = pf0 && pf0.instanceable ? this._bandOhneZwilling(pf0, foundryFlat) : pf0;
                 bandHalt = !(pf && pf.instanceable) ? (pf0 === null ? "wartet" : true) : false;
                 if (pf && pf.instanceable && Array.isArray(pf.leaves) && pf.leaves.length && pf.lod !== _curLod) {
@@ -1244,7 +1248,7 @@ class AnazhRealm_vegetation_streu {
         // derselbe Same wie ihr Bau (die Gestalt des Orts, `_scatterFoundrySeed`) — bis K69-2 fragte er ohne Art und Ort den
         // rohen Samen, also den Partner einer anderen Gestalt
         const seed = this._scatterFoundrySeed(cell.cellX, cell.cellZ, cell.variantIndex, cell.species, tf);
-        const pf = preset && seed !== null ? this._foundryFlattenFor({ seed }, preset, wunsch) : null;
+        const pf = preset && seed !== null ? this._foundryFlattenFor({ seed, wo: tf }, preset, wunsch) : null;
         return !!(pf && pf.instanceable);
     }
 

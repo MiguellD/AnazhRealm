@@ -808,7 +808,8 @@ class AnazhRealm_studio_gestalt {
         const key = this._foundryKoerperKey(preset, variant, lod, entryOv);
         const group = this._foundryCacheGet(key);
         if (group === undefined) {
-            this._foundryZug(key, preset, variant, lod, entryOv, entry.position, {
+            // der Rang: der Ort des Eintrags, sonst der Rang seines Bestellers (`wo`, die Streu-Zelle, R1) — ohne beides Vorrat
+            this._foundryZug(key, preset, variant, lod, entryOv, entry.position || entry.wo, {
                 // Wirft die Stufe mit einer ANDEREN Gestalt (Budget `schatten`: der L0-Baum wirft seine L1), reist diese
                 // im selben Zug davor — sonst stellte sie sich erst nach der Ankunft ans Ende der Worker-Schlange, und die
                 // Stufe wartete doppelt.
