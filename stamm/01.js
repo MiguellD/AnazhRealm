@@ -844,8 +844,7 @@ class AnazhRealm {
             // die Shader-Blende (state.lodUniforms.uLodRef, pro Frame gespiegelt) → live ohne Rebuild. Default
             // aus AnazhRealm.LOD_DISTANCES.lodRef (Referenz-Höhe: größere Bäume schalten später, kleinere früher).
             // lodMaskOn togglet das Crossfade (false → harte Kanten).
-            lodRef:
-                AnazhRealm.LOD_DISTANCES.lodRef,
+            lodRef: AnazhRealm.LOD_DISTANCES.lodRef,
             lodMaskOn: true,
             // Foundry-Dither-Blende: Crossfade-Maske (__phytoCore.lodCrossfadeMask + _lodCrossfadeMaskNode)
             // UND CPU-Doppel-Mitgliedschaft im Band (_updateFoundryLodBand) schalten ZUSAMMEN an diesem Flag —

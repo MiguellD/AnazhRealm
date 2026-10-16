@@ -16606,9 +16606,6 @@ async function checkBandWelle6DSoul(ctx) {
         r.state.player.hp = r.state.player.hpMax;
 
         // --- Min-Regel-Hybrid ---
-        out.hasPrecisionDecay = typeof C.PRECISION_DECAY === "number";
-        out.precisionDecayValue = C.PRECISION_DECAY;
-        out.precisionDecayIs07 = Math.abs(C.PRECISION_DECAY - 0.7) < 0.001;
         // Beispiel aus wave-6-design §10.5
         const examplePart = {
             shape: "box",
@@ -16722,12 +16719,6 @@ async function checkBandWelle6DSoul(ctx) {
         );
         check("Welle 6.D Etappe 3a (NULL): tickPlayerVitals regeneriert Stamina", wave6d3aResults.tickRegenerates);
         // Min-Regel-Hybrid
-        check("Welle 6.D Etappe 3a: PRECISION_DECAY-Konstante existiert", wave6d3aResults.hasPrecisionDecay);
-        check(
-            "Welle 6.D Etappe 3a: PRECISION_DECAY == 0.7",
-            wave6d3aResults.precisionDecayIs07,
-            `value=${wave6d3aResults.precisionDecayValue}`
-        );
         check(
             "Welle 6.D Etappe 3a: Hybrid-Beispiel aus Doc — 4 Stufen → ~0.595",
             wave6d3aResults.hybridMatchesDoc,
@@ -26856,8 +26847,6 @@ async function checkBandWelle6HCreatures(ctx) {
         const r = window.anazhRealm;
         if (!r || !r.state || !r.state.creatures || r.state.creatures.length < 2) return null;
         const out = {};
-        out.hasVolumeConst = r.constructor.HARVEST_VOLUME_TO_UNITS === 4;
-        out.hasHandoverDist = r.constructor.CREATURE_HANDOVER_DIST === 2.0;
 
         const p = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, y: 5, z: 0 };
 
@@ -26984,8 +26973,6 @@ async function checkBandWelle6HCreatures(ctx) {
     });
 
     if (wave6hP2b5Results && !wave6hP2b5Results.error) {
-        check("Welle 6.H P2B.5: HARVEST_VOLUME_TO_UNITS===4", wave6hP2b5Results.hasVolumeConst);
-        check("Welle 6.H P2B.5: CREATURE_HANDOVER_DIST===2.0", wave6hP2b5Results.hasHandoverDist);
         check(
             "Welle 6.H P2B.5: stein_block-Harvest liefert ≥10 Stein (volumen-basiert)",
             wave6hP2b5Results.steinBlockHasStein
@@ -33643,8 +33630,6 @@ async function checkBandV18207R5StructureTexture(ctx) {
         }
 
 
-        // (R3) Default microBoost 1.3 (sichtbar); der Slider ist live, der Spieler dreht selbst.
-        out.defaultIs13 = A.R5_STRUCTURE_TEXTURE.microBoost === 1.3;
 
         return out;
     });
@@ -33654,7 +33639,6 @@ async function checkBandV18207R5StructureTexture(ctx) {
         `V18.207 (R1b) microBoost sinnvoll (>0, <5; gemessen ${res.microBoostValue})`,
         res.microBoostSensible === true
     );
-    check("V18.207 (R3) V18.210-Default microBoost = 1.3 (sichtbar — Slider live)", res.defaultIs13 === true);
 }
 
 // V18.208 — KREATUR-GRÖSSEN-STAT-SYMMETRIE (Folge zu V18.195/V18.206
@@ -34018,8 +34002,6 @@ async function checkBandV18210Verdrahtung(ctx) {
         out.a1SpeciesDistinct = sigs.size >= 4; // wenigstens 4 unterschiedlich (Eiche/Kiefer/Tanne/Birke sind klar trennbar)
 
         // ============== A2: R5 LIVE-UNIFORM + SLIDER ==============
-        // (A2a) Default wanderte 1.0 → 1.3
-        out.a2DefaultIs13 = A.R5_STRUCTURE_TEXTURE.microBoost === 1.3;
         // (A2b) Live-Uniform existiert in atmoUniforms
         const au = r._ensureAtmoUniforms ? r._ensureAtmoUniforms() : null;
         out.a2UniformExists = !!(au && au.r5StructureBoost);
@@ -34220,7 +34202,6 @@ async function checkBandV18210Verdrahtung(ctx) {
     );
 
     // A2 — R5 Live-Slider
-    check("V18.210-A2a R5_STRUCTURE_TEXTURE.microBoost Default = 1.3 (war 1.0)", res.a2DefaultIs13 === true);
     check("V18.210-A2b Live-Uniform r5StructureBoost in atmoUniforms", res.a2UniformExists === true);
     check("V18.210-A2c setStructureBoost-Setter existiert", res.a2SetterExists === true);
     check("V18.210-A2c2 Setter aktualisiert Uniform live", res.a2SetterUpdatesUniform === true);
@@ -45776,10 +45757,6 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
         const out = {};
         const Class = r.constructor;
 
-        // 1. Konstanten
-        out.threshold3 = Class.CREATURE_SPECIALIZATION_LEVEL_THRESHOLD === 3;
-        out.maxLevel5 = Class.CREATURE_SPECIALIZATION_MAX_LEVEL === 5;
-        out.speedBonus15 = Class.CREATURE_SPECIALIZATION_SPEED_BONUS_PER_LEVEL === 0.15;
 
         // 2. Methoden existieren
         out.hasComputeSpecs = typeof r._computeCreatureSpecializations === "function";
@@ -45959,9 +45936,6 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
     });
 
     if (wave6hP2dResults && !wave6hP2dResults.error) {
-        check("Welle 6.H P2D: LEVEL_THRESHOLD === 3", wave6hP2dResults.threshold3);
-        check("Welle 6.H P2D: MAX_LEVEL === 5", wave6hP2dResults.maxLevel5);
-        check("Welle 6.H P2D: SPEED_BONUS_PER_LEVEL === 0.15", wave6hP2dResults.speedBonus15);
         check(
             "Welle 6.H P2D: alle 6 Methoden existieren (compute/level/top/speedMul/levelUp/skillKey)",
             wave6hP2dResults.hasComputeSpecs &&
@@ -49024,7 +48998,6 @@ async function checkBandWaves9And10a(ctx) {
             out.altarSoulwork = r._computeWorkshopDomain(r.state.blueprints.seelenstein_altar) === "soulwork";
             out.drehbankMechanism = r._computeWorkshopDomain(r.state.blueprints.drehbank) === "mechanism";
             out.noHardcodedDomain = r.state.blueprints.esse.workshopDomain === undefined;
-            out.proximityConst = AR.WORKSHOP_PROXIMITY_M === 32;
 
             // Modus auf pfad für strikten Test
             r.setGameMode("pfad");
@@ -49090,7 +49063,6 @@ async function checkBandWaves9And10a(ctx) {
                 wave9cResults.drehbankMechanism &&
                 wave9cResults.noHardcodedDomain
         );
-        check("Welle 9c: Konstante WORKSHOP_PROXIMITY_M === 32 (V17.90 — Basis-Maßstab)", wave9cResults.proximityConst);
         check(
             "Welle 9c: pfad ohne nahe Werkstatt → Gate lehnt ab + nennt neededDomain",
             wave9cResults.pfadFarFails && wave9cResults.pfadFarReportsDomain

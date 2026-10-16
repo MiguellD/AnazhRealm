@@ -2408,7 +2408,8 @@ class AnazhRealm_Z20a {
         // Die Maße (Breite · Tiefe · Dachneigung · Geschosse) sind das fränkische Preset des Gesetzbuchs (fachwerk PRESETS
         // fraenkisch.s), kein Zahlen-Zwilling (K2); Stil, Verband, Gaube und Flügel wählt die Vorschau.
         if (worldKey === "fachwerk" && type.startsWith("haus_")) {
-            const PRE = AnazhRealm.Gesetz("fachwerk:PRESETS.fraenkisch.s") || AnazhRealm._kernPflichtBruch("fachwerk:PRESETS");
+            const PRE =
+                AnazhRealm.Gesetz("fachwerk:PRESETS.fraenkisch.s") || AnazhRealm._kernPflichtBruch("fachwerk:PRESETS");
             opts.studioOv = Object.freeze(
                 Object.assign({}, PRE, { stil: "alt", brace: "andreas", gaube: true, fluegel: true, fluegelSide: 1 })
             );

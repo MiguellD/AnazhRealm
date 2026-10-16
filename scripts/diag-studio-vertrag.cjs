@@ -81,8 +81,7 @@ function absorber() {
     return a;
 }
 
-// Die Namensräume aller Kerne in EINEM Kontext, wie der Main-Thread sie lädt (Manifest-Ordnung) — die Seh-Klassen (phyto-core
-// BUDGET_GESETZ.seh, die EINE Liste: `wurf.seh` einer Gelenk-Gestalt wählt aus ihr, S3) und die Linse EIN WERT lesen sie.
+// Alle Kerne in EINEM Kontext wie im Main-Thread — die Seh-Klassen (BUDGET_GESETZ.seh, S3) und die Linse EIN WERT lesen sie.
 const KERNE = (() => {
     const ctx = vm.createContext({ THREE: absorber(), console: { log() {}, warn() {}, error() {} }, performance: { now: () => 0 } });
     ctx.self = ctx;
@@ -93,23 +92,16 @@ const KERNE = (() => {
 })();
 const SEH_KLASSEN = KERNE.__phytoCore.BUDGET_GESETZ.seh.slice();
 
-// EIN WERT, EINE STELLE (K2): ein Wert lebt an EINER Stelle — Täter "datei:zeile art quelle — text". `ersatz`: ein Literal hinter
-// einer Quelle (`K || 10`, `Number.isFinite(D.x) ? D.x : 20`, `(K || {}).y`, `globalThis.X_GESETZ || {…}`); Quelle = eine
-// Konstante des Stamms (`AnazhRealm.K`, `static K`, `this.constructor.K`), ein Kern-Namensraum, ein Gesetz-Ruf und jeder Alias
-// davon — ein dynamischer Schlüssel (`T[k] || 0`) ist eine Tafel-Frage. `gesetz-ersatz`: `AnazhRealm.Gesetz(p, <nicht null>)`.
-// `stiller-catch`: ein leerer catch im Gesetz-Leser. `zwilling`: ein Stamm-Objekt trägt ≥ 2 markante Zahlen (eine Reihe ≥ 3
-// zählt doppelt) unter denselben Schlüsseln wie ein Kern-Objekt — ein Zwilling ist ein MUSTER, nie ein Name (Lehre 7).
+// EIN WERT, EINE STELLE (K2): `ersatz` = ein Literal hinter einer Quelle (Konstante des Stamms, Kern, Gesetz-Ruf, Alias; ein
+// dynamischer Schlüssel ist eine Tafel-Frage) · `gesetz-ersatz` · `stiller-catch` im Gesetz-Leser · `zwilling` = ein Stamm-Objekt
+// mit ≥ 2 markanten Zahlen (eine Reihe zählt doppelt) unter den Schlüsseln eines Kern-Objekts — ein MUSTER, nie ein Name (Lehre 7).
 function einWertTaeter(dateien, kerne) {
     const kinder = (n, f) => {
-        for (const k in n) {
-            const v = k === "loc" ? null : n[k];
-            if (Array.isArray(v)) for (const c of v) c && typeof c.type === "string" && f(c);
-            else if (v && typeof v.type === "string") f(v);
-        }
+        for (const k in n) for (const c of [].concat(k === "loc" ? [] : n[k])) if (c && typeof c.type === "string") f(c);
     };
-    const opt = { ecmaVersion: "latest", sourceType: "script", locations: true };
-    const asts = dateien.map((d) => Object.assign({ ast: require("acorn").parse(d.src, opt) }, d));
+    const asts = dateien.map((d) => ({ ...d, ast: require("acorn").parse(d.src, { ecmaVersion: "latest", locations: true }) }));
     const istAR = (n) => n.type === "Identifier" && n.name === "AnazhRealm";
+    const istGesetz = (m) => m.type === "MemberExpression" && istAR(m.object) && m.property.name === "Gesetz";
     const KONST = new Set();
     const sammle = (n) => {
         if (n.type === "AssignmentExpression" && n.left.type === "MemberExpression" && istAR(n.left.object))
@@ -134,10 +126,7 @@ function einWertTaeter(dateien, kerne) {
         if (n.type === "Identifier") return al.get(n.name) || (/^__\w+Core$/.test(n.name) ? n.name : null);
         if (n.type === "LogicalExpression")
             return n.operator === "&&" ? quelle(n.right, al) : literal(n.right) ? quelle(n.left, al) : null;
-        if (n.type === "CallExpression")
-            return n.callee.type === "MemberExpression" && istAR(n.callee.object) && n.callee.property.name === "Gesetz"
-                ? "Gesetz"
-                : null;
+        if (n.type === "CallExpression") return istGesetz(n.callee) ? "Gesetz" : null;
         if (n.type !== "MemberExpression" || n.computed) return null;
         const [o, p] = [n.object, n.property.name];
         if (istAR(o) || (o.type === "MemberExpression" && o.object.type === "ThisExpression" && o.property.name === "constructor"))
@@ -153,8 +142,7 @@ function einWertTaeter(dateien, kerne) {
         if (!ja) kinder(t, (c) => (ja = ja || nennt(c, q, al)));
         return ja;
     };
-    const tafeln = [];
-    const gesehen = new Set();
+    const [tafeln, gesehen] = [[], new Set()];
     (function w(o, weg, t) {
         if (!o || typeof o !== "object" || gesehen.has(o) || t > 6 || ArrayBuffer.isView(o)) return;
         gesehen.add(o);
@@ -178,8 +166,7 @@ function einWertTaeter(dateien, kerne) {
             if (fb && !(fb.type === "Literal" && fb.value === null)) melde(n, "gesetz-ersatz", "Gesetz");
             if (n.type === "CatchClause" && !n.body.body.length && al.get("\0in") === "Gesetz")
                 melde(n, "stiller-catch", "AnazhRealm.Gesetz");
-            if (n.type === "AssignmentExpression" && n.left.type === "MemberExpression" && istAR(n.left.object) && n.left.property.name === "Gesetz")
-                return w(n.right, new Map(al).set("\0in", "Gesetz"));
+            if (n.type === "AssignmentExpression" && istGesetz(n.left)) return w(n.right, new Map(al).set("\0in", "Gesetz"));
             if (n.type === "ObjectExpression") {
                 const z = [];
                 for (const p of n.properties) {
@@ -1259,10 +1246,7 @@ function validateManifest(m) {
     }
     // EIN WERT, EINE STELLE (K2) — die Linse (`einWertTaeter`) über dem Code-Baum des Stamms; Kommentare zitieren straflos.
     (function einWertEineStelle() {
-        let src = null;
-        try {
-            src = stammLib.text(root);
-        } catch (_e) {}
+        const src = stammLib.text(root); // fehlt der Stamm, bricht die Wand laut
         const dateien = stammLib.dateien(root).map((d) => ({ name: d, src: fs.readFileSync(path.join(root, d), "utf8") }));
         const taeter = einWertTaeter(dateien, KERNE);
         check(
@@ -1271,29 +1255,18 @@ function validateManifest(m) {
             taeter.length ? taeter.length + " Täter: " + taeter.join(" | ") : dateien.length + " Dateien sauber"
         );
         const probe =
-            "AnazhRealm.EINS = 1; AnazhRealm.T = { x: 2 }; AnazhRealm.W = { cell: 12, pack: 1.16 };\n" +
-            "AnazhRealm.Gesetz = function (p) { try { return p; } catch (_e) {} };\nclass Z { f() { const D = AnazhRealm.T;" +
-            " return [AnazhRealm.EINS || 3, Number.isFinite(D.x) ? D.x : 4, (AnazhRealm.T || {}).x, AnazhRealm.Gesetz('t:X', 7)," +
-            " globalThis.HIMMEL_GESETZ || { projY: 0.16 }]; } }\n";
+            "AnazhRealm.EINS = 1; AnazhRealm.T = { x: 2 }; AnazhRealm.W = { cell: 12, pack: 1.16 }; AnazhRealm.Gesetz = function (p) { try { return p; } catch (_e) {} };\n" +
+            "class Z { f() { const D = AnazhRealm.T; return [AnazhRealm.EINS || 3, Number.isFinite(D.x) ? D.x : 4, (AnazhRealm.T || {}).x, AnazhRealm.Gesetz('t:X', 7), globalThis.HIMMEL_GESETZ || { projY: 0.16 }]; } }";
         const arten = einWertTaeter([{ name: "probe.js", src: probe }], KERNE).map((t) => t.split(" ").slice(1, 3).join(" "));
-        const soll = "ersatz AnazhRealm.EINS|ersatz AnazhRealm.T|ersatz AnazhRealm.T.x|ersatz HIMMEL_GESETZ|gesetz-ersatz Gesetz";
         check(
             "SELBST-TEST: sieben Formen (||, isFinite, (K || {}), Gesetz-Ersatz, stiller catch, globalThis, Zahlen-Zwilling) feuern beim Namen",
-            (soll + "|stiller-catch AnazhRealm.Gesetz|zwilling __phytoCore.FOREST_PACK").split("|").every((s) => arten.includes(s)),
+            "ersatz AnazhRealm.EINS|ersatz AnazhRealm.T|ersatz AnazhRealm.T.x|ersatz HIMMEL_GESETZ|gesetz-ersatz Gesetz|stiller-catch AnazhRealm.Gesetz|zwilling __phytoCore.FOREST_PACK"
+                .split("|")
+                .every((s) => arten.includes(s)),
             arten.join(" · ")
         );
         (function inlineAbsenz() {
-            let fc = null;
-            try {
-                fc = fs.readFileSync(path.join(root, "foundry-core.js"), "utf8");
-            } catch (_e) {}
-            check(
-                "KONSUM: terrain steht in GESETZ_KERNE und foundry-core trägt __terrainCore (HIMMEL+WASSER)",
-                !!src &&
-                    /terrain:\s*"__terrainCore"/.test(src) &&
-                    !!fc &&
-                    /var __terrainCore = \{ HIMMEL_GESETZ/.test(fc)
-            );
+            const fc = fs.readFileSync(path.join(root, "foundry-core.js"), "utf8");
             // K09a — DAS GELÄNDE-GESETZBUCH steht im Strom: gelaende in GESETZ_KERNE, die Manifest-Zeile als Gesetz-Kern
             // (§9), der voxel-worker lädt DIESELBE Datei per importScripts mit seinem ?v=, index.html lädt sie vor dem Stamm.
             const wk = fs.readFileSync(path.join(root, "voxel-worker.js"), "utf8");

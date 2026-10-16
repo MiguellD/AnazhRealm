@@ -860,7 +860,11 @@ class AnazhRealm_Z06b {
                 throw new Error("phyto-core fehlt: WX_GESETZ." + w + " (das Wetter-Feld der Welt)");
             return Object.freeze({ fog: r.fog, sun: r.sun, grey: r.grey, wind: r.wind, rain: r.rain });
         };
-        return (AnazhRealm._wetterFeld = Object.freeze({ sunny: zeile("klar"), rainy: zeile("regen"), stormy: zeile("sturm") }));
+        return (AnazhRealm._wetterFeld = Object.freeze({
+            sunny: zeile("klar"),
+            rainy: zeile("regen"),
+            stormy: zeile("sturm"),
+        }));
     }
     // V6 — grey→Licht-Entsättigung: der grey-Kanal zieht das RICHTLICHT so weit
     // Richtung neutral-grau (Luminanz-erhaltend). ~0.7 → stormy dämpft die

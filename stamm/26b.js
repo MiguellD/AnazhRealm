@@ -928,7 +928,8 @@ AnazhRealm.Gesetz = function (pfad) {
         const teile = pfad.slice(d + 1).split(".");
         if (!nsName) grund = "kein Kern dieses Namens in GESETZ_KERNE";
         else if (!ns) grund = nsName + " ist nicht geladen";
-        else if (teile[0] in ns) v = ns; // Namensraum-Block (ARENA/VERHALTEN/FAHR/SIEDLUNG/…)
+        else if (teile[0] in ns)
+            v = ns; // Namensraum-Block (ARENA/VERHALTEN/FAHR/SIEDLUNG/…)
         else if (ns.PRESETS) v = (ns.PRESETS[Object.keys(ns.PRESETS)[0]] || {}).fx; // fx-Heimat des Primär-Presets
         for (let i = 0; !grund && i < teile.length; i++) {
             if (v == null) grund = (teile.slice(0, i).join(".") || teile[0]) + " fehlt im Kern";

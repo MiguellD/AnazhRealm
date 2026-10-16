@@ -7,7 +7,8 @@
 // Ineinanderwachsen) sind das Pflanz-Gesetz des Kerns (phyto-core FOREST_PACK) — EINE Quelle für Labor-Wald und Welt-Wald.
 AnazhRealm._waldPack = function (k) {
     const FP = globalThis.__phytoCore && globalThis.__phytoCore.FOREST_PACK;
-    if (!FP || !Number.isFinite(FP[k])) throw new Error("phyto-core fehlt: FOREST_PACK." + k + " (das Pflanz-Gesetz des Walds)");
+    if (!FP || !Number.isFinite(FP[k]))
+        throw new Error("phyto-core fehlt: FOREST_PACK." + k + " (das Pflanz-Gesetz des Walds)");
     return FP[k];
 };
 AnazhRealm.FOREST = Object.freeze({

@@ -656,9 +656,9 @@ async function runPartB() {
 
         // ════ AB HIER SYNCHRON (ein Block, kein await → keine Interleaves) ════
         const cfg = A.LOD_DISTANCES;
-        const M = cfg.hysteresis || 0;
+        const M = cfg.hysteresis;
         const visH = r._lodTreeVisHeight(entry);
-        const capL = Number.isFinite(cfg.leafVisCap) && cfg.leafVisCap > 0 ? cfg.leafVisCap : 12;
+        const capL = cfg.leafVisCap;
         const factor = r._lodPerceptionDistance(1000, visH) / 1000; // linear → skalierbar
         res.visH = visH;
         res.factor = factor;
