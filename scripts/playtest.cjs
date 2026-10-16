@@ -17347,14 +17347,21 @@ async function checkBandWelle6GHylomorphism(ctx) {
             r.state.materials.laub.builtIn === true
         );
 
-        // Worldgen-Bäume leben in state.architectures (Präfix baum_, stamm_ oder prozedural grown_),
-        // NICHT in state.vegetation.
-        const archs = Array.isArray(r.state.architectures) ? r.state.architectures : [];
-        const archTrees = archs.filter(
-            (a) =>
-                typeof a.type === "string" &&
-                (a.type.startsWith("baum_") || a.type.startsWith("stamm_") || a.type.startsWith("grown_"))
-        );
+        // Worldgen-Bäume leben in state.architectures (Präfix baum_, stamm_ oder prozedural grown_) — gezählt, wenn das Spiel
+        // sagt, dass der Wald der Mesh-Zone steht (Karte WL): keine Lücke „pflanzung"/„bauten" des Weltbilds (`_weltbildLuecken`,
+        // der Leser des Ladeschirms). Die Wanduhr der Bänder davor zählte unter Last n=0 (integ FZ 16.10., Neulauf n=53); der
+        // Takt-Deckel fängt nur einen Hänger und nennt die offene Lücke. (state.vegetation füllt seit V9.43-c kein Pfad.)
+        const istBaum = (a) => typeof a.type === "string" && /^(baum_|stamm_|grown_)/.test(a.type);
+        const wald = () =>
+            r._weltbildLuecken().filter((l) => /^(pflanzung|bauten)$/.test(l.term)).map((l) => l.satz).join(" · ");
+        out.waldErsterBlick = r.state.architectures.filter(istBaum).length;
+        out.waldLueckeErst = wald();
+        for (out.waldTakte = 0; wald() && out.waldTakte < 3000; out.waldTakte++) {
+            r._gameLoopTick(performance.now());
+            await new Promise((ok) => setTimeout(ok, 0));
+        }
+        out.waldLueckeRest = wald();
+        const archTrees = r.state.architectures.filter(istBaum);
         out.worldgenTreesInArchitectures = archTrees.length;
         // Mindestens ein gerenderter Baum (instanced, kein a.mesh) muss Kollision tragen — feld-nativ via
         // blockerAABBs (beim Spawn gefüllt, render-unabhängig), kein Ammo-Body.
@@ -17368,35 +17375,10 @@ async function checkBandWelle6GHylomorphism(ctx) {
         const initIslands = Array.isArray(r.state.floatingIslands) ? r.state.floatingIslands : [];
         out.initIslandsCount = initIslands.length;
 
-        // Vegetation enthält NUR noch Gras + Blumen (keine Bäume).
-        const veg = Array.isArray(r.state.vegetation) ? r.state.vegetation : [];
-        out.vegetationCount = veg.length;
-        // Diskrimination: kein Eintrag in state.vegetation hat eine
-        // Stamm-Cylinder mit Höhe ≥2 (Bäume sind weg).
-        out.noTreesInVegetation = !veg.some((v) => {
-            let isTreeLike = false;
-            v.traverse &&
-                v.traverse((n) => {
-                    if (
-                        !isTreeLike &&
-                        n.isMesh &&
-                        n.geometry &&
-                        n.geometry.type === "CylinderGeometry" &&
-                        n.geometry.parameters &&
-                        n.geometry.parameters.height >= 2 &&
-                        (n.geometry.parameters.radiusBottom || 0) >= 0.3
-                    )
-                        isTreeLike = true;
-                });
-            return isTreeLike;
-        });
-
-        // DSL-Op-Tests: spawn_tree → erzeugt Architektur, NICHT
-        // mehr Three.js-Group in state.vegetation.
+        // DSL-Op-Tests: spawn_tree → erzeugt Architektur.
         const archsBefore = r.state.architectures.length;
         const islandsBefore = r.state.floatingIslands.length;
         const ufosBefore = r.state.ufos ? r.state.ufos.length : 0;
-        const vegBefore = r.state.vegetation ? r.state.vegetation.length : 0;
         const playerPos = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, y: 50, z: 0 };
         // der Ort des Baums liegt auf dem LAND (Schau-2: die Natur-Wand lässt keinen Baum ins Wasser — der feste Versatz
         // +50/+50 lag im Wasser, der Baum fiel benannt „wasser")
@@ -17418,9 +17400,7 @@ async function checkBandWelle6GHylomorphism(ctx) {
         const archsAfter = r.state.architectures.length;
         const islandsAfter = r.state.floatingIslands.length;
         const ufosAfter = r.state.ufos ? r.state.ufos.length : 0;
-        const vegAfter = r.state.vegetation ? r.state.vegetation.length : 0;
         out.treeAddedToArchitectures = archsAfter === archsBefore + 1;
-        out.treeNotAddedToVegetation = vegAfter === vegBefore;
         out.islandSpawned = islandsAfter > islandsBefore;
         out.ufoSpawned = ufosAfter > ufosBefore;
 
@@ -17653,24 +17633,16 @@ async function checkBandWelle6GHylomorphism(ctx) {
         check("Welle 6.G P1.5: Material 'laub' existiert als Built-in", wave6gResults.hasLaubMaterial);
         check(
             "Welle 6.G P1.5: Worldgen-Bäume sind in state.architectures",
-            wave6gResults.worldgenTreesInArchitectures > 0,
-            `n=${wave6gResults.worldgenTreesInArchitectures}`
+            wave6gResults.worldgenTreesInArchitectures > 0 && !wave6gResults.waldLueckeRest,
+            `n=${wave6gResults.worldgenTreesInArchitectures} nach ${wave6gResults.waldTakte} Takten (erster Blick n=${wave6gResults.waldErsterBlick}${wave6gResults.waldLueckeErst ? ", " + wave6gResults.waldLueckeErst : ""})${wave6gResults.waldLueckeRest ? ", offen nach dem Deckel: " + wave6gResults.waldLueckeRest : ""}`
         );
         check(
             "Welle 6.G P1.5: mind. ein Worldgen-Baum hat feld-native Kollision via blockerAABBs",
             wave6gResults.treeHasCompoundCollision
         );
         check(
-            "Welle 6.G P1.5: state.vegetation enthält KEINE Bäume mehr (nur Gras + Blumen)",
-            wave6gResults.noTreesInVegetation
-        );
-        check(
             "Welle 6.G P1.5: spawn_tree DSL-Op fügt Eintrag zu state.architectures hinzu",
             wave6gResults.treeAddedToArchitectures
-        );
-        check(
-            "Welle 6.G P1.5: spawn_tree DSL-Op fügt NICHTS zu state.vegetation hinzu (Parallelcode weg)",
-            wave6gResults.treeNotAddedToVegetation
         );
         check("Welle 6.G P1.5: neu-gespawnter Baum hat type='baum_eiche'", wave6gResults.newTreeIsBaumEiche);
         console.log(

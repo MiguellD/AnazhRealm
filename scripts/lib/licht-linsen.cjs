@@ -163,7 +163,8 @@ function albedoSicht(opts) {
                 let pos = null,
                     gesetzt = false,
                     verweigert = null,
-                    eintrag = null;
+                    eintrag = null,
+                    kreatur = null;
                 if (ex.typ === "architektur") {
                     let best = null;
                     for (const e of st.architectures || [])
@@ -224,6 +225,7 @@ function albedoSicht(opts) {
                         await ticke(gesetzt ? 120 : 0, () => false);
                         if (window.__tiereHalten) window.__tiereHalten();
                         pos = new T.Vector3(c.position.x, c.position.y, c.position.z);
+                        kreatur = c;
                     }
                 } else if (ex.typ === "spieler") pos = pp.clone();
                 else if (ex.typ === "boden" && ex.wald) {
@@ -254,7 +256,7 @@ function albedoSicht(opts) {
                         pos = new T.Vector3(x, r._voxelSurfaceY(x, zz), zz);
                     else verweigert = `die Stelle ${x}/${zz} trägt keinen Wald-Boden (${b} Bäume, der nächste ${nah.toFixed(1)} m)`;
                 }
-                exemplare.push({ zeile: z, pos, gesetzt, verweigert, eintrag });
+                exemplare.push({ zeile: z, pos, gesetzt, verweigert, eintrag, kreatur });
             }
             // DAS AUGE DER STUFE AM EXEMPLAR (K63-n7, `exemplar.stufeNah`; gemessen 15.10., Radeon: der Genesis-Platz ist Grundriss,
             // der gesetzte Wagen gt rückte auf 19,4 m — dort zeigt er die Stufe 1, und das Budget-Gesetz faltet in ihren Lack-Zug
@@ -524,6 +526,14 @@ function albedoSicht(opts) {
                     const passt = (m) =>
                         kre.test(kl.get(m)) &&
                         matsOf(m).some((mt) => window.__stoffPasst(w.stoff || null, stoffOf(mt)));
+                    // DIE POSE DES LABORS (Karte WL; gemessen 16.10., Radeon, EINE Welt): das Tier steht im Schuss in der Kern-STAND_POSE
+                    // mit Gier 0 (`_tierBaumNeutralStance`; das Labor steht idle, stride 0) — mitten im Schritt eingefroren las das
+                    // Fell je Phase 0,1746 bis 0,1862, im Stand 0,1849 bis 0,1853
+                    if (ex.kreatur) {
+                        ex.kreatur.rotation.y = 0;
+                        r._tierBaumNeutralStance(ex.kreatur);
+                        ex.kreatur.updateMatrixWorld(true);
+                    }
                     let sel = meshes.filter((m) => visAlt.get(m) && passt(m));
                     if (ex.eintrag)
                         sel = sel
